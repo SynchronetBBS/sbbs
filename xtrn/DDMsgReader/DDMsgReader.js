@@ -153,6 +153,9 @@
  *                              "terminalSupportsUTF8 not defined" error eliminated.
  * 2024-03-31 Eric Oulashin     Version 1.95d
  *                              Fix for checkmark refresh when selecting all/none in the message list
+ * 2024-08-04 Eric Oulashin     Version 1.95e
+ *                              Fix: Indexed newscan mode for new users now shows the number of new messages
+ *                              in sub-boards like it's supposed to.
  */
 
 "use strict";
@@ -256,9 +259,20 @@ load('822header.js');
 var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 var hexdump = load('hexdump_lib.js');
 
+/*
+// Temporary
+//if (user.is_sysop)
+{
+	//bbs.scan_subs(SCAN_NEW);
+	bbs.scan_posts();
+	exit(0);
+}
+// End Temporary
+*/
+
 // Reader version information
-var READER_VERSION = "1.95d";
-var READER_DATE = "2024-03-31";
+var READER_VERSION = "1.95e";
+var READER_DATE = "2024-08-04";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1676,21 +1690,18 @@ function DigDistMsgReader_PopulateHdrsForCurrentSubBoard(pStartIdx, pEndIdx)
 		// only get messages from the user's scan pointer
 		else if (this.doingNewscan && (this.userSettings.newscanOnlyShowNewMsgs || (startIdxIsNumber && pStartIdx == POPULATE_MSG_HDRS_FROM_SCAN_PTR)))
 		{
-			
+			// Populate the list of headers starting at the scan pointer.
+			var startMsgIdx = absMsgNumToIdxWithMsgbaseObj(msgbase, msg_area.sub[this.subBoardCode].scan_ptr);
+			var endMsgIdx = msgbase.total_msgs;
+			tmpHdrs = {};
+			for (var i = startMsgIdx+1; i < endMsgIdx; ++i)
 			{
-				// Populate the list of headers starting at the scan pointer.
-				var startMsgIdx = absMsgNumToIdxWithMsgbaseObj(msgbase, msg_area.sub[this.subBoardCode].scan_ptr);
-				var endMsgIdx = msgbase.total_msgs;
-				tmpHdrs = {};
-				for (var i = startMsgIdx+1; i < endMsgIdx; ++i)
-				{
-					//var msgHdr = msgbase.get_msg_header(true, i, false, false); // Don't expand fields, don't include votes
-					// TODO: I think we should be able to call get_msg_header() and get valid vote information,
-					// but that doesn't seem to be the case:
-					var msgHdr = msgbase.get_msg_header(true, i, false, true); // Don't expand fields, include votes
-					if (msgHdr != null)
-						tmpHdrs[msgHdr.number] = msgHdr;
-				}
+				//var msgHdr = msgbase.get_msg_header(true, i, false, false); // Don't expand fields, don't include votes
+				// TODO: I think we should be able to call get_msg_header() and get valid vote information,
+				// but that doesn't seem to be the case:
+				var msgHdr = msgbase.get_msg_header(true, i, false, true); // Don't expand fields, include votes
+				if (msgHdr != null)
+					tmpHdrs[msgHdr.number] = msgHdr;
 			}
 		}
 		// If pStartIdx & pEndIdx are valid, then use those
@@ -2696,10 +2707,78 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 				switch (pScanMode)
 				{
 					case SCAN_NEW:
+						var totalNumMsgs = msgbase.total_msgs;
+
+						// Temporary (debugging newscan for new user)
+						/*
+						console.print("\x01n\r\n");
+						console.print("Last msg #: " + msgbase.last_msg + "\r\n");
+						console.print("Scan pointer: " + msg_area.sub[this.subBoardCode].scan_ptr + " (" + typeof( msg_area.sub[this.subBoardCode].scan_ptr) + ")\r\n");
+						console.print("Last read: " + msg_area.sub[this.subBoardCode].last_read + "\r\n");
+						
+						var tmpMsgbase = new MsgBase(this.subBoardCode);
+						{
+							if (tmpMsgbase.open())
+							{
+								var idxArray = tmpMsgbase.get_index();
+								var foundScanPtrMsg = false;
+								var scanPtrMsgIsLastMsg = false;
+								for (var idxI = 0; idxI < idxArray.length && !foundScanPtrMsg; ++idxI)
+								{
+									if (idxArray[idxI].number == msg_area.sub[this.subBoardCode].scan_ptr)
+									{
+										foundScanPtrMsg = true;
+										scanPtrMsgIsLastMsg = (idxI == idxArray.length-1);
+										break;
+									}
+								}
+								tmpMsgbase.close();
+							}
+						}
+						// End Temporary
+						*/
+						
+						// Newer - Seems like it's not working as well:
+						/*
+						var latestPostInfo = getLatestPostTimestampAndNumNewMsgs(this.subBoardCode, msgbase);
+						if (latestPostInfo.numNewMsgs > 0)
+						{
+							var startMsgIdx = totalNumMsgs > 0 ? totalNumMsgs - latestPostInfo.numNewMsgs : 0;
+							if (startMsgIdx < 0)
+								startMsgIdx = totalNumMsgs - 1;
+
+							bbs.curgrp = grpIndex;
+							bbs.cursub = subIndex;
+							// For a newscan, start at index 0 if the user wants to only show new messages
+							// during a newscan; otherwise, start at the scan pointer message (the sub-board
+							// will have to be populated with all messages)
+							if (!this.userSettings.newscanOnlyShowNewMsgs)
+							{
+								// Start at the scan pointer
+								startMsgIdx = scanPtrMsgIdx;
+								// If the message has already been read, then start at the next message
+								var tmpMsgHdr = this.GetMsgHdrByIdx(startMsgIdx);
+								if ((tmpMsgHdr != null) && (msg_area.sub[this.subBoardCode].last_read == tmpMsgHdr.number) && (startMsgIdx < this.NumMessages() - 1))
+									++startMsgIdx;
+							}
+							// Allow the user to read messages in this sub-board.  Don't allow
+							// the user to change to a different message area, don't pause
+							// when there's no search results in a sub-board, and return
+							// instead of going to the next sub-board via navigation.
+							var readRetObj = this.ReadOrListSubBoard(null, startMsgIdx, false, true, false, null, null, false);
+							// If the user stopped reading & decided to quit, then exit the
+							// message scan loops.
+							if (readRetObj.stoppedReading)
+							{
+								continueNewScan = false;
+								userAborted = true;
+							}
+						}
+						*/
+						// Older:
 						// Make sure the sub-board has some messages.  Let the user read it if
 						// the scan pointer index is -1 (one unread message) or if it points to
 						// a message within the number of messages in the sub-board.
-						var totalNumMsgs = msgbase.total_msgs;
 						// If the user's scan_ptr for the sub-board isn't the 'last message' special value,
 						// then check the user's scan_ptr against the message number of the last readable
 						// message (i.e., the last message in the sub-board could be a vote header, which
@@ -14581,6 +14660,13 @@ function DigDistMsgReader_GetScanPtrMsgIdx()
 	if (msg_area.sub[this.subBoardCode].scan_ptr == 0)
 		return -1;
 
+	/*
+	// Temporary (debugging newscan for new user)
+	var grpIdx = msg_area.sub[this.subBoardCode].grp_index;
+	var subDesc = msg_area.grp_list[grpIdx].name + " - " + msg_area.sub[this.subBoardCode].name;
+	// End Temporary
+	*/
+
 	// If the user's scan pointer is a crazy value, that could be because
 	// the user hasn't read messages in the sub-board yet.  In that case,
 	// just use 0.  Otherwise, get the user's scan pointer message index.
@@ -14588,7 +14674,10 @@ function DigDistMsgReader_GetScanPtrMsgIdx()
 	// If the user's scan_ptr for the sub-board isn't the 'last message'
 	// special value, then use it
 	if (!subBoardScanPtrIsLatestMsgSpecialVal(this.subBoardCode))
+	{
 		msgIdx = this.GetMsgIdx(msg_area.sub[this.subBoardCode].scan_ptr);
+		//console.print("- " + subDesc + " Here 1; scan_ptr: " + msg_area.sub[this.subBoardCode].scan_ptr + "; msgIdx: " + msgIdx + "\r\n\x01p"); // Temporary
+	}
 	// Sanity checking for msgIdx
 	var msgbase = new MsgBase(this.subBoardCode);
 	if (msgbase.open())
@@ -14602,13 +14691,23 @@ function DigDistMsgReader_GetScanPtrMsgIdx()
 			if (readableMsgIdx > -1)
 			{
 				var newLastRead = this.IdxToAbsMsgNum(readableMsgIdx);
+				//console.print("- " + subDesc + " Here 2. newLastRead: " + newLastRead + "\r\n\x01p"); // Temporary
 				if (newLastRead > -1)
+				{
+					//console.print("- " + subDesc + " Here 3\r\n\x01p"); // Temporary
 					msg_area.sub[this.subBoardCode].scan_ptr = newLastRead;
+				}
 				else
+				{
+					//console.print("- " + subDesc + " Here 4\r\n\x01p"); // Temporary
 					msg_area.sub[this.subBoardCode].scan_ptr = 0;
+				}
 			}
 			else
+			{
+				//console.print("- " + subDesc + " Here 5\r\n\x01p"); // Temporary
 				msg_area.sub[this.subBoardCode].scan_ptr = 0;
+			}
 		}
 		msgbase.close();
 	}
@@ -16611,56 +16710,81 @@ function findWidestNumMsgsAndNumNewMsgs(pScanScope, pForNewscanOnly)
 //
 // Parameters:
 //  pSubCode: The internal code of a sub-board to check
+//  pMsgbase: Optional - A MsgBase object, if the messagebase is already open
 //
 // Return value: An object with the following properties:
 //               latestMsgTimestamp: The timestamp of the latest post in the sub-board
 //               numnewMsgs: The number of new messages (unread to the user) in the sub-board
-function getLatestPostTimestampAndNumNewMsgs(pSubCode)
+function getLatestPostTimestampAndNumNewMsgs(pSubCode, pMsgbase)
 {
 	var retObj = {
 		latestMsgTimestamp: 0,
 		numNewMsgs: 0
 	};
+	
+	var msgbase = null;
+	var msgbaseIsOpen = false;
+	var msgBaseOpenedHere = false;
+	if (typeof(pMsgbase) === "object" && typeof(pMsgbase.get_msg_body) === "function")
+	{
+		msgbase = pMsgbase;
+		msgbaseIsOpen = pMsgbase.is_open;
+	}
+	else
+	{
+		msgbase = new MsgBase(pSubCode);
+		msgbaseIsOpen = msgbase.open();
+		msgBaseOpenedHere = true;
+	}
 
-	var msgbase = new MsgBase(pSubCode);
-	if (msgbase.open())
+	//var msgbase = new MsgBase(pSubCode);
+	//if (msgbase.open())
+	if (msgbaseIsOpen)
 	{
 		retObj.latestMsgTimestamp = getLatestPostTimeWithMsgbase(msgbase, pSubCode);
 		var totalNumMsgs = msgbase.total_msgs;
 		// scan_ptr: user's current new message scan pointer (highest-read message number)
 		if (typeof(msg_area.sub[pSubCode].scan_ptr) === "number")
 		{
-			var lastReadableMsgHdr = getLastReadableMsgHdrInSubBoard(pSubCode);
-			if (lastReadableMsgHdr != null)
+			// If the user's scan pointer for the sub-board is the special value indicating it isn't valid yet,
+			// then the user is probably a new user who hasn't visited this sub-board before, so the number of
+			// new messages should be the total number of posts.
+			if (msgNumIsLatestMsgSpecialVal(msg_area.sub[pSubCode].scan_ptr))
+				retObj.numNewMsgs = msg_area.sub[pSubCode].posts;
+			else
 			{
-				// If the user's scan_ptr for the sub-board isn't the 'last message'
-				// special value, then use it
-				if (!subBoardScanPtrIsLatestMsgSpecialVal(pSubCode))
+				var lastReadableMsgHdr = getLastReadableMsgHdrInSubBoard(pSubCode);
+				if (lastReadableMsgHdr != null)
 				{
-					// Count the number of readable messages after scan_ptr up to the last read message.
-					// If both index objects are null, then calculate this via the last readable message
-					// number and the scan pointer.
-					var scanPtrMsgIndex = msgbase.get_msg_index(false, msg_area.sub[pSubCode].scan_ptr, false);
-					//var lastMsgIndex = msgbase.get_msg_index(false, msgbase.last_msg, false);
-					//if (scanPtrMsgIndex != null && lastMsgIndex != null)
-					if (scanPtrMsgIndex != null)
+					// If the user's scan_ptr for the sub-board isn't the 'last message'
+					// special value, then use it
+					if (!subBoardScanPtrIsLatestMsgSpecialVal(pSubCode))
 					{
-						//for (var i = scanPtrMsgIndex.offset; i < lastMsgIndex.offset; ++i)
-						for (var i = scanPtrMsgIndex.offset; i < lastReadableMsgHdr.offset; ++i)
+						// Count the number of readable messages after scan_ptr up to the last read message.
+						// If both index objects are null, then calculate this via the last readable message
+						// number and the scan pointer.
+						var scanPtrMsgIndex = msgbase.get_msg_index(false, msg_area.sub[pSubCode].scan_ptr, false);
+						//var lastMsgIndex = msgbase.get_msg_index(false, msgbase.last_msg, false);
+						//if (scanPtrMsgIndex != null && lastMsgIndex != null)
+						if (scanPtrMsgIndex != null)
 						{
-							var msgIndex = msgbase.get_msg_index(true, i, false);
-							if (msgIndex != null && isReadableMsgHdr(msgIndex, pSubCode))
-								++retObj.numNewMsgs;
+							//for (var i = scanPtrMsgIndex.offset; i < lastMsgIndex.offset; ++i)
+							for (var i = scanPtrMsgIndex.offset; i < lastReadableMsgHdr.offset; ++i)
+							{
+								var msgIndex = msgbase.get_msg_index(true, i, false);
+								if (msgIndex != null && isReadableMsgHdr(msgIndex, pSubCode))
+									++retObj.numNewMsgs;
+							}
 						}
-					}
-					else
-					{
-						retObj.numNewMsgs = lastReadableMsgHdr.number - msg_area.sub[pSubCode].scan_ptr;
-						// Calculating the number of new messages in the above way seems to
-						// sometimes (though rarely) be incorrect (returning more than the actual
-						// number of new messages).  Another way might be to start from scan_ptr
-						// scan_ptr and count the number of readable messages.
-						//retObj.numNewMsgs = numReadableMsgsFromAbsMsgNumWithMsgbase(msgbase, pSubCode, msg_area.sub[pSubCode].scan_ptr);
+						else
+						{
+							retObj.numNewMsgs = lastReadableMsgHdr.number - msg_area.sub[pSubCode].scan_ptr;
+							// Calculating the number of new messages in the above way seems to
+							// sometimes (though rarely) be incorrect (returning more than the actual
+							// number of new messages).  Another way might be to start from scan_ptr
+							// scan_ptr and count the number of readable messages.
+							//retObj.numNewMsgs = numReadableMsgsFromAbsMsgNumWithMsgbase(msgbase, pSubCode, msg_area.sub[pSubCode].scan_ptr);
+						}
 					}
 				}
 			}
@@ -16682,7 +16806,8 @@ function getLatestPostTimestampAndNumNewMsgs(pSubCode)
 		}
 		else
 			retObj.numNewMsgs = msg_area.sub[pSubCode].posts;
-		msgbase.close();
+		if (msgBaseOpenedHere)
+			msgbase.close();
 		if (retObj.numNewMsgs < 0)
 			retObj.numNewMsgs = 0;
 	}
@@ -23406,6 +23531,7 @@ function ChoiceScrollbox_DoInputLoop(pDrawBorder)
 		{
 			case 'N': // Next page
 			case KEY_PAGE_DOWN:
+				//if (user.is_sysop) console.print("\x01n\r\nMenu page down pressed\r\n\x01p"); // Temproary;
 				refreshList = (this.pageNum < this.numPages-1);
 				if (refreshList)
 				{
@@ -23413,6 +23539,21 @@ function ChoiceScrollbox_DoInputLoop(pDrawBorder)
 					this.topItemIndex += this.numItemsPerPage;
 					this.chosenTextItemIndex = retObj.selectedIndex = this.topItemIndex;
 					// Note: this.bottomItemIndex is refreshed at the top of the loop
+				}
+				else if (retObj.selectedIndex < this.bottomItemIndex)
+				{
+					// Go to the last item
+					// Display the current line un-highlighted
+					console.gotoxy(this.dimensions.topLeftX+1, curpos.y);
+					printf(this.listIemFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, this.maxItemWidth));
+					// Select the bottommost item, and display it highlighted.
+					this.chosenTextItemIndex = retObj.selectedIndex = this.bottomItemIndex;
+					curpos.x = this.dimensions.topLeftX+1;
+					curpos.y = this.dimensions.bottomRightY-1;
+					console.gotoxy(curpos);
+					printf(this.listIemHighlightFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, this.maxItemWidth));
+					console.gotoxy(curpos); // Move the cursor into place where it should be
+					refreshList = false;
 				}
 				break;
 			case 'P': // Previous page
@@ -23424,6 +23565,21 @@ function ChoiceScrollbox_DoInputLoop(pDrawBorder)
 					this.topItemIndex -= this.numItemsPerPage;
 					this.chosenTextItemIndex = retObj.selectedIndex = this.topItemIndex;
 					// Note: this.bottomItemIndex is refreshed at the top of the loop
+				}
+				else if (retObj.selectedIndex > this.topItemIndex)
+				{
+					// Go to the first item
+					// Display the current line un-highlighted
+					console.gotoxy(this.dimensions.topLeftX+1, curpos.y);
+					printf(this.listIemFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, this.maxItemWidth));
+					// Select the top item, and display it highlighted.
+					this.chosenTextItemIndex = retObj.selectedIndex = this.topItemIndex;
+					curpos.x = this.dimensions.topLeftX+1;
+					curpos.y = this.dimensions.topLeftY+1;
+					console.gotoxy(curpos);
+					printf(this.listIemHighlightFormatStr, this.txtItemList[retObj.selectedIndex].substr(0, this.maxItemWidth));
+					console.gotoxy(curpos); // Move the cursor into place where it should be
+					refreshList = false;
 				}
 				break;
 			case 'F': // First page
