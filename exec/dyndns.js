@@ -4,7 +4,7 @@
 
 // usage: ?dyndns <password> [ip_address] [-mx address]
 
-const REVISION = "1.22";
+const REVISION = "2.0";
 const rx_log_level = LOG_INFO;
 const tx_log_level = LOG_DEBUG;
 
@@ -29,6 +29,7 @@ var mx_record = options.mx;
 var ip_address = options.ip;
 var ip6_address = options.ip6;
 var host_name = system.qwk_id;
+var password = options.password || argv[0];
 
 for(i=1;i<argc;i++) {
 	switch (argv[i].toLowerCase()) {
@@ -77,7 +78,7 @@ for(h in host_list) {
 				writeln(host_name);
 				break;
 			case "pw?":
-				writeln(argv[0]);
+				writeln(password);
 				break;
 			case "ip?":
 				if(ip_address)
