@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.95e    2024-08-04   Fix: Indexed newscan mode for new users now shows the
+                      number of new messages in sub-boards like it's supposed
+                      to.
 1.95d    2024-03-31   Fix for checkmark refresh when selecting all/none in the
                       message list
 1.95c    2024-02-15   The filename of quotes.txt is now in the correct case for
