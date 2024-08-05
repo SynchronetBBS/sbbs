@@ -1109,8 +1109,6 @@ var Level = function (l, n) {
 					return e;
 				});
 				frames.labels[currentSkill].invalidate();
-				break;
-
 			case "\r":
 			case " ":
 				if (typeof cursor.ini.hoveringOver == "undefined") break;
