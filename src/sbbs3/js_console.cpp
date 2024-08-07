@@ -1930,10 +1930,13 @@ js_gotoxy(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(JSVAL_IS_OBJECT(argv[0])) {
-		if(!JS_GetProperty(cx, JSVAL_TO_OBJECT(argv[0]),"x", &val)
+		JSObject* obj = JSVAL_TO_OBJECT(argv[0]);
+		if(obj == nullptr)
+			return JS_FALSE;
+		if(!JS_GetProperty(cx, obj, "x", &val)
 			|| !JS_ValueToInt32(cx,val,&x))
 			return JS_FALSE;
-		if(!JS_GetProperty(cx, JSVAL_TO_OBJECT(argv[0]),"y", &val)
+		if(!JS_GetProperty(cx, obj, "y", &val)
 			|| !JS_ValueToInt32(cx,val,&y))
 			return JS_FALSE;
 	} else {
