@@ -1931,8 +1931,10 @@ js_gotoxy(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(JSVAL_IS_OBJECT(argv[0])) {
 		JSObject* obj = JSVAL_TO_OBJECT(argv[0]);
-		if(obj == nullptr)
+		if(obj == nullptr) {
+			JS_ReportError(cx, "invalid object argument in call to %s", __FUNCTION__);
 			return JS_FALSE;
+		}
 		if(!JS_GetProperty(cx, obj, "x", &val)
 			|| !JS_ValueToInt32(cx,val,&x))
 			return JS_FALSE;
