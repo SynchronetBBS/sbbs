@@ -2370,7 +2370,7 @@ static void js_add_queryval(http_session_t * session, char *key, char *value)
 	int			alen;
 
 	/* Return existing object if it's already been created */
-	if(JS_GetProperty(session->js_cx,session->js_query,key,&val) && val!=JSVAL_VOID)  {
+	if(JS_GetProperty(session->js_cx,session->js_query,key,&val) && !JSVAL_NULL_OR_VOID(val))  {
 		keyarray = JSVAL_TO_OBJECT(val);
 		alen=-1;
 	}
@@ -2402,7 +2402,7 @@ static void js_add_cookieval(http_session_t * session, char *key, char *value)
 	int			alen;
 
 	/* Return existing object if it's already been created */
-	if(JS_GetProperty(session->js_cx,session->js_cookie,key,&val) && val!=JSVAL_VOID)  {
+	if(JS_GetProperty(session->js_cx,session->js_cookie,key,&val) && !JSVAL_NULL_OR_VOID(val))  {
 		keyarray = JSVAL_TO_OBJECT(val);
 		alen=-1;
 	}
@@ -3555,7 +3555,7 @@ static bool exec_js_webctrl(http_session_t* session, char *name, char* script, c
 		}
 	}
 	if(JS_GetProperty(session->js_cx,session->js_glob,"js",&val)
-		&& JSVAL_IS_OBJECT(val)) {
+		&& JSVAL_IS_OBJECT(val) && !JSVAL_NULL_OR_VOID(val)) {
 		if((js_str=JS_NewStringCopyZ(session->js_cx, curdir))!=NULL) {
 			JS_DefineProperty(session->js_cx, JSVAL_TO_OBJECT(val), "startup_dir", STRING_TO_JSVAL(js_str)
 				,NULL,NULL,JSPROP_ENUMERATE);
@@ -5256,7 +5256,7 @@ JSObject* js_CreateHttpReplyObject(JSContext* cx
 	JSString*	js_str;
 
 	/* Return existing object if it's already been created */
-	if(JS_GetProperty(cx,parent,"http_reply",&val) && val!=JSVAL_VOID)  {
+	if(JS_GetProperty(cx,parent,"http_reply",&val) && !JSVAL_NULL_OR_VOID(val))  {
 		reply = JSVAL_TO_OBJECT(val);
 		JS_ClearScope(cx,reply);
 	}
@@ -5270,7 +5270,7 @@ JSObject* js_CreateHttpReplyObject(JSContext* cx
 		,NULL,NULL,JSPROP_ENUMERATE);
 
 	/* Return existing object if it's already been created */
-	if(JS_GetProperty(cx,reply,"header",&val) && val!=JSVAL_VOID)  {
+	if(JS_GetProperty(cx,reply,"header",&val) && !JSVAL_NULL_OR_VOID(val))  {
 		headers = JSVAL_TO_OBJECT(val);
 		JS_ClearScope(cx,headers);
 	}
@@ -5293,7 +5293,7 @@ JSObject* js_CreateHttpRequestObject(JSContext* cx
 	jsval		val;
 
 	/* Return existing object if it's already been created */
-	if(JS_GetProperty(cx,parent,"http_request",&val) && val!=JSVAL_VOID)  {
+	if(JS_GetProperty(cx,parent,"http_request",&val) && !JSVAL_NULL_OR_VOID(val))  {
 		session->js_request=JSVAL_TO_OBJECT(val);
 	}
 	else
@@ -5305,7 +5305,7 @@ JSObject* js_CreateHttpRequestObject(JSContext* cx
 	js_add_request_prop(session,"virtual_path",session->req.virtual_path);
 
 	/* Return existing object if it's already been created */
-	if(JS_GetProperty(cx,session->js_request,"query",&val) && val!=JSVAL_VOID)  {
+	if(JS_GetProperty(cx,session->js_request,"query",&val) && !JSVAL_NULL_OR_VOID(val))  {
 		session->js_query = JSVAL_TO_OBJECT(val);
 		JS_ClearScope(cx,session->js_query);
 	}
@@ -5314,7 +5314,7 @@ JSObject* js_CreateHttpRequestObject(JSContext* cx
 									, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	/* Return existing object if it's already been created */
-	if(JS_GetProperty(cx,session->js_request,"header",&val) && val!=JSVAL_VOID)  {
+	if(JS_GetProperty(cx,session->js_request,"header",&val) && !JSVAL_NULL_OR_VOID(val))  {
 		session->js_header = JSVAL_TO_OBJECT(val);
 		JS_ClearScope(cx,session->js_header);
 	}
@@ -5323,7 +5323,7 @@ JSObject* js_CreateHttpRequestObject(JSContext* cx
 									, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	/* Return existing object if it's already been created */
-	if(JS_GetProperty(cx,session->js_request,"cookie",&val) && val!=JSVAL_VOID)  {
+	if(JS_GetProperty(cx,session->js_request,"cookie",&val) && !JSVAL_NULL_OR_VOID(val))  {
 		session->js_cookie = JSVAL_TO_OBJECT(val);
 		JS_ClearScope(cx,session->js_cookie);
 	}
@@ -5860,10 +5860,10 @@ js_write_template(JSContext *cx, uintN argc, jsval *arglist)
 		else {
 			/* "Fast Mode" requested? */
 			jsval		val;
-			JSObject*	reply;
+			JSObject*	reply = NULL;
 			if(JS_GetProperty(cx, session->js_glob, "http_reply", &val))
 				reply=JSVAL_TO_OBJECT(val);
-			if(JS_GetProperty(cx, reply, "fast", &val)
+			if(relpy != NULL && JS_GetProperty(cx, reply, "fast", &val)
 				&& JSVAL_IS_BOOLEAN(val) && JSVAL_TO_BOOLEAN(val)) {
 				session->req.keep_alive=false;
 				if(!ssjs_send_headers(session,false)) {
@@ -6036,11 +6036,14 @@ static bool ssjs_send_headers(http_session_t* session,int chunked)
 	JS_BEGINREQUEST(session->js_cx);
 	if(JS_GetProperty(session->js_cx,session->js_glob,"http_reply",&val)) {
 		reply = JSVAL_TO_OBJECT(val);
-		if(JS_GetProperty(session->js_cx,reply,"status",&val))
-			JSVALUE_TO_STRBUF(session->js_cx, val, session->req.status, sizeof(session->req.status), NULL);
-		if(JS_GetProperty(session->js_cx,reply,"header",&val)) {
-			headers = JSVAL_TO_OBJECT(val);
-			heads=JS_Enumerate(session->js_cx,headers);
+		if(reply != NULL) {
+			if(JS_GetProperty(session->js_cx,reply,"status",&val))
+				JSVALUE_TO_STRBUF(session->js_cx, val, session->req.status, sizeof(session->req.status), NULL);
+			if(JS_GetProperty(session->js_cx,reply,"header",&val)) {
+				headers = JSVAL_TO_OBJECT(val);
+				if(headers != NULL)
+					heads=JS_Enumerate(session->js_cx,headers);
+			}
 		}
 	}
 	if(heads != NULL) {

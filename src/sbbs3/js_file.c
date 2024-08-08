@@ -1367,7 +1367,7 @@ js_iniSetObject(JSContext *cx, uintN argc, jsval *arglist)
 
     object = JSVAL_TO_OBJECT(argv[1]);
 
-	if((id_array=JS_Enumerate(cx,object))==NULL)
+	if(object == NULL || (id_array=JS_Enumerate(cx,object))==NULL)
 		return(JS_TRUE);
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -1553,7 +1553,7 @@ js_iniSetAllObjects(JSContext *cx, uintN argc, jsval *arglist)
 
     array = JSVAL_TO_OBJECT(argv[0]);
 
-	if(!JS_IsArrayObject(cx, array))
+	if(array == NULL || !JS_IsArrayObject(cx, array))
 		return(JS_TRUE);
 
     if(!JS_GetArrayLength(cx, array, &count))
@@ -1596,7 +1596,7 @@ js_iniSetAllObjects(JSContext *cx, uintN argc, jsval *arglist)
 		if(!JSVAL_IS_OBJECT(oval))	/* must be an array of objects */
 			break;
 		object=JSVAL_TO_OBJECT(oval);
-		if(!JS_GetProperty(cx, object, name, &set_argv[0]))
+		if(object == NULL || !JS_GetProperty(cx, object, name, &set_argv[0]))
 			continue;
 		if((id_array=JS_Enumerate(cx,object))==NULL) {
 			if(name != name_def)
@@ -1921,7 +1921,7 @@ js_writebin(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(JSVAL_IS_OBJECT(argv[0]) && !JSVAL_IS_NULL(argv[0])) {
 		array = JSVAL_TO_OBJECT(argv[0]);
-		if(JS_IsArrayObject(cx, array)) {
+		if(array != NULL && JS_IsArrayObject(cx, array)) {
 		    if(!JS_GetArrayLength(cx, array, &count))
 				return(JS_TRUE);
 		}
@@ -2076,7 +2076,7 @@ js_writeall(JSContext *cx, uintN argc, jsval *arglist)
 
     array = JSVAL_TO_OBJECT(argv[0]);
 
-    if(!JS_IsArrayObject(cx, array))
+    if(array == NULL || !JS_IsArrayObject(cx, array))
 		return(JS_TRUE);
 
     if(!JS_GetArrayLength(cx, array, &limit))

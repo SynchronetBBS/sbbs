@@ -746,7 +746,7 @@ js_get_file(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_FALSE;
 		argn++;
 	}
-	if(argn < argc && JSVAL_IS_OBJECT(argv[argn])) {
+	if(argn < argc && JSVAL_IS_OBJECT(argv[argn]) && !JSVAL_IS_NULL(argv[argn])) {
 		free(filename);
 		if((filename = parse_file_name(cx, JSVAL_TO_OBJECT(argv[argn]))) == NULL)
 			return JS_FALSE;
@@ -1030,7 +1030,7 @@ js_get_file_path(JSContext *cx, uintN argc, jsval *arglist)
 		HANDLE_PENDING(cx, filename);
 		argn++;
 	}
-	if(argn < argc && JSVAL_IS_OBJECT(argv[argn])) {
+	if(argn < argc && JSVAL_IS_OBJECT(argv[argn]) && !JSVAL_IS_NULL(argv[argn])) {
 		free(filename);
 		if((filename = parse_file_name(cx, JSVAL_TO_OBJECT(argv[argn]))) == NULL)
 			return JS_FALSE;
@@ -1081,7 +1081,7 @@ js_get_file_size(JSContext *cx, uintN argc, jsval *arglist)
 		HANDLE_PENDING(cx, filename);
 		argn++;
 	}
-	if(argn < argc && JSVAL_IS_OBJECT(argv[argn])) {
+	if(argn < argc && JSVAL_IS_OBJECT(argv[argn]) && !JSVAL_IS_NULL(argv[argn])) {
 		free(filename);
 		if((filename = parse_file_name(cx, JSVAL_TO_OBJECT(argv[argn]))) == NULL)
 			return JS_FALSE;
@@ -1129,7 +1129,7 @@ js_get_file_time(JSContext *cx, uintN argc, jsval *arglist)
 		HANDLE_PENDING(cx, filename);
 		argn++;
 	}
-	if(argn < argc && JSVAL_IS_OBJECT(argv[argn])) {
+	if(argn < argc && JSVAL_IS_OBJECT(argv[argn]) && !JSVAL_IS_NULL(argv[argn])) {
 		free(filename);
 		if((filename = parse_file_name(cx, JSVAL_TO_OBJECT(argv[argn]))) == NULL)
 			return JS_FALSE;
@@ -1201,7 +1201,7 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	uintN argn = 0;
-	if(argn < argc && JSVAL_IS_OBJECT(argv[argn])) {
+	if(argn < argc && JSVAL_IS_OBJECT(argv[argn]) && !JSVAL_IS_NULL(argv[argn])) {
 		p->smb_result = parse_file_properties(cx, JSVAL_TO_OBJECT(argv[argn]), &file, &extdesc, &auxdata);
 		if(p->smb_result != SMB_SUCCESS)
 			return JS_TRUE;
@@ -1217,7 +1217,7 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 	if(argn < argc && JSVAL_IS_OBJECT(argv[argn]) && !JSVAL_IS_NULL(argv[argn])) {
 		JSObject* objarg = JSVAL_TO_OBJECT(argv[argn]);
 		JSClass* cl;
-		if((cl = JS_GetClass(cx, objarg)) != NULL && strcmp(cl->name, "Client") == 0) {
+		if(objarg != NULL && (cl = JS_GetClass(cx, objarg)) != NULL && strcmp(cl->name, "Client") == 0) {
 			client = JS_GetPrivate(cx, objarg);
 		}
 	}

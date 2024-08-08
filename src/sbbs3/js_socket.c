@@ -548,7 +548,7 @@ SOCKET js_socket(JSContext *cx, jsval val)
 	JSClass*	cl;
 	SOCKET		sock=INVALID_SOCKET;
 
-	if(JSVAL_IS_OBJECT(val) && (cl=JS_GetClass(cx,JSVAL_TO_OBJECT(val)))!=NULL) {
+	if(JSVAL_IS_OBJECT(val) && !JSVAL_IS_NULL(val) && (cl=JS_GetClass(cx,JSVAL_TO_OBJECT(val)))!=NULL) {
 		if(cl->flags&JSCLASS_HAS_PRIVATE)
 			if((vp=JS_GetInstancePrivate(cx,JSVAL_TO_OBJECT(val), &js_socket_class,NULL))!=NULL)
 				sock=*(SOCKET*)vp;
@@ -571,7 +571,7 @@ size_t js_socket_numsocks(JSContext *cx, jsval val)
 	int32_t		intval;
 	size_t ret = 0;
 
-	if(JSVAL_IS_OBJECT(val) && (cl=JS_GetClass(cx,JSVAL_TO_OBJECT(val)))!=NULL) {
+	if(JSVAL_IS_OBJECT(val) && !JSVAL_IS_NULL(val) && (cl=JS_GetClass(cx,JSVAL_TO_OBJECT(val)))!=NULL) {
 		if(cl->flags&JSCLASS_HAS_PRIVATE) {
 			if((p=(js_socket_private_t *)JS_GetInstancePrivate(cx,JSVAL_TO_OBJECT(val),&js_socket_class,NULL))!=NULL) {
 				if(p->set) {
@@ -606,7 +606,7 @@ size_t js_socket_add(JSContext *cx, jsval val, struct pollfd *fds, short events)
 	int32_t		intval;
 	size_t ret = 0;
 
-	if(JSVAL_IS_OBJECT(val) && (cl=JS_GetClass(cx,JSVAL_TO_OBJECT(val)))!=NULL) {
+	if(JSVAL_IS_OBJECT(val) && !JSVAL_IS_NULL(val) && (cl=JS_GetClass(cx,JSVAL_TO_OBJECT(val)))!=NULL) {
 		if(cl->flags&JSCLASS_HAS_PRIVATE) {
 			if((p=(js_socket_private_t *)JS_GetInstancePrivate(cx,JSVAL_TO_OBJECT(val),&js_socket_class,NULL))!=NULL) {
 				if(p->set) {
@@ -646,7 +646,7 @@ SOCKET js_socket_add(JSContext *cx, jsval val, fd_set *fds)
 	size_t		i;
 	int32_t		intval;
 
-	if(JSVAL_IS_OBJECT(val) && (cl=JS_GetClass(cx,JSVAL_TO_OBJECT(val)))!=NULL) {
+	if(JSVAL_IS_OBJECT(val) && !JSVAL_IS_NULL(val) && (cl=JS_GetClass(cx,JSVAL_TO_OBJECT(val)))!=NULL) {
 		if(cl->flags&JSCLASS_HAS_PRIVATE) {
 			if((p=(js_socket_private_t *)JS_GetInstancePrivate(cx,JSVAL_TO_OBJECT(val),&js_socket_class,NULL))!=NULL) {
 				if(p->set) {
@@ -681,7 +681,7 @@ bool  js_socket_isset(JSContext *cx, jsval val, fd_set *fds)
 	size_t		i;
 	int			intval;
 
-	if(JSVAL_IS_OBJECT(val) && (cl=JS_GetClass(cx,JSVAL_TO_OBJECT(val)))!=NULL) {
+	if(JSVAL_IS_OBJECT(val) && !JSVAL_IS_NULL(val) && (cl=JS_GetClass(cx,JSVAL_TO_OBJECT(val)))!=NULL) {
 		if(cl->flags&JSCLASS_HAS_PRIVATE) {
 			if((p=(js_socket_private_t *)JS_GetInstancePrivate(cx,JSVAL_TO_OBJECT(val),&js_socket_class,NULL))!=NULL) {
 				if(p->set) {
@@ -1063,7 +1063,7 @@ js_connect(JSContext *cx, uintN argc, jsval *arglist)
 	port = js_port(cx,argv[1],p->type);
 	rc=JS_SUSPENDREQUEST(cx);
 
-	if (argc > 2 && JSVAL_IS_OBJECT(argv[2]) && JS_ObjectIsFunction(cx, JSVAL_TO_OBJECT(argv[2]))) {
+	if (argc > 2 && JSVAL_IS_OBJECT(argv[2]) && !JSVAL_IS_NULL(argv[2]) && JS_ObjectIsFunction(cx, JSVAL_TO_OBJECT(argv[2]))) {
 		JSBool bgr = js_connect_event(cx, argc, arglist, p, port, obj);
 		JS_RESUMEREQUEST(cx, rc);
 		return bgr;
@@ -2073,6 +2073,8 @@ js_get_callback(JSContext *cx)
 		}
 	}
 	pjs_obj = JSVAL_TO_OBJECT(val);
+	if(pjs_obj == NULL)
+		return NULL;
 	return JS_GetPrivate(cx, pjs_obj);
 }
 

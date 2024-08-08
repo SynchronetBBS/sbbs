@@ -297,9 +297,11 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		if((JS_GetProperty(cx, scope, "js", &val) && !JSVAL_NULL_OR_VOID(val))
 		    || (JS_GetProperty(cx, obj, "js", &val) && !JSVAL_NULL_OR_VOID(val))) {
 			js_internal = JSVAL_TO_OBJECT(val);
-			bg->cb.parent_cb = (js_callback_t*)JS_GetPrivate(cx,js_internal);
-			if (bg->cb.parent_cb == NULL) {
-				lprintf(LOG_ERR, "!ERROR parent CB is NULL");
+			if(js_internal != NULL) {
+				bg->cb.parent_cb = (js_callback_t*)JS_GetPrivate(cx,js_internal);
+				if (bg->cb.parent_cb == NULL) {
+					lprintf(LOG_ERR, "!ERROR parent CB is NULL");
+				}
 			}
 		}
 		else {
@@ -410,7 +412,7 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		
 	} else if(JSVAL_IS_OBJECT(argv[argn])) {
 		JSObject* tmp_obj=JSVAL_TO_OBJECT(argv[argn++]);
-		if(!JS_ObjectIsFunction(cx,tmp_obj))	/* Scope specified */
+		if(tmp_obj != NULL && !JS_ObjectIsFunction(cx,tmp_obj))	/* Scope specified */
 			exec_obj=tmp_obj;
 	}
 
@@ -510,19 +512,21 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		if((JS_GetProperty(cx, scope, "js", &val) && val!=JSVAL_VOID && JSVAL_IS_OBJECT(val))
 		    || (JS_GetProperty(cx, obj, "js", &val) && val!=JSVAL_VOID && JSVAL_IS_OBJECT(val))) {
 			JSObject* js_obj = JSVAL_TO_OBJECT(val);
-			
-			/* if js.exec_dir is defined (location of executed script), search there first */
-			if(JS_GetProperty(cx, js_obj, "exec_dir", &val) && val!=JSVAL_VOID && JSVAL_IS_STRING(val)) {
-				JSVALUE_TO_STRBUF(cx, val, path, sizeof(path), &len);
-				strncat(path, filename, sizeof(path)-len);
-				path[sizeof(path)-1]=0;
-				rc=JS_SUSPENDREQUEST(cx);
-				if(!fexistcase(path))
-					path[0]=0;
-				JS_RESUMEREQUEST(cx, rc);
+
+			if(js_obj != NULL) {
+				/* if js.exec_dir is defined (location of executed script), search there first */
+				if(JS_GetProperty(cx, js_obj, "exec_dir", &val) && val!=JSVAL_VOID && JSVAL_IS_STRING(val)) {
+					JSVALUE_TO_STRBUF(cx, val, path, sizeof(path), &len);
+					strncat(path, filename, sizeof(path)-len);
+					path[sizeof(path)-1]=0;
+					rc=JS_SUSPENDREQUEST(cx);
+					if(!fexistcase(path))
+						path[0]=0;
+					JS_RESUMEREQUEST(cx, rc);
+				}
+				if(JS_GetProperty(cx, js_obj, JAVASCRIPT_LOAD_PATH_LIST, &val) && val!=JSVAL_VOID && JSVAL_IS_OBJECT(val))
+					js_load_list = JSVAL_TO_OBJECT(val);
 			}
-			if(JS_GetProperty(cx, js_obj, JAVASCRIPT_LOAD_PATH_LIST, &val) && val!=JSVAL_VOID && JSVAL_IS_OBJECT(val))
-				js_load_list = JSVAL_TO_OBJECT(val);
 
 			/* if mods_dir is defined, search mods/js.load_path_list[n] next */
 			if(path[0]==0 && p->cfg->mods_dir[0]!=0 && js_load_list!=NULL) {
@@ -701,7 +705,7 @@ js_require(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(JSVAL_IS_OBJECT(argv[argn])) {
 		tmp_obj=JSVAL_TO_OBJECT(argv[argn++]);
-		if(!JS_ObjectIsFunction(cx,tmp_obj))	/* Scope specified */
+		if(tmp_obj != NULL && !JS_ObjectIsFunction(cx,tmp_obj))	/* Scope specified */
 			exec_obj=tmp_obj;
 	}
 
@@ -869,7 +873,7 @@ js_exit(JSContext *cx, uintN argc, jsval *arglist)
 		if((JS_GetProperty(cx, scope, "js", &val) && JSVAL_IS_OBJECT(val)) || 
 		    (JS_GetProperty(cx, obj, "js", &val) && JSVAL_IS_OBJECT(val))) {
 			obj = JSVAL_TO_OBJECT(val);
-			if(JS_GetProperty(cx, obj, "scope", &val) && JSVAL_IS_OBJECT(val))
+			if(obj != NULL && JS_GetProperty(cx, obj, "scope", &val) && JSVAL_IS_OBJECT(val) && !JSVAL_IS_NULL(val))
 				obj = JSVAL_TO_OBJECT(val);
 			else
 				obj = JS_THIS_OBJECT(cx, arglist);
@@ -1709,7 +1713,7 @@ js_html_encode(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(argc>5 && JSVAL_IS_OBJECT(argv[5])) {
 		stateobj=JSVAL_TO_OBJECT(argv[5]);
-		if(JS_GetProperty(cx,stateobj,"fg",&val) && JSVAL_IS_NUMBER(val)) {
+		if(stateobj != NULL && JS_GetProperty(cx,stateobj,"fg",&val) && JSVAL_IS_NUMBER(val)) {
 			if(!JS_ValueToInt32(cx, val, &fg)) {
 				free(inbuf);
 				return JS_FALSE;
@@ -3806,7 +3810,7 @@ js_socket_select(JSContext *cx, uintN argc, jsval *arglist)
 	for(argn=0;argn<argc;argn++) {
 		if(JSVAL_IS_BOOLEAN(argv[argn]))
 			poll_for_write=JSVAL_TO_BOOLEAN(argv[argn]);
-		else if(JSVAL_IS_OBJECT(argv[argn]))
+		else if(JSVAL_IS_OBJECT(argv[argn]) && !JSVAL_IS_NULL(argv[argn]))
 			inarray[inarray_cnt++] = JSVAL_TO_OBJECT(argv[argn]);
 #ifdef PREFER_POLL
 		else if(JSVAL_IS_NUMBER(argv[argn]))

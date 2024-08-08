@@ -1130,7 +1130,7 @@ js_findstr(JSContext *cx, uintN argc, jsval *arglist)
 
 	if(JSVAL_IS_OBJECT(argv[0]) && !JSVAL_IS_NULL(argv[0])) {
 		JSObject* array = JSVAL_TO_OBJECT(argv[0]);
-		if(!JS_IsArrayObject(cx, array))
+		if(array == NULL || !JS_IsArrayObject(cx, array))
 			return(JS_TRUE);
 		jsuint count;
 		if(!JS_GetArrayLength(cx, array, &count))
@@ -1810,7 +1810,7 @@ js_new_user(JSContext *cx, uintN argc, jsval *arglist)
 	for(n=0;n<argc;n++) {
 		if(JSVAL_IS_OBJECT(argv[n])) {
 			objarg = JSVAL_TO_OBJECT(argv[n]);
-			if((cl=JS_GetClass(cx,objarg))!=NULL && strcmp(cl->name,"Client")==0) {
+			if(objarg != NULL && (cl=JS_GetClass(cx,objarg))!=NULL && strcmp(cl->name,"Client")==0) {
 				client=JS_GetPrivate(cx,objarg);
 				continue;
 			}
@@ -1820,7 +1820,7 @@ js_new_user(JSContext *cx, uintN argc, jsval *arglist)
 	if(client==NULL) {
 		if(JS_GetProperty(cx, JS_GetGlobalObject(cx), "client", &val) && !JSVAL_NULL_OR_VOID(val)) {
 			objarg = JSVAL_TO_OBJECT(val);
-			if((cl=JS_GetClass(cx,objarg))!=NULL && strcmp(cl->name,"Client")==0)
+			if(objarg != NULL && (cl=JS_GetClass(cx,objarg))!=NULL && strcmp(cl->name,"Client")==0)
 				client=JS_GetPrivate(cx,objarg);
 		}
 	}
@@ -2826,6 +2826,8 @@ JSBool js_CreateTextProperties(JSContext* cx, JSObject* parent)
 		return JS_FALSE;
 
 	JSObject* text = JSVAL_TO_OBJECT(val);
+	if(text == NULL)
+		return JS_FALSE;
 	for (int i = 0; i < TOTAL_TEXT; ++i) {
 		val = INT_TO_JSVAL(i + 1);
 		if(!JS_SetProperty(cx, text, text_id[i], &val))

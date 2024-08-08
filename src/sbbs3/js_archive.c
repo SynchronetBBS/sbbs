@@ -65,7 +65,7 @@ js_create(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	if(argn < argc && JSVAL_IS_OBJECT(argv[argn])) {
 		JSObject* array = JSVAL_TO_OBJECT(argv[argn]);
-		if(!JS_IsArrayObject(cx, array)) {
+		if(array == NULL || !JS_IsArrayObject(cx, array)) {
 			JS_ReportError(cx, "invalid array object");
 			return JS_FALSE;
 		}

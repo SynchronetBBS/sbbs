@@ -396,6 +396,12 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 		}
 	}
 	pjs_obj = JSVAL_TO_OBJECT(val);
+	if(pjs_obj == NULL) {
+		free(cmd);
+		free(startup_dir);
+		JS_ReportError(cx, "Invalid js object");
+		return JS_FALSE;
+	}
 	js_callback = JS_GetPrivate(cx, pjs_obj);
 
 	if(isfullpath(cmd))
@@ -460,7 +466,7 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 
 		if (JS_GetProperty(cx, pjs_obj, JAVASCRIPT_LOAD_PATH_LIST, &val) && val!=JSVAL_VOID && JSVAL_IS_OBJECT(val)) {
 			pload_path_list = JSVAL_TO_OBJECT(val);
-			if (!JS_IsArrayObject(cx, pload_path_list)) {
+			if (pload_path_list == NULL || !JS_IsArrayObject(cx, pload_path_list)) {
 				JS_ReportError(cx, "Weird js."JAVASCRIPT_LOAD_PATH_LIST" value");
 				return JS_FALSE;
 			}
@@ -1709,7 +1715,7 @@ void js_PrepareToExecute(JSContext *cx, JSObject *obj, const char *filename, con
 	JSString*	str;
 	jsval		val;
 
-	if(JS_GetProperty(cx, obj, "js", &val) && JSVAL_IS_OBJECT(val)) {
+	if(JS_GetProperty(cx, obj, "js", &val) && JSVAL_IS_OBJECT(val) && !JSVAL_IS_NULL(val)) {
 		JSObject* js = JSVAL_TO_OBJECT(val);
 		char	dir[MAX_PATH+1];
 

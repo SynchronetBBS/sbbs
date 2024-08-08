@@ -890,7 +890,7 @@ js_conio_puttext(JSContext *cx, uintN argc, jsval *arglist)
 	if(!JSVAL_IS_OBJECT(argv[4]))
 		return(JS_FALSE);
 	array=JSVAL_TO_OBJECT(argv[4]);
-	if(!JS_GetArrayLength(cx, array, &size))
+	if(array == NULL || !JS_GetArrayLength(cx, array, &size))
 		return(JS_FALSE);
 
 	buffer=(unsigned char *)malloc(size);

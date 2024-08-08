@@ -779,7 +779,7 @@ js_getstr(JSContext *cx, uintN argc, jsval *arglist)
 		else if(JSVAL_IS_OBJECT(argv[i])) {
 			JSObject* array = JSVAL_TO_OBJECT(argv[i]);
 			jsuint len=0;
-			if(!JS_GetArrayLength(cx, array, &len))
+			if(array == NULL || !JS_GetArrayLength(cx, array, &len))
 				return JS_FALSE;
 			history = (str_list_t)alloca(sizeof(char*) * (len + 1));
 			memset(history, 0, sizeof(char*) * (len + 1));

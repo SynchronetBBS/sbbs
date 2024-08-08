@@ -947,7 +947,7 @@ static bool parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	if(JS_GetProperty(cx, hdr, "field_list", &val) && JSVAL_IS_OBJECT(val)) {
 		array=JSVAL_TO_OBJECT(val);
 		len=0;
-		if(!JS_GetArrayLength(cx, array, &len)) {
+		if(array == NULL && !JS_GetArrayLength(cx, array, &len)) {
 			JS_ReportError(cx, "Invalid \"field_list\" array in header object");
 			goto err;
 		}
@@ -958,7 +958,7 @@ static bool parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 			if(!JSVAL_IS_OBJECT(val))
 				continue;
 			field=JSVAL_TO_OBJECT(val);
-			if(!JS_GetProperty(cx, field, "type", &val))
+			if(field == NULL || !JS_GetProperty(cx, field, "type", &val))
 				continue;
 			if(JSVAL_IS_STRING(val)) {
 				JSVALUE_TO_RASTRING(cx, val, cp, &cp_sz, NULL);
@@ -1593,7 +1593,7 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 				JSObject *obj = JSVAL_TO_OBJECT(cov);
 				JSClass	*cl;
 
-				if((cl=JS_GetClass(cx,obj))!=NULL && strcmp(cl->name,"Client")==0)
+				if(obj != NULL && (cl=JS_GetClass(cx,obj))!=NULL && strcmp(cl->name,"Client")==0)
 					client=JS_GetPrivate(cx,obj);
 			}
 
@@ -1603,7 +1603,7 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 				JSObject *obj = JSVAL_TO_OBJECT(cov);
 				JSClass	*cl;
 
-				if((cl=JS_GetClass(cx,obj))!=NULL && strcmp(cl->name,"User")==0) {
+				if(obj != NULL && (cl=JS_GetClass(cx,obj))!=NULL && strcmp(cl->name,"User")==0) {
 					user=*(user_t **)(JS_GetPrivate(cx,obj));
 					namecrc=crc16(user->name, 0);
 					aliascrc=crc16(user->alias, 0);
@@ -2386,7 +2386,7 @@ js_get_msg_body(JSContext *cx, uintN argc, jsval *arglist)
 			msg_specified=JS_TRUE;
 			n++;
 			break;
-		} else if(JSVAL_IS_OBJECT(argv[n])) {		/* Use existing header */
+		} else if(JSVAL_IS_OBJECT(argv[n]) && !JSVAL_IS_NULL(argv[n])) {		/* Use existing header */
 			JSClass *oc=JS_GetClass(cx, JSVAL_TO_OBJECT(argv[n]));
 			if(oc != NULL && strcmp(oc->name, js_msghdr_class.name) == 0) {
 				privatemsg_t	*pmsg=JS_GetPrivate(cx,JSVAL_TO_OBJECT(argv[n]));
@@ -2585,7 +2585,9 @@ js_save_msg(JSContext *cx, uintN argc, jsval *arglist)
 	for(n=0;n<argc;n++) {
 		if(JSVAL_IS_OBJECT(argv[n]) && !JSVAL_IS_NULL(argv[n])) {
 			objarg = JSVAL_TO_OBJECT(argv[n]);
-			if((cl=JS_GetClass(cx,objarg))!=NULL && strcmp(cl->name,"Client")==0) {
+			if(objarg == NULL)
+				continue;
+			if(objarg != NULL && (cl=JS_GetClass(cx,objarg))!=NULL && strcmp(cl->name,"Client")==0) {
 				client=JS_GetPrivate(cx,objarg);
 				continue;
 			}
@@ -2614,7 +2616,7 @@ js_save_msg(JSContext *cx, uintN argc, jsval *arglist)
 	if(client==NULL) {
 		if(JS_GetProperty(cx, JS_GetGlobalObject(cx), "client", &val) && !JSVAL_NULL_OR_VOID(val)) {
 			objarg = JSVAL_TO_OBJECT(val);
-			if((cl=JS_GetClass(cx,objarg))!=NULL && strcmp(cl->name,"Client")==0)
+			if(objarg != NULL && (cl=JS_GetClass(cx,objarg))!=NULL && strcmp(cl->name,"Client")==0)
 				client=JS_GetPrivate(cx,objarg);
 		}
 	}
@@ -2659,7 +2661,7 @@ js_save_msg(JSContext *cx, uintN argc, jsval *arglist)
 					if(!JS_GetElement(cx, rcpt_list, i, &val))
 						break;
 
-					if(!JSVAL_IS_OBJECT(val))
+					if(!JSVAL_IS_OBJECT(val) || JSVAL_IS_NULL(val))
 						break;
 
 					rc=JS_SUSPENDREQUEST(cx);
