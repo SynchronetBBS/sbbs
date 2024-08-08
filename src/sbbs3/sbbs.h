@@ -838,6 +838,7 @@ public:
 	char	cmdstr_output[512]{};
 	char*	ultoac(uint32_t, char*, char sep=',');
 	char*	u64toac(uint64_t, char*, char sep=',');
+	int		protnum(char prot);
 	const char* protname(char prot);
 
 	void	subinfo(int subnum);

@@ -603,26 +603,28 @@ void sbbs_t::qwk_sec()
 			/***************/
 			/* Send Packet */
 			/***************/
-			xfer_prot_menu(XFER_DOWNLOAD);
-			mnemonics(text[ProtocolOrQuit]);
-			snprintf(tmp2, sizeof tmp2, "%c",quit_key());
-			for(i=0;i<cfg.total_prots;i++)
-				if(cfg.prot[i]->dlcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
-					snprintf(tmp, sizeof tmp, "%c",cfg.prot[i]->mnemonic);
-					strcat(tmp2,tmp);
+			i = protnum(useron.prot);
+			if (i >= cfg.total_prots) {
+				xfer_prot_menu(XFER_DOWNLOAD);
+				mnemonics(text[ProtocolOrQuit]);
+				snprintf(tmp2, sizeof tmp2, "%c",quit_key());
+				for(i=0;i<cfg.total_prots;i++)
+					if(cfg.prot[i]->dlcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
+						snprintf(tmp, sizeof tmp, "%c",cfg.prot[i]->mnemonic);
+						strcat(tmp2,tmp);
+					}
+				ch=(char)getkeys(tmp2,0);
+				if(ch==quit_key() || sys_status&SS_ABORT || !online) {
+					for(i=0;i<cfg.total_subs;i++)
+						subscan[i].ptr=sav_ptr[i];   /* re-load saved pointers */
+					last_ns_time=ns_time;
+					continue;
 				}
-			ungetkey(useron.prot);
-			ch=(char)getkeys(tmp2,0);
-			if(ch==quit_key() || sys_status&SS_ABORT || !online) {
-				for(i=0;i<cfg.total_subs;i++)
-					subscan[i].ptr=sav_ptr[i];   /* re-load saved pointers */
-				last_ns_time=ns_time;
-				continue;
+				for(i=0;i<cfg.total_prots;i++)
+					if(cfg.prot[i]->dlcmd[0] && cfg.prot[i]->mnemonic==ch
+						&& chk_ar(cfg.prot[i]->ar,&useron,&client))
+						break;
 			}
-			for(i=0;i<cfg.total_prots;i++)
-				if(cfg.prot[i]->dlcmd[0] && cfg.prot[i]->mnemonic==ch
-					&& chk_ar(cfg.prot[i]->ar,&useron,&client))
-					break;
 			if(i<cfg.total_prots) {
 				snprintf(str, sizeof str, "%s%s.qwk",cfg.temp_dir,cfg.sys_id);
 				snprintf(tmp2, sizeof tmp2, "%s.qwk",cfg.sys_id);

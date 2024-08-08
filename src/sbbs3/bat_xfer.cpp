@@ -338,23 +338,25 @@ bool sbbs_t::start_batch_download()
 		bputs(text[NotEnoughTimeToDl]);
 		return(false); 
 	}
-	xfer_prot_menu(XFER_BATCH_DOWNLOAD);
-	sync();
-	mnemonics(text[ProtocolOrQuit]);
-	SAFEPRINTF(str,"%c",quit_key());
-	for(i=0;i<cfg.total_prots;i++)
-		if(cfg.prot[i]->batdlcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
-			sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
-			SAFECAT(str,tmp); 
-		}
-	ungetkey(useron.prot);
-	ch=(char)getkeys(str,0);
-	if(ch==quit_key() || sys_status&SS_ABORT)
-		return(false);
-	for(i=0;i<cfg.total_prots;i++)
-		if(cfg.prot[i]->batdlcmd[0] && cfg.prot[i]->mnemonic==ch
-			&& chk_ar(cfg.prot[i]->ar,&useron,&client))
-			break;
+	i = protnum(useron.prot);
+	if (i >= cfg.total_prots) {
+		xfer_prot_menu(XFER_BATCH_DOWNLOAD);
+		sync();
+		mnemonics(text[ProtocolOrQuit]);
+		SAFEPRINTF(str,"%c",quit_key());
+		for(i=0;i<cfg.total_prots;i++)
+			if(cfg.prot[i]->batdlcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
+				sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
+				SAFECAT(str,tmp); 
+			}
+		ch=(char)getkeys(str,0);
+		if(ch==quit_key() || sys_status&SS_ABORT)
+			return(false);
+		for(i=0;i<cfg.total_prots;i++)
+			if(cfg.prot[i]->batdlcmd[0] && cfg.prot[i]->mnemonic==ch
+				&& chk_ar(cfg.prot[i]->ar,&useron,&client))
+				break;
+	}
 	if(i>=cfg.total_prots || !create_batchdn_lst((cfg.prot[i]->misc&PROT_NATIVE) ? true:false)) {
 		return(false);
 	}

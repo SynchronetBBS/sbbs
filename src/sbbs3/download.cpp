@@ -147,7 +147,7 @@ int sbbs_t::protocol(prot_t* prot, enum XFER_TYPE type
 	if(sys_status&SS_ABORT || !online) {	/* if ctrl-c or hangup */
 		return(-1);
 	}
-	bputs(text[StartXferNow]);
+	bprintf(text[StartXferNow], prot->name);
 	if(cd)
 		p=cfg.temp_dir;
 	else
@@ -396,9 +396,8 @@ bool sbbs_t::sendfile(char* fname, char prot, const char* desc, bool autohang)
 	int		error;
 	bool	result;
 
-	if(prot > ' ')
-		ch=toupper(prot);
-	else {
+	i = protnum(prot);
+	if (i >= cfg.total_prots) {
 		xfer_prot_menu(XFER_DOWNLOAD);
 		mnemonics(text[ProtocolOrQuit]);
 		sprintf(keys,"%c",quit_key());
@@ -410,12 +409,12 @@ bool sbbs_t::sendfile(char* fname, char prot, const char* desc, bool autohang)
 
 		if(ch==quit_key() || sys_status&SS_ABORT)
 			return false; 
+		for(i=0;i<cfg.total_prots;i++)
+			if(cfg.prot[i]->mnemonic==ch && chk_ar(cfg.prot[i]->ar,&useron,&client))
+				break;
+		if(i >= cfg.total_prots)
+			return false;
 	}
-	for(i=0;i<cfg.total_prots;i++)
-		if(cfg.prot[i]->mnemonic==ch && chk_ar(cfg.prot[i]->ar,&useron,&client))
-			break;
-	if(i >= cfg.total_prots)
-		return false;
 	time_t elapsed = 0;
 	error = protocol(cfg.prot[i], XFER_DOWNLOAD, fname, fname, false, autohang, &elapsed);
 	if(cfg.prot[i]->misc&PROT_DSZLOG)

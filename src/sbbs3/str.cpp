@@ -1428,11 +1428,21 @@ char* sbbs_t::u64toac(uint64_t val, char* str, char sep)
 	return ::u64toac(val, str, sep);
 }
 
+int sbbs_t::protnum(char prot)
+{
+	int i;
+
+	for(i = 0; i < cfg.total_prots; ++i) {
+		if(prot == cfg.prot[i]->mnemonic && chk_ar(cfg.prot[i]->ar, &useron, &client))
+			break;
+	}
+	return i;
+}
+
 const char* sbbs_t::protname(char prot)
 {
-	for(int i=0; i < cfg.total_prots; ++i) {
-		if(prot == cfg.prot[i]->mnemonic)
-			return cfg.prot[i]->name;
-	}
+	int i = protnum(prot);
+	if(i < cfg.total_prots)
+		return cfg.prot[i]->name;
 	return text[None];
 }
