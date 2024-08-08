@@ -947,7 +947,7 @@ static bool parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 	if(JS_GetProperty(cx, hdr, "field_list", &val) && JSVAL_IS_OBJECT(val)) {
 		array=JSVAL_TO_OBJECT(val);
 		len=0;
-		if(array == NULL && !JS_GetArrayLength(cx, array, &len)) {
+		if(array == NULL || !JS_GetArrayLength(cx, array, &len)) {
 			JS_ReportError(cx, "Invalid \"field_list\" array in header object");
 			goto err;
 		}
