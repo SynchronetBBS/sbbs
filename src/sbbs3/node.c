@@ -452,6 +452,39 @@ void printnodedat(int number, node_t node)
 		printf(" %d error%c",node.errors, node.errors>1 ? 's' : '\0' );
 }
 
+void usage()
+{
+	printf("usage: node [-v[key]] [-debug] [action [on|off]] [node numbers] [...]"
+		"\n\n");
+	printf("actions (default action is 'list'):\n\n");
+	printf("    list        = list status\n");
+	printf("    anon        = anonymous user\n");
+	printf("    lock        = locked\n");
+	printf("    intr        = interrupt\n");
+	printf("    down        = shut-down\n");
+	printf("    rerun       = rerun\n");
+	printf("    event       = run event\n");
+	printf("    nopage      = page disable\n");
+	printf("    noalerts    = activity alerts disable\n");
+	printf("    status=#    = set status value\n");
+	printf("                  %d = Waiting for connection\n", NODE_WFC);
+	printf("                  %d = Offline\n", NODE_OFFLINE);
+	printf("    useron=#    = set useron number\n");
+	printf("    action=#    = set action value\n");
+	printf("    errors=#    = set error counter\n");
+	printf("    conn=#      = set connection value\n");
+	printf("    misc=#      = set misc value\n");
+	printf("    aux=#       = set aux value\n");
+	printf("    extaux=#    = set extended aux value\n");
+	printf("\n");
+	printf("options:\n\n");
+	printf("    -debug      = display numeric values of each node record field\n");
+	printf("    -loop       = execute node command repeatedly\n");
+	printf("    -pause      = wait for a key-press after executing node command\n");
+	printf("    -v[key]     = view a connected-client key value (default: all)\n");
+	printf("                  (may be used multiple times to display multiple keys)\n");
+	exit(0);
+}
 
 /****************************/
 /* Main program entry point */
@@ -478,34 +511,7 @@ int main(int argc, char **argv)
 	}
 
 	if(argc<2) {
-		printf("usage: node [-v[key]] [-debug] [action [on|off]] [node numbers] [...]"
-			"\n\n");
-		printf("actions (default action is 'list'):\n\n");
-		printf("    list        = list status\n");
-		printf("    anon        = anonymous user\n");
-		printf("    lock        = locked\n");
-		printf("    intr        = interrupt\n");
-		printf("    down        = shut-down\n");
-		printf("    rerun       = rerun\n");
-		printf("    event       = run event\n");
-		printf("    nopage      = page disable\n");
-		printf("    noalerts    = activity alerts disable\n");
-		printf("    status=#    = set status value\n");
-		printf("                  %d = Waiting for connection\n", NODE_WFC);
-		printf("                  %d = Offline\n", NODE_OFFLINE);
-		printf("    useron=#    = set useron number\n");
-		printf("    action=#    = set action value\n");
-		printf("    errors=#    = set error counter\n");
-		printf("    conn=#      = set connection value\n");
-		printf("    misc=#      = set misc value\n");
-		printf("    aux=#       = set aux value\n");
-		printf("    extaux=#    = set extended aux value\n");
-		printf("\n");
-		printf("options:\n\n");
-		printf("    -debug      = display numeric values of each node record field\n");
-		printf("    -v[key]     = view a connected-client key value (default: all)\n");
-		printf("                  (may be used multiple times to display multiple keys)\n");
-		exit(0);
+		usage();
 	}
 
 	SAFECOPY(ctrl_dir, get_ctrl_dir(/* warn: */TRUE));
@@ -535,11 +541,11 @@ int main(int argc, char **argv)
 			node_num=onoff=value=0;
 			if(!stricmp(argv[i],"-DEBUG"))
 				debug=1;
-			if(!stricmp(argv[i],"-LOOP"))
+			else if(!stricmp(argv[i],"-LOOP"))
 				loop=1;
-			if(!stricmp(argv[i],"-PAUSE"))
+			else if(!stricmp(argv[i],"-PAUSE"))
 				pause=1;
-			if(strncmp(argv[i], "-v", 2) == 0) {
+			else if(strncmp(argv[i], "-v", 2) == 0) {
 				verbose = true;
 				if(argv[i][2])
 					strListPush(&key_list, argv[i] + 2);
@@ -596,6 +602,7 @@ int main(int argc, char **argv)
 				mode=MODE_EXTAUX;
 				value=strtoul(argv[i]+7, NULL, 0);
 			}
+			else usage();
 		}
 		if(mode!=MODE_LIST)
 			modify=1;
@@ -705,13 +712,15 @@ int main(int argc, char **argv)
 					} /* if(!node_num) */
 
 				if(pause) {
-					printf("Hit enter...");
+					printf("\nHit enter...");
+					fflush(stdout);
 					getchar();
 					printf("\n");
 				}
 				if(!loop)
 					break;
-				SLEEP(1000);
+				if(!pause)
+					SLEEP(1000);
 				cls();
 			} /* while(1) */
 
