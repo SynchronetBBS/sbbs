@@ -2232,10 +2232,7 @@ js_batchclear(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
-	if(!js_argc(cx, argc, 1))
-		return(JS_FALSE);
-
-	if(JSVAL_TO_BOOLEAN(argv[0]))
+	if(argc > 0 && argv[0] == JSVAL_TRUE)
 		xfer_type = XFER_BATCH_UPLOAD;
 
 	rc=JS_SUSPENDREQUEST(cx);
@@ -4530,8 +4527,8 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("Add file list to batch download queue")
 	,310
 	},
-	{"batch_clear",		js_batchclear,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("upload=false")
-	,JSDOCSTR("Clear batch download (or upload) queue")
+	{"batch_clear",		js_batchclear,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[upload_queue=false]")
+	,JSDOCSTR("Clear the batch download or batch upload queue")
 	,320
 	},
 	{"view_file",		js_viewfile,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("filename")
