@@ -482,14 +482,24 @@ function lib_down()
 
 function logoff(fast)
 {
-	if(bbs.batch_dnload_total && console.yesno(bbs.text(bbs.text.DownloadBatchQ)))
-		bbs.batch_download();
-	else {
-		if(fast)
-			bbs.hangup();
-		else
-			bbs.logoff(/* prompt: */true);
+	if(bbs.batch_dnload_total) {
+		var prompt = bbs.text(bbs.text.DownloadBatchQ);
+		if(prompt.length) {
+			if(console.yesno(prompt)) {
+				bbs.batch_download();
+				return; // hang-up is handled in bbs.batch_download()
+			}
+			if(!console.noyes(bbs.text(bbs.text.ClearDownloadQueueQ)))
+				if(bbs.batch_clear(/* upload_queue */false))
+					console.putmsg(bbs.text(bbs.text.DownloadQueueCleared));
+				else
+					alert("Failed to clear batch download queue!");
+		}
 	}
+	if(fast)
+		bbs.hangup();
+	else
+		bbs.logoff(/* prompt: */true);
 }
 
 function upload_file()
