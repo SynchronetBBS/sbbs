@@ -346,7 +346,7 @@
 	"queue (1-%d): \1n"
 "\r\nUpload queue is empty.\r\n"                        281 UploadQueueIsEmpty
 "\r\nHang up after transfer"                            282 HangUpAfterXferQ
-"\r\n\1w\1hStart transfer now (Ctrl-X to abort):\r\n\1n"   283 StartXferNow
+"\r\n\1w\1hStart %s transfer now (Ctrl-X to abort):\r\n\1n"   283 StartXferNow
 "\1_\r\n\1b\1hDisconnecting @ELLIPSIS@ \1wH\1bang up or \1wA\1bbort "  284 Disconnecting
 "\1[\1w\1hGood-bye!  (Time Used: @TUSED@)\1>"               285 Disconnected
 "\1r\1h\1i%s NOT SENT!\1n\r\n"                              286 FileNotSent
