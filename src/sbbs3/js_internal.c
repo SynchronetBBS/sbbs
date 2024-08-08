@@ -399,7 +399,7 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 	if(pjs_obj == NULL) {
 		free(cmd);
 		free(startup_dir);
-		JS_ReportError(cx, "Invalid js object");
+		JS_ReportError(cx, "Unable to get parent js object");
 		return JS_FALSE;
 	}
 	js_callback = JS_GetPrivate(cx, pjs_obj);
@@ -458,7 +458,7 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 	js_PrepareToExecute(cx, js_scope, path, startup_dir, js_scope);
 	free(startup_dir);
 	// Copy in the load_path_list...
-	if(pjs_obj != NULL) {
+	{
 		JSObject*	pload_path_list;
 		JSObject*	load_path_list;
 		uint32_t	plen;
@@ -486,10 +486,6 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 			JS_ReportError(cx, "Unable to get parent js."JAVASCRIPT_LOAD_PATH_LIST" array.");
 			return JS_FALSE;
 		}
-	}
-	else {
-		JS_ReportError(cx, "Unable to get parent js object");
-		return JS_FALSE;
 	}
 
 	js_script=JS_CompileFile(cx, js_scope, path);
