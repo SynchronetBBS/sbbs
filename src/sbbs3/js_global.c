@@ -868,20 +868,20 @@ js_exit(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *obj=JS_THIS_OBJECT(cx, arglist);
 	jsval *argv=JS_ARGV(cx, arglist);
 	jsval val;
+	int exit_code = 0;
 
-	if(argc) {
-		if((JS_GetProperty(cx, scope, "js", &val) && JSVAL_IS_OBJECT(val)) || 
-		    (JS_GetProperty(cx, obj, "js", &val) && JSVAL_IS_OBJECT(val))) {
+	if(argc && JSVAL_IS_NUMBER(argv[0]))
+		exit_code = JSVAL_TO_INT(argv[0]);
+	if((JS_GetProperty(cx, scope, "js", &val) && JSVAL_IS_OBJECT(val)) ||
+		(JS_GetProperty(cx, obj, "js", &val) && JSVAL_IS_OBJECT(val))) {
+		obj = JSVAL_TO_OBJECT(val);
+		if(obj != NULL && JS_GetProperty(cx, obj, "scope", &val) && JSVAL_IS_OBJECT(val) && !JSVAL_IS_NULL(val))
 			obj = JSVAL_TO_OBJECT(val);
-			if(obj != NULL && JS_GetProperty(cx, obj, "scope", &val) && JSVAL_IS_OBJECT(val) && !JSVAL_IS_NULL(val))
-				obj = JSVAL_TO_OBJECT(val);
-			else
-				obj = JS_THIS_OBJECT(cx, arglist);
-		}
-		if(JSVAL_IS_NUMBER(argv[0]))
-			JS_DefineProperty(cx, obj, "exit_code", argv[0]
-				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
+		else
+			obj = JS_THIS_OBJECT(cx, arglist);
 	}
+	JS_DefineProperty(cx, obj, "exit_code", INT_TO_JSVAL(exit_code)
+		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY);
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
@@ -4826,7 +4826,7 @@ js_qwknet_route(JSContext *cx, uintN argc, jsval *arglist)
 #endif
 
 static jsSyncMethodSpec js_global_functions[] = {
-	{"exit",			js_exit,			0,	JSTYPE_VOID,	"[number exit_code]"
+	{"exit",			js_exit,			0,	JSTYPE_VOID,	"[<i>number</i> exit_code=0]"
 	,JSDOCSTR("Stop script execution, "
 		"optionally setting the global property <tt>exit_code</tt> to the specified numeric value")
 	,311
@@ -4873,7 +4873,7 @@ static jsSyncMethodSpec js_global_functions[] = {
 		"<i>forced</i> defaults to <tt>true</tt>")
 	,311
 	},
-	{"random",			js_random,			1,	JSTYPE_NUMBER,	JSDOCSTR("max_number=100")
+	{"random",			js_random,			1,	JSTYPE_NUMBER,	JSDOCSTR("[max_number=100]")
 	,JSDOCSTR("Return random integer between <tt>0</tt> and <i>max_number</i>-1")
 	,310
 	},		
