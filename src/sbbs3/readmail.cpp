@@ -44,6 +44,7 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 	char	str[256],str2[256],done=0,domsg=1
 			,*p;
 	char 	tmp[512];
+	char	savepath[MAX_PATH + 1]{};
 	int		i;
 	uint32_t u,v;
 	int		mismatches=0,act;
@@ -637,8 +638,15 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 					break;
 	*/
 				bputs(text[FileToWriteTo]);
-				if(getstr(str,50,K_LINE))
-					msgtotxt(&smb, &msg, str, /* header: */true, /* mode: */GETMSGTXT_ALL);
+				{
+					const char* section = "mail";
+					const char* key = "savepath";
+					user_get_property(&cfg, useron.number, section, key, savepath, sizeof(savepath) - 1);
+					if(getstr(savepath, sizeof(savepath) - 1, K_EDIT | K_LINE | K_AUTODEL) > 0) {
+						if(msgtotxt(&smb, &msg, savepath, /* header: */true, /* mode: */GETMSGTXT_ALL))
+							user_set_property(&cfg, useron.number, section, key, savepath);
+					}
+				}
 				break;
 			case 'E':
 				editmsg(&smb, &msg);
