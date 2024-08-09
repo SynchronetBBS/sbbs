@@ -4458,14 +4458,16 @@ void node_thread(void* arg)
 					SAFEPRINTF2(str,"%s%s.js",sbbs->cfg.mods_dir
 						,sbbs->cfg.shell[sbbs->useron.shell]->code);
 					if(fexistcase(str)) {
-						sbbs->js_execfile(str);
+						if(sbbs->js_execfile(str) != 0)
+							break;
 						continue;
 					}
 				}
 				SAFEPRINTF2(str, "%s%s.js", sbbs->cfg.exec_dir
 					,sbbs->cfg.shell[sbbs->useron.shell]->code);
 				if(fexistcase(str)) {
-					sbbs->js_execfile(str);
+					if(sbbs->js_execfile(str) != 0)
+						break;
 					continue;
 				}
 				SAFEPRINTF2(str,"%s%s.bin",sbbs->cfg.mods_dir

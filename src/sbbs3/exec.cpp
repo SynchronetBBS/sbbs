@@ -692,7 +692,8 @@ int sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scop
 	js_callback.rq_tail = NULL;
 	listeners = js_callback.listeners;
 	js_callback.listeners = NULL;
-	JS_ExecuteScript(js_cx, js_scope, js_script, &rval);
+	if(!JS_ExecuteScript(js_cx, js_scope, js_script, &rval))
+		result = -1;
 	js_handle_events(js_cx, &js_callback, &terminated);
 //	sys_status &=~ SS_ABORT;
 
