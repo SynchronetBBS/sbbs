@@ -5,7 +5,7 @@
 // If you have DDMsgReader in a directory other than xtrn/DDMsgReader, then the changes to
 // DDMsgReader.cfg will be saved in that directory (assuming you're running ddmr_cfg.js from
 // that same directory).
-// Currently for DDMsgReader 1.95e.
+// Currently for DDMsgReader 1.95f.
 //
 // If you're running DDMsgReader from xtrn/DDMsgReader (the standard location) and you want
 // to save the configuration file there (rather than sbbs/mods), you can use one of the
@@ -18,7 +18,7 @@ require("sbbsdefs.js", "P_NONE");
 require("uifcdefs.js", "UIFC_INMSG");
 
 
-if (!uifc.init("DigDist. Message Reader 1.95e Configurator"))
+if (!uifc.init("DigDist. Message Reader 1.95f Configurator"))
 {
 	print("Failed to initialize uifc");
 	exit(1);
@@ -110,6 +110,7 @@ function doMainMenu()
 		"enableIndexedModeMsgListCache", // Boolean
 		"quickUserValSetIndex", // Number (can be -1)
 		"saveAllHdrsWhenSavingMsgToBBSPC", // Boolean
+		"msgSaveDir", // String
 		"useIndexedModeForNewscan", // Boolean
 		"displayIndexedModeMenuIfNoNewMessages", // Boolean
 		"indexedModeMenuSnapToFirstWithNew", // Boolean
@@ -143,6 +144,7 @@ function doMainMenu()
 		"Enable Indexed Mode Message List Cache",
 		"Quick User Val Set Index",
 		"Save All Headers When Saving Message To BBS PC",
+		"Default directory to save messages to",
 		"Use Indexed Mode For Newscan",
 		"Display Indexed menu even with no new messages",
 		"Index menu: Snap to sub-boards w/ new messages",
@@ -244,6 +246,24 @@ function doMainMenu()
 						gCfgInfo.cfgOptions[optName] = userInput;
 						anyOptionChanged = true;
 						menuItems[optionMenuSelection] = formatCfgMenuText(itemTextMaxLen, optionStrs[optionMenuSelection], gCfgInfo.cfgOptions[optName]);
+					}
+				}
+				else if (optName == "msgSaveDir")
+				{
+					var userInput = uifc.input(WIN_MID, "Message save dir", gCfgInfo.cfgOptions[optName], 0, K_EDIT);
+					if (typeof(userInput) === "string" && userInput.length > 0)
+					{
+						if (file_isdir(userInput))
+						{
+							anyOptionChanged = (userInput != gCfgInfo.cfgOptions[optName]);
+							if (anyOptionChanged)
+							{
+								gCfgInfo.cfgOptions[optName] = userInput;
+								menuItems[optionMenuSelection] = formatCfgMenuText(itemTextMaxLen, optionStrs[optionMenuSelection], gCfgInfo.cfgOptions[optName]);
+							}
+						}
+						else
+							uifc.msg("That directory doesn't exist!");
 					}
 				}
 				else
@@ -358,7 +378,6 @@ function promptThemeFilename()
 
 	return chosenThemeFilename;
 }
-
 
 // Prompts the user to select one of multiple values for an option
 //
@@ -540,6 +559,11 @@ function getOptionHelpText()
 	optionHelpText["saveAllHdrsWhenSavingMsgToBBSPC"] = "Save All Headers When Saving Message to BBS PC: As the sysop, you can save messages to the BBS PC. This ";
 	optionHelpText["saveAllHdrsWhenSavingMsgToBBSPC"] += "option specifies whether or not to save all the message headers along with the message. If disabled, ";
 	optionHelpText["saveAllHdrsWhenSavingMsgToBBSPC"] += "only a few relevant headers will be saved (such as From, To, Subject, and message time).";
+
+	optionHelpText["msgSaveDir"] = "Default directory to save messages to: The default directory on the BBS machine to save messages to (for the sysop). This can ";
+	optionHelpText["msgSaveDir"] += "be blank, in which case, you would need to enter the full path every time when saving a message. If you specify ";
+	optionHelpText["msgSaveDir"] += "a directory, it will save there if you only enter a filename, but you can still enter a fully-pathed ";
+	optionHelpText["msgSaveDir"] += "filename to save a message in a different directory.";
 
 	optionHelpText["useIndexedModeForNewscan"] = "Used Indexed Mode For Newscan: Whether or not to use indexed mode for message newscans (not for new-to-you ";
 	optionHelpText["useIndexedModeForNewscan"] += "scans). This is a default for a user setting. When indexed mode is enabled for newscans, the reader displays ";
@@ -752,6 +776,8 @@ function readDDMsgReaderCfgFile()
 		retObj.cfgOptions.quickUserValSetIndex = -1;
 	if (!retObj.cfgOptions.hasOwnProperty("saveAllHdrsWhenSavingMsgToBBSPC"))
 		retObj.cfgOptions.saveAllHdrsWhenSavingMsgToBBSPC = false;
+	if (!retObj.cfgOptions.hasOwnProperty("msgSaveDir"))
+		retObj.cfgOptions.msgSaveDir = "";
 	if (!retObj.cfgOptions.hasOwnProperty("useIndexedModeForNewscan"))
 		retObj.cfgOptions.useIndexedModeForNewscan = false;
 	if (!retObj.cfgOptions.hasOwnProperty("displayIndexedModeMenuIfNoNewMessages"))

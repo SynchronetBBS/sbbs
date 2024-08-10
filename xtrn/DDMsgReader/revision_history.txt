@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.95f    2024-08-08   New config option: msgSaveDir, which specifies the
+                      directory on the BBS PC to save messages to. Can be empty,
+                      to use a full path inputted by the user.
 1.95e    2024-08-04   Fix: Indexed newscan mode for new users now shows the
                       number of new messages in sub-boards like it's supposed
                       to.
