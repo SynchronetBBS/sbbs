@@ -10,9 +10,7 @@
 </div>
 
 <?xjs 
-	load("sbbsdefs.js");
-	const bullshit = load({}, '../xtrn/bullshit/bullshit-lib.js');
-	const settings = bullshit.loadSettings('../xtrn/bullshit/');
+	load('smbdefs.js');
 
 	// Deuce's URL-ifier
 	function linkify(body) {
@@ -31,35 +29,58 @@
 		return body;
 	}
 
-	const list = bullshit.loadList(settings);
+	var maxMessages = 10;
+	var list = []; // { type, title, date, body }
+
+	var f = new File(system.ctrl_dir + 'modopts.d/bullshit.ini');
+	if (f.open('r')) {
+		messageBase = f.iniGetValue('bullshit', 'messageBase');
+		maxMessages = f.iniGetValue('bullshit', 'maxMessages', 10);
+		if (messageBase !== null) {
+			var mb = new MsgBase(messageBase);
+			if (mb.open()) {
+				for (var n = mb.first_msg; n <= mb.last_msg; n++) {
+					var h = mb.get_msg_header(false, n);
+					if (h === null || (h.attr&MSG_DELETE) > 0) continue;
+					list.push({ type: 'message', title: h.subject, date: h.when_written_time, body: mb.get_msg_body(n) });
+				}
+			}
+			if (list.length > maxMessages) list = list.slice(-maxMessages);
+		}
+
+		files = f.iniGetObject('bullshit:files');
+		var fkeys = Object.keys(files);
+		for (var n = 0; n < fkeys.length; n++) {
+			if (!file_exists(files[fkeys[n]])) continue;
+			var ff = new File(files[fkeys[n]]);
+			if (!ff.open('r')) continue;
+			var body = ff.read();
+			ff.close();
+			list.push({ type: 'file', title: fkeys[n], date: file_date(files[fkeys[n]]), body: body });
+		}
+		f.close();
+		list = list.sort(function (a, b) { return b.date - a.date; });
+	}
 ?>
 
 <div>
 	<ul class="list-group">
-	<?xjs list.forEach(function (e, i) { ?>
+	<? list.forEach(function (e, i) { ?>
 		<li class="list-group-item striped">
 			<strong><? write(e.title); ?></strong><br>
-			<em><? write(e.date); ?></em>
+			<em><? write(system.timestr(e.date)); ?></em>
 			<div id="bfdiv<? write(i); ?>" class="message">
-				<?xjs if (e.type == 'file') { ?>
-					<?xjs
-						const f = new File(e.path);
-						f.open('r');
-						const body = f.read();
-						f.close();
-					?>
+				<? if (e.type == 'file') { ?>
 					<script type="text/javascript">
-						_gc.from_ans(atob('<? write(base64_encode(body)); ?>'), '#bfdiv' + <? write(i); ?>);
+						_gc.from_ans(atob('<? write(base64_encode(e.body)); ?>'), '#bfdiv' + <? write(i); ?>);
 					</script>
-				<?xjs } else {
-					const mb = new MsgBase(settings.messageBase);
-					mb.open();
-					const mbody = mb.get_msg_body(e.num);
-					mb.close();
-					write(linkify(mbody).replace(/\r?\n/g, '<br>'));
-				} ?>
+				<?xjs
+					} else {
+						write(linkify(e.body).replace(/\r?\n/g, '<br>'));
+					}
+				?>
 			</div>
 		</li>
-	<?xjs }); ?>
+	<? }); ?>
 	</ul>
 </div>
