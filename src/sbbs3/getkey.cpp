@@ -467,7 +467,7 @@ bool sbbs_t::pause(bool set_abort)
 /****************************************************************************/
 /* Puts a character into the input buffer                                   */
 /****************************************************************************/
-void sbbs_t::ungetkey(char ch, bool insert)
+bool sbbs_t::ungetkey(char ch, bool insert)
 {
 	char dbg[2] = {};
 #if 0	/* this way breaks ansi_getxy() */
@@ -491,20 +491,25 @@ void sbbs_t::ungetkey(char ch, bool insert)
 			if(keybuftop==KEY_BUFSIZE)
 				keybuftop=0;
 		}
-	} else
-		lprintf(LOG_WARNING, "No space in keyboard input buffer");
+		return true;
+	}
+	lprintf(LOG_WARNING, "No space in keyboard input buffer");
+	return false;
 #endif
 }
 
 /****************************************************************************/
 /* Puts a string into the input buffer										*/
 /****************************************************************************/
-void sbbs_t::ungetstr(const char* str, bool insert)
+bool sbbs_t::ungetkeys(const char* str, bool insert)
 {
 	size_t i;
 
-	for(i = 0; str[i] != '\0'; i++)
-		ungetkey(str[i], insert);
+	for(i = 0; str[i] != '\0'; i++) {
+		if(!ungetkey(str[i], insert))
+			return false;
+	}
+	return true;
 }
 
 size_t sbbs_t::keybuf_space(void)

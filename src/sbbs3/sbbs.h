@@ -1004,8 +1004,8 @@ public:
 	/* getkey.cpp */
 	char	getkey(int mode = K_NONE);
 	int		getkeys(const char *str, uint max, int mode = K_UPPER);
-	void	ungetkey(char ch, bool insert = false);		/* Places 'ch' into the input buffer    */
-	void	ungetstr(const char* str, bool insert = false);
+	bool	ungetkey(char ch, bool insert = false);		/* Places 'ch' into the input buffer    */
+	bool	ungetkeys(const char* str, bool insert = false);
 	char	question[MAX_TEXTDAT_ITEM_LEN+1]{};
 	bool	yesno(const char *str, int mode = 0);
 	bool	noyes(const char *str, int mode = 0);

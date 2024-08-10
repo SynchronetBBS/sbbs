@@ -409,7 +409,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 								lprintf(LOG_DEBUG, "Stuffing hot spot command into keybuf: '%s'", dbg);
 							}
 	#endif
-							ungetstr(spot->cmd);
+							ungetkeys(spot->cmd);
 							if(pause_inside && pause_hotspot == NULL)
 								return handle_ctrlkey(TERM_KEY_ABORT, mode);
 							return 0;
@@ -484,7 +484,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 								lprintf(LOG_DEBUG, "Stuffing hot spot command into keybuf: '%s'", dbg);
 							}
 	#endif
-							ungetstr(spot->cmd);
+							ungetkeys(spot->cmd);
 							if(pause_inside && pause_hotspot == NULL)
 								return handle_ctrlkey(TERM_KEY_ABORT, mode);
 							return 0;

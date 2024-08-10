@@ -256,7 +256,7 @@ bool sbbs_t::ansi_getxy(int* x, int* y)
 				c_escape_str(str, dbg, sizeof(dbg), /* Ctrl-only? */true);
 				lprintf(LOG_DEBUG, "Unexpected ansi_getxy response: '%s'", dbg);
 #endif
-				ungetstr(str, /* insert */false);
+				ungetkeys(str, /* insert */false);
 				rsp = 0;
 				state = state_escape;
 			}

@@ -490,7 +490,7 @@ static const char* con_prop_desc[] = {
 	,"Number of bytes currently in the output buffer (from the local server) - <small>READ ONLY</small>"
 	,"Number of bytes available in the output buffer - <small>READ ONLY</small>"
 	,"Emulated serial data output rate, in bits-per-second (0 = unlimited)"
-	,"Number of characters currently in the keyboard input buffer (from <tt>ungetstr</tt>) - <small>READ ONLY</small>"
+	,"Number of characters currently in the keyboard input buffer (from <tt>ungetkeys</tt>) - <small>READ ONLY</small>"
 	,"Number of character spaces available in the keyboard input buffer - <small>READ ONLY</small>"
 	,"Key associated with a positive acknowledgment (e.g. 'Y') - <small>READ ONLY</small>"
 	,"Key associated with a negative acknowledgment (e.g. 'N') - <small>READ ONLY</small>"
@@ -976,10 +976,36 @@ js_gettemplate(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_ungetkeys(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	char*		op;
+	sbbs_t*		sbbs;
+    JSString*	js_str;
+	jsrefcount	rc;
+
+	if((sbbs=(sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class))==NULL)
+		return JS_FALSE;
+
+	if((js_str=JS_ValueToString(cx, argv[0]))==NULL)
+		return JS_FALSE;
+
+	JSSTRING_TO_MSTRING(cx, js_str, op, NULL);
+	if(op==NULL)
+		return JS_FALSE;
+
+	rc=JS_SUSPENDREQUEST(cx);
+	bool result = sbbs->ungetkeys(op, argv[1] == JSVAL_TRUE);
+	free(op);
+	JS_RESUMEREQUEST(cx, rc);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
+    return JS_TRUE;
+}
+
+static JSBool
 js_ungetstr(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
-	char*		p;
 	char*		op;
 	sbbs_t*		sbbs;
     JSString*	js_str;
@@ -988,8 +1014,6 @@ js_ungetstr(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=(sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class))==NULL)
 		return(JS_FALSE);
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
 	if((js_str=JS_ValueToString(cx, argv[0]))==NULL)
 		return(JS_FALSE);
 
@@ -997,12 +1021,12 @@ js_ungetstr(JSContext *cx, uintN argc, jsval *arglist)
 	if(op==NULL)
 		return JS_FALSE;
 
-	p=op;
 	rc=JS_SUSPENDREQUEST(cx);
-	while(p && *p)
-		sbbs->ungetkey(*(p++));
+	size_t len = strlen(op);
+	DWORD wrote = RingBufWrite(&sbbs->inbuf, (BYTE*)op, len);
 	free(op);
 	JS_RESUMEREQUEST(cx, rc);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(wrote == len));
     return(JS_TRUE);
 }
 
@@ -2550,9 +2574,13 @@ static jsSyncMethodSpec js_console_functions[] = {
 	,JSDOCSTR("Get an input string based on specified template")
 	,310
 	},
-	{"ungetstr",		js_ungetstr,		1, JSTYPE_VOID,		JSDOCSTR("keys")
-	,JSDOCSTR("Put one or more characters in the keyboard input buffer")
+	{"ungetstr",		js_ungetstr,		1, JSTYPE_BOOLEAN,	JSDOCSTR("characters")
+	,JSDOCSTR("Append characters into the receive input buffer")
 	,310
+	},
+	{"ungetkeys",		js_ungetkeys,		1, JSTYPE_BOOLEAN,	JSDOCSTR("characters [,<i>bool</i> insert=false]")
+	,JSDOCSTR("Insert or append characters (i.e. keys) into the remote keyboard input buffer")
+	,320
 	},
 	{"yesno",			js_yesno,			2, JSTYPE_BOOLEAN,	JSDOCSTR("question [,<i>number</i> p_mode=P_NONE]")
 	,JSDOCSTR("YES/no question - returns <tt>true</tt> if 'yes' is selected")
