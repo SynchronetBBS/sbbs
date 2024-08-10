@@ -10,7 +10,7 @@
 //   -P don't pause for user key-press
 //   -C don't clear screen after successful session
 //   -s <string-to-send after connect> (multiple may be specified)
-//   -S <CR-terminated-string-to-send> (multiple may be specified)
+//   -S <CRLF-terminated-string-to-send> (multiple may be specified)
 
 // legacy usage (still supported, but deprecated):
 // ?telgate address[:port] [telnet-gateway-mode]
@@ -65,7 +65,7 @@ for(var i = 0; i < argv.length; i++) {
 			send.push(value);
 			break;
 		case 'S':
-			send.push(value + '\r');
+			send.push(value + '\r\n');
 			break;
 		default:
 			alert(js.exec_file + ": Unrecognized option: " + arg);
