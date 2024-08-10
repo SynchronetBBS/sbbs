@@ -1,14 +1,91 @@
-// telgate.js
+// Synchronet Telnet Gateway v2.0
 
 // @format.tab-size 4, @format.use-tabs true
 
+// usage: ?telgate address[:port] [options]
+// options:
+//   -T <connect-timeout-seconds> (default: 10 seconds)
+//   -m <telnet-gateway-mode> (Number or TG_* vars OR'd together, default: 0)
+//   -q don't display banner or pause prompt (quiet)
+//   -P don't pause for user key-press
+//   -C don't clear screen after successful session
+//   -s <string-to-send after connect> (multiple may be specified)
+//   -S <CR-terminated-string-to-send> (multiple may be specified)
+
+// legacy usage (still supported, but deprecated):
+// ?telgate address[:port] [telnet-gateway-mode]
+
+// See https://wiki.synchro.net/module:telgate for details
+
 load("sbbsdefs.js");
 
-write("\r\n\1h\1hPress \001yCtrl-]\001w for a control menu anytime.\r\n\r\n");
-console.pause();
-writeln("\001h\001yConnecting to: \001w"+argv[0]+"\001n");
-var flags=TG_NONE;
-if(argc>1)
-	flags=eval(argv[1]);
-bbs.telnet_gate(argv[0],flags);
-console.clear();
+"use strict";
+
+var quiet = false;
+var pause = true;
+var clear = true;
+var mode;
+var addr;
+var timeout = 10;
+var send = [];
+
+for(var i = 0; i < argv.length; i++) {
+	var arg = argv[i];
+	if(arg[0] != '-') {
+		if(!addr)
+			addr = arg;
+		else if(!mode)
+			mode = arg;
+		else {
+			alert(js.exec_file + ": Unexpected argument: " + arg);
+			exit(1);
+		}
+		continue;
+	}
+	switch(arg[1]) { // non-value options
+		case 'q':
+			quiet = true;
+			continue;
+		case 'P':
+			pause = false;
+			continue;
+		case 'C':
+			clear = false;
+			continue;
+	}
+	var value = arg.length > 2 ? arg.substring(2) : argv[++i];
+	switch(arg[1]) { // value options
+		case 'T':
+			timeout = Number(value);
+			break;
+		case 'm':
+			mode = value;
+			break;
+		case 's':
+			send.push(value);
+			break;
+		case 'S':
+			send.push(value + '\r');
+			break;
+		default:
+			alert(js.exec_file + ": Unrecognized option: " + arg);
+			exit(1);
+	}
+}
+if(!addr) {
+	alert(js.exec_file + ": No destination address specified");
+	exit(1);
+}
+if(!quiet) {
+	write("\r\n\x01h\x01hPress \x01yCtrl-]\x01w for a control menu anytime.\r\n\r\n");
+	if(pause)
+		console.pause();
+	writeln("\x01h\x01yConnecting to: \x01w" + addr + "\x01n");
+}
+
+mode = eval(mode);
+var result = bbs.telnet_gate(addr, mode, timeout, send);
+if(result === false)
+	alert(js.exec_file + ": Failed to connect to: " + addr);
+else if(clear)
+	console.clear();
