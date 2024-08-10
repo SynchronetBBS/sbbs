@@ -156,6 +156,9 @@
  * 2024-08-04 Eric Oulashin     Version 1.95e
  *                              Fix: Indexed newscan mode for new users now shows the number of new messages
  *                              in sub-boards like it's supposed to.
+ * 2024-08-09 Eric Oulashin     Version 1.95f
+ *                              New config option: msgSaveDir, which specifies the directory on the BBS PC
+ *                              to save messages to. Can be empty, to use a full path inputted by the user.
  */
 
 "use strict";
@@ -271,8 +274,8 @@ var hexdump = load('hexdump_lib.js');
 */
 
 // Reader version information
-var READER_VERSION = "1.95e";
-var READER_DATE = "2024-08-04";
+var READER_VERSION = "1.95f";
+var READER_DATE = "2024-08-09";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1198,6 +1201,9 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// For the sysop, whether to save all message headers when saving a message to the BBS
 	// PC. This could be a boolean (true/false) or the string "ask" to prompt every time
 	this.saveAllHdrsWhenSavingMsgToBBSPC = false;
+
+	// For the sysop, the directory on the BBS PC for where to save messages (empty by default)
+	this.msgSaveDir = "";
 
 	this.cfgFilename = "DDMsgReader.cfg";
 	// Check the command-line arguments for a custom configuration file name
@@ -9554,6 +9560,8 @@ function DigDistMsgReader_ReadConfigFile()
 		}
 		if (typeof(settingsObj["saveAllHdrsWhenSavingMsgToBBSPC"]) === "boolean")
 			this.saveAllHdrsWhenSavingMsgToBBSPC = settingsObj.saveAllHdrsWhenSavingMsgToBBSPC;
+		if (typeof(settingsObj["msgSaveDir"]) === "string" && settingsObj.msgSaveDir.length > 0 && file_isdir(settingsObj.msgSaveDir))
+			this.msgSaveDir = settingsObj.msgSaveDir;
 		// User setting defaults
 		if (typeof(settingsObj.reverseListOrder === "boolean"))
 			this.userSettings.listMessagesInReverse = settingsObj.reverseListOrder;
@@ -14492,7 +14500,8 @@ function DigDistMsgReader_SaveMsgHexDumpToFile(pMsgHdr, pOutFilename)
 	var hexLines = hexdump.generate(undefined, msgText, /* ASCII: */true, /* offsets: */true);
 	if (Array.isArray(hexLines) && hexLines.length > 0)
 	{
-		var outFile = new File(pOutFilename);
+		var outFilename = genPathedFilename(this.msgSaveDir, pOutFilename);
+		var outFile = new File(outFilename);
 		if (outFile.open("w"))
 		{
 			// Write the message header lines
@@ -16929,7 +16938,8 @@ function DigDistMsgReader_SaveMsgToFile(pMsgHdr, pFilename, pPromptPos)
 		var hdrLines = this.GetExtdMsgHdrInfo(msgbase, pMsgHdr.number, false, false, false, false);
 		msgbase.close();
 
-		var messageSaveFile = new File(pFilename);
+		var outFilename = genPathedFilename(this.msgSaveDir, pFilename);
+		var messageSaveFile = new File(outFilename);
 		if (messageSaveFile.open("w"))
 		{
 			var writeAllHeaders = false;
@@ -24717,6 +24727,36 @@ function entryExistsInGlobalEmailFilter(pEmailAddr)
 		filterFile.close();
 	}
 	return entryExists;
+}
+
+// Returns whether a path string is (likely) a valid Windows path string
+function testForWindowsPath(pPathStr)
+{
+	if (typeof(pPathStr) !== "string")
+		return false;
+	// Check whether it starts with <letter>:\, <letter>:/, or "\\" (for a network path)
+	return /^[a-zA-Z]:\\/.test(pPathStr) || /^[a-zA-Z]:\//.test(pPathStr) || /^\\\\/.test(pPathStr);
+}
+
+// For a given filename, if it has a / or is a good-looking Windows path, then use it as the full path.
+// Otherwise, if the defautl directory (pDefaultDir) is not blank and exists, then use it & append
+// pFilename; otherwise, treat pFilename as fully-pathed.
+//
+// Parameters:
+//  pDefaultDir: A default directory to use to fully-path the filename
+//  pFilename: A filename by itself or an absolute Path
+//
+// Return value: The fully-pathed filename, using either the default path or fully-pathed as specified by pFilename
+function genPathedFilename(pDefaultDir, pFilename)
+{
+	var outFilename = "";
+	if (pFilename.indexOf("/") > -1 || (gRunningInWindows && testForWindowsPath(pFilename)))
+		outFilename = pFilename;
+	else if (pDefaultDir.length > 0 && file_isdir(pDefaultDir))
+		outFilename = backslash(pDefaultDir) + pFilename;
+	else
+		outFilename = pFilename;
+	return outFilename;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////

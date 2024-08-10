@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.95e
-                           Release date: 2024-08-04
+                                 Version 1.95f
+                           Release date: 2024-08-08
 
                                      by
 
@@ -830,6 +830,16 @@ promptDelPersonalEmailAfterReply      Default for a user setting: When reading
                                       personal email, whether or not to propmt
                                       the user if they want to delete a message
                                       after replying to it
+
+msgSaveDir                            The default directory on the BBS machine
+                                      to save messages to (for the sysop). This
+                                      can be blank, in which case, you would
+                                      need to enter the full path every time
+                                      when saving a message. If you specify a
+                                      directory, it will save there if you only
+                                      enter a filename, but you can still enter
+                                      a fully-pathed filename to save a message
+                                      in a different directory.
 
 themeFilename                         The name of the configuration file to
                                       use for colors & string settings
