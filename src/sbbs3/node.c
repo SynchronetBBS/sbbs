@@ -454,9 +454,9 @@ void printnodedat(int number, node_t node)
 
 void usage()
 {
-	printf("usage: node [-v[key]] [-debug] [action [on|off]] [node numbers] [...]"
+	printf("usage: node [-v[key]] [-debug] <action [on|off]> [node numbers] [...]"
 		"\n\n");
-	printf("actions (default action is 'list'):\n\n");
+	printf("actions:\n\n");
 	printf("    list        = list status\n");
 	printf("    anon        = anonymous user\n");
 	printf("    lock        = locked\n");
@@ -493,7 +493,7 @@ int main(int argc, char **argv)
 {
 	char str[256],ctrl_dir[MAX_PATH + 1],debug=0;
 	int sys_nodes,node_num=0,onoff=0;
-	int i,j,mode=0,misc;
+	int i,j,mode=-1,misc;
 	int	modify=0;
 	int loop=0;
 	int pause=0;
@@ -550,6 +550,8 @@ int main(int argc, char **argv)
 				if(argv[i][2])
 					strListPush(&key_list, argv[i] + 2);
 			}
+			else if(!stricmp(argv[i],"LIST"))
+				mode=MODE_LIST;
 			else if(!stricmp(argv[i],"LOCK"))
 				mode=MODE_LOCK;
 			else if(!stricmp(argv[i],"ANON"))
@@ -604,6 +606,8 @@ int main(int argc, char **argv)
 			}
 			else usage();
 		}
+		if(mode < 0)
+			usage();
 		if(mode!=MODE_LIST)
 			modify=1;
 
