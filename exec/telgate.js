@@ -24,7 +24,7 @@ load("sbbsdefs.js");
 var quiet = false;
 var pause = true;
 var clear = true;
-var mode;
+var mode = 0;
 var addr;
 var timeout = 10;
 var send = [];
@@ -35,7 +35,7 @@ for(var i = 0; i < argv.length; i++) {
 		if(!addr)
 			addr = arg;
 		else if(!mode)
-			mode = arg;
+			mode = eval(arg);
 		else {
 			alert(js.exec_file + ": Unexpected argument: " + arg);
 			exit(1);
@@ -59,7 +59,7 @@ for(var i = 0; i < argv.length; i++) {
 			timeout = Number(value);
 			break;
 		case 'm':
-			mode = value;
+			mode = eval(value);
 			break;
 		case 's':
 			send.push(value);
@@ -83,7 +83,6 @@ if(!quiet) {
 	writeln("\x01h\x01yConnecting to: \x01w" + addr + "\x01n");
 }
 
-mode = eval(mode);
 var result = bbs.telnet_gate(addr, mode, timeout, send);
 if(result === false)
 	alert(js.exec_file + ": Failed to connect to: " + addr);
