@@ -1,0 +1,17 @@
+{
+  "name": "bullshit",
+  "version": "4.0.0",
+  "description": "",
+  "main": "src/bullshit.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "ts4s build -s src -b ./",
+    "deploy": "npm run build && eval $(cat .env) && scp -P $SSH_PORT ./*.*js $SSH_USER@$SSH_HOST:$DEPLOY_PATH"
+  },
+  "author": "echicken",
+  "license": "MIT",
+  "dependencies": {
+    "@swag/ts4s": "git+ssh://git@gitlab.synchro.net:swag/ts4s.git#newload",
+    "swindows": "git+ssh://git@gitlab.synchro.net:echicken/swindows.git"
+  }
+}

@@ -1,0 +1,15 @@
+{
+	"extends": "./node_modules/@swag/ts4s/tsconfig-synchronet.json",
+	"compilerOptions": {
+		"rootDir": ".",
+		"outDir": ".",
+		"target": "ESNext",
+		"lib": ["ESNext"]
+	},
+	"include": [
+		"src/bullshit.ts",
+	],
+	"exclude": [
+		"node_modules"
+	]
+}
