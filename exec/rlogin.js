@@ -8,7 +8,7 @@
 //   -T <connect-timeout-seconds> (default: 10 seconds)
 //   -m <telnet-gateway-mode> (Number or TG_* vars OR'd together, default: 0)
 //   -p send current user alias and password as server and client-name values
-//   -q don't display banner or pause prompt displayed (quiet)
+//   -q don't display banner or pause prompt (quiet)
 //   -P don't pause for user key-press
 //   -C don't clear screen after successful session
 
