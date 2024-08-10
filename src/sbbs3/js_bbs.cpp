@@ -2989,11 +2989,13 @@ static JSBool
 js_telnet_gate(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
+	uintN		argn;
 	char*		addr;
 	uint32		mode=0;
 	uint32		timeout=10;
 	JSString*	js_addr;
 	sbbs_t*		sbbs;
+	str_list_t	send_strings = NULL;
 	jsrefcount	rc;
 
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
@@ -3009,22 +3011,45 @@ js_telnet_gate(JSContext *cx, uintN argc, jsval *arglist)
 	if(addr==NULL)
 		return(JS_FALSE);
 
-	if(argc>1 && JSVAL_IS_NUMBER(argv[1])) {
-		if(!JS_ValueToECMAUint32(cx,argv[1],&mode)) {
+	argn = 1;
+	if(argc > argn && JSVAL_IS_NUMBER(argv[argn])) {
+		if(!JS_ValueToECMAUint32(cx,argv[argn],&mode)) {
 			free(addr);
 			return JS_FALSE;
 		}
+		++argn;
 	}
-	if(argc>2 && JSVAL_IS_NUMBER(argv[2])) {
-		if(!JS_ValueToECMAUint32(cx,argv[2],&timeout)) {
+	if(argc > argn && JSVAL_IS_NUMBER(argv[argn])) {
+		if(!JS_ValueToECMAUint32(cx,argv[argn],&timeout)) {
 			free(addr);
 			return JS_FALSE;
+		}
+		++argn;
+	}
+	if(argc > argn && JSVAL_IS_OBJECT(argv[argn])) {
+		JSObject* array = JSVAL_TO_OBJECT(argv[argn]);
+		jsuint count = 0;
+		if(array != NULL && JS_IsArrayObject(cx, array) && JS_GetArrayLength(cx, array, &count)) {
+			send_strings = strListInit();
+			char* tmp = NULL;
+			size_t tmplen = 0;
+			for(jsuint i = 0; i < count; ++i) {
+				jsval val;
+				if(!JS_GetElement(cx, array, i, &val))
+					break;
+				JSVALUE_TO_RASTRING(cx, val, tmp, &tmplen, NULL);
+				HANDLE_PENDING(cx, tmp);
+				strListPush(&send_strings, tmp);
+			}
+			free(tmp);
+			++argn;
 		}
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->telnet_gate(addr,mode,timeout)));
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->telnet_gate(addr, mode, timeout, send_strings)));
 	free(addr);
+	strListFree(&send_strings);
 	JS_RESUMEREQUEST(cx, rc);
 
 	return(JS_TRUE);
@@ -3045,6 +3070,7 @@ js_rlogin_gate(JSContext *cx, uintN argc, jsval *arglist)
 	uint32		timeout = 10;
 	JSString*	js_str;
 	sbbs_t*		sbbs;
+	str_list_t	send_strings = NULL;
 	jsrefcount	rc;
 
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
@@ -3086,6 +3112,23 @@ js_rlogin_gate(JSContext *cx, uintN argc, jsval *arglist)
 					break;
 				}
 			}
+		} else if(JSVAL_IS_OBJECT(argv[argn])) {
+			JSObject* array = JSVAL_TO_OBJECT(argv[argn]);
+			jsuint count = 0;
+			if(array != NULL && JS_IsArrayObject(cx, array) && JS_GetArrayLength(cx, array, &count)) {
+				send_strings = strListInit();
+				char* tmp = NULL;
+				size_t tmplen = 0;
+				for(jsuint i = 0; i < count; ++i) {
+					jsval val;
+					if(!JS_GetElement(cx, array, i, &val))
+						break;
+					JSVALUE_TO_RASTRING(cx, val, tmp, &tmplen, NULL);
+					HANDLE_PENDING(cx, tmp);
+					strListPush(&send_strings, tmp);
+				}
+				free(tmp);
+			}
 		}
 	}
 	if(!fail) {
@@ -3093,13 +3136,14 @@ js_rlogin_gate(JSContext *cx, uintN argc, jsval *arglist)
 			mode = 0;
 		rc=JS_SUSPENDREQUEST(cx);
 		JS_SET_RVAL(cx, arglist
-			,BOOLEAN_TO_JSVAL(sbbs->telnet_gate(addr,mode|TG_RLOGIN,timeout,client_user_name,server_user_name,term_type)));
+			,BOOLEAN_TO_JSVAL(sbbs->telnet_gate(addr, mode|TG_RLOGIN, timeout, send_strings, client_user_name, server_user_name, term_type)));
 		JS_RESUMEREQUEST(cx, rc);
 	}
 	FREE_AND_NULL(addr);
 	FREE_AND_NULL(client_user_name);
 	FREE_AND_NULL(server_user_name);
 	FREE_AND_NULL(term_type);
+	strListFree(&send_strings);
 
 	return(fail ? JS_FALSE : JS_TRUE);
 }
@@ -4765,12 +4809,12 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	"(see <tt>EVENT_*</tt> in <tt>sbbsdefs.js</tt> for valid values)")
 	,310
 	},
-	{"telnet_gate",		js_telnet_gate,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("address[:port] [,<i>number</i> mode=TG_NONE] [,<i>number</i> timeout=10]")
+	{"telnet_gate",		js_telnet_gate,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("address[:port] [,<i>number</i> mode=TG_NONE] [,<i>number</i> timeout=10] [,<i>array<i> send_strings]")
 	,JSDOCSTR("External Telnet gateway (see <tt>TG_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> flags).")
 	,310
 	},
 	{"rlogin_gate",		js_rlogin_gate,		1,	JSTYPE_BOOLEAN
-	,JSDOCSTR("address[:port] [,<i>string</i> client-user-name=<i>user.alias</i>, <i>string</i> server-user-name=<i>user.name</i>, <i>string</i> terminal=<i>console.terminal</i>] [,<i>number</i> mode=TG_NONE]  [,<i>number</i> timeout=10]")
+	,JSDOCSTR("address[:port] [,<i>string</i> client-user-name=<i>user.alias</i>, <i>string</i> server-user-name=<i>user.name</i>, <i>string</i> terminal=<i>console.terminal</i>] [,<i>number</i> mode=TG_NONE]  [,<i>number</i> timeout=10]  [,<i>array<i> send_strings]")
 	,JSDOCSTR("External RLogin gateway (see <tt>TG_*</tt> in <tt>sbbsdefs.js</tt> for valid <i>mode</i> flags).")
 	,316
 	},

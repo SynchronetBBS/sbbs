@@ -216,7 +216,7 @@ struct TelnetProxy
 }; // struct TelnetProxy
 
 
-bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, char* client_user_name, char* server_user_name, char* term_type)
+bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, str_list_t send_strings, char* client_user_name, char* server_user_name, char* term_type)
 {
 	char*	p;
 	uchar	buf[512];
@@ -330,6 +330,11 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, char* clie
 	request_telnet_opt(TELNET_DONT,TELNET_BINARY_TX, 3000);
 	if(!(telnet_mode&TELNET_MODE_OFF) && (mode&TG_PASSTHRU))
 		telnet_mode|=TELNET_MODE_GATE;	// Pass-through telnet commands
+
+	if(send_strings != NULL) {
+		for(i = 0; send_strings[i] != NULL; ++i)
+			sendsocket(remote_socket, send_strings[i], strlen(send_strings[i]));
+	}
 
 	while(online) {
 		if(!(mode&TG_NOCHKTIME))

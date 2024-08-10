@@ -1337,7 +1337,8 @@ public:
 	void	catsyslog(int crash);
 
 	/* telgate.cpp */
-	bool	telnet_gate(char* addr, uint mode, unsigned timeout=10, char* client_user_name=NULL, char* server_user_name=NULL, char* term_type=NULL);	// See TG_* for mode bits
+	bool	telnet_gate(char* addr, uint mode, unsigned timeout=10 	// See TG_* for mode bits
+		,str_list_t send_strings=NULL, char* client_user_name=NULL, char* server_user_name=NULL, char* term_type=NULL);
 
 	/* sftp.cpp */
 	bool init_sftp(int channel_id);
