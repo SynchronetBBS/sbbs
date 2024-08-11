@@ -381,6 +381,7 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, str_list_t
 					l=K_CHAT;
 					if(!(mode&TG_ECHO))
 						l|=K_NOECHO;
+					*buf = '\0';
 					rd=getstr((char*)buf,sizeof(buf)-1,l);
 					if(!rd)
 						continue;
