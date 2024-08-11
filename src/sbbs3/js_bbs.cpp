@@ -3038,7 +3038,6 @@ js_telnet_gate(JSContext *cx, uintN argc, jsval *arglist)
 				if(!JS_GetElement(cx, array, i, &val))
 					break;
 				JSVALUE_TO_RASTRING(cx, val, tmp, &tmplen, NULL);
-				HANDLE_PENDING(cx, tmp);
 				strListPush(&send_strings, tmp);
 			}
 			free(tmp);
@@ -3124,7 +3123,6 @@ js_rlogin_gate(JSContext *cx, uintN argc, jsval *arglist)
 					if(!JS_GetElement(cx, array, i, &val))
 						break;
 					JSVALUE_TO_RASTRING(cx, val, tmp, &tmplen, NULL);
-					HANDLE_PENDING(cx, tmp);
 					strListPush(&send_strings, tmp);
 				}
 				free(tmp);
