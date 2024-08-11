@@ -611,7 +611,7 @@ int main(int argc, char **argv)
 		if(mode!=MODE_LIST)
 			modify=1;
 
-		if((mode && node_num) || i+1==argc)
+		if(node_num || i+1==argc)
 			while(1) {
 				for(j=1;j<=sys_nodes;j++)
 					if(!node_num || j==node_num) {
