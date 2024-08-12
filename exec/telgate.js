@@ -11,6 +11,7 @@
 //   -C don't clear screen after successful session
 //   -s <string-to-send after connect> (multiple may be specified)
 //   -S <CRLF-terminated-string-to-send> (multiple may be specified)
+//   -c Don't show remote connection name
 
 // legacy usage (still supported, but deprecated):
 // ?telgate address[:port] [telnet-gateway-mode]
@@ -24,6 +25,7 @@ load("sbbsdefs.js");
 var quiet = false;
 var pause = true;
 var clear = true;
+var remote = true;
 var mode = 0;
 var addr;
 var timeout = 10;
@@ -51,6 +53,9 @@ for(var i = 0; i < argv.length; i++) {
 			continue;
 		case 'C':
 			clear = false;
+			continue;
+		case 'c':
+			remote = false;
 			continue;
 	}
 	var value = arg.length > 2 ? arg.substring(2) : argv[++i];
@@ -80,11 +85,18 @@ if(!quiet) {
 	write("\r\n\x01h\x01hPress \x01yCtrl-]\x01w for a control menu anytime.\r\n\r\n");
 	if(pause)
 		console.pause();
-	writeln("\x01h\x01yConnecting to: \x01w" + addr + "\x01n");
+	if (!remote)
+		writeln("\x01h\x01yConnecting...");
+	else
+		writeln("\x01h\x01yConnecting to: \x01w" + addr + "\x01n");
 }
 
 var result = bbs.telnet_gate(addr, mode, timeout, send);
-if(result === false)
-	alert(js.exec_file + ": Failed to connect to: " + addr);
+if(result === false) {
+	if(!remote)
+		alert(js.exec_file + ": Failed to connect to remote host");
+	else
+		alert(js.exec_file + ": Failed to connect to: " + addr);
+}
 else if(clear)
 	console.clear();
