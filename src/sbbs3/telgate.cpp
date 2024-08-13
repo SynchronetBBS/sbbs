@@ -215,6 +215,23 @@ struct TelnetProxy
 	}
 }; // struct TelnetProxy
 
+/*****************************************************************************/
+// Expands Sole-LF to CR/LF
+/*****************************************************************************/
+static uint8_t* expand_lf(uint8_t* inbuf, size_t inlen, uint8_t* outbuf, size_t& outlen)
+{
+	size_t i, j;
+
+	if(outlen < 1 || outbuf == nullptr)
+		return nullptr;
+	for(i = j = 0; i < inlen && j < (outlen - 1); ++i) {
+		if(inbuf[i] == '\n' && (i == 0 || inbuf[i - 1] != '\r'))
+			outbuf[j++] = '\r';
+		outbuf[j++] = inbuf[i];
+	}
+	outlen = j;
+    return outbuf;
+}
 
 bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, str_list_t send_strings, char* client_user_name, char* server_user_name, char* term_type)
 {
@@ -316,7 +333,7 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, str_list_t
 		if(sendsocket(remote_socket,(char*)buf,l) != (ssize_t)l)
 			lprintf(LOG_WARNING, "Error %d sending %lu bytes to server: %s", ERROR_VALUE, l, destaddr);
 		mode|=TG_NOLF;	/* Send LF (to remote host) when Telnet client sends CRLF (when not in binary mode) */
-	} else {
+	} else if(!(mode & TG_RAW)) {
 		proxy = new TelnetProxy(remote_socket, this);
 		if(!(mode & TG_ECHO))
 			proxy->request_opt(TELNET_DO, TELNET_ECHO);
@@ -434,9 +451,15 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, str_list_t
 			break;
 		}
 		uint8_t* p = buf;
-		if(!(mode & (TG_RLOGIN | TG_PASSTHRU)))
+		if(!(mode & (TG_RLOGIN | TG_PASSTHRU | TG_RAW)))
 			p = proxy->recv(buf, rd, rd);
-		RingBufWrite(&outbuf,p,rd);
+		if(mode & TG_EXPANDLF) {
+			uint8_t expanded_buf[sizeof(buf) * 2];
+			size_t expanded_len = sizeof(expanded_buf);
+			expand_lf(p, rd, expanded_buf, expanded_len);
+			RingBufWrite(&outbuf, expanded_buf, expanded_len);
+		} else
+			RingBufWrite(&outbuf,p,rd);
 	}
 	console&=~CON_RAW_IN;
 	telnet_mode&=~TELNET_MODE_GATE;

@@ -790,6 +790,8 @@ enum {							/* readmail and delmailidx which types		*/
 #define TG_SENDPASS		(1<<9)	/* Send password instead of real name (RLogin) - DEPRECATED	(it sent the password as the server user name) */
 #define TG_NOLF			(1<<10)	/* Do not send line-feeds (opposite of TG_CRLF) */
 #define TG_RLOGINSWAP	(1<<11)	/* Swap the RLogin alias/real-names			*/
+#define TG_RAW			(1<<12)	/* Connecting to a raw TCP server			*/
+#define TG_EXPANDLF		(1<<13)	/* Expand incoming LF to CRLF				*/
 
 enum {							/* Values for 'mode' in listfileinfo        */
 	 FI_INFO            		/* Just list file information               */

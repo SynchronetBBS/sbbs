@@ -463,6 +463,8 @@ var   TG_NOTERMTYPE =(1<<8);	/* Request client "DONT TERM_TYPE"			*/
 var   TG_SENDPASS	=(1<<9);	/* DEPRECATED								*/
 var   TG_NOLF		=(1<<10);	/* Do not send line-feeds					*/
 var   TG_RLOGINSWAP	=(1<<11);	/* Swap the RLogin alias/real-names			*/
+var   TG_RAW        =(1<<12);	/* Connecting to a raw TCP server			*/
+var   TG_EXPANDLF   =(1<<13);	/* Expand incoming LF to CRLF				*/
 					    		/********************************************/
 
 					    		/********************************************/
