@@ -7,6 +7,7 @@
 //   -T <connect-timeout-seconds> (default: 10 seconds)
 //   -m <telnet-gateway-mode> (Number or TG_* vars OR'd together, default: 0)
 //   -q don't display banner or pause prompt (quiet)
+//   -v increase verbosity (display remote host name/address/port in messages)
 //   -P don't pause for user key-press
 //   -C don't clear screen after successful session
 //   -s <string-to-send after connect> (multiple may be specified)
@@ -21,13 +22,17 @@ load("sbbsdefs.js");
 
 "use strict";
 
-var quiet = false;
-var pause = true;
-var clear = true;
 var mode = 0;
 var addr;
-var timeout = 10;
 var send = [];
+var options;
+if((options = load({}, "modopts.js","telgate")) == null)
+	options = {};
+var quiet = options.quiet === undefined ? false : options.quiet;
+var pause = options.pause === undefined ? true : options.pause;
+var clear = options.clear === undefined ? true : options.clear;
+var timeout = options.timeout === undefined ? 10 : options.timeout;
+var verbosity = options.verbosity === undefined ? 0 : options.verbosity;
 
 for(var i = 0; i < argv.length; i++) {
 	var arg = argv[i];
@@ -52,6 +57,9 @@ for(var i = 0; i < argv.length; i++) {
 		case 'C':
 			clear = false;
 			continue;
+		case 'v':
+			++verbosity;
+			break;
 	}
 	var value = arg.length > 2 ? arg.substring(2) : argv[++i];
 	switch(arg[1]) { // value options
@@ -76,15 +84,16 @@ if(!addr) {
 	alert(js.exec_file + ": No destination address specified");
 	exit(1);
 }
+var remote_host = (verbosity > 0 ? addr : "remote host");
 if(!quiet) {
-	write("\r\n\x01h\x01hPress \x01yCtrl-]\x01w for a control menu anytime.\r\n\r\n");
+	write(options.help_msg || "\r\n\x01h\x01hPress \x01yCtrl-]\x01w for a control menu anytime.\r\n\r\n");
 	if(pause)
 		console.pause();
-	writeln("\x01h\x01yConnecting to: \x01w" + addr + "\x01n");
+	write(format(options.connecting_msg || "\x01h\x01yConnecting to \x01w%s \x01n...\r\n", remote_host));
 }
 
 var result = bbs.telnet_gate(addr, mode, timeout, send);
 if(result === false)
-	alert(js.exec_file + ": Failed to connect to: " + addr);
+	alert(options.failed_connect_msg || (js.exec_file + ": Failed to connect to " + remote_host));
 else if(clear)
 	console.clear();

@@ -9,6 +9,7 @@
 //   -m <telnet-gateway-mode> (Number or TG_* vars OR'd together, default: 0)
 //   -p send current user alias and password as server and client-name values
 //   -q don't display banner or pause prompt (quiet)
+//   -v increase verbosity (display remote host name/address/port in messages)
 //   -P don't pause for user key-press
 //   -C don't clear screen after successful session
 
@@ -21,15 +22,21 @@
 
 require("sbbsdefs.js", 'TG_RLOGINSWAP');
 
-var quiet = false;
-var pause = true;
-var clear = true;
 var mode;
 var addr;
 var client_name;
 var server_name;
 var term_type;
-var timeout = 10;
+var options;
+if((options = load({}, "modopts.js","rlogin")) == null) {
+	if((options = load({}, "modopts.js","telgate")) == null)
+		options = {};
+}
+var quiet = options.quiet === undefined ? false : options.quiet;
+var pause = options.pause === undefined ? true : options.pause;
+var clear = options.clear === undefined ? true : options.clear;
+var timeout = options.timeout === undefined ? 10 : options.timeout;
+var verbosity = options.verbosity === undefined ? 0 : options.verbosity;
 
 for(var i = 0; i < argv.length; i++) {
 	var arg = argv[i];
@@ -59,6 +66,9 @@ for(var i = 0; i < argv.length; i++) {
 			break;
 		case 'C':
 			clear = false;
+			break;
+		case 'v':
+			++verbosity;
 			break;
 		case 'p': // send alias and password as expected by Synchronet
 			client_name = user.security.password;
@@ -91,11 +101,12 @@ if(!addr) {
 	alert(js.exec_file + ": No destination address specified");
 	exit(1);
 }
+var remote_host = (verbosity > 0 ? addr : "remote host");
 if(!quiet) {
-	write("\r\n\x01h\x01hPress \x01yCtrl-]\x01w for a control menu anytime.\r\n\r\n");
+	write(options.help_msg || "\r\n\x01h\x01hPress \x01yCtrl-]\x01w for a control menu anytime.\r\n\r\n");
 	if(pause)
 		console.pause();
-	writeln("\x01h\x01yConnecting to: \x01w" + addr + "\x01n");
+	write(format(options.connecting_msg || "\x01h\x01yConnecting to \x01w%s \x01n...\r\n", remote_host));
 }
 mode = eval(mode);
 var result = bbs.rlogin_gate(
@@ -107,6 +118,6 @@ var result = bbs.rlogin_gate(
 	,timeout
 	);
 if(result === false)
-	alert(js.exec_file + ": Failed to connect to: " + addr);
+	alert(options.failed_connect_msg || (js.exec_file + ": Failed to connect to " + remote_host));
 else if(clear)
 	console.clear();
