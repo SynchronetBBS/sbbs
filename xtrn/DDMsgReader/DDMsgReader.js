@@ -14,7 +14,7 @@
  *
  * Author: Eric Oulashin (AKA Nightfox)
  * BBS: Digital Distortion
- * BBS address: digitaldistortionbbs.com (or digdist.bbsindex.com)
+ * BBS address: digitaldistortionbbs.com (or digdist.synchro.net)
  *
  * Date       Author            Description
  * 2014-09-13 Eric Oulashin     Started (based on my message lister script)
@@ -159,6 +159,8 @@
  * 2024-08-09 Eric Oulashin     Version 1.95f
  *                              New config option: msgSaveDir, which specifies the directory on the BBS PC
  *                              to save messages to. Can be empty, to use a full path inputted by the user.
+ * 2024-08-12 Eric Oulashin     Version 1.95g
+ *                              Updates to help with the newscan issues placing the user at the first message, etc.
  */
 
 "use strict";
@@ -274,8 +276,8 @@ var hexdump = load('hexdump_lib.js');
 */
 
 // Reader version information
-var READER_VERSION = "1.95f";
-var READER_DATE = "2024-08-09";
+var READER_VERSION = "1.95g";
+var READER_DATE = "2024-08-12";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -2660,6 +2662,7 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 
 			var grpIndex = msg_area.sub[this.subBoardCode].grp_index;
 			var subIndex = msg_area.sub[this.subBoardCode].index;
+			var scanPtrMsgIdx = this.GetScanPtrMsgIdx();
 			// Sub-board description: msg_area.grp_list[grpIndex].sub_list[subIndex].description
 			// Open the sub-board and check for unread messages.  If there are any, then let
 			// the user read the messages in the sub-board.
@@ -2702,7 +2705,7 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 				}
 				*/
 
-				var scanPtrMsgIdx = this.GetScanPtrMsgIdx();
+				//var scanPtrMsgIdx = this.GetScanPtrMsgIdx();
 				// In the switch cases below, bbs.curgrp and bbs.cursub are
 				// temporarily changed the user's sub-board to the current
 				// sub-board so that certain @-codes (such as @GRP-L@, etc.)
@@ -2713,6 +2716,9 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 				switch (pScanMode)
 				{
 					case SCAN_NEW:
+						if (scanPtrMsgIdx < 0)
+							continue;
+
 						var totalNumMsgs = msgbase.total_msgs;
 
 						// Temporary (debugging newscan for new user)
@@ -2880,7 +2886,7 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 					msgbase.close();
 			}
 		}
-		// Briefly wait, to prevent the CPU from reaching 99% usage
+		// Briefly wait, to prevent the CPU from reaching 99% usage or more
 		mswait(10);
 	}
 	this.doingMultiSubBoardScan = false;
@@ -3054,7 +3060,11 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 	{
 		msgIndex = this.GetLastReadMsgIdxAndNum().lastReadMsgIdx;
 		if (msgIndex == -1)
-			msgIndex = 0;
+		{
+			msgIndex = this.NumMessages() - 1;
+			if (msgIndex == -1)
+				msgIndex = 0;
+		}
 		else if (msgIndex >= numOfMessages)
 			msgIndex = numOfMessages - 1;
 	}
@@ -14603,54 +14613,73 @@ function DigDistMsgReader_GetLastReadMsgIdxAndNum(pMailStartFromFirst)
 	}
 	else
 	{
-		//retObj.lastReadMsgIdx = this.AbsMsgNumToIdx(msg_area.sub[this.subBoardCode].last_read);
-		retObj.lastReadMsgIdx = this.GetMsgIdx(msg_area.sub[this.subBoardCode].last_read);
-		retObj.lastReadMsgNum = msg_area.sub[this.subBoardCode].last_read;
-		/*
-		this.hdrsForCurrentSubBoard = [];
-		// hdrsForCurrentSubBoardByMsgNum is an object that maps absolute message numbers
-		// to their index to hdrsForCurrentSubBoard
-		this.msgNumToIdxMap = {};
-		*/
-		// Sanity checking for retObj.lastReadMsgIdx (note: this function should return -1 if
-		// there is no last read message).
-		var msgbase = new MsgBase(this.subBoardCode);
-		if (msgbase.open())
+		// If the user's scan_ptr is the special value indicating it should be the last message,
+		// then set it up that way, and return the index of the last message in the current sub-board
+		if (subBoardScanPtrIsLatestMsgSpecialVal(this.subBoardCode))
 		{
-			// If retObj.lastReadMsgIdx is -1, as a result of GetMsgIdx(), then see what the last read
-			// message index is according to the Synchronet message base.  If
-			// this.hdrsForCurrentSubBoard.length has been populated, then if the last
-			// message index according to Synchronet is greater than that, then set the
-			// message index to the last index in this.hdrsForCurrentSubBoard.length.
-			if (retObj.lastReadMsgIdx == -1)
+			var lasgReadableMsgHdr = getLastReadableMsgHdrInSubBoard(this.subBoardCode);
+			if (lasgReadableMsgHdr != null)
 			{
-				var msgIdxAccordingToMsgbase = absMsgNumToIdxWithMsgbaseObj(msgbase, msg_area.sub[this.subBoardCode].last_read);
-				if ((this.hdrsForCurrentSubBoard.length > 0) && (msgIdxAccordingToMsgbase >= this.hdrsForCurrentSubBoard.length))
+				if (this.GetMsgIdx(lasgReadableMsgHdr) > -1)
 				{
-					retObj.lastReadMsgIdx = this.hdrsForCurrentSubBoard.length - 1;
-					retObj.lastReadMsgNum = this.hdrsForCurrentSubBoard[retObj.lastReadMsgIdx].number;
+					msg_area.sub[this.subBoardCode].scan_ptr = lasgReadableMsgHdr.number;
+					msg_area.sub[this.subBoardCode].last_read = lasgReadableMsgHdr.number;
+					retObj.lastReadMsgIdx = this.NumMessages() - 1;
+					retObj.lastReadMsgNum = lasgReadableMsgHdr.number;
 				}
 			}
-			//if (retObj.lastReadMsgIdx >= msgbase.total_msgs)
-			//	retObj.lastReadMsgIdx = msgbase.total_msgs - 1;
-			// TODO: Is this code right?  Modified 3/24/2015 to replace
-			// the above 2 commented lines.
-			if ((retObj.lastReadMsgIdx < 0) || (retObj.lastReadMsgIdx >= msgbase.total_msgs))
+		}
+		else
+		{
+			//retObj.lastReadMsgIdx = this.AbsMsgNumToIdx(msg_area.sub[this.subBoardCode].last_read);
+			retObj.lastReadMsgIdx = this.GetMsgIdx(msg_area.sub[this.subBoardCode].last_read);
+			retObj.lastReadMsgNum = msg_area.sub[this.subBoardCode].last_read;
+			/*
+			this.hdrsForCurrentSubBoard = [];
+			// hdrsForCurrentSubBoardByMsgNum is an object that maps absolute message numbers
+			// to their index to hdrsForCurrentSubBoard
+			this.msgNumToIdxMap = {};
+			*/
+			// Sanity checking for retObj.lastReadMsgIdx (note: this function should return -1 if
+			// there is no last read message).
+			var msgbase = new MsgBase(this.subBoardCode);
+			if (msgbase.open())
 			{
-				// Look for the first message not marked as deleted
-				var readableMsgIdx = this.FindNextReadableMsgIdx(0, true);
-				// If a non-deleted message was found, then set the last read
-				// pointer to it.
-				if (readableMsgIdx > -1)
+				// If retObj.lastReadMsgIdx is -1, as a result of GetMsgIdx(), then see what the last read
+				// message index is according to the Synchronet message base.  If
+				// this.hdrsForCurrentSubBoard.length has been populated, then if the last
+				// message index according to Synchronet is greater than that, then set the
+				// message index to the last index in this.hdrsForCurrentSubBoard.length.
+				if (retObj.lastReadMsgIdx == -1)
 				{
-					var newLastRead = this.IdxToAbsMsgNum(readableMsgIdx);
-					if (newLastRead > -1)
-						msg_area.sub[this.subBoardCode].last_read = newLastRead;
+					var msgIdxAccordingToMsgbase = absMsgNumToIdxWithMsgbaseObj(msgbase, msg_area.sub[this.subBoardCode].last_read);
+					if ((this.hdrsForCurrentSubBoard.length > 0) && (msgIdxAccordingToMsgbase >= this.hdrsForCurrentSubBoard.length))
+					{
+						retObj.lastReadMsgIdx = this.hdrsForCurrentSubBoard.length - 1;
+						retObj.lastReadMsgNum = this.hdrsForCurrentSubBoard[retObj.lastReadMsgIdx].number;
+					}
+				}
+				//if (retObj.lastReadMsgIdx >= msgbase.total_msgs)
+				//	retObj.lastReadMsgIdx = msgbase.total_msgs - 1;
+				// TODO: Is this code right?  Modified 3/24/2015 to replace
+				// the above 2 commented lines.
+				if ((retObj.lastReadMsgIdx < 0) || (retObj.lastReadMsgIdx >= msgbase.total_msgs))
+				{
+					// Look for the first message not marked as deleted
+					var readableMsgIdx = this.FindNextReadableMsgIdx(0, true);
+					// If a non-deleted message was found, then set the last read
+					// pointer to it.
+					if (readableMsgIdx > -1)
+					{
+						var newLastRead = this.IdxToAbsMsgNum(readableMsgIdx);
+						if (newLastRead > -1)
+							msg_area.sub[this.subBoardCode].last_read = newLastRead;
+						else
+							msg_area.sub[this.subBoardCode].last_read = 0;
+					}
 					else
 						msg_area.sub[this.subBoardCode].last_read = 0;
 				}
-				else
-					msg_area.sub[this.subBoardCode].last_read = 0;
 			}
 		}
 	}
@@ -14668,6 +14697,8 @@ function DigDistMsgReader_GetScanPtrMsgIdx()
 		return 0;
 	if (msg_area.sub[this.subBoardCode].scan_ptr == 0)
 		return -1;
+	if (msg_area.sub[this.subBoardCode].posts == 0)
+		return -1;
 
 	/*
 	// Temporary (debugging newscan for new user)
@@ -14675,23 +14706,45 @@ function DigDistMsgReader_GetScanPtrMsgIdx()
 	var subDesc = msg_area.grp_list[grpIdx].name + " - " + msg_area.sub[this.subBoardCode].name;
 	// End Temporary
 	*/
+	
+	//printf("%s - Scan tr is last msg special value: %s\r\n", subDesc, subBoardScanPtrIsLatestMsgSpecialVal(this.subBoardCode) ? "true" : "false"); // Temporary
 
-	// If the user's scan pointer is a crazy value, that could be because
-	// the user hasn't read messages in the sub-board yet.  In that case,
-	// just use 0.  Otherwise, get the user's scan pointer message index.
+	// If the user's scan pointer is the special value that their scan pointer should be
+	// on the last message, then set it that way (the user might be a new user).
+	// Otherwise, get the user's scan pointer message index.
 	var msgIdx = 0;
-	// If the user's scan_ptr for the sub-board isn't the 'last message'
-	// special value, then use it
-	if (!subBoardScanPtrIsLatestMsgSpecialVal(this.subBoardCode))
+	if (subBoardScanPtrIsLatestMsgSpecialVal(this.subBoardCode))
+	{
+		var lasgReadableMsgHdr = getLastReadableMsgHdrInSubBoard(this.subBoardCode);
+		if (lasgReadableMsgHdr != null)
+		{
+			msgIdx = this.GetMsgIdx(lasgReadableMsgHdr);
+			// There shouldn't be any need to set scan_ptr or last_read:
+			/*
+			if (msgIdx > -1)
+			{
+				//msg_area.sub[this.subBoardCode].scan_ptr = lasgReadableMsgHdr.number;
+				//msg_area.sub[this.subBoardCode].last_read = lasgReadableMsgHdr.number;
+				//printf("- %s Here 1; scan_ptr: %d; msgIdx: %d\r\n\x01p", subDesc, msg_area.sub[this.subBoardCode].scan_ptr, msgIdx); // Temporary (debugging newscan for new user)
+			}
+			//else
+			//	 return -1;
+			*/
+		}
+		else
+			 return -1;
+	}
+	else
 	{
 		msgIdx = this.GetMsgIdx(msg_area.sub[this.subBoardCode].scan_ptr);
-		//console.print("- " + subDesc + " Here 1; scan_ptr: " + msg_area.sub[this.subBoardCode].scan_ptr + "; msgIdx: " + msgIdx + "\r\n\x01p"); // Temporary
+		//printf("- %s Here 2; scan_ptr: %d; msgIdx: %d\r\n\x01p", subDesc, msg_area.sub[this.subBoardCode].scan_ptr, msgIdx); // Temporary (debugging newscan for new user)
 	}
 	// Sanity checking for msgIdx
 	var msgbase = new MsgBase(this.subBoardCode);
 	if (msgbase.open())
 	{
-		if ((msgIdx < 0) || (msgIdx >= msgbase.total_msgs) || subBoardScanPtrIsLatestMsgSpecialVal(this.subBoardCode))
+		//if ((msgIdx < 0) || (msgIdx >= msgbase.total_msgs) || subBoardScanPtrIsLatestMsgSpecialVal(this.subBoardCode))
+		if ((msgIdx < 0) || (msgIdx >= msgbase.total_msgs))
 		{
 			msgIdx = -1;
 			// Look for the first message not marked as deleted
@@ -14700,21 +14753,21 @@ function DigDistMsgReader_GetScanPtrMsgIdx()
 			if (readableMsgIdx > -1)
 			{
 				var newLastRead = this.IdxToAbsMsgNum(readableMsgIdx);
-				//console.print("- " + subDesc + " Here 2. newLastRead: " + newLastRead + "\r\n\x01p"); // Temporary
+				//console.print("- " + subDesc + " Here 3. newLastRead: " + newLastRead + "\r\n\x01p"); // Temporary (debugging newscan for new user)
 				if (newLastRead > -1)
 				{
-					//console.print("- " + subDesc + " Here 3\r\n\x01p"); // Temporary
+					//console.print("- " + subDesc + " Here 4\r\n\x01p"); // Temporary (debugging newscan for new user)
 					msg_area.sub[this.subBoardCode].scan_ptr = newLastRead;
 				}
 				else
 				{
-					//console.print("- " + subDesc + " Here 4\r\n\x01p"); // Temporary
+					//console.print("- " + subDesc + " Here 5\r\n\x01p"); // Temporary (debugging newscan for new user)
 					msg_area.sub[this.subBoardCode].scan_ptr = 0;
 				}
 			}
 			else
 			{
-				//console.print("- " + subDesc + " Here 5\r\n\x01p"); // Temporary
+				//console.print("- " + subDesc + " Here 6\r\n\x01p"); // Temporary (debugging newscan for new user)
 				msg_area.sub[this.subBoardCode].scan_ptr = 0;
 			}
 		}
@@ -16755,11 +16808,11 @@ function getLatestPostTimestampAndNumNewMsgs(pSubCode, pMsgbase)
 		// scan_ptr: user's current new message scan pointer (highest-read message number)
 		if (typeof(msg_area.sub[pSubCode].scan_ptr) === "number")
 		{
-			// If the user's scan pointer for the sub-board is the special value indicating it isn't valid yet,
-			// then the user is probably a new user who hasn't visited this sub-board before, so the number of
-			// new messages should be the total number of posts.
+			// If the user's scan pointer for the sub-board is the special value indicating that the user's
+			// scan pointer thould be the last message, then the number of new messages should be 0 (they're
+			// probably a new user).
 			if (msgNumIsLatestMsgSpecialVal(msg_area.sub[pSubCode].scan_ptr))
-				retObj.numNewMsgs = msg_area.sub[pSubCode].posts;
+				retObj.numNewMsgs = 0;
 			else
 			{
 				var lastReadableMsgHdr = getLastReadableMsgHdrInSubBoard(pSubCode);
