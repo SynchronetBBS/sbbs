@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.95g    2024-08-12   Updates to help with the newscan issues placing the user
+                      at the first message, etc.
 1.95f    2024-08-08   New config option: msgSaveDir, which specifies the
                       directory on the BBS PC to save messages to. Can be empty,
                       to use a full path inputted by the user.
