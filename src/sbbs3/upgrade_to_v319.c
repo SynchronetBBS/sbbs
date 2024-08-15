@@ -21,7 +21,6 @@
 
 #include <stdbool.h>
 #include "sbbs.h"
-#include "sbbs4defs.h"
 #include "ini_file.h"
 #include "dat_file.h"
 #include "datewrap.h"
