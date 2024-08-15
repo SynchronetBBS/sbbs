@@ -1,4 +1,11 @@
 "use strict";
+js.on_exit("console.ctrlkey_passthru = ".concat(console.ctrlkey_passthru, ";"));
+js.on_exit("console.attributes = ".concat(console.attributes, ";"));
+js.on_exit("bbs.sys_status = ".concat(bbs.sys_status, ";"));
+js.on_exit("console.home();");
+js.on_exit('console.write("\x1B[0;37;40m");');
+js.on_exit('console.write("\x1B[2J");');
+js.on_exit('console.write("\x1B[?25h");');
 (function() {
   var __getOwnPropNames = Object.getOwnPropertyNames;
   var __commonJS = function(cb, mod) {
@@ -4644,30 +4651,6 @@
     }
   });
 
-  // node_modules/core-js/modules/es.date.to-json.js
-  var require_es_date_to_json = __commonJS({
-    "node_modules/core-js/modules/es.date.to-json.js": function() {
-      "use strict";
-      var $ = require_export();
-      var fails = require_fails();
-      var toObject = require_to_object();
-      var toPrimitive = require_to_primitive();
-      var FORCED = fails(function() {
-        return new Date(NaN).toJSON() !== null || Date.prototype.toJSON.call({ toISOString: function() {
-          return 1;
-        } }) !== 1;
-      });
-      $({ target: "Date", proto: true, arity: 1, forced: FORCED }, {
-        // eslint-disable-next-line no-unused-vars -- required for `.length`
-        toJSON: function toJSON(key) {
-          var O = toObject(this);
-          var pv = toPrimitive(O, "number");
-          return typeof pv == "number" && !isFinite(pv) ? null : O.toISOString();
-        }
-      });
-    }
-  });
-
   // node_modules/core-js/modules/es.date.to-string.js
   var require_es_date_to_string = __commonJS({
     "node_modules/core-js/modules/es.date.to-string.js": function() {
@@ -5466,11 +5449,9 @@
   require_es_array_slice();
   require_es_array_sort();
   require_es_array_splice();
-  require_es_date_to_json();
   require_es_date_to_string();
   require_es_function_bind();
   require_es_function_name();
-  require_es_json_stringify();
   require_es_object_define_property();
   require_es_object_to_string();
   require_es_parse_int();
@@ -8512,7 +8493,6 @@
         settings.domains = domains2;
       if (nodelists !== null)
         settings.nodelists = nodelists;
-      js.global.log(7, JSON.stringify(settings));
       return settings;
     }
     var cgadefs5 = load("cga_defs.js");
