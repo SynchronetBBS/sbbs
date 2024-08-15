@@ -8211,11 +8211,11 @@ js.on_exit('console.write("\x1B[?25h");');
               break;
             case keydefs.KEY_HOME:
               this._cmdstr = "";
-              this.update(0);
+              this.update(-this._index);
               break;
             case keydefs.KEY_END:
               this._cmdstr = "";
-              this.update(this._window.dataHeight);
+              this.update(this._window.contentWindow.dataHeight);
               break;
             case keydefs.KEY_DEL:
               this._cmdstr = "";
