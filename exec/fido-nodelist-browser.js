@@ -9287,6 +9287,7 @@
         if (!ui.getCmd(input))
           break;
       }
+      windowManager.showCursor();
     }
     init();
     main();
