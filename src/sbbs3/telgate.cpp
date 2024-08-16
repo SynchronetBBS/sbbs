@@ -473,5 +473,6 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, str_list_t
 	close_socket(remote_socket);
 
 	lprintf(LOG_INFO,"Node %d Telnet gate to %s finished",cfg.node_num,destaddr);
+	delete proxy;
 	return true;
 }
