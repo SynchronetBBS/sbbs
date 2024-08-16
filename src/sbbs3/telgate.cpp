@@ -349,8 +349,11 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, str_list_t
 		telnet_mode|=TELNET_MODE_GATE;	// Pass-through telnet commands
 
 	if(send_strings != NULL) {
-		for(i = 0; send_strings[i] != NULL; ++i)
-			sendsocket(remote_socket, send_strings[i], strlen(send_strings[i]));
+		for(i = 0; send_strings[i] != NULL; ++i) {
+			ssize_t len = strlen(send_strings[i]);
+			if(sendsocket(remote_socket, send_strings[i], len) != len)
+				lprintf(LOG_WARNING, "Error %d sending %d character to server: %s", ERROR_VALUE, (int)len, destaddr);
+		}
 	}
 
 	while(online) {
