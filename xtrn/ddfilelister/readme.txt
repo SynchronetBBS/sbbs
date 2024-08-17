@@ -1,6 +1,6 @@
                         Digital Distortion File Lister
-                                 Version 2.21
-                           Release date: 2024-04-09
+                                 Version 2.22
+                           Release date: 2024-08-16
 
                                      by
 
@@ -356,3 +356,16 @@ Synchronet's ctrl directory):
 - NFilesListed (168): This string will be blanked if the file lister is used as
   a loadable module and the blankNFilesListedStrIfLoadableModule configuration
   setting is true
+- EditDescription (254)
+- TagFilePrompt (298)
+- EditUploader (256)
+- EditCreditValue (257)
+- EditTimesDownloaded (258)
+- EditExtDescriptionQ (259)
+- NScanDate (400)
+- NScanYear (401)
+- NScanMonth (402)
+- NScanDay (403)
+- NScanHour (404)
+- NScanMinute (405)
+- NScanPmQ (406)

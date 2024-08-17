@@ -5,6 +5,10 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.22     2024-08-16   Added the ability to edit file information using the E
+                      key when listing. Normal users can edit the description
+                      and tags, and sysops can also edit the uploader, credit
+                      value, # times downloaded, and scan date/time
 2.21     2024-04-09   Fix: Searching by file date as a loadable module now does
                       the new file search
 2.20     2024-03-22   (Hopefully) Fix for descLines undefined error
