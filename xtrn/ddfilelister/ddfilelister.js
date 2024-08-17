@@ -1881,7 +1881,7 @@ function editFileInfo(pFileList, pFileListMenu)
 		// Get the extended metadata object and check to see if it has an existing extended definition
 		var extdMetadata = getFileInfoFromFilebase(fileMetadata.dirCode, fileMetadata.name, FileBase.DETAIL.EXTENDED);
 		// Let the user edit the extended description with their configured editor
-		var descFilename = system.node_dir + "extdDescTemp.txt";
+		var descFilename = system.temp_dir + "extdDescTemp.txt";
 		var outFile = new File(descFilename);
 		if (outFile.open("w"))
 		{
@@ -1976,7 +1976,7 @@ function editFileInfo(pFileList, pFileListMenu)
 		var minuteNum = parseInt(minuteStr, 10);
 		var allAreNums = !isNaN(yearNum) && !isNaN(monthNum) && !isNaN(dayNum) && !isNaN(hourNum) && !isNaN(minuteNum);
 		if (allAreNums && monthNum >= 1 && monthNum <= 12 && dayNum >= 1 && dayNum <= 31 && hourNum <= 23 && minuteNum <= 59)
-			newMetadata.time = getTimeTFFromDate(yearNum, monthNum, dayNum, hourNum, minuteNum);
+			newMetadata.time = new Date(yearNum, monthNum - 1, dayNum, hourNum, minuteNum, 0) / 1000;
 		else
 			console.print("\x01nDate/time invalid; not updating.\r\n");
 	}
@@ -5429,25 +5429,6 @@ function getLibAndDirDesc(pDirCode)
 	var libDesc = file_area.lib_list[libIdx].description;
 	var dirDesc =  file_area.dir[pDirCode].description;
 	return libDesc + " - " + dirDesc;
-}
-
-// Returns a time_t timestamp with a given year, month, day, hour, minute, and second.
-//
-// Parameters:
-//  pYear: The year
-//  pMonthNum: The month (1-12)
-//  pDayNum: The day number (1-31)
-//  pHour: The hour of day (0-23)
-//  pMinute: The minute of the hour (0-59)
-//  pSecond: The second of the minute (0-59). This is optional.
-//
-// Return: A time_t value representing the given date/time
-function getTimeTFFromDate(pYear, pMonthNum, pDayNum, pHour, pMinute, pSecond)
-{
-	var seconds = (typeof(pSecond) === "number" ? pSecond : 0);
-	var dateStr = format("%d-%02d-%02dT%02d:%02d:%02d", pYear, pMonthNum, pDayNum, pHour, pMinute, seconds);
-	var date = new Date(dateStr);
-	return date.getTime() / 1000;
 }
 
 // Returns whether a name matches the user's name or alias, case-insensitively
