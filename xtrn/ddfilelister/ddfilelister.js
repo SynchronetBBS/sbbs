@@ -119,6 +119,10 @@
  *                              Fix: Searching by file date as a loadable module now does the new file search
  * 2024-04-09 Eric Oulashin     Version 2.21
  *                              Releasing this version
+ * 2024-08-14 Eric Oulashin     Version 2.22 Beta
+ *                              Started working on adding the ability to edit file details/information (for the sysop)
+ * 2024-08-16 Eric Oulashin     Version 2.22
+ *                              Releasing this version
 */
 
 "use strict";
@@ -132,14 +136,15 @@
 if (console.aborted)
 	exit(-1);
 
-// This script requires Synchronet version 3.19 or newer.
+// This script requires Synchronet version 3.20 or newer (only for bbs.Text.<value>);
+// Synchronet 3.19 added filebase support in JS.
 // If the Synchronet version is below the minimum, then exit.
-if (system.version_num < 31900)
+if (system.version_num < 32000)
 {
 	if (user.is_sysop)
 	{
 		var message = "\x01n\x01h\x01y\x01i* Warning:\x01n\x01h\x01w Digital Distortion File Lister "
-		            + "requires version \x01g3.19\x01w or\r\n"
+		            + "requires version \x01g3.20\x01w or\r\n"
 		            + "newer of Synchronet.  This BBS is using version \x01g" + system.version
 		            + "\x01w.\x01n";
 		console.crlf();
@@ -163,8 +168,8 @@ require("attr_conv.js", "convertAttrsToSyncPerSysCfg");
 
 
 // Lister version information
-var LISTER_VERSION = "2.21";
-var LISTER_DATE = "2024-04-09";
+var LISTER_VERSION = "2.22";
+var LISTER_DATE = "2024-08-16";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -245,15 +250,16 @@ var FILE_VIEW_INFO = 1;
 var FILE_VIEW = 2;
 var FILE_ADD_TO_BATCH_DL = 3;
 var FILE_DOWNLOAD_SINGLE = 4;
-var HELP = 5;
-var QUIT = 6;
-var FILE_MOVE = 7;   // Sysop action
-var FILE_DELETE = 8; // Sysop action
+var FILE_EDIT = 5;
+var HELP = 6;
+var QUIT = 7;
+var FILE_MOVE = 8;   // Sysop action
+var FILE_DELETE = 9; // Sysop action
 
-var NEXT_PAGE = 9;
-var PREV_PAGE = 10;
-var FIRST_PAGE = 11;
-var LAST_PAGE = 12;
+var NEXT_PAGE = 10;
+var PREV_PAGE = 11;
+var FIRST_PAGE = 12;
+var LAST_PAGE = 13;
 
 // Search/list modes
 var MODE_LIST_DIR = 1;
@@ -381,7 +387,7 @@ console.clear("\x01n");
 if ((gListBehavior & FL_NO_HDR) != FL_NO_HDR)
 	displayFileLibAndDirHeader(false, null, !gUseLightbarInterface || !console.term_supports(USER_ANSI));
 // Create the file list menu (must be done after displayFileLibAndDirHeader() when using ANSI and lightbar)
-var gFileListMenu = createFileListMenu(fileMenuBar.getAllActionKeysStr(true, true) + KEY_LEFT + KEY_RIGHT + KEY_DEL/* + CTRL_C*/);
+var gFileListMenu = createFileListMenu(fileMenuBar.getAllActionKeysStr(true, true) + KEY_LEFT + KEY_RIGHT + KEY_DEL /*+ CTRL_C*/);
 if (gUseLightbarInterface && console.term_supports(USER_ANSI))
 {
 	fileMenuBar.writePromptLine();
@@ -574,7 +580,7 @@ else
 	var topItemIndexForLastPage = allFileInfoLines.length - numLinesPerPage;
 
 	// Allowed keys for user input
-	var validOptionKeys = "IVBDMNPFLQ?" + KEY_PAGEDN + KEY_PAGEUP + KEY_HOME + KEY_END;
+	var validOptionKeys = "IVBDEMNPFLQ?" + KEY_PAGEDN + KEY_PAGEUP + KEY_HOME + KEY_END;
 	if (user.is_sysop)
 		validOptionKeys += KEY_DEL + KEY_BACKSPACE;
 	// If the user's terminal supports ANSI, then also allow left, right, and enter (option navigation & selection)
@@ -907,6 +913,9 @@ function doAction(pActionCode, pFileList, pFileListMenu)
 			retObj = getDefaultActionRetObj();
 			retObj.continueFileLister = false;
 			break;
+		case FILE_EDIT:
+			retObj = editFileInfo(pFileList, pFileListMenu);
+			break;
 		case FILE_MOVE: // Sysop action
 			if (user.is_sysop)
 				retObj = chooseFilebaseAndMoveFileToOtherFilebase(pFileList, pFileListMenu);
@@ -943,6 +952,9 @@ function getActionStr(pActionCode)
 			break;
 		case FILE_DOWNLOAD_SINGLE:
 			actionCodeStr = "Download File";
+			break;
+		case FILE_EDIT:
+			actionCodeStr = "Edit File Info";
 			break;
 		case FILE_MOVE:
 			actionCodeStr = "Move File";
@@ -1771,6 +1783,7 @@ function displayHelpScreen()
 	printf(printfStr, "V", "View the file");
 	printf(printfStr, "B", "Flag the selected file(s) for batch download");
 	printf(printfStr, "D", "Download the highlighted (selected) file");
+	printf(printfStr, "E", "Edit the file information");
 	if (!gUseLightbarInterface)
 	{
 		printf(printfStr, "N/PageDn", "Show the next page of files");
@@ -1795,6 +1808,198 @@ function displayHelpScreen()
 	retObj.reDrawListerHeader = true;
 	retObj.reDrawMainScreenContent = true;
 	retObj.reDrawCmdBar = true;
+	return retObj;
+}
+
+// Allows the user to edit a file's metadata.  Only for sysops!
+//
+// Parameters:
+//  pFileList: The list of file metadata objects from the file directory
+//  pFileListMenu: The menu object for the file diretory
+//
+// Return value: An object with values to indicate status & screen refresh actions; see
+//               getDefaultActionRetObj() for details.
+function editFileInfo(pFileList, pFileListMenu)
+{
+	var retObj = getDefaultActionRetObj();
+
+	var fileMetadata = pFileList[pFileListMenu.selectedItemIdx];
+
+	// If the user isn't the sysop or didn't upload this file, then don't let
+	// them edit it
+	if (!(user.is_sysop || userNameOrAliasMatchCaseIns(fileMetadata.from)))
+	{
+		if (gUseLightbarInterface && console.term_supports(USER_ANSI))
+		{
+			var errorMsg = "You don't have permission to edit this file";
+			displayMsg(errorMsg, true, true);
+		}
+		else
+		{
+			var errorMsg = format("\x01n\r\n\x01y\x01hYou don't have permission to edit \x01c%s \x01y(in \x01g%s\x01y)\x01n", fileMetadata.name, getLibAndDirDesc(fileMetadata.dirCode));
+			errorMsg = lfexpand(word_wrap(errorMsg, console.screen_columns-1));
+			console.print(errorMsg + "\r\n\x01p");
+			retObj.reDrawMainScreenContent = true;
+			retObj.reDrawListerHeader = true;
+			retObj.reDrawCmdBar = true;
+			retObj.refreshedSelectedFilesAlready = true;
+		}
+		return retObj;
+	}
+
+	// Set return values. After this function, the screen will need to be re-drawn.
+	retObj.reDrawMainScreenContent = true;
+	retObj.reDrawListerHeader = true;
+	retObj.reDrawCmdBar = true;
+	retObj.refreshedSelectedFilesAlready = true;
+
+	console.print("\x01n\r\n\r\n");
+	var msg = format("\x01cEditing file\x01g\x01h: \x01c%s\x01n \x01c(in \x01h%s\x01n\x01c)\x01n", fileMetadata.name, getLibAndDirDesc(fileMetadata.dirCode));
+	console.print(lfexpand(word_wrap(msg), console.screen_columns-1));
+	var newMetadata = {};
+	for (var prop in fileMetadata)
+		newMetadata[prop] = fileMetadata[prop];
+	// Description
+	var promptText = bbs.text(bbs.text.EditDescription);
+	var editWidth = console.screen_columns - console.strlen(promptText) - 1;
+	console.mnemonics(promptText);
+	newMetadata.desc = console.getstr(fileMetadata.desc, editWidth, K_EDIT|K_LINE|K_NOSPIN); // K_NOCRLF
+	if (console.aborted)
+		return retObj;
+	// Tags
+	promptText = bbs.text(bbs.text.TagFilePrompt);
+	editWidth = console.screen_columns - console.strlen(promptText) - 1;
+	console.mnemonics(promptText);
+	var tags = console.getstr(newMetadata.hasOwnProperty("tags") ? newMetadata.tags : "", editWidth, K_EDIT|K_LINE|K_NOSPIN); // K_NOCRLF
+	if (console.aborted)
+		return retObj;
+	if (tags.length > 0)
+		newMetadata.tags = tags;
+	// Extended description
+	if (!console.noyes(bbs.text(bbs.text.EditExtDescriptionQ)))
+	{
+		// Get the extended metadata object and check to see if it has an existing extended definition
+		var extdMetadata = getFileInfoFromFilebase(fileMetadata.dirCode, fileMetadata.name, FileBase.DETAIL.EXTENDED);
+		// Let the user edit the extended description with their configured editor
+		var descFilename = system.node_dir + "extdDescTemp.txt";
+		var outFile = new File(descFilename);
+		if (outFile.open("w"))
+		{
+			// An extended file description is usually up to about 45 characters long
+			var descWrapped = word_wrap(extdMetadata.extdesc, 45, null, false).split("\r\n");
+			for (var lineIdx = 0; lineIdx < descWrapped.length; ++lineIdx)
+				outFile.writeln(descWrapped[lineIdx]);
+			outFile.close();
+			if (console.editfile(descFilename, "", "", fileMetadata.name, "", false))
+			{
+				if (outFile.open("r"))
+				{
+					newMetadata.extdesc = outFile.readAll(console.screen_columns).join("\r\n");
+					outFile.close();
+				}
+			}
+			if (!file_remove(descFilename))
+				log(LOG_ERR, "Failed to delete temporary file " + descFilename);
+		}
+	}
+	// Only let the sysop edit the uploader, credit value, upload time, etc.
+	if (user.is_sysop)
+	{
+		// Uploader
+		promptText = bbs.text(bbs.text.EditUploader);
+		editWidth = console.screen_columns - console.strlen(promptText) - 1;
+		console.mnemonics(promptText);
+		newMetadata.from = console.getstr(fileMetadata.from, editWidth, K_EDIT|K_LINE|K_NOSPIN);
+		if (console.aborted)
+			return retObj;
+		// Credit value
+		promptText = bbs.text(bbs.text.EditCreditValue);
+		editWidth = console.screen_columns - console.strlen(promptText) - 1;
+		console.mnemonics(promptText);
+		newMetadata.cost = console.getstr(fileMetadata.cost.toString(), editWidth, K_EDIT|K_LINE|K_NUMBER|K_NOSPIN);
+		if (console.aborted)
+			return retObj;
+		// # times downloaded
+		promptText = bbs.text(bbs.text.EditTimesDownloaded);
+		editWidth = console.screen_columns - console.strlen(promptText) - 1;
+		console.mnemonics(promptText);
+		newMetadata.times_downloaded = console.getstr(fileMetadata.times_downloaded.toString(), editWidth, K_EDIT|K_LINE|K_NUMBER|K_NOSPIN);
+		if (console.aborted)
+			return retObj;
+		// Current new-scan date/time
+		console.mnemonics(bbs.text(bbs.text.NScanDate));
+		//console.print(bbs.text(bbs.text.NScanDate));
+		console.mnemonics(system.timestr(fileMetadata.time));
+		var yearStr = strftime("%Y", fileMetadata.time);
+		var monthNumStr = strftime("%m", fileMetadata.time);
+		var dayNumStr = strftime("%d", fileMetadata.time);
+		var hourStr = strftime("%H", fileMetadata.time);
+		var minuteStr = strftime("%M", fileMetadata.time);
+		console.crlf();
+		console.mnemonics(bbs.text(bbs.text.NScanYear));
+		var scanYearConsoleAttrs = console.attributes; // To restore for subsequent prompts since console.getstr() seems to apply normal attribute
+		yearStr = console.getstr(yearStr, yearStr.length+1, K_EDIT|K_LINE|K_NUMBER|K_NOSPIN|K_NOCRLF);
+		if (console.aborted)
+			return retObj;
+		console.attributes = scanYearConsoleAttrs; // Restore year prompt console attributes
+		console.mnemonics(bbs.text(bbs.text.NScanMonth));
+		monthNumStr = console.getstr(monthNumStr, 2, K_EDIT|K_LINE|K_NUMBER|K_NOSPIN|K_NOCRLF);
+		if (console.aborted)
+			return retObj;
+		console.attributes = scanYearConsoleAttrs; // Restore year prompt console attributes
+		console.mnemonics(bbs.text(bbs.text.NScanDay));
+		dayNumStr = console.getstr(dayNumStr, 2, K_EDIT|K_LINE|K_NUMBER|K_NOSPIN|K_NOCRLF);
+		if (console.aborted)
+			return retObj;
+		console.attributes = scanYearConsoleAttrs; // Restore year prompt console attributes
+		console.mnemonics(bbs.text(bbs.text.NScanHour));
+		hourStr = console.getstr(hourStr, 2, K_EDIT|K_LINE|K_NUMBER|K_NOSPIN|K_NOCRLF);
+		if (console.aborted)
+			return retObj;
+		var hourNum = parseInt(hourStr, 10);
+		console.attributes = scanYearConsoleAttrs; // Restore year prompt console attributes
+		console.mnemonics(bbs.text(bbs.text.NScanMinute));
+		minuteStr = console.getstr(minuteStr, 2, K_EDIT|K_LINE|K_NUMBER|K_NOSPIN|K_NOCRLF);
+		if (console.aborted)
+			return retObj;
+		if (!isNaN(hourNum) && hourNum <= 12)
+		{
+			console.attributes = scanYearConsoleAttrs; // Restore year prompt console attributes
+			if (console.yesno(bbs.text(bbs.text.NScanPmQ)))
+				hourNum += 12;
+			
+		}
+		// Do some validation before setting the newscan time
+		var yearNum = parseInt(yearStr, 10);
+		var monthNum = parseInt(monthNumStr, 10);
+		var dayNum = parseInt(dayNumStr, 10);
+		var minuteNum = parseInt(minuteStr, 10);
+		var allAreNums = !isNaN(yearNum) && !isNaN(monthNum) && !isNaN(dayNum) && !isNaN(hourNum) && !isNaN(minuteNum);
+		if (allAreNums && monthNum >= 1 && monthNum <= 12 && dayNum >= 1 && dayNum <= 31 && hourNum <= 23 && minuteNum <= 59)
+			newMetadata.time = getTimeTFFromDate(yearNum, monthNum, dayNum, hourNum, minuteNum);
+		else
+			console.print("\x01nDate/time invalid; not updating.\r\n");
+	}
+
+	// Update the file information in the filebase
+	var filebase = new FileBase(fileMetadata.dirCode);
+	if (filebase.open())
+	{
+		var succeeded = filebase.update(fileMetadata.name, newMetadata);
+		filebase.close();
+		if (succeeded)
+		{
+			pFileList[pFileListMenu.selectedItemIdx] = newMetadata;
+			log(LOG_INFO, format("Successfully updated information update for %s in %s", fileMetadata.name, getLibAndDirDesc(fileMetadata.dirCode)));
+		}
+		else
+		{
+			log(LOG_ERR, format("Failed to save information update for %s in %s", fileMetadata.name, getLibAndDirDesc(fileMetadata.dirCode)));
+			console.print("\r\nFailed to save the changes!\r\n\x01p");
+		}
+	}
+
+	
 	return retObj;
 }
 
@@ -1883,11 +2088,7 @@ function chooseFilebaseAndMoveFileToOtherFilebase(pFileList, pFileListMenu)
 	if (typeof(chosenDirCode) === "string" && chosenDirCode.length > 0)
 	{
 		// For logging
-		var libIdx = file_area.dir[chosenDirCode].lib_index;
-		var dirIdx = file_area.dir[chosenDirCode].index;
-		var libDesc = file_area.lib_list[libIdx].description;
-		var dirDesc =  file_area.dir[chosenDirCode].description;
-		var destLibAndDirDesc = libDesc + " - " + dirDesc;
+		var destLibAndDirDesc = getLibAndDirDesc(chosenDirCode);
 
 		// Build an array of file indexes and sort the array
 		var fileIndexes = [];
@@ -1907,11 +2108,7 @@ function chooseFilebaseAndMoveFileToOtherFilebase(pFileList, pFileListMenu)
 		{
 			var fileIdx = fileIndexes[i];
 			// For logging
-			libIdx = file_area.dir[pFileList[fileIdx].dirCode].lib_index;
-			dirIdx = file_area.dir[pFileList[fileIdx].dirCode].index;
-			libDesc = file_area.lib_list[libIdx].description;
-			dirDesc =  file_area.dir[pFileList[fileIdx].dirCode].description;
-			var srcLibAndDirDesc = libDesc + " - " + dirDesc;
+			var srcLibAndDirDesc = getLibAndDirDesc(pFileList[fileIdx].dirCode);
 
 			var moveRetObj = moveFileToOtherFilebase(pFileList[fileIdx], chosenDirCode);
 			var logMsg = "";
@@ -2237,9 +2434,22 @@ function DDFileMenuBar(pPos)
 	this.cmdArray.push(new DDFileMenuBarItem("DL", 0, FILE_DOWNLOAD_SINGLE));
 	if (user.is_sysop)
 	{
+		// For the Edit command, the sysop will have too many things in the menu
+		// if using the traditional (non-lightbar) interface; if using the lightbar
+		// interface, there is still enough room.  For othe lightbar interface,
+		// use the full word "Edit"; otherwise, use "E".
+		if (gUseLightbarInterface && console.term_supports(USER_ANSI))
+			this.cmdArray.push(new DDFileMenuBarItem("Edit", 0, FILE_EDIT));
+		else
+			this.cmdArray.push(new DDFileMenuBarItem("E", 0, FILE_EDIT));
 		this.cmdArray.push(new DDFileMenuBarItem("Move", 0, FILE_MOVE));
 		//this.cmdArray.push(new DDFileMenuBarItem("Del", 0, FILE_DELETE));
 		this.cmdArray.push(new DDFileMenuBarItem("DEL", 0, FILE_DELETE, KEY_DEL));
+	}
+	else
+	{
+		// The user is not a sysop; there is room for the Edit comand
+		this.cmdArray.push(new DDFileMenuBarItem("Edit", 0, FILE_EDIT));
 	}
 	//DDFileMenuBarItem(pItemText, pPos, pRetCode, pHotkeyOverride)
 	if (!gUseLightbarInterface || !console.term_supports(USER_ANSI))
@@ -4274,14 +4484,14 @@ function populateFileList(pSearchMode)
 		{
 			console.attributes = "N";
 			console.crlf();
-			console.mnemonics(bbs.text(DirLibOrAll));
+			console.mnemonics(bbs.text(bbs.text.DirLibOrAll));
 			userInputDLA = console.getkeys(validInputOptions, -1, K_UPPER);
 		}
 		var userFilespec = "";
 		if (userInputDLA.length > 0 && validInputOptions.indexOf(userInputDLA) > -1)
 		{
 			// Prompt the user for a filespec to search for
-			console.mnemonics(bbs.text(FileSpecStarDotStar));
+			console.mnemonics(bbs.text(bbs.text.FileSpecStarDotStar));
 			userFilespec = console.getstr();
 			if (userFilespec.length == 0)
 				userFilespec = "*"; // Should this be *.*?
@@ -4311,7 +4521,7 @@ function populateFileList(pSearchMode)
 				console.attributes = "N";
 				console.crlf();
 				//console.print("\r\n\x01c\x01hFind Text in File Descriptions (no wildcards)\x01n\r\n");
-				console.mnemonics(bbs.text(DirLibOrAll));
+				console.mnemonics(bbs.text(bbs.text.DirLibOrAll));
 				console.attributes = "N";
 				userInputDLA = console.getkeys(validInputOptions, -1, K_UPPER);
 			}
@@ -4319,7 +4529,7 @@ function populateFileList(pSearchMode)
 			if (userInputDLA.length > 0 && validInputOptions.indexOf(userInputDLA) > -1)
 			{
 				// Prompt the user for a description to search for
-				console.mnemonics(bbs.text(SearchStringPrompt));
+				console.mnemonics(bbs.text(bbs.text.SearchStringPrompt));
 				searchDescription = console.getstr(40, K_LINE|K_UPPER);
 				if (searchDescription.length > 0)
 					console.print("Searching....");
@@ -4387,7 +4597,7 @@ function populateFileList(pSearchMode)
 		{
 			console.attributes = "N";
 			console.crlf();
-			console.mnemonics(bbs.text(DirLibOrAll));
+			console.mnemonics(bbs.text(bbs.text.DirLibOrAll));
 			var validInputOptions = "DLA";
 			userInputDLA = console.getkeys(validInputOptions, -1, K_UPPER);
 			console.attributes = "N";
@@ -5039,7 +5249,7 @@ function userCanDownloadFromFileArea_ShowErrorIfNot(pDirCode)
 		console.crlf();
 		console.print(areaFullDesc);
 		console.crlf();
-		console.mnemonics(bbs.text(CantDownloadFromDir));
+		console.mnemonics(bbs.text(bbs.text.CantDownloadFromDir));
 		console.crlf();
 		console.pause();
 	}
@@ -5203,4 +5413,54 @@ function charStr(pChar, pNumTimes)
 	for (var i = 0; i < pNumTimes; ++i)
 		str += pChar;
 	return str;
+}
+
+// Given a directory internal-code, this returns the library description and directory
+// description separated by a dash.
+//
+// Parameters:
+//  pDirCode: The internal directory code
+//
+// Return value: The library description and directory description separated by a dash
+function getLibAndDirDesc(pDirCode)
+{
+	var libIdx = file_area.dir[pDirCode].lib_index;
+	var dirIdx = file_area.dir[pDirCode].index;
+	var libDesc = file_area.lib_list[libIdx].description;
+	var dirDesc =  file_area.dir[pDirCode].description;
+	return libDesc + " - " + dirDesc;
+}
+
+// Returns a time_t timestamp with a given year, month, day, hour, minute, and second.
+//
+// Parameters:
+//  pYear: The year
+//  pMonthNum: The month (1-12)
+//  pDayNum: The day number (1-31)
+//  pHour: The hour of day (0-23)
+//  pMinute: The minute of the hour (0-59)
+//  pSecond: The second of the minute (0-59). This is optional.
+//
+// Return: A time_t value representing the given date/time
+function getTimeTFFromDate(pYear, pMonthNum, pDayNum, pHour, pMinute, pSecond)
+{
+	var seconds = (typeof(pSecond) === "number" ? pSecond : 0);
+	var dateStr = format("%d-%02d-%02dT%02d:%02d:%02d", pYear, pMonthNum, pDayNum, pHour, pMinute, seconds);
+	var date = new Date(dateStr);
+	return date.getTime() / 1000;
+}
+
+// Returns whether a name matches the user's name or alias, case-insensitively
+//
+// Parameters:
+//  pName: A name to match
+//
+// Return value: Whether the name matches the user's name or alias
+function userNameOrAliasMatchCaseIns(pName)
+{
+	if (typeof(pName) !== "string")
+		return false;
+
+	var nameUpper = pName.toUpperCase();
+	return nameUpper == user.alias.toUpperCase() || nameUpper == user.name.toUpperCase() || nameUpper == user.handle.toUpperCase();
 }
