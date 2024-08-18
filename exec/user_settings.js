@@ -115,7 +115,8 @@ function display_menu(thisuser)
 		keys += 'E';
 		console.add_hotspot('E');
 		console.putmsg(format(bbs.text(bbs.text.UserDefaultsXeditor)
-			,thisuser.editor ? xtrn_area.editor[thisuser.editor].name : bbs.text(bbs.text.None)));
+			,(thisuser.editor && xtrn_area.editor[thisuser.editor])
+				? xtrn_area.editor[thisuser.editor].name : bbs.text(bbs.text.None)));
 	}
 	if (bbs.text(bbs.text.UserDefaultsArcType).length) {
 		keys += 'A';
