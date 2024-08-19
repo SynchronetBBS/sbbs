@@ -4,7 +4,7 @@
 
 !include sbbsdefs.inc
 
-replace_text 563 "\1n\1h\1b{\1wContinue? Yes/No\1b} "
+replace_text 563 "\1n\1h\1b{\1w@ContinueQ@? @Yes@/@No@\1b} "
 
 # Set return point for main menu commands (via end_cmd)
 cmd_home

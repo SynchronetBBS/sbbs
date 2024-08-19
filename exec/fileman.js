@@ -6,6 +6,8 @@ require("file_size.js", "file_size_float");
 require("uifcdefs.js", "WIN_ORG");
 require("sbbsdefs.js", "K_EDIT");
 
+var filelist = load({}, "filelist_lib.js");
+
 "use strict";
 
 if(!uifc.init("Synchronet File Manager", argv[0])) {
@@ -17,18 +19,15 @@ js.on_exit("uifc.bail()");
 // TODO: make these configurable
 var uploader = system.operator;
 var use_diz = false;
-const excludes = [
-	"FILES.BBS",
+var desc_offset;
+const excludes = filelist.filenames.concat([
 	"FILES.TXT",
 	"FILE_ID.DIZ",
-	"DESCRIPT.ION",
-	"00_INDEX.TXT",
 	"00_INDEX.HTM",
 	"WILDCAT.TXT",
-	"SFFILES.BBS",
 	"MEDIA.LST",
 	"AREADESC"
-];
+]);
 
 const main_ctx = new uifc.list.CTX;
 while(!js.terminated) {
@@ -286,12 +285,14 @@ function list_files(title, list, dircode)
 			if(list[i].tagged)
 				++tagged;
 		}
-		for(var i in list)
+		for(var i in list) {
+			var file = list[i];
 			items.push(format("%-*s%-*s  %s"
 				,tagged ? 2:0
-				,list[i].tagged ? ascii(251):""
-				,namelen, wide_screen ? list[i].name : FileBase().format_name(list[i].name)
-				,list[i].desc || ""));
+				,file.tagged ? ascii(251):""
+				,namelen, wide_screen ? file.name : FileBase().format_name(file.name)
+				,file.desc || ""));
+		}
 		var win_mode = WIN_SAV | WIN_RHT | WIN_ACT | WIN_DEL | WIN_DELACT | WIN_TAG;
 		if(dircode)
 			win_mode |= WIN_INS | WIN_INSACT;
@@ -363,6 +364,11 @@ function list_files(title, list, dircode)
 	}
 }
 
+function getvpath(dircode)
+{
+	return file_area.dir[dircode].vpath || (dircode + "/");
+}
+
 function list_pending_files(title, list)
 {
 	const ctx = new uifc.list.CTX;
@@ -379,7 +385,7 @@ function list_pending_files(title, list)
 			items.push(format("%-*s%s%s"
 				,tagged ? 2:0
 				,file.tagged ? ascii(251):""
-				,file_area.dir[file.dircode].vpath || (file.dircode + "/")
+				,getvpath(file.dircode)
 				,file.name));
 		}
 		var win_mode = WIN_SAV | WIN_RHT | WIN_ACT | WIN_TAG | WIN_DEL | WIN_DELACT;
@@ -446,24 +452,29 @@ function list_pending_files(title, list)
 
 function find_new_files(list, dircode)
 {
-	var new_files = find_new_filenames(list, dircode);
+	var new_files = find_new_filenames(list, dircode, excludes);
 	for(var i in new_files)
 		new_files[i] = { name: new_files[i], dircode: dircode };
 	return new_files;
 }
 
-function find_new_filenames(list, dircode)
+function find_new_filenames(list, dircode, excludes)
 {
 	var all_files = directory(file_area.dir[dircode].path + "*");
 	var new_files = [];
 	for(var i in all_files) {
 		if(!file_isdir(all_files[i])) {
 			var fname = file_getname(all_files[i]);
-			if(find_file(fname, list) < 0 && excludes.indexOf(fname.toUpperCase()) < 0)
+			if(find_file(fname, list) < 0 && (!excludes || excludes.indexOf(fname.toUpperCase()) < 0))
 				new_files.push(fname);
 		}
 	}
 	return new_files;
+}
+
+function is_filelist(filename)
+{
+	return filelist.filenames.indexOf(filename.toUpperCase()) >= 0;
 }
 
 function add_files(list, dircode)
@@ -478,8 +489,12 @@ function add_files(list, dircode)
 	while(!js.terminated && new_files.length > 0) {
 		const new_title = new_files.length + " New Files in " + file_area.dir[dircode].path;
 		var opts = [];
-		for(var i in new_files)
-			opts[i] = format("%-*s%s", tagged.length ? 2:0, tagged.indexOf(new_files[i]) >= 0 ? ascii(251):"", new_files[i]);
+		for(var i in new_files) {
+			var filename = new_files[i];
+			opts[i] = format("%-*s%s%s"
+				,tagged.length ? 2:0, tagged.indexOf(filename) >= 0 ? ascii(251):"", filename
+				,is_filelist(filename) ? " <- File List (likely suitable for import)" : "");
+		}
 		var choice = uifc.list(WIN_SAV|WIN_ACT|WIN_TAG, new_title, opts, ctx);
 		if(choice < 0)
 			break;
@@ -506,7 +521,12 @@ function add_files(list, dircode)
 		if(!files.length)
 			files = [new_files[choice]];
 		for(var i = files.length -1; i >= 0; --i) {
-			var new_file = add_file(files[i], dircode);
+			var filename = files[i];
+			if(is_filelist(filename)) {
+				import_filelist(filename, dircode);
+				continue;
+			}
+			var new_file = add_file(filename, dircode);
 			if(!new_file)
 				break;
 			list.push(new_file);
@@ -581,7 +601,7 @@ function view_archive(file, dircode)
 			buf.push(format("%-*s  %10u  %s"
 				,namelen, list[i].name, list[i].size
 				,system.timestr(list[i].time).slice(4)));
-		uifc.showbuf(WIN_MID|WIN_HLP, path, buf.join('\n'));
+		uifc.showbuf(WIN_MID, path, buf.join('\n'));
 	} catch(e) {
 		uifc.msg(e);
 	}
@@ -623,22 +643,27 @@ function viewable_text_file(filename)
 	return false;
 }
 
-function view_text_file(file, dircode)
+function view_text_file(file, dircode, col_counter)
 {
 	var path = file_area.dir[dircode || file.dircode].path + file.name;
 	var f = new File(path);
 	if(f.open("r")) {
 		var txt = f.readAll();
-		if(txt)
-			uifc.showbuf(WIN_MID|WIN_SAV, file.name, txt.join('\n'));
+		if(txt) {
+			if(col_counter) {
+				txt.unshift("0123456789012345678901234567890123456789012345678901234567890123456789012345678");
+				txt.unshift("          1         2         3         4         5         6         7");
+			}
+			uifc.showbuf(WIN_MID|WIN_SAV, path, txt.join('\n'));
+		}
 		f.close();
 	}
 }
 
-function view_contents(file, dircode)
+function view_contents(file, dircode, col_counter)
 {
 	if(viewable_text_file(file.name))
-		view_text_file(file, dircode);
+		view_text_file(file, dircode, col_counter);
 	else
 		view_archive(file, dircode);
 }
@@ -714,7 +739,7 @@ function edit(file, dircode)
 			var extdesc = strip_ctrl_a(file.extdesc).split('\n');
 			opts = opts.concat(extdesc);
 		}
-		const title = (file_area.dir[dircode].vpath || (dircode + "/")) +  orig.name;
+		const title = getvpath(dircode) +  orig.name;
 		var choice = uifc.list(WIN_SAV|WIN_ACT|WIN_ESC|WIN_XTR|WIN_INS|WIN_DEL, title, opts, ctx);
 		if(choice == -1) {
 			if(JSON.stringify(file) != JSON.stringify(orig)) {
@@ -948,14 +973,13 @@ function add_file(filename, dircode)
 		cost: file_size(file_area.dir[dircode].path + filename)
 		};
 	const ctx = new uifc.list.CTX;
-	const title = "Adding " + filename + " to " + (file_area.dir[dircode].vpath || dircode);
+	const title = "Adding " + filename + " to " + getvpath(dircode);
 	while(!js.terminated) {
 		var opts = [
 			"Add File...",
 			"View Contents...",
 			"Description: " + (file.desc || ""),
 			"Uploader: " + (file.from || ""),
-			"Cost: " + file.cost,
 			"Extract/Import DIZ: " + ((file_area.dir[dircode].settings & DIR_DIZ) ? (use_diz ? "Yes" : "No") : "N/A"),
 			];
 		var choice = uifc.list(WIN_MID|WIN_SAV|WIN_ACT, title, opts, ctx);
@@ -972,9 +996,6 @@ function add_file(filename, dircode)
 				uploader = edit_uploader(file);
 				continue;
 			case 4:
-				edit_cost(file);
-				continue;
-			case 5:
 				if(file_area.dir[dircode].settings & DIR_DIZ)
 					use_diz = !use_diz;
 				continue;
@@ -992,3 +1013,204 @@ function add_file(filename, dircode)
 	base.close();
 	return result ? file : false;
 }
+
+function import_filelist(filename, dircode)
+{
+	var filepath = file_area.dir[dircode].path + filename;
+	var base = new FileBase(dircode);
+	if(!base.open()) {
+		uifc.msg("Unable to open base: " + dircode);
+		return false;
+	}
+	var file = {
+		name: filename,
+		from: uploader
+	};
+	const ctx = new uifc.list.CTX;
+	const title = "Importing " + filename + " to " + getvpath(dircode);
+	while(!js.terminated) {
+		var opts = [
+			"Parse List File...",
+			"View File...",
+			"Uploader: " + uploader,
+			"Extract/Import DIZ: " + ((file_area.dir[dircode].settings & DIR_DIZ) ? (use_diz ? "Yes" : "No") : "N/A"),
+			"Description Offset: " + desc_offset
+			];
+		var choice = uifc.list(WIN_MID|WIN_SAV|WIN_ACT, title, opts, ctx);
+		if(choice < 0)
+			break;
+		switch(choice) {
+			case 1:
+				view_contents(file, dircode, /* column counter */true);
+				continue;
+			case 2:
+				uploader = edit_uploader(file);
+				continue;
+			case 3:
+				if(file_area.dir[dircode].settings & DIR_DIZ)
+					use_diz = !use_diz;
+				continue;
+			case 4:
+				var desc_off = uifc.input(WIN_SAV|WIN_MID, "Description character offset",
+					desc_offset || "", 3, K_EDIT | K_NUMBER);
+				if(desc_off === undefined)
+					continue;
+				desc_offset = desc_off || undefined;
+				continue;
+		}
+		--uifc.save_num;
+		var f = new File(filepath);
+		if(!f.open("r")) {
+			uifc.msg("Error " + f.error + " opening " + f.name);
+			break;
+		}
+		var lines = f.readAll();
+		f.close();
+		var list = filelist.parse(lines, desc_offset);
+		for(var i in list)
+			list[i].from = uploader;
+		list_parsed_filelist(filepath, list, dircode);
+		break;
+	}
+	base.close();
+	return result ? file : false;
+}
+
+function list_parsed_filelist(listfile, list, dircode)
+{
+	const title = "Parsed " + listfile;
+	const wide_screen = uifc.screen_width >= 100;
+	const ctx = new uifc.list.CTX;
+	while(!js.terminated) {
+		var items = [];
+		var namelen = 12;
+		var tagged = 0;
+		for(var i in list) {
+			if(wide_screen && list[i].name.length > namelen)
+				namelen = list[i].name.length;
+			if(list[i].tagged)
+				++tagged;
+		}
+		for(var i in list) {
+			var file = list[i];
+			items.push(format("%-*s%-*s  %s"
+				,tagged ? 2:0
+				,file.tagged ? ascii(251):""
+				,namelen, wide_screen ? file.name : FileBase().format_name(file.name)
+				,file.desc || ""));
+		}
+		var win_mode = WIN_SAV | WIN_BOT | WIN_DEL | WIN_DELACT | WIN_TAG | WIN_ACT;
+		if(!tagged)
+			win_mode |= WIN_EDIT;
+		var result = uifc.list(win_mode, title, items, ctx);
+		if(result == -1)
+			break;
+		if(result == MSK_TAGALL) {
+			var tag = !Boolean(list[0].tagged);
+			for(var i in list)
+				list[i].tagged = tag;
+			continue;
+		}
+		if(result & MSK_ON) {
+			var op = result & MSK_ON;
+			result &= MSK_OFF;
+			var file = list[result];
+			switch(op) {
+				case MSK_TAG:
+					list[result].tagged = !list[result].tagged;
+					++ctx.cur;
+					++ctx.bar;
+					break;
+				case MSK_DEL:
+					if(tagged > 0) {
+						for(var i = list.length - 1; i >= 0; --i) {
+							file = list[i];
+							if(file.tagged === true)
+								list.splice(i, /* deleteCount: */1);
+						}
+					} else {
+						list.splice(result, /* deleteCount: */1);
+					}
+					break;
+				case MSK_EDIT:
+					edit_desc(file);
+					break;
+			}
+			continue;
+		}
+		edit_parsed_file(list, result, dircode);
+		--uifc.save_num;
+	}
+}
+
+function edit_parsed_file(list, index, dircode)
+{
+	var file = list[index];
+	const ctx = new uifc.list.CTX;
+	while(!js.terminated) {
+		var opts = [
+			"Import Parsed File List...",
+			"View Contents...",
+			"Description: " + (file.desc || ""),
+			"Uploader: " + (file.from || ""),
+			"|---------- Extended Description -----------|"
+			];
+		if(file.extdesc) {
+			var extdesc = strip_ctrl_a(file.extdesc).split('\n');
+			opts = opts.concat(extdesc);
+		}
+		const title = getvpath(dircode) +  file.name;
+		var choice = uifc.list(WIN_SAV|WIN_ACT|WIN_DEL|WIN_INS, title, opts, ctx);
+		if(choice == -1) {
+			break;
+		}
+		var mask = choice & MSK_ON;
+		choice &= MSK_OFF;
+		if(mask && choice < 10)
+			continue;
+		switch(choice) {
+			case 0:
+				break;
+			case 1:
+				view_contents(file, dircode);
+				break;
+			case 2:
+				edit_desc(file);
+				break;
+			case 3:
+				edit_uploader(file);
+				break;
+			case 4:
+				break;
+			default: // Extended description
+			{
+				if(file.extdesc)
+					file.extdesc = file.extdesc.replace(/\r/g, '');
+				var extdesc = file.extdesc ? file.extdesc.split('\n') : [];
+				var index = choice - 5;
+				if(mask & MSK_DEL) {
+					extdesc.splice(index, /* deleteCount: */1);
+				}
+				else if(mask & MSK_INS) {
+					var str = uifc.input(WIN_SAV, 1, ctx.bar + 2, "", 79, K_MSG);
+					if(str !== undefined)
+						extdesc.splice(index, /* deleteCount: */0, str);
+				}
+				else if(extdesc.length <= index) {
+					var str = uifc.input(WIN_SAV, 1, ctx.bar + 2, "", 79, K_MSG);
+					if(str !== undefined)
+						extdesc.push(str);
+				}
+				else {
+					var str = uifc.input(WIN_SAV, 1, ctx.bar + 2, "", extdesc[index], 79, K_EDIT|K_MSG);
+					if(str !== undefined)
+						extdesc[index] = str;
+				}
+				file.extdesc = extdesc.join('\r\n');
+				break;
+			}
+		}
+	}
+	return false;
+}
+

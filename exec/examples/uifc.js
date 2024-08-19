@@ -57,7 +57,7 @@ while(!js.terminated) {
 			edit_list(list);
 			break;
 		case 6:
-			uifc.showbuf(WIN_MID, "uifc dump", JSON.stringify(uifc, null, 4));
+			uifc.showbuf(WIN_MID, "uifc dump", "~test~"); //JSON.stringify(uifc, null, 4));
 			break;
 			
 	}

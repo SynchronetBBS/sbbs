@@ -16,7 +16,7 @@ for(var i = 0; i < argc; i++) {
 		if(opt == "help" || opt == "?") {
 			writeln("usage: [-options] [[dir_code] [...]]");
 			writeln("options:");
-			writeln("  -lib=<name>     search for duplicates in specified library only");
+			writeln("  -lib=<name>     operate on files in specified library only");
 			writeln("  -ex=<filename>  add to excluded file name list (case-insensitive)");
 			writeln("  -offline        remove files that are offline (don't exist on disk)");
 			writeln("  -test           don't actually remove files, just report findings");
@@ -46,10 +46,13 @@ if(dir_list.length < 1)
 	for(var dir in file_area.dir)
 		dir_list.push(dir);
 
+if(options.test)
+	log("Running in test (read-only) mode");
 var now = time();
 for(var i in dir_list) {
 	var dir_code = dir_list[i];
 	var dir = file_area.dir[dir_code];
+	log(dir_code);
 	var base = new FileBase(dir_code);
 	if(!base.open())
 		throw new Error(base.last_error);

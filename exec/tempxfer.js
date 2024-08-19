@@ -208,6 +208,7 @@ while(bbs.online && !console.aborted) {
 				} catch(e) {
 					log(LOG_INFO, e);
 					alert(e);
+					// Fall-back to external archivers?
 					break;
 				}
 				base.close();

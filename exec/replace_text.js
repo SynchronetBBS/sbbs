@@ -3,11 +3,15 @@
 // one or more replacement files must be passed on the command-line in the form:
 // ctrl/text.<arg>.ini or ctrl/text.<arg>.json
 
+// see ctrl/text.*.ini for example text.ini syntax
+
 /*** example text.json:
-{ 
+{
+	"LANG": "Español",
 	"On": "En",
 	"Off": "Apagado",
 	"Yes": "Si",
+	"No": "No",
 	"None": "Nada",
 	"All": "Todo",
 	"Only": "Solamente",
@@ -15,18 +19,6 @@
 	"Scanning": "Escaneo",
 	"Done": "Hecho",
 }
-******************************************/
-
-/*** example text.ini (quotes are optional, CP437 encoded):
-	On: Auf
-	Off: Aus
-	Yes: Ja
-	None: Nichts
-	All: Alle
-	Only: Nur
-	Unlimited: unbergrenzt
-	Scanning: Abtastung
-	Done: Fertig
 ******************************************/
 
 const text = require('text.js', 'TOTAL_TEXT');

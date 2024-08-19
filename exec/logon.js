@@ -6,6 +6,9 @@
 
 "use strict";
 
+//if(user.number == 1)
+//	js.exec("jsdocs.js", {});
+
 require("sbbsdefs.js", 'SS_RLOGIN');
 require("nodedefs.js", 'NODE_QUIET');
 if(!bbs.mods.avatar_lib)
