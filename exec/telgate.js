@@ -10,6 +10,7 @@
 //   -v increase verbosity (display remote host name/address/port in messages)
 //   -P don't pause for user key-press
 //   -C don't clear screen after successful session
+//   -N send blank line (CRLF) after connect (multiple may be specified)
 //   -s <string-to-send after connect> (multiple may be specified)
 //   -S <CRLF-terminated-string-to-send> (multiple may be specified)
 
@@ -59,7 +60,10 @@ for(var i = 0; i < argv.length; i++) {
 			continue;
 		case 'v':
 			++verbosity;
-			break;
+			continue;
+		case 'N':
+			send.push("\r\n");
+			continue;
 	}
 	var value = arg.length > 2 ? arg.substring(2) : argv[++i];
 	switch(arg[1]) { // value options
