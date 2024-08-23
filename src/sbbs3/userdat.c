@@ -48,7 +48,7 @@
 #define USER_FIELD_SEPARATOR '\t'
 static const char user_field_separator[2] = { USER_FIELD_SEPARATOR, '\0' };
 
-#define LOOP_USERDAT 50
+#define LOOP_USERDAT 500
 
 char* userdat_filename(scfg_t* cfg, char* path, size_t size)
 {
@@ -277,9 +277,8 @@ bool lockuserdat(int file, unsigned user_number)
 		return false;
 	unsigned attempt=0;
 	while(attempt < LOOP_USERDAT && lock(file, offset, USER_RECORD_LINE_LEN) == -1) {
-		if(attempt)
-			mswait(100);
 		attempt++;
+		mswait((attempt / 10) * 100);
 	}
 	return attempt < LOOP_USERDAT;
 }
@@ -1179,12 +1178,12 @@ int putnodedat(scfg_t* cfg, uint number, node_t* node, bool closeit, int file)
 	}
 
 	number--;	/* make zero based */
-	for(attempts=0;attempts<10;attempts++) {
+	for(attempts=0;attempts<LOOP_USERDAT;attempts++) {
 		(void)lseek(file,(long)number*sizeof(node_t),SEEK_SET);
 		if((wr=write(file,node,sizeof(node_t)))==sizeof(node_t))
 			break;
 		wrerr=errno;	/* save write error */
-		mswait(100);
+		mswait(((attempts + 1) / 10) * 100);
 	}
 	unlock(file,(long)number*sizeof(node_t),sizeof(node_t));
 	if(closeit)
