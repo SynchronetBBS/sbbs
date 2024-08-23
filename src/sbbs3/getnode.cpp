@@ -52,9 +52,10 @@ int sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 			return(errno); 
 		}
 	}
+#if 0 // This leads to high disk (or Samba/file server) utilization as we call getnodedat() a lot
 	else
 		utime(str,NULL);		/* NFS fix... utime() forces a cache refresh */
-
+#endif
 	number--;	/* make zero based */
 	for(count=0;count<LOOP_NODEDAB;count++) {
 		if(count)
