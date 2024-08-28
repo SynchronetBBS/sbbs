@@ -2437,11 +2437,16 @@ function DDFileMenuBar(pPos)
 		// For the Edit command, the sysop will have too many things in the menu
 		// if using the traditional (non-lightbar) interface; if using the lightbar
 		// interface, there is still enough room.  For othe lightbar interface,
-		// use the full word "Edit"; otherwise, use "E".
+		// use the full word "Edit"; otherwise (for the traditional/non-lightbar
+		// interface), use as much of the word "Edit" as possible if the user's
+		// terminal is over 80 columns wide; otherwise, use "E".
 		if (gUseLightbarInterface && console.term_supports(USER_ANSI))
 			this.cmdArray.push(new DDFileMenuBarItem("Edit", 0, FILE_EDIT));
 		else
-			this.cmdArray.push(new DDFileMenuBarItem("E", 0, FILE_EDIT));
+		{
+			var itemText = console.screen_columns > 80 ? "Edit".substr(0, console.screen_columns-79) : "E"; //-80+1
+			this.cmdArray.push(new DDFileMenuBarItem(itemText, 0, FILE_EDIT));
+		}
 		this.cmdArray.push(new DDFileMenuBarItem("Move", 0, FILE_MOVE));
 		//this.cmdArray.push(new DDFileMenuBarItem("Del", 0, FILE_DELETE));
 		this.cmdArray.push(new DDFileMenuBarItem("DEL", 0, FILE_DELETE, KEY_DEL));
