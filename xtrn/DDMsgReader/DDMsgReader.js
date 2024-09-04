@@ -161,6 +161,8 @@
  *                              to save messages to. Can be empty, to use a full path inputted by the user.
  * 2024-08-12 Eric Oulashin     Version 1.95g
  *                              Updates to help with the newscan issues placing the user at the first message, etc.
+ * 2024-09-03 Eric Oulashin     Version 1.95h
+ *                              Fix for saving an ANSI message to the local BBS PC
  */
 
 "use strict";
@@ -276,8 +278,8 @@ var hexdump = load('hexdump_lib.js');
 */
 
 // Reader version information
-var READER_VERSION = "1.95g";
-var READER_DATE = "2024-08-12";
+var READER_VERSION = "1.95h";
+var READER_DATE = "2024-09-03";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -17059,7 +17061,7 @@ function DigDistMsgReader_SaveMsgToFile(pMsgHdr, pFilename, pPromptPos)
 					//var graphic = new Graphic(this.msgAreaWidth, this.msgAreaHeight);
 					// To help ensure ANSI messages look good, it seems the Graphic object should have
 					// its with later set to 1 less than the width used to create it.
-					var graphicWidth = (msgAreaWidth < console.screen_columns ? msgAreaWidth+1 : console.screen_columns);
+					var graphicWidth = (this.msgAreaWidth < console.screen_columns ? this.msgAreaWidth+1 : console.screen_columns);
 					var graphic = new Graphic(graphicWidth, this.msgAreaHeight);
 					graphic.auto_extend = true;
 					graphic.ANSI = ansiterm.expand_ctrl_a(msgBody);

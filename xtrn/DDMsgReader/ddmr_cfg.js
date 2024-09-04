@@ -5,7 +5,7 @@
 // If you have DDMsgReader in a directory other than xtrn/DDMsgReader, then the changes to
 // DDMsgReader.cfg will be saved in that directory (assuming you're running ddmr_cfg.js from
 // that same directory).
-// Currently for DDMsgReader 1.95g.
+// Currently for DDMsgReader 1.95h.
 //
 // If you're running DDMsgReader from xtrn/DDMsgReader (the standard location) and you want
 // to save the configuration file there (rather than sbbs/mods), you can use one of the
@@ -18,7 +18,7 @@ require("sbbsdefs.js", "P_NONE");
 require("uifcdefs.js", "UIFC_INMSG");
 
 
-if (!uifc.init("DigDist. Message Reader 1.95g Configurator"))
+if (!uifc.init("DigDist. Message Reader 1.95h Configurator"))
 {
 	print("Failed to initialize uifc");
 	exit(1);
