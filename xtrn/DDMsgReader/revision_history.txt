@@ -5,6 +5,7 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.95h    2024-09-03   Fix for saving an ANSI message to the local BBS PC
 1.95g    2024-08-12   Updates to help with the newscan issues placing the user
                       at the first message, etc.
 1.95f    2024-08-08   New config option: msgSaveDir, which specifies the
