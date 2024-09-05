@@ -370,8 +370,10 @@ function GetFromWebSocketClientVersion7() {
                             }
                         }
                     } else if (FFrameType === WEBSOCKET_FRAME_BINARY) {
+                        SendToWebSocketClient_RickDebug('\r\n');
                         for (var i = 0; i < InStr.length; i++) {
                             InByte = InStr.charCodeAt(i);
+                            SendToWebSocketClient_RickDebug('    InByte = ' + InByte + ', FFramePayloadReceived = ' + FFramePayloadReceived + ', Mask = ' + FFrameMask[FFramePayloadReceived % 4] + ', OutByte = ' + (InByte ^ FFrameMask[FFramePayloadReceived % 4]) + '\r\n');
                             if (FFrameMasked) InByte ^= FFrameMask[FFramePayloadReceived++ % 4];
                             tempBytes.push(InByte);
                             Result += String.fromCharCode(InByte);
