@@ -3134,8 +3134,19 @@ function DDLightbarMenu_UpdateScrollbar(pNewStartRow, pOldStartRow, pNumSolidBlo
 	// then the solid block section has moved down; if the diff is negative, the
 	// solid block section has moved up.
 	var solidBlockStartRowDiff = pNewStartRow - pOldStartRow;
+	// Calculate the 'old' last row & new last row, but don't let them go over
+	// the bottom row of the menu
 	var oldLastRow = pOldStartRow + numSolidBlocks - 1;
+	const maxY = this.pos.y + this.size.height - 1;
+	if (oldLastRow > maxY)
+		oldLastRow = maxY;
+	else if (oldLastRow < this.pos.y)
+		oldLastRow = this.pos.y;
 	var newLastRow = pNewStartRow + numSolidBlocks - 1;
+	if (newLastRow > maxY)
+		newLastRow = maxY;
+	else if (newLastRow < this.pos.y)
+		newLastRow = this.pos.y;
 	if (solidBlockStartRowDiff > 0)
 	{
 		// The solid block section has moved down
