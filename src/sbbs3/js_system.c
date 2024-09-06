@@ -47,6 +47,7 @@ enum {
 	,SYS_PROP_INETADDR
 	,SYS_PROP_LOCATION
 	,SYS_PROP_TIMEZONE
+	,SYS_PROP_TZ_OFFSET
 	,SYS_PROP_PWDAYS
 	,SYS_PROP_MINPWLEN
 	,SYS_PROP_MAXPWLEN
@@ -168,6 +169,10 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case SYS_PROP_TIMEZONE:
 			sys_timezone(cfg);
 			*vp = INT_TO_JSVAL(cfg->sys_timezone);
+			break;
+		case SYS_PROP_TZ_OFFSET:
+			sys_timezone(cfg);
+			*vp = INT_TO_JSVAL(smb_tzutc(cfg->sys_timezone));
 			break;
 		case SYS_PROP_NODES:
 			*vp = INT_TO_JSVAL(cfg->sys_nodes);
@@ -437,7 +442,10 @@ static jsSyncPropertySpec js_system_properties[] = {
 		,JSDOCSTR("Location (city, state)")
 	},
 	{	"timezone",					SYS_PROP_TIMEZONE,	SYSOBJ_FLAGS,		310
-		,JSDOCSTR("Timezone (use <i>system.zonestr()</i> to get string representation)")
+		,JSDOCSTR("Local timezone in SMB format (use <i>system.zonestr()</i> to get string representation)")
+	},
+	{	"tz_offset",				SYS_PROP_TZ_OFFSET,	SYSOBJ_FLAGS,		320
+		,JSDOCSTR("Local timezone offset, in minutes, from UTC (negative values represent zones <i>west</i> of UTC, positive values represent zones <i>east</i> of UTC)")
 	},
 	{	"pwdays",					SYS_PROP_PWDAYS,	SYSOBJ_FLAGS,		310
 		,JSDOCSTR("Days between forced user password changes (<tt>0</tt>=<i>never</i>)")
