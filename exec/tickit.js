@@ -541,7 +541,7 @@ function parse_ticfile(fname)
 		m = line.match(/^\s*([^\s]+)\s(.*)$/);
 		if (m !== null) {
 			key = m[1].toLowerCase();
-			val = m[2];
+			val = truncsp(m[2]);
 
 			if (key !== 'desc' && key !== 'ldesc')
 				key = key.replace(/^\s*/,'');
