@@ -915,7 +915,7 @@
 "\1n\r\nSorry, you can't edit this message.\r\n"	757 CantEditMsg
 "\1n\r\nSorry, you can't delete message #%u.\r\n"	758 CantDeleteMsg
 "\1n\r\nSorry, you can't read messages on %s %s\r\n"	759 CantReadSub
-"\1n\r\nSorry, you can't post that message.\r\n"	760 CantPostMsg
+"\rSorry, you can't post that message. Reason: %s\r\n"	760 CantPostMsg
 "\r\n\1y\1hOperator: \1w"				761 OperatorPrompt
 "Add this sub-board to your new-scan list"         762 AddSubToNewScanQ
 "\1n\1r\1iWARNING: You are reading messages past the last unvalidated message (%u)" 763 UnvalidatedWarning

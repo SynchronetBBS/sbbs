@@ -312,17 +312,21 @@ bool sbbs_t::postmsg(int subnum, int wm_mode, smb_t* resmb, smbmsg_t* remsg)
 	i=smb_addmsg(&smb,&msg,storage,dupechk_hashes,xlat,(uchar*)msgbuf, findsig(msgbuf));
 	free(msgbuf);
 
-	if(i==SMB_DUPE_MSG) {
-		attr(cfg.color[clr_err]);
-		bprintf(text[CantPostMsg], smb.last_error);
-	} else if(i!=SMB_SUCCESS)
+	if(i==SMB_DUPE_MSG)
+		bprintf(text[CantPostMsg], "duplicate");
+	else if(i!=SMB_SUCCESS)
 		errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error);
 
 	smb_close(&smb);
 	smb_stack(&smb,SMB_STACK_POP);
 	smb_freemsgmem(&msg);
-	if(i!=SMB_SUCCESS)
-		return(false); 
+	if(i!=SMB_SUCCESS) {
+		if(i == SMB_DUPE_MSG)
+			llprintf(LOG_NOTICE, "P!", "duplicate message post attempt in %s", cfg.sub[subnum]->code);
+		else
+			llprintf(LOG_NOTICE, "P!", "message posting failure (SMB error %d) in %s", i, cfg.sub[subnum]->code);
+		return false;
+	}
 
 	logon_posts++;
 	user_posted_msg(&cfg, &useron, 1);
