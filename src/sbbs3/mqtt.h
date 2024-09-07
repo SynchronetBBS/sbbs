@@ -44,6 +44,8 @@ struct mqtt {
 	scfg_t* cfg;
 	char* host;
 	bool connected;
+	int connect_error;
+	int disconnect_reason;
 	ulong max_clients;
 	ulong error_count;
 	ulong served;
