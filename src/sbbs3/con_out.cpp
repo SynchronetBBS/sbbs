@@ -606,7 +606,7 @@ bool sbbs_t::update_nodeterm(void)
 	}
 	strListFree(&ini);
 
-	if(cfg.mqtt.enabled) {
+	if(mqtt->connected) {
 		char str[256];
 		char topic[128];
 		SAFEPRINTF(topic, "node/%u/terminal", cfg.node_num);

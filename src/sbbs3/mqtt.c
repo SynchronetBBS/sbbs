@@ -77,6 +77,7 @@ int mqtt_init(struct mqtt* mqtt, scfg_t* cfg, struct startup* startup)
 
 	if(mqtt == NULL || cfg == NULL || startup == NULL)
 		return MQTT_FAILURE;
+	mqtt->connected = false;
 	if(!cfg->mqtt.enabled)
 		return MQTT_SUCCESS;
 	mqtt->handle = NULL;
@@ -155,7 +156,7 @@ static int mqtt_sub(struct mqtt* mqtt, const char* topic)
 {
 	if(mqtt == NULL || mqtt->cfg == NULL)
 		return MQTT_FAILURE;
-	if(!mqtt->cfg->mqtt.enabled)
+	if(!mqtt->connected)
 		return MQTT_SUCCESS;
 #ifdef USE_MOSQUITTO
 	if(mqtt->handle != NULL && topic != NULL) {
@@ -184,7 +185,7 @@ int mqtt_lputs(struct mqtt* mqtt, enum topic_depth depth, int level, const char*
 {
 	if(mqtt == NULL || mqtt->cfg == NULL)
 		return MQTT_FAILURE;
-	if(!mqtt->cfg->mqtt.enabled)
+	if(!mqtt->connected)
 		return MQTT_SUCCESS;
 	if(level > mqtt->cfg->mqtt.log_level)
 		return MQTT_SUCCESS;
@@ -239,7 +240,7 @@ int mqtt_pub_strval(struct mqtt* mqtt, enum topic_depth depth, const char* key, 
 {
 	if(mqtt == NULL || mqtt->cfg == NULL)
 		return MQTT_FAILURE;
-	if(!mqtt->cfg->mqtt.enabled)
+	if(!mqtt->connected)
 		return MQTT_SUCCESS;
 #ifdef USE_MOSQUITTO
 	if(mqtt->handle != NULL) {
@@ -265,7 +266,7 @@ int mqtt_pub_timestamped_msg(struct mqtt* mqtt, enum topic_depth depth, const ch
 
 	if(mqtt == NULL || mqtt->cfg == NULL)
 		return MQTT_FAILURE;
-	if(!mqtt->cfg->mqtt.enabled)
+	if(!mqtt->connected)
 		return MQTT_SUCCESS;
 	time_to_isoDateTimeStr(t, xpTimeZone_local(), timestamp, sizeof(timestamp));
 	SAFEPRINTF2(str, "%s\t%s", timestamp, msg);
@@ -276,7 +277,7 @@ int mqtt_pub_uintval(struct mqtt* mqtt, enum topic_depth depth, const char* key,
 {
 	if(mqtt == NULL || mqtt->cfg == NULL)
 		return MQTT_FAILURE;
-	if(!mqtt->cfg->mqtt.enabled)
+	if(!mqtt->connected)
 		return MQTT_SUCCESS;
 #ifdef USE_MOSQUITTO
 	if(mqtt->handle != NULL) {
@@ -301,7 +302,7 @@ int mqtt_pub_message(struct mqtt* mqtt, enum topic_depth depth, const char* key,
 {
 	if(mqtt == NULL || mqtt->cfg == NULL)
 		return MQTT_FAILURE;
-	if(!mqtt->cfg->mqtt.enabled)
+	if(!mqtt->connected)
 		return MQTT_SUCCESS;
 #ifdef USE_MOSQUITTO
 	if(mqtt->handle != NULL) {
@@ -627,7 +628,7 @@ int mqtt_startup(struct mqtt* mqtt, scfg_t* cfg, struct startup* startup, const 
 		} else {
 			result = mqtt_thread_start(mqtt);
 			if(result != MQTT_SUCCESS) {
-				lprintf(lputs, LOG_ERR, "Error %d starting pub/sub thread", result);
+				lprintf(lputs, LOG_ERR, "MQTT error %d starting pub/sub thread", result);
 				mqtt_close(mqtt);
 			} else {
 #ifdef USE_MOSQUITTO
@@ -637,6 +638,7 @@ int mqtt_startup(struct mqtt* mqtt, scfg_t* cfg, struct startup* startup, const 
 				lprintf(lputs, LOG_INFO, "MQTT connecting to broker %s:%u", cfg->mqtt.broker_addr, cfg->mqtt.broker_port);
 				result = mqtt_connect(mqtt, /* bind_address: */NULL);
 				if(result == MQTT_SUCCESS) {
+					mqtt->connected = true;
 					lprintf(lputs, LOG_DEBUG, "MQTT broker-connect (%s:%d) successful", cfg->mqtt.broker_addr, cfg->mqtt.broker_port);
 					mqtt_pub_noval(mqtt, TOPIC_SERVER, "client");
 				} else {
@@ -746,7 +748,7 @@ int mqtt_client_on(struct mqtt* mqtt, bool on, int sock, client_t* client, bool 
 	if(mqtt == NULL || mqtt->cfg == NULL)
 		return MQTT_FAILURE;
 
-	if(!mqtt->cfg->mqtt.enabled)
+	if(!mqtt->connected)
 		return MQTT_SUCCESS;
 
 	listLock(&mqtt->client_list);
@@ -806,7 +808,7 @@ int mqtt_user_login_fail(struct mqtt* mqtt, client_t* client, const char* userna
 	if(mqtt == NULL || mqtt->cfg == NULL || client == NULL)
 		return MQTT_FAILURE;
 
-	if(!mqtt->cfg->mqtt.enabled)
+	if(!mqtt->connected)
 		return MQTT_SUCCESS;
 
 	if(username == NULL)
@@ -829,7 +831,7 @@ int mqtt_user_login(struct mqtt* mqtt, client_t* client)
 	if(mqtt == NULL || mqtt->cfg == NULL || client == NULL)
 		return MQTT_FAILURE;
 
-	if(!mqtt->cfg->mqtt.enabled)
+	if(!mqtt->connected)
 		return MQTT_SUCCESS;
 
 	snprintf(topic, sizeof(topic), "login/%s", client->protocol);
@@ -852,7 +854,7 @@ int mqtt_user_logout(struct mqtt* mqtt, client_t* client, time_t logintime)
 	if(mqtt == NULL || mqtt->cfg == NULL || client == NULL)
 		return MQTT_FAILURE;
 
-	if(!mqtt->cfg->mqtt.enabled)
+	if(!mqtt->connected)
 		return MQTT_SUCCESS;
 
 	long tused = (long)(time(NULL) - logintime);
@@ -889,7 +891,10 @@ int mqtt_client_count(struct mqtt* mqtt)
 void mqtt_shutdown(struct mqtt* mqtt)
 {
 	if(mqtt != NULL && mqtt->cfg != NULL && mqtt->cfg->mqtt.enabled) {
-		mqtt_disconnect(mqtt);
+		if(mqtt->connected) {
+			if(mqtt_disconnect(mqtt) == MQTT_SUCCESS)
+				mqtt->connected = false;
+		}
 		mqtt_thread_stop(mqtt);
 		mqtt_close(mqtt);
 	}
@@ -903,7 +908,7 @@ static int mqtt_file_xfer(struct mqtt* mqtt, user_t* user, int dirnum, const cha
 	if(!is_valid_dirnum(mqtt->cfg, dirnum))
 		return MQTT_FAILURE;
 
-	if(!mqtt->cfg->mqtt.enabled)
+	if(!mqtt->connected)
 		return MQTT_SUCCESS;
 
 	char str[256];

@@ -43,6 +43,7 @@ struct mqtt {
 	mqtt_handle_t handle;
 	scfg_t* cfg;
 	char* host;
+	bool connected;
 	ulong max_clients;
 	ulong error_count;
 	ulong served;
