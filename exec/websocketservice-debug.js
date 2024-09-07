@@ -260,7 +260,7 @@ function GetFromWebSocketClientVersion7() {
 	var Result = '';
 	var InByte = 0;
 	var InByte2 = 0;
-	var InByte3 = 0;
+	var MaskIndex = 0;
 
     while (client.socket.data_waiting && (Result.length <= 4096)) {
         // Check what the client packet state is
@@ -268,7 +268,6 @@ function GetFromWebSocketClientVersion7() {
             case WEBSOCKET_NEED_PACKET_START:
 				// Next byte will give us the opcode, and also tell is if the message is fragmented
 				FFrameOpCode = client.socket.recvBin(1) & 0x0F;
-                SendToWebSocketClient_RickDebug('\r\nFWebSocketState=WEBSOCKET_NEED_PACKET_START, FFrameOpCode=' + FFrameOpCode + '\r\n');
                 switch (FFrameOpCode) {
                     case 0: // Continuation frame, keep same opcode as previous frame
                         break;
@@ -316,7 +315,6 @@ function GetFromWebSocketClientVersion7() {
 					FFramePayloadLength = client.socket.recvBin(8);
 				}
                 
-				SendToWebSocketClient_RickDebug('\r\nFWebSocketState=WEBSOCKET_NEED_PAYLOAD_LENGTH, InByte=' + InByte + ', FFrameMasked = ' + FFrameMasked + ', FFramePayloadLength = ' + FFramePayloadLength + '\r\n');
                 if (FFrameMasked) {
                     FWebSocketState = WEBSOCKET_NEED_MASKING_KEY;
                 } else {
@@ -325,17 +323,15 @@ function GetFromWebSocketClientVersion7() {
 				break;
             case WEBSOCKET_NEED_MASKING_KEY:
 				InByte = client.socket.recvBin(4);
-				FFrameMask[0] = (InByte >> 24) & 0xFF; // (InByte & 0xFF000000) >> 24;
-				FFrameMask[1] = (InByte >> 16) & 0xFF; // (InByte & 0x00FF0000) >> 16;
-				FFrameMask[2] = (InByte >> 8) & 0xFF; // (InByte & 0x0000FF00) >> 8;
-				FFrameMask[3] = (InByte >> 0) & 0xFF; // InByte & 0x000000FF;
-                SendToWebSocketClient_RickDebug('\r\nFWebSocketState=WEBSOCKET_NEED_MASKING_KEY, InByte=' + InByte + ', FFrameMask = ' + FFrameMask[0] + ' ' + FFrameMask[1] + ' ' + FFrameMask[2] + ' ' + FFrameMask[3] + '\r\n');
+				FFrameMask[0] = (InByte >> 24) & 0xFF;
+				FFrameMask[1] = (InByte >> 16) & 0xFF;
+				FFrameMask[2] = (InByte >> 8) & 0xFF;
+				FFrameMask[3] = (InByte >> 0) & 0xFF;
                 FWebSocketState = (FFramePayloadLength > 0 ? WEBSOCKET_DATA : WEBSOCKET_NEED_PACKET_START); // NB: Might not be any data to read, so check for payload length before setting state
 				break;
             case WEBSOCKET_DATA:
                 var BytesToRead = FFramePayloadLength - FWebSocketDataQueue.length;
                 var InStr = client.socket.recv(BytesToRead);
-                SendToWebSocketClient_RickDebug('\r\nFWebSocketState=WEBSOCKET_DATA, InStr=' + StringToBytes(InStr).join(' ') + '\r\n');
                 if (InStr) {
                     if (InStr.length != BytesToRead) {
                         // Didn't get the whole websocket data packet this read, so queue up the latest read, then return the data we have so far
@@ -349,12 +345,13 @@ function GetFromWebSocketClientVersion7() {
                         InStr = FWebSocketDataQueue + InStr;
                     }
 
-                    var tempBytes = [];
                     if (FFrameType == WEBSOCKET_FRAME_TEXT) {
                         for (var i = 0; i < InStr.length; i++) {
                             InByte = InStr.charCodeAt(i);
-                            if (FFrameMasked) InByte ^= FFrameMask[FFramePayloadReceived++ % 4];
-                            tempBytes.push(InByte);
+                            if (FFrameMasked) {
+                                MaskIndex = FFramePayloadReceived++ % 4;
+                                InByte ^= FFrameMask[MaskIndex];
+                            }
 
                             // Check if the byte needs to be UTF-8 decoded
                             if ((InByte & 0x80) === 0) {
@@ -362,27 +359,28 @@ function GetFromWebSocketClientVersion7() {
                             } else if ((InByte & 0xE0) === 0xC0) {
                                 // Handle UTF-8 decode
                                 InByte2 = InStr.charCodeAt(++i);
-                                if (FFrameMasked) InByte2 ^= FFrameMask[FFramePayloadReceived++ % 4];
-                                tempBytes.push(InByte2);
+                                if (FFrameMasked) {
+                                    MaskIndex = FFramePayloadReceived++ % 4;
+                                    InByte2 ^= FFrameMask[MaskIndex];
+                                }
                                 Result += String.fromCharCode(((InByte & 31) << 6) | (InByte2 & 63));
                             } else {
                                 throw new Error('GetFromWebSocketClientVersion7 Byte out of range: ' + InByte);
                             }
                         }
                     } else if (FFrameType === WEBSOCKET_FRAME_BINARY) {
-                        SendToWebSocketClient_RickDebug('\r\n');
                         for (var i = 0; i < InStr.length; i++) {
                             InByte = InStr.charCodeAt(i);
-                            SendToWebSocketClient_RickDebug('    InByte = ' + InByte + ', FFrameMasked = ' + FFrameMasked + ', FFramePayloadReceived = ' + FFramePayloadReceived + ', Mask = ' + FFrameMask[FFramePayloadReceived % 4] + ', OutByte = ' + (InByte ^ FFrameMask[FFramePayloadReceived % 4]) + '\r\n');
-                            if (FFrameMasked) InByte ^= FFrameMask[FFramePayloadReceived++ % 4];
-                            tempBytes.push(InByte);
+                            if (FFrameMasked) {
+                                MaskIndex = FFramePayloadReceived++ % 4;
+                                InByte ^= FFrameMask[MaskIndex];
+                            }
                             Result += String.fromCharCode(InByte);
                         }
                     } else {
                         throw new Error('GetFromWebSocketClientVersion7 Invalid frame type: ' + FFrameType);
                     }
 
-                    SendToWebSocketClient_RickDebug('\r\n    tempBytes = ' + tempBytes.join(' ') + '\r\n');
                     // Finished the data packet, so reset variables
                     FWebSocketDataQueue = '';
                     FWebSocketState = WEBSOCKET_NEED_PACKET_START;
@@ -441,13 +439,6 @@ function SendToWebSocketClient(AData) {
 			SendToWebSocketClientVersion7(AData); 
 			break;
     }
-}
-
-function SendToWebSocketClient_RickDebug(AStr) {
-    if (!client.socket.is_connected) return;
-    if (AStr.length == 0) return;
-
-    SendToWebSocketClient(StringToBytes(AStr));
 }
 
 function SendToWebSocketClientDraft0(AData) {
