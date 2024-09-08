@@ -260,7 +260,6 @@ function GetFromWebSocketClientVersion7() {
 	var Result = '';
 	var InByte = 0;
 	var InByte2 = 0;
-	var MaskIndex = 0;
 
     while (client.socket.data_waiting && (Result.length <= 4096)) {
         // Check what the client packet state is
@@ -348,10 +347,7 @@ function GetFromWebSocketClientVersion7() {
                     if (FFrameType == WEBSOCKET_FRAME_TEXT) {
                         for (var i = 0; i < InStr.length; i++) {
                             InByte = InStr.charCodeAt(i);
-                            if (FFrameMasked) {
-                                MaskIndex = FFramePayloadReceived++ % 4;
-                                InByte ^= FFrameMask[MaskIndex];
-                            }
+                            if (FFrameMasked) InByte = UnmaskByte(InByte);
 
                             // Check if the byte needs to be UTF-8 decoded
                             if ((InByte & 0x80) === 0) {
@@ -359,10 +355,7 @@ function GetFromWebSocketClientVersion7() {
                             } else if ((InByte & 0xE0) === 0xC0) {
                                 // Handle UTF-8 decode
                                 InByte2 = InStr.charCodeAt(++i);
-                                if (FFrameMasked) {
-                                    MaskIndex = FFramePayloadReceived++ % 4;
-                                    InByte2 ^= FFrameMask[MaskIndex];
-                                }
+                                if (FFrameMasked) InByte2 = UnmaskByte(InByte2);
                                 Result += String.fromCharCode(((InByte & 31) << 6) | (InByte2 & 63));
                             } else {
                                 throw new Error('GetFromWebSocketClientVersion7 Byte out of range: ' + InByte);
@@ -371,10 +364,7 @@ function GetFromWebSocketClientVersion7() {
                     } else if (FFrameType === WEBSOCKET_FRAME_BINARY) {
                         for (var i = 0; i < InStr.length; i++) {
                             InByte = InStr.charCodeAt(i);
-                            if (FFrameMasked) {
-                                MaskIndex = FFramePayloadReceived++ % 4;
-                                InByte ^= FFrameMask[MaskIndex];
-                            }
+                            if (FFrameMasked) InByte = UnmaskByte(InByte);
                             Result += String.fromCharCode(InByte);
                         }
                     } else {
@@ -693,6 +683,42 @@ function ShakeHandsVersion7() {
 		}
 		return false;
 	}
+}
+
+// This long function replaces the original one-liner "if (FFrameMasked) InByte ^= FFrameMask[FFramePayloadReceived++ % 4];"
+// This is because a sysop running sbbs on a banana pi reported garbled input, and it was determined that the garbled input was
+// caused by the above one-liner not working.  This function does a bunch of extra checks and will throw if unmasking fails.
+// See https://gitlab.synchro.net/main/sbbs/-/issues/782 for more details
+function UnmaskByte(maskedByte) {
+    // Determine which index in the FFrameMask array we need to use to unmask the next byte
+    var maskIndex = FFramePayloadReceived % 4;
+    FFramePayloadReceived++;
+    if (maskIndex === undefined) {
+        throw new Error('UnmaskByte maskIndex is undefined (should be between 0 and 3)');
+    } else if (maskIndex < 0 || maskIndex > 3) {
+        throw new Error('UnmaskByte maskIndex is ' + maskIndex + ' (should be between 0 and 3)');
+    }
+
+    // Read the masking byte from the array
+    var maskingByte = FFrameMask[maskIndex];
+    if (maskingByte === undefined) {
+        throw new Error('UnmaskByte maskingByte is undefined (should be between 0 and 255)');
+    } else if (maskingByte < 0 || maskingByte > 255) {
+        throw new Error('UnmaskByte maskingByte is ' + maskingByte + ' (should be between 0 and 255)');
+    }
+
+    // Check if the masking byte is zero (if it is the maskedByte isn't really masked, and we can return it as-is)
+    if (maskingByte === 0) {
+        return maskedByte;
+    }
+
+    // Unmask the maskedByte and confirm the XOR operation succeeded (ie result doesn't match the original maskedByte)
+    var result = maskedByte ^ maskingByte;
+    if (result === maskedByte) {
+        throw new Error('UnmaskByte result is ' + result + ', expected ' + maskedByte + ' XOR ' + maskingByte + ' = ' + (maskedByte ^ maskingByte));
+    }
+
+    return result;
 }
 
 function inet_pton (a) {
