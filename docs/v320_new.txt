@@ -24,6 +24,20 @@ o Increase maximum length of configured file/directory paths and command-lines
   from 63 to 100 characters
 o Internal codes (prefixes and suffixes) have doubled in maximum length
   from 8 to 16 characters (or 32 characters for prefixed-codes)
+o User database (user.tab file) and node status (node.dab file) locking
+  - incremental back-off on lock retries
+  - increased total retry duration from 5 to 45 seconds
+o Optional configuration files for configuring behavior of TUI utilities
+  - i.e. ctrl/scfg.ini, echocfg.ini, uedit.ini, umonitor.ini
+  - fall-back to uifc.ini if it exists
+  - supported keys (in the root/global section of the .ini file):
+	video_mode (default: 42)
+	uifc_mode (default: 0)
+	ciolib_mode (default: 0)
+	scaling (default: 0)
+	lines (default: 25)
+	insert (default: false)
+	esc_delay (default: 25)
 o New IRC service (ircd v2.0)
 o New command-line specifier: %- to represent the user's chat handle/call-sign
 o New configurable date display/input formats (e.g. Year first)
@@ -58,6 +72,15 @@ Customization
 ~~~~~~~~~~~~~
 o New preferred method of text.dat string sysop-customization: ctrl/text.ini
   See https://wiki.synchro.net/custom:text.ini for details
+o Attribute configuration file (attr.cfg) replaced with ctrl/attr.ini
+  - auto-converted during upgrade process
+o New "Rainbow" (Elite Text) attribute code for auto-sequenced attributes
+  - attribute sequence is configured via "rainbow" key in ctrl/attr.ini
+  - New Ctrl-A codes: 'X' to turn on repeating/wrapping rainbow attributes,
+    Ctrl-A 'x' to turn on non-repeating/wrapping rainbow attributes
+  - New @-code: RAINBOW:x to set the list of (comma-separated) rainbow
+    attribute values (in same form as attr.ini)
+    When used in a display file, the rainbow attribute change is temporary
 o Baja: Make !INCLUDE directives filename case-insensitive
   - some old command shells/mods wouldn't compile on *nix systems otherwise
 o New stock JavaScript modules:
@@ -124,12 +147,17 @@ o Support @-code expansion in certin text.dat/ini strings:
 o Fixed negative MSG_SCORE @-code value on 64-bit *nix builds
 o Updated text.dat strings:
   - BulkUploadDescPrompt - now takes a string (%s) for the file size in bytes
+  - StartXferNow - now takes a string (%s) for the protocol name/description
+  - CantPost - now takes a string (%s) for the reason the user can't post
   - Regarding* -can now use @-codes instead of printf-specifiers
   - UseerDefaultsHotKey - is now blank ("") by default (suppressed)
   - YNQP - no longer used, replaced with first char of Yes/No/Quit/Password
+  - DoYouMeanThisUserQ - Using mnemonic with @-codes
+o Better support for a blank (disabled) text.dat AreYouThere string
 o Mnemonic strings now support @-codes immediately following the tilde
   (e.g. ~@Yes@) to use the first character of a dynamically-replaced
   (e.g. localized/translated) text string as a command key
+o Add MNE:<low>[:high][:cmd] @-code for mnemonic string attribute control
 o New text.dat strings:
   - HashingFile
   - HashedFile
@@ -239,6 +267,7 @@ o New command-line option (-A) to enable alternate/ASCII arrow symbols
 o SCFG Command-line options are now case-sensitive ('-a' and '-A' are unique)
 o SCFG Command-line options must be preceded with '-', not '/', on all OSes
 o '?' key can be used to pull-up online help (e.g. when F1 key is not working)
+o Add import/export DIRS.WIN (AKA DIRS.TXT) list files as found on CD-ROMs
 
 JavaScript
 ~~~~~~~~~~
@@ -278,12 +307,17 @@ o bbs.text now has numeric properties named after each text ID
   (so load() or require() of text.js is no longer strictly required)
 o bbs.editfile() now supports overriding the maximum lines (default: 10000)
   and message metadata fields place in external editor drop files
+o Argument to bbs.batch_clear() now optional (clear downlaod queue by default)
 o New bbs properties: first_node and last_node
 o New system.find_login_id() method
 o Allow system.matchuserdata() to search deleted user records
-o New property: system.login_settings
-o New property: system.mail_settings
-o New property: system.guru
+o New system properties:
+  - login_settings
+  - mail_settings
+  - guru
+  - tz_offset
+  - git_date
+  - git_time
 o New console properties:
   - line_delay
   - max_getkey_inactivity
@@ -294,6 +328,7 @@ o New console properties that present common (possibly localized) command
 o console.mouse_mode now supports being set to just true or false (no flags)
 o console.pause() now accepts an optional bool argument (set_abort)
 o New console.flush() method
+o New console.ungetkeys() method, similar to console.ungetstr()
 o New console.progress() method
   Display a progress indication bar, e.g. "[ Scanning 10.0% ]" with the bar
   backfill effect (when supported by the terminal)
@@ -305,10 +340,12 @@ o New console methods:
 o Renamed console.crlf() to console.newline() (leaving crlf() as an alias)
 o File.readBin() and writeBin() methods now support 64-bit integer binary data
 o New method: File.iniRemoveSections()
-o Stock modules previously provided as Baja-compiled .bin files, now as .js:
-  default.js (uses new load/shell_lib.js library for writing command shells)
-  yesnobar.js
-  noyesbar.js
+o Global exit() function now sets 'exit_code' to 0 by default
+o Prevent NULL pointer dereference when 'null' object passed to JS functions
+o The second parameter to FileBase.add() can be either:
+  - undefined: will try to extract/use DIZ only if there's no ext desc already
+  - true: will try to extract/use a DIZ even if there's an ext desc already
+  - false: will never try to extract/use a DIZ
 
 Servers
 ~~~~~~~
@@ -338,6 +375,7 @@ Terminal Server
 ~~~~~~~~~~~~~~~
 o Multiple Language/Locale support (user selectable), see ctrl/text.*.ini
   and https://wiki.synchro.net/custom:localization for details
+o Reduce the Terminal Server thread outcom timeout from 80 seconds to 800 ms
 o Socket inactivity watchdog now supported and configurable with separate
   maximum inactivity values for Login, New User Registration, and normal
   User Session (SCFG->Servers->Terminal Server->Max * Inactivity settings)
@@ -366,6 +404,9 @@ o When editing existing messages (in message bases), the metadata details of
   the editor drop file
 o Configurable system password timeout (default: 15 minutes)
 o Fix PETSCII 40/80 column port connections for IPv6
+o exec/*.bin cmd shell filenames were case sensitive (must've been lowercase)
+  - while the mods/*.bin command shell filenames could be any-case!
+  - only impacted non-Windows systems (UNIX file systems are case-sensitive)
 o [BBS]
   DefaultTermWidth=80
   DefaultTermHeight=24
@@ -384,12 +425,57 @@ o Make new user QWK-related and Chat-related settings configurable
 o New line-based method of output throttling (e.g for animated ANSIs)
   Enabled/set via LINEDELAY @-code and JS console.line_delay property
 o New twitlist-author operator menu option when reading messages
+o Don't display protocol menu when starting a download using default protocol
 o SSH FTP (SFTP) support
 o SSH "any auth" support (e.g. for use with login matrixes)
 o SSH terminal type/size advertisement
 o SSH max-severity of log messages is now configurable
 o SSH negotiation is now asynchronous/non-blocking, so other nodes can accept
   connections while any SSH negotiations are in progress
+o Removed remnants of (long unused/deprecated) WIP and HTML terminal support
+o Telnet/Rlogin gateway improvements
+  - now supports "Raw TCP" (using TG_RAW mode flag)
+  - now supports sending arbitratry text strings after connection
+  - now supports expansion of received bare-LFs to CRLF (TG_EXPANDLF)
+  - proxy's a real Telnet client (when TG_PASSTHRU mode flag not set)
+    allowing SSH and RLogin clients to connnect (via gateway) to Telnet servers
+    and improved compatibility with intolerante Telnet servers (e.g. MUDs)
+
+Telnet and RLogin Gateway Modules (telgate.js and rlogin.js)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+o Optionally store settings in [telgate] or [rlogin] sections of modopts.ini
+o Many more command-line options available to change behavior per invocation
+o Don't display remote host name/addr unless -v option is specified or
+  verbosity=1 is set in modopts.ini
+o Allow the displayed messages to be customized or disabled as the sysop wishes
+  via modopts.ini (e.g. set to a blank string to disable) keys:
+  - help_msg
+  - connecting_msg
+  - failed_connect_msg
+
+Stock Modules
+~~~~~~~~~~~~~
+o logonlist.js
+ - allow time format to be set via modopts.ini [logonlist] time_fmt
+o irc.js
+  - add '-p' option to over-ride password sent to server via PASS message
+o bullseye.js
+  - refactored (now v3.00)
+o newuser.js
+  - allow '-' as a character in a QWK-ID (for QWKnet accounts)
+o fseditor.js
+  - open the quote file in "binary" mode (only applicable on Windows)
+o addfiles.js
+  - Better support for CD-ROM filenaming (no dashes in ISO 9660 filenames!)
+o logonlist.js
+  - log the current connection protocol as a separate property in logon.jsonl
+  - when passed a non-zero integer arg, display logons from that many days ago
+o Previously provided as Baja-compiled .bin files (from .src), now as .js:
+  - default.js (uses new load/shell_lib.js library for writing command shells)
+  - yesnobar.js
+  - noyesbar.js
+o cleanup.js
+  - deletes old/obsolete files after upgrade to v3.20
 
 Doors
 ~~~~~
@@ -414,6 +500,8 @@ o Parse DOSXTRN.ERR
   dosxtrn.exe when failing to execute the child/DOS program and log the parsed
   error details (errno value and description), helpful in debugging the reason
   why a DOS program may not have been successfully executed by DOSXTRN
+o Add support for command-line specifiers in external program 'startup dir'
+o Convert CP437 to UTF-8 (when necessary) for *nix stdio doors (e.g. DOSEMU)
 o When user hangs-up on external programs on *nix, try to terminate w/SIGTERM
   Previously, when a user disconnected or ran out of time while running a
   stdio-based external program on *nix, if the program was still running, we'd
@@ -428,6 +516,13 @@ o When user hangs-up on external programs on *nix, try to terminate w/SIGTERM
 
 File Transfers
 ~~~~~~~~~~~~~~
+o New "File Manager" JavaScript utility (invoke with 'jsexec fileman')
+  - The newest bestest way for sysops to manage their files!
+  - Browse file areas or search all areas for specific metadata sub-strings
+  - Add, move, rename and remove/delete files (invidually or in bulk via tags)
+  - View file contents (archives and text files)
+  - Edit file descriptions
+  - Import file lists (e.g. FILES.BBS)
 o Added support for SSH FTP (SFTP)
 o Extracted DIZ from sub-directory of archive does not preempt root DIZ File
 o Increased maximum extended file description length from 4000 to 5000 chars
@@ -471,12 +566,16 @@ o Sanity check sub-board's assigned FTN addresses when loading configuration
   (use nearest matching configured AKA)
 o Fixed QWKnet netmail dest user look-up (using qnet/users.dat)
   broken back in 2021
+o Don't use message times from QWK reply packets unless timezone also included
+o Default FTN charset to CP437 (not ASCII) for QWK-imported messages
+o Increase FidoNet echo/area tag max length from 40/50 to 60 chars (per FSC-74)
 o Fix heap corruption in decoding of quoted-printable text in smblib
 o Fix erroneous filtering of vote messages by age
   e.g. !Filtering QWK message from (null) due to age: 19321 days
 o Fix: Include blank lines in messages edited with internal editor
 o Don't save draft messages upon disconnect for Guest or "no one" (user #0)
 o Fixes for moderated message bases (e.g. ignore deleted messages)
+o P-restricted users (including QWKnet accounts) can no-longer post polls
 o Ignore trailing white-space from message subjects before hashing
   Use new chksmb -S option to ignore resulting Subject CRC mismatch errors
 o Improved MIME/QP-encoded message text parsing
