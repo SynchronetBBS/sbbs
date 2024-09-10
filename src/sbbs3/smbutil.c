@@ -66,6 +66,7 @@ const char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
 /********************/
 
 smb_t		smb;
+int			verbosity = 0;
 ulong		mode=0L;
 ushort		tzone=0;
 ushort		xlat=XLAT_NONE;
@@ -121,6 +122,7 @@ char *usage=
 "      -!    = wait for keypress (pause) on error\n"
 "      -b    = beep on error\n"
 "      -r    = display raw message body text (not MIME-decoded)\n"
+"      -v    = increase verbosity of console output\n"
 "      -C    = continue after some (normally fatal) error conditions\n"
 "      -t<s> = set 'to' user name for imported message\n"
 "      -n<s> = set 'to' netmail address for imported message\n"
@@ -496,6 +498,41 @@ void config(void)
 }
 
 /****************************************************************************/
+/* Generates a 24 character ASCII string that represents the time_t pointer */
+/* Used as a replacement for ctime()                                        */
+/****************************************************************************/
+char *my_timestr(time_t intime)
+{
+    static char str[256];
+    char mer[3],hour;
+    struct tm *gm;
+
+	gm=localtime(&intime);
+	if(gm==NULL) {
+		strcpy(str,"Invalid Time");
+		return(str);
+	}
+	if(gm->tm_hour>=12) {
+		if(gm->tm_hour==12)
+			hour=12;
+		else
+			hour=gm->tm_hour-12;
+		strcpy(mer,"pm");
+	}
+	else {
+		if(gm->tm_hour==0)
+			hour=12;
+		else
+			hour=gm->tm_hour;
+		strcpy(mer,"am");
+	}
+	sprintf(str,"%s %02d %4d %02d:%02d %s"
+		,mon[gm->tm_mon],gm->tm_mday,1900+gm->tm_year
+		,hour,gm->tm_min,mer);
+	return(str);
+}
+
+/****************************************************************************/
 /* Lists messages' to, from, and subject                                    */
 /****************************************************************************/
 void listmsgs(ulong start, ulong count)
@@ -527,46 +564,32 @@ void listmsgs(ulong start, ulong count)
 				,beep,i,smb.last_error);
 			break; 
 		}
-		printf("%4lu/#%-4"PRIu32" %-25.25s %-25.25s %s\n"
-			,start + l, msg.hdr.number,msg.from,msg.to,msg.subj);
+		printf("%4lu/#%-4"PRIu32" ", start + l, msg.hdr.number);
+		if(verbosity > 0)
+			printf("%s ",my_timestr(msg.hdr.when_written.time));
+		if(verbosity > 1)
+			printf("%-9s ", smb_zonestr(msg.hdr.when_written.zone,NULL));
+		printf("%-25.25s", msg.from);
+		switch(smb_msg_type(msg.idx.attr)) {
+			case SMB_MSG_TYPE_FILE:
+				printf("*FILE %10"PRIu64"  %s", smb_getfilesize(&msg.idx), msg.subj);
+				break;
+			case SMB_MSG_TYPE_BALLOT:
+				printf("*%-25s %04hX on msg/poll #%"PRIu32, "VOTE", msg.idx.votes, msg.idx.remsg);
+				break;
+			default:
+				if((msg.idx.attr&MSG_POLL_VOTE_MASK) == MSG_POLL_CLOSURE)
+					printf("*%-25s #%"PRIu32, "CLOSE-POLL", msg.idx.remsg);
+				else if(msg.idx.attr&MSG_POLL)
+					printf("*%-25s %s", "POLL", msg.subj);
+				else
+					printf(" %-25.25s %s", msg.to, msg.subj);
+				break;
+		}
+		printf("\n");
 		smb_freemsgmem(&msg);
 		l++; 
 	}
-}
-
-/****************************************************************************/
-/* Generates a 24 character ASCII string that represents the time_t pointer */
-/* Used as a replacement for ctime()                                        */
-/****************************************************************************/
-char *my_timestr(time_t intime)
-{
-    static char str[256];
-    char mer[3],hour;
-    struct tm *gm;
-
-	gm=localtime(&intime);
-	if(gm==NULL) {
-		strcpy(str,"Invalid Time");
-		return(str); 
-	}
-	if(gm->tm_hour>=12) {
-		if(gm->tm_hour==12)
-			hour=12;
-		else
-			hour=gm->tm_hour-12;
-		strcpy(mer,"pm"); 
-	}
-	else {
-		if(gm->tm_hour==0)
-			hour=12;
-		else
-			hour=gm->tm_hour;
-		strcpy(mer,"am"); 
-	}
-	sprintf(str,"%s %s %02d %4d %02d:%02d %s"
-		,wday[gm->tm_wday],mon[gm->tm_mon],gm->tm_mday,1900+gm->tm_year
-		,hour,gm->tm_min,mer);
-	return(str);
 }
 
 /****************************************************************************/
@@ -1767,11 +1790,7 @@ int main(int argc, char **argv)
 	}
 	
 	for(x=1;x<argc && x>0;x++) {
-		if(
-#ifndef __unix__
-			argv[x][0]=='/' ||		/* for backwards compatibilty */
-#endif
-			argv[x][0]=='-') {
+		if(argv[x][0]=='-') {
 			if(IS_DIGIT(argv[x][1])) {
 				count=strtol(argv[x]+1,NULL,10);
 				continue;
@@ -1859,6 +1878,9 @@ int main(int argc, char **argv)
 						break;
 					case 'b':
 						beep="\a";
+						break;
+					case 'v':
+						++verbosity;
 						break;
 					default:
 						fprintf(stderr, "\nUnknown opt '%c'\n", argv[x][j]);
@@ -2013,7 +2035,7 @@ int main(int argc, char **argv)
 							break;
 						case 'v':
 						case 'V':
-							viewmsgs(getmsgnum(cmd+1),count,cmd[y]=='V');
+							viewmsgs(getmsgnum(cmd+1),count,cmd[y]=='V' || verbosity > 0);
 							y=strlen(cmd)-1;
 							break;
 						case 'h':
