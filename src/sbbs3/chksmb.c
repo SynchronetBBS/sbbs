@@ -434,41 +434,31 @@ int main(int argc, char **argv)
 			}
 		}
 
-		if(contains_ctrl_chars(msg.to)
-			|| (msg.to_net.type != NET_FIDO && contains_ctrl_chars(msg.to_net.addr))
-			|| contains_ctrl_chars(msg.from)
-			|| (msg.from_net.type != NET_FIDO && contains_ctrl_chars(msg.from_net.addr))
-			|| contains_ctrl_chars(msg.subj)) {
-			fprintf(stderr,"%sHeader field contains control characters\n", beep);
-			msgerr=TRUE;
-			ctrl_chars++;
-		}
-
 		if(msg.hdr.length!=smb_getmsghdrlen(&msg)) {
 			fprintf(stderr,"%sHeader length mismatch\n",beep);
 			msgerr=TRUE;
 			if(extinfo)
-				printf("MSGERR: Header length (%hu) does not match calculcated length (%u)\n"
+				printf("MSGERR: Header length (%hu) does not match calculated length (%u)\n"
 					,msg.hdr.length,smb_getmsghdrlen(&msg));
 			hdrlenerr++;
 		}
 
-		if(msg.hdr.type == SMB_MSG_TYPE_NORMAL && chk_msgids && msg.from_net.type == NET_NONE && msg.id == NULL) {
-			fprintf(stderr,"%sNo Message-ID\n",beep);
-			msgerr=TRUE;
-			if(extinfo)
-				printf("MSGERR: Header missing Message-ID\n");
-			msgids++;
-		}
-
-		long age = (long)(now - msg.hdr.when_imported.time);
-		if(!(msg.hdr.attr&MSG_DELETE) && age  > (long)oldest)
-			oldest = age;
-
-		/* Test reading of the message text (body and tails) */
 		if(msg.hdr.attr&MSG_DELETE)
 			body=tail=NULL;
 		else {
+			if(contains_ctrl_chars(msg.to)
+				|| (msg.to_net.type != NET_FIDO && contains_ctrl_chars(msg.to_net.addr))
+				|| contains_ctrl_chars(msg.from)
+				|| (msg.from_net.type != NET_FIDO && contains_ctrl_chars(msg.from_net.addr))
+				|| contains_ctrl_chars(msg.subj)) {
+				fprintf(stderr,"%sHeader field contains control characters\n", beep);
+				msgerr=TRUE;
+				ctrl_chars++;
+			}
+			long age = (long)(now - msg.hdr.when_imported.time);
+			if(age  > (long)oldest)
+				oldest = age;
+			/* Test reading of the message text (body and tails) */
 			if((body=smb_getmsgtxt(&smb,&msg,GETMSGTXT_BODY_ONLY))==NULL) {
 				fprintf(stderr,"%sGet text body failure\n",beep);
 				msgerr=TRUE;
@@ -490,6 +480,13 @@ int main(int argc, char **argv)
 				,beep, base_type, msg.hdr.type, smb_msg_type(msg.hdr.attr));
 			msgerr=TRUE;
 			types++;
+		}
+		else if(msg.hdr.type == SMB_MSG_TYPE_NORMAL && chk_msgids && msg.from_net.type == NET_NONE && msg.id == NULL) {
+			fprintf(stderr,"%sNo Message-ID\n",beep);
+			msgerr=TRUE;
+			if(extinfo)
+				printf("MSGERR: Header missing Message-ID\n");
+			msgids++;
 		}
 
 		if(!(smb.status.attr&(SMB_EMAIL|SMB_NOHASH|SMB_FILE_DIRECTORY)) && chkhash) {
