@@ -2661,106 +2661,76 @@ bool pack_bundle(const char *tmp_pkt, fidoaddr_t orig, fidoaddr_t dest)
 
 /******************************************************************************
  This function checks the inbound directory for the first bundle it finds, it
- will then unpack and delete the bundle.  If no bundles exist this function
- returns a false, otherwise a true is returned.
+ will then unpack and delete the bundle.  If no more bundles exist, this function
+ returns false, otherwise true is returned.
  ******************************************************************************/
 bool unpack_bundle(const char* inbound)
 {
-	char*			p;
-	char			str[MAX_PATH+1];
+	char			path[MAX_PATH+1];
 	char			fname[MAX_PATH+1];
-	int				i;
+	int				day_of_week = 0;
 	static glob_t	g;
 	static size_t	gi;
 
-	for(i=0;i<7 && !terminated;i++) {
+	while (!terminated) {
+		if(gi >= g.gl_pathc) {
 #if defined(__unix__)	/* support upper or lower case */
-		switch(i) {
-			case 0:
-				p="[Ss][Uu]";
-				break;
-			case 1:
-				p="[Mm][Oo]";
-				break;
-			case 2:
-				p="[Tt][Uu]";
-				break;
-			case 3:
-				p="[Ww][Ee]";
-				break;
-			case 4:
-				p="[Tt][Hh]";
-				break;
-			case 5:
-				p="[Ff][Rr]";
-				break;
-			default:
-				p="[Ss][Aa]";
-				break;
-		}
-#else
-		switch(i) {
-			case 0:
-				p="su";
-				break;
-			case 1:
-				p="mo";
-				break;
-			case 2:
-				p="tu";
-				break;
-			case 3:
-				p="we";
-				break;
-			case 4:
-				p="th";
-				break;
-			case 5:
-				p="fr";
-				break;
-			default:
-				p="sa";
-				break;
-		}
+			const char* week[] = { "[Ss][Uu]", "[Mm][Oo]", "[Tt][Uu]", "[Ww][Ee]", "[Tt][Hh]", "[Ff][Rr]", "[Ss][Aa]" };
+#else // case insensitive file system
+			const char* week[] = { "SU", "MO", "TU", "WE", "TH", "FR", "SA" };
 #endif
-		SAFEPRINTF2(str,"%s*.%s?",inbound,p);
-		if(gi>=g.gl_pathc) {
+			if(day_of_week >= sizeof week / sizeof week[0])
+				break;
+			SAFEPRINTF2(path, "%s*.%s?", inbound, week[day_of_week]);
+			day_of_week++;
 			gi=0;
 			globfree(&g);
-			glob(str,0,NULL,&g);
-		}
-		if(gi<g.gl_pathc) {
-			SAFECOPY(fname,g.gl_pathv[gi]);
-			gi++;
-			off_t length = flength(fname);
-			if(length < 1) {
-				if(fdate(fname) < time(NULL) + (24*60*60))
-					lprintf(LOG_DEBUG, "Ignoring %ld-byte file (less than 24-hours old): %s", (long)length, fname);
-				else {
-					lprintf(LOG_INFO, "Deleting %ld-byte file (more than 24-hours old): %s", (long)length, fname);
-					delfile(fname, __LINE__);	/* Delete it if it's a 0-byte file */
-				}
+			glob(path,0,NULL,&g);
+			if(g.gl_pathc < 1)
 				continue;
-			}
-			lprintf(LOG_INFO,"Unpacking bundle: %s (%1.1fKB)", fname, length/1024.0);
-			if(unpack(fname, inbound) != 0) {	/* failure */
-				lprintf(LOG_ERR, "!Unpack failure: %s", fname);
-				/* rename to "*.?_?" or (if it exists) "*.?-?" */
-				SAFECOPY(str,fname);
-				str[strlen(str)-2]='_';
-				if(fexistcase(str))
-					str[strlen(str)-2]='-';
-				if(fexistcase(str))
-					delfile(str, __LINE__);
-				if(rename(fname,str))
-					lprintf(LOG_ERR,"ERROR line %d renaming %s to %s"
-						,__LINE__,fname,str);
-				continue;
-			}
-			delfile(fname, __LINE__);	/* successful, so delete bundle */
-			bundles_unpacked++;
-			return(true);
 		}
+		SAFECOPY(fname,g.gl_pathv[gi]);
+		gi++;
+		if(isdir(fname)) {
+			lprintf(LOG_WARNING, "Ignoring directory matching bundle pattern: %s", fname);
+			continue;
+		}
+		off_t length = flength(fname);
+		if(length < 1) {
+			time_t ftime = fdate(fname);
+			time_t age = time(NULL) - ftime;
+			float hours_old = age / (60.0F * 60.0F);
+			char* tp = ctime(&ftime);
+			if(tp == NULL)
+				tp = "<an invalid date/time>";
+			else
+				tp += 4;
+			if(hours_old < 24.0)
+				lprintf(LOG_DEBUG, "Ignoring %ld-length file from %.20s (less than 24-hours old): %s", (long)length, tp, fname);
+			else {
+				lprintf(LOG_INFO, "Deleting %ld-length file from %.20s (at least 24-hours old): %s", (long)length, tp, fname);
+				delfile(fname, __LINE__);	/* Delete it if it's a 0-byte file */
+			}
+			continue;
+		}
+		lprintf(LOG_INFO,"Unpacking bundle: %s (%1.1fKB)", fname, length/1024.0);
+		if(unpack(fname, inbound) != 0) {	/* failure */
+			lprintf(LOG_ERR, "!Unpack failure: %s", fname);
+			/* rename to "*.?_?" or (if it exists) "*.?-?" */
+			SAFECOPY(path,fname);
+			path[strlen(path)-2]='_';
+			if(fexistcase(path))
+				path[strlen(path)-2]='-';
+			if(fexistcase(path))
+				delfile(path, __LINE__);
+			if(rename(fname,path))
+				lprintf(LOG_ERR,"ERROR line %d renaming %s to %s"
+					,__LINE__,fname,path);
+			continue;
+		}
+		delfile(fname, __LINE__);	/* successful, so delete bundle */
+		bundles_unpacked++;
+		return(true);
 	}
 
 	return(false);
