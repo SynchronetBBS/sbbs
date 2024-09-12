@@ -196,11 +196,14 @@ while(client.socket.is_connected && !quit) {
 	}
 
 	// Get Request
-	cmdline = client.socket.recvline(1024 /*maxlen*/, 300 /*timeout*/);
+	cmdline = client.socket.recvline(/* maxlen: */1024, /* timeout: */(msgbase && msgbase.is_open) ? 10 : 300);
 
 	if(cmdline==null) {
-		if(msgbase && msgbase.is_open)
+		if(msgbase && msgbase.is_open) {
+			log(LOG_DEBUG, "Closing open message base (" + file_getname(msgbase.file) + ") due to client inactivity");
 			msgbase.close();
+			continue;
+		}
 		if(client.socket.is_connected) {
 			if(user.security.exemptions&UFLAG_H)
 				continue;
