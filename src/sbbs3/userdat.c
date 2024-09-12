@@ -56,6 +56,12 @@ char* userdat_filename(scfg_t* cfg, char* path, size_t size)
 	return path;
 }
 
+char* msgptrs_filename(scfg_t* cfg, unsigned user_number, char* path, size_t size)
+{
+	safe_snprintf(path, size, "%suser/%4.4u.subs", cfg->data_dir, user_number);
+	return path;
+}
+
 /****************************************************************************/
 /****************************************************************************/
 void split_userdat(char *userdat, char* field[])
@@ -3973,7 +3979,7 @@ bool getmsgptrs(scfg_t* cfg, user_t* user, subscan_t* subscan, void (*progress)(
 		return initmsgptrs(cfg, subscan, cfg->guest_msgscan_init, progress, cbdata);
 
 	/* New way: */
-	SAFEPRINTF2(path,"%suser/%4.4u.subs", cfg->data_dir, user->number);
+	msgptrs_filename(cfg, user->number, path, sizeof path);
 	FILE* fp = fnopen(NULL, path, O_RDONLY|O_TEXT);
 	if (fp != NULL) {
 		str_list_t ini = iniReadFile(fp);
@@ -4032,12 +4038,30 @@ bool getmsgptrs(scfg_t* cfg, user_t* user, subscan_t* subscan, void (*progress)(
 }
 
 /****************************************************************************/
-/* Writes to data/user/####.subs the msgptr array for the current user		*/
-/* Pass usernumber value of 0 to indicate "Guest" login						*/
+/* Writes to data/user/####.subs the msgptr array for the specified user	*/
 /****************************************************************************/
 bool putmsgptrs(scfg_t* cfg, user_t* user, subscan_t* subscan)
 {
 	char		path[MAX_PATH+1];
+
+	if (user->number==0 || (user->rest&FLAG('G')))	/* Guest */
+		return true;
+
+	msgptrs_filename(cfg, user->number, path, sizeof path);
+	FILE* fp = fnopen(NULL, path, O_RDWR|O_CREAT|O_TEXT);
+	if (fp == NULL)
+		return false;
+	bool result = putmsgptrs_fp(cfg, user, subscan, fp);
+	fclose(fp);
+
+	return result;
+}
+
+/****************************************************************************/
+/* Writes to FILE* the msgptr array for the specified user					*/
+/****************************************************************************/
+bool putmsgptrs_fp(scfg_t* cfg, user_t* user, subscan_t* subscan, FILE* fp)
+{
 	int			i;
 	time_t		now = time(NULL);
 	bool		result = true;
@@ -4046,10 +4070,6 @@ bool putmsgptrs(scfg_t* cfg, user_t* user, subscan_t* subscan)
 		return(true);
 
 	fixmsgptrs(cfg, subscan);
-	SAFEPRINTF2(path,"%suser/%4.4u.subs", cfg->data_dir, user->number);
-	FILE* fp = fnopen(NULL, path, O_RDWR|O_CREAT|O_TEXT);
-	if (fp == NULL)
-		return false;
 	str_list_t new = strListInit();
 	str_list_t ini = iniReadFile(fp);
 	ini_style_t ini_style = { .key_prefix = "\t", .section_separator = "" };
@@ -4077,7 +4097,6 @@ bool putmsgptrs(scfg_t* cfg, user_t* user, subscan_t* subscan)
 		result = iniWriteFile(fp, new);
 	strListFree(&new);
 	iniFreeStringList(ini);
-	fclose(fp);
 
 	return result;
 }

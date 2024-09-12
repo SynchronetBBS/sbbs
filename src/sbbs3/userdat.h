@@ -22,6 +22,8 @@
 #ifndef _USERDAT_H
 #define _USERDAT_H
 
+#include <stdio.h>		// FILE
+
 #include "scfgdefs.h"   /* scfg_t */
 #include "client.h"		/* client_t */
 #include "link_list.h"
@@ -38,6 +40,7 @@ extern "C" {
 #endif
 
 DLLEXPORT char*	userdat_filename(scfg_t*, char*, size_t);
+DLLEXPORT char*	msgptrs_filename(scfg_t*, unsigned user_number, char*, size_t);
 DLLEXPORT int	openuserdat(scfg_t*, bool for_modify);
 DLLEXPORT bool	seekuserdat(int file, unsigned user_number);
 DLLEXPORT int	closeuserdat(int file);
@@ -164,6 +167,7 @@ DLLEXPORT bool	user_set_time_property(scfg_t*, unsigned user_number, const char*
 DLLEXPORT bool	newmsgs(smb_t*, time_t);
 DLLEXPORT bool	getmsgptrs(scfg_t*, user_t*, subscan_t*, void (*progress)(void*, int, int), void* cbdata);
 DLLEXPORT bool	putmsgptrs(scfg_t*, user_t*, subscan_t*);
+DLLEXPORT bool	putmsgptrs_fp(scfg_t*, user_t*, subscan_t*, FILE*);
 DLLEXPORT bool	fixmsgptrs(scfg_t*, subscan_t*);
 DLLEXPORT bool	initmsgptrs(scfg_t*, subscan_t*, unsigned days, void (*progress)(void*, int, int), void* cbdata);
 

@@ -43,8 +43,19 @@ void sbbs_t::getmsgptrs()
 
 void sbbs_t::putmsgptrs()
 {
-	if(!::putmsgptrs(&cfg,&useron,subscan))
-		errormsg(WHERE, ERR_WRITE, "message pointers", 0);
+	if(useron.number == 0 || useron.rest&FLAG('G'))
+		return;
+	char path[MAX_PATH + 1];
+	msgptrs_filename(&cfg, useron.number, path, sizeof path);
+	const uint access = O_RDWR | O_CREAT | O_TEXT;
+	FILE* fp = fnopen(NULL, path, access);
+	if (fp == NULL) {
+		errormsg(WHERE, ERR_OPEN, path, access);
+	} else {
+		if(!putmsgptrs_fp(&cfg,&useron,subscan, fp))
+			errormsg(WHERE, ERR_WRITE, "message pointers", 0);
+		fclose(fp);
+	}
 }
 
 void sbbs_t::reinit_msg_ptrs()
