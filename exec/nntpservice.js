@@ -199,6 +199,8 @@ while(client.socket.is_connected && !quit) {
 	cmdline = client.socket.recvline(1024 /*maxlen*/, 300 /*timeout*/);
 
 	if(cmdline==null) {
+		if(msgbase && msgbase.is_open)
+			msgbase.close();
 		if(client.socket.is_connected) {
 			if(user.security.exemptions&UFLAG_H)
 				continue;
