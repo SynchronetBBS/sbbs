@@ -172,8 +172,10 @@ bool sbbs_t::unpack_rep(char* repfile)
 	msg_filters.ip_can = trashcan_list(&cfg,"ip");
 	msg_filters.host_can = trashcan_list(&cfg,"host");
 	msg_filters.subject_can = trashcan_list(&cfg,"subject");
-
 	msg_filters.twit_list = list_of_twits(&cfg);
+	str_list_t ip_silent_list = trashcan_list(&cfg, "ip-silent");
+	strListMerge(&msg_filters.ip_can, ip_silent_list);
+	strListFree(&ip_silent_list);
 
 	now=time(NULL);
 	for(l=QWK_BLOCK_LEN;l<size;l+=blocks*QWK_BLOCK_LEN) {
