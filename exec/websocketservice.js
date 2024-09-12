@@ -37,9 +37,9 @@ const WEBSOCKET_FRAME_BINARY  = 2;
 // Global variables
 var FFrameMask = [];
 var FFrameMasked = false;
+var FFrameMaskIndex = 0;
 var FFrameOpCode = 0;
 var FFramePayloadLength = 0;
-var FFramePayloadReceived = 0;
 var FFrameType = WEBSOCKET_FRAME_UNKNOWN;
 var FServerSocket = null;
 var FWebSocketDataQueue = '';
@@ -299,8 +299,8 @@ function GetFromWebSocketClientVersion7() {
                 // If we get here, we want to move on to the next state
 				FFrameMask = [];
                 FFrameMasked = false;
+                FFrameMaskIndex = 0;
                 FFramePayloadLength = 0;
-                FFramePayloadReceived = 0;
                 FWebSocketState = WEBSOCKET_NEED_PAYLOAD_LENGTH;
                 break;
             case WEBSOCKET_NEED_PAYLOAD_LENGTH:
@@ -348,7 +348,10 @@ function GetFromWebSocketClientVersion7() {
                     if (FFrameType == WEBSOCKET_FRAME_TEXT) {
                         for (var i = 0; i < InStr.length; i++) {
                             InByte = InStr.charCodeAt(i);
-                            if (FFrameMasked) InByte ^= FFrameMask[FFramePayloadReceived++ % 4];
+                            if (FFrameMasked) {
+                                InByte ^= FFrameMask[FFrameMaskIndex++];
+                                if (FFrameMaskIndex >= FFrameMask.length) FFrameMaskIndex = 0;
+                            }
 
                             // Check if the byte needs to be UTF-8 decoded
                             if ((InByte & 0x80) === 0) {
@@ -356,7 +359,10 @@ function GetFromWebSocketClientVersion7() {
                             } else if ((InByte & 0xE0) === 0xC0) {
                                 // Handle UTF-8 decode
                                 InByte2 = InStr.charCodeAt(++i);
-                                if (FFrameMasked) InByte2 ^= FFrameMask[FFramePayloadReceived++ % 4];
+                                if (FFrameMasked) {
+                                    InByte2 ^= FFrameMask[FFrameMaskIndex++];
+                                    if (FFrameMaskIndex >= FFrameMask.length) FFrameMaskIndex = 0;
+                                }
                                 Result += String.fromCharCode(((InByte & 31) << 6) | (InByte2 & 63));
                             } else {
                                 throw new Error('GetFromWebSocketClientVersion7 Byte out of range: ' + InByte);
@@ -365,7 +371,10 @@ function GetFromWebSocketClientVersion7() {
                     } else if (FFrameType === WEBSOCKET_FRAME_BINARY) {
                         for (var i = 0; i < InStr.length; i++) {
                             InByte = InStr.charCodeAt(i);
-                            if (FFrameMasked) InByte ^= FFrameMask[FFramePayloadReceived++ % 4];
+                            if (FFrameMasked) {
+                                InByte ^= FFrameMask[FFrameMaskIndex++];
+                                if (FFrameMaskIndex >= FFrameMask.length) FFrameMaskIndex = 0;
+                            }
                             Result += String.fromCharCode(InByte);
                         }
                     } else {
