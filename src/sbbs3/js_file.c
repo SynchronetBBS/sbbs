@@ -39,7 +39,7 @@ typedef struct
 {
 	FILE*	fp;
 	char	name[MAX_PATH+1];
-	char	mode[5];
+	char	mode[7];
 	uchar	etx;
 	BOOL	debug;
 	BOOL	rot13;
