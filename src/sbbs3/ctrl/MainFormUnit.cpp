@@ -210,12 +210,8 @@ static void client_on(void* p, bool on, int sock, client_t* client, bool update)
     char    str[128];
     int     i,j;
     time_t  t;
-	static  HANDLE mutex;
     TListItem*  Item;
 	
-    if(!mutex)
-    	mutex=CreateMutex(NULL,false,NULL);
-	WaitForSingleObject(mutex,INFINITE);
     WaitForSingleObject(ClientForm->ListMutex,INFINITE);
 
     /* Search for existing entry for this socket */
@@ -225,7 +221,6 @@ static void client_on(void* p, bool on, int sock, client_t* client, bool update)
     }
     if(i>=ClientForm->ListView->Items->Count) {
 		if(update)	{ /* Can't update a non-existing entry */
-			ReleaseMutex(mutex);
 			ReleaseMutex(ClientForm->ListMutex);
 			return;
 		}
@@ -239,30 +234,30 @@ static void client_on(void* p, bool on, int sock, client_t* client, bool update)
         client_add(NULL, FALSE);
         if(i>=0)
             ClientForm->ListView->Items->Delete(i);
-        ReleaseMutex(mutex);
         ReleaseMutex(ClientForm->ListMutex);
         return;
     }
-    if(client!=NULL && client->size==sizeof(client_t)) {
-        t=time(NULL);
-        if(i>=0) {
-            Item=ClientForm->ListView->Items->Item[i];
-        } else {
-            Item=ClientForm->ListView->Items->Add();
-            Item->Data=(void*)t;
-            Item->Caption=sock;
-        }
-        Item->SubItems->Clear();
-        Item->SubItems->Add(client->protocol);
-        Item->SubItems->Add(client->user);
-        Item->SubItems->Add(client->addr);
-        Item->SubItems->Add(client->host);
-        Item->SubItems->Add(client->port);
-        t-=(time_t)Item->Data;
-        sprintf(str,"%d:%02d",t/60,t%60);
-        Item->SubItems->Add(str);
-    }
-    ReleaseMutex(mutex);
+	try {
+		if(client!=NULL && client->size==sizeof(client_t)) {
+			t=time(NULL);
+			if(i>=0) {
+				Item=ClientForm->ListView->Items->Item[i];
+			} else {
+				Item=ClientForm->ListView->Items->Add();
+				Item->Data=(void*)t;
+				Item->Caption=sock;
+			}
+			Item->SubItems->Clear();
+			Item->SubItems->Add(client->protocol);
+			Item->SubItems->Add(client->user);
+			Item->SubItems->Add(client->addr);
+			Item->SubItems->Add(client->host);
+			Item->SubItems->Add(client->port);
+			t-=(time_t)Item->Data;
+			sprintf(str,"%d:%02d",t/60,t%60);
+			Item->SubItems->Add(str);
+		}
+	} catch(...) {}
     ReleaseMutex(ClientForm->ListMutex);
 }
 
@@ -1989,9 +1984,9 @@ void __fastcall TMainForm::DisplayMainPanels(TObject* Sender)
 	UpperRightPageControl->Visible=true;
 	LowerLeftPageControl->Visible=true;
 	LowerRightPageControl->Visible=true;
+	TopPanel->Visible=true;
 	HorizontalSplitter->Visible=true;
 	BottomPanel->Visible=true;
-	TopPanel->Visible=true;
 
     // Work-around for CB5 PageControl anomaly
     int i;
