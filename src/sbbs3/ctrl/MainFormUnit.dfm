@@ -51,7 +51,7 @@ object MainForm: TMainForm
     Left = 0
     Top = 164
     Width = 777
-    Height = 10
+    Height = 1
     Cursor = crVSplit
     Align = alTop
     Beveled = True
