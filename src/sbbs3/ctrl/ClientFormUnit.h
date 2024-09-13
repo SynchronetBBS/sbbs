@@ -55,10 +55,13 @@ __published:	// IDE-managed Components
     TPopupMenu *PopupMenu;
     TMenuItem *CloseSocketMenuItem;
 	TMenuItem *FilterIpMenuItem;
+    TMenuItem *N1;
+    TMenuItem *SelectAllMenuItem;
     void __fastcall FormHide(TObject *Sender);
     void __fastcall TimerTimer(TObject *Sender);
     void __fastcall CloseSocketMenuItemClick(TObject *Sender);
 	void __fastcall FilterIpMenuItemClick(TObject *Sender);
+    void __fastcall SelectAllMenuItemClick(TObject *Sender);
 private:	// User declarations
 public:		// User declarations
     __fastcall TClientForm(TComponent* Owner);

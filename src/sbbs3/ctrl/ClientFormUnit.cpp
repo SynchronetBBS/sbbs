@@ -57,6 +57,7 @@ void __fastcall TClientForm::TimerTimer(TObject *Sender)
 
     if(WaitForSingleObject(ListMutex,1)!=WAIT_OBJECT_0)
         return;
+	ListView->Items->BeginUpdate();
     for(i=0;i<ListView->Items->Count;i++) {
         t=time(NULL)-(ulong)ListView->Items->Item[i]->Data;
         if(t/(60*60))
@@ -66,8 +67,8 @@ void __fastcall TClientForm::TimerTimer(TObject *Sender)
         ListView->Items->Item[i]->SubItems->Strings[5]=str;
 
     }
+	ListView->Items->EndUpdate();
     ReleaseMutex(ListMutex);
-
 }
 //---------------------------------------------------------------------------
 
@@ -155,6 +156,13 @@ void __fastcall TClientForm::FilterIpMenuItemClick(TObject *Sender)
         	break;
         ListItem=ListView->GetNextItem(ListItem,sdAll,State);
     }
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TClientForm::SelectAllMenuItemClick(TObject *Sender)
+{
+	for(int i = 0; i < ListView->Items->Count; ++i)
+		ListView->Items->Item[i]->Selected = true;
 }
 //---------------------------------------------------------------------------
 
