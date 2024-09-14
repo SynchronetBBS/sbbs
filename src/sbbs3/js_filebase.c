@@ -1047,6 +1047,8 @@ js_get_file_path(JSContext *cx, uintN argc, jsval *arglist)
 			JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
 		smb_freefilemem(&file);
 	}
+	else
+		JS_ReportError(cx, "%d loading file '%s'", p->smb_result, filename);
 	JS_RESUMEREQUEST(cx, rc);
 	free(filename);
 
@@ -1324,12 +1326,16 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 				if(!readd_always && strcmp(extdesc ? extdesc : "", file.extdesc ? file.extdesc : "") == 0
 					&& strcmp(auxdata ? auxdata : "", file.auxdata ? file.auxdata : "") == 0)
 					p->smb_result = smb_putfile(&p->smb, &file);
+					if(p->smb_result != SMB_SUCCESS)
+						JS_ReportError(cx, "%d writing '%s'", p->smb_result, file.name);
 				else {
 					if((p->smb_result = smb_removefile(&p->smb, &file)) == SMB_SUCCESS) {
 						if(readd_always)
 							file.hdr.when_imported.time = 0; // we want the file to appear as "new"
 						p->smb_result = smb_addfile(&p->smb, &file, SMB_SELFPACK, extdesc, auxdata, newfname);
 					}
+					else
+						JS_ReportError(cx, "%d removing '%s'", p->smb_result, file.name);
 				}
 			}
 		}
