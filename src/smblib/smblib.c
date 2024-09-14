@@ -432,7 +432,7 @@ int smb_lockmsghdr(smb_t* smb, smbmsg_t* msg)
 /****************************************************************************/
 int smb_getmsgidx(smb_t* smb, smbmsg_t* msg)
 {
-	fileidxrec_t	idx = {};
+	fileidxrec_t	idx = {0};
 	int			byte_offset;
 	uint		l,total,bot,top;
 	off_t		length;
