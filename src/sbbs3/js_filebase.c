@@ -1330,18 +1330,18 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 				if(file.extdesc != NULL)
 					truncsp(file.extdesc);
 				if(!readd_always && strcmp(extdesc ? extdesc : "", file.extdesc ? file.extdesc : "") == 0
-					&& strcmp(auxdata ? auxdata : "", file.auxdata ? file.auxdata : "") == 0)
+					&& strcmp(auxdata ? auxdata : "", file.auxdata ? file.auxdata : "") == 0) {
 					p->smb_result = smb_putfile(&p->smb, &file);
 					if(p->smb_result != SMB_SUCCESS)
 						JS_ReportError(cx, "%d writing '%s'", p->smb_result, file.name);
-				else {
+				} else {
 					if((p->smb_result = smb_removefile_by_name(&p->smb, filename)) == SMB_SUCCESS) {
 						if(readd_always)
 							file.hdr.when_imported.time = 0; // we want the file to appear as "new"
 						p->smb_result = smb_addfile(&p->smb, &file, SMB_SELFPACK, extdesc, auxdata, newfname);
 					}
 					else
-						JS_ReportError(cx, "%d removing '%s'", p->smb_result, file.name);
+						JS_ReportError(cx, "%d removing '%s'", p->smb_result, filename);
 				}
 			}
 		}
@@ -1811,7 +1811,7 @@ js_filebase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *		obj;
 	jsval *			argv=JS_ARGV(cx, arglist);
-	char*			base = NULL;
+	char			base[MAX_PATH + 1] = "";
 	private_t*		p;
 	scfg_t*			scfg;
 
@@ -1827,15 +1827,13 @@ js_filebase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	memset(p,0,sizeof(private_t));
 	p->smb.retry_time=scfg->smb_retry_time;
 
-	JSSTRING_TO_MSTRING(cx, JS_ValueToString(cx, argv[0]), base, NULL);
+	JSVALUE_TO_STRBUF(cx, argv[0], base, sizeof base, NULL);
 	if(JS_IsExceptionPending(cx)) {
-		if(base != NULL)
-			free(base);
 		free(p);
 		return JS_FALSE;
 	}
-	if(base==NULL) {
-		JS_ReportError(cx, "Invalid base parameter");
+	if(*base=='\0') {
+		JS_ReportError(cx, "Invalid 'code' parameter");
 		free(p);
 		return JS_FALSE;
 	}
@@ -1843,7 +1841,6 @@ js_filebase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	if(!JS_SetPrivate(cx, obj, p)) {
 		JS_ReportError(cx,"JS_SetPrivate failed");
 		free(p);
-		free(base);
 		return JS_FALSE;
 	}
 
@@ -1864,7 +1861,6 @@ js_filebase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		SAFECOPY(p->smb.file, base);
 	}
 
-	free(base);
 	return JS_TRUE;
 }
 

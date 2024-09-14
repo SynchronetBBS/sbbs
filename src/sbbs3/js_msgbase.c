@@ -3350,9 +3350,8 @@ js_msgbase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject *		obj;
 	jsval *			argv=JS_ARGV(cx, arglist);
-	JSString*		js_str;
 	JSObject*		cfgobj;
-	char*			base = NULL;
+	char			base[MAX_PATH + 1] = "";
 	private_t*		p;
 	scfg_t*			scfg;
 
@@ -3368,16 +3367,13 @@ js_msgbase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	memset(p,0,sizeof(private_t));
 	p->smb.retry_time=scfg->smb_retry_time;
 
-	js_str = JS_ValueToString(cx, argv[0]);
-	JSSTRING_TO_MSTRING(cx, js_str, base, NULL);
+	JSVALUE_TO_STRBUF(cx, argv[0], base, sizeof base, NULL);
 	if(JS_IsExceptionPending(cx)) {
-		if(base != NULL)
-			free(base);
 		free(p);
 		return JS_FALSE;
 	}
-	if(base==NULL) {
-		JS_ReportError(cx, "Invalid base parameter");
+	if(*base=='\0') {
+		JS_ReportError(cx, "Invalid 'code' parameter");
 		free(p);
 		return JS_FALSE;
 	}
@@ -3387,7 +3383,6 @@ js_msgbase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	if(!JS_SetPrivate(cx, obj, p)) {
 		JS_ReportError(cx,"JS_SetPrivate failed");
 		free(p);
-		free(base);
 		return JS_FALSE;
 	}
 
@@ -3441,7 +3436,6 @@ js_msgbase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		}
 	}
 
-	free(base);
 	return JS_TRUE;
 }
 
