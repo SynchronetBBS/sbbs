@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.23     2024-09-13   Check for null when getting extended metadata from the
+                      file DB (possibly caused by DB corruption). Also, allow
+                      changing the filename when editing file info.
 2.22     2024-08-16   Added the ability to edit file information using the E
                       key when listing. Normal users can edit the description
                       and tags, and sysops can also edit the uploader, credit
