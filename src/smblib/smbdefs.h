@@ -408,14 +408,9 @@ struct hash_info {
 };
 
 typedef struct {		/* File index record */
-	union {
-		idxrec_t	idx;
-		struct {
-			idxrec_t idx_;	// only here for storage, no need to reference
-			char name[SMB_FILEIDX_NAMELEN + 1];
-			struct hash_info hash;
-		};
-	};
+	idxrec_t	idx;
+	char name[SMB_FILEIDX_NAMELEN + 1];
+	struct hash_info hash;
 } fileidxrec_t;
 #define SIZEOF_SMB_FILEIDXREC_T 128
 										/* valid bits in hashflags_t		*/
