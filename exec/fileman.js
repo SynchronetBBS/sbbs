@@ -271,6 +271,19 @@ function find_file(fname, list)
 	return -1;
 }
 
+function get_file_details(dircode, filename)
+{
+	var base = new FileBase(dircode);
+	if(!base.open()) {
+		uifc.msg("Unable to open base: " + dircode);
+		return null;
+	}
+
+	var file = base.get(filename, FileBase.DETAIL.EXTENDED);
+	base.close();
+	return file;
+}
+
 function list_files(title, list, dircode)
 {
 	const wide_screen = uifc.screen_width >= 100;
@@ -347,6 +360,12 @@ function list_files(title, list, dircode)
 					}
 					break;
 				case MSK_EDIT:
+					list[result] = get_file_details(dircode, file.name);
+					file = list[result];
+					if(!file) {
+						uifc.msg("Error getting file details");
+						break;
+					}
 					var orig_name = file.name;
 					if(edit_filename(file))
 						save(file, dircode, orig_name);
