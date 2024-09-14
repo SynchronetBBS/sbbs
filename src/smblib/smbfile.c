@@ -472,6 +472,19 @@ int smb_removefile(smb_t* smb, smbfile_t* file)
 	return result;
 }
 
+/****************************************************************************/
+/****************************************************************************/
+int smb_removefile_by_name(smb_t* smb, const char* filename)
+{
+	int result;
+	smbfile_t file;
+	if((result = smb_loadfile(smb, filename, &file, file_detail_normal)) != SMB_SUCCESS)
+		return result;
+	result = smb_removefile(smb, &file);
+	smb_freefilemem(&file);
+	return result;
+}
+
 uint64_t smb_getfilesize(idxrec_t* idx)
 {
 	return ((uint64_t)idx->size) | (((uint64_t)idx->size_ext) << 32);

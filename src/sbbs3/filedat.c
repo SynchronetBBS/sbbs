@@ -562,12 +562,7 @@ bool removefile(scfg_t* cfg, int dirnum, const char* filename)
 	if(smb_open_dir(cfg, &smb, dirnum) != SMB_SUCCESS)
 		return false;
 
-	int result;
-	file_t file;
-	if((result = smb_loadfile(&smb, filename, &file, file_detail_normal)) == SMB_SUCCESS) {
-		result = smb_removefile(&smb, &file);
-		smb_freefilemem(&file);
-	}
+	int result = smb_removefile_by_name(&smb, filename);
 	smb_close(&smb);
 	return result == SMB_SUCCESS;
 }
