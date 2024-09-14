@@ -1304,7 +1304,13 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 	if(filename != NULL && fileobj != NULL
 		&& (p->smb_result = smb_loadfile(&p->smb, filename, &file, file_detail_extdesc)) == SMB_SUCCESS) {
 		p->smb_result = parse_file_properties(cx, fileobj, &file, &extdesc, &auxdata);
-		if((extdesc == NULL	|| use_diz_always == true)
+		if(p->smb_result == SMB_SUCCESS
+			&& strcmp(filename, file.name) != 0 && smb_findfile(&p->smb, file.name, NULL) == SMB_SUCCESS) {
+			JS_ReportError(cx, "file (%s) already exists in base", file.name);
+			p->smb_result = SMB_DUPE_MSG;
+		}
+		if(p->smb_result == SMB_SUCCESS
+			&& (extdesc == NULL || use_diz_always == true)
 			&& is_valid_dirnum(scfg, file.dir)
 			&& (scfg->dir[file.dir]->misc & DIR_DIZ)) {
 			get_diz(scfg, &file, &extdesc);
