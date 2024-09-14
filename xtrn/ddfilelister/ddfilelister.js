@@ -123,6 +123,9 @@
  *                              Started working on adding the ability to edit file details/information (for the sysop)
  * 2024-08-16 Eric Oulashin     Version 2.22
  *                              Releasing this version
+ * 2024-09-13 Eric Oulashin     Version 2.23
+ *                              Check for null when getting extended metadata from the file DB (possibly caused
+ *                              by DB corruption). Also, allow changing the filename when editing file info.
 */
 
 "use strict";
@@ -168,8 +171,8 @@ require("attr_conv.js", "convertAttrsToSyncPerSysCfg");
 
 
 // Lister version information
-var LISTER_VERSION = "2.22";
-var LISTER_DATE = "2024-08-16";
+var LISTER_VERSION = "2.23";
+var LISTER_DATE = "2024-09-13";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1057,7 +1060,13 @@ function showFileInfo_ANSI(pFileMetadata)
 	if (extendedDescEnabled())
 		fileMetadata = pFileMetadata;
 	else
-		fileMetadata = getFileInfoFromFilebase(dirCode, pFileMetadata.name, FileBase.DETAIL.EXTENDED);
+	{
+		var tmpFileMetadata = getFileInfoFromFilebase(dirCode, pFileMetadata.name, FileBase.DETAIL.EXTENDED);
+		if (tmpFileMetadata != null)
+			fileMetadata = tmpFileMetadata;
+		else
+			fileMetadata = pFileMetadata;
+	}
 	// Build a string with the file information
 	// Make sure the displayed filename isn't too crazy long
 	var frameInnerWidth = frameWidth - 2; // Without borders
@@ -1210,7 +1219,13 @@ function showFileInfo_noANSI(pFileMetadata)
 	if (extendedDescEnabled())
 		fileMetadata = pFileMetadata;
 	else
-		fileMetadata = getFileInfoFromFilebase(dirCode, pFileMetadata.name, FileBase.DETAIL.EXTENDED);
+	{
+		var tmpFileMetadata = getFileInfoFromFilebase(dirCode, pFileMetadata.name, FileBase.DETAIL.EXTENDED);
+		if (tmpFileMetadata != null)
+			fileMetadata = tmpFileMetadata;
+		else
+			fileMetadata = pFileMetadata;
+	}
 
 	console.print("\x01n\x01wFilename:\r\n");
 	console.print(gColors.filename + fileMetadata.name +  "\x01n\x01w\r\n");
@@ -1880,27 +1895,42 @@ function editFileInfo(pFileList, pFileListMenu)
 	{
 		// Get the extended metadata object and check to see if it has an existing extended definition
 		var extdMetadata = getFileInfoFromFilebase(fileMetadata.dirCode, fileMetadata.name, FileBase.DETAIL.EXTENDED);
-		// Let the user edit the extended description with their configured editor
-		var descFilename = system.temp_dir + "extdDescTemp.txt";
-		var outFile = new File(descFilename);
-		if (outFile.open("w"))
+		if (extdMetadata != null)
 		{
-			// An extended file description is usually up to about 45 characters long
-			var descWrapped = word_wrap(extdMetadata.extdesc, 45, null, false).split("\r\n");
-			for (var lineIdx = 0; lineIdx < descWrapped.length; ++lineIdx)
-				outFile.writeln(descWrapped[lineIdx]);
-			outFile.close();
-			if (console.editfile(descFilename, "", "", fileMetadata.name, "", false))
+			// Let the user edit the extended description with their configured editor
+			var descFilename = system.temp_dir + "extdDescTemp.txt";
+			var outFile = new File(descFilename);
+			if (outFile.open("w"))
 			{
-				if (outFile.open("r"))
+				// An extended file description is usually up to about 45 characters long
+				var descWrapped = word_wrap(extdMetadata.extdesc, 45, null, false).split("\r\n");
+				for (var lineIdx = 0; lineIdx < descWrapped.length; ++lineIdx)
+					outFile.writeln(descWrapped[lineIdx]);
+				outFile.close();
+				if (console.editfile(descFilename, "", "", fileMetadata.name, "", false))
 				{
-					newMetadata.extdesc = outFile.readAll(console.screen_columns).join("\r\n");
-					outFile.close();
+					if (outFile.open("r"))
+					{
+						newMetadata.extdesc = outFile.readAll(console.screen_columns).join("\r\n");
+						outFile.close();
+					}
 				}
+				if (!file_remove(descFilename))
+					log(LOG_ERR, "Failed to delete temporary file " + descFilename);
 			}
-			if (!file_remove(descFilename))
-				log(LOG_ERR, "Failed to delete temporary file " + descFilename);
 		}
+		else
+			console.print("\x01n\x01h\x01y* Unable to retrieve extended metadata for the file\x01n\r\n");
+	}
+	// Filename
+	if (!console.noyes("Change the filename"))
+	{
+		var promptText = "\x01n\x01cFilename\x01h: \x01n";
+		editWidth = console.screen_columns - console.strlen(promptText) - 1;
+		console.print(promptText);
+		newMetadata.name = console.getstr(fileMetadata.name, editWidth, K_EDIT|K_LINE|K_NOSPIN); // K_NOCRLF
+		if (console.aborted)
+			return retObj;
 	}
 	// Only let the sysop edit the uploader, credit value, upload time, etc.
 	if (user.is_sysop)
@@ -2762,10 +2792,21 @@ function getFileInfoFromFilebase(pDirCode, pFilename, pDetail)
 		else
 			fileDetail = (extendedDescEnabled() ? FileBase.DETAIL.EXTENDED : FileBase.DETAIL.NORM);
 		fileMetadataObj = filebase.get(filename, fileDetail);
-		fileMetadataObj.dirCode = pDirCode;
-		//fileMetadataObj.size = filebase.get_size(filename);
-		if (!fileMetadataObj.hasOwnProperty("time"))
-			fileMetadataObj.time = filebase.get_time(filename);
+		// Temporary
+		if (user.is_sysop)
+		{
+			for (var prop in fileMetadataObj)
+				console.print(prop + ": " + fileMetadataObj[prop] + "\r\n");
+			console.pause();
+		}
+		// End Temporary
+		if (fileMetadataObj != null)
+		{
+			fileMetadataObj.dirCode = pDirCode;
+			//fileMetadataObj.size = filebase.get_size(filename);
+			if (!fileMetadataObj.hasOwnProperty("time"))
+				fileMetadataObj.time = filebase.get_time(filename);
+		}
 		filebase.close();
 	}
 
@@ -5387,7 +5428,7 @@ function getExtdFileDescArray(pFileList, pIdx)
 	{
 		var dirCode = (pFileList[pIdx].hasOwnProperty("dirCode") ? pFileList[pIdx].dirCode : gDirCode);
 		var fileMetadata = getFileInfoFromFilebase(dirCode, pFileList[pIdx].name, FileBase.DETAIL.EXTENDED);
-		if (fileMetadata.hasOwnProperty("extdesc"))
+		if (fileMetadata != null && fileMetadata.hasOwnProperty("extdesc"))
 			extdDesc = fileMetadata.extdesc;
 	}
 	if (extdDesc.length == 0)
