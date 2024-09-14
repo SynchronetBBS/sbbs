@@ -160,7 +160,7 @@ int main(int argc, char **argv)
 				,dfieldlength,dfieldoffset
 				,dupenum,dupenumhdr,dupeoff,attr,actalloc,types
 				,datactalloc,misnumbered,timeerr,idxofferr,idxerr
-				,subjcrc,fromcrc,tocrc
+				,subjcrc,fromcrc,tocrc, fname_err
 				,intransit,unvalidated
 				,zeronum,idxzeronum,idxnumerr,packable=0L,totallzhsaved=0L
 				,totalmsgs=0,totallzhmsgs=0,totaldelmsgs=0,totalmsgbytes=0L
@@ -356,6 +356,7 @@ int main(int argc, char **argv)
 	headers=deleted=orphan=dupenumhdr=attr=zeronum=timeerr=lockerr=hdrerr=0;
 	types = 0;
 	subjcrc=fromcrc=tocrc=0;
+	fname_err = 0L;
 	hdrnumerr=hdrlenerr=0;
 	actalloc=datactalloc=deldatblocks=delhdrblocks=xlaterr=0;
 	lzhblocks=lzhsaved=acthdrblocks=actdatblocks=0;
@@ -650,6 +651,15 @@ int main(int argc, char **argv)
 					if(extinfo)
 						printf("MSGERR: Flagged 'moderated', but not yet 'validated'\n");
 					unvalidated++;
+				}
+				if(msg.hdr.type == SMB_MSG_TYPE_FILE) {
+					char fname[SMB_FILEIDX_NAMELEN + 1];
+					smb_fileidxname(msg.name, fname, sizeof fname);
+					if(strcmp(fname, msg.file_idx.name) != 0) {
+						fprintf(stderr, "%sFilename mismatch: '%s' != '%s'\n", beep, fname, msg.file_idx.name);
+						msgerr = true;
+						fname_err++;
+					}
 				}
 			}
 			if(msg.hdr.number==0) {
@@ -1060,6 +1070,10 @@ int main(int argc, char **argv)
 		printf("%-35.35s (!): %lu\n"
 			,smb.status.attr&(SMB_EMAIL|SMB_FILE_DIRECTORY) ? INDXERR "To Ext" : INDXERR "To CRCs"
 			,tocrc);
+	if(fname_err)
+		printf("%-35.35s (!): %lu\n"
+			,"Filename mismatches"
+			,fname_err);
 	if(intransit)
 		printf("%-35.35s (?): %lu\n"
 			,"Message flagged as 'In Transit'"
@@ -1139,7 +1153,7 @@ int main(int argc, char **argv)
 		|| lockerr || hdrerr || hdrnumerr || idxnumerr || idxofferr
 		|| actalloc || datactalloc || misnumbered || timeerr
 		|| intransit || unvalidated || ctrl_chars
-		|| subjcrc || fromcrc || tocrc
+		|| subjcrc || fromcrc || tocrc || fname_err
 		|| dfieldoffset || dfieldlength || xlaterr || idxerr) {
 		printf("%shas Errors!\n",beep);
 		errors++;
