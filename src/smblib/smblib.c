@@ -432,7 +432,7 @@ int smb_lockmsghdr(smb_t* smb, smbmsg_t* msg)
 /****************************************************************************/
 int smb_getmsgidx(smb_t* smb, smbmsg_t* msg)
 {
-	idxrec_t	idx;
+	fileidxrec_t	idx = {};
 	int			byte_offset;
 	uint		l,total,bot,top;
 	off_t		length;
@@ -477,7 +477,7 @@ int smb_getmsgidx(smb_t* smb, smbmsg_t* msg)
 				return(SMB_ERR_SEEK);
 			}
 		}
-		if(smb_fread(smb,&msg->idx,sizeof(msg->idx),smb->sid_fp)!=sizeof(msg->idx)) {
+		if(smb_fread(smb,&msg->idx, idxreclen, smb->sid_fp) != idxreclen) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%s reading index at offset %d (byte %u)", __FUNCTION__
 				,(int)msg->idx_offset,byte_offset);
@@ -504,30 +504,30 @@ int smb_getmsgidx(smb_t* smb, smbmsg_t* msg)
 				,l,(uint)(l*idxreclen));
 			return(SMB_ERR_SEEK);
 		}
-		if(smb_fread(smb,&idx,sizeof(idx),smb->sid_fp)!=sizeof(idx)) {
+		if(smb_fread(smb,&idx, idxreclen, smb->sid_fp) != idxreclen) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%s reading index at offset %u (byte %u)", __FUNCTION__
-				,l,(uint)(l*sizeof(idx)));
+				,l,(uint)(l * idxreclen));
 			return(SMB_ERR_READ);
 		}
-		if(bot==top-1 && idx.number!=msg->hdr.number) {
+		if(bot==top-1 && idx.idx.number!=msg->hdr.number) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error),"%s msg %u not found"
 				, __FUNCTION__, (uint)msg->hdr.number);
 			return(SMB_ERR_NOT_FOUND);
 		}
-		if(idx.number>msg->hdr.number) {
+		if(idx.idx.number>msg->hdr.number) {
 			top=l;
 			l=bot+((top-bot)/2);
 			continue; 
 		}
-		if(idx.number<msg->hdr.number) {
+		if(idx.idx.number<msg->hdr.number) {
 			bot=l;
 			l=top-((top-bot)/2);
 			continue; 
 		}
 		break; 
 	}
-	msg->idx=idx;
+	msg->file_idx=idx;
 	msg->idx_offset=l;
 	return(SMB_SUCCESS);
 }
