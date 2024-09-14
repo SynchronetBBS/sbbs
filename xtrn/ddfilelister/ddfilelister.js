@@ -2792,14 +2792,6 @@ function getFileInfoFromFilebase(pDirCode, pFilename, pDetail)
 		else
 			fileDetail = (extendedDescEnabled() ? FileBase.DETAIL.EXTENDED : FileBase.DETAIL.NORM);
 		fileMetadataObj = filebase.get(filename, fileDetail);
-		// Temporary
-		if (user.is_sysop)
-		{
-			for (var prop in fileMetadataObj)
-				console.print(prop + ": " + fileMetadataObj[prop] + "\r\n");
-			console.pause();
-		}
-		// End Temporary
 		if (fileMetadataObj != null)
 		{
 			fileMetadataObj.dirCode = pDirCode;
@@ -2807,6 +2799,8 @@ function getFileInfoFromFilebase(pDirCode, pFilename, pDetail)
 			if (!fileMetadataObj.hasOwnProperty("time"))
 				fileMetadataObj.time = filebase.get_time(filename);
 		}
+		else
+			log(LOG_ERR, "Failed to get metadata for file " + pFilename + " in directory with internal code " + pDirCode + " (detail: " + fileDetail + ")");
 		filebase.close();
 	}
 
