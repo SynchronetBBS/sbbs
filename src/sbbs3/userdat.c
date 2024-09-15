@@ -3277,6 +3277,9 @@ int newuserdat(scfg_t* cfg, user_t* user)
 	SAFEPRINTF2(str,"%sfile/%04u.in",cfg->data_dir,user->number);  /* delete any files */
 	delfiles(str, ALLFILES, /* keep: */0);                         /* waiting for user */
 	rmdir(str);
+	SAFEPRINTF2(str,"%sfile/%04u.out",cfg->data_dir,user->number); /* delete any files */
+	delfiles(str, ALLFILES, /* keep: */0);                         /* pending transmit to/by user */
+	rmdir(str);
 	SAFEPRINTF(tmp,"%04u.*",user->number);
 	SAFEPRINTF(str,"%sfile",cfg->data_dir);
 	delfiles(str,tmp, /* keep: */0);
