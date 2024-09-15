@@ -1,6 +1,7 @@
 // Post a message to a local sub-board or mail message base
 // a preferred alternative to using "smbutil i"
 
+require("smbdefs.js", "MSG_FILEREQUEST");
 var hdrs = { };
 var sub_code;
 var import_fname;
@@ -21,6 +22,7 @@ function usage()
 	print("\t-e<number>    set 'from' user number");
 	print("\t-s<subject>   set 'subject'");
 	print("\t-d            use default values (no prompt) for to, from, and subject");
+	print("\t-F            set file request attribute flag");
 	print();
 	print("Note: You may need to enclose multi-word options in quotes (e.g. \"-fMy Name\")");
 	print();
@@ -45,6 +47,9 @@ for(var i in argv) {
 				case 'f':
 					if(val.length)
 						hdrs.from = val;
+					break;
+				case 'F':
+					hdrs.auxattr = MSG_FILEREQUEST;
 					break;
 				case 'e':
 					if(val.length)
