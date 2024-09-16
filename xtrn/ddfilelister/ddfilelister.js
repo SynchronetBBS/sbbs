@@ -5526,6 +5526,43 @@ function removeOrReplaceSyncCursorMovementChars(pStr, pReplaceNewlineWithActualn
 	else
 		str = str.replace(/\x01\//g, "");
 	str = str.replace(/\x01\?/g, "");
-	str = str.replace(/\x01[0-9]+/g, "");
+	str = replaceCursorRightCodes(str);
 	return str;
+}
+
+// Replaces cursor-right codes with spaces in a string
+function replaceCursorRightCodes(pStr)
+{
+	var str = pStr;
+	var idxRetObj = cursorRightCodeIdx(str);
+	while (idxRetObj.idx > -1)
+	{
+		var strBefore = str.substr(0, idxRetObj.idx);
+		str = strBefore + format("%*s", idxRetObj.numSpaces, "") + str.substr(idxRetObj.idx+2);
+		idxRetObj = cursorRightCodeIdx(str);
+	}
+	return str;
+}
+
+// Returns the index of the first cursor-right code in a string,
+// along with the number of spaces there should be
+function cursorRightCodeIdx(pStr)
+{
+	var retObj = {
+		idx: -1,
+		numSpaces: 0
+	};
+
+	retObj.idx = pStr.indexOf("\x01");
+	if (retObj.idx > -1 && pStr.length > retObj.idx+1)
+	{
+		// The value of the next character would be 128 to 255 for a cursor-right code;
+		// number of spaces is the value - 127
+		var nextCharVal = ascii(pStr[retObj.idx+1]);
+		if (nextCharVal >= 128)
+			retObj.numSpaces = nextCharVal - 127;
+		else
+			retObj.idx = -1;
+	}
+	return retObj;
 }
