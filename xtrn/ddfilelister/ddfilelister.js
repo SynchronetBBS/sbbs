@@ -1100,8 +1100,6 @@ function showFileInfo_ANSI(pFileMetadata)
 		fileDesc = fileMetadata.extdesc;
 	else
 		fileDesc = fileMetadata.desc;
-	// Remove/replace any cursor movement characters, as they can corrupt the display
-	fileDesc = removeOrReplaceSyncCursorMovementChars(fileDesc);
 	
 	// It's possible for fileDesc to be undefined (due to extDesc or desc being undefined),
 	// so make sure it's a string.
@@ -1109,6 +1107,9 @@ function showFileInfo_ANSI(pFileMetadata)
 	// Frame object
 	if (typeof(fileDesc) === "string")
 	{
+		// Remove/replace any cursor movement characters, as they can corrupt the display
+		fileDesc = removeOrReplaceSyncCursorMovementChars(fileDesc);
+
 		// Check to see if it starts with a normal attribute and remove if so,
 		// since that seems to cause problems with displaying the description in a Frame object.  This
 		// may be a kludge, and perhaps there's a better solution..
@@ -1260,6 +1261,10 @@ function showFileInfo_noANSI(pFileMetadata)
 	// Frame object
 	if (typeof(fileDesc) === "string")
 	{
+		// We could remove/replace any cursor movement characters, but probably don't need to
+		// for the traditional/non-ANSI interface, as those things shouldn't corrupt the display
+		//fileDesc = removeOrReplaceSyncCursorMovementChars(fileDesc);
+
 		// Check to see if it starts with a normal attribute and remove if so,
 		// since that seems to cause problems with displaying the description in a Frame object.  This
 		// may be a kludge, and perhaps there's a better solution..
