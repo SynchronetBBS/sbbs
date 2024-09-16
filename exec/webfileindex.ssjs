@@ -105,7 +105,7 @@ function dir_index(dir)
 		write("<tr>");
 		write("<td>" + f.name.link(f.name) + "</td>");
 		write("<td align=right>" + file_size_float(f.size, 1, 0) + "</td>");
-		write("<td align=right>" + strftime("%b %d, %Y", f.time) + "</td>");
+		write("<td align=right>" + strftime("%b %d, %Y", f.added) + "</td>");
 		write('<td class="desc" onclick="showExtDesc(event)">');
 		write(utf8_encode(f.desc || ''));
 		if (f.extdesc !== undefined) {
