@@ -126,6 +126,9 @@
  * 2024-09-13 Eric Oulashin     Version 2.23
  *                              Check for null when getting extended metadata from the file DB (possibly caused
  *                              by DB corruption). Also, allow changing the filename when editing file info.
+ * 2024-09015 Eric Oulashin     Version 2.24
+ *                              When displaying a file description, remove/replace cursor movement
+ *                              characters, which can corrupt the display
 */
 
 "use strict";
@@ -171,8 +174,8 @@ require("attr_conv.js", "convertAttrsToSyncPerSysCfg");
 
 
 // Lister version information
-var LISTER_VERSION = "2.23";
-var LISTER_DATE = "2024-09-13";
+var LISTER_VERSION = "2.24";
+var LISTER_DATE = "2024-09-15";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1097,12 +1100,16 @@ function showFileInfo_ANSI(pFileMetadata)
 		fileDesc = fileMetadata.extdesc;
 	else
 		fileDesc = fileMetadata.desc;
+	
 	// It's possible for fileDesc to be undefined (due to extDesc or desc being undefined),
 	// so make sure it's a string.
 	// Also, if it's a string, reformat certain types of strings that don't look good in a
 	// Frame object
 	if (typeof(fileDesc) === "string")
 	{
+		// Remove/replace any cursor movement characters, as they can corrupt the display
+		fileDesc = removeOrReplaceSyncCursorMovementChars(fileDesc);
+
 		// Check to see if it starts with a normal attribute and remove if so,
 		// since that seems to cause problems with displaying the description in a Frame object.  This
 		// may be a kludge, and perhaps there's a better solution..
@@ -1254,6 +1261,10 @@ function showFileInfo_noANSI(pFileMetadata)
 	// Frame object
 	if (typeof(fileDesc) === "string")
 	{
+		// We could remove/replace any cursor movement characters, but probably don't need to
+		// for the traditional/non-ANSI interface, as those things shouldn't corrupt the display
+		//fileDesc = removeOrReplaceSyncCursorMovementChars(fileDesc);
+
 		// Check to see if it starts with a normal attribute and remove if so,
 		// since that seems to cause problems with displaying the description in a Frame object.  This
 		// may be a kludge, and perhaps there's a better solution..
@@ -3270,6 +3281,8 @@ function createFileListMenu(pQuitKeys)
 		}
 		*/
 		var desc = (typeof(gFileList[pIdx].desc) === "string" ? gFileList[pIdx].desc : "");
+		// Remove/replace any cursor movement codes in the description, which can corrupt the display
+		desc = removeOrReplaceSyncCursorMovementChars(desc, false);
 		menuItemObj.text = format(this.fileFormatStr,
 		                          filename,
 								  getFileSizeStr(gFileList[pIdx].size, this.fileSizeLen),
@@ -5094,6 +5107,8 @@ function displayFileExtDescOnMainScreen(pFileIdx, pStartScreenRow, pEndScreenRow
 		screenRowForPrinting = pStartScreenRow;
 	if (typeof(pEndScreenRow) === "number" && pEndScreenRow > firstScreenRow && pStartScreenRow <= lastScreenRow)
 		lastScreenRow = pEndScreenRow;
+	// Remove/replace any cursor movement characters, as they can corrupt the display
+	fileDesc = removeOrReplaceSyncCursorMovementChars(fileDesc);
 	var fileDescArray = fileDesc.split("\r\n");
 	console.attributes = "N";
 	// screenRowNum is to keep track of the row on the screen where the
@@ -5103,12 +5118,14 @@ function displayFileExtDescOnMainScreen(pFileIdx, pStartScreenRow, pEndScreenRow
 	{
 		if (screenRowForPrinting > screenRowNum++)
 			continue;
+		//var descLine = ANSIAttrsToSyncAttrs(fileDescArray[i]);
 		// Note: substrWithAttrCodes() is defined in dd_lightbar_menu.js
 		// Normally it would be handy to use printf() to print the text line:
 		//printf(formatStr, substrWithAttrCodes(fileDescArray[i], 0, maxDescLen));
 		// However, printf() doesn't account for attribute codes and thus may not
 		// fill the rest of the width.  So, we do that manually.
-		var descLine = substrWithAttrCodes(fileDescArray[i], 0, maxDescLen);
+		var descLine = substrWithAttrCodes(fileDescArray[i], 0, maxDescLen); 
+		//descLine = "Has ANSI: " + textHasANSICodes(fileDescArray[i]);
 		var lineTextLength = console.strlen(descLine, P_AUTO_UTF8);
 		if (lineTextLength > 0)
 		{
@@ -5484,4 +5501,68 @@ function userNameOrAliasMatchCaseIns(pName)
 
 	var nameUpper = pName.toUpperCase();
 	return nameUpper == user.alias.toUpperCase() || nameUpper == user.name.toUpperCase() || nameUpper == user.handle.toUpperCase();
+}
+
+// Removes/replaces any cursor movement characters from a string
+//
+// Parameters:
+//  pStr: The string to remove/replace characters from
+//  pReplaceNewlineWithActualnewline: Optional boolean - Whether or not to replace a newline with an actual newline. Defaults to true.
+//
+// Return value: The string with the cursor movement characters removed/replaced
+function removeOrReplaceSyncCursorMovementChars(pStr, pReplaceNewlineWithActualnewline)
+{
+	var pReplaceNewlineWithActualnewline = typeof(pReplaceNewlineWithActualnewline) === "boolean" ? pReplaceNewlineWithActualnewline : true;
+	var str = pStr.replace(/\x01'/g, "");
+	str = str.replace(/\x01J/g, "");
+	str = str.replace(/\x01>/g, "");
+	str = str.replace(/\x01</g, "");
+	str = str.replace(/\x01\]/g, "");
+	str = str.replace(/\x01\[/g, "");
+	str = str.replace(/\x01\\/g, "");
+	// /: Newline
+	if (pReplaceNewlineWithActualnewline)
+		str = str.replace(/\x01\//g, "\r\n");
+	else
+		str = str.replace(/\x01\//g, "");
+	str = str.replace(/\x01\?/g, "");
+	str = replaceCursorRightCodes(str);
+	return str;
+}
+
+// Replaces cursor-right codes with spaces in a string
+function replaceCursorRightCodes(pStr)
+{
+	var str = pStr;
+	var idxRetObj = cursorRightCodeIdx(str);
+	while (idxRetObj.idx > -1)
+	{
+		var strBefore = str.substr(0, idxRetObj.idx);
+		str = strBefore + format("%*s", idxRetObj.numSpaces, "") + str.substr(idxRetObj.idx+2);
+		idxRetObj = cursorRightCodeIdx(str);
+	}
+	return str;
+}
+
+// Returns the index of the first cursor-right code in a string,
+// along with the number of spaces there should be
+function cursorRightCodeIdx(pStr)
+{
+	var retObj = {
+		idx: -1,
+		numSpaces: 0
+	};
+
+	retObj.idx = pStr.indexOf("\x01");
+	if (retObj.idx > -1 && pStr.length > retObj.idx+1)
+	{
+		// The value of the next character would be 128 to 255 for a cursor-right code;
+		// number of spaces is the value - 127
+		var nextCharVal = ascii(pStr[retObj.idx+1]);
+		if (nextCharVal >= 128)
+			retObj.numSpaces = nextCharVal - 127;
+		else
+			retObj.idx = -1;
+	}
+	return retObj;
 }

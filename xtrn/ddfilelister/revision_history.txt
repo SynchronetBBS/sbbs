@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.24     2024-09-15   When displaying a file description, remove/replace cursor
+                      movement characters, which can corrupt the display
 2.23     2024-09-13   Check for null when getting extended metadata from the
                       file DB (possibly caused by DB corruption). Also, allow
                       changing the filename when editing file info.
