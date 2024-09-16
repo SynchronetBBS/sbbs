@@ -534,6 +534,11 @@ while(client.socket.is_connected && !quit) {
 				writeln("412 read permission to newsgroup denied");
 				break;
 			}
+			if(!msgbase.is_open && !msgbase.open()) {
+				log(LOG_ERR, "Error " + msgbase.error + " opening " + msgbase.file);
+				writeln("503 unable to re-open message base");
+				break;
+			}
 			var first, last;
 			if(cmd[1]==undefined || cmd[1].length==0)
 				first=last=current_article;
@@ -581,6 +586,11 @@ while(client.socket.is_connected && !quit) {
 			}
 			if(!selected.can_read) {
 				writeln("412 read permission to newsgroup denied");
+				break;
+			}
+			if(!msgbase.is_open && !msgbase.open()) {
+				log(LOG_ERR, "Error " + msgbase.error + " opening " + msgbase.file);
+				writeln("503 unable to re-open message base");
 				break;
 			}
 			writeln("221 Header follows");
@@ -680,6 +690,11 @@ while(client.socket.is_connected && !quit) {
 			if(typeof(current_article)=="number"
 				&& (current_article<1 || isNaN(current_article))) {
 				writeln("420 no current article has been selected");
+				break;
+			}
+			if(!msgbase.is_open && !msgbase.open()) {
+				log(LOG_ERR, "Error " + msgbase.error + " opening " + msgbase.file);
+				writeln("503 unable to re-open message base");
 				break;
 			}
 
