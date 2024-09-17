@@ -66,6 +66,7 @@ DLLEXPORT char*			format_diz(const char* src, char* dest, size_t maxlen, int wid
 DLLEXPORT char*			prep_file_desc(const char *src, char* dst);
 DLLEXPORT int			file_client_hfields(file_t*, client_t*);
 DLLEXPORT int			file_sauce_hfields(file_t*, struct sauce_charinfo*);
+DLLEXPORT char*			liberal_filepattern(const char* filespec, char* buf, size_t size);
 
 DLLEXPORT str_list_t	directory(const char* path);
 DLLEXPORT long			create_archive(const char* archive, const char* format

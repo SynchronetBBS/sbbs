@@ -36,6 +36,7 @@ int extdesclines(char *str);
 int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, const int mode)
 {
 	char	hdr[256],letter='A';
+	char	filepattern[SMB_FILEIDX_NAMELEN + 1] = "";
 	uchar	flagprompt=0;
 	int		c, d;
 	int		i,j;
@@ -72,7 +73,7 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 
 	size_t file_count = 0;
 	file_t* file_list = loadfiles(&smb
-		, (mode & FL_FIND) ? NULL : filespec
+		, (mode & FL_FIND) ? NULL : liberal_filepattern(filespec, filepattern, sizeof filepattern)
 		, (mode & FL_ULTIME) ? ns_time : 0
 		, tofile == NULL ? file_detail_extdesc : file_detail_normal
 		, (enum file_sort)cfg.dir[dirnum]->sort
@@ -766,7 +767,7 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 
 	size_t file_count = 0;
 	file_t* file_list = loadfiles(&smb
-		, filespec
+		, liberal_filepattern(filespec, str, sizeof str)
 		, /* time_t */0
 		, file_detail_extdesc
 		, (enum file_sort)cfg.dir[dirnum]->sort

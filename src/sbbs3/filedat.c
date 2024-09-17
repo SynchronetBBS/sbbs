@@ -187,26 +187,29 @@ str_list_t loadfilenames(smb_t* smb, const char* filespec, time_t t, enum file_s
 	return file_list;
 }
 
+// Liberal filespec matching when filespec does not contain wildcards and is at least 12 chars in length
+char* liberal_filepattern(const char* filespec, char* buf, size_t size)
+{
+	char newfilespec[SMB_FILEIDX_NAMELEN + 1] = "";
+	size_t len = strlen(filespec);
+	if (len <  12 || strcspn(filespec, "*?") != len)
+		return (char*)filespec;
+	SAFECOPY(newfilespec, filespec);
+	char* ext = getfext(filespec);
+	char* newext = getfext(newfilespec);
+	if(ext != NULL && newext != NULL) {
+		*newext = 0;
+		SAFECAT(newfilespec, "*");
+		SAFECAT(newfilespec, ext);
+	} else
+		SAFECAT(newfilespec, "*");
+	strlcpy(buf, newfilespec, size);
+	return buf;
+}
+
 // Load and optionally-sort files from an open filebase into a dynamically-allocated list of "objects"
 file_t* loadfiles(smb_t* smb, const char* filespec, time_t t, enum file_detail detail, enum file_sort order, size_t* count)
 {
-	// Liberal filespec matching when filespec does not contain wildcards and is at least 12 chars in length
-	char newfilespec[SMB_FILEIDX_NAMELEN + 1] = "";
-	if(filespec != NULL) {
-		size_t len = strlen(filespec);
-		if(len >= 12 && strcspn(filespec, "*?") == len) {
-			SAFECOPY(newfilespec, filespec);
-			char* ext = getfext(filespec);
-			char* newext = getfext(newfilespec);
-			if(ext != NULL && newext != NULL) {
-				*newext = 0;
-				SAFECAT(newfilespec, "*");
-				SAFECAT(newfilespec, ext);
-			} else
-				SAFECAT(newfilespec, "*");
-			filespec = newfilespec;
-		}
-	}
 	*count = 0;
 
 	long start = 0;	
