@@ -369,6 +369,8 @@ function view_file_info(mode)
 					return;
 				}
 			}
+			if(console.aborted)
+				return;
 		}
 		console.putmsg(bbs.text(bbs.text.SearchingAllLibs));
 		for(var i=0; i<file_area.lib_list.length; i++) {
@@ -380,6 +382,8 @@ function view_file_info(mode)
 						return;
 					}
 				}
+				if(console.aborted)
+					return;
 			}
 		}
 	}
@@ -397,6 +401,8 @@ function view_files()
 				continue;
 			if(bbs.list_files(file_area.lib_list[bbs.curlib].dir_list[i].number, str, FL_VIEW))
 				break;
+			if(console.aborted)
+				return;
 		}
 		if(i<file_area.lib_list[bbs.curlib].dir_list.length)
 			return;
@@ -406,6 +412,8 @@ function view_files()
 				continue;
 			for(var j=0; j<file_area.lib_list[i].dir_list.length; j++) {
 				if(bbs.list_files(file_area.lib_list[i].dir_list[j].number, str, FL_VIEW))
+					return;
+				if(console.aborted)
 					return;
 			}
 		}
