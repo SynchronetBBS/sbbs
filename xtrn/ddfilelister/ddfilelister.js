@@ -5554,7 +5554,7 @@ function cursorRightCodeIdx(pStr)
 	};
 
 	retObj.idx = pStr.indexOf("\x01");
-	if (retObj.idx > -1 && pStr.length > retObj.idx+1)
+	while (retObj.idx > -1 && retObj.numSpaces == 0 && pStr.length > retObj.idx+1)
 	{
 		// The value of the next character would be 128 to 255 for a cursor-right code;
 		// number of spaces is the value - 127
@@ -5562,7 +5562,14 @@ function cursorRightCodeIdx(pStr)
 		if (nextCharVal >= 128)
 			retObj.numSpaces = nextCharVal - 127;
 		else
-			retObj.idx = -1;
+		{
+			// See if there's another \x01 after retObj.idx
+			retObj.idx = pStr.indexOf("\x01", retObj.idx+1);
+		}
 	}
+
+	if (retObj.idx > -1 && retObj.numSpaces == 0)
+		retObj.idx = -1;
+
 	return retObj;
 }
