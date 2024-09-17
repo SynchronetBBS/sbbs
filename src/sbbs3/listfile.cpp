@@ -71,9 +71,10 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 	if(smb_open_dir(&cfg, &smb, dirnum) != SMB_SUCCESS)
 		return 0;
 
+	filespec = liberal_filepattern(filespec, filepattern, sizeof filepattern);
 	size_t file_count = 0;
 	file_t* file_list = loadfiles(&smb
-		, (mode & FL_FIND) ? NULL : liberal_filepattern(filespec, filepattern, sizeof filepattern)
+		, (mode & FL_FIND) ? NULL : filespec
 		, (mode & FL_ULTIME) ? ns_time : 0
 		, tofile == NULL ? file_detail_extdesc : file_detail_normal
 		, (enum file_sort)cfg.dir[dirnum]->sort
@@ -740,6 +741,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 {
 	char	str[MAX_PATH + 1],path[MAX_PATH + 1],dirpath[MAX_PATH + 1],done=0,ch;
+	char	filepattern[SMB_FILEIDX_NAMELEN + 1] = "";
 	char 	tmp[512];
 	int		error;
 	int		found=0;
@@ -765,9 +767,10 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 	if(smb_open_dir(&cfg, &smb, dirnum) != SMB_SUCCESS)
 		return 0;
 
+	filespec = liberal_filepattern(filespec, filepattern, sizeof filepattern);
 	size_t file_count = 0;
 	file_t* file_list = loadfiles(&smb
-		, liberal_filepattern(filespec, str, sizeof str)
+		, filespec
 		, /* time_t */0
 		, file_detail_extdesc
 		, (enum file_sort)cfg.dir[dirnum]->sort
