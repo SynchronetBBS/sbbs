@@ -237,6 +237,7 @@ int smb_findfile(smb_t* smb, const char* filename, smbfile_t* file)
 
 		if(smb_fread(smb, &fidx, sizeof(fidx), smb->sid_fp) != sizeof(fidx))
 			break;
+		TERMINATE(fidx.name);
 
 		f->idx_offset = offset++;
 
@@ -438,7 +439,7 @@ int smb_removefile(smb_t* smb, smbfile_t* file)
 		}
 		rewind(smb->sid_fp);
 		for(uint32_t i = 0; i < smb->status.total_files; i++) {
-			if(stricmp(fidx[i].name, fname) == 0) {
+			if(strnicmp(fidx[i].name, fname, sizeof(fname) - 1) == 0) {
 				removed++;
 				continue;
 			}
