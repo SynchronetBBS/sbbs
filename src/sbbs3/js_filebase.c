@@ -1739,7 +1739,7 @@ static jsSyncMethodSpec js_filebase_functions[] = {
 	},
 	{"update",			js_update_file,		3, JSTYPE_BOOLEAN
 		,JSDOCSTR("filename, <i>object</i> file-meta-object [,<i>bool</i> use_diz_always=false] [,<i>bool</i> readd_always=false]")
-		,JSDOCSTR("Update an existing file in the file base"
+		,JSDOCSTR("Update metadata and/or rename an existing file in the file base"
 				", may throw exception on errors (e.g. file rename failure)")
 		,31900
 	},
