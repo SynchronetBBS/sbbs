@@ -630,6 +630,7 @@ void dumpindex(ulong start, ulong count)
 			fseek(smb.sid_fp,((start-1L) + l) * idxreclen,SEEK_SET);
 			if(!fread(&fidx,sizeof(fidx),1,smb.sid_fp))
 				break;
+			TERMINATE(fidx.name);
 			printf("  %02X  %.*s", fidx.hash.flags, (int)sizeof(fidx.name), fidx.name);
 		}
 		printf("\n");
