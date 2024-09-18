@@ -226,7 +226,7 @@ bool fwrite_dstats(FILE* fp, const stats_t* stats)
 }
 
 /****************************************************************************/
-/* If node is zero, reads from ctrl/dsts.ini, otherwise from each node		*/
+/* If node is zero, writes to ctrl/dsts.ini, otherwise each node's dsts.ini	*/
 /****************************************************************************/
 bool putstats(scfg_t* cfg, uint node, const stats_t* stats)
 {
