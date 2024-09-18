@@ -84,7 +84,7 @@ FILE* fopen_cstats(scfg_t* cfg, uint node, bool for_write)
 /****************************************************************************/
 bool fclose_dstats(FILE* fp)
 {
-	return fclose(fp);
+	return fclose(fp) == 0;
 }
 
 /****************************************************************************/
