@@ -321,7 +321,7 @@ static JSBool js_sub_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 static JSBool js_sub_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
 {
 	jsval idval;
-	int32		val=0;
+	uint32_t	val=0;
     jsint       tiny;
 	struct js_msg_area_priv *p;
 
@@ -337,16 +337,16 @@ static JSBool js_sub_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, j
 
 	switch(tiny) {
 		case SUB_PROP_SCAN_PTR:
-			if(!JS_ValueToInt32(cx, *vp, (int32*)&scan->ptr))
+			if(!JS_ValueToECMAUint32(cx, *vp, &scan->ptr))
 				return JS_FALSE;
 			break;
 		case SUB_PROP_SCAN_CFG:
-			if(!JS_ValueToInt32(cx, *vp, &val))
+			if(!JS_ValueToECMAUint32(cx, *vp, &val))
 				return JS_FALSE;
 			scan->cfg=(ushort)val;
 			break;
 		case SUB_PROP_LAST_READ:
-			if(!JS_ValueToInt32(cx, *vp, (int32*)&scan->last))
+			if(!JS_ValueToECMAUint32(cx, *vp, &scan->last))
 				return JS_FALSE;
 			break;
 	}
