@@ -1674,6 +1674,16 @@ void free_opts(char **opt)
 	free(opt);
 }
 
+const int user_status_len = 8;
+const char* user_status(user_t* user)
+{
+	if(user->misc & DELETED)
+		return "DELETED";
+	if(user->misc & INACTIVE)
+		return "INACTIVE";
+	return "active";
+}
+
 int finduser(scfg_t *cfg, user_t *user)
 {
 	int i,j,last;
@@ -1703,7 +1713,9 @@ int finduser(scfg_t *cfg, user_t *user)
 				FREE_AND_NULL(opt[j]);
 				if((opt[j]=(struct user_list *)malloc(sizeof(struct user_list)))==NULL)
 					allocfail(sizeof(struct user_list));
-				sprintf(opt[j]->info,"%1.1s%c%1.1s%c %-25.25s %c %-25.25s",user->misc&DELETED?"Y":"N",sepchar,user->misc&INACTIVE?"Y":"N",sepchar,user->name,sepchar,user->alias);
+				sprintf(opt[j]->info,"%-*s%c %-25.25s %c %-25.25s"
+					,user_status_len,user_status(user),sepchar
+					,user->name,sepchar,user->alias);
 				opt[j++]->usernum=i;
 			}
 		}
@@ -1712,7 +1724,7 @@ int finduser(scfg_t *cfg, user_t *user)
 			allocfail(sizeof(struct user_list));
 		opt[j]->info[0]=0;
 		i=0;
-		sprintf(title,"D%cI%c Real Name                 %c Alias                    ", sepchar, sepchar, sepchar);
+		sprintf(title," Status  %c Real Name                 %c Alias                    ", sepchar, sepchar);
 		switch(uifc.list(WIN_ORG|WIN_MID|WIN_ACT,0,0,0,&i,0,title,(char **)opt)) {
 			case -1:
 				done=1;
@@ -1754,7 +1766,9 @@ int getuser(scfg_t *cfg, user_t *user, char* str)
 				FREE_AND_NULL(opt[j]);
 				if((opt[j]=(struct user_list *)malloc(sizeof(struct user_list)))==NULL)
 					allocfail(sizeof(struct user_list));
-				sprintf(opt[j]->info,"%1.1s%c%1.1s%c %-25.25s %c %-25.25s",user->misc&DELETED?"Y":"N",sepchar,user->misc&INACTIVE?"Y":"N",sepchar,user->name,sepchar,user->alias);
+				sprintf(opt[j]->info,"%-*s%c %-25.25s %c %-25.25s"
+					,user_status_len,user_status(user),sepchar
+					,user->name,sepchar,user->alias);
 				opt[j++]->usernum=i;
 			}
 		}
@@ -1763,7 +1777,7 @@ int getuser(scfg_t *cfg, user_t *user, char* str)
 			allocfail(sizeof(struct user_list));
 		opt[j]->info[0]=0;
 		i=0;
-		sprintf(title, "D%cI%c Real Name                 %c Alias                    ", sepchar, sepchar, sepchar);
+		sprintf(title, " Status  %c Real Name                 %c Alias                    ", sepchar, sepchar);
 		switch(uifc.list(WIN_ORG|WIN_MID|WIN_ACT,0,0,0,&i,0,title,(char **)opt)) {
 			case -1:
 				done=1;
@@ -2129,11 +2143,13 @@ int main(int argc, char** argv)  {
 				for(i=1; i<=last; i++) {
 					user.number=i;
 					GETUSERDAT(&cfg,&user);
-					sprintf(opt[i-1],"%1.1s%c%1.1s%c %-25.25s %c %-25.25s",user.misc&DELETED?"Y":"N",sepchar,user.misc&INACTIVE?"Y":"N",sepchar,user.name,sepchar,user.alias);
+					sprintf(opt[i-1],"%-*s%c %-25.25s %c %-25.25s"
+						,user_status_len,user_status(&user)
+						,sepchar,user.name,sepchar,user.alias);
 				}
 				opt[i-1][0]=0;
 				i=0;
-				sprintf(str, "%cD%cI%c Real Name                 %c Alias                    ", sepchar, sepchar, sepchar, sepchar);
+				sprintf(str, " Status  %c Real Name                 %c Alias                    ", sepchar, sepchar);
 				switch(uifc.list(WIN_ORG|WIN_MID|WIN_ACT,0,0,0,&curuser,&curbar,str,opt)) {
 					case -1:
 						done=1;
@@ -2158,7 +2174,7 @@ int main(int argc, char** argv)  {
 				}
 				opt[j][0] = 0;
 				i=0;
-				sprintf(str, "Num  %c Real Name                 %c Alias                    ", sepchar, sepchar);
+				sprintf(str, " Num  %c Real Name                 %c Alias                    ", sepchar, sepchar);
 				switch(uifc.list(WIN_ORG|WIN_MID|WIN_ACT,0,0,0,&i,0,str,opt)) {
 					case -1:
 						done = 1;
