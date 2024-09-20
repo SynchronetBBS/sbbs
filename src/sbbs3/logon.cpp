@@ -52,8 +52,6 @@ bool sbbs_t::logon()
 	client.usernum = useron.number;
 	client_on(client_socket,&client,TRUE /* update */);
 
-	load_user_text();
-
 #ifdef JAVASCRIPT
 	js_create_user_objects(js_cx, js_glob);
 #endif
@@ -88,8 +86,10 @@ bool sbbs_t::logon()
 		else
 			useron.xedit=0;
 		useron.prot=cfg.new_prot;
-		useron.shell=cfg.new_shell; 
+		useron.shell=cfg.new_shell;
+		*useron.lang = '\0';
 	}
+	load_user_text();
 
 	if(!chk_ars(startup->login_ars, &useron, &client)) {
 		bputs(text[NoNodeAccess]);
