@@ -4382,7 +4382,7 @@ void sbbs_t::logoffstats()
 		if(fread_dstats(fp, &stats)) {
 			stats.total.timeon += minutes_used;
 			stats.today.timeon += minutes_used;
-			fwrite_dstats(fp, &stats);
+			fwrite_dstats(fp, &stats, __FUNCTION__);
 		}
 		fclose_dstats(fp);
 	}

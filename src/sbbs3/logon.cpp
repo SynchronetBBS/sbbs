@@ -657,7 +657,7 @@ uint sbbs_t::logonstats()
 			fwrite_cstats(csts, &stats);
 			fclose_cstats(csts);
 			rolloverstats(&stats);
-			fwrite_dstats(dsts, &stats);
+			fwrite_dstats(dsts, &stats, __FUNCTION__);
 			fclose_dstats(dsts);
 		} 
 	}
@@ -680,7 +680,7 @@ uint sbbs_t::logonstats()
 		fread_dstats(fp, &stats);
 		stats.today.logons++;
 		stats.total.logons++;
-		fwrite_dstats(fp, &stats);
+		fwrite_dstats(fp, &stats, __FUNCTION__);
 		fclose_dstats(fp);
 	}
 

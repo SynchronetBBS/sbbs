@@ -35,7 +35,7 @@ DLLEXPORT FILE*		fopen_cstats(scfg_t*, uint node, bool for_write);
 DLLEXPORT bool		fclose_cstats(FILE*);
 DLLEXPORT bool		fclose_dstats(FILE*);
 DLLEXPORT bool		fread_dstats(FILE*, stats_t*);
-DLLEXPORT bool		fwrite_dstats(FILE*, const stats_t*);
+DLLEXPORT bool		fwrite_dstats(FILE*, const stats_t*, const char* function);
 DLLEXPORT bool		fwrite_cstats(FILE*, const stats_t*);
 DLLEXPORT void		parse_cstats(str_list_t, stats_t*);
 DLLEXPORT bool		getstats(scfg_t*, uint node, stats_t*);

@@ -23,6 +23,7 @@
 #include "nopen.h"
 #include "smblib.h"
 #include "ini_file.h"
+#include "datewrap.h"
 #include "xpendian.h"
 #include "xpdatetime.h"
 #include "scfglib.h"
@@ -210,7 +211,23 @@ static void settotals(str_list_t* ini, const char* section, const totals_t* stat
 
 /****************************************************************************/
 /****************************************************************************/
-bool fwrite_dstats(FILE* fp, const stats_t* stats)
+static bool write_dstats(FILE* fp, str_list_t* ini, const char* function)
+{
+	time_t now = time(NULL);
+	char tstr[32];
+	char value[INI_MAX_VALUE_LEN + 1];
+	const char* key = "LastWrite";
+	char* last = iniGetString(*ini, ROOT_SECTION, key, NULL, value);
+	if(last != NULL)
+		iniSetString(ini, ROOT_SECTION, "PrevLastWrite", last, NULL);
+	safe_snprintf(value, sizeof value, "%.24s by %s", ctime_r(&now, tstr), function);
+	iniSetString(ini, ROOT_SECTION, key, value, NULL);
+	return iniWriteFile(fp, *ini);
+}
+
+/****************************************************************************/
+/****************************************************************************/
+bool fwrite_dstats(FILE* fp, const stats_t* stats, const char* function)
 {
 	bool result;
 	str_list_t ini;
@@ -222,7 +239,7 @@ bool fwrite_dstats(FILE* fp, const stats_t* stats)
 	iniSetDateTime(&ini, NULL, strStatsDate, /* include_time: */false, stats->date, /* style: */NULL);
 	settotals(&ini, strStatsToday, &stats->today);
 	settotals(&ini, strStatsTotal, &stats->total);
-	result = iniWriteFile(fp, ini);
+	result = write_dstats(fp, &ini, function);
 	iniFreeStringList(ini);
 
 	return result;
@@ -238,7 +255,7 @@ bool putstats(scfg_t* cfg, uint node, const stats_t* stats)
 	FILE* fp = fopen_dstats(cfg, node, /* for_write: */true);
 	if(fp == NULL)
 		return false;
-	result = fwrite_dstats(fp, stats);
+	result = fwrite_dstats(fp, stats, __FUNCTION__);
 	iniCloseFile(fp);
 	return result;
 }
@@ -376,7 +393,7 @@ static bool inc_xfer_stats(scfg_t* cfg, uint node, uint files, uint64_t bytes, c
 	ini = iniReadFile(fp);
 	inc_xfer_stat_keys(&ini, strStatsTotal, files, bytes, files_key, bytes_key);
 	inc_xfer_stat_keys(&ini, strStatsToday, files, bytes, files_key, bytes_key);
-	result = iniWriteFile(fp, ini);
+	result = write_dstats(fp, &ini, __FUNCTION__);
 	fclose_dstats(fp);
 	iniFreeStringList(ini);
 
@@ -413,7 +430,7 @@ static bool inc_post_stat(scfg_t* cfg, uint node, uint count)
 	ini = iniReadFile(fp);
 	iniSetUInteger(&ini, strStatsToday, strStatsPosts, iniGetUInteger(ini, strStatsToday, strStatsPosts, 0) + count, /* style: */NULL);
 	iniSetUInteger(&ini, strStatsTotal, strStatsPosts, iniGetUInteger(ini, strStatsTotal, strStatsPosts, 0) + count, /* style: */NULL);
-	result = iniWriteFile(fp, ini);
+	result = write_dstats(fp, &ini, __FUNCTION__);
 	fclose_dstats(fp);
 	iniFreeStringList(ini);
 
@@ -441,7 +458,7 @@ static bool inc_email_stat(scfg_t* cfg, uint node, uint count, bool feedback)
 	ini = iniReadFile(fp);
 	iniSetUInteger(&ini, strStatsToday, key, iniGetUInteger(ini, strStatsToday, key, 0) + count, /* style: */NULL);
 	iniSetUInteger(&ini, strStatsTotal, key, iniGetUInteger(ini, strStatsTotal, key, 0) + count, /* style: */NULL);
-	result = iniWriteFile(fp, ini);
+	result = write_dstats(fp, &ini, __FUNCTION__);
 	fclose_dstats(fp);
 	iniFreeStringList(ini);
 

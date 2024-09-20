@@ -3303,7 +3303,7 @@ int newuserdat(scfg_t* cfg, user_t* user)
 		if(fread_dstats(fp, &stats)) {
 			stats.today.nusers++;
 			stats.total.nusers++;
-			fwrite_dstats(fp, &stats);
+			fwrite_dstats(fp, &stats, __FUNCTION__);
 		}
 		fclose_dstats(fp);
 	}
