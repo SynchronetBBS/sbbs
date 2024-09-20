@@ -67,6 +67,10 @@ FILE* fopen_dstats(scfg_t* cfg, uint node, bool for_write)
     char path[MAX_PATH+1];
 
 	dstats_fname(cfg, node, path, sizeof(path));
+#ifdef _DEBUG
+	if(for_write)
+		backup(path, 99, /* rename: */false);
+#endif
 	return fnopen(NULL, path, for_write ? O_CREAT|O_RDWR : O_RDONLY);
 }
 
