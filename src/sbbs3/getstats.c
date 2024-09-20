@@ -114,7 +114,6 @@ static void gettotals(str_list_t ini, const char* section, totals_t* stats)
 
 /****************************************************************************/
 /* Reads data from dsts.ini into stats structure                            */
-/* If node is zero, reads from ctrl/dsts.ini, otherwise from each node		*/
 /****************************************************************************/
 bool fread_dstats(FILE* fp, stats_t* stats)
 {
@@ -377,7 +376,7 @@ static bool inc_xfer_stats(scfg_t* cfg, uint node, uint files, uint64_t bytes, c
 	ini = iniReadFile(fp);
 	inc_xfer_stat_keys(&ini, strStatsTotal, files, bytes, files_key, bytes_key);
 	inc_xfer_stat_keys(&ini, strStatsToday, files, bytes, files_key, bytes_key);
-	result = iniWriteFile(fp, ini) > 0;
+	result = iniWriteFile(fp, ini);
 	fclose_dstats(fp);
 	iniFreeStringList(ini);
 
@@ -414,7 +413,7 @@ static bool inc_post_stat(scfg_t* cfg, uint node, uint count)
 	ini = iniReadFile(fp);
 	iniSetUInteger(&ini, strStatsToday, strStatsPosts, iniGetUInteger(ini, strStatsToday, strStatsPosts, 0) + count, /* style: */NULL);
 	iniSetUInteger(&ini, strStatsTotal, strStatsPosts, iniGetUInteger(ini, strStatsTotal, strStatsPosts, 0) + count, /* style: */NULL);
-	result = iniWriteFile(fp, ini) > 0;
+	result = iniWriteFile(fp, ini);
 	fclose_dstats(fp);
 	iniFreeStringList(ini);
 
@@ -442,7 +441,7 @@ static bool inc_email_stat(scfg_t* cfg, uint node, uint count, bool feedback)
 	ini = iniReadFile(fp);
 	iniSetUInteger(&ini, strStatsToday, key, iniGetUInteger(ini, strStatsToday, key, 0) + count, /* style: */NULL);
 	iniSetUInteger(&ini, strStatsTotal, key, iniGetUInteger(ini, strStatsTotal, key, 0) + count, /* style: */NULL);
-	result = iniWriteFile(fp, ini) > 0;
+	result = iniWriteFile(fp, ini);
 	fclose_dstats(fp);
 	iniFreeStringList(ini);
 
