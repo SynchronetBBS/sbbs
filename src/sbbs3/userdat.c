@@ -2924,11 +2924,12 @@ bool user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
 	if(!is_download_free(cfg, dirnum, user, client))
 		subtract_cdt(cfg, user, f.cost);
 
+	bool result = true;
 	if(!(cfg->dir[dirnum]->misc&DIR_NOSTAT))
-		inc_download_stats(cfg, /* files: */1, bytes);
+		result = inc_download_stats(cfg, /* files: */1, bytes);
 
 	smb_freefilemem(&f);
-	return true;
+	return result;
 }
 #endif
 
