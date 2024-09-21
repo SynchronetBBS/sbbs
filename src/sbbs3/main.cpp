@@ -4379,7 +4379,9 @@ void sbbs_t::logoffstats()
 		FILE* fp = fopen_dstats(&cfg, i ? 0 : cfg.node_num, /* for_write: */true);
 		if(fp == NULL)
 			continue;
-		if(fread_dstats(fp, &stats)) {
+		if(!fread_dstats(fp, &stats)) {
+			errormsg(WHERE, ERR_READ, "dsts.ini", i);
+		} else {
 			stats.total.timeon += minutes_used;
 			stats.today.timeon += minutes_used;
 			fwrite_dstats(fp, &stats, __FUNCTION__);

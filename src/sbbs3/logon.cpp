@@ -652,12 +652,15 @@ uint sbbs_t::logonstats()
 				continue;
 			}
 
-			fread_dstats(dsts, &stats);
-			stats.date = time(NULL);
-			fwrite_cstats(csts, &stats);
-			fclose_cstats(csts);
-			rolloverstats(&stats);
-			fwrite_dstats(dsts, &stats, __FUNCTION__);
+			if(!fread_dstats(dsts, &stats)) {
+				errormsg(WHERE, ERR_READ, "dsts.ini", i);
+			} else {
+				stats.date = time(NULL);
+				fwrite_cstats(csts, &stats);
+				fclose_cstats(csts);
+				rolloverstats(&stats);
+				fwrite_dstats(dsts, &stats, __FUNCTION__);
+			}
 			fclose_dstats(dsts);
 		} 
 	}
@@ -677,10 +680,13 @@ uint sbbs_t::logonstats()
 			errormsg(WHERE, ERR_OPEN, "dsts.ini", i);
 			return(0L); 
 		}
-		fread_dstats(fp, &stats);
-		stats.today.logons++;
-		stats.total.logons++;
-		fwrite_dstats(fp, &stats, __FUNCTION__);
+		if(!fread_dstats(fp, &stats)) {
+			errormsg(WHERE, ERR_READ, "dsts.ini", i);
+		} else {
+			stats.today.logons++;
+			stats.total.logons++;
+			fwrite_dstats(fp, &stats, __FUNCTION__);
+		}
 		fclose_dstats(fp);
 	}
 
