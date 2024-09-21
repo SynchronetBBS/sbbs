@@ -126,13 +126,14 @@ bool fread_dstats(FILE* fp, stats_t* stats)
 		return false;
 
 	memset(stats, 0, sizeof(*stats));
-	ini = iniReadFile(fp);
+	if((ini = iniReadFile(fp)) == NULL)
+		return false;
 	stats->date    = iniGetDateTime(ini, NULL, strStatsDate, 0);
 	gettotals(ini, strStatsToday, &stats->today);
 	gettotals(ini, strStatsTotal, &stats->total);
 	iniFreeStringList(ini);
 
-	return feof(fp) != 0;
+	return true;
 }
 
 /****************************************************************************/
@@ -233,18 +234,20 @@ static bool write_dstats(FILE* fp, str_list_t* ini, const char* function)
 /****************************************************************************/
 bool fwrite_dstats(FILE* fp, const stats_t* stats, const char* function)
 {
-	bool result;
+	bool result = false;
 	str_list_t ini;
 
 	if(fp == NULL)
 		return false;
 
 	ini = iniReadFile(fp);
-	iniSetDateTime(&ini, NULL, strStatsDate, /* include_time: */false, stats->date, &ini_style);
-	settotals(&ini, strStatsToday, &stats->today);
-	settotals(&ini, strStatsTotal, &stats->total);
-	result = write_dstats(fp, &ini, function);
-	iniFreeStringList(ini);
+	if(ini != NULL) {
+		iniSetDateTime(&ini, NULL, strStatsDate, /* include_time: */false, stats->date, &ini_style);
+		settotals(&ini, strStatsToday, &stats->today);
+		settotals(&ini, strStatsTotal, &stats->total);
+		result = write_dstats(fp, &ini, function);
+		iniFreeStringList(ini);
+	}
 
 	return result;
 }
@@ -395,11 +398,13 @@ static bool inc_xfer_stats(scfg_t* cfg, uint node, uint files, uint64_t bytes, c
 	if(fp == NULL)
 		return false;
 	ini = iniReadFile(fp);
-	inc_xfer_stat_keys(&ini, strStatsTotal, files, bytes, files_key, bytes_key);
-	inc_xfer_stat_keys(&ini, strStatsToday, files, bytes, files_key, bytes_key);
-	result = write_dstats(fp, &ini, __FUNCTION__);
+	if(ini != NULL) {
+		inc_xfer_stat_keys(&ini, strStatsTotal, files, bytes, files_key, bytes_key);
+		inc_xfer_stat_keys(&ini, strStatsToday, files, bytes, files_key, bytes_key);
+		result = write_dstats(fp, &ini, __FUNCTION__);
+		iniFreeStringList(ini);
+	}
 	fclose_dstats(fp);
-	iniFreeStringList(ini);
 
 	return result;
 }
@@ -432,11 +437,13 @@ static bool inc_post_stat(scfg_t* cfg, uint node, uint count)
 	if(fp == NULL)
 		return false;
 	ini = iniReadFile(fp);
-	iniSetUInteger(&ini, strStatsToday, strStatsPosts, iniGetUInteger(ini, strStatsToday, strStatsPosts, 0) + count, &ini_style);
-	iniSetUInteger(&ini, strStatsTotal, strStatsPosts, iniGetUInteger(ini, strStatsTotal, strStatsPosts, 0) + count, &ini_style);
-	result = write_dstats(fp, &ini, __FUNCTION__);
+	if(ini != NULL) {
+		iniSetUInteger(&ini, strStatsToday, strStatsPosts, iniGetUInteger(ini, strStatsToday, strStatsPosts, 0) + count, &ini_style);
+		iniSetUInteger(&ini, strStatsTotal, strStatsPosts, iniGetUInteger(ini, strStatsTotal, strStatsPosts, 0) + count, &ini_style);
+		result = write_dstats(fp, &ini, __FUNCTION__);
+		iniFreeStringList(ini);
+	}
 	fclose_dstats(fp);
-	iniFreeStringList(ini);
 
 	return result;
 }
@@ -460,11 +467,13 @@ static bool inc_email_stat(scfg_t* cfg, uint node, uint count, bool feedback)
 	if(fp == NULL)
 		return false;
 	ini = iniReadFile(fp);
-	iniSetUInteger(&ini, strStatsToday, key, iniGetUInteger(ini, strStatsToday, key, 0) + count, &ini_style);
-	iniSetUInteger(&ini, strStatsTotal, key, iniGetUInteger(ini, strStatsTotal, key, 0) + count, &ini_style);
-	result = write_dstats(fp, &ini, __FUNCTION__);
+	if(ini != NULL) {
+		iniSetUInteger(&ini, strStatsToday, key, iniGetUInteger(ini, strStatsToday, key, 0) + count, &ini_style);
+		iniSetUInteger(&ini, strStatsTotal, key, iniGetUInteger(ini, strStatsTotal, key, 0) + count, &ini_style);
+		result = write_dstats(fp, &ini, __FUNCTION__);
+		iniFreeStringList(ini);
+	}
 	fclose_dstats(fp);
-	iniFreeStringList(ini);
 
 	return result;
 }
