@@ -1433,7 +1433,8 @@ void __fastcall TMainForm::StatsTimerTick(TObject *Sender)
 	if(!StatsForm->Visible)
 		return;
 
-    getstats(&cfg,0,&stats);
+    if(!getstats(&cfg,0,&stats))
+		return;
 
 	StatsForm->TotalLogons->Caption=AnsiString(stats.logons);
     StatsForm->LogonsToday->Caption=AnsiString(stats.ltoday);
@@ -1450,20 +1451,10 @@ void __fastcall TMainForm::StatsTimerTick(TObject *Sender)
     StatsForm->NewUsersToday->Caption=AnsiString(newusers=stats.nusers);
     StatsForm->PostsToday->Caption=AnsiString(stats.ptoday);
     StatsForm->UploadedFiles->Caption=AnsiString(stats.uls);
-	if(stats.ulb>=1024*1024)
-    	sprintf(str,"%.1fM",stats.ulb/(1024.0*1024.0));
-    else if(stats.ulb>=1024)
-    	sprintf(str,"%luK",stats.ulb/1024);
-    else
-    	sprintf(str,"%lu",stats.ulb);
+	byte_estimate_to_str(stats.ulb, str, sizeof str, 1, 1);
     StatsForm->UploadedBytes->Caption=AnsiString(str);
     StatsForm->DownloadedFiles->Caption=AnsiString(stats.dls);
-	if(stats.dlb>=1024*1024)
-    	sprintf(str,"%.1fM",stats.dlb/(1024.0*1024.0));
-    else if(stats.dlb>=1024)
-    	sprintf(str,"%luK",stats.dlb/1024);
-    else
-    	sprintf(str,"%lu",stats.dlb);
+	byte_estimate_to_str(stats.dlb, str, sizeof str, 1, 1);
     StatsForm->DownloadedBytes->Caption=AnsiString(str);
 
 	counter++;
