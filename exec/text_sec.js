@@ -20,6 +20,16 @@ function txtsec_data(sec)
 	return system.data_dir + "text/" + sec.code.toLowerCase();
 }
 
+function get_fpath(sec, fname)
+{
+	var path = file_getcase(txtsec_data(sec) + "/" + fname);
+	if(!path)
+		path = file_getcase(bbs.cmdstr(fname));
+	if(!path)
+		path = txtsec_data(sec) + "/" + file_getname(fname);
+	return path;
+}
+
 function read_list(sec)
 {
 	var f = new File(txtsec_data(sec) + ".ini");
@@ -27,21 +37,13 @@ function read_list(sec)
 		return [];
 	var list = f.iniGetAllObjects();
 	f.close();
-	for(var i = 0; i < list.length; i++) {
-		var fname = list[i].name;
-		var path = file_getcase(txtsec_data(sec) + "/" + fname);
-		if(!path)
-			path = file_getcase(bbs.cmdstr(fname));
-		if(path)
-			list[i].path = path;
-	}
 	return list;
 }
 
 function write_list(sec, list)
 {
 	var f = new File(txtsec_data(sec) + ".ini");
-	if(!f.open("wt"))
+	if(!f.open("w+t"))
 		return false;
 	f.iniSetAllObjects(list);
 	f.close();
@@ -61,6 +63,7 @@ if(!usrsec.length) {
 }
 bbs.node_action = NODE_RTXT;
 while(bbs.online) {
+	console.aborted = false;
 	if(bbs.menu_exists("text_sec"))
 		bbs.menu("text_sec");
 	else {
@@ -81,6 +84,7 @@ while(bbs.online) {
 		var prev;
 		var list = read_list(usrsec[cursec]);
 		var menu = "text" + (cursec + 1);
+		console.aborted = false;
 		if(bbs.menu_exists(menu))
 			bbs.menu(menu);
 		else {
@@ -119,7 +123,7 @@ while(bbs.online) {
 				for(var f = 0; f < files.length; f++) {
 					var match = false;
 					for(var j = 0; j < list.length && !match; j++) {
-						if(file_getname(list[j].path) == file_getname(files[f]))
+						if(file_getname(list[j].name) == file_getname(files[f]))
 							match = true;
 					}
 					if(!match) {
@@ -135,6 +139,12 @@ while(bbs.online) {
 				var path = fname;
 				if(!file_exists(path))
 					path = backslash(txtsec_data(usrsec[cursec])) + fname;
+				if(!file_exists(path)) {
+					console.print(format(bbs.text(FileDoesNotExist), path));
+					if(confirm("Create it"))
+						if(!(console.editfile(path)))
+							break;
+				}
 				console.printfile(path);
 				console.crlf();
 				console.print(bbs.text(AddTextFileDesc));
@@ -151,11 +161,11 @@ while(bbs.online) {
 				if(i < 1)
 					break;
 				i--;
-				var path = list[i].path;
+				var fpath = get_fpath(usrsec[cursec], list[i].name);
 				list.splice(i, 1);
 				if(write_list(usrsec[cursec], list) == true) {
-					if(file_exists(path) && !console.noyes(format(bbs.text(DeleteTextFileQ), path)))
-						file_remove(path);
+					if(file_exists(fpath) && !console.noyes(format(bbs.text(DeleteTextFileQ), fpath)))
+						file_remove(fpath);
 				}
 				break;
 			case 'E':
@@ -172,9 +182,10 @@ while(bbs.online) {
 						write_list(usrsec[cursec], list);
 					}
 				}
+				var fpath = get_fpath(usrsec[cursec], list[i].name);
 				if(!console.aborted
-					&& !console.noyes("Edit " + file_getname(list[i].path)))
-					console.editfile(list[i].path);
+					&& !console.noyes("Edit " + fpath))
+					console.editfile(fpath);
 				break;
 			default:
 				if(!cmd && typeof(prev) == "number")
@@ -194,11 +205,12 @@ while(bbs.online) {
 						console.putbyte(142);
 					if(console.term_supports(USER_RIP))
 						console.write("\x02|*\r\n");
+					var fpath = get_fpath(usrsec[cursec], list[cmd].name);
 					if(list[cmd].tail)
-						console.printtail(list[cmd].path, list[cmd].tail, mode);
+						console.printtail(fpath, list[cmd].tail, mode);
 					else
-						console.printfile(list[cmd].path, mode);
-					log(LOG_INFO, "read text file: " + list[cmd].path);
+						console.printfile(fpath, mode);
+					log(LOG_INFO, "read text file: " + fpath);
 					console.pause();
 					if(console.term_supports(USER_RIP))
 						console.write("\x02|*\r\n");
