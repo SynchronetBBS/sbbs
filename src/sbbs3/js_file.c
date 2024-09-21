@@ -1670,7 +1670,7 @@ js_iniReadAll(JSContext *cx, uintN argc, jsval *arglist)
 	rc=JS_SUSPENDREQUEST(cx);
 	str_list_t list = iniReadFile(p->fp);
 	JS_RESUMEREQUEST(cx, rc);
-	for(size_t i = 0; list[i] != NULL; i++) {
+	for(size_t i = 0; list != NULL && list[i] != NULL; i++) {
 		JSString* js_str;
 		if((js_str = JS_NewStringCopyZ(cx, list[i])) == NULL)
 			break;
