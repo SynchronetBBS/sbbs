@@ -255,6 +255,7 @@ int sbbs_t::process_edited_file(const char* src, const char* dest, int mode, uns
 		return -4;
 	}
 
+	len = -5;
 	if((fp=fopen(dest,"wb"))!=NULL) {
 		len=process_edited_text(buf, fp, mode, lines, maxlines);
 		fclose(fp);
@@ -1303,7 +1304,8 @@ bool sbbs_t::editfile(char *fname, uint maxlines, const char* to, const char* fr
 			SAFEPRINTF3(str,"created or edited file: %s (%ld bytes, %u lines)"
 				,path, l, lines);
 			logline(LOG_NOTICE,nulstr,str);
-		}
+		} else if (l < 0)
+			errormsg(WHERE, ERR_CREATE, path, l);
 		rioctl(IOSM|PAUSE|ABORT);
 		return true;
 	}
