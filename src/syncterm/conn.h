@@ -45,6 +45,16 @@ enum {
 	CONN_TYPE_TERMINATOR
 };
 
+#define IS_NETWORK_CONN(x) (                \
+	((x) == CONN_TYPE_RLOGIN) ||         \
+	((x) == CONN_TYPE_RLOGIN_REVERSED) || \
+	((x) == CONN_TYPE_TELNET) ||           \
+	((x) == CONN_TYPE_RAW) ||               \
+	((x) == CONN_TYPE_SSH) ||                \
+	((x) == CONN_TYPE_SSHNA) ||               \
+	((x) == CONN_TYPE_MBBS_GHOST) ||           \
+	((x) == CONN_TYPE_TELNETS))
+
 struct conn_api {
 	int               (*connect)(struct bbslist *bbs);
 	int               (*close)(void);

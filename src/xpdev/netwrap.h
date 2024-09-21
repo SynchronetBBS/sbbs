@@ -45,6 +45,9 @@ DLLEXPORT void			freeNameServerList(str_list_t);
 DLLEXPORT const char*	IPv4AddressToStr(uint32_t, char* dest, size_t size);
 DLLEXPORT uint32_t		parseIPv4Address(const char*);
 DLLEXPORT struct in6_addr parseIPv6Address(const char*);
+DLLEXPORT bool isValidHostname(const char *str);
+DLLEXPORT bool isValidAddressString(const char *str);
+DLLEXPORT bool isResolvableHostname(const char *str);
 
 #if defined(__cplusplus)
 }

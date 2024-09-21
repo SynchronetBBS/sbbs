@@ -2,6 +2,7 @@
 
 #include <dirwrap.h>
 #include <ini_file.h>
+#include <netwrap.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -2956,16 +2957,9 @@ show_bbslist(char *current, int connected)
 							    &(list[listcount - 1]->conn_type), NULL, "Connection Type",
 							    &(conn_types[1])) >= 0) {
 								list[listcount - 1]->conn_type++;
-								if ((list[listcount - 1]->conn_type != CONN_TYPE_MODEM)
-								    && (list[listcount - 1]->conn_type
-								    != CONN_TYPE_SERIAL)
-								    && (list[listcount - 1]->conn_type
-								    != CONN_TYPE_SERIAL_NORTS)
-								    && (list[listcount - 1]->conn_type
-								    != CONN_TYPE_SHELL)) {
+								if (IS_NETWORK_CONN(list[listcount - 1]->conn_type)) {
 									/* Default address to name, if appears to be address */
-									if (strchr(list[listcount - 1]->name, ' ') == NULL
-										&& strchr(list[listcount - 1]->name, '.') != NULL)
+									if (isResolvableHostname(list[listcount - 1]->name))
 										SAFECOPY(list[listcount - 1]->addr, list[listcount - 1]->name);
                                                                         /* Set the port too */
 									j = conn_ports[list[listcount - 1]->conn_type];

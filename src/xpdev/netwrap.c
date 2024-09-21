@@ -172,6 +172,125 @@ const char* IPv4AddressToStr(uint32_t addr, char* dest, size_t size)
 #endif
 }
 
+/*
+ * While RFC-952 limits a name to 24 characters, this is never enforced.
+ * RFC-952 also doesn't allow beginning or ending with a hyphen.
+ * RFC-952 also bans starting with a digit.
+ * RFC-1123 explicitly overrode the restriction against starting with a digit.
+ * RFC-1123 implicitly overrode the length restriction.
+ *
+ * The limit of 63 characters for a name comes from DNS, as does the 253
+ * (254 with trailing dot) overall limit.  If DNS isn't used, it's chaos.
+ */
+static bool
+isValidHostnameString(const char *str)
+{
+	size_t pos;
+	size_t seglen = 0;
+	size_t totallen = 0;
+	size_t segcount = 0;
+	bool last_was_hyphen = false;
+
+	while (*str) {
+		if ((*str >= 'a' && *str <= 'z')
+		    || (*str >= 'A' && *str <= 'Z')
+		    || (*str >= '0' && *str <= '9')
+		    || (*str == '-')
+		    || (*str == '.')) {
+			if (*str == '.') {
+				if (last_was_hyphen) {
+					return false;
+				}
+				if (seglen == 0) {
+					return false;
+				}
+				seglen = 0;
+			}
+			else {
+				if (seglen == 0) {
+					if (*str == '-') {
+						return false;
+					}
+					segcount++;
+				}
+				seglen++;
+				if (seglen > 63) {
+					return false;
+				}
+			}
+			totallen++;
+			if (totallen > 253) {
+				// Allow a trailing dot
+				if (totallen != 254 || *str != '.') {
+					return false;
+				}
+			}
+			last_was_hyphen = (*str == '-');
+		}
+		else {
+			return false;
+		}
+		str++;
+	}
+
+	return true;
+}
+
+bool
+isValidAddressString(const char *str)
+{
+	struct sockaddr_in in;
+	struct sockaddr_in6 in6;
+
+	/*
+	 * Per RFC-1123, we need to check for valid IP address first
+	 */
+	if (xp_inet_pton(AF_INET, str, &in) != -1)
+		return true;
+	if (xp_inet_pton(AF_INET6, str, &in6) != -1)
+		return true;
+
+	return false;
+}
+
+bool
+isValidHostname(const char *str)
+{
+	/*
+	 * Per RFC-1123, we need to check for valid IP address first
+	 */
+	if (isValidAddressString(str))
+		return true;
+
+	return isValidHostnameString(str);
+}
+
+bool
+isResolvableHostname(const char *str)
+{
+	if (!isValidHostname(str)) {
+		return false;
+	}
+
+	struct addrinfo hints = {0};
+	struct addrinfo *res = NULL;
+	const char portnum[2] = "1";
+
+	hints.ai_flags = PF_UNSPEC;
+	hints.ai_family = PF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_protocol = IPPROTO_TCP;
+	hints.ai_flags = AI_NUMERICSERV;
+#ifdef AI_ADDRCONFIG
+	hints.ai_flags |= AI_ADDRCONFIG;
+#endif
+	if (getaddrinfo(str, portnum, &hints, &res) != 0) {
+		return false;
+	}
+	freeaddrinfo(res);
+	return true;
+}
+
 #if NETWRAP_TEST
 int main(int argc, char** argv)
 {

@@ -15,19 +15,19 @@ If you need help with SyncTERM, the best places are:
    Connect to irc.synchro.net and find Deuce in #Synchronet.  Ask your
    question, then idle.  I can take hours to respond.  Do not give up,
    this is the quickest way to get a response.
-2) E-Mail:
-   I am usually fairly responsive to emails sent to me at
-   shurd@sasktel.net.  Please describe your issue as clearly as possible.
-3) Dove-Net:
-   I usually read Dove-Net regularly, and many other users can often
-   help with support issues.  Ask questions in the Hardware/Software Help
-   sub.  If your local BBS does not carry Dove-Net, you can telnet to
-   vert.synchro.net and leave messages there.
-4) SourceForge:
+2) SourceForge:
    The official SyncTERM project page at
    http://www.sf.net/projects/syncterm has a bug tracker and other
    features that will email me and provide tracking for issues that
    are filed.
+3) E-Mail:
+   I am usually fairly responsive to emails sent to me at
+   shurd@sasktel.net.  Please describe your issue as clearly as possible.
+4) Dove-Net:
+   I usually read Dove-Net regularly, and many other users can often
+   help with support issues.  Ask questions in the Hardware/Software Help
+   sub.  If your local BBS does not carry Dove-Net, you can telnet to
+   vert.synchro.net and leave messages there.
 
 Throughout this document, I will mention things which are not supported.
 These are things which I don't normally test, and are unlikely to work
@@ -69,7 +69,7 @@ build system is used.  There are a number of optional dependencies, and
 a large number of supported compile flags (many of which are shared with
 Synchronet).
 
-The biggest optional dependency is SDL 1.2 (from http://libsdl.org).
+The biggest optional dependency is SDL 2 (from http://libsdl.org).
 SyncTERM can use SDL for both graphics and sound.  X11 can also be used
 for graphics, and OSS, ALSA, or Portaudio can also provide sound.  These
 use run-time linking, so at compile time, only the headers are needed.
