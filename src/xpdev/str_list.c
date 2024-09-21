@@ -627,11 +627,16 @@ void strListFree(str_list_t* list)
 	}
 }
 
-static str_list_t str_list_read_file(FILE* fp, str_list_t* lp, size_t max_line_len)
+// Read from the current file position (in stream 'fp') to the end of file
+// adding each read line (up to max_line_len chars) to the specified string
+// list (or allocating a new one, when 'lp' is NULL).
+// Returns NULL of error (i.e. memory allocation or file read failure).
+// Upon error, the allocated list will be freed, but only if 'lp' was NULL.
+str_list_t strListReadFile(FILE* fp, str_list_t* lp, size_t max_line_len)
 {
 	char*		buf=NULL;
 	size_t		count;
-	str_list_t	list;
+	str_list_t	list = NULL;
 
 	if(max_line_len<1)
 		max_line_len=2048;
@@ -646,15 +651,20 @@ static str_list_t str_list_read_file(FILE* fp, str_list_t* lp, size_t max_line_l
 		count=strListCount(*lp);
 		while(!feof(fp)) {
 			if(buf==NULL && (buf=(char*)malloc(max_line_len+1))==NULL)
-				return(NULL);
+				break;
 			
 			if(fgets(buf,max_line_len+1,fp)==NULL)
 				break;
 			strListAppend(lp, buf, count++);
 		}
+		if(!feof(fp)) {
+			strListFreeStrings(list);
+			free(list);
+			free(buf);
+			return NULL;
+		}
 	}
-	if(buf)
-		free(buf);
+	free(buf);
 
 	return(*lp);
 }
@@ -664,7 +674,7 @@ size_t strListInsertFile(FILE* fp, str_list_t* lp, size_t index, size_t max_line
 	str_list_t	list;
 	size_t		count;
 
-	if((list=str_list_read_file(fp, NULL, max_line_len)) == NULL)
+	if((list = strListReadFile(fp, NULL, max_line_len)) == NULL)
 		return(0);
 
 	count = strListInsertList(lp, list, index);
@@ -672,11 +682,6 @@ size_t strListInsertFile(FILE* fp, str_list_t* lp, size_t index, size_t max_line
 	strListFree(&list);
 
 	return(count);
-}
-
-str_list_t strListReadFile(FILE* fp, str_list_t* lp, size_t max_line_len)
-{
-	return str_list_read_file(fp,lp,max_line_len);
 }
 
 size_t strListWriteFile(FILE* fp, const str_list_t list, const char* separator)
@@ -801,8 +806,7 @@ char* strListCreateBlock(str_list_t list)
 
 void strListFreeBlock(char* block)
 {
-	if(block!=NULL)
-		free(block);	/* this must be done here for Windows-DLL reasons */
+	free(block);	/* this must be done here for Windows-DLL reasons */
 }
 
 int strListTruncateTrailingWhitespaces(str_list_t list)
