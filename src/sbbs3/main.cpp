@@ -4384,7 +4384,8 @@ void sbbs_t::logoffstats()
 		} else {
 			stats.total.timeon += minutes_used;
 			stats.today.timeon += minutes_used;
-			fwrite_dstats(fp, &stats, __FUNCTION__);
+			if(!fwrite_dstats(fp, &stats, __FUNCTION__))
+				errormsg(WHERE, ERR_WRITE, "dsts.ini", i);
 		}
 		fclose_dstats(fp);
 	}

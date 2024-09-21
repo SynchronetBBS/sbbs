@@ -659,7 +659,8 @@ uint sbbs_t::logonstats()
 				fwrite_cstats(csts, &stats);
 				fclose_cstats(csts);
 				rolloverstats(&stats);
-				fwrite_dstats(dsts, &stats, __FUNCTION__);
+				if(!fwrite_dstats(dsts, &stats, __FUNCTION__))
+					errormsg(WHERE, ERR_WRITE, "dsts.ini", i);
 			}
 			fclose_dstats(dsts);
 		} 
@@ -685,7 +686,8 @@ uint sbbs_t::logonstats()
 		} else {
 			stats.today.logons++;
 			stats.total.logons++;
-			fwrite_dstats(fp, &stats, __FUNCTION__);
+			if(!fwrite_dstats(fp, &stats, __FUNCTION__))
+				errormsg(WHERE, ERR_WRITE, "dsts.ini", i);
 		}
 		fclose_dstats(fp);
 	}
