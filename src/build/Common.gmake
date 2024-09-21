@@ -253,6 +253,10 @@ ifndef win
 endif
 
 ifeq ($(os),darwin)
+ ifdef FAT
+  CFLAGS += -arch x86_64 -arch arm64
+  LDFLAGS += -arch x86_64 -arch arm64
+ endif
  ifeq ("$(machine_uname)","")
   ifeq ($(shell sysctl hw.optional.x86_64),hw.optional.x86_64: 1)
    machine_uname := x86_64
