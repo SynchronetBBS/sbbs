@@ -278,7 +278,7 @@ ifeq ($(os), netbsd)
 	paxctl +m $(JSEXEC)
 endif
 ifeq ($(os), freebsd)
-	elfctl -e +noprotmax,wxneeded $(JSDOOR)
+	elfctl -e +noprotmax,wxneeded $(JSEXEC)
 endif
 
 # ANS2ASC
