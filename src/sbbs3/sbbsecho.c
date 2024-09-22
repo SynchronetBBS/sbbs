@@ -6543,7 +6543,7 @@ int main(int argc, char **argv)
 			fclose(fp);
 //		lprintf(LOG_DEBUG, "Checking bad areas for areas we now carry - begin");
 		strListTruncateStrings(bad_areas, " \t\r\n");
-		for(i=0; bad_areas[i] != NULL; i++) {
+		for(i=0; bad_areas != NULL && bad_areas[i] != NULL; i++) {
 			if(area_is_valid(find_area(bad_areas[i]))) {			/* Do we carry this area? */
 				lprintf(LOG_DEBUG, "Removing area '%s' from bad areas list (since it is now carried locally)", bad_areas[i]);
 				free(strListRemove(&bad_areas, i));
