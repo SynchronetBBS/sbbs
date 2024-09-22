@@ -657,12 +657,12 @@ uint sbbs_t::logonstats()
 			} else {
 				stats.date = time(NULL);
 				fwrite_cstats(csts, &stats);
-				fclose_cstats(csts);
 				rolloverstats(&stats);
 				if(!fwrite_dstats(dsts, &stats, __FUNCTION__))
 					errormsg(WHERE, ERR_WRITE, "dsts.ini", i);
 			}
 			fclose_dstats(dsts);
+			fclose_cstats(csts);
 		} 
 	}
 
