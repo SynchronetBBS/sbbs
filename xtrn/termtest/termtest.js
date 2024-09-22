@@ -536,12 +536,12 @@ var tests = [
 		if (!interactive)
 			return null;
 		console.write("\x1b[=0M");
-		console.write("\x1b[MFCDEFG\x0e\x0f");
+		console.write("\x1b[MFCDEFG\x0e\x0f\x08 \x08");
 		var ret = console.yesno("Did you hear an ascending set of five notes");
 		if (ret)
 			return false;
 		console.write("\x1b[=2M");
-		console.write("\x1b[MFCDEFG\x0e\x0f");
+		console.write("\x1b[MFCDEFG\x0e\x0f\x08 \x08");
 		var ret = console.yesno("Did you hear an ascending set of five notes");
 		if (!ret)
 			return false;
@@ -551,7 +551,7 @@ var tests = [
 	{'name':'BCAM', 'func':function() {
 		if (!interactive)
 			return null;
-		console.write("\x1b[NCDEFG\x0e\x0f");
+		console.write("\x1b[NCDEFG\x0e\x0f\x08 \x08");
 		return ret = console.yesno("Did you hear an ascending set of five notes");
 	}},
 	{'name':'DCH', 'func':function() {
