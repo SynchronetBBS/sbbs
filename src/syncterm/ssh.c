@@ -1021,10 +1021,10 @@ ssh_close(void)
 			sftpc_end(sftp_state);
 		close_ssh_channel();
 		cryptDestroySession(ssh_session);
-		if (ssh_sock != INVALID_SOCKET) {
-			closesocket(ssh_sock);
-			ssh_sock = INVALID_SOCKET;
-		}
+	}
+	if (ssh_sock != INVALID_SOCKET) {
+		closesocket(ssh_sock);
+		ssh_sock = INVALID_SOCKET;
 	}
 	destroy_conn_buf(&conn_inbuf);
 	destroy_conn_buf(&conn_outbuf);
