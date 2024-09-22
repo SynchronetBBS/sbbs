@@ -427,7 +427,8 @@ most of the options are the same or silimar.
         Commodore and Atari modes will also change the selected font.
         If the current font is a mode-specific one (such as C64 or Atari),
         Changing from that mode to a standard one will change the font
-        to Codepage 437 English.
+        to Codepage 437 English.  See Current Screen Mode and Custom
+        Screen Mode for additional information.
 
     Hide Status Line: Indicates that the "status line" at the bottom of
         the window when connected should not be displayed.  This allows
@@ -506,7 +507,7 @@ most of the options are the same or silimar.
         remote, which will enable authentication using the private key on
         at least OpenSSH and new versions of Synchronet.  This option
         requires SFTP support from the remote side, and may cause connection
-        stability issues of SFTP is not available or does not work correctly.
+        stability issues if SFTP is not available or does not work correctly.
 
 
                         Modifying the Sort Order
@@ -598,3 +599,201 @@ configurable in SyncTERM.
 
 GR: Set to GR (for "GRaphics", meaning ANSI-BBS support) or NG
 (for "No Graphics").  Always set to GR.  Not configurable in SyncTERM.
+
+
+                           SyncTERM Settings
+
+The SyncTERM Settings menu has the following options:
+
+Default Connection Settings: Set the default values for a new directory
+    entry.  See Edit Directory Entry for details on these options.
+
+Current Screen Mode: Changes the current screen mode.  For directory
+    entries where the screen mode is "Current", will be used during the
+    connection.  This setting is not saved across program restarts.
+    To change the startup screen mode, see
+    SyncTERM Settings → Program Settings → Startup Screen Mode.
+
+Font Management: Allows setting up custom font files.
+
+Program Settings: Allows changing settings that are preserved across
+    reboots.
+
+File Locations: Shows the paths to the various files and directories
+    that SyncTERM will access.
+
+
+                       Current Screen Mode
+
+This temporarily sets the screen mode.  A screen mode defines the number
+of rows and columns in the window, which font size to use (8x8, 8x14, or
+8x16), and the aspect ratio to scale pixels to.  The majority of these
+modes are based on historical analog hardware modes, so most of them do
+not use square pixels.  The main exceptions are LCD80x25, which is an
+80x25 mode that uses square pixels and the 8x16 font, and VGA80x25, which
+is an 80x25 mode that uses square pixels, the 8x16 font, and performs the
+VGA column expansion to use 9 pixel wide cells.
+
+
+                        Font Management
+
+The Font Management menu allows you to add and remove fonts.  Each font
+should have a unique name, and at least one file for 8x8, 8x14, or 8x16
+fonts.  The font format is the one used by "DOS fonts".  You can insert
+and delete items using normal UIFC commands.
+
+
+                        Program Settings
+
+Confirm Program Exit: Asks if you are sure you want to quit when pressing
+    ESC or right-clicking in the main SyncTERM screen.
+
+Prompt To Save: If enabled, when SyncTERM is started with a URI that is
+    not in a dialing directory, asks if you want to add the entry to the
+    directory.
+
+Startup Screen Mode: The screen mode that is used when SyncTERM starts.
+
+Video Output Mode: The method of displaying SyncTERM output.  The options
+    will vary by OS, compile-time options, and installed libraries.  See
+    the -I option to SyncTERM for details on the various modes.
+
+Scrollback Buffer Lines: The maximum number of lines to keep in the
+    scrollback.  Once this number is reached, the oldest lines are
+    removed to make room for new lines.
+
+Modem/Comm Device: The device name for the Modem device.  For UNIX-like
+    systems, this will be something like "/dev/ttyd0".  For Windows, this
+    will be "COM1" to "COM9".  If it's COM10 or higher, it needs to be
+    specified as "\\.\COM10".
+
+Modem/Comm Rate: Specifies the speed to communicate with the modem at.
+    If set to 0, the speed is not set by SyncTERM, and the default is
+    used.
+
+Modem Init String: The string to send to the modem when the device is
+    first opened to prepare it to be used.
+
+Modem Dial String: A string that is sent immediately before the phone
+    number to cause the modem to dial.
+
+List Path: The path to load the personal dialing directory from.
+
+TERM For Shell: The value that the TERM variable is set to for shell
+    type connections.
+
+Scaling: Select to cycle through the values "Blocky", "Pointy", and
+    "External".  Blocky scales each pixel to a rectangle, and Pointy
+    will use 45° angles.  External will use hardware scaling if possible.
+    The quality of External scaling varies wildly based on OS, device
+    drivers, and output mode.
+
+Custom Screen Mode: Allows defining the Rows, Columns, Font Size, and
+    Aspect Ratio of the "Custom" screen mode.
+
+
+                      Connected State
+
+When you are connected to a system, there are a number of controls
+available that are not sent to the remote.
+
+For Curses and ANSI modes, only two controls are avilable, and they
+are not available in other modes.  This is because these two modes
+don't have access to keys that could not potentially be sent to the
+remote.  To help avoid conflict with remote systems, the XON (CTRL-Q)
+and XOFF (CTRL-S) codes that are used for software flow control are
+used.
+
+CTRL-Q: Disconnects from the current session.
+
+CTRL-S: Brings up the Online Menu (see below)
+
+For all other modes, the ALT key is used for SyncTERM commands, and
+the following combinations are supported:
+
+Shift-Insert: Pastes the current PRIMARY selection or clipboard
+    contents to the remote.
+
+ALT-B: View scrollback (See "Viewing The Scrollback")
+
+ALT-C: Capture Control.  Allows starting and stopping capturing the
+    session to a file.  Useful for stealing ANSIs and debugging
+    emulation issues.
+
+ALT-D: Begins a download from the remote system.
+
+ALT-E: Brings up the Dialing Directory
+
+ALT-F: Allows selecting a different font.  In some output modes, the
+    selected font will change text that is already on the screen.
+    In most modes however, only newly displayed text will be in the
+    new font.
+
+ALT-H: Hangup and return to the main menu.
+
+ALT-L: Send auto-login information.  For protocols that allow auto-
+    login, only the system password is sent.  For all others, the
+    username is sent followed by a carriage return, then the password
+    followed by a CR, then the system password followed by the CR.
+    If any of these are not configured for the current entry, neither
+    them, nor the CR are sent for that item.
+
+ALT-M: Changes the currently supported "ANSI" Music prefix.
+
+ALT-O: Toggles remote mouse support.  With the remote capturing mouse
+    events, it can be difficult to select text to copy.  ALT-O allows
+    taking the mouse away from the remote.
+
+ALT-U: Upload a file to the remote.
+
+ALT-X: Disconnect and exit SyncTERM.  Does not return to the main
+    menu.
+
+ALT-Z: Brings up the Online Menu (see below)
+
+ALT-UpArrow: Selects the next fastest character pacing speed.  If the
+    fastest speed is currently selected, disables character pacing.
+    If pacing is currently disabled, selects the slowest pacing speed.
+
+ALT-DownArrow: Selects the next slowest character pacing speed.  If
+    the slowest speed is currently selected, disables character pacing.
+    If pacing is currently disabled, selects the fastest pacing speed.
+
+
+                                Online Menu
+
+Allows menu-based selection of some of the above options, as well as
+some less-common operations that don't have a keyboard shortcut.
+
+Scrollback: See ALT-B
+
+Disconnect: See ALT-H
+
+Send Login: See ALT-L
+
+Upload: See ALT-U
+
+Download: See ALT-D
+
+Change Output Rate: Allows selecting a specific character pacing to
+    use.
+
+Change Log Level: Temporarily changes the file transfer log level
+
+Capture Control: See ALT-C
+
+ANSI Music Control: See ALT-M
+
+Font Setup: See ALT-F
+
+Toggle Doorway Mode: Turns on or off Doorway mode without the host
+    specifying it.  Can be used to recover from broken remote software.
+
+Toggle Remote Mouse: See ALT-O
+
+Toggle Operation Overkill ][ Mode: Turns on or off OO][ mode.
+    Can be used to recover from broken remote software.
+
+Exit: See ALT-X
+
+Edit Dialing Directory: See ALT-E

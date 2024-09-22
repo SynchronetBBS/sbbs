@@ -4133,8 +4133,8 @@ doterm(struct bbslist *bbs)
 					    && (cio_api.mode != CIOLIB_MODE_CURSES_IBM)
 					    && (cio_api.mode != CIOLIB_MODE_ANSI)) {
                                                         /* FALLTHROUGH for curses/ansi modes */
-							case 0x2d00: /* Alt-X - Exit */
-							case CIO_KEY_QUIT:
+				case 0x2d00: /* Alt-X - Exit */
+				case CIO_KEY_QUIT:
 								if (!check_exit(true))
 									break;
 					}
