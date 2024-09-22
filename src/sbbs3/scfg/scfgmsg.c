@@ -135,8 +135,10 @@ long import_msg_areas(enum import_list_type type, FILE* stream, int grpnum
 			if(ini == NULL)
 				return 0;
 			list = iniGetSectionList(ini, /* prefix: */NULL);
-			if(list == NULL)
+			if(list == NULL) {
+				strListFree(&ini);
 				return 0;
+			}
 			break;
 		default: // EchoLists (e.g. BACKBONE.NA, badareas.lst) and AREAS.BBS
 			new_sub_misc = SUB_FIDO;
