@@ -27,7 +27,7 @@
 #pragma warning(disable : 4244 4267 4018)
 #endif
 
-SOCKET          ssh_sock;
+SOCKET          ssh_sock = INVALID_SOCKET;
 CRYPT_SESSION   ssh_session;
 int             ssh_channel;
 bool            ssh_active = true;
