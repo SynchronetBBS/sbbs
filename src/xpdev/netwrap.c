@@ -185,12 +185,12 @@ const char* IPv4AddressToStr(uint32_t addr, char* dest, size_t size)
 static bool
 isValidHostnameString(const char *str)
 {
-	size_t pos;
 	size_t seglen = 0;
 	size_t totallen = 0;
-	size_t segcount = 0;
 	bool last_was_hyphen = false;
 
+	if (!*str)
+		return false;
 	while (*str) {
 		if ((*str >= 'a' && *str <= 'z')
 		    || (*str >= 'A' && *str <= 'Z')
@@ -211,7 +211,6 @@ isValidHostnameString(const char *str)
 					if (*str == '-') {
 						return false;
 					}
-					segcount++;
 				}
 				seglen++;
 				if (seglen > 63) {

@@ -1257,6 +1257,8 @@ get_syncterm_filename(char *fn, int fnlen, int type, bool shared)
 		sprintf(fn, "%.*s", fnlen - 1, config_override);
 		return fn;
 	}
+if ((type == SYNCTERM_PATH_LIST) && !shared)
+fprintf(stderr, "List override = %p, type = %d (%d), shared: %d\n", list_override, type, SYNCTERM_PATH_LIST, shared);
 	if ((list_override != NULL) && (type == SYNCTERM_PATH_LIST) && !shared) {
 		sprintf(fn, "%.*s", fnlen - 1, list_override);
 		return fn;
