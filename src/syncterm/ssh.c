@@ -1031,5 +1031,6 @@ ssh_close(void)
 	FREE_AND_NULL(conn_api.rd_buf);
 	FREE_AND_NULL(conn_api.wr_buf);
 	pthread_mutex_destroy(&ssh_mutex);
+	pthread_mutex_init(&ssh_tx_mutex);
 	return 0;
 }
