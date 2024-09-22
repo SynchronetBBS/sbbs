@@ -64,6 +64,7 @@ struct syncterm_settings {
 	struct modem_settings mdm;
 	char                  TERM[INI_MAX_VALUE_LEN + 1];
 	char                  list_path[MAX_PATH + 1];
+	char                  stored_list_path[MAX_PATH + 1];
 	double                scaling_factor;
 	int                   xfer_failure_keypress_timeout; /* wait for user acknowledgement via keypress, in seconds
                                                               */
@@ -82,6 +83,7 @@ struct syncterm_settings {
 };
 
 extern char                    *inpath;
+extern char                    *list_override;
 extern const char              *syncterm_version;
 extern struct vmem_cell        *scrollback_buf;
 extern uint32_t                *scrollback_fbuf;

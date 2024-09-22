@@ -1962,7 +1962,7 @@ change_settings(int connected)
 		SAFEPRINTF(opts[6], "Modem/Comm Rate         %s", str);
 		SAFEPRINTF(opts[7], "Modem Init String       %s", settings.mdm.init_string);
 		SAFEPRINTF(opts[8], "Modem Dial String       %s", settings.mdm.dial_string);
-		SAFEPRINTF(opts[9], "List Path               %s", settings.list_path);
+		SAFEPRINTF(opts[9], "List Path               %s", settings.stored_list_path);
 		SAFEPRINTF(opts[10], "TERM For Shell          %s", settings.TERM);
 		sprintf(opts[11],   "Scaling                 %s", scaling_names[settings_to_scale()]);
 		if (connected)
@@ -2211,13 +2211,15 @@ change_settings(int connected)
 			case 9:
 				uifc.helpbuf = "`List Path`\n\n"
 				    "The complete path to the BBS list goes here.\n";
-				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "List Path", settings.list_path, MAX_PATH,
+				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "List Path", settings.stored_list_path, MAX_PATH,
 				    K_EDIT) >= 0) {
 					iniSetString(&inicontents,
 					    "SyncTERM",
 					    "ListPath",
-					    settings.list_path,
+					    settings.stored_list_path,
 					    &ini_style);
+					if (list_override == NULL)
+						SAFECOPY(settings.list_path, settings.stored_list_path);
 				}
 				else {
 					check_exit(false);

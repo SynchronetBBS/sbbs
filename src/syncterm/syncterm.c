@@ -1257,8 +1257,6 @@ get_syncterm_filename(char *fn, int fnlen, int type, bool shared)
 		sprintf(fn, "%.*s", fnlen - 1, config_override);
 		return fn;
 	}
-if ((type == SYNCTERM_PATH_LIST) && !shared)
-fprintf(stderr, "List override = %p, type = %d (%d), shared: %d\n", list_override, type, SYNCTERM_PATH_LIST, shared);
 	if ((list_override != NULL) && (type == SYNCTERM_PATH_LIST) && !shared) {
 		sprintf(fn, "%.*s", fnlen - 1, list_override);
 		return fn;
@@ -1338,8 +1336,14 @@ load_settings(struct syncterm_settings *set)
 	set->custom_fontheight = iniReadInteger(inifile, "SyncTERM", "CustomFontHeight", 16);
 	set->custom_aw = iniReadInteger(inifile, "SyncTERM", "CustomAspectWidth", 4);
 	set->custom_ah = iniReadInteger(inifile, "SyncTERM", "CustomAspectHeight", 3);
-	get_syncterm_filename(set->list_path, sizeof(set->list_path), SYNCTERM_PATH_LIST, false);
-	iniReadSString(inifile, "SyncTERM", "ListPath", set->list_path, set->list_path, sizeof(set->list_path));
+	get_syncterm_filename(set->stored_list_path, sizeof(set->stored_list_path), SYNCTERM_PATH_LIST, false);
+	iniReadSString(inifile, "SyncTERM", "ListPath", set->stored_list_path, set->stored_list_path, sizeof(set->stored_list_path));
+	if (list_override != NULL) {
+		SAFECOPY(set->list_path, list_override);
+	}
+	else {
+		SAFECOPY(set->list_path, set->stored_list_path);
+	}
 	set->scaling_factor = iniReadFloat(inifile, "SyncTERM", "ScalingFactor", 0);
 	set->blocky = iniReadBool(inifile, "SyncTERM", "BlockyScaling", true);
 	set->extern_scale = iniReadBool(inifile, "SyncTERM", "ExternalScaling", false);
@@ -1564,6 +1568,41 @@ main(int argc, char **argv)
 	uifc.esc_delay = 25;
 	url[0] = 0;
 
+	/*
+	 * We need to parse -n and -b before we call load_settings()
+	 * so that get_syncterm_filename works properly
+	 */
+	for (i = 1; i < argc; i++) {
+		if (argv[i][0] == '-'
+#ifndef __unix__
+		    || argv[i][0] == '/'
+#endif
+		    ) {
+			switch (toupper(argv[i][1])) {
+				case 'B':
+					if (argv[i][2] == 0) {
+						if ((i + 1) < argc)
+							list_override = argv[++i];
+						// Error handling below
+					}
+					else {
+						list_override = &argv[i][2];
+					}
+					break;
+				case 'N':
+					if (argv[i][2] == 0) {
+						if ((i + 1) < argc)
+							config_override = argv[++i];
+						// Error handling below
+					}
+					else {
+						config_override = &argv[i][2];
+					}
+					break;
+			}
+		}
+	}
+
 	load_settings(&settings);
 	cvmode = find_vmode(CIOLIB_MODE_CUSTOM);
 	vparams[cvmode].cols = settings.custom_cols;
@@ -1598,24 +1637,30 @@ main(int argc, char **argv)
 					break;
 				case 'B':
 					if (argv[i][2] == 0) {
-						if ((i + 1) < argc)
-							list_override = argv[++i];
+						if ((i + 1) < argc) {
+							// This has already been parsed above...
+							//list_override = argv[++i];
+						}
 						else
 							goto USAGE;
 					}
 					else {
-						list_override = &argv[i][2];
+						// This has already been parsed above...
+						//list_override = &argv[i][2];
 					}
 					break;
 				case 'N':
 					if (argv[i][2] == 0) {
-						if ((i + 1) < argc)
-							config_override = argv[++i];
+						if ((i + 1) < argc) {
+							// This has already been parsed above...
+							//config_override = argv[++i];
+						}
 						else
 							goto USAGE;
 					}
 					else {
-						config_override = &argv[i][2];
+						// This has already been parsed above...
+						//config_override = &argv[i][2];
 					}
 					break;
 				case 'C':
