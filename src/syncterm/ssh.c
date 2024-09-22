@@ -29,8 +29,8 @@
 
 SOCKET          ssh_sock = INVALID_SOCKET;
 CRYPT_SESSION   ssh_session;
-int             ssh_channel;
-bool            ssh_active = true;
+int             ssh_channel = -1;
+bool            ssh_active;
 pthread_mutex_t ssh_mutex;
 pthread_mutex_t ssh_tx_mutex;
 int             sftp_channel = -1;
@@ -739,8 +739,6 @@ ssh_connect(struct bbslist *bbs)
 	if (ssh_sock == INVALID_SOCKET)
 		return -1;
 
-	ssh_active = true;
-
 	if (!bbs->hidepopups)
 		uifc.pop("Creating Session");
 	status = cryptCreateSession(&ssh_session, CRYPT_UNUSED, CRYPT_SESSION_SSH);
@@ -748,6 +746,8 @@ ssh_connect(struct bbslist *bbs)
 		error_popup(bbs, "creating session", status);
 		return -1;
 	}
+	ssh_active = true;
+
 
 	/* we need to disable Nagle on the socket. */
 	if (setsockopt(ssh_sock, IPPROTO_TCP, TCP_NODELAY, (char *)&off, sizeof(off)))
@@ -889,7 +889,6 @@ ssh_connect(struct bbslist *bbs)
 	}
 	FlushData(ssh_session);
 
-	ssh_active = true;
 	if (!bbs->hidepopups) {
 		uifc.pop(NULL);
 		uifc.pop("Clearing Ownership");
@@ -1002,27 +1001,31 @@ ssh_close(void)
 {
 	char garbage[1024];
 
-	cryptSetAttribute(ssh_session, CRYPT_OPTION_NET_READTIMEOUT, 1);
-	cryptSetAttribute(ssh_session, CRYPT_OPTION_NET_WRITETIMEOUT, 1);
 	conn_api.terminate = 1;
-	ssh_active = false;
-	if (sftp_state)
-		sftpc_finish(sftp_state);
-	while (conn_api.input_thread_running == 1 || conn_api.output_thread_running == 1 || pubkey_thread_running) {
-		conn_recv_upto(garbage, sizeof(garbage), 0);
-		SLEEP(1);
+	if (ssh_active) {
+		cryptSetAttribute(ssh_session, CRYPT_OPTION_NET_READTIMEOUT, 1);
+		cryptSetAttribute(ssh_session, CRYPT_OPTION_NET_WRITETIMEOUT, 1);
+		ssh_active = false;
+		if (sftp_state)
+			sftpc_finish(sftp_state);
+		while (conn_api.input_thread_running == 1 || conn_api.output_thread_running == 1 || pubkey_thread_running) {
+			conn_recv_upto(garbage, sizeof(garbage), 0);
+			SLEEP(1);
+		}
+		pthread_mutex_lock(&ssh_mutex);
+		int sc = sftp_channel;
+		pthread_mutex_unlock(&ssh_mutex);
+		if (sc != -1)
+			close_sftp_channel(sc);
+		if (sftp_state)
+			sftpc_end(sftp_state);
+		close_ssh_channel();
+		cryptDestroySession(ssh_session);
+		if (ssh_sock != INVALID_SOCKET) {
+			closesocket(ssh_sock);
+			ssh_sock = INVALID_SOCKET;
+		}
 	}
-	pthread_mutex_lock(&ssh_mutex);
-	int sc = sftp_channel;
-	pthread_mutex_unlock(&ssh_mutex);
-	if (sc != -1)
-		close_sftp_channel(sc);
-	if (sftp_state)
-		sftpc_end(sftp_state);
-	close_ssh_channel();
-	cryptDestroySession(ssh_session);
-	closesocket(ssh_sock);
-	ssh_sock = INVALID_SOCKET;
 	destroy_conn_buf(&conn_inbuf);
 	destroy_conn_buf(&conn_outbuf);
 	FREE_AND_NULL(conn_api.rd_buf);
