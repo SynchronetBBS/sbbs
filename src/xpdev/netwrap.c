@@ -268,13 +268,13 @@ isValidHostname(const char *str)
 bool
 isResolvableHostname(const char *str)
 {
-	if (!isValidHostname(str)) {
-		return false;
-	}
-
 	struct addrinfo hints = {0};
 	struct addrinfo *res = NULL;
 	const char portnum[2] = "1";
+
+	if (!isValidHostname(str)) {
+		return false;
+	}
 
 	hints.ai_flags = PF_UNSPEC;
 	hints.ai_family = PF_UNSPEC;
