@@ -175,10 +175,6 @@ $(SBBS): $(JS_DEPS) $(CRYPT_DEPS) $(OBJS) $(LIBS) $(EXTRA_SBBS_DEPENDS) $(ENCODE
 ifeq ($(os), netbsd)
 	paxctl +m $(SBBS)
 endif
-ifeq ($(os), freebsd)
-	elfctl -e +noprotmax,wxneeded $(SBBS)
-endif
-
 
 # FTP Server Link Rule
 $(FTPSRVR): $(MTOBJODIR)/ftpsrvr.o
@@ -204,6 +200,9 @@ $(SERVICES): $(SERVICE_OBJS)
 $(SBBSCON): $(CON_OBJS) $(SBBS) $(FTPSRVR) $(WEBSRVR) $(MAILSRVR) $(SERVICES)
 	@echo Linking $@
 	$(QUIET)$(CXX) $(LDFLAGS) $(MT_LDFLAGS) -o $@ $(CON_OBJS) $(CON_LIBS) $(SMBLIB_LIBS) $(XPDEV-MT_LIBS)
+ifeq ($(os), freebsd)
+	elfctl -e +noprotmax,wxneeded $(SBBSCON)
+endif
 
 # Baja Utility
 $(BAJA): $(BAJA_OBJS) | $(EXEODIR)
