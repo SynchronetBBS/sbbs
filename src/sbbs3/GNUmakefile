@@ -175,6 +175,10 @@ $(SBBS): $(JS_DEPS) $(CRYPT_DEPS) $(OBJS) $(LIBS) $(EXTRA_SBBS_DEPENDS) $(ENCODE
 ifeq ($(os), netbsd)
 	paxctl +m $(SBBS)
 endif
+ifeq ($(os), freebsd)
+	elfctl -e +noprotmax $(SBBS)
+endif
+
 
 # FTP Server Link Rule
 $(FTPSRVR): $(MTOBJODIR)/ftpsrvr.o
@@ -263,6 +267,9 @@ $(JSDOOR): $(JSDOOR_OBJS) $(XPDEV_LIB) $(ENCODE_LIB) $(HASH_LIB) $(CIOLIB-MT) | 
 ifeq ($(os), netbsd)
 	paxctl +m $(JSDOOR)
 endif
+ifeq ($(os), freebsd)
+	elfctl -e +noprotmax $(JSDOOR)
+endif
 
 # JSEXEC
 $(JSEXEC): $(JSEXEC_OBJS) $(SBBS) $(CIOLIB-MT) | $(EXEODIR)
@@ -270,6 +277,9 @@ $(JSEXEC): $(JSEXEC_OBJS) $(SBBS) $(CIOLIB-MT) | $(EXEODIR)
 	$(QUIET)$(CXX) $(LDFLAGS) $(MT_LDFLAGS) -o $@ $(JSEXEC_OBJS) -lsbbs $(JS_LIBS) $(SMBLIB_LIBS) $(UIFC-MT_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS)
 ifeq ($(os), netbsd)
 	paxctl +m $(JSEXEC)
+endif
+ifeq ($(os), freebsd)
+	elfctl -e +noprotmax $(JSDOOR)
 endif
 
 # ANS2ASC
