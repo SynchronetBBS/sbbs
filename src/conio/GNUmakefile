@@ -50,8 +50,10 @@ endif
 
 # CIOLIB Library Link Rule
 $(CIOLIB-MT_BUILD): $(MTOBJODIR) $(OBJS) $(CIOLIB_INTERPOLATE_TARGET)
-
 	@echo Creating $@ ...
+ifdef FAT
+	$(QUIET)$(DELETE) $@
+endif
 	$(QUIET)$(AR) rc $@ $(OBJS)
 	$(QUIET)$(RANLIB) $@
 
