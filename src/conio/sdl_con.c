@@ -1044,7 +1044,7 @@ void sdl_video_event_thread(void *data)
 #if defined(__DARWIN__)
 						fullscreen = (sdl.GetWindowFlags(win) & SDL_WINDOW_MAXIMIZED) != 0;
 						cio_api.mode=fullscreen?CIOLIB_MODE_SDL_FULLSCREEN:CIOLIB_MODE_SDL;
-						update_cvstat(vs);
+						update_cvstat(&cvstat);
 #endif
 						// Fall-through
 					case SDL_WINDOWEVENT_SIZE_CHANGED:
