@@ -78,6 +78,10 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		xp_dlclose(sdl_dll);
 		return(-1);
 	}
+	if((sdlf->GetWindowSizeInPixels=xp_dlsym(sdl_dll, SDL_GetWindowSizeInPixels))==NULL) {
+		xp_dlclose(sdl_dll);
+		return(-1);
+	}
 	if((sdlf->SetWindowIcon=xp_dlsym(sdl_dll, SDL_SetWindowIcon))==NULL) {
 		xp_dlclose(sdl_dll);
 		return(-1);

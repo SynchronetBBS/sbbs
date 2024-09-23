@@ -458,7 +458,7 @@ static void internal_setwinsize(struct video_stats *vs, bool force)
 	}
 	else {
 		pthread_mutex_lock(&win_mutex);
-		sdl.GetWindowSize(win, &w, &h);
+		sdl.GetWindowSizeInPixels(win, &w, &h);
 		pthread_mutex_unlock(&win_mutex);
 		if (w != vs->winwidth || h != vs->winheight)
 			changed = true;
@@ -633,7 +633,7 @@ static void setup_surfaces(struct video_stats *vs)
 		// SDL2: This is slow sometimes... not sure why.
 		new_win = true;
 		if (sdl.CreateWindowAndRenderer(vs->winwidth, vs->winheight, flags, &win, &renderer) == 0) {
-			sdl.GetWindowSize(win, &idealw, &idealh);
+			sdl.GetWindowSizeInPixels(win, &idealw, &idealh);
 			vs->winwidth = idealw;
 			vs->winheight = idealh;
 			sdl.RenderClear(renderer);
@@ -655,8 +655,11 @@ static void setup_surfaces(struct video_stats *vs)
 	}
 	else {
 		sdl_bughack_minsize(idealmw, idealmh, false);
-		sdl.SetWindowSize(win, idealw, idealh);
-		sdl.GetWindowSize(win, &idealw, &idealh);
+		// Don't change window size when maximized...
+		if ((sdl.GetWindowFlags(win) & SDL_WINDOW_MAXIMIZED) == 0) {
+			sdl.SetWindowSize(win, idealw, idealh);
+		}
+		sdl.GetWindowSizeInPixels(win, &idealw, &idealh);
 		vs->winwidth = idealw;
 		vs->winheight = idealh;
 		if (internal_scaling) {
@@ -704,7 +707,7 @@ static void sdl_add_key(unsigned int keyval, struct video_stats *vs)
 			int w, h;
 
 			// Get current window size
-			sdl.GetWindowSize(win, &w, &h);
+			sdl.GetWindowSizeInPixels(win, &w, &h);
 			// Limit to max window size if available
 			SDL_Rect r;
 			if (sdl.GetDisplayUsableBounds(0, &r) == 0) {
@@ -1038,6 +1041,8 @@ void sdl_video_event_thread(void *data)
 				switch(ev.window.event) {
 					case SDL_WINDOWEVENT_SIZE_CHANGED:
 						// SDL2: User resized window
+					case SDL_WINDOWEVENT_MAXIMIZED:
+					case SDL_WINDOWEVENT_RESTORED:
 					case SDL_WINDOWEVENT_RESIZED:
 						pthread_mutex_lock(&sdl_mode_mutex);
 						if (sdl_mode) {

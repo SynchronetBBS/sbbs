@@ -25,6 +25,7 @@ struct sdlfuncs {
 	void	(HACK_HACK_HACK *FreeSurface)	(SDL_Surface *surface);
 	void	(HACK_HACK_HACK *SetWindowTitle)	(SDL_Window *window, const char *title);
 	void	(HACK_HACK_HACK *GetWindowSize)	(SDL_Window *window, int *w, int *h);
+	void	(HACK_HACK_HACK *GetWindowSizeInPixels)	(SDL_Window *window, int *w, int *h);
 	void	(HACK_HACK_HACK *SetWindowIcon)	(SDL_Window *win, SDL_Surface *icon);
 	int	(HACK_HACK_HACK *ShowCursor)	(int toggle);
 	Uint32	(HACK_HACK_HACK *WasInit)	(Uint32 flags);
