@@ -1,0 +1,47 @@
+--- js-1.8.5/js/src/configure.orig	2024-09-23 18:24:48
++++ js-1.8.5/js/src/configure	2024-09-23 18:32:58
+@@ -1617,7 +1617,7 @@
+ #line 1618 "configure"
+ #include "confdefs.h"
+ 
+-main(){return(0);}
++int main(){return(0);}
+ EOF
+ if { (eval echo configure:1623: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+   ac_cv_prog_cc_works=yes
+@@ -2262,7 +2262,7 @@
+ #line 2263 "configure"
+ #include "confdefs.h"
+ 
+-main(){return(0);}
++int main(){return(0);}
+ EOF
+ if { (eval echo configure:2268: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
+   ac_cv_prog_cc_works=yes
+@@ -3471,7 +3471,7 @@
+ if eval "test \"`echo '$''{'ac_cv_prog_cc_${ac_cc}_c_o'+set}'`\" = set"; then
+   echo $ac_n "(cached) $ac_c" 1>&6
+ else
+-  echo 'foo(){}' > conftest.c
++  echo 'int foo(){}' > conftest.c
+ # Make sure it works both with $CC and with simple cc.
+ # We do the test twice because some compilers refuse to overwrite an
+ # existing .o file with -o, though they will create one.
+@@ -11047,7 +11047,7 @@
+ #line 11048 "configure"
+ #include "confdefs.h"
+ 
+-main()
++int main()
+ {
+   char c0 = 0x40, c1 = 0x80, c2 = 0x81;
+   exit(memcmp(&c0, &c2, 1) < 0 && memcmp(&c1, &c2, 1) < 0 ? 0 : 1);
+@@ -13592,7 +13592,7 @@
+ #line 13593 "configure"
+ #include "confdefs.h"
+ #include <stdio.h>
+-main()
++int main()
+ {
+   FILE *f=fopen("conftestval", "w");
+   if (!f) exit(1);
