@@ -200,9 +200,6 @@ $(SERVICES): $(SERVICE_OBJS)
 $(SBBSCON): $(CON_OBJS) $(SBBS) $(FTPSRVR) $(WEBSRVR) $(MAILSRVR) $(SERVICES)
 	@echo Linking $@
 	$(QUIET)$(CXX) $(LDFLAGS) $(MT_LDFLAGS) -o $@ $(CON_OBJS) $(CON_LIBS) $(SMBLIB_LIBS) $(XPDEV-MT_LIBS)
-ifeq ($(os), freebsd)
-	elfctl -e +noprotmax,wxneeded $(SBBSCON)
-endif
 
 # Baja Utility
 $(BAJA): $(BAJA_OBJS) | $(EXEODIR)
@@ -266,9 +263,6 @@ $(JSDOOR): $(JSDOOR_OBJS) $(XPDEV_LIB) $(ENCODE_LIB) $(HASH_LIB) $(CIOLIB-MT) | 
 ifeq ($(os), netbsd)
 	paxctl +m $(JSDOOR)
 endif
-ifeq ($(os), freebsd)
-	elfctl -e +noprotmax,wxneeded $(JSDOOR)
-endif
 
 # JSEXEC
 $(JSEXEC): $(JSEXEC_OBJS) $(SBBS) $(CIOLIB-MT) | $(EXEODIR)
@@ -276,9 +270,6 @@ $(JSEXEC): $(JSEXEC_OBJS) $(SBBS) $(CIOLIB-MT) | $(EXEODIR)
 	$(QUIET)$(CXX) $(LDFLAGS) $(MT_LDFLAGS) -o $@ $(JSEXEC_OBJS) -lsbbs $(JS_LIBS) $(SMBLIB_LIBS) $(UIFC-MT_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS)
 ifeq ($(os), netbsd)
 	paxctl +m $(JSEXEC)
-endif
-ifeq ($(os), freebsd)
-	elfctl -e +noprotmax,wxneeded $(JSEXEC)
 endif
 
 # ANS2ASC
