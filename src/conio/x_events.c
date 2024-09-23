@@ -456,6 +456,7 @@ fullscreen_geometry(int *x_org, int *y_org, int *width, int *height)
 	int wx, wy;
 #if defined(WITH_XRANDR) || defined(WITH_XINERAMA)
 	int cx, cy;
+	int i;
 #endif
 #ifdef WITH_XRANDR
 	static XRRScreenResources *xrrsr = NULL;
@@ -464,7 +465,6 @@ fullscreen_geometry(int *x_org, int *y_org, int *width, int *height)
 	bool found;
 #endif
 #ifdef WITH_XINERAMA
-	int i;
 	int nscrn;
 	XineramaScreenInfo *xsi;
 #endif
