@@ -256,34 +256,34 @@ ESC ^	Privacy Message (PM)
 	0x20-0x7e, terminated by a String Terminator (ST)
 	The string is currently ignored.
 
-ESC _	Application Program String (APS)
+ESC _	Application Program Command (APC)
 	Begins a string consisting of the characters 0x08 - 0x0d and
 	0x20-0x7e, terminated by a String Terminator (ST)
 	
-	SyncTERM implements the following APS commands:
+	SyncTERM implements the following APC commands:
 
-	APS SyncTERM:C;S Ps1 Ps2 ST (Store file)
+	APC SyncTERM:C;S Ps1 Ps2 ST (Store file)
 		Where Ps1 is a filename and Ps2 is the base64 encoded
 		contents of the file.  The named file is stored in the
 		cache directory for the current connection.
 
-	APS SyncTERM:C;L Ps ST (List Files)
+	APC SyncTERM:C;L Ps ST (List Files)
 		List files in cache.  SyncTERM responds with
-		an APS string with lines separated by newlines.  The
+		an APC string with lines separated by newlines.  The
 		first line is always "SyncTERM:C;L\n" and for each
 		matching file, a line in the form
 		<Filename> TAB <MD5 sum> LF is sent
 		(ie: "coolfont.fnt\t595f44fec1e92a71d3e9e77456ba80d1\n")
 
 		And additional argument can be specified as a glob(3)
-		pattern (defaults to "*") in APS SyncTERM:C;L;Ps ST.
+		pattern (defaults to "*") in APC SyncTERM:C;L;Ps ST.
 
-	APS SyncTERM:C;SetFont Pn Ps ST
+	APC SyncTERM:C;SetFont Pn Ps ST
 		Where Pn is a font slot number (max 255) and Ps is a
 		filename in the cache.  This sets font slot Pn to use
 		the specified font file.
 
-	APS SyncTERM:C;DrawPPM Ps... Ps2 ST
+	APC SyncTERM:C;DrawPPM Ps... Ps2 ST
 		Draws a PPM from the cache directory on the screen.
 		Ps2 is the filename and is required.  Arguments for
 		Ps are optional.  The following options can be included
@@ -344,15 +344,15 @@ ESC _	Application Program String (APS)
 		and assumes it is correctly using the BT.709 gamma
 		transfer.
 
-	APS SyncTERM:C;LoadPPM Ps... Ps0 ST
+	APC SyncTERM:C;LoadPPM Ps... Ps0 ST
 		Loads a PPM to a buffer.  Ps0 is the filename
 		B=#
 			Selects the buffer (0 or 1 only) to paste from.
 		
-	APS SyncTERM:C;LoadPBM Ps... Ps0 ST
+	APC SyncTERM:C;LoadPBM Ps... Ps0 ST
 		Loads a PBM to a buffer.  Ps0 is the filename
 		
-	APS SyncTERM:P;Copy Ps... ST
+	APC SyncTERM:P;Copy Ps... ST
 		Copies a portion of the screen into an internal buffer
 		for use with the Paste function.  Defaults to copying
 		the entire screen.
@@ -372,7 +372,7 @@ ESC _	Application Program String (APS)
 			Sets the height to copy.
 			Default = Screen height - X.
 
-	APS SyncTERM:P,Paste Ps... ST
+	APC SyncTERM:P,Paste Ps... ST
 		Pastes from the copied buffer.  Supports the same
 		options as the Cache DrawPPM command except for the
 		filename, and adds the B= option.
