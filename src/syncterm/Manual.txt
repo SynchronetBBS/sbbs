@@ -380,7 +380,7 @@ TAB::
 Move to the comment field for the current entry, or the settings
 menu if there is no current entry.
 
-Back TAB (Shift=TAB)::
+Back TAB (Shift-TAB)::
 Move to settings menu.
 
 To add a new entry, go to the bottom of the list (by pressing end) and
@@ -476,7 +476,7 @@ Address::
 IP address or host name
 
 Connection Type::
-Protocol to use.  See <<protocols
+Protocol to use.  See <<protocols>>
 
 Flow Control (Modem, Serial, and 3-wire)::
 The type of flow control
@@ -515,8 +515,9 @@ the aspect ratio, and the font size.  Some modes such as the
 Commodore and Atari modes will also change the selected font.
 If the current font is a mode-specific one (such as C64 or Atari),
 Changing from that mode to a standard one will change the font
-to Codepage 437 English.  See Current Screen Mode and Custom
-Screen Mode for additional information.
+to Codepage 437 English.  See
+<<_current_screen_mode,Current Screen Mode>> and
+<<custom_screen_mode,Custom Screen Mode>> for additional information.
 
 Hide Status Line::
 Indicates that the "status line" at the bottom of
@@ -676,7 +677,9 @@ Changes the current screen mode.  For directory
 entries where the screen mode is "Current", will be used during the
 connection.  This setting is not saved across program restarts.
 To change the startup screen mode, see
-SyncTERM Settings → Program Settings → Startup Screen Mode.
+<<_syncterm_settings,SyncTERM Settings>> →
+<<_program_settings,Program Settings>> →
+Startup Screen Mode.
 
 Font Management::
 Allows setting up custom font files.
@@ -767,6 +770,7 @@ will use 45° angles.  External will use hardware scaling if possible.
 The quality of External scaling varies wildly based on OS, device
 drivers, and output mode.
 
+[[custom_screen_mode]]
 Custom Screen Mode::
 Allows defining the Rows, Columns, Font Size, and
 Aspect Ratio of the "Custom" screen mode.
