@@ -187,7 +187,7 @@ var tests = [
 		console.write("\x1bM");
 		return check_xy(5, 1);
 	}},
-	{'name':'APS', 'func':function() {
+	{'name':'APC', 'func':function() {
 		console.gotoxy(1,1);
 		console.write("\x1b_This is an application string\x1b\\");
 		return check_xy(1, 1);
@@ -212,7 +212,7 @@ var tests = [
 		return check_xy(1, 1);
 		// TODO: Palette redefinitions...
 	}},
-	{'name':'APS', 'func':function() {
+	{'name':'SOS', 'func':function() {
 		console.gotoxy(1,1);
 		console.write("\x1bXThis is just a string\x1b\\");
 		return check_xy(1, 1);
