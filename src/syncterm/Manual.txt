@@ -131,7 +131,7 @@ are millisecods, and the default is 25.
 -H::
 Use SSH mode when connecting.
 
--I\[ACFXWS\[WF]O\[WF]]::
+-I[ACFXWS[WF]O[WF]]::
 Selects the output mode. Not all modes are available in all builds or
 on all platforms. Legal vales are:
 	A:::
@@ -149,7 +149,7 @@ on all platforms. Legal vales are:
 	curses, but instead of the curses-defined alternative character
 	set, assumes that the IBM CP437 character set can be output.
 
-	G\[WF]:::
+	G[WF]:::
 	Windows GDI output mode. Uses the Win32 API directly, and is
 	the default for Windows. Additionally, a 'W' or 'F' can be
 	specified to force windowed or full-screen mode respectively.
@@ -157,7 +157,7 @@ on all platforms. Legal vales are:
 	I:::
 	Curses in ASCII mode.
 
-	S\[WF]:::
+	S[WF]:::
 	SDL window output mode. Uses the SDL library for output. The
 	default mode. Additionally, a 'W' or 'F' can be specified to
 	force windowed or full-screen mode respectively.
@@ -166,7 +166,7 @@ on all platforms. Legal vales are:
 	Windows console mode. Windows only mode which uses the system
 	console APIs for output.
 
-	X\[WF]:::
+	X[WF]:::
 	X11 output mode. UNIX only mode which directly uses the X11
 	libraries for drawing. The default where supported. Additionally,
 	a 'W' or 'F' can be specified to force windowed or full-screen
@@ -899,8 +899,8 @@ specifying it.  Can be used to recover from broken remote software.
 Toggle Remote Mouse::
 Same as ALT-O
 
-Toggle Operation Overkill ]\[ Mode::
-Turns on or off OO]\[ mode.
+Toggle Operation Overkill ][ Mode::
+Turns on or off OO][ mode.
 Can be used to recover from broken remote software.
 
 Exit::
