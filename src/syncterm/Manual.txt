@@ -1,324 +1,387 @@
-                           SyncTERM v1.2
+= SyncTERM v1.2 Manual
+Stephen Hurd <shurd@sasktel.net>
+:toc:
 
 SyncTERM is a terminal program written specifically for connecting to
-Bulleten Board Systems (BBSs).  Despite the name, SyncTERM is in no way
+Bulleten Board Systems (BBSs). Despite the name, SyncTERM is in no way
 Synchronet specific, it just happens to share a large portion of code
 with the rest of the Synchronet project, and live in the same git
 repository.
 
-
-                             Support
-
+== Getting Support
 If you need help with SyncTERM, the best places are:
 
-1) IRC:
-   Connect to irc.synchro.net and find Deuce in #Synchronet.  Ask your
-   question, then idle.  I can take hours to respond.  Do not give up,
-   this is the quickest way to get a response.
-2) SourceForge:
-   The official SyncTERM project page at
-   http://www.sf.net/projects/syncterm has a bug tracker and other
-   features that will email me and provide tracking for issues that
-   are filed.
-3) E-Mail:
-   I am usually fairly responsive to emails sent to me at
-   shurd@sasktel.net.  Please describe your issue as clearly as possible.
-4) Dove-Net:
-   I usually read Dove-Net regularly, and many other users can often
-   help with support issues.  Ask questions in the Hardware/Software Help
-   sub.  If your local BBS does not carry Dove-Net, you can telnet to
-   vert.synchro.net and leave messages there.
+IRC::
+Connect to irc.synchro.net and find Deuce in #Synchronet. Ask your
+question, then idle. I can take hours to respond. Do not give up,
+this is the quickest way to get a response.
+
+SourceForge::
+The official http://www.sf.net/projects/syncterm[SyncTERM project page]
+has a bug tracker and other features that will email me and provide
+tracking for issues that are filed.
+
+E-Mail::
+I am usually fairly responsive to emails sent to me at
+mailto:shurd@sasktel.net[shurd@sasktel.net]. Please describe your issue
+as clearly as possible.
+
+Dove-Net::
+While I no longer read Dove-Net regularly, many other users can often
+help with support issues. Ask questions in the Hardware/Software Help
+sub. If your local BBS does not carry Dove-Net, you can telnet to
+vert.synchro.net and leave messages there.
 
 Throughout this document, I will mention things which are not supported.
 These are things which I don't normally test, and are unlikely to work
-at any given time.  If you ask for support on one of these issues, I may
-help out, or I may not.  It doesn't bother me if you ask for help on
+at any given time. If you ask for support on one of these issues, I may
+help out, or I may not. It doesn't bother me if you ask for help on
 these things, but if you continue to ask for help after I refuse, it will
 make it less likely I'll work on it in the future.
 
-
-                             History
-
-I started writing SyncTERM in June of 2004.  There weren't any good BBS
+== History
+I started writing SyncTERM in June of 2004. There weren't any good BBS
 clients available for FreeBSD at the time, so I started writing one.
 Initially, it was RLogin only and no file transfer support existed or
 was planned. since RLogin supports auto-login with user ID and password
 on Synchronet systems, and RLogin is a much simpler protocol than telnet,
-no telnet support was planned.  Digital Man (authour of Synchronet) added
+no telnet support was planned. Digital Man (authour of Synchronet) added
 telnet and ZModem support a year later, and SyncTERM became a generally
-usable BBS client.  New features continued to be added slowly over the
+usable BBS client. New features continued to be added slowly over the
 years.
 
+== Getting SyncTERM
 
-                        Getting SyncTERM
+Releases of SyncTERM are available on the
+http://www.sf.net/projects/syncterm[SourceForge project page]. Nightly
+builds and source bundles are also available at
+http://syncterm.bbsdev.net/[the SyncTERM website] for the more adventurous.
 
-Releases of SyncTERM are available on the SourceForge project page.
-Nightly builds and source bundles are also available at
-http://syncterm.bbsdev.net/ for the more adventurous.
 
-
-                 Compiling SyncTERM from Source
+== Compiling SyncTERM from Source
 
 Windows users should not need to build SyncTERM from source. Windows
-specifically is not an easy build to do.  The Windows builds are done on
+specifically is not an easy build to do. The Windows builds are done on
 a FreeBSD system using MinGW, and this is the only supported build method
-currently.
+currently.  There is a Visual Studio project for building SyncTERM, but
+this is not supported.
 
 For *nix systems (Linux, FreeBSD, OS X, and others), a GNU make based
-build system is used.  There are a number of optional dependencies, and
+build system is used. There are a number of optional dependencies, and
 a large number of supported compile flags (many of which are shared with
 Synchronet).
 
-The biggest optional dependency is SDL 2 (from http://libsdl.org).
-SyncTERM can use SDL for both graphics and sound.  X11 can also be used
-for graphics, and OSS, ALSA, or Portaudio can also provide sound.  These
+The biggest optional dependency is http://libsdl.org[SDL 2].
+SyncTERM can use SDL for both graphics and sound. X11 can also be used
+for graphics, and OSS, ALSA, or Portaudio can also provide sound. These
 use run-time linking, so at compile time, only the headers are needed.
 Static linking with SDL is also supported, but the other optional
 dependencies can not be statically linked.
 
-For SSH, a copy of Peter Gutmann's Cryptlib is provided along with a set
-of patches.  This is still an optional dependency, so if Cryptlib doesn't
-build on your platform, you can still use SyncTERM's other connection
-options.  Cryptlib must be statically linked if it is used.
+For SSH, a copy of Peter Gutmann's
+https://cryptlib.com/security-software/about-cryptlib[Cryptlib] is
+provided along with a set of patches. This is still an optional
+dependency, so if Cryptlib doesn't build on your platform, you can still
+use SyncTERM's other connection options. Cryptlib must be statically
+linked if it is used.
 
 Once you have the desired dependencies installed, change to the syncterm
 directory in the source tree (ie: syncterm-YYYYMMDD/src/syncterm) and
-run the "make RELEASE=1" command.  This will generate the binary in a
+run the `make RELEASE=1` command. This will generate the binary in a
 subdirectory with the following name format:
-[compiler].[os].[arch].exe.[build]
+ [compiler].[os].[arch].exe.[build]
 
-[compiler] is either gcc or clang depending on the system compiler.
-[os] is the OS name reported by uname.
-[arch] is the architecture reported by uname unless it is x86 compatible
-       in which case it is forced to x86 for historical reasons.
-[build] is "release" for release builds and "debug" for debug builds.
+[compiler]::
+is either gcc or clang depending on the system compiler.
 
+[os]::
+is the OS name reported by uname.
+[arch]::
+is the architecture reported by uname unless it is x86 compatible in
+which case it is forced to x86 for historical reasons.
+[build]::
+is "release" for release builds and "debug" for debug builds.
 
-                           Running SyncTERM
+SyncTERM can be installed with `make RELEASE=1 install`
 
-SyncTERM supports many command-line options to control behaviour.  Options
-begin with a - followed by one or more other characters.  The following
+== Running SyncTERM
+
+SyncTERM supports many command-line options to control behaviour. Options
+begin with a - followed by one or more other characters. The following
 options are supported (options are not case sensitive):
 
--6
-    Specifying -6 forces SyncTERM to use IPv6 addresses when possible.
+-6::
+Specifying -6 forces SyncTERM to use IPv6 addresses when possible.
 
--4	
-    Specifying -4 forces SyncTERM to use IPv4 addresses when possible.
+-4::
+Specifying -4 forces SyncTERM to use IPv4 addresses when possible.
 
--B/path/to/bbs/list.lst
-    Loads the user BBS list from the specified file instead of the default.
+-B/path/to/bbs/list.lst::
+Loads the user BBS list from the specified file instead of the default.
 
--C
-    Changes the default to no status line.
+-C::
+Changes the default to no status line.
 
--E##
-    Specifies the escape delay in ANSI on Curses modes.  The escape delay
-    is how long SyncTERM will wait after an escape key is received from the
-    user to see if it's a control sequence or a bare ESC press.  The units
-    are millisecods, and the default is 25.
+-E##::
+Specifies the escape delay in ANSI on Curses modes. The escape delay
+is how long SyncTERM will wait after an escape key is received from the
+user to see if it's a control sequence or a bare ESC press. The units
+are millisecods, and the default is 25.
 
--H
-    Use SSH mode when connecting.
+-H::
+Use SSH mode when connecting.
 
--I[ACFXWS[WF]O[WF]]
-    Selects the output mode.  Not all modes are available in all builds or
-    on all platforms.  Legal vales are:
+-I\[ACFXWS\[WF]O\[WF]]::
+Selects the output mode. Not all modes are available in all builds or
+on all platforms. Legal vales are:
+	A:::
+	ANSI output mode. This mode outputs ANSI control sequences to
+	stdout. This can be used as a door on BBSs or on some terminals.
+	This is not generally something a normal user would ever want to
+	use.
 
-    A - ANSI output mode.  This mode outputs ANSI control sequences to stdout.
-        This can be used as a door on BBSs or on some terminals.  This is not
-        generally something a normal user would ever want to use.
+	C:::
+	Curses output mode. UNIX only mode which uses the curses library
+	to run in a terminal window.
 
-    C - Curses output mode.  UNIX only mode which uses the curses library to
-        run in a terminal window.
+	F:::
+	Curses with forced IBM character set. UNIX only mode which uses
+	curses, but instead of the curses-defined alternative character
+	set, assumes that the IBM CP437 character set can be output.
 
-    F - Curses with forced IBM character set.  UNIX only mode which uses
-        curses, but instead of the curses-defined alternative character set,
-        assumes that the IBM CP437 character set can be output.
+	G\[WF]:::
+	Windows GDI output mode. Uses the Win32 API directly, and is
+	the default for Windows. Additionally, a 'W' or 'F' can be
+	specified to force windowed or full-screen mode respectively.
 
-    G[WF] - Windows GDI output mode.  Uses the Win32 API directly, and is
-        the default for Windows.  Additionally, a 'W' or 'F' can be
-        specified to force windowed or full-screen mode respectively.
+	I:::
+	Curses in ASCII mode.
 
-    I - Curses in ASCII mode.
+	S\[WF]:::
+	SDL window output mode. Uses the SDL library for output. The
+	default mode. Additionally, a 'W' or 'F' can be specified to
+	force windowed or full-screen mode respectively.
 
-    X[WF] - X11 output mode.  UNIX only mode which directly uses the X11
-        libraries for drawing.  The default where supported.  Additionally,
-        a 'W' or 'F' can be specified to force windowed or full-screen
-        mode respectively.
+	W:::
+	Windows console mode. Windows only mode which uses the system
+	console APIs for output.
 
-    W - Windows console mode.  Windows only mode which uses the system console
-        APIs for output.
+	X\[WF]:::
+	X11 output mode. UNIX only mode which directly uses the X11
+	libraries for drawing. The default where supported. Additionally,
+	a 'W' or 'F' can be specified to force windowed or full-screen
+	mode respectively.
 
-    S[WF] - SDL window output mode.  Uses the SDL library for output.  The
-        default mode.  Additionally, a 'W' or 'F' can be specified to force
-        windowed or full-screen mode respectively.
+-L##::
+Specifies the number of lines on the "screen". Supported values are:
+14, 21, 25 (default), 28, 43, 50, and 60. If an unsupported value
+is used, it will default use 50.
 
--L##
-    Specifies the number of lines on the "screen".  Supported values are:
-    14, 21, 25 (default), 28, 43, 50, and 60.  If an unsupported value
-    is used, it will default use 50.
+-pns_*::
+Only "supported" on macOS.  Ignored.
 
--pns_*
-    Only "supported" on macOS.  Ignored.
+-N/path/to/config.ini::
+Loads the configuration from the specified file instead of the default.
 
--N/path/to/config.ini
-    Loads the configuration from the specified file instead of the default.
+-Q::
+Quiet mode, doesn't show popups by default.
 
--Q
-    Quiet mode, doesn't show popups by default.
+-R::
+Use RLogin mode when connecting.
 
--R
-    Use RLogin mode when connecting.
+-T::
+Use Telnet mode when connecting.
 
--T
-    Use Telnet mode when connecting.
-
--S
-    Use "safe" mode.  This mode attempts to restrict the ability of the user
-    to modify the local drive contents.  This has not been exhaustively audited,
-    and should therefore not be trusted.
+-S::
+Use "safe" mode.  This mode attempts to restrict the ability of the user
+to modify the local drive contents.  This has not been exhaustively
+audited, and should therefore not be trusted.
 
 After the options, a full URI, hostname, or dialing directory entry may be
 specified.  Supported URI schemes are:
 rlogin://, ssh://, telnet://, raw://, shell://, ghost://.
 
-If there is an entry matching the URI, hostname, or entry name, the settings will
-be loaded from the BBS list, then modified per the command-line arguments.
+If there is an entry matching the URI, hostname, or entry name, the
+settings will be loaded from the BBS list, then modified per the
+command-line arguments.
 
 
-                          The User InterFaCe
+== The User InterFaCe
 
 Menus in SyncTERM use a common user interface library named UIFC.  This
 library was originally developed for Synchronet.
 
 The following is the general behaviour of UIFC menus.
 
-Mouse controls:
+Mouse controls::
 
-Right-click: Same as pressing ESC (ie: exit menu).
+	Right-click:::
+	Same as pressing ESC (ie: exit menu).
 
-Left-click: Select an item in a menu.
+	Left-click:::
+	Select an item in a menu.
++
+If there is a blank line at the end of the menu, you can select
+it to insert a new item.
++
+Menus have a standard set of mouse controls
++
+If you click outside of a menu, that menu is usually closed, but
+in some cases, it may simply become inactive.
++
+At the top of each menu is a block which is used to close the menu.
++
+If there is help for the menu, there is also a ? button to bring
+up the help.
++
+If there are more options than fit in the window, there is a scrollbar
+on the left side.
 
-	If there is a blank line at the end of the menu, you can select
-	it to insert a new item.
+	Left-Drag:::
+	Select and copy a region (the copy is made when the button is
+	released).
 
-	Menus have a standard set of mouse controls
+	Middle-click:::
+	Paste from PRIMARY selection or clipboard.
 
-	If you click outside of a menu, that menu is usually closed, but
-	in some cases, it may simply become inactive.
+Keyboard Controls::
 
-	At the top of each menu is a block which is used to close the menu.
-
-	If there is help for the menu, there is also a ? button to bring
-	up the help.
-
-	If there are more options than fit in the window, is a scrollbar
-	on the left side.
-
-Left-Drag: Select and copy a region (the copy is made when the button is released).
-
-Middle-click: Paste from PRIMARY selection or clipboard.
-
-Keyboard Controls:
-
-Return: Select the currently highlighted option.  If there is a blank
+	Return:::
+	Select the currently highlighted option.  If there is a blank
 	line at the end of the menu, you can select it to insert a new
 	item.
 
-Escape: Exit the current menu.
-Backspace: An alias for Escape.
-CTRL-C: An alias for Escape.
+	Escape:::
+	Exit the current menu.
 
-Home: Jump to the beginning of the menu
+	Backspace::: An alias for Escape.
+	CTRL-C: An alias for Escape.
 
-Up Arrow: Move to the previous item in the list
+	Home:::
+	Jump to the beginning of the menu
 
-Page Up: Jump up in the menu by one screen.
+	Up Arrow:::
+	Move to the previous item in the list
 
-Page Down: Jump down in the menu by one screen.
+	Page Up:::
+	Jump up in the menu by one screen.
 
-End: Jump to the end of the menu
+	Page Down:::
+	Jump down in the menu by one screen.
 
-Down Arrow: Move to the next item in the list.
+	End:::
+	Jump to the end of the menu
 
-F1: Help
+	Down Arrow:::
+	Move to the next item in the list.
 
-F2: Edit
+	F1:::
+	Help
 
-F5: Copy
-CTRL-Insert: An alias for F5
+	F2:::
+	Edit
 
-Shift-Delete: Cut
+	F5:::
+	Copy
 
-F6: Paste
-Shift-Insert: An alias for F6
+	CTRL-Insert:::
+	An alias for F5
 
-Insert: Inserts a new item.
-+: An alias for Insert
+	Shift-Delete:::
+	Cut
 
-Delete: Delete item at current location
--: An alias for Delete
+	F6:::
+	Paste
 
-Any letter or number: Jumps to the next item that has that character
-earliest in it's name.
+	Shift-Insert:::
+	An alias for F6
 
-ALT-Left: Snap the window size to the next smaller integer zoom level
+	Insert:::
+	Inserts a new item.
 
-ALT-Right: Snap the window size to the next larger smaller integer zoom level
+	+:::
+	An alias for Insert
 
-CTRL-F: Find text in options
+	Delete:::
+	Delete item at current location
 
-CTRL-G: Repeat last find
+	-:::
+	An alias for Delete
+
+	Any letter or number:::
+	Jumps to the next item that has that character
+	earliest in it's name.
+
+	ALT-Left:::
+	Snap the window size to the next smaller integer zoom level
+
+	ALT-Right:::
+	Snap the window size to the next larger smaller integer zoom
+	level
+
+	CTRL-F:::
+	Find text in options
+
+	CTRL-G:::
+	Repeat last find
 
 
-                         The Dialing Directory
+== The Dialing Directory
 
-This is the default startup screen if no BBS is specified on the command-line.
-At the top is the program name and version, a build date, the current
-output mode, and the current date and time.
+This is the default startup screen if no BBS is specified on the
+command-line. At the top is the program name and version, a build date,
+the current output mode, and the current date and time.
 
 With version numbers, trailing letters indicate pre-release versions. 'a'
-indicates an alpha build which will have known bugs and/or incomplete features.
-'b' indicates a beta build which indicates there are expected to be no known
-bugs, but it has not received testing. "rcX" is a release candidate where
-X is a number.  These indicate that after some period (usually one to two
-weeks) of no newly reported bugs, a release will be made.
+indicates an alpha build which will have known bugs and/or incomplete
+features. 'b' indicates a beta build which indicates there are expected
+to be no known bugs, but it has not received testing. "rcX" is a release
+candidate where X is a number.  These indicate that after some period
+(usually one to two weeks) of no newly reported bugs, a release will be
+made.
 
-The output mode is important to make note of when reporting issues, since
-many bugs only impact one or two output modes.  It's after the build date.
+The output mode is important to make note of when reporting issues,
+since many bugs only impact one or two output modes.  It's after the
+build date.
 
 The bottom-most line contains help on the current menu, indicating what
 options are available in the most recent menu.
 
-There are three areas the user can interact with in the dialing directory.
-The "Directory" menu, the "SyncTERM Settings" menu, and the comment line.
+There are three areas the user can interact with in the dialing
+directory. The <<_the_directory,Directory>> menu, the <<_syncterm_settings,SyncTERM Settings>> menu, and the
+comment line.
 
-The comment line is directly above the help line at the bottom, and allows
-a per-BBS comment to be entered.
+The comment line is directly above the help line at the bottom, and
+allows a per-BBS comment to be entered.
 
 
-                             The Directory
+=== The Directory
 
 This menu lists all the entries in the two dialing directory files.  If
 you move the bar over one and press <Enter>, it will connect you to the
 highlighted system as configured in the entry.
 
-In addition to the standard controls, this menu also has some extra keyboard
-shortcuts.
+In addition to the standard controls, this menu also has some extra
+keyboard shortcuts.
 
-CTRL-D: Quick-connect to a URL
+CTRL-D::
+Quick-connect to a URL
 
-CTRL-E: Edit the selected entry (Alias for F2)
+CTRL-E::
+Edit the selected entry (Alias for F2)
 
-CTRL-S: Modify the sort order
+CTRL-S::
+<<_modifying_the_sort_order,Modify the sort order>>
 
-ALT-B: View the scrollback of the last session
+ALT-B::
+View the scrollback of the last session
 
-TAB: Move to the comment field for the current entry, or the settings
-     menu if there is no current entry.
+TAB::
+Move to the comment field for the current entry, or the settings
+menu if there is no current entry.
 
-Back TAB (Shift=TAB): Move to settings menu.
+Back TAB (Shift=TAB)::
+Move to settings menu.
 
 To add a new entry, go to the bottom of the list (by pressing end) and
 select the blank entry at the bottom.  A window will pop up asking for
@@ -327,220 +390,532 @@ dialing directory.
 
 Next you will be prompted for the protocol to use.  Options include:
 
-    RLogin: Uses the historic RFC1282 RLogin protocol without OOB data.  This
-        is an obsolete, unencrypted protocol that can allow auto-login, and
-        is 8-bit clean (unlike telnet).  It is very simple.  Instead of the
-        local username, the users password is sent.
+[[protocols]]
+RLogin::
+Uses the historic RFC1282 RLogin protocol without OOB data.  This
+is an obsolete, unencrypted protocol that can allow auto-login, and
+is 8-bit clean (unlike telnet).  It is very simple.  Instead of the
+local username, the users password is sent.
 
-    RLogin Reversed: Some RLogin servers that support password auto-login have
-        reversed the remote and local username fields.  This allows connecting
-        to these servers.
+RLogin Reversed::
+Some RLogin servers that support password auto-login have
+reversed the remote and local username fields.  This allows connecting
+to these servers.
 
-    Telnet: Uses the historic and highly complex telnet protocol.  This is an
-        obsolete, unencrypted protocol and is not 8-bit clean and predates
-        TCP/IP.  It has been the source of many security vulnerabilities over
-        the fifty years or so it has existed.  Historically, it has been the
-        most common way to connect to a remote system as a terminal, so is
-        widely supported.
+Telnet::
+Uses the historic and highly complex telnet protocol.  This is an
+obsolete, unencrypted protocol and is not 8-bit clean and predates
+TCP/IP.  It has been the source of many security vulnerabilities over
+the fifty years or so it has existed.  Historically, it has been the
+most common way to connect to a remote system as a terminal, so is
+widely supported.
 
-    Raw: A raw 8-bit clean TCP connection.  This is often what retro BBSs
-        actually support when they say they support telnet.
+Raw::
+A raw 8-bit clean TCP connection.  This is often what retro BBSs
+actually support when they say they support telnet.
 
-    SSH: The Secure Shell v2 protocol.  This is the modern replacement for both
-        telnet and rlogin, and is widely supported.  This is encrypted and
-        performs user and server authentication as part of the protocol instead
-        of inline.  SyncTERM supports authenticating with both a password and
-        a public key.
+SSH::
+The Secure Shell v2 protocol.  This is the modern replacement for both
+telnet and rlogin, and is widely supported.  This is encrypted and
+performs user and server authentication as part of the protocol instead
+of inline.  SyncTERM supports authenticating with both a password and
+a public key.
 
-    SSH (no auth): The SSH protocol, but will not send a password or public
-        key.  Used for auto-login systems where the user name by itself is
-        sufficient.
+SSH (no auth)::
+The SSH protocol, but will not send a password or public
+key.  Used for auto-login systems where the user name by itself is
+sufficient.
 
-    Modem: SyncTERM can directly control a modem for making outgoing calls.
+Modem::
+SyncTERM can directly control a modem for making outgoing calls.
 
-    Serial: Direct communication with a serial port.
+Serial::
+Direct communication with a serial port.
 
-    3-wire: Serial, but with only transmit and receive.  In this mode, there
-        is no way to detect if the remote has hung up and there is no flow
-        control, so bytes can easily be lost.  This is primarily used for
-        communicating with embedded hardware, and not BBSs.
+3-wire::
+Serial, but with only transmit and receive.  In this mode, there
+is no way to detect if the remote has hung up and there is no flow
+control, so bytes can easily be lost.  This is primarily used for
+communicating with embedded hardware, and not BBSs.
 
-    Shell: Runs a shell in the terminal.
+Shell::
+Runs a shell in the terminal.
 
-    MBBS GHost: The MajorBBS 'GHost' protocol.
+MBBS GHost::
+The <<_mbbs_ghost,MajorBBS 'GHost' protocol>>.
 
-    TelnetS: Telnet over TLS.  All the drawbacks of the telnet protocol, but
-        at least it's encrypted.
+TelnetS::
+Telnet over TLS.  All the drawbacks of the telnet protocol, but
+at least it's encrypted.
 
-Finally, you will be promted for the "address".  This is the DNS addres, IP
-address, serial port, or command to connect to.
+Finally, you will be promted for the "address".  This is the DNS addres,
+IP address, serial port, or command to connect to.
 
 Ones these three pieces of information are entered, the entry is created
 and you are returned to the Directory.  To further modify the settings,
 you can press F2 to enter the Edit Directory Entry menu.
 
 
-                          Edit Directory Entry
+==== Edit Directory Entry
 
 In this menu, you can modify all the connection settings for an entry.
 The exact contents of this menu will vary a bit by connection type, but
 most of the options are the same or silimar.
 
-    Name: The name of the entry.
+Name::
+The name of the entry.
 
-    Phone Number (Modem only): The phone number to dial.
+Phone Number (Modem only):: The phone number to dial.
 
-    Device Name (Serial and 3-wire only): The device name to open.
+Device Name (Serial and 3-wire only):: The device name to open.
 
-    Command (Shell only): The command to run (usually a shell such as
-        /bin/sh)
+Command (Shell only)::
+The command to run (usually a shell such as /bin/sh)
 
-    Address: IP address or host name
+Address::
+IP address or host name
 
-    Connection Type: Protocol to use.  See pervious section
+Connection Type::
+Protocol to use.  See <<protocols
 
-    Flow Control (Modem, Serial, and 3-wire): The type of flow control
-        to use. RTC/CTS, XON/XOFF, Both, or None
+Flow Control (Modem, Serial, and 3-wire)::
+The type of flow control
+to use. RTC/CTS, XON/XOFF, Both, or None
 
-    TCP Port: The TCP port to connect to.
+TCP Port:: The TCP port to connect to.
 
-    SSH Username (SSH (no auth)): The username to send for the SSH
-        protocol.  This may not be the same as the BBS username.
+SSH Username (SSH (no auth))::
+The username to send for the SSH
+protocol.  This may not be the same as the BBS username.
 
-    BBS Username (SSH (no auth)): The username to send when ALT-L is entered.
+BBS Username (SSH (no auth))::
+The username to send when ALT-L is entered.
 
-    BBS Password (SSH (no auth)): The password to send on ALT-L.
+BBS Password (SSH (no auth))::
+The password to send on ALT-L.
 
-    Username: The user name to send.  Used by SSH, RLogin, and GHost.
-        For other protocols, send when ALT-L is pressed.
+Username::
+The user name to send.  Used by SSH, RLogin, and GHost.
+For other protocols, send when ALT-L is pressed.
 
-    Password: The password to send.
+Password::
+The password to send.
 
-    GHost Program (GHost): The program name to send to the remote.
+GHost Program (GHost)::
+The program name to send to the remote.
 
-    System Password: An additional password that can be sent after the
-        first ALT-L using successive ALT-Ls.
+System Password::
+An additional password that can be sent after the
+first ALT-L using successive ALT-Ls.
 
-    Screen Mode: Selects the format of the window when connected.
-        A mode specifies the number of columns, the number of rows,
-        the aspect ratio, and the font size.  Some modes such as the
-        Commodore and Atari modes will also change the selected font.
-        If the current font is a mode-specific one (such as C64 or Atari),
-        Changing from that mode to a standard one will change the font
-        to Codepage 437 English.  See Current Screen Mode and Custom
-        Screen Mode for additional information.
+Screen Mode::
+Selects the format of the window when connected.
+A mode specifies the number of columns, the number of rows,
+the aspect ratio, and the font size.  Some modes such as the
+Commodore and Atari modes will also change the selected font.
+If the current font is a mode-specific one (such as C64 or Atari),
+Changing from that mode to a standard one will change the font
+to Codepage 437 English.  See Current Screen Mode and Custom
+Screen Mode for additional information.
 
-    Hide Status Line: Indicates that the "status line" at the bottom of
-        the window when connected should not be displayed.  This allows
-        for an extra line of text from the remote to be shown.
+Hide Status Line::
+Indicates that the "status line" at the bottom of
+the window when connected should not be displayed.  This allows
+for an extra line of text from the remote to be shown.
 
-    Download Path: The location to save downloaded files.
+Download Path::
+The location to save downloaded files.
 
-    Upload Path: The location to start at when browsing for files to
-        upload.
+Upload Path::
+The location to start at when browsing for files to upload.
 
-    Log Configuration: This brings up a sub-menu to control a debug log.
-        There are four options in this sub-menu:
-        Log Filename: If this is not blank, specifies the file to write
-            the log data to.  When this is blank, disable logging.
-        File Transfer Log Level: May be one of None, Alerts, Critical Errors,
-            Errors, Warnings, Notices, Normal, or Debug.
-        Telnet Command Log Level: Chosen from the same list as above.
-        Append Log File: If set you Yes, the log file retains old information
-            and will keep growing.  If set to No, the log file is emptied
-            for each new connection.
+Log Configuration::
+This brings up a sub-menu to control a debug log.
+There are four options in this sub-menu:
+Log Filename:::
+	If this is not blank, specifies the file to write
+	the log data to.  When this is blank, disable logging.
+File Transfer Log Level:::
+	May be one of None, Alerts, Critical Errors,
+	Errors, Warnings, Notices, Normal, or Debug.
+Telnet Command Log Level:::
+	Chosen from the same list as above.
+Append Log File::: If set you Yes, the log file retains old information
+	and will keep growing.  If set to No, the log file is emptied
+	for each new connection.
 
-    Comm Rate: For networked modes, specifies the sharacter pacing speed.
-        For serial and modem types, specifies the speed to open the port at.
+Comm Rate::
+For networked modes, specifies the sharacter pacing speed.
+For serial and modem types, specifies the speed to open the port at.
 
-    ANSI Music: There are three options in this sub-menu.
-        ESC [ | only: With this setting, ANSI music is fully compliant with
-            the standards (ECMA-48, ANSI, etc), but almost not software
-            works with this.
-        BANSI Style: Supports both the SyncTERM (CSI |) and BananaCom (CSI N)
-            ANSI music styles.  Support is still very rare, but slightly
-            more common than the first.
-        All ANSI Music Enabled: In addition to the previous two, also
-            supports CSI M for ANSI music.  This is by far the most common
-            sequence used by software that supports ANSI music.
-            Unfortunately, this prevents the ANSI Delete Line sequence from
-            working correctly.
+ANSI Music::
+There are three options in this sub-menu.
+ESC [ | only:::
+	With this setting, ANSI music is fully compliant with
+	the standards (ECMA-48, ANSI, etc), but almost not software
+	works with this.
+BANSI Style:::
+	Supports both the SyncTERM (CSI |) and BananaCom (CSI N)
+	ANSI music styles.  Support is still very rare, but slightly
+	more common than the first.
+All ANSI Music Enabled:::
+	In addition to the previous two, also
+	supports CSI M for ANSI music.  This is by far the most common
+	sequence used by software that supports ANSI music.
+	Unfortunately, this prevents the ANSI Delete Line sequence from
+	working correctly.
 
-    Address Family: Selected IP address family for network connections.
-        As per DNS: Uses the first address returned by getaddrinfo()
-        IPv4 only: Will only connect over an IPv4 address.  If none is
-            available, the connection will fail.
-        IPv6 only: Will only connect over an IPv6 address.  If none is
-            available, the connection will fail.
+Address Family::
+Selected IP address family for network connections.
+As per DNS:::
+	Uses the first address returned by getaddrinfo()
+IPv4 only:::
+	Will only connect over an IPv4 address.  If none is
+	available, the connection will fail.
+IPv6 only:::
+	Will only connect over an IPv6 address.  If none is
+	available, the connection will fail.
  
-    Font: Choses a font (and by implication, a codepage) for the connection.
-        Custom fonts are also listed in this menu.
+Font::
+Choses a font (and by implication, a codepage) for the connection.
+Custom fonts are also listed in this menu.
 
-    Hide Popups: Do not show status and progress popups.
+Hide Popups::
+Do not show status and progress popups.
 
-    RIP: Selects the version for Remote Imaging Protocol ("RIP").
-        RIP allows graphics and mouse usage, and was used by doors and
-        BBSs starting in the early 90s.  The RIP support in SyncTERM is
-        not complete, and may not be compatible with other terminals.
-        RIPv1 is the one most commonly used by old BBS software, and it
-        requires that the Screen Mode be set to an EGA mode.  RIPv3
-        is an updated version that is not backward compatible, but can
-        be used in any mode.
+RIP::
+Selects the version for Remote Imaging Protocol ("RIP").
+RIP allows graphics and mouse usage, and was used by doors and
+BBSs starting in the early 90s.  The RIP support in SyncTERM is
+not complete, and may not be compatible with other terminals.
+RIPv1 is the one most commonly used by old BBS software, and it
+requires that the Screen Mode be set to an EGA mode.  RIPv3
+is an updated version that is not backward compatible, but can
+be used in any mode.
 
-    Force LCF Mode: This setting will force the DEC terminal
-        "Last Column Flag" mode to always be enabled.  This mode is almost
-        always used in modern terminal emulators, which are almost all
-        VT-102 emulators at least.  LCF controls the wrapping behaviour
-        when the cursor is on the last column of a line.  The specific
-        rules used are complex and not implemented the same in all terminal
-        emulators even today.
+Force LCF Mode::
+This setting will force the DEC terminal
+"Last Column Flag" mode to always be enabled.  This mode is almost
+always used in modern terminal emulators, which are almost all
+VT-102 emulators at least.  LCF controls the wrapping behaviour
+when the cursor is on the last column of a line.  The specific
+rules used are complex and not implemented the same in all terminal
+emulators even today.
 
-    Yellow is Yellow: By default, SyncTERM displays low-intensity yellow
-        as brown.  This originated in the IBM CGA monitors, and was carried
-        forward to EGA and even most VGA modes.  Some digital monitors that
-        were CGA compatible did not have the brown hack.  While the vast
-        majority of software will assume that low-intensity yellow should
-        be brown, this allows strict standard compliance.
+Yellow is Yellow::
+By default, SyncTERM displays low-intensity yellow
+as brown.  This originated in the IBM CGA monitors, and was carried
+forward to EGA and even most VGA modes.  Some digital monitors that
+were CGA compatible did not have the brown hack.  While the vast
+majority of software will assume that low-intensity yellow should
+be brown, this allows strict standard compliance.
 
-    SFTP Public Key: For SSH connections, SyncTERM can open another SSH
-        channel and write the public key to .ssh/authorized_keys on the
-        remote, which will enable authentication using the private key on
-        at least OpenSSH and new versions of Synchronet.  This option
-        requires SFTP support from the remote side, and may cause connection
-        stability issues if SFTP is not available or does not work correctly.
-
-
-                        Modifying the Sort Order
-
-You can change the order that entries appear in the Directory via the CTRL-S
-key.  This brings up a menu where you can add entries by either pressing
-Insert to add before the current item, or by pressing Return on the enpty
-line at the end.  This will bring up a list of fields that can be sorted on.
-
-Pressing enter on a field will toggle if it's reversed (highest to lowest) or
-not.
+SFTP Public Key::
+For SSH connections, SyncTERM can open another SSH
+channel and write the public key to .ssh/authorized_keys on the
+remote, which will enable authentication using the private key on
+at least OpenSSH and new versions of Synchronet.  This option
+requires SFTP support from the remote side, and may cause connection
+stability issues if SFTP is not available or does not work correctly.
 
 
-                          Viewing the Scrollback
+==== Modifying the Sort Order
+
+You can change the order that entries appear in the Directory via the
+CTRL-S key.  This brings up a menu where you can add entries by either
+pressing Insert to add before the current item, or by pressing Return on
+the enpty line at the end.  This will bring up a list of fields that can
+be sorted on.
+
+Pressing enter on a field will toggle if it's reversed (highest to
+lowest) or not.
+
+
+==== Viewing the Scrollback
 
 When viewing the scrollback, the following keys are supported:
 
-Up-arrow: Move up one line
-J: Move up one line
+Up-arrow::
+Move up one line
 
-Down-arrow: Move down on line
-K: Move down one line
+J::
+Move up one line
 
-Page Up: Move up one screen
-H: Move up one screen
+Down-arrow::
+Move down on line
 
-Page Down: Move down on screen
-L: Move down one screen
+K::
+Move down one line
 
-Escape: Exit scrollback mode
+Page Up::
+Move up one screen
+
+H::
+Move up one screen
+
+Page Down::
+Move down on screen
+
+L::
+Move down one screen
+
+Escape::
+Exit scrollback mode
 
 
-                               MBBS GHost
+=== SyncTERM Settings
+
+The SyncTERM Settings menu has the following options:
+
+Default Connection Settings::
+Set the default values for a new directory
+entry.  See Edit Directory Entry for details on these options.
+
+Current Screen Mode::
+Changes the current screen mode.  For directory
+entries where the screen mode is "Current", will be used during the
+connection.  This setting is not saved across program restarts.
+To change the startup screen mode, see
+SyncTERM Settings → Program Settings → Startup Screen Mode.
+
+Font Management::
+Allows setting up custom font files.
+
+Program Settings::
+Allows changing settings that are preserved across
+reboots.
+
+File Locations::
+Shows the paths to the various files and directories
+that SyncTERM will access.
+
+
+==== Current Screen Mode
+
+This temporarily sets the screen mode.  A screen mode defines the number
+of rows and columns in the window, which font size to use (8x8, 8x14, or
+8x16), and the aspect ratio to scale pixels to.  The majority of these
+modes are based on historical analog hardware modes, so most of them do
+not use square pixels.  The main exceptions are LCD80x25, which is an
+80x25 mode that uses square pixels and the 8x16 font, and VGA80x25, which
+is an 80x25 mode that uses square pixels, the 8x16 font, and performs the
+VGA column expansion to use 9 pixel wide cells.
+
+
+==== Font Management
+
+The Font Management menu allows you to add and remove fonts.  Each font
+should have a unique name, and at least one file for 8x8, 8x14, or 8x16
+fonts.  The font format is the one used by "DOS fonts".  You can insert
+and delete items using normal UIFC commands.
+
+
+==== Program Settings
+
+Confirm Program Exit::
+Asks if you are sure you want to quit when pressing
+ESC or right-clicking in the main SyncTERM screen.
+
+Prompt To Save::
+If enabled, when SyncTERM is started with a URI that is
+not in a dialing directory, asks if you want to add the entry to the
+directory.
+
+Startup Screen Mode::
+The screen mode that is used when SyncTERM starts.
+
+Video Output Mode::
+The method of displaying SyncTERM output.  The options
+will vary by OS, compile-time options, and installed libraries.  See
+the -I option to SyncTERM for details on the various modes.
+
+Scrollback Buffer Lines::
+The maximum number of lines to keep in the
+scrollback.  Once this number is reached, the oldest lines are
+removed to make room for new lines.
+
+Modem/Comm Device::
+The device name for the Modem device.  For UNIX-like
+systems, this will be something like "/dev/ttyd0".  For Windows, this
+will be "COM1" to "COM9".  If it's COM10 or higher, it needs to be
+specified as "\\.\COM10".
+
+Modem/Comm Rate::
+Specifies the speed to communicate with the modem at.
+If set to 0, the speed is not set by SyncTERM, and the default is
+used.
+
+Modem Init String::
+The string to send to the modem when the device is
+first opened to prepare it to be used.
+
+Modem Dial String::
+A string that is sent immediately before the phone
+number to cause the modem to dial.
+
+List Path::
+The path to load the personal dialing directory from.
+
+TERM For Shell::
+The value that the TERM variable is set to for shell
+type connections.
+
+Scaling::
+Select to cycle through the values "Blocky", "Pointy", and
+"External".  Blocky scales each pixel to a rectangle, and Pointy
+will use 45° angles.  External will use hardware scaling if possible.
+The quality of External scaling varies wildly based on OS, device
+drivers, and output mode.
+
+Custom Screen Mode::
+Allows defining the Rows, Columns, Font Size, and
+Aspect Ratio of the "Custom" screen mode.
+
+
+== Connected State
+
+When you are connected to a system, there are a number of controls
+available that are not sent to the remote.
+
+For Curses and ANSI modes, only two controls are avilable, and they
+are not available in other modes.  This is because these two modes
+don't have access to keys that could not potentially be sent to the
+remote.  To help avoid conflict with remote systems, the XON (CTRL-Q)
+and XOFF (CTRL-S) codes that are used for software flow control are
+used.
+
+CTRL-Q::
+Disconnects from the current session.
+
+CTRL-S::
+Brings up the Online Menu (see below)
+
+For all other modes, the ALT key is used for SyncTERM commands, and
+the following combinations are supported:
+
+Shift-Insert::
+Pastes the current PRIMARY selection or clipboard
+contents to the remote.
+
+ALT-B::
+View scrollback (See "Viewing The Scrollback")
+
+ALT-C::
+Capture Control.  Allows starting and stopping capturing the
+session to a file.  Useful for stealing ANSIs and debugging
+emulation issues.
+
+ALT-D::
+Begins a download from the remote system.
+
+ALT-E::
+Brings up the Dialing Directory
+
+ALT-F::
+Allows selecting a different font.  In some output modes, the
+selected font will change text that is already on the screen.
+In most modes however, only newly displayed text will be in the
+new font.
+
+ALT-H::
+Hangup and return to the main menu.
+
+ALT-L::
+Send auto-login information.  For protocols that allow auto-
+login, only the system password is sent.  For all others, the
+username is sent followed by a carriage return, then the password
+followed by a CR, then the system password followed by the CR.
+If any of these are not configured for the current entry, neither
+them, nor the CR are sent for that item.
+
+ALT-M::
+Changes the currently supported "ANSI" Music prefix.
+
+ALT-O::
+Toggles remote mouse support.  With the remote capturing mouse
+events, it can be difficult to select text to copy.  ALT-O allows
+taking the mouse away from the remote.
+
+ALT-U::
+Upload a file to the remote.
+
+ALT-X::
+Disconnect and exit SyncTERM.  Does not return to the main
+menu.
+
+ALT-Z::
+Brings up the Online Menu (see below)
+
+ALT-UpArrow::
+Selects the next fastest character pacing speed.  If the
+fastest speed is currently selected, disables character pacing.
+If pacing is currently disabled, selects the slowest pacing speed.
+
+ALT-DownArrow::
+Selects the next slowest character pacing speed.  If
+the slowest speed is currently selected, disables character pacing.
+If pacing is currently disabled, selects the fastest pacing speed.
+
+
+=== Online Menu
+
+Allows menu-based selection of some of the above options, as well as
+some less-common operations that don't have a keyboard shortcut.
+
+Scrollback::
+Same as ALT-B
+
+Disconnect::
+Same as ALT-H
+
+Send Login::
+Same as ALT-L
+
+Upload::
+Same as ALT-U
+
+Download::
+Same as ALT-D
+
+Change Output Rate::
+Allows selecting a specific character pacing to use.
+
+Change Log Level::
+Temporarily changes the file transfer log level
+
+Capture Control::
+Same as ALT-C
+
+ANSI Music Control::
+Same as ALT-M
+
+Font Setup::
+Same as ALT-F
+
+Toggle Doorway Mode::
+Turns on or off Doorway mode without the host
+specifying it.  Can be used to recover from broken remote software.
+
+Toggle Remote Mouse::
+Same as ALT-O
+
+Toggle Operation Overkill ]\[ Mode::
+Turns on or off OO]\[ mode.
+Can be used to recover from broken remote software.
+
+Exit::
+Same as ALT-X
+
+Edit Dialing Directory::
+Same as ALT-E
+
+
+== Techical Details
+
+The following sections delve deeper into technical details, and should
+not be required for normal use.
+
+=== MBBS GHost
 
 "GHost" in SyncTERM refers to the "Galacticomm Host Program" (called Ghost)
 that was included in Major BBS and Worldgroup (MBBS/WG) that allowed a Sysop
@@ -599,201 +974,3 @@ configurable in SyncTERM.
 
 GR: Set to GR (for "GRaphics", meaning ANSI-BBS support) or NG
 (for "No Graphics").  Always set to GR.  Not configurable in SyncTERM.
-
-
-                           SyncTERM Settings
-
-The SyncTERM Settings menu has the following options:
-
-Default Connection Settings: Set the default values for a new directory
-    entry.  See Edit Directory Entry for details on these options.
-
-Current Screen Mode: Changes the current screen mode.  For directory
-    entries where the screen mode is "Current", will be used during the
-    connection.  This setting is not saved across program restarts.
-    To change the startup screen mode, see
-    SyncTERM Settings → Program Settings → Startup Screen Mode.
-
-Font Management: Allows setting up custom font files.
-
-Program Settings: Allows changing settings that are preserved across
-    reboots.
-
-File Locations: Shows the paths to the various files and directories
-    that SyncTERM will access.
-
-
-                       Current Screen Mode
-
-This temporarily sets the screen mode.  A screen mode defines the number
-of rows and columns in the window, which font size to use (8x8, 8x14, or
-8x16), and the aspect ratio to scale pixels to.  The majority of these
-modes are based on historical analog hardware modes, so most of them do
-not use square pixels.  The main exceptions are LCD80x25, which is an
-80x25 mode that uses square pixels and the 8x16 font, and VGA80x25, which
-is an 80x25 mode that uses square pixels, the 8x16 font, and performs the
-VGA column expansion to use 9 pixel wide cells.
-
-
-                        Font Management
-
-The Font Management menu allows you to add and remove fonts.  Each font
-should have a unique name, and at least one file for 8x8, 8x14, or 8x16
-fonts.  The font format is the one used by "DOS fonts".  You can insert
-and delete items using normal UIFC commands.
-
-
-                        Program Settings
-
-Confirm Program Exit: Asks if you are sure you want to quit when pressing
-    ESC or right-clicking in the main SyncTERM screen.
-
-Prompt To Save: If enabled, when SyncTERM is started with a URI that is
-    not in a dialing directory, asks if you want to add the entry to the
-    directory.
-
-Startup Screen Mode: The screen mode that is used when SyncTERM starts.
-
-Video Output Mode: The method of displaying SyncTERM output.  The options
-    will vary by OS, compile-time options, and installed libraries.  See
-    the -I option to SyncTERM for details on the various modes.
-
-Scrollback Buffer Lines: The maximum number of lines to keep in the
-    scrollback.  Once this number is reached, the oldest lines are
-    removed to make room for new lines.
-
-Modem/Comm Device: The device name for the Modem device.  For UNIX-like
-    systems, this will be something like "/dev/ttyd0".  For Windows, this
-    will be "COM1" to "COM9".  If it's COM10 or higher, it needs to be
-    specified as "\\.\COM10".
-
-Modem/Comm Rate: Specifies the speed to communicate with the modem at.
-    If set to 0, the speed is not set by SyncTERM, and the default is
-    used.
-
-Modem Init String: The string to send to the modem when the device is
-    first opened to prepare it to be used.
-
-Modem Dial String: A string that is sent immediately before the phone
-    number to cause the modem to dial.
-
-List Path: The path to load the personal dialing directory from.
-
-TERM For Shell: The value that the TERM variable is set to for shell
-    type connections.
-
-Scaling: Select to cycle through the values "Blocky", "Pointy", and
-    "External".  Blocky scales each pixel to a rectangle, and Pointy
-    will use 45° angles.  External will use hardware scaling if possible.
-    The quality of External scaling varies wildly based on OS, device
-    drivers, and output mode.
-
-Custom Screen Mode: Allows defining the Rows, Columns, Font Size, and
-    Aspect Ratio of the "Custom" screen mode.
-
-
-                      Connected State
-
-When you are connected to a system, there are a number of controls
-available that are not sent to the remote.
-
-For Curses and ANSI modes, only two controls are avilable, and they
-are not available in other modes.  This is because these two modes
-don't have access to keys that could not potentially be sent to the
-remote.  To help avoid conflict with remote systems, the XON (CTRL-Q)
-and XOFF (CTRL-S) codes that are used for software flow control are
-used.
-
-CTRL-Q: Disconnects from the current session.
-
-CTRL-S: Brings up the Online Menu (see below)
-
-For all other modes, the ALT key is used for SyncTERM commands, and
-the following combinations are supported:
-
-Shift-Insert: Pastes the current PRIMARY selection or clipboard
-    contents to the remote.
-
-ALT-B: View scrollback (See "Viewing The Scrollback")
-
-ALT-C: Capture Control.  Allows starting and stopping capturing the
-    session to a file.  Useful for stealing ANSIs and debugging
-    emulation issues.
-
-ALT-D: Begins a download from the remote system.
-
-ALT-E: Brings up the Dialing Directory
-
-ALT-F: Allows selecting a different font.  In some output modes, the
-    selected font will change text that is already on the screen.
-    In most modes however, only newly displayed text will be in the
-    new font.
-
-ALT-H: Hangup and return to the main menu.
-
-ALT-L: Send auto-login information.  For protocols that allow auto-
-    login, only the system password is sent.  For all others, the
-    username is sent followed by a carriage return, then the password
-    followed by a CR, then the system password followed by the CR.
-    If any of these are not configured for the current entry, neither
-    them, nor the CR are sent for that item.
-
-ALT-M: Changes the currently supported "ANSI" Music prefix.
-
-ALT-O: Toggles remote mouse support.  With the remote capturing mouse
-    events, it can be difficult to select text to copy.  ALT-O allows
-    taking the mouse away from the remote.
-
-ALT-U: Upload a file to the remote.
-
-ALT-X: Disconnect and exit SyncTERM.  Does not return to the main
-    menu.
-
-ALT-Z: Brings up the Online Menu (see below)
-
-ALT-UpArrow: Selects the next fastest character pacing speed.  If the
-    fastest speed is currently selected, disables character pacing.
-    If pacing is currently disabled, selects the slowest pacing speed.
-
-ALT-DownArrow: Selects the next slowest character pacing speed.  If
-    the slowest speed is currently selected, disables character pacing.
-    If pacing is currently disabled, selects the fastest pacing speed.
-
-
-                                Online Menu
-
-Allows menu-based selection of some of the above options, as well as
-some less-common operations that don't have a keyboard shortcut.
-
-Scrollback: See ALT-B
-
-Disconnect: See ALT-H
-
-Send Login: See ALT-L
-
-Upload: See ALT-U
-
-Download: See ALT-D
-
-Change Output Rate: Allows selecting a specific character pacing to
-    use.
-
-Change Log Level: Temporarily changes the file transfer log level
-
-Capture Control: See ALT-C
-
-ANSI Music Control: See ALT-M
-
-Font Setup: See ALT-F
-
-Toggle Doorway Mode: Turns on or off Doorway mode without the host
-    specifying it.  Can be used to recover from broken remote software.
-
-Toggle Remote Mouse: See ALT-O
-
-Toggle Operation Overkill ][ Mode: Turns on or off OO][ mode.
-    Can be used to recover from broken remote software.
-
-Exit: See ALT-X
-
-Edit Dialing Directory: See ALT-E
