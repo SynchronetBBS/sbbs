@@ -648,6 +648,12 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	if(strcmp(sp, "PETSCII") == 0)
 		return (useron.misc & PETSCII) ? text[On] : text[Off];
 
+	if(strcmp(sp, "PETGRFX") == 0) {
+		if(term_supports(PETSCII))
+			outcom(PETSCII_UPPERGRFX);
+		return nulstr;
+	}
+
 	if(strcmp(sp, "SWAPDEL") == 0)
 		return (useron.misc & SWAP_DELETE) ? text[On] : text[Off];
 
