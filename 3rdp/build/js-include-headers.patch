@@ -1,0 +1,95 @@
+diff -u js-1.8.5/js/src/configure.in.orig js-1.8.5/js/src/configure.in
+--- js-1.8.5/js/src/configure.in.orig	2024-09-24 22:14:12
++++ js-1.8.5/js/src/configure.in	2024-09-24 22:17:58
+@@ -3939,6 +3939,7 @@
+ AC_CACHE_VAL(ac_cv_va_copy,[
+     AC_TRY_RUN([
+         #include <stdarg.h>
++        #include <stdlib.h>
+         void f (int i, ...) {
+             va_list args1, args2;
+             va_start (args1, i);
+@@ -3958,6 +3959,7 @@
+ AC_CACHE_VAL(ac_cv___va_copy,[
+     AC_TRY_RUN([
+         #include <stdarg.h>
++        #include <stdlib.h>
+         void f (int i, ...) {
+             va_list args1, args2;
+             va_start (args1, i);
+@@ -3977,6 +3979,7 @@
+ AC_CACHE_VAL(ac_cv_va_val_copy,[
+     AC_TRY_RUN([
+         #include <stdarg.h>
++        #include <stdlib.h>
+         void f (int i, ...) {
+             va_list args1, args2;
+             va_start (args1, i);
+@@ -5271,6 +5274,7 @@
+ AC_MSG_CHECKING([for gcc -pipe support])
+ if test -n "$GNU_CC" -a -n "$GNU_CXX" -a -n "$GNU_AS"; then
+     echo '#include <stdio.h>' > dummy-hello.c
++    echo '#include <stdlib.h>' >> dummy-hello.c
+     echo 'int main() { printf("Hello World\n"); exit(0); }' >> dummy-hello.c
+     ${CC} -S dummy-hello.c -o dummy-hello.s 2>&5
+     cat dummy-hello.s 2> /dev/null | ${AS_BIN} -o dummy-hello.S - 2>&5
+diff -u js-1.8.5/js/src/configure.orig js-1.8.5/js/src/configure
+--- js-1.8.5/js/src/configure.orig	2024-09-24 22:33:47.275117000 -0400
++++ js-1.8.5/js/src/configure	2024-09-24 22:39:16.459457000 -0400
+@@ -8194,6 +8194,7 @@
+ #line 8195 "configure"
+ #include "confdefs.h"
+ #include <ctype.h>
++#include <stdlib.h>
+ #define ISLOWER(c) ('a' <= (c) && (c) <= 'z')
+ #define TOUPPER(c) (ISLOWER(c) ? 'A' + ((c) - 'a') : (c))
+ #define XOR(e, f) (((e) && !(f)) || (!(e) && (f)))
+@@ -11045,6 +11046,8 @@
+ else
+   cat > conftest.$ac_ext <<EOF
+ #line 11048 "configure"
++#include <stdlib.h>
++#include <string.h>
+ #include "confdefs.h"
+ 
+ int main()
+@@ -11638,6 +11641,7 @@
+ #include "confdefs.h"
+ 
+         #include <stdarg.h>
++        #include <stdlib.h>
+         void f (int i, ...) {
+             va_list args1, args2;
+             va_start (args1, i);
+@@ -11679,6 +11683,7 @@
+ #include "confdefs.h"
+ 
+         #include <stdarg.h>
++        #include <stdlib.h>
+         void f (int i, ...) {
+             va_list args1, args2;
+             va_start (args1, i);
+@@ -11720,6 +11725,7 @@
+ #include "confdefs.h"
+ 
+         #include <stdarg.h>
++        #include <stdlib.h>
+         void f (int i, ...) {
+             va_list args1, args2;
+             va_start (args1, i);
+@@ -13592,6 +13598,7 @@
+ #line 13593 "configure"
+ #include "confdefs.h"
+ #include <stdio.h>
++#include <stdlib.h>
+ int main()
+ {
+   FILE *f=fopen("conftestval", "w");
+@@ -14351,6 +14358,7 @@
+ echo "configure:14352: checking for gcc -pipe support" >&5
+ if test -n "$GNU_CC" -a -n "$GNU_CXX" -a -n "$GNU_AS"; then
+     echo '#include <stdio.h>' > dummy-hello.c
++    echo '#include <stdlib.h>' >> dummy-hello.c
+     echo 'int main() { printf("Hello World\n"); exit(0); }' >> dummy-hello.c
+     ${CC} -S dummy-hello.c -o dummy-hello.s 2>&5
+     cat dummy-hello.s 2> /dev/null | ${AS_BIN} -o dummy-hello.S - 2>&5
