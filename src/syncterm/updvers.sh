@@ -49,6 +49,7 @@ echo "PATCH:    ${PATCH}"
 echo "PATCHSEQ: ${PATCHSEQ}"
 echo "PATCHSTR: ${PATCHSTR}"
 echo "ISREL:    ${ISREL}"
+echo "Do you need to bump revision in ../conio/cterm.c?"
 
 # CMakeLists.txt
 perl -pi -e "s/(CPACK_PACKAGE_VERSION_MAJOR )[0-9]+/\$1.'${MAJOR}'/ge" CMakeLists.txt
