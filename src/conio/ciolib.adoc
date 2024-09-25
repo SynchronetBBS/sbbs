@@ -1,0 +1,458 @@
+= Ciolib Manual
+
+== Introduction
+
+Ciolib originated as a FreeBSD/Linux implementation of the Borland conio
+library for use by the Synchronet User InterFaCe library (UIFC).  Since
+then, it has grown more complete by being used to port other software
+that was originally implemented using Borland C.
+
+The use of ciolib in SyncTERM however, kicked off an explosion in
+capabilities, and SyncTERM has been the primary driver of ciolib
+development ever since.  Graphics, multiple font, TruColor, window
+scaling and more have been added to ciolib to extend SyncTERM.
+In addition, the ANSI parsing and displaying code CTerm is part of
+ciolib, and not SyncTERM.
+
+== Output Modes
+
+An output mode specifies the manner in which ciolib displays the content
+to the user. There are twelve ciolib output modes that can be broadly
+grouped into two categories:
+
+	Text Output Modes::
+	These modes use a text based library or interface to display
+	character cells and attributes.  These modes are incapable of
+	graphics.
+	
+		Curses Modes:::
+		In one of the curses modes, the curses (or ncurses if
+		available) API provided by the OS is used for output.
+		This means it requires the TERM variable be set
+		appropriately, and needs to run inside of another
+		terminal emulator such as XTerm or Kitty.  There are
+		three curses modes.
+		
+			Curses::::
+			This uses the wide char curses API and supports
+			unicode input and output, translating as needed.
+			This provides the highest quality in almost all
+			terminals.
+			
+			Curses IBM::::
+			When in this mode, ciolib assumes that any
+			characters displayed on the screen will be in IBM
+			codepage 437, and translates to and from that as
+			appropriate. This mode can work well inside of
+			a CP437 BBS connection, but makes many
+			assumptions that are suspect.
+			
+			Curses ASCII::::
+			In this mode, output is restricted to the ASCII
+			character set, and everything is translated to
+			that. This is the least capable curses mode.
+
+		ANSI Mode:::
+		Ciolib will output ANSI control sequences on stdout in
+		this mode.  In general, the sequences used are in line
+		with "ANSI-BBS".  This is similar to curses mode, except
+		the TERM variable has no impact, and all characteristics
+		of the terminal emulator used for display are simply
+		assumed. This is the best mode to use from inside a BBS
+		connection.
+
+		Windows Conio:::
+		Only available on Windows, this uses the old Windows NT
+		console API to output text.  Newer versions of Windows
+		have changed this API considerably, so until ciolib is
+		updated to support the new console, this is of limited
+		usefulness.
+
+	Graphical Modes::
+	In graphical modes, ciolib controls every pixel that is displayed.
+	As a result of this, every feature of ciolib is available to
+	every graphical mode. The main reasons to choose one over another
+	is portability and OS.
++
+Graphical modes usually also have a fullscreen variant.
+	
+		SDL Mode:::
+		SDL mode is the most portable of the modes as it uses
+		libsdl, a library designed for writing cross-platform
+		games.  SDL supports many more platforms than ciolib
+		does, and is usually the first graphical mode supported
+		on a new platform.
++
+Unfortunately, SDL mode tends to be more complex and
+usually somewhat slower or more CPU intensive than other
+modes, so is usually only used as a fallback.
+
+		X mode:::
+		This uses libX11 to communicate with an X server.
+		Historically, the GUI for most \*nix systems were
+		provided via an X server.  While Linux
+		distributions are moving to Wayland, evne Wayland still
+		support libX11 applications.
+
+		GDI mode:::
+		This directly uses the Win32 Graphics Display Interface
+		(GDI) API.
+
+== Text Modes
+
+Ciolib operates in exactly one text mode.  This is
+distinct from the Text Output Mode mentioned above.  Internally, a text
+mode is defined via fourteen values:
+
+Mode Number::
+A unique ID for each mode. Many of these were defined by Borland, but
+the list has been extended by various parties over the years.
+
+Palette::
+The palette is a mapping of attribute values to TruColor RGB values. For
+historical DOS modes, this defines the standard sixteen colours (or
+up to three intensities for monchrome modes).  For other modes such as
+the Commodore 64 and Atari modes, the palette is very different.
+
+Columns::
+The number of columns on the display.
+
+Rows::
+The number of rows on the display.
+
+Cursor Start::
+The pixel row number the default cursor starts on.  DOS modes tend to use
+a two pixel high underline cursor, while Commodore uses a full block
+cursor.
+
+Cursor End::
+The pixel row number the default cursor ends on.
+
+Character Height::
+The height of a single cell on the display. This indirectly sets the
+allowed fonts, since only fonts with the specified height can be used.
+
+Character Width::
+The width of a character cell. In all except one mode, this is 8.
+However, in the VGA80X25 mode, this is 9.  When this is 9, an
+8 pixel wide font may still be used if the `VIDMODES_FLAG_EXPAND` flag
+is set.
+
+Default Attribute::
+The attribute used when a screen is initialized.  Light Gray on Black
+for DOS modes, but varies for other modes.
+
+Flags::
+Flags can be set to control on/off behaviours in a mode.  There are
+currently two flags that can be set
+	CIOLIB_VIDEO_EXPAND:::
+	This flag is used to add an extra pixel to the right side of each
+	character cell that is not present in the font data.
+
+	CIOLIB_VIDEO_LINE_GRAPHICS_EXPAND:::
+	An algorithm from IBM graphics cards is used to fill in an extra pixel column.
+	This makes line drawing characters connect across the space,
+	but leaves a single pixel gap between block drawing characters.
+
+Aspect Ratio Width::
+See next item.
+
+Aspect Ratio Height::
+Aspect Ratio Height and Aspect Ratio Width controls the aspect ratio the
+mode is scaled to. Most historical text modes did not use square pixels,
+but ciolib assumes that its output does use square pixels. It's simplest
+to describe these old modes using the aspect ratio of the display and
+the pixel resolution.  Historical display were almost universally 4:3
+aspect ratio. The Commodore 64 however used large borders on the sides,
+and the aspect ratio is actually 6:5.  There is a small number of
+additional modes that use aspect ratios with square pixels.  These are:
+
+	ST132X37_16_9:::
+	This is a 132x37 mode with square pixels and a 16:9 aspect ratio.
+
+	ST132X37_5_4:::
+	This is a 132x52 mode with square pixels and a 5:4 aspect ratio.
+
+	LCD80X25:::
+	This is an 80X25 mode with square pixels and an 8:5 aspect ratio.
+	This mode was added to provide a way of avoiding scaling and the
+	resulting "blurriness".
+
+X Resolution::
+The width in pixels of the display.
+
+Y Resolution::
+The height in pixels of the display.
+
+There is a custom mode defined where the values can be modified by the
+program to create exactly the desired mode.
+
+== Fonts
+
+There are a large number of built in fonts that ciolib supports. Most
+are codepage fonts, but there is also Commodore, Atari, and Amiga fonts
+included in the default set.  Not all builtin fonts are available in
+every size.  The following table summarizes the available fonts.
+
+[%autowidth,cols="1,^2,^3,^4,5"]
+|===
+|Name |8x16 |8x12 |8x8 |Character Set
+
+|Codepage 437 English
+|√
+|√
+|√
+|CP437
+
+|Codepage 1251 Cyrillic, (swiss)
+|√
+|
+|
+|CP1251
+
+|Russian koi8-r
+|√
+|√
+|√
+|KOI8_R
+
+|ISO-8859-2 Central European
+|√
+|√
+|√
+|ISO_8859_2
+
+|ISO-8859-4 Baltic wide (VGA 9bit mapped)
+|√
+|
+|
+|ISO_8859_4
+
+|Codepage 866 (c) Russian
+|√
+|
+|
+|CP866M
+
+|ISO-8859-9 Turkish
+|√
+|
+|
+|ISO_8859_9
+
+|haik8 codepage (use only with armscii8 screenmap)
+|√
+|√
+|√
+|HAIK8
+
+|ISO-8859-8 Hebrew
+|√
+|√
+|√
+|ISO_8859_8
+
+|Ukrainian font koi8-u
+|√
+|√
+|√
+|KOI8_U
+
+|ISO-8859-15 West European, (thin)
+|√
+|
+|
+|ISO_8859_15
+
+|ISO-8859-4 Baltic (VGA 9bit mapped)
+|√
+|√
+|√
+|ISO_8859_4
+
+|Russian koi8-r (b)
+|√
+|
+|
+|KOI8_R
+
+|ISO-8859-4 Baltic wide
+|√
+|
+|
+|ISO_8859_4
+
+|ISO-8859-5 Cyrillic
+|√
+|√
+|√
+|ISO_8859_5
+
+|ARMSCII-8 Character set
+|√
+|√
+|√
+|ARMSCII8
+
+|ISO-8859-15 West European
+|√
+|√
+|√
+|ISO_8859_15
+
+|Codepage 850 Multilingual Latin I, (thin)
+|√
+|
+|√
+|CP850
+
+|Codepage 850 Multilingual Latin I
+|√
+|√
+|√
+|CP850
+
+|Codepage 865 Norwegian, (thin)
+|√
+|
+|√
+|CP865
+
+|Codepage 1251 Cyrillic
+|√
+|√
+|√
+|CP1251
+
+|ISO-8859-7 Greek
+|√
+|√
+|√
+|ISO_8859_7
+
+|Russian koi8-r (c)
+|√
+|
+|
+|KOI8_R
+
+|ISO-8859-4 Baltic
+|√
+|√
+|√
+|ISO_8859_4
+
+|ISO-8859-1 West European
+|√
+|√
+|√
+|ISO_8859_1
+
+|Codepage 866 Russian
+|√
+|√
+|√
+|CP866M2
+
+|Codepage 437 English, (thin)
+|√
+|
+|√
+|CP437
+
+|Codepage 866 (b) Russian
+|√
+|
+|
+|CP866M2
+
+|Codepage 865 Norwegian
+|√
+|√
+|√
+|CP865
+
+|Ukrainian font cp866u
+|√
+|√
+|√
+|CP866U
+
+|ISO-8859-1 West European, (thin)
+|√
+|
+|
+|ISO_8859_1
+
+|Codepage 1131 Belarusian, (swiss)
+|√
+|
+|
+|CP1131
+
+|Commodore 64 (UPPER)
+|√
+|
+|√
+|PETSCIIU
+
+|Commodore 64 (Lower)
+|√
+|
+|√
+|PETSCIIL
+
+|Commodore 128 (UPPER)
+|√
+|
+|√
+|PETSCIIU
+
+|Commodore 128 (Lower)
+|√
+|
+|√
+|PETSCIIL
+
+|Atari
+|√
+|
+|√
+|ATASCII
+
+|P0T NOoDLE (Amiga)
+|√
+|√
+|
+|ISO_8859_1
+
+|mO'sOul (Amiga)
+|√
+|
+|√
+|ISO_8859_1
+
+|MicroKnight Plus (Amiga)
+|√
+|
+|
+|ISO_8859_1
+
+|Topaz Plus (Amiga)
+|√
+|
+|
+|ISO_8859_1
+
+|MicroKnight (Amiga)
+|√
+|
+|√
+|ISO_8859_1
+
+|Topaz (Amiga)
+|√
+|√
+|
+|ISO_8859_1
+|===

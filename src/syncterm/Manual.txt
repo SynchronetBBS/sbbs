@@ -982,3 +982,4 @@ GR: Set to GR (for "GRaphics", meaning ANSI-BBS support) or NG
 (for "No Graphics").  Always set to GR.  Not configurable in SyncTERM.
 
 include::../conio/cterm.adoc[leveloffset=+2]
+include::../conio/ciolib.adoc[leveloffset=+2]
