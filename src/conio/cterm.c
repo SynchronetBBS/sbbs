@@ -3884,6 +3884,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									delete_tabstop(cterm, WHEREX());
 									break;
 								case 3:
+								case 5:
 									cterm->tab_count = 0;
 									break;
 							}

@@ -1,3 +1,4 @@
+:experimental:
 = SyncTERM v1.2 Manual
 Stephen Hurd <shurd@sasktel.net>
 :toc:
@@ -125,7 +126,7 @@ Changes the default to no status line.
 -E##::
 Specifies the escape delay in ANSI on Curses modes. The escape delay
 is how long SyncTERM will wait after an escape key is received from the
-user to see if it's a control sequence or a bare ESC press. The units
+user to see if it's a control sequence or a bare kbd:[Escape] press. The units
 are millisecods, and the default is 25.
 
 -H::
@@ -246,83 +247,83 @@ on the left side.
 
 Keyboard Controls::
 
-	Return:::
+	kbd:[Return]:::
 	Select the currently highlighted option.  If there is a blank
 	line at the end of the menu, you can select it to insert a new
 	item.
 
-	Escape:::
+	kbd:[Escape]:::
 	Exit the current menu.
 
-	Backspace::: An alias for Escape.
+	kbd:[Backspace]::: An alias for Escape.
 	CTRL-C: An alias for Escape.
 
-	Home:::
+	kbd:[Home]:::
 	Jump to the beginning of the menu
 
-	Up Arrow:::
+	kbd:[↑]:::
 	Move to the previous item in the list
 
-	Page Up:::
+	kbd:[Page Up]:::
 	Jump up in the menu by one screen.
 
-	Page Down:::
+	kbd:[Page Down]:::
 	Jump down in the menu by one screen.
 
-	End:::
+	kbd:[End]:::
 	Jump to the end of the menu
 
-	Down Arrow:::
+	kbd:[↓]:::
 	Move to the next item in the list.
 
-	F1:::
+	kbd:[F1]:::
 	Help
 
-	F2:::
+	kbd:[F2]:::
 	Edit
 
-	F5:::
+	kbd:[F5]:::
 	Copy
 
-	CTRL-Insert:::
+	kbd:[Ctrl+Insert]:::
 	An alias for F5
 
-	Shift-Delete:::
+	kbd:[Shift+Delete]:::
 	Cut
 
 	F6:::
 	Paste
 
-	Shift-Insert:::
+	kbd:[Shift+Insert]:::
 	An alias for F6
 
-	Insert:::
+	kbd:[Insert]:::
 	Inserts a new item.
 
-	+:::
+	kbd:[+]:::
 	An alias for Insert
 
-	Delete:::
+	kbd:[Delete]:::
 	Delete item at current location
 
-	-:::
+	kbd:[-]:::
 	An alias for Delete
 
 	Any letter or number:::
 	Jumps to the next item that has that character
 	earliest in it's name.
 
-	ALT-Left:::
+	kbd:[Alt+→]:::
 	Snap the window size to the next smaller integer zoom level
 
-	ALT-Right:::
+	kbd:[Alt+←]:::
 	Snap the window size to the next larger smaller integer zoom
 	level
 
-	CTRL-F:::
+	kbd:[Ctrl+F]:::
 	Find text in options
 
-	CTRL-G:::
+	kbd:[Ctrl+G]:::
 	Repeat last find
 
 
@@ -364,23 +365,23 @@ highlighted system as configured in the entry.
 In addition to the standard controls, this menu also has some extra
 keyboard shortcuts.
 
-CTRL-D::
+kbd:[Ctrl+D]::
 Quick-connect to a URL
 
-CTRL-E::
+kbd:[Ctrl+E]::
 Edit the selected entry (Alias for F2)
 
-CTRL-S::
+kbd:[Ctrl+S]::
 <<_modifying_the_sort_order,Modify the sort order>>
 
-ALT-B::
+kbd:[Alt+B]::
 View the scrollback of the last session
 
-TAB::
+kbd:[Tab]::
 Move to the comment field for the current entry, or the settings
 menu if there is no current entry.
 
-Back TAB (Shift-TAB)::
+kbd:[Back Tab] (kbd:[Shift+Tab])::
 Move to settings menu.
 
 To add a new entry, go to the bottom of the list (by pressing end) and
@@ -489,14 +490,14 @@ The username to send for the SSH
 protocol.  This may not be the same as the BBS username.
 
 BBS Username (SSH (no auth))::
-The username to send when ALT-L is entered.
+The username to send when kbd:[Alt+L] is entered.
 
 BBS Password (SSH (no auth))::
-The password to send on ALT-L.
+The password to send on kbd:[Alt+L].
 
 Username::
 The user name to send.  Used by SSH, RLogin, and GHost.
-For other protocols, send when ALT-L is pressed.
+For other protocols, send when kbd:[Alt+L] is pressed.
 
 Password::
 The password to send.
@@ -506,7 +507,7 @@ The program name to send to the remote.
 
 System Password::
 An additional password that can be sent after the
-first ALT-L using successive ALT-Ls.
+first kbd:[Alt+L] using successive kbd:[Alt+L]s.
 
 Screen Mode::
 Selects the format of the window when connected.
@@ -636,31 +637,31 @@ lowest) or not.
 
 When viewing the scrollback, the following keys are supported:
 
-Up-arrow::
+kbd:[↑]::
 Move up one line
 
-J::
+kbd:[J]::
 Move up one line
 
-Down-arrow::
+kbd:[↓]::
 Move down on line
 
-K::
+kbd:[K]::
 Move down one line
 
-Page Up::
+kbd:[Page Up]::
 Move up one screen
 
-H::
+kbd:[H]::
 Move up one screen
 
-Page Down::
+kbd:[Page Down]::
 Move down on screen
 
-L::
+kbd:[L]::
 Move down one screen
 
-Escape::
+kbd:[Escape]::
 Exit scrollback mode
 
 
@@ -788,43 +789,43 @@ remote.  To help avoid conflict with remote systems, the XON (CTRL-Q)
 and XOFF (CTRL-S) codes that are used for software flow control are
 used.
 
-CTRL-Q::
+kbd:[Ctrl+Q]::
 Disconnects from the current session.
 
-CTRL-S::
+kbd:[Ctrl+S]::
 Brings up the Online Menu (see below)
 
 For all other modes, the ALT key is used for SyncTERM commands, and
 the following combinations are supported:
 
-Shift-Insert::
+kbd:[Shift+Insert]::
 Pastes the current PRIMARY selection or clipboard
 contents to the remote.
 
-ALT-B::
+kbd:[Alt+B]::
 View scrollback (See "Viewing The Scrollback")
 
-ALT-C::
+kbd:[Alt+C]::
 Capture Control.  Allows starting and stopping capturing the
 session to a file.  Useful for stealing ANSIs and debugging
 emulation issues.
 
-ALT-D::
+kbd:[Alt+D]::
 Begins a download from the remote system.
 
-ALT-E::
+kbd:[Alt+E]::
 Brings up the Dialing Directory
 
-ALT-F::
+kbd:[Alt+F]::
 Allows selecting a different font.  In some output modes, the
 selected font will change text that is already on the screen.
 In most modes however, only newly displayed text will be in the
 new font.
 
-ALT-H::
+kbd:[Alt+H]::
 Hangup and return to the main menu.
 
-ALT-L::
+kbd:[Alt+L]::
 Send auto-login information.  For protocols that allow auto-
 login, only the system password is sent.  For all others, the
 username is sent followed by a carriage return, then the password
@@ -832,30 +833,30 @@ followed by a CR, then the system password followed by the CR.
 If any of these are not configured for the current entry, neither
 them, nor the CR are sent for that item.
 
-ALT-M::
+kbd:[Alt+M]::
 Changes the currently supported "ANSI" Music prefix.
 
-ALT-O::
+kbd:[Alt+O]::
 Toggles remote mouse support.  With the remote capturing mouse
-events, it can be difficult to select text to copy.  ALT-O allows
+events, it can be difficult to select text to copy.  kbd:[Alt+O] allows
 taking the mouse away from the remote.
 
-ALT-U::
+kbd:[Alt+U]::
 Upload a file to the remote.
 
-ALT-X::
+kbd:[Alt+X]::
 Disconnect and exit SyncTERM.  Does not return to the main
 menu.
 
-ALT-Z::
+kbd:[Alt+Z]::
 Brings up the Online Menu (see below)
 
-ALT-UpArrow::
+kbd:[Alt+↑]::
 Selects the next fastest character pacing speed.  If the
 fastest speed is currently selected, disables character pacing.
 If pacing is currently disabled, selects the slowest pacing speed.
 
-ALT-DownArrow::
+kbd:[Alt+↓]::
 Selects the next slowest character pacing speed.  If
 the slowest speed is currently selected, disables character pacing.
 If pacing is currently disabled, selects the fastest pacing speed.
@@ -867,19 +868,19 @@ Allows menu-based selection of some of the above options, as well as
 some less-common operations that don't have a keyboard shortcut.
 
 Scrollback::
-Same as ALT-B
+Same as kbd:[Alt+B]
 
 Disconnect::
-Same as ALT-H
+Same as kbd:[Alt+H]
 
 Send Login::
-Same as ALT-L
+Same as kbd:[Alt+L]
 
 Upload::
-Same as ALT-U
+Same as kbd:[Alt+U]
 
 Download::
-Same as ALT-D
+Same as kbd:[Alt+D]
 
 Change Output Rate::
 Allows selecting a specific character pacing to use.
@@ -888,30 +889,30 @@ Change Log Level::
 Temporarily changes the file transfer log level
 
 Capture Control::
-Same as ALT-C
+Same as kbd:[Alt+C]
 
 ANSI Music Control::
-Same as ALT-M
+Same as kbd:[Alt+M]
 
 Font Setup::
-Same as ALT-F
+Same as kbd:[Alt+F]
 
 Toggle Doorway Mode::
 Turns on or off Doorway mode without the host
 specifying it.  Can be used to recover from broken remote software.
 
 Toggle Remote Mouse::
-Same as ALT-O
+Same as kbd:[Alt+O]
 
 Toggle Operation Overkill ][ Mode::
 Turns on or off OO][ mode.
 Can be used to recover from broken remote software.
 
 Exit::
-Same as ALT-X
+Same as kbd:[Alt+X]
 
 Edit Dialing Directory::
-Same as ALT-E
+Same as kbd:[Alt+E]
 
 
 == Techical Details
