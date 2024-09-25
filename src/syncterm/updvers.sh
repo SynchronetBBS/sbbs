@@ -61,7 +61,7 @@ perl -pgi -e "s|(<key>CFBundleShortVersionString</key>.+?<string>)[^<]+(?=</stri
 perl -pgi -e "s|(<key>CFBundleVersion</key>.+?<string>)[^<]+(?=</string>)|\$1.'${NUMERIC}'|ges" Info.plist
 
 # Manual.txt
-perl -pi -e "s/(?<=SyncTERM v)[0-9.a-z]+/${NUMERIC}/g" Manual.txt
+perl -pi -e "s/(?<=SyncTERM v)[0-9.a-z]+/${VERSTR}/g" Manual.txt
 
 # dpkg-control.in
 perl -pi -e "s/(?<=^Version: ).*$/${VERSTR}/g" dpkg-control.in
