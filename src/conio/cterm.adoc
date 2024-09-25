@@ -10,7 +10,7 @@ current line, not on the next character.  A tab will wrap
 to the next line only if the current cursor position is the
 last character on the line.  This behavior is often surprising
 to people who are used to VT emulators which implement the LCF
-as documented in STD-070, who expect the cursor to "stick" in
+as documented in <<STD-070>>, who expect the cursor to "stick" in
 the last column until the next character is received.
 
 There are two settable flags that will impact the default
@@ -22,7 +22,7 @@ not move the cursor at all, overwriting the existing charater.
 Default behaviour can be restored with `CSI ? 7 h`.
 
 If the `CSI = 4` h sequence is received, CTerm will enable LCF
-mode as documented in STD-070, and `CSI = 4 l` will restore
+mode as documented in <<STD-070>>, and `CSI = 4 l` will restore
 default behaviour.  `CSI = 5 h` will set LCF mode and disable
 `CSI = 4 l`, as well as cause LCF to remain enabled across
 an `ESC c` (RIS).
@@ -2372,6 +2372,7 @@ for people who want to maintain compatibility.
 
 == References
 
+* [[STD-070]]https://vt100.net/manx/details/1,35074[[STD-070\]] Digital Equipment Corporation. Video Systems Reference Manual. 1989-04-14.
 * [[ECMA-48]]https://www.ecma-international.org/wp-content/uploads/ECMA-48_5th_edition_june_1991.pdf[[ECMA-48\]] ECMA. Control Functions for Coded Character Sets. June 1991
 * [[XTerm]]https://invisible-island.net/xterm/ctlseqs/ctlseqs.pdf[[XTerm\]] Edward May. XTerm Control Sequences. University of California, Berkeley. 2024/09/19
 * [[Paste64]]https://invisible-island.net/xterm/xterm-paste64.html[[Paste64\]] Thomas E. Dickey. XTerm -- bracketed paste. 2022
