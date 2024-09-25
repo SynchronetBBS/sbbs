@@ -25,6 +25,7 @@
 #include "unicode.h"
 #include "cp437defs.h"
 #include "ver.h"
+#include "petdefs.h"
 
 #if defined(_WINSOCKAPI_)
 	extern WSADATA WSAData;
