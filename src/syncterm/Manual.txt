@@ -256,7 +256,8 @@ Keyboard Controls::
 	Exit the current menu.
 
 	kbd:[Backspace]::: An alias for Escape.
-	CTRL-C: An alias for Escape.
+
+	kbd:[Ctrl+C]: An alias for Escape.
 
 	kbd:[Home]:::
 	Jump to the beginning of the menu
@@ -291,7 +292,7 @@ Keyboard Controls::
 	kbd:[Shift+Delete]:::
 	Cut
 
-	F6:::
+	kbd:[F6]:::
 	Paste
 
 	kbd:[Shift+Insert]:::
@@ -624,7 +625,7 @@ stability issues if SFTP is not available or does not work correctly.
 ==== Modifying the Sort Order
 
 You can change the order that entries appear in the Directory via the
-CTRL-S key.  This brings up a menu where you can add entries by either
+kbd:[Ctrl+S] key.  This brings up a menu where you can add entries by either
 pressing Insert to add before the current item, or by pressing Return on
 the enpty line at the end.  This will bring up a list of fields that can
 be sorted on.
@@ -785,8 +786,8 @@ available that are not sent to the remote.
 For Curses and ANSI modes, only two controls are avilable, and they
 are not available in other modes.  This is because these two modes
 don't have access to keys that could not potentially be sent to the
-remote.  To help avoid conflict with remote systems, the XON (CTRL-Q)
-and XOFF (CTRL-S) codes that are used for software flow control are
+remote.  To help avoid conflict with remote systems, the XON (kbd:[Ctrl+Q])
+and XOFF (kbd:[Ctrl+S]) codes that are used for software flow control are
 used.
 
 kbd:[Ctrl+Q]::
@@ -979,3 +980,5 @@ configurable in SyncTERM.
 
 GR: Set to GR (for "GRaphics", meaning ANSI-BBS support) or NG
 (for "No Graphics").  Always set to GR.  Not configurable in SyncTERM.
+
+include::../conio/cterm.adoc[leveloffset=+2]

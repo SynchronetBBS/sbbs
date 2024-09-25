@@ -1,0 +1,2384 @@
+= CTerm Manual
+:toc:
+
+== CTerm terminal characteristics
+
+=== End of line behaviour (wrapping):
+The cursor is moved to the first character of the next line
+as soon as a character is written to the last column of the
+current line, not on the next character.  A tab will wrap
+to the next line only if the current cursor position is the
+last character on the line.  This behavior is often surprising
+to people who are used to VT emulators which implement the LCF
+as documented in STD-070, who expect the cursor to "stick" in
+the last column until the next character is received.
+
+There are two settable flags that will impact the default
+behaviour.
+
+`CSI ? 7 l` will disable wrapping at the end of line
+completely, and any characters written to the last column will
+not move the cursor at all, overwriting the existing charater.
+Default behaviour can be restored with `CSI ? 7 h`.
+
+If the `CSI = 4` h sequence is received, CTerm will enable LCF
+mode as documented in STD-070, and `CSI = 4 l` will restore
+default behaviour.  `CSI = 5 h` will set LCF mode and disable
+`CSI = 4 l`, as well as cause LCF to remain enabled across
+an `ESC c` (RIS).
+
+Specifically, the LCF will be
+set when displaying a printable character advances the cursor
+to the right margin, and cleared by any of the following being
+received:
+`CSI ? 6 h`, `CSI ? 6 l`, `CSI ? 7 l`, `CSI @`, `CSI A`, `CSI B`, `CSI a`
+`CSI j`, `CSI H`, `CSI f`, `CSI I`, `CSI Y`, `CSI J`, `CSI K`, `CSI P`
+`CSI X`, `CSI r`, `ESC E`, `ESC M`, `CR`, `LF`, `BS`, `TAB`
+Any normal printable character when the cursor is at the right
+margin (of the screen or scrollable area).
+
+== Control characters
+
+=== `0x00` NUL (`NUL`)
+In doorway mode, indicates that the next character is
+a literal character.  The IBM CP437 character will
+be displayed.  This allows ESC and other control
+characters to be placed on the screen.
+
+SOURCE: <<BANSI>>
+
+=== `0x07` Bell (`BEL`)
+Beep
+
+=== `0x08` Backspace (`BS`)
+Non-destructive backspace.  Moves cursor position to
+the previous column unless the current column is the
+first, in which case no operation is performed.
+
+SOURCE: <<ECMA-48>>
+
+=== `0x09` Horizontal Tab (`HT`)
+Moves to the next horizontal tab stop.  Does not overwrite
+any characters in between.  If there are no tab stops left
+in the line, moves to the first position of the next line.
+If the starting position is on the last line, will perform
+a scroll, filling the new line at bottom with the current
+attribute.
+
+SOURCE: <<ECMA-48>>
+
+=== `0x0A` Line Feed (`LF`)
+Move cursor position to same column of the next row.
+If current row is the last row, scrolls the screen up
+and fills the new row with the current attribute.
+
+SOURCE: <<ECMA-48>>
+
+=== `0x0D` Carriage Return (`CR`)
+Move cursor position to column 1 of the current line
+
+SOURCE: <<ECMA-48>>
+
+=== `0x1B` Escape (`ESC`)
+Introduces a control code.  The `ESC` and the next byte
+together form the control code.  If the control code is
+not valid, the `ESC` is ignored.
+
+SOURCE: <<ECMA-48>>
+
+== Control Codes
+
+Control codes are in the following format: +
+`ESC {'0'` to `'~'}`
+Legal combinations which are not handled are silently dropped.
+
+=== `ESC E` Next Line (`NEL`)
+Moves to the line home position of the next line.
+(Same as `CR` `LF`)
+
+SOURCE: <<ECMA-48>>
+
+=== `ESC H` Set Tab (`HTS`)
+Sets a tab stop at the current column
+
+SOURCE: <<ECMA-48>>
+
+=== `ESC M` Reverse Line Feed (`RI`)
+Move up one line
+
+SOURCE: <<ECMA-48>>
+
+=== `ESC P`	Device Control String (`DCS`)
+Begins a string consisting of the characters 0x08 - 0x0d and
+0x20-0x7e, terminated by a String Terminator (`ST`)
+
+SOURCE: <<ECMA-48>>
+
+==== Supported `DCS` string values
+`CTerm:Font:p1:<b64>` CTerm Loadable Font (`CTLF`)::
+	Indicates the string is a loadable font. (CTerm 1.213)
+	+
+	`p1` is a font slot number, which must be higher than the last
+	default defined font (See `CSI sp D` for list of predefined
+	fonts). `<b64>` is the base64 encoded font data.  Font size is
+	deduced from the size of the data.  This replaces the now
+	deprecated `CSI = Ps1 ; Ps2 {`
+
+`[ p1 [ ; p2 ] ] q` Sixel Sequence::
+Defaults:  `p1` = 0  `p2` = 0
+Indicates the string is a sixel sequence.
++
+`p1` selects the vertical height of a single pixel.  This
+may be overridden by the raster attributes command, and
+is deprecated.  Supported values
++
+.Supported Values of `p1`
+[%autowidth]
+|===
+|Value |Vertical Size
+
+|0,1,5,6
+|2 pixels
+
+|2
+|5 pixels
+
+|3,4
+|3 pixels
+
+|7,8,9
+|1 pixel
+|===
++
+`p2` indicates if unset sixels should be set to the current
+background colour.  If p2 is 1, positions specified as 0
+remain at their current colour.
++
+Any additional parameters are ignored.
++
+The rest of the string is made up of sixel data characters and
+sixel control functions.  Sixel data characters are in the
+range of `?` (0x3f) to `~` (0x7e).  Each sixel data character
+represents six vertical pixels.  The data is extracted by
+subtracting 0x3f from the ASCII value of the character.
+The least significant bit is the topmost pixel.
++
+.Sixel Control Functions
+
+	`! Pn X` Graphics Repeat Introducer:::
+	The character X is repeated Pn times.
+
+	`" p1 ; p2 [ ; p3 [ ; p4 ] ]` Raster Attributes:::
+	p1 indicates the vertical size in pixels of each sixel.
+	p2 indicates the horizontal size in pixels.
+	p3 and p4 define the height and width (in sixels)
+	respectively of a block to fill with the background
+	colour.  This block may not extend past the current
+	bottom of the screen.  If any pixel data characters
+	proceed this command, it is ignored.
+
+	`# p1` Colour Select:::
+	Selects the current foreground colour from the
+	sixel palette.
+	`# p1 ; p2 ; p3 ; p4 ; p5` Palette map:::
+	Defines sixel palette entry p1 and sets it as the
+	current foreground colour.  p2 specifies the colour
+	space to define the colour in, the only supported
+	value is 2.  p3, p4, and p5 specify the red, green,
+	and blue content as a percentage (0-100).
+	`$` Graphics Carriage Return:::
+	Returns the active position to the left border of
+	the same sixel row.  Generally, one pass per colour
+	is used.  In passes after the first one, sixels
+	with a value of zero are not overwritten with the
+	background colour.
+	`-` Graphics New Line:::
+	Moves the active position to the left border of the
+	next sixel row.
++
+SOURCE: <<VT330340,[VT330/340]>>
+
+`$ q pt` Request Status String (`DECRQSS`)::
+`pt` is the intermediate and/or final characters of a control
+function to query the status of.  The terminal will send a
+response in the format
++
+`DCS p1 $ r pt ST`
++
+`p1` is 1 if the terminal supports querying the control
+function and 0 if it does not.
++
+`pt` is the characters in the control function except the `CSI`
+characters.
++
+.Currently supported values of pt:
+[%autowidth]
+|===
+|`pt` |Request SGR parameters
+
+|r
+|Request top and bottom margins
+
+|s
+|Request left and right margins
+
+|t
+|Request height in lines
+
+|$\|
+|Request width in columns
+|*\|
+|Request height in lines
+|===
++
+SOURCE: <<VT420>>
+
+`p1 [ ; p2 [ ; p3 ] ! z` Define Macro (`DECDMAC`)::
+Defaults: `p2` = 0  `p3` = 0
++
+Sets a macro to be replayed using `CSI Pn * z`
++
+`p1` is the macro number to set, and must be between 0 and
+63 inclusive.
++
+If `p2` is zero, the macro numbered `p1` will be deleted. If
+`p2` is one, all macros are deleted.
++
+If `p3` is zero, the macro is defined using ASCII characters
+(0x20 - 0x7e and 0xa0 - 0xff only) if `p3` is one, the macro
+is defined using hex pairs.
++
+When the macro is defined using hex pairs, a repeat
+sequence may be included in the format of `! Pn ; D..D ;`
+`Pn` specifies the number of repeats (default of one instance)+
+`D..D` is the sequence of pairs to send Pn times.  The 
+terminating ; may be left out if the sequence to be
+repeated ends at the end of the string.
++
+SOURCE: <<VT420>>
+
+=== `ESC X` Start Of String (`SOS`)
+As the above strings, but may contain any characters except
+a Start Of String sequence or a String Terminator sequence.
+The string is currently ignored.
+
+SOURCE: <<ECMA-48>>
+
+=== `ESC \` String Terminator (`ST`)
+Ends a string.
+
+SOURCE: <<ECMA-48>>
+
+=== `ESC ]` Operating System Command (`OSC`)
+Begins a string consisting of the characters 0x08 - 0x0d and
+0x20-0x7e, terminated by a String Terminator (ST)
++
+.Supported OSC values
+	`4;(pX;pY)...`::
+	Specifies one or more palette redefinitions. +
+	`pX` is the palette index, and `pY` is the colour definition +
+	Color format: `rgb:R/G/B`::::
+		Where `R`, `G`, and `B` are a sequence of one to four
+		hex digits representing the value of the
+		red, green, and blue channels respectively.
++
+SOURCE: <<XTerm>>
+
+	`104 [ ; Ps ... ]`::
+	Resets palette entry to default.  If the entire string
+	is "104" (ie: no `Ps` present), resets all colours.  Otherwise, only each index
+	separated by a semicolon is reset.
++
+SOURCE: <<XTerm>>
+
+=== `ESC ^` Privacy Message (`PM`)
+Begins a string consisting of the characters 0x08 - 0x0d and
+0x20-0x7e, terminated by a String Terminator (`ST`)
+The string is currently ignored.
+
+SOURCE: <<ECMA-48>>
+
+=== `ESC _` Application Program Command (`APC`)
+Begins a string consisting of the characters 0x08 - 0x0d and
+0x20-0x7e, terminated by a String Terminator (ST)
+
+SOURCE: <<ECMA-48>>
+
+SyncTERM implements the following APC commands:
+
+	`SyncTERM:C;S Ps1 Ps2` Store file (`CTSFI`)::
+	Where `Ps1` is a filename and `Ps2` is the base64 encoded
+	contents of the file.  The named file is stored in the
+	cache directory for the current connection.
+
+	`SyncTERM:C;L [ ; Ps]` List Files (`CTLFI`)::
+	Defaults: `Ps` = * +
+	`Ps` is the glob(3) pattern to use matching files.
+	SyncTERM responds with
+	an `APC` string with lines separated by newlines.  The
+	first line is always `SyncTERM:C;L\n` and for each
+	matching file, a line in the form
+	`<Filename> TAB <MD5 sum> LF` is sent
+	(ie: "coolfont.fnt\t595f44fec1e92a71d3e9e77456ba80d1\n")
+
+	`SyncTERM:C;SetFont; Pn ; Ps` Set Font (`CTSF`)::
+	Where `Pn` is a font slot number (max 255) and `Ps` is a
+	filename in the cache.  This sets font slot `Pn` to use
+	the specified font file.
+
+	`SyncTERM:C;DrawPPM Ps... Ps1` Draw a PPM from Cache (`CTDPFC`)::
+	Draws a PPM from the cache directory on the screen.
+	`Ps1` is the filename and is required.  Arguments for
+	`Ps` are optional.  The following options can be included
+	(separated by semi-colons):
++
+--
+		`SX=#`:::
+		Sets the left X position in the specified image
+		to copy from.  Default = 0.
+
+		`SY=#`:::
+		Sets the top Y position in the specified image
+		to copy from.  Default = 0.
+
+		`SW=#`:::
+		Sets the width of the portion of the image to
+		copy.  Default = Image width - `SX`
+
+		`SH=#`:::
+		Sets the height of the portion of the image to
+		copy.  Default = Image height - `SH`
+
+		`DX=#`:::
+		Sets the X position on the screen to draw the
+		image at.  Default = 0.
+
+		`DY=#`:::
+		Sets the Y position on the screen to draw the
+		image at.  Default = 0.
+
+		`MX=#`:::
+		Sets the X position in the mask to start
+		applying from.  Default = 0.
+
+		`MY=#`:::
+		Sets the Y position in the mask to start
+		applying from.  Default = 0.
+
+		`MW=#`:::
+		Sets the overall width of the mask (not the
+		width to apply).  If `MFILE` is not specified,
+		and a mask is (ie: using `MASK=`), this is
+		required.  If `MFILE` is specified, the width
+		is read from the file.
+
+		`MH=#`:::
+		Sets the overall height of the mask (not the
+		height to apply).  If MFILE is not specified,
+		and a mask is (ie: using MASK=), this is
+		required.  If MFILE is specified, the width
+		is read from the file.
+
+		`MFILE=<filename>`:::
+		Specifies a filename in the cache directory of
+		a PBM file specifying a mask of which pixels
+		to copy.  Any pixel set to black (ie: 1) in the
+		PBM will be drawn from the source image.  Pixels
+		set to white (ie: 0) will be left untouched.
+
+		`MASK=<maskbits>`:::
+		Specifies a base64-encoded bitmap, each set bit
+		will be drawn from the source image, cleared
+		bits will not be drawn.  Requires MW= and MH=
+		to be specified.
+
+		`MBUF`:::
+		Uses the loaded mask buffer.
+--
++
+The PPM file may be raw (preferred) or text.  SyncTERM
+does not support more than 255 values per colour channel
+and assumes it is correctly using the BT.709 gamma
+transfer.
+
+	`SyncTERM:C;LoadPPM Ps... Ps0` Load a PPM to Buffer (`CTLPTB`)::
+	Loads a PPM to a buffer.  Ps0 is the filename
+		`B=#`:::
+		Selects the buffer (0 or 1 only) to paste from.
+
+	`SyncTERM:C;LoadPBM Ps... Ps0` Load a PBM to Buffer (`CTLPBTB`)::
+	Loads a PBM to a buffer.  Ps0 is the filename
+
+	`SyncTERM:P;Copy Ps...` Copy Screen into Buffer (`CTCSIB`)::
+	Copies a portion of the screen into an internal buffer
+	for use with the Paste function.  Defaults to copying
+	the entire screen.
+		`B=#`:::
+		Selects the buffer (0 or 1 only) to copy to.
+
+		`X=#`:::
+		Sets the left X position on the screen to start
+		copying at.  Default = 0.
+
+		`Y=#`:::
+		Sets the top Y position on the screen to start
+		copying at.  Default = 0.
+
+		`W=#`:::
+		Sets the width to copy.
+		Default = Screen width - X.
+
+		`H=#`:::
+		Sets the height to copy.
+		Default = Screen height - X.
+
+	`SyncTERM:P,Paste Ps...` Paste Buffer to Screen (`CTPBTS`)::
+	Pastes from the copied buffer.  Supports the same
+	options as the Cache DrawPPM command except for the
+	filename, and adds the B= option.
+		`B=#`:::
+		Selects the buffer (0 or 1 only) to paste from.
+
+=== `ESC c` Reset to Initial State (`RIS`)
+Resets all the terminal settings, clears the screen, and homes
+the cursor.
+
+SOURCE: <<ECMA-48>>
+
+== Control Sequences:
+
+Control sequences start with the Control Sequence Introducer which is
+`ESC [`.  `CSI` will be used to express this from now on.
+
+Control sequences are in the following format: +
+`CSI {'0' (ZERO) to '?'}{SPACE to '/'}{'@' to '~'}` +
+There may be multiple characters from the {'0' (ZERO) to '?'}
+and {SPACE to '/'} before the terminating {'@' to '~'} character.
+
+Legal combinations not handled are silently dropped.
+Illegal combinations are displayed.
+
+=== Sequence Parameters
+Parameters are expressed by the {'0' (ZERO) to '?'} character set.
+
+Sequences which use parameters use decimal parameters separated by
+a ';'.  The use of a ':' from the set is reserved.
+
+If the parameter string begins with '<', '=', '>', or '?' then
+this is a non-standard extension to the ANSI spec.
+
+.Sequence Paramters
+[%autowidth,cols="1,2"]
+|===
+|`Pn`
+|Indicates a single numeric parameter
+
+|`Pn1 ; Pn2`
+|Two numeric parameters
+
+|`Pn...`
+|Any number of numeric parameters
+
+|`Ps`
+|Single selective parameter
+
+|`Ps1 ; Ps1`
+|Two selective parameters
+
+|`Ps...`
+|Any numer of selective parameters
+|===
+
+If a default is defined, the parameter is optional
+
+=== `CSI Pn @` Insert Character(s) (`ICH`)
+Defaults: `Pn` = 1 +
+Moves text from the current position to the right edge Pn characters
+to the right, with rightmost characters going off-screen and the
+resulting hole being filled with the current attribute.
+
+SOURCE: <<ECMA-48>>
+
+=== `CSI Pn SP @` Scroll Left (`SL`)
+Defaults: `Pn` = 1 +
+Shifts the contents of the screen left `Pn` columns(s) with
+leftmost columns going off-screen and the resulting hole being
+filled with the current attribute.
+
+SOURCE: <<ECMA-48>>
+
+=== `CSI Pn A` Cursor Up (`CUU`)
+Defaults: `Pn` = 1 +
+Moves the cursor position up `Pn` lines from the current position.
+Attempting to move past the screen boundaries stops the cursor
+at the screen boundary.
+
+SOURCE: <<ECMA-48>>
+
+=== `CSI Pn SP A` Scroll Right (`SR`)
+Defaults: `Pn` = 1 +
+Shifts the contents of the screen right `Pn` columns(s) with
+rightmost columns going off-screen and the resulting hole being
+filled with the current attribute.
+
+SOURCE: <<ECMA-48>>
+
+=== `CSI Pn B` Cursor Down (`CUD`)
+Defaults: `Pn` = 1 +
+Moves the cursor position down `Pn` lines from the current position.
+Attempting to move past the screen boundaries stops the cursor
+at the screen boundary.
+
+SOURCE: <<ECMA-48>>
+
+=== `CSI Pn C` Cursor Right (`CUF`)
+Defaults: `Pn` = 1
+Moves the cursor position right `Pn` columns from the current position.
+Attempting to move past the screen boundaries stops the cursor
+at the screen boundary.
+
+SOURCE: <<ECMA-48>>
+
+=== `CSI Pn D` Cursor Left (`CUB`)
+Defaults: `Pn` = 1
+Moves the cursor position left `Pn` columns from the current position.
+Attempting to move past the screen boundaries stops the cursor
+at the screen boundary.
+
+SOURCE: <<ECMA-48>>
+
+=== `CSI Ps1 ; Ps2 sp D` Font Selection (`FNT`)
+Defaults: `Ps1` = 0  Ps2 = 0
+"sp" indicates a single space character.
+Sets font `Ps1` to be the one indicated by `Ps2`.  Currently four fonts are
+supported.  `Ps2` must be between 0 and 255.  Not all output types support
+font selection.  Only X11 and SDL currently do.
+
+.Supported `Ps1` values
+[%autowidth,cols="1,2"]
+|===
+|0
+|Default font
+
+|1
+|Font selected by the high intensity bit when `CSI ? 31 h` is enabled
+
+|2
+|Font selected by the blink intensity bit when `CSI ? 34 h` is enabled
+
+|3
+|Font selected by both the high intensity and blink bits when both `CSI ? 31 h` and `CSI ? 34 h` are enabled
+|===
+
+.Currently included fonts
+[%autowidth,cols="1,2"]
+|===
+|0
+|Codepage 437 English
+
+|1
+|Codepage 1251 Cyrillic, (swiss)
+
+|2
+|Russian koi8-r
+
+|3
+|ISO-8859-2 Central European
+
+|4
+|ISO-8859-4 Baltic wide (VGA 9bit mapped)
+
+|5
+|Codepage 866 (c) Russian
+
+|6
+|ISO-8859-9 Turkish
+
+|7
+|haik8 codepage (use only with armscii8 screenmap)
+
+|8
+|ISO-8859-8 Hebrew
+
+|9
+|Ukrainian font koi8-u
+
+|10
+|ISO-8859-15 West European, (thin)
+
+|11
+|ISO-8859-4 Baltic (VGA 9bit mapped)
+
+|12
+|Russian koi8-r (b)
+
+|13
+|ISO-8859-4 Baltic wide
+
+|14
+|ISO-8859-5 Cyrillic
+
+|15
+|ARMSCII-8 Character set
+
+|16
+|ISO-8859-15 West European
+
+|17
+|Codepage 850 Multilingual Latin I, (thin)
+
+|18
+|Codepage 850 Multilingual Latin I
+
+|19
+|Codepage 885 Norwegian, (thin)
+
+|20
+|Codepage 1251 Cyrillic
+
+|21
+|ISO-8859-7 Greek
+
+|22
+|Russian koi8-r (c)
+
+|23
+|ISO-8859-4 Baltic
+
+|24
+|ISO-8859-1 West European
+
+|25
+|Codepage 866 Russian
+
+|26
+|Codepage 437 English, (thin)
+
+|27
+|Codepage 866 (b) Russian
+
+|28
+|Codepage 885 Norwegian
+
+|29
+|Ukrainian font cp866u
+
+|30
+|ISO-8859-1 West European, (thin)
+
+|31
+|Codepage 1131 Belarusian, (swiss)
+
+|32
+|Commodore 64 (UPPER)
+
+|33
+|Commodore 64 (Lower)
+
+|34
+|Commodore 128 (UPPER)
+
+|35
+|Commodore 128 (Lower)
+
+|36
+|Atari
+
+|37
+|P0T NOoDLE (Amiga)
+
+|38
+|mO'sOul (Amiga)
+
+|39
+|MicroKnight Plus (Amiga)
+
+|40
+|Topaz Plus (Amiga)
+
+|41
+|MicroKnight (Amiga)
+
+|42
+|Topaz (Amiga)
+|===
+
+Not all fonts are supported in all modes.  If a font is not supported
+in the current mode, no action is taken, but there should be a
+non-zero 'Font Selection result' value in the Font State Report.
+
+SOURCE: <<ECMA-48>>
+
+=== `CSI Pn E` Cursor Next Line (`CNL`)
+Defaults: `Pn` = 1 +
+Moves the cursor to the first column of the line `Pn` down from the
+current position. Attempting to move past the screen boundaries
+stops the cursor at the screen boundary.
+
+SOURCE: <<ECMA-48>>
+
+=== `CSI Pn F` Cursor Preceding Line (`CPL`)
+Defaults: `Pn` = 1 +
+Moves the cursor to the first column of the row `Pn` up from the
+current position.  Attempting to move past the screen boundaries
+stops the cursor at the screen boundary.
+
+SOURCE: <<ECMA-48>>
+
+=== `CSI Pn G` Cursor Character Absolute (`CHA`)
+Defaults: `Pn` = 1 +
+Movies the cursor to column Pn of the current row.
+
+SOURCE: <<ECMA-48>>
+
+=== `CSI Pn1 ; Pn2 H` Cursor Position (`CUP`)
+Defaults: `Pn1` = 1  `Pn2` = 1 +
+Moves the cursor to the `Pn2`th column of the `Pn1`th line.
+
+SOURCE: <<ECMA-48>>
+
+=== `CSI Pn I` Cursor Forward Tabulation (`CHT`)
+Defaults: `Pn` = 1 +
+Move the cursor to the Pn-th next tab stop.
+Basically the same as sending TAB Pn times.
+
+SOURCE: <<ECMA-48>>
+
+=== `CSI Ps J` Erase in Page (`ED`)
+Defaults: `Ps` = 0 +
+Erases from the current screen according to the value of `Ps`
+
+[%autowidth,cols="1,2"]
+|===
+|0
+|Erase from the current position to the end of the screen.
+
+|1
+|Erase from the current position to the start of the screen.
+
+|2
+|Erase entire screen.  As a violation of ECMA-048, also moves
+the cursor to position 1/1 as a number of BBS programs assume
+this behaviour.
+|===
+
+Erased characters are set to the current attribute.
+
+SOURCE: <<ECMA-48>>, <<BANSI>>
+
+=== `CSI Ps K` Erase in Line (`EL`)
+Defaults: `Ps` = 0 +
+Erases from the current line according to the value pf `Ps`
+
+[%autowidth,cols="1,2"]
+|===
+|0
+|Erase from the current position to the end of the line.
+
+|1
+|Erase from the current position to the start of the line.
+
+|2
+|Erase entire line.
+|===
+
+Erased characters are set to the current attribute.
+
+SOURCE: <<ECMA-48>>
+
+=== `CSI Pn L` Insert Line(s) (`IL`)
+Defaults: `Pn` = 1 +
+Inserts `Pn` lines at the current line position.  The current line and
+those after it are scrolled down and the new empty lines are filled
+with the current attribute.  If the cursor is not currently inside
+the scrolling margins, has no effect.
+
+SOURCE: <<ECMA-48>>
+
+=== `CSI Pn M` Delete Line(s) / "ANSI" Music (`DL`)
+Defaults: `Pn` = 1
+Deletes the current line and the `Pn` - 1 lines after it scrolling the
+first non-deleted line up to the current line and filling the newly
+empty lines at the end of the screen with the current attribute.
+If the cursor is not currently inside the scrolling margins, has no
+effect.
+If "ANSI" Music is fully enabled (CSI = 2 M), and no parameter is
+specified, performs "ANSI" music instead.
+See <<_ansi_music,"ANSI" MUSIC>> section for more details.
+
+SOURCE: <<ECMA-48>>, <<BANSI>>
+
+=== `CSI = Ps M` CTerm Set ANSI Music (`CTSAM`)
+NON-STANDARD EXTENSION. +
+Defaults:  `Ps` = 0 +
+Sets the current state of ANSI music parsing.
+0 - Only `CSI |` will introduce an ANSI music string.
+1 - Both `CSI |` and `CSI N` will introduce an ANSI music string.
+2 - `CSI |`, `CSI N`, and `CSI M` will all introduce an ANSI music string.
+In this mode, Delete Line will not be available.
+
+=== `CSI N` BananaCom ANSI Music (`BCAM`)
+"ANSI" Music / Not implemented.
+If "ANSI" Music is set to BananaCom (`CSI = 1 M`) or fully enabled
+(`CSI = 2 M`) performs "ANSI" music.  See <<_ansi_music,"ANSI" MUSIC>> section for more
+details.
+
+SOURCE: <<BANSI>>
+
+=== `CSI Pn P` Delete Character (`DCH`)
+Defaults: `Pn` = 1 +
+Deletes the character at the current position by shifting all
+characters from the current column + `Pn` left to the current column.
+Opened blanks at the end of the line are filled with the current
+attribute.  If the cursor is not currently inside the scrolling
+margins, has no effect.
+
+SOURCE: <<ECMA-48>>
+
+=== `CSI Pn S` Scroll Up (`SU`)
+Defaults: `Pn` = 1 +
+Scrolls the screen up `Pn` lines.  New lines emptied at the
+bottom are filled with the current attribute.
+
+SOURCE: <<ECMA-48>>
+
+=== `CSI ? Ps1 ; Ps2 S` XTerm Set or Request Graphics Attribute (`XTSRGA`)
+If `Ps1` is 2, and `Ps2` is 1, replies with the graphics screen information
+in the following format: `CSI ? 2 ; 0 ; Px ; Py S`
+Where `Px` is the width of the screen in pixels and `Py` is the height.
+
+SOURCE: <<XTerm>>
+
+=== `CSI Pn T` Scroll Down (`SD`)
+Defaults: `Pn` = 1 +
+Scrolls all text on the screen down `Pn` lines.  New lines emptied at the
+top are filled with the current attribute.
+
+SOURCE: <<ECMA-48>>
+
+=== `CSI Pn X` Erase Character (`ECH`)
+Defaults: `Pn` = 1 +
+Erase `p1` characters starting at the current character.  Will not erase
+past the end of line.
+Erased characters are set to the current attribute.
+This can erase across scroll margins.
+
+SOURCE: <<ECMA-48>>
+
+=== `CSI Pn Y` Cursor Line Tabulation (`CVT`)
+Defaults: `Pn` = 1 +
+Move the cursor to the `Pn`-th next tab stop.
+Basically the same as sending TAB `Pn` times.
+
+SOURCE: <<ECMA-48>>
+
+=== `CSI Pn Z` Cursor Backward Tabulation (`CBT`)
+Defaults: `Pn` = 1 +
+Move the cursor to the ``Pn``th preceding tab stop.  Will not go past the
+start of the line.
+
+SOURCE: <<ECMA-48>>
+
+=== `CSI Pn `` Character Position Absolute (`HPA`)
+Defaults: `Pn` = 1 +
+Move the cursor to the specified position on the current row.
+Will not go past the end of the line.
+
+SOURCE: <<ECMA-48>>
+
+=== `CSI Pn a` Cursor Position Forward (`HPR`)
+Defaults: `Pn` = 1 +
+Moves the cursor position forward `Pn` columns from the current position.
+Attempting to move past the screen boundaries stops the cursor
+at the screen boundary.
+
+SOURCE: <<ECMA-48>>
+
+=== `CSI Pn b` Repeat (`REP`)
+Defaults: `Pn` = 1 +
+Repeats the previous graphic character `Pn` times.  Will not repeat
+escape sequences.
+
+SOURCE: <<ECMA-48>>
+
+=== `CSI Ps c` Device Attributes (`DA`)
+Defaults: `Ps` = 0 +
+If `Ps` is 0, CTerm will reply with the sequence:
+`CSI = 67;84;101;114;109;pN c`
+`67;84;101;114;109` is the ASCII values of the "CTerm" string.  `pN` is the
+revision ID of CTerm with dots converted to semi-colons
+(e.g. "1;156").  Use the revision to detect if a specific feature
+is available.  If you are adding features to a forked version of cterm,
+please do so by	adding an extra parameter to the end, not by
+incrementing any existing one!
+
+SOURCE: <<ECMA-48>>
+
+=== `CSI < Ps c` CTerm Device Attributes (`CTDA`)
+Defaults: `Ps` = 0 +
+If `Pn` is 0, CTerm will reply with the sequence:
+`CSI < 0 ; Ps... c`
+
+.Possible values for `Ps`
+[%autowidth,cols="1,2"]
+|===
+|1
+|Loadable fonts are availabe via Device Control Strings
+
+|2
+|Bright Background (ie: DECSET 32) is supported
+
+|3
+|Palette entries may be modified via an Operating System Command string
+|4
+|Pixel operations are supported (currently, sixel and PPM graphics)
+
+|5
+|The current font may be selected via `CSI Ps1 ; Ps2 sp D`
+
+|6
+|Extended palette is available
+
+|7
+|Mouse is available
+|===
+
+=== `CSI PN d` Line Position Absolute (`VPA`)
+Defaults: `Pn` = 1 +
+Moves to row specified by `Pn`.
+
+SOURCE: <<ECMA-48>>
+
+=== `CSI Pn SP d` Tab Stop Remove (`TSR`)
+Defaults: None +
+Removes a tab stop at postion `Pn`.
+
+SOURCE: <<ECMA-48>>
+
+=== `CSI Pn e` Line Position Forward (`VPR`)
+Defaults: `Pn` = 1 +
+Moves forward Pn rows.
+
+SOURCE: <<ECMA-48>>
+
+=== `CSI Pn1 ; Pn2 f` Character and Line Position (`HVP`)
+Defaults: `Pn1` = 1  `Pn2` = 1 +
+Moves the cursor to the ``Pn``2th column of the ``Pn``1th line.
+
+SOURCE: <<ECMA-48>>
+
+=== `CSI Ps g` Tabulation Clear (`TBC`)
+Defaults: `Ps` = 0 +
+Deletes tab stops according to the values of `Ps`:
+
+[%autowidth,cols="1,2"]
+|===
+|0
+|Deletes tab stop at current position.
+
+|3
+|Deletes all tab stops.
+
+|5
+|Deletes all tab stops.
+|===
+
+SOURCE: <<ECMA-48>>
+
+=== `CSI = 255 h` (`BCSET`)
+NON-STANDARD EXTENSION +
+Enable DoorWay Mode
+
+SOURCE: <<BANSI>>
+
+=== `CSI = 4 h` Enable Last Column Flag (`CTELCF`)
+NON-STANDARD EXTENSION +
+Enable Last Column Flag mode
+
+=== `CSI = 5 h` Force Last Column Flag (`CTFLCF`)
+NON-STANDARD EXTENSION +
+Force Last Column Flag mode
+
+=== `CSI ? Ps... h` Set Mode (DECSET)
+NON-STANDARD EXTENSION +
+Sets one or more mode.  The following modes are supported:
+
+[%autowidth,cols="1,2"]
+|===
+|6
+|Enable origin mode.
+
+In this mode, position parameters are relative to the top left of
+the scrolling region, not the screen.  Defaults to reset.
+
+SOURCE: <<VT102>>
+|7
+|Enable auto wrap
+
+This is the normal mode in which a write to the last column of a
+row will move the cursor to the start of the next line triggering
+a scroll if required to create a new line.  Defaults to set.
+
+SOURCE: <<VT102>>
+|9
+|X10 compatible mouse reporting
+
+Mouse button presses will send a CSI M <button> <x> <y>
+Where <button> is ' ' + button number (0-based)
+<x> and <y> are '!' + position (0-based)
+
+SOURCE: <<XTerm>>
+|25
+|Display the cursor.  Defaults to set.
+
+SOURCE: <<VT320>>
+|31
+|Enable bright alt character set
+
+With this mode set, the bright (1) graphic rendition selects
+characters from an alternate character set.  Defaults to reset.
+|32
+|Bright Intensity Disable
+
+This makes the bright intensity bit not control the intensity.
+Mostly for use with `CSI ? 31 h` to permit fonts in the same
+colours.  Defaults to reset.
+|33
+|Blink to Bright Intensity Background
+
+With this mode set, the blink (5,6) graphic renditions cause the
+background colour to be high intensity rather than causing blink.
+Defaults to reset.
+|34
+|Enable blink alt character set
+
+With this mode set, the blink (5, 6) graphic renditions selects
+characters from an alternate character set.  Defaults to reset
+|35
+|Blink Disabled
+
+This makes the blink (5, 6) graphic renditions not cause the
+character to blink.  Mostly for use with `CSI ? 34 h` to permit
+fonts to be used without blinking.  Defaults to reset.
+|67
+|When set, the backspace key sends a backspace character.
+
+Defaults to set.
+|69
+|DEC Left Right Margin Mode enabled
+
+Enables `CSI s` to set the left/right margins, and disables `CSI s`
+from saving the current cursor position.
+|80
+|Sixel Scrolling Enabled
+
+When this is set, the sixel active position begins in the
+upper-left corner of the currently active text position.
+When the sixel active position reaches the bottom of the
+page, the page is scrolled up.  At the end of the sixel
+string, a sixel newline is appended, and the current cursor
+position is the one in which the bottom sixel is in.
+Defaults to set.
+
+SOURCE: <<VT330340,[VT330/340]>>
+|1000
+|Normal tracking mode mouse reporting
+
+Mouse button presses will send a CSI M <button> <x> <y>
+Where <button> is ' ' + button number (0-based)
+Mouse button releases will use a button number of 4
+<x> and <y> are '!' + position (0-based)
+
+SOURCE: <<XTerm>>
+|1001
+|Highlight tracking mode mouse reporting
+
+(Not supported by SyncTERM)
+
+SOURCE: <<XTerm>>
+|1002
+|Button-event tracking mode mouse reporting
+
+Mouse button presses and movement when a button is pressed
+will send a CSI M <button> <x> <y>
+Where <button> is ' ' + button number (0-based)
+32 is added to the button number for movement events.
+Mouse button releases will use a button number of 4
+<x> and <y> are '!' + position (0-based)
+
+SOURCE: <<XTerm>>
+|1003
+|Any-event tracking mode mouse reporting
+
+Mouse button presses and movement
+will send a CSI M <button> <x> <y>
+Where <button> is ' ' + button number (0-based)
+32 is added to the button number for movement events.
+Mouse button releases will use a button number of 4
+<x> and <y> are '!' + position (0-based)
+If no button is pressed, it acts as though button 0 is.
+
+SOURCE: <<XTerm>>
+|1004
+|Focus-event tracking mode mouse reporting
+
+(Not supported by SyncTERM)
+
+SOURCE: <<XTerm>>
+|1005
+|UTF-8 encoded extended coordinates
+
+(Not supported by SyncTERM)
+
+SOURCE: <<XTerm>>
+|1006
+|SGR encoded extended coordinates
+
+Instead of the CSI M method, the format of mouse reporting
+is changed to CSI < Pb ; Px ; Py M for presses and
+CSI < Pb ; Px ; Py m for releases.
+Instead of CSI M
+Px and Py are one-based.
+Pb remains the same (32 added for movement)
+Button 3 is not used for release (separate code)
+
+SOURCE: <<XTerm>>
+|1007
+|Alternate scroll mode
+
+(Not supported by SyncTERM)
+
+SOURCE: <<XTerm>>
+|1015
+|URXVT encoded extended coordinates
+
+(Not supported by SyncTERM)
+
+SOURCE: <<XTerm>>
+|2004
+|Set bracketed paste mode
+
+SOURCE: <<XTerm>>
+|===
+
+=== `CSI Pn j` Character Position Backward (`HPB`)
+Defaults: `Pn` = 1 +
+Moves the cursor position left `Pn` columns from the current position.
+Attempting to move past the screen boundaries stops the cursor
+at the screen boundary.
+
+SOURCE: <<ECMA-48>>
+
+=== `CSI Pn k` Line Position Backward (`VPB`)
+Defaults: `Pn` = 1
+Moves the cursor position up `Pn` lines from the current position.
+Attempting to move past the screen boundaries stops the cursor
+at the screen boundary.
+
+SOURCE: <<ECMA-48>>
+
+=== `CSI = 255 l` Disable DoorWay Mode (`BCRST`)
+NON-STANDARD EXTENSION +
+
+SOURCE: <<BANSI>>
+
+=== `CSI = 4 l` (`CTDLCF`)
+NON-STANDARD EXTENSION +
+Disable Last Column Flag mode
+
+=== `CSI ? Ps... l` Reset Mode (`DECRST`)
+NON-STANDARD EXTENSION +
+Resets one or more mode.  The following modes are supported:
+
+[%autowidth,cols="1,2"]
+|===
+|6
+|Origin Mode
+
+With this mode reset, position parameters are relative to the
+top left of the screen, not the scrolling region.  Defaults
+to reset.
+
+SOURCE: <<VT102>>
+|7
+|Disable auto wrap
+
+Resetting this mode causes a write to the last column of a to
+leave the cursor where it was before the write occurred,
+overwriting anything which was previously written to the same
+position.
+
+SOURCE: <<VT102>>
+|9
+|Disable X10 compatible mouse reporting
+
+|25
+|Hide the cursor.  Defaults to set.
+
+SOURCE: <<VT320>>
+|31
+|Disable bright alt character set
+
+With this mode reset, the bright (1) graphic rendition does not
+select an alternative font.  Defaults to reset.
+|32
+|Bright Intensity Enable
+
+When reset, bright intensity graphics rendition behaves normally.
+Defaults to reset.
+|33
+|Disable Blink to Bright Intensity Background
+
+With this mode set, the blink (5,6) graphic renditions do not
+affect the background colour.  Defaults to reset.
+|34
+|Disable blink alt character set
+
+With this mode reset, the blink (5, 6) graphic renditions do not
+select characters from an alternate character set.  Defaults to
+reset.
+|35
+|Blink Enable
+
+With this mode reset, the blink (5,6) graphic renditions behave
+normally (cause the characters to blink).  Defaults to reset.
+|67
+|When reset, the backspace key sends a delete character.
+
+Defaults to set.
+|69
+|DEC Left Right Margin Mode disabled
+
+Disables CSI s from setting the left/right margins, and changes
+it back to saving the current cursor position.  The current
+left/right margins are maintained.
+|80
+|Sixel Scrolling Disabled
+
+When this is reset, the sixel active position begins in the
+upper-left corner of the page.  Any commands that attempt to
+advance the sixel position past the bottom of the page are
+ignored.  At the end of the sixel string, the current cursor
+position is unchanged from where it was when the sixel string
+started.  Defaults to set.
+
+SOURCE: <<VT330340,[VT330/340]>>
+|1000
+|Disable Normal tracking mode mouse reporting
+
+SOURCE: <<XTerm>>
+|1001
+|Disable Highlight tracking mode mouse reporting
+
+(Not supported by SyncTERM)
+
+SOURCE: <<XTerm>>
+|1002
+|Disable Button-event tracking mode mouse reporting
+
+SOURCE: <<XTerm>>
+|1003
+|Disable Any-event tracking mode mouse reporting
+
+SOURCE: <<XTerm>>
+|1004
+|Disable Focus-event tracking mode mouse reporting
+
+(Not supported by SyncTERM)
+
+SOURCE: <<XTerm>>
+|1005
+|Disable UTF-8 encoded extended coordinates
+
+(Not supported by SyncTERM)
+
+SOURCE: <<XTerm>>
+|1006
+|Disable SGR encoded extended coordinates
+
+SOURCE: <<XTerm>>
+|1007
+|Disable Alternate scroll mode
+(Not supported by SyncTERM)
+
+SOURCE: <<XTerm>>
+|1015
+|Disable URXVT encoded extended coordinates
+
+(Not supported by SyncTERM)
+
+SOURCE: <<XTerm>>
+|2004
+|Disable bracketed paste mode
+
+SOURCE: <<XTerm>> <<Paste64>>
+|===
+
+=== `CSI Ps... m` Select Graphic Rendition (`SGR`)
+Defaults: `Ps1` = 0 +
+Sets or clears one or more text attributes.  Unlimited parameters are
+supported and are applied in received order.  The following are
+supported:
+[%autowidth,cols="1,2,^3,^4,^5,^6,^7,^8"]
+|===
+|`Ps` |Description |Blink |Bold |FG |BG |TF |TB
+|0
+|Default attribute, white on black
+|√
+|√
+|√
+|√
+|√
+|√
+
+|1
+|Bright Intensity
+| 
+|√
+| 
+| 
+|√
+| 
+
+|2
+|Dim intensity
+| 
+|√
+| 
+| 
+|√
+| 
+
+|5
+|Blink (By definition, slow blink)
+|√
+| 
+| 
+| 
+| 
+|√
+
+|6
+|Blink (By definition, fast blink)
+
+NOTE: Both blinks are the same speed.
+|√
+| 
+| 
+| 
+| 
+|√
+
+|7
+|Negative Image - Reverses FG and BG
+| 
+| 
+|√
+|√
+|√
+|√
+
+|8
+|Concealed characters, sets the
+
+      foreground colour to the background
+      colour.
+| 
+| 
+|√
+| 
+|√
+|√
+
+|22
+|Normal intensity
+| 
+|√
+| 
+| 
+|√
+| 
+
+|25
+|Steady (Not blinking)
+|√
+| 
+| 
+| 
+| 
+|√
+
+|27
+|Positive Image - Restores FG and BG
+
+NOTE: This should be a separate
+attribute than 7 but this
+implementation makes them equal
+| 
+| 
+|√
+|√
+|√
+|√
+
+|30
+|Black foreground
+| 
+| 
+|√
+| 
+|√
+| 
+
+|31
+|Red foreground
+| 
+| 
+|√
+| 
+|√
+| 
+
+|32
+|Green foreground
+| 
+| 
+|√
+| 
+|√
+| 
+
+|33
+|Yellow foreground
+| 
+| 
+|√
+| 
+|√
+| 
+
+|34
+|Blue foreground
+| 
+| 
+|√
+| 
+|√
+| 
+
+|35
+|Magenta foreground
+| 
+| 
+|√
+| 
+|√
+| 
+
+|36
+|Cyan foreground
+| 
+| 
+|√
+| 
+|√
+| 
+
+|37
+|White foreground
+| 
+| 
+|√
+| 
+|√
+| 
+
+|38
+|Extended Foreground (see notes)
+| 
+| 
+| 
+| 
+|√
+| 
+
+|39
+|Default foreground (same as white)
+| 
+| 
+|√
+| 
+|√
+| 
+
+|40
+|Black background
+| 
+| 
+| 
+|√
+| 
+|√
+
+|41
+|Red background
+| 
+| 
+| 
+|√
+| 
+|√
+
+|42
+|Green background
+| 
+| 
+| 
+|√
+| 
+|√
+
+|43
+|Yellow background
+| 
+| 
+| 
+|√
+| 
+|√
+
+|44
+|Blue background
+| 
+| 
+| 
+|√
+| 
+|√
+
+|45
+|Magenta background
+| 
+| 
+| 
+|√
+| 
+|√
+
+|46
+|Cyan background
+| 
+| 
+| 
+|√
+| 
+|√
+
+|47
+|White background
+| 
+| 
+| 
+|√
+| 
+|√
+
+|48
+|Extended Background (see notes)
+| 
+| 
+| 
+| 
+| 
+|√
+
+|49
+|Default background (same as black)
+| 
+| 
+| 
+|√
+| 
+|√
+
+|91
+|Bright Red foreground
+| 
+|√
+|√
+| 
+|√
+| 
+
+|92
+|Bright Green foreground
+| 
+|√
+|√
+| 
+|√
+| 
+
+|93
+|Bright Yellow foreground
+| 
+|√
+|√
+| 
+|√
+| 
+
+|94
+|Bright Blue foreground
+| 
+|√
+|√
+| 
+|√
+| 
+
+|95
+|Bright Magenta foreground
+| 
+|√
+|√
+| 
+|√
+| 
+
+|96
+|Bright Cyan foreground
+| 
+|√
+|√
+| 
+|√
+| 
+
+|97
+|Bright White foreground
+| 
+|√
+|√
+| 
+|√
+| 
+
+|100
+|Bright Black background
+|√
+| 
+| 
+|√
+| 
+|√
+
+|101
+|Bright Red background
+|√
+| 
+| 
+|√
+| 
+|√
+
+|102
+|Bright Green background
+|√
+| 
+| 
+|√
+| 
+|√
+
+|103
+|Bright Yellow background
+|√
+| 
+| 
+|√
+| 
+|√
+
+|104
+|Bright Blue background
+|√
+| 
+| 
+|√
+| 
+|√
+
+|105
+|Bright Magenta background
+|√
+| 
+| 
+|√
+| 
+|√
+
+|106
+|Bright Cyan background
+|√
+| 
+| 
+|√
+| 
+|√
+
+|107
+|Bright White background
+|√
+| 
+| 
+|√
+| 
+|√
+
+|===
+
+All others are ignored.
+
+Blink indicates the blink bit.
+Bold indicates the bold bit.
+FG indicates the foreground colour.
+BG indicates the background colour.
+TF indicates that the Tru Colour foreground is changed.
+TB indicates that the Tru Colour background is changed.
+
+NOTE: For 90-97, there is no effect unless bright foreground colours
+are enabled.
+
+NOTE: For 100-107, there is no effect unless bright background colours
+are enabled.
+
+NOTE: For 38 and 48, two additional formats are supported, a palette
+selection and a direct colour selection.
+
+For palette selection, an additional two parameters are required
+after that value.  They are considered part of the 38/48, not separate
+values.  The first additional parameter must be a 5.  The second
+additional parameter specified the palette index to use.  To set the
+foreground to orange, and the background to a fairly dark grey, you
+would send:
+`CSI 38 ; 5 ; 214 ; 48 ; 5 ; 238 m`
+
+The default palette is the XTerm 256-colour palette.  <<colors256,[256colors]>>
+
+For direct colour selection, an additional four parameters are required
+after that value.  They are considered part of the 38/48, not separate
+values.  The first additional parameter must be a 2.  The second,
+third, and fourth specify the R/G/B values respectively. CTerm handles
+this with an internal temporary palette, so scrollback may not have the
+correct colours.  The internal palette is large enough for all cells in
+a 132x60 screen to have unique foreground and background colours
+though, so the current screen should always be as expected.
+
+SOURCE: <<ECMA-48>>, <<XTerm>>
+
+=== `CSI Ps n` Device Status Report (`DSR`)
+Defaults: `Ps` = 0 +
+A request for a status report.  CTerm handles the following three
+requests:
+[%autowidth,cols="1,2"]
+|===
+|5
+|Request a DSR
+
+CTerm will always reply with CSI 0 n indicating 
+"ready, no malfunction detected"
+
+|6
+|Request active cursor position
+
+CTerm will reply with CSI y ; x R where y is the current line
+and x is
+the current row.
+
+|255
+|NON-STANDARD EXTENSION (BCDSR)
+
+Replies as though a CSI 6 n was received with the cursor in
+the bottom right corner.  i.e.: Returns the terminal size as
+a position report.
+|===
+
+SOURCE: <<ECMA-48>> (parameters 5 and 6 only) <<BANSI>> (parameter 255)
+
+=== `CSI = Ps n` State/Mode Request/Report (`CTSMRR`)
+NON-STANDARD EXTENSION +
+Defaults: `Ps` = 1 +
+When `Ps` is 1, CTerm will respond with a Font State Report of the form
+`CSI = 1 ;pF ;pR ;pS0 ;pS1 ;pS2 ;pS3 n`
+`pF` is the first available loadable-font slot number
+`pR` is the result of the previous "Font Selection" request:
+[%autowidth,cols="1,2"]
+|===
+|0
+|successful font selection
+
+|1
+|failed font selection
+
+|99
+|no font selection request has been received
+|===
+
+`pS0` - `pS3` contain the font slots numbers of previously successful
+"Font Selection" requests into the 4 available alternate-font
+style/attribute values:
+[%autowidth,cols="1,2"]
+|===
+|`pS0`
+|normal attribute font slot
+
+|`pS1`
+|high intensity foreground attribute font slot
+
+|`pS2`
+|blink attribute font slot
+
+|`pS3`
+|high intensity blink attribute font slot
+|===
+
+When `Ps` is 2, CTerm will respond with a Mode Report of the form
+`CSI = 2[;pN [;pN] [...]] n`
+Where pN represent zero or more mode values set previously
+(e.g. via `CSI ? pN h`). Mode values cleared (disabled via `CSI ? pN l`)
+will not be included in the set of values returned in the Mode
+Report.  If no modes are currently set, an empty parameter will be
+included as the first and only pN.
+
+When `Ps` is 3, CTerm will respond with a Mode Report of the form
+`CSI = 3 ; pH ; pW n`
+Where `pH` is the height of a character cell in pixels, and `pW` is
+the width of a character cell in pixels.
+
+When `Ps` is 4, CTerm will respond with a Mode Report of the form
+`CSI = 4 ; pF n`
+Where `pF` is 1 if LCF mode is enabled, and 0 if it is disabled.
+
+When `Ps` is 5, CTerm will respond with a Mode Report of the form
+`CSI = 5 ; pF n`
+Where pF is 1 if LCF mode is forced, and 0 if it is not.
+
+=== `CSI ? Ps [ ; Pn ] n` Device Status Report (`DECDSR`)
+When `Ps` is 62 (`DECMSR`) and there is no `Pn`, CTerm will respond
+with a Mode Report of the form
+`CSI 32767 * {`
+This indicates that 524,272 bytes are available for macro storage.
+This is not actually true, SyncTERM will use all available memory
+for macro storage, but some software checks this value, and some
+parsers don't allow more than INT16_MAX parameter values.
+
+When `Ps` is 63 (DECCKSR) `Pn` defaults to 1, and CTerm will respond
+with a checksum of the defined macros in the form
+`DCS Pn ! xxxx ST`
+Where xxxx is the hex checksum.
+
+SOURCE: <<VT420>>
+
+=== `CSI Pn1 ; Pn2 r` Set Top and Bottom Margins (`DECSTBM`)
+Defaults: `Pn1` = 1  `Pn2` = last line on screen +
+Selects top and bottom margins, defining the scrolling region. `Pn1` is
+the line number of the first line in the scrolling region. `Pn2` is the
+line number of the bottom line.
+
+SOURCE: <<XTerm>>
+
+=== `CSI Ps1 ; Ps2 * r` Select Communication Speed (`DECSCS`)
+Set the output emulation speed.
+If `Ps1` or `Ps2` are omitted, causes output speed emulation to stop
+`Ps1` may be empty.
+Sequence is ignored if `Ps1` is not empty, 0, or 1.
+The value of `Ps2` sets the output speed emulation as follows:
+
+[%autowidth]
+|===
+|Value |Speed
+
+|empty, 0
+|Unlimited
+
+|1
+|300
+
+|2
+|600
+
+|3
+|1200
+
+|4
+|2400
+
+|5
+|4800
+
+|6
+|9600
+
+|7
+|19200
+
+|8
+|38400
+
+|9
+|57600
+
+|10
+|76800
+
+|11
+|115200
+|===
+
+SOURCE: <<VT420>>
+
+=== `CSI ? Ps... s` Save Mode Setting (`CTSMS`)
+NON-STANDARD EXTENSION +
+Saves the current mode states as specified by `CSI ? l` and `CSI ? h`.  If
+`Ps1` is omitted, saves all such states.  If one or more values of `Ps` is
+included, saves only the specified states (arguments to `CSI ? l`/`h`).
+
+=== `CSI Pn1 ; Pn2 s` Set Left and Right Margins (`DECSLRM`)
+(Only when DEC Left Right Margin Mode  - 69 - is enabled)
+
+Defaults: `Pn1` = 1  `Pn2` = last column on screen +
+If either `Pn1` or `Pn2` is zero, the current setting is retained.
+Selects left and right margins, defining the scrolling region. `Pn1` is
+the column number of the first column in the scrolling region. `Pn2` is
+the column number of the right column.
+
+SOURCE: <<XTerm>>
+
+=== `CSI s` Save Current Position (`SCOSC`)
+(Only when DEC Left Right Margin Mode  - 69 - is disabled)
+NON-STANDARD EXTENSION
+Saves the current cursor position for later restoring with `CSI u`
+although this is non-standard, it's so widely used in the BBS world
+that any terminal program MUST implement it.
+
+SOURCE: <<ANSISYS>>
+
+=== `CSI Ps ; Pn1 ; Pn2 ; Pn3 t` Select a 24-bit colour (`CT24BC`)
+NON-STANDARD EXTENSION
+
+If `Ps` is 0, sets the background colour.
+If `Ps` is 1, sets the foreground colour.
+`Pn1`, `Pn2`, `Pn3` contains the RGB value to set.
+CTerm handles this with an internal temporary palette, so scrollback
+may not have the correct colours.  The internal palette is large
+enough for all cells in a 132x60 screen to have unique foreground
+and background colours though, so the current screen should always
+be as expected.
+
+=== `CSI ? Ps...  u` Restore Mode Setting (`CTRMS`)
+NON-STANDARD EXTENSION
+
+Restores the mode states as saved via `CSI ? s`.  If `Ps` is omitted,
+restores all such states.  If one or more values of `Ps` is included,
+restores all the specified states (arguments to `CSI ? l`/`h`)
+
+=== `CSI u` Restore Cursor Position (`SCORC`)
+Move the cursor to the last position saved by `CSI s`.  If no position
+has been saved, the cursor is not moved.
+
+SOURCE: <<ANSISYS>>
+
+=== `CSI 2 $ w` Request Tab Stop Report (`DECTABSR`)
+Requests a list of tab stops.
+The list is in the form:
+`DCS 2 $ u Pt ST`
+
+The string `Pt` is a list of tab stops separated by `/`s.
+
+SOURCE: <<VT320>>
+
+=== `CSI Pn1 ; Ps ; Pn2 ; Pn3 ; Pn4 ; Pn5 * y` Request Checksum of Rectangular Area (`DECRQCRA`)
+Returns a checksum for the specified rectangular area.
+`Pn1` is an ID that is returned in the response.
+`Ps` MUST be 1
+`Pn2` specifies the top row of the rectangle
+`Pn3` specifies the left column of the rectangle
+`Pn4` specifies the bottom row of the rectangle
+`Pn5` specifies the right column of the rectangle
+The return value is in the format of `DCS Pn1 ! ~ xxxx ST`
+Where xxxx is the hex value of the checksum.
+
+Source: <<VT420>>
+
+=== `CSI Pn * z` Invoke Macro (`DECINVM`)
+Invokes a macro.
+`Pn` specifies the macro number.  If `Pn` is not 0..63, no action is
+taken.
+
+SOURCE: <<VT420>>
+
+=== `CSI = Ps1 ; Ps2 {` (`CTOSF`)
+NON-STANDARD EXTENSION (Deprecated) +
+Defaults:  `Ps1` = 255  `Ps2` = 0 +
+Indicates that a font block is following.
+`Ps1` indicates the font slot to place the loaded font into.  This must
+be higher than the last default defined font (See `CSI sp D` for list
+of predefined fonts)  `Ps2` indicates font size according to the
+following table:
+
+[%autowidth,cols="1,2"]
+|===
+|0
+|8x16 font, 4096 bytes.
+
+|1
+|8x14 font, 3584 bytes.
+
+|2
+|8x8 font, 2048 bytes.
+|===
+
+The DCS font string should be used instead as of CTerm 1.213
+
+== "ANSI" Music
+This is the place where the BBS world completely fell on it's face in ANSI
+usage.  A programmer with either TeleMate or QModem (the first two programs to
+support "ANSI" music as far as I can tell) decided they needed a method of
+playing music on a BBS connection.  They decided to add an "unused" ANSI code
+and go their merry way.  Since their product didn't implement `CSI M` (Delete
+line) they assumed it was unused and blissfully broke the spec.  They defined
+"ANSI" music as:
+`CSI M <music string> 0x0e`
+
+They used a subset of IBM BASICs PLAY statement functionality for ANSI music
+strings which often start with "MF" or "MB", so the M after the CSI was often
+considered as part of the music string.  You would see things such as:
+`CSI MFABCD 0x0e` and the F would not be played as a note.  This just added
+further confusion to the mess.
+
+Later on, BananaCom realized the conflict between delete line and music, so
+they added *another* broken code `CSI N` (Properly, erase in field... not
+implemented in many BBS clients) which was to provide an "unbroken" method of
+playing music strings.  They also used `CSI Y` to disambiguate delete line, `CSI Y`
+is supposed to be a vertical tab (also not implemented in very many clients).
+BananaCom also introduced many more non-standard and standard-breaking control
+sequences which are not supported by CTerm.
+
+CTerm has further introduced a standard compliant ANSI music introducer `CSI |`
+
+By default, CTerm allows both `CSI N` and `CSI |` to introduce a music string.
+Allowed introducers are set by `CSI = p1 M` as defined above.
+
+The details of ANSI music then are as follows:
+The following characters are allowed in music strings:
+"aAbBcCdDeEfFgGlLmMnNoOpPsStT0123456789.-+#<> "
+If any character not in this list is present, the music string is ignored as
+is the introducing code.
+
+If the introducing code is `CSI M` the first char is examined, and if it is
+a one of "BbFfLlSs" or if it is "N" or "n" and is not followed by a decimal
+digit, then the music string is treated as though an M is located in front
+of the first character.
+
+The music string is then parsed with the following sequences supported:
+
+`Mx`::
+sets misc. music parameters where x is one of the following:
++
+[%autowidth, cols="1,2"]
+|===
+|`F`
+|Plays music in the foreground, waiting for music to complete
+playing before more characters are processed.
+
+|`B`
+|Play music in the background, allowing normal processing to continue.
+
+|`N`
+|"Normal" not legato, not staccato
+
+|`L`
+|Play notes legato
+
+|`S`
+|Play notes staccato
+|===
+
+`T###`::
+Sets the tempo of the music where `+###+` is one or more decimal digits.
+If the decimal number is greater than 255, it is forced to 255.
+If it is less than 32, it is forced to 32.  The number signifies
+quarter notes per minute.
+The default tempo is 120.
+
+`O###`::
+Sets the octave of the music where `+###+` is one or more decimal digits.
+If the decimal number is greater than 6, it is forced to 6.
+The default octave is 4.
+
+`N###`::
+Plays a single note by number.  Valid values are 0 - 71.  Invalid
+values are played as silence.  Note zero is C in octave 0.
+See following section for valid note modifiers.
+
+`A, B, C, D, E, F, G, or P`::
+Plays the named note or pause from the current
+octave.  An "Octave" is the rising sequence of the following notes:
+C, C#, D, D#, E, F, F#, G, G#, A, A#, B
+The special note `P` is a pause.
+Notes may be followed by one or more modifier characters which
+are applied in order.  If one overrides a previous one, the last
+is used.  The valid modifiers are:
+	`+` - Sharp:::
+	The next highest semitone is played.
+	Each sharp character will move up one semitone, so "C++"
+	is equivalent to "D".
+
+	`#` - Sharp:::
+	The next highest semitone is played.
+	Each sharp character will move up one semitone, so "C##"
+	is equivalent to "D".
+
+	`-` - Flat:::
+	The next lowest semitone is played.
+	Each flat character will move down one semitone, so "D--"
+	is equivalent to "C".
+
+	`.` - Duration is 1.5 times what it would otherwise be:::
+	Dots are not cumulative, so `C..` is equivalent to `C.`
+
+	`+###+` - Notelength as a reciprocal of the fraction of a whole note to play the note for:::
+	For example, 4 would indicate a 1/4 note.
+	The default note length is 4.
+
+`L###`::
+Set the notelength parameter for all following notes which do not have
+one specified (ie: override the quarter-note default)  Legal note
+lengths are 1-64 indicating the reciprocal of the fraction (ie: 4
+indicates a 1/4 note).
+
+`<`::
+Move the next lowest octave.
+Octave cannot go above six or below zero.
+
+`>`::
+Move to the next highest octave.
+Octave cannot go above six or below zero.
+
+The lowest playable character is C in octave zero.  The frequencies for the
+six C notes for the seven octaves in rising order are:
+65.406, 130.810, 261.620, 523.250, 1046.500, 2093.000, 4186.000
+
+Purists will note that the lower three octaves are not exactly one half of
+the next higher octave in frequency.  This is due to lost resolution of
+low frequencies.  The notes *sound* correct to me.  If anyone can give me
+an excellent reason to change them (and more correct integer values for all
+notes) I am willing to do that assuming the notes still sound "right".
+
+NMOTE: If you are playing some ANSI Music then ask the user if they
+heard it, ALWAYS follow it with an 0x0f 0x0e is the shift lock character which
+*will* cause people with anything but an ANSI-BBS terminal (ie: *nix users
+using the bundled telnet app) to have their screen messed up.  0x0f "undoes"
+the 0x0e.
+
+== Sequences sent by SyncTERM
+The following keys in SyncTERM result in the specified sequence being
+sent to the remote.  This is not part of CTerm, but are documented here
+for people who want to maintain compatibility.
+
+[%autowidth,cols="1,2"]
+|===
+|Left Arrow
+|"\033[D"
+
+|Right Arrow
+|"\033[C"
+
+|Up Arrow
+|"\033[A"
+
+|Down Arrow
+|"\033[B"
+
+|Home
+|"\033[H"
+
+|End
+|"\033[K"
+
+|Select
+|"\033[K" (Same as End due to termcap weirdness)
+
+|Delete
+|"\x7f"
+
+|Page Down
+|"\033[U"
+
+|Page Up
+|"\033[V"
+
+|F1
+|"\033[11~"
+
+|F2
+|"\033[12~"
+
+|F3
+|"\033[13~"
+
+|F4
+|"\033[14~"
+
+|F5
+|"\033[15~"
+
+|F6
+|"\033[17~" (Note the jump from 15 to 17 here)
+
+|F7
+|"\033[18~"
+
+|F8
+|"\033[19~"
+
+|F9
+|"\033[20~"
+
+|F10
+|"\033[21~"
+
+|F11
+|"\033[23~" (Note the jump from 21 to 23 here)
+
+|F12
+|"\033[24~"
+
+|Shift + F1
+|"\033[11;2~"
+
+|Shift + F2
+|"\033[12;2~"
+
+|Shift + F3
+|"\033[13;2~"
+
+|Shift + F4
+|"\033[14;2~"
+
+|Shift + F5
+|"\033[15;2~"
+
+|Shift + F6
+|"\033[17;2~"
+
+|Shift + F7
+|"\033[18;2~"
+
+|Shift + F8
+|"\033[19;2~"
+
+|Shift + F9
+|"\033[20;2~"
+
+|Shift + F10
+|"\033[21;2~"
+
+|Shift + F11
+|"\033[23;2~"
+
+|Shift + F12
+|"\033[24;2~"
+
+|Alt + F1
+|"\033[11;3~"
+
+|Alt + F2
+|"\033[12;3~"
+
+|Alt + F3
+|"\033[13;3~"
+
+|Alt + F4
+|"\033[14;3~"
+
+|Alt + F5
+|"\033[15;3~"
+
+|Alt + F6
+|"\033[17;3~"
+
+|Alt + F7
+|"\033[18;3~"
+
+|Alt + F8
+|"\033[19;3~"
+
+|Alt + F9
+|"\033[20;3~"
+
+|Alt + F10
+|"\033[21;3~"
+
+|Alt + F11
+|"\033[23;3~"
+
+|Alt + F12
+|"\033[24;3~"
+
+|Control + F1
+|"\033[11;5~"
+
+|Control + F2
+|"\033[12;5~"
+
+|Control + F3
+|"\033[13;5~"
+
+|Control + F4
+|"\033[14;5~"
+
+|Control + F5
+|"\033[15;5~"
+
+|Control + F6
+|"\033[17;5~"
+
+|Control + F7
+|"\033[18;5~"
+
+|Control + F8
+|"\033[19;5~"
+
+|Control + F9
+|"\033[20;5~"
+
+|Control + F10
+|"\033[21;5~"
+
+|Control + F11
+|"\033[23;5~"
+
+|Control + F12
+|"\033[24;5~"
+
+|Insert
+|"\033[@"
+
+|Back Tab
+|"\033[Z"
+|===
+
+== References
+
+* [[ECMA-48]]https://www.ecma-international.org/wp-content/uploads/ECMA-48_5th_edition_june_1991.pdf[[ECMA-48\]] ECMA. Control Functions for Coded Character Sets. June 1991
+* [[XTerm]]https://invisible-island.net/xterm/ctlseqs/ctlseqs.pdf[[XTerm\]] Edward May. XTerm Control Sequences. University of California, Berkeley. 2024/09/19
+* [[Paste64]]https://invisible-island.net/xterm/xterm-paste64.html[[Paste64\]] Thomas E. Dickey. XTerm -- bracketed paste. 2022
+* [[BANSI]]http://www.bbsdocumentary.com/library/PROGRAMS/GRAPHICS/ANSI/bansi.txt[[BANSI\]] Paul Wheaton. BANSI.TXT. 1999
+* [[VT102]]https://vt100.net/docs/vt102-ug/[[VT102\]] Digital. VT102 Video Terminal User Guide. 1982.
+* [[VT330340]]https://vt100.net/docs/vt3xx-gp/[[VT330/340\]] Digital. VT330/VT340 Programmer Reference Manual, Volume 2: Graphics Programming. May 1988.
+* [[VT320]]https://vt100.net/docs/vt320-uu/[[VT320\]] Digital. Installing and Using the VT320 Video Terminal. June 1987.
+* [[colors256]]https://jonasjacek.github.io/colors/[[256colors\]] Jonas Jarad Jacek. 256 colors cheat sheet. 2023-12-24.
+* [[VT420]]https://vt100.net/docs/vt420-uu/[[VT420\]] Digital. Installing and Using the VT420 Video Terminal. June 1990.
+* [[ANSISYS]]https://en.wikipedia.org/wiki/ANSI.SYS[[ANSISYS\]] Wikipedia. ANSI.SYS.
