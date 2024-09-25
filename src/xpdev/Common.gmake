@@ -110,6 +110,7 @@ ifdef USE_SDL_AUDIO
    ifdef SDL_FRAMEWORK_PATH
     WITH_SDL_AUDIO	:=	1
     CIOLIB-MT_LDFLAGS += -Wl,-rpath,@executable_path/../Frameworks
+    CIOLIB-MT_LDFLAGS += -Wl,-rpath,${SDL_FRAMEWORK_PATH}
    endif
   else
    ifeq ($(shell command -v sdl2-config > /dev/null && sdl2-config --cflags > /dev/null 2>&1 && echo YES),YES)
