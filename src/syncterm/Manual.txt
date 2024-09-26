@@ -67,7 +67,7 @@ a FreeBSD system using MinGW, and this is the only supported build method
 currently.  There is a Visual Studio project for building SyncTERM, but
 this is not supported.
 
-For *nix systems (Linux, FreeBSD, OS X, and others), a GNU make based
+For *nix systems (Linux, FreeBSD, macOS, and others), a GNU make based
 build system is used. There are a number of optional dependencies, and
 a large number of supported compile flags (many of which are shared with
 Synchronet).
@@ -76,8 +76,7 @@ The biggest optional dependency is http://libsdl.org[SDL 2].
 SyncTERM can use SDL for both graphics and sound. X11 can also be used
 for graphics, and OSS, ALSA, or Portaudio can also provide sound. These
 use run-time linking, so at compile time, only the headers are needed.
-Static linking with SDL is also supported, but the other optional
-dependencies can not be statically linked.
+Static linking with SDL is also supported.
 
 For SSH, a copy of Peter Gutmann's
 https://cryptlib.com/security-software/about-cryptlib[Cryptlib] is
@@ -86,6 +85,9 @@ dependency, so if Cryptlib doesn't build on your platform, you can still
 use SyncTERM's other connection options. Cryptlib must be statically
 linked if it is used.
 
+Other optional dependencies (such as Portaudio) can not be statically
+linked, and are only supported with static linking.
+
 Once you have the desired dependencies installed, change to the syncterm
 directory in the source tree (ie: syncterm-YYYYMMDD/src/syncterm) and
 run the `make RELEASE=1` command. This will generate the binary in a
@@ -93,8 +95,7 @@ subdirectory with the following name format:
  [compiler].[os].[arch].exe.[build]
 
 [compiler]::
-is either gcc or clang depending on the system compiler.
-
+is likely either gcc or clang depending on the system compiler.
 [os]::
 is the OS name reported by uname.
 [arch]::
@@ -109,7 +110,8 @@ SyncTERM can be installed with `make RELEASE=1 install`
 
 SyncTERM supports many command-line options to control behaviour. Options
 begin with a - followed by one or more other characters. The following
-options are supported (options are not case sensitive):
+options are supported (options are not case sensitive unless
+specifically noted):
 
 -6::
 Specifying -6 forces SyncTERM to use IPv6 addresses when possible.
@@ -134,21 +136,18 @@ Use SSH mode when connecting.
 
 -I[ACFXWS[WF]O[WF]]::
 Selects the output mode. Not all modes are available in all builds or
-on all platforms. Legal vales are:
+on all platforms. Legal values are:
++
+--
 	A:::
 	ANSI output mode. This mode outputs ANSI control sequences to
-	stdout. This can be used as a door on BBSs or on some terminals.
-	This is not generally something a normal user would ever want to
-	use.
+	stdout.
 
 	C:::
-	Curses output mode. UNIX only mode which uses the curses library
-	to run in a terminal window.
+	Curses output mode. For use in *nix terminals.
 
 	F:::
-	Curses with forced IBM character set. UNIX only mode which uses
-	curses, but instead of the curses-defined alternative character
-	set, assumes that the IBM CP437 character set can be output.
+	Curses with forced IBM character set.  Limited usefulness.
 
 	G[WF]:::
 	Windows GDI output mode. Uses the Win32 API directly, and is
@@ -159,8 +158,8 @@ on all platforms. Legal vales are:
 	Curses in ASCII mode.
 
 	S[WF]:::
-	SDL window output mode. Uses the SDL library for output. The
-	default mode. Additionally, a 'W' or 'F' can be specified to
+	SDL window output mode. Uses the SDL library for output. 
+	Additionally, a 'W' or 'F' can be specified to
 	force windowed or full-screen mode respectively.
 
 	W:::
@@ -172,6 +171,9 @@ on all platforms. Legal vales are:
 	libraries for drawing. The default where supported. Additionally,
 	a 'W' or 'F' can be specified to force windowed or full-screen
 	mode respectively.
+--
++
+Refer to the <<_output_modes>> section for more details.
 
 -L##::
 Specifies the number of lines on the "screen". Supported values are:
@@ -191,12 +193,19 @@ Quiet mode, doesn't show popups by default.
 Use RLogin mode when connecting.
 
 -T::
-Use Telnet mode when connecting.
+Use Telnet mode when connecting.  If an upper-case -T is the only
+argument passed to SyncTERM however, SyncTERM will output a terminfo
+entry on stdout then exit.  See <<_installing_terminfo_entry>> for more
+details.
 
 -S::
 Use "safe" mode.  This mode attempts to restrict the ability of the user
 to modify the local drive contents.  This has not been exhaustively
 audited, and should therefore not be trusted.
+
+-v::
+This option is case sensitive and must the be only option passed to
+SyncTERM.  Causes syncterm to output the version on stdout then exit.
 
 After the options, a full URI, hostname, or dialing directory entry may be
 specified.  Supported URI schemes are:
@@ -225,15 +234,11 @@ Mouse controls::
 If there is a blank line at the end of the menu, you can select
 it to insert a new item.
 +
-Menus have a standard set of mouse controls
-+
-If you click outside of a menu, that menu is usually closed, but
-in some cases, it may simply become inactive.
-+
-At the top of each menu is a block which is used to close the menu.
-+
-If there is help for the menu, there is also a ? button to bring
-up the help.
+Menus have a standard set of mouse controls. If you click outside of a
+menu, that menu is usually closed, but in some cases, it may simply
+become inactive. At the top of each menu is a block which is used to
+close the menu. If there is help for the menu, there is also a ? button
+to bring up the help.
 +
 If there are more options than fit in the window, there is a scrollbar
 on the left side.
@@ -255,9 +260,9 @@ Keyboard Controls::
 	kbd:[Escape]:::
 	Exit the current menu.
 
-	kbd:[Backspace]::: An alias for Escape.
+	kbd:[Backspace]::: An alias for kbd:[Escape].
 
-	kbd:[Ctrl+C]: An alias for Escape.
+	kbd:[Ctrl+C]::: An alias for kbd:[Escape].
 
 	kbd:[Home]:::
 	Jump to the beginning of the menu
@@ -287,7 +292,7 @@ Keyboard Controls::
 	Copy
 
 	kbd:[Ctrl+Insert]:::
-	An alias for F5
+	An alias for kbd:[F5]
 
 	kbd:[Shift+Delete]:::
 	Cut
@@ -296,19 +301,19 @@ Keyboard Controls::
 	Paste
 
 	kbd:[Shift+Insert]:::
-	An alias for F6
+	An alias for kbd:[F6]
 
 	kbd:[Insert]:::
 	Inserts a new item.
 
 	kbd:[+]:::
-	An alias for Insert
+	An alias for kbd:[Insert]
 
 	kbd:[Delete]:::
 	Delete item at current location
 
 	kbd:[-]:::
-	An alias for Delete
+	An alias for kbd:[Delete]
 
 	Any letter or number:::
 	Jumps to the next item that has that character
@@ -370,7 +375,7 @@ kbd:[Ctrl+D]::
 Quick-connect to a URL
 
 kbd:[Ctrl+E]::
-Edit the selected entry (Alias for F2)
+Edit the selected entry (Alias for kbd:[F2])
 
 kbd:[Ctrl+S]::
 <<_modifying_the_sort_order,Modify the sort order>>
@@ -383,7 +388,7 @@ Move to the comment field for the current entry, or the settings
 menu if there is no current entry.
 
 kbd:[Back Tab] (kbd:[Shift+Tab])::
-Move to settings menu.
+Move to <<_syncterm_settings>>.
 
 To add a new entry, go to the bottom of the list (by pressing end) and
 select the blank entry at the bottom.  A window will pop up asking for
@@ -451,11 +456,13 @@ Telnet over TLS.  All the drawbacks of the telnet protocol, but
 at least it's encrypted.
 
 Finally, you will be promted for the "address".  This is the DNS addres,
-IP address, serial port, or command to connect to.
+IP address, serial port, or command to connect to.  If the connection will
+be made over the network, and the name is a valid hostname, it will be
+auto-filled in this field.  To overwrite it, simply start typeing.
 
-Ones these three pieces of information are entered, the entry is created
+Once these three pieces of information are entered, the entry is created
 and you are returned to the Directory.  To further modify the settings,
-you can press F2 to enter the Edit Directory Entry menu.
+you can press kbd:[F2] to enter the <<_edit_directory_entry>> menu.
 
 
 ==== Edit Directory Entry
@@ -478,7 +485,8 @@ Address::
 IP address or host name
 
 Connection Type::
-Protocol to use.  See <<protocols>>
+Protocol to use.  See <<protocols>>.  When you change the protocol, the
+port number value will be updated as well.
 
 Flow Control (Modem, Serial, and 3-wire)::
 The type of flow control
@@ -486,14 +494,15 @@ to use. RTC/CTS, XON/XOFF, Both, or None
 
 TCP Port:: The TCP port to connect to.
 
-SSH Username (SSH (no auth))::
-The username to send for the SSH
-protocol.  This may not be the same as the BBS username.
+SSH Username (SSH no auth only)::
+The username to send for the SSH protocol.  Some BBSs have everyone log
+in to SSH with the same username, then log into the BBS with their
+name.  This allows setting the first username.
 
-BBS Username (SSH (no auth))::
+BBS Username (SSH no auth only)::
 The username to send when kbd:[Alt+L] is entered.
 
-BBS Password (SSH (no auth))::
+BBS Password (SSH no auth only)::
 The password to send on kbd:[Alt+L].
 
 Username::
@@ -555,7 +564,7 @@ ANSI Music::
 There are three options in this sub-menu.
 ESC [ | only:::
 	With this setting, ANSI music is fully compliant with
-	the standards (ECMA-48, ANSI, etc), but almost not software
+	the standards (ECMA-48, ANSI, etc), but almost no software
 	works with this.
 BANSI Style:::
 	Supports both the SyncTERM (CSI |) and BananaCom (CSI N)
@@ -679,8 +688,8 @@ Changes the current screen mode.  For directory
 entries where the screen mode is "Current", will be used during the
 connection.  This setting is not saved across program restarts.
 To change the startup screen mode, see
-<<_syncterm_settings,SyncTERM Settings>> →
-<<_program_settings,Program Settings>> →
+<<_syncterm_settings>> →
+<<_program_settings>> →
 Startup Screen Mode.
 
 Font Management::
@@ -688,7 +697,7 @@ Allows setting up custom font files.
 
 Program Settings::
 Allows changing settings that are preserved across
-reboots.
+reboots.  Refer to the <<_program_settings>> section for details.
 
 File Locations::
 Shows the paths to the various files and directories
@@ -704,7 +713,8 @@ modes are based on historical analog hardware modes, so most of them do
 not use square pixels.  The main exceptions are LCD80x25, which is an
 80x25 mode that uses square pixels and the 8x16 font, and VGA80x25, which
 is an 80x25 mode that uses square pixels, the 8x16 font, and performs the
-VGA column expansion to use 9 pixel wide cells.
+VGA column expansion to use 9 pixel wide cells.  For further details,
+see the <<_text_modes>> section of the ciolib chapter.
 
 
 ==== Font Management
@@ -920,6 +930,23 @@ Same as kbd:[Alt+E]
 
 The following sections delve deeper into technical details, and should
 not be required for normal use.
+
+=== Installing Terminfo Entry
+
+When using *nix software through SyncTERM either locally via the shell
+protocol, or remotely via SSH or as a door on a BBS, it helps immensely
+if the remote has a terminfo entry for SyncTERM installed.  To install
+the terminfo entry, follow the following steps:
+
+1. Write the terminfo entry to a file +
+`syncterm -T > syncterm.terminfo`
+2. Compile the entry and install it +
+`tic -sx syncterm.terminfo` +
+By default, it is only installed for the current user.
+
+Once the terminfo entries are installed, you can use them by setting the
+`TERM` environment variable to `syncterm`.  In Bourne shells, this is
+usually accomplished with the command `export TERM=syncterm`.
 
 === MBBS GHost
 
