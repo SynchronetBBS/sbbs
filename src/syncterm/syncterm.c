@@ -1567,6 +1567,7 @@ main(int argc, char **argv)
 	uifc.size = sizeof(uifc);
 	uifc.esc_delay = 25;
 	uifc.insert_mode = TRUE;
+	uifc.reverse_cursor = TRUE;
 	url[0] = 0;
 
 	/*
