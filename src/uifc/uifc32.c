@@ -2144,6 +2144,14 @@ void getstrupd(int left, int top, int width, char *outstr, int cursoffset, int *
 	_setcursortype(cursor);
 }
 
+static void set_cursor_type(uifcapi_t* api)
+{
+	BOOL block_cursor = api->insert_mode;
+	if(api->reverse_cursor)
+		block_cursor = !block_cursor;
+	_setcursortype(cursor = (block_cursor ? _SOLIDCURSOR : _NORMALCURSOR));
+}
+
 /****************************************************************************/
 /* Gets a string of characters from the user. Turns cursor on. Allows 	    */
 /* Different modes - K_* macros. ESC aborts input.                          */
@@ -2166,7 +2174,7 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 		return(-1);
 	}
 	gotoxy(left,top);
-	_setcursortype(cursor = api->insert_mode ? _SOLIDCURSOR : _NORMALCURSOR);
+	set_cursor_type(api);
 	str[0]=0;
 	if(mode&K_EDIT && outstr[0]) {
 	/***
@@ -2380,7 +2388,7 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 					continue;
 				case CIO_KEY_IC:	/* insert */
 					api->insert_mode = !api->insert_mode;
-					_setcursortype(cursor = api->insert_mode ? _SOLIDCURSOR : _NORMALCURSOR);
+					set_cursor_type(api);
 					continue;
 				case BS:
 					if(i)
@@ -2908,7 +2916,7 @@ void showbuf(uifc_winmode_t mode, int left, int top, int width, int height, cons
 	lines=0;
 	k=0;
 	for(j=0;j<len;j++) {
-		if(mode&WIN_HLP && (hbuf[j]==2 || hbuf[j]=='~' || hbuf[j]==1 || hbuf[j]=='`'))
+		if((mode&WIN_HLP) && (hbuf[j]==2 || hbuf[j]=='~' || hbuf[j]==1 || hbuf[j]=='`'))
 			continue;
 		if(hbuf[j]==CR)
 			continue;
@@ -2947,11 +2955,11 @@ void showbuf(uifc_winmode_t mode, int left, int top, int width, int height, cons
 				++i;
 			}
 		}
-		else if(mode&WIN_HLP && (hbuf[j]==2 || hbuf[j]=='~')) {		 /* Ctrl-b toggles inverse */
+		else if((mode&WIN_HLP) && (hbuf[j]==2 || hbuf[j]=='~')) {
 			inverse=!inverse;
 			i--;
 		}
-		else if(mode&WIN_HLP && (hbuf[j]==1 || hbuf[j]=='`')) {		 /* Ctrl-a toggles high intensity */
+		else if((mode&WIN_HLP) && (hbuf[j]==1 || hbuf[j]=='`')) {
 			high=!high;
 			i--;
 		}
