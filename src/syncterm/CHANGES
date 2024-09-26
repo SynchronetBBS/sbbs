@@ -25,6 +25,7 @@ Add ALT-O to toggle remote mouse support (to enable copy/paste locally)
 Support LCF as defined in STD-070
 Support upploading SSH public key over SFTP channel in SSH mode
 Add "Yellow is Yellow" option
+Insert mode defaults to on in UIFC text input fields
 
 Version 1.1
 -----------
