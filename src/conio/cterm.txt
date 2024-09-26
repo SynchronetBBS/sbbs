@@ -1,4 +1,19 @@
-$Id: cterm.txt,v 1.79 2020/04/28 19:39:13 deuce Exp $
+****************************
+*** NOTICE NOTICE NOTICE ***
+****************************
+
+This document is no longer the normative reference for CTerm.
+The document generated from the cterm.adoc file (which should
+be in this same folder) can be found at:
+https://syncterm.bbsdev.net/cterm.html
+
+As of SyncTERM 1.2, this document will become more and more
+obsolete and will eventually be removed.
+
+****************************
+*** NOTICE NOTICE NOTICE ***
+****************************
+
 
 CTerm terminal characteristics:
 ------------------------------
