@@ -1566,6 +1566,7 @@ main(int argc, char **argv)
 	uifc.mode = UIFC_NOCTRL | UIFC_NHM;
 	uifc.size = sizeof(uifc);
 	uifc.esc_delay = 25;
+	uifc.insert_mode = TRUE;
 	url[0] = 0;
 
 	/*
