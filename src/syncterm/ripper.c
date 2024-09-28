@@ -38,9 +38,9 @@
 // TODO: Output parsing... (yech)
 // TODO: Actually make the graphics viewport work properly
 
-#ifdef HAS_VSTAT
-
 bool rip_did_reinit;
+
+#ifdef HAS_VSTAT
 
 enum rip_state {
 	RIP_STATE_BOL  // Beginning of the line
