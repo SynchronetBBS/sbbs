@@ -12,6 +12,9 @@ CFLAGS += -I$(HASH_SRC) $(XPDEV_CFLAGS)
 # HASH Library Link Rule
 $(HASH_BUILD): $(OBJODIR) $(OBJS)
 	@echo Creating $@ ...
+ifdef FAT
+	$(QUIET)$(DELETE) $@
+endif
 	$(QUIET)$(AR) rc $@ $(OBJS)
 	$(QUIET)$(RANLIB) $@
 

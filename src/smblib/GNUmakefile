@@ -23,6 +23,9 @@ CFLAGS += -I$(XPDEV_SRC) $(ENCODE_CFLAGS) $(HASH_CFLAGS) $(XPDEV_CFLAGS)
 # SMBLIB Library Link Rule
 $(SMBLIB_BUILD): $(OBJS) | $(OBJODIR)
 	@echo Creating $@ ...
+ifdef FAT
+	$(QUIET)$(DELETE) $@
+endif
 	$(QUIET)$(AR) rc $@ $(OBJS)
 	$(QUIET)$(RANLIB) $@
 

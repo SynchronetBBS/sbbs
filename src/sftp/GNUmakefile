@@ -17,5 +17,8 @@ CFLAGS += -I$(XPDEV_SRC) $(XPDEV-MT_CFLAGS)
 # MT-SFTP Library Link Rule
 $(SFTPLIB-MT_BUILD): $(MT_OBJS) | $(LIBODIR)
 	@echo Creating $@ ...
+ifdef FAT
+	$(QUIET)$(DELETE) $@
+endif
 	$(QUIET)$(AR) rc $@ $(MT_OBJS)
 	$(QUIET)$(RANLIB) $@
