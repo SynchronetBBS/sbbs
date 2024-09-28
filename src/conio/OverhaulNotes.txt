@@ -84,15 +84,28 @@ Foreground colour
 Background colour
 Font
 Flags
-- Fast Blink
-- Slow Blink
 - Bold
+- Increased intensity
+- Faint
+- decreased intensity
+- second colour
 - Italic
+- Underline
+- Slow Blink (< 150/min)
+- Fast Blink (> 150/min)
 - Negative
 - Concealed
-- Underline
-- Overstrike
+- crossed-out (Overstrike)
+- Fraktur (Gothic)
 - Double underline
+- Framed
+- Encircled
+- Overlined
+- Ideogram underline (right)
+- Ideogram double underline (right)
+- Ideogram overline (left)
+- Ideogram double overline (left)
+- Ideogram stress
 - Double overstrike
 - Double-wide
 - Double-high
