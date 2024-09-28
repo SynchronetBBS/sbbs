@@ -124,3 +124,10 @@ manipulated.  No attributes are planned.
 
 For the bitmap and pixel layers associated with a text area, they will
 scroll with the text in that area.
+
+Unicode fonts of last resort:
+Unscii... a retro computing font...
+http://viznut.fi/unscii/
+
+Unifont... the mother of all fonts...
+https://unifoundry.com/unifont/index.html
