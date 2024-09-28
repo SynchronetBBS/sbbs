@@ -23,7 +23,7 @@ static HWND win;
 static HANDLE rch;
 static HANDLE wch;
 static bool maximized = false;
-static uint16_t winxpos, winypos;
+static int16_t winxpos, winypos;
 static const DWORD style = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_MINIMIZEBOX | WS_VISIBLE;
 static const DWORD fs_style = WS_POPUP | WS_VISIBLE;
 #define STYLE (fullscreen ? fs_style : style)
@@ -87,11 +87,11 @@ utf8_to_utf16(const uint8_t *str8, int buflen)
 	LPWSTR ret;
 
 	// First, get the size required for the conversion...
-	sz = MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, str8, buflen, NULL, 0);
+	sz = MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, (LPCCH)str8, buflen, NULL, 0);
 	if (sz == 0)
 		return NULL;
 	ret = (LPWSTR)malloc((sz + 1) * sizeof(*ret));
-	if (sz == MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, str8, buflen, ret, sz)) {
+	if (sz == MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, (LPCCH)str8, buflen, (LPWSTR)ret, sz)) {
 		ret[sz] = 0;
 		return ret;
 	}
@@ -110,7 +110,7 @@ utf16_to_utf8(const LPWSTR str16)
 	if (sz == 0)
 		return NULL;
 	ret = (uint8_t *)malloc(sz * sizeof(*ret));
-	if (sz == WideCharToMultiByte(CP_UTF8, 0, str16, -1, ret, sz * sizeof(*ret), NULL, NULL)) {
+	if (sz == WideCharToMultiByte(CP_UTF8, 0, str16, -1, (LPSTR)ret, sz * sizeof(*ret), NULL, NULL)) {
 		return ret;
 	}
 	free(ret);
@@ -195,9 +195,9 @@ static BOOL
 gdiAdjustWindowRect(LPRECT r, DWORD style, BOOL menu, UINT dpi)
 {
 	static bool gotPtr = false;
-	static BOOL (__stdcall *AWREFD)(LPRECT, DWORD, BOOL, DWORD, UINT);
-	static BOOL (__stdcall *GDFW)(HWND);
-	static BOOL (__stdcall *GDFS)(void);
+	static BOOL (__stdcall *AWREFD)(LPRECT, DWORD, BOOL, DWORD, UINT) = NULL;
+	static UINT (__stdcall *GDFW)(HWND) = NULL;
+	static UINT (__stdcall *GDFS)(void) = NULL;
 
 	if (!gotPtr) {
 		const char* user32dll[] = {"User32", NULL};
@@ -211,12 +211,14 @@ gdiAdjustWindowRect(LPRECT r, DWORD style, BOOL menu, UINT dpi)
 		gotPtr = true;
 	}
 
-	if (win && AWREFD && GDFW && GDFS) {
+	if (AWREFD && GDFW && GDFS) {
 		if (dpi == 0) {
-			if (win == NULL)
+			if (win == NULL || GDFW == NULL) {
 				dpi = GDFS();
-			else
+			}
+			else {
 				dpi = GDFW(win);
+			}
 		}
 		return AWREFD(r, style, menu, 0, dpi);
 	}
@@ -267,38 +269,6 @@ gdi_handle_wm_size(WPARAM wParam, LPARAM lParam)
 	pthread_mutex_unlock(&vstatlock);
 
 	return 0;
-}
-
-static LRESULT
-gdi_handle_wm_sizing(WPARAM wParam, RECT *rect)
-{
-	int w, h;
-	double mult;
-
-	mult = bitmap_double_mult_inside(w, h);
-	bitmap_get_scaled_win_size(mult, &w, &h, 0, 0);
-	switch(wParam) {
-		case WMSZ_BOTTOM:
-		case WMSZ_BOTTOMLEFT:
-		case WMSZ_LEFT:
-			rect->bottom = rect->top + h - 1;
-			rect->left = rect->right - w + 1;
-			break;
-		case WMSZ_BOTTOMRIGHT:
-		case WMSZ_RIGHT:
-			rect->bottom = rect->top + h - 1;
-			rect->right = rect->left + w - 1;
-			break;
-		case WMSZ_TOP:
-		case WMSZ_TOPLEFT:
-			rect->top = rect->bottom - h + 1;
-			rect->left = rect->right - w + 1;
-			break;
-		case WMSZ_TOPRIGHT:
-			rect->right = rect->left + w - 1;
-			break;
-	}
-	return TRUE;
 }
 
 static LRESULT
@@ -611,20 +581,50 @@ handle_wm_getminmaxinfo(MINMAXINFO *inf)
 	return 0;
 }
 
-static LRESULT
-gdi_handle_getdpiscaledsize(WPARAM wParam, LPSIZE sz)
+static void
+gdi_get_windowsize_at_dpi(bool screen, LONG *w, LONG *h, WORD dpi)
 {
 	RECT r;
+	r.left = r.top = 0;
 	pthread_mutex_lock(&vstatlock);
 	// Now make the inside of the window the size we want (sigh)
-	r.left = r.top = 0;
-	r.right = vstat.scrnwidth - 1;
-	r.bottom = vstat.scrnheight - 1;
+	if (screen) {
+		r.right = vstat.scrnwidth - 1;
+		r.bottom = vstat.scrnheight - 1;
+	} else {
+		r.right = vstat.winwidth - 1;
+		r.bottom = vstat.winheight - 1;
+	}
 	pthread_mutex_unlock(&vstatlock);
-	gdiAdjustWindowRect(&r, STYLE, FALSE, HIWORD(wParam));
-	sz->cx = r.right - r.left + 1;
-	sz->cy = r.bottom - r.top + 1;
-	pthread_mutex_unlock(&vstatlock);
+	gdiAdjustWindowRect(&r, STYLE, FALSE, dpi);
+	if (w)
+		*w = r.right - r.left + 1;
+	if (h)
+		*h = r.bottom - r.top + 1;
+}
+
+static LRESULT
+gdi_handle_getdpiscaledsize(WORD dpi, LPSIZE sz)
+{
+	LONG w, h;
+	gdi_get_windowsize_at_dpi(true, &w, &h, dpi);
+	sz->cx = w;
+	sz->cy = h;
+	return TRUE;
+}
+
+static LRESULT CALLBACK
+gdi_handle_wm_dpichanged(WPARAM wParam, RECT *r)
+{
+	WORD dpi;
+	LONG w, h;
+
+	// The high and low words have the X and Y DPI respectively, and they're always the same
+	dpi = HIWORD(wParam);
+
+	// Now make the inside of the window the size we want (sigh)
+	gdi_get_windowsize_at_dpi(false, &w, &h, dpi);
+	SetWindowPos(win, NULL, 0, 0, w, h, SWP_NOMOVE|SWP_NOOWNERZORDER|SWP_NOZORDER|SWP_NOACTIVATE);
 	return 0;
 }
 
@@ -640,14 +640,12 @@ gdi_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			return gdi_handle_wm_char(wParam, lParam);
 		case WM_MOVE:
 			pthread_mutex_lock(&winpos_lock);
-			winxpos = lParam & 0xffff;
-			winypos = (lParam >> 16) & 0xffff;
+			winxpos = (WORD)(lParam & 0xffff);
+			winypos = (WORD)((lParam >> 16) & 0xffff);
 			pthread_mutex_unlock(&winpos_lock);
 			return 0;
 		case WM_SIZE:
 			return gdi_handle_wm_size(wParam, lParam);
-		//case WM_SIZING:
-		//	return gdi_handle_wm_sizing(wParam, (RECT *)lParam);
 		case WM_CLOSE:
 		case WM_DESTROY:
 			PostQuitMessage(0);
@@ -675,21 +673,13 @@ gdi_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		case WM_SETCURSOR:
 			if ((lParam & 0xffff) == HTCLIENT) {
 				SetCursor(cursor);
-				return 0;
+				return TRUE;
 			}
-			break;
+			return FALSE;
 		case WM_GETDPISCALEDSIZE:
-			return gdi_handle_getdpiscaledsize(wParam, (LPSIZE)lParam);
+			return gdi_handle_getdpiscaledsize(HIWORD(wParam), (LPSIZE)lParam);
 		case WM_DPICHANGED:
-			// The rect is the suggested position and size for the window...
-			//r = *((RECT*)lParam);
-			// The high and low words have the X and Y DPI respectively, and they're always the same
-			//WORD dpi = HIWORD(wParam);
-			// For now, just say "We've got this!" and ignore it.
-			// TODO: In the future, maybe resize so the window stays "the same"?
-			//       Problem is that this is still imaginary DPI, so unlikely to work properly.
-			return 0;
-			break;
+			return gdi_handle_wm_dpichanged(wParam, (RECT*)lParam);
 		case WM_USER_SETCURSOR:
 			if (!GetClientRect(hwnd, &r))
 				break;
@@ -700,17 +690,15 @@ gdi_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			if (p.x < 0 || p.y < 0 || p.x > (r.right - r.left) || p.y > (r.bottom - r.top))
 				break;
 			SetCursor(cursor);
-			break;
+			return true;
 		case WM_USER_INVALIDATE:
 			InvalidateRect(win, NULL, FALSE);
 			return true;
 		case WM_USER_SETSIZE:
-			pthread_mutex_lock(&vstatlock);
 			// Now make the inside of the window the size we want (sigh)
 			r.left = r.top = 0;
 			r.right = wParam - 1;
 			r.bottom = lParam - 1;
-			pthread_mutex_unlock(&vstatlock);
 			gdiAdjustWindowRect(&r, STYLE, FALSE, 0);
 			SetWindowPos(win, NULL, 0, 0, r.right - r.left + 1, r.bottom - r.top + 1, SWP_NOMOVE|SWP_NOOWNERZORDER|SWP_NOZORDER);
 			return true;
@@ -874,8 +862,8 @@ gdi_thread(void *arg)
 {
 	WNDCLASSW wc = {0};
 	MSG  msg;
-	RECT r;
 	ATOM cl;
+	LONG w, h;
 	int wx = CW_USEDEFAULT;
 	int wy = CW_USEDEFAULT;
 	int mode = (int)arg;
@@ -924,13 +912,9 @@ gdi_thread(void *arg)
 			fullscreen = false;
 	}
 	stype = ciolib_initial_scaling_type;
-	// Now make the inside of the window the size we want (sigh)
-	r.left = r.top = 0;
-	r.right = vstat.winwidth - 1;
-	r.bottom = vstat.winheight - 1;
 	pthread_mutex_unlock(&vstatlock);
-	gdiAdjustWindowRect(&r, STYLE, FALSE, 0);
-	win = CreateWindowW(wc.lpszClassName, L"SyncConsole", STYLE, wx, wy, r.right - r.left + 1, r.bottom - r.top + 1, NULL, NULL, NULL, NULL);
+	gdi_get_windowsize_at_dpi(false, &w, &h, 0);
+	win = CreateWindowW(wc.lpszClassName, L"SyncConsole", STYLE, wx, wy, w, h, NULL, NULL, NULL, NULL);
 	if (win == NULL)
 		goto fail;
 	if (cio_api.options & CONIO_OPT_DISABLE_CLOSE)
@@ -1026,7 +1010,7 @@ gdi_settitle(const char *newTitle)
 {
 	LPWSTR utf16;
 
-	utf16 = utf8_to_utf16(newTitle, -1);
+	utf16 = utf8_to_utf16((const uint8_t *)newTitle, -1);
 	if (utf16 != NULL) {
 		SetWindowTextW(win, utf16);
 		free(utf16);
@@ -1097,7 +1081,7 @@ gdi_copytext(const char *text, size_t buflen)
 	LPWSTR clipStr;
 	HGLOBAL clipBuf;
 
-	utf16 = utf8_to_utf16(text, buflen);
+	utf16 = utf8_to_utf16((const uint8_t *)text, buflen);
 	if (utf16 != NULL) {
 		if (OpenClipboard(NULL)) {
 			EmptyClipboard();
@@ -1129,7 +1113,7 @@ gdi_getcliptext(void)
 	if (dat != NULL) {
 		datstr = GlobalLock(dat);
 		if (datstr != NULL) {
-			ret = utf16_to_utf8(datstr);
+			ret = (char *)utf16_to_utf8(datstr);
 			GlobalUnlock(dat);
 		}
 	}
