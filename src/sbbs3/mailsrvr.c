@@ -674,6 +674,46 @@ int compare_addrs(const char* addr1, const char* addr2)
 	return strcmp(angle_bracket(tmp1, sizeof(tmp1), addr1), angle_bracket(tmp2, sizeof(tmp2), addr2));
 }
 
+// MIME-Encode a word (Q-encoded UTF-8, only)
+size_t mime_encode_word(char* buf, size_t size, const char* src)
+{
+	size_t len = snprintf(buf, size - 1, "=?utf-8?q?");
+	// RFC 2047: "An 'encoded-word' may not be more than 75 characters long"
+	for(const char* p = src; *p != '\0' && len < (size - 1) && len < 71; ++p) {
+		if(*p >= 0 && *p != '=' && *p != ' ') { // US-ASCII char, represented without Q-encoding
+			buf[len++] = *p;
+			continue;
+		}
+		len += snprintf(buf + len, size - (len + 1), "=%02X", (unsigned char)*p);
+	}
+	len += snprintf(buf + len, size - (len + 1), "?=");
+	return len;
+}
+
+// MIME-Encode words in string, when necessary
+static char* encode_header_field(const char* src, char* buf, size_t size, const smbmsg_t* msg)
+{
+	if(str_is_ascii(src))
+		return (char*)src;
+	char tmp[256];
+	if(!(msg->hdr.auxattr & MSG_HFIELDS_UTF8))
+		cp437_to_utf8_str(src, tmp, sizeof tmp, /* min-char-val: */'\x80');
+	else
+		SAFECOPY(tmp, src);
+	size_t len = 0;
+	char* state = NULL;
+	for(char* p = strtok_r(tmp, " \t", &state); p != NULL && len < (size - 1); p = strtok_r(NULL, " \t", &state)) {
+		if(len)
+			buf[len++] = ' ';
+		if(str_is_ascii(p))
+			len += snprintf(buf + len, size - (len + 1), "%s", p);
+		else
+			len += mime_encode_word(buf + len, size - (len + 1), p);
+	}
+	buf[len] = '\0';
+	return buf;
+}
+
 static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, smbmsg_t* msg, char* msgtxt, ulong maxlines
 						  ,str_list_t file_list, char* mime_boundary)
 {
@@ -681,6 +721,7 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 	char		msgid[256];
 	char		tmp[256];
 	char		date[64];
+	char		encoded_text[256];
 	char*		p;
 	char*		np;
 	int			i;
@@ -708,7 +749,9 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 		char fromname[256];
 		char fromaddr[256];
 		smtp_netmailaddr(&scfg, msg, fromname, sizeof(fromname), fromaddr, sizeof(fromaddr));
-		s = sockprintf(socket,prot,sess,"From: %s %s", fromname, angle_bracket(tmp, sizeof(tmp), fromaddr));
+		s = sockprintf(socket,prot,sess,"From: %s %s"
+			,encode_header_field(fromname, encoded_text, sizeof encoded_text, msg)
+			,angle_bracket(tmp, sizeof(tmp), fromaddr));
 	}
 	if(!s)
 		return(0);
@@ -719,12 +762,12 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 	} else {
 		if(msg->from_org!=NULL || msg->from_net.type==NET_NONE)
 			if(!sockprintf(socket,prot,sess,"Organization: %s"
-				,msg->from_org==NULL ? scfg.sys_name : msg->from_org))
+				,encode_header_field(msg->from_org==NULL ? scfg.sys_name : msg->from_org, encoded_text, sizeof encoded_text, msg)))
 				return(0);
 	}
 
 	p = smb_get_hfield(msg, RFC822SUBJECT, NULL);
-	if(!sockprintf(socket,prot,sess,"Subject: %s", p == NULL ? msg->subj : p))
+	if(!sockprintf(socket,prot,sess,"Subject: %s", p == NULL ? encode_header_field(msg->subj, encoded_text, sizeof encoded_text, msg) : p))
 		return(0);
 
 	if((p = smb_get_hfield(msg, RFC822TO, NULL)) != NULL)
@@ -732,19 +775,20 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 	else if((p = msg->to_list) != NULL)
 		s=sockprintf(socket,prot,sess,"To: %s", p);	/* use original RFC822 header field */
 	else {
+		const char* to = encode_header_field(msg->to, encoded_text, sizeof encoded_text, msg);
 		if(strchr(msg->to,'@')!=NULL || msg->to_net.addr==NULL)
-			s=sockprintf(socket,prot,sess,"To: %s",msg->to);	/* Avoid double-@ */
+			s=sockprintf(socket,prot,sess,"To: %s",to);	/* Avoid double-@ */
 		else if(msg->to_net.type==NET_INTERNET || msg->to_net.type==NET_QWK) {
 			if(strchr((char*)msg->to_net.addr,'<')!=NULL)
 				s=sockprintf(socket,prot,sess,"To: %s",(char*)msg->to_net.addr);
 			else
-				s=sockprintf(socket,prot,sess,"To: \"%s\" <%s>",msg->to,(char*)msg->to_net.addr);
+				s=sockprintf(socket,prot,sess,"To: \"%s\" <%s>",to,(char*)msg->to_net.addr);
 		} else if(msg->to_net.type==NET_FIDO) {
 			char faddrbuf[64];
-			s=sockprintf(socket,prot,sess,"To: \"%s\" (%s)",msg->to, smb_faddrtoa((fidoaddr_t*)msg->to_net.addr, faddrbuf));
+			s=sockprintf(socket,prot,sess,"To: \"%s\" (%s)",to, smb_faddrtoa((fidoaddr_t*)msg->to_net.addr, faddrbuf));
 		} else {
 			usermailaddr(&scfg,toaddr,msg->to);
-			s=sockprintf(socket,prot,sess,"To: \"%s\" <%s>",msg->to,toaddr);
+			s=sockprintf(socket,prot,sess,"To: \"%s\" <%s>",to,toaddr);
 		}
 	}
 	if(!s)
