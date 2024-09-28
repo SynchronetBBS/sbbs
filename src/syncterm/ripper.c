@@ -9897,11 +9897,13 @@ handle_command_str(const char *incmd)
 {
 	const char *p, *p2, *p3, *p4;
 	char        str[2];
+	char *indup;
 
 	if (incmd == NULL)
 		return;
+	indup = strdup(incmd);
 
-	for (p = incmd; *p; p++) {
+	for (p = indup; *p; p++) {
                 // TODO: No way to send a ^ or a $ or a [
 		if ((*p == '^') || (*p == '`')) { // CTRL char
 			p++;
@@ -9957,6 +9959,7 @@ handle_command_str(const char *incmd)
 		ripbuf_pos = 0;
 		ripbufpos = 0;
 	}
+	free(indup);
 }
 
 static void
@@ -10082,6 +10085,7 @@ reinit_screen(uint8_t *font, int fx, int fy)
 	hold_update = 0;
 	cterm->logfile = NULL;
 	cterm->log = CTERM_LOG_NONE;
+	lcf = cterm->last_column_flag;
 	cterm_end(cterm, 0);
 	normal_palette();
 
@@ -10124,7 +10128,6 @@ reinit_screen(uint8_t *font, int fx, int fy)
 	clrscr();
 	get_term_win_size(&term.width, &term.height, NULL, NULL, &term.nostatus);
 	term.width = cols;
-	lcf = cterm->last_column_flag;
 	cterm = cterm_init(rows + (term.nostatus ? 0 : -1),
 	        cols,
 	        oldcterm.x,
