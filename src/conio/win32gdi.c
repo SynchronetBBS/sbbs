@@ -485,7 +485,7 @@ gdi_handle_mouse_button(LPARAM lParam, int event)
 static LRESULT
 gdi_handle_mouse_wheel(int16_t distance, LPARAM lParam)
 {
-	if (distance < 0) // Forward
+	if (distance > 0) // Forward
 		ciomouse_gotevent(CIOLIB_BUTTON_PRESS(4), -1, -1 ,-1 ,-1);
 	else
 		ciomouse_gotevent(CIOLIB_BUTTON_PRESS(5), -1, -1 ,-1 ,-1);
