@@ -39,6 +39,9 @@ $(XPTIME): $(OBJODIR)/xptime.o $(XPDEV_LIB_BUILD)
 
 $(XPDEV_LIB_BUILD): $(OBJS) | $(OBJODIR)
 	@echo Creating $@
+ifdef FAT
+	$(QUIET)$(DELETE) $@
+endif
 	$(QUIET)$(AR) rc $@ $(OBJS)
 	$(QUIET)$(RANLIB) $@
 
@@ -48,6 +51,9 @@ $(XPDEV_SHLIB_BUILD): $(OBJS) | $(OBJODIR)
 
 $(XPDEV-MT_LIB_BUILD): $(MTOBJS) | $(MTOBJODIR)
 	@echo Creating $@
+ifdef FAT
+	$(QUIET)$(DELETE) $@
+endif
 	$(QUIET)$(AR) rc $@ $(MTOBJS)
 	$(QUIET)$(RANLIB) $@
 

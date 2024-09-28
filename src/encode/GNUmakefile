@@ -12,6 +12,9 @@ CFLAGS += -I$(ENCODE_SRC) $(XPDEV_CFLAGS)
 # ENCODE Library Link Rule
 $(ENCODE_BUILD): $(OBJODIR) $(OBJS)
 	@echo Creating $@ ...
+ifdef FAT
+	$(QUIET)$(DELETE) $@
+endif
 	$(QUIET)$(AR) rc $@ $(OBJS)
 	$(QUIET)$(RANLIB) $@
 
