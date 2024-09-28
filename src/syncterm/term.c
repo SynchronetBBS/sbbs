@@ -379,10 +379,15 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 	}
 	now = time(NULL);
 	newmouse = ((ms->mode == MM_OFF) ? 1 : 0) | (ms->flags & MS_FLAGS_DISABLED);
-	if ((now == lastupd) && (speed == oldspeed) && (newmouse == lastmouse)) {
-		setfont(oldfont_norm, 0, 1);
-		setfont(oldfont_bright, 0, 2);
-		return;
+	if (rip_did_reinit) {
+		rip_did_reinit = false;
+	}
+	else {
+		if ((now == lastupd) && (speed == oldspeed) && (newmouse == lastmouse)) {
+			setfont(oldfont_norm, 0, 1);
+			setfont(oldfont_bright, 0, 2);
+			return;
+		}
 	}
 	lastupd = now;
 	lastmouse = newmouse;
