@@ -931,6 +931,26 @@ Same as kbd:[Alt+E]
 The following sections delve deeper into technical details, and should
 not be required for normal use.
 
+=== Persistant State
+
+SyncTERM will preserve a very small amount of state when exited normally
+and restore it when the program is restarted.  At present, this state
+is limited to the scaling factor applied to the window.  The scaling
+factor is a floating-point value that indicates the largest value which
+both the width and height can be multiplied by and still fit inside the
+current window size.  If you manually resize the window only making it
+wider for example, the additional width will not be saved as the height
+will control the size the next time SyncTERM is started.
+
+This state is only saved under two specific circumstances.  Either the
+current text mode at exit is the same as the configured Startup Screen
+Mode, or the Startup Screen Mode is "Current" and the current text mode
+is "80x25".  In all other cases (such as after the Current Screen Mode
+is changed), it will not be saved.  Also, it's only saved when the
+program exits normally.  In the case of a crash, the setting will not be
+updated.
+
+
 === Installing Terminfo Entry
 
 When using *nix software through SyncTERM either locally via the shell
