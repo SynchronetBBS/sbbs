@@ -40,6 +40,8 @@
 
 #ifdef HAS_VSTAT
 
+bool rip_did_reinit;
+
 enum rip_state {
 	RIP_STATE_BOL  // Beginning of the line
 	,
@@ -10076,6 +10078,7 @@ reinit_screen(uint8_t *font, int fx, int fy)
 	void                 *nvmem;
 	uint32_t lcf;
 
+	rip_did_reinit = true;
 	hold_update = 0;
 	cterm->logfile = NULL;
 	cterm->log = CTERM_LOG_NONE;

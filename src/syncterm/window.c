@@ -32,8 +32,10 @@ get_term_win_size(int *width, int *height, int *pixelw, int *pixelh, int *nostat
 	}
 	*height = txtinfo.screenheight;
 	if (vmode != -1) {
-		if (txtinfo.screenheight >= vparams[vmode].rows)
-			*height = vparams[vmode].rows;
+		if ((cio_api.options & CONIO_OPT_SET_PIXEL) == 0) {
+			if (txtinfo.screenheight >= vparams[vmode].rows)
+				*height = vparams[vmode].rows;
+		}
 	}
 	if (!*nostatus)
 		(*height)--;
