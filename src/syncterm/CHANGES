@@ -1,5 +1,14 @@
-Version 1.2
------------
+Version 1.2rc2
+--------------
+Start UIFC in insert mode, and use block cursor for overwrite mode
+Fix issue when dragging a GDI window between different zoom levels
+Fix status bar display when RIP changes number of lines on screen
+Fix some use-after-free bugs in RIP
+Fix reversed mouse wheel in GDI mode
+Have the X11 IC focus follow window focus
+
+Version 1.2rc1
+--------------
 Aspect ratio enforcement
 Support internal smooth scaling
 Support toggling scaling blocky vs smooth
@@ -25,8 +34,6 @@ Add ALT-O to toggle remote mouse support (to enable copy/paste locally)
 Support LCF as defined in STD-070
 Support upploading SSH public key over SFTP channel in SSH mode
 Add "Yellow is Yellow" option
-Insert mode defaults to on in UIFC text input fields
-Underline cursor for insert mode, block on overstrike in UIFC fields
 
 Version 1.1
 -----------
