@@ -1054,11 +1054,8 @@ static int init_window()
 		set_win_property(ATOM__NET_WM_STATE, XA_ATOM, 32, PropModeReplace, &a, 1);
 
 	im = x11.XOpenIM(dpy, NULL, classhints ? classhints->res_name : "CIOLIB", classhints ? classhints->res_class : "CIOLIB");
-	if (im != NULL) {
+	if (im != NULL)
 		ic = x11.XCreateIC(im, XNClientWindow, win, XNInputStyle, XIMPreeditNothing | XIMStatusNothing, NULL);
-		if (ic)
-			x11.XSetICFocus(ic);
-	}
 
 	if (classhints)
 		x11.XFree(classhints);
