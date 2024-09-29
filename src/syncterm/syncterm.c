@@ -1295,7 +1295,7 @@ check_upgrade(void)
 					    "You may want to note the new locations in the File Locations menu\n"
 					    "option in SyncTERM Settings menu, exit SyncTERM (this is important) and\n"
 					    "manually move the files to the new locations, overwriting the newly\n"
-					    "created ini file\n", NULL, NULL);
+					    "created ini file.\n", NULL, NULL);
 					uifcbail();
 				}
 			}
