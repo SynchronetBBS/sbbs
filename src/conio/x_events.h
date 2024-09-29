@@ -105,6 +105,7 @@ struct x11 {
 	XIC (*XCreateIC)(XIM im, ...);
 	int (*XwcLookupString)(XIC ic, XKeyPressedEvent *event, wchar_t *buffer_return, int wchars_buffer, KeySym *keysym_return, Status *status_return);
 	void (*XSetICFocus)(XIC ic);
+	void (*XUnsetICFocus)(XIC ic);
 	Bool (*XFilterEvent)(XEvent *event, Window w);
 	Cursor (*XCreateFontCursor)(Display *display, unsigned int shape);
 	int (*XDefineCursor)(Display *display, Window w, Cursor cursor);
