@@ -1069,9 +1069,10 @@ static int init_window()
 	gcv.graphics_exposures = False;
 	gc=x11.XCreateGC(dpy, win, GCFunction | GCForeground | GCBackground | GCGraphicsExposures, &gcv);
 
-	x11.XSelectInput(dpy, win, KeyReleaseMask | KeyPressMask |
-		     ExposureMask | ButtonPressMask | PropertyChangeMask
-		     | ButtonReleaseMask | PointerMotionMask | StructureNotifyMask);
+	x11.XSelectInput(dpy, win, KeyReleaseMask | KeyPressMask
+		     | ExposureMask | ButtonPressMask | PropertyChangeMask
+		     | ButtonReleaseMask | PointerMotionMask
+		     | StructureNotifyMask | FocusChangeMask);
 
 	x11.XStoreName(dpy, win, "SyncConsole");
 	Atom protos[2];
@@ -1731,6 +1732,29 @@ x11_event(XEvent *ev)
 			if (ev->xexpose.count == 0)
 				expose_rect(ev->xexpose.x, ev->xexpose.y, ev->xexpose.width, ev->xexpose.height);
 			break;
+
+		/* Focus Events */
+		case FocusIn:
+		case FocusOut:
+			{
+				if (ev->xfocus.mode == NotifyGrab)
+					break;
+				if (ev->xfocus.mode == NotifyUngrab)
+					break;
+				if (ev->xfocus.detail == NotifyInferior)
+					break;
+				if (ev->xfocus.detail == NotifyPointer)
+					break;
+				if (ev->type == FocusIn) {
+					if (ic)
+						x11.XSetICFocus(ic);
+				}
+				else {
+					if (ic)
+						x11.XUnsetICFocus(ic);
+				}
+				break;
+			}
 
 		/* Copy/Paste events */
 		case SelectionClear:

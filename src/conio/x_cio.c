@@ -446,6 +446,10 @@ int x_initciolib(int mode)
 		xp_dlclose(dl);
 		return(-1);
 	}
+	if((x11.XUnsetICFocus=xp_dlsym(dl,XUnsetICFocus))==NULL) {
+		xp_dlclose(dl);
+		return(-1);
+	}
 	if((x11.XFilterEvent=xp_dlsym(dl,XFilterEvent))==NULL) {
 		xp_dlclose(dl);
 		return(-1);
