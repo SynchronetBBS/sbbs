@@ -786,6 +786,8 @@ map_window(bool mp)
 	static last_minh = 0;
 	static last_maxw = 0;
 	static last_maxh = 0;
+	static last_aspectx = 0;
+	static last_aspecty = 0;
 	bool extents_changed = false;
 
 	sh = x11.XAllocSizeHints();
@@ -841,9 +843,23 @@ map_window(bool mp)
 		sh->min_aspect.x = sh->max_aspect.x = sh->min_width;
 		sh->min_aspect.y = sh->max_aspect.y = sh->min_height;
 	}
+	if (sh->min_aspect.x != last_aspectx)
+		extents_changed = true;
+	last_aspectx = sh->min_aspect.x;
+	if (sh->min_aspect.y != last_aspecty)
+		extents_changed = true;
+	last_aspecty = sh->min_aspect.y;
 
 	sh->flags |= PAspect;
 
+	/*
+	 * It appears that herbstluftwm will give focus to anything calling
+	 * XSetWMNormalHints(), so be careful to not do it in response to
+	 * a _NET_FRAME_EXTENTS change since we get that when we're losing
+	 * focus due to focus follows mouse, which results in SyncTERM and
+	 * herbstluftwm fighting over if SyncTERM is focused or not
+	 * (SyncTERM wins).
+	 */
 	if (extents_changed || mp)
 		x11.XSetWMNormalHints(dpy, win, sh);
 	pthread_mutex_lock(&vstatlock);
