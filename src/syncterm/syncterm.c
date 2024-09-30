@@ -845,7 +845,7 @@ check_exit(bool force)
 			if (!confirm("Are you sure you want to exit?", NULL))
 				return false;
 		}
-		quitting = false;
+		quitting = true;
 		return true;
 	}
 	return false;
