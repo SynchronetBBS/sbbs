@@ -782,6 +782,11 @@ static void
 map_window(bool mp)
 {
 	XSizeHints *sh;
+	static last_minw = 0;
+	static last_minh = 0;
+	static last_maxw = 0;
+	static last_maxh = 0;
+	bool extents_changed = false;
 
 	sh = x11.XAllocSizeHints();
 	if (sh == NULL) {
@@ -799,6 +804,12 @@ map_window(bool mp)
 			pthread_mutex_lock(&vstatlock);
 			bitmap_get_scaled_win_size(7.0, &sh->max_width, &sh->max_height, 0, 0);
 		}
+		if (sh->max_width != last_maxw)
+			extents_changed = true;
+		last_maxw = sh->max_width;
+		if (!extents_changed && sh->max_height != last_maxh)
+			extents_changed = true;
+		last_maxh = sh->max_height;
 		sh->flags |= PMaxSize;
 
 		bitmap_get_scaled_win_size(x_cvstat.scaling, &sh->base_width, &sh->base_height, sh->max_width, sh->max_height);
@@ -812,6 +823,12 @@ map_window(bool mp)
 		pthread_mutex_lock(&vstatlock);
 
 	bitmap_get_scaled_win_size(1.0, &sh->min_width, &sh->min_height, 0, 0);
+	if (sh->min_width != last_minw)
+		extents_changed = true;
+	last_minw = sh->min_width;
+	if (!extents_changed && sh->min_height != last_minh)
+		extents_changed = true;
+	last_minh = sh->min_height;
 	sh->flags |= PMinSize;
 
 	pthread_mutex_unlock(&vstatlock);
@@ -827,7 +844,8 @@ map_window(bool mp)
 
 	sh->flags |= PAspect;
 
-	x11.XSetWMNormalHints(dpy, win, sh);
+	if (extents_changed || mp)
+		x11.XSetWMNormalHints(dpy, win, sh);
 	pthread_mutex_lock(&vstatlock);
 	vstat.scaling = x_cvstat.scaling;
 	pthread_mutex_unlock(&vstatlock);
