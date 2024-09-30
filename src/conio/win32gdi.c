@@ -272,6 +272,51 @@ gdi_handle_wm_size(WPARAM wParam, LPARAM lParam)
 }
 
 static LRESULT
+gdi_handle_wm_sizing(WPARAM wParam, RECT *r)
+{
+	int ow, oh, nw, nh;
+	double s;
+	RECT tr = *r;
+
+	ow = r->right - r->left;
+	oh = r->bottom - r->top;
+	UnadjustWindowSize(&ow, &oh);
+	nw = ow;
+	nh = oh;
+	pthread_mutex_lock(&vstatlock);
+	s = bitmap_double_mult_inside(ow, oh);
+	bitmap_get_scaled_win_size(s, &nw, &nh, 0, 0);
+	pthread_mutex_unlock(&vstatlock);
+
+	if (nw != ow) {
+		switch (wParam) {
+			case WMSZ_BOTTOMLEFT:
+			case WMSZ_LEFT:
+			case WMSZ_TOPLEFT:
+				r->left += (nw - ow);
+				break;
+			default:
+				r->right += (nw - ow);
+				break;
+		}
+	}
+	if (nh != oh) {
+		switch (wParam) {
+			case WMSZ_TOP:
+			case WMSZ_TOPLEFT:
+			case WMSZ_TOPRIGHT:
+				r->top += (nh - oh);
+				break;
+			default:
+				r->bottom += (nh - oh);
+				break;
+		}
+	}
+
+	return TRUE;
+}
+
+static LRESULT
 gdi_handle_wm_paint(HWND hwnd)
 {
 	static HDC memDC = NULL;
@@ -646,6 +691,8 @@ gdi_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			return 0;
 		case WM_SIZE:
 			return gdi_handle_wm_size(wParam, lParam);
+		case WM_SIZING:
+			return gdi_handle_wm_sizing(wParam, (RECT *)lParam);
 		case WM_CLOSE:
 		case WM_DESTROY:
 			PostQuitMessage(0);
@@ -675,7 +722,7 @@ gdi_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 				SetCursor(cursor);
 				return TRUE;
 			}
-			return FALSE;
+			break;
 		case WM_GETDPISCALEDSIZE:
 			return gdi_handle_getdpiscaledsize(HIWORD(wParam), (LPSIZE)lParam);
 		case WM_DPICHANGED:
