@@ -782,12 +782,12 @@ static void
 map_window(bool mp)
 {
 	XSizeHints *sh;
-	static last_minw = 0;
-	static last_minh = 0;
-	static last_maxw = 0;
-	static last_maxh = 0;
-	static last_aspectx = 0;
-	static last_aspecty = 0;
+	static int last_minw = 0;
+	static int last_minh = 0;
+	static int last_maxw = 0;
+	static int last_maxh = 0;
+	static int last_aspectx = 0;
+	static int last_aspecty = 0;
 	bool extents_changed = false;
 
 	sh = x11.XAllocSizeHints();
