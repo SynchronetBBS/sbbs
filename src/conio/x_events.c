@@ -450,11 +450,11 @@ static bool
 fullscreen_geometry(int *x_org, int *y_org, int *width, int *height)
 {
 	Window root;
-	Window cr;
 	uint64_t dummy;
 	unsigned int rw, rh;
 	int wx, wy;
 #if defined(WITH_XRANDR) || defined(WITH_XINERAMA)
+	Window cr;
 	int cx, cy;
 	int i;
 #endif
@@ -981,7 +981,9 @@ static int init_window()
 	int w, h;
 	int mw, mh;
 	int screen;
+#if (defined(WITH_XRENDER) || defined(WITH_XINERAMA))
 	int major, minor;
+#endif
 	unsigned long pid_l;
 	Atom a;
 
