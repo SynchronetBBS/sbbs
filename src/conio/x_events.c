@@ -778,7 +778,8 @@ my_fls(unsigned long mask)
 /*
  * Actually maps (shows) the window
  */
-static void map_window()
+static void
+map_window(bool mp)
 {
 	XSizeHints *sh;
 
@@ -830,7 +831,7 @@ static void map_window()
 	pthread_mutex_lock(&vstatlock);
 	vstat.scaling = x_cvstat.scaling;
 	pthread_mutex_unlock(&vstatlock);
-	if (map_pending)
+	if (mp)
 		x11.XMapWindow(dpy, win);
 
 	x11.XFree(sh);
@@ -1171,7 +1172,7 @@ static void resize_window()
 	x_cvstat.scaling = vstat.scaling;
 	if (resize) {
 		pthread_mutex_unlock(&vstatlock);
-		map_window();
+		map_window(map_pending);
 		pthread_mutex_lock(&vstatlock);
 		x11.XResizeWindow(dpy, win, width, height);
 		x_cvstat.winwidth = vstat.winwidth = width;
@@ -1207,7 +1208,7 @@ static void init_mode_internal(int mode)
 	x_cvstat = vstat;
 	pthread_mutex_unlock(&vstatlock);
 	resize_xim();
-	map_window();
+	map_window(map_pending);
 }
 
 static void check_scaling(void)
@@ -1645,7 +1646,8 @@ x11_event(XEvent *ev)
 		case PropertyNotify:
 			if (A(_NET_FRAME_EXTENTS) != None) {
 				if (ev->xproperty.atom == A(_NET_FRAME_EXTENTS)) {
-					map_window();
+					// Don't map the window in respose to _NET_FRAME_EXTENTS change
+					map_window(false);
 				}
 			}
 			if (A(_NET_WM_STATE) != None) {
