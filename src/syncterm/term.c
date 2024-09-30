@@ -2273,7 +2273,10 @@ capture_control(struct bbslist *bbs)
 							if ((tm = localtime(&t)) != NULL) { // The null-terminator
                                                                                             // overwrites the first
                                                                                             // byte of filesize
-								snprintf(sauce.date, sizeof(sauce.date), "%04u%02u%02u",
+								// We can't use snprintf() here because snprintf()
+								// Is guaranteed to terminate, so the last digit
+								// would always be truncated.
+								sprintf(sauce.date, sizeof(sauce.date), "%04u%02u%02u",
 								    1900 + tm->tm_year, 1 + tm->tm_mon, tm->tm_mday);
 							}
 							sauce.filesize = LE_INT32(ftell(fp)); // LE
