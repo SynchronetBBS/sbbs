@@ -131,3 +131,19 @@ http://viznut.fi/unscii/
 
 Unifont... the mother of all fonts...
 https://unifoundry.com/unifont/index.html
+
+For Unicode, we're not going to want the fonts in the image I don't
+think, so they'll need to be loaded from disk/rasterized on demand.
+This means a cache that we can use bsearch() on... which means we'll
+need something like an epoch to age things out of the cache, and the
+cache will need to be cleared after each connection... and presumably
+at certain other points during a connection.  Getting this right with
+epoch stuff is going to prove tricky, but be necessary to prevent
+blocking while waiting to render a glyph (essentially, it must *always*
+be possible to add a new glyph without blocking).
+
+Further, "fonts" will need to have a source map as well... loading
+a CP437 font will only update specific glyphs for example, and those
+will be spread out around the space, so "stacks" of fonts, each
+entry listing ranges to map will be needed, and we'll want to use
+bsearch() there too.
