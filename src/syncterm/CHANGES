@@ -6,8 +6,11 @@ Fix status bar display when RIP changes number of lines on screen
 Fix some use-after-free bugs in RIP
 Fix reversed mouse wheel in GDI mode
 Have the X11 IC focus follow window focus
-Fix WM_SETCURSOR handling to allow crabbing resize points in GDI
+Fix WM_SETCURSOR handling to allow grabbing resize points in GDI
 Added "Build Options" menu item
+Fix focus-follows-mouse behaviour in herbstluftwm
+Fix SAUCE binary capture date
+Add Build Options menu item
 
 Version 1.2rc1
 --------------
