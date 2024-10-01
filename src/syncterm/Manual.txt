@@ -703,6 +703,9 @@ File Locations::
 Shows the paths to the various files and directories
 that SyncTERM will access.
 
+Build Options::
+Shows which optional components SyncTERM was built to support.
+
 
 ==== Current Screen Mode
 

@@ -15,7 +15,6 @@ ifndef NO_PULSEAUDIO
  endif
 endif
 
-CFLAGS	+=	-DSOUNDCARD_H_IN=$(shell if [ -f /usr/include/sys/soundcard.h ] ; then echo 1 ; elif [ -f /usr/include/soundcard.h ] ; then echo 2 ; elif [ -f /usr/include/linux/soundcard.h ] ; then echo 3 ; else echo 0 ; fi) -I. $(XPDEV_CFLAGS)
 ifndef WITHOUT_ALSA_SOUND
 	ifeq ($(shell if [ -f /usr/include/alsa/asoundlib.h ] ; then echo YES ; fi),YES)
 		CFLAGS	+=	-DUSE_ALSA_SOUND
