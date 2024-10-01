@@ -6,7 +6,7 @@
 
 const title = "Synchronet Minesweeper";
 const ini_section = "minesweeper";
-const REVISION = "$Revision: 2.15 $".split(' ')[1];
+const REVISION = "$Revision: 2.16 $".split(' ')[1];
 const author = "Digital Man";
 const header_height = 4;
 const winners_list = js.exec_dir + "winners.jsonl";
@@ -33,6 +33,26 @@ const winner_subject = "Winner";
 const highscores_subject = "High Scores";
 const tear_line = "\r\n--- " + js.exec_file + " " + REVISION + "\r\n";
 const selectors = ["()", "[]", "<>", "{}", "--", "  "];
+const gfile = "graphics.ppm";
+const mfile = "selmask.pbm";
+const image = {
+	'selected': 208
+};
+image[attr_count + '1'] = 0;
+image[attr_count + '2'] = 16;
+image[attr_count + '3'] = 32;
+image[attr_count + '4'] = 48;
+image[attr_count + '5'] = 64;
+image[attr_count + '6'] = 80;
+image[attr_count + '7'] = 96;
+image[attr_count + '8'] = 112;
+image[char_empty] = 128;
+image[char_covered] = 240;
+image[char_mine] = 144;
+image[char_flag] = 160;
+image[char_unsure] = 176;
+image[char_badflag] = 192;
+image[char_detonated_mine] = 224;
 
 require("sbbsdefs.js", "K_NONE");
 require("mouse_getkey.js", "mouse_getkey");
@@ -87,6 +107,7 @@ var win_rank = false;
 var view_details = false;
 var cell_width;	// either 3 or 2
 var best = null;
+var graph = false;
 
 log(LOG_DEBUG, title + " options: " + JSON.stringify(options));
 
@@ -544,7 +565,18 @@ function draw_cell(x, y)
 		left = "\x01n\x01h" + selectors[selector%selectors.length][0];
 		right = "\x01n\x01h" + selectors[selector%selectors.length][1];
 	}
-	console.print(left + val + right);
+	if (graph) {
+		const margin = Math.floor((console.screen_columns - (game.width * cell_width)) / 2);
+		var xpos = (x * cell_width + margin) * 8;
+		var ypos = (header_height + y + top) * 16;
+		console.write('\x1b_SyncTERM:P;Paste;SX='+image[val]+';SY=0;SW=16;SH=16;DX='+xpos+';DY='+ypos+';B=0\x1b\\');
+		if (selected.x == x && selected.y == y) {
+			console.write('\x1b_SyncTERM:P;Paste;SX='+image['selected']+';SY=0;SW=16;SH=16;DX='+xpos+';DY='+ypos+';MBUF;B=0\x1b\\');
+		}
+	}
+	else {
+		console.print(left + val + right);
+	}
 }
 
 // Return total number of surrounding flags
@@ -711,7 +743,9 @@ function draw_board(full)
 			draw_border();
 		for(var x = 0; x < game.width; x++) {
 			if(full || board[y][x].changed !== false) {
-				if(console.term_supports(USER_ANSI))
+				if (graph) {
+				}
+				else if(console.term_supports(USER_ANSI))
 					console.gotoxy((x * cell_width) + margin + 1, header_height + y + top + 1);
 				else {
 					console.creturn();
@@ -743,7 +777,9 @@ function draw_board(full)
 		console.attributes = LIGHTGRAY;
 	}
 	if(redraw_selection) { // We need to draw/redraw the selected cell last in this case
-		if(console.term_supports(USER_ANSI))
+		if (graph) {
+		}
+		else if(console.term_supports(USER_ANSI))
 			console.gotoxy(margin + (selected.x * cell_width) + 1, header_height + selected.y + top + 1);
 		else {
 			console.up(height - (selected.y + 1));
@@ -885,7 +921,7 @@ function init_game(difficulty)
 	game.width = game.height;
 	game.height = Math.min(game.height, console.screen_rows - header_height);
 	game.width += game.width - game.height;
-	if(game.width > 10 && (game.width * 3) + 2 > (console.screen_columns - 20))
+	if(graph || (game.width > 10 && (game.width * 3) + 2 > (console.screen_columns - 20)))
 		cell_width = 2;
 	else
 		cell_width = 3;
@@ -946,8 +982,181 @@ function screen_to_board(mouse)
 	return true;
 }
 
+function read_apc()
+{
+	var ret = '';
+	var ch;
+	var state = 0;
+
+	for(;;) {
+		ch = console.getbyte(1000);
+		if (ch === null)
+			return undefined;
+		switch(state) {
+			case 0:
+				if (ch == 0x1b) {
+					state++;
+					break;
+				}
+				break;
+			case 1:
+				if (ch == 95) {
+					state++;
+					break;
+				}
+				state = 0;
+				break;
+			case 2:
+				if (ch == 0x1b) {
+					state++;
+					break;
+				}
+				ret += ascii(ch);
+				break;
+			case 3:
+				if (ch == 92) {
+					return ret;
+				}
+				return undefined;
+		}
+	}
+	return undefined;
+}
+
+
+function pixel_capability()
+{
+	var ret = false;
+	var ch;
+	var state = 0;
+	var optval = 0;
+
+	for(;;) {
+		ch = console.getbyte();
+		switch(state) {
+			case 0:
+				if (ch == 0x1b) { // ESC
+					state++;
+					break;
+				}
+				break;
+			case 1:
+				if (ch == 91) {   // [
+					state++;
+					break;
+				}
+				state = 0;
+				break;
+			case 2:
+				if (ch == 60) {   // <
+					state++;
+					break;
+				}
+				state = 0;
+				break;
+			case 3:
+				if (ch == 48) {   // 0
+					state++;
+					break;
+				}
+				state = 0;
+				break;
+			case 4:
+				if (ch == 59) {   // ;
+					state++;
+					break;
+				}
+				state = 0;
+				break;
+			case 5:
+				if (ch >= ascii('0') && ch <= ascii('9')) {
+					optval = optval * 10 + (ch - ascii('0'));
+					break;
+				}
+				else if(ch == 59) {
+					if (optval === 3)
+						ret = true;
+					optval = 0;
+					break;
+				}
+				else if (ch === 99) { // c
+					if (optval === 3)
+						ret = true;
+					return ret;
+				}
+				state = 0;
+				break;
+		}
+	}
+	return ret;
+}
+
+function detect_graphics()
+{
+	var tmpckpt;
+	var f;
+	var md5;
+	var lst;
+	var m;
+	var b;
+
+	// Detect PPM graphics and load the cache
+	graph = false;
+	tmpckpt = console.ctrlkey_passthru;
+	if (console.cterm_version >= 1316) {
+		console.ctrlkey_passthru = '+[';
+		console.write('\x1b[<c');
+		graph = pixel_capability();
+	}
+
+	if (graph) {
+		// Load up cache...
+		f = new File(js.exec_dir+'/'+gfile);
+		if (f.open('rb')) {
+			md5 = f.md5_hex;
+			console.write('\x1b_SyncTERM:C;L;minesweeper/'+gfile+'\x1b\\');
+			lst = read_apc();
+			m = lst.match(/\ngraphics.ppm\t([0-9a-f]+)\n/);
+			if (m == null || m[1] !== md5) {
+				// Store in cache...
+				console.write('\x1b_SyncTERM:C;S;minesweeper/'+gfile+';');
+				f.base64 = true;
+				console.write(f.read());
+				console.write('\x1b\\');
+			}
+			f.close();
+			console.write('\x1b_SyncTERM:C;LoadPPM;B=0;minesweeper/'+gfile+'\x1b\\');
+			f = new File(js.exec_dir+'/'+mfile);
+			if (f.open('rb')) {
+				md5 = f.md5_hex;
+				console.write('\x1b_SyncTERM:C;L;minesweeper/'+mfile+'\x1b\\');
+				lst = read_apc();
+				m = lst.match(/\nselmask.pbm\t([0-9a-f]+)\n/);
+				if (m == null || m[1] !== md5) {
+					// Store in cache...
+					console.write('\x1b_SyncTERM:C;S;minesweeper/'+mfile+';');
+					f.base64 = true;
+					console.write(f.read());
+					console.write('\x1b\\');
+				}
+				f.close();
+				console.write('\x1b_SyncTERM:C;LoadPBM;minesweeper/'+mfile+'\x1b\\');
+			}
+			else {
+				graph = false;
+			}
+		}
+		else {
+			graph = false;
+		}
+	}
+	console.ctrlkey_passthru = tmpckpt;
+}
+
 function play()
 {
+	if (graph)
+		detect_graphics();
 	console.clear();
 	var start = Date.now();
 	show_image(welcome_image, /* fx: */false, /* delay: */0);
@@ -1252,6 +1461,9 @@ try {
 			js.on_exit("console.clear()");
 
 		js.on_exit("console.attributes = LIGHTGRAY");
+	}
+	if(argv.indexOf("graphics") >= 0) {
+		graph = true;
 	}
 	if(argv.indexOf("winners") >= 0) {
 		if(!isNaN(numval) && numval > 0)
