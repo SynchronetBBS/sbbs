@@ -54,6 +54,10 @@ image[char_unsure] = 176;
 image[char_badflag] = 192;
 image[char_detonated_mine] = 224;
 
+const orig_mouse = console.mouse_mode;
+const orig_misc = user.misc;
+const orig_autoterm = console.autoterm;
+
 require("sbbsdefs.js", "K_NONE");
 require("mouse_getkey.js", "mouse_getkey");
 
@@ -550,6 +554,49 @@ function highlighted(x, y)
 		&& (selected.y == y -1 || selected.y == y || selected.y == y + 1);
 }
 
+function board_width()
+{
+	var width;
+
+	if (graph) {
+		width = game.width * cell_width;
+		if (width < (title + " " + REVISION).length + 2)
+			width = (title + " " + REVISION).length + 2;
+	}
+	else
+		width = (game.width * cell_width) + !(cell_width&1);
+	return width;
+}
+
+function get_margin()
+{
+	var width = board_width();
+	if ((cell_width & 1) || graph)
+		width--;
+	var margin = Math.floor((console.screen_columns - width) / 2);
+
+	return margin;
+}
+
+function get_board_margin()
+{
+	var margin = get_margin();
+	if (graph) {
+		var width = board_width();
+		// Correct for level 1...
+		if (width != game.width * cell_width) {
+			margin += Math.floor((width - (game.width * cell_width)) / 2);
+		}
+	}
+
+	return margin;
+}
+
+function get_top()
+{
+	return Math.floor(Math.max(0, (console.screen_rows - (header_height + game.height)) - 1) / 2);
+}
+
 function draw_cell(x, y)
 {
 	console.attributes = LIGHTGRAY;
@@ -566,12 +613,19 @@ function draw_cell(x, y)
 		right = "\x01n\x01h" + selectors[selector%selectors.length][1];
 	}
 	if (graph) {
-		const margin = Math.floor((console.screen_columns - (game.width * cell_width)) / 2);
-		var xpos = (x * cell_width + margin) * 8;
-		var ypos = (header_height + y + top) * 16;
-		console.write('\x1b_SyncTERM:P;Paste;SX='+image[val]+';SY=0;SW=16;SH=16;DX='+xpos+';DY='+ypos+';B=0\x1b\\');
-		if (selected.x == x && selected.y == y) {
-			console.write('\x1b_SyncTERM:P;Paste;SX='+image['selected']+';SY=0;SW=16;SH=16;DX='+xpos+';DY='+ypos+';MBUF;B=0\x1b\\');
+		if (image[val] !== undefined) {
+			const margin = get_board_margin();
+			const width = board_width();
+			var xpos = (x * cell_width + margin) * 8;
+			var ypos = (header_height + y + top) * 16;
+			console.write('\x1b_SyncTERM:P;Paste;SX='+image[val]+';SY=0;SW=16;SH=16;DX='+xpos+';DY='+ypos+';B=0\x1b\\');
+			if (selected.x == x && selected.y == y) {
+				console.write('\x1b_SyncTERM:P;Paste;SX='+image['selected']+';SY=0;SW=16;SH=16;DX='+xpos+';DY='+ypos+';MBUF;B=0\x1b\\');
+			}
+		}
+		else {
+			log(LOG_DEBUG, "Undefined cell: "+val.toSource());
+			console.print(left + val + right);
 		}
 	}
 	else {
@@ -627,7 +681,7 @@ function show_title()
 
 function draw_border()
 {
-	const margin = Math.floor((console.screen_columns - (game.width * cell_width)) / 2);
+	const margin = get_margin();
 	
 	console.creturn();
 	console.attributes = LIGHTGRAY;
@@ -639,7 +693,7 @@ function draw_border()
 		console.attributes = BG_BLUE;
 		console.cleartoeol();
 	} else {
-		console.right((game.width * cell_width) + !(cell_width&1));
+		console.right(board_width());
 		console.print(' ');
 	}
 	console.creturn();
@@ -660,8 +714,9 @@ var top;
 
 function draw_board(full)
 {
-	const margin = Math.floor((console.screen_columns - (game.width * cell_width)) / 2);
-	top = Math.floor(Math.max(0, (console.screen_rows - (header_height + game.height)) - 1) / 2);
+	var width;
+	const margin = get_margin();
+	top = get_top();
 	console.line_counter = 0;
 	console.home();
 	if(full) {
@@ -669,8 +724,8 @@ function draw_board(full)
 		console.right(margin - 1);
 		console.attributes = BG_BLUE|BG_HIGH;
 		console.print('\xDF');
-		var width = (game.width * cell_width) + 1 + !(cell_width&1);
-		for(var x = 1; x < width; x++)
+		width = board_width();
+		for(var x = 0; x < width; x++)
 			console.print(' ');
 		console.print('\xDF');
 		console.creturn();
@@ -770,7 +825,8 @@ function draw_board(full)
 			console.right(margin - 1);
 			console.attributes = BG_BLUE|BG_HIGH;
 			console.print('\xDC');
-			for(var x = 0; x < (game.width * cell_width) + !(cell_width&1); x++)
+			width = board_width();
+			for(var x = 0; x < width; x++)
 				console.print(' ');
 			console.print('\xDC');
 		}
@@ -968,10 +1024,13 @@ function change(x, y)
 
 function screen_to_board(mouse)
 {
-	const margin = Math.floor((console.screen_columns - (game.width * cell_width)) / 2);
-	top = Math.floor(Math.max(0, (console.screen_rows - (header_height + game.height)) - 1) / 2);
+	const margin = get_board_margin();
+	top = get_top();
 
 	var x = (mouse.x - margin + (cell_width - 2)) / cell_width;
+	if (graph) {
+		x = Math.floor(x + 0.5);
+	}
 	if (Math.floor(x) !== x)
 		return false;
 	mouse.x = x;
@@ -1151,6 +1210,12 @@ function detect_graphics()
 		}
 	}
 	console.ctrlkey_passthru = tmpckpt;
+	if (graph) {
+		user.misc |= USER_MOUSE;
+		console.autoterm |= USER_MOUSE;
+		console.mouse_mode = true;
+		js.on_exit("console.mouse_mode = orig_mouse; user.misc = orig_misc; console.autoterm = orig_autoterm;");
+	}
 }
 
 function play()
