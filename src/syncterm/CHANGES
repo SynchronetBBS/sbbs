@@ -12,6 +12,7 @@ Fix focus-follows-mouse behaviour in herbstluftwm
 Fix SAUCE binary capture date
 Add Build Options menu item
 Fix saving non-integer scaling in GDI mode
+Fix static 20k memory leak
 
 Version 1.2rc1
 --------------
