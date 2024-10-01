@@ -165,6 +165,7 @@ static int r_shift;
 static int g_shift;
 static int b_shift;
 static struct graphics_buffer *last = NULL;
+pthread_mutex_t	last_mutex;
 #ifdef WITH_XRENDER
 static XRenderPictFormat *xrender_pf = NULL;
 static Pixmap xrender_pm = None;
@@ -724,6 +725,17 @@ resize_pictures(void)
 #endif
 }
 
+static void
+free_last(void)
+{
+	pthread_mutex_lock(&last_mutex);
+	if (last) {
+		release_buffer(last);
+		last = NULL;
+	}
+	pthread_mutex_unlock(&last_mutex);
+}
+
 static void resize_xim(void)
 {
 	int width, height;
@@ -742,10 +754,7 @@ static void resize_xim(void)
 	if (xim) {
 		if (width == xim->width
 		    && height == xim->height) {
-			if (last) {
-				release_buffer(last);
-				last = NULL;
-			}
+			free_last();
 			return;
 		}
 #ifdef XDestroyImage
@@ -754,10 +763,7 @@ static void resize_xim(void)
 		x11.XDestroyImage(xim);
 #endif
 	}
-	if (last) {
-		release_buffer(last);
-		last = NULL;
-	}
+	free_last();
 	xim = x11.XCreateImage(dpy, visual, depth, ZPixmap, 0, NULL, width, height, 32, 0);
 	xim->data=(char *)calloc(1, xim->bytes_per_line*xim->height);
 }
@@ -1227,11 +1233,8 @@ static void init_mode_internal(int mode)
 	int ow, oh;
 
 	x11_get_maxsize(&mw, &mh);
+	free_last();
 	pthread_mutex_lock(&vstatlock);
-	if (last) {
-		release_buffer(last);
-		last = NULL;
-	}
 	ow = vstat.winwidth;
 	oh = vstat.winheight;
 	bitmap_drv_init_mode(mode, NULL, NULL, mw, mh);
@@ -1374,13 +1377,13 @@ local_draw_rect(struct rectlist *rect)
 		yoff = 0;
 
 	if (last && (last->w != dw || last->h != dh)) {
-		release_buffer(last);
-		last = NULL;
+		free_last();
 	}
 
 	/* TODO: Translate into local colour depth */
 	idx = 0;
 
+	pthread_mutex_lock(&last_mutex);
 	for (y = 0; y < dh; y++) {
 		for (x = 0; x < dw; x++) {
 			if (last) {
@@ -1485,6 +1488,7 @@ local_draw_rect(struct rectlist *rect)
 #endif
 	}
 	last = source;
+	pthread_mutex_lock(&last_mutex);
 }
 
 static void handle_resize_event(int width, int height, bool map)
@@ -1539,10 +1543,7 @@ static void expose_rect(int x, int y, int width, int height)
 	x11.XFillRectangle(dpy, win, gc, 0, yoff + sh, w, h);
 
 	/* Since we're exposing, we *have* to redraw */
-	if (last) {
-		release_buffer(last);
-		last = NULL;
-	}
+	free_last();
 	bitmap_drv_request_pixels();
 }
 
@@ -2271,6 +2272,8 @@ void x11_event_thread(void *args)
 		return;
 	}
 	sem_init(&event_thread_complete, 0, 0);
+	pthread_mutex_init(&last_mutex, NULL);
+
 	atexit(x11_terminate_event_thread);
 
 	if(local_pipe[0] > xfd)
