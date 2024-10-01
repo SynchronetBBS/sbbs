@@ -22,10 +22,6 @@
 				#include <soundcard.h>
 			#elif SOUNDCARD_H_IN==3
 				#include <linux/soundcard.h>
-			#else
-				#ifndef USE_ALSA_SOUND
-					#warning Cannot find soundcard.h
-				#endif
 			#endif
 		#endif
 		#ifdef USE_ALSA_SOUND
