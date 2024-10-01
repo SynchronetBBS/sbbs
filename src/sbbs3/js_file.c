@@ -2934,7 +2934,7 @@ static jsSyncMethodSpec js_file_functions[] = {
 	,310
 	},
 	{"read",			js_read,			0,	JSTYPE_STRING,	JSDOCSTR("[maxlen=<i>file_length</i>-<i>file_position</i>]")
-	,JSDOCSTR("Read a string from file (optionally unix-to-unix or base64 decoding in the process), "
+	,JSDOCSTR("Read a string from file (optionally unix-to-unix or base64 encoding in the process), "
 		"<i>maxlen</i> defaults to the current length of the file minus the current file position")
 	,310
 	},
