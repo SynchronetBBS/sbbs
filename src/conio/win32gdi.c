@@ -1341,10 +1341,10 @@ gdi_setwinsize(int w, int h)
 double
 gdi_getscaling(void)
 {
-	int ret;
+	double ret;
 
 	pthread_mutex_lock(&vstatlock);
-	ret = (int)bitmap_double_mult_inside(vstat.winwidth, vstat.winheight);
+	ret = bitmap_double_mult_inside(vstat.winwidth, vstat.winheight);
 	pthread_mutex_unlock(&vstatlock);
 	return ret;
 }
