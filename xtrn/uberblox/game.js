@@ -121,7 +121,7 @@ function blox()
 	function mainLobby()
 	{
 		drawLobby();
-		while(1) {
+		while(!js.terminated) {
 			var k=console.inkey(K_NOCRLF|K_NOSPIN|K_NOECHO,5);
 			if(k) {
 				switch(k.toUpperCase())	{
@@ -167,7 +167,7 @@ function blox()
 		gameover=false;
 		generateLevel();
 		redraw();
-		while(1) {
+		while(!js.terminated) {
 			if(gameover) {
 				endGame();
 				console.getkey(K_NOECHO);
@@ -556,10 +556,10 @@ function blox()
 			else
 				console.attributes=BROWN;
 			console.gotoxy(posx,posy+index);
-			console.putmsg(score.name,P_SAVEATR);
-			console.right(17-score.name.length);
-			console.putmsg(score.sys,P_SAVEATR);
-			console.right(25-score.sys.length);
+			console.putmsg(score.name.substring(0,20),P_SAVEATR);
+			console.right(20-score.name.length);
+			console.putmsg(score.sys.substring(0,22),P_SAVEATR);
+			console.right(22-score.sys.length);
 			console.putmsg(printPadded(score.score,10,undefined,"right"),P_SAVEATR);
 			console.right(3);
 			console.putmsg(printPadded(data.formatDate(score.laston),8,undefined,"right"),P_SAVEATR);
