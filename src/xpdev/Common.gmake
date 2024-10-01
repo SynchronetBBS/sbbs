@@ -57,7 +57,8 @@ ifndef win
   XPDEV-MT_CFLAGS	+=	-DHAS_MACHINE_SPKR_H
   XPDEV_CFLAGS		+=	-DHAS_MACHINE_SPKR_H
  endif
- XPDEV-MT_CFLAGS	+=	-DSOUNDCARD_H_IN=$(shell if [ -f /usr/include/sys/soundcard.h ] ; then echo 1 ; elif [ -f /usr/include/soundcard.h ] ; then echo 2 ; elif [ -f /usr/include/linux/soundcard.h ] ; then echo 3 ; else echo 0 ; fi) -I. $(XPDEV_CFLAGS)
+ XPDEV-MT_CFLAGS	+=	-DSOUNDCARD_H_IN=$(shell if [ -f /usr/include/sys/soundcard.h ] ; then echo 1 ; elif [ -f /usr/include/soundcard.h ] ; then echo 2 ; elif [ -f /usr/include/linux/soundcard.h ] ; then echo 3 ; else echo 0 ; fi)
+ XPDEV_CFLAGS	+=	-DSOUNDCARD_H_IN=$(shell if [ -f /usr/include/sys/soundcard.h ] ; then echo 1 ; elif [ -f /usr/include/soundcard.h ] ; then echo 2 ; elif [ -f /usr/include/linux/soundcard.h ] ; then echo 3 ; else echo 0 ; fi)
 endif
 
 # FreeBSD, OpenBSD, NetBSD, Linux, SunOS, and Darwin all have random()/srandom()
