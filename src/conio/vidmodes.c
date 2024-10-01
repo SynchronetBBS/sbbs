@@ -305,7 +305,8 @@ void release_vmem(struct vstat_vmem *vm)
 {
 	if (vm == NULL)
 		return;
-	vm->refcount--;
+	if (vm->refcount)
+		vm->refcount--;
 	if (vm->refcount == 0) {
 		FREE_AND_NULL(vm->vmem);
 		FREE_AND_NULL(vm);

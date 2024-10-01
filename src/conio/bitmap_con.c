@@ -1935,7 +1935,6 @@ int bitmap_drv_init(void (*drawrect_cb) (struct rectlist *data)
 	pthread_mutex_init(&screenlock, NULL);
 	pthread_mutex_init(&free_rect_lock, NULL);
 	pthread_mutex_lock(&vstatlock);
-	vstat.vmem=NULL;
 	vstat.flags = VIDMODES_FLAG_PALETTE_VMEM;
 	pthread_mutex_lock(&screenlock);
 	for (i = 0; i < sizeof(dac_default)/sizeof(struct dac_colors); i++) {
