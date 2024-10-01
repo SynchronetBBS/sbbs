@@ -2270,14 +2270,12 @@ capture_control(struct bbslist *bbs)
 								memcpy(sauce.author, bbs->user,
 								    MIN(strlen(bbs->user), sizeof(sauce.author)));
 							}
-							if ((tm = localtime(&t)) != NULL) { // The null-terminator
-                                                                                            // overwrites the first
-                                                                                            // byte of filesize
-								// We can't use snprintf() here because snprintf()
-								// Is guaranteed to terminate, so the last digit
-								// would always be truncated.
-								sprintf(sauce.date, "%04u%02u%02u",
-								    1900 + tm->tm_year, 1 + tm->tm_mon, tm->tm_mday);
+							if ((tm = localtime(&t)) != NULL) {
+								char tmpstr[SAUCE_LEN_DATE + 1] = {0};
+								if (snprintf(tmpstr, sizeof(tmpstr), "%04u%02u%02u",
+								    1900 + tm->tm_year, 1 + tm->tm_mon, tm->tm_mday) >= 0) {
+									memcpy(sauce.date, tmpstr, SAUCE_LEN_DATE);
+								}
 							}
 							sauce.filesize = LE_INT32(ftell(fp)); // LE
 							sauce.datatype = sauce_datatype_bin;
