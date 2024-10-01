@@ -165,7 +165,6 @@ static int r_shift;
 static int g_shift;
 static int b_shift;
 static struct graphics_buffer *last = NULL;
-pthread_mutex_t	last_mutex;
 #ifdef WITH_XRENDER
 static XRenderPictFormat *xrender_pf = NULL;
 static Pixmap xrender_pm = None;
@@ -728,12 +727,10 @@ resize_pictures(void)
 static void
 free_last(void)
 {
-	pthread_mutex_lock(&last_mutex);
 	if (last) {
 		release_buffer(last);
 		last = NULL;
 	}
-	pthread_mutex_unlock(&last_mutex);
 }
 
 static void resize_xim(void)
@@ -1383,7 +1380,6 @@ local_draw_rect(struct rectlist *rect)
 	/* TODO: Translate into local colour depth */
 	idx = 0;
 
-	pthread_mutex_lock(&last_mutex);
 	for (y = 0; y < dh; y++) {
 		for (x = 0; x < dw; x++) {
 			if (last) {
@@ -1488,7 +1484,6 @@ local_draw_rect(struct rectlist *rect)
 #endif
 	}
 	last = source;
-	pthread_mutex_lock(&last_mutex);
 }
 
 static void handle_resize_event(int width, int height, bool map)
@@ -2272,7 +2267,6 @@ void x11_event_thread(void *args)
 		return;
 	}
 	sem_init(&event_thread_complete, 0, 0);
-	pthread_mutex_init(&last_mutex, NULL);
 
 	atexit(x11_terminate_event_thread);
 
