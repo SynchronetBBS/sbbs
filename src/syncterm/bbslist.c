@@ -3405,7 +3405,7 @@ show_bbslist(char *current, int connected)
 #else
 						    "[ ]",
 #endif
-#ifdef NO_X
+#ifdef DISABLE_X11
 						    "[ ]",
 #else
 						    "[`\xFB`]",
