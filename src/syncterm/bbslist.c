@@ -23,6 +23,20 @@
 #include "vidmodes.h"
 #include "window.h"
 
+#if defined(__unix__) && defined(SOUNDCARD_H_IN) && (SOUNDCARD_H_IN > 0) && !defined(_WIN32)
+	#if SOUNDCARD_H_IN==1
+		#include <sys/soundcard.h>
+	#elif SOUNDCARD_H_IN==2
+		#include <soundcard.h>
+	#elif SOUNDCARD_H_IN==3
+		#include <linux/soundcard.h>
+	#else
+		#ifndef USE_ALSA_SOUND
+			#warning Cannot find soundcard.h
+		#endif
+	#endif
+#endif
+
 #ifdef _MSC_VER
 #pragma warning(disable : 4244 4267 4018)
 #endif
@@ -2618,6 +2632,7 @@ show_bbslist(char *current, int connected)
 		"Font Management",
 		"Program Settings",
 		"File Locations",
+		"Build Options",
 		NULL
 	};
 	char                 *connected_settings_menu[] = {
@@ -2625,6 +2640,7 @@ show_bbslist(char *current, int connected)
 		"Font Management",
 		"Program Settings",
 		"File Locations",
+		"Build Options",
 		NULL
 	};
 	int                   at_settings = 0;
@@ -3164,6 +3180,8 @@ show_bbslist(char *current, int connected)
 				    "        Modify hardware and screen/video settings\n\n"
 				    "~ File Locations ~\n"
 				    "        Display location for config and directory files\n\n"
+				    "~ Build Options ~\n"
+				    "        Display compile options selected at build time\n\n"
 				    "~ " ALT_KEY_NAMEP "-B ~\n"
 				    "        View scrollback of last session\n";
 				if (oldopt != -2)
@@ -3349,6 +3367,108 @@ show_bbslist(char *current, int connected)
 						    60,
 						    21,
 						    "File Locations",
+						    p,
+						    NULL,
+						    NULL);
+						break;
+					case 5: // Build Options
+						asprintf(&p,
+						    "`SyncTERM Build Options`\n\n"
+						    "%s Cryptlib (ie: SSH and TLS)\n"
+						    "%s Operation Overkill ][ Terminal\n\n"
+						    "Video\n"
+						    "    %s SDL\n"
+						    "    %s X11 Support\n"
+						    "        %s Xinerama\n"
+						    "        %s XRandR\n"
+						    "        %s XRender\n"
+						    "    %s GDI\n\n"
+						    "Audio\n"
+						    "    %s OSS\n"
+						    "    %s SDL\n"
+						    "    %s ALSA\n"
+						    "    %s PortAudio\n"
+						    "    %s PulseAudio\n"
+						    "    %s PC Speaker\n",
+#ifdef WITHOUT_CRYPTLIB
+						    "[ ]",
+#else
+						    "[`\xFB`]",
+#endif
+#ifdef WITHOUT_OOII
+						    "[ ]",
+#else
+						    "[`\xFB`]",
+#endif
+#ifdef WITH_SDL
+						    "[`\xFB`]",
+#else
+						    "[ ]",
+#endif
+#ifdef NO_X
+						    "[ ]",
+#else
+						    "[`\xFB`]",
+#endif
+#ifdef WITH_XINERAMA
+						    "[`\xFB`]",
+#else
+						    "[ ]",
+#endif
+#ifdef WITH_XRANDR
+						    "[`\xFB`]",
+#else
+						    "[ ]",
+#endif
+#ifdef WITH_XRENDER
+						    "[`\xFB`]",
+#else
+						    "[ ]",
+#endif
+#ifdef WITH_GDI
+						    "[`\xFB`]",
+#else
+						    "[ ]",
+#endif
+#if (defined SOUNDCARD_H_IN) && (SOUNDCARD_H_IN > 0) && (defined AFMT_U8)
+						    "[`\xFB`]",
+#else
+						    "[ ]",
+#endif
+#ifdef WITH_SDL_AUDIO
+						    "[`\xFB`]",
+#else
+						    "[ ]",
+#endif
+#ifdef USE_ALSA_SOUND
+						    "[`\xFB`]",
+#else
+						    "[ ]",
+#endif
+#ifdef WITH_PORTAUDIO
+						    "[`\xFB`]",
+#else
+						    "[ ]",
+#endif
+#ifdef WITH_PULSEAUDIO
+						    "[`\xFB`]",
+#else
+						    "[ ]",
+#endif
+#if (defined(__FreeBSD__) && defined(HAS_MACHINE_SPEAKER_H)) || ((defined(__OpenBSD__) || defined(__NetBSD__)) && defined(HAS_MACHINE_SPKR_H))
+						    "[`\xFB`]"
+#elif !defined(__GNU__) && !defined(__QNX__) && !defined(__OpenBSD__) && !defined(__NetBSD__) && !defined(__APPLE__) && !defined(__CYGWIN__) && !defined(__HAIKU__) && !defined(__EMSCRIPTEN__)
+						    "[`\xFB`]"
+#else
+						    "[ ]"
+#endif
+						);
+						uifc.showbuf(WIN_MID | WIN_SAV | WIN_HLP,
+						    0,
+						    0,
+						    60,
+						    21,
+						    "Build Options",
 						    p,
 						    NULL,
 						    NULL);

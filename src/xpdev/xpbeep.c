@@ -15,15 +15,17 @@
 	#include <fcntl.h>
 	#include <sys/ioctl.h>
 	#ifndef __EMSCRIPTEN__
-		#if SOUNDCARD_H_IN==1
-			#include <sys/soundcard.h>
-		#elif SOUNDCARD_H_IN==2
-			#include <soundcard.h>
-		#elif SOUNDCARD_H_IN==3
-			#include <linux/soundcard.h>
-		#else
-			#ifndef USE_ALSA_SOUND
-				#warning Cannot find soundcard.h
+		#ifdef SOUNDCARD_H_IN
+			#if SOUNDCARD_H_IN==1
+				#include <sys/soundcard.h>
+			#elif SOUNDCARD_H_IN==2
+				#include <soundcard.h>
+			#elif SOUNDCARD_H_IN==3
+				#include <linux/soundcard.h>
+			#else
+				#ifndef USE_ALSA_SOUND
+					#warning Cannot find soundcard.h
+				#endif
 			#endif
 		#endif
 		#ifdef USE_ALSA_SOUND
