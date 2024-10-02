@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.5)
+project(SyncTERM C)
+add_subdirectory(src/syncterm)
+add_custom_target(SyncTERM ALL)
+add_dependencies(SyncTERM syncterm)
