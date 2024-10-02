@@ -241,8 +241,10 @@ Sets a macro to be replayed using `CSI Pn * z`
 `p1` is the macro number to set, and must be between 0 and
 63 inclusive.
 +
-If `p2` is zero, the macro numbered `p1` will be deleted. If
-`p2` is one, all macros are deleted.
+If `p2` is zero, the macro numbered `p1` will be deleted before the new
+macro is set. If `p2` is one, all macros are deleted before the new
+macro is set.  If the macro is zero length, only the delete action is
+stored, you can't store a zero-length macro.
 +
 If `p3` is zero, the macro is defined using ASCII characters
 (0x20 - 0x7e and 0xa0 - 0xff only) if `p3` is one, the macro
