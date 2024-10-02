@@ -3388,8 +3388,7 @@ show_bbslist(char *current, int connected)
 						    "    %s SDL\n"
 						    "    %s ALSA\n"
 						    "    %s PortAudio\n"
-						    "    %s PulseAudio\n"
-						    "    %s PC Speaker\n",
+						    "    %s PulseAudio\n",
 #ifdef WITHOUT_CRYPTLIB
 						    "[ ]",
 #else
@@ -3451,13 +3450,6 @@ show_bbslist(char *current, int connected)
 						    "[ ]",
 #endif
 #ifdef WITH_PULSEAUDIO
-						    "[`\xFB`]",
-#else
-						    "[ ]",
-#endif
-#if (defined(__FreeBSD__) && defined(HAS_MACHINE_SPEAKER_H)) || ((defined(__OpenBSD__) || defined(__NetBSD__)) && defined(HAS_MACHINE_SPKR_H))
-						    "[`\xFB`]"
-#elif !defined(__GNU__) && !defined(__QNX__) && !defined(__OpenBSD__) && !defined(__NetBSD__) && !defined(__APPLE__) && !defined(__CYGWIN__) && !defined(__HAIKU__) && !defined(__EMSCRIPTEN__)
 						    "[`\xFB`]"
 #else
 						    "[ ]"
