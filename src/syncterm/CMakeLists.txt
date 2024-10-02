@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.5)
 project (SyncTERM C)
 
+set(WITHOUT_CRYPTLIB OFF CACHE BOOL "Disable cryptlib (ssh and telnet over TLS")
+set(WITHOUT_OOII OFF CACHE BOOL "Disable Operation Overkill ][ Terminal")
+
 # CPack stuff...
 set(CPACK_PACKAGE_NAME SyncTERM)
 set(CPACK_PACKAGE_VENDOR Deuce)
@@ -30,17 +33,10 @@ set(SOURCE
 	fonts.c
 	menu.c
 	modem.c
-	ooii.c
-	ooii_bmenus.c
-	ooii_cmenus.c
-	ooii_logons.c
-	ooii_sounds.c
 	ripper.c
 	rlogin.c
-	ssh.c
 	syncterm.c
 	telnet_io.c
-	telnets.c
 	term.c
 	uifcinit.c
 	window.c
@@ -54,7 +50,8 @@ if(NOT WIN32)
 		NAMES gmake make
 	)
 	if(${3RDP_GNU_MAKE} STREQUAL "3RDP_GNU_MAKE-NOTFOUND")
-		set(WITHOUT_CRYPTLIB 1)
+		set(WITHOUT_CRYPTLIB ON CACHE BOOL "Disable cryptlib (ssh and telnet over TLS" FORCE)
+		message(WARNING "GNU Make not found, cannot build cryptlib")
 	else()
 		if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
 			set(BUILD_TYPE_FLAG DEBUG=1)
@@ -79,13 +76,26 @@ if(NOT WIN32)
 	endif()
 endif()
 
+if(NOT WITHOUT_OOII)
+	list(APPEND SOURCE ooii.c ooii_bmenus.c ooii_cmenus.c ooii_logons.c ooii_sounds.c)
+endif()
+
+if(NOT WITHOUT_CRYPTLIB)
+	list(APPEND SOURCE ssh.c telnets.c)
+	if(WIN32)
+		find_library(3RDP_CRYPTLIB_LIB cl32 PATHS ${CMAKE_CURRENT_LIST_DIR}/../../3rdp/win32.release/cryptlib/bin NO_DEFAULT_PATH)
+	endif()
+endif()
+
 add_executable(syncterm ${SOURCE})
 require_libs(syncterm ciolib comio encode hash sftp uifc xpdev)
+if(WITHOUT_OOII)
+	target_compile_definitions(syncterm PRIVATE WITHOUT_OOII=1)
+endif()
 if(WITHOUT_CRYPTLIB)
 	target_compile_definitions(syncterm PRIVATE WITHOUT_CRYPTLIB)
 else()
 	if(WIN32)
-		find_library(3RDP_CRYPTLIB_LIB cl32 PATHS ${CMAKE_CURRENT_LIST_DIR}/../../3rdp/win32.release/cryptlib/bin NO_DEFAULT_PATH)
 		target_include_directories(syncterm PRIVATE ${CMAKE_CURRENT_LIST_DIR}/../../3rdp/win32.release/cryptlib/include)
 		target_link_libraries(syncterm ${3RDP_CRYPTLIB_LIB})
 	else()
