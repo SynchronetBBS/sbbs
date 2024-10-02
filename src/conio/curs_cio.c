@@ -810,11 +810,12 @@ void curs_suspend(void)
 
 void curs_resume(void)
 {
+	wint_t ch;
 	if (suspended) {
 		raw();
 		timeout(10);
 		refresh();
-		getch();
+		get_wch(&ch);
 	}
 	suspended = 0;
 }
