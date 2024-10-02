@@ -22,6 +22,6 @@ set(HEADER
 )
 
 add_library(encode OBJECT ${SOURCE})
-target_compile_features(encode PUBLIC c_std_99)
+target_compile_features(encode PUBLIC c_std_11)
 target_include_directories(encode PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(encode xpdev)

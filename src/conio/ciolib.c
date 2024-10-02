@@ -2003,7 +2003,7 @@ CIOLIBEXPORT void ciolib_setscaling_type(enum ciolib_scaling newval)
 		cio_api.setscaling_type(newval);
 }
 
-#if defined(__DARWIN__)
+#if defined(WITH_SDL) && defined(__DARWIN__)
 #ifdef main
 #undef main
 #endif
