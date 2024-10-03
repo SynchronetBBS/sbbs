@@ -40,7 +40,7 @@ static char          diseases[11][14] = // #,str length
 
 
 static char weapons[27][20] = {
-	"ú",              // 0
+	"\xfa",              // 0
 	"Steel Chain",    // 1
 	"Salanger",       // 2
 	"Natase",         // 3
@@ -71,7 +71,7 @@ static char weapons[27][20] = {
 
 
 static char ammos[6][20] = {
-	"ú",            // 0
+	"\xfa",            // 0
 	"ZZETs",        // 1   {  (Trilasm/Exavator) }
 	"Power Pack",   // 2   {  (SanPlizer/RaxHaven/E-Sword/)        }
 	"Cirze Supply", // 3   {  (Z-Tempest/Devastator/Tevix-Bahn)    }
@@ -81,7 +81,7 @@ static char ammos[6][20] = {
 
 
 static char equips[46][20] = {
-	"ú",              // 0
+	"\xfa",              // 0
 	"Rations",        // 1
 	"Hemp Rope",      // 2
 	"Silencer",       // 3
@@ -131,7 +131,7 @@ static char equips[46][20] = {
 
 
 static char suits[4][20] = {
-	"ú",                  // 0
+	"\xfa",                  // 0
 	"Environmental Suit", // 1
 	"Combat Suit",        // 2
 	"Anti-G Suit"
@@ -139,7 +139,7 @@ static char suits[4][20] = {
 
 
 static char armors[13][20] = {
-	"ú",                  // 0
+	"\xfa",                  // 0
 	"Leather",            // 1
 	"HeXonium",           // 2
 	"Laser Vest",         // 3
@@ -451,7 +451,7 @@ readSmallMenu(unsigned char *codeStr)
 			cterm_write(cterm, "-[C]  Check\r\n\r\n", -1, NULL, 0, NULL);
 			cterm_write(cterm, "-[*]  Back to HQ\r\n\r\n", -1, NULL, 0, NULL);
 			term_setattr(LIGHTBLUE);
-			cterm_write(cterm, "-<Supply Room>  é ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-<Supply Room>  \xe9 ", -1, NULL, 0, NULL);
 			break;
 
 		case 'b':
@@ -469,7 +469,7 @@ readSmallMenu(unsigned char *codeStr)
 			cterm_write(cterm, "-[V]  View Recruit\r\n\r\n", -1, NULL, 0, NULL);
 			cterm_write(cterm, "-[*]  Exit to Barracks\r\n\r\n", -1, NULL, 0, NULL);
 			term_setattr(LIGHTBLUE);
-			cterm_write(cterm, "-<Chambers>  é ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-<Chambers>  \xe9 ", -1, NULL, 0, NULL);
 			break;
 
 		case 'c':
@@ -489,7 +489,7 @@ readSmallMenu(unsigned char *codeStr)
 			cterm_write(cterm, "-[T]  Terminate Yourself\r\n\r\n", -1, NULL, 0, NULL);
 			cterm_write(cterm, "-[*]  Exit\r\n\r\n", -1, NULL, 0, NULL);
 			term_setattr(LIGHTBLUE);
-			cterm_write(cterm, "-<Specs>  é ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-<Specs>  \xe9 ", -1, NULL, 0, NULL);
 			break;
 
 		case 'd':
@@ -534,7 +534,7 @@ readSmallMenu(unsigned char *codeStr)
 			cterm_write(cterm, menuBlock, -1, NULL, 0, NULL);
 			cterm_write(cterm, " crystals onhand.\r\n\r\n", -1, NULL, 0, NULL);
 			term_setattr(LIGHTBLUE);
-			cterm_write(cterm, "-<Bank>  é ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-<Bank>  \xe9 ", -1, NULL, 0, NULL);
 			break;
 
 		case 'e':
@@ -571,7 +571,7 @@ readSmallMenu(unsigned char *codeStr)
 			cterm_write(cterm, "-[*]  Exit to Barracks\r\n\r\n", -1, NULL, 0, NULL);
 
 			term_setattr(LIGHTBLUE);
-			cterm_write(cterm, "-<Games Room>  é ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-<Games Room>  \xe9 ", -1, NULL, 0, NULL);
 			break;
 
 		case 'f':
@@ -597,7 +597,7 @@ readSmallMenu(unsigned char *codeStr)
 			cterm_write(cterm, "-[C]  Check Your Status\r\n\r\n", -1, NULL, 0, NULL);
 			cterm_write(cterm, "-[*]  Exit to Barracks\r\n\r\n", -1, NULL, 0, NULL);
 			term_setattr(LIGHTBLUE);
-			cterm_write(cterm, "-<Sentry Post>  é ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-<Sentry Post>  \xe9 ", -1, NULL, 0, NULL);
 			break;
 
 		case 'g':
@@ -620,7 +620,7 @@ readSmallMenu(unsigned char *codeStr)
 			cterm_write(cterm, "-[S]  Send E-Mail\r\n\r\n", -1, NULL, 0, NULL);
 			cterm_write(cterm, "-[*]  Back to Comm. Post\r\n\r\n", -1, NULL, 0, NULL);
 			term_setattr(LIGHTBLUE);
-			cterm_write(cterm, "-<E-Mail>  é ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-<E-Mail>  \xe9 ", -1, NULL, 0, NULL);
 			break;
 
 		case 'h':
@@ -689,7 +689,7 @@ readSmallMenu(unsigned char *codeStr)
 			cterm_write(cterm, "-[V]  Vaccinate Disease\r\n\r\n", -1, NULL, 0, NULL);
 			cterm_write(cterm, "-[*]  Back to HQ\r\n\r\n", -1, NULL, 0, NULL);
 			term_setattr(LIGHTBLUE);
-			cterm_write(cterm, "-<Medical Center>  é ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-<Medical Center>  \xe9 ", -1, NULL, 0, NULL);
 			break;
 
 		case 'j':
@@ -710,7 +710,7 @@ readSmallMenu(unsigned char *codeStr)
 			cterm_write(cterm, "-[H]  Hall of Fame\r\n\r\n", -1, NULL, 0, NULL);
 			cterm_write(cterm, "-[*]  Back to HQ\r\n\r\n", -1, NULL, 0, NULL);
 			term_setattr(LIGHTBLUE);
-			cterm_write(cterm, "-<Records>  é ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-<Records>  \xe9 ", -1, NULL, 0, NULL);
 			break;
 
 		case 'k':
@@ -735,7 +735,7 @@ readSmallMenu(unsigned char *codeStr)
 			cterm_write(cterm, "-[S]  Sell Armor\r\n\r\n", -1, NULL, 0, NULL);
 			cterm_write(cterm, "-[*]  Back to Supply Room\r\n\r\n", -1, NULL, 0, NULL);
 			term_setattr(LIGHTBLUE);
-			cterm_write(cterm, "-<Supply Armor>  é ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-<Supply Armor>  \xe9 ", -1, NULL, 0, NULL);
 			break;
 
 		case 'l':
@@ -796,7 +796,7 @@ readSmallMenu(unsigned char *codeStr)
 				cterm_write(cterm, "-[S]  Sell Equipment\r\n\r\n", -1, NULL, 0, NULL);
 				cterm_write(cterm, "-[*]  Back to Supply Room\r\n\r\n", -1, NULL, 0, NULL);
 				term_setattr(LIGHTBLUE);
-				cterm_write(cterm, "-<Supply Equip>  é ", -1, NULL, 0, NULL);
+				cterm_write(cterm, "-<Supply Equip>  \xe9 ", -1, NULL, 0, NULL);
 			}
 			break;
 
@@ -850,7 +850,7 @@ readSmallMenu(unsigned char *codeStr)
 			cterm_write(cterm, "-[S]  Sell a Suit\r\n\r\n", -1, NULL, 0, NULL);
 			cterm_write(cterm, "-[*]  Back to Supply Room\r\n\r\n", -1, NULL, 0, NULL);
 			term_setattr(LIGHTBLUE);
-			cterm_write(cterm, "-<Supply Suits>  é ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-<Supply Suits>  \xe9 ", -1, NULL, 0, NULL);
 			break;
 
 		case 'p':
@@ -907,7 +907,7 @@ readSmallMenu(unsigned char *codeStr)
 			cterm_write(cterm, "-[S]  Sell Weapon\r\n\r\n", -1, NULL, 0, NULL);
 			cterm_write(cterm, "-[*]  Back to Supply Room\r\n\r\n", -1, NULL, 0, NULL);
 			term_setattr(LIGHTBLUE);
-			cterm_write(cterm, "-<Supply Weapons>  é ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-<Supply Weapons>  \xe9 ", -1, NULL, 0, NULL);
 			break;
 
 		case 'r':
@@ -991,7 +991,7 @@ readSmallMenu(unsigned char *codeStr)
 			cterm_write(cterm, "\r\n-[*]  Return to HQ\r\n\r\n", -1, NULL, 0, NULL);
 
 			term_setattr(LIGHTBLUE);
-			cterm_write(cterm, "-<Squadrons>  é ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-<Squadrons>  \xe9 ", -1, NULL, 0, NULL);
 			break;
 
 		case 't':
@@ -1035,7 +1035,7 @@ readSmallMenu(unsigned char *codeStr)
 			term_setattr(LIGHTGRAY);
 			cterm_write(cterm, "Toggle Combat Modes\r\n\r\n", -1, NULL, 0, NULL);
 			term_setattr(LIGHTBLUE);
-			cterm_write(cterm, "-<Combat>  é ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-<Combat>  \xe9 ", -1, NULL, 0, NULL);
 			break;
 
 		case 'u':
@@ -1079,7 +1079,7 @@ readSmallMenu(unsigned char *codeStr)
 			cterm_write(cterm, "-[P]  Pick up items\r\n\r\n", -1, NULL, 0, NULL);
 			cterm_write(cterm, "-[*]  Leave campsite\r\n\r\n", -1, NULL, 0, NULL);
 			term_setattr(LIGHTBLUE);
-			cterm_write(cterm, "-<Camp>  é ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-<Camp>  \xe9 ", -1, NULL, 0, NULL);
 			break;
 
 		case 'v':
@@ -1148,7 +1148,7 @@ readSmallMenu(unsigned char *codeStr)
 
 			cterm_write(cterm, "-[*]  Exit\r\n\r\n", -1, NULL, 0, NULL);
 			term_setattr(LIGHTBLUE);
-			cterm_write(cterm, "-<Medpacks>  é ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "-<Medpacks>  \xe9 ", -1, NULL, 0, NULL);
 			break;
 	}
 
@@ -1162,7 +1162,7 @@ checkStamp(int xx, int yy, char stampStr[]) // used w/ incomingCheck
 	term_setattr(LIGHTCYAN);
 	cterm_write(cterm, stampStr, -1, NULL, 0, NULL);
 	term_setattr(CYAN);
-	cterm_write(cterm, "é", -1, NULL, 0, NULL);
+	cterm_write(cterm, "\xe9", -1, NULL, 0, NULL);
 	return;
 }
 
@@ -1181,17 +1181,17 @@ incomingCheckStatus(unsigned char *codeStr)
 	who = atoi(menuBlock);
 
 	term_setattr(who);
-	cterm_write(cterm, "\r\nÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿\r\n", -1, NULL, 0, NULL);
+	cterm_write(cterm, "\r\n\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf\r\n", -1, NULL, 0, NULL);
 	term_setattr(LIGHTCYAN);
 	cterm_write(cterm, "Recruit   ", -1, NULL, 0, NULL);
 	term_setattr(CYAN);
-	cterm_write(cterm, "é", -1, NULL, 0, NULL);
+	cterm_write(cterm, "\xe9", -1, NULL, 0, NULL);
 	term_setattr(who);
 	term_gotoxy(34, 3);
-	cterm_write(cterm, " ³", -1, NULL, 0, NULL);
+	cterm_write(cterm, " \xb3", -1, NULL, 0, NULL);
 	term_gotoxy(1, 4);
 	cterm_write(cterm,
-	    "ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ",
+	    "\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcf\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd",
 	    -1,
 	    NULL,
 	    0,
@@ -1209,7 +1209,7 @@ incomingCheckStatus(unsigned char *codeStr)
 
 	term_gotoxy(1, 8);
 	cterm_write(cterm,
-	    "ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ",
+	    "\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4",
 	    -1,
 	    NULL,
 	    0,
@@ -1225,7 +1225,7 @@ incomingCheckStatus(unsigned char *codeStr)
 	term_gotoxy(1, 11);
 	term_setattr(who);
 	cterm_write(cterm,
-	    "ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ",
+	    "\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd",
 	    -1,
 	    NULL,
 	    0,
@@ -1237,7 +1237,7 @@ incomingCheckStatus(unsigned char *codeStr)
 	term_gotoxy(1, 14);
 	term_setattr(who);
 	cterm_write(cterm,
-	    "ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ",
+	    "\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4",
 	    -1,
 	    NULL,
 	    0,
@@ -1249,7 +1249,7 @@ incomingCheckStatus(unsigned char *codeStr)
 	term_gotoxy(1, 17);
 	term_setattr(who);
 	cterm_write(cterm,
-	    "ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ",
+	    "\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4",
 	    -1,
 	    NULL,
 	    0,
@@ -1261,7 +1261,7 @@ incomingCheckStatus(unsigned char *codeStr)
 	term_gotoxy(1, 21);
 	term_setattr(who);
 	cterm_write(cterm,
-	    "ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ",
+	    "\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd",
 	    -1,
 	    NULL,
 	    0,
@@ -1284,7 +1284,7 @@ scanChar(unsigned char s, int where, int miniTrik)
 	switch (s) {
 		case 1:
 			if (where == 4) // AFB
-				return "²²²";
+				return "\xb2\xb2\xb2";
 			return "OO ";
 		case 2:
 			return "ww ";
@@ -1301,9 +1301,9 @@ scanChar(unsigned char s, int where, int miniTrik)
 		case 8:
 			return "@v ";
 		case 9:
-			return "®¯ ";
+			return "\xae\xaf ";
 		case 10:
-			return "ÊÊ ";
+			return "\xca\xca ";
 		case 11:
 			return "%% ";
 		case 12:
@@ -1313,31 +1313,31 @@ scanChar(unsigned char s, int where, int miniTrik)
 		case 14:
 			return "@^ ";
 		case 15:
-			return "÷÷ ";
+			return "\xf7\xf7 ";
 		case 16:
-			return "°Ä°";
+			return "\xb0\xc4\xb0";
 		case 17:
-			return "²±²";
+			return "\xb2\xb1\xb2";
 		case 19:
 			return "GG ";
 		case 20:
 			return "#_ ";
 		case 21:
-			return " ";
+			return "\x15\x15 ";
 		case 22:
-			return "áá ";
+			return "\xe1\xe1 ";
 		case 23:
-			return "ØØ ";
+			return "\xd8\xd8 ";
 		case 24:
-			return " ù ";
+			return " \xf9 ";
 		case 25:
 			if (where == 4) // AFB
-				return "óò ";
-			return "É» ";
+				return "\xf3\xf2 ";
+			return "\xc9\xbb ";
 		case 26:
 			return "ii ";
 		case 27:
-			return "èè ";
+			return "\xe8\xe8 ";
 		case 28:
 			return "cc ";
 		case 29:
@@ -1353,7 +1353,7 @@ scanChar(unsigned char s, int where, int miniTrik)
 				case 2:
 					return "## ";
 				case 3:
-					return "Õ¾ ";
+					return "\xd5\xbe ";
 				case 4:
 					return "// ";
 				case 5:
@@ -1367,19 +1367,19 @@ scanChar(unsigned char s, int where, int miniTrik)
 		case 31:
 			return "YY ";
 		case 32:
-			return " ";
+			return "\x9d\x9d ";
 		case 33:
-			return "ëë ";
+			return "\xeb\xeb ";
 		case 34:
-			return "ä¯ ";
+			return "\xe4\xaf ";
 		case 35:
 			return "[] ";
 		case 37:
 			return "** ";
 		case 38:
-			return " ";
+			return "\x8f\x8f ";
 		case 39:
-			return "ğğ ";
+			return "\xf0\xf0 ";
 		case 99:
 			return "[] ";
 		default:
@@ -1403,7 +1403,7 @@ setScanCol(char s)
 			term_setattr(2);
 			break;
 		case '"':
-		case '°':
+		case '\xb0':
 			term_setattr(3);
 			break;
 		case 'U':
@@ -1413,56 +1413,56 @@ setScanCol(char s)
 
 		case '^':
 		case 'i':
-		case 'á':
-		case 'ó':
+		case '\xe1':
+		case '\xf3':
 			term_setattr(6);
 			break;
 
 		case 'O':
-		case '²':
+		case '\xb2':
 		case 'Q':
 			term_setattr(7);
 			break;
-		case 'ä':
+		case '\xe4':
 		case ' ':
 			term_setattr(8);
 			break;
-		case '÷':
+		case '\xf7':
 			term_setattr(9);
 			break;
 		case '-':
-		case '':
+		case '\x15':
 			term_setattr(10);
 			break;
 
 		case '?':
 		case '@':
 		case '/':
-		case '':
+		case '\x9d':
 		case 'Y':
-		case 'ë':
+		case '\xeb':
 			term_setattr(12);
 			break;
 
 		case '#':
 		case 'c':
-		case 'ğ':
+		case '\xf0':
 			term_setattr(13);
 			break;
 
 		case '.':
 		case '[':
-		case '®':
-		case 'Ê':
+		case '\xae':
+		case '\xca':
 		case '!':
-		case 'É':
-		case 'Ø':
+		case '\xc9':
+		case '\xd8':
 			term_setattr(14);
 			break;
 
 		case 'I':
-		case 'è':
-		case '':
+		case '\xe8':
+		case '\x8f':
 			term_setattr(15);
 			break;
 	}
@@ -1489,18 +1489,18 @@ incomingMapScanner(unsigned char *codeStr)
 			term_gotoxy(1, 1);
 			term_setattr(1);
 			cterm_write(cterm,
-			    "\r\nÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿\r\n",
+			    "\r\n\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf\r\n",
 			    -1,
 			    NULL,
 			    0,
 			    NULL);
-			cterm_write(cterm, "³ ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "\xb3 ", -1, NULL, 0, NULL);
 			term_setattr(5);
-			cterm_write(cterm, "ÖÄ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "\xd6\xc4", -1, NULL, 0, NULL);
 			term_setattr(13);
 			cterm_write(cterm, "Infrared", -1, NULL, 0, NULL);
 			term_setattr(5);
-			cterm_write(cterm, "Ä·", -1, NULL, 0, NULL);
+			cterm_write(cterm, "\xc4\xb7", -1, NULL, 0, NULL);
 			term_setattr(13);
 			cterm_write(cterm,
 			    "     Compass      Sector Monitor     System Monitor           ",
@@ -1509,42 +1509,42 @@ incomingMapScanner(unsigned char *codeStr)
 			    0,
 			    NULL);
 			term_setattr(1);
-			cterm_write(cterm, "³\r\n", -1, NULL, 0, NULL);
-			cterm_write(cterm, "³ ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "\xb3\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "\xb3 ", -1, NULL, 0, NULL);
 			term_setattr(5);
 			cterm_write(cterm,
-			    "Ç          ¶     ~~~~~~~      ~~~~~~~~~~~~~~     ~~~~~~~~~~~~~~           ",
+			    "\xc7          \xb6     ~~~~~~~      ~~~~~~~~~~~~~~     ~~~~~~~~~~~~~~           ",
 			    -1,
 			    NULL,
 			    0,
 			    NULL);
 			term_setattr(1);
-			cterm_write(cterm, "³\r\n", -1, NULL, 0, NULL);
-			cterm_write(cterm, "³ ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "\xb3\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "\xb3 ", -1, NULL, 0, NULL);
 			term_setattr(5);
-			cterm_write(cterm, "Ç          ¶   [         ]    [ ]  ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "\xc7          \xb6   [         ]    [ ]  ", -1, NULL, 0, NULL);
 			term_setattr(13);
 			cterm_write(cterm, "Items         Hit Points", -1, NULL, 0, NULL);
 			term_setattr(5);
 			cterm_write(cterm, " [:            ", -1, NULL, 0, NULL);
 			term_setattr(1);
-			cterm_write(cterm, "³\r\n", -1, NULL, 0, NULL);
-			cterm_write(cterm, "³ ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "\xb3\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "\xb3 ", -1, NULL, 0, NULL);
 			term_setattr(5);
-			cterm_write(cterm, "Ç          ¶                  [ ]  ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "\xc7          \xb6                  [ ]  ", -1, NULL, 0, NULL);
 			term_setattr(13);
 			cterm_write(cterm, "Campers       Radiation  ", -1, NULL, 0, NULL);
 			term_setattr(5);
 			cterm_write(cterm, "[:            ", -1, NULL, 0, NULL);
 			term_setattr(1);
-			cterm_write(cterm, "³\r\n", -1, NULL, 0, NULL);
-			cterm_write(cterm, "³ ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "\xb3\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "\xb3 ", -1, NULL, 0, NULL);
 			term_setattr(5);
-			cterm_write(cterm, "ÓÄÄÄ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "\xd3\xc4\xc4\xc4", -1, NULL, 0, NULL);
 			term_setattr(13);
 			cterm_write(cterm, "scan", -1, NULL, 0, NULL);
 			term_setattr(5);
-			cterm_write(cterm, "ÄÄÄ½    ", -1, NULL, 0, NULL);
+			cterm_write(cterm, "\xc4\xc4\xc4\xbd    ", -1, NULL, 0, NULL);
 			term_setattr(13);
 			cterm_write(cterm, "Time :        ", -1, NULL, 0, NULL);
 			term_setattr(5);
@@ -1554,9 +1554,9 @@ incomingMapScanner(unsigned char *codeStr)
 			term_setattr(5);
 			cterm_write(cterm, "[:            ", -1, NULL, 0, NULL);
 			term_setattr(1);
-			cterm_write(cterm, "³\r\n", -1, NULL, 0, NULL);
+			cterm_write(cterm, "\xb3\r\n", -1, NULL, 0, NULL);
 			cterm_write(cterm,
-			    "ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ\r\n",
+			    "\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9\r\n",
 			    -1,
 			    NULL,
 			    0,
@@ -1567,25 +1567,25 @@ incomingMapScanner(unsigned char *codeStr)
 			term_gotoxy(1, 9);
 			term_setattr(1);
 			cterm_write(cterm,
-			    "ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿\r\n",
+			    "\xda\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xbf\r\n",
 			    -1,
 			    NULL,
 			    0,
 			    NULL);
 			cterm_write(cterm,
-			    "³                                                                           ³\r\n",
+			    "\xb3                                                                           \xb3\r\n",
 			    -1,
 			    NULL,
 			    0,
 			    NULL);
 			cterm_write(cterm,
-			    "³                                                                           ³\r\n",
+			    "\xb3                                                                           \xb3\r\n",
 			    -1,
 			    NULL,
 			    0,
 			    NULL);
 			cterm_write(cterm,
-			    "ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ\r\n",
+			    "\xc0\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xd9\r\n",
 			    -1,
 			    NULL,
 			    0,
@@ -1769,7 +1769,7 @@ incomingMapScanner(unsigned char *codeStr)
 				}
 				else {
 					term_setattr(12);
-					cterm_write(cterm, "û", -1, NULL, 0, NULL);
+					cterm_write(cterm, "\xfb", -1, NULL, 0, NULL);
 				}
 
 				codeStr++;
@@ -1785,7 +1785,7 @@ incomingMapScanner(unsigned char *codeStr)
 				}
 				else {
 					term_setattr(12);
-					cterm_write(cterm, "û", -1, NULL, 0, NULL);
+					cterm_write(cterm, "\xfb", -1, NULL, 0, NULL);
 				}
 
 				codeStr++;
@@ -1801,7 +1801,7 @@ incomingMapScanner(unsigned char *codeStr)
 				}
 				else {
 					term_setattr(12);
-					cterm_write(cterm, "û", -1, NULL, 0, NULL);
+					cterm_write(cterm, "\xfb", -1, NULL, 0, NULL);
 
 					codeStr++;
 					codeStr++;
