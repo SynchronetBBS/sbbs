@@ -2646,9 +2646,10 @@ static jsSyncMethodSpec js_socket_functions[] = {
 		"optionally specifying a network interface (via <i>ip_address</i>)")
 	,311
 	},
-	{"connect",     js_connect,     2,	JSTYPE_BOOLEAN,	JSDOCSTR("host, port [,timeout=10.0]")
+	{"connect",     js_connect,     2,	JSTYPE_BOOLEAN,	JSDOCSTR("host, port [,timeout=10.0] [,callback]")
 	,JSDOCSTR("Connect to a remote port (number or service name) on the specified host (IP address or host name)"
-	", default <i>timeout</i> value is <i>10.0</i> (seconds)")
+	", default <i>timeout</i> value is <i>10.0</i> (seconds).  Instead of a timeout, you can pass a <i>callback</i> "
+	"which is called when the connection completes with the Socket object as the only parameter.")
 	,311
 	},
 	{"listen",		js_listen,		0,	JSTYPE_BOOLEAN,	JSDOCSTR("")
