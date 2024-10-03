@@ -3974,21 +3974,25 @@ js_socket_select(JSContext *cx, uintN argc, jsval *arglist)
 		nfds = 0;
 		for (j = 0; j < inarray_cnt; j++) {
 			if (limit[j] > 0) {
-				switch (j) {
-					case 0:
-						events = POLLIN;
-						break;
-					case 1:
-						events = POLLOUT;
-						break;
-					case 2:
-						events = POLLPRI;
-						break;
+				if (inarray_cnt == 1)
+					events = poll_for_write ? POLLOUT : POLLIN;
+				else {
+					switch (j) {
+						case 0:
+							events = POLLIN;
+							break;
+						case 1:
+							events = POLLOUT;
+							break;
+						case 2:
+							events = POLLPRI;
+							break;
+					}
 				}
 				for (i = 0; i < limit[j]; i++) {
 					if(!JS_GetElement(cx, inarray[j], i, &val))
 						break;
-					nfds += js_socket_add(cx, val, &fds[nfds], poll_for_write ? POLLOUT : POLLIN);
+					nfds += js_socket_add(cx, val, &fds[nfds], events);
 				}
 			}
 		}
