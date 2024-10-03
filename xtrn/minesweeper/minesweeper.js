@@ -117,6 +117,10 @@ log(LOG_DEBUG, title + " options: " + JSON.stringify(options));
 
 function mouse_enable(enable)
 {
+	if (graph) {
+		console.write("\x1b[?1003;1006"+(enable ? 'h' : 'l'));
+		return;
+	}
 	const mouse_passthru = (CON_MOUSE_CLK_PASSTHRU | CON_MOUSE_REL_PASSTHRU);
 	if(enable)
 		console.status |= mouse_passthru;
@@ -622,6 +626,9 @@ function draw_cell(x, y)
 			if (selected.x == x && selected.y == y) {
 				console.write('\x1b_SyncTERM:P;Paste;SX='+image['selected']+';SY=0;SW=16;SH=16;DX='+xpos+';DY='+ypos+';MBUF;B=0\x1b\\');
 			}
+			else if(console.attributes & HIGH) {
+				console.write('\x1b_SyncTERM:P;Paste;SX='+image['selected']+';SY=0;SW=16;SH=16;DX='+xpos+';DY='+ypos+';MBUF;MX=16;B=0\x1b\\');
+			}
 		}
 		else {
 			log(LOG_DEBUG, "Undefined cell: "+val.toSource());
@@ -716,6 +723,7 @@ function draw_board(full)
 {
 	var width;
 	const margin = get_margin();
+	const bmargin = get_board_margin();
 	top = get_top();
 	console.line_counter = 0;
 	console.home();
@@ -779,7 +787,7 @@ function draw_board(full)
 	if(full || cmds !== cmds_shown) {
 		console.clear_hotspots();
 		draw_border();
-		console.attributes = LIGHTGRAY;		
+		console.attributes = LIGHTGRAY;
 		console_center(cmds);
 		cmds_shown = cmds;
 		draw_border();
@@ -845,7 +853,7 @@ function draw_board(full)
 		draw_cell(selected.x, selected.y);
 		console.left(2);
 	}
-	console.gotoxy(margin + (selected.x * cell_width) + 2, header_height + selected.y + top + 1);
+	console.gotoxy(bmargin + (selected.x * cell_width) + 2, header_height + selected.y + top + 1);
 }
 
 function mined(x, y)
@@ -1211,9 +1219,8 @@ function detect_graphics()
 	}
 	console.ctrlkey_passthru = tmpckpt;
 	if (graph) {
-		user.misc |= USER_MOUSE;
-		console.autoterm |= USER_MOUSE;
-		console.mouse_mode = true;
+		console.mouse_mode = false;
+		console.write("\x1b[?1003;1006h");
 		js.on_exit("console.mouse_mode = orig_mouse; user.misc = orig_misc; console.autoterm = orig_autoterm;");
 	}
 }
@@ -1259,7 +1266,10 @@ function play()
 		var mk = mouse_getkey(K_NONE, 1000, true);
 		var key = mk.key;
 		if (mk.mouse !== null) {
-			if ((!mk.mouse.release) || mk.mouse.motion || !screen_to_board(mk.mouse)) {
+			var ignore = true;
+			if (graph && mk.mouse.button == 64 && mk.mouse.motion == 32 && mk.mouse.press == true && mk.mouse.release == false)
+				ignore = false;
+			if (((!mk.mouse.release) && ignore) || (mk.mouse.motion && ignore) || !screen_to_board(mk.mouse)) {
 				key = null;
 			}
 			else {
@@ -1272,6 +1282,21 @@ function play()
 						break;
 					case 2:
 						key = 'F';
+						break;
+					case 64:
+						if (graph) {
+							if (selected.x != mk.mouse.x - 1 || selected.y != mk.mouse.y - 1) {
+								change(selected.x, selected.y);
+								selected.x = mk.mouse.x - 1;
+								selected.y = mk.mouse.y - 1;
+								change(selected.x, selected.y);
+							}
+							else {
+								// Skip time update...
+								continue;
+							}
+						}
+						key = null;
 						break;
 					default:
 						key = null;
