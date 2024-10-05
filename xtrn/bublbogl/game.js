@@ -92,7 +92,7 @@ function boggle() {
 		lobby.draw();
 		console.gotoxy(58,2);
 		console.putmsg(centerString("\1c\1h" + date.getMonthName() + "\1n\1c - \1c\1h" + date.getFullYear(),21));
-	}
+				console.gotoxy(3,4);		console.putmsg("\1y\1h" + date.getMonthName() + " High Scores");	}
 	function showMessage(txt)	{		console.gotoxy(27,21);		console.putmsg("                                                   ");		console.gotoxy(27,21);		console.putmsg("\1-" + (txt?txt:""),P_SAVEATR);	}	function redraw()
 	{
 		console.clear(ANSI_NORMAL);
