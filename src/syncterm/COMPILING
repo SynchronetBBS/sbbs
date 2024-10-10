@@ -51,6 +51,11 @@ gmake CC=mingw32-gcc VERBOSE=please AR=mingw32-ar AS=mingw32-as RANLIB=mingw32-r
 32-bit Release builds for Win32 using MinGW-w64 use the following command line:
 gmake AR=i686-w64-mingw32-ar AS=i686-w64-mingw32-as CC=i686-w64-mingw32-gcc CXX=i686-w64-mingw32-g++ RANLIB=i686-w64-mingw32-ranlib WINDRES=i686-w64-mingw32-windres RELEASE=1 VERBOSE=1
 
+32-bit CMake builds for Win32 using MinGW-w64 on my system uses:
+cmake -DWITHOUT_ALSA=ON -DWITHOUT_PULSEAUDIO=ON -DCMAKE_TOOLCHAIN_FILE=/synchronet/src/sbbs/src/syncterm/FBSD-mingw64.cmake ..
+cmake --build . -j4
+This does not rebuild cryptlib, so is suspect.
+
 64-bit Release builds for Win32 using MinGW-w64 use the following command line:
 gmake AR=x86_64-w64-mingw32-ar AS=x86_64-w64-mingw32-as CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ RANLIB=x86_64-w64-mingw32-ranlib WINDRES=x86_64-w64-mingw32-windres RELEASE=1 VERBOSE=1
 
