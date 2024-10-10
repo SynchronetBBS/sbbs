@@ -730,6 +730,7 @@ void sbbs_t::maindflts(user_t* user)
 		char cmdline[256];
 		snprintf(cmdline, sizeof(cmdline), "%s %u", cfg.usercfg_mod, user->number);
 		exec_bin(cmdline, &main_csi);
+		getuserdat(&cfg, user);
 		return;
 	}
 	while(online) {
