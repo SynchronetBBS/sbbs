@@ -45,7 +45,9 @@ set(SOURCE
 	../sbbs3/xmodem.c
 )
 
-if(NOT WIN32)
+if(WIN32)
+	set(3RDP_CRYPTLIB_LIB ${CMAKE_CURRENT_SOURCE_DIR}/../../3rdp/win32.release/cryptlib/bin/cl32.lib)
+else()
 	find_program(3RDP_GNU_MAKE
 		NAMES gmake make
 	)
@@ -101,6 +103,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 	set_source_files_properties(SyncTERM.icns PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 endif()
 require_libs(syncterm ciolib comio encode hash sftp uifc xpdev)
+target_compile_definitions(syncterm PRIVATE TELNET_NO_DLL)
 if(WITHOUT_OOII)
 	target_compile_definitions(syncterm PRIVATE WITHOUT_OOII=1)
 endif()

@@ -233,7 +233,9 @@ extern "C" {
 	#define snprintf		_snprintf
 #endif
 	#define vsnprintf		_vsnprintf
-	#define NEEDS_STRLCPY
+	#ifndef NEEDS_STRLCPY
+		#define NEEDS_STRLCPY
+	#endif
 #endif
 
 #if defined(__WATCOMC__)
