@@ -505,6 +505,23 @@ spec:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [uifc]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
 
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [syncterm-cmake]":
+  extends:
+    - .$[[ inputs.os ]]-build
+  script:
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
+    - cd src/syncterm
+    - mkdir build
+    - cd build
+    - cmake ..
+    - cmake --build .
+  artifacts:
+    name: "syncterm-cmake-$[[ inputs.os ]]-$[[ inputs.platform ]]"
+    paths:
+      - "src/syncterm/build/syncterm*"
+  needs:
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
+
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [syncdraw]":
   extends:
     - .$[[ inputs.os ]]-build
