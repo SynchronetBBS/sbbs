@@ -132,6 +132,8 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 	target_link_libraries(syncterm util)
 	target_link_libraries(syncterm ${FOUNDATION_LIBRARY})
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+	target_link_libraries(syncterm util)
 endif()
 
 install(TARGETS syncterm DESTINATION bin)
