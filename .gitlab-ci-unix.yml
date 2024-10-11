@@ -513,7 +513,7 @@ spec:
     - cd src/syncterm
     - mkdir build
     - cd build
-    - cmake ..
+    - cmake -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DFIXED_FIXED_SEED=ON ..
     - cmake --build .
   artifacts:
     name: "syncterm-cmake-$[[ inputs.os ]]-$[[ inputs.platform ]]"
