@@ -1,0 +1,402 @@
+cmake_minimum_required(VERSION 3.11)
+
+project (Cryptlib C)
+
+set(FIXED_FIXED_SEED OFF CACHE BOOL "Use a non-random fixed seed")
+
+include(CheckCCompilerFlag)
+include(TestBigEndian)
+
+find_package(Threads)
+string(REGEX MATCH "[0-9]+" SYSTEM_VERSION ${CMAKE_SYSTEM_VERSION})
+check_c_compiler_flag(-Wpointer-sign HAVE_POINTER_SIGN)
+check_c_compiler_flag(-Wswitch HAVE_SWITCH)
+check_c_compiler_flag(-fstack-protector HAVE_STACK_PROTECTOR)
+check_c_compiler_flag(-fstack-protector-strong HAVE_STACK_PROTECTOR_STRONG)
+check_c_compiler_flag(-fstack-clash-protection HAVE_STACK_CLASH_PROTECTION)
+check_c_compiler_flag(-fwrapv HAVE_WRAPV)
+check_c_compiler_flag(-fno-delete-null-pointer-checks HAVE_NO_DELETE_NULL_POINTER_CHECKS)
+check_c_compiler_flag(-fPIC HAVE_BIG_PIC)
+check_c_compiler_flag(-fpic HAVE_LITTLE_PIC)
+test_big_endian(IS_BIG_ENDIAN)
+if(FIXED_FIXED_SEED)
+	set(FIXED_SEED "FEEDC0DEBAADF00D")
+else()
+	string(RANDOM LENGTH 16 ALPHABET "0123456789ABCDEF" FIXED_SEED)
+endif()
+
+set(SOURCE
+	bn/bn_asm.c
+	bn/bn_exp.c
+	bn/bn_exp2.c
+	bn/bn_gcd.c
+	bn/bn_mul.c
+	bn/bn_recp.c
+	bn/ec_lib.c
+	bn/ecp_mont.c
+	bn/ecp_smpl.c
+	bn/ec_mult.c
+	cert/certrev.c
+	cert/certschk.c
+	cert/certsign.c
+	cert/certval.c
+	cert/chain.c
+	cert/chk_cert.c
+	cert/chk_chain.c
+	cert/chk_san.c
+	cert/chk_use.c
+	cert/comp_cert.c
+	cert/comp_curs.c
+	cert/comp_del.c
+	cert/comp_get.c
+	cert/comp_gets.c
+	cert/comp_pkiuser.c
+	cert/comp_set.c
+	cert/dn.c
+	cert/dn_rw.c
+	cert/dn_rws.c
+	cert/dn_string.c
+	cert/ext.c
+	cert/ext_add.c
+	cert/ext_check.c
+	cert/ext_copy.c
+	cert/ext_def.c
+	cert/ext_rd.c
+	cert/ext_rdattr.c
+	cert/ext_rdstack.c
+	cert/ext_wr.c
+	cert/imp_check.c
+	cert/imp_exp.c
+	cert/read.c
+	cert/trustmgr.c
+	cert/write.c
+	cert/write_pre.c
+	crypt/aes_modes.c
+	crypt/aes_ni.c
+	crypt/aescrypt.c
+	crypt/aeskey.c
+	crypt/aestab.c
+	crypt/castecb.c
+	crypt/castenc.c
+	crypt/castskey.c
+	crypt/chacha20.c
+	crypt/descbc.c
+	crypt/desecb.c
+	crypt/desecb3.c
+	crypt/desenc.c
+	crypt/desskey.c
+	crypt/gcm.c
+	crypt/gf128mul.c
+	crypt/icbc.c
+	crypt/iecb.c
+	crypt/iskey.c
+	crypt/poly1305.c
+	crypt/rc2cbc.c
+	crypt/rc2ecb.c
+	crypt/rc2skey.c
+	crypt/rc4enc.c
+	crypt/rc4skey.c
+	context/ctx_3des.c
+	context/ctx_aes.c
+	context/ctx_attr.c
+	context/ctx_bn.c
+	context/ctx_bnmath.c
+	context/ctx_bnpkc.c
+	context/ctx_bnprime.c
+	context/ctx_bnrw.c
+	context/ctx_bnsieve.c
+	context/ctx_bntest.c
+	context/ctx_cast.c
+	context/ctx_chacha20.c
+	context/ctx_des.c
+	context/ctx_dh.c
+	context/ctx_dsa.c
+	context/ctx_ecdh.c
+	context/ctx_ecdsa.c
+	context/ctx_elg.c
+	context/ctx_encr.c
+	context/ctx_generic.c
+	context/ctx_hsha.c
+	context/ctx_hsha2.c
+	context/ctx_idea.c
+	context/ctx_md5.c
+	context/ctx_misc.c
+	context/ctx_poly1305.c
+	context/ctx_rc2.c
+	context/ctx_rc4.c
+	context/ctx_rsa.c
+	context/ctx_sha.c
+	context/ctx_sha2.c
+	context/kg_dlp.c
+	context/kg_ecc.c
+	context/kg_prime.c
+	context/kg_rsa.c
+	context/keyload.c
+	context/key_id.c
+	context/key_rdpriv.c
+	context/key_rdpub.c
+	context/key_wrpriv.c
+	context/key_wrpub.c
+	device/dev_attr.c
+	device/dev_storage.c
+	device/hardware.c
+	device/hw_template.c
+	device/hw_templalg.c
+	device/hw_misc.c
+	device/pkcs11.c
+	device/pkcs11_init.c
+	device/pkcs11_pkc.c
+	device/pkcs11_rd.c
+	device/pkcs11_wr.c
+	device/system.c
+	enc_dec/asn1_algoenc.c
+	enc_dec/asn1_algoid.c
+	enc_dec/asn1_check.c
+	enc_dec/asn1_ext.c
+	enc_dec/asn1_oid.c
+	enc_dec/asn1_rd.c
+	enc_dec/asn1_wr.c
+	enc_dec/base32.c
+	enc_dec/base64.c
+	enc_dec/base64_id.c
+	enc_dec/misc_rw.c
+	enc_dec/pgp_rw.c
+	envelope/cms_deenv.c
+	envelope/cms_env.c
+	envelope/cms_envpre.c
+	envelope/decode.c
+	envelope/encode.c
+	envelope/env_attr.c
+	envelope/pgp_deenv.c
+	envelope/pgp_env.c
+	envelope/res_action.c
+	envelope/res_deenv.c
+	envelope/res_env.c
+	crypt/md5dgst.c
+	crypt/sha1dgst.c
+	crypt/sha2.c
+	io/dns.c
+	io/dns_srv.c
+	io/eap.c
+	io/eap_rd.c
+	io/eap_wr.c
+	io/file.c
+	io/http.c
+	io/http_rd.c
+	io/http_parse.c
+	io/http_wr.c
+	io/memory.c
+	io/net.c
+	io/net_proxy.c
+	io/net_trans.c
+	io/net_url.c
+	io/stream.c
+	io/tcp.c
+	io/tcp_conn.c
+	io/tcp_err.c
+	io/tcp_rw.c
+	kernel/attr_acl.c
+	kernel/certmgt_acl.c
+	kernel/init.c
+	kernel/int_msg.c
+	kernel/key_acl.c
+	kernel/mech_acl.c
+	kernel/msg_acl.c
+	kernel/obj_access.c
+	kernel/objects.c
+	kernel/sec_mem.c
+	kernel/selftest.c
+	kernel/semaphore.c
+	kernel/sendmsg.c
+	kernel/storage.c
+	keyset/dbms.c
+	keyset/ca_add.c
+	keyset/ca_clean.c
+	keyset/ca_issue.c
+	keyset/ca_misc.c
+	keyset/ca_rev.c
+	keyset/dbx_misc.c
+	keyset/dbx_rd.c
+	keyset/dbx_wr.c
+	keyset/http_keys.c
+	keyset/key_attr.c
+	keyset/ldap.c
+	keyset/odbc.c
+	keyset/pgp.c
+	keyset/pgp_rd.c
+	keyset/pgp_wr.c
+	keyset/pkcs12.c
+	keyset/pkcs12_rd.c
+	keyset/pkcs12_rdobj.c
+	keyset/pkcs12_wr.c
+	keyset/pkcs15.c
+	keyset/pkcs15_add.c
+	keyset/pkcs15_addpub.c
+	keyset/pkcs15_addpriv.c
+	keyset/pkcs15_attrrd.c
+	keyset/pkcs15_attrwr.c
+	keyset/pkcs15_get.c
+	keyset/pkcs15_getpkc.c
+	keyset/pkcs15_rd.c
+	keyset/pkcs15_set.c
+	keyset/pkcs15_wr.c
+	cryptapi.c
+	cryptcrt.c
+	cryptctx.c
+	cryptdev.c
+	cryptenv.c
+	cryptkey.c
+	cryptlib.c
+	cryptses.c
+	cryptusr.c
+	mechs/keyex.c
+	mechs/keyex_int.c
+	mechs/keyex_rw.c
+	mechs/mech_cwrap.c
+	mechs/mech_derive.c
+	mechs/mech_int.c
+	mechs/mech_pkwrap.c
+	mechs/mech_privk.c
+	mechs/mech_sign.c
+	mechs/obj_query.c
+	mechs/sign.c
+	mechs/sign_cms.c
+	mechs/sign_int.c
+	mechs/sign_pgp.c
+	mechs/sign_rw.c
+	mechs/sign_x509.c
+	misc/int_api.c
+	misc/int_attr.c
+	misc/int_debug.c
+	misc/int_env.c
+	misc/int_err.c
+	misc/int_mem.c
+	misc/int_string.c
+	misc/int_time.c
+	bindings/java_jni.c
+	misc/os_spec.c
+	misc/pgp_misc.c
+	random/random.c
+	random/rand_x917.c
+	random/unix.c
+	misc/user.c
+	misc/user_attr.c
+	misc/user_config.c
+	misc/user_rw.c
+	session/certstore.c
+	session/cmp.c
+	session/cmp_cli.c
+	session/cmp_crypt.c
+	session/cmp_err.c
+	session/cmp_rd.c
+	session/cmp_rdmsg.c
+	session/cmp_svr.c
+	session/cmp_wr.c
+	session/cmp_wrmsg.c
+	session/ocsp.c
+	session/pnppki.c
+	session/rtcs.c
+	session/scep.c
+	session/scep_cli.c
+	session/scep_svr.c
+	session/scvp.c
+	session/scvp_cli.c
+	session/scvp_svr.c
+	session/scorebrd.c
+	session/sess_attr.c
+	session/sess_iattr.c
+	session/sess_rd.c
+	session/sess_wr.c
+	session/sess_websock.c
+	session/session.c
+	session/ssh.c
+	session/ssh2.c
+	session/ssh2_algo.c
+	session/ssh2_authcli.c
+	session/ssh2_authsvr.c
+	session/ssh2_channel.c
+	session/ssh2_cli.c
+	session/ssh2_crypt.c
+	session/ssh2_id.c
+	session/ssh2_msg.c
+	session/ssh2_msgcli.c
+	session/ssh2_msgsvr.c
+	session/ssh2_rd.c
+	session/ssh2_svr.c
+	session/ssh2_wr.c
+	session/tls.c
+	session/tls13_crypt.c
+	session/tls13_hs.c
+	session/tls13_keyex.c
+	session/tls_cert.c
+	session/tls_cli.c
+	session/tls_crypt.c
+	session/tls_ext.c
+	session/tls_hello.c
+	session/tls_hscomplete.c
+	session/tls_keymgt.c
+	session/tls_rd.c
+	session/tls_sign.c
+	session/tls_suites.c
+	session/tls_svr.c
+	session/tls_wr.c
+	session/tsp.c
+	zlib/adler32.c
+	zlib/deflate.c
+	zlib/inffast.c
+	zlib/inflate.c
+	zlib/inftrees.c
+	zlib/trees.c
+	zlib/zutil.c
+)
+
+add_library(cl STATIC ${SOURCE})
+if(HAVE_POINTER_SIGN)
+	target_compile_options(cl PRIVATE -Wno-pointer-sign)
+endif()
+if(HAVE_SWITCH)
+	target_compile_options(cl PRIVATE -Wno-switch)
+endif()
+if(HAVE_STACK_PROTECTOR_STRONG)
+	target_compile_options(cl PRIVATE -fstack-protector-strong)
+else()
+	if(HAVE_STACK_PROTECTOR)
+		target_compile_options(cl PRIVATE -fstack-protector)
+	endif()
+endif()
+if(HAVE_STACK_CLASH_PROTECTION)
+	# Apple compilers will accept the flag, but then warn about it doing nothing
+	if(NOT APPLE)
+		target_compile_options(cl PRIVATE -fstack-clash-protection)
+	endif()
+endif()
+if(HAVE_WRAPV)
+	target_compile_options(cl PRIVATE -fwrapv)
+endif()
+if(HAVE_NO_DELETE_NULL_POINTER_CHECKS)
+	target_compile_options(cl PRIVATE -fno-delete-null-pointer-checks)
+endif()
+if(HAVE_BIG_PIC)
+	target_compile_options(cl PRIVATE -fPIC)
+else()
+	if(HAVE_LITTLE_PIC)
+		target_compile_options(cl PRIVATE -fpic)
+	endif()
+endif()
+if(UNIX)
+	target_compile_definitions(cl PRIVATE __UNIX__)
+endif()
+if(IS_BIG_ENDIAN)
+	target_compile_definitions(cl PRIVATE DATA_BIGENDIAN)
+else()
+	target_compile_definitions(cl PRIVATE DATA_LITTLEENDIAN)
+endif()
+target_compile_definitions(cl PRIVATE _FORTIFY_SOURCE=2)
+target_compile_definitions(cl PRIVATE OSVERSION=${SYSTEM_VERSION})
+target_compile_definitions(cl PRIVATE FIXED_SEED=0x${FIXED_SEED})
+target_include_directories(cl PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(cl PUBLIC $<TARGET_FILE_DIR:cl>)
+target_link_libraries(cl ${CMAKE_THREAD_LIBS_INIT})
+
+# Copy header into build directory...
+add_custom_command(TARGET cl POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/cryptlib.h $<TARGET_FILE_DIR:cl>)
