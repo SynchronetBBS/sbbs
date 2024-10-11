@@ -521,6 +521,10 @@ spec:
       - "src/syncterm/build/syncterm*"
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
+  rules:
+    - if: '"$[[ inputs.cross_platform ]]" == "yes"'
+      when: never
+    - !reference [.rules, rules]
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [syncdraw]":
   extends:
