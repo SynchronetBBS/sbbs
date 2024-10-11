@@ -6,6 +6,11 @@ set(FIXED_FIXED_SEED OFF CACHE BOOL "Use a non-random fixed seed")
 
 include(CheckCCompilerFlag)
 include(TestBigEndian)
+find_program(PATCH_BIN patch REQUIRED)
+find_program(PERL_BIN perl REQUIRED)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+	find_program(DOS2UNIX_BIN dos2unix REQUIRED)
+endif()
 
 find_package(Threads)
 string(REGEX MATCH "[0-9]+" SYSTEM_VERSION ${CMAKE_SYSTEM_VERSION})
@@ -24,6 +29,74 @@ if(FIXED_FIXED_SEED)
 else()
 	string(RANDOM LENGTH 16 ALPHABET "0123456789ABCDEF" FIXED_SEED)
 endif()
+
+set(PATCHES
+	cl-fix-test-select.patch
+	cl-terminal-params.patch
+	cl-ranlib.patch
+	cl-vcxproj.patch
+	cl-endian.patch
+	cl-win32-noasm.patch
+	cl-zz-country.patch
+	cl-algorithms.patch
+	cl-allow-duplicate-ext.patch
+	cl-macosx-minver.patch
+	cl-posix-me-gently.patch
+	cl-PAM-noprompts.patch
+	cl-zlib.patch
+	cl-Dynamic-linked-static-lib.patch
+	cl-SSL-fix.patch
+	cl-bigger-maxattribute.patch
+	cl-mingw-vcver.patch
+	cl-win32-build-fix.patch
+	cl-no-odbc.patch
+	cl-noasm-defines.patch
+	cl-bn-noasm64-fix.patch
+	cl-prefer-ECC.patch
+	cl-prefer-ECC-harder.patch
+	cl-clear-GCM-flag.patch
+	cl-use-ssh-ctr.patch
+	cl-ssh-list-ctr-modes.patch
+	cl-ssl-suite-blocksizes.patch
+	cl-no-tpm.patch
+	cl-no-via-aes.patch
+	cl-fix-ssh-ecc-ephemeral.patch
+	cl-just-use-cc.patch
+	cl-no-safe-stack.patch
+	cl-allow-pkcs12.patch
+	cl-openbsd-threads.patch
+	cl-allow-none-auth.patch
+	cl-poll-not-select.patch
+	cl-good-sockets.patch
+	cl-moar-objects.patch
+	cl-remove-march.patch
+	cl-server-term-support.patch
+	cl-add-pubkey-attribute.patch
+	cl-allow-ssh-auth-retries.patch
+	cl-fix-ssh-channel-close.patch
+	cl-vt-lt-2005-always-defined.patch
+	cl-no-pie.patch
+	cl-win32-lean-and-mean.patch
+	cl-thats-not-asm.patch
+	cl-make-channels-work.patch
+	cl-allow-ssh-2.0-go.patch
+	cl-read-timeout-every-time.patch
+	cl-pass-after-pubkey.patch
+	cl-allow-servercheck-pubkeys.patch
+	cl-double-delete-fine-on-close.patch
+	cl-handle-unsupported-pubkey.patch
+	cl-add-patches-info.patch
+	cl-netbsd-hmac-symbol.patch
+	cl-netbsd-no-getfsstat.patch
+	cl-fix-shell-exec-types.patch
+	cl-ssh-eof-half-close.patch
+	cl-fix-mb-w-conv-warnings.patch
+	cl-fix-ssh-header-read.patch
+	cl-ssh-service-type-for-channel.patch
+	cl-ssh-sbbs-id-string.patch
+	cl-channel-select-both.patch
+	cl-allow-none-auth-svr.patch
+)
 
 set(SOURCE
 	bn/bn_asm.c
@@ -350,7 +423,29 @@ set(SOURCE
 	zlib/zutil.c
 )
 
-add_library(cl STATIC ${SOURCE})
+set(LAST_PATCH "")
+# Linux patch -l won't deal with line ending differences. :(
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+	add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/dos2unix.done
+		COMMAND ${DOS2UNIX_BIN} ${CMAKE_CURRENT_SOURCE_DIR}/* ${CMAKE_CURRENT_SOURCE_DIR}/*/*
+		COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_SOURCE_DIR}/dos2unix.done
+		DEPENDS ${LAST_PATCH})
+	set(LAST_PATCH ${CMAKE_CURRENT_SOURCE_DIR}/dos2unix.done)
+endif()
+foreach(PATCH IN LISTS PATCHES)
+	add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${PATCH}.done
+		COMMAND ${PATCH_BIN} -l -b -p0 -d ${CMAKE_CURRENT_SOURCE_DIR} -i ${CMAKE_CURRENT_SOURCE_DIR}/${PATCH}
+		COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_BINARY_DIR}/${PATCH}.done
+		DEPENDS ${LAST_PATCH})
+	set(LAST_PATCH ${CMAKE_CURRENT_BINARY_DIR}/${PATCH}.done)
+endforeach()
+add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/cryptlib.h.updated
+	COMMAND ${PERL_BIN} -i.bak ${CMAKE_CURRENT_SOURCE_DIR}/hashpatch.pl ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/cryptlib.h
+	COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_SOURCE_DIR}/cryptlib.h.updated
+	DEPENDS ${LAST_PATCH})
+set(LAST_PATCH ${CMAKE_CURRENT_SOURCE_DIR}/cryptlib.h.updated)
+add_library(cl STATIC EXCLUDE_FROM_ALL ${LAST_PATCH} ${SOURCE})
+
 if(HAVE_POINTER_SIGN)
 	target_compile_options(cl PRIVATE -Wno-pointer-sign)
 endif()
@@ -367,7 +462,10 @@ endif()
 if(HAVE_STACK_CLASH_PROTECTION)
 	# Apple compilers will accept the flag, but then warn about it doing nothing
 	if(NOT APPLE)
-		target_compile_options(cl PRIVATE -fstack-clash-protection)
+		# OpenBSD compilers will accept the flag, but then warn about it doing nothing
+		if(NOT CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")
+			target_compile_options(cl PRIVATE -fstack-clash-protection)
+		endif()
 	endif()
 endif()
 if(HAVE_WRAPV)
@@ -399,4 +497,4 @@ target_include_directories(cl PUBLIC $<TARGET_FILE_DIR:cl>)
 target_link_libraries(cl ${CMAKE_THREAD_LIBS_INIT})
 
 # Copy header into build directory...
-add_custom_command(TARGET cl POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/cryptlib.h $<TARGET_FILE_DIR:cl>)
+add_custom_command(TARGET cl POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/cryptlib.h $<TARGET_FILE_DIR:cl>)
