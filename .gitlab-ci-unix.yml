@@ -509,7 +509,6 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
-    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
     - cd src/syncterm
     - mkdir build
     - cd build
@@ -519,8 +518,6 @@ spec:
     name: "syncterm-cmake-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
       - "src/syncterm/build/syncterm*"
-  needs:
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
   rules:
     - if: '"$[[ inputs.cross_platform ]]" == "yes"'
       when: never
