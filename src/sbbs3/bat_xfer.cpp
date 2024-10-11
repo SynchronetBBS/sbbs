@@ -221,7 +221,7 @@ void sbbs_t::batchmenu()
 						if(xfrdir != INVALID_DIR && !(cfg.dir[xfrdir]->misc&DIR_ULTIME))
 							starttime+=elapsed; 
 					}
-					batch_upload();
+					process_batch_upload_queue();
 					delfiles(cfg.temp_dir,ALLFILES);
 					autohangup(); 
 				}
@@ -534,7 +534,7 @@ bool sbbs_t::create_batchup_lst()
 /****************************************************************************/
 /* Processes files that were supposed to be received in the batch queue     */
 /****************************************************************************/
-void sbbs_t::batch_upload()
+void sbbs_t::process_batch_upload_queue()
 {
 	char src[MAX_PATH + 1];
 	char dest[MAX_PATH + 1];

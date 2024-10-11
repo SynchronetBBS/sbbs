@@ -1210,7 +1210,7 @@ public:
 	void	batch_add_list(char *list);
 	bool	create_batchup_lst(void);
 	bool	create_batchdn_lst(bool native);
-	void	batch_upload(void);
+	void	process_batch_upload_queue(void);
 	void	batch_download(int xfrprot);
 	bool	start_batch_download(void);
 
