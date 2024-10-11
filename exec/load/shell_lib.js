@@ -512,7 +512,7 @@ function logoff(fast)
 
 function upload_file()
 {
-	bbs.menu("upload");
+	bbs.menu("upload", P_NOERROR);
 	var i=0xffff;	/* INVALID_DIR */
 	if(usrlibs) {
 		i = file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].number;
