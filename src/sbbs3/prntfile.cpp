@@ -282,8 +282,11 @@ bool sbbs_t::menu(const char *code, int mode, JSObject* obj)
 			}
 			if(menu_exists(code, next, path))
 				break;
-			if(!menu_exists(code, last, path))
+			if(!menu_exists(code, last, path)) {
+				if(!(mode & P_NOERROR))
+					errormsg(WHERE, ERR_CHK, path);
 				return false;
+			}
 		} while(0);
 	}
 
