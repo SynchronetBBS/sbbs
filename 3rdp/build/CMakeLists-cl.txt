@@ -99,6 +99,8 @@ set(PATCHES
 	cl-mingw64-thread-handles.patch
 	cl-mingw64-is-really-new.patch
 	cl-lowercase-versionhelpers.patch
+	cl-fix-cpuid-order.patch
+	cl-fix-cbli-incompatible.patch
 )
 
 set(SOURCE
@@ -354,7 +356,6 @@ set(SOURCE
 	misc/pgp_misc.c
 	random/random.c
 	random/rand_x917.c
-	random/unix.c
 	misc/user.c
 	misc/user_attr.c
 	misc/user_config.c
@@ -426,6 +427,11 @@ set(SOURCE
 	zlib/zutil.c
 )
 
+if(WIN32)
+	list(APPEND SOURCE random/win32.c)
+else()
+	list(APPEND SOURCE random/unix.c)
+endif()
 set(LAST_PATCH "")
 # Linux patch -l won't deal with line ending differences. :(
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
