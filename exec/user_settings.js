@@ -28,6 +28,7 @@ console.clear();
 require("sbbsdefs.js", 'BBS_OPT_AUTO_LOGON');
 require("userdefs.js", 'USER_SPIN');
 require("nodedefs.js", 'NODE_DFLT');
+require("gettext.js", 'gettext');
 var termdesc = load("termdesc.js");
 
 function get_lang_count()
@@ -70,7 +71,7 @@ function display_menu(thisuser)
 	var keys = 'Q\r';
 
 	const curspin = (thisuser.settings & USER_SPIN) ? bbs.text(On)
-		: (thisuser.settings & USER_NOPAUSESPIN) ? bbs.text(Off) : "Pause Prompt " + bbs.text(Only);
+		: (thisuser.settings & USER_NOPAUSESPIN) ? bbs.text(Off) : gettext("Pause Prompt") + " " + bbs.text(Only);
 	for (var i = 0; i < main_cfg.shell.length; i++) {
 		if (main_cfg.shell[i].code === thisuser.command_shell.toUpperCase()) {
 			const cmdshell = main_cfg.shell[i].name;
@@ -78,9 +79,12 @@ function display_menu(thisuser)
 		}
 	}
 	var protname = bbs.text(bbs.text.None);
+	var autohang = '';
 	for (var i = 0; i < file_cfg.protocol.length; i++) {
 		if (String(file_cfg.protocol[i].key) === String(thisuser.download_protocol)) {
 			protname = file_cfg.protocol[i].name;
+			if(thisuser.settings & USER_AUTOHANG)
+				autohang = gettext("(Auto-Hangup)");
 			break;
 		}
 	}
@@ -203,7 +207,7 @@ function display_menu(thisuser)
 		console.add_hotspot('Z');
 		console.putmsg(format(bbs.text(bbs.text.UserDefaultsProtocol)
 			,protname + ' '
-			,thisuser.settings & USER_AUTOHANG ? "(Auto-Hangup)" : ''));
+			,autohang));
 	}
 	if (bbs.text(bbs.text.UserDefaultsPassword).length
 		&& (system.settings & SYS_PWEDIT)
@@ -487,7 +491,7 @@ while(bbs.online && !js.terminated) {
 					,system.min_password_length, system.max_password_length));
 				str = console.getstr(LEN_PASS, K_UPPER | K_LINE | K_TRIM);
 				if (!bbs.good_password(str)) {
-					console.crlf();
+					console.newline();
 					console.pause();
 					break;
 				}
@@ -525,6 +529,9 @@ while(bbs.online && !js.terminated) {
 		case 'Z':
 			var c = 0;
 			var keylist = 'Q';
+			console.newline();
+			console.print(gettext("Choose a default file transfer protocol (or [ENTER] for None):"));
+			console.newline(2);
 			for (var code in file_cfg.protocol) {
 				if (!thisuser.compare_ars(file_cfg.protocol[code].ars)
 					|| file_cfg.protocol[code].dlcmd.length === 0)
@@ -535,7 +542,7 @@ while(bbs.online && !js.terminated) {
 
 				keylist += String(file_cfg.protocol[code].key);
 				if (c%2===1)
-					console.crlf();
+					console.newline();
 				c++;
 			}
 			console.mnemonics(bbs.text(bbs.text.ProtocolOrQuit));
@@ -543,7 +550,7 @@ while(bbs.online && !js.terminated) {
 			if (kp === 'Q' || console.aborted)
 				break;
 			thisuser.download_protocol = kp;
-			if (console.yesno(bbs.text(bbs.text.HangUpAfterXferQ)))
+			if (kp && console.yesno(bbs.text(bbs.text.HangUpAfterXferQ)))
 				thisuser.settings |= USER_AUTOHANG;
 			else
 				thisuser.settings &= ~USER_AUTOHANG;
