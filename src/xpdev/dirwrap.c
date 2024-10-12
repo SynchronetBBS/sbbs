@@ -918,12 +918,13 @@ static uint64_t getdiskspace(const char* path, uint64_t unit, bool freespace)
 	uint64_t		total;
 	ULARGE_INTEGER	avail;
 	ULARGE_INTEGER	size;
-	static HINSTANCE hK32;
-	GetDiskFreeSpaceEx_t GDFSE;
+	static HINSTANCE hK32 = NULL;
+	GetDiskFreeSpaceEx_t GDFSE = NULL;
 
 	if(hK32 == NULL)
 		hK32 = LoadLibraryA("KERNEL32");
-	GDFSE = (GetDiskFreeSpaceEx_t)GetProcAddress(hK32,"GetDiskFreeSpaceExA");
+	if(hK32 != NULL)
+		GDFSE = (GetDiskFreeSpaceEx_t)GetProcAddress(hK32,"GetDiskFreeSpaceExA");
 
 	if (GDFSE!=NULL) {	/* Windows 95-OSR2 or later */
 		if(!GDFSE(

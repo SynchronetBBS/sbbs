@@ -91,11 +91,13 @@ utf8_to_utf16(const uint8_t *str8, int buflen)
 	if (sz == 0)
 		return NULL;
 	ret = (LPWSTR)malloc((sz + 1) * sizeof(*ret));
-	if (sz == MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, (LPCCH)str8, buflen, (LPWSTR)ret, sz)) {
-		ret[sz] = 0;
-		return ret;
+	if (ret != NULL) {
+		if (sz == MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, (LPCCH)str8, buflen, (LPWSTR)ret, sz)) {
+			ret[sz] = 0;
+			return ret;
+		}
+		free(ret);
 	}
-	free(ret);
 	return NULL;
 }
 
@@ -170,6 +172,8 @@ gdi_add_key(uint16_t key)
 		lwch = wch;
 		if (lwch != NULL)
 			WriteFile(lwch, bp, remain, &added, NULL);
+		else
+			added = remain;
 		remain -= added;
 		bp += added;
 	} while (remain > 0);
@@ -276,7 +280,6 @@ gdi_handle_wm_sizing(WPARAM wParam, RECT *r)
 {
 	int ow, oh, nw, nh;
 	double s;
-	RECT tr = *r;
 
 	ow = r->right - r->left;
 	oh = r->bottom - r->top;
@@ -569,7 +572,13 @@ get_monitor_size_pos(int *w, int *h, int *xpos, int *ypos)
 
 	if (!primary && win == NULL)
 		primary = true;
-	mon = MonitorFromWindow(win, primary ? MONITOR_DEFAULTTOPRIMARY : MONITOR_DEFAULTTONEAREST);
+	if (win == NULL) {
+		const POINT origin = {0};
+		mon = MonitorFromPoint(origin, MONITOR_DEFAULTTOPRIMARY);
+	}
+	else {
+		mon = MonitorFromWindow(win, primary ? MONITOR_DEFAULTTOPRIMARY : MONITOR_DEFAULTTONEAREST);
+	}
 	if (mon) {
 		mi.cbSize = sizeof(mi);
 		ret = GetMonitorInfoW(mon, &mi);
@@ -864,7 +873,9 @@ magic_message(MSG msg)
 									if (hm) {
 										MONITORINFO mi = {sizeof(mi)};
 										if (GetMonitorInfo(hm, &mi)) {
-											WINDOWINFO wi;
+											WINDOWINFO wi = {
+												.cbSize = sizeof(WINDOWINFO);
+											};
 											if (GetWindowInfo(win, &wi)) {
 												window_left = wi.rcWindow.left;
 												window_top = wi.rcWindow.top;
@@ -1157,9 +1168,14 @@ gdi_copytext(const char *text, size_t buflen)
 			clipBuf = GlobalAlloc(GMEM_MOVEABLE, (wcslen(utf16) + 1) * sizeof(utf16[0]));
 			if (clipBuf != NULL) {
 				clipStr = GlobalLock(clipBuf);
-				wcscpy(clipStr, utf16);
-				GlobalUnlock(clipBuf);
-				SetClipboardData(CF_UNICODETEXT, clipBuf);
+				if (clipStr != NULL) {
+					wcscpy(clipStr, utf16);
+					GlobalUnlock(clipBuf);
+					SetClipboardData(CF_UNICODETEXT, clipBuf);
+				}
+				else {
+					GlobalUnlock(clipBuf);
+				}
 			}
 			CloseClipboard();
 		}
