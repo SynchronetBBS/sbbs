@@ -70,6 +70,9 @@ set(PATCHES
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-ssh-sbbs-id-string.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-channel-select-both.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-allow-none-auth-svr.patch
+	${CMAKE_CURRENT_SOURCE_DIR}/cl-mingw64-thread-handles.patch
+	${CMAKE_CURRENT_SOURCE_DIR}/cl-mingw64-is-really-new.patch
+	${CMAKE_CURRENT_SOURCE_DIR}/cl-lowercase-versionhelpers.patch
 )
 
 FetchContent_Declare(CryptLib
