@@ -1098,7 +1098,7 @@ void sbbs_t::maindflts(user_t* user)
 					if(!getstr(str,LEN_PASS,K_UPPER|K_LINE|K_TRIM))
 						break;
 					truncsp(str);
-					if(!chkpass(str,user,false)) {
+					if(!chkpass(str,user)) {
 						CRLF;
 						pause();
 						break; 

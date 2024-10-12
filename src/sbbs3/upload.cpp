@@ -206,6 +206,9 @@ bool sbbs_t::okay_to_upload(int dirnum)
 	char str[MAX_PATH + 1];
 	char path[MAX_PATH + 1];
 
+	if(!is_valid_dirnum(dirnum))
+		return false;
+
 	SAFECOPY(path, cfg.dir[dirnum]->path);
 
 	if(!isdir(path)) {
@@ -230,10 +233,11 @@ bool sbbs_t::okay_to_upload(int dirnum)
 /****************************************************************************/
 /* Uploads files                                                            */
 /****************************************************************************/
-bool sbbs_t::upload(int dirnum)
+bool sbbs_t::upload(int dirnum, const char* fname)
 {
-	char	descbeg[25]={""},descend[25]={""}
-				,fname[MAX_FILENAME_LEN + 1],keys[256],ch,*p;
+	char	descbeg[25]={""},descend[25]={""};
+	char	filename[MAX_FILENAME_LEN + 1]{};
+	char	keys[256],ch,*p;
 	char	str[MAX_PATH+1];
 	char	path[MAX_PATH+1];
 	char 	tmp[512];
@@ -269,11 +273,15 @@ bool sbbs_t::upload(int dirnum)
 		return false;
 
 	f.dir=curdirnum=dirnum;
-	bputs(text[Filename]);
-	if(getstr(fname, sizeof(fname) - 1, K_TRIM) < 1 || !checkfname(fname)) {
-		if(fname[0])
-			bprintf(text[BadFilename], fname);
-		return(false); 
+	if(fname == nullptr) {
+		bputs(text[Filename]);
+		if(getstr(filename, sizeof(filename) - 1, K_TRIM) < 1)
+			return false;
+		fname = filename;
+	}
+	if(!checkfname(fname)) {
+		bprintf(text[BadFilename], fname);
+		return false;
 	}
 	if(dirnum==cfg.sysop_dir)
 		SAFEPRINTF(str,text[UploadToSysopDirQ],fname);

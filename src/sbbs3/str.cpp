@@ -833,7 +833,7 @@ bool sbbs_t::chkpass(char *passwd, user_t* user, bool unique)
 		bputs(text[PasswordTooShort]);
 		return(false); 
 	}
-	if(!strcmp(pass,user->pass)) {
+	if(unique && strcmp(pass,user->pass) == 0) {
 		bputs(text[PasswordNotChanged]);
 		return(false); 
 	}

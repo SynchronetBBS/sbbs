@@ -833,7 +833,7 @@ public:
 	void	printnodedat(uint number, node_t* node);
 	bool	inputnstime32(time32_t *dt);
 	bool	inputnstime(time_t *dt);
-	bool	chkpass(char *pass, user_t* user, bool unique);
+	bool	chkpass(char *pass, user_t* user, bool unique = false);
 	char *	cmdstr(const char *instr, const char *fpath, const char *fspec, char *outstr, int mode = EX_UNSPECIFIED);
 	char	cmdstr_output[512]{};
 	char*	ultoac(uint32_t, char*, char sep=',');
@@ -1159,7 +1159,7 @@ public:
 	/* upload.cpp */
 	bool	uploadfile(file_t* f);
 	bool	okay_to_upload(int dirnum);
-	bool	upload(int dirnum);
+	bool	upload(int dirnum, const char* fname = nullptr);
 	char	upload_lastdesc[LEN_FDESC+1]{};
 	bool	bulkupload(int dirnum);
 
@@ -1210,7 +1210,8 @@ public:
 	void	batch_add_list(char *list);
 	bool	create_batchup_lst(void);
 	bool	create_batchdn_lst(bool native);
-	void	process_batch_upload_queue(void);
+	bool	batch_upload(void);
+	bool	process_batch_upload_queue(void);
 	void	batch_download(int xfrprot);
 	bool	start_batch_download(void);
 

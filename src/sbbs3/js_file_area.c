@@ -26,6 +26,7 @@
 
 static const char* file_area_prop_desc[] = {
 	 "Minimum amount of available disk space (in bytes) required for user uploads to be allowed"
+	,"Maximum allowed length of filenames (in characters) uploaded by users"
 	,"File area settings (bit-flags) - see <tt>FM_*</tt> in <tt>sbbsdefs.js</tt> for details"
 	,"Web file virtual path prefix"
 	,NULL
@@ -217,7 +218,16 @@ JSBool js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 		if(name)
 			free(name);
 		val=DOUBLE_TO_JSVAL((jsdouble)p->cfg->min_dspace);
-		JS_DefineProperty(cx, areaobj, "min_diskspace", val, NULL, NULL, JSPROP_ENUMERATE);
+		JS_DefineProperty(cx, areaobj, "min_diskspace", val, NULL, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
+		if(name)
+			return(JS_TRUE);
+	}
+
+	if(name==NULL || strcmp(name, "max_filename_length")==0) {
+		if(name)
+			free(name);
+		val=UINT_TO_JSVAL(p->cfg->filename_maxlen);
+		JS_DefineProperty(cx, areaobj, "max_filename_length", val, NULL, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
 		if(name)
 			return(JS_TRUE);
 	}
@@ -226,7 +236,7 @@ JSBool js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 		if(name)
 			free(name);
 		val=UINT_TO_JSVAL(p->cfg->file_misc);
-		JS_DefineProperty(cx, areaobj, "settings", val, NULL, NULL, JSPROP_ENUMERATE);
+		JS_DefineProperty(cx, areaobj, "settings", val, NULL, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
 		if(name)
 			return(JS_TRUE);
 	}
@@ -241,7 +251,7 @@ JSBool js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 				return JS_FALSE;
 			val=STRING_TO_JSVAL(js_str);
 		}
-		JS_DefineProperty(cx, areaobj, "web_vpath_prefix", val, NULL, NULL, JSPROP_ENUMERATE);
+		JS_DefineProperty(cx, areaobj, "web_vpath_prefix", val, NULL, NULL, JSPROP_ENUMERATE|JSPROP_READONLY);
 		if(name)
 			return(JS_TRUE);
 	}

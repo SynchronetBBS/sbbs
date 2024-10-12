@@ -31,7 +31,7 @@ void sbbs_t::batchmenu()
 	char 	tmp[512];
 	char	keys[32];
 	int		sort = -1;
-	int		i,n,xfrprot,xfrdir;
+	int		n;
     int64_t	totalcdt,totalsize;
 	str_list_t ini;
 	str_list_t filenames;
@@ -184,51 +184,56 @@ void sbbs_t::batchmenu()
 					bputs(text[R_Upload]);
 					break; 
 				}
-				if(batup_total() < 1 && cfg.upload_dir==INVALID_DIR) {
-					bputs(text[UploadQueueIsEmpty]);
-					break; 
-				}
-				if(cfg.upload_dir != INVALID_DIR && !okay_to_upload(cfg.upload_dir))
-					break;
-				xfer_prot_menu(XFER_BATCH_UPLOAD);
-				if(!create_batchup_lst())
-					break;
-				sync();
-				mnemonics(text[ProtocolOrQuit]);
-				SAFEPRINTF(str,"%c",quit_key());
-				for(i=0;i<cfg.total_prots;i++)
-					if(cfg.prot[i]->batulcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
-						sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
-						SAFECAT(str,tmp); 
-					}
-				ch=(char)getkeys(str,0);
-				if(ch==quit_key())
-					break;
-				for(i=0;i<cfg.total_prots;i++)
-					if(cfg.prot[i]->batulcmd[0] && cfg.prot[i]->mnemonic==ch
-						&& chk_ar(cfg.prot[i]->ar,&useron,&client))
-						break;
-				if(i<cfg.total_prots) {
-					SAFEPRINTF(str,"%sBATCHUP.LST",cfg.node_dir);
-					xfrprot=i;
-					xfrdir=cfg.upload_dir;
-					action=NODE_ULNG;
-					sync();
-					if(online==ON_REMOTE) {
-						delfiles(cfg.temp_dir,ALLFILES);
-						time_t elapsed = 0;
-						protocol(cfg.prot[xfrprot],XFER_BATCH_UPLOAD,str,nulstr, /* cd: */true, /* autohang: */true, &elapsed);
-						if(xfrdir != INVALID_DIR && !(cfg.dir[xfrdir]->misc&DIR_ULTIME))
-							starttime+=elapsed; 
-					}
-					process_batch_upload_queue();
-					delfiles(cfg.temp_dir,ALLFILES);
-					autohangup(); 
-				}
+				batch_upload();
 				break; 
 		} 
 	}
 	delfiles(cfg.temp_dir,ALLFILES);
+}
+
+bool sbbs_t::batch_upload()
+{
+	char str[129];
+	char tmp[512];
+	char ch;
+	int i;
+
+	if(batup_total() < 1 && !okay_to_upload(cfg.upload_dir)) {
+		bputs(text[UploadQueueIsEmpty]);
+		return false;
+	}
+	xfer_prot_menu(XFER_BATCH_UPLOAD);
+	if(!create_batchup_lst())
+		return false;
+	sync();
+	mnemonics(text[ProtocolOrQuit]);
+	SAFEPRINTF(str,"%c",quit_key());
+	for(i=0;i<cfg.total_prots;i++)
+		if(cfg.prot[i]->batulcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
+			sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
+			SAFECAT(str,tmp);
+		}
+	ch=(char)getkeys(str,0);
+	if(ch==quit_key() || !online)
+		return false;
+	for(i=0;i<cfg.total_prots;i++)
+		if(cfg.prot[i]->batulcmd[0] && cfg.prot[i]->mnemonic==ch
+			&& chk_ar(cfg.prot[i]->ar,&useron,&client))
+			break;
+	if(i >= cfg.total_prots)
+		return false;
+	SAFEPRINTF(str,"%sBATCHUP.LST",cfg.node_dir);
+	action=NODE_ULNG;
+	sync();
+	delfiles(cfg.temp_dir,ALLFILES);
+	time_t elapsed = 0;
+	protocol(cfg.prot[i],XFER_BATCH_UPLOAD,str,nulstr, /* cd: */true, /* autohang: */true, &elapsed);
+	if(batup_total() < 1 && is_valid_dirnum(cfg.upload_dir) && !(cfg.dir[cfg.upload_dir]->misc&DIR_ULTIME))
+		starttime+=elapsed;
+	bool result = process_batch_upload_queue();
+	delfiles(cfg.temp_dir,ALLFILES);
+	autohangup();
+	return result;
 }
 
 /****************************************************************************/
@@ -534,10 +539,11 @@ bool sbbs_t::create_batchup_lst()
 /****************************************************************************/
 /* Processes files that were supposed to be received in the batch queue     */
 /****************************************************************************/
-void sbbs_t::process_batch_upload_queue()
+bool sbbs_t::process_batch_upload_queue()
 {
 	char src[MAX_PATH + 1];
 	char dest[MAX_PATH + 1];
+	int uploaded = 0;
 
 	str_list_t ini = batch_list_read(&cfg, useron.number, XFER_BATCH_UPLOAD);
 	str_list_t filenames = iniGetSectionList(ini, /* prefix: */NULL);
@@ -561,15 +567,17 @@ void sbbs_t::process_batch_upload_queue()
 		file_t f = {{}};
 		if(!batch_file_get(&cfg, ini, filename, &f))
 			continue;
-		if(uploadfile(&f))
+		if(uploadfile(&f)) {
 			batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
+			++uploaded;
+		}
 		smb_freefilemem(&f);
 	}
 	iniFreeStringList(filenames);
 	iniFreeStringList(ini);
 
 	if(cfg.upload_dir == INVALID_DIR) // no blind upload dir specified
-		return;
+		return uploaded > 0 && batup_total() == 0;
 
 	DIR* dir = opendir(cfg.temp_dir);
 	DIRENT* dirent;
@@ -609,12 +617,15 @@ void sbbs_t::process_batch_upload_queue()
 			file_t f = {{}};
 			f.dir = cfg.upload_dir;
 			smb_hfield_str(&f, SMB_FILENAME, dirent->d_name);
-			uploadfile(&f);
+			if(uploadfile(&f))
+				++uploaded;
 			smb_freefilemem(&f);
 		}
 	}
 	if(dir!=NULL)
 		closedir(dir);
+
+	return uploaded > 0 && batup_total() == 0;
 }
 
 /****************************************************************************/

@@ -341,7 +341,7 @@ bool sbbs_t::newuser()
 			useron.shell=i; 
 	}
 
-	if(rlogin_pass[0] && chkpass(rlogin_pass,&useron,true)) {
+	if(rlogin_pass[0] && chkpass(rlogin_pass,&useron)) {
 		CRLF;
 		SAFECOPY(useron.pass, rlogin_pass);
 		strupr(useron.pass);	/* passwords are case insensitive, but assumed (in some places) to be uppercase in the user database */
@@ -362,7 +362,7 @@ bool sbbs_t::newuser()
 				bprintf(text[NewPasswordPromptFmt], cfg.min_pwlen, LEN_PASS);
 				getstr(str,LEN_PASS,K_UPPER|K_LINE|K_TRIM);
 				truncsp(str);
-				if(chkpass(str,&useron,true)) {
+				if(chkpass(str,&useron)) {
 					SAFECOPY(useron.pass,str);
 					CRLF;
 					bprintf(text[YourPasswordIs],useron.pass);

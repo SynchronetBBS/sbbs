@@ -1163,7 +1163,7 @@ void sbbs_t::ctrl_a(char x)
 		cursor_right((uchar)x-0x7f);
 		return;
 	}
-	if(valid_ctrl_a_attr(x) && toupper(x) != 'X')
+	if(valid_ctrl_a_attr(x))
 		rainbow_index = -1;
 	if(IS_DIGIT(x)) {	/* background color */
 		atr &= (BG_BRIGHT|BLINK|0x0f);

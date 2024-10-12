@@ -286,7 +286,7 @@ bool sbbs_t::logon()
 					bprintf(text[NewPasswordPromptFmt], cfg.min_pwlen, LEN_PASS);
 					getstr(str,LEN_PASS,K_UPPER|K_LINE|K_TRIM);
 					truncsp(str);
-					if(chkpass(str,&useron,true))
+					if(chkpass(str,&useron, /* unique: */true))
 						break;
 					CRLF; 
 				}
