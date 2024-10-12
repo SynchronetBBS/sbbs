@@ -106,7 +106,7 @@ function show_subs(grp)
 		return;
 	if(bbs.menu("subs" + msg_area.grp_list[grp].number, P_NOERROR))
 		return;
-	console.crlf();
+	console.newline();
 	console.print(format(bbs.text(bbs.text.SubLstHdr), msg_area.grp_list[grp].description));
 	for(var i=0; i < usrsubs[grp] && !console.aborted; ++i) {
 		if(i==cursub[grp]) console.print('*');
@@ -184,7 +184,7 @@ function show_dirs(lib)
 		return;
 	if(bbs.menu("dirs" + file_area.lib_list[lib].number, P_NOERROR))
 		return;
-	console.crlf();
+	console.newline();
 	console.print(format(bbs.text(bbs.text.DirLstHdr), file_area.lib_list[lib].description));
 	for(var i=0; i < usrdirs[lib] && !console.aborted; ++i) {
 		if(i==curdir[lib]) console.print('*');
@@ -277,7 +277,7 @@ function enter_file_section()
 		return;
 	if(!(user.settings & USER_ASK_NSCAN))
 		return;
-	console.crlf(2);
+	console.newline(2);
 	if(console.yesno("Search all libraries for new files"))
 		bbs.scan_dirs(FL_ULTIME, /* all */true);
 }

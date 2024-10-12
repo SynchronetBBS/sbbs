@@ -187,7 +187,7 @@ while(bbs.online && !js.terminated) {
 	bbs.node_action = menu.node_action;
 	bbs.nodesync();
 	eval(menu.eval);
-	console.crlf();
+	console.newline();
 	console.aborted = false;
 	console.putmsg(menu.prompt, P_SAVEATR);
 	var cmd = console.getkey(K_UPPER);
@@ -225,7 +225,7 @@ while(bbs.online && !js.terminated) {
 			eval(menu.nav[cmd].eval);
 		continue;
 	}
-	console.crlf();
+	console.newline();
 	console.line_counter = 0;
 	if(cmd == help_key) {
 		if(user.settings & USER_EXPERT)
@@ -237,7 +237,7 @@ while(bbs.online && !js.terminated) {
 		console.print("\r\n\x01c\x01h" + gettext("Unrecognized command."));
 		if(user.settings & USER_EXPERT)
 			console.print(" " + gettext("Hit") + " '\x01i" + help_key + "\x01n\x01c\x01h' " + gettext("for a menu."));
-		console.crlf();
+		console.newline();
 		continue;
 	}
 	if(!bbs.compare_ars(menu_cmd.ars))
