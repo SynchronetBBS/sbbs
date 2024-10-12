@@ -16,6 +16,7 @@ Fix static 20k memory leak
 Fix NetBSD native curses requiring keypress to exit
 Fix CMake-based build system
 Allow drag resize on macOS to support arbitrary sizes
+Fix AltGr handing in GDI mode
 
 Version 1.2rc1
 --------------
