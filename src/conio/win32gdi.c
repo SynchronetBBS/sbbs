@@ -874,7 +874,7 @@ magic_message(MSG msg)
 										MONITORINFO mi = {sizeof(mi)};
 										if (GetMonitorInfo(hm, &mi)) {
 											WINDOWINFO wi = {
-												.cbSize = sizeof(WINDOWINFO);
+												.cbSize = sizeof(WINDOWINFO)
 											};
 											if (GetWindowInfo(win, &wi)) {
 												window_left = wi.rcWindow.left;
