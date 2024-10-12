@@ -1,0 +1,279 @@
+--- misc/os_spec.c.orig	2023-02-26 03:33:34.000000000 -0500
++++ misc/os_spec.c	2024-10-12 02:13:21.004004000 -0400
+@@ -1203,7 +1203,7 @@
+ #if VC_GE_2005( _MSC_VER )
+   #pragma warning( push )
+   #pragma warning( disable : 4255 )	/* Errors in VersionHelpers.h */
+-  #include <VersionHelpers.h>
++  #include <versionhelpers.h>
+   #pragma warning( pop )
+ #endif /* VC++ >= 2005 */
+ 
+@@ -2147,37 +2147,76 @@
+ 	return( sysCaps );
+ 	}
+ 
+-#elif defined( __WIN32__ )  && defined( _M_X64 )
++#elif ( defined( __clang__ ) || \
++		( defined( __GNUC__ ) && \
++		  ( ( __GNUC__ > 4 ) || \
++			( __GNUC__ == 4 && __GNUC_MINOR__ >= 4 ) ) ) ) && \
++	  ( defined( __i386__ ) || defined( __x86_64__ ) )
+ 
+-/* 64-bit VC++ doesn't allow inline asm, but does provide the __cpuid() 
+-   builtin to perform the operation above.  We don't guard this with the 
+-   NO_ASM check because it's not (technically) done with inline asm, 
+-   although it's a bit unclear whether an intrinsic qualifies as asm or
+-   C */
++/* clang and newer versions of gcc have cpuid as an intrinsic */
+ 
+-#pragma intrinsic( __cpuid )
++#if HWINTRINS_FLAG_RDTSC != 0x01
++  #error Need to sync HWINTRINS_FLAG_RDTSC with equivalent asm definition
++#endif /* HWINTRINS_FLAG_RDTSC */
+ 
++#include <cpuid.h>
++
+ typedef struct { unsigned int eax, ebx, ecx, edx; } CPUID_INFO;
+ 
+-STDC_NONNULL_ARG( ( 1 ) ) \
+-static void cpuID( OUT_PTR CPUID_INFO *result, const int type )
++CHECK_RETVAL_BOOL STDC_NONNULL_ARG( ( 1 ) ) \
++static BOOLEAN cpuID_Checked( OUT_PTR CPUID_INFO *result, const int type )
+ 	{
+-	int intResult[ 4 ];	/* That's what the function prototype says */
++	int a, b, c, d;		/* That's what the function prototype says */
++	int retVal;
+ 
++	assert( isWritePtr( result, sizeof( CPUID_INFO ) ) );
++
+ 	/* Clear return value */
+ 	memset( result, 0, sizeof( CPUID_INFO ) );
+ 
+-	/* Get the CPUID data and copy it back to the caller.  We clear it 
+-	   before calling the __cpuid intrinsic because some analysers don't 
+-	   know about it and will warn about use of uninitialised memory */
+-	memset( intResult, 0, sizeof( int ) * 4 );
+-	__cpuid( intResult, type );
+-	result->eax = intResult[ 0 ];
+-	result->ebx = intResult[ 1 ];
+-	result->ecx = intResult[ 2 ];
+-	result->edx = intResult[ 3 ];
++	/* Get the CPUID data and copy it back to the caller */
++	retVal = __get_cpuid( type, &a, &b, &c, &d );
++	if( retVal <= 0 )
++		return( FALSE );
++	result->eax = a;
++	result->ebx = b;
++	result->ecx = c;
++	result->edx = d;
++
++	return( TRUE );
+ 	}
+ 
++STDC_NONNULL_ARG( ( 1 ) ) \
++static void cpuID( OUT_PTR CPUID_INFO *result, const int type )
++	{
++	int a, b, c, d;		/* That's what the function prototype says */
++
++	/* The GNU __get_cpuid() is broken, see
++	   https://github.com/gcc-mirror/gcc/blob/master/gcc/config/i386/cpuid.h,
++	   it's implemented as:
++
++		__get_cpuid (unsigned int __leaf,
++					 unsigned int *__eax, unsigned int *__ebx,
++					 unsigned int *__ecx, unsigned int *__edx)
++			{
++			unsigned int __ext = __leaf & 0x80000000;
++			unsigned int __maxlevel = __get_cpuid_max (__ext, 0);
++
++			if (__maxlevel == 0 || __maxlevel < __leaf)
++				return 0;
++
++	   Since the high bit is masked, it can never work for any query on 
++	   extended attributes like VIA's 0xC000000x ones since __maxlevel will 
++	   always be less than the 0xC000000x that we want to query on.  To deal 
++	   with this we call the lower-level __cpuid() directly, bypassing the 
++	   broken wrapper */
++	__cpuid( type, a, b, c, d );
++	result->eax = a;
++	result->ebx = b;
++	result->ecx = c;
++	result->edx = d;
++	}
++
+ CHECK_RETVAL_ENUM( HWINTRINS_FLAG ) \
+ static int getHWIntrins( void )
+ 	{
+@@ -2185,19 +2224,16 @@
+ 	char vendorID[ 12 + 8 ];
+ 	int *vendorIDptr = ( int * ) vendorID;
+ 	unsigned long processorID, featureFlags, featureFlags2;
+-	int sysCaps = HWINTRINS_FLAG_RDTSC;	/* x86-64 always has RDTSC */
++	int sysCaps = 0;
+ 
+-	/* Get any CPU info that we need.  There is an 
+-	   IsProcessorFeaturePresent() function, but all that this provides is 
+-	   an indication of the availability of rdtsc (alongside some stuff that 
+-	   we don't care about, like MMX and 3DNow).  Since we still need to 
+-	   check for the presence of other features, we do the whole thing 
+-	   ourselves */
+-	cpuID( &cpuidInfo, 0 );
++	/* Get any CPU info that we need */
++	if( !cpuID_Checked( &cpuidInfo, 0 ) )	/* CPUID function 0: Get vendor ID */
++		return( HWINTRINS_FLAG_NONE );
+ 	vendorIDptr[ 0 ] = cpuidInfo.ebx;
+ 	vendorIDptr[ 1 ] = cpuidInfo.edx;
+ 	vendorIDptr[ 2 ] = cpuidInfo.ecx;
+-	cpuID( &cpuidInfo, 1 );
++	if( !cpuID_Checked( &cpuidInfo, 1 ) )	/* CPUID function 1: Get processor info */
++		return( HWINTRINS_FLAG_NONE );
+ 	processorID = cpuidInfo.eax;
+ 	featureFlags = cpuidInfo.ecx;
+ 	featureFlags2 = cpuidInfo.ebx;
+@@ -2206,10 +2242,7 @@
+ 	if( !memcmp( vendorID, "CentaurHauls", 12 ) )
+ 		{
+ 		/* Get the Centaur extended CPUID info and check whether the feature-
+-		   flags read capability is present.  VIA only announced their 64-
+-		   bit CPUs in mid-2010 and availability is limited so it's 
+-		   uncertain whether this code will ever be exercised, but we provide 
+-		   it anyway for compatibility with the 32-bit equivalent */
++		   flags read capability is present */
+ 		cpuID( &cpuidInfo, 0xC0000000 );
+ 		if( cpuidInfo.eax >= 0xC0000001 )
+ 			{
+@@ -2247,76 +2280,37 @@
+ 	return( sysCaps );
+ 	}
+ 
+-#elif ( defined( __clang__ ) || \
+-		( defined( __GNUC__ ) && \
+-		  ( ( __GNUC__ > 4 ) || \
+-			( __GNUC__ == 4 && __GNUC_MINOR__ >= 4 ) ) ) ) && \
+-	  ( defined( __i386__ ) || defined( __x86_64__ ) )
++#elif defined( __WIN32__ )  && defined( _M_X64 )
+ 
+-/* clang and newer versions of gcc have cpuid as an intrinsic */
++/* 64-bit VC++ doesn't allow inline asm, but does provide the __cpuid() 
++   builtin to perform the operation above.  We don't guard this with the 
++   NO_ASM check because it's not (technically) done with inline asm, 
++   although it's a bit unclear whether an intrinsic qualifies as asm or
++   C */
+ 
+-#if HWINTRINS_FLAG_RDTSC != 0x01
+-  #error Need to sync HWINTRINS_FLAG_RDTSC with equivalent asm definition
+-#endif /* HWINTRINS_FLAG_RDTSC */
++#pragma intrinsic( __cpuid )
+ 
+-#include <cpuid.h>
+-
+ typedef struct { unsigned int eax, ebx, ecx, edx; } CPUID_INFO;
+ 
+-CHECK_RETVAL_BOOL STDC_NONNULL_ARG( ( 1 ) ) \
+-static BOOLEAN cpuID_Checked( OUT_PTR CPUID_INFO *result, const int type )
++STDC_NONNULL_ARG( ( 1 ) ) \
++static void cpuID( OUT_PTR CPUID_INFO *result, const int type )
+ 	{
+-	int a, b, c, d;		/* That's what the function prototype says */
+-	int retVal;
++	int intResult[ 4 ];	/* That's what the function prototype says */
+ 
+-	assert( isWritePtr( result, sizeof( CPUID_INFO ) ) );
+-
+ 	/* Clear return value */
+ 	memset( result, 0, sizeof( CPUID_INFO ) );
+ 
+-	/* Get the CPUID data and copy it back to the caller */
+-	retVal = __get_cpuid( type, &a, &b, &c, &d );
+-	if( retVal <= 0 )
+-		return( FALSE );
+-	result->eax = a;
+-	result->ebx = b;
+-	result->ecx = c;
+-	result->edx = d;
+-
+-	return( TRUE );
++	/* Get the CPUID data and copy it back to the caller.  We clear it 
++	   before calling the __cpuid intrinsic because some analysers don't 
++	   know about it and will warn about use of uninitialised memory */
++	memset( intResult, 0, sizeof( int ) * 4 );
++	__cpuid( intResult, type );
++	result->eax = intResult[ 0 ];
++	result->ebx = intResult[ 1 ];
++	result->ecx = intResult[ 2 ];
++	result->edx = intResult[ 3 ];
+ 	}
+ 
+-STDC_NONNULL_ARG( ( 1 ) ) \
+-static void cpuID( OUT_PTR CPUID_INFO *result, const int type )
+-	{
+-	int a, b, c, d;		/* That's what the function prototype says */
+-
+-	/* The GNU __get_cpuid() is broken, see
+-	   https://github.com/gcc-mirror/gcc/blob/master/gcc/config/i386/cpuid.h,
+-	   it's implemented as:
+-
+-		__get_cpuid (unsigned int __leaf,
+-					 unsigned int *__eax, unsigned int *__ebx,
+-					 unsigned int *__ecx, unsigned int *__edx)
+-			{
+-			unsigned int __ext = __leaf & 0x80000000;
+-			unsigned int __maxlevel = __get_cpuid_max (__ext, 0);
+-
+-			if (__maxlevel == 0 || __maxlevel < __leaf)
+-				return 0;
+-
+-	   Since the high bit is masked, it can never work for any query on 
+-	   extended attributes like VIA's 0xC000000x ones since __maxlevel will 
+-	   always be less than the 0xC000000x that we want to query on.  To deal 
+-	   with this we call the lower-level __cpuid() directly, bypassing the 
+-	   broken wrapper */
+-	__cpuid( type, a, b, c, d );
+-	result->eax = a;
+-	result->ebx = b;
+-	result->ecx = c;
+-	result->edx = d;
+-	}
+-
+ CHECK_RETVAL_ENUM( HWINTRINS_FLAG ) \
+ static int getHWIntrins( void )
+ 	{
+@@ -2324,16 +2318,19 @@
+ 	char vendorID[ 12 + 8 ];
+ 	int *vendorIDptr = ( int * ) vendorID;
+ 	unsigned long processorID, featureFlags, featureFlags2;
+-	int sysCaps = 0;
++	int sysCaps = HWINTRINS_FLAG_RDTSC;	/* x86-64 always has RDTSC */
+ 
+-	/* Get any CPU info that we need */
+-	if( !cpuID_Checked( &cpuidInfo, 0 ) )	/* CPUID function 0: Get vendor ID */
+-		return( HWINTRINS_FLAG_NONE );
++	/* Get any CPU info that we need.  There is an 
++	   IsProcessorFeaturePresent() function, but all that this provides is 
++	   an indication of the availability of rdtsc (alongside some stuff that 
++	   we don't care about, like MMX and 3DNow).  Since we still need to 
++	   check for the presence of other features, we do the whole thing 
++	   ourselves */
++	cpuID( &cpuidInfo, 0 );
+ 	vendorIDptr[ 0 ] = cpuidInfo.ebx;
+ 	vendorIDptr[ 1 ] = cpuidInfo.edx;
+ 	vendorIDptr[ 2 ] = cpuidInfo.ecx;
+-	if( !cpuID_Checked( &cpuidInfo, 1 ) )	/* CPUID function 1: Get processor info */
+-		return( HWINTRINS_FLAG_NONE );
++	cpuID( &cpuidInfo, 1 );
+ 	processorID = cpuidInfo.eax;
+ 	featureFlags = cpuidInfo.ecx;
+ 	featureFlags2 = cpuidInfo.ebx;
+@@ -2342,7 +2339,10 @@
+ 	if( !memcmp( vendorID, "CentaurHauls", 12 ) )
+ 		{
+ 		/* Get the Centaur extended CPUID info and check whether the feature-
+-		   flags read capability is present */
++		   flags read capability is present.  VIA only announced their 64-
++		   bit CPUs in mid-2010 and availability is limited so it's 
++		   uncertain whether this code will ever be exercised, but we provide 
++		   it anyway for compatibility with the 32-bit equivalent */
+ 		cpuID( &cpuidInfo, 0xC0000000 );
+ 		if( cpuidInfo.eax >= 0xC0000001 )
+ 			{

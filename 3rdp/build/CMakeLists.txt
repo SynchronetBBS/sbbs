@@ -73,6 +73,8 @@ set(PATCHES
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-mingw64-thread-handles.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-mingw64-is-really-new.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-lowercase-versionhelpers.patch
+	${CMAKE_CURRENT_SOURCE_DIR}/cl-fix-cpuid-order.patch
+	${CMAKE_CURRENT_SOURCE_DIR}/cl-fix-cbli-incompatible.patch
 )
 
 FetchContent_Declare(CryptLib

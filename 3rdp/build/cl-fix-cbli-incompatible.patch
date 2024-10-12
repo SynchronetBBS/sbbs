@@ -1,0 +1,16 @@
+--- misc/os_spec.c.orig	2024-10-12 02:22:09.340489000 -0400
++++ misc/os_spec.c	2024-10-12 02:23:00.791733000 -0400
+@@ -3357,11 +3357,11 @@
+ 
+ 	/* Walk down the block list checking whether the page(s) contain another 
+ 	   locked block */
+-	status = getBlockListInfo( NULL, &currentBlockPtr, &currentBlockSize );
++	status = getBlockListInfo( NULL, (const void **)&currentBlockPtr, &currentBlockSize );
+ 	REQUIRES_V( cryptStatusOK( status ) );
+ 	LOOP_LARGE_CHECKINC( cryptStatusOK( status ),
+ 						 status = getBlockListInfo( currentBlockPtr, 
+-													&currentBlockPtr, 
++													(const void **)&currentBlockPtr, 
+ 													&currentBlockSize ) )
+ 		{
+ 		const PTR_TYPE currentFirstPageAddress = \
