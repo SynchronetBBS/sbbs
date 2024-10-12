@@ -524,7 +524,15 @@ function upload_file()
 		if(file_area.upload_dir != undefined)
 			i = file_area.upload_dir.number;
 	}
-	bbs.upload_file(i);
+	console.newline();
+	console.print(bbs.text(bbs.text.Filename));
+	var fname = console.getstr(file_area.max_filename_length, K_TRIM);
+	if(fname)
+		bbs.upload_file(i, fname);
+	else if(!console.aborted
+		&& (file_area.upload_dir !== undefined || bbs.batch_upload_total)
+		&& confirm("\r\nStart batch upload"))
+		bbs.batch_upload();
 }
 
 function upload_user_file()
