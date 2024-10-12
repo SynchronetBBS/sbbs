@@ -60,6 +60,10 @@ if(NOT WITHOUT_CRYPTLIB)
 	list(APPEND SOURCE ssh.c telnets.c)
 endif()
 
+if(WIN32)
+	list(APPEND SOURCE syncterm.rc)
+endif()
+
 add_executable(syncterm MACOSX_BUNDLE ${SOURCE})
 set_target_properties(syncterm PROPERTIES
 	MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist
