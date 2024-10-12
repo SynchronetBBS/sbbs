@@ -436,16 +436,31 @@ gdi_handle_wm_paint(HWND hwnd)
 	return 0;
 }
 
+static void
+gdi_process_utf32(uint32_t cp, LPARAM lParam)
+{
+	uint16_t repeat;
+	uint8_t ch;
+	uint16_t i;
+
+	repeat = lParam & 0xffff;
+	// Translate from unicode to codepage...
+	ch = cpchar_from_unicode_cpoint(getcodepage(), cp, 0);
+	// Control characters get a pass (TODO: Test in ATASCII)
+	if (ch == 0 && cp < 32)
+		ch = cp;
+	if (ch) {
+		for (i = 0; i < repeat; i++)
+			gdi_add_key(ch);
+	}
+}
+
 static LRESULT
 gdi_handle_wm_char(WPARAM wParam, LPARAM lParam)
 {
 	static WPARAM highpair;
 	uint32_t cp;
-	uint8_t ch;
-	uint16_t repeat;
-	uint16_t i;
 
-	repeat = lParam & 0xffff;
 	if (IS_HIGH_SURROGATE(wParam)) {
 		highpair = wParam;
 		return 0;
@@ -456,16 +471,17 @@ gdi_handle_wm_char(WPARAM wParam, LPARAM lParam)
 	else {
 		cp = wParam;
 	}
-	// Translate from unicode to codepage...
-	ch = cpchar_from_unicode_cpoint(getcodepage(), cp, 0);
-	// Control characters get a pass (TODO: Test in ATASCII)
-	if (ch == 0 && cp < 32)
-		ch = cp;
-	if (ch) {
-		for (i = 0; i < repeat; i++)
-			gdi_add_key(ch);
-	}
+	gdi_process_utf32(cp, lParam);
 	return 0;
+}
+
+static LRESULT
+gdi_handle_wm_unichar(WPARAM wParam, LPARAM lParam)
+{
+	gdi_process_utf32(wParam, lParam);
+	if (wParam == UNICODE_NOCHAR)
+		return TRUE;
+	return FALSE;
 }
 
 struct gdi_mouse_pos {
@@ -683,6 +699,8 @@ gdi_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			return gdi_handle_wm_paint(hwnd);
 		case WM_CHAR:
 			return gdi_handle_wm_char(wParam, lParam);
+		case WM_UNICHAR:
+			return gdi_handle_wm_unichar(wParam, lParam);
 		case WM_MOVE:
 			pthread_mutex_lock(&winpos_lock);
 			winxpos = (WORD)(lParam & 0xffff);
@@ -828,6 +846,10 @@ magic_message(MSG msg)
 			for (i = 0; keyval[i].VirtualKeyCode != 0; i++) {
 				if (keyval[i].VirtualKeyCode == msg.wParam) {
 					if (msg.lParam & (1 << 29)) {
+						if (mods & (WMOD_CTRL | WMOD_LCTRL | WMOD_RCTRL)) {
+							// On Windows, AltGr maps to Alt + Ctrl, so don't handle it here.
+							return false;
+						}
 						if (keyval[i].ALT > 255) {
 							if (keyval[i].VirtualKeyCode == VK_LEFT) {
 								gdi_snap(false);
