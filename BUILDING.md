@@ -1,7 +1,7 @@
 # Building Synchronet
 
 ## Source code
-The vast majority of Synchronet C/C++ source files (including header files) are stored in in the `src` and `3rdp` directories of the repository. 
+The vast majority of Synchronet C/C++ source files (including header files) are stored in in the `src` and `3rdp` directories of the repository.
 
 ### Generated source files:
 - src/sbbs3/git_*.h
@@ -35,7 +35,7 @@ Ignore the CMake and CodeBlocks related build files: they're not currently used 
 <details><summary>UNIX</summary>
 
 ### Prerequisites
-Building for UNIX-like operating systems (including macOS), requires: 
+Building for UNIX-like operating systems (including macOS), requires:
 - GNU make
 - GNU C/C++ Compiler or Clang C/C++ Compiler
 - libarchive library and headers
@@ -56,9 +56,9 @@ Optionally:
 - GTK+ User Interface Builder (GLADE) library and headers
 
 ### Instructions
-The `install/GNUmakefile` is normally used to both build and install Synchronet on UNIX-like systems in a single operation.
+The `install/install-sbbs.mk` file is normally used to both build and install Synchronet on UNIX-like systems in a single operation.
 
-`$ make -f path/to/install/GNUmakefile install SYMLINK=1`
+`$ make -f path/to/install/install-sbbs.mk SYMLINK=1`
 
 If you to build without installing or want to rebuild (e.g. after pulling upstream changes), then running `make` in the `src/sbbs3` directory is usually sufficient:
 
