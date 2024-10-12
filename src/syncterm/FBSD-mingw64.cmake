@@ -1,5 +1,6 @@
 # the name of the target operating system
 set(CMAKE_SYSTEM_NAME Windows)
+set(CMAKE_SYSTEM_VERSION 10)
 
 # Add search path
 list(APPEND CMAKE_PROGRAM_PATH /home/admin/mingw-w32/bin)
