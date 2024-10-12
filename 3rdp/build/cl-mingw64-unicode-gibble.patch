@@ -1,0 +1,13 @@
+--- random/win32.c.orig	2024-10-12 02:34:13.133481000 -0400
++++ random/win32.c	2024-10-12 02:41:42.385903000 -0400
+@@ -2105,8 +2105,8 @@
+ 	#pragma warning( push )
+ 	#pragma warning( disable:28159 )	/* Incorrect annotation in lmstats.h */
+ #endif /* VC++ >= 2010 */
+-	if( NetStatisticsGet( NULL, isWorkstation ? SERVICE_WORKSTATION : \
+-												SERVICE_SERVER, 0, 0, 
++	if( NetStatisticsGet( NULL, isWorkstation ? L"LanmanWorkstation": \
++												L"LanmanServer", 0, 0, 
+ 						  &lpBuffer ) == NERR_Success )
+ 		{
+ 		if( NetApiBufferSize( lpBuffer, &dwSize ) == NERR_Success )
