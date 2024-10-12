@@ -10,7 +10,6 @@ Fix WM_SETCURSOR handling to allow grabbing resize points in GDI
 Added "Build Options" menu item
 Fix focus-follows-mouse behaviour in herbstluftwm
 Fix SAUCE binary capture date
-Add Build Options menu item
 Fix saving non-integer scaling in GDI mode
 Fix static 20k memory leak
 Fix NetBSD native curses requiring keypress to exit
