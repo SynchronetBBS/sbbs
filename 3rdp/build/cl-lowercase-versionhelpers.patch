@@ -1,0 +1,22 @@
+--- io/file.c.orig	2024-10-12 01:53:03.081690000 -0400
++++ io/file.c	2024-10-12 01:53:29.042894000 -0400
+@@ -5996,7 +5996,7 @@
+ #if VC_GE_2005( _MSC_VER )
+   #pragma warning( push )
+   #pragma warning( disable : 4255 )	/* Errors in VersionHelpers.h */
+-  #include <VersionHelpers.h>
++  #include <versionhelpers.h>
+   #pragma warning( pop )
+ #endif /* VC++ >= 2005 */
+ #ifdef __WIN64__
+--- misc/os_spec.c.orig	2024-10-12 01:53:13.741978000 -0400
++++ misc/os_spec.c	2024-10-12 01:53:36.082901000 -0400
+@@ -1203,7 +1203,7 @@
+ #if VC_GE_2005( _MSC_VER )
+   #pragma warning( push )
+   #pragma warning( disable : 4255 )	/* Errors in VersionHelpers.h */
+-  #include <VersionHelpers.h>
++  #include <versionhelpers.h>
+   #pragma warning( pop )
+ #endif /* VC++ >= 2005 */
+ 

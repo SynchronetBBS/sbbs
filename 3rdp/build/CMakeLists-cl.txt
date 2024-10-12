@@ -96,6 +96,9 @@ set(PATCHES
 	cl-ssh-sbbs-id-string.patch
 	cl-channel-select-both.patch
 	cl-allow-none-auth-svr.patch
+	cl-mingw64-thread-handles.patch
+	cl-mingw64-is-really-new.patch
+	cl-lowercase-versionhelpers.patch
 )
 
 set(SOURCE
