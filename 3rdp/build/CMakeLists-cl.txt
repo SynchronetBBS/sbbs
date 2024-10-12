@@ -101,6 +101,7 @@ set(PATCHES
 	cl-lowercase-versionhelpers.patch
 	cl-fix-cpuid-order.patch
 	cl-fix-cbli-incompatible.patch
+	cl-mingw64-unicode-gibble.patch
 )
 
 set(SOURCE

@@ -75,6 +75,7 @@ set(PATCHES
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-lowercase-versionhelpers.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-fix-cpuid-order.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-fix-cbli-incompatible.patch
+	${CMAKE_CURRENT_SOURCE_DIR}/cl-mingw64-unicode-gibble.patch
 )
 
 FetchContent_Declare(CryptLib
