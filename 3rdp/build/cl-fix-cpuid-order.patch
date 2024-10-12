@@ -1,14 +1,5 @@
 --- misc/os_spec.c.orig	2023-02-26 03:33:34.000000000 -0500
 +++ misc/os_spec.c	2024-10-12 02:13:21.004004000 -0400
-@@ -1203,7 +1203,7 @@
- #if VC_GE_2005( _MSC_VER )
-   #pragma warning( push )
-   #pragma warning( disable : 4255 )	/* Errors in VersionHelpers.h */
--  #include <VersionHelpers.h>
-+  #include <versionhelpers.h>
-   #pragma warning( pop )
- #endif /* VC++ >= 2005 */
- 
 @@ -2147,37 +2147,76 @@
  	return( sysCaps );
  	}
