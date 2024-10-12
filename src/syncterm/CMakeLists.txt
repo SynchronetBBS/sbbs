@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
+set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the build type")
 project (SyncTERM C)
 
 set(WITHOUT_CRYPTLIB OFF CACHE BOOL "Disable cryptlib (ssh and telnet over TLS")
