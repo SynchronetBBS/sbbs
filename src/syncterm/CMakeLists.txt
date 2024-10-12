@@ -65,7 +65,13 @@ if(WIN32)
 	list(APPEND SOURCE syncterm.rc)
 endif()
 
-add_executable(syncterm MACOSX_BUNDLE ${SOURCE})
+if(WITHOUT_GDI AND WITHOUT_SDL)
+	set(WIN_MAIN_TYPE "")
+else()
+	set(WIN_MAIN_TYPE WIN32)
+endif()
+
+add_executable(syncterm MACOSX_BUNDLE ${WIN_MAIN_TYPE} ${SOURCE})
 set_target_properties(syncterm PROPERTIES
 	MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist
 )
