@@ -1036,8 +1036,10 @@ void sdl_video_event_thread(void *data)
 				else {
 					if (sdl_init_good)
 						sdl_add_key(CIO_KEY_QUIT, &cvstat);
-					else
+					else {
+						sdl.QuitSubSystem(SDL_INIT_VIDEO);
 						return;
+					}
 				}
 				break;
 			case SDL_WINDOWEVENT:
@@ -1076,6 +1078,7 @@ void sdl_video_event_thread(void *data)
 						sdl_ufunc_retval=0;
 						if (ciolib_reaper)
 							exit(0);
+						sdl.QuitSubSystem(SDL_INIT_VIDEO);
 						sem_post(&sdl_ufunc_ret);
 						return;
 					case SDL_USEREVENT_FLUSH:
@@ -1285,6 +1288,7 @@ void sdl_video_event_thread(void *data)
 				break;
 		}
 	}
+	sdl.QuitSubSystem(SDL_INIT_VIDEO);
 	return;
 }
 
