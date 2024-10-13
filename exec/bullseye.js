@@ -6,7 +6,7 @@
 
 // @format.tab-size 4, @format.use-tabs true
 
-load("sbbsdefs.js");
+require("sbbsdefs.js", "P_NOERROR");
 
 "use strict";
 
@@ -47,7 +47,7 @@ if(bull.length < 1) {
 // Display menu, list bulletins, display prompt, etc.
 
 while(bbs.online && !js.terminated) {
-	if(bbs.menu("../bullseye")) {
+	if(bbs.menu("../bullseye", P_NOERROR)) {
 		console.mnemonics("\r\nEnter number of bulletin or [~Quit]: ");
 		b = console.getnum(bull.length);
 	} else {
