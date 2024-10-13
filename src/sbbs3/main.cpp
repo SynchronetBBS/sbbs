@@ -4253,8 +4253,6 @@ void sbbs_t::reset_logon_vars(void)
     cid[0]=0;
     wordwrap[0]=0;
     question[0]=0;
-    menu_dir[0]=0;
-    menu_file[0]=0;
 	row = 0;
 	rows = startup->default_term_height;
 	cols = startup->default_term_width;
@@ -4456,6 +4454,8 @@ void node_thread(void* arg)
 			if(curshell != sbbs->useron.shell) {
 				if(sbbs->useron.shell>=sbbs->cfg.total_shells)
 					sbbs->useron.shell=0;
+				sbbs->menu_dir[0]=0;
+				sbbs->menu_file[0]=0;
 
 				if(sbbs->cfg.mods_dir[0]) {
 					SAFEPRINTF2(str,"%s%s.js",sbbs->cfg.mods_dir
@@ -4517,8 +4517,6 @@ void node_thread(void* arg)
 
 				curshell=sbbs->useron.shell;
 				sbbs->main_csi.ip=sbbs->main_csi.cs;
-				sbbs->menu_dir[0]=0;
-				sbbs->menu_file[0]=0;
 			}
 			if(sbbs->exec(&sbbs->main_csi))
 				break;
