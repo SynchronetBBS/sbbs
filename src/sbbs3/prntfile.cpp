@@ -317,8 +317,12 @@ bool sbbs_t::menu_exists(const char *code, const char* ext, char* path)
 	if(isfullpath(code))
 		SAFECOPY(prefix, code);
 	else {
-		backslash(menu_dir);
-		SAFEPRINTF3(prefix, "%smenu/%s%s", cfg.text_dir, menu_dir, code);
+		char subdir[MAX_PATH + 1];
+		SAFECOPY(subdir, menu_dir);
+		backslash(subdir);
+		if(*code == '.')
+			*subdir = '\0';
+		SAFEPRINTF3(prefix, "%smenu/%s%s", cfg.text_dir, subdir, code);
 		FULLPATH(path, prefix, MAX_PATH);
 		SAFECOPY(prefix, path);
 	}
