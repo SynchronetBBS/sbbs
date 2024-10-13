@@ -103,6 +103,8 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 	target_link_libraries(syncterm ${FOUNDATION_LIBRARY})
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	target_link_libraries(syncterm util)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Haiku")
+	target_link_libraries(syncterm network bsd)
 endif()
 
 install(TARGETS syncterm DESTINATION bin)
