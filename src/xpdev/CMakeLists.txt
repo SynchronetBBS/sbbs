@@ -166,7 +166,7 @@ target_link_libraries(xpdev ${CMAKE_THREAD_LIBS_INIT})
 target_include_directories(xpdev PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 if(NOT WIN32)
-	target_compile_definitions(xpdev PUBLIC USE_XP_SEMAPHORES)
+	target_compile_definitions(xpdev PUBLIC USE_XP_SEMAPHORES PREFER_POLL)
 endif()
 target_compile_definitions(xpdev PUBLIC LINK_LIST_THREADSAFE)
 
