@@ -58,8 +58,8 @@ perl -pi -e "s/(CPACK_PACKAGE_VERSION_PATCH )[^)]+/\$1.'${PATCHSTR}'/ge" CMakeLi
 perl -pi -e "s/(CPACK_PACKAGE_VERSION )[^)]+/\$1.'${VERSTR}'/ge" CMakeLists.txt
 
 # Info.plist
-perl -pgi -e "s|(<key>CFBundleShortVersionString</key>.+?<string>)[^<]+(?=</string>)|\$1.'${VERSTR}'|ges" Info.plist
-perl -pgi -e "s|(<key>CFBundleVersion</key>.+?<string>)[^<]+(?=</string>)|\$1.'${NUMERIC}'|ges" Info.plist
+perl -pi -e "s|(<key>CFBundleShortVersionString</key>.+?<string>)[^<]+(?=</string>)|\$1.'${VERSTR}'|ges" Info.plist
+perl -pi -e "s|(<key>CFBundleVersion</key>.+?<string>)[^<]+(?=</string>)|\$1.'${NUMERIC}'|ges" Info.plist
 
 # Manual.txt
 perl -pi -e "s/(?<=SyncTERM v)[0-9.a-z]+/${VERSTR}/g" Manual.txt
