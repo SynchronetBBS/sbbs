@@ -62,6 +62,9 @@
 #ifndef CMIN
  #define CMIN 1
 #endif
+#ifndef CSWTCH
+ #define CSWTCH 0
+#endif
 #ifndef CQUIT
  #define CQUIT 034 /* FS, ^\ */
 #endif

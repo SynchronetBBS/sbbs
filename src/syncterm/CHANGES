@@ -1,3 +1,7 @@
+Version 1.2rc3
+--------------
+Get Haiku support building again
+
 Version 1.2rc2
 --------------
 Start UIFC in insert mode, and use block cursor for overwrite mode

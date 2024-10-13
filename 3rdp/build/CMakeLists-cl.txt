@@ -8,7 +8,8 @@ include(CheckCCompilerFlag)
 include(TestBigEndian)
 find_program(PATCH_BIN patch REQUIRED)
 find_program(PERL_BIN perl REQUIRED)
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+# Really, this is "GNU patch?"
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "Haiku")
 	find_program(DOS2UNIX_BIN dos2unix REQUIRED)
 endif()
 
@@ -102,6 +103,7 @@ set(PATCHES
 	cl-fix-cpuid-order.patch
 	cl-fix-cbli-incompatible.patch
 	cl-mingw64-unicode-gibble.patch
+	cl-haiku-build.patch
 )
 
 set(SOURCE
@@ -435,7 +437,7 @@ else()
 endif()
 set(LAST_PATCH "")
 # Linux patch -l won't deal with line ending differences. :(
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+if(DEFINED DOS2UNIX_BIN)
 	add_custom_command(OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/dos2unix.done
 		COMMAND ${DOS2UNIX_BIN} ${CMAKE_CURRENT_SOURCE_DIR}/* ${CMAKE_CURRENT_SOURCE_DIR}/*/*
 		COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_SOURCE_DIR}/dos2unix.done
