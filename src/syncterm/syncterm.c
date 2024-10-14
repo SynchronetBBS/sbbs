@@ -6,6 +6,11 @@
  #include "DarwinWrappers.h"
 #endif
 
+#if defined(__HAIKU__)
+ #include <FindDirectory.h>
+ #include <fs_info.h>
+#endif
+
 #define NOCRYPT                         /* Stop windows.h from loading wincrypt.h */
 /* Is windows.h REALLY necessary?!?! */
 #define __WINCRYPT_H__                  /* Really REALLY stop wincrypt.h har har
@@ -1121,6 +1126,64 @@ get_win_filename(char *fn, int fnlen, int type, int shared)
 	return fn;
 }
 
+#elif defined(__HAIKU__)
+
+static char *
+get_haiku_filename(char *fn, int fnlen, int type, int shared)
+{
+	dev_t v = dev_for_path("/boot");
+	status_t s;
+	size_t sz;
+
+	switch(type) {
+		case SYNCTERM_PATH_INI:
+		case SYNCTERM_PATH_LIST:
+		case SYNCTERM_PATH_KEYS:
+			if (shared)
+				s = find_directory(B_SYSTEM_SETTINGS_DIRECTORY, v, true, fn, fnlen);
+			else
+				s = find_directory(B_USER_SETTINGS_DIRECTORY, v, true, fn, fnlen);
+			break;
+		case SYNCTERM_DEFAULT_TRANSFER_PATH:
+			if (shared)
+				s = B_BAD_TYPE;
+			else
+				s = find_directory(B_DESKTOP_DIRECTORY, v, true, fn, fnlen);
+			break;
+		case SYNCTERM_PATH_CACHE:
+			if (shared)
+				s = find_directory(B_SYSTEM_CACHE_DIRECTORY, v, true, fn, fnlen);
+			else
+				s = find_directory(B_USER_CACHE_DIRECTORY, v, true, fn, fnlen);
+			break;
+	}
+
+	if (s != B_OK)
+		return NULL;
+	if (type == SYNCTERM_DEFAULT_TRANSFER_PATH)
+		return fn;
+	sz = strlcat(fn, "/SyncTERM", fnlen);
+	if (sz >= fnlen)
+		return NULL;
+	if (type == SYNCTERM_PATH_CACHE)
+		return fn;
+
+	switch(type) {
+		case SYNCTERM_PATH_INI:
+			sz = strlcat(fn, "/SyncTERM.ini", fnlen);
+			break;
+		case SYNCTERM_PATH_LIST:
+			sz = strlcat(fn, "/SyncTERM.lst", fnlen);
+			break;
+		case SYNCTERM_PATH_KEYS:
+			sz = strlcat(fn, "/SyncTERM.ssh", fnlen);
+			break;
+	}
+	if (sz >= fnlen)
+		return NULL;
+	return fn;
+}
+
 #else
 enum xdg_paths {
 	XDG_DATA_HOME,
@@ -1266,6 +1329,8 @@ get_syncterm_filename(char *fn, int fnlen, int type, bool shared)
 	return get_OSX_filename(fn, fnlen, type, shared);
 #elif defined(_WIN32)
 	return get_win_filename(fn, fnlen, type, shared);
+#elif defined(__HAIKU__)
+	return get_haiku_filename(fn, fnlen, type, shared);
 #else
 	return get_unix_filename(fn, fnlen, type, shared);
 #endif
