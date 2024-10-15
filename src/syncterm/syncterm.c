@@ -1093,7 +1093,7 @@ get_win_filename(char *fn, int fnlen, int type, int shared)
 
         /* Create if it doesn't exist */
 	if (*fn && !isdir(fn)) {
-		if (MKDIR(fn))
+		if (mkpath(fn))
 			return NULL;
 	}
 
@@ -1165,6 +1165,13 @@ get_haiku_filename(char *fn, int fnlen, int type, int shared)
 	sz = strlcat(fn, "/SyncTERM", fnlen);
 	if (sz >= fnlen)
 		return NULL;
+
+	/* Create if it doesn't exist */
+	if (!isdir(fn) && !shared) {
+		if (mkpath(fn))
+			return NULL;
+	}
+
 	if (type == SYNCTERM_PATH_CACHE)
 		return fn;
 
@@ -1289,7 +1296,7 @@ get_unix_filename(char *fn, int fnlen, int type, int shared)
 
 	/* Create if it doesn't exist */
 	if (!isdir(fn) && !shared) {
-		if (MKDIR(fn))
+		if (mkpath(fn))
 			return NULL;
 	}
 
