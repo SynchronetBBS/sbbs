@@ -20,6 +20,7 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "filedat.h"
 #include "js_request.h"
 
 #ifdef JAVASCRIPT
@@ -120,6 +121,8 @@ enum {
 	,USER_PROP_FREECDTPERDAY
 	,USER_PROP_CACHED
 	,USER_PROP_IS_SYSOP
+	,USER_PROP_BATUPLST
+	,USER_PROP_BATDNLST
 };
 
 static void js_getuserdat(scfg_t* scfg, private_t* p)
@@ -424,6 +427,13 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			*vp = BOOLEAN_TO_JSVAL(is_user_sysop(p->user));
 			JS_RESUMEREQUEST(cx, rc);
 			return(JS_TRUE);	/* intentional early return */
+
+		case USER_PROP_BATUPLST:
+			s = batch_list_name(scfg, p->user->number, XFER_BATCH_UPLOAD, tmp, sizeof tmp);
+			break;
+		case USER_PROP_BATDNLST:
+			s = batch_list_name(scfg, p->user->number, XFER_BATCH_DOWNLOAD, tmp, sizeof tmp);
+			break;
 
 		default:
 			/* This must not set vp in order for child objects to work (stats and security) */
@@ -843,6 +853,8 @@ static jsSyncPropertySpec js_user_properties[] = {
 	{	"logontime"			,USER_PROP_LOGONTIME 	,USER_PROP_FLAGS,		310},
 	{	"cached"			,USER_PROP_CACHED		,USER_PROP_FLAGS,		314},
 	{	"is_sysop"			,USER_PROP_IS_SYSOP		,JSPROP_ENUMERATE|JSPROP_READONLY,	315},
+	{	"batch_upload_list"	,USER_PROP_BATUPLST		,JSPROP_ENUMERATE|JSPROP_READONLY,	320},
+	{	"batch_download_list",USER_PROP_BATDNLST	,JSPROP_ENUMERATE|JSPROP_READONLY,	320},
 	{0}
 };
 
@@ -888,6 +900,8 @@ static const char* user_prop_desc[] = {
 	,"Logon time (time_t format)"
 	,"Record is currently cached in memory"
 	,"User has a System Operator's security level"
+	,"Batch upload list file path/name"
+	,"Batch download list file path/name"
 	,NULL
 };
 #endif
