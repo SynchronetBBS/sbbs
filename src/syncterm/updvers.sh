@@ -18,24 +18,32 @@ a)
 	PATCHSEQ=0
 	ISREL=0
 	HAIKU_PRE=~$PATCH
+	HAIKU_VAR=B_APPV_ALPHA
+	HAIKU_INTERNAL=0
 	;;
 b)
 	PATCHSTR=beta
 	PATCHSEQ=1
 	ISREL=0
 	HAIKU_PRE=~$PATCH
+	HAIKU_VAR=B_APPV_BETA
+	HAIKU_INTERNAL=0
 	;;
 rc*)
 	PATCHSTR=${PATCH}
 	PATCHSEQ=$((1+${PATCH##rc}))
 	ISREL=0
 	HAIKU_PRE=~$PATCH
+	HAIKU_VAR=B_APPV_GAMMA
+	HAIKU_INTERNAL=${PATCH##rc}
 	;;
 "")
 	PATCHSTR=release
 	PATCHSEQ=0
 	ISREL=1
 	HAIKU_PRE=
+	HAIKU_VAR=B_APPV_FINAL
+	HAIKU_INTERNAL=42
 	;;
 *)
 	echo Invalid patch value
@@ -91,3 +99,10 @@ perl -pi -e "s/(?<=^Version: ).*$/${VERSTR}/g" dpkg-control.in
 # PackageInfo.in
 echo Updating PackageInfo.in
 perl -pi -e "s/^(version\s+).*$/\$1.'${NUMERIC}${HAIKU_PRE}-1'/e" PackageInfo.in
+
+# haiku.rdef
+echo Updating haiku.rdef
+perl -pi -e "s/^(.*major = ).*$/\$1.'${MAJOR},'/e" haiku.rdef
+perl -pi -e "s/^(.*middle = ).*$/\$1.'${MIDDLE},'/e" haiku.rdef
+perl -pi -e "s/^(.*variety = ).*$/\$1.'${HAIKU_VAR},'/e" haiku.rdef
+perl -pi -e "s/^(.*internal = ).*$/\$1.'${HAIKU_INTERNAL},'/e" haiku.rdef
