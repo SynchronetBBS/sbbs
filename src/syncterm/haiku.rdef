@@ -6,8 +6,8 @@ resource app_version
 	internal = 2,
 	short_info = "SyncTERM BBS Terminal",
 	long_info = "SyncTERM - ANSI-BBS terminal for connecting to BBS"
-}
+};
 resource app_flags
 {
 	B_MULTIPLE_LAUNCH
-}
+};
