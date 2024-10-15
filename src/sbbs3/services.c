@@ -78,6 +78,7 @@ typedef struct {
 	struct in6_addr	outgoing6;
 	char			protocol[34];
 	char			cmd[128];
+	char			login_ars[LEN_ARSTR + 1];
 	uint			max_clients;
 	uint32_t		options;
 	int				listen_backlog;
@@ -445,6 +446,13 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 	if(!chk_ars(&scfg, startup->login_ars, &client->user, client->client)) {
 		lprintf(LOG_NOTICE,"%04d %s <%s> !Insufficient server access: %s"
 			,client->socket, client->service->protocol, client->user.alias, startup->login_ars);
+		badlogin(client->socket, user, NULL, client->client, &client->addr);
+		JS_RESUMEREQUEST(cx, rc);
+		return(JS_TRUE);
+	}
+	if(!chk_ars(&scfg, client->service->login_ars, &client->user, client->client)) {
+		lprintf(LOG_NOTICE,"%04d %s <%s> !Insufficient service access: %s"
+			,client->socket, client->service->protocol, client->user.alias, client->service->login_ars);
 		badlogin(client->socket, user, NULL, client->client, &client->addr);
 		JS_RESUMEREQUEST(cx, rc);
 		return(JS_TRUE);
@@ -1628,6 +1636,7 @@ static service_t* read_services_ini(const char* services_ini, service_t* service
 	char		cmd[INI_MAX_VALUE_LEN];
 	char		host[INI_MAX_VALUE_LEN];
 	char		prot[INI_MAX_VALUE_LEN];
+	char		value[INI_MAX_VALUE_LEN];
 	char		portstr[INI_MAX_VALUE_LEN];
 	char**		sec_list;
 	str_list_t	list;
@@ -1675,6 +1684,8 @@ static service_t* read_services_ini(const char* services_ini, service_t* service
 		serv.log_level=iniGetLogLevel(list,sec_list[i],"LogLevel",log_level);
 		serv.lowest_log_level=iniGetLogLevel(list,sec_list[i],"LowestLogLevel",0);
 		SAFECOPY(serv.cmd,iniGetString(list,sec_list[i],"Command","",cmd));
+		SAFECOPY(serv.login_ars
+			,iniGetString(list, sec_list[i], "LoginRequirements", "", value));
 
 		p=iniGetString(list,sec_list[i],"Port",serv.protocol,portstr);
 		if(IS_DIGIT(*p))
