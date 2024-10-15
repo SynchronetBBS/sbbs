@@ -355,12 +355,12 @@ enum {								/* Values for xtrn_t.type				*/
 	 XTRN_NONE						/* No data file needed					*/
 	,XTRN_SBBS						/* Synchronet external					*/
 	,XTRN_WWIV						/* WWIV external						*/
-	,XTRN_GAP						/* Gap door 							*/
+	,XTRN_DOOR_SYS					/* 52-line door.sys file				*/
 	,XTRN_RBBS						/* RBBS, QBBS, or Remote Access 		*/
 	,XTRN_WILDCAT					/* Wildcat								*/
 	,XTRN_PCBOARD					/* PCBoard								*/
 	,XTRN_SPITFIRE					/* SpitFire 							*/
-	,XTRN_UTI						/* UTI Doors - MegaMail 				*/
+	,XTRN_GAP						/* 31-line doors.sys file				*/
 	,XTRN_SR						/* Solar Realms 						*/
 	,XTRN_RBBS1 					/* DORINFO1.DEF always					*/
 	,XTRN_TRIBBS					/* TRIBBS.SYS							*/

@@ -216,92 +216,52 @@ static char* mdaystr(long mdays)
 static char* dropfile(int type, ulong misc)
 {
 	static char str[128];
-	char fname[64]="";
 
 	switch(type) {
 		case XTRN_SBBS:
-			strcpy(fname,"XTRN.DAT");
+			strcpy(str,"XTRN.DAT");
 			break;
 		case XTRN_WWIV:
-			strcpy(fname,"CHAIN.TXT");
+			strcpy(str,"CHAIN.TXT");
 			break;
 		case XTRN_GAP:
-			strcpy(fname,"DOOR.SYS");
+			strcpy(str,"DOOR.SYS (31 lines)");
+			break;
+		case XTRN_DOOR_SYS:
+			strcpy(str,"DOOR.SYS (52 lines)");
 			break;
 		case XTRN_RBBS:
-			strcpy(fname,"DORINFO#.DEF");
+			strcpy(str,"DORINFO#.DEF");
 			break;
 		case XTRN_RBBS1:
-			strcpy(fname,"DORINFO1.DEF");
+			strcpy(str,"DORINFO1.DEF");
             break;
 		case XTRN_WILDCAT:
-			strcpy(fname,"CALLINFO.BBS");
+			strcpy(str,"CALLINFO.BBS");
 			break;
 		case XTRN_PCBOARD:
-			strcpy(fname,"PCBOARD.SYS");
+			strcpy(str,"PCBOARD.SYS");
 			break;
 		case XTRN_SPITFIRE:
-			strcpy(fname,"SFDOORS.DAT");
-			break;
-		case XTRN_UTI:
-			strcpy(fname,"UTIDOOR.TXT");
+			strcpy(str,"SFDOORS.DAT");
 			break;
 		case XTRN_SR:
-			strcpy(fname,"DOORFILE.SR");
+			strcpy(str,"DOORFILE.SR");
 			break;
 		case XTRN_TRIBBS:
-			strcpy(fname,"TRIBBS.SYS");
+			strcpy(str,"TRIBBS.SYS");
 			break;
         case XTRN_DOOR32:
-            strcpy(fname,"DOOR32.SYS");
-            break;
-	}
-
-	if(misc&XTRN_LWRCASE)
-		strlwr(fname);
-
-	switch(type) {
-		case XTRN_SBBS:
-			sprintf(str,"%-15s %s","Synchronet",fname);
-			break;
-		case XTRN_WWIV:
-			sprintf(str,"%-15s %s","WWIV",fname);
-			break;
-		case XTRN_GAP:
-			sprintf(str,"%-15s %s","GAP",fname);
-			break;
-		case XTRN_RBBS:
-			sprintf(str,"%-15s %s","RBBS/QuickBBS",fname);
-			break;
-		case XTRN_RBBS1:
-			sprintf(str,"%-15s %s","RBBS/QuickBBS",fname);
-            break;
-		case XTRN_WILDCAT:
-			sprintf(str,"%-15s %s","Wildcat",fname);
-			break;
-		case XTRN_PCBOARD:
-			sprintf(str,"%-15s %s","PCBoard",fname);
-			break;
-		case XTRN_SPITFIRE:
-			sprintf(str,"%-15s %s","SpitFire",fname);
-			break;
-		case XTRN_UTI:
-			sprintf(str,"%-15s %s","MegaMail",fname);
-			break;
-		case XTRN_SR:
-			sprintf(str,"%-15s %s","Solar Realms",fname);
-			break;
-		case XTRN_TRIBBS:
-			sprintf(str,"%-15s %s","TriBBS",fname);
-			break;
-        case XTRN_DOOR32:
-            sprintf(str,"%-15s %s","Mystic",fname);
+            strcpy(str,"DOOR32.SYS");
             break;
 		default:
 			strcpy(str,"None");
-			break;
+			return str;
 	}
-	return(str);
+
+	if(misc&XTRN_LWRCASE)
+		strlwr(str);
+	return str;
 }
 
 void xprogs_cfg()
@@ -1225,7 +1185,7 @@ void xtrn_cfg(int section)
 			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Disable Local Display"
 				,cfg.xtrn[i]->misc&XTRN_NODISPLAY ? "Yes" : "No");
 			snprintf(opt[k++],MAX_OPLN,"%-23.23s%-4s%s","BBS Drop File Type"
-				,cfg.xtrn[i]->misc&REALNAME ? "(R)":nulstr
+				,(cfg.xtrn[i]->type != XTRN_NONE && (cfg.xtrn[i]->misc&REALNAME)) ? "(R)":nulstr
 				,dropfile(cfg.xtrn[i]->type,cfg.xtrn[i]->misc));
 			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Place Drop File In"
 				,cfg.xtrn[i]->misc&STARTUPDIR ? "Start-Up Directory":cfg.xtrn[i]->misc&XTRN_TEMP_DIR ? "Temp Directory" : "Node Directory");
@@ -1518,12 +1478,12 @@ void xtrn_cfg(int section)
 					strcpy(opt[k++],"None");
 					snprintf(opt[k++], MAX_OPLN, "%-15s %s","Synchronet","XTRN.DAT");
 					snprintf(opt[k++], MAX_OPLN, "%-15s %s","WWIV","CHAIN.TXT");
-					snprintf(opt[k++], MAX_OPLN, "%-15s %s","GAP","DOOR.SYS");
+					snprintf(opt[k++], MAX_OPLN, "%-15s %s","GAP (extended)","DOOR.SYS (52 lines)");
 					snprintf(opt[k++], MAX_OPLN, "%-15s %s","RBBS/QuickBBS","DORINFO#.DEF");
 					snprintf(opt[k++], MAX_OPLN, "%-15s %s","Wildcat","CALLINFO.BBS");
 					snprintf(opt[k++], MAX_OPLN, "%-15s %s","PCBoard","PCBOARD.SYS");
 					snprintf(opt[k++], MAX_OPLN, "%-15s %s","SpitFire","SFDOORS.DAT");
-					snprintf(opt[k++], MAX_OPLN, "%-15s %s","MegaMail","UTIDOOR.TXT");
+					snprintf(opt[k++], MAX_OPLN, "%-15s %s","GAP (original)","DOOR.SYS (31 lines)");
 					snprintf(opt[k++], MAX_OPLN, "%-15s %s","Solar Realms","DOORFILE.SR");
 					snprintf(opt[k++], MAX_OPLN, "%-15s %s","RBBS/QuickBBS","DORINFO1.DEF");
 					snprintf(opt[k++], MAX_OPLN, "%-15s %s","TriBBS","TRIBBS.SYS");
@@ -1547,9 +1507,15 @@ void xtrn_cfg(int section)
 						"  Wildcat! 2.x    CALLINFO.BBS\n"
 						"  SpitFire        SFDOORS.DAT\n"
 						"  TriBBS          TRIBBS.SYS\n"
-						"  MegaMail        UTIDOOR.TXT\n"
 						"  Solar Realms    DOORFILE.SR\n"
 						"  Synchronet      XTRN.DAT                      MODUSER.DAT\n"
+						"\n"
+						"The drop file format compatible with the largest number of online\n"
+						"programs (e.g. door games) written for MS-DOS based BBSes is the\n"
+						"`DOOR.SYS` file format.  Synchronet supports both the original (GAP)\n"
+						"31-line DOOR.SYS file format and the extended 52-line format.\n"
+						"If you encounter door compatibility issues with the original 32-line\n"
+						"format, try using the 52-line format (or vice versa).\n"
 					;
 					k=uifc.list(WIN_MID|WIN_ACT,0,0,0,&k,0
 						,"BBS Drop File Type",opt);
@@ -2263,12 +2229,12 @@ void xedit_cfg()
 					strcpy(opt[k++],"None");
 					snprintf(opt[k++], MAX_OPLN, "%-15s %s","Synchronet","XTRN.DAT");
 					snprintf(opt[k++], MAX_OPLN, "%-15s %s","WWIV","CHAIN.TXT");
-					snprintf(opt[k++], MAX_OPLN, "%-15s %s","GAP","DOOR.SYS");
+					snprintf(opt[k++], MAX_OPLN, "%-15s %s","GAP (extended)","DOOR.SYS (52 lines)");
 					snprintf(opt[k++], MAX_OPLN, "%-15s %s","RBBS/QuickBBS","DORINFO#.DEF");
 					snprintf(opt[k++], MAX_OPLN, "%-15s %s","Wildcat","CALLINFO.BBS");
 					snprintf(opt[k++], MAX_OPLN, "%-15s %s","PCBoard","PCBOARD.SYS");
 					snprintf(opt[k++], MAX_OPLN, "%-15s %s","SpitFire","SFDOORS.DAT");
-					snprintf(opt[k++], MAX_OPLN, "%-15s %s","MegaMail","UTIDOOR.TXT");
+					snprintf(opt[k++], MAX_OPLN, "%-15s %s","GAP (original)","DOOR.SYS (31 lines)");
 					snprintf(opt[k++], MAX_OPLN, "%-15s %s","Solar Realms","DOORFILE.SR");
 					snprintf(opt[k++], MAX_OPLN, "%-15s %s","RBBS/QuickBBS","DORINFO1.DEF");
 					snprintf(opt[k++], MAX_OPLN, "%-15s %s","TriBBS","TRIBBS.SYS");

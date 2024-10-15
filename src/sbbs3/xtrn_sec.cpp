@@ -352,7 +352,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		fclose(fp); 
 	}
 
-	else if(type==XTRN_GAP) {	/* Gap DOOR.SYS File */
+	else if(type==XTRN_GAP || type==XTRN_DOOR_SYS) {	/* Gap DOOR.SYS File */
 		SAFECOPY(tmp,"DOOR.SYS");
 		if(misc&XTRN_LWRCASE)
 			strlwr(tmp);
@@ -429,52 +429,58 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 
 		t = getnextevent(&cfg, NULL);
 		localtime_r(&t, &tm);
-		safe_snprintf(str, sizeof(str), "%u\n%" PRIu64 "\n%s\n%s\n%s\n%s"
-			"\n%s\n%02d:%02d\n%c\n"
+		safe_snprintf(str, sizeof(str), "%u\n%" PRIu64 "\n"
 			,0									/* 30: Kbytes downloaded today */
 			,user_available_credits(&useron)/1024UL /* 31: Max Kbytes to download today */
-			,getbirthmmddyy(&cfg, '/', useron.birth, tmp, sizeof(tmp))	/* 32: User birthday (MM/DD/YY) */
-			,node_dir							/* 33: Path to MAIN directory */
-			,data_dir							/* 34: Path to GEN directory */
-			,cfg.sys_op 						/* 35: Sysop name */
-			,useron.handle						/* 36: Alias name */
-			,tm.tm_hour							/* 37: Event time HH:MM */
-			,tm.tm_min
-			,'Y');                              /* 38: Error correcting connection */
+			);
 		lfexpand(str,misc);
 		fwrite(str,strlen(str),1,fp);
 
-		localtime_r(&ns_time,&tm);
-		safe_snprintf(str, sizeof(str), "%c\n%c\n%u\n%" PRIu32 "\n%02d/%02d/%02d\n"
-			,(term & (NO_EXASCII|ANSI|COLOR)) == ANSI
-				? 'Y':'N'                       /* 39: ANSI supported but NG mode */
-			,'Y'                                /* 40: Use record locking */
-			,cfg.color[clr_external]			/* 41: BBS default color */
-			,MIN(useron.min, INT16_MAX)			/* 42: Time credits in minutes */
-			,TM_MONTH(tm.tm_mon)				/* 43: File new-scan date */
-			,tm.tm_mday
-			,TM_YEAR(tm.tm_year));
-		lfexpand(str,misc);
-		fwrite(str,strlen(str),1,fp);
+		if(type == XTRN_DOOR_SYS) { // 52-line variant
+			safe_snprintf(str, sizeof(str), "%s\n%s\n%s\n%s"
+				"\n%s\n%02d:%02d\n%c\n"
+				,getbirthmmddyy(&cfg, '/', useron.birth, tmp, sizeof(tmp))	/* 32: User birthday (MM/DD/YY) */
+				,node_dir							/* 33: Path to MAIN directory */
+				,data_dir							/* 34: Path to GEN directory */
+				,cfg.sys_op 						/* 35: Sysop name */
+				,useron.handle						/* 36: Alias name */
+				,tm.tm_hour							/* 37: Event time HH:MM */
+				,tm.tm_min
+				,'Y');                              /* 38: Error correcting connection */
+			lfexpand(str,misc);
+			fwrite(str,strlen(str),1,fp);
 
-		localtime_r(&logontime,&tm);
-		localtime32(&useron.laston,&tl);
-		safe_snprintf(str, sizeof(str), "%02d:%02d\n%02d:%02d\n%u\n%u\n%" PRIu64 "\n"
-			"%"  PRIu64 "\n%s\n%u\n%u\n"
-			,tm.tm_hour							/* 44: Time of this call */
-			,tm.tm_min
-			,tl.tm_hour							/* 45: Time of last call */
-			,tl.tm_min
-			,999								/* 46: Max daily files available */
-			,0									/* 47: Files downloaded so far today */
-			,useron.ulb/1024UL					/* 48: Total Kbytes uploaded */
-			,useron.dlb/1024UL					/* 49: Total Kbytes downloaded */
-			,useron.comment 					/* 50: User comment */
-			,0									/* 51: Total doors opened */
-			,MIN(useron.posts, INT16_MAX));		/* 52: User message left */
-		lfexpand(str,misc);
-		fwrite(str,strlen(str),1,fp);
+			localtime_r(&ns_time,&tm);
+			safe_snprintf(str, sizeof(str), "%c\n%c\n%u\n%" PRIu32 "\n%02d/%02d/%02d\n"
+				,(term & (NO_EXASCII|ANSI|COLOR)) == ANSI
+					? 'Y':'N'                       /* 39: ANSI supported but NG mode */
+				,'Y'                                /* 40: Use record locking */
+				,cfg.color[clr_external]			/* 41: BBS default color */
+				,MIN(useron.min, INT16_MAX)			/* 42: Time credits in minutes */
+				,TM_MONTH(tm.tm_mon)				/* 43: File new-scan date */
+				,tm.tm_mday
+				,TM_YEAR(tm.tm_year));
+			lfexpand(str,misc);
+			fwrite(str,strlen(str),1,fp);
 
+			localtime_r(&logontime,&tm);
+			localtime32(&useron.laston,&tl);
+			safe_snprintf(str, sizeof(str), "%02d:%02d\n%02d:%02d\n%u\n%u\n%" PRIu64 "\n"
+				"%"  PRIu64 "\n%s\n%u\n%u\n"
+				,tm.tm_hour							/* 44: Time of this call */
+				,tm.tm_min
+				,tl.tm_hour							/* 45: Time of last call */
+				,tl.tm_min
+				,999								/* 46: Max daily files available */
+				,0									/* 47: Files downloaded so far today */
+				,useron.ulb/1024UL					/* 48: Total Kbytes uploaded */
+				,useron.dlb/1024UL					/* 49: Total Kbytes downloaded */
+				,useron.comment 					/* 50: User comment */
+				,0									/* 51: Total doors opened */
+				,MIN(useron.posts, INT16_MAX));		/* 52: User message left */
+			lfexpand(str,misc);
+			fwrite(str,strlen(str),1,fp);
+		}
 		fclose(fp);
 	}
 
@@ -862,31 +868,6 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		fclose(fp);
 	}
 
-	else if(type==XTRN_UTI) { /* UTI v2.1 - UTIDOOR.TXT */
-		SAFECOPY(tmp,"UTIDOOR.TXT");
-		if(misc&XTRN_LWRCASE)
-			strlwr(tmp);
-		SAFEPRINTF2(str,"%s%s",dropdir,tmp);
-		(void)removecase(str);
-		if((fp = fnopen(NULL,str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT)) == NULL) {
-			errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_TRUNC|O_TEXT);
-			return; 
-		}
-
-		SAFECOPY(tmp,name);
-		strupr(tmp);
-		safe_snprintf(str, sizeof(str), "%s\n%u\n%u\n%u\n%u\n"
-			,tmp								/* User name */
-			,cur_rate							/* Actual BPS rate */
-			,online==ON_LOCAL ? 0: cfg.com_port /* COM Port */
-			,dte_rate							/* DTE rate */
-			,tleft);							/* Time left in sec */
-		lfexpand(str,misc);
-		fwrite(str, strlen(str), 1, fp);
-
-		fclose(fp);
-	}
-
 	else if(type==XTRN_SR) { /* Solar Realms DOORFILE.SR */
 		SAFECOPY(tmp,"DOORFILE.SR");
 		if(misc&XTRN_LWRCASE)
@@ -1029,7 +1010,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 		}
 		return; 
 	}
-	else if(cfg.xtrn[xtrnnum]->type==XTRN_GAP) {
+	else if(cfg.xtrn[xtrnnum]->type == XTRN_GAP || cfg.xtrn[xtrnnum]->type == XTRN_DOOR_SYS) {
 		SAFEPRINTF(path,"%sDOOR.SYS", xtrn_dropdir(cfg.xtrn[xtrnnum], startup, sizeof(startup)));
 		fexistcase(path);
 		if((stream=fopen(path,"rb"))!=NULL) {
@@ -1083,12 +1064,14 @@ void sbbs_t::moduserdat(uint xtrnnum)
 				}
 			}
 
-			for(;i<42;i++)
-				if(!fgets(str,128,stream))
-					break;
-			if(i==42 && IS_DIGIT(str[0])) {	/* Time Credits in Minutes */
-				useron.min=atol(str);
-				putuserdec32(useron.number, USER_MIN, useron.min); 
+			if(cfg.xtrn[xtrnnum]->type == XTRN_DOOR_SYS) {
+				for(;i<42;i++)
+					if(!fgets(str,128,stream))
+						break;
+				if(i==42 && IS_DIGIT(str[0])) {	/* Time Credits in Minutes */
+					useron.min=atol(str);
+					putuserdec32(useron.number, USER_MIN, useron.min); 
+				}
 			}
 
 			fclose(stream); 
@@ -1328,7 +1311,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 		case XTRN_WWIV:
 			SAFECOPY(name,"CHAIN.TXT");
 			break;
-		case XTRN_GAP:
+		case XTRN_DOOR_SYS:
 			SAFECOPY(name,"DOOR.SYS");
 			break;
 		case XTRN_RBBS:
@@ -1342,9 +1325,6 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 			break;
 		case XTRN_PCBOARD:
 			SAFECOPY(name,"PCBOARD.SYS");
-			break;
-		case XTRN_UTI:
-			SAFECOPY(name,"UTIDOOR.TXT");
 			break;
 		case XTRN_SR:
 			SAFECOPY(name,"DOORFILE.SR");
