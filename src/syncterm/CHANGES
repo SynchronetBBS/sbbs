@@ -2,6 +2,7 @@ Version 1.2rc3
 --------------
 Get Haiku support building again
 Properly quit video subsystem from video thread - fixes Haiku crash
+Create dirs on macOS when needed - fixes adding first BBS
 
 Version 1.2rc2
 --------------

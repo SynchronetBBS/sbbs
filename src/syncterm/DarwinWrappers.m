@@ -38,21 +38,32 @@ get_OSX_filename(char *fn, int fnlen, int type, int shared)
 		return NULL;
 	}
 	strlcpy(fn, result.path.UTF8String, fnlen);
+
+	if (type == SYNCTERM_DEFAULT_TRANSFER_PATH) {
+		strlcat(fn, "/", fnlen);
+		return fn;
+	}
+
 	switch(type) {
 		case SYNCTERM_PATH_INI:
-			strlcat(fn, "/Preferences/SyncTERM/SyncTERM.ini", fnlen);
+			strlcat(fn, "/Preferences/SyncTERM", fnlen);
+			mkpath(fn);
+			strlcat(fn, "/SyncTERM.ini", fnlen);
 			break;
 		case SYNCTERM_PATH_LIST:
-			strlcat(fn, "/Preferences/SyncTERM/SyncTERM.lst", fnlen);
-			break;
-		case SYNCTERM_DEFAULT_TRANSFER_PATH:
-			strlcat(fn, "/", fnlen);
+			strlcat(fn, "/Preferences/SyncTERM", fnlen);
+			mkpath(fn);
+			strlcat(fn, "/SyncTERM.lst", fnlen);
 			break;
 		case SYNCTERM_PATH_CACHE:
-			strlcat(fn, "/SyncTERM/", fnlen);
+			strlcat(fn, "/SyncTERM", fnlen);
+			mkpath(fn);
+			strlcat(fn, "/", fnlen);
 			break;
 		case SYNCTERM_PATH_KEYS:
-			strlcat(fn, "/Preferences/SyncTERM/SyncTERM.ssh", fnlen);
+			strlcat(fn, "/Preferences/SyncTERM", fnlen);
+			mkpath(fn);
+			strlcat(fn, "/SyncTERM.ssh", fnlen);
 			break;
 	}
 
