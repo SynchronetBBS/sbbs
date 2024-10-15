@@ -103,6 +103,6 @@ perl -pi -e "s/^(version\s+).*$/\$1.'${NUMERIC}${HAIKU_PRE}-1'/e" PackageInfo.in
 # haiku.rdef
 echo Updating haiku.rdef
 perl -pi -e "s/^(.*major = ).*$/\$1.'${MAJOR},'/e" haiku.rdef
-perl -pi -e "s/^(.*middle = ).*$/\$1.'${MIDDLE},'/e" haiku.rdef
+perl -pi -e "s/^(.*middle = ).*$/\$1.'${MINOR},'/e" haiku.rdef
 perl -pi -e "s/^(.*variety = ).*$/\$1.'${HAIKU_VAR},'/e" haiku.rdef
 perl -pi -e "s/^(.*internal = ).*$/\$1.'${HAIKU_INTERNAL},'/e" haiku.rdef
