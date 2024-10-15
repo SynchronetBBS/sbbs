@@ -8,8 +8,7 @@ packager	"Stephen Hurd <shurd@sasktel.net>"
 urls		"http://syncterm.bbsdev.net/"
 copyrights	Yes
 licenses {
-	"GPLv2"
-	"Sleepycat"
+	"GNU GPL v2"
 }
 provides	{
 	SyncTERM
