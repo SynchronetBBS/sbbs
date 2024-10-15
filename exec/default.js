@@ -23,8 +23,11 @@ const main_menu = {
 	file: "main",
 	eval: 'bbs.main_cmds++',
 	node_action: NODE_MAIN,
-	prompt: "\x01-\x01c\xfe \x01b\x01h" + gettext("Main") + " \x01n\x01c\xfe \x01h" + time_code +
-		" \x01n\x01c[\x01h@GN@\x01n\x01c] @GRP@\x01\\ [\x01h@SN@\x01n\x01c] @SUB@: \x01n",
+	prompt: gettext("\x01-\x01c\xfe \x01b\x01h", "shell_prompt_begin")
+		+ gettext("Main")
+		+ gettext(" \x01n\x01c\xfe \x01h", "shell_prompt_middle")
+		+ time_code
+		+ gettext(" \x01n\x01c[\x01h@GN@\x01n\x01c] @GRP@\x01\\ [\x01h@SN@\x01n\x01c] @SUB@: \x01n", "shell_main_prompt_end"),
 	num_input: shell.get_sub_num,
 	slash_num_input: shell.get_grp_num,
 	command: {
@@ -102,8 +105,11 @@ const file_menu = {
 	file: "transfer",
 	eval: 'bbs.file_cmds++',
 	node_action: NODE_XFER,
-	prompt: "\x01-\x01c\xfe \x01b\x01h" + gettext("File") + " \x01n\x01c\xfe \x01h" + time_code +
-		" \x01n\x01c(\x01h@LN@\x01n\x01c) @LIB@\x01\\ (\x01h@DN@\x01n\x01c) @DIR@: \x01n",
+	prompt: gettext("\x01-\x01c\xfe \x01b\x01h", "shell_prompt_begin")
+		+ gettext("File")
+		+ gettext(" \x01n\x01c\xfe \x01h", "shell_prompt_middle")
+		+ time_code
+		+ gettext(" \x01n\x01c(\x01h@LN@\x01n\x01c) @LIB@\x01\\ (\x01h@DN@\x01n\x01c) @DIR@: \x01n", "shell_file_prompt_end"),
 	num_input: shell.get_dir_num,
 	slash_num_input: shell.get_lib_num,
 	command: {
