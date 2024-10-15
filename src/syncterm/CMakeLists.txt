@@ -116,7 +116,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Haiku")
 	add_custom_command(TARGET syncterm PRE_LINK
 		COMMAND rc -o ${CMAKE_CURRENT_BINARY_DIR}/syncterm.rsrc ${CMAKE_CURRENT_SOURCE_DIR}/haiku.rdef)
 	add_custom_command(TARGET syncterm POST_BUILD
-		COMMAND xres =o $<TARGET_FILE:syncterm> ${CMAKE_CURRENT_BINARY_DIR}/syncterm.rsrc)
+		COMMAND xres -o $<TARGET_FILE:syncterm> ${CMAKE_CURRENT_BINARY_DIR}/syncterm.rsrc)
 endif()
 
 install(TARGETS syncterm DESTINATION bin)
