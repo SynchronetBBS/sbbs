@@ -1,11 +1,16 @@
 name		SyncTERM
-version		1.2rc2
+version		1.2~b-1
 architecture	@ARCHITECTURE_TYPE@
 summary		"ANSI-BBS terminal for connecting to BBSs"
 description	"An ANSI-BBS terminal designed to connect to remote BBSs via telnet, rlogin, or SSH. Supports ANSI music and the IBM charset when possible. Will run from a console, under X11 using XLib, or using SDL."
 vendor		Deuce
 packager	"Stephen Hurd <shurd@sasktel.net>"
 urls		"http://syncterm.bbsdev.net/"
+copyrights	Yes
+licenses {
+	"GPLv2"
+	"Sleepycat"
+}
 provides	{
 	SyncTERM
 	app:SyncTERM
