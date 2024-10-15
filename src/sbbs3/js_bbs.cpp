@@ -1454,6 +1454,7 @@ js_chkpass(JSContext *cx, uintN argc, jsval *arglist)
 	sbbs_t*		sbbs;
 	char*		cstr;
 	jsrefcount	rc;
+	bool		unique = false;
 
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
@@ -1461,11 +1462,14 @@ js_chkpass(JSContext *cx, uintN argc, jsval *arglist)
  	if(!js_argc(cx, argc, 1))
 		return(JS_FALSE);
 
+	if(JSVAL_IS_BOOLEAN(argv[1]))
+		unique = JSVAL_TO_BOOLEAN(argv[1]);
+
 	JSString* str=JS_ValueToString(cx,argv[0]);
 
 	JSSTRING_TO_ASTRING(cx, str, cstr, LEN_PASS+2, NULL);
 	rc=JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->chkpass(cstr,&sbbs->useron,true)));
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->chkpass(cstr,&sbbs->useron, unique)));
 	JS_RESUMEREQUEST(cx, rc);
 	return(JS_TRUE);
 }
@@ -2943,6 +2947,7 @@ js_upload_file(JSContext *cx, uintN argc, jsval *arglist)
 	uint		dirnum=0;
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
+	char* fname = nullptr;
 
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
@@ -2954,12 +2959,35 @@ js_upload_file(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 	}
 
+	if(JSVAL_IS_STRING(argv[1])) {
+		JSString* js_str;
+		if((js_str = JS_ValueToString(cx, argv[1]))==NULL)
+			return JS_FALSE;
+		JSSTRING_TO_MSTRING(cx, js_str, fname, NULL);
+	}
+
 	rc=JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->upload(dirnum)));
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->upload(dirnum, fname)));
 	JS_RESUMEREQUEST(cx, rc);
+	free(fname);
 	return(JS_TRUE);
 }
 
+static JSBool
+js_batch_upload(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	sbbs_t*		sbbs;
+	jsrefcount	rc;
+
+	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
+		return(JS_FALSE);
+
+	rc=JS_SUSPENDREQUEST(cx);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->batch_upload()));
+	JS_RESUMEREQUEST(cx, rc);
+	return JS_TRUE;
+}
 
 static JSBool
 js_bulkupload(JSContext *cx, uintN argc, jsval *arglist)
@@ -4581,14 +4609,14 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("Send specified filename (complete path) to user via user-prompted "
 		"(or optionally specified) protocol.<br>"
 		"The optional <i>description</i> string is used for logging purposes.<br>"
-		"When <i>autohang=true</i>, disconnect after transfer based on user's default setting."
+		"When <i>autohang</i> is <tt>true</tt>, disconnect after transfer based on user's default setting."
 	)
 	,314
 	},
 	{"receive_file",	js_recvfile,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("filename [,protocol] [,autohang=true]")
 	,JSDOCSTR("Received specified filename (complete path) from user via user-prompted "
 		"(or optionally specified) protocol.<br>"
-		"When <i>autohang=true</i>, disconnect after transfer based on user's default setting."
+		"When <i>autohang</i> is <tt>true</tt>, disconnect after transfer based on user's default setting."
 	)
 	,314
 	},
@@ -4666,9 +4694,16 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("Send bulk private e-mail, if <i>ars</i> not specified, prompt for destination users")
 	,310
 	},
-	{"upload_file",		js_upload_file,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[directory=<i>current</i>]")
-	,JSDOCSTR("Upload file to file directory specified by number or internal code")
+	{"upload_file",		js_upload_file,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[directory=<i>current</i>] [,<i>string</i> filename=undefined]")
+	,JSDOCSTR("Upload file to file directory specified by number or internal code.<br>"
+		"Will prompt for filename when none is passed.")
 	,310
+	},
+	{"batch_upload",	js_batch_upload,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("")
+	,JSDOCSTR("Start a batch upload of one or more files.<br>"
+			"The user's batch upload queue must have one or more files or an 'Uploads' directory must be configured (<tt>file_area.upload_dir</tt> is not <tt>undefined</tt>).<br>"
+			"Returns <tt>true</tt> if one or more blind-uploads were received and all files in the batch upload queue (if any) were received successfully.")
+	,320
 	},
 	{"bulk_upload",		js_bulkupload,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[directory=<i>current</i>]")
 	,JSDOCSTR("Add files (already in local storage path) to file directory "
@@ -4772,7 +4807,7 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,310
 	},
 	{"menu_exists",		js_menu_exists,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("base_filename")
-	,JSDOCSTR("Return true if the referenced menu file exists (i.e. in the text/menu directory)")
+	,JSDOCSTR("Return <tt>true</tt> if the referenced menu file exists (i.e. in the text/menu directory)")
 	,31700
 	},
 	{"log_key",			js_logkey,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("key [,comma=false]")
@@ -4827,9 +4862,10 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("Verify system password, prompting for the password if not passed as an argument")
 	,310
 	},
-	{"good_password",	js_chkpass,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("password")
+	{"good_password",	js_chkpass,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("password, [forced_unique=false]")
 	,JSDOCSTR("Check if requested user password meets minimum password requirements "
-		"(length, uniqueness, etc.)")
+		"(length, uniqueness, etc.).<br>"
+		"When <i>forced_unique</i> is <tt>true</tt>, the password must be substantially different from the user's current password.")
 	,310
 	},
 	/* chat/node stuff */
