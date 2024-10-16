@@ -2976,7 +2976,6 @@ js_upload_file(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_batch_upload(JSContext *cx, uintN argc, jsval *arglist)
 {
-	jsval *argv=JS_ARGV(cx, arglist);
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
 
