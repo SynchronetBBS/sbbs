@@ -27,7 +27,7 @@
 /****************************************************************************/
 void sbbs_t::batchmenu()
 {
-    char	str[129],tmp2[250],done=0,ch;
+    char	str[129],tmp2[250],ch;
 	char 	tmp[512];
 	char	keys[32];
 	int		sort = -1;
@@ -48,9 +48,9 @@ void sbbs_t::batchmenu()
 		return; 
 	}
 	if(useron.misc&(RIP) && !(useron.misc&EXPERT))
-		menu("batchxfer");
+		menu("batchxfr");
 	lncntr=0;
-	while(online && !done && (cfg.upload_dir!=INVALID_DIR || batdn_total() || batup_total())) {
+	while(online && (cfg.upload_dir!=INVALID_DIR || batdn_total() || batup_total())) {
 		if(!(useron.misc&(EXPERT|RIP))) {
 			sys_status&=~SS_ABORT;
 			if(lncntr) {
@@ -69,7 +69,6 @@ void sbbs_t::batchmenu()
 			logch(ch,0);
 		if(ch==quit_key() || ch=='\r') {	/* Quit */
 			lncntr=0;
-			done=1;
 			break;
 		}
 		switch(ch) {
