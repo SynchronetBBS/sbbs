@@ -480,6 +480,12 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 				,MIN(useron.posts, INT16_MAX));		/* 52: User message left */
 			lfexpand(str,misc);
 			fwrite(str,strlen(str),1,fp);
+		} else { // 31-line variant, followed by 21 blank lines
+			for(i = 0; i < 21; ++i) {
+				if(!(misc & XTRN_NATIVE))
+					fputc('\r', fp);
+				fputc('\n', fp);
+			}
 		}
 		fclose(fp);
 	}

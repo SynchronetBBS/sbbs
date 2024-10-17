@@ -1510,12 +1510,16 @@ void xtrn_cfg(int section)
 						"  Solar Realms    DOORFILE.SR\n"
 						"  Synchronet      XTRN.DAT                      MODUSER.DAT\n"
 						"\n"
+						"`DOOR.SYS`\n"
 						"The drop file format compatible with the largest number of online\n"
 						"programs (e.g. door games) written for MS-DOS based BBSes is the\n"
 						"`DOOR.SYS` file format.  Synchronet supports both the original (GAP)\n"
-						"31-line DOOR.SYS file format and the extended 52-line format.\n"
-						"If you encounter door compatibility issues with the original 32-line\n"
-						"format, try using the 52-line format (or vice versa).\n"
+						"31-line DOOR.SYS file format and the extended (later) 52-line format.\n"
+						"The 31-line DOOR.SYS file created by Synchronet includes 21 extra blank\n"
+						"lines to accommodate software that expects more than 31 lines, but has\n"
+						"an issue with the contents of the additional lines as populated by SBBS.\n"
+						"If you encounter door compatibility issues with the original 31-line\n"
+						"format, try using the 52-line format instead (or vice versa).\n"
 					;
 					k=uifc.list(WIN_MID|WIN_ACT,0,0,0,&k,0
 						,"BBS Drop File Type",opt);
