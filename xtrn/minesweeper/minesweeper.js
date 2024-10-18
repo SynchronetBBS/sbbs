@@ -1245,8 +1245,8 @@ function detect_graphics()
 	console.ctrlkey_passthru = tmpckpt;
 	if (graph) {
 		console.mouse_mode = false;
-		console.write("\x1b[?1003;1006h");
-		js.on_exit("console.mouse_mode = orig_mouse; user.misc = orig_misc; console.autoterm = orig_autoterm;");
+		console.write("\x1b[?9;1000;1001;1002;1004;1005;1007;1015;1016l\x1b[?1003;1006h");
+		js.on_exit("console.write('\x1b[?1003;1006l;'); console.mouse_mode = orig_mouse; user.misc = orig_misc; console.autoterm = orig_autoterm;");
 	}
 }
 
