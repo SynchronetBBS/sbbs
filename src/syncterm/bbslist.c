@@ -2976,9 +2976,6 @@ show_bbslist(char *current, int connected)
 							    &(conn_types[1])) >= 0) {
 								list[listcount - 1]->conn_type++;
 								if (IS_NETWORK_CONN(list[listcount - 1]->conn_type)) {
-									/* Default address to name, if appears to be address */
-									if (isResolvableHostname(list[listcount - 1]->name))
-										SAFECOPY(list[listcount - 1]->addr, list[listcount - 1]->name);
                                                                         /* Set the port too */
 									j = conn_ports[list[listcount - 1]->conn_type];
 									if ((j < 1) || (j > 65535))
