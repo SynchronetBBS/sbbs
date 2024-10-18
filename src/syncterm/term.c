@@ -2426,7 +2426,21 @@ clean_path(char *fn, size_t fnsz)
 {
 	char *fp;
 
+#ifdef _WIN32
+	// Convert all backslashes to slashes...
+	for (char *fpc = fn; *fpc; fpc++) {
+		if (*fpc == '\\')
+			*fpc = '/';
+	}
+#endif
 	fp = _fullpath(NULL, fn, fnsz);
+#ifdef _WIN32
+	// Convert all backslashes to slashes...
+	for (char *fpc = fp; *fpc; fpc++) {
+		if (*fpc == '\\')
+			*fpc = '/';
+	}
+#endif
 	if ((fp == NULL) || strcmp(fp, fn)) {
 		FREE_AND_NULL(fp);
 		return 0;
