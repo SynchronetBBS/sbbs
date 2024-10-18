@@ -23,9 +23,14 @@ const defs = {
 	mouse_reporting: {
 		x10_compatible:			9,
 		normal_tracking:		1000,
+		highlight_tracking:		1001,	// Not supported by SyncTERM
 		button_events:			1002,
 		any_events:				1003,
+		focus_event_tracking:	1004,	// Not supported by SyncTERM
+		utf8_extended_coord:	1005,	// Not supported by SyncTERM
 		extended_coord:			1006,	// modifies the above modes
+		alt_scroll_mode:		1007,	// Not supported by SyncTERM
+		urxvt_extended_coord:	1015,	// Not supported by SyncTERM
 	},
 
 	// SyncTerm emulation speed map
@@ -144,9 +149,20 @@ var ext_mode = {
 	restore_all:	function()	{ return "\x1b[?u"; }
 }
 
+function mouse_reporting_modes(mode)
+{
+	var list = [];
+	if(mode == 'all')
+		for(var i in defs.mouse_reporting)
+			list.push(defs.mouse_reporting[i]);
+	else
+		list.push(defs.mouse_reporting[mode]);
+	return list.join(";");
+}
+
 var mouse = {
-	set: 	function(mode)	{ return format("\x1b[?%uh", defs.mouse_reporting[mode]); },
-	clear: 	function(mode)	{ return format("\x1b[?%ul", defs.mouse_reporting[mode]); }
+	set: 	function(mode)	{ return format("\x1b[?%sh", mouse_reporting_modes(mode)); },
+	clear: 	function(mode)	{ return format("\x1b[?%sl", mouse_reporting_modes(mode)); }
 }
 
 var speed = {
