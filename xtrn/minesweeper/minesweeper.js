@@ -1166,6 +1166,7 @@ function detect_graphics()
 	var lst;
 	var m;
 	var b;
+	var sent;
 
 	// Detect PPM graphics and load the cache
 	graph = false;
@@ -1180,6 +1181,7 @@ function detect_graphics()
 		// Load up cache...
 		f = new File(js.exec_dir+'/'+gfile);
 		if (f.open('rb')) {
+			sent = false;
 			md5 = f.md5_hex;
 			console.write('\x1b_SyncTERM:C;L;minesweeper/'+gfile+'\x1b\\');
 			lst = read_apc();
@@ -1190,33 +1192,56 @@ function detect_graphics()
 				f.base64 = true;
 				console.write(f.read());
 				console.write('\x1b\\');
+				sent = true;
+			}
+			if (sent) {
+				console.write('\x1b_SyncTERM:C;L;minesweeper/'+gfile+'\x1b\\');
+				lst = read_apc();
+				m = lst.match(/\ngraphics.ppm\t([0-9a-f]+)\n/);
+				if (m == null || m[1] !== md5) {
+					graph = false;
+				}
 			}
 			f.close();
-			console.write('\x1b_SyncTERM:C;LoadPPM;B=0;minesweeper/'+gfile+'\x1b\\');
-			f = new File(js.exec_dir+'/'+mfile);
-			if (f.open('rb')) {
-				md5 = f.md5_hex;
-				console.write('\x1b_SyncTERM:C;L;minesweeper/'+mfile+'\x1b\\');
-				lst = read_apc();
-				m = lst.match(/\nselmask.pbm\t([0-9a-f]+)\n/);
-				if (m == null || m[1] !== md5) {
-					// Store in cache...
-					console.write('\x1b_SyncTERM:C;S;minesweeper/'+mfile+';');
-					f.base64 = true;
-					console.write(f.read());
-					console.write('\x1b\\');
+			if (graph) {
+				sent = false;
+				f = new File(js.exec_dir+'/'+mfile);
+				if (f.open('rb')) {
+					md5 = f.md5_hex;
+					console.write('\x1b_SyncTERM:C;L;minesweeper/'+mfile+'\x1b\\');
+					lst = read_apc();
+					m = lst.match(/\nselmask.pbm\t([0-9a-f]+)\n/);
+					if (m == null || m[1] !== md5) {
+						// Store in cache...
+						console.write('\x1b_SyncTERM:C;S;minesweeper/'+mfile+';');
+						f.base64 = true;
+						console.write(f.read());
+						console.write('\x1b\\');
+						sent = true;
+					}
+					console.write('\x1b_SyncTERM:C;L;minesweeper/'+mfile+'\x1b\\');
+					lst = read_apc();
+					m = lst.match(/\nselmask.pbm\t([0-9a-f]+)\n/);
+					if (m == null || m[1] !== md5) {
+						graph = false;
+					}
+					f.close();
 				}
-				f.close();
-				console.write('\x1b_SyncTERM:C;LoadPBM;minesweeper/'+mfile+'\x1b\\');
-			}
-			else {
-				graph = false;
+				else {
+					graph = false;
+				}
 			}
 		}
 		else {
 			graph = false;
 		}
 	}
+
+	if (graph) {
+		console.write('\x1b_SyncTERM:C;LoadPPM;B=0;minesweeper/'+gfile+'\x1b\\');
+		console.write('\x1b_SyncTERM:C;LoadPBM;minesweeper/'+mfile+'\x1b\\');
+	}
+
 	console.ctrlkey_passthru = tmpckpt;
 	if (graph) {
 		console.mouse_mode = false;
