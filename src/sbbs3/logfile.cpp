@@ -177,7 +177,7 @@ void sbbs_t::logentry(const char *code, const char *entry)
 void sbbs_t::log(const char *str)
 {
 	if(logfile_fp==NULL || online==ON_LOCAL) return;
-	if(logcol>=78 || (78-logcol)<strlen(str)) {
+	if(logcol>=78 || (logcol > 1 && (78-logcol)<strlen(str))) {
 		fputs(log_line_ending, logfile_fp);
 		logcol=1; 
 	}
