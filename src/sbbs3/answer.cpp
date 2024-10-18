@@ -742,7 +742,7 @@ bool sbbs_t::answer()
 			}
 			pthread_mutex_unlock(&input_thread_mutex);
 		}
-	lprintf(LOG_INFO, "terminal type: %ux%u %s %s", cols, rows, term_charset(autoterm), terminal);
+		lprintf(LOG_INFO, "terminal type: %ux%u %s %s", cols, rows, term_charset(autoterm), terminal);
 		SAFECOPY(client_ipaddr, cid);	/* Over-ride IP address with Caller-ID info */
 		SAFECOPY(useron.comp,client_name);
 	}
