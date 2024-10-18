@@ -155,7 +155,7 @@ function mouse_reporting_modes(mode)
 	if(mode == 'all')
 		for(var i in defs.mouse_reporting)
 			list.push(defs.mouse_reporting[i]);
-	else if(typeof mode == 'array')
+	else if(typeof mode == 'object')
 		for(var i in mode)
 			list.push(defs.mouse_reporting[mode[i]]);
 	else
