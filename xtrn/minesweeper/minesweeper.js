@@ -118,7 +118,7 @@ log(LOG_DEBUG, title + " options: " + JSON.stringify(options));
 function mouse_enable(enable)
 {
 	if (graph) {
-		console.write("\x1b[?1003;1006"+(enable ? 'h' : 'l'));
+		ansiterm.send('mouse', enable ? 'set' : 'clear', ['any_events', 'extended_coord']);
 		return;
 	}
 	const mouse_passthru = (CON_MOUSE_CLK_PASSTHRU | CON_MOUSE_REL_PASSTHRU);
@@ -1245,7 +1245,8 @@ function detect_graphics()
 	console.ctrlkey_passthru = tmpckpt;
 	if (graph) {
 		console.mouse_mode = false;
-		console.write("\x1b[?9;1000;1001;1002;1004;1005;1007;1015;1016l\x1b[?1003;1006h");
+		ansiterm.send('mouse', 'clear', 'all');
+		ansiterm.send('mouse', 'set', ['any_events', 'extended_coord']);
 		js.on_exit("console.write('\x1b[?1003;1006l;'); console.mouse_mode = orig_mouse; user.misc = orig_misc; console.autoterm = orig_autoterm;");
 	}
 }
