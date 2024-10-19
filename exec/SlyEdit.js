@@ -76,6 +76,11 @@
  * 2024-05-11 Eric Oulashin     Version 1.89b
  *                              In SlyEdit_Misc.js, check to see that xtrn_area.editor[user.editor]
  *                              is an object before using it.
+ * 2024-10-19 Eric Oulashin     Version 1.89c
+ *                              Open the quote file in binary mode to avoid EOF issues on Windows
+ *                              if a unicode "right arrow" code exists in the message, which
+ *                              would get truncated to ASCII Ctrl-Z (ASCII 26), which is
+ *                              interpreted as EOF on Windows.
  */
 
 "use strict";
@@ -164,8 +169,8 @@ if (console.screen_columns < 80)
 }
 
 // Version information
-var EDITOR_VERSION = "1.89b";
-var EDITOR_VER_DATE = "2024-05-11";
+var EDITOR_VERSION = "1.89c";
+var EDITOR_VER_DATE = "2024-10-19";
 
 
 // Program variables
@@ -1009,14 +1014,14 @@ console.crlf();
 // If the user's setting to pause after every screenful is disabled, then
 // pause here so that they can see the exit information.
 if (user.settings & USER_PAUSE == 0)
-   mswait(1000);
+	mswait(1000);
 
 // Load any specified 3rd-party exit scripts and execute any provided exit
 // JavaScript commands.
 for (var i = 0; i < gConfigSettings.thirdPartyLoadOnExit.length; ++i)
-  load(gConfigSettings.thirdPartyLoadOnExit[i]);
+	load(gConfigSettings.thirdPartyLoadOnExit[i]);
 for (var i = 0; i < gConfigSettings.runJSOnExit.length; ++i)
-  eval(gConfigSettings.runJSOnExit[i]);
+	eval(gConfigSettings.runJSOnExit[i]);
 
 exit(exitCode);
 
@@ -1030,7 +1035,14 @@ exit(exitCode);
 function readQuoteOrMessageFile()
 {
 	var inputFile = new File(gInputFilename);
-	if (inputFile.open("r", false))
+	// Open the quote file in "binary" mode (only applicable on Windows) - If
+	// the quote file contains a Ctrl-Z (ASCII 26) char, it would be truncated
+	// at that point. Some UTF-8 messages that include a "right arrow" unicode
+	// code point are truncated to ASCII Ctrl-Z (ASCII 26) char, which is interpreted
+	// by Windows as an "EOF" (end of file) marker for files open in text mode and the
+	// file won't be read beyond that char.
+	var openMode = gUseQuotes ? "rb" : "r";
+	if (inputFile.open(openMode, false))
 	{
 		// Read into the gQuoteLines or gEditLines array, depending on the value
 		// of gUseQuotes.  Use a buffer size that should be long enough.
