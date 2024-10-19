@@ -694,6 +694,7 @@ static void setup_surfaces(struct video_stats *vs)
 	}
 	pthread_mutex_unlock(&win_mutex);
 	vstat.scaling = sdl_getscaling();
+	update_cvstat(vs);
 }
 
 /* Called from event thread only */
