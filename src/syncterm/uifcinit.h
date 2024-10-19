@@ -9,6 +9,7 @@
 #include <uifc.h>
 
 extern uifcapi_t uifc; /* User Interface (UIFC) Library API */
+void set_uifc_title(void);
 int init_uifc(bool scrn, bool bottom);
 void uifcbail(void);
 void uifcmsg(char *msg, char *helpbuf);

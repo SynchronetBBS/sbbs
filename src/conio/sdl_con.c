@@ -699,6 +699,8 @@ static void setup_surfaces(struct video_stats *vs)
 /* Called from event thread only */
 static void sdl_add_key(unsigned int keyval, struct video_stats *vs)
 {
+	int w, h;
+
 	if (keyval == 0xe0)
 		keyval = CIO_KEY_LITERAL_E0;
 	if(keyval==0xa600 && vs != NULL) {
@@ -706,12 +708,12 @@ static void sdl_add_key(unsigned int keyval, struct video_stats *vs)
 		cio_api.mode=fullscreen?CIOLIB_MODE_SDL_FULLSCREEN:CIOLIB_MODE_SDL;
 		update_cvstat(vs);
 		sdl.SetWindowFullscreen(win, fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
-		if (!fullscreen) {
-			int w, h;
+		sdl.SetWindowResizable(win, fullscreen ? SDL_FALSE : SDL_TRUE);
 
-			// Get current window size
-			sdl.GetWindowSizeInPixels(win, &w, &h);
-			// Limit to max window size if available
+		// Get current window size
+		sdl.GetWindowSizeInPixels(win, &w, &h);
+		// Limit to max window size if available
+		if (!fullscreen) {
 			SDL_Rect r;
 			if (sdl.GetDisplayUsableBounds(0, &r) == 0) {
 				if (w > r.w)
@@ -719,10 +721,10 @@ static void sdl_add_key(unsigned int keyval, struct video_stats *vs)
 				if (h > r.h)
 					h = r.h;
 			}
-			// Set size based on current max
-			vs->scaling = bitmap_double_mult_inside(w, h);
-			bitmap_get_scaled_win_size(vs->scaling, &vs->winwidth, &vs->winheight, w, h);
 		}
+		// Set size based on current max
+		vs->scaling = bitmap_double_mult_inside(w, h);
+		bitmap_get_scaled_win_size(vs->scaling, &vs->winwidth, &vs->winheight, w, h);
 		setup_surfaces(vs);
 		return;
 	}
@@ -1049,7 +1051,11 @@ void sdl_video_event_thread(void *data)
 						// Fall-through
 					case SDL_WINDOWEVENT_SIZE_CHANGED:
 						// SDL2: User resized window
-					case SDL_WINDOWEVENT_RESIZED:
+					case SDL_WINDOWEVENT_RESIZED: {
+						int flags = sdl.GetWindowFlags(win);
+						fullscreen = (flags & (SDL_WINDOW_FULLSCREEN)) != 0;
+						sdl.SetWindowResizable(win, (flags & SDL_WINDOW_FULLSCREEN) ? SDL_FALSE : SDL_TRUE);
+						cio_api.mode=fullscreen?CIOLIB_MODE_SDL_FULLSCREEN:CIOLIB_MODE_SDL;
 						pthread_mutex_lock(&sdl_mode_mutex);
 						if (sdl_mode) {
 							pthread_mutex_unlock(&sdl_mode_mutex);
@@ -1058,6 +1064,7 @@ void sdl_video_event_thread(void *data)
 						pthread_mutex_unlock(&sdl_mode_mutex);
 						internal_setwinsize(&cvstat, false);
 						break;
+					}
 					case SDL_WINDOWEVENT_EXPOSED:
 						bitmap_drv_request_pixels();
 						break;

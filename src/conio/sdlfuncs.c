@@ -150,6 +150,10 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		xp_dlclose(sdl_dll);
 		return(-1);
 	}
+	if((sdlf->SetWindowResizable=xp_dlsym(sdl_dll, SDL_SetWindowResizable))==NULL) {
+		xp_dlclose(sdl_dll);
+		return(-1);
+	}
 	if((sdlf->LockTexture=xp_dlsym(sdl_dll, SDL_LockTexture))==NULL) {
 		xp_dlclose(sdl_dll);
 		return(-1);
