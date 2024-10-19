@@ -6,7 +6,7 @@
 
 const title = "Synchronet Minesweeper";
 const ini_section = "minesweeper";
-const REVISION = "$Revision: 2.16 $".split(' ')[1];
+const REVISION = "3.00";
 const author = "Digital Man";
 const header_height = 4;
 const winners_list = js.exec_dir + "winners.jsonl";
@@ -100,6 +100,9 @@ else {
 	var ansiterm = bbs.mods.ansiterm_lib;
 	if(!ansiterm)
 		ansiterm = bbs.mods.ansiterm_lib = load({}, "ansiterm_lib.js");
+	var cterm = bbs.mods.cterm_lib;
+	if(!cterm)
+		cterm = bbs.mods.cterm_lib = load({}, "cterm_lib.js");
 }
 var game = {};
 var board = [];
@@ -391,6 +394,11 @@ function get_winners(level)
 	return list;
 }
 
+function datestr(t)
+{
+	return strftime("%b%m-%y", t);
+}
+
 function show_winners(level)
 {
 	console.clear();
@@ -437,7 +445,7 @@ function show_winners(level)
 			,game.width
 			,game.height
 			,game.mines
-			,system.datestr(game.end)
+			,datestr(game.end)
 			));
 		count++;
 		displayed++;
@@ -483,7 +491,7 @@ function show_log()
 		else
 			console.attributes = BG_CYAN;
 		console.print(format("%s  %-25s %1.2f %s %3ux%2ux%-3u %3s  %s\x01>\x01n\r\n"
-			,system.datestr(game.end)
+			,datestr(game.end)
 			,game.name
 			,calc_difficulty(game)
 			,secondstr(calc_time(game), true)
@@ -519,7 +527,7 @@ function show_best()
 		else
 			console.attributes = BG_CYAN;
 		console.print(format("%s  %1.2f  %s  %3ux%2ux%-3u %s\x01>\x01n\r\n"
-			,system.datestr(game.end)
+			,datestr(game.end)
 			,calc_difficulty(game)
 			,secondstr(calc_time(game), true)
 			,game.width, game.height, game.mines
@@ -1090,74 +1098,6 @@ function read_apc()
 	return undefined;
 }
 
-
-function pixel_capability()
-{
-	var ret = false;
-	var ch;
-	var state = 0;
-	var optval = 0;
-
-	for(;;) {
-		ch = console.getbyte();
-		switch(state) {
-			case 0:
-				if (ch == 0x1b) { // ESC
-					state++;
-					break;
-				}
-				break;
-			case 1:
-				if (ch == 91) {   // [
-					state++;
-					break;
-				}
-				state = 0;
-				break;
-			case 2:
-				if (ch == 60) {   // <
-					state++;
-					break;
-				}
-				state = 0;
-				break;
-			case 3:
-				if (ch == 48) {   // 0
-					state++;
-					break;
-				}
-				state = 0;
-				break;
-			case 4:
-				if (ch == 59) {   // ;
-					state++;
-					break;
-				}
-				state = 0;
-				break;
-			case 5:
-				if (ch >= ascii('0') && ch <= ascii('9')) {
-					optval = optval * 10 + (ch - ascii('0'));
-					break;
-				}
-				else if(ch == 59) {
-					if (optval === 3)
-						ret = true;
-					optval = 0;
-					break;
-				}
-				else if (ch === 99) { // c
-					if (optval === 3)
-						ret = true;
-					return ret;
-				}
-				state = 0;
-				break;
-		}
-	}
-	return ret;
-}
-
 function detect_graphics()
 {
 	var tmpckpt;
@@ -1171,15 +1111,13 @@ function detect_graphics()
 	// Detect PPM graphics and load the cache
 	graph = false;
 	tmpckpt = console.ctrlkey_passthru;
-	if (console.cterm_version >= 1316) {
-		console.ctrlkey_passthru = '+[';
-		console.write('\x1b[<c');
-		graph = pixel_capability();
+	if (console.cterm_version >= cterm.cterm_version_supports_copy_buffers) {
+		graph = cterm.query_ctda(cterm.cterm_device_attributes.pixelops_supported);
 	}
 
 	if (graph) {
 		// Load up cache...
-		f = new File(js.exec_dir+'/'+gfile);
+		f = new File(js.exec_dir+gfile);
 		if (f.open('rb')) {
 			sent = false;
 			md5 = f.md5_hex;
@@ -1205,7 +1143,7 @@ function detect_graphics()
 			f.close();
 			if (graph) {
 				sent = false;
-				f = new File(js.exec_dir+'/'+mfile);
+				f = new File(js.exec_dir+mfile);
 				if (f.open('rb')) {
 					md5 = f.md5_hex;
 					console.write('\x1b_SyncTERM:C;L;minesweeper/'+mfile+'\x1b\\');
