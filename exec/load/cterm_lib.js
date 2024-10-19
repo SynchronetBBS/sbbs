@@ -13,6 +13,7 @@ const cterm_version_supports_mode_query = 1160;
 const cterm_version_supports_palettes = 1167;
 const cterm_version_supports_sixel = 1189;
 const cterm_version_supports_fontdim_query = 1198;
+const cterm_version_supports_copy_buffers = 1316;
 var font_slot_first = 43;
 const font_slot_last = 255;
 const font_styles = { normal:0, high:1, blink:2, highblink:3 };
