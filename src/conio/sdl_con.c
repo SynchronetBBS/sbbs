@@ -704,7 +704,7 @@ static void sdl_add_key(unsigned int keyval, struct video_stats *vs)
 	if (keyval == 0xe0)
 		keyval = CIO_KEY_LITERAL_E0;
 	if(keyval==0xa600 && vs != NULL) {
-		fullscreen = !(sdl.GetWindowFlags(win) & SDL_WINDOW_MAXIMIZED);
+		fullscreen = !(sdl.GetWindowFlags(win) & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP));
 		cio_api.mode=fullscreen?CIOLIB_MODE_SDL_FULLSCREEN:CIOLIB_MODE_SDL;
 		update_cvstat(vs);
 		sdl.SetWindowFullscreen(win, fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
@@ -1053,8 +1053,8 @@ void sdl_video_event_thread(void *data)
 						// SDL2: User resized window
 					case SDL_WINDOWEVENT_RESIZED: {
 						int flags = sdl.GetWindowFlags(win);
-						fullscreen = (flags & (SDL_WINDOW_FULLSCREEN)) != 0;
-						sdl.SetWindowResizable(win, (flags & SDL_WINDOW_FULLSCREEN) ? SDL_FALSE : SDL_TRUE);
+						fullscreen = (flags & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP)) != 0;
+						sdl.SetWindowResizable(win, (flags & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP)) ? SDL_FALSE : SDL_TRUE);
 						cio_api.mode=fullscreen?CIOLIB_MODE_SDL_FULLSCREEN:CIOLIB_MODE_SDL;
 						pthread_mutex_lock(&sdl_mode_mutex);
 						if (sdl_mode) {
