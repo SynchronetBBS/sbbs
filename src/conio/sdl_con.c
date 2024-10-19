@@ -704,7 +704,7 @@ static void sdl_add_key(unsigned int keyval, struct video_stats *vs)
 	if (keyval == 0xe0)
 		keyval = CIO_KEY_LITERAL_E0;
 	if(keyval==0xa600 && vs != NULL) {
-		fullscreen=!fullscreen;
+		fullscreen = !(sdl.GetWindowFlags(win) & SDL_WINDOW_MAXIMIZED);
 		cio_api.mode=fullscreen?CIOLIB_MODE_SDL_FULLSCREEN:CIOLIB_MODE_SDL;
 		update_cvstat(vs);
 		sdl.SetWindowFullscreen(win, fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
