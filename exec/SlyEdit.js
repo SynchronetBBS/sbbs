@@ -1041,8 +1041,7 @@ function readQuoteOrMessageFile()
 	// code point are truncated to ASCII Ctrl-Z (ASCII 26) char, which is interpreted
 	// by Windows as an "EOF" (end of file) marker for files open in text mode and the
 	// file won't be read beyond that char.
-	var openMode = gUseQuotes ? "rb" : "r";
-	if (inputFile.open(openMode, false))
+	if (inputFile.open("rb", false))
 	{
 		// Read into the gQuoteLines or gEditLines array, depending on the value
 		// of gUseQuotes.  Use a buffer size that should be long enough.
