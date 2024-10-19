@@ -474,7 +474,7 @@ enum failure_reason {
 	FAILURE_DISCONNECTED
 };
 
-int
+SOCKET
 conn_socket_connect(struct bbslist *bbs)
 {
 	SOCKET           sock = INVALID_SOCKET;
