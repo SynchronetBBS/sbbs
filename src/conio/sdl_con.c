@@ -63,7 +63,7 @@ int sdl_ufunc_retval;
 sem_t sdl_flush_sem;
 int pending_updates=0;
 
-int fullscreen=0;
+int fullscreen = 0;
 
 int	sdl_init_good=0;
 pthread_mutex_t sdl_keylock;
@@ -395,7 +395,7 @@ int sdl_init(int mode)
 	bitmap_drv_init(sdl_drawrect, sdl_flush);
 
 	if(mode==CIOLIB_MODE_SDL_FULLSCREEN)
-		fullscreen=1;
+		fullscreen = 1;
 	// Needs to be *after* bitmap_drv_init()
 #if defined(__DARWIN__)
 	sem_post(&startsdl_sem);
@@ -924,24 +924,23 @@ void sdl_video_event_thread(void *data)
 					if ((ev.key.keysym.mod & KMOD_ALT) &&
 					    (ev.key.keysym.sym == SDLK_LEFT ||
 					     ev.key.keysym.sym == SDLK_RIGHT)) {
-						// Don't allow ALT-DIR to change size when maximized...
-						if ((sdl.GetWindowFlags(win) & SDL_WINDOW_MAXIMIZED) == 0) {
-							int w, h;
-							SDL_Rect r;
-							if (sdl.GetDisplayUsableBounds(0, &r) == 0) {
-								w = r.w;
-								h = r.h;
-							}
-							else {
-								w = 0;
-								h = 0;
-							}
-							pthread_mutex_lock(&vstatlock);
-							bitmap_snap(ev.key.keysym.sym == SDLK_RIGHT, w, h);
-							pthread_mutex_unlock(&vstatlock);
-							update_cvstat(&cvstat);
-							setup_surfaces(&cvstat);
+						if (sdl.GetWindowFlags(win) & SDL_WINDOW_MAXIMIZED)
+							sdl.RestoreWindow(win);
+						int w, h;
+						SDL_Rect r;
+						if (sdl.GetDisplayUsableBounds(0, &r) == 0) {
+							w = r.w;
+							h = r.h;
 						}
+						else {
+							w = 0;
+							h = 0;
+						}
+						pthread_mutex_lock(&vstatlock);
+						bitmap_snap(ev.key.keysym.sym == SDLK_RIGHT, w, h);
+						pthread_mutex_unlock(&vstatlock);
+						update_cvstat(&cvstat);
+						setup_surfaces(&cvstat);
 						break;
 					}
 				}
@@ -1051,10 +1050,9 @@ void sdl_video_event_thread(void *data)
 						// Fall-through
 					case SDL_WINDOWEVENT_SIZE_CHANGED:
 						// SDL2: User resized window
-					case SDL_WINDOWEVENT_RESIZED: {
-						int flags = sdl.GetWindowFlags(win);
-						fullscreen = (flags & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP)) != 0;
-						sdl.SetWindowResizable(win, (flags & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP)) ? SDL_FALSE : SDL_TRUE);
+					case SDL_WINDOWEVENT_RESIZED:
+						fullscreen = !!(sdl.GetWindowFlags(win) & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP));
+						sdl.SetWindowResizable(win, fullscreen ? SDL_FALSE : SDL_TRUE);
 						cio_api.mode=fullscreen?CIOLIB_MODE_SDL_FULLSCREEN:CIOLIB_MODE_SDL;
 						pthread_mutex_lock(&sdl_mode_mutex);
 						if (sdl_mode) {
@@ -1064,7 +1062,6 @@ void sdl_video_event_thread(void *data)
 						pthread_mutex_unlock(&sdl_mode_mutex);
 						internal_setwinsize(&cvstat, false);
 						break;
-					}
 					case SDL_WINDOWEVENT_EXPOSED:
 						bitmap_drv_request_pixels();
 						break;
