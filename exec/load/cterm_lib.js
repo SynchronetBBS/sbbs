@@ -406,7 +406,9 @@ function redefine_palette(palette, bits)
 // Scale from 6-bit to 8-bit RGB color channel
 function scale_rgb_channel_value(val)
 {
-	var newval = Math.ceil(0xff / (0x3f / (val&0x3f)));
+	val &= 0x3f;
+
+	var newval = (val << 2) | (val >> 4);
 
 //	log(LOG_DEBUG, format("scaled color channel from %d (%X) to %d (%x)", val, val, newval, newval));
 
