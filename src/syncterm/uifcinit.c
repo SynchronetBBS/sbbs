@@ -24,6 +24,26 @@ int      orig_x;
 int      orig_y;
 uint32_t orig_palette[16];
 
+static void
+get_title(char *str, size_t sz)
+{
+	snprintf(str, sz, "%.40s - %.30s", syncterm_version, output_descrs[cio_api.mode]);
+}
+
+void
+set_uifc_title(void)
+{
+	char top[80];
+
+	textattr(uifc.bclr | (uifc.cclr<<4));
+	get_title(top, sizeof(top));
+	gotoxy(1,1);
+	clreol();
+	gotoxy(3,1);
+	cputs(top);
+        uifc.timedisplay(true);
+}
+
 int
 init_uifc(bool scrn, bool bottom)
 {
@@ -59,7 +79,7 @@ init_uifc(bool scrn, bool bottom)
 	}
 
 	if (scrn) {
-		sprintf(top, "%.40s - %.30s", syncterm_version, output_descrs[cio_api.mode]);
+		get_title(top, sizeof(top));
 		if (uifc.scrn(top)) {
 			printf(" USCRN (len=%d) failed!\n", uifc.scrn_len + 1);
 			uifc.bail();

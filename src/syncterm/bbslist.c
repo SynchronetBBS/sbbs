@@ -2655,6 +2655,7 @@ show_bbslist(char *current, int connected)
 	char                  list_title[30];
 	int                   redraw = 0;
 	bool                  nowait = true;
+	int                   last_mode;
 
 	glob_sbar = &sbar;
 	glob_sopt = &sopt;
@@ -2678,6 +2679,7 @@ show_bbslist(char *current, int connected)
 	uifc.helpbuf = "Help Button Hack";
 	uifc.list(WIN_T2B | WIN_RHT | WIN_EXTKEYS | WIN_DYN | WIN_ACT | WIN_INACT,
 	    0, 0, 0, &sopt, &sbar, "SyncTERM Settings", connected ? connected_settings_menu : settings_menu);
+	last_mode = cio_api.mode;
 	for (;;) {
 		if (quitting) {
 			free(list);
@@ -2689,6 +2691,10 @@ show_bbslist(char *current, int connected)
 				if (quitting) {
 					free(list);
 					return NULL;
+				}
+				if (last_mode != cio_api.mode) {
+					set_uifc_title();
+					last_mode = cio_api.mode;
 				}
 				if (connected) {
 					uifc.helpbuf = "`SyncTERM Directory`\n\n"
@@ -3166,6 +3172,10 @@ show_bbslist(char *current, int connected)
 		}
 		else {
 			for (; at_settings && !quitting;) {
+				if (last_mode != cio_api.mode) {
+					set_uifc_title();
+					last_mode = cio_api.mode;
+				}
 				uifc.helpbuf = "`SyncTERM Settings Menu`\n\n"
 				    "~ Default Connection Settings ~\n"
 				    "        Modify the settings that are used by default for new entries\n\n"
