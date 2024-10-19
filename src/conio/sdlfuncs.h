@@ -43,7 +43,7 @@ struct sdlfuncs {
 	void (HACK_HACK_HACK *SetWindowSize)	(SDL_Window *window, int w, int h);
 	void (HACK_HACK_HACK *DestroyTexture)	(SDL_Texture *texture);
 	int (HACK_HACK_HACK *SetWindowFullscreen)	(SDL_Window *window, Uint32 flags);
-	int (HACK_HACK_HACK *SetWindowResizable)	(SDL_Window *window, SDL_bool resizable);
+	void (HACK_HACK_HACK *SetWindowResizable)	(SDL_Window *window, SDL_bool resizable);
 	int (HACK_HACK_HACK *LockTexture)	(SDL_Texture *texture, const SDL_Rect *rect, void **pixels, int *pitch);
 	void (HACK_HACK_HACK *UnlockTexture)	(SDL_Texture *texture);
 	int (HACK_HACK_HACK *QueryTexture)	(SDL_Texture *texture, Uint32 *format, int *access, int *w, int *h);
