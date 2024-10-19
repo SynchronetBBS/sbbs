@@ -59,6 +59,7 @@ struct sdlfuncs {
 	void(HACK_HACK_HACK *free)	(void *);
 	Uint32(HACK_HACK_HACK *GetWindowFlags)	(SDL_Window * window);
 	int (HACK_HACK_HACK *GetDisplayUsableBounds) (int, SDL_Rect *);
+	void (HACK_HACK_HACK *RestoreWindow) (SDL_Window *);
 	int	gotfuncs;
 };
 

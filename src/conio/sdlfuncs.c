@@ -214,6 +214,10 @@ int load_sdl_funcs(struct sdlfuncs *sdlf)
 		xp_dlclose(sdl_dll);
 		return(-1);
 	}
+	if((sdlf->RestoreWindow=xp_dlsym(sdl_dll, SDL_RestoreWindow))==NULL) {
+		xp_dlclose(sdl_dll);
+		return(-1);
+	}
 #ifndef STATIC_SDL
 	{
 		int (HACK_HACK_HACK *ra)(char *name, Uint32 style, void *hInst);
