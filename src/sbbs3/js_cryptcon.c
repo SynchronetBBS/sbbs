@@ -1034,8 +1034,8 @@ static const char* cryptcon_algo_prop_desc[] = {
 	 "<p>Elgamal was formerly covered (indirectly) by a patent in the US, this has now expired.</p>",
 	"ECDSA is a digital signature algorithm with a key size of up to 521 bits.",
 	"ECDH is a key-agreement algorithm with a key size of up to 521 bits.",
-	"EDDSA is a digital signature scheme using a variant of Schnorr signature based on twisted Edwards curves."
-	"X25519 is a digital signature scheme using one of the fastest curves in ECC, and is not covered by any known patents."
+	"EDDSA is a digital signature scheme using a variant of Schnorr signature based on twisted Edwards curves.",
+	"X25519 is a digital signature scheme using one of the fastest curves in ECC, and is not covered by any known patents.",
 	"MD5 (only used for TLS 1.0/1.1)",
 	"SHA1 is a message digest/hash algorithm with a digest/hash size of 160 bits. This algorithm has poor long-term security prospects and should be deprecated in favour of SHA-2.",
 	"SHA2/SHA256 is a message digest/hash algorithm with a digest/hash size of 256 bits.",
