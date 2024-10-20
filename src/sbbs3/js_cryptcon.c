@@ -1023,6 +1023,7 @@ static const char* cryptcon_algo_prop_desc[] = {
 	"RC4 is an 8-bit stream cipher with a key of up to 1024 bits. Some weaknesses have been found in this algorithm, and it's proven to be extremely difficult to employ in a safe manner. For this reason it should not be used any more except for legacy application support, and is disabled by default.</p>"
 	 "<p>The term \"RC4\" is trademarked in the US. It may be necessary to refer to it as \"an algorithm compatible with RC4\" in products that use RC4 and are distributed in the US. Common practice is to refer to it as ArcFour.</p>",
 	"AES is a 128-bit block cipher with a 128-bit key.",
+	"ChaCha20 is a 512-bit state stream cipher with a 128 or 256-bit key size.",
 	"<p>Diffie-Hellman is a key-agreement algorithm with a key size of up to 4096 bits.</p>"
 	 "<p>Diffie-Hellman was formerly covered by a patent in the US, this has now expired.</p>",
 	"<p>RSA is a public-key encryption/digital signature algorithm with a key size of up to 4096 bits.</p>"
@@ -1033,6 +1034,8 @@ static const char* cryptcon_algo_prop_desc[] = {
 	 "<p>Elgamal was formerly covered (indirectly) by a patent in the US, this has now expired.</p>",
 	"ECDSA is a digital signature algorithm with a key size of up to 521 bits.",
 	"ECDH is a key-agreement algorithm with a key size of up to 521 bits.",
+	"EDDSA is a digital signature scheme using a variant of Schnorr signature based on twisted Edwards curves."
+	"X25519 is a digital signature scheme using one of the fastest curves in ECC, and is not covered by any known patents."
 	"MD5 (only used for TLS 1.0/1.1)",
 	"SHA1 is a message digest/hash algorithm with a digest/hash size of 160 bits. This algorithm has poor long-term security prospects and should be deprecated in favour of SHA-2.",
 	"SHA2/SHA256 is a message digest/hash algorithm with a digest/hash size of 256 bits.",
@@ -1040,6 +1043,7 @@ static const char* cryptcon_algo_prop_desc[] = {
 	"HMAC-SHA1 is a MAC algorithm with a key size of up to 1024 bits.",
 	"HMAC-SHA2 is a MAC algorithm with a key size of up to 1024 bits.",
 	"HMAC-future-SHA-nextgen",
+	"Poly1305 is a universal hash family designed for use in cryptography.",
 	NULL
 };
 
@@ -1091,6 +1095,9 @@ JSObject* js_CreateCryptContextClass(JSContext* cx, JSObject* parent)
 			JS_DefineProperty(cx, algo, "AES", INT_TO_JSVAL(CRYPT_ALGO_AES), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 			/* CRYPT_ALGO_BLOWFISH no longer supported */
+			JS_DefineProperty(cx, algo, "Chacha20", INT_TO_JSVAL(CRYPT_ALGO_CHACHA20), NULL, NULL
+				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+
 			JS_DefineProperty(cx, algo, "DH", INT_TO_JSVAL(CRYPT_ALGO_DH), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 			JS_DefineProperty(cx, algo, "RSA", INT_TO_JSVAL(CRYPT_ALGO_RSA), NULL, NULL
@@ -1103,6 +1110,11 @@ JSObject* js_CreateCryptContextClass(JSContext* cx, JSObject* parent)
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 			JS_DefineProperty(cx, algo, "ECDH", INT_TO_JSVAL(CRYPT_ALGO_ECDH), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+			JS_DefineProperty(cx, algo, "EDDSA", INT_TO_JSVAL(CRYPT_ALGO_ECDSA), NULL, NULL
+				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+			JS_DefineProperty(cx, algo, "X25519", INT_TO_JSVAL(CRYPT_ALGO_25519), NULL, NULL
+				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+
 			JS_DefineProperty(cx, algo, "MD5", INT_TO_JSVAL(CRYPT_ALGO_MD5), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 			JS_DefineProperty(cx, algo, "SHA1", INT_TO_JSVAL(CRYPT_ALGO_SHA1), NULL, NULL
@@ -1112,6 +1124,7 @@ JSObject* js_CreateCryptContextClass(JSContext* cx, JSObject* parent)
 			/* CRYPT_ALGO_RIPEMD160 no longer supported */
 			JS_DefineProperty(cx, algo, "SHAng", INT_TO_JSVAL(CRYPT_ALGO_SHAng), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+
 			/* CRYPT_ALGO_HMAC_MD5 no longer supported */
 			JS_DefineProperty(cx, algo, "HMAC-SHA1", INT_TO_JSVAL(CRYPT_ALGO_HMAC_SHA1), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
@@ -1119,6 +1132,8 @@ JSObject* js_CreateCryptContextClass(JSContext* cx, JSObject* parent)
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 			/* CRYPT_ALGO_HMAC_RIPEMD160 no longer supported */
 			JS_DefineProperty(cx, algo, "HMAC-SHAng", INT_TO_JSVAL(CRYPT_ALGO_HMAC_SHAng), NULL, NULL
+				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+			JS_DefineProperty(cx, algo, "HMAC-Poly1305", INT_TO_JSVAL(CRYPT_ALGO_HMAC_POLY1305), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 #ifdef BUILD_JSDOCS
 			js_CreateArrayOfStrings(cx, algo, "_property_desc_list", cryptcon_algo_prop_desc, JSPROP_READONLY);
