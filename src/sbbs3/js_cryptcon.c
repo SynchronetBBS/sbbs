@@ -1095,7 +1095,7 @@ JSObject* js_CreateCryptContextClass(JSContext* cx, JSObject* parent)
 			JS_DefineProperty(cx, algo, "AES", INT_TO_JSVAL(CRYPT_ALGO_AES), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 			/* CRYPT_ALGO_BLOWFISH no longer supported */
-			JS_DefineProperty(cx, algo, "Chacha20", INT_TO_JSVAL(CRYPT_ALGO_CHACHA20), NULL, NULL
+			JS_DefineProperty(cx, algo, "ChaCha20", INT_TO_JSVAL(CRYPT_ALGO_CHACHA20), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 
 			JS_DefineProperty(cx, algo, "DH", INT_TO_JSVAL(CRYPT_ALGO_DH), NULL, NULL
@@ -1133,7 +1133,7 @@ JSObject* js_CreateCryptContextClass(JSContext* cx, JSObject* parent)
 			/* CRYPT_ALGO_HMAC_RIPEMD160 no longer supported */
 			JS_DefineProperty(cx, algo, "HMAC-SHAng", INT_TO_JSVAL(CRYPT_ALGO_HMAC_SHAng), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
-			JS_DefineProperty(cx, algo, "HMAC-Poly1305", INT_TO_JSVAL(CRYPT_ALGO_HMAC_POLY1305), NULL, NULL
+			JS_DefineProperty(cx, algo, "HMAC-Poly1305", INT_TO_JSVAL(CRYPT_ALGO_POLY1305), NULL, NULL
 				, JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
 #ifdef BUILD_JSDOCS
 			js_CreateArrayOfStrings(cx, algo, "_property_desc_list", cryptcon_algo_prop_desc, JSPROP_READONLY);
