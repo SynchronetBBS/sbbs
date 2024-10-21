@@ -83,6 +83,14 @@ static pthread_mutex_t sdl_headlock;
 static struct rectlist *update_list = NULL;
 static struct rectlist *update_list_tail = NULL;
 
+#ifdef __DARWIN__
+static int mac_width;
+static int mac_height;
+#define UPDATE_WINDOW_SIZE sdl.GetWindowSize(win, &mac_width, &mac_height)
+#else
+#define UPDATE_WINDOW_SIZE
+#endif
+
 enum {
 	 SDL_USEREVENT_FLUSH
 	,SDL_USEREVENT_SETTITLE
@@ -459,6 +467,7 @@ static void internal_setwinsize(struct video_stats *vs, bool force)
 	else {
 		pthread_mutex_lock(&win_mutex);
 		sdl.GetWindowSizeInPixels(win, &w, &h);
+		UPDATE_WINDOW_SIZE;
 		pthread_mutex_unlock(&win_mutex);
 		if (w != vs->winwidth || h != vs->winheight) {
 			vs->winwidth = w;
@@ -637,6 +646,7 @@ static void setup_surfaces(struct video_stats *vs)
 		new_win = true;
 		if (sdl.CreateWindowAndRenderer(vs->winwidth, vs->winheight, flags, &win, &renderer) == 0) {
 			sdl.GetWindowSizeInPixels(win, &idealw, &idealh);
+			UPDATE_WINDOW_SIZE;
 			vs->winwidth = idealw;
 			vs->winheight = idealh;
 			sdl.RenderClear(renderer);
@@ -663,6 +673,7 @@ static void setup_surfaces(struct video_stats *vs)
 			sdl.SetWindowSize(win, idealw, idealh);
 		}
 		sdl.GetWindowSizeInPixels(win, &idealw, &idealh);
+		UPDATE_WINDOW_SIZE;
 		vs->winwidth = idealw;
 		vs->winheight = idealh;
 		if (internal_scaling) {
@@ -713,6 +724,7 @@ static void sdl_add_key(unsigned int keyval, struct video_stats *vs)
 
 		// Get current window size
 		sdl.GetWindowSizeInPixels(win, &w, &h);
+		UPDATE_WINDOW_SIZE;
 		// Limit to max window size if available
 		if (!fullscreen) {
 			SDL_Rect r;
@@ -861,6 +873,9 @@ static int win_to_res_xpos(int winpos, struct video_stats *vs)
 	int w, h;
 
 	bitmap_get_scaled_win_size(vs->scaling, &w, &h, 0, 0);
+#ifdef __DARWIN__
+	winpos = winpos * vs->winwidth / mac_width;
+#endif
 	int xoff = (vs->winwidth - w) / 2;
 	if (xoff < 0)
 		xoff = 0;
@@ -880,6 +895,9 @@ static int win_to_res_ypos(int winpos, struct video_stats *vs)
 	int w, h;
 
 	bitmap_get_scaled_win_size(vs->scaling, &w, &h, 0, 0);
+#ifdef __DARWIN__
+	winpos = winpos * vs->winheight / mac_height;
+#endif
 	int yoff = (vs->winheight - h) / 2;
 	if (yoff < 0)
 		yoff = 0;

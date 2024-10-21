@@ -6,6 +6,7 @@ Create dirs on macOS when needed - fixes adding first BBS
 Fix cache subdirectories on Windows
 Make File Locations window wider
 Ensure window can be resized if started in fullscreen mode
+Fix macOS mouse position reporting
 
 Version 1.2rc2
 --------------
