@@ -63,13 +63,13 @@ for(var i = 0; i < argv.length; i++) {
 			continue;
 		case 'P':
 			pause = false;
-			break;
+			continue;
 		case 'C':
 			clear = false;
-			break;
+			continue;
 		case 'v':
 			++verbosity;
-			break;
+			continue;
 		case 'p': // send alias and password as expected by Synchronet
 			client_name = user.security.password;
 			server_name = user.alias;
