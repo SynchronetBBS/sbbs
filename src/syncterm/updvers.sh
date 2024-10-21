@@ -72,8 +72,8 @@ perl -pi -e "s/(CPACK_PACKAGE_VERSION )[^)]+/\$1.'${VERSTR}'/ge" CMakeLists.txt
 
 # Info.plist
 echo Updating Info.plist
-perl -pi -e "s|(<key>CFBundleShortVersionString</key>.+?<string>)[^<]+(?=</string>)|\$1.'${VERSTR}'|ges" Info.plist
-perl -pi -e "s|(<key>CFBundleVersion</key>.+?<string>)[^<]+(?=</string>)|\$1.'${NUMERIC}'|ges" Info.plist
+perl -pgi -e "s|(<key>CFBundleShortVersionString</key>.+?<string>)[^<]+(?=</string>)|\$1.'${VERSTR}'|ges" Info.plist
+perl -pgi -e "s|(<key>CFBundleVersion</key>.+?<string>)[^<]+(?=</string>)|\$1.'${NUMERIC}'|ges" Info.plist
 
 # Manual.txt
 echo Updating Manual.txt
