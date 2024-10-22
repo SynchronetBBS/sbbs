@@ -1,3 +1,7 @@
+Version 1.2rc4
+--------------
+Fix pointy scaling to work even when interpolating both directions
+
 Version 1.2rc3
 --------------
 Get Haiku support building again

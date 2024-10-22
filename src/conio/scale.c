@@ -11,12 +11,12 @@
 #pragma warning(disable : 4244 4267 4018)
 #endif
 
-static void pointy_scale3(uint32_t* src, uint32_t* dest, int width, int height);
-static void pointy_scale5(uint32_t* src, uint32_t* dest, int width, int height);
-static void pointy_scale_odd(uint32_t* src, uint32_t* dest, int width, int height, int mult);
-static void interpolate_height(uint32_t* src, uint32_t* dst, int width, int height, int newheight);
-static void interpolate_width(uint32_t* src, uint32_t* dst, int width, int height, int newwidth);
-static void multiply_scale(uint32_t* src, uint32_t* dst, int width, int height, int xmult, int ymult);
+static void pointy_scale3(const uint32_t* src, uint32_t* dest, const int width, const int height);
+static void pointy_scale5(const uint32_t* src, uint32_t* dest, const int width, const int height);
+static void pointy_scale_odd(const uint32_t* src, uint32_t* dest, const int width, const int height, const int mult);
+static void interpolate_height(uint32_t const* src, uint32_t* dst, const int width, const int height, const int newheight);
+static void interpolate_width(uint32_t const* src, uint32_t* dst, const int width, const int height, const int newwidth);
+static void multiply_scale(uint32_t const* src, uint32_t* dst, const int width, const int height, const int xmult, const int ymult);
 
 static struct graphics_buffer *free_list;
 
@@ -231,6 +231,7 @@ do_scale(struct rectlist* rect, int fwidth, int fheight)
 	int xmult = 1;
 	int total_xscaling = 1;
 	int total_yscaling = 1;
+	int minscale = 1;
 	struct graphics_buffer *ctarget;
 	struct graphics_buffer *csrc;
 	uint32_t* nt;
@@ -249,44 +250,51 @@ do_scale(struct rectlist* rect, int fwidth, int fheight)
 	xscale = 1;
 	total_yscaling = yscale;
 	yscale = 1;
+	if (total_xscaling < total_yscaling)
+		minscale = total_xscaling;
+	else
+		minscale = total_yscaling;
 	// If x/y scaling isn't a simple multiple, block scale everything...
-	if ((total_yscaling % total_xscaling) == 0) {
-		if (!(cio_api.options & CONIO_OPT_BLOCKY_SCALING)) {
-			if ((total_xscaling & 1) == 1 && total_xscaling > 5) {
-				pointymult = total_xscaling;
-				total_xscaling /= pointymult;
-				xscale *= pointymult;
-				total_yscaling /= pointymult;
-				yscale *= pointymult;
-			}
-			while (total_xscaling > 1 && ((total_xscaling % 5) == 0) && ((total_yscaling % 5) == 0)) {
-				pointy5++;
-				total_xscaling /= 5;
-				xscale *= 5;
-				total_yscaling /= 5;
-				yscale *= 5;
-			}
-			while (total_xscaling > 1 && ((total_xscaling % 3) == 0) && ((total_yscaling % 3) == 0)) {
-				pointy3++;
-				total_xscaling /= 3;
-				xscale *= 3;
-				total_yscaling /= 3;
-				yscale *= 3;
-			}
-			while (total_xscaling > 1 && ((total_xscaling % 4) == 0) && ((total_yscaling % 4) == 0)) {
-				xbr4++;
-				total_xscaling /= 4;
-				xscale *= 4;
-				total_yscaling /= 4;
-				yscale *= 4;
-			}
-			while (total_xscaling > 1 && ((total_xscaling % 2) == 0) && ((total_yscaling % 2) == 0)) {
-				xbr2++;
-				total_xscaling /= 2;
-				xscale *= 2;
-				total_yscaling /= 2;
-				yscale *= 2;
-			}
+	if (!(cio_api.options & CONIO_OPT_BLOCKY_SCALING)) {
+		if ((minscale & 1) == 1 && minscale > 5) {
+			pointymult = total_xscaling;
+			total_xscaling /= pointymult;
+			xscale *= pointymult;
+			total_yscaling /= pointymult;
+			yscale *= pointymult;
+			minscale /= pointymult;
+		}
+		while (minscale > 1 && ((minscale % 5) == 0) && ((minscale % 5) == 0)) {
+			pointy5++;
+			total_xscaling /= 5;
+			xscale *= 5;
+			total_yscaling /= 5;
+			yscale *= 5;
+			minscale /= 5;
+		}
+		while (minscale > 1 && ((minscale % 3) == 0) && ((minscale % 3) == 0)) {
+			pointy3++;
+			total_xscaling /= 3;
+			xscale *= 3;
+			total_yscaling /= 3;
+			yscale *= 3;
+			minscale /= 3;
+		}
+		while (minscale > 1 && ((minscale % 4) == 0) && ((minscale % 4) == 0)) {
+			xbr4++;
+			total_xscaling /= 4;
+			xscale *= 4;
+			total_yscaling /= 4;
+			yscale *= 4;
+			minscale /= 4;
+		}
+		while (minscale > 1 && ((minscale % 2) == 0) && ((minscale % 2) == 0)) {
+			xbr2++;
+			total_xscaling /= 2;
+			xscale *= 2;
+			total_yscaling /= 2;
+			yscale *= 2;
+			minscale /= 2;
 		}
 	}
 
@@ -452,10 +460,10 @@ csrc->w, csrc->h, pointymult, pointy5, pointy3, xbr4, xbr2, xmult, ymult, csrc->
 }
 
 static void
-pointy_scale_odd(uint32_t* src, uint32_t* dest, int width, int height, int mult)
+pointy_scale_odd(const uint32_t* src, uint32_t* dest, const int width, const int height, const int mult)
 {
 	int x, y;
-	uint32_t* s;
+	const uint32_t* s;
 	uint32_t* d;
 	int prevline, prevcol, nextline, nextcol;
 	int i, j;
@@ -556,10 +564,10 @@ pointy_scale_odd(uint32_t* src, uint32_t* dest, int width, int height, int mult)
 }
 
 static void
-pointy_scale5(uint32_t* src, uint32_t* dest, int width, int height)
+pointy_scale5(const uint32_t* src, uint32_t* dest, const int width, const int height)
 {
 	int x, y;
-	uint32_t* s;
+	const uint32_t* s;
 	uint32_t* d;
 	int w5 = width * 5;
 	int w10 = width * 10;
@@ -675,10 +683,10 @@ pointy_scale5(uint32_t* src, uint32_t* dest, int width, int height)
 }
 
 static void
-pointy_scale3(uint32_t* src, uint32_t* dest, int width, int height)
+pointy_scale3(const uint32_t* src, uint32_t* dest, const int width, const int height)
 {
 	int x, y;
-	uint32_t* s;
+	const uint32_t* s;
 	uint32_t* d;
 	int w3 = width * 3;
 	int w6 = width * 6;
@@ -810,7 +818,7 @@ blend_YCoCg(const uint32_t c1, const uint32_t c2, const uint16_t weight)
  * pixels.
  */
 static void
-interpolate_width(uint32_t* src, uint32_t* dst, int width, int height, int newwidth)
+interpolate_width(uint32_t const* src, uint32_t* dst, const int width, const int height, const int newwidth)
 {
 	int x, y;
 	const double mult = (double)width / newwidth;
@@ -852,7 +860,7 @@ interpolate_width(uint32_t* src, uint32_t* dst, int width, int height, int newwi
  * pixels.
  */
 static void
-interpolate_height(uint32_t* src, uint32_t* dst, int width, int height, int newheight)
+interpolate_height(uint32_t const* src, uint32_t* dst, const int width, const int height, const int newheight)
 {
 	int x, y;
 	const double mult = (double)height / newheight;
@@ -920,16 +928,16 @@ fail:
 	tline = NULL;
 	nsz = 0;
 	tsz = 0;
-	memcpy(src, dst, width * height * sizeof(*src));
+	memcpy(dst, src, width * height * sizeof(*src));
 	fprintf(stderr, "Allocation failure in interpolate_height()!");
 }
 
 static void
-multiply_scale(uint32_t* src, uint32_t* dst, int width, int height, int xmult, int ymult)
+multiply_scale(uint32_t const* src, uint32_t* dst, const int width, const int height, const int xmult, const int ymult)
 {
 	int x, y;
 	int mx, my;
-	uint32_t* slstart;
+	uint32_t const* slstart;
 
 	for (y = 0; y < height; y++) {
 		slstart = src;
