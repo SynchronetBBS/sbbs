@@ -755,7 +755,7 @@ struct YCoCg_data {
 };
 
 static void
-RGB_to_YCoCg(const uint32_t RGB, struct YCoCg_data *YCoCg)
+RGB_to_YCoCg(const uint32_t RGB, struct YCoCg_data *restrict YCoCg)
 {
 	signed R, G, B, tmp;
 
@@ -770,7 +770,7 @@ RGB_to_YCoCg(const uint32_t RGB, struct YCoCg_data *YCoCg)
 }
 
 static uint32_t
-YCoCg_to_RGB(struct YCoCg_data *YCoCg)
+YCoCg_to_RGB(struct YCoCg_data *restrict YCoCg)
 {
 	signed Ri, Gi, Bi, tmp;
 	unsigned R, G, B;
@@ -786,7 +786,7 @@ YCoCg_to_RGB(struct YCoCg_data *YCoCg)
 }
 
 static uint32_t
-blend_YCoCg(const uint32_t c1, const uint32_t c2, uint16_t weight)
+blend_YCoCg(const uint32_t c1, const uint32_t c2, const uint16_t weight)
 {
 	const uint16_t iw = 65535 - weight;
 
@@ -810,7 +810,7 @@ blend_YCoCg(const uint32_t c1, const uint32_t c2, uint16_t weight)
  * pixels.
  */
 static void
-interpolate_width(uint32_t* src, uint32_t* dst, int width, int height, int newwidth)
+interpolate_width(uint32_t*restrict src, uint32_t* dst, int width, int height, int newwidth)
 {
 	int x, y;
 	const double mult = (double)width / newwidth;
@@ -852,7 +852,7 @@ interpolate_width(uint32_t* src, uint32_t* dst, int width, int height, int newwi
  * pixels.
  */
 static void
-interpolate_height(uint32_t* src, uint32_t* dst, int width, int height, int newheight)
+interpolate_height(uint32_t*restrict src, uint32_t*restrict dst, int width, int height, int newheight)
 {
 	int x, y;
 	const double mult = (double)height / newheight;
@@ -925,7 +925,7 @@ fail:
 }
 
 static void
-multiply_scale(uint32_t* src, uint32_t* dst, int width, int height, int xmult, int ymult)
+multiply_scale(uint32_t* src, uint32_t*restrict dst, int width, int height, int xmult, int ymult)
 {
 	int x, y;
 	int mx, my;
