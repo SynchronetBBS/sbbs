@@ -2644,6 +2644,11 @@ static void ctrl_thread(void* arg)
 					sockprintf(sock,sess,"534 Already in TLS mode");
 					continue;
 				}
+				if(startup->options & FTP_OPT_NO_FTPS) {
+					lprintf(LOG_NOTICE, "%04d <%s> AUTH TLS rejected because FTPS support is disabled", sock, host_ip);
+					sockprintf(sock, sess, "431 TLS not available");
+					continue;
+				}
 				if (start_tls(&sock, &sess, TRUE) || sess == -1) {
 					lprintf(LOG_WARNING, "%04d <%s> failed to initialize TLS successfully", sock, host_ip);
 					break;
