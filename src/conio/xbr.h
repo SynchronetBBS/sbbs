@@ -1,4 +1,4 @@
 #include <inttypes.h>
 
-void xbr_filter(uint32_t *data, uint32_t *out, int width, int height, int n);
+void xbr_filter(const uint32_t *data, uint32_t *out, const int width, const int height, const int n);
 

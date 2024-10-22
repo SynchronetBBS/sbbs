@@ -61,7 +61,7 @@ RGB_to_YCoCg(const uint32_t RGB, struct YCoCg_data *YCoCg)
 	YCoCg->Y = tmp + (YCoCg->Cg >> 1);
 }
 
-static uint32_t pixel_diff(uint32_t x, uint32_t y)
+static uint32_t pixel_diff(const uint32_t x, const uint32_t y)
 {
 	struct YCoCg_data yccx;
 	struct YCoCg_data yccy;
@@ -217,7 +217,7 @@ static uint32_t pixel_diff(uint32_t x, uint32_t y)
 } while(0)
 
 void
-xbr_filter(uint32_t *data, uint32_t *out, int width, int height, int n)
+xbr_filter(const uint32_t *data, uint32_t *out, const int width, const int height, const int n)
 {
     int x, y;
     const int nl = width * n;
