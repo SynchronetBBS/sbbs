@@ -886,7 +886,6 @@ static void receive_thread(void* arg)
 	time_t		now;
 	time_t		start;
 	time_t		last_report;
-	CRYPT_SESSION	sess = -1;
 	char		*estr;
 
 	xfer=*(xfer_t*)arg;
@@ -898,7 +897,7 @@ static void receive_thread(void* arg)
 	if((fp=fopen(xfer.filename,xfer.append ? "ab" : "wb"))==NULL) {
 		lprintf(LOG_ERR,"%04d <%s> !DATA ERROR %d (%s) line %d opening %s"
 			,xfer.ctrl_sock, xfer.user->alias, errno, strerror(errno), __LINE__, xfer.filename);
-		sockprintf(xfer.ctrl_sock,sess,"450 ERROR %d (%s) opening %s", errno, strerror(errno), xfer.filename);
+		sockprintf(xfer.ctrl_sock,xfer.ctrl_sess,"450 ERROR %d (%s) opening %s", errno, strerror(errno), xfer.filename);
 		ftp_close_socket(xfer.data_sock,xfer.data_sess,__LINE__);
 		*xfer.inprogress=FALSE;
 		thread_down();
@@ -958,21 +957,21 @@ static void receive_thread(void* arg)
 		if(xfer.filepos + total > max_fsize) {
 			lprintf(LOG_WARNING,"%04d <%s> !DATA received %"PRIdOFF" bytes of %s exceeds maximum allowed (%"PRIu64" bytes)"
 				,xfer.ctrl_sock, xfer.user->alias, xfer.filepos+total, xfer.filename, startup->max_fsize);
-			sockprintf(xfer.ctrl_sock,sess,"552 File size exceeds maximum allowed (%"PRIu64" bytes)", startup->max_fsize);
+			sockprintf(xfer.ctrl_sock,xfer.ctrl_sess,"552 File size exceeds maximum allowed (%"PRIu64" bytes)", startup->max_fsize);
 			error=TRUE;
 			break;
 		}
 		if(*xfer.aborted==TRUE) {
 			lprintf(LOG_WARNING,"%04d <%s> !DATA Transfer aborted",xfer.ctrl_sock, xfer.user->alias);
 			/* Send NAK */
-			sockprintf(xfer.ctrl_sock,sess,"426 Transfer aborted.");
+			sockprintf(xfer.ctrl_sock,xfer.ctrl_sess,"426 Transfer aborted.");
 			error=TRUE;
 			break;
 		}
 		if(ftp_set==NULL || terminate_server) {
 			lprintf(LOG_WARNING,"%04d <%s> !DATA Transfer locally aborted",xfer.ctrl_sock, xfer.user->alias);
 			/* Send NAK */
-			sockprintf(xfer.ctrl_sock,sess,"426 Transfer locally aborted.");
+			sockprintf(xfer.ctrl_sock,xfer.ctrl_sess,"426 Transfer locally aborted.");
 			error=TRUE;
 			break;
 		}
@@ -1021,7 +1020,7 @@ static void receive_thread(void* arg)
 					lprintf(LOG_WARNING,"%04d <%s> !DATA ERROR %d receiving on data socket %d"
 						,xfer.ctrl_sock, xfer.user->alias,ERROR_VALUE,*xfer.data_sock);
 				/* Send NAK */
-				sockprintf(xfer.ctrl_sock,sess,"426 Error %d receiving on DATA channel"
+				sockprintf(xfer.ctrl_sock,xfer.ctrl_sess,"426 Error %d receiving on DATA channel"
 					,ERROR_VALUE);
 				error=TRUE;
 				break;
@@ -1029,7 +1028,7 @@ static void receive_thread(void* arg)
 			lprintf(LOG_ERR,"%04d <%s> !DATA ERROR recv returned %d on socket %d"
 				,xfer.ctrl_sock, xfer.user->alias,rd,*xfer.data_sock);
 			/* Send NAK */
-			sockprintf(xfer.ctrl_sock,sess,"451 Unexpected socket error: %d",rd);
+			sockprintf(xfer.ctrl_sock,xfer.ctrl_sess,"451 Unexpected socket error: %d",rd);
 			error=TRUE;
 			break;
 		}
@@ -1048,7 +1047,7 @@ static void receive_thread(void* arg)
 	if(xfer.filepos+total < startup->min_fsize) {
 		lprintf(LOG_WARNING,"%04d <%s> DATA received %"PRIdOFF" bytes for %s, less than minimum required (%"PRIu64" bytes)"
 			,xfer.ctrl_sock, xfer.user->alias, xfer.filepos+total, xfer.filename, startup->min_fsize);
-		sockprintf(xfer.ctrl_sock,sess,"550 File size less than minimum required (%"PRIu64" bytes)"
+		sockprintf(xfer.ctrl_sock,xfer.ctrl_sess,"550 File size less than minimum required (%"PRIu64" bytes)"
 			,startup->min_fsize);
 		error=TRUE;
 	}
@@ -1141,7 +1140,7 @@ static void receive_thread(void* arg)
 			smb_freefilemem(&f);
 		}
 		/* Send ACK */
-		sockprintf(xfer.ctrl_sock,sess,"226 Upload complete (%lu cps).",cps);
+		sockprintf(xfer.ctrl_sock,xfer.ctrl_sess,"226 Upload complete (%lu cps).",cps);
 	}
 
 	if(ftp_set!=NULL && !terminate_server)
