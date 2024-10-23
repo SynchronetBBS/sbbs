@@ -357,7 +357,7 @@ bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, int p_mode, post_t* post)
 	return true;
 }
 
-void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del)
+void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del, bool use_default_prot)
 {
 	char str[256];
 	char fpath[MAX_PATH+1];
@@ -383,7 +383,7 @@ void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del)
 					if(!result)
 						errormsg(WHERE, ERR_WRITE, fpath, filelen);
 					else
-						sendfile(fpath, useron.prot, "attachment");
+						sendfile(fpath, use_default_prot ? useron.prot : 0, "attachment");
 				}
 			}
 		} else

@@ -900,7 +900,7 @@ public:
 	uint	getlastmsg(int subnum, uint32_t *ptr, time_t *t);
 	time_t	getmsgtime(int subnum, uint ptr);
 	int		getmsgnum(int subnum, time_t t);
-	void	download_msg_attachments(smb_t*, smbmsg_t*, bool del);
+	void	download_msg_attachments(smb_t*, smbmsg_t*, bool del, bool use_default_prot = false);
 
 	/* readmail.cpp */
 	int		readmail(uint usernumber, int which, int lm_mode = 0);
