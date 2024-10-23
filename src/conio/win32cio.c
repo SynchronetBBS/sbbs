@@ -376,6 +376,10 @@ int win32_getch(void)
 #define ENABLE_AUTO_POSITION	0x0100
 #endif
 
+#ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
+#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
+#endif
+
 static DWORD	orig_in_conmode=0;
 static DWORD	orig_out_conmode=0;
 static void *	win32_suspendbuf=NULL;
