@@ -30,7 +30,6 @@
 
 #include <inttypes.h>
 #include <stdlib.h>
-#include "scale.h"
 
 #define LB_MASK       0x00FEFEFE
 #define RED_BLUE_MASK 0x00FF00FF
@@ -46,7 +45,7 @@ struct YCoCg_data {
 	signed Cg;
 };
 
-static void
+static inline void
 RGB_to_YCoCg(const uint32_t RGB, struct YCoCg_data *YCoCg)
 {
 	int R, G, B, tmp;
@@ -61,7 +60,7 @@ RGB_to_YCoCg(const uint32_t RGB, struct YCoCg_data *YCoCg)
 	YCoCg->Y = tmp + (YCoCg->Cg >> 1);
 }
 
-static uint32_t pixel_diff(const uint32_t x, const uint32_t y)
+static inline uint32_t pixel_diff(const uint32_t x, const uint32_t y)
 {
 	struct YCoCg_data yccx;
 	struct YCoCg_data yccy;
@@ -71,9 +70,9 @@ static uint32_t pixel_diff(const uint32_t x, const uint32_t y)
 	RGB_to_YCoCg(x, &yccx);
 	RGB_to_YCoCg(y, &yccy);
 
-    return (ABSDIFF(yccx.Y, yccy.Y)) +
-           (ABSDIFF(yccx.Co, yccy.Co) >> 1) +
-           (ABSDIFF(yccx.Cg, yccy.Cg) >> 1);
+	return (ABSDIFF(yccx.Y, yccy.Y)) +
+	    (ABSDIFF(yccx.Co, yccy.Co) >> 1) +
+	    (ABSDIFF(yccx.Cg, yccy.Cg) >> 1);
 }
 
 #define ALPHA_BLEND_128_W(a, b) ((((a) & LB_MASK) >> 1) + (((b) & LB_MASK) >> 1))
