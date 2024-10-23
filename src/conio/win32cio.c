@@ -22,6 +22,7 @@
 #include <genwrap.h>
 #include <stdio.h>		/* stdin */
 #include <stdlib.h>		/* atexit */
+#include <xpprintf.h>		/* atexit */
 
 #if defined(_WIN32)
  #include <malloc.h>	/* alloca() on Win32 */
@@ -496,9 +497,9 @@ void win32_resume(void)
 	if((h=GetStdHandle(STD_INPUT_HANDLE)) != INVALID_HANDLE_VALUE)
 		SetConsoleMode(h, conmode);
 
-    conmode=orig_out_conmode;
-    conmode&=~ENABLE_PROCESSED_OUTPUT;
-    conmode&=~ENABLE_WRAP_AT_EOL_OUTPUT;
+	conmode=orig_out_conmode;
+	conmode&=~ENABLE_PROCESSED_OUTPUT;
+	conmode&=~ENABLE_WRAP_AT_EOL_OUTPUT;
 	if((h=GetStdHandle(STD_OUTPUT_HANDLE)) != INVALID_HANDLE_VALUE)
 		SetConsoleMode(h, conmode);
 }
@@ -634,6 +635,8 @@ void win32_textmode(int mode)
 	SMALL_RECT	rc;
 	CONSOLE_SCREEN_BUFFER_INFOEX	bi;
 	int i;
+	DWORD oldmode;
+	DWORD cmode;
 
 	modeidx = find_vmode(mode);
 	if (modeidx == -1)
@@ -667,12 +670,32 @@ void win32_textmode(int mode)
 	cio_textinfo.wintop=1;
 	cio_textinfo.winright=cio_textinfo.screenwidth;
 	cio_textinfo.winbottom=cio_textinfo.screenheight;
-	if (GetConsoleScreenBufferInfoEx(GetStdHandle(STD_OUTPUT_HANDLE), &bi)) {
+	if (GetConsoleScreenBufferInfoEx(h, &bi)) {
 		for (i = 0; i < 16; i++) {
 			bi.ColorTable[i] = RGB(dac_default[palettes[vparams[modeidx].palette][i]].red, dac_default[palettes[vparams[modeidx].palette][i]].green, dac_default[palettes[vparams[modeidx].palette][i]].blue);
 		}
-		if (SetConsoleScreenBufferInfoEx(GetStdHandle(STD_OUTPUT_HANDLE), &bi)) {
+		if (SetConsoleScreenBufferInfoEx(h, &bi)) {
 			cio_api.options |= CONIO_OPT_PALETTE_SETTING;
+		}
+	}
+	if (GetConsoleMode(h, &oldmode)) {
+		cmode = oldmode | ENABLE_VIRTUAL_TERMINAL_PROCESSING | ENABLE_PROCESSED_OUTPUT;
+		if (SetConsoleMode(h, cmode)) {
+			if (GetConsoleMode(h, &cmode)) {
+				if (cmode & ENABLE_VIRTUAL_TERMINAL_PROCESSING) {
+					for (i = 0; i < 16; i++) {
+						int slen;
+						char *seq;
+						slen = asprintf(&seq, "\x1b]4;%d;rgb:%u/%u/%u\x1b\\", i, dac_default[palettes[vparams[modeidx].palette][i]].red, dac_default[palettes[vparams[modeidx].palette][i]].green, dac_default[palettes[vparams[modeidx].palette][i]].blue);
+						if (slen > -1)
+							WriteConsole(h, seq, slen, NULL, NULL);
+						else
+							seq = NULL;
+						xp_asprintf_free(seq);
+					}
+				}
+			}
+			SetConsoleMode(h, oldmode);
 		}
 	}
 }
@@ -909,15 +932,44 @@ int win32_getvideoflags(void)
 int win32_setpalette(uint32_t entry, uint16_t r, uint16_t g, uint16_t b)
 {
 	CONSOLE_SCREEN_BUFFER_INFOEX	bi;
+	HANDLE h;
+	DWORD mode;
+	DWORD oldmode;
+	int ret = 0;
+
+	if((h=GetStdHandle(STD_OUTPUT_HANDLE)) == INVALID_HANDLE_VALUE)
+		return(0);
+	if (GetConsoleMode(h, &oldmode)) {
+		mode = oldmode | ENABLE_VIRTUAL_TERMINAL_PROCESSING | ENABLE_PROCESSED_OUTPUT;
+		if (SetConsoleMode(h, mode)) {
+			if (GetConsoleMode(h, &mode)) {
+				if (mode & ENABLE_VIRTUAL_TERMINAL_PROCESSING) {
+					int slen;
+					char *seq;
+					slen = asprintf(&seq, "\x1b]4;%d;rgb:%u/%u/%u\x1b\\", entry, r, g, b);
+					if (slen > -1) {
+						if (WriteConsole(h, seq, slen, NULL, NULL))
+							ret = 1;
+					}
+					else
+						seq = NULL;
+					xp_asprintf_free(seq);
+				}
+			}
+			SetConsoleMode(h, oldmode);
+			if (ret)
+				return ret;
+		}
+	}
 
 	if (entry > 15)
 		return 0;
 
-	if (!GetConsoleScreenBufferInfoEx(GetStdHandle(STD_OUTPUT_HANDLE), &bi))
+	if (!GetConsoleScreenBufferInfoEx(h, &bi))
 		return 0;
 
 	bi.ColorTable[entry] = RGB(r >> 8, g >> 8, b >> 8);
-	if (!SetConsoleScreenBufferInfoEx(GetStdHandle(STD_OUTPUT_HANDLE), &bi))
+	if (!SetConsoleScreenBufferInfoEx(h, &bi))
 		return 0;
 
 	return 1;
