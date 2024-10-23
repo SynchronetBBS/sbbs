@@ -2605,8 +2605,8 @@ static void ctrl_thread(void* arg)
 			client.usernum = user.number;
 			client_on(sock,&client,TRUE /* update */);
 
-			lprintf(LOG_INFO,"%04d <%s> logged-in (%u today, %u total)"
-				,sock,user.alias,user.ltoday+1, user.logons+1);
+			lprintf(LOG_INFO,"%04d [%s] <%s> logged-in (%u today, %u total)"
+				,sock,host_ip,user.alias,user.ltoday+1, user.logons+1);
 			logintime=time(NULL);
 			timeleft=(long)gettimeleft(&scfg,&user,logintime);
 			ftp_printfile(sock,sess,"hello",230);
@@ -2644,12 +2644,12 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 				if(startup->options & FTP_OPT_NO_FTPS) {
-					lprintf(LOG_NOTICE, "%04d <%s> AUTH TLS rejected because FTPS support is disabled", sock, host_ip);
+					lprintf(LOG_NOTICE, "%04d [%s] AUTH TLS rejected because FTPS support is disabled", sock, host_ip);
 					sockprintf(sock, sess, "431 TLS not available");
 					continue;
 				}
 				if (start_tls(&sock, &sess, TRUE) || sess == -1) {
-					lprintf(LOG_WARNING, "%04d <%s> failed to initialize TLS successfully", sock, host_ip);
+					lprintf(LOG_WARNING, "%04d [%s] failed to initialize TLS successfully", sock, host_ip);
 					break;
 				}
 				user.number=0;
@@ -2657,7 +2657,7 @@ static void ctrl_thread(void* arg)
 				filepos=0;
 				got_pbsz = FALSE;
 				protection = FALSE;
-				lprintf(LOG_INFO, "%04d <%s> initialized TLS successfully", sock, host_ip);
+				lprintf(LOG_INFO, "%04d [%s] initialized TLS successfully", sock, host_ip);
 				SAFECOPY(client.protocol, "FTPS");
 				client_on(sock, &client, /* update: */TRUE);
 				continue;
