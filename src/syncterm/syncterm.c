@@ -82,7 +82,6 @@ enum {
 #include "ssh.h"
 #endif
 #include "fonts.h"
-#include "scale.h"
 #include "syncterm.h"
 #include "term.h"
 #include "uifcinit.h"

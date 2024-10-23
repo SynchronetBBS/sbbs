@@ -352,15 +352,15 @@ do_scale(struct rectlist* rect, int fwidth, int fheight)
 
 #if 0
 fprintf(stderr, "Plan:\n"
-"start:       %dx%d\n"
+"start:       %zux%zu\n"
 "pointymulti: %d\n"
 "pointy5:     %d\n"
 "pointy3:     %d\n"
 "xBR4:        %d\n"
 "xBR2:        %d\n"
 "Multiply:    %dx%d\n"
-"hinterp:     %zu -> %zu\n"
-"winterp:     %zu -> %zu\n",
+"hinterp:     %zu -> %d\n"
+"winterp:     %zu -> %d\n",
 csrc->w, csrc->h, pointymult, pointy5, pointy3, xbr4, xbr2, xmult, ymult, csrc->h * yscale, fheight, csrc->w * xscale, fwidth);
 #endif
 	// And scale...
@@ -762,7 +762,7 @@ struct YCoCg_data {
 	signed Cg;
 };
 
-static void
+static inline void
 RGB_to_YCoCg(const uint32_t RGB, struct YCoCg_data *YCoCg)
 {
 	signed R, G, B, tmp;
@@ -777,7 +777,7 @@ RGB_to_YCoCg(const uint32_t RGB, struct YCoCg_data *YCoCg)
 	YCoCg->Y = tmp + (YCoCg->Cg >> 1);
 }
 
-static uint32_t
+static inline uint32_t
 YCoCg_to_RGB(struct YCoCg_data *YCoCg)
 {
 	signed Ri, Gi, Bi, tmp;
@@ -793,7 +793,7 @@ YCoCg_to_RGB(struct YCoCg_data *YCoCg)
 	return (R << 16) | (G << 8) | B;
 }
 
-static uint32_t
+static inline uint32_t
 blend_YCoCg(const uint32_t c1, const uint32_t c2, const uint16_t weight)
 {
 	const uint16_t iw = 65535 - weight;
@@ -823,34 +823,41 @@ interpolate_width(uint32_t const* src, uint32_t* dst, const int width, const int
 	int x, y;
 	const double mult = (double)width / newwidth;
 	uint32_t *s = dst;
+	const int wm1 = width - 1;
 
-	for (x = 0; x < newwidth; x++) {
-		// First, calculate which two pixels this is between.
-		const double xpos = mult * x;
-		const int xposi = xpos;
-		const uint16_t weight = xpos * 65536;
-		dst = &s[x];
-		for (y = 0; y < height; y++) {
+	int srow_start = 0;
+	int drow_start = 0;
+	for (y = 0; y < height; y++) {
+		double xpos = 0.0;
+		dst = &s[drow_start];
+		for (x = 0; x < newwidth; x++) {
+			// First, calculate which two pixels this is between.
+			const int xposi = xpos;
+			const uint16_t weight = xpos * 65536;
+			const int yposi = srow_start + xposi;
 			if (weight == 0) {
 				// Exact match!
-				*dst = src[width * y + xposi];
+				*dst = src[yposi];
 			}
 			else {
 				// Now pick the two pixels
-				const uint32_t pix1 = src[y * width + xposi];
+				const uint32_t pix1 = src[yposi];
 				uint32_t pix2;
-				if (xposi < width - 1)
-					pix2 = src[y * width + xposi + 1];
+				if (xposi < wm1)
+					pix2 = src[yposi + 1];
 				else
-					pix2 = src[y * width + xposi];
+					pix2 = src[yposi];
 				if (pix1 == pix2)
 					*dst = pix1;
 				else {
 					*dst = blend_YCoCg(pix1, pix2, weight);
 				}
 			}
-			dst += newwidth;
+			xpos += mult;
+			dst++;
 		}
+		srow_start += width;
+		drow_start += newwidth;
 	}
 }
 
