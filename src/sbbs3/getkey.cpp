@@ -175,7 +175,6 @@ char sbbs_t::getkey(int mode)
 /****************************************************************************/
 void sbbs_t::mnemonics(const char *instr)
 {
-    const char *ctrl_a_codes;
     size_t l;
 
 	if(!strchr(instr,'~')) {
@@ -183,7 +182,7 @@ void sbbs_t::mnemonics(const char *instr)
 		bputs(instr);
 		return; 
 	}
-	ctrl_a_codes=strchr(instr,1);
+	bool ctrl_a_codes = (strchr(instr, CTRL_A) != NULL) && !contains_invalid_attr(instr);
 	if(!ctrl_a_codes) {
 		const char* last = lastchar(instr);
 		if(instr[0] == '@' && *last == '@' && strchr(instr + 1, '@') == last && strchr(instr, ' ') == NULL) {
