@@ -4317,18 +4317,11 @@ doterm(struct bbslist *bbs)
 			if (key && (cterm->emulation == CTERM_EMULATION_ATASCII)) {
                                 /* Translate keys to ATASCII */
 				switch (key) {
-					case '\r':
-					case '\n': // 0x9b
-					case 155:
-						ch[0] = 155;
-						conn_send(ch, 1, 0);
-						break;
 					case CIO_KEY_DOWN:
 						ch[0] = 29;
 						conn_send(ch, 1, 0);
 						break;
 					case CIO_KEY_DC: /* "Delete" key */
-					case '\b':       /* Backspace */
 						ch[0] = 126;
 						conn_send(ch, 1, 0);
 						break;
@@ -4348,28 +4341,13 @@ doterm(struct bbslist *bbs)
 						ch[0] = 255;
 						conn_send(ch, 1, 0);
 						break;
-					case '\t':
-						ch[0] = 127;
-						conn_send(ch, 1, 0);
-						break;
-					case '|':
-						ch[0] = 124 + (atascii_inverse ? 128 : 0);
-						conn_send(ch, 1, 0);
-						break;
 					case 96: /* Backtick toggles inverse */
 						atascii_inverse = !atascii_inverse;
 						break;
 					default:
 						if (key < 256) {
-                                                        /* ASCII Translation */
-							if (key < 123) {
-								ch[0] = key + (atascii_inverse ? 128 : 0);
-								conn_send(ch, 1, 0);
-							}
-							else if (key > 252 && key < 256) {
-								ch[0] = key;
-								conn_send(ch, 1, 0);
-							}
+							ch[0] = key;
+							conn_send(ch, 1, 0);
 						}
 						break;
 				}
@@ -4394,7 +4372,6 @@ doterm(struct bbslist *bbs)
 						ch[0] = 147; /* Clear / Shift-Home */
 						conn_send(ch, 1, 0);
 						break;
-					case '\b':
 					case CIO_KEY_DC: /* "Delete" key */
 						ch[0] = 20;
 						conn_send(ch, 1, 0);
@@ -4637,14 +4614,6 @@ doterm(struct bbslist *bbs)
 						break;
 					case CIO_KEY_IC:
 						conn_send("\033[@", 3, 0);
-						break;
-					case 17: /* CTRL-Q */
-						ch[0] = key;
-						conn_send(ch, 1, 0);
-						break;
-					case 19: /* CTRL-S */
-						ch[0] = key;
-						conn_send(ch, 1, 0);
 						break;
 					case CIO_KEY_BACKTAB:
 						conn_send("\033[Z", 3, 0);
