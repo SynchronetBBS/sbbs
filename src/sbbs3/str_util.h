@@ -57,6 +57,7 @@ DLLEXPORT char *	strip_char(const char* str, char* dest, char);
 DLLEXPORT bool		valid_ctrl_a_attr(char a);
 DLLEXPORT bool		valid_ctrl_a_code(char a);
 DLLEXPORT size_t	strip_invalid_attr(char *str);
+DLLEXPORT bool		contains_invalid_attr(const char*);
 DLLEXPORT char *	u32toac(uint32_t, char*, char sep);
 DLLEXPORT char *	u64toac(uint64_t, char*, char sep);
 DLLEXPORT char *	rot13(char* str);
