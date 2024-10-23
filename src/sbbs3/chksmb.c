@@ -122,7 +122,7 @@ void print_hash(hash_t* hash)
 		printf("\t%-20s = %s\n"			,"hash.sha1"	, SHA1_hex(str, hash->data.sha1));
 }
 
-char *usage="\nusage: chksmb [-opts] <filespec.SHD>\n"
+char *usage="\nusage: chksmb [-opts] <path/to/base[.shd]> [...]\n"
 			"\n"
 			" opts:\n"
 			"       b - beep on error\n"
