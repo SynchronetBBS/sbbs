@@ -1914,10 +1914,8 @@ js_pushxy(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=(sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class))==NULL)
 		return(JS_FALSE);
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
 	rc=JS_SUSPENDREQUEST(cx);
-	sbbs->ansi_save();
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->ansi_save()));
 	JS_RESUMEREQUEST(cx, rc);
     return(JS_TRUE);
 }
@@ -1931,10 +1929,8 @@ js_popxy(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=(sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class))==NULL)
 		return(JS_FALSE);
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
 	rc=JS_SUSPENDREQUEST(cx);
-	sbbs->ansi_restore();
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->ansi_restore()));
 	JS_RESUMEREQUEST(cx, rc);
     return(JS_TRUE);
 }
@@ -1972,7 +1968,7 @@ js_gotoxy(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	sbbs->cursor_xy(x,y);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->cursor_xy(x,y)));
 	JS_RESUMEREQUEST(cx, rc);
     return(JS_TRUE);
 }
@@ -2201,7 +2197,22 @@ js_clearkeybuf(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
-js_getlines(JSContext *cx, uintN argc, jsval *arglist)
+js_ansi_getdims(JSContext *cx, uintN argc, jsval *arglist)
+{
+	sbbs_t*		sbbs;
+	jsrefcount	rc;
+
+	if((sbbs=(sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class))==NULL)
+		return(JS_FALSE);
+
+	rc=JS_SUSPENDREQUEST(cx);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->ansi_getdims()));
+	JS_RESUMEREQUEST(cx, rc);
+    return(JS_TRUE);
+}
+
+static JSBool
+js_getdims(JSContext *cx, uintN argc, jsval *arglist)
 {
 	sbbs_t*		sbbs;
 	jsrefcount	rc;
@@ -2212,7 +2223,7 @@ js_getlines(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	rc=JS_SUSPENDREQUEST(cx);
-	sbbs->ansi_getlines();
+	sbbs->getdimensions();
 	JS_RESUMEREQUEST(cx, rc);
     return(JS_TRUE);
 }
@@ -2711,18 +2722,18 @@ static jsSyncMethodSpec js_console_functions[] = {
 	},
 	{"ansi_save",		js_pushxy,			0, JSTYPE_ALIAS	},
 	{"ansi_pushxy",		js_pushxy,			0, JSTYPE_ALIAS	},
-	{"pushxy",			js_pushxy,			0, JSTYPE_VOID,		JSDOCSTR("")
+	{"pushxy",			js_pushxy,			0, JSTYPE_BOOLEAN,	JSDOCSTR("")
 	,JSDOCSTR("Save the current cursor position (x and y coordinates) in the remote terminal")
 	,311
 	},
 	{"ansi_restore",	js_popxy,			0, JSTYPE_ALIAS },
 	{"ansi_popxy",		js_popxy,			0, JSTYPE_ALIAS },
-	{"popxy",			js_popxy,			0, JSTYPE_VOID,		JSDOCSTR("")
+	{"popxy",			js_popxy,			0, JSTYPE_BOOLEAN,	JSDOCSTR("")
 	,JSDOCSTR("Restore a saved cursor position to the remote terminal (requires terminal support, e.g. ANSI)")
 	,311
 	},
 	{"ansi_gotoxy",		js_gotoxy,			1, JSTYPE_ALIAS },
-	{"gotoxy",			js_gotoxy,			1, JSTYPE_VOID,		JSDOCSTR("[x,y] or [<i>object</i> { x,y }]")
+	{"gotoxy",			js_gotoxy,			1, JSTYPE_BOOLEAN,	JSDOCSTR("[x,y] or [<i>object</i> { x,y }]")
 	,JSDOCSTR("Move cursor to a specific screen coordinate (ANSI or PETSCII, 1-based values), "
 	"arguments can be separate x and y coordinates or an object with x and y properties "
 	"(like that returned from <tt>console.getxy()</tt>)")
@@ -2748,11 +2759,16 @@ static jsSyncMethodSpec js_console_functions[] = {
 	,JSDOCSTR("Move cursor left one or more columns")
 	,311
 	},
-	{"ansi_getlines",	js_getlines,		0, JSTYPE_ALIAS },
-	{"getlines",		js_getlines,		0, JSTYPE_ALIAS },
-	{"getdimensions",	js_getlines,		0, JSTYPE_VOID,		JSDOCSTR("")
-	,JSDOCSTR("Query the number of rows and columns on the remote terminal")
-	,311
+	{"ansi_getlines",	js_ansi_getdims,	0, JSTYPE_ALIAS },
+	{"ansi_getdims",	js_ansi_getdims,	0, JSTYPE_BOOLEAN,	JSDOCSTR("")
+	,JSDOCSTR("Query the dimensions (rows and columns) of the remote ANSI terminal")
+	,320
+	},
+
+	{"getlines",		js_getdims,		0, JSTYPE_ALIAS },
+	{"getdimensions",	js_getdims,		0, JSTYPE_VOID,		JSDOCSTR("")
+	,JSDOCSTR("Get the dimensions of user's terminal, querying the remote terminal if possible/appropriate")
+	,320
 	},
 	{"ansi_getxy",		js_getxy,			0, JSTYPE_ALIAS },
 	{"getxy",			js_getxy,			0, JSTYPE_OBJECT,	JSDOCSTR("")

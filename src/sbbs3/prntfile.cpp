@@ -163,7 +163,7 @@ bool sbbs_t::printfile(const char* fname, int mode, int org_cols, JSObject* obj)
 		rioctl(IOSM|ABORT); 
 	}
 	if(rip)
-		ansi_getlines();
+		ansi_getdims();
 	console=savcon;
 
 	return true;

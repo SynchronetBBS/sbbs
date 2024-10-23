@@ -515,7 +515,7 @@ int sbbs_t::term_supports(int cmp_flags)
 
 char* sbbs_t::term_rows(user_t* user, char* str, size_t size)
 {
-	if(user->rows != TERM_ROWS_AUTO)
+	if(user->rows >= TERM_ROWS_MIN && user->rows <= TERM_ROWS_MAX)
 		rows = user->rows;
 	safe_snprintf(str, size, "%s%d %s", user->rows ? nulstr:text[TerminalAutoDetect], rows, text[TerminalRows]);
 	return str;
@@ -523,7 +523,7 @@ char* sbbs_t::term_rows(user_t* user, char* str, size_t size)
 
 char* sbbs_t::term_cols(user_t* user, char* str, size_t size)
 {
-	if(user->cols != TERM_COLS_AUTO)
+	if(user->cols >= TERM_COLS_MIN && user->cols <= TERM_COLS_MAX)
 		cols = user->cols;
 	safe_snprintf(str, size, "%s%d %s", user->cols ? nulstr:text[TerminalAutoDetect], cols, text[TerminalColumns]);
 	return str;
@@ -1098,6 +1098,21 @@ void sbbs_t::set_output_rate(enum output_rate speed)
 		}
 		comprintf("\x1b[;%u*r", val);
 		cur_output_rate = speed;
+	}
+}
+
+/****************************************************************************/
+/* Get the dimensions of the current user console, place into row and cols	*/
+/****************************************************************************/
+void sbbs_t::getdimensions()
+{
+	if(sys_status & SS_USERON) {
+		if(!ansi_getdims()) {
+			if(useron.rows >= TERM_ROWS_MIN && useron.rows <= TERM_ROWS_MAX)
+				rows = useron.rows;
+			if(useron.cols >= TERM_COLS_MIN && useron.cols <= TERM_COLS_MAX)
+				cols = useron.cols;
+		}
 	}
 }
 

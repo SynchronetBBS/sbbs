@@ -1013,7 +1013,7 @@ void sbbs_t::maindflts(user_t* user)
 				putuserdec32(user->number, USER_COLS, i);
 				if(user==&useron) {
 					useron.cols = i;
-					ansi_getlines();
+					getdimensions();
 				}
 				bputs(text[HowManyRows]);
 				if((i = getnum(TERM_ROWS_MAX)) < 0)
@@ -1021,7 +1021,7 @@ void sbbs_t::maindflts(user_t* user)
 				putuserdec32(user->number, USER_ROWS, i);
 				if(user==&useron) {
 					useron.rows = i;
-					ansi_getlines();
+					getdimensions();
 				}
 				break;
 			case 'P':

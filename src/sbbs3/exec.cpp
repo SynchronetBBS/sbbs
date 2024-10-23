@@ -1836,7 +1836,7 @@ int sbbs_t::exec(csi_t *csi)
 			lncntr=0;
 			return(0);
 		case CS_GETLINES:
-			ansi_getlines();
+			getdimensions();
 			return(0);
 		case CS_HANGUP:
 			hangup();

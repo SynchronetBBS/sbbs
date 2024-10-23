@@ -728,7 +728,7 @@ public:
 	bool	ansi_getxy(int* x, int* y);
 	bool	ansi_save(void);
 	bool	ansi_restore(void);
-	void	ansi_getlines(void);
+	bool	ansi_getdims(void);
 	enum ansi_mouse_mode {
 		ANSI_MOUSE_X10	= 9,
 		ANSI_MOUSE_NORM	= 1000,
@@ -994,6 +994,7 @@ public:
 		output_rate_115200 = 115200,
 	} cur_output_rate = output_rate_unlimited;
 	void	set_output_rate(enum output_rate);
+	void	getdimensions();
 
 	/* getstr.cpp */
 	size_t	getstr_offset = 0;

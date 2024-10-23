@@ -899,7 +899,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 
 	if(strcmp(sp, "GETDIM") == 0) {
-		ansi_getlines();
+		getdimensions();
 		return nulstr;
 	}
 

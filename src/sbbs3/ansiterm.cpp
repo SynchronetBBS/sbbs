@@ -192,14 +192,15 @@ char* sbbs_t::ansi(int atr, int curatr, char* str)
 	return ::ansi_attr(atr, curatr, str, (term&COLOR) ? TRUE:FALSE);
 }
 
-void sbbs_t::ansi_getlines()
+bool sbbs_t::ansi_getdims()
 {
 	if(sys_status&SS_USERON && useron.misc&ANSI
 		&& (useron.rows == TERM_ROWS_AUTO || useron.cols == TERM_COLS_AUTO)
 		&& online==ON_REMOTE) {									/* Remote */
 		putcom("\x1b[s\x1b[255B\x1b[255C\x1b[6n\x1b[u");
-		inkey(K_ANSI_CPR,TIMEOUT_ANSI_GETXY*1000); 
+		return inkey(K_ANSI_CPR,TIMEOUT_ANSI_GETXY*1000) == 0;
 	}
+	return false;
 }
 
 bool sbbs_t::ansi_getxy(int* x, int* y)
