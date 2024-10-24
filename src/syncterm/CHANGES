@@ -3,6 +3,7 @@ Version 1.2rc4
 Fix pointy scaling to work even when interpolating both directions
 Fix ATASCII input
 Fix -iW colors
+Fix default port for Telnets
 
 Version 1.2rc3
 --------------
