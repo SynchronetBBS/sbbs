@@ -16,6 +16,97 @@
 #include "uifcinit.h"
 #include "window.h"
 
+static SOCKET telnets_sock;
+static CRYPT_SESSION telnets_session;
+static int telnets_active = true;
+static pthread_mutex_t telnets_mutex;
+
+void
+telnets_input_thread(void *args)
+{
+	int    status;
+	int    rd;
+	size_t buffered;
+	size_t buffer;
+	SetThreadName("TelnetS Input");
+	conn_api.input_thread_running = 1;
+	while (telnets_active && !conn_api.terminate) {
+		if (!socket_readable(telnets_sock, 100))
+			continue;
+		pthread_mutex_lock(&telnets_mutex);
+		cryptFlushData(telnets_session);
+		status = cryptPopData(telnets_session, conn_api.rd_buf, conn_api.rd_buf_size, &rd);
+		pthread_mutex_unlock(&telnets_mutex);
+                // Handle case where there was socket activity without readable data (ie: rekey)
+		if (status == CRYPT_ERROR_TIMEOUT)
+			continue;
+		if (cryptStatusError(status)) {
+			if ((status == CRYPT_ERROR_COMPLETE) || (status == CRYPT_ERROR_READ)) { /* connection closed */
+
+				telnets_active = true;
+				break;
+			}
+			cryptlib_error_message(status, "recieving data");
+			telnets_active = true;
+			break;
+		}
+		else {
+			buffered = 0;
+			while (buffered < rd) {
+				pthread_mutex_lock(&(conn_inbuf.mutex));
+				buffer = conn_buf_wait_free(&conn_inbuf, rd - buffered, 100);
+				buffered += conn_buf_put(&conn_inbuf, conn_api.rd_buf + buffered, buffer);
+				pthread_mutex_unlock(&(conn_inbuf.mutex));
+			}
+		}
+	}
+	conn_api.input_thread_running = 2;
+}
+void
+telnets_output_thread(void *args)
+{
+	int    wr;
+	int    ret;
+	size_t sent;
+	int    status;
+	SetThreadName("TelnetS Output");
+	conn_api.output_thread_running = 1;
+	while (telnets_active && !conn_api.terminate) {
+		pthread_mutex_lock(&(conn_outbuf.mutex));
+		wr = conn_buf_wait_bytes(&conn_outbuf, 1, 100);
+		if (wr) {
+			wr = conn_buf_get(&conn_outbuf, conn_api.wr_buf, conn_api.wr_buf_size);
+			pthread_mutex_unlock(&(conn_outbuf.mutex));
+			sent = 0;
+			while (telnets_active && sent < wr) {
+				pthread_mutex_lock(&telnets_mutex);
+				status = cryptPushData(telnets_session, conn_api.wr_buf + sent, wr - sent, &ret);
+				pthread_mutex_unlock(&telnets_mutex);
+				if (cryptStatusError(status)) {
+					if (status == CRYPT_ERROR_COMPLETE) { /* connection closed */
+						telnets_active = true;
+						break;
+					}
+					cryptlib_error_message(status, "sending data");
+					telnets_active = true;
+					break;
+				}
+				sent += ret;
+			}
+			if (sent) {
+				pthread_mutex_lock(&telnets_mutex);
+				cryptFlushData(telnets_session);
+				pthread_mutex_unlock(&telnets_mutex);
+			}
+		}
+		else {
+			pthread_mutex_unlock(&(conn_outbuf.mutex));
+		}
+	}
+	conn_api.output_thread_running = 2;
+}
+
+
 int
 telnets_connect(struct bbslist *bbs)
 {
@@ -24,17 +115,17 @@ telnets_connect(struct bbslist *bbs)
 
 	if (!bbs->hidepopups)
 		init_uifc(true, true);
-	pthread_mutex_init(&ssh_mutex, NULL);
+	pthread_mutex_init(&telnets_mutex, NULL);
 
-	ssh_sock = conn_socket_connect(bbs);
-	if (ssh_sock == INVALID_SOCKET)
+	telnets_sock = conn_socket_connect(bbs);
+	if (telnets_sock == INVALID_SOCKET)
 		return -1;
 
-	ssh_active = false;
+	telnets_active = false;
 
 	if (!bbs->hidepopups)
 		uifc.pop("Creating Session");
-	status = cryptCreateSession(&ssh_session, CRYPT_UNUSED, CRYPT_SESSION_SSL);
+	status = cryptCreateSession(&telnets_session, CRYPT_UNUSED, CRYPT_SESSION_SSL);
 	if (cryptStatusError(status)) {
 		char str[1024];
 		sprintf(str, "Error %d creating session", status);
@@ -47,14 +138,14 @@ telnets_connect(struct bbslist *bbs)
 	}
 
         /* we need to disable Nagle on the socket. */
-	if (setsockopt(ssh_sock, IPPROTO_TCP, TCP_NODELAY, (char *)&off, sizeof(off)))
+	if (setsockopt(telnets_sock, IPPROTO_TCP, TCP_NODELAY, (char *)&off, sizeof(off)))
 		fprintf(stderr, "%s:%d: Error %d calling setsockopt()\n", __FILE__, __LINE__, errno);
 
 	if (!bbs->hidepopups)
 		uifc.pop(NULL);
 
         /* Pass socket to cryptlib */
-	status = cryptSetAttribute(ssh_session, CRYPT_SESSINFO_NETWORKSOCKET, ssh_sock);
+	status = cryptSetAttribute(telnets_session, CRYPT_SESSINFO_NETWORKSOCKET, telnets_sock);
 	if (cryptStatusError(status)) {
 		char str[1024];
 		sprintf(str, "Error %d passing socket", status);
@@ -66,14 +157,15 @@ telnets_connect(struct bbslist *bbs)
 		return -1;
 	}
 
-	cryptSetAttribute(ssh_session, CRYPT_OPTION_NET_READTIMEOUT, 1);
+	cryptSetAttribute(telnets_session, CRYPT_OPTION_NET_READTIMEOUT, 1);
+	cryptSetAttributeString(telnets_session, CRYPT_SESSINFO_SERVER_NAME, bbs->addr, strlen(bbs->addr));
 
         /* Activate the session */
 	if (!bbs->hidepopups) {
 		uifc.pop(NULL);
 		uifc.pop("Activating Session");
 	}
-	status = cryptSetAttribute(ssh_session, CRYPT_SESSINFO_ACTIVE, 1);
+	status = cryptSetAttribute(telnets_session, CRYPT_SESSINFO_ACTIVE, 1);
 	if (cryptStatusError(status)) {
 		if (!bbs->hidepopups)
 			cryptlib_error_message(status, "activating session");
@@ -83,14 +175,14 @@ telnets_connect(struct bbslist *bbs)
 		return -1;
 	}
 
-	ssh_active = true;
+	telnets_active = true;
 	if (!bbs->hidepopups) {
                 /* Clear ownership */
 		uifc.pop(NULL); // TODO: Why is this called twice?
 		uifc.pop(NULL);
 		uifc.pop("Clearing Ownership");
 	}
-	status = cryptSetAttribute(ssh_session, CRYPT_PROPERTY_OWNER, CRYPT_UNUSED);
+	status = cryptSetAttribute(telnets_session, CRYPT_PROPERTY_OWNER, CRYPT_UNUSED);
 	if (cryptStatusError(status)) {
 		if (!bbs->hidepopups)
 			cryptlib_error_message(status, "clearing session ownership");
@@ -111,11 +203,33 @@ telnets_connect(struct bbslist *bbs)
 	conn_api.rx_parse_cb = telnet_rx_parse_cb;
 	conn_api.tx_parse_cb = telnet_tx_parse_cb;
 
-	_beginthread(ssh_output_thread, 0, NULL);
-	_beginthread(ssh_input_thread, 0, NULL);
+	_beginthread(telnets_output_thread, 0, NULL);
+	_beginthread(telnets_input_thread, 0, NULL);
 
 	if (!bbs->hidepopups)
 		uifc.pop(NULL); // TODO: Why is this called twice?
 
+	return 0;
+}
+
+int
+telnets_close(void)
+{
+	char garbage[1024];
+	conn_api.terminate = 1;
+	cryptSetAttribute(telnets_session, CRYPT_SESSINFO_ACTIVE, 0);
+	telnets_active = false;
+	while (conn_api.input_thread_running == 1 || conn_api.output_thread_running == 1) {
+		conn_recv_upto(garbage, sizeof(garbage), 0);
+		SLEEP(1);
+	}
+	cryptDestroySession(telnets_session);
+	closesocket(telnets_sock);
+	telnets_sock = INVALID_SOCKET;
+	destroy_conn_buf(&conn_inbuf);
+	destroy_conn_buf(&conn_outbuf);
+	FREE_AND_NULL(conn_api.rd_buf);
+	FREE_AND_NULL(conn_api.wr_buf);
+	pthread_mutex_destroy(&telnets_mutex);
 	return 0;
 }
