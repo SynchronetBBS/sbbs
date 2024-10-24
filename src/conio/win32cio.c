@@ -948,7 +948,7 @@ int win32_setpalette(uint32_t entry, uint16_t r, uint16_t g, uint16_t b)
 				if (mode & ENABLE_VIRTUAL_TERMINAL_PROCESSING) {
 					int slen;
 					char seq[30];
-					slen = snprintf(seq, sizeof(seq), "\x1b]4;%d;rgb:%02hhx/%02hhx/%02hhx\x1b\\", i, r >> 8, g >> 8, b >> 8);
+					slen = snprintf(seq, sizeof(seq), "\x1b]4;%d;rgb:%02hhx/%02hhx/%02hhx\x1b\\", entry, r >> 8, g >> 8, b >> 8);
 					if (slen > -1) {
 						if (WriteConsole(h, seq, slen, NULL, NULL))
 							ret = 1;
