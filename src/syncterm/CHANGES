@@ -4,6 +4,8 @@ Fix pointy scaling to work even when interpolating both directions
 Fix ATASCII input
 Fix -iW colors
 Fix default port for Telnets
+Set Server Name Extension when connecting via telnets
+Fix telnets (broken when sftp support was added)
 
 Version 1.2rc3
 --------------
