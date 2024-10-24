@@ -59,7 +59,7 @@ char              *conn_types[] = {
 	"Unknown", "RLogin", "RLogin Reversed", "Telnet", "Raw", "SSH", "SSH (no auth)", "Modem", "Serial",
 	"3-wire (No RTS)", "Shell", "MBBS GHost", "TelnetS", NULL
 };
-short unsigned int conn_ports[] = {0, 513, 513, 23, 0, 22, 22, 0, 0, 0, 65535, 992, 0};
+short unsigned int conn_ports[] = {0, 513, 513, 23, 0, 22, 22, 0, 0, 0, 0, 65535, 992, 0};
 
 struct conn_buffer conn_inbuf;
 struct conn_buffer conn_outbuf;
