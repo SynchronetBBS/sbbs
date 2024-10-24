@@ -34,7 +34,7 @@ static const char* msg_area_prop_desc[] = {
 
 static const char* msg_grp_prop_desc[] = {
 	 "Index into grp_list array (or -1 if not in array)"
-	,"Unique number for this message group"
+	,"Unique (zero-based) number for this message group"
 	,"Group name"
 	,"Group description"
 	,"Group access requirements"
@@ -47,7 +47,7 @@ static const char* msg_sub_prop_desc[] = {
 
 	 "Index into sub_list array (or -1 if not in array)</i>"
 	,"Group's index into grp_list array</i>"
-	,"Unique number for this sub-board"
+	,"Unique (zero-based) number for this sub-board"
 	,"Group number"
 	,"Group name</i>"
 	,"Sub-board internal code"

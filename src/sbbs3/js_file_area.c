@@ -34,7 +34,7 @@ static const char* file_area_prop_desc[] = {
 
 static const char* lib_prop_desc[] = {
 	 "Index into lib_list array (or -1 if not in array)"
-	,"Unique number for this library"
+	,"Unique (zero-based) number for this library"
 	,"Name"
 	,"Description"
 	,"Access requirements"
@@ -47,7 +47,7 @@ static const char* lib_prop_desc[] = {
 static const char* dir_prop_desc[] = {
 
 	 "Index into dir_list array (or -1 if not in array)"
-	,"Unique number for this directory"
+	,"Unique (zero-based) number for this directory"
 	,"Library index"
 	,"Library number"
 	,"Library name"
