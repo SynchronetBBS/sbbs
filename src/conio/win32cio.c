@@ -257,7 +257,7 @@ static int win32_keyboardio(int isgetch)
 				break;
 			}
 			if(isgetch)
-				SLEEP(1);
+				WaitForSingleObject(h, 1000);
 			else
 				return(FALSE);
 		}
@@ -266,10 +266,18 @@ static int win32_keyboardio(int isgetch)
 			continue;
 
 		if(!ReadConsoleInput(h, &input, 1, &num)
-				|| !num || (input.EventType!=KEY_EVENT && input.EventType!=MOUSE_EVENT))
+				|| !num || (input.EventType!=KEY_EVENT && input.EventType!=MOUSE_EVENT && input.EventType != WINDOW_BUFFER_SIZE_EVENT))
 			continue;
 
 		switch(input.EventType) {
+			case WINDOW_BUFFER_SIZE_EVENT:
+				if (input.Event.WindowBufferSizeEvent.dwSize.X != cio_textinfo.screenwidth || input.Event.WindowBufferSizeEvent.dwSize.Y != cio_textinfo.screenheight) {
+					struct ciolib_screen *screen = savescreen();
+					win32_textmode(cio_textinfo.currmode);
+					restorescreen(screen);
+					freescreen(screen);
+				}
+				break;
 			case KEY_EVENT:
 
 #ifdef DEBUG_KEY_EVENTS
@@ -496,7 +504,7 @@ void win32_resume(void)
 	DWORD	conmode;
 	HANDLE	h;
 
-	conmode=ENABLE_MOUSE_INPUT|ENABLE_EXTENDED_FLAGS;
+	conmode=ENABLE_MOUSE_INPUT|ENABLE_EXTENDED_FLAGS|ENABLE_WINDOW_INPUT;
 	if((h=GetStdHandle(STD_INPUT_HANDLE)) != INVALID_HANDLE_VALUE)
 		SetConsoleMode(h, conmode);
 
@@ -528,7 +536,7 @@ int win32_initciolib(int inmode)
 	if((h=GetStdHandle(STD_INPUT_HANDLE))==INVALID_HANDLE_VALUE
 		|| !GetConsoleMode(h, &orig_in_conmode))
 		return(0);
-	conmode=ENABLE_MOUSE_INPUT|ENABLE_EXTENDED_FLAGS;
+	conmode=ENABLE_MOUSE_INPUT|ENABLE_EXTENDED_FLAGS|ENABLE_WINDOW_INPUT;
 	if(!SetConsoleMode(h, conmode))
 		return(0);
 
@@ -653,8 +661,11 @@ void win32_textmode(int mode)
 
 	if ((h=GetStdHandle(STD_OUTPUT_HANDLE)) == INVALID_HANDLE_VALUE)
 		return;
-	if (!SetConsoleScreenBufferSize(h,sz))
-		return;	// Note: This fails and returns here with large windows (e.g. width > 255)
+	if (!SetConsoleScreenBufferSize(h,sz)) {
+		// Apparently this fails if it's already the specified size.
+		if (GetLastError() != 0xb7)
+			return;	// Note: This fails and returns here with large windows (e.g. width > 255)
+	}
 	if (!SetConsoleWindowInfo(h,TRUE,&rc))
 		return;
 	sz.X=vparams[modeidx].cols;
@@ -689,8 +700,7 @@ void win32_textmode(int mode)
 					for (i = 0; i < 16; i++) {
 						int slen;
 						char seq[30];
-						int dac = palettes[vparams[modeidx].palette][i];
-						slen = snprintf(seq, sizeof(seq), "\x1b]4;%d;rgb:%02hhx/%02hhx/%02hhx\x1b\\", i, dac_default[dac].red, dac_default[dac].green, dac_default[dac].blue);
+						slen = snprintf(seq, sizeof(seq), "\x1b]4;%d;rgb:%02hhx/%02hhx/%02hhx\x1b\\", i, dac_default[i].red, dac_default[i].green, dac_default[i].blue);
 						if (slen > -1)
 							WriteConsoleA(h, seq, slen, NULL, NULL);
 					}
@@ -950,7 +960,7 @@ int win32_setpalette(uint32_t entry, uint16_t r, uint16_t g, uint16_t b)
 					char seq[30];
 					slen = snprintf(seq, sizeof(seq), "\x1b]4;%d;rgb:%02hhx/%02hhx/%02hhx\x1b\\", entry, r >> 8, g >> 8, b >> 8);
 					if (slen > -1) {
-						if (WriteConsole(h, seq, slen, NULL, NULL))
+						if (WriteConsoleA(h, seq, slen, NULL, NULL))
 							ret = 1;
 					}
 				}
