@@ -104,7 +104,7 @@ function show_subs(grp)
 {
 	if(msg_area.grp_list.length < 1)
 		return;
-	if(bbs.menu("subs" + msg_area.grp_list[grp].number, P_NOERROR))
+	if(bbs.menu("subs" + msg_area.grp_list[grp].number + 1, P_NOERROR))
 		return;
 	console.newline();
 	console.print(format(bbs.text(bbs.text.SubLstHdr), msg_area.grp_list[grp].description));
@@ -182,7 +182,7 @@ function show_dirs(lib)
 {
 	if(file_area.lib_list.length < 1)
 		return;
-	if(bbs.menu("dirs" + file_area.lib_list[lib].number, P_NOERROR))
+	if(bbs.menu("dirs" + file_area.lib_list[lib].number + 1, P_NOERROR))
 		return;
 	console.newline();
 	console.print(format(bbs.text(bbs.text.DirLstHdr), file_area.lib_list[lib].description));
