@@ -97,7 +97,7 @@ enum {
 	,BBS_PROP_SMB_LAST_MSG
 	,BBS_PROP_SMB_TOTAL_MSGS
 	,BBS_PROP_SMB_MSGS
-	,BBS_PROP_SMB_CURMSG
+	,BBS_PROP_SMB_CURMSG	// writable
 
 	/* READ ONLY */
 	,BBS_PROP_MSG_TO
@@ -121,7 +121,7 @@ enum {
 	,BBS_PROP_MSG_AUXATTR
 	,BBS_PROP_MSG_NETATTR
 	,BBS_PROP_MSG_OFFSET
-	,BBS_PROP_MSG_NUMBER
+	,BBS_PROP_MSG_NUMBER	// writable
 	,BBS_PROP_MSG_EXPIRATION
 	,BBS_PROP_MSG_FORWARDED
 	,BBS_PROP_MSG_THREAD_ID
@@ -649,6 +649,8 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case BBS_PROP_MSG_NUMBER:
 			if(sbbs->current_msg!=NULL)
 				val=sbbs->current_msg->hdr.number;
+			else
+				val=sbbs->current_msg_number;
 			break;
 		case BBS_PROP_MSG_EXPIRATION:
 			if(sbbs->current_msg!=NULL)
@@ -886,6 +888,12 @@ static JSBool js_bbs_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, j
 			sbbs->xfer_cmds=val;
 			break;
 
+		case BBS_PROP_SMB_CURMSG:
+			sbbs->smb.curmsg = val;
+			break;
+		case BBS_PROP_MSG_NUMBER:
+			sbbs->current_msg_number = val;
+			break;
 		case BBS_PROP_CURGRP:
 			if(p!=NULL) {	/* set by name */
 				int i;
@@ -1052,7 +1060,7 @@ static jsSyncPropertySpec js_bbs_properties[] = {
 	{	"smb_last_msg"		,BBS_PROP_SMB_LAST_MSG		,PROP_READONLY	,310},
 	{	"smb_total_msgs"	,BBS_PROP_SMB_TOTAL_MSGS	,PROP_READONLY	,310},
 	{	"smb_msgs"			,BBS_PROP_SMB_MSGS			,PROP_READONLY	,310},
-	{	"smb_curmsg"		,BBS_PROP_SMB_CURMSG		,PROP_READONLY	,310},
+	{	"smb_curmsg"		,BBS_PROP_SMB_CURMSG		,JSPROP_ENUMERATE, 310},
 
 	{	"msg_to"			,BBS_PROP_MSG_TO			,PROP_READONLY	,310},
 	{	"msg_to_ext"		,BBS_PROP_MSG_TO_EXT		,PROP_READONLY	,310},
@@ -1075,7 +1083,7 @@ static jsSyncPropertySpec js_bbs_properties[] = {
 	{	"msg_auxattr"		,BBS_PROP_MSG_AUXATTR		,PROP_READONLY	,310},
 	{	"msg_netattr"		,BBS_PROP_MSG_NETATTR		,PROP_READONLY	,310},
 	{	"msg_offset"		,BBS_PROP_MSG_OFFSET		,PROP_READONLY	,310},
-	{	"msg_number"		,BBS_PROP_MSG_NUMBER		,PROP_READONLY	,310},
+	{	"msg_number"		,BBS_PROP_MSG_NUMBER		,JSPROP_ENUMERATE ,310},
 	{	"msg_expiration"	,BBS_PROP_MSG_EXPIRATION	,PROP_READONLY	,310},
 	{	"msg_forwarded"		,BBS_PROP_MSG_FORWARDED		,PROP_READONLY	,310},
 	{	"msg_thread_id"		,BBS_PROP_MSG_THREAD_BACK	,PROP_READONLY	,316},

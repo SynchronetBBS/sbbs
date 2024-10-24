@@ -707,6 +707,7 @@ public:
 	const char*	current_msg_subj = nullptr;
 	const char*	current_msg_from = nullptr;
 	const char*	current_msg_to = nullptr;
+	uint32_t current_msg_number = 0;
 	file_t*	current_file = nullptr;
 
 			/* Global command shell variables */
