@@ -22,7 +22,6 @@
 #include <genwrap.h>
 #include <stdio.h>		/* stdin */
 #include <stdlib.h>		/* atexit */
-#include <xpprintf.h>		/* atexit */
 
 #if defined(_WIN32)
  #include <malloc.h>	/* alloca() on Win32 */
@@ -689,14 +688,13 @@ void win32_textmode(int mode)
 				if (cmode & ENABLE_VIRTUAL_TERMINAL_PROCESSING) {
 					for (i = 0; i < 16; i++) {
 						int slen;
-						char *seq;
-						slen = asprintf(&seq, "\x1b]4;%d;rgb:%u/%u/%u\x1b\\", i, dac_default[palettes[vparams[modeidx].palette][i]].red, dac_default[palettes[vparams[modeidx].palette][i]].green, dac_default[palettes[vparams[modeidx].palette][i]].blue);
+						char seq[30];
+						int dac = palettes[vparams[modeidx].palette][i];
+						slen = snprintf(seq, sizeof(seq), "\x1b]4;%d;rgb:%02hhx/%02hhx/%02hhx\x1b\\", i, dac_default[dac].red, dac_default[dac].green, dac_default[dac].blue);
 						if (slen > -1)
-							WriteConsole(h, seq, slen, NULL, NULL);
-						else
-							seq = NULL;
-						xp_asprintf_free(seq);
+							WriteConsoleA(h, seq, slen, NULL, NULL);
 					}
+					cio_api.options |= CONIO_OPT_PALETTE_SETTING;
 				}
 			}
 			SetConsoleMode(h, oldmode);
@@ -949,15 +947,12 @@ int win32_setpalette(uint32_t entry, uint16_t r, uint16_t g, uint16_t b)
 			if (GetConsoleMode(h, &mode)) {
 				if (mode & ENABLE_VIRTUAL_TERMINAL_PROCESSING) {
 					int slen;
-					char *seq;
-					slen = asprintf(&seq, "\x1b]4;%d;rgb:%u/%u/%u\x1b\\", entry, r, g, b);
+					char seq[30];
+					slen = snprintf(seq, sizeof(seq), "\x1b]4;%d;rgb:%02hhx/%02hhx/%02hhx\x1b\\", i, r >> 8, g >> 8, b >> 8);
 					if (slen > -1) {
 						if (WriteConsole(h, seq, slen, NULL, NULL))
 							ret = 1;
 					}
-					else
-						seq = NULL;
-					xp_asprintf_free(seq);
 				}
 			}
 			SetConsoleMode(h, oldmode);
