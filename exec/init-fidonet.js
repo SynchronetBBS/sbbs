@@ -759,7 +759,8 @@ if(echolist_fname && file_size(echolist_fname) > 0) {
 		var misc = 0;
 		if(!network.handles)
 			misc |= SUB_NAME;
-		system.exec(system.exec_dir + "scfg"
+		system.exec(system.exec_dir + "scfg "
+			+ system.ctrl_dir
 			+ " -import=" + echolist_fname
 			+ " -g" + netname
 			+ " -faddr=" + fidoaddr.to_str(your)
@@ -863,6 +864,7 @@ function add_gfile(fname, desc, tail)
 		file.close();
 		return true;
 	}
+	mkdir(system.data_dir + "text");
 	var file = new File(system.data_dir + "text/operator.ini");
 	if(!file.open(file.exists ? 'r+':'w+')) {
 		alert("Error " + file.error + " opening " + file.name);
