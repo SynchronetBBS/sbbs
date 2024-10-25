@@ -514,6 +514,7 @@ void win32_resume(void)
 	conmode&=~ENABLE_WRAP_AT_EOL_OUTPUT;
 	if((h=GetStdHandle(STD_OUTPUT_HANDLE)) != INVALID_HANDLE_VALUE)
 		SetConsoleMode(h, conmode);
+	win32_puttext(1, 1, cio_textinfo.screenwidth, cio_textinfo.screenheight, win32cio_buffer);
 }
 
 static BOOL WINAPI ControlHandler(unsigned long CtrlType)
@@ -550,6 +551,7 @@ int win32_initciolib(int inmode)
 	if(!SetConsoleMode(h, conmode))
 		return(0);
 
+	cio_textinfo.currmode = -1;
 	if(GetConsoleScreenBufferInfo(h, &sbuff)==0) {
 		win32_textmode(C80);	// TODO: This likely won't work...
 	}
@@ -558,60 +560,60 @@ int win32_initciolib(int inmode)
 		unsigned screenwidth = sbuff.srWindow.Right - sbuff.srWindow.Left + 1;
 		unsigned screenheight = sbuff.srWindow.Bottom - sbuff.srWindow.Top + 1;
 		if (screenwidth > 0xff)
-			cio_textinfo.screenwidth = 0xff;
+			screenwidth = 0xff;
 		else
-			cio_textinfo.screenwidth = screenwidth;
+			screenwidth = screenwidth;
 		if (screenheight > 0xff)
-			cio_textinfo.screenheight = 0xff;
+			screenheight = 0xff;
 		else
-			cio_textinfo.screenheight = screenheight;
+			screenheight = screenheight;
 
-		if(cio_textinfo.screenwidth>=132) {
-			if(cio_textinfo.screenheight<25)
+		if(screenwidth>=132) {
+			if(screenheight<25)
 				win32_textmode(VESA_132X21);
-			else if(cio_textinfo.screenheight<28)
+			else if(screenheight<28)
 				win32_textmode(VESA_132X25);
-			else if(cio_textinfo.screenheight<30)
+			else if(screenheight<30)
 				win32_textmode(VESA_132X28);
-			else if(cio_textinfo.screenheight<34)
+			else if(screenheight<34)
 				win32_textmode(VESA_132X30);
-			else if(cio_textinfo.screenheight<43)
+			else if(screenheight<43)
 				win32_textmode(VESA_132X34);
-			else if(cio_textinfo.screenheight<50)
+			else if(screenheight<50)
 				win32_textmode(VESA_132X43);
-			else if(cio_textinfo.screenheight<60)
+			else if(screenheight<60)
 				win32_textmode(VESA_132X50);
 			else
 				win32_textmode(VESA_132X60);
 		}
-		else if(cio_textinfo.screenwidth>=80) {
-			if(cio_textinfo.screenheight<21)
+		else if(screenwidth>=80) {
+			if(screenheight<21)
 				win32_textmode(C80X14);
-			else if(cio_textinfo.screenheight<25)
+			else if(screenheight<25)
 				win32_textmode(C80X21);
-			else if(cio_textinfo.screenheight<28)
+			else if(screenheight<28)
 				win32_textmode(C80);
-			else if(cio_textinfo.screenheight<43)
+			else if(screenheight<43)
 				win32_textmode(C80X28);
-			else if(cio_textinfo.screenheight<50)
+			else if(screenheight<50)
 				win32_textmode(C80X43);
-			else if(cio_textinfo.screenheight<60)
+			else if(screenheight<60)
 				win32_textmode(C80X50);
 			else
 				win32_textmode(C80X60);
 		}
 		else {
-			if(cio_textinfo.screenheight<21)
+			if(screenheight<21)
 				win32_textmode(C40X14);
-			else if(cio_textinfo.screenheight<25)
+			else if(screenheight<25)
 				win32_textmode(C40X21);
-			else if(cio_textinfo.screenheight<28)
+			else if(screenheight<28)
 				win32_textmode(C40);
-			else if(cio_textinfo.screenheight<43)
+			else if(screenheight<43)
 				win32_textmode(C40X28);
-			else if(cio_textinfo.screenheight<50)
+			else if(screenheight<50)
 				win32_textmode(C40X43);
-			else if(cio_textinfo.screenheight<60)
+			else if(screenheight<60)
 				win32_textmode(C40X50);
 			else
 				win32_textmode(C40X60);
@@ -692,14 +694,22 @@ void win32_textmode(int mode)
 		return;
 	sz.X=vparams[modeidx].cols;
 	sz.Y=vparams[modeidx].rows;
-	if (!SetConsoleScreenBufferSize(h,sz))
-		return;
+	if (!SetConsoleScreenBufferSize(h,sz)) {
+		DWORD err = GetLastError();
+		switch(err) {
+			case 0xb7: // Apparently this fails if it's already the specified size.
+			case 0x57: // And also if it's smaller than the view rect
+				break;
+			default:
+				return;
+		}
+	}
 
 	cio_textinfo.attribute=7;
 	cio_textinfo.normattr=7;
 	cio_textinfo.currmode=vparams[modeidx].mode;
-	cio_textinfo.screenheight=(unsigned char)sz.Y;
-	cio_textinfo.screenwidth=(unsigned char)sz.X;
+	cio_textinfo.screenheight=vparams[modeidx].rows;
+	cio_textinfo.screenwidth=vparams[modeidx].cols;
 	cio_textinfo.curx=1;
 	cio_textinfo.cury=1;
 	cio_textinfo.winleft=1;
