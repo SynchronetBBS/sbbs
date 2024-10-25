@@ -961,6 +961,10 @@ int ansi_initio_cb(void)
 		conmode = ENABLE_VIRTUAL_TERMINAL_PROCESSING | ENABLE_PROCESSED_OUTPUT;
 		if(!SetConsoleMode(h, conmode))
 			return(0);
+		if (!GetConsoleMode(h, &conmode))
+			return(0);
+		if (!(conmode & ENABLE_VIRTUAL_TERMINAL_PROCESSING))
+			return(0);
 	}
 	fflush(stderr);
 	fflush(stdout);
@@ -992,7 +996,7 @@ int ansi_initio_cb(void)
 		atexit(ansi_fixterm);
 	}
 #endif
-	return(0);
+	return(1);
 }
 
 #if defined(__BORLANDC__)
@@ -1009,7 +1013,8 @@ int ansi_initciolib(int inmode)
 	ansi_textmode(1);
 	cio_textinfo.screenheight=24;
 	cio_textinfo.screenwidth=80;
-	ciolib_ansi_initio_cb();
+	if (!ciolib_ansi_initio_cb())
+		return 0;
 
 	sem_init(&got_key,0,0);
 	sem_init(&got_input,0,0);

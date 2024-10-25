@@ -761,13 +761,13 @@ void win32_textmode(int mode)
 	cio_textinfo.wintop=1;
 	cio_textinfo.winright=cio_textinfo.screenwidth;
 	cio_textinfo.winbottom=cio_textinfo.screenheight;
+	bi.cbSize = sizeof(bi);
 	if (GetConsoleScreenBufferInfoEx(h, &bi)) {
 		for (i = 0; i < 16; i++) {
 			bi.ColorTable[i] = RGB(dac_default[palettes[vparams[modeidx].palette][i]].red, dac_default[palettes[vparams[modeidx].palette][i]].green, dac_default[palettes[vparams[modeidx].palette][i]].blue);
 		}
-		if (SetConsoleScreenBufferInfoEx(h, &bi)) {
+		if (SetConsoleScreenBufferInfoEx(h, &bi))
 			cio_api.options |= CONIO_OPT_PALETTE_SETTING;
-		}
 	}
 	if (GetConsoleMode(h, &oldmode)) {
 		cmode = oldmode | ENABLE_VIRTUAL_TERMINAL_PROCESSING | ENABLE_PROCESSED_OUTPUT;
@@ -1053,6 +1053,7 @@ int win32_setpalette(uint32_t entry, uint16_t r, uint16_t g, uint16_t b)
 	if (entry > 15)
 		return 0;
 
+	bi.cbSize = sizeof(bi);
 	if (!GetConsoleScreenBufferInfoEx(h, &bi))
 		return 0;
 
