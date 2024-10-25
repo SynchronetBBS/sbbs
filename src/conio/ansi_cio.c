@@ -406,6 +406,7 @@ int ansi_puttext(int sx, int sy, int ex, int ey, void* buf)
 			for(cx=sx-1;cx<ex;cx++) {
 				if(out[(cy*ti.screenwidth+cx)*2]!=*out
 						|| out[(cy*ti.screenwidth+cx)*2+1]!=*(out+1)) {
+					// End loops early...
 					j=0;
 					cx=ex;
 					cy=ey;
@@ -476,6 +477,8 @@ int ansi_puttext(int sx, int sy, int ex, int ey, void* buf)
 	if(!i) {
 		for(y=sy-1;y<ey;y++) {
 			for(x=sx-1;x<ex;x++) {
+// TODO: This breaks when there's a window() set. :(
+#if 0
 				/*
 				 * Check if we can use clear2eol now... this means  the rest of the
 				 * chars on the line are the same attr, and are all spaces or NULLs
@@ -510,6 +513,7 @@ int ansi_puttext(int sx, int sy, int ex, int ey, void* buf)
 					}
 					break;
 				}
+#endif
 				sch=*(out++);
 				if(sch==27 && doorway_enabled==0)
 					sch=' ';
