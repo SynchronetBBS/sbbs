@@ -37,10 +37,11 @@ o Optional configuration files for configuring behavior of TUI utilities
 	scaling (default: 0)
 	lines (default: 25)
 	insert (default: false)
-	esc_delay (default: 25)
+	reverse_cursor (default: false)
+	esc_delay (default: 25[ms])
 o New IRC service (ircd v2.0)
 o New command-line specifier: %- to represent the user's chat handle/call-sign
-o New configurable date display/input formats (e.g. Year first)
+o New configurable system date display/input formats (e.g. Year first)
   and configurable date value separators (e.g. '.', '-', ' ' instead of '/')
 
 Security
@@ -58,10 +59,10 @@ o Change the semantics of the "Allow Sysop Logins" setting in SCFG->System:
   an account with sysop access (i.e. level 90+) can still login, but any
   action that normally requires the system password will not be allowed. This
   includes the sysop-actions available in the FTP server when authenticating
-  with  <user-pass>:<system-pass> as the password. The sysop-user can still
+  with <user-pass>:<system-pass> as the password. The sysop-user can still
   authenticate (and login), but none of those sysop-actions will be available
   to them.
-  Renamed/moved to SCFG->System->Security Options->Toggles->Allow Sysop Access
+  Renamed/moved-to SCFG->System->Security Options->Toggles->Allow Sysop Access
 o Filter files (e.g. text/*.can) now have optional expiration date and other
   metadata
   - Configured via the sbbs.ini: LoginAttemptFilterDuration
@@ -88,11 +89,12 @@ o New stock JavaScript modules:
     Replaces logic previously copy/pasted into multiple Baja command shells
   - user_settings.js
     Replaces hard-coded (in C++) user defaults/settings menu
-o New @-codes:
+o More new @-codes:
   - BUILD_DATE
   - BUILD_TIME
   - CPS
   - OS_CPU
+  - GIT_DATE
   - TRUNCATE
   - TRUNCOFF
   - GETDIM
@@ -111,6 +113,7 @@ o New @-codes:
   - ICE
   - RIP
   - PETSCII
+  - PETGRFX
   - SWAPDEL
   - UTF8
   - MOUSE
@@ -131,6 +134,7 @@ o New @-codes:
   - ANFSCAN
   - EDITOR
   - SHELL
+  - NODE_USER
   - Every string from the text.dat file, using the string ID
 o @-codes can now be included in text centered with the CENTER @-code
   Note: this centering logic does not know the expanded-size of the @-code, so
@@ -157,7 +161,11 @@ o Better support for a blank (disabled) text.dat AreYouThere string
 o Mnemonic strings now support @-codes immediately following the tilde
   (e.g. ~@Yes@) to use the first character of a dynamically-replaced
   (e.g. localized/translated) text string as a command key
-o Add MNE:<low>[:high][:cmd] @-code for mnemonic string attribute control
+o Mnemonic strings that contain (only) non-attribute Ctrl-A codes will still
+  have the special attributes (colors) applied to the command keys displayed.
+  Previously, any Ctrl-A character in a mnemonic string defeated the automatic
+  colorization of the output
+o New MNE:<low>[:high][:cmd] @-code for mnemonic string attribute control
 o New text.dat strings:
   - HashingFile
   - HashedFile
@@ -191,7 +199,7 @@ o New text.dat strings for received Fido and Internet mail
 
 Windows
 ~~~~~~
-o Synchronet runs on Windows XP again
+o Synchronet runs on Windows XP again:
   Fixed 'The procedure entry point inet_ntop could not be located in the
   dynamic link library WS2_32.dll'
 o Ignore VDD WriteFile() failures if the child process has terminated
@@ -272,58 +280,69 @@ o Add import/export DIRS.WIN (AKA DIRS.TXT) list files as found on CD-ROMs
 JavaScript
 ~~~~~~~~~~
 o Command-shells can be written entirely in JavaScript, no .bin stub needed
-o New property: file_area.web_vpath_prefix
+o New file_area properties:
+  - web_vpath_prefix
+  - max_filename_length
 o file_area.min_diskspace is in bytes now, not kilobytes
 o file-metadata-object (return value of FileBase.get())
   - New property: vpath
   - Renamed property: metadata -> auxdata
-o New system methods for vetting filenames (e.g. for upload by users)
+o New 'system' methods for vetting filenames (e.g. for upload by users)
   - illegal_filename() - check if contains illegal chars/sequences
   - safest_filename() - check if contains only safest chars
   - allowed_filename() - check if meets criteria from SCFG->File Options
   - check_filename() - check if legal and meets configured criteria and
     is not in file.can
 o bbs.check_filename() - ditto, except will display badfile.msg as appropriate
-o MsgBase.save_msg() throws an exception when empty recipient list is provided
-o Restore ability for MsgBase.open() to open an arbitrary SMB msgbase
-o Remember the last 'first_msg' property value after MsgBase is closed
-o Fixed user.dat open file descriptor leak in User object constructor
-o New User.stats.download_cps property
-o New User.mail_settings property
-o New User.close() method
-o Add 'fidonet_addr' property to msg_area.sub[]
-o New global function: rmfiles() - remove files and sub-dirs, recursively
-o New global function: strip_ctrl_a() - remove Ctrl-A sequences from string
-o New bbs.expand_atcodes() method
-o New bbs.batch_clear() method
-o New bbs.chat_sec() method
-o New bbs.sync() method
-o New bbs methods: save_msg_scan() and reload_msgs_scan()
-o bbs.telnet_gate() and rlogin_gate() now return boolean (success/failure)
-o bbs.logoff() now returns boolean (false if log-off was denied)
-o New bbs.load_user_text() method
-o bbs.text() now accepts an additional argument: default_text=false
-o bbs.text now has numeric properties named after each text ID
-  (so load() or require() of text.js is no longer strictly required)
-o bbs.editfile() now supports overriding the maximum lines (default: 10000)
-  and message metadata fields place in external editor drop files
-o Argument to bbs.batch_clear() now optional (clear downlaod queue by default)
-o New bbs properties: first_node and last_node
 o New system.find_login_id() method
 o Allow system.matchuserdata() to search deleted user records
-o New system properties:
+o New 'system' properties:
   - login_settings
   - mail_settings
   - guru
   - tz_offset
   - git_date
   - git_time
-o New console properties:
+o MsgBase.save_msg() throws an exception when empty recipient list is provided
+o Restore ability for MsgBase.open() to open an arbitrary SMB msgbase
+o Remember the last 'first_msg' property value after MsgBase is closed
+o Fixed user.dat open file descriptor leak in User object constructor
+o New 'User' properties:
+  - mail_settings
+  - batch_upload_list
+  - batch_download_list
+  - stats.download_cps
+o New User.close() method
+o Add 'fidonet_addr' property to msg_area.sub[]
+o New global function: rmfiles() - remove files and sub-dirs, recursively
+o New global function: strip_ctrl_a() - remove Ctrl-A sequences from string
+o New 'bbs' methods:
+  - expand_atcodes()
+  - batch_clear()
+  - batch_upload()
+  - chat_sec()
+  - sync()
+  - save_msg_scan()
+  - reload_msgs_scan()
+  - load_user_text()
+  - upload_file()
+o bbs.telnet_gate() and rlogin_gate() now return boolean (success/failure)
+o bbs.logoff() now returns boolean (false if log-off was denied)
+o bbs.text() now accepts an additional argument: default_text=false
+o bbs.text now has numeric properties named after each text ID
+  (so load() or require() of text.js is no longer strictly required)
+o bbs.editfile() now supports overriding the maximum lines (default: 10000)
+  and message metadata fields place in external editor drop files
+o Argument to bbs.batch_clear() now optional (clear downlaod queue by default)
+o New 'bbs' properties: first_node and last_node
+o bbs.msg_number and bbs.smb_curmsg properties are now writable
+o bbs.good_password() now defaults to allowing the same/similar user password
+o New 'console' properties:
   - line_delay
   - max_getkey_inactivity
   - last_getkey_activity
   - max_socket_inactivity
-o New console properties that present common (possibly localized) command
+o New 'console' properties that present common (possibly localized) command
   keys: yes_key, no_key, quit_key, all_key, list_key, next_key, prev_key 
 o console.mouse_mode now supports being set to just true or false (no flags)
 o console.pause() now accepts an optional bool argument (set_abort)
@@ -332,11 +351,13 @@ o New console.ungetkeys() method, similar to console.ungetstr()
 o New console.progress() method
   Display a progress indication bar, e.g. "[ Scanning 10.0% ]" with the bar
   backfill effect (when supported by the terminal)
-o New console methods:
+o New 'console' methods:
   - cond_newline()
   - cond_blankline()
   - cond_contline()
   - linefeed()
+  - getdimensions()
+  - ansi_getdims() [ansi_getlines() is/has-long-been deprecated]
 o Renamed console.crlf() to console.newline() (leaving crlf() as an alias)
 o File.readBin() and writeBin() methods now support 64-bit integer binary data
 o New method: File.iniRemoveSections()
@@ -370,6 +391,7 @@ o Allow a per-service "LowestLogLevel" setting
   fill your error.log file with? Set that service's "LowestLogLevel" to
   "Warning" in your services.ini file ("lower" means "more severe" when it
   comes to log levels, so this would set the maximum severity to Warning)
+o Allow a per-service "LoginRequirements" setting in services.ini
 
 Terminal Server
 ~~~~~~~~~~~~~~~
@@ -484,6 +506,8 @@ o Fix EXITINFO.BBS drop file generation (a few problems with size and garbage)
 o Total rewrite of the PCBOARD.SYS and USERS.SYS drop file generation logic
 o Limit DOOR.SYS drop file numeric values to 32767
   - Fixes issues with doors using The DoorFrame door library (e.g Lemonade!)
+o Added (GAP original) 31-line DOOR.SYS drop file support
+  - In addition to the existing 52-line DOOR.SYS drop file support
 o Populate line 36 (user alias) of DOOR.SYS with the current user's handle
   Previously, we just always made this a blank line
 o Add line 8 (user's real name) to DOORFILE.SR (Solar Realms' drop file)
@@ -630,11 +654,14 @@ o SMTP mail server wasn't RFC 4954 compliant for "AUTH PLAIN" logins
   Fix for errant "Missing AUTH PLAIN argument" log message
 o Fix false FORGED mail header 'FROM' field detection/rejection
 o Fix max_clients limit not being effectively-imposed on SMTPS connections
+o MIME-encode words that contani non-ASCII values in text header fields
 
 FTP Server
 ~~~~~~~~~~
 o Limit uploaded file sizes, accounting for free disk space
 o Fix uploader-notification, credit awards, download-counters in downloads
 o Fix false "SUSPECTED BOUND ATTACK ATTEMPT" for IPv6 active-data connections
+o Fix FTPS file upload support
+o Added option to disable FTPS support (e.g. for trouble-shooting)
 o Source of virtual sub-directory names are now configurable in SCFG
   - May be derived from internal code suffix (default), the short or long name
