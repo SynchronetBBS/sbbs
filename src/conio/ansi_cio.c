@@ -42,6 +42,7 @@
 
 #include "ciolib.h"
 #include "ansi_cio.h"
+#include "vidmodes.h"
 
 int	CIOLIB_ANSI_TIMEOUT=500;
 int  (*ciolib_ansi_readbyte_cb)(void)=ansi_readbyte_cb;
@@ -255,11 +256,17 @@ static void ansi_gotoxy_abs(int x, int y)
 		return;
 	}
 
+#if notyet
+	/* Do we even NEED to move? */
+	if(x==ansix && y==ansiy)
+		return;
+
 	/* Moving to col 1 (and not already there)... use \r */
-	if(x==1 && ansix>1) {
+	if(x==1 && ansix!=1) {
 		ansi_sendstr("\r",1);
 		ansix=1;
 	}
+#endif
 
 	/* Do we even NEED to move? */
 	if(x==ansix && y==ansiy)
@@ -281,9 +288,12 @@ static void ansi_gotoxy_abs(int x, int y)
 
 		/* We must have to move down then. */
 		/* Only one, use a newline */
+#if notyet
 		if(y-ansiy < 4)
 			ansi_sendstr("\n\n\n",y-ansiy);
-		else {
+		else 
+#endif
+		{
 			sprintf(str,"\033[%dB",y-ansiy);
 			ansi_sendstr(str,-1);
 		}
@@ -337,7 +347,7 @@ static void ansi_gotoxy_abs(int x, int y)
 		return;
 	}
 
-	/* Changing the row and the column... better use a fill movement then. */
+	/* Changing the row and the column... better use a full movement then. */
 	sprintf(str,"\033[%d;%dH",y,x);
 	ansi_sendstr(str,-1);
 	ansiy=y;
@@ -418,10 +428,13 @@ int ansi_puttext(int sx, int sy, int ex, int ey, void* buf)
 			&& memcmp(buf,ansivmem,ti.screenwidth*(ti.screenheight-1)*2)==0) {
 		/* We need to get to the bottom line... */
 		if(ansiy < ti.screenheight) {
+#if notyet
 			if(ansiy > ti.screenheight-4) {
 				ansi_sendstr("\n\n\n\n\n",ti.screenheight-ansiy-2);
 			}
-			else {
+			else
+#endif
+			{
 				sprintf(str,"\033[%dB",ti.screenheight-ansiy-2);
 				ansi_sendstr(str,-1);
 			}
@@ -439,16 +452,20 @@ int ansi_puttext(int sx, int sy, int ex, int ey, void* buf)
 			&& memcmp(buf,ansivmem+ti.screenwidth,ti.screenwidth*(ti.screenheight-1)*2)==0) {
 		/* We need to get to the bottom line... */
 		if(ansiy < ti.screenheight) {
+#if notyet
 			if(ansiy > ti.screenheight-4) {
 				ansi_sendstr("\n\n\n\n\n",ti.screenheight-ansiy-2);
 			}
-			else {
+			else
+#endif
+			{
 				char str[16];
 				sprintf(str,"\033[%dB",ti.screenheight-ansiy-2);
 				ansi_sendstr(str,-1);
 			}
 		}
-		ansi_sendstr("\n",1);
+		ansi_sendstr("\r\n",2);
+		ansix = 1;
 		memcpy(ansivmem,buf,ti.screenwidth*(ti.screenheight-1)*2);
 		for(x=0;x<ti.screenwidth;x++)
 			ansivmem[(ti.screenheight-1)*ti.screenwidth+x]=(ti.attribute<<8)|' ';
@@ -927,17 +944,38 @@ int ansi_initio_cb(void)
 {
 #ifdef _WIN32
 	DWORD conmode = 0;
+	HANDLE h;
 	if(isatty(fileno(stdin))) {
-		if(!SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), ENABLE_VIRTUAL_TERMINAL_INPUT))
-			return(0);
-
-		GetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), &conmode);
-		if(!SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), conmode | ENABLE_VIRTUAL_TERMINAL_PROCESSING))
+		h = GetStdHandle(STD_INPUT_HANDLE);
+		conmode = ENABLE_VIRTUAL_TERMINAL_INPUT;
+		if(!SetConsoleMode(h, conmode))
 			return(0);
 	}
-	setmode(fileno(stdout),_O_BINARY);
-	setmode(fileno(stdin),_O_BINARY);
+
+	if(isatty(fileno(stdout))) {
+		h = GetStdHandle(STD_OUTPUT_HANDLE);
+		conmode = ENABLE_VIRTUAL_TERMINAL_PROCESSING | ENABLE_PROCESSED_OUTPUT;
+		if(!SetConsoleMode(h, conmode))
+			return(0);
+	}
+	fflush(stderr);
+	fflush(stdout);
+	fflush(stdin);
+	_setmode(_fileno(stderr),_O_BINARY);
 	setvbuf(stdout, NULL, _IONBF, 0);
+	_setmode(_fileno(stdout),_O_BINARY);
+	setvbuf(stdout, NULL, _IONBF, 0);
+	_setmode(_fileno(stdin),_O_BINARY);
+	setvbuf(stdin, NULL, _IONBF, 0);
+	if (isatty(fileno(stdout))) {
+		for (int i = 0; i < 16; i++) {
+			int slen;
+			char seq[30];
+			slen = snprintf(seq, sizeof(seq), "\x1b]4;%d;rgb:%02hhx/%02hhx/%02hhx\x1b\\", i, dac_default[i].red, dac_default[i].green, dac_default[i].blue);
+			if (slen > -1)
+				ansi_writestr_cb(seq, slen);
+		}
+	}
 #else
 	struct termios tio_raw;
 
