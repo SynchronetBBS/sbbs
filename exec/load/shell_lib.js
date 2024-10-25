@@ -273,6 +273,7 @@ function main_info()
 // Prompts for new-file-scan the first time the user enters the file section
 function enter_file_section()
 {
+	bbs.menu("tmessage", P_NOERROR);
 	if(bbs.file_cmds > 0)
 		return;
 	if(!(user.settings & USER_ASK_NSCAN))
