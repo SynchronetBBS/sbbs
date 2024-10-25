@@ -125,6 +125,9 @@ CIOLIBEXPORT const struct keyvals keyval[] =
 	{0, 0, 0, 0, 0}	/** END **/
 };
 
+static uint8_t *win32cio_buffer = NULL;
+static size_t win32cio_buffer_sz = 0;
+
 /* Mouse related stuff */
 static int domouse=1;
 static DWORD last_state=0;
@@ -272,10 +275,8 @@ static int win32_keyboardio(int isgetch)
 		switch(input.EventType) {
 			case WINDOW_BUFFER_SIZE_EVENT:
 				if (input.Event.WindowBufferSizeEvent.dwSize.X != cio_textinfo.screenwidth || input.Event.WindowBufferSizeEvent.dwSize.Y != cio_textinfo.screenheight) {
-					struct ciolib_screen *screen = savescreen();
 					win32_textmode(cio_textinfo.currmode);
-					restorescreen(screen);
-					freescreen(screen);
+					win32_puttext(1, 1, cio_textinfo.screenwidth, cio_textinfo.screenheight, win32cio_buffer);
 				}
 				break;
 			case KEY_EVENT:
@@ -652,6 +653,22 @@ void win32_textmode(int mode)
 	modeidx = find_vmode(mode);
 	if (modeidx == -1)
 		modeidx = C80;
+	if (cio_textinfo.currmode != vparams[modeidx].mode) {
+		size_t newsz = vparams[modeidx].cols * vparams[modeidx].rows * 2;
+		void *tmpbuf = realloc(win32cio_buffer, newsz);
+		if (tmpbuf == NULL) {
+			// Nothing useful to do here.
+			MessageBoxA(NULL, "Error reallocating win32cio_buffer", "realloc() failure", MB_OK | MB_ICONERROR);
+			exit(1);
+		}
+		win32cio_buffer = tmpbuf;
+		win32cio_buffer_sz = newsz;
+		for (i = 0; i < newsz; i += 2) {
+			win32cio_buffer[i] = ' ';
+			win32cio_buffer[i+1] = vparams[modeidx].default_attr;
+		}
+	}
+
 	sz.X = cio_textinfo.screenwidth > vparams[modeidx].cols ? cio_textinfo.screenwidth : vparams[modeidx].cols;
 	sz.Y = cio_textinfo.screenheight > vparams[modeidx].rows ? cio_textinfo.screenheight : vparams[modeidx].rows;
 	rc.Left=0;
@@ -662,9 +679,14 @@ void win32_textmode(int mode)
 	if ((h=GetStdHandle(STD_OUTPUT_HANDLE)) == INVALID_HANDLE_VALUE)
 		return;
 	if (!SetConsoleScreenBufferSize(h,sz)) {
-		// Apparently this fails if it's already the specified size.
-		if (GetLastError() != 0xb7)
-			return;	// Note: This fails and returns here with large windows (e.g. width > 255)
+		DWORD err = GetLastError();
+		switch(err) {
+			case 0xb7: // Apparently this fails if it's already the specified size.
+			case 0x57: // And also if it's smaller than the view rect
+				break;
+			default:
+				return;
+		}
 	}
 	if (!SetConsoleWindowInfo(h,TRUE,&rc))
 		return;
@@ -787,6 +809,8 @@ int win32_puttext(int left, int top, int right, int bottom, void* buf)
 	reg.Bottom=bottom-1;
 	ci=(CHAR_INFO *)alloca(sizeof(CHAR_INFO)*(bs.X*bs.Y));
 	for(y=0;y<bs.Y;y++) {
+		if (buf != win32cio_buffer)
+			memcpy(&win32cio_buffer[(cio_textinfo.screenwidth * ((top-1) + y) + (left-1)) * 2], &bu[y*bs.X*2], bs.X*2);
 		for(x=0;x<bs.X;x++) {
 			ci[(y*bs.X)+x].Char.AsciiChar=bu[((y*bs.X)+x)*2];
 			ci[(y*bs.X)+x].Attributes=DOStoWinAttr(bu[(((y*bs.X)+x)*2)+1]);
