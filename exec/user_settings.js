@@ -236,8 +236,10 @@ while(bbs.online && !js.terminated) {
 	bbs.node_action = NODE_DFLT;
 	bbs.nodesync();
 	console.aborted = false;
-	if (user.number === thisuser.number)
+	if (user.number === thisuser.number) {
 		bbs.load_user_text();
+		console.term_updated();
+	}
 	var keys = display_menu(thisuser);
 
 	switch(console.getkeys(keys, K_UPPER)) {
@@ -536,15 +538,16 @@ while(bbs.online && !js.terminated) {
 				if (!thisuser.compare_ars(file_cfg.protocol[code].ars)
 					|| file_cfg.protocol[code].dlcmd.length === 0)
 					continue;
+				if (c%2===1)
+					console.newline();
 				console.putmsg(format(bbs.text(bbs.text.TransferProtLstFmt)
 					,String(file_cfg.protocol[code].key)
 					,file_cfg.protocol[code].name));
 
 				keylist += String(file_cfg.protocol[code].key);
-				if (c%2===1)
-					console.newline();
 				c++;
 			}
+			console.newline();
 			console.mnemonics(bbs.text(bbs.text.ProtocolOrQuit));
 			var kp = console.getkeys(keylist);
 			if (kp === 'Q' || console.aborted)
