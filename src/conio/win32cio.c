@@ -719,6 +719,13 @@ void win32_textmode(int mode)
 	}
 
 	// Now we try to set the window size
+	/*
+	 * The Windows Terminal appears to have a bug here where 
+	 * SetConsoleWindowInfo() succeeds *and* changes what some parts
+	 * think the window size is (ie: GetConsoleScreenBufferInfo()),
+	 * but the actual window stays the old size.  Hilarity ensues
+	 * when it assumes it wraps at the smaller window size.
+	 */
 	SetConsoleWindowInfo(h,TRUE,&rc);
 
 	// And finally, we set the screen buffer to *just* fit the window
