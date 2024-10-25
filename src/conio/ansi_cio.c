@@ -1001,7 +1001,7 @@ int ansi_initio_cb(void)
 int ansi_initciolib(int inmode)
 {
 	int i;
-	char *init="\033[s\033[99B\033[99B\033[99B_\033[99C\033[99C\033[99C_\033[6n\033[u\033[0m_\033[2J\033[H";
+	char *init="\033[99B\033[99B\033[99B_\033[99C\033[99C\033[99C_\033[6n\033[0m_\033[2J\033[H";
 	time_t start;
 
 	cio_api.options = 0;
