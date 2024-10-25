@@ -122,7 +122,7 @@ static tODKeySequence ODaKeySequences[] =
    {"\033[C", ANSI_KEY_RIGHT},
    {"\033[D", ANSI_KEY_LEFT},
    {"\033[M", ANSI_KEY_PGUP},
-   {"\033[H\x1b[2J", ANSI_KEY_PGDN},
+   {"\033[2J", ANSI_KEY_PGDN},
    {"\033[H", ANSI_KEY_HOME},
    {"\033[K", ANSI_KEY_END},
    {"\033OP", ANSI_KEY_F1},
