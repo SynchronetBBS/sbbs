@@ -642,6 +642,21 @@ int win32_showmouse(void)
 	return(0);
 }
 
+static bool
+getWindowSize(HANDLE h, int *x, int *y)
+{
+	CONSOLE_SCREEN_BUFFER_INFO inf;
+	SMALL_RECT *r = &inf.srWindow;
+
+	if (!GetConsoleScreenBufferInfo(h, &inf))
+		return false;
+	if (x)
+		*x = r->Right - r->Left + 1;
+	if (y)
+		*y = r->Bottom - r->Top + 1;
+	return true;
+}
+
 void win32_textmode(int mode)
 {
 	HANDLE	h;
@@ -651,6 +666,7 @@ void win32_textmode(int mode)
 	int i;
 	DWORD oldmode;
 	DWORD cmode;
+	int wx, wy;
 
 	modeidx = find_vmode(mode);
 	if (modeidx == -1)
@@ -671,15 +687,26 @@ void win32_textmode(int mode)
 		}
 	}
 
+	if ((h=GetStdHandle(STD_OUTPUT_HANDLE)) == INVALID_HANDLE_VALUE)
+		return;
+
+	/*
+	 * First, we need to set the screen buffer "big enough" for the
+	 * new window, but at least as big as the current window
+	 */
 	sz.X = cio_textinfo.screenwidth > vparams[modeidx].cols ? cio_textinfo.screenwidth : vparams[modeidx].cols;
 	sz.Y = cio_textinfo.screenheight > vparams[modeidx].rows ? cio_textinfo.screenheight : vparams[modeidx].rows;
+	if (getWindowSize(h, &wx, &wy)) {
+		if (wx > sz.X)
+			sz.X = wx;
+		if (wy > sz.Y)
+			sz.Y = wy;
+	}
 	rc.Left=0;
 	rc.Right=vparams[modeidx].cols-1;
 	rc.Top=0;
 	rc.Bottom=vparams[modeidx].rows-1;
 
-	if ((h=GetStdHandle(STD_OUTPUT_HANDLE)) == INVALID_HANDLE_VALUE)
-		return;
 	if (!SetConsoleScreenBufferSize(h,sz)) {
 		DWORD err = GetLastError();
 		switch(err) {
@@ -690,10 +717,21 @@ void win32_textmode(int mode)
 				return;
 		}
 	}
-	if (!SetConsoleWindowInfo(h,TRUE,&rc))
-		return;
+
+	// Now we try to set the window size
+	SetConsoleWindowInfo(h,TRUE,&rc);
+
+	// And finally, we set the screen buffer to *just* fit the window
 	sz.X=vparams[modeidx].cols;
 	sz.Y=vparams[modeidx].rows;
+
+	// Of course, the window may not be the size we asked for...
+	if (getWindowSize(h, &wx, &wy)) {
+		if (wx > sz.X)
+			sz.X = wx;
+		if (wy > sz.Y)
+			sz.Y = wy;
+	}
 	if (!SetConsoleScreenBufferSize(h,sz)) {
 		DWORD err = GetLastError();
 		switch(err) {
