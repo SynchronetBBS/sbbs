@@ -390,6 +390,9 @@ int win32_getch(void)
 
 static DWORD	orig_in_conmode=0;
 static DWORD	orig_out_conmode=0;
+static CONSOLE_SCREEN_BUFFER_INFOEX orig_sbiex = {
+	.cbSize = sizeof(CONSOLE_SCREEN_BUFFER_INFOEX),
+};
 static void *	win32_suspendbuf=NULL;
 
 #ifndef CONSOLE_FULLSCREEN_MODE
@@ -484,12 +487,6 @@ BOOL NT_GetConsoleDisplayMode(DWORD* mode)
 }
 
 
-void RestoreDisplayMode(void)
-{
-	if(orig_display_mode==0)
-		NT_SetConsoleDisplayMode(GetStdHandle(STD_OUTPUT_HANDLE),CONSOLE_WINDOWED_MODE);
-}
-
 void win32_suspend(void)
 {
 	HANDLE h;
@@ -498,6 +495,16 @@ void win32_suspend(void)
 		SetConsoleMode(h, orig_out_conmode);
 	if((h=GetStdHandle(STD_INPUT_HANDLE)) != INVALID_HANDLE_VALUE)
 		SetConsoleMode(h, orig_in_conmode);
+}
+
+void RestoreDisplayMode(void)
+{
+	HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+	if(orig_display_mode==0)
+		NT_SetConsoleDisplayMode(h,CONSOLE_WINDOWED_MODE);
+	win32_suspend();
+	SetConsoleScreenBufferInfoEx(h, &orig_sbiex);
+	SetConsoleScreenBufferInfoEx(h, &orig_sbiex);
 }
 
 void win32_resume(void)
@@ -545,6 +552,10 @@ int win32_initciolib(int inmode)
 	if((h=GetStdHandle(STD_OUTPUT_HANDLE))==INVALID_HANDLE_VALUE
 		|| !GetConsoleMode(h, &orig_out_conmode))
 		return(0);
+	GetConsoleScreenBufferInfoEx(h, &orig_sbiex);
+	// FFS Microsoft, get your shut together.
+	orig_sbiex.srWindow.Bottom++;
+	orig_sbiex.srWindow.Right++;
 	conmode=orig_out_conmode;
 	conmode&=~ENABLE_PROCESSED_OUTPUT;
 	conmode&=~ENABLE_WRAP_AT_EOL_OUTPUT;
@@ -623,8 +634,8 @@ int win32_initciolib(int inmode)
 	NT_GetConsoleDisplayMode(&orig_display_mode);
 	if(inmode==CIOLIB_MODE_CONIO_FULLSCREEN) {
 		NT_SetConsoleDisplayMode(h,CONSOLE_FULLSCREEN_MODE);
-		atexit(RestoreDisplayMode);
 	}
+	atexit(RestoreDisplayMode);
 	cio_api.mouse=1;
 	cio_api.options = CONIO_OPT_BRIGHT_BACKGROUND | CONIO_OPT_CUSTOM_CURSOR | CONIO_OPT_SET_TITLE;
 	return(1);

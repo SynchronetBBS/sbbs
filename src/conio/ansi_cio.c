@@ -68,6 +68,12 @@ static int		ansi_raw_inch;
 static WORD	*ansivmem;
 static int		force_move=1;
 
+static DWORD orig_in_mode;
+static DWORD orig_out_mode;
+static CONSOLE_SCREEN_BUFFER_INFOEX orig_sbiex = {
+	.cbSize = sizeof(CONSOLE_SCREEN_BUFFER_INFOEX),
+};
+
 /* Control sequence table definitions. */
 typedef struct
 {
@@ -908,12 +914,20 @@ void ansi_textmode(int mode)
 	ansiy=1;
 }
 
-#ifdef __unix__
 void ansi_fixterm(void)
 {
+#ifdef _WIN32
+	if (isatty(fileno(stdin)))
+		SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), orig_in_mode);
+	if (isatty(fileno(stdout))) {
+		HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+		SetConsoleMode(h, orig_out_mode);
+		SetConsoleScreenBufferInfoEx(h, &orig_sbiex);
+	}
+#else
 	tcsetattr(STDIN_FILENO,TCSANOW,&tio_default);
-}
 #endif
+}
 
 #ifndef ENABLE_EXTENDED_FLAGS
 #define ENABLE_INSERT_MODE		0x0020
@@ -951,6 +965,7 @@ int ansi_initio_cb(void)
 	HANDLE h;
 	if(isatty(fileno(stdin))) {
 		h = GetStdHandle(STD_INPUT_HANDLE);
+		GetConsoleMode(h, &orig_in_mode);
 		conmode = ENABLE_VIRTUAL_TERMINAL_INPUT;
 		if(!SetConsoleMode(h, conmode))
 			return(0);
@@ -958,6 +973,11 @@ int ansi_initio_cb(void)
 
 	if(isatty(fileno(stdout))) {
 		h = GetStdHandle(STD_OUTPUT_HANDLE);
+		GetConsoleMode(h, &orig_out_mode);
+		GetConsoleScreenBufferInfoEx(h, &orig_sbiex);
+		// FFS Microsoft, get your shut together.
+		orig_sbiex.srWindow.Bottom++;
+		orig_sbiex.srWindow.Right++;
 		conmode = ENABLE_VIRTUAL_TERMINAL_PROCESSING | ENABLE_PROCESSED_OUTPUT;
 		if(!SetConsoleMode(h, conmode))
 			return(0);
@@ -984,6 +1004,7 @@ int ansi_initio_cb(void)
 				ansi_writestr_cb(seq, slen);
 		}
 	}
+	atexit(ansi_fixterm);
 #else
 	struct termios tio_raw;
 
