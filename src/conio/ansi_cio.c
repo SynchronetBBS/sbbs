@@ -70,9 +70,11 @@ static int		force_move=1;
 
 static DWORD orig_in_mode;
 static DWORD orig_out_mode;
+#ifdef _WIN32
 static CONSOLE_SCREEN_BUFFER_INFOEX orig_sbiex = {
 	.cbSize = sizeof(CONSOLE_SCREEN_BUFFER_INFOEX),
 };
+#endif
 
 /* Control sequence table definitions. */
 typedef struct
