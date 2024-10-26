@@ -553,7 +553,7 @@ int win32_initciolib(int inmode)
 		|| !GetConsoleMode(h, &orig_out_conmode))
 		return(0);
 	GetConsoleScreenBufferInfoEx(h, &orig_sbiex);
-	// FFS Microsoft, get your shut together.
+	// FFS Microsoft, get your shit together.
 	orig_sbiex.srWindow.Bottom++;
 	orig_sbiex.srWindow.Right++;
 	conmode=orig_out_conmode;
@@ -774,6 +774,9 @@ void win32_textmode(int mode)
 	cio_textinfo.winbottom=cio_textinfo.screenheight;
 	bi.cbSize = sizeof(bi);
 	if (GetConsoleScreenBufferInfoEx(h, &bi)) {
+		// FFS Microsoft, get your shit together.
+		bi.srWindow.Bottom++;
+		bi.srWindow.Right++;
 		for (i = 0; i < 16; i++) {
 			bi.ColorTable[i] = RGB(dac_default[palettes[vparams[modeidx].palette][i]].red, dac_default[palettes[vparams[modeidx].palette][i]].green, dac_default[palettes[vparams[modeidx].palette][i]].blue);
 		}
@@ -1067,6 +1070,9 @@ int win32_setpalette(uint32_t entry, uint16_t r, uint16_t g, uint16_t b)
 	bi.cbSize = sizeof(bi);
 	if (!GetConsoleScreenBufferInfoEx(h, &bi))
 		return 0;
+	// FFS Microsoft, get your shit together.
+	bi.srWindow.Bottom++;
+	bi.srWindow.Right++;
 
 	bi.ColorTable[entry] = RGB(r >> 8, g >> 8, b >> 8);
 	if (!SetConsoleScreenBufferInfoEx(h, &bi))

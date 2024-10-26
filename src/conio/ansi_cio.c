@@ -975,7 +975,7 @@ int ansi_initio_cb(void)
 		h = GetStdHandle(STD_OUTPUT_HANDLE);
 		GetConsoleMode(h, &orig_out_mode);
 		GetConsoleScreenBufferInfoEx(h, &orig_sbiex);
-		// FFS Microsoft, get your shut together.
+		// FFS Microsoft, get your shit together.
 		orig_sbiex.srWindow.Bottom++;
 		orig_sbiex.srWindow.Right++;
 		conmode = ENABLE_VIRTUAL_TERMINAL_PROCESSING | ENABLE_PROCESSED_OUTPUT;
