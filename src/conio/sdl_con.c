@@ -372,20 +372,9 @@ static int sdl_init_mode(int mode, bool init)
 	}
 	bitmap_drv_init_mode(mode, &bitmap_width, &bitmap_height, w, h);
 	if (ciolib_initial_scaling < 1.0) {
-		if (w != 0 && h != 0) {
-			w *= ciolib_initial_scaling;
-			h *= ciolib_initial_scaling;
-			ciolib_initial_scaling = bitmap_double_mult_inside(w, h);
-		}
-		if (ciolib_initial_scaling < 1.0) {
+		ciolib_initial_scaling = vstat.scaling;
+		if (ciolib_initial_scaling < 1.0)
 			ciolib_initial_scaling = 1.0;
-		}
-	}
-	if (init) {
-		internal_scaling = (ciolib_initial_scaling_type == CIOLIB_SCALING_INTERNAL);
-		if (ciolib_initial_scaling) {
-			bitmap_get_scaled_win_size(ciolib_initial_scaling, &vstat.winwidth, &vstat.winheight, 0, 0);
-		}
 	}
 	pthread_mutex_lock(&sdl_mode_mutex);
 	sdl_mode = true;
