@@ -28,13 +28,14 @@ f = undefined;
 if (!settings.ssl)
 	settings.ssl=false;
 
-const PROTOCOL_VERSION = '1.3.0';
+const PROTOCOL_VERSION = '1.3.1';
 const MAX_LINE = 256;
-const FROM_SITE = system.qwk_id.toLowerCase();
+const FROM_SITE = system.name.replace(/ /g, "_");
 const SYSTEM_NAME = system_info.system_name || system.name;
 
 const clients = {};
 var last_connect = 0;
+var latency_tracker = [];
 
 // User / site name must be ASCII 33-125, no MCI, 30 chars max, underscores
 function sanitize_name(str) {
@@ -205,6 +206,7 @@ function mrc_send(sock, from_user, from_room, to_user, to_site, to_room, msg) {
         sanitize_room(to_room || ''),
         m
     ].join('~') + '~';
+    latency_tracker.push({"line": line.trim(), "time": Date.now()});
     log(LOG_DEBUG, 'To MRC: ' + line);
     return sock.send(line + '\n');
 }
@@ -218,6 +220,12 @@ function mrc_receive(sock) {
     while (sock.data_waiting) {
         line = sock.recvline(MAX_LINE, settings.timeout);
         if (!line || line == '') break;
+        latency_tracker.forEach(function(m) {
+            if (m.line===line.trim()) {
+                client_send({ from_user: "SERVER", to_user: 'CLIENT', body: 'LATENCY:' + (Date.now() - m.time) }); 
+                latency_tracker = [];
+            }
+        });
         log(LOG_DEBUG, 'From MRC: ' + line);
         message = parse_message(line);
         if (!message) continue;
@@ -248,7 +256,7 @@ function main() {
 
     var mrc_sock;
     var die = false;
-    var loop = 1800;
+    var last_stats = 0;
     while (!die && !js.terminated) {
 
         yield();
@@ -256,11 +264,10 @@ function main() {
             mrc_sock = mrc_connect(settings.server, settings.port, settings.ssl);
             continue;
         }
-        mswait(10);
-        loop += 1
-        if (loop > 2000) {
+        
+        if (time() - last_stats > 20) { // TODO: consider moving to settings
             request_stats(mrc_sock);
-            loop = 0;
+            last_stats = time();
         }
 
         client_accept();
