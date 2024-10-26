@@ -6,7 +6,8 @@ echicken -at- bbs.electronicchicken.com
 3) Customization
 4) MRC Stats
 5) SSL Support
-6) Support
+6) Themes
+7) Support
 
 
 1) Quick Start
@@ -85,19 +86,22 @@ mrc-client.ini:
 
 4) MRC Stats
 
-MRC-Connector makes requests for server stats every 20 seconds. These stats
-are displayed on the MRC-Client screen as well as stored in the mrcstats.dat 
-file for display elsewhere.
+MRC-Connector makes requests for server stats every 20 seconds. These global 
+stats are displayed on the MRC-Client screen by typing /toggle_stats as well 
+as stored in the mrcstats.dat file for display elsewhere on the BBS.
 
-The file "chat-with-mrc-stats-example.msg" is included as an exammple to 
-demonstrate how to display MRC stats on a menu file. The script file 
-"mrc-display-menu-stats.js" must be copied to the /sbbs/mods directory in order
-for this msg file to work, since it calls this script directly.
+For example (optional): The file "chat-with-mrc-stats-example.msg" is included
+to demonstrate how to display MRC stats on a menu file. The script file
+"mrc-display-menu-stats.js" must be copied to the /sbbs/mods directory since
+the menu file calls this script to fetch the stats whenever it's displayed.
+
+*** NOTE: If you are running mrc-display-menu-stats.js like a door
+          from your external programs menu, you're doing it wrong.
 
 If you do decide to make use of this msg file, rename it as chat.msg and copy
-it to your /sbbs/text/menu directory, replacing the old chat.msg file. Also be 
-sure to copy "chat_sec-with-mrc-example.js" to your /sbbs/mods directory and 
-rename it "chat_sec.js", in order to add M as a valid menu option for 
+it to your /sbbs/text/menu directory, replacing the old chat.msg file. Also be
+sure to copy "chat_sec-with-mrc-example.js" to your /sbbs/mods directory and
+rename it "chat_sec.js", in order to add M as a valid menu option for
 Multi-Relay Chat.
 
 
@@ -116,7 +120,22 @@ shouldn't be difficult. Once connected to MRC you can type /BBSES and you should
 see "Yes" next to your BBS in the SSL column.
 
 
-6) Support
+6) Themes
+
+MRC comes with several customizable theme files. These can be added/edited as
+the system wishes. The client automatically detects any available theme files 
+matching the pattern:
+
+    mrc-theme-<theme_name>.ini
+
+Available themes are listed in /help. User selects a theme by typing 
+/theme <name>, and the selected theme gets saved to settings for future
+sessions.
+
+If a theme file is not available, the classic blue theme gets used by default.
+
+
+7) Support
 
 - Post a message to 'echicken' in the Synchronet Sysops area on DOVE-Net
 - Find me on irc.synchro.net in #synchronet

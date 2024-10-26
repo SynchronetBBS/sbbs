@@ -14,7 +14,9 @@ function MRC_Session(host, port, user, pass, alias) {
         last_ping: 0,
         last_send: 0,
         alias: alias || user,
-        stats: ['-','-','-','0']
+        stats: ['-','-','-','0'],
+        mention_count: 0,
+        latency: '-'
     };
 
     const callbacks = {
@@ -37,8 +39,8 @@ function MRC_Session(host, port, user, pass, alias) {
     }
 
     function send_message(to_user, to_room, body) {
-        if (body.length + state.alias.length + 1 > 140) {
-            word_wrap(body, 140 - 1 - state.alias.length).split(/\n/).forEach(function (e) {
+        if (body.length + state.alias.length + 1 > 250) {
+            word_wrap(body, 250 - 1 - state.alias.length).split(/\n/).forEach(function (e) {
                 send(to_user, '', to_room, state.alias + ' ' + e);
             });
         } else {
@@ -69,6 +71,7 @@ function MRC_Session(host, port, user, pass, alias) {
                 case 'ROOMTOPIC':                    
                     const room = params.substr(0, params.indexOf(':'));        // room is everything left of the first colon (:)
                     const topic = params.substr(params.indexOf(':')+1).trim(); // topic is everything right of the first colon (:), including any additional colons to follow                    
+                    state.room_topic = topic;
                     emit('topic', room, topic);
                     break;
                 case 'USERLIST':
@@ -77,7 +80,11 @@ function MRC_Session(host, port, user, pass, alias) {
                     break;
                 case 'STATS':
                     state.stats = params.split(' ');
-                    emit('stats', state.stats);
+                    emit('stats'); //, state.stats);
+                    break;
+                case 'LATENCY':
+                    state.latency = params;
+                    emit('latency');
                     break;
                 default:
                     emit('message', msg);
@@ -175,7 +182,7 @@ function MRC_Session(host, port, user, pass, alias) {
 
     const commands = {
         banners: {
-            help: 'List of banners from server'
+            help: 'List of banners from server' // Doesn't do anything?
         },
         chatters: {
             help: 'List current users'
@@ -266,7 +273,38 @@ function MRC_Session(host, port, user, pass, alias) {
         },
         whoon: {
             help: 'Display list of users and BBSs'
+        },
+        afk: {
+            help: "Set yourself AFK (Shortcut for STATUS AFK)",
+            callback: function (str) {
+                this.send_command('AFK ' + str);
+            }
+        },
+        register: {
+            help: "Register handle on server (MRC Trust)",
+            callback: function (str) {
+                this.send_command('REGISTER ' + str);
+            }
+        },
+        identify: {
+            help: "Identify as a registered user (MRC Trust)",
+            callback: function (str) {
+                this.send_command('IDENTIFY ' + str);
+            }
+        },
+        update: {
+            help: "Update user registration (MRC Trust)",
+            callback: function (str) {
+                this.send_command('UPDATE ' + str);
+            }
+        },
+        trust: {
+            help: "MRC Trust Info (MRC Trust)",
+            callback: function (str) {
+                this.send_command('TRUST ' + str);
+            }
         }
+        
     };
 
     Object.keys(commands).forEach(function (e) {
