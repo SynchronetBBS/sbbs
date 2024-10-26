@@ -1003,6 +1003,7 @@ int ansi_initio_cb(void)
 			if (slen > -1)
 				ansi_writestr_cb(seq, slen);
 		}
+		WriteConsoleA(h, "\x1b[3 q", 5, NULL, NULL);
 	}
 	atexit(ansi_fixterm);
 #else

@@ -796,6 +796,7 @@ void win32_textmode(int mode)
 							WriteConsoleA(h, seq, slen, NULL, NULL);
 					}
 					cio_api.options |= CONIO_OPT_PALETTE_SETTING;
+					WriteConsoleA(h, "\x1b[3 q", 5, NULL, NULL);
 				}
 			}
 			SetConsoleMode(h, oldmode);
