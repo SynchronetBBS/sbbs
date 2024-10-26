@@ -5,6 +5,28 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.96     2024-10-26   New feature: sub-board sorting for changing sub-boards
+                      (and users can change their sorting option).
+
+                      The new configuration option subBoardChangeSorting
+                      specifies the sub-board sorting (None, Alphabetical,
+                      LatestMsgDateOldestFirst, or LatestMsgDateNewestFirst).
+                      This is a default for a user option that users can change
+                      for themselves.
+
+                      New: Toggleable behavior for whether to show sub-boards
+                      with new messages in the indexed newscan. Users can change
+                      this option for themselves.
+
+                      The new configuration option
+                      indexedModeNewscanOnlyShowSubsWithNewMsgs sets the default
+                      setting for this behavior (true or false).
+
+                      Internal: Updated for bbs.msg_number and bbs.smb_curmsg
+                      being writeable in Synchronet 3.20 - If these can be
+                      changed, there's no need to write the drop file
+                      DDML_SyncSMBInfo.txt containing information about the
+                      message being replied to etc. for message editors to use
 1.95h    2024-09-03   Fix for saving an ANSI message to the local BBS PC
 1.95g    2024-08-12   Updates to help with the newscan issues placing the user
                       at the first message, etc.

@@ -163,6 +163,16 @@
  *                              Updates to help with the newscan issues placing the user at the first message, etc.
  * 2024-09-03 Eric Oulashin     Version 1.95h
  *                              Fix for saving an ANSI message to the local BBS PC
+ * 2024-10-16 Eric Oulashin     Version 1.96 Beta
+ *                              Started working on sub-board sorting for changing sub-boards
+ * 2024-10-24 Eric Oulashin     Updated for bbs.msg_number and bbs.smb_curmsg being writeable
+ * 2024-10-25 Eric Oulashin     Message sub-board sort fixes
+ * 2024-10-26 Eric Oulashin     When downloading attachments, let the user select a download
+ *                              protocol if they don't have one configured.
+ *                              User options for sub-board sorting when changing to another
+ *                              sub-board, and whether to show sub-boards with new messages in
+ *                              the indexed newscan.
+ *                              Releasing this version (1.96).
  */
 
 "use strict";
@@ -263,23 +273,17 @@ require("attr_conv.js", "convertAttrsToSyncPerSysCfg");
 require("graphic.js", 'Graphic');
 require("smbdefs.js", "SMB_POLL_ANSWER");
 load('822header.js');
+// If using Synchronet 3.20 or newer, load user_settings_lib.js, for
+// prompt_user_for_download_protocol
+if (system.version_num >= 32000)
+	require("user_settings_lib.js", "prompt_user_for_download_protocol");
 var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 var hexdump = load('hexdump_lib.js');
 
-/*
-// Temporary
-//if (user.is_sysop)
-{
-	//bbs.scan_subs(SCAN_NEW);
-	bbs.scan_posts();
-	exit(0);
-}
-// End Temporary
-*/
 
 // Reader version information
-var READER_VERSION = "1.95h";
-var READER_DATE = "2024-09-03";
+var READER_VERSION = "1.96";
+var READER_DATE = "2024-10-26";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -454,6 +458,12 @@ const MSG_LIST_SORT_DATETIME_WRITTEN = 1;
 const POPULATE_MSG_HDRS_FROM_SCAN_PTR = -1;
 const POPULATE_NEWSCAN_FORCE_GET_ALL_HDRS = -2; // Get all message headers even for a newscan
 
+// Sub-board sort options for changing to another sub-board
+const SUB_BOARD_SORT_NONE = 0;
+const SUB_BOARD_SORT_ALPHABETICAL = 1;
+const SUB_BOARD_SORT_LATEST_MSG_DATE_OLDEST_FIRST = 2;
+const SUB_BOARD_SORT_LATEST_MSG_DATE_NEWEST_FIRST = 3;
+
 // Misc. defines
 var ERROR_WAIT_MS = 1500;
 var SEARCH_TIMEOUT_MS = 10000;
@@ -574,8 +584,7 @@ if (gCmdLineArgVals.hasOwnProperty("search") && (gCmdLineArgVals.search.toLowerC
 		case "A": // Abort
 		default:
 			gDoDDMR = false;
-			console.print("\x01n\x01h\x01y\x01iAborted\x01n");
-			console.crlf();
+			console.putmsg(bbs.text(Aborted), P_SAVEATR);
 			console.pause();
 			break;
 	}
@@ -1231,6 +1240,8 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		newscanOnlyShowNewMsgs: true,
 		// Whether or not to use indexed mode for doing a newscan
 		useIndexedModeForNewscan: false,
+		// When using indexed mode newscan, only show sub-boards that have new messages
+		indexedModeNewscanOnlyShowSubsWithNewMsgs: false,
 		// Whether or not the indexed mode sub-board menu should "snap" selection to sub-boards with new messages
 		// when the menu is shown
 		indexedModeMenuSnapToFirstWithNew: false,
@@ -1248,7 +1259,9 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		// When reading personal email, whether or not to propmt if the user wants to delete a message after replying to it
 		promptDelPersonalEmailAfterReply: false,
 		// Whether or not to display the 'replied' status character (for personal email)
-		displayMsgRepliedChar: true
+		displayMsgRepliedChar: true,
+		// Sub-board sorting for changing to another sub-board: None, Alphabetical, or LatestMsgDate
+		subBoardChangeSorting: SUB_BOARD_SORT_NONE
 	};
 	// Read the settings from the config file (some settings could set user settings)
 	this.cfgFileSuccessfullyRead = false;
@@ -1493,7 +1506,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// Lightbar-specific methods
 	this.WriteMsgGroupLine = DigDistMsgReader_writeMsgGroupLine;
 	this.UpdateMsgAreaPageNumInHeader = DigDistMsgReader_updateMsgAreaPageNumInHeader;
-	this.GetMsgSubBoardLine = DigDistMsgReader_GetMsgSubBrdLine;
+	this.GetMsgSubBoardLine = DigDistMsgReader_GetMsgSubBoardLine;
 	// Choose Message Area help screen
 	this.ShowChooseMsgAreaHelpScreen = DigDistMsgReader_showChooseMsgAreaHelpScreen;
 	// Method to build the sub-board printf information for a message
@@ -3948,6 +3961,23 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 	var continueOn = true;
 	while (continueOn)
 	{
+		// TODO: Sometimes, showing the menu here removes the top header line
+		// and bottom key help line. Happens with SyncTerm, but not with KiTTY.
+		// Change to MusicalNet, New Albums
+		// List messages & scroll down to the bottom
+		// Press C and change to the Synthesizers sub-board
+		// At this point, it lists the messages and the top header & bottom help line are gone
+		// Did it clear screen?
+		/*
+		// Temporary
+		if (user.is_sysop)
+		{
+			console.attributes = "N";
+			console.gotoxy(1, 2);
+			console.print("Before showing the menu  \x01p");
+		}
+		// End Temporary
+		*/
 		var userChoice = msgListMenu.GetVal(drawMenu);
 		drawMenu = true;
 		var lastUserInputUpper = (typeof(msgListMenu.lastUserInput) == "string" ? msgListMenu.lastUserInput.toUpperCase() : msgListMenu.lastUserInput);
@@ -4713,10 +4743,74 @@ function DigDistMsgReader_CreateLightbarSubBoardMenu(pGrpIdx)
 	subBoardMenu.AddAdditionalQuitKeys("nNqQ ?0123456789/" + CTRL_F);
 
 	// Add the sub-board items to the menu
-	for (var subIdx = 0; subIdx < msg_area.grp_list[pGrpIdx].sub_list.length; ++subIdx)
+	if (this.userSettings.subBoardChangeSorting == SUB_BOARD_SORT_ALPHABETICAL)
 	{
-		var itemText = this.GetMsgSubBoardLine(pGrpIdx, subIdx, false);
-		subBoardMenu.Add(strip_ctrl(itemText), subIdx);
+		var sortedSubs = [];
+		for (var subIdx = 0; subIdx < msg_area.grp_list[pGrpIdx].sub_list.length; ++subIdx)
+		{
+			sortedSubs.push({
+				subIdx: subIdx,
+				desc: msg_area.grp_list[pGrpIdx].sub_list[subIdx].description
+			});
+		}
+		sortedSubs.sort(function(pA, pB)
+		{
+			if (pA.desc < pB.desc)
+				return -1;
+			else if (pA.desc == pB.desc)
+				return 0;
+			else if (pA.desc > pB.desc)
+				return 1;
+		});
+		for (var subsI = 0; subsI < sortedSubs.length; ++subsI)
+		{
+			var itemText = this.GetMsgSubBoardLine(pGrpIdx, sortedSubs[subsI].subIdx, false, subsI+1);
+			subBoardMenu.Add(strip_ctrl(itemText), sortedSubs[subsI].subIdx);
+		}
+	}
+	else if (this.userSettings.subBoardChangeSorting == SUB_BOARD_SORT_LATEST_MSG_DATE_OLDEST_FIRST ||
+	         this.userSettings.subBoardChangeSorting == SUB_BOARD_SORT_LATEST_MSG_DATE_NEWEST_FIRST)
+	{
+		var sortedSubs = [];
+		for (var subIdx = 0; subIdx < msg_area.grp_list[pGrpIdx].sub_list.length; ++subIdx)
+			sortedSubs.push(getSubBoardInfo(pGrpIdx, subIdx, this.msgAreaList_lastImportedMsg_showImportTime));
+		if (this.userSettings.subBoardChangeSorting == SUB_BOARD_SORT_LATEST_MSG_DATE_OLDEST_FIRST)
+		{
+			sortedSubs.sort(function(pA, pB)
+			{
+				if (pA.newestTime < pB.newestTime)
+					return -1;
+				else if (pA.newestTime == pB.newestTime)
+					return 0;
+				else if (pA.newestTime > pB.newestTime)
+					return 1;
+			});
+		}
+		else if (this.userSettings.subBoardChangeSorting == SUB_BOARD_SORT_LATEST_MSG_DATE_NEWEST_FIRST)
+		{
+			sortedSubs.sort(function(pA, pB)
+			{
+				if (pA.newestTime < pB.newestTime)
+					return 1;
+				else if (pA.newestTime == pB.newestTime)
+					return 0;
+				else if (pA.newestTime > pB.newestTime)
+					return -1;
+			});
+		}
+		for (var subsI = 0; subsI < sortedSubs.length; ++subsI)
+		{
+			var itemText = this.GetMsgSubBoardLine(pGrpIdx, msg_area.sub[sortedSubs[subsI].subCode].index, false, subsI+1);
+			subBoardMenu.Add(strip_ctrl(itemText), msg_area.sub[sortedSubs[subsI].subCode].index);
+		}
+	}
+	else // SUB_BOARD_SORT_NONE
+	{
+		for (var subIdx = 0; subIdx < msg_area.grp_list[pGrpIdx].sub_list.length; ++subIdx)
+		{
+			var itemText = this.GetMsgSubBoardLine(pGrpIdx, subIdx, false);
+			subBoardMenu.Add(strip_ctrl(itemText), subIdx);
+		}
 	}
 	// Alternately, we could change the menu's NumItems() and GetItem():
 	/*
@@ -4745,7 +4839,25 @@ function DigDistMsgReader_CreateLightbarSubBoardMenu(pGrpIdx)
 	// Set the currently selected item to the current group
 	if (msg_area.sub[this.subBoardCode].grp_index == pGrpIdx)
 	{
-		subBoardMenu.SetSelectedItemIdx(msg_area.sub[this.subBoardCode].index);
+		// If no sorting is being used, then simply set the current selected
+		// index to the sub-board index.
+		if (this.userSettings.subBoardChangeSorting == SUB_BOARD_SORT_NONE)
+			subBoardMenu.SetSelectedItemIdx(msg_area.sub[this.subBoardCode].index);
+		else
+		{
+			// Sorting is being used. Look for the item with the user's current
+			// sub-board index and set that as the current item index in the menu
+			var numItems = subBoardMenu.NumItems();
+			for (var i = 0; i < numItems; ++i)
+			{
+				if (msg_area.sub[this.subBoardCode].index == subBoardMenu.GetItem(i).retval)
+				{
+					subBoardMenu.SetSelectedItemIdx(i);
+					break;
+				}
+			}
+		}
+
 		/*
 		subBoardMenu.selectedItemIdx = msg_area.sub[this.subBoardCode].index;
 		if (subBoardMenu.selectedItemIdx >= subBoardMenu.topItemIdx+subBoardMenu.GetNumItemsPerPage())
@@ -9589,6 +9701,22 @@ function DigDistMsgReader_ReadConfigFile()
 			this.userSettings.promptDelPersonalEmailAfterReply = settingsObj.promptDelPersonalEmailAfterReply;
 		if (typeof(settingsObj.displayIndexedModeMenuIfNoNewMessages) === "boolean")
 			this.userSettings.displayIndexedModeMenuIfNoNewMessages = settingsObj.displayIndexedModeMenuIfNoNewMessages;
+		if (typeof(settingsObj.subBoardChangeSorting) === "string")
+		{
+			var valUpper = settingsObj.subBoardChangeSorting.toUpperCase();
+			if (valUpper == "NONE")
+				this.userSettings.subBoardChangeSorting = SUB_BOARD_SORT_NONE;
+			else if (valUpper == "ALPHABETICAL")
+				this.userSettings.subBoardChangeSorting = SUB_BOARD_SORT_ALPHABETICAL;
+			else if (valUpper == "LATESTMSGDATEOLDESTFIRST" || valUpper == "LATEST_MSG_DATE_OLDEST_FIRST")
+				this.userSettings.subBoardChangeSorting = SUB_BOARD_SORT_LATEST_MSG_DATE_OLDEST_FIRST;
+			else if (valUpper == "LATESTMSGDATENEWESTFIRST" || valUpper == "LATEST_MSG_DATE_NEWEST_FIRST")
+				this.userSettings.subBoardChangeSorting = SUB_BOARD_SORT_LATEST_MSG_DATE_NEWEST_FIRST;
+			else
+				this.userSettings.subBoardChangeSorting = SUB_BOARD_SORT_NONE;
+		}
+		if (typeof(settingsObj.indexedModeNewscanOnlyShowSubsWithNewMsgs) === "boolean")
+			this.userSettings.indexedModeNewscanOnlyShowSubsWithNewMsgs = settingsObj.indexedModeNewscanOnlyShowSubsWithNewMsgs;
 	}
 	else
 	{
@@ -11253,15 +11381,54 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 		// propmt), this information is stored in bbs.smb_last_msg,
 		// bbs.smb_total_msgs, and bbs.smb_curmsg, but this message lister
 		// can't change those values.  Thus, we need to write them to a file.
-		var msgBaseInfoFile = new File(system.node_dir + "DDML_SyncSMBInfo.txt");
-		if (msgBaseInfoFile.open("w"))
+
+		// Some message editors (i.e., SlyEdit) need to access the message
+		// base and get the number of the message being replied to (in order
+		// to get the author's initials for quoting, etc.).  This information
+		// is stored in bbs.msg_number and bbs.smb_curmsg (there's also
+		// bbs.smb_last_msg and bbs.smb_total_msgs).  We really only need to
+		// change bbs.msg_number and bbs.smb_curmsg. In Synchronet versions 3.19
+		// and lower, these are all read-only, so we'd need to write them to a file.
+		// Try and change them, and only write the file if we get an exception
+		// (which would be due to them being read-only in the running version of
+		// Synchronet).
+		var msgbaseInfoDropFileName = system.node_dir + "DDML_SyncSMBInfo.txt"; // Will be removed later if it exists
+		try
 		{
-			msgBaseInfoFile.writeln(msgbase.last_msg.toString()); // Highest message #
-			msgBaseInfoFile.writeln(this.NumMessages(msgbase).toString()); // Total # messages
-			// Message number (Note: For SlyEdit, requires SlyEdit 1.27 or newer).
-			msgBaseInfoFile.writeln(pMsgHdr.number.toString()); // # of the message being read (New: 2013-05-14)
-			msgBaseInfoFile.writeln(this.subBoardCode); // Sub-board code
-			msgBaseInfoFile.close();
+			bbs.msg_number = pMsgHdr.number;
+			bbs.smb_curmsg = pMsgHdr.number;
+
+			// bbs.smb_sub_code is also used by SlyEdit, but it
+			// probably doesn't need to be changed; it's still
+			// read-only.  SlyEdit gets message information in
+			// its getCurMsgInfo() function in SlyEdit_Misc.js.
+			//bbs.smb_sub_code = this.subBoardCode;
+			/*
+			bbs.smb_last_msg = msgbase.last_msg;
+			bbs.smb_total_msgs = msgbase.total_msgs;
+			*/
+		}
+		catch (e)
+		{
+			// e would be something like "TypeError: bbs.msg_number is read-only"
+			log(LOG_INFO, "Error setting bbs.msg_number or bbs.smb_curmsg (" + e + "); writing " + msgbaseInfoDropFileName + " with messagebase info");
+
+			// Open a file in the node directory and write some information
+			// about the current sub-board and message being read:
+			// - The highest message number in the sub-board (last message)
+			// - The total number of messages in the sub-board
+			// - The number of the message being read
+			// - The current sub-board code
+			var msgBaseInfoFile = new File(msgbaseInfoDropFileName);
+			if (msgBaseInfoFile.open("w"))
+			{
+				msgBaseInfoFile.writeln(msgbase.last_msg.toString()); // Highest message #
+				msgBaseInfoFile.writeln(this.NumMessages(msgbase).toString()); // Total # messages
+				// Message number (Note: For SlyEdit, requires SlyEdit 1.27 or newer).
+				msgBaseInfoFile.writeln(pMsgHdr.number.toString()); // # of the message being read (New: 2013-05-14)
+				msgBaseInfoFile.writeln(this.subBoardCode); // Sub-board code
+				msgBaseInfoFile.close();
+			}
 		}
 
 		// Store the current total number of messages so that we can search new
@@ -11295,7 +11462,12 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 			retObj.postSucceeded = bbs.post_msg(this.subBoardCode, replyMode, pMsgHdr);
 			console.pause();
 		}
-		msgBaseInfoFile.remove();
+		// Remove the messagebase info drop file if it exists
+		if (file_exists(msgbaseInfoDropFileName))
+		{
+			if (!file_remove(msgbaseInfoDropFileName))
+				log(LOG_ERROR, "Failed to remove " + msgbaseInfoDropFileName);
+		}
 		var msgbaseReOpened = msgbase.open();
 
 		// If the user replied to the message and a message search was done that
@@ -12784,9 +12956,9 @@ function DigDistMsgReader_SelectMsgArea_Lightbar(pMsgGrp, pGrpIdx)
 		// and the user would have pressed one of the additional quit keys set
 		// up for the menu.  So look at the menu's lastUserInput and do the
 		// appropriate thing.
-		else if ((lastUserInputUpper == "Q") || (lastUserInputUpper == KEY_ESC)) // Quit
+		else if (lastUserInputUpper == "Q" || lastUserInputUpper == KEY_ESC) // Quit
 			continueOn = false;
-		else if ((lastUserInputUpper == "/") || (lastUserInputUpper == CTRL_F)) // Start of find
+		else if (lastUserInputUpper == "/" || lastUserInputUpper == CTRL_F) // Start of find
 		{
 			console.gotoxy(1, console.screen_rows);
 			console.cleartoeol("\x01n");
@@ -12960,10 +13132,13 @@ function DigDistMsgReader_SelectMsgArea_Lightbar(pMsgGrp, pGrpIdx)
 			// prompt the user for the message number.
 			console.gotoxy(1, console.screen_rows);
 			console.clearline("\x01n");
-			console.print("\x01cChoose group #: \x01h");
-			var userInput = console.getnum(msg_area.grp_list.length);
+			if (chooseMsgGrp)
+				console.print("\x01cChoose group #: \x01h");
+			else
+				console.print("\x01cChoose sub #: \x01h");
+			var userInput = console.getnum(msgAreaMenu.NumItems());
 			if (userInput > 0)
-				chosenIdx = userInput - 1;
+				chosenIdx = msgAreaMenu.GetItem(userInput - 1).retval; // The item retval is the sub-board index
 			else
 			{
 				// The user didn't make a selection.  So, we need to refresh
@@ -13115,7 +13290,7 @@ function DigDistMsgReader_SelectMsgArea_Traditional()
 				{
 					console.clear("\x01n");
 					this.DisplayAreaChgHdr();
-					this.ListSubBoardsInMsgGroup(selectedGrp-1, defaultSubBoard-1, null, subSearchText);
+					var subIndexes = this.ListSubBoardsInMsgGroup(selectedGrp-1, defaultSubBoard-1, this.userSettings.subBoardChangeSorting, subSearchText);
 					console.crlf();
 					console.print("\x01n\x01b\x01h" + TALL_UPPER_MID_BLOCK + " \x01n\x01cWhich, \x01h/\x01n\x01c or \x01hCTRL-F\x01n\x01c, \x01hQ\x01n\x01cuit, or [\x01h" +
 					              defaultSubBoard + "\x01n\x01c]: \x01h");
@@ -13152,7 +13327,8 @@ function DigDistMsgReader_SelectMsgArea_Traditional()
 						// there or false if not.  If there is no search specified,
 						// the validator function will return a 'true' value.
 						var selectedGrpIdx = selectedGrp - 1;
-						var selectedSubIdx = selectedSubBoard - 1;
+						//var selectedSubIdx = selectedSubBoard - 1;
+						var selectedSubIdx = subIndexes[selectedSubBoard - 1];
 						var msgAreaValidRetval = this.ValidateMsgAreaChoice(selectedGrpIdx, selectedSubIdx);
 						if (msgAreaValidRetval.msgAreaGood)
 						{
@@ -13228,14 +13404,18 @@ function DigDistMsgReader_ListMsgGrps_Traditional(pSearchText)
 //  pMarkIndex: An index of a message group to highlight.  This
 //                   is optional; if left off, this will default to
 //                   the current sub-board.
-//  pSortType: Optional - A string describing how to sort the list (if desired):
-//             "none": Default behavior - Sort by sub-board #
-//             "dateAsc": Sort by date, ascending
-//             "dateDesc": Sort by date, descending
-//             "description": Sort by description
+//  pSortType: Optional - A numeric value to specify how to sort the list (if desired):
+//             SUB_BOARD_SORT_NONE: Default behavior - Sort by sub-board #
+//             SUB_BOARD_SORT_ALPHABETICAL: Alphetical
+//             SUB_BOARD_SORT_LATEST_MSG_DATE_OLDEST_FIRST: Sort by date, ascending
+//             SUB_BOARD_SORT_LATEST_MSG_DATE_NEWEST_FIRST: Sort by date, descending
 //  pSearchText: Optional - Search text for the message sub-boards
+//
+// Return value: An array of sub-board indexes, in order of their display (useful when sorting is being used)
 function DigDistMsgReader_ListSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIndex, pSortType, pSearchText)
 {
+	var subIndexes = [];
+
 	// Default to the current message group & sub-board if pGrpIndex
 	// and pMarkIndex aren't specified.
 	var grpIndex = bbs.curgrp;
@@ -13268,94 +13448,58 @@ function DigDistMsgReader_ListSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIn
 	var newestDate = {}; // For storing the date of the newest post in a sub-board
 	var msgBase = null;    // For opening the sub-boards with a MsgBase object
 	var msgHeader = null;  // For getting the date & time of the newest post in a sub-board
-	var subBoardNum = 0;   // 0-based sub-board number (because the array index is the number as a str)
+	//var subBoardNum = 0;   // 0-based sub-board number (because the array index is the number as a str)
 	var includeSubBoard = true;
 	// If a sort type is specified, then add the sub-board information to
 	// subBoardArray so that it can be sorted.
-	if ((typeof(pSortType) == "string") && (pSortType != "") && (pSortType != "none"))
+	if (typeof(pSortType) == "number" && pSortType != SUB_BOARD_SORT_NONE)
 	{
 		subBoardArray = [];
 		var subBoardInfo = null;
-		for (var arrSubBoardNum in msg_area.grp_list[grpIndex].sub_list)
+		for (var subIdx = 0; subIdx < msg_area.grp_list[grpIndex].sub_list.length; ++subIdx)
 		{
 			if (searchText.length > 0)
-				includeSubBoard = ((msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].name.toUpperCase().indexOf(searchText) >= 0) || (msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].description.toUpperCase().indexOf(searchText) >= 0));
+				includeSubBoard = ((msg_area.grp_list[grpIndex].sub_list[subIdx].name.toUpperCase().indexOf(searchText) >= 0) || (msg_area.grp_list[grpIndex].sub_list[subIdx].description.toUpperCase().indexOf(searchText) >= 0));
 			else
 				includeSubBoard = true;
 			if (!includeSubBoard)
 				continue;
-
-			// Open the current sub-board with the msgBase object.
-			msgBase = new MsgBase(msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code);
-			if (msgBase.open())
-			{
-				subBoardInfo = new MsgSubBoardInfo();
-				subBoardInfo.subBoardNum = +(arrSubBoardNum);
-				subBoardInfo.description = msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].description;
-				// Note: numReadableMsgs() is slow because it goes through and
-				// checks for deleted messages, etc., so just use msgBase.total_msgs
-				//subBoardInfo.numPosts = numReadableMsgs(msgBase, msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code);
-				subBoardInfo.numPosts = msgBase.total_msgs;
-
-				// Get the date & time when the last message was imported.
-				if (subBoardInfo.numPosts > 0)
-				{
-					var msgIdx = msgBase.total_msgs-1;
-					msgHeader = msgBase.get_msg_index(true, msgIdx, false);
-					while (!isReadableMsgHdr(msgHeader, msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code) && (msgIdx >= 0))
-						msgHeader = msgBase.get_msg_index(true, --msgIdx, true);
-					if (msgHeader != null)
-						msgHeader = msgBase.get_msg_header(true, msgIdx, false);
-					if (msgHeader != null)
-					{
-						if (this.msgAreaList_lastImportedMsg_showImportTime)
-							subBoardInfo.newestPostDate = msgHeader.when_imported_time;
-						else
-						{
-							//subBoardInfo.newestPostDate = msgHeader.when_written_time;
-							var msgWrittenLocalTime = msgWrittenTimeToLocalBBSTime(msgHeader);
-							if (msgWrittenLocalTime != -1)
-								subBoardInfo.newestPostDate = msgWrittenTimeToLocalBBSTime(msgHeader);
-							else
-								subBoardInfo.newestPostDate = msgHeader.when_written_time;
-						}
-					}
-				}
-			}
-			msgBase.close();
+			
+			var subBoardInfo = getSubBoardInfo(grpIndex, subIdx, this.msgAreaList_lastImportedMsg_showImportTime);
+			subBoardInfo.subIdx = subIdx;
 			subBoardArray.push(subBoardInfo);
 		}
 
 		// Possibly sort the sub-board list.
-		if (pSortType == "dateAsc")
+		if (pSortType == SUB_BOARD_SORT_LATEST_MSG_DATE_OLDEST_FIRST)
 		{
 			subBoardArray.sort(function(pA, pB)
 			{
 				// Return -1, 0, or 1, depending on whether pA's date comes
 				// before, is equal to, or comes after pB's date.
 				var returnValue = 0;
-				if (pA.newestPostDate < pB.newestPostDate)
+				if (pA.newestTime < pB.newestTime)
 					returnValue = -1;
-				else if (pA.newestPostDate > pB.newestPostDate)
+				else if (pA.newestTime > pB.newestTime)
 					returnValue = 1;
 				return returnValue;
 			});
 		}
-		else if (pSortType == "dateDesc")
+		else if (pSortType == SUB_BOARD_SORT_LATEST_MSG_DATE_NEWEST_FIRST)
 		{
 			subBoardArray.sort(function(pA, pB)
 			{
 				// Return -1, 0, or 1, depending on whether pA's date comes
 				// after, is equal to, or comes before pB's date.
 				var returnValue = 0;
-				if (pA.newestPostDate > pB.newestPostDate)
+				if (pA.newestTime > pB.newestTime)
 					returnValue = -1;
-				else if (pA.newestPostDate < pB.newestPostDate)
+				else if (pA.newestTime < pB.newestTime)
 					returnValue = 1;
 				return returnValue;
 			});
 		}
-		else if (pSortType == "description")
+		else if (pSortType == SUB_BOARD_SORT_ALPHABETICAL)
 		{
 			// Binary safe string comparison  
 			// 
@@ -13369,49 +13513,54 @@ function DigDistMsgReader_ListSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIn
 			// *     returns 2: -1
 			subBoardArray.sort(function(pA, pB)
 			{
-				return ((pA.description == pB.description) ? 0 : ((pA.description > pB.description) ? 1 : -1));
+				return (pA.desc == pB.desc ? 0 : (pA.desc > pB.desc ? 1 : -1));
 			});
 		}
 
 		// Display the sub-board list.
 		for (var i = 0; i < subBoardArray.length; ++i)
 		{
+			subIndexes.push(subBoardArray[i].subIdx);
 			console.crlf();
-			console.print((subBoardArray[i].subBoardNum == highlightIndex) ? "\x01n" +
+			console.print((subBoardArray[i].subIdx == highlightIndex) ? "\x01n" +
 			              this.colors.areaChooserMsgAreaMarkColor + "*" : " ");
-			printf(this.subBoardListPrintfInfo[grpIndex].printfStr, +(subBoardArray[i].subBoardNum+1),
-			       subBoardArray[i].description.substr(0, this.subBoardNameLen),
-			       subBoardArray[i].numPosts, strftime("%Y-%m-%d", subBoardArray[i].newestPostDate),
-			       strftime("%H:%M:%S", subBoardArray[i].newestPostDate));
+			//var itemNum = subBoardArray[i].subIdx + 1;
+			var itemNum = i + 1;
+			printf(this.subBoardListPrintfInfo[grpIndex].printfStr, itemNum,
+			       subBoardArray[i].desc.substr(0, this.subBoardNameLen),
+			       subBoardArray[i].numItems, strftime("%Y-%m-%d", subBoardArray[i].newestTime),
+			       strftime("%H:%M:%S", subBoardArray[i].newestTime));
 		}
 	}
 	// If no sort type is specified, then output the sub-board information in
 	// order of sub-board number.
 	else
 	{
-		for (var arrSubBoardNum in msg_area.grp_list[grpIndex].sub_list)
+		for (var subIdx = 0; subIdx < msg_area.grp_list[grpIndex].sub_list.length; ++subIdx)
 		{
+			subIndexes.push(subIdx);
+
 			if (searchText.length > 0)
-				includeSubBoard = ((msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].name.toUpperCase().indexOf(searchText) >= 0) || (msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].description.toUpperCase().indexOf(searchText) >= 0));
+				includeSubBoard = ((msg_area.grp_list[grpIndex].sub_list[subIdx].name.toUpperCase().indexOf(searchText) >= 0) || (msg_area.grp_list[grpIndex].sub_list[subIdx].description.toUpperCase().indexOf(searchText) >= 0));
 			else
 				includeSubBoard = true;
 			if (!includeSubBoard)
 				continue;
 
 			// Open the current sub-board with the msgBase object.
-			msgBase = new MsgBase(msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code);
+			msgBase = new MsgBase(msg_area.grp_list[grpIndex].sub_list[subIdx].code);
 			if (msgBase.open())
 			{
 				// Get the date & time when the last message was imported.
 				// Note: numReadableMsgs() is slow because it goes through and
 				// checks for deleted messages, etc., so just use msgBase.total_msgs
-				//var numMsgs = numReadableMsgs(msgBase, msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code);
+				//var numMsgs = numReadableMsgs(msgBase, msg_area.grp_list[grpIndex].sub_list[subIdx].code);
 				var numMsgs = msgBase.total_msgs;
 				if (numMsgs > 0)
 				{
 					var msgIdx = msgBase.total_msgs-1;
 					msgHeader = msgBase.get_msg_index(true, msgIdx, false);
-					while (!isReadableMsgHdr(msgHeader, msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].code) && (msgIdx >= 0))
+					while (!isReadableMsgHdr(msgHeader, msg_area.grp_list[grpIndex].sub_list[subIdx].code) && (msgIdx >= 0))
 					  msgHeader = msgBase.get_msg_index(true, --msgIdx, true);
 					if (msgHeader != null)
 						msgHeader = msgBase.get_msg_header(true, msgIdx, false);
@@ -13445,18 +13594,20 @@ function DigDistMsgReader_ListSubBoardsInMsgGroup_Traditional(pGrpIndex, pMarkIn
 					newestDate.date = newestDate.time = "";
 
 				// Print the sub-board information
-				subBoardNum = +(arrSubBoardNum);
+				var subBoardNum = +(subIdx);
 				console.crlf();
 				console.print((subBoardNum == highlightIndex) ? "\x01n" +
 				              this.colors.areaChooserMsgAreaMarkColor + "*" : " ");
 				printf(this.subBoardListPrintfInfo[grpIndex].printfStr, +(subBoardNum+1),
-				       msg_area.grp_list[grpIndex].sub_list[arrSubBoardNum].description.substr(0, this.subBoardListPrintfInfo[grpIndex].nameLen),
+				       msg_area.grp_list[grpIndex].sub_list[subIdx].description.substr(0, this.subBoardListPrintfInfo[grpIndex].nameLen),
 				       numMsgs, newestDate.date, newestDate.time);
 
 				msgBase.close();
 			}
 		}
 	}
+
+	return subIndexes;
 }
 
 //////////////////////////////////////////////
@@ -13532,9 +13683,11 @@ function DigDistMsgReader_updateMsgAreaPageNumInHeader(pPageNum, pNumPages, pGro
 //  pGrpIndex: The index of the message group (assumed to be valid)
 //  pSubIndex: The index of the sub-board within the message group (assumed to be valid)
 //  pHighlight: Boolean - Whether or not to write the line highlighted.
+//  pDisplayNum: Optional - The number to display in the item text, if different from
+//               its index+1
 //
 // Return value: A string with the sub-board information
-function DigDistMsgReader_GetMsgSubBrdLine(pGrpIndex, pSubIndex, pHighlight)
+function DigDistMsgReader_GetMsgSubBoardLine(pGrpIndex, pSubIndex, pHighlight, pDisplayNum)
 {
 	// Determine if pGrpIndex and pSubIndex specify the user's
 	// currently-selected group and sub-board.
@@ -13550,9 +13703,10 @@ function DigDistMsgReader_GetMsgSubBrdLine(pGrpIndex, pSubIndex, pHighlight)
 	var subBoardInfo = getSubBoardInfo(pGrpIndex, pSubIndex, this.msgAreaList_lastImportedMsg_showImportTime);
 	var latestDateStr = strftime("%Y-%m-%d", subBoardInfo.newestTime);
 	var latestTimeStr = strftime("%H:%M:%S", subBoardInfo.newestTime);
+	var displayNum = (pDisplayNum == undefined ? pSubIndex + 1 : pDisplayNum);
 	subBoardStr += (currentSub ? this.colors.areaChooserMsgAreaMarkColor + "*" : " ");
 	subBoardStr += format((pHighlight ? this.subBoardListPrintfInfo[pGrpIndex].highlightPrintfStr : this.subBoardListPrintfInfo[pGrpIndex].printfStr),
-						  +(pSubIndex+1),
+						  displayNum, //+(pSubIndex+1),
 						  msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].description.substr(0, this.subBoardListPrintfInfo[pGrpIndex].nameLen),
 						  subBoardInfo.numItems, latestDateStr, latestTimeStr);
 	return subBoardStr;
@@ -15492,7 +15646,7 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn, pTopR
 	// Create the user settings box
 	var optBoxTitle = "Setting                                      Enabled";
 	var optBoxWidth = ChoiceScrollbox_MinWidth();
-	var optBoxHeight = 10;
+	var optBoxHeight = 12;
 	if (this.doingNewscan)
 		optBoxHeight += 3;
 	if (this.readingPersonalEmail)
@@ -15538,7 +15692,11 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn, pTopR
 	if (this.userSettings.useIndexedModeForNewscan)
 		optionBox.chgCharInTextItem(INDEXED_MODE_NEWSCAN_OPT_INDEX, checkIdx, CHECK_CHAR);
 
-	// Indexed-mode newscan options
+	const INDEXED_NEWSCAN_ONLY_SHOW_SUBS_WITH_NEW_MSGS_OPT_INDEX = optionBox.addTextItem(format(optionFormatStr, "Indexed newscan: Only show subs w/ new msgs"));
+	if (this.userSettings.indexedModeNewscanOnlyShowSubsWithNewMsgs)
+		optionBox.chgCharInTextItem(INDEXED_NEWSCAN_ONLY_SHOW_SUBS_WITH_NEW_MSGS_OPT_INDEX, checkIdx, CHECK_CHAR);
+
+	// Some options to show only when doing an indexed-mode newscan
 	var SHOW_INDEXED_NEWSCAN_MENU_IF_NO_NEW_MSGS_OPT_INDEX = -1;
 	var INDEXED_MODE_MENU_SNAP_TO_NEW_MSGS_OPT_INDEX = -1;
 	var INDEXED_MODE_MENU_SNAP_TO_NEW_MSGS_WHEN_MARK_ALL_READ_OPT_IDX = -1;
@@ -15565,10 +15723,6 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn, pTopR
 	if (this.userSettings.quitFromReaderGoesToMsgList)
 		optionBox.chgCharInTextItem(READER_QUIT_TO_MSG_LIST_OPT_INDEX, checkIdx, CHECK_CHAR);
 
-	const PROPMT_DEL_PERSONAL_MSG_AFTER_REPLY_OPT_INDEX = optionBox.addTextItem(format(optionFormatStr, "Prompt delete after reply to personal email"));
-	if (this.userSettings.promptDelPersonalEmailAfterReply)
-		optionBox.chgCharInTextItem(PROPMT_DEL_PERSONAL_MSG_AFTER_REPLY_OPT_INDEX, checkIdx, CHECK_CHAR);
-
 	// Specific to personal email
 	var DISPLAY_PERSONAL_MAIL_REPLIED_INDICATOR_CHAR_OPT_INDEX = -1;
 	if (this.readingPersonalEmail)
@@ -15578,22 +15732,28 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn, pTopR
 			optionBox.chgCharInTextItem(DISPLAY_PERSONAL_MAIL_REPLIED_INDICATOR_CHAR_OPT_INDEX, checkIdx, CHECK_CHAR);
 	}
 
+	const PROMPT_DEL_PERSONAL_MSG_AFTER_REPLY_OPT_INDEX = optionBox.addTextItem(format(optionFormatStr, "Prompt delete after reply to personal email"));
+	if (this.userSettings.promptDelPersonalEmailAfterReply)
+		optionBox.chgCharInTextItem(PROMPT_DEL_PERSONAL_MSG_AFTER_REPLY_OPT_INDEX, checkIdx, CHECK_CHAR);
+
 	// Create an object containing toggle values (true/false) for each option index
 	var optionToggles = {};
 	optionToggles[ENH_SCROLLBAR_OPT_INDEX] = this.userSettings.useEnhReaderScrollbar;
 	optionToggles[LIST_MESSAGES_IN_REVERSE_OPT_INDEX] = this.userSettings.listMessagesInReverse;
 	optionToggles[NEWSCAN_ONLY_SHOW_NEW_MSGS_INDEX] = this.userSettings.newscanOnlyShowNewMsgs;
 	optionToggles[INDEXED_MODE_NEWSCAN_OPT_INDEX] = this.userSettings.useIndexedModeForNewscan;
+	optionToggles[INDEXED_NEWSCAN_ONLY_SHOW_SUBS_WITH_NEW_MSGS_OPT_INDEX] = this.userSettings.indexedModeNewscanOnlyShowSubsWithNewMsgs;
 	optionToggles[SHOW_INDEXED_NEWSCAN_MENU_IF_NO_NEW_MSGS_OPT_INDEX] = this.userSettings.displayIndexedModeMenuIfNoNewMessages;
 	optionToggles[INDEXED_MODE_MENU_SNAP_TO_NEW_MSGS_OPT_INDEX] = this.userSettings.indexedModeMenuSnapToFirstWithNew;
 	optionToggles[INDEXED_MODE_MENU_SNAP_TO_NEW_MSGS_WHEN_MARK_ALL_READ_OPT_IDX] = this.userSettings.indexedModeMenuSnapToNextWithNewAftarMarkAllRead;
 	optionToggles[INDEX_NEWSCAN_ENTER_SHOWS_MSG_LIST_OPT_INDEX] = this.userSettings.enterFromIndexMenuShowsMsgList;
 	optionToggles[READER_QUIT_TO_MSG_LIST_OPT_INDEX] = this.userSettings.quitFromReaderGoesToMsgList;
-	optionToggles[PROPMT_DEL_PERSONAL_MSG_AFTER_REPLY_OPT_INDEX] = this.userSettings.promptDelPersonalEmailAfterReply;
+	optionToggles[PROMPT_DEL_PERSONAL_MSG_AFTER_REPLY_OPT_INDEX] = this.userSettings.promptDelPersonalEmailAfterReply;
 	optionToggles[DISPLAY_PERSONAL_MAIL_REPLIED_INDICATOR_CHAR_OPT_INDEX] = this.userSettings.displayMsgRepliedChar;
 
 	// Other actions
 	var USER_TWITLIST_OPT_INDEX = optionBox.addTextItem("Personal twit list");
+	var SUB_BOARD_CHANGE_SORTING_OPT_INDEX = optionBox.addTextItem("Sorting for sub-board change");
 
 	// Set up the enter key in the box to toggle the selected item.
 	optionBox.readerObj = this;
@@ -15628,6 +15788,9 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn, pTopR
 					case INDEXED_MODE_NEWSCAN_OPT_INDEX:
 						this.readerObj.userSettings.useIndexedModeForNewscan = !this.readerObj.userSettings.useIndexedModeForNewscan;
 						break;
+					case INDEXED_NEWSCAN_ONLY_SHOW_SUBS_WITH_NEW_MSGS_OPT_INDEX:
+						this.readerObj.userSettings.indexedModeNewscanOnlyShowSubsWithNewMsgs = !this.readerObj.userSettings.indexedModeNewscanOnlyShowSubsWithNewMsgs;
+						break;
 					case SHOW_INDEXED_NEWSCAN_MENU_IF_NO_NEW_MSGS_OPT_INDEX:
 						this.readerObj.userSettings.displayIndexedModeMenuIfNoNewMessages = !this.readerObj.userSettings.displayIndexedModeMenuIfNoNewMessages;
 						break;
@@ -15643,7 +15806,7 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn, pTopR
 					case READER_QUIT_TO_MSG_LIST_OPT_INDEX:
 						this.readerObj.userSettings.quitFromReaderGoesToMsgList = !this.readerObj.userSettings.quitFromReaderGoesToMsgList;
 						break;
-					case PROPMT_DEL_PERSONAL_MSG_AFTER_REPLY_OPT_INDEX:
+					case PROMPT_DEL_PERSONAL_MSG_AFTER_REPLY_OPT_INDEX:
 						this.readerObj.userSettings.promptDelPersonalEmailAfterReply = !this.readerObj.userSettings.promptDelPersonalEmailAfterReply;
 						break;
 					case DISPLAY_PERSONAL_MAIL_REPLIED_INDICATOR_CHAR_OPT_INDEX:
@@ -15670,6 +15833,16 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn, pTopR
 						retObj.userTwitListChanged = !arraysHaveSameValues(this.readerObj.userSettings.twitList, oldUserTwitList);
 						optionBox.continueInputLoopOverride = false; // Exit the input loop of the option box
 						retObj.needWholeScreenRefresh = true;
+						break;
+					case SUB_BOARD_CHANGE_SORTING_OPT_INDEX:
+						var sortOptMenu = CreateSubBoardChangeSortOptMenu(optBoxStartX, msgBoxTopRow, optBoxWidth, optBoxHeight, this.readerObj.userSettings.subBoardChangeSorting);
+						var chosenSortOpt = sortOptMenu.GetVal();
+						console.attributes = "N";
+						if (typeof(chosenSortOpt) === "number")
+							this.readerObj.userSettings.subBoardChangeSorting = chosenSortOpt;
+						retObj.needWholeScreenRefresh = false;
+						this.drawBorder();
+						this.drawInnerMenu(SUB_BOARD_CHANGE_SORTING_OPT_INDEX);
 						break;
 					default:
 						break;
@@ -15712,6 +15885,54 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn, pTopR
 	retObj.optionBoxHeight = optionBox.dimensions.height;
 	return retObj;
 }
+// Helper function for DigDistMsgReader_DoUserSettings_Scrollable(): Creates the
+// menu object to let the user choose a sub-board change sorting option, and returns
+// the object
+function CreateSubBoardChangeSortOptMenu(pX, pY, pWidth, pHeight, pCurrentSortSetting)
+{
+	var sortOptMenu = new DDLightbarMenu(pX, pY, pWidth, pHeight);
+	sortOptMenu.AddAdditionalQuitKeys("qQ");
+	sortOptMenu.borderEnabled = true;
+	sortOptMenu.colors.borderColor = "\x01n\x01b";
+	sortOptMenu.borderChars = {
+		upperLeft: UPPER_LEFT_DOUBLE,
+		upperRight: UPPER_RIGHT_DOUBLE,
+		lowerLeft: LOWER_LEFT_DOUBLE,
+		lowerRight: LOWER_RIGHT_DOUBLE,
+		top: HORIZONTAL_DOUBLE,
+		bottom: HORIZONTAL_DOUBLE,
+		left: VERTICAL_DOUBLE,
+		right: VERTICAL_DOUBLE
+	};
+	sortOptMenu.topBorderText = "Sub-board change sorting";
+	sortOptMenu.Add("None", SUB_BOARD_SORT_NONE);
+	sortOptMenu.Add("Alphabetical", SUB_BOARD_SORT_ALPHABETICAL);
+	sortOptMenu.Add("Msg date: Oldest first", SUB_BOARD_SORT_LATEST_MSG_DATE_OLDEST_FIRST);
+	sortOptMenu.Add("Msg date: Newest first", SUB_BOARD_SORT_LATEST_MSG_DATE_NEWEST_FIRST);
+	switch (pCurrentSortSetting)
+	{
+		case SUB_BOARD_SORT_NONE:
+			sortOptMenu.selectedItemIdx = 0;
+			break;
+		case SUB_BOARD_SORT_ALPHABETICAL:
+			sortOptMenu.selectedItemIdx = 1;
+			break;
+		case SUB_BOARD_SORT_LATEST_MSG_DATE_OLDEST_FIRST:
+			sortOptMenu.selectedItemIdx = 2;
+			break;
+		case SUB_BOARD_SORT_LATEST_MSG_DATE_NEWEST_FIRST:
+			sortOptMenu.selectedItemIdx = 3;
+			break;
+	}
+
+	sortOptMenu.colors.itemColor = "\x01n\x01c\x01h";
+
+	// For use in numbered mode for the traditional UI:
+	sortOptMenu.colors.itemNumColor = "\x01n\x01c";
+	sortOptMenu.colors.highlightedItemNumColor = "\x01n\x01g\x01h";
+
+	return sortOptMenu;
+}
 // For the DigDistMsgReader class:  Lets the user manage their preferences/settings (traditional user interface)
 //
 // Return value: An object containing the following properties:
@@ -15737,11 +15958,14 @@ function DigDistMsgReader_DoUserSettings_Traditional()
 	var LIST_MESSAGES_IN_REVERSE_OPT_NUM = optNum++;
 	var NEWSCAN_ONLY_SHOW_NEW_MSGS_OPT_NUM = optNum++;
 	var USE_INDEXED_MODE_FOR_NEWSCAN_OPT_NUM = optNum++;
+	var INDEXED_NEWSCAN_ONLY_SHOW_SUBS_WITH_NEW_MSGS_OPT_NUM = optNum++;
 	var INDEX_NEWSCAN_ENTER_SHOWS_MSG_LIST_OPT_NUM = optNum++;
 	var READER_QUIT_TO_MSG_LIST_OPT_NUM = optNum++;
 	var PROPMT_DEL_PERSONAL_MSG_AFTER_REPLY_OPT_NUM = optNum++;
 	var USER_TWITLIST_OPT_NUM = optNum++;
-	var HIGHEST_CHOICE_NUM = USER_TWITLIST_OPT_NUM; // Highest choice number
+	// Sub-board sorting for changing to another sub-board
+	var SUB_BOARD_CHANGE_SORTING_OPT_NUM = optNum++;
+	var HIGHEST_CHOICE_NUM = SUB_BOARD_CHANGE_SORTING_OPT_NUM; // Highest choice number
 	// Specific to personal email
 	var DISPLAY_PERSONAL_MAIL_REPLIED_INDICATOR_CHAR_OPT_NUM = -1;
 	if (this.readingPersonalEmail)
@@ -15764,10 +15988,12 @@ function DigDistMsgReader_DoUserSettings_Traditional()
 	printTradUserSettingOption(LIST_MESSAGES_IN_REVERSE_OPT_NUM, "List messages in reverse", wordFirstCharAttrs, wordRemainingAttrs);
 	printTradUserSettingOption(NEWSCAN_ONLY_SHOW_NEW_MSGS_OPT_NUM, "Only show new messages for newscan", wordFirstCharAttrs, wordRemainingAttrs);
 	printTradUserSettingOption(USE_INDEXED_MODE_FOR_NEWSCAN_OPT_NUM, "Use Indexed mode for newscan", wordFirstCharAttrs, wordRemainingAttrs);
+	printTradUserSettingOption(INDEXED_NEWSCAN_ONLY_SHOW_SUBS_WITH_NEW_MSGS_OPT_NUM, "Indexed newscan: Only show subs w/ new msgs", wordFirstCharAttrs, wordRemainingAttrs);
 	printTradUserSettingOption(INDEX_NEWSCAN_ENTER_SHOWS_MSG_LIST_OPT_NUM, "Index: Selection shows message list", wordFirstCharAttrs, wordRemainingAttrs);
 	printTradUserSettingOption(READER_QUIT_TO_MSG_LIST_OPT_NUM, "Quitting From reader goes to message list", wordFirstCharAttrs, wordRemainingAttrs);
 	printTradUserSettingOption(PROPMT_DEL_PERSONAL_MSG_AFTER_REPLY_OPT_NUM, "Prompt to delete personal message after replying", wordFirstCharAttrs, wordRemainingAttrs);
 	printTradUserSettingOption(USER_TWITLIST_OPT_NUM, "Personal twit list", wordFirstCharAttrs, wordRemainingAttrs);
+	printTradUserSettingOption(SUB_BOARD_CHANGE_SORTING_OPT_NUM, "Sorting for sub-board change", wordFirstCharAttrs, wordRemainingAttrs);
 	// Specific to personal email
 	if (this.readingPersonalEmail)
 		printTradUserSettingOption(DISPLAY_PERSONAL_MAIL_REPLIED_INDICATOR_CHAR_OPT_NUM, "Display email replied indicator", wordFirstCharAttrs, wordRemainingAttrs);
@@ -15799,6 +16025,11 @@ function DigDistMsgReader_DoUserSettings_Traditional()
 			var oldIndexedModeNewscanSetting = this.userSettings.useIndexedModeForNewscan;
 			this.userSettings.useIndexedModeForNewscan = !console.noyes("Use indexed mode for newscan-all");
 			userSettingsChanged = (this.userSettings.useIndexedModeForNewscan != oldIndexedModeNewscanSetting);
+			break;
+		case INDEXED_NEWSCAN_ONLY_SHOW_SUBS_WITH_NEW_MSGS_OPT_NUM:
+			var oldIndexedModeNewscanSubsWithNewMsgsSetting = this.userSettings.indexedModeNewscanOnlyShowSubsWithNewMsgs;
+			this.userSettings.indexedModeNewscanOnlyShowSubsWithNewMsgs = !console.noyes("Indexed newscan: Only subs w/ new msgs");
+			userSettingsChanged = (this.userSettings.indexedModeNewscanOnlyShowSubsWithNewMsgs != oldIndexedModeNewscanSubsWithNewMsgsSetting);
 			break;
 		case SHOW_INDEXED_NEWSCAN_MENU_IF_NO_NEW_MSGS_OPT_NUM:
 			var oldIndexedMenuIfNoMsgsSetting = this.userSettings.displayIndexedModeMenuIfNoNewMessages;
@@ -15833,6 +16064,43 @@ function DigDistMsgReader_DoUserSettings_Traditional()
 			this.ReadUserSettingsFile(true);
 			retObj.userTwitListChanged = !arraysHaveSameValues(this.userSettings.twitList, oldUserTwitList);
 			retObj.needWholeScreenRefresh = true;
+			break;
+		case SUB_BOARD_CHANGE_SORTING_OPT_NUM:
+			console.attributes = "N";
+			console.crlf();
+			console.print("\x01cChoose a sorting option for sub-board change (\x01hQ\x01n\x01c to quit)");
+			console.crlf();
+			var sortOptMenu = CreateSubBoardChangeSortOptMenu(1, 1, console.screen_columns, console.screen_rows, this.userSettings.subBoardChangeSorting);
+			sortOptMenu.numberedMode = true;
+			sortOptMenu.allowANSI = false;
+			var chosenSortOpt = sortOptMenu.GetVal();
+			if (typeof(chosenSortOpt) === "number")
+			{
+				this.userSettings.subBoardChangeSorting = chosenSortOpt;
+				console.print("\x01n\x01cYou chose\x01g\x01h: \x01c");
+				switch (chosenSortOpt)
+				{
+					case SUB_BOARD_SORT_NONE:
+						console.print("None");
+						break;
+					case SUB_BOARD_SORT_ALPHABETICAL:
+						console.print("Alphabetical");
+						break;
+					case SUB_BOARD_SORT_LATEST_MSG_DATE_OLDEST_FIRST:
+						console.print("Message date (oldest first)");
+						break;
+					case SUB_BOARD_SORT_LATEST_MSG_DATE_NEWEST_FIRST:
+						console.print("Message date (newest first)");
+						break;
+				}
+				console.crlf();
+			}
+			else
+			{
+				console.putmsg(bbs.text(Aborted), P_SAVEATR);
+				console.pause();
+			}
+			console.attributes = "N";
 			break;
 	}
 
@@ -16251,6 +16519,12 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 
 			++numSubBoards;
 
+			var itemInfo = this.GetIndexedModeSubBoardMenuItemTextAndInfo(msg_area.grp_list[grpIdx].sub_list[subIdx].code);
+			// If configured to only show sub-boards with new messages and this sub-board
+			// does'nt have any new messages, then skip it
+			if (this.userSettings.indexedModeNewscanOnlyShowSubsWithNewMsgs && itemInfo.numNewMsgs == 0)
+				continue;
+
 			if (!grpNameItemAddedToMenu)
 			{
 				//var grpDesc = msg_area.grp_list[grpIdx].name + " - " + msg_area.grp_list[grpIdx].description;
@@ -16272,7 +16546,7 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 				grpNameItemAddedToMenu = true;
 			}
 
-			var itemInfo = this.GetIndexedModeSubBoardMenuItemTextAndInfo(msg_area.grp_list[grpIdx].sub_list[subIdx].code);
+			//var itemInfo = this.GetIndexedModeSubBoardMenuItemTextAndInfo(msg_area.grp_list[grpIdx].sub_list[subIdx].code);
 			this.indexedModeMenu.Add(itemInfo.itemText, {
 				subCode: msg_area.grp_list[grpIdx].sub_list[subIdx].code,
 				numNewMsgs: itemInfo.numNewMsgs
@@ -16932,7 +17206,6 @@ function DigDistMsgReader_CreateLightbarIndexedModeMenu(pNumMsgsWidth, pNumNewMs
 	// Add additional keypresses for quitting the menu's input loop so we can
 	// respond to these keys
 	// TODO: Include Mm to allow the user to view the message list instead of read it from the indexed menu
-	//indexedModeMenu.AddAdditionalQuitKeys();
 	for (var key in this.indexedModeMenuKeys)
 	{
 		if (/[a-zA-Z]/.test(this.indexedModeMenuKeys[key]))
@@ -22622,17 +22895,39 @@ function msgHdrHasAttachmentFlag(pMsgHdr)
 //
 // Parameters:
 //  pMsgHdr: The message header
-//  pSubCode: The sub-board code that the message is in
-function allowUserToDownloadMessage_NewInterface(pMsgHdr, pSubCode)
+//  pMsgbaseCode: The internal code for the messagebase that the message is in
+function allowUserToDownloadMessage_NewInterface(pMsgHdr, pMsgbaseCode)
 {
 	if (typeof(bbs.download_msg_attachments) !== "function")
 		return;
-	if (typeof(pSubCode) !== "string")
+	if (typeof(pMsgbaseCode) !== "string")
 		return;
 	if (typeof(pMsgHdr) !== "object" || typeof(pMsgHdr.number) == "undefined")
 		return;
 
-	var msgBase = new MsgBase(pSubCode);
+	// If the user doesn't have a download protocol configured, then allow them
+	// to choose one
+	if (user.download_protocol == "")
+	{
+		// Due to using file.ini, this only works on Synchronet 3.20 and newer
+		if (system.version_num >= 32000)
+		{
+			prompt_user_for_download_protocol();
+			// If the user's download protocol is still blank (user aborted choosing a download protocol),
+			// then just return
+			if (user.download_protocol == "")
+				return;
+		}
+		else
+		{
+			console.print(word_wrap("\x01nYou don't have a default download protocol. You can configure it in your user preferences.\r\n"));
+			console.pause();
+			return;
+		}
+	}
+
+	// Open the messagebase and let the user download the message and/or attachments
+	var msgBase = new MsgBase(pMsgbaseCode);
 	if (msgBase.open())
 	{
 		// bbs.download_msg_attachments() requires a message header returned
