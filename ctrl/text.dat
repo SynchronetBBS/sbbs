@@ -334,15 +334,16 @@
 "\r\nDownload queue cleared.\r\n"                       272 DownloadQueueCleared
 "\r\nDownload queue is empty.\r\n"                      273 DownloadQueueIsEmpty
 "\r\n\1-\1g\1hUpload Queue:\1n\1g"\                          274 UploadQueueLstHdr
-	"        Description\r\n\r\n\1n"
-"\1g\1h%2d: \1n\1g%-12s     %s\r\n"                          275 UploadQueueLstFmt
+	"                               Description\r\n\r\n\1n"
+"\1g\1h%2d: \1n\1g%-38s  %s\r\n"                          275 UploadQueueLstFmt
 "\r\n\1-\1g\1hDownload Queue:\1n\1g"\                        276 DownloadQueueLstHdr
-	"      Credits      Bytes        Time\r\n\r\n\1n"
-"\1g\1h%2d: \1n\1g%-12s %11.11s %11.11s     %s\r\n"       277 DownloadQueueLstFmt
-"\r\n\1w\1h         Totals: %11.11s %11.11s     %s\r\n"   278 DownloadQueueTotals
-"\r\n\1-\1gRemove which file from upload "\               279 RemoveWhichFromUlQueue
+	"                             Credits      Bytes        Time\r\n\r\n\1n"
+"\1g\1h%2d: \1n\1g%-35s %11.11s %11.11s     %s\r\n"       277 DownloadQueueLstFmt
+"\r\n\1w\1h                                "\	  	  278 DownloadQueueTotals
+	"Totals: %11.11s %11.11s     %s\r\n"
+"\r\n\1-\1gRemove which file(s) from upload "\            279 RemoveWhichFromUlQueue
 	"queue (1-%d): \1n"
-"\r\n\1-\1gRemove which file from download "\             280 RemoveWhichFromDlQueue
+"\r\n\1-\1gRemove which file(s) from download "\          280 RemoveWhichFromDlQueue
 	"queue (1-%d): \1n"
 "\r\nUpload queue is empty.\r\n"                        281 UploadQueueIsEmpty
 "\r\nHang up after transfer"                            282 HangUpAfterXferQ
