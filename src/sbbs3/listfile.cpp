@@ -22,7 +22,7 @@
 #include "sbbs.h"
 #include "filedat.h"
 
-#define BF_MAX	26	/* Batch Flag max: A-Z */	
+#define BF_MAX	26	/* Batch Flag max: A-Z */
 
 int extdesclines(char *str);
 
@@ -96,9 +96,9 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 		if(thisnode.action!=NODE_LFIL) {	/* was a sync */
 			if(getnodedat(cfg.node_num,&thisnode,true)==0) {
 				thisnode.action=NODE_LFIL;
-				putnodedat(cfg.node_num,&thisnode); 
-			} 
-		} 
+				putnodedat(cfg.node_num,&thisnode);
+			}
+		}
 	}
 
 	m = 0; // current file index
@@ -114,18 +114,18 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 				if((i=batchflagprompt(&smb, bf, file_row, letter-'A', file_count))==2) {
 					m=anchor;
 					found-=letter-'A';
-					letter='A'; 
+					letter='A';
 				}
 				else if(i==3) {
 					if((int)anchor-(letter-'A')<0) {
 						m=0;
-						found=0; 
+						found=0;
 					}
 					else {
 						m=anchor-(letter-'A');
-						found-=letter-'A'; 
+						found-=letter-'A';
 					}
-					letter='A'; 
+					letter='A';
 				}
 				else if((int)i==-1) {
 					found = -1;
@@ -134,10 +134,10 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 				else
 					break;
 				getnodedat(cfg.node_num,&thisnode,0);
-				nodesync(); 
+				nodesync();
 			}
 			else
-				break; 
+				break;
 		}
 		if(m < file_count)
 			f = &file_list[m];
@@ -165,7 +165,7 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 				p = strcasestr(f->author_org, filespec);
 			if(p == NULL) {
 				m++;
-				continue; 
+				continue;
 			}
 		}
 		if(useron.misc&BATCHFLAG && letter=='A' && found && !tofile
@@ -219,7 +219,7 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 						bputs("\xba\r\n\xc8\xcd");
 						for(c=0;c<d;c++)
 							outchar('\xcd');
-						bputs("\xbc\r\n"); 
+						bputs("\xbc\r\n");
 					}
 				}
 			}
@@ -230,7 +230,7 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 				else {
 					sprintf(hdr,text[ShortHdrLib],i+1,cfg.lib[usrlib[i]]->sname);
 					bputs("\1[\1>\r\n");
-					bputs(hdr); 
+					bputs(hdr);
 					c=bstrlen(hdr);
 				}
 				if(tofile) {
@@ -238,7 +238,7 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 				}
 				else {
 					sprintf(hdr,text[ShortHdrDir],j+1,cfg.dir[dirnum]->lname);
-					bputs(hdr); 
+					bputs(hdr);
 					c+=bstrlen(hdr);
 				}
 				if(tofile) {
@@ -249,9 +249,9 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 					attr(cfg.color[clr_filelstline]);
 					while(c--)
 						outchar('\xC4');
-					CRLF; 
-				} 
-			} 
+					CRLF;
+				}
+			}
 		}
 		int currow = row;
 		next=m;
@@ -273,11 +273,11 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 			disp=listfile(f, dirnum, nulstr, letter, longest);
 		if(!disp && letter>'A') {
 			next=m-1;
-			letter--; 
+			letter--;
 		}
 		else {
 			disp=1;
-			found++; 
+			found++;
 		}
 		if(sys_status&SS_ABORT) {
 			found = -1;
@@ -306,34 +306,34 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 				}
 				if(i==2) {
 					next=anchor;
-					found-=(letter-'A')+1; 
+					found-=(letter-'A')+1;
 				}
 				else if(i==3) {
 					if((int)anchor-((letter-'A'+1))<0) {
 						next=0;
-						found=0; 
+						found=0;
 					}
 					else {
 						next=anchor-((letter-'A'+1));
-						found-=letter-'A'+1; 
-					} 
+						found-=letter-'A'+1;
+					}
 				}
 				getnodedat(cfg.node_num,&thisnode,0);
 				nodesync();
-				letter='A';	
+				letter='A';
 			}
 			else
-				letter++; 
+				letter++;
 		}
 		if(useron.misc&BATCHFLAG && !tofile
 			&& lncntr>=rows-2) {
 			lncntr=0;		/* defeat pause() */
-			flagprompt=1; 
+			flagprompt=1;
 		}
 		m=next;
 		if(mode & FL_FIND) continue;
 		if(filespec[0] && !strchr(filespec,'*') && !strchr(filespec,'?') && m)
-			break; 
+			break;
 	}
 
 	freefiles(file_list, file_count);
@@ -382,15 +382,15 @@ bool sbbs_t::listfile(file_t* f, const  int dirnum, const char *search, const ch
 	if(f->extdesc != NULL && *f->extdesc && !(useron.misc&EXTDESC))
 		outchar('+');
 	else
-		outchar(' '); 
+		outchar(' ');
 	if(useron.misc&BATCHFLAG) {
 		attr(curatr ^ HIGH);
-		bprintf("%c",letter); 
+		bprintf("%c",letter);
 	}
 	cdt = f->cost;
 	if(f->size == -1) {
 		exist = false;
-		size_attr = clr_err; 
+		size_attr = clr_err;
 	}
 	else if((cfg.dir[dirnum]->misc & (DIR_FREE | DIR_FCHK)) == (DIR_FREE | DIR_FCHK))
 		cdt = getfilesize(&cfg, f);
@@ -406,7 +406,7 @@ bool sbbs_t::listfile(file_t* f, const  int dirnum, const char *search, const ch
 			attr(curatr^(HIGH|BLINK));
 			bprintf("%6s", text[FREE]);
 		}
-		else 
+		else
 			bprintf("%6s", bytes);
 	}
 	else {
@@ -414,7 +414,7 @@ bool sbbs_t::listfile(file_t* f, const  int dirnum, const char *search, const ch
 			attr(curatr^(HIGH|BLINK));
 			bprintf("%7s", text[FREE]);
 		}
-		else 
+		else
 			bprintf("%7s", bytes);
 	}
 	if(exist)
@@ -444,7 +444,7 @@ bool sbbs_t::listfile(file_t* f, const  int dirnum, const char *search, const ch
 		else {
 			bputs(P_TRUNCATE, fdesc);
 		}
-		CRLF; 
+		CRLF;
 	} else {
 		truncsp(ext);
 		while(strncmp(ext, "\r\n", 2) == 0
@@ -495,7 +495,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 			menu("batflag");
 			if(lncntr)
 				pause();
-			return(2); 
+			return(2);
 		}
 		if(ch==quit_key() || sys_status&SS_ABORT)
 			return(-1);
@@ -511,14 +511,14 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 		if(ch=='B' || ch=='D') {    /* Flag for batch download */
 			if(useron.rest&FLAG('D')) {
 				bputs(text[R_Download]);
-				return(2); 
+				return(2);
 			}
 			if(total==1) {
 				addtobatdl(bf[0]);
 				if(ch=='D')
 					start_batch_download();
 				CRLF;
-				return(2); 
+				return(2);
 			}
 			link_list_t saved_hotspots = mouse_hotspots;
 			ZERO_VAR(mouse_hotspots);
@@ -538,7 +538,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 				for(c=0;c<d;c++) {
 					if(batdn_total() >= cfg.max_batdn) {
 						bprintf(text[BatchDlQueueIsFull],str+c);
-						break; 
+						break;
 					}
 					if(str[c]=='*' || strchr(str+c,'.')) {     /* filename or spec given */
 //						f.dir=dirnum;
@@ -548,33 +548,33 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 						for(i=0;i<total;i++) {
 							if(batdn_total() >= cfg.max_batdn) {
 								bprintf(text[BatchDlQueueIsFull],str+c);
-								break; 
+								break;
 							}
 							if(filematch(bf[i]->name, str+c)) {
-								addtobatdl(bf[i]); 
-							} 
-						} 
+								addtobatdl(bf[i]);
+							}
+						}
 					}
 					if(strchr(str+c,'.'))
 						c+=strlen(str+c);
 					else if(str[c]<'A'+(char)total && str[c]>='A') {
 						addtobatdl(bf[str[c]-'A']);
-					} 
+					}
 				}
 				if(ch=='D')
 					start_batch_download();
 				CRLF;
-				return(2); 
+				return(2);
 			}
 			clearline();
-			continue; 
+			continue;
 		}
 
 		if(ch=='E' || ch=='V') {    /* Extended Info */
 			if(total==1) {
 				if(!viewfile(bf[0], ch=='E'))
 					return(-1);
-				return(2); 
+				return(2);
 			}
 			link_list_t saved_hotspots = mouse_hotspots;
 			ZERO_VAR(mouse_hotspots);
@@ -600,22 +600,22 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 						for(i=0;i<total;i++) {
 							if(filematch(bf[i]->name, str+c)) {
 								if(!viewfile(bf[i], ch=='E'))
-									return(-1); 
-							} 
-						} 
+									return(-1);
+							}
+						}
 					}
 					if(strchr(str+c,'.'))
 						c+=strlen(str+c);
 					else if(str[c]<'A'+(char)total && str[c]>='A') {
 						if(!viewfile(bf[str[c]-'A'], ch=='E'))
-							return(-1); 
-					} 
+							return(-1);
+					}
 				}
 				cond_newline();
-				return(2); 
+				return(2);
 			}
 			clearline();
-			continue; 
+			continue;
 		}
 
 		if((ch=='R' || ch=='M')     /* Delete or Move */
@@ -623,7 +623,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 			&& (dir_op(smb->dirnum) || useron.exempt&FLAG('R'))) {
 			if(total==1) {
 				strcpy(str,"A");
-				d=1; 
+				d=1;
 			}
 			else {
 				link_list_t saved_hotspots = mouse_hotspots;
@@ -675,7 +675,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 					if(!md)
 						md=usrdirs[ml]-1;
 					else md--;
-					CRLF; 
+					CRLF;
 				}
 				lncntr=0;
 				for(c=0;c<d;c++) {
@@ -697,9 +697,9 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 									}
 								}
 								else if(ch=='M')
-									movefile(smb, bf[i], usrdir[ml][md]); 
-							} 
-						} 
+									movefile(smb, bf[i], usrdir[ml][md]);
+							}
+						}
 					}
 					if(strchr(str+c,'.'))
 						c+=strlen(str+c);
@@ -719,15 +719,15 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 							else if(ch=='M')
 								movefile(smb, f, usrdir[ml][md]);
 						}
-					} 
+					}
 				}
-				return(2); 
+				return(2);
 			}
 			clearline();
-			continue; 
+			continue;
 		}
 
-		return(1); 
+		return(1);
 	}
 
 	return(-1);
@@ -789,7 +789,7 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 		else action=NODE_LFIL;
 		if(msgabort()) {
 			found=-1;
-			break; 
+			break;
 		}
 		m++;
 		if(f->hdr.attr & MSG_DELETE)
@@ -825,7 +825,7 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 					if(m)
 						m--;
 					break;
-			} 
+			}
 		}
 		else {
 			showfileinfo(f, /* show_extdesc: */mode != FI_DOWNLOAD);
@@ -835,7 +835,7 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 			|| mode==FI_OFFLINE) {
 			sync();
 //			CRLF;
-			SAFECOPY(str, "VDEQRN\r");
+			SAFEPRINTF(str, "VDERN\r%c", quit_key());
 			if(m > 1)
 				SAFECAT(str, "P-\b");
 			if(dir_op(dirnum)) {
@@ -848,7 +848,13 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 			}
 			else
 				mnemonics(text[UserRemoveFilePrompt]);
-			switch(getkeys(str,0)) {
+			char key = getkeys(str, 0);
+			if(key == quit_key()) {
+				found=-1;
+				done=1;
+				break;
+			}
+			switch(key) {
 				case 'V':
 					viewfilecontents(f);
 					CRLF;
@@ -878,7 +884,7 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 								errormsg(WHERE, ERR_REMOVE, path);
 							} else
 								lprintf(LOG_NOTICE, "deleted %s", path);
-						} 
+						}
 					}
 					break;
 				case 'R':   /* remove file from database */
@@ -908,12 +914,12 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 							if(yesno(str)) {
 								f->dir = i;
 								addfile(&cfg, f, f->extdesc, f->auxdata, /* client: */NULL);
-							} 
-						} 
+							}
+						}
 					}
 					if(dir_op(dirnum) || stricmp(f->from, useron.alias)) {
 						if(noyes(text[RemoveCreditsQ]))
-	/* Fall through */      break; 
+	/* Fall through */      break;
 					}
 				case 'C':   /* remove credits only */
 					removefcdt(f);
@@ -951,22 +957,20 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 					if(m)
 						m--;
 					break;
-				case 'Q':   /* quit */
-					found=-1;
-					done=1;
-					break; 
-			} 
+			}
 		}
 		else if(mode==FI_DOWNLOAD || mode==FI_USERXFER) {
+			char keys[128];
+			SAFEPRINTF(keys, "\r%c", quit_key());
 			getfilepath(&cfg, f, path);
 			if(getfilesize(&cfg, f) < 1L) { /* getfilesize will set this to -1 if non-existant */
 				sync();       /* and 0 byte files shouldn't be d/led */
 				mnemonics(text[QuitOrNext]);
-				if(getkeys("\rQ",0)=='Q') {
+				if(getkeys(keys,0)==quit_key()) {
 					found=-1;
-					break; 
+					break;
 				}
-				continue; 
+				continue;
 			}
 			if(!is_download_free(&cfg,f->dir,&useron,&client)
 				&& f->cost>user_available_credits(&useron)) {
@@ -974,21 +978,21 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 				bprintf(text[YouOnlyHaveNCredits]
 					,u64toac(user_available_credits(&useron),tmp));
 				mnemonics(text[QuitOrNext]);
-				if(getkeys("\rQ",0)=='Q') {
+				if(getkeys(keys,0)==quit_key()) {
 					found=-1;
-					break; 
+					break;
 				}
-				continue; 
+				continue;
 			}
 			if(!can_user_download(&cfg, f->dir, &useron, &client, /* reason: */NULL)) {
 				sync();
 				bputs(text[CantDownloadFromDir]);
 				mnemonics(text[QuitOrNext]);
-				if(getkeys("\rQ",0)=='Q') {
+				if(getkeys(keys,0)==quit_key()) {
 					found=-1;
-					break; 
+					break;
 				}
-				continue; 
+				continue;
 			}
 
 			if(!(cfg.dir[f->dir]->misc&DIR_TFREE) && gettimetodl(&cfg, f, cur_cps) > timeleft && !dir_op(dirnum)
@@ -996,11 +1000,21 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 				sync();
 				bputs(text[NotEnoughTimeToDl]);
 				mnemonics(text[QuitOrNext]);
-				if(getkeys("\rQ",0)=='Q') {
+				if(getkeys(keys,0)==quit_key()) {
 					found=-1;
-					break; 
+					break;
 				}
-				continue; 
+				continue;
+			}
+			if(batch_file_exists(&cfg, useron.number, XFER_BATCH_DOWNLOAD, f->name)) {
+				sync();
+				bprintf(text[FileAlreadyInQueue], f->name);
+				mnemonics(text[QuitOrNext]);
+				if(getkeys(keys,0)==quit_key()) {
+					found=-1;
+					break;
+				}
+				continue;
 			}
 			xfer_prot_menu(XFER_DOWNLOAD);
 			sync();
@@ -1017,12 +1031,12 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 			ch=(char)getkeys(str,0);
 			if(ch==quit_key()) {
 				found=-1;
-				done=1; 
+				done=1;
 			}
 			else if(ch=='B') {
 				if(!addtobatdl(f)) {
-					break; 
-				} 
+					break;
+				}
 			}
 			else if(ch == '\b' || ch == '-') { /* previous */
 				m--;
@@ -1048,7 +1062,7 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 							thisnode.aux=0xf0;
 							putnodedat(cfg.node_num,&thisnode);
 						}
-						CRLF; 
+						CRLF;
 					}
 					for(j=0; j<cfg.total_dlevents; j++) {
 						if(file_type_match(f->name, cfg.dlevent[j]->ext)
@@ -1066,15 +1080,15 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 						starttime+=elapsed;
 					if(checkprotresult(cfg.prot[i],error, f)) {
 						downloadedfile(f);
-						downloadedbytes(f->size, elapsed); 
+						downloadedbytes(f->size, elapsed);
 					} else
-						notdownloaded(f->size, elapsed); 
+						notdownloaded(f->size, elapsed);
 					delfiles(cfg.temp_dir,ALLFILES);
-					autohangup(); 
-				} 
-			} 
+					autohangup();
+				}
+			}
 		}
-		if(filespec[0] && !strchr(filespec,'*') && !strchr(filespec,'?')) 
+		if(filespec[0] && !strchr(filespec,'*') && !strchr(filespec,'?'))
 			break; 
 	}
 	freefiles(file_list, file_count);
@@ -1108,7 +1122,7 @@ int extdesclines(char *str)
 	for(i=lc=last=0;str[i];i++)
 		if(str[i]==LF || i-last>LEN_FDESC) {
 			lc++;
-			last=i; 
+			last=i;
 		}
 	return(lc);
 }
