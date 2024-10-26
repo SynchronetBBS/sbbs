@@ -28,7 +28,7 @@ console.clear();
 require("sbbsdefs.js", 'BBS_OPT_AUTO_LOGON');
 require("userdefs.js", 'USER_SPIN');
 require("nodedefs.js", 'NODE_DFLT');
-require("gettext.js", 'gettext');
+require("user_settings_lib.js", 'prompt_user_for_download_protocol'); // Includes gettext.js
 var termdesc = load("termdesc.js");
 
 function get_lang_count()
@@ -529,34 +529,7 @@ while(bbs.online && !js.terminated) {
 			thisuser.settings ^= USER_ASK_SSCAN;
 			break;
 		case 'Z':
-			var c = 0;
-			var keylist = 'Q';
-			console.newline();
-			console.print(gettext("Choose a default file transfer protocol (or [ENTER] for None):"));
-			console.newline(2);
-			for (var code in file_cfg.protocol) {
-				if (!thisuser.compare_ars(file_cfg.protocol[code].ars)
-					|| file_cfg.protocol[code].dlcmd.length === 0)
-					continue;
-				if (c%2===1)
-					console.newline();
-				console.putmsg(format(bbs.text(bbs.text.TransferProtLstFmt)
-					,String(file_cfg.protocol[code].key)
-					,file_cfg.protocol[code].name));
-
-				keylist += String(file_cfg.protocol[code].key);
-				c++;
-			}
-			console.newline();
-			console.mnemonics(bbs.text(bbs.text.ProtocolOrQuit));
-			var kp = console.getkeys(keylist);
-			if (kp === 'Q' || console.aborted)
-				break;
-			thisuser.download_protocol = kp;
-			if (kp && console.yesno(bbs.text(bbs.text.HangUpAfterXferQ)))
-				thisuser.settings |= USER_AUTOHANG;
-			else
-				thisuser.settings &= ~USER_AUTOHANG;
+			prompt_user_for_download_protocol(thisuser, file_cfg);
 			break;
 		case 'Q':
 		case '\r':
