@@ -1711,13 +1711,27 @@ bitmap_double_mult_inside(int maxwidth, int maxheight)
 	double mult = 1.0;
 	double wmult = 1.0;
 	double hmult = 1.0;
+	int wmw, wmh;
+	int hmw, hmh;
 	int w, h;
 
 	bitmap_get_scaled_win_size_nomax(1.0, &w, &h);
 	wmult = (double)maxwidth / w;
 	hmult = (double)maxheight / h;
-	if (wmult < hmult)
-		mult = wmult;
+	bitmap_get_scaled_win_size_nomax(wmult, &wmw, &wmh);
+	bitmap_get_scaled_win_size_nomax(hmult, &hmw, &hmh);
+	if (wmult < hmult) {
+		if (hmw <= maxwidth && hmh <= maxheight)
+			mult = hmult;
+		else
+			mult = wmult;
+	}
+	else if(hmult < wmult) {
+		if (wmw <= maxwidth && wmh <= maxheight)
+			mult = wmult;
+		else
+			mult = hmult;
+	}
 	else
 		mult = hmult;
 	// TODO: Allow below 1.0?
