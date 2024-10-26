@@ -135,6 +135,7 @@ enum {
 	,BBS_PROP_MSGHDR_TOS
 
 	/* READ ONLY */
+	,BBS_PROP_DOWNLOAD_CPS
 	,BBS_PROP_BATCH_UPLOAD_TOTAL
 	,BBS_PROP_BATCH_DNLOAD_TOTAL
 
@@ -273,6 +274,7 @@ enum {
 	,"File last-download date"
 	,"File download count"
 
+	,"Most recent file download rate (in characters/bytes per second)"
 	,"Number of files in batch upload queue"
 	,"Number of files in batch download queue"
 
@@ -764,6 +766,9 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 				val=sbbs->current_file->hdr.attr;
 			break;
 
+		case BBS_PROP_DOWNLOAD_CPS:
+			val = sbbs->cur_cps;
+			break;
 		case BBS_PROP_BATCH_UPLOAD_TOTAL:
 			val = sbbs->batup_total();
 			break;
@@ -1110,6 +1115,7 @@ static jsSyncPropertySpec js_bbs_properties[] = {
 	{	"file_download_date",BBS_PROP_FILE_DATE_DLED	,PROP_READONLY	,317},
 	{	"file_download_count",BBS_PROP_FILE_TIMES_DLED	,PROP_READONLY	,317},
 
+	{	"download_cps"		,BBS_PROP_DOWNLOAD_CPS		,PROP_READONLY	,320},
 	{	"batch_upload_total",BBS_PROP_BATCH_UPLOAD_TOTAL,PROP_READONLY	,310},
 	{	"batch_dnload_total",BBS_PROP_BATCH_DNLOAD_TOTAL,PROP_READONLY	,310},
 
@@ -2234,7 +2240,7 @@ js_batchaddlist(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
-js_batchclear(JSContext *cx, uintN argc, jsval *arglist)
+js_batch_clear(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
 	sbbs_t*		sbbs;
@@ -2249,6 +2255,60 @@ js_batchclear(JSContext *cx, uintN argc, jsval *arglist)
 
 	rc=JS_SUSPENDREQUEST(cx);
 	bool result = batch_list_clear(&sbbs->cfg, sbbs->useron.number, xfer_type);
+	JS_RESUMEREQUEST(cx, rc);
+
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
+
+	return(JS_TRUE);
+}
+
+static JSBool
+js_batch_remove(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	sbbs_t*		sbbs;
+	jsrefcount	rc;
+	enum XFER_TYPE xfer_type = XFER_BATCH_DOWNLOAD;
+
+	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
+		return(JS_FALSE);
+
+	if(argc > 0 && argv[0] == JSVAL_TRUE)
+		xfer_type = XFER_BATCH_UPLOAD;
+
+	rc=JS_SUSPENDREQUEST(cx);
+	int result = 0;
+	if(JSVAL_IS_STRING(argv[1])) {
+		char* cstr{};
+		JSVALUE_TO_MSTRING(cx, argv[1], cstr, NULL);
+		result = batch_file_remove(&sbbs->cfg, sbbs->useron.number, xfer_type, cstr);
+		free(cstr);
+	} else if(JSVAL_IS_NUMBER(argv[1])) {
+		result = batch_file_remove_n(&sbbs->cfg, sbbs->useron.number, xfer_type, JSVAL_TO_INT(argv[1]));
+	}
+	JS_RESUMEREQUEST(cx, rc);
+
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(result));
+
+	return(JS_TRUE);
+}
+
+static JSBool
+js_batch_sort(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *argv=JS_ARGV(cx, arglist);
+	sbbs_t*		sbbs;
+	jsrefcount	rc;
+	enum XFER_TYPE xfer_type = XFER_BATCH_DOWNLOAD;
+
+	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
+		return(JS_FALSE);
+
+	if(argc > 0 && argv[0] == JSVAL_TRUE)
+		xfer_type = XFER_BATCH_UPLOAD;
+
+	rc=JS_SUSPENDREQUEST(cx);
+	bool result = batch_list_sort(&sbbs->cfg, sbbs->useron.number, xfer_type);
 	JS_RESUMEREQUEST(cx, rc);
 
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
@@ -4604,8 +4664,16 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("Add file list to batch download queue")
 	,310
 	},
-	{"batch_clear",		js_batchclear,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[upload_queue=false]")
+	{"batch_sort",		js_batch_sort,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[upload_queue=false]")
+	,JSDOCSTR("Sort the batch download or batch upload queue")
+	,320
+	},
+	{"batch_clear",		js_batch_clear,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[upload_queue=false]")
 	,JSDOCSTR("Clear the batch download or batch upload queue")
+	,320
+	},
+	{"batch_remove",	js_batch_remove,	2,	JSTYPE_NUMBER,	JSDOCSTR("boolean upload_queue, <i>string</i> filename_or_pattern or <i>number</i> index")
+	,JSDOCSTR("Remove one or more files from the batch download or batch upload queue")
 	,320
 	},
 	{"view_file",		js_viewfile,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("filename")
