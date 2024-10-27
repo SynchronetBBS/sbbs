@@ -8,6 +8,7 @@ Set Server Name Extension when connecting via telnets
 Fix telnets (broken when sftp support was added)
 Update ANSI and win32 console support
 Fix bug with window resizing calculations
+New icons thanks to zuMi!
 
 Version 1.2rc3
 --------------
