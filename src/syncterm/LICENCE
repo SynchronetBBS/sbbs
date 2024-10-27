@@ -8,6 +8,8 @@ Some parts of this program are covered under other licences.
 The files in the comio, conio, smblib, uifc, and xpdev are covered under
 the LGPL.
 
+Icons contributed bu zuMi
+
 SSH support uses cryptlib available from here:
 https://www.cs.auckland.ac.nz/~pgut001/cryptlib/
 
