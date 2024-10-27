@@ -624,6 +624,16 @@ function getOptionHelpText()
 	optionHelpText["promptDelPersonalEmailAfterReply"] = "Personal email: Prompt to delete after reply: When reading personal email, ";
 	optionHelpText["promptDelPersonalEmailAfterReply"] += "whether or not to propmt the user if they want to delete a message after ";
 	optionHelpText["promptDelPersonalEmailAfterReply"] +=  "replying to it. This is a defafult for a user setting.";
+	
+	optionHelpText["subBoardChangeSorting"] = "Sorting for sub-board change: This is a sorting option for the sub-boards ";
+	optionHelpText["subBoardChangeSorting"] += "when the user changes to another sub-board. The options are None (no sorting, ";
+	optionHelpText["subBoardChangeSorting"] += "in the order defined in SCFG), Alphabetical, LatestMsgDateOldestFirst (by message ";
+	optionHelpText["subBoardChangeSorting"] += "date, oldest first), or LatestMsgDateNewestFirst (by message date, newest first). ";
+	optionHelpText["subBoardChangeSorting"] += "This is a default for a user setting, which users can change for themselves.";
+
+	optionHelpText["indexedModeNewscanOnlyShowSubsWithNewMsgs"] = "Index newscan: Only show subs w/ new msgs: For indexed newscan mode, ";
+	optionHelpText["indexedModeNewscanOnlyShowSubsWithNewMsgs"] += "whether to only show sub-boards with new messages. This is a ";
+	optionHelpText["indexedModeNewscanOnlyShowSubsWithNewMsgs"] += "default for a user setting, which users can change for themselves.";
 
 	optionHelpText["themeFilename"] = "Theme filename: The name of a file for a color theme to use";
 
