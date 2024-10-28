@@ -2321,13 +2321,12 @@ js_xfer_prot_menu(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv=JS_ARGV(cx, arglist);
 	sbbs_t*		sbbs;
+	char keys[128];
 	jsrefcount	rc;
 	enum XFER_TYPE xfer_type = XFER_DOWNLOAD;
 
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
-
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if(argc > 0 && argv[0] == JSVAL_TRUE)
 		xfer_type = XFER_BATCH_UPLOAD;
@@ -2335,10 +2334,14 @@ js_xfer_prot_menu(JSContext *cx, uintN argc, jsval *arglist)
 		xfer_type = (xfer_type == XFER_UPLOAD) ? XFER_BATCH_UPLOAD : XFER_BATCH_DOWNLOAD;
 
 	rc=JS_SUSPENDREQUEST(cx);
-	sbbs->xfer_prot_menu(xfer_type);
+	sbbs->xfer_prot_menu(xfer_type, &sbbs->useron, keys, sizeof keys);
+	JSString* js_str = JS_NewStringCopyZ(cx, keys);
+	if(js_str == nullptr)
+		return JS_FALSE;
+	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
 	JS_RESUMEREQUEST(cx, rc);
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -4677,8 +4680,8 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("Display the file transfer policy")
 	,310
 	},
-	{"xfer_prot_menu",	js_xfer_prot_menu,	0,	JSTYPE_VOID,	JSDOCSTR("[<i>bool</i> upload=false] [,<i>bool</i> batch=false]")
-	,JSDOCSTR("Display file transfer protocol menu")
+	{"xfer_prot_menu",	js_xfer_prot_menu,	0,	JSTYPE_STRING,	JSDOCSTR("[<i>bool</i> upload=false] [,<i>bool</i> batch=false]")
+	,JSDOCSTR("Display file transfer protocol menu, returns protocol command keys")
 	,320
 	},
 	{"batch_menu",		js_batchmenu,		0,	JSTYPE_VOID,	JSDOCSTR("")
