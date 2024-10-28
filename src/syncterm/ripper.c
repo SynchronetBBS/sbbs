@@ -10080,6 +10080,7 @@ reinit_screen(uint8_t *font, int fx, int fy)
 	int                   rows = 43;
 	void                 *nvmem;
 	uint32_t lcf;
+	bool fh_change;
 
 	rip_did_reinit = true;
 	hold_update = 0;
@@ -10098,6 +10099,7 @@ reinit_screen(uint8_t *font, int fx, int fy)
 	if (font == ripfnt16x14)
 		cols = 40;
 	pthread_mutex_lock(&vstatlock);
+	fh_change = fy != vstat.charheight;
 	rows = vstat.scrnheight / fy;
 	if ((font != vstat.forced_font) || (fx != vstat.charwidth) || (fy != vstat.charheight)) {
 		vstat.forced_font = font;
@@ -10105,6 +10107,15 @@ reinit_screen(uint8_t *font, int fx, int fy)
 		vstat.charheight = fy;
 		vstat.cols = cols;
 		vstat.rows = rows;
+		if (fh_change) {
+			if (fy > 8)
+				vstat.default_curs_start = vstat.charheight - 2;
+			else
+				vstat.default_curs_start = vstat.charheight - 1;
+			vstat.default_curs_end = vstat.charheight - 1;
+			vstat.curs_start = vstat.default_curs_start;
+			vstat.curs_end = vstat.default_curs_end;
+		}
 
                 // We need to update gettextinfo() results as well...
 		cio_textinfo.screenwidth = cols;
