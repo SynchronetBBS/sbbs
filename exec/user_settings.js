@@ -529,15 +529,14 @@ while(bbs.online && !js.terminated) {
 			thisuser.settings ^= USER_ASK_SSCAN;
 			break;
 		case 'Z':
-			var c = 0;
-			var keylist = 'Q';
+			var keylist = console.quit_key;
 			console.newline();
 			console.print(gettext("Choose a default file transfer protocol (or [ENTER] for None):"));
 			console.newline(2);
-			bbs.xfer_prot_menu();
+			keylist += bbs.xfer_prot_menu();
 			console.mnemonics(bbs.text(bbs.text.ProtocolOrQuit));
 			var kp = console.getkeys(keylist);
-			if (kp === 'Q' || console.aborted)
+			if (kp === console.quit_key || console.aborted)
 				break;
 			thisuser.download_protocol = kp;
 			if (kp && console.yesno(bbs.text(bbs.text.HangUpAfterXferQ)))
