@@ -18,6 +18,25 @@ struct terminal {
 	int nostatus;
 };
 
+enum mouse_modes {
+	MM_OFF,
+	MM_RIP = 1,
+	MM_X10 = 9,
+	MM_NORMAL_TRACKING = 1000,
+	MM_HIGHLIGHT_TRACKING = 1001,
+	MM_BUTTON_EVENT_TRACKING = 1002,
+	MM_ANY_EVENT_TRACKING = 1003
+};
+
+struct mouse_state {
+	uint32_t         flags;
+
+#define MS_FLAGS_SGR (1 << 0)
+#define MS_FLAGS_DISABLED (1 << 1)
+#define MS_SGR_SET (1006)
+	enum mouse_modes mode;
+};
+
 #define XMODEM_128B (1 << 10) /* Use 128 byte block size (ick!) */
 
 extern struct terminal   term;
