@@ -5,7 +5,7 @@
 // If you have DDMsgReader in a directory other than xtrn/DDMsgReader, then the changes to
 // DDMsgReader.cfg will be saved in that directory (assuming you're running ddmr_cfg.js from
 // that same directory).
-// Currently for DDMsgReader 1.95h.
+// Currently for DDMsgReader 1.96.
 //
 // If you're running DDMsgReader from xtrn/DDMsgReader (the standard location) and you want
 // to save the configuration file there (rather than sbbs/mods), you can use one of the
@@ -18,7 +18,7 @@ require("sbbsdefs.js", "P_NONE");
 require("uifcdefs.js", "UIFC_INMSG");
 
 
-if (!uifc.init("DigDist. Message Reader 1.95h Configurator"))
+if (!uifc.init("DigDist. Message Reader 1.96 Configurator"))
 {
 	print("Failed to initialize uifc");
 	exit(1);
@@ -117,6 +117,8 @@ function doMainMenu()
 		"indexedModeMenuSnapToNextWithNewAftarMarkAllRead", // Boolean
 		"newscanOnlyShowNewMsgs", // Boolean
 		"promptDelPersonalEmailAfterReply", // Boolean
+		"subBoardChangeSorting", // String: None, Alphabetical, LatestMsgDateOldestFirst, or LatestMsgDateNewestFirst
+		"indexedModeNewscanOnlyShowSubsWithNewMsgs", // Boolean
 		"themeFilename" // String
 	];
 	// Strings for the options to display on the menu
@@ -151,6 +153,8 @@ function doMainMenu()
 		"Index menu mark all read: Snap to subs w/ new msgs",
 		"During a newscan, only show new messages",
 		"Personal email: Prompt to delete after reply",
+		"Sorting for sub-board change",
+		"Index newscan: Only show subs w/ new msgs",
 		"Theme Filename"
 	];
 	// Build an array of formatted string to be displayed on the menu
@@ -264,6 +268,35 @@ function doMainMenu()
 						}
 						else
 							uifc.msg("That directory doesn't exist!");
+					}
+				}
+				else if (optName == "subBoardChangeSorting")
+				{
+					// Multiple-choice
+					var options = ["None", "Alphabetical", "Msg date: Oldest first", "Msg date: Newest first"];
+					var promptStr = optionStrs[optionMenuSelection];
+					var userChoice = promptMultipleChoice(promptStr, options, gCfgInfo.cfgOptions[optName]);
+					//if (userChoice != null && userChoice != undefined)
+					var userChoiceIdx = options.indexOf(userChoice);
+					if (userChoiceIdx >= 0 && userChoiceIdx < options.length)
+					{
+						switch (userChoiceIdx)
+						{
+							case 0: // None
+								gCfgInfo.cfgOptions[optName] = "None";
+								break;
+							case 1: // Alphabetical
+								gCfgInfo.cfgOptions[optName] = "Alphabetical";
+								break;
+							case 2: // Msg date: Oldest first
+								gCfgInfo.cfgOptions[optName] = "LatestMsgDateOldestFirst";
+								break;
+							case 3: // Msg date: Newest first
+								gCfgInfo.cfgOptions[optName] = "LatestMsgDateNewestFirst";
+								break;
+						}
+						anyOptionChanged = true;
+						menuItems[optionMenuSelection] = formatCfgMenuText(itemTextMaxLen, optionStrs[optionMenuSelection], gCfgInfo.cfgOptions[optName]);
 					}
 				}
 				else
@@ -591,6 +624,16 @@ function getOptionHelpText()
 	optionHelpText["promptDelPersonalEmailAfterReply"] = "Personal email: Prompt to delete after reply: When reading personal email, ";
 	optionHelpText["promptDelPersonalEmailAfterReply"] += "whether or not to propmt the user if they want to delete a message after ";
 	optionHelpText["promptDelPersonalEmailAfterReply"] +=  "replying to it. This is a defafult for a user setting.";
+	
+	optionHelpText["subBoardChangeSorting"] = "Sorting for sub-board change: This is a sorting option for the sub-boards ";
+	optionHelpText["subBoardChangeSorting"] += "when the user changes to another sub-board. The options are None (no sorting, ";
+	optionHelpText["subBoardChangeSorting"] += "in the order defined in SCFG), Alphabetical, LatestMsgDateOldestFirst (by message ";
+	optionHelpText["subBoardChangeSorting"] += "date, oldest first), or LatestMsgDateNewestFirst (by message date, newest first). ";
+	optionHelpText["subBoardChangeSorting"] += "This is a default for a user setting, which users can change for themselves.";
+
+	optionHelpText["indexedModeNewscanOnlyShowSubsWithNewMsgs"] = "Index newscan: Only show subs w/ new msgs: For indexed newscan mode, ";
+	optionHelpText["indexedModeNewscanOnlyShowSubsWithNewMsgs"] += "whether to only show sub-boards with new messages. This is a ";
+	optionHelpText["indexedModeNewscanOnlyShowSubsWithNewMsgs"] += "default for a user setting, which users can change for themselves.";
 
 	optionHelpText["themeFilename"] = "Theme filename: The name of a file for a color theme to use";
 
@@ -792,6 +835,10 @@ function readDDMsgReaderCfgFile()
 		retObj.cfgOptions.indexedModeMenuSnapToNextWithNewAftarMarkAllRead = true;
 	if (!retObj.cfgOptions.hasOwnProperty("promptDelPersonalEmailAfterReply"))
 		retObj.cfgOptions.promptDelPersonalEmailAfterReply = false;
+	if (!retObj.cfgOptions.hasOwnProperty("subBoardChangeSorting"))
+		retObj.cfgOptions.subBoardChangeSorting = "None";
+	if (!retObj.cfgOptions.hasOwnProperty("indexedModeNewscanOnlyShowSubsWithNewMsgs"))
+		retObj.cfgOptions.indexedModeNewscanOnlyShowSubsWithNewMsgs = false;
 	if (!retObj.cfgOptions.hasOwnProperty("themeFilename"))
 		retObj.cfgOptions.themeFilename = "DefaultTheme.cfg";
 
