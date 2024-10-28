@@ -2331,7 +2331,7 @@ js_xfer_prot_menu(JSContext *cx, uintN argc, jsval *arglist)
 	if(argc > 0 && argv[0] == JSVAL_TRUE)
 		xfer_type = XFER_BATCH_UPLOAD;
 	if(argc > 1 && argv[1] == JSVAL_TRUE)
-		xfer_type = (xfer_type == XFER_UPLOAD) ? XFER_BATCH_UPLOAD : XFER_BATCH_DOWNLOAD;
+		xfer_type = ((xfer_type == XFER_UPLOAD) ? XFER_BATCH_UPLOAD : XFER_BATCH_DOWNLOAD);
 
 	rc=JS_SUSPENDREQUEST(cx);
 	sbbs->xfer_prot_menu(xfer_type, &sbbs->useron, keys, sizeof keys);
