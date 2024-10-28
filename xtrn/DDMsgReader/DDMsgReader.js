@@ -167,9 +167,7 @@
  *                              Started working on sub-board sorting for changing sub-boards
  * 2024-10-24 Eric Oulashin     Updated for bbs.msg_number and bbs.smb_curmsg being writeable
  * 2024-10-25 Eric Oulashin     Message sub-board sort fixes
- * 2024-10-26 Eric Oulashin     When downloading attachments, let the user select a download
- *                              protocol if they don't have one configured.
- *                              User options for sub-board sorting when changing to another
+ * 2024-10-26 Eric Oulashin     User options for sub-board sorting when changing to another
  *                              sub-board, and whether to show sub-boards with new messages in
  *                              the indexed newscan.
  *                              Releasing this version (1.96).
@@ -273,10 +271,6 @@ require("attr_conv.js", "convertAttrsToSyncPerSysCfg");
 require("graphic.js", 'Graphic');
 require("smbdefs.js", "SMB_POLL_ANSWER");
 load('822header.js');
-// If using Synchronet 3.20 or newer, load user_settings_lib.js, for
-// prompt_user_for_download_protocol
-if (system.version_num >= 32000)
-	require("user_settings_lib.js", "prompt_user_for_download_protocol");
 var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 var hexdump = load('hexdump_lib.js');
 
@@ -22904,27 +22898,6 @@ function allowUserToDownloadMessage_NewInterface(pMsgHdr, pMsgbaseCode)
 		return;
 	if (typeof(pMsgHdr) !== "object" || typeof(pMsgHdr.number) == "undefined")
 		return;
-
-	// If the user doesn't have a download protocol configured, then allow them
-	// to choose one
-	if (user.download_protocol == "")
-	{
-		// Due to using file.ini, this only works on Synchronet 3.20 and newer
-		if (system.version_num >= 32000)
-		{
-			prompt_user_for_download_protocol();
-			// If the user's download protocol is still blank (user aborted choosing a download protocol),
-			// then just return
-			if (user.download_protocol == "")
-				return;
-		}
-		else
-		{
-			console.print(word_wrap("\x01nYou don't have a default download protocol. You can configure it in your user preferences.\r\n"));
-			console.pause();
-			return;
-		}
-	}
 
 	// Open the messagebase and let the user download the message and/or attachments
 	var msgBase = new MsgBase(pMsgbaseCode);
