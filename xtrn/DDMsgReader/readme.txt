@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.95h
-                           Release date: 2024-09-03
+                                 Version 1.96
+                           Release date: 2024-10-26
 
                                      by
 
@@ -840,6 +840,18 @@ msgSaveDir                            The default directory on the BBS machine
                                       enter a filename, but you can still enter
                                       a fully-pathed filename to save a message
                                       in a different directory.
+
+subBoardChangeSorting                 Sub-board sorting for changing to another
+                                      sub-board: None, Alphabetical,
+                                      LatestMsgDateOldestFirst, or
+                                      LatestMsgDateNewestFirst
+
+indexedModeNewscanOnlyShowSubsWithNewMsgs  For indexed-mode newscan, whether to
+                                           only show sub-boards with new
+                                           messages. This is the default for a
+                                           user setting; users can toggle this
+                                           for themselves as they like. Valid
+                                           values are true or false.
 
 themeFilename                         The name of the configuration file to
                                       use for colors & string settings
