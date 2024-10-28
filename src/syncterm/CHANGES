@@ -3,6 +3,7 @@ Version 1.2rc5
 Fix RIP parsing when passed fragmented ANSI sequences
 Fix cursor when RIP changes font height
 Fix Alt-O in RIP mode
+In telnet mode, always negotiate echo, binary, and suppress GA
 
 Version 1.2rc4
 --------------
