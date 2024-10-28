@@ -16241,6 +16241,7 @@ rip_getch(void)
 		}
 		return ch;
 	}
+	struct mouse_state *ms = cterm->mouse_state_change_cbdata;
 
 	gotoxy(wherex(), wherey());
 	ch = getch();
@@ -16251,7 +16252,7 @@ rip_getch(void)
 	}
 
 	shadow_palette();
-	if (ch == CIO_KEY_MOUSE) {
+	if (ch == CIO_KEY_MOUSE && (!(ms->flags & MS_FLAGS_DISABLED))) {
 		ch = -1;
 		getmouse(&mevent);
 		mevent.startx_res = unmap_rip_x(mevent.startx_res);

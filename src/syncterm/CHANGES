@@ -1,3 +1,9 @@
+Version 1.2rc5
+--------------
+Fix RIP parsing when passed fragmented ANSI sequences
+Fix cursor when RIP changes font height
+Fix Alt-O in RIP mode
+
 Version 1.2rc4
 --------------
 Fix pointy scaling to work even when interpolating both directions
@@ -9,8 +15,6 @@ Fix telnets (broken when sftp support was added)
 Update ANSI and win32 console support
 Fix bug with window resizing calculations
 New icons thanks to zuMi!
-Fix RIP parsing when passed fragmented ANSI sequences
-Fix cursor when RIP changes font height
 
 Version 1.2rc3
 --------------
