@@ -1437,20 +1437,38 @@ char* sbbs_t::u64toac(uint64_t val, char* str, char sep)
 	return ::u64toac(val, str, sep);
 }
 
-int sbbs_t::protnum(char prot)
+int sbbs_t::protnum(char prot, enum XFER_TYPE type)
 {
 	int i;
 
 	for(i = 0; i < cfg.total_prots; ++i) {
-		if(prot == cfg.prot[i]->mnemonic && chk_ar(cfg.prot[i]->ar, &useron, &client))
-			break;
+		if(prot != cfg.prot[i]->mnemonic || !chk_ar(cfg.prot[i]->ar, &useron, &client))
+			continue;
+		switch(type) {
+			case XFER_UPLOAD:
+				if(cfg.prot[i]->ulcmd[0])
+					return i;
+				break;
+			case XFER_DOWNLOAD:
+				if(cfg.prot[i]->dlcmd[0])
+					return i;
+				break;
+			case XFER_BATCH_UPLOAD:
+				if(cfg.prot[i]->batulcmd[0])
+					return i;
+				break;
+			case XFER_BATCH_DOWNLOAD:
+				if(cfg.prot[i]->batdlcmd[0])
+					return i;
+				break;
+		}
 	}
 	return i;
 }
 
-const char* sbbs_t::protname(char prot)
+const char* sbbs_t::protname(char prot, enum XFER_TYPE type)
 {
-	int i = protnum(prot);
+	int i = protnum(prot, type);
 	if(i < cfg.total_prots)
 		return cfg.prot[i]->name;
 	return text[None];
