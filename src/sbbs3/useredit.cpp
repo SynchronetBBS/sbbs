@@ -851,7 +851,7 @@ void sbbs_t::maindflts(user_t* user)
 		if(*text[UserDefaultsProtocol]) {
 			add_hotspot('Z');
 			SAFECAT(keys, "Z");
-			bprintf(text[UserDefaultsProtocol], protname(user->prot)
+			bprintf(text[UserDefaultsProtocol], protname(user->prot, XFER_DOWNLOAD)
 				, user->misc & AUTOHANG ? "(Auto-Hangup)" : nulstr);
 		}
 		if(*text[UserDefaultsPassword] && (cfg.sys_misc & SM_PWEDIT) && !(user->rest & FLAG('G'))) {
@@ -1131,16 +1131,11 @@ void sbbs_t::maindflts(user_t* user)
 					remove(str);
 				break;
 			case 'Z':
-				xfer_prot_menu(XFER_DOWNLOAD);
+				xfer_prot_menu(XFER_DOWNLOAD, user, keys, sizeof keys);
+				SAFECAT(keys, quit_key(str));
 				sync();
 				mnemonics(text[ProtocolOrQuit]);
-				sprintf(str,"%c",quit_key());
-				for(i=0;i<cfg.total_prots;i++)
-					if(cfg.prot[i]->dlcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
-						SAFEPRINTF(tmp,"%c",cfg.prot[i]->mnemonic);
-						strcat(str,tmp); 
-					}
-				ch=(char)getkeys(str,0);
+				ch=(char)getkeys(keys,0);
 				if(ch < 0)
 					break;
 				if(sys_status & SS_ABORT)

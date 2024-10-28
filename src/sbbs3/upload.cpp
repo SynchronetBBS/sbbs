@@ -450,20 +450,15 @@ bool sbbs_t::upload(int dirnum, const char* fname)
 	if(fexistcase(path)) {   /* File is on disk */
 		result = uploadfile(&f);
 	} else {
-		xfer_prot_menu(XFER_UPLOAD);
+		xfer_prot_menu(XFER_UPLOAD, &useron, keys, sizeof keys);
+		SAFECAT(keys, quit_key(str));
 		sync();
-		SAFEPRINTF(keys,"%c",quit_key());
 		if(dirnum==cfg.user_dir || !cfg.max_batup)  /* no batch user to user xfers */
 			mnemonics(text[ProtocolOrQuit]);
 		else {
 			mnemonics(text[ProtocolBatchOrQuit]);
-			strcat(keys,"B"); 
+			SAFECAT(keys,"B");
 		}
-		for(i=0;i<cfg.total_prots;i++)
-			if(cfg.prot[i]->ulcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
-				SAFEPRINTF(tmp,"%c",cfg.prot[i]->mnemonic);
-				strcat(keys,tmp); 
-			}
 		ch=(char)getkeys(keys,0);
 		if(ch==quit_key() || (sys_status&SS_ABORT))
 			result = false;
@@ -478,10 +473,7 @@ bool sbbs_t::upload(int dirnum, const char* fname)
 				result = true;
 			}
 		} else {
-			for(i=0;i<cfg.total_prots;i++)
-				if(cfg.prot[i]->ulcmd[0] && cfg.prot[i]->mnemonic==ch
-					&& chk_ar(cfg.prot[i]->ar,&useron,&client))
-					break;
+			i = protnum(ch, XFER_UPLOAD);
 			if(i<cfg.total_prots) {
 				time_t elapsed = 0;
 				protocol(cfg.prot[i],XFER_UPLOAD,path,nulstr,/* cd: */true, /* autohang: */true, &elapsed);
@@ -567,7 +559,8 @@ bool sbbs_t::bulkupload(int dirnum)
 
 bool sbbs_t::recvfile(char *fname, char prot, bool autohang)
 {
-	char	keys[32];
+	char	keys[128];
+	char	str[128];
 	char	ch;
 	int		i;
 	bool	result=false;
@@ -575,21 +568,15 @@ bool sbbs_t::recvfile(char *fname, char prot, bool autohang)
 	if(prot)
 		ch=toupper(prot);
 	else {
-		xfer_prot_menu(XFER_UPLOAD);
+		xfer_prot_menu(XFER_UPLOAD, &useron, keys, sizeof keys);
+		SAFECAT(keys, quit_key(str));
 		mnemonics(text[ProtocolOrQuit]);
-		SAFEPRINTF(keys,"%c",quit_key());
-		for(i=0;i<cfg.total_prots;i++)
-			if(cfg.prot[i]->ulcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client))
-				sprintf(keys+strlen(keys),"%c",cfg.prot[i]->mnemonic);
-
 		ch=(char)getkeys(keys,0);
 
 		if(ch==quit_key() || sys_status&SS_ABORT)
 			return(false); 
 	}
-	for(i=0;i<cfg.total_prots;i++)
-		if(cfg.prot[i]->mnemonic==ch && chk_ar(cfg.prot[i]->ar,&useron,&client))
-			break;
+	i = protnum(ch, XFER_UPLOAD);
 	if(i<cfg.total_prots) {
 		if(protocol(cfg.prot[i], XFER_UPLOAD, fname, fname, true, autohang)==0)
 			result=true;

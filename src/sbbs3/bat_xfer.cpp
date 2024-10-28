@@ -193,7 +193,7 @@ void sbbs_t::batchmenu()
 bool sbbs_t::batch_upload()
 {
 	char str[129];
-	char tmp[512];
+	char keys[128];
 	char ch;
 	int i;
 
@@ -201,24 +201,16 @@ bool sbbs_t::batch_upload()
 		bputs(text[UploadQueueIsEmpty]);
 		return false;
 	}
-	xfer_prot_menu(XFER_BATCH_UPLOAD);
+	xfer_prot_menu(XFER_BATCH_UPLOAD, &useron, keys, sizeof keys);
+	SAFECAT(keys, quit_key(str));
 	if(!create_batchup_lst())
 		return false;
 	sync();
 	mnemonics(text[ProtocolOrQuit]);
-	SAFEPRINTF(str,"%c",quit_key());
-	for(i=0;i<cfg.total_prots;i++)
-		if(cfg.prot[i]->batulcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
-			sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
-			SAFECAT(str,tmp);
-		}
-	ch=(char)getkeys(str,0);
+	ch=(char)getkeys(keys,0);
 	if(ch==quit_key() || !online)
 		return false;
-	for(i=0;i<cfg.total_prots;i++)
-		if(cfg.prot[i]->batulcmd[0] && cfg.prot[i]->mnemonic==ch
-			&& chk_ar(cfg.prot[i]->ar,&useron,&client))
-			break;
+	i = protnum(ch, XFER_BATCH_UPLOAD);
 	if(i >= cfg.total_prots)
 		return false;
 	SAFEPRINTF(str,"%sBATCHUP.LST",cfg.node_dir);
@@ -342,24 +334,17 @@ bool sbbs_t::start_batch_download()
 		bputs(text[NotEnoughTimeToDl]);
 		return(false); 
 	}
-	i = protnum(useron.prot);
+	i = protnum(useron.prot, XFER_BATCH_DOWNLOAD);
 	if (i >= cfg.total_prots) {
-		xfer_prot_menu(XFER_BATCH_DOWNLOAD);
+		char keys[128];
+		xfer_prot_menu(XFER_BATCH_DOWNLOAD, &useron, keys, sizeof keys);
+		SAFECAT(keys, quit_key(str));
 		sync();
 		mnemonics(text[ProtocolOrQuit]);
-		SAFEPRINTF(str,"%c",quit_key());
-		for(i=0;i<cfg.total_prots;i++)
-			if(cfg.prot[i]->batdlcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
-				sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
-				SAFECAT(str,tmp); 
-			}
-		ch=(char)getkeys(str,0);
+		ch=(char)getkeys(keys, 0);
 		if(ch==quit_key() || sys_status&SS_ABORT)
 			return(false);
-		for(i=0;i<cfg.total_prots;i++)
-			if(cfg.prot[i]->batdlcmd[0] && cfg.prot[i]->mnemonic==ch
-				&& chk_ar(cfg.prot[i]->ar,&useron,&client))
-				break;
+		i = protnum(ch, XFER_BATCH_DOWNLOAD);
 	}
 	if(i>=cfg.total_prots || !create_batchdn_lst((cfg.prot[i]->misc&PROT_NATIVE) ? true:false)) {
 		return(false);

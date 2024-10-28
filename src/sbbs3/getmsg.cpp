@@ -360,6 +360,7 @@ bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, int p_mode, post_t* post)
 void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del, bool use_default_prot)
 {
 	char str[256];
+	char keys[128];
 	char fpath[MAX_PATH+1];
 	char* txt;
 	int attachment_index = 0;
@@ -424,20 +425,11 @@ void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del, bool 
 						,getfname(fpath),u64toac(length,tmp));
 					if(length>0L && text[DownloadAttachedFileQ][0] && yesno(str)) {
 						{	/* Remote User */
-							xfer_prot_menu(XFER_DOWNLOAD);
+							xfer_prot_menu(XFER_DOWNLOAD, &useron, keys, sizeof keys);
+							SAFECAT(keys, quit_key(str));
 							mnemonics(text[ProtocolOrQuit]);
-							strcpy(str,"Q");
-							for(i=0;i<cfg.total_prots;i++)
-								if(cfg.prot[i]->dlcmd[0]
-									&& chk_ar(cfg.prot[i]->ar,&useron,&client)) {
-									sprintf(tmp,"%c",cfg.prot[i]->mnemonic);
-									SAFECAT(str,tmp);
-								}
-							ch=(char)getkeys(str,0);
-							for(i=0;i<cfg.total_prots;i++)
-								if(cfg.prot[i]->dlcmd[0] && ch==cfg.prot[i]->mnemonic
-									&& chk_ar(cfg.prot[i]->ar,&useron,&client))
-									break;
+							ch=(char)getkeys(keys,0);
+							i = protnum(ch, XFER_DOWNLOAD);
 							if(i<cfg.total_prots) {
 								time_t elapsed = 0;
 								int error = protocol(cfg.prot[i], XFER_DOWNLOAD, fpath, nulstr, /* cid: */false, /* autohang: */true, &elapsed);

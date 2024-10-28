@@ -1006,9 +1006,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					ch=*(csi->ip++);	/* Protocol */
 					cmdstr((char *)csi->ip,csi->str,csi->str,str);
 					while(*(csi->ip++));	/* Find NULL */
-					for(i=0;i<cfg.total_prots;i++)
-						if(cfg.prot[i]->mnemonic==ch && chk_ar(cfg.prot[i]->ar,&useron,&client))
-							break;
+					i = protnum(ch, j==SEND_FILE_VIA ? XFER_DOWNLOAD : XFER_UPLOAD);
 					csi->logic=LOGIC_FALSE;
 					if(i<cfg.total_prots)
 						if(protocol(cfg.prot[i],j==SEND_FILE_VIA ? XFER_DOWNLOAD : XFER_UPLOAD
@@ -1021,9 +1019,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					ch=*(csi->ip++);	/* Protocol */
 					pp=getstrvar(csi,*(int32_t *)csi->ip);
 					csi->ip+=4;
-					for(i=0;i<cfg.total_prots;i++)
-						if(cfg.prot[i]->mnemonic==ch && chk_ar(cfg.prot[i]->ar,&useron,&client))
-							break;
+					i = protnum(ch, j==SEND_FILE_VIA_VAR ? XFER_DOWNLOAD : XFER_UPLOAD);
 					csi->logic=LOGIC_FALSE;
 					if(!pp || !(*pp))
 						return(0);

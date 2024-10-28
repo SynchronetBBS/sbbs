@@ -391,27 +391,22 @@ void sbbs_t::seqwait(uint devnum)
 bool sbbs_t::sendfile(char* fname, char prot, const char* desc, bool autohang)
 {
 	char	keys[128];
+	char	tmp[128];
 	char	ch;
 	int		i;
 	int		error;
 	bool	result;
 
-	i = protnum(prot);
+	i = protnum(prot, XFER_DOWNLOAD);
 	if (i >= cfg.total_prots) {
-		xfer_prot_menu(XFER_DOWNLOAD);
+		xfer_prot_menu(XFER_DOWNLOAD, &useron, keys, sizeof keys);
+		SAFECAT(keys, quit_key(tmp));
 		mnemonics(text[ProtocolOrQuit]);
-		sprintf(keys,"%c",quit_key());
-		for(i=0;i<cfg.total_prots;i++)
-			if(cfg.prot[i]->dlcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client))
-				sprintf(keys+strlen(keys),"%c",cfg.prot[i]->mnemonic);
-
 		ch=(char)getkeys(keys,0);
 
 		if(ch==quit_key() || sys_status&SS_ABORT)
-			return false; 
-		for(i=0;i<cfg.total_prots;i++)
-			if(cfg.prot[i]->mnemonic==ch && chk_ar(cfg.prot[i]->ar,&useron,&client))
-				break;
+			return false;
+		i = protnum(ch, XFER_DOWNLOAD);
 		if(i >= cfg.total_prots)
 			return false;
 	}
