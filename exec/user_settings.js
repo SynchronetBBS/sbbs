@@ -534,20 +534,7 @@ while(bbs.online && !js.terminated) {
 			console.newline();
 			console.print(gettext("Choose a default file transfer protocol (or [ENTER] for None):"));
 			console.newline(2);
-			for (var code in file_cfg.protocol) {
-				if (!thisuser.compare_ars(file_cfg.protocol[code].ars)
-					|| file_cfg.protocol[code].dlcmd.length === 0)
-					continue;
-				if (c%2===1)
-					console.newline();
-				console.putmsg(format(bbs.text(bbs.text.TransferProtLstFmt)
-					,String(file_cfg.protocol[code].key)
-					,file_cfg.protocol[code].name));
-
-				keylist += String(file_cfg.protocol[code].key);
-				c++;
-			}
-			console.newline();
+			bbs.xfer_prot_menu();
 			console.mnemonics(bbs.text(bbs.text.ProtocolOrQuit));
 			var kp = console.getkeys(keylist);
 			if (kp === 'Q' || console.aborted)
