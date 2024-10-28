@@ -1016,19 +1016,14 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 				}
 				continue;
 			}
-			xfer_prot_menu(XFER_DOWNLOAD);
+			xfer_prot_menu(XFER_DOWNLOAD, &useron, keys, sizeof keys);
 			sync();
 			mnemonics(text[ProtocolBatchQuitOrNext]);
-			SAFEPRINTF(str,"B%cN\r",quit_key());
+			SAFECAT(keys, "BN\r");
+			SAFECAT(keys, quit_key(str));
 			if(m > 1)
-				SAFECAT(str, "\b-");
-			for(i=0;i<cfg.total_prots;i++)
-				if(cfg.prot[i]->dlcmd[0]
-					&& chk_ar(cfg.prot[i]->ar,&useron,&client)) {
-					sprintf(str + strlen(str), "%c", cfg.prot[i]->mnemonic);
-				}
-	//		  ungetkey(useron.prot);
-			ch=(char)getkeys(str,0);
+				SAFECAT(keys, "\b-");
+			ch=(char)getkeys(keys, 0);
 			if(ch==quit_key()) {
 				found=-1;
 				done=1;
@@ -1045,10 +1040,7 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 				continue;
 			}
 			else if(ch!=CR && ch!='N') {
-				for(i=0;i<cfg.total_prots;i++)
-					if(cfg.prot[i]->dlcmd[0] && cfg.prot[i]->mnemonic==ch
-						&& chk_ar(cfg.prot[i]->ar,&useron,&client))
-						break;
+				i = protnum(ch, XFER_DOWNLOAD);
 				if(i<cfg.total_prots) {
 					delfiles(cfg.temp_dir,ALLFILES);
 					if(cfg.dir[f->dir]->seqdev) {

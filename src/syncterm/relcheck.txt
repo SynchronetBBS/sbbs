@@ -1,0 +1,6 @@
+Upload files to SourceForge
+Set default OS versions on SourceForge
+Add new version to Found in Version file on SourceForge in bug and support trackers
+Update latest release version on homepage
+Post in DoVe-Net Synchronet Announcements
+Post on reddit in r/syncterm and r/bbs

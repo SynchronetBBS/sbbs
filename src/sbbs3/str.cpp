@@ -1084,15 +1084,16 @@ const char* prot_menu_file[] = {
 	,"biprot"
 };
 
-void sbbs_t::xfer_prot_menu(enum XFER_TYPE type)
+char* sbbs_t::xfer_prot_menu(enum XFER_TYPE type, user_t* user, char* keys, size_t size)
 {
-	if(menu(prot_menu_file[type], P_NOERROR)) {
-		return;
-	}
+	size_t count = 0;
+	bool menu_used = menu(prot_menu_file[type], P_NOERROR);
+	if(user == nullptr)
+		user = &useron;
 	cond_blankline();
 	int printed=0;
 	for(int i=0;i<cfg.total_prots;i++) {
-		if(!chk_ar(cfg.prot[i]->ar,&useron,&client))
+		if(!chk_ar(cfg.prot[i]->ar, user, &client))
 			continue;
 		if(type==XFER_UPLOAD && cfg.prot[i]->ulcmd[0]==0)
 			continue;
@@ -1102,12 +1103,20 @@ void sbbs_t::xfer_prot_menu(enum XFER_TYPE type)
 			continue;
 		if(type==XFER_BATCH_DOWNLOAD && cfg.prot[i]->batdlcmd[0]==0)
 			continue;
+		if(keys != nullptr && count + 1 < size)
+			keys[count++] = cfg.prot[i]->mnemonic;
+		if(menu_used)
+			continue;
 		if(printed && (cols < 80 || (printed%2)==0))
 			CRLF;
 		bprintf(text[TransferProtLstFmt],cfg.prot[i]->mnemonic,cfg.prot[i]->name);
 		printed++;
 	}
-	newline();
+	if(keys != nullptr)
+		keys[count] = '\0';
+	if(!menu_used)
+		newline();
+	return keys;
 }
 
 void sbbs_t::node_stats(uint node_num)
@@ -1428,20 +1437,38 @@ char* sbbs_t::u64toac(uint64_t val, char* str, char sep)
 	return ::u64toac(val, str, sep);
 }
 
-int sbbs_t::protnum(char prot)
+int sbbs_t::protnum(char prot, enum XFER_TYPE type)
 {
 	int i;
 
 	for(i = 0; i < cfg.total_prots; ++i) {
-		if(prot == cfg.prot[i]->mnemonic && chk_ar(cfg.prot[i]->ar, &useron, &client))
-			break;
+		if(prot != cfg.prot[i]->mnemonic || !chk_ar(cfg.prot[i]->ar, &useron, &client))
+			continue;
+		switch(type) {
+			case XFER_UPLOAD:
+				if(cfg.prot[i]->ulcmd[0])
+					return i;
+				break;
+			case XFER_DOWNLOAD:
+				if(cfg.prot[i]->dlcmd[0])
+					return i;
+				break;
+			case XFER_BATCH_UPLOAD:
+				if(cfg.prot[i]->batulcmd[0])
+					return i;
+				break;
+			case XFER_BATCH_DOWNLOAD:
+				if(cfg.prot[i]->batdlcmd[0])
+					return i;
+				break;
+		}
 	}
 	return i;
 }
 
-const char* sbbs_t::protname(char prot)
+const char* sbbs_t::protname(char prot, enum XFER_TYPE type)
 {
-	int i = protnum(prot);
+	int i = protnum(prot, type);
 	if(i < cfg.total_prots)
 		return cfg.prot[i]->name;
 	return text[None];

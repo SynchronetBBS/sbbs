@@ -15652,6 +15652,7 @@ unrip_line(BYTE *buf, unsigned *blen, unsigned *pos, size_t *rip_start, unsigned
 	*pos += insert;
 	pending_len = 0;
 	pending[0] = 0;
+	*rip_start = maxlen + 1;
 }
 
 static int

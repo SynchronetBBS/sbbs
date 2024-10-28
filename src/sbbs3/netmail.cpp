@@ -216,23 +216,16 @@ bool sbbs_t::netmail(const char *into, const char *title, int mode, smb_t* resmb
 			return(false); 
 		}
 		{ /* Remote */
-			xfer_prot_menu(XFER_UPLOAD);
+			char keys[128];
+			xfer_prot_menu(XFER_UPLOAD, &useron, keys, sizeof keys);
+			SAFECAT(keys, quit_key(str));
 			mnemonics(text[ProtocolOrQuit]);
-			sprintf(str,"%c",quit_key());
-			for(x=0;x<cfg.total_prots;x++)
-				if(cfg.prot[x]->ulcmd[0] && chk_ar(cfg.prot[x]->ar,&useron,&client)) {
-					sprintf(tmp,"%c",cfg.prot[x]->mnemonic);
-					strcat(str,tmp); 
-				}
-			ch=(char)getkeys(str,0);
+			ch=(char)getkeys(keys, 0);
 			if(ch==quit_key() || sys_status&SS_ABORT) {
 				bputs(text[Aborted]);
 				return(false); 
 			}
-			for(x=0;x<cfg.total_prots;x++)
-				if(cfg.prot[x]->ulcmd[0] && cfg.prot[x]->mnemonic==ch
-					&& chk_ar(cfg.prot[x]->ar,&useron,&client))
-					break;
+			x = protnum(ch, XFER_UPLOAD);
 			if(x<cfg.total_prots)	/* This should be always */
 				protocol(cfg.prot[x],XFER_UPLOAD,subj,nulstr,true); 
 		}
@@ -1053,25 +1046,18 @@ bool sbbs_t::inetmail(const char *into, const char *subj, int mode, smb_t* resmb
 			return(false); 
 		}
 		{ /* Remote */
-			xfer_prot_menu(XFER_UPLOAD);
+			char keys[128];
+			xfer_prot_menu(XFER_UPLOAD, &useron, keys, sizeof keys);
+			SAFECAT(keys, quit_key(str));
 			mnemonics(text[ProtocolOrQuit]);
-			SAFEPRINTF(str,"%c",quit_key());
-			for(x=0;x<cfg.total_prots;x++)
-				if(cfg.prot[x]->ulcmd[0] && chk_ar(cfg.prot[x]->ar,&useron,&client)) {
-					SAFEPRINTF(tmp,"%c",cfg.prot[x]->mnemonic);
-					SAFECAT(str,tmp); 
-				}
-			ch=(char)getkeys(str,0);
+			ch=(char)getkeys(keys, 0);
 			if(ch==quit_key() || sys_status&SS_ABORT) {
 				bputs(text[Aborted]);
 				strListFree(&rcpt_list);
 				(void)remove(msgpath);
 				return(false); 
 			}
-			for(x=0;x<cfg.total_prots;x++)
-				if(cfg.prot[x]->ulcmd[0] && cfg.prot[x]->mnemonic==ch
-					&& chk_ar(cfg.prot[x]->ar,&useron,&client))
-					break;
+			x = protnum(ch, XFER_UPLOAD);
 			if(x<cfg.total_prots)	/* This should be always */
 				protocol(cfg.prot[x],XFER_UPLOAD,str2,nulstr,true); 
 		}

@@ -603,27 +603,20 @@ void sbbs_t::qwk_sec()
 			/***************/
 			/* Send Packet */
 			/***************/
-			i = protnum(useron.prot);
+			i = protnum(useron.prot, XFER_DOWNLOAD);
 			if (i >= cfg.total_prots) {
-				xfer_prot_menu(XFER_DOWNLOAD);
+				char keys[128];
+				xfer_prot_menu(XFER_DOWNLOAD, &useron, keys, sizeof keys);
+				SAFECAT(keys, quit_key(str));
 				mnemonics(text[ProtocolOrQuit]);
-				snprintf(tmp2, sizeof tmp2, "%c",quit_key());
-				for(i=0;i<cfg.total_prots;i++)
-					if(cfg.prot[i]->dlcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
-						snprintf(tmp, sizeof tmp, "%c",cfg.prot[i]->mnemonic);
-						strcat(tmp2,tmp);
-					}
-				ch=(char)getkeys(tmp2,0);
+				ch=(char)getkeys(keys, 0);
 				if(ch==quit_key() || sys_status&SS_ABORT || !online) {
 					for(i=0;i<cfg.total_subs;i++)
 						subscan[i].ptr=sav_ptr[i];   /* re-load saved pointers */
 					last_ns_time=ns_time;
 					continue;
 				}
-				for(i=0;i<cfg.total_prots;i++)
-					if(cfg.prot[i]->dlcmd[0] && cfg.prot[i]->mnemonic==ch
-						&& chk_ar(cfg.prot[i]->ar,&useron,&client))
-						break;
+				i = protnum(ch, XFER_DOWNLOAD);
 			}
 			if(i<cfg.total_prots) {
 				snprintf(str, sizeof str, "%s%s.qwk",cfg.temp_dir,cfg.sys_id);
@@ -654,21 +647,14 @@ void sbbs_t::qwk_sec()
 			/******************/
 			/* Receive Packet */
 			/******************/
-			xfer_prot_menu(XFER_UPLOAD);
+			char keys[128];
+			xfer_prot_menu(XFER_UPLOAD, &useron, keys, sizeof keys);
+			SAFECAT(keys, quit_key(str));
 			mnemonics(text[ProtocolOrQuit]);
-			snprintf(tmp2, sizeof tmp2, "%c",quit_key());
-			for(i=0;i<cfg.total_prots;i++)
-				if(cfg.prot[i]->ulcmd[0] && chk_ar(cfg.prot[i]->ar,&useron,&client)) {
-					snprintf(tmp, sizeof tmp, "%c",cfg.prot[i]->mnemonic);
-					strcat(tmp2,tmp);
-				}
-			ch=(char)getkeys(tmp2,0);
+			ch=(char)getkeys(keys, 0);
 			if(ch==quit_key() || sys_status&SS_ABORT || !online)
 				continue;
-			for(i=0;i<cfg.total_prots;i++)
-				if(cfg.prot[i]->ulcmd[0] && cfg.prot[i]->mnemonic==ch
-					&& chk_ar(cfg.prot[i]->ar,&useron,&client))
-					break;
+			i = protnum(ch, XFER_UPLOAD);
 			if(i>=cfg.total_prots)	/* This shouldn't happen */
 				continue;
 			snprintf(str, sizeof str, "%s%s.rep",cfg.temp_dir,cfg.sys_id);

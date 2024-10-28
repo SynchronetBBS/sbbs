@@ -6,6 +6,10 @@ Fix -iW colors
 Fix default port for Telnets
 Set Server Name Extension when connecting via telnets
 Fix telnets (broken when sftp support was added)
+Update ANSI and win32 console support
+Fix bug with window resizing calculations
+New icons thanks to zuMi!
+Fix RIP parsing when passed fragmented ANSI sequences
 
 Version 1.2rc3
 --------------

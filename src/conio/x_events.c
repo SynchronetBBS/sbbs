@@ -1227,17 +1227,19 @@ static void resize_window()
 static void init_mode_internal(int mode)
 {
 	int mw, mh;
-	int ow, oh;
 
 	x11_get_maxsize(&mw, &mh);
 	free_last();
 	pthread_mutex_lock(&vstatlock);
-	ow = vstat.winwidth;
-	oh = vstat.winheight;
+	double os = vstat.scaling;
+	int ow = vstat.winwidth;
+	int oh = vstat.winheight;
 	bitmap_drv_init_mode(mode, NULL, NULL, mw, mh);
+	// TODO: This hacks the right values into the wrong places so resize_window() fixes them.
+	x_cvstat.scaling = vstat.scaling;
+	vstat.scaling = os;
 	vstat.winwidth = ow;
 	vstat.winheight = oh;
-	vstat.scaling = bitmap_double_mult_inside(ow, oh);
 	pthread_mutex_unlock(&vstatlock);
 	resize_window();
 	pthread_mutex_lock(&vstatlock);

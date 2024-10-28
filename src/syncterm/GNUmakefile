@@ -140,12 +140,29 @@ installdirs:
 	-mkdir -p ${DESTDIR}${PREFIX}/bin
 	-mkdir -p ${DESTDIR}${DESKTOPDIR}
 	-mkdir -p ${DESTDIR}${MANPREFIX}/man/man1
+	-mkdir -p ${DESTDIR}${PREFIX}/share/icons/hicolor/16x16/apps
+	-mkdir -p ${DESTDIR}${PREFIX}/share/icons/hicolor/22x22/apps
+	-mkdir -p ${DESTDIR}${PREFIX}/share/icons/hicolor/24x24/apps
+	-mkdir -p ${DESTDIR}${PREFIX}/share/icons/hicolor/32x32/apps
+	-mkdir -p ${DESTDIR}${PREFIX}/share/icons/hicolor/36x36/apps
+	-mkdir -p ${DESTDIR}${PREFIX}/share/icons/hicolor/48x48/apps
 	-mkdir -p ${DESTDIR}${PREFIX}/share/icons/hicolor/64x64/apps
+	-mkdir -p ${DESTDIR}${PREFIX}/share/icons/hicolor/256x256/apps
+	-mkdir -p ${DESTDIR}${PREFIX}/share/icons/hicolor/scalable/apps
 
 install: $(SYNCTERM) syncterm.1.gz installdirs
 	@echo Installing...
 	${INSTALL_EXE} ${SYNCTERM} ${DESTDIR}${PREFIX}/bin
-	${INSTALL_DATA} syncterm.png ${DESTDIR}${PREFIX}/share/icons/hicolor/64x64/apps
+	${INSTALL_DATA} syncterm16.png ${DESTDIR}${PREFIX}/share/icons/hicolor/16x16/apps/syncterm.png
+	${INSTALL_DATA} syncterm22.png ${DESTDIR}${PREFIX}/share/icons/hicolor/22x22/apps/syncterm.png
+	${INSTALL_DATA} syncterm24.png ${DESTDIR}${PREFIX}/share/icons/hicolor/24x24/apps/syncterm.png
+	${INSTALL_DATA} syncterm32.png ${DESTDIR}${PREFIX}/share/icons/hicolor/32x32/apps/syncterm.png
+	${INSTALL_DATA} syncterm36.png ${DESTDIR}${PREFIX}/share/icons/hicolor/36x36/apps/syncterm.png
+	${INSTALL_DATA} syncterm48.png ${DESTDIR}${PREFIX}/share/icons/hicolor/48x48/apps/syncterm.png
+	${INSTALL_DATA} syncterm64.png ${DESTDIR}${PREFIX}/share/icons/hicolor/64x64/apps/syncterm.png
+	${INSTALL_DATA} syncterm256.png ${DESTDIR}${PREFIX}/share/icons/hicolor/256x256/apps/syncterm.png
+	${INSTALL_DATA} icons/syncterm.svg ${DESTDIR}${PREFIX}/share/icons/hicolor/scalable/apps
+	${INSTALL_DATA} icons/syncterm-mini.svg ${DESTDIR}${PREFIX}/share/icons/hicolor/scalable/apps
 	${INSTALL_DATA} syncterm.desktop ${DESTDIR}${DESKTOPDIR}
 	${INSTALL_DATA} syncterm.1.gz ${DESTDIR}${MANPREFIX}/man/man1
 
@@ -154,7 +171,15 @@ dpkgdirs:
 	${QUIET}-mkdir -p dpkg${DESTDIR}${PREFIX}/bin
 	${QUIET}-mkdir -p dpkg${DESTDIR}${DESKTOPDIR}
 	${QUIET}-mkdir -p dpkg${DESTDIR}${PREFIX}/share/doc/syncterm
+	${QUIET}-mkdir -p dpkg${DESTDIR}${PREFIX}/share/icons/hicolor/16x16/apps
+	${QUIET}-mkdir -p dpkg${DESTDIR}${PREFIX}/share/icons/hicolor/22x22/apps
+	${QUIET}-mkdir -p dpkg${DESTDIR}${PREFIX}/share/icons/hicolor/24x24/apps
+	${QUIET}-mkdir -p dpkg${DESTDIR}${PREFIX}/share/icons/hicolor/32x32/apps
+	${QUIET}-mkdir -p dpkg${DESTDIR}${PREFIX}/share/icons/hicolor/36x36/apps
+	${QUIET}-mkdir -p dpkg${DESTDIR}${PREFIX}/share/icons/hicolor/48x48/apps
 	${QUIET}-mkdir -p dpkg${DESTDIR}${PREFIX}/share/icons/hicolor/64x64/apps
+	${QUIET}-mkdir -p dpkg${DESTDIR}${PREFIX}/share/icons/hicolor/256x256/apps
+	${QUIET}-mkdir -p dpkg${DESTDIR}${PREFIX}/share/icons/hicolor/scalable/apps
 	${QUIET}-mkdir -p dpkg${DESTDIR}${MANPREFIX}/share/man/man1
 	${QUIET}-mkdir -p dpkg/DEBIAN
 
@@ -169,7 +194,16 @@ changelog.gz: CHANGES
 dpkg: $(SYNCTERM) syncterm.1.gz dpkg-control dpkgdirs changelog.gz
 	@echo Creating $@
 	${QUIET}${INSTALL_EXE} ${SYNCTERM} dpkg${DESTDIR}${PREFIX}/bin
-	${QUIET}${INSTALL_DATA} syncterm.png dpkg${DESTDIR}${PREFIX}/share/icons/hicolor/64x64/apps
+	${QUIET}${INSTALL_DATA} syncterm16.png ${DESTDIR}${PREFIX}/share/icons/hicolor/16x16/apps/syncterm.png
+	${QUIET}${INSTALL_DATA} syncterm22.png ${DESTDIR}${PREFIX}/share/icons/hicolor/22x22/apps/syncterm.png
+	${QUIET}${INSTALL_DATA} syncterm24.png ${DESTDIR}${PREFIX}/share/icons/hicolor/24x24/apps/syncterm.png
+	${QUIET}${INSTALL_DATA} syncterm32.png ${DESTDIR}${PREFIX}/share/icons/hicolor/32x32/apps/syncterm.png
+	${QUIET}${INSTALL_DATA} syncterm36.png ${DESTDIR}${PREFIX}/share/icons/hicolor/36x36/apps/syncterm.png
+	${QUIET}${INSTALL_DATA} syncterm48.png ${DESTDIR}${PREFIX}/share/icons/hicolor/48x48/apps/syncterm.png
+	${QUIET}${INSTALL_DATA} syncterm64.png ${DESTDIR}${PREFIX}/share/icons/hicolor/64x64/apps/syncterm.png
+	${QUIET}${INSTALL_DATA} syncterm256.png ${DESTDIR}${PREFIX}/share/icons/hicolor/256x256/apps/syncterm.png
+	${QUIET}${INSTALL_DATA} icons/syncterm.svg ${DESTDIR}${PREFIX}/share/icons/hicolor/scalable/apps
+	${QUIET}${INSTALL_DATA} icons/syncterm-mini.svg ${DESTDIR}${PREFIX}/share/icons/hicolor/scalable/apps
 	${QUIET}${INSTALL_DATA} syncterm.desktop dpkg${DESTDIR}${DESKTOPDIR}
 	${QUIET}${INSTALL_DATA} syncterm.1.gz dpkg${DESTDIR}${MANPREFIX}/share/man/man1
 	${QUIET}${INSTALL_DATA} LICENCE dpkg${DESTDIR}${PREFIX}/share/doc/syncterm/copyright

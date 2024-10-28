@@ -32,6 +32,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 {
 	char		str[256],str2[256],msgpath[256],ch
 				,buf[SDT_BLOCK_LEN];
+	char		keys[128];
 	char 		tmp[512];
 	char		title[LEN_TITLE+1] = "";
 	const char*	editor=NULL;
@@ -136,24 +137,16 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 			(void)remove(msgpath);
 			return(false); 
 		}
-		xfer_prot_menu(XFER_UPLOAD);
+		xfer_prot_menu(XFER_UPLOAD, &useron, keys, sizeof keys);
+		SAFECAT(keys, quit_key(str));
 		mnemonics(text[ProtocolOrQuit]);
-		sprintf(str,"%c",quit_key());
-		for(x=0;x<cfg.total_prots;x++)
-			if(cfg.prot[x]->ulcmd[0] && chk_ar(cfg.prot[x]->ar,&useron,&client)) {
-				sprintf(tmp,"%c",cfg.prot[x]->mnemonic);
-				SAFECAT(str,tmp); 
-			}
-		ch=(char)getkeys(str,0);
+		ch=(char)getkeys(keys,0);
 		if(ch==quit_key() || sys_status&SS_ABORT) {
 			bputs(text[Aborted]);
 			(void)remove(msgpath);
 			return(false); 
 		}
-		for(x=0;x<cfg.total_prots;x++)
-			if(cfg.prot[x]->ulcmd[0] && cfg.prot[x]->mnemonic==ch
-				&& chk_ar(cfg.prot[x]->ar,&useron,&client))
-				break;
+		x = protnum(ch, XFER_UPLOAD);
 		if(x<cfg.total_prots)	/* This should be always */
 			protocol(cfg.prot[x],XFER_UPLOAD,str2,nulstr,true); 
 		safe_snprintf(tmp,sizeof(tmp),"%s%s",cfg.temp_dir,title);

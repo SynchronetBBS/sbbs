@@ -600,6 +600,7 @@ public:
 	char	yes_key(void) { return toupper(*text[Yes]); }
 	char	no_key(void) { return toupper(*text[No]); }
 	char	quit_key(void) { return toupper(*text[Quit]); }
+	char*	quit_key(char* str) { str[0] = quit_key(); str[1] = '\0'; return str; }
 	char	all_key(void) { return toupper(*text[All]); }
 	char	list_key(void) { return toupper(*text[List]); }
 	char	next_key(void) { return toupper(*text[Next]); }
@@ -765,7 +766,7 @@ public:
 	void	user_info(void);
 	void	xfer_policy(void);
 
-	void	xfer_prot_menu(enum XFER_TYPE);
+	char*	xfer_prot_menu(enum XFER_TYPE, user_t* user = nullptr, char* buf = nullptr, size_t size = 0);
 	void	node_stats(uint node_num);
 	void	sys_stats(void);
 	void	logonlist(const char* args = "");
@@ -839,8 +840,8 @@ public:
 	char	cmdstr_output[512]{};
 	char*	ultoac(uint32_t, char*, char sep=',');
 	char*	u64toac(uint64_t, char*, char sep=',');
-	int		protnum(char prot);
-	const char* protname(char prot);
+	int		protnum(char prot, enum XFER_TYPE xfer_type = XFER_DOWNLOAD);
+	const char* protname(char prot, enum XFER_TYPE xfer_type = XFER_DOWNLOAD);
 
 	void	subinfo(int subnum);
 	void	dirinfo(int dirnum);
