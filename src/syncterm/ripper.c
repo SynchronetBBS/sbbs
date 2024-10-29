@@ -7362,7 +7362,7 @@ static void kill_saved_mouse_fields(void);
 static void copy_mouse_fields(struct mouse_field *from, struct mouse_field **to);
 static void shadow_palette(void);
 static void normal_palette(void);
-static void draw_line(int x1, int y1, int x2, int y2);
+static void draw_line(int x1, int y1, int x2, int y2, bool final);
 static void reinit_screen(uint8_t *font, int fontx, int fonty);
 static bool no_viewport(void);
 
@@ -8388,7 +8388,20 @@ draw_pixel(int x, int y)
 		pix = getpixels(rip.viewport.sx + x, rip.viewport.sy + y, rip.viewport.sx + x, rip.viewport.sy + y, 0);
 		if (pix == NULL)
 			return;
+		if (pix->pixels[0] & 0x40000000) {
+			return;
+		}
 		rip_setpixel(rip.viewport.sx + x, rip.viewport.sy + y, pixel2color(pix->pixels[0]) ^ rip.color);
+		freepixels(pix);
+		pix = getpixels(rip.viewport.sx + x, rip.viewport.sy + y, rip.viewport.sx + x, rip.viewport.sy + y, 0);
+		if (pix) {
+			pix->pixels[0] |= 0x40000000;
+			setpixels(rip.viewport.sx + x, rip.viewport.sy + y, rip.viewport.sx + x, rip.viewport.sy + y, 0, 0, 0, 0, pix, NULL);
+			freepixels(pix);
+		}
+
+		pix = getpixels(rip.viewport.sx + x, rip.viewport.sy + y, rip.viewport.sx + x, rip.viewport.sy + y, 0);
+		freepixels(pix);
 	}
 	else {
 		rip_setpixel(rip.viewport.sx + x, rip.viewport.sy + y, rip.color);
@@ -8666,7 +8679,7 @@ write_char(char ch)
 					puts("TODO: \"Do scan\"\n");
 					break;
 				case 3:
-					draw_line(rip.x, rip.y, xs + dx, ys + dy);
+					draw_line(rip.x, rip.y, xs + dx, ys + dy, true);
 
                                 // Fall-through...
 				case 2:
@@ -8725,7 +8738,7 @@ write_text(const char *str)
 }
 
 static void
-draw_line(int x1, int y1, int x2, int y2)
+draw_line(int x1, int y1, int x2, int y2, bool final)
 {
 	int *minc, *mins, *mino, *mind;
 	int *maxc, *maxs, *maxe, *maxo, *maxd;
@@ -8822,16 +8835,29 @@ draw_line(int x1, int y1, int x2, int y2)
 // else {
                 // I-shape...
 		if (dx >= dy) {
-			draw_line(x1, y1 + 1, x2, y2 + 1);
-			draw_line(x1, y1 - 1, x2, y2 - 1);
+			draw_line(x1, y1 + 1, x2, y2 + 1, false);
+			draw_line(x1, y1 - 1, x2, y2 - 1, false);
 		}
 		else {
-			draw_line(x1 + 1, y1, x2 + 1, y2);
-			draw_line(x1 - 1, y1, x2 - 1, y2);
+			draw_line(x1 + 1, y1, x2 + 1, y2, false);
+			draw_line(x1 - 1, y1, x2 - 1, y2, false);
 		}
 
 // }
 		rip.line_width = 3;
+	}
+
+	if (final && rip.xor) {
+		struct ciolib_pixels *pix = getpixels(0, 0, rip.x_max - 1, rip.y_max - 1, false);
+		if (pix) {
+			size_t off = 0;
+			for (y = 0; y < pix->height; y++) {
+				for (x = 0; x < pix->width; x++)
+					pix->pixels[off++] &= ~0x40000000;
+			}
+			setpixels(0, 0, rip.x_max - 1, rip.y_max - 1, 0, 0, 0, 0, pix, NULL);
+			freepixels(pix);
+		}
 	}
 }
 
@@ -9887,6 +9913,7 @@ do_popup(const char * const str)
 	rip.x = ox;
 	rip.y = oy;
 	setpixels(x1, y1, x2, y2, 0, 0, 0, 0, pix, NULL);
+	freepixels(pix);
 	if (ret < 0)
 		return NULL;
 	return p;
@@ -11107,7 +11134,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          */
 							handled = true;
 							GET_XY2();
-							draw_line(x1, y1, x2, y2);
+							draw_line(x1, y1, x2, y2, true);
 							break;
 						case 'K': // RIP_FILLED_RECTANGLE (v2.A2)
 							handled = true;
@@ -11132,10 +11159,10 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 									fill_pixel(arg2, arg1);
 							}
 							if (rip.borders) {
-								draw_line(x1, y1, x2, y1);
-								draw_line(x2, y1, x2, y2);
-								draw_line(x2, y2, x1, y2);
-								draw_line(x1, y2, x1, y1);
+								draw_line(x1, y1, x2, y1, false);
+								draw_line(x2, y1, x2, y2, false);
+								draw_line(x2, y2, x1, y2, false);
+								draw_line(x1, y2, x1, y1, true);
 							}
 							break;
 						case 'N': // RIP_SET_BORDER (v2.A3)
@@ -11212,7 +11239,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 									y2 = parse_mega(&args[4 + i * 4], 2);
 									if (y2 == -1)
 										break;
-									draw_line(x1, y1, x2, y2);
+									draw_line(x1, y1, x2, y2, false);
 									x1 = x2;
 									y1 = y2;
 								}
@@ -11224,7 +11251,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								y2 = parse_mega(&args[4], 2);
 								if (y1 == -1)
 									break;
-								draw_line(x1, y1, x2, y2);
+								draw_line(x1, y1, x2, y2, true);
 							}
 							break;
 						case 'Q': // RIP_SET_PALETTE !|Q <c1> <c2> ... <c16>
@@ -11266,10 +11293,10 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          */
 							handled = true;
 							GET_XY2();
-							draw_line(x1, y1, x2, y1);
-							draw_line(x2, y1, x2, y2);
-							draw_line(x2, y2, x1, y2);
-							draw_line(x1, y2, x1, y1);
+							draw_line(x1, y1, x2, y1, false);
+							draw_line(x2, y1, x2, y2, false);
+							draw_line(x2, y2, x1, y2, false);
+							draw_line(x1, y2, x1, y1, true);
 							break;
 						case 'S': // RIP_FILL_STYLE !|S <pattern> <color>
                                                         /*
@@ -11382,7 +11409,10 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          * RIPterm)
                                                          */
 							handled = true;
-							arg1 = parse_mega(&args[0], 1);
+							if (rip.version == RIP_VERSION_3)
+								arg1 = parse_mega(&args[0], 2);
+							else
+								arg1 = parse_mega(&args[0], 1);
 							if (arg1 == 0)
 								rip.xor = false;
 							else if (arg1 == 1)
@@ -11837,7 +11867,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							if (no_viewport())
 								break;
 							GET_XY();
-							draw_line(x1, y1, x1, y1);
+							draw_line(x1, y1, x1, y1, true);
 							break;
 						case 'l': // RIP_POLYLINE !|l <npoints> <x1> <y1> ... <xn> <yn>
                                                         /* This command will draw a multi-faceted line.  It is identical
@@ -11881,7 +11911,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 									y2 = parse_mega(&args[4 + i * 4], 2);
 									if (y2 == -1)
 										break;
-									draw_line(x1, y1, x2, y2);
+									draw_line(x1, y1, x2, y2, true);
 									x1 = x2;
 									y1 = y2;
 								}
@@ -12086,11 +12116,11 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 									draw_line(argv[i - 1].x,
 									    argv[i - 1].y,
 									    argv[i].x,
-									    argv[i].y);
+									    argv[i].y, false);
 								draw_line(argv[arg1 - 1].x,
 								    argv[arg1 - 1].y,
 								    argv[0].x,
-								    argv[0].y);
+								    argv[0].y, true);
 							}
 							free(argv);
 							break;
@@ -14164,6 +14194,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 													arg3);
 											}
 										}
+										freepixels(pix);
 										break;
 									}
 								}
