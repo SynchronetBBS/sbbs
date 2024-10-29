@@ -81,9 +81,6 @@ void node_menu()
 			"This is the list of configured terminal server nodes. A node is required\n"
 			"for each supported simultaneous 'caller'.\n"
 			"\n"
-			"`Note:` When nodes are added to this list, the `LastNode` value must be\n"
-			"      adjusted accordingly. See the `ctrl/sbbs.ini` file for more details.\n"
-			"\n"
 			"To add a node, hit ~ INS ~.\n"
 			"\n"
 			"To delete a node, hit ~ DEL ~.\n"
@@ -91,8 +88,8 @@ void node_menu()
 			"To configure a node, select it using the arrow keys and hit ~ ENTER ~.\n"
 			"\n"
 			"To copy a node's configuration to another node, first select the source\n"
-			"node with the arrow keys and hit ~ F5 ~. Then select the destination\n"
-			"node and hit ~ F6 ~.\n"
+			"node with the arrow keys and hit ~ Ctrl-C ~. Then select the destination\n"
+			"node and hit ~ Ctrl-V ~.\n"
 		;
 
 		i=uifc.list(j,0,0,13,&node_menu_dflt,&node_bar,"Nodes",opt);
@@ -198,7 +195,7 @@ void node_cfg()
 	while(1) {
 		i=0;
 		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Phone Number",cfg.node_phone);
-		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Logon Requirements",cfg.node_arstr);
+		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Login Requirements",cfg.node_arstr);
 		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Keep Node File Open",cfg.node_misc&NM_CLOSENODEDAB ? "No":"Yes");
 		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Daily Event",cfg.node_daily);
 		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Node Directory",cfg.node_path[cfg.node_num-1]);
@@ -232,7 +229,7 @@ void node_cfg()
 				uifc.input(WIN_MID|WIN_SAV,0,10,"Phone Number",cfg.node_phone,sizeof(cfg.node_phone)-1,K_EDIT);
 				break;
 			case __COUNTER__:
-				sprintf(str,"Node %u Logon",cfg.node_num);
+				sprintf(str,"Node %u Login",cfg.node_num);
 				getar(str,cfg.node_arstr);
 				break;
 			case __COUNTER__:
@@ -280,11 +277,9 @@ void node_cfg()
 				uifc.helpbuf=
 					"`Text Directory:`\n"
 					"\n"
-					"Your text directory contains `read-only` text files. Synchronet never\n"
-					"`writes` to any files in this directory so it `CAN` be placed on a RAM\n"
-					"disk or other volatile media. This directory contains the system's menus\n"
-					"and other important text files, so be sure the files and directories are\n"
-					"moved to this directory if you decide to change it.\n"
+					"This directory contains the system's menus and other important text\n"
+					"files, so be sure the files and directories are copied or moved to this\n"
+					"directory if you decide to change its location.\n"
 				;
 				uifc.input(WIN_MID|WIN_SAV,0,10,"Text Directory"
 					,cfg.text_dir,sizeof(cfg.text_dir)-1,K_EDIT);
