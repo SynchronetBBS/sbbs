@@ -1370,7 +1370,7 @@ int edit_sys_date_verbal(int page, int total)
 		"`Short Date Display Format:`\n"
 		"\n"
 		"If you would like abbreviated dates to be displayed using verbal\n"
-		"(non-numeric, unambiguous) month name abbreviations, choose `Verbal`.";
+		"(non-numeric, less ambiguous) month name abbreviations, choose `Verbal`.";
 	;
 	if(page) {
 		mode = wiz_help(page, total, uifc.helpbuf);
