@@ -178,7 +178,7 @@ require("attr_conv.js", "convertAttrsToSyncPerSysCfg");
 
 // Lister version information
 var LISTER_VERSION = "2.24a";
-var LISTER_DATE = "2024-10-28";
+var LISTER_DATE = "2024-10-29";
 
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -5,7 +5,7 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
-2.24a    2024-10-28   When doing a file search, don't pause for input between
+2.24a    2024-10-29   When doing a file search, don't pause for input between
                       directories. This is a fix for issue 806 (reported by
                       nelgin).
 2.24     2024-09-15   When displaying a file description, remove/replace cursor
