@@ -5,6 +5,8 @@ Fix cursor when RIP changes font height
 Fix Alt-O in RIP mode
 In telnet mode, always negotiate echo, binary, and suppress GA
 Fix mouse selection in scrollback
+Fix RIP XOR operation
+Fix memory leak in RIP parser
 
 Version 1.2rc4
 --------------
