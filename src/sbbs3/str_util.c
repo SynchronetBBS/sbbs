@@ -535,16 +535,15 @@ size_t strip_invalid_attr(char *str)
 }
 
 /****************************************************************************/
-/* Detects invalid Ctrl-Ax "attribute" sequences in str                    	*/
-/* Returns number of ^A's in line                                           */
+/* Detects valid Ctrl-Ax "attribute" sequences in str                    	*/
 /****************************************************************************/
-bool contains_invalid_attr(const char *str)
+bool contains_ctrl_a_attr(const char *str)
 {
 
 	while(*str != '\0') {
 		if(*str == CTRL_A) {
 			++str;
-			if(!valid_ctrl_a_attr(*str))
+			if(valid_ctrl_a_attr(*str))
 				return true;
 		}
 		++str;

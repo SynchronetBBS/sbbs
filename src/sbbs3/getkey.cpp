@@ -182,7 +182,7 @@ void sbbs_t::mnemonics(const char *instr)
 		bputs(instr);
 		return; 
 	}
-	bool ctrl_a_codes = (strchr(instr, CTRL_A) != NULL) && !contains_invalid_attr(instr);
+	bool ctrl_a_codes = contains_ctrl_a_attr(instr);
 	if(!ctrl_a_codes) {
 		const char* last = lastchar(instr);
 		if(instr[0] == '@' && *last == '@' && strchr(instr + 1, '@') == last && strchr(instr, ' ') == NULL) {
