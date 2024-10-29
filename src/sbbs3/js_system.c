@@ -2194,8 +2194,18 @@ js_text(JSContext *cx, uintN argc, jsval *arglist)
 	if(sys->cfg == NULL || sys->cfg->text == NULL)
 		return JS_TRUE;
 
-	if(!JS_ValueToECMAUint32(cx, argv[0], &i))
-		return JS_FALSE;
+	if(JSVAL_IS_NUMBER(argv[0])) {
+		if(!JS_ValueToECMAUint32(cx, argv[0], &i))
+			return JS_FALSE;
+	} else {
+		JSString* js_str = JS_ValueToString(cx, argv[0]);
+		if(js_str == NULL)
+			return JS_FALSE;
+		char* id;
+		JSSTRING_TO_MSTRING(cx, js_str, id, NULL);
+		i = get_text_num(id) + 1; // Note: this is a non-caching look-up!
+		free(id);
+	}
 
 	if(i > 0  && i <= TOTAL_TEXT) {
 		JSString* js_str = JS_NewStringCopyZ(cx, sys->cfg->text[i - 1]);
@@ -2358,8 +2368,9 @@ static jsSyncMethodSpec js_system_functions[] = {
 		"returns <tt>true</tt> on success")
 	,315
 	},
-	{"text",			js_text,			1,	JSTYPE_STRING,	JSDOCSTR("index_number")
-	,JSDOCSTR("Return specified text string (see <tt>bbs.text()</tt> for details)")
+	{"text",			js_text,			1,	JSTYPE_STRING,	JSDOCSTR("<i>number</i> index or <i>string</i> id")
+	,JSDOCSTR("Return specified text string (see <tt>bbs.text()</tt> for details)<br>"
+		"The <i>string</i> id support was added in v3.20.")
 	,31802
 	},
 	{0}

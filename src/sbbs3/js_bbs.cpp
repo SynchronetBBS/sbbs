@@ -1502,10 +1502,20 @@ js_text(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
-	if(argc && JSVAL_IS_NUMBER(argv[0])) {
-		if(!JS_ValueToECMAUint32(cx,argv[0],&i))
-			return JS_FALSE;
-		if(JSVAL_IS_BOOLEAN(argv[1]))
+	if(argc > 0) {
+		if(JSVAL_IS_NUMBER(argv[0])) {
+			if(!JS_ValueToECMAUint32(cx,argv[0],&i))
+				return JS_FALSE;
+		} else {
+			JSString* js_str = JS_ValueToString(cx, argv[0]);
+			if(js_str == NULL)
+				return JS_FALSE;
+			char* id = nullptr;
+			JSSTRING_TO_MSTRING(cx, js_str, id, NULL);
+			i = sbbs->get_text_num(id) + 1;
+			free(id);
+		}
+		if(argc > 1 && JSVAL_IS_BOOLEAN(argv[1]))
 			dflt = JSVAL_TO_BOOLEAN(argv[1]);
 	}
 
@@ -4592,31 +4602,32 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,320
 	},
 	/* text.dat */
-	{"text",			js_text,			1,	JSTYPE_STRING,	JSDOCSTR("index_number [,<i>bool</i> default_text=false]")
-	,JSDOCSTR("Return current text string (specified via 1-based string index number)"
-		"from text.dat/text.ini or replacement text or <i>null</i> upon error"
+	{"text",			js_text,			1,	JSTYPE_STRING,	JSDOCSTR("<i>number</i> index or <i>string</i> id [,<i>bool</i> default_text=false]")
+	,JSDOCSTR("Return current text string (specified via 1-based string index number or identifier string)"
+		"from <tt>text.dat</tt>, <tt>text.ini</tt> or replacement text or <i>null</i> upon error"
 		"<p>"
 		"<i>New in v3.20:</i><br>"
+		"Passing <i>string</i> identifier (<tt>id</tt>) for fast/cached look-up of text string by ID.<br>"
 		"Use <tt>bbs.text.<i>ID</i></tt> to obtain a text string index number from its corresponding ID (name).<br>"
 		"The <tt>default_text</tt> argument can be used to get a <i>default</i> language (i.e. <tt>text.dat</tt> file) string value."
 	)
 	,310
 	},
 	{"replace_text",	js_replace_text,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("index_number, text")
-	,JSDOCSTR("Replace specified text.dat/text.ini string in memory")
+	,JSDOCSTR("Replace specified <tt>text.dat</tt> or <tt>text.ini</tt> string in memory")
 	,310
 	},
 	{"revert_text",		js_revert_text,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[<i>number</i> index=<i>all</i>]")
-	,JSDOCSTR("Revert specified text string to original <tt>text.dat/text.ini</tt> string; "
+	,JSDOCSTR("Revert specified text string to original <tt>text.dat</tt> or <tt>text.ini</tt> string; "
 		"if <i>index</i> unspecified, reverts all text lines")
 	,310
 	},
 	{"load_text",		js_load_text,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("base_filename")
-	,JSDOCSTR("Load an alternate text.dat from ctrl directory, automatically appends '.dat' to basefilename")
+	,JSDOCSTR("Load an alternate text.dat from ctrl directory, automatically appends <tt>.dat</tt> to basefilename")
 	,310
 	},
 	{"load_user_text",	js_load_user_text,	0,	JSTYPE_BOOLEAN,	JSDOCSTR("")
-	,JSDOCSTR("Load text string from the user's selected language (ctrl/text.*.ini) file")
+	,JSDOCSTR("Load text string from the user's selected language (<tt>ctrl/text.*.ini</tt>) file")
 	,320
 	},
 	/* procedures */
@@ -4704,7 +4715,7 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	,JSDOCSTR("Clear the batch download or batch upload queue")
 	,320
 	},
-	{"batch_remove",	js_batch_remove,	2,	JSTYPE_NUMBER,	JSDOCSTR("boolean upload_queue, <i>string</i> filename_or_pattern or <i>number</i> index")
+	{"batch_remove",	js_batch_remove,	2,	JSTYPE_NUMBER,	JSDOCSTR("<i>bool</i> upload_queue, <i>string</i> filename_or_pattern or <i>number</i> index")
 	,JSDOCSTR("Remove one or more files from the batch download or batch upload queue")
 	,320
 	},
