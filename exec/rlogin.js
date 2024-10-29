@@ -2,8 +2,8 @@
 
 // usage: ?rlogin address[:port] [options]
 // options:
-//   -c <client-name> (default: user alias)
-//   -s <server-name> (default: user real name)
+//   -c <client-name> (default: user alias) - may be specified multiple
+//   -s <server-name> (default: user real name) - may be specified multiple
 //   -t <terminal-type> (e.g. "xtrn=doorcode" to auto-exec door on server)
 //   -T <connect-timeout-seconds> (default: 10 seconds)
 //   -m <telnet-gateway-mode> (Number or TG_* vars OR'd together, default: 0)
@@ -24,8 +24,8 @@ require("sbbsdefs.js", 'TG_RLOGINSWAP');
 
 var mode;
 var addr;
-var client_name;
-var server_name;
+var client_name = '';
+var server_name = '';
 var term_type;
 var options;
 if((options = load({}, "modopts.js","rlogin")) == null) {
@@ -78,10 +78,10 @@ for(var i = 0; i < argv.length; i++) {
 	var value = arg.length > 2 ? arg.substring(2) : argv[++i];
 	switch(arg[1]) { // value options
 		case 'c':
-			client_name = value;
+			client_name += value;
 			break;
 		case 's':
-			server_name = value;
+			server_name += value;
 			break;
 		case 't':
 			term_type = value;
