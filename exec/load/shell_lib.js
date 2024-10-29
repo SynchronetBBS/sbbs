@@ -240,7 +240,7 @@ function select_file_area()
 
 function main_info()
 {
-	while(bbs.online && !js.terminate) {
+	while(bbs.online && !js.terminated) {
 		if(!(user.settings & USER_EXPERT))
 			bbs.menu("maininfo");
 		bbs.nodesync();
