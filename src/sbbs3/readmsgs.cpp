@@ -343,7 +343,6 @@ static int find_post(smb_t* smb, uint32_t msgnum, post_t* post)
 
 void sbbs_t::show_thread(uint32_t msgnum, post_t* post, unsigned curmsg, int thread_depth, uint64_t reply_mask)
 {
-	char date[32];
 	smbmsg_t msg;
 
 	int i = find_post(&smb, msgnum, post);
@@ -373,7 +372,7 @@ void sbbs_t::show_thread(uint32_t msgnum, post_t* post, unsigned curmsg, int thr
 			? text[Anonymous] : msghdr_field(&msg, msg.from)
 		,(unsigned)i == curmsg ? '<' : ' '
 		,msg_listing_flag(smb.subnum, &msg, &post[i])
-		,unixtodstr(&cfg, msg.hdr.when_written.time, date));
+		,datestr(msg.hdr.when_written.time));
 
 	if(thread_depth) {
 		if(msg.hdr.thread_first)

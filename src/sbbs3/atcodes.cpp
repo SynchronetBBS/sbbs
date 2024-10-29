@@ -758,7 +758,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return(smb_zonestr(sys_timezone(&cfg),str));
 
 	if(!strcmp(sp,"DATE") || !strcmp(sp,"SYSDATE")) {
-		return(unixtodstr(&cfg,time32(NULL),str));
+		return datestr(time(NULL));
 	}
 
 	if(strncmp(sp, "DATE:", 5) == 0 || strncmp(sp, "TIME:", 5) == 0) {
@@ -1113,7 +1113,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 
 	if(strcmp(sp, "PWDATE") == 0 || strcmp(sp, "MEMO") == 0)
-		return(unixtodstr(&cfg,useron.pwmod,str));
+		return datestr(useron.pwmod);
 
 	if(strncmp(sp, "PWDATE:", 7) == 0) {
 		SAFECOPY(tmp, sp + 7);
@@ -1131,7 +1131,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 
 	if(!strcmp(sp,"SINCE"))
-		return(unixtodstr(&cfg,useron.firston,str));
+		return datestr(useron.firston);
 
 	if(strncmp(sp, "SINCE:", 6) == 0) {
 		SAFECOPY(tmp, sp + 6);
@@ -1205,7 +1205,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return(timestr(useron.laston));
 
 	if(!strcmp(sp,"LASTDATEON"))
-		return(unixtodstr(&cfg,useron.laston,str));
+		return datestr(useron.laston);
 
 	if(strncmp(sp, "LASTON:", 7) == 0) {
 		SAFECOPY(tmp, sp + 7);
@@ -1235,7 +1235,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return(timestr(useron.firston));
 
 	if(!strcmp(sp,"FIRSTDATEON"))
-		return(unixtodstr(&cfg,useron.firston,str));
+		return datestr(useron.firston);
 
 	if(strncmp(sp, "FIRSTON:", 8) == 0) {
 		SAFECOPY(tmp, sp + 8);
@@ -1413,7 +1413,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 
 	if(!strcmp(sp,"LASTNEW"))
-		return(unixtodstr(&cfg,(time32_t)ns_time,str));
+		return datestr(ns_time);
 
 	if(strncmp(sp, "LASTNEW:", 8) == 0) {
 		SAFECOPY(tmp, sp + 8);
@@ -1483,7 +1483,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 
 	if(!strcmp(sp,"EXDATE") || !strcmp(sp,"EXPDATE"))
-		return(unixtodstr(&cfg,useron.expire,str));
+		return datestr(useron.expire);
 
 	if(strncmp(sp, "EXPDATE:", 8) == 0) {
 		if(!useron.expire)

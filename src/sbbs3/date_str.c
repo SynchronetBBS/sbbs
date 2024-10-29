@@ -149,6 +149,33 @@ char* unixtodstr(scfg_t* cfg, time32_t t, char *str)
 }
 
 /****************************************************************************/
+/****************************************************************************/
+char* datestr(scfg_t* cfg, time_t t, char* str)
+{
+	if(t == 0)
+		return "---------";
+	if(!cfg->sys_date_verbal)
+		return unixtodstr(cfg, (time32_t)t, str);
+	struct tm tm = {};
+	if(localtime_r(&t, &tm) == NULL)
+		return "!!!!!!!!!";
+	char fmt[32] = "";
+	switch(cfg->sys_date_fmt) {
+		case MMDDYY:
+			snprintf(fmt, sizeof fmt, "%%b%%d%c%%y", cfg->sys_date_sep);
+			break;
+		case DDMMYY:
+			snprintf(fmt, sizeof fmt, "%%d%c%%b%%y", cfg->sys_date_sep);
+			break;
+		case YYMMDD:
+			snprintf(fmt, sizeof fmt, "%%y%c%%b%%d", cfg->sys_date_sep);
+			break;
+	}
+	strftime(str, 9, fmt, &tm);
+	return str;
+}
+
+/****************************************************************************/
 /* Takes the value 'sec' and makes a string the format HH:MM:SS             */
 /****************************************************************************/
 char* sectostr(uint sec,char *str)

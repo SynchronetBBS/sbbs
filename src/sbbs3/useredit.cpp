@@ -87,7 +87,7 @@ void sbbs_t::useredit(int usernumber)
 			SAFEPRINTF2(user_pass, "%.*s..", (int)(max_len - 2), user.pass);
 		bprintf(text[UeditAliasPassword]
 			,user.alias
-			,unixtodstr(&cfg,user.pwmod,tmp)
+			,datestr(user.pwmod,tmp)
 			,(user.level>useron.level || !(cfg.sys_misc&SM_ECHO_PW)) ? "<hidden>" : user_pass
 			);
 		bprintf(text[UeditRealNamePhone]
@@ -115,8 +115,8 @@ void sbbs_t::useredit(int usernumber)
 		if(localtime32(&user.laston,&tm)==NULL)
 			return;
 		bprintf(text[UserDates]
-			,unixtodstr(&cfg,user.firston,str),unixtodstr(&cfg,user.expire,tmp)
-			,unixtodstr(&cfg,user.laston,tmp2),tm.tm_hour, tm.tm_min);
+			,datestr(user.firston,str),datestr(user.expire,tmp)
+			,datestr(user.laston,tmp2),tm.tm_hour, tm.tm_min);
 
 		bprintf(text[UserTimes]
 			,user.timeon,user.ttoday,cfg.level_timeperday[user.level]
@@ -341,28 +341,28 @@ void sbbs_t::useredit(int usernumber)
 				break;
 			case 'K':	/* date changes */
 				bputs(text[UeditLastOn]);
-				unixtodstr(&cfg,user.laston,str);
+				datestr(user.laston,str);
 				gettmplt(str, date_template(&cfg, tmp, sizeof tmp),K_LINE|K_EDIT);
 				if(sys_status&SS_ABORT)
 					break;
 				user.laston=dstrtounix(&cfg,str);
 				putuserdatetime(user.number, USER_LASTON, user.laston);
 				bputs(text[UeditFirstOn]);
-				unixtodstr(&cfg,user.firston,str);
+				datestr(user.firston,str);
 				gettmplt(str, date_template(&cfg, tmp, sizeof tmp),K_LINE|K_EDIT);
 				if(sys_status&SS_ABORT)
 					break;
 				user.firston=dstrtounix(&cfg,str);
 				putuserdatetime(user.number, USER_FIRSTON, user.firston);
 				bputs(text[UeditExpire]);
-				unixtodstr(&cfg,user.expire,str);
+				datestr(user.expire,str);
 				gettmplt(str, date_template(&cfg, tmp, sizeof tmp),K_LINE|K_EDIT);
 				if(sys_status&SS_ABORT)
 					break;
 				user.expire=dstrtounix(&cfg,str);
 				putuserdatetime(user.number, USER_EXPIRE, user.expire);
 				bputs(text[UeditPwModDate]);
-				unixtodstr(&cfg,user.pwmod,str);
+				datestr(user.pwmod,str);
 				gettmplt(str, date_template(&cfg, tmp, sizeof tmp),K_LINE|K_EDIT);
 				if(sys_status&SS_ABORT)
 					break;

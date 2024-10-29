@@ -28,7 +28,7 @@
 /****************************************************************************/
 int sbbs_t::putnodedat(uint number, node_t* node)
 {
-	char	str[256],firston[25];
+	char	str[256];
 	char	path[MAX_PATH+1];
 	int		wr=0;
 	int		wrerr=0;
@@ -54,7 +54,7 @@ int sbbs_t::putnodedat(uint number, node_t* node)
 				,useron.sex
 				,useron.comp
 				,useron.ipaddr
-				,unixtodstr(&cfg,useron.firston,firston)
+				,datestr(useron.firston)
 				,node->aux&0xff
 				,node->connection
 				);

@@ -154,6 +154,7 @@ int edit_sys_inetaddr(int page, int total);
 int edit_sys_timezone(int page, int total);
 int edit_sys_timefmt(int page, int total);
 int edit_sys_datefmt(int page, int total);
+int edit_sys_date_verbal(int page, int total);
 int edit_sys_newuser_policy(int page, int total);
 int edit_sys_alias_policy(int page, int total);
 int edit_sys_delmsg_policy(int page, int total);

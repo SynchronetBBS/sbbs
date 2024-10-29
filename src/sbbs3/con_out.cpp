@@ -1121,7 +1121,6 @@ void sbbs_t::getdimensions()
 /****************************************************************************/
 void sbbs_t::ctrl_a(char x)
 {
-	char	tmp1[128];
 	uint	atr = curatr;
 	struct	tm tm;
 
@@ -1219,7 +1218,7 @@ void sbbs_t::ctrl_a(char x)
 			break;
 		case 'D':   /* Date */
 			now=time(NULL);
-			bputs(unixtodstr(&cfg,(time32_t)now,tmp1));
+			bputs(datestr(now));
 			break;
 		case ',':   /* Delay 1/10 sec */
 			mswait(100);

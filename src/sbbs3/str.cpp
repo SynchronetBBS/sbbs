@@ -217,14 +217,14 @@ void sbbs_t::userlist(int mode)
 			sprintf(name,"%s #%d",user.alias,i);
 			sprintf(line[j],text[UserListFmt],name
 				,cfg.sys_misc&SM_LISTLOC ? user.location : user.note
-				,unixtodstr(&cfg,user.laston,tmp)
+				,datestr(user.laston,tmp)
 				,user.modem); 
 		}
 		else {
 			sprintf(name,"%s #%u",user.alias,i);
 			bprintf(text[UserListFmt],name
 				,cfg.sys_misc&SM_LISTLOC ? user.location : user.note
-				,unixtodstr(&cfg,user.laston,tmp)
+				,datestr(user.laston,tmp)
 				,user.modem); 
 		}
 		j++; 
@@ -976,9 +976,11 @@ char* sbbs_t::timestr(time_t intime)
 	return(::timestr(&cfg,(time32_t)intime,timestr_output));
 }
 
-char* sbbs_t::datestr(time_t t)
+char* sbbs_t::datestr(time_t t, char* str)
 {
-	return unixtodstr(&cfg, (time32_t)t, datestr_output);
+	if(str == nullptr)
+		str = datestr_output;
+	return ::datestr(&cfg, t, str);
 }
 
 void sbbs_t::sys_info()
@@ -1030,9 +1032,9 @@ void sbbs_t::user_info()
 
 	if(localtime32(&useron.laston,&tm)!=NULL)
 		bprintf(text[UserDates]
-			,unixtodstr(&cfg,useron.firston,str)
-			,unixtodstr(&cfg,useron.expire,tmp)
-			,unixtodstr(&cfg,useron.laston,tmp2)
+			,datestr(useron.firston,str)
+			,datestr(useron.expire,tmp)
+			,datestr(useron.laston,tmp2)
 			,tm.tm_hour,tm.tm_min);
 
 	bprintf(text[UserTimes]

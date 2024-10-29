@@ -199,7 +199,7 @@ void cfg_wizard(void)
 	}
 
 	int stage = 0;
-	int total = 16;
+	int total = 17;
 	scfg_t saved_cfg = cfg;
 	do {
 		switch(stage) {
@@ -288,6 +288,12 @@ void cfg_wizard(void)
 				break;
 			case __COUNTER__:
 				if(edit_sys_datefmt(stage, total) < 0) {
+					--stage;
+					continue;
+				}
+				break;
+			case __COUNTER__:
+				if(edit_sys_date_verbal(stage, total) < 0) {
 					--stage;
 					continue;
 				}

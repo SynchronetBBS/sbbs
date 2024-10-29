@@ -37,6 +37,7 @@ DLLEXPORT char *	date_template(scfg_t*, char* buf, size_t);
 DLLEXPORT char *	zonestr(short zone);
 DLLEXPORT time32_t	dstrtounix(scfg_t*, const char *str);
 DLLEXPORT char *	unixtodstr(scfg_t*, time32_t, char *str);
+DLLEXPORT char *	datestr(scfg_t*, time_t, char* str);
 DLLEXPORT char *	sectostr(uint sec, char *str);
 DLLEXPORT char *	seconds_to_str(uint, char*);
 DLLEXPORT char *	hhmmtostr(scfg_t* cfg, struct tm* tm, char* str);

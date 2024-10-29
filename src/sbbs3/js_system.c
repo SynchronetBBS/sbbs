@@ -1292,7 +1292,7 @@ js_datestr(JSContext *cx, uintN argc, jsval *arglist)
 		}
 		JS_ValueToECMAUint32(cx,argv[0],(uint32_t*)&t);
 	}
-	unixtodstr(sys->cfg,t,str);
+	datestr(sys->cfg,t,str);
 	if((js_str = JS_NewStringCopyZ(cx, str))==NULL)
 		return(JS_FALSE);
 

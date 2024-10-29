@@ -465,7 +465,7 @@ int edit_sys_newuser_policy(int page, int total)
 	;
 	if(page)
 		mode = wiz_help(page, total, uifc.helpbuf);
-	i=uifc.list(mode,0,10,0,&i,0
+	i=uifc.list(mode,0,11,0,&i,0
 		,"Open to New Users",uifcYesNoOpts);
 	if(i == 0) {
 		cfg.sys_misc &= ~SM_CLOSED;
@@ -1329,7 +1329,7 @@ int edit_sys_datefmt(int page, int total)
 		"MM DD YY", "DD MM YY", "YY MM DD",
 		NULL };
 	uifc.helpbuf=
-		"`Date Display Format:`\n"
+		"`Numeric Date Format:`\n"
 		"\n"
 		"If you would like abbreviated dates to be displayed in the traditional\n"
 		"U.S. date format of month first, choose `MM/DD/YY`.  If you prefer the\n"
@@ -1344,7 +1344,7 @@ int edit_sys_datefmt(int page, int total)
 		uifc.list_height = 7;
 	}
 	i=uifc.list(mode, 0, 11, 0,&i,0
-		,"Date Display Format", opts);
+		,"Numeric Date Format", opts);
 	if (i < 0)
 		return i;
 	cfg.sys_date_fmt = i % 3;
@@ -1356,6 +1356,32 @@ int edit_sys_datefmt(int page, int total)
 		cfg.sys_date_sep = '-';
 	else
 		cfg.sys_date_sep = ' ';
+	return i;
+}
+
+int edit_sys_date_verbal(int page, int total)
+{
+	int mode = WIN_SAV | WIN_MID;
+	int i = cfg.sys_date_verbal;
+	char* opts[] = {
+		"Numeric", "Verbal",
+		NULL };
+	uifc.helpbuf=
+		"`Short Date Display Format:`\n"
+		"\n"
+		"If you would like abbreviated dates to be displayed using verbal\n"
+		"(non-numeric, unambiguous) month name abbreviations, choose `Verbal`.";
+	;
+	if(page) {
+		mode = wiz_help(page, total, uifc.helpbuf);
+		mode |= WIN_FIXEDHEIGHT;
+		uifc.list_height = 2;
+	}
+	i=uifc.list(mode, 0, 11, 0,&i,0
+		,"Short Date Display Format", opts);
+	if (i < 0)
+		return i;
+	cfg.sys_date_verbal = i;
 	return i;
 }
 
@@ -1669,6 +1695,7 @@ void sys_cfg(void)
 	static int uq_cur, uq_bar;
 	static int newtog_cur, newtog_bar;
 	char str[81],done=0;
+	char dstr[9];
 	int i,j;
 	scfg_t saved_cfg = cfg;
 	char sys_pass[sizeof(cfg.sys_pass)];
@@ -1680,7 +1707,9 @@ void sys_cfg(void)
 		snprintf(opt[i++],MAX_OPLN,"%-20s%s %s","Local Time Zone"
 			,smb_zonestr(cfg.sys_timezone,NULL)
 			,SMB_TZ_HAS_DST(cfg.sys_timezone) && cfg.sys_misc&SM_AUTO_DST ? "(Auto-DST)" : "");
-		snprintf(opt[i++],MAX_OPLN,"%-20s%s","Local Date Format", date_format(&cfg, str, sizeof str));
+		snprintf(opt[i++],MAX_OPLN,"%-20s%s (e.g. %s)","Short Date Format"
+			,date_format(&cfg, str, sizeof str)
+			,datestr(&cfg, time(NULL), dstr));
 		snprintf(opt[i++],MAX_OPLN,"%-20s%s","Operator",cfg.sys_op);
 
 		strcpy(opt[i++],"Notifications...");
@@ -1723,7 +1752,8 @@ void sys_cfg(void)
 				edit_sys_timezone(false, false);
 				break;
 			case 3:
-				edit_sys_datefmt(false, false);
+				if(edit_sys_datefmt(false, false) >= 0)
+					edit_sys_date_verbal(false, false);
 				break;
 			case 4:
 				edit_sys_operator(false, false);

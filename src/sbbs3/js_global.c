@@ -2228,7 +2228,7 @@ js_html_encode(JSContext *cx, uintN argc, jsval *arglist)
 
 					case 'D':
 						now=time(NULL);
-						j+=sprintf(outbuf+j,"%s",unixtodstr(p->cfg,(time32_t)now,tmp1));
+						j+=sprintf(outbuf+j,"%s",datestr(p->cfg,now,tmp1));
 						break;
 					case 'T':
 						now=time(NULL);

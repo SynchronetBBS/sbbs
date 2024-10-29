@@ -822,7 +822,7 @@ public:
 	void	revert_text(void);
 	char*	server_host_name(void);
 	char*	timestr(time_t);
-	char*	datestr(time_t);
+	char*	datestr(time_t, char* str = nullptr);
 	char	timestr_output[60]{};
 	char	datestr_output[60]{};
 	char*	age_of_posted_item(char* buf, size_t max, time_t);

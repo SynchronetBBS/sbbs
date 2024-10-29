@@ -358,7 +358,7 @@ bool sbbs_t::upload(int dirnum, const char* fname)
 		now=time(NULL);
 		if(descbeg[0])
 			strcat(descbeg," ");
-		SAFEPRINTF(str,"%s  ",unixtodstr(&cfg,(time32_t)now,tmp));
+		SAFEPRINTF(str,"%s  ",datestr(now,tmp));
 		strcat(descbeg,str); 
 	}
 	if(cfg.dir[dirnum]->misc&DIR_MULT) {
