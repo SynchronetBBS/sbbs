@@ -156,7 +156,7 @@ char* datestr(scfg_t* cfg, time_t t, char* str)
 		return "---------";
 	if(!cfg->sys_date_verbal)
 		return unixtodstr(cfg, (time32_t)t, str);
-	struct tm tm = {};
+	struct tm tm = {0};
 	if(localtime_r(&t, &tm) == NULL)
 		return "!!!!!!!!!";
 	char fmt[32] = "";
