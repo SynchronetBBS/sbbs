@@ -86,7 +86,7 @@ enum rip_state {
 
         // Back to normal state definitions
 
-/*23*/,
+/*18*/,
 	RIP_STATE_CR         // Got a CR
 	,
 	RIP_STATE_ESC        // Got an ESC
@@ -15604,7 +15604,10 @@ handle_rip_line(BYTE *buf, unsigned *blen, unsigned *pos, size_t *rip_start, uns
 		remainder = *blen - *pos - 1;
 	}
 	else {
-		remove = 0;
+		if ((*blen > 0) && (rip.state == RIP_STATE_CR) && (buf[0] == '\n'))
+			remove = 1;
+		else
+			remove = 0;
 		remainder = *blen;
 	}
 	if (ns == RIP_STATE_FLUSHING) {
