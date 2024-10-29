@@ -405,6 +405,9 @@ viewofflinescroll(void)
 	gotoxy(1, 1);
 	textattr(uifc.hclr | (uifc.bclr << 4) | BLINK);
 	gettextinfo(&sbtxtinfo);
+	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_START);
+	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_MOVE);
+	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_END);
 	ciomouse_addevent(CIOLIB_BUTTON_4_PRESS);
 	ciomouse_addevent(CIOLIB_BUTTON_5_PRESS);
 	showmouse();
