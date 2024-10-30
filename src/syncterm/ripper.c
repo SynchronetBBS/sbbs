@@ -321,6 +321,9 @@ static struct {
 	} text_region;
 
 	struct bbslist         *bbs;
+	void *default_font;
+	int   default_font_width;
+	int   default_font_height;
 } rip = {
 	RIP_STATE_BOL,
 	RIP_STATE_FLUSHING,
@@ -356,8 +359,10 @@ static struct {
 	0, 0,
 	NULL,
 	{0, 0, 0, 0, 0, 0},
-	NULL
-	,
+	NULL,
+	NULL,
+	8,
+	8,
 };
 
 static const uint16_t      rip_line_patterns[4] = {
@@ -7855,20 +7860,7 @@ rv_reset(const char * const var, const void * const data)
 	rip.text_disabled = false;
 	rip.ansi_state = ANSI_STATE_NONE;
 	_setcursortype(rip.curstype);
-	if (rip.version == RIP_VERSION_3) {
-		void *font;
-		int   width;
-		int   height;
-
-		pthread_mutex_lock(&vstatlock);
-		font = vstat.forced_font;
-		width = vstat.charwidth;
-		height = vstat.charheight;
-		pthread_mutex_unlock(&vstatlock);
-		reinit_screen(font, width, height);
-	}
-	else
-		reinit_screen((uint8_t *)conio_fontdata[0].eight_by_eight, 8, 8);
+	reinit_screen(rip.default_font, rip.default_font_width, rip.default_font_height);
 	memcpy(&curr_ega_palette, &default_ega_palette, sizeof(curr_ega_palette));
 	set_ega_palette();
 	cterm->left_margin = 1;
@@ -16229,6 +16221,18 @@ init_rip(struct bbslist *bbs)
 	rip.viewport.ex = rip.x_dim - 1;
 	rip.viewport.ey = rip.y_dim - 1;
 	rip.bbs = bbs;
+	if (rip.version == RIP_VERSION_1) {
+		rip.default_font = conio_fontdata[0].eight_by_eight;
+		rip.default_font_width = 8;
+		rip.default_font_height = 8;
+	}
+	else {
+		pthread_mutex_lock(&vstatlock);
+		rip.default_font = vstat.forced_font;
+		rip.default_font_width = vstat.charwidth;
+		rip.default_font_height = vstat.charheight;
+		pthread_mutex_unlock(&vstatlock);
+	}
 
 	pending_len = 0;
 	if (pending)
