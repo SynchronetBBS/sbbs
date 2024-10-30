@@ -7,6 +7,8 @@ In telnet mode, always negotiate echo, binary, and suppress GA
 Fix mouse selection in scrollback
 Fix RIP XOR operation
 Fix memory leak in RIP parser
+Fix handling of split CRLF pairs in RIP mode
+Don't change font for RIP_RESET_WINDOWS in RIPv3 mode
 
 Version 1.2rc4
 --------------

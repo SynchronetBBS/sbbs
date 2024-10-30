@@ -24,7 +24,7 @@ const char_flag = '\x01r\x9f';
 const char_badflag = '\x01r\x01h!';
 const char_unsure = '\x01r?';
 const attr_empty = '\x01b'; //\x01h';
-const char_empty = attr_empty + '\xFA'; 
+const char_empty = attr_empty + '\xFA';
 const char_covered = attr_empty +'\xFE';
 const char_mine = '\x01r\x01h\xEB';
 const char_detonated_mine = '\x01r\x01h\x01i\*';
@@ -158,7 +158,7 @@ function show_image(filename, fx, delay)
 function countmines(x, y)
 {
 	var count = 0;
-	
+
 	for(var yi = y - 1; yi <= y + 1; yi++)
 		for(var xi = x - 1; xi <= x + 1; xi++)
 			if((yi != y || xi != x) && mined(xi, yi))
@@ -181,7 +181,7 @@ function place_mines()
 		mined[i] = mined[r];
 		mined[r] = tmp;
 	}
-	
+
 	for(var y = 0; y < game.height; y++) {
 		for(var x = 0; x < game.width; x++) {
 			if(mined[(y * game.width) + x])
@@ -268,7 +268,7 @@ function lostgame(cause)
 	show_image(boom_image, false, options.boom_delay);
 	show_image(loser_image, true);
 }
-	
+
 function calc_difficulty(game)
 {
 	const game_cells = game.height * game.width;
@@ -388,15 +388,10 @@ function get_winners(level)
 	if(level)
 		list = list.filter(function (obj) { var difficulty = calc_difficulty(obj);
 			return (difficulty <= level && difficulty > level - 1); });
-			
-	list.sort(compare_won_game);
-			
-	return list;
-}
 
-function datestr(t)
-{
-	return strftime("%b%m-%y", t);
+	list.sort(compare_won_game);
+
+	return list;
 }
 
 function show_winners(level)
@@ -445,7 +440,7 @@ function show_winners(level)
 			,game.width
 			,game.height
 			,game.mines
-			,datestr(game.end)
+			,system.datestr(game.end)
 			));
 		count++;
 		displayed++;
@@ -464,26 +459,26 @@ function show_log()
 	console.attributes = YELLOW|BG_BLUE|BG_HIGH;
 	console_center(" " + title + " Log ");
 	console.attributes = LIGHTGRAY;
-	
+
 	var winners = json_lines.get(winners_list);
 	if(typeof winners != 'object')
 		winners = [];
-	
+
 	var losers = json_lines.get(losers_list);
 	if(typeof losers != 'object')
 		losers = [];
-	
+
 	var list = losers.concat(winners);
-	
+
 	if(!list.length) {
 		alert("No winners or losers yet!");
 		return;
 	}
 	console.attributes = WHITE;
 	console.print(format("Date      %-25s Lvl     Time    WxHxMines Rev  Result\r\n", "User", ""));
-	
+
 	list.sort(compare_game);
-	
+
 	for(var i = 0; i < list.length && !console.aborted; i++) {
 		var game = list[i];
 		if(i&1)
@@ -491,7 +486,7 @@ function show_log()
 		else
 			console.attributes = BG_CYAN;
 		console.print(format("%s  %-25s %1.2f %s %3ux%2ux%-3u %3s  %s\x01>\x01n\r\n"
-			,datestr(game.end)
+			,system.datestr(game.end)
 			,game.name
 			,calc_difficulty(game)
 			,secondstr(calc_time(game), true)
@@ -511,15 +506,15 @@ function show_best()
 	console.attributes = YELLOW|BG_BLUE|BG_HIGH;
 	console_center(" Your " + title + " Personal Best Wins ");
 	console.attributes = LIGHTGRAY;
-	
+
 	var wins = [];
 	for(var i in best)
 		wins.push(best[i]);
 	wins.reverse();	// Display newest first
-	
+
 	console.attributes = WHITE;
 	console.print("Date       Lvl     Time    WxHxMines  Rev\r\n");
-	
+
 	for(var i in wins) {
 		var game = wins[i];
 		if(i&1)
@@ -527,7 +522,7 @@ function show_best()
 		else
 			console.attributes = BG_CYAN;
 		console.print(format("%s  %1.2f  %s  %3ux%2ux%-3u %s\x01>\x01n\r\n"
-			,datestr(game.end)
+			,system.datestr(game.end)
 			,calc_difficulty(game)
 			,secondstr(calc_time(game), true)
 			,game.width, game.height, game.mines
@@ -652,12 +647,12 @@ function draw_cell(x, y)
 function countflagged(x, y)
 {
 	var count = 0;
-	
+
 	for(var yi = y - 1; yi <= y + 1; yi++)
 		for(var xi = x - 1; xi <= x + 1; xi++)
 			if((yi != y || xi != x) && flagged(xi, yi))
 				count++;
-			
+
 	return count;
 }
 
@@ -665,12 +660,12 @@ function countflagged(x, y)
 function countunflagged(x, y)
 {
 	var count = 0;
-	
+
 	for(var yi = y - 1; yi <= y + 1; yi++)
 		for(var xi = x - 1; xi <= x + 1; xi++)
 			if((yi != y || xi != x) && unflagged(xi, yi))
 				count++;
-	
+
 	return count;
 }
 
@@ -692,12 +687,12 @@ function show_title()
 {
 	console.attributes = YELLOW|BG_BLUE|BG_HIGH;
 	console_center(title + " " + REVISION);
-} 
+}
 
 function draw_border()
 {
 	const margin = get_margin();
-	
+
 	console.creturn();
 	console.attributes = LIGHTGRAY;
 	console.cleartoeol();
@@ -788,7 +783,7 @@ function draw_board(full)
 			else
 				cmds += "\x01h\x01k\x01~Dig  Flag  ";
 		}
-		else 
+		else
 			cmds += "\x01h\x01~D\x01nig  \x01h\x01~F\x01nlag  ";
 	}
 	cmds += "\x01n\x01h\x01~N\x01new  \x01h\x01~Q\x01nuit";
@@ -885,7 +880,7 @@ function uncover_cell(x, y)
 	board[y][x].covered = false;
 	board[y][x].unsure = false;
 	board[y][x].changed = true;
-	
+
 	if(!mined(x, y))
 		return false;
 	board[y][x].detonated = true;
@@ -907,7 +902,7 @@ function uncover(x, y)
 {
 	if(!game.start)
 		start_game();
-	
+
 	if(!board[y] || !board[y][x] || board[y][x].flagged || !board[y][x].covered)
 		return;
 	if(uncover_cell(x, y))
@@ -923,7 +918,7 @@ function uncover(x, y)
 
 function can_chord(x, y)
 {
-	return !board[y][x].covered 
+	return !board[y][x].covered
 		&& board[y][x].count
 		&& board[y][x].count == countflagged(x, y)
 		&& countunflagged(x, y);
@@ -1571,23 +1566,23 @@ try {
 
 	if(!difficulty)
 		difficulty = 1;
-	
+
 	play();
 	userprops.set(ini_section, "selector", selector%selectors.length);
 	userprops.set(ini_section, "highlight", highlight);
 	userprops.set(ini_section, "difficulty", difficulty);
-	
+
 } catch(e) {
-	
-	var msg = file_getname(e.fileName) + 
-		" line " + e.lineNumber + 
+
+	var msg = file_getname(e.fileName) +
+		" line " + e.lineNumber +
 		": " + e.message;
 	if(js.global.console)
 		console.crlf();
 	alert(msg);
 	if(options.sub && user.alias != author) {
 		var msgbase = new MsgBase(options.sub);
-		var hdr = { 
+		var hdr = {
 			to: author,
 			from: user.alias || system.operator,
 			subject: title

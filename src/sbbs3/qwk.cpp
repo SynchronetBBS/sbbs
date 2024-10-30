@@ -187,7 +187,7 @@ void sbbs_t::update_qwkroute(char *via)
 			for(i=0;i<total_qwknodes;i++)
 				if(qwknode[i].time>t)
 					fprintf(stream,"%s %s:%s\r\n"
-						,unixtodstr(&cfg,(time32_t)qwknode[i].time,str),qwknode[i].id,qwknode[i].path);
+						,unixtodstr(qwknode[i].time,str),qwknode[i].id,qwknode[i].path);
 			fclose(stream);
 		}
 		else

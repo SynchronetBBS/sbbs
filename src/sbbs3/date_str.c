@@ -122,25 +122,26 @@ char* unixtodstr(scfg_t* cfg, time32_t t, char *str)
 			}
 			if(tm.tm_mday>31)
 				tm.tm_mday=1;
+			++tm.tm_mon;
 		}
 	}
 	if (cfg->sys_date_fmt == YYMMDD)
 		sprintf(str,"%02u%c%02u%c%02u"
 			,TM_YEAR(tm.tm_year)
 			,cfg->sys_date_sep
-			,tm.tm_mon+1
+			,tm.tm_mon
 			,cfg->sys_date_sep
 			,tm.tm_mday);
 	else if(cfg->sys_date_fmt == DDMMYY)
 		sprintf(str,"%02u%c%02u%c%02u"
 			,tm.tm_mday
 			,cfg->sys_date_sep
-			,tm.tm_mon+1
+			,tm.tm_mon
 			,cfg->sys_date_sep
 			,TM_YEAR(tm.tm_year));
 	else
 		sprintf(str,"%02u%c%02u%c%02u"
-			,tm.tm_mon+1
+			,tm.tm_mon
 			,cfg->sys_date_sep
 			,tm.tm_mday
 			,cfg->sys_date_sep

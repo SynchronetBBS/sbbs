@@ -73,8 +73,8 @@ void sbbs_t::useredit(int usernumber)
 				return; 
 			} 
 		}
-		unixtodstr(&cfg,time32(NULL),str);
-		unixtodstr(&cfg,user.laston,tmp);
+		unixtodstr(time(NULL),str);
+		unixtodstr(user.laston,tmp);
 		if(strcmp(str,tmp) && user.ltoday) {
 			user.ltoday=user.ttoday=user.ptoday=user.etoday=user.textra=0;
 			user.freecdt=cfg.level_freecdtperday[user.level];
@@ -341,28 +341,28 @@ void sbbs_t::useredit(int usernumber)
 				break;
 			case 'K':	/* date changes */
 				bputs(text[UeditLastOn]);
-				datestr(user.laston,str);
+				unixtodstr(user.laston,str);
 				gettmplt(str, date_template(&cfg, tmp, sizeof tmp),K_LINE|K_EDIT);
 				if(sys_status&SS_ABORT)
 					break;
 				user.laston=dstrtounix(&cfg,str);
 				putuserdatetime(user.number, USER_LASTON, user.laston);
 				bputs(text[UeditFirstOn]);
-				datestr(user.firston,str);
+				unixtodstr(user.firston,str);
 				gettmplt(str, date_template(&cfg, tmp, sizeof tmp),K_LINE|K_EDIT);
 				if(sys_status&SS_ABORT)
 					break;
 				user.firston=dstrtounix(&cfg,str);
 				putuserdatetime(user.number, USER_FIRSTON, user.firston);
 				bputs(text[UeditExpire]);
-				datestr(user.expire,str);
+				unixtodstr(user.expire,str);
 				gettmplt(str, date_template(&cfg, tmp, sizeof tmp),K_LINE|K_EDIT);
 				if(sys_status&SS_ABORT)
 					break;
 				user.expire=dstrtounix(&cfg,str);
 				putuserdatetime(user.number, USER_EXPIRE, user.expire);
 				bputs(text[UeditPwModDate]);
-				datestr(user.pwmod,str);
+				unixtodstr(user.pwmod,str);
 				gettmplt(str, date_template(&cfg, tmp, sizeof tmp),K_LINE|K_EDIT);
 				if(sys_status&SS_ABORT)
 					break;

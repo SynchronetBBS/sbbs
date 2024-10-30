@@ -983,6 +983,13 @@ char* sbbs_t::datestr(time_t t, char* str)
 	return ::datestr(&cfg, t, str);
 }
 
+char* sbbs_t::unixtodstr(time_t t, char* str)
+{
+	if(str == nullptr)
+		str = datestr_output;
+	return ::unixtodstr(&cfg, t, str);
+}
+
 void sbbs_t::sys_info()
 {
 	char	tmp[128];
