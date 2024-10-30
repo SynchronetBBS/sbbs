@@ -892,7 +892,7 @@ function get_nodenum(str)
 
 function get_cmdline(str)
 {
-	return get_arg(str, "Command-line");
+	return bbs.cmdstr(get_arg(str, "Command-line"));
 }
 
 function get_filename(str)
