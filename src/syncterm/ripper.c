@@ -7855,7 +7855,20 @@ rv_reset(const char * const var, const void * const data)
 	rip.text_disabled = false;
 	rip.ansi_state = ANSI_STATE_NONE;
 	_setcursortype(rip.curstype);
-	reinit_screen((uint8_t *)conio_fontdata[0].eight_by_eight, 8, 8);
+	if (rip.version == RIP_VERSION_3) {
+		void *font;
+		int   width;
+		int   height;
+
+		pthread_mutex_lock(&vstatlock);
+		font = vstat.forced_font;
+		width = vstat.charwidth;
+		height = vstat.charheight;
+		pthread_mutex_unlock(&vstatlock);
+		reinit_screen(font, width, height);
+	}
+	else
+		reinit_screen((uint8_t *)conio_fontdata[0].eight_by_eight, 8, 8);
 	memcpy(&curr_ega_palette, &default_ega_palette, sizeof(curr_ega_palette));
 	set_ega_palette();
 	cterm->left_margin = 1;
