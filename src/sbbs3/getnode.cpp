@@ -143,8 +143,8 @@ void sbbs_t::nodesync(bool clearline)
 
 		if(!(sys_status&SS_NEWDAY)) {
 			now=time(NULL);
-			unixtodstr(&cfg,(time32_t)logontime,str);
-			unixtodstr(&cfg,(time32_t)now,today);
+			unixtodstr(logontime,str);
+			unixtodstr(now,today);
 			if(strcmp(str,today)) { /* New day, clear "today" user vars */
 				sys_status|=SS_NEWDAY;	// So we don't keep doing this over&over
 				resetdailyuserdat(&cfg, &useron,/* write: */true);
