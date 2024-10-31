@@ -1,5 +1,5 @@
---- ./cryptlib.h.orig	2023-12-31 09:28:53.203654000 -0500
-+++ ./cryptlib.h	2023-12-31 09:38:13.586441000 -0500
+--- ./cryptlib.h.orig	2024-10-31 00:50:21.388918000 -0400
++++ ./cryptlib.h	2024-10-31 00:50:22.228018000 -0400
 @@ -1262,6 +1262,7 @@
  	CRYPT_SESSINFO_SSH_CHANNEL_ARG2,/* SSH channel argument 2 */
  	CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE,/* SSH channel active */
@@ -8,7 +8,7 @@
  	CRYPT_SESSINFO_TLS_OPTIONS,		/* SSL/TLS protocol options */
  		CRYPT_SESSINFO_SSL_OPTIONS = CRYPT_SESSINFO_TLS_OPTIONS,
  	CRYPT_SESSINFO_TLS_SUBPROTOCOL,	/* SSL/TLS additional sub-protocol */
-@@ -1762,6 +1763,14 @@
+@@ -1763,6 +1764,14 @@
  #define CRYPT_TLSOPTION_SUITEB_256			0x200	/*  vanish in future releases) */
  #ifdef _CRYPT_DEFINED
  #define CRYPT_TLSOPTION_MAX					0x07F	/* Defines for range checking */
@@ -23,32 +23,8 @@
  #endif /* _CRYPT_DEFINED */
  
  /****************************************************************************
---- ./kernel/attr_acl.c.orig	2023-12-31 09:39:13.241750000 -0500
-+++ ./kernel/attr_acl.c	2023-12-31 09:40:15.337914000 -0500
-@@ -3883,6 +3883,12 @@
- 		ST_NONE, ST_NONE, ST_SESS_SSH | ST_SESS_SSH_SVR,
- 		MKPERM_SSH( Rxx_RWD ),
- 		ROUTE( OBJECT_TYPE_SESSION ), RANGE( 2, CRYPT_MAX_TEXTSIZE ) ),
-+	MKACL_N(	/* SSH protocol options */
-+		CRYPT_SESSINFO_SSH_OPTIONS,
-+		ST_NONE, ST_NONE, ST_SESS_SSH, 
-+		MKPERM_SESSIONS( Rxx_RWx ),
-+		ROUTE( OBJECT_TYPE_SESSION ),
-+		RANGE( CRYPT_SSHOPTION_NONE, CRYPT_SSHOPTION_MAX ) ),
- 
- 	MKACL_N(        /* TLS protocol options */
- 		CRYPT_SESSINFO_TLS_OPTIONS,
-@@ -4883,7 +4889,7 @@
- 	static_assert( CRYPT_CERTINFO_FIRST_EXTENSION == 2200, "Attribute value" );
- 	static_assert( CRYPT_CERTINFO_FIRST_CMS == 2500, "Attribute value" );
- 	static_assert( CRYPT_SESSINFO_FIRST_SPECIFIC == 6017, "Attribute value" );
--	static_assert( CRYPT_SESSINFO_LAST_SPECIFIC == 6035, "Attribute value" );
-+	static_assert( CRYPT_SESSINFO_LAST_SPECIFIC == 6036, "Attribute value" );
- 	static_assert( CRYPT_CERTFORMAT_LAST == 13, "Attribute value" );
- 
- 	/* Perform a consistency check on the attribute ACLs.  The ACLs are
---- ./session/ssh2_authcli.c.orig	2023-12-31 09:44:20.876065000 -0500
-+++ ./session/ssh2_authcli.c	2023-12-31 09:46:41.813246000 -0500
+--- ./session/ssh2_authcli.c.orig	2024-10-31 00:50:21.731447000 -0400
++++ ./session/ssh2_authcli.c	2024-10-31 00:50:22.232051000 -0400
 @@ -334,13 +334,22 @@
  	assert( isWritePtr( authType, sizeof( SSH_AUTHTYPE_TYPE ) ) );
  	assert( isWritePtr( furtherAuthRequired, sizeof( BOOLEAN ) ) );
@@ -82,7 +58,7 @@
  	if( usePasswordAuth )
  		{
  		/*	byte	type = SSH_MSG_USERAUTH_REQUEST
-@@ -1251,6 +1262,11 @@
+@@ -1255,6 +1266,11 @@
  	   auth required */
  	if( !hasPassword )
  		{
@@ -94,8 +70,8 @@
  		return( reportAuthFailure( sessionInfoPtr, SSH_AUTHTYPE_PUBKEY, 
  								   requiredAuthType, TRUE ) );
  		}
---- session/ssh.c.orig	2023-05-06 19:14:38.000000000 -0400
-+++ session/ssh.c	2024-01-07 21:22:26.535903000 -0500
+--- ./session/ssh.c.orig	2024-10-07 00:23:28.000000000 -0400
++++ ./session/ssh.c	2024-10-31 00:50:22.236542000 -0400
 @@ -540,6 +540,7 @@
  			  type == CRYPT_SESSINFO_SSH_CHANNEL_ARG1 || \
  			  type == CRYPT_SESSINFO_SSH_CHANNEL_ARG2 || \
@@ -156,7 +132,7 @@
  	/* If we 're setting the channel-active attribute, this implicitly
  	   activates or deactivates the channel rather than setting any
  	   attribute value */
-@@ -776,8 +799,6 @@
+@@ -778,8 +801,6 @@
  		 SESSION_PROTOCOL_FIXEDSIZECREDENTIALS,	/* Flags */
  		SSH_PORT,					/* SSH port */
  		SESSION_NEEDS_USERID |		/* Client attributes */
@@ -165,3 +141,27 @@
  			SESSION_NEEDS_PRIVKEYSIGN,
  				/* The client private key is optional, but if present it has
  				   to be signature-capable */
+--- ./kernel/attr_acl.c.orig	2024-10-31 00:50:21.402631000 -0400
++++ ./kernel/attr_acl.c	2024-10-31 00:50:22.241228000 -0400
+@@ -3866,6 +3866,12 @@
+ 		ST_NONE, ST_NONE, ST_SESS_SSH | ST_SESS_SSH_SVR, 
+ 		MKPERM_SSH( Rxx_RWD ),
+ 		ROUTE( OBJECT_TYPE_SESSION ), RANGE( 2, CRYPT_MAX_TEXTSIZE ) ),
++	MKACL_N(	/* SSH protocol options */
++		CRYPT_SESSINFO_SSH_OPTIONS,
++		ST_NONE, ST_NONE, ST_SESS_SSH, 
++		MKPERM_SESSIONS( Rxx_RWx ),
++		ROUTE( OBJECT_TYPE_SESSION ),
++		RANGE( CRYPT_SSHOPTION_NONE, CRYPT_SSHOPTION_MAX ) ),
+ 
+ 	MKACL_N(	/* TLS protocol options */
+ 		CRYPT_SESSINFO_TLS_OPTIONS,
+@@ -4914,7 +4920,7 @@
+ 	static_assert( CRYPT_CERTINFO_FIRST_EXTENSION == 2200, "Attribute value" );
+ 	static_assert( CRYPT_CERTINFO_FIRST_CMS == 2500, "Attribute value" );
+ 	static_assert( CRYPT_SESSINFO_FIRST_SPECIFIC == 6017, "Attribute value" );
+-	static_assert( CRYPT_SESSINFO_LAST_SPECIFIC == 6035, "Attribute value" );
++	static_assert( CRYPT_SESSINFO_LAST_SPECIFIC == 6036, "Attribute value" );
+ 	static_assert( CRYPT_CERTFORMAT_LAST == 13, "Attribute value" );
+ 
+ 	/* Perform a consistency check on the attribute ACLs.  The ACLs are

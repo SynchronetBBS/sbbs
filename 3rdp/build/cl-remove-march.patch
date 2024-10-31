@@ -1,6 +1,6 @@
---- tools/ccopts.sh.orig	2023-12-31 08:25:17.141687000 -0500
-+++ tools/ccopts.sh	2023-12-31 08:33:58.559121000 -0500
-@@ -1055,34 +1055,35 @@
+--- ./tools/ccopts.sh.orig	2024-10-31 00:50:22.176028000 -0400
++++ ./tools/ccopts.sh	2024-10-31 00:50:22.407477000 -0400
+@@ -1118,34 +1118,35 @@
  # -march=native.  As a result we have to use the pretty bad -march=x86-64
  # for most gcc versions, which doesn't even get us native AES support.
  

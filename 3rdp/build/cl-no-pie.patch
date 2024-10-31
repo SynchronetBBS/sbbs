@@ -1,15 +1,25 @@
---- tools/ccopts.sh.orig	2023-12-31 11:49:24.760461000 -0500
-+++ tools/ccopts.sh	2023-12-31 11:49:32.686744000 -0500
-@@ -1253,9 +1253,9 @@
- # Enable ASLR.  We only do this for static libs, for shared libs it's
- # already been handled via -fpic.
+--- ./tools/ccopts.sh.orig	2024-10-31 00:50:22.407477000 -0400
++++ ./tools/ccopts.sh	2024-10-31 00:50:22.771693000 -0400
+@@ -744,14 +744,14 @@
+ # that it's linked with can specify -pie.
  
--if [ "$COMPILER_VER" -ge 42 ] && [ $SHARED -le 0 ] ; then
--	CCARGS="$CCARGS -fpie -Wl,-pie" ;
--fi
-+#if [ "$COMPILER_VER" -ge 42 ] && [ $SHARED -le 0 ] ; then
-+#	CCARGS="$CCARGS -fpie -Wl,-pie" ;
-+#fi
+ if [ $SHARED -eq 0 ] ; then
+-	if [ $ISCLANG -gt 0 ] && [ "$COMPILER_VER" -ge 30 ] ; then
+-		CCARGS="$CCARGS -fpie" ;
+-		echo "Enabling ASLR support, consider linking the final binary with -pie." >&2 ;
+-	fi ;
+-	if [ $ISGCC -gt 0 ] && [ "$COMPILER_VER" -ge 42 ] ; then
+-		CCARGS="$CCARGS -fpie" ;
+-		echo "Enabling ASLR support, consider linking the final binary with -pie." >&2 ;
+-	fi ;
++	#if [ $ISCLANG -gt 0 ] && [ "$COMPILER_VER" -ge 30 ] ; then
++	#	CCARGS="$CCARGS -fpie" ;
++	#	echo "Enabling ASLR support, consider linking the final binary with -pie." >&2 ;
++	#fi ;
++	#if [ $ISGCC -gt 0 ] && [ "$COMPILER_VER" -ge 42 ] ; then
++	#	CCARGS="$CCARGS -fpie" ;
++	#	echo "Enabling ASLR support, consider linking the final binary with -pie." >&2 ;
++	#fi ;
+ fi
  
- # Newer versions of gcc support marking the stack as nonexecutable (e.g.
- # using the x86-64 NX bit), so if it's available we enable it.  This is
+ # If the system supports recursive and/or robust mutexes, indicate that

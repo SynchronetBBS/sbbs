@@ -1,6 +1,24 @@
---- ./session/ssh2_authcli.c.orig	2023-12-28 09:41:49.741680000 -0500
-+++ ./session/ssh2_authcli.c	2023-12-28 09:48:19.999152000 -0500
-@@ -583,7 +583,5 @@
+--- ./session/sess_attr.c.orig	2024-10-31 00:50:22.448890000 -0400
++++ ./session/sess_attr.c	2024-10-31 00:50:22.601581000 -0400
+@@ -442,6 +442,7 @@
+ 			   back out of, and leads to exceptions to exceptions, so we 
+ 			   keep it simple and only allow passwords to be added if 
+ 			   there's an immediately preceding username */
++#if 0
+ 			if( cryptStatusError( status ) )
+ 				{
+ 				return( exitErrorNotInited( sessionInfoPtr, 
+@@ -455,6 +456,7 @@
+ 				return( exitErrorNotInited( sessionInfoPtr, 
+ 											CRYPT_SESSINFO_USERNAME ) );
+ 				}
++#endif
+ 
+ 			break;
+ 
+--- ./session/ssh2_authcli.c.orig	2024-10-31 00:50:22.232051000 -0400
++++ ./session/ssh2_authcli.c	2024-10-31 00:50:22.587803000 -0400
+@@ -606,9 +606,7 @@
  					  "Server requested password authentication but only a "
  					  "public/private key was available" ) );
  			}
@@ -8,21 +26,12 @@
 -				( CRYPT_ERROR_WRONGKEY, SESSION_ERRINFO, 
 -				  "Server reported: Invalid public-key authentication" ) );
 +		return CRYPT_ENVELOPE_RESOURCE;
-		}
---- kernel/attr_acl.c.orig	2023-12-29 11:53:27.990291000 -0500
-+++ kernel/attr_acl.c	2023-12-29 11:54:01.468829000 -0500
-@@ -3655,7 +3655,7 @@
- 		subACL_SessinfoKeyset ),
- 	MKACL_SL(	/* Session authorisation OK */
- 		CRYPT_SESSINFO_AUTHRESPONSE, 
--		ST_NONE, ST_NONE, ST_SESS_TLS | ST_SESS_TLS_SVR | ST_SESS_SSH_SVR, 
-+		ST_NONE, ST_NONE, ST_SESS_TLS | ST_SESS_TLS_SVR | ST_SESS_SSH | ST_SESS_SSH_SVR, 
- 		MKPERM_SESSIONS( RWx_RWx ), 
- 		ROUTE( OBJECT_TYPE_SESSION ),
- 		RANGE_ALLOWEDVALUES, allowedAuthResponses ),
---- session/ssh.c.orig	2023-12-29 12:02:24.938661000 -0500
-+++ session/ssh.c	2023-12-29 12:05:44.619757000 -0500
-@@ -861,6 +861,18 @@
+ 		}
+ 	if( requiredAuthType == SSH_AUTHTYPE_PUBKEY )
+ 		{
+--- ./session/ssh.c.orig	2024-10-31 00:50:22.459542000 -0400
++++ ./session/ssh.c	2024-10-31 00:50:22.598316000 -0400
+@@ -403,6 +403,18 @@
  
  	REQUIRES( sanityCheckSessionSSH( sessionInfoPtr ) );
  
@@ -41,27 +50,9 @@
  	shutdownFunction = ( SES_SHUTDOWN_FUNCTION ) \
  					   FNPTR_GET( sessionInfoPtr->shutdownFunction );
  	REQUIRES( shutdownFunction != NULL );
---- ./session/sess_attr.c.orig	2023-12-31 09:02:53.666275000 -0500
-+++ ./session/sess_attr.c	2023-12-31 09:06:17.870218000 -0500
-@@ -442,6 +442,7 @@
- 			   back out of, and leads to exceptions to exceptions, so we 
- 			   keep it simple and only allow passwords to be added if 
- 			   there's an immediately preceding username */
-+#if 0
- 			if( cryptStatusError( status ) )
- 				{
- 				return( exitErrorNotInited( sessionInfoPtr, 
-@@ -455,6 +456,7 @@
- 				return( exitErrorNotInited( sessionInfoPtr, 
- 											CRYPT_SESSINFO_USERNAME ) );
- 				}
-+#endif
- 
- 			break;
- 
---- ./session/ssh2_cli.c.orig	2023-02-25 00:51:44.000000000 -0500
-+++ ./session/ssh2_cli.c	2023-12-31 09:10:49.225311000 -0500
-@@ -985,232 +985,239 @@
+--- ./session/ssh2_cli.c.orig	2024-10-07 00:22:20.000000000 -0400
++++ ./session/ssh2_cli.c	2024-10-31 00:50:22.605912000 -0400
+@@ -988,234 +988,241 @@
  	REQUIRES( sanityCheckSessionSSH( sessionInfoPtr ) );
  	REQUIRES( sanityCheckSSHHandshakeInfo( handshakeInfo ) );
  
@@ -115,7 +106,7 @@
 +		SET_FLAG( sessionInfoPtr->flags, SESSION_FLAG_ISSECURE_WRITE );
 +		CFI_CHECK_UPDATE( "SSH_MSG_NEWKEYS" );
  
--#if 0
+ #if 0
 -	/*   byte       SSH_MSG_EXT_INFO
 -	     uint32     nr-extensions
 -	       string   extension-name
@@ -125,7 +116,6 @@
 -		status = continuePacketStreamSSH( &stream, SSH_MSG_EXT_INFO, 
 -										  &packetOffset );
 -		if( cryptStatusOK( status ) )
-+#if 0
 +		/*   byte       SSH_MSG_EXT_INFO
 +		     uint32     nr-extensions
 +		       string   extension-name
@@ -405,6 +395,7 @@
 +							 "negotiated during the handshake" ) );
 +				}
  			}
+-#ifdef USE_SSH_EXTENDED
 -		if( sessionInfoPtr->sessionSSH->packetType == SSH_MSG_EXT_INFO )
 +		else
  			{
@@ -436,6 +427,7 @@
 +								  ID_SIZE + UINT32_SIZE );
  			if( cryptStatusError( status ) )
 -				return( status );
+-			}
 +				{
 +				/* This is the first message after the change cipherspec, a 
 +				   basic packet format error is more likely to be due to an 
@@ -447,6 +439,7 @@
 +							 "probably due to incorrect encryption keys being "
 +							 "negotiated during the handshake" ) );
 +				}
++#ifdef USE_SSH_EXTENDED
 +			if( sessionInfoPtr->sessionSSH->packetType == SSH_MSG_EXT_INFO )
 +				{
 +				/* The server sent extension information, process it */
@@ -463,6 +456,20 @@
 +				if( cryptStatusError( status ) )
 +					return( status );
 +				}
+ #endif /* USE_SSH_EXTENDED */
+-		sMemConnect( &stream, sessionInfoPtr->receiveBuffer, length );
+-		status = readString32( &stream, stringBuffer, CRYPT_MAX_TEXTSIZE,
+-							   &stringLength );
+-		sMemDisconnect( &stream );
+-		if( cryptStatusError( status ) || \
+-			stringLength != 12 || \
+-			memcmp( stringBuffer, "ssh-userauth", 12 ) )
+-			{
+-			/* More of a sanity check than anything else, the MAC should 
+-			   have caught any keying problems */
+-			retExt( CRYPT_ERROR_BADDATA,
+-					( CRYPT_ERROR_BADDATA, SESSION_ERRINFO, 
+-					  "Invalid service accept packet" ) );
 +			sMemConnect( &stream, sessionInfoPtr->receiveBuffer, length );
 +			status = readString32( &stream, stringBuffer, CRYPT_MAX_TEXTSIZE,
 +								   &stringLength );
@@ -478,32 +485,17 @@
 +						  "Invalid service accept packet" ) );
 +				}
  			}
--		sMemConnect( &stream, sessionInfoPtr->receiveBuffer, length );
--		status = readString32( &stream, stringBuffer, CRYPT_MAX_TEXTSIZE,
--							   &stringLength );
--		sMemDisconnect( &stream );
--		if( cryptStatusError( status ) || \
--			stringLength != 12 || \
--			memcmp( stringBuffer, "ssh-userauth", 12 ) )
--			{
--			/* More of a sanity check than anything else, the MAC should 
--			   have caught any keying problems */
--			retExt( CRYPT_ERROR_BADDATA,
--					( CRYPT_ERROR_BADDATA, SESSION_ERRINFO, 
--					  "Invalid service accept packet" ) );
--			}
--		}
--	CFI_CHECK_UPDATE( "serviceAccept" );
 +		CFI_CHECK_UPDATE( "serviceAccept" );
 +		REQUIRES( CFI_CHECK_SEQUENCE_5( "initSecurityInfo", "SSH_MSG_NEWKEYS",
 +										"SSH_MSG_SERVICE_REQUEST",
 +										"readHSPacketSSH2", "serviceAccept") );
 +		CFI_CHECK_VALUE = CFI_CHECK_INIT;
-+	}
+ 		}
+-	CFI_CHECK_UPDATE( "serviceAccept" );
  
  	/* Try and authenticate ourselves to the server */
  	status = processClientAuth( sessionInfoPtr, handshakeInfo );
-@@ -1235,10 +1242,7 @@
+@@ -1240,10 +1247,7 @@
  		return( status );
  	CFI_CHECK_UPDATE( "sendChannelOpen" );
  
@@ -515,3 +507,14 @@
  								   "sendChannelOpen" ) );
  	return( CRYPT_OK );
  #else	/* Test handling of OpenSSH "no-more-sessions@openssh.com" */
+--- ./kernel/attr_acl.c.orig	2024-10-31 00:50:22.534228000 -0400
++++ ./kernel/attr_acl.c	2024-10-31 00:50:22.593469000 -0400
+@@ -3779,7 +3779,7 @@
+ 		subACL_SessinfoKeyset ),
+ 	MKACL_SL(	/* Session authorisation OK */
+ 		CRYPT_SESSINFO_AUTHRESPONSE, 
+-		ST_NONE, ST_NONE, ST_SESS_TLS | ST_SESS_TLS_SVR | ST_SESS_SSH_SVR, 
++		ST_NONE, ST_NONE, ST_SESS_TLS | ST_SESS_TLS_SVR | ST_SESS_SSH | ST_SESS_SSH_SVR, 
+ 		MKPERM_SESSIONS( RWx_RWx ), 
+ 		ROUTE( OBJECT_TYPE_SESSION ),
+ 		allowedAuthResponses ),

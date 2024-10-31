@@ -60,7 +60,6 @@ set(PATCHES
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-fix-shell-exec-types.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-ssh-eof-half-close.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-fix-mb-w-conv-warnings.patch
-	${CMAKE_CURRENT_SOURCE_DIR}/cl-fix-ssh-header-read.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-ssh-service-type-for-channel.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-ssh-sbbs-id-string.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-channel-select-both.patch

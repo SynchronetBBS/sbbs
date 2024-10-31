@@ -1,5 +1,5 @@
---- crypt32.vcxproj.orig	2023-06-14 23:54:56.000000000 -0400
-+++ crypt32.vcxproj	2023-12-31 06:32:59.386199000 -0500
+--- ./crypt32.vcxproj.orig	2024-10-19 00:52:26.000000000 -0400
++++ ./crypt32.vcxproj	2024-10-31 00:50:21.512780000 -0400
 @@ -208,6 +208,8 @@
        <ControlFlowGuard>false</ControlFlowGuard>
        <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -145,7 +145,7 @@
      </Link>
      <ResourceCompile>
        <PreprocessorDefinitions>_WIN64</PreprocessorDefinitions>
-@@ -896,4 +922,4 @@
+@@ -899,4 +925,4 @@
    <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
    <ImportGroup Label="ExtensionTargets">
    </ImportGroup>

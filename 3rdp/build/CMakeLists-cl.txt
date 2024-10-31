@@ -87,7 +87,6 @@ set(PATCHES
 	cl-fix-shell-exec-types.patch
 	cl-ssh-eof-half-close.patch
 	cl-fix-mb-w-conv-warnings.patch
-	cl-fix-ssh-header-read.patch
 	cl-ssh-service-type-for-channel.patch
 	cl-ssh-sbbs-id-string.patch
 	cl-channel-select-both.patch

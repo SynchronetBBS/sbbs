@@ -1,5 +1,15 @@
---- ./kernel/attr_acl.c.orig	2024-01-22 17:04:32.412926000 -0500
-+++ ./kernel/attr_acl.c	2024-01-22 17:08:33.630148000 -0500
+--- ./cryptlib.h.orig	2024-10-31 00:50:23.029627000 -0400
++++ ./cryptlib.h	2024-10-31 00:50:23.170930000 -0400
+@@ -502,6 +502,7 @@
+ 	CRYPT_OPTION_INFO_MAJORVERSION,	/* Major release version */
+ 	CRYPT_OPTION_INFO_MINORVERSION,	/* Minor release version */
+ 	CRYPT_OPTION_INFO_STEPPING,		/* Release stepping */
++	CRYPT_OPTION_INFO_PATCHES,		/* MD5Sum of patches applied */
+ 
+ 	/* Encryption options */
+ 	CRYPT_OPTION_ENCR_ALGO,			/* Conventional encryption algorithm */
+--- ./kernel/attr_acl.c.orig	2024-10-31 00:50:23.034531000 -0400
++++ ./kernel/attr_acl.c	2024-10-31 00:50:23.162378000 -0400
 @@ -339,6 +339,12 @@
  		MKPERM( Rxx_Rxx ),
  		ROUTE( OBJECT_TYPE_USER ),
@@ -13,23 +23,13 @@
  
  	MKACL_SS(	/* Encryption algorithm */
  		/* We restrict the subrange to disallow the selection of the
---- ./misc/user_config.c.orig	2024-01-22 17:08:01.812451000 -0500
-+++ ./misc/user_config.c	2024-01-22 17:06:08.338812000 -0500
+--- ./misc/user_config.c.orig	2024-09-04 00:36:16.000000000 -0400
++++ ./misc/user_config.c	2024-10-31 00:50:23.167081000 -0400
 @@ -78,6 +78,7 @@
  	MK_OPTION( CRYPT_OPTION_INFO_MAJORVERSION, 3, CRYPT_UNUSED ),
  	MK_OPTION( CRYPT_OPTION_INFO_MINORVERSION, 4, CRYPT_UNUSED ),
- 	MK_OPTION( CRYPT_OPTION_INFO_STEPPING, 7, CRYPT_UNUSED ),
+ 	MK_OPTION( CRYPT_OPTION_INFO_STEPPING, 8, CRYPT_UNUSED ),
 +	MK_OPTION_S( CRYPT_OPTION_INFO_PATCHES, CRYPTLIB_PATCHES, 32, CRYPT_UNUSED ),
  
  	/* Context options, base = 0 */
  	/* Algorithm = Conventional encryption/hash/MAC options */
---- cryptlib.h.orig	2024-01-22 17:03:52.690137000 -0500
-+++ cryptlib.h	2024-01-22 17:09:36.542496000 -0500
-@@ -502,6 +502,7 @@
- 	CRYPT_OPTION_INFO_MAJORVERSION,	/* Major release version */
- 	CRYPT_OPTION_INFO_MINORVERSION,	/* Minor release version */
- 	CRYPT_OPTION_INFO_STEPPING,		/* Release stepping */
-+	CRYPT_OPTION_INFO_PATCHES,		/* MD5Sum of patches applied */
- 
- 	/* Encryption options */
- 	CRYPT_OPTION_ENCR_ALGO,			/* Conventional encryption algorithm */

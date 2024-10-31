@@ -1,5 +1,5 @@
---- io/tcp_rw.c.orig	2023-02-26 03:33:50.000000000 -0500
-+++ io/tcp_rw.c	2023-12-31 08:12:00.663053000 -0500
+--- ./io/tcp_rw.c.orig	2023-10-04 21:26:08.000000000 -0400
++++ ./io/tcp_rw.c	2024-10-31 00:50:22.325643000 -0400
 @@ -20,6 +20,10 @@
  
  #ifdef USE_TCP
@@ -10,8 +10,8 @@
 +
  /****************************************************************************
  *																			*
- *							Network I/O Wait Management						*
-@@ -74,6 +78,7 @@
+ *						 		Utility Routines							*
+@@ -137,6 +141,7 @@
  		{ CRYPT_ERROR_OPEN, "unknown" }, { CRYPT_ERROR_OPEN, "unknown" }
  		};
  	MONOTIMER_INFO timerInfo;
@@ -19,7 +19,7 @@
  	struct timeval tv;
  	fd_set readfds, writefds, exceptfds;
  	fd_set *readFDPtr = ( type == IOWAIT_READ || \
-@@ -81,6 +86,11 @@
+@@ -144,6 +149,11 @@
  						  type == IOWAIT_ACCEPT ) ? &readfds : NULL;
  	fd_set *writeFDPtr = ( type == IOWAIT_WRITE || \
  						   type == IOWAIT_CONNECT ) ? &writefds : NULL;
@@ -31,7 +31,7 @@
  	LOOP_INDEX selectIterations;
  	int status;
  
-@@ -91,26 +101,6 @@
+@@ -154,26 +164,6 @@
  	REQUIRES( isBooleanValue( previousDataRead ) );
  	REQUIRES( isEnumRange( type, IOWAIT ) );
  
@@ -58,7 +58,7 @@
  	/* Set up the information needed to handle timeouts and wait on the
  	   socket.  If there's no timeout then we wait 5ms on the theory that it 
  	   isn't noticeable to the caller but ensures that we at least get a 
-@@ -153,6 +143,20 @@
+@@ -216,6 +206,20 @@
  	status = setMonoTimer( &timerInfo, timeout );
  	if( cryptStatusError( status ) )
  		return( status );
@@ -79,7 +79,7 @@
  	LOOP_MED( ( selectIterations = 0, status = SOCKET_ERROR ), \
  			  isSocketError( status ) && \
  				( selectIterations <= 0 || \
-@@ -162,6 +166,7 @@
+@@ -225,6 +229,7 @@
  		{
  		ENSURES( LOOP_INVARIANT_MED( selectIterations, 0, 19 ) );
  
@@ -87,7 +87,7 @@
  		if( readFDPtr != NULL )
  			{
  			FD_ZERO( readFDPtr );
-@@ -189,6 +194,10 @@
+@@ -252,6 +257,10 @@
  		clearErrorState();
  		status = select( ( int ) netStream->netSocket + 1, readFDPtr, 
  						 writeFDPtr, &exceptfds, &tv );
@@ -98,7 +98,7 @@
  
  		/* If there's a problem and it's not something transient like an
  		   interrupted system call, exit.  For a transient problem, we just
-@@ -272,7 +281,11 @@
+@@ -335,7 +344,11 @@
  	   false and an indicator to receive SIGURG's not set, the OOB data byte 
  	   just languishes in a side-buffer), however we shouldn't be receiving 
  	   OOB data so we treat that as an error too */
@@ -110,7 +110,7 @@
  		{
  		int socketErrorCode;
  
-@@ -326,6 +339,7 @@
+@@ -389,6 +402,7 @@
  
  	/* The socket is read for reading or writing */
  	ENSURES( status > 0 );
@@ -118,7 +118,7 @@
  	ENSURES( ( type == IOWAIT_READ && \
  			   FD_ISSET( netStream->netSocket, &readfds ) ) || \
  			 ( type == IOWAIT_WRITE && \
-@@ -334,6 +348,13 @@
+@@ -397,6 +411,13 @@
  			   ( FD_ISSET( netStream->netSocket, &readfds ) || \
  				 FD_ISSET( netStream->netSocket, &writefds ) ) ) || \
  			 ( type == IOWAIT_ACCEPT ) );
