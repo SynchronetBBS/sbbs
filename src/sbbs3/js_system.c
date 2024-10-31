@@ -1265,7 +1265,7 @@ js_timestr(JSContext *cx, uintN argc, jsval *arglist)
 	return(JS_TRUE);
 }
 
-/* Returns a mm/dd/yy or dd/mm/yy formated string */
+/* Convert between string and time_t representations of date */
 static JSBool
 js_datestr(JSContext *cx, uintN argc, jsval *arglist)
 {
@@ -1275,6 +1275,7 @@ js_datestr(JSContext *cx, uintN argc, jsval *arglist)
 	time32_t	t;
 	JSString*	js_str;
 	char		*p;
+	enum date_fmt fmt;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
@@ -1282,12 +1283,14 @@ js_datestr(JSContext *cx, uintN argc, jsval *arglist)
 	if((sys = (js_system_private_t*)js_GetClassPrivate(cx,obj,&js_system_class))==NULL)
 		return JS_FALSE;
 
+	fmt = sys->cfg->sys_date_fmt;
+
 	if(argc<1)
 		t=time32(NULL);	/* use current time */
 	else {
 		if(JSVAL_IS_STRING(argv[0])) {	/* convert from string to time_t? */
 			JSVALUE_TO_ASTRING(cx, argv[0], p, 10, NULL);
-			JS_SET_RVAL(cx, arglist, DOUBLE_TO_JSVAL((double)dstrtounix(sys->cfg, p)));
+			JS_SET_RVAL(cx, arglist, DOUBLE_TO_JSVAL((double)dstrtounix(fmt, p)));
 			return(JS_TRUE);
 		}
 		JS_ValueToECMAUint32(cx,argv[0],(uint32_t*)&t);

@@ -345,28 +345,28 @@ void sbbs_t::useredit(int usernumber)
 				gettmplt(str, date_template(&cfg, tmp, sizeof tmp),K_LINE|K_EDIT);
 				if(sys_status&SS_ABORT)
 					break;
-				user.laston=dstrtounix(&cfg,str);
+				user.laston=dstrtounix(cfg.sys_date_fmt,str);
 				putuserdatetime(user.number, USER_LASTON, user.laston);
 				bputs(text[UeditFirstOn]);
 				unixtodstr(user.firston,str);
 				gettmplt(str, date_template(&cfg, tmp, sizeof tmp),K_LINE|K_EDIT);
 				if(sys_status&SS_ABORT)
 					break;
-				user.firston=dstrtounix(&cfg,str);
+				user.firston=dstrtounix(cfg.sys_date_fmt,str);
 				putuserdatetime(user.number, USER_FIRSTON, user.firston);
 				bputs(text[UeditExpire]);
 				unixtodstr(user.expire,str);
 				gettmplt(str, date_template(&cfg, tmp, sizeof tmp),K_LINE|K_EDIT);
 				if(sys_status&SS_ABORT)
 					break;
-				user.expire=dstrtounix(&cfg,str);
+				user.expire=dstrtounix(cfg.sys_date_fmt,str);
 				putuserdatetime(user.number, USER_EXPIRE, user.expire);
 				bputs(text[UeditPwModDate]);
 				unixtodstr(user.pwmod,str);
 				gettmplt(str, date_template(&cfg, tmp, sizeof tmp),K_LINE|K_EDIT);
 				if(sys_status&SS_ABORT)
 					break;
-				user.pwmod=dstrtounix(&cfg,str);
+				user.pwmod=dstrtounix(cfg.sys_date_fmt,str);
 				putuserdatetime(user.number, USER_PWMOD, user.pwmod);
 				break;
 			case 'L':

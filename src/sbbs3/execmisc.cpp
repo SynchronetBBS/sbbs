@@ -745,7 +745,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					pp=getstrvar(csi,*(int32_t *)csi->ip);
 					csi->ip+=4;
 					if(lp && pp && *pp)
-						*lp=(int32_t)dstrtounix(&cfg,*pp);
+						*lp=(int32_t)dstrtounix(cfg.sys_date_fmt,*pp);
 					return(0);
 				case STRLEN_INT_VAR:
 					lp=getintvar(csi,*(int32_t *)csi->ip);

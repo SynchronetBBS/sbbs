@@ -1047,7 +1047,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 				&& IS_DIGIT(str[3]) && IS_DIGIT(str[4])
 				&& (str[5]=='/' || str[5]=='-')
 				&& IS_DIGIT(str[6]) && IS_DIGIT(str[7])) { /* valid expire date */
-				useron.expire=dstrtounix(&cfg,str);
+				useron.expire=dstrtounix(MMDDYY,str);
 				putuserdatetime(useron.number, USER_EXPIRE, useron.expire); 
 			}
 

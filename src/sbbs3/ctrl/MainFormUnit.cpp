@@ -2767,7 +2767,7 @@ void __fastcall TMainForm::ViewLogClick(TObject *Sender)
         CodeInputForm->ComboBox->Items->Clear();
        	CodeInputForm->ComboBox->Text=AnsiString(unixtodstr(&cfg,time(NULL),str));
         mr=CodeInputForm->ShowModal();
-        t=dstrtounix(&cfg,CodeInputForm->ComboBox->Text.c_str());
+        t=dstrtounix(cfg.sys_date_fmt,CodeInputForm->ComboBox->Text.c_str());
         delete CodeInputForm;
         if(mr!=mrOk)
             return;

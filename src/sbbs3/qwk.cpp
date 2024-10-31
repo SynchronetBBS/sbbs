@@ -204,7 +204,7 @@ void sbbs_t::update_qwkroute(char *via)
 				if(!fgets(str,sizeof(str),stream))
 					break;
 				truncsp(str);
-				t=dstrtounix(&cfg,str);
+				t=dstrtounix(MMDDYY,str);
 				p=strchr(str,':');
 				if(!p) continue;
 				*p=0;
@@ -679,7 +679,7 @@ void sbbs_t::qwksetptr(int subnum, char *buf, int reset)
 	}
 
 	if(buf[2]=='/' && buf[5]=='/') {    /* date specified */
-		time_t t=dstrtounix(&cfg,buf);
+		time_t t=dstrtounix(MMDDYY,buf);
 		subscan[subnum].ptr=getmsgnum(subnum,t);
 		return;
 	}
@@ -781,7 +781,7 @@ void sbbs_t::qwkcfgline(char *buf, int subnum)
 			useron.qwk|=QWK_FILES;
 		else if(str[8]=='/' && str[11]=='/') {      /* set scan date */
 			useron.qwk|=QWK_FILES;
-			ns_time=dstrtounix(&cfg,str+6);
+			ns_time=dstrtounix(MMDDYY,str+6);
 		}
 		else
 			useron.qwk&=~QWK_FILES;

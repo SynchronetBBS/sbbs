@@ -987,7 +987,7 @@ char* sbbs_t::unixtodstr(time_t t, char* str)
 {
 	if(str == nullptr)
 		str = datestr_output;
-	return ::unixtodstr(&cfg, t, str);
+	return ::unixtodstr(&cfg, (time32_t)t, str);
 }
 
 void sbbs_t::sys_info()

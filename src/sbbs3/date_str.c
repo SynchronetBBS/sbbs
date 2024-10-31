@@ -50,9 +50,9 @@ char* date_template(scfg_t* cfg, char* buf, size_t size)
 #define DECVAL(ch, mul)	(DEC_CHAR_TO_INT(ch) * (mul))
 
 /****************************************************************************/
-/* Converts a date string in format MM/DD/YY into unix time format			*/
+/* Converts a date string in numeric format (e.g. MM/DD/YY) to time_t		*/
 /****************************************************************************/
-time32_t dstrtounix(scfg_t* cfg, const char *instr)
+time32_t dstrtounix(enum date_fmt fmt, const char *instr)
 {
 	const char*	p;
 	const char*	day;
@@ -83,13 +83,13 @@ time32_t dstrtounix(scfg_t* cfg, const char *instr)
 	}
 
 	memset(&tm,0,sizeof(tm));
-	if (cfg->sys_date_fmt == YYMMDD) {
+	if (fmt == YYMMDD) {
 		tm.tm_year = DECVAL(p[0], 10) + DECVAL(p[1], 1);
 		tm.tm_mon = DECVAL(p[3], 10) + DECVAL(p[4], 1);
 		tm.tm_mday = DECVAL(p[6], 10) + DECVAL(p[7], 1);
 	} else {
 		tm.tm_year=((p[6]&0xf)*10)+(p[7]&0xf);
-		if(cfg->sys_date_fmt == DDMMYY) {
+		if(fmt == DDMMYY) {
 			tm.tm_mon=((p[3]&0xf)*10)+(p[4]&0xf);
 			tm.tm_mday=((p[0]&0xf)*10)+(p[1]&0xf); 
 		}
