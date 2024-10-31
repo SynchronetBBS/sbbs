@@ -1,9 +1,10 @@
---- ./tools/ccopts.sh.orig	2024-10-31 00:50:22.407477000 -0400
-+++ ./tools/ccopts.sh	2024-10-31 00:50:22.771693000 -0400
-@@ -744,14 +744,14 @@
+--- ./tools/ccopts.sh.orig	2024-10-31 01:25:49.233934000 -0400
++++ ./tools/ccopts.sh	2024-10-31 01:26:47.463749000 -0400
+@@ -743,16 +743,16 @@
+ # assembled with ar without any linker involvement, so only the final binary
  # that it's linked with can specify -pie.
  
- if [ $SHARED -eq 0 ] ; then
+-if [ $SHARED -eq 0 ] ; then
 -	if [ $ISCLANG -gt 0 ] && [ "$COMPILER_VER" -ge 30 ] ; then
 -		CCARGS="$CCARGS -fpie" ;
 -		echo "Enabling ASLR support, consider linking the final binary with -pie." >&2 ;
@@ -12,14 +13,17 @@
 -		CCARGS="$CCARGS -fpie" ;
 -		echo "Enabling ASLR support, consider linking the final binary with -pie." >&2 ;
 -	fi ;
-+	#if [ $ISCLANG -gt 0 ] && [ "$COMPILER_VER" -ge 30 ] ; then
-+	#	CCARGS="$CCARGS -fpie" ;
-+	#	echo "Enabling ASLR support, consider linking the final binary with -pie." >&2 ;
-+	#fi ;
-+	#if [ $ISGCC -gt 0 ] && [ "$COMPILER_VER" -ge 42 ] ; then
-+	#	CCARGS="$CCARGS -fpie" ;
-+	#	echo "Enabling ASLR support, consider linking the final binary with -pie." >&2 ;
-+	#fi ;
- fi
+-fi
++#if [ $SHARED -eq 0 ] ; then
++#	if [ $ISCLANG -gt 0 ] && [ "$COMPILER_VER" -ge 30 ] ; then
++#		CCARGS="$CCARGS -fpie" ;
++#		echo "Enabling ASLR support, consider linking the final binary with -pie." >&2 ;
++#	fi ;
++#	if [ $ISGCC -gt 0 ] && [ "$COMPILER_VER" -ge 42 ] ; then
++#		CCARGS="$CCARGS -fpie" ;
++#		echo "Enabling ASLR support, consider linking the final binary with -pie." >&2 ;
++#	fi ;
++#fi
  
  # If the system supports recursive and/or robust mutexes, indicate that
+ # they're available.  We don't use recursive mutexes by default because they
