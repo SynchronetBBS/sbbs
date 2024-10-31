@@ -406,6 +406,7 @@ set(SOURCE
 	session/tls_cli.c
 	session/tls_crypt.c
 	session/tls_ext.c
+	session/tls_ext_rw.c
 	session/tls_hello.c
 	session/tls_hscomplete.c
 	session/tls_keymgt.c
