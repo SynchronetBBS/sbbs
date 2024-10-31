@@ -32,7 +32,6 @@ else()
 endif()
 
 set(PATCHES
-	cl-fix-test-select.patch
 	cl-terminal-params.patch
 	cl-ranlib.patch
 	cl-vcxproj.patch
@@ -49,7 +48,6 @@ set(PATCHES
 	cl-SSL-fix.patch
 	cl-bigger-maxattribute.patch
 	cl-mingw-vcver.patch
-	cl-win32-build-fix.patch
 	cl-no-odbc.patch
 	cl-noasm-defines.patch
 	cl-bn-noasm64-fix.patch
@@ -58,14 +56,11 @@ set(PATCHES
 	cl-clear-GCM-flag.patch
 	cl-use-ssh-ctr.patch
 	cl-ssh-list-ctr-modes.patch
-	cl-ssl-suite-blocksizes.patch
 	cl-no-tpm.patch
 	cl-no-via-aes.patch
-	cl-fix-ssh-ecc-ephemeral.patch
 	cl-just-use-cc.patch
 	cl-no-safe-stack.patch
 	cl-allow-pkcs12.patch
-	cl-openbsd-threads.patch
 	cl-allow-none-auth.patch
 	cl-poll-not-select.patch
 	cl-good-sockets.patch

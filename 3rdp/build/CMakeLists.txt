@@ -5,7 +5,6 @@ project (Cryptlib C)
 include(FetchContent)
 
 set(PATCHES
-	${CMAKE_CURRENT_SOURCE_DIR}/cl-fix-test-select.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-terminal-params.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-ranlib.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-vcxproj.patch
@@ -22,7 +21,6 @@ set(PATCHES
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-SSL-fix.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-bigger-maxattribute.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-mingw-vcver.patch
-	${CMAKE_CURRENT_SOURCE_DIR}/cl-win32-build-fix.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-no-odbc.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-noasm-defines.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-bn-noasm64-fix.patch
@@ -31,14 +29,11 @@ set(PATCHES
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-clear-GCM-flag.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-use-ssh-ctr.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-ssh-list-ctr-modes.patch
-	${CMAKE_CURRENT_SOURCE_DIR}/cl-ssl-suite-blocksizes.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-no-tpm.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-no-via-aes.patch
-	${CMAKE_CURRENT_SOURCE_DIR}/cl-fix-ssh-ecc-ephemeral.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-just-use-cc.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-no-safe-stack.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-allow-pkcs12.patch
-	${CMAKE_CURRENT_SOURCE_DIR}/cl-openbsd-threads.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-allow-none-auth.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-poll-not-select.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-good-sockets.patch
