@@ -78,7 +78,7 @@ void __fastcall TMainForm::PutUserText(TEdit* Edit, enum user_field fnum)
 void __fastcall TMainForm::PutUserDate(TEdit* Edit, enum user_field fnum)
 {
     if(Edit->Tag)
-        putuserdatetime(&cfg, user.number, fnum, dstrtounix(&cfg, Edit->Text.c_str()));
+        putuserdatetime(&cfg, user.number, fnum, dstrtounix(cfg.sys_date_fmt, Edit->Text.c_str()));
     Edit->Tag = false;
 }
 //---------------------------------------------------------------------------
