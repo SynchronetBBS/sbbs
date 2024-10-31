@@ -558,10 +558,10 @@
 "Change Exemptions"                                     448 ChangeExemptionQ
 "        \1n%s\r\nToggle: "                              449 FlagEditing
 "\1_\1y\1hGo to Name or Number: \1n"                        450 GoToUser
-"\1_\1y\1hLast on: \1w"                                     451 UeditLastOn
-"\1_\1y\1hFirst on: \1w"                                    452 UeditFirstOn
-"\1_\1y\1hExpire: \1w"                                      453 UeditExpire
-"\1_\1y\1hPassword Last Modified: \1w"                      454 UeditPwModDate
+"\1_\1y\1hLast on (@DATEFMT@): \1w"                         451 UeditLastOn
+"\1_\1y\1hFirst on (@DATEFMT@): \1w"                        452 UeditFirstOn
+"\1_\1y\1hExpire (@DATEFMT@): \1w"                          453 UeditExpire
+"\1_\1y\1hPassword Last Modified (@DATEFMT@): \1w"          454 UeditPwModDate
 "\1_\1y\1hLevel: \1w"                                       455 UeditML
 "\1_\1y\1hNote: \1w"                                        456 UeditNote
 "\1_\1y\1hComment: \1w"                                     457 UeditComment
