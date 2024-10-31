@@ -126,9 +126,12 @@
  * 2024-09-13 Eric Oulashin     Version 2.23
  *                              Check for null when getting extended metadata from the file DB (possibly caused
  *                              by DB corruption). Also, allow changing the filename when editing file info.
- * 2024-09015 Eric Oulashin     Version 2.24
+ * 2024-09-15 Eric Oulashin     Version 2.24
  *                              When displaying a file description, remove/replace cursor movement
  *                              characters, which can corrupt the display
+ * 2024-10-29 Eric Oulashin     Version 2.24a
+ *                              When doing a file search, don't call console.pause() between directories.
+ *                              This is a fix for issue 806 (reported by nelgin).
 */
 
 "use strict";
@@ -174,8 +177,8 @@ require("attr_conv.js", "convertAttrsToSyncPerSysCfg");
 
 
 // Lister version information
-var LISTER_VERSION = "2.24";
-var LISTER_DATE = "2024-09-15";
+var LISTER_VERSION = "2.24a";
+var LISTER_DATE = "2024-10-29";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -4477,7 +4480,6 @@ function populateFileList(pSearchMode)
 				console.print("\x01n\x01cThere are no files in \x01h" + file_area.lib_list[libIdx].description + "\x01n\x01c - \x01h" +
 							  file_area.dir[gDirCode].description + "\x01n");
 				console.crlf();
-				console.pause();
 				retObj.exitNow = true;
 				retObj.exitCode = 0;
 				return retObj;
