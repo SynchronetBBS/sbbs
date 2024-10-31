@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.24a    2024-10-29   When doing a file search, don't pause for input between
+                      directories. This is a fix for issue 806 (reported by
+                      nelgin).
 2.24     2024-09-15   When displaying a file description, remove/replace cursor
                       movement characters, which can corrupt the display
 2.23     2024-09-13   Check for null when getting extended metadata from the
