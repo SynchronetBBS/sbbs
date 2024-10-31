@@ -21,6 +21,7 @@
 
 #include "date_str.h"
 #include "datewrap.h"
+#include "text.h"
 
 const char *wday[]={"Sun","Mon","Tue","Wed","Thu","Fri","Sat"};
 const char *mon[]={"Jan","Feb","Mar","Apr","May","Jun"
@@ -233,32 +234,34 @@ char* timestr(scfg_t* cfg, time32_t t, char* str)
 	uchar		hour;
     struct tm	tm;
 	time_t		intime=t;
+	char** w = (cfg->text == NULL) ? (char**)wday : &cfg->text[Sun];
+	char** m = (cfg->text == NULL) ? (char**)mon : &cfg->text[Jan];
 
 	if(localtime_r(&intime,&tm)==NULL) {
 		strcpy(str,"Invalid Time");
-		return(str); 
+		return(str);
 	}
 	if(cfg->sys_misc&SM_MILITARY) {
-		sprintf(str,"%s %s %02u %4u %02u:%02u:%02u"
-			,wday[tm.tm_wday],mon[tm.tm_mon],tm.tm_mday,1900+tm.tm_year
+		snprintf(str, LEN_DATETIME + 1, "%s %s %02u %4u %02u:%02u:%02u"
+			,w[tm.tm_wday],m[tm.tm_mon],tm.tm_mday,1900+tm.tm_year
 			,tm.tm_hour,tm.tm_min,tm.tm_sec);
-		return(str); 
+		return(str);
 	}
 	if(tm.tm_hour>=12) {
 		if(tm.tm_hour==12)
 			hour=12;
 		else
 			hour=tm.tm_hour-12;
-		mer="pm"; 
+		mer="pm";
 	} else {
 		if(tm.tm_hour==0)
 			hour=12;
 		else
 			hour=tm.tm_hour;
-		mer="am"; 
+		mer="am";
 	}
-	sprintf(str,"%s %s %02u %4u %02u:%02u %s"
-		,wday[tm.tm_wday],mon[tm.tm_mon],tm.tm_mday,1900+tm.tm_year
+	snprintf(str, LEN_DATETIME + 1, "%s %s %02u %4u %02u:%02u %s"
+		,w[tm.tm_wday],m[tm.tm_mon],tm.tm_mday,1900+tm.tm_year
 		,hour,tm.tm_min,mer);
 	return(str);
 }

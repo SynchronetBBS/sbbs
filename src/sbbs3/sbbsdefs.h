@@ -96,6 +96,9 @@
 #define LEN_SIFNAME 8		/* Maximum length of SIF filename			*/
 #define LEN_EXTCODE (LEN_CODE*2)	/* Code prefix + suffix */
 
+#define LEN_DATE		8
+#define LEN_DATETIME 	24
+
 							/* Lengths of various strings				*/
 #define LEN_GSNAME	15		/* Group/Lib short name						*/
 #define LEN_GLNAME	40		/* Group/Lib long name						*/

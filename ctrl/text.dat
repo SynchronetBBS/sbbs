@@ -1062,3 +1062,22 @@
 "\1n\1b[\1h\1wW\1n\1b] \1hWord-wrap Message Text       \1n\1b: \1c%s\r\n"	875  QWKSettingsWrapText
 "\1/Unknown uploader (%s) of file\1\\: %s"			       876 UnknownUploader
 "FREE"                                                     877 FREE
+"Sun"                                                      878 Sun
+"Mon"                                                      879 Mon
+"Tue"                                                      880 Tue
+"Wed"                                                      881 Wed
+"Thu"                                                      882 Thu
+"Fri"                                                      883 Fri
+"Sat"                                                      884 Sat
+"Jan"                                                      885 Jan
+"Feb"                                                      886 Feb
+"Mar"                                                      887 Mar
+"Apr"                                                      888 Apr
+"May"                                                      889 May
+"Jun"                                                      890 Jun
+"Jul"                                                      891 Jul
+"Aug"                                                      892 Aug
+"Sep"                                                      893 Sep
+"Oct"                                                      894 Oct
+"Nov"                                                      895 Nov
+"Dec"                                                      896 Dec

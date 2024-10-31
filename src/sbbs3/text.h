@@ -894,6 +894,25 @@ enum text {
 	,QWKSettingsWrapText
 	,UnknownUploader
 	,FREE
+	,Sun
+	,Mon
+	,Tue
+	,Wed
+	,Thu
+	,Fri
+	,Sat
+	,Jan
+	,Feb
+	,Mar
+	,Apr
+	,May
+	,Jun
+	,Jul
+	,Aug
+	,Sep
+	,Oct
+	,Nov
+	,Dec
 
 	,TOTAL_TEXT
 };
