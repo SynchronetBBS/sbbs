@@ -1011,7 +1011,7 @@ int edit_stats(scfg_t *cfg, user_t *user)
 				temptime=user->firston;
 				unixtodstr(cfg,temptime,str);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"First On Date",str,8,K_EDIT);
-				user->firston=dstrtounix(cfg, str);
+				user->firston=dstrtounix(cfg->sys_date_fmt, str);
 				temptime2=temptime-user->firston;
 				sectostr(temptime2,str);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"First On Time",str,8,K_EDIT);
@@ -1027,7 +1027,7 @@ int edit_stats(scfg_t *cfg, user_t *user)
 				temptime=user->laston;
 				unixtodstr(cfg,temptime,str);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Last On Date",str,8,K_EDIT);
-				user->laston=dstrtounix(cfg, str);
+				user->laston=dstrtounix(cfg->sys_date_fmt, str);
 				temptime2=temptime-user->laston;
 				sectostr(temptime2,str);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Last On Time",str,8,K_EDIT);
@@ -1043,7 +1043,7 @@ int edit_stats(scfg_t *cfg, user_t *user)
 				temptime=user->logontime;
 				unixtodstr(cfg,temptime,str);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Logon Date",str,8,K_EDIT);
-				user->logontime=dstrtounix(cfg, str);
+				user->logontime=dstrtounix(cfg->sys_date_fmt, str);
 				temptime2=temptime-user->logontime;
 				sectostr(temptime2,str);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Logon Time",str,8,K_EDIT);
@@ -1219,7 +1219,7 @@ int edit_stats(scfg_t *cfg, user_t *user)
 				temptime=user->pwmod;
 				unixtodstr(cfg,temptime,str);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Password Modified Date",str,8,K_EDIT);
-				user->firston=dstrtounix(cfg, str);
+				user->firston=dstrtounix(cfg->sys_date_fmt, str);
 				temptime2=temptime-user->pwmod;
 				sectostr(temptime2,str);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Password Modified Time",str,8,K_EDIT);
@@ -1294,8 +1294,8 @@ int edit_security(scfg_t *cfg, user_t *user)
 				GETUSERDAT(cfg,user);
 				unixtodstr(cfg,user->expire,str);
 				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Expiration",str,8,K_EDIT);
-				if(uifc.changes && dstrtounix(cfg, str)!=user->expire) {
-					user->expire=dstrtounix(cfg, str);
+				if(uifc.changes && dstrtounix(cfg->sys_date_fmt, str)!=user->expire) {
+					user->expire=dstrtounix(cfg->sys_date_fmt, str);
 					putuserdatetime(cfg, user->number, USER_EXPIRE, user->expire);
 				}
 				break;
