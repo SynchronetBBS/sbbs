@@ -38,6 +38,7 @@ DLLEXPORT char *	zonestr(short zone);
 DLLEXPORT time32_t	dstrtounix(enum date_fmt, const char *str);
 DLLEXPORT char *	unixtodstr(scfg_t*, time32_t, char *str);
 DLLEXPORT char *	datestr(scfg_t*, time_t, char* str);
+DLLEXPORT char *	verbal_datestr(scfg_t*, time_t, char* str);
 DLLEXPORT char *	sectostr(uint sec, char *str);
 DLLEXPORT char *	seconds_to_str(uint, char*);
 DLLEXPORT char *	hhmmtostr(scfg_t* cfg, struct tm* tm, char* str);
