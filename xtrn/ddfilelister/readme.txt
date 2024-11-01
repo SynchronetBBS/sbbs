@@ -198,8 +198,8 @@ following directories, in the following order:
 2. sbbs/ctrl
 3. The same directory as ddfilelister.js
 If you customize your configuration files, you can copy them to your sbbs/mods
-or sbbs/ctrl directory so that they'll be more difficutl to accidentally
-override if you update your xtrn/DDMsgReader from the Synchronet CVS
+or sbbs/ctrl directory so that they'll be more difficult to accidentally
+override if you update your xtrn/DDMsgReader from the Synchronet Git
 repository, where this reader's files are checked in.
 
 The configuration settings are described in the sections below:
