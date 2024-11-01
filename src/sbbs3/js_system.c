@@ -2264,9 +2264,9 @@ static jsSyncMethodSpec js_system_functions[] = {
 	,310
 	},
 	{"datestr",			js_datestr,			0,	JSTYPE_STRING,	JSDOCSTR("[time=<i>current</i>]")
-	,JSDOCSTR("Convert time_t integer into a date string (in either <tt>MM/DD/YY</tt> or <tt>DD/MM/YY</tt> format), "
+	,JSDOCSTR("Convert time_t integer into a short (8 character) date string, in either numeric or verbal format (depending on system preference), "
 		"defaults to current date if <i>time</i> not specified. "
-		"If <i>time</i> is a string in the appropriate format, returns the time_t.")
+		"If <i>time</i> is a string in numeric date format, returns the parsed time_t value as a number.")
 	,310
 	},
 	{"secondstr",		js_secondstr,		0,	JSTYPE_STRING,	JSDOCSTR("seconds")
