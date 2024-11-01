@@ -132,21 +132,24 @@
  * 2024-10-29 Eric Oulashin     Version 2.24a
  *                              When doing a file search, don't call console.pause() between directories.
  *                              This is a fix for issue 806 (reported by nelgin).
+ * 2024-10-30 Eric Oulashin     Version 2.25 Beta
+ *                              Made 'view file' (FL_VIEW) work when used as a loadable module.
+ *                              Refactored some stuff in the process.
+ * 2024-10-31 Eric Oulashin     Version 2.25
+ *                              Finished up the 'view file' update. Also refactored the way
+ *                              file extended info is displayed - Added information to match
+ *                              Synchronet's stock lister, and display the uploader's avatar
+ *                              if available
 */
 
 "use strict";
-
-//js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
-//console.ctrlkey_passthru |= (1<<3); // Ctrl-C
-//console.ctrlkey_passthru = "+C";
-//console.ctrlkey_passthru = "-C";
 
 // If the search action has been aborted, then return -1
 if (console.aborted)
 	exit(-1);
 
-// This script requires Synchronet version 3.20 or newer (only for bbs.Text.<value>);
-// Synchronet 3.19 added filebase support in JS.
+// This script requires Synchronet version 3.20 or newer (for bbs.Text.<value> and
+// user.stats.download_cps); Synchronet 3.19 added filebase support in JS.
 // If the Synchronet version is below the minimum, then exit.
 if (system.version_num < 32000)
 {
@@ -174,11 +177,13 @@ require("frame.js", "Frame");
 require("scrollbar.js", "ScrollBar");
 require("mouse_getkey.js", "mouse_getkey");
 require("attr_conv.js", "convertAttrsToSyncPerSysCfg");
+require("file_size.js", "file_size_str");
+var gAvatar = load({}, "avatar_lib.js");
 
 
-// Lister version information
-var LISTER_VERSION = "2.24a";
-var LISTER_DATE = "2024-10-29";
+// Version information
+var LISTER_VERSION = "2.25";
+var LISTER_DATE = "2024-10-31";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -201,6 +206,9 @@ var LEFT_T_HDOUBLE_VSINGLE = "\xcC6";
 var BYTES_PER_GB = 1073741824;
 var BYTES_PER_MB = 1048576;
 var BYTES_PER_KB = 1024;
+
+// Decimal precision for file_size_str()
+var FILE_SIZE_PRECISION = 2;
 
 // File list column indexes (0-based).  The end indexes are one past the last index.
 // These defaults assume an 80-character wide terminal.
@@ -275,6 +283,7 @@ var MODE_LIST_DIR = 1;
 var MODE_SEARCH_FILENAME = 2;
 var MODE_SEARCH_DESCRIPTION = 3;
 var MODE_NEW_FILE_SEARCH = 4;
+var MODE_VIEWING_FILES = 5;
 
 // Sort orders (not included in FileBase.SORT)
 var SORT_PER_DIR_CFG = 50; // Sort according to the file directory configuration
@@ -313,6 +322,10 @@ var gUseLightbarInterface = true;
 // If using the traditional interface, whether to use Synchronet's stock
 // file lister instead of ddfilelister
 var gTraditionalUseSyncStock = false;
+
+// Whether or not to display user avatars for the uploader in extended
+// file information
+var gDispayUserAvatars = true;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Script execution code
@@ -353,6 +366,19 @@ if ((!gUseLightbarInterface || !console.term_supports(USER_ANSI)) && gTraditiona
 		exitCode = bbs.list_files(gDirCode, gFilespec, gListBehavior);
 	exit(exitCode);
 }
+
+// Date/time format string (depends on system settings for date format & military time)
+const gTimeFormatStr = getTimeFormatStr();
+
+// If we are to view file(s), then do so for this file directory
+// and exit
+if (Boolean(gListBehavior & FL_VIEW))
+{
+	exit(doFileView(gDirCode, gFilespec));
+}
+
+///////////////////////////////////////////
+// The following assumes normal file listing mode & other modes (not FL_VIEW)
 
 // This array will contain file metadata objects
 var gFileList = [];
@@ -1050,11 +1076,6 @@ function showFileInfo_ANSI(pFileMetadata)
 	if (pFileMetadata == undefined || typeof(pFileMetadata) !== "object")
 		return retObj;
 
-	// The width of the frame to display the file info (including borders).  This
-	// is declared early so that it can be used for string length adjustment.
-	//var frameWidth = pFileListMenu.size.width - 4; // TODO: Remove?
-	var frameWidth = console.screen_columns - 4;
-
 	// pFileList[pFileListMenu.selectedItemIdx] has a file metadata object without
 	// extended information.  Get a metadata object with extended information so we
 	// can display the extended description.
@@ -1073,45 +1094,145 @@ function showFileInfo_ANSI(pFileMetadata)
 		else
 			fileMetadata = pFileMetadata;
 	}
-	// Build a string with the file information
-	// Make sure the displayed filename isn't too crazy long
-	var frameInnerWidth = frameWidth - 2; // Without borders
-	var adjustedFilename = shortenFilename(fileMetadata.name, frameInnerWidth, false);
-	var fileInfoStr = "\x01n\x01wFilename";
-	if (adjustedFilename.length < fileMetadata.name.length)
-		fileInfoStr += " (shortened)";
-	fileInfoStr += ":\r\n";
-	fileInfoStr += gColors.filename + adjustedFilename +  "\x01n\x01w\r\n";
-	// Note: File size can also be retrieved by calling a FileBase's get_size(fileMetadata.name)
-	// TODO: Shouldn't need the max length here
-	fileInfoStr += "Size: " + gColors.fileSize + getFileSizeStr(fileMetadata.size, 99999) + "\x01n\x01w\r\n";
-	fileInfoStr += "Timestamp: " + gColors.fileTimestamp + strftime("%Y-%m-%d %H:%M:%S", fileMetadata.time) + "\x01n\x01w\r\n";
-	fileInfoStr += "\r\n";
 
+	// The width of the frame to display the file info (including borders).  This
+	// is declared early so that it can be used for string length adjustment.
+	//var frameWidth = pFileListMenu.size.width - 4; // TODO: Remove?
+	var frameWidth = console.screen_columns - 4;
+	var frameInnerWidth = frameWidth - 2; // Without borders
+	// Build a string with the file information
 	// File library/directory information
 	var libIdx = file_area.dir[dirCode].lib_index;
 	var dirIdx = file_area.dir[dirCode].index;
 	var libDesc = file_area.lib_list[libIdx].description;
 	var dirDesc =  file_area.dir[dirCode].description;
-	fileInfoStr += format("\x01c\x01h%s\x01g: \x01n\x01c%s\x01n\x01w\r\n", "Lib", libDesc.substr(0, frameInnerWidth-5));
+	var fileInfoStr = format("\x01c\x01h%s\x01g: \x01n\x01c%s\x01n\x01w\r\n", "Lib", libDesc.substr(0, frameInnerWidth-5));
 	fileInfoStr += format("\x01c\x01h%s\x01g: \x01n\x01c%s\x01n\x01w\r\n", "Dir", dirDesc.substr(0, frameInnerWidth-5));
 	fileInfoStr += "\r\n";
+	// Make sure the displayed filename isn't too crazy long
+	var adjustedFilename = shortenFilename(fileMetadata.name, frameInnerWidth, false);
+	fileInfoStr += "\x01n\x01wFilename";
+	if (adjustedFilename.length < fileMetadata.name.length)
+		fileInfoStr += " (shortened)";
+	fileInfoStr += ":\r\n";
+	fileInfoStr += gColors.filename + adjustedFilename +  "\x01n\x01w\r\n";
+	// Note: File size can also be retrieved by calling a FileBase's get_size(fileMetadata.name)
+	var fileSizeStr = format("%s (%s) bytes", numberWithCommas(fileMetadata.size), file_size_str(fileMetadata.size, null, FILE_SIZE_PRECISION));
+	fileInfoStr += "Size: " + gColors.fileSize + fileSizeStr + "\x01n\x01w";
+	// Credit value
+	var fieldFormatStr = "\r\n\x01n\x01c\x01h%s\x01g:\x01n\x01c %s";
+	var dirFilesAreFree = Boolean(file_area.dir[dirCode].settings & DIR_FREE);
+	var creditStr = dirFilesAreFree || fileMetadata.cost == 0 ? "FREE" : fileMetadata.cost.toString();
+	fileInfoStr += format(fieldFormatStr, "Credit value", lfexpand(word_wrap(creditStr, frameInnerWidth)).replace(/\r\n$/, ""));
+	// CRC-32, MD5, SHA-1
+	if (fileMetadata.hasOwnProperty("crc32"))
+	{
+		var str = lfexpand(word_wrap(fileMetadata.crc32, frameInnerWidth)).replace(/\r\n$/, "");
+		fileInfoStr += format(fieldFormatStr, "File CRC32", str);
+	}
+	if (fileMetadata.hasOwnProperty("md5"))
+	{
+		str = lfexpand(word_wrap(fileMetadata.md5, frameInnerWidth)).replace(/\r\n$/, "");
+		fileInfoStr += format(fieldFormatStr, "File MD5", str);
+	}
+	if (fileMetadata.hasOwnProperty("sha1"))
+	{
+		str = lfexpand(word_wrap(fileMetadata.sha1, frameInnerWidth)).replace(/\r\n$/, "");
+		fileInfoStr += format(fieldFormatStr, "File SHA-1", str);
+	}
+	// Short description
+	str = lfexpand(word_wrap(fileMetadata.desc, frameInnerWidth)).replace(/\r\n$/, "");
+	fileInfoStr += format(fieldFormatStr, "Description", str);
+	// Author, group
+	var authorStr = fileMetadata.hasOwnProperty("author") ? fileMetadata.author : "";
+	fileInfoStr += format(fieldFormatStr, "Author", lfexpand(word_wrap(authorStr, frameInnerWidth)).replace(/\r\n$/, ""));
+	var groupStr = fileMetadata.hasOwnProperty("author_org") ? fileMetadata.author_org : "";
+	fileInfoStr += format(fieldFormatStr, "Group", lfexpand(word_wrap(groupStr, frameInnerWidth)).replace(/\r\n$/, ""));
 
-	// fileMetadata should have extdDesc, but check just in case
-	var fileDesc = "";
-	if (fileMetadata.hasOwnProperty("extdesc") && fileMetadata.extdesc.length > 0)
-		fileDesc = fileMetadata.extdesc;
+	// Some data to possibly write alongside the uploader's avatar
+	// Uploaded by
+	var uploadedByStr = fileMetadata.from;
+	if (fileMetadata.hasOwnProperty("from_protocol"))
+		uploadedByStr += " via " + fileMetadata.from_protocol;
+	// Date added
+	var uploadedDateStr = strftime(gTimeFormatStr, fileMetadata.added);
+	// File date
+	//var fileDateStr = gColors.fileTimestamp + strftime(gTimeFormatStr, fileMetadata.time) + "\x01n\x01w";
+	var fileDateStr = strftime(gTimeFormatStr, fileMetadata.time);
+	// Last downloaded date
+	var lastDownloadedDateStr = strftime(gTimeFormatStr, fileMetadata.last_downloaded);
+	// # times downloaded
+	var timesDownloadedStr = fileMetadata.hasOwnProperty("times_downloaded") ? fileMetadata.times_downloaded : 0;
+	// Time to download
+	var timeToDownloadStr = secondsToTimeStr(calcDownloadTimeInSeconds(fileMetadata.size));
+	// If enabled, get the uploader's avatar, if available. If there
+	// is an avatar for the uploader, display it to the right,
+	// alongside the next file information lines. Otherwise, just
+	// display the file information lines without the avatar.
+	var userAvatarArray = []
+	if (gDispayUserAvatars)
+		userAvatarArray = getAvatarArray(fileMetadata.from);
+	if (userAvatarArray.length > 0)
+	{
+		// infoToDisplay is an array containing labels and values for the next
+		// lines of file information to be displayed with the user's avatar on
+		// the right
+		var infoToDisplay = [{ label: "Uploaded by", value: uploadedByStr },
+			{ label: "Uploaded on", value: uploadedDateStr },
+			{ label: "File date", value: fileDateStr }
+		];
+		if (fileMetadata.hasOwnProperty("last_downloaded"))
+			infoToDisplay.push({ label: "Last downloaded", value: lastDownloadedDateStr });
+		infoToDisplay.push({ label: "Times downloaded", value: timesDownloadedStr });
+		infoToDisplay.push({ label: "Time to download", value: timeToDownloadStr });
+		// Go through and display each file info line with the user's
+		// avatar to the right
+		var arrayIdx = 0;
+		for (; arrayIdx < infoToDisplay.length; ++arrayIdx)
+		{
+			if (arrayIdx < userAvatarArray.length)
+			{
+				//var valueLen = frameInnerWidth - console.strlen(userAvatarArray[arrayIdx]) - infoToDisplay[arrayIdx].label.length - 3;
+				var valueLen = frameInnerWidth - gAvatar.defs.width - infoToDisplay[arrayIdx].label.length - 3;
+				var valueStr = format("%-" + valueLen + "s", infoToDisplay[arrayIdx].value.toString().substr(0, valueLen));
+				fileInfoStr += format(fieldFormatStr, infoToDisplay[arrayIdx].label, valueStr);
+				fileInfoStr += " " + userAvatarArray[arrayIdx];
+			}
+			else
+			{
+				// Just the file info without avatar line component
+				fileInfoStr += format(fieldFormatStr, infoToDisplay[arrayIdx].label, infoToDisplay[arrayIdx].value.toString().substr(0, frameInnerWidth));
+			}
+		}
+		// In case the user avatar still has more lines, display them
+		for (; arrayIdx < userAvatarArray.length; ++arrayIdx)
+		{
+			var widthBeforeAvatarLine = frameInnerWidth - console.strlen(userAvatarArray[arrayIdx]);
+			fileInfoStr += format("%*s", widthBeforeAvatarLine, "") + userAvatarArray[arrayIdx];
+		}
+	}
 	else
-		fileDesc = fileMetadata.desc;
-	
-	// It's possible for fileDesc to be undefined (due to extDesc or desc being undefined),
-	// so make sure it's a string.
-	// Also, if it's a string, reformat certain types of strings that don't look good in a
-	// Frame object
-	if (typeof(fileDesc) === "string")
+	{
+		// Uploaded by
+		fileInfoStr += format(fieldFormatStr, "Uploaded by", uploadedByStr.substr(0, frameInnerWidth));
+		// Uploaded On (date)
+		fileInfoStr += format(fieldFormatStr, "Uploaded on", uploadedDateStr.substr(0, frameInnerWidth));
+		// File date
+		fileInfoStr += format(fieldFormatStr, "File date", fileDateStr.substr(0, frameInnerWidth));
+		//fileInfoStr += "\r\n";
+		// Last downloaded
+		if (fileMetadata.hasOwnProperty("last_downloaded"))
+			fileInfoStr += format(fieldFormatStr, "Last downloaded", lastDownloadedDateStr);
+		// # times downloaded
+		fileInfoStr += format(fieldFormatStr, "Times downloaded", timesDownloadedStr);
+		// Time to download
+		fileInfoStr += format(fieldFormatStr, "Time to download", timeToDownloadStr);
+	}
+	// Extended description, if available
+	if (fileMetadata.hasOwnProperty("extdesc") && fileMetadata.extdesc.length > 0)
 	{
 		// Remove/replace any cursor movement characters, as they can corrupt the display
-		fileDesc = removeOrReplaceSyncCursorMovementChars(fileDesc);
+		var fileDesc = removeOrReplaceSyncCursorMovementChars(fileMetadata.extdesc);
 
 		// Check to see if it starts with a normal attribute and remove if so,
 		// since that seems to cause problems with displaying the description in a Frame object.  This
@@ -1119,56 +1240,15 @@ function showFileInfo_ANSI(pFileMetadata)
 		fileDesc = fileDesc.replace(/^\x01[nN]/, "");
 		// Fix line endings if necessary
 		fileDesc = lfexpand(fileDesc);
-	}
-	else
-		fileDesc = "";
-	// This might be overkill, but just in case, convert any non-Synchronet
-	// attribute codes to Synchronet attribute codes in the description.
-	if (!fileMetadata.hasOwnProperty("attrsConverted"))
-	{
+		// Convert any non-Synchronet attribute codes to Synchronet attribute codes
+		// in the description.
 		fileDesc = convertAttrsToSyncPerSysCfg(fileDesc);
-		fileMetadata.attrsConverted = true;
-		if (fileMetadata.hasOwnProperty("extdesc"))
-			fileMetadata.extdesc = fileDesc;
-		else
-			fileMetadata.desc = fileDesc;
+		fileInfoStr += "\r\n\r\n" + gColors.desc;
+		fileInfoStr += fileDesc;
 	}
 
-	fileInfoStr += gColors.desc;
-	if (fileDesc.length > 0)
-		fileInfoStr += "Description:\r\n" + fileDesc; // Don't want to use strip_ctrl(fileDesc)
-	else
-		fileInfoStr += "No description available";
-	fileInfoStr += "\r\n";
-	// # of times downloaded and last downloaded date/time
-	var fieldFormatStr = "\r\n\x01n\x01c\x01h%s\x01g:\x01n\x01c %s";
-	var timesDownloaded = fileMetadata.hasOwnProperty("times_downloaded") ? fileMetadata.times_downloaded : 0;
-	fileInfoStr += format(fieldFormatStr, "Times downloaded", timesDownloaded);
-	if (fileMetadata.hasOwnProperty("last_downloaded"))
-		fileInfoStr += format(fieldFormatStr, "Last downloaded", strftime("%Y-%m-%d %H:%M", fileMetadata.last_downloaded));
-	// Some more fields for the sysop
-	if (user.is_sysop)
-	{
-		var sysopFields = [ "from", "cost", "added" ];
-		for (var sI = 0; sI < sysopFields.length; ++sI)
-		{
-			var prop = sysopFields[sI];
-			if (fileMetadata.hasOwnProperty(prop))
-			{
-				if (typeof(fileMetadata[prop]) === "string" && fileMetadata[prop].length == 0)
-					continue;
-				var propName = prop.charAt(0).toUpperCase() + prop.substr(1);
-				var infoValue = "";
-				if (prop == "added")
-					infoValue = strftime("%Y-%m-%d %H:%M:%S", fileMetadata.added);
-				else
-					infoValue = fileMetadata[prop].toString().substr(0, frameInnerWidth);
-				fileInfoStr += format(fieldFormatStr, propName, infoValue);
-				//fileInfoStr += "\x01n\x01w";
-			}
-		}
-	}
-	// Append a final CR & LF so that all lines can be split on those
+	// Append a final CR & LF - This seems to be needed in order to get all
+	// description lines by spltiting on \r\n
 	fileInfoStr += "\r\n";
 	//fileInfoStr += "\x01n\x01w";
 
@@ -1195,13 +1275,20 @@ function showFileInfo_ANSI(pFileMetadata)
 	// Construct the file list redraw info.  Note that the X and Y are relative
 	// to the file list menu, not absolute screen coordinates.
 	retObj.fileListPartialRedrawInfo = {
-		startX: frameUpperLeftX - gFileListMenu.pos.x + 1, // Relative to the file menu
-		startY: frameUpperLeftY - gFileListMenu.pos.y + 1, // Relative to the file menu
+		startX: 1,
+		startY: 1,
 		absStartX: frameUpperLeftX,
 		absStartY: frameUpperLeftY,
 		width: frameWidth,
 		height: frameHeight
 	};
+	// If gFileListMenu is defined, then set startX and startY
+	// relative to the file menu
+	if (typeof(gFileListMenu) === "object")
+	{
+		retObj.fileListPartialRedrawInfo.startX = frameUpperLeftX - gFileListMenu.pos.x + 1;
+		retObj.fileListPartialRedrawInfo.startY = frameUpperLeftY - gFileListMenu.pos.y + 1;
+	}
 
 	return retObj;
 }
@@ -1218,113 +1305,90 @@ function showFileInfo_noANSI(pFileMetadata)
 	if (pFileMetadata == undefined || typeof(pFileMetadata) !== "object")
 		return retObj;
 
-	// pFileList[pFileListMenu.selectedItemIdx] has a file metadata object without
-	// extended information.  Get a metadata object with extended information so we
-	// can display the extended description.
-	// The metadata object in pFileList should have a dirCode added by this script.
+	// The metadata object in pFileList could have a dirCode added by this script.
 	var dirCode = gDirCode;
 	if (pFileMetadata.hasOwnProperty("dirCode"))
 		dirCode = pFileMetadata.dirCode;
-	var fileMetadata = null;
-	if (extendedDescEnabled())
-		fileMetadata = pFileMetadata;
-	else
-	{
-		var tmpFileMetadata = getFileInfoFromFilebase(dirCode, pFileMetadata.name, FileBase.DETAIL.EXTENDED);
-		if (tmpFileMetadata != null)
-			fileMetadata = tmpFileMetadata;
-		else
-			fileMetadata = pFileMetadata;
-	}
-
-	console.print("\x01n\x01wFilename:\r\n");
-	console.print(gColors.filename + fileMetadata.name +  "\x01n\x01w\r\n");
-	console.print("Size: " + gColors.fileSize + getFileSizeStr(fileMetadata.size, 99999) + "\x01n\x01w\r\n");
-	console.print("Timestamp: " + gColors.fileTimestamp + strftime("%Y-%m-%d %H:%M:%S", fileMetadata.time) + "\x01n\x01w\r\n");
-	console.crlf();
-
-	// File library/directory information
 	var libIdx = file_area.dir[dirCode].lib_index;
-	var dirIdx = file_area.dir[dirCode].index;
-	var libDesc = file_area.lib_list[libIdx].description;
-	var dirDesc =  file_area.dir[dirCode].description;
-	console.print("\x01c\x01hLib\x01g: \x01n\x01c" + libDesc + "\x01n\x01w\r\n");
-	console.print("\x01c\x01hDir\x01g: \x01n\x01c" + dirDesc + "\x01n\x01w\r\n");
+	//var dirIdx = file_area.dir[dirCode].index;
+
+	// Ensure the metadata object has extended information
+	var fileMetadata = pFileMetadata;
+	if (!fileMetadata.hasOwnProperty("extdesc"))
+		fileMetadata = getFileInfoFromFilebase(dirCode, fileMetadata.name, FileBase.DETAIL.EXTENDED);
+
+	var labelLen = 16;
+	var lblSep = " : ";
+	var valueLen = console.screen_columns - labelLen - console.strlen(lblSep) - 1;
+	var generalFormatStr = "\x01n\x01g%-" + labelLen + "s\x01h" + lblSep + "%-" + valueLen + "s\x01n\r\n";
+
+	// File library & directory
+	var libDesc = format("(%d) %s", file_area.lib_list[libIdx].index+1, file_area.lib_list[libIdx].description);
+	var dirDesc = format("(%d) %s", file_area.dir[dirCode].index+1, file_area.dir[dirCode].description);
 	console.crlf();
-
-	// fileMetadata should have extdDesc, but check just in case
-	var fileDesc = "";
-	if (fileMetadata.hasOwnProperty("extdesc") && fileMetadata.extdesc.length > 0)
-		fileDesc = fileMetadata.extdesc;
-	else
-		fileDesc = fileMetadata.desc;
-	// It's possible for fileDesc to be undefined (due to extDesc or desc being undefined),
-	// so make sure it's a string.
-	// Also, if it's a string, reformat certain types of strings that don't look good in a
-	// Frame object
-	if (typeof(fileDesc) === "string")
+	printf(generalFormatStr, "Library", libDesc.substr(0, valueLen));
+	printf(generalFormatStr, "Directory", dirDesc.substr(0, valueLen));
+	var formatStr = "\x01n\x01g%-" + labelLen + "s\x01h" + lblSep + "\x01n" + gColors.filename + "%-" + valueLen + "s\x01n\r\n";
+	printf(formatStr, "Filename", fileMetadata.name.substr(0, valueLen));
+	// File size
+	formatStr = "\x01n\x01g%-" + labelLen + "s\x01h" + lblSep + "\x01n" + gColors.fileSize + "%-" + valueLen + "s\x01n\r\n";
+	var fileSizeStr = format(gColors.fileSize + "%s (%s) bytes", numberWithCommas(fileMetadata.size), file_size_str(fileMetadata.size, null, FILE_SIZE_PRECISION).substr(0, valueLen));
+	printf(formatStr, "File size", fileSizeStr.substr(0, valueLen));
+	// Credit value
+	var dirFilesAreFree = Boolean(file_area.dir[dirCode].settings & DIR_FREE);
+	var creditStr = dirFilesAreFree || fileMetadata.cost == 0 ? "FREE" : fileMetadata.cost.toString();
+	printf(generalFormatStr, "Credit value", creditStr.substr(0, valueLen));
+	if (fileMetadata.hasOwnProperty("crc32"))
+		printf(generalFormatStr, "File CRC-32", format("%x", fileMetadata.crc32).substr(0, valueLen));
+	if (fileMetadata.hasOwnProperty("md5"))
+		printf(generalFormatStr, "File MD5", fileMetadata.md5.substr(0, valueLen));
+	if (fileMetadata.hasOwnProperty("sha1"))
+		printf(generalFormatStr, "File SHA-1", fileMetadata.sha1.substr(0, valueLen));
+	formatStr = "\x01n\x01g%-" + labelLen + "s\x01h" + lblSep + "\x01n" + gColors.desc + "%-" + valueLen + "s\x01n\r\n";
+	printf(formatStr, "Description", fileMetadata.desc.substr(0, valueLen));
+	var authorStr = fileMetadata.hasOwnProperty("author") ? fileMetadata.author : "";
+	printf(generalFormatStr, "Author", authorStr.substr(0, valueLen));
+	var groupStr = fileMetadata.hasOwnProperty("author_org") ? fileMetadata.author_org : "";
+	printf(generalFormatStr, "Group", groupStr.substr(0, valueLen));
+	var uploadedByStr = fileMetadata.from;
+	if (fileMetadata.hasOwnProperty("from_protocol"))
+		uploadedByStr += " via " + fileMetadata.from_protocol;
+	printf(generalFormatStr, "Uploaded by", uploadedByStr.substr(0, valueLen));
+	// If enabled, and if possible, show the avatar of the user who uploaded the file
+	if (gDispayUserAvatars && gAvatar != null && fileMetadata.from != "")
 	{
-		// We could remove/replace any cursor movement characters, but probably don't need to
-		// for the traditional/non-ANSI interface, as those things shouldn't corrupt the display
-		//fileDesc = removeOrReplaceSyncCursorMovementChars(fileDesc);
-
-		// Check to see if it starts with a normal attribute and remove if so,
-		// since that seems to cause problems with displaying the description in a Frame object.  This
-		// may be a kludge, and perhaps there's a better solution..
-		fileDesc = fileDesc.replace(/^\x01[nN]/, "");
-		// Fix line endings if necessary
-		fileDesc = lfexpand(fileDesc);
-	}
-	else
-		fileDesc = "";
-	// This might be overkill, but just in case, convert any non-Synchronet
-	// attribute codes to Synchronet attribute codes in the description.
-	if (!fileMetadata.hasOwnProperty("attrsConverted"))
-	{
-		fileDesc = convertAttrsToSyncPerSysCfg(fileDesc);
-		fileMetadata.attrsConverted = true;
-		if (fileMetadata.hasOwnProperty("extdesc"))
-			fileMetadata.extdesc = fileDesc;
-		else
-			fileMetadata.desc = fileDesc;
-	}
-
-	console.print(gColors.desc);
-	if (fileDesc.length > 0)
-		console.print("Description:\r\n" + fileDesc); // Don't want to use strip_ctrl(fileDesc)
-	else
-		console.print("No description available");
-	console.crlf();
-	// # of times downloaded and last downloaded date/time
-	var fieldFormatStr = "\x01n\x01c\x01h%s\x01g:\x01n\x01c %s\x01n\r\n";
-	var timesDownloaded = fileMetadata.hasOwnProperty("times_downloaded") ? fileMetadata.times_downloaded : 0;
-	printf(fieldFormatStr, "Times downloaded", timesDownloaded);
-	if (fileMetadata.hasOwnProperty("last_downloaded"))
-		printf(fieldFormatStr, "Last downloaded", strftime("%Y-%m-%d %H:%M", fileMetadata.last_downloaded));
-	// Some more fields for the sysop
-	if (user.is_sysop)
-	{
-		var sysopFields = [ "from", "cost", "added" ];
-		for (var sI = 0; sI < sysopFields.length; ++sI)
+		var userNum = system.matchuser(fileMetadata.from);
+		if (userNum > 0)
 		{
-			var prop = sysopFields[sI];
-			if (fileMetadata.hasOwnProperty(prop))
-			{
-				if (typeof(fileMetadata[prop]) === "string" && fileMetadata[prop].length == 0)
-					continue;
-				var propName = prop.charAt(0).toUpperCase() + prop.substr(1);
-				var infoValue = "";
-				if (prop == "added")
-					infoValue = strftime("%Y-%m-%d %H:%M:%S", fileMetadata.added);
-				else
-					infoValue = fileMetadata[prop].toString();
-				printf(fieldFormatStr, propName, infoValue);
-				console.attributes = "NW";
-			}
+			gAvatar.draw(userNum, fileMetadata.from, /*netaddr*/null, /* above: */true, /* right-justified: */true);
+			console.attributes = 0;	// Clear the background attribute as the next line might scroll, filling with BG attribute
 		}
 	}
-	console.attributes = "NW";
-	console.crlf();
+	// Uploaded on
+	formatStr = "\x01n\x01g%-" + labelLen + "s\x01h" + lblSep + "\x01n" + gColors.fileTimestamp + "%-" + valueLen + "s\x01n\r\n";
+	var timeStr = strftime(gTimeFormatStr, fileMetadata.added);
+	printf(formatStr, "Uploaded on", timeStr.substr(0, valueLen));
+	// File date
+	timeStr = strftime(gTimeFormatStr, fileMetadata.time);
+	printf(formatStr, "File date", timeStr.substr(0, valueLen));
+	if (fileMetadata.hasOwnProperty("last_downloaded"))
+	{
+		timeStr = strftime(gTimeFormatStr, fileMetadata.last_downloaded);
+		printf(generalFormatStr, "Last downloaded", timeStr.substr(0, valueLen));
+	}
+	// Times downloaded, time to download
+	var timesDownloaded = fileMetadata.hasOwnProperty("times_downloaded") ? fileMetadata.times_downloaded : 0;
+	printf(generalFormatStr, "Times downloaded", timesDownloaded);
+	printf(generalFormatStr, "Time to download", secondsToTimeStr(calcDownloadTimeInSeconds(fileMetadata.size)));
+	// Extended description (if available)
+	console.attributes = "N";
+	console.print(gColors.desc);
+	if (fileMetadata.hasOwnProperty("extdesc"))
+	{
+		console.crlf();
+		console.print(fileMetadata.extdesc);
+		console.crlf();
+	}
 
 	// Construct the file list redraw info.  Note that the X and Y are relative
 	// to the file list menu, not absolute screen coordinates.
@@ -1432,7 +1496,7 @@ function addSelectedFilesToBatchDLQueue(pFileMetadata, pFileList)
 	// then just return now.
 	var filenames = [];
 	var metadataObjects = [];
-	if (gFileListMenu.numSelectedItemIndexes() > 0)
+	if (typeof(gFileListMenu) === "object" && gFileListMenu.numSelectedItemIndexes() > 0 && Array.isArray(pFileList))
 	{
 		for (var idx in gFileListMenu.selectedItemIndexes)
 		{
@@ -1448,7 +1512,7 @@ function addSelectedFilesToBatchDLQueue(pFileMetadata, pFileList)
 	}
 	// Note that confirmFileActionWithUser() will re-draw the parts of the file
 	// list menu that are necessary.
-	var addFilesConfirmed = addFilesConfirmed = confirmFileActionWithUser(filenames, "Batch DL add", false);
+	var addFilesConfirmed = confirmFileActionWithUser(filenames, "Batch DL add", false);
 	retObj.refreshedSelectedFilesAlready = true;
 	if (addFilesConfirmed)
 	{
@@ -3286,9 +3350,10 @@ function createFileListMenu(pQuitKeys)
 		var desc = (typeof(gFileList[pIdx].desc) === "string" ? gFileList[pIdx].desc : "");
 		// Remove/replace any cursor movement codes in the description, which can corrupt the display
 		desc = removeOrReplaceSyncCursorMovementChars(desc, false);
+		var fileSizeStr = file_size_str(gFileList[pIdx].size, null, FILE_SIZE_PRECISION);
 		menuItemObj.text = format(this.fileFormatStr,
 		                          filename,
-								  getFileSizeStr(gFileList[pIdx].size, this.fileSizeLen),
+								  fileSizeStr.substr(0, this.fileSizeLen),
 		                          desc.substr(0, this.shortDescLen));
 		return menuItemObj;
 	}
@@ -3568,94 +3633,6 @@ function getLargestNumFilesInLibDirs(pLibIdx)
 			largestNumFiles = numFilesInDir;
 	}
 	return largestNumFiles;
-}
-
-// Returns a formatted string representation of a file size.  Tries
-// to put a size designation at the end if possible.
-//
-// Parameters:
-//  pFileSize: The size of the file in bytes
-//  pMaxLen: Optional - The maximum length of the string
-//
-// Return value: A formatted string representation of the file size
-function getFileSizeStr(pFileSize, pMaxLen)
-{
-	var fileSizeStr = "?";
-	if (typeof(pFileSize) !== "number" || pFileSize < 0)
-		return fileSizeStr;
-
-	// TODO: Improve
-	if (pFileSize >= BYTES_PER_GB) // Gigabytes
-	{
-		fileSizeStr = format("%.02fG", +(pFileSize / BYTES_PER_GB));
-		if (typeof(pMaxLen) === "number" && pMaxLen > 0 && fileSizeStr.length > pMaxLen)
-		{
-			fileSizeStr = format("%.1fG", +(pFileSize / BYTES_PER_GB));
-			if (fileSizeStr.length > pMaxLen)
-			{
-				// If there's a decimal point, then put the size designation after it
-				var dotIdx = fileSizeStr.lastIndexOf(".");
-				if (dotIdx > 0)
-				{
-					if (/\.$/.test(fileSizeStr))
-						fileSizeStr = fileSizeStr.substr(0, dotIdx) + "G";
-					else
-						fileSizeStr = fileSizeStr.substr(0, fileSizeStr.length-1) + "G";
-				}
-			}
-			fileSizeStr = fileSizeStr.substr(0, pMaxLen);
-		}
-	}
-	else if (pFileSize >= BYTES_PER_MB) // Megabytes
-	{
-		fileSizeStr = format("%.02fM", +(pFileSize / BYTES_PER_MB));
-		if (typeof(pMaxLen) === "number" && pMaxLen > 0 && fileSizeStr.length > pMaxLen)
-		{
-			fileSizeStr = format("%.1fM", +(pFileSize / BYTES_PER_MB));
-			if (fileSizeStr.length > pMaxLen)
-			{
-				// If there's a decimal point, then put the size designation after it
-				var dotIdx = fileSizeStr.lastIndexOf(".");
-				if (dotIdx > 0)
-				{
-					if (/\.$/.test(fileSizeStr))
-						fileSizeStr = fileSizeStr.substr(0, dotIdx) + "M";
-					else
-						fileSizeStr = fileSizeStr.substr(0, fileSizeStr.length-1) + "M";
-				}
-			}
-			fileSizeStr = fileSizeStr.substr(0, pMaxLen);
-		}
-	}
-	else if (pFileSize >= BYTES_PER_KB) // Kilobytes
-	{
-		fileSizeStr = format("%.02fK", +(pFileSize / BYTES_PER_KB));
-		if (typeof(pMaxLen) === "number" && pMaxLen > 0 && fileSizeStr.length > pMaxLen)
-		{
-			fileSizeStr = format("%.1fK", +(pFileSize / BYTES_PER_KB));
-			if (fileSizeStr.length > pMaxLen)
-			{
-				// If there's a decimal point, then put the size designation after it
-				var dotIdx = fileSizeStr.lastIndexOf(".");
-				if (dotIdx > 0)
-				{
-					if (/\.$/.test(fileSizeStr))
-						fileSizeStr = fileSizeStr.substr(0, dotIdx) + "K";
-					else
-						fileSizeStr = fileSizeStr.substr(0, fileSizeStr.length-1) + "K";
-				}
-			}
-			fileSizeStr = fileSizeStr.substr(0, pMaxLen);
-		}
-	}
-	else
-	{
-		fileSizeStr = pFileSize.toString();
-		if (typeof(pMaxLen) === "number" && pMaxLen > 0 && fileSizeStr.length > pMaxLen)
-			fileSizeStr = fileSizeStr.substr(0, pMaxLen);
-	}
-
-	return fileSizeStr;
 }
 
 // Displays some text with a solid horizontal line on the next line.
@@ -4109,6 +4086,11 @@ function readConfigFile()
 				if (typeof(settingsObj[prop]) === "boolean")
 					gBlankNFilesListedStrIfLoadableModule = settingsObj[prop];
 			}
+			else if (propUpper == "DISPLAYUSERAVATARS")
+			{
+				if (typeof(settingsObj[prop]) === "boolean")
+					gDispayUserAvatars = settingsObj[prop];
+			}
 			else if (propUpper == "THEMEFILENAME")
 			{
 				if (typeof(settingsObj[prop]) === "string")
@@ -4366,7 +4348,34 @@ function parseArgs(argv)
 
 		// Default gScriptmode to MODE_LIST_DIR; for FLBehavior as FL_NONE, no special behavior
 		gScriptMode = MODE_LIST_DIR;
-		
+
+		/*
+		// Temporary
+		if (user.is_sysop)
+		{
+			console.print("\x01n\r\n" + argv.length + " args:\r\n");
+			for (var i = 0; i < argv.length; ++i)
+				console.print(argv[i] + "\r\n");
+			console.crlf();
+			console.print("FLBehavior: " + FLBehavior + "; binary:\r\n");
+			console.print(FLBehavior.toString(2) + "\r\n");
+			console.print("Behavior flags:\r\n");
+			if (Boolean(FLBehavior & FL_ULTIME))
+				console.print("FL_ULTIME\r\n");
+			if (Boolean(FLBehavior & FL_DLTIME))
+				console.print("FL_DLTIME\r\n");
+			if (Boolean(FLBehavior & FL_NO_HDR))
+				console.print("FL_NO_HDR\r\n");
+			if (Boolean(FLBehavior & FL_FINDDESC))
+				console.print("FL_FINDDESC\r\n");
+			if (Boolean(FLBehavior & FL_EXFIND))
+				console.print("FL_EXFIND\r\n");
+			if (Boolean(FLBehavior & FL_VIEW))
+				console.print("FL_VIEW\r\n");
+			console.pause();
+		}
+		// End Temporary
+		*/
 		// 2 args - Scanning/searching
 		if (argv.length == 2)
 		{
@@ -4395,7 +4404,8 @@ function parseArgs(argv)
 			if (Boolean(FLBehavior & FL_VIEW))
 			{
 				// View ZIP/ARC/GIF etc. info
-				// TODO: Not sure what to do with this
+				// TODO: Not sure what to do with this; not sure if it's possible
+				// to get this here
 			}
 		}
 		// 3 args - Internal code, mode, filespec/description keyword
@@ -4432,7 +4442,8 @@ function parseArgs(argv)
 			else if (Boolean(FLBehavior & FL_VIEW))
 			{
 				// View ZIP/ARC/GIF etc. info
-				// TODO: Not sure what to do with this
+				gFilespec = argv[2];
+				gScriptMode = MODE_VIEWING_FILES; // Not sure if this is really necessary, but for completeness
 			}
 		}
 
@@ -5393,7 +5404,8 @@ function getFileInfoLineArrayForTraditionalUI(pFileList, pIdx, pFormatInfo)
 	var filename = shortenFilename(pFileList[pIdx].name, pFormatInfo.filenameLen, true);
 	// Note: substrWithAttrCodes() is defined in dd_lightbar_menu.js
 	var fileInfoLines = [];
-	fileInfoLines.push(format(pFormatInfo.formatStr, pIdx+1, filename, getFileSizeStr(pFileList[pIdx].size, pFormatInfo.fileSizeLen), substrWithAttrCodes(descLines[0], 0, pFormatInfo.descLen)));
+	var fileSizeStr = file_size_str(pFileList[pIdx].size, null, FILE_SIZE_PRECISION);
+	fileInfoLines.push(format(pFormatInfo.formatStr, pIdx+1, filename, fileSizeStr.substr(0, pFormatInfo.fileSizeLen), substrWithAttrCodes(descLines[0], 0, pFormatInfo.descLen)));
 	if (userExtDescEnabled)
 	{
 		for (var i = 1; i < descLines.length; ++i)
@@ -5574,4 +5586,260 @@ function cursorRightCodeIdx(pStr)
 		retObj.idx = -1;
 
 	return retObj;
+}
+
+// Performs the file viewing flow, for use as a loadable module
+//
+// Parameters:
+//  pDirCode: The internal code of the file directory to use
+//  pFilespec: The filename or spec of the files to look for
+//
+// Return value: 0 on success or non-zero on failure
+function doFileView(pDirCode, pFilespec)
+{
+	// To do the stock file view behavior:
+	//return bbs.list_files(file_area.dir[pDirCode].number, pFilespec, FL_VIEW);
+
+
+	var retCode = 0; // 1 (or non-zero?) for canceling
+
+	var libIdx = file_area.dir[pDirCode].lib_index;
+	console.line_counter = 0; // To avoid screen pauses
+	printf("\x01n\x01cSearching \x01h%s\x01n\x01c - \x01h%s\x01n", file_area.lib_list[libIdx].description, file_area.dir[pDirCode].description);
+	console.crlf();
+	var filebase = new FileBase(pDirCode);
+	if (filebase.open())
+	{
+		var fileList = filebase.get_list(pFilespec, FileBase.DETAIL.EXTENDED, 0, true, file_area.dir[pDirCode].sort);
+		filebase.close();
+		var continueFileList = true;
+		for (var i = 0; i < fileList.length && continueFileList; ++i)
+		{
+			var fileMetadata = fileList[i];
+			// Add the dir code to the metadata object (convenience for viewFile())
+			fileMetadata.dirCode = pDirCode;
+			viewFile(fileMetadata);
+
+			// Loop control variable for user interaction
+			var continueOn = true;
+			while (continueOn)
+			{
+				// Prompt the user for the next action. For instance:
+				// appjs119.zip: Batch download, Extended info, View file, Quit, Prev or [Next]:
+				var promptText = bbs.text(bbs.text.FileInfoPrompt).replace("%s", fileMetadata.name);
+				console.mnemonics(promptText);
+				//var userInput = console.inkey(K_UPPER|K_NOECHO|K_NOSPIN|K_NOCRLF, 5);
+				var allowedKeys = "QBEVPN" + CTRL_C;
+				var userInput = console.getkeys(allowedKeys, -1, K_UPPER|K_NOECHO|K_NOSPIN|K_NOCRLF);
+				if (userInput == "Q" || userInput == CTRL_C || console.aborted)
+				{
+					retCode = 1; // Non-zero exit code to cancel
+					continueOn = false; // This individual file
+					continueFileList = false; // All files
+				}
+				else if (userInput == "B")
+				{
+					// Add the file to batch downloaded queue (confirm first)
+					console.crlf();
+					var addFileConfirmed = console.yesno(format("Add %s to your batch DL queue", fileMetadata.name));
+					if (addFileConfirmed)
+					{
+						// If the file isn't in the user's batch DL queue already, then add it.
+						var fileAlreadyInQueue = false;
+						var batchDLQueueStats = getUserDLQueueStats();
+						for (var fIdx = 0; fIdx < batchDLQueueStats.filenames.length && !fileAlreadyInQueue; ++fIdx)
+							fileAlreadyInQueue = (batchDLQueueStats.filenames[fIdx].filename == fileMetadata.name);
+						if (!fileAlreadyInQueue)
+						{
+							var addToQueueSuccessful = true;
+							var batchDLFilename = system.data_dir + "user/" + format("%04d", user.number) + ".dnload";
+							var batchDLFile = new File(batchDLFilename);
+							if (batchDLFile.open(batchDLFile.exists ? "r+" : "w+"))
+							{
+								batchDLFile.writeln("");
+
+								// Add the required "dir" and "desc" properties to the user's batch download
+								// queue file.  The section is the filename.  Also, this script should add a
+								// dirCode property to each metadata object in the list.
+								addToQueueSuccessful = batchDLFile.iniSetValue(fileMetadata.name, "dir", pDirCode);
+								if (addToQueueSuccessful)
+								{
+									addToQueueSuccessful = batchDLFile.iniSetValue(fileMetadata.name, "desc", fileMetadata.desc);
+									// Update the batch DL queue stats object
+									++(batchDLQueueStats.numFilesInQueue);
+									batchDLQueueStats.filenames.push({ filename: fileMetadata.name, desc: fileMetadata.desc });
+									batchDLQueueStats.totalSize += fileMetadata.size;
+									batchDLQueueStats.totalCost += fileMetadata.cost;
+								}
+
+								batchDLFile.close();
+							}
+
+							if (addToQueueSuccessful)
+								printf("\x01n\x01c\x01h%s\x01n\x01c was added to your batch DL queue.\x01n", fileMetadata.name);
+							else
+								printf("\x01n\x01y\x01hFailed to add \x01w%s \x01yto your batch DL queue\x01n", fileMetadata.name);
+							console.crlf();
+							console.pause();
+						}
+						else
+						{
+							// File is already in the user's DL queue
+							printf(bbs.text(bbs.text.FileAlreadyInQueue), fileMetadata.name);
+							console.pause();
+						}
+					}
+					else
+					{
+						printf("\x01n\x01c\x01h%s\x01n\x01c was not added to your batch DL queue.\x01n", fileMetadata.name);
+						console.crlf();
+						console.pause();
+					}
+				}
+				else if (userInput == "E")
+				{
+					// View file extended info (add dirCode to the metadata for convenience)
+					fileMetadata.dirCode = pDirCode;
+					// If using ANSI, show the info in a scrolling interface; otherwise,
+					// use a non-scrolling interface.
+					if (gUseLightbarInterface && console.term_supports(USER_ANSI))
+						showFileInfo_ANSI(fileMetadata);
+					else
+					{
+						showFileInfo_noANSI(fileMetadata);
+						console.pause();
+					}
+				}
+				else if (userInput == "V")
+				{
+					// View file
+					viewFile(fileMetadata);
+				}
+				else if (userInput == "P")
+				{
+					// Previous file
+					if (i > 0)
+					{
+						i -= 2; // i will be incremented by 1 again by the for loop
+						continueOn = false; // The current file
+					}
+				}
+				else if (userInput == "N" || userInput == "")
+				{
+					// Next file - No action to take here (default action)
+					continueOn = false; // The current file
+				}
+
+				// If the user aboreted, then stop
+				if (console.aborted)
+				{
+					retCode = -1;
+					continueOn = false; // The current file
+					continueFileList = false; // All files
+				}
+			}
+		}
+	}
+	else
+	{
+		log(LOG_ERR, format("Failed to open file dir %s (%s - %s)", pDirCode, file_area.lib_list[libIdx].description, file_area.dir[pDirCode].description));
+	}
+
+	return retCode;
+}
+
+// Adds commas to a number in the expected places, and
+// returns the result as a string.
+function numberWithCommas(pNum)
+{
+	return pNum.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+// Calculates the time (in seconds) for the user to download a number of bytes
+function calcDownloadTimeInSeconds(pNumBytes)
+{
+	// Synchronet JS documentation:
+	// https://nix.synchro.net/jsobjs.html
+	// It mentions both bbs.download_cps and user.stats.download_cps
+	// added in Synchronet 3.20, but bbs.download_cps seems to be
+	// unavailable at this time of writing
+	return pNumBytes / user.stats.download_cps;
+}
+
+// Converts a number of seconds to a string representing HH:MM:SS
+function secondsToTimeStr(pNumSeconds)
+{
+	const SECS_PER_HOUR = 3600.0;
+	const SECS_PER_MIN = 60.0;
+	var numSecondsRemaining = pNumSeconds;
+	var numHours = Math.floor(numSecondsRemaining / SECS_PER_HOUR);
+	numSecondsRemaining -= numHours * SECS_PER_HOUR;
+	var numMins = Math.floor(numSecondsRemaining / SECS_PER_MIN);
+	numSecondsRemaining -= numMins * SECS_PER_MIN;
+	return format("%02d:%02d:%02d", numHours, numMins, numSecondsRemaining);
+}
+
+// Gets a date format string for use with strftime() based on
+// the system's settings (European date, military time)
+function getTimeFormatStr()
+{
+	// https://cplusplus.com/reference/ctime/strftime/
+	// Specifier	Replaced by								Example
+	// %a			Abbreviated weekday name				Thu
+	// %b			Abbreviated month name					Aug
+	// %d			Day of the month, zero-padded (01-31)	23
+	// %Y			Year									2001
+	// %I			Hour in 12h format (01-12)				02
+	// %H			Hour in 24h format (00-23)				14
+	// %M			Minute (00-59)							55
+	// %S			Second (00-61)							02
+	// %p			AM or PM designation					PM
+
+	var timeFormatStr = "%a "; // Abbreviated weekday name
+	// Date format
+	if (Boolean(system.settings & SYS_EURODATE))
+		timeFormatStr += "%d %b %Y "; // Day, month, year
+	else
+		timeFormatStr += "%b %d %Y "; // Month, day, year
+	// Time (12-hour or 24-hour)
+	if (Boolean(system.settings & SYS_MILITARY))
+		timeFormatStr += "%H:%M:%S"; // 24-hour time
+	else
+		timeFormatStr += "%I:%M:%S %p"; // 12-hour AM/PM time
+	return timeFormatStr;
+}
+
+// Tries to get avatar data for a given username and returns it as an
+// array of strings. If the avatar can't be found, this will return an
+// empty array.
+//
+// Parameters:
+//  pUsername: The username to look up, to find the avatar
+//
+// Return value: An array of strings representing the user's avatar. If not found, this will be an empty array.
+function getAvatarArray(pUsername)
+{
+	var avatarLineArray = [];
+	var userNum = system.matchuser(pUsername);
+	if (userNum > 0)
+	{
+		var avatar = gAvatar.read(userNum, pUsername, /*netaddr*/null, userNum);
+		if(gAvatar.is_enabled(avatar))
+		{
+			load('graphic.js');
+			var graphic = new Graphic(gAvatar.defs.width, gAvatar.defs.height);
+			try
+			{
+				graphic.BIN = base64_decode(avatar.data);
+				var avatarMsg = graphic.MSG.replace(/\r\n$/, ""); // Remove any trailing CRLF
+				var avatarLines = avatarMsg.split("\r\n");
+				if (Array.isArray(avatarLines))
+					avatarLineArray = avatarLines;
+			}
+			catch(e)
+			{
+			};
+		}
+	}
+	return avatarLineArray;
 }
