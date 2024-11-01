@@ -5,6 +5,14 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.25     2024-10-31   Made 'view file' (FL_VIEW) work when used as a loadable
+                      module. Also, when displaying extended informatoin for
+                      a file, added more information to match Synchronet's stock
+                      lister, and to display the user avatar for the uploader,
+                      if available.
+                      Added a new configuration option, displayUserAvatars, to
+                      specify whether or not to display the user avatar of the
+                      uploader in a file's extended information.
 2.24a    2024-10-29   When doing a file search, don't pause for input between
                       directories. This is a fix for issue 806 (reported by
                       nelgin).

@@ -1,6 +1,6 @@
                         Digital Distortion File Lister
-                                 Version 2.24a
-                           Release date: 2024-10-29
+                                 Version 2.25
+                           Release date: 2024-10-31
 
                                      by
 
@@ -198,8 +198,8 @@ following directories, in the following order:
 2. sbbs/ctrl
 3. The same directory as ddfilelister.js
 If you customize your configuration files, you can copy them to your sbbs/mods
-or sbbs/ctrl directory so that they'll be more difficutl to accidentally
-override if you update your xtrn/DDMsgReader from the Synchronet CVS
+or sbbs/ctrl directory so that they'll be more difficult to accidentally
+override if you update your xtrn/DDMsgReader from the Synchronet Git
 repository, where this reader's files are checked in.
 
 The configuration settings are described in the sections below:
@@ -245,6 +245,10 @@ blankNFilesListedStrIfLoadableModule  When used as a loadable module, whether or
                                       not to blank out the "# Files Listed"
                                       string (from text.dat) so that Synchronet
                                       won't display it after the lister exits
+
+displayUserAvatars                    Whether or not to display uploader avatars
+                                      in extended information for files. Valid
+                                      values are true and false.
 
 themeFilename                         The name of the configuration file to
                                       use for colors & string settings
@@ -369,3 +373,5 @@ Synchronet's ctrl directory):
 - NScanHour (404)
 - NScanMinute (405)
 - NScanPmQ (406)
+- FileInfoPrompt (232)
+- FileAlreadyInQueue (303)
