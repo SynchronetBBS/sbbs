@@ -174,7 +174,7 @@ void wizard_msg(int page, int total, const char* text)
 {
 	uifc.showbuf(WIN_HLP|WIN_DYN|WIN_L2R, 2, 2, 76, 20, "Setup Wizard", text, NULL, NULL);
 	if(page > 0 && page < total) {
-		int x = (uifc.scrn_width / 2) + 22;
+		int x = (uifc.scrn_width / 2) + 21;
 		int y = 21;
 		uifc.printf(x, y, uifc.cclr|(uifc.bclr<<4),  "%*.*s", total, total
 			, "\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1\xb1");
