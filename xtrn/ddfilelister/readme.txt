@@ -1,6 +1,6 @@
                         Digital Distortion File Lister
-                                 Version 2.24a
-                           Release date: 2024-10-29
+                                 Version 2.25
+                           Release date: 2024-10-31
 
                                      by
 
@@ -246,6 +246,10 @@ blankNFilesListedStrIfLoadableModule  When used as a loadable module, whether or
                                       string (from text.dat) so that Synchronet
                                       won't display it after the lister exits
 
+displayUserAvatars                    Whether or not to display uploader avatars
+                                      in extended information for files. Valid
+                                      values are true and false.
+
 themeFilename                         The name of the configuration file to
                                       use for colors & string settings
 
@@ -369,3 +373,5 @@ Synchronet's ctrl directory):
 - NScanHour (404)
 - NScanMinute (405)
 - NScanPmQ (406)
+- FileInfoPrompt (232)
+- FileAlreadyInQueue (303)
