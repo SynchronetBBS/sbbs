@@ -214,7 +214,7 @@ int edit_sys_timezone(int page, int total)
 		strcpy(opt[i++],"Hawaii/Alaska");
 		strcpy(opt[i++],"Bering");
 		opt[i][0]=0;
-		switch(cfg.sys_timezone) {
+		switch(((uint16_t)cfg.sys_timezone) & ~DAYLIGHT) {
 			default:
 			case AST: i = 0; break;
 			case EST: i = 1; break;
@@ -1331,8 +1331,8 @@ int edit_sys_datefmt(int page, int total)
 	uifc.helpbuf=
 		"`Numeric Date Format:`\n"
 		"\n"
-		"If you would like abbreviated dates to be displayed in the traditional\n"
-		"U.S. date format of month first, choose `MM/DD/YY`.  If you prefer the\n"
+		"If you would like short dates to be displayed in the traditional U.S.\n"
+		"date format of month first, choose `MM/DD/YY`.  If you prefer the\n"
 		"European traditional date format of day first, choose `DD/MM/YY`.\n"
 		"If you and your users would prefer year first, choose `YY/MM/DD`.\n"
 		"\n"
@@ -1363,13 +1363,14 @@ int edit_sys_date_verbal(int page, int total)
 {
 	int mode = WIN_SAV | WIN_MID;
 	int i = cfg.sys_date_verbal;
-	char* opts[] = {
-		"Numeric", "Verbal",
-		NULL };
+	time_t t = time(NULL);
+	snprintf(opt[0],MAX_OPLN,"Numeric (e.g. %s)", unixtodstr(&cfg, (time32_t)t, tmp));
+	snprintf(opt[1],MAX_OPLN,"Verbal  (e.g. %s)", verbal_datestr(&cfg, (time32_t)t, tmp));
+	opt[2][0] = '\0';
 	uifc.helpbuf=
 		"`Short Date Display Format:`\n"
 		"\n"
-		"If you would like abbreviated dates to be displayed using verbal\n"
+		"If you would like short (8 character) dates to be displayed using verbal\n"
 		"(non-numeric, less ambiguous) month name abbreviations, choose `Verbal`.";
 	;
 	if(page) {
@@ -1378,7 +1379,7 @@ int edit_sys_date_verbal(int page, int total)
 		uifc.list_height = 2;
 	}
 	i=uifc.list(mode, 0, 11, 0,&i,0
-		,"Short Date Display Format", opts);
+		,"Short Date Display Format", opt);
 	if (i < 0)
 		return i;
 	cfg.sys_date_verbal = i;
