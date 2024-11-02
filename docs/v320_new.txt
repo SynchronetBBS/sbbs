@@ -186,6 +186,8 @@ o New text.dat strings:
   - QWKSettingsWrapText
   - UnknownUploader
   - FREE
+  - Sun - Sat
+  - Jan - Dec
 o New text.dat strings for received Fido and Internet mail
   - InternetMailReceived
   - InternetMailForwarded
@@ -597,6 +599,7 @@ o Fix heap corruption in decoding of quoted-printable text in smblib
 o Fix erroneous filtering of vote messages by age
   e.g. !Filtering QWK message from (null) due to age: 19321 days
 o Fix: Include blank lines in messages edited with internal editor
+o Internal message editor now supports deletion of ranges of lines with /D cmd
 o Don't save draft messages upon disconnect for Guest or "no one" (user #0)
 o Fixes for moderated message bases (e.g. ignore deleted messages)
 o P-restricted users (including QWKnet accounts) can no-longer post polls
