@@ -2265,6 +2265,8 @@ screen_to_ciolib(int screen)
 			return EGA80X25;
 		case SCREEN_MODE_VGA_80X25:
 			return VGA80X25;
+		case SCREEN_MODE_PRESTEL:
+			return PRESTEL_40X24;
 	}
 	gettextinfo(&ti);
 	return ti.currmode;
@@ -2320,6 +2322,8 @@ ciolib_to_screen(int ciolib)
 			return SCREEN_MODE_CUSTOM;
 		case EGA80X25:
 			return SCREEN_MODE_EGA_80X25;
+		case PRESTEL_40X24:
+			return SCREEN_MODE_PRESTEL;
 	}
 	return SCREEN_MODE_CURRENT;
 }

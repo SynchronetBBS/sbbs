@@ -455,4 +455,10 @@ every size.  The following table summarizes the available fonts.
 |√
 |
 |ISO_8859_1
+
+|Prestel
+|√
+|
+|
+|ISO_8859_1
 |===

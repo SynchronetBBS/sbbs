@@ -784,12 +784,213 @@ setwindow(struct cterminal *cterm)
 	WINDOW(col, row, max_col, max_row);
 }
 
+static void
+set_attr(struct cterminal *cterm, unsigned char colour, bool bg)
+{
+	if (bg) {
+		cterm->attr &= 0x8F;
+		cterm->attr |= ((colour & 0x07) << 4);
+	}
+	else {
+		cterm->attr &= 0xF8;
+		cterm->attr |= (colour & 0x07);
+	}
+	attr2palette(cterm->attr, bg ? NULL : &cterm->fg_color, bg ? &cterm->bg_color : NULL);
+	if (bg)
+		FREE_AND_NULL(cterm->bg_tc_str);
+	else
+		FREE_AND_NULL(cterm->fg_tc_str);
+}
+
+static void
+set_fgattr(struct cterminal *cterm, unsigned char colour)
+{
+	set_attr(cterm, colour, false ^ cterm->negative);
+}
+
+static void
+set_bgattr(struct cterminal *cterm, unsigned char colour)
+{
+	set_attr(cterm, colour, true ^ cterm->negative);
+}
+
+static void
+prestel_new_line(struct cterminal *cterm)
+{
+	cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_CONCEAL | CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT | CTERM_EXTATTR_PRESTEL_HOLD | CTERM_EXTATTR_PRESTEL_MOSAIC | CTERM_EXTATTR_PRESTEL_SEPARATED);
+	cterm->attr = 7;
+	attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
+	cterm->prestel_last_mosaic = 32;
+	TEXTATTR(cterm->attr);
+	setcolour(cterm->fg_color, cterm->bg_color);
+}
+
+static void
+prestel_apply_ctrl(struct cterminal *cterm, uint8_t ch)
+{
+	switch(ch) {
+		case 64: // Alphanumeric Black
+			set_fgattr(cterm, BLACK);
+			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_MOSAIC);
+			cterm->prestel_last_mosaic = 32;
+			break;
+		case 65: // Alphanumeric Red
+			set_fgattr(cterm, RED);
+			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_MOSAIC);
+			cterm->prestel_last_mosaic = 32;
+			break;
+		case 66: // Alphanumeric Green
+			set_fgattr(cterm, GREEN);
+			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_MOSAIC);
+			cterm->prestel_last_mosaic = 32;
+			break;
+		case 67: // Alphanumeric Yellow
+			set_fgattr(cterm, BROWN);
+			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_MOSAIC);
+			cterm->prestel_last_mosaic = 32;
+			break;
+		case 68: // Alphanumeric Blue
+			set_fgattr(cterm, BLUE);
+			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_MOSAIC);
+			cterm->prestel_last_mosaic = 32;
+			break;
+		case 69: // Alphanumeric Magenta
+			set_fgattr(cterm, MAGENTA);
+			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_MOSAIC);
+			cterm->prestel_last_mosaic = 32;
+			break;
+		case 70: // Alphanumeric Cyan
+			set_fgattr(cterm, CYAN);
+			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_MOSAIC);
+			cterm->prestel_last_mosaic = 32;
+			break;
+		case 71: // Alphanumeric White
+			set_fgattr(cterm, LIGHTGRAY);
+			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_MOSAIC);
+			cterm->prestel_last_mosaic = 32;
+			break;
+		case 72: // Flash
+			cterm->attr |= 0x80;
+			attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
+			break;
+		case 73: // Steady
+			cterm->attr &= 0x7f;
+			attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
+			break;
+		case 76: // Normal Height
+			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT);
+			cterm->prestel_last_mosaic = 32;
+			break;
+		case 77: // Double Height
+			cterm->extattr |= CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT;
+			cterm->prestel_last_mosaic = 32;
+			break;
+		case 80: // Mosaic Black
+			set_fgattr(cterm, BLACK);
+			cterm->extattr |= CTERM_EXTATTR_PRESTEL_MOSAIC;
+			cterm->prestel_last_mosaic = 32;
+			break;
+		case 81: // Mosaic Red
+			set_fgattr(cterm, RED);
+			cterm->extattr |= CTERM_EXTATTR_PRESTEL_MOSAIC;
+			cterm->prestel_last_mosaic = 32;
+			break;
+		case 82: // Mosaic Green
+			set_fgattr(cterm, GREEN);
+			cterm->extattr |= CTERM_EXTATTR_PRESTEL_MOSAIC;
+			cterm->prestel_last_mosaic = 32;
+			break;
+		case 83: // Mosaic Yellow
+			set_fgattr(cterm, BROWN);
+			cterm->extattr |= CTERM_EXTATTR_PRESTEL_MOSAIC;
+			cterm->prestel_last_mosaic = 32;
+			break;
+		case 84: // Mosaic Blue
+			set_fgattr(cterm, BLUE);
+			cterm->extattr |= CTERM_EXTATTR_PRESTEL_MOSAIC;
+			cterm->prestel_last_mosaic = 32;
+			break;
+		case 85: // Mosaic Magenta
+			set_fgattr(cterm, MAGENTA);
+			cterm->extattr |= CTERM_EXTATTR_PRESTEL_MOSAIC;
+			cterm->prestel_last_mosaic = 32;
+			break;
+		case 86: // Mosaic Cyan
+			set_fgattr(cterm, CYAN);
+			cterm->extattr |= CTERM_EXTATTR_PRESTEL_MOSAIC;
+			cterm->prestel_last_mosaic = 32;
+			break;
+		case 87: // Mosaic White
+			set_fgattr(cterm, LIGHTGRAY);
+			cterm->extattr |= CTERM_EXTATTR_PRESTEL_MOSAIC;
+			cterm->prestel_last_mosaic = 32;
+			break;
+		case 88: // Conceal Display
+			cterm->attr |= 0x08;
+			cterm->extattr |= CTERM_EXTATTR_PRESTEL_MOSAIC;
+			break;
+		case 89: // Contiguous Mosaics
+			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_SEPARATED);
+			break;
+		case 90: // Separated Mosaics
+			cterm->extattr |= CTERM_EXTATTR_PRESTEL_SEPARATED;
+			break;
+		case 92: // Black Background
+			set_bgattr(cterm, BLACK);
+			break;
+		case 93: // New Background
+			set_bgattr(cterm, cterm->attr & 0x07);
+			break;
+		case 94: // Hold Mosaics
+			cterm->extattr |= CTERM_EXTATTR_PRESTEL_HOLD;
+			break;
+		case 95: // Release Mosaics
+			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_HOLD);
+			break;
+	}
+	TEXTATTR(cterm->attr);
+	setcolour(cterm->fg_color, cterm->bg_color);
+}
+
+static void
+prestel_get_state(struct cterminal *cterm)
+{
+	struct vmem_cell *line;
+	int sx, sy;
+	int tx, ty;
+
+	SCR_XY(&sx, &sy);
+	TERM_XY(&tx, &ty);
+	line = malloc(sizeof(*line) * tx);
+	prestel_new_line(cterm);
+	if (tx > 1) {
+		vmem_gettext(cterm->x, sy, cterm->x + tx - 2, sy, line);
+		for (int i = 0; i < (tx - 1); i++) {
+			uint8_t ch = line[i].ch;
+			if (line[i].fg & 0x7F000000) {
+				ch = (line[i].fg & 0x7F000000) >> 24;
+				prestel_apply_ctrl(cterm, ch);
+			}
+			else {
+				if (ch >= 128) {
+					cterm->prestel_last_mosaic = ch;
+					if (ch >= 192)
+						cterm->prestel_last_mosaic -= 64;
+				}
+			}
+		}
+	}
+	free(line);
+}
+
 void
 cterm_gotoxy(struct cterminal *cterm, int x, int y)
 {
 	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_CURR, &x, &y);
 	GOTOXY(x, y);
 	ABS_XY(&cterm->xpos, &cterm->ypos);
+	if (cterm->emulation == CTERM_EMULATION_PRESTEL)
+		prestel_get_state(cterm);
 }
 
 static void
@@ -2317,6 +2518,14 @@ adjust_currpos(struct cterminal *cterm, int xadj, int yadj, int scroll)
 			ty = TERM_MINX;
 		else
 			ty += yadj;
+		if (cterm->emulation == CTERM_EMULATION_PRESTEL) {
+			while (ty > TERM_MAXY) {
+				ty -= TERM_MAXY;
+			}
+			while (ty < TERM_MINY) {
+				ty += TERM_MAXY;
+			}
+		}
 		if (scroll) {
 			while(ty > TERM_MAXY) {
 				cterm_scrollup(cterm);
@@ -2364,6 +2573,8 @@ adjust_currpos(struct cterminal *cterm, int xadj, int yadj, int scroll)
 	if (ty < cterm->top_margin && y >= cterm->top_margin)
 		ty = cterm->top_margin;
 	GOTOXY(tx, ty);
+	if (cterm->emulation == CTERM_EMULATION_PRESTEL)
+		prestel_get_state(cterm);
 }
 
 static int
@@ -2433,36 +2644,6 @@ set_negative(struct cterminal *cterm, bool on)
 		cterm->bg_color = tmp_colour;
 		cterm->negative = on;
 	}
-}
-
-static void
-set_attr(struct cterminal *cterm, unsigned char colour, bool bg)
-{
-	if (bg) {
-		cterm->attr &= 0x8F;
-		cterm->attr |= ((colour & 0x07) << 4);
-	}
-	else {
-		cterm->attr &= 0xF8;
-		cterm->attr |= (colour & 0x07);
-	}
-	attr2palette(cterm->attr, bg ? NULL : &cterm->fg_color, bg ? &cterm->bg_color : NULL);
-	if (bg)
-		FREE_AND_NULL(cterm->bg_tc_str);
-	else
-		FREE_AND_NULL(cterm->fg_tc_str);
-}
-
-static void
-set_fgattr(struct cterminal *cterm, unsigned char colour)
-{
-	set_attr(cterm, colour, false ^ cterm->negative);
-}
-
-static void
-set_bgattr(struct cterminal *cterm, unsigned char colour)
-{
-	set_attr(cterm, colour, true ^ cterm->negative);
 }
 
 static void
@@ -4699,6 +4880,10 @@ struct cterminal* cterm_init(int height, int width, int xpos, int ypos, int back
 		sem_init(&cterm->playnote_thread_terminated,0,0);
 		_beginthread(playnote_thread, 0, cterm);
 	}
+	if (cterm->emulation == CTERM_EMULATION_PRESTEL) {
+		cterm->cursor = _NOCURSOR;
+		SETCURSORTYPE(cterm->cursor);
+	}
 
 	return cterm;
 }
@@ -4751,12 +4936,25 @@ advance_char(struct cterminal *cterm, int *x, int *y, int move)
 			GOTOXY(*x, *y);
 		}
 		else if(*y == bm && (*x == rm || *x == CURR_MAXX)) {
-			cond_scrollup(cterm);
-			move = 1;
-			*x = lm;
+			if (cterm->emulation == CTERM_EMULATION_PRESTEL) {
+				*y = cterm->top_margin;
+				move = 1;
+				*x = lm;
+				if (cterm->emulation == CTERM_EMULATION_PRESTEL) {
+					prestel_new_line(cterm);
+				}
+			}
+			else {
+				cond_scrollup(cterm);
+				move = 1;
+				*x = lm;
+			}
 		}
 		else {
 			if(*x == rm || *x == CURR_MAXX) {
+				if (cterm->emulation == CTERM_EMULATION_PRESTEL) {
+					prestel_new_line(cterm);
+				}
 				*x=lm;
 				if (*y < CURR_MAXY)
 					(*y)++;
@@ -5014,6 +5212,48 @@ static void parse_macro_intro(struct cterminal *cterm)
 #define uctputs(c, p)	ctputs(c, (char *)p)
 #define ustrcat(b, s)	strcat((char *)b, (const char *)s)
 
+static void
+prestel_move(struct cterminal *cterm, int xadj, int yadj)
+{
+	int tx, ty;
+
+	TERM_XY(&tx, &ty);
+	tx += xadj;
+	ty += yadj;
+	// First, fix up x...
+	while (tx < cterm->left_margin) {
+		ty--;
+		tx += TERM_MAXX;
+	}
+	while (tx > cterm->right_margin) {
+		ty++;
+		tx -= TERM_MAXX;
+	}
+	// Now fix up y
+	while (ty < cterm->top_margin) {
+		ty += TERM_MAXY;
+	}
+	while (ty > cterm->bottom_margin) {
+		ty -= TERM_MAXY;
+	}
+	GOTOXY(tx, ty);
+	prestel_get_state(cterm);
+}
+
+static void prestel_fix_line(struct cterminal *cterm, int y)
+{
+	int sy = y;
+	int sx = 1;
+	int ex = 1;
+	struct vmem_cell *line;
+
+	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &sy, &sx);
+	ex = sx + TERM_MAXX - 1;
+	line = malloc(sizeof(*line) * (ex - sx + 1));
+	vmem_gettext(sx, sy, ex, sy, line);
+	free(line);
+}
+
 CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int buflen, char *retbuf, size_t retsize, int *speed)
 {
 	const unsigned char *buf = (unsigned char *)vbuf;
@@ -5079,6 +5319,8 @@ CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int b
 			if(cterm->log==CTERM_LOG_RAW && cterm->logfile != NULL)
 				fwrite(buf, buflen, 1, cterm->logfile);
 			prn[0]=0;
+			if (cterm->emulation == CTERM_EMULATION_PRESTEL)
+				prestel_get_state(cterm);
 			for(j=0;j<buflen;j++) {
 				if(ustrlen(prn) >= sizeof(prn)-sizeof(cterm->escbuf)) {
 					uctputs(cterm, prn);
@@ -5218,27 +5460,51 @@ CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int b
 				}
 				else if(cterm->sequence) {
 					ustrcat(cterm->escbuf,ch);
-					switch(legal_sequence(cterm->escbuf, sizeof(cterm->escbuf)-1)) {
-						case SEQ_BROKEN:
-							/* Broken sequence detected */
-							ustrcat(prn,"\033");
-							ustrcat(prn,cterm->escbuf);
-							cterm->escbuf[0]=0;
-							cterm->sequence=0;
-							if(ch[0]=='\033') {	/* Broken sequence followed by a legal one! */
-								if(prn[0])	/* Don't display the ESC */
-									prn[ustrlen(prn)-1]=0;
-								uctputs(cterm, prn);
-								prn[0]=0;
-								cterm->sequence=1;
-							}
-							break;
-						case SEQ_INCOMPLETE:
-							break;
-						case SEQ_COMPLETE:
-							do_ansi(cterm, retbuf, retsize, speed, lastch);
-							lastch = 0;
-							break;
+					if (cterm->emulation == CTERM_EMULATION_PRESTEL) {
+						prestel_apply_ctrl(cterm, ch[0]);
+						cterm->escbuf[0]=0;
+						cterm->sequence=0;
+						if (cterm->extattr & CTERM_EXTATTR_PRESTEL_HOLD) {
+							tmpvc[0].ch = cterm->prestel_last_mosaic;
+							if ((tmpvc[0].ch >= 128) && (cterm->extattr & CTERM_EXTATTR_PRESTEL_SEPARATED))
+								tmpvc[0].ch += 64;
+						}
+						else {
+							tmpvc[0].ch = ch[0] - 64;
+						}
+						tmpvc[0].legacy_attr=cterm->attr;
+						tmpvc[0].fg = cterm->fg_color | (ch[0] << 24);
+						tmpvc[0].bg = cterm->bg_color;
+						tmpvc[0].font = ciolib_attrfont(cterm->attr);
+						SCR_XY(&sx, &sy);
+						vmem_puttext(sx, sy, sx, sy, tmpvc);
+						ch[1]=0;
+						CURR_XY(&x, &y);
+						advance_char(cterm, &x, &y, 1);
+					}
+					else {
+						switch(legal_sequence(cterm->escbuf, sizeof(cterm->escbuf)-1)) {
+							case SEQ_BROKEN:
+								/* Broken sequence detected */
+								ustrcat(prn,"\033");
+								ustrcat(prn,cterm->escbuf);
+								cterm->escbuf[0]=0;
+								cterm->sequence=0;
+								if(ch[0]=='\033') {	/* Broken sequence followed by a legal one! */
+									if(prn[0])	/* Don't display the ESC */
+										prn[ustrlen(prn)-1]=0;
+									uctputs(cterm, prn);
+									prn[0]=0;
+									cterm->sequence=1;
+								}
+								break;
+							case SEQ_INCOMPLETE:
+								break;
+							case SEQ_COMPLETE:
+								do_ansi(cterm, retbuf, retsize, speed, lastch);
+								lastch = 0;
+								break;
+						}
 					}
 				}
 				else if (cterm->music) {
@@ -5709,6 +5975,92 @@ CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int b
 								CURR_XY(&x, &y);
 								advance_char(cterm, &x, &y, 1);
 								break;
+						}
+					}
+					else if(cterm->emulation == CTERM_EMULATION_PRESTEL) {
+						switch(buf[j]) {
+							case 0: // NUL
+								uctputs(cterm, prn);
+								prn[0]=0;
+								break;
+							case 5: // ENQ
+								// Send memory 1
+								if(strlen(retbuf) + 10 < retsize)
+									// TODO: Use the memories...
+									strcat(retbuf, "0000000000");
+								break;
+							case 8: // APB (Active Position Packward)
+								lastch = 0;
+								uctputs(cterm, prn);
+								prn[0]=0;
+								prestel_move(cterm, -1, 0);
+								break;
+							case 9: // APF (Active Position Forward)
+								lastch = 0;
+								uctputs(cterm, prn);
+								prn[0]=0;
+								prestel_move(cterm, 1, 0);
+								break;
+							case 10: // APD (Active Position Down)
+								lastch = 0;
+								uctputs(cterm, prn);
+								prn[0]=0;
+								prestel_move(cterm, 0, 1);
+								break;
+							case 11: // APU (Active Position Up)
+								lastch = 0;
+								uctputs(cterm, prn);
+								prn[0]=0;
+								prestel_move(cterm, 0, -1);
+								break;
+							case 12: // CS (Clear Screen)
+								lastch = 0;
+								uctputs(cterm, prn);
+								prn[0]=0;
+								prestel_new_line(cterm);
+								cterm_clearscreen(cterm, (char)cterm->attr);
+								GOTOXY(CURR_MINX, CURR_MINY);
+								break;
+							case 17: // Cursor on
+								cterm->cursor=_NORMALCURSOR;
+								SETCURSORTYPE(cterm->cursor);
+								break;
+							case 20: // Cursor off
+								cterm->cursor=_NOCURSOR;
+								SETCURSORTYPE(cterm->cursor);
+								break;
+							case 27: // ESC
+								uctputs(cterm, prn);
+								prn[0]=0;
+								cterm->sequence=1;
+								break;
+							case 30: // APH (Active Position Home)
+								lastch = 0;
+								uctputs(cterm, prn);
+								prn[0]=0;
+								GOTOXY(CURR_MINX, CURR_MINY);
+								prestel_new_line(cterm);
+								break;
+							default:
+								if (buf[j] == 13 || buf[j] == 10 || (buf[j] >= 32 && buf[j] <= 127)) {
+									if (cterm->extattr & CTERM_EXTATTR_PRESTEL_MOSAIC) {
+										if (buf[j] < 64 && buf[j] >= 32)
+											ch[0] = buf[j] + 96;
+										else if (buf[j] >= 96 && buf[j] < 128)
+											ch[0] = buf[j] + 64;
+										else
+											ch[0] = buf[j];
+										if (ch[0] >= 128)
+											cterm->prestel_last_mosaic = ch[0];
+										if (cterm->extattr & CTERM_EXTATTR_PRESTEL_SEPARATED) {
+											if (ch[0] >= 128)
+												ch[0] += 64;
+										}
+									}
+									else
+										lastch = ch[0];
+									ustrcat(prn,ch);
+								}
 						}
 					}
 					else {	/* ANSI-BBS */

@@ -118,11 +118,12 @@ enum {
 	,COLOUR_PALETTE
 	,C64_PALETTE
 	,ATARI_PALETTE
+	,PRESTEL_PALETTE
 };
 
-extern struct video_params vparams[56];
+extern struct video_params vparams[57];
 #define NUMMODES      (sizeof(vparams) / sizeof(struct video_params))
-extern uint32_t palettes[5][16];
+extern uint32_t palettes[6][16];
 extern struct dac_colors dac_default[TOTAL_DAC_SIZE];
 extern char vga_font_bitmap[4096];
 extern char vga_font_bitmap14[3584];
