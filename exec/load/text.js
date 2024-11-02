@@ -884,7 +884,26 @@ var NodeConnectionSFTP=874;
 var QWKSettingsWrapText=875;
 var UnknownUploader=876;
 var FREE=877;
+var Sun=878;
+var Mon=879;
+var Tue=880;
+var Wed=881;
+var Thu=882;
+var Fri=883;
+var Sat=884;
+var Jan=885;
+var Feb=886;
+var Mar=887;
+var Apr=888;
+var May=889;
+var Jun=890;
+var Jul=891;
+var Aug=892;
+var Sep=893;
+var Oct=894;
+var Nov=895;
+var Dec=896;
 
-var TOTAL_TEXT=878;
+var TOTAL_TEXT=897;
 
 this;
