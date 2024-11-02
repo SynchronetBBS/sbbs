@@ -453,7 +453,7 @@ bool iniRemoveSectionFast(str_list_t list, const char* section)
 	if(list[i]==NULL)	/* not found */
 		return(false);
 	do {
-		strListFastDelete(list,i);
+		strListFastDelete(list,i, /* count: */1);
 	} while(list[i]!=NULL && *list[i]!=INI_OPEN_SECTION_CHAR);
 
 	return(true);

@@ -73,11 +73,11 @@ DLLEXPORT char*			strListInsertFormat(str_list_t* list, size_t index, const char
 
 /* Remove a string at a specific index */
 DLLEXPORT char*			strListRemove(str_list_t*, size_t index);
-DLLEXPORT char*			strListFastRemove(str_list_t, size_t index);
+DLLEXPORT bool			strListFastRemove(str_list_t, size_t index, size_t count);
 
 /* Remove and free a string at a specific index */
 DLLEXPORT bool			strListDelete(str_list_t*, size_t index);
-DLLEXPORT bool			strListFastDelete(str_list_t, size_t index);
+DLLEXPORT bool			strListFastDelete(str_list_t, size_t index, size_t count);
 
 /* Replace a string at a specific index */
 DLLEXPORT char*			strListReplace(const str_list_t, size_t index, const char* str);

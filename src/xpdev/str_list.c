@@ -152,25 +152,23 @@ char* strListRemove(str_list_t* list, size_t index)
 }
 
 // Remove without realloc
-char* strListFastRemove(str_list_t list, size_t index)
+bool strListFastRemove(str_list_t list, size_t index, size_t count)
 {
-	char*	str;
 	size_t	i;
-	size_t	count;
+	size_t	total;
 
-	count = strListCount(list);
+	total = strListCount(list);
 
-	if(index == STR_LIST_LAST_INDEX && count)
-		index = count-1;
+	if(index == STR_LIST_LAST_INDEX && total)
+		index = total-1;
 
-	if(index >= count)	/* invalid index, do nothing */
-		return NULL;
+	if(index + count > total)	/* invalid index, do nothing */
+		return false;
 
-	str = list[index];
-	for(i = index; i < count; i++)
-		list[i] = list[i + 1];
+	for(i = index; i <= total - count; ++i)
+		list[i] = list[i + count];
 
-	return str;
+	return true;
 }
 
 bool strListDelete(str_list_t* list, size_t index)
@@ -185,16 +183,18 @@ bool strListDelete(str_list_t* list, size_t index)
 	return(true);
 }
 
-bool strListFastDelete(str_list_t list, size_t index)
+bool strListFastDelete(str_list_t list, size_t index, size_t count)
 {
-	char*	str;
+	size_t	i;
 
-	if((str=strListFastRemove(list, index))==NULL)
-		return(false);
+	for(i = 0; i < count; ++i)
+		if(list[index + i] == NULL)
+			return false;
 
-	free(str);
+	for(i = 0; i < count; ++i)
+		free(list[index + i]);
 
-	return(true);
+	return strListFastRemove(list, index, count);
 }
 
 char* strListReplace(const str_list_t list, size_t index, const char* str)
@@ -917,7 +917,7 @@ int strListFastDeleteBlanks(str_list_t list)
 
 	for(i = 0; list[i] != NULL; ) {
 		if(list[i][0] == '\0')
-			strListFastDelete(list, i);
+			strListFastDelete(list, i, /* count: */1);
 		else
 			i++;
 	}
