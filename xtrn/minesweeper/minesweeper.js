@@ -1454,7 +1454,8 @@ function play()
 				console.line_counter = 0;
 				console.clear();
 				console.printfile(help_file);
-				console.pause();
+				if(console.line_counter)
+					console.pause();
 				console.clear();
 				console.aborted = false;
 				full_redraw = true;
@@ -1463,6 +1464,11 @@ function play()
 			case '\t':
 				highlight = !highlight;
 				break;
+			case CTRL_G:	// graphics toggle/re-detect
+				graph = !graph;
+				if(graph)
+					graph = cterm.query_ctda(cterm.cterm_device_attributes.pixelops_supported);
+				// Fall-through
 			case CTRL_R:
 				console.clear();
 				full_redraw = true;

@@ -50,6 +50,8 @@ It's a game of quick deduction, pattern-recognition, and a little bit o' luck!
 
 ù hcTogglen the affected-area highlight feature with the hTABn key.
   Cycle through the available block-selector styles using hCtrl-Sn.
+  
+ù Toggle hcgraphics moden (when supported) with the hCtrl-Gn key.
 
 hDifficulty Leveln:
 
@@ -87,4 +89,4 @@ your terminal, you can try using these alternatives:
   
 ... or use the numeric keypad.
 
-$Id: minesweeper.hlp,v 2.0 2019/09/27 03:01:45 rswindell Exp $
+Good luck!
