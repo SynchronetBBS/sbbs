@@ -330,3 +330,13 @@ $(UPGRADE_TO_V320): $(UPGRADE_TO_V320_OBJS) $(OBJODIR) | $(EXEODIR)
 	@echo Linking $@
 	$(QUIET)$(CC) $(CONSOLE_LDFLAGS) -o $@ $(UPGRADE_TO_V320_OBJS) $(SMBLIB_LIBS) $(XPDEV_LIBS) $(ENCODE_LIBS) $(HASH_LIBS)
 
+ifdef SBBS_OFFICIAL
+ifdef SBBSCTRL
+$(EXEODIR)/textgen: $(TEXTGEN_OBJS)
+	@echo Linking $@
+	$(QUIET)$(CC) -o $@ $(TEXTGEN_OBJS) $(XPDEV_LIB) $(ENCODE_LIB) -lm
+
+text.h: $(SBBSCTRL)/text.dat $(EXEODIR)/textgen
+	$(EXEODIR)/textgen
+endif
+endif
