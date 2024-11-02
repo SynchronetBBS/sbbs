@@ -1053,7 +1053,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 				continue;
 			}
 		}
-		if(strin[0]=='/' && strlen(strin)<8) {
+		if(strin[0]=='/' && strlen(strin)<16) {
 			if(!stricmp(strin,"/DEBUG") && SYSOP) {
 				bprintf("\r\nline=%d lines=%d (%d), rows=%d\r\n",line,lines,(int)strListCount(str), rows);
 				continue;
@@ -1062,26 +1062,35 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 				strListFree(&str);
 				return(0);
 			}
-			else if(toupper(strin[1])=='D') {	/* delete a line */
-				if(str[0] == NULL)
-					continue;
+			else if(toupper(strin[1])=='D') {	// delete line(s)
 				lines = strListCount(str);
-				i=atoi(strin+2)-1;
-				if(i==-1)   /* /D means delete last line */
-					i=lines-1;
-				if(i>=(int)lines || i<0)
-					bputs(text[InvalidLineNumber]);
-				else {
-					free(str[i]);
-					lines--;
-					while(i<(int)lines) {
-						str[i]=str[i+1];
-						i++;
+				char* p = strin + 2;
+				int first = atoi(p) - 1;
+				if(first < 0 || (uint)first >= lines) {
+					if(*p) {
+						bputs(text[InvalidLineNumber]);
+						continue;
 					}
-					str[i] = NULL;
-					if(line>lines)
-						line=lines;
+					first = lines - 1; // /D means delete last line
+					if(first < 0)
+						continue;
 				}
+				int last = first;
+				SKIP_DIGIT(p);
+				FIND_CHAR(p, '-');
+				if(*p == '-') {
+					++p;
+					last = atoi(p) - 1;
+					if(last < first || (uint)last >= lines) {
+						bputs(text[InvalidLineNumber]);
+						continue;
+					}
+				}
+				int count = (last - first) + 1;
+				strListFastDelete(str, first, count);
+				lines -= count;
+				if(line>lines)
+					line=lines;
 				continue;
 			}
 			else if(toupper(strin[1])=='I') {	/* insert a line before number x */
