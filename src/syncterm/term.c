@@ -4413,6 +4413,51 @@ doterm(struct bbslist *bbs)
 						break;
 				}
 			}
+			else if (key && (cterm->emulation == CTERM_EMULATION_PRESTEL)) {
+				switch (key) {
+					case '#':
+						ch[0] = '_';
+						conn_send(ch, 1, 0);
+						break;
+					// TODO: Can send control chars instead...
+					case 8:
+					case CIO_KEY_DC:
+					case CIO_KEY_LEFT:
+						ch[0] = 8;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_RIGHT:
+						ch[0] = 9;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_UP:
+						ch[0] = 11;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_DOWN:
+						ch[0] = 10;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_HOME:
+						ch[0] = 0x1f;
+						conn_send(ch, 1, 0);
+						break;
+					case '_':
+						ch[0] = '`';
+						conn_send(ch, 1, 0);
+						break;
+					// TODO: Map £ ('#'), ½ (\), ¼ ({), ¾ (}), ÷ (~)
+					// TODO: Add Reveal key
+					// TODO: Add clear screen key
+					// TODO: Make return # or some shit...
+					default:
+						if (key == 13 || (key < 129 && key > 31)) {
+							ch[0] = key;
+							conn_send(ch, 1, 0);
+						}
+						break;
+				}
+			}
 			else if (key) {
 				switch (key) {
 					case CIO_KEY_LEFT:

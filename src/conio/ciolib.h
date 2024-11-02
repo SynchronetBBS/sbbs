@@ -90,8 +90,8 @@ enum {
 	,CYAN
 	,RED
 	,MAGENTA
-	,BROWN	
-	,LIGHTGRAY	
+	,BROWN
+	,LIGHTGRAY
 	,DARKGRAY
 	,LIGHTBLUE	
 	,LIGHTGREEN	
@@ -203,6 +203,8 @@ enum text_modes
 	VESA_132X50	= 206,
 	VESA_132X60	= 196,
 
+	PRESTEL_40X24   = 254,
+
 	/* Custom Mode */
 	CIOLIB_MODE_CUSTOM = 255,	// Last mode... if it's over 255, text_info can't hold it.
 };
@@ -290,7 +292,7 @@ struct ciolib_screen {
 	uint32_t		palette[16];
 };
 
-#define CONIO_FIRST_FREE_FONT	43
+#define CONIO_FIRST_FREE_FONT	44
 
 typedef struct {
 	int		mode;

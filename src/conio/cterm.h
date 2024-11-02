@@ -56,6 +56,7 @@ typedef enum {
 	 CTERM_EMULATION_ANSI_BBS
 	,CTERM_EMULATION_PETASCII
 	,CTERM_EMULATION_ATASCII
+	,CTERM_EMULATION_PRESTEL
 } cterm_emulation_t;
 
 typedef enum {
@@ -127,6 +128,11 @@ struct cterminal {
 #define CTERM_EXTATTR_DECLRMM		0x0008
 #define CTERM_EXTATTR_BRACKETPASTE      0x0010
 #define CTERM_EXTATTR_DECBKM            0x0020
+#define CTERM_EXTATTR_PRESTEL_MOSAIC	0x0040
+#define CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT 0x0080
+#define CTERM_EXTATTR_PRESTEL_CONCEAL	0x0100
+#define CTERM_EXTATTR_PRESTEL_SEPARATED	0x0200
+#define CTERM_EXTATTR_PRESTEL_HOLD	0x0400
 	int					save_xpos;		// Saved position (for later restore)
 	int					save_ypos;
 	int					sequence;		// An escape sequence is being parsed
@@ -227,6 +233,7 @@ struct cterminal {
 	/* Alternate font renderer */
 	void (*font_render)(char *str);
 	int skypix;
+	uint8_t prestel_last_mosaic;
 
 	/* conio function pointers */
 #ifdef CTERM_WITHOUT_CONIO
