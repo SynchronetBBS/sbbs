@@ -47,7 +47,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 	{NULL, NULL, NULL, "Topaz Plus (Amiga)", CIOLIB_ISO_8859_1},
 	{NULL, NULL, NULL, "MicroKnight (Amiga)", CIOLIB_ISO_8859_1},
 	{NULL, NULL, NULL, "Topaz (Amiga)", CIOLIB_ISO_8859_1},
-	{NULL, NULL, NULL, "Prestel (8x16)", CIOLIB_PRESETL},
+	{NULL, NULL, NULL, "Prestel (8x16)", CIOLIB_PRESTEL},
 };
 #else
 CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
