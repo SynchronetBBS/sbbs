@@ -2850,7 +2850,7 @@ bool user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
 		SAFEPRINTF(usernum, "%u", user->number);
 		int i = strListFind(dest_user_list, usernum, /* case-sensitive: */true);
 		if(i >= 0) {
-			strListFastDelete(dest_user_list, i);
+			strListFastDelete(dest_user_list, i, /* count: */1);
 			char tmp[512];
 			smb_hfield_replace_str(&f, RECIPIENTLIST, strListCombine(dest_user_list, tmp, sizeof(tmp), ","));
 		}
