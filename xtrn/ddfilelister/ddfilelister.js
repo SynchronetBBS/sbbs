@@ -370,6 +370,12 @@ if ((!gUseLightbarInterface || !console.term_supports(USER_ANSI)) && gTraditiona
 // Date/time format string (depends on system settings for date format & military time)
 const gTimeFormatStr = getTimeFormatStr();
 
+
+// Clear the line counter to prevent screen pausing (when
+// doing a search, this script will be called once per directory).
+console.line_counter = 0;
+
+
 // If we are to view file(s), then do so for this file directory
 // and exit
 if (Boolean(gListBehavior & FL_VIEW))
@@ -392,7 +398,6 @@ if (listPopRetObj.exitNow)
 	exit(0); // listPopRetObj.exitCode
 
 // If there are no files, then say so (if not running as a loadable module) and exit.
-console.line_counter = 0;
 if (gFileList.length == 0)
 {
 	if (!gRunningAsLoadableModule)
