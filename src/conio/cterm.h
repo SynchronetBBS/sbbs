@@ -70,6 +70,18 @@ typedef enum {
 
 #define CTERM_NO_SETFONT_REQUESTED	99
 
+enum prestel_prog_states {
+	PRESTEL_PROG_NONE = 0,
+	PRESTEL_PROG_1,
+	PRESTEL_PROG_1_ESC,
+	PRESTEL_PROG_2,
+	PRESTEL_PROG_2_ESC,
+	PRESTEL_PROG_PROGRAM_BLOCK,
+};
+
+#define PRESTEL_MEM_SLOTS 7
+#define PRESTEL_MEM_SLOT_SIZE 16
+
 struct cterminal {
 	/* conio stuff */
 	int	x;		// X position of the left side on the screen
@@ -234,6 +246,11 @@ struct cterminal {
 	void (*font_render)(char *str);
 	int skypix;
 	uint8_t prestel_last_mosaic;
+
+	/* Prestel data */
+	char prestel_data[PRESTEL_MEM_SLOTS][PRESTEL_MEM_SLOT_SIZE];
+	enum prestel_prog_states prestel_prog_state;
+	uint8_t prestel_mem;
 
 	/* conio function pointers */
 #ifdef CTERM_WITHOUT_CONIO
