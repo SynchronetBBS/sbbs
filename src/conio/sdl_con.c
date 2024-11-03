@@ -706,7 +706,9 @@ static void sdl_add_key(unsigned int keyval, struct video_stats *vs)
 	if (keyval == 0xe0)
 		keyval = CIO_KEY_LITERAL_E0;
 	if(keyval==0xa600 && vs != NULL) {
+		pthread_mutex_lock(&win_mutex);
 		fullscreen = !(sdl.GetWindowFlags(win) & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP));
+		pthread_mutex_unlock(&win_mutex);
 		cio_api.mode=fullscreen?CIOLIB_MODE_SDL_FULLSCREEN:CIOLIB_MODE_SDL;
 		update_cvstat(vs);
 		sdl.SetWindowFullscreen(win, fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
@@ -933,8 +935,10 @@ void sdl_video_event_thread(void *data)
 					if ((ev.key.keysym.mod & KMOD_ALT) &&
 					    (ev.key.keysym.sym == SDLK_LEFT ||
 					     ev.key.keysym.sym == SDLK_RIGHT)) {
+						pthread_mutex_lock(&win_mutex);
 						if (sdl.GetWindowFlags(win) & SDL_WINDOW_MAXIMIZED)
 							sdl.RestoreWindow(win);
+						pthread_mutex_unlock(&win_mutex);
 						int w, h;
 						SDL_Rect r;
 						if (sdl.GetDisplayUsableBounds(0, &r) == 0) {
