@@ -123,7 +123,7 @@ const char* sbbsecho_pid(void)
 {
 	static char str[256];
 
-	sprintf(str, "SBBSecho %u.%02u-%s %s/%s %s %s"
+	snprintf(str, sizeof str, "SBBSecho %u.%02u-%s %s/%s %s %s"
 		,SBBSECHO_VERSION_MAJOR,SBBSECHO_VERSION_MINOR,PLATFORM_DESC,GIT_BRANCH,GIT_HASH,GIT_DATE,compiler);
 
 	return str;
@@ -143,7 +143,7 @@ const char* tear_line(char ch)
 {
 	static char str[256];
 
-	sprintf(str,"%c%c%c SBBSecho %u.%02u-%s\r", ch, ch, ch
+	snprintf(str, sizeof str, "%c%c%c SBBSecho %u.%02u-%s\r", ch, ch, ch
 		,SBBSECHO_VERSION_MAJOR,SBBSECHO_VERSION_MINOR,PLATFORM_DESC);
 
 	return str;
@@ -310,20 +310,20 @@ echostat_msg_t parse_echostat_msg(str_list_t ini, const char* section, const cha
 	char key[128];
 	echostat_msg_t msg = {{0}};
 
-	sprintf(key, "%s.to", prefix),			iniGetString(ini, section, key, NULL, msg.to);
-	sprintf(key, "%s.from", prefix),		iniGetString(ini, section, key, NULL, msg.from);
-	sprintf(key, "%s.subj", prefix),		iniGetString(ini, section, key, NULL, msg.subj);
-	sprintf(key, "%s.msg_id", prefix),		iniGetString(ini, section, key, NULL, msg.msg_id);
-	sprintf(key, "%s.reply_id", prefix),	iniGetString(ini, section, key, NULL, msg.reply_id);
-	sprintf(key, "%s.pid", prefix),			iniGetString(ini, section, key, NULL, msg.pid);
-	sprintf(key, "%s.tid", prefix),			iniGetString(ini, section, key, NULL, msg.tid);
-	sprintf(key, "%s.msg_tz", prefix),		iniGetString(ini, section, key, NULL, msg.msg_tz);
-	sprintf(key, "%s.msg_time", prefix),	msg.msg_time = iniGetDateTime(ini, section, key, 0);
-	sprintf(key, "%s.localtime", prefix),	msg.localtime = iniGetDateTime(ini, section, key, 0);
-	sprintf(key, "%s.length", prefix),		msg.length = (size_t)iniGetBytes(ini, section, key, 1, 0);
-	sprintf(key, "%s.origaddr", prefix),	iniGetString(ini, section, key, NULL, str);
+	snprintf(key, sizeof key, "%s.to", prefix),			iniGetString(ini, section, key, NULL, msg.to);
+	snprintf(key, sizeof key, "%s.from", prefix),		iniGetString(ini, section, key, NULL, msg.from);
+	snprintf(key, sizeof key, "%s.subj", prefix),		iniGetString(ini, section, key, NULL, msg.subj);
+	snprintf(key, sizeof key, "%s.msg_id", prefix),		iniGetString(ini, section, key, NULL, msg.msg_id);
+	snprintf(key, sizeof key, "%s.reply_id", prefix),	iniGetString(ini, section, key, NULL, msg.reply_id);
+	snprintf(key, sizeof key, "%s.pid", prefix),			iniGetString(ini, section, key, NULL, msg.pid);
+	snprintf(key, sizeof key, "%s.tid", prefix),			iniGetString(ini, section, key, NULL, msg.tid);
+	snprintf(key, sizeof key, "%s.msg_tz", prefix),		iniGetString(ini, section, key, NULL, msg.msg_tz);
+	snprintf(key, sizeof key, "%s.msg_time", prefix),	msg.msg_time = iniGetDateTime(ini, section, key, 0);
+	snprintf(key, sizeof key, "%s.localtime", prefix),	msg.localtime = iniGetDateTime(ini, section, key, 0);
+	snprintf(key, sizeof key, "%s.length", prefix),		msg.length = (size_t)iniGetBytes(ini, section, key, 1, 0);
+	snprintf(key, sizeof key, "%s.origaddr", prefix),	iniGetString(ini, section, key, NULL, str);
 	if(str[0])	 msg.origaddr = atofaddr(str);
-	sprintf(key, "%s.pkt_orig", prefix),	iniGetString(ini, section, key, NULL, str);
+	snprintf(key, sizeof key, "%s.pkt_orig", prefix),	iniGetString(ini, section, key, NULL, str);
 	if(str[0])	 msg.pkt_orig = atofaddr(str);
 
 	return msg;
@@ -440,11 +440,11 @@ size_t read_echostats(const char* fname, echostat_t **echostat)
 			continue;
 		for(int type = 0; type < ECHOSTAT_MSG_TYPES; type++) {
 			char prefix[32];
-			sprintf(prefix, "First%s", echostat_msg_type[type])
+			snprintf(prefix, sizeof prefix, "First%s", echostat_msg_type[type])
 				,stat->first[type]	= parse_echostat_msg(keys, NULL, prefix);
-			sprintf(prefix, "Last%s", echostat_msg_type[type])
+			snprintf(prefix, sizeof prefix, "Last%s", echostat_msg_type[type])
 				,stat->last[type]	= parse_echostat_msg(keys, NULL, prefix);
-			sprintf(prefix, "Total%s", echostat_msg_type[type])
+			snprintf(prefix, sizeof prefix, "Total%s", echostat_msg_type[type])
 				,stat->total[type] = iniGetLongInt(keys, NULL, prefix, 0);
 		}
 		stat->known = iniGetBool(keys, NULL, "Known", false);
@@ -467,9 +467,9 @@ const char* iniTimeStr(time_t t)
 	if(t == 0)
 		return "Never";
 	if((p = ctime_r(&t, tmp)) == NULL)
-		sprintf(tstr, "0x%lx", (ulong)t);
+		snprintf(tstr, sizeof tstr, "0x%lx", (ulong)t);
 	else
-		sprintf(tstr, "%.3s %.2s %.4s %.8s", p+4, p+8, p+20, p+11);
+		snprintf(tstr, sizeof tstr, "%.3s %.2s %.4s %.8s", p+4, p+8, p+20, p+11);
 
 	return tstr;
 }
@@ -504,8 +504,8 @@ void fwrite_echostat(FILE* fp, echostat_t* stat)
 		fprintf(fp, "Title = %s\n"				, desc);
 	for(int type = 0; type < ECHOSTAT_MSG_TYPES; type++) {
 		char prefix[32];
-		sprintf(prefix, "First%s", echostat_msg_type[type])	, fwrite_echostat_msg(fp, &stat->first[type], prefix);
-		sprintf(prefix, "Last%s", echostat_msg_type[type])	, fwrite_echostat_msg(fp, &stat->last[type], prefix);
+		snprintf(prefix, sizeof prefix, "First%s", echostat_msg_type[type])	, fwrite_echostat_msg(fp, &stat->first[type], prefix);
+		snprintf(prefix, sizeof prefix, "Last%s", echostat_msg_type[type])	, fwrite_echostat_msg(fp, &stat->last[type], prefix);
 		if(stat->total[type] != 0)
 			fprintf(fp,	"Total%s = %lu\n"					, echostat_msg_type[type], stat->total[type]);
 	}
@@ -1075,7 +1075,7 @@ int create_netmail(const char *to, const smbmsg_t* msg, const char *subject, con
 		return -2;
 	}
 	for(i=startmsg;i;i++) {
-		sprintf(fname,"%s%u.msg",scfg.netmail_dir,i);
+		snprintf(fname, sizeof fname, "%s%u.msg",scfg.netmail_dir,i);
 		if(!fexistcase(fname))
 			break;
 	}
@@ -1130,7 +1130,7 @@ int create_netmail(const char *to, const smbmsg_t* msg, const char *subject, con
 
 	t = when_written.time;
 	tm = localtime(&t);
-	sprintf(hdr.time,"%02u %3.3s %02u  %02u:%02u:%02u"
+	snprintf(hdr.time, sizeof hdr.time, "%02u %3.3s %02u  %02u:%02u:%02u"
 		,tm->tm_mday,mon[tm->tm_mon],TM_YEAR(tm->tm_year)
 		,tm->tm_hour,tm->tm_min,tm->tm_sec);
 
@@ -1387,7 +1387,7 @@ void gen_notify_list(nodecfg_t* nodecfg)
 
 		fprintf(tmpf,"Connected Areas\r\n---------------\r\n");
 		for(i=0;i<cfg.areas;i++) {
-			sprintf(str,"%s\r\n",cfg.area[i].tag);
+			snprintf(str, sizeof str, "%s\r\n",cfg.area[i].tag);
 			if(str[0]=='*')
 				continue;
 			if(area_is_linked(i,&cfg.nodecfg[k].addr))
@@ -2005,8 +2005,15 @@ bool areafix_command(char* instr, nodecfg_t* nodecfg, const char* to)
 		FIND_WHITESPACE(p);
 		SKIP_WHITESPACE(p);
 		SAFECOPY(password, p);
+		if(strchr(password, ' ') != NULL) {
+			snprintf(str, sizeof str, "Your AreaMgr password cannot contain spaces.");
+			lprintf(LOG_INFO, "AreaFix (for %s) %s", faddrtoa(&addr), str);
+			create_netmail(to, /* msg: */NULL, "AreaMgr Password Change Request", str
+				,/* dest: */addr, /* src: */NULL);
+			return true;
+		}
 		if(!stricmp(password, nodecfg->password)) {
-			sprintf(str,"Your AreaMgr password was already set to '%s'."
+			snprintf(str, sizeof str, "Your AreaMgr password was already set to '%s'."
 				,nodecfg->password);
 			lprintf(LOG_INFO, "AreaFix (for %s) %s", faddrtoa(&addr), str);
 			create_netmail(to, /* msg: */NULL, "AreaMgr Password Change Request", str
@@ -2032,7 +2039,7 @@ bool areafix_command(char* instr, nodecfg_t* nodecfg, const char* to)
 		SKIP_WHITESPACE(p);
 		SAFECOPY(pktpwd, p);
 		if(!stricmp(pktpwd, nodecfg->pktpwd)) {
-			sprintf(str,"Your packet password was already set to '%s'."
+			snprintf(str, sizeof str, "Your packet password was already set to '%s'."
 				,nodecfg->pktpwd);
 			lprintf(LOG_INFO, "AreaFix (for %s) %s", faddrtoa(&addr), str);
 			create_netmail(to, /* msg: */NULL, "Packet Password Change Request", str, /* dest: */addr, /* src: */NULL);
@@ -2057,7 +2064,7 @@ bool areafix_command(char* instr, nodecfg_t* nodecfg, const char* to)
 		SKIP_WHITESPACE(p);
 		SAFECOPY(ticpwd, p);
 		if(!stricmp(ticpwd, nodecfg->ticpwd)) {
-			sprintf(str,"Your TIC File password was already set to '%s'."
+			snprintf(str, sizeof str, "Your TIC File password was already set to '%s'."
 				,nodecfg->ticpwd);
 			lprintf(LOG_INFO, "AreaFix (for %s) %s", faddrtoa(&addr), str);
 			create_netmail(to, /* msg: */NULL, "TIC File Password Change Request", str, /* dest: */addr, /* src: */NULL);
@@ -2187,9 +2194,10 @@ bool areafix_command(char* instr, nodecfg_t* nodecfg, const char* to)
  This is where we're gonna process any netmail that comes in for AreaFix.
  Returns text for message body for the local Area Mgr (sysop) upon failure.
 ******************************************************************************/
-char* process_areafix(fidoaddr_t addr, char* inbuf, const char* password, const char* name)
+char* process_areafix(fidoaddr_t addr, char* inbuf, const char* subj, const char* name)
 {
 	static char body[1024];
+	char password[FIDO_SUBJ_LEN];
 	char str[128];
 	char *p,*tp,action,cmds=0;
 	ulong l,m;
@@ -2198,7 +2206,12 @@ char* process_areafix(fidoaddr_t addr, char* inbuf, const char* password, const 
 	lprintf(LOG_INFO,"AreaFix (for %s) Request received from %s"
 			,smb_faddrtoa(&addr,NULL), name);
 
-	sprintf(body,"%s (%s) attempted an Area Management (AreaFix) request.\r\n", name, faddrtoa(&addr));
+	snprintf(body, sizeof body, "%s (%s) attempted an Area Management (AreaFix) request.\r\n", name, faddrtoa(&addr));
+
+	SAFECOPY(password, subj);
+	p = password;
+	FIND_WHITESPACE(p);
+	*p = '\0';
 
 	p=(char *)inbuf;
 
@@ -2333,7 +2346,7 @@ int unpack(const char *infile, const char* outdir)
 				u=cfg.arcdefs;
 				break;
 			}
-			sprintf(tmp,"%02X",ch);
+			snprintf(tmp, sizeof tmp, "%02X",ch);
 			SAFECAT(str,tmp);
 		}
 		if(!stricmp(str,cfg.arcdef[u].hexid))
@@ -2445,9 +2458,9 @@ int attachment(const char *bundlename, fidoaddr_t dest, enum attachment_mode mod
 		}
 										/* Get attach names from existing MSGs */
 #ifdef __unix__
-		sprintf(str,"%s*.[Mm][Ss][Gg]",scfg.netmail_dir);
+		snprintf(str, sizeof str, "%s*.[Mm][Ss][Gg]",scfg.netmail_dir);
 #else
-		sprintf(str,"%s*.msg",scfg.netmail_dir);
+		snprintf(str, sizeof str, "%s*.msg",scfg.netmail_dir);
 #endif
 		glob(str,0,NULL,&g);
 		for(f=0;f<g.gl_pathc && !terminated;f++) {
@@ -2604,7 +2617,7 @@ bool pack_bundle(const char *tmp_pkt, fidoaddr_t orig, fidoaddr_t dest)
 		return false;
 	}
 	time(&now);
-	sprintf(day,"%-.2s",ctime(&now));
+	snprintf(day, sizeof day, "%-.2s",ctime(&now));
 	strupr(day);
 
 	if(nodecfg != NULL)
@@ -2994,7 +3007,7 @@ void bail(int error_level)
 		|| packets_imported || packets_sent
 		|| bundles_unpacked || bundles_sent) {
 		char signoff[1024];
-		sprintf(signoff, "SBBSecho (PID %u) exiting with error level %d", getpid(), error_level);
+		snprintf(signoff, sizeof signoff, "SBBSecho (PID %u) exiting with error level %d", getpid(), error_level);
 		if(bundles_unpacked || bundles_sent)
 			sprintf(signoff+strlen(signoff), ", Bundles(%lu unpacked, %lu sent)", bundles_unpacked, bundles_sent);
 		if(packets_imported || packets_sent)
@@ -3044,7 +3057,7 @@ time32_t fmsgtime(const char *str)
 
 	if(IS_DIGIT(str[1])) {	/* Regular format: "01 Jan 86  02:34:56" */
 		tm.tm_mday=atoi(str);
-		sprintf(month,"%3.3s",str+3);
+		snprintf(month, sizeof month, "%3.3s",str+3);
 		if(!stricmp(month,"jan"))
 			tm.tm_mon=0;
 		else if(!stricmp(month,"feb"))
@@ -3079,7 +3092,7 @@ time32_t fmsgtime(const char *str)
 
 	else {					/* SEAdog  format: "Mon  1 Jan 86 02:34" */
 		tm.tm_mday=atoi(str+4);
-		sprintf(month,"%3.3s",str+7);
+		snprintf(month, sizeof month, "%3.3s",str+7);
 		if(!stricmp(month,"jan"))
 			tm.tm_mon=0;
 		else if(!stricmp(month,"feb"))
@@ -3127,9 +3140,9 @@ static short fmsgzone(const char* p)
 		west=false;
 
 	if(strlen((char*)p)>=2)
-		sprintf(hr,"%.2s",p);
+		snprintf(hr, sizeof hr, "%.2s",p);
 	if(strlen((char*)p+2)>=2)
-		sprintf(min,"%.2s",p+2);
+		snprintf(min, sizeof min, "%.2s",p+2);
 
 	val=atoi(hr)*60;
 	val+=atoi(min);
@@ -3275,7 +3288,7 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint usernumber, uint subnum)
 			smb_hfield_netaddr(&msg, RECIPIENTNETADDR, user.netmail, &nettype);
 			smb_hfield_bin(&msg, RECIPIENTNETTYPE, nettype);
 		} else {
-			sprintf(str,"%u",usernumber);
+			snprintf(str, sizeof str, "%u",usernumber);
 			smb_hfield_str(&msg,RECIPIENTEXT,str);
 		}
 	}
@@ -3727,10 +3740,10 @@ void putfmsg(FILE* stream, const char* fbuf, fmsghdr_t* hdr, area_t area
 				if(seenbys.addr[u].net!=addr.net || !net_exists) {
 					net_exists=1;
 					addr.net=seenbys.addr[u].net;
-					sprintf(str,"%d/",addr.net);
+					snprintf(str, sizeof str, "%d/",addr.net);
 					SAFECAT(seenby,str);
 				}
-				sprintf(str,"%d",seenbys.addr[u].node);
+				snprintf(str, sizeof str, "%d",seenbys.addr[u].node);
 				SAFECAT(seenby,str);
 				if(lastlen+strlen(seenby)<80) {
 					(void)fwrite(seenby,strlen(seenby),1,stream);
@@ -3758,10 +3771,10 @@ void putfmsg(FILE* stream, const char* fbuf, fmsghdr_t* hdr, area_t area
 					if(area.link[u].net!=addr.net || !net_exists) {
 						net_exists=1;
 						addr.net=area.link[u].net;
-						sprintf(str,"%d/",addr.net);
+						snprintf(str, sizeof str, "%d/",addr.net);
 						SAFECAT(seenby,str);
 					}
-					sprintf(str,"%d",area.link[u].node);
+					snprintf(str, sizeof str, "%d",area.link[u].node);
 					SAFECAT(seenby,str);
 					if(lastlen+strlen(seenby)<80) {
 						(void)fwrite(seenby,strlen(seenby),1,stream);
@@ -3787,10 +3800,10 @@ void putfmsg(FILE* stream, const char* fbuf, fmsghdr_t* hdr, area_t area
 					if(scfg.faddr[u].net!=addr.net || !net_exists) {
 						net_exists=1;
 						addr.net=scfg.faddr[u].net;
-						sprintf(str,"%d/",addr.net);
+						snprintf(str, sizeof str, "%d/",addr.net);
 						SAFECAT(seenby,str);
 					}
-					sprintf(str,"%d",scfg.faddr[u].node);
+					snprintf(str, sizeof str, "%d",scfg.faddr[u].node);
 					SAFECAT(seenby,str);
 					if(lastlen+strlen(seenby)<80) {
 						(void)fwrite(seenby,strlen(seenby),1,stream);
@@ -3819,10 +3832,10 @@ void putfmsg(FILE* stream, const char* fbuf, fmsghdr_t* hdr, area_t area
 				if(paths.addr[u].net!=addr.net || !net_exists) {
 					net_exists=1;
 					addr.net=paths.addr[u].net;
-					sprintf(str,"%d/",addr.net);
+					snprintf(str, sizeof str, "%d/",addr.net);
 					SAFECAT(seenby,str);
 				}
-				sprintf(str,"%d",paths.addr[u].node);
+				snprintf(str, sizeof str, "%d",paths.addr[u].node);
 				SAFECAT(seenby,str);
 				if(lastlen+strlen(seenby)<80) {
 					(void)fwrite(seenby,strlen(seenby),1,stream);
@@ -3843,10 +3856,10 @@ void putfmsg(FILE* stream, const char* fbuf, fmsghdr_t* hdr, area_t area
 				if(sysaddr.net!=addr.net || !net_exists) {
 					net_exists=1;
 					addr.net=sysaddr.net;
-					sprintf(str,"%d/",addr.net);
+					snprintf(str, sizeof str, "%d/",addr.net);
 					SAFECAT(seenby,str);
 				}
-				sprintf(str,"%d",sysaddr.node);
+				snprintf(str, sizeof str, "%d",sysaddr.node);
 				SAFECAT(seenby,str);
 				if(lastlen+strlen(seenby)<80)
 					(void)fwrite(seenby,strlen(seenby),1,stream);
@@ -3910,7 +3923,7 @@ void gen_psb(addrlist_t *seenbys, addrlist_t *paths, const char *inbuf, uint16_t
 	if(!p) p=strstr(fbuf,"\nSEEN-BY:");
 	if(p) {
 		while(1) {
-			sprintf(str,"%-.100s",p+10);
+			snprintf(str, sizeof str, "%-.100s",p+10);
 			if((p1=strchr(str,'\r'))!=NULL)
 				*p1=0;
 			p1=str;
@@ -3922,7 +3935,7 @@ void gen_psb(addrlist_t *seenbys, addrlist_t *paths, const char *inbuf, uint16_t
 					++i;
 				if(j>len)
 					break;
-				sprintf(seenby,"%-.*s",(i-j),p1+j);
+				snprintf(seenby, sizeof str, "%-.*s",(i-j),p1+j);
 				if((p2=strchr(seenby,':'))!=NULL) {
 					addr.zone=atoi(seenby);
 					addr.net=atoi(p2+1);
@@ -3971,7 +3984,7 @@ void gen_psb(addrlist_t *seenbys, addrlist_t *paths, const char *inbuf, uint16_t
 	addr.zone=addr.net=addr.node=addr.point=paths->addrs=0;
 	if((p=strstr(fbuf,"\1PATH:"))!=NULL) {
 		while(1) {
-			sprintf(str,"%-.100s",p+7);
+			snprintf(str, sizeof str, "%-.100s",p+7);
 			if((p1=strchr(str,'\r'))!=NULL)
 				*p1=0;
 			p1=str;
@@ -4494,7 +4507,7 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 						FREE_AND_NULL(body);
 					}
 				} else {	/* AreaFix */
-					p=process_areafix(addr,fmsgbuf,/* Password: */hdr.subj, /* To: */hdr.from);
+					p=process_areafix(addr,fmsgbuf, hdr.subj, /* To: */hdr.from);
 					if(p != NULL && cfg.areamgr[0] != 0) {
 						uint notify = matchuser(&scfg, cfg.areamgr, TRUE);
 						if(notify) {
@@ -4990,7 +5003,7 @@ void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan
 					strcat((char *)fmsgbuf,tear_line('-'));
 				}
 
-				sprintf(str," * Origin: %s (%s)\r"
+				snprintf(str, sizeof str, " * Origin: %s (%s)\r"
 					,scfg.sub[subnum]->origline[0] ? scfg.sub[subnum]->origline : scfg.origline
 					,smb_faddrtoa(&scfg.sub[subnum]->faddr,NULL));
 				strcat((char *)fmsgbuf,str);
@@ -5404,9 +5417,9 @@ void pack_netmail(void)
 	printf("\nPacking Outbound NetMail from %s*.msg ...\n",scfg.netmail_dir);
 
 #ifdef __unix__
-	sprintf(str,"%s*.[Mm][Ss][Gg]",scfg.netmail_dir);
+	snprintf(str, sizeof str, "%s*.[Mm][Ss][Gg]",scfg.netmail_dir);
 #else
-	sprintf(str,"%s*.msg",scfg.netmail_dir);
+	snprintf(str, sizeof str, "%s*.msg",scfg.netmail_dir);
 #endif
 	glob(str,0,NULL,&g);
 	for(f=0;f<g.gl_pathc && !terminated;f++) {
@@ -6630,9 +6643,9 @@ int main(int argc, char **argv)
 		printf("\nScanning for Inbound NetMail Messages...\n");
 
 #ifdef __unix__
-		sprintf(str,"%s*.[Mm][Ss][Gg]",scfg.netmail_dir);
+		snprintf(str, sizeof str, "%s*.[Mm][Ss][Gg]",scfg.netmail_dir);
 #else
-		sprintf(str,"%s*.msg",scfg.netmail_dir);
+		snprintf(str, sizeof str, "%s*.msg",scfg.netmail_dir);
 #endif
 		glob(str,0,NULL,&g);
 		for(f=0; f<g.gl_pathc && !terminated; f++) {

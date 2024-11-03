@@ -1399,7 +1399,7 @@ int main(int argc, char **argv)
 								uifc.input(WIN_MID|WIN_SAV,0,0
 									,"AreaFix Password"
 									,cfg.nodecfg[i].password,sizeof(cfg.nodecfg[i].password)-1
-									,K_EDIT|K_UPPER);
+									,K_EDIT|K_UPPER|K_NOSPACE);
 								break;
 							case __COUNTER__:
 	uifc.helpbuf=
@@ -2864,7 +2864,7 @@ int main(int argc, char **argv)
 								uifc.input(WIN_MID|WIN_SAV,0,0
 									,"Password to use when forwarding AreaMgr requests"
 									,cfg.listcfg[i].password,sizeof(cfg.listcfg[i].password)-1
-									,K_EDIT|K_UPPER);
+									,K_EDIT|K_UPPER|K_NOSPACE);
 								break;
 						}
 					}
