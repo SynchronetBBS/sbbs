@@ -4917,6 +4917,13 @@ struct cterminal* cterm_init(int height, int width, int xpos, int ypos, int back
 	if (cterm->emulation == CTERM_EMULATION_PRESTEL) {
 		cterm->cursor = _NOCURSOR;
 		SETCURSORTYPE(cterm->cursor);
+		memcpy(cterm->prestel_data[0], "0000000000??????", PRESTEL_MEM_SLOT_SIZE);
+		memcpy(cterm->prestel_data[1], ":2:?4967?89:1???", PRESTEL_MEM_SLOT_SIZE);
+		memcpy(cterm->prestel_data[2], ":1632?123?456???", PRESTEL_MEM_SLOT_SIZE);
+		memcpy(cterm->prestel_data[3], ";???????????????", PRESTEL_MEM_SLOT_SIZE);
+		memcpy(cterm->prestel_data[4], ";???????????????", PRESTEL_MEM_SLOT_SIZE);
+		memcpy(cterm->prestel_data[5], ";???????????????", PRESTEL_MEM_SLOT_SIZE);
+		memcpy(cterm->prestel_data[6], ";???????????????", PRESTEL_MEM_SLOT_SIZE);
 	}
 
 	return cterm;
@@ -5430,6 +5437,20 @@ prestel_move(struct cterminal *cterm, int xadj, int yadj)
 	prestel_get_state(cterm);
 }
 
+static void
+prestel_send_memory(struct cterminal *cterm, uint8_t mem, char *retbuf, size_t retsize)
+{
+	char app[2] = {0,0};
+
+	for (int x = 0; x < PRESTEL_MEM_SLOT_SIZE; x++) {
+		if (cterm->prestel_data[mem][x] != '?') {
+			app[0] = cterm->prestel_data[mem][x];
+			if(strlen(retbuf) + 1 < retsize)
+				strcat(retbuf, app);
+		}
+	}
+}
+
 CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int buflen, char *retbuf, size_t retsize, int *speed)
 {
 	const unsigned char *buf = (unsigned char *)vbuf;
@@ -5635,35 +5656,139 @@ CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int b
 					}
 				}
 				else if(cterm->sequence) {
-					ustrcat(cterm->escbuf,ch);
 					if (cterm->emulation == CTERM_EMULATION_PRESTEL) {
-						prestel_apply_ctrl_before(cterm, ch[0]);
-						TEXTATTR(cterm->attr);
-						setcolour(cterm->fg_color, cterm->bg_color);
-						cterm->escbuf[0]=0;
-						cterm->sequence=0;
-						if (cterm->extattr & CTERM_EXTATTR_PRESTEL_HOLD) {
-							tmpvc[0].ch = cterm->prestel_last_mosaic;
-							if ((tmpvc[0].ch >= 128) && (cterm->extattr & CTERM_EXTATTR_PRESTEL_SEPARATED))
-								tmpvc[0].ch += 64;
+						if (cterm->prestel_prog_state == PRESTEL_PROG_NONE) {
+							if (ch[0] == '1')
+								cterm->prestel_prog_state = PRESTEL_PROG_1;
+							else {
+								prestel_apply_ctrl_before(cterm, ch[0]);
+								TEXTATTR(cterm->attr);
+								setcolour(cterm->fg_color, cterm->bg_color);
+								cterm->escbuf[0]=0;
+								cterm->sequence=0;
+								if (cterm->extattr & CTERM_EXTATTR_PRESTEL_HOLD) {
+									tmpvc[0].ch = cterm->prestel_last_mosaic;
+									if ((tmpvc[0].ch >= 128) && (cterm->extattr & CTERM_EXTATTR_PRESTEL_SEPARATED))
+										tmpvc[0].ch += 64;
+								}
+								else {
+									tmpvc[0].ch = ch[0] - 64;
+								}
+								tmpvc[0].legacy_attr=cterm->attr;
+								tmpvc[0].fg = cterm->fg_color | (ch[0] << 24);
+								tmpvc[0].bg = cterm->bg_color;
+								tmpvc[0].font = ciolib_attrfont(cterm->attr);
+								SCR_XY(&sx, &sy);
+								vmem_puttext(sx, sy, sx, sy, tmpvc);
+								ch[1]=0;
+								CURR_XY(&x, &y);
+								prestel_apply_ctrl_after(cterm, ch[0]);
+								TEXTATTR(cterm->attr);
+								setcolour(cterm->fg_color, cterm->bg_color);
+								advance_char(cterm, &x, &y, 1);
+							}
 						}
 						else {
-							tmpvc[0].ch = ch[0] - 64;
+							if (ch[0] == 0)
+								break;
+							switch (cterm->prestel_prog_state) {
+								case PRESTEL_PROG_1:
+									if (ch[0] == 0x1b)
+										cterm->prestel_prog_state = PRESTEL_PROG_1_ESC;
+									else {
+										cterm->prestel_prog_state = PRESTEL_PROG_NONE;
+										cterm->escbuf[0]=0;
+										cterm->sequence=0;
+									}
+									break;
+								case PRESTEL_PROG_1_ESC:
+									if (ch[0] == '2') {
+										cterm->prestel_prog_state = PRESTEL_PROG_2;
+										cterm->prestel_mem = 0;
+									}
+									else {
+										cterm->prestel_prog_state = PRESTEL_PROG_NONE;
+										cterm->escbuf[0]=0;
+										cterm->sequence=0;
+									}
+									break;
+								case PRESTEL_PROG_2:
+									if (ch[0] == 5) {
+										prestel_send_memory(cterm, cterm->prestel_mem, retbuf, retsize);
+										cterm->prestel_prog_state = PRESTEL_PROG_NONE;
+										cterm->escbuf[0]=0;
+										cterm->sequence=0;
+									}
+									else if (ch[0] == 0x1b) {
+										cterm->prestel_prog_state = PRESTEL_PROG_2_ESC;
+									}
+									else {
+										cterm->prestel_prog_state = PRESTEL_PROG_NONE;
+										cterm->escbuf[0]=0;
+										cterm->sequence=0;
+									}
+									break;
+								case PRESTEL_PROG_2_ESC:
+									if (ch[0] == '3') {
+										cterm->prestel_mem++;
+										if (cterm->prestel_mem >= PRESTEL_MEM_SLOTS) {
+											cterm->prestel_prog_state = PRESTEL_PROG_NONE;
+											cterm->escbuf[0]=0;
+											cterm->sequence=0;
+										}
+										else
+											cterm->prestel_prog_state = PRESTEL_PROG_2;
+									}
+									else if (ch[0] == '4') {
+										cterm->prestel_prog_state = PRESTEL_PROG_PROGRAM_BLOCK;
+									}
+									else {
+										cterm->prestel_prog_state = PRESTEL_PROG_NONE;
+										cterm->escbuf[0]=0;
+										cterm->sequence=0;
+									}
+									break;
+								case PRESTEL_PROG_PROGRAM_BLOCK:
+									ch[1] = 0;
+									switch(ch[0]) {
+										case ':':
+											ch[0] = '0';
+											/* Fall-through */
+										case '1':
+										case '2':
+										case '3':
+										case '4':
+										case '5':
+										case '6':
+										case '7':
+										case '8':
+										case '9':
+										case ';':
+										case '?':
+											ustrcat(cterm->escbuf, ch);
+											if (strlen(cterm->escbuf) >= PRESTEL_MEM_SLOT_SIZE) {
+												memcpy(cterm->prestel_data[cterm->prestel_mem], cterm->escbuf, PRESTEL_MEM_SLOT_SIZE);
+												prestel_send_memory(cterm, cterm->prestel_mem, retbuf, retsize);
+												cterm->prestel_prog_state = PRESTEL_PROG_NONE;
+												cterm->escbuf[0]=0;
+												cterm->sequence=0;
+											}
+											break;
+										default:
+											cterm->prestel_prog_state = PRESTEL_PROG_NONE;
+											cterm->escbuf[0]=0;
+											cterm->sequence=0;
+											break;
+									}
+									break;
+								default:
+									cterm->prestel_prog_state = PRESTEL_PROG_NONE;
+									break;
+							}
 						}
-						tmpvc[0].legacy_attr=cterm->attr;
-						tmpvc[0].fg = cterm->fg_color | (ch[0] << 24);
-						tmpvc[0].bg = cterm->bg_color;
-						tmpvc[0].font = ciolib_attrfont(cterm->attr);
-						SCR_XY(&sx, &sy);
-						vmem_puttext(sx, sy, sx, sy, tmpvc);
-						ch[1]=0;
-						CURR_XY(&x, &y);
-						prestel_apply_ctrl_after(cterm, ch[0]);
-						TEXTATTR(cterm->attr);
-						setcolour(cterm->fg_color, cterm->bg_color);
-						advance_char(cterm, &x, &y, 1);
 					}
 					else {
+						ustrcat(cterm->escbuf,ch);
 						switch(legal_sequence(cterm->escbuf, sizeof(cterm->escbuf)-1)) {
 							case SEQ_BROKEN:
 								/* Broken sequence detected */
@@ -6165,10 +6290,7 @@ CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int b
 								prn[0]=0;
 								break;
 							case 5: // ENQ
-								// Send memory 1
-								if(strlen(retbuf) + 10 < retsize)
-									// TODO: Use the memories...
-									strcat(retbuf, "0000000000");
+								prestel_send_memory(cterm, 0, retbuf, retsize);
 								break;
 							case 8: // APB (Active Position Packward)
 								lastch = 0;
