@@ -313,6 +313,7 @@ typedef struct {
 #define CONIO_OPT_BLOCKY_SCALING    (1 << 13)
 #define CONIO_OPT_EXTERNAL_SCALING  (1 << 14)
 #define CONIO_OPT_DISABLE_CLOSE     (1 << 15) // Disable OS/WM app close control/menu-option
+#define CONIO_OPT_PRESTEL_REVEAL    (1 << 16)
 	void	(*clreol)		(void);
 	int		(*puttext)		(int,int,int,int,void *);
 	int		(*vmem_puttext)		(int,int,int,int,struct vmem_cell *);

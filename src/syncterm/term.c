@@ -4442,6 +4442,13 @@ doterm(struct bbslist *bbs)
 						ch[0] = 0x1f;
 						conn_send(ch, 1, 0);
 						break;
+					case '\t': {
+						cio_api.options ^= CONIO_OPT_PRESTEL_REVEAL;
+						struct ciolib_screen *savscrn = savescreen();
+						ciolib_vmem_puttext(1, 1, savscrn->text_info.screenwidth, savscrn->text_info.screenheight, savscrn->vmem);
+						freescreen(savscrn);
+						break;
+					}
 					case '_':
 						ch[0] = '`';
 						conn_send(ch, 1, 0);
