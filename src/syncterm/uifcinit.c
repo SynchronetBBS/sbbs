@@ -63,14 +63,15 @@ init_uifc(bool scrn, bool bottom)
 		orig_y = wherey();
 		setvideoflags(orig_vidflags & (CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT));
 		uifc.chars = NULL;
+		get_modepalette(orig_palette);
+		set_modepalette(palettes[COLOUR_PALETTE]);
 		if ((i = uifcini32(&uifc)) != 0) {
+			set_modepalette(orig_palette);
 			fprintf(stderr, "uifc library init returned error %d\n", i);
 			return -1;
 		}
 		bottomfunc = uifc.bottomline;
 		uifc_initialized = UIFC_INIT;
-		get_modepalette(orig_palette);
-		set_modepalette(palettes[COLOUR_PALETTE]);
 		if ((cio_api.options & (CONIO_OPT_EXTENDED_PALETTE | CONIO_OPT_PALETTE_SETTING))
 		    == (CONIO_OPT_EXTENDED_PALETTE | CONIO_OPT_PALETTE_SETTING)) {
 			uifc.bclr = BLUE;
