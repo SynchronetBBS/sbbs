@@ -796,6 +796,10 @@ set_attr(struct cterminal *cterm, unsigned char colour, bool bg)
 		cterm->attr |= (colour & 0x07);
 	}
 	attr2palette(cterm->attr, bg ? NULL : &cterm->fg_color, bg ? &cterm->bg_color : NULL);
+	if (cterm->emulation == CTERM_EMULATION_PRESTEL) {
+		if (cterm->extattr & CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT)
+			cterm->bg_color |= 0x01000000;
+	}
 	if (bg)
 		FREE_AND_NULL(cterm->bg_tc_str);
 	else
@@ -832,9 +836,12 @@ prestel_apply_ctrl_before(struct cterminal *cterm, uint8_t ch)
 		case 73: // Steady
 			cterm->attr &= 0x7f;
 			attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
+			if (CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT)
+				cterm->bg_color |= 0x01000000;
 			break;
 		case 76: // Normal Height
 			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT);
+			cterm->bg_color &= ~0x01000000;
 			cterm->prestel_last_mosaic = 32;
 			break;
 		case 88: // Conceal Display
@@ -908,9 +915,12 @@ prestel_apply_ctrl_after(struct cterminal *cterm, uint8_t ch)
 		case 72: // Flash
 			cterm->attr |= 0x80;
 			attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
+			if (cterm->extattr & CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT)
+				cterm->bg_color |= 0x01000000;
 			break;
 		case 77: // Double Height
 			cterm->extattr |= CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT;
+			cterm->bg_color |= 0x01000000;
 			cterm->prestel_last_mosaic = 32;
 			break;
 		case 80: // Mosaic Black
@@ -4948,7 +4958,7 @@ void cterm_start(struct cterminal *cterm)
  * - Format effector added or removed
  * - Hold mosaic character changed
  */
-static void prestel_fix_line(struct cterminal *cterm, int x, int y)
+static void prestel_fix_line(struct cterminal *cterm, int x, int y, bool restore, bool force)
 {
 	int sy = y;
 	int sx = 1;
@@ -4960,6 +4970,7 @@ static void prestel_fix_line(struct cterminal *cterm, int x, int y)
 	unsigned char attr = cterm->attr;
 	uint8_t prestel_last_mosaic = cterm->prestel_last_mosaic;
 	bool fixed = false;
+	bool fixedheight = false;
 
 	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &sy, &sx);
 	ex = sx + TERM_MAXX - 1;
@@ -4973,6 +4984,18 @@ static void prestel_fix_line(struct cterminal *cterm, int x, int y)
 			// This is a control character
 			ch = (line[i].fg & 0x7F000000) >> 24;
 			prestel_apply_ctrl_before(cterm, ch);
+			if ((cterm->extattr & CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT) && ((line[i].bg & 0x01000000) == 0)) {
+				// Should be double-high
+				line[i].bg |= 0x01000000;
+				fixed = true;
+				fixedheight = true;
+			}
+			if (((cterm->extattr & CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT) == 0) && (line[i].bg & 0x01000000)) {
+				// Should not be double-high
+				line[i].bg &= ~0x01000000;
+				fixed = true;
+				fixedheight = true;
+			}
 			if (line[i].fg != (cterm->fg_color | (ch << 24))
 			    || line[i].bg != cterm->bg_color
 			    || line[i].legacy_attr != cterm->attr) {
@@ -5009,6 +5032,18 @@ static void prestel_fix_line(struct cterminal *cterm, int x, int y)
 				prestel_last_mosaic = cterm->prestel_last_mosaic;
 			}
 			// This is displayable
+			if ((cterm->extattr & CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT) && ((line[i].bg & 0x01000000) == 0)) {
+				// Should be double-high
+				line[i].bg |= 0x01000000;
+				fixed = true;
+				fixedheight = true;
+			}
+			if (((cterm->extattr & CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT) == 0) && (line[i].bg & 0x01000000)) {
+				// Should not be double-high
+				line[i].bg &= ~0x01000000;
+				fixed = true;
+				fixedheight = true;
+			}
 			if (line[i].fg != cterm->fg_color
 			    || line[i].bg != cterm->bg_color
 			    || line[i].legacy_attr != cterm->attr) {
@@ -5052,14 +5087,19 @@ static void prestel_fix_line(struct cterminal *cterm, int x, int y)
 			}
 		}
 	}
-	if (fixed)
+	if (force || fixed)
 		vmem_puttext(sx, sy, ex, sy, line);
 	free(line);
-	cterm->extattr = extattr;
-	cterm->fg_color = fg_color;
-	cterm->bg_color = bg_color;
-	cterm->attr = attr;
-	cterm->prestel_last_mosaic = prestel_last_mosaic;
+	if (restore) {
+		cterm->extattr = extattr;
+		cterm->fg_color = fg_color;
+		cterm->bg_color = bg_color;
+		cterm->attr = attr;
+		cterm->prestel_last_mosaic = prestel_last_mosaic;
+	}
+	if (fixedheight) {
+		prestel_fix_line(cterm, x, y+1, false, true);
+	}
 }
 
 static void
@@ -5070,7 +5110,7 @@ advance_char(struct cterminal *cterm, int *x, int *y, int move)
 	int bm = cterm->bottom_margin;
 
 	if (cterm->emulation == CTERM_EMULATION_PRESTEL) {
-		prestel_fix_line(cterm, *x, *y);
+		prestel_fix_line(cterm, *x, *y, true, false);
 		TEXTATTR(cterm->attr);
 		setcolour(cterm->fg_color, cterm->bg_color);
 	}
@@ -5199,6 +5239,8 @@ ctputs(struct cterminal *cterm, char *buf)
 		}
 	}
 	CPUTS(outp);
+	if (cterm->emulation == CTERM_EMULATION_PRESTEL)
+		prestel_fix_line(cterm, cx, cy, true, false);
 	*cterm->_wscroll=oldscroll;
 }
 

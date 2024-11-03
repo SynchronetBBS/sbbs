@@ -541,6 +541,9 @@ static int bitmap_draw_one_char(struct vmem_cell *vc, unsigned int xpos, unsigne
 	WORD	sch;
 	BOOL	draw_fg = TRUE;
 	size_t rsz;
+	bool double_height = false;
+	bool bottom = false;
+	bool top = false;
 
 	if(!bitmap_initialized) {
 		return(-1);
@@ -596,6 +599,58 @@ static int bitmap_draw_one_char(struct vmem_cell *vc, unsigned int xpos, unsigne
 
 	pixeloffset = PIXEL_OFFSET(screena, xoffset, yoffset);
 	rsz = screena.screenwidth - vstat.charwidth;
+	// PRESTEL!
+	if (vstat.mode == PRESTEL_40X24) {
+		struct vstat_vmem *vmem_ptr = get_vmem(&vstat);
+
+		if (ypos > 1) {
+			for (y = 0; y < ypos; y++) {
+				if (top) {
+					bottom = true;
+					top = false;
+				}
+				else {
+					if (bottom)
+						bottom = false;
+					else {
+						if (y == ypos - 1)
+							break;
+						for (x = 0; x < vstat.cols; x++) {
+							if (vmem_ptr->vmem[y * vstat.cols + x].bg & 0x01000000) {
+								top = true;
+								break;
+							}
+						}
+					}
+				}
+			}
+		}
+		if (bottom) {
+			if (vmem_ptr->vmem[(ypos - 2) * vstat.cols + (xpos - 1)].bg & 0x01000000) {
+				double_height = true;
+			}
+			fg = vmem_ptr->vmem[(ypos - 2) * vstat.cols + (xpos - 1)].fg;
+			bg = vmem_ptr->vmem[(ypos - 2) * vstat.cols + (xpos - 1)].bg;
+		}
+		else {
+			if (ypos != vstat.rows) {
+				if (vmem_ptr->vmem[(ypos - 1) * vstat.cols + (xpos - 1)].bg & 0x01000000) {
+					top = true;
+					double_height = true;
+				}
+			}
+		}
+		// Draw as space if not double-bottom
+		if (bottom) {
+			if (double_height) {
+				pixeloffset -= vstat.charheight * vstat.scrnwidth;
+				fontoffset=(vmem_ptr->vmem[(ypos - 2) * vstat.cols + (xpos - 1)].ch) * (vstat.charheight * ((fdw + 7) / 8));
+			}
+			else
+				fontoffset=(32) * (vstat.charheight * ((fdw + 7) / 8));
+		}
+		release_vmem(vmem_ptr);
+	}
 	for (y = 0; y < vstat.charheight; y++) {
 		for(x = 0; x < vstat.charwidth; x++) {
 			fdx = x;
@@ -624,11 +679,23 @@ static int bitmap_draw_one_char(struct vmem_cell *vc, unsigned int xpos, unsigne
 					screena.update_pixels = 1;
 					screena.rect->data[pixeloffset] = fg;
 				}
+				if (double_height) {
+					if (screena.rect->data[pixeloffset+screena.screenwidth] != fg) {
+						screena.update_pixels = 1;
+						screena.rect->data[pixeloffset+screena.screenwidth] = fg;
+					}
+				}
 			}
 			else {
 				if (screena.rect->data[pixeloffset] != bg) {
 					screena.update_pixels = 1;
 					screena.rect->data[pixeloffset] = bg;
+				}
+				if (double_height) {
+					if (screena.rect->data[pixeloffset+screena.screenwidth] != bg) {
+						screena.update_pixels = 1;
+						screena.rect->data[pixeloffset+screena.screenwidth] = bg;
+					}
 				}
 			}
 
@@ -637,18 +704,35 @@ static int bitmap_draw_one_char(struct vmem_cell *vc, unsigned int xpos, unsigne
 					screenb.update_pixels = 1;
 					screenb.rect->data[pixeloffset] = fg;
 				}
+				if (double_height) {
+					if (screenb.rect->data[pixeloffset+screena.screenwidth] != fg) {
+						screenb.update_pixels = 1;
+						screenb.rect->data[pixeloffset+screena.screenwidth] = fg;
+					}
+				}
 			}
 			else {
 				if (screenb.rect->data[pixeloffset] != bg) {
 					screenb.update_pixels = 1;
 					screenb.rect->data[pixeloffset] = bg;
 				}
+				if (double_height) {
+					if (screenb.rect->data[pixeloffset+screena.screenwidth] != bg) {
+						screenb.update_pixels = 1;
+						screenb.rect->data[pixeloffset+screena.screenwidth] = bg;
+					}
+				}
 			}
 			pixeloffset++;
 		}
-		if (x & 0x07)
+		if (x & 0x07) {
 			fontoffset++;
+			if (double_height && ((y & 1) == 0))
+				fontoffset--;
+		}
 		pixeloffset += rsz;
+		if (double_height)
+			pixeloffset += screena.screenwidth;
 	}
 	pthread_mutex_unlock(&screenlock);
 
