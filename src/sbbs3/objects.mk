@@ -296,4 +296,7 @@ TEXTGEN_OBJS = 		$(OBJODIR)/textgen$(OFILE) \
 			$(OBJODIR)/getctrl$(OFILE) \
 			$(OBJODIR)/str_util$(OFILE)
 
-
+TRASHMAN_OBJS = 	$(OBJODIR)/trashman$(OFILE) \
+			$(OBJODIR)/trash$(OFILE) \
+ 		  	$(OBJODIR)/nopen$(OFILE) \
+			$(OBJODIR)/findstr$(OFILE)

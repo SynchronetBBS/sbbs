@@ -28,6 +28,20 @@
 #include "nopen.h"
 
 /****************************************************************************/
+char* trashcan_fname(scfg_t* cfg, const char* name, char* fname, size_t maxlen)
+{
+	safe_snprintf(fname,maxlen,"%s%s.can",cfg->text_dir,name);
+	return fname;
+}
+
+/****************************************************************************/
+char* twitlist_fname(scfg_t* cfg, char* fname, size_t maxlen)
+{
+	safe_snprintf(fname, maxlen, "%stwitlist.cfg", cfg->ctrl_dir);
+	return fname;
+}
+
+/****************************************************************************/
 /* Searches the file <name>.can in the TEXT directory for matches			*/
 /* Returns true if found in list, false if not.								*/
 /****************************************************************************/
@@ -38,23 +52,32 @@ bool trashcan(scfg_t* cfg, const char* insearchof, const char* name)
 }
 
 /****************************************************************************/
-static void parse_trash_details(char* p, struct trash* trash)
+bool trash_parse_details(const char* p, struct trash* trash, char* item, size_t size)
 {
 	memset(trash, 0, sizeof(*trash));
 
-	str_list_t list = strListSplit(NULL, p, "\t");
+	str_list_t list = strListSplitCopy(NULL, p, "\t");
 	if(list == NULL)
-		return;
+		return false;
 
-	trash->added = iniGetDateTime(list, ROOT_SECTION, "t", 0);
-	trash->expires = iniGetDateTime(list, ROOT_SECTION, "e", 0);
-	if((p = iniGetValue(list, ROOT_SECTION, "p", NULL, NULL)) != NULL)
-		SAFECOPY(trash->prot, p);
-	if((p = iniGetValue(list, ROOT_SECTION, "u", NULL, NULL)) != NULL)
-		SAFECOPY(trash->user, p);
-	if((p = iniGetValue(list, ROOT_SECTION, "r", NULL, NULL)) != NULL)
-		SAFECOPY(trash->reason, p);
+	if(item != NULL && size > 0) {
+		if(list[0] == NULL)
+			*item = '\0';
+		else
+			strlcpy(item, list[0], size);
+	}
+	if(strListFastDelete(list, /* index: */0, /* count: */1)) {
+		trash->added = iniGetDateTime(list, ROOT_SECTION, "t", 0);
+		trash->expires = iniGetDateTime(list, ROOT_SECTION, "e", 0);
+		if((p = iniGetValue(list, ROOT_SECTION, "p", NULL, NULL)) != NULL)
+			SAFECOPY(trash->prot, p);
+		if((p = iniGetValue(list, ROOT_SECTION, "u", NULL, NULL)) != NULL)
+			SAFECOPY(trash->user, p);
+		if((p = iniGetValue(list, ROOT_SECTION, "r", NULL, NULL)) != NULL)
+			SAFECOPY(trash->reason, p);
+	}
 	strListFree(&list);
+	return true;
 }
 
 /****************************************************************************/
@@ -87,8 +110,8 @@ bool trashcan2(scfg_t* cfg, const char* str1, const char* str2, const char* name
 	if(!find2strs(str1, str2, trashcan_fname(cfg,name,fname,sizeof(fname)), details))
 		return false;
 	if(trash != NULL) {
-		parse_trash_details(details, trash);
-		if(trash->expires && trash->expires <= time(NULL))
+		if(trash_parse_details(details, trash, NULL, 0)
+			&& trash->expires && trash->expires <= time(NULL))
 			return false;
 	}
 	return true;
@@ -102,8 +125,8 @@ bool trash_in_list(const char* str1, const char* str2, str_list_t list, struct t
 	if(!find2strs_in_list(str1, str2, list, details))
 		return false;
 	if(trash != NULL) {
-		parse_trash_details(details, trash);
-		if(trash->expires && trash->expires <= time(NULL))
+		if(trash_parse_details(details, trash, NULL, 0)
+			&& trash->expires && trash->expires <= time(NULL))
 			return false;
 	}
 	return true;

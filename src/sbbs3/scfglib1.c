@@ -931,20 +931,6 @@ faddr_t* nearest_sysfaddr(scfg_t* cfg, faddr_t* addr)
 	return &cfg->faddr[i];
 }
 
-/****************************************************************************/
-char* trashcan_fname(scfg_t* cfg, const char* name, char* fname, size_t maxlen)
-{
-	safe_snprintf(fname,maxlen,"%s%s.can",cfg->text_dir,name);
-	return fname;
-}
-
-/****************************************************************************/
-char* twitlist_fname(scfg_t* cfg, char* fname, size_t maxlen)
-{
-	safe_snprintf(fname, maxlen, "%stwitlist.cfg", cfg->ctrl_dir);
-	return fname;
-}
-
 char* sub_newsgroup_name(scfg_t* cfg, sub_t* sub, char* str, size_t size)
 {
 	memset(str, 0, size);

@@ -34,6 +34,7 @@ DUPEFIND	= $(EXEODIR)/dupefind$(EXEFILE)
 READSAUCE	= $(EXEODIR)/readsauce$(EXEFILE)
 PKTDUMP		= $(EXEODIR)/pktdump$(EXEFILE)
 FMSGDUMP	= $(EXEODIR)/fmsgdump$(EXEFILE)
+TRASHMAN	= $(EXEODIR)/trashman$(EXEFILE)
 UPGRADE_TO_V319 = $(EXEODIR)/upgrade_to_v319$(EXEFILE)
 UPGRADE_TO_V320 = $(EXEODIR)/upgrade_to_v320$(EXEFILE)
 
@@ -45,7 +46,9 @@ UTILS		= $(FIXSMB) $(CHKSMB) \
 			  $(QWKNODES) $(SLOG) \
 			  $(DELFILES) $(DUPEFIND) \
 			  $(SEXYZ) $(READSAUCE) \
-			  $(PKTDUMP) $(FMSGDUMP) $(UPGRADE_TO_V319) \
+			  $(PKTDUMP) $(FMSGDUMP) \
+			  $(TRASHMAN) \
+			  $(UPGRADE_TO_V319) \
 			  $(UPGRADE_TO_V320)
 
 GIT_INFO	= git_hash.h git_branch.h
@@ -74,7 +77,7 @@ standalone-utils: $(FIXSMB) $(CHKSMB) \
 			  $(QWKNODES) \
 			  $(DELFILES) $(DUPEFIND) \
 			  $(SEXYZ) $(READSAUCE) \
-			  $(PKTDUMP) $(FMSGDUMP)
+			  $(PKTDUMP) $(FMSGDUMP) $(TRASHMAN)
 
 .PHONY: libdeps
 libdeps: $(JS_DEPS) gitinfo smblib xpdev-mt $(MTOBJODIR) $(LIBODIR)
@@ -200,6 +203,7 @@ $(SLOG): $(XPDEV_LIB)
 $(DELFILES): $(XPDEV_LIB) $(SMBLIB)
 $(DUPEFIND): $(XPDEV_LIB) $(SMBLIB)
 $(READSAUCE): $(XPDEV_LIB)
+$(TRASHMAN): $(XPDEV_LIB)
 $(UPGRADE_TO_V319): $(XPDEV_LIB) $(SMBLIB)
 $(UPGRADE_TO_V320): $(XPDEV_LIB)
 

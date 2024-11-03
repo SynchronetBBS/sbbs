@@ -78,9 +78,6 @@ DLLEXPORT bool	is_valid_grpnum(scfg_t*, int);
 DLLEXPORT bool	is_valid_xtrnnum(scfg_t*, int);
 DLLEXPORT bool	is_valid_xtrnsec(scfg_t*, int);
 
-DLLEXPORT char *	trashcan_fname(scfg_t* cfg, const char *name, char* fname, size_t);
-DLLEXPORT char *	twitlist_fname(scfg_t* cfg, char* fname, size_t);
-
 DLLEXPORT char *	sub_newsgroup_name(scfg_t*, sub_t*, char*, size_t);
 DLLEXPORT char *	sub_area_tag(scfg_t*, sub_t*, char*, size_t);
 DLLEXPORT char *	dir_area_tag(scfg_t*, dir_t*, char*, size_t);
