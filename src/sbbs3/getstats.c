@@ -238,7 +238,7 @@ bool fwrite_dstats(FILE* fp, const stats_t* stats, const char* function)
 
 	ini = iniReadFile(fp);
 	if(ini != NULL) {
-		iniSetDateTime(&ini, NULL, strStatsDate, /* include_time: */false, stats->date, &ini_style);
+		iniSetDateTime(&ini, NULL, strStatsDate, /* include_time: */false, stats->date, /* style: */NULL);
 		settotals(&ini, strStatsToday, &stats->today);
 		settotals(&ini, strStatsTotal, &stats->total);
 		result = write_dstats(fp, &ini, function);
