@@ -4419,7 +4419,14 @@ doterm(struct bbslist *bbs)
 						ch[0] = '_';
 						conn_send(ch, 1, 0);
 						break;
-					// TODO: Can send control chars instead...
+					case 10:
+						ch[0] = '\r';
+						conn_send(ch, 1, 0);
+						break;
+					case 13:
+						ch[0] = '_';
+						conn_send(ch, 1, 0);
+						break;
 					case 8:
 					case CIO_KEY_DC:
 					case CIO_KEY_LEFT:
