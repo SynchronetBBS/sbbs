@@ -1,5 +1,6 @@
 Address all Area Management requests to 'AreaFix' (without quotes).
-Your Area Manager password goes in the message subject.
+Your Area Manager password goes in the message subject followed optionally
+by -R, -L, or -Q for Rescan, List, or Query functions, respectively.
 
 In the body of the message, one or more:
 
