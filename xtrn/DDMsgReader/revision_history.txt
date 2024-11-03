@@ -5,6 +5,14 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.96a    2024-11-02   When changing to another sub-board, the user can now cycle
+                      through the sort options with the [ and ] keys. Also,
+                      updated the change sub-board help to show in a scrollable
+                      window for users with ANSI terminals, rather than simply
+                      displaying the help with a pause at the end. Other help
+                      screens could potentially be shown this way too.
+                      New theme configuration options: helpWinBorderColor and
+                      scrollingWinHelpTextColor
 1.96     2024-10-26   New feature: sub-board sorting for changing sub-boards
                       (and users can change their sorting option).
 
