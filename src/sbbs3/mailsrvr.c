@@ -1932,30 +1932,66 @@ static ulong dns_blacklisted(SOCKET sock, const char* prot, union xp_sockaddr *a
 	return(found);
 }
 
+static void parse_mail_address(const char* p
+							   ,char* name, size_t name_len
+							   ,char* addr, size_t addr_len)
+{
+	char*	tp;
+	char	tmp[256];
+
+	if(p == NULL || addr == NULL)
+		return;
+
+	SKIP_WHITESPACE(p);
+
+	/* Get the address */
+	if((tp=strchr(p,'<'))!=NULL)
+		tp++;
+	else
+		tp=(char*)p;
+	SKIP_WHITESPACE(tp);
+	sprintf(addr,"%.*s",(int)addr_len,tp);
+	truncstr(addr,">( ");
+
+	if(name != NULL) {
+		SAFECOPY(tmp,p);
+		p=tmp;
+		/* Get the "name" (if possible) */
+		if((tp=strchr(p,'"'))!=NULL) {	/* name in quotes? */
+			p=tp+1;
+			tp=strchr(p,'"');
+		} else if((tp=strchr(p,'('))!=NULL) {	/* name in parenthesis? */
+			p=tp+1;
+			tp=strchr(p,')');
+		} else if(*p=='<') {					/* address in brackets? */
+			p++;
+			tp=strchr(p,'>');
+		} else									/* name, then address in brackets */
+			tp=strchr(p,'<');
+		if(tp) *tp=0;
+		sprintf(name,"%.*s",(int)name_len,p);
+		truncsp(name);
+		strip_char(name, name, '\\');
+	}
+}
 
 static BOOL chk_email_addr(SOCKET socket, const char* prot, char* p, char* host_name, char* host_ip
 						   ,char* to, char* from, char* source)
 {
-	char	addr[64];
+	char	name[128];
+	char	addr[128];
 	char	tmp[128];
 
-	SKIP_WHITESPACE(p);
-	char* lt = strchr(p, '<');
-	if(lt!= NULL)
-		p = lt+1;
-	SAFECOPY(addr,p);
-	truncstr(addr,">( ");
+	parse_mail_address(p, name, sizeof name, addr, sizeof addr);
 
 	struct trash trash;
-	if(!trashcan2(&scfg, addr, NULL, "email", &trash))
+	if(!trashcan2(&scfg, name, addr, "email", &trash))
 		return(TRUE);
-
 	char details[128];
 	lprintf(LOG_NOTICE,"%04d %s [%s] !BLOCKED %s e-mail address: %s %s"
-		,socket, prot, host_ip, source, addr, trash_details(&trash, details, sizeof details));
-	SAFEPRINTF2(tmp,"Blocked %s e-mail address: %s", source, addr);
+		,socket, prot, host_ip, source, p, trash_details(&trash, details, sizeof details));
+	SAFEPRINTF2(tmp,"Blocked %s e-mail address: %s", source, p);
 	spamlog(&scfg, &mqtt, (char*)prot, "REFUSED", tmp, host_name, host_ip, to, from);
-
 	return(FALSE);
 }
 
@@ -2736,49 +2772,6 @@ static int chk_received_hdr(SOCKET socket,const char* prot,const char *buf,IN_AD
 	} while(0);
 	free(fromstr);
 	return(dnsbl_result->s_addr);
-}
-
-static void parse_mail_address(char* p
-							   ,char* name, size_t name_len
-							   ,char* addr, size_t addr_len)
-{
-	char*	tp;
-	char	tmp[256];
-
-	if(p == NULL || addr == NULL)
-		return;
-
-	SKIP_WHITESPACE(p);
-
-	/* Get the address */
-	if((tp=strchr(p,'<'))!=NULL)
-		tp++;
-	else
-		tp=p;
-	SKIP_WHITESPACE(tp);
-	sprintf(addr,"%.*s",(int)addr_len,tp);
-	truncstr(addr,">( ");
-
-	if(name != NULL) {
-		SAFECOPY(tmp,p);
-		p=tmp;
-		/* Get the "name" (if possible) */
-		if((tp=strchr(p,'"'))!=NULL) {	/* name in quotes? */
-			p=tp+1;
-			tp=strchr(p,'"');
-		} else if((tp=strchr(p,'('))!=NULL) {	/* name in parenthesis? */
-			p=tp+1;
-			tp=strchr(p,')');
-		} else if(*p=='<') {					/* address in brackets? */
-			p++;
-			tp=strchr(p,'>');
-		} else									/* name, then address in brackets */
-			tp=strchr(p,'<');
-		if(tp) *tp=0;
-		sprintf(name,"%.*s",(int)name_len,p);
-		truncsp(name);
-		strip_char(name, name, '\\');
-	}
 }
 
 static BOOL checktag(scfg_t *scfg, char *tag, uint usernum)
