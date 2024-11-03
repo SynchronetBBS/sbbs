@@ -4415,6 +4415,10 @@ doterm(struct bbslist *bbs)
 			}
 			else if (key && (cterm->emulation == CTERM_EMULATION_PRESTEL)) {
 				switch (key) {
+					case '_':
+						ch[0] = '#';
+						conn_send(ch, 1, 0);
+						break;
 					case '#':
 						ch[0] = '_';
 						conn_send(ch, 1, 0);
@@ -4456,14 +4460,7 @@ doterm(struct bbslist *bbs)
 						freescreen(savscrn);
 						break;
 					}
-					case '_':
-						ch[0] = '`';
-						conn_send(ch, 1, 0);
-						break;
-					// TODO: Map £ ('#'), ½ (\), ¼ ({), ¾ (}), ÷ (~)
-					// TODO: Add Reveal key
-					// TODO: Add clear screen key
-					// TODO: Make return # or some shit...
+					// TODO: Add clear screen key?
 					default:
 						if (key == 13 || (key < 129 && key > 31)) {
 							ch[0] = key;
