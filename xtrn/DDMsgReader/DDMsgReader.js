@@ -171,6 +171,15 @@
  *                              sub-board, and whether to show sub-boards with new messages in
  *                              the indexed newscan.
  *                              Releasing this version (1.96).
+ * 2024-11-02 Eric Oulashin     Version 1.96a
+ *                              When changing to another sub-board, the user can now cycle
+ *                              through the sort options with the [ and ] keys. Also,
+ *                              updated the change sub-board help to show in a scrollable
+ *                              window for users with ANSI terminals, rather than simply
+ *                              displaying the help with a pause at the end. Other help
+ *                              screens could potentially be shown this way too.
+ *                              New theme configuration options: helpWinBorderColor and
+ *                              scrollingWinHelpTextColor
  */
 
 "use strict";
@@ -271,13 +280,15 @@ require("attr_conv.js", "convertAttrsToSyncPerSysCfg");
 require("graphic.js", 'Graphic');
 require("smbdefs.js", "SMB_POLL_ANSWER");
 load('822header.js');
+require("frame.js", "Frame");
+require("scrollbar.js", "ScrollBar");
 var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 var hexdump = load('hexdump_lib.js');
 
 
 // Reader version information
-var READER_VERSION = "1.96";
-var READER_DATE = "2024-10-26";
+var READER_VERSION = "1.96a";
+var READER_DATE = "2024-11-02";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -392,6 +403,7 @@ var UPPER_CENTER_BLOCK = "\xDF";
 var LOWER_CENTER_BLOCK = "\xDC";
 
 
+const ERROR_MSG_ATTR_CODES = "\x01y\x01h";
 const ERROR_PAUSE_WAIT_MS = 1500;
 
 // Reader mode definitions:
@@ -457,6 +469,8 @@ const SUB_BOARD_SORT_NONE = 0;
 const SUB_BOARD_SORT_ALPHABETICAL = 1;
 const SUB_BOARD_SORT_LATEST_MSG_DATE_OLDEST_FIRST = 2;
 const SUB_BOARD_SORT_LATEST_MSG_DATE_NEWEST_FIRST = 3;
+// Maximum sort option value (would to be changed if more sort options are added)
+const SUB_BOARD_MAX_SORT_VALUE = SUB_BOARD_SORT_LATEST_MSG_DATE_NEWEST_FIRST;
 
 // Misc. defines
 var ERROR_WAIT_MS = 1500;
@@ -919,7 +933,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.GetUpvoteAndDownvoteInfo = DigDistMsgReader_GetUpvoteAndDownvoteInfo;
 	this.GetMsgBody = DigDistMsgReader_GetMsgBody;
 	this.RefreshMsgHdrInArrays = DigDistMsgReader_RefreshMsgHdrInArrays;
-	this.WriteLightbarKeyHelpErrorMsg = DigDistMsgReader_WriteLightbarKeyHelpErrorMsg;
+	this.WriteLightbarKeyHelpMsg = DigDistMsgReader_WriteLightbarKeyHelpMsg;
 
 	// startMode specifies the mode for the reader to start in - List mode
 	// or reader mode, etc.  This is a setting that is read from the configuration
@@ -1320,6 +1334,10 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		}
 	}
 
+	// Message sub-board sort option for changing to a different sub-board, to
+	// persist while the reader is running but not to save to user settings
+	this.subBoardSortOptionWhileRunning = this.userSettings.subBoardChangeSorting;
+
 	// this.tabReplacementText will be the text that tabs will be replaced
 	// with in enhanced reader mode
 	//this.tabReplacementText = format("%" + this.numTabSpaces + "s", "");
@@ -1501,8 +1519,8 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.WriteMsgGroupLine = DigDistMsgReader_writeMsgGroupLine;
 	this.UpdateMsgAreaPageNumInHeader = DigDistMsgReader_updateMsgAreaPageNumInHeader;
 	this.GetMsgSubBoardLine = DigDistMsgReader_GetMsgSubBoardLine;
-	// Choose Message Area help screen
-	this.ShowChooseMsgAreaHelpScreen = DigDistMsgReader_showChooseMsgAreaHelpScreen;
+	// Choose Message Area help
+	this.ShowChooseMsgAreaHelp = DigDistMsgReader_ShowChooseMsgAreaHelp;
 	// Method to build the sub-board printf information for a message
 	// group
 	this.BuildSubBoardPrintfInfoForGrp = DigDistMsgReader_BuildSubBoardPrintfInfoForGrp;
@@ -1624,7 +1642,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// The selected message cursor position for the lightbar message list (initially
 	// null, will be set in the lightbar list message)
 	this.lightbarListCurPos = null;
-
+	
 	// selectedMessages will be an object (indexed by sub-board internal code)
 	// containing objects that contain message indexes (as properties) for the
 	// sub-boards.  Messages can be selected by the user for doing things such
@@ -3920,19 +3938,25 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 
 	// This function will be used for displaying the help line at
 	// the bottom of the screen.
-	function DisplayHelpLine(pHelpLineText)
+	function DisplayHelpLine(pHelpLineText, pHelpLineLen)
 	{
 		console.gotoxy(1, console.screen_rows);
 		// Mouse: console.print replaced with console.putmsg for mouse click hotspots
 		//console.print(pHelpLineText);
 		console.putmsg(pHelpLineText); // console.putmsg() can process @-codes, which we use for mouse click tracking
-		console.cleartoeol("\x01n");
+		//console.cleartoeol("\x01n"); // In some cases, this seems to output several extra blank lines
+		if (pHelpLineLen < console.screen_columns - 1)
+		{
+			console.attributes = "N";
+			var diff = console.screen_columns - pHelpLineLen - 1;
+			format("%*s", diff, "");
+		}
 	}
 
 	// Clear the screen and write the header at the top
 	console.clear("\x01n");
 	this.WriteMsgListScreenTopHeader();
-	DisplayHelpLine(this.msgListLightbarModeHelpLine);
+	DisplayHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
 
 	// If the lightbar message list index & cursor position variables haven't been
 	// set yet, then set them.
@@ -4047,7 +4071,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 				if (continueOn)
 				{
 					this.WriteMsgListScreenTopHeader();
-					DisplayHelpLine(this.msgListLightbarModeHelpLine);
+					DisplayHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
 				}
 			}
 		}
@@ -4117,7 +4141,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 			if (continueOn)
 			{
 				this.WriteMsgListScreenTopHeader();
-				DisplayHelpLine(this.msgListLightbarModeHelpLine);
+				DisplayHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
 			}
 		}
 		// DEL key: Delete a message
@@ -4143,7 +4167,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 					// There are still some messages to show, so refresh the screen.
 					// Refresh the header & help line.
 					this.WriteMsgListScreenTopHeader();
-					DisplayHelpLine(this.msgListLightbarModeHelpLine);
+					DisplayHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
 				}
 			}
 		}
@@ -4168,7 +4192,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 					var returnObj = this.EditExistingMsg(this.lightbarListSelectedMsgIdx);
 					// Refresh the header & help line
 					this.WriteMsgListScreenTopHeader();
-					DisplayHelpLine(this.msgListLightbarModeHelpLine);
+					DisplayHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
 				}
 			}
 			else
@@ -4218,7 +4242,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 
 			// Refresh the header & help lines
 			this.WriteMsgListScreenTopHeader();
-			DisplayHelpLine(this.msgListLightbarModeHelpLine);
+			DisplayHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
 		}
 		// C: Change to another message area (sub-board)
 		else if (lastUserInputUpper == this.msgListKeys.chgMsgArea)
@@ -4253,7 +4277,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 					// Adjust the menu indexes to ensure they're correct for the current sub-board
 					this.AdjustLightbarMsgListMenuIdxes(msgListMenu);
 					this.WriteMsgListScreenTopHeader();
-					DisplayHelpLine(this.msgListLightbarModeHelpLine);
+					DisplayHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
 				}
 			}
 			else
@@ -4266,7 +4290,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 			// Re-draw the message list header & help line before
 			// the menu is re-drawn
 			this.WriteMsgListScreenTopHeader();
-			DisplayHelpLine(this.msgListLightbarModeHelpLine);
+			DisplayHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
 		}
 		// Spacebar: Select a message for batch operations (such as batch
 		// delete, etc.)
@@ -4304,7 +4328,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 				drawMenu = false; // No need to re-draw the menu
 
 			// Refresh the help line
-			DisplayHelpLine(this.msgListLightbarModeHelpLine);
+			DisplayHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
 		}
 		// Ctrl-D: Batch delete (for selected messages)
 		else if (lastUserInputUpper == this.msgListKeys.batchDelete) // CTRL_D
@@ -4337,7 +4361,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 					{
 						// There are still messages to list, so refresh the header & help lines
 						this.WriteMsgListScreenTopHeader();
-						DisplayHelpLine(this.msgListLightbarModeHelpLine);
+						DisplayHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
 					}
 				}
 				else
@@ -4345,7 +4369,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 					// There are no selected messages
 					writeWithPause(1, console.screen_rows, "\x01n\x01h\x01yThere are no selected messages.", ERROR_PAUSE_WAIT_MS, "\x01n", true);
 					// Refresh the help line
-					DisplayHelpLine(this.msgListLightbarModeHelpLine);
+					DisplayHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
 				}
 			}
 		}
@@ -4370,12 +4394,12 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 
 				// Refresh the header & help line.
 				this.WriteMsgListScreenTopHeader();
-				DisplayHelpLine(this.msgListLightbarModeHelpLine);
+				DisplayHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
 			}
 		}
 		else if (lastUserInputUpper == this.msgListKeys.userSettings)
 		{
-			var userSettingsRetObj = this.DoUserSettings_Scrollable(function(pReader) { DisplayHelpLine(pReader.msgListLightbarModeHelpLine); });
+			var userSettingsRetObj = this.DoUserSettings_Scrollable(function(pReader) { DisplayHelpLine(pReader.msgListLightbarModeHelpLine, pReader.msgListLightbarModeHelpLineLen); });
 			lastUserInputUpper = "";
 			drawMenu = userSettingsRetObj.needWholeScreenRefresh;
 			// In case the user changed their twitlist, re-filter the messages for this sub-board
@@ -4400,7 +4424,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 			if (userSettingsRetObj.needWholeScreenRefresh)
 			{
 				this.WriteMsgListScreenTopHeader();
-				DisplayHelpLine(this.msgListLightbarModeHelpLine);
+				DisplayHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
 			}
 			else
 				msgListMenu.DrawPartialAbs(userSettingsRetObj.optionBoxTopLeftX, userSettingsRetObj.optionBoxTopLeftY, userSettingsRetObj.optionBoxWidth, userSettingsRetObj.optionBoxHeight);
@@ -4686,10 +4710,12 @@ function DigDistMsgReader_CreateLightbarMsgGrpMenu()
 //
 // Parameters:
 //  pGrpIdx: The index of the group to list sub-boards for
+//  pSortOption: Optional - An override for the sort option to use.  If not specified (or invalid),
+//               this will use the user's configured sort option (this.userSettings.subBoardChangeSorting)
 //
 // Return value: A DDLightbarMenu object set up to let the user choose a sub-board within the
 //               given message group
-function DigDistMsgReader_CreateLightbarSubBoardMenu(pGrpIdx)
+function DigDistMsgReader_CreateLightbarSubBoardMenu(pGrpIdx, pSortOption)
 {
 	// Start & end indexes for the various items in each sub-board list row
 	// Selected mark, group#, description, # sub-boards
@@ -4734,10 +4760,14 @@ function DigDistMsgReader_CreateLightbarSubBoardMenu(pGrpIdx)
 
 	// Add additional keypresses for quitting the menu's input loop so we can
 	// respond to these keys
-	subBoardMenu.AddAdditionalQuitKeys("nNqQ ?0123456789/" + CTRL_F);
+	subBoardMenu.AddAdditionalQuitKeys("nNqQ ?0123456789/[]" + CTRL_F);
 
-	// Add the sub-board items to the menu
-	if (this.userSettings.subBoardChangeSorting == SUB_BOARD_SORT_ALPHABETICAL)
+	// Add the sub-board items to the menu. Sort according to the user's
+	// sorting option.
+	var sortOption = this.userSettings.subBoardChangeSorting;
+	if (typeof(pSortOption) === "number" && pSortOption >= 0 && pSortOption <= SUB_BOARD_MAX_SORT_VALUE)
+		sortOption = pSortOption;
+	if (sortOption == SUB_BOARD_SORT_ALPHABETICAL)
 	{
 		var sortedSubs = [];
 		for (var subIdx = 0; subIdx < msg_area.grp_list[pGrpIdx].sub_list.length; ++subIdx)
@@ -4762,13 +4792,13 @@ function DigDistMsgReader_CreateLightbarSubBoardMenu(pGrpIdx)
 			subBoardMenu.Add(strip_ctrl(itemText), sortedSubs[subsI].subIdx);
 		}
 	}
-	else if (this.userSettings.subBoardChangeSorting == SUB_BOARD_SORT_LATEST_MSG_DATE_OLDEST_FIRST ||
-	         this.userSettings.subBoardChangeSorting == SUB_BOARD_SORT_LATEST_MSG_DATE_NEWEST_FIRST)
+	else if (sortOption == SUB_BOARD_SORT_LATEST_MSG_DATE_OLDEST_FIRST ||
+	         sortOption == SUB_BOARD_SORT_LATEST_MSG_DATE_NEWEST_FIRST)
 	{
 		var sortedSubs = [];
 		for (var subIdx = 0; subIdx < msg_area.grp_list[pGrpIdx].sub_list.length; ++subIdx)
 			sortedSubs.push(getSubBoardInfo(pGrpIdx, subIdx, this.msgAreaList_lastImportedMsg_showImportTime));
-		if (this.userSettings.subBoardChangeSorting == SUB_BOARD_SORT_LATEST_MSG_DATE_OLDEST_FIRST)
+		if (sortOption == SUB_BOARD_SORT_LATEST_MSG_DATE_OLDEST_FIRST)
 		{
 			sortedSubs.sort(function(pA, pB)
 			{
@@ -4780,7 +4810,7 @@ function DigDistMsgReader_CreateLightbarSubBoardMenu(pGrpIdx)
 					return 1;
 			});
 		}
-		else if (this.userSettings.subBoardChangeSorting == SUB_BOARD_SORT_LATEST_MSG_DATE_NEWEST_FIRST)
+		else if (sortOption == SUB_BOARD_SORT_LATEST_MSG_DATE_NEWEST_FIRST)
 		{
 			sortedSubs.sort(function(pA, pB)
 			{
@@ -4835,7 +4865,7 @@ function DigDistMsgReader_CreateLightbarSubBoardMenu(pGrpIdx)
 	{
 		// If no sorting is being used, then simply set the current selected
 		// index to the sub-board index.
-		if (this.userSettings.subBoardChangeSorting == SUB_BOARD_SORT_NONE)
+		if (sortOption == SUB_BOARD_SORT_NONE)
 			subBoardMenu.SetSelectedItemIdx(msg_area.sub[this.subBoardCode].index);
 		else
 		{
@@ -9438,14 +9468,21 @@ function DigDistMsgReader_SetMsgListPauseTextAndLightbarHelpLine()
 		var numLeft = Math.floor(numChars / 2);
 		var numRight = numChars - numLeft;
 		for (var i = 0; i < numLeft; ++i)
+		{
 			this.msgListLightbarModeHelpLine = " " + this.msgListLightbarModeHelpLine;
+			++lbHelpLineLen;
+		}
 		this.msgListLightbarModeHelpLine = "\x01n"
 		                             + this.colors.lightbarMsgListHelpLineBkgColor
 		                             + this.msgListLightbarModeHelpLine;
 		this.msgListLightbarModeHelpLine += "\x01n" + this.colors.lightbarMsgListHelpLineBkgColor;
 		for (var i = 0; i < numRight; ++i)
+		{
 			this.msgListLightbarModeHelpLine += ' ';
+			++lbHelpLineLen;
+		}
 	}
+	this.msgListLightbarModeHelpLineLen = lbHelpLineLen;
 }
 // For the DigDistMsgReader Class: Sets the hotkey help line for the enhanced
 // reader mode
@@ -13015,7 +13052,7 @@ function DigDistMsgReader_SelectMsgArea_Lightbar(pMsgGrp, pGrpIdx)
 					}
 					else
 					{
-						this.WriteLightbarKeyHelpErrorMsg("Not found");
+						this.WriteLightbarKeyHelpMsg("Not found", ERROR_MSG_ATTR_CODES, ERROR_WAIT_MS);
 						drawMenu = false;
 					}
 				}
@@ -13091,7 +13128,7 @@ function DigDistMsgReader_SelectMsgArea_Lightbar(pMsgGrp, pGrpIdx)
 					}
 					else
 					{
-						this.WriteLightbarKeyHelpErrorMsg("Not found");
+						this.WriteLightbarKeyHelpMsg("Not found", ERROR_MSG_ATTR_CODES, ERROR_WAIT_MS);
 						drawMenu = false;
 						this.WriteChgMsgAreaKeysHelpLine();
 					}
@@ -13099,14 +13136,18 @@ function DigDistMsgReader_SelectMsgArea_Lightbar(pMsgGrp, pGrpIdx)
 			}
 			else
 			{
-				this.WriteLightbarKeyHelpErrorMsg("There is no previous search", REFRESH_MSG_AREA_CHG_LIGHTBAR_HELP_LINE);
+				this.WriteLightbarKeyHelpMsg("There is no previous search", ERROR_MSG_ATTR_CODES, ERROR_WAIT_MS, REFRESH_MSG_AREA_CHG_LIGHTBAR_HELP_LINE);
 				drawMenu = false;
 				this.WriteChgMsgAreaKeysHelpLine();
 			}
 		}
 		else if (lastUserInputUpper == "?") // Show help
 		{
-			this.ShowChooseMsgAreaHelpScreen(true, true);
+			var screenInfo = this.ShowChooseMsgAreaHelp(!chooseMsgGrp, true, true);
+			msgAreaMenu.DrawPartialAbs(screenInfo.topLeftX, screenInfo.topLeftY, screenInfo.width, screenInfo.height);
+			drawMenu = false;
+			/*
+			this.ShowChooseMsgAreaHelp(!chooseMsgGrp, true, true);
 			console.pause();
 			// Refresh the screen
 			console.clear("\x01n");
@@ -13114,6 +13155,48 @@ function DigDistMsgReader_SelectMsgArea_Lightbar(pMsgGrp, pGrpIdx)
 			this.DisplayAreaChgHdr(1);
 			displayListHdrLines(this.areaChangeHdrLines.length+1, chooseMsgGrp, this);
 			this.WriteChgMsgAreaKeysHelpLine();
+			drawMenu = true;
+			*/
+		}
+		else if (lastUserInputUpper == "]")
+		{
+			// Cycle through sort options (higher). This key should only be returned
+			// from the sub-board menu, but check chooseMsgGrp anyway just to be safe.
+			if (!chooseMsgGrp)
+			{
+				// The sort option numeric values are from 0 to
+				// SUB_BOARD_MAX_SORT_VALUE, inclusive
+				if (this.subBoardSortOptionWhileRunning == SUB_BOARD_MAX_SORT_VALUE)
+					this.subBoardSortOptionWhileRunning = 0;
+				else
+					++this.subBoardSortOptionWhileRunning;
+				// Re-create the sub-board menu, which will use the new sort option
+				var msgAreaMenu = this.CreateLightbarSubBoardMenu(pGrpIdx, this.subBoardSortOptionWhileRunning);
+				// Write the new sorting option momentarily
+				var sortOptStr = subBoardSortOptionToStr(this.subBoardSortOptionWhileRunning);
+				this.WriteLightbarKeyHelpMsg("New sorting: " + sortOptStr, "\x01n\x01c\x01h", 1000, REFRESH_MSG_AREA_CHG_LIGHTBAR_HELP_LINE);
+				drawMenu = true;
+			}
+		}
+		else if (lastUserInputUpper == "[")
+		{
+			// Cycle through sort options (lower). This key should only be returned
+			// from the sub-board menu, but check chooseMsgGrp anyway just to be safe.
+			if (!chooseMsgGrp)
+			{
+				// The sort option numeric values are from 0 to
+				// SUB_BOARD_MAX_SORT_VALUE, inclusive
+				if (this.subBoardSortOptionWhileRunning == 0)
+					this.subBoardSortOptionWhileRunning = SUB_BOARD_MAX_SORT_VALUE;
+				else
+					--this.subBoardSortOptionWhileRunning;
+				// Re-create the sub-board menu, which will use the new sort option
+				var msgAreaMenu = this.CreateLightbarSubBoardMenu(pGrpIdx, this.subBoardSortOptionWhileRunning);
+				// Write the new sorting option momentarily
+				var sortOptStr = subBoardSortOptionToStr(this.subBoardSortOptionWhileRunning);
+				this.WriteLightbarKeyHelpMsg("New sorting: " + sortOptStr, "\x01n\x01c\x01h", 1000, REFRESH_MSG_AREA_CHG_LIGHTBAR_HELP_LINE);
+				drawMenu = true;
+			}
 		}
 		// If the user entered a numeric digit, then treat it as
 		// the start of the message group number.
@@ -13279,29 +13362,34 @@ function DigDistMsgReader_SelectMsgArea_Traditional()
 				*/
 
 				var subSearchText = "";
+				// Format string for the prompt text, with a %d for the sub-board number
+				var promptTextFormatStr = format("\x01n\x01b\x01h%s \x01n\x01cWhich, \x01h/\x01n\x01c or "
+				                        + "\x01hCTRL-F\x01n\x01c, \x01h[\x01n\x01c, \x01h]\x01n\x01c, \x01hQ\x01n\x01cuit, "
+				                        + "or [\x01h%%d\x01n\x01c]: \x01h", TALL_UPPER_MID_BLOCK);
 				var continueChoosingSubBoard = true;
 				while (continueChoosingSubBoard)
 				{
+					console.line_counter = 0; // To avoid a screen pause
 					console.clear("\x01n");
 					this.DisplayAreaChgHdr();
-					var subIndexes = this.ListSubBoardsInMsgGroup(selectedGrp-1, defaultSubBoard-1, this.userSettings.subBoardChangeSorting, subSearchText);
+					var subIndexes = this.ListSubBoardsInMsgGroup(selectedGrp-1, defaultSubBoard-1, this.subBoardSortOptionWhileRunning, subSearchText);
 					console.crlf();
-					console.print("\x01n\x01b\x01h" + TALL_UPPER_MID_BLOCK + " \x01n\x01cWhich, \x01h/\x01n\x01c or \x01hCTRL-F\x01n\x01c, \x01hQ\x01n\x01cuit, or [\x01h" +
-					              defaultSubBoard + "\x01n\x01c]: \x01h");
+					printf(promptTextFormatStr, defaultSubBoard);
 					// Accept Q (quit), / or CTRL_F (Search) or a sub-board number
-					selectedSubBoard = console.getkeys("Q/" + CTRL_F, msg_area.grp_list[selectedGrp - 1].sub_list.length);
+					selectedSubBoard = console.getkeys("Q/[]" + CTRL_F, msg_area.grp_list[selectedGrp - 1].sub_list.length);
+					var userChoiceAsStr = selectedSubBoard.toString();
 
 					// If the user just pressed enter (selectedSubBoard would be blank),
 					// default the selected directory.
-					if (selectedSubBoard.toString() == "")
+					if (userChoiceAsStr == "")
 						selectedSubBoard = defaultSubBoard;
 
 					// If the user chose to quit out of the sub-board list, then
 					// return to the message group list.
-					if (selectedSubBoard.toString() == "Q")
+					if (userChoiceAsStr == "Q")
 						continueChoosingSubBoard = false;
 					// / or CTRL-F: Search
-					else if ((selectedSubBoard.toString() == "/") || (selectedSubBoard.toString() == CTRL_F))
+					else if (userChoiceAsStr == "/" || userChoiceAsStr == CTRL_F)
 					{
 						console.crlf();
 						var searchPromptText = "\x01n\x01c\x01hSearch\x01g: \x01n";
@@ -13309,6 +13397,34 @@ function DigDistMsgReader_SelectMsgArea_Traditional()
 						var searchText = console.getstr("", console.screen_columns-strip_ctrl(searchPromptText).length-1, K_UPPER|K_NOCRLF|K_GETSTR|K_NOSPIN|K_LINE);
 						if (searchText.length > 0)
 							subSearchText = searchText;
+					}
+					else if (userChoiceAsStr == "]")
+					{
+						// Cycle through sort options (higher)
+						// The sort option numeric values are from 0 to
+						// SUB_BOARD_MAX_SORT_VALUE, inclusive
+						if (this.subBoardSortOptionWhileRunning == SUB_BOARD_MAX_SORT_VALUE)
+							this.subBoardSortOptionWhileRunning = 0;
+						else
+							++this.subBoardSortOptionWhileRunning;
+						var sortOptStr = subBoardSortOptionToStr(this.subBoardSortOptionWhileRunning);
+						console.print("\x01n\x01c\x01hNew sorting: " + sortOptStr + "\x01;\x01;");
+						console.line_counter = 0; // To avoid a screen pause
+						console.crlf();
+					}
+					else if (userChoiceAsStr == "[")
+					{
+						// Cycle through sort options (lower)
+						// The sort option numeric values are from 0 to
+						// SUB_BOARD_MAX_SORT_VALUE, inclusive
+						if (this.subBoardSortOptionWhileRunning == 0)
+							this.subBoardSortOptionWhileRunning = SUB_BOARD_MAX_SORT_VALUE;
+						else
+							--this.subBoardSortOptionWhileRunning;
+						var sortOptStr = subBoardSortOptionToStr(this.subBoardSortOptionWhileRunning);
+						console.print("\x01n\x01c\x01hNew sorting: " + sortOptStr + "\x01;\x01;");
+						console.line_counter = 0; // To avoid a screen pause
+						console.crlf();
 					}
 					// If the user chose a message sub-board, then validate the user's
 					// sub-board choice; if that succeeds, then change the user's
@@ -13710,67 +13826,144 @@ function DigDistMsgReader_GetMsgSubBoardLine(pGrpIndex, pSubIndex, pHighlight, p
 // Other functions for the msg. area chooser //
 ///////////////////////////////////////////////
 
-// For the DigDistMsgReader class: Shows the help screen
+// For the DigDistMsgReader class: Shows help for choosing a message area.
+// If the user's terminal supports ANSI, displays the help in a scrollable
+// window. Returns an object with X, Y, width, and height properties for the
+// scrollable window that was used; if a scrollable window wasn't used, the
+// values of the returned object's propreties will all be 0.
 //
 // Parameters:
-//  pLightbar: Boolean - Whether or not to show lightbar help.  If
-//             false, then this function will show regular help.
+//  pChoosingSubBoard: Boolean - Whether or not the user is choosing a sub-board.
+//                     If false, the user is choosing a message group.
+//  pLightbar: Boolean - Whether or not to show lightbar help along with
+//             regular help.
 //  pClearScreen: Boolean - Whether or not to clear the screen first
-function DigDistMsgReader_showChooseMsgAreaHelpScreen(pLightbar, pClearScreen)
+//
+// Return value: An object containing the following properties:
+//               topLeftX: The X coordinate of the top-left corner of the help box (if used; will be 0 if not)
+//               topLeftY: The Y coordinate of the top-left corner of the help box (if used; will be 0 if not)
+//               width: The width of the help box (if used; will be 0 if not)
+//               height: The height of the help box (if used; will be 0 if not)
+function DigDistMsgReader_ShowChooseMsgAreaHelp(pChoosingSubBoard, pLightbar, pClearScreen)
 {
-	if (pClearScreen && console.term_supports(USER_ANSI))
-		console.clear("\x01n");
-	else
-		console.attributes = "N";
-	DisplayProgramInfo();
-	console.crlf();
-	console.print("\x01n\x01c\x01hMessage area (sub-board) chooser");
-	console.crlf();
-	console.print("\x01k" + charStr(HORIZONTAL_SINGLE, 32) + "\x01n");
-	console.crlf();
-	console.print("\x01cFirst, a listing of message groups is displayed.  One can be chosen by typing");
-	console.crlf();
-	console.print("its number.  Then, a listing of sub-boards within that message group will be");
-	console.crlf();
-	console.print("shown, and one can be chosen by typing its number.");
-	console.crlf();
+	// A return object with box information, if used
+	var retObj = {
+		topLeftX: 0,
+		topLeftY: 0,
+		width: 0,
+		height: 0
+	};
 
-	console.crlf();
-	console.print("Keyboard commands:");
-	console.crlf();
-	console.print("\x01k\x01h" + charStr(HORIZONTAL_SINGLE, 18) + "\x01n");
-	console.crlf();
-	console.print("\x01n\x01c\x01h/\x01n\x01c or \x01hCTRL-F\x01n\x01c: Find group/sub-board");
-	console.crlf();
-	console.print("\x01n\x01c\x01h?\x01n\x01c: Show this help screen");
-	console.crlf();
-	console.print("\x01hQ\x01n\x01c: Quit");
-	console.crlf();
-
-	if (pLightbar)
+	// If the user's terminal supports ANSI, show the help in a scrollable window
+	if (console.term_supports(USER_ANSI))
 	{
-		console.crlf();
-		console.print("\x01n\x01cThe lightbar interface also allows up & down navigation through the lists:");
-		console.crlf();
-		console.print("\x01k\x01h" + charStr(HORIZONTAL_SINGLE, 74));
-		console.crlf();
-		console.print("\x01n\x01c\x01hUp\x01n\x01c/\x01hdown arrow\x01n\x01c: Move the cursor up/down one line");
-		console.crlf();
-		console.print("\x01hPageUp\x01n\x01c/\x01hPageDown\x01n\x01c: Move up/down a page");
-		console.crlf();
-		console.print("\x01hENTER\x01n\x01c: Select the current group/sub-board");
-		console.crlf();
-		console.print("\x01hHOME\x01n\x01c: Go to the first item on the screen");
-		console.crlf();
-		console.print("\x01hEND\x01n\x01c: Go to the last item on the screen");
-		console.crlf();
-		console.print("\x01hF\x01n\x01c: Go to the first page");
-		console.crlf();
-		console.print("\x01hL\x01n\x01c: Go to the last page");
-		console.crlf();
-		console.print("\x01hN\x01n\x01c: Next search result");
-		console.crlf();
+		// Frame dimensions
+		var frameUpperLeftX = 3;
+		var frameUpperLeftY = 3;
+		var frameWidth = console.screen_columns - (frameUpperLeftX*2);
+		var frameHeight = console.screen_rows - (frameUpperLeftY*2);
+		var frameInnerWidth = frameWidth - 3; // 3 due to the use of a scrollbar
+		retObj.topLeftX = frameUpperLeftX;
+		retObj.topLeftY = frameUpperLeftY;
+		retObj.width = frameWidth;
+		retObj.height = frameHeight;
+
+		var normalColor = "\x01n" + this.colors.scrollingWinHelpTextColor;
+		var highColor = "\x01n" + this.colors.scrollingWinHelpTextColor + "\x01h";
+
+		// Center a title in the window
+		var helpStr = "Message area (sub-board) chooser";
+		var width = Math.floor((frameInnerWidth/2)-(helpStr.length/2));
+		var helpText = "\x01n" + format("%*s", width, "") + normalColor + helpStr + "\r\n";
+		helpText += "\x01k" + format("%*s", width, "") + charStr(HORIZONTAL_SINGLE, helpStr.length) + "\x01n\r\n";
+		// Help text
+		helpStr = format("\x01n%sFirst, a listing of message groups is displayed.  One can be chosen by\r\n", normalColor);
+		helpStr += "typing its number.  Then, a listing of sub-boards within that message\r\n";
+		helpStr += "group will be shown, and one can be chosen by typing its number.";
+		helpText += lfexpand(word_wrap(helpStr), frameInnerWidth, null, false);
+		// Not wrapping properly:
+		/*
+		helpStr = "\x01cFirst, a listing of message groups is displayed.  One can be chosen by typing ";
+		helpStr += "its number.  Then, a listing of sub-boards within that message group will be ";
+		helpStr += "shown, and one can be chosen by typing its number.";
+		helpText += lfexpand(word_wrap(helpStr), frameInnerWidth, null, false);
+		*/
+
+		helpText += "\r\n";
+		helpText += "Keyboard commands:\r\n";
+		helpText += "\x01k\x01h" + charStr(HORIZONTAL_SINGLE, frameInnerWidth) + "\x01n\r\n";
+		helpText += format("%s/%s or %sCTRL-F%s: Find group/sub-board\r\n", highColor, normalColor, highColor, normalColor);
+		if (pChoosingSubBoard)
+			helpText += format("%s[%s or %s]%s: Cycle through sub-board sort options\r\n", highColor, normalColor, highColor, normalColor);
+		helpText += format("%s?%s: Show this help screen\r\n", highColor, normalColor);
+		helpText += format("%sQ%s: Quit\r\n", highColor, normalColor);
+
+		if (pLightbar)
+		{
+			helpText += "\r\n";
+			helpText += format("%sThe lightbar interface also allows up & down navigation through the\r\n", normalColor);
+			helpText += "lists:\r\n";
+			helpText += "\x01n\x01k\x01h" + charStr(HORIZONTAL_SINGLE, frameInnerWidth) + "\r\n";
+			helpText += format("%sUp\x01n%s/%sdown arrow\x01n%s: Move the cursor up/down one line\r\n", highColor, normalColor, highColor, normalColor);
+			helpText += format("%sPageUp%s/%sPageDown%s: Move up/down a page\r\n", highColor, normalColor, highColor, normalColor);
+			helpText += format("%sENTER%s: Select the current group/sub-board\r\n", highColor, normalColor);
+			helpText += format("%sHOME%s: Go to the first item on the screen\r\n", highColor, normalColor);
+			helpText += format("%sEND%s: Go to the last item on the screen\r\n", highColor, normalColor);
+			helpText += format("%sF%s: Go to the first page\r\n", highColor, normalColor);
+			helpText += format("%sL%s: Go to the last page\r\n", highColor, normalColor);
+			helpText += format("%sN%s: Next search result\r\n", highColor, normalColor);
+		}
+
+		// Construct & draw a frame with the file information & do the input loop
+		// for the frame until the user closes the frame.
+		var frameTitle = "Change Sub-board Help";
+		displayBorderedFrameAndDoInputLoop(frameUpperLeftX, frameUpperLeftY, frameWidth, frameHeight,
+										   this.colors.helpWinBorderColor, frameTitle,
+										   "Change Sub-Board Help", helpText);
 	}
+	else
+	{
+		// The user's terminal doesn't support ANSI - Don't use a scrollable window
+		if (pClearScreen && console.term_supports(USER_ANSI))
+			console.clear("\x01n");
+		else
+			console.attributes = "N";
+		DisplayProgramInfo();
+		console.crlf();
+		var normalColor = "\x01n" + this.colors.tradInterfaceHelpScreenColor;
+		var highColor = "\x01n" + this.colors.tradInterfaceHelpScreenColor + "\x01h";
+		printf("%sMessage area (sub-board) chooser\r\n", normalColor);
+		console.print("\x01n\x01k\x01h" + charStr(HORIZONTAL_SINGLE, 32) + "\x01n\r\n");
+		var helpStr = format("%sFirst, a listing of message groups is displayed.  One can be chosen by typing ", normalColor);
+		helpStr += "its number.  Then, a listing of sub-boards within that message group will be ";
+		helpStr += "shown, and one can be chosen by typing its number.";
+		console.print(lfexpand(word_wrap(helpStr)));
+
+		console.crlf();
+		console.print("Keyboard commands:\r\n");
+		console.print("\x01n\x01k\x01h" + charStr(HORIZONTAL_SINGLE, 18) + "\x01n\r\n");
+		printf("%s/%s or %sCTRL-F%s: Find group/sub-board\r\n", highColor, normalColor, highColor, normalColor);
+		printf("%s[%s or %s]%sc: Cycle through sub-board sort options\r\n", highColor, normalColor, highColor, normalColor);
+		printf("%s?%s Show this help screen\r\n", highColor, normalColor);
+		printf("%sQ%s: Quit\r\n", highColor, normalColor);
+
+		if (pLightbar)
+		{
+			console.crlf();
+			printf("%sThe lightbar interface also allows up & down navigation through the lists:\r\n", normalColor);
+			printf("\x01n\x01k\x01h" + charStr(HORIZONTAL_SINGLE, 74) + "\r\n");
+			printf("%sUp%s/%sdown arrow%s: Move the cursor up/down one line\r\n", highColor, normalColor, highColor, normalColor);
+			printf("%sPageUp%s/%sPageDown%s: Move up/down a page\r\n", highColor, normalColor, highColor, normalColor);
+			printf("%sENTER%s: Select the current group/sub-board\r\n", highColor, normalColor);
+			printf("%sHOME%s: Go to the first item on the screen\r\n", highColor, normalColor);
+			printf("%sEND%s: Go to the last item on the screen\r\n", highColor, normalColor);
+			printf("%sF%s: Go to the first page\r\n", highColor, normalColor);
+			printf("%sL%s: Go to the last page\r\n", highColor, normalColor);
+			printf("%sN%s: Next search result\r\n", highColor, normalColor);
+		}
+	}
+
+	return retObj;
 }
 
 // Builds sub-board printf format information for a message group.
@@ -18770,21 +18963,27 @@ function DigDistMsgReader_RecalcMsgListWidthsAndFormatStrs(pMsgNumLen)
 		this.sMsgListHdrFormatStr += "\r\n";
 }
 
-// For the DigDistMessageReader class: Writes a temporary error message at the key help line
-// for lightbar mode.
+// For the DigDistMessageReader class: Writes a temporary message at the key help line which is
+// used for lightbar mode.
 //
 // Parameters:
-//  pErrorMsg: The error message to write
+//  pMsg: The message to write
+//  pAttrStr: A string of attribute codes to use for the string
+//  pWaitTimeMS: Optional - The amount of time (in milliseconds) to show the message.
+//               Defaults to ERROR_WAIT_MS.
 //  pHelpLineRefreshDef: Optional - Specifies which help line to refresh on the screen
 //                       (i.e., REFRESH_MSG_AREA_CHG_LIGHTBAR_HELP_LINE)
-function DigDistMsgReader_WriteLightbarKeyHelpErrorMsg(pErrorMsg, pLineRefreshDef)
+function DigDistMsgReader_WriteLightbarKeyHelpMsg(pMsg, pAttrStr, pWaitTimeMS, pLineRefreshDef)
 {
 	console.gotoxy(1, console.screen_rows);
 	console.cleartoeol("\x01n");
 	console.gotoxy(1, console.screen_rows);
-	console.print("\x01y\x01h" + pErrorMsg + "\x01n");
-	mswait(ERROR_WAIT_MS);
-	var helpLineRefreshDef = (typeof(pHelpLineRefreshDef) == "number" ? pHelpLineRefreshDef : -1);
+	console.print(pAttrStr + pMsg + "\x01n");
+	var msgDisplayTime = ERROR_WAIT_MS;
+	if (typeof(pWaitTimeMS) === "number" && pWaitTimeMS > 0)
+		msgDisplayTime = pWaitTimeMS;
+	mswait(msgDisplayTime);
+	var helpLineRefreshDef = (typeof(pLineRefreshDef) == "number" ? pLineRefreshDef : -1);
 	if (helpLineRefreshDef == REFRESH_MSG_AREA_CHG_LIGHTBAR_HELP_LINE)
 		this.WriteChgMsgAreaKeysHelpLine();
 }
@@ -18989,8 +19188,14 @@ function getDefaultColors()
 		// Prompt for continuing to list messages after reading a message
 		afterReadMsg_ListMorePromptColor: "\x01n\x01c",
 
-		// Help screen text color
-		tradInterfaceHelpScreenColor: "\x01n\x01h\x01w",
+		// Traditional interface help screen text color
+		tradInterfaceHelpScreenColor: "\x01n\x01c",
+
+		// Help window border color (where applicable)
+		helpWinBorderColor: "\x01n\x01r",
+
+		// Scrolling window help text color
+		scrollingWinHelpTextColor: "\x01n\x01c",
 
 		// Colors for choosing a message group & sub-board
 		areaChooserMsgAreaNumColor: "\x01n\x01w\x01h",
@@ -25081,6 +25286,273 @@ function genPathedFilename(pDefaultDir, pFilename)
 		outFilename = pFilename;
 	return outFilename;
 }
+
+// Converts one of the sub-board sort options to a descriptive string
+function subBoardSortOptionToStr(pSortOption)
+{
+	var optionStr = "None (as configured in the system)";
+	switch (pSortOption)
+	{
+		case SUB_BOARD_SORT_NONE:
+			optionStr = "None (as configured in the system)";
+			break;
+		case SUB_BOARD_SORT_ALPHABETICAL:
+			optionStr = "Alphabetical";
+			break;
+		case SUB_BOARD_SORT_LATEST_MSG_DATE_OLDEST_FIRST:
+			optionStr = "Latest message date (oldest first)";
+			break;
+		case SUB_BOARD_SORT_LATEST_MSG_DATE_NEWEST_FIRST:
+			optionStr = "Latest message date (newest first)";
+			break;
+	}
+	return optionStr;
+}
+
+
+// Constructs & displays a frame with a border around it, and performs a user input loop
+// until the user quits out of the input loop.
+//
+// Parameters:
+//  pFrameX: The X coordinate of the upper-left corner of the frame (including border)
+//  pFrameY: The Y coordinate of the upper-left corner of the frame (including border)
+//  pFrameWidth: The width of the frame (including border)
+//  pFrameHeight: The height of the frame (including border)
+//  pBorderColor: The attribute codes for the border color
+//  pFrameTitle: The title (text) to use in the frame border
+//  pTitleColor: Optional string - The attribute codes for the color to use for the frame title
+//  pFrameContents: The contents to display in the frame
+//  pAdditionalQuitKeys: Optional - A string containing additional keys to quit the
+//                       input loop.  This is case-sensitive.
+//
+// Return value: The last keypress/input from the user
+function displayBorderedFrameAndDoInputLoop(pFrameX, pFrameY, pFrameWidth, pFrameHeight, pBorderColor, pFrameTitle, pTitleColor, pFrameContents, pAdditionalQuitKeys)
+{
+	if (typeof(pFrameX) !== "number" || typeof(pFrameY) !== "number" || typeof(pFrameWidth) !== "number" || typeof(pFrameHeight) !== "number")
+		return;
+
+	// Display the border for the frame
+	var keyHelpStr = "\x01n\x01c\x01hQ\x01b/\x01cEnter\x01b/\x01cESC\x01y: \x01gClose\x01b";
+	var scrollLoopNavHelp = "\x01c\x01hUp\x01b/\x01cDn\x01b/\x01cHome\x01b/\x01cEnd\x01b/\x01cPgup\x01b/\x01cPgDn\x01y: \x01gNav";
+	if (console.screen_columns >= 80)
+		keyHelpStr += ", " + scrollLoopNavHelp;
+	var borderColor = (typeof(pBorderColor) === "string" ? pBorderColor : "\x01r");
+	drawBorder(pFrameX, pFrameY, pFrameWidth, pFrameHeight, borderColor, "double", pFrameTitle, pTitleColor, keyHelpStr);
+
+	// Construct the frame window for the file info
+	// Create a Frame here with the full filename, extended description, etc.
+	var frameX = pFrameX + 1;
+	var frameY = pFrameY + 1;
+	var frameWidth = pFrameWidth - 2;
+	var frameHeight = pFrameHeight - 2;
+	var frameObj = new Frame(frameX, frameY, frameWidth, frameHeight, BG_BLACK);
+	frameObj.attr &=~ HIGH;
+	frameObj.v_scroll = true;
+	frameObj.h_scroll = false;
+	frameObj.scrollbars = true;
+	var scrollbarObj = new ScrollBar(frameObj, {bg: BG_BLACK, fg: LIGHTGRAY, orientation: "vertical", autohide: false});
+	// Put the file info string in the frame window, then start the
+	// user input loop for the frame
+	frameObj.putmsg(pFrameContents, "\x01n");
+	var lastUserInput = doFrameInputLoop(frameObj, scrollbarObj, pFrameContents, pAdditionalQuitKeys);
+	//infoFrame.bottom();
+
+	return lastUserInput;
+}
+
+// Displays a Frame object and handles the input loop for navigation until
+// the user presses Q, Enter, or ESC To quit the input loop
+//
+// Parameters:
+//  pFrame: The Frame object
+//  pScrollbar: The Scrollbar object for the Frame
+//  pFrameContentStr: The string content that was added to the Frame
+//  pAdditionalQuitKeys: Optional - A string containing additional keys to quit the
+//                       input loop.  This is case-sensitive.
+//
+// Return value: The last keypress/input from the user
+function doFrameInputLoop(pFrame, pScrollbar, pFrameContentStr, pAdditionalQuitKeys)
+{
+	var checkAdditionalQuitKeys = (typeof(pAdditionalQuitKeys) === "string" && pAdditionalQuitKeys.length > 0);
+
+	// Input loop for the frame to let the user scroll it
+	var frameContentTopYOffset = 0;
+	//var maxFrameYOffset = pFrameContentStr.split("\r\n").length - pFrame.height;
+	var maxFrameYOffset = countOccurrencesInStr(pFrameContentStr, "\r\n") - pFrame.height;
+	if (maxFrameYOffset < 0) maxFrameYOffset = 0;
+	var userInput = "";
+	var continueOn = true;
+	do
+	{
+		pFrame.scrollTo(0, frameContentTopYOffset);
+		pFrame.invalidate();
+		pScrollbar.cycle();
+		pFrame.cycle();
+		pFrame.draw();
+		// Note: getKeyWithESCChars() is defined in dd_lightbar_menu.js.
+		userInput = getKeyWithESCChars(K_NOECHO|K_NOSPIN|K_NOCRLF, 30000).toUpperCase();
+		if (userInput == KEY_UP)
+		{
+			if (frameContentTopYOffset > 0)
+				--frameContentTopYOffset;
+		}
+		else if (userInput == KEY_DOWN)
+		{
+			if (frameContentTopYOffset < maxFrameYOffset)
+				++frameContentTopYOffset;
+		}
+		else if (userInput == KEY_PAGEUP)
+		{
+			frameContentTopYOffset -= pFrame.height;
+			if (frameContentTopYOffset < 0)
+				frameContentTopYOffset = 0;
+		}
+		else if (userInput == KEY_PAGEDN)
+		{
+			frameContentTopYOffset += pFrame.height;
+			if (frameContentTopYOffset > maxFrameYOffset)
+				frameContentTopYOffset = maxFrameYOffset;
+		}
+		else if (userInput == KEY_HOME)
+			frameContentTopYOffset = 0;
+		else if (userInput == KEY_END)
+			frameContentTopYOffset = maxFrameYOffset;
+
+		// Check for whether to continue the input loop
+		continueOn = (userInput != "Q" && userInput != KEY_ENTER && userInput != KEY_ESC);
+		// If the additional quit keys does not contain the user's keypress, then continue
+		// the input loop.
+		// In other words, if the additional quit keys includes the user's keypress, then
+		// don't continue.
+		if (continueOn && checkAdditionalQuitKeys)
+			continueOn = (pAdditionalQuitKeys.indexOf(userInput) < 0);
+	} while (continueOn);
+
+	return userInput;
+}
+
+// Draws a border
+//
+// Parameters:
+//  pX: The X location of the upper left corner
+//  pY: The Y location of the upper left corner
+//  pWidth: The width of the box
+//  pHeight: The height of the box
+//  pColor: A string containing color/attribute codes for the border characters
+//  pLineStyle: A string specifying the border character style, either "single" or "double"
+//  pTitle: Optional - A string specifying title text for the top border
+//  pTitleColor: Optional - Attribute codes for the color to use for the title text
+//  pBottomBorderText: Optional - A string specifying text to include in the bottom border
+function drawBorder(pX, pY, pWidth, pHeight, pColor, pLineStyle, pTitle, pTitleColor, pBottomBorderText)
+{
+	if (typeof(pX) !== "number" || typeof(pY) !== "number" || typeof(pWidth) !== "number" || typeof(pHeight) !== "number")
+		return;
+	if (typeof(pColor) !== "string")
+		return;
+
+	var borderChars = {
+		UL: UPPER_LEFT_SINGLE,
+		UR: UPPER_RIGHT_SINGLE,
+		LL: LOWER_LEFT_SINGLE,
+		LR: LOWER_RIGHT_SINGLE,
+		preText: RIGHT_T_SINGLE,
+		postText: LEFT_T_SINGLE,
+		horiz: HORIZONTAL_SINGLE,
+		vert: VERTICAL_SINGLE
+	};
+	if (typeof(pLineStyle) === "string" && pLineStyle.toUpperCase() == "DOUBLE")
+	{
+		borderChars.UL = UPPER_LEFT_DOUBLE;
+		borderChars.UR = UPPER_RIGHT_DOUBLE;
+		borderChars.LL = LOWER_LEFT_DOUBLE;
+		borderChars.LR = LOWER_RIGHT_DOUBLE;
+		borderChars.preText = RIGHT_T_DOUBLE;
+		borderChars.postText = LEFT_T_DOUBLE
+		borderChars.horiz = HORIZONTAL_DOUBLE;
+		borderChars.vert = VERTICAL_DOUBLE;
+	}
+
+	// Top border
+	console.gotoxy(pX, pY);
+	console.print("\x01n" + pColor);
+	console.print(borderChars.UL);
+	var innerWidth = pWidth - 2;
+	// Include the title text in the top border, if there is any specified
+	var titleLen = console.strlen(pTitle);
+	if (typeof(pTitle) === "string" && titleLen > 0)
+	{
+		if (titleLen > pWidth - 4)
+			titleLen = pWidth - 4;
+		innerWidth -= titleLen;
+		innerWidth -= 2; // ?? Correctional
+		var titleWithoutAttrs = strip_ctrl(pTitle);
+		// Note: substrWithAttrCodes() is defined in dd_lightbar_menu.js
+		var titleText = titleWithoutAttrs;
+		if (typeof(pTitleColor) === "string")
+			titleText = "\x01n" + pTitleColor + titleWithoutAttrs;
+		console.print(borderChars.preText + "\x01n" + titleWithoutAttrs.substr(0, titleLen) +
+		              "\x01n" + pColor + borderChars.postText);
+		if (innerWidth > 0)
+			console.print(pColor);
+	}
+	for (var i = 0; i < innerWidth; ++i)
+		console.print(borderChars.horiz);
+	console.print(borderChars.UR);
+	// Side borders
+	var rightCol = pX + pWidth - 1;
+	var endScreenRow = pY + pHeight - 1;
+	for (var screenRow = pY + 1; screenRow < endScreenRow; ++screenRow)
+	{
+		console.gotoxy(pX, screenRow);
+		console.print(borderChars.vert);
+		console.gotoxy(rightCol, screenRow);
+		console.print(borderChars.vert);
+	}
+	// Bottom border
+	console.gotoxy(pX, endScreenRow);
+	console.print(borderChars.LL);
+	innerWidth = pWidth - 2;
+	// Include the bottom border text in the top border, if there is any specified
+	if (typeof(pBottomBorderText) === "string" && pBottomBorderText.length > 0)
+	{
+		var textLen = strip_ctrl(pBottomBorderText).length;
+		if (textLen > pWidth - 4)
+			textLen = pWidth - 4;
+		innerWidth -= textLen;
+		innerWidth -= 2; // ?? Correctional
+		// Note: substrWithAttrCodes() is defined in dd_lightbar_menu.js
+		console.print(borderChars.preText + "\x01n" + substrWithAttrCodes(pBottomBorderText, 0, textLen) +
+		              "\x01n" + pColor + borderChars.postText);
+		if (innerWidth > 0)
+			console.print(pColor);
+	}
+	for (var i = 0; i < innerWidth; ++i)
+		console.print(borderChars.horiz);
+	console.print(borderChars.LR);
+}
+
+// Counts the number of occurrences of a substring within a string
+//
+// Parameters:
+//  pStr: The string to count occurences in
+//  pSubstr: The string to look for within pStr
+//
+// Return value: The number of occurrences of pSubstr found in pStr
+function countOccurrencesInStr(pStr, pSubstr)
+{
+	if (typeof(pStr) !== "string" || typeof(pSubstr) !== "string") return 0;
+	if (pStr.length == 0 || pSubstr.length == 0) return 0;
+
+	var count = 0;
+	var strIdx = pStr.indexOf(pSubstr);
+	while (strIdx > -1 && strIdx < pStr.length)
+	{
+		++count;
+		strIdx = pStr.indexOf(pSubstr, strIdx+1);
+	}
+	return count;
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////
 

@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.96
-                           Release date: 2024-10-26
+                                 Version 1.96a
+                           Release date: 2024-11-02
 
                                      by
 
@@ -1044,7 +1044,13 @@ afterReadMsg_ListMorePromptColor     Color for the text used for asking the user
 tradInterfaceHelpScreenColor         Color for the text used in the traditional
                                      user interface message list help screen
 
-areaChooserMsgAreaNumColor            Color for the message area numbers when
+helpWinBorderColor                   Color for scrolling help windows (where
+                                     applicable)
+
+scrollingWinHelpTextColor            Color for help text in scrolling windows
+                                     (where applicable)
+
+areaChooserMsgAreaNumColor           Color for the message area numbers when
                                      choosing a different message area
 
 areaChooserMsgAreaDescColor          Color for the message area descriptions
