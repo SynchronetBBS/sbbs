@@ -77,13 +77,13 @@ for(var i = 0; i < argc; i++) {
 			continue;
 		}
 		if(opt.indexOf("lib=") == 0) {
-			var lib = opt.slice(4);
-			if(!file_area.lib[lib]) {
-				alert("Library not found: " + lib);
+			var libname = opt.slice(4);
+			if(!file_area.lib[libname]) {
+				alert("Library not found: " + libname);
 				exit(1);
 			}
-			for(var j = 0; j < file_area.lib[lib].dir_list.length; j++)
-				dir_list.push(file_area.lib[lib].dir_list[j].code);
+			for(var j = 0; j < file_area.lib[libname].dir_list.length; j++)
+				dir_list.push(file_area.lib[libname].dir_list[j].code);
 			options.auto = true;
 			continue;
 		}
