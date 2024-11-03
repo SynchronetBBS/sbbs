@@ -443,6 +443,7 @@ static void internal_setwinsize(struct video_stats *vs, bool force)
 		w = vs->scrnwidth;
 	if (h < vs->scrnheight)
 		h = vs->scrnheight;
+	pthread_mutex_lock(&win_mutex);
 	pthread_mutex_lock(&vstatlock);
 	if (w == vstat.winwidth && h == vstat.winheight)
 		changed = force;
@@ -452,18 +453,18 @@ static void internal_setwinsize(struct video_stats *vs, bool force)
 	}
 	if (changed) {
 		pthread_mutex_unlock(&vstatlock);
+		pthread_mutex_unlock(&win_mutex);
 	}
 	else {
-		pthread_mutex_lock(&win_mutex);
 		sdl.GetWindowSizeInPixels(win, &w, &h);
 		UPDATE_WINDOW_SIZE;
-		pthread_mutex_unlock(&win_mutex);
 		if (w != vs->winwidth || h != vs->winheight) {
 			vs->winwidth = w;
 			vs->winheight = h;
 			changed = true;
 		}
 		pthread_mutex_unlock(&vstatlock);
+		pthread_mutex_unlock(&win_mutex);
 		vstat.scaling = sdl_getscaling();
 	}
 	if (changed)
