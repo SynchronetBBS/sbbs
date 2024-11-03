@@ -461,28 +461,30 @@ void docopy(void)
 					case CIOLIB_BUTTON_1_DRAG_END:
 						lines=abs(mevent.endy-mevent.starty)+1;
 						copybuf=malloc(((endy-starty+1)*(endx-startx+1)+1+lines*2)*4);
-						outpos=0;
-						for(y=starty-1;y<endy;y++) {
-							for(x=startx-1;x<endx;x++) {
-								size_t outlen;
-								uint8_t *utf8str;
-								char ch;
+						if (copybuf) {
+							outpos=0;
+							for(y=starty-1;y<endy;y++) {
+								for(x=startx-1;x<endx;x++) {
+									size_t outlen;
+									uint8_t *utf8str;
+									char ch;
 
-								ch = screen->vmem[(y*api->scrn_width+x)].ch ? screen->vmem[(y*api->scrn_width+x)].ch : ' ';
-								utf8str = cp_to_utf8(conio_fontdata[screen->vmem[(y*api->scrn_width+x)].font].cp, &ch, 1, &outlen);
-								if (utf8str == NULL)
-									continue;
-								memcpy(copybuf + outpos, utf8str, outlen);
-								outpos += outlen;
+									ch = screen->vmem[(y*api->scrn_width+x)].ch ? screen->vmem[(y*api->scrn_width+x)].ch : ' ';
+									utf8str = cp_to_utf8(conio_fontdata[screen->vmem[(y*api->scrn_width+x)].font].cp, &ch, 1, &outlen);
+									if (utf8str == NULL)
+										continue;
+									memcpy(copybuf + outpos, utf8str, outlen);
+									outpos += outlen;
+								}
+								#ifdef _WIN32
+									copybuf[outpos++]='\r';
+								#endif
+								copybuf[outpos++]='\n';
 							}
-							#ifdef _WIN32
-								copybuf[outpos++]='\r';
-							#endif
-							copybuf[outpos++]='\n';
+							copybuf[outpos]=0;
+							copytext(copybuf, strlen(copybuf));
+							free(copybuf);
 						}
-						copybuf[outpos]=0;
-						copytext(copybuf, strlen(copybuf));
-						free(copybuf);
 						restorescreen(screen);
 						freescreen(screen);
 						freescreen(sbuffer);
