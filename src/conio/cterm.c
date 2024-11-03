@@ -994,6 +994,10 @@ prestel_get_state(struct cterminal *cterm)
 	SCR_XY(&sx, &sy);
 	TERM_XY(&tx, &ty);
 	line = malloc(sizeof(*line) * tx);
+	if (line == NULL) {
+		fprintf(stderr, "malloc() in prestel_get_state()\n");
+		return;
+	}
 	prestel_new_line(cterm);
 	if (tx > 1) {
 		vmem_gettext(cterm->x, sy, cterm->x + tx - 2, sy, line);
@@ -4982,6 +4986,10 @@ static void prestel_fix_line(struct cterminal *cterm, int x, int y, bool restore
 	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &sy, &sx);
 	ex = sx + TERM_MAXX - 1;
 	line = malloc(sizeof(*line) * (ex - sx + 1));
+	if (line == NULL) {
+		fprintf(stderr, "malloc() in prestel_get_state()\n");
+		return;
+	}
 	vmem_gettext(sx, sy, ex, sy, line);
 	prestel_new_line(cterm);
 	for (int i = 0; i < TERM_MAXX; i++) {
