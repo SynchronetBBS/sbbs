@@ -544,6 +544,7 @@ static int bitmap_draw_one_char(struct vmem_cell *vc, unsigned int xpos, unsigne
 	bool double_height = false;
 	bool bottom = false;
 	bool top = false;
+	bool not_hidden = true;
 
 	if(!bitmap_initialized) {
 		return(-1);
@@ -602,6 +603,7 @@ static int bitmap_draw_one_char(struct vmem_cell *vc, unsigned int xpos, unsigne
 	// PRESTEL!
 	if (vstat.mode == PRESTEL_40X24) {
 		struct vstat_vmem *vmem_ptr = get_vmem(&vstat);
+		unsigned char lattr = vc->legacy_attr;
 
 		if (ypos > 1) {
 			for (y = 0; y < ypos; y++) {
@@ -631,6 +633,7 @@ static int bitmap_draw_one_char(struct vmem_cell *vc, unsigned int xpos, unsigne
 			}
 			fg = vmem_ptr->vmem[(ypos - 2) * vstat.cols + (xpos - 1)].fg;
 			bg = vmem_ptr->vmem[(ypos - 2) * vstat.cols + (xpos - 1)].bg;
+			lattr = vmem_ptr->vmem[(ypos - 2) * vstat.cols + (xpos - 1)].legacy_attr;
 		}
 		else {
 			if (ypos != vstat.rows) {
@@ -650,6 +653,12 @@ static int bitmap_draw_one_char(struct vmem_cell *vc, unsigned int xpos, unsigne
 				fontoffset=(32) * (vstat.charheight * ((fdw + 7) / 8));
 		}
 		release_vmem(vmem_ptr);
+		if (lattr & 0x08) {
+			if (!(cio_api.options & CONIO_OPT_PRESTEL_REVEAL)) {
+				draw_fg = false;
+				not_hidden = false;
+			}
+		}
 	}
 	for (y = 0; y < vstat.charheight; y++) {
 		for(x = 0; x < vstat.charwidth; x++) {
@@ -699,7 +708,7 @@ static int bitmap_draw_one_char(struct vmem_cell *vc, unsigned int xpos, unsigne
 				}
 			}
 
-			if(fbb) {
+			if(fbb && not_hidden) {
 				if (screenb.rect->data[pixeloffset] != fg) {
 					screenb.update_pixels = 1;
 					screenb.rect->data[pixeloffset] = fg;

@@ -23,6 +23,7 @@ int      orig_vidflags;
 int      orig_x;
 int      orig_y;
 uint32_t orig_palette[16];
+bool reveal;
 
 static void
 get_title(char *str, size_t sz)
@@ -53,6 +54,8 @@ init_uifc(bool scrn, bool bottom)
 
 	gettextinfo(&txtinfo);
 	if (!uifc_initialized) {
+		reveal = !!(cio_api.options & CONIO_OPT_PRESTEL_REVEAL);
+		cio_api.options |= CONIO_OPT_PRESTEL_REVEAL;
                 /* Set scrn_len to 0 to prevent textmode() call */
 		uifc.scrn_len = 0;
 		orig_vidflags = getvideoflags();
@@ -115,6 +118,8 @@ uifcbail(void)
 		setvideoflags(orig_vidflags);
 		loadfont(NULL);
 		gotoxy(orig_x, orig_y);
+		if (!reveal)
+			cio_api.options &= ~CONIO_OPT_PRESTEL_REVEAL;
 	}
 	uifc_initialized = 0;
 }

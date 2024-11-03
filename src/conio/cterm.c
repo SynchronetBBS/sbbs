@@ -846,7 +846,7 @@ prestel_apply_ctrl_before(struct cterminal *cterm, uint8_t ch)
 			break;
 		case 88: // Conceal Display
 			cterm->attr |= 0x08;
-			cterm->extattr |= CTERM_EXTATTR_PRESTEL_MOSAIC;
+			cterm->extattr |= CTERM_EXTATTR_PRESTEL_CONCEAL;
 			break;
 		case 89: // Contiguous Mosaics
 			// TODO: Can be either way. :(
@@ -6198,6 +6198,7 @@ CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int b
 								lastch = 0;
 								uctputs(cterm, prn);
 								prn[0]=0;
+								cio_api.options &= ~(CONIO_OPT_PRESTEL_REVEAL);
 								prestel_new_line(cterm);
 								cterm_clearscreen(cterm, (char)cterm->attr);
 								GOTOXY(CURR_MINX, CURR_MINY);
