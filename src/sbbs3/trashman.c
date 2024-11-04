@@ -20,14 +20,13 @@
  ****************************************************************************/
 
 #include "trash.h"
-//#include "datewrap.h"
-//#include "xpdatetime.h"
-//#include "ini_file.h"
-//#include "scfglib.h"
 #include "findstr.h"
 #include "nopen.h"
 
+bool test = false;
 int verbosity = 0;
+int max_age = 0;
+const char* prot = NULL;
 
 int maint(const char* fname)
 {
@@ -37,16 +36,17 @@ int maint(const char* fname)
 		perror(fname);
 		return -1;
 	}
-	FILE* fp = fnopen(NULL, fname, O_WRONLY|O_TRUNC);
+	FILE* fp = fnopen(NULL, test ? _PATH_DEVNULL : fname, O_WRONLY|O_TRUNC);
 	if(fp == NULL) {
-		perror(fname);
+		perror(test ? _PATH_DEVNULL : fname);
 		return -2;
 	}
 	time_t now = time(NULL);
 	for(int i = 0; list[i] != NULL; ++i) {
 		struct trash trash;
 		char item[256];
-		if(!trash_parse_details(list[i], &trash, item, sizeof item)) {
+		if(!trash_parse_details(list[i], &trash, item, sizeof item)
+			|| (prot != NULL && stricmp(trash.prot, prot) != 0)) {
 			fputs(list[i], fp);
 			continue;
 		}
@@ -60,17 +60,34 @@ int maint(const char* fname)
 			++removed;
 			continue;
 		}
+		if(max_age) {
+			int age = now - trash.added;
+			if(age > 0 && (age/=(24*60*60)) > max_age) {
+				if(verbosity > 0)
+					printf("%s is %d days old", item, age);
+				++removed;
+				continue;
+			}
+		}
 		fputs(list[i], fp);
 	}
 	fclose(fp);
 	strListFree(&list);
+	if(removed || verbosity > 0)
+		printf("%d items %sremoved from %s\n"
+			,removed, test ? "would have been " : "", fname);
 	return removed;
 }
 
 int usage(const char* prog)
 {
-	printf("usage: %s [-v][...] /path/to/file1.can [/path/to/file2.can][...]\n"
+	printf("\nusage: %s [-opt][...] /path/to/file1.can [/path/to/file2.can][...]\n"
 		,getfname(prog));
+	printf("\noptions:\n");
+	printf("     -a<days> specify maximum age of filter items, in days\n");
+	printf("     -p<prot> only manage filters for specified protocol\n");
+	printf("     -t       run in test (read-only) mode\n");
+	printf("     -v       increase verbosity of output\n");
 	return EXIT_SUCCESS;
 }
 
@@ -84,9 +101,21 @@ int main(int argc, const char** argv)
 		const char* arg = argv[i];
 		if(*arg != '-')
 			continue;
-		switch(arg[1]) {
+		++arg;
+		switch(*arg) {
+			case 't':
+				test = true;
+				break;
 			case 'v':
-				++verbosity;
+				do {
+					++verbosity;
+				} while(*(++arg) == 'v');
+				break;
+			case 'a':
+				max_age = atoi(++arg);
+				break;
+			case 'p':
+				prot = ++arg;
 				break;
 			default:
 				return usage(argv[0]);
@@ -102,6 +131,6 @@ int main(int argc, const char** argv)
 			return EXIT_FAILURE;
 		total += removed;
 	}
-	printf("%d total items removed\n", total);
+	printf("%d total items %sremoved\n", total, test ? "would have been " : "");
 	return EXIT_SUCCESS;
 }
