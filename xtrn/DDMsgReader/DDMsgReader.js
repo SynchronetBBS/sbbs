@@ -180,6 +180,11 @@
  *                              screens could potentially be shown this way too.
  *                              New theme configuration options: helpWinBorderColor and
  *                              scrollingWinHelpTextColor
+ * 2024-11-03 Eric Oulashin     Version 1.96b
+ *                              Bug fix: When displaying the new scrollable area change help
+ *                              window, if there's an area change header in use, refresh it
+ *                              and the header lines, since the scrollable help window would
+ *                              display over them.
  */
 
 "use strict";
@@ -287,8 +292,8 @@ var hexdump = load('hexdump_lib.js');
 
 
 // Reader version information
-var READER_VERSION = "1.96a";
-var READER_DATE = "2024-11-02";
+var READER_VERSION = "1.96b";
+var READER_DATE = "2024-11-03";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -13145,7 +13150,15 @@ function DigDistMsgReader_SelectMsgArea_Lightbar(pMsgGrp, pGrpIdx)
 		{
 			var screenInfo = this.ShowChooseMsgAreaHelp(!chooseMsgGrp, true, true);
 			msgAreaMenu.DrawPartialAbs(screenInfo.topLeftX, screenInfo.topLeftY, screenInfo.width, screenInfo.height);
+			// If there's an area change header, refresh the header and the header lines,
+			// since the help window will display over it
+			if (this.areaChangeHdrLines.length > 0)
+			{
+				this.DisplayAreaChgHdr(1);
+				displayListHdrLines(this.areaChangeHdrLines.length+1, chooseMsgGrp, this);
+			}
 			drawMenu = false;
+			// Older, with a non-scrolling help screen:
 			/*
 			this.ShowChooseMsgAreaHelp(!chooseMsgGrp, true, true);
 			console.pause();
