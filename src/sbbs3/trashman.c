@@ -53,7 +53,7 @@ int maint(const char* fname)
 		char item[256];
 		if(!trash_parse_details(list[i], &trash, item, sizeof item)
 			|| (prot != NULL && stricmp(trash.prot, prot) != 0)) {
-			fputs(list[i], fp);
+			fprintf(fp, "%s\n", list[i]);
 			continue;
 		}
 		if(verbosity > 1) {
@@ -75,7 +75,7 @@ int maint(const char* fname)
 				continue;
 			}
 		}
-		fputs(list[i], fp);
+		fprintf(fp, "%s\n", list[i]);
 	}
 	fclose(fp);
 	strListFree(&list);

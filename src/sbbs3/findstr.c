@@ -240,6 +240,7 @@ bool find2strs(const char* str1, const char* str2, const char* fname, char* meta
 static char* process_findstr_item(size_t index, char *str, void* cbdata)
 {
 	SKIP_WHITESPACE(str);
+	truncnl(str);
 	return c_unescape_str(str);
 }
 
