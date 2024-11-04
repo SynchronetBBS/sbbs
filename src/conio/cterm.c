@@ -4894,7 +4894,7 @@ struct cterminal* cterm_init(int height, int width, int xpos, int ypos, int back
 	if (cterm->emulation == CTERM_EMULATION_PRESTEL) {
 		cterm->cursor = _NOCURSOR;
 		SETCURSORTYPE(cterm->cursor);
-		memcpy(cterm->prestel_data[0], "0000000000??????", PRESTEL_MEM_SLOT_SIZE);
+		memcpy(cterm->prestel_data[0], "????????????????", PRESTEL_MEM_SLOT_SIZE);
 		memcpy(cterm->prestel_data[1], ":2:?4967?89:1???", PRESTEL_MEM_SLOT_SIZE);
 		memcpy(cterm->prestel_data[2], ":1632?123?456???", PRESTEL_MEM_SLOT_SIZE);
 		memcpy(cterm->prestel_data[3], ";???????????????", PRESTEL_MEM_SLOT_SIZE);
