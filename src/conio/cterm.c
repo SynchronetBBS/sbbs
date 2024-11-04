@@ -836,7 +836,7 @@ prestel_apply_ctrl_before(struct cterminal *cterm, uint8_t ch)
 		case 73: // Steady
 			cterm->attr &= 0x7f;
 			attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
-			if (CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT)
+			if (cterm->extattr & CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT)
 				cterm->bg_color |= 0x01000000;
 			break;
 		case 76: // Normal Height
@@ -869,48 +869,45 @@ prestel_apply_ctrl_before(struct cterminal *cterm, uint8_t ch)
 }
 
 static void
+prestel_colour(struct cterminal *cterm, bool alpha, int colour)
+{
+	cterm->attr &= 0xF7;
+	set_fgattr(cterm, colour);
+	cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_CONCEAL);
+	if (alpha)
+		cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_MOSAIC);
+	else
+		cterm->extattr |= CTERM_EXTATTR_PRESTEL_MOSAIC;
+	cterm->prestel_last_mosaic = 32;
+}
+
+static void
 prestel_apply_ctrl_after(struct cterminal *cterm, uint8_t ch)
 {
 	switch(ch) {
 		case 64: // Alphanumeric Black
-			set_fgattr(cterm, BLACK);
-			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_MOSAIC | CTERM_EXTATTR_PRESTEL_CONCEAL);
-			cterm->prestel_last_mosaic = 32;
+			prestel_colour(cterm, true, BLACK);
 			break;
 		case 65: // Alphanumeric Red
-			set_fgattr(cterm, RED);
-			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_MOSAIC | CTERM_EXTATTR_PRESTEL_CONCEAL);
-			cterm->prestel_last_mosaic = 32;
+			prestel_colour(cterm, true, RED);
 			break;
 		case 66: // Alphanumeric Green
-			set_fgattr(cterm, GREEN);
-			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_MOSAIC | CTERM_EXTATTR_PRESTEL_CONCEAL);
-			cterm->prestel_last_mosaic = 32;
+			prestel_colour(cterm, true, GREEN);
 			break;
 		case 67: // Alphanumeric Yellow
-			set_fgattr(cterm, BROWN);
-			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_MOSAIC | CTERM_EXTATTR_PRESTEL_CONCEAL);
-			cterm->prestel_last_mosaic = 32;
+			prestel_colour(cterm, true, YELLOW);
 			break;
 		case 68: // Alphanumeric Blue
-			set_fgattr(cterm, BLUE);
-			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_MOSAIC | CTERM_EXTATTR_PRESTEL_CONCEAL);
-			cterm->prestel_last_mosaic = 32;
+			prestel_colour(cterm, true, BLUE);
 			break;
 		case 69: // Alphanumeric Magenta
-			set_fgattr(cterm, MAGENTA);
-			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_MOSAIC | CTERM_EXTATTR_PRESTEL_CONCEAL);
-			cterm->prestel_last_mosaic = 32;
+			prestel_colour(cterm, true, MAGENTA);
 			break;
 		case 70: // Alphanumeric Cyan
-			set_fgattr(cterm, CYAN);
-			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_MOSAIC | CTERM_EXTATTR_PRESTEL_CONCEAL);
-			cterm->prestel_last_mosaic = 32;
+			prestel_colour(cterm, true, CYAN);
 			break;
 		case 71: // Alphanumeric White
-			set_fgattr(cterm, LIGHTGRAY);
-			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_MOSAIC | CTERM_EXTATTR_PRESTEL_CONCEAL);
-			cterm->prestel_last_mosaic = 32;
+			prestel_colour(cterm, true, WHITE);
 			break;
 		case 72: // Flash
 			cterm->attr |= 0x80;
@@ -924,52 +921,28 @@ prestel_apply_ctrl_after(struct cterminal *cterm, uint8_t ch)
 			cterm->prestel_last_mosaic = 32;
 			break;
 		case 80: // Mosaic Black
-			set_fgattr(cterm, BLACK);
-			cterm->extattr |= CTERM_EXTATTR_PRESTEL_MOSAIC;
-			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_CONCEAL);
-			cterm->prestel_last_mosaic = 32;
+			prestel_colour(cterm, false, BLACK);
 			break;
 		case 81: // Mosaic Red
-			set_fgattr(cterm, RED);
-			cterm->extattr |= CTERM_EXTATTR_PRESTEL_MOSAIC;
-			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_CONCEAL);
-			cterm->prestel_last_mosaic = 32;
+			prestel_colour(cterm, false, RED);
 			break;
 		case 82: // Mosaic Green
-			set_fgattr(cterm, GREEN);
-			cterm->extattr |= CTERM_EXTATTR_PRESTEL_MOSAIC;
-			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_CONCEAL);
-			cterm->prestel_last_mosaic = 32;
+			prestel_colour(cterm, false, GREEN);
 			break;
 		case 83: // Mosaic Yellow
-			set_fgattr(cterm, BROWN);
-			cterm->extattr |= CTERM_EXTATTR_PRESTEL_MOSAIC;
-			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_CONCEAL);
-			cterm->prestel_last_mosaic = 32;
+			prestel_colour(cterm, false, YELLOW);
 			break;
 		case 84: // Mosaic Blue
-			set_fgattr(cterm, BLUE);
-			cterm->extattr |= CTERM_EXTATTR_PRESTEL_MOSAIC;
-			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_CONCEAL);
-			cterm->prestel_last_mosaic = 32;
+			prestel_colour(cterm, false, BLUE);
 			break;
 		case 85: // Mosaic Magenta
-			set_fgattr(cterm, MAGENTA);
-			cterm->extattr |= CTERM_EXTATTR_PRESTEL_MOSAIC;
-			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_CONCEAL);
-			cterm->prestel_last_mosaic = 32;
+			prestel_colour(cterm, false, MAGENTA);
 			break;
 		case 86: // Mosaic Cyan
-			set_fgattr(cterm, CYAN);
-			cterm->extattr |= CTERM_EXTATTR_PRESTEL_MOSAIC;
-			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_CONCEAL);
-			cterm->prestel_last_mosaic = 32;
+			prestel_colour(cterm, false, CYAN);
 			break;
 		case 87: // Mosaic White
-			set_fgattr(cterm, LIGHTGRAY);
-			cterm->extattr |= CTERM_EXTATTR_PRESTEL_MOSAIC;
-			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_CONCEAL);
-			cterm->prestel_last_mosaic = 32;
+			prestel_colour(cterm, false, WHITE);
 			break;
 		case 95: // Release Mosaics
 			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_HOLD);
