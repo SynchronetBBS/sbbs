@@ -1170,14 +1170,3 @@ void sbbs_t::purgeuser(int usernumber)
 	putusername(&cfg,usernumber,nulstr);
 	putusermisc(usernumber, user.misc | DELETED);
 }
-
-/****************************************************************************/
-/* An error checking/logging wrapper for userdat.c putuserdat()				*/
-/****************************************************************************/
-void sbbs_t::putuserdat(user_t* user)
-{
-	int result = ::putuserdat(&cfg, user);
-	if(result != 0)
-		lprintf(LOG_ERR, "!Error %d writing user data for user #%d"
-			,result, user->number);
-}

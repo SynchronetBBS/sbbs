@@ -805,6 +805,7 @@ public:
 	bool	putusermisc(int usernumber, uint32_t value);
 	bool	putuserchat(int usernumber, uint32_t value);
 	bool	putuserqwk(int usernumber, uint32_t value);
+	bool	putuserdat(user_t*);
 
 	uint	finduserstr(uint usernumber, enum user_field, const char* str
 				,bool del=false, bool next=false);
@@ -1322,7 +1323,6 @@ public:
 	int		searchdn(char *search,int usernum);
 	void	maindflts(user_t* user);
 	void	purgeuser(int usernumber);
-	void	putuserdat(user_t*);
 
 	/* ver.cpp */
 	void	ver(void);
