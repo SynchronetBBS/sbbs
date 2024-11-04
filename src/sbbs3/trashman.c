@@ -22,6 +22,8 @@
 #include "trash.h"
 #include "findstr.h"
 #include "nopen.h"
+#include "git_branch.h"
+#include "git_hash.h"
 
 bool test = false;
 int verbosity = 0;
@@ -36,7 +38,11 @@ int maint(const char* fname)
 		perror(fname);
 		return -1;
 	}
-	FILE* fp = fnopen(NULL, test ? _PATH_DEVNULL : fname, O_WRONLY|O_TRUNC);
+	FILE* fp;
+	if(test)
+		fp = fopen(_PATH_DEVNULL, "w");
+	else
+		fp = fnopen(NULL, fname, O_WRONLY|O_TRUNC);
 	if(fp == NULL) {
 		perror(test ? _PATH_DEVNULL : fname);
 		return -2;
@@ -52,19 +58,19 @@ int maint(const char* fname)
 		}
 		if(verbosity > 1) {
 			char details[256];
-			printf("%s %s\n", item, trash_details(&trash, details, sizeof details));
+			printf("%s: %s %s\n", fname, item, trash_details(&trash, details, sizeof details));
 		}
 		if(trash.expires && trash.expires < now) {
 			if(verbosity > 0)
-				printf("%s expired %s", item, ctime(&trash.expires));
+				printf("%s: %s expired %s", fname, item, ctime(&trash.expires));
 			++removed;
 			continue;
 		}
-		if(max_age) {
-			int age = now - trash.added;
+		if(max_age != 0 && trash.added != 0) {
+			int age = (int)(now - trash.added);
 			if(age > 0 && (age/=(24*60*60)) > max_age) {
 				if(verbosity > 0)
-					printf("%s is %d days old", item, age);
+					printf("%s: %s is %d days old\n", fname, item, age);
 				++removed;
 				continue;
 			}
@@ -74,8 +80,8 @@ int maint(const char* fname)
 	fclose(fp);
 	strListFree(&list);
 	if(removed || verbosity > 0)
-		printf("%d items %sremoved from %s\n"
-			,removed, test ? "would have been " : "", fname);
+		printf("%s: %d items %sremoved\n"
+			,fname, removed, test ? "would have been " : "");
 	return removed;
 }
 
@@ -93,7 +99,8 @@ int usage(const char* prog)
 
 int main(int argc, const char** argv)
 {
-	printf("\nSynchronet trash/filter file manager v1.0\n");
+	printf("\nSynchronet Trash Can (Filter File) Manager  v1.0  %s/%s\n"
+		,GIT_BRANCH, GIT_HASH);
 
 	if(argc < 2)
 		return usage(argv[0]);
@@ -122,6 +129,7 @@ int main(int argc, const char** argv)
 		}
 	}
 	int total = 0;
+	int files = 0;
 	for(int i = 1; i < argc; ++i) {
 		const char* arg = argv[i];
 		if(*arg == '-')
@@ -130,7 +138,9 @@ int main(int argc, const char** argv)
 		if(removed < 0)
 			return EXIT_FAILURE;
 		total += removed;
+		++files;
 	}
-	printf("%d total items %sremoved\n", total, test ? "would have been " : "");
+	if(files > 1)
+		printf("%d total items %sremoved from %d files\n", total, test ? "would have been " : "", files);
 	return EXIT_SUCCESS;
 }
