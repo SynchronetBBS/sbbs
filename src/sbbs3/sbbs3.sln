@@ -102,6 +102,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "conio_gdi", "..\conio\conio
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sftp", "..\sftp\sftp.vcxproj", "{4C69A1D2-182A-45D3-AD33-54A8A91B387D}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "trashman", "trashman.vcxproj", "{2BE1C8F2-50CE-44B0-A341-92B24E2D3DB4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -275,6 +277,10 @@ Global
 		{4C69A1D2-182A-45D3-AD33-54A8A91B387D}.Debug|Win32.Build.0 = Debug|Win32
 		{4C69A1D2-182A-45D3-AD33-54A8A91B387D}.Release|Win32.ActiveCfg = Release|Win32
 		{4C69A1D2-182A-45D3-AD33-54A8A91B387D}.Release|Win32.Build.0 = Release|Win32
+		{2BE1C8F2-50CE-44B0-A341-92B24E2D3DB4}.Debug|Win32.ActiveCfg = Debug|Win32
+		{2BE1C8F2-50CE-44B0-A341-92B24E2D3DB4}.Debug|Win32.Build.0 = Debug|Win32
+		{2BE1C8F2-50CE-44B0-A341-92B24E2D3DB4}.Release|Win32.ActiveCfg = Release|Win32
+		{2BE1C8F2-50CE-44B0-A341-92B24E2D3DB4}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
