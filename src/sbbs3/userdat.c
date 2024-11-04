@@ -279,8 +279,6 @@ bool lockuserdat(int file, unsigned user_number)
 
 	off_t offset = userdatoffset(user_number);
 
-	if(lseek(file, offset, SEEK_SET) != offset)
-		return false;
 	unsigned attempt=0;
 	while(attempt < LOOP_USERDAT && lock(file, offset, USER_RECORD_LINE_LEN) == -1) {
 		attempt++;
@@ -783,7 +781,10 @@ int putuserdat(scfg_t* cfg, user_t* user)
 		return(-4);
 	}
 
-	seekuserdat(file, user->number);
+	if(!seekuserdat(file, user->number)) {
+		close(file);
+		return -5;
+	}
 	if(!lockuserdat(file, user->number)) {
 		close(file);
 		return(-2);
