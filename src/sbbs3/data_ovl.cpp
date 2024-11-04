@@ -89,6 +89,20 @@ uint sbbs_t::finduserstr(uint usernumber, enum user_field fnum, const char* str
 	return(i);
 }
 
+/****************************************************************************/
+/* An error checking/logging wrapper for userdat.c putuserdat()				*/
+/****************************************************************************/
+bool sbbs_t::putuserdat(user_t* user)
+{
+	int result = ::putuserdat(&cfg, user);
+	if(result != 0) {
+		lprintf(LOG_ERR, "!Error %d writing user data for user #%d"
+			,result, user->number);
+		return false;
+	}
+	return true;
+}
+
 bool sbbs_t::putuserstr(int usernumber, enum user_field fnum, const char *str)
 {
 	int result = ::putuserstr(&cfg, usernumber, fnum, str);

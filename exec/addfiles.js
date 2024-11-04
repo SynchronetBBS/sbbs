@@ -3,7 +3,7 @@
 
 require("sbbsdefs.js", 'LEN_FDESC');
 
-var lib = load({}, "filelist_lib.js");
+const lib = load({}, "filelist_lib.js");
 
 "use strict";
 

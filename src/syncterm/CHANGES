@@ -1,3 +1,8 @@
+Version 1.2rc6
+--------------
+Prestel fixes for Steady and Concealed modes
+Set default prestel ID to zero characters for CCl4
+
 Version 1.2rc5
 --------------
 Fix RIP parsing when passed fragmented ANSI sequences

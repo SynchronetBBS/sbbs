@@ -475,7 +475,12 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 		client->user.ltoday++;
 	}
 
-	putuserdat(&scfg,&client->user);
+	int result = putuserdat(&scfg,&client->user);
+	if(result != 0) {
+		lprintf(LOG_ERR, "%04d %s !Error %d writing user data for user #%d"
+			,client->socket,client->service->protocol
+			,result, client->user.number);
+	}
 	if(client->subscan==NULL) {
 		client->subscan=(subscan_t*)calloc(scfg.total_subs, sizeof(subscan_t));
 		if(client->subscan==NULL)

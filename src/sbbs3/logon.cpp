@@ -443,7 +443,7 @@ bool sbbs_t::logon()
 	SAFECOPY(useron.ipaddr, client_ipaddr);
 	SAFECOPY(useron.comp, client_name);
 	useron.logons++;
-	putuserdat(&cfg,&useron);
+	putuserdat(&useron);
 	getmsgptrs();
 	sys_status|=SS_USERON;          /* moved from further down */
 
