@@ -42,7 +42,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 	int		org_lbuflen = lbuflen;
 
 	int term = term_supports();
-	console&=~(CON_UPARROW|CON_DOWNARROW|CON_LEFTARROW|CON_BACKSPACE|CON_DELETELINE);
+	console&=~(CON_UPARROW|CON_DOWNARROW|CON_LEFTARROW|CON_RIGHTARROW|CON_BACKSPACE|CON_DELETELINE);
 	if(!(mode&K_WRAP))
 		console&=~CON_INSERT;
 	sys_status&=~SS_ABORT;
@@ -123,6 +123,10 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 			break;
 		if(ch==LF && mode&K_MSG) { /* Down-arrow same as CR */
 			console|=CON_DOWNARROW;
+			break;
+		}
+		if(ch==TERM_KEY_RIGHT && (mode & K_RIGHTEXIT) && i == l) {
+			console |= CON_RIGHTARROW;
 			break;
 		}
 		if(ch==TAB && (mode&K_TAB || (!(mode&K_WRAP) && history == NULL)))	/* TAB same as CR */

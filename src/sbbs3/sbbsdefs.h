@@ -485,6 +485,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define CON_PAUSEOFF	(1<<4)	// Temporary pause over-ride (same as UPAUSE)
 #define CON_L_INPUT		(1<<5)	/* Accept input locally						*/
 #define CON_RAW_IN		(1<<8)	/* Raw input mode - no editing capabilities	*/
+#define CON_RIGHTARROW	(1<<9)	/* Right arrow hit, exiting from getstr()	*/
 #define CON_ECHO_OFF	(1<<10)	/* Remote & Local echo disabled for ML/MF	*/
 #define CON_UPARROW		(1<<11)	/* Up arrow hit - move up one line			*/
 #define CON_DOWNARROW	(1<<12)	/* Down arrow hit, exiting from getstr()	*/
@@ -665,6 +666,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define K_CTRLKEYS	(1<<24)		/* No control-key handling/eating in inkey()*/
 #define K_NUL		(1<<25)		/* Return NOINP on timeout instead of '\0'	*/
 #define K_UTF8		(1<<26)		/* Don't translate UTF-8 input into CP437 	*/
+#define K_RIGHTEXIT	(1<<27)		/* Allow exit by arrowing right				*/
 
 								/* Bits in 'mode' for putmsg and printfile  */
 #define P_NONE		0			/* No mode flags							*/
