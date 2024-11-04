@@ -20,8 +20,10 @@
 
 "use strict";
 
-const REVISION = "2.0";
+const REVISION = "2.1";
 require('sbbsdefs.js', 'SUB_NAME');
+require('dns.js', 'DNS');
+const dns = new DNS(/* synchronous: */true);
 const temp_node = 9999;
 var netname;
 var netdns;
@@ -293,6 +295,27 @@ function get_binkp_sysop()
 	var result = file.iniGetValue("Binkp", "Sysop");
 	file.close();
 	return result;
+}
+
+function valid_email_host(host)
+{
+	return resolve_ip(host) || dns.resolveMX(host).length > 0;
+}
+
+function check_email_addr(addr)
+{
+	if(!addr)
+		return false;
+	if(netaddr_type(addr) != NET_INTERNET) {
+		alert(format("'%s' does not appear to be a valid Internet e-mail address!", addr));
+		return false;
+	}
+	var host = addr.slice(addr.indexOf('@') + 1);
+	if(!valid_email_host(host)) {
+		alert(format("'%s' does not appear to be a valid/working Internet e-mail host!", host));
+		return false;
+	}
+	return true;
 }
 
 function update_sbbsecho_ini(hub, link, domain, echolist_fname, areamgr)
@@ -569,6 +592,8 @@ if(system.stats.total_users) {
 			sysop = u.name;
 		if(netaddr_type(u.netmail) == NET_INTERNET)
 			sysop_email = u.netmail;
+		else
+			sysop_email = u.email;
 	}
 }
 sysop = get_binkp_sysop() || sysop;
@@ -578,7 +603,8 @@ if(!sysop_email) {
 	sysop_email = sysop.replace(' ', '.');
 	sysop_email += '@' + system.inet_addr;
 }
-while((netaddr_type(sysop_email) != NET_INTERNET || !confirm("Your Internet e-mail address is " + sysop_email)) && !aborted())
+alert("It is important that you provide a valid/working Internet email address:");
+while((!check_email_addr(sysop_email) || !confirm("Your Internet e-mail address is " + sysop_email)) && !aborted())
 	sysop_email = prompt("Your Internet e-mail address");
 
 /* Get/Confirm passwords */
@@ -592,7 +618,7 @@ while(((!link.TicFilePwd && (link.TicFilePwd !== "")) || !confirm("Your TIC File
 /***********************************************/
 /* SEND NODE NUMBER REQUEST NETMAIL (Internet) */
 /***********************************************/
-if(your.node === temp_node && network.email && network.email.indexOf('@') > 0
+if(your.node === temp_node && check_email_addr(network.email)
 	&& confirm("Send a node number application to " + network.email)) {
 	var result = send_app_netmail(network.email);
 	if(typeof result !== 'boolean') {
