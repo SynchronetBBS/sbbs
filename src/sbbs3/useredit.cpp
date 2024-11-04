@@ -78,7 +78,7 @@ void sbbs_t::useredit(int usernumber)
 		if(strcmp(str,tmp) && user.ltoday) {
 			user.ltoday=user.ttoday=user.ptoday=user.etoday=user.textra=0;
 			user.freecdt=cfg.level_freecdtperday[user.level];
-			putuserdat(&cfg,&user); 	/* Leave alone */
+			putuserdat(&user); 	/* Leave alone */
 		}
 		char user_pass[LEN_PASS + 1];
 		SAFECOPY(user_pass, user.pass);
@@ -494,7 +494,7 @@ void sbbs_t::useredit(int usernumber)
 					else
 						user.expire+=((long)cfg.val_expire[i]*24L*60L*60L); 
 				}
-				putuserdat(&cfg,&user);
+				putuserdat(&user);
 				break;
 			case 'W':
 				bputs(text[UeditPassword]);
@@ -516,7 +516,7 @@ void sbbs_t::useredit(int usernumber)
 					if((int)i>0) {
 						user.number=i;
 						putusername(&cfg,user.number,user.alias);
-						putuserdat(&cfg,&user); 
+						putuserdat(&user);
 					} 
 				}
 				break;
@@ -1169,4 +1169,15 @@ void sbbs_t::purgeuser(int usernumber)
 	delallmail(usernumber, MAIL_ANY);
 	putusername(&cfg,usernumber,nulstr);
 	putusermisc(usernumber, user.misc | DELETED);
+}
+
+/****************************************************************************/
+/* An error checking/logging wrapper for userdat.c putuserdat()				*/
+/****************************************************************************/
+void sbbs_t::putuserdat(user_t* user)
+{
+	int result = ::putuserdat(&cfg, user);
+	if(result != 0)
+		lprintf(LOG_ERR, "!Error %d writing user data for user #%d"
+			,result, user->number);
 }

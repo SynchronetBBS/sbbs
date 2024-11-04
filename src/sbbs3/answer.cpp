@@ -452,7 +452,7 @@ bool sbbs_t::answer()
 								SAFECOPY(useron.ipaddr, client_ipaddr);
 								SAFECOPY(useron.comp, client_name);
 								useron.logons++;
-								putuserdat(&cfg,&useron);
+								putuserdat(&useron);
 								snprintf(str, sizeof(str), "(%04u)  %-25s  %s Logon"
 									,useron.number, useron.alias, client.protocol);
 								logline("++", str);

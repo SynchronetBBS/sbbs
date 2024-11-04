@@ -2628,7 +2628,9 @@ static void ctrl_thread(void* arg)
 			SAFECOPY(user.comp,host_name);
 			SAFECOPY(user.ipaddr,host_ip);
 			user.logontime=(time32_t)logintime;
-			putuserdat(&scfg, &user);
+			if((result = putuserdat(&scfg, &user)) != 0)
+				lprintf(LOG_ERR, "%04d [%s] <%s> !Error %d writing user data for user #%d"
+					,sock, host_ip, user.alias, result, user.number);
 			mqtt_user_login(&mqtt, &client);
 
 #ifdef _WIN32

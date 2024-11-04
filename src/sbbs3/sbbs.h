@@ -1322,6 +1322,7 @@ public:
 	int		searchdn(char *search,int usernum);
 	void	maindflts(user_t* user);
 	void	purgeuser(int usernumber);
+	void	putuserdat(user_t*);
 
 	/* ver.cpp */
 	void	ver(void);
