@@ -2613,7 +2613,8 @@ int putuserstr(scfg_t* cfg, int usernumber, enum user_field fnum, const char *st
 		unlockuserdat(file, usernumber);
 	}
 	close(file);
-	dirtyuserdat(cfg, usernumber);
+	if(retval == 0)
+		dirtyuserdat(cfg, usernumber);
 	return retval;
 }
 
