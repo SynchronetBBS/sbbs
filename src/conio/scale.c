@@ -763,7 +763,7 @@ struct YCoCg_data {
 };
 
 static inline void
-RGB_to_YCoCg(const uint32_t RGB, struct YCoCg_data *YCoCg)
+RGB_to_YCoCg(const uint32_t RGB, struct YCoCg_data * const YCoCg)
 {
 	signed R, G, B, tmp;
 
@@ -778,7 +778,7 @@ RGB_to_YCoCg(const uint32_t RGB, struct YCoCg_data *YCoCg)
 }
 
 static inline uint32_t
-YCoCg_to_RGB(struct YCoCg_data *YCoCg)
+YCoCg_to_RGB(struct YCoCg_data const * const YCoCg)
 {
 	signed Ri, Gi, Bi, tmp;
 	unsigned R, G, B;
