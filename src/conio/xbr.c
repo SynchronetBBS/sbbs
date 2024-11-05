@@ -40,9 +40,9 @@
 #endif
 
 struct YCoCg_data {
-	unsigned Y;
-	signed Co;
-	signed Cg;
+	uint32_t Y;
+	int32_t Co;
+	int32_t Cg;
 };
 
 static inline void
@@ -55,9 +55,9 @@ RGB_to_YCoCg(const uint32_t RGB, struct YCoCg_data *YCoCg)
 	B = (RGB) & 0xFF;
 
 	YCoCg->Co = R - B;
-	tmp = B + (YCoCg->Co >> 1);
+	tmp = B + (YCoCg->Co / 2);
 	YCoCg->Cg = G - tmp;
-	YCoCg->Y = tmp + (YCoCg->Cg >> 1);
+	YCoCg->Y = tmp + (YCoCg->Cg / 2);
 }
 
 static inline uint32_t pixel_diff(const uint32_t x, const uint32_t y)

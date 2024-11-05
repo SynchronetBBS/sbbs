@@ -757,39 +757,34 @@ pointy_scale3(const uint32_t* src, uint32_t* dest, const int width, const int he
 }
 
 struct YCoCg_data {
-	unsigned Y;
-	signed Co;
-	signed Cg;
+	uint32_t Y; // 0 to 255
+	int32_t Co;  // -255 to 255
+	int32_t Cg;  // -255 to 255
 };
 
 static inline void
 RGB_to_YCoCg(const uint32_t RGB, struct YCoCg_data * const YCoCg)
 {
-	signed R, G, B, tmp;
+	const uint8_t R = (RGB >> 16) & 0xFF;
+	const uint8_t G = (RGB >> 8) & 0xFF;
+	const uint8_t B = (RGB) & 0xFF;
 
-	R = (RGB >> 16) & 0xFF;
-	G = (RGB >> 8) & 0xFF;
-	B = (RGB) & 0xFF;
-
-	YCoCg->Co = R - B;
-	tmp = B + (YCoCg->Co >> 1);
+	YCoCg->Co = R - B; // -255 to 255
+	const uint8_t tmp = B + (YCoCg->Co / 2);
 	YCoCg->Cg = G - tmp;
-	YCoCg->Y = tmp + (YCoCg->Cg >> 1);
+	YCoCg->Y = tmp + (YCoCg->Cg / 2);
 }
 
 static inline uint32_t
 YCoCg_to_RGB(struct YCoCg_data const * const YCoCg)
 {
-	signed Ri, Gi, Bi, tmp;
-	unsigned R, G, B;
-
-	tmp = YCoCg->Y - (YCoCg->Cg >> 1);
-	Gi = YCoCg->Cg + tmp;
-	Bi = tmp - (YCoCg->Co >> 1);
-	Ri = Bi + YCoCg->Co;
-	R = ((Ri < 0) ? 0 : ((Ri > 255) ? 255 : Ri));
-	G = ((Gi < 0) ? 0 : ((Gi > 255) ? 255 : Gi));
-	B = ((Bi < 0) ? 0 : ((Bi > 255) ? 255 : Bi));
+	const int16_t tmp = YCoCg->Y - (YCoCg->Cg / 2);
+	const int16_t Gi = YCoCg->Cg + tmp;
+	const int16_t Bi = tmp - (YCoCg->Co / 2);
+	const int16_t Ri = Bi + YCoCg->Co;
+	const uint32_t R = (Ri < 0) ? 0 : ((Ri > 255) ? 255 : Ri);
+	const uint32_t G = (Gi < 0) ? 0 : ((Gi > 255) ? 255 : Gi);
+	const uint32_t B = (Bi < 0) ? 0 : ((Bi > 255) ? 255 : Bi);
 	return (R << 16) | (G << 8) | B;
 }
 
@@ -805,9 +800,9 @@ blend_YCoCg(const uint32_t c1, const uint32_t c2, const uint16_t weight)
 	RGB_to_YCoCg(c1, &ycc1);
 	RGB_to_YCoCg(c2, &ycc2);
 
-	ycc3.Y = ((uint32_t)ycc1.Y * iw + (uint32_t)ycc2.Y * weight) / 65535;
-	ycc3.Co = ((int32_t)ycc1.Co * iw + (int32_t)ycc2.Co * weight) / 65535;
-	ycc3.Cg = ((int32_t)ycc1.Cg * iw + (int32_t)ycc2.Cg * weight) / 65535;
+	ycc3.Y = (ycc1.Y * iw + ycc2.Y * weight) / 65535;
+	ycc3.Co = (ycc1.Co * iw + ycc2.Co * weight) / 65535;
+	ycc3.Cg = (ycc1.Cg * iw + ycc2.Cg * weight) / 65535;
 
 	return YCoCg_to_RGB(&ycc3);
 }
