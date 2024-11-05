@@ -2,6 +2,7 @@ Version 1.2rc6
 --------------
 Prestel fixes for Steady and Concealed modes
 Set default prestel ID to zero characters for CCl4
+Modify scaler to use integer math
 
 Version 1.2rc5
 --------------
