@@ -5,7 +5,7 @@
 
 #include "sftp.h"
 
-typedef struct sftp_client_state {
+struct sftp_client_state {
 	bool (*send_cb)(uint8_t *buf, size_t len, void *cb_data);
 	xpevent_t recv_event;
 	sftp_rx_pkt_t rxp;
@@ -20,7 +20,7 @@ typedef struct sftp_client_state {
 	uint32_t err_id;
 	uint32_t err_code;
 	bool terminating;
-} *sftpc_state_t;
+};
 
 #define SFTP_STATIC_TYPE sftpc_state_t
 #include "sftp_static.h"
