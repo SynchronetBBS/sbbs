@@ -617,7 +617,8 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define SS_USERON		(1<<3)	/* A User is logged on to the BBS				*/
 #define SS_LCHAT		(1<<4)	/* Local chat in progress						*/
 #define SS_ANSCAP		(1<<6)	/* Capture ANSI codes too						*/
-#define SS_DAILY		(1<<9)	/* Execute System Daily Event on logoff 		*/
+#define SS_NEW_MONTH	(1<<8)	// Execute System Monthly Event
+#define SS_NEW_DAY		(1<<9)	// Execute System Daily Event
 #define SS_INUEDIT		(1<<10)	/* Inside Alt-Useredit section 				*/
 #define SS_ABORT		(1<<11) /* Global abort input or output flag			*/
 #define SS_SYSPAGE		(1<<12) /* Paging sysop								*/
@@ -636,6 +637,8 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define SS_MOFF			(1<<29) /* Disable automatic messages					*/
 #define SS_QWKLOGON		(1<<30) /* QWK logon									*/
 #define SS_FASTLOGON	(1U<<31)/* Fast logon									*/
+
+#define SS_DAILY		(SS_NEW_DAY | SS_NEW_MONTH)
 
 								/* Bits in 'mode' for getkey and getstr     */
 #define K_NONE		0			/* Use as a place holder for no mode flags	*/

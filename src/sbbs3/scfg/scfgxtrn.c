@@ -329,12 +329,13 @@ void fevents_cfg()
 		snprintf(opt[i++],MAX_OPLN,"%-32.32s%s","Logon Event",cfg.sys_logon);
 		snprintf(opt[i++],MAX_OPLN,"%-32.32s%s","Logout Event",cfg.sys_logout);
 		snprintf(opt[i++],MAX_OPLN,"%-32.32s%s","Daily Event",cfg.sys_daily);
+		snprintf(opt[i++],MAX_OPLN,"%-32.32s%s","Monthly Event",cfg.sys_monthly);
 		opt[i][0]=0;
 		uifc.helpbuf=
 			"`External Events:`\n"
 			"\n"
 			"From this menu, you can configure the logon and logout events, and the\n"
-			"system daily event.\n"
+			"system daily and monthly (off-line) events.\n"
 		;
 		switch(uifc.list(WIN_ACT|WIN_SAV|WIN_CHE|WIN_BOT|WIN_RHT,0,0,60,&event_dflt,0
 			,"Fixed Events",opt)) {
@@ -384,6 +385,18 @@ void fevents_cfg()
 				;
 				uifc.input(WIN_MID|WIN_SAV,0,0,"Daily Event"
 					,cfg.sys_daily,sizeof(cfg.sys_daily)-1,K_EDIT);
+
+				break;
+			case 3:
+				uifc.helpbuf=
+					"`Monthly Event:`\n"
+					"\n"
+					"Enter a command line for a program that will run once each new month.\n"
+					SCFG_CMDLINE_PREFIX_HELP
+					SCFG_CMDLINE_SPEC_HELP
+				;
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Monthly Event"
+					,cfg.sys_monthly,sizeof(cfg.sys_monthly)-1,K_EDIT);
 
 				break;
 		}

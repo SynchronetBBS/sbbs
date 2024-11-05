@@ -138,6 +138,7 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	SAFECOPY(cfg->sys_logon, iniGetString(ini, "logon_event", "cmd", "", value));
 	SAFECOPY(cfg->sys_logout, iniGetString(ini, "logout_event", "cmd", "", value));
 	SAFECOPY(cfg->sys_daily, iniGetString(ini, "daily_event", "cmd", "", value));
+	SAFECOPY(cfg->sys_monthly, iniGetString(ini, "monthly_event", "cmd", "", value));
 
 	named_str_list_t** sections = iniParseSections(ini);
 

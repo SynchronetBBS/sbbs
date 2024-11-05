@@ -203,6 +203,7 @@ bool write_main_cfg(scfg_t* cfg)
 	iniSetString(&ini, "logon_event", "cmd", cfg->sys_logon, NULL);
 	iniSetString(&ini, "logout_event", "cmd", cfg->sys_logout, NULL);
 	iniSetString(&ini, "daily_event", "cmd", cfg->sys_daily, NULL);
+	iniSetString(&ini, "monthly_event", "cmd", cfg->sys_monthly, NULL);
 
 	{
 		const char* name = "expired";
