@@ -2861,7 +2861,17 @@ show_bbslist(char *current, int connected)
 
                                                 /* Fall-through */
 						case -2 - CIO_KEY_MOUSE: /* Clicked outside of window... */
-							getmouse(&mevent);
+							if(mouse_pending()) {
+								do {
+									getmouse(&mevent);
+								} while (mouse_pending());
+								if (mevent.event == CIOLIB_BUTTON_1_CLICK
+								    && mevent.starty == cio_textinfo.screenheight - 1) {
+									if (edit_comment(list[opt], settings.list_path))
+										redraw = 1;
+									break;
+								}
+							}
 
                                                 /* Fall-through */
 						case -2 - 0x0f00: /* Backtab */
@@ -3236,7 +3246,17 @@ show_bbslist(char *current, int connected)
 						}
 						break;
 					case -2 - CIO_KEY_MOUSE:
-						getmouse(&mevent);
+						if (mouse_pending()) {
+							do {
+								getmouse(&mevent);
+							} while(mouse_pending());
+							if (mevent.event == CIOLIB_BUTTON_1_CLICK
+							&& mevent.starty == cio_textinfo.screenheight - 1) {
+								if (edit_comment(list[opt], settings.list_path))
+									redraw = 1;
+								break;
+							}
+						}
 
                                         /* Fall-through */
 					case -2 - 0x0f00: /* Backtab */
