@@ -626,10 +626,12 @@ uint sbbs_t::logonstats()
 	if((tm.tm_mday>update_tm.tm_mday && tm.tm_mon==update_tm.tm_mon)
 		|| tm.tm_mon>update_tm.tm_mon || tm.tm_year>update_tm.tm_year) {
 
-		safe_snprintf(msg, sizeof(msg), "New Day - Prev: %s ",timestr(stats.date));
+		sys_status |= SS_NEW_DAY;
+		if(tm.tm_mon != update_tm.tm_mon)
+			sys_status |= SS_NEW_MONTH;
+		safe_snprintf(msg, sizeof(msg), "New Day%s - Prev: %s "
+			,(sys_status & SS_NEW_MONTH) ? " and Month" :"", timestr(stats.date));
 		logline(LOG_NOTICE, "!=", msg);
-
-		sys_status|=SS_DAILY;       /* New Day !!! */
 		safe_snprintf(path, sizeof(path), "%slogon.lst",cfg.data_dir);    /* Truncate logon list (LEGACY) */
 		int file;
 		if((file=nopen(path,O_TRUNC|O_CREAT|O_WRONLY))==-1) {

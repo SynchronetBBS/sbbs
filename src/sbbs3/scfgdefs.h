@@ -465,6 +465,7 @@ typedef struct
 	enum date_fmt	sys_date_fmt;
 	char			sys_date_sep;
 	bool			sys_date_verbal;
+	char 			sys_monthly[LEN_CMD+1];	   /* Monthly event */
 	char 			sys_daily[LEN_CMD+1];	   /* Daily event */
 	char 			sys_logon[LEN_CMD+1];	   /* Logon event */
 	char 			sys_logout[LEN_CMD+1];	   /* Logoff event */

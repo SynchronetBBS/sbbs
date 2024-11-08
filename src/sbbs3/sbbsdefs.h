@@ -485,6 +485,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define CON_PAUSEOFF	(1<<4)	// Temporary pause over-ride (same as UPAUSE)
 #define CON_L_INPUT		(1<<5)	/* Accept input locally						*/
 #define CON_RAW_IN		(1<<8)	/* Raw input mode - no editing capabilities	*/
+#define CON_RIGHTARROW	(1<<9)	/* Right arrow hit, exiting from getstr()	*/
 #define CON_ECHO_OFF	(1<<10)	/* Remote & Local echo disabled for ML/MF	*/
 #define CON_UPARROW		(1<<11)	/* Up arrow hit - move up one line			*/
 #define CON_DOWNARROW	(1<<12)	/* Down arrow hit, exiting from getstr()	*/
@@ -616,7 +617,8 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define SS_USERON		(1<<3)	/* A User is logged on to the BBS				*/
 #define SS_LCHAT		(1<<4)	/* Local chat in progress						*/
 #define SS_ANSCAP		(1<<6)	/* Capture ANSI codes too						*/
-#define SS_DAILY		(1<<9)	/* Execute System Daily Event on logoff 		*/
+#define SS_NEW_MONTH	(1<<8)	// Execute System Monthly Event
+#define SS_NEW_DAY		(1<<9)	// Execute System Daily Event
 #define SS_INUEDIT		(1<<10)	/* Inside Alt-Useredit section 				*/
 #define SS_ABORT		(1<<11) /* Global abort input or output flag			*/
 #define SS_SYSPAGE		(1<<12) /* Paging sysop								*/
@@ -635,6 +637,8 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define SS_MOFF			(1<<29) /* Disable automatic messages					*/
 #define SS_QWKLOGON		(1<<30) /* QWK logon									*/
 #define SS_FASTLOGON	(1U<<31)/* Fast logon									*/
+
+#define SS_DAILY		(SS_NEW_DAY | SS_NEW_MONTH)
 
 								/* Bits in 'mode' for getkey and getstr     */
 #define K_NONE		0			/* Use as a place holder for no mode flags	*/
@@ -665,6 +669,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define K_CTRLKEYS	(1<<24)		/* No control-key handling/eating in inkey()*/
 #define K_NUL		(1<<25)		/* Return NOINP on timeout instead of '\0'	*/
 #define K_UTF8		(1<<26)		/* Don't translate UTF-8 input into CP437 	*/
+#define K_RIGHTEXIT	(1<<27)		/* Allow exit by arrowing right				*/
 
 								/* Bits in 'mode' for putmsg and printfile  */
 #define P_NONE		0			/* No mode flags							*/

@@ -1658,7 +1658,7 @@ void http_logon(http_session_t * session, user_t *usr)
 		if(result != 0)
 			lprintf(LOG_ERR, "%04d %s [%s] <%s> !Error %d writing user data for user #%d"
 				,session->socket, session->client.protocol, session->host_ip
-				,session->username, session->user.number);
+				,session->username, result, session->user.number);
 
 	}
 	SAFECOPY(session->client.user, session->username);

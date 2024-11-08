@@ -4842,6 +4842,14 @@ void sbbs_t::daily_maint(void)
 		online = false;
 		lprintf(result ? LOG_ERR : LOG_INFO, "Daily event: '%s' returned %d", cmd, result);
 	}
+	if((sys_status & SS_NEW_MONTH) && cfg.sys_monthly[0]) {
+		lputs(LOG_INFO, "DAILY: Running monthly event");
+		const char* cmd = cmdstr(cfg.sys_monthly,nulstr,nulstr,NULL);
+		online = ON_LOCAL;
+		int result = external(cmd, EX_OFFLINE);
+		online = false;
+		lprintf(result ? LOG_ERR : LOG_INFO, "Monthly event: '%s' returned %d", cmd, result);
+	}
 	lputs(LOG_INFO, "DAILY: System maintenance ended");
 	sys_status&=~SS_DAILY;
 }

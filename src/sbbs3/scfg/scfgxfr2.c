@@ -252,17 +252,20 @@ static void append_dir_list(const char* parent, const char* dir, FILE* fp, int d
 	globfree(&g);
 }
 
-BOOL create_raw_dir_list(const char* list_file)
+BOOL create_raw_dir_list(char* list_file)
 {
 	char		path[MAX_PATH+1];
+	char		fname[MAX_PATH+1] = "dirs.raw";
 	char*		p;
 	int			k=0;
 	bool		include_empty_dirs;
 	FILE*		fp;
 
 	SAFECOPY(path, list_file);
-	if((p=getfname(path))!=NULL)
+	if((p=getfname(path))!=NULL) {
+		SAFECOPY(fname, p);
 		*p=0;
+	}
 	if(uifc.input(WIN_MID|WIN_SAV,0,0,"Parent Directory",path,sizeof(path)-1
 		,K_EDIT)<1)
 		return(FALSE);
@@ -276,9 +279,12 @@ BOOL create_raw_dir_list(const char* list_file)
 	if(k<0)
 		return(FALSE);
 	if((fp=fopen(list_file,"w"))==NULL) {
-		SAFEPRINTF2(path,"Create Failure (%u): %s", errno, list_file);
-		uifc.msg(path);
-		return(FALSE);
+		strcpy(list_file, fname);
+		if((fp=fopen(list_file,"w"))==NULL) {
+			SAFEPRINTF2(path,"Create Failure (%u): %s", errno, list_file);
+			uifc.msg(path);
+			return(FALSE);
+		}
 	}
 	backslash(path);
 	uifc.pop("Scanning Directories...");

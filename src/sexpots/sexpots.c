@@ -970,10 +970,18 @@ void input_thread(void* arg)
 {
 	char		dbg[32];
 	BYTE		ch;
+	BYTE		last_ch = 0;
+	BYTE		nl = '\n';
 
 	lprintf(LOG_DEBUG,"Input thread started");
 	while(!call_terminated) {
-		if(!comReadByte(com_handle, &ch)) {
+		bool result = comReadByte(com_handle, &ch);
+		if(telnet && telnet_local_option[TELNET_BINARY_TX] != TELNET_WILL && last_ch == '\r'
+			&& (result == false || ch != '\n')) {
+			sendbuf(sock, &nl, sizeof nl);
+			last_ch = 0;
+		}
+		if(!result) {
 			YIELD();
 			continue;
 		}
@@ -982,6 +990,7 @@ void input_thread(void* arg)
 		if(telnet && ch==TELNET_IAC)
 			sendbuf(sock, &ch, sizeof(ch));	/* escape Telnet IAC char (255) when in telnet mode */
 		sendbuf(sock, &ch, sizeof(ch));
+		last_ch = ch;
 		bytes_received++;
 	}
 	lprintf(LOG_DEBUG,"Input thread terminated");
@@ -1737,7 +1746,7 @@ int main(int argc, char** argv)
 	/*******************************/
 
 	sprintf(banner,"\n%s/%-7s "
-		"v2.0  Copyright %s Rob Swindell"
+		"v2.1  Copyright %s Rob Swindell"
 		,TITLE
 		,PLATFORM_DESC
 		,&__DATE__[7]

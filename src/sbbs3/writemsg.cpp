@@ -1006,7 +1006,12 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 			if(line < 1)
 				carriage_return();
 			ulong prev_con = console;
-			getstr(strin, cols-1, K_WRAP|K_MSG|K_EDIT|K_LEFTEXIT|K_NOCRLF);
+			int kmode = K_WRAP|K_MSG|K_EDIT|K_NOCRLF|K_USEOFFSET;
+			if(line)
+				kmode |= K_LEFTEXIT;
+			if(str[line] != NULL)
+				kmode |= K_RIGHTEXIT;
+			getstr(strin, cols-1, kmode);
 			if((prev_con&CON_DELETELINE) /* Ctrl-X/ZDLE */ && strncmp(strin, "B00", 3) == 0) {
 				strin[0] = 0;
 				prot = 'Z';
@@ -1017,7 +1022,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 		if(sys_status&SS_ABORT)
 			continue;
 
-		if(console&(CON_UPARROW|CON_BACKSPACE)) {
+		if(console&(CON_UPARROW|CON_LEFTARROW|CON_BACKSPACE)) {
 			if(console&CON_BACKSPACE && strin[0] == 0) {
 				strListRemove(&str, line);
 				for(i = line; str[i]; i++) {
@@ -1026,6 +1031,8 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 					newline();
 				}
 				clearline();
+				if(line)
+					--line;
 				cursor_up(i - line);
 				continue;
 			} else if(str[line] == NULL) {
@@ -1046,7 +1053,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 			continue;
 		}
 		newline();
-		if(console&CON_DOWNARROW) {
+		if(console & (CON_DOWNARROW | CON_RIGHTARROW)) {
 			if(str[line] != NULL) {
 				strListReplace(str, line, strin);
 				line++;
@@ -1136,20 +1143,25 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 				continue;
 			}
 			else if(toupper(strin[1])=='L') {   /* list message */
-				bool linenums = false;
-				if(str[0] != NULL)
-					linenums = !noyes(text[WithLineNumbersQ]);
-				CRLF;
-				attr(LIGHTGRAY);
-				putmsg(top, pmode);
 				if(str[0] == NULL) {
 					continue;
 				}
-				j=atoi(strin+2);
-				if(j) j--;  /* start from line j */
+				lines = strListCount(str);
+				j = atoi(strin+2) - 1;
+				if(j < 0)
+					j = 0;
+				if(j >= (int)lines) {
+					bputs(text[InvalidLineNumber]);
+					continue;
+				}
+				bool linenums = !noyes(text[WithLineNumbersQ]);
+				CRLF;
+				attr(LIGHTGRAY);
+				putmsg(top, pmode);
+				int digits = DEC_DIGITS(lines);
 				while(str[j] != NULL && !msgabort()) {
 					if(linenums) { /* line numbers */
-						SAFEPRINTF3(tmp,"%3d: %-.*s", j+1, (int)(cols-6), str[j]);
+						snprintf(tmp, sizeof tmp, "%*d: %-.*s", digits, j+1, (int)(cols-(digits + 3)), str[j]);
 						putmsg(tmp, pmode);
 					}
 					else

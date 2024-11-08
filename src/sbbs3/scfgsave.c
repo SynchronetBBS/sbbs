@@ -27,6 +27,7 @@
 #include "nopen.h"
 
 bool no_msghdr=false,all_msghdr=false;
+static ini_style_t ini_style = { .key_prefix = "\t", .section_separator = "" };
 
 /****************************************************************************/
 /****************************************************************************/
@@ -157,135 +158,136 @@ bool write_main_cfg(scfg_t* cfg)
 		SAFEPRINTF(key, "%u", i + 1);
 		if(cfg->node_path[i][0] == 0)
 			SAFEPRINTF(cfg->node_path[i], "../node%u", i + 1);
-		iniSetString(&ini, "node_dir", key, cfg->node_path[i], NULL);
+		iniSetString(&ini, "node_dir", key, cfg->node_path[i], &ini_style);
 	}
 	{
 		const char* name = "dir";
 		backslash(cfg->data_dir);
 		backslash(cfg->exec_dir);
-		iniSetString(&ini, name, "data", cfg->data_dir, NULL);
-		iniSetString(&ini, name, "exec", cfg->exec_dir, NULL);
-		iniSetString(&ini, name, "mods", cfg->mods_dir, NULL);
-		iniSetString(&ini, name, "logs", cfg->logs_dir, NULL);
+		iniSetString(&ini, name, "data", cfg->data_dir, &ini_style);
+		iniSetString(&ini, name, "exec", cfg->exec_dir, &ini_style);
+		iniSetString(&ini, name, "mods", cfg->mods_dir, &ini_style);
+		iniSetString(&ini, name, "logs", cfg->logs_dir, &ini_style);
 	}
 	{
 		const char* name = "newuser";
-		iniSetHexInt(&ini, name, "questions", cfg->uq, NULL);
-		iniSetString(&ini, name, "password", cfg->new_pass, NULL);
-		iniSetString(&ini, name, "magic_word", cfg->new_magic, NULL);
-		iniSetString(&ini, name, "sif", cfg->new_sif, NULL);
-		iniSetString(&ini, name, "sof", cfg->new_sof, NULL);
+		iniSetHexInt(&ini, name, "questions", cfg->uq, &ini_style);
+		iniSetString(&ini, name, "password", cfg->new_pass, &ini_style);
+		iniSetString(&ini, name, "magic_word", cfg->new_magic, &ini_style);
+		iniSetString(&ini, name, "sif", cfg->new_sif, &ini_style);
+		iniSetString(&ini, name, "sof", cfg->new_sof, &ini_style);
 
-		iniSetUInteger(&ini, name, "level", cfg->new_level, NULL);
-		iniSetHexInt(&ini, name, "flags1", cfg->new_flags1, NULL);
-		iniSetHexInt(&ini, name, "flags2", cfg->new_flags2, NULL);
-		iniSetHexInt(&ini, name, "flags3", cfg->new_flags3, NULL);
-		iniSetHexInt(&ini, name, "flags4", cfg->new_flags4, NULL);
-		iniSetHexInt(&ini, name, "exemptions", cfg->new_exempt, NULL);
-		iniSetHexInt(&ini, name, "restrictions", cfg->new_rest, NULL);
-		iniSetUInteger(&ini, name, "credits", cfg->new_cdt, NULL);
-		iniSetUInteger(&ini, name, "minutes", cfg->new_min, NULL);
-		iniSetString(&ini, name, "editor", cfg->new_xedit, NULL);
-		iniSetUInteger(&ini, name, "expiration_days", cfg->new_expire, NULL);
+		iniSetUInteger(&ini, name, "level", cfg->new_level, &ini_style);
+		iniSetHexInt(&ini, name, "flags1", cfg->new_flags1, &ini_style);
+		iniSetHexInt(&ini, name, "flags2", cfg->new_flags2, &ini_style);
+		iniSetHexInt(&ini, name, "flags3", cfg->new_flags3, &ini_style);
+		iniSetHexInt(&ini, name, "flags4", cfg->new_flags4, &ini_style);
+		iniSetHexInt(&ini, name, "exemptions", cfg->new_exempt, &ini_style);
+		iniSetHexInt(&ini, name, "restrictions", cfg->new_rest, &ini_style);
+		iniSetUInteger(&ini, name, "credits", cfg->new_cdt, &ini_style);
+		iniSetUInteger(&ini, name, "minutes", cfg->new_min, &ini_style);
+		iniSetString(&ini, name, "editor", cfg->new_xedit, &ini_style);
+		iniSetUInteger(&ini, name, "expiration_days", cfg->new_expire, &ini_style);
 		if(cfg->new_shell>=cfg->total_shells)
 			cfg->new_shell=0;
 		if(cfg->total_shells > 0)
-			iniSetString(&ini, name, "command_shell", cfg->shell[cfg->new_shell]->code, NULL);
-		iniSetHexInt(&ini, name, "settings", cfg->new_misc, NULL);
-		iniSetHexInt(&ini, name, "chat_settings", cfg->new_chat, NULL);
-		iniSetHexInt(&ini, name, "qwk_settings", cfg->new_qwk, NULL);
+			iniSetString(&ini, name, "command_shell", cfg->shell[cfg->new_shell]->code, &ini_style);
+		iniSetHexInt(&ini, name, "settings", cfg->new_misc, &ini_style);
+		iniSetHexInt(&ini, name, "chat_settings", cfg->new_chat, &ini_style);
+		iniSetHexInt(&ini, name, "qwk_settings", cfg->new_qwk, &ini_style);
 		SAFEPRINTF(tmp, "%c", cfg->new_prot);
-		iniSetString(&ini, name, "download_protocol", tmp, NULL);
-		iniSetUInteger(&ini, name, "msgscan_init", cfg->new_msgscan_init, NULL);
-		iniSetString(&ini, name, "gender_options", cfg->new_genders, NULL);
+		iniSetString(&ini, name, "download_protocol", tmp, &ini_style);
+		iniSetUInteger(&ini, name, "msgscan_init", cfg->new_msgscan_init, &ini_style);
+		iniSetString(&ini, name, "gender_options", cfg->new_genders, &ini_style);
 	}
 
-	iniSetString(&ini, "logon_event", "cmd", cfg->sys_logon, NULL);
-	iniSetString(&ini, "logout_event", "cmd", cfg->sys_logout, NULL);
-	iniSetString(&ini, "daily_event", "cmd", cfg->sys_daily, NULL);
+	iniSetString(&ini, "logon_event", "cmd", cfg->sys_logon, &ini_style);
+	iniSetString(&ini, "logout_event", "cmd", cfg->sys_logout, &ini_style);
+	iniSetString(&ini, "daily_event", "cmd", cfg->sys_daily, &ini_style);
+	iniSetString(&ini, "monthly_event", "cmd", cfg->sys_monthly, &ini_style);
 
 	{
 		const char* name = "expired";
-		iniSetUInteger(&ini, name, "level", cfg->expired_level, NULL);
-		iniSetHexInt(&ini, name, "flags1", cfg->expired_flags1, NULL);
-		iniSetHexInt(&ini, name, "flags2", cfg->expired_flags2, NULL);
-		iniSetHexInt(&ini, name, "flags3", cfg->expired_flags3, NULL);
-		iniSetHexInt(&ini, name, "flags4", cfg->expired_flags4, NULL);
-		iniSetHexInt(&ini, name, "exemptions", cfg->expired_exempt, NULL);
-		iniSetHexInt(&ini, name, "restrictions", cfg->expired_rest, NULL);
+		iniSetUInteger(&ini, name, "level", cfg->expired_level, &ini_style);
+		iniSetHexInt(&ini, name, "flags1", cfg->expired_flags1, &ini_style);
+		iniSetHexInt(&ini, name, "flags2", cfg->expired_flags2, &ini_style);
+		iniSetHexInt(&ini, name, "flags3", cfg->expired_flags3, &ini_style);
+		iniSetHexInt(&ini, name, "flags4", cfg->expired_flags4, &ini_style);
+		iniSetHexInt(&ini, name, "exemptions", cfg->expired_exempt, &ini_style);
+		iniSetHexInt(&ini, name, "restrictions", cfg->expired_rest, &ini_style);
 	}
 
 	{
 		const char* name = "MQTT";
-		iniSetBool(&ini, name, "Enabled", cfg->mqtt.enabled, NULL);
-		iniSetBool(&ini, name, "Verbose", cfg->mqtt.verbose, NULL);
-		iniSetString(&ini, name, "Broker_addr", cfg->mqtt.broker_addr, NULL);
-		iniSetUInt16(&ini, name, "Broker_port", cfg->mqtt.broker_port, NULL);
-		iniSetInteger(&ini, name, "Protocol_version", cfg->mqtt.protocol_version, NULL);
-		iniSetInteger(&ini, name, "Keepalive", cfg->mqtt.keepalive, NULL);
-		iniSetInteger(&ini, name, "Publish_QOS", cfg->mqtt.publish_qos, NULL);
-		iniSetInteger(&ini, name, "Subscribe_QOS", cfg->mqtt.subscribe_qos, NULL);
-		iniSetString(&ini, name, "Username", cfg->mqtt.username, NULL);
-		iniSetString(&ini, name, "Password", cfg->mqtt.password, NULL);
-		iniSetLogLevel(&ini, name , "LogLevel", cfg->mqtt.log_level, NULL);
+		iniSetBool(&ini, name, "Enabled", cfg->mqtt.enabled, &ini_style);
+		iniSetBool(&ini, name, "Verbose", cfg->mqtt.verbose, &ini_style);
+		iniSetString(&ini, name, "Broker_addr", cfg->mqtt.broker_addr, &ini_style);
+		iniSetUInt16(&ini, name, "Broker_port", cfg->mqtt.broker_port, &ini_style);
+		iniSetInteger(&ini, name, "Protocol_version", cfg->mqtt.protocol_version, &ini_style);
+		iniSetInteger(&ini, name, "Keepalive", cfg->mqtt.keepalive, &ini_style);
+		iniSetInteger(&ini, name, "Publish_QOS", cfg->mqtt.publish_qos, &ini_style);
+		iniSetInteger(&ini, name, "Subscribe_QOS", cfg->mqtt.subscribe_qos, &ini_style);
+		iniSetString(&ini, name, "Username", cfg->mqtt.username, &ini_style);
+		iniSetString(&ini, name, "Password", cfg->mqtt.password, &ini_style);
+		iniSetLogLevel(&ini, name , "LogLevel", cfg->mqtt.log_level, &ini_style);
 		// TLS
-		iniSetInteger(&ini, name, "TLS_mode", cfg->mqtt.tls.mode, NULL);
-		iniSetString(&ini, name, "TLS_cafile", cfg->mqtt.tls.cafile, NULL);
-		iniSetString(&ini, name, "TLS_certfile", cfg->mqtt.tls.certfile, NULL);
-		iniSetString(&ini, name, "TLS_keyfile", cfg->mqtt.tls.keyfile, NULL);
-		iniSetString(&ini, name, "TLS_keypass", cfg->mqtt.tls.keypass, NULL);
-		iniSetString(&ini, name, "TLS_psk", cfg->mqtt.tls.psk, NULL);
-		iniSetString(&ini, name, "TLS_identity", cfg->mqtt.tls.identity, NULL);
+		iniSetInteger(&ini, name, "TLS_mode", cfg->mqtt.tls.mode, &ini_style);
+		iniSetString(&ini, name, "TLS_cafile", cfg->mqtt.tls.cafile, &ini_style);
+		iniSetString(&ini, name, "TLS_certfile", cfg->mqtt.tls.certfile, &ini_style);
+		iniSetString(&ini, name, "TLS_keyfile", cfg->mqtt.tls.keyfile, &ini_style);
+		iniSetString(&ini, name, "TLS_keypass", cfg->mqtt.tls.keypass, &ini_style);
+		iniSetString(&ini, name, "TLS_psk", cfg->mqtt.tls.psk, &ini_style);
+		iniSetString(&ini, name, "TLS_identity", cfg->mqtt.tls.identity, &ini_style);
 	}
 
 	{
 		const char* name = "module";
-		iniSetString(&ini, name, "logon", cfg->logon_mod, NULL);
-		iniSetString(&ini, name, "logoff", cfg->logoff_mod, NULL);
-		iniSetString(&ini, name, "newuser", cfg->newuser_mod, NULL);
-		iniSetString(&ini, name, "usercfg", cfg->usercfg_mod, NULL);
-		iniSetString(&ini, name, "login", cfg->login_mod, NULL);
-		iniSetString(&ini, name, "logout", cfg->logout_mod, NULL);
-		iniSetString(&ini, name, "sync", cfg->sync_mod, NULL);
-		iniSetString(&ini, name, "expire", cfg->expire_mod, NULL);
-		iniSetString(&ini, name, "readmail", cfg->readmail_mod, NULL);
-		iniSetString(&ini, name, "scanposts", cfg->scanposts_mod, NULL);
-		iniSetString(&ini, name, "scansubs", cfg->scansubs_mod, NULL);
-		iniSetString(&ini, name, "listmsgs", cfg->listmsgs_mod, NULL);
-		iniSetString(&ini, name, "textsec", cfg->textsec_mod, NULL);
-		iniSetString(&ini, name, "chatsec", cfg->chatsec_mod, NULL);
-		iniSetString(&ini, name, "automsg", cfg->automsg_mod, NULL);
-		iniSetString(&ini, name, "feedback", cfg->feedback_mod, NULL);
-		iniSetString(&ini, name, "userlist", cfg->userlist_mod, NULL);
+		iniSetString(&ini, name, "logon", cfg->logon_mod, &ini_style);
+		iniSetString(&ini, name, "logoff", cfg->logoff_mod, &ini_style);
+		iniSetString(&ini, name, "newuser", cfg->newuser_mod, &ini_style);
+		iniSetString(&ini, name, "usercfg", cfg->usercfg_mod, &ini_style);
+		iniSetString(&ini, name, "login", cfg->login_mod, &ini_style);
+		iniSetString(&ini, name, "logout", cfg->logout_mod, &ini_style);
+		iniSetString(&ini, name, "sync", cfg->sync_mod, &ini_style);
+		iniSetString(&ini, name, "expire", cfg->expire_mod, &ini_style);
+		iniSetString(&ini, name, "readmail", cfg->readmail_mod, &ini_style);
+		iniSetString(&ini, name, "scanposts", cfg->scanposts_mod, &ini_style);
+		iniSetString(&ini, name, "scansubs", cfg->scansubs_mod, &ini_style);
+		iniSetString(&ini, name, "listmsgs", cfg->listmsgs_mod, &ini_style);
+		iniSetString(&ini, name, "textsec", cfg->textsec_mod, &ini_style);
+		iniSetString(&ini, name, "chatsec", cfg->chatsec_mod, &ini_style);
+		iniSetString(&ini, name, "automsg", cfg->automsg_mod, &ini_style);
+		iniSetString(&ini, name, "feedback", cfg->feedback_mod, &ini_style);
+		iniSetString(&ini, name, "userlist", cfg->userlist_mod, &ini_style);
 
-		iniSetString(&ini, name, "nodelist", cfg->nodelist_mod, NULL);
-		iniSetString(&ini, name, "whosonline", cfg->whosonline_mod, NULL);
-		iniSetString(&ini, name, "privatemsg", cfg->privatemsg_mod, NULL);
-		iniSetString(&ini, name, "logonlist", cfg->logonlist_mod, NULL);
+		iniSetString(&ini, name, "nodelist", cfg->nodelist_mod, &ini_style);
+		iniSetString(&ini, name, "whosonline", cfg->whosonline_mod, &ini_style);
+		iniSetString(&ini, name, "privatemsg", cfg->privatemsg_mod, &ini_style);
+		iniSetString(&ini, name, "logonlist", cfg->logonlist_mod, &ini_style);
 
-		iniSetString(&ini, name, "xtrnsec", cfg->xtrnsec_mod, NULL);
-		iniSetString(&ini, name, "prextrn", cfg->prextrn_mod, NULL);
-		iniSetString(&ini, name, "postxtrn", cfg->postxtrn_mod, NULL);
+		iniSetString(&ini, name, "xtrnsec", cfg->xtrnsec_mod, &ini_style);
+		iniSetString(&ini, name, "prextrn", cfg->prextrn_mod, &ini_style);
+		iniSetString(&ini, name, "postxtrn", cfg->postxtrn_mod, &ini_style);
 
-		iniSetString(&ini, name, "scandirs", cfg->scandirs_mod, NULL);
-		iniSetString(&ini, name, "listfiles", cfg->listfiles_mod, NULL);
-		iniSetString(&ini, name, "fileinfo", cfg->fileinfo_mod, NULL);
-		iniSetString(&ini, name, "batxfer", cfg->batxfer_mod, NULL);
-		iniSetString(&ini, name, "tempxfer", cfg->tempxfer_mod, NULL);
+		iniSetString(&ini, name, "scandirs", cfg->scandirs_mod, &ini_style);
+		iniSetString(&ini, name, "listfiles", cfg->listfiles_mod, &ini_style);
+		iniSetString(&ini, name, "fileinfo", cfg->fileinfo_mod, &ini_style);
+		iniSetString(&ini, name, "batxfer", cfg->batxfer_mod, &ini_style);
+		iniSetString(&ini, name, "tempxfer", cfg->tempxfer_mod, &ini_style);
 	}
 
 	for(uint i=0; i<10; i++) {
 		SAFEPRINTF(name, "valset:%u", i);
 		str_list_t section = strListInit();
-		iniSetUInteger(&section, name, "level", cfg->val_level[i], NULL);
-		iniSetUInteger(&section, name, "expire", cfg->val_expire[i], NULL);
-		iniSetHexInt(&section, name, "flags1", cfg->val_flags1[i], NULL);
-		iniSetHexInt(&section, name, "flags2", cfg->val_flags2[i], NULL);
-		iniSetHexInt(&section, name, "flags3", cfg->val_flags3[i], NULL);
-		iniSetHexInt(&section, name, "flags4", cfg->val_flags4[i], NULL);
-		iniSetUInteger(&section, name, "credits", cfg->val_cdt[i], NULL);
-		iniSetHexInt(&section, name, "exemptions", cfg->val_exempt[i], NULL);
-		iniSetHexInt(&section, name, "restrictions", cfg->val_rest[i], NULL);
+		iniSetUInteger(&section, name, "level", cfg->val_level[i], &ini_style);
+		iniSetUInteger(&section, name, "expire", cfg->val_expire[i], &ini_style);
+		iniSetHexInt(&section, name, "flags1", cfg->val_flags1[i], &ini_style);
+		iniSetHexInt(&section, name, "flags2", cfg->val_flags2[i], &ini_style);
+		iniSetHexInt(&section, name, "flags3", cfg->val_flags3[i], &ini_style);
+		iniSetHexInt(&section, name, "flags4", cfg->val_flags4[i], &ini_style);
+		iniSetUInteger(&section, name, "credits", cfg->val_cdt[i], &ini_style);
+		iniSetHexInt(&section, name, "exemptions", cfg->val_exempt[i], &ini_style);
+		iniSetHexInt(&section, name, "restrictions", cfg->val_rest[i], &ini_style);
 		strListMerge(&ini, section);
 		free(section);
 	}
@@ -293,15 +295,15 @@ bool write_main_cfg(scfg_t* cfg)
 	for(uint i=0; i<100; i++) {
 		SAFEPRINTF(name, "level:%u", i);
 		str_list_t section = strListInit();
-		iniSetUInteger(&section, name, "timeperday", cfg->level_timeperday[i], NULL);
-		iniSetUInteger(&section, name, "timepercall", cfg->level_timepercall[i], NULL);
-		iniSetUInteger(&section, name, "callsperday", cfg->level_callsperday[i], NULL);
-		iniSetUInteger(&section, name, "linespermsg", cfg->level_linespermsg[i], NULL);
-		iniSetUInteger(&section, name, "postsperday", cfg->level_postsperday[i], NULL);
-		iniSetUInteger(&section, name, "emailperday", cfg->level_emailperday[i], NULL);
-		iniSetHexInt(&section, name, "settings", cfg->level_misc[i], NULL);
-		iniSetUInteger(&section, name, "expireto", cfg->level_expireto[i], NULL);
-		iniSetBytes(&section, name, "freecdtperday", 1, cfg->level_freecdtperday[i], NULL);
+		iniSetUInteger(&section, name, "timeperday", cfg->level_timeperday[i], &ini_style);
+		iniSetUInteger(&section, name, "timepercall", cfg->level_timepercall[i], &ini_style);
+		iniSetUInteger(&section, name, "callsperday", cfg->level_callsperday[i], &ini_style);
+		iniSetUInteger(&section, name, "linespermsg", cfg->level_linespermsg[i], &ini_style);
+		iniSetUInteger(&section, name, "postsperday", cfg->level_postsperday[i], &ini_style);
+		iniSetUInteger(&section, name, "emailperday", cfg->level_emailperday[i], &ini_style);
+		iniSetHexInt(&section, name, "settings", cfg->level_misc[i], &ini_style);
+		iniSetUInteger(&section, name, "expireto", cfg->level_expireto[i], &ini_style);
+		iniSetBytes(&section, name, "freecdtperday", 1, cfg->level_freecdtperday[i], &ini_style);
 		strListMerge(&ini, section);
 		free(section);
 	}
@@ -310,9 +312,9 @@ bool write_main_cfg(scfg_t* cfg)
 	for(int i=0; i<cfg->total_shells; i++) {
 		SAFEPRINTF(name, "shell:%s", cfg->shell[i]->code);
 		str_list_t section = strListInit();
-		iniSetString(&section, name, "name", cfg->shell[i]->name, NULL);
-		iniSetString(&section, name, "ars", cfg->shell[i]->arstr, NULL);
-		iniSetHexInt(&section, name, "settings", cfg->shell[i]->misc, NULL);
+		iniSetString(&section, name, "name", cfg->shell[i]->name, &ini_style);
+		iniSetString(&section, name, "ars", cfg->shell[i]->arstr, &ini_style);
+		iniSetHexInt(&section, name, "settings", cfg->shell[i]->misc, &ini_style);
 		strListMerge(&ini, section);
 		free(section);
 	}
@@ -352,17 +354,17 @@ bool write_msgs_cfg(scfg_t* cfg)
 
 	{
 		const char* name = "mail";
-		iniSetUInteger(&ini, name, "max_crcs", cfg->mail_maxcrcs, NULL);
-		iniSetUInteger(&ini, name, "max_age", cfg->mail_maxage, NULL);
-		iniSetUInteger(&ini, name, "max_spam_age", cfg->max_spamage, NULL);
+		iniSetUInteger(&ini, name, "max_crcs", cfg->mail_maxcrcs, &ini_style);
+		iniSetUInteger(&ini, name, "max_age", cfg->mail_maxage, &ini_style);
+		iniSetUInteger(&ini, name, "max_spam_age", cfg->max_spamage, &ini_style);
 	}
 
 	{
 		const char* name = "qwk";
-		iniSetUInteger(&ini, name, "max_msgs", cfg->max_qwkmsgs, NULL);
-		iniSetString(&ini, name, "prepack_ars", cfg->preqwk_arstr, NULL);
-		iniSetUInteger(&ini, name, "max_age", cfg->max_qwkmsgage, NULL);
-		iniSetString(&ini, name, "default_tagline", cfg->qnet_tagline, NULL);
+		iniSetUInteger(&ini, name, "max_msgs", cfg->max_qwkmsgs, &ini_style);
+		iniSetString(&ini, name, "prepack_ars", cfg->preqwk_arstr, &ini_style);
+		iniSetUInteger(&ini, name, "max_age", cfg->max_qwkmsgage, &ini_style);
+		iniSetString(&ini, name, "default_tagline", cfg->qnet_tagline, &ini_style);
 	}
 
 	/* Message Groups */
@@ -370,10 +372,10 @@ bool write_msgs_cfg(scfg_t* cfg)
 	for(int i=0;i<cfg->total_grps;i++) {
 		SAFEPRINTF(name, "grp:%s", cfg->grp[i]->sname);
 		str_list_t section = strListInit();
-		iniSetString(&section, name, "description", cfg->grp[i]->lname, NULL);
-		iniSetString(&section, name, "ars", cfg->grp[i]->arstr, NULL);
-		iniSetString(&section, name, "code_prefix", cfg->grp[i]->code_prefix, NULL);
-		iniSetUInteger(&section, name, "sort", cfg->grp[i]->sort, NULL);
+		iniSetString(&section, name, "description", cfg->grp[i]->lname, &ini_style);
+		iniSetString(&section, name, "ars", cfg->grp[i]->arstr, &ini_style);
+		iniSetString(&section, name, "code_prefix", cfg->grp[i]->code_prefix, &ini_style);
+		iniSetUInteger(&section, name, "sort", cfg->grp[i]->sort, &ini_style);
 		strListMerge(&ini, section);
 		free(section);
 	}
@@ -391,35 +393,35 @@ bool write_msgs_cfg(scfg_t* cfg)
 			SAFEPRINTF2(name, "sub:%s:%s"
 				,cfg->grp[grp]->sname, cfg->sub[i]->code_suffix);
 			str_list_t section = strListInit();
-			iniSetString(&section, name, "description", cfg->sub[i]->lname, NULL);
-			iniSetString(&section, name, "name", cfg->sub[i]->sname, NULL);
-			iniSetString(&section, name, "qwk_name", cfg->sub[i]->qwkname, NULL);
+			iniSetString(&section, name, "description", cfg->sub[i]->lname, &ini_style);
+			iniSetString(&section, name, "name", cfg->sub[i]->sname, &ini_style);
+			iniSetString(&section, name, "qwk_name", cfg->sub[i]->qwkname, &ini_style);
 	#if 1
 			if(cfg->sub[i]->data_dir[0]) {
 				backslash(cfg->sub[i]->data_dir);
 				md(cfg->sub[i]->data_dir);
 			}
 	#endif
-			iniSetString(&section, name, "data_dir", cfg->sub[i]->data_dir, NULL);
-			iniSetString(&section, name, "ars", cfg->sub[i]->arstr, NULL);
-			iniSetString(&section, name, "read_ars", cfg->sub[i]->read_arstr, NULL);
-			iniSetString(&section, name, "post_ars", cfg->sub[i]->post_arstr, NULL);
-			iniSetString(&section, name, "operator_ars", cfg->sub[i]->op_arstr, NULL);
-			iniSetHexInt(&section, name, "settings", cfg->sub[i]->misc&(~SUB_HDRMOD), NULL);    /* Don't write mod bit */
-			iniSetString(&section, name, "qwknet_tagline", cfg->sub[i]->tagline, NULL);
-			iniSetString(&section, name, "fidonet_origin", cfg->sub[i]->origline, NULL);
-			iniSetString(&section, name, "post_sem", cfg->sub[i]->post_sem, NULL);
-			iniSetString(&section, name, "newsgroup", cfg->sub[i]->newsgroup, NULL);
-			iniSetString(&section, name, "fidonet_addr", smb_faddrtoa(&cfg->sub[i]->faddr, tmp), NULL);
-			iniSetUInteger(&section, name, "max_msgs", cfg->sub[i]->maxmsgs, NULL);
-			iniSetUInteger(&section, name, "max_crcs", cfg->sub[i]->maxcrcs, NULL);
-			iniSetUInteger(&section, name, "max_age", cfg->sub[i]->maxage, NULL);
-			iniSetUInteger(&section, name, "ptridx", cfg->sub[i]->ptridx, NULL);
-			iniSetString(&section, name, "moderated_ars", cfg->sub[i]->mod_arstr, NULL);
-			iniSetUInteger(&section, name, "qwk_conf", cfg->sub[i]->qwkconf, NULL);
-			iniSetHexInt(&section, name, "print_mode", cfg->sub[i]->pmode, NULL);
-			iniSetHexInt(&section, name, "print_mode_neg", cfg->sub[i]->n_pmode, NULL);
-			iniSetString(&section, name, "area_tag", cfg->sub[i]->area_tag, NULL);
+			iniSetString(&section, name, "data_dir", cfg->sub[i]->data_dir, &ini_style);
+			iniSetString(&section, name, "ars", cfg->sub[i]->arstr, &ini_style);
+			iniSetString(&section, name, "read_ars", cfg->sub[i]->read_arstr, &ini_style);
+			iniSetString(&section, name, "post_ars", cfg->sub[i]->post_arstr, &ini_style);
+			iniSetString(&section, name, "operator_ars", cfg->sub[i]->op_arstr, &ini_style);
+			iniSetHexInt(&section, name, "settings", cfg->sub[i]->misc&(~SUB_HDRMOD), &ini_style);    /* Don't write mod bit */
+			iniSetString(&section, name, "qwknet_tagline", cfg->sub[i]->tagline, &ini_style);
+			iniSetString(&section, name, "fidonet_origin", cfg->sub[i]->origline, &ini_style);
+			iniSetString(&section, name, "post_sem", cfg->sub[i]->post_sem, &ini_style);
+			iniSetString(&section, name, "newsgroup", cfg->sub[i]->newsgroup, &ini_style);
+			iniSetString(&section, name, "fidonet_addr", smb_faddrtoa(&cfg->sub[i]->faddr, tmp), &ini_style);
+			iniSetUInteger(&section, name, "max_msgs", cfg->sub[i]->maxmsgs, &ini_style);
+			iniSetUInteger(&section, name, "max_crcs", cfg->sub[i]->maxcrcs, &ini_style);
+			iniSetUInteger(&section, name, "max_age", cfg->sub[i]->maxage, &ini_style);
+			iniSetUInteger(&section, name, "ptridx", cfg->sub[i]->ptridx, &ini_style);
+			iniSetString(&section, name, "moderated_ars", cfg->sub[i]->mod_arstr, &ini_style);
+			iniSetUInteger(&section, name, "qwk_conf", cfg->sub[i]->qwkconf, &ini_style);
+			iniSetHexInt(&section, name, "print_mode", cfg->sub[i]->pmode, &ini_style);
+			iniSetHexInt(&section, name, "print_mode_neg", cfg->sub[i]->n_pmode, &ini_style);
+			iniSetString(&section, name, "area_tag", cfg->sub[i]->area_tag, &ini_style);
 			strListMerge(&ini, section);
 			free(section);
 
@@ -488,16 +490,16 @@ bool write_msgs_cfg(scfg_t* cfg)
 		str_list_t addr_list = strListInit();
 		for(int i=0; i<cfg->total_faddrs; i++)
 			strListPush(&addr_list, smb_faddrtoa(&cfg->faddr[i], tmp));
-		iniSetStringList(&section, name, "addr_list", ",", addr_list, NULL);
+		iniSetStringList(&section, name, "addr_list", ",", addr_list, &ini_style);
 		strListFree(&addr_list);
 
-		iniSetString(&section, name, "default_origin", cfg->origline, NULL);
-		iniSetString(&section, name, "netmail_sem", cfg->netmail_sem, NULL);
-		iniSetString(&section, name, "echomail_sem", cfg->echomail_sem, NULL);
+		iniSetString(&section, name, "default_origin", cfg->origline, &ini_style);
+		iniSetString(&section, name, "netmail_sem", cfg->netmail_sem, &ini_style);
+		iniSetString(&section, name, "echomail_sem", cfg->echomail_sem, &ini_style);
 		backslash(cfg->netmail_dir);
-		iniSetString(&section, name, "netmail_dir", cfg->netmail_dir, NULL);
-		iniSetHexInt(&section, name, "netmail_settings", cfg->netmail_misc, NULL);
-		iniSetUInteger(&section, name, "netmail_cost", cfg->netmail_cost, NULL);
+		iniSetString(&section, name, "netmail_dir", cfg->netmail_dir, &ini_style);
+		iniSetHexInt(&section, name, "netmail_settings", cfg->netmail_misc, &ini_style);
+		iniSetUInteger(&section, name, "netmail_cost", cfg->netmail_cost, &ini_style);
 		md(cfg->netmail_dir);
 		strListMerge(&ini, section);
 		free(section);
@@ -507,16 +509,16 @@ bool write_msgs_cfg(scfg_t* cfg)
 	for(int i=0; i<cfg->total_qhubs; i++) {
 		SAFEPRINTF(name, "qhub:%s", cfg->qhub[i]->id);
 		str_list_t section = strListInit();
-		iniSetBool(&section, name, "enabled", cfg->qhub[i]->enabled, NULL);
-		iniSetUInteger(&section, name, "time", cfg->qhub[i]->time, NULL);
-		iniSetUInteger(&section, name, "freq", cfg->qhub[i]->freq, NULL);
-		iniSetUInteger(&section, name, "days", cfg->qhub[i]->days, NULL);
-		iniSetUInteger(&section, name, "node_num", cfg->qhub[i]->node, NULL);
-		iniSetString(&section, name, "call", cfg->qhub[i]->call, NULL);
-		iniSetString(&section, name, "pack", cfg->qhub[i]->pack, NULL);
-		iniSetString(&section, name, "unpack", cfg->qhub[i]->unpack, NULL);
-		iniSetHexInt(&section, name, "settings", cfg->qhub[i]->misc, NULL);
-		iniSetString(&section, name, "format", cfg->qhub[i]->fmt, NULL);
+		iniSetBool(&section, name, "enabled", cfg->qhub[i]->enabled, &ini_style);
+		iniSetUInteger(&section, name, "time", cfg->qhub[i]->time, &ini_style);
+		iniSetUInteger(&section, name, "freq", cfg->qhub[i]->freq, &ini_style);
+		iniSetUInteger(&section, name, "days", cfg->qhub[i]->days, &ini_style);
+		iniSetUInteger(&section, name, "node_num", cfg->qhub[i]->node, &ini_style);
+		iniSetString(&section, name, "call", cfg->qhub[i]->call, &ini_style);
+		iniSetString(&section, name, "pack", cfg->qhub[i]->pack, &ini_style);
+		iniSetString(&section, name, "unpack", cfg->qhub[i]->unpack, &ini_style);
+		iniSetHexInt(&section, name, "settings", cfg->qhub[i]->misc, &ini_style);
+		iniSetString(&section, name, "format", cfg->qhub[i]->fmt, &ini_style);
 		strListMerge(&ini, section);
 		free(section);
 		for(int j=0; j<cfg->qhub[i]->subs; j++) {
@@ -529,8 +531,8 @@ bool write_msgs_cfg(scfg_t* cfg)
 			SAFEPRINTF2(code,"%s%s"
 				,cfg->grp[sub->grp]->code_prefix
 				,sub->code_suffix);
-			iniSetString(&section, name, "sub", code, NULL);
-			iniSetHexInt(&section, name, "settings", cfg->qhub[i]->mode[j], NULL);
+			iniSetString(&section, name, "sub", code, &ini_style);
+			iniSetHexInt(&section, name, "settings", cfg->qhub[i]->mode[j], &ini_style);
 			strListMerge(&ini, section);
 			free(section);
 		}
@@ -539,11 +541,11 @@ bool write_msgs_cfg(scfg_t* cfg)
 	{
 		const char* name = "Internet";
 		str_list_t section = strListInit();
-		iniSetString(&section, name, "addr", cfg->sys_inetaddr, NULL); /* Internet address */
-		iniSetString(&section, name, "netmail_sem", cfg->inetmail_sem, NULL);
-		iniSetHexInt(&section, name, "netmail_settings", cfg->inetmail_misc, NULL);
-		iniSetUInteger(&section, name, "cost", cfg->inetmail_cost, NULL);
-		iniSetString(&section, name, "smtp_sem", cfg->smtpmail_sem, NULL);
+		iniSetString(&section, name, "addr", cfg->sys_inetaddr, &ini_style); /* Internet address */
+		iniSetString(&section, name, "netmail_sem", cfg->inetmail_sem, &ini_style);
+		iniSetHexInt(&section, name, "netmail_settings", cfg->inetmail_misc, &ini_style);
+		iniSetUInteger(&section, name, "cost", cfg->inetmail_cost, &ini_style);
+		iniSetString(&section, name, "smtp_sem", cfg->smtpmail_sem, &ini_style);
 		strListMerge(&ini, section);
 		free(section);
 	}
@@ -601,16 +603,16 @@ bool write_msgs_cfg(scfg_t* cfg)
 /****************************************************************************/
 static void write_dir_defaults_cfg(str_list_t* ini, const char* section, dir_t* dir)
 {
-	iniSetString(ini, section, "data_dir", dir->data_dir, NULL);
-	iniSetString(ini, section, "upload_sem", dir->upload_sem, NULL);
-	iniSetString(ini, section, "extensions", dir->exts, NULL);
-	iniSetHexInt(ini, section, "settings", dir->misc, NULL);
-	iniSetUInteger(ini, section, "seq_dev", dir->seqdev, NULL);
-	iniSetUInteger(ini, section, "sort", dir->sort, NULL);
-	iniSetUInteger(ini, section, "max_age", dir->maxage, NULL);
-	iniSetUInteger(ini, section, "max_files", dir->maxfiles, NULL);
-	iniSetUInteger(ini, section, "upload_credit_pct", dir->up_pct, NULL);
-	iniSetUInteger(ini, section, "download_credit_pct", dir->dn_pct, NULL);
+	iniSetString(ini, section, "data_dir", dir->data_dir, &ini_style);
+	iniSetString(ini, section, "upload_sem", dir->upload_sem, &ini_style);
+	iniSetString(ini, section, "extensions", dir->exts, &ini_style);
+	iniSetHexInt(ini, section, "settings", dir->misc, &ini_style);
+	iniSetUInteger(ini, section, "seq_dev", dir->seqdev, &ini_style);
+	iniSetUInteger(ini, section, "sort", dir->sort, &ini_style);
+	iniSetUInteger(ini, section, "max_age", dir->maxage, &ini_style);
+	iniSetUInteger(ini, section, "max_files", dir->maxfiles, &ini_style);
+	iniSetUInteger(ini, section, "upload_credit_pct", dir->up_pct, &ini_style);
+	iniSetUInteger(ini, section, "download_credit_pct", dir->dn_pct, &ini_style);
 }
 
 /****************************************************************************/
@@ -645,9 +647,9 @@ bool write_file_cfg(scfg_t* cfg)
 	for(int i=0; i<cfg->total_fextrs; i++) {
 		SAFEPRINTF(name, "extractor:%u", i);
 		str_list_t section = strListInit();
-		iniSetString(&section, name, "extension", cfg->fextr[i]->ext, NULL);
-		iniSetString(&section, name, "cmd", cfg->fextr[i]->cmd, NULL);
-		iniSetString(&section, name, "ars", cfg->fextr[i]->arstr, NULL);
+		iniSetString(&section, name, "extension", cfg->fextr[i]->ext, &ini_style);
+		iniSetString(&section, name, "cmd", cfg->fextr[i]->cmd, &ini_style);
+		iniSetString(&section, name, "ars", cfg->fextr[i]->arstr, &ini_style);
 		strListMerge(&ini, section);
 		free(section);
 	}
@@ -657,9 +659,9 @@ bool write_file_cfg(scfg_t* cfg)
 	for(int i=0; i<cfg->total_fcomps; i++) {
 		SAFEPRINTF(name, "compressor:%u", i);
 		str_list_t section = strListInit();
-		iniSetString(&section, name, "extension", cfg->fcomp[i]->ext, NULL);
-		iniSetString(&section, name, "cmd", cfg->fcomp[i]->cmd, NULL);
-		iniSetString(&section, name, "ars", cfg->fcomp[i]->arstr, NULL);
+		iniSetString(&section, name, "extension", cfg->fcomp[i]->ext, &ini_style);
+		iniSetString(&section, name, "cmd", cfg->fcomp[i]->cmd, &ini_style);
+		iniSetString(&section, name, "ars", cfg->fcomp[i]->arstr, &ini_style);
 		strListMerge(&ini, section);
 		free(section);
 	}
@@ -669,9 +671,9 @@ bool write_file_cfg(scfg_t* cfg)
 	for(int i=0; i<cfg->total_fviews; i++) {
 		SAFEPRINTF(name, "viewer:%u", i);
 		str_list_t section = strListInit();
-		iniSetString(&section, name, "extension", cfg->fview[i]->ext, NULL);
-		iniSetString(&section, name, "cmd", cfg->fview[i]->cmd, NULL);
-		iniSetString(&section, name, "ars", cfg->fview[i]->arstr, NULL);
+		iniSetString(&section, name, "extension", cfg->fview[i]->ext, &ini_style);
+		iniSetString(&section, name, "cmd", cfg->fview[i]->cmd, &ini_style);
+		iniSetString(&section, name, "ars", cfg->fview[i]->arstr, &ini_style);
 		strListMerge(&ini, section);
 		free(section);
 	}
@@ -681,10 +683,10 @@ bool write_file_cfg(scfg_t* cfg)
 	for(int i=0; i<cfg->total_ftests; i++) {
 		SAFEPRINTF(name, "tester:%u", i);
 		str_list_t section = strListInit();
-		iniSetString(&section, name, "extension", cfg->ftest[i]->ext, NULL);
-		iniSetString(&section, name, "cmd", cfg->ftest[i]->cmd, NULL);
-		iniSetString(&section, name, "working", cfg->ftest[i]->workstr, NULL);
-		iniSetString(&section, name, "ars", cfg->ftest[i]->arstr, NULL);
+		iniSetString(&section, name, "extension", cfg->ftest[i]->ext, &ini_style);
+		iniSetString(&section, name, "cmd", cfg->ftest[i]->cmd, &ini_style);
+		iniSetString(&section, name, "working", cfg->ftest[i]->workstr, &ini_style);
+		iniSetString(&section, name, "ars", cfg->ftest[i]->arstr, &ini_style);
 		strListMerge(&ini, section);
 		free(section);
 	}
@@ -694,10 +696,10 @@ bool write_file_cfg(scfg_t* cfg)
 	for(int i=0; i<cfg->total_dlevents; i++) {
 		SAFEPRINTF(name, "dlevent:%u", i);
 		str_list_t section = strListInit();
-		iniSetString(&section, name, "extension", cfg->dlevent[i]->ext, NULL);
-		iniSetString(&section, name, "cmd", cfg->dlevent[i]->cmd, NULL);
-		iniSetString(&section, name, "working", cfg->dlevent[i]->workstr, NULL);
-		iniSetString(&section, name, "ars", cfg->dlevent[i]->arstr, NULL);
+		iniSetString(&section, name, "extension", cfg->dlevent[i]->ext, &ini_style);
+		iniSetString(&section, name, "cmd", cfg->dlevent[i]->cmd, &ini_style);
+		iniSetString(&section, name, "working", cfg->dlevent[i]->workstr, &ini_style);
+		iniSetString(&section, name, "ars", cfg->dlevent[i]->arstr, &ini_style);
 		strListMerge(&ini, section);
 		free(section);
 	}
@@ -709,14 +711,14 @@ bool write_file_cfg(scfg_t* cfg)
 		SAFEPRINTF(name, "protocol:%u", i);
 		str_list_t section = strListInit();
 		SAFEPRINTF(str, "%c", cfg->prot[i]->mnemonic);
-		iniSetString(&section, name, "key", str, NULL);
-		iniSetString(&section, name, "name", cfg->prot[i]->name, NULL);
-		iniSetString(&section, name, "ulcmd", cfg->prot[i]->ulcmd, NULL);
-		iniSetString(&section, name, "dlcmd", cfg->prot[i]->dlcmd, NULL);
-		iniSetString(&section, name, "batulcmd", cfg->prot[i]->batulcmd, NULL);
-		iniSetString(&section, name, "batdlcmd", cfg->prot[i]->batdlcmd, NULL);
-		iniSetHexInt(&section, name, "settings", cfg->prot[i]->misc, NULL);
-		iniSetString(&section, name, "ars", cfg->prot[i]->arstr, NULL);
+		iniSetString(&section, name, "key", str, &ini_style);
+		iniSetString(&section, name, "name", cfg->prot[i]->name, &ini_style);
+		iniSetString(&section, name, "ulcmd", cfg->prot[i]->ulcmd, &ini_style);
+		iniSetString(&section, name, "dlcmd", cfg->prot[i]->dlcmd, &ini_style);
+		iniSetString(&section, name, "batulcmd", cfg->prot[i]->batulcmd, &ini_style);
+		iniSetString(&section, name, "batdlcmd", cfg->prot[i]->batdlcmd, &ini_style);
+		iniSetHexInt(&section, name, "settings", cfg->prot[i]->misc, &ini_style);
+		iniSetString(&section, name, "ars", cfg->prot[i]->arstr, &ini_style);
 		strListMerge(&ini, section);
 		free(section);
 	}
@@ -726,18 +728,18 @@ bool write_file_cfg(scfg_t* cfg)
 	for(int i=0; i<cfg->total_libs; i++) {
 		SAFEPRINTF(name, "lib:%s", cfg->lib[i]->sname);
 		str_list_t section = strListInit();
-		iniSetString(&section, name, "description", cfg->lib[i]->lname, NULL);
-		iniSetString(&section, name, "ars", cfg->lib[i]->arstr, NULL);
-		iniSetString(&section, name, "upload_ars", cfg->lib[i]->ul_arstr, NULL);
-		iniSetString(&section, name, "download_ars", cfg->lib[i]->dl_arstr, NULL);
-		iniSetString(&section, name, "operator_ars", cfg->lib[i]->op_arstr, NULL);
-		iniSetString(&section, name, "exempt_ars", cfg->lib[i]->ex_arstr, NULL);
-		iniSetString(&section, name, "parent_path", cfg->lib[i]->parent_path, NULL);
-		iniSetString(&section, name, "code_prefix", cfg->lib[i]->code_prefix, NULL);
+		iniSetString(&section, name, "description", cfg->lib[i]->lname, &ini_style);
+		iniSetString(&section, name, "ars", cfg->lib[i]->arstr, &ini_style);
+		iniSetString(&section, name, "upload_ars", cfg->lib[i]->ul_arstr, &ini_style);
+		iniSetString(&section, name, "download_ars", cfg->lib[i]->dl_arstr, &ini_style);
+		iniSetString(&section, name, "operator_ars", cfg->lib[i]->op_arstr, &ini_style);
+		iniSetString(&section, name, "exempt_ars", cfg->lib[i]->ex_arstr, &ini_style);
+		iniSetString(&section, name, "parent_path", cfg->lib[i]->parent_path, &ini_style);
+		iniSetString(&section, name, "code_prefix", cfg->lib[i]->code_prefix, &ini_style);
 
-		iniSetUInteger(&section, name, "sort", cfg->lib[i]->sort, NULL);
-		iniSetHexInt(&section, name, "settings", cfg->lib[i]->misc, NULL);
-		iniSetUInteger(&section, name, "vdir_name", cfg->lib[i]->vdir_name, NULL);
+		iniSetUInteger(&section, name, "sort", cfg->lib[i]->sort, &ini_style);
+		iniSetHexInt(&section, name, "settings", cfg->lib[i]->misc, &ini_style);
+		iniSetUInteger(&section, name, "vdir_name", cfg->lib[i]->vdir_name, &ini_style);
 		strListMerge(&ini, section);
 		free(section);
 
@@ -762,22 +764,22 @@ bool write_file_cfg(scfg_t* cfg)
 				SAFEPRINTF2(name, "dir:%s:%s"
 					,cfg->lib[j]->sname, cfg->dir[i]->code_suffix);
 				str_list_t section = strListInit();
-				iniSetString(&section, name, "description", cfg->dir[i]->lname, NULL);
-				iniSetString(&section, name, "name", cfg->dir[i]->sname, NULL);
+				iniSetString(&section, name, "description", cfg->dir[i]->lname, &ini_style);
+				iniSetString(&section, name, "name", cfg->dir[i]->sname, &ini_style);
 
 				if (cfg->dir[i]->data_dir[0]) {
 					backslash(cfg->dir[i]->data_dir);
 					md(cfg->dir[i]->data_dir);
 				}
 
-				iniSetString(&section, name, "ars", cfg->dir[i]->arstr, NULL);
-				iniSetString(&section, name, "upload_ars", cfg->dir[i]->ul_arstr, NULL);
-				iniSetString(&section, name, "download_ars", cfg->dir[i]->dl_arstr, NULL);
-				iniSetString(&section, name, "operator_ars", cfg->dir[i]->op_arstr, NULL);
-				iniSetString(&section, name, "exempt_ars", cfg->dir[i]->ex_arstr, NULL);
-				iniSetString(&section, name, "area_tag", cfg->dir[i]->area_tag, NULL);
+				iniSetString(&section, name, "ars", cfg->dir[i]->arstr, &ini_style);
+				iniSetString(&section, name, "upload_ars", cfg->dir[i]->ul_arstr, &ini_style);
+				iniSetString(&section, name, "download_ars", cfg->dir[i]->dl_arstr, &ini_style);
+				iniSetString(&section, name, "operator_ars", cfg->dir[i]->op_arstr, &ini_style);
+				iniSetString(&section, name, "exempt_ars", cfg->dir[i]->ex_arstr, &ini_style);
+				iniSetString(&section, name, "area_tag", cfg->dir[i]->area_tag, &ini_style);
 				backslash(cfg->dir[i]->path);
-				iniSetString(&section, name, "path", cfg->dir[i]->path, NULL);
+				iniSetString(&section, name, "path", cfg->dir[i]->path, &ini_style);
 
 				if (cfg->dir[i]->misc&DIR_FCHK) {
 					SAFECOPY(path, cfg->dir[i]->path);
@@ -819,8 +821,8 @@ bool write_file_cfg(scfg_t* cfg)
 #endif
 		SAFEPRINTF(name, "text:%s", cfg->txtsec[i]->code);
 		str_list_t section = strListInit();
-		iniSetString(&section, name, "name", cfg->txtsec[i]->name, NULL);
-		iniSetString(&section, name, "ars", cfg->txtsec[i]->arstr, NULL);
+		iniSetString(&section, name, "name", cfg->txtsec[i]->name, &ini_style);
+		iniSetString(&section, name, "ars", cfg->txtsec[i]->arstr, &ini_style);
 		strListMerge(&ini, section);
 		free(section);
 	}
@@ -853,33 +855,33 @@ bool write_chat_cfg(scfg_t* cfg)
 	str_list_t ini = strListInit();
 	for(int i=0; i<cfg->total_gurus; i++) {
 		SAFEPRINTF(section, "guru:%s", cfg->guru[i]->code);
-		iniSetString(&ini, section, "name", cfg->guru[i]->name, NULL);
-		iniSetString(&ini, section, "ars", cfg->guru[i]->arstr, NULL);
+		iniSetString(&ini, section, "name", cfg->guru[i]->name, &ini_style);
+		iniSetString(&ini, section, "ars", cfg->guru[i]->arstr, &ini_style);
 	}
 
 	for(int i=0; i<cfg->total_actsets; i++) {
 		SAFEPRINTF(section, "actions:%s", cfg->actset[i]->name);
 		for(int j=0; j<cfg->total_chatacts; j++) {
 			if(cfg->chatact[j]->actset == i)
-				iniSetString(&ini, section, cfg->chatact[j]->cmd, cfg->chatact[j]->out, NULL);
+				iniSetString(&ini, section, cfg->chatact[j]->cmd, cfg->chatact[j]->out, &ini_style);
 		}
 	}
 
 	for(int i=0; i<cfg->total_chans; i++) {
 		SAFEPRINTF(section, "chan:%s", cfg->chan[i]->code);
-		iniSetString(&ini, section, "actions", cfg->actset[cfg->chan[i]->actset]->name, NULL);
-		iniSetString(&ini, section, "name", cfg->chan[i]->name, NULL);
-		iniSetString(&ini, section, "ars", cfg->chan[i]->arstr, NULL);
-		iniSetUInteger(&ini, section, "cost", cfg->chan[i]->cost, NULL);
-		iniSetString(&ini, section, "guru", cfg->guru[cfg->chan[i]->guru]->code, NULL);
-		iniSetHexInt(&ini, section, "settings", cfg->chan[i]->misc, NULL);
+		iniSetString(&ini, section, "actions", cfg->actset[cfg->chan[i]->actset]->name, &ini_style);
+		iniSetString(&ini, section, "name", cfg->chan[i]->name, &ini_style);
+		iniSetString(&ini, section, "ars", cfg->chan[i]->arstr, &ini_style);
+		iniSetUInteger(&ini, section, "cost", cfg->chan[i]->cost, &ini_style);
+		iniSetString(&ini, section, "guru", cfg->guru[cfg->chan[i]->guru]->code, &ini_style);
+		iniSetHexInt(&ini, section, "settings", cfg->chan[i]->misc, &ini_style);
 	}
 
 	for(int i=0; i<cfg->total_pages; i++) {
 		SAFEPRINTF(section, "pager:%u", i);
-		iniSetString(&ini, section, "cmd", cfg->page[i]->cmd, NULL);
-		iniSetString(&ini, section, "ars", cfg->page[i]->arstr, NULL);
-		iniSetHexInt(&ini, section, "settings", cfg->page[i]->misc, NULL);
+		iniSetString(&ini, section, "cmd", cfg->page[i]->cmd, &ini_style);
+		iniSetString(&ini, section, "ars", cfg->page[i]->arstr, &ini_style);
+		iniSetHexInt(&ini, section, "settings", cfg->page[i]->misc, &ini_style);
 	}
 
 	FILE* fp = fopen(inipath, "w");
@@ -911,13 +913,13 @@ bool write_xtrn_cfg(scfg_t* cfg)
 	for(int i=0; i<cfg->total_xedits; i++) {
 		SAFEPRINTF(name, "editor:%s", cfg->xedit[i]->code);
 		str_list_t section = strListInit();
-		iniSetString(&section, name, "name", cfg->xedit[i]->name, NULL);
-		iniSetString(&section, name, "cmd", cfg->xedit[i]->rcmd, NULL);
-		iniSetHexInt(&section, name, "settings", cfg->xedit[i]->misc, NULL);
-		iniSetString(&section, name, "ars", cfg->xedit[i]->arstr, NULL);
-		iniSetUInteger(&section, name, "type", cfg->xedit[i]->type, NULL);
-		iniSetUInteger(&section, name, "soft_cr", cfg->xedit[i]->soft_cr, NULL);
-		iniSetUInteger(&section, name, "quotewrap_cols", cfg->xedit[i]->quotewrap_cols, NULL);
+		iniSetString(&section, name, "name", cfg->xedit[i]->name, &ini_style);
+		iniSetString(&section, name, "cmd", cfg->xedit[i]->rcmd, &ini_style);
+		iniSetHexInt(&section, name, "settings", cfg->xedit[i]->misc, &ini_style);
+		iniSetString(&section, name, "ars", cfg->xedit[i]->arstr, &ini_style);
+		iniSetUInteger(&section, name, "type", cfg->xedit[i]->type, &ini_style);
+		iniSetUInteger(&section, name, "soft_cr", cfg->xedit[i]->soft_cr, &ini_style);
+		iniSetUInteger(&section, name, "quotewrap_cols", cfg->xedit[i]->quotewrap_cols, &ini_style);
 		strListMerge(&ini, section);
 		free(section);
 	}
@@ -925,8 +927,8 @@ bool write_xtrn_cfg(scfg_t* cfg)
 	for(int i=0; i<cfg->total_xtrnsecs; i++) {
 		SAFEPRINTF(name, "sec:%s", cfg->xtrnsec[i]->code);
 		str_list_t section = strListInit();
-		iniSetString(&section, name, "name", cfg->xtrnsec[i]->name, NULL);
-		iniSetString(&section, name, "ars", cfg->xtrnsec[i]->arstr, NULL);
+		iniSetString(&section, name, "name", cfg->xtrnsec[i]->name, &ini_style);
+		iniSetString(&section, name, "ars", cfg->xtrnsec[i]->arstr, &ini_style);
 		strListMerge(&ini, section);
 		free(section);
 	}
@@ -940,19 +942,19 @@ bool write_xtrn_cfg(scfg_t* cfg)
 				continue;
 			SAFEPRINTF2(name, "prog:%s:%s", cfg->xtrnsec[sec]->code, cfg->xtrn[i]->code);
 			str_list_t section = strListInit();
-			iniSetString(&section, name, "name", cfg->xtrn[i]->name, NULL);
-			iniSetString(&section, name, "ars", cfg->xtrn[i]->arstr, NULL);
-			iniSetString(&section, name, "execution_ars", cfg->xtrn[i]->run_arstr, NULL);
-			iniSetUInteger(&section, name, "type", cfg->xtrn[i]->type, NULL);
-			iniSetHexInt(&section, name, "settings", cfg->xtrn[i]->misc, NULL);
-			iniSetUInteger(&section, name, "event", cfg->xtrn[i]->event, NULL);
-			iniSetUInteger(&section, name, "cost", cfg->xtrn[i]->cost, NULL);
-			iniSetString(&section, name, "cmd", cfg->xtrn[i]->cmd, NULL);
-			iniSetString(&section, name, "clean_cmd", cfg->xtrn[i]->clean, NULL);
-			iniSetString(&section, name, "startup_dir", cfg->xtrn[i]->path, NULL);
-			iniSetUInteger(&section, name, "textra", cfg->xtrn[i]->textra, NULL);
-			iniSetUInteger(&section, name, "max_time", cfg->xtrn[i]->maxtime, NULL);
-			iniSetDuration(&section, name, "max_inactivity", cfg->xtrn[i]->max_inactivity, NULL);
+			iniSetString(&section, name, "name", cfg->xtrn[i]->name, &ini_style);
+			iniSetString(&section, name, "ars", cfg->xtrn[i]->arstr, &ini_style);
+			iniSetString(&section, name, "execution_ars", cfg->xtrn[i]->run_arstr, &ini_style);
+			iniSetUInteger(&section, name, "type", cfg->xtrn[i]->type, &ini_style);
+			iniSetHexInt(&section, name, "settings", cfg->xtrn[i]->misc, &ini_style);
+			iniSetUInteger(&section, name, "event", cfg->xtrn[i]->event, &ini_style);
+			iniSetUInteger(&section, name, "cost", cfg->xtrn[i]->cost, &ini_style);
+			iniSetString(&section, name, "cmd", cfg->xtrn[i]->cmd, &ini_style);
+			iniSetString(&section, name, "clean_cmd", cfg->xtrn[i]->clean, &ini_style);
+			iniSetString(&section, name, "startup_dir", cfg->xtrn[i]->path, &ini_style);
+			iniSetUInteger(&section, name, "textra", cfg->xtrn[i]->textra, &ini_style);
+			iniSetUInteger(&section, name, "max_time", cfg->xtrn[i]->maxtime, &ini_style);
+			iniSetDuration(&section, name, "max_inactivity", cfg->xtrn[i]->max_inactivity, &ini_style);
 			strListMerge(&ini, section);
 			free(section);
 		}
@@ -961,28 +963,28 @@ bool write_xtrn_cfg(scfg_t* cfg)
 	for(int i=0; i<cfg->total_events; i++) {
 		SAFEPRINTF(name, "event:%s", cfg->event[i]->code);
 		str_list_t section = strListInit();
-		iniSetString(&section, name, "cmd", cfg->event[i]->cmd, NULL);
-		iniSetUInteger(&section, name, "days", cfg->event[i]->days, NULL);
-		iniSetUInteger(&section, name, "time", cfg->event[i]->time, NULL);
-		iniSetUInteger(&section, name, "node_num", cfg->event[i]->node, NULL);
-		iniSetHexInt(&section, name, "settings", cfg->event[i]->misc, NULL);
-		iniSetString(&section, name, "startup_dir", cfg->event[i]->dir, NULL);
-		iniSetUInteger(&section, name, "freq", cfg->event[i]->freq, NULL);
-		iniSetHexInt(&section, name, "mdays", cfg->event[i]->mdays, NULL);
-		iniSetUInteger(&section, name, "months", cfg->event[i]->months, NULL);
-		iniSetUInteger(&section, name, "errlevel", cfg->event[i]->errlevel, NULL);
+		iniSetString(&section, name, "cmd", cfg->event[i]->cmd, &ini_style);
+		iniSetUInteger(&section, name, "days", cfg->event[i]->days, &ini_style);
+		iniSetUInteger(&section, name, "time", cfg->event[i]->time, &ini_style);
+		iniSetUInteger(&section, name, "node_num", cfg->event[i]->node, &ini_style);
+		iniSetHexInt(&section, name, "settings", cfg->event[i]->misc, &ini_style);
+		iniSetString(&section, name, "startup_dir", cfg->event[i]->dir, &ini_style);
+		iniSetUInteger(&section, name, "freq", cfg->event[i]->freq, &ini_style);
+		iniSetHexInt(&section, name, "mdays", cfg->event[i]->mdays, &ini_style);
+		iniSetUInteger(&section, name, "months", cfg->event[i]->months, &ini_style);
+		iniSetUInteger(&section, name, "errlevel", cfg->event[i]->errlevel, &ini_style);
 		strListMerge(&ini, section);
 		free(section);
 	}
 
 	for(int i=0; i<cfg->total_natvpgms; i++) {
 		SAFEPRINTF(name, "native:%s", cfg->natvpgm[i]->name);
-		iniAddSection(&ini, name, NULL);
+		iniAddSection(&ini, name, &ini_style);
 	}
 
 	for(int i=0; i<cfg->total_hotkeys; i++) {
 		SAFEPRINTF(name, "hotkey:%u", cfg->hotkey[i]->key);
-		iniSetString(&ini, name, "cmd", cfg->hotkey[i]->cmd, NULL);
+		iniSetString(&ini, name, "cmd", cfg->hotkey[i]->cmd, &ini_style);
 	}
 
 	FILE* fp = fopen(inipath, "w");

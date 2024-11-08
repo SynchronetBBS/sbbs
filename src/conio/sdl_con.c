@@ -660,6 +660,17 @@ static void setup_surfaces(struct video_stats *vs)
 		sdl_bughack_minsize(idealmw, idealmh, false);
 		// Don't change window size when maximized...
 		if ((sdl.GetWindowFlags(win) & SDL_WINDOW_MAXIMIZED) == 0) {
+			int ABUw, ABUh;
+			int pixelw, pixelh;
+			uint64_t tmpw, tmph;
+
+			// Workaround for systems where setWindowSize() units aren't pixels (ie: macOS)
+			sdl.GetWindowSize(win, &ABUw, &ABUh);
+			sdl.GetWindowSizeInPixels(win, &pixelw, &pixelh);
+			tmpw = ((uint64_t)idealw) * ABUw / pixelw;
+			tmph = ((uint64_t)idealh) * ABUh / pixelh;
+			idealw = tmpw;
+			idealh = tmph;
 			sdl.SetWindowSize(win, idealw, idealh);
 		}
 		sdl.GetWindowSizeInPixels(win, &idealw, &idealh);
