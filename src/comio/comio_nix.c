@@ -222,14 +222,13 @@ COM_HANDLE comOpen(const char* device)
                 );
     t.c_oflag = 0;  /* No output processing */
 #ifdef CBAUD
-    t.c_cflags &= CBAUD;
+    t.c_cflag &= CBAUD;
 #else
-    t.c_cflags = 0;
-#else
+    t.c_cflag = 0;
+#endif
     t.c_cflag |= (
                   CS8         /* 8 bits */
                 | CREAD       /* enable receiver */
-#endif
 /*
 Fun snippet from the FreeBSD manpage:
 
