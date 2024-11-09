@@ -1,0 +1,22 @@
+--- js-1.8.5/js/src/jsnum.h.orig	2024-11-09 02:32:13
++++ js-1.8.5/js/src/jsnum.h	2024-11-09 02:33:18
+@@ -101,7 +101,7 @@
+ #ifdef WIN32
+     return _finite(d);
+ #else
+-    return finite(d);
++    return isfinite(d);
+ #endif
+ }
+ 
+--- js-1.8.5/js/src/ctypes/CTypes.cpp.orig	2024-11-09 02:35:36
++++ js-1.8.5/js/src/ctypes/CTypes.cpp	2024-11-09 02:35:46
+@@ -464,7 +464,7 @@
+ #ifdef WIN32
+   return _finite(f) != 0;
+ #else
+-  return finite(f);
++  return isfinite(f);
+ #endif
+ }
+ 
