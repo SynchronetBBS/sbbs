@@ -221,7 +221,8 @@ COM_HANDLE comOpen(const char* device)
                 | IGNPAR   /* ignore (discard) parity errors */
                 );
     t.c_oflag = 0;  /* No output processing */
-    t.c_cflag = (
+	t.c_cflag &= ~(CSIZE | CSTOPB | PARENB | PARODD);
+    t.c_cflag |= (
                   CS8         /* 8 bits */
                 | CREAD       /* enable receiver */
 /*
