@@ -68,16 +68,16 @@ include:
       has_curses: 'no'
   - local: '.gitlab-ci-unix.yml'
     inputs:
-      os: 'darwin'
+      os: 'darwin-x86'
       platform: 'x86'
-      tagname: 'x86macOS'
+      tagname: 'macOS-x86'
       gnu_make: 'make'
       build_flags: 'CC="ccache cc" CXX="ccache c++" RELEASE=1'
   - local: '.gitlab-ci-unix.yml'
     inputs:
-      os: 'darwin'
+      os: 'darwin-aarch64'
       platform: 'aarch64'
-      tagname: 'aarch64macOS'
+      tagname: 'macOS-aarch64'
       gnu_make: 'make'
       build_flags: 'RELEASE=1'
 
