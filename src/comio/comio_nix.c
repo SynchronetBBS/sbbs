@@ -221,10 +221,15 @@ COM_HANDLE comOpen(const char* device)
                 | IGNPAR   /* ignore (discard) parity errors */
                 );
     t.c_oflag = 0;  /* No output processing */
-	t.c_cflag &= ~(CSIZE | CSTOPB | PARENB | PARODD);
+#ifdef CBAUD
+    t.c_cflags &= CBAUD;
+#else
+    t.c_cflags = 0;
+#else
     t.c_cflag |= (
                   CS8         /* 8 bits */
                 | CREAD       /* enable receiver */
+#endif
 /*
 Fun snippet from the FreeBSD manpage:
 
