@@ -70,14 +70,14 @@ include:
     inputs:
       os: 'darwin'
       platform: 'x86'
-      tagname: 'macOS-x86'
+      tagname: 'x86macOS'
       gnu_make: 'make'
       build_flags: 'CC="ccache cc" CXX="ccache c++" RELEASE=1'
   - local: '.gitlab-ci-unix.yml'
     inputs:
       os: 'darwin'
       platform: 'aarch64'
-      tagname: 'macOS-aarch64'
+      tagname: 'aarch64macOS'
       gnu_make: 'make'
       build_flags: 'RELEASE=1'
 
