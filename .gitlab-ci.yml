@@ -79,7 +79,7 @@ include:
       platform: 'aarch64'
       tagname: 'macOS-aarch64'
       gnu_make: 'make'
-      build_flags: 'CC="ccache cc" CXX="ccache c++" RELEASE=1'
+      build_flags: ''
 
 smoketest-jsexec-linux:
   tags: [Linux]
