@@ -1156,16 +1156,26 @@ function showFileInfo_ANSI(pFileMetadata)
 
 	// Some data to possibly write alongside the uploader's avatar
 	// Uploaded by
-	var uploadedByStr = fileMetadata.from;
+	var uploadedByStr = "Unknown";
+	if (fileMetadata.hasOwnProperty("from"))
+		uploadedByStr = fileMetadata.from;
 	if (fileMetadata.hasOwnProperty("from_protocol"))
 		uploadedByStr += " via " + fileMetadata.from_protocol;
 	// Date added
-	var uploadedDateStr = strftime(gTimeFormatStr, fileMetadata.added);
+	var uploadedDateStr = "Unknown";
+	if (fileMetadata.hasOwnProperty("added"))
+		uploadedDateStr = strftime(gTimeFormatStr, fileMetadata.added);
 	// File date
-	//var fileDateStr = gColors.fileTimestamp + strftime(gTimeFormatStr, fileMetadata.time) + "\x01n\x01w";
-	var fileDateStr = strftime(gTimeFormatStr, fileMetadata.time);
+	var fileDateStr = "Unknown";
+	if (fileMetadata.hasOwnProperty("time"))
+	{
+		//fileDateStr = gColors.fileTimestamp + strftime(gTimeFormatStr, fileMetadata.time) + "\x01n\x01w";
+		fileDateStr = strftime(gTimeFormatStr, fileMetadata.time);
+	}
 	// Last downloaded date
-	var lastDownloadedDateStr = strftime(gTimeFormatStr, fileMetadata.last_downloaded);
+	var lastDownloadedDateStr = "Unknown";
+	if (fileMetadata.hasOwnProperty("last_downloaded"))
+		lastDownloadedDateStr = strftime(gTimeFormatStr, fileMetadata.last_downloaded);
 	// # times downloaded
 	var timesDownloadedStr = fileMetadata.hasOwnProperty("times_downloaded") ? fileMetadata.times_downloaded : 0;
 	// Time to download
@@ -1355,7 +1365,9 @@ function showFileInfo_noANSI(pFileMetadata)
 	printf(generalFormatStr, "Author", authorStr.substr(0, valueLen));
 	var groupStr = fileMetadata.hasOwnProperty("author_org") ? fileMetadata.author_org : "";
 	printf(generalFormatStr, "Group", groupStr.substr(0, valueLen));
-	var uploadedByStr = fileMetadata.from;
+	var uploadedByStr = "Unknown";
+	if (fileMetadata.hasOwnProperty("from"))
+		uploadedByStr = fileMetadata.from;
 	if (fileMetadata.hasOwnProperty("from_protocol"))
 		uploadedByStr += " via " + fileMetadata.from_protocol;
 	printf(generalFormatStr, "Uploaded by", uploadedByStr.substr(0, valueLen));
@@ -1371,10 +1383,14 @@ function showFileInfo_noANSI(pFileMetadata)
 	}
 	// Uploaded on
 	formatStr = "\x01n\x01g%-" + labelLen + "s\x01h" + lblSep + "\x01n" + gColors.fileTimestamp + "%-" + valueLen + "s\x01n\r\n";
-	var timeStr = strftime(gTimeFormatStr, fileMetadata.added);
+	var timeStr = "Unknown";
+	if (fileMetadata.hasOwnProperty("added"))
+		timeStr = strftime(gTimeFormatStr, fileMetadata.added);
 	printf(formatStr, "Uploaded on", timeStr.substr(0, valueLen));
 	// File date
-	timeStr = strftime(gTimeFormatStr, fileMetadata.time);
+	timeStr = "Unknown";
+	if (fileMetadata.hasOwnProperty("time"))
+		timeStr = strftime(gTimeFormatStr, fileMetadata.time);
 	printf(formatStr, "File date", timeStr.substr(0, valueLen));
 	if (fileMetadata.hasOwnProperty("last_downloaded"))
 	{
