@@ -71,7 +71,7 @@ $(JSLIB_BUILD): $(3RDP_ROOT)/dist/libmozjs.tgz $(3RDP_ROOT)/dist/libffi.tgz $(3R
 	$(QUIET)-rm -rf $(JS_SRC)/*
 	$(QUIET)tar -xzpC $(JS_SRC) -f $(3RDPDISTDIR)/libmozjs.tgz
 	$(QUIET)rm -rf $(JS_SRC)/js-1.8.5/js/src/ctypes/libffi/*
-	$(QUIET)tar -xC $(JS_SRC)/js-1.8.5/js/src/ctypes/libffi -f $(3RDPDISTDIR)/libffi.tgz
+	$(QUIET)tar -xzC $(JS_SRC)/js-1.8.5/js/src/ctypes/libffi -f $(3RDPDISTDIR)/libffi.tgz
 	$(QUIET)-mv $(JS_SRC)/js-1.8.5/js/src/ctypes/libffi/libffi*/* $(JS_SRC)/js-1.8.5/js/src/ctypes/libffi
 	$(QUIET)echo "pthread_np.h" >> $(JS_SRC)/js-1.8.5/js/src/config/system-headers
 	$(QUIET)patch -b -p0 -d $(JS_SRC)/js-1.8.5 < js_src_jsnativestack_cpp.patch
