@@ -1,0 +1,18 @@
+--- js-1.8.5/js/src/configure.orig	2024-11-09 02:22:23
++++ js-1.8.5/js/src/configure	2024-11-09 02:27:15
+@@ -5543,6 +5543,7 @@
+     ;;
+ darwin*)
+     HOST_OS_ARCH=Darwin
++    MOZ_FIX_LINK_PATHS=
+     ;;
+ linux*)
+     HOST_OS_ARCH=Linux
+@@ -5748,6 +5749,7 @@
+         OS_TEST=x86_64
+         ;;
+     *)
++        MOZ_FIX_LINK_PATHS=
+         if test -z "$CROSS_COMPILE" ; then
+             OS_TEST=`uname -p`
+         fi
