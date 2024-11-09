@@ -1821,6 +1821,15 @@ int main(int argc, char** argv)
 	}
 	SetConsoleCtrlHandler(ControlHandler, TRUE /* Add */);
 
+#elif defined(__unix__)
+    signal(SIGQUIT,break_handler);
+    signal(SIGINT,break_handler);
+    signal(SIGTERM,break_handler);
+
+    signal(SIGHUP,SIG_IGN);
+
+    /* Don't die on SIGPIPE  */
+    signal(SIGPIPE,SIG_IGN);
 #endif
 
 	service_loop(argc,argv);
