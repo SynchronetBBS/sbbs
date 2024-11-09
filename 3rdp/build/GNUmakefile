@@ -66,10 +66,13 @@ $(JS_SRC): | $(3RDPSRCDIR)
 $(JS_IDIR): | $(3RDPODIR)
 	$(QUIET)$(IFNOTEXIST) mkdir $(JS_IDIR)
 
-$(JSLIB_BUILD): $(3RDP_ROOT)/dist/libmozjs.tgz $(3RDP_ROOT)/build/js_src_jsnativestack_cpp.patch $(3RDP_ROOT)/build/js-configure.patch $(3RDP_ROOT)/build/js-configure.in.patch $(3RDP_ROOT)/build/imacro-asm-fix.patch $(3RDP_ROOT)/build/js-volatile-outside-functions.patch $(3RDP_ROOT)/build/js-Wno-misleading-indentation.patch $(3RDP_ROOT)/build/js-allow-python3.patch $(3RDP_ROOT)/build/js-no-rwx-pages.patch $(3RDP_ROOT)/build/js-disable-shell.patch $(3RDP_ROOT)/build/js-darwin-configure.patch $(3RDP_ROOT)/build/js-keep-ffi-cache.patch $(3RDP_ROOT)/build/js-config.guess-libffi.patch $(3RDP_ROOT)/build/js-support-mingw-cross.patch $(3RDP_ROOT)/build/js-int-main-conf.patch $(3RDP_ROOT)/build/js-include-headers.patch | $(JS_SRC) $(JS_IDIR)
+$(JSLIB_BUILD): $(3RDP_ROOT)/dist/libmozjs.tgz $(3RDP_ROOT)/dist/libffi.tgz $(3RDP_ROOT)/build/js_src_jsnativestack_cpp.patch $(3RDP_ROOT)/build/js-configure.patch $(3RDP_ROOT)/build/js-configure.in.patch $(3RDP_ROOT)/build/imacro-asm-fix.patch $(3RDP_ROOT)/build/js-volatile-outside-functions.patch $(3RDP_ROOT)/build/js-Wno-misleading-indentation.patch $(3RDP_ROOT)/build/js-allow-python3.patch $(3RDP_ROOT)/build/js-no-rwx-pages.patch $(3RDP_ROOT)/build/js-disable-shell.patch $(3RDP_ROOT)/build/js-darwin-configure.patch $(3RDP_ROOT)/build/js-keep-ffi-cache.patch $(3RDP_ROOT)/build/js-support-mingw-cross.patch $(3RDP_ROOT)/build/js-int-main-conf.patch $(3RDP_ROOT)/build/js-include-headers.patch | $(JS_SRC) $(JS_IDIR)
 	@echo Creating $@ ...
 	$(QUIET)-rm -rf $(JS_SRC)/*
 	$(QUIET)tar -xzpC $(JS_SRC) -f $(3RDPDISTDIR)/libmozjs.tgz
+	$(QUIET)rm -rf $(JS_SRC)/js-1.8.5/js/src/ctypes/libffi/*
+	$(QUIET)tar -xC $(JS_SRC)/js-1.8.5/js/src/ctypes/libffi -f $(3RDPDISTDIR)/libffi.tgz
+	$(QUIET)-mv $(JS_SRC)/js-1.8.5/js/src/ctypes/libffi/libffi*/* $(JS_SRC)/js-1.8.5/js/src/ctypes/libffi
 	$(QUIET)echo "pthread_np.h" >> $(JS_SRC)/js-1.8.5/js/src/config/system-headers
 	$(QUIET)patch -b -p0 -d $(JS_SRC)/js-1.8.5 < js_src_jsnativestack_cpp.patch
 	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-configure.patch
@@ -85,7 +88,6 @@ $(JSLIB_BUILD): $(3RDP_ROOT)/dist/libmozjs.tgz $(3RDP_ROOT)/build/js_src_jsnativ
 	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-no-rwx-pages.patch
 	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-darwin-configure.patch
 	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-keep-ffi-cache.patch
-	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-config.guess-libffi.patch
 	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-support-mingw-cross.patch
 	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-int-main-conf.patch
 	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-include-headers.patch
