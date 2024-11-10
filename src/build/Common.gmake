@@ -387,7 +387,7 @@ ifeq ($(os),darwin)
  CFLAGS +=  -D__unix__ -fno-common -D__DARWIN__
  CFLAGS +=  -mmacosx-version-min=$(MIN_MAC_OSX_VERSION)
  LDFLAGS += -mmacosx-version-min=$(MIN_MAC_OSX_VERSION)
- ifneq ($(shell brew --prefix),"")
+ ifeq ($(shell brew --prefix && echo "Yes"),"Yes")
   CFLAGS += -I$(shell brew --prefix)/include
   CFLAGS += -L$(shell brew --prefix)/lib
  endif
