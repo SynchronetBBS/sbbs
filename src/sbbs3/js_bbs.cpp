@@ -2339,7 +2339,7 @@ js_xfer_prot_menu(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 
 	if(argc > 0 && argv[0] == JSVAL_TRUE)
-		xfer_type = XFER_BATCH_UPLOAD;
+		xfer_type = XFER_UPLOAD;
 	if(argc > 1 && argv[1] == JSVAL_TRUE)
 		xfer_type = ((xfer_type == XFER_UPLOAD) ? XFER_BATCH_UPLOAD : XFER_BATCH_DOWNLOAD);
 
