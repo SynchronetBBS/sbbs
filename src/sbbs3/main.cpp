@@ -3985,14 +3985,14 @@ int sbbs_t::nopen(char *str, int access)
 	if(!(access&O_TEXT))
 		access|=O_BINARY;
     while(((file=sopen(str,access,share,DEFFILEMODE))==-1)
-        && (errno==EACCES || errno==EAGAIN) && count++<LOOP_NOPEN)
-	    mswait(100);
+        && (errno==EACCES || errno==EAGAIN || errno==EDEADLOCK) && count++<LOOP_NOPEN)
+	    SLEEP((count / 10) * 100);
     if(count>(LOOP_NOPEN/2) && count<=LOOP_NOPEN) {
         SAFEPRINTF2(logstr,"NOPEN COLLISION - File: \"%s\" Count: %d"
             ,str,count);
         logline(LOG_WARNING,"!!",logstr);
 	}
-    if(file==-1 && (errno==EACCES || errno==EAGAIN)) {
+    if(file==-1 && (errno==EACCES || errno==EAGAIN || errno==EDEADLOCK)) {
         SAFEPRINTF2(logstr,"NOPEN ACCESS DENIED - File: \"%s\" errno: %d"
 			,str,errno);
 		logline(LOG_WARNING,"!!",logstr);

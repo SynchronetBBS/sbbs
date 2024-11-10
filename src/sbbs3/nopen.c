@@ -29,7 +29,6 @@
 /* Network open function. Opens all files DENYALL, DENYWRITE, or DENYNONE	*/
 /* depending on access, and retries LOOP_NOPEN number of times if the		*/
 /* attempted file is already open or denying access  for some other reason. */
-/* All files are opened in BINARY mode.										*/
 /****************************************************************************/
 int nopen(const char* str, uint access)
 {
@@ -50,8 +49,7 @@ int nopen(const char* str, uint access)
 #endif
     while(((file=sopen(str,access,share,DEFFILEMODE))==-1)
         && (errno==EACCES || errno==EAGAIN || errno==EDEADLOCK) && count++<LOOP_NOPEN)
-        if(count)
-            SLEEP(100);
+		SLEEP((count / 10) * 100);
     return(file);
 }
 

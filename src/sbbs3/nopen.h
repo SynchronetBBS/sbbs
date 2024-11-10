@@ -27,7 +27,7 @@
 #include "gen_defs.h"		/* bool */
 
 #define FNOPEN_BUF_SIZE		(2*1024)
-#define LOOP_NOPEN	  50	/* Retries before file access denied			*/
+#define LOOP_NOPEN	  500	/* Retries before file access denied			*/
 
 #ifdef __cplusplus
 extern "C" {
