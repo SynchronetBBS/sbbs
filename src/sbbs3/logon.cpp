@@ -616,58 +616,61 @@ uint sbbs_t::logonstats()
 		return 0;
 	}
 
-	now=time(NULL);
-	if(stats.date > now+(24L*60L*60L)) /* More than a day in the future? */
-		errormsg(WHERE,ERR_CHK,"Daily stats date/time stamp", (ulong)stats.date);
-	if(localtime_r(&stats.date, &update_tm)==NULL)
-		return(0);
-	if(localtime_r(&now,&tm)==NULL)
-		return(0);
-	if((tm.tm_mday>update_tm.tm_mday && tm.tm_mon==update_tm.tm_mon)
-		|| tm.tm_mon>update_tm.tm_mon || tm.tm_year>update_tm.tm_year) {
+	if(stats.date != 0) {
+		now=time(NULL);
+		if(stats.date > now+(24L*60L*60L)) /* More than a day in the future? */
+			errormsg(WHERE,ERR_CHK,"Daily stats date/time stamp", (ulong)stats.date);
+		if(localtime_r(&stats.date, &update_tm)==NULL)
+			return(0);
+		if(localtime_r(&now,&tm)==NULL)
+			return(0);
+		if((tm.tm_mday>update_tm.tm_mday && tm.tm_mon==update_tm.tm_mon)
+			|| tm.tm_mon>update_tm.tm_mon || tm.tm_year>update_tm.tm_year) {
 
-		sys_status |= SS_NEW_DAY;
-		if(tm.tm_mon != update_tm.tm_mon)
-			sys_status |= SS_NEW_MONTH;
-		safe_snprintf(msg, sizeof(msg), "New Day%s - Prev: %s "
-			,(sys_status & SS_NEW_MONTH) ? " and Month" :"", timestr(stats.date));
-		logline(LOG_NOTICE, "!=", msg);
-		safe_snprintf(path, sizeof(path), "%slogon.lst",cfg.data_dir);    /* Truncate logon list (LEGACY) */
-		int file;
-		if((file=nopen(path,O_TRUNC|O_CREAT|O_WRONLY))==-1) {
-			errormsg(WHERE,ERR_OPEN,path,O_TRUNC|O_CREAT|O_WRONLY);
-			return(0L); 
-		}
-		close(file);
-		for(i=0;i<=cfg.sys_nodes;i++) {
-			if(i) {     /* updating a node */
-				getnodedat(i,&node,1);
-				node.misc|=NODE_EVENT;
-				putnodedat(i,&node); 
+			sys_status |= SS_NEW_DAY;
+			if(tm.tm_mon != update_tm.tm_mon)
+				sys_status |= SS_NEW_MONTH;
+			safe_snprintf(msg, sizeof(msg), "New Day%s - Prev: %s "
+				,(sys_status & SS_NEW_MONTH) ? " and Month" :"", timestr(stats.date));
+			logline(LOG_NOTICE, "!=", msg);
+			safe_snprintf(path, sizeof(path), "%slogon.lst",cfg.data_dir);    /* Truncate logon list (LEGACY) */
+			int file;
+			if((file=nopen(path,O_TRUNC|O_CREAT|O_WRONLY))==-1) {
+				errormsg(WHERE,ERR_OPEN,path,O_TRUNC|O_CREAT|O_WRONLY);
+				return(0L); 
 			}
-			if((dsts = fopen_dstats(&cfg, i, /* for_write: */TRUE)) == NULL) /* doesn't have stats yet */
-				continue;
+			close(file);
+			for(i=0;i<=cfg.sys_nodes;i++) {
+				if(i) {     /* updating a node */
+					getnodedat(i,&node,1);
+					node.misc|=NODE_EVENT;
+					putnodedat(i,&node); 
+				}
+				if((dsts = fopen_dstats(&cfg, i, /* for_write: */TRUE)) == NULL) /* doesn't have stats yet */
+					continue;
 
-			if((csts = fopen_cstats(&cfg, i, /* for_write: */TRUE)) == NULL) {
+				if((csts = fopen_cstats(&cfg, i, /* for_write: */TRUE)) == NULL) {
+					fclose_dstats(dsts);
+					errormsg(WHERE, ERR_OPEN, "csts.tab", i);
+					continue;
+				}
+
+				dstats_fname(&cfg, i, path, sizeof path);
+				if(!fread_dstats(dsts, &stats)) {
+					errormsg(WHERE, ERR_READ, path, i);
+				} else {
+					stats.date = time(NULL);
+					fwrite_cstats(csts, &stats);
+					rolloverstats(&stats);
+					backup(path, 90, /* rename: */false);
+					if(!fwrite_dstats(dsts, &stats, __FUNCTION__))
+						errormsg(WHERE, ERR_WRITE, path, i);
+				}
 				fclose_dstats(dsts);
-				errormsg(WHERE, ERR_OPEN, "csts.tab", i);
-				continue;
-			}
-
-			if(!fread_dstats(dsts, &stats)) {
-				errormsg(WHERE, ERR_READ, "dsts.ini", i);
-			} else {
-				stats.date = time(NULL);
-				fwrite_cstats(csts, &stats);
-				rolloverstats(&stats);
-				if(!fwrite_dstats(dsts, &stats, __FUNCTION__))
-					errormsg(WHERE, ERR_WRITE, "dsts.ini", i);
-			}
-			fclose_dstats(dsts);
-			fclose_cstats(csts);
-		} 
+				fclose_cstats(csts);
+			} 
+		}
 	}
-
 	if(cfg.node_num==0)	/* called from event_thread() */
 		return(0);
 
