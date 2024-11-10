@@ -295,7 +295,8 @@ int smb_locksmbhdr(smb_t* smb)
 		++count;
 		SLEEP((count / 10) * smb->retry_delay);
 	}
-	safe_snprintf(smb->last_error,sizeof(smb->last_error),"%s timeout locking message base after %d seconds", __FUNCTION__, time(NULL) - start);
+	safe_snprintf(smb->last_error,sizeof(smb->last_error),"%s timeout locking message base after %d seconds"
+		, __FUNCTION__, (int)(time(NULL) - start));
 	return(SMB_ERR_TIMEOUT);
 }
 
