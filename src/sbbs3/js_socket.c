@@ -1656,11 +1656,6 @@ js_sock_read_check(js_socket_private_t *p, time_t start, int32 timeout, int i)
 {
 	bool		rd;
 
-	if(timeout > 0 && time(NULL)-start>timeout) {
-		dbprintf(false, p, "recvline timeout (received: %d)",i);
-		return 1;
-	}
-
 	if(!socket_check(p->sock,&rd,NULL,1000)) {
 		store_socket_error(p, ERROR_VALUE, NULL);
 		return 2;
@@ -2646,9 +2641,9 @@ static jsSyncMethodSpec js_socket_functions[] = {
 		"optionally specifying a network interface (via <i>ip_address</i>)")
 	,311
 	},
-	{"connect",     js_connect,     2,	JSTYPE_BOOLEAN,	JSDOCSTR("host, port [,timeout=10.0] [,callback]")
+	{"connect",     js_connect,     2,	JSTYPE_BOOLEAN,	JSDOCSTR("host, port [,timeout=10] [,callback]")
 	,JSDOCSTR("Connect to a remote port (number or service name) on the specified host (IP address or host name)"
-	", default <i>timeout</i> value is <i>10.0</i> (seconds).  Instead of a timeout, you can pass a <i>callback</i> "
+	", default <i>timeout</i> value is <i>10</i> (seconds).  Instead of a timeout, you can pass a <i>callback</i> "
 	"which is called when the connection completes with the Socket object as the only parameter.")
 	,311
 	},
