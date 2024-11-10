@@ -377,8 +377,8 @@ ifeq ($(os),haiku)
  CFLAGS	+=	-D__unix__ -DNEEDS_FORKPTY
 endif
 ifeq ($(os),darwin)
- MAC_MAJOR_VER = $(shell sw_vers --productVersion | cut -f 1 -d.)
- MAC_MINOR_VER = $(shell sw_vers --productVersion | cut -f 2 -d.)
+ MAC_MAJOR_VER = $(shell sw_vers -productVersion | cut -f 1 -d.)
+ MAC_MINOR_VER = $(shell sw_vers -productVersion | cut -f 2 -d.)
  ifeq ($(MAC_MAJOR_VER),10)
   MIN_MAC_OSX_VERSION ?= $(MAC_MAJOR_VER).$(MAC_MINOR_VER)
  else
