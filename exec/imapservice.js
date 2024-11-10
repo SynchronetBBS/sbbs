@@ -1702,7 +1702,7 @@ var authenticated_command_handlers = {
 			if (saved_config[base_code] != undefined)
 				old_saved = saved_config[base_code];
 			read_cfg(base_code, true);
-			index = read_index(base_code);
+			index = read_index(base);
 			delete saved_config[base_code];
 			if (old_saved != undefined)
 				saved_config[base_code] = old_saved;
