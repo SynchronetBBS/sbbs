@@ -4,11 +4,21 @@
 require("mailutil.js", 'mail_get_name');
 require("smbdefs.js", 'RFC822HEADER');
 
+function get_news_subject(hdr)
+{
+	if(hdr.field_list !== undefined)
+		for(var i in hdr.field_list) {
+			if(hdr.field_list[i].type == RFC822SUBJECT)
+				return hdr.field_list[i].data;
+		}
+	return hdr.subject;
+}
+
 function write_news_header(hdr,writeln)
 {
 	/* Required header fields */
 	writeln("To: " + hdr.to);
-	writeln("Subject: " + hdr.subject);
+	writeln("Subject: " + get_news_subject(hdr));
 	writeln("Message-ID: " + hdr.id);
 	writeln("Date: " + hdr.date);
 
@@ -48,7 +58,7 @@ function write_news_header(hdr,writeln)
 	var content_type;
 
 	if(hdr.field_list!=undefined) {
-		for(i in hdr.field_list) {
+		for(var i in hdr.field_list) {
 			if(hdr.field_list[i].type==RFC822HEADER) {
 				if(hdr.field_list[i].data.toLowerCase().indexOf("content-type:")==0)
 					content_type = hdr.field_list[i].data;

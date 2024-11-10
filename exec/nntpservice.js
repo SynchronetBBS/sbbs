@@ -561,7 +561,7 @@ while(client.socket.is_connected && !quit) {
 					continue;
 				writeln(format("%u\t%s\t%s\t%s\t%s\t%s\t%u\t%u\tXref:%s"
 					,i
-					,hdr.subject
+					,get_news_subject(hdr)
 					,hdr.from
 					,hdr.date
 					,hdr.id								// message-id
@@ -615,7 +615,7 @@ while(client.socket.is_connected && !quit) {
 						field=hdr.to;
 						break;
 					case "subject":
-						field=hdr.subject;
+						field=get_news_subject(hdr);
 						break;
 					case "from":
 						field=hdr.from;
