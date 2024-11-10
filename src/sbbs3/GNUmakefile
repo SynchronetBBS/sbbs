@@ -109,8 +109,15 @@ ifeq ($(shell pkg-config libarchive --exists && echo "yes"),yes)
  FILE_LIBS	= $(shell pkg-config libarchive --libs)
 else
  ifeq ($(os), darwin)
-  CFLAGS += -I/usr/local/opt/libarchive/include -I/opt/local/include
-  LDFLAGS += -L/usr/local/opt/libarchive/lib -I/opt/local/lib
+  if ($(shell test -d /opt/homebrew/opt/libarchive/include && echo "yes"),yes)
+    CFLAGS += -I/opt/homebrew/opt/libarchive/include -I/opt/homebrew/include
+    LDFLAGS += -L/opt/homebrew/opt/libarchive/lib -I/opt/homebrew/lib
+  else
+    if ($(shell test -d /usr/local/opt/libarchive/include && echo "yes"),yes)
+      CFLAGS += -I/usr/local/opt/libarchive/include -I/opt/local/include
+      LDFLAGS += -L/usr/local/opt/libarchive/lib -I/opt/local/lib
+    endif
+  endif
  endif
  FILE_LIBS	= -larchive
 endif
