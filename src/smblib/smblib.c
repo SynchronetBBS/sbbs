@@ -67,7 +67,7 @@ int smb_open(smb_t* smb)
 		smb->retry_time=10;		/* seconds */
 	if(!smb->retry_delay 
 		|| smb->retry_delay>(smb->retry_time*100))	/* at least ten retries */
-		smb->retry_delay=250;	/* milliseconds */
+		smb->retry_delay=100;	/* milliseconds */
 	smb->shd_fp=smb->sdt_fp=smb->sid_fp=NULL;
 	smb->sha_fp=smb->sda_fp=smb->hash_fp=NULL;
 	smb->last_error[0]=0;
@@ -270,6 +270,7 @@ int smb_trunchdr(smb_t* smb)
 int smb_locksmbhdr(smb_t* smb)
 {
 	time_t	start=0;
+	int count = 0;
 
 	if(smb->locked)
 		return SMB_SUCCESS;
@@ -283,19 +284,18 @@ int smb_locksmbhdr(smb_t* smb)
 			smb->locked=true;
 			return(SMB_SUCCESS);
 		}
+		/* In case we've already locked it */
+		if(unlock(fileno(smb->shd_fp),0L,sizeof(smbhdr_t)+sizeof(smbstatus_t))==0)
+			smb->locked=false;
 		if(!start)
 			start=time(NULL);
 		else
 			if(time(NULL)-start>=(time_t)smb->retry_time)
 				break;
-		/* In case we've already locked it */
-		if(unlock(fileno(smb->shd_fp),0L,sizeof(smbhdr_t)+sizeof(smbstatus_t))==0)
-			smb->locked=false;
-		else {
-			SLEEP(smb->retry_delay);
-		}
+		++count;
+		SLEEP((count / 10) * smb->retry_delay);
 	}
-	safe_snprintf(smb->last_error,sizeof(smb->last_error),"%s timeout locking message base", __FUNCTION__);
+	safe_snprintf(smb->last_error,sizeof(smb->last_error),"%s timeout locking message base after %d seconds", __FUNCTION__, time(NULL) - start);
 	return(SMB_ERR_TIMEOUT);
 }
 
