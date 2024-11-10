@@ -79,7 +79,7 @@ include:
       platform: 'x86'
       tagname: 'macOS-x86'
       gnu_make: 'make'
-      build_flags: 'CC="ccache cc" CXX="ccache c++" RELEASE=1 VERBOSE=1'
+      build_flags: 'CC="ccache cc" CXX="ccache c++" RELEASE=1'
 
 smoketest-jsexec-linux:
   tags: [Linux]
