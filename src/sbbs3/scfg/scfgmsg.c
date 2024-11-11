@@ -1198,7 +1198,7 @@ void msg_opts()
 				ultoa(cfg.smb_retry_time,str,10);
 				uifc.input(WIN_MID|WIN_SAV,0,0
 					,"Maximum Message Base Retry Time (in seconds)"
-					,str,2,K_NUMBER|K_EDIT);
+					,str,3,K_NUMBER|K_EDIT);
 				cfg.smb_retry_time=atoi(str);
 				break;
 			case 2:
