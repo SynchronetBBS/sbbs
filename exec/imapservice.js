@@ -250,6 +250,9 @@ function send_fetch_response(msgnum, fmat, uid)
 	function get_rfc822_text() {
 		if(rfc822.text==undefined)
 			rfc822.text=base.get_msg_body(msgnum, true, true, true);
+		// At least some iPhones in 2024 would not display
+		// zero-length messages.  Convert them to a single
+		// space instead.
 		if(rfc822.text === "" || rfc822.text==undefined)
 			rfc822.text=' ';
 	}
