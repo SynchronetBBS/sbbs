@@ -224,7 +224,7 @@ function send_fetch_response(msgnum, fmat, uid)
 	 */
 	function get_header() {
 		if(hdr == undefined)
-			hdr=base.get_msg_header(msgnum, /* expand_fields: */false);
+			hdr=base.get_msg_header(true, idx.offset, /* expand_fields: */false);
 		/* If that didn't work, make up a minimal useless header */
 		if (hdr == undefined) {
 			hdr = Object.create(MsgBase.HeaderPrototype);
@@ -240,13 +240,15 @@ function send_fetch_response(msgnum, fmat, uid)
 	}
 
 	function get_rfc822_header() {
-		get_header();
-		rfc822.header=hdr.get_rfc822_header();
+		if (!rfc822.hasOwnProperty('header')) {
+			get_header();
+			rfc822.header=hdr.get_rfc822_header();
+		}
 	}
 
 	function get_rfc822_text() {
 		if(rfc822.text==undefined)
-			rfc822.text=base.get_msg_body(msgnum, true, true, true);
+			rfc822.text=base.get_msg_body(true, idx.offset, true, true, true);
 		if(rfc822.text === "" || rfc822.text==undefined)
 			rfc822.text='No body here';
 	}
@@ -278,9 +280,10 @@ function send_fetch_response(msgnum, fmat, uid)
 			get_header();
 			if(!(hdr.attr & MSG_READ)) {
 				hdr.attr |= MSG_READ;
-				base.put_msg_header(msgnum, hdr);
+				// TODO: Can this change the offset?
+				base.put_msg_header(true, idx.offset, hdr);
 				index=read_index(base);
-				hdr=base.get_msg_header(msgnum, /* expand_fields: */false);
+				hdr=base.get_msg_header(true, idx.offset, /* expand_fields: */false);
 				if(hdr.attr & MSG_READ)
 					seen_changed=true;
 			}
@@ -875,15 +878,6 @@ var unauthenticated_command_handlers = {
 				return md5_calc(ok + base64_decode(md5_calc(ik+text)), true);
 			}
 
-			function setcfg(u)
-			{
-				cfgfile=new File(format(system.data_dir+"user/%04d.imap", u.number));
-				if (!cfgfile.open(cfgfile.exists ? 'r+':'w+', true, 0)) {
-					tagged(tag, "NO", "Can't open imap state file");
-					return;
-				}
-			}
-
 			if(mechanism.toUpperCase()=="PLAIN") {
 				if (!client.socket.ssl_session) {
 					tagged(tag, "NO", "No AUTH for you.");
@@ -901,7 +895,8 @@ var unauthenticated_command_handlers = {
 					tagged(tag, "NO", "No AUTH for you.");
 					return;
 				}
-				setcfg(system.matchuser(args[1], false));
+				if (!open_cfg(system.matchuser(args[1], false)))
+					return;
 				tagged(tag, "OK", "Howdy.");
 				state=Authenticated;
 			}
@@ -927,7 +922,8 @@ var unauthenticated_command_handlers = {
 				}
 				// First, try as-stored...
 				if (args[1] === hmac(u.security.password, challenge)) {
-					setcfg(u);
+					if (!open_cfg(u))
+						return;
 					login(u.alias, u.security.password);
 					tagged(tag, "OK", "Howdy.");
 					state=Authenticated;
@@ -935,7 +931,8 @@ var unauthenticated_command_handlers = {
 				}
 				// Lower-case
 				if (args[1] === hmac(u.security.password.toLowerCase(), challenge)) {
-					setcfg(u);
+					if (!open_cfg(u))
+						return;
 					login(u.alias, u.security.password);
 					tagged(tag, "OK", "Howdy.");
 					state=Authenticated;
@@ -943,7 +940,8 @@ var unauthenticated_command_handlers = {
 				}
 				// Upper-case
 				if (args[1] === hmac(u.security.password.toUpperCase(), challenge)) {
-					setcfg(u);
+					if (!open_cfg(u))
+						return;
 					login(u.alias, u.security.password);
 					tagged(tag, "OK", "Howdy.");
 					state=Authenticated;
@@ -973,11 +971,8 @@ var unauthenticated_command_handlers = {
 				return;
 			}
 			u = system.matchuser(usr, false);
-			cfgfile=new File(format(system.data_dir+"user/%04d.imap", u.number));
-			if (!cfgfile.open(cfgfile.exists ? 'r+':'w+', true, 0)) {
-				tagged(tag, "NO", "Can't open imap state file");
+			if (!open_cfg(u))
 				return;
-			}
 			tagged(tag, "OK", "Sure, come on in.");
 			state=Authenticated;
 		},
@@ -1365,6 +1360,16 @@ function apply_seen(index)
 		if(saved_config[index.code].Seen != undefined && saved_config[index.code].Seen[index.idx[i].number] == 1)
 			index.idx[i].attr |= MSG_READ;
 	}
+}
+
+function open_cfg(usr)
+{
+	cfgfile=new File(format(system.data_dir+"user/%04d.imap", usr.number));
+	if (!cfgfile.open(cfgfile.exists ? 'r+':'w+', true, 0)) {
+		tagged(tag, "NO", "Can't open imap state file");
+		return false;
+	}
+	return true;
 }
 
 function lock_cfg()

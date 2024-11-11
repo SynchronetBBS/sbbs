@@ -125,5 +125,6 @@ MsgBase.HeaderPrototype.get_rfc822_header=function(force_update, unfold, default
 			}
 		}
 	}
+
 	return this.rfc822;
 };
