@@ -28,9 +28,10 @@ var readonly=true;
 var orig_ptrs={};
 var msg_ptrs={};
 var curr_status={exists:0,recent:0,unseen:0,uidnext:0,uidvalidity:0};
-var saved_config={mail:{scan_ptr:0}};
+var saved_config={'__config_epoch__':0, mail:{scan_ptr:0}};
 var scan_ptr;
 var cfgfile;
+var applied_epoch = -1;
 
 /**********************/
 /* Encoding functions */
@@ -224,7 +225,7 @@ function send_fetch_response(msgnum, fmat, uid)
 	 */
 	function get_header() {
 		if(hdr == undefined)
-			hdr=base.get_msg_header(true, idx.offset, /* expand_fields: */false);
+			hdr=base.get_msg_header(msgnum, /* expand_fields: */false);
 		/* If that didn't work, make up a minimal useless header */
 		if (hdr == undefined) {
 			hdr = Object.create(MsgBase.HeaderPrototype);
@@ -248,7 +249,7 @@ function send_fetch_response(msgnum, fmat, uid)
 
 	function get_rfc822_text() {
 		if(rfc822.text==undefined)
-			rfc822.text=base.get_msg_body(true, idx.offset, true, true, true);
+			rfc822.text=base.get_msg_body(msgnum, true, true, true);
 		if(rfc822.text === "" || rfc822.text==undefined)
 			rfc822.text='No body here';
 	}
@@ -280,10 +281,9 @@ function send_fetch_response(msgnum, fmat, uid)
 			get_header();
 			if(!(hdr.attr & MSG_READ)) {
 				hdr.attr |= MSG_READ;
-				// TODO: Can this change the offset?
-				base.put_msg_header(true, idx.offset, hdr);
+				base.put_msg_header(msgnum, hdr);
 				index=read_index(base);
-				hdr=base.get_msg_header(true, idx.offset, /* expand_fields: */false);
+				hdr=base.get_msg_header(msgnum, /* expand_fields: */false);
 				if(hdr.attr & MSG_READ)
 					seen_changed=true;
 			}
@@ -291,6 +291,7 @@ function send_fetch_response(msgnum, fmat, uid)
 		else {
 			lock_cfg();
 			read_cfg(index.code, false);
+			apply_seen(index);
 			if(saved_config[index.code] == undefined)
 				saved_config[index.code] = {};
 			if(saved_config[index.code].Seen == undefined)
@@ -298,9 +299,10 @@ function send_fetch_response(msgnum, fmat, uid)
 			if(saved_config[index.code].Seen[msgnum] != 1) {
 				seen_changed=true;
 				saved_config[index.code].Seen[msgnum]=1;
+				applied_epoch = saved_config.__config_epoch__ + 1;
 				save_cfg(false);
+				index.idx[msgnum].attr |= MSG_READ;
 			}
-			apply_seen(index);
 			unlock_cfg();
 			idx.attr |= MSG_READ;
 		}
@@ -1355,12 +1357,16 @@ function apply_seen(index)
 
 	if (index.code == 'mail')
 		return;
+	if (applied_epoch == saved_config.__config_epoch__)
+		return;
 	for(i in index.idx) {
 		// Fake \Seen
-		index.idx[i].attr &= ~MSG_READ;
 		if(saved_config[index.code].Seen != undefined && saved_config[index.code].Seen[index.idx[i].number] == 1)
 			index.idx[i].attr |= MSG_READ;
+		else
+			index.idx[i].attr &= ~MSG_READ;
 	}
+	applied_epoch = saved_config.__config_epoch__;
 }
 
 function open_cfg(usr)
@@ -1379,6 +1385,9 @@ function open_cfg(usr)
 			read_old_cfg();
 			save_cfg();
 		}
+	}
+	else {
+		save_cfg();
 	}
 	unlock_cfg();
 	return true;
@@ -1473,18 +1482,23 @@ function save_cfg(lck)
 
 	if(user.number > 0) {
 		for (sub in saved_config) {
-			scpy = undefined;
-			if (saved_config[sub].Seen !== undefined) {
-				scpy = JSON.parse(JSON.stringify(saved_config[sub].Seen));
+			if (sub == '__config_epoch__') {
+				new_cfg[sub] = saved_config[sub] + 1;
 			}
-			if(scpy !== undefined) {
-				var bin = binify(scpy);
-				if (bin !== undefined || scpy !== undefined) {
-					new_cfg[sub] = {};
+			else {
+				scpy = undefined;
+				if (saved_config[sub].Seen !== undefined) {
+					scpy = JSON.parse(JSON.stringify(saved_config[sub].Seen));
 				}
-				if (bin !== undefined)
-					new_cfg[sub].bseen = bin;
-				new_cfg[sub].seen = scpy;
+				if(scpy !== undefined) {
+					var bin = binify(scpy);
+					if (bin !== undefined || scpy !== undefined) {
+						new_cfg[sub] = {};
+					}
+					if (bin !== undefined)
+						new_cfg[sub].bseen = bin;
+					new_cfg[sub].seen = scpy;
+				}
 			}
 		}
 		if (lck)
@@ -2371,22 +2385,27 @@ function read_cfg(sub, lck)
 	cfgfile.rewind();
 	newfile = JSON.parse(cfgfile.read());
 	for (newsub in newfile) {
-		saved_config[newsub] = {};
-		if (newfile[newsub].hasOwnProperty('seen'))
-			saved_config[newsub].Seen = newfile[newsub].seen;
-		else
-			saved_config[newsub].Seen = newfile[newsub].seen = {};
-		if (newfile[newsub].hasOwnProperty('bseen')) {
-			for (i in newfile[newsub].bseen) {
-				basemsg = parseInt(i, 10);
-				bstr = base64_decode(newfile[newsub].bseen[i]);
-				for (byte = 0; byte < bstr.length; byte++) {
-					asc = ascii(bstr[byte]);
-					if (asc == 0)
-						continue;
-					for (bit=0; bit<8; bit++) {
-						if (asc & (1<<bit))
-							saved_config[newsub].Seen[basemsg+(byte*8+bit)]=1;
+		if (newsub == '__config_epoch__') {
+			saved_config.__config_epoch__ = newfile[newsub];
+		}
+		else {
+			saved_config[newsub] = {};
+			if (newfile[newsub].hasOwnProperty('seen'))
+				saved_config[newsub].Seen = newfile[newsub].seen;
+			else
+				saved_config[newsub].Seen = newfile[newsub].seen = {};
+			if (newfile[newsub].hasOwnProperty('bseen')) {
+				for (i in newfile[newsub].bseen) {
+					basemsg = parseInt(i, 10);
+					bstr = base64_decode(newfile[newsub].bseen[i]);
+					for (byte = 0; byte < bstr.length; byte++) {
+						asc = ascii(bstr[byte]);
+						if (asc == 0)
+							continue;
+						for (bit=0; bit<8; bit++) {
+							if (asc & (1<<bit))
+								saved_config[newsub].Seen[basemsg+(byte*8+bit)]=1;
+						}
 					}
 				}
 			}
