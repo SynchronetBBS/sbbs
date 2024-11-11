@@ -289,9 +289,6 @@ function send_fetch_response(msgnum, fmat, uid)
 			}
 		}
 		else {
-			lock_cfg();
-			read_cfg(index.code, false);
-			apply_seen(index);
 			if(saved_config[index.code] == undefined)
 				saved_config[index.code] = {};
 			if(saved_config[index.code].Seen == undefined)
@@ -300,10 +297,8 @@ function send_fetch_response(msgnum, fmat, uid)
 				seen_changed=true;
 				saved_config[index.code].Seen[msgnum]=1;
 				applied_epoch = saved_config.__config_epoch__ + 1;
-				save_cfg(false);
 				index.idx[msgnum].attr |= MSG_READ;
 			}
-			unlock_cfg();
 			idx.attr |= MSG_READ;
 		}
 	}
@@ -1792,6 +1787,9 @@ function do_store(seq, uid, item, data)
 	var idx;
 	var changed=false;
 
+	lock_cfg();
+	read_cfg(index.code, false);
+	apply_seen(index);
 	for(i in seq) {
 		idx=index.idx[seq[i]];
 		hdr=base.get_msg_header(seq[i], /* expand_fields: */false);
@@ -1831,6 +1829,8 @@ function do_store(seq, uid, item, data)
 			break;
 		js.gc();
 	}
+	save_cfg(false);
+	unlock_cfg();
 	if(mod_seen && base.cfg != undefined) {
 		lock_cfg();
 		read_cfg(base.cfg.code, false);
@@ -2208,6 +2208,7 @@ var selected_command_handlers = {
 			var data_items=parse_data_items(args[2]);
 			var i;
 
+			lock_cfg();
 			read_cfg(get_base_code(base), true);
 			apply_seen(index);
 			for(i in seq) {
@@ -2215,6 +2216,8 @@ var selected_command_handlers = {
 				if (!client.socket.is_connected)
 					break;
 			}
+			save_cfg(false);
+			unlock_cfg();
 			js.gc();
 			tagged(tag, "OK", "There they are!");
 		},
@@ -2261,6 +2264,7 @@ var selected_command_handlers = {
 					}
 					seq=parse_seq_set(args[2],true);
 					data_items=parse_data_items(args[3]);
+					lock_cfg();
 					read_cfg(get_base_code(base), true);
 					apply_seen(index);
 					for(i in seq) {
@@ -2268,6 +2272,8 @@ var selected_command_handlers = {
 						if (!client.socket.is_connected)
 							break;
 					}
+					save_cfg(false);
+					lock_cfg();
 					js.gc();
 					tagged(tag, "OK", "There they are (with UIDs)!");
 					break;
