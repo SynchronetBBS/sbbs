@@ -1809,7 +1809,7 @@ var authenticated_command_handlers = {
 				untagged('NAMESPACE NIL NIL (("" ' + encode_string(sepchar) + '))');
 			else
 				untagged('NAMESPACE (("" ' + encode_string(sepchar) + ')) NIL NIL');
-			tagged(tag, "OK", "Maybe this will get separators to work.");
+			tagged(tag, "OK", "\"Namespaces\"");
 		},
 	},
 };
