@@ -106,7 +106,7 @@
 		#define SH_DENYWR   F_RDLCK    /* shareable lock */
 
 		#ifndef SH_COMPAT
-			#define SH_COMPAT			0
+			#define SH_COMPAT SH_DENYNO
 		#endif
 	#endif
 
