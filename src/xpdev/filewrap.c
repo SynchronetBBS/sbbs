@@ -75,23 +75,21 @@ off_t filelength(int fd)
 	#undef F_OFD_SETLK
 #endif
 
+#if defined(__linux__) && !defined(F_OFD_SETLK)
+	#warning Linux OFD locks not enabled!
+#endif
+
 /* Sets a lock on a portion of a file */
 int lock(int fd, off_t pos, off_t len)
 {
-	#if !defined(BSD)
- 		struct flock alock = {0};
-		int cmd = F_SETLK;
+#if !defined(BSD)
+	struct flock alock = {0};
+	int cmd = F_SETLK;
 	#ifdef F_OFD_SETLK
 		cmd = F_OFD_SETLK;
 	#endif
 
-	int	flags;
-	if((flags=fcntl(fd,F_GETFL))==-1)
-		return -1;
-	if((flags & (O_RDONLY|O_RDWR|O_WRONLY))==O_RDONLY)
-		alock.l_type = F_RDLCK; /* set read lock to prevent writes */
-	else
-		alock.l_type = F_WRLCK; /* set write lock to prevent all access */
+	alock.l_type = F_WRLCK; /* set write lock to prevent all access */
 	alock.l_whence = L_SET;		/* SEEK_SET */
 	alock.l_start = pos;
 	alock.l_len = (int)len;
@@ -99,19 +97,12 @@ int lock(int fd, off_t pos, off_t len)
 	int result = fcntl(fd, cmd, &alock);
 	if(result == -1 && errno != EINVAL)
 		return -1;
-#ifdef F_OFD_SETLK
-	if(result == 0)
-		return 0;
+#elif !defined(__QNX__) && !defined(__solaris__)
+	/* use flock (doesn't work over NFS) */
+	if(flock(fd,LOCK_EX|LOCK_NB)!=0  && errno != EOPNOTSUPP)
+		return(-1);
 #endif
-#endif
-
-	#if !defined(__QNX__) && !defined(__solaris__)
-		/* use flock (doesn't work over NFS) */
-		if(flock(fd,LOCK_EX|LOCK_NB)!=0 && errno != EOPNOTSUPP)
-			return(-1);
-	#endif
-
-		return(0);
+	return(0);
 }
 
 /* Removes a lock from a file record */
@@ -131,13 +122,7 @@ int unlock(int fd, off_t pos, off_t len)
 	int result = fcntl(fd, cmd, &alock);
 	if(result == -1 && errno != EINVAL)
 		return -1;
-#ifdef F_OFD_SETLK
-	if(result == 0)
-		return 0;
-#endif
-#endif
-
-#if !defined(__QNX__) && !defined(__solaris__)
+#elif !defined(__QNX__) && !defined(__solaris__)
 	/* use flock (doesn't work over NFS) */
 	if(flock(fd,LOCK_UN|LOCK_NB)!=0 && errno != EOPNOTSUPP)
 		return(-1);
