@@ -2209,7 +2209,7 @@ var selected_command_handlers = {
 			var i;
 
 			lock_cfg();
-			read_cfg(get_base_code(base), true);
+			read_cfg(get_base_code(base), false);
 			apply_seen(index);
 			for(i in seq) {
 				send_fetch_response(seq[i], data_items, false);
@@ -2265,7 +2265,7 @@ var selected_command_handlers = {
 					seq=parse_seq_set(args[2],true);
 					data_items=parse_data_items(args[3]);
 					lock_cfg();
-					read_cfg(get_base_code(base), true);
+					read_cfg(get_base_code(base), false);
 					apply_seen(index);
 					for(i in seq) {
 						send_fetch_response(seq[i], data_items, true);
