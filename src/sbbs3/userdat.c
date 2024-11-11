@@ -48,7 +48,7 @@
 #define USER_FIELD_SEPARATOR '\t'
 static const char user_field_separator[2] = { USER_FIELD_SEPARATOR, '\0' };
 
-#define LOOP_USERDAT 500
+#define LOOP_USERDAT 100
 
 char* userdat_filename(scfg_t* cfg, char* path, size_t size)
 {
