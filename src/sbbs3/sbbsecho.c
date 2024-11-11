@@ -2761,7 +2761,9 @@ bool unpack_bundle(const char* inbound)
 				path[strlen(path)-2]='-';
 			if(fexistcase(path))
 				delfile(path, __LINE__);
-			if(rename(fname,path))
+			if(rename(fname,path) == 0)
+				lprintf(LOG_NOTICE, "Bad bundle (%s) renamed to: %s", fname, path);
+			else
 				lprintf(LOG_ERR,"ERROR line %d renaming %s to %s"
 					,__LINE__,fname,path);
 			continue;
