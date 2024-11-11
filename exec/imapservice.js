@@ -28,7 +28,7 @@ var readonly=true;
 var orig_ptrs={};
 var msg_ptrs={};
 var curr_status={exists:0,recent:0,unseen:0,uidnext:0,uidvalidity:0};
-var saved_config={'__config_epoch__':0, mail:{scan_ptr:0}};
+var saved_config={'__config_epoch__':0, mail:{scan_ptr:0, subscribed:true}};
 var scan_ptr;
 var cfgfile;
 var applied_epoch = -1;
@@ -293,7 +293,7 @@ function send_fetch_response(msgnum, fmat, uid)
 		}
 		else {
 			if(saved_config[index.code] == undefined)
-				saved_config[index.code] = {};
+				saved_config[index.code] = {subscribed:false};
 			if(saved_config[index.code].Seen == undefined)
 				saved_config[index.code].Seen = {};
 			if(saved_config[index.code].Seen[msgnum] != 1) {
@@ -575,7 +575,7 @@ function parse_data_items(obj)
 				obj=["FLAGS","INTERNALDATE","RFC822.SIZE","ENVELOPE","BODY"];
 				break;
 			default:
-				obj=[];
+				obj=[obj];
 		}
 	}
 	return(obj);
@@ -1192,7 +1192,7 @@ function sublist(group, match, subscribed)
 
 		for(sub in msg_area.grp_list[grp].sub_list) {
 			if(re.test(msg_area.grp_list[grp].description+sepchar+msg_area.grp_list[grp].sub_list[sub].description)) {
-				if((!subscribed) || (msg_area.grp_list[grp].sub_list[sub].scan_cfg&SCAN_CFG_NEW && (!(msg_area.grp_list[grp].sub_list[sub].scan_cfg&SCAN_CFG_YONLY)))) {
+				if((!subscribed) || (saved_config.hasOwnProperty(msg_area.grp_list[grp].sub_list[sub].code) && saved_config[msg_area.grp_list[grp].sub_list[sub].code].hasOwnProperty('subscribed') && saved_config[msg_area.grp_list[grp].sub_list[sub].code].subscribed)) {
 					base=new MsgBase(msg_area.grp_list[grp].sub_list[sub].code);
 					if(base == undefined || sub=="NONE!!!" || (!base.open()))
 						continue;
@@ -1355,6 +1355,8 @@ function apply_seen(index)
 
 	if (index.code == 'mail')
 		return;
+	if (index === undefined)
+		return;
 	if (applied_epoch == saved_config.__config_epoch__)
 		return;
 	for(i in index.idx) {
@@ -1381,11 +1383,11 @@ function open_cfg(usr)
 		if (ch != '{') {
 			// INI file, convert...
 			read_old_cfg();
-			save_cfg();
+			save_cfg(false);
 		}
 	}
 	else {
-		save_cfg();
+		save_cfg(false);
 	}
 	unlock_cfg();
 	return true;
@@ -1488,15 +1490,17 @@ function save_cfg(lck)
 				if (saved_config[sub].Seen !== undefined) {
 					scpy = JSON.parse(JSON.stringify(saved_config[sub].Seen));
 				}
+				new_cfg[sub] = {};
 				if(scpy !== undefined) {
 					var bin = binify(scpy);
-					if (bin !== undefined || scpy !== undefined) {
-						new_cfg[sub] = {};
-					}
 					if (bin !== undefined)
 						new_cfg[sub].bseen = bin;
 					new_cfg[sub].seen = scpy;
 				}
+				if (saved_config[sub].subscribed === undefined || saved_config[sub].subscribed === false)
+					new_cfg[sub].subscribed = false;
+				else
+					new_cfg[sub].subscribed = true;
 			}
 		}
 		if (lck)
@@ -1654,8 +1658,12 @@ var authenticated_command_handlers = {
 			var sub=getsub(args[1]);
 
 			if(msg_area.sub[sub]!=undefined && msg_area.sub[sub].can_read) {
+				lock_cfg();
+				read_cfg(sub, false);
+				saved_config[sub].subscribed = true;
+				save_cfg(false);
+				unlock_cfg();
 				tagged(tag, "OK", "Subscribed...");
-				msg_area.sub[sub].scan_cfg|=SCAN_CFG_NEW;
 			}
 			else
 				tagged(tag, "NO", "Can't subscribe to that sub (what is it?)");
@@ -1668,9 +1676,12 @@ var authenticated_command_handlers = {
 			var sub=getsub(args[1]);
 
 			if(msg_area.sub[sub]!=undefined && msg_area.sub[sub].can_read) {
+				lock_cfg();
+				read_cfg(sub, false);
+				saved_config[sub].subscribed = false;
+				save_cfg(false);
+				unlock_cfg();
 				tagged(tag, "OK", "Unsubscribed...");
-				// This may leave the to you only bit set... yay.
-				msg_area.sub[sub].scan_cfg&=~SCAN_CFG_NEW;
 			}
 			else
 				tagged(tag, "NO", "Can't unsubscribe that sub (what is it?)");
@@ -1792,7 +1803,6 @@ function do_store(seq, uid, item, data)
 
 	lock_cfg();
 	read_cfg(index.code, false);
-	apply_seen(index);
 	for(i in seq) {
 		idx=index.idx[seq[i]];
 		hdr=base.get_msg_header(seq[i], /* expand_fields: */false);
@@ -1838,15 +1848,18 @@ function do_store(seq, uid, item, data)
 		lock_cfg();
 		read_cfg(base.cfg.code, false);
 		if(saved_config[base.cfg.code] == undefined) {
-			saved_config[base.cfg.code] = {};
+			saved_config[base.cfg.code] = {subscribed:false};
 		}
 		if(saved_config[base.cfg.code].Seen == undefined) {
 			saved_config[base.cfg.code].Seen = {};
 			saved_config[base.cfg.code].Seen[header.number]=0;
 		}
 		saved_config[base.cfg.code].Seen[seq[i]] ^= 1;
+		if (saved_config[base.cfg.code].Seen[seq[i]])
+			index.idx[seq[i]].attr |= MSG_READ;
+		else
+			index.idx[seq[i]].attr &= ~MSG_READ;
 		save_cfg(false);
-		apply_seen(index);
 		unlock_cfg();
 	}
 	if(changed)
@@ -2213,7 +2226,6 @@ var selected_command_handlers = {
 
 			lock_cfg();
 			read_cfg(get_base_code(base), false);
-			apply_seen(index);
 			for(i in seq) {
 				send_fetch_response(seq[i], data_items, false);
 				if (!client.socket.is_connected)
@@ -2269,7 +2281,6 @@ var selected_command_handlers = {
 					data_items=parse_data_items(args[3]);
 					lock_cfg();
 					read_cfg(get_base_code(base), false);
-					apply_seen(index);
 					for(i in seq) {
 						send_fetch_response(seq[i], data_items, true);
 						if (!client.socket.is_connected)
@@ -2330,7 +2341,7 @@ function read_old_cfg()
 		if(secs[sec].search(/\.seen$/)!=-1) {
 			this_sec = secs[sec].replace(/(?:\.seen)+$/,'');
 			if(saved_config[this_sec]==undefined)
-				saved_config[this_sec]={};
+				saved_config[this_sec]={subscribed:false};
 			saved_config[this_sec].Seen=cfgfile.iniGetObject(secs[sec]);
 			if(saved_config[this_sec].Seen==null)
 				saved_config[this_sec].Seen={};
@@ -2339,7 +2350,7 @@ function read_old_cfg()
 			got_bseen.push(secs[sec]);
 			this_sec = secs[sec].replace(/(?:\.bseen)+$/,'');
 			if(saved_config[this_sec]==undefined)
-				saved_config[this_sec]={};
+				saved_config[this_sec]={subscribed:false};
 			if(saved_config[this_sec].Seen==undefined)
 				saved_config[this_sec].Seen={};
 		}
@@ -2389,7 +2400,7 @@ function read_cfg(sub, lck)
 	if (lck)
 		lock_cfg();
 	if(saved_config[sub]==undefined)
-		saved_config[sub]={};
+		saved_config[sub]={subscribed:false};
 
 	cfgfile.rewind();
 	newfile = JSON.parse(cfgfile.read());
@@ -2403,6 +2414,10 @@ function read_cfg(sub, lck)
 				saved_config[newsub].Seen = newfile[newsub].seen;
 			else
 				saved_config[newsub].Seen = newfile[newsub].seen = {};
+			if (newfile[newsub].hasOwnProperty('subscribed'))
+				saved_config[newsub].subscribed = newfile[newsub].subscribed;
+			else
+				saved_config[newsub].subscribed = false;
 			if (newfile[newsub].hasOwnProperty('bseen')) {
 				for (i in newfile[newsub].bseen) {
 					basemsg = parseInt(i, 10);
@@ -2432,6 +2447,7 @@ function read_cfg(sub, lck)
 		if(saved_config[sub].Seen==undefined)
 			saved_config[sub].Seen={};
 	}
+	apply_seen(index);
 }
 
 js.on_exit("exit_func()");
