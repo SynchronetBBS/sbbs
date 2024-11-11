@@ -295,10 +295,11 @@ function send_fetch_response(msgnum, fmat, uid)
 				saved_config[index.code] = {};
 			if(saved_config[index.code].Seen == undefined)
 				saved_config[index.code].Seen = {};
-			if(saved_config[index.code].Seen[msgnum] != 1)
+			if(saved_config[index.code].Seen[msgnum] != 1) {
 				seen_changed=true;
-			saved_config[index.code].Seen[msgnum]=1;
-			save_cfg(false);
+				saved_config[index.code].Seen[msgnum]=1;
+				save_cfg(false);
+			}
 			apply_seen(index);
 			unlock_cfg();
 			idx.attr |= MSG_READ;
@@ -1369,6 +1370,17 @@ function open_cfg(usr)
 		tagged(tag, "NO", "Can't open imap state file");
 		return false;
 	}
+	lock_cfg();
+	// Check if it's the old INI format...
+	if (cfgfile.length > 0) {
+		var ch = cfgfile.read(1);
+		if (ch != '{') {
+			// INI file, convert...
+			read_old_cfg();
+			save_cfg();
+		}
+	}
+	unlock_cfg();
 	return true;
 }
 
@@ -1457,31 +1469,29 @@ function save_cfg(lck)
 	var b;
 	var s;
 	var scpy;
+	var new_cfg = {};
 
 	if(user.number > 0) {
+		for (sub in saved_config) {
+			scpy = undefined;
+			if (saved_config[sub].Seen !== undefined) {
+				scpy = JSON.parse(JSON.stringify(saved_config[sub].Seen));
+			}
+			if(scpy !== undefined) {
+				var bin = binify(scpy);
+				if (bin !== undefined || scpy !== undefined) {
+					new_cfg[sub] = {};
+				}
+				if (bin !== undefined)
+					new_cfg[sub].bseen = bin;
+				new_cfg[sub].seen = scpy;
+			}
+		}
 		if (lck)
 			lock_cfg();
 		cfgfile.rewind();
-		for(sub in saved_config) {
-			s = undefined;
-			if (saved_config[sub].Seen !== undefined) {
-				scpy = JSON.parse(JSON.stringify(saved_config[sub].Seen));
-				s=saved_config[sub].Seen;
-				delete saved_config[sub].Seen;
-			}
-			cfgfile.iniSetObject(sub,saved_config[sub]);
-			if(s != undefined) {
-				// First, try any "binary" Seen compression
-				b = binify(s);
-				cfgfile.iniRemoveSection(sub+'.bseen');
-				if (b != undefined)
-					cfgfile.iniSetObject(sub+'.bseen',b);
-				cfgfile.iniRemoveSection(sub+'.seen');
-				if (Object.keys(s).length > 0)
-					cfgfile.iniSetObject(sub+'.seen',s);
-				saved_config[sub].Seen=scpy;
-			}
-		}
+		cfgfile.truncate();
+		cfgfile.write(JSON.stringify(new_cfg));
 		cfgfile.flush();
 		if (lck)
 			unlock_cfg();
@@ -2275,7 +2285,7 @@ var selected_command_handlers = {
 	},
 };
 
-function read_cfg(sub, lck)
+function read_old_cfg()
 {
 	var secs;
 	var sec;
@@ -2291,11 +2301,6 @@ function read_cfg(sub, lck)
 	var bit;
 	var asc;
 
-	if(saved_config[sub]==undefined)
-		saved_config[sub]={};
-
-	if (lck)
-		lock_cfg();
 	cfgfile.rewind();
 	secs=cfgfile.iniGetSections();
 	for(sec in secs) {
@@ -2345,6 +2350,49 @@ function read_cfg(sub, lck)
 			}
 		}
 	}
+}
+
+function read_cfg(sub, lck)
+{
+	var basemsg;
+	var bstr;
+	var newsub;
+	var newfile;
+	var i;
+	var byte;
+	var asc;
+	var bit;
+
+	if (lck)
+		lock_cfg();
+	if(saved_config[sub]==undefined)
+		saved_config[sub]={};
+
+	cfgfile.rewind();
+	newfile = JSON.parse(cfgfile.read());
+	for (newsub in newfile) {
+		saved_config[newsub] = {};
+		if (newfile[newsub].hasOwnProperty('seen'))
+			saved_config[newsub].Seen = newfile[newsub].seen;
+		else
+			saved_config[newsub].Seen = newfile[newsub].seen = {};
+		if (newfile[newsub].hasOwnProperty('bseen')) {
+			for (i in newfile[newsub].bseen) {
+				basemsg = parseInt(i, 10);
+				bstr = base64_decode(newfile[newsub].bseen[i]);
+				for (byte = 0; byte < bstr.length; byte++) {
+					asc = ascii(bstr[byte]);
+					if (asc == 0)
+						continue;
+					for (bit=0; bit<8; bit++) {
+						if (asc & (1<<bit))
+							saved_config[newsub].Seen[basemsg+(byte*8+bit)]=1;
+					}
+				}
+			}
+		}
+	}
+
 	if (lck)
 		unlock_cfg();
 
