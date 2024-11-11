@@ -251,7 +251,7 @@ function send_fetch_response(msgnum, fmat, uid)
 		if(rfc822.text==undefined)
 			rfc822.text=base.get_msg_body(msgnum, true, true, true);
 		if(rfc822.text === "" || rfc822.text==undefined)
-			rfc822.text='No body here';
+			rfc822.text=' ';
 	}
 
 	function get_rfc822() {
