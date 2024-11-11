@@ -184,18 +184,30 @@ function debug_log(line, rx)
 /* Socket I/O */
 /**************/
 
+function full_send(sock, str)
+{
+	var sent = 0;
+	var sret;
+
+	do {
+		sret = sock.send(str.substr(sent));
+		if (sret == undefined)
+			break;
+		sent += sret;
+	} while(sent < str.length);
+}
+
 function tagged(tag, msg, desc)
 {
-	client.socket.send(tag+" "+msg+" "+desc+"\r\n");
+	full_send(client.socket, tag+" "+msg+" "+desc+"\r\n");
 	debug_log("Send: "+tag+" "+msg+" "+desc, false);
 }
 
 function untagged(msg)
 {
-	client.socket.send("* "+msg+"\r\n");
+	full_send(client.socket, "* "+msg+"\r\n");
 	debug_log("Send: * "+msg.length+": "+msg, false);
 }
-
 
 /*************************************************************/
 /* Fetch response generation... this is the tricky bit.  :-) */
@@ -1786,6 +1798,18 @@ var authenticated_command_handlers = {
 			var tag=args[0];
 
 			tagged(tag, "NO", "No appending yet... sorry.");
+		},
+	},
+	NAMESPACE:{
+		arguments: 0,
+		handler:function(args) {
+			var tag=args[0];
+
+			if (user.security.restrictions & UFLAG_G)
+				untagged('NAMESPACE NIL NIL (("" ' + encode_string(sepchar) + '))');
+			else
+				untagged('NAMESPACE (("" ' + encode_string(sepchar) + ')) NIL NIL');
+			tagged(tag, "OK", "Maybe this will get separators to work.");
 		},
 	},
 };
