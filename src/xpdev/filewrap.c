@@ -192,9 +192,6 @@ int sopen(const char *fn, int sh_access, int share, ...)
 	int pmode=0;
 #endif
 	int	flock_op=LOCK_NB;	/* non-blocking */
-#if !defined(BSD)
-	struct flock alock = {0};
-#endif
     va_list ap;
 
     if(sh_access&O_CREAT) {
@@ -209,24 +206,7 @@ int sopen(const char *fn, int sh_access, int share, ...)
 	if (share == SH_DENYNO || share == SH_COMPAT) /* no lock needed */
 		return fd;
 
-#if !defined(BSD)
-	int cmd = F_SETLK;
-#ifdef F_OFD_SETLK
-	cmd = F_OFD_SETLK;
-#endif
-	/* use fcntl (doesn't work correctly with threads) */
-	alock.l_type = share;
-	alock.l_whence = L_SET;
-	alock.l_start = 0;
-	alock.l_len = 0;       /* lock to EOF */
-
-	if(fcntl(fd, cmd, &alock)==-1 && errno != EINVAL) {	/* EINVAL means the file does not support locking */
-		close(fd);
-		return -1;
-	}
-#endif
-
-#if !defined(__QNX__) && !defined(__solaris__)
+#if !defined(__solaris__)
 	/* use flock (doesn't work over NFS) */
 	if(share==SH_DENYRW)
 		flock_op|=LOCK_EX;
@@ -239,7 +219,6 @@ int sopen(const char *fn, int sh_access, int share, ...)
 		return(-1);
 	}
 #endif
-
 	return fd;
 }
 #endif /* !QNX */
