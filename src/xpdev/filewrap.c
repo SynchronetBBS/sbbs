@@ -89,7 +89,14 @@ int lock(int fd, off_t pos, off_t len)
 		cmd = F_OFD_SETLK;
 	#endif
 
-	alock.l_type = F_WRLCK; /* set write lock to prevent all access */
+	// fcntl() will return EBADF if we try to set a write lock a file opened O_RDONLY
+	int	flags;
+	if((flags=fcntl(fd,F_GETFL))==-1)
+		return -1;
+	if((flags & (O_RDONLY|O_RDWR|O_WRONLY))==O_RDONLY)
+		alock.l_type = F_RDLCK; /* set read lock to prevent writes */
+	else
+		alock.l_type = F_WRLCK; /* set write lock to prevent all access */
 	alock.l_whence = L_SET;		/* SEEK_SET */
 	alock.l_start = pos;
 	alock.l_len = (int)len;
