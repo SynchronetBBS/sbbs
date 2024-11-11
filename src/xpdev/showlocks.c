@@ -1,12 +1,22 @@
+#include <stdlib.h>
+#include <string.h>
 #include "filewrap.h"
 
-void show_locks(const char* path)
+int main(int argc, char** argv)
 {
-	int file = open(path, O_RDWR);
+	int access = O_RDWR;
+	int argn = 1;
+	if(strcmp(argv[argn], "-r") == 0) {
+		access = O_RDONLY;
+		++argn;
+	}
+	const char* path = argv[argn++];
+
+	int file = open(path, access);
 
 	if(file == -1) {
 		perror(path);
-		return;
+		return EXIT_FAILURE;
 	}
 
 	off_t len = filelength(file);
@@ -17,11 +27,5 @@ void show_locks(const char* path)
 			unlock(file, o, 1);
 	}
 	close(file);
+	return EXIT_SUCCESS;
 }
-
-int main(int argc, char** argv)
-{
-	for(int i = 1; i < argc; ++i)
-		show_locks(argv[i]);
-	return 0;
-} 
