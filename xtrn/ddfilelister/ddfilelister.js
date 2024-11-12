@@ -140,7 +140,11 @@
  *                              file extended info is displayed - Added information to match
  *                              Synchronet's stock lister, and display the uploader's avatar
  *                              if available
-*/
+ * 2024-11-12 Eric Oulashin     Version 2.25a
+ *                              Check to see if cost is in the file metadata before using it.
+ *                              Also, when getting a file's full path, ensure the filename is
+ *                              passed to get_path() (as described in the JS documentation)
+ */
 
 "use strict";
 
@@ -169,7 +173,6 @@ if (system.version_num < 32000)
 
 
 require("sbbsdefs.js", "K_UPPER");
-require("sbbsdefs.js", "K_UPPER");
 require('key_defs.js', 'KEY_UP');
 require("text.js", "Email"); // Text string definitions (referencing text.dat)
 require("dd_lightbar_menu.js", "DDLightbarMenu");
@@ -182,8 +185,8 @@ var gAvatar = load({}, "avatar_lib.js");
 
 
 // Version information
-var LISTER_VERSION = "2.25";
-var LISTER_DATE = "2024-10-31";
+var LISTER_VERSION = "2.25a";
+var LISTER_DATE = "2024-11-12";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1127,7 +1130,9 @@ function showFileInfo_ANSI(pFileMetadata)
 	// Credit value
 	var fieldFormatStr = "\r\n\x01n\x01c\x01h%s\x01g:\x01n\x01c %s";
 	var dirFilesAreFree = Boolean(file_area.dir[dirCode].settings & DIR_FREE);
-	var creditStr = dirFilesAreFree || fileMetadata.cost == 0 ? "FREE" : fileMetadata.cost.toString();
+	var creditStr = "FREE";
+	if (fileMetadata.hasOwnProperty("cost"))
+		creditStr = dirFilesAreFree || fileMetadata.cost == 0 ? "FREE" : fileMetadata.cost.toString();
 	fileInfoStr += format(fieldFormatStr, "Credit value", lfexpand(word_wrap(creditStr, frameInnerWidth)).replace(/\r\n$/, ""));
 	// CRC-32, MD5, SHA-1
 	if (fileMetadata.hasOwnProperty("crc32"))
@@ -1351,7 +1356,9 @@ function showFileInfo_noANSI(pFileMetadata)
 	printf(formatStr, "File size", fileSizeStr.substr(0, valueLen));
 	// Credit value
 	var dirFilesAreFree = Boolean(file_area.dir[dirCode].settings & DIR_FREE);
-	var creditStr = dirFilesAreFree || fileMetadata.cost == 0 ? "FREE" : fileMetadata.cost.toString();
+	var creditStr = "FREE";
+	if (fileMetadata.hasOwnProperty("cost"))
+		creditStr = dirFilesAreFree || fileMetadata.cost == 0 ? "FREE" : fileMetadata.cost.toString();
 	printf(generalFormatStr, "Credit value", creditStr.substr(0, valueLen));
 	if (fileMetadata.hasOwnProperty("crc32"))
 		printf(generalFormatStr, "File CRC-32", format("%x", fileMetadata.crc32).substr(0, valueLen));
@@ -1471,7 +1478,7 @@ function viewFile(pFileMetadata)
 	var filebase = new FileBase(pFileMetadata.dirCode);
 	if (filebase.open())
 	{
-		fullyPathedFilename = filebase.get_path(pFileMetadata);
+		fullyPathedFilename = filebase.get_path(pFileMetadata.name);
 		filebase.close();
 	}
 	else
@@ -1568,8 +1575,9 @@ function addSelectedFilesToBatchDLQueue(pFileMetadata, pFileList)
 						// Update the batch DL queue stats object
 						++(batchDLQueueStats.numFilesInQueue);
 						batchDLQueueStats.filenames.push({ filename: metadataObjects[i].name, desc: metadataObjects[i].desc });
-						batchDLQueueStats.totalSize += +(metadataObjects[i].size);
-						batchDLQueueStats.totalCost += +(metadataObjects[i].cost);
+						batchDLQueueStats.totalSize += metadataObjects[i].size;
+						if (metadataObjects[i].hasOwnProperty("cost"))
+							batchDLQueueStats.totalCost += metadataObjects[i].cost;
 					}
 
 					if (!addToQueueSuccessful)
@@ -1626,7 +1634,9 @@ function addSelectedFilesToBatchDLQueue(pFileMetadata, pFileList)
 					// Note: The maximum number of allowed files in the batch download queue doesn't seem to
 					// be available to JavaScript.
 					var totalQueueSize = batchDLQueueStats.totalSize + pFileMetadata.size;
-					var totalQueueCost = batchDLQueueStats.totalCost + pFileMetadata.cost;
+					var totalQueueCost = batchDLQueueStats.totalCost;
+					if (pFileMetadata.hasOwnProperty("cost"))
+						totalQueueCost += pFileMetadata.cost;
 					var queueStats = "\x01n\x01cFiles: \x01h" + batchDLQueueStats.numFilesInQueue + "  \x01n\x01cCredits: \x01h"
 								   + totalQueueCost + "\x01n\x01c  Bytes: \x01h" + numWithCommas(totalQueueSize) + "\x01n\x01w\r\n";
 					for (var i = 0; i < batchDLQueueStats.filenames.length; ++i)
@@ -1708,7 +1718,9 @@ function addSelectedFilesToBatchDLQueue(pFileMetadata, pFileList)
 					// Note: The maximum number of allowed files in the batch download queue doesn't seem to
 					// be available to JavaScript.
 					var totalQueueSize = batchDLQueueStats.totalSize + pFileMetadata.size;
-					var totalQueueCost = batchDLQueueStats.totalCost + pFileMetadata.cost;
+					var totalQueueCost = batchDLQueueStats.totalCost;
+					if (pFileMetadata.hasOwnProperty("cost"))
+						totalQueueCost += pFileMetadata.cost;
 					console.print("\x01cFiles: \x01h" + batchDLQueueStats.numFilesInQueue + "  \x01n\x01cCredits: \x01h"
 					               + totalQueueCost + "\x01n\x01c  Bytes: \x01h" + numWithCommas(totalQueueSize) + "\x01n");
 					console.crlf();
@@ -1781,7 +1793,7 @@ function getUserDLQueueStats()
 		{
 			if (typeof(allIniObjs[i]) === "object")
 			{
-				++(retObj.numFilesInQueue);
+				++retObj.numFilesInQueue;
 				//allIniObjs[i].name
 				//allIniObjs[i].dir
 				//allIniObjs[i].desc
@@ -1798,8 +1810,9 @@ function getUserDLQueueStats()
 						var fileInfo = filebase.get(allIniObjs[i].name);
 						if (typeof(fileInfo) === "object")
 						{
-							retObj.totalSize += +(fileInfo.size);
-							retObj.totalCost += +(fileInfo.cost);
+							retObj.totalSize += fileInfo.size;
+							if (fileInfo.hasOwnProperty("cost"))
+								retObj.totalCost += fileInfo.cost;
 						}
 						filebase.close();
 					}
@@ -2045,7 +2058,7 @@ function editFileInfo(pFileList, pFileListMenu)
 		promptText = bbs.text(bbs.text.EditCreditValue);
 		editWidth = console.screen_columns - console.strlen(promptText) - 1;
 		console.mnemonics(promptText);
-		newMetadata.cost = console.getstr(fileMetadata.cost.toString(), editWidth, K_EDIT|K_LINE|K_NUMBER|K_NOSPIN);
+		newMetadata.cost = parseInt(console.getstr(fileMetadata.cost.toString(), editWidth, K_EDIT|K_LINE|K_NUMBER|K_NOSPIN));
 		if (console.aborted)
 			return retObj;
 		// # times downloaded
@@ -2930,7 +2943,7 @@ function moveFileToOtherFilebase(pSrcFileMetadata, pDestDirCode)
 	{
 		var extdFileInfo = srcFilebase.get(pSrcFileMetadata, FileBase.DETAIL.MAX);
 		// Move the file over, remove it from the original filebase, and add it to the new filebase
-		var srcFilenameFull = srcFilebase.get_path(pSrcFileMetadata);
+		var srcFilenameFull = srcFilebase.get_path(pSrcFileMetadata.name);
 		var destFilenameFull = file_area.dir[pDestDirCode].path + pSrcFileMetadata.name;
 		if (file_rename(srcFilenameFull, destFilenameFull))
 		{
@@ -4531,11 +4544,11 @@ function populateFileList(pSearchMode)
 				gFileList = filebase.get_list(gFilespec, fileDetail, 0, true, file_area.dir[gDirCode].sort);
 			else
 				gFileList = filebase.get_list(gFilespec, fileDetail, 0, true, gFileSortOrder);
-			filebase.close();
 			// Add a dirCode property to the file metadata objects (for consistency,
 			// as file search results may contain files from multiple directories).
 			// Also, if the metadata objects have an extdesc, remove any trailing CRLF
-			// from the end.
+			// from the end. Also, if the metadat objects don't have a 'size' or the size
+			// is -1 for the files, try to get the size by using Filebase.get_size()
 			for (var i = 0; i < gFileList.length; ++i)
 			{
 				gFileList[i].dirCode = gDirCode;
@@ -4545,7 +4558,22 @@ function populateFileList(pSearchMode)
 					// Fix line endings if necessary
 					gFileList[i].extdesc = lfexpand(gFileList[i].extdesc);
 				}
+				if (!gFileList[i].hasOwnProperty("size") || gFileList[i].size < 0)
+					gFileList[i].size = filebase.get_size(gFileList[i].name);
+				// If the size is still -1, try harder to get the file size
+				if (gFileList[i].size < 0)
+				{
+					var fullyPathedFilename = filebase.get_path(gFileList[i].name);
+					var inFile = new File(fullyPathedFilename);
+					if (inFile.open("rb"))
+					{
+						gFileList[i].size = inFile.length;
+						//if (user.handle == "Nightfox") console.print("\x01nOpened " + fullyPathedFilename + "; size: " + inFile.length + "\r\n"); // Temporary
+						inFile.close();
+					}
+				}
 			}
+			filebase.close();
 		}
 		else
 		{
@@ -5690,7 +5718,8 @@ function doFileView(pDirCode, pFilespec)
 									++(batchDLQueueStats.numFilesInQueue);
 									batchDLQueueStats.filenames.push({ filename: fileMetadata.name, desc: fileMetadata.desc });
 									batchDLQueueStats.totalSize += fileMetadata.size;
-									batchDLQueueStats.totalCost += fileMetadata.cost;
+									if (fileMetadata.hasOwnProperty("cost"))
+										batchDLQueueStats.totalCost += fileMetadata.cost;
 								}
 
 								batchDLFile.close();
