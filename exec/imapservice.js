@@ -190,8 +190,10 @@ function full_send(sock, str)
 	var sret;
 
 	do {
+		if (sock.poll(60, true) != 1)
+			break;
 		sret = sock.send(str.substr(sent));
-		if (sret == undefined)
+		if (sret == undefined || sret == 0)
 			break;
 		sent += sret;
 	} while(sent < str.length);
