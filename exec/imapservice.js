@@ -1409,11 +1409,16 @@ function open_cfg(usr)
 
 function lock_cfg()
 {
+	start = time();
 	while(!cfgfile.lock(0, 1)) {
 		if (!client.socket.is_connected)
 			exit(0);
 		if (js.termianted)
 			exit(0);
+		if ((time() - start) > 45) {
+			log(LOG_ERR, "Timed out waiting 45 seconds for IMAP log.");
+			exit(0);
+		}
 		mswait(10);
 	}
 }
