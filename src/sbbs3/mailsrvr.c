@@ -1415,7 +1415,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 					,socket, client.protocol, user.alias, i, smb.last_error, __LINE__, msg.idx.number);
 				break;
 			}
-			bytes+=smb_getmsgtxtlen(&msg);
+			bytes+=msg.hdr.length + smb_getmsgtxtlen(&msg);
 			smb_freemsgmem(&msg);
 		}
 
