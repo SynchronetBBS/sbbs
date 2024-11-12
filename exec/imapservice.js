@@ -1409,8 +1409,13 @@ function open_cfg(usr)
 
 function lock_cfg()
 {
-	while(!cfgfile.lock(0, 1))
+	while(!cfgfile.lock(0, 1)) {
+		if (!client.socket.is_connected)
+			exit(0);
+		if (js.termianted)
+			exit(0);
 		mswait(10);
+	}
 }
 
 function unlock_cfg()
