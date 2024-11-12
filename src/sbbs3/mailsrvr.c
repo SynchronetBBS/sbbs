@@ -874,7 +874,11 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 
 	/* MESSAGE BODY */
 	lines=0;
-	np=msgtxt;
+	if(*msgtxt == '\0')
+		np = "\r\n"; // Send at least one line of message text (issue #822)
+	else
+		np = msgtxt;
+	long bytes = 0;
 	while(*np && lines<maxlines) {
 		len=0;
 		while(len<RFC822_MAX_LINE_LEN && *(np+len)!=0 && *(np+len)!='\n')
@@ -886,6 +890,7 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 
 		if(!sockprintf(socket,prot,sess, "%s%.*s", *np=='.' ? ".":"", tlen, np))
 			break;
+		bytes += tlen;
 		lines++;
 		if(*(np+len)=='\r')
 			len++;
@@ -898,10 +903,10 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 			YIELD();
 		if((lines%100) == 0)
 			lprintf(LOG_DEBUG,"%04d %s sent %lu lines (%ld bytes) of body text"
-				,socket, prot, lines, (long)(np-msgtxt));
+				,socket, prot, lines, bytes);
 	}
 	lprintf(LOG_DEBUG,"%04d %s sent %lu lines (%ld bytes) of body text"
-		,socket, prot, lines, (long)(np-msgtxt));
+		,socket, prot, lines, bytes);
 	if(file_list!=NULL) {
 		for(i=0;file_list[i];i++) {
 			sockprintf(socket,prot,sess,"");
@@ -1527,7 +1532,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 						continue;
 					}
 					if(!strnicmp(buf, "LIST",4)) {
-						sockprintf(socket,client.protocol,session,"+OK %" PRIu32 " %u",msgnum,smb_getmsgtxtlen(&msg));
+						sockprintf(socket,client.protocol,session,"+OK %" PRIu32 " %u",msgnum,msg.hdr.length + smb_getmsgtxtlen(&msg));
 					} else /* UIDL */
 						sockprintf(socket,client.protocol,session,"+OK %" PRIu32 " %u",msgnum,msg.hdr.number);
 
@@ -1559,7 +1564,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 						break;
 					}
 					if(!strnicmp(buf, "LIST",4)) {
-						sockprintf(socket,client.protocol,session,"%u %u",l+1,smb_getmsgtxtlen(&msg));
+						sockprintf(socket,client.protocol,session,"%u %u",l+1,msg.hdr.length + smb_getmsgtxtlen(&msg));
 					} else /* UIDL */
 						sockprintf(socket,client.protocol,session,"%u %u",l+1,msg.hdr.number);
 
@@ -1634,16 +1639,16 @@ static bool pop3_client_thread(pop3_t* pop3)
 					lines=-1;
 
 				sockprintf(socket,client.protocol,session,"+OK message follows");
-				lprintf(LOG_DEBUG,"%04d %s <%s> sending message text (%lu bytes)"
-					,socket, client.protocol, user.alias, (ulong)strlen(msgtxt));
+				lprintf(LOG_DEBUG,"%04d %s <%s> sending message text (%lu bytes) from %s"
+					,socket, client.protocol, user.alias, (ulong)strlen(msgtxt), msg.from);
 				lines_sent=sockmsgtxt(socket, client.protocol, session, &msg, msgtxt, lines);
 				/* if(startup->options&MAIL_OPT_DEBUG_POP3) */
 				if(lines!=-1 && lines_sent<lines)	/* could send *more* lines */
-					lprintf(LOG_WARNING,"%04d %s <%s> !ERROR sending message text (sent %ld of %ld lines)"
-						,socket, client.protocol, user.alias, lines_sent, lines);
+					lprintf(LOG_WARNING,"%04d %s <%s> !ERROR sending message text (sent %ld of %ld lines) from %s"
+						,socket, client.protocol, user.alias, lines_sent, lines, msg.from);
 				else {
-					lprintf(LOG_DEBUG,"%04d %s <%s> message transfer complete (%lu lines)"
-						,socket, client.protocol, user.alias, lines_sent);
+					lprintf(LOG_DEBUG,"%04d %s <%s> message transfer complete (%lu lines) from %s"
+						,socket, client.protocol, user.alias, lines_sent, msg.from);
 
 					if((i=smb_locksmbhdr(&smb))!=SMB_SUCCESS) {
 						lprintf(LOG_ERR,"%04d %s <%s> !ERROR %d (%s) locking message base"
