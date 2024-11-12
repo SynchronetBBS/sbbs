@@ -1002,9 +1002,9 @@ function sendflags(perm)
 	flags=calc_msgflags(0xffff, 0xffff, base.subnum, base.last_msg, readonly);
 	pflags=calc_msgflags(0xffff, 0xffff, base.subnum, base.last_msg, readonly);
 	if(perm)
-		untagged("OK [PERMANENTFLAGS ("+pflags+")] Overkill!");
+		untagged("OK [PERMANENTFLAGS ("+pflags+")]");
 	else
-		untagged("FLAGS ("+flags+") Overkill!");
+		untagged("FLAGS ("+flags+")");
 }
 
 function parse_flags(inflags)
