@@ -2721,7 +2721,8 @@ static jsSyncMethodSpec js_socket_functions[] = {
 	},
 	{"poll",		js_poll,		1,	JSTYPE_NUMBER,	JSDOCSTR("[timeout=0] [,write=false]")
 	,JSDOCSTR("Poll socket for read or write ability (default is <i>read</i>), "
-	"default timeout value is 0.0 seconds (immediate timeout)")
+	"default timeout value is 0.0 seconds (immediate timeout) "
+	"returns -1 on error, 0 if the timeout passes without the event triggering, and 1 if the socket is ready")
 	,310
 	},
 	{"on",		js_on,		2,	JSTYPE_NUMBER,	JSDOCSTR("('read' | 'write'), callback")
