@@ -762,3 +762,33 @@ char* separate_thousands(const char* src, char *dest, size_t maxlen, char sep)
 	strcpy(d, tail);
 	return dest;
 }
+
+// Update 'str' to conform with RFC 5536 requirements of a newsgroup name
+char* make_newsgroup_name(char* str)
+{
+   /*
+	* From RFC5536:
+	* newsgroup-name  =  component *( "." component )
+	* component       =  1*component-char
+	* component-char  =  ALPHA / DIGIT / "+" / "-" / "_"
+	*/
+	if (str[0] == '.')
+		str[0] = '_';
+	size_t c;
+	for(c = 0; str[c] != 0; c++) {
+		/* Legal characters */
+		if ((str[c] >= 'A' && str[c] <= 'Z')
+				|| (str[c] >= 'a' && str[c] <= 'z')
+				|| (str[c] >= '0' && str[c] <= '9')
+				|| str[c] == '+'
+				|| str[c] == '-'
+				|| str[c] == '_'
+				|| str[c] == '.')
+			continue;
+		str[c] = '_';
+	}
+	c--;
+	if (str[c] == '.')
+		str[c] = '_';
+	return str;
+}

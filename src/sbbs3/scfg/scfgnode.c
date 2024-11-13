@@ -197,7 +197,7 @@ void node_cfg()
 		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Phone Number",cfg.node_phone);
 		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Login Requirements",cfg.node_arstr);
 		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Keep Node File Open",cfg.node_misc&NM_CLOSENODEDAB ? "No":"Yes");
-		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Daily Event",cfg.node_daily);
+		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Daily Event", (cfg.node_daily.misc & EVENT_DISABLED) ? "<DISABLED>" : cfg.node_daily.cmd);
 		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Node Directory",cfg.node_path[cfg.node_num-1]);
 		snprintf(opt[i++], MAX_OPLN, "%-27.27s%s","Text Directory",cfg.text_dir);
 		opt[i][0]=0;
@@ -265,8 +265,7 @@ void node_cfg()
 					SCFG_CMDLINE_PREFIX_HELP
 					SCFG_CMDLINE_SPEC_HELP
 				;
-				uifc.input(WIN_MID|WIN_SAV,0,10,"Daily Event"
-					,cfg.node_daily,sizeof(cfg.node_daily)-1,K_EDIT);
+				fevent_cfg("Daily Event", &cfg.node_daily);
 				break;
 			case __COUNTER__:
 				uifc.helpbuf = node_path_help;

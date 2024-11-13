@@ -319,6 +319,36 @@ void xprogs_cfg()
 	}
 }
 
+void fevent_cfg(const char* name, fevent_t* event)
+{
+	static int dflt;
+	int i;
+
+	while(1) {
+		i=0;
+		snprintf(opt[i++],MAX_OPLN,"%-15s%s","Enabled", (event->misc & EVENT_DISABLED) ? "No" : "Yes");
+		snprintf(opt[i++],MAX_OPLN,"%-15s%s","Native", (event->misc & XTRN_NATIVE) ? "Yes" : "No");
+		snprintf(opt[i++],MAX_OPLN,"%-15s%s","Command Line", event->cmd);
+		opt[i][0]=0;
+		switch(uifc.list(WIN_ACT|WIN_SAV|WIN_RHT,0,0,0,&dflt,0,name,opt)) {
+			case -1:
+				return;
+			case 0:
+				event->misc ^= EVENT_DISABLED;
+				uifc.changes = TRUE;
+				break;
+			case 1:
+				event->misc ^= XTRN_NATIVE;
+				uifc.changes = TRUE;
+				break;
+			case 2:
+				uifc.input(WIN_MID|WIN_SAV,0,0,"Command"
+					,event->cmd, sizeof event->cmd - 1,K_EDIT);
+				break;
+		}
+	}
+}
+
 void fevents_cfg()
 {
 	static int event_dflt;
@@ -326,10 +356,10 @@ void fevents_cfg()
 
 	while(1) {
 		i=0;
-		snprintf(opt[i++],MAX_OPLN,"%-32.32s%s","Logon Event",cfg.sys_logon);
-		snprintf(opt[i++],MAX_OPLN,"%-32.32s%s","Logout Event",cfg.sys_logout);
-		snprintf(opt[i++],MAX_OPLN,"%-32.32s%s","Daily Event",cfg.sys_daily);
-		snprintf(opt[i++],MAX_OPLN,"%-32.32s%s","Monthly Event",cfg.sys_monthly);
+		snprintf(opt[i++],MAX_OPLN,"%-12s%s","Logon", (cfg.sys_logon.misc & EVENT_DISABLED) ? "<DISABLED>" : cfg.sys_logon.cmd);
+		snprintf(opt[i++],MAX_OPLN,"%-12s%s","Logout", (cfg.sys_logout.misc & EVENT_DISABLED) ? "<DISABLED>" : cfg.sys_logout.cmd);
+		snprintf(opt[i++],MAX_OPLN,"%-12s%s","Daily", (cfg.sys_daily.misc & EVENT_DISABLED) ? "<DISABLED>" : cfg.sys_daily.cmd);
+		snprintf(opt[i++],MAX_OPLN,"%-12s%s","Monthly", (cfg.sys_monthly.misc & EVENT_DISABLED) ? "<DISABLED>" : cfg.sys_monthly.cmd);
 		opt[i][0]=0;
 		uifc.helpbuf=
 			"`External Events:`\n"
@@ -337,7 +367,7 @@ void fevents_cfg()
 			"From this menu, you can configure the logon and logout events, and the\n"
 			"system daily and monthly (off-line) events.\n"
 		;
-		switch(uifc.list(WIN_ACT|WIN_SAV|WIN_CHE|WIN_BOT|WIN_RHT,0,0,60,&event_dflt,0
+		switch(uifc.list(WIN_ACT|WIN_SAV|WIN_CHE|WIN_BOT|WIN_RHT,0,0,0,&event_dflt,0
 			,"Fixed Events",opt)) {
 			case -1:
 				return;
@@ -355,8 +385,7 @@ void fevents_cfg()
 					SCFG_CMDLINE_PREFIX_HELP
 					SCFG_CMDLINE_SPEC_HELP
 				;
-				uifc.input(WIN_MID|WIN_SAV,0,0,"Logon Event"
-					,cfg.sys_logon,sizeof(cfg.sys_logon)-1,K_EDIT);
+				fevent_cfg("Logon Event", &cfg.sys_logon);
 				break;
 			case 1:
 				uifc.helpbuf=
@@ -371,8 +400,7 @@ void fevents_cfg()
 					SCFG_CMDLINE_PREFIX_HELP
 					SCFG_CMDLINE_SPEC_HELP
 				;
-				uifc.input(WIN_MID|WIN_SAV,0,0,"Logout Event"
-					,cfg.sys_logout,sizeof(cfg.sys_logout)-1,K_EDIT);
+				fevent_cfg("Logout Event", &cfg.sys_logout);
 				break;
 			case 2:
 				uifc.helpbuf=
@@ -383,9 +411,7 @@ void fevents_cfg()
 					SCFG_CMDLINE_PREFIX_HELP
 					SCFG_CMDLINE_SPEC_HELP
 				;
-				uifc.input(WIN_MID|WIN_SAV,0,0,"Daily Event"
-					,cfg.sys_daily,sizeof(cfg.sys_daily)-1,K_EDIT);
-
+				fevent_cfg("Daily Event", &cfg.sys_daily);
 				break;
 			case 3:
 				uifc.helpbuf=
@@ -395,9 +421,7 @@ void fevents_cfg()
 					SCFG_CMDLINE_PREFIX_HELP
 					SCFG_CMDLINE_SPEC_HELP
 				;
-				uifc.input(WIN_MID|WIN_SAV,0,0,"Monthly Event"
-					,cfg.sys_monthly,sizeof(cfg.sys_monthly)-1,K_EDIT);
-
+				fevent_cfg("Monthly Event", &cfg.sys_monthly);
 				break;
 		}
 	}

@@ -26,6 +26,7 @@
 #include "findstr.h"
 #include "ini_file.h"
 #include "sockwrap.h"	 // IPPORT_MQTT
+#include "str_util.h"
 
 bool allocerr(char* error, size_t maxerrlen, const char* fname, const char *item, size_t size)
 {
@@ -54,7 +55,8 @@ bool read_node_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	fclose(fp);
 
 	SAFECOPY(cfg->node_phone, iniGetString(ini, ROOT_SECTION, "phone", "", value));
-	SAFECOPY(cfg->node_daily, iniGetString(ini, ROOT_SECTION, "daily", "", value));
+	SAFECOPY(cfg->node_daily.cmd, iniGetString(ini, ROOT_SECTION, "daily", "", value));
+	cfg->node_daily.misc = iniGetUInteger(ini, ROOT_SECTION, "daily_settings", 0);
 	SAFECOPY(cfg->text_dir, iniGetString(ini, ROOT_SECTION, "text_dir", "../text/", value));
 	SAFECOPY(cfg->temp_dir, iniGetString(ini, ROOT_SECTION, "temp_dir", "temp", value));
 	SAFECOPY(cfg->node_arstr, iniGetString(ini, ROOT_SECTION, "ars", "", value));
@@ -135,10 +137,14 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->errlevel = (uchar)iniGetUInteger(ini, ROOT_SECTION, "errlevel", LOG_CRIT);
 
 	// fixed events
-	SAFECOPY(cfg->sys_logon, iniGetString(ini, "logon_event", "cmd", "", value));
-	SAFECOPY(cfg->sys_logout, iniGetString(ini, "logout_event", "cmd", "", value));
-	SAFECOPY(cfg->sys_daily, iniGetString(ini, "daily_event", "cmd", "", value));
-	SAFECOPY(cfg->sys_monthly, iniGetString(ini, "monthly_event", "cmd", "", value));
+	SAFECOPY(cfg->sys_logon.cmd, iniGetString(ini, "logon_event", "cmd", "", value));
+	cfg->sys_logon.misc = iniGetUInt32(ini, "logon_event", "settings", 0);
+	SAFECOPY(cfg->sys_logout.cmd, iniGetString(ini, "logout_event", "cmd", "", value));
+	cfg->sys_logout.misc = iniGetUInt32(ini, "logout_event", "settings", 0);
+	SAFECOPY(cfg->sys_daily.cmd, iniGetString(ini, "daily_event", "cmd", "", value));
+	cfg->sys_daily.misc = iniGetUInt32(ini, "daily_event", "settings", 0);
+	SAFECOPY(cfg->sys_monthly.cmd, iniGetString(ini, "monthly_event", "cmd", "", value));
+	cfg->sys_monthly.misc = iniGetUInt32(ini, "monthly_event", "settings", 0);
 
 	named_str_list_t** sections = iniParseSections(ini);
 
@@ -934,37 +940,11 @@ faddr_t* nearest_sysfaddr(scfg_t* cfg, faddr_t* addr)
 
 char* sub_newsgroup_name(scfg_t* cfg, sub_t* sub, char* str, size_t size)
 {
-	memset(str, 0, size);
 	if(sub->newsgroup[0])
-		strncpy(str, sub->newsgroup, size - 1);
-	else {
-		snprintf(str, size - 1, "%s.%s", cfg->grp[sub->grp]->sname, sub->sname);
-		/*
-		 * From RFC5536:
-		 * newsgroup-name  =  component *( "." component )
-		 * component       =  1*component-char
-		 * component-char  =  ALPHA / DIGIT / "+" / "-" / "_"
-		 */
-		if (str[0] == '.')
-			str[0] = '_';
-		size_t c;
-		for(c = 0; str[c] != 0; c++) {
-			/* Legal characters */
-			if ((str[c] >= 'A' && str[c] <= 'Z')
-					|| (str[c] >= 'a' && str[c] <= 'z')
-					|| (str[c] >= '0' && str[c] <= '9')
-					|| str[c] == '+'
-					|| str[c] == '-'
-					|| str[c] == '_'
-					|| str[c] == '.')
-				continue;
-			str[c] = '_';
-		}
-		c--;
-		if (str[c] == '.')
-			str[c] = '_';
-	}
-	return str;
+		strlcpy(str, sub->newsgroup, size);
+	else
+		snprintf(str, size, "%s.%s", cfg->grp[sub->grp]->sname, sub->sname);
+	return make_newsgroup_name(str);
 }
 
 char* sub_area_tag(scfg_t* cfg, sub_t* sub, char* str, size_t size)

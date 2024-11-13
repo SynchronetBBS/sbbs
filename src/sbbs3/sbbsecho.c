@@ -1217,7 +1217,7 @@ int create_netmail(const char *to, const smbmsg_t* msg, const char *subject, con
 	}
 	fputc(FIDO_STORED_MSG_TERMINATOR, fp);
 	lprintf(LOG_INFO, "Created NetMail (%s)%s from %s (%s) to %s (%s), attr: %04hX%s, subject: %s"
-		,getfname(fname), (hdr.attr&FIDO_FILE) ? " with attachment" : ""
+		,getfname(fname), (hdr.attr&FIDO_FILE) ? " with attachment(s)" : ""
 		,from, smb_faddrtoa(&faddr, tmp), to, smb_faddrtoa(&dest, NULL), hdr.attr, fmsgattr_str(hdr.attr), subject);
 	return fclose(fp);
 }
@@ -4332,10 +4332,21 @@ bool pkt_to_msg(FILE* fidomsg, fmsghdr_t* hdr, const char* info, const char* inb
 			free(fmsgbuf);
 			return false;
 		}
-		if(hdr->attr&FIDO_FILE) {	/* File attachment (only a single file supported) */
-			char fname[FIDO_SUBJ_LEN];
-			SAFECOPY(fname, getfname(hdr->subj));
-			SAFEPRINTF2(hdr->subj, "%s%s", inbound, fname);	/* Fix the file path in the subject */
+		if(hdr->attr&FIDO_FILE) {	/* File attachment */
+			char filelist[FIDO_SUBJ_LEN];
+			SAFECOPY(filelist, hdr->subj);
+			*hdr->subj = '\0';
+			char* token;
+			/* Fix the file path(s) in the subject (also removing commas and extra spaces) */
+			for(token = strtok(filelist, FIDO_FILELIST_SEP); token != NULL; token = strtok(NULL, FIDO_FILELIST_SEP)) {
+				char* fname = getfname(token);
+				if(*hdr->subj == '\0')
+					snprintf(hdr->subj, sizeof hdr->subj, "%s%s", inbound, fname);
+				else {
+					SAFECAT(hdr->subj, " ");
+					SAFECAT(hdr->subj, fname); // Only include path for first file
+				}
+			}
 		}
 		const uint16_t remove_attrs = FIDO_CRASH | FIDO_LOCAL | FIDO_HOLD;
 		if(hdr->attr&remove_attrs) {
@@ -4362,8 +4373,9 @@ bool pkt_to_msg(FILE* fidomsg, fmsghdr_t* hdr, const char* info, const char* inb
 /**************************************/
 int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const char* inbound)
 {
-	char info[512],str[256],tmp[256],subj[256]
-		,*fmsgbuf=NULL,*p,*tp,*sp;
+	char info[512],str[256];
+	char tmp[MAX_PATH + 1];
+	char *fmsgbuf=NULL,*p,*tp;
 	int i,match,usernumber = 0;
 	ulong length;
 	fidoaddr_t addr;
@@ -4617,34 +4629,29 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 		putsmsg(&scfg,usernumber,str);
 	}
 	if(hdr.attr&FIDO_FILE) {	/* File attachment */
-		SAFECOPY(subj,hdr.subj);
-		tp=subj;
-		while(1) {
-			p=strchr(tp,' ');
-			if(p) *p=0;
-			sp=strrchr(tp,'/');              /* sp is slash pointer */
-			if(!sp) sp=strrchr(tp,'\\');
-			if(sp) tp=sp+1;
-			lprintf(LOG_INFO, "Processing attached file: %s", tp);
-			SAFEPRINTF2(str,"%s%s", inbound, tp);
-			if(!fexistcase(str)) {
-				lprintf(LOG_WARNING, "Attached file not found in expected inbound: %s", str);
+		char filelist[FIDO_SUBJ_LEN];
+		SAFECOPY(filelist, hdr.subj);
+		char* token;
+		for(token = strtok(filelist, FIDO_FILELIST_SEP); token != NULL; token = strtok(NULL, FIDO_FILELIST_SEP)) {
+			char fpath[MAX_PATH + 1];
+			char* fname = getfname(token);
+			lprintf(LOG_INFO, "Processing attached file: %s", fname);
+			snprintf(fpath, sizeof fpath, "%s%s", inbound, fname);
+			if(!fexistcase(fpath)) {
+				lprintf(LOG_WARNING, "Attached file not found in expected inbound: %s", fpath);
 				if(inbound == cfg.inbound)
 					inbound = cfg.secure_inbound;
 				else
 					inbound = cfg.inbound;
-				SAFEPRINTF2(str,"%s%s", inbound, tp);
+				SAFEPRINTF2(fpath, "%s%s", inbound, fname);
 			}
 			SAFEPRINTF2(tmp,"%sfile/%04u.in",scfg.data_dir,usernumber);
 			(void)mkpath(tmp);
 			backslash(tmp);
-			SAFECAT(tmp,tp);
-			lprintf(LOG_DEBUG, "Moving attachment from %s to %s", str, tmp);
-			if((i = mv(str,tmp,0)) != 0)
-				lprintf(LOG_ERR, "ERROR %d moving attached file from %s to %s for NetMail %s", i, str, tmp, info);
-			if(!p)
-				break;
-			tp=p+1;
+			SAFECAT(tmp, fname);
+			lprintf(LOG_DEBUG, "Moving attachment from %s to %s", fpath, tmp);
+			if((i = mv(fpath, tmp,0)) != 0)
+				lprintf(LOG_ERR, "ERROR %d moving attached file from %s to %s for NetMail %s", i, fpath, tmp, info);
 		}
 	}
 	netmail++;
@@ -5506,7 +5513,11 @@ void pack_netmail(void)
 			if((fp=fopen(req,"a")) == NULL)
 				lprintf(LOG_ERR,"ERROR %d (%s) creating/opening %s", errno, strerror(errno), req);
 			else {
-				fprintf(fp,"%s\n",getfname(hdr.subj));
+				char filelist[FIDO_SUBJ_LEN];
+				SAFECOPY(filelist, hdr.subj);
+				char* token;
+				for(token = strtok(filelist, FIDO_FILELIST_SEP); token != NULL; token = strtok(NULL, FIDO_FILELIST_SEP))
+					fprintf(fp,"%s\n",getfname(token));
 				fclose(fp);
 				if(write_flofile(req, addr,/* bundle: */false, cfg.use_outboxes, /* del_file: */true, hdr.attr))
 					continue;
@@ -5593,8 +5604,22 @@ void pack_netmail(void)
 					if(kfs > cr)
 						kfs = NULL;
 				}
-				if(write_flofile(hdr.subj,addr,/* bundle: */false,/* use_outbox: */false, /* del_file: */kfs != NULL, hdr.attr))
-					bail(1);
+				char path[MAX_PATH + 1] = "";
+				char filelist[FIDO_SUBJ_LEN];
+				SAFECOPY(filelist, hdr.subj);
+				char* token;
+				for(token = strtok(filelist, FIDO_FILELIST_SEP); token != NULL; token = strtok(NULL, FIDO_FILELIST_SEP)) {
+					char fpath[MAX_PATH + 1];
+					char* fname = getfname(token);
+					if(path[0] == '\0' && fname != token) {
+						SAFECOPY(fpath, token);
+						*fname = '\0';
+						SAFECOPY(path, token);
+					} else
+						snprintf(fpath, sizeof fpath, "%s%s", path, fname);
+					if(write_flofile(fpath, addr,/* bundle: */false,/* use_outbox: */false, /* del_file: */kfs != NULL, hdr.attr) != 0)
+						bail(1);
+				}
 				SAFECOPY(hdr.subj, getfname(hdr.subj));	/* Don't include the file path in the subject */
 			}
 		}
