@@ -56,12 +56,15 @@ function write_news_header(hdr,writeln)
 		writeln("X-FTN-CHRS: " + hdr.ftn_charset);
 
 	var content_type;
+	var user_agent;
 
 	if(hdr.field_list!=undefined) {
 		for(var i in hdr.field_list) {
 			if(hdr.field_list[i].type==RFC822HEADER) {
 				if(hdr.field_list[i].data.toLowerCase().indexOf("content-type:")==0)
 					content_type = hdr.field_list[i].data;
+				if(hdr.field_list[i].data.toLowerCase().indexOf("user-agent:")==0)
+					user_agent = hdr.field_list[i].data;
 				writeln(hdr.field_list[i].data);
 			} else if(hdr.field_list[i].type==FIDOCTRL) {
 				writeln("X-FTN-Kludge: " + hdr.field_list[i].data);
@@ -72,6 +75,10 @@ function write_news_header(hdr,writeln)
 			}
 		}
 	}
+
+	if(user_agent === undefined && hdr.editor !== undefined)
+		writeln("User-Agent: " + hdr.editor);
+
 	if(content_type==undefined) {
 		var charset = hdr.text_charset;
 		if(!charset) {
@@ -164,6 +171,9 @@ function parse_news_header(hdr, line)
 			hdr.references=data;
 			if(!hdr.reply_id && data.length)
 				hdr.reply_id=data.match(/(?:\S+\s)*(\S+)$/)[1];
+			break;
+		case "user-agent":
+			hdr.editor=data;
 			break;
 		case "x-gateway":
 			hdr.gateway=data;
