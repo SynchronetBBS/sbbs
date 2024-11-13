@@ -66,6 +66,7 @@ DLLEXPORT bool		str_has_ctrl(const char*);
 DLLEXPORT bool		str_is_ascii(const char*);
 DLLEXPORT char *	utf8_to_cp437_inplace(char* str);
 DLLEXPORT char *	separate_thousands(const char* src, char *dest, size_t maxlen, char sep);
+DLLEXPORT char *    make_newsgroup_name(char* str);
 
 #ifdef __cplusplus
 }
