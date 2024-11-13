@@ -257,7 +257,7 @@ int openuserdat(scfg_t* cfg, bool for_modify)
 
 int closeuserdat(int file)
 {
-	if(file < 1)
+	if(file < 0)
 		return -1;
 	return close(file);
 }
@@ -1393,7 +1393,7 @@ char* getnodeext(scfg_t* cfg, int num, char* buf)
 
 	if(!VALID_CFG(cfg) || num < 1)
 		return "";
-	if((f = opennodeext(cfg)) < 1)
+	if((f = opennodeext(cfg)) < 0)
 		return "";
 	(void)lseek(f, (num-1) * 128, SEEK_SET);
 	if(read(f, buf, 128) != 128)
