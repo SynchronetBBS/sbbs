@@ -26,6 +26,7 @@
 #include "findstr.h"
 #include "ini_file.h"
 #include "sockwrap.h"	 // IPPORT_MQTT
+#include "str_util.h"
 
 bool allocerr(char* error, size_t maxerrlen, const char* fname, const char *item, size_t size)
 {
@@ -934,37 +935,11 @@ faddr_t* nearest_sysfaddr(scfg_t* cfg, faddr_t* addr)
 
 char* sub_newsgroup_name(scfg_t* cfg, sub_t* sub, char* str, size_t size)
 {
-	memset(str, 0, size);
 	if(sub->newsgroup[0])
-		strncpy(str, sub->newsgroup, size - 1);
-	else {
-		snprintf(str, size - 1, "%s.%s", cfg->grp[sub->grp]->sname, sub->sname);
-		/*
-		 * From RFC5536:
-		 * newsgroup-name  =  component *( "." component )
-		 * component       =  1*component-char
-		 * component-char  =  ALPHA / DIGIT / "+" / "-" / "_"
-		 */
-		if (str[0] == '.')
-			str[0] = '_';
-		size_t c;
-		for(c = 0; str[c] != 0; c++) {
-			/* Legal characters */
-			if ((str[c] >= 'A' && str[c] <= 'Z')
-					|| (str[c] >= 'a' && str[c] <= 'z')
-					|| (str[c] >= '0' && str[c] <= '9')
-					|| str[c] == '+'
-					|| str[c] == '-'
-					|| str[c] == '_'
-					|| str[c] == '.')
-				continue;
-			str[c] = '_';
-		}
-		c--;
-		if (str[c] == '.')
-			str[c] = '_';
-	}
-	return str;
+		strlcpy(str, sub->newsgroup, size);
+	else
+		snprintf(str, size, "%s.%s", cfg->grp[sub->grp]->sname, sub->sname);
+	return make_newsgroup_name(str);
 }
 
 char* sub_area_tag(scfg_t* cfg, sub_t* sub, char* str, size_t size)

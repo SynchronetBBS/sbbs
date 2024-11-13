@@ -292,8 +292,10 @@ void sub_cfg(int grpnum)
 			SAFECOPY(cfg.sub[subnum[i]]->lname,str);
 			SAFECOPY(cfg.sub[subnum[i]]->sname,str2);
 			SAFECOPY(cfg.sub[subnum[i]]->qwkname,code);
-			if(strchr(str,'.') && strchr(str,' ')==NULL)
+			if(strchr(str,'.') && strchr(str,' ')==NULL) {
 				SAFECOPY(cfg.sub[subnum[i]]->newsgroup,str);
+				make_newsgroup_name(cfg.sub[subnum[i]]->newsgroup);
+			}
 			uifc.changes = TRUE;
 			continue;
 		}
@@ -353,9 +355,10 @@ void sub_cfg(int grpnum)
 			else
 				SAFEPRINTF(area_tag, "[%s]", sub_area_tag(&cfg, cfg.sub[i], tmp, sizeof(tmp)));
 			char newsgroup_name[sizeof(cfg.sub[i]->newsgroup) + 2];
-			if(cfg.sub[i]->newsgroup[0])
+			if(cfg.sub[i]->newsgroup[0]) {
 				SAFECOPY(newsgroup_name, cfg.sub[i]->newsgroup);
-			else
+				make_newsgroup_name(newsgroup_name);
+			} else
 				SAFEPRINTF(newsgroup_name, "[%s]", sub_newsgroup_name(&cfg, cfg.sub[i], tmp, sizeof(tmp)));
 			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Long Name",cfg.sub[i]->lname);
 			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Short Name",cfg.sub[i]->sname);
@@ -476,10 +479,13 @@ void sub_cfg(int grpnum)
 						"is configured here, a name will be automatically generated from the\n"
 						"Sub-board's Short Name and message group's Short Name.\n"
 						"\n"
-						"This name should ~ not ~ contain spaces."
+						"A newsgroup name (per RFC 5536) may ~ only ~ contain the characters:\n"
+						"    [`a-z`], [`A-Z`], [`0-9`], '`+`', '`_`', '`-`', and '`.`'.\n"
+						"A newsgroup name may not begin or end with a '`.`'.\n"
 					;
-					uifc.input(WIN_MID|WIN_SAV,0,17,""
-						,cfg.sub[i]->newsgroup,sizeof(cfg.sub[i]->newsgroup)-1,K_EDIT);
+					if(uifc.input(WIN_MID|WIN_SAV,0,17,""
+						,cfg.sub[i]->newsgroup,sizeof(cfg.sub[i]->newsgroup)-1,K_EDIT) > 0)
+						make_newsgroup_name(cfg.sub[i]->newsgroup);
 					break;
 				case 5:
 					uifc.helpbuf=
