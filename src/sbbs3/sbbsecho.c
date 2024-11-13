@@ -5593,8 +5593,22 @@ void pack_netmail(void)
 					if(kfs > cr)
 						kfs = NULL;
 				}
-				if(write_flofile(hdr.subj,addr,/* bundle: */false,/* use_outbox: */false, /* del_file: */kfs != NULL, hdr.attr))
-					bail(1);
+				char path[MAX_PATH + 1] = "";
+				char filelist[FIDO_SUBJ_LEN];
+				SAFECOPY(filelist, hdr.subj);
+				char* token;
+				for(token = strtok(filelist, " ,"); token != NULL; token = strtok(NULL, " ,")) {
+					char fpath[MAX_PATH + 1];
+					char* fname = getfname(token);
+					if(path[0] == '\0' && fname != token) {
+						SAFECOPY(fpath, token);
+						*fname = '\0';
+						SAFECOPY(path, token);
+					} else
+						snprintf(fpath, sizeof fpath, "%s%s", path, fname);
+					if(write_flofile(fpath, addr,/* bundle: */false,/* use_outbox: */false, /* del_file: */kfs != NULL, hdr.attr) != 0)
+						bail(1);
+				}
 				SAFECOPY(hdr.subj, getfname(hdr.subj));	/* Don't include the file path in the subject */
 			}
 		}
