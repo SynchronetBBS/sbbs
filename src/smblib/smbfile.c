@@ -84,7 +84,7 @@ size_t smb_fread(smb_t* smb, void* buf, size_t bytes, FILE* fp)
 	while(1) {
 		if((ret=fread(buf,sizeof(char),bytes,fp))==bytes)
 			return(ret);
-		if(feof(fp) || (get_errno()!=EDEADLOCK && get_errno()!=EACCES))
+		if(feof(fp) || !FILE_RETRY_ERRNO(get_errno()))
 			return(ret);
 		if(!start)
 			start=time(NULL);
@@ -144,7 +144,7 @@ int smb_open_fp(smb_t* smb, FILE** fp, int share)
 	while(1) {
 		if((file=sopen(path,O_RDWR|O_CREAT|O_BINARY,share,DEFFILEMODE))!=-1)
 			break;
-		if(get_errno()!=EACCES && get_errno()!=EAGAIN) {
+		if(!FILE_RETRY_ERRNO(get_errno())) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%s %d '%s' opening %s", __FUNCTION__
 				,get_errno(),strerror(get_errno()),path);

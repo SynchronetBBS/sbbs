@@ -48,7 +48,7 @@ int nopen(const char* str, uint access)
 		access|=O_BINARY;
 #endif
     while(((file=sopen(str,access,share,DEFFILEMODE))==-1)
-        && (errno==EACCES || errno==EAGAIN || errno==EDEADLOCK) && count++<LOOP_NOPEN)
+        && FILE_RETRY_ERRNO(errno) && count++<LOOP_NOPEN)
 		SLEEP((count / 10) * 100);
     return(file);
 }

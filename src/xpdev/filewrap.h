@@ -144,6 +144,9 @@
 #define CLOSE_OPEN_FILE(x)	do { if((x) >= 0)    { close(x);  (x) = -1;   } } while(0)
 #define FCLOSE_OPEN_FILE(x)	do { if((x) != NULL) { fclose(x); (x) = NULL; } } while(0)
 
+// These errno values should trigger sopen() and lock() retries, within limits
+#define FILE_RETRY_ERRNO(x) ((x)==EACCES || (x)==EAGAIN || (x)==EDEADLOCK || (x)==EBUSY)
+
 /**************/
 /* Prototypes */
 /**************/
