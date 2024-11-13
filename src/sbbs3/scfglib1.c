@@ -55,7 +55,8 @@ bool read_node_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	fclose(fp);
 
 	SAFECOPY(cfg->node_phone, iniGetString(ini, ROOT_SECTION, "phone", "", value));
-	SAFECOPY(cfg->node_daily, iniGetString(ini, ROOT_SECTION, "daily", "", value));
+	SAFECOPY(cfg->node_daily.cmd, iniGetString(ini, ROOT_SECTION, "daily", "", value));
+	cfg->node_daily.misc = iniGetUInteger(ini, ROOT_SECTION, "daily_settings", 0);
 	SAFECOPY(cfg->text_dir, iniGetString(ini, ROOT_SECTION, "text_dir", "../text/", value));
 	SAFECOPY(cfg->temp_dir, iniGetString(ini, ROOT_SECTION, "temp_dir", "temp", value));
 	SAFECOPY(cfg->node_arstr, iniGetString(ini, ROOT_SECTION, "ars", "", value));
@@ -136,10 +137,14 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->errlevel = (uchar)iniGetUInteger(ini, ROOT_SECTION, "errlevel", LOG_CRIT);
 
 	// fixed events
-	SAFECOPY(cfg->sys_logon, iniGetString(ini, "logon_event", "cmd", "", value));
-	SAFECOPY(cfg->sys_logout, iniGetString(ini, "logout_event", "cmd", "", value));
-	SAFECOPY(cfg->sys_daily, iniGetString(ini, "daily_event", "cmd", "", value));
-	SAFECOPY(cfg->sys_monthly, iniGetString(ini, "monthly_event", "cmd", "", value));
+	SAFECOPY(cfg->sys_logon.cmd, iniGetString(ini, "logon_event", "cmd", "", value));
+	cfg->sys_logon.misc = iniGetUInt32(ini, "logon_event", "settings", 0);
+	SAFECOPY(cfg->sys_logout.cmd, iniGetString(ini, "logout_event", "cmd", "", value));
+	cfg->sys_logout.misc = iniGetUInt32(ini, "logout_event", "settings", 0);
+	SAFECOPY(cfg->sys_daily.cmd, iniGetString(ini, "daily_event", "cmd", "", value));
+	cfg->sys_daily.misc = iniGetUInt32(ini, "daily_event", "settings", 0);
+	SAFECOPY(cfg->sys_monthly.cmd, iniGetString(ini, "monthly_event", "cmd", "", value));
+	cfg->sys_monthly.misc = iniGetUInt32(ini, "monthly_event", "settings", 0);
 
 	named_str_list_t** sections = iniParseSections(ini);
 

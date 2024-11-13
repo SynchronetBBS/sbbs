@@ -311,6 +311,11 @@ typedef struct {							/* Generic Timed Event */
 
 } event_t;
 
+typedef struct {							// Fixed event
+	char			cmd[LEN_CMD + 1];
+	uint32_t		misc;					// Settings flags
+} fevent_t;
+
 typedef struct {							/* QWK Network Hub */
 	char		id[LEN_QWKID+1],			/* System ID of Hub */
 				call[LEN_CMD+1],			/* Call-out command line to execute */
@@ -465,10 +470,10 @@ typedef struct
 	enum date_fmt	sys_date_fmt;
 	char			sys_date_sep;
 	bool			sys_date_verbal;
-	char 			sys_monthly[LEN_CMD+1];	   /* Monthly event */
-	char 			sys_daily[LEN_CMD+1];	   /* Daily event */
-	char 			sys_logon[LEN_CMD+1];	   /* Logon event */
-	char 			sys_logout[LEN_CMD+1];	   /* Logoff event */
+	fevent_t		sys_monthly;		/* Monthly event */
+	fevent_t 		sys_daily;			/* Daily event */
+	fevent_t 		sys_logon;			/* Logon event */
+	fevent_t 		sys_logout;			/* Logout event */
 	uint8_t			min_pwlen;
 	uint16_t		sys_pwdays; 		/* Max days between password change */
 	uint16_t		sys_deldays;		/* Days to keep deleted users */
@@ -488,7 +493,7 @@ typedef struct
 	int32_t			xtrn_misc;			/* External Programs Misc Settings */
 	uint16_t		filename_maxlen;	/* Maximum filename length */
 
-	char			node_daily[LEN_CMD+1];	/* Name of node's daily event */
+	fevent_t		node_daily;			/* Node's daily event */
 	uint32_t		node_misc;			/* Misc bits for node setup */
 	bool			spinning_pause_prompt;
 	uint16_t		valuser;			/* User validation mail goes to */

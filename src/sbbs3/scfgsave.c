@@ -80,7 +80,8 @@ bool write_node_cfg(scfg_t* cfg)
 
 	str_list_t ini = strListInit();
 	iniSetString(&ini, ROOT_SECTION, "phone", cfg->node_phone, NULL);
-	iniSetString(&ini, ROOT_SECTION, "daily", cfg->node_daily, NULL);
+	iniSetString(&ini, ROOT_SECTION, "daily", cfg->node_daily.cmd, NULL);
+	iniSetHexInt(&ini, ROOT_SECTION, "daily_settings", cfg->node_daily.misc, NULL);
 	iniSetString(&ini, ROOT_SECTION, "text_dir", cfg->text_dir, NULL);
 	iniSetString(&ini, ROOT_SECTION, "temp_dir", cfg->temp_dir, NULL);
 	iniSetString(&ini, ROOT_SECTION, "ars", cfg->node_arstr, NULL);
@@ -201,10 +202,14 @@ bool write_main_cfg(scfg_t* cfg)
 		iniSetString(&ini, name, "gender_options", cfg->new_genders, &ini_style);
 	}
 
-	iniSetString(&ini, "logon_event", "cmd", cfg->sys_logon, &ini_style);
-	iniSetString(&ini, "logout_event", "cmd", cfg->sys_logout, &ini_style);
-	iniSetString(&ini, "daily_event", "cmd", cfg->sys_daily, &ini_style);
-	iniSetString(&ini, "monthly_event", "cmd", cfg->sys_monthly, &ini_style);
+	iniSetString(&ini, "logon_event", "cmd", cfg->sys_logon.cmd, &ini_style);
+	iniSetHexInt(&ini, "logon_event", "settings", cfg->sys_logon.misc, &ini_style);
+	iniSetString(&ini, "logout_event", "cmd", cfg->sys_logout.cmd, &ini_style);
+	iniSetHexInt(&ini, "logout_event", "settings", cfg->sys_logout.misc, &ini_style);
+	iniSetString(&ini, "daily_event", "cmd", cfg->sys_daily.cmd, &ini_style);
+	iniSetHexInt(&ini, "daily_event", "settings", cfg->sys_daily.misc, &ini_style);
+	iniSetString(&ini, "monthly_event", "cmd", cfg->sys_monthly.cmd, &ini_style);
+	iniSetHexInt(&ini, "monthly_event", "settings", cfg->sys_monthly.misc, &ini_style);
 
 	{
 		const char* name = "expired";

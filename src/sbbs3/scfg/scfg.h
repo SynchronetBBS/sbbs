@@ -171,6 +171,7 @@ void sort_subs(int grpnum);
 void sort_dirs(int libnum);
 int subs_in_group(int grpnum);
 char random_code_char(void);
+void fevent_cfg(const char* name, fevent_t* event);
 const char* io_method(uint32_t mode);
 void choose_io_method(uint32_t* misc);
 bool load_main_cfg(scfg_t*, char*, size_t);

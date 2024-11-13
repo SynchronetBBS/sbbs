@@ -3092,7 +3092,7 @@ void event_thread(void* arg)
 					sbbs->getnodedat(i,&node,1);
 					node.status=NODE_EVENT_RUNNING;
 					sbbs->putnodedat(i,&node);
-					if(sbbs->cfg.node_daily[0]) {
+					if(sbbs->cfg.node_daily.cmd[0] && !(sbbs->cfg.node_daily.misc & EVENT_DISABLED)) {
 						sbbs->cfg.node_num=i;
 						SAFECOPY(sbbs->cfg.node_dir, sbbs->cfg.node_path[i-1]);
 
@@ -3100,8 +3100,8 @@ void event_thread(void* arg)
 						sbbs->online=ON_LOCAL;
 						sbbs->console|=CON_L_ECHO;
 						sbbs->logentry("!:","Run node daily event");
-						const char* cmd = sbbs->cmdstr(sbbs->cfg.node_daily,nulstr,nulstr,NULL);
-						int result = sbbs->external(cmd, EX_OFFLINE);
+						const char* cmd = sbbs->cmdstr(sbbs->cfg.node_daily.cmd,nulstr,nulstr,NULL);
+						int result = sbbs->external(cmd, EX_OFFLINE | sbbs->cfg.node_daily.misc);
 						sbbs->lprintf(result ? LOG_ERR : LOG_INFO, "Node daily event: '%s' returned %d", cmd, result);
 						sbbs->console&=~CON_L_ECHO;
 						sbbs->online=false;
@@ -4834,19 +4834,19 @@ void sbbs_t::daily_maint(void)
 		smb_close(&smb);
 	}
 
-	if(cfg.sys_daily[0]) {
+	if(cfg.sys_daily.cmd[0] && !(cfg.sys_daily.misc & EVENT_DISABLED)) {
 		lputs(LOG_INFO, "DAILY: Running system event");
-		const char* cmd = cmdstr(cfg.sys_daily,nulstr,nulstr,NULL);
+		const char* cmd = cmdstr(cfg.sys_daily.cmd,nulstr,nulstr,NULL);
 		online = ON_LOCAL;
-		int result = external(cmd, EX_OFFLINE);
+		int result = external(cmd, EX_OFFLINE | cfg.sys_daily.misc);
 		online = false;
 		lprintf(result ? LOG_ERR : LOG_INFO, "Daily event: '%s' returned %d", cmd, result);
 	}
-	if((sys_status & SS_NEW_MONTH) && cfg.sys_monthly[0]) {
+	if((sys_status & SS_NEW_MONTH) && cfg.sys_monthly.cmd[0] && !(cfg.sys_monthly.misc & EVENT_DISABLED)) {
 		lputs(LOG_INFO, "DAILY: Running monthly event");
-		const char* cmd = cmdstr(cfg.sys_monthly,nulstr,nulstr,NULL);
+		const char* cmd = cmdstr(cfg.sys_monthly.cmd,nulstr,nulstr,NULL);
 		online = ON_LOCAL;
-		int result = external(cmd, EX_OFFLINE);
+		int result = external(cmd, EX_OFFLINE | cfg.sys_monthly.misc);
 		online = false;
 		lprintf(result ? LOG_ERR : LOG_INFO, "Monthly event: '%s' returned %d", cmd, result);
 	}

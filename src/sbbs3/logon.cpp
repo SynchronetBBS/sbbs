@@ -487,9 +487,9 @@ bool sbbs_t::logon()
 			errormsg(WHERE, ERR_WRITE, path, strlen(str));
 	}
 
-	if(cfg.sys_logon[0]) {				/* execute system logon event */
-		lprintf(LOG_DEBUG, "executing logon event: %s", cfg.sys_logon);
-		external(cmdstr(cfg.sys_logon,nulstr,nulstr,NULL),EX_STDOUT); /* EX_SH */
+	if(cfg.sys_logon.cmd[0] && !(cfg.sys_logon.misc & EVENT_DISABLED)) {				/* execute system logon event */
+		lprintf(LOG_DEBUG, "executing logon event: %s", cfg.sys_logon.cmd);
+		external(cmdstr(cfg.sys_logon.cmd,nulstr,nulstr,NULL), EX_STDOUT | cfg.sys_logon.misc); /* EX_SH */
 	}
 
 	if(sys_status&SS_QWKLOGON)
