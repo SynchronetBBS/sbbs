@@ -240,7 +240,7 @@ int smb_trunchdr(smb_t* smb)
 	while(1) {
 		if(chsize(fileno(smb->shd_fp),0L)==0)
 			break;
-		if(get_errno()!=EACCES && get_errno()!=EAGAIN) {
+		if(!FILE_RETRY_ERRNO(get_errno())) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%s %d '%s' changing header file size", __FUNCTION__
 				,get_errno(),strerror(get_errno()));
@@ -1510,7 +1510,7 @@ int smb_addcrc(smb_t* smb, uint32_t crc)
 	while(1) {
 		if((file=sopen(str,O_RDWR|O_CREAT|O_BINARY,SH_DENYRW, DEFFILEMODE))!=-1)
 			break;
-		if(get_errno()!=EACCES && get_errno()!=EAGAIN) {
+		if(!FILE_RETRY_ERRNO(get_errno())) {
 			safe_snprintf(smb->last_error,sizeof(smb->last_error)
 				,"%s %d '%s' opening %s", __FUNCTION__
 				,get_errno(),strerror(get_errno()),str);
