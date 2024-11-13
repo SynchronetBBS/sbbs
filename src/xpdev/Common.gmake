@@ -104,24 +104,25 @@ ifdef USE_SDL_AUDIO
    WITH_SDL_AUDIO	:=	1
   endif
  else
-  ifeq ($(os),darwin)
-   ifeq ($(shell if [ -d /Library/Frameworks/SDL2.framework ] ; then echo YES ; fi),YES)
-    SDL_FRAMEWORK_PATH ?= /Library/Frameworks
-    CFLAGS += -F${SDL_FRAMEWORK_PATH}
-   endif
-   ifdef SDL_FRAMEWORK_PATH
-    WITH_SDL_AUDIO	:=	1
-    CIOLIB-MT_LDFLAGS += -Wl,-rpath,@executable_path/../Frameworks
-    CIOLIB-MT_LDFLAGS += -Wl,-rpath,${SDL_FRAMEWORK_PATH}
-   endif
+  ifeq ($(shell command -v sdl2-config > /dev/null && sdl2-config --cflags > /dev/null 2>&1 && echo YES),YES)
+   SDL_CONFIG := sdl2-config
+   WITH_SDL_AUDIO	:=	1
   else
-   ifeq ($(shell command -v sdl2-config > /dev/null && sdl2-config --cflags > /dev/null 2>&1 && echo YES),YES)
-    SDL_CONFIG := sdl2-config
+   ifeq ($(shell command -v sdl-config > /dev/null && if [ `sdl-config --version | sed -E 's/\..*$$//'` -ge 2 ] ; then echo 'YES' ; fi),YES)
+    SDL_CONFIG := sdl-config
     WITH_SDL_AUDIO	:=	1
-   else
-    ifeq ($(shell command -v sdl-config > /dev/null && if [ `sdl-config --version | sed -E 's/\..*$$//'` -ge 2 ] ; then echo 'YES' ; fi),YES)
-     SDL_CONFIG := sdl-config
+   endif
+  endif
+  ifndef WITH_SDL
+   ifeq ($(os),darwin)
+    ifeq ($(shell if [ -d /Library/Frameworks/SDL2.framework ] ; then echo YES ; fi),YES)
+     SDL_FRAMEWORK_PATH ?= /Library/Frameworks
+     CFLAGS += -F${SDL_FRAMEWORK_PATH}
+    endif
+    ifdef SDL_FRAMEWORK_PATH
      WITH_SDL_AUDIO	:=	1
+     CIOLIB-MT_LDFLAGS += -Wl,-rpath,@executable_path/../Frameworks
+     CIOLIB-MT_LDFLAGS += -Wl,-rpath,${SDL_FRAMEWORK_PATH}
     endif
    endif
   endif
@@ -162,12 +163,14 @@ ifdef WITH_SDL_AUDIO
  else
   ifeq ($(os),darwin)
    XPDEV-MT_CFLAGS	+=	-DWITH_SDL_AUDIO -DSTATIC_SDL
-   XPDEV-MT_CFLAGS	+=	-I${SDL_FRAMEWORK_PATH}/SDL2.framework/Headers
-   XPDEV-MT_LIBS	+=	-F${SDL_FRAMEWORK_PATH} -framework SDL2 -I${SDL_FRAMEWORK_PATH}/SDL2.framework/Headers
    XPDEV_CFLAGS	+=	-DWITH_SDL_AUDIO -DSTATIC_SDL
-   XPDEV_CFLAGS	+=	-I${SDL_FRAMEWORK_PATH}/SDL2.framework/Headers
-   XPDEV_LIBS	+=	-F${SDL_FRAMEWORK_PATH} -framework SDL2 -I${SDL_FRAMEWORK_PATH}/SDL2.framework/Headers
-   XPDEV-MT_LDFLAGS += -Wl,-rpath,@executable_path/../Frameworks
+   ifdef SDL_FRAMEWORK_PATH
+    XPDEV-MT_CFLAGS	+=	-I${SDL_FRAMEWORK_PATH}/SDL2.framework/Headers
+    XPDEV-MT_LIBS	+=	-F${SDL_FRAMEWORK_PATH} -framework SDL2 -I${SDL_FRAMEWORK_PATH}/SDL2.framework/Headers
+    XPDEV_CFLAGS	+=	-I${SDL_FRAMEWORK_PATH}/SDL2.framework/Headers
+    XPDEV_LIBS	+=	-F${SDL_FRAMEWORK_PATH} -framework SDL2 -I${SDL_FRAMEWORK_PATH}/SDL2.framework/Headers
+    XPDEV-MT_LDFLAGS += -Wl,-rpath,@executable_path/../Frameworks
+   endif
   endif
  endif
 endif
