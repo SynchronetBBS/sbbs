@@ -5506,7 +5506,11 @@ void pack_netmail(void)
 			if((fp=fopen(req,"a")) == NULL)
 				lprintf(LOG_ERR,"ERROR %d (%s) creating/opening %s", errno, strerror(errno), req);
 			else {
-				fprintf(fp,"%s\n",getfname(hdr.subj));
+				char filelist[FIDO_SUBJ_LEN];
+				SAFECOPY(filelist, hdr.subj);
+				char* token;
+				for(token = strtok(filelist, " ,"); token != NULL; token = strtok(NULL, " ,"))
+					fprintf(fp,"%s\n",getfname(token));
 				fclose(fp);
 				if(write_flofile(req, addr,/* bundle: */false, cfg.use_outboxes, /* del_file: */true, hdr.attr))
 					continue;
