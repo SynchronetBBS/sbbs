@@ -4544,6 +4544,7 @@ function populateFileList(pSearchMode)
 				gFileList = filebase.get_list(gFilespec, fileDetail, 0, true, file_area.dir[gDirCode].sort);
 			else
 				gFileList = filebase.get_list(gFilespec, fileDetail, 0, true, gFileSortOrder);
+			filebase.close();
 			// Add a dirCode property to the file metadata objects (for consistency,
 			// as file search results may contain files from multiple directories).
 			// Also, if the metadata objects have an extdesc, remove any trailing CRLF
@@ -4558,22 +4559,7 @@ function populateFileList(pSearchMode)
 					// Fix line endings if necessary
 					gFileList[i].extdesc = lfexpand(gFileList[i].extdesc);
 				}
-				if (!gFileList[i].hasOwnProperty("size") || gFileList[i].size < 0)
-					gFileList[i].size = filebase.get_size(gFileList[i].name);
-				// If the size is still -1, try harder to get the file size
-				if (gFileList[i].size < 0)
-				{
-					var fullyPathedFilename = filebase.get_path(gFileList[i].name);
-					var inFile = new File(fullyPathedFilename);
-					if (inFile.open("rb"))
-					{
-						gFileList[i].size = inFile.length;
-						//if (user.handle == "Nightfox") console.print("\x01nOpened " + fullyPathedFilename + "; size: " + inFile.length + "\r\n"); // Temporary
-						inFile.close();
-					}
-				}
 			}
-			filebase.close();
 		}
 		else
 		{
