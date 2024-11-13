@@ -115,7 +115,7 @@ int lprintf(int level, char *fmt, ...)
 ;
 int mv(const char *insrc, const char *indest, bool copy);
 time32_t fmsgtime(const char *str);
-void export_echomail(const char *sub_code, const nodecfg_t*, bool rescan);
+ulong export_echomail(const char *sub_code, const nodecfg_t*, bool rescan);
 const char* area_desc(const char* areatag);
 
 /* FTN-compliant "Program Identifier"/PID (also used as a "Tosser Identifier"/TID) */
@@ -1706,11 +1706,6 @@ void alter_areas(str_list_t add_area, str_list_t del_area, nodecfg_t* nodecfg, c
 							return;
 						}
 						memcpy(&cfg.area[u].link[cfg.area[u].links-1],&addr,sizeof(fidoaddr_t));
-						bool rescanned = false;
-						if(rescan && is_valid_subnum(&scfg, cfg.area[u].sub)) {
-							rescanned = true;
-							export_echomail(scfg.sub[cfg.area[u].sub]->code, nodecfg, true);
-						}
 
 						fprintf(afileout,"%-*s %-*s "
 							,LEN_EXTCODE, code
@@ -1721,13 +1716,17 @@ void alter_areas(str_list_t add_area, str_list_t del_area, nodecfg_t* nodecfg, c
 						if(comment[0])
 							fprintf(afileout,"%s",comment);
 						fprintf(afileout,"\n");
-						fprintf(nmfile,"%s added%s.\r\n",echotag, rescanned ? " and rescanned" : "");
+						fprintf(nmfile,"%s added.\r\n",echotag);
 						added++;
 						break;
 					}
 				}
 				if(u==cfg.areas)			/* Something screwy going on */
 					fprintf(afileout,"%s\n",fields);
+				else if(rescan && area_is_linked(u,&addr) && is_valid_subnum(&scfg, cfg.area[u].sub)) {
+					ulong exported = export_echomail(scfg.sub[cfg.area[u].sub]->code, nodecfg, true);
+					fprintf(nmfile,"%s rescanned and %lu messages exported.\r\n", echotag, exported);
+				}
 				continue;  					/* Area match so continue on */
 			}
 			nomatch=1; 						/* This area wasn't in there */
@@ -2102,10 +2101,9 @@ bool areafix_command(char* instr, nodecfg_t* nodecfg, const char* to, bool resca
 
 	if(stricmp(instr, "RESCAN") == 0) {
 		lprintf(LOG_INFO, "AreaFix (for %s) Rescanning all areas", faddrtoa(&addr));
-		export_echomail(NULL, nodecfg, true);
-		create_netmail(to,/* msg: */NULL, "Rescan Areas"
-			,"All connected areas carried by your hub have been rescanned."
-			,/* dest: */addr, /* src: */NULL);
+		ulong exported = export_echomail(NULL, nodecfg, true);
+		snprintf(str, sizeof str, "All connected areas have been rescanned and %lu messages exported.", exported);
+		create_netmail(to,/* msg: */NULL, "Rescan Areas", str, /* dest: */addr, /* src: */NULL);
 		return true;
 	}
 
@@ -2119,8 +2117,8 @@ bool areafix_command(char* instr, nodecfg_t* nodecfg, const char* to, bool resca
 		else if(subnum == INVALID_SUB)
 			SAFEPRINTF(str, "Connected area '%s' is pass-through: cannot be rescanned", p);
 		else {
-			export_echomail(scfg.sub[subnum]->code, nodecfg, true);
-			SAFEPRINTF(str, "Connected area '%s' has been rescanned.", p);
+			ulong exported = export_echomail(scfg.sub[subnum]->code, nodecfg, true);
+			snprintf(str, sizeof str, "Connected area '%s' has been rescanned and %lu messages exported.", p, exported);
 		}
 		lprintf(LOG_INFO, "AreaFix (for %s) %s", faddrtoa(&addr), str);
 		create_netmail(to,/* msg: */NULL, "Rescan Area"
@@ -2186,7 +2184,7 @@ bool areafix_command(char* instr, nodecfg_t* nodecfg, const char* to, bool resca
 	if(stricmp(instr, "-ALL") == 0) {
 		str_list_t del_area=strListInit();
 		strListPush(&del_area, instr);
-		alter_areas(NULL,del_area,nodecfg,to,rescan);
+		alter_areas(NULL,del_area,nodecfg,to, /* rescan */false);
 		strListFree(&del_area);
 		return true;
 	}
@@ -4716,7 +4714,7 @@ static void write_export_ptr(int subnum, uint32_t ptr, const char* tag)
  empty address as 'addr' designates that a rescan should be done for that
  address.
 ******************************************************************************/
-void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan)
+ulong export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan)
 {
 	char	str[256],tear,cr;
 	char*	buf=NULL;
@@ -5083,6 +5081,7 @@ void export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan
 	if(exported)
 		lprintf(LOG_INFO,"Exported: %5lu msgs total", exported);
 	exported_echomail += exported;
+	return exported;
 }
 
 void del_file_attachments(smbmsg_t* msg)
