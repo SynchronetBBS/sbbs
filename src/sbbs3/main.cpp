@@ -3985,7 +3985,7 @@ int sbbs_t::nopen(char *str, int access)
 	if(!(access&O_TEXT))
 		access|=O_BINARY;
     while(((file=sopen(str,access,share,DEFFILEMODE))==-1)
-        && (errno==EACCES || errno==EAGAIN || errno==EDEADLOCK) && count++<LOOP_NOPEN)
+        && FILE_RETRY_ERRNO(errno) && count++<LOOP_NOPEN)
 	    SLEEP((count / 10) * 100);
     if(count>(LOOP_NOPEN/2) && count<=LOOP_NOPEN) {
         SAFEPRINTF2(logstr,"NOPEN COLLISION - File: \"%s\" Count: %d"
