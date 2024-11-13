@@ -370,7 +370,7 @@ function save_ptr(ini_file, name, value)
 	}
 }
 
-printf("Scanning %lu message bases...\r\n",area.length);
+printf("Scanning message bases...\r\n");
 for(sub in area) {
 
 	if(!socket.is_connected)
