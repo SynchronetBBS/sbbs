@@ -7,11 +7,13 @@ int main(int argc, char** argv)
 	int access = O_RDWR;
 	char* share = "NWA";
 	bool try_all = true;
+	bool loop = false;
 
 	if(argc < 2) {
-		printf("usage: sopenfile [-r] <path/filename> [share-mode]\n");
+		printf("usage: sopenfile [-r] [-l] <path/filename> [share-mode]\n");
 		printf("\n");
 		printf("-r           open file read-only instead of read/write\n");
+		printf("-l           loop until failure\n");
 		printf("\n");
 		printf("share-mode:  N (deny-none)\n");
 		printf("             W (deny-write)\n");
@@ -23,42 +25,48 @@ int main(int argc, char** argv)
 		access = O_RDONLY;
 		++argn;
 	}
+	if(strcmp(argv[argn], "-l") == 0) {
+		loop = true;
+		++argn;
+	}
 	const char* path = argv[argn++];
 	if(argc > argn) {
 		share = argv[argn++];
 		try_all = false;
 	}
-	
-	for(int i = 0; share[i] != '\0'; ++i) {
-		int share_mode = 0;
-		char share_flag = share[i];
-		switch(toupper(share_flag)) {
-			case 'N':
-				share_mode = SH_DENYNO;
-				break;
-			case 'W':
-				share_mode = SH_DENYWR;
-				break;
-			case 'A':
-				share_mode = SH_DENYRW;
-				break;
-			default:
-				fprintf(stderr, "Unrecognized share-mode: %c\n", share_flag);
-				return EXIT_FAILURE;
-		}
-		fprintf(stderr, "%s Deny-%c (share mode %x): ", path, toupper(share_flag), share_mode);
-		int file = sopen(path, access, share_mode);
-		if(file < 0)
-			fprintf(stderr, "Error %d (%s)\n", errno, strerror(errno));
-		else {
-			printf("Success\n");
-			if(!try_all) {
-				fprintf(stderr, "Hit enter\n");
-				getchar();
+
+	do {
+		for(int i = 0; share[i] != '\0'; ++i) {
+			int share_mode = 0;
+			char share_flag = share[i];
+			switch(toupper(share_flag)) {
+				case 'N':
+					share_mode = SH_DENYNO;
+					break;
+				case 'W':
+					share_mode = SH_DENYWR;
+					break;
+				case 'A':
+					share_mode = SH_DENYRW;
+					break;
+				default:
+					fprintf(stderr, "Unrecognized share-mode: %c\n", share_flag);
+					return EXIT_FAILURE;
 			}
-			close(file);
+			fprintf(stderr, "%s Deny-%c (share mode %x): ", path, toupper(share_flag), share_mode);
+			int file = sopen(path, access, share_mode);
+			if(file < 0)
+				fprintf(stderr, "Error %d (%s)\n", errno, strerror(errno));
+			else {
+				printf("Success\n");
+				if(!try_all) {
+					fprintf(stderr, "Hit enter\n");
+					getchar();
+				}
+				close(file);
+			}
 		}
-	}
-	return EXIT_SUCCESS;
+	} while(loop && errno == 0);
+	return errno == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
