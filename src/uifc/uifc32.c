@@ -956,52 +956,56 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 			set_vmem(ptr++, api->chars->list_separator_right, hclr|(bclr<<4), 0);
 		}
 
-		if((*cur)>=opts)
-			(*cur)=opts-1;			/* returned after scrolled */
+		// Clamp cur
+		if ((*cur) >= opts)
+			*cur = opts - 1;			/* returned after scrolled */
+		if ((*cur)<0)
+			*cur = 0;
 
-		if(!bar) {
-			if((*cur)>height-vbrdrsize-1)
-				(*cur)=height-vbrdrsize-1;
-			if((*cur)>opts-1)
-				(*cur)=opts-1;
+		if (!bar) {
+			// If we don't have bar, do not allow scrolling
+			if ((*cur) > height - vbrdrsize - 1)
+				*cur = height - vbrdrsize - 1;
+			if ((*cur) > opts - 1)
+				*cur = opts - 1;
 			i=0;
 		}
 		else {
-			if((*bar)>=opts)
-				(*bar)=opts-1;
-			if((*bar)>height-vbrdrsize-1)
-				(*bar)=height-vbrdrsize-1;
-			if((*cur)==opts-1)
-				(*bar)=height-vbrdrsize-1;
-			if((*bar)>opts-1)
-				(*bar)=opts-1;
-			if((*bar)<0)
-				(*bar)=0;
+			// *bar must be strictly <= *cur
+			if (*bar > *cur)
+				*bar = *cur;
+
+			// *bar needs to fit in window with room for highlight
+			if ((*bar) >= height - vbrdrsize)
+				*bar = height - vbrdrsize - 1;
+
+			// And finally, *bar can't be negative
+			if ((*bar) < 0)
+				*bar = 0;
+
 			// Set i to the first option to display on the screen...
-			i=(*cur)-(*bar);
-			// If bar is too high, start with first item
-			if (i < 0) {
+			i = (*cur) - (*bar);
+
+			// If there are enough options to fill the screen
+			if ((opts > (height - vbrdrsize))) {
+				// If the screen is not filled...
+				if ((opts - i) < (height - vbrdrsize)) {
+					*bar += (height - vbrdrsize) - (opts - i);
+					// This shouldn't be possible, but may as well be paranoid
+					if (*bar > *cur)
+						*bar = *cur;
+					// Recalculate i since we adjusted bar
+					i=(*cur)-(*bar);
+				}
+			}
+			else {
+				// Show whole menu
 				*bar = *cur;
 				i = 0;
 			}
-			// If the number of options on screen is greater than the rows on screen...
-			if ((opts - i) > (height - vbrdrsize)) {
-				*bar = height - vbrdrsize;
-				if (*bar > *cur)
-					*bar = *cur;
-				i=(*cur)-(*bar);
-			}
-			// If there are enough options to fill the screen, but the screen is not filled...
-			if ((opts > (height - vbrdrsize)) && ((opts - i) < (height - vbrdrsize))) {
-				*bar += (height - vbrdrsize) - (opts - i);
-				i=(*cur)-(*bar);
-			}
 		}
-		if((*cur)<0)
-			(*cur)=0;
 
 		j=0;
-		if(i<0) i=0;
 		longopt=0;
 		while(j<height-vbrdrsize) {
 			if(!(mode&WIN_NOBRDR))
