@@ -1102,68 +1102,71 @@ function check_msgflags(attr, netattr, ismail, touser, fromuser, isoperator)
 	return(flags);
 }
 
-function calc_msgflags(attr, netattr, num, msg, readonly)
+function calc_msgflags_arr(attr, netattr, num, msg, readonly)
 {
-	var flags='';
+	var flags = [];
 
-	if(attr & MSG_PRIVATE)
-		flags += "PRIVATE ";
-	if(attr & MSG_READ)
-		flags += "\\Seen ";
-	if(attr & MSG_PERMANENT)
-		flags += "PERMANENT ";
-	if(attr & MSG_LOCKED)
-		flags += "LOCKED ";
-	if(attr & MSG_DELETE)
-		flags += "\\Deleted ";
-	if(attr & MSG_ANONYMOUS)
-		flags += "ANONYMOUS ";
-	if(attr & MSG_KILLREAD)
-		flags += "KILLREAD ";
-	if(attr & MSG_MODERATED)
-		flags += "MODERATED ";
-	if(attr & MSG_VALIDATED)
-		flags += "\\Flagged ";
-	if(attr & MSG_REPLIED) {
-		if(num==-1)
-			flags += "\\Answered ";
+	if (attr & MSG_PRIVATE)
+		flags.push("PRIVATE");
+	if (attr & MSG_READ)
+		flags.push("\\Seen");
+	if (attr & MSG_PERMANENT)
+		flags.push("PERMANENT");
+	if (attr & MSG_LOCKED)
+		flags.push("LOCKED");
+	if (attr & MSG_DELETE)
+		flags.push("\\Deleted");
+	if (attr & MSG_ANONYMOUS)
+		flags.push("ANONYMOUS");
+	if (attr & MSG_KILLREAD)
+		flags.push("KILLREAD");
+	if (attr & MSG_MODERATED)
+		flags.push("MODERATED");
+	if (attr & MSG_VALIDATED)
+		flags.push("\\Flagged");
+	if (attr & MSG_REPLIED) {
+		if (num==-1)
+			flags.push("\\Answered");
 		else
-			flags += "REPLIED ";
+			flags.push("REPLIED");
 	}
-	if(attr & MSG_NOREPLY)
-		flags += "NOREPLY ";
+	if (attr & MSG_NOREPLY)
+		flags.push("NOREPLY");
 
-	if(netattr & NETMSG_INTRANSIT)
-		flags += "INTRANSIT ";
-	if(netattr & NETMSG_SENT)
-		flags += "SENT ";
-	if(netattr & NETMSG_KILLSENT)
-		flags += "KILLSENT ";
-	if(netattr & NETMSG_ARCHIVESENT)
-		flags += "ARCHIVESENT ";
-	if(netattr & NETMSG_HOLD)
-		flags += "HOLD ";
-	if(netattr & NETMSG_CRASH)
-		flags += "CRASH ";
-	if(netattr & NETMSG_IMMEDIATE)
-		flags += "IMMEDIATE ";
-	if(netattr & NETMSG_DIRECT)
-		flags += "DIRECT ";
+	if (netattr & NETMSG_INTRANSIT)
+		flags.push("INTRANSIT");
+	if (netattr & NETMSG_SENT)
+		flags.push("SENT");
+	if (netattr & NETMSG_KILLSENT)
+		flags.push("KILLSENT");
+	if (netattr & NETMSG_ARCHIVESENT)
+		flags.push("ARCHIVESENT");
+	if (netattr & NETMSG_HOLD)
+		flags.push("HOLD");
+	if (netattr & NETMSG_CRASH)
+		flags.push("CRASH");
+	if (netattr & NETMSG_IMMEDIATE)
+		flags.push("IMMEDIATE");
+	if (netattr & NETMSG_DIRECT)
+		flags.push("DIRECT");
 
-	if(attr==0xffff || orig_ptrs[num] < msg) {
-		flags += '\\Recent ';
+	if (attr==0xffff || orig_ptrs[num] < msg) {
+		flags.push('\\Recent');
 	}
 
-	if(!readonly) {
-		if(msg > msg_ptrs[num])
+	if (!readonly) {
+		if (msg > msg_ptrs[num])
 			msg_ptrs[num]=msg;
-		if(base != undefined && base.is_open)
+		if (base != undefined && base.is_open)
 			scan_ptr=msg;
 	}
 
-	if(flags.length)
-		return(flags.substr(0, flags.length-1));
-	return("");
+	return flags;
+}
+
+function calc_msgflags(attr, netattr, num, msg, readonly)
+{
+	return calc_msgflags_arr(attr, netattr, num, msg, readonly).join(' ');
 }
 
 function sublist(group, match, subscribed)
@@ -1934,7 +1937,552 @@ function parse_rfc822_date(date)
 {
 	var dt=new Date(date);
 
-	return(dt.valueOf()/1000);
+	return Math.floor(dt.valueOf()/1000);
+}
+
+function search_get_headers(msg)
+{
+	if (msg.headers != undefined)
+		return true;
+	msg.headers = base.get_msg_header(msg.idx.number, /* expand_fields: */false);
+	if (msg.headers == undefined) {
+		if (msg.errors === undefined)
+			msg.errors = [];
+		msg.errors.push('Unable to read headers for index '+msg.idx.number+' got '+msg.headers.toSource());
+		return false;
+	}
+	return true;
+}
+
+function search_get_parsed_headers(msg)
+{
+	if (!search_get_headers(msg))
+		return false;
+	msg.headers.parse_headers();
+	if (msg.headers.parsed_headers != undefined)
+		return true;
+	return false;
+}
+
+function search_get_body(msg)
+{
+	if (msg.body != undefined)
+		return;
+	msg.body = base.get_msg_body(msg.idx.number, true, true, true).toUpperCase();
+	if (msg.body == undefined) {
+		if (msg.errors === undefined)
+			msg.errors = [];
+		msg.errors.push('Unable to read body for index '+msg.idx.number+' got '+msg.headers.toSource());
+		return false;
+	}
+	return true;
+}
+
+var search_operators = {
+	'MSGOFF': {
+		// Sequence set...
+		children: 0,
+		args: ['sequence-set'],
+		implied: true,
+		handler:function(msg, arg) {
+			if (arg[0].indexOf(msg.idx.number) != -1)
+				return true;
+			return false;
+		}
+	},
+	'AND': {	// Always implied
+		children: 2,
+		args: [],
+		implied: true,
+		handler:function(msg, child) {
+			var gotundef = false;
+			var i;
+
+			for (i in child) {
+				if (child[i] == undefined)
+					gotundef = true;
+				else if (child[i] == false)
+					return false;
+			}
+			if (gotundef)
+				return undef;
+			return true;
+		}
+	},
+	'ALL': {
+		children: 0,
+		args: [],
+		handler:function(msg) {
+			return true;
+		}
+	},
+	'ANSWERED': {
+		children: 0,
+		args: [],
+		handler:function(msg) {
+			if (search_get_headers(msg)) {
+				if (base.subnum==-1 && (msg.idx.attr & MSG_REPLIED))
+					return true;
+			}
+			return false;
+		}
+	},
+	'BCC': {
+		children: 0,
+		args: ['string'],
+		handler:function(msg, arg) {
+			return search_operators.HEADER.handler(msg, ['BCC', arg[0]]);
+		}
+	},
+	'BEFORE': {
+		children: 0,
+		args: ['date-start'],
+		handler:function(msg, arg) {
+			if (search_get_headers(msg)) {
+				if (msg.headers.when_imported_time < arg[0])
+					return true;
+			}
+			return false;
+		},
+	},
+	'BODY': {
+		children: 0,
+		args: ['string'],
+		handler:function(msg, arg) {
+			if (search_get_body(msg)) {
+				if (msg.body.indexOf(arg[0]) != -1)
+					return true;
+			}
+			return false;
+		}
+	},
+	'CC': {
+		children: 0,
+		args: ['string'],
+		handler:function(msg, arg) {
+			return search_operators.HEADER.handler(msg, ['CC', arg[0]]);
+		}
+	},
+	'DELETED': {
+		children: 0,
+		args: [],
+		handler:function(msg) {
+			if(msg.idx.attr & MSG_DELETE)
+				return true;
+			return false;
+		}
+	},
+	'DRAFT': {
+		children: 0,
+		args: [],
+		handler:function(msg) {
+			return false;
+		}
+	},
+	'FLAGGED': {
+		children: 0,
+		args: [],
+		handler:function(msg) {
+			if(msg.idx.attr & MSG_VALIDATED)
+				return true;
+			return false;
+		}
+	},
+	'FROM': {
+		children: 0,
+		args: [],
+		handler:function(msg, arg) {
+			if (search_get_headers(msg)) {
+				if (msg.headers.get_from().toUpperCase().indexOf(arg[0]) != -1)
+					return true;
+			}
+			return false;
+		}
+	},
+	'HEADER': {
+		children: 0,
+		args: ['string', 'string'],
+		handler:function(msg, arg) {
+			var i;
+			var match = new RegExp('^' + arg[0] + abnf.WSP + '*:.*' + arg[1], 'i');
+			var lch = arg[0].toLowerCase();
+
+			if (search_get_parsed_headers(msg)) {
+				if (msg.headers.parsed_headers[lch] == undefined)
+					return false;
+				for (i in msg.headers.parsed_headers[lch]) {
+					if (msg.headers.parsed_headers[lch][i].search(match) == 0)
+						return true
+				}
+			}
+			return false;
+		}
+	},
+	'KEYWORD': {
+		children: 0,
+		args: ['string'],
+		handler:function(msg, arg) {
+			var flags = parse_flags([arg[0]]);
+
+			if (flags.netattr) {
+				if (search_get_headers(msg)) {
+					if ((msg.headers.netattr & flags.netattr) == flags.netattr)
+						return true;
+				}
+				return false;
+			}
+			if (flags.attr) {
+				if ((msg.idx.attr & flags.attr) == flags.attr)
+					return true;
+			}
+			if (arg[0].toUpperCase() == '\\Recent') {
+				if (msg.idx.offset > orig_ptrs[base.subnum])
+					return true;
+			}
+			return false;
+		}
+	},
+	'LARGER': {
+		children: 0,
+		args: ['n'],
+		handler:function(msg, arg) {
+			if (search_get_headers(msg)) {
+				if (search_get_body(msg)) {
+					if (msg.body.length + msg.headers.get_rfc822_header().length > parseInt(arg[0], 10))
+						return true;
+				}
+			}
+			return false;
+		}
+	},
+	'NEW': {
+		children: 0,
+		args: [],
+		handler:function(msg) {
+			return search_operators.KEYWORD.handler(msg, ['\\Recent']) && search_operators.KEYWORD.handler(msg, ['\\Unseen']);
+		}
+	},
+	'NOT': {
+		children: 1,
+		args: [],
+		handler:function(msg, child) {
+			return !child[0];
+		}
+	},
+	'OLD': {
+		children: 0,
+		args: [],
+		handler:function(msg) {
+			return !search_operators.KEYWORD.handler(msg, ['\\Recent']);
+		}
+	},
+	'ON': {
+		children: 0,
+		args: ['date'],
+		handler:function(msg, arg) {
+			if (search_get_headers(msg)) {
+				if (datestr(arg[0]) == datestr(msg.headers.when_imported_time))
+					return true;
+			}
+			return false;
+		}
+	},
+	// TODO: Make this jsut be an (c1 || c2)
+	'OR': {
+		children: 2,
+		args: [],
+		handler:function(msg, child) {
+			var gotundef = false;
+			var i;
+
+			for (i in child) {
+				if (child[i] == undefined)
+					gotundef = true;
+				else if (child[i] == true)
+					return true;
+			}
+			if (gotundef)
+				return undef;
+			return false;
+		}
+	},
+	'RECENT': {
+		children: 0,
+		args: [],
+		handler:function(msg) {
+			return search_operators.KEYWORD.handler(msg, ['\\Recent']);
+		}
+	},
+	'SEEN': {
+		children: 0,
+		args: [],
+		handler:function(msg) {
+			return search_operators.KEYWORD.handler(msg, ['\\Seen']);
+		}
+	},
+	'SENTBEFORE': {
+		children: 0,
+		args: ['date-start'],
+		handler:function(msg, arg) {
+			if (search_get_parsed_headers(msg)) {
+				if (parse_rfc822_date(msg.headers.date) < arg[0])
+					return true;
+			}
+			return false;
+		}
+	},
+	'SENTON': {
+		children: 0,
+		args: ['date'],
+		handler:function(msg, arg) {
+			if (search_get_parsed_headers(msg)) {
+				if (datestr(arg[0]) == datestr(parse_rfc822_date(msg.headers.date)))
+					return true;
+			}
+			return false;
+		}
+	},
+	'SENTSINCE': {
+		children: 0,
+		args: ['date-end'],
+		handler:function(msg, arg) {
+			if (search_get_parsed_headers(msg)) {
+				if (parse_rfc822_date(msg.headers.date) > arg[0])
+					return true;
+			}
+			return false;
+		}
+	},
+	'SINCE': {
+		children: 0,
+		args: ['date-end'],
+		handler:function(msg, arg) {
+			if (search_get_headers(msg)) {
+				if (msg.headers.when_imported_time > arg[0])
+					return true;
+			}
+			return false;
+		}
+	},
+	'SMALLER': {
+		children: 0,
+		args: ['n'],
+		handler:function(msg, arg) {
+			if (search_get_headers(msg)) {
+				if (search_get_body(msg)) {
+					if (msg.body.length + msg.headers.get_rfc822_header().length < parseInt(arg[0], 10))
+						return true;
+				}
+			}
+			return false;
+		}
+	},
+	'SUBJECT': {
+		children: 0,
+		args: ['string'],
+		handler:function(msg, arg) {
+			return search_operators.HEADER.handler(msg, ['SUBJECT', arg[0]]);
+		}
+	},
+	'TEXT': {
+		children: 0,
+		args: ['string'],
+		handler:function(msg, arg) {
+			if (search_get_headers(msg)) {
+				if (search_get_body(msg)) {
+					if ((msg.headers.get_rfc822_header() + msg.body).indexOf(arg[0]) != -1)
+						return true;
+
+				}
+			}
+			return false;
+		}
+	},
+	'TO': {
+		children: 0,
+		args: ['string'],
+		handler:function(msg, arg) {
+			return search_operators.HEADER.handler(msg, ['TO', arg[0]]);
+		}
+	},
+	'UID': {
+		children: 0,
+		args: ['sequence-set-uid'],
+		handler:function(msg, arg) {
+			if (arg[0].indexOf(msg.idx.number) != -1)
+				return true;
+			return false;
+		}
+	},
+	'UNANSWERED': {
+		children: 0,
+		args: [],
+		handler:function(msg) {
+			return !search_operators.KEYWORD.handler(msg, ['\\Answered']);
+		}
+	},
+	'UNDELETED': {
+		children: 0,
+		args: [],
+		handler:function(msg) {
+			return !search_operators.KEYWORD.handler(msg, ['\\Deleted']);
+		}
+	},
+	'UNDRAFT': {
+		children: 0,
+		args: [],
+		handler:function(msg) {
+			return !search_operators.KEYWORD.handler(msg, ['\\Draft']);
+		}
+	},
+	'UNFLAGGED': {
+		children: 0,
+		args: [],
+		handler:function(msg) {
+			return !search_operators.KEYWORD.handler(msg, ['\\Flagged']);
+		}
+	},
+	'UNKEYWORD': {
+		children: 0,
+		args: ['string'],
+		handler:function(msg, arg) {
+			return !search_operators.KEYWORD.handler(msg, arg[0]);
+		}
+	},
+	'UNSEEN': {
+		children: 0,
+		args: [],
+		handler:function(msg) {
+			return !search_operators.KEYWORD.handler(msg, ['\\Seen']);
+		}
+	},
+};
+
+function parse_arg(str, type)
+{
+	var m;
+	var months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+	var dre = new RegExp('^([0-9]{1,2})-('+(months.join('|'))+')-([0-9]{4,4})$', 'i');
+	var d;
+
+	switch(type) {
+		case 'string':
+			return str.toUpperCase().toSource();
+		case 'date':
+			m = str.match(dre);
+			// TODO: Date start and date end...
+			d = new Date(parseInt(m[3], 10), months.indexOf(m[2].toLowerCase()), parseInt(m[1], 10), 12);
+			return Math.floor(d.valueOf() / 1000).toString();
+		case 'date-start':
+			m = str.match(dre);
+			// TODO: Date start and date end...
+			d = new Date(parseInt(m[3], 10), months.indexOf(m[2].toLowerCase()), parseInt(m[1], 10), 0);
+			return Math.floor(d.valueOf() / 1000).toString();
+		case 'date-end':
+			m = str.match(dre);
+			// TODO: Date start and date end...
+			d = new Date(parseInt(m[3], 10), months.indexOf(m[2].toLowerCase()), parseInt(m[1], 10) + 1, 0);
+			d--;
+			return Math.floor(d.valueOf() / 1000).toString();
+		case 'n':
+			d = parseInt(str, 10);
+			return d.toString();
+		case 'sequence-set-uid':
+			return parse_seq_set(str, true).toSource();
+		case 'sequence-set':
+			return parse_seq_set(str, false).toSource();
+	}
+}
+
+function new_search_expr(args)
+{
+	var ret = [];
+	var i;
+	var arg;
+	var uc;
+	var op;
+	var one;
+	var c;
+	var tmp;
+	var comma;
+
+	while (args.length) {
+		arg = args.shift();
+		if (typeof(arg) == 'object') {
+			ret.push(new_search_expr(arg));
+		}
+		else if (typeof(arg) == 'string') {
+			uc = arg.toUpperCase();
+			if (search_operators.hasOwnProperty(uc) && ((!search_operators[uc].hasOwnProperty('implied')) || (!search_operators[uc].implied))) {
+				op = search_operators[uc];
+				one = 'search_operators.'+uc+'.handler(msg';
+				if (op.children > 0)
+					one += ', [';
+				comma = false;
+				for (c = op.children; c > 0; c--) {
+					if (comma)
+						one += ', ';
+					else
+						comma = true;
+					tmp = args.shift();
+					one += new_search_expr([tmp]);
+				}
+				if (op.children > 0)
+					one += ']';
+				if (op.args.length > 0)
+					one += ', [';
+				comma = false;
+				for (i in op.args) {
+					if (comma)
+						one += ', ';
+					else
+						comma = true;
+					tmp = args.shift();
+					one += parse_arg(tmp, op.args[i]);
+				}
+				if (op.args.length > 0)
+					one += ']';
+				one += ')';
+				ret.push(one);
+			}
+			else if (arg.search(/^(?:(?:[0-9]+|\*)(?::(?:[0-9]+|\*))?,)*(?:(?:[0-9]+|\*)(?::(?:[0-9]+|\*))?)$/) == 0) {
+				offsets=parse_seq_set(arg, false);
+				ret.push('search_operators.MSGOFF.handler(msg, [' + offsets.toSource() + '])');
+			}
+			else
+				throw new Error("Unhandled parameter: '"+uc+"'");
+		}
+		else {
+			throw new Error("Unhandled type: '"+typeof(arg)+"'");
+		}
+	}
+
+	return ret.join(' && ');
+}
+
+function new_search(args, uid)
+{
+	var argscpy = JSON.parse(JSON.stringify(args));
+	var arg;
+	var seval;
+	var s;
+	var i;
+	var idx;
+	var result = [];
+
+	seval = new_search_expr(argscpy);
+	try {
+		s = eval('function(msg) { return('+seval+'); }');
+		for (i in index.offsets) {
+			msg = {idx:index.idx[index.offsets[i]]};
+			if (s(msg)) {
+				result.push(uid ? msg.idx.number : msg.idx.offset);
+			}
+		}
+	} catch(error) {
+		log(LOG_WARNING, "Exception during search: " + error);
+	}
+	untagged("SEARCH "+result.join(" "));
 }
 
 function do_search(args, uid)
@@ -1953,140 +2501,140 @@ function do_search(args, uid)
 			var tmp;
 		
 			switch(args.shift().toUpperCase()) {
-				case 'ALL':
+				case 'ALL': //
 					type="idx";
 					search=(function(idx) { return true; });
 					break;
-				case 'ANSWERED':
+				case 'ANSWERED': //
 					type="idx";
 					search=(function(idx) { if(base.subnum==-1 && (idx.attr & MSG_REPLIED)) return true; return false; });
 					break;
-				case 'BODY':
+				case 'BODY': //
 					type="body";
 					search=(eval("function(body) { return(body.indexOf("+args.shift().toUpperCase().toSource()+")!=-1) }"));
 					break;
-				case 'DELETED':
+				case 'DELETED': //
 					type="idx";
 					search=(function(idx) { if(idx.attr & MSG_DELETE) return true; return false; });
 					break;
-				case 'DRAFT':
+				case 'DRAFT': //
 					type="idx";
 					search=(function(idx) { return false; });
 					break;
-				case 'FLAGGED':
+				case 'FLAGGED': //
 					type="idx";
 					search=(function(idx) { if(idx.attr & MSG_VALIDATED) return true; return false; });
 					break;
-				case 'FROM':
+				case 'FROM': //
 					type="hdr";
 					search=(eval("function(hdr) { return(hdr.get_from().toUpperCase().indexOf("+args.shift().toUpperCase().toSource()+")!=-1) }"));
 					break;
-				case 'KEYWORD':
+				case 'KEYWORD': //
 					type="hdr";
 					search=(eval("function(hdr) { var flags="+parse_flags([args.shift()]).toSource()+"; if((hdr.attr & flags.attr)==flags.attr && (hdr.netattr & flags.netattr)==flags.netattr) return true; return false;}"));
 					break;
-				case 'NEW':
+				case 'NEW': //
 					type="idx";
 					search=(eval("function(idx) { if((idx.number > orig_ptrs[base.subnum]) && (idx.attr & MSG_READ)==0) return true; return false; }"));
 					break;
-				case 'OLD':
+				case 'OLD': //
 					type="idx";
 					search=(eval("function(idx) { if(idx.number <= orig_ptrs[base.subnum]) return true; return false; }"));
 					break;
-				case 'RECENT':
+				case 'RECENT': //
 					type="idx";
 					search=(eval("function(idx) { if(idx.number > orig_ptrs[base.subnum]) return true; return false; }"));
 					break;
-				case 'SEEN':
+				case 'SEEN': //
 					type="idx";
 					search=(function(idx) { if(idx.attr & MSG_READ) return true; return false });
 					break;
-				case 'SUBJECT':
+				case 'SUBJECT': //
 					type="hdr";
 					search=(eval("function(hdr) { return(hdr.subject.toUpperCase().indexOf("+args.shift().toUpperCase().toSource()+")!=-1) }"));
 					break;
-				case 'TO':
+				case 'TO': //
 					type="hdr";
 					search=(eval("function(hdr) { return(hdr.to.toUpperCase().indexOf("+args.shift().toUpperCase().toSource()+")!=-1) }"));
 					break;
-				case 'UID':
+				case 'UID': //
 					type="idx";
 					search=(eval("function(idx) { var good_uids="+parse_seq_set(args.shift(), true).toSource()+"; var i; for(i in good_uids) { if(good_uids[i]==idx.number) return true; } return false; }"));
 					break;
-				case 'UNANSWERED':
+				case 'UNANSWERED': //
 					type="idx";
 					search=(function(idx) { if(base.subnum==-1 && (idx.attr & MSG_REPLIED)) return false; return true; });
 					break;
-				case 'UNDELETED':
+				case 'UNDELETED': //
 					type="idx";
 					search=(function(idx) { if(idx.attr & MSG_DELETE) return false; return true; });
 					break;
-				case 'UNDRAFT':
+				case 'UNDRAFT': //
 					type="idx";
 					search=(function(idx) { return true; });
 					break;
-				case 'UNFLAGGED':
+				case 'UNFLAGGED': //
 					type="idx";
 					search=(function(idx) { if(idx.attr & MSG_VALIDATED) return false; return true; });
 					break;
-				case 'UNKEYWORD':
+				case 'UNKEYWORD': //
 					type="hdr";
 					search=(eval("function(hdr) { var flags="+parse_flags([args.shift()]).toSource()+"; if((hdr.attr & flags.attr)==flags.attr && (hdr.netattr & flags.netattr)==flags.netattr) return false; return true;}"));
 					break;
-				case 'BEFORE':
+				case 'BEFORE': //
 					type="hdr";
 					search=(eval("function(hdr) { var before="+parse_date(args.shift()).toSource()+"; if(hdr.when_imported_time < before) return true; return false; }"));
 					break;
-				case 'ON':
+				case 'ON': //
 					type="hdr";
 					search=(eval("function(hdr) { var on="+datestr(parse_date(args.shift())).toSource()+"; if(datestr(hdr.when_imported_time) == on) return true; return false; }"));
 					break;
-				case 'SINCE':
+				case 'SINCE': //
 					type="hdr";
 					search=(eval("function(hdr) { var since="+parse_date(args[0]).toSource()+"; var since_str="+datestr(parse_date(args.shift())).toSource()+"; if(hdr.when_imported_time > since && datestr(hdr.when_imported_time) != since_str) return true; return false; }"));
 					break;
-				case 'SENTBEFORE':
+				case 'SENTBEFORE': //
 					type="hdr";
 					search=(eval("function(hdr) { var before="+parse_date(args.shift()).toSource()+"; if(parse_rfc822_date(hdr.date) < before) return true; return false; }"));
 					break;
-				case 'SENTON':
+				case 'SENTON': //
 					type="hdr";
 					search=(eval("function(hdr) { var on="+datestr(parse_date(args.shift())).toSource()+"; if(datestr(parse_rfc822_date(hdr.date)) == on) return true; return false; }"));
 					break;
-				case 'SENTSINCE':
+				case 'SENTSINCE': //
 					type="hdr";
-					search=(eval("function(hdr) { var since="+parse_date(args[0]).toSource()+"; var since_str="+datestr(parse_date(args.shift())).toSource()+"; if(parse_rfc822_date(hdrdate) > since && datestr(parse_rfc822_date(hdr.date)) != since_str) return true; return false; }"));
+					search=(eval("function(hdr) { var since="+parse_date(args[0]).toSource()+"; var since_str="+datestr(parse_date(args.shift())).toSource()+"; if(parse_rfc822_date(hdr.date) > since && datestr(parse_rfc822_date(hdr.date)) != since_str) return true; return false; }"));
 					break;
-				case 'HEADER':
+				case 'HEADER': //
 					type="hdr";
-					search=(eval("function(hdr) { var hname="+args.shift().toLowerCase().toSource()+"; var match=new RegExp('^('+abnf.field_name+')'+abnf.WSP+'*:.*'+"+args.shift().toSource()+"; var hdrs=hdr.parse_headers(); var i; for(i in hdrs[hname]) if(hdrs[hname][i].search(match)==0) return true; return false;}"));
+					search=(eval("function(hdr) { var hname="+args.shift().toLowerCase().toSource()+"; var match=new RegExp('^('+abnf.field_name+')'+abnf.WSP+'*:.*'+"+args.shift().toSource()+", 'i'); var hdrs=hdr.parse_headers(); var i; for(i in hdrs[hname]) if(hdrs[hname][i].search(match)==0) return true; return false;}"));
 					break;
-				case 'LARGER':
+				case 'LARGER': //
 					type="all";
 					search=(eval("function(idx,hdr,body) { var min="+parseInt(args.shift(),10)+"; if(body.length + hdr.get_rfc822_header().length > min) return true; return false;}"));
 					break;
-				case 'SMALLER':
+				case 'SMALLER': //
 					type="all";
 					search=(eval("function(idx,hdr,body) { var max="+parseInt(args.shift(),10)+"; if(body.length + hdr.get_rfc822_header().length < max) return true; return false;}"));
 					break;
-				case 'CC':
+				case 'CC': //
 					type="hdr";
-					search=(eval("function(hdr) { var match=new RegExp('^('+abnf.field_name+')'+abnf.WSP+'*:.*'+"+args.shift().toSource()+"; var hdrs=hdr.parse_headers(); var i; if(hdrs.cc == undefined) return false; for(i in hdrs.cc) if(hdrs.cc[i].search(match)==0) return true; return false;}"));
+					search=(eval("function(hdr) { var match=new RegExp('^('+abnf.field_name+')'+abnf.WSP+'*:.*'+"+args.shift().toSource()+",'i'); var hdrs=hdr.parse_headers(); var i; if(hdrs.cc == undefined) return false; for(i in hdrs.cc) if(hdrs.cc[i].search(match)==0) return true; return false;}"));
 					break;
-				case 'BCC':
+				case 'BCC': //
 					type="hdr";
-					search=(eval("function(hdr) { var match=new RegExp('^('+abnf.field_name+')'+abnf.WSP+'*:.*'+"+args.shift().toSource()+"; var hdrs=hdr.parse_headers(); var i; if(hdrs.bcc == undefined) return false; for(i in hdrs.bcc) if(hdrs.bcc[i].search(match)==0) return true; return false;}"));
+					search=(eval("function(hdr) { var match=new RegExp('^('+abnf.field_name+')'+abnf.WSP+'*:.*'+"+args.shift().toSource()+",'i'); var hdrs=hdr.parse_headers(); var i; if(hdrs.bcc == undefined) return false; for(i in hdrs.bcc) if(hdrs.bcc[i].search(match)==0) return true; return false;}"));
 					break;
-				case 'TEXT':
+				case 'TEXT': //
 					type="all";
 					search=(eval("function(idx,hdr,body) { var str="+args.shift().toSource()+"; if(hdr.get_rfc822_header().indexOf(str)!=-1) return true; if(body.indexOf(str)!=-1) return true; return false}"));
 					break;
-				case 'NOT':
+				case 'NOT': //
 					next1=get_func(args);
 					type=next1[0];
 					search=(eval("function(x) { return !"+next1[1].toSource()+"(x)}"));
 					break;
-				case 'OR':
+				case 'OR': //
 					next1=get_func(args);
 					next2=get_func(args);
 					if(next1[0]==next1[1]) {
@@ -2248,7 +2796,8 @@ var selected_command_handlers = {
 				tagged(tag, "NO", "I don't support CHARSET in SEARCH.");
 				return;
 			}
-			do_search(args.slice(1), false);
+			new_search(args.slice(1), false);
+			//do_search(args.slice(1), false);
 			tagged(tag, "OK", "And that was your results.");
 		}
 	},
@@ -2344,7 +2893,8 @@ var selected_command_handlers = {
 						tagged(tag, "NO", "I don't support CHARSET in SEARCH.");
 						return;
 					}
-					do_search(args.slice(2), true);
+					new_search(args.slice(2), true);
+					//do_search(args.slice(2), true);
 					tagged(tag, "OK", "And that was your results.");
 					break;
 				default:
