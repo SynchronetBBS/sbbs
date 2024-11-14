@@ -266,7 +266,7 @@ int eputs(int level, const char *str)
 			startup->errormsg(startup->cbdata, level, errmsg);
 	}
 
-	if(startup==NULL || startup->event_lputs==NULL || level > startup->log_level)
+	if(startup==NULL || startup->event_lputs==NULL || level > startup->event_log_level)
 		return(0);
 
 	return(startup->event_lputs(startup->event_cbdata,level,str));

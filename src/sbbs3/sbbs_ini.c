@@ -47,6 +47,7 @@ static const char*	strMaxSFTPInactivity="MaxSFTPInactivity";
 static const char*	strMaxConConn="MaxConcurrentConnections";
 static const char*	strHostName="HostName";
 static const char*	strLogLevel="LogLevel";
+static const char*	strEventLogLevel="EventLogLevel";
 static const char*	strTLSErrorLevel="TLSErrorLevel";
 static const char*	strBindRetryCount="BindRetryCount";
 static const char*	strBindRetryDelay="BindRetryDelay";
@@ -504,6 +505,8 @@ void sbbs_read_ini(
 
 		bbs->log_level
 			=iniGetLogLevel(list,section,strLogLevel,global->log_level);
+		bbs->event_log_level
+			=iniGetLogLevel(list,section,strEventLogLevel,bbs->log_level);
 		bbs->options
 			=iniGetBitField(list,section,strOptions,bbs_options
 				,BBS_OPT_XTRN_MINIMIZED);
@@ -956,6 +959,10 @@ bool sbbs_write_ini(
 		if(bbs->log_level==global->log_level)
 			iniRemoveValue(lp,section,strLogLevel);
 		else if(!iniSetLogLevel(lp,section,strLogLevel,bbs->log_level,&style))
+			break;
+		if(bbs->event_log_level==bbs->log_level)
+			iniRemoveValue(lp,section,strEventLogLevel);
+		else if(!iniSetLogLevel(lp,section,strEventLogLevel,bbs->event_log_level,&style))
 			break;
 
 		/* JavaScript operating parameters */

@@ -566,6 +566,8 @@ static void termsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Execute Timed Events", startup.options & BBS_OPT_NO_EVENTS ? "No" : "Yes");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Execute QWK-related Events"
 			,startup.options & BBS_OPT_NO_EVENTS ? "N/A" : startup.options & BBS_OPT_NO_QWK_EVENTS ? "No" : "Yes");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Event Log Level"
+			,startup.options & BBS_OPT_NO_EVENTS ? "N/A" : iniLogLevelStringList()[startup.event_log_level]);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Login Requirements", startup.login_ars);
 		strcpy(opt[i++], "JavaScript Settings...");
@@ -693,15 +695,20 @@ static void termsrvr_cfg(void)
 				startup.options ^= BBS_OPT_NO_QWK_EVENTS;
 				break;
 			case 16:
-				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
+				if(startup.options & BBS_OPT_NO_EVENTS)
+					break;
+				uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &startup.event_log_level, 0, "Event Log Level", iniLogLevelStringList());
 				break;
 			case 17:
-				getar("Terminal Server Login", startup.login_ars);
+				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
 				break;
 			case 18:
-				js_startup_cfg(&startup.js);
+				getar("Terminal Server Login", startup.login_ars);
 				break;
 			case 19:
+				js_startup_cfg(&startup.js);
+				break;
+			case 20:
 				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:
