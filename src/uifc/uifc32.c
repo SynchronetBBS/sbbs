@@ -643,6 +643,9 @@ static inline char* non_null_str(char* str) { return str == NULL ? "" : str; }
 /****************************************************************************/
 /* General menu function, see uifc.h for details.							*/
 /****************************************************************************/
+// cur is the currently selected option.
+// bar is how many unselected options are displayed up to (ie: The number
+//     of unselected options before cur currently displayed on screen)
 int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 	, const char *initial_title, char **option)
 {
@@ -974,16 +977,24 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 				(*bar)=opts-1;
 			if((*bar)<0)
 				(*bar)=0;
+			// Set i to the first option to display on the screen...
 			i=(*cur)-(*bar);
+			// If bar is too high, start with first item
 			if (i < 0) {
-				*bar += i;
+				*bar = *cur;
 				i = 0;
 			}
-			if(i+(height-vbrdrsize-1)>=opts) {
-				(*bar)=(height-vbrdrsize);
+			// If the number of options on screen is greater than the rows on screen...
+			if ((opts - i) > (height - vbrdrsize)) {
+				*bar = height - vbrdrsize;
 				if (*bar > *cur)
 					*bar = *cur;
-				i=(*cur)-(*bar)+1;
+				i=(*cur)-(*bar);
+			}
+			// If there are enough options to fill the screen, but the screen is not filled...
+			if ((opts > (height - vbrdrsize)) && ((opts - i) < (height - vbrdrsize))) {
+				*bar += (height - vbrdrsize) - (opts - i);
+				i=(*cur)-(*bar);
 			}
 		}
 		if((*cur)<0)
