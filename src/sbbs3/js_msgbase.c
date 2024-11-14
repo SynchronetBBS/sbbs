@@ -3215,6 +3215,7 @@ static jsSyncMethodSpec js_msgbase_functions[] = {
 	"<tr><td align=top><tt>mime_version</tt><td>MIME Version (optional)"
 	"<tr><td align=top><tt>content_type</tt><td>MIME Content-Type (optional)"
 	"<tr><td align=top><tt>summary</tt><td>Message Summary (optional)"
+	"<tr><td align=top><tt>editor</tt><td>Message Editor used by author (optional)"
 	"<tr><td align=top><tt>tags</tt><td>Message Tags (space-delimited, optional)"
 	"<tr><td align=top><tt>id</tt><td>Message's RFC-822 compliant Message-ID"
 	"<tr><td align=top><tt>reply_id</tt><td>Message's RFC-822 compliant Reply-ID"
