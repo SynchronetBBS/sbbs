@@ -1394,17 +1394,23 @@ function open_cfg(usr)
 		return false;
 	}
 	lock_cfg();
-	// Check if it's the old INI format...
-	if (cfgfile.length > 0) {
-		var ch = cfgfile.read(1);
-		if (ch != '{') {
-			// INI file, convert...
-			read_old_cfg();
+	try {
+		// Check if it's the old INI format...
+		if (cfgfile.length > 0) {
+			var ch = cfgfile.read(1);
+			if (ch != '{') {
+				// INI file, convert...
+				read_old_cfg();
+				save_cfg(false);
+			}
+		}
+		else {
 			save_cfg(false);
 		}
 	}
-	else {
-		save_cfg(false);
+	catch (error) {
+		unlock_cfg();
+		throw error;
 	}
 	unlock_cfg();
 	return true;
@@ -1686,9 +1692,15 @@ var authenticated_command_handlers = {
 
 			if(msg_area.sub[sub]!=undefined && msg_area.sub[sub].can_read) {
 				lock_cfg();
-				read_cfg(sub, false);
-				saved_config[sub].subscribed = true;
-				save_cfg(false);
+				try {
+					read_cfg(sub, false);
+					saved_config[sub].subscribed = true;
+					save_cfg(false);
+				}
+				catch (error) {
+					unlock_cfg();
+					throw error;
+				}
 				unlock_cfg();
 				tagged(tag, "OK", "Subscribed...");
 			}
@@ -1704,9 +1716,15 @@ var authenticated_command_handlers = {
 
 			if(msg_area.sub[sub]!=undefined && msg_area.sub[sub].can_read) {
 				lock_cfg();
-				read_cfg(sub, false);
-				saved_config[sub].subscribed = false;
-				save_cfg(false);
+				try {
+					read_cfg(sub, false);
+					saved_config[sub].subscribed = false;
+					save_cfg(false);
+				}
+				catch (error) {
+					unlock_cfg();
+					throw error;
+				}
 				unlock_cfg();
 				tagged(tag, "OK", "Unsubscribed...");
 			}
@@ -1841,64 +1859,76 @@ function do_store(seq, uid, item, data)
 	var changed=false;
 
 	lock_cfg();
-	read_cfg(index.code, false);
-	for(i in seq) {
-		idx=index.idx[seq[i]];
-		hdr=base.get_msg_header(seq[i], /* expand_fields: */false);
-		flags=parse_flags(data);
-		switch(item.toUpperCase()) {
-			case 'FLAGS.SILENT':
-				silent=true;
-			case 'FLAGS':
-				chflags={attr:idx.attr^flags.attr, netattr:hdr.netattr^flags.netattr};
-				break;
-			case '+FLAGS.SILENT':
-				silent=true;
-			case '+FLAGS':
-				chflags={attr:idx.attr^(idx.attr|flags.attr), netattr:hdr.netattr^(hdr.netattr|flags.netattr)};
-				break;
-			case '-FLAGS.SILENT':
-				silent=true;
-			case '-FLAGS':
-				chflags={attr:idx.attr^(idx.attr&~flags.attr), netattr:hdr.netattr^(hdr.netattr&~flags.netattr)};
-				break
-		}
-
-		if(chflags.attr & MSG_READ)
-			mod_seen=true;
-		chflags=check_msgflags(chflags.attr, chflags.netattr, base.subnum==-1, hdr.to_net_type==NET_NONE?hdr.to==user.number:false, hdr.from_net_type==NET_NONE?hdr.from==user.number:false,base.is_operator);
-		if(chflags.attr || chflags.netattr) {
-			hdr.attr ^= chflags.attr;
-			hdr.netattr ^= chflags.netattr;
-			if(!readonly) {
-				base.put_msg_header(seq[i], hdr);
-				changed=true;
+	try {
+		read_cfg(index.code, false);
+		for(i in seq) {
+			idx=index.idx[seq[i]];
+			hdr=base.get_msg_header(seq[i], /* expand_fields: */false);
+			flags=parse_flags(data);
+			switch(item.toUpperCase()) {
+				case 'FLAGS.SILENT':
+					silent=true;
+				case 'FLAGS':
+					chflags={attr:idx.attr^flags.attr, netattr:hdr.netattr^flags.netattr};
+					break;
+				case '+FLAGS.SILENT':
+					silent=true;
+				case '+FLAGS':
+					chflags={attr:idx.attr^(idx.attr|flags.attr), netattr:hdr.netattr^(hdr.netattr|flags.netattr)};
+					break;
+				case '-FLAGS.SILENT':
+					silent=true;
+				case '-FLAGS':
+					chflags={attr:idx.attr^(idx.attr&~flags.attr), netattr:hdr.netattr^(hdr.netattr&~flags.netattr)};
+					break
 			}
+
+			if(chflags.attr & MSG_READ)
+				mod_seen=true;
+			chflags=check_msgflags(chflags.attr, chflags.netattr, base.subnum==-1, hdr.to_net_type==NET_NONE?hdr.to==user.number:false, hdr.from_net_type==NET_NONE?hdr.from==user.number:false,base.is_operator);
+			if(chflags.attr || chflags.netattr) {
+				hdr.attr ^= chflags.attr;
+				hdr.netattr ^= chflags.netattr;
+				if(!readonly) {
+					base.put_msg_header(seq[i], hdr);
+					changed=true;
+				}
+			}
+			if(!silent)
+				send_fetch_response(seq[i], ["FLAGS"], uid);
+			if (!client.socket.is_connected)
+				break;
+			js.gc();
 		}
-		if(!silent)
-			send_fetch_response(seq[i], ["FLAGS"], uid);
-		if (!client.socket.is_connected)
-			break;
-		js.gc();
+		save_cfg(false);
 	}
-	save_cfg(false);
+	catch (error) {
+		unlock_cfg();
+		throw error;
+	}
 	unlock_cfg();
 	if(mod_seen && base.cfg != undefined) {
 		lock_cfg();
-		read_cfg(base.cfg.code, false);
-		if(saved_config[base.cfg.code] == undefined) {
-			saved_config[base.cfg.code] = {subscribed:false};
+		try {
+			read_cfg(base.cfg.code, false);
+			if(saved_config[base.cfg.code] == undefined) {
+				saved_config[base.cfg.code] = {subscribed:false};
+			}
+			if(saved_config[base.cfg.code].Seen == undefined) {
+				saved_config[base.cfg.code].Seen = {};
+				saved_config[base.cfg.code].Seen[header.number]=0;
+			}
+			saved_config[base.cfg.code].Seen[seq[i]] ^= 1;
+			if (saved_config[base.cfg.code].Seen[seq[i]])
+				index.idx[seq[i]].attr |= MSG_READ;
+			else
+				index.idx[seq[i]].attr &= ~MSG_READ;
+			save_cfg(false);
 		}
-		if(saved_config[base.cfg.code].Seen == undefined) {
-			saved_config[base.cfg.code].Seen = {};
-			saved_config[base.cfg.code].Seen[header.number]=0;
+		catch (error) {
+			unlock_cfg();
+			throw error;
 		}
-		saved_config[base.cfg.code].Seen[seq[i]] ^= 1;
-		if (saved_config[base.cfg.code].Seen[seq[i]])
-			index.idx[seq[i]].attr |= MSG_READ;
-		else
-			index.idx[seq[i]].attr &= ~MSG_READ;
-		save_cfg(false);
 		unlock_cfg();
 	}
 	if(changed)
@@ -2810,13 +2840,19 @@ var selected_command_handlers = {
 			var i;
 
 			lock_cfg();
-			read_cfg(get_base_code(base), false);
-			for(i in seq) {
-				send_fetch_response(seq[i], data_items, false);
-				if (!client.socket.is_connected)
-					break;
+			try {
+				read_cfg(get_base_code(base), false);
+				for(i in seq) {
+					send_fetch_response(seq[i], data_items, false);
+					if (!client.socket.is_connected)
+						break;
+				}
+				save_cfg(false);
 			}
-			save_cfg(false);
+			catch (error) {
+				unlock_cfg();
+				throw error;
+			}
 			unlock_cfg();
 			js.gc();
 			tagged(tag, "OK", "There they are!");
@@ -2865,14 +2901,20 @@ var selected_command_handlers = {
 					seq=parse_seq_set(args[2],true);
 					data_items=parse_data_items(args[3]);
 					lock_cfg();
-					read_cfg(get_base_code(base), false);
-					for(i in seq) {
-						send_fetch_response(seq[i], data_items, true);
-						if (!client.socket.is_connected)
-							break;
+					try {
+						read_cfg(get_base_code(base), false);
+						for(i in seq) {
+							send_fetch_response(seq[i], data_items, true);
+							if (!client.socket.is_connected)
+								break;
+						}
+						save_cfg(false);
 					}
-					save_cfg(false);
-					lock_cfg();
+					catch (error) {
+						unlock_cfg();
+						throw error;
+					}
+					unlock_cfg();
 					js.gc();
 					tagged(tag, "OK", "There they are (with UIDs)!");
 					break;
@@ -2986,47 +3028,54 @@ function read_cfg(sub, lck)
 
 	if (lck)
 		lock_cfg();
-	if(saved_config[sub]==undefined)
-		saved_config[sub]={subscribed:false};
-
-	cfgfile.rewind();
-	contents = cfgfile.read();
 	try {
-		newfile = JSON.parse(contents);
-	}
-	catch (error) {
-		newfile = {'__config_epoch__':0, mail:{scan_ptr:0, subscribed:true}};
-	}
-	for (newsub in newfile) {
-		if (newsub == '__config_epoch__') {
-			saved_config.__config_epoch__ = newfile[newsub];
+		if(saved_config[sub]==undefined)
+			saved_config[sub]={subscribed:false};
+
+		cfgfile.rewind();
+		contents = cfgfile.read();
+		try {
+			newfile = JSON.parse(contents);
 		}
-		else {
-			saved_config[newsub] = {};
-			if (newfile[newsub].hasOwnProperty('seen'))
-				saved_config[newsub].Seen = newfile[newsub].seen;
-			else
-				saved_config[newsub].Seen = newfile[newsub].seen = {};
-			if (newfile[newsub].hasOwnProperty('subscribed'))
-				saved_config[newsub].subscribed = newfile[newsub].subscribed;
-			else
-				saved_config[newsub].subscribed = false;
-			if (newfile[newsub].hasOwnProperty('bseen')) {
-				for (i in newfile[newsub].bseen) {
-					basemsg = parseInt(i, 10);
-					bstr = base64_decode(newfile[newsub].bseen[i]);
-					for (byte = 0; byte < bstr.length; byte++) {
-						asc = ascii(bstr[byte]);
-						if (asc == 0)
-							continue;
-						for (bit=0; bit<8; bit++) {
-							if (asc & (1<<bit))
-								saved_config[newsub].Seen[basemsg+(byte*8+bit)]=1;
+		catch (error) {
+			newfile = {'__config_epoch__':0, mail:{scan_ptr:0, subscribed:true}};
+		}
+		for (newsub in newfile) {
+			if (newsub == '__config_epoch__') {
+				saved_config.__config_epoch__ = newfile[newsub];
+			}
+			else {
+				saved_config[newsub] = {};
+				if (newfile[newsub].hasOwnProperty('seen'))
+					saved_config[newsub].Seen = newfile[newsub].seen;
+				else
+					saved_config[newsub].Seen = newfile[newsub].seen = {};
+				if (newfile[newsub].hasOwnProperty('subscribed'))
+					saved_config[newsub].subscribed = newfile[newsub].subscribed;
+				else
+					saved_config[newsub].subscribed = false;
+				if (newfile[newsub].hasOwnProperty('bseen')) {
+					for (i in newfile[newsub].bseen) {
+						basemsg = parseInt(i, 10);
+						bstr = base64_decode(newfile[newsub].bseen[i]);
+						for (byte = 0; byte < bstr.length; byte++) {
+							asc = ascii(bstr[byte]);
+							if (asc == 0)
+								continue;
+							for (bit=0; bit<8; bit++) {
+								if (asc & (1<<bit))
+									saved_config[newsub].Seen[basemsg+(byte*8+bit)]=1;
+							}
 						}
 					}
 				}
 			}
 		}
+	}
+	catch (error) {
+		if (lck)
+			unlock_cfg();
+		throw error;
 	}
 
 	if (lck)
