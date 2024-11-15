@@ -2,8 +2,6 @@
 
 /* JSexec script for nightly Synchronet test builds */
 
-/* $Id: testbuild.js,v 1.34 2020/08/01 22:09:03 rswindell Exp $ */
-
 require("smbdefs.js", 'SMB_PRIORITY_HIGHEST');
 
 var keep = false;
@@ -22,7 +20,7 @@ var temp_dir = backslash(system.temp_path) + "sbbs-" + date_str;
 log(LOG_INFO,"Using temp directory: " + temp_dir);
 
 var build_output = "build_output.txt";
-var repo = "git@gitlab.synchro.net:/sbbs/sbbs";
+var repo = "git@gitlab.synchro.net:/main/sbbs";
 var cmd_line = "git clone " + repo + " " + temp_dir + " 2> " + build_output;
 
 log(LOG_INFO, "Executing: " + cmd_line);
@@ -31,7 +29,7 @@ log(LOG_INFO, "Done: " + cmd_line);
 if(retval) {
 	print("errno: " + errno);
 	send_email(subject,
-		log(LOG_ERR,"!ERROR " + retval + " executing: '" + cmd_line)
+		log(LOG_ERR,"!ERROR " + retval + format(" (errno=%d) ", errno) + " executing: '" + cmd_line)
 			+ "\n\n" + file_contents(build_output)
 		,SMB_PRIORITY_HIGHEST);
 	bail(1);
@@ -301,6 +299,15 @@ if(!js.terminated) {
 	log(LOG_INFO,format("Copying %s to %s",archive,dest));
 	if(!file_copy(archive,dest))
 		log(LOG_ERR,format("!ERROR copying %s to %s",archive,dest));
+	else {
+		var filebase = new FileBase("sbbs");
+		if(filebase.open()) {
+			var file = filebase.get(archive);
+			if(file)
+				filebase.update(file.name, file, true, true);
+			filebase.close();
+		}
+	}
 }
 bail(0);
 /* end */
