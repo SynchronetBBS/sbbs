@@ -89,6 +89,8 @@ static const char* qhubIniSection = "QWK_NetworkHubs";
 volatile time_t	uptime=0;
 volatile uint	served=0;
 
+static std::atomic<time_t> event_thread_tick;
+static bool event_thread_blocked;
 static	protected_uint32_t node_threads_running;
 static volatile uint32_t client_highwater=0;
 
@@ -2890,6 +2892,9 @@ void event_thread(void* arg)
 
 	while(!sbbs->terminated && !terminate_server) {
 
+		sbbs->event_thread_running = true;
+		event_thread_tick = time(NULL);
+
 		if(startup->options&BBS_OPT_NO_EVENTS) {
 			SLEEP(1000);
 			continue;
@@ -3473,6 +3478,8 @@ void event_thread(void* arg)
 						int result = sbbs->external(cmd, ex_mode, sbbs->cfg.event[i]->dir);
 						if(!(ex_mode&EX_BG))
 							sbbs->lprintf(result ? sbbs->cfg.event[i]->errlevel : LOG_INFO, "Timed event: '%s' returned %d", cmd, result);
+						else
+							sbbs->lprintf(LOG_DEBUG, "Background timed event '%s' spawned", cmd);
 					}
 					sbbs->console&=~CON_L_ECHO;
 					sbbs->online=false;
@@ -5352,7 +5359,6 @@ NO_SSH:
 			cleanup(1);
 			return;
 		}
-		events->event_thread_running = true;
 		_beginthread(event_thread, 0, events);
 	}
 
@@ -5448,6 +5454,22 @@ NO_SSH:
 #ifdef USE_CRYPTLIB
 		sbbs->ssh_mode=false;
 #endif
+
+		if(events->event_thread_running) {
+			time_t now = time(NULL);
+			t = event_thread_tick;
+			if(now > t && now - t > 60 * 60 * 2) {
+				if(!event_thread_blocked) {
+					lprintf(LOG_ERR, "Event thread appears to be blocked since %.24s", ctime_r(&t, str));
+					event_thread_blocked = true;
+				}
+			} else {
+				if(event_thread_blocked) {
+					lprintf(LOG_NOTICE, "Event thrad unblocked");
+					event_thread_blocked = false;
+				}
+			}
+		}
 
 		/* now wait for connection */
 		client_addr_len = sizeof(client_addr);
