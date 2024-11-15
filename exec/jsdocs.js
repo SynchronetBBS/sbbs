@@ -283,8 +283,8 @@ f.writeln("<body>");
 f.writeln("<font face=arial,helvetica>");
 
 f.writeln("<h1>Synchronet JavaScript Object Model Reference</h1>");
-f.printf("Generated for <b>Synchronet v%s</b>, compiled %s\n"
-		 ,system.full_version.replace(/ Debug/,""),system.compiled_when);
+f.printf("Generated for <b>Synchronet v%s</b>, %s/%s (%s) compiled %s\n"
+		 ,system.full_version.replace(/ Debug/,""),system.git_branch, system.git_hash, system.git_date, system.compiled_when);
 f.writeln("<ul><li style='display:list-item'>");
 if(min_ver)
 	f.writeln("Includes Properties and Methods added or substantially modified in Synchronet v" + verstr(min_ver) + " only.");
