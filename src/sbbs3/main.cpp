@@ -2926,7 +2926,7 @@ void event_thread(void* arg)
 						continue;
 					}
 					if(!fexist(fname)) {
-						sbbs->lprintf(LOG_INFO, "%s already gone", fname);
+						sbbs->lprintf(LOG_NOTICE, "%s already gone", fname);
 						sbbs->fremove(WHERE, lockfile, /* log-all-errors: */true);
 						continue;
 					}
@@ -2971,6 +2971,8 @@ void event_thread(void* arg)
 			glob(str,0,NULL,&g);
 			for(i=0;i<(int)g.gl_pathc && !sbbs->terminated;i++) {
 				char* fname = g.gl_pathv[i];
+				if(!fexist(fname))
+					continue;
 				sbbs->useron.number = 0;
 				sbbs->lprintf(LOG_INFO, "QWK pack semaphore signaled: %s", fname);
 				sbbs->useron.number = atoi(fname+offset);
@@ -2987,7 +2989,7 @@ void event_thread(void* arg)
 					continue;
 				}
 				if(!fexist(fname)) {
-					sbbs->lprintf(LOG_INFO, "%s already gone", fname);
+					sbbs->lprintf(LOG_NOTICE, "%s already gone", fname);
 					sbbs->fremove(WHERE, lockfile, /* log-all-errors: */true);
 					continue;
 				}
@@ -3389,7 +3391,7 @@ void event_thread(void* arg)
 					sbbs->online=ON_LOCAL;
 					sbbs->console|=CON_L_ECHO;
 					cmd = sbbs->cmdstr(cmd, nulstr, sbbs->cfg.event[i]->dir, NULL);
-					sbbs->lprintf(LOG_INFO,"Running %s%stimed event: '%s'"
+					sbbs->lprintf(LOG_INFO,"Running %s%stimed event: %s"
 						,native_executable(&sbbs->cfg, cmd, ex_mode) ? "native ":"16-bit DOS "
 						,(ex_mode&EX_BG)		? "background ":""
 						,cmd);
@@ -3398,7 +3400,7 @@ void event_thread(void* arg)
 						if(!(ex_mode&EX_BG))
 							sbbs->lprintf(result ? sbbs->cfg.event[i]->errlevel : LOG_INFO, "Timed event: '%s' returned %d", cmd, result);
 						else
-							sbbs->lprintf(LOG_DEBUG, "Background timed event '%s' spawned", cmd);
+							sbbs->lprintf(LOG_DEBUG, "Background timed event spawned: %s", cmd);
 					}
 					sbbs->console&=~CON_L_ECHO;
 					sbbs->online=false;
