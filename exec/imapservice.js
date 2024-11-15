@@ -1693,6 +1693,7 @@ var authenticated_command_handlers = {
 			if(!open_sub(sub)) {
 				tagged(tag, "NO", "Can't find "+args[1]+" ("+sub+")");
 				state=Authenticated;
+				readonly=true;
 				return;
 			}
 			tagged(tag, "OK", "[READ-WRITE] Mailbox "+sub+" has been selected");
