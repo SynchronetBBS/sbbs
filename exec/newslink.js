@@ -24,7 +24,7 @@
 // s		no subject filtering
 // m		Moderate imported messages
 
-const REVISION = "1.114";
+const REVISION = "1.2";
 
 printf("Synchronet NewsLink %s session started\r\n", REVISION);
 
@@ -174,7 +174,7 @@ cfg_file = new File(cfg_fname);
 if(!cfg_file.open("r")) {
 	printf("!Error %d opening %s\r\n",errno,cfg_fname);
 	delete cfg_file;
-	exit();
+	exit(1);
 }
 
 while(!cfg_file.eof) {
@@ -275,7 +275,7 @@ if(debug) {
 
 if(host==undefined || !host.length) {
 	print("!No news server specified");
-	exit();
+	exit(1);
 }
 
 printf("Connecting to %s port %d ...\r\n",host,port);
@@ -286,7 +286,7 @@ if(!socket.connect(host, port, connect_timeout)) {
 	printf("!Error %d connecting to %s port %d\r\n"
 		,socket.last_error,host,port);
 	delete socket;
-	exit();
+	exit(1);
 }
 print("Connected");
 if(tls) {
@@ -310,7 +310,7 @@ if(username!=undefined && username.length) {
 		if(rsp==null || rsp[0]!='2') {
 			printf("!Authentication FAILURE: %s\r\n", rsp);
 			delete socket;
-			exit();
+			exit(1);
 		}
 	}
 	print("Authenticated");
@@ -454,7 +454,8 @@ for(sub in area) {
 			/* message number */		ptr
 			);
 		if(hdr == null) {
-			alert("Failed to read msg header #" + ptr);
+			if(msgbase.status != 0)
+				alert("Error " + msgbase.error + " reading msg header #" + ptr);
 			continue;
 		}
 		if(!hdr.id) {
@@ -578,6 +579,9 @@ for(sub in area) {
 		ptr = msgbase.last_msg;
 	export_ptr = ptr;
 	save_ptr(ini_file, "export_ptr", export_ptr);
+
+	if(stop_sem_signaled())
+		break;
 
 	/***************************/
 	/* IMPORT Network Messages */
