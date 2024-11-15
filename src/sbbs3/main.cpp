@@ -2914,40 +2914,47 @@ void event_thread(void* arg)
 			strcat(str,"*.rep");
 			glob(str,0,NULL,&g);
 			for(i=0;i<(int)g.gl_pathc && !sbbs->terminated;i++) {
-				if(flength(g.gl_pathv[i]) < 1)
+				char* fname = g.gl_pathv[i];
+				if(flength(fname) < 1)
 					continue;
 				sbbs->useron.number = 0;
-				sbbs->lprintf(LOG_DEBUG, "Inbound QWK Reply Packet detected: %s", g.gl_pathv[i]);
-				sbbs->useron.number = atoi(g.gl_pathv[i]+offset);
+				sbbs->lprintf(LOG_DEBUG, "Inbound QWK Reply Packet detected: %s", fname);
+				sbbs->useron.number = atoi(fname+offset);
 				getuserdat(&sbbs->cfg,&sbbs->useron);
 				if(sbbs->useron.number != 0 && !(sbbs->useron.misc&(DELETED|INACTIVE))) {
 					time_t t;
-					SAFEPRINTF(semfile,"%s.lock",g.gl_pathv[i]);
+					SAFEPRINTF(semfile,"%s.lock",fname);
 					if(!fmutex(semfile,startup->host_name,TIMEOUT_MUTEX_FILE, &t)) {
 						sbbs->lprintf(LOG_INFO," %s exists (unpack in progress?) since %s", semfile, time_as_hhmm(&sbbs->cfg, t, str));
+						continue;
+					}
+					if(!fexist(fname)) {
+						sbbs->lprintf(LOG_INFO, "%s already gone", fname);
+						if(remove(semfile) != 0)
+							sbbs->errormsg(WHERE, ERR_REMOVE, semfile, 0);
 						continue;
 					}
 					sbbs->online=ON_LOCAL;
 					sbbs->console|=CON_L_ECHO;
 					sbbs->getusrsubs();
-					bool success = sbbs->unpack_rep(g.gl_pathv[i]);
+					bool success = sbbs->unpack_rep(fname);
 					sbbs->delfiles(sbbs->cfg.temp_dir,ALLFILES);		/* clean-up temp_dir after unpacking */
 					sbbs->online=false;
 					sbbs->console&=~CON_L_ECHO;
 
 					/* putuserdat? */
 					if(success) {
-						if(remove(g.gl_pathv[i]))
-							sbbs->errormsg(WHERE, ERR_REMOVE, g.gl_pathv[i], 0);
+						if(remove(fname))
+							sbbs->errormsg(WHERE, ERR_REMOVE, fname, 0);
 					} else {
 						char badpkt[MAX_PATH+1];
-						SAFEPRINTF2(badpkt, "%s.%" PRIx64 ".bad", g.gl_pathv[i], (uint64_t)time(NULL));
+						SAFEPRINTF2(badpkt, "%s.%" PRIx64 ".bad", fname, (uint64_t)time(NULL));
 						(void)remove(badpkt);
-						if(rename(g.gl_pathv[i], badpkt) == 0)
-							sbbs->lprintf(LOG_NOTICE, "%s renamed to %s", g.gl_pathv[i], badpkt);
+						if(rename(fname, badpkt) == 0)
+							sbbs->lprintf(LOG_NOTICE, "%s renamed to %s", fname, badpkt);
 						else
 							sbbs->lprintf(LOG_ERR, "!ERROR %d (%s) renaming %s to %s"
-								,errno, strerror(errno), g.gl_pathv[i], badpkt);
+								,errno, strerror(errno), fname, badpkt);
 						SAFEPRINTF(badpkt, "%u.rep.*.bad", sbbs->useron.number);
 						SAFEPRINTF(str,"%sfile/", sbbs->cfg.data_dir);
 						sbbs->delfiles(str, badpkt, /* keep: */10);
@@ -2956,9 +2963,9 @@ void event_thread(void* arg)
 						sbbs->errormsg(WHERE, ERR_REMOVE, semfile, 0);
 				}
 				else {
-					sbbs->lprintf(LOG_INFO, "Removing: %s", g.gl_pathv[i]);
-					if(remove(g.gl_pathv[i]))
-						sbbs->errormsg(WHERE, ERR_REMOVE, g.gl_pathv[i], 0);
+					sbbs->lprintf(LOG_INFO, "Removing: %s", fname);
+					if(remove(fname))
+						sbbs->errormsg(WHERE, ERR_REMOVE, fname, 0);
 				}
 			}
 			globfree(&g);
@@ -2970,16 +2977,23 @@ void event_thread(void* arg)
 			offset=strlen(sbbs->cfg.data_dir)+4;
 			glob(str,0,NULL,&g);
 			for(i=0;i<(int)g.gl_pathc && !sbbs->terminated;i++) {
+				char* fname = g.gl_pathv[i];
 				sbbs->useron.number = 0;
-				sbbs->lprintf(LOG_INFO, "QWK pack semaphore signaled: %s", g.gl_pathv[i]);
-				sbbs->useron.number = atoi(g.gl_pathv[i]+offset);
+				sbbs->lprintf(LOG_INFO, "QWK pack semaphore signaled: %s", fname);
+				sbbs->useron.number = atoi(fname+offset);
 				SAFEPRINTF2(semfile,"%spack%04u.lock",sbbs->cfg.data_dir,sbbs->useron.number);
 				time_t t;
+				getuserdat(&sbbs->cfg,&sbbs->useron);
 				if(!fmutex(semfile,startup->host_name,TIMEOUT_MUTEX_FILE, &t)) {
 					sbbs->lprintf(LOG_INFO,"%s exists (pack in progress?) since %s", semfile, time_as_hhmm(&sbbs->cfg, t, str));
 					continue;
 				}
-				getuserdat(&sbbs->cfg,&sbbs->useron);
+				if(!fexist(fname)) {
+					sbbs->lprintf(LOG_INFO, "%s already gone", fname);
+					if(remove(semfile))
+						sbbs->errormsg(WHERE, ERR_REMOVE, semfile, 0);
+					continue;
+				}
 				if(sbbs->useron.number != 0 && !(sbbs->useron.misc&(DELETED|INACTIVE))) {
 					sbbs->lprintf(LOG_INFO, "Packing QWK Message Packet");
 					sbbs->online=ON_LOCAL;
@@ -3002,8 +3016,8 @@ void event_thread(void* arg)
 					sbbs->console&=~CON_L_ECHO;
 					sbbs->online=false;
 				}
-				if(fexist(g.gl_pathv[i]) && remove(g.gl_pathv[i]) != 0)
-					sbbs->errormsg(WHERE, ERR_REMOVE, g.gl_pathv[i], 0);
+				if(fexist(fname) && remove(fname) != 0)
+					sbbs->errormsg(WHERE, ERR_REMOVE, fname, 0);
 				if(remove(semfile))
 					sbbs->errormsg(WHERE, ERR_REMOVE, semfile, 0);
 			}
