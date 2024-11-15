@@ -13,6 +13,7 @@ load("822header.js");
 load("mime.js");
 
 var sepchar="|";
+var debug_exceptions = false;
 var debug=false;
 var debugRX=false;
 
@@ -218,6 +219,41 @@ function next_epoch(last_epoch)
 	return last_epoch + 1;
 }
 
+function init_seen(code)
+{
+	if(saved_config[code] == undefined)
+		saved_config[code] = {subscribed:false};
+	if(saved_config[code].Seen == undefined)
+		saved_config[code].Seen = {};
+}
+
+function get_seen_flag(code, idx)
+{
+	if (saved_config[code] == undefined)
+		return 0;
+	if (saved_config[code].Seen == undefined)
+		return 0;
+	if (saved_config[code].Seen[idx.number] == undefined)
+		return 0;
+	return saved_config[code].Seen[idx.number];
+}
+
+/*
+ * This only sets the "internal" Seen.  Caller is responsible for
+ * updating the message base.
+ */
+function set_seen_flag_g(code, idx, val)
+{
+	if (!readonly) {
+		init_seen(code);
+		saved_config[code].Seen[idx.number] = val;
+		if (val)
+			idx.attr |= MSG_READ;
+		else
+			idx.attr &= ~MSG_READ;
+	}
+}
+
 /*************************************************************/
 /* Fetch response generation... this is the tricky bit.  :-) */
 /*************************************************************/
@@ -301,6 +337,10 @@ function send_fetch_response(msgnum, fmat, uid)
 	function set_seen_flag() {
 		if(readonly)
 			return;
+		if (get_seen_flag(index.code, idx) == 0) {
+			seen_changed = true;
+			set_seen_flag_g(index.code, idx, 1);
+		}
 		if(base.subnum==-1) {
 			get_header();
 			if(!(hdr.attr & MSG_READ)) {
@@ -311,19 +351,6 @@ function send_fetch_response(msgnum, fmat, uid)
 				if(hdr.attr & MSG_READ)
 					seen_changed=true;
 			}
-		}
-		else {
-			if(saved_config[index.code] == undefined)
-				saved_config[index.code] = {subscribed:false};
-			if(saved_config[index.code].Seen == undefined)
-				saved_config[index.code].Seen = {};
-			if(saved_config[index.code].Seen[msgnum] != 1) {
-				seen_changed=true;
-				saved_config[index.code].Seen[msgnum]=1;
-				applied_epoch = next_epoch(saved_config.__config_epoch__);
-				index.idx[msgnum].attr |= MSG_READ;
-			}
-			idx.attr |= MSG_READ;
 		}
 	}
 
@@ -799,6 +826,8 @@ function parse_command(line)
 		return(execute_line(parse_line()));
 	} catch(error) {
 		log(LOG_WARNING, "Exception during command parsing: " + error);
+		if (debug_exceptions)
+			throw error;
 	}
 }
 
@@ -1360,7 +1389,7 @@ function read_index(base)
 		else {
 			// Fake \Seen
 			idx.attr &= ~MSG_READ;
-			if(saved_config[index.code].Seen != undefined && saved_config[index.code].Seen[idx.number] == 1) {
+			if(get_seen_flag(index.code, idx) == 1) {
 				idx.attr |= MSG_READ;
 				newseen[idx.number]=1;
 			}
@@ -1385,7 +1414,7 @@ function apply_seen(index)
 		return;
 	for(i in index.idx) {
 		// Fake \Seen
-		if(saved_config[index.code].Seen != undefined && saved_config[index.code].Seen[index.idx[i].number] == 1)
+		if(get_seen_flag(index.code, index.idx[i]) == 1)
 			index.idx[i].attr |= MSG_READ;
 		else
 			index.idx[i].attr &= ~MSG_READ;
@@ -1861,7 +1890,6 @@ function do_store(seq, uid, item, data)
 	var flags;
 	var chflags;
 	var hdr;
-	var mod_seen=false;
 	var idx;
 	var changed=false;
 
@@ -1889,9 +1917,11 @@ function do_store(seq, uid, item, data)
 					chflags={attr:idx.attr^(idx.attr&~flags.attr), netattr:hdr.netattr^(hdr.netattr&~flags.netattr)};
 					break
 			}
+			if (((hdr.attr ^ chflags.attr) | MSG_READ) == MSG_READ)
+				set_seen_flag_g(index.code, idx, 1);
+			else
+				set_seen_flag_g(index.code, idx, 0);
 
-			if(chflags.attr & MSG_READ)
-				mod_seen=true;
 			chflags=check_msgflags(chflags.attr, chflags.netattr, base.subnum==-1, hdr.to_net_type==NET_NONE?hdr.to==user.number:false, hdr.from_net_type==NET_NONE?hdr.from==user.number:false,base.is_operator);
 			if(chflags.attr || chflags.netattr) {
 				hdr.attr ^= chflags.attr;
@@ -1914,30 +1944,6 @@ function do_store(seq, uid, item, data)
 		throw error;
 	}
 	unlock_cfg();
-	if(mod_seen && base.cfg != undefined) {
-		lock_cfg();
-		try {
-			read_cfg(base.cfg.code, false);
-			if(saved_config[base.cfg.code] == undefined) {
-				saved_config[base.cfg.code] = {subscribed:false};
-			}
-			if(saved_config[base.cfg.code].Seen == undefined) {
-				saved_config[base.cfg.code].Seen = {};
-				saved_config[base.cfg.code].Seen[header.number]=0;
-			}
-			saved_config[base.cfg.code].Seen[seq[i]] ^= 1;
-			if (saved_config[base.cfg.code].Seen[seq[i]])
-				index.idx[seq[i]].attr |= MSG_READ;
-			else
-				index.idx[seq[i]].attr &= ~MSG_READ;
-			save_cfg(false);
-		}
-		catch (error) {
-			unlock_cfg();
-			throw error;
-		}
-		unlock_cfg();
-	}
 	if(changed)
 		index=read_index(base);
 }
@@ -2518,6 +2524,8 @@ function new_search(args, uid)
 		}
 	} catch(error) {
 		log(LOG_WARNING, "Exception during search: " + error);
+		if (debug_exceptions)
+			throw error;
 	}
 	untagged("SEARCH "+result.join(" "));
 }
@@ -2778,6 +2786,8 @@ function do_search(args, uid)
 		untagged("SEARCH "+result.join(" "));
 	} catch(error) {
 		log(LOG_WARNING, "Exception during search: " + error);
+		if (debug_exceptions)
+			throw error;
 	}
 }
 
