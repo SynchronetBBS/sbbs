@@ -368,8 +368,6 @@ bool read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->max_qwkmsgs = iniGetInteger(section, NULL, "max_msgs", 0);
 	cfg->max_qwkmsgage = iniGetInteger(section, NULL, "max_age", 0);
 	SAFECOPY(cfg->qnet_tagline, iniGetString(section, NULL, "default_tagline", "", value));
-	SAFECOPY(cfg->preqwk_arstr, iniGetString(section, NULL, "prepack_ars", "", value));
-	arstr(NULL, cfg->preqwk_arstr, cfg, cfg->preqwk_ar);
 
 	/* E-Mail stuff */
 	section = iniGetParsedSection(sections, "mail", /* cut: */true);

@@ -1123,7 +1123,6 @@ void msg_opts()
 			sprintf(str,"Unlimited");
 		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s"
 			,"Maximum QWK Message Age",str);
-		snprintf(opt[i++],MAX_OPLN,"%-33.33s%s","Pre-pack QWK Requirements",cfg.preqwk_arstr);
 		if(cfg.mail_maxage)
 			SAFEPRINTF(str,"Enabled (%u days old)",cfg.mail_maxage);
         else
@@ -1232,21 +1231,6 @@ void msg_opts()
 				cfg.max_qwkmsgage=atoi(str);
                 break;
 			case 4:
-				uifc.helpbuf=
-					"`Pre-pack QWK Requirements:`\n"
-					"\n"
-					"ALL user accounts on the BBS meeting this requirement will have a QWK\n"
-					"packet automatically created for them every day after midnight\n"
-					"(during the internal daily event).\n"
-					"\n"
-					"This is mainly intended for QWK network nodes that wish to save connect\n"
-					"time by having their packets pre-packed. If a large number of users meet\n"
-					"this requirement, it can take up a large amount of disk space on your\n"
-					"system (in the `data/file` directory).\n"
-				;
-				getar("Pre-pack QWK (Use with caution!)",cfg.preqwk_arstr);
-				break;
-			case 5:
 				sprintf(str,"%u",cfg.mail_maxage);
                 uifc.helpbuf=
 	                "`Maximum Age of E-mail:`\n"
@@ -1258,7 +1242,7 @@ void msg_opts()
                     "(in days)",str,5,K_EDIT|K_NUMBER);
                 cfg.mail_maxage=atoi(str);
                 break;
-			case 6:
+			case 5:
 				sprintf(str,"%u",cfg.max_spamage);
                 uifc.helpbuf=
 	                "`Maximum Age of SPAM:`\n"
@@ -1270,7 +1254,7 @@ void msg_opts()
                     "(in days)",str,5,K_EDIT|K_NUMBER);
                 cfg.max_spamage=atoi(str);
                 break;
-			case 7:
+			case 6:
 				strcpy(opt[0],"Daily");
 				strcpy(opt[1],"Immediately");
 				opt[2][0]=0;
@@ -1299,7 +1283,7 @@ void msg_opts()
 					uifc.changes=1; 
 				}
                 break;
-			case 8:
+			case 7:
 				sprintf(str,"%"PRIu32,cfg.mail_maxcrcs);
                 uifc.helpbuf=
 	                "`Maximum Number of E-mail CRCs:`\n"
@@ -1312,7 +1296,7 @@ void msg_opts()
                     "CRCs",str,5,K_EDIT|K_NUMBER);
                 cfg.mail_maxcrcs=atol(str);
                 break;
-			case 9:
+			case 8:
 				i=cfg.sys_misc&SM_ANON_EM ? 0:1;
 				uifc.helpbuf=
 					"`Allow Anonymous E-mail:`\n"
@@ -1332,7 +1316,7 @@ void msg_opts()
 					uifc.changes=1; 
 				}
 				break;
-			case 10:
+			case 9:
 				i=cfg.sys_misc&SM_QUOTE_EM ? 0:1;
 				uifc.helpbuf=
 					"`Allow Quoting in E-mail:`\n"
@@ -1352,7 +1336,7 @@ void msg_opts()
 					uifc.changes=1; 
 				}
 				break;
-			case 11:
+			case 10:
 				i=cfg.sys_misc&SM_FILE_EM ? 0:1;
 				uifc.helpbuf=
 					"`Allow File Attachment Uploads in E-mail:`\n"
@@ -1372,7 +1356,7 @@ void msg_opts()
 					uifc.changes=1; 
 				}
 				break;
-			case 12:
+			case 11:
 				i=cfg.sys_misc&SM_FWDTONET ? 0:1;
 				uifc.helpbuf=
 					"`Allow Users to Have Their E-mail Forwarded to NetMail:`\n"
@@ -1393,7 +1377,7 @@ void msg_opts()
 					uifc.changes=1; 
 				}
                 break;
-			case 13:
+			case 12:
 				i=cfg.sys_misc&SM_DELREADM ? 0:1;
 				uifc.helpbuf=
 					"`Kill Read E-mail Automatically:`\n"
@@ -1413,7 +1397,7 @@ void msg_opts()
 					uifc.changes=1; 
 				}
                 break;
-			case 14:
+			case 13:
 				i=cfg.msg_misc&MM_REALNAME ? 0:1;
 				uifc.helpbuf=
 					"`Receive E-mail by Real Name:`\n"
@@ -1433,7 +1417,7 @@ void msg_opts()
 					uifc.changes=1; 
 				}
                 break;
-			case 15:
+			case 14:
 				n=(cfg.msg_misc&MM_EMAILSIG) ? 0:1;
 				uifc.helpbuf=
 					"`Include User Signatures in E-mail:`\n"
@@ -1455,10 +1439,10 @@ void msg_opts()
 					cfg.msg_misc&=~MM_EMAILSIG; 
 				}
                 break;
-			case 16:
+			case 15:
 				edit_sys_delmsg_policy(false, false);
                 break;
-			case 17:
+			case 16:
 				uifc.helpbuf=
 					"`Days of New Messages for Guest:`\n"
 					"\n"
@@ -1473,7 +1457,7 @@ void msg_opts()
 					,str,4,K_EDIT|K_NUMBER);
 				cfg.guest_msgscan_init=atoi(str);
                 break;
-			case 18:
+			case 17:
 				uifc.helpbuf=
 					"`Extra Attribute Codes...`\n"
 					"\n"

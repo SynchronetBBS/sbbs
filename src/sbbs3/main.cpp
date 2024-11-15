@@ -2793,8 +2793,8 @@ static bool is_time_to_run(time_t now, const qhub_t* hub)
 void event_thread(void* arg)
 {
 	char		str[MAX_PATH+1];
-	char		semfile[MAX_PATH+1];
-	int			i,j,k;
+	char		lockfile[MAX_PATH+1];
+	int			i,j;
 	int			file;
 	int			offset;
 	bool		check_semaphores;
@@ -2806,7 +2806,6 @@ void event_thread(void* arg)
 	time_t		start;
 	time_t		lastsemchk=0;
 	time_t		lastnodechk=0;
-	time_t		lastprepack=0;
 	node_t		node;
 	glob_t		g;
 	sbbs_t*		sbbs = (sbbs_t*) arg;
@@ -2837,22 +2836,16 @@ void event_thread(void* arg)
 			sbbs->cfg.event[i]->last = (time32_t)iniReadDateTime(fp, eventIniSection, sbbs->cfg.event[i]->code, 0);
 		for (i = 0; i < sbbs->cfg.total_qhubs; ++i)
 			sbbs->cfg.qhub[i]->last = (time32_t)iniReadDateTime(fp, qhubIniSection, sbbs->cfg.qhub[i]->id, 0);
-
-		lastprepack = iniReadDateTime(fp, ROOT_SECTION, "QWK_prepack", 0);
 		iniCloseFile(fp);
 	} else {
 		// Read time.dab (legacy), and auto-upgrade to time.ini
 		SAFEPRINTF(str,"%stime.dab",sbbs->cfg.ctrl_dir);
 		if((file=sbbs->nopen(str,O_RDONLY)) != -1) {
-			time32_t t32;
 			for(i=0;i<sbbs->cfg.total_events;i++) {
 				sbbs->cfg.event[i]->last=0;
 				if(read(file,&sbbs->cfg.event[i]->last,sizeof(sbbs->cfg.event[i]->last))!=sizeof(sbbs->cfg.event[i]->last))
 					sbbs->errormsg(WHERE,ERR_READ,str,sizeof(time32_t));
 			}
-			if(read(file, &t32, sizeof t32) != sizeof t32)	/* expected to fail first time */
-				t32 = 0;
-			lastprepack = t32;
 			close(file);
 		}
 		// Read qnet.dab (legacy), and auto-upgrade to time.ini
@@ -2872,8 +2865,6 @@ void event_thread(void* arg)
 		else {
 			str_list_t ini = strListInit();
 			if(ini != NULL) {
-				if(lastprepack != 0)
-					iniSetDateTime(&ini, ROOT_SECTION, "QWK_prepack", /* include time */true, lastprepack, /* style: */nullptr);
 				for (i = 0; i < sbbs->cfg.total_events; ++i)
 					iniSetDateTime(&ini, eventIniSection, sbbs->cfg.event[i]->code, /* include time */true, sbbs->cfg.event[i]->last, &eventIniStyle);
 				for (i = 0; i < sbbs->cfg.total_qhubs; ++i)
@@ -2928,16 +2919,15 @@ void event_thread(void* arg)
 				getuserdat(&sbbs->cfg,&sbbs->useron);
 				if(sbbs->useron.number != 0 && !(sbbs->useron.misc&(DELETED|INACTIVE))) {
 					time_t t;
-					SAFEPRINTF(semfile,"%s.lock",fname);
-					if(!fmutex(semfile,startup->host_name,TIMEOUT_MUTEX_FILE, &t)) {
+					SAFEPRINTF(lockfile,"%s.lock",fname);
+					if(!fmutex(lockfile,startup->host_name,TIMEOUT_MUTEX_FILE, &t)) {
 						if(difftime(time(NULL), t) > 60)
-							sbbs->lprintf(LOG_INFO," %s exists (unpack in progress?) since %s", semfile, time_as_hhmm(&sbbs->cfg, t, str));
+							sbbs->lprintf(LOG_INFO," %s exists (unpack in progress?) since %s", lockfile, time_as_hhmm(&sbbs->cfg, t, str));
 						continue;
 					}
 					if(!fexist(fname)) {
 						sbbs->lprintf(LOG_INFO, "%s already gone", fname);
-						if(remove(semfile) != 0)
-							sbbs->errormsg(WHERE, ERR_REMOVE, semfile, 0);
+						sbbs->fremove(WHERE, lockfile, /* log-all-errors: */true);
 						continue;
 					}
 					sbbs->online=ON_LOCAL;
@@ -2950,12 +2940,11 @@ void event_thread(void* arg)
 
 					/* putuserdat? */
 					if(success) {
-						if(remove(fname))
-							sbbs->errormsg(WHERE, ERR_REMOVE, fname, 0);
+						sbbs->fremove(WHERE, fname, /* log-all-errors: */true);
 					} else {
 						char badpkt[MAX_PATH+1];
 						SAFEPRINTF2(badpkt, "%s.%" PRIx64 ".bad", fname, (uint64_t)time(NULL));
-						(void)remove(badpkt);
+						sbbs->fremove(WHERE, badpkt);
 						if(rename(fname, badpkt) == 0)
 							sbbs->lprintf(LOG_NOTICE, "%s renamed to %s", fname, badpkt);
 						else
@@ -2965,13 +2954,11 @@ void event_thread(void* arg)
 						SAFEPRINTF(str,"%sfile/", sbbs->cfg.data_dir);
 						sbbs->delfiles(str, badpkt, /* keep: */10);
 					}
-					if(remove(semfile))
-						sbbs->errormsg(WHERE, ERR_REMOVE, semfile, 0);
+					sbbs->fremove(WHERE, lockfile, /* log-all-errors: */true);
 				}
 				else {
 					sbbs->lprintf(LOG_INFO, "Removing: %s", fname);
-					if(remove(fname))
-						sbbs->errormsg(WHERE, ERR_REMOVE, fname, 0);
+					sbbs->fremove(WHERE, fname, /* log-all-errors: */true);
 				}
 			}
 			globfree(&g);
@@ -2987,18 +2974,21 @@ void event_thread(void* arg)
 				sbbs->useron.number = 0;
 				sbbs->lprintf(LOG_INFO, "QWK pack semaphore signaled: %s", fname);
 				sbbs->useron.number = atoi(fname+offset);
-				SAFEPRINTF2(semfile,"%spack%04u.lock",sbbs->cfg.data_dir,sbbs->useron.number);
+				SAFEPRINTF2(lockfile,"%spack%04u.lock",sbbs->cfg.data_dir,sbbs->useron.number);
 				time_t t;
-				getuserdat(&sbbs->cfg,&sbbs->useron);
-				if(!fmutex(semfile,startup->host_name,TIMEOUT_MUTEX_FILE, &t)) {
+				int retval = getuserdat(&sbbs->cfg,&sbbs->useron);
+				if(retval != 0) {
+					lprintf(LOG_WARNING, "Error %d reading user data for user #%d", retval, sbbs->useron.number);
+					continue;
+				}
+				if(!fmutex(lockfile,startup->host_name,TIMEOUT_MUTEX_FILE, &t)) {
 					if(difftime(time(NULL), t) > 60)
-						sbbs->lprintf(LOG_INFO,"%s exists (pack in progress?) since %s", semfile, time_as_hhmm(&sbbs->cfg, t, str));
+						sbbs->lprintf(LOG_INFO,"%s exists (pack in progress?) since %s", lockfile, time_as_hhmm(&sbbs->cfg, t, str));
 					continue;
 				}
 				if(!fexist(fname)) {
 					sbbs->lprintf(LOG_INFO, "%s already gone", fname);
-					if(remove(semfile))
-						sbbs->errormsg(WHERE, ERR_REMOVE, semfile, 0);
+					sbbs->fremove(WHERE, lockfile, /* log-all-errors: */true);
 					continue;
 				}
 				if(sbbs->useron.number != 0 && !(sbbs->useron.misc&(DELETED|INACTIVE))) {
@@ -3023,74 +3013,10 @@ void event_thread(void* arg)
 					sbbs->console&=~CON_L_ECHO;
 					sbbs->online=false;
 				}
-				if(fexist(fname) && remove(fname) != 0)
-					sbbs->errormsg(WHERE, ERR_REMOVE, fname, 0);
-				if(remove(semfile))
-					sbbs->errormsg(WHERE, ERR_REMOVE, semfile, 0);
+				sbbs->fremove(WHERE, fname, /* log-all-errors: */true);
+				sbbs->fremove(WHERE, lockfile, /* log-all-errors: */true);
 			}
 			globfree(&g);
-			sbbs->useron.number = 0;
-
-			/* Create (pre-pack) QWK files for users configured as such */
-			sbbs->event_code = "prepackQWK";
-			SAFEPRINTF(semfile,"%sprepack.now",sbbs->cfg.data_dir);
-			if(sbbs->cfg.preqwk_ar[0]
-				&& (fexistcase(semfile) || (now-lastprepack)/60>(60*24))) {
-				j=lastuser(&sbbs->cfg);
-				sbbs->lputs(LOG_INFO,"Pre-packing QWK Message packets...");
-				int userfile = openuserdat(&sbbs->cfg, /* for_modify: */false);
-				for(i=1;i<=j;i++) {
-
-					sbbs->useron.number=i;
-					if(fgetuserdat(&sbbs->cfg,&sbbs->useron, userfile) != 0)
-						continue;
-
-					if(sbbs->useron.number
-						&& !(sbbs->useron.misc&(DELETED|INACTIVE))	 /* Pre-QWK */
-						&& sbbs->chk_ar(sbbs->cfg.preqwk_ar,&sbbs->useron,/* client: */NULL)) {
-						for(k=1;k<=sbbs->cfg.sys_nodes;k++) {
-							if(sbbs->getnodedat(k,&node,0)!=0)
-								continue;
-							if((node.status==NODE_INUSE || node.status==NODE_QUIET
-								|| node.status==NODE_LOGON) && node.useron==i)
-								break;
-						}
-						if(k<=sbbs->cfg.sys_nodes)	/* Don't pre-pack with user online */
-							continue;
-						sbbs->lprintf(LOG_INFO, "Pre-packing QWK");
-						sbbs->online=ON_LOCAL;
-						sbbs->console|=CON_L_ECHO;
-						sbbs->getmsgptrs();
-						sbbs->getusrsubs();
-						SAFEPRINTF3(str,"%sfile%c%04u.qwk"
-							,sbbs->cfg.data_dir,PATH_DELIM,sbbs->useron.number);
-						if(sbbs->pack_qwk(str,&l,true /* pre-pack */)) {
-							sbbs->qwk_success(l,0,1);
-							sbbs->putmsgptrs();
-							batch_list_clear(&sbbs->cfg, sbbs->useron.number, XFER_BATCH_DOWNLOAD);
-						}
-						sbbs->delfiles(sbbs->cfg.temp_dir,ALLFILES);
-						sbbs->console&=~CON_L_ECHO;
-						sbbs->online=false;
-					}
-				}
-				closeuserdat(userfile);
-				lastprepack=now;
-				SAFEPRINTF(str,"%stime.ini",sbbs->cfg.ctrl_dir);
-				if((fp = iniOpenFile(str, /* for modify: */true ))== NULL) {
-					sbbs->errormsg(WHERE,ERR_OPEN,str,O_WRONLY);
-					break;
-				}
-				str_list_t ini = iniReadFile(fp);
-				if(ini != NULL) {
-					iniSetDateTime(&ini, ROOT_SECTION, "QWK_prepack", /* include time: */true, lastprepack, /* style: */nullptr);
-					iniWriteFile(fp, ini);
-					iniFreeStringList(ini);
-				}
-				iniCloseFile(fp);
-
-				remove(semfile);
-			}
 			sbbs->useron.number = 0;
 		}
 
@@ -3196,7 +3122,7 @@ void event_thread(void* arg)
 						if(sbbs->unpack_qwk(str,i)==false) {
 							char newname[MAX_PATH+1];
 							SAFEPRINTF2(newname,"%s.%x.bad",str,(int)now);
-							remove(newname);
+							sbbs->fremove(WHERE, newname);
 							if(rename(str,newname)==0)
 								sbbs->lprintf(LOG_NOTICE, "%s renamed to %s", str, newname);
 							else
@@ -3208,8 +3134,7 @@ void event_thread(void* arg)
 						sbbs->delfiles(sbbs->cfg.temp_dir,ALLFILES);
 						sbbs->console&=~CON_L_ECHO;
 						sbbs->online=false;
-						if(fexist(str) && remove(str))
-							sbbs->errormsg(WHERE, ERR_REMOVE, str, 0);
+						sbbs->fremove(WHERE, str, /* log-all-errors: */true);
 					}
 				}
 				globfree(&g);
@@ -3219,10 +3144,8 @@ void event_thread(void* arg)
 			if(is_time_to_run(now, sbbs->cfg.qhub[i])) {
 				SAFEPRINTF2(str,"%sqnet/%s.now"
 					,sbbs->cfg.data_dir,sbbs->cfg.qhub[i]->id);
-				if(fexistcase(str)) {
-					if(remove(str))					/* Remove semaphore file */
-						sbbs->errormsg(WHERE, ERR_REMOVE, str, 0);
-				}
+				if(fexistcase(str))
+					sbbs->fremove(WHERE, str);					/* Remove semaphore file */
 				SAFEPRINTF2(str,"%sqnet/%s.ptr"
 					,sbbs->cfg.data_dir,sbbs->cfg.qhub[i]->id);
 				file=sbbs->nopen(str,O_RDONLY);
@@ -3361,10 +3284,8 @@ void event_thread(void* arg)
 							}
 						}
 						SAFEPRINTF2(str,"%s%s.now",sbbs->cfg.data_dir,sbbs->cfg.event[i]->code);
-						if(fexistcase(str)) {
-							if(remove(str))
-								sbbs->errormsg(WHERE, ERR_REMOVE, str, 0);
-						}
+						if(fexistcase(str))
+							sbbs->fremove(WHERE, str);
 						sbbs->cfg.event[i]->last=(time32_t)now;
 					} else {	// Exclusive event to run on a node under our control
 						sbbs->lprintf(LOG_INFO,"Waiting for all nodes to become inactive before running timed event");
@@ -3450,10 +3371,8 @@ void event_thread(void* arg)
 					SAFECOPY(sbbs->cfg.node_dir, sbbs->cfg.node_path[sbbs->cfg.node_num-1]);
 
 					SAFEPRINTF2(str,"%s%s.now",sbbs->cfg.data_dir,sbbs->cfg.event[i]->code);
-					if(fexistcase(str)) {
-						if(remove(str))
-							sbbs->errormsg(WHERE, ERR_REMOVE, str, 0);
-					}
+					if(fexistcase(str))
+						sbbs->fremove(WHERE, str);
 					if(sbbs->cfg.event[i]->node != NODE_ANY && (sbbs->cfg.event[i]->misc&EVENT_EXCL)) {
 						sbbs->getnodedat(sbbs->cfg.event[i]->node,&node,1);
 						node.status=NODE_EVENT_RUNNING;
@@ -3551,7 +3470,7 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 		SAFECOPY(cfg.node_dir, cfg.node_path[node_num-1]);
 		prep_dir(cfg.node_dir, cfg.temp_dir, sizeof(cfg.temp_dir));
 		SAFEPRINTF2(syspage_semfile, "%ssyspage.%u", cfg.ctrl_dir, node_num);
-		(void)remove(syspage_semfile);
+		fremove(WHERE, syspage_semfile);
 	} else {	/* event thread needs exclusive-use temp_dir */
 		if(startup->temp_dir[0])
 			SAFECOPY(cfg.temp_dir,startup->temp_dir);
@@ -3721,7 +3640,7 @@ bool sbbs_t::init()
 
 		// remove any pending node messages
 		safe_snprintf(str, sizeof(str), "%smsgs/n%3.3u.msg",cfg.data_dir,cfg.node_num);
-		(void)remove(str);
+		fremove(WHERE, str);
 		// Delete any stale temporary files (with potentially sensitive content)
 		delfiles(cfg.temp_dir,ALLFILES);
 		safe_snprintf(str, sizeof(str), "%sMSGTMP", cfg.node_dir);
@@ -3883,7 +3802,7 @@ sbbs_t::~sbbs_t()
 	}
 
 	if(syspage_semfile[0])
-		remove(syspage_semfile);
+		fremove(WHERE, syspage_semfile);
 
 	/********************************/
 	/* Free allocated class members */
@@ -4074,7 +3993,7 @@ int sbbs_t::mv(const char* path, const char* dest, bool copy)
 		errormsg(WHERE, "CopyFile", src, 0, dest);
 		return -1;
 	}
-    if(!copy && remove(src)) {
+    if(!copy && remove(src) != 0) {
         errormsg(WHERE,ERR_REMOVE,src,0);
         return(-1);
 	}

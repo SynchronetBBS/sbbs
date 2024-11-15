@@ -367,7 +367,6 @@ bool write_msgs_cfg(scfg_t* cfg)
 	{
 		const char* name = "qwk";
 		iniSetUInteger(&ini, name, "max_msgs", cfg->max_qwkmsgs, &ini_style);
-		iniSetString(&ini, name, "prepack_ars", cfg->preqwk_arstr, &ini_style);
 		iniSetUInteger(&ini, name, "max_age", cfg->max_qwkmsgage, &ini_style);
 		iniSetString(&ini, name, "default_tagline", cfg->qnet_tagline, &ini_style);
 	}

@@ -563,8 +563,6 @@ typedef struct
 	uint16_t		max_spamage;	/* Maximum age (in days) of SPAM-tagged messages */
 	uint32_t		max_log_size;
 	uint16_t		max_logs_kept;
-	char			preqwk_arstr[LEN_ARSTR+1]; /* pre pack QWK */
-	uchar			preqwk_ar[LEN_ARSTR+1];
 	uint16_t		cdt_min_value;	/* Minutes per 100k credits */
 	uint32_t		cdt_per_dollar; /* Credits per dollar */
 	uint16_t		cdt_up_pct; 	/* Pct of credits credited on uploads */
