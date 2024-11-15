@@ -404,7 +404,7 @@ function send_fetch_response(msgnum, fmat, uid)
 
 	function add_part(mime) {
 		var i;
-		var ret='(NIL) ';
+		var ret='(';
 
 		if (mime.mime.parsed == undefined) {
 			log(LOG_WARNING, "MIME part was not actually parsed!");
@@ -728,7 +728,7 @@ function parse_command(line)
 				if (line.search(/^{([0-9]+)}$/) !== 0)
 					throw new Error('invalid string literal ('+line+'), aborting');
 				line=line.replace(/^{([0-9]+)}$/, "$1");
-				client.socket.send("+ Give me more of that good stuff\r\n");
+				full_send(client.socket, "+ Give me more of that good stuff\r\n");
 				var len = parseInt(line);
 				if(len) {
 					ret=client.socket.recv(len);
@@ -832,7 +832,7 @@ var any_state_command_handlers = {
 			var tag=args[0];
 			var elapsed=0;
 
-			client.socket.send("+ Ooo, Idling... my favorite.\r\n");
+			full_send(client.socket, "+ Ooo, Idling... my favorite.\r\n");
 			js.gc(true);
 			while(1) {
 				line=client.socket.recvline(10240, 5);
@@ -898,7 +898,7 @@ var unauthenticated_command_handlers = {
 					tagged(tag, "NO", "No AUTH for you.");
 					return;
 				}
-				client.socket.send("+\r\n");
+				full_send(client.socket, "+\r\n");
 				line=client.socket.recvline(10240, 1800);
 				line=base64_decode(line);
 				if(!line) {
@@ -917,7 +917,7 @@ var unauthenticated_command_handlers = {
 			}
 			else if(mechanism.toUpperCase() == "CRAM-MD5") {
 				challenge = '<'+random(2147483647)+"."+time()+"@"+system.host_name+'>';
-				client.socket.send("+ "+base64_encode(challenge)+"\r\n");
+				full_send(client.socket, "+ "+base64_encode(challenge)+"\r\n");
 				line=client.socket.recvline(10240, 1800);
 				line=base64_decode(line);
 				if(!line) {
@@ -3093,7 +3093,7 @@ function read_cfg(sub, lck)
 }
 
 js.on_exit("exit_func()");
-client.socket.send("* OK Give 'er\r\n");
+full_send(client.socket, "* OK Give 'er\r\n");
 var waited=0;
 if (argv.indexOf('-d') >= 0)
 	debug = true;
