@@ -211,6 +211,13 @@ function untagged(msg)
 	debug_log("Send: * "+msg.length+": "+msg, false);
 }
 
+function next_epoch(last_epoch)
+{
+	if (last_epoch >= Number.MAX_SAFE_INTEGER)
+		return 0;
+	return last_epoch + 1;
+}
+
 /*************************************************************/
 /* Fetch response generation... this is the tricky bit.  :-) */
 /*************************************************************/
@@ -313,7 +320,7 @@ function send_fetch_response(msgnum, fmat, uid)
 			if(saved_config[index.code].Seen[msgnum] != 1) {
 				seen_changed=true;
 				saved_config[index.code].Seen[msgnum]=1;
-				applied_epoch = saved_config.__config_epoch__ + 1;
+				applied_epoch = next_epoch(saved_config.__config_epoch__);
 				index.idx[msgnum].attr |= MSG_READ;
 			}
 			idx.attr |= MSG_READ;
@@ -1516,7 +1523,7 @@ function save_cfg(lck)
 	if(user.number > 0) {
 		for (sub in saved_config) {
 			if (sub == '__config_epoch__') {
-				new_cfg[sub] = saved_config[sub] + 1;
+				new_cfg[sub] = next_epoch(saved_config[sub]);
 			}
 			else {
 				scpy = undefined;
