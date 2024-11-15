@@ -1594,25 +1594,17 @@ function save_cfg()
 
 function close_sub()
 {
+	var code;
+
 	if(base != undefined && base.is_open) {
 		msg_ptrs[base.subnum]=scan_ptr;
+		code = get_base_code(base);
 		lock_cfg();
 		try {
-			if(base.subnum==-1) {
-				read_cfg('mail', false);
-				if (saved_config.mail.scan_ptr!=scan_ptr) {
-					saved_config.mail.scan_ptr=scan_ptr;
-					save_cfg();
-				}
-			}
-			else {
-				if (base.cfg != undefined) {
-					read_cfg(base.cfg.code, false);
-					if (saved_config[base.cfg.code].scan_ptr !== scan_ptr) {
-						saved_config[base.cfg.code].scan_ptr=scan_ptr;
-						save_cfg();
-					}
-				}
+			read_cfg(get_base_code(base), false);
+			if (saved_config[code].scan_ptr!=scan_ptr) {
+				saved_config[code].scan_ptr=scan_ptr;
+				save_cfg();
 			}
 		}
 		catch (error) {
