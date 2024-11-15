@@ -26,7 +26,6 @@ var base;
 var index={offsets:[],idx:{}};
 var line;
 var readonly=true;
-var orig_ptrs={};
 var curr_status={exists:0,recent:0,unseen:0,uidnext:0,uidvalidity:0};
 var saved_config={'__config_epoch__':0, mail:{scan_ptr:0, subscribed:true}};
 var scan_ptr;
@@ -1186,13 +1185,8 @@ function calc_msgflags_arr(attr, netattr, num, msg, readonly)
 	if (netattr & NETMSG_DIRECT)
 		flags.push("DIRECT");
 
-	if (attr==0xffff || orig_ptrs[num] < msg) {
+	if (attr==0xffff || (scan_ptr < msg)) {
 		flags.push('\\Recent');
-	}
-
-	if (!readonly) {
-		if (base != undefined && base.is_open)
-			scan_ptr=msg;
 	}
 
 	return flags;
@@ -1321,7 +1315,7 @@ function update_status()
 	if(base.subnum != index.subnum || base.last_msg != index.last)
 		index=read_index(base);
 	curr_status.exists=index.offsets.length;
-	curr_status.recent=count_recent(index, orig_ptrs[base.subnum]);
+	curr_status.recent=count_recent(index, scan_ptr);
 	curr_status.unseen=count_unseen(index);
 	if(index.offsets.length == 0)
 		curr_status.uidnext=1;
@@ -1616,6 +1610,7 @@ function open_sub(sub)
 {
 	var i;
 	var idx;
+	var code;
 
 	close_sub();
 	base=new MsgBase(sub);
@@ -1623,14 +1618,26 @@ function open_sub(sub)
 		update_status();
 		return false;
 	}
+	code = get_base_code(base);
 	if(base.cfg != undefined) {
-		if(orig_ptrs[base.subnum]==undefined) {
-			orig_ptrs[base.subnum]=msg_area.sub[base.cfg.code].scan_ptr;
+		scan_ptr = msg_area.sub[code].scan_ptr;
+	}
+	lock_cfg();
+	try {
+		read_cfg(sub, false);
+
+		if (saved_config[code].scan_ptr > scan_ptr)
+			scan_ptr = saved_config[code].scan_ptr;
+		if (!readonly) {
+			saved_config[code].scan_ptr = base.last_msg;
+			save_cfg();
 		}
 	}
-	read_cfg(sub, true);
-
-	scan_ptr=orig_ptrs[base.subnum];
+	catch (error) {
+		unlock_cfg();
+		throw error;
+	}
+	unlock_cfg();
 	update_status();
 	sendflags(false);
 	untagged(curr_status.exists+" EXISTS");
@@ -1817,6 +1824,7 @@ var authenticated_command_handlers = {
 			var index;
 			var old_saved;
 			var base_code;
+			var sp;
 
 			if(typeof(items)!="object")
 				items=[items];
@@ -1825,13 +1833,15 @@ var authenticated_command_handlers = {
 				tagged(tag, "NO", "Can't find your mailbox");
 				return;
 			}
-			if(base.cfg != undefined && orig_ptrs[base.subnum]==undefined)
-				orig_ptrs[base.subnum]=msg_area.sub[base.cfg.code].scan_ptr;
-
 			base_code = get_base_code(base);
+
 			if (saved_config[base_code] != undefined)
 				old_saved = saved_config[base_code];
 			read_cfg(base_code, true);
+			if (saved_config[base_code].scan_ptr == undefined) {
+				if (base_code != 'mail')
+					saved_config[base_code].scan_ptr = msg_area.sub[base.cfg.code].scan_ptr;
+			}
 			index = read_index(base);
 			delete saved_config[base_code];
 			if (old_saved != undefined)
@@ -1845,7 +1855,7 @@ var authenticated_command_handlers = {
 						break;
 					case 'RECENT':
 						response.push("RECENT");
-						response.push(count_recent(index, orig_ptrs[base.subnum]));
+						response.push(count_recent(index, saved_config[base_code].scan_ptr));
 						break;
 					case 'UIDNEXT':
 						response.push("UIDNEXT");
@@ -1910,6 +1920,13 @@ function do_store(seq, uid, item, data)
 		for(i in seq) {
 			idx=index.idx[seq[i]];
 			hdr=base.get_msg_header(seq[i], /* expand_fields: */false);
+			// Hack in our seen flag...
+			if (get_seen_flag(index.code, idx)) {
+				idx.attr |= MSG_READ;
+			}
+			else {
+				idx.attr &= ~MSG_READ;
+			}
 			flags=parse_flags(data);
 			switch(item.toUpperCase()) {
 				case 'FLAGS.SILENT':
@@ -1928,10 +1945,12 @@ function do_store(seq, uid, item, data)
 					chflags={attr:idx.attr^(idx.attr&~flags.attr), netattr:hdr.netattr^(hdr.netattr&~flags.netattr)};
 					break
 			}
-			if (((hdr.attr ^ chflags.attr) | MSG_READ) == MSG_READ)
+			if (((idx.attr ^ chflags.attr) & MSG_READ) == MSG_READ) {
 				set_seen_flag_g(index.code, idx, 1);
-			else
+			}
+			else {
 				set_seen_flag_g(index.code, idx, 0);
+			}
 
 			chflags=check_msgflags(chflags.attr, chflags.netattr, base.subnum==-1, hdr.to_net_type==NET_NONE?hdr.to==user.number:false, hdr.from_net_type==NET_NONE?hdr.from==user.number:false,base.is_operator);
 			if(chflags.attr || chflags.netattr) {
@@ -2190,7 +2209,7 @@ var search_operators = {
 					return true;
 			}
 			if (arg[0].toUpperCase() == '\\Recent') {
-				if (msg.idx.offset > orig_ptrs[base.subnum])
+				if (msg.idx.offset > scan_ptr)
 					return true;
 			}
 			return false;
@@ -2424,17 +2443,14 @@ function parse_arg(str, type)
 			return str.toUpperCase().toSource();
 		case 'date':
 			m = str.match(dre);
-			// TODO: Date start and date end...
 			d = new Date(parseInt(m[3], 10), months.indexOf(m[2].toLowerCase()), parseInt(m[1], 10), 12);
 			return Math.floor(d.valueOf() / 1000).toString();
 		case 'date-start':
 			m = str.match(dre);
-			// TODO: Date start and date end...
 			d = new Date(parseInt(m[3], 10), months.indexOf(m[2].toLowerCase()), parseInt(m[1], 10), 0);
 			return Math.floor(d.valueOf() / 1000).toString();
 		case 'date-end':
 			m = str.match(dre);
-			// TODO: Date start and date end...
 			d = new Date(parseInt(m[3], 10), months.indexOf(m[2].toLowerCase()), parseInt(m[1], 10) + 1, 0);
 			d--;
 			return Math.floor(d.valueOf() / 1000).toString();
@@ -3111,13 +3127,8 @@ function read_cfg(sub, lck)
 	if (lck)
 		unlock_cfg();
 
-	if(sub == 'mail') {
-		orig_ptrs[-1]=saved_config.mail.scan_ptr;
-	}
-	else {
-		if(saved_config[sub].Seen==undefined)
-			saved_config[sub].Seen={};
-	}
+	if(saved_config[sub].Seen==undefined)
+		saved_config[sub].Seen={};
 	apply_seen(index);
 }
 
