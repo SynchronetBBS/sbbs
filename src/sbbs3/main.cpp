@@ -3249,7 +3249,7 @@ void event_thread(void* arg)
 						sbbs->lprintf(LOG_INFO,"Waiting for node %d to run timed event: %s"
 							,sbbs->cfg.event[i]->node, event_code);
 						sbbs->lprintf(LOG_DEBUG,"event last run: %s (0x%08x)"
-							,timestr(&sbbs->cfg, sbbs->cfg.event[i]->last, str)
+							,sbbs->timestr(sbbs->cfg.event[i]->last)
 							,sbbs->cfg.event[i]->last);
 						lastnodechk=0;	 /* really last event time check */
 						start=time(NULL);
@@ -3517,7 +3517,6 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 bool sbbs_t::init()
 {
 	char		str[MAX_PATH+1];
-	char		tmp[128];
 	int			result;
 	int			i,j,k,l;
 	node_t		node;
@@ -3622,8 +3621,8 @@ bool sbbs_t::init()
 			log(crlf);
 			time_t ftime = fdate(str);
 			safe_snprintf(str,sizeof(str),
-				"End of preexisting log entry (possible crash on %.24s)"
-				,ctime_r(&ftime, tmp));
+				"End of preexisting log entry (possible crash on %s)"
+				,timestr(ftime));
 			logline(LOG_NOTICE,"L!",str);
 			log(crlf);
 			catsyslog(true);
@@ -4303,9 +4302,8 @@ void sbbs_t::logoffstats()
 
 	now = time(NULL);
 	if(now <= logontime) {
-		char tmp[128];
 		lprintf(LOG_WARNING, "Logoff time (%u) <= logon time (%u): %s"
-			,(uint)now, (uint)logontime, ctime_r(&logontime, tmp));
+			,(uint)now, (uint)logontime, timestr(logontime));
 		return;
 	}
 	uint minutes_used = (uint)(now-logontime)/60;
@@ -5379,7 +5377,11 @@ NO_SSH:
 			t = event_thread_tick;
 			if(now > t && now - t > 60 * 60 * 2) {
 				if(!event_thread_blocked) {
-					lprintf(LOG_ERR, "Event thread appears to be blocked since %.24s", ctime_r(&t, str));
+					if(*events->event_code != '\0')
+						snprintf(str, sizeof str, " running %s", events->event_code);
+					else
+						*str = '\0';
+					lprintf(LOG_ERR, "Event thread appears to be blocked%s since %s", str, events->timestr(t));
 					event_thread_blocked = true;
 				}
 			} else {
