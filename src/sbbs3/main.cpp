@@ -2925,7 +2925,8 @@ void event_thread(void* arg)
 					time_t t;
 					SAFEPRINTF(semfile,"%s.lock",fname);
 					if(!fmutex(semfile,startup->host_name,TIMEOUT_MUTEX_FILE, &t)) {
-						sbbs->lprintf(LOG_INFO," %s exists (unpack in progress?) since %s", semfile, time_as_hhmm(&sbbs->cfg, t, str));
+						if(difftime(time(NULL), t) > 60)
+							sbbs->lprintf(LOG_INFO," %s exists (unpack in progress?) since %s", semfile, time_as_hhmm(&sbbs->cfg, t, str));
 						continue;
 					}
 					if(!fexist(fname)) {
@@ -2985,7 +2986,8 @@ void event_thread(void* arg)
 				time_t t;
 				getuserdat(&sbbs->cfg,&sbbs->useron);
 				if(!fmutex(semfile,startup->host_name,TIMEOUT_MUTEX_FILE, &t)) {
-					sbbs->lprintf(LOG_INFO,"%s exists (pack in progress?) since %s", semfile, time_as_hhmm(&sbbs->cfg, t, str));
+					if(difftime(time(NULL), t) > 60)
+						sbbs->lprintf(LOG_INFO,"%s exists (pack in progress?) since %s", semfile, time_as_hhmm(&sbbs->cfg, t, str));
 					continue;
 				}
 				if(!fexist(fname)) {
@@ -3284,11 +3286,9 @@ void event_thread(void* arg)
 					int ex_mode = EX_OFFLINE|EX_SH; /* sh for Unix perl scripts */
 					if(sbbs->cfg.qhub[i]->misc & QHUB_NATIVE)
 						ex_mode |= EX_NATIVE;
-					int result = sbbs->external(
-						 sbbs->cmdstr(sbbs->cfg.qhub[i]->call
-							,sbbs->cfg.qhub[i]->id,sbbs->cfg.qhub[i]->id,NULL)
-						,ex_mode);
-					sbbs->lprintf(result ? LOG_ERR : LOG_INFO, "Call-out to: %s returned %d", sbbs->cfg.qhub[i]->id, result);
+					const char* cmd = sbbs->cmdstr(sbbs->cfg.qhub[i]->call, sbbs->cfg.qhub[i]->id,sbbs->cfg.qhub[i]->id,NULL);
+					int result = sbbs->external(cmd, ex_mode);
+					sbbs->lprintf(result ? LOG_ERR : LOG_INFO, "Call-out to: %s (%s) returned %d", sbbs->cfg.qhub[i]->id, cmd, result);
 					sbbs->console&=~CON_L_ECHO;
 					sbbs->online=false;
 				}
@@ -3464,18 +3464,15 @@ void event_thread(void* arg)
 					ex_mode|=(sbbs->cfg.event[i]->misc&EX_NATIVE);
 					sbbs->online=ON_LOCAL;
 					sbbs->console|=CON_L_ECHO;
-					sbbs->lprintf(LOG_INFO,"Running %s%stimed event: %s"
+					cmd = sbbs->cmdstr(cmd, nulstr, sbbs->cfg.event[i]->dir, NULL);
+					sbbs->lprintf(LOG_INFO,"Running %s%stimed event: '%s'"
 						,native_executable(&sbbs->cfg, cmd, ex_mode) ? "native ":"16-bit DOS "
 						,(ex_mode&EX_BG)		? "background ":""
-						,event_code);
+						,cmd);
 					{
-						int result=
-							sbbs->external(
-								 sbbs->cmdstr(cmd,nulstr,sbbs->cfg.event[i]->dir,NULL)
-								,ex_mode
-								,sbbs->cfg.event[i]->dir);
+						int result = sbbs->external(cmd, ex_mode, sbbs->cfg.event[i]->dir);
 						if(!(ex_mode&EX_BG))
-							sbbs->lprintf(result ? sbbs->cfg.event[i]->errlevel : LOG_INFO, "Timed event: %s returned %d", event_code, result);
+							sbbs->lprintf(result ? sbbs->cfg.event[i]->errlevel : LOG_INFO, "Timed event: '%s' returned %d", cmd, result);
 					}
 					sbbs->console&=~CON_L_ECHO;
 					sbbs->online=false;
