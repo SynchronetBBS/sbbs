@@ -1418,8 +1418,8 @@ function lock_cfg()
 			exit(0);
 		if (js.termianted)
 			exit(0);
-		if ((time() - start) > 45) {
-			log(LOG_ERR, "Timed out waiting 45 seconds for IMAP log.");
+		if ((time() - start) > 600) {
+			log(LOG_ERR, "Timed out waiting 600 seconds for IMAP lock.");
 			exit(0);
 		}
 		mswait(10);
@@ -2982,6 +2982,7 @@ function read_cfg(sub, lck)
 	var byte;
 	var asc;
 	var bit;
+	var contents;
 
 	if (lck)
 		lock_cfg();
@@ -2989,7 +2990,13 @@ function read_cfg(sub, lck)
 		saved_config[sub]={subscribed:false};
 
 	cfgfile.rewind();
-	newfile = JSON.parse(cfgfile.read());
+	contents = cfgfile.read();
+	try {
+		newfile = JSON.parse(contents);
+	}
+	catch (error) {
+		newfile = {'__config_epoch__':0, mail:{scan_ptr:0, subscribed:true}};
+	}
 	for (newsub in newfile) {
 		if (newsub == '__config_epoch__') {
 			saved_config.__config_epoch__ = newfile[newsub];
