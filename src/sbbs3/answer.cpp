@@ -114,8 +114,8 @@ bool sbbs_t::answer()
 	memset(&tm,0,sizeof(tm));
     localtime_r(&now,&tm); 
 
-	safe_snprintf(str,sizeof(str),"%s  %s %s %02d %u            Node %3u"
-		,hhmmtostr(&cfg,&tm,str2)
+	safe_snprintf(str,sizeof(str),"%-6s  %s %s %02d %u            Node %3u"
+		,tm_as_hhmm(&cfg, &tm, str2)
 		,wday[tm.tm_wday]
         ,mon[tm.tm_mon],tm.tm_mday,tm.tm_year+1900,cfg.node_num);
 	logline("@ ",str);

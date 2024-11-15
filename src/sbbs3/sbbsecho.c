@@ -685,9 +685,11 @@ bool bso_lock_node(fidoaddr_t dest)
 	if(strListFind(locked_bso_nodes, fname, /* case_sensitive: */true) >= 0)
 		return true;
 	for(unsigned attempt=0;;) {
-		if(fmutex(fname, program_id(), cfg.bsy_timeout))
+		char tmp[128];
+		time_t t;
+		if(fmutex(fname, program_id(), cfg.bsy_timeout, &t))
 			break;
-		lprintf(LOG_NOTICE, "Node (%s) externally locked via: %s", smb_faddrtoa(&dest, NULL), fname);
+		lprintf(LOG_NOTICE, "Node (%s) externally locked via: %s (since %s)", smb_faddrtoa(&dest, NULL), fname, time_as_hhmm(&scfg, t, tmp));
 		if(++attempt >= cfg.bso_lock_attempts) {
 			lprintf(LOG_WARNING, "Giving up after %u attempts to lock node %s", attempt, smb_faddrtoa(&dest, NULL));
 			return false;
@@ -6428,8 +6430,9 @@ int main(int argc, char **argv)
 	}
 
 	SAFEPRINTF(path,"%ssbbsecho.bsy", scfg.ctrl_dir);
-	if(!fmutex(path, program_id(), cfg.bsy_timeout)) {
-		lprintf(LOG_WARNING, "Mutex file exists (%s): SBBSecho appears to be already running", path);
+	time_t t;
+	if(!fmutex(path, program_id(), cfg.bsy_timeout, &t)) {
+		lprintf(LOG_WARNING, "Mutex file exists (%s): SBBSecho appears to be already running since %s", path, time_as_hhmm(&scfg, t, str));
 		bail(1);
 	}
 	mtxfile_locked = true;

@@ -109,7 +109,7 @@ bool ftouch(const char* fname)
 	return true;
 }
 
-bool fmutex(const char* fname, const char* text, long max_age)
+bool fmutex(const char* fname, const char* text, long max_age, time_t* tp)
 {
 	int file;
 	time_t t;
@@ -120,9 +120,14 @@ bool fmutex(const char* fname, const char* text, long max_age)
 		text=hostname;
 #endif
 
-	if(max_age && (t=fdate(fname)) >= 0 && (time(NULL)-t) > max_age) {
-		if(remove(fname)!=0)
-			return false;
+	if(max_age > 0 || tp != NULL) {
+		if(tp == NULL)
+			tp = &t;
+		*tp = fdate(fname);
+		if(max_age > 0 && *tp != -1 && (time(NULL) - *tp) > max_age) {
+			if(remove(fname)!=0)
+				return false;
+		}
 	}
 	if((file=open(fname,O_CREAT|O_WRONLY|O_EXCL,DEFFILEMODE))<0)
 		return false;

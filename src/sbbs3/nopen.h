@@ -36,7 +36,7 @@ extern "C" {
 int		nopen(const char* str, uint access);
 FILE *	fnopen(int* file, const char* str, uint access);
 bool	ftouch(const char* fname);
-bool	fmutex(const char* fname, const char* text, long max_age);
+bool	fmutex(const char* fname, const char* text, long max_age, time_t*);
 bool	fcompare(const char* fn1, const char* fn2);
 bool	backup(const char* org, int backup_level, bool ren);
 

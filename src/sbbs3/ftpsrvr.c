@@ -2134,6 +2134,7 @@ static void ctrl_thread(void* arg)
 	char		aliasfile[MAX_PATH+1];
 	char		aliaspath[MAX_PATH+1];
 	char		mls_path[MAX_PATH+1];
+	char		mutex_file[MAX_PATH+1]="";
 	char		*mls_fname;
 	char		permstr[11];
 	char		aliasline[512];
@@ -2593,6 +2594,17 @@ static void ctrl_thread(void* arg)
 				if(badlogin(sock, sess, &login_attempts, user.alias, password, &client, &ftp.client_addr))
 					break;
 				continue;
+			}
+
+			snprintf(mutex_file, sizeof mutex_file, "%suser/%04u.ftp", scfg.data_dir, user.number);
+			if(user.rest & FLAG('Q')) { // QWKnet accont
+				if(!fmutex(mutex_file, startup->host_name, /* max_age: */60 * 60, &t)) {
+					lprintf(LOG_NOTICE, "%04d <%s> QWKnet account already logged-in to FTP server: %s (since %s)"
+						,sock, user.alias, mutex_file, time_as_hhmm(&scfg, t, str));
+					sockprintf(sock, sess, "421 QWKnet accounts are limited to one concurrent FTP session");
+					user.number = 0;
+					break;
+				}
 			}
 
 			/* Update client display */
@@ -4254,7 +4266,7 @@ static void ctrl_thread(void* arg)
 				if(!fexistcase(qwkfile)) {
 					lprintf(LOG_INFO,"%04d <%s> creating QWK packet...",sock,user.alias);
 					sprintf(str,"%spack%04u.now",scfg.data_dir,user.number);
-					if(!fmutex(str, startup->host_name, /* max_age: */60 * 60)) {
+					if(!fmutex(str, startup->host_name, /* max_age: */60 * 60, /* time: */NULL)) {
 						lprintf(LOG_WARNING, "%04d <%s> !ERROR %d (%s) creating mutex-semaphore file: %s"
 							,sock, user.alias, errno, strerror(errno), str);
 						sockprintf(sock,sess,"451 Packet creation already in progress (are you logged-in concurrently?)");
@@ -4909,6 +4921,8 @@ static void ctrl_thread(void* arg)
 	}
 
 	if(user.number) {
+		if(*mutex_file != '\0')
+			ftp_remove(sock, __LINE__, mutex_file, user.alias, LOG_ERR);
 		/* Update User Statistics */
 		if(!logoutuserdat(&scfg, &user, time(NULL), logintime))
 			lprintf(LOG_ERR,"%04d <%s> !ERROR in logoutuserdat", sock, user.alias);

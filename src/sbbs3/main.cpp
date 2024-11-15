@@ -2921,9 +2921,10 @@ void event_thread(void* arg)
 				sbbs->useron.number = atoi(g.gl_pathv[i]+offset);
 				getuserdat(&sbbs->cfg,&sbbs->useron);
 				if(sbbs->useron.number != 0 && !(sbbs->useron.misc&(DELETED|INACTIVE))) {
+					time_t t;
 					SAFEPRINTF(semfile,"%s.lock",g.gl_pathv[i]);
-					if(!fmutex(semfile,startup->host_name,TIMEOUT_MUTEX_FILE)) {
-						sbbs->lprintf(LOG_INFO," %s exists (unpack in progress?)", semfile);
+					if(!fmutex(semfile,startup->host_name,TIMEOUT_MUTEX_FILE, &t)) {
+						sbbs->lprintf(LOG_INFO," %s exists (unpack in progress?) since %s", semfile, time_as_hhmm(&sbbs->cfg, t, str));
 						continue;
 					}
 					sbbs->online=ON_LOCAL;
@@ -2973,8 +2974,9 @@ void event_thread(void* arg)
 				sbbs->lprintf(LOG_INFO, "QWK pack semaphore signaled: %s", g.gl_pathv[i]);
 				sbbs->useron.number = atoi(g.gl_pathv[i]+offset);
 				SAFEPRINTF2(semfile,"%spack%04u.lock",sbbs->cfg.data_dir,sbbs->useron.number);
-				if(!fmutex(semfile,startup->host_name,TIMEOUT_MUTEX_FILE)) {
-					sbbs->lprintf(LOG_INFO,"%s exists (pack in progress?)", semfile);
+				time_t t;
+				if(!fmutex(semfile,startup->host_name,TIMEOUT_MUTEX_FILE, &t)) {
+					sbbs->lprintf(LOG_INFO,"%s exists (pack in progress?) since %s", semfile, time_as_hhmm(&sbbs->cfg, t, str));
 					continue;
 				}
 				getuserdat(&sbbs->cfg,&sbbs->useron);

@@ -3548,7 +3548,7 @@ js_fmutex(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	ret=fmutex(fname,text,max_age);
+	ret=fmutex(fname,text,max_age, /* time: */NULL);
 	free(fname);
 	if(text)
 		free(text);

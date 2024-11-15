@@ -33,16 +33,13 @@ void sbbs_t::logout(bool logged_in)
 	int 	i,j;
 	ushort	ttoday;
 	node_t	node;
-	struct	tm tm;
 
 	now=time(NULL);
-	if(localtime_r(&now,&tm)==NULL)
-		errormsg(WHERE,ERR_CHK,"localtime",(ulong)now);
 
 	if(!useron.number) {				 /* Not logged in, so do nothing */
 		if(!online) {
-			SAFEPRINTF2(str,"%s  T:%3u sec\r\n"
-				,hhmmtostr(&cfg,&tm,tmp)
+			SAFEPRINTF2(str,"%-6s  T:%3u sec\r\n"
+				,time_as_hhmm(&cfg, now, tmp)
 				,(uint)(now-answertime));
 			logline("@-",str); 
 		}
@@ -133,8 +130,7 @@ void sbbs_t::logout(bool logged_in)
 		putuserstr(useron.number, USER_CURSUB, cfg.sub[usrsub[curgrp][cursub[curgrp]]]->code);
 	if(usrlibs>0)
 		putuserstr(useron.number, USER_CURDIR, cfg.dir[usrdir[curlib][curdir[curlib]]]->code);
-	hhmmtostr(&cfg,&tm,str);
-	SAFECAT(str,"  ");
+	snprintf(str, sizeof str, "%-6s  ", time_as_hhmm(&cfg, now, tmp));
 	if(sys_status&SS_USERON) {
 		char ulb[64];
 		char dlb[64];

@@ -218,17 +218,31 @@ char* minutes_to_str(uint min, char* str, size_t size)
 }
 
 /****************************************************************************/
+/* Returns 5 or 6 character string, depending on configuration				*/
 /****************************************************************************/
-char* hhmmtostr(scfg_t* cfg, struct tm* tm, char* str)
+char* tm_as_hhmm(scfg_t* cfg, struct tm* tm, char* str)
 {
-	if(cfg->sys_misc&SM_MILITARY)
-		sprintf(str,"%02d:%02d "
+	if(cfg != NULL && (cfg->sys_misc & SM_MILITARY))
+		sprintf(str,"%02d:%02d"
 	        ,tm->tm_hour,tm->tm_min);
 	else
 		sprintf(str,"%02d:%02d%c"
 	        ,tm->tm_hour>12 ? tm->tm_hour-12 : tm->tm_hour==0 ? 12 : tm->tm_hour
 			,tm->tm_min,tm->tm_hour>=12 ? 'p' : 'a');
 	return(str);
+}
+
+/****************************************************************************/
+/* Returns 5 or 6 character string, depending on configuration				*/
+/****************************************************************************/
+char* time_as_hhmm(scfg_t* cfg, time_t t, char* str)
+{
+	struct tm tm;
+	if(localtime_r(&t, &tm) == NULL) {
+		strcpy(str,"??:??");
+		return str;
+	}
+	return tm_as_hhmm(cfg, &tm, str);
 }
 
 /****************************************************************************/
