@@ -27,7 +27,6 @@ var index={offsets:[],idx:{}};
 var line;
 var readonly=true;
 var orig_ptrs={};
-var msg_ptrs={};
 var curr_status={exists:0,recent:0,unseen:0,uidnext:0,uidvalidity:0};
 var saved_config={'__config_epoch__':0, mail:{scan_ptr:0, subscribed:true}};
 var scan_ptr;
@@ -1192,8 +1191,6 @@ function calc_msgflags_arr(attr, netattr, num, msg, readonly)
 	}
 
 	if (!readonly) {
-		if (msg > msg_ptrs[num])
-			msg_ptrs[num]=msg;
 		if (base != undefined && base.is_open)
 			scan_ptr=msg;
 	}
@@ -1597,7 +1594,6 @@ function close_sub()
 	var code;
 
 	if(base != undefined && base.is_open) {
-		msg_ptrs[base.subnum]=scan_ptr;
 		code = get_base_code(base);
 		lock_cfg();
 		try {
@@ -1630,7 +1626,6 @@ function open_sub(sub)
 	if(base.cfg != undefined) {
 		if(orig_ptrs[base.subnum]==undefined) {
 			orig_ptrs[base.subnum]=msg_area.sub[base.cfg.code].scan_ptr;
-			msg_ptrs[base.subnum]=msg_area.sub[base.cfg.code].scan_ptr;
 		}
 	}
 	read_cfg(sub, true);
@@ -3117,7 +3112,6 @@ function read_cfg(sub, lck)
 		unlock_cfg();
 
 	if(sub == 'mail') {
-		msg_ptrs[-1]=saved_config.mail.scan_ptr;
 		orig_ptrs[-1]=saved_config.mail.scan_ptr;
 	}
 	else {
