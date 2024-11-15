@@ -33,6 +33,7 @@ var saved_config={'__config_epoch__':0, mail:{scan_ptr:0, subscribed:true}};
 var scan_ptr;
 var cfgfile;
 var applied_epoch = -1;
+var cfg_locked = false;
 
 /**********************/
 /* Encoding functions */
@@ -1437,11 +1438,11 @@ function open_cfg(usr)
 			if (ch != '{') {
 				// INI file, convert...
 				read_old_cfg();
-				save_cfg(false);
+				save_cfg();
 			}
 		}
 		else {
-			save_cfg(false);
+			save_cfg();
 		}
 	}
 	catch (error) {
@@ -1466,19 +1467,27 @@ function lock_cfg()
 		}
 		mswait(10);
 	}
+	cfg_locked = true;
 }
 
 function unlock_cfg()
 {
 	cfgfile.unlock(0, 1);
+	cfg_locked = false;
 }
 
 function exit_func()
 {
 	close_sub();
 	if (cfgfile !== undefined) {
+		if (!cfg_locked)
+			lock_cfg();
+		try {
+			save_cfg();
+		}
+		catch (error) {
+		}
 		unlock_cfg();
-		save_cfg(true);
 	}
 }
 
@@ -1541,7 +1550,7 @@ function binify(seen)
 	return ret;
 }
 
-function save_cfg(lck)
+function save_cfg()
 {
 	var cfg;
 	var b;
@@ -1549,6 +1558,8 @@ function save_cfg(lck)
 	var scpy;
 	var new_cfg = {};
 
+	if (!cfg_locked)
+		throw new Error('Configuration must be locked to call save_cfg()');
 	if(user.number > 0) {
 		for (sub in saved_config) {
 			if (sub == '__config_epoch__') {
@@ -1560,6 +1571,8 @@ function save_cfg(lck)
 					scpy = JSON.parse(JSON.stringify(saved_config[sub].Seen));
 				}
 				new_cfg[sub] = {};
+				if (saved_config[sub].scan_ptr != undefined)
+					new_cfg[sub].scan_ptr = saved_config[sub].scan_ptr;
 				if(scpy !== undefined) {
 					var bin = binify(scpy);
 					if (bin !== undefined)
@@ -1572,14 +1585,10 @@ function save_cfg(lck)
 					new_cfg[sub].subscribed = true;
 			}
 		}
-		if (lck)
-			lock_cfg();
 		cfgfile.rewind();
 		cfgfile.truncate();
 		cfgfile.write(JSON.stringify(new_cfg));
 		cfgfile.flush();
-		if (lck)
-			unlock_cfg();
 	}
 }
 
@@ -1587,16 +1596,30 @@ function close_sub()
 {
 	if(base != undefined && base.is_open) {
 		msg_ptrs[base.subnum]=scan_ptr;
-		if(msg_ptrs[base.subnum]!=orig_ptrs[base.subnum]) {
+		lock_cfg();
+		try {
 			if(base.subnum==-1) {
+				read_cfg('mail', false);
 				if (saved_config.mail.scan_ptr!=scan_ptr) {
 					saved_config.mail.scan_ptr=scan_ptr;
-					save_cfg(true);
+					save_cfg();
 				}
 			}
-			else
-				msg_area.sub[base.cfg.code].scan_ptr=scan_ptr;
+			else {
+				if (base.cfg != undefined) {
+					read_cfg(base.cfg.code, false);
+					if (saved_config[base.cfg.code].scan_ptr !== scan_ptr) {
+						saved_config[base.cfg.code].scan_ptr=scan_ptr;
+						save_cfg();
+					}
+				}
+			}
 		}
+		catch (error) {
+			unlock_cfg();
+			throw error;
+		}
+		unlock_cfg();
 		base.close();
 	}
 }
@@ -1731,7 +1754,7 @@ var authenticated_command_handlers = {
 				try {
 					read_cfg(sub, false);
 					saved_config[sub].subscribed = true;
-					save_cfg(false);
+					save_cfg();
 				}
 				catch (error) {
 					unlock_cfg();
@@ -1755,7 +1778,7 @@ var authenticated_command_handlers = {
 				try {
 					read_cfg(sub, false);
 					saved_config[sub].subscribed = false;
-					save_cfg(false);
+					save_cfg();
 				}
 				catch (error) {
 					unlock_cfg();
@@ -1937,7 +1960,7 @@ function do_store(seq, uid, item, data)
 				break;
 			js.gc();
 		}
-		save_cfg(false);
+		save_cfg();
 	}
 	catch (error) {
 		unlock_cfg();
@@ -2864,7 +2887,7 @@ var selected_command_handlers = {
 					if (!client.socket.is_connected)
 						break;
 				}
-				save_cfg(false);
+				save_cfg();
 			}
 			catch (error) {
 				unlock_cfg();
@@ -2925,7 +2948,7 @@ var selected_command_handlers = {
 							if (!client.socket.is_connected)
 								break;
 						}
-						save_cfg(false);
+						save_cfg();
 					}
 					catch (error) {
 						unlock_cfg();
@@ -3063,6 +3086,8 @@ function read_cfg(sub, lck)
 			}
 			else {
 				saved_config[newsub] = {};
+				if (newfile[newsub].hasOwnProperty('scan_ptr'))
+					saved_config[newsub].scan_ptr = newfile[newsub].scan_ptr;
 				if (newfile[newsub].hasOwnProperty('seen'))
 					saved_config[newsub].Seen = newfile[newsub].seen;
 				else
