@@ -460,7 +460,8 @@ void tevents_cfg()
 			"\n"
 			"To configure an event, select it and hit ~ ENTER ~.\n"
 		;
-		i=uifc.list(j,0,0,0,&dflt,&bar,"Timed Events",opt);
+		snprintf(str, sizeof str, "Timed Events (%u)", cfg.total_events);
+		i=uifc.list(j,0,0,0,&dflt,&bar,str,opt);
 		if((signed)i==-1)
 			return;
 		int msk = i & MSK_ON;
@@ -1095,7 +1096,7 @@ void xtrn_cfg(int section)
 			"\n"
 			"To configure a program, select it with the arrow keys and hit ~ ENTER ~.\n"
 		;
-		sprintf(str,"%s Programs",cfg.xtrnsec[section]->name);
+		snprintf(str, sizeof str, "%s Programs (%d)", cfg.xtrnsec[section]->name, j);
 		i=uifc.list(i,0,0,45,&ext_dflt,&ext_bar,str,opt);
 		if((signed)i==-1)
 			return;
