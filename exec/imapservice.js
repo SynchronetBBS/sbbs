@@ -1549,16 +1549,21 @@ function old_unlock_cfg()
 
 function exit_func()
 {
-	close_sub();
+	try {
+		close_sub();
+	}
+	catch(error) {}
 	if (locked_code !== undefined) {
-		log("At exit, "+locked_code+" is still locked.");
-		unlock_cfg(locked_code);
+		try {
+			log("At exit, "+locked_code+" is still locked.");
+			unlock_cfg(locked_code);
+		}
+		catch(error) {}
 	}
 	try {
 		save_cfg();
 	}
-	catch (error) {
-	}
+	catch (error) {}
 }
 
 function binify(seen)
