@@ -496,7 +496,7 @@ function send_fetch_response(msgnum, fmat, uid)
 	}
 
 	idx=index.idx[msgnum];
-	resp=idx.offset;
+	resp=idx.imap_offset;
 	resp += " FETCH (";
 	fmat=fmat.sort(sort_format);
 
@@ -1411,7 +1411,7 @@ function read_index(base)
 		}
 		index.idx[idx.number]=idx;
 		index.offsets.push(idx.number);
-		idx.offset=index.offsets.length;
+		idx.imap_offset=index.offsets.length;
 	}
 	return(index);
 }
@@ -2671,7 +2671,7 @@ function new_search(args, uid)
 		for (i in index.offsets) {
 			msg = {idx:index.idx[index.offsets[i]]};
 			if (s(msg)) {
-				result.push(uid ? msg.idx.number : msg.idx.offset);
+				result.push(uid ? msg.idx.number : msg.idx.imap_offset);
 			}
 		}
 	} catch(error) {
@@ -2930,7 +2930,7 @@ function do_search(args, uid)
 					continue;
 			}
 			if(!failed)
-				result.push(uid?idx.number:idx.offset);
+				result.push(uid?idx.number:idx.imap_offset);
 			if (!client.socket.is_connected)
 				break;
 		}
