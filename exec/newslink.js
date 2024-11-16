@@ -455,7 +455,7 @@ for(sub in area) {
 			);
 		if(hdr == null) {
 			if(msgbase.status != 0)
-				alert("Error " + msgbase.error + " reading msg header #" + ptr);
+				alert("Error (" + msgbase.error + ") reading msg header #" + ptr);
 			continue;
 		}
 		if(!hdr.id) {
@@ -619,6 +619,8 @@ for(sub in area) {
 			ptr = last_msg;
 		ptr++;
 	}
+	if(msgbase.cfg.max_msgs > 0 && last_msg - ptr > msgbase.cfg.max_msgs)
+		ptr = (last_msg - msgbase.cfg.max_msgs) + 1;
 
 	delete article_list;
 	subpending=0;
@@ -651,7 +653,7 @@ for(sub in area) {
 			continue;
 		}
 
-		printf("Retrieving article: %u\r\n", ptr);
+		printf("Retrieving %s article: %u\r\n", newsgroup, ptr);
 		writeln(format("ARTICLE %lu",ptr));
 		rsp = readln();
 		if(rsp==null || rsp[0]!='2') {
