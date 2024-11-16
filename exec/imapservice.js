@@ -1592,7 +1592,7 @@ function close_sub()
 		lock_cfg();
 		try {
 			read_cfg(get_base_code(base), false);
-			if (saved_config[code].scan_ptr!=scan_ptr) {
+			if (saved_config[code].scan_ptr < scan_ptr) {
 				saved_config[code].scan_ptr=scan_ptr;
 				save_cfg();
 			}
