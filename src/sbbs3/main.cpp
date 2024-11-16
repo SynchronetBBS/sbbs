@@ -2920,16 +2920,17 @@ void event_thread(void* arg)
 				if(sbbs->useron.number != 0 && !(sbbs->useron.misc&(DELETED|INACTIVE))) {
 					time_t t;
 					SAFEPRINTF(lockfname,"%s.lock",fname);
-					int lockfile = fmutex_open(lockfname,startup->host_name,TIMEOUT_MUTEX_FILE, &t);
+					int lockfile = fmutex_open(lockfname,startup->host_name,TIMEOUT_MUTEX_FILE, &t, true);
 					if(lockfile < 0) {
 						if(difftime(time(NULL), t) > 60)
 							sbbs->lprintf(LOG_INFO," %s exists (unpack in progress?) since %s", lockfname, time_as_hhmm(&sbbs->cfg, t, str));
 						continue;
 					}
+					sbbs->lprintf(LOG_DEBUG, "%s is now owned", lockfname);
 					if(!fexist(fname)) {
-						sbbs->lprintf(LOG_NOTICE, "%s already gone", fname);
-						close(lockfile);
-						sbbs->fremove(WHERE, lockfname, /* log-all-errors: */true);
+						sbbs->lprintf(LOG_DEBUG, "%s already gone", fname);
+						if(!fmutex_close(lockfname, lockfile))
+							sbbs->errormsg(WHERE, ERR_REMOVE, lockfname);
 						continue;
 					}
 					sbbs->online=ON_LOCAL;
@@ -2956,8 +2957,8 @@ void event_thread(void* arg)
 						SAFEPRINTF(str,"%sfile/", sbbs->cfg.data_dir);
 						sbbs->delfiles(str, badpkt, /* keep: */10);
 					}
-					close(lockfile);
-					sbbs->fremove(WHERE, lockfname, /* log-all-errors: */true);
+					if(!fmutex_close(lockfname, lockfile))
+						sbbs->errormsg(WHERE, ERR_REMOVE, lockfname);
 				}
 				else {
 					sbbs->lprintf(LOG_INFO, "Removing: %s", fname);
@@ -2988,16 +2989,17 @@ void event_thread(void* arg)
 					continue;
 				}
 				SAFEPRINTF2(lockfname,"%spack%04u.lock",sbbs->cfg.data_dir,usernum);
-				int lockfile = fmutex_open(lockfname,startup->host_name,TIMEOUT_MUTEX_FILE, &t);
+				int lockfile = fmutex_open(lockfname,startup->host_name,TIMEOUT_MUTEX_FILE, &t, true);
 				if(lockfile < 0) {
 					if(difftime(time(NULL), t) > 60)
 						sbbs->lprintf(LOG_INFO,"%s exists (pack in progress?) since %s", lockfname, time_as_hhmm(&sbbs->cfg, t, str));
 					continue;
 				}
+				sbbs->lprintf(LOG_DEBUG, "%s is now owned", lockfname);
 				if(!fexist(fname)) {
-					sbbs->lprintf(LOG_NOTICE, "%s already gone", fname);
-					close(lockfile);
-					sbbs->fremove(WHERE, lockfname, /* log-all-errors: */true);
+					sbbs->lprintf(LOG_DEBUG, "%s already gone", fname);
+					if(!fmutex_close(lockfname, lockfile))
+						sbbs->errormsg(WHERE, ERR_REMOVE, lockfname);
 					continue;
 				}
 				if(!(sbbs->useron.misc&(DELETED|INACTIVE))) {
@@ -3022,9 +3024,9 @@ void event_thread(void* arg)
 					sbbs->console&=~CON_L_ECHO;
 					sbbs->online=false;
 				}
-				sbbs->fremove(WHERE, fname, /* log-all-errors: */true);
-				close(lockfile);
-				sbbs->fremove(WHERE, lockfname, /* log-all-errors: */true);
+				sbbs->fremove(WHERE, fname);
+				if(!fmutex_close(lockfname, lockfile))
+					sbbs->errormsg(WHERE, ERR_REMOVE, lockfname);
 			}
 			globfree(&g);
 			sbbs->useron.number = 0;
