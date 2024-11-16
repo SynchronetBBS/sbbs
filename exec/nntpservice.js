@@ -1004,12 +1004,6 @@ while(client.socket.is_connected && !quit) {
 							else
 								hdr.attr&=~MSG_MODERATED;
 
-							if(hdr.references) {
-								var replyto_hdr = msgbase.get_msg_header(hdr.references);
-								if(replyto_hdr && replyto_hdr.ftn_msgid)
-									hdr.ftn_reply = replyto_hdr.ftn_msgid;
-							}
-
 						    if(msgbase.save_msg(hdr,client,body)) {
 							    log(format("%s posted a message (%u chars, %u lines) on %s (%s)"
 									,user.alias, body.length, lines, newsgroups[n], msgbase.cfg.code));
