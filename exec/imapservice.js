@@ -1209,6 +1209,7 @@ function sublist(group, match, subscribed)
 	var re;
 	var has_sep=false;
 	var base;
+	var code;
 
 	if(match=='')
 		return([""]);
@@ -1232,22 +1233,34 @@ function sublist(group, match, subscribed)
 	if(re.test("INBOX"))
 		ret.push("INBOX");
 
-	for(grp in msg_area.grp_list) {
-		if(re.test(msg_area.grp_list[grp].description))
-			ret.push((msg_area.grp_list[grp].description+sepchar).replace(/&/g,'&-'));
+	lock_cfg()
+	try {
+		read_cfg('mail', true);
+		for(grp in msg_area.grp_list) {
+			if(re.test(msg_area.grp_list[grp].description))
+				ret.push((msg_area.grp_list[grp].description+sepchar).replace(/&/g,'&-'));
 
-		for(sub in msg_area.grp_list[grp].sub_list) {
-			if(re.test(msg_area.grp_list[grp].description+sepchar+msg_area.grp_list[grp].sub_list[sub].description)) {
-				if((!subscribed) || (saved_config.hasOwnProperty(msg_area.grp_list[grp].sub_list[sub].code) && saved_config[msg_area.grp_list[grp].sub_list[sub].code].hasOwnProperty('subscribed') && saved_config[msg_area.grp_list[grp].sub_list[sub].code].subscribed)) {
-					base=new MsgBase(msg_area.grp_list[grp].sub_list[sub].code);
-					if(base == undefined || sub=="NONE!!!" || (!base.open()))
-						continue;
-					base.close();
-					ret.push((msg_area.grp_list[grp].description+sepchar+msg_area.grp_list[grp].sub_list[sub].description).replace(/&/g,'&-'));
+			for(sub in msg_area.grp_list[grp].sub_list) {
+				code = msg_area.grp_list[grp].sub_list[sub].code
+				// TODO: Notyet
+				//read_cfg(code, false);
+				if(re.test(msg_area.grp_list[grp].description+sepchar+msg_area.grp_list[grp].sub_list[sub].description)) {
+					if((!subscribed) || (saved_config.hasOwnProperty(code) && saved_config[code].hasOwnProperty('subscribed') && saved_config[code].subscribed)) {
+						base=new MsgBase(code);
+						if(base == undefined || sub=="NONE!!!" || (!base.open()))
+							continue;
+						base.close();
+						ret.push((msg_area.grp_list[grp].description+sepchar+msg_area.grp_list[grp].sub_list[sub].description).replace(/&/g,'&-'));
+					}
 				}
 			}
 		}
 	}
+	catch (error) {
+		unlock_cfg();
+		throw error;
+	}
+	unlock_cfg();
 	return(ret);
 }
 
@@ -1362,7 +1375,6 @@ function read_index(base)
 	var i;
 	var idx;
 	var index;
-	var newseen={};
 
 	index={offsets:[],idx:{}};
 	index.first=base.first_msg;
@@ -1384,14 +1396,12 @@ function read_index(base)
 			idx.attr &= ~MSG_READ;
 			if(get_seen_flag(index.code, idx) == 1) {
 				idx.attr |= MSG_READ;
-				newseen[idx.number]=1;
 			}
 		}
 		index.idx[idx.number]=idx;
 		index.offsets.push(idx.number);
 		idx.offset=index.offsets.length;
 	}
-	saved_config[index.code].Seen=newseen;
 	return(index);
 }
 
@@ -1841,7 +1851,6 @@ var authenticated_command_handlers = {
 			var base;
 			var mademap=false;
 			var index;
-			var old_saved;
 			var base_code;
 			var sp;
 
@@ -1854,17 +1863,8 @@ var authenticated_command_handlers = {
 			}
 			base_code = get_base_code(base);
 
-			if (saved_config[base_code] != undefined)
-				old_saved = saved_config[base_code];
 			read_cfg(base_code, true);
-			if (saved_config[base_code].scan_ptr == undefined) {
-				if (base_code != 'mail')
-					saved_config[base_code].scan_ptr = msg_area.sub[base.cfg.code].scan_ptr;
-			}
 			index = read_index(base);
-			delete saved_config[base_code];
-			if (old_saved != undefined)
-				saved_config[base_code] = old_saved;
 			base.close();
 			for(i in items) {
 				switch(items[i].toUpperCase()) {
@@ -3106,34 +3106,36 @@ function read_cfg(sub, lck)
 		catch (error) {
 			newfile = {'__config_epoch__':0, mail:{scan_ptr:0, subscribed:true}};
 		}
-		for (newsub in newfile) {
-			if (newsub == '__config_epoch__') {
-				saved_config.__config_epoch__ = newfile[newsub];
-			}
-			else {
-				if (last_saved_file[newsub] == undefined || JSON.stringify(newfile[newsub]) != JSON.stringify(last_saved_file[newsub])) {
-					saved_config[newsub] = {};
-					if (newfile[newsub].hasOwnProperty('scan_ptr'))
-						saved_config[newsub].scan_ptr = newfile[newsub].scan_ptr;
-					if (newfile[newsub].hasOwnProperty('seen'))
-						saved_config[newsub].Seen = newfile[newsub].seen;
-					else
-						saved_config[newsub].Seen = {};
-					if (newfile[newsub].hasOwnProperty('subscribed'))
-						saved_config[newsub].subscribed = newfile[newsub].subscribed;
-					else
-						saved_config[newsub].subscribed = false;
-					if (newfile[newsub].hasOwnProperty('bseen')) {
-						for (i in newfile[newsub].bseen) {
-							basemsg = parseInt(i, 10);
-							bstr = base64_decode(newfile[newsub].bseen[i]);
-							for (byte = 0; byte < bstr.length; byte++) {
-								asc = ascii(bstr[byte]);
-								if (asc == 0)
-									continue;
-								for (bit=0; bit<8; bit++) {
-									if (asc & (1<<bit))
-										saved_config[newsub].Seen[basemsg+(byte*8+bit)]=1;
+		if (newfile.__config_epoch__ !== saved_config.__config_epoch__) {
+			for (newsub in newfile) {
+				if (newsub == '__config_epoch__') {
+					saved_config.__config_epoch__ = newfile[newsub];
+				}
+				else {
+					if (last_saved_file[newsub] == undefined || JSON.stringify(newfile[newsub]) != JSON.stringify(last_saved_file[newsub])) {
+						saved_config[newsub] = {};
+						if (newfile[newsub].hasOwnProperty('scan_ptr'))
+							saved_config[newsub].scan_ptr = newfile[newsub].scan_ptr;
+						if (newfile[newsub].hasOwnProperty('seen'))
+							saved_config[newsub].Seen = newfile[newsub].seen;
+						else
+							saved_config[newsub].Seen = {};
+						if (newfile[newsub].hasOwnProperty('subscribed'))
+							saved_config[newsub].subscribed = newfile[newsub].subscribed;
+						else
+							saved_config[newsub].subscribed = false;
+						if (newfile[newsub].hasOwnProperty('bseen')) {
+							for (i in newfile[newsub].bseen) {
+								basemsg = parseInt(i, 10);
+								bstr = base64_decode(newfile[newsub].bseen[i]);
+								for (byte = 0; byte < bstr.length; byte++) {
+									asc = ascii(bstr[byte]);
+									if (asc == 0)
+										continue;
+									for (bit=0; bit<8; bit++) {
+										if (asc & (1<<bit))
+											saved_config[newsub].Seen[basemsg+(byte*8+bit)]=1;
+									}
 								}
 							}
 						}
@@ -3153,6 +3155,10 @@ function read_cfg(sub, lck)
 
 	if(saved_config[sub].Seen==undefined)
 		saved_config[sub].Seen={};
+	if (sub != 'mail' && ((saved_config[sub].sub_ptr == undefined) || (msg_area.sub[sub].scan_ptr > saved_config[sub]))) {
+		saved_config[sub].scan_ptr = msg_area.sub[sub].scan_ptr;
+	}
+
 	apply_seen(index);
 	last_saved_config = JSON.parse(JSON.stringify(saved_config));
 	last_saved_file = newfile;
