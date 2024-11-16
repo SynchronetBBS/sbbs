@@ -2926,7 +2926,7 @@ void event_thread(void* arg)
 							sbbs->lprintf(LOG_INFO," %s exists (unpack in progress?) since %s", lockfname, time_as_hhmm(&sbbs->cfg, t, str));
 						continue;
 					}
-					sbbs->lprintf(LOG_DEBUG, "%s is now owned", lockfname);
+					sbbs->lprintf(LOG_DEBUG, "Opened %s", lockfname);
 					if(!fexist(fname)) {
 						sbbs->lprintf(LOG_DEBUG, "%s already gone", fname);
 						if(!fmutex_close(lockfname, lockfile))
@@ -2995,7 +2995,7 @@ void event_thread(void* arg)
 						sbbs->lprintf(LOG_INFO,"%s exists (pack in progress?) since %s", lockfname, time_as_hhmm(&sbbs->cfg, t, str));
 					continue;
 				}
-				sbbs->lprintf(LOG_DEBUG, "%s is now owned", lockfname);
+				sbbs->lprintf(LOG_DEBUG, "Opened %s", lockfname);
 				if(!fexist(fname)) {
 					sbbs->lprintf(LOG_DEBUG, "%s already gone", fname);
 					if(!fmutex_close(lockfname, lockfile))
