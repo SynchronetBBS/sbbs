@@ -129,7 +129,7 @@ bool fmutex(const char* fname, const char* text, long max_age, time_t* tp)
 				return false;
 		}
 	}
-	if((file=open(fname,O_CREAT|O_WRONLY|O_EXCL,DEFFILEMODE))<0)
+	if((file=sopen(fname, O_CREAT|O_WRONLY|O_EXCL, SH_DENYRW, DEFFILEMODE))<0)
 		return false;
 	if(text!=NULL)
 		result = write(file,text,strlen(text)) >= 0;
