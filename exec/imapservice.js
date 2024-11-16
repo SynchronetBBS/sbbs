@@ -1549,6 +1549,8 @@ function save_cfg()
 	var s;
 	var scpy;
 	var new_cfg = {};
+	var forced;
+	var fk;
 
 	if (!cfg_locked)
 		throw new Error('Configuration must be locked to call save_cfg()');
@@ -1558,6 +1560,14 @@ function save_cfg()
 				new_cfg[sub] = next_epoch(saved_config[sub]);
 			}
 			else {
+				// Sanity check to make sure both seen and bseen aren't defined for the same message
+				forced = false;
+				if (last_saved_file[sub].bseen != undefined && last_saved_file[sub].seen != undefined) {
+					fk = Object.keys(last_saved_file[sub].bseen)[0];
+					if (last_saved_file[sub].seen[fk])
+						delete last_saved_config[sub];
+				}
+
 				if (last_saved_config[sub] == undefined || JSON.stringify(saved_config[sub]) != JSON.stringify(last_saved_config[sub])) {
 					scpy = undefined;
 					if (saved_config[sub].Seen !== undefined) {
@@ -1570,7 +1580,8 @@ function save_cfg()
 						var bin = binify(scpy);
 						if (bin !== undefined)
 							new_cfg[sub].bseen = bin;
-						new_cfg[sub].seen = scpy;
+						if (Object.keys(scpy).length > 0)
+							new_cfg[sub].seen = scpy;
 					}
 					if (saved_config[sub].subscribed === undefined || saved_config[sub].subscribed === false)
 						new_cfg[sub].subscribed = false;
@@ -3107,7 +3118,7 @@ function read_cfg(sub, lck)
 					if (newfile[newsub].hasOwnProperty('seen'))
 						saved_config[newsub].Seen = newfile[newsub].seen;
 					else
-						saved_config[newsub].Seen = newfile[newsub].seen = {};
+						saved_config[newsub].Seen = {};
 					if (newfile[newsub].hasOwnProperty('subscribed'))
 						saved_config[newsub].subscribed = newfile[newsub].subscribed;
 					else
@@ -3127,9 +3138,6 @@ function read_cfg(sub, lck)
 							}
 						}
 					}
-				}
-				else {
-					// saved_config is already correct.
 				}
 			}
 		}
