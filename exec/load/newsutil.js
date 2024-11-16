@@ -33,10 +33,6 @@ function write_news_header(hdr,writeln)
 	if(hdr.replyto!=undefined)
 		writeln("Reply-To: " + hdr.replyto);
 	if(hdr.reply_id!=undefined)
-		writeln("In-Reply-To: " + hdr.reply_id);
-	if(hdr.references!=undefined)
-		writeln("References: " + hdr.references);
-	else if(hdr.reply_id!=undefined)
 		writeln("References: " + hdr.reply_id);
 
 	/* FidoNet header fields */
