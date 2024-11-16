@@ -109,11 +109,11 @@ bool ftouch(const char* fname)
 	return true;
 }
 
-bool fmutex(const char* fname, const char* text, long max_age, time_t* tp)
+int fmutex_open(const char* fname, const char* text, long max_age, time_t* tp)
 {
 	int file;
 	time_t t;
-	bool result = true;
+	size_t len;
 #if !defined(NO_SOCKET_SUPPORT)
 	char hostname[128];
 	if(text==NULL && gethostname(hostname,sizeof(hostname))==0)
@@ -126,15 +126,28 @@ bool fmutex(const char* fname, const char* text, long max_age, time_t* tp)
 		*tp = fdate(fname);
 		if(max_age > 0 && *tp != -1 && (time(NULL) - *tp) > max_age) {
 			if(remove(fname)!=0)
-				return false;
+				return -1;
 		}
 	}
 	if((file=sopen(fname, O_CREAT|O_WRONLY|O_EXCL, SH_DENYRW, DEFFILEMODE))<0)
+		return file;
+	if(text!=NULL) {
+		len = strlen(text);
+		if(write(file, text, len) != len) {
+			close(file);
+			return -1;
+		}
+	}
+	return file;
+}
+
+bool fmutex(const char* fname, const char* text, long max_age, time_t* tp)
+{
+	int file = fmutex_open(fname, text, max_age, tp);
+	if(file < 0)
 		return false;
-	if(text!=NULL)
-		result = write(file,text,strlen(text)) >= 0;
 	close(file);
-	return result;
+	return true;
 }
 
 bool fcompare(const char* fn1, const char* fn2)
