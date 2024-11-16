@@ -120,8 +120,10 @@ int fmutex_open(const char* fname, const char* text, long max_age, time_t* tp, b
 	size_t len;
 #if !defined(NO_SOCKET_SUPPORT)
 	char hostname[128];
-	if(text==NULL && gethostname(hostname,sizeof(hostname))==0)
-		text=hostname;
+#endif
+#ifdef _WIN32
+	DWORD attributes = FILE_ATTRIBUTE_NORMAL;
+	HANDLE h;
 #endif
 
 	if(max_age > 0 || tp != NULL) {
@@ -134,10 +136,9 @@ int fmutex_open(const char* fname, const char* text, long max_age, time_t* tp, b
 		}
 	}
 #ifdef _WIN32
-	DWORD attributes = FILE_ATTRIBUTE_NORMAL;
 	if(atomic_remove)
 		attributes |= FILE_FLAG_DELETE_ON_CLOSE;
-	HANDLE h = CreateFileA(fname,
+	h = CreateFileA(fname,
 		GENERIC_WRITE,	// dwDesiredAccess
 		0,				// dwShareMode (deny all)
 		NULL,			// lpSecurityAttributes,
@@ -154,6 +155,10 @@ int fmutex_open(const char* fname, const char* text, long max_age, time_t* tp, b
 #else
 	if((file=sopen(fname, O_CREAT|O_WRONLY|O_EXCL, SH_DENYRW, DEFFILEMODE))<0)
 		return -1;
+#endif
+#if !defined(NO_SOCKET_SUPPORT)
+	if(text==NULL && gethostname(hostname,sizeof(hostname))==0)
+		text=hostname;
 #endif
 	if(text!=NULL) {
 		len = strlen(text);
