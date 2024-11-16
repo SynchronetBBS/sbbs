@@ -28,6 +28,8 @@ var line;
 var readonly=true;
 var curr_status={exists:0,recent:0,unseen:0,uidnext:0,uidvalidity:0};
 var saved_config={'__config_epoch__':0, mail:{scan_ptr:0, subscribed:true}};
+var last_saved_config=JSON.parse(JSON.stringify(saved_config));
+var last_saved_file={};
 var scan_ptr;
 var cfgfile;
 var applied_epoch = -1;
@@ -602,7 +604,6 @@ function send_fetch_response(msgnum, fmat, uid)
 	resp=resp.replace(/ $/,'');
 	resp += ")";
 	untagged(resp);
-	js.gc(false);
 }
 
 /*
@@ -1557,23 +1558,30 @@ function save_cfg()
 				new_cfg[sub] = next_epoch(saved_config[sub]);
 			}
 			else {
-				scpy = undefined;
-				if (saved_config[sub].Seen !== undefined) {
-					scpy = JSON.parse(JSON.stringify(saved_config[sub].Seen));
+				if (last_saved_config[sub] == undefined || JSON.stringify(saved_config[sub]) != JSON.stringify(last_saved_config[sub])) {
+					scpy = undefined;
+					if (saved_config[sub].Seen !== undefined) {
+						scpy = JSON.parse(JSON.stringify(saved_config[sub].Seen));
+					}
+					new_cfg[sub] = {};
+					if (saved_config[sub].scan_ptr != undefined)
+						new_cfg[sub].scan_ptr = saved_config[sub].scan_ptr;
+					if(scpy !== undefined) {
+						var bin = binify(scpy);
+						if (bin !== undefined)
+							new_cfg[sub].bseen = bin;
+						new_cfg[sub].seen = scpy;
+					}
+					if (saved_config[sub].subscribed === undefined || saved_config[sub].subscribed === false)
+						new_cfg[sub].subscribed = false;
+					else
+						new_cfg[sub].subscribed = true;
+					last_saved_file[sub] = new_cfg[sub];
+					last_saved_config[sub] = JSON.parse(JSON.stringify(saved_config[sub]));
 				}
-				new_cfg[sub] = {};
-				if (saved_config[sub].scan_ptr != undefined)
-					new_cfg[sub].scan_ptr = saved_config[sub].scan_ptr;
-				if(scpy !== undefined) {
-					var bin = binify(scpy);
-					if (bin !== undefined)
-						new_cfg[sub].bseen = bin;
-					new_cfg[sub].seen = scpy;
+				else {
+					new_cfg[sub] = last_saved_file[sub];
 				}
-				if (saved_config[sub].subscribed === undefined || saved_config[sub].subscribed === false)
-					new_cfg[sub].subscribed = false;
-				else
-					new_cfg[sub].subscribed = true;
 			}
 		}
 		cfgfile.rewind();
@@ -1913,13 +1921,15 @@ function do_store(seq, uid, item, data)
 	var hdr;
 	var idx;
 	var changed=false;
+	var uci = item.toUpperCase();
 
 	lock_cfg();
 	try {
 		read_cfg(index.code, false);
+		flags=parse_flags(data);
 		for(i in seq) {
 			idx=index.idx[seq[i]];
-			hdr=base.get_msg_header(seq[i], /* expand_fields: */false);
+			hdr=base.get_msg_header(seq[i], false);
 			// Hack in our seen flag...
 			if (get_seen_flag(index.code, idx)) {
 				idx.attr |= MSG_READ;
@@ -1927,8 +1937,7 @@ function do_store(seq, uid, item, data)
 			else {
 				idx.attr &= ~MSG_READ;
 			}
-			flags=parse_flags(data);
-			switch(item.toUpperCase()) {
+			switch(uci) {
 				case 'FLAGS.SILENT':
 					silent=true;
 				case 'FLAGS':
@@ -1944,6 +1953,8 @@ function do_store(seq, uid, item, data)
 				case '-FLAGS':
 					chflags={attr:idx.attr^(idx.attr&~flags.attr), netattr:hdr.netattr^(hdr.netattr&~flags.netattr)};
 					break
+				default:
+					chflags={attr:0, netattr:0};
 			}
 			if (((idx.attr ^ chflags.attr) & MSG_READ) == MSG_READ) {
 				set_seen_flag_g(index.code, idx, 1);
@@ -1965,8 +1976,8 @@ function do_store(seq, uid, item, data)
 				send_fetch_response(seq[i], ["FLAGS"], uid);
 			if (!client.socket.is_connected)
 				break;
-			js.gc();
 		}
+		js.gc();
 		save_cfg();
 	}
 	catch (error) {
@@ -3089,31 +3100,36 @@ function read_cfg(sub, lck)
 				saved_config.__config_epoch__ = newfile[newsub];
 			}
 			else {
-				saved_config[newsub] = {};
-				if (newfile[newsub].hasOwnProperty('scan_ptr'))
-					saved_config[newsub].scan_ptr = newfile[newsub].scan_ptr;
-				if (newfile[newsub].hasOwnProperty('seen'))
-					saved_config[newsub].Seen = newfile[newsub].seen;
-				else
-					saved_config[newsub].Seen = newfile[newsub].seen = {};
-				if (newfile[newsub].hasOwnProperty('subscribed'))
-					saved_config[newsub].subscribed = newfile[newsub].subscribed;
-				else
-					saved_config[newsub].subscribed = false;
-				if (newfile[newsub].hasOwnProperty('bseen')) {
-					for (i in newfile[newsub].bseen) {
-						basemsg = parseInt(i, 10);
-						bstr = base64_decode(newfile[newsub].bseen[i]);
-						for (byte = 0; byte < bstr.length; byte++) {
-							asc = ascii(bstr[byte]);
-							if (asc == 0)
-								continue;
-							for (bit=0; bit<8; bit++) {
-								if (asc & (1<<bit))
-									saved_config[newsub].Seen[basemsg+(byte*8+bit)]=1;
+				if (last_saved_file[newsub] == undefined || JSON.stringify(newfile[newsub]) != JSON.stringify(last_saved_file[newsub])) {
+					saved_config[newsub] = {};
+					if (newfile[newsub].hasOwnProperty('scan_ptr'))
+						saved_config[newsub].scan_ptr = newfile[newsub].scan_ptr;
+					if (newfile[newsub].hasOwnProperty('seen'))
+						saved_config[newsub].Seen = newfile[newsub].seen;
+					else
+						saved_config[newsub].Seen = newfile[newsub].seen = {};
+					if (newfile[newsub].hasOwnProperty('subscribed'))
+						saved_config[newsub].subscribed = newfile[newsub].subscribed;
+					else
+						saved_config[newsub].subscribed = false;
+					if (newfile[newsub].hasOwnProperty('bseen')) {
+						for (i in newfile[newsub].bseen) {
+							basemsg = parseInt(i, 10);
+							bstr = base64_decode(newfile[newsub].bseen[i]);
+							for (byte = 0; byte < bstr.length; byte++) {
+								asc = ascii(bstr[byte]);
+								if (asc == 0)
+									continue;
+								for (bit=0; bit<8; bit++) {
+									if (asc & (1<<bit))
+										saved_config[newsub].Seen[basemsg+(byte*8+bit)]=1;
+								}
 							}
 						}
 					}
+				}
+				else {
+					// saved_config is already correct.
 				}
 			}
 		}
@@ -3130,6 +3146,8 @@ function read_cfg(sub, lck)
 	if(saved_config[sub].Seen==undefined)
 		saved_config[sub].Seen={};
 	apply_seen(index);
+	last_saved_config = JSON.parse(JSON.stringify(saved_config));
+	last_saved_file = newfile;
 }
 
 js.on_exit("exit_func()");
