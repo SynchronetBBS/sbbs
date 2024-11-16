@@ -37,8 +37,8 @@ int		nopen(const char* str, uint access);
 FILE *	fnopen(int* file, const char* str, uint access);
 bool	ftouch(const char* fname);
 bool	fmutex(const char* fname, const char* text, long max_age, time_t*);
-int		fmutex_open(const char* fname, const char* text, long max_age, time_t*, bool atomic_remove);
-bool	fmutex_close(const char* fname, int file);
+int		fmutex_open(const char* fname, const char* text, long max_age, time_t*, bool auto_remove);
+bool	fmutex_close(int file);
 bool	fcompare(const char* fn1, const char* fn2);
 bool	backup(const char* org, int backup_level, bool ren);
 

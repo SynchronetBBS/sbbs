@@ -2929,8 +2929,8 @@ void event_thread(void* arg)
 					sbbs->lprintf(LOG_DEBUG, "Opened %s", lockfname);
 					if(!fexist(fname)) {
 						sbbs->lprintf(LOG_DEBUG, "%s already gone", fname);
-						if(!fmutex_close(lockfname, lockfile))
-							sbbs->errormsg(WHERE, ERR_REMOVE, lockfname);
+						if(!fmutex_close(lockfile))
+							sbbs->errormsg(WHERE, ERR_CLOSE, lockfname);
 						continue;
 					}
 					sbbs->online=ON_LOCAL;
@@ -2957,8 +2957,8 @@ void event_thread(void* arg)
 						SAFEPRINTF(str,"%sfile/", sbbs->cfg.data_dir);
 						sbbs->delfiles(str, badpkt, /* keep: */10);
 					}
-					if(!fmutex_close(lockfname, lockfile))
-						sbbs->errormsg(WHERE, ERR_REMOVE, lockfname);
+					if(!fmutex_close(lockfile))
+						sbbs->errormsg(WHERE, ERR_CLOSE, lockfname);
 				}
 				else {
 					sbbs->lprintf(LOG_INFO, "Removing: %s", fname);
@@ -2998,8 +2998,8 @@ void event_thread(void* arg)
 				sbbs->lprintf(LOG_DEBUG, "Opened %s", lockfname);
 				if(!fexist(fname)) {
 					sbbs->lprintf(LOG_DEBUG, "%s already gone", fname);
-					if(!fmutex_close(lockfname, lockfile))
-						sbbs->errormsg(WHERE, ERR_REMOVE, lockfname);
+					if(!fmutex_close(lockfile))
+						sbbs->errormsg(WHERE, ERR_CLOSE, lockfname);
 					continue;
 				}
 				if(!(sbbs->useron.misc&(DELETED|INACTIVE))) {
@@ -3025,8 +3025,8 @@ void event_thread(void* arg)
 					sbbs->online=false;
 				}
 				sbbs->fremove(WHERE, fname);
-				if(!fmutex_close(lockfname, lockfile))
-					sbbs->errormsg(WHERE, ERR_REMOVE, lockfname);
+				if(!fmutex_close(lockfile))
+					sbbs->errormsg(WHERE, ERR_CLOSE, lockfname);
 			}
 			globfree(&g);
 			sbbs->useron.number = 0;

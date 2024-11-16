@@ -113,7 +113,7 @@ bool ftouch(const char* fname)
 }
 
 // Opens a mutex file and returns its file descriptor or -1 on failure
-int fmutex_open(const char* fname, const char* text, long max_age, time_t* tp, bool atomic_remove)
+int fmutex_open(const char* fname, const char* text, long max_age, time_t* tp, bool auto_remove)
 {
 	int file;
 	time_t t;
@@ -136,7 +136,7 @@ int fmutex_open(const char* fname, const char* text, long max_age, time_t* tp, b
 		}
 	}
 #ifdef _WIN32
-	if(atomic_remove)
+	if(auto_remove)
 		attributes |= FILE_FLAG_DELETE_ON_CLOSE;
 	h = CreateFileA(fname,
 		GENERIC_WRITE,	// dwDesiredAccess
@@ -155,6 +155,13 @@ int fmutex_open(const char* fname, const char* text, long max_age, time_t* tp, b
 #else
 	if((file=sopen(fname, O_CREAT|O_WRONLY|O_EXCL, SH_DENYRW, DEFFILEMODE))<0)
 		return -1;
+	if(auto_remove) {
+		// the file will remain in existence until the last file descriptor referring to it is closed
+		if(remove(fname) != 0) {
+			close(file);
+			return -1;
+		}
+	}
 #endif
 #if !defined(NO_SOCKET_SUPPORT)
 	if(text==NULL && gethostname(hostname,sizeof(hostname))==0)
@@ -170,24 +177,18 @@ int fmutex_open(const char* fname, const char* text, long max_age, time_t* tp, b
 	return file;
 }
 
+bool fmutex_close(int file)
+{
+	return close(file) == 0;
+}
+
 // Opens and immediately closes a mutex file
 bool fmutex(const char* fname, const char* text, long max_age, time_t* tp)
 {
-	int file = fmutex_open(fname, text, max_age, tp, false);
+	int file = fmutex_open(fname, text, max_age, tp, /* auto_remove: */false);
 	if(file < 0)
 		return false;
-	close(file);
-	return true;
-}
-
-// Closes and atomically removes a mutex file opened with fmutex_open()
-bool fmutex_close(const char* fname, int file)
-{
-#ifndef _WIN32 // You can't delete an open file on Windows, so we open with the DELETE_ON_CLOSE attribute instead
-	if(remove(fname) != 0)
-		return false;
-#endif
-	return close(file) == 0;
+	return fmutex_close(file);
 }
 
 bool fcompare(const char* fn1, const char* fn2)
