@@ -4562,7 +4562,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 					if(dnsbl_result.s_addr==0						/* Don't double-filter */
 						&& !spam_block_exempt)	{
 						lprintf(LOG_NOTICE,"%04d %s !BLOCKING IP ADDRESS: %s in %s", socket, client.protocol, client_id, spam_block);
-						filter_ip(&scfg, client.protocol, reason, host_name, host_ip, reverse_path, spam_block, /* duration: */0);
+						filter_ip(&scfg, client.protocol, reason, host_name, host_ip, reverse_path, spam_block, startup->spam_block_duration);
 						strcat(tmp," and BLOCKED");
 					}
 					spamlog(&scfg, &mqtt, (char*)client.protocol, tmp, "Attempted recipient in SPAM BAIT list"

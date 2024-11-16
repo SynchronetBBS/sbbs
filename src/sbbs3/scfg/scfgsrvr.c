@@ -110,7 +110,7 @@ static void login_attempt_cfg(struct login_attempt_settings* login_attempt)
 				break;
 			case 4:
 				SAFECOPY(str, duration(login_attempt->tempban_duration, false));
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Lifetime of Temporary-Ban of IP", str, 6, K_EDIT) > 0)
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Lifetime of Temporary-Ban of IP", str, 10, K_EDIT) > 0)
 					login_attempt->tempban_duration = (uint)parse_duration(str);
 				break;
 			case 5:
@@ -1626,6 +1626,8 @@ static void mailsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s%s", "DNS-Blacklisted Servers", startup.options & MAIL_OPT_DNSBL_THROTTLE ? "Throttle and " : "", p);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Hash DNS-Blacklisted Msgs", startup.options & MAIL_OPT_DNSBL_SPAMHASH ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Kill SPAM When Read", startup.options & MAIL_OPT_KILL_READ_SPAM ? "Yes": "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Spammer IP-Filter Duration"
+			,startup.spam_block_duration == 0 ? "Infinite" : duration_to_vstr(startup.spam_block_duration, tmp, sizeof(tmp)));
 		if(startup.options & MAIL_OPT_RELAY_TX)
 			p = "Relay";
 		else
@@ -1787,15 +1789,23 @@ static void mailsrvr_cfg(void)
 				startup.options ^= MAIL_OPT_KILL_READ_SPAM;
 				break;
 			case 26:
-				sendmail_cfg(&startup);
+				if(startup.spam_block_duration == 0)
+					SAFECOPY(str, "Infinite");
+				else
+					SAFECOPY(str, duration(startup.spam_block_duration, false));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Lifetime of ban of SPAM-bait taker IP", str, 8, K_EDIT) > 0)
+					startup.spam_block_duration = (uint)parse_duration(str);
 				break;
 			case 27:
-				getar("Mail Server Login", startup.login_ars);
+				sendmail_cfg(&startup);
 				break;
 			case 28:
-				js_startup_cfg(&startup.js);
+				getar("Mail Server Login", startup.login_ars);
 				break;
 			case 29:
+				js_startup_cfg(&startup.js);
+				break;
+			case 30:
 				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:

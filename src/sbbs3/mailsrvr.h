@@ -80,6 +80,7 @@ typedef struct {
 	js_startup_t js;
 
 	uint	max_concurrent_connections;
+	uint	spam_block_duration;
 
 } mail_startup_t;
 
