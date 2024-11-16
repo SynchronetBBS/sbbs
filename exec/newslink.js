@@ -418,9 +418,9 @@ for(sub in area) {
 	ini_file = new File(ini_fname);
 	if(ini_file.open("r")) {
 		export_ptr=ini_file.iniGetValue("NewsLink","export_ptr",export_ptr);
-		printf("%s.ini export ptr: %ld\r\n",sub,export_ptr);
+		printf("%s export ptr: %ld\r\n",file_getname(ini_fname), export_ptr);
 		import_ptr=ini_file.iniGetValue("NewsLink","import_ptr",import_ptr);
-		printf("%s.ini import ptr: %ld\r\n",sub,import_ptr);
+		printf("%s import ptr: %ld\r\n",file_getname(ini_fname),import_ptr);
 		ini_file.close();
 	}
 
