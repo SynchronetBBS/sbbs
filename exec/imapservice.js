@@ -28,6 +28,7 @@ var line;
 var readonly=true;
 var curr_status={exists:0,recent:0,unseen:0,uidnext:0,uidvalidity:0};
 var saved_config={mail:{'__config_epoch__':0, scan_ptr:0, subscribed:true, Seen:{}}};
+var loaded_config={};
 var scan_ptr;
 var cfgfile;
 var applied_epoch = -1;
@@ -284,7 +285,7 @@ function send_fetch_response(msgnum, fmat, uid)
 	 */
 	function get_header() {
 		if(hdr == undefined)
-			hdr=base.get_msg_header(msgnum, /* expand_fields: */false);
+			hdr=base.get_msg_header(true, idx.offset, /* expand_fields: */false);
 		/* If that didn't work, make up a minimal useless header */
 		if (hdr == undefined) {
 			hdr = Object.create(MsgBase.HeaderPrototype);
@@ -307,8 +308,12 @@ function send_fetch_response(msgnum, fmat, uid)
 	}
 
 	function get_rfc822_text() {
-		if(rfc822.text==undefined)
-			rfc822.text=base.get_msg_body(msgnum, true, true, true);
+		if(rfc822.text==undefined) {
+			if (hdr != undefined)
+				rfc822.text=base.get_msg_body(hdr, true, true, true);
+			else
+				rfc822.text=base.get_msg_body(true, idx.offset, true, true, true);
+		}
 		// At least some iPhones in 2024 would not display
 		// zero-length messages.  Convert them to a single
 		// space instead.
@@ -347,9 +352,9 @@ function send_fetch_response(msgnum, fmat, uid)
 			get_header();
 			if(!(hdr.attr & MSG_READ)) {
 				hdr.attr |= MSG_READ;
-				base.put_msg_header(msgnum, hdr);
+				base.put_msg_header(true, idx.offset, hdr);
 				index=read_index(base);
-				hdr=base.get_msg_header(msgnum, /* expand_fields: */false);
+				hdr=base.get_msg_header(true, idx.offset, /* expand_fields: */false);
 				if(hdr.attr & MSG_READ)
 					seen_changed=true;
 			}
@@ -605,6 +610,7 @@ function send_fetch_response(msgnum, fmat, uid)
 	resp=resp.replace(/ $/,'');
 	resp += ")";
 	untagged(resp);
+	return seen_changed;
 }
 
 /*
@@ -1637,6 +1643,7 @@ function save_cfg(sub)
 	function save_one_cfg(osub)
 	{
 		var new_cfg = {};
+		var newfile;
 
 		if (osub != locked_code)
 			throw new Error('Unlocking ' + osub.toSource() + ' but ' + locked_code.toSource() + ' is locked');
@@ -1670,7 +1677,9 @@ function save_cfg(sub)
 				new_cfg.subscribed = true;
 			cfgfile.rewind();
 			cfgfile.truncate();
-			cfgfile.write(JSON.stringify(new_cfg));
+			newfile = JSON.stringify(new_cfg);
+			cfgfile.write(newfile);
+			loaded_config[osub] = newfile;
 		}
 	}
 
@@ -1721,6 +1730,7 @@ function open_sub(sub)
 {
 	var i;
 	var idx;
+	var changed = false;
 
 	close_sub();
 	base=new MsgBase(sub);
@@ -1735,9 +1745,11 @@ function open_sub(sub)
 	try {
 		read_cfg();
 
-		if (saved_config[sub].scan_ptr > scan_ptr)
+		if (saved_config[sub].scan_ptr > scan_ptr) {
 			scan_ptr = saved_config[sub].scan_ptr;
-		if (!readonly) {
+			changed = true;
+		}
+		if (changed && !readonly) {
 			saved_config[sub].scan_ptr = base.last_msg;
 			save_cfg(sub);
 		}
@@ -1872,8 +1884,10 @@ var authenticated_command_handlers = {
 				lock_cfg(sub);
 				try {
 					read_cfg();
-					saved_config[sub].subscribed = true;
-					save_cfg(sub);
+					if (!saved_config[sub].subscribed) {
+						saved_config[sub].subscribed = true;
+						save_cfg(sub);
+					}
 				}
 				catch (error) {
 					unlock_cfg(sub);
@@ -1896,8 +1910,10 @@ var authenticated_command_handlers = {
 				lock_cfg(sub);
 				try {
 					read_cfg();
-					saved_config[sub].subscribed = false;
-					save_cfg(sub);
+					if (saved_config[sub].subscribed) {
+						saved_config[sub].subscribed = false;
+						save_cfg(sub);
+					}
 				}
 				catch (error) {
 					unlock_cfg(sub);
@@ -2043,7 +2059,7 @@ function do_store(seq, uid, item, data)
 		flags=parse_flags(data);
 		for(i in seq) {
 			idx=index.idx[seq[i]];
-			hdr=base.get_msg_header(seq[i], false);
+			hdr=base.get_msg_header(true, idx.offset, false);
 			// Hack in our seen flag...
 			if (get_seen_flag(index.code, idx)) {
 				idx.attr |= MSG_READ;
@@ -2082,7 +2098,7 @@ function do_store(seq, uid, item, data)
 				hdr.attr ^= chflags.attr;
 				hdr.netattr ^= chflags.netattr;
 				if(!readonly) {
-					base.put_msg_header(seq[i], hdr);
+					base.put_msg_header(true, idx.offset, hdr);
 					changed=true;
 				}
 			}
@@ -2142,7 +2158,7 @@ function search_get_headers(msg)
 {
 	if (msg.headers != undefined)
 		return true;
-	msg.headers = base.get_msg_header(msg.idx.number, /* expand_fields: */false);
+	msg.headers = base.get_msg_header(true, msg.idx.offset, /* expand_fields: */false);
 	if (msg.headers == undefined) {
 		if (msg.errors === undefined)
 			msg.errors = [];
@@ -2166,7 +2182,10 @@ function search_get_body(msg)
 {
 	if (msg.body != undefined)
 		return;
-	msg.body = base.get_msg_body(msg.idx.number, true, true, true).toUpperCase();
+	if (msg.headers != undefined)
+		msg.body = base.get_msg_body(msg.headers, true, true, true).toUpperCase();
+	else
+		msg.body = base.get_msg_body(true, msg.idx.offset, true, true, true).toUpperCase();
 	if (msg.body == undefined) {
 		if (msg.errors === undefined)
 			msg.errors = [];
@@ -2896,7 +2915,7 @@ function do_search(args, uid)
 					continue;
 			}
 			if(search_set.hdr.length > 0 || search_set.all.length > 0) {
-				hdr=base.get_msg_header(idx.number, /* expand_fields: */false);
+				hdr=base.get_msg_header(true, idx.offset, /* expand_fields: */false);
 				if(hdr==null) {
 					log("Unable to get header for idx.number");
 					continue;
@@ -2909,7 +2928,7 @@ function do_search(args, uid)
 					continue;
 			}
 			if(search_set.body.length > 0 || search_set.all.length > 0) {
-				body=base.get_msg_body(idx.number,true,true,true).toUpperCase();
+				body=base.get_msg_body(true, idx.offset,true,true,true).toUpperCase();
 				if(body==null) {
 					log("Unable to get body for idx.number");
 					continue;
@@ -3007,16 +3026,19 @@ var selected_command_handlers = {
 			var seq=parse_seq_set(args[1],false);
 			var data_items=parse_data_items(args[2]);
 			var i;
+			var need_save = false;
 
 			lock_cfg(get_base_code(base));
 			try {
 				read_cfg();
 				for(i in seq) {
-					send_fetch_response(seq[i], data_items, false);
+					if (send_fetch_response(seq[i], data_items, false))
+						need_save = true;
 					if (!client.socket.is_connected)
 						break;
 				}
-				save_cfg(get_base_code(base));
+				if (need_save)
+					save_cfg(get_base_code(base));
 			}
 			catch (error) {
 				unlock_cfg(get_base_code(base));
@@ -3060,6 +3082,7 @@ var selected_command_handlers = {
 			var data_items;
 			var data;
 			var i;
+			var need_save = false;
 
 			switch(cmd.toUpperCase()) {
 				case 'FETCH':
@@ -3073,11 +3096,13 @@ var selected_command_handlers = {
 					try {
 						read_cfg();
 						for(i in seq) {
-							send_fetch_response(seq[i], data_items, true);
+							if (send_fetch_response(seq[i], data_items, true))
+								need_save = true;
 							if (!client.socket.is_connected)
 								break;
 						}
-						save_cfg(get_base_code(base));
+						if (need_save)
+							save_cfg(get_base_code(base));
 					}
 					catch (error) {
 						unlock_cfg(get_base_code(base));
@@ -3292,34 +3317,37 @@ function read_cfg()
 		else
 			newfile = {subscribed:false, __config_epoch__: 0, scan_ptr:0};
 	}
-	if (newfile.__config_epoch__ !== saved_config[locked_code].__config_epoch__) {
-		saved_config.__config_epoch__ = newfile.__config_epoch__;
-		saved_config[locked_code] = {};
-		if (newfile.hasOwnProperty('scan_ptr'))
-			saved_config[locked_code].scan_ptr = newfile.scan_ptr;
-		if (newfile.hasOwnProperty('seen'))
-			saved_config[locked_code].Seen = newfile.seen;
-		else
-			saved_config[locked_code].Seen = {};
-		if (newfile.hasOwnProperty('subscribed'))
-			saved_config[locked_code].subscribed = newfile.subscribed;
-		else
-			saved_config[locked_code].subscribed = false;
-		if (newfile.hasOwnProperty('bseen')) {
-			for (i in newfile.bseen) {
-				basemsg = parseInt(i, 10);
-				bstr = base64_decode(newfile.bseen[i]);
-				for (byte = 0; byte < bstr.length; byte++) {
-					asc = ascii(bstr[byte]);
-					if (asc == 0)
-						continue;
-					for (bit=0; bit<8; bit++) {
-						if (asc & (1<<bit))
-							saved_config[locked_code].Seen[basemsg+(byte*8+bit)]=1;
+	if (loaded_config[locked_code] !== newfile) {
+		if (newfile.__config_epoch__ !== saved_config[locked_code].__config_epoch__) {
+			saved_config.__config_epoch__ = newfile.__config_epoch__;
+			saved_config[locked_code] = {};
+			if (newfile.hasOwnProperty('scan_ptr'))
+				saved_config[locked_code].scan_ptr = newfile.scan_ptr;
+			if (newfile.hasOwnProperty('seen'))
+				saved_config[locked_code].Seen = newfile.seen;
+			else
+				saved_config[locked_code].Seen = {};
+			if (newfile.hasOwnProperty('subscribed'))
+				saved_config[locked_code].subscribed = newfile.subscribed;
+			else
+				saved_config[locked_code].subscribed = false;
+			if (newfile.hasOwnProperty('bseen')) {
+				for (i in newfile.bseen) {
+					basemsg = parseInt(i, 10);
+					bstr = base64_decode(newfile.bseen[i]);
+					for (byte = 0; byte < bstr.length; byte++) {
+						asc = ascii(bstr[byte]);
+						if (asc == 0)
+							continue;
+						for (bit=0; bit<8; bit++) {
+							if (asc & (1<<bit))
+								saved_config[locked_code].Seen[basemsg+(byte*8+bit)]=1;
+						}
 					}
 				}
 			}
 		}
+		loaded_config[locked_code] = newfile;
 	}
 
 	if(saved_config[locked_code].Seen==undefined)
