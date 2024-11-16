@@ -13,7 +13,7 @@ load("822header.js");
 load("mime.js");
 
 var sepchar="|";
-var debug_exceptions = false;
+var debug_exceptions = true;
 var debug=false;
 var debugRX=false;
 
@@ -27,13 +27,12 @@ var index={offsets:[],idx:{}};
 var line;
 var readonly=true;
 var curr_status={exists:0,recent:0,unseen:0,uidnext:0,uidvalidity:0};
-var saved_config={'__config_epoch__':0, mail:{scan_ptr:0, subscribed:true}};
-var last_saved_config=JSON.parse(JSON.stringify(saved_config));
-var last_saved_file={};
+var saved_config={mail:{'__config_epoch__':0, scan_ptr:0, subscribed:true, Seen:{}}};
 var scan_ptr;
 var cfgfile;
 var applied_epoch = -1;
 var cfg_locked = false;
+var locked_code = undefined;
 
 /**********************/
 /* Encoding functions */
@@ -215,6 +214,8 @@ function untagged(msg)
 
 function next_epoch(last_epoch)
 {
+	if (last_epoch === undefined)
+		last_epoch = 0;
 	if (last_epoch >= Number.MAX_SAFE_INTEGER)
 		return 0;
 	return last_epoch + 1;
@@ -223,7 +224,7 @@ function next_epoch(last_epoch)
 function init_seen(code)
 {
 	if(saved_config[code] == undefined)
-		saved_config[code] = {subscribed:false};
+		saved_config[code] = {subscribed:false, Seen:{}};
 	if(saved_config[code].Seen == undefined)
 		saved_config[code].Seen = {};
 }
@@ -946,7 +947,7 @@ var unauthenticated_command_handlers = {
 					tagged(tag, "NO", "No AUTH for you.");
 					return;
 				}
-				if (!open_cfg(system.matchuser(args[1], false)))
+				if (!open_cfg(system.matchuser(args[1], false), tag))
 					return;
 				tagged(tag, "OK", "Howdy.");
 				state=Authenticated;
@@ -973,27 +974,36 @@ var unauthenticated_command_handlers = {
 				}
 				// First, try as-stored...
 				if (args[1] === hmac(u.security.password, challenge)) {
-					if (!open_cfg(u))
+					if (!login(u.alias, u.security.password)) {
+						tagged(tag, "NO", "No AUTH for you.");
 						return;
-					login(u.alias, u.security.password);
+					}
+					if (!open_cfg(u, tag))
+						return;
 					tagged(tag, "OK", "Howdy.");
 					state=Authenticated;
 					return;
 				}
 				// Lower-case
 				if (args[1] === hmac(u.security.password.toLowerCase(), challenge)) {
-					if (!open_cfg(u))
+					if (!login(u.alias, u.security.password)) {
+						tagged(tag, "NO", "No AUTH for you.");
 						return;
-					login(u.alias, u.security.password);
+					}
+					if (!open_cfg(u, tag))
+						return;
 					tagged(tag, "OK", "Howdy.");
 					state=Authenticated;
 					return;
 				}
 				// Upper-case
 				if (args[1] === hmac(u.security.password.toUpperCase(), challenge)) {
-					if (!open_cfg(u))
+					if (!login(u.alias, u.security.password)) {
+						tagged(tag, "NO", "No AUTH for you.");
 						return;
-					login(u.alias, u.security.password);
+					}
+					if (!open_cfg(u, tag))
+						return;
 					tagged(tag, "OK", "Howdy.");
 					state=Authenticated;
 					return;
@@ -1022,7 +1032,7 @@ var unauthenticated_command_handlers = {
 				return;
 			}
 			u = system.matchuser(usr, false);
-			if (!open_cfg(u))
+			if (!open_cfg(u, tag))
 				return;
 			tagged(tag, "OK", "Sure, come on in.");
 			state=Authenticated;
@@ -1233,34 +1243,32 @@ function sublist(group, match, subscribed)
 	if(re.test("INBOX"))
 		ret.push("INBOX");
 
-	lock_cfg()
-	try {
-		read_cfg('mail', true);
-		for(grp in msg_area.grp_list) {
-			if(re.test(msg_area.grp_list[grp].description))
-				ret.push((msg_area.grp_list[grp].description+sepchar).replace(/&/g,'&-'));
+	for(grp in msg_area.grp_list) {
+		if(re.test(msg_area.grp_list[grp].description))
+			ret.push((msg_area.grp_list[grp].description+sepchar).replace(/&/g,'&-'));
 
-			for(sub in msg_area.grp_list[grp].sub_list) {
-				code = msg_area.grp_list[grp].sub_list[sub].code
-				// TODO: Notyet
-				//read_cfg(code, false);
-				if(re.test(msg_area.grp_list[grp].description+sepchar+msg_area.grp_list[grp].sub_list[sub].description)) {
-					if((!subscribed) || (saved_config.hasOwnProperty(code) && saved_config[code].hasOwnProperty('subscribed') && saved_config[code].subscribed)) {
-						base=new MsgBase(code);
-						if(base == undefined || sub=="NONE!!!" || (!base.open()))
-							continue;
-						base.close();
-						ret.push((msg_area.grp_list[grp].description+sepchar+msg_area.grp_list[grp].sub_list[sub].description).replace(/&/g,'&-'));
-					}
+		for(sub in msg_area.grp_list[grp].sub_list) {
+			code = msg_area.grp_list[grp].sub_list[sub].code
+			lock_cfg(code);
+			try {
+				read_cfg();
+			}
+			catch (error) {
+				unlock_cfg(code);
+				throw(error);
+			}
+			unlock_cfg(code);
+			if(re.test(msg_area.grp_list[grp].description+sepchar+msg_area.grp_list[grp].sub_list[sub].description)) {
+				if((!subscribed) || (saved_config.hasOwnProperty(code) && saved_config[code].hasOwnProperty('subscribed') && saved_config[code].subscribed)) {
+					base=new MsgBase(code);
+					if(base == undefined || sub=="NONE!!!" || (!base.open()))
+						continue;
+					base.close();
+					ret.push((msg_area.grp_list[grp].description+sepchar+msg_area.grp_list[grp].sub_list[sub].description).replace(/&/g,'&-'));
 				}
 			}
 		}
 	}
-	catch (error) {
-		unlock_cfg();
-		throw error;
-	}
-	unlock_cfg();
 	return(ret);
 }
 
@@ -1385,11 +1393,13 @@ function read_index(base)
 	index.code = get_base_code(base);
 	for(i=0; i<index.total; i++) {
 		idx=base.get_msg_index(true,i);
-		if(idx==null)
+		if(idx==null) {
 			continue;
+		}
 		if(base.subnum==-1) {
-			if(idx.to != user.number)
+			if(idx.to != user.number) {
 				continue;
+			}
 		}
 		else {
 			// Fake \Seen
@@ -1425,39 +1435,86 @@ function apply_seen(index)
 	applied_epoch = saved_config.__config_epoch__;
 }
 
-function open_cfg(usr)
+function open_cfg(usr, tag)
 {
-	cfgfile=new File(format(system.data_dir+"user/%04d.imap", usr.number));
-	if (!cfgfile.open(cfgfile.exists ? 'r+':'w+', true, 0)) {
-		tagged(tag, "NO", "Can't open imap state file");
-		return false;
+	var path = format(system.data_dir+"user/%04d", usr.number);
+	if (!file_isdir(path)) {
+		if (!mkdir(path))
+			return false;
 	}
-	lock_cfg();
-	try {
-		// Check if it's the old INI format...
-		if (cfgfile.length > 0) {
-			var ch = cfgfile.read(1);
-			if (ch != '{') {
-				// INI file, convert...
-				read_old_cfg();
-				save_cfg();
+
+	cfgfile=new File(format(system.data_dir+"user/%04d.imap", usr.number));
+	if (cfgfile.exists) {
+		if (!cfgfile.open('r+', true, 0)) {
+			tagged(tag, "NO", "Can't open imap state file");
+			return false;
+		}
+		old_lock_cfg();
+		try {
+			// Check if it's the old INI format...
+			if (cfgfile.length > 0) {
+				var ch = cfgfile.read(1);
+				if (ch != '{') {
+					// INI file, convert...
+					read_old_cfg();
+				}
+				else {
+					read_old_cfg2();
+				}
 			}
 		}
-		else {
-			save_cfg();
+		catch (error) {
+			old_unlock_cfg();
+			throw error;
 		}
+		cfgfile.truncate();
+		old_unlock_cfg();
+		cfgfile.close();
+		file_remove(cfgfile.name);
+		cfgfile = undefined;
+		save_cfg();
 	}
-	catch (error) {
-		unlock_cfg();
-		throw error;
-	}
-	unlock_cfg();
+	else
+		cfgfile = undefined;
 	return true;
 }
 
-function lock_cfg()
+function lock_cfg(sub)
 {
-	start = time();
+	if (locked_code !== undefined)
+		throw new Error('Locking ' + sub.toSource() + ' while ' + locked_code.toSource() + ' is locked');
+	if (cfgfile != undefined)
+		throw new Error('Locking ' + sub.toSource() + ' while ' + cfgfile.name + ' is open.');
+	var path = format(system.data_dir+"user/%04d", user.number);
+	if (!file_isdir(path)) {
+		if (!mkdir(path)) {
+			throw new Error("Unable to create "+path);
+			return false;
+		}
+	}
+
+	cfgfile=new File(format("%s/%s.imap", path, sub));
+	if (!cfgfile.open(cfgfile.exists ? 'r+':'w+', true, 0))
+		throw new Error('Unable to open config file');
+
+	var start = time();
+	while(!cfgfile.lock(0, 1)) {
+		if (!client.socket.is_connected)
+			exit(0);
+		if (js.termianted)
+			exit(0);
+		if ((time() - start) > 600) {
+			log(LOG_ERR, "Timed out waiting 600 seconds for IMAP lock.");
+			exit(0);
+		}
+		mswait(10);
+	}
+	locked_code = sub;
+}
+
+function old_lock_cfg()
+{
+	var start = time();
 	while(!cfgfile.lock(0, 1)) {
 		if (!client.socket.is_connected)
 			exit(0);
@@ -1472,7 +1529,18 @@ function lock_cfg()
 	cfg_locked = true;
 }
 
-function unlock_cfg()
+function unlock_cfg(sub)
+{
+	if (sub != locked_code)
+		throw new Error('Unlocking ' + sub.toSource() + ' but ' + locked_code.toSource() + ' is locked');
+	cfgfile.flush();
+	cfgfile.unlock(0, 1);
+	cfgfile.close();
+	cfgfile = undefined;
+	locked_code = undefined;
+}
+
+function old_unlock_cfg()
 {
 	cfgfile.unlock(0, 1);
 	cfg_locked = false;
@@ -1481,15 +1549,14 @@ function unlock_cfg()
 function exit_func()
 {
 	close_sub();
-	if (cfgfile !== undefined) {
-		if (!cfg_locked)
-			lock_cfg();
-		try {
-			save_cfg();
-		}
-		catch (error) {
-		}
-		unlock_cfg();
+	if (locked_code !== undefined) {
+		log("At exit, "+locked_code+" is still locked.");
+		unlock_cfg(locked_code);
+	}
+	try {
+		save_cfg();
+	}
+	catch (error) {
 	}
 }
 
@@ -1552,63 +1619,72 @@ function binify(seen)
 	return ret;
 }
 
-function save_cfg()
+function save_cfg(sub)
 {
 	var cfg;
 	var b;
 	var s;
 	var scpy;
 	var new_cfg = {};
-	var forced;
 	var fk;
 
-	if (!cfg_locked)
-		throw new Error('Configuration must be locked to call save_cfg()');
-	if(user.number > 0) {
-		for (sub in saved_config) {
-			if (sub == '__config_epoch__') {
-				new_cfg[sub] = next_epoch(saved_config[sub]);
-			}
-			else {
-				// Sanity check to make sure both seen and bseen aren't defined for the same message
-				forced = false;
-				if (last_saved_file[sub].bseen != undefined && last_saved_file[sub].seen != undefined) {
-					fk = Object.keys(last_saved_file[sub].bseen)[0];
-					if (last_saved_file[sub].seen[fk])
-						delete last_saved_config[sub];
-				}
+	function save_one_cfg(osub)
+	{
+		var new_cfg = {};
 
-				if (last_saved_config[sub] == undefined || JSON.stringify(saved_config[sub]) != JSON.stringify(last_saved_config[sub])) {
-					scpy = undefined;
-					if (saved_config[sub].Seen !== undefined) {
-						scpy = JSON.parse(JSON.stringify(saved_config[sub].Seen));
-					}
-					new_cfg[sub] = {};
-					if (saved_config[sub].scan_ptr != undefined)
-						new_cfg[sub].scan_ptr = saved_config[sub].scan_ptr;
-					if(scpy !== undefined) {
-						var bin = binify(scpy);
-						if (bin !== undefined)
-							new_cfg[sub].bseen = bin;
-						if (Object.keys(scpy).length > 0)
-							new_cfg[sub].seen = scpy;
-					}
-					if (saved_config[sub].subscribed === undefined || saved_config[sub].subscribed === false)
-						new_cfg[sub].subscribed = false;
-					else
-						new_cfg[sub].subscribed = true;
-					last_saved_file[sub] = new_cfg[sub];
-					last_saved_config[sub] = JSON.parse(JSON.stringify(saved_config[sub]));
+		if (osub != locked_code)
+			throw new Error('Unlocking ' + osub.toSource() + ' but ' + locked_code.toSource() + ' is locked');
+
+		if (saved_config[locked_code]==undefined) {
+			if (locked_code == 'mail')
+				saved_config[locked_code]={subscribed:true, __config_epoch__: 0, scan_ptr:0};
+			else
+				saved_config[locked_code]={subscribed:false, __config_epoch__: 0, scan_ptr:0};
+		}
+
+		if(user.number > 0) {
+			// Sanity check to make sure both seen and bseen aren't defined for the same message
+			new_cfg.__config_epoch__ = next_epoch(saved_config[osub].__config_epoch__);
+			scpy = undefined;
+			if (saved_config[osub].Seen !== undefined) {
+				scpy = JSON.parse(JSON.stringify(saved_config[osub].Seen));
+			}
+			if (saved_config[osub].scan_ptr != undefined)
+				new_cfg.scan_ptr = saved_config[osub].scan_ptr;
+			if(scpy !== undefined) {
+				var bin = binify(scpy);
+				if (bin !== undefined)
+					new_cfg.bseen = bin;
+				if (Object.keys(scpy).length > 0)
+					new_cfg.seen = scpy;
+			}
+			if (saved_config[osub].subscribed === undefined || saved_config[osub].subscribed === false)
+				new_cfg.subscribed = false;
+			else
+				new_cfg.subscribed = true;
+			cfgfile.rewind();
+			cfgfile.truncate();
+			cfgfile.write(JSON.stringify(new_cfg));
+		}
+	}
+
+	if (sub != undefined) {
+		save_one_cfg(sub);
+	}
+	else {
+		for (nsub in saved_config) {
+			if (nsub != '__config_epoch__') {
+				lock_cfg(nsub);
+				try {
+					save_one_cfg(nsub);
 				}
-				else {
-					new_cfg[sub] = last_saved_file[sub];
+				catch (error) {
+					unlock_cfg(nsub);
+					throw errorl
 				}
+				unlock_cfg(nsub);
 			}
 		}
-		cfgfile.rewind();
-		cfgfile.truncate();
-		cfgfile.write(JSON.stringify(new_cfg));
-		cfgfile.flush();
 	}
 }
 
@@ -1618,19 +1694,19 @@ function close_sub()
 
 	if(base != undefined && base.is_open) {
 		code = get_base_code(base);
-		lock_cfg();
+		lock_cfg(get_base_code(base));
 		try {
-			read_cfg(get_base_code(base), false);
+			read_cfg();
 			if (saved_config[code].scan_ptr < scan_ptr) {
 				saved_config[code].scan_ptr=scan_ptr;
-				save_cfg();
+				save_cfg(get_base_code(base));
 			}
 		}
 		catch (error) {
-			unlock_cfg();
+			unlock_cfg(get_base_code(base));
 			throw error;
 		}
-		unlock_cfg();
+		unlock_cfg(get_base_code(base));
 		base.close();
 	}
 }
@@ -1639,7 +1715,6 @@ function open_sub(sub)
 {
 	var i;
 	var idx;
-	var code;
 
 	close_sub();
 	base=new MsgBase(sub);
@@ -1647,26 +1722,25 @@ function open_sub(sub)
 		update_status();
 		return false;
 	}
-	code = get_base_code(base);
 	if(base.cfg != undefined) {
-		scan_ptr = msg_area.sub[code].scan_ptr;
+		scan_ptr = msg_area.sub[sub].scan_ptr;
 	}
-	lock_cfg();
+	lock_cfg(sub);
 	try {
-		read_cfg(sub, false);
+		read_cfg();
 
-		if (saved_config[code].scan_ptr > scan_ptr)
-			scan_ptr = saved_config[code].scan_ptr;
+		if (saved_config[sub].scan_ptr > scan_ptr)
+			scan_ptr = saved_config[sub].scan_ptr;
 		if (!readonly) {
-			saved_config[code].scan_ptr = base.last_msg;
-			save_cfg();
+			saved_config[sub].scan_ptr = base.last_msg;
+			save_cfg(sub);
 		}
 	}
 	catch (error) {
-		unlock_cfg();
+		unlock_cfg(sub);
 		throw error;
 	}
-	unlock_cfg();
+	unlock_cfg(sub);
 	update_status();
 	sendflags(false);
 	untagged(curr_status.exists+" EXISTS");
@@ -1682,6 +1756,8 @@ function display_list(cmd, groups)
 {
 	var group;
 	var base;
+	var scanptr;
+	var code;
 
 	for(group in groups) {
 		if(groups[group].substr(-1)==sepchar)
@@ -1693,7 +1769,20 @@ function display_list(cmd, groups)
 			else {
 				base=new MsgBase(getsub(groups[group]));
 				if(base.cfg != undefined) {
-					if(base.last_msg > msg_area.sub[base.cfg.code].scan_ptr)
+					code = get_base_code(base);
+					lock_cfg(code);
+					try {
+						read_cfg();
+					}
+					catch (error) {
+						unlock_cfg(code);
+						throw(error);
+					}
+					unlock_cfg(code);
+					scanptr = msg_area.sub[base.cfg.code].scan_ptr;
+					if (saved_config[base.cfg.code].scan_ptr > scanptr)
+						scanptr = saved_config[base.cfg.code].scan_ptr;
+					if(base.last_msg > scanptr)
 						untagged(cmd+' (\\Noinferiors \\Marked \\HasNoChildren) '+encode_string(sepchar)+' '+encode_string(groups[group]));
 					else
 						untagged(cmd+' (\\Noinferiors \\UnMarked \\HasNoChildren) '+encode_string(sepchar)+' '+encode_string(groups[group]));
@@ -1774,17 +1863,17 @@ var authenticated_command_handlers = {
 			var sub=getsub(args[1]);
 
 			if(msg_area.sub[sub]!=undefined && msg_area.sub[sub].can_read) {
-				lock_cfg();
+				lock_cfg(sub);
 				try {
-					read_cfg(sub, false);
+					read_cfg();
 					saved_config[sub].subscribed = true;
-					save_cfg();
+					save_cfg(sub);
 				}
 				catch (error) {
-					unlock_cfg();
+					unlock_cfg(sub);
 					throw error;
 				}
-				unlock_cfg();
+				unlock_cfg(sub);
 				tagged(tag, "OK", "Subscribed...");
 			}
 			else
@@ -1798,17 +1887,17 @@ var authenticated_command_handlers = {
 			var sub=getsub(args[1]);
 
 			if(msg_area.sub[sub]!=undefined && msg_area.sub[sub].can_read) {
-				lock_cfg();
+				lock_cfg(sub);
 				try {
-					read_cfg(sub, false);
+					read_cfg();
 					saved_config[sub].subscribed = false;
-					save_cfg();
+					save_cfg(sub);
 				}
 				catch (error) {
-					unlock_cfg();
+					unlock_cfg(sub);
 					throw error;
 				}
-				unlock_cfg();
+				unlock_cfg(sub);
 				tagged(tag, "OK", "Unsubscribed...");
 			}
 			else
@@ -1863,7 +1952,15 @@ var authenticated_command_handlers = {
 			}
 			base_code = get_base_code(base);
 
-			read_cfg(base_code, true);
+			lock_cfg(base_code);
+			try {
+				read_cfg();
+			}
+			catch (error) {
+				unlock_cfg(base_code);
+				throw error;
+			}
+			unlock_cfg(base_code);
 			index = read_index(base);
 			base.close();
 			for(i in items) {
@@ -1934,9 +2031,9 @@ function do_store(seq, uid, item, data)
 	var changed=false;
 	var uci = item.toUpperCase();
 
-	lock_cfg();
+	lock_cfg(index.code);
 	try {
-		read_cfg(index.code, false);
+		read_cfg();
 		flags=parse_flags(data);
 		for(i in seq) {
 			idx=index.idx[seq[i]];
@@ -1988,14 +2085,14 @@ function do_store(seq, uid, item, data)
 			if (!client.socket.is_connected)
 				break;
 		}
-		js.gc();
-		save_cfg();
+		save_cfg(index.code);
 	}
 	catch (error) {
-		unlock_cfg();
+		unlock_cfg(index.code);
 		throw error;
 	}
-	unlock_cfg();
+	unlock_cfg(index.code);
+	js.gc();
 	if(changed)
 		index=read_index(base);
 }
@@ -2231,7 +2328,7 @@ var search_operators = {
 					return true;
 			}
 			if (arg[0].toUpperCase() == '\\Recent') {
-				if (msg.idx.offset > scan_ptr)
+				if (msg.idx.number > scan_ptr)
 					return true;
 			}
 			return false;
@@ -2905,21 +3002,21 @@ var selected_command_handlers = {
 			var data_items=parse_data_items(args[2]);
 			var i;
 
-			lock_cfg();
+			lock_cfg(get_base_code(base));
 			try {
-				read_cfg(get_base_code(base), false);
+				read_cfg();
 				for(i in seq) {
 					send_fetch_response(seq[i], data_items, false);
 					if (!client.socket.is_connected)
 						break;
 				}
-				save_cfg();
+				save_cfg(get_base_code(base));
 			}
 			catch (error) {
-				unlock_cfg();
+				unlock_cfg(get_base_code(base));
 				throw error;
 			}
-			unlock_cfg();
+			unlock_cfg(get_base_code(base));
 			js.gc();
 			tagged(tag, "OK", "There they are!");
 		},
@@ -2966,21 +3063,21 @@ var selected_command_handlers = {
 					}
 					seq=parse_seq_set(args[2],true);
 					data_items=parse_data_items(args[3]);
-					lock_cfg();
+					lock_cfg(get_base_code(base));
 					try {
-						read_cfg(get_base_code(base), false);
+						read_cfg();
 						for(i in seq) {
 							send_fetch_response(seq[i], data_items, true);
 							if (!client.socket.is_connected)
 								break;
 						}
-						save_cfg();
+						save_cfg(get_base_code(base));
 					}
 					catch (error) {
-						unlock_cfg();
+						unlock_cfg(get_base_code(base));
 						throw error;
 					}
-					unlock_cfg();
+					unlock_cfg(get_base_code(base));
 					js.gc();
 					tagged(tag, "OK", "There they are (with UIDs)!");
 					break;
@@ -3080,7 +3177,7 @@ function read_old_cfg()
 	}
 }
 
-function read_cfg(sub, lck)
+function read_old_cfg2(sub, lck)
 {
 	var basemsg;
 	var bstr;
@@ -3093,7 +3190,7 @@ function read_cfg(sub, lck)
 	var contents;
 
 	if (lck)
-		lock_cfg();
+		old_lock_cfg();
 	try {
 		if(saved_config[sub]==undefined)
 			saved_config[sub]={subscribed:false};
@@ -3112,30 +3209,28 @@ function read_cfg(sub, lck)
 					saved_config.__config_epoch__ = newfile[newsub];
 				}
 				else {
-					if (last_saved_file[newsub] == undefined || JSON.stringify(newfile[newsub]) != JSON.stringify(last_saved_file[newsub])) {
-						saved_config[newsub] = {};
-						if (newfile[newsub].hasOwnProperty('scan_ptr'))
-							saved_config[newsub].scan_ptr = newfile[newsub].scan_ptr;
-						if (newfile[newsub].hasOwnProperty('seen'))
-							saved_config[newsub].Seen = newfile[newsub].seen;
-						else
-							saved_config[newsub].Seen = {};
-						if (newfile[newsub].hasOwnProperty('subscribed'))
-							saved_config[newsub].subscribed = newfile[newsub].subscribed;
-						else
-							saved_config[newsub].subscribed = false;
-						if (newfile[newsub].hasOwnProperty('bseen')) {
-							for (i in newfile[newsub].bseen) {
-								basemsg = parseInt(i, 10);
-								bstr = base64_decode(newfile[newsub].bseen[i]);
-								for (byte = 0; byte < bstr.length; byte++) {
-									asc = ascii(bstr[byte]);
-									if (asc == 0)
-										continue;
-									for (bit=0; bit<8; bit++) {
-										if (asc & (1<<bit))
-											saved_config[newsub].Seen[basemsg+(byte*8+bit)]=1;
-									}
+					saved_config[newsub] = {};
+					if (newfile[newsub].hasOwnProperty('scan_ptr'))
+						saved_config[newsub].scan_ptr = newfile[newsub].scan_ptr;
+					if (newfile[newsub].hasOwnProperty('seen'))
+						saved_config[newsub].Seen = newfile[newsub].seen;
+					else
+						saved_config[newsub].Seen = {};
+					if (newfile[newsub].hasOwnProperty('subscribed'))
+						saved_config[newsub].subscribed = newfile[newsub].subscribed;
+					else
+						saved_config[newsub].subscribed = false;
+					if (newfile[newsub].hasOwnProperty('bseen')) {
+						for (i in newfile[newsub].bseen) {
+							basemsg = parseInt(i, 10);
+							bstr = base64_decode(newfile[newsub].bseen[i]);
+							for (byte = 0; byte < bstr.length; byte++) {
+								asc = ascii(bstr[byte]);
+								if (asc == 0)
+									continue;
+								for (bit=0; bit<8; bit++) {
+									if (asc & (1<<bit))
+										saved_config[newsub].Seen[basemsg+(byte*8+bit)]=1;
 								}
 							}
 						}
@@ -3146,22 +3241,88 @@ function read_cfg(sub, lck)
 	}
 	catch (error) {
 		if (lck)
-			unlock_cfg();
+			old_unlock_cfg();
 		throw error;
 	}
 
 	if (lck)
-		unlock_cfg();
+		old_unlock_cfg();
 
 	if(saved_config[sub].Seen==undefined)
 		saved_config[sub].Seen={};
-	if (sub != 'mail' && ((saved_config[sub].sub_ptr == undefined) || (msg_area.sub[sub].scan_ptr > saved_config[sub]))) {
+	if (sub !== undefined && sub != 'mail' && ((saved_config[sub].scan_ptr == undefined) || (msg_area.sub[sub].scan_ptr > saved_config[sub]))) {
 		saved_config[sub].scan_ptr = msg_area.sub[sub].scan_ptr;
 	}
 
 	apply_seen(index);
-	last_saved_config = JSON.parse(JSON.stringify(saved_config));
-	last_saved_file = newfile;
+}
+
+function read_cfg()
+{
+	var basemsg;
+	var bstr;
+	var newfile;
+	var i;
+	var byte;
+	var asc;
+	var bit;
+	var contents;
+
+	if (saved_config[locked_code]==undefined) {
+		if (locked_code == 'mail')
+			saved_config[locked_code]={subscribed:true, __config_epoch__: 0, scan_ptr:0};
+		else
+			saved_config[locked_code]={subscribed:false, __config_epoch__: 0, scan_ptr:0};
+	}
+
+	cfgfile.rewind();
+	contents = cfgfile.read();
+	try {
+		newfile = JSON.parse(contents);
+	}
+	catch (error) {
+		if (locked_code == 'mail')
+			newfile = {subscribed:true, __config_epoch__: 0, scan_ptr:0};
+		else
+			newfile = {subscribed:false, __config_epoch__: 0, scan_ptr:0};
+	}
+	if (newfile.__config_epoch__ !== saved_config[locked_code].__config_epoch__) {
+		saved_config.__config_epoch__ = newfile.__config_epoch__;
+		saved_config[locked_code] = {};
+		if (newfile.hasOwnProperty('scan_ptr'))
+			saved_config[locked_code].scan_ptr = newfile.scan_ptr;
+		if (newfile.hasOwnProperty('seen'))
+			saved_config[locked_code].Seen = newfile.seen;
+		else
+			saved_config[locked_code].Seen = {};
+		if (newfile.hasOwnProperty('subscribed'))
+			saved_config[locked_code].subscribed = newfile.subscribed;
+		else
+			saved_config[locked_code].subscribed = false;
+		if (newfile.hasOwnProperty('bseen')) {
+			for (i in newfile.bseen) {
+				basemsg = parseInt(i, 10);
+				bstr = base64_decode(newfile.bseen[i]);
+				for (byte = 0; byte < bstr.length; byte++) {
+					asc = ascii(bstr[byte]);
+					if (asc == 0)
+						continue;
+					for (bit=0; bit<8; bit++) {
+						if (asc & (1<<bit))
+							saved_config[locked_code].Seen[basemsg+(byte*8+bit)]=1;
+					}
+				}
+			}
+		}
+	}
+
+	if(saved_config[locked_code].Seen==undefined)
+		saved_config[locked_code].Seen={};
+	if (locked_code != 'mail' && ((saved_config[locked_code].scan_ptr == undefined) || (msg_area.sub[locked_code].scan_ptr > saved_config[locked_code]))) {
+		saved_config[locked_code].scan_ptr = msg_area.sub[locked_code].scan_ptr;
+	}
+
+	apply_seen(index);
 }
 
 js.on_exit("exit_func()");
