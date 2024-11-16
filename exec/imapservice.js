@@ -13,7 +13,7 @@ load("822header.js");
 load("mime.js");
 
 var sepchar="|";
-var debug_exceptions = true;
+var debug_exceptions = false;
 var debug=false;
 var debugRX=false;
 
@@ -1244,8 +1244,9 @@ function sublist(group, match, subscribed)
 		ret.push("INBOX");
 
 	for(grp in msg_area.grp_list) {
-		if(re.test(msg_area.grp_list[grp].description))
-			ret.push((msg_area.grp_list[grp].description+sepchar).replace(/&/g,'&-'));
+		if(re.test(msg_area.grp_list[grp].description)) {
+			ret.push((msg_area.grp_list[grp].description+sepchar).replace(/&/g,'&-').replace(/\//g,'-'));
+		}
 
 		for(sub in msg_area.grp_list[grp].sub_list) {
 			code = msg_area.grp_list[grp].sub_list[sub].code
@@ -1264,7 +1265,7 @@ function sublist(group, match, subscribed)
 					if(base == undefined || sub=="NONE!!!" || (!base.open()))
 						continue;
 					base.close();
-					ret.push((msg_area.grp_list[grp].description+sepchar+msg_area.grp_list[grp].sub_list[sub].description).replace(/&/g,'&-'));
+					ret.push((msg_area.grp_list[grp].description+sepchar+msg_area.grp_list[grp].sub_list[sub].description).replace(/&/g,'&-').replace(/\//g,'-'));
 				}
 			}
 		}
@@ -1282,9 +1283,9 @@ function getsub(longname) {
 	longname = longname.replace(/&-/g,'&');
 	components=longname.split(sepchar);
 	for(grp in msg_area.grp_list) {
-		if(msg_area.grp_list[grp].description==components[0]) {
+		if(msg_area.grp_list[grp].description.replace(/\//g,'-')==components[0]) {
 			for(sub in msg_area.grp_list[grp].sub_list) {
-				if(components[1]==msg_area.grp_list[grp].sub_list[sub].description) {
+				if(components[1]==msg_area.grp_list[grp].sub_list[sub].description.replace(/\//g,'-')) {
 					return(msg_area.grp_list[grp].sub_list[sub].code);
 				}
 			}
