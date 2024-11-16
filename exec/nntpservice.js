@@ -1004,7 +1004,7 @@ while(client.socket.is_connected && !quit) {
 							else
 								hdr.attr&=~MSG_MODERATED;
 
-							if((!hdr.ftn_reply) && hdr.references) {
+							if(hdr.references) {
 								var replyto_hdr = msgbase.get_msg_header(hdr.references);
 								if(replyto_hdr && replyto_hdr.ftn_msgid)
 									hdr.ftn_reply = replyto_hdr.ftn_msgid;
