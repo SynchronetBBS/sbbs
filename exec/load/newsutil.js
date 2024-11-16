@@ -170,7 +170,7 @@ function parse_news_header(hdr, line)
 		case "references":
 			hdr.references=data;
 			if(!hdr.reply_id && data.length)
-				hdr.reply_id=data.match(/(?:\S+\s)*(\S+)$/)[1];
+				hdr.reply_id=data.match(/<[^\<]*>$/);
 			break;
 		case "user-agent":
 			hdr.editor=data;
