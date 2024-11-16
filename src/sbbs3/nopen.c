@@ -24,6 +24,9 @@
 #include "filewrap.h"
 #include "sockwrap.h"
 #include "nopen.h"
+#ifdef _WIN32
+	#include <io.h>
+#endif
 
 /****************************************************************************/
 /* Network open function. Opens all files DENYALL, DENYWRITE, or DENYNONE	*/
@@ -109,7 +112,8 @@ bool ftouch(const char* fname)
 	return true;
 }
 
-int fmutex_open(const char* fname, const char* text, long max_age, time_t* tp)
+// Opens a mutex file and returns its file descriptor or -1 on failure
+int fmutex_open(const char* fname, const char* text, long max_age, time_t* tp, bool atomic_remove)
 {
 	int file;
 	time_t t;
@@ -129,8 +133,28 @@ int fmutex_open(const char* fname, const char* text, long max_age, time_t* tp)
 				return -1;
 		}
 	}
+#ifdef _WIN32
+	DWORD attributes = FILE_ATTRIBUTE_NORMAL;
+	if(atomic_remove)
+		attributes |= FILE_FLAG_DELETE_ON_CLOSE;
+	HANDLE h = CreateFileA(fname,
+		GENERIC_WRITE,	// dwDesiredAccess
+		0,				// dwShareMode (deny all)
+		NULL,			// lpSecurityAttributes,
+		CREATE_NEW,		// dwCreationDisposition
+		attributes,		// dwFlagsAndAttributes,
+		NULL			// hTemplateFile
+		);
+	if(h == INVALID_HANDLE_VALUE)
+		return -1;
+	if((file = _open_osfhandle((intptr_t)h, O_WRONLY)) == -1) {
+		CloseHandle(h);
+		return -1;
+	}
+#else
 	if((file=sopen(fname, O_CREAT|O_WRONLY|O_EXCL, SH_DENYRW, DEFFILEMODE))<0)
-		return file;
+		return -1;
+#endif
 	if(text!=NULL) {
 		len = strlen(text);
 		if(write(file, text, len) != len) {
@@ -141,13 +165,24 @@ int fmutex_open(const char* fname, const char* text, long max_age, time_t* tp)
 	return file;
 }
 
+// Opens and immediately closes a mutex file
 bool fmutex(const char* fname, const char* text, long max_age, time_t* tp)
 {
-	int file = fmutex_open(fname, text, max_age, tp);
+	int file = fmutex_open(fname, text, max_age, tp, false);
 	if(file < 0)
 		return false;
 	close(file);
 	return true;
+}
+
+// Closes and atomically removes a mutex file opened with fmutex_open()
+bool fmutex_close(const char* fname, int file)
+{
+#ifndef _WIN32 // You can't delete an open file on Windows, so we open with the DELETE_ON_CLOSE attribute instead
+	if(remove(fname) != 0)
+		return false;
+#endif
+	return close(file) == 0;
 }
 
 bool fcompare(const char* fn1, const char* fn2)
