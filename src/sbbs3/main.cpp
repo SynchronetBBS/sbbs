@@ -2793,7 +2793,7 @@ static bool is_time_to_run(time_t now, const qhub_t* hub)
 void event_thread(void* arg)
 {
 	char		str[MAX_PATH+1];
-	char		lockfile[MAX_PATH+1];
+	char		lockfname[MAX_PATH+1];
 	int			i,j;
 	int			file;
 	int			offset;
@@ -2919,15 +2919,17 @@ void event_thread(void* arg)
 				getuserdat(&sbbs->cfg,&sbbs->useron);
 				if(sbbs->useron.number != 0 && !(sbbs->useron.misc&(DELETED|INACTIVE))) {
 					time_t t;
-					SAFEPRINTF(lockfile,"%s.lock",fname);
-					if(!fmutex(lockfile,startup->host_name,TIMEOUT_MUTEX_FILE, &t)) {
+					SAFEPRINTF(lockfname,"%s.lock",fname);
+					int lockfile = fmutex_open(lockfname,startup->host_name,TIMEOUT_MUTEX_FILE, &t);
+					if(lockfile < 0) {
 						if(difftime(time(NULL), t) > 60)
-							sbbs->lprintf(LOG_INFO," %s exists (unpack in progress?) since %s", lockfile, time_as_hhmm(&sbbs->cfg, t, str));
+							sbbs->lprintf(LOG_INFO," %s exists (unpack in progress?) since %s", lockfname, time_as_hhmm(&sbbs->cfg, t, str));
 						continue;
 					}
 					if(!fexist(fname)) {
 						sbbs->lprintf(LOG_NOTICE, "%s already gone", fname);
-						sbbs->fremove(WHERE, lockfile, /* log-all-errors: */true);
+						close(lockfile);
+						sbbs->fremove(WHERE, lockfname, /* log-all-errors: */true);
 						continue;
 					}
 					sbbs->online=ON_LOCAL;
@@ -2954,7 +2956,8 @@ void event_thread(void* arg)
 						SAFEPRINTF(str,"%sfile/", sbbs->cfg.data_dir);
 						sbbs->delfiles(str, badpkt, /* keep: */10);
 					}
-					sbbs->fremove(WHERE, lockfile, /* log-all-errors: */true);
+					close(lockfile);
+					sbbs->fremove(WHERE, lockfname, /* log-all-errors: */true);
 				}
 				else {
 					sbbs->lprintf(LOG_INFO, "Removing: %s", fname);
@@ -2975,25 +2978,29 @@ void event_thread(void* arg)
 					continue;
 				sbbs->useron.number = 0;
 				sbbs->lprintf(LOG_INFO, "QWK pack semaphore signaled: %s", fname);
-				sbbs->useron.number = atoi(fname+offset);
-				SAFEPRINTF2(lockfile,"%spack%04u.lock",sbbs->cfg.data_dir,sbbs->useron.number);
+				int usernum = atoi(fname+offset);
 				time_t t;
+				sbbs->useron.number = usernum;
 				int retval = getuserdat(&sbbs->cfg,&sbbs->useron);
 				if(retval != 0) {
-					lprintf(LOG_WARNING, "Error %d reading user data for user #%d", retval, sbbs->useron.number);
+					sbbs->lprintf(LOG_WARNING, "ERROR %d reading user data for user #%d", retval, usernum);
+					sbbs->fremove(WHERE, fname, /* log-all-errors: */true);
 					continue;
 				}
-				if(!fmutex(lockfile,startup->host_name,TIMEOUT_MUTEX_FILE, &t)) {
+				SAFEPRINTF2(lockfname,"%spack%04u.lock",sbbs->cfg.data_dir,usernum);
+				int lockfile = fmutex_open(lockfname,startup->host_name,TIMEOUT_MUTEX_FILE, &t);
+				if(lockfile < 0) {
 					if(difftime(time(NULL), t) > 60)
-						sbbs->lprintf(LOG_INFO,"%s exists (pack in progress?) since %s", lockfile, time_as_hhmm(&sbbs->cfg, t, str));
+						sbbs->lprintf(LOG_INFO,"%s exists (pack in progress?) since %s", lockfname, time_as_hhmm(&sbbs->cfg, t, str));
 					continue;
 				}
 				if(!fexist(fname)) {
 					sbbs->lprintf(LOG_NOTICE, "%s already gone", fname);
-					sbbs->fremove(WHERE, lockfile, /* log-all-errors: */true);
+					close(lockfile);
+					sbbs->fremove(WHERE, lockfname, /* log-all-errors: */true);
 					continue;
 				}
-				if(sbbs->useron.number != 0 && !(sbbs->useron.misc&(DELETED|INACTIVE))) {
+				if(!(sbbs->useron.misc&(DELETED|INACTIVE))) {
 					sbbs->lprintf(LOG_INFO, "Packing QWK Message Packet");
 					sbbs->online=ON_LOCAL;
 					sbbs->console|=CON_L_ECHO;
@@ -3016,7 +3023,8 @@ void event_thread(void* arg)
 					sbbs->online=false;
 				}
 				sbbs->fremove(WHERE, fname, /* log-all-errors: */true);
-				sbbs->fremove(WHERE, lockfile, /* log-all-errors: */true);
+				close(lockfile);
+				sbbs->fremove(WHERE, lockfname, /* log-all-errors: */true);
 			}
 			globfree(&g);
 			sbbs->useron.number = 0;
