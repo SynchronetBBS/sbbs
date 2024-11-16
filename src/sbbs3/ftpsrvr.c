@@ -2134,7 +2134,6 @@ static void ctrl_thread(void* arg)
 	char		aliasfile[MAX_PATH+1];
 	char		aliaspath[MAX_PATH+1];
 	char		mls_path[MAX_PATH+1];
-	char		mutex_file[MAX_PATH+1]="";
 	char		*mls_fname;
 	char		permstr[11];
 	char		aliasline[512];
@@ -2161,6 +2160,7 @@ static void ctrl_thread(void* arg)
 	int			curdir=-1;
 	int			orglib;
 	int			orgdir;
+	int			mutex_file = -1;
 	long		filepos=0L;
 	long		timeleft;
 	ulong		l;
@@ -2488,6 +2488,7 @@ static void ctrl_thread(void* arg)
 		if(!strnicmp(cmd, "USER ",5)) {
 			sysop=FALSE;
 			user.number=0;
+			fmutex_close(&mutex_file);
 			p=cmd+5;
 			SKIP_WHITESPACE(p);
 			truncsp(p);
@@ -2504,6 +2505,7 @@ static void ctrl_thread(void* arg)
 		}
 		if(!strnicmp(cmd, "PASS ",5) && user.alias[0]) {
 			user.number=0;
+			fmutex_close(&mutex_file);
 			p=cmd+5;
 			SKIP_WHITESPACE(p);
 
@@ -2596,11 +2598,12 @@ static void ctrl_thread(void* arg)
 				continue;
 			}
 
-			snprintf(mutex_file, sizeof mutex_file, "%suser/%04u.ftp", scfg.data_dir, user.number);
 			if(user.rest & FLAG('Q')) { // QWKnet accont
-				if(!fmutex(mutex_file, startup->host_name, /* max_age: */60 * 60, &t)) {
+				char mutex_fname[MAX_PATH + 1];
+				snprintf(mutex_fname, sizeof mutex_fname, "%suser/%04u.ftp", scfg.data_dir, user.number);
+				if((mutex_file = fmutex_open(mutex_fname, startup->host_name, /* max_age: */60 * 60, &t, /* auto_remove: */true)) < 0) {
 					lprintf(LOG_NOTICE, "%04d <%s> QWKnet account already logged-in to FTP server: %s (since %s)"
-						,sock, user.alias, mutex_file, time_as_hhmm(&scfg, t, str));
+						,sock, user.alias, mutex_fname, time_as_hhmm(&scfg, t, str));
 					sockprintf(sock, sess, "421 QWKnet accounts are limited to one concurrent FTP session");
 					user.number = 0;
 					break;
@@ -4920,9 +4923,8 @@ static void ctrl_thread(void* arg)
 		lprintf(LOG_DEBUG,"%04d Done waiting for transfer to complete",sock);
 	}
 
+	fmutex_close(&mutex_file);
 	if(user.number) {
-		if(*mutex_file != '\0')
-			ftp_remove(sock, __LINE__, mutex_file, user.alias, LOG_ERR);
 		/* Update User Statistics */
 		if(!logoutuserdat(&scfg, &user, time(NULL), logintime))
 			lprintf(LOG_ERR,"%04d <%s> !ERROR in logoutuserdat", sock, user.alias);

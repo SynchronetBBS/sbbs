@@ -2929,7 +2929,7 @@ void event_thread(void* arg)
 					sbbs->lprintf(LOG_DEBUG, "Opened %s", lockfname);
 					if(!fexist(fname)) {
 						sbbs->lprintf(LOG_DEBUG, "%s already gone", fname);
-						if(!fmutex_close(lockfile))
+						if(!fmutex_close(&lockfile))
 							sbbs->errormsg(WHERE, ERR_CLOSE, lockfname);
 						continue;
 					}
@@ -2957,7 +2957,7 @@ void event_thread(void* arg)
 						SAFEPRINTF(str,"%sfile/", sbbs->cfg.data_dir);
 						sbbs->delfiles(str, badpkt, /* keep: */10);
 					}
-					if(!fmutex_close(lockfile))
+					if(!fmutex_close(&lockfile))
 						sbbs->errormsg(WHERE, ERR_CLOSE, lockfname);
 				}
 				else {
@@ -2998,7 +2998,7 @@ void event_thread(void* arg)
 				sbbs->lprintf(LOG_DEBUG, "Opened %s", lockfname);
 				if(!fexist(fname)) {
 					sbbs->lprintf(LOG_DEBUG, "%s already gone", fname);
-					if(!fmutex_close(lockfile))
+					if(!fmutex_close(&lockfile))
 						sbbs->errormsg(WHERE, ERR_CLOSE, lockfname);
 					continue;
 				}
@@ -3025,7 +3025,7 @@ void event_thread(void* arg)
 					sbbs->online=false;
 				}
 				sbbs->fremove(WHERE, fname);
-				if(!fmutex_close(lockfile))
+				if(!fmutex_close(&lockfile))
 					sbbs->errormsg(WHERE, ERR_CLOSE, lockfname);
 			}
 			globfree(&g);

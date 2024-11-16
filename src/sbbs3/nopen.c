@@ -177,9 +177,16 @@ int fmutex_open(const char* fname, const char* text, long max_age, time_t* tp, b
 	return file;
 }
 
-bool fmutex_close(int file)
+bool fmutex_close(int* file)
 {
-	return close(file) == 0;
+	if(file == NULL)
+		return false;
+	if(*file < 0) // already closed (or never opened)
+		return true;
+	if(close(*file) != 0)
+		return false;
+	*file = -1;
+	return true;
 }
 
 // Opens and immediately closes a mutex file
@@ -188,7 +195,7 @@ bool fmutex(const char* fname, const char* text, long max_age, time_t* tp)
 	int file = fmutex_open(fname, text, max_age, tp, /* auto_remove: */false);
 	if(file < 0)
 		return false;
-	return fmutex_close(file);
+	return fmutex_close(&file);
 }
 
 bool fcompare(const char* fn1, const char* fn2)
