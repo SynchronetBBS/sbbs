@@ -254,7 +254,7 @@ void node_cfg()
 				}
 				break;
 			case __COUNTER__:
-				uifc.helpbuf=
+				fevent_cfg("Daily Event", &cfg.node_daily,
 					"`Daily Event:`\n"
 					"\n"
 					"If you have an event that this node's terminal server should run every\n"
@@ -264,8 +264,7 @@ void node_cfg()
 					"are required, use a batch file or shell script.\n"
 					SCFG_CMDLINE_PREFIX_HELP
 					SCFG_CMDLINE_SPEC_HELP
-				;
-				fevent_cfg("Daily Event", &cfg.node_daily);
+					);
 				break;
 			case __COUNTER__:
 				uifc.helpbuf = node_path_help;

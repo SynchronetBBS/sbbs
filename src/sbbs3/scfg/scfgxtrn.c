@@ -320,7 +320,7 @@ void xprogs_cfg()
 	}
 }
 
-void fevent_cfg(const char* name, fevent_t* event)
+void fevent_cfg(const char* name, fevent_t* event, const char* help)
 {
 	static int dflt;
 	int i;
@@ -332,6 +332,7 @@ void fevent_cfg(const char* name, fevent_t* event)
 		snprintf(opt[i++],MAX_OPLN,"%-27s%s",use_shell_opt, (event->misc & EX_SH) ? "Yes" : "No");
 		snprintf(opt[i++],MAX_OPLN,"%-27s%s","Command Line", event->cmd);
 		opt[i][0]=0;
+		uifc.helpbuf = (char*)help;
 		switch(uifc.list(WIN_ACT|WIN_SAV|WIN_RHT,0,0,0,&dflt,0,name,opt)) {
 			case -1:
 				return;
@@ -340,12 +341,10 @@ void fevent_cfg(const char* name, fevent_t* event)
 				uifc.changes = TRUE;
 				break;
 			case 1:
-				event->misc ^= EX_NATIVE;
-				uifc.changes = TRUE;
+				toggle_flag(native_opt, &event->misc, EX_NATIVE, native_help, false);
 				break;
 			case 2:
-				event->misc ^= EX_SH;
-				uifc.changes = TRUE;
+				toggle_flag(use_shell_prompt, &event->misc, EX_SH, use_shell_help, false);
 				break;
 			case 3:
 				uifc.input(WIN_MID|WIN_SAV,0,0,"Command"
@@ -378,7 +377,7 @@ void fevents_cfg()
 			case -1:
 				return;
 			case 0:
-				uifc.helpbuf=
+				fevent_cfg("Logon Event", &cfg.sys_logon,
 					"`Logon Event:`\n"
 					"\n"
 					"This is the command line for a program that will execute during the\n"
@@ -390,11 +389,10 @@ void fevents_cfg()
 					"program configured to run as a logon event.\n"
 					SCFG_CMDLINE_PREFIX_HELP
 					SCFG_CMDLINE_SPEC_HELP
-				;
-				fevent_cfg("Logon Event", &cfg.sys_logon);
+					);
 				break;
 			case 1:
-				uifc.helpbuf=
+				fevent_cfg("Logout Event", &cfg.sys_logout,
 					"`Logout Event:`\n"
 					"\n"
 					"This is the command line for a program that will execute during the\n"
@@ -405,29 +403,26 @@ void fevents_cfg()
 					"event.\n"
 					SCFG_CMDLINE_PREFIX_HELP
 					SCFG_CMDLINE_SPEC_HELP
-				;
-				fevent_cfg("Logout Event", &cfg.sys_logout);
+					);
 				break;
 			case 2:
-				uifc.helpbuf=
+				fevent_cfg("Daily Event", &cfg.sys_daily,
 					"`Daily Event:`\n"
 					"\n"
 					"This is the command line for a program that will run after the first\n"
 					"user that logs on after midnight, logs off (regardless of what node).\n"
 					SCFG_CMDLINE_PREFIX_HELP
 					SCFG_CMDLINE_SPEC_HELP
-				;
-				fevent_cfg("Daily Event", &cfg.sys_daily);
+					);
 				break;
 			case 3:
-				uifc.helpbuf=
+				fevent_cfg("Monthly Event", &cfg.sys_monthly,
 					"`Monthly Event:`\n"
 					"\n"
 					"Enter a command line for a program that will run once each new month.\n"
 					SCFG_CMDLINE_PREFIX_HELP
 					SCFG_CMDLINE_SPEC_HELP
-				;
-				fevent_cfg("Monthly Event", &cfg.sys_monthly);
+					);
 				break;
 		}
 	}
@@ -626,19 +621,11 @@ void tevents_cfg()
 					break;
 
 				case 3:
-					k=(cfg.event[i]->misc&EVENT_DISABLED) ? 1:0;
-					uifc.helpbuf=
+					toggle_flag("Event Enabled", &cfg.event[i]->misc, EVENT_DISABLED, true,
 						"`Timed Event Enabled:`\n"
 						"\n"
 						"If you want disable this event from executing, set this option to ~No~.\n"
-					;
-					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-						,"Event Enabled",uifcYesNoOpts);
-					if((k==0 && cfg.event[i]->misc&EVENT_DISABLED)
-						|| (k==1 && !(cfg.event[i]->misc&EVENT_DISABLED))) {
-						cfg.event[i]->misc^=EVENT_DISABLED;
-						uifc.changes=1;
-					}
+						);
 					break;
 
 				case 4:
@@ -789,112 +776,49 @@ void tevents_cfg()
 						}
 					break;
 				case 9:
-					k=(cfg.event[i]->misc&EVENT_EXCL) ? 0:1;
-					uifc.helpbuf=
+					toggle_flag("Exclusive Execution", &cfg.event[i]->misc, EVENT_EXCL, false,
 						"`Exclusive Event Execution:`\n"
 						"\n"
 						"If this event must be run exclusively (all nodes inactive), set this\n"
 						"option to `Yes`.\n"
-					;
-					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"Exclusive Execution"
-						,uifcYesNoOpts);
-					if(!k && !(cfg.event[i]->misc&EVENT_EXCL)) {
-						cfg.event[i]->misc|=EVENT_EXCL;
-						uifc.changes=1;
-					}
-					else if(k==1 && cfg.event[i]->misc&EVENT_EXCL) {
-						cfg.event[i]->misc&=~EVENT_EXCL;
-						uifc.changes=1;
-					}
+						);
 					break;
 				case 10:
-					k=(cfg.event[i]->misc&EVENT_FORCE) ? 0:1;
-					uifc.helpbuf=
+					toggle_flag("Force Users Off-line for Event"
+						,&cfg.event[i]->misc, EVENT_FORCE, false,
 						"`Force Users Off-line for Event:`\n"
 						"\n"
 						"If you want to have your users' on-line time reduced so the event can\n"
 						"execute precisely on time, set this option to `Yes`.\n"
-					;
-					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-						,"Force Users Off-line for Event",uifcYesNoOpts);
-					if(!k && !(cfg.event[i]->misc&EVENT_FORCE)) {
-						cfg.event[i]->misc|=EVENT_FORCE;
-						uifc.changes=1;
-					}
-					else if(k==1 && (cfg.event[i]->misc&EVENT_FORCE)) {
-						cfg.event[i]->misc&=~EVENT_FORCE;
-						uifc.changes=1;
-					}
+						);
 					break;
 
 				case 11:
-					k=(cfg.event[i]->misc&EX_NATIVE) ? 0:1;
-					uifc.helpbuf=native_help;
-					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-						,native_opt,uifcYesNoOpts);
-					if(!k && !(cfg.event[i]->misc&EX_NATIVE)) {
-						cfg.event[i]->misc|=EX_NATIVE;
-						uifc.changes=TRUE;
-					}
-					else if(k==1 && (cfg.event[i]->misc&EX_NATIVE)) {
-						cfg.event[i]->misc&=~EX_NATIVE;
-						uifc.changes=TRUE;
-					}
+					toggle_flag(native_opt, &cfg.event[i]->misc, XTRN_NATIVE, false, native_help);
 					break;
 
 				case 12:
-					k=(cfg.event[i]->misc&XTRN_SH) ? 0:1;
-					uifc.helpbuf = use_shell_help;
-					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-						,use_shell_prompt, uifcYesNoOpts);
-					if(!k && !(cfg.event[i]->misc&XTRN_SH)) {
-						cfg.event[i]->misc|=XTRN_SH;
-						uifc.changes=TRUE;
-					}
-					else if(k==1 && (cfg.event[i]->misc&XTRN_SH)) {
-						cfg.event[i]->misc&=~XTRN_SH;
-						uifc.changes=TRUE;
-					}
+					toggle_flag(use_shell_prompt, &cfg.event[i]->misc, XTRN_SH, false, use_shell_help);
 					break;
 
 				case 13:
-					k=(cfg.event[i]->misc&EX_BG) ? 0:1;
-					uifc.helpbuf=
+					toggle_flag("Background (Asynchronous) Execution"
+						,&cfg.event[i]->misc, EX_BG, false,
 						"`Execute Event in Background (Asynchronously):`\n"
 						"\n"
 						"If you would like this event to run simultaneously with other events,\n"
 						"set this option to `Yes`. Exclusive events will not run in the background.\n"
-					;
-					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-						,"Background (Asynchronous) Execution",uifcYesNoOpts);
-					if(!k && !(cfg.event[i]->misc&EX_BG)) {
-						cfg.event[i]->misc|=EX_BG;
-						uifc.changes=TRUE;
-					}
-					else if(k==1 && (cfg.event[i]->misc&EX_BG)) {
-						cfg.event[i]->misc&=~EX_BG;
-						uifc.changes=TRUE;
-					}
+						);
 					break;
 
 				case 14:
-					k=(cfg.event[i]->misc&EVENT_INIT) ? 0:1;
-					uifc.helpbuf=
+					toggle_flag("Always Run After (re-)Initialization"
+						,&cfg.event[i]->misc, EVENT_INIT, false,
 						"`Always Run After (re-)Initialization:`\n"
 						"\n"
 						"If you want this event to always run after the BBS is initialized or\n"
 						"re-initialized, set this option to ~Yes~.\n"
-					;
-					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-						,"Always Run After (re-)Initialization",uifcYesNoOpts);
-					if(!k && !(cfg.event[i]->misc&EVENT_INIT)) {
-						cfg.event[i]->misc|=EVENT_INIT;
-						uifc.changes=1;
-					}
-					else if(k==1 && (cfg.event[i]->misc&EVENT_INIT)) {
-						cfg.event[i]->misc&=~EVENT_INIT;
-						uifc.changes=1;
-					}
+						);
 					break;
 
 				case 15:
@@ -1354,74 +1278,31 @@ void xtrn_cfg(int section)
 					getar(str,cfg.xtrn[i]->run_arstr);
 					break;
 				case __COUNTER__:
-					k=(cfg.xtrn[i]->misc&MULTIUSER) ? 0:1;
-					uifc.helpbuf=
+					toggle_flag("Supports Multiple Users", &cfg.xtrn[i]->misc, MULTIUSER, false,
 						"`Supports Multiple Users:`\n"
 						"\n"
 						"If this online program supports multiple simultaneous users (nodes),\n"
 						"set this option to `Yes`.\n"
-					;
-					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"Supports Multiple Users"
-						,uifcYesNoOpts);
-					if(!k && !(cfg.xtrn[i]->misc&MULTIUSER)) {
-						cfg.xtrn[i]->misc|=MULTIUSER;
-						uifc.changes=TRUE;
-					}
-					else if(k==1 && (cfg.xtrn[i]->misc&MULTIUSER)) {
-						cfg.xtrn[i]->misc&=~MULTIUSER;
-						uifc.changes=TRUE;
-					}
+						);
 					break;
 				case __COUNTER__:
 					choose_io_method(&cfg.xtrn[i]->misc);
 					break;
 				case __COUNTER__:
-					k=(cfg.xtrn[i]->misc&XTRN_NATIVE) ? 0:1;
-					uifc.helpbuf=native_help;
-					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-						,native_opt,uifcYesNoOpts);
-					if(!k && !(cfg.xtrn[i]->misc&XTRN_NATIVE)) {
-						cfg.xtrn[i]->misc|=XTRN_NATIVE;
-						uifc.changes=TRUE;
-					}
-					else if(k==1 && (cfg.xtrn[i]->misc&XTRN_NATIVE)) {
-						cfg.xtrn[i]->misc&=~XTRN_NATIVE;
-						uifc.changes=TRUE;
-					}
+					toggle_flag(native_opt, &cfg.xtrn[i]->misc, XTRN_NATIVE, false, native_help);
 					break;
 				case __COUNTER__:
-					k=(cfg.xtrn[i]->misc&XTRN_SH) ? 0:1;
-					uifc.helpbuf = use_shell_help;
-					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-						,use_shell_prompt,uifcYesNoOpts);
-					if(!k && !(cfg.xtrn[i]->misc&XTRN_SH)) {
-						cfg.xtrn[i]->misc|=XTRN_SH;
-						uifc.changes=TRUE;
-					}
-					else if(k==1 && (cfg.xtrn[i]->misc&XTRN_SH)) {
-						cfg.xtrn[i]->misc&=~XTRN_SH;
-						uifc.changes=TRUE;
-					}
+					toggle_flag(use_shell_prompt, &cfg.xtrn[i]->misc, XTRN_SH, false, use_shell_help);
 					break;
 				case __COUNTER__:
-					k=(cfg.xtrn[i]->misc&MODUSERDAT) ? 0:1;
-					uifc.helpbuf=
+					toggle_flag("Program Can Modify User Data"
+						,&cfg.xtrn[i]->misc, MODUSERDAT, false,
 						"`Program Can Modify User Data:`\n"
 						"\n"
 						"If this online programs recognizes the Synchronet MODUSER.DAT format\n"
 						"or the RBBS/QuickBBS EXITINFO.BBS format and you want it to be able to\n"
 						"modify the data of users who run the program, set this option to `Yes`.\n"
-					;
-					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-						,"Program Can Modify User Data",uifcYesNoOpts);
-					if(!k && !(cfg.xtrn[i]->misc&MODUSERDAT)) {
-						cfg.xtrn[i]->misc|=MODUSERDAT;
-						uifc.changes=TRUE;
-					}
-					else if(k==1 && (cfg.xtrn[i]->misc&MODUSERDAT)) {
-						cfg.xtrn[i]->misc&=~MODUSERDAT;
-						uifc.changes=TRUE;
-					}
+						);
 					break;
 				case __COUNTER__:
 					k=0;
@@ -1457,29 +1338,17 @@ void xtrn_cfg(int section)
 						}
 						break;
 					}
-					k=(cfg.xtrn[i]->misc&EVENTONLY) ? 0:1;
-					uifc.helpbuf=
+					toggle_flag("Execute as Event Only"
+						,&cfg.xtrn[i]->misc, EVENTONLY, false,
 						"`Execute Online Program as Event Only:`\n"
 						"\n"
 						"If you would like this online program to execute as an event only\n"
 						"(not available to users on the online program menu), set this option\n"
 						"to `Yes`.\n"
-					;
-					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k
-						,0,"Execute as Event Only"
-						,uifcYesNoOpts);
-					if(!k && !(cfg.xtrn[i]->misc&EVENTONLY)) {
-						cfg.xtrn[i]->misc|=EVENTONLY;
-						uifc.changes=TRUE;
-					}
-					else if(k==1 && (cfg.xtrn[i]->misc&EVENTONLY)) {
-						cfg.xtrn[i]->misc&=~EVENTONLY;
-						uifc.changes=TRUE;
-					}
+						);
 					break;
 				case __COUNTER__:
-					k=(cfg.xtrn[i]->misc&XTRN_PAUSE) ? 0:1;
-					uifc.helpbuf=
+					toggle_flag("Pause After Execution", &cfg.xtrn[i]->misc, XTRN_PAUSE, false,
 						"`Pause Screen After Execution:`\n"
 						"\n"
 						"Set this option to ~Yes~ if you would like an automatic screen pause\n"
@@ -1488,18 +1357,11 @@ void xtrn_cfg(int section)
 						"This can be useful if the program displays information just before\n"
 						"exiting or you want to debug a program with a program not running\n"
 						"correctly.\n"
-					;
-					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-						,"Pause After Execution",uifcYesNoOpts);
-					if((!k && !(cfg.xtrn[i]->misc&XTRN_PAUSE))
-						|| (k && (cfg.xtrn[i]->misc&XTRN_PAUSE))) {
-						cfg.xtrn[i]->misc^=XTRN_PAUSE;
-						uifc.changes=TRUE;
-					}
+						);
 					break;
 				case __COUNTER__:
-					k=(cfg.xtrn[i]->misc&XTRN_NODISPLAY) ? 0:1;
-					uifc.helpbuf=
+					toggle_flag("Disable Local Screen Display"
+						,&cfg.xtrn[i]->misc, XTRN_NODISPLAY, false,
 						"`Disable Local Screen Display:`\n"
 						"\n"
 						"Set this option to `Yes` if you wish to prevent this program from\n"
@@ -1508,14 +1370,7 @@ void xtrn_cfg(int section)
 						"This will disable 'Screen' output in the `DOOR.SYS` and `PCBOARD.SYS` drop\n"
 						"files and on Windows, stop the creation of a new console window when\n"
 						"executing this program."
-					;
-					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-						,"Disable Local Screen Display", uifcYesNoOpts);
-					if((!k && !(cfg.xtrn[i]->misc & XTRN_NODISPLAY))
-						|| (k && (cfg.xtrn[i]->misc & XTRN_NODISPLAY))) {
-						cfg.xtrn[i]->misc ^= XTRN_NODISPLAY;
-						uifc.changes=TRUE;
-					}
+						);
 					break;
 				case __COUNTER__:
 					k=0;
@@ -1707,43 +1562,23 @@ void xtrn_cfg(int section)
 								cfg.xtrn[i]->maxtime=atoi(str);
 								break;
 							case 2:
-								k=(cfg.xtrn[i]->misc&FREETIME) ? 0:1;
-								uifc.helpbuf=
+								toggle_flag("Suspended (Free) Time"
+									,&cfg.xtrn[i]->misc, FREETIME, false,
 									"`Suspended (Free) Time:`\n"
 									"\n"
 									"If you want the user's time online to be suspended while running this\n"
 									"online program (e.g. Free Time), set this option to `Yes`.\n"
-								;
-								k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-									,"Suspended (Free) Time",uifcYesNoOpts);
-								if(!k && !(cfg.xtrn[i]->misc&FREETIME)) {
-									cfg.xtrn[i]->misc|=FREETIME;
-									uifc.changes=TRUE;
-								}
-								else if(k==1 && (cfg.xtrn[i]->misc&FREETIME)) {
-									cfg.xtrn[i]->misc&=~FREETIME;
-									uifc.changes=TRUE;
-								}
+									);
 								break;
 							case 3:
-								k=(cfg.xtrn[i]->misc&XTRN_CHKTIME) ? 0:1;
-								uifc.helpbuf=
+								toggle_flag("Monitor Time Left"
+									,&cfg.xtrn[i]->misc, XTRN_CHKTIME, false,
 									"`Monitor Time Left:`\n"
 									"\n"
 									"If you want Synchronet to monitor the user's time left online while this\n"
 									"program runs (and disconnect the user if their time runs out), set this\n"
 									"option to `Yes`.\n"
-								;
-								k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-									,"Monitor Time Left",uifcYesNoOpts);
-								if(!k && !(cfg.xtrn[i]->misc&XTRN_CHKTIME)) {
-									cfg.xtrn[i]->misc|=XTRN_CHKTIME;
-									uifc.changes=TRUE;
-								}
-								else if(k==1 && (cfg.xtrn[i]->misc&XTRN_CHKTIME)) {
-									cfg.xtrn[i]->misc&=~XTRN_CHKTIME;
-									uifc.changes=TRUE;
-								}
+									);
 								break;
 							case 4:
 								if(cfg.xtrn[i]->max_inactivity < 1)
@@ -2012,35 +1847,14 @@ void xedit_cfg()
 					choose_io_method(&cfg.xedit[i]->misc);
 					break;
 				case 5:
-					k=(cfg.xedit[i]->misc&XTRN_NATIVE) ? 0:1;
-					uifc.helpbuf=native_help;
-					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-						,native_opt,uifcYesNoOpts);
-					if(!k && !(cfg.xedit[i]->misc&XTRN_NATIVE)) {
-						cfg.xedit[i]->misc|=XTRN_NATIVE;
-						uifc.changes=TRUE;
-					}
-					else if(k==1 && (cfg.xedit[i]->misc&XTRN_NATIVE)) {
-						cfg.xedit[i]->misc&=~XTRN_NATIVE;
-						uifc.changes=TRUE;
-					}
+					toggle_flag(native_opt, &cfg.xedit[i]->misc, XTRN_NATIVE, false, native_help);
 					break;
 				case 6:
-					k=(cfg.xedit[i]->misc&XTRN_SH) ? 0:1;
-					uifc.helpbuf = use_shell_help;
-					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-						,use_shell_prompt, uifcYesNoOpts);
-					if(!k && !(cfg.xedit[i]->misc&XTRN_SH)) {
-						cfg.xedit[i]->misc|=XTRN_SH;
-						uifc.changes=TRUE;
-					} else if(k==1 && (cfg.xedit[i]->misc&XTRN_SH)) {
-						cfg.xedit[i]->misc&=~XTRN_SH;
-						uifc.changes=TRUE;
-					}
+					toggle_flag(use_shell_prompt, &cfg.xedit[i]->misc, XTRN_SH, false, use_shell_help);
 					break;
 				case 7:
-					k=(cfg.xedit[i]->misc&SAVECOLUMNS) ? 0:1;
-					uifc.helpbuf=
+					toggle_flag("Record Terminal Width"
+						,&cfg.xedit[i]->misc, SAVECOLUMNS, false,
 						"`Record Terminal Width:`\n"
 						"\n"
 						"When set to `Yes`, Synchronet will store the current terminal width\n"
@@ -2050,22 +1864,7 @@ void xedit_cfg()
 						"\n"
 						"If this editor correctly detects and supports terminal widths `other`\n"
 						"`than 80 columns`, set this option to `Yes`."
-					;
-					switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-						,"Record Terminal Width",uifcYesNoOpts)) {
-						case 0:
-							if(!(cfg.xedit[i]->misc&SAVECOLUMNS)) {
-								cfg.xedit[i]->misc |= SAVECOLUMNS;
-								uifc.changes = TRUE;
-							}
-							break;
-						case 1:
-							if(cfg.xedit[i]->misc&SAVECOLUMNS) {
-								cfg.xedit[i]->misc &= ~SAVECOLUMNS;
-								uifc.changes = TRUE;
-							}
-							break;
-					}
+						);
 					break;
 				case 8:
 					k=(cfg.xedit[i]->misc&QUOTEWRAP) ? 0:1;
@@ -2181,23 +1980,13 @@ void xedit_cfg()
 					goto lowercase_filename;
 					break;
 				case 11:
-					k=(cfg.xedit[i]->misc&EXPANDLF) ? 0:1;
-					uifc.helpbuf=
+					toggle_flag("Expand LF to CRLF"
+						,&cfg.xedit[i]->misc, EXPANDLF, false,
 						"`Expand Line Feeds to Carriage Return/Line Feed Pairs:`\n"
 						"\n"
 						"If this message editor saves new lines as a single line feed character\n"
 						"instead of a carriage return/line feed pair, set this option to `Yes`.\n"
-					;
-					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0,"Expand LF to CRLF"
-						,uifcYesNoOpts);
-					if(!k && !(cfg.xedit[i]->misc&EXPANDLF)) {
-						cfg.xedit[i]->misc|=EXPANDLF;
-						uifc.changes=TRUE;
-					}
-					else if(k==1 && (cfg.xedit[i]->misc&EXPANDLF)) {
-						cfg.xedit[i]->misc&=~EXPANDLF;
-						uifc.changes=TRUE;
-					}
+						);
 					break;
 				case 12:
 					if(cfg.xedit[i]->misc & XTRN_UTF8)
@@ -2232,45 +2021,23 @@ void xedit_cfg()
 					}
 					break;
 				case 13:
-					k=(cfg.xedit[i]->misc&STRIPKLUDGE) ? 0:1;
-					uifc.helpbuf=
+					toggle_flag("Strip FidoNet Kludge Lines"
+						,&cfg.xedit[i]->misc, STRIPKLUDGE, false,
 						"`Strip FidoNet Kludge Lines From Messages:`\n"
 						"\n"
 						"If this message editor adds FidoNet Kludge lines to the message text,\n"
 						"set this option to `Yes` to strip those lines from the message.\n"
-					;
-					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-                		,"Strip FidoNet Kludge Lines"
-						,uifcYesNoOpts);
-					if(!k && !(cfg.xedit[i]->misc&STRIPKLUDGE)) {
-						cfg.xedit[i]->misc|=STRIPKLUDGE;
-						uifc.changes=TRUE;
-					}
-					else if(k==1 && (cfg.xedit[i]->misc&STRIPKLUDGE)) {
-						cfg.xedit[i]->misc&=~STRIPKLUDGE;
-						uifc.changes=TRUE;
-					}
+						);
 					break;
 				case 14:
-					k=(cfg.xedit[i]->misc&XTRN_UTF8) ? 0:1;
-					uifc.helpbuf=
+					toggle_flag("Support UTF-8 Encoding"
+						,&cfg.xedit[i]->misc, XTRN_UTF8, false,
 						"`Support UTF-8 Encoding:`\n"
 						"\n"
 						"If this editor can handle UTF-8 encoded message text and header fields\n"
 						"and can detect and support UTF-8 terminal input and output, set this\n"
 						"option to `Yes`."
-					;
-					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-                		,"Support UTF-8 Encoding"
-						,uifcYesNoOpts);
-					if(!k && !(cfg.xedit[i]->misc&XTRN_UTF8)) {
-						cfg.xedit[i]->misc ^= XTRN_UTF8;
-						uifc.changes=TRUE;
-					}
-					else if(k==1 && (cfg.xedit[i]->misc&XTRN_UTF8)) {
-						cfg.xedit[i]->misc ^= XTRN_UTF8;
-						uifc.changes=TRUE;
-					}
+						);
 					break;
 				case 15:
 					k=0;

@@ -170,6 +170,22 @@ void sort_dirs(int libnum)
 	}
 }
 
+void toggle_flag(const char* title, uint* misc, uint flag, bool invert, const char* help)
+{
+	int k = ((*misc) & flag) == invert;
+	if(help != NULL)
+		uifc.helpbuf = (char*)help;
+	k = uifc.list(WIN_MID|WIN_SAV, 0, 0, 0, &k, 0, title, uifcYesNoOpts);
+	if((k == invert) && ((*misc) & flag) == 0) {
+		*misc |= flag;
+		uifc.changes = TRUE;
+	}
+	else if((k == !invert) && ((*misc) & flag) != 0) {
+		*misc &= ~flag;
+		uifc.changes = TRUE;
+	}
+}
+
 void wizard_msg(int page, int total, const char* text)
 {
 	uifc.showbuf(WIN_HLP|WIN_DYN|WIN_L2R, 2, 2, 76, 20, "Setup Wizard", text, NULL, NULL);
