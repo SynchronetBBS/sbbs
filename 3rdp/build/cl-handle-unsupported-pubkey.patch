@@ -1,5 +1,5 @@
---- session/ssh2_authsvr.c.orig	2024-01-21 22:30:02.886716000 -0500
-+++ session/ssh2_authsvr.c	2024-01-21 22:32:54.203440000 -0500
+--- ./session/ssh2_authsvr.c.orig	2024-10-31 00:50:23.044734000 -0400
++++ ./session/ssh2_authsvr.c	2024-10-31 00:50:23.133300000 -0400
 @@ -443,8 +443,11 @@
  		}
  	if( cryptStatusError( status ) )

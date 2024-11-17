@@ -1,8 +1,8 @@
---- makefile.orig	2024-02-20 20:08:15.914584000 -0500
-+++ makefile	2024-02-20 20:09:10.012487000 -0500
-@@ -2140,6 +2140,15 @@
- 	$(MAKE) OSNAME=win32 $(DEFINES) EXTRAOBJS="$(WIN32ASMOBJS)" \
- 		CFLAGS="$(XCFLAGS) -O2 -m32 -Wl,--subsystem,windows,--output-def,cl32.def -DSTATIC_LIB"
+--- ./makefile.orig	2024-10-31 00:50:22.799649000 -0400
++++ ./makefile	2024-10-31 00:50:23.320196000 -0400
+@@ -2185,6 +2185,15 @@
+ 	$(MAKE) OSNAME=win64 $(DEFINES) \
+ 		CFLAGS="$(XCFLAGS) -O2 -m64 -Wl,--subsystem,windows,--output-def,cl32.def -DSTATIC_LIB"
  
 +MINGW64_NT-5.1:
 +	$(MAKE) OSNAME=win64 target-init

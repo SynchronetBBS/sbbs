@@ -1,6 +1,6 @@
---- tools/ccopts.sh.orig	2023-12-31 07:18:39.570162000 -0500
-+++ tools/ccopts.sh	2023-12-31 07:19:32.075029000 -0500
-@@ -369,25 +369,25 @@
+--- ./tools/ccopts.sh.orig	2024-10-31 00:50:21.784137000 -0400
++++ ./tools/ccopts.sh	2024-10-31 00:50:21.888849000 -0400
+@@ -361,25 +361,25 @@
  esac
  if [ -z "$DISABLE_AUTODETECT" ] && [ $HASDYNLOAD -gt 0 ] ; then
  	# ODBC support

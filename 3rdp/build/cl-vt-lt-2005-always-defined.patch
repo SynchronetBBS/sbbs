@@ -1,6 +1,6 @@
---- io/file.c.orig	2023-12-31 10:28:41.818647000 -0500
-+++ io/file.c	2023-12-31 10:28:56.618717000 -0500
-@@ -5226,7 +5226,7 @@
+--- ./io/file.c.orig	2024-09-17 05:19:20.000000000 -0400
++++ ./io/file.c	2024-10-31 00:50:22.735306000 -0400
+@@ -5242,7 +5242,7 @@
  CHECK_RETVAL_BOOL STDC_NONNULL_ARG( ( 1 ) ) \
  static BOOLEAN isSpecialSID( INOUT_PTR SID *pUserSid )
  	{

@@ -1,18 +1,6 @@
-diff -ur ../cl-old/context/keyload.c ./context/keyload.c
---- ../cl-old/context/keyload.c	2023-12-28 05:19:27.069792000 -0500
-+++ ./context/keyload.c	2023-12-28 05:41:08.270975000 -0500
-@@ -39,6 +39,7 @@
- 		{ CRYPT_IATTRIBUTE_KEY_PGP_PARTIAL, KEYFORMAT_PGP },
- 		{ CRYPT_IATTRIBUTE_KEY_SPKI, KEYFORMAT_CERT },
- 		{ CRYPT_IATTRIBUTE_KEY_SPKI_PARTIAL, KEYFORMAT_CERT },
-+		{ CRYPT_CTXINFO_SSH_PUBLIC_KEY, KEYFORMAT_SSH },
- 		{ CRYPT_ERROR, 0 }, { CRYPT_ERROR, 0 }
- 		};
- 	int value, status;
-diff -ur ../cl-old/cryptlib.h ./cryptlib.h
---- ../cl-old/cryptlib.h	2023-12-28 05:19:25.405198000 -0500
-+++ ./cryptlib.h	2023-12-28 05:41:08.275709000 -0500
-@@ -562,6 +562,7 @@
+--- ./cryptlib.h.orig	2024-10-31 00:50:22.444476000 -0400
++++ ./cryptlib.h	2024-10-31 00:50:22.528176000 -0400
+@@ -592,6 +592,7 @@
  	/* Misc.information */
  	CRYPT_CTXINFO_LABEL,			/* Label for private/secret key */
  	CRYPT_CTXINFO_PERSISTENT,		/* Obj.is backed by device or keyset */
@@ -20,10 +8,9 @@ diff -ur ../cl-old/cryptlib.h ./cryptlib.h
  
  	/* Used internally */
  	CRYPT_CTXINFO_LAST, CRYPT_CERTINFO_FIRST = 2000,
-diff -ur ../cl-old/kernel/attr_acl.c ./kernel/attr_acl.c
---- ../cl-old/kernel/attr_acl.c	2023-12-28 05:19:27.269520000 -0500
-+++ ./kernel/attr_acl.c	2023-12-28 05:48:43.951684000 -0500
-@@ -760,6 +760,11 @@
+--- ./kernel/attr_acl.c.orig	2024-10-31 00:50:22.454000000 -0400
++++ ./kernel/attr_acl.c	2024-10-31 00:50:22.534228000 -0400
+@@ -779,6 +779,11 @@
  		MKPERM( Rxx_RWD ),
  		ROUTE( OBJECT_TYPE_CONTEXT ),
  		subACL_CtxinfoPersistent ),
@@ -35,8 +22,8 @@ diff -ur ../cl-old/kernel/attr_acl.c ./kernel/attr_acl.c
  	MKACL_END(), MKACL_END()
  	};
  
---- context/ctx_attr.c.orig	2023-02-08 05:36:06.000000000 -0500
-+++ context/ctx_attr.c	2024-01-07 19:38:26.173540000 -0500
+--- ./context/ctx_attr.c.orig	2023-08-24 00:04:00.000000000 -0400
++++ ./context/ctx_attr.c	2024-10-31 00:50:22.539343000 -0400
 @@ -422,6 +422,11 @@
  				}
  			STDC_FALLTHROUGH;
@@ -49,3 +36,13 @@ diff -ur ../cl-old/kernel/attr_acl.c ./kernel/attr_acl.c
  		case CRYPT_IATTRIBUTE_KEY_PGP:
  		case CRYPT_IATTRIBUTE_KEY_SSH:
  		case CRYPT_IATTRIBUTE_KEY_TLS:
+--- ./context/keyload.c.orig	2023-02-26 03:18:06.000000000 -0500
++++ ./context/keyload.c	2024-10-31 00:50:22.524017000 -0400
+@@ -38,6 +38,7 @@
+ 		{ CRYPT_IATTRIBUTE_KEY_PGP_PARTIAL, KEYFORMAT_PGP },
+ 		{ CRYPT_IATTRIBUTE_KEY_SPKI, KEYFORMAT_CERT },
+ 		{ CRYPT_IATTRIBUTE_KEY_SPKI_PARTIAL, KEYFORMAT_CERT },
++		{ CRYPT_CTXINFO_SSH_PUBLIC_KEY, KEYFORMAT_SSH },
+ 		{ CRYPT_ERROR, 0 }, { CRYPT_ERROR, 0 }
+ 		};
+ 	int value, status;

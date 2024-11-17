@@ -1,6 +1,6 @@
---- ../tmp2/session/ssh2_authcli.c	2018-12-14 17:31:34.000000000 -0500
-+++ session/ssh2_authcli.c	2019-06-03 16:41:49.956986000 -0400
-@@ -868,7 +868,7 @@
+--- ./session/ssh2_authcli.c.orig	2024-09-04 01:05:30.000000000 -0400
++++ ./session/ssh2_authcli.c	2024-10-31 00:50:21.731447000 -0400
+@@ -897,7 +897,7 @@
  		if( !cryptStatusError( status ) )
  			{
  			status = CRYPT_OK;	/* readUint32() returns a count value */
@@ -9,7 +9,7 @@
  				{
  				/* Requesting zero or more than a small number of prompts is 
  				   suspicious */
-@@ -876,49 +876,52 @@
+@@ -905,49 +905,52 @@
  				}
  			}
  		}

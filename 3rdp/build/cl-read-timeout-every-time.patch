@@ -1,6 +1,6 @@
---- session/sess_rd.c.orig	2024-02-09 13:31:06.861571000 -0500
-+++ session/sess_rd.c	2024-02-09 13:33:52.564141000 -0500
-@@ -686,7 +686,8 @@
+--- ./session/sess_rd.c.orig	2024-10-31 00:50:22.883113000 -0400
++++ ./session/sess_rd.c	2024-10-31 00:50:22.976543000 -0400
+@@ -691,7 +691,8 @@
  static int getData( INOUT_PTR SESSION_INFO *sessionInfoPtr, 
  					OUT_BUFFER( length, *bytesCopied ) BYTE *buffer, 
  					IN_DATALENGTH const int length, 
@@ -10,7 +10,7 @@
  	{
  	const int bytesToCopy = min( length, sessionInfoPtr->receiveBufPos );
  	READSTATE_INFO readInfo;
-@@ -822,6 +823,7 @@
+@@ -827,6 +828,7 @@
  				sessionInfoPtr->receiveBufSize - sessionInfoPtr->receiveBufEnd )
  			{
  			sioctlSet( &sessionInfoPtr->stream, STREAM_IOCTL_READTIMEOUT, 1 );
@@ -18,7 +18,7 @@
  			}
  
  		ENSURES( sanityCheckSessionRead( sessionInfoPtr ) );
-@@ -843,6 +845,7 @@
+@@ -848,6 +850,7 @@
  	   necessary to avoid having the stream always block for the set timeout 
  	   value on the last read */
  	sioctlSet( &sessionInfoPtr->stream, STREAM_IOCTL_READTIMEOUT, 0 );
@@ -26,7 +26,7 @@
  
  	ENSURES( sanityCheckSessionRead( sessionInfoPtr ) );
  
-@@ -855,6 +858,7 @@
+@@ -860,6 +863,7 @@
  					IN_DATALENGTH const int dataMaxLength, 
  					OUT_DATALENGTH_Z int *bytesCopied )
  	{
@@ -34,7 +34,7 @@
  	BYTE *dataPtr = data;
  	int dataLength, status = CRYPT_OK, LOOP_ITERATOR;
  
-@@ -884,29 +888,31 @@
+@@ -889,29 +893,31 @@
  		return( status );
  		}
  
@@ -85,7 +85,7 @@
  		ENSURES( LOOP_INVARIANT_MAX_REV_XXX( dataLength, 1, dataMaxLength ) );
  				 /* dataLength is decremented by the number of bytes read */
  
-@@ -918,7 +924,7 @@
+@@ -923,7 +929,7 @@
  			   available.
  			3. CRYPT_OK to indicate that data was read and more may be 
  			   available */

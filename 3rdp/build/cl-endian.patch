@@ -1,6 +1,6 @@
---- misc/os_detect.h.orig	2023-12-31 10:15:40.782951000 -0500
-+++ misc/os_detect.h	2023-12-31 10:16:40.940469000 -0500
-@@ -658,7 +658,9 @@
+--- ./misc/os_detect.h.orig	2024-10-23 02:45:14.000000000 -0400
++++ ./misc/os_detect.h	2024-10-31 00:50:21.539462000 -0400
+@@ -684,7 +684,9 @@
  	 __GNUC__ is defined but the gcc include files aren't present.  The
  	 above checks catch the most common cases, if there are other pretend-
  	 gcc's then they'll need to be special-cased before this one */

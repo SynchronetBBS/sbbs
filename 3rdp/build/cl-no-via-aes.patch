@@ -1,6 +1,6 @@
---- crypt/aesopt.h.orig	2020-04-14 09:11:58.722175000 -0400
-+++ crypt/aesopt.h	2020-04-14 09:13:30.401074000 -0400
-@@ -102,7 +102,7 @@
+--- ./crypt/aesopt.h.orig	2023-07-11 19:08:32.000000000 -0400
++++ ./crypt/aesopt.h	2024-10-31 00:50:22.127051000 -0400
+@@ -106,7 +106,7 @@
  	defined( _M_IX86 ) && \
  	!( defined( _WIN32_WCE ) || defined( NO_ASM ) )
    #ifndef USE_VIA_ACE_IF_PRESENT
@@ -9,7 +9,7 @@
    #endif
  #endif /* VC++ on x86 under Win32 - pcg */
  
-@@ -212,7 +212,7 @@
+@@ -216,7 +216,7 @@
  #if defined( __GNUC__ ) && defined( __i386__ ) \
   || defined( _WIN32 ) && defined( _M_IX86 ) && !(defined( _WIN64 ) \
   || defined( _WIN32_WCE ) || defined( _MSC_VER ) && ( _MSC_VER <= 800 ))
@@ -18,7 +18,7 @@
  #endif
  
  /* AES is supported out of the box by Windows x64 compilers, but by gcc only 
-@@ -263,7 +263,7 @@
+@@ -285,7 +285,7 @@
  	AES_REV_DKS must be set for assembler code used with a VIA ACE build
  */
  
@@ -27,7 +27,7 @@
  #  define USE_VIA_ACE_IF_PRESENT
  #endif
  
-@@ -508,7 +508,7 @@
+@@ -530,7 +530,7 @@
  #endif
  
  #if defined( ASSUME_VIA_ACE_PRESENT ) && !defined( USE_VIA_ACE_IF_PRESENT )

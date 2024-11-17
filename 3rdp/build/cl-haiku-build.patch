@@ -1,17 +1,17 @@
---- crypt/osconfig.h.orig	2024-10-13 06:57:14.810287104 +0000
-+++ crypt/osconfig.h	2024-10-13 06:58:42.890503168 +0000
-@@ -96,7 +96,7 @@
+--- crypt/osconfig.h.orig	2024-10-31 00:53:32.911075000 -0400
++++ crypt/osconfig.h	2024-10-31 00:55:38.632254000 -0400
+@@ -310,7 +310,7 @@
     identical, even if they differ at a higher level */
- #if defined( __FreeBSD__ ) || defined( __bsdi__ ) || \
- 	defined( __OpenBSD__ ) || defined( __NetBSD__ ) || \
--	defined( __linux__ )
-+	defined( __linux__ ) || defined(__HAIKU__)
+ #elif defined( __FreeBSD__ ) || defined( __bsdi__ ) || \
+ 	  defined( __OpenBSD__ ) || defined( __NetBSD__ ) || \
+-	  defined( __linux__ )
++	  defined( __linux__ ) || defined( __HAIKU__ )
    #if defined( __x86_64__ ) || defined( __amd64__ )
  	/* 64-bit x86 has both 'long' and 'long long' as 64 bits.  In addition
  	   we use DES_INT since int's are 64-bit.  We have to check for the
---- io/file.c.orig	2024-10-13 07:30:37.232521728 +0000
-+++ io/file.c	2024-10-13 07:53:48.930349056 +0000
-@@ -4417,7 +4417,7 @@
+--- io/file.c.orig	2024-10-31 00:53:35.106314000 -0400
++++ io/file.c	2024-10-31 00:53:35.251907000 -0400
+@@ -4419,7 +4419,7 @@
    #if defined( __FreeBSD__ )
  	struct timeval timeVals[ 2 ];
    #elif !( defined( __APPLE__ ) || defined( __FreeBSD__ ) || \
@@ -20,7 +20,7 @@
  	struct utimbuf timeStamp;
    #endif /* OS-specific variable declarations */
  #endif /* USE_EMBEDDED_OS */
-@@ -4480,7 +4480,7 @@
+@@ -4482,7 +4482,7 @@
  	   generic DoS that they could perform anyway if they have the user's
  	   rights */
  #ifndef USE_EMBEDDED_OS /* Embedded systems have no file timestamps */
@@ -29,9 +29,9 @@
  	sFileClose( &stream );
  	utimes( fileName, NULL );	/* Android's Linux doesn't have futimes() */
    #elif defined( __APPLE__ )
---- kernel/thread.h.orig	2024-10-13 07:55:48.750518272 +0000
-+++ kernel/thread.h	2024-10-13 07:57:17.796131328 +0000
-@@ -3135,7 +3135,8 @@
+--- kernel/thread.h.orig	2024-10-31 00:53:35.043387000 -0400
++++ kernel/thread.h	2024-10-31 00:53:35.257697000 -0400
+@@ -3184,7 +3184,8 @@
    #endif /* Slowaris 5.7 / 7.x or newer */
  #elif defined( _AIX ) || defined( __Android__ ) || defined( __CYGWIN__ ) || \
  	  ( defined( __hpux ) && ( OSVERSION >= 11 ) ) || \
@@ -41,8 +41,8 @@
    #define THREAD_YIELD()		sched_yield()
  #elif defined( __XMK__ )
    /* The XMK underlying scheduling object is the process context, for which
---- random/unix.c.orig	2024-10-13 07:30:33.515375104 +0000
-+++ random/unix.c	2024-10-13 08:15:32.121110528 +0000
+--- random/unix.c.orig	2024-10-31 00:53:34.685713000 -0400
++++ random/unix.c	2024-10-31 00:53:35.264083000 -0400
 @@ -66,7 +66,8 @@
     memory-based polling with a stub the prints an error message for the
     caller */
@@ -53,18 +53,7 @@
    #define NO_SYSV_SHAREDMEM
  #endif /* Android || QNX <= 4.x */
  
-@@ -80,7 +81,9 @@
- #include <fcntl.h>
- #include <pwd.h>
- #if !( defined( __QNX__ ) || defined( __MVS__ ) )
--  #include <sys/errno.h>
-+  #if !(defined( __HAIKU__) )
-+    #include <sys/errno.h>
-+  #endif
-   #include <sys/ipc.h>
- #endif /* !( QNX || MVS ) */
- #include <sys/time.h>		/* SCO and SunOS need this before resource.h */
-@@ -118,7 +121,7 @@
+@@ -122,7 +123,7 @@
    #include <sys/sem.h>
    #include <sys/shm.h>
  #endif /* CYGWIN */
@@ -73,7 +62,7 @@
    #include <sys/shm.h>
  #endif /* !( __Android__  || Cygwin || QNX ) */
  #if defined( __linux__ ) && ( defined(__i386__) || defined(__x86_64__) )
-@@ -1948,7 +1951,12 @@
+@@ -1950,7 +1951,12 @@
  *																			*
  ****************************************************************************/
  

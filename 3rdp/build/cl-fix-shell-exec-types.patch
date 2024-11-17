@@ -1,5 +1,5 @@
---- ./session/ssh2_msgsvr.c.orig	2024-01-22 00:34:35.418900000 -0500
-+++ ./session/ssh2_msgsvr.c	2024-01-22 00:40:38.301267000 -0500
+--- ./session/ssh2_msgsvr.c.orig	2024-10-31 00:50:22.441423000 -0400
++++ ./session/ssh2_msgsvr.c	2024-10-31 00:50:23.269569000 -0400
 @@ -676,7 +676,9 @@
  				setChannelAttribute(sessionInfoPtr, CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT, status);
  			break;

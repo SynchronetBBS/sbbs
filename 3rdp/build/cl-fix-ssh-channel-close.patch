@@ -1,26 +1,6 @@
---- session/ssh2_msg.c.orig	2023-12-29 14:59:17.512549000 -0500
-+++ session/ssh2_msg.c	2023-12-29 15:00:11.110220000 -0500
-@@ -457,7 +457,7 @@
- 											 channelNo ) == CHANNEL_BOTH )
- 				{
- 				status = sendChannelClose( sessionInfoPtr, channelNo,
--										   CHANNEL_BOTH, TRUE );
-+										   CHANNEL_READ, TRUE );
- 				}
- 			else
- 				{
-@@ -527,6 +538,8 @@
- 	   no more channels left to close */
- 	status = deleteChannel( sessionInfoPtr, channelNo, channelType,
- 							closeLastChannel  );
-+	if( getChannelStatusByChannelNo( sessionInfoPtr, channelNo ) == CHANNEL_NONE )
-+		return CRYPT_OK;
- 	if( cryptStatusError( status ) )
- 		{
- 		if( status != OK_SPECIAL )
---- cryptlib.h.orig	2023-12-29 15:55:17.717475000 -0500
-+++ cryptlib.h	2023-12-29 15:56:34.124863000 -0500
-@@ -1228,6 +1228,7 @@
+--- ./cryptlib.h.orig	2024-10-31 00:50:22.528176000 -0400
++++ ./cryptlib.h	2024-10-31 00:50:22.662806000 -0400
+@@ -1277,6 +1277,7 @@
  	CRYPT_SESSINFO_SSH_CHANNEL_TERMINAL,	/* TERM string sent to remote */
  	CRYPT_SESSINFO_SSH_CHANNEL_WIDTH,	/* Terminal width */
  	CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT,	/* Terminal height */
@@ -28,7 +8,7 @@
  
  	/* Used internally */
  	CRYPT_SESSINFO_LAST, CRYPT_USERINFO_FIRST = 7000,
-@@ -1374,7 +1375,7 @@
+@@ -1439,7 +1440,7 @@
  	CRYPT_CERTINFO_FIRST_CMS = CRYPT_CERTINFO_CMS_CONTENTTYPE,
  	CRYPT_CERTINFO_LAST_CMS = CRYPT_CERTINFO_LAST - 1,
  	CRYPT_SESSINFO_FIRST_SPECIFIC = CRYPT_SESSINFO_REQUEST,
@@ -37,8 +17,8 @@
  
  	/* Point at which private-use values start.  Attribute values sometimes
  	   need to be extended with additional pseudo-values in object-specific
---- ./session/ssh2_channel.c.orig	2023-12-29 19:50:00.990529000 -0500
-+++ ./session/ssh2_channel.c	2023-12-29 19:51:32.502476000 -0500
+--- ./session/ssh2_channel.c.orig	2024-10-31 00:50:22.433953000 -0400
++++ ./session/ssh2_channel.c	2024-10-31 00:50:22.667097000 -0400
 @@ -24,6 +24,7 @@
  #define CHANNEL_FLAG_NONE		0x00	/* No channel flag */
  #define CHANNEL_FLAG_ACTIVE		0x01	/* Channel is active */
@@ -47,7 +27,7 @@
  
  /* Per-channel information.  SSH channel IDs are 32-bit/4 byte data values
     and can be reused during sessions so we provide our own guaranteed-unique
-@@ -126,6 +127,8 @@
+@@ -118,6 +119,8 @@
  		   after */
  		ENSURES( attributeListPtr->valueLength == sizeof( SSH_CHANNEL_INFO ) );
  		channelInfoPtr = attributeListPtr->value;
@@ -56,7 +36,7 @@
  		if( isActiveChannel( channelInfoPtr ) && \
  			channelInfoPtr->channelID != excludedChannelID )
  			return( TRUE );
-@@ -149,7 +152,9 @@
+@@ -141,7 +144,9 @@
  	static const CRYPT_ATTRIBUTE_TYPE attributeOrderList[] = {
  			CRYPT_SESSINFO_SSH_CHANNEL, CRYPT_SESSINFO_SSH_CHANNEL_TYPE,
  			CRYPT_SESSINFO_SSH_CHANNEL_ARG1, CRYPT_SESSINFO_SSH_CHANNEL_ARG2,
@@ -67,7 +47,7 @@
  			CRYPT_ATTRIBUTE_NONE };
  	SSH_CHANNEL_INFO *channelInfoPtr = attributeListPtr->value;
  	CRYPT_ATTRIBUTE_TYPE attributeType = channelInfoPtr->cursorPos;
-@@ -229,6 +234,7 @@
+@@ -228,6 +233,7 @@
  			case CRYPT_SESSINFO_SSH_CHANNEL:
  			case CRYPT_SESSINFO_SSH_CHANNEL_TYPE:
  			case CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE:
@@ -75,7 +55,7 @@
  				doContinue = FALSE;	/* Always present */
  				break;
  
-@@ -474,6 +480,8 @@
+@@ -476,6 +482,8 @@
  	{
  	const SSH_CHANNEL_INFO *channelInfoPtr = \
  				getCurrentChannelInfo( sessionInfoPtr, CHANNEL_READ );
@@ -84,7 +64,7 @@
  
  	assert( isReadPtr( sessionInfoPtr, sizeof( SESSION_INFO ) ) );
  	assert( isWritePtr( value, sizeof( int ) ) );
-@@ -485,27 +493,38 @@
+@@ -487,27 +495,38 @@
  	/* Clear return values */
  	*value = 0;
  
@@ -129,7 +109,7 @@
  				return CRYPT_ERROR_NOTFOUND;
  			*value = channelInfoPtr->height;
  			return( CRYPT_OK );
-@@ -760,7 +779,7 @@
+@@ -765,7 +784,7 @@
  	channelInfoPtr = findChannelByChannelNo( sessionInfoPtr, channelNo );
  	return( ( channelInfoPtr == NULL ) ? CHANNEL_NONE : \
  			( channelInfoPtr->flags & CHANNEL_FLAG_WRITECLOSED ) ? \
@@ -138,7 +118,7 @@
  	}
  
  CHECK_RETVAL_ENUM( CHANNEL ) STDC_NONNULL_ARG( ( 1 ) ) \
-@@ -780,7 +799,7 @@
+@@ -785,7 +804,7 @@
  										addrInfoLen );
  	return( ( channelInfoPtr == NULL ) ? CHANNEL_NONE : \
  			( channelInfoPtr->flags & CHANNEL_FLAG_WRITECLOSED ) ? \
@@ -147,7 +127,7 @@
  	}
  
  /****************************************************************************
-@@ -1001,12 +1020,22 @@
+@@ -1013,12 +1032,22 @@
  	/* Delete the channel entry.  If we're only closing the write side we
  	   mark the channel as closed for write but leave the overall channel
  	   open */
@@ -171,9 +151,9 @@
  		return( isChannelActive( sessionInfoPtr, \
  								 channelInfoPtr->channelID ) ? \
  				CRYPT_OK : OK_SPECIAL );
---- session/ssh.c.orig	2023-12-31 08:49:41.952161000 -0500
-+++ session/ssh.c	2023-12-31 08:50:06.475509000 -0500
-@@ -543,6 +543,7 @@
+--- ./session/ssh.c.orig	2024-10-31 00:50:22.598316000 -0400
++++ ./session/ssh.c	2024-10-31 00:50:22.670528000 -0400
+@@ -556,6 +556,7 @@
  			  type == CRYPT_SESSINFO_SSH_CHANNEL_WIDTH || \
  			  type == CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT || \
  			  type == CRYPT_SESSINFO_SSH_CHANNEL_TERMINAL || \
@@ -181,7 +161,7 @@
  			  type == CRYPT_SESSINFO_SSH_PREAUTH );
  #else
  	REQUIRES( type == CRYPT_SESSINFO_SSH_PREAUTH );
-@@ -567,7 +568,8 @@
+@@ -593,7 +594,8 @@
  	if( type == CRYPT_SESSINFO_SSH_CHANNEL || \
  		type == CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE || \
  		type == CRYPT_SESSINFO_SSH_CHANNEL_WIDTH || \
@@ -191,9 +171,29 @@
  		{
  		status = getChannelAttribute( sessionInfoPtr, type, data );
  		}
---- kernel/attr_acl.c.orig	2023-12-31 08:49:41.973327000 -0500
-+++ kernel/attr_acl.c	2023-12-31 08:51:13.972549000 -0500
-@@ -3943,6 +3943,12 @@
+--- ./session/ssh2_msg.c.orig	2023-02-26 03:33:24.000000000 -0500
++++ ./session/ssh2_msg.c	2024-10-31 00:50:22.659472000 -0400
+@@ -468,7 +468,7 @@
+ 											 channelNo ) == CHANNEL_BOTH )
+ 				{
+ 				status = sendChannelClose( sessionInfoPtr, channelNo,
+-										   CHANNEL_BOTH, TRUE );
++										   CHANNEL_READ, TRUE );
+ 				}
+ 			else
+ 				{
+@@ -527,6 +527,8 @@
+ 	   no more channels left to close */
+ 	status = deleteChannel( sessionInfoPtr, channelNo, channelType,
+ 							closeLastChannel  );
++	if( getChannelStatusByChannelNo( sessionInfoPtr, channelNo ) == CHANNEL_NONE )
++		return CRYPT_OK;
+ 	if( cryptStatusError( status ) )
+ 		{
+ 		if( status != OK_SPECIAL )
+--- ./kernel/attr_acl.c.orig	2024-10-31 00:50:22.593469000 -0400
++++ ./kernel/attr_acl.c	2024-10-31 00:50:22.675666000 -0400
+@@ -3980,6 +3980,12 @@
  		MKPERM_SSH_EXT( RWx_RWx ),
  		ROUTE( OBJECT_TYPE_SESSION ),
  		subACL_SessinfoSSHChannelHeight ),
@@ -206,7 +206,7 @@
  
  	MKACL_END(), MKACL_END()
  	};
-@@ -4931,7 +4937,7 @@
+@@ -4968,7 +4974,7 @@
  	static_assert( CRYPT_CERTINFO_FIRST_EXTENSION == 2200, "Attribute value" );
  	static_assert( CRYPT_CERTINFO_FIRST_CMS == 2500, "Attribute value" );
  	static_assert( CRYPT_SESSINFO_FIRST_SPECIFIC == 6017, "Attribute value" );

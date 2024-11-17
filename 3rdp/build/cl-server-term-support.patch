@@ -1,5 +1,101 @@
---- session/ssh2_channel.c.orig	2019-02-05 18:18:26.000000000 -0500
-+++ session/ssh2_channel.c	2023-12-24 08:09:36.669204000 -0500
+--- ./cryptlib.h.orig	2024-10-31 00:50:22.228018000 -0400
++++ ./cryptlib.h	2024-10-31 00:50:22.444476000 -0400
+@@ -1273,9 +1273,9 @@
+ 	CRYPT_SESSINFO_TSP_MSGIMPRINT,	/* TSP message imprint */
+ 
+ 	/* Terminal attributes */
+-	CRYPT_SESSINFO_SSH_TERMINAL,	/* TERM string sent to remote */
+-	CRYPT_SESSINFO_SSH_WIDTH,	/* Terminal width */
+-	CRYPT_SESSINFO_SSH_HEIGHT,	/* Terminal height */
++	CRYPT_SESSINFO_SSH_CHANNEL_TERMINAL,	/* TERM string sent to remote */
++	CRYPT_SESSINFO_SSH_CHANNEL_WIDTH,	/* Terminal width */
++	CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT,	/* Terminal height */
+ 
+ 	/* Used internally */
+ 	CRYPT_SESSINFO_LAST, CRYPT_USERINFO_FIRST = 7000,
+@@ -1438,7 +1438,7 @@
+ 	CRYPT_CERTINFO_FIRST_CMS = CRYPT_CERTINFO_CMS_CONTENTTYPE,
+ 	CRYPT_CERTINFO_LAST_CMS = CRYPT_CERTINFO_LAST - 1,
+ 	CRYPT_SESSINFO_FIRST_SPECIFIC = CRYPT_SESSINFO_REQUEST,
+-	CRYPT_SESSINFO_LAST_SPECIFIC = CRYPT_SESSINFO_TSP_MSGIMPRINT
++	CRYPT_SESSINFO_LAST_SPECIFIC = CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT
+ 
+ 	/* Point at which private-use values start.  Attribute values sometimes
+ 	   need to be extended with additional pseudo-values in object-specific
+--- ./session/ssh2_msgcli.c.orig	2024-10-31 00:50:21.392905000 -0400
++++ ./session/ssh2_msgcli.c	2024-10-31 00:50:22.437872000 -0400
+@@ -555,15 +555,15 @@
+ 	writeUint32( stream, channelNo );
+ 	writeString32( stream, "pty-req", 7 );
+ 	sputc( stream, 0 );					/* No reply */
+-	if( cryptStatusError( status = getSessionAttributeS( sessionInfoPtr, &term, CRYPT_SESSINFO_SSH_TERMINAL) ) )
++	if( cryptStatusError( status = getChannelAttributeS( sessionInfoPtr, CRYPT_SESSINFO_SSH_CHANNEL_TERMINAL, term.data, sizeof(termString), &term.length) ) || term.length == 0 )
+ 		writeString32( stream, "xterm", 5 );/* Generic */
+ 	else
+ 		writeString32( stream, term.data, term.length );/* Generic */
+-	if( cryptStatusError( getSessionAttribute( sessionInfoPtr, &value, CRYPT_SESSINFO_SSH_WIDTH ) ) )
++	if( cryptStatusError( getChannelAttribute( sessionInfoPtr, CRYPT_SESSINFO_SSH_CHANNEL_WIDTH, &value ) ) || value == 0 )
+ 		writeUint32( stream, 80 );
+ 	else
+ 		writeUint32( stream, value);
+-	if( cryptStatusError( getSessionAttribute( sessionInfoPtr, &value, CRYPT_SESSINFO_SSH_HEIGHT ) ) )
++	if( cryptStatusError( getChannelAttribute( sessionInfoPtr, CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT, &value ) ) || value == 0 )
+ 		writeUint32( stream, 48 );		/* 48 x 80 (24 x 80 is so 1970s) */
+ 	else
+ 		writeUint32( stream, value);
+--- ./session/sess_attr.c.orig	2024-10-31 00:50:21.810708000 -0400
++++ ./session/sess_attr.c	2024-10-31 00:50:22.448890000 -0400
+@@ -818,8 +818,6 @@
+ 								   SESSION_FLAG_ISOPEN ) ? TRUE : FALSE;
+ 			return( CRYPT_OK );
+ 
+-		case CRYPT_SESSINFO_SSH_HEIGHT:
+-		case CRYPT_SESSINFO_SSH_WIDTH:
+ 		case CRYPT_SESSINFO_SERVER_PORT:
+ 		case CRYPT_SESSINFO_CLIENT_PORT:
+ 			{
+@@ -895,7 +893,6 @@
+ 			return( CRYPT_ERROR_NOTFOUND );
+ 			}
+ 
+-		case CRYPT_SESSINFO_SSH_TERMINAL:
+ 		case CRYPT_SESSINFO_USERNAME:
+ 		case CRYPT_SESSINFO_PASSWORD:
+ 		case CRYPT_SESSINFO_AUTHTOKEN:
+@@ -1064,13 +1061,6 @@
+ 			return( status );
+ 			}
+ 
+-		case CRYPT_SESSINFO_SSH_WIDTH:
+-			return( addSessionInfo( sessionInfoPtr,
+-									CRYPT_SESSINFO_SSH_WIDTH, value ) );
+-		case CRYPT_SESSINFO_SSH_HEIGHT:
+-			return( addSessionInfo( sessionInfoPtr,
+-									CRYPT_SESSINFO_SSH_HEIGHT, value ) );
+-
+ 		case CRYPT_SESSINFO_SERVER_PORT:
+ 			/* If there's already a network socket specified then we can't 
+ 			   set a port as well */
+@@ -1239,9 +1229,6 @@
+ 			return( addCredential( sessionInfoPtr, data, dataLength, 
+ 								   attribute ) );
+ 
+-		case CRYPT_SESSINFO_SSH_TERMINAL:
+-		case CRYPT_SESSINFO_SSH_WIDTH:
+-		case CRYPT_SESSINFO_SSH_HEIGHT:
+ 		case CRYPT_SESSINFO_SERVER_FINGERPRINT_SHA1:
+ 			/* Remember the value */
+ 			return( addSessionInfoS( sessionInfoPtr, attribute, data, 
+@@ -1305,7 +1292,6 @@
+ 			sessionInfoPtr->writeTimeout = CRYPT_ERROR;
+ 			return( CRYPT_OK );
+ 
+-		case CRYPT_SESSINFO_SSH_TERMINAL:
+ 		case CRYPT_SESSINFO_USERNAME:
+ 		case CRYPT_SESSINFO_PASSWORD:
+ 		case CRYPT_SESSINFO_AUTHTOKEN:
+--- ./session/ssh2_channel.c.orig	2023-02-26 03:33:26.000000000 -0500
++++ ./session/ssh2_channel.c	2024-10-31 00:50:22.433953000 -0400
 @@ -59,6 +59,9 @@
  
  	/* Channel extra data.  This contains encoded oddball protocol-specific
@@ -10,7 +106,7 @@
  	BUFFER_FIXED( UINT_SIZE + CRYPT_MAX_TEXTSIZE + ( UINT_SIZE * 4 ) ) \
  	BYTE extraData[ ( UINT_SIZE + CRYPT_MAX_TEXTSIZE ) + \
  					( UINT_SIZE * 4 ) + 8 ];
-@@ -239,6 +242,21 @@
+@@ -238,6 +241,21 @@
  					doContinue = FALSE;
  				break;
  
@@ -32,7 +128,7 @@
  			default:
  				retIntError();
  			}
-@@ -479,6 +497,18 @@
+@@ -481,6 +499,18 @@
  		case CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE:
  			*value = isActiveChannel( channelInfoPtr ) ? TRUE : FALSE;
  			return( CRYPT_OK );
@@ -51,7 +147,7 @@
  		}
  
  	retIntError();
-@@ -532,6 +562,13 @@
+@@ -537,6 +567,13 @@
  			return( attributeCopyParams( data, dataMaxLength, dataLength,
  										 channelInfoPtr->arg2,
  										 channelInfoPtr->arg2Len ) );
@@ -65,7 +161,7 @@
  		}
  
  	retIntError();
-@@ -596,7 +633,21 @@
+@@ -601,7 +638,21 @@
  		return( selectChannel( sessionInfoPtr, channelInfoPtr->writeChannelNo,
  							   CHANNEL_WRITE ) );
  		}
@@ -87,7 +183,7 @@
  	retIntError();
  	}
  
-@@ -639,6 +688,11 @@
+@@ -644,6 +695,11 @@
  			return( attributeCopyParams( channelInfoPtr->arg2, 
  										 CRYPT_MAX_TEXTSIZE,
  										 &channelInfoPtr->arg2Len, 
@@ -99,30 +195,9 @@
  										 data, dataLength ) );
  		}
  
---- session/ssh2_msgcli.c.orig	2023-12-24 07:59:00.803690000 -0500
-+++ session/ssh2_msgcli.c	2023-12-24 08:12:21.955372000 -0500
-@@ -553,15 +553,15 @@
- 	writeUint32( stream, channelNo );
- 	writeString32( stream, "pty-req", 7 );
- 	sputc( stream, 0 );					/* No reply */
--	if( cryptStatusError( status = getSessionAttributeS( sessionInfoPtr, &term, CRYPT_SESSINFO_SSH_TERMINAL) ) )
-+	if( cryptStatusError( status = getChannelAttributeS( sessionInfoPtr, CRYPT_SESSINFO_SSH_CHANNEL_TERMINAL, term.data, sizeof(termString), &term.length) ) || term.length == 0 )
- 		writeString32( stream, "xterm", 5 );/* Generic */
- 	else
- 		writeString32( stream, term.data, term.length );/* Generic */
--	if( cryptStatusError( getSessionAttribute( sessionInfoPtr, &value, CRYPT_SESSINFO_SSH_WIDTH ) ) )
-+	if( cryptStatusError( getChannelAttribute( sessionInfoPtr, CRYPT_SESSINFO_SSH_CHANNEL_WIDTH, &value ) ) || value == 0 )
- 		writeUint32( stream, 80 );
- 	else
- 		writeUint32( stream, value);
--	if( cryptStatusError( getSessionAttribute( sessionInfoPtr, &value, CRYPT_SESSINFO_SSH_HEIGHT ) ) )
-+	if( cryptStatusError( getChannelAttribute( sessionInfoPtr, CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT, &value ) ) || value == 0 )
- 		writeUint32( stream, 48 );		/* 48 x 80 (24 x 80 is so 1970s) */
- 	else
- 		writeUint32( stream, value);
---- session/ssh2_msgsvr.c.orig	2019-02-05 18:18:26.000000000 -0500
-+++ session/ssh2_msgsvr.c	2023-12-24 08:15:19.887857000 -0500
-@@ -655,8 +655,20 @@
+--- ./session/ssh2_msgsvr.c.orig	2023-02-26 03:35:56.000000000 -0500
++++ ./session/ssh2_msgsvr.c	2024-10-31 00:50:22.441423000 -0400
+@@ -664,8 +664,20 @@
  	   problem but just deny the request */
  	switch( requestInfoPtr->requestType )
  		{
@@ -144,184 +219,8 @@
  		case REQUEST_NOOP:
  			/* Generic requests containing extra information that we're not
  			   interested in */
---- cryptlib.h.orig	2023-12-24 08:16:11.665165000 -0500
-+++ cryptlib.h	2023-12-24 08:16:59.952861000 -0500
-@@ -1224,9 +1224,9 @@
- 	CRYPT_SESSINFO_TSP_MSGIMPRINT,	/* TSP message imprint */
- 
- 	/* Terminal attributes */
--	CRYPT_SESSINFO_SSH_TERMINAL,	/* TERM string sent to remote */
--	CRYPT_SESSINFO_SSH_WIDTH,	/* Terminal width */
--	CRYPT_SESSINFO_SSH_HEIGHT,	/* Terminal height */
-+	CRYPT_SESSINFO_SSH_CHANNEL_TERMINAL,	/* TERM string sent to remote */
-+	CRYPT_SESSINFO_SSH_CHANNEL_WIDTH,	/* Terminal width */
-+	CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT,	/* Terminal height */
- 
- 	/* Used internally */
- 	CRYPT_SESSINFO_LAST, CRYPT_USERINFO_FIRST = 7000,
-@@ -1373,7 +1373,7 @@
- 	CRYPT_CERTINFO_FIRST_CMS = CRYPT_CERTINFO_CMS_CONTENTTYPE,
- 	CRYPT_CERTINFO_LAST_CMS = CRYPT_CERTINFO_LAST - 1,
- 	CRYPT_SESSINFO_FIRST_SPECIFIC = CRYPT_SESSINFO_REQUEST,
--	CRYPT_SESSINFO_LAST_SPECIFIC = CRYPT_SESSINFO_TSP_MSGIMPRINT
-+	CRYPT_SESSINFO_LAST_SPECIFIC = CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT
- 
- 	/* Point at which private-use values start.  Attribute values sometimes
- 	   need to be extended with additional pseudo-values in object-specific
---- session/sess_attr.c.orig	2023-12-24 08:19:43.874119000 -0500
-+++ session/sess_attr.c	2023-12-24 08:21:50.844733000 -0500
-@@ -567,8 +567,6 @@
- 								   SESSION_FLAG_ISOPEN ) ? TRUE : FALSE;
- 			return( CRYPT_OK );
- 
--		case CRYPT_SESSINFO_SSH_HEIGHT:
--		case CRYPT_SESSINFO_SSH_WIDTH:
- 		case CRYPT_SESSINFO_SERVER_PORT:
- 		case CRYPT_SESSINFO_CLIENT_PORT:
- 			{
-@@ -643,7 +641,6 @@
- 			return( CRYPT_ERROR_NOTFOUND );
- 			}
- 
--		case CRYPT_SESSINFO_SSH_TERMINAL:
- 		case CRYPT_SESSINFO_USERNAME:
- 		case CRYPT_SESSINFO_PASSWORD:
- 			/* If the session was resumed from cached information then the
-@@ -802,13 +799,6 @@
- 			return( status );
- 			}
- 
--		case CRYPT_SESSINFO_SSH_WIDTH:
--			return( addSessionInfo( sessionInfoPtr,
--									CRYPT_SESSINFO_SSH_WIDTH, value ) );
--		case CRYPT_SESSINFO_SSH_HEIGHT:
--			return( addSessionInfo( sessionInfoPtr,
--									CRYPT_SESSINFO_SSH_HEIGHT, value ) );
--
- 		case CRYPT_SESSINFO_SERVER_PORT:
- 			/* If there's already a network socket specified then we can't 
- 			   set a port as well */
-@@ -966,9 +956,6 @@
- 			return( addCredential( sessionInfoPtr, data, dataLength, 
- 								   attribute ) );
- 
--		case CRYPT_SESSINFO_SSH_TERMINAL:
--		case CRYPT_SESSINFO_SSH_WIDTH:
--		case CRYPT_SESSINFO_SSH_HEIGHT:
- 		case CRYPT_SESSINFO_SERVER_FINGERPRINT_SHA1:
- 			/* Remember the value */
- 			return( addSessionInfoS( sessionInfoPtr, attribute, data, 
-@@ -1031,7 +1018,6 @@
- 			sessionInfoPtr->writeTimeout = CRYPT_ERROR;
- 			return( CRYPT_OK );
- 
--		case CRYPT_SESSINFO_SSH_TERMINAL:
- 		case CRYPT_SESSINFO_USERNAME:
- 		case CRYPT_SESSINFO_PASSWORD:
- 		case CRYPT_SESSINFO_SERVER_NAME:
---- kernel/attr_acl.c.orig	2023-12-31 08:42:47.250931000 -0500
-+++ kernel/attr_acl.c	2023-12-31 08:43:02.362902000 -0500
-@@ -3648,6 +3648,49 @@
- 	MKACL_END_SUBACL(), MKACL_END_SUBACL()
- 	};
- 
-+static const ATTRIBUTE_ACL subACL_SessinfoSSHChannelTerminal[] = {
-+	MKACL_S(	/* SSH client: Read/write */
-+		/* Shortest valid name = "sftp" */
-+		CRYPT_SESSINFO_SSH_CHANNEL_TERMINAL,
-+		ST_NONE, ST_NONE, ST_SESS_SSH, 
-+		MKPERM_SSH_EXT( RWx_RWx ),
-+		ROUTE( OBJECT_TYPE_SESSION ), RANGE( 1, CRYPT_MAX_TEXTSIZE ) ),
-+	MKACL_S(	/* SSH server: Read-only info from client */
-+		CRYPT_SESSINFO_SSH_CHANNEL_TERMINAL,
-+		ST_NONE, ST_NONE, ST_SESS_SSH_SVR, 
-+		MKPERM_SSH_EXT( RWx_xxx ),
-+		ROUTE( OBJECT_TYPE_SESSION ), RANGE( 1, CRYPT_MAX_TEXTSIZE ) ),
-+	MKACL_END_SUBACL(), MKACL_END_SUBACL()
-+	};
-+
-+static const ATTRIBUTE_ACL subACL_SessinfoSSHChannelWidth[] = {
-+	MKACL_N(	/* SSH client: Read/write */
-+		CRYPT_SESSINFO_SSH_CHANNEL_WIDTH,
-+		ST_NONE, ST_NONE, ST_SESS_SSH, 
-+		MKPERM_SSH_EXT( RWx_RWx ),
-+		ROUTE( OBJECT_TYPE_SESSION ), RANGE( 0, 800 ) ),
-+	MKACL_N(	/* SSH server: Read-only info from client */
-+		CRYPT_SESSINFO_SSH_CHANNEL_WIDTH,
-+		ST_NONE, ST_NONE, ST_SESS_SSH_SVR, 
-+		MKPERM_SSH_EXT( RWx_xxx ),
-+		ROUTE( OBJECT_TYPE_SESSION ), RANGE( 0, 800 ) ),
-+	MKACL_END_SUBACL(), MKACL_END_SUBACL()
-+	};
-+
-+static const ATTRIBUTE_ACL subACL_SessinfoSSHChannelHeight[] = {
-+	MKACL_N(	/* SSH client: Read/write */
-+		CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT,
-+		ST_NONE, ST_NONE, ST_SESS_SSH, 
-+		MKPERM_SSH_EXT( RWx_RWx ),
-+		ROUTE( OBJECT_TYPE_SESSION ), RANGE( 0, 800 ) ),
-+	MKACL_N(	/* SSH server: Read-only info from client */
-+		CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT,
-+		ST_NONE, ST_NONE, ST_SESS_SSH_SVR, 
-+		MKPERM_SSH_EXT( RWx_xxx ),
-+		ROUTE( OBJECT_TYPE_SESSION ), RANGE( 0, 800 ) ),
-+	MKACL_END_SUBACL(), MKACL_END_SUBACL()
-+	};
-+
- /* Session attributes */
- 
- static const ATTRIBUTE_ACL sessionACL[] = {
-@@ -3877,24 +3920,24 @@
- 		MKPERM_TSP( xWD_xWD ),
- 		ROUTE( OBJECT_TYPE_SESSION ), &objectCtxHash ),
- 
--	MKACL_S(	/* SSH client: Read/write */
--		CRYPT_SESSINFO_SSH_TERMINAL,
--		ST_NONE, ST_NONE, ST_SESS_SSH, 
--		0xffffffff /*MKPERM_SSH_EXT( RWD_RWD )*/,
-+	MKACL_ST(	/* SSH client: Read/write */
-+		CRYPT_SESSINFO_SSH_CHANNEL_TERMINAL,
-+		ST_NONE, ST_NONE, ST_SESS_SSH | ST_SESS_SSH_SVR, 
-+		MKPERM_SSH_EXT( RWx_RWx ),
- 		ROUTE( OBJECT_TYPE_SESSION ),
--		RANGE( 1, CRYPT_MAX_TEXTSIZE ) ),
--	MKACL_N(	/* SSH client: Read/write */
--		CRYPT_SESSINFO_SSH_WIDTH,
--		ST_NONE, ST_NONE, ST_SESS_SSH, 
--		0xffffffff /*MKPERM_SSH_EXT( RWD_RWD )*/,
-+		subACL_SessinfoSSHChannelTerminal ),
-+	MKACL_ST(	/* SSH client: Read/write */
-+		CRYPT_SESSINFO_SSH_CHANNEL_WIDTH,
-+		ST_NONE, ST_NONE, ST_SESS_SSH | ST_SESS_SSH_SVR, 
-+		MKPERM_SSH_EXT( RWx_RWx ),
- 		ROUTE( OBJECT_TYPE_SESSION ),
--		RANGE( 1, 800 ) ),
--	MKACL_N(	/* SSH client: Read/write */
--		CRYPT_SESSINFO_SSH_HEIGHT,
--		ST_NONE, ST_NONE, ST_SESS_SSH, 
--		0xffffffff /*MKPERM_SSH_EXT( RWD_RWD )*/,
-+		subACL_SessinfoSSHChannelWidth ),
-+	MKACL_ST(	/* SSH client: Read/write */
-+		CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT,
-+		ST_NONE, ST_NONE, ST_SESS_SSH | ST_SESS_SSH_SVR, 
-+		MKPERM_SSH_EXT( RWx_RWx ),
- 		ROUTE( OBJECT_TYPE_SESSION ),
--		RANGE( 1, 800 ) ),
-+		subACL_SessinfoSSHChannelHeight ),
- 
- 	MKACL_END(), MKACL_END()
- 	};
-@@ -4883,7 +4926,7 @@
- 	static_assert( CRYPT_CERTINFO_FIRST_EXTENSION == 2200, "Attribute value" );
- 	static_assert( CRYPT_CERTINFO_FIRST_CMS == 2500, "Attribute value" );
- 	static_assert( CRYPT_SESSINFO_FIRST_SPECIFIC == 6017, "Attribute value" );
--	static_assert( CRYPT_SESSINFO_LAST_SPECIFIC == 6036, "Attribute value" );
-+	static_assert( CRYPT_SESSINFO_LAST_SPECIFIC == 6039, "Attribute value" );
- 	static_assert( CRYPT_CERTFORMAT_LAST == 13, "Attribute value" );
- 
- 	/* Perform a consistency check on the attribute ACLs.  The ACLs are
---- ./session/ssh.c.orig	2024-01-07 21:24:52.912681000 -0500
-+++ ./session/ssh.c	2024-01-07 21:25:24.857224000 -0500
+--- ./session/ssh.c.orig	2024-10-31 00:50:22.236542000 -0400
++++ ./session/ssh.c	2024-10-31 00:50:22.459542000 -0400
 @@ -541,6 +541,9 @@
  			  type == CRYPT_SESSINFO_SSH_CHANNEL_ARG2 || \
  			  type == CRYPT_SESSINFO_SSH_CHANNEL_ACTIVE || \
@@ -375,3 +274,104 @@
  		status = setChannelAttribute( sessionInfoPtr, type, value );
  	else
  		{
+--- ./kernel/attr_acl.c.orig	2024-10-31 00:50:22.241228000 -0400
++++ ./kernel/attr_acl.c	2024-10-31 00:50:22.454000000 -0400
+@@ -3679,6 +3679,49 @@
+ 	MKACL_END_SUBACL(), MKACL_END_SUBACL()
+ 	};
+ 
++static const ATTRIBUTE_ACL subACL_SessinfoSSHChannelTerminal[] = {
++	MKACL_S(	/* SSH client: Read/write */
++		/* Shortest valid name = "sftp" */
++		CRYPT_SESSINFO_SSH_CHANNEL_TERMINAL,
++		ST_NONE, ST_NONE, ST_SESS_SSH, 
++		MKPERM_SSH_EXT( RWx_RWx ),
++		ROUTE( OBJECT_TYPE_SESSION ), RANGE( 1, CRYPT_MAX_TEXTSIZE ) ),
++	MKACL_S(	/* SSH server: Read-only info from client */
++		CRYPT_SESSINFO_SSH_CHANNEL_TERMINAL,
++		ST_NONE, ST_NONE, ST_SESS_SSH_SVR, 
++		MKPERM_SSH_EXT( RWx_xxx ),
++		ROUTE( OBJECT_TYPE_SESSION ), RANGE( 1, CRYPT_MAX_TEXTSIZE ) ),
++	MKACL_END_SUBACL(), MKACL_END_SUBACL()
++	};
++
++static const ATTRIBUTE_ACL subACL_SessinfoSSHChannelWidth[] = {
++	MKACL_N(	/* SSH client: Read/write */
++		CRYPT_SESSINFO_SSH_CHANNEL_WIDTH,
++		ST_NONE, ST_NONE, ST_SESS_SSH, 
++		MKPERM_SSH_EXT( RWx_RWx ),
++		ROUTE( OBJECT_TYPE_SESSION ), RANGE( 0, 800 ) ),
++	MKACL_N(	/* SSH server: Read-only info from client */
++		CRYPT_SESSINFO_SSH_CHANNEL_WIDTH,
++		ST_NONE, ST_NONE, ST_SESS_SSH_SVR, 
++		MKPERM_SSH_EXT( RWx_xxx ),
++		ROUTE( OBJECT_TYPE_SESSION ), RANGE( 0, 800 ) ),
++	MKACL_END_SUBACL(), MKACL_END_SUBACL()
++	};
++
++static const ATTRIBUTE_ACL subACL_SessinfoSSHChannelHeight[] = {
++	MKACL_N(	/* SSH client: Read/write */
++		CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT,
++		ST_NONE, ST_NONE, ST_SESS_SSH, 
++		MKPERM_SSH_EXT( RWx_RWx ),
++		ROUTE( OBJECT_TYPE_SESSION ), RANGE( 0, 800 ) ),
++	MKACL_N(	/* SSH server: Read-only info from client */
++		CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT,
++		ST_NONE, ST_NONE, ST_SESS_SSH_SVR, 
++		MKPERM_SSH_EXT( RWx_xxx ),
++		ROUTE( OBJECT_TYPE_SESSION ), RANGE( 0, 800 ) ),
++	MKACL_END_SUBACL(), MKACL_END_SUBACL()
++	};
++
+ /* Session attributes */
+ 
+ static const ATTRIBUTE_ACL sessionACL[] = {
+@@ -3914,24 +3957,24 @@
+ 		MKPERM_TSP( xWD_xWD ),
+ 		ROUTE( OBJECT_TYPE_SESSION ), &objectCtxHash ),
+ 
+-	MKACL_S(	/* SSH client: Read/write */
+-		CRYPT_SESSINFO_SSH_TERMINAL,
+-		ST_NONE, ST_NONE, ST_SESS_SSH, 
+-		0xffffffff /*MKPERM_SSH_EXT( RWD_RWD )*/,
++	MKACL_ST(	/* SSH client: Read/write */
++		CRYPT_SESSINFO_SSH_CHANNEL_TERMINAL,
++		ST_NONE, ST_NONE, ST_SESS_SSH | ST_SESS_SSH_SVR, 
++		MKPERM_SSH_EXT( RWx_RWx ),
+ 		ROUTE( OBJECT_TYPE_SESSION ),
+-		RANGE( 1, CRYPT_MAX_TEXTSIZE ) ),
+-	MKACL_N(	/* SSH client: Read/write */
+-		CRYPT_SESSINFO_SSH_WIDTH,
+-		ST_NONE, ST_NONE, ST_SESS_SSH, 
+-		0xffffffff /*MKPERM_SSH_EXT( RWD_RWD )*/,
++		subACL_SessinfoSSHChannelTerminal ),
++	MKACL_ST(	/* SSH client: Read/write */
++		CRYPT_SESSINFO_SSH_CHANNEL_WIDTH,
++		ST_NONE, ST_NONE, ST_SESS_SSH | ST_SESS_SSH_SVR, 
++		MKPERM_SSH_EXT( RWx_RWx ),
+ 		ROUTE( OBJECT_TYPE_SESSION ),
+-		RANGE( 1, 800 ) ),
+-	MKACL_N(	/* SSH client: Read/write */
+-		CRYPT_SESSINFO_SSH_HEIGHT,
+-		ST_NONE, ST_NONE, ST_SESS_SSH, 
+-		0xffffffff /*MKPERM_SSH_EXT( RWD_RWD )*/,
++		subACL_SessinfoSSHChannelWidth ),
++	MKACL_ST(	/* SSH client: Read/write */
++		CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT,
++		ST_NONE, ST_NONE, ST_SESS_SSH | ST_SESS_SSH_SVR, 
++		MKPERM_SSH_EXT( RWx_RWx ),
+ 		ROUTE( OBJECT_TYPE_SESSION ),
+-		RANGE( 1, 800 ) ),
++		subACL_SessinfoSSHChannelHeight ),
+ 
+ 	MKACL_END(), MKACL_END()
+ 	};
+@@ -4920,7 +4963,7 @@
+ 	static_assert( CRYPT_CERTINFO_FIRST_EXTENSION == 2200, "Attribute value" );
+ 	static_assert( CRYPT_CERTINFO_FIRST_CMS == 2500, "Attribute value" );
+ 	static_assert( CRYPT_SESSINFO_FIRST_SPECIFIC == 6017, "Attribute value" );
+-	static_assert( CRYPT_SESSINFO_LAST_SPECIFIC == 6036, "Attribute value" );
++	static_assert( CRYPT_SESSINFO_LAST_SPECIFIC == 6039, "Attribute value" );
+ 	static_assert( CRYPT_CERTFORMAT_LAST == 13, "Attribute value" );
+ 
+ 	/* Perform a consistency check on the attribute ACLs.  The ACLs are

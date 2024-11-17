@@ -1,5 +1,5 @@
---- session/ssh2_msg.c.orig	2024-01-23 16:22:31.757678000 -0500
-+++ session/ssh2_msg.c	2024-01-23 16:25:32.829132000 -0500
+--- ./session/ssh2_msg.c.orig	2024-10-31 00:50:22.886368000 -0400
++++ ./session/ssh2_msg.c	2024-10-31 00:50:23.294965000 -0400
 @@ -468,6 +468,16 @@
  			   close before sending a disconnect message, so we record the
  			   presence of an EOF in the log in case this turns into a 

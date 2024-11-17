@@ -1,5 +1,5 @@
---- cryptlib.h.orig	2024-01-18 23:57:53.642105000 -0500
-+++ cryptlib.h	2024-01-18 23:58:23.323178000 -0500
+--- ./cryptlib.h.orig	2024-10-31 00:50:22.829934000 -0400
++++ ./cryptlib.h	2024-10-31 00:50:23.029627000 -0400
 @@ -1236,6 +1236,7 @@
  	CRYPT_SESSINFO_PASSWORD,		/* Password */
  	CRYPT_SESSINFO_AUTHTOKEN,		/* Authentication token, e.g. TOTP */
@@ -8,49 +8,8 @@
  	CRYPT_SESSINFO_KEYSET,			/* Certificate store */
  	CRYPT_SESSINFO_AUTHRESPONSE,	/* Session authorisation OK */
  
---- kernel/attr_acl.c.orig	2024-01-19 00:01:33.318597000 -0500
-+++ kernel/attr_acl.c	2024-01-19 00:06:16.927122000 -0500
-@@ -3739,6 +3739,15 @@
- 		MKPERM_SESSIONS( xWx_xWx ),
- 		ROUTE( OBJECT_TYPE_SESSION ),
- 		subACL_SessinfoPrivatekey ),
-+	MKACL_S(	/* Other side public key */
-+		/* We can read this attribute in the low state because we might be
-+		   going back to the caller for confirmation before we transition
-+		   into the high state */
-+		CRYPT_SESSINFO_PUBLICKEY,
-+		ST_NONE, ST_NONE, ST_SESS_SSH_SVR, 
-+		MKPERM_SESSIONS( Rxx_Rxx ),
-+		ROUTE( OBJECT_TYPE_SESSION ),
-+		RANGE( 1, CRYPT_MAX_TEXTSIZE ) ),
- 	MKACL_ST(	/* Certificate store/auth.keyset */
- 		CRYPT_SESSINFO_KEYSET,
- 		ST_NONE, ST_NONE, MK_ST_EXCEPTION( ST_SESS_ANY_SVR, ST_SESS_TSP_SVR ) | \
-@@ -4942,8 +4951,8 @@
- 	static_assert( CRYPT_CERTINFO_LAST_GENERALNAME == 2115, "Attribute value" );
- 	static_assert( CRYPT_CERTINFO_FIRST_EXTENSION == 2200, "Attribute value" );
- 	static_assert( CRYPT_CERTINFO_FIRST_CMS == 2500, "Attribute value" );
--	static_assert( CRYPT_SESSINFO_FIRST_SPECIFIC == 6017, "Attribute value" );
--	static_assert( CRYPT_SESSINFO_LAST_SPECIFIC == 6040, "Attribute value" );
-+	static_assert( CRYPT_SESSINFO_FIRST_SPECIFIC == 6018, "Attribute value" );
-+	static_assert( CRYPT_SESSINFO_LAST_SPECIFIC == 6041, "Attribute value" );
- 	static_assert( CRYPT_CERTFORMAT_LAST == 13, "Attribute value" );
- 
- 	/* Perform a consistency check on the attribute ACLs.  The ACLs are
---- session/sess_iattr.c.orig	2024-01-19 02:24:29.979555000 -0500
-+++ session/sess_iattr.c	2024-01-19 02:25:37.172862000 -0500
-@@ -327,7 +327,8 @@
- 			attributeListPtr = DATAPTR_GET( attributeListPtr->next );
- 			if( attributeListPtr == NULL || \
- 				( attributeListPtr->attributeID != CRYPT_SESSINFO_PASSWORD && \
--				  attributeListPtr->attributeID != CRYPT_SESSINFO_AUTHTOKEN ) )
-+				  attributeListPtr->attributeID != CRYPT_SESSINFO_AUTHTOKEN && \
-+				  attributeListPtr->attributeID != CRYPT_SESSINFO_PUBLICKEY ) )
- 				{
- 				/* We report the missing attribute as a password, which is 
- 				   more likely and more understandable than a missing 
---- session/ssh2_authsvr.c.orig	2023-02-26 03:33:26.000000000 -0500
-+++ session/ssh2_authsvr.c	2024-01-19 12:21:51.007398000 -0500
+--- ./session/ssh2_authsvr.c.orig	2023-02-26 03:33:26.000000000 -0500
++++ ./session/ssh2_authsvr.c	2024-10-31 00:50:23.044734000 -0400
 @@ -396,7 +396,7 @@
  	/* If we've already seen a standard authentication method then the new 
  	   method must be the same */
@@ -278,9 +237,9 @@
  		}
  	sMemDisconnect( &stream );
  	CFI_CHECK_UPDATE( "SSH_AUTHTYPE_PUBKEY" );
---- session/sess_attr.c.orig	2024-01-19 15:00:59.583402000 -0500
-+++ session/sess_attr.c	2024-01-19 15:01:28.125584000 -0500
-@@ -884,6 +884,7 @@
+--- ./session/sess_attr.c.orig	2024-10-31 00:50:22.601581000 -0400
++++ ./session/sess_attr.c	2024-10-31 00:50:23.048496000 -0400
+@@ -913,6 +913,7 @@
  		case CRYPT_SESSINFO_SERVER_FINGERPRINT_SHA1:
  		case CRYPT_SESSINFO_SERVER_NAME:
  		case CRYPT_SESSINFO_CLIENT_NAME:
@@ -288,3 +247,44 @@
  			attributeListPtr = findSessionInfo( sessionInfoPtr, attribute );
  			if( attributeListPtr == NULL )
  				return( exitErrorNotInited( sessionInfoPtr, attribute ) );
+--- ./session/sess_iattr.c.orig	2023-06-06 00:20:48.000000000 -0400
++++ ./session/sess_iattr.c	2024-10-31 00:50:23.040192000 -0400
+@@ -327,7 +327,8 @@
+ 			attributeListPtr = DATAPTR_GET( attributeListPtr->next );
+ 			if( attributeListPtr == NULL || \
+ 				( attributeListPtr->attributeID != CRYPT_SESSINFO_PASSWORD && \
+-				  attributeListPtr->attributeID != CRYPT_SESSINFO_AUTHTOKEN ) )
++				  attributeListPtr->attributeID != CRYPT_SESSINFO_AUTHTOKEN && \
++				  attributeListPtr->attributeID != CRYPT_SESSINFO_PUBLICKEY ) )
+ 				{
+ 				/* We report the missing attribute as a password, which is 
+ 				   more likely and more understandable than a missing 
+--- ./kernel/attr_acl.c.orig	2024-10-31 00:50:22.675666000 -0400
++++ ./kernel/attr_acl.c	2024-10-31 00:50:23.034531000 -0400
+@@ -3770,6 +3770,15 @@
+ 		MKPERM_SESSIONS( xWx_xWx ),
+ 		ROUTE( OBJECT_TYPE_SESSION ),
+ 		subACL_SessinfoPrivatekey ),
++	MKACL_S(	/* Other side public key */
++		/* We can read this attribute in the low state because we might be
++		   going back to the caller for confirmation before we transition
++		   into the high state */
++		CRYPT_SESSINFO_PUBLICKEY,
++		ST_NONE, ST_NONE, ST_SESS_SSH_SVR, 
++		MKPERM_SESSIONS( Rxx_Rxx ),
++		ROUTE( OBJECT_TYPE_SESSION ),
++		RANGE( 1, CRYPT_MAX_TEXTSIZE ) ),
+ 	MKACL_ST(	/* Certificate store/auth.keyset */
+ 		CRYPT_SESSINFO_KEYSET,
+ 		ST_NONE, ST_NONE, MK_ST_EXCEPTION( ST_SESS_ANY_SVR, ST_SESS_TSP_SVR ) | \
+@@ -4973,8 +4982,8 @@
+ 	static_assert( CRYPT_CERTINFO_LAST_GENERALNAME == 2115, "Attribute value" );
+ 	static_assert( CRYPT_CERTINFO_FIRST_EXTENSION == 2200, "Attribute value" );
+ 	static_assert( CRYPT_CERTINFO_FIRST_CMS == 2500, "Attribute value" );
+-	static_assert( CRYPT_SESSINFO_FIRST_SPECIFIC == 6017, "Attribute value" );
+-	static_assert( CRYPT_SESSINFO_LAST_SPECIFIC == 6040, "Attribute value" );
++	static_assert( CRYPT_SESSINFO_FIRST_SPECIFIC == 6018, "Attribute value" );
++	static_assert( CRYPT_SESSINFO_LAST_SPECIFIC == 6041, "Attribute value" );
+ 	static_assert( CRYPT_CERTFORMAT_LAST == 13, "Attribute value" );
+ 
+ 	/* Perform a consistency check on the attribute ACLs.  The ACLs are

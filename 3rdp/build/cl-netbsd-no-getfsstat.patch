@@ -1,6 +1,6 @@
---- random/unix.c.orig	2023-06-15 21:31:00.000000000 -0400
-+++ random/unix.c	2024-02-04 00:09:42.916028000 -0500
-@@ -560,8 +560,10 @@
+--- ./random/unix.c.orig	2024-09-17 19:34:46.000000000 -0400
++++ ./random/unix.c	2024-10-31 00:50:23.241421000 -0400
+@@ -564,8 +564,10 @@
  									/* IPv4 routing table */
  	{ 6, { CTL_NET, AF_ROUTE, 0, AF_INET6, NET_RT_DUMP, 0 }, 5 },
  									/* IPv6 routing table */
@@ -11,7 +11,7 @@
  
  	/* VM info */
  #ifdef VM_LOADAVG 
-@@ -747,7 +749,7 @@
+@@ -751,7 +753,7 @@
  
  /* BSD-specific polling using getfsstat() */
  
