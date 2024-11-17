@@ -549,8 +549,11 @@ bool ftp_remove(SOCKET sock, int line, const char* fname, const char* username, 
 	int ret=0;
 
 	if(fexist(fname) && (ret=remove(fname))!=0) {
-		if(fexist(fname))	// In case there was a race condition (other host deleted file first)
-			lprintf(err_level, "%04d <%s> !ERROR %d (%s) (line %d) removing file: %s", sock, username, errno, strerror(errno), line, fname);
+		if(fexist(fname)) {	// In case there was a race condition (other host deleted file first)
+			char error[256];
+			lprintf(err_level, "%04d <%s> !ERROR %d (%s) (line %d) removing file: %s"
+				,sock, username, errno, safe_strerror(errno, error, sizeof error), line, fname);
+		}
 	}
 	return ret == 0;
 }
@@ -579,6 +582,7 @@ static void send_thread(void* arg)
 {
 	char		buf[8192];
 	char		str[256];
+	char		errstr[256];
 	char		tmp[128];
 	char		username[128];
 	char		host_ip[INET6_ADDRSTRLEN];
@@ -631,8 +635,8 @@ static void send_thread(void* arg)
 	if((fp=fnopen(NULL,xfer.filename,O_RDONLY|O_BINARY))==NULL	/* non-shareable open failed */
 		&& (fp=fopen(xfer.filename,"rb"))==NULL) {				/* shareable open failed */
 		lprintf(LOG_ERR,"%04d <%s> !DATA ERROR %d (%s) line %d opening %s"
-			,xfer.ctrl_sock, xfer.user->alias, errno, strerror(errno), __LINE__, xfer.filename);
-		sockprintf(xfer.ctrl_sock,xfer.ctrl_sess,"450 ERROR %d (%s) opening %s", errno, strerror(errno), xfer.filename);
+			,xfer.ctrl_sock, xfer.user->alias, errno, safe_strerror(errno, errstr, sizeof errstr), __LINE__, xfer.filename);
+		sockprintf(xfer.ctrl_sock,xfer.ctrl_sess,"450 ERROR %d (%s) opening %s", errno, safe_strerror(errno, errstr, sizeof errstr), xfer.filename);
 		if(xfer.tmpfile && !(startup->options&FTP_OPT_KEEP_TEMP_FILES))
 			ftp_remove(xfer.ctrl_sock, __LINE__, xfer.filename, xfer.user->alias, LOG_ERR);
 		ftp_close_socket(xfer.data_sock,xfer.data_sess,__LINE__);
@@ -756,8 +760,8 @@ static void send_thread(void* arg)
 	}
 
 	if((i=ferror(fp))!=0)
-		lprintf(LOG_ERR,"%04d <%s> !DATA FILE ERROR %d (%d, %s)"
-			,xfer.ctrl_sock, xfer.user->alias, i, errno, strerror(errno));
+		lprintf(LOG_ERR,"%04d <%s> !DATA FILE ERROR %d (errno=%d: %s)"
+			,xfer.ctrl_sock, xfer.user->alias, i, errno, safe_strerror(errno, errstr, sizeof errstr));
 
 	ftp_close_socket(xfer.data_sock,xfer.data_sess,__LINE__);	/* Signal end of file */
 	if(startup->options&FTP_OPT_DEBUG_DATA)
@@ -870,6 +874,7 @@ static void send_thread(void* arg)
 static void receive_thread(void* arg)
 {
 	char		str[128];
+	char		errstr[256];
 	char		buf[8192];
 	char		extdesc[LEN_EXTDESC + 1] = "";
 	char		tmp[MAX_PATH+1];
@@ -896,8 +901,8 @@ static void receive_thread(void* arg)
 
 	if((fp=fopen(xfer.filename,xfer.append ? "ab" : "wb"))==NULL) {
 		lprintf(LOG_ERR,"%04d <%s> !DATA ERROR %d (%s) line %d opening %s"
-			,xfer.ctrl_sock, xfer.user->alias, errno, strerror(errno), __LINE__, xfer.filename);
-		sockprintf(xfer.ctrl_sock,xfer.ctrl_sess,"450 ERROR %d (%s) opening %s", errno, strerror(errno), xfer.filename);
+			,xfer.ctrl_sock, xfer.user->alias, errno, safe_strerror(errno, errstr, sizeof errstr), __LINE__, xfer.filename);
+		sockprintf(xfer.ctrl_sock,xfer.ctrl_sess,"450 ERROR %d (%s) opening %s", errno, safe_strerror(errno, errstr, sizeof errstr), xfer.filename);
 		ftp_close_socket(xfer.data_sock,xfer.data_sess,__LINE__);
 		*xfer.inprogress=FALSE;
 		thread_down();
@@ -2119,6 +2124,7 @@ static void ctrl_thread(void* arg)
 	char		str[128];
 	char		uniq[33];
 	char		owner[33];
+	char		error[256];
 	char*		cmd;
 	char*		p;
 	char*		np;
@@ -2510,8 +2516,8 @@ static void ctrl_thread(void* arg)
 			SKIP_WHITESPACE(p);
 
 			SAFECOPY(password,p);
-			int usernum = find_login_id(&scfg, user.alias);
-			if(usernum < 1) {
+			uint usernum = find_login_id(&scfg, user.alias);
+			if(usernum == 0) {
 				if(scfg.sys_misc&SM_ECHO_PW)
 					lprintf(LOG_NOTICE,"%04d !UNKNOWN USER: '%s' (password: %s)",sock,user.alias,p);
 				else
@@ -2522,8 +2528,8 @@ static void ctrl_thread(void* arg)
 			}
 			user.number = usernum;
 			if((i=getuserdat(&scfg, &user))!=0) {
-				lprintf(LOG_ERR,"%04d <%s> !ERROR %d (errno=%d) getting data for user #%d"
-					,sock, user.alias, i, errno, usernum);
+				lprintf(LOG_ERR,"%04d <%s> !ERROR %d (errno=%d: %s) getting data for user #%d"
+					,sock, user.alias, i, errno, safe_strerror(errno, error, sizeof error), usernum);
 				sockprintf(sock,sess,"530 Database error %d",i);
 				continue;
 			}
@@ -3224,7 +3230,7 @@ static void ctrl_thread(void* arg)
 					if (cmd[3] == 'D') {
 						if((fp=fopen(ftp_tmpfname(fname,"lst",sock),"w+b"))==NULL) {
 							lprintf(LOG_ERR,"%04d <%s> !ERROR %d (%s) line %d opening %s"
-								,sock, user.alias, errno, strerror(errno), __LINE__, fname);
+								,sock, user.alias, errno, safe_strerror(errno, error, sizeof error), __LINE__, fname);
 							sockprintf(sock,sess, "451 Insufficient system storage");
 							continue;
 						}
@@ -3305,7 +3311,7 @@ static void ctrl_thread(void* arg)
 
 				if((fp=fopen(ftp_tmpfname(fname,"lst",sock),"w+b"))==NULL) {
 					lprintf(LOG_ERR,"%04d <%s> !ERROR %d (%s) line %d opening %s"
-						,sock, user.alias, errno, strerror(errno), __LINE__, fname);
+						,sock, user.alias, errno, safe_strerror(errno, error, sizeof error), __LINE__, fname);
 					sockprintf(sock,sess, "451 Insufficient system storage");
 					continue;
 				}
@@ -3450,7 +3456,7 @@ static void ctrl_thread(void* arg)
 				} else {
 					sockprintf(sock,sess,"521 Error %d creating directory: %s",errno,fname);
 					lprintf(LOG_WARNING,"%04d <%s> !ERROR %d (%s) attempting to create directory: %s"
-						,sock,user.alias,errno,strerror(errno),fname);
+						,sock,user.alias,errno,safe_strerror(errno, error, sizeof error),fname);
 				}
 				continue;
 			}
@@ -3469,7 +3475,7 @@ static void ctrl_thread(void* arg)
 				} else {
 					sockprintf(sock,sess,"450 Error %d removing directory: %s", errno, fname);
 					lprintf(LOG_WARNING,"%04d <%s> !ERROR %d (%s) removing directory: %s"
-						,sock, user.alias, errno, strerror(errno), fname);
+						,sock, user.alias, errno, safe_strerror(errno, error, sizeof error), fname);
 				}
 				continue;
 			}
@@ -3504,7 +3510,7 @@ static void ctrl_thread(void* arg)
 				} else {
 					sockprintf(sock,sess,"450 Error %d renaming file: %s", errno, ren_from);
 					lprintf(LOG_WARNING,"%04d <%s> !ERRROR %d (%s) renaming file: %s"
-						,sock, user.alias, errno, strerror(errno), ren_from);
+						,sock, user.alias, errno, safe_strerror(errno, error, sizeof error), ren_from);
 				}
 				continue;
 			}
@@ -3549,7 +3555,7 @@ static void ctrl_thread(void* arg)
 					} else {
 						sockprintf(sock,sess,"450 Error %d removing file: %s", errno, fname);
 						lprintf(LOG_WARNING,"%04d <%s> !ERROR %d (%s) deleting file: %s"
-							,sock, user.alias, errno, strerror(errno), fname);
+							,sock, user.alias, errno, safe_strerror(errno, error, sizeof error), fname);
 					}
 					continue;
 				}
@@ -3640,7 +3646,7 @@ static void ctrl_thread(void* arg)
 				if (cmd[3] == 'D') {
 					if((fp=fopen(ftp_tmpfname(fname,"lst",sock),"w+b"))==NULL) {
 						lprintf(LOG_ERR,"%04d <%s> !ERROR %d (%s) line %d opening %s"
-							,sock, user.alias, errno, strerror(errno), __LINE__, fname);
+							,sock, user.alias, errno, safe_strerror(errno, error, sizeof error), __LINE__, fname);
 						sockprintf(sock,sess, "451 Insufficient system storage");
 						continue;
 					}
@@ -3913,7 +3919,7 @@ static void ctrl_thread(void* arg)
 
 			if((fp=fopen(ftp_tmpfname(fname,"lst",sock),"w+b"))==NULL) {
 				lprintf(LOG_ERR,"%04d <%s> !ERROR %d (%s) line %d opening %s"
-					,sock, user.alias, errno, strerror(errno), __LINE__, fname);
+					,sock, user.alias, errno, safe_strerror(errno, error, sizeof error), __LINE__, fname);
 				sockprintf(sock,sess, "451 Insufficient system storage");
 				continue;
 			}
@@ -4268,10 +4274,13 @@ static void ctrl_thread(void* arg)
 				&& !stricmp(p,str) && !delecmd) {
 				if(!fexistcase(qwkfile)) {
 					lprintf(LOG_INFO,"%04d <%s> creating QWK packet...",sock,user.alias);
-					sprintf(str,"%spack%04u.now",scfg.data_dir,user.number);
+					char hostname[128];
+					if(gethostname(hostname, sizeof hostname) != 0)
+						SAFECOPY(hostname, server_host_name());
+					snprintf(str, sizeof str, "%spack%04u.%s.now",scfg.data_dir,user.number,hostname);
 					if(!fmutex(str, startup->host_name, /* max_age: */60 * 60, /* time: */NULL)) {
 						lprintf(LOG_WARNING, "%04d <%s> !ERROR %d (%s) creating mutex-semaphore file: %s"
-							,sock, user.alias, errno, strerror(errno), str);
+							,sock, user.alias, errno, safe_strerror(errno, error, sizeof error), str);
 						sockprintf(sock,sess,"451 Packet creation already in progress (are you logged-in concurrently?)");
 						filepos=0;
 						continue;
@@ -4331,7 +4340,7 @@ static void ctrl_thread(void* arg)
 				}
 				if((fp=fopen(ftp_tmpfname(fname,"ndx",sock),"wb"))==NULL) {
 					lprintf(LOG_ERR,"%04d <%s> !ERROR %d (%s) line %d opening %s"
-						,sock, user.alias, errno, strerror(errno), __LINE__, fname);
+						,sock, user.alias, errno, safe_strerror(errno, error, sizeof error), __LINE__, fname);
 					sockprintf(sock,sess, "451 Insufficient system storage");
 					filepos=0;
 					continue;
@@ -4527,7 +4536,8 @@ static void ctrl_thread(void* arg)
 					,tm.tm_hour,tm.tm_min,tm.tm_sec);
 			} else if(delecmd && success) {
 				if(removecase(fname)!=0) {
-					lprintf(LOG_ERR,"%04d <%s> !ERROR %d (%s) deleting %s", sock, user.alias, errno, strerror(errno), fname);
+					lprintf(LOG_ERR,"%04d <%s> !ERROR %d (%s) deleting %s"
+						,sock, user.alias, errno, safe_strerror(errno, error, sizeof error), fname);
 					sockprintf(sock,sess,"450 %s could not be deleted (error: %d)"
 						,fname,errno);
 				} else {
@@ -5130,7 +5140,8 @@ void ftp_server(void* arg)
 			,ctime_r(&t,str),startup->options);
 
 		if(chdir(startup->ctrl_dir)!=0)
-			lprintf(LOG_ERR,"!ERROR %d (%s) changing directory to: %s", errno, strerror(errno), startup->ctrl_dir);
+			lprintf(LOG_ERR,"!ERROR %d (%s) changing directory to: %s"
+				,errno, safe_strerror(errno, error, sizeof error), startup->ctrl_dir);
 
 		/* Initial configuration and load from CNF files */
 		SAFECOPY(scfg.ctrl_dir, startup->ctrl_dir);
