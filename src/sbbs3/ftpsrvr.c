@@ -2510,8 +2510,8 @@ static void ctrl_thread(void* arg)
 			SKIP_WHITESPACE(p);
 
 			SAFECOPY(password,p);
-			user.number = find_login_id(&scfg, user.alias);
-			if(!user.number) {
+			int usernum = find_login_id(&scfg, user.alias);
+			if(usernum < 1) {
 				if(scfg.sys_misc&SM_ECHO_PW)
 					lprintf(LOG_NOTICE,"%04d !UNKNOWN USER: '%s' (password: %s)",sock,user.alias,p);
 				else
@@ -2520,11 +2520,11 @@ static void ctrl_thread(void* arg)
 					break;
 				continue;
 			}
+			user.number = usernum;
 			if((i=getuserdat(&scfg, &user))!=0) {
-				lprintf(LOG_ERR,"%04d <%s> !ERROR %d getting data for user #%d"
-					,sock, user.alias, i, user.number);
+				lprintf(LOG_ERR,"%04d <%s> !ERROR %d (errno=%d) getting data for user #%d"
+					,sock, user.alias, i, errno, usernum);
 				sockprintf(sock,sess,"530 Database error %d",i);
-				user.number=0;
 				continue;
 			}
 			if(user.misc&(DELETED|INACTIVE)) {
