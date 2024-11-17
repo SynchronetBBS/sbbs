@@ -152,6 +152,9 @@ bool matchusername(scfg_t* cfg, const char* name, const char* comp)
 }
 
 /****************************************************************************/
+// Given a login-ID (user number, alias, or real name), return the user
+// number or 0 on failure
+/****************************************************************************/
 uint find_login_id(scfg_t* cfg, const char* user_id)
 {
 	uint usernum;
