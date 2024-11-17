@@ -43,6 +43,7 @@ static char* native_help =
 	"If this program is `16-bit MS-DOS` executable, set this option to `No`,\n"
 	"otherwise (it is a native program or script) set this option to `Yes`.\n"
 	;
+static char* native_opt = "Native Executable/Script";
 
 #define CUT_XTRNSEC_NUM	USHRT_MAX
 
@@ -326,9 +327,10 @@ void fevent_cfg(const char* name, fevent_t* event)
 
 	while(1) {
 		i=0;
-		snprintf(opt[i++],MAX_OPLN,"%-15s%s","Enabled", (event->misc & EVENT_DISABLED) ? "No" : "Yes");
-		snprintf(opt[i++],MAX_OPLN,"%-15s%s","Native", (event->misc & XTRN_NATIVE) ? "Yes" : "No");
-		snprintf(opt[i++],MAX_OPLN,"%-15s%s","Command Line", event->cmd);
+		snprintf(opt[i++],MAX_OPLN,"%-27s%s","Enabled", (event->misc & EVENT_DISABLED) ? "No" : "Yes");
+		snprintf(opt[i++],MAX_OPLN,"%-27s%s",native_opt, (event->misc & EX_NATIVE) ? "Yes" : "No");
+		snprintf(opt[i++],MAX_OPLN,"%-27s%s",use_shell_opt, (event->misc & EX_SH) ? "Yes" : "No");
+		snprintf(opt[i++],MAX_OPLN,"%-27s%s","Command Line", event->cmd);
 		opt[i][0]=0;
 		switch(uifc.list(WIN_ACT|WIN_SAV|WIN_RHT,0,0,0,&dflt,0,name,opt)) {
 			case -1:
@@ -338,10 +340,14 @@ void fevent_cfg(const char* name, fevent_t* event)
 				uifc.changes = TRUE;
 				break;
 			case 1:
-				event->misc ^= XTRN_NATIVE;
+				event->misc ^= EX_NATIVE;
 				uifc.changes = TRUE;
 				break;
 			case 2:
+				event->misc ^= EX_SH;
+				uifc.changes = TRUE;
+				break;
+			case 3:
 				uifc.input(WIN_MID|WIN_SAV,0,0,"Command"
 					,event->cmd, sizeof event->cmd - 1,K_EDIT);
 				break;
@@ -534,7 +540,7 @@ void tevents_cfg()
 				,cfg.event[i]->misc&EVENT_EXCL ? "Yes":"No");
 			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Force Users Off-line"
 				,cfg.event[i]->misc&EVENT_FORCE ? "Yes":"No");
-			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Native Executable/Script"
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s",native_opt
 				,cfg.event[i]->misc&EX_NATIVE ? "Yes" : "No");
 			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s",use_shell_opt
 				,cfg.event[i]->misc&XTRN_SH ? "Yes" : "No");
@@ -825,7 +831,7 @@ void tevents_cfg()
 					k=(cfg.event[i]->misc&EX_NATIVE) ? 0:1;
 					uifc.helpbuf=native_help;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-						,"Native Executable/Script",uifcYesNoOpts);
+						,native_opt,uifcYesNoOpts);
 					if(!k && !(cfg.event[i]->misc&EX_NATIVE)) {
 						cfg.event[i]->misc|=EX_NATIVE;
 						uifc.changes=TRUE;
@@ -1180,7 +1186,7 @@ void xtrn_cfg(int section)
 			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Multiple Concurrent Users"
 				,cfg.xtrn[i]->misc&MULTIUSER ? "Yes" : "No");
 			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","I/O Method", io_method(cfg.xtrn[i]->misc));
-			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Native Executable/Script"
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s",native_opt
 				,cfg.xtrn[i]->misc&XTRN_NATIVE ? "Yes" : "No");
 			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s",use_shell_opt
 				,cfg.xtrn[i]->misc&XTRN_SH ? "Yes" : "No");
@@ -1373,7 +1379,7 @@ void xtrn_cfg(int section)
 					k=(cfg.xtrn[i]->misc&XTRN_NATIVE) ? 0:1;
 					uifc.helpbuf=native_help;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-						,"Native",uifcYesNoOpts);
+						,native_opt,uifcYesNoOpts);
 					if(!k && !(cfg.xtrn[i]->misc&XTRN_NATIVE)) {
 						cfg.xtrn[i]->misc|=XTRN_NATIVE;
 						uifc.changes=TRUE;
@@ -1868,7 +1874,7 @@ void xedit_cfg()
 			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Command Line",cfg.xedit[i]->rcmd);
 			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Access Requirements",cfg.xedit[i]->arstr);
 			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","I/O Method", io_method(cfg.xedit[i]->misc));
-			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s","Native Executable/Script"
+			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s",native_opt
 				,cfg.xedit[i]->misc&XTRN_NATIVE ? "Yes" : "No");
 			snprintf(opt[k++],MAX_OPLN,"%-27.27s%s",use_shell_opt
 				,cfg.xedit[i]->misc&XTRN_SH ? "Yes" : "No");
@@ -2009,7 +2015,7 @@ void xedit_cfg()
 					k=(cfg.xedit[i]->misc&XTRN_NATIVE) ? 0:1;
 					uifc.helpbuf=native_help;
 					k=uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-						,"Native",uifcYesNoOpts);
+						,native_opt,uifcYesNoOpts);
 					if(!k && !(cfg.xedit[i]->misc&XTRN_NATIVE)) {
 						cfg.xedit[i]->misc|=XTRN_NATIVE;
 						uifc.changes=TRUE;
