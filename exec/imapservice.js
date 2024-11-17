@@ -3011,8 +3011,11 @@ var selected_command_handlers = {
 
 			// TODO: Support (or ignore) CHARSET in search commands
 			if(args[1]=='CHARSET') {
-				tagged(tag, "NO", "I don't support CHARSET in SEARCH.");
-				return;
+				if (args[2] != 'US-ASCII') {
+					tagged(tag, "NO", "[BADCHARSET (US-ASCII)] I don't support CHARSET in SEARCH.");
+					return;
+				}
+				args.splice(1, 2);
 			}
 			new_search(args.slice(1), false);
 			//do_search(args.slice(1), false);
@@ -3126,8 +3129,11 @@ var selected_command_handlers = {
 				case 'SEARCH':
 					// TODO: Support (or ignore) CHARSET in SEARCH
 					if(args[2]=='CHARSET') {
-						tagged(tag, "NO", "I don't support CHARSET in SEARCH.");
-						return;
+						if (args[3] != 'US-ASCII') {
+							tagged(tag, "NO", "[BADCHARSET (US-ASCII)] I don't support CHARSET in SEARCH.");
+							return;
+						}
+						args.splice(2, 2);
 					}
 					new_search(args.slice(2), true);
 					//do_search(args.slice(2), true);
