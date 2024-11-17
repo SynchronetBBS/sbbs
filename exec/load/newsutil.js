@@ -32,8 +32,6 @@ function write_news_header(hdr,writeln)
 		writeln("Newsgroups: " + hdr.newsgroups);
 	if(hdr.replyto!=undefined)
 		writeln("Reply-To: " + hdr.replyto);
-	if(hdr.reply_id!=undefined)
-		writeln("References: " + hdr.reply_id);
 
 	/* FidoNet header fields */
 	if(hdr.ftn_area!=undefined)
@@ -53,6 +51,7 @@ function write_news_header(hdr,writeln)
 
 	var content_type;
 	var user_agent;
+	var references;
 
 	if(hdr.field_list!=undefined) {
 		for(var i in hdr.field_list) {
@@ -61,6 +60,8 @@ function write_news_header(hdr,writeln)
 					content_type = hdr.field_list[i].data;
 				if(hdr.field_list[i].data.toLowerCase().indexOf("user-agent:")==0)
 					user_agent = hdr.field_list[i].data;
+				if(hdr.field_list[i].data.toLowerCase().indexOf("references:")==0)
+					references = hdr.field_list[i].data;
 				writeln(hdr.field_list[i].data);
 			} else if(hdr.field_list[i].type==FIDOCTRL) {
 				writeln("X-FTN-Kludge: " + hdr.field_list[i].data);
@@ -72,6 +73,8 @@ function write_news_header(hdr,writeln)
 		}
 	}
 
+	if(references === undefined && hdr.reply_id !== undefined)
+		writeln("References: " + hdr.reply_id);
 	if(user_agent === undefined && hdr.editor !== undefined)
 		writeln("User-Agent: " + hdr.editor);
 
@@ -151,9 +154,6 @@ function parse_news_header(hdr, line)
 			hdr.replyto_net_type=NET_INTERNET;
 			hdr.replyto=data;
 			break;
-		case "in-reply-to":
-			hdr.reply_id=data;
-			break;
 		case "date":
 			hdr.date=data;
 			break;
@@ -162,11 +162,6 @@ function parse_news_header(hdr, line)
 			break;
 		case "message-id":
 			hdr.id=data;
-			break;
-		case "references":
-			hdr.references=data;
-			if(!hdr.reply_id && data.length)
-				hdr.reply_id=data.match(/<[^\<]*>$/);
 			break;
 		case "user-agent":
 			hdr.editor=data;
@@ -203,6 +198,10 @@ function parse_news_header(hdr, line)
 			hdr.control=data;
 			break;
 
+		case "references":
+			if(!hdr.reply_id && data.length)
+				hdr.reply_id = data.match(/<[^\<]*>$/);
+			// fall-through
 		default:
 			if(hdr.field_list==undefined)
 				hdr.field_list=[];
