@@ -760,7 +760,7 @@ static void send_thread(void* arg)
 	}
 
 	if((i=ferror(fp))!=0)
-		lprintf(LOG_ERR,"%04d <%s> !DATA FILE ERROR %d (errno=%d: %s)"
+		lprintf(LOG_ERR,"%04d <%s> !DATA FILE ERROR %d (errno %d %s)"
 			,xfer.ctrl_sock, xfer.user->alias, i, errno, safe_strerror(errno, errstr, sizeof errstr));
 
 	ftp_close_socket(xfer.data_sock,xfer.data_sess,__LINE__);	/* Signal end of file */
@@ -2528,7 +2528,7 @@ static void ctrl_thread(void* arg)
 			}
 			user.number = usernum;
 			if((i=getuserdat(&scfg, &user))!=0) {
-				lprintf(LOG_ERR,"%04d <%s> !ERROR %d (errno=%d: %s) getting data for user #%d"
+				lprintf(LOG_ERR,"%04d <%s> !ERROR %d (errno %d %s) getting data for user #%d"
 					,sock, user.alias, i, errno, safe_strerror(errno, error, sizeof error), usernum);
 				sockprintf(sock,sess,"530 Database error %d",i);
 				continue;
@@ -2650,8 +2650,8 @@ static void ctrl_thread(void* arg)
 			SAFECOPY(user.ipaddr,host_ip);
 			user.logontime=(time32_t)logintime;
 			if((result = putuserdat(&scfg, &user)) != 0)
-				lprintf(LOG_ERR, "%04d [%s] <%s> !Error %d writing user data for user #%d"
-					,sock, host_ip, user.alias, result, user.number);
+				lprintf(LOG_ERR, "%04d [%s] <%s> !Error %d (errno %d %s) writing user data for user #%d"
+					,sock, host_ip, user.alias, result, errno, safe_strerror(errno, error, sizeof error), user.number);
 			mqtt_user_login(&mqtt, &client);
 
 #ifdef _WIN32
