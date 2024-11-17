@@ -21,6 +21,7 @@
 
 #include "date_str.h"
 #include "datewrap.h"
+#include "xpdatetime.h"
 #include "text.h"
 
 const char *wday[]={"Sun","Mon","Tue","Wed","Thu","Fri","Sat"};
@@ -238,7 +239,7 @@ char* tm_as_hhmm(scfg_t* cfg, struct tm* tm, char* str)
 char* time_as_hhmm(scfg_t* cfg, time_t t, char* str)
 {
 	struct tm tm;
-	if(localtime_r(&t, &tm) == NULL) {
+	if(t == INVALID_TIME || localtime_r(&t, &tm) == NULL) {
 		strcpy(str,"??:??");
 		return str;
 	}
