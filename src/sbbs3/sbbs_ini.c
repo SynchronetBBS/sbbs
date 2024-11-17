@@ -689,7 +689,7 @@ void sbbs_read_ini(
 		mail->bind_retry_delay=iniGetInteger(list,section,strBindRetryDelay,global->bind_retry_delay);
 		mail->login_attempt = get_login_attempt_settings(list, section, global);
 		mail->max_concurrent_connections = iniGetInteger(list, section, strMaxConConn, 0);
-		mail->spam_block_duration = iniGetDuration(list, section, "SpamBlockDuration", 0);
+		mail->spam_block_duration = (uint)iniGetDuration(list, section, "SpamBlockDuration", 0);
 		mail->notify_offline_users = iniGetBool(list, section, "NotifyOfflineUsers", false);
 	}
 
