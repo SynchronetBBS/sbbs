@@ -2316,7 +2316,7 @@ void input_thread(void *arg)
 		if(!(sbbs->cfg.ctrlkey_passthru&(1<<CTRL_C))
 			&& sbbs->rio_abortable
 			&& !(sbbs->telnet_mode&TELNET_MODE_GATE)
-			&& sbbs->telnet_remote_option[TELNET_BINARY_TX]!=TELNET_WILL
+			&& !(sbbs->sys_status & SS_FILEXFER)
 			&& memchr(wrbuf, CTRL_C, wr)) {
 			if(RingBufFull(&sbbs->inbuf))
     			lprintf(LOG_DEBUG,"Node %d Ctrl-C hit with %u bytes in input buffer"
