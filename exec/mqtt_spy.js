@@ -107,10 +107,12 @@ while(!js.terminated) {
 		if(console.aborted || !bbs.online)
 			break;
 		console.line_counter = 0;
-		while(bbs.online) {
+		while(bbs.online && !console.aborted) {
 			var key = ascii(console.getbyte(10));
 			if(!key)
 				break;
+			if(key == CTRL_C)
+				console.aborted = true;
 			if(key == KEY_ESC) {
 				key = ascii(console.getbyte(500));
 				if(!key)
