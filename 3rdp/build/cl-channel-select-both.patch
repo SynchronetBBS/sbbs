@@ -1,5 +1,5 @@
---- session/ssh2_channel.c.orig	2024-02-26 21:17:09.598879000 -0500
-+++ session/ssh2_channel.c	2024-02-26 21:17:23.741869000 -0500
+--- ./session/ssh2_channel.c.orig	2024-10-31 00:50:23.103563000 -0400
++++ ./session/ssh2_channel.c	2024-10-31 00:50:23.443226000 -0400
 @@ -660,7 +660,7 @@
  		if( channelInfoPtr == NULL )
  			return( CRYPT_ERROR_NOTFOUND );

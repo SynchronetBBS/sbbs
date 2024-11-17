@@ -1,10 +1,12 @@
---- io/tcp.h.orig	2021-12-09 19:31:03.572654000 -0500
-+++ io/tcp.h	2021-12-09 19:31:34.740365000 -0500
-@@ -962,15 +962,7 @@
+--- ./io/tcp.h.orig	2023-08-15 22:03:04.000000000 -0400
++++ ./io/tcp.h	2024-10-31 00:50:22.353981000 -0400
+@@ -1114,17 +1114,7 @@
  #ifndef INVALID_SOCKET
    #define INVALID_SOCKET			( -1 )
  #endif /* INVALID_SOCKET */
--#if defined( __WINDOWS__ )
+-#if defined( __FreeRTOS__ ) && defined( USE_FREERTOS_SOCKETS )
+-  #define isBadSocket( socket )		( ( socket ) == INVALID_SOCKET )
+-#elif defined( __WINDOWS__ )
 -  #define isBadSocket( socket )		( ( socket ) == INVALID_SOCKET )
 -#elif defined( STDERR_FILENO )
 -  #define isBadSocket( socket )		( ( socket ) <= STDERR_FILENO || \

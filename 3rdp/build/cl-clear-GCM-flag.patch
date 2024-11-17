@@ -1,10 +1,10 @@
---- ./session/tls_hello.c.orig	2020-01-24 18:02:09.710811000 -0500
-+++ ./session/tls_hello.c	2020-01-24 18:02:24.220573000 -0500
-@@ -223,6 +223,7 @@
+--- ./session/tls_hello.c.orig	2024-05-27 00:36:04.000000000 -0400
++++ ./session/tls_hello.c	2024-10-31 00:50:22.021163000 -0400
+@@ -269,6 +269,7 @@
  		if( cryptStatusError( status ) )
  			return( status );
  		sessionInfoPtr->cryptBlocksize = queryInfo.blockSize;
 +		CLEAR_FLAG( sessionInfoPtr->protocolFlags, TLS_PFLAG_GCM );
  		}
- 
- 	return( CRYPT_OK );
+ 	DEBUG_PRINT(( "Cipher suite set to %s.\n", 
+ 				  cipherSuiteInfoPtr->debugText ));

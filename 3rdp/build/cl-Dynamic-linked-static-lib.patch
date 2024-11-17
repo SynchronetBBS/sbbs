@@ -1,14 +1,14 @@
---- ../tmp2/tools/ccopts.sh	2019-03-04 16:32:32.000000000 -0500
-+++ tools/ccopts.sh	2019-06-03 16:56:55.005703000 -0400
-@@ -393,7 +393,6 @@
+--- ./tools/ccopts.sh.orig	2024-10-31 00:50:21.757200000 -0400
++++ ./tools/ccopts.sh	2024-10-31 00:50:21.784137000 -0400
+@@ -697,7 +697,6 @@
  # of large-displacement jumps, so if you're tuning the code for size/speed
  # you can try -fpic to see if you get any improvement.
  
 -if [ $SHARED -gt 0 ] ; then
  	case $OSNAME in
  		'Darwin')
- 			CCARGS="$CCARGS -fPIC -fno-common" ;;
-@@ -420,7 +419,6 @@
+ 			CCARGS="$CCARGS -fPIC -fno-common -mmacosx-version-min=%%MIN_MAC_OSX_VERSION%%" ;;
+@@ -725,7 +724,6 @@
  		*)
  			CCARGS="$CCARGS -fPIC" ;;
  	esac ;

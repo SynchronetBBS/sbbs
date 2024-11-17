@@ -1,6 +1,6 @@
---- ./misc/config.h.orig	2023-12-31 08:00:17.038610000 -0500
-+++ ./misc/config.h	2023-12-31 08:01:00.988147000 -0500
-@@ -602,7 +602,7 @@
+--- ./misc/config.h.orig	2024-10-31 00:50:22.047853000 -0400
++++ ./misc/config.h	2024-10-31 00:50:22.201744000 -0400
+@@ -633,7 +633,7 @@
     manner you must immediately obtain and use an original, unmodified 
     version */
  
@@ -9,7 +9,7 @@
  
  /* Going beyond the PKCS #12 read capability which exists solely to allow 
     the import of keys supplied in that format by third parties, cryptlib has
-@@ -620,7 +620,7 @@
+@@ -651,7 +651,7 @@
     PKCS #12 write is an unsupported facility with special-case usage 
     restrictions that doesn't work like any normal keyset */
  

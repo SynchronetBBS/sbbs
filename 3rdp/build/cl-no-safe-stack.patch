@@ -1,47 +1,39 @@
---- tools/ccopts.sh.orig	2023-12-31 07:57:24.600204000 -0500
-+++ tools/ccopts.sh	2023-12-31 07:59:35.674830000 -0500
-@@ -601,25 +601,25 @@
+--- ./tools/ccopts.sh.orig	2024-10-31 00:50:22.100746000 -0400
++++ ./tools/ccopts.sh	2024-10-31 00:50:22.176028000 -0400
+@@ -616,21 +616,21 @@
  	return $RESULT ;
  	}
  
 -if [ $ISCLANG -gt 0 ] && [ $ISSPECIAL -eq 0 ] ; then
 -	if [ $COMPILER_VER -ge 47 ] ; then
--		if [ "$OSNAME" = "Darwin" ] || [ "$OSNAME" = "OpenBSD" ] ; then
--			# The versions of clang shipped with OS X or OpenBSD don't
--			# support -fsanitize=safe-stack even as late as clang 12, so
--			# there's not much that we can do.
--			CCARGS="$CCARGS" ;
--		elif ! hasSafeStackLibs ; then
--			echo "  " >&2 ;
--			echo "  (This system supports clang stack sanitization via -fsanitize=safe-stack" >&2 ;
--			echo "   in $0, however the necessary libclang_rt isn't installed." >&2 ;
--			echo "   If you can install the required library then consider enabling" >&2 ;
--			echo "   -fsanitize=safe-stack in $0)." >&2 ;
--			echo "  " >&2 ;
--		else
--			CCARGS="$CCARGS -fsanitize=safe-stack" ;
--		fi ;
+-		SAFESTACK_SUPPORT=checkSafeStack ;
+-		case $SAFESTACK_SUPPORT in
+-			0)	;;
+-			1)	echo "  " >&2 ;
+-				echo "  (This system supports clang stack sanitization via -fsanitize=safe-stack" >&2 ;
+-				echo "   in $0, however the necessary libclang_rt isn't installed." >&2 ;
+-				echo "   If you can install the required library then consider enabling" >&2 ;
+-				echo "   -fsanitize=safe-stack in $0)." >&2 ;
+-				echo "  " >&2 ;;
+-			2)	CCARGS="$CCARGS -fsanitize=safe-stack" ;;
+-		esac ;
 -	fi ;
 -fi
 +#if [ $ISCLANG -gt 0 ] && [ $ISSPECIAL -eq 0 ] ; then
 +#	if [ $COMPILER_VER -ge 47 ] ; then
-+#		if [ "$OSNAME" = "Darwin" ] || [ "$OSNAME" = "OpenBSD" ] ; then
-+#			# The versions of clang shipped with OS X or OpenBSD don't
-+#			# support -fsanitize=safe-stack even as late as clang 12, so
-+#			# there's not much that we can do.
-+#			CCARGS="$CCARGS" ;
-+#		elif ! hasSafeStackLibs ; then
-+#			echo "  " >&2 ;
-+#			echo "  (This system supports clang stack sanitization via -fsanitize=safe-stack" >&2 ;
-+#			echo "   in $0, however the necessary libclang_rt isn't installed." >&2 ;
-+#			echo "   If you can install the required library then consider enabling" >&2 ;
-+#			echo "   -fsanitize=safe-stack in $0)." >&2 ;
-+#			echo "  " >&2 ;
-+#		else
-+#			CCARGS="$CCARGS -fsanitize=safe-stack" ;
-+#		fi ;
++#		SAFESTACK_SUPPORT=checkSafeStack ;
++#		case $SAFESTACK_SUPPORT in
++#			0)	;;
++#			1)	echo "  " >&2 ;
++#				echo "  (This system supports clang stack sanitization via -fsanitize=safe-stack" >&2 ;
++#				echo "   in $0, however the necessary libclang_rt isn't installed." >&2 ;
++#				echo "   If you can install the required library then consider enabling" >&2 ;
++#				echo "   -fsanitize=safe-stack in $0)." >&2 ;
++#				echo "  " >&2 ;;
++#			2)	CCARGS="$CCARGS -fsanitize=safe-stack" ;;
++#		esac ;
 +#	fi ;
 +#fi
  
- # The Sun compiler has its own set of problems, the biggest of which is
- # determining where it is and what it is (see comments elsewhere), but
+ # If we're using clang or gcc and RELRO support is present, enable it.  This
+ # is a bit of an odd one, the various descriptions and docs imply it really

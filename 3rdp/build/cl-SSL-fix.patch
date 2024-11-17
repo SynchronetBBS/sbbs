@@ -1,6 +1,6 @@
---- ../tmp2/session/sess_attr.c	2019-02-05 18:18:28.000000000 -0500
-+++ session/sess_attr.c	2019-06-03 17:06:34.378151000 -0400
-@@ -102,11 +102,13 @@
+--- ./session/sess_attr.c.orig	2024-10-31 00:50:21.397162000 -0400
++++ ./session/sess_attr.c	2024-10-31 00:50:21.810708000 -0400
+@@ -235,11 +235,13 @@
  
  	/* If there's already a network socket specified then we can't set a 
  	   server name as well */
@@ -13,4 +13,4 @@
 +*/
  
  	/* Parse the server name.  The PKI protocols all use HTTP as their 
- 	   substrate so if it's not SSH or SSL/TLS we require HTTP */
+ 	   substrate so if it's not SSH or TLS we require HTTP */
