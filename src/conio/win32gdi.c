@@ -683,6 +683,22 @@ gdi_handle_getdpiscaledsize(WORD dpi, LPSIZE sz)
 	return TRUE;
 }
 
+static LRESULT
+gdi_handle_wm_activateapp(WPARAM wParam, LPARAM lParam)
+{
+	int w, h;
+
+	if (wParam == FALSE) {
+		if (fullscreen) {
+			// Minimize when we lose focus in fullscreen
+			// Fixes interaction with Windows+M, and makes
+			// Alt-TAB less shitty.
+			ShowWindow(win, SW_MINIMIZE);
+		}
+	}
+	return 0;
+}
+
 static LRESULT CALLBACK
 gdi_handle_wm_dpichanged(WPARAM wParam, RECT *r)
 {
@@ -718,6 +734,8 @@ gdi_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			return 0;
 		case WM_SIZE:
 			return gdi_handle_wm_size(wParam, lParam);
+		case WM_ACTIVATEAPP:
+			return gdi_handle_wm_activateapp(wParam, lParam);
 		case WM_SIZING:
 			return gdi_handle_wm_sizing(wParam, (RECT *)lParam);
 		case WM_CLOSE:
