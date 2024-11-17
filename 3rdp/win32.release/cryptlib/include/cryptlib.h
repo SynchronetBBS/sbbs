@@ -1,7 +1,7 @@
 /****************************************************************************
 *																			*
 *							  cryptlib Header File							*
-*						Copyright Peter Gutmann 1992-2022					*
+*						Copyright Peter Gutmann 1992-2023					*
 *																			*
 ****************************************************************************/
 
@@ -9,10 +9,10 @@
 
 #define _CRYPTLIB_DEFINED
 
-/* The current cryptlib version: 3.4.7 */
+/* The current cryptlib version: 3.4.8 */
 
-#define CRYPTLIB_VERSION	347
-#define CRYPTLIB_PATCHES "7305f59a18c9ced28e8bc7890b82f654  -"
+#define CRYPTLIB_VERSION	348
+#define CRYPTLIB_PATCHES "e75068e75d7f24e8afde1bad813e90b9  -"
 
 /* Fixup for Windows support.  We need to include windows.h for various types
    and prototypes needed for DLLs, but this pulls in wincrypt.h which defines 
@@ -177,7 +177,7 @@
   #define C_NONNULL_ARG( argIndex )
 #endif /* Compiler-specific annotations */
 
-#ifdef _CRYPTLIB_DEFINED			/* Disable use in non-C versions of header */
+#ifdef _CRYPT_DEFINED				/* Disable use in non-C versions of header */
 
 /* Alongside the externally visible types, cryptlib also has various internal
    types that are extended forms of the external types that are invisible
@@ -189,7 +189,7 @@
    here is because it's not possible to extend an enum outside the point
    where it's originally defined */
 
-#endif /* _CRYPTLIB_DEFINED */
+#endif /* _CRYPT_DEFINED */
 
 /****************************************************************************
 *																			*
@@ -1765,6 +1765,7 @@ typedef enum {
 #define CRYPT_TLSOPTION_DISABLE_NAMEVERIFY	0x010	/* Disable cert hostname check */
 #define CRYPT_TLSOPTION_DISABLE_CERTVERIFY	0x020	/* Disable certificate check */
 #define CRYPT_TLSOPTION_SERVER_SNI			0x040	/* Enable SNI-based key selection */
+#define CRYPT_TLSOPTION_RESUMED				0x080	/* TLS session is resumed */
 #define CRYPT_TLSOPTION_SUITEB_128			0x100	/* SuiteB security levels (will */
 #define CRYPT_TLSOPTION_SUITEB_256			0x200	/*  vanish in future releases) */
 #ifdef _CRYPT_DEFINED
