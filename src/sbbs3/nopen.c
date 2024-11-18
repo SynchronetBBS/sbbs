@@ -113,29 +113,30 @@ bool ftouch(const char* fname)
 }
 
 // Opens a mutex file and returns its file descriptor or -1 on failure
-int fmutex_open(const char* fname, const char* text, long max_age, time_t* tp, bool auto_remove)
+bool fmutex_open(const char* fname, const char* text, long max_age, bool auto_remove, fmutex_t* fm)
 {
-	int file;
-	time_t t;
 	size_t len;
 #if !defined(NO_SOCKET_SUPPORT)
 	char hostname[128];
 #endif
-#ifdef _WIN32
+#if defined _WIN32
 	DWORD attributes = FILE_ATTRIBUTE_NORMAL;
 	HANDLE h;
 #endif
 
-	if(max_age > 0 || tp != NULL) {
-		if(tp == NULL)
-			tp = &t;
-		*tp = fdate(fname);
-		if(max_age > 0 && *tp != -1 && (time(NULL) - *tp) > max_age) {
-			if(remove(fname)!=0)
-				return -1;
+	if(fm == NULL)
+		return false;
+	memset(fm, 0, sizeof *fm);
+	snprintf(fm->name, sizeof fm->name, fname);
+	fm->remove = auto_remove;
+	if(max_age > 0) {
+		fm->time = fdate(fname);
+		if(max_age > 0 && fm->time != -1 && (time(NULL) - fm->time) > max_age) {
+			if(remove(fname) != 0)
+				return false;
 		}
 	}
-#ifdef _WIN32
+#if defined _WIN32
 	if(auto_remove)
 		attributes |= FILE_FLAG_DELETE_ON_CLOSE;
 	h = CreateFileA(fname,
@@ -147,21 +148,14 @@ int fmutex_open(const char* fname, const char* text, long max_age, time_t* tp, b
 		NULL			// hTemplateFile
 		);
 	if(h == INVALID_HANDLE_VALUE)
-		return -1;
-	if((file = _open_osfhandle((intptr_t)h, O_WRONLY)) == -1) {
+		return false;
+	if((fm->fd = _open_osfhandle((intptr_t)h, O_WRONLY)) == -1) {
 		CloseHandle(h);
-		return -1;
+		return false;
 	}
 #else
-	if((file=sopen(fname, O_CREAT|O_WRONLY|O_EXCL, SH_DENYRW, DEFFILEMODE))<0)
-		return -1;
-	if(auto_remove) {
-		// the file will remain in existence until the last file descriptor referring to it is closed
-		if(remove(fname) != 0) {
-			close(file);
-			return -1;
-		}
-	}
+	if((fm->fd = sopen(fname, O_CREAT|O_WRONLY|O_EXCL, SH_DENYRW, DEFFILEMODE)) < 0)
+		return false;
 #endif
 #if !defined(NO_SOCKET_SUPPORT)
 	if(text==NULL && gethostname(hostname,sizeof(hostname))==0)
@@ -169,33 +163,43 @@ int fmutex_open(const char* fname, const char* text, long max_age, time_t* tp, b
 #endif
 	if(text!=NULL) {
 		len = strlen(text);
-		if(write(file, text, len) != len) {
-			close(file);
-			return -1;
+		if(write(fm->fd, text, len) != len) {
+			close(fm->fd);
+			return false;
 		}
 	}
-	return file;
+	return true;
 }
 
-bool fmutex_close(int* file)
+bool fmutex_close(fmutex_t* fm)
 {
-	if(file == NULL)
+	if(fm == NULL)
 		return false;
-	if(*file < 0) // already closed (or never opened)
+	if(fm->fd < 0) // already closed (or never opened)
 		return true;
-	if(close(*file) != 0)
+#if !defined _WIN32 // should only be necessary (and possible) on *nix
+	if(fm->remove) {
+		if(unlink(fm->name) != 0)
+			return false;
+	}
+#endif
+	if(close(fm->fd) != 0)
 		return false;
-	*file = -1;
+	fm->fd = -1;
 	return true;
 }
 
 // Opens and immediately closes a mutex file
 bool fmutex(const char* fname, const char* text, long max_age, time_t* tp)
 {
-	int file = fmutex_open(fname, text, max_age, tp, /* auto_remove: */false);
-	if(file < 0)
+	fmutex_t fm;
+
+	if(!fmutex_open(fname, text, max_age, /* auto_remove: */false, &fm)) {
+		if(tp != NULL)
+			*tp = fm.time;
 		return false;
-	return fmutex_close(&file);
+	}
+	return fmutex_close(&fm);
 }
 
 bool fcompare(const char* fn1, const char* fn2)

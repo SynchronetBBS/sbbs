@@ -2918,12 +2918,11 @@ void event_thread(void* arg)
 				sbbs->useron.number = atoi(fname+offset);
 				getuserdat(&sbbs->cfg,&sbbs->useron);
 				if(sbbs->useron.number != 0 && !(sbbs->useron.misc&(DELETED|INACTIVE))) {
-					time_t t;
 					SAFEPRINTF(lockfname,"%s.lock",fname);
-					int lockfile = fmutex_open(lockfname,startup->host_name,TIMEOUT_MUTEX_FILE, &t, true);
-					if(lockfile < 0) {
-						if(difftime(time(NULL), t) > 60)
-							sbbs->lprintf(LOG_INFO," %s exists (unpack in progress?) since %s", lockfname, time_as_hhmm(&sbbs->cfg, t, str));
+					fmutex_t lockfile;
+					if(!fmutex_open(lockfname, startup->host_name, TIMEOUT_MUTEX_FILE, true, &lockfile)) {
+						if(difftime(time(NULL), lockfile.time) > 60)
+							sbbs->lprintf(LOG_INFO," %s exists (unpack in progress?) since %s", lockfname, time_as_hhmm(&sbbs->cfg, lockfile.time, str));
 						continue;
 					}
 					sbbs->lprintf(LOG_DEBUG, "Opened %s", lockfname);
@@ -2980,7 +2979,6 @@ void event_thread(void* arg)
 				sbbs->useron.number = 0;
 				sbbs->lprintf(LOG_INFO, "QWK pack semaphore signaled: %s", fname);
 				int usernum = atoi(fname+offset);
-				time_t t;
 				sbbs->useron.number = usernum;
 				int retval = getuserdat(&sbbs->cfg,&sbbs->useron);
 				if(retval != 0) {
@@ -2989,10 +2987,10 @@ void event_thread(void* arg)
 					continue;
 				}
 				SAFEPRINTF2(lockfname,"%spack%04u.lock",sbbs->cfg.data_dir,usernum);
-				int lockfile = fmutex_open(lockfname,startup->host_name,TIMEOUT_MUTEX_FILE, &t, true);
-				if(lockfile < 0) {
-					if(difftime(time(NULL), t) > 60)
-						sbbs->lprintf(LOG_INFO,"%s exists (pack in progress?) since %s", lockfname, time_as_hhmm(&sbbs->cfg, t, str));
+				fmutex_t lockfile;
+				if(!fmutex_open(lockfname,startup->host_name,TIMEOUT_MUTEX_FILE, true, &lockfile)) {
+					if(difftime(time(NULL), lockfile.time) > 60)
+						sbbs->lprintf(LOG_INFO,"%s exists (pack in progress?) since %s", lockfname, time_as_hhmm(&sbbs->cfg, lockfile.time, str));
 					continue;
 				}
 				sbbs->lprintf(LOG_DEBUG, "Opened %s", lockfname);

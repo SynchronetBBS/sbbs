@@ -25,9 +25,17 @@
 #include <stdio.h>			/* FILE */
 #include <fcntl.h>			/* O_RDONLY */
 #include "gen_defs.h"		/* bool */
+#include "dirwrap.h"		/* MAX_PATH */
 
 #define FNOPEN_BUF_SIZE		(2*1024)
 #define LOOP_NOPEN	  100	/* Retries before file access denied			*/
+
+typedef struct {
+	int fd;
+	time_t time;
+	bool remove;
+	char name[MAX_PATH + 1];
+} fmutex_t;
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,8 +45,8 @@ int		nopen(const char* str, uint access);
 FILE *	fnopen(int* file, const char* str, uint access);
 bool	ftouch(const char* fname);
 bool	fmutex(const char* fname, const char* text, long max_age, time_t*);
-int		fmutex_open(const char* fname, const char* text, long max_age, time_t*, bool auto_remove);
-bool	fmutex_close(int* file);
+bool	fmutex_open(const char* fname, const char* text, long max_age, bool auto_remove, fmutex_t*);
+bool	fmutex_close(fmutex_t*);
 bool	fcompare(const char* fn1, const char* fn2);
 bool	backup(const char* org, int backup_level, bool ren);
 
