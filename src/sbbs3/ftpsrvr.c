@@ -2607,7 +2607,7 @@ static void ctrl_thread(void* arg)
 			if(user.rest & FLAG('Q')) { // QWKnet accont
 				char mutex_fname[MAX_PATH + 1];
 				snprintf(mutex_fname, sizeof mutex_fname, "%suser/%04u.ftp", scfg.data_dir, user.number);
-				if(!fmutex_open(mutex_fname, startup->host_name, /* max_age: */60 * 60, /* auto_remove: */true, &mutex_file)) {
+				if(!fmutex_open(mutex_fname, startup->host_name, /* max_age: */60 * 60, &mutex_file)) {
 					lprintf(LOG_NOTICE, "%04d <%s> QWKnet account already logged-in to FTP server: %s (since %s)"
 						,sock, user.alias, mutex_fname, time_as_hhmm(&scfg, mutex_file.time, str));
 					sockprintf(sock, sess, "421 QWKnet accounts are limited to one concurrent FTP session");

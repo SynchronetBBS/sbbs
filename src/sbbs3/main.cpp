@@ -2920,7 +2920,7 @@ void event_thread(void* arg)
 				if(sbbs->useron.number != 0 && !(sbbs->useron.misc&(DELETED|INACTIVE))) {
 					SAFEPRINTF(lockfname,"%s.lock",fname);
 					fmutex_t lockfile;
-					if(!fmutex_open(lockfname, startup->host_name, TIMEOUT_MUTEX_FILE, true, &lockfile)) {
+					if(!fmutex_open(lockfname, startup->host_name, TIMEOUT_MUTEX_FILE, &lockfile)) {
 						if(difftime(time(NULL), lockfile.time) > 60)
 							sbbs->lprintf(LOG_INFO," %s exists (unpack in progress?) since %s", lockfname, time_as_hhmm(&sbbs->cfg, lockfile.time, str));
 						continue;
@@ -2988,7 +2988,7 @@ void event_thread(void* arg)
 				}
 				SAFEPRINTF2(lockfname,"%spack%04u.lock",sbbs->cfg.data_dir,usernum);
 				fmutex_t lockfile;
-				if(!fmutex_open(lockfname,startup->host_name,TIMEOUT_MUTEX_FILE, true, &lockfile)) {
+				if(!fmutex_open(lockfname, startup->host_name, TIMEOUT_MUTEX_FILE, &lockfile)) {
 					if(difftime(time(NULL), lockfile.time) > 60)
 						sbbs->lprintf(LOG_INFO,"%s exists (pack in progress?) since %s", lockfname, time_as_hhmm(&sbbs->cfg, lockfile.time, str));
 					continue;

@@ -112,8 +112,9 @@ bool ftouch(const char* fname)
 	return true;
 }
 
-// Opens a mutex file and returns its file descriptor or -1 on failure
-bool fmutex_open(const char* fname, const char* text, long max_age, bool auto_remove, fmutex_t* fm)
+// Opens a mutex file (implementation)
+static
+bool _fmutex_open(const char* fname, const char* text, long max_age, bool auto_remove, fmutex_t* fm)
 {
 	size_t len;
 #if !defined(NO_SOCKET_SUPPORT)
@@ -128,7 +129,6 @@ bool fmutex_open(const char* fname, const char* text, long max_age, bool auto_re
 		return false;
 	memset(fm, 0, sizeof *fm);
 	snprintf(fm->name, sizeof fm->name, fname);
-	fm->remove = auto_remove;
 	if(max_age > 0) {
 		fm->time = fdate(fname);
 		if(max_age > 0 && fm->time != -1 && (time(NULL) - fm->time) > max_age) {
@@ -171,6 +171,12 @@ bool fmutex_open(const char* fname, const char* text, long max_age, bool auto_re
 	return true;
 }
 
+// Opens a mutex file (public API: always auto-removes upon close)
+bool fmutex_open(const char* fname, const char* text, long max_age, fmutex_t* fm)
+{
+	return _fmutex_open(fname, text, max_age, /* auto-remove: */true, fm);
+}
+
 bool fmutex_close(fmutex_t* fm)
 {
 	if(fm == NULL)
@@ -178,10 +184,8 @@ bool fmutex_close(fmutex_t* fm)
 	if(fm->fd < 0) // already closed (or never opened)
 		return true;
 #if !defined _WIN32 // should only be necessary (and possible) on *nix
-	if(fm->remove) {
-		if(unlink(fm->name) != 0)
-			return false;
-	}
+	if(unlink(fm->name) != 0)
+		return false;
 #endif
 	if(close(fm->fd) != 0)
 		return false;
@@ -194,12 +198,12 @@ bool fmutex(const char* fname, const char* text, long max_age, time_t* tp)
 {
 	fmutex_t fm;
 
-	if(!fmutex_open(fname, text, max_age, /* auto_remove: */false, &fm)) {
+	if(!_fmutex_open(fname, text, max_age, /* auto_remove: */false, &fm)) {
 		if(tp != NULL)
 			*tp = fm.time;
 		return false;
 	}
-	return fmutex_close(&fm);
+	return close(fm.fd) == 0;
 }
 
 bool fcompare(const char* fn1, const char* fn2)
