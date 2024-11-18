@@ -120,7 +120,7 @@ void __fastcall TAboutBoxForm::FormShow(TObject *Sender)
         ,(CRYPTLIB_VERSION/10)%10
         ,CRYPTLIB_VERSION%10);
     Credits->Lines->Add(AnsiString(ver) +
-        " Copyright 1992-2022 Peter Gutmann. All rights reserved.");
+        " Copyright 1992-2023 Peter Gutmann. All rights reserved.");
 #endif
 }
 //---------------------------------------------------------------------------
