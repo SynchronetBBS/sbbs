@@ -176,9 +176,9 @@ function dump_obj(obj, name)
 function debug_log(line, rx)
 {
 	if(debug)
-		log(line);
+		log(LOG_DEBUG, line);
 	else if(rx && debugRX)
-		log(line);
+		log(LOG_DEBUG, line);
 }
 
 
@@ -1561,7 +1561,7 @@ function exit_func()
 	catch(error) {}
 	if (locked_code !== undefined) {
 		try {
-			log("At exit, "+locked_code+" is still locked.");
+			log(LOG_WARNING, "At exit, "+locked_code+" is still locked.");
 			unlock_cfg(locked_code);
 		}
 		catch(error) {}
@@ -2917,7 +2917,7 @@ function do_search(args, uid)
 			if(search_set.hdr.length > 0 || search_set.all.length > 0) {
 				hdr=base.get_msg_header(true, idx.offset, /* expand_fields: */false);
 				if(hdr==null) {
-					log("Unable to get header for idx.number");
+					log(LOG_DEBUG, "Unable to get header for idx.number");
 					continue;
 				}
 				for(j in search_set.hdr) {
@@ -2930,7 +2930,7 @@ function do_search(args, uid)
 			if(search_set.body.length > 0 || search_set.all.length > 0) {
 				body=base.get_msg_body(true, idx.offset,true,true,true).toUpperCase();
 				if(body==null) {
-					log("Unable to get body for idx.number");
+					log(LOG_DEBUG, "Unable to get body for idx.number");
 					continue;
 				}
 				for(j in search_set.body) {
