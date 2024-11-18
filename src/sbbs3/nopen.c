@@ -128,6 +128,7 @@ bool _fmutex_open(const char* fname, const char* text, long max_age, bool auto_r
 	if(fm == NULL)
 		return false;
 	memset(fm, 0, sizeof *fm);
+	fm->fd = -1;
 	snprintf(fm->name, sizeof fm->name, fname);
 	if(max_age > 0) {
 		fm->time = fdate(fname);
