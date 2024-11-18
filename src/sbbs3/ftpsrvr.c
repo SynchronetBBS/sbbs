@@ -2166,7 +2166,7 @@ static void ctrl_thread(void* arg)
 	int			curdir=-1;
 	int			orglib;
 	int			orgdir;
-	fmutex_t	mutex_file = {-1};
+	fmutex_t	mutex_file = {.fd = -1};
 	long		filepos=0L;
 	long		timeleft;
 	ulong		l;
@@ -4646,9 +4646,9 @@ static void ctrl_thread(void* arg)
 				sprintf(str,"%s.rep",scfg.sys_id);
 				if(!(startup->options&FTP_OPT_ALLOW_QWK)
 					|| stricmp(p,str)) {
-					lprintf(LOG_WARNING,"%04d <%s> !attempted to upload invalid path/filename: '%s'"
+					lprintf(LOG_WARNING,"%04d <%s> !attempted to upload invalid path or filename: '%s'"
 						,sock, user.alias, p);
-					sockprintf(sock,sess,"553 Invalid directory.");
+					sockprintf(sock,sess,"553 Invalid path or filename.");
 					continue;
 				}
 				sprintf(fname,"%sfile/%04d.rep",scfg.data_dir,user.number);
