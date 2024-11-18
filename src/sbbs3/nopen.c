@@ -159,7 +159,7 @@ bool _fmutex_open(fmutex_t* fm, const char* text, long max_age, bool auto_remove
 		return false;
 	}
 #else
-	if((fm->fd = sopen(fname, O_CREAT|O_WRONLY|O_EXCL, SH_DENYRW, DEFFILEMODE)) < 0)
+	if((fm->fd = sopen(fm->name, O_CREAT|O_WRONLY|O_EXCL, SH_DENYRW, DEFFILEMODE)) < 0)
 		return false;
 #endif
 #if !defined(NO_SOCKET_SUPPORT)
