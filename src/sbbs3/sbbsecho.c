@@ -103,6 +103,7 @@ char*			text[TOTAL_TEXT];
 
 bool pause_on_exit=false;
 bool pause_on_abend=false;
+bool mtxfile_locked=false;
 bool terminated=false;
 
 str_list_t	locked_bso_nodes;
@@ -686,7 +687,7 @@ bool bso_lock_node(fidoaddr_t dest)
 	for(unsigned attempt=0;;) {
 		char tmp[128];
 		time_t t;
-		if(fmutex_open(fname, program_id(), cfg.bsy_timeout, &t, /* auto-remove: */true) >= 0)
+		if(fmutex(fname, program_id(), cfg.bsy_timeout, &t))
 			break;
 		lprintf(LOG_NOTICE, "Node (%s) externally locked via: %s (since %s)", smb_faddrtoa(&dest, NULL), fname, time_as_hhmm(&scfg, t, tmp));
 		if(++attempt >= cfg.bso_lock_attempts) {
@@ -2987,6 +2988,7 @@ const char* area_desc(const char* areatag)
 void cleanup(void)
 {
 	char*		p;
+	char		path[MAX_PATH+1];
 
 	if(bad_areas != NULL) {
 		lprintf(LOG_DEBUG, "Writing %lu areas to %s", (ulong)strListCount(bad_areas), cfg.badareafile);
@@ -3008,6 +3010,16 @@ void cleanup(void)
 			fclose(fp);
 		}
 		strListFree(&bad_areas);
+	}
+	while((p=strListPop(&locked_bso_nodes)) != NULL) {
+		delfile(p, __LINE__);
+		free(p);
+	}
+
+	if(mtxfile_locked) {
+		SAFEPRINTF(path,"%ssbbsecho.bsy", scfg.ctrl_dir);
+		if(delfile(path, __LINE__))
+			mtxfile_locked = false;
 	}
 }
 
@@ -6419,10 +6431,11 @@ int main(int argc, char **argv)
 
 	SAFEPRINTF(path,"%ssbbsecho.bsy", scfg.ctrl_dir);
 	time_t t;
-	if(fmutex_open(path, program_id(), cfg.bsy_timeout, &t, /* auto-remove: */true) < 0) {
+	if(!fmutex(path, program_id(), cfg.bsy_timeout, &t)) {
 		lprintf(LOG_WARNING, "Mutex file exists (%s): SBBSecho appears to be already running since %s", path, time_as_hhmm(&scfg, t, str));
 		bail(1);
 	}
+	mtxfile_locked = true;
 	atexit(cleanup);
 
 	if(cfg.max_log_size && ftello(fidologfile) >= cfg.max_log_size) {
