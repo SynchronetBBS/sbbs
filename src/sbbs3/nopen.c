@@ -112,9 +112,17 @@ bool ftouch(const char* fname)
 	return true;
 }
 
+fmutex_t fmutex_init(void)
+{
+	fmutex_t fm = { 0 };
+	fm.fd = -1;
+	fm.time = -1;
+	return fm;
+}
+
 // Opens a mutex file (implementation)
 static
-bool _fmutex_open(const char* fname, const char* text, long max_age, bool auto_remove, fmutex_t* fm)
+bool _fmutex_open(fmutex_t* fm, const char* text, long max_age, bool auto_remove)
 {
 	size_t len;
 #if !defined(NO_SOCKET_SUPPORT)
@@ -127,20 +135,16 @@ bool _fmutex_open(const char* fname, const char* text, long max_age, bool auto_r
 
 	if(fm == NULL)
 		return false;
-	memset(fm, 0, sizeof *fm);
 	fm->fd = -1;
-	snprintf(fm->name, sizeof fm->name, fname);
-	if(max_age > 0) {
-		fm->time = fdate(fname);
-		if(max_age > 0 && fm->time != -1 && (time(NULL) - fm->time) > max_age) {
-			if(remove(fname) != 0)
-				return false;
-		}
+	fm->time = fdate(fm->name);
+	if(max_age > 0 && fm->time != -1 && (time(NULL) - fm->time) > max_age) {
+		if(remove(fm->name) != 0)
+			return false;
 	}
 #if defined _WIN32
 	if(auto_remove)
 		attributes |= FILE_FLAG_DELETE_ON_CLOSE;
-	h = CreateFileA(fname,
+	h = CreateFileA(fm->name,
 		GENERIC_WRITE,	// dwDesiredAccess
 		0,				// dwShareMode (deny all)
 		NULL,			// lpSecurityAttributes,
@@ -173,9 +177,9 @@ bool _fmutex_open(const char* fname, const char* text, long max_age, bool auto_r
 }
 
 // Opens a mutex file (public API: always auto-removes upon close)
-bool fmutex_open(const char* fname, const char* text, long max_age, fmutex_t* fm)
+bool fmutex_open(fmutex_t* fm, const char* text, long max_age)
 {
-	return _fmutex_open(fname, text, max_age, /* auto-remove: */true, fm);
+	return _fmutex_open(fm, text, max_age, /* auto-remove: */true);
 }
 
 bool fmutex_close(fmutex_t* fm)
@@ -185,6 +189,7 @@ bool fmutex_close(fmutex_t* fm)
 	if(fm->fd < 0) // already closed (or never opened)
 		return true;
 #if !defined _WIN32 // should only be necessary (and possible) on *nix
+	// We remove before close to insure the file we remove is the file we opened
 	if(unlink(fm->name) != 0)
 		return false;
 #endif
@@ -199,7 +204,8 @@ bool fmutex(const char* fname, const char* text, long max_age, time_t* tp)
 {
 	fmutex_t fm;
 
-	if(!_fmutex_open(fname, text, max_age, /* auto_remove: */false, &fm)) {
+	SAFECOPY(fm.name, fname);
+	if(!_fmutex_open(&fm, text, max_age, /* auto_remove: */false)) {
 		if(tp != NULL)
 			*tp = fm.time;
 		return false;

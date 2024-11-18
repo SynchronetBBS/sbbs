@@ -2918,11 +2918,11 @@ void event_thread(void* arg)
 				sbbs->useron.number = atoi(fname+offset);
 				getuserdat(&sbbs->cfg,&sbbs->useron);
 				if(sbbs->useron.number != 0 && !(sbbs->useron.misc&(DELETED|INACTIVE))) {
-					SAFEPRINTF(lockfname,"%s.lock",fname);
 					fmutex_t lockfile;
-					if(!fmutex_open(lockfname, startup->host_name, TIMEOUT_MUTEX_FILE, &lockfile)) {
+					SAFEPRINTF(lockfile.name,"%s.lock",fname);
+					if(!fmutex_open(&lockfile, startup->host_name, TIMEOUT_MUTEX_FILE)) {
 						if(difftime(time(NULL), lockfile.time) > 60)
-							sbbs->lprintf(LOG_INFO," %s exists (unpack in progress?) since %s", lockfname, time_as_hhmm(&sbbs->cfg, lockfile.time, str));
+							sbbs->lprintf(LOG_INFO," %s exists (unpack in progress?) since %s", lockfile.name, time_as_hhmm(&sbbs->cfg, lockfile.time, str));
 						continue;
 					}
 					sbbs->lprintf(LOG_DEBUG, "Opened %s", lockfname);
@@ -2986,11 +2986,11 @@ void event_thread(void* arg)
 					sbbs->fremove(WHERE, fname, /* log-all-errors: */true);
 					continue;
 				}
-				SAFEPRINTF2(lockfname,"%spack%04u.lock",sbbs->cfg.data_dir,usernum);
 				fmutex_t lockfile;
-				if(!fmutex_open(lockfname, startup->host_name, TIMEOUT_MUTEX_FILE, &lockfile)) {
+				SAFEPRINTF2(lockfile.name,"%spack%04u.lock",sbbs->cfg.data_dir,usernum);
+				if(!fmutex_open(&lockfile, startup->host_name, TIMEOUT_MUTEX_FILE)) {
 					if(difftime(time(NULL), lockfile.time) > 60)
-						sbbs->lprintf(LOG_INFO,"%s exists (pack in progress?) since %s", lockfname, time_as_hhmm(&sbbs->cfg, lockfile.time, str));
+						sbbs->lprintf(LOG_INFO,"%s exists (pack in progress?) since %s", lockfile.name, time_as_hhmm(&sbbs->cfg, lockfile.time, str));
 					continue;
 				}
 				sbbs->lprintf(LOG_DEBUG, "Opened %s", lockfname);
