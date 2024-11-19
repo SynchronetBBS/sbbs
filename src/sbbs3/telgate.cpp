@@ -343,7 +343,8 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, str_list_t
 	if(mode&TG_NOTERMTYPE)
 		request_telnet_opt(TELNET_DONT,TELNET_TERM_TYPE, 3000);	// Re-negotiation of terminal type
 
-	/* Text/NVT mode by default */
+	/* Text/NVT mode by default (for Ctrl-] menu support) */
+	bool remote_was_binary_tx = (telnet_remote_option[TELNET_BINARY_TX] == TELNET_WILL);
 	request_telnet_opt(TELNET_DONT,TELNET_BINARY_TX, 3000);
 	if(!(telnet_mode&TELNET_MODE_OFF) && (mode&TG_PASSTHRU))
 		telnet_mode|=TELNET_MODE_GATE;	// Pass-through telnet commands
@@ -469,6 +470,8 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, str_list_t
 
 	/* Disable Telnet Terminal Echo */
 	request_telnet_opt(TELNET_WILL,TELNET_ECHO);
+	if(remote_was_binary_tx)
+		request_telnet_opt(TELNET_DO,TELNET_BINARY_TX);
 
 	close_socket(remote_socket);
 
