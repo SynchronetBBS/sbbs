@@ -2793,7 +2793,6 @@ static bool is_time_to_run(time_t now, const qhub_t* hub)
 void event_thread(void* arg)
 {
 	char		str[MAX_PATH+1];
-	char		lockfname[MAX_PATH+1];
 	int			i,j;
 	int			file;
 	int			offset;
@@ -2925,11 +2924,11 @@ void event_thread(void* arg)
 							sbbs->lprintf(LOG_INFO," %s exists (unpack in progress?) since %s", lockfile.name, time_as_hhmm(&sbbs->cfg, lockfile.time, str));
 						continue;
 					}
-					sbbs->lprintf(LOG_DEBUG, "Opened %s", lockfname);
+					sbbs->lprintf(LOG_DEBUG, "Opened %s", lockfile.name);
 					if(!fexist(fname)) {
 						sbbs->lprintf(LOG_DEBUG, "%s already gone", fname);
 						if(!fmutex_close(&lockfile))
-							sbbs->errormsg(WHERE, ERR_CLOSE, lockfname);
+							sbbs->errormsg(WHERE, ERR_CLOSE, lockfile.name);
 						continue;
 					}
 					sbbs->online=ON_LOCAL;
@@ -2957,7 +2956,7 @@ void event_thread(void* arg)
 						sbbs->delfiles(str, badpkt, /* keep: */10);
 					}
 					if(!fmutex_close(&lockfile))
-						sbbs->errormsg(WHERE, ERR_CLOSE, lockfname);
+						sbbs->errormsg(WHERE, ERR_CLOSE, lockfile.name);
 				}
 				else {
 					sbbs->lprintf(LOG_INFO, "Removing: %s", fname);
@@ -2993,11 +2992,11 @@ void event_thread(void* arg)
 						sbbs->lprintf(LOG_INFO,"%s exists (pack in progress?) since %s", lockfile.name, time_as_hhmm(&sbbs->cfg, lockfile.time, str));
 					continue;
 				}
-				sbbs->lprintf(LOG_DEBUG, "Opened %s", lockfname);
+				sbbs->lprintf(LOG_DEBUG, "Opened %s", lockfile.name);
 				if(!fexist(fname)) {
 					sbbs->lprintf(LOG_DEBUG, "%s already gone", fname);
 					if(!fmutex_close(&lockfile))
-						sbbs->errormsg(WHERE, ERR_CLOSE, lockfname);
+						sbbs->errormsg(WHERE, ERR_CLOSE, lockfile.name);
 					continue;
 				}
 				if(!(sbbs->useron.misc&(DELETED|INACTIVE))) {
@@ -3024,7 +3023,7 @@ void event_thread(void* arg)
 				}
 				sbbs->fremove(WHERE, fname);
 				if(!fmutex_close(&lockfile))
-					sbbs->errormsg(WHERE, ERR_CLOSE, lockfname);
+					sbbs->errormsg(WHERE, ERR_CLOSE, lockfile.name);
 			}
 			globfree(&g);
 			sbbs->useron.number = 0;
