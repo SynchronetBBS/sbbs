@@ -1303,6 +1303,18 @@ bool area_is_linked(unsigned area_num, const fidoaddr_t* addr)
 	return false;
 }
 
+void link_area(unsigned area_num, const fidoaddr_t* addr)
+{
+	area_t* area = &cfg.area[area_num];
+	if((area->link = realloc_or_free(area->link, (sizeof *addr) * (area->links + 1))) == NULL) {
+		lprintf(LOG_ERR,"ERROR line %d allocating memory for area "
+			"#%u links.",__LINE__, area_num + 1);
+		bail(1);
+		return;
+	}
+	memcpy(&area->link[area->links++], &addr, sizeof *addr);
+}
+
 /* Returns area index */
 uint find_area(const char* echotag)
 {
@@ -1556,49 +1568,131 @@ int check_elists(const char *areatag, fidoaddr_t addr)
 	}
 	return(match);
 }
-/******************************************************************************
- Used by AREAFIX to add/remove/change areas in the areas file
-******************************************************************************/
-void alter_areas(str_list_t add_area, str_list_t del_area, nodecfg_t* nodecfg, const char* to, bool rescan)
+
+// areafile is in (new) .ini format (e.g. data/areas.ini)
+bool areafile_is_ini = false;
+
+const char* strSub = "sub";
+const char* strLinks = "links";
+const char* strLinkSep = " ";
+const char* strPassthrough = "pass-through";
+
+void add_areas_from_echolists(FILE* afileout, FILE* nmfile
+	,str_list_t add_area, size_t* added
+	,nodecfg_t* nodecfg);
+
+void alter_areas_ini(FILE* afilein, FILE* afileout, FILE* nmfile
+	,str_list_t add_area, size_t* added
+	,str_list_t del_area, size_t* deleted
+	,nodecfg_t* nodecfg, const char* to, bool rescan)
 {
-	FILE *nmfile,*afilein,*afileout,*fwdfile;
-	char str[1024],fields[1024],code[LEN_EXTCODE+1],echotag[FIDO_AREATAG_LEN+1],comment[256]
-		,outpath[MAX_PATH+1]
-		,*p,*tp,nomatch=0,match=0;
-	int	file;
-	unsigned j,k,x,y;
+	bool nomatch = false;
+	unsigned j;
+	faddr_t addr = nodecfg->addr;
+	const char* addr_str = smb_faddrtoa(&addr,NULL);
+
+	str_list_t ini = iniReadFile(afilein);
+	str_list_t areas = iniGetSectionList(ini, /* prefix: */NULL);
+	fclose(afilein);
+
+	for(int i = 0; areas != NULL && areas[i] != NULL; ++i) {
+		const char* echotag = areas[i];         /* Areatag Field */
+		if(echotag[0] == '*') {
+			/* Don't allow down-links to our "Unknown area" */
+			continue;
+		}
+		if(del_area[0] != NULL) { /* Check for areas to remove */
+			bool disconnect_all = (stricmp(del_area[0], "-ALL") == 0);
+			if(disconnect_all || strListFind(del_area, echotag, /* case-sensitive */false) >= 0) {
+				uint areanum = find_area(echotag);
+				if(!area_is_valid(areanum)) {
+					lprintf(LOG_ERR, "Invalid area num on line %d", __LINE__);
+					continue;
+				}
+				if(!area_is_linked(areanum, &addr)) {
+					if(!disconnect_all) {
+						fprintf(nmfile,"%s not connected.\r\n",echotag);
+						lprintf(LOG_NOTICE, "AreaFix (for %s) Unlink-requested area already unlinked: %s"
+							,addr_str, echotag);
+					}
+					continue;
+				}
+				lprintf(LOG_INFO,"AreaFix (for %s) Unlinking area: %s", addr_str, echotag);
+				str_list_t links = iniGetStringList(ini, echotag, strLinks, strLinkSep, "");
+				int link = strListFind(links, addr_str, /* case-sensitive */true);
+				if(link >= 0 && strListFastDelete(links, link, 1)) {
+					iniSetStringList(&ini, echotag, strLinks, strLinkSep, links, &sbbsecho_ini_style);
+					fprintf(nmfile,"%s removed.\r\n",echotag);
+					(*deleted)++;
+				}
+				strListFree(&links);
+				continue;
+			}
+		}
+		if(add_area[0] != NULL) { 				/* Check for areas to add */
+			bool add_all = (stricmp(add_area[0], "+ALL") == 0);
+			j = strListFind(add_area, echotag, /* case-sensitive */false);
+			if(add_all || j >= 0) {
+				if(j >= 0)
+					add_area[j][0]=0;  /* So we can check other lists */
+				uint areanum = find_area(echotag);
+				if(!area_is_valid(areanum)) {
+					lprintf(LOG_ERR, "Invalid area num on line %d", __LINE__);
+					continue;
+				}
+				if(area_is_linked(areanum, &addr)) {
+					fprintf(nmfile,"%s already connected.\r\n",echotag);
+					lprintf(LOG_NOTICE, "AreaFix (for %s) Link-requested area is already connected: %s"
+						,addr_str, echotag);
+				} else if(cfg.add_from_echolists_only && !check_elists(echotag,addr)) {
+					lprintf(LOG_NOTICE, "AreaFix (for %s) Link-requested area not found in EchoLists: %s"
+						,addr_str, echotag);
+					continue;
+				} else {
+					lprintf(LOG_INFO,"AreaFix (for %s) Linking area: %s", addr_str, echotag);
+					link_area(areanum, &addr);
+					char value[INI_MAX_VALUE_LEN] = "";
+					iniGetString(ini, echotag, strLinks, "", value);
+					if(*value != '\0')
+						SAFECAT(value, strLinkSep);
+					SAFECAT(value, addr_str);
+					iniSetString(&ini, echotag, strLinks, value, &sbbsecho_ini_style);
+					fprintf(nmfile,"%s added.\r\n",echotag);
+					(*added)++;
+				}
+				if(rescan && area_is_linked(areanum, &addr) && is_valid_subnum(&scfg, cfg.area[areanum].sub)) {
+					ulong exported = export_echomail(scfg.sub[cfg.area[areanum].sub]->code, nodecfg, true);
+					fprintf(nmfile,"%s rescanned and %lu messages exported.\r\n", echotag, exported);
+				}
+				continue;
+			}
+		}
+		nomatch = true; 						/* This area wasn't in there */
+	}
+	strListWriteFile(afileout, ini, "\n");
+	strListFree(&ini);
+	strListFree(&areas);
+	if(nomatch || (add_area[0] != NULL && stricmp(add_area[0],"+ALL") == 0))
+		add_areas_from_echolists(afileout, nmfile, add_area, added, nodecfg);
+}
+
+void alter_areas_bbs(FILE* afilein, FILE* afileout, FILE* nmfile
+	,str_list_t add_area, size_t* added
+	,str_list_t del_area, size_t* deleted
+	,nodecfg_t* nodecfg, const char* to, bool rescan)
+{
+	char fields[1024],code[LEN_EXTCODE+1],echotag[FIDO_AREATAG_LEN+1],comment[256]
+		,*p,*tp;
+	bool nomatch = false;
+	unsigned j;
 	unsigned u;
-	size_t add_count, added = 0;
-	size_t del_count, deleted = 0;
-	struct stat st = {0};
+	size_t add_count;
+	size_t del_count;
 	faddr_t addr = nodecfg->addr;
 
 	add_count = strListCount(add_area);
 	del_count = strListCount(del_area);
 
-	if((nmfile=tmpfile())==NULL) {
-		lprintf(LOG_ERR,"ERROR in tmpfile()");
-		return;
-	}
-	SAFECOPY(outpath,cfg.areafile);
-	*getfname(outpath)=0;
-	SAFECAT(outpath, "AREASXXXXXX");
-	if((file = mkstemp(outpath)) == -1) {
-		lprintf(LOG_ERR, "ERROR %u (%s) line %d opening %s", errno, strerror(errno), __LINE__, outpath);
-		fclose(nmfile);
-		return;
-	}
-	if((afileout=fdopen(file, "w+"))==NULL) {
-		lprintf(LOG_ERR,"ERROR %u (%s) line %d fdopening %s",errno,strerror(errno),__LINE__,outpath);
-		fclose(nmfile);
-		return;
-	}
-	if((afilein=fopen(cfg.areafile,"r"))==NULL) {
-		lprintf(LOG_ERR,"ERROR %u (%s) line %d opening areafile: %s",errno,strerror(errno),__LINE__,cfg.areafile);
-		fclose(afileout);
-		fclose(nmfile);
-		return;
-	}
 	while(!feof(afilein)) {
 		if(!fgets(fields,sizeof(fields),afilein))
 			break;
@@ -1661,7 +1755,7 @@ void alter_areas(str_list_t add_area, str_list_t del_area, nodecfg_t* nodecfg, c
 							fprintf(afileout,"%s",comment);
 						fprintf(afileout,"\n");
 						fprintf(nmfile,"%s removed.\r\n",echotag);
-						deleted++;
+						(*deleted)++;
 						break;
 					}
 				}
@@ -1697,17 +1791,7 @@ void alter_areas(str_list_t add_area, str_list_t del_area, nodecfg_t* nodecfg, c
 						lprintf(LOG_INFO,"AreaFix (for %s) Linking area: %s", smb_faddrtoa(&addr,NULL), echotag);
 
 						/* Added 12/4/95 to add link to connected links */
-
-						++cfg.area[u].links;
-						if((cfg.area[u].link=(fidoaddr_t *)
-							realloc_or_free(cfg.area[u].link,sizeof(fidoaddr_t)
-							*(cfg.area[u].links)))==NULL) {
-							lprintf(LOG_ERR,"ERROR line %d allocating memory for area "
-								"#%u links.",__LINE__,u+1);
-							bail(1);
-							return;
-						}
-						memcpy(&cfg.area[u].link[cfg.area[u].links-1],&addr,sizeof(fidoaddr_t));
+						link_area(u, &addr);
 
 						fprintf(afileout,"%-*s %-*s "
 							,LEN_EXTCODE, code
@@ -1719,7 +1803,7 @@ void alter_areas(str_list_t add_area, str_list_t del_area, nodecfg_t* nodecfg, c
 							fprintf(afileout,"%s",comment);
 						fprintf(afileout,"\n");
 						fprintf(nmfile,"%s added.\r\n",echotag);
-						added++;
+						(*added)++;
 						break;
 					}
 				}
@@ -1736,48 +1820,73 @@ void alter_areas(str_list_t add_area, str_list_t del_area, nodecfg_t* nodecfg, c
 		fprintf(afileout,"%s\n",fields);	/* No match so write back line */
 	}
 	fclose(afilein);
-	if(nomatch || (add_count && stricmp(add_area[0],"+ALL") == 0)) {
-		for(j=0;j<cfg.listcfgs;j++) {
-			match=0;
-			for(k=0; cfg.listcfg[j].keys[k] ;k++) {
-				if(match) break;
-				for(x=0; nodecfg->keys[x] ;x++) {
-					if(!stricmp(cfg.listcfg[j].keys[k]
-						,nodecfg->keys[x])) {
-						if((fwdfile=tmpfile())==NULL) {
-							lprintf(LOG_ERR,"ERROR line %d opening forward temp "
-								"file",__LINE__);
-							match=1;
+	if(nomatch || (add_area[0] != NULL && stricmp(add_area[0],"+ALL") == 0))
+		add_areas_from_echolists(afileout, nmfile, add_area, added, nodecfg);
+}
+
+void add_areas_from_echolists(FILE* afileout, FILE* nmfile
+	,str_list_t add_area, size_t* added
+	,nodecfg_t* nodecfg)
+{
+	char str[1024];
+	char echotag[FIDO_AREATAG_LEN+1];
+	char* p;
+	char* tp;
+	bool match = false;
+	FILE* afilein;
+	FILE* fwdfile;
+	uint j, k, x, y;
+	faddr_t addr = nodecfg->addr;
+
+	for(j=0;j<cfg.listcfgs;j++) {
+		match=0;
+		for(k=0; cfg.listcfg[j].keys[k] ;k++) {
+			if(match) break;
+			for(x=0; nodecfg->keys[x] ;x++) {
+				if(!stricmp(cfg.listcfg[j].keys[k]
+					,nodecfg->keys[x])) {
+					if((fwdfile=tmpfile())==NULL) {
+						lprintf(LOG_ERR,"ERROR line %d opening forward temp "
+							"file",__LINE__);
+						match=1;
+						break;
+					}
+					if((afilein=fopen(cfg.listcfg[j].listpath,"r"))==NULL) {
+						lprintf(LOG_ERR,"ERROR %u (%s) line %d opening %s"
+							,errno,strerror(errno),__LINE__,cfg.listcfg[j].listpath);
+						fclose(fwdfile);
+						match=1;
+						break;
+					}
+					while(!feof(afilein)) {
+						if(!fgets(str,sizeof(str),afilein))
 							break;
-						}
-						if((afilein=fopen(cfg.listcfg[j].listpath,"r"))==NULL) {
-							lprintf(LOG_ERR,"ERROR %u (%s) line %d opening %s"
-								,errno,strerror(errno),__LINE__,cfg.listcfg[j].listpath);
-							fclose(fwdfile);
-							match=1;
-							break;
-						}
-						while(!feof(afilein)) {
-							if(!fgets(str,sizeof(str),afilein))
-								break;
-							p=str;
-							SKIP_WHITESPACE(p);
-							if(*p==';')     /* Ignore Comment Lines */
+						p=str;
+						SKIP_WHITESPACE(p);
+						if(*p==';')     /* Ignore Comment Lines */
+							continue;
+						tp=p;
+						FIND_WHITESPACE(tp);
+						*tp=0;
+						SAFECOPY(echotag, p);
+						if(add_area[0]!=NULL && stricmp(add_area[0],"+ALL")==0) {
+							if(area_is_valid(find_area(p)))
 								continue;
-							tp=p;
-							FIND_WHITESPACE(tp);
-							*tp=0;
-							SAFECOPY(echotag, p);
-							if(add_area[0]!=NULL && stricmp(add_area[0],"+ALL")==0) {
-								if(area_is_valid(find_area(p)))
-									continue;
-							}
-							for(y=0;add_area[y]!=NULL;y++)
-								if((!stricmp(add_area[y], echotag) &&
-									add_area[y][0]) ||
-									!stricmp(add_area[0],"+ALL"))
-									break;
-							if(add_area[y]!=NULL) {
+						}
+						for(y=0;add_area[y]!=NULL;y++)
+							if((!stricmp(add_area[y], echotag) &&
+								add_area[y][0]) ||
+								!stricmp(add_area[0],"+ALL"))
+								break;
+						if(add_area[y]!=NULL) {
+							if(areafile_is_ini) {
+								fprintf(afileout,"\n[%s]\n%s = true", echotag, strPassthrough);
+								fprintf(afileout,"\n%s = ", strLinks);
+								if(cfg.listcfg[j].hub.zone)
+									fprintf(afileout,"%s%s"
+										,smb_faddrtoa(&cfg.listcfg[j].hub,NULL), strLinkSep);
+								fprintf(afileout,"%s\n",smb_faddrtoa(&addr,NULL));
+							} else {
 								fprintf(afileout,"%-*s %-*s"
 									,LEN_EXTCODE, "P"
 									,FIDO_AREATAG_LEN, echotag);
@@ -1785,30 +1894,75 @@ void alter_areas(str_list_t add_area, str_list_t del_area, nodecfg_t* nodecfg, c
 									fprintf(afileout," %s"
 										,smb_faddrtoa(&cfg.listcfg[j].hub,NULL));
 								fprintf(afileout," %s\n",smb_faddrtoa(&addr,NULL));
-								fprintf(nmfile,"%s added.\r\n", echotag);
-								if(stricmp(add_area[0],"+ALL"))
-									add_area[y][0]=0;
-								if(cfg.listcfg[j].forward
-									&& cfg.listcfg[j].hub.zone)
-									fprintf(fwdfile,"%s\r\n", echotag);
-								added++;
-								lprintf(LOG_NOTICE, "AreaFix (for %s) Adding area from EchoList (%s): %s"
-									, smb_faddrtoa(&addr,NULL), cfg.listcfg[j].listpath, echotag);
 							}
+							fprintf(nmfile,"%s added.\r\n", echotag);
+							if(stricmp(add_area[0],"+ALL"))
+								add_area[y][0]=0;
+							if(cfg.listcfg[j].forward
+								&& cfg.listcfg[j].hub.zone)
+								fprintf(fwdfile,"%s\r\n", echotag);
+							(*added)++;
+							lprintf(LOG_NOTICE, "AreaFix (for %s) Adding area from EchoList (%s): %s"
+								, smb_faddrtoa(&addr,NULL), cfg.listcfg[j].listpath, echotag);
 						}
-						fclose(afilein);
-						if(cfg.listcfg[j].forward && ftell(fwdfile)>0)
-							file_to_netmail(fwdfile,cfg.listcfg[j].password
-								,cfg.listcfg[j].hub,/* To: */cfg.listcfg[j].areamgr);
-						fclose(fwdfile);
-						match=1;
-						break;
 					}
+					fclose(afilein);
+					if(cfg.listcfg[j].forward && ftell(fwdfile)>0)
+						file_to_netmail(fwdfile,cfg.listcfg[j].password
+							,cfg.listcfg[j].hub,/* To: */cfg.listcfg[j].areamgr);
+					fclose(fwdfile);
+					match=1;
+					break;
 				}
 			}
 		}
 	}
-	if(add_count && stricmp(add_area[0],"+ALL")) {
+}
+
+/******************************************************************************
+ Used by AREAFIX to add/remove/change areas in the areas file
+******************************************************************************/
+void alter_areas(str_list_t add_area, str_list_t del_area, nodecfg_t* nodecfg, const char* to, bool rescan)
+{
+	FILE *nmfile,*afilein,*afileout;
+	char outpath[MAX_PATH+1];
+	int	file;
+	unsigned u;
+	size_t added = 0;
+	size_t deleted = 0;
+	struct stat st = {0};
+	faddr_t addr = nodecfg->addr;
+
+	if((nmfile=tmpfile())==NULL) {
+		lprintf(LOG_ERR,"ERROR in tmpfile()");
+		return;
+	}
+	SAFECOPY(outpath,cfg.areafile);
+	*getfname(outpath)=0;
+	SAFECAT(outpath, "AREASXXXXXX");
+	if((file = mkstemp(outpath)) == -1) {
+		lprintf(LOG_ERR, "ERROR %u (%s) line %d opening %s", errno, strerror(errno), __LINE__, outpath);
+		fclose(nmfile);
+		return;
+	}
+	if((afileout=fdopen(file, "w+"))==NULL) {
+		lprintf(LOG_ERR,"ERROR %u (%s) line %d fdopening %s",errno,strerror(errno),__LINE__,outpath);
+		fclose(nmfile);
+		return;
+	}
+	if((afilein=fopen(cfg.areafile,"r"))==NULL) {
+		lprintf(LOG_ERR,"ERROR %u (%s) line %d opening areafile: %s",errno,strerror(errno),__LINE__,cfg.areafile);
+		fclose(afileout);
+		fclose(nmfile);
+		return;
+	}
+
+	if(areafile_is_ini)
+		alter_areas_bbs(afilein, afileout, nmfile, add_area, &added, del_area, &deleted, nodecfg, to, rescan);
+	else
+		alter_areas_ini(afilein, afileout, nmfile, add_area, &added, del_area, &deleted, nodecfg, to, rescan);
+
+	if(add_area[0] != NULL && stricmp(add_area[0],"+ALL")) {
 		for(u=0;add_area[u]!=NULL;u++)
 			if(add_area[u][0]) {
 				fprintf(nmfile,"%s not found.\r\n",add_area[u]);
@@ -1876,8 +2030,11 @@ bool add_sub_to_arealist(sub_t* sub, fidoaddr_t uplink)
 		if(last_ch != '\n')
 			fputc('\n', fp);
 
-		fprintf(fp, "%-*s %-*s %s\n"
-			,LEN_EXTCODE, sub->code, FIDO_AREATAG_LEN, echotag, smb_faddrtoa(&uplink, NULL));
+		if(areafile_is_ini)
+			fprintf(fp, "\n[%s]\n%s = %s\n%s = %s\n", echotag, strSub, sub->code, strLinks, smb_faddrtoa(&uplink, NULL));
+		else
+			fprintf(fp, "%-*s %-*s %s\n"
+				,LEN_EXTCODE, sub->code, FIDO_AREATAG_LEN, echotag, smb_faddrtoa(&uplink, NULL));
 		fclose(fp);
 	}
 
@@ -6152,17 +6309,160 @@ void check_free_diskspace(const char* path)
 	}
 }
 
+void read_areafile_ini(FILE* stream)
+{
+	char value[INI_MAX_VALUE_LEN];
+	str_list_t ini = iniReadFile(stream);
+	str_list_t areas = iniGetSectionList(ini, /* prefix: */NULL);
+
+	for(size_t u = 0; areas != NULL && areas[u] != NULL; ++u) {
+		char* area_tag = areas[u];
+		int areanum = cfg.areas;
+		if(!new_area(/* tag: */NULL, /* Pass-through by default: */INVALID_SUB, /* link: */NULL)) {
+			lprintf(LOG_ERR,"ERROR allocating memory for area #%u.",cfg.areas + 1);
+			bail(1);
+			return;
+		}
+		str_list_t keys = iniGetSection(ini, area_tag);
+		if(!iniGetBool(keys, ROOT_SECTION, strPassthrough, false)) {
+			if((cfg.area[areanum].sub = getsubnum(&scfg, iniGetString(keys, ROOT_SECTION, strSub, "", value))) >= scfg.total_subs) {
+				printf("\n");
+				lprintf(LOG_WARNING,"%s: Unrecognized internal code, assumed passthru", value);
+			}
+		}
+		if(area_tag[0]=='*')         /* UNKNOWN-ECHO area */
+			cfg.badecho = areanum;
+		if((cfg.area[areanum].tag=strdup(area_tag))==NULL) {
+			printf("\n");
+			lprintf(LOG_ERR,"ERROR allocating memory for area #%u tag."
+				,areanum+1);
+			bail(1);
+			return;
+		}
+		str_list_t links = iniGetStringList(keys, ROOT_SECTION, strLinks, strLinkSep, NULL);
+		cfg.area[areanum].links = strListCount(links);
+		if((cfg.area[areanum].link = malloc(sizeof(fidoaddr_t) * (cfg.area[areanum].links))) == NULL) {
+			printf("\n");
+			lprintf(LOG_ERR,"ERROR allocating memory for area #%u links."
+				,areanum+1);
+			bail(1);
+			return;
+		}
+		cfg.area[areanum].links = 0;
+		for(size_t l = 0; links != NULL && links[l] != NULL; ++l) {
+			fidoaddr_t link = atofaddr(links[l]);
+			if(findnodecfg(&cfg, link, /* exact: */cfg.require_linked_node_cfg) == NULL) {
+				printf("\n");
+				lprintf(LOG_WARNING, "Configuration for %s-linked-node (%s) not found in %s"
+					,cfg.area[areanum].tag, faddrtoa(&link), cfg.cfgfile);
+			} else {
+				cfg.area[areanum].link[cfg.area[areanum].links++] = link;
+			}
+		}
+		strListFree(&links);
+		strListFree(&keys);
+	}
+	strListFree(&areas);
+	strListFree(&ini);
+}
+
+void read_areafile_bbs(FILE* stream)
+{
+	char	str[1025]
+			,*p,*tp;
+	char	tmp_code[LEN_EXTCODE+1];
+	char	area_tag[FIDO_AREATAG_LEN+1];
+	int 	i;
+
+	while(!terminated) {
+		if(!fgets(str,sizeof(str),stream))
+			break;
+		truncsp(str);
+		p=str;
+		SKIP_WHITESPACE(p);	/* Find first printable char */
+		if(*p==';' || !*p)          /* Ignore blank lines or start with ; */
+			continue;
+		int areanum = cfg.areas;
+		if(!new_area(/* tag: */NULL, /* Pass-through by default: */INVALID_SUB, /* link: */NULL)) {
+			lprintf(LOG_ERR,"ERROR allocating memory for area #%u.",cfg.areas + 1);
+			bail(1);
+			return;
+		}
+		sprintf(tmp_code,"%-.*s",LEN_EXTCODE,p);
+		tp=tmp_code;
+		FIND_WHITESPACE(tp);
+		*tp=0;
+		for(i=0;i<scfg.total_subs;i++)
+			if(!stricmp(tmp_code,scfg.sub[i]->code))
+				break;
+		if(i<scfg.total_subs)
+			cfg.area[areanum].sub = i;
+		else if(stricmp(tmp_code,"P")) {
+			printf("\n");
+			lprintf(LOG_WARNING,"%s: Unrecognized internal code, assumed passthru",tmp_code);
+		}
+
+		FIND_WHITESPACE(p);				/* Skip code */
+		SKIP_WHITESPACE(p);				/* Skip white space */
+		SAFECOPY(area_tag,p);		       /* Area tag */
+		truncstr(area_tag,"\t ");
+		strupr(area_tag);
+		if(area_tag[0]=='*')         /* UNKNOWN-ECHO area */
+			cfg.badecho=areanum;
+		if(areanum > 0 && area_is_valid(find_area(area_tag))) {
+			printf("\n");
+			lprintf(LOG_WARNING, "DUPLICATE AREA (%s) in area file (%s), IGNORED!", area_tag, cfg.areafile);
+			cfg.areas--;
+			continue;
+		}
+		if((cfg.area[areanum].tag=strdup(area_tag))==NULL) {
+			printf("\n");
+			lprintf(LOG_ERR,"ERROR allocating memory for area #%u tag."
+				,areanum+1);
+			bail(1);
+			return;
+		}
+
+		FIND_WHITESPACE(p);		/* Skip tag */
+		SKIP_WHITESPACE(p);		/* Skip white space */
+
+		while(*p && *p!=';') {
+			if(!IS_DIGIT(*p)) {
+				printf("\n");
+				lprintf(LOG_WARNING, "Invalid Area File line, expected link address(es) after echo-tag: '%s'", str);
+				break;
+			}
+			if((cfg.area[areanum].link=(fidoaddr_t *)
+				realloc_or_free(cfg.area[areanum].link
+				,sizeof(fidoaddr_t)*(cfg.area[areanum].links+1)))==NULL) {
+				printf("\n");
+				lprintf(LOG_ERR,"ERROR allocating memory for area #%u links."
+					,areanum+1);
+				bail(1);
+				return;
+			}
+			fidoaddr_t link = atofaddr(p);
+			cfg.area[areanum].link[cfg.area[areanum].links] = link;
+			if(findnodecfg(&cfg, link, /* exact: */cfg.require_linked_node_cfg) == NULL) {
+				printf("\n");
+				lprintf(LOG_WARNING, "Configuration for %s-linked-node (%s) not found in %s"
+					,cfg.area[areanum].tag, faddrtoa(&link), cfg.cfgfile);
+			} else
+				cfg.area[areanum].links++;
+			FIND_WHITESPACE(p);	/* Skip address */
+			SKIP_WHITESPACE(p);	/* Skip white space */
+		}
+	}
+}
+
 /***********************************/
 /* Synchronet/FidoNet Message util */
 /***********************************/
 int main(int argc, char **argv)
 {
 	FILE*	fidomsg;
-	char	str[1025],path[MAX_PATH+1]
-			,*p,*tp;
+	char	str[1025],path[MAX_PATH+1];
 	char*	sub_code = NULL;
-	char	tmp_code[LEN_EXTCODE+1];
-	char	area_tag[FIDO_AREATAG_LEN+1];
 	char	cmdline[256];
 	int 	i,j,fmsg;
 	size_t	f;
@@ -6465,94 +6765,17 @@ int main(int argc, char **argv)
 	cfg.area=NULL;
 
 	(void)fexistcase(cfg.areafile);
+	char *ext = getfext(cfg.areafile);
+	areafile_is_ini = (ext != NULL && stricmp(ext, ".ini") == 0);
+
 	if((stream = fopen(cfg.areafile,"r")) == NULL) {
 		lprintf(LOG_NOTICE, "Could not open Area File (%s): %s", cfg.areafile, strerror(errno));
 	} else {
 		printf("Reading %s",cfg.areafile);
-		while(!terminated) {
-			if(!fgets(str,sizeof(str),stream))
-				break;
-			truncsp(str);
-			p=str;
-			SKIP_WHITESPACE(p);	/* Find first printable char */
-			if(*p==';' || !*p)          /* Ignore blank lines or start with ; */
-				continue;
-			int areanum = cfg.areas;
-			if(!new_area(/* tag: */NULL, /* Pass-through by default: */INVALID_SUB, /* link: */NULL)) {
-				lprintf(LOG_ERR,"ERROR allocating memory for area #%u.",cfg.areas + 1);
-				bail(1);
-				return -1;
-			}
-			sprintf(tmp_code,"%-.*s",LEN_EXTCODE,p);
-			tp=tmp_code;
-			FIND_WHITESPACE(tp);
-			*tp=0;
-			for(i=0;i<scfg.total_subs;i++)
-				if(!stricmp(tmp_code,scfg.sub[i]->code))
-					break;
-			if(i<scfg.total_subs)
-				cfg.area[areanum].sub = i;
-			else if(stricmp(tmp_code,"P")) {
-				printf("\n");
-				lprintf(LOG_WARNING,"%s: Unrecognized internal code, assumed passthru",tmp_code);
-			}
-
-			FIND_WHITESPACE(p);				/* Skip code */
-			SKIP_WHITESPACE(p);				/* Skip white space */
-			SAFECOPY(area_tag,p);		       /* Area tag */
-			truncstr(area_tag,"\t ");
-			strupr(area_tag);
-			if(area_tag[0]=='*')         /* UNKNOWN-ECHO area */
-				cfg.badecho=areanum;
-			if(areanum > 0 && area_is_valid(find_area(area_tag))) {
-				printf("\n");
-				lprintf(LOG_WARNING, "DUPLICATE AREA (%s) in area file (%s), IGNORED!", area_tag, cfg.areafile);
-				cfg.areas--;
-				continue;
-			}
-			if((cfg.area[areanum].tag=strdup(area_tag))==NULL) {
-				printf("\n");
-				lprintf(LOG_ERR,"ERROR allocating memory for area #%u tag."
-					,areanum+1);
-				bail(1);
-				return -1;
-			}
-
-			FIND_WHITESPACE(p);		/* Skip tag */
-			SKIP_WHITESPACE(p);		/* Skip white space */
-
-			while(*p && *p!=';') {
-				if(!IS_DIGIT(*p)) {
-					printf("\n");
-					lprintf(LOG_WARNING, "Invalid Area File line, expected link address(es) after echo-tag: '%s'", str);
-					break;
-				}
-				if((cfg.area[areanum].link=(fidoaddr_t *)
-					realloc_or_free(cfg.area[areanum].link
-					,sizeof(fidoaddr_t)*(cfg.area[areanum].links+1)))==NULL) {
-					printf("\n");
-					lprintf(LOG_ERR,"ERROR allocating memory for area #%u links."
-						,areanum+1);
-					bail(1);
-					return -1;
-				}
-				fidoaddr_t link = atofaddr(p);
-				cfg.area[areanum].link[cfg.area[areanum].links] = link;
-				if(findnodecfg(&cfg, link, /* exact: */cfg.require_linked_node_cfg) == NULL) {
-					printf("\n");
-					lprintf(LOG_WARNING, "Configuration for %s-linked-node (%s) not found in %s"
-						,cfg.area[areanum].tag, faddrtoa(&link), cfg.cfgfile);
-				} else
-					cfg.area[areanum].links++;
-				FIND_WHITESPACE(p);	/* Skip address */
-				SKIP_WHITESPACE(p);	/* Skip white space */
-			}
-
-	#if 0
-			if(cfg.area[areanum].sub!=INVALID_SUB || cfg.area[areanum].links)
-				cfg.areas++;		/* Don't allocate if no tossing */
-	#endif
-		}
+		if(areafile_is_ini)
+			read_areafile_ini(stream);
+		else
+			read_areafile_bbs(stream);
 		fclose(stream);
 		printf("\n");
 		lprintf(LOG_DEBUG, "Read %u areas from %s", cfg.areas, cfg.areafile);

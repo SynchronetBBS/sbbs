@@ -28,7 +28,7 @@
 #include "ini_file.h"
 
 #define SBBSECHO_VERSION_MAJOR		3
-#define SBBSECHO_VERSION_MINOR		22
+#define SBBSECHO_VERSION_MINOR		23
 
 #define SBBSECHO_PRODUCT_CODE		0x12FF	/* from http://ftsc.org/docs/ftscprod.013 */
 
@@ -65,7 +65,7 @@ enum pkt_type {
 #define SBBSECHO_MAX_TICPWD_LEN 40	/* FRL-1039: no restrictions on the length ... of the password */
 
 typedef struct {
-    uint		sub;						/* Set to INVALID_SUB if pass-thru */
+    int			sub;						/* Set to INVALID_SUB if pass-thru */
     char*		tag;						/* AreaTag, a.k.a. 'EchoTag' */
 	uint		imported; 					/* Total messages imported this run */
 	uint		exported; 					/* Total messages exported this run */
