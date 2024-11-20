@@ -822,7 +822,7 @@ read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id, int
 	entry->stop_bits = iniGetUShortInt(section, NULL, "StopBits", 1);
 	if (entry->stop_bits < 1 || entry->stop_bits > 2)
 		entry->stop_bits = 1;
-	entry->parity = iniGetEnum(section, NULL, "Parity", parity_enum, PARITY_NONE);
+	entry->parity = iniGetEnum(section, NULL, "Parity", parity_enum, SYNCTERM_PARITY_NONE);
 
         /* Log Stuff */
 	iniGetSString(section, NULL, "LogFile", "", entry->logfile, sizeof(entry->logfile));

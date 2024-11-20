@@ -110,9 +110,9 @@ enum {
 };
 
 enum {
-	PARITY_NONE,
-	PARITY_EVEN,
-	PARITY_ODD,
+	SYNCTERM_PARITY_NONE,
+	SYNCTERM_PARITY_EVEN,
+	SYNCTERM_PARITY_ODD,
 };
 
 /* NOTE: changing this may require updating sort_order in bbslist.c */

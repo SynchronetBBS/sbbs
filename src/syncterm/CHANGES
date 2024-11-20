@@ -9,6 +9,7 @@ Fix crash when editing blank "extra" bbslist entry
 Support copy/paste in BBS list
 Show current list path, not default in File Locations
 Explicitly set serial port to 8N1
+Add support bit data bits, stop bits, and parity
 
 Version 1.2rc6
 --------------
