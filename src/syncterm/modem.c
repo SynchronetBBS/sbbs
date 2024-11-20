@@ -164,7 +164,7 @@ modem_connect(struct bbslist *bbs)
 				return -1;
 			}
 		}
-		if (!comSetParity(com, false, false)) {
+		if (!comSetParity(com, bbs->parity != PARITY_NONE, bbs->parity == PARITY_ODD)) {
 			if (!bbs->hidepopups)
 				uifcmsg("Cannot Set Parity", "`Cannot Set Parity`\n\n"
 				    "Cannot open the specified serial device.\n");
@@ -172,7 +172,7 @@ modem_connect(struct bbslist *bbs)
 			comClose(com);
 			return -1;
 		}
-		if (!comSetBits(com, 8, 1)) {
+		if (!comSetBits(com, bbs->data_bits, bbs->stop_bits)) {
 			if (!bbs->hidepopups)
 				uifcmsg("Cannot Set Data Bits", "`Cannot Set Data Bits`\n\n"
 				    "Cannot open the specified serial device.\n");
@@ -208,6 +208,22 @@ modem_connect(struct bbslist *bbs)
 				comClose(com);
 				return -1;
 			}
+		}
+		if (!comSetParity(com, bbs->parity != PARITY_NONE, bbs->parity == PARITY_ODD)) {
+			if (!bbs->hidepopups)
+				uifcmsg("Cannot Set Parity", "`Cannot Set Parity`\n\n"
+				    "Cannot open the specified serial device.\n");
+			conn_api.terminate = -1;
+			comClose(com);
+			return -1;
+		}
+		if (!comSetBits(com, bbs->data_bits, bbs->stop_bits)) {
+			if (!bbs->hidepopups)
+				uifcmsg("Cannot Set Data Bits", "`Cannot Set Data Bits`\n\n"
+				    "Cannot open the specified serial device.\n");
+			conn_api.terminate = -1;
+			comClose(com);
+			return -1;
 		}
 		if (!comRaiseDTR(com)) {
 			if (!bbs->hidepopups)

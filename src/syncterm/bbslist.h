@@ -109,6 +109,12 @@ enum {
 	RIP_VERSION_3
 };
 
+enum {
+	PARITY_NONE,
+	PARITY_EVEN,
+	PARITY_ODD,
+};
+
 /* NOTE: changing this may require updating sort_order in bbslist.c */
 struct bbslist {
 	char               name[LIST_NAME_MAX + 1];
@@ -145,6 +151,11 @@ struct bbslist {
 	bool               has_fingerprint;
 	uint8_t            ssh_fingerprint[20];
 	bool               sftp_public_key;
+	// No way to get a uint8_t from an ini file.
+	short unsigned int stop_bits;
+	short unsigned int data_bits;
+	// Enums are ints (actually, they're unsigned, but ints are what they are
+	int                parity;
 };
 
 extern char *music_names[];
