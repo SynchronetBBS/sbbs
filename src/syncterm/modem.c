@@ -164,7 +164,7 @@ modem_connect(struct bbslist *bbs)
 				return -1;
 			}
 		}
-		if (!comSetParity(com, bbs->parity != PARITY_NONE, bbs->parity == PARITY_ODD)) {
+		if (!comSetParity(com, bbs->parity != SYNCTERM_PARITY_NONE, bbs->parity == SYNCTERM_PARITY_ODD)) {
 			if (!bbs->hidepopups)
 				uifcmsg("Cannot Set Parity", "`Cannot Set Parity`\n\n"
 				    "Cannot open the specified serial device.\n");
@@ -209,7 +209,7 @@ modem_connect(struct bbslist *bbs)
 				return -1;
 			}
 		}
-		if (!comSetParity(com, bbs->parity != PARITY_NONE, bbs->parity == PARITY_ODD)) {
+		if (!comSetParity(com, bbs->parity != SYNCTERM_PARITY_NONE, bbs->parity == SYNCTERM_PARITY_ODD)) {
 			if (!bbs->hidepopups)
 				uifcmsg("Cannot Set Parity", "`Cannot Set Parity`\n\n"
 				    "Cannot open the specified serial device.\n");
