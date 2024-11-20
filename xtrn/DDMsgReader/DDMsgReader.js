@@ -185,6 +185,9 @@
  *                              window, if there's an area change header in use, refresh it
  *                              and the header lines, since the scrollable help window would
  *                              display over them.
+ * 2024-11-20 Eric Oulashin     Version 1.96c
+ *                              Bug fix: When showing a poll vote from the user, it should
+ *                              show people who've voted - ensure it only counts vote responses
  */
 
 "use strict";
@@ -292,8 +295,8 @@ var hexdump = load('hexdump_lib.js');
 
 
 // Reader version information
-var READER_VERSION = "1.96b";
-var READER_DATE = "2024-11-03";
+var READER_VERSION = "1.96c";
+var READER_DATE = "2024-11-20";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -18721,22 +18724,26 @@ function DigDistMsgReader_GetMsgBody(pMsgHdr)
 				{
 					if (tmpHdrs[tmpProp] == null)
 						continue;
-					// If this header's thread_back or reply_id matches the poll message
-					// number, then append the 'user voted' string to the message body.
+					// Look for poll votes: If this header's thread_back or reply_id matches the
+					// poll message number, and there's no message body and the header's field_list
+					// is empty, then append the 'user voted' string to the message body.
 					if ((tmpHdrs[tmpProp].thread_back == pMsgHdr.number) || (tmpHdrs[tmpProp].reply_id == pMsgHdr.id))
 					{
 						var msgWrittenLocalTime = msgWrittenTimeToLocalBBSTime(tmpHdrs[tmpProp]);
 						var voteDate = strftime("%a %b %d %Y %H:%M:%S", msgWrittenLocalTime);
 						var grpName = "";
 						var msgbaseCfgName = "";
+						var tmpMessageBody = "";
 						var msgbase = new MsgBase(this.subBoardCode);
 						if (msgbase.open())
 						{
 							grpName = msgbase.cfg.grp_name;
 							msgbaseCfgName = msgbase.cfg.name;
+							tmpMessageBody = msgbase.get_msg_body(false, tmpHdrs[tmpProp].number, false, false, true, true);
 							msgbase.close();
 						}
-						retObj.msgBody += format(userVotedInYourPollText, voteDate, grpName, msgbaseCfgName, tmpHdrs[tmpProp].from, pMsgHdr.subject);
+						if (tmpHdrs[tmpProp].field_list.length == 0 && (tmpMessageBody == null || tmpMessageBody.length == 0))
+							retObj.msgBody += format(userVotedInYourPollText, voteDate, grpName, msgbaseCfgName, tmpHdrs[tmpProp].from, pMsgHdr.subject);
 					}
 				}
 			}
