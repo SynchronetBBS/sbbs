@@ -283,7 +283,7 @@ char                          music_helpbuf[] = "`ANSI Music Setup`\n\n"
 static char *address_families[] = {"PerDNS", "IPv4", "IPv6", NULL};
 static char *address_family_names[] = {"As per DNS", "IPv4 only", "IPv6 only", NULL};
 
-static char *parity_enum[] = {"None", "Even", "Odd"};
+static char *parity_enum[] = {"None", "Even", "Odd", NULL};
 
 static char *address_family_help = "`Address Family`\n\n"
     "Select the address family to resolve\n\n"
