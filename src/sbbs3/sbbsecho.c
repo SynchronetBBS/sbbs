@@ -1587,10 +1587,13 @@ void alter_areas_ini(FILE* afilein, FILE* afileout, FILE* nmfile
 	,nodecfg_t* nodecfg, const char* to, bool rescan)
 {
 	bool nomatch = false;
-	unsigned j;
 	faddr_t addr = nodecfg->addr;
 	const char* addr_str = smb_faddrtoa(&addr,NULL);
+	size_t add_count;
+	size_t del_count;
 
+	add_count = strListCount(add_area);
+	del_count = strListCount(del_area);
 	str_list_t ini = iniReadFile(afilein);
 	str_list_t areas = iniGetSectionList(ini, /* prefix: */NULL);
 	fclose(afilein);
@@ -1601,7 +1604,7 @@ void alter_areas_ini(FILE* afilein, FILE* afileout, FILE* nmfile
 			/* Don't allow down-links to our "Unknown area" */
 			continue;
 		}
-		if(del_area[0] != NULL) { /* Check for areas to remove */
+		if(del_count) { /* Check for areas to remove */
 			bool disconnect_all = (stricmp(del_area[0], "-ALL") == 0);
 			if(disconnect_all || strListFind(del_area, echotag, /* case-sensitive */false) >= 0) {
 				uint areanum = find_area(echotag);
@@ -1629,12 +1632,12 @@ void alter_areas_ini(FILE* afilein, FILE* afileout, FILE* nmfile
 				continue;
 			}
 		}
-		if(add_area[0] != NULL) { 				/* Check for areas to add */
+		if(add_count) { 				/* Check for areas to add */
 			bool add_all = (stricmp(add_area[0], "+ALL") == 0);
-			j = strListFind(add_area, echotag, /* case-sensitive */false);
-			if(add_all || j >= 0) {
-				if(j >= 0)
-					add_area[j][0]=0;  /* So we can check other lists */
+			int add_index = strListFind(add_area, echotag, /* case-sensitive */false);
+			if(add_all || add_index >= 0) {
+				if(add_index >= 0)
+					add_area[add_index][0]=0;  /* So we can check other lists */
 				uint areanum = find_area(echotag);
 				if(!area_is_valid(areanum)) {
 					lprintf(LOG_ERR, "Invalid area num on line %d", __LINE__);
@@ -1666,13 +1669,13 @@ void alter_areas_ini(FILE* afilein, FILE* afileout, FILE* nmfile
 				}
 				continue;
 			}
+			nomatch = true; 						/* This area wasn't in there */
 		}
-		nomatch = true; 						/* This area wasn't in there */
 	}
 	strListWriteFile(afileout, ini, "\n");
 	strListFree(&ini);
 	strListFree(&areas);
-	if(nomatch || (add_area[0] != NULL && stricmp(add_area[0],"+ALL") == 0))
+	if(nomatch || (add_count && stricmp(add_area[0],"+ALL") == 0))
 		add_areas_from_echolists(afileout, nmfile, add_area, added, nodecfg);
 }
 
@@ -1820,7 +1823,7 @@ void alter_areas_bbs(FILE* afilein, FILE* afileout, FILE* nmfile
 		fprintf(afileout,"%s\n",fields);	/* No match so write back line */
 	}
 	fclose(afilein);
-	if(nomatch || (add_area[0] != NULL && stricmp(add_area[0],"+ALL") == 0))
+	if(nomatch || (add_count && stricmp(add_area[0],"+ALL") == 0))
 		add_areas_from_echolists(afileout, nmfile, add_area, added, nodecfg);
 }
 
