@@ -283,6 +283,8 @@ char                          music_helpbuf[] = "`ANSI Music Setup`\n\n"
 static char *address_families[] = {"PerDNS", "IPv4", "IPv6", NULL};
 static char *address_family_names[] = {"As per DNS", "IPv4 only", "IPv6 only", NULL};
 
+static char *parity_enum[] = {"None", "Even", "Odd"};
+
 static char *address_family_help = "`Address Family`\n\n"
     "Select the address family to resolve\n\n"
     "`As per DNS`..: Uses what is in the DNS system\n"
@@ -779,10 +781,10 @@ read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id, int
 	iniGetSString(section, NULL, "Address", "", entry->addr, sizeof(entry->addr));
 	entry->conn_type = iniGetEnum(section, NULL, "ConnectionType", conn_types_enum, CONN_TYPE_SSH);
 	entry->flow_control = fc_from_enum(iniGetEnum(section, NULL, "FlowControl", fc_enum, 0));
-	entry->port = iniGetShortInt(section, NULL, "Port", conn_ports[entry->conn_type]);
+	entry->port = iniGetUShortInt(section, NULL, "Port", conn_ports[entry->conn_type]);
 	entry->added = iniGetDateTime(section, NULL, "Added", 0);
 	entry->connected = iniGetDateTime(section, NULL, "LastConnected", 0);
-	entry->calls = iniGetInteger(section, NULL, "TotalCalls", 0);
+	entry->calls = iniGetUInteger(section, NULL, "TotalCalls", 0);
 	iniGetSString(section, NULL, "UserName", "", entry->user, sizeof(entry->user));
 	iniGetSString(section, NULL, "Password", "", entry->password, sizeof(entry->password));
 	iniGetSString(section, NULL, "SystemPassword", "", entry->syspass, sizeof(entry->syspass));
@@ -814,6 +816,13 @@ read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id, int
 	entry->sftp_public_key = iniGetBool(section, NULL, "SFTPPublicKey", false);
 	iniGetSString(section, NULL, "DownloadPath", home, entry->dldir, sizeof(entry->dldir));
 	iniGetSString(section, NULL, "UploadPath", home, entry->uldir, sizeof(entry->uldir));
+	entry->data_bits = iniGetUShortInt(section, NULL, "DataBits", 8);
+	if (entry->data_bits < 7 || entry->data_bits > 8)
+		entry->data_bits = 8;
+	entry->stop_bits = iniGetUShortInt(section, NULL, "StopBits", 1);
+	if (entry->stop_bits < 1 || entry->stop_bits > 2)
+		entry->stop_bits = 1;
+	entry->parity = iniGetEnum(section, NULL, "Parity", parity_enum, PARITY_NONE);
 
         /* Log Stuff */
 	iniGetSString(section, NULL, "LogFile", "", entry->logfile, sizeof(entry->logfile));
@@ -1119,7 +1128,9 @@ edit_name(char *itemname, struct bbslist **list, str_list_t inifile, bool edit_t
 int
 edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdefault)
 {
-	char       opt[22][69]; /* 21=Holds number of menu items, 80=Number of columns */
+	char       opt[25][69]; /* 21=Holds number of menu items, 80=Number of columns */
+	char       optname[69];
+	int        optmap[25];
 	char      *opts[(sizeof(opt) / sizeof(opt[0])) + 1];
 	int        changed = 0;
 	int        copt = 0, i, j;
@@ -1159,61 +1170,106 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 		itemname = item->name;
 	for (; !quitting;) {
 		i = 0;
+		memset(optmap, 0, sizeof(optmap));
 		if (!isdefault) {
+			optmap[i] = 0;
 			sprintf(opt[i++], "Name              %s", itemname);
-			if (item->conn_type == CONN_TYPE_MODEM)
-				sprintf(opt[i++], "Phone Number      %s", item->addr);
-			else if ((item->conn_type == CONN_TYPE_SERIAL) || (item->conn_type == CONN_TYPE_SERIAL_NORTS))
-				sprintf(opt[i++], "Device Name       %s", item->addr);
-			else if (item->conn_type == CONN_TYPE_SHELL)
-				sprintf(opt[i++], "Command           %s", item->addr);
-			else
-				sprintf(opt[i++], "Address           %s", item->addr);
+			optmap[i] = 1;
+			switch (item->conn_type) {
+				case CONN_TYPE_MODEM:
+					sprintf(opt[i++], "Phone Number      %s", item->addr);
+					break;
+				case CONN_TYPE_SERIAL:
+				case CONN_TYPE_SERIAL_NORTS:
+					sprintf(opt[i++], "Device Name       %s", item->addr);
+					break;
+				case CONN_TYPE_SHELL:
+					sprintf(opt[i++], "Command           %s", item->addr);
+					break;
+				default:
+					sprintf(opt[i++], "Address           %s", item->addr);
+					break;
+			}
 		}
+		optmap[i] = 2;
 		sprintf(opt[i++], "Connection Type   %s", conn_types[item->conn_type]);
-		if ((item->conn_type == CONN_TYPE_MODEM) || (item->conn_type == CONN_TYPE_SERIAL) || (item->conn_type == CONN_TYPE_SERIAL_NORTS))
+		if ((item->conn_type == CONN_TYPE_MODEM) || (item->conn_type == CONN_TYPE_SERIAL) || (item->conn_type == CONN_TYPE_SERIAL_NORTS)) {
+			optmap[i] = 3;
 			fc_str(opt[i++], item->flow_control);
-		else if (item->conn_type != CONN_TYPE_SHELL)
+			optmap[i] = 4;
+			sprintf(opt[i++], "Stop Bits         %hu", item->stop_bits);
+			optmap[i] = 5;
+			sprintf(opt[i++], "Data Bits         %hu", item->data_bits);
+			optmap[i] = 6;
+			sprintf(opt[i++], "Parity            %s", parity_enum[item->parity]);
+		}
+		else if (item->conn_type != CONN_TYPE_SHELL) {
+			optmap[i] = 7;
 			sprintf(opt[i++], "TCP Port          %hu", item->port);
+		}
 		if (item->conn_type == CONN_TYPE_MBBS_GHOST) {
+			optmap[i] = 8;
 			printf_trunc(opt[i], sizeof(opt[i]), "Username          %s", item->user);
 			i++;
+			optmap[i] = 9;
 			sprintf(opt[i++], "GHost Program     %s", item->password);
+			optmap[i] = 10;
 			sprintf(opt[i++], "System Password   %s", item->syspass[0] ? "********" : "<none>");
 		}
 		else if (item->conn_type == CONN_TYPE_SSHNA) {
+			optmap[i] = 8;
 			printf_trunc(opt[i], sizeof(opt[i]), "SSH Username      %s", item->user);
 			i++;
+			optmap[i] = 9;
 			sprintf(opt[i++], "BBS Username      %s", item->password);
+			optmap[i] = 10;
 			sprintf(opt[i++], "BBS Password      %s", item->syspass[0] ? "********" : "<none>");
 		}
 		else {
+			optmap[i] = 8;
 			printf_trunc(opt[i], sizeof(opt[i]), "Username          %s", item->user);
 			i++;
+			optmap[i] = 9;
 			sprintf(opt[i++], "Password          %s", item->password[0] ? "********" : "<none>");
+			optmap[i] = 10;
 			sprintf(opt[i++], "System Password   %s", item->syspass[0] ? "********" : "<none>");
 		}
+		optmap[i] = 11;
 		sprintf(opt[i++], "Screen Mode       %s", screen_modes[item->screen_mode]);
+		optmap[i] = 12;
 		sprintf(opt[i++], "Hide Status Line  %s", item->nostatus ? "Yes" : "No");
+		optmap[i] = 13;
 		printf_trunc(opt[i], sizeof(opt[i]), "Download Path     %s", item->dldir);
 		i++;
+		optmap[i] = 14;
 		printf_trunc(opt[i], sizeof(opt[i]), "Upload Path       %s", item->uldir);
 		i++;
+		optmap[i] = 15;
 		strcpy(opt[i++], "Log Configuration");
 		if (item->bpsrate)
 			sprintf(str, "%ubps", item->bpsrate);
 		else
 			strcpy(str, "Current");
+		optmap[i] = 16;
 		sprintf(opt[i++], "Comm Rate         %s", str);
+		optmap[i] = 17;
 		sprintf(opt[i++], "ANSI Music        %s", music_names[item->music]);
+		optmap[i] = 18;
 		sprintf(opt[i++], "Address Family    %s", address_family_names[item->address_family]);
+		optmap[i] = 19;
 		sprintf(opt[i++], "Font              %s", item->font);
+		optmap[i] = 20;
 		sprintf(opt[i++], "Hide Popups       %s", item->hidepopups ? "Yes" : "No");
+		optmap[i] = 21;
 		sprintf(opt[i++], "RIP               %s", rip_versions[item->rip]);
+		optmap[i] = 22;
 		sprintf(opt[i++], "Force LCF Mode    %s", item->force_lcf ? "Yes" : "No");
+		optmap[i] = 23;
 		sprintf(opt[i++], "Yellow is Yellow  %s", item->yellow_is_yellow ? "Yes" : "No");
-		if (item->conn_type == CONN_TYPE_SSH || item->conn_type == CONN_TYPE_SSHNA)
+		if (item->conn_type == CONN_TYPE_SSH || item->conn_type == CONN_TYPE_SSHNA) {
+			optmap[i] = 24;
 			sprintf(opt[i++], "SFTP Public Key   %s", item->sftp_public_key ? "Yes" : "No");
+		}
 		opt[i][0] = 0;
 		uifc.changes = 0;
 
@@ -1314,10 +1370,28 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 		i = uifc.list(WIN_MID | WIN_SAV | WIN_ACT, 0, 0, 0, &copt, &bar,
 		        isdefault ? "Edit Default Connection" : "Edit Directory Entry",
 		        opts);
-		if ((i >= 0) && isdefault)
-			i += 2;
-		if ((i >= 3) && (item->conn_type == CONN_TYPE_SHELL))
-			i++; /* no port number */
+		if (i < -1)
+			continue;
+		// Remember, i gets converted to (unsigned) size_t in comparison
+		if (i > 0 && i >= (sizeof(optmap) / sizeof(optmap[0]))) {
+			continue;
+		}
+		if (i >= 0) {
+			if (optmap[i] == 0)
+				continue;
+			i = optmap[i];
+			strcpy(optname, opt[i]);
+			for (tmpptr = optname; *tmpptr; tmpptr++) {
+				if (tmpptr[0] == 0)
+					break;
+				if (tmpptr[0] == ' ') {
+					if (tmpptr[1] == ' ' || tmpptr[1] == 0) {
+						*tmpptr = 0;
+						break;
+					}
+				}
+			}
+		}
 		switch (i) {
 			case -1:
 				check_exit(false);
@@ -1343,135 +1417,21 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 				}
 				strListFree(&inifile);
 				return changed;
-			case 0:
+			case 0:	// name
 				edit_name(itemname, list, inifile, false);
 				break;
-			case 1:
+			case 1:	// address
 				uifc.helpbuf = address_help;
 				uifc.input(WIN_MID | WIN_SAV,
-				    0,
-				    0
-				    ,
-				    item->conn_type == CONN_TYPE_MODEM ? "Phone Number"
-				                                       : item->conn_type == CONN_TYPE_SERIAL ? "Device Name"
-				                                                                             : item->conn_type == CONN_TYPE_SERIAL_NORTS ? "Device Name"
-				                                                                                                                         : item->conn_type == CONN_TYPE_SHELL ? "Command"
-				                                                                                                                                                              : "Address"
-				    ,
-				    item->addr,
-				    LIST_ADDR_MAX,
-				    K_EDIT);
+				    0, 0 ,optname ,item->addr, LIST_ADDR_MAX, K_EDIT);
 				check_exit(false);
 				iniSetString(&inifile, itemname, "Address", item->addr, &ini_style);
 				break;
-			case 3:
-				if ((item->conn_type == CONN_TYPE_MODEM) || (item->conn_type == CONN_TYPE_SERIAL)
-				    || (item->conn_type == CONN_TYPE_SERIAL_NORTS)) {
-					uifc.helpbuf = "`Flow Control`\n\n"
-					    "Select the desired flow control type.\n"
-					    "This should usually be left as \"RTS/CTS\".\n";
-					i = fc_to_enum(item->flow_control);
-					j = i;
-					switch (uifc.list(WIN_SAV, 0, 0, 0, &j, NULL, "Flow Control", fc_names)) {
-						case -1:
-							check_exit(false);
-							break;
-						default:
-							item->flow_control = fc_from_enum(j);
-							if (j != i) {
-								iniSetEnum(&inifile,
-								    itemname,
-								    "FlowControl",
-								    fc_enum,
-								    j,
-								    &ini_style);
-								uifc.changes = 1;
-							}
-							break;
-					}
-				}
-				else {
-					i = item->port;
-					sprintf(str, "%hu", item->port);
-					uifc.helpbuf = "`TCP Port`\n\n"
-					    "Enter the TCP port number that the server is listening to on the remote system.\n"
-					    "Telnet is generally port 23, RLogin is generally 513 and SSH is\n"
-					    "generally 22\n";
-					uifc.input(WIN_MID | WIN_SAV, 0, 0, "TCP Port", str, 5, K_EDIT | K_NUMBER);
-					check_exit(false);
-					j = atoi(str);
-					if ((j < 1) || (j > 65535))
-						j = conn_ports[item->conn_type];
-					item->port = j;
-					iniSetShortInt(&inifile, itemname, "Port", item->port, &ini_style);
-					if (i != j)
-						uifc.changes = 1;
-					else
-						uifc.changes = 0;
-				}
-				break;
-			case 4:
-				if (item->conn_type == CONN_TYPE_SSHNA) {
-					uifc.helpbuf = "`SSH Username`\n\n"
-					    "Enter the username for passwordless SSH authentication.";
-				}
-				else {
-					uifc.helpbuf = "`Username`\n\n"
-					    "Enter the username to attempt auto-login to the remote with.\n"
-					    "For SSH, this must be the SSH user name.";
-				}
-				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Username", item->user, MAX_USER_LEN, K_EDIT);
-				check_exit(false);
-				iniSetString(&inifile, itemname, "UserName", item->user, &ini_style);
-				break;
-			case 5:
-				if (item->conn_type == CONN_TYPE_MBBS_GHOST) {
-					uifc.helpbuf = "`GHost Program`\n\n"
-					    "Enter the program name to be sent.";
-					tmpptr = "GHost Program";
-				}
-				else if (item->conn_type == CONN_TYPE_SSHNA) {
-					uifc.helpbuf = "`BBS Username`\n\n"
-					    "Enter the username to be sent for auto-login (ALT-L).";
-					tmpptr = "BBS Username";
-				}
-				else {
-					uifc.helpbuf = "`Password`\n\n"
-					    "Enter your password for auto-login.\n"
-					    "For SSH, this must be the SSH password if it exists.\n";
-					tmpptr = "Password";
-				}
-				uifc.input(WIN_MID | WIN_SAV, 0, 0, tmpptr, item->password, MAX_PASSWD_LEN, K_EDIT);
-				check_exit(false);
-				iniSetString(&inifile, itemname, "Password", item->password, &ini_style);
-				break;
-			case 6:
-				if (item->conn_type == CONN_TYPE_SSHNA) {
-					uifc.helpbuf = "`BBS Password`\n\n"
-					    "Enter your password for auto-login. (ALT-L)\n";
-				}
-				else {
-					uifc.helpbuf = "`System Password`\n\n"
-					    "Enter your System password for auto-login.\n"
-					    "This password is sent after the username and password, so for non-\n"
-					    "Synchronet, or non-sysop accounts, this can be used for simple\n"
-					    "scripting.";
-				}
-				uifc.input(WIN_MID | WIN_SAV,
-				    0,
-				    0,
-				    "System Password",
-				    item->syspass,
-				    MAX_SYSPASS_LEN,
-				    K_EDIT);
-				check_exit(false);
-				iniSetString(&inifile, itemname, "SystemPassword", item->syspass, &ini_style);
-				break;
-			case 2:
+			case 2:	// conn_type
 				i = item->conn_type;
 				item->conn_type--;
 				uifc.helpbuf = conn_type_help;
-				switch (uifc.list(WIN_SAV, 0, 0, 0, &(item->conn_type), NULL, "Connection Type",
+				switch (uifc.list(WIN_SAV, 0, 0, 0, &(item->conn_type), NULL, optname,
 				    &(conn_types[1]))) {
 					case -1:
 						check_exit(false);
@@ -1518,7 +1478,150 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 						break;
 				}
 				break;
-			case 7:
+			case 3: // flow_control
+				uifc.helpbuf = "`Flow Control`\n\n"
+				    "Select the desired flow control type.\n"
+				    "This should usually be left as \"RTS/CTS\".\n";
+				i = fc_to_enum(item->flow_control);
+				j = i;
+				switch (uifc.list(WIN_SAV, 0, 0, 0, &j, NULL, optname, fc_names)) {
+					case -1:
+						check_exit(false);
+						break;
+					default:
+						item->flow_control = fc_from_enum(j);
+						if (j != i) {
+							iniSetEnum(&inifile,
+							    itemname,
+							    "FlowControl",
+							    fc_enum,
+							    j,
+							    &ini_style);
+							uifc.changes = 1;
+						}
+						break;
+				}
+				break;
+			case 4: // stop_bits
+				switch(item->stop_bits) {
+					case 1:
+						item->stop_bits = 2;
+						break;
+					default:
+						item->stop_bits = 1;
+						break;
+				}
+				iniSetUShortInt(&inifile,
+				    itemname,
+				    "StopBits",
+				    item->stop_bits,
+				    &ini_style);
+				uifc.changes = 1;
+				break;
+			case 5: // data_bits
+				switch(item->data_bits) {
+					case 8:
+						item->data_bits = 7;
+						break;
+					default:
+						item->data_bits = 8;
+						break;
+				}
+				iniSetUShortInt(&inifile,
+				    itemname,
+				    "DataBits",
+				    item->data_bits,
+				    &ini_style);
+				uifc.changes = 1;
+				break;
+			case 6: // Parity
+				uifc.helpbuf = "`Parity`\n\n"
+				    "Select the parity setting.";
+				i = item->parity;
+				switch (uifc.list(WIN_SAV, 0, 0, 0, &i, NULL, "Parity", parity_enum)) {
+					case -1:
+						check_exit(false);
+						break;
+					default:
+						item->parity = i;
+						iniSetEnum(&inifile, itemname, "Parity", parity_enum, item->parity, &ini_style);
+						changed = 1;
+				}
+				break;
+			case 7: // port
+				i = item->port;
+				sprintf(str, "%hu", item->port);
+				uifc.helpbuf = "`TCP Port`\n\n"
+				    "Enter the TCP port number that the server is listening to on the remote system.\n"
+				    "Telnet is generally port 23, RLogin is generally 513 and SSH is\n"
+				    "generally 22\n";
+				uifc.input(WIN_MID | WIN_SAV, 0, 0, "TCP Port", str, 5, K_EDIT | K_NUMBER);
+				check_exit(false);
+				j = atoi(str);
+				if ((j < 1) || (j > 65535))
+					j = conn_ports[item->conn_type];
+				item->port = j;
+				iniSetUShortInt(&inifile, itemname, "Port", item->port, &ini_style);
+				if (i != j)
+					uifc.changes = 1;
+				else
+					uifc.changes = 0;
+				break;
+			case 8: // user
+				if (item->conn_type == CONN_TYPE_SSHNA) {
+					uifc.helpbuf = "`SSH Username`\n\n"
+					    "Enter the username for passwordless SSH authentication.";
+				}
+				else {
+					uifc.helpbuf = "`Username`\n\n"
+					    "Enter the username to attempt auto-login to the remote with.\n"
+					    "For SSH, this must be the SSH user name.";
+				}
+				uifc.input(WIN_MID | WIN_SAV, 0, 0, optname, item->user, MAX_USER_LEN, K_EDIT);
+				check_exit(false);
+				iniSetString(&inifile, itemname, "UserName", item->user, &ini_style);
+				break;
+			case 9: // password
+				if (item->conn_type == CONN_TYPE_MBBS_GHOST) {
+					uifc.helpbuf = "`GHost Program`\n\n"
+					    "Enter the program name to be sent.";
+				}
+				else if (item->conn_type == CONN_TYPE_SSHNA) {
+					uifc.helpbuf = "`BBS Username`\n\n"
+					    "Enter the username to be sent for auto-login (ALT-L).";
+				}
+				else {
+					uifc.helpbuf = "`Password`\n\n"
+					    "Enter your password for auto-login.\n"
+					    "For SSH, this must be the SSH password if it exists.\n";
+				}
+				uifc.input(WIN_MID | WIN_SAV, 0, 0, optname, item->password, MAX_PASSWD_LEN, K_EDIT);
+				check_exit(false);
+				iniSetString(&inifile, itemname, "Password", item->password, &ini_style);
+				break;
+			case 10: // syspass
+				if (item->conn_type == CONN_TYPE_SSHNA) {
+					uifc.helpbuf = "`BBS Password`\n\n"
+					    "Enter your password for auto-login. (ALT-L)\n";
+				}
+				else {
+					uifc.helpbuf = "`System Password`\n\n"
+					    "Enter your System password for auto-login.\n"
+					    "This password is sent after the username and password, so for non-\n"
+					    "Synchronet, or non-sysop accounts, this can be used for simple\n"
+					    "scripting.";
+				}
+				uifc.input(WIN_MID | WIN_SAV,
+				    0,
+				    0,
+				    optname,
+				    item->syspass,
+				    MAX_SYSPASS_LEN,
+				    K_EDIT);
+				check_exit(false);
+				iniSetString(&inifile, itemname, "SystemPassword", item->syspass, &ini_style);
+				break;
+			case 11: // screen_mode
 				i = item->screen_mode;
 				uifc.helpbuf = "`Screen Mode`\n\n"
 				    "Select the screen size for this connection\n";
@@ -1620,12 +1723,12 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 						break;
 				}
 				break;
-			case 8:
+			case 12: // nostatus
 				item->nostatus = !item->nostatus;
 				changed = 1;
 				iniSetBool(&inifile, itemname, "NoStatus", item->nostatus, &ini_style);
 				break;
-			case 9:
+			case 13: // dldir
 				uifc.helpbuf = "`Download Path`\n\n"
 				    "Enter the path where downloads will be placed.";
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Download Path", item->dldir, MAX_PATH,
@@ -1634,7 +1737,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 				else
 					check_exit(false);
 				break;
-			case 10:
+			case 14: // uldir
 				uifc.helpbuf = "`Upload Path`\n\n"
 				    "Enter the path where uploads will be browsed from.";
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Upload Path", item->uldir, MAX_PATH,
@@ -1643,10 +1746,10 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 				else
 					check_exit(false);
 				break;
-			case 11:
+			case 15: // log
 				configure_log(item, itemname, inifile, &changed);
 				break;
-			case 12:
+			case 16: // bpsrate
 				uifc.helpbuf = "`Comm Rate (in bits-per-second)`\n\n"
 				    "`For TCP connections:`\n"
 				    "Select the rate which received characters will be displayed.\n\n"
@@ -1665,7 +1768,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 						changed = 1;
 				}
 				break;
-			case 13:
+			case 17: // music
 				uifc.helpbuf = music_helpbuf;
 				i = item->music;
 				if (uifc.list(WIN_SAV, 0, 0, 0, &i, NULL, "ANSI Music Setup", music_names) != -1) {
@@ -1677,7 +1780,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 					check_exit(false);
 				}
 				break;
-			case 14:
+			case 18: // address_family
 				uifc.helpbuf = address_family_help;
 				i = item->address_family;
 				if (uifc.list(WIN_SAV, 0, 0, 0, &i, NULL, "Address Family",
@@ -1695,7 +1798,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 					check_exit(false);
 				}
 				break;
-			case 15:
+			case 19: // font
 				uifc.helpbuf = "`Font`\n\n"
 				    "Select the desired font for this connection.\n\n"
 				    "Some fonts do not allow some modes.  When this is the case, an\n"
@@ -1714,12 +1817,12 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 						}
 				}
 				break;
-			case 16:
+			case 20: // hidepopups
 				item->hidepopups = !item->hidepopups;
 				changed = 1;
 				iniSetBool(&inifile, itemname, "HidePopups", item->hidepopups, &ini_style);
 				break;
-			case 17:
+			case 21: // rip
 				item->rip = get_rip_version(item->rip, &changed);
 				if (item->rip == RIP_VERSION_1) {
 					item->screen_mode = SCREEN_MODE_80X43;
@@ -1732,17 +1835,17 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 				}
 				iniSetEnum(&inifile, itemname, "RIP", rip_versions, item->rip, &ini_style);
 				break;
-			case 18:
+			case 22: // force_lcf
 				item->force_lcf	= !item->force_lcf;
 				changed = 1;
 				iniSetBool(&inifile, itemname, "ForceLCF", item->force_lcf, &ini_style);
 				break;
-			case 19:
+			case 23: // yellow_is_yellow
 				item->yellow_is_yellow = !item->yellow_is_yellow;
 				changed = 1;
 				iniSetBool(&inifile, itemname, "YellowIsYellow", item->yellow_is_yellow, &ini_style);
 				break;
-			case 20:
+			case 24: // sftp_public_key
 				item->sftp_public_key = !item->sftp_public_key;
 				changed = 1;
 				iniSetBool(&inifile, itemname, "SFTPPublicKey", item->sftp_public_key, &ini_style);
@@ -1820,6 +1923,9 @@ add_bbs(char *listpath, struct bbslist *bbs, bool new_entry)
 		iniWriteFile(listfile, inifile);
 		fclose(listfile);
 	}
+	iniSetUShortInt(&inifile, bbs->name, "StopBits", bbs->stop_bits, &ini_style);
+	iniSetUShortInt(&inifile, bbs->name, "DataBits", bbs->data_bits, &ini_style);
+	iniSetEnum(&inifile, bbs->name, "Parity", parity_enum, bbs->parity, &ini_style);
 	strListFree(&inifile);
 }
 
