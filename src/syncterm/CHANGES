@@ -8,6 +8,7 @@ Add blank pixel to left and top of Prestel DEL glyph
 Fix crash when editing blank "extra" bbslist entry
 Support copy/paste in BBS list
 Show current list path, not default in File Locations
+Explicitly set serial port to 8N1
 
 Version 1.2rc6
 --------------
