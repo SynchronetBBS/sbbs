@@ -1921,14 +1921,21 @@ bool sbbs_t::request_telnet_opt(uchar cmd, uchar opt, unsigned waitforack)
 	if(telnet_mode&TELNET_MODE_OFF)
 		return false;
 
-	if(cmd==TELNET_DO || cmd==TELNET_DONT) {	/* remote option */
-		if(telnet_remote_option[opt]==telnet_opt_ack(cmd))
-			return true;	/* already set in this mode, do nothing */
-		telnet_remote_option[opt]=telnet_opt_ack(cmd);
-	} else {	/* local option */
-		if(telnet_local_option[opt]==telnet_opt_ack(cmd))
-			return true;	/* already set in this mode, do nothing */
-		telnet_local_option[opt]=telnet_opt_ack(cmd);
+	switch(cmd) {
+		case TELNET_DO: /* remote option */
+		case TELNET_DONT:
+			if(telnet_remote_option[opt]==telnet_opt_ack(cmd))
+				return true;	/* already set in this mode, do nothing */
+			telnet_remote_option[opt]=telnet_opt_ack(cmd);
+			break;
+		case TELNET_WILL: /* local option */
+		case TELNET_WONT:
+			if(telnet_local_option[opt]==telnet_opt_ack(cmd))
+				return true;	/* already set in this mode, do nothing */
+			telnet_local_option[opt]=telnet_opt_ack(cmd);
+			break;
+		default:
+			return false;
 	}
 	if(waitforack)
 		ResetEvent(telnet_ack_event);
