@@ -2016,7 +2016,7 @@ main(int argc, char **argv)
 			if (bbs->id != -1) {
 				if (bbs->type == SYSTEM_BBSLIST) {
 					bbs->type = USER_BBSLIST;
-					add_bbs(settings.list_path, bbs);
+					add_bbs(settings.list_path, bbs, false);
 				}
 				if ((listfile = fopen(settings.list_path, "r")) != NULL) {
 					inifile = iniReadFile(listfile);
@@ -2093,7 +2093,7 @@ main(int argc, char **argv)
 							    "Save this directory entry?", YesNo)) {
 								case 0: /* Yes */
 									edit_list(NULL, bbs, settings.list_path, false);
-									add_bbs(settings.list_path, bbs);
+									add_bbs(settings.list_path, bbs, false);
 									last_bbs = strdup(bbs->name);
 									break;
 								default: /* ESC/No */

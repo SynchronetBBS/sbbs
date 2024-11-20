@@ -1076,6 +1076,46 @@ get_rip_version(int oldver, int *changed)
 	return cur;
 }
 
+static bool
+edit_name(char *itemname, struct bbslist **list, str_list_t inifile, bool edit_to_add)
+{
+	char       tmp[LIST_NAME_MAX + 1] = {0};
+
+	do {
+		uifc.helpbuf = "`Directory Entry Name`\n\n"
+		    "Enter the name of the entry as it is to appear in the directory.";
+		if (itemname)
+			strcpy(tmp, itemname);
+		if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Name", tmp, LIST_NAME_MAX, K_EDIT) == -1)
+			return false;
+		check_exit(false);
+		if (quitting)
+			return false;
+		if ((edit_to_add || stricmp(tmp, itemname)) && list_name_check(list, tmp, NULL, false)) {
+			uifc.helpbuf = "`Entry Name Already Exists`\n\n"
+			    "An entry with that name already exists in the directory.\n"
+			    "Please choose a unique name.\n";
+			uifc.msg("Entry Name Already Exists!");
+			check_exit(false);
+		}
+		else {
+			if (tmp[0] == 0) {
+				uifc.helpbuf = "`Can Not Use an Empty Name`\n\n"
+				    "Entry names can not be empty.  Please enter an entry name.\n";
+				uifc.msg("Can not use an empty name");
+				check_exit(false);
+			}
+			else {
+				if (!edit_to_add)
+					iniRenameSection(&inifile, itemname, tmp);
+				strcpy(itemname, tmp);
+				return true;
+			}
+		}
+	} while (tmp[0] == 0 && !quitting);
+	return false;
+}
+
 int
 edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdefault)
 {
@@ -1103,7 +1143,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 			return 0;
 		}
 		item->type = USER_BBSLIST;
-		add_bbs(listpath, item);
+		add_bbs(listpath, item, true);
 	}
 	if ((listfile = fopen(listpath, "r")) != NULL) {
 		inifile = iniReadFile(listfile);
@@ -1304,34 +1344,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 				strListFree(&inifile);
 				return changed;
 			case 0:
-				do {
-					uifc.helpbuf = "`Directory Entry Name`\n\n"
-					    "Enter the name of the entry as it is to appear in the directory.";
-					strcpy(tmp, itemname);
-					uifc.input(WIN_MID | WIN_SAV, 0, 0, "Name", tmp, LIST_NAME_MAX, K_EDIT);
-					check_exit(false);
-					if (quitting)
-						break;
-					if (stricmp(tmp, itemname) && list_name_check(list, tmp, NULL, false)) {
-						uifc.helpbuf = "`Entry Name Already Exists`\n\n"
-						    "An entry with that name already exists in the directory.\n"
-						    "Please choose a unique name.\n";
-						uifc.msg("Entry Name Already Exists!");
-						check_exit(false);
-					}
-					else {
-						if (tmp[0] == 0) {
-							uifc.helpbuf = "`Can Not Use and Empty Name`\n\n"
-							    "Entry names can not be empty.  Please enter an entry name.\n";
-							uifc.msg("Can not use an empty name");
-							check_exit(false);
-						}
-						else {
-							iniRenameSection(&inifile, itemname, tmp);
-							strcpy(itemname, tmp);
-						}
-					}
-				} while (tmp[0] == 0 && !quitting);
+				edit_name(itemname, list, inifile, false);
 				break;
 			case 1:
 				uifc.helpbuf = address_help;
@@ -1743,7 +1756,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 }
 
 void
-add_bbs(char *listpath, struct bbslist *bbs)
+add_bbs(char *listpath, struct bbslist *bbs, bool new_entry)
 {
 	FILE      *listfile;
 	str_list_t inifile;
@@ -1762,6 +1775,10 @@ add_bbs(char *listpath, struct bbslist *bbs)
          * Redundant:
          * iniAddSection(&inifile,bbs->name,NULL);
          */
+        if (new_entry) {
+		bbs->connected = 0;
+		bbs->calls = 0;
+	}
 	iniSetString(&inifile, bbs->name, "Address", bbs->addr, &ini_style);
 	iniSetShortInt(&inifile, bbs->name, "Port", bbs->port, &ini_style);
 	iniSetDateTime(&inifile, bbs->name, "Added", /* include time */ true, time(NULL), &ini_style);
@@ -2593,7 +2610,7 @@ edit_comment(struct bbslist *list, char *listpath)
 			if (uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, NULL, "Copy from system directory?", YesNo) != 0)
 				goto done;
 			list->type = USER_BBSLIST;
-			add_bbs(listpath, list);
+			add_bbs(listpath, list, true);
 		}
 	}
 
@@ -2670,6 +2687,7 @@ show_bbslist(char *current, int connected)
 	int                   redraw = 0;
 	bool                  nowait = true;
 	int                   last_mode;
+	struct  bbslist      *copied = NULL;
 
 	glob_sbar = &sbar;
 	glob_sopt = &sopt;
@@ -2774,7 +2792,8 @@ show_bbslist(char *current, int connected)
 				val = uifc.list((listcount < MAX_OPTS ? WIN_XTR : 0)
 				        | WIN_ACT | WIN_INSACT | WIN_DELACT | WIN_UNGETMOUSE | WIN_SAV | WIN_ESC
 				        | WIN_INS | WIN_DEL | WIN_EDIT | WIN_EXTKEYS | WIN_DYN | WIN_FIXEDHEIGHT
-				        | (redraw ? WIN_NODRAW : 0)
+				        | (redraw ? WIN_NODRAW : 0) | WIN_COPY
+				        | (copied == NULL ? 0 : (WIN_PASTE | WIN_PASTEXTR))
 				        ,
 				        0,
 				        (uifc.scrn_len - (uifc.list_height) + 1) / 2 - 4,
@@ -2799,7 +2818,10 @@ show_bbslist(char *current, int connected)
 					    &bar,
 					    list_title,
 					    (char **)list);
-					val = opt | MSK_EDIT;
+					if (opt < (listcount))
+						val = opt | MSK_EDIT;
+					else
+						val = opt | MSK_INS;
 				}
 				draw_comment(list[opt]);
 				if (val < 0) {
@@ -3068,7 +3090,7 @@ show_bbslist(char *current, int connected)
 								listcount--;
 							}
 							else {
-								add_bbs(settings.list_path, list[listcount - 1]);
+								add_bbs(settings.list_path, list[listcount - 1], true);
 								load_bbslist(list,
 								    BBSLIST_SIZE,
 								    &defaults,
@@ -3158,6 +3180,68 @@ show_bbslist(char *current, int connected)
 								    strdup(list[opt]->name));
 								oldopt = -1;
 							}
+							break;
+						case MSK_COPY:
+							if (safe_mode) {
+								uifc.helpbuf = "`Cannot edit list in safe mode`\n\n"
+								    "SyncTERM is currently running in safe mode.  This means you cannot edit the\n"
+								    "directory.";
+								uifc.msg("Cannot edit list in safe mode");
+								check_exit(false);
+								break;
+							}
+							if (copied == NULL)
+								copied = malloc(sizeof(struct bbslist));
+							if (copied == NULL) {
+								uifc.msg("Cannot allocate memory to copy");
+								check_exit(false);
+								break;
+							}
+							memcpy(copied, list[opt], sizeof(struct bbslist));
+							break;
+						case MSK_PASTE:
+							uifc.list((listcount < MAX_OPTS ? WIN_XTR : 0)
+							    | WIN_ACT | WIN_INSACT | WIN_DELACT | WIN_SAV | WIN_ESC
+							    | WIN_INS | WIN_DEL | WIN_EDIT | WIN_EXTKEYS | WIN_DYN
+							    | WIN_SEL | WIN_FIXEDHEIGHT
+							    ,
+							    0,
+							    (uifc.scrn_len - (uifc.list_height) + 1) / 2 - 4,
+							    0,
+							    &opt,
+							    &bar,
+							    list_title,
+							    (char **)list);
+							if (safe_mode) {
+								uifc.helpbuf = "`Cannot edit list in safe mode`\n\n"
+								    "SyncTERM is currently running in safe mode.  This means you cannot edit the\n"
+								    "directory.";
+								uifc.msg("Cannot edit list in safe mode");
+								check_exit(false);
+								break;
+							}
+							if (copied == NULL)
+								break;
+							if (copied->type != SYSTEM_BBSLIST) {
+								if (!edit_name(copied->name, list, NULL, true))
+									break;
+								listcount++;
+								list[listcount - 1] = copied;
+							}
+							add_bbs(settings.list_path, copied, true);
+							edit_list(list, list[listcount - 1], settings.list_path, false);
+							load_bbslist(list,
+							    BBSLIST_SIZE,
+							    &defaults,
+							    settings.list_path,
+							    sizeof(settings.list_path),
+							    shared_list,
+							    sizeof(shared_list),
+							    &listcount,
+							    &opt,
+							    &bar,
+							    strdup(list[listcount - 1]->name));
+							oldopt = -1;
 							break;
 					}
 				}
@@ -3362,10 +3446,7 @@ show_bbslist(char *current, int connected)
 						oldopt = -1;
 						break;
 					case 4: /* File Locations */
-						get_syncterm_filename(personal_list,
-						    sizeof(personal_list),
-						    SYNCTERM_PATH_LIST,
-						    false);
+						strcpy(personal_list, settings.list_path);
 						get_syncterm_filename(setting_file,
 						    sizeof(setting_file),
 						    SYNCTERM_PATH_INI,
