@@ -1587,7 +1587,6 @@ void alter_areas_ini(FILE* afilein, FILE* afileout, FILE* nmfile
 	,nodecfg_t* nodecfg, const char* to, bool rescan)
 {
 	bool nomatch = false;
-	unsigned j;
 	faddr_t addr = nodecfg->addr;
 	const char* addr_str = smb_faddrtoa(&addr,NULL);
 	size_t add_count;
@@ -1635,10 +1634,10 @@ void alter_areas_ini(FILE* afilein, FILE* afileout, FILE* nmfile
 		}
 		if(add_count) { 				/* Check for areas to add */
 			bool add_all = (stricmp(add_area[0], "+ALL") == 0);
-			j = strListFind(add_area, echotag, /* case-sensitive */false);
-			if(add_all || j >= 0) {
-				if(j >= 0)
-					add_area[j][0]=0;  /* So we can check other lists */
+			int add_index = strListFind(add_area, echotag, /* case-sensitive */false);
+			if(add_all || add_index >= 0) {
+				if(add_index >= 0)
+					add_area[add_index][0]=0;  /* So we can check other lists */
 				uint areanum = find_area(echotag);
 				if(!area_is_valid(areanum)) {
 					lprintf(LOG_ERR, "Invalid area num on line %d", __LINE__);
@@ -1670,8 +1669,8 @@ void alter_areas_ini(FILE* afilein, FILE* afileout, FILE* nmfile
 				}
 				continue;
 			}
+			nomatch = true; 						/* This area wasn't in there */
 		}
-		nomatch = true; 						/* This area wasn't in there */
 	}
 	strListWriteFile(afileout, ini, "\n");
 	strListFree(&ini);
