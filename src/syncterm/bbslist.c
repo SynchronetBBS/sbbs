@@ -1138,7 +1138,6 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 	char       str[64];
 	FILE      *listfile;
 	str_list_t inifile;
-	char       tmp[LIST_NAME_MAX + 1];
 	char      *itemname;
 	char      *tmpptr;
 
