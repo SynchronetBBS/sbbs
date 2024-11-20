@@ -539,11 +539,6 @@ public:
 	int 	telnet_rows = 0;
 	int		telnet_cols = 0;
 	int		telnet_speed = 0;
-	bool	telnet_is_nvt() {
-		return !(telnet_mode & TELNET_MODE_OFF)
-			&& telnet_local_option[TELNET_BINARY_TX] != TELNET_DO
-			&& telnet_remote_option[TELNET_BINARY_TX] != TELNET_WILL;
-	}
 
 	xpevent_t	telnet_ack_event;
 
@@ -1174,8 +1169,8 @@ public:
 	bool	bulkupload(int dirnum);
 
 	/* download.cpp */
-	bool	data_transfer_begin(void);
-	void	data_transfer_end(bool was_telnet_nvt_mode);
+	void	data_transfer_begin(uchar& local_binary_tx, uchar& remote_binary_tx);
+	void	data_transfer_end(uchar local_binary_tx, uchar remote_binary_tx);
 	void	downloadedfile(file_t* f);
 	void	notdownloaded(off_t size, time_t elapsed);
 	void	downloadedbytes(off_t size, time_t elapsed);

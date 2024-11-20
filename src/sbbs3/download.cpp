@@ -104,25 +104,23 @@ const char* sbbs_t::protcmdline(prot_t* prot, enum XFER_TYPE type)
 	return("invalid transfer type");
 }
 
-bool sbbs_t::data_transfer_begin()
+void sbbs_t::data_transfer_begin(uchar& local_binary_tx, uchar& remote_binary_tx)
 {
 	sys_status|=SS_FILEXFER;	/* disable spy during file xfer */
-	bool telnet_was_nvt = telnet_is_nvt();
+	local_binary_tx = telnet_local_option[TELNET_BINARY_TX];
+	remote_binary_tx = telnet_remote_option[TELNET_BINARY_TX];
 	/* enable telnet binary transmission in both directions */
 	request_telnet_opt(TELNET_DO,TELNET_BINARY_TX);
 	request_telnet_opt(TELNET_WILL,TELNET_BINARY_TX);
 	console |= CON_RAW_IN;
-	return telnet_was_nvt;
 }
 
-void sbbs_t::data_transfer_end(bool telnet_was_nvt)
+void sbbs_t::data_transfer_end(uchar local_binary_tx, uchar remote_binary_tx)
 {
 	sys_status&=~SS_FILEXFER;
-	if(telnet_was_nvt) {
-		/* Got back to Text/NVT mode */
-		request_telnet_opt(TELNET_DONT,TELNET_BINARY_TX);
-		request_telnet_opt(TELNET_WONT,TELNET_BINARY_TX);
-	}
+	/* Got back to Text/NVT mode */
+	request_telnet_opt(local_binary_tx, TELNET_BINARY_TX);
+	request_telnet_opt(remote_binary_tx, TELNET_BINARY_TX);
 	console &= ~CON_RAW_IN;
 }
 
@@ -168,11 +166,12 @@ int sbbs_t::protocol(prot_t* prot, enum XFER_TYPE type
 	cmdline=cmdstr(protcmdline(prot,type), fpath, fspec, NULL, ex_mode);
 	SAFEPRINTF(msg,"Transferring %s",cmdline);
 	spymsg(msg);
-	bool was_nvt_mode = data_transfer_begin();
+	uchar local_binary_tx, remote_binary_tx;
+	data_transfer_begin(local_binary_tx, remote_binary_tx);
 	time_t start = time(NULL);
 	i=external(cmdline,ex_mode,p);
 	time_t end = time(NULL);
-	data_transfer_end(was_nvt_mode);
+	data_transfer_end(local_binary_tx, remote_binary_tx);
 
 	// Save DSZLOG to logfile
 	if((stream=fnopen(NULL,protlog,O_RDONLY))!=NULL) {
