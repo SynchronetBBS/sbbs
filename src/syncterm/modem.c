@@ -265,6 +265,10 @@ modem_connect(struct bbslist *bbs)
 		if (!bbs->hidepopups)
 			uifc.pop("Initializing...");
 
+		/* Drain modem input */
+		while(modem_response(respbuf, sizeof(respbuf), 2) == 0)
+			;
+
 fprintf(stderr, "Sending: '%s'\n", settings.mdm.init_string);
 		comWriteString(com, settings.mdm.init_string);
 		comWriteString(com, "\r");
