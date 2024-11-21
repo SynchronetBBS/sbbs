@@ -1961,9 +1961,9 @@ void alter_areas(str_list_t add_area, str_list_t del_area, nodecfg_t* nodecfg, c
 	}
 
 	if(areafile_is_ini)
-		alter_areas_bbs(afilein, afileout, nmfile, add_area, &added, del_area, &deleted, nodecfg, to, rescan);
-	else
 		alter_areas_ini(afilein, afileout, nmfile, add_area, &added, del_area, &deleted, nodecfg, to, rescan);
+	else
+		alter_areas_bbs(afilein, afileout, nmfile, add_area, &added, del_area, &deleted, nodecfg, to, rescan);
 
 	if(add_area[0] != NULL && stricmp(add_area[0],"+ALL")) {
 		for(u=0;add_area[u]!=NULL;u++)
