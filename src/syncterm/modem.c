@@ -89,6 +89,7 @@ modem_output_thread(void *args)
 			if (seven_bits) {
 				for (i = 0; i < wr; i++)
 					conn_api.wr_buf[i] &= 0x7f;
+#if 0
 				switch (parity) {
 					case SYNCTERM_PARITY_NONE:
 						break;
@@ -99,6 +100,7 @@ modem_output_thread(void *args)
 						conn_api.wr_buf[i] = ptable[conn_api.wr_buf[i]] ^ 0x80;
 						break;
 				}
+#endif
 			}
 			sent = 0;
 			while (com != COM_HANDLE_INVALID && sent < wr) {
