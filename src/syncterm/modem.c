@@ -139,6 +139,7 @@ modem_response(char *str, size_t maxlen, int timeout)
 		str[len++] = ch;
 	}
 	str[len] = 0;
+fprintf(stderr, "Modem response: '%s'\n", str);
 
 	return 0;
 }
@@ -264,6 +265,7 @@ modem_connect(struct bbslist *bbs)
 		if (!bbs->hidepopups)
 			uifc.pop("Initializing...");
 
+fprintf(stderr, "Sending: "%s"\n", settings.mdm.init_string);
 		comWriteString(com, settings.mdm.init_string);
 		comWriteString(com, "\r");
 
@@ -302,7 +304,9 @@ modem_connect(struct bbslist *bbs)
 			uifc.pop(NULL);
 			uifc.pop("Dialing...");
 		}
+fprintf(stderr, "Sending: "%s"\n", settings.mdm.dial_string);
 		comWriteString(com, settings.mdm.dial_string);
+fprintf(stderr, "Sending: "%s"\n", bbs->addr);
 		comWriteString(com, bbs->addr);
 		comWriteString(com, "\r");
 
