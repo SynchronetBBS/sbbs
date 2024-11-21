@@ -11,7 +11,7 @@ Show current list path, not default in File Locations
 Explicitly set serial port to 8N1
 Add support bit data bits, stop bits, and parity
 Drain modem buffer before sending init command
-Do "software parity" for broken USB modems
+Strip high bit in 7-bit modes
 
 Version 1.2rc6
 --------------
