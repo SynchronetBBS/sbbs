@@ -52,9 +52,8 @@ modem_input_thread(void *args)
 			pthread_mutex_unlock(&(conn_inbuf.mutex));
 		}
 		if (args == NULL) {
-			if ((comGetModemStatus(com) & COM_DCD) == 0) {
+			if ((comGetModemStatus(com) & COM_DCD) == 0)
 				break;
-			}
 		}
 		else if (monitor_dsr) {
 			if ((comGetModemStatus(com) & COM_DSR) == 0)
@@ -86,12 +85,6 @@ modem_output_thread(void *args)
 		wr = conn_buf_wait_bytes(&conn_outbuf, 1, 100);
 		if (wr) {
 			wr = conn_buf_get(&conn_outbuf, conn_api.wr_buf, conn_api.wr_buf_size);
-if (seven) {
-for (int blerp = 0; blerp < wr; blerp++) {
-conn_api.wr_buf[blerp] &= 0x7f;
-conn_api.wr_buf[blerp] |= (parmap[conn_api.wr_buf[blerp]] << 7);
-}
-}
 			pthread_mutex_unlock(&(conn_outbuf.mutex));
 			if (seven_bits) {
 				for (i = 0; i < wr; i++)
@@ -119,9 +112,8 @@ conn_api.wr_buf[blerp] |= (parmap[conn_api.wr_buf[blerp]] << 7);
 			pthread_mutex_unlock(&(conn_outbuf.mutex));
 		}
 		if (args == NULL) {
-			if ((comGetModemStatus(com) & COM_DCD) == 0) {
+			if ((comGetModemStatus(com) & COM_DCD) == 0)
 				break;
-			}
 		}
 		else if (monitor_dsr) {
 			if ((comGetModemStatus(com) & COM_DSR) == 0)
@@ -284,8 +276,6 @@ modem_connect(struct bbslist *bbs)
 			comClose(com);
 			return -1;
 		}
-if (bbs->data_bits == 7)
-seven = true;
 		if (!comSetFlowControl(com, bbs->flow_control)) {
 			conn_api.close();
 			if (!bbs->hidepopups) {
@@ -314,10 +304,6 @@ seven = true;
 
 		if (!bbs->hidepopups)
 			uifc.pop("Initializing...");
-
-		/* Drain modem input */
-		while(modem_response(respbuf, sizeof(respbuf), 2) == 0)
-			;
 
 		comWriteString(com, settings.mdm.init_string);
 		comWriteString(com, "\r");
