@@ -15,6 +15,11 @@
 #include "uifcinit.h"
 
 static COM_HANDLE com = COM_HANDLE_INVALID;
+bool seven = false;
+char parmap[128] = {0};
+const char nbits[16] = {
+	0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4
+};
 
 void
 modem_input_thread(void *args)
@@ -33,6 +38,10 @@ modem_input_thread(void *args)
 fprintf(stderr, "Initial input DCD: %d\n", comGetModemStatus(com) & COM_DCD);
 	while (com != COM_HANDLE_INVALID && !conn_api.terminate) {
 		rd = comReadBuf(com, (char *)conn_api.rd_buf, conn_api.rd_buf_size, NULL, 100);
+if (seven) {
+for (int blerp = 0; blerp < rd; blerp++)
+conn_api.rd_buf[blerp] &= 0x7f;
+}
 		buffered = 0;
 		while (com != COM_HANDLE_INVALID && buffered < rd) {
 			pthread_mutex_lock(&(conn_inbuf.mutex));
@@ -76,6 +85,12 @@ fprintf(stderr, "Initial output DCD: %d\n", comGetModemStatus(com) & COM_DCD);
 		wr = conn_buf_wait_bytes(&conn_outbuf, 1, 100);
 		if (wr) {
 			wr = conn_buf_get(&conn_outbuf, conn_api.wr_buf, conn_api.wr_buf_size);
+if (seven) {
+for (int blerp = 0; blerp < wr; blerp++) {
+conn_api.wr_buf[blerp] &= 0x7f;
+conn_api.wr_buf[blerp] |= (parmap[conn_api.wr_buf[blerp]] << 7);
+}
+}
 			pthread_mutex_unlock(&(conn_outbuf.mutex));
 			sent = 0;
 			while (com != COM_HANDLE_INVALID && sent < wr) {
@@ -149,6 +164,11 @@ modem_connect(struct bbslist *bbs)
 {
 	int  ret;
 	char respbuf[1024];
+
+for (int i = 0; i < 128; i++) {
+int b = nbits[i & 0x0f] + nbits[i >> 4];
+parmap[i] = b&1;
+}
 
 	if (!bbs->hidepopups)
 		init_uifc(true, true);
@@ -240,6 +260,8 @@ modem_connect(struct bbslist *bbs)
 			comClose(com);
 			return -1;
 		}
+if (bbs->data_bits == 7)
+seven = true;
 		if (!comSetFlowControl(com, bbs->flow_control)) {
 			conn_api.close();
 			if (!bbs->hidepopups) {
