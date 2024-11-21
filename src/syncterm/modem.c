@@ -265,7 +265,7 @@ modem_connect(struct bbslist *bbs)
 		if (!bbs->hidepopups)
 			uifc.pop("Initializing...");
 
-fprintf(stderr, "Sending: "%s"\n", settings.mdm.init_string);
+fprintf(stderr, "Sending: '%s'\n", settings.mdm.init_string);
 		comWriteString(com, settings.mdm.init_string);
 		comWriteString(com, "\r");
 
@@ -304,9 +304,9 @@ fprintf(stderr, "Sending: "%s"\n", settings.mdm.init_string);
 			uifc.pop(NULL);
 			uifc.pop("Dialing...");
 		}
-fprintf(stderr, "Sending: "%s"\n", settings.mdm.dial_string);
+fprintf(stderr, "Sending: '%s'\n", settings.mdm.dial_string);
 		comWriteString(com, settings.mdm.dial_string);
-fprintf(stderr, "Sending: "%s"\n", bbs->addr);
+fprintf(stderr, "Sending: '%s'\n", bbs->addr);
 		comWriteString(com, bbs->addr);
 		comWriteString(com, "\r");
 
