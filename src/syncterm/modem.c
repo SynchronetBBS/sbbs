@@ -17,7 +17,7 @@
 static COM_HANDLE com = COM_HANDLE_INVALID;
 static pthread_once_t ptable_once = PTHREAD_ONCE_INIT;
 static char ptable[128];
-static nbits[16] = {
+static int nbits[16] = {
 	0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4
 };
 static bool seven_bits = false;
@@ -30,7 +30,6 @@ modem_input_thread(void *args)
 	int    buffered;
 	size_t buffer;
 	bool   monitor_dsr = true;
-	char   pb;
 
 	SetThreadName("Modem Input");
 	conn_api.input_thread_running = 1;
@@ -41,7 +40,7 @@ modem_input_thread(void *args)
 	while (com != COM_HANDLE_INVALID && !conn_api.terminate) {
 		rd = comReadBuf(com, (char *)conn_api.rd_buf, conn_api.rd_buf_size, NULL, 100);
 		// Strip high bits... we *should* check the parity
-		if (seven) {
+		if (seven_bits) {
 			for (int i = 0; i < rd; i++)
 				conn_api.rd_buf[i] &= 0x7f;
 		}
@@ -69,6 +68,7 @@ modem_input_thread(void *args)
 void
 modem_output_thread(void *args)
 {
+	int  i;
 	int  wr;
 	int  ret;
 	int  sent;
@@ -86,7 +86,7 @@ modem_output_thread(void *args)
 		if (wr) {
 			wr = conn_buf_get(&conn_outbuf, conn_api.wr_buf, conn_api.wr_buf_size);
 			pthread_mutex_unlock(&(conn_outbuf.mutex));
-			if (seven) {
+			if (seven_bits) {
 				for (i = 0; i < wr; i++)
 					conn_api.wr_buf[i] &= 0x7f;
 				switch (parity) {
@@ -184,7 +184,7 @@ modem_connect(struct bbslist *bbs)
 
 	pthread_once(&ptable_once, init_ptable);
 	parity = bbs->parity;
-	seven = (bbs->data_bits == 7);
+	seven_bits = (bbs->data_bits == 7);
 
 	if (!bbs->hidepopups)
 		init_uifc(true, true);
@@ -299,7 +299,7 @@ modem_connect(struct bbslist *bbs)
 			getch();
 
 		/* Drain modem output buffer */
-		while (comReadByte(com, respbuf))
+		while (comReadByte(com, (uchar*)respbuf))
 			;
 
 		if (!bbs->hidepopups)
