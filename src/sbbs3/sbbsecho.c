@@ -6316,7 +6316,7 @@ void read_areafile_ini(FILE* stream)
 {
 	char value[INI_MAX_VALUE_LEN];
 	str_list_t ini = iniReadFile(stream);
-	str_list_t areas = iniGetSectionList(ini, /* prefix: */NULL);
+	str_list_t areas = iniGetSectionListWithDupes(ini, /* prefix: */NULL);
 
 	for(size_t u = 0; areas != NULL && areas[u] != NULL; ++u) {
 		char* area_tag = areas[u];
@@ -6335,6 +6335,12 @@ void read_areafile_ini(FILE* stream)
 		}
 		if(area_tag[0]=='*')         /* UNKNOWN-ECHO area */
 			cfg.badecho = areanum;
+		if(areanum > 0 && area_is_valid(find_area(area_tag))) {
+			printf("\n");
+			lprintf(LOG_WARNING, "DUPLICATE AREA (%s) in area file (%s), IGNORED!", area_tag, cfg.areafile);
+			cfg.areas--;
+			continue;
+		}
 		if((cfg.area[areanum].tag=strdup(area_tag))==NULL) {
 			printf("\n");
 			lprintf(LOG_ERR,"ERROR allocating memory for area #%u tag."
