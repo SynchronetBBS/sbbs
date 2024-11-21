@@ -197,6 +197,15 @@ bool strListFastDelete(str_list_t list, size_t index, size_t count)
 	return strListFastRemove(list, index, count);
 }
 
+void strListFastDeleteAll(str_list_t list)
+{
+	size_t i;
+
+	for(i = 0; list[i] != NULL; ++i)
+		free(list[i]);
+	list[0] = NULL;
+}
+
 char* strListReplace(const str_list_t list, size_t index, const char* str)
 {
 	char*	buf;

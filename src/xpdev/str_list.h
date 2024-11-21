@@ -78,6 +78,7 @@ DLLEXPORT bool			strListFastRemove(str_list_t, size_t index, size_t count);
 /* Remove and free a string at a specific index */
 DLLEXPORT bool			strListDelete(str_list_t*, size_t index);
 DLLEXPORT bool			strListFastDelete(str_list_t, size_t index, size_t count);
+DLLEXPORT void			strListFastDeleteAll(str_list_t);
 
 /* Replace a string at a specific index */
 DLLEXPORT char*			strListReplace(const str_list_t, size_t index, const char* str);
