@@ -35,7 +35,6 @@ modem_input_thread(void *args)
 		if ((comGetModemStatus(com) & COM_DSR) == 0)
 			monitor_dsr = false;
 	}
-fprintf(stderr, "Initial input DCD: %d\n", comGetModemStatus(com) & COM_DCD);
 	while (com != COM_HANDLE_INVALID && !conn_api.terminate) {
 		rd = comReadBuf(com, (char *)conn_api.rd_buf, conn_api.rd_buf_size, NULL, 100);
 if (seven) {
@@ -51,7 +50,6 @@ conn_api.rd_buf[blerp] &= 0x7f;
 		}
 		if (args == NULL) {
 			if ((comGetModemStatus(com) & COM_DCD) == 0) {
-fprintf(stderr, "input thread terminated, DCD lost\n");
 				break;
 			}
 		}
@@ -79,7 +77,6 @@ modem_output_thread(void *args)
 		if ((comGetModemStatus(com) & COM_DSR) == 0)
 			monitor_dsr = false;
 	}
-fprintf(stderr, "Initial output DCD: %d\n", comGetModemStatus(com) & COM_DCD);
 	while (com != COM_HANDLE_INVALID && !conn_api.terminate) {
 		pthread_mutex_lock(&(conn_outbuf.mutex));
 		wr = conn_buf_wait_bytes(&conn_outbuf, 1, 100);
@@ -105,7 +102,6 @@ conn_api.wr_buf[blerp] |= (parmap[conn_api.wr_buf[blerp]] << 7);
 		}
 		if (args == NULL) {
 			if ((comGetModemStatus(com) & COM_DCD) == 0) {
-fprintf(stderr, "output thread terminated, DCD lost\n");
 				break;
 			}
 		}
@@ -154,7 +150,6 @@ modem_response(char *str, size_t maxlen, int timeout)
 		str[len++] = ch;
 	}
 	str[len] = 0;
-fprintf(stderr, "Modem response: '%s'\n", str);
 
 	return 0;
 }
@@ -291,7 +286,6 @@ seven = true;
 		while(modem_response(respbuf, sizeof(respbuf), 2) == 0)
 			;
 
-fprintf(stderr, "Sending: '%s'\n", settings.mdm.init_string);
 		comWriteString(com, settings.mdm.init_string);
 		comWriteString(com, "\r");
 
@@ -330,9 +324,7 @@ fprintf(stderr, "Sending: '%s'\n", settings.mdm.init_string);
 			uifc.pop(NULL);
 			uifc.pop("Dialing...");
 		}
-fprintf(stderr, "Sending: '%s'\n", settings.mdm.dial_string);
 		comWriteString(com, settings.mdm.dial_string);
-fprintf(stderr, "Sending: '%s'\n", bbs->addr);
 		comWriteString(com, bbs->addr);
 		comWriteString(com, "\r");
 
@@ -373,7 +365,6 @@ fprintf(stderr, "Sending: '%s'\n", bbs->addr);
 		}
 	}
 
-fprintf(stderr, "After connect, DCD: %d\n", comGetModemStatus(com) & COM_DCD);
 	if (!create_conn_buf(&conn_inbuf, BUFFER_SIZE)) {
 		conn_api.close();
 		return -1;
@@ -444,7 +435,6 @@ modem_close(void)
         /* TODO:  We need a drain function */
 	SLEEP(500);
 
-fprintf(stderr, "Lowering DTR in modem_close()\n");
 	if (!comLowerDTR(com))
 		goto CLOSEIT;
 
