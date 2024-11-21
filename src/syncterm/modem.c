@@ -180,6 +180,14 @@ modem_connect(struct bbslist *bbs)
 			comClose(com);
 			return -1;
 		}
+		if (!comSetFlowControl(com, bbs->flow_control)) {
+			conn_api.close();
+			if (!bbs->hidepopups) {
+				uifcmsg("Failed to set Flow Control", "`Failed to set Flow Control`\n\n"
+				    "SyncTERM was unable to set flow control.\n");
+			}
+			return -1;
+		}
 		if (bbs->conn_type == CONN_TYPE_SERIAL_NORTS)
 			comLowerRTS(com);
 		if (!comRaiseDTR(com)) {
@@ -225,6 +233,15 @@ modem_connect(struct bbslist *bbs)
 			comClose(com);
 			return -1;
 		}
+		if (!comSetFlowControl(com, bbs->flow_control)) {
+			conn_api.close();
+			if (!bbs->hidepopups) {
+				uifcmsg("Failed to set Flow Control", "`Failed to set Flow Control`\n\n"
+				    "SyncTERM was unable to set flow control.\n");
+			}
+			return -1;
+		}
+
 		if (!comRaiseDTR(com)) {
 			if (!bbs->hidepopups)
 				uifcmsg("Cannot Raise DTR", "`Cannot Raise DTR`\n\n"
@@ -318,15 +335,6 @@ modem_connect(struct bbslist *bbs)
 			SLEEP(1000);
 			uifc.pop(NULL);
 		}
-	}
-
-	if (!comSetFlowControl(com, bbs->flow_control)) {
-		conn_api.close();
-		if (!bbs->hidepopups) {
-			uifcmsg("Failed to set Flow Control", "`Failed to set Flow Control`\n\n"
-			    "SyncTERM was unable to set flow control.\n");
-		}
-		return -1;
 	}
 
 	if (!create_conn_buf(&conn_inbuf, BUFFER_SIZE)) {
