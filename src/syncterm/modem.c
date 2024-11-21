@@ -15,6 +15,13 @@
 #include "uifcinit.h"
 
 static COM_HANDLE com = COM_HANDLE_INVALID;
+static pthread_once_t ptable_once = PTHREAD_ONCE_INIT;
+static char ptable[128];
+static nbits[16] = {
+	0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4
+};
+static bool seven_bits = false;
+static int parity = SYNCTERM_PARITY_NONE;
 
 void
 modem_input_thread(void *args)
@@ -23,6 +30,7 @@ modem_input_thread(void *args)
 	int    buffered;
 	size_t buffer;
 	bool   monitor_dsr = true;
+	char   pb;
 
 	SetThreadName("Modem Input");
 	conn_api.input_thread_running = 1;
@@ -32,6 +40,11 @@ modem_input_thread(void *args)
 	}
 	while (com != COM_HANDLE_INVALID && !conn_api.terminate) {
 		rd = comReadBuf(com, (char *)conn_api.rd_buf, conn_api.rd_buf_size, NULL, 100);
+		// Strip high bits... we *should* check the parity
+		if (seven) {
+			for (int i = 0; i < rd; i++)
+				conn_api.rd_buf[i] &= 0x7f;
+		}
 		buffered = 0;
 		while (com != COM_HANDLE_INVALID && buffered < rd) {
 			pthread_mutex_lock(&(conn_inbuf.mutex));
@@ -73,6 +86,20 @@ modem_output_thread(void *args)
 		if (wr) {
 			wr = conn_buf_get(&conn_outbuf, conn_api.wr_buf, conn_api.wr_buf_size);
 			pthread_mutex_unlock(&(conn_outbuf.mutex));
+			if (seven) {
+				for (i = 0; i < wr; i++)
+					conn_api.wr_buf[i] &= 0x7f;
+				switch (parity) {
+					case SYNCTERM_PARITY_NONE:
+						break;
+					case SYNCTERM_PARITY_EVEN:
+						conn_api.wr_buf[i] = ptable[conn_api.wr_buf[i]];
+						break;
+					case SYNCTERM_PARITY_ODD:
+						conn_api.wr_buf[i] = ptable[conn_api.wr_buf[i]] ^ 0x80;
+						break;
+				}
+			}
 			sent = 0;
 			while (com != COM_HANDLE_INVALID && sent < wr) {
 				ret = comWriteBuf(com, conn_api.wr_buf + sent, wr - sent);
@@ -137,11 +164,27 @@ modem_response(char *str, size_t maxlen, int timeout)
 	return 0;
 }
 
+void
+init_ptable(void)
+{
+	int i;
+	int nb;
+
+	for (i = 0; i < (sizeof(ptable) / sizeof(ptable[0])); i++) {
+		nb = nbits[i & 0x0f] | nbits[i >> 4];
+		ptable[i] = ((nb & 1) << 7) | i;
+	}
+}
+
 int
 modem_connect(struct bbslist *bbs)
 {
 	int  ret;
 	char respbuf[1024];
+
+	pthread_once(&ptable_once, init_ptable);
+	parity = bbs->parity;
+	seven = (bbs->data_bits == 7);
 
 	if (!bbs->hidepopups)
 		init_uifc(true, true);
