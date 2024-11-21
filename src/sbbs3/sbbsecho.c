@@ -2384,10 +2384,14 @@ char* process_areafix(fidoaddr_t addr, char* inbuf, const char* subj, const char
 			SKIP_WHITESPACE(p);
 			if(stricmp(p, "-R") == 0 || strnicmp(p, "-R ", 3) == 0)
 				rescan = true;
-			if(stricmp(p, "-L") == 0 || strnicmp(p, "-L ", 3) == 0)
+			if(stricmp(p, "-L") == 0 || strnicmp(p, "-L ", 3) == 0) {
 				list = true;
-			if(stricmp(p, "-Q") == 0 || strnicmp(p, "-Q ", 3) == 0)
+				++cmds;
+			}
+			if(stricmp(p, "-Q") == 0 || strnicmp(p, "-Q ", 3) == 0) {
 				query = true;
+				++cmds;
+			}
 			FIND_WHITESPACE(p);
 		}
 	}
