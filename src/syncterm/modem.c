@@ -30,6 +30,7 @@ modem_input_thread(void *args)
 		if ((comGetModemStatus(com) & COM_DSR) == 0)
 			monitor_dsr = false;
 	}
+fprintf(stderr, "Initial input DCD: %d\n", comGetModemStatus(com) & COM_DCD);
 	while (com != COM_HANDLE_INVALID && !conn_api.terminate) {
 		rd = comReadBuf(com, (char *)conn_api.rd_buf, conn_api.rd_buf_size, NULL, 100);
 		buffered = 0;
@@ -40,8 +41,10 @@ modem_input_thread(void *args)
 			pthread_mutex_unlock(&(conn_inbuf.mutex));
 		}
 		if (args == NULL) {
-			if ((comGetModemStatus(com) & COM_DCD) == 0)
+			if ((comGetModemStatus(com) & COM_DCD) == 0) {
+fprintf(stderr, "input thread terminated, DCD lost\n");
 				break;
+			}
 		}
 		else if (monitor_dsr) {
 			if ((comGetModemStatus(com) & COM_DSR) == 0)
@@ -67,6 +70,7 @@ modem_output_thread(void *args)
 		if ((comGetModemStatus(com) & COM_DSR) == 0)
 			monitor_dsr = false;
 	}
+fprintf(stderr, "Initial output DCD: %d\n", comGetModemStatus(com) & COM_DCD);
 	while (com != COM_HANDLE_INVALID && !conn_api.terminate) {
 		pthread_mutex_lock(&(conn_outbuf.mutex));
 		wr = conn_buf_wait_bytes(&conn_outbuf, 1, 100);
@@ -85,8 +89,10 @@ modem_output_thread(void *args)
 			pthread_mutex_unlock(&(conn_outbuf.mutex));
 		}
 		if (args == NULL) {
-			if ((comGetModemStatus(com) & COM_DCD) == 0)
+			if ((comGetModemStatus(com) & COM_DCD) == 0) {
+fprintf(stderr, "output thread terminated, DCD lost\n");
 				break;
+			}
 		}
 		else if (monitor_dsr) {
 			if ((comGetModemStatus(com) & COM_DSR) == 0)
@@ -337,6 +343,7 @@ modem_connect(struct bbslist *bbs)
 		}
 	}
 
+fprintf(stderr, "After connect, DCD: %d\n", comGetModemStatus(com) & COM_DCD);
 	if (!create_conn_buf(&conn_inbuf, BUFFER_SIZE)) {
 		conn_api.close();
 		return -1;
@@ -407,6 +414,7 @@ modem_close(void)
         /* TODO:  We need a drain function */
 	SLEEP(500);
 
+fprintf(stderr, "Lowering DTR in modem_close()\n");
 	if (!comLowerDTR(com))
 		goto CLOSEIT;
 
