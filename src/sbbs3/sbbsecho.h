@@ -1,4 +1,4 @@
-/* Synchronet FidoNet EchoMail tosser/scanner/areafix program */
+/* Synchronet FidoNet EchoMail tosser/scanner/areamgr program */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
@@ -103,7 +103,7 @@ typedef struct {
 	char		inbox[MAX_PATH+1];
 	char		outbox[MAX_PATH+1];
 	str_list_t	keys;
-	bool		areafix;
+	bool		areamgr;
 	bool		send_notify;
 	bool		passive;
 	bool		direct;
@@ -178,7 +178,7 @@ typedef struct {
 			   ;
 	uint		umask;
 	char		default_recipient[LEN_ALIAS+1];
-	char		areamgr[LEN_ALIAS+1];	/* User to notify of areafix activity */
+	char		areamgr[LEN_ALIAS+1];	/* User to notify of areamgr activity */
 	arcdef_t*	arcdef; 				/* Each archive definition */
 	nodecfg_t*	nodecfg;				/* Each node configuration */
 	echolist_t*	listcfg;				/* Each echolist configuration */
