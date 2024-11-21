@@ -147,7 +147,7 @@ void global_settings(void)
 			"\n"
 			"`Config File Backups` determines the number of automatic backups of your\n"
 			"    SBBSecho configuration file (e.g. `sbbsecho.ini`) that will be\n"
-			"    maintained by FidoNet Config (`echocfg`) and SBBSecho AreaFix.\n"
+			"    maintained by FidoNet Config (`echocfg`) and SBBSecho AreaManager.\n"
 			"\n"
 			"`Minimum Free Disk Space` determines the minimum amount of free disk\n"
 			"    space for SBBSecho to run.  SBBSecho will just exit with an error\n"
@@ -990,7 +990,7 @@ int main(int argc, char **argv)
 	"The `EchoLists` sub-menu is for configuring additional (optional)\n"
 	"lists of FidoNet-style message areas (echoes) in `BACKBONE.NA` file\n"
 	"format.  These lists, if configured, are used in addition to your main\n"
-	"`Area File` (e.g. areas.bbs) for advanced AreaFix/AreaMgr operations."
+	"`Area File` (e.g. areas.bbs) for advanced AreaManager/AreaFix operations."
 	;
 		i=0;
 		sprintf(opt[i++],"Global Settings");
@@ -1110,7 +1110,7 @@ int main(int argc, char **argv)
 	"    e.g. '`1:ALL`' matches all nodes within FidoNet Zone 1.\n"
 	"\n"
 	"`Name` is name of the system operator of the configured node. This is used\n"
-	"    as the destination name for AreaFix Notification NetMail messages.\n"
+	"    as the destination name for AreaMgr Notification NetMail messages.\n"
 	"\n"
 	"`Comment` is a note to yourself about this node. Setting this to the\n"
 	"    BBS name or official FidoNet title corresponding with the configured\n"
@@ -1120,7 +1120,7 @@ int main(int argc, char **argv)
 	"    your configured archive types or '`None`'.  This archive type will\n"
 	"    be used when creating EchoMail bundles or if `None`, raw/uncompressed\n"
 	"    EchoMail packets will be sent to this node.\n"
-	"    This setting may be managed by the node using AreaFix requests.\n"
+	"    This setting may be managed by the node using AreaMgr requests.\n"
 	"\n"
 	"`Packet Type` is the type of outbound packet generated for this node.\n"
 	"    Incoming packet types are automatically detected from among the list\n"
@@ -1132,7 +1132,7 @@ int main(int argc, char **argv)
 	"    this password value.  If this password is blank/empty and `Strict\n"
 	"    Packet Passwords` are enabled, then incoming packets from this node\n"
 	"    must also have no password.  Packet passwords are case insensitive.\n"
-	"    This setting may be managed by the node using AreaFix requests.\n"
+	"    This setting may be managed by the node using AreaMgr requests.\n"
 	"\n"
 	"`Session Password` is the password that will be used for authenticated\n"
 	"    BinkP sessions with this node. Session passwords are case sensitive.\n"
@@ -1141,18 +1141,18 @@ int main(int argc, char **argv)
 	"`TIC File Password` is an optional password that may be configured here\n"
 	"    (and in your `sbbsecho.ini` file) for use by `tickit.js` when creating\n"
 	"    or authenticating `.TIC` files.\n"
-	"    This setting may be managed by the node using AreaFix requests.\n"
+	"    This setting may be managed by the node using AreaMgr requests.\n"
 	"\n"
-	"`AreaFix Support` is a toggle that determines whether or not this node\n"
-	"    may send AreaFix NetMail requests to your system to perform remote\n"
-	"    area and account management.\n"
+	"`AreaMgr Support` is a toggle that determines whether or not this node\n"
+	"    may send AreaMgr NetMail requests to your system to perform remote\n"
+	"    area and account management (e.g. addressed to '`AreaFix`').\n"
 	"\n"
-	"`AreaFix Password` is an optional password used to authenticate inbound\n"
-	"    AreaFix NetMail requests (Remote Area Management) from this node.\n"
-	"    AreaFix Passwords are case insensitive.\n"
-	"    This setting may be managed by the node using AreaFix requests.\n"
+	"`AreaMgr Password` is an optional password used to authenticate inbound\n"
+	"    AreaMgr NetMail requests (Remote Area Management) from this node.\n"
+	"    AreaMgr Passwords are case insensitive.\n"
+	"    This setting may be managed by the node using AreaMgr requests.\n"
 	"\n"
-	"`EchoList Keys` is a list of keys which enable AreaFix access to one or\n"
+	"`EchoList Keys` is a list of keys which enable AreaMgr access to one or\n"
 	"    more additional EchoLists.\n"
 	"\n"
 	"`Status` is the default mode for sending mail to this node: `Normal`, `Hold`\n"
@@ -1163,10 +1163,10 @@ int main(int argc, char **argv)
 	"\n"
 	"`Passive` is used to temporarily disable (pause) the packing and sending\n"
 	"    of EchoMail for this node.  The opposite of Passive is `Active`.\n"
-	"    This setting may be managed by the node using AreaFix requests.\n"
+	"    This setting may be managed by the node using AreaMgr requests.\n"
 	"\n"
 	"`Send Notify List` is used to flag nodes that you want notified via\n"
-	"    NetMail of their current AreaFix settings whenever SBBSecho is run\n"
+	"    NetMail of their current AreaMgr settings whenever SBBSecho is run\n"
 	"    with the '`G`' option.\n"
 	"\n"
 	"`Uplink for Message Groups` is an optional list of Message Groups (short\n"
@@ -1213,9 +1213,9 @@ int main(int argc, char **argv)
 							,cfg.nodecfg[i].sesspwd);
 						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","TIC File Password"
 							,cfg.nodecfg[i].ticpwd);
-						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","AreaFix Support"
-							,cfg.nodecfg[i].areafix ? "Yes" : "No");
-						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","AreaFix Password"
+						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","AreaMgr Support"
+							,cfg.nodecfg[i].areamgr ? "Yes" : "No");
+						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","AreaMgr Password"
 							,cfg.nodecfg[i].password);
 						snprintf(opt[j++],MAX_OPLN-1,"%-30.30s %s","EchoList Keys"
 							,strListCombine(cfg.nodecfg[i].keys,str,sizeof(str),","));
@@ -1290,7 +1290,7 @@ int main(int argc, char **argv)
 	uifc.helpbuf=
 	"~ Name ~\n\n"
 	"This is an optional NetMail destination name for the node (e.g. the sysop's name).\n"
-	"This is used for AreaFix Notification NetMail messages.\n";
+	"This is used for AreaManager Notification NetMail messages.\n";
 								uifc.input(WIN_MID|WIN_SAV,0,0
 									,"Name"
 									,cfg.nodecfg[i].name,sizeof(cfg.nodecfg[i].name)-1
@@ -1381,14 +1381,14 @@ int main(int argc, char **argv)
 								break;
 							case __COUNTER__:
 	uifc.helpbuf=
-	"~ AreaFix Support ~\n\n"
+	"~ AreaManager Support ~\n\n"
 	"If you wish for this node to be able to remotely query or change their\n"
-	"configuration via `AreaFix` NetMail messages, set to option to `Yes`.\n";
-								k = cfg.nodecfg[i].areafix;
+	"configuration via `AreaManager` (AreaFix) NetMail messages, set to option to `Yes`.\n";
+								k = cfg.nodecfg[i].areamgr;
 								switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-									,"AreaFix Support",uifcYesNoOpts)) {
-									case 0:	cfg.nodecfg[i].areafix = true;	uifc.changes=TRUE; break;
-									case 1:	cfg.nodecfg[i].areafix = false;	uifc.changes=TRUE; break;
+									,"AreaManager Support",uifcYesNoOpts)) {
+									case 0:	cfg.nodecfg[i].areamgr = true;	uifc.changes=TRUE; break;
+									case 1:	cfg.nodecfg[i].areamgr = false;	uifc.changes=TRUE; break;
 								}
 								break;
 							case __COUNTER__:
@@ -1397,7 +1397,7 @@ int main(int argc, char **argv)
 	"This is the password that will be used by this node when doing remote\n"
 	"AreaManager / AreaFix functions.\n";
 								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"AreaFix Password"
+									,"AreaManager Password"
 									,cfg.nodecfg[i].password,sizeof(cfg.nodecfg[i].password)-1
 									,K_EDIT|K_UPPER|K_NOSPACE);
 								break;
@@ -1473,7 +1473,7 @@ int main(int argc, char **argv)
 							case __COUNTER__:
 								k = !cfg.nodecfg[i].send_notify;
 								switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-									,"Send AreaFix Notifications",uifcYesNoOpts)) {
+									,"Send AreaManager Notifications",uifcYesNoOpts)) {
 									case 0:	cfg.nodecfg[i].send_notify = true;	uifc.changes=TRUE; break;
 									case 1:	cfg.nodecfg[i].send_notify = false;	uifc.changes=TRUE; break;
 								}
@@ -1682,7 +1682,7 @@ int main(int argc, char **argv)
 	" `*` A `<tag>` value of `*` indicates a `bad echo` (unknown) area\n"
 	" `*` A `<code>` value of `P` indicates a pass-through message area\n"
 	" `*` This file may be import/exported to/from your `Message Areas` in `SCFG`\n"
-	" `*` This file may be remotely modified by authorized nodes using `AreaFix`\n"
+	" `*` This file may be remotely modified by authorized nodes using `AreaMgr`\n"
 	"\n"
 	"Default value is `" DEFAULT_AREA_FILE "`."
 	;
@@ -1963,7 +1963,7 @@ int main(int argc, char **argv)
 	"~ EchoMail Settings ~\n"
 	"\n"
 	"`Area Manager` is the BBS user name or alias to notify (via email) of\n"
-	"    AreaFix activities and errors.  This setting defaults to `SYSOP`.\n"
+	"    AreaMgr activities and errors.  This setting defaults to `SYSOP`.\n"
 	"\n"
 	"`Maximum Packet Size` is the largest packet file size that SBBSecho will\n"
 	"    normally create (in bytes).\n"
@@ -1995,7 +1995,7 @@ int main(int argc, char **argv)
 	"`Allow Nodes to Add Areas from Area File` when set to `Yes` allows linked\n"
 	"    nodes to add areas listed in your Area File (e.g. `areas.bbs`).\n"
 	"    When set to `No`, only areas found in one or more `EchoLists` may be\n"
-	"    added via AreaFix, provided the linked node has access.\n"
+	"    added via AreaMgr, provided the linked node has access.\n"
 	"    This setting defaults to `Yes`.\n"
 	"\n"
 	"`Maximum Backups to Maintain of Area File` defines the number of backup\n"
@@ -2074,7 +2074,7 @@ int main(int argc, char **argv)
 						case 0:
 				uifc.helpbuf=
 				"~ Area Manager ~\n\n"
-				"Local user to notify of AreaFix activity and errors.\n";
+				"Local user to notify of AreaManager activity and errors.\n";
 							uifc.input(WIN_MID|WIN_BOT|WIN_SAV,0,0,"Area Manager (user name or alias)"
 								,cfg.areamgr
 								,LEN_ALIAS,K_EDIT);
@@ -2147,7 +2147,7 @@ int main(int argc, char **argv)
 						case 7:
 							k = cfg.add_from_echolists_only;
 							switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
-								,"Allow AreaFix-Add from Area File",uifcYesNoOpts)) {
+								,"Allow AreaManager-Add from Area File",uifcYesNoOpts)) {
 								case 0:	cfg.add_from_echolists_only = false;	break;
 								case 1:	cfg.add_from_echolists_only = true;		break;
 							}
@@ -2686,7 +2686,7 @@ int main(int argc, char **argv)
 					"~ EchoLists ~\n\n"
 					"This feature allows you to specify lists of echoes, in `BACKBONE.NA`\n"
 					"format, which are utilized in `addition` to your Area File (e.g. \n"
-					"`areas.bbs`) for advanced AreaFix (Area Management) operations.\n";
+					"`areas.bbs`) for advanced Area Management operations.\n";
 					for(u=0;u<cfg.listcfgs;u++)
 						snprintf(opt[u],MAX_OPLN-1,"%s",cfg.listcfg[u].listpath);
 					opt[u][0]=0;
@@ -2798,7 +2798,7 @@ int main(int argc, char **argv)
 								uifc.helpbuf=
 								"~ Required Key ~\n\n"
 								"These keys determine which linked nodes have access to the selected\n"
-								"echolist file via AreaFix requests (e.g. query, add, remove).\n"
+								"echolist file via AreaManager requests (e.g. query, add, remove).\n"
 								"\n"
 								"A linked node need only have one of the required keys to have access\n"
 								"the echolist."

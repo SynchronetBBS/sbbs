@@ -398,7 +398,7 @@ bool sbbsecho_read_ini(sbbsecho_cfg_t* cfg)
 		ncfg->grphub			= iniGetStringList(ini, node, "GroupHub", ",", "");
 		ncfg->keys				= iniGetStringList(ini, node, "keys", ",", "");
 		ncfg->pkt_type			= iniGetEnum(ini, node, "PacketType", pktTypeStringList, ncfg->pkt_type);
-		ncfg->areafix			= iniGetBool(ini, node, "AreaFix", ncfg->password[0] ? true : false);
+		ncfg->areamgr			= iniGetBool(ini, node, "AreaFix", ncfg->password[0] ? true : false);
 		ncfg->send_notify		= iniGetBool(ini, node, "notify", ncfg->send_notify);
 		ncfg->passive			= iniGetBool(ini, node, "passive", ncfg->passive);
 		ncfg->direct			= iniGetBool(ini, node, "direct", ncfg->direct);
@@ -619,7 +619,7 @@ bool sbbsecho_write_ini(sbbsecho_cfg_t* cfg)
 		iniSetString(&ini	,section,	"Archive"		,node->archive == SBBSECHO_ARCHIVE_NONE ? "None" : node->archive->name, style);
 		iniSetEnum(&ini		,section,	"PacketType"	,pktTypeStringList, node->pkt_type, style);
 		iniSetString(&ini	,section,	"PacketPwd"		,node->pktpwd		,style);
-		iniSetBool(&ini		,section,	"AreaFix"		,node->areafix		,style);
+		iniSetBool(&ini		,section,	"AreaFix"		,node->areamgr		,style);
 		iniSetString(&ini	,section,	"AreaFixPwd"	,node->password		,style);
 		iniSetString(&ini	,section,	"SessionPwd"	,node->sesspwd		,style);
 		iniSetString(&ini	,section,	"TicFilePwd"	,node->ticpwd		,style);

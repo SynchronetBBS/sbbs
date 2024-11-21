@@ -1263,7 +1263,7 @@ void* iniFreeNamedStringList(named_string_t** list)
 	return(NULL);
 }
 
-str_list_t iniReadSectionList(FILE* fp, const char* prefix)
+static str_list_t ini_read_section_list(FILE* fp, const char* prefix, bool include_dupes)
 {
 	char*	p;
 	char	str[INI_MAX_LINE_LEN];
@@ -1288,7 +1288,7 @@ str_list_t iniReadSectionList(FILE* fp, const char* prefix)
 		if(prefix!=NULL)
 			if(strnicmp(p,prefix,strlen(prefix))!=0)
 				continue;
-		if(strListFind(lp, p, /* case_sensitive */false) >= 0)
+		if(!include_dupes && strListFind(lp, p, /* case_sensitive */false) >= 0)
 			continue;
 		if(strListAppend(&lp,p,items++)==NULL)
 			break;
@@ -1297,7 +1297,17 @@ str_list_t iniReadSectionList(FILE* fp, const char* prefix)
 	return(lp);
 }
 
-str_list_t iniGetSectionList(str_list_t list, const char* prefix)
+str_list_t iniReadSectionList(FILE* fp, const char* prefix)
+{
+	return  ini_read_section_list(fp, prefix, /* include dupes: */false);
+}
+
+str_list_t iniReadSectionListWithDupes(FILE* fp, const char* prefix)
+{
+	return  ini_read_section_list(fp, prefix, /* include dupes: */true);
+}
+
+static str_list_t ini_get_section_list(str_list_t list, const char* prefix, bool include_dupes)
 {
 	char*	p;
 	char	str[INI_MAX_LINE_LEN];
@@ -1319,13 +1329,23 @@ str_list_t iniGetSectionList(str_list_t list, const char* prefix)
 		if(prefix!=NULL)
 			if(strnicmp(p,prefix,strlen(prefix))!=0)
 				continue;
-		if(strListFind(lp, p, /* case_sensitive */false) >= 0)
+		if(include_dupes && strListFind(lp, p, /* case_sensitive */false) >= 0)
 			continue;
 		if(strListAppend(&lp,p,items++)==NULL)
 			break;
 	}
 
 	return(lp);
+}
+
+str_list_t iniGetSectionList(str_list_t list, const char* prefix)
+{
+	return ini_get_section_list(list, prefix, /* include_dupes: */false);
+}
+
+str_list_t iniGetSectionListWithDupes(str_list_t list, const char* prefix)
+{
+	return ini_get_section_list(list, prefix, /* include_dupes: */true);
 }
 
 size_t iniGetSectionCount(str_list_t list, const char* prefix)
