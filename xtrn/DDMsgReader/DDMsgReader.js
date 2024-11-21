@@ -18711,7 +18711,9 @@ function DigDistMsgReader_GetMsgBody(pMsgHdr)
 			if ((msgFromUpper == user.name.toUpperCase()) || (msgFromUpper == user.handle.toUpperCase()))
 			{
 				// Check all the messages in the messagebase after the current one
-				// to find poll response messages
+				// to find ballots for this poll. For ballots, append the 'user voted'
+				// string to the message body.
+
 				// Get the line from text.dat for writing who voted & when.  It
 				// is a format string and should look something like this:
 				//"\r\n\x01n\x01hOn %s, in \x01c%s \x01n\x01c%s\r\n\x01h\x01m%s voted in your poll: \x01n\x01h%s\r\n" 787 PollVoteNotice
@@ -18720,32 +18722,52 @@ function DigDistMsgReader_GetMsgBody(pMsgHdr)
 				// Pass true to get_all_msg_headers() to tell it to return vote messages
 				// (the parameter was introduced in Synchronet 3.17+)
 				var tmpHdrs = msgbase.get_all_msg_headers(true);
+				// Get the current sub-board's group name and configuration name, for use
+				// with the 'user voted' text
+				//var indexRecords = []; // Index records; faster than getting full message header objects
+				var grpName = "";
+				var msgbaseCfgName = "";
+				var msgbase = new MsgBase(this.subBoardCode);
+				if (msgbase.open())
+				{
+					//indexRecords = msgbase.get_index();
+					grpName = msgbase.cfg.grp_name;
+					msgbaseCfgName = msgbase.cfg.name;
+					msgbase.close();
+				}
 				for (var tmpProp in tmpHdrs)
 				{
 					if (tmpHdrs[tmpProp] == null)
 						continue;
-					// Look for poll votes: If this header's thread_back or reply_id matches the
-					// poll message number, and there's no message body and the header's field_list
-					// is empty, then append the 'user voted' string to the message body.
-					if ((tmpHdrs[tmpProp].thread_back == pMsgHdr.number) || (tmpHdrs[tmpProp].reply_id == pMsgHdr.id))
+					if (tmpHdrs[tmpProp].type == MSG_TYPE_BALLOT && (tmpHdrs[tmpProp].thread_back == pMsgHdr.number || tmpHdrs[tmpProp].reply_id == pMsgHdr.id))
 					{
 						var msgWrittenLocalTime = msgWrittenTimeToLocalBBSTime(tmpHdrs[tmpProp]);
 						var voteDate = strftime("%a %b %d %Y %H:%M:%S", msgWrittenLocalTime);
-						var grpName = "";
-						var msgbaseCfgName = "";
-						var tmpMessageBody = "";
-						var msgbase = new MsgBase(this.subBoardCode);
-						if (msgbase.open())
-						{
-							grpName = msgbase.cfg.grp_name;
-							msgbaseCfgName = msgbase.cfg.name;
-							tmpMessageBody = msgbase.get_msg_body(false, tmpHdrs[tmpProp].number, false, false, true, true);
-							msgbase.close();
-						}
-						if (tmpHdrs[tmpProp].field_list.length == 0 && (tmpMessageBody == null || tmpMessageBody.length == 0))
-							retObj.msgBody += format(userVotedInYourPollText, voteDate, grpName, msgbaseCfgName, tmpHdrs[tmpProp].from, pMsgHdr.subject);
+						retObj.msgBody += format(userVotedInYourPollText, voteDate, grpName, msgbaseCfgName, tmpHdrs[tmpProp].from, pMsgHdr.subject);
 					}
 				}
+				// we could check the index records this way:
+				/*
+				for (var i = 0; i < indexRecords.length; ++i)
+				{
+					if (Boolean(indexRecords[i].attr & MSG_VOTE) && indexRecords[i].remsg == pMsgHdr.number)
+					{
+						// Get the 'from' name for this ballot
+						var ballotFromName = "";
+						if (msgbase.open())
+						{
+							// TODO: get_msg_header() is returning null here..?
+							var tmpHdr = msgbase.get_msg_header(false, indexRecords[i].number);
+							msgbase.close();
+							if (tmpHdr != null)
+								ballotFromName = tmpHdr.from;
+						}
+						var msgWrittenLocalTime = msgWrittenTimeToLocalBBSTime(indexRecords[i]);
+						var voteDate = strftime("%a %b %d %Y %H:%M:%S", msgWrittenLocalTime);
+						retObj.msgBody += format(userVotedInYourPollText, voteDate, grpName, msgbaseCfgName, ballotFromName, pMsgHdr.subject);
+					}
+				}
+				*/
 			}
 		}
 	}
