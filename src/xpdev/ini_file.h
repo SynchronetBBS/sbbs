@@ -52,6 +52,7 @@ extern "C" {
 /* Read all section names and return as an allocated string list */
 /* Optionally (if prefix!=NULL), returns a subset of section names */
 DLLEXPORT str_list_t 	iniReadSectionList(FILE*, const char* prefix);
+DLLEXPORT str_list_t 	iniReadSectionListWithDupes(FILE*, const char* prefix);
 /* Returns number (count) of sections */
 DLLEXPORT size_t 		iniReadSectionCount(FILE*, const char* prefix);
 /* Read all key names and return as an allocated string list */
@@ -137,9 +138,10 @@ DLLEXPORT bool 			iniCloseFile(FILE*);
 
 /* StringList functions */
 DLLEXPORT str_list_t 	iniGetSectionList(str_list_t list, const char* prefix);
+DLLEXPORT str_list_t 	iniGetSectionListWithDupes(str_list_t list, const char* prefix);
 DLLEXPORT size_t 		iniGetSectionCount(str_list_t list, const char* prefix);
 DLLEXPORT str_list_t 	iniGetKeyList(str_list_t list, const char* section);
-DLLEXPORT named_string_t** 
+DLLEXPORT named_string_t**
 						iniGetNamedStringList(str_list_t list, const char* section);
 
 /* Return the unparsed value (string literals not supported): */
