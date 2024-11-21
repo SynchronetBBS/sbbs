@@ -185,6 +185,9 @@
  *                              window, if there's an area change header in use, refresh it
  *                              and the header lines, since the scrollable help window would
  *                              display over them.
+ * 2024-11-20 Eric Oulashin     Version 1.96c
+ *                              Bug fix: When showing a poll vote from the user, it should
+ *                              show people who've voted - ensure it only counts vote responses
  */
 
 "use strict";
@@ -292,8 +295,8 @@ var hexdump = load('hexdump_lib.js');
 
 
 // Reader version information
-var READER_VERSION = "1.96b";
-var READER_DATE = "2024-11-03";
+var READER_VERSION = "1.96c";
+var READER_DATE = "2024-11-20";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -18708,7 +18711,9 @@ function DigDistMsgReader_GetMsgBody(pMsgHdr)
 			if ((msgFromUpper == user.name.toUpperCase()) || (msgFromUpper == user.handle.toUpperCase()))
 			{
 				// Check all the messages in the messagebase after the current one
-				// to find poll response messages
+				// to find ballots for this poll. For ballots, append the 'user voted'
+				// string to the message body.
+
 				// Get the line from text.dat for writing who voted & when.  It
 				// is a format string and should look something like this:
 				//"\r\n\x01n\x01hOn %s, in \x01c%s \x01n\x01c%s\r\n\x01h\x01m%s voted in your poll: \x01n\x01h%s\r\n" 787 PollVoteNotice
@@ -18717,28 +18722,52 @@ function DigDistMsgReader_GetMsgBody(pMsgHdr)
 				// Pass true to get_all_msg_headers() to tell it to return vote messages
 				// (the parameter was introduced in Synchronet 3.17+)
 				var tmpHdrs = msgbase.get_all_msg_headers(true);
+				// Get the current sub-board's group name and configuration name, for use
+				// with the 'user voted' text
+				//var indexRecords = []; // Index records; faster than getting full message header objects
+				var grpName = "";
+				var msgbaseCfgName = "";
+				var msgbase = new MsgBase(this.subBoardCode);
+				if (msgbase.open())
+				{
+					//indexRecords = msgbase.get_index();
+					grpName = msgbase.cfg.grp_name;
+					msgbaseCfgName = msgbase.cfg.name;
+					msgbase.close();
+				}
 				for (var tmpProp in tmpHdrs)
 				{
 					if (tmpHdrs[tmpProp] == null)
 						continue;
-					// If this header's thread_back or reply_id matches the poll message
-					// number, then append the 'user voted' string to the message body.
-					if ((tmpHdrs[tmpProp].thread_back == pMsgHdr.number) || (tmpHdrs[tmpProp].reply_id == pMsgHdr.id))
+					if (tmpHdrs[tmpProp].type == MSG_TYPE_BALLOT && (tmpHdrs[tmpProp].thread_back == pMsgHdr.number || tmpHdrs[tmpProp].reply_id == pMsgHdr.id))
 					{
 						var msgWrittenLocalTime = msgWrittenTimeToLocalBBSTime(tmpHdrs[tmpProp]);
 						var voteDate = strftime("%a %b %d %Y %H:%M:%S", msgWrittenLocalTime);
-						var grpName = "";
-						var msgbaseCfgName = "";
-						var msgbase = new MsgBase(this.subBoardCode);
-						if (msgbase.open())
-						{
-							grpName = msgbase.cfg.grp_name;
-							msgbaseCfgName = msgbase.cfg.name;
-							msgbase.close();
-						}
 						retObj.msgBody += format(userVotedInYourPollText, voteDate, grpName, msgbaseCfgName, tmpHdrs[tmpProp].from, pMsgHdr.subject);
 					}
 				}
+				// we could check the index records this way:
+				/*
+				for (var i = 0; i < indexRecords.length; ++i)
+				{
+					if (Boolean(indexRecords[i].attr & MSG_VOTE) && indexRecords[i].remsg == pMsgHdr.number)
+					{
+						// Get the 'from' name for this ballot
+						var ballotFromName = "";
+						if (msgbase.open())
+						{
+							// TODO: get_msg_header() is returning null here..?
+							var tmpHdr = msgbase.get_msg_header(false, indexRecords[i].number);
+							msgbase.close();
+							if (tmpHdr != null)
+								ballotFromName = tmpHdr.from;
+						}
+						var msgWrittenLocalTime = msgWrittenTimeToLocalBBSTime(indexRecords[i]);
+						var voteDate = strftime("%a %b %d %Y %H:%M:%S", msgWrittenLocalTime);
+						retObj.msgBody += format(userVotedInYourPollText, voteDate, grpName, msgbaseCfgName, ballotFromName, pMsgHdr.subject);
+					}
+				}
+				*/
 			}
 		}
 	}

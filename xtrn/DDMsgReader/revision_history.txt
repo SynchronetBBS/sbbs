@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.96c    2024-11-20   Bug fix: When showing a poll vote from the user, it should
+                      show people who've voted - ensure it only counts vote
+                      responses
 1.96b    2024-11-03   Bug fix: When displaying the new scrollable area change
                       help window, if there's an area change header in use,
                       refresh it and the header lines, since the scrollable help
