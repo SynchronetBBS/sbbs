@@ -1164,7 +1164,7 @@ enum {
 	BBSLIST_FIELD_STOP_BITS,
 	BBSLIST_FIELD_DATA_BITS,
 	BBSLIST_FIELD_PARITY,
-ꪪ};
+};
 
 void
 build_edit_list(struct bbslist *item, char opt[][69], int *optmap, char **opts, int isdefault, char *itemname)
