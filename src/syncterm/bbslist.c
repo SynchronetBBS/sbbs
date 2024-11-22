@@ -1125,6 +1125,210 @@ edit_name(char *itemname, struct bbslist **list, str_list_t inifile, bool edit_t
 	return false;
 }
 
+void
+build_edit_list(struct bbslist *item, char opt[][69], int *optmap, char **opts, int isdefault)
+{
+	int i = 0;
+	char      *itemname;
+	char       str[64];
+
+	if (!isdefault) {
+		optmap[i] = 0;
+		sprintf(opt[i++], "Name              %s", itemname);
+		optmap[i] = 1;
+		switch (item->conn_type) {
+			case CONN_TYPE_MODEM:
+				sprintf(opt[i++], "Phone Number      %s", item->addr);
+				break;
+			case CONN_TYPE_SERIAL:
+			case CONN_TYPE_SERIAL_NORTS:
+				sprintf(opt[i++], "Device Name       %s", item->addr);
+				break;
+			case CONN_TYPE_SHELL:
+				sprintf(opt[i++], "Command           %s", item->addr);
+				break;
+			default:
+				sprintf(opt[i++], "Address           %s", item->addr);
+				break;
+		}
+	}
+	optmap[i] = 2;
+	sprintf(opt[i++], "Connection Type   %s", conn_types[item->conn_type]);
+	if ((item->conn_type == CONN_TYPE_MODEM) || (item->conn_type == CONN_TYPE_SERIAL) || (item->conn_type == CONN_TYPE_SERIAL_NORTS)) {
+		optmap[i] = 3;
+		fc_str(opt[i++], item->flow_control);
+		optmap[i] = 4;
+		sprintf(opt[i++], "Stop Bits         %hu", item->stop_bits);
+		optmap[i] = 5;
+		sprintf(opt[i++], "Data Bits         %hu", item->data_bits);
+		optmap[i] = 6;
+		sprintf(opt[i++], "Parity            %s", parity_enum[item->parity]);
+	}
+	else if (item->conn_type != CONN_TYPE_SHELL) {
+		optmap[i] = 7;
+		sprintf(opt[i++], "TCP Port          %hu", item->port);
+	}
+	if (item->conn_type == CONN_TYPE_MBBS_GHOST) {
+		optmap[i] = 8;
+		printf_trunc(opt[i], sizeof(opt[i]), "Username          %s", item->user);
+		i++;
+		optmap[i] = 9;
+		sprintf(opt[i++], "GHost Program     %s", item->password);
+		optmap[i] = 10;
+		sprintf(opt[i++], "System Password   %s", item->syspass[0] ? "********" : "<none>");
+	}
+	else if (item->conn_type == CONN_TYPE_SSHNA) {
+		optmap[i] = 8;
+		printf_trunc(opt[i], sizeof(opt[i]), "SSH Username      %s", item->user);
+		i++;
+		optmap[i] = 9;
+		sprintf(opt[i++], "BBS Username      %s", item->password);
+		optmap[i] = 10;
+		sprintf(opt[i++], "BBS Password      %s", item->syspass[0] ? "********" : "<none>");
+	}
+	else {
+		optmap[i] = 8;
+		printf_trunc(opt[i], sizeof(opt[i]), "Username          %s", item->user);
+		i++;
+		optmap[i] = 9;
+		sprintf(opt[i++], "Password          %s", item->password[0] ? "********" : "<none>");
+		optmap[i] = 10;
+		sprintf(opt[i++], "System Password   %s", item->syspass[0] ? "********" : "<none>");
+	}
+	optmap[i] = 11;
+	sprintf(opt[i++], "Screen Mode       %s", screen_modes[item->screen_mode]);
+	optmap[i] = 12;
+	sprintf(opt[i++], "Hide Status Line  %s", item->nostatus ? "Yes" : "No");
+	optmap[i] = 13;
+	printf_trunc(opt[i], sizeof(opt[i]), "Download Path     %s", item->dldir);
+	i++;
+	optmap[i] = 14;
+	printf_trunc(opt[i], sizeof(opt[i]), "Upload Path       %s", item->uldir);
+	i++;
+	optmap[i] = 15;
+	strcpy(opt[i++], "Log Configuration");
+	if (item->bpsrate)
+		sprintf(str, "%ubps", item->bpsrate);
+	else
+		strcpy(str, "Current");
+	optmap[i] = 16;
+	sprintf(opt[i++], "Comm Rate         %s", str);
+	optmap[i] = 17;
+	sprintf(opt[i++], "ANSI Music        %s", music_names[item->music]);
+	optmap[i] = 18;
+	sprintf(opt[i++], "Address Family    %s", address_family_names[item->address_family]);
+	optmap[i] = 19;
+	sprintf(opt[i++], "Font              %s", item->font);
+	optmap[i] = 20;
+	sprintf(opt[i++], "Hide Popups       %s", item->hidepopups ? "Yes" : "No");
+	optmap[i] = 21;
+	sprintf(opt[i++], "RIP               %s", rip_versions[item->rip]);
+	optmap[i] = 22;
+	sprintf(opt[i++], "Force LCF Mode    %s", item->force_lcf ? "Yes" : "No");
+	optmap[i] = 23;
+	sprintf(opt[i++], "Yellow is Yellow  %s", item->yellow_is_yellow ? "Yes" : "No");
+	if (item->conn_type == CONN_TYPE_SSH || item->conn_type == CONN_TYPE_SSHNA) {
+		optmap[i] = 24;
+		sprintf(opt[i++], "SFTP Public Key   %s", item->sftp_public_key ? "Yes" : "No");
+	}
+	opt[i][0] = 0;
+
+	if (isdefault) {
+		uifc.helpbuf = "`Edit Default Connection`\n\n"
+		    "Select item to edit.\n\n"
+		    "~ Conection Type ~\n"
+		    "        Type of connection\n\n"
+		    "~ TCP Port ~ (if applicable)\n"
+		    "        TCP port to connect to (applicable types only)\n\n"
+		    "~ Username ~\n"
+		    "        Username sent by the auto-login command\n\n"
+		    "~ Password ~\n"
+		    "        Password sent by auto-login command (not securely stored)\n\n"
+		    "~ System Password ~\n"
+		    "        System Password sent by auto-login command (not securely stored)\n\n"
+		    "~ Screen Mode ~\n"
+		    "        Display mode to use\n\n"
+		    "~ Hide Status Line ~\n"
+		    "        Selects if the status line should be hidden, giving an extra\n"
+		    "        display row\n\n"
+		    "~ Download Path ~\n"
+		    "        Default path to store downloaded files\n\n"
+		    "~ Upload Path ~\n"
+		    "        Default path for uploads\n\n"
+		    "~ Log Configuration ~\n"
+		    "        Configure logging settings\n\n"
+		    "~ Comm Rate ~\n"
+		    "        Display speed\n\n"
+		    "~ ANSI Music ~\n"
+		    "        ANSI music type selection\n\n"
+		    "~ Address Family ~\n"
+		    "        IPv4 or IPv6\n\n"
+		    "~ Font ~\n"
+		    "        Select font to use for the entry\n\n"
+		    "~ Hide Popups ~\n"
+		    "        Hide all popup dialogs (i.e., Connecting, Disconnected, etc.)\n\n"
+		    "~ RIP ~\n"
+		    "        Enable/Disable RIP modes\n\n"
+		    "~ Force LCF Mode ~\n"
+		    "        Force Last Column Flag mode as used in VT terminals\n\n"
+		    "~ Yellow Is Yellow ~\n"
+		    "        Make the dark yellow colour actually yellow instead of the brown\n"
+		    "        used in IBM CGA monitors\n\n"
+		    "~ SFTP Public Key ~ (if applicable)\n"
+		    "        Automatically append the SSH public key to the\n"
+		    "        .ssh/authorized_keys file on the remote system using the SFTP\n"
+		    "        protocol."
+		;
+	}
+	else {
+		uifc.helpbuf = "`Edit Directory Entry`\n\n"
+		    "Select item to edit.\n\n"
+		    "~ Name ~\n"
+		    "        The name of the BBS entry\n\n"
+		    "~ Phone Number / Device Name / Command / Address ~\n"
+		    "        Required information to establish the connection (type specific)\n\n"
+		    "~ Conection Type ~\n"
+		    "        Type of connection\n\n"
+		    "~ TCP Port ~ (if applicable)\n"
+		    "        TCP port to connect to (applicable types only)\n\n"
+		    "~ Username ~\n"
+		    "        Username sent by the auto-login command\n\n"
+		    "~ Password ~\n"
+		    "        Password sent by auto-login command (not securely stored)\n\n"
+		    "~ System Password ~\n"
+		    "        System Password sent by auto-login command (not securely stored)\n\n"
+		    "~ Screen Mode ~\n"
+		    "        Display mode to use\n\n"
+		    "~ Hide Status Line ~\n"
+		    "        Selects if the status line should be hidden, giving an extra\n"
+		    "        display row\n\n"
+		    "~ Download Path ~\n"
+		    "        Default path to store downloaded files\n\n"
+		    "~ Upload Path ~\n"
+		    "        Default path for uploads\n\n"
+		    "~ Log Configuration ~\n"
+		    "        Configure logging settings\n\n"
+		    "~ Comm Rate ~\n"
+		    "        Display speed\n\n"
+		    "~ ANSI Music ~\n"
+		    "        ANSI music type selection\n\n"
+		    "~ Address Family ~\n"
+		    "        IPv4 or IPv6\n\n"
+		    "~ Font ~\n"
+		    "        Select font to use for the entry\n\n"
+		    "~ Hide Popups ~\n"
+		    "        Hide all popup dialogs (i.e., Connecting, Disconnected, etc.)\n\n"
+		    "~ RIP ~\n"
+		    "        Enable/Disable RIP modes\n\n"
+		    "~ Force LCF Mode ~\n"
+		    "        Force Last Column Flag mode as used in VT terminals\n\n"
+		    "~ Yellow Is Yellow ~\n"
+		    "        Make the dark yellow colour actually yellow instead of the brown\n"
+		    "        used in IBM CGA monitors\n\n"
+		;
+	}
+}
+
 int
 edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdefault)
 {
@@ -1168,204 +1372,9 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 	else
 		itemname = item->name;
 	for (; !quitting;) {
-		i = 0;
 		memset(optmap, 0, sizeof(optmap));
-		if (!isdefault) {
-			optmap[i] = 0;
-			sprintf(opt[i++], "Name              %s", itemname);
-			optmap[i] = 1;
-			switch (item->conn_type) {
-				case CONN_TYPE_MODEM:
-					sprintf(opt[i++], "Phone Number      %s", item->addr);
-					break;
-				case CONN_TYPE_SERIAL:
-				case CONN_TYPE_SERIAL_NORTS:
-					sprintf(opt[i++], "Device Name       %s", item->addr);
-					break;
-				case CONN_TYPE_SHELL:
-					sprintf(opt[i++], "Command           %s", item->addr);
-					break;
-				default:
-					sprintf(opt[i++], "Address           %s", item->addr);
-					break;
-			}
-		}
-		optmap[i] = 2;
-		sprintf(opt[i++], "Connection Type   %s", conn_types[item->conn_type]);
-		if ((item->conn_type == CONN_TYPE_MODEM) || (item->conn_type == CONN_TYPE_SERIAL) || (item->conn_type == CONN_TYPE_SERIAL_NORTS)) {
-			optmap[i] = 3;
-			fc_str(opt[i++], item->flow_control);
-			optmap[i] = 4;
-			sprintf(opt[i++], "Stop Bits         %hu", item->stop_bits);
-			optmap[i] = 5;
-			sprintf(opt[i++], "Data Bits         %hu", item->data_bits);
-			optmap[i] = 6;
-			sprintf(opt[i++], "Parity            %s", parity_enum[item->parity]);
-		}
-		else if (item->conn_type != CONN_TYPE_SHELL) {
-			optmap[i] = 7;
-			sprintf(opt[i++], "TCP Port          %hu", item->port);
-		}
-		if (item->conn_type == CONN_TYPE_MBBS_GHOST) {
-			optmap[i] = 8;
-			printf_trunc(opt[i], sizeof(opt[i]), "Username          %s", item->user);
-			i++;
-			optmap[i] = 9;
-			sprintf(opt[i++], "GHost Program     %s", item->password);
-			optmap[i] = 10;
-			sprintf(opt[i++], "System Password   %s", item->syspass[0] ? "********" : "<none>");
-		}
-		else if (item->conn_type == CONN_TYPE_SSHNA) {
-			optmap[i] = 8;
-			printf_trunc(opt[i], sizeof(opt[i]), "SSH Username      %s", item->user);
-			i++;
-			optmap[i] = 9;
-			sprintf(opt[i++], "BBS Username      %s", item->password);
-			optmap[i] = 10;
-			sprintf(opt[i++], "BBS Password      %s", item->syspass[0] ? "********" : "<none>");
-		}
-		else {
-			optmap[i] = 8;
-			printf_trunc(opt[i], sizeof(opt[i]), "Username          %s", item->user);
-			i++;
-			optmap[i] = 9;
-			sprintf(opt[i++], "Password          %s", item->password[0] ? "********" : "<none>");
-			optmap[i] = 10;
-			sprintf(opt[i++], "System Password   %s", item->syspass[0] ? "********" : "<none>");
-		}
-		optmap[i] = 11;
-		sprintf(opt[i++], "Screen Mode       %s", screen_modes[item->screen_mode]);
-		optmap[i] = 12;
-		sprintf(opt[i++], "Hide Status Line  %s", item->nostatus ? "Yes" : "No");
-		optmap[i] = 13;
-		printf_trunc(opt[i], sizeof(opt[i]), "Download Path     %s", item->dldir);
-		i++;
-		optmap[i] = 14;
-		printf_trunc(opt[i], sizeof(opt[i]), "Upload Path       %s", item->uldir);
-		i++;
-		optmap[i] = 15;
-		strcpy(opt[i++], "Log Configuration");
-		if (item->bpsrate)
-			sprintf(str, "%ubps", item->bpsrate);
-		else
-			strcpy(str, "Current");
-		optmap[i] = 16;
-		sprintf(opt[i++], "Comm Rate         %s", str);
-		optmap[i] = 17;
-		sprintf(opt[i++], "ANSI Music        %s", music_names[item->music]);
-		optmap[i] = 18;
-		sprintf(opt[i++], "Address Family    %s", address_family_names[item->address_family]);
-		optmap[i] = 19;
-		sprintf(opt[i++], "Font              %s", item->font);
-		optmap[i] = 20;
-		sprintf(opt[i++], "Hide Popups       %s", item->hidepopups ? "Yes" : "No");
-		optmap[i] = 21;
-		sprintf(opt[i++], "RIP               %s", rip_versions[item->rip]);
-		optmap[i] = 22;
-		sprintf(opt[i++], "Force LCF Mode    %s", item->force_lcf ? "Yes" : "No");
-		optmap[i] = 23;
-		sprintf(opt[i++], "Yellow is Yellow  %s", item->yellow_is_yellow ? "Yes" : "No");
-		if (item->conn_type == CONN_TYPE_SSH || item->conn_type == CONN_TYPE_SSHNA) {
-			optmap[i] = 24;
-			sprintf(opt[i++], "SFTP Public Key   %s", item->sftp_public_key ? "Yes" : "No");
-		}
-		opt[i][0] = 0;
+		build_edit_list(item, opt, optmap, opts, isdefault);
 		uifc.changes = 0;
-
-		if (isdefault) {
-			uifc.helpbuf = "`Edit Default Connection`\n\n"
-			    "Select item to edit.\n\n"
-			    "~ Conection Type ~\n"
-			    "        Type of connection\n\n"
-			    "~ TCP Port ~ (if applicable)\n"
-			    "        TCP port to connect to (applicable types only)\n\n"
-			    "~ Username ~\n"
-			    "        Username sent by the auto-login command\n\n"
-			    "~ Password ~\n"
-			    "        Password sent by auto-login command (not securely stored)\n\n"
-			    "~ System Password ~\n"
-			    "        System Password sent by auto-login command (not securely stored)\n\n"
-			    "~ Screen Mode ~\n"
-			    "        Display mode to use\n\n"
-			    "~ Hide Status Line ~\n"
-			    "        Selects if the status line should be hidden, giving an extra\n"
-			    "        display row\n\n"
-			    "~ Download Path ~\n"
-			    "        Default path to store downloaded files\n\n"
-			    "~ Upload Path ~\n"
-			    "        Default path for uploads\n\n"
-			    "~ Log Configuration ~\n"
-			    "        Configure logging settings\n\n"
-			    "~ Comm Rate ~\n"
-			    "        Display speed\n\n"
-			    "~ ANSI Music ~\n"
-			    "        ANSI music type selection\n\n"
-			    "~ Address Family ~\n"
-			    "        IPv4 or IPv6\n\n"
-			    "~ Font ~\n"
-			    "        Select font to use for the entry\n\n"
-			    "~ Hide Popups ~\n"
-			    "        Hide all popup dialogs (i.e., Connecting, Disconnected, etc.)\n\n"
-			    "~ RIP ~\n"
-			    "        Enable/Disable RIP modes\n\n"
-			    "~ Force LCF Mode ~\n"
-			    "        Force Last Column Flag mode as used in VT terminals\n\n"
-			    "~ Yellow Is Yellow ~\n"
-			    "        Make the dark yellow colour actually yellow instead of the brown\n"
-			    "        used in IBM CGA monitors\n\n"
-			    "~ SFTP Public Key ~ (if applicable)\n"
-			    "        Automatically append the SSH public key to the\n"
-			    "        .ssh/authorized_keys file on the remote system using the SFTP\n"
-			    "        protocol."
-			;
-		}
-		else {
-			uifc.helpbuf = "`Edit Directory Entry`\n\n"
-			    "Select item to edit.\n\n"
-			    "~ Name ~\n"
-			    "        The name of the BBS entry\n\n"
-			    "~ Phone Number / Device Name / Command / Address ~\n"
-			    "        Required information to establish the connection (type specific)\n\n"
-			    "~ Conection Type ~\n"
-			    "        Type of connection\n\n"
-			    "~ TCP Port ~ (if applicable)\n"
-			    "        TCP port to connect to (applicable types only)\n\n"
-			    "~ Username ~\n"
-			    "        Username sent by the auto-login command\n\n"
-			    "~ Password ~\n"
-			    "        Password sent by auto-login command (not securely stored)\n\n"
-			    "~ System Password ~\n"
-			    "        System Password sent by auto-login command (not securely stored)\n\n"
-			    "~ Screen Mode ~\n"
-			    "        Display mode to use\n\n"
-			    "~ Hide Status Line ~\n"
-			    "        Selects if the status line should be hidden, giving an extra\n"
-			    "        display row\n\n"
-			    "~ Download Path ~\n"
-			    "        Default path to store downloaded files\n\n"
-			    "~ Upload Path ~\n"
-			    "        Default path for uploads\n\n"
-			    "~ Log Configuration ~\n"
-			    "        Configure logging settings\n\n"
-			    "~ Comm Rate ~\n"
-			    "        Display speed\n\n"
-			    "~ ANSI Music ~\n"
-			    "        ANSI music type selection\n\n"
-			    "~ Address Family ~\n"
-			    "        IPv4 or IPv6\n\n"
-			    "~ Font ~\n"
-			    "        Select font to use for the entry\n\n"
-			    "~ Hide Popups ~\n"
-			    "        Hide all popup dialogs (i.e., Connecting, Disconnected, etc.)\n\n"
-			    "~ RIP ~\n"
-			    "        Enable/Disable RIP modes\n\n"
-			    "~ Force LCF Mode ~\n"
-			    "        Force Last Column Flag mode as used in VT terminals\n\n"
-			    "~ Yellow Is Yellow ~\n"
-			    "        Make the dark yellow colour actually yellow instead of the brown\n"
-			    "        used in IBM CGA monitors\n\n"
-			;
-		}
 		i = uifc.list(WIN_MID | WIN_SAV | WIN_ACT, 0, 0, 0, &copt, &bar,
 		        isdefault ? "Edit Default Connection" : "Edit Directory Entry",
 		        opts);
