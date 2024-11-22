@@ -1,103 +1,27 @@
-Version 1.2rc7
---------------
-Allow clicking in the comment line to edit
-Fix window resize on macOS with retina displays
-Fix deleting of not-last item when list is at bottom
-Fix GDI behaviour when deactivating in fullscreen mode
-Add blank pixel to left and top of Prestel DEL glyph
-Fix crash when editing blank "extra" bbslist entry
-Support copy/paste in BBS list
-Show current list path, not default in File Locations
-Explicitly set serial port to 8N1
-Add support bit data bits, stop bits, and parity
-Drain modem buffer before sending init command
-Strip high bit in 7-bit modes
-
-Version 1.2rc6
---------------
-Prestel fixes for Steady and Concealed modes
-Set default prestel ID to zero characters for CCl4
-Modify scaler to use integer math, fixes issue on macOS
-
-Version 1.2rc5
---------------
-Fix RIP parsing when passed fragmented ANSI sequences
-Fix cursor when RIP changes font height
-Fix Alt-O in RIP mode
-In telnet mode, always negotiate echo, binary, and suppress GA
-Fix mouse selection in scrollback
-Fix RIP XOR operation
-Fix memory leak in RIP parser
-Fix handling of split CRLF pairs in RIP mode
-Don't change font for RIP_RESET_WINDOWS in RIPv3 mode
+Version 1.2
+-----------
+Support PPM graphics
 Initial support for Prestel mode
-
-Version 1.2rc4
---------------
-Fix pointy scaling to work even when interpolating both directions
-Fix ATASCII input
-Fix -iW colors
-Fix default port for Telnets
-Set Server Name Extension when connecting via telnets
-Fix telnets (broken when sftp support was added)
-Update ANSI and win32 console support
-Fix bug with window resizing calculations
+Start of RIP and SkyPix support (incomplete)
+Support XTerm Bracketed Paste
+Support LCF as defined in STD-070
 New icons thanks to zuMi!
-
-Version 1.2rc3
---------------
-Get Haiku support building again
-Properly quit video subsystem from video thread - fixes Haiku crash
-Create dirs on macOS when needed - fixes adding first BBS
-Fix cache subdirectories on Windows
-Make File Locations window wider
-Ensure window can be resized if started in fullscreen mode
-Fix macOS mouse position reporting
-
-Version 1.2rc2
---------------
-Start UIFC in insert mode, and use block cursor for overwrite mode
-Fix issue when dragging a GDI window between different zoom levels
-Fix status bar display when RIP changes number of lines on screen
-Fix some use-after-free bugs in RIP
-Fix reversed mouse wheel in GDI mode
-Have the X11 IC focus follow window focus
-Fix WM_SETCURSOR handling to allow grabbing resize points in GDI
-Added "Build Options" menu item
-Fix focus-follows-mouse behaviour in herbstluftwm
-Fix SAUCE binary capture date
-Fix saving non-integer scaling in GDI mode
-Fix static 20k memory leak
-Fix NetBSD native curses requiring keypress to exit
-Fix CMake-based build system
-Allow drag resize on macOS to support arbitrary sizes
-Fix AltGr handing in GDI mode
-
-Version 1.2rc1
---------------
+Added a comment field to listings
+Support copy/paste in BBS list
 Aspect ratio enforcement
+Add ALT-O to toggle remote mouse support (to enable copy/paste locally)
+Add -b and -n command-line options for BBS list and INI file respectively
+Add a native (GDI) Windows mode (prefered over SDL mode)
+Add support for data bits, stop bits, and parity
+In telnet mode, always negotiate echo, binary, and suppress GA
+Get Haiku support building again
+Added "Build Options" menu item
 Support internal smooth scaling
 Support toggling scaling blocky vs smooth
 Support for telnets
 Support for SSH "none" auth method
 Support for VGA mode
-Start of RIP and SkyPix support (incomplete)
-Added a comment field to listings
-Default connection type changed to SSH
-ALT-Left/ALT-Right for window size snapping, ALT-Up/ALT-Down for speed
-Use the comodore C64 palette with "most common" adjustments
-On Windows, indicate "awareness" for "High DPI"
-Prefer X11 mode over SDL mode
-Fix scrolling with left/right margins
-Resumed ZModem ETA estimation fix
-Support PPM graphics
-Add a native (GDI) Windows mode (prefered over SDL mode)
-Improve startup behaviour on Windows
 Allow hardware scaling in X11, GDI, and SDL modes
-Support XTerm Bracketed Paste
-Add -b and -n command-line options for BBS list and INI file respectively
-Add ALT-O to toggle remote mouse support (to enable copy/paste locally)
-Support LCF as defined in STD-070
 Support upploading SSH public key over SFTP channel in SSH mode
 Add "Yellow is Yellow" option
 
