@@ -1125,6 +1125,47 @@ edit_name(char *itemname, struct bbslist **list, str_list_t inifile, bool edit_t
 	return false;
 }
 
+enum {
+	BBSLIST_FIELD_NONE,
+	BBSLIST_FIELD_NAME,
+	BBSLIST_FIELD_ADDR,
+	BBSLIST_FIELD_PORT,
+	BBSLIST_FIELD_ADDED,
+	BBSLIST_FIELD_CONNECTED,
+	BBSLIST_FIELD_CALLS,
+	BBSLIST_FIELD_USER,
+	BBSLIST_FIELD_PASSWORD,
+	BBSLIST_FIELD_SYSPASS,
+	BBSLIST_FIELD_TYPE,
+	BBSLIST_FIELD_CONN_TYPE,
+	BBSLIST_FIELD_ID,
+	BBSLIST_FIELD_SCREEN_MODE,
+	BBSLIST_FIELD_NOSTATUS,
+	BBSLIST_FIELD_DLDIR,
+	BBSLIST_FIELD_ULDIR,
+	BBSLIST_FIELD_LOGFILE,
+	BBSLIST_FIELD_APPEND_LOGFILE,
+	BBSLIST_FIELD_XFER_LOGLEVEL,
+	BBSLIST_FIELD_TELNET_LOGLEVEL,
+	BBSLIST_FIELD_BPSRATE,
+	BBSLIST_FIELD_MUSIC,
+	BBSLIST_FIELD_ADDRESS_FAMILY,
+	BBSLIST_FIELD_FONT,
+	BBSLIST_FIELD_HIDEPOPUPS,
+	BBSLIST_FIELD_GHOST_PROGRAM,
+	BBSLIST_FIELD_RIP,
+	BBSLIST_FIELD_FLOW_CONTROL,
+	BBSLIST_FIELD_COMMENT,
+	BBSLIST_FIELD_FORCE_LCF,
+	BBSLIST_FIELD_YELLOW_IS_YELLOW,
+	BBSLIST_FIELD_HAS_FINGERPRINT,
+	BBSLIST_FIELD_SSH_FINGERPRINT,
+	BBSLIST_FIELD_SFTP_PUBLIC_KEY,
+	BBSLIST_FIELD_STOP_BITS,
+	BBSLIST_FIELD_DATA_BITS,
+	BBSLIST_FIELD_PARITY,
+ꪪ};
+
 void
 build_edit_list(struct bbslist *item, char opt[][69], int *optmap, char **opts, int isdefault, char *itemname)
 {
@@ -1132,9 +1173,9 @@ build_edit_list(struct bbslist *item, char opt[][69], int *optmap, char **opts, 
 	char       str[64];
 
 	if (!isdefault) {
-		optmap[i] = 1;
+		optmap[i] = BBSLIST_FIELD_NAME;
 		sprintf(opt[i++], "Name              %s", itemname);
-		optmap[i] = 2;
+		optmap[i] = BBSLIST_FIELD_ADDR;
 		switch (item->conn_type) {
 			case CONN_TYPE_MODEM:
 				sprintf(opt[i++], "Phone Number      %s", item->addr);
@@ -1151,83 +1192,83 @@ build_edit_list(struct bbslist *item, char opt[][69], int *optmap, char **opts, 
 				break;
 		}
 	}
-	optmap[i] = 3;
+	optmap[i] = BBSLIST_FIELD_CONN_TYPE;
 	sprintf(opt[i++], "Connection Type   %s", conn_types[item->conn_type]);
 	if ((item->conn_type == CONN_TYPE_MODEM) || (item->conn_type == CONN_TYPE_SERIAL) || (item->conn_type == CONN_TYPE_SERIAL_NORTS)) {
-		optmap[i] = 4;
+		optmap[i] = BBSLIST_FIELD_FLOW_CONTROL;
 		fc_str(opt[i++], item->flow_control);
-		optmap[i] = 5;
+		optmap[i] = BBSLIST_FIELD_STOP_BITS;
 		sprintf(opt[i++], "Stop Bits         %hu", item->stop_bits);
-		optmap[i] = 6;
+		optmap[i] = BBSLIST_FIELD_DATA_BITS;
 		sprintf(opt[i++], "Data Bits         %hu", item->data_bits);
-		optmap[i] = 7;
+		optmap[i] = BBSLIST_FIELD_PARITY;
 		sprintf(opt[i++], "Parity            %s", parity_enum[item->parity]);
 	}
 	else if (item->conn_type != CONN_TYPE_SHELL) {
-		optmap[i] = 8;
+		optmap[i] = BBSLIST_FIELD_PORT;
 		sprintf(opt[i++], "TCP Port          %hu", item->port);
 	}
 	if (item->conn_type == CONN_TYPE_MBBS_GHOST) {
-		optmap[i] = 9;
+		optmap[i] = BBSLIST_FIELD_USER;
 		printf_trunc(opt[i], sizeof(opt[i]), "Username          %s", item->user);
 		i++;
-		optmap[i] = 10;
+		optmap[i] = BBSLIST_FIELD_PASSWORD;
 		sprintf(opt[i++], "GHost Program     %s", item->password);
-		optmap[i] = 11;
+		optmap[i] = BBSLIST_FIELD_SYSPASS;
 		sprintf(opt[i++], "System Password   %s", item->syspass[0] ? "********" : "<none>");
 	}
 	else if (item->conn_type == CONN_TYPE_SSHNA) {
-		optmap[i] = 9;
+		optmap[i] = BBSLIST_FIELD_USER;
 		printf_trunc(opt[i], sizeof(opt[i]), "SSH Username      %s", item->user);
 		i++;
-		optmap[i] = 10;
+		optmap[i] = BBSLIST_FIELD_PASSWORD;
 		sprintf(opt[i++], "BBS Username      %s", item->password);
-		optmap[i] = 11;
+		optmap[i] = BBSLIST_FIELD_SYSPASS;
 		sprintf(opt[i++], "BBS Password      %s", item->syspass[0] ? "********" : "<none>");
 	}
 	else {
-		optmap[i] = 9;
+		optmap[i] = BBSLIST_FIELD_USER;
 		printf_trunc(opt[i], sizeof(opt[i]), "Username          %s", item->user);
 		i++;
-		optmap[i] = 10;
+		optmap[i] = BBSLIST_FIELD_PASSWORD;
 		sprintf(opt[i++], "Password          %s", item->password[0] ? "********" : "<none>");
-		optmap[i] = 11;
+		optmap[i] = BBSLIST_FIELD_SYSPASS;
 		sprintf(opt[i++], "System Password   %s", item->syspass[0] ? "********" : "<none>");
 	}
-	optmap[i] = 12;
+	optmap[i] = BBSLIST_FIELD_SCREEN_MODE;
 	sprintf(opt[i++], "Screen Mode       %s", screen_modes[item->screen_mode]);
-	optmap[i] = 13;
+	optmap[i] = BBSLIST_FIELD_NOSTATUS;
 	sprintf(opt[i++], "Hide Status Line  %s", item->nostatus ? "Yes" : "No");
-	optmap[i] = 14;
+	optmap[i] = BBSLIST_FIELD_DLDIR;
 	printf_trunc(opt[i], sizeof(opt[i]), "Download Path     %s", item->dldir);
 	i++;
-	optmap[i] = 15;
+	optmap[i] = BBSLIST_FIELD_ULDIR;
 	printf_trunc(opt[i], sizeof(opt[i]), "Upload Path       %s", item->uldir);
 	i++;
-	optmap[i] = 16;
+	optmap[i] = BBSLIST_FIELD_LOGFILE;
 	strcpy(opt[i++], "Log Configuration");
 	if (item->bpsrate)
 		sprintf(str, "%ubps", item->bpsrate);
 	else
 		strcpy(str, "Current");
-	optmap[i] = 17;
+	optmap[i] = BBSLIST_FIELD_BPSRATE;
 	sprintf(opt[i++], "Comm Rate         %s", str);
-	optmap[i] = 18;
+	optmap[i] = BBSLIST_FIELD_MUSIC;
 	sprintf(opt[i++], "ANSI Music        %s", music_names[item->music]);
-	optmap[i] = 19;
+	optmap[i] = BBSLIST_FIELD_ADDRESS_FAMILY;
 	sprintf(opt[i++], "Address Family    %s", address_family_names[item->address_family]);
-	optmap[i] = 20;
+	optmap[i] = BBSLIST_FIELD_FONT;
 	sprintf(opt[i++], "Font              %s", item->font);
-	optmap[i] = 21;
+	optmap[i] = BBSLIST_FIELD_HIDEPOPUPS;
 	sprintf(opt[i++], "Hide Popups       %s", item->hidepopups ? "Yes" : "No");
-	optmap[i] = 22;
+	optmap[i] = BBSLIST_FIELD_RIP;
 	sprintf(opt[i++], "RIP               %s", rip_versions[item->rip]);
-	optmap[i] = 23;
+	optmap[i] = BBSLIST_FIELD_FORCE_LCF;
 	sprintf(opt[i++], "Force LCF Mode    %s", item->force_lcf ? "Yes" : "No");
-	optmap[i] = 24;
+	optmap[i] = BBSLIST_FIELD_YELLOW_IS_YELLOW;
 	sprintf(opt[i++], "Yellow is Yellow  %s", item->yellow_is_yellow ? "Yes" : "No");
 	if (item->conn_type == CONN_TYPE_SSH || item->conn_type == CONN_TYPE_SSHNA) {
-		optmap[i] = 25;
+		optmap[i] = BBSLIST_FIELD_SFTP_PUBLIC_KEY;
 		sprintf(opt[i++], "SFTP Public Key   %s", item->sftp_public_key ? "Yes" : "No");
 	}
 	opt[i][0] = 0;
@@ -1392,10 +1433,9 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 		itemname = NULL;
 	else
 		itemname = item->name;
-	memset(optmap, 0, sizeof(optmap));
-	build_edit_list(item, opt, optmap, opts, isdefault, itemname);
 	build_edit_help(item, isdefault, helpbuf, sizeof(helpbuf));
 	for (; !quitting;) {
+		memset(optmap, 0, sizeof(optmap));
 		build_edit_list(item, opt, optmap, opts, isdefault, itemname);
 		uifc.changes = 0;
 		uifc.helpbuf = helpbuf;
@@ -1409,7 +1449,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 			continue;
 		}
 		if (i >= 0) {
-			if (optmap[i] == 0)
+			if (optmap[i] == BBSLIST_FIELD_NONE)
 				continue;
 			i = optmap[i];
 			strcpy(optname, opt[i]);
@@ -1449,17 +1489,17 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 				}
 				strListFree(&inifile);
 				return changed;
-			case 1:	// name
+			case BBSLIST_FIELD_NAME:
 				edit_name(itemname, list, inifile, false);
 				break;
-			case 2:	// address
+			case BBSLIST_FIELD_ADDR:
 				uifc.helpbuf = address_help;
 				uifc.input(WIN_MID | WIN_SAV,
 				    0, 0 ,optname ,item->addr, LIST_ADDR_MAX, K_EDIT);
 				check_exit(false);
 				iniSetString(&inifile, itemname, "Address", item->addr, &ini_style);
 				break;
-			case 3:	// conn_type
+			case BBSLIST_FIELD_CONN_TYPE:
 				i = item->conn_type;
 				item->conn_type--;
 				uifc.helpbuf = conn_type_help;
@@ -1512,7 +1552,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 				memset(optmap, 0, sizeof(optmap));
 				build_edit_help(item, isdefault, helpbuf, sizeof(helpbuf));
 				break;
-			case 4: // flow_control
+			case BBSLIST_FIELD_FLOW_CONTROL:
 				uifc.helpbuf = "`Flow Control`\n\n"
 				    "Select the desired flow control type.\n"
 				    "This should usually be left as \"RTS/CTS\".\n";
@@ -1536,7 +1576,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 						break;
 				}
 				break;
-			case 5: // stop_bits
+			case BBSLIST_FIELD_STOP_BITS:
 				switch(item->stop_bits) {
 					case 1:
 						item->stop_bits = 2;
@@ -1552,7 +1592,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 				    &ini_style);
 				uifc.changes = 1;
 				break;
-			case 6: // data_bits
+			case BBSLIST_FIELD_DATA_BITS:
 				switch(item->data_bits) {
 					case 8:
 						item->data_bits = 7;
@@ -1568,7 +1608,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 				    &ini_style);
 				uifc.changes = 1;
 				break;
-			case 7: // Parity
+			case BBSLIST_FIELD_PARITY:
 				uifc.helpbuf = "`Parity`\n\n"
 				    "Select the parity setting.";
 				i = item->parity;
@@ -1582,7 +1622,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 						changed = 1;
 				}
 				break;
-			case 8: // port
+			case BBSLIST_FIELD_PORT:
 				i = item->port;
 				sprintf(str, "%hu", item->port);
 				uifc.helpbuf = "`TCP Port`\n\n"
@@ -1601,7 +1641,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 				else
 					uifc.changes = 0;
 				break;
-			case 9: // user
+			case BBSLIST_FIELD_USER:
 				if (item->conn_type == CONN_TYPE_SSHNA) {
 					uifc.helpbuf = "`SSH Username`\n\n"
 					    "Enter the username for passwordless SSH authentication.";
@@ -1615,7 +1655,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 				check_exit(false);
 				iniSetString(&inifile, itemname, "UserName", item->user, &ini_style);
 				break;
-			case 10: // password
+			case BBSLIST_FIELD_PASSWORD:
 				if (item->conn_type == CONN_TYPE_MBBS_GHOST) {
 					uifc.helpbuf = "`GHost Program`\n\n"
 					    "Enter the program name to be sent.";
@@ -1633,7 +1673,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 				check_exit(false);
 				iniSetString(&inifile, itemname, "Password", item->password, &ini_style);
 				break;
-			case 11: // syspass
+			case BBSLIST_FIELD_SYSPASS:
 				if (item->conn_type == CONN_TYPE_SSHNA) {
 					uifc.helpbuf = "`BBS Password`\n\n"
 					    "Enter your password for auto-login. (ALT-L)\n";
@@ -1655,7 +1695,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 				check_exit(false);
 				iniSetString(&inifile, itemname, "SystemPassword", item->syspass, &ini_style);
 				break;
-			case 12: // screen_mode
+			case BBSLIST_FIELD_SCREEN_MODE:
 				i = item->screen_mode;
 				uifc.helpbuf = "`Screen Mode`\n\n"
 				    "Select the screen size for this connection\n";
@@ -1757,12 +1797,12 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 						break;
 				}
 				break;
-			case 13: // nostatus
+			case BBSLIST_FIELD_NOSTATUS:
 				item->nostatus = !item->nostatus;
 				changed = 1;
 				iniSetBool(&inifile, itemname, "NoStatus", item->nostatus, &ini_style);
 				break;
-			case 14: // dldir
+			case BBSLIST_FIELD_DLDIR:
 				uifc.helpbuf = "`Download Path`\n\n"
 				    "Enter the path where downloads will be placed.";
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Download Path", item->dldir, MAX_PATH,
@@ -1771,7 +1811,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 				else
 					check_exit(false);
 				break;
-			case 15: // uldir
+			case BBSLIST_FIELD_ULDIR:
 				uifc.helpbuf = "`Upload Path`\n\n"
 				    "Enter the path where uploads will be browsed from.";
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Upload Path", item->uldir, MAX_PATH,
@@ -1780,10 +1820,10 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 				else
 					check_exit(false);
 				break;
-			case 16: // log
+			case BBSLIST_FIELD_LOGFILE:
 				configure_log(item, itemname, inifile, &changed);
 				break;
-			case 17: // bpsrate
+			case BBSLIST_FIELD_BPSRATE:
 				uifc.helpbuf = "`Comm Rate (in bits-per-second)`\n\n"
 				    "`For TCP connections:`\n"
 				    "Select the rate which received characters will be displayed.\n\n"
@@ -1802,7 +1842,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 						changed = 1;
 				}
 				break;
-			case 18: // music
+			case BBSLIST_FIELD_MUSIC:
 				uifc.helpbuf = music_helpbuf;
 				i = item->music;
 				if (uifc.list(WIN_SAV, 0, 0, 0, &i, NULL, "ANSI Music Setup", music_names) != -1) {
@@ -1814,7 +1854,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 					check_exit(false);
 				}
 				break;
-			case 19: // address_family
+			case BBSLIST_FIELD_ADDRESS_FAMILY:
 				uifc.helpbuf = address_family_help;
 				i = item->address_family;
 				if (uifc.list(WIN_SAV, 0, 0, 0, &i, NULL, "Address Family",
@@ -1832,7 +1872,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 					check_exit(false);
 				}
 				break;
-			case 20: // font
+			case BBSLIST_FIELD_FONT:
 				uifc.helpbuf = "`Font`\n\n"
 				    "Select the desired font for this connection.\n\n"
 				    "Some fonts do not allow some modes.  When this is the case, an\n"
@@ -1851,12 +1891,12 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 						}
 				}
 				break;
-			case 21: // hidepopups
+			case BBSLIST_FIELD_HIDEPOPUPS:
 				item->hidepopups = !item->hidepopups;
 				changed = 1;
 				iniSetBool(&inifile, itemname, "HidePopups", item->hidepopups, &ini_style);
 				break;
-			case 22: // rip
+			case BBSLIST_FIELD_RIP:
 				item->rip = get_rip_version(item->rip, &changed);
 				if (item->rip == RIP_VERSION_1) {
 					item->screen_mode = SCREEN_MODE_80X43;
@@ -1869,17 +1909,17 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 				}
 				iniSetEnum(&inifile, itemname, "RIP", rip_versions, item->rip, &ini_style);
 				break;
-			case 23: // force_lcf
+			case BBSLIST_FIELD_FORCE_LCF:
 				item->force_lcf	= !item->force_lcf;
 				changed = 1;
 				iniSetBool(&inifile, itemname, "ForceLCF", item->force_lcf, &ini_style);
 				break;
-			case 24: // yellow_is_yellow
+			case BBSLIST_FIELD_YELLOW_IS_YELLOW:
 				item->yellow_is_yellow = !item->yellow_is_yellow;
 				changed = 1;
 				iniSetBool(&inifile, itemname, "YellowIsYellow", item->yellow_is_yellow, &ini_style);
 				break;
-			case 25: // sftp_public_key
+			case BBSLIST_FIELD_SFTP_PUBLIC_KEY:
 				item->sftp_public_key = !item->sftp_public_key;
 				changed = 1;
 				iniSetBool(&inifile, itemname, "SFTPPublicKey", item->sftp_public_key, &ini_style);
