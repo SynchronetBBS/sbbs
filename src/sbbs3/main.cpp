@@ -5388,7 +5388,7 @@ NO_SSH:
 		sbbs->ssh_mode=false;
 #endif
 
-		if(events->event_thread_running) {
+		if(events != nullptr && events->event_thread_running) {
 			time_t now = time(NULL);
 			t = event_thread_tick;
 			if(now > t && now - t > 60 * 60 * 2) {
