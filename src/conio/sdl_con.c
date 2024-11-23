@@ -1323,7 +1323,6 @@ sdl_initsync(void)
 #else
 	if(init_sdl_video()) {
 #endif
-		fprintf(stderr,"SDL Video Initialization Failed\n");
 		return(-1);
 	}
 	sem_init(&sdl_key_pending, 0, 0);
