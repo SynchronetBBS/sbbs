@@ -985,6 +985,8 @@ void input_thread(void* arg)
 			YIELD();
 			continue;
 		}
+		if(com_byte_size < 8)
+			ch &= (1 << com_byte_size) - 1;
 		if(com_debug)
 			lprintf(LOG_DEBUG, "Received char from COM port (%s): %s", com_dev, chr(ch, dbg, sizeof(dbg)));
 		if(telnet && ch==TELNET_IAC)
