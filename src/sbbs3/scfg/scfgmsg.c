@@ -813,6 +813,7 @@ void msgs_cfg()
 					q=uifc.changes;
 					strcpy(opt[k++],"subs.txt       Synchronet Sub-boards");
 					strcpy(opt[k++],"areas.bbs      SBBSecho Area File");
+					strcpy(opt[k++],"areas.ini      SBBSecho Area File");
 					strcpy(opt[k++],"backbone.na    FidoNet EchoList");
 					strcpy(opt[k++],"newsgroup.lst  USENET Newsgroup List");
 					opt[k][0]=0;
@@ -829,6 +830,10 @@ void msgs_cfg()
 						"\n"
 						"`areas.bbs`\n"
 						"  Area File as used by the Synchronet Fido EchoMail program, `SBBSecho`.\n"
+						"\n"
+						"`areas.ini`\n"
+						"  Area File as used by the Synchronet Fido EchoMail program, `SBBSecho`\n"
+						"  (optionally, as of SBBSecho v3.23).\n"
 						"\n"
 						"`backbone.na` (also `fidonet.na` and `badareas.lst`)\n"
 						"  FidoNet standard EchoList containing standardized echo `Area Tags`\n"
@@ -847,10 +852,12 @@ void msgs_cfg()
 					else if(k==1)
 						sprintf(str,"%sareas.bbs",cfg.data_dir);
 					else if(k==2)
-						sprintf(str,"backbone.na");
+						sprintf(str,"%sareas.ini",cfg.data_dir);
 					else if(k==3)
+						sprintf(str,"backbone.na");
+					else if(k==4)
 						sprintf(str,"newsgroup.lst");
-					if(k==1) {
+					if(k==1 || k ==2) {
 						uifc.helpbuf=
 							"`Links:`\n"
 							"\n"
@@ -914,14 +921,24 @@ void msgs_cfg()
 								,str2);
 							continue;
 						}
-						if(k==2) {		/* BACKBONE.NA */
+						if(k==2) {		/* areas.ini */
+							fprintf(stream, "[%s]\n"
+								,sub_area_tag(&cfg, cfg.sub[j], str, sizeof(str)));
+							fprintf(stream, "sub = %s%s\n"
+								,cfg.grp[cfg.sub[j]->grp]->code_prefix
+								,cfg.sub[j]->code_suffix);
+							fprintf(stream, "links = %s\n", str2);
+							fprintf(stream,"\n");
+							continue;
+						}
+						if(k==3) {		/* BACKBONE.NA */
 							fprintf(stream,"%-*s %s\n"
 								,FIDO_AREATAG_LEN
 								,sub_area_tag(&cfg, cfg.sub[j], str, sizeof(str))
 								,cfg.sub[j]->lname);
 							continue; 
 						}
-						if(k==3) {		/* newsgroup.lst */
+						if(k==4) {		/* newsgroup.lst */
 							fprintf(stream,"%s %s\n"
 								,sub_newsgroup_name(&cfg, cfg.sub[j], str, sizeof(str))
 								,cfg.sub[j]->lname);
