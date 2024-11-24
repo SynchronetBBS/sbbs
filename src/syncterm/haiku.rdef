@@ -1,8 +1,8 @@
 resource app_version
 {
 	major = 1,
-	middle = 2,
-	variety = B_APPV_BETA,
+	middle = 3,
+	variety = B_APPV_ALPHA,
 	internal = 0,
 	short_info = "SyncTERM BBS Terminal",
 	long_info = "SyncTERM - ANSI-BBS terminal for connecting to BBS"
