@@ -47,8 +47,8 @@ int sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 	pthread_mutex_lock(&nodefile_mutex);
 	if(nodefile==-1) {
 		if((nodefile=nopen(str,O_RDWR|O_DENYNONE))==-1) {
-			errormsg(WHERE,ERR_OPEN,str,O_RDWR|O_DENYNONE);
 			pthread_mutex_unlock(&nodefile_mutex);
+			errormsg(WHERE,ERR_OPEN,str,O_RDWR|O_DENYNONE);
 			return(errno); 
 		}
 	}
@@ -77,11 +77,11 @@ int sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 	}
 
 	if(count==LOOP_NODEDAB) {
-		errormsg(WHERE,rd==sizeof(node_t) ? ERR_LOCK : ERR_READ,"node.dab",number+1);
 		if(nodefile!=-1)
 			close(nodefile);
 		nodefile=-1;
 		pthread_mutex_unlock(&nodefile_mutex);
+		errormsg(WHERE,rd==sizeof(node_t) ? ERR_LOCK : ERR_READ,"node.dab",number+1);
 		return(-2);
 	}
 	pthread_mutex_unlock(&nodefile_mutex);
