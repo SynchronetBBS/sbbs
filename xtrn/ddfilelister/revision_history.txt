@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.25b    2024-11-24   When editing file information, check whether cost and
+                      times_downloaded exist in the metadata before accessing
+                      them
 2.25a    2024-11-12   Check whether cost is in the file metadata before using it.
                       Also, an internal change: When getting a file's full path,
                       ensure its filename is passed to get_path(), as described
