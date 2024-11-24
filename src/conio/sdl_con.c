@@ -960,7 +960,6 @@ void sdl_video_event_thread(void *data)
 							sdl.RestoreWindow(win);
 						pthread_mutex_unlock(&win_mutex);
 						int w, h;
-						SDL_Rect r;
 						if (!sdl_get_bounds(&w, &h)) {
 							w = 0;
 							h = 0;
