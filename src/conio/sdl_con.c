@@ -345,10 +345,30 @@ void sdl_flush(void)
 	sdl_user_func(SDL_USEREVENT_FLUSH);
 }
 
+static bool
+sdl_get_bounds(int *w, int *h)
+{
+	SDL_Rect r;
+	int ABUw, ABUh;
+	int pixelw, pixelh;
+
+	if (sdl.GetDisplayUsableBounds(0, &r) != 0)
+		return false;
+	sdl.GetWindowSize(win, &ABUw, &ABUh);
+	sdl.GetWindowSizeInPixels(win, &pixelw, &pixelh);
+	if (pixelw == 0 || pixelh == 0 || ABUw == 0 || ABUh == 0) {
+		*w = r.w;
+		*h = r.h;
+		return true;
+	}
+	*w = ((uint64_t)r.w) * ABUw / pixelw;
+	*h = ((uint64_t)r.h) * ABUh / pixelh;
+	return true;
+}
+
 static int sdl_init_mode(int mode, bool init)
 {
 	int w, h;
-	SDL_Rect r;
 
 	if (mode != CIOLIB_MODE_CUSTOM) {
 		pthread_mutex_lock(&vstatlock);
@@ -362,11 +382,7 @@ static int sdl_init_mode(int mode, bool init)
 	sdl_user_func(SDL_USEREVENT_FLUSH);
 
 	pthread_mutex_lock(&vstatlock);
-	if (sdl.GetDisplayUsableBounds(0, &r) == 0) {
-		w = r.w;
-		h = r.h;
-	}
-	else {
+	if (!sdl_get_bounds(&w, &h)) {
 		w = 0;
 		h = 0;
 	}
@@ -729,15 +745,8 @@ static void sdl_add_key(unsigned int keyval, struct video_stats *vs)
 		sdl.GetWindowSizeInPixels(win, &w, &h);
 		UPDATE_WINDOW_SIZE;
 		// Limit to max window size if available
-		if (!fullscreen) {
-			SDL_Rect r;
-			if (sdl.GetDisplayUsableBounds(0, &r) == 0) {
-				if (w > r.w)
-					w = r.w;
-				if (h > r.h)
-					h = r.h;
-			}
-		}
+		if (!fullscreen)
+			sdl_get_bounds(&w, &h);
 		// Set size based on current max
 		vs->scaling = bitmap_double_mult_inside(w, h);
 		bitmap_get_scaled_win_size(vs->scaling, &vs->winwidth, &vs->winheight, w, h);
@@ -952,11 +961,7 @@ void sdl_video_event_thread(void *data)
 						pthread_mutex_unlock(&win_mutex);
 						int w, h;
 						SDL_Rect r;
-						if (sdl.GetDisplayUsableBounds(0, &r) == 0) {
-							w = r.w;
-							h = r.h;
-						}
-						else {
+						if (!sdl_get_bounds(&w, &h)) {
 							w = 0;
 							h = 0;
 						}
