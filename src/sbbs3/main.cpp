@@ -2489,7 +2489,6 @@ void output_thread(void* arg)
 	uint		buftop=0;
 	sbbs_t*		sbbs = (sbbs_t*) arg;
 	uint		mss=IO_THREAD_BUF_SIZE;
-	uint		ssh_errors = 0;
 
 	SetThreadName("sbbs/termOutput");
 	thread_up(true /* setuid */);
@@ -2622,7 +2621,6 @@ void output_thread(void* arg)
 			else {
 				if (cryptStatusError((err=cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, sbbs->session_channel)))) {
 					GCESSTR(err, node, sbbs->ssh_session, "setting channel");
-					ssh_errors++;
 					sbbs->online=false;
 					i=buftop-bufbot;	// Pretend we sent it all
 				}
@@ -2637,7 +2635,6 @@ void output_thread(void* arg)
 					if(cryptStatusError((err=cryptPushData(sbbs->ssh_session, (char*)buf+bufbot, buftop-bufbot, &i)))) {
 						/* Handle the SSH error here... */
 						GCESSTR(err, node, sbbs->ssh_session, "pushing data");
-						ssh_errors++;
 						sbbs->online=false;
 						i=buftop-bufbot;	// Pretend we sent it all
 					}
@@ -2651,7 +2648,6 @@ void output_thread(void* arg)
 							GCESSTR(err, node, sbbs->ssh_session, "setting write timeout");
 						if(cryptStatusError((err=cryptFlushData(sbbs->ssh_session)))) {
 							GCESSTR(err, node, sbbs->ssh_session, "flushing data");
-							ssh_errors++;
 							if (err != CRYPT_ERROR_TIMEOUT) {
 								sbbs->online=false;
 								i=buftop-bufbot;	// Pretend we sent it all
