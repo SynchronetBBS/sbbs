@@ -118,7 +118,9 @@ ifeq ($(os),darwin)
 	-${QUIET}mkdir $(EXEODIR)/SyncTERM.app/Contents
 	-${QUIET}mkdir $(EXEODIR)/SyncTERM.app/Contents/MacOS
 	-${QUIET}mkdir $(EXEODIR)/SyncTERM.app/Contents/Resources
+ifdef SDL_FRAMEWORK_PATH
 	-${QUIET}mkdir $(EXEODIR)/SyncTERM.app/Contents/Frameworks
+endif
 	${QUIET}echo "APPL????" > $(EXEODIR)/SyncTERM.app/Contents/PkgInfo
 	${QUIET}${INSTALL_EXE} ${SYNCTERM} ${EXEODIR}/SyncTERM.app/Contents/MacOS
 	${QUIET}${INSTALL_DATA} Info.plist ${EXEODIR}/SyncTERM.app/Contents
