@@ -381,6 +381,7 @@ static int sdl_init_mode(int mode, bool init)
 
 	sdl_user_func(SDL_USEREVENT_FLUSH);
 
+	pthread_mutex_lock(&win_mutex);
 	pthread_mutex_lock(&vstatlock);
 	if (!sdl_get_bounds(&w, &h)) {
 		w = 0;
@@ -396,6 +397,7 @@ static int sdl_init_mode(int mode, bool init)
 	sdl_mode = true;
 	pthread_mutex_unlock(&sdl_mode_mutex);
 	pthread_mutex_unlock(&vstatlock);
+	pthread_mutex_unlock(&win_mutex);
 
 	sdl_user_func_ret(SDL_USEREVENT_SETVIDMODE, vstat.winwidth, vstat.winheight);
 
@@ -735,7 +737,6 @@ static void sdl_add_key(unsigned int keyval, struct video_stats *vs)
 	if(keyval==0xa600 && vs != NULL) {
 		pthread_mutex_lock(&win_mutex);
 		fullscreen = !(sdl.GetWindowFlags(win) & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP));
-		pthread_mutex_unlock(&win_mutex);
 		cio_api.mode=fullscreen?CIOLIB_MODE_SDL_FULLSCREEN:CIOLIB_MODE_SDL;
 		update_cvstat(vs);
 		sdl.SetWindowFullscreen(win, fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
@@ -747,6 +748,7 @@ static void sdl_add_key(unsigned int keyval, struct video_stats *vs)
 		// Limit to max window size if available
 		if (!fullscreen)
 			sdl_get_bounds(&w, &h);
+		pthread_mutex_unlock(&win_mutex);
 		// Set size based on current max
 		vs->scaling = bitmap_double_mult_inside(w, h);
 		bitmap_get_scaled_win_size(vs->scaling, &vs->winwidth, &vs->winheight, w, h);
@@ -958,12 +960,12 @@ void sdl_video_event_thread(void *data)
 						pthread_mutex_lock(&win_mutex);
 						if (sdl.GetWindowFlags(win) & SDL_WINDOW_MAXIMIZED)
 							sdl.RestoreWindow(win);
-						pthread_mutex_unlock(&win_mutex);
 						int w, h;
 						if (!sdl_get_bounds(&w, &h)) {
 							w = 0;
 							h = 0;
 						}
+						pthread_mutex_unlock(&win_mutex);
 						pthread_mutex_lock(&vstatlock);
 						bitmap_snap(ev.key.keysym.sym == SDLK_RIGHT, w, h);
 						pthread_mutex_unlock(&vstatlock);
