@@ -68,6 +68,7 @@ static char* logLevelStringList[]
 void global_settings(void)
 {
 	static int global_opt;
+	static int global_bar;
 
 	while(1) {
 		int i = 0;
@@ -223,7 +224,7 @@ void global_settings(void)
 			"    Default: Supported\n"
 			;
 
-		int key = uifc.list(WIN_ACT|WIN_SAV, 0, 0, 0, &global_opt,0, "Global Settings", opt);
+		int key = uifc.list(WIN_ACT|WIN_SAV, 0, 0, 0, &global_opt, &global_bar, "Global Settings", opt);
 
 		switch(key) {
 
@@ -730,7 +731,9 @@ int main(int argc, char **argv)
 	nodecfg_t savnodecfg;
 	arcdef_t savarcdef;
 	struct fido_domain savedomain;
-	struct robot saverobot;
+	struct robot saverobot = {
+		.name = ""
+	};
 	BOOL door_mode=FALSE;
 	unsigned int u;
 	char	sysop_aliases[256];
@@ -1384,7 +1387,7 @@ int main(int argc, char **argv)
 	"~ AreaManager Support ~\n\n"
 	"If you wish for this node to be able to remotely query or change their\n"
 	"configuration via `AreaManager` (AreaFix) NetMail messages, set to option to `Yes`.\n";
-								k = cfg.nodecfg[i].areamgr;
+								k = !cfg.nodecfg[i].areamgr;
 								switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 									,"AreaManager Support",uifcYesNoOpts)) {
 									case 0:	cfg.nodecfg[i].areamgr = true;	uifc.changes=TRUE; break;
@@ -2201,7 +2204,7 @@ int main(int argc, char **argv)
 							}
 							break;
 						case 10:
-							k = !cfg.check_path;
+							k = !cfg.relay_filtered_msgs;
 							switch(uifc.list(WIN_MID|WIN_SAV,0,0,0,&k,0
 								,"Relay Filtered EchoMail Messages",uifcYesNoOpts)) {
 								case 0:	cfg.relay_filtered_msgs = true;		break;
