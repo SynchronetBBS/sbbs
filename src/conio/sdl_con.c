@@ -361,8 +361,8 @@ sdl_get_bounds(int *w, int *h)
 		*h = r.h;
 		return true;
 	}
-	*w = ((uint64_t)r.w) * ABUw / pixelw;
-	*h = ((uint64_t)r.h) * ABUh / pixelh;
+	*w = ((uint64_t)r.w) * pixelw / ABUw;
+	*h = ((uint64_t)r.h) * pixelh / ABUh;
 	return true;
 }
 
