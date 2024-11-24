@@ -1,6 +1,6 @@
                         Digital Distortion File Lister
-                                 Version 2.25a
-                           Release date: 2024-11-12
+                                 Version 2.25b
+                           Release date: 2024-11-24
 
                                      by
 

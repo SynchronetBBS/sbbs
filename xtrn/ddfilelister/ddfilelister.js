@@ -144,6 +144,9 @@
  *                              Check to see if cost is in the file metadata before using it.
  *                              Also, when getting a file's full path, ensure the filename is
  *                              passed to get_path() (as described in the JS documentation)
+ * 2024-11-24 Eric Oulashin     Version 2.25b
+ *                              When editing file information, check whether cost and times_downloaded
+ *                              exist in the metadata before accessing them
  */
 
 "use strict";
@@ -185,8 +188,8 @@ var gAvatar = load({}, "avatar_lib.js");
 
 
 // Version information
-var LISTER_VERSION = "2.25a";
-var LISTER_DATE = "2024-11-12";
+var LISTER_VERSION = "2.25b";
+var LISTER_DATE = "2024-11-24";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2058,14 +2061,16 @@ function editFileInfo(pFileList, pFileListMenu)
 		promptText = bbs.text(bbs.text.EditCreditValue);
 		editWidth = console.screen_columns - console.strlen(promptText) - 1;
 		console.mnemonics(promptText);
-		newMetadata.cost = parseInt(console.getstr(fileMetadata.cost.toString(), editWidth, K_EDIT|K_LINE|K_NUMBER|K_NOSPIN));
+		var costStr = (fileMetadata.hasOwnProperty("cost") ? fileMetadata.cost.toString() : "0");
+		newMetadata.cost = parseInt(console.getstr(costStr, editWidth, K_EDIT|K_LINE|K_NUMBER|K_NOSPIN));
 		if (console.aborted)
 			return retObj;
 		// # times downloaded
 		promptText = bbs.text(bbs.text.EditTimesDownloaded);
 		editWidth = console.screen_columns - console.strlen(promptText) - 1;
 		console.mnemonics(promptText);
-		newMetadata.times_downloaded = console.getstr(fileMetadata.times_downloaded.toString(), editWidth, K_EDIT|K_LINE|K_NUMBER|K_NOSPIN);
+		var timesDownloadedStr = (fileMetadata.hasOwnProperty("times_downloaded") ? fileMetadata.times_downloaded.toString() : "0");
+		newMetadata.times_downloaded = parseInt(console.getstr(timesDownloadedStr, editWidth, K_EDIT|K_LINE|K_NUMBER|K_NOSPIN));
 		if (console.aborted)
 			return retObj;
 		// Current new-scan date/time
