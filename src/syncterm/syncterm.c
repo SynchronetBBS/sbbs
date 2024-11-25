@@ -87,7 +87,7 @@ enum {
 #include "uifcinit.h"
 #include "window.h"
 
-const char *syncterm_version = "SyncTERM 1.3a"
+const char *syncterm_version = "SyncTERM 1.4a"
 
 #define ALPHA
 #ifdef _DEBUG
