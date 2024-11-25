@@ -1451,8 +1451,8 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 		if (i >= 0) {
 			if (optmap[i] == BBSLIST_FIELD_NONE)
 				continue;
-			i = optmap[i];
 			strcpy(optname, opt[i]);
+			i = optmap[i];
 			for (tmpptr = optname; *tmpptr; tmpptr++) {
 				if (tmpptr[0] == 0)
 					break;
