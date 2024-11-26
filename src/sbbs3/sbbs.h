@@ -885,6 +885,7 @@ public:
 
 	/* postmsg.cpp */
 	bool	postmsg(int subnum, int wm_mode = WM_NONE, smb_t* resmb = NULL, smbmsg_t* remsg = NULL);
+	bool	notify(const char* subject, const char* text = NULL);
 
 	/* mail.cpp */
 	int		delmail(uint usernumber,int which);

@@ -1081,3 +1081,4 @@
 "Oct"                                                      894 Oct
 "Nov"                                                      895 Nov
 "Dec"                                                      896 Dec
+"\7@ALIAS@ paged you to chat from node @NODE@\7"           897 SysopPageNotification

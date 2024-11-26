@@ -707,3 +707,10 @@ extern "C" int notify(scfg_t* cfg, uint usernumber, const char* subject, const c
 			,subject);
 	return putsmsg(cfg, usernumber, smsg);
 }
+
+bool sbbs_t::notify(const char* subject, const char* text)
+{
+	char buf[128];
+
+	return ::notify(&cfg, /* usernumber: */1, expand_atcodes(subject, buf, sizeof buf), text) == 0;
+}

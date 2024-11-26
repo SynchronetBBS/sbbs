@@ -897,4 +897,5 @@ const char* const text_id[]={
 	,"Oct"
 	,"Nov"
 	,"Dec"
+	,"SysopPageNotification"
 };

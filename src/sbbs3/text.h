@@ -913,6 +913,7 @@ enum text {
 	,Oct
 	,Nov
 	,Dec
+	,SysopPageNotification
 
 	,TOTAL_TEXT
 };
