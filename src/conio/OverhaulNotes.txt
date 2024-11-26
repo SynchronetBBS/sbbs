@@ -151,3 +151,58 @@ a CP437 font will only update specific glyphs for example, and those
 will be spread out around the space, so "stacks" of fonts, each
 entry listing ranges to map will be needed, and we'll want to use
 bsearch() there too.
+
+General architecture:
+
+Bitmap output layer: single API for putting pixels in a rectangle.
+                     - maintains the "current" screen
+                     - multiple are stacked for final output
+                     - when stacked, tries to do as few scalings as possible
+                     - has an epoch
+                     - can register an input source
+                     - can regiser a menu bar
+Input source: mouse and keyboard input, passes events to a callback or pipe
+              - input *must be* unicode
+              - needs to have modifier support... at least ALT
+Text output layer: single API for adding text to the "screen"
+                   - maintains the "current" screen
+                   - has an epoch, potentially per-line and per-cell
+                   - can flush to output (curses, bitmap, etc)
+                   - can register an input source
+                   - can regiser a menu bar
+UI layer: This one is where it gets weird... being able to do TUI and
+          GUI means being able to exist inside or outside of the text
+          output layer... and when outside, having the bitmap output
+          "inside" of it.  It likely makes sense to just have this as
+          mostly TUI with extra "status bar" type things and a "menu bar"
+          thing.
+          - can register a menu bar
+          - Maybe an input source?
+          - Is this where the status bar lives?
+Menu bar: Generic menu bar interface that has "preference" levels so only
+          one of the registered menu bars is used.  Registers callbacks
+          and keyboard shortcuts, and can have options dynamically disabled.
+          - Maybe an input source?
+Status bar: Some fancy something that allows a GUI status bar as well as a
+            text one.
+Encoding Translator: Converts from one encoding to another
+                     - One of the two encodings is always expected to be unicode
+                     - Must support both UTF-8 and UTF-32 at a minimum
+Terminal Emulator: Bidirectional pipe with remote
+                   - Has four IO paths...
+                     - Input from remote
+                     - Output to remote
+                     - Input from keyboard - has translation of some kind...
+                     - Input from mouse
+                   - Outputs to a text output layer and/or a bitmap layer
+                   - Can output audio
+Audio output: Can output simple tones and samples
+              - Want MIDI support
+              - Want streaming support
+              - Want tracker support
+Connection interface: For "remote" connections
+                      - Telnet/SSH/pty/etc.
+                      - Implements codepage/unicode translation?
+                        - If so, this is where the "line at a time" telnet mode
+                          needs to live, which is awkward.
+Unconnected UI: Settings, List, etc.

@@ -5432,6 +5432,39 @@ prestel_send_memory(struct cterminal *cterm, uint8_t mem, char *retbuf, size_t r
 	}
 }
 
+static void
+prestel_handle_escaped(struct cterminal *cterm, uint8_t ctrl)
+{
+	struct vmem_cell tmpvc[1];
+	int sx, sy, x, y;
+
+	prestel_apply_ctrl_before(cterm, ctrl);
+	TEXTATTR(cterm->attr);
+	setcolour(cterm->fg_color, cterm->bg_color);
+	cterm->escbuf[0]=0;
+	cterm->sequence=0;
+	if (cterm->extattr & CTERM_EXTATTR_PRESTEL_HOLD) {
+		tmpvc[0].ch = cterm->prestel_last_mosaic;
+		if ((tmpvc[0].ch >= 128) && (cterm->extattr & CTERM_EXTATTR_PRESTEL_SEPARATED))
+			tmpvc[0].ch += 64;
+	}
+	else {
+		tmpvc[0].ch = ctrl - 64;
+	}
+	tmpvc[0].legacy_attr=cterm->attr;
+	tmpvc[0].fg = cterm->fg_color | (ctrl << 24);
+	tmpvc[0].bg = cterm->bg_color;
+	tmpvc[0].font = ciolib_attrfont(cterm->attr);
+	SCR_XY(&sx, &sy);
+	vmem_puttext(sx, sy, sx, sy, tmpvc);
+	ctrl=0;
+	CURR_XY(&x, &y);
+	prestel_apply_ctrl_after(cterm, ctrl);
+	TEXTATTR(cterm->attr);
+	setcolour(cterm->fg_color, cterm->bg_color);
+	advance_char(cterm, &x, &y, 1);
+}
+
 CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int buflen, char *retbuf, size_t retsize, int *speed)
 {
 	const unsigned char *buf = (unsigned char *)vbuf;
@@ -5642,31 +5675,7 @@ CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int b
 							if (ch[0] == '1')
 								cterm->prestel_prog_state = PRESTEL_PROG_1;
 							else {
-								prestel_apply_ctrl_before(cterm, ch[0]);
-								TEXTATTR(cterm->attr);
-								setcolour(cterm->fg_color, cterm->bg_color);
-								cterm->escbuf[0]=0;
-								cterm->sequence=0;
-								if (cterm->extattr & CTERM_EXTATTR_PRESTEL_HOLD) {
-									tmpvc[0].ch = cterm->prestel_last_mosaic;
-									if ((tmpvc[0].ch >= 128) && (cterm->extattr & CTERM_EXTATTR_PRESTEL_SEPARATED))
-										tmpvc[0].ch += 64;
-								}
-								else {
-									tmpvc[0].ch = ch[0] - 64;
-								}
-								tmpvc[0].legacy_attr=cterm->attr;
-								tmpvc[0].fg = cterm->fg_color | (ch[0] << 24);
-								tmpvc[0].bg = cterm->bg_color;
-								tmpvc[0].font = ciolib_attrfont(cterm->attr);
-								SCR_XY(&sx, &sy);
-								vmem_puttext(sx, sy, sx, sy, tmpvc);
-								ch[1]=0;
-								CURR_XY(&x, &y);
-								prestel_apply_ctrl_after(cterm, ch[0]);
-								TEXTATTR(cterm->attr);
-								setcolour(cterm->fg_color, cterm->bg_color);
-								advance_char(cterm, &x, &y, 1);
+								prestel_handle_escaped(cterm, ch[0]);
 							}
 						}
 						else {
@@ -6346,6 +6355,11 @@ CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int b
 										lastch = ch[0];
 									ustrcat(prn,ch);
 								}
+								else if ((buf[j] >= 0x80) && (buf[j] <= 0x9f)) {
+									// "Raw" C1 control
+									prestel_handle_escaped(cterm, buf[j] - 64);
+								}
+								break;
 						}
 					}
 					else {	/* ANSI-BBS */
