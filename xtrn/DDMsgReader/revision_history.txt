@@ -5,6 +5,10 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.96d    2024-11-25   Bug fix: For the indexed-mode newscan, when showing only
+                      sub-boards that have new messages, ensure the selected
+                      item index is correct when re-populating the menu so that
+                      it doesn't skip a sub-board.
 1.96c    2024-11-20   Bug fix: When showing a poll vote from the user, it should
                       show people who've voted - ensure it only counts vote
                       responses
