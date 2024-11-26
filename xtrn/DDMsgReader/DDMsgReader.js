@@ -188,6 +188,11 @@
  * 2024-11-20 Eric Oulashin     Version 1.96c
  *                              Bug fix: When showing a poll vote from the user, it should
  *                              show people who've voted - ensure it only counts vote responses
+ * 2024-11-25 Eric Oulashin     Version 1.96d
+ *                              Bug fix: For the indexed-mode newscan, when showing only
+ *                              sub-boards that have new messages, ensure the selected item
+ *                              index is correct when re-populating the menu so that it doesn't
+ *                              skip a sub-board.
  */
 
 "use strict";
@@ -295,8 +300,8 @@ var hexdump = load('hexdump_lib.js');
 
 
 // Reader version information
-var READER_VERSION = "1.96c";
-var READER_DATE = "2024-11-20";
+var READER_VERSION = "1.96d";
+var READER_DATE = "2024-11-25";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -16699,6 +16704,8 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 	// Ensure the menu is clear, and (re-)populate the menu with sub-board information w/ # of new messages in each, etc.
 	// Also, build an array of sub-board codes for each menu item.
 	this.indexedModeMenu.RemoveAllItems();
+	setIndexedSubBoardMenuSelectedItemIdx(this.indexedModeMenu, 0);
+	DigDistMsgReader_IndexedModeChooseSubBoard.selectedItemIdx = 0;
 	var numSubBoards = 0;
 	var totalNewMsgs = 0;
 	for (var grpIdx = 0; grpIdx < msg_area.grp_list.length; ++grpIdx)
@@ -16795,7 +16802,7 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 			return retObj;
 		}
 	}
-
+	
 	// If we've saved the index of the selected item in the menu, then set it back in the menu, if it's
 	// valid.  This is done because the list of items is cleared each time this function is called.
 	if (!thisFunctionFirstCall && typeof(DigDistMsgReader_IndexedModeChooseSubBoard.selectedItemIdx) === "number")
