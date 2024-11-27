@@ -840,9 +840,12 @@ prestel_apply_ctrl_before(struct cterminal *cterm, uint8_t ch)
 				cterm->bg_color |= 0x01000000;
 			break;
 		case 76: // Normal Height
+			if (cterm->extattr & CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT) {
+				cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_HOLD);
+				cterm->prestel_last_mosaic = 32;
+			}
 			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT);
 			cterm->bg_color &= ~0x01000000;
-			cterm->prestel_last_mosaic = 32;
 			break;
 		case 88: // Conceal Display
 			cterm->attr |= 0x08;
@@ -874,20 +877,19 @@ prestel_colour(struct cterminal *cterm, bool alpha, int colour)
 	cterm->attr &= 0xF7;
 	set_fgattr(cterm, colour);
 	cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_CONCEAL);
-	if (alpha)
-		cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_MOSAIC);
-	else
+	if (alpha) {
+		cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_HOLD | CTERM_EXTATTR_PRESTEL_MOSAIC);
+		cterm->prestel_last_mosaic = 32;
+	}
+	else {
 		cterm->extattr |= CTERM_EXTATTR_PRESTEL_MOSAIC;
-	cterm->prestel_last_mosaic = 32;
+	}
 }
 
 static void
 prestel_apply_ctrl_after(struct cterminal *cterm, uint8_t ch)
 {
 	switch(ch) {
-		case 64: // Alphanumeric Black
-			prestel_colour(cterm, true, BLACK);
-			break;
 		case 65: // Alphanumeric Red
 			prestel_colour(cterm, true, RED);
 			break;
@@ -916,12 +918,12 @@ prestel_apply_ctrl_after(struct cterminal *cterm, uint8_t ch)
 				cterm->bg_color |= 0x01000000;
 			break;
 		case 77: // Double Height
+			if ((cterm->extattr & CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT) == 0) {
+				cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_HOLD);
+				cterm->prestel_last_mosaic = 32;
+			}
 			cterm->extattr |= CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT;
 			cterm->bg_color |= 0x01000000;
-			cterm->prestel_last_mosaic = 32;
-			break;
-		case 80: // Mosaic Black
-			prestel_colour(cterm, false, BLACK);
 			break;
 		case 81: // Mosaic Red
 			prestel_colour(cterm, false, RED);
@@ -981,13 +983,13 @@ prestel_get_state(struct cterminal *cterm)
 				prestel_apply_ctrl(cterm, ch);
 			}
 			else {
-				if (ch >= 128) {
+				if (ch >= 128)
 					cterm->prestel_last_mosaic = ch;
-					if (ch >= 192)
-						cterm->prestel_last_mosaic -= 64;
-				}
 			}
 		}
+	}
+	else {
+		prestel_new_line(cterm);
 	}
 	TEXTATTR(cterm->attr);
 	setcolour(cterm->fg_color, cterm->bg_color);
@@ -4993,13 +4995,15 @@ static void prestel_fix_line(struct cterminal *cterm, int x, int y, bool restore
 				line[i].legacy_attr = cterm->attr;
 				fixed = true;
 			}
-			if (line[i].ch < 32 && (cterm->extattr & CTERM_EXTATTR_PRESTEL_HOLD) && cterm->prestel_last_mosaic != 32) {
-				// Should be held mosaic, but is ctrl char...
-				line[i].ch = cterm->prestel_last_mosaic;
-				fixed = true;
+			if (line[i].ch < 128 && (cterm->extattr & CTERM_EXTATTR_PRESTEL_HOLD)) {
+				// Should be held mosaic, but is not mosaic char...
+				if (cterm->prestel_last_mosaic != 32) {
+					line[i].ch = cterm->prestel_last_mosaic;
+					fixed = true;
+				}
 			}
-			if (line[i].ch >= 128 && (((cterm->extattr & CTERM_EXTATTR_PRESTEL_HOLD) == 0) || cterm->prestel_last_mosaic == 32)) {
-				line[i].ch = ch - 64;
+			if (line[i].ch >= 128 && ((cterm->extattr & CTERM_EXTATTR_PRESTEL_HOLD) == 0)) {
+				line[i].ch = ch;
 				fixed = true;
 			}
 			if (i == (x - 1)) {
@@ -5012,13 +5016,6 @@ static void prestel_fix_line(struct cterminal *cterm, int x, int y, bool restore
 			prestel_apply_ctrl_after(cterm, ch);
 		}
 		else {
-			if (i == (x - 1)) {
-				extattr = cterm->extattr;
-				fg_color = cterm->fg_color;
-				bg_color = cterm->bg_color;
-				attr = cterm->attr;
-				prestel_last_mosaic = cterm->prestel_last_mosaic;
-			}
 			// This is displayable
 			if ((cterm->extattr & CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT) && ((line[i].bg & 0x01000000) == 0)) {
 				// Should be double-high
@@ -5043,7 +5040,7 @@ static void prestel_fix_line(struct cterminal *cterm, int x, int y, bool restore
 			}
 			if (line[i].ch >= 128 && ((cterm->extattr & CTERM_EXTATTR_PRESTEL_MOSAIC) == 0)) {
 				// Mosaic character, but should be alphanum
-				if (line[i].ch >= 196)
+				if (line[i].ch >= 192)
 					line[i].ch -= 64;
 				if (line[i].ch < 160)
 					line[i].ch -= 96;
@@ -5063,30 +5060,40 @@ static void prestel_fix_line(struct cterminal *cterm, int x, int y, bool restore
 					line[i].ch += 64;
 				fixed = true;
 			}
-			else if((line[i].ch >= 196) && ((cterm->extattr & CTERM_EXTATTR_PRESTEL_SEPARATED) == 0)) {
+			else if((line[i].ch >= 192) && ((cterm->extattr & CTERM_EXTATTR_PRESTEL_SEPARATED) == 0)) {
 				// Should not be separated...
 				line[i].ch -= 64;
 				fixed = true;
 			}
-			else if(((line[i].ch >= 128) && (line[i].ch < 196)) && (cterm->extattr & CTERM_EXTATTR_PRESTEL_SEPARATED)) {
+			else if(((line[i].ch >= 128) && (line[i].ch < 192)) && (cterm->extattr & CTERM_EXTATTR_PRESTEL_SEPARATED)) {
 				// Should be separated...
 				line[i].ch += 64;
 				fixed = true;
+			}
+			if (line[i].ch >= 128 && (cterm->extattr & CTERM_EXTATTR_PRESTEL_MOSAIC)) {
+				cterm->prestel_last_mosaic = line[i].ch;
+			}
+			if (i == (x - 1)) {
+				extattr = cterm->extattr;
+				fg_color = cterm->fg_color;
+				bg_color = cterm->bg_color;
+				attr = cterm->attr;
+				prestel_last_mosaic = cterm->prestel_last_mosaic;
 			}
 		}
 	}
 	if (force || fixed)
 		vmem_puttext(sx, sy, ex, sy, line);
 	free(line);
+	if (fixedheight) {
+		prestel_fix_line(cterm, x, y+1, false, true);
+	}
 	if (restore) {
 		cterm->extattr = extattr;
 		cterm->fg_color = fg_color;
 		cterm->bg_color = bg_color;
 		cterm->attr = attr;
 		cterm->prestel_last_mosaic = prestel_last_mosaic;
-	}
-	if (fixedheight) {
-		prestel_fix_line(cterm, x, y+1, false, true);
 	}
 }
 
@@ -5443,10 +5450,8 @@ prestel_handle_escaped(struct cterminal *cterm, uint8_t ctrl)
 	setcolour(cterm->fg_color, cterm->bg_color);
 	cterm->escbuf[0]=0;
 	cterm->sequence=0;
-	if (cterm->extattr & CTERM_EXTATTR_PRESTEL_HOLD) {
+	if ((cterm->extattr & CTERM_EXTATTR_PRESTEL_HOLD) && (cterm->prestel_last_mosaic != 32)) {
 		tmpvc[0].ch = cterm->prestel_last_mosaic;
-		if ((tmpvc[0].ch >= 128) && (cterm->extattr & CTERM_EXTATTR_PRESTEL_SEPARATED))
-			tmpvc[0].ch += 64;
 	}
 	else {
 		tmpvc[0].ch = ctrl - 64;
@@ -5456,9 +5461,9 @@ prestel_handle_escaped(struct cterminal *cterm, uint8_t ctrl)
 	tmpvc[0].bg = cterm->bg_color;
 	tmpvc[0].font = ciolib_attrfont(cterm->attr);
 	SCR_XY(&sx, &sy);
+	CURR_XY(&x, &y);
 	vmem_puttext(sx, sy, sx, sy, tmpvc);
 	ctrl=0;
-	CURR_XY(&x, &y);
 	prestel_apply_ctrl_after(cterm, ctrl);
 	TEXTATTR(cterm->attr);
 	setcolour(cterm->fg_color, cterm->bg_color);
@@ -6283,31 +6288,26 @@ CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int b
 								prestel_send_memory(cterm, 0, retbuf, retsize);
 								break;
 							case 8: // APB (Active Position Packward)
-								lastch = 0;
 								uctputs(cterm, prn);
 								prn[0]=0;
 								prestel_move(cterm, -1, 0);
 								break;
 							case 9: // APF (Active Position Forward)
-								lastch = 0;
 								uctputs(cterm, prn);
 								prn[0]=0;
 								prestel_move(cterm, 1, 0);
 								break;
 							case 10: // APD (Active Position Down)
-								lastch = 0;
 								uctputs(cterm, prn);
 								prn[0]=0;
 								prestel_move(cterm, 0, 1);
 								break;
 							case 11: // APU (Active Position Up)
-								lastch = 0;
 								uctputs(cterm, prn);
 								prn[0]=0;
 								prestel_move(cterm, 0, -1);
 								break;
 							case 12: // CS (Clear Screen)
-								lastch = 0;
 								uctputs(cterm, prn);
 								prn[0]=0;
 								cio_api.options &= ~(CONIO_OPT_PRESTEL_REVEAL);
@@ -6329,7 +6329,6 @@ CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int b
 								cterm->sequence=1;
 								break;
 							case 30: // APH (Active Position Home)
-								lastch = 0;
 								uctputs(cterm, prn);
 								prn[0]=0;
 								GOTOXY(CURR_MINX, CURR_MINY);
@@ -6344,15 +6343,14 @@ CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int b
 											ch[0] = buf[j] + 64;
 										else
 											ch[0] = buf[j];
-										if (ch[0] >= 128)
-											cterm->prestel_last_mosaic = ch[0];
 										if (cterm->extattr & CTERM_EXTATTR_PRESTEL_SEPARATED) {
 											if (ch[0] >= 128)
 												ch[0] += 64;
 										}
+										if (ch[0] >= 128) {
+											cterm->prestel_last_mosaic = ch[0];
+										}
 									}
-									else
-										lastch = ch[0];
 									ustrcat(prn,ch);
 								}
 								else if ((buf[j] >= 0x80) && (buf[j] <= 0x9f)) {
