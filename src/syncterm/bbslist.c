@@ -1171,6 +1171,8 @@ build_edit_list(struct bbslist *item, char opt[][69], int *optmap, char **opts, 
 {
 	int i = 0;
 	char       str[64];
+	bool is_ansi = true;
+	bool is_serial = ((item->conn_type == CONN_TYPE_MODEM) || (item->conn_type == CONN_TYPE_SERIAL) || (item->conn_type == CONN_TYPE_SERIAL_NORTS));
 
 	if (!isdefault) {
 		optmap[i] = BBSLIST_FIELD_NAME;
@@ -1194,9 +1196,19 @@ build_edit_list(struct bbslist *item, char opt[][69], int *optmap, char **opts, 
 	}
 	optmap[i] = BBSLIST_FIELD_CONN_TYPE;
 	sprintf(opt[i++], "Connection Type   %s", conn_types[item->conn_type]);
-	if ((item->conn_type == CONN_TYPE_MODEM) || (item->conn_type == CONN_TYPE_SERIAL) || (item->conn_type == CONN_TYPE_SERIAL_NORTS)) {
+	if (IS_NETWORK_CONN(item->conn_type)) {
+		optmap[i] = BBSLIST_FIELD_ADDRESS_FAMILY;
+		sprintf(opt[i++], "Address Family    %s", address_family_names[item->address_family]);
+	}
+	if (is_serial) {
 		optmap[i] = BBSLIST_FIELD_FLOW_CONTROL;
 		fc_str(opt[i++], item->flow_control);
+		if (item->bpsrate)
+			sprintf(str, "%ubps", item->bpsrate);
+		else
+			strcpy(str, "Current");
+		optmap[i] = BBSLIST_FIELD_BPSRATE;
+		sprintf(opt[i++], "Comm Rate         %s", str);
 		optmap[i] = BBSLIST_FIELD_STOP_BITS;
 		sprintf(opt[i++], "Stop Bits         %hu", item->stop_bits);
 		optmap[i] = BBSLIST_FIELD_DATA_BITS;
@@ -1235,8 +1247,26 @@ build_edit_list(struct bbslist *item, char opt[][69], int *optmap, char **opts, 
 		optmap[i] = BBSLIST_FIELD_SYSPASS;
 		sprintf(opt[i++], "System Password   %s", item->syspass[0] ? "********" : "<none>");
 	}
+	if (item->conn_type == CONN_TYPE_SSH || item->conn_type == CONN_TYPE_SSHNA) {
+		optmap[i] = BBSLIST_FIELD_SFTP_PUBLIC_KEY;
+		sprintf(opt[i++], "SFTP Public Key   %s", item->sftp_public_key ? "Yes" : "No");
+	}
 	optmap[i] = BBSLIST_FIELD_SCREEN_MODE;
 	sprintf(opt[i++], "Screen Mode       %s", screen_modes[item->screen_mode]);
+	optmap[i] = BBSLIST_FIELD_FONT;
+	sprintf(opt[i++], "Font              %s", item->font);
+	if (get_emulation(item) != CTERM_EMULATION_ANSI_BBS)
+		is_ansi = false;
+	if (is_ansi) {
+		optmap[i] = BBSLIST_FIELD_MUSIC;
+		sprintf(opt[i++], "ANSI Music        %s", music_names[item->music]);
+		optmap[i] = BBSLIST_FIELD_RIP;
+		sprintf(opt[i++], "RIP               %s", rip_versions[item->rip]);
+		optmap[i] = BBSLIST_FIELD_FORCE_LCF;
+		sprintf(opt[i++], "Force LCF Mode    %s", item->force_lcf ? "Yes" : "No");
+		optmap[i] = BBSLIST_FIELD_YELLOW_IS_YELLOW;
+		sprintf(opt[i++], "Yellow is Yellow  %s", item->yellow_is_yellow ? "Yes" : "No");
+	}
 	optmap[i] = BBSLIST_FIELD_NOSTATUS;
 	sprintf(opt[i++], "Hide Status Line  %s", item->nostatus ? "Yes" : "No");
 	optmap[i] = BBSLIST_FIELD_DLDIR;
@@ -1247,30 +1277,16 @@ build_edit_list(struct bbslist *item, char opt[][69], int *optmap, char **opts, 
 	i++;
 	optmap[i] = BBSLIST_FIELD_LOGFILE;
 	strcpy(opt[i++], "Log Configuration");
-	if (item->bpsrate)
-		sprintf(str, "%ubps", item->bpsrate);
-	else
-		strcpy(str, "Current");
-	optmap[i] = BBSLIST_FIELD_BPSRATE;
-	sprintf(opt[i++], "Comm Rate         %s", str);
-	optmap[i] = BBSLIST_FIELD_MUSIC;
-	sprintf(opt[i++], "ANSI Music        %s", music_names[item->music]);
-	optmap[i] = BBSLIST_FIELD_ADDRESS_FAMILY;
-	sprintf(opt[i++], "Address Family    %s", address_family_names[item->address_family]);
-	optmap[i] = BBSLIST_FIELD_FONT;
-	sprintf(opt[i++], "Font              %s", item->font);
+	if (!is_serial) {
+		if (item->bpsrate)
+			sprintf(str, "%ubps", item->bpsrate);
+		else
+			strcpy(str, "Current");
+		optmap[i] = BBSLIST_FIELD_BPSRATE;
+		sprintf(opt[i++], "Fake Comm Rate    %s", str);
+	}
 	optmap[i] = BBSLIST_FIELD_HIDEPOPUPS;
 	sprintf(opt[i++], "Hide Popups       %s", item->hidepopups ? "Yes" : "No");
-	optmap[i] = BBSLIST_FIELD_RIP;
-	sprintf(opt[i++], "RIP               %s", rip_versions[item->rip]);
-	optmap[i] = BBSLIST_FIELD_FORCE_LCF;
-	sprintf(opt[i++], "Force LCF Mode    %s", item->force_lcf ? "Yes" : "No");
-	optmap[i] = BBSLIST_FIELD_YELLOW_IS_YELLOW;
-	sprintf(opt[i++], "Yellow is Yellow  %s", item->yellow_is_yellow ? "Yes" : "No");
-	if (item->conn_type == CONN_TYPE_SSH || item->conn_type == CONN_TYPE_SSHNA) {
-		optmap[i] = BBSLIST_FIELD_SFTP_PUBLIC_KEY;
-		sprintf(opt[i++], "SFTP Public Key   %s", item->sftp_public_key ? "Yes" : "No");
-	}
 	opt[i][0] = 0;
 }
 
@@ -1278,6 +1294,11 @@ void
 build_edit_help(struct bbslist *item, int isdefault, char *helpbuf, size_t hbsz)
 {
 	size_t hblen = 0;
+	bool is_ansi = true;
+	bool is_serial = ((item->conn_type == CONN_TYPE_MODEM) || (item->conn_type == CONN_TYPE_SERIAL) || (item->conn_type == CONN_TYPE_SERIAL_NORTS));
+
+	if (get_emulation(item) != CTERM_EMULATION_ANSI_BBS)
+		is_ansi = false;
 
 	/*
 	 * Not using strncpy() here because memset()ing the whole thing
@@ -1317,8 +1338,14 @@ build_edit_help(struct bbslist *item, int isdefault, char *helpbuf, size_t hbsz)
 	}
 	hblen += strlcat(helpbuf + hblen, "~ Conection Type ~\n"
 	    "        Type of connection\n\n", hbsz - hblen);
-	if ((item->conn_type == CONN_TYPE_MODEM) || (item->conn_type == CONN_TYPE_SERIAL) || (item->conn_type == CONN_TYPE_SERIAL_NORTS)) {
-		hblen += strlcat(helpbuf + hblen, "~ Flow Control ~\n"
+	if (IS_NETWORK_CONN(item->conn_type)) {
+		hblen += strlcat(helpbuf + hblen, "~ Address Family ~\n"
+	    "       IPv4 or IPv6\n\n", hbsz - hblen);
+	}
+	if (is_serial) {
+		hblen += strlcat(helpbuf + hblen, "~ Comm Rate ~\n"
+		    "        Port speed\n\n"
+		    "~ Flow Control ~\n"
 		    "        Type of flow control to use\n\n"
 		    "~ Stop Bits ~\n"
 		    "        Number of stop bits for each byte\n\n"
@@ -1355,9 +1382,29 @@ build_edit_help(struct bbslist *item, int isdefault, char *helpbuf, size_t hbsz)
 		    "~ System Password ~\n"
 		    "        System Password sent by auto-login command (not securely stored)\n\n", hbsz - hblen);
 	}
+	if (item->conn_type == CONN_TYPE_SSH || item->conn_type == CONN_TYPE_SSHNA) {
+		hblen += strlcat(helpbuf + hblen, "~ SFTP Public Key ~\n"
+		    "        Open an SFTP channel and transfer the public key to\n"
+		    "        .ssh/authorized_keys\n\n", hbsz - hblen);
+	}
 	hblen += strlcat(helpbuf + hblen, "~ Screen Mode ~\n"
-	    "        Display mode to use\n\n"
-	    "~ Hide Status Line ~\n"
+	    "        Display mode to use\n\n", hbsz - hblen);
+	hblen += strlcat(helpbuf + hblen, "~ Font ~\n"
+	    "        Select font to use for the entry\n\n"
+	    "~ Hide Popups ~\n"
+	    "        Hide all popup dialogs (i.e., Connecting, Disconnected, etc.)\n\n", hbsz - hblen);
+	if (is_ansi) {
+		hblen += strlcat(helpbuf + hblen, "~ ANSI Music ~\n"
+		    "        ANSI music type selection\n\n"
+		    "~ RIP ~\n"
+		    "        Enable/Disable RIP modes\n\n"
+		    "~ Force LCF Mode ~\n"
+		    "        Force Last Column Flag mode as used in VT terminals\n\n"
+		    "~ Yellow Is Yellow ~\n"
+		    "        Make the dark yellow colour actually yellow instead of the brown\n"
+		    "        used in IBM CGA monitors\n\n", hbsz - hblen);
+	}
+	hblen += strlcat(helpbuf + hblen, "~ Hide Status Line ~\n"
 	    "        Selects if the status line should be hidden, giving an extra\n"
 	    "        display row\n\n"
 	    "~ Download Path ~\n"
@@ -1365,28 +1412,10 @@ build_edit_help(struct bbslist *item, int isdefault, char *helpbuf, size_t hbsz)
 	    "~ Upload Path ~\n"
 	    "        Default path for uploads\n\n"
 	    "~ Log Configuration ~\n"
-	    "        Configure logging settings\n\n"
-	    "~ Comm Rate ~\n"
-	    "        Display speed\n\n"
-	    "~ ANSI Music ~\n"
-	    "        ANSI music type selection\n\n"
-	    "~ Address Family ~\n"
-	    "        IPv4 or IPv6\n\n"
-	    "~ Font ~\n"
-	    "        Select font to use for the entry\n\n"
-	    "~ Hide Popups ~\n"
-	    "        Hide all popup dialogs (i.e., Connecting, Disconnected, etc.)\n\n"
-	    "~ RIP ~\n"
-	    "        Enable/Disable RIP modes\n\n"
-	    "~ Force LCF Mode ~\n"
-	    "        Force Last Column Flag mode as used in VT terminals\n\n"
-	    "~ Yellow Is Yellow ~\n"
-	    "        Make the dark yellow colour actually yellow instead of the brown\n"
-	    "        used in IBM CGA monitors\n\n", hbsz - hblen);
-	if (item->conn_type == CONN_TYPE_SSH || item->conn_type == CONN_TYPE_SSHNA) {
-		hblen += strlcat(helpbuf + hblen, "~ SFTP Public Key ~\n"
-		    "        Open an SFTP channel and transfer the public key to\n"
-		    "        .ssh/authorized_keys\n\n", hbsz - hblen);
+	    "        Configure logging settings\n\n", hbsz - hblen);
+	if (!is_serial) {
+		hblen += strlcat(helpbuf + hblen, "~ Fake Comm Rate ~\n"
+		    "        Display speed\n\n", hbsz - hblen);
 	}
 }
 

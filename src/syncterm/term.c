@@ -3681,6 +3681,22 @@ send_login(struct bbslist *bbs) {
 	}
 }
 
+static void
+normalize_entry(struct bbslist *bbs)
+{
+	cterm_emulation_t emu = get_emulation(bbs);
+
+	switch (emu) {
+		case CTERM_EMULATION_ANSI_BBS:
+			break;
+		default:
+			bbs->rip = RIP_VERSION_NONE;
+			bbs->force_lcf = false;
+			bbs->yellow_is_yellow = false;
+			break;
+	}
+}
+
 bool
 doterm(struct bbslist *bbs)
 {
@@ -3732,6 +3748,7 @@ doterm(struct bbslist *bbs)
 	int                speedwatch = 0;
 	bool atascii_inverse = false;
 
+	normalize_entry(bbs);
 	freepixels(pixmap_buffer[0]);
 	freepixels(pixmap_buffer[1]);
 	pixmap_buffer[0] = NULL;
