@@ -605,24 +605,18 @@ static int bitmap_draw_one_char(struct vmem_cell *vc, unsigned int xpos, unsigne
 		struct vstat_vmem *vmem_ptr = get_vmem(&vstat);
 		unsigned char lattr = vc->legacy_attr;
 
-		if (ypos > 1) {
-			for (y = 0; y < ypos; y++) {
-				if (top) {
-					bottom = true;
-					top = false;
-				}
-				else {
-					if (bottom)
-						bottom = false;
-					else {
-						if (y == ypos - 1)
-							break;
-						for (x = 0; x < vstat.cols; x++) {
-							if (vmem_ptr->vmem[y * vstat.cols + x].bg & 0x01000000) {
-								top = true;
-								break;
-							}
-						}
+		for (y = 0; y < ypos; y++) {
+			if (top) {
+				bottom = true;
+				top = false;
+			}
+			else {
+				if (bottom)
+					bottom = false;
+				for (x = 0; x < vstat.cols; x++) {
+					if (vmem_ptr->vmem[y * vstat.cols + x].bg & 0x01000000) {
+						top = true;
+						break;
 					}
 				}
 			}

@@ -4956,7 +4956,7 @@ static void prestel_fix_line(struct cterminal *cterm, int x, int y, bool restore
 	unsigned char attr = cterm->attr;
 	uint8_t prestel_last_mosaic = cterm->prestel_last_mosaic;
 	bool fixed = false;
-	bool fixedheight = false;
+	bool dblheight = false;
 
 	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &sy, &sx);
 	ex = sx + TERM_MAXX - 1;
@@ -4978,13 +4978,13 @@ static void prestel_fix_line(struct cterminal *cterm, int x, int y, bool restore
 				// Should be double-high
 				line[i].bg |= 0x01000000;
 				fixed = true;
-				fixedheight = true;
+				dblheight = true;
 			}
 			if (((cterm->extattr & CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT) == 0) && (line[i].bg & 0x01000000)) {
 				// Should not be double-high
 				line[i].bg &= ~0x01000000;
 				fixed = true;
-				fixedheight = true;
+				dblheight = true;
 			}
 			if (line[i].fg != (cterm->fg_color | (ch << 24))
 			    || line[i].bg != cterm->bg_color
@@ -5014,6 +5014,8 @@ static void prestel_fix_line(struct cterminal *cterm, int x, int y, bool restore
 				prestel_last_mosaic = cterm->prestel_last_mosaic;
 			}
 			prestel_apply_ctrl_after(cterm, ch);
+			if (cterm->extattr & CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT)
+				dblheight = true;
 		}
 		else {
 			// This is displayable
@@ -5021,13 +5023,13 @@ static void prestel_fix_line(struct cterminal *cterm, int x, int y, bool restore
 				// Should be double-high
 				line[i].bg |= 0x01000000;
 				fixed = true;
-				fixedheight = true;
+				dblheight = true;
 			}
 			if (((cterm->extattr & CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT) == 0) && (line[i].bg & 0x01000000)) {
 				// Should not be double-high
 				line[i].bg &= ~0x01000000;
 				fixed = true;
-				fixedheight = true;
+				dblheight = true;
 			}
 			if (line[i].fg != cterm->fg_color
 			    || line[i].bg != cterm->bg_color
@@ -5085,7 +5087,7 @@ static void prestel_fix_line(struct cterminal *cterm, int x, int y, bool restore
 	if (force || fixed)
 		vmem_puttext(sx, sy, ex, sy, line);
 	free(line);
-	if (fixedheight) {
+	if (dblheight) {
 		prestel_fix_line(cterm, x, y+1, false, true);
 	}
 	if (restore) {
