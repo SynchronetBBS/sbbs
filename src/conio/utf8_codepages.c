@@ -19,7 +19,7 @@ const static struct ciolib_cpmap cp437_table[162] = {
 	{0x00DC, 154}, {0x00DF, 225}, {0x00E0, 133}, {0x00E1, 160},
 	{0x00E2, 131}, {0x00E4, 132}, {0x00E5, 134}, {0x00E6, 145},
 	{0x00E7, 135}, {0x00E8, 138}, {0x00E9, 130}, {0x00EA, 136},
-	{0x00EB, 137}, {0x00EC, 141}, {0x00ED, 161}, {0x00EE, 140}, 
+	{0x00EB, 137}, {0x00EC, 141}, {0x00ED, 161}, {0x00EE, 140},
 	{0x00EF, 139}, {0x00F1, 164}, {0x00F2, 149}, {0x00F3, 162},
 	{0x00F4, 147}, {0x00F6, 148}, {0x00F7, 246}, {0x00F9, 151},
 	{0x00FA, 163}, {0x00FB, 150}, {0x00FC, 129}, {0x00FF, 152},
@@ -47,7 +47,7 @@ const static struct ciolib_cpmap cp437_table[162] = {
 	{0x25A0, 254}, {0x25AC, 22},  {0x25B2, 30},  {0x25BA, 16},
 	{0x25BC, 31},  {0x25C4, 17},  {0x25CB, 9},   {0x25D8, 8},
 	{0x25D9, 10},  {0x263A, 1},   {0x263B, 2},   {0x263C, 15},
-	{0x2640, 12},  {0x2642, 11},  {0x2660, 6},   {0x2663, 5}, 
+	{0x2640, 12},  {0x2642, 11},  {0x2660, 6},   {0x2663, 5},
 	{0x2665, 3},   {0x2666, 4},   {0x266A, 13},  {0x266B, 14},
 	{0xfffd, '?'}
 };
@@ -60,21 +60,21 @@ const static uint32_t cp437_ext_table[32] = {
 };
 
 const static uint32_t cp437_unicode_table[128] = {
-	0x00C7, 0x00FC, 0x00E9, 0x00E2, 0x00E4, 0x00E0, 0x00E5, 0x00E7, 
-	0x00EA, 0x00EB, 0x00E8, 0x00EF, 0x00EE, 0x00EC, 0x00C4, 0x00C5, 
-	0x00C9, 0x00E6, 0x00C6, 0x00F4, 0x00F6, 0x00F2, 0x00FB, 0x00F9, 
-	0x00FF, 0x00D6, 0x00DC, 0x00A2, 0x00A3, 0x00A5, 0x20A7, 0x0192, 
-	0x00E1, 0x00ED, 0x00F3, 0x00FA, 0x00F1, 0x00D1, 0x00AA, 0x00BA, 
-	0x00BF, 0x2310, 0x00AC, 0x00BD, 0x00BC, 0x00A1, 0x00AB, 0x00BB, 
-	0x2591, 0x2592, 0x2593, 0x2502, 0x2524, 0x2561, 0x2562, 0x2556, 
-	0x2555, 0x2563, 0x2551, 0x2557, 0x255D, 0x255C, 0x255B, 0x2510, 
-	0x2514, 0x2534, 0x252C, 0x251C, 0x2500, 0x253C, 0x255E, 0x255F, 
-	0x255A, 0x2554, 0x2569, 0x2566, 0x2560, 0x2550, 0x256C, 0x2567, 
-	0x2568, 0x2564, 0x2565, 0x2559, 0x2558, 0x2552, 0x2553, 0x256B, 
-	0x256A, 0x2518, 0x250C, 0x2588, 0x2584, 0x258C, 0x2590, 0x2580, 
-	0x03B1, 0x00DF, 0x0393, 0x03C0, 0x03A3, 0x03C3, 0x00B5, 0x03C4, 
-	0x03A6, 0x0398, 0x03A9, 0x03B4, 0x221E, 0x03C6, 0x03B5, 0x2229, 
-	0x2261, 0x00B1, 0x2265, 0x2264, 0x2320, 0x2321, 0x00F7, 0x2248, 
+	0x00C7, 0x00FC, 0x00E9, 0x00E2, 0x00E4, 0x00E0, 0x00E5, 0x00E7,
+	0x00EA, 0x00EB, 0x00E8, 0x00EF, 0x00EE, 0x00EC, 0x00C4, 0x00C5,
+	0x00C9, 0x00E6, 0x00C6, 0x00F4, 0x00F6, 0x00F2, 0x00FB, 0x00F9,
+	0x00FF, 0x00D6, 0x00DC, 0x00A2, 0x00A3, 0x00A5, 0x20A7, 0x0192,
+	0x00E1, 0x00ED, 0x00F3, 0x00FA, 0x00F1, 0x00D1, 0x00AA, 0x00BA,
+	0x00BF, 0x2310, 0x00AC, 0x00BD, 0x00BC, 0x00A1, 0x00AB, 0x00BB,
+	0x2591, 0x2592, 0x2593, 0x2502, 0x2524, 0x2561, 0x2562, 0x2556,
+	0x2555, 0x2563, 0x2551, 0x2557, 0x255D, 0x255C, 0x255B, 0x2510,
+	0x2514, 0x2534, 0x252C, 0x251C, 0x2500, 0x253C, 0x255E, 0x255F,
+	0x255A, 0x2554, 0x2569, 0x2566, 0x2560, 0x2550, 0x256C, 0x2567,
+	0x2568, 0x2564, 0x2565, 0x2559, 0x2558, 0x2552, 0x2553, 0x256B,
+	0x256A, 0x2518, 0x250C, 0x2588, 0x2584, 0x258C, 0x2590, 0x2580,
+	0x03B1, 0x00DF, 0x0393, 0x03C0, 0x03A3, 0x03C3, 0x00B5, 0x03C4,
+	0x03A6, 0x0398, 0x03A9, 0x03B4, 0x221E, 0x03C6, 0x03B5, 0x2229,
+	0x2261, 0x00B1, 0x2265, 0x2264, 0x2320, 0x2321, 0x00F7, 0x2248,
 	0x00B0, 0x2219, 0x00B7, 0x221A, 0x207F, 0x00B2, 0x25A0, 0x00A0
 };
 
@@ -1467,33 +1467,19 @@ const static uint32_t petsciil_unicode_table[256] = {
 
 const static struct ciolib_cpmap prestel_table[] = {
 	{0xa3, '#'},   // £
-	{0x2190, '['}, // ←
-	{0xbd, '\\'},  // ½
-	{0x2192, ']'}, // →
-	{0x2191, '^'}, // ↑
-	{0x2317, '_'}, // Viewdata square
-	{0x2015, '`'}, // Horizontal bar *
 	{0xbc, '{'},   // ¼
-	{0x23f8, '|'}, // Double vertical bar *
+	{0xbd, '\\'},  // ½
 	{0xbe, '}'},   // ¾
 	{0xf7, '~'},   // ÷
-
-	/* Space */     {0x1fb00, 129}, {0x1fb01, 130}, {0x1fb02, 131},
-	{0x1fb03, 132}, {0x1fb04, 133}, {0x1fb05, 134}, {0x1fb06, 135},
-	{0x1fb07, 136}, {0x1fb08, 137}, {0x1fb09, 138}, {0x1fb0a, 139},
-	{0x1fb0b, 140}, {0x1fb0c, 141}, {0x1fb0d, 142}, {0x1fb0e, 143},
-	{0x1fb0f, 144}, {0x1fb10, 145}, {0x1fb11, 146}, {0x1fb12, 147},
-	{0x1fb13, 148}, { 0x258c, 149}, {0x1fb14, 150}, {0x1fb15, 151},
-	{0x1fb16, 152}, {0x1fb17, 153}, {0x1fb18, 154}, {0x1fb19, 155},
-	{0x1fb1a, 156}, {0x1fb1b, 157}, {0x1fb1c, 158}, {0x1fb1d, 159},
-	{0x1fb1e, 160}, {0x1fb1f, 161}, {0x1fb20, 162}, {0x1fb21, 163},
-	{0x1fb22, 164}, {0x1fb23, 165}, {0x1fb24, 166}, {0x1fb25, 167},
-	{0x1fb26, 168}, {0x1fb27, 169}, { 0x2590, 170}, {0x1fb28, 171},
-	{0x1fb29, 172}, {0x1fb2a, 173}, {0x1fb2b, 174}, {0x1fb2c, 175},
-	{0x1fb2d, 176}, {0x1fb2e, 177}, {0x1fb2f, 178}, {0x1fb30, 179},
-	{0x1fb31, 180}, {0x1fb32, 181}, {0x1fb33, 182}, {0x1fb34, 183},
-	{0x1fb35, 184}, {0x1fb36, 185}, {0x1fb37, 186}, {0x1fb38, 187},
-	{0x1fb39, 188}, {0x1fb3a, 189}, {0x1fb3b, 190}, { 0x2588, 191},	
+	{0x2015, '`'}, // Horizontal bar *
+	{0x2190, '['}, // ←
+	{0x2191, '^'}, // ↑
+	{0x2192, ']'}, // →
+	{0x2317, '_'}, // Viewdata square
+	{0x23f8, '|'}, // Double vertical bar *
+	{0x258c, 149},
+	{0x2590, 170},
+	{0x2588, 191},
 
 	/* Space */     {0x1ce51, 193}, {0x1ce52, 194}, {0x1ce53, 195},
 	{0x1ce54, 196}, {0x1ce55, 197}, {0x1ce56, 198}, {0x1ce57, 199},
@@ -1510,7 +1496,24 @@ const static struct ciolib_cpmap prestel_table[] = {
 	{0x1ce80, 240}, {0x1ce81, 241}, {0x1ce82, 242}, {0x1ce83, 243},
 	{0x1ce84, 244}, {0x1ce85, 245}, {0x1ce86, 246}, {0x1ce87, 247},
 	{0x1ce88, 248}, {0x1ce89, 249}, {0x1ce8a, 250}, {0x1ce8b, 251},
-	{0x1ce8c, 252}, {0x1ce8d, 253}, {0x1ce8e, 254}, {0x1ce8f, 255}
+	{0x1ce8c, 252}, {0x1ce8d, 253}, {0x1ce8e, 254}, {0x1ce8f, 255},
+
+	/* Space */     {0x1fb00, 129}, {0x1fb01, 130}, {0x1fb02, 131},
+	{0x1fb03, 132}, {0x1fb04, 133}, {0x1fb05, 134}, {0x1fb06, 135},
+	{0x1fb07, 136}, {0x1fb08, 137}, {0x1fb09, 138}, {0x1fb0a, 139},
+	{0x1fb0b, 140}, {0x1fb0c, 141}, {0x1fb0d, 142}, {0x1fb0e, 143},
+	{0x1fb0f, 144}, {0x1fb10, 145}, {0x1fb11, 146}, {0x1fb12, 147},
+	{0x1fb13, 148}, {0x1fb14, 150}, {0x1fb15, 151},
+	{0x1fb16, 152}, {0x1fb17, 153}, {0x1fb18, 154}, {0x1fb19, 155},
+	{0x1fb1a, 156}, {0x1fb1b, 157}, {0x1fb1c, 158}, {0x1fb1d, 159},
+	{0x1fb1e, 160}, {0x1fb1f, 161}, {0x1fb20, 162}, {0x1fb21, 163},
+	{0x1fb22, 164}, {0x1fb23, 165}, {0x1fb24, 166}, {0x1fb25, 167},
+	{0x1fb26, 168}, {0x1fb27, 169}, {0x1fb28, 171}, {0x1fb29, 172},
+	{0x1fb2a, 173}, {0x1fb2b, 174}, {0x1fb2c, 175},
+	{0x1fb2d, 176}, {0x1fb2e, 177}, {0x1fb2f, 178}, {0x1fb30, 179},
+	{0x1fb31, 180}, {0x1fb32, 181}, {0x1fb33, 182}, {0x1fb34, 183},
+	{0x1fb35, 184}, {0x1fb36, 185}, {0x1fb37, 186}, {0x1fb38, 187},
+	{0x1fb39, 188}, {0x1fb3a, 189}, {0x1fb3b, 190}
 };
 
 const static uint32_t prestel_unicode_table[256] = {
@@ -1562,7 +1565,7 @@ const static uint32_t prestel_unicode_table[256] = {
 	0x1fb2d, 0x1fb2e, 0x1fb2f, 0x1fb30,
 	0x1fb31, 0x1fb32, 0x1fb33, 0x1fb34,
 	0x1fb35, 0x1fb36, 0x1fb37, 0x1fb38,
-	0x1fb39, 0x1fb3a, 0x1fb3b,  0x2588,	
+	0x1fb39, 0x1fb3a, 0x1fb3b,  0x2588,
 
 	0x00020, 0x1ce51, 0x1ce52, 0x1ce53,
 	0x1ce54, 0x1ce55, 0x1ce56, 0x1ce57,
@@ -1864,7 +1867,7 @@ error:
 /*
  * Converts UTF-8 to defined codepage, replacing unmapped characters
  * with unmapped if unmapped is zero, unmapped characters are stripped.
- * 
+ *
  * Returns NULL if there are invalid sequences or codepoints.
  * Does not normalize the unicode, just a simple mapping
  * (TODO: Normalize into combined chars etc)
@@ -1933,81 +1936,81 @@ error:
 
 const struct codepage_def ciolib_cp[CIOLIB_CP_COUNT] = {
 	// 0
-	{"CP437", CIOLIB_CP437, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext, 
+	{"CP437", CIOLIB_CP437, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		cp437_table, sizeof(cp437_table) / sizeof(cp437_table[0]),
 		cp437_unicode_table, cp437_ext_table},
-	{"CP1251", CIOLIB_CP1251, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext, 
+	{"CP1251", CIOLIB_CP1251, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		cp1251_table, sizeof(cp1251_table) / sizeof(cp1251_table[0]),
 		cp1251_unicode_table, cp437_ext_table},
-	{"KOI8-R", CIOLIB_KOI8_R, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext, 
+	{"KOI8-R", CIOLIB_KOI8_R, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		koi8_r_table, sizeof(koi8_r_table) / sizeof(koi8_r_table[0]),
 		koi8_r_unicode_table, empty_ext_table},
-	{"ISO-8859-2", CIOLIB_ISO_8859_2, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext, 
+	{"ISO-8859-2", CIOLIB_ISO_8859_2, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		iso8859_2_table, sizeof(iso8859_2_table) / sizeof(iso8859_2_table[0]),
 		iso8859_2_unicode_table, empty_ext_table},
-	{"ISO-8859-4", CIOLIB_ISO_8859_4, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext, 
+	{"ISO-8859-4", CIOLIB_ISO_8859_4, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		iso8859_4_table, sizeof(iso8859_4_table) / sizeof(iso8859_4_table[0]),
 		iso8859_4_unicode_table, empty_ext_table},
 	// 5
-	{"CP866M", CIOLIB_CP866M, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext, 
+	{"CP866M", CIOLIB_CP866M, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		cp866m_table, sizeof(cp866m_table) / sizeof(cp866m_table[0]),
 		cp866m_unicode_table, cp437_ext_table},
-	{"ISO-8859-9", CIOLIB_ISO_8859_9, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext, 
+	{"ISO-8859-9", CIOLIB_ISO_8859_9, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		iso8859_9_table, sizeof(iso8859_9_table) / sizeof(iso8859_9_table[0]),
 		iso8859_9_unicode_table, empty_ext_table},
-	{"ISO-8859-8", CIOLIB_ISO_8859_8, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext, 
+	{"ISO-8859-8", CIOLIB_ISO_8859_8, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		iso8859_8_table, sizeof(iso8859_8_table) / sizeof(iso8859_8_table[0]),
 		iso8859_8_unicode_table, empty_ext_table},
-	{"KOI8-U", CIOLIB_KOI8_U, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext, 
+	{"KOI8-U", CIOLIB_KOI8_U, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		koi8_u_table, sizeof(koi8_u_table) / sizeof(koi8_u_table[0]),
 		koi8_u_unicode_table, empty_ext_table},
-	{"ISO-8859-15", CIOLIB_ISO_8859_15, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext, 
+	{"ISO-8859-15", CIOLIB_ISO_8859_15, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		iso8859_15_table, sizeof(iso8859_15_table) / sizeof(iso8859_15_table[0]),
 		iso8859_15_unicode_table, empty_ext_table},
 	// 10
-	{"ISO-8859-5", CIOLIB_ISO_8859_5, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext, 
+	{"ISO-8859-5", CIOLIB_ISO_8859_5, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		iso8859_5_table, sizeof(iso8859_5_table) / sizeof(iso8859_5_table[0]),
 		iso8859_5_unicode_table, empty_ext_table},
-	{"CP850", CIOLIB_CP850, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext, 
+	{"CP850", CIOLIB_CP850, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		cp850_table, sizeof(cp850_table) / sizeof(cp850_table[0]),
 		cp850_unicode_table, cp437_ext_table},
-	{"CP865", CIOLIB_CP865, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext, 
+	{"CP865", CIOLIB_CP865, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		cp865_table, sizeof(cp865_table) / sizeof(cp865_table[0]),
 		cp865_unicode_table, cp437_ext_table},
-	{"ISO-8859-7", CIOLIB_ISO_8859_7, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext, 
+	{"ISO-8859-7", CIOLIB_ISO_8859_7, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		iso8859_7_table, sizeof(iso8859_7_table) / sizeof(iso8859_7_table[0]),
 		iso8859_7_unicode_table, empty_ext_table},
-	{"ISO-8859-1", CIOLIB_ISO_8859_1, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext, 
+	{"ISO-8859-1", CIOLIB_ISO_8859_1, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		iso8859_1_table, sizeof(iso8859_1_table) / sizeof(iso8859_1_table[0]),
 		iso8859_1_unicode_table, empty_ext_table},
 	// 15
-	{"CP866M2", CIOLIB_CP866M2, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext, 
+	{"CP866M2", CIOLIB_CP866M2, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		cp866m2_table, sizeof(cp866m2_table) / sizeof(cp866m2_table[0]),
 		cp866m2_unicode_table, cp437_ext_table},
-	{"CP866U", CIOLIB_CP866U, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext, 
+	{"CP866U", CIOLIB_CP866U, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		cp866u_table, sizeof(cp866u_table) / sizeof(cp866u_table[0]),
 		cp866u_unicode_table, cp437_ext_table},
-	{"CP1131", CIOLIB_CP1131, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext, 
+	{"CP1131", CIOLIB_CP1131, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		cp1131_table, sizeof(cp1131_table) / sizeof(cp1131_table[0]),
 		cp1131_unicode_table, cp437_ext_table},
-	{"ARMSCII-8", CIOLIB_ARMSCII8, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext, 
+	{"ARMSCII-8", CIOLIB_ARMSCII8, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		armscii8_table, sizeof(armscii8_table) / sizeof(armscii8_table[0]),
 		armscii8_unicode_table, cp437_ext_table},
-	{"HAIK8", CIOLIB_HAIK8, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext, 
+	{"HAIK8", CIOLIB_HAIK8, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		haik8_table, sizeof(haik8_table) / sizeof(haik8_table[0]),
 		haik8_unicode_table, cp437_ext_table},
 	// 20
 	{"ATASCII", CIOLIB_ATASCII, ftstr_to_utf8, utf8_to_cpstr, fb_cptable_from_unicode_cpoint, ft_cpoint_from_cptable,  ft_cpoint_from_cptable_ext,
 		atascii_table, sizeof(atascii_table) / sizeof(atascii_table[0]),
 		atascii_unicode_table, atascii_ext_table},
-	{"PETSCIIU", CIOLIB_PETSCIIU, ftstr_to_utf8, utf8_to_cpstr, ft_from_unicode_cpoint, ft_cpoint_from_cptable,  cpoint_from_cptable_ext, 
+	{"PETSCIIU", CIOLIB_PETSCIIU, ftstr_to_utf8, utf8_to_cpstr, ft_from_unicode_cpoint, ft_cpoint_from_cptable,  cpoint_from_cptable_ext,
 		petsciiu_table, sizeof(petsciiu_table) / sizeof(petsciiu_table[0]),
 		petsciiu_unicode_table, empty_ext_table},
-	{"PETSCIIL", CIOLIB_PETSCIIL, ftstr_to_utf8, utf8_to_cpstr, ft_from_unicode_cpoint, ft_cpoint_from_cptable,  cpoint_from_cptable_ext, 
+	{"PETSCIIL", CIOLIB_PETSCIIL, ftstr_to_utf8, utf8_to_cpstr, ft_from_unicode_cpoint, ft_cpoint_from_cptable,  cpoint_from_cptable_ext,
 		petsciil_table, sizeof(petsciil_table) / sizeof(petsciil_table[0]),
 		petsciil_unicode_table, empty_ext_table},
 
-	{"PRESTEL", CIOLIB_PRESTEL, ftstr_to_utf8, utf8_to_cpstr, ft_from_unicode_cpoint, ft_cpoint_from_cptable,  cpoint_from_cptable_ext, 
+	{"PRESTEL", CIOLIB_PRESTEL, ftstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, ft_cpoint_from_cptable,  cpoint_from_cptable_ext,
 		prestel_table, sizeof(prestel_table) / sizeof(prestel_table[0]),
 		prestel_unicode_table, empty_ext_table},
 };
