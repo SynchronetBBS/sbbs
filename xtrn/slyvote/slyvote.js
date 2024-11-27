@@ -192,6 +192,11 @@
  *                              what directory the script is running in.
  *                              Now uses user.is_sysop rather than storing a global
  *                              variable with an ARS check for "SYSOP".
+ * 2024-11-27 Eric Oulashin     Version 1.16
+ *                              When showing a poll result message, for the user who posted the poll,
+ *                              show the answers from the people who voted on it. This is to
+ *                              basically mimic the fact that Synchronet shows who voted on your
+ *                              poll and what they answered, but in the poll message itself.
  */
 
 // TODO: Have a messsage group selection so that it doesn't have to display all
@@ -263,8 +268,8 @@ else
 var gAvatar = load({}, "avatar_lib.js");
 
 // Version information
-var SLYVOTE_VERSION = "1.15";
-var SLYVOTE_DATE = "2023-12-09";
+var SLYVOTE_VERSION = "1.16";
+var SLYVOTE_DATE = "2024-11-27";
 
 // Characters for display
 // Box-drawing/border characters: Single-line
@@ -1646,8 +1651,40 @@ function GetMsgBody(pMsgbase, pMsgHdr, pSubBoardCode, pUser)
 						{
 							var msgWrittenLocalTime = MsgWrittenTimeToLocalBBSTime(tmpHdrs[tmpProp]);
 							var voteDate = strftime("%a %b %d %Y %H:%M:%S", msgWrittenLocalTime);
-							msgBody += format(userVotedInYourPollText, voteDate, pMsgbase.cfg.grp_name, pMsgbase.cfg.name,
-							                  tmpHdrs[tmpProp].from, pMsgHdr.subject);
+							var voterStr = format(userVotedInYourPollText, voteDate, pMsgbase.cfg.grp_name, pMsgbase.cfg.name,
+							                      tmpHdrs[tmpProp].from, pMsgHdr.subject);
+							var voterStrArray = lfexpand(word_wrap(voterStr, console.screen_columns-1, null, false)).split("\r\n");
+							for (var voterStrI = 0; voterStrI < voterStrArray.length; ++voterStrI)
+							{
+								msgBody += voterStrArray[voterStrI];
+								if (voterStrI < voterStrArray.length-1)
+									msgBody += "\r\n";
+							}
+							// tmpHdrs[tmpProp].votes is a bitfield of which options they voted for
+							if (!/\r\n$/.test(userVotedInYourPollText))
+								msgBody += "\r\n";
+							// MSG_POLL_MAX_ANSWERS
+							var answerBitIdx = 0;
+							for (var fieldI = 0; fieldI < pMsgHdr.field_list.length; ++fieldI)
+							{
+								if (pMsgHdr.field_list[fieldI].type == SMB_POLL_ANSWER)
+								{
+									var answerBit = (1 << answerBitIdx);
+									if ((tmpHdrs[tmpProp].votes & answerBit) == answerBit)
+									{
+										var optionStrArray = lfexpand(word_wrap(pMsgHdr.field_list[fieldI].data, console.screen_columns-1, null, false)).split("\r\n");
+										if (optionStrArray.length > 0)
+										{
+											if (optionStrArray[optionStrArray.length-1] == "")
+												optionStrArray.pop();
+											msgBody += format(" - %s\r\n", optionStrArray[0]);
+											for (var optStrI = 1; optStrI < optionStrArray.length; ++optStrI)
+												msgBody += format("%s\r\n", optionStrArray[optStrI]);
+										}
+									}
+									++answerBitIdx;
+								}
+							}
 						}
 					}
 				}
