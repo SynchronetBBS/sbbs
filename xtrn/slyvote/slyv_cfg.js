@@ -13,7 +13,7 @@ require("sbbsdefs.js", "P_NONE");
 require("uifcdefs.js", "UIFC_INMSG");
 
 
-if (!uifc.init("SlyVote 1.15 Configurator"))
+if (!uifc.init("SlyVote 1.16 Configurator"))
 {
 	print("Failed to initialize uifc");
 	exit(1);

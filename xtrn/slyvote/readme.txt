@@ -1,6 +1,6 @@
                                    SlyVote
-                                 Version 1.15
-                           Release date: 2023-09-20
+                                 Version 1.16
+                           Release date: 2024-11-27
 
                                      by
 
@@ -117,26 +117,26 @@ To set up SlyVote in the Synchronet external programs menu:
 1. Run SCFG
 2. Choose "External Programs" and then "Online Programs (Doors)"
 3. Choose a program section, and then add an entry that is set up as follows:
-+[¦][?]----------------------------------------------------+
-¦                          SlyVote                         ¦
-¦----------------------------------------------------------¦
-¦ ¦Name                       SlyVote                      ¦
-¦ ¦Internal Code              SLYVOTE                      ¦
-¦ ¦Start-up Directory         ../xtrn/slyvote              ¦
-¦ ¦Command Line               ?slyvote.js                  ¦
-¦ ¦Clean-up Command Line                                   ¦
-¦ ¦Execution Cost             None                         ¦
-¦ ¦Access Requirements        ANSI                         ¦
-¦ ¦Execution Requirements                                  ¦
-¦ ¦Multiple Concurrent Users  Yes                          ¦
-¦ ¦Intercept I/O              No                           ¦
-¦ ¦Native Executable          No                           ¦
-¦ ¦Use Shell to Execute       No                           ¦
-¦ ¦Modify User Data           No                           ¦
-¦ ¦Execute on Event           No                           ¦
-¦ ¦Pause After Execution      No                           ¦
-¦ ¦BBS Drop File Type         None                         ¦
-¦ ¦Place Drop File In         Node Directory               ¦
++[Â¦][?]----------------------------------------------------+
+Â¦                          SlyVote                         Â¦
+Â¦----------------------------------------------------------Â¦
+Â¦ Â¦Name                       SlyVote                      Â¦
+Â¦ Â¦Internal Code              SLYVOTE                      Â¦
+Â¦ Â¦Start-up Directory         ../xtrn/slyvote              Â¦
+Â¦ Â¦Command Line               ?slyvote.js                  Â¦
+Â¦ Â¦Clean-up Command Line                                   Â¦
+Â¦ Â¦Execution Cost             None                         Â¦
+Â¦ Â¦Access Requirements        ANSI                         Â¦
+Â¦ Â¦Execution Requirements                                  Â¦
+Â¦ Â¦Multiple Concurrent Users  Yes                          Â¦
+Â¦ Â¦Intercept I/O              No                           Â¦
+Â¦ Â¦Native Executable          No                           Â¦
+Â¦ Â¦Use Shell to Execute       No                           Â¦
+Â¦ Â¦Modify User Data           No                           Â¦
+Â¦ Â¦Execute on Event           No                           Â¦
+Â¦ Â¦Pause After Execution      No                           Â¦
+Â¦ Â¦BBS Drop File Type         None                         Â¦
+Â¦ Â¦Place Drop File In         Node Directory               Â¦
 +----------------------------------------------------------+
 
 

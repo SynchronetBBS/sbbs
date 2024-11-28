@@ -193,6 +193,11 @@
  *                              sub-boards that have new messages, ensure the selected item
  *                              index is correct when re-populating the menu so that it doesn't
  *                              skip a sub-board.
+ * 2024-11-26 Eric Oulashin     Version 1.96e
+ *                              When showing a poll result message, for the user who posted the poll,
+ *                              show the answers from the people who voted on it. This is to
+ *                              basically mimic the fact that Synchronet shows who voted on your
+ *                              poll and what they answered, but in the poll message itself.
  */
 
 "use strict";
@@ -300,8 +305,8 @@ var hexdump = load('hexdump_lib.js');
 
 
 // Reader version information
-var READER_VERSION = "1.96d";
-var READER_DATE = "2024-11-25";
+var READER_VERSION = "1.96e Beta";
+var READER_DATE = "2024-11-26";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -18750,7 +18755,40 @@ function DigDistMsgReader_GetMsgBody(pMsgHdr)
 					{
 						var msgWrittenLocalTime = msgWrittenTimeToLocalBBSTime(tmpHdrs[tmpProp]);
 						var voteDate = strftime("%a %b %d %Y %H:%M:%S", msgWrittenLocalTime);
-						retObj.msgBody += format(userVotedInYourPollText, voteDate, grpName, msgbaseCfgName, tmpHdrs[tmpProp].from, pMsgHdr.subject);
+						//retObj.msgBody += format(userVotedInYourPollText, voteDate, grpName, msgbaseCfgName, tmpHdrs[tmpProp].from, pMsgHdr.subject);
+						var voterStr = format(userVotedInYourPollText, voteDate, grpName, msgbaseCfgName, tmpHdrs[tmpProp].from, pMsgHdr.subject);
+						var voterStrArray = lfexpand(word_wrap(voterStr, console.screen_columns-1, null, false)).split("\r\n");
+						for (var voterStrI = 0; voterStrI < voterStrArray.length; ++voterStrI)
+						{
+							retObj.msgBody += voterStrArray[voterStrI];
+							if (voterStrI < voterStrArray.length-1)
+								retObj.msgBody += "\r\n";
+						}
+						// tmpHdrs[tmpProp].votes is a bitfield of which options they voted for
+						if (!/\r\n$/.test(userVotedInYourPollText))
+							retObj.msgBody += "\r\n";
+						// MSG_POLL_MAX_ANSWERS
+						var answerBitIdx = 0;
+						for (var fieldI = 0; fieldI < pMsgHdr.field_list.length; ++fieldI)
+						{
+							if (pMsgHdr.field_list[fieldI].type == SMB_POLL_ANSWER)
+							{
+								var answerBit = (1 << answerBitIdx);
+								if ((tmpHdrs[tmpProp].votes & answerBit) == answerBit)
+								{
+									var optionStrArray = lfexpand(word_wrap(pMsgHdr.field_list[fieldI].data, console.screen_columns-1, null, false)).split("\r\n");
+									if (optionStrArray.length > 0)
+									{
+										if (optionStrArray[optionStrArray.length-1] == "")
+											optionStrArray.pop();
+										retObj.msgBody += format(" - %s\r\n", optionStrArray[0]);
+										for (var optStrI = 1; optStrI < optionStrArray.length; ++optStrI)
+											retObj.msgBody += format("%s\r\n", optionStrArray[optStrI]);
+									}
+								}
+								++answerBitIdx;
+							}
+						}
 					}
 				}
 				// we could check the index records this way:
@@ -18805,6 +18843,9 @@ function DigDistMsgReader_GetMsgBody(pMsgHdr)
 
 	// Remove any Synchronet pause codes that might exist in the message
 	retObj.msgBody = retObj.msgBody.replace("\x01p", "").replace("\x01P", "");
+
+	// Remote a trailing \r\n from the message, if it exists
+	retObj.msgBody = retObj.msgBody.replace(/\r\n$/g, "");
 	
 	// If the user is a sysop, this is a moderated message area, and the message
 	// hasn't been validated, then prepend the message with a message to let the

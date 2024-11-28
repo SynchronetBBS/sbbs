@@ -5,6 +5,11 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.96e    2024-11-27   When showing a poll result message, for the user who
+                      posted the poll, show the answers from the people who
+                      voted on it. This is to basically mimic the fact that
+                      Synchronet shows who voted on your poll and what they
+                      answered, but in the poll message itself.
 1.96d    2024-11-25   Bug fix: For the indexed-mode newscan, when showing only
                       sub-boards that have new messages, ensure the selected
                       item index is correct when re-populating the menu so that
