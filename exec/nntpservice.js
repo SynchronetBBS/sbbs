@@ -562,7 +562,7 @@ while(client.socket.is_connected && !quit) {
 				writeln(format("%u\t%s\t%s\t%s\t%s\t%s\t%u\t%u\tXref:%s"
 					,i
 					,get_news_subject(hdr)
-					,hdr.from
+					,get_news_from(hdr)
 					,hdr.date
 					,hdr.id								// message-id
 					,hdr.reply_id ? hdr.reply_id : ''	// references
@@ -618,7 +618,7 @@ while(client.socket.is_connected && !quit) {
 						field=get_news_subject(hdr);
 						break;
 					case "from":
-						field=hdr.from;
+						field=get_news_from(hdr);
 						break;
 					case "reply-to":
 						field=hdr.replyto;
@@ -767,34 +767,7 @@ while(client.socket.is_connected && !quit) {
 
 			if(cmd[0].toUpperCase()!="BODY") {
 
-				if(!hdr.from_net_type || !hdr.from_net_addr)	/* local message */
-					writeln(format("From: \"%s\" <%s@%s>"
-						,hdr.from
-						,hdr.from.replace(/ /g,".").toLowerCase()
-						,system.inetaddr));
-				else if(!hdr.from_net_addr.length)
-					writeln(format("From: %s",hdr.from));
-				else if(hdr.from_net_addr.indexOf('@')!=-1)
-					writeln(format("From: \"%s\" <%s>"
-						,hdr.from
-						,hdr.from_net_addr));
-				else if(hdr.from_net_type == NET_FIDO)
-					writeln(format("From: \"%s\" (%s) <%s>"
-						,hdr.from
-						,hdr.from_net_addr
-						,fidoaddr_to_emailaddr(hdr.from, hdr.from_net_addr)));
-				else if(hdr.from_net_type == NET_QWK)
-					writeln(format("From: \"%s\" (%s) <%s!%s@%s>"
-						,hdr.from
-						,hdr.from_net_addr
-						,hdr.from_net_addr
-						,hdr.from.replace(/ /g,".")
-						,system.inetaddr));
-				else
-					writeln(format("From: \"%s\" <%s@%s>"
-						,hdr.from
-						,hdr.from.replace(/ /g,".").toLowerCase()
-						,hdr.from_net_addr));
+				writeln("From: " + get_news_from(hdr));
 
 				if(hdr.path==undefined)
 					hdr.path="not-for-mail";
