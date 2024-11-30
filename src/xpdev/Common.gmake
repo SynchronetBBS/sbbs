@@ -218,3 +218,14 @@ ifeq ($(shell if [ -f /usr/include/alsa/asoundlib.h ] ; then echo YES ; fi),YES)
  XPDEV-MT_LIBS += -ldl
  XPDEV_LIBS += -ldl
 endif
+
+ifndef NO_PULSEAUDIO
+ ifeq ($(shell command -v pkg-config > /dev/null && pkg-config --exists libpulse-simple && echo 'YES'),YES)
+  XPDEV-CFLAGS += -DWITH_PULSEAUDIO `pkg-config libpulse-simple --cflags`
+  XPDEV-MT_CFLAGS += -DWITH_PULSEAUDIO `pkg-config libpulse-simple --cflags`
+  ifeq ($(os),linux)
+   XPDEV-MT_LIBS += -ldl
+   XPDEV_LIBS += -ldl
+  endif
+ endif
+endif
