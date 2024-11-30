@@ -16,9 +16,7 @@ ifdef win
 else
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)curs_cio$(OFILE)
 endif
-ifdef NO_X
- CFLAGS	+=	-DNO_X
-else
+ifndef NO_X
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)x_events$(OFILE)
  OBJS	+=      $(MTOBJODIR)$(DIRSEP)x_cio$(OFILE)
  NEED_BITMAP := 1
