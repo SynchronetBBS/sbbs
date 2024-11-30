@@ -897,6 +897,7 @@ static void websrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Access Logging", startup.options & WEB_OPT_HTTP_LOGGING ? str : strDisabled);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Clients", maximum(startup.max_clients));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Inactivity", vduration(startup.max_inactivity));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Concurrent Connections", maximum(startup.max_concurrent_connections));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Filebase Index Script", startup.file_index_script);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Filebase VPath Prefix", startup.file_vpath_prefix);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Filebase VPath for VHosts"
@@ -992,39 +993,44 @@ static void websrvr_cfg(void)
 					startup.max_inactivity = (uint16_t)parse_duration(str);
 				break;
 			case 12:
+				SAFECOPY(str, maximum(startup.max_concurrent_connections));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Concurrent Connections (0=unlimited)", str, 10, K_EDIT | K_NUMBER) > 0)
+					startup.max_concurrent_connections = atoi(str);
+				break;
+			case 13:
 				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Filebase Index Script"
 					,startup.file_index_script, sizeof(startup.file_index_script)-1, K_EDIT);
 				break;
-			case 13:
+			case 14:
 				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Filebase Virtual Path Prefix"
 					,startup.file_vpath_prefix, sizeof(startup.file_vpath_prefix)-1, K_EDIT);
 				break;
-			case 14:
+			case 15:
 				startup.file_vpath_for_vhosts = !startup.file_vpath_for_vhosts;
 				break;
-			case 15:
+			case 16:
 				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Authentication Methods"
 					,startup.default_auth_list, sizeof(startup.default_auth_list)-1, K_EDIT);
 				break;
-			case 16:
+			case 17:
 				SAFEPRINTF(str, "%u", startup.outbuf_drain_timeout);
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Output Buffer Drain Timeout (milliseconds)"
 					,str, 5, K_NUMBER|K_EDIT) > 0)
 					startup.outbuf_drain_timeout = atoi(str);
 				break;
-			case 17:
+			case 18:
 				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
 				break;
-			case 18:
+			case 19:
 				startup.options ^= WEB_OPT_NO_CGI;
 				break;
-			case 19:
+			case 20:
 				if(startup.options & WEB_OPT_NO_CGI)
 					break;
 				uifc.input(WIN_MID|WIN_SAV, 0, 0, "CGI Directory"
 					,startup.cgi_dir, sizeof(startup.cgi_dir)-1, K_EDIT);
 				break;
-			case 20:
+			case 21:
 				if(startup.options & WEB_OPT_NO_CGI)
 					break;
 				strListCombine(startup.cgi_ext, str, sizeof(str), ", ");
@@ -1034,26 +1040,26 @@ static void websrvr_cfg(void)
 					uifc.changes = true;
 				}
 				break;
-			case 21:
+			case 22:
 				if(startup.options & WEB_OPT_NO_CGI)
 					break;
 				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Default CGI MIME Content-Type"
 					,startup.default_cgi_content, sizeof(startup.default_cgi_content)-1, K_EDIT);
 				break;
-			case 22:
+			case 23:
 				if(startup.options & WEB_OPT_NO_CGI)
 					break;
 				duration_to_str(startup.max_cgi_inactivity, str, sizeof(str));
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum CGI Inactivity", str, 10, K_EDIT) > 0)
 					startup.max_cgi_inactivity = (uint16_t)parse_duration(str);
 				break;
-			case 23:
+			case 24:
 				getar("Web Server Login", startup.login_ars);
 				break;
-			case 24:
+			case 25:
 				js_startup_cfg(&startup.js);
 				break;
-			case 25:
+			case 26:
 				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:
@@ -1241,7 +1247,7 @@ static void ftpsrvr_cfg(void)
 				break;
 			case 11:
 				SAFECOPY(str, maximum(startup.max_concurrent_connections));
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Concurrent (Unauthenticated) Connections", str, 10, K_EDIT) > 0)
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum Concurrent Connections (0=unlimited)", str, 10, K_EDIT | K_NUMBER) > 0)
 					startup.max_concurrent_connections = atoi(str);
 				break;
 			case 12:

@@ -515,7 +515,7 @@ void sbbs_read_ini(
 		bbs->bind_retry_delay=iniGetInteger(list,section,strBindRetryDelay,global->bind_retry_delay);
 
 		bbs->login_attempt = get_login_attempt_settings(list, section, global);
-		bbs->max_concurrent_connections = iniGetInteger(list, section, strMaxConConn, 0);
+		bbs->max_concurrent_connections = iniGetUInteger(list, section, strMaxConConn, 0);
 
 		bbs->max_login_inactivity = (uint16_t)iniGetDuration(list, section, strMaxLoginInactivity, 10 * 60);
 		bbs->max_newuser_inactivity = (uint16_t)iniGetDuration(list, section, strMaxNewUserInactivity, 60 * 60);
@@ -587,7 +587,7 @@ void sbbs_read_ini(
 		ftp->bind_retry_count=iniGetInteger(list,section,strBindRetryCount,global->bind_retry_count);
 		ftp->bind_retry_delay=iniGetInteger(list,section,strBindRetryDelay,global->bind_retry_delay);
 		ftp->login_attempt = get_login_attempt_settings(list, section, global);
-		ftp->max_concurrent_connections = iniGetInteger(list, section, strMaxConConn, 0);
+		ftp->max_concurrent_connections = iniGetUInteger(list, section, strMaxConConn, 0);
 	}
 
 	/***********************************************************************/
@@ -688,7 +688,7 @@ void sbbs_read_ini(
 		mail->bind_retry_count=iniGetInteger(list,section,strBindRetryCount,global->bind_retry_count);
 		mail->bind_retry_delay=iniGetInteger(list,section,strBindRetryDelay,global->bind_retry_delay);
 		mail->login_attempt = get_login_attempt_settings(list, section, global);
-		mail->max_concurrent_connections = iniGetInteger(list, section, strMaxConConn, 0);
+		mail->max_concurrent_connections = iniGetUInteger(list, section, strMaxConConn, 0);
 		mail->spam_block_duration = (uint)iniGetDuration(list, section, "SpamBlockDuration", 0);
 		mail->notify_offline_users = iniGetBool(list, section, "NotifyOfflineUsers", false);
 	}
@@ -818,6 +818,7 @@ void sbbs_read_ini(
 		web->bind_retry_count=iniGetInteger(list,section,strBindRetryCount,global->bind_retry_count);
 		web->bind_retry_delay=iniGetInteger(list,section,strBindRetryDelay,global->bind_retry_delay);
 		web->login_attempt = get_login_attempt_settings(list, section, global);
+		web->max_concurrent_connections = iniGetUInteger(list, section, strMaxConConn, WEB_DEFAULT_MAX_CON_CONN);
 	}
 
 	free(global_interfaces);
@@ -941,7 +942,7 @@ bool sbbs_write_ini(
 			break;
 		if(!iniSetUInteger(lp,section,"OutbufDrainTimeout",bbs->outbuf_drain_timeout,&style))
 			break;
-		if(!iniSetInteger(lp,section,strMaxConConn,bbs->max_concurrent_connections,&style))
+		if(!iniSetUInteger(lp,section,strMaxConConn,bbs->max_concurrent_connections,&style))
 			break;
 		if(!iniSetDuration(lp, section, strMaxLoginInactivity, bbs->max_login_inactivity, &style))
 			break;
@@ -1048,7 +1049,7 @@ bool sbbs_write_ini(
 			break;
 		if(!iniSetDuration(lp,section,strMaxInactivity,ftp->max_inactivity,&style))
 			break;
-		if(!iniSetInteger(lp,section,strMaxConConn,ftp->max_concurrent_connections,&style))
+		if(!iniSetUInteger(lp,section,strMaxConConn,ftp->max_concurrent_connections,&style))
 			break;
 		if(!iniSetDuration(lp,section,"QwkTimeout",ftp->qwk_timeout,&style))
 			break;
@@ -1178,7 +1179,7 @@ bool sbbs_write_ini(
 			break;
 		if(!iniSetDuration(lp,section,"ConnectTimeout",mail->connect_timeout,&style))
 			break;
-		if(!iniSetInteger(lp,section,strMaxConConn,mail->max_concurrent_connections,&style))
+		if(!iniSetUInteger(lp,section,strMaxConConn,mail->max_concurrent_connections,&style))
 			break;
 
 		if(strcmp(mail->host_name,global->host_name)==0
@@ -1421,6 +1422,8 @@ bool sbbs_write_ini(
 		else if(!iniSetInteger(lp,section,strBindRetryDelay,web->bind_retry_delay,&style))
 			break;
 		if(!iniSetUInteger(lp,section,"OutbufDrainTimeout",web->outbuf_drain_timeout,&style))
+			break;
+		if(!iniSetUInteger(lp,section,strMaxConConn,web->max_concurrent_connections,&style))
 			break;
 	}
 

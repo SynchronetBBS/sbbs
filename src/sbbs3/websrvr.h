@@ -29,12 +29,14 @@
 typedef struct {
 
 	STARTUP_COMMON_ELEMENTS
-	uint16_t	max_clients;
+	uint		max_clients;
 #define WEB_DEFAULT_MAX_CLIENTS			100	/* 0=unlimited */
-	uint16_t	max_inactivity;
+	uint		max_inactivity;
 #define WEB_DEFAULT_MAX_INACTIVITY		120	/* seconds */
-	uint16_t	max_cgi_inactivity;
+	uint		max_cgi_inactivity;
 #define WEB_DEFAULT_MAX_CGI_INACTIVITY	120	/* seconds */
+	uint	max_concurrent_connections;
+#define WEB_DEFAULT_MAX_CON_CONN		10	/* 0=unlimited */
 	uint16_t	port;
 	uint16_t	tls_port;
     str_list_t	interfaces;
@@ -56,7 +58,7 @@ typedef struct {
 	int		tls_error_level;		/* Cap the severity of TLS error log messages */
 	char	default_cgi_content[128];
 	char	default_auth_list[128];
-	uint16_t	outbuf_drain_timeout;
+	uint	outbuf_drain_timeout;
 
 	/* JavaScript operating parameters */
 	js_startup_t js;

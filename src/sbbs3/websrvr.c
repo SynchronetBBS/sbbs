@@ -82,6 +82,7 @@ static const char*	error_302="302 Moved Temporarily";
 static const char*	error_307="307 Temporary Redirect";
 static const char*	error_404="404 Not Found";
 static const char*	error_416="416 Requested Range Not Satisfiable";
+static const char*	error_429="429 Too Many Requests";
 static const char*	error_500="500 Internal Server Error";
 static const char*	error_503="503 Service Unavailable\r\nConnection: close\r\nContent-Length: 0\r\n\r\n";
 static const char*	unknown=STR_UNKNOWN_USER;
@@ -125,6 +126,7 @@ static str_list_t shutdown_semfiles;
 static str_list_t pause_semfiles;
 static str_list_t cgi_env;
 static struct mqtt mqtt;
+static link_list_t current_connections;
 
 static named_string_t** mime_types;
 static named_string_t** cgi_handlers;
@@ -770,6 +772,8 @@ static void update_clients(void)
 
 static void client_on(SOCKET sock, client_t* client, bool update)
 {
+	if(!update)
+		listAddNodeData(&current_connections, client->addr, strlen(client->addr) + 1, sock, LAST_NODE);
 	if(startup!=NULL && startup->client_on!=NULL)
 		startup->client_on(startup->cbdata,true,sock,client,update);
 	mqtt_client_on(&mqtt, true, sock, client, update);
@@ -777,6 +781,7 @@ static void client_on(SOCKET sock, client_t* client, bool update)
 
 static void client_off(SOCKET sock)
 {
+	listRemoveTaggedNode(&current_connections, sock, /* free_data */true);
 	if(startup!=NULL && startup->client_on!=NULL)
 		startup->client_on(startup->cbdata,false,sock,NULL,false);
 	mqtt_client_on(&mqtt, false, sock, NULL, false);
@@ -6968,6 +6973,8 @@ static void cleanup(int code)
 
 	update_clients();	/* active_clients is destroyed below */
 
+	listFree(&current_connections);
+
 	if(protected_uint32_value(active_clients))
 		lprintf(LOG_WARNING,"!!!! Terminating with %u active clients", protected_uint32_value(active_clients));
 	else
@@ -7175,6 +7182,7 @@ void web_server(void* arg)
 	protected_uint32_init(&thread_count, 0);
 
 	do {
+		listInit(&current_connections, LINK_LIST_MUTEX);
 		protected_uint32_init(&active_clients,0);
 
 		/* Setup intelligent defaults */
@@ -7417,6 +7425,23 @@ void web_server(void* arg)
 				startup->socket_open(startup->cbdata,true);
 
 			inet_addrtop(&client_addr, host_ip, sizeof(host_ip));
+
+			if(startup->max_concurrent_connections > 0) {
+				int ip_len = strlen(host_ip) + 1;
+				uint connections = listCountMatches(&current_connections, host_ip, ip_len);
+				if(connections >= startup->max_concurrent_connections
+					&& !is_host_exempt(&scfg, host_ip, /* host_name */NULL)) {
+					lprintf(LOG_NOTICE, "%04d [%s] !Maximum concurrent connections (%u) exceeded"
+						,client_socket, host_ip, startup->max_concurrent_connections);
+					static int len_429;
+					if(len_429 < 1)
+						len_429 = strlen(error_429);
+					if(sendsocket(client_socket, error_429, len_429) != len_429)
+						lprintf(LOG_ERR, "%04d FAILED sending error 429", client_socket);
+					close_socket(&client_socket);
+					continue;
+				}
+			}
 
 			if(trashcan(&scfg,host_ip,"ip-silent")) {
 				close_socket(&client_socket);
