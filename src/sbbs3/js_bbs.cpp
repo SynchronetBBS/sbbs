@@ -1476,7 +1476,7 @@ js_chkpass(JSContext *cx, uintN argc, jsval *arglist)
  	if(!js_argc(cx, argc, 1))
 		return(JS_FALSE);
 
-	if(JSVAL_IS_BOOLEAN(argv[1]))
+	if(argc > 1 && JSVAL_IS_BOOLEAN(argv[1]))
 		unique = JSVAL_TO_BOOLEAN(argv[1]);
 
 	JSString* str=JS_ValueToString(cx,argv[0]);
@@ -1752,7 +1752,7 @@ js_expand_atcodes(JSContext* cx, uintN argc, jsval* arglist)
 	if (instr == NULL)
 		return JS_FALSE;
 
-	if(JSVAL_IS_OBJECT(argv[1]) && !JSVAL_IS_NULL(argv[1])) {
+	if(argc > 1 && (JSVAL_IS_OBJECT(argv[1]) && !JSVAL_IS_NULL(argv[1]))) {
 		JSObject* hdrobj;
 		if((hdrobj = JSVAL_TO_OBJECT(argv[1])) == NULL) {
 			free(instr);
@@ -2288,13 +2288,15 @@ js_batch_remove(JSContext *cx, uintN argc, jsval *arglist)
 
 	rc=JS_SUSPENDREQUEST(cx);
 	int result = 0;
-	if(JSVAL_IS_STRING(argv[1])) {
-		char* cstr{};
-		JSVALUE_TO_MSTRING(cx, argv[1], cstr, NULL);
-		result = batch_file_remove(&sbbs->cfg, sbbs->useron.number, xfer_type, cstr);
-		free(cstr);
-	} else if(JSVAL_IS_NUMBER(argv[1])) {
-		result = batch_file_remove_n(&sbbs->cfg, sbbs->useron.number, xfer_type, JSVAL_TO_INT(argv[1]));
+	if(argc > 1) {
+		if(JSVAL_IS_STRING(argv[1])) {
+			char* cstr{};
+			JSVALUE_TO_MSTRING(cx, argv[1], cstr, NULL);
+			result = batch_file_remove(&sbbs->cfg, sbbs->useron.number, xfer_type, cstr);
+			free(cstr);
+		} else if(JSVAL_IS_NUMBER(argv[1])) {
+			result = batch_file_remove_n(&sbbs->cfg, sbbs->useron.number, xfer_type, JSVAL_TO_INT(argv[1]));
+		}
 	}
 	JS_RESUMEREQUEST(cx, rc);
 
@@ -3065,7 +3067,7 @@ js_upload_file(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
 	}
 
-	if(JSVAL_IS_STRING(argv[1])) {
+	if(argc > 1 && JSVAL_IS_STRING(argv[1])) {
 		JSString* js_str;
 		if((js_str = JS_ValueToString(cx, argv[1]))==NULL)
 			return JS_FALSE;
