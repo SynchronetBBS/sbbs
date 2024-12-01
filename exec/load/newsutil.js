@@ -25,10 +25,13 @@ function get_news_from(hdr)
 			,system.inetaddr);
 	if(!hdr.from_net_addr.length)
 		return mimehdr.encode(hdr.from);
-	if(hdr.from_net_addr.indexOf('@')!=-1)
+	if(hdr.from_net_addr.indexOf('@')!=-1) {
+		if(hdr.from == hdr.from_net_addr)
+			return format("<%s>", hdr.from_net_addr);
 		return format("\"%s\" <%s>"
 			,mimehdr.encode(hdr.from)
 			,hdr.from_net_addr);
+	}
 	if(hdr.from_net_type == NET_FIDO)
 		return format("\"%s\" (%s) <%s>"
 			,mimehdr.encode(hdr.from)
