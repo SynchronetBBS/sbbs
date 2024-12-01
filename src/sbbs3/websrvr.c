@@ -6807,7 +6807,7 @@ void http_session_thread(void* arg)
 	if(startup->max_concurrent_connections > 0) {
 		int ip_len = strlen(session.host_ip) + 1;
 		uint connections = listCountMatches(&current_connections, session.host_ip, ip_len);
-		if(connections >= startup->max_concurrent_connections
+		if(connections > startup->max_concurrent_connections
 			&& !is_host_exempt(&scfg, session.host_ip, /* host_name */NULL)) {
 			lprintf(LOG_NOTICE, "%04d [%s] !Maximum concurrent connections (%u) exceeded"
 				,socket, session.host_ip, startup->max_concurrent_connections);
