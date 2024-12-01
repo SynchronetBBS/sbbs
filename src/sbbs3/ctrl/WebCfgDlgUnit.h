@@ -97,10 +97,12 @@ __published:	// IDE-managed Components
     TLabel *TlsInterfaceLabel;
     TLabel *TlsPortLabel;
     TEdit *TlsPortEdit;
-    TLabel *AuthTypesLabel;
-    TEdit *AuthTypesEdit;
     TCheckBox *HSTSEnableCheckBox;
     TButton *ConfigureSoundButton;
+    TLabel *AuthTypesLabel;
+    TEdit *AuthTypesEdit;
+    TLabel *MaxConConLabel;
+    TEdit *MaxConConEdit;
     void __fastcall FormShow(TObject *Sender);
     void __fastcall OKBtnClick(TObject *Sender);
     void __fastcall AccessLogCheckBoxClick(TObject *Sender);

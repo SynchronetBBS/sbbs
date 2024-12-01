@@ -61,6 +61,7 @@ void __fastcall TWebCfgDlg::FormShow(TObject *Sender)
     else
         MaxClientsEdit->Text=AnsiString((int)MainForm->web_startup.max_clients);
     MaxInactivityEdit->Text = duration_to_str(MainForm->web_startup.max_inactivity, str, sizeof str);
+    MaxConConEdit->Text = AnsiString((int)MainForm->web_startup.max_concurrent_connections);
 	PortEdit->Text=AnsiString((int)MainForm->web_startup.port);
     TlsPortEdit->Text=AnsiString((int)MainForm->web_startup.tls_port);
     AutoStartCheckBox->Checked=MainForm->WebAutoStart;
@@ -115,6 +116,7 @@ void __fastcall TWebCfgDlg::OKBtnClick(TObject *Sender)
     MainForm->web_startup.tls_interfaces = strListSplitCopy(NULL, TlsInterfaceEdit->Text.c_str(), ",");
     MainForm->web_startup.max_clients=MaxClientsEdit->Text.ToIntDef(10);
     MainForm->web_startup.max_inactivity = parse_duration(MaxInactivityEdit->Text.c_str());
+    MainForm->web_startup.max_concurrent_connections = MaxConConEdit->Text.ToIntDef(0);
     MainForm->web_startup.port=PortEdit->Text.ToIntDef(IPPORT_HTTP);
     MainForm->web_startup.tls_port=TlsPortEdit->Text.ToIntDef(IPPORT_HTTPS);
     MainForm->WebAutoStart=AutoStartCheckBox->Checked;
