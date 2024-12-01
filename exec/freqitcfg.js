@@ -187,7 +187,7 @@ function main()
 	js.on_exit("uifc.bail()");
 	while (cmd >= 0) {
 		opts = ["Dirs...", "Secure Dirs...", format("Max Files (%d)", cfg.maxfiles), "Magic Names..."];
-		cmd = uifc.list(WIN_ACT|WIN_ORG|WIN_MID, "FREQIT Options", opts, ctx);
+		cmd = uifc.list(WIN_ACT|WIN_ORG|WIN_MID|WIN_ESC, "FREQIT Options", opts, ctx);
 		switch(cmd) {
 			case 0:		// Dirs
 				edit_dirs(cfg.dirs);
@@ -206,11 +206,9 @@ function main()
 			case -1:	// Done
 				switch(uifc.list(WIN_ACT|WIN_MID, 'Save File', ['Yes', 'No'])) {
 					case 0:
-						uifc.bail();
 						cfg.save();
 						break;
 					case 1:
-						uifc.bail();
 						break;
 					case -1:
 						cmd = 0;
