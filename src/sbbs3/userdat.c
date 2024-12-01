@@ -253,7 +253,7 @@ int openuserdat(scfg_t* cfg, bool for_modify)
 	char path[MAX_PATH+1];
 
 	if(!VALID_CFG(cfg))
-		return(-1);
+		return USER_INVALID_ARG;
 
 	return nopen(userdat_filename(cfg, path, sizeof(path)), for_modify ? (O_RDWR|O_CREAT|O_DENYNONE) : (O_RDONLY|O_DENYNONE));
 }
@@ -261,7 +261,7 @@ int openuserdat(scfg_t* cfg, bool for_modify)
 int closeuserdat(int file)
 {
 	if(file < 0)
-		return -1;
+		return USER_INVALID_ARG;
 	return close(file);
 }
 
@@ -308,7 +308,7 @@ int readuserdat(scfg_t* cfg, unsigned user_number, char* userdat, size_t size, i
 	int file;
 
 	if(!VALID_CFG(cfg) || !VALID_USER_NUMBER(user_number))
-		return -1;
+		return USER_INVALID_ARG;
 
 	memset(userdat, 0, size);
 	if(infile >= 0)
@@ -321,32 +321,32 @@ int readuserdat(scfg_t* cfg, unsigned user_number, char* userdat, size_t size, i
 	if(user_number > (unsigned)(filelength(file) / USER_RECORD_LINE_LEN)) {
 		if(file != infile)
 			close(file);
-		return -2;	/* no such user record */
+		return USER_INVALID_NUM;	/* no such user record */
 	}
 
 	if(!seekuserdat(file, user_number)) {
 		if(file != infile)
 			close(file);
-		return -3;
+		return USER_SEEK_ERROR;
 	}
 
 	if(!lockuserdat(file, user_number)) {
 		if(file != infile)
 			close(file);
-		return -4;
+		return USER_LOCK_ERROR;
 	}
 
 	if(read(file, userdat, size - 1) != size - 1) {
 		unlockuserdat(file, user_number);
 		if(file != infile)
 			close(file);
-		return -5;
+		return USER_READ_ERROR;
 	}
 	if(!leave_locked)
 		unlockuserdat(file, user_number);
 	if(file != infile)
 		close(file);
-	return 0;
+	return USER_SUCCESS;
 }
 
 // Assumes file already positioned at beginning of user record
@@ -383,13 +383,13 @@ int parseuserdat(scfg_t* cfg, char *userdat, user_t *user, char* field[])
 	unsigned user_number;
 
 	if(user==NULL)
-		return(-1);
+		return USER_INVALID_ARG;
 
 	user_number=user->number;
 	memset(user,0,sizeof(user_t));
 
 	if(!VALID_CFG(cfg) || !VALID_USER_NUMBER(user_number))
-		return(-1);
+		return USER_INVALID_ARG;
 
 	/* The user number needs to be set here
 	   before calling chk_ar() below for user-number comparisons in AR strings to function correctly */
@@ -485,7 +485,7 @@ int parseuserdat(scfg_t* cfg, char *userdat, user_t *user, char* field[])
 				resetdailyuserdat(cfg,user,/* write: */false);
 		}
 	}
-	return(0);
+	return USER_SUCCESS;
 }
 
 /****************************************************************************/
@@ -498,7 +498,7 @@ int getuserdat(scfg_t* cfg, user_t *user)
 	char	userdat[USER_RECORD_LINE_LEN + 1];
 
 	if(!VALID_CFG(cfg) || user==NULL || !VALID_USER_NUMBER(user->number))
-		return(-1);
+		return USER_INVALID_ARG;
 
 	if((file = openuserdat(cfg, /* for_modify: */false)) < 0) {
 		user->number = 0;
@@ -522,7 +522,7 @@ int fgetuserdat(scfg_t* cfg, user_t *user, int file)
 	char	userdat[USER_RECORD_LEN + 1];
 
 	if(!VALID_CFG(cfg) || user==NULL || !VALID_USER_NUMBER(user->number))
-		return(-1);
+		return USER_INVALID_ARG;
 
 	if((retval = readuserdat(cfg, user->number, userdat, sizeof(userdat), file, /* leave_locked: */false)) != 0) {
 		user->number = 0;
@@ -768,41 +768,41 @@ int putuserdat(scfg_t* cfg, user_t* user)
     char	userdat[USER_RECORD_LINE_LEN];
 
 	if(user==NULL)
-		return(-1);
+		return USER_INVALID_ARG;
 
 	if(!VALID_CFG(cfg) || !VALID_USER_NUMBER(user->number))
-		return(-1);
+		return USER_INVALID_ARG;
 
 	if(!format_userdat(cfg, user, userdat))
-		return -10;
+		return USER_FORMAT_ERROR;
 
 	if((file=openuserdat(cfg, /* for_modify: */true)) < 0)
-		return(errno);
+		return USER_OPEN_ERROR;
 
 	if(filelength(file)<((off_t)user->number - 1) * USER_RECORD_LINE_LEN) {
 		close(file);
-		return(-4);
+		return USER_INVALID_NUM;
 	}
 
 	if(!seekuserdat(file, user->number)) {
 		close(file);
-		return -5;
+		return USER_SEEK_ERROR;
 	}
 	if(!lockuserdat(file, user->number)) {
 		close(file);
-		return(-2);
+		return USER_LOCK_ERROR;
 	}
 
 	if(write(file,userdat,sizeof(userdat)) != sizeof(userdat)) {
 		unlockuserdat(file, user->number);
 		close(file);
-		return(-3);
+		return USER_WRITE_ERROR;
 	}
 	unlockuserdat(file, user->number);
 	close(file);
 	dirtyuserdat(cfg,user->number);
 
-	return(0);
+	return USER_SUCCESS;
 }
 
 /****************************************************************************/
@@ -860,11 +860,11 @@ int putusername(scfg_t* cfg, int number, const char *name)
 	off_t total_users;
 
 	if(!VALID_CFG(cfg) || name==NULL || !VALID_USER_NUMBER(number))
-		return(-1);
+		return USER_INVALID_ARG;
 
 	SAFEPRINTF(str,"%suser/name.dat", cfg->data_dir);
 	if((file=nopen(str,O_RDWR|O_CREAT))==-1)
-		return(errno);
+		return USER_OPEN_ERROR;
 	length = filelength(file);
 
 	/* Truncate corrupted name.dat */
@@ -872,13 +872,13 @@ int putusername(scfg_t* cfg, int number, const char *name)
 	if(length/(LEN_ALIAS+2) > total_users) {
 		if(chsize(file,(long)(total_users*(LEN_ALIAS+2))) != 0) {
 			close(file);
-			return -4;
+			return USER_TRUNC_ERROR;
 		}
 	}
 
 	if(length && length%(LEN_ALIAS+2)) {
 		close(file);
-		return(-3);
+		return USER_SIZE_ERROR;
 	}
 	if(length<(((long)number-1)*(LEN_ALIAS+2))) {
 		SAFEPRINTF2(str,"%*s\r\n",LEN_ALIAS,"");
@@ -895,8 +895,8 @@ int putusername(scfg_t* cfg, int number, const char *name)
 	close(file);
 
 	if(wr!=LEN_ALIAS+2)
-		return(errno);
-	return(0);
+		return USER_WRITE_ERROR;
+	return USER_SUCCESS;
 }
 
 #define DECVAL(ch, mul)	(DEC_CHAR_TO_INT(ch) * (mul))
@@ -1130,16 +1130,17 @@ int getnodedat(scfg_t* cfg, uint number, node_t *node, bool lockit, int* fdp)
 
 	if(!VALID_CFG(cfg)
 		|| node==NULL || number<1 || number>cfg->sys_nodes)
-		return(-1);
+		return USER_INVALID_ARG;
 
 	memset(node,0,sizeof(node_t));
 	if(fdp != NULL && *fdp > 0)
 		file = *fdp;
 	else {
 		if((file = opennodedat(cfg)) == -1)
-			return errno;
+			return USER_OPEN_ERROR;
 	}
 
+	int result = USER_SIZE_ERROR;
 	if(filelength(file)>=(long)(number*sizeof(node_t))) {
 		number--;	/* make zero based */
 		for(count=0;count<LOOP_NODEDAB;count++) {
@@ -1147,25 +1148,27 @@ int getnodedat(scfg_t* cfg, uint number, node_t *node, bool lockit, int* fdp)
 				mswait(100);
 			(void)lseek(file,(long)number*sizeof(node_t),SEEK_SET);
 			if(lockit
-				&& lock(file,(long)number*sizeof(node_t),sizeof(node_t))!=0)
+				&& lock(file,(long)number*sizeof(node_t),sizeof(node_t))!=0) {
+				result = USER_LOCK_ERROR;
 				continue;
+			}
 			rd=read(file,node,sizeof(node_t));
-			if(rd!=sizeof(node_t))
+			if(rd!=sizeof(node_t)) {
+				result = USER_READ_ERROR;
 				unlock(file,(long)number*sizeof(node_t),sizeof(node_t));
-			if(rd==sizeof(node_t))
+			} else {
+				result = USER_SUCCESS;
 				break;
+			}
 		}
 	}
 
-	if(fdp==NULL || count==LOOP_NODEDAB)
+	if(fdp==NULL || result != USER_SUCCESS)
 		CLOSE_OPEN_FILE(file);
 	if(fdp!=NULL)
 		*fdp=file;
 
-	if(count==LOOP_NODEDAB)
-		return(-2);
-
-	return(0);
+	return result;
 }
 
 /****************************************************************************/
@@ -1175,16 +1178,15 @@ int getnodedat(scfg_t* cfg, uint number, node_t *node, bool lockit, int* fdp)
 int putnodedat(scfg_t* cfg, uint number, node_t* node, bool closeit, int file)
 {
 	size_t	wr=0;
-	int		wrerr=0;
 	int		attempts;
 
 	if(file<0)
-		return -1;
+		return USER_INVALID_ARG;
 	if(!VALID_CFG(cfg)
 		|| node==NULL || number<1 || number>cfg->sys_nodes) {
 		if(closeit)
 			close(file);
-		return(-1);
+		return USER_INVALID_ARG;
 	}
 
 	number--;	/* make zero based */
@@ -1192,7 +1194,6 @@ int putnodedat(scfg_t* cfg, uint number, node_t* node, bool closeit, int file)
 		(void)lseek(file,(long)number*sizeof(node_t),SEEK_SET);
 		if((wr=write(file,node,sizeof(node_t)))==sizeof(node_t))
 			break;
-		wrerr=errno;	/* save write error */
 		mswait(((attempts + 1) / 10) * 100);
 	}
 	unlock(file,(long)number*sizeof(node_t),sizeof(node_t));
@@ -1200,8 +1201,8 @@ int putnodedat(scfg_t* cfg, uint number, node_t* node, bool closeit, int file)
 		close(file);
 
 	if(wr!=sizeof(node_t))
-		return(wrerr);
-	return(0);
+		return USER_WRITE_ERROR;
+	return USER_SUCCESS;
 }
 
 /****************************************************************************/
@@ -1211,10 +1212,10 @@ bool set_node_status(scfg_t* cfg, int nodenum, enum node_status status)
 	node_t node;
 	int file = -1;
 
-	if(getnodedat(cfg, nodenum, &node, /* lockit: */true, &file) != 0)
+	if(getnodedat(cfg, nodenum, &node, /* lockit: */true, &file) != USER_SUCCESS)
 		return false;
 	node.status = status;
-	return putnodedat(cfg, nodenum, &node, /* closeit: */true, file) == 0;
+	return putnodedat(cfg, nodenum, &node, /* closeit: */true, file) == USER_SUCCESS;
 }
 
 /****************************************************************************/
@@ -1224,10 +1225,10 @@ bool set_node_misc(scfg_t* cfg, int nodenum, uint misc)
 	node_t node;
 	int file = -1;
 
-	if(getnodedat(cfg, nodenum, &node, /* lockit: */true, &file) != 0)
+	if(getnodedat(cfg, nodenum, &node, /* lockit: */true, &file) != USER_SUCCESS)
 		return false;
 	node.misc = misc;
-	return putnodedat(cfg, nodenum, &node, /* closeit: */true, file) == 0;
+	return putnodedat(cfg, nodenum, &node, /* closeit: */true, file) == USER_SUCCESS;
 }
 
 /****************************************************************************/
@@ -1237,13 +1238,13 @@ bool set_node_lock(scfg_t* cfg, int nodenum, bool set)
 	node_t node;
 	int file = -1;
 
-	if(getnodedat(cfg, nodenum, &node, /* lockit: */true, &file) != 0)
+	if(getnodedat(cfg, nodenum, &node, /* lockit: */true, &file) != USER_SUCCESS)
 		return false;
 	if(set)
 		node.misc |= NODE_LOCK;
 	else
 		node.misc &= ~NODE_LOCK;
-	return putnodedat(cfg, nodenum, &node, /* closeit: */true, file) == 0;
+	return putnodedat(cfg, nodenum, &node, /* closeit: */true, file) == USER_SUCCESS;
 }
 
 /****************************************************************************/
@@ -1253,13 +1254,13 @@ bool set_node_interrupt(scfg_t* cfg, int nodenum, bool set)
 	node_t node;
 	int file = -1;
 
-	if(getnodedat(cfg, nodenum, &node, /* lockit: */true, &file) != 0)
+	if(getnodedat(cfg, nodenum, &node, /* lockit: */true, &file) != USER_SUCCESS)
 		return false;
 	if(set)
 		node.misc |= NODE_INTR;
 	else
 		node.misc &= ~NODE_INTR;
-	return putnodedat(cfg, nodenum, &node, /* closeit: */true, file) == 0;
+	return putnodedat(cfg, nodenum, &node, /* closeit: */true, file) == USER_SUCCESS;
 }
 
 /****************************************************************************/
@@ -1269,13 +1270,13 @@ bool set_node_down(scfg_t* cfg, int nodenum, bool set)
 	node_t node;
 	int file = -1;
 
-	if(getnodedat(cfg, nodenum, &node, /* lockit: */true, &file) != 0)
+	if(getnodedat(cfg, nodenum, &node, /* lockit: */true, &file) != USER_SUCCESS)
 		return false;
 	if(set)
 		node.misc |= NODE_DOWN;
 	else
 		node.misc &= ~NODE_DOWN;
-	return putnodedat(cfg, nodenum, &node, /* closeit: */true, file) == 0;
+	return putnodedat(cfg, nodenum, &node, /* closeit: */true, file) == USER_SUCCESS;
 }
 
 /****************************************************************************/
@@ -1285,13 +1286,13 @@ bool set_node_rerun(scfg_t* cfg, int nodenum, bool set)
 	node_t node;
 	int file = -1;
 
-	if(getnodedat(cfg, nodenum, &node, /* lockit: */true, &file) != 0)
+	if(getnodedat(cfg, nodenum, &node, /* lockit: */true, &file) != USER_SUCCESS)
 		return false;
 	if(set)
 		node.misc |= NODE_RRUN;
 	else
 		node.misc &= ~NODE_RRUN;
-	return putnodedat(cfg, nodenum, &node, /* closeit: */true, file) == 0;
+	return putnodedat(cfg, nodenum, &node, /* closeit: */true, file) == USER_SUCCESS;
 }
 
 /****************************************************************************/
@@ -1301,10 +1302,10 @@ bool set_node_errors(scfg_t* cfg, int nodenum, uint errors)
 	node_t node;
 	int file = -1;
 
-	if(getnodedat(cfg, nodenum, &node, /* lockit: */true, &file) != 0)
+	if(getnodedat(cfg, nodenum, &node, /* lockit: */true, &file) != USER_SUCCESS)
 		return false;
 	node.errors = errors;
-	return putnodedat(cfg, nodenum, &node, /* closeit: */true, file) == 0;
+	return putnodedat(cfg, nodenum, &node, /* closeit: */true, file) == USER_SUCCESS;
 }
 
 /****************************************************************************/
@@ -1699,19 +1700,19 @@ int putsmsg(scfg_t* cfg, int usernumber, char *strin)
     node_t node;
 
 	if(!VALID_CFG(cfg) || !VALID_USER_NUMBER(usernumber) || strin==NULL)
-		return(-1);
+		return USER_INVALID_ARG;
 
 	if(*strin==0)
-		return(0);
+		return USER_SUCCESS;
 
 	SAFEPRINTF2(str,"%smsgs/%4.4u.msg",cfg->data_dir,usernumber);
 	if((file=nopen(str,O_WRONLY|O_CREAT|O_APPEND))==-1) {
-		return(errno);
+		return USER_OPEN_ERROR;
 	}
 	i=strlen(strin);
 	if(write(file,strin,i)!=i) {
 		close(file);
-		return(errno);
+		return USER_WRITE_ERROR;
 	}
 	close(file);
 	file = -1;
@@ -1727,7 +1728,7 @@ int putsmsg(scfg_t* cfg, int usernumber, char *strin)
 		}
 	}
 	CLOSE_OPEN_FILE(file);
-	return(0);
+	return USER_SUCCESS;
 }
 
 /****************************************************************************/
@@ -1854,19 +1855,19 @@ int putnmsg(scfg_t* cfg, int num, char *strin)
     node_t node;
 
 	if(!VALID_CFG(cfg) || num<1 || strin==NULL)
-		return(-1);
+		return USER_INVALID_ARG;
 
 	if(*strin==0)
-		return(0);
+		return USER_SUCCESS;
 
 	SAFEPRINTF2(str,"%smsgs/n%3.3u.msg",cfg->data_dir,num);
 	if((file=nopen(str,O_WRONLY|O_CREAT))==-1)
-		return(errno);
+		return USER_OPEN_ERROR;
 	(void)lseek(file,0L,SEEK_END);	/* Instead of opening with O_APPEND */
 	i=strlen(strin);
 	if(write(file,strin,i)!=i) {
 		close(file);
-		return(errno);
+		return USER_WRITE_ERROR;
 	}
 	CLOSE_OPEN_FILE(file);
 	getnodedat(cfg,num,&node, /* lockit: */false, &file);
@@ -1879,7 +1880,7 @@ int putnmsg(scfg_t* cfg, int num, char *strin)
 	}
 	CLOSE_OPEN_FILE(file);
 
-	return(0);
+	return USER_SUCCESS;
 }
 
 /* Return node's client's socket descriptor or negative on error */
@@ -2597,16 +2598,16 @@ int putuserstr(scfg_t* cfg, int usernumber, enum user_field fnum, const char *st
 	int		retval;
 
 	if(!VALID_CFG(cfg) || !VALID_USER_NUMBER(usernumber) || !VALID_USER_FIELD(fnum) || str == NULL)
-		return -1;
+		return USER_INVALID_ARG;
 
 	if(strchr(str, USER_FIELD_SEPARATOR) != NULL)
-		return -2;
+		return USER_FORMAT_ERROR;
 
 	if((file = openuserdat(cfg, /* for_modify: */true)) == -1)
-		return errno;
+		return USER_OPEN_ERROR;
 
 	retval = readuserdat(cfg, usernumber, userdat, sizeof(userdat), file, /* leave_locked: */true);
-	if(retval == 0) {
+	if(retval == USER_SUCCESS) {
 		split_userdat(userdat, field);
 		field[fnum] = (char*)str;
 		if(!seekuserdat(file, usernumber))
@@ -2616,7 +2617,7 @@ int putuserstr(scfg_t* cfg, int usernumber, enum user_field fnum, const char *st
 		unlockuserdat(file, usernumber);
 	}
 	close(file);
-	if(retval == 0)
+	if(retval == USER_SUCCESS)
 		dirtyuserdat(cfg, usernumber);
 	return retval;
 }
@@ -3230,12 +3231,12 @@ int newuserdat(scfg_t* cfg, user_t* user)
 	stats_t	stats;
 
 	if(!VALID_CFG(cfg) || user==NULL)
-		return(-1);
+		return USER_INVALID_ARG;
 
 	SAFEPRINTF(str,"%suser/name.dat",cfg->data_dir);
 	if(fexist(str)) {
 		if((stream=fnopen(&file,str,O_RDONLY))==NULL) {
-			return(errno);
+			return USER_OPEN_ERROR;
 		}
 		last=(long)filelength(file)/(LEN_ALIAS+2);	   /* total users */
 		while(unum<=last) {
@@ -3274,10 +3275,10 @@ int newuserdat(scfg_t* cfg, user_t* user)
 
 	user->number=unum;		/* store the new user number */
 
-	if((err=putusername(cfg,user->number,user->alias))!=0)
+	if((err=putusername(cfg,user->number,user->alias)) != USER_SUCCESS)
 		return(err);
 
-	if((err=putuserdat(cfg,user))!=0)
+	if((err=putuserdat(cfg,user)) != USER_SUCCESS)
 		return(err);
 
 	SAFEPRINTF2(str,"%sfile/%04u.in",cfg->data_dir,user->number);  /* delete any files */
@@ -3314,7 +3315,7 @@ int newuserdat(scfg_t* cfg, user_t* user)
 		fclose_dstats(fp);
 	}
 
-	return(0);
+	return USER_SUCCESS;
 }
 
 size_t user_field_len(enum user_field fnum)

@@ -35,6 +35,19 @@
 #define USER_RECORD_LINE_LEN	1000					// includes LF terminator
 #define USER_RECORD_LEN			(USER_RECORD_LINE_LEN - 1)	// does not include LF
 
+// API function return values
+#define USER_SUCCESS			0
+#define USER_INVALID_ARG		-100
+#define USER_INVALID_NUM		-101
+#define USER_OPEN_ERROR			-102
+#define USER_SEEK_ERROR			-103
+#define USER_LOCK_ERROR			-104
+#define USER_READ_ERROR			-105
+#define USER_FORMAT_ERROR		-106
+#define USER_WRITE_ERROR		-107
+#define USER_TRUNC_ERROR		-108
+#define USER_SIZE_ERROR			-109
+
 #ifdef __cplusplus
 extern "C" {
 #endif
