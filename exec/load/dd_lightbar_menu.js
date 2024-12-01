@@ -1045,6 +1045,18 @@ function DDLightbarMenu_Draw(pSelectedItemIndexes, pDrawBorders, pDrawScrollbar,
 		// the rest of the height of the menu.
 		if (numItemsWritten < numPossibleItems)
 		{
+			console.attributes = 0;
+			for (; numItemsWritten < numPossibleItems; ++numItemsWritten)
+			{
+				writeTheItem = ((this.nextDrawOnlyItems.length == 0) || (this.nextDrawOnlyItems.indexOf(numItemsWritten) > -1));
+				if (writeTheItem)
+				{
+					console.gotoxy(curPos.x, curPos.y++);
+					printf("%*s", itemLen, "");
+				}
+			}
+			// Old way - Not sure why I was doing it this way:
+			/*
 			var numberFormatStr = "%" + this.itemNumLen + "s ";
 			var itemFormatStr = "%-" + itemLen + "s";
 			for (; numItemsWritten < numPossibleItems; ++numItemsWritten)
@@ -1060,6 +1072,7 @@ function DDLightbarMenu_Draw(pSelectedItemIndexes, pDrawBorders, pDrawScrollbar,
 					console.print(itemText);
 				}
 			}
+			*/
 		}
 	}
 	else
