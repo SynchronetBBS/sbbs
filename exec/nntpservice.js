@@ -25,7 +25,7 @@
 //					Netscape Communicator 4.77
 //					Xnews 5.04.25
 
-const REVISION = "1.134";
+const REVISION = "1.2";
 
 var tearline = format("--- Synchronet %s%s-%s NNTP Service %s\r\n"
 					  ,system.version,system.revision,system.platform,REVISION);
@@ -35,6 +35,8 @@ var tagline	=  format(" *  %s - %s - telnet://%s\r\n"
 load("sbbsdefs.js");
 load("newsutil.js");
 load("mailutil.js");
+
+"use strict";
 
 var debug = false;
 var no_anonymous = false;
@@ -290,34 +292,30 @@ while(client.socket.is_connected && !quit) {
 				pattern=cmd[2];
  				writeln("215 list of newsgroups follows");
 				if(include_mail && user.security.level == 99 && wildmatch("mail", pattern)) {
-					if(msgbase && msgbase.is_open)
-						msgbase.close();
-					msgbase=new MsgBase("mail");
-					if(msgbase.open()==true) {
-						writeln(format("mail %u %u n", msgbase.last_msg, msgbase.first_msg));
-						msgbase.close();
+					var mb=new MsgBase("mail");
+					if(mb.open()==true) {
+						writeln(format("mail %u %u n", mb.last_msg, mb.first_msg));
+						mb.close();
 					} else
-						log(LOG_ERR, "Error " + msgbase.error + " opening " + msgbase.file);
+						log(LOG_ERR, "Error " + mb.error + " opening " + mb.file);
 				}
 				for(g in msg_area.grp_list)
 					for(s in msg_area.grp_list[g].sub_list) {
 						if(!wildmatch(msg_area.grp_list[g].sub_list[s].newsgroup, pattern))
 							continue;
-						if(msgbase && msgbase.is_open)
-							msgbase.close();
-						msgbase=new MsgBase(msg_area.grp_list[g].sub_list[s].code);
-						if(!msgbase.open()) {
-							log(LOG_ERR, "Error " + msgbase.error + " opening " + msgbase.file);
+						var mb=new MsgBase(msg_area.grp_list[g].sub_list[s].code);
+						if(!mb.open()) {
+							log(LOG_ERR, "Error " + mb.error + " opening " + mb.file);
 							continue;
 						}
-						var count = count_msgs(msgbase);
+						var count = count_msgs(mb);
 						writeln(format("%s %u %u %s"
 							,msg_area.grp_list[g].sub_list[s].newsgroup
 							,count.last
 							,count.first
 							,msg_area.grp_list[g].sub_list[s].is_moderated ? "m" : (msg_area.grp_list[g].sub_list[s].can_post ? "y" : "n")
 							));
-						msgbase.close();
+						mb.close();
 					}
 				writeln(".");	// end of list
 			}
@@ -423,25 +421,23 @@ while(client.socket.is_connected && !quit) {
 			writeln("231 list of new newsgroups since " + compare.toISOString() + " follows");
 			for(g in msg_area.grp_list) {
 				for(s in msg_area.grp_list[g].sub_list) {
-					if(msgbase && msgbase.is_open)
-						msgbase.close();
-					msgbase=new MsgBase(msg_area.grp_list[g].sub_list[s].code);
-					var ini_file = new File(msgbase.file + ".ini");
+					var mb=new MsgBase(msg_area.grp_list[g].sub_list[s].code);
+					var ini_file = new File(mb.file + ".ini");
 					if(ini_file.open("r")) {
 						var created = ini_file.iniGetValue(null, "Created", 0);
 						ini_file.close();
 						if(created >= compare.getTime() / 1000) {
-							if(msgbase.open()) {
-								var count = count_msgs(msgbase);
+							if(mb.open()) {
+								var count = count_msgs(mb);
 								writeln(format("%s %u %u %s"
 									,msg_area.grp_list[g].sub_list[s].newsgroup
 									,count.last
 									,count.first
 									,msg_area.grp_list[g].sub_list[s].is_moderated ? "m" : (msg_area.grp_list[g].sub_list[s].can_post ? "y" : "n")
 									));
-								msgbase.close();
+								mb.close();
 							} else {
-								log(LOG_ERR, "Error " + msgbase.error + " opening " + msgbase.file);
+								log(LOG_ERR, "Error " + mb.error + " opening " + mb.file);
 							}
 						}
 					}
@@ -507,6 +503,7 @@ while(client.socket.is_connected && !quit) {
 					,count.last
 					,selected.newsgroup
 					));
+				current_article = count.first;
 			} else {	// LISTGROUP
 				writeln("211 list of article numbers follow");
 				var total_msgs = msgbase.total_msgs;
@@ -520,6 +517,7 @@ while(client.socket.is_connected && !quit) {
 						continue;
 					writeln(idx.number);
 				}
+				current_article = msgbase.first_msg;
 				writeln(".");
 			}
 			break;
@@ -676,12 +674,7 @@ while(client.socket.is_connected && !quit) {
 				writeln("412 read permission to newsgroup denied");
 				break;
 			}
-			if(cmd[1]==undefined || cmd[1].length==0) {
-				writeln("420 no current article has been selected");
-				bogus_cmd(cmdline);
-				break;
-			}
-			if(cmd[1]!='') {
+			if(cmd[1]) {
 				if(cmd[1].indexOf('<')>=0)		/* message-id */
 					current_article=cmd[1];
 				else
@@ -928,14 +921,9 @@ while(client.socket.is_connected && !quit) {
 						    if(!msg_area.grp_list[g].sub_list[s].can_post)
 							    continue;
 
-						    if(msgbase!=null) {
-							    msgbase.close();
-							    delete msgbase;
-						    }
-
-						    msgbase=new MsgBase(msg_area.grp_list[g].sub_list[s].code);
-							if(!msgbase.open()) {
-								log(LOG_ERR, "Error " + msgbase.error + " opening " + msgbase.file);
+						    var mb=new MsgBase(msg_area.grp_list[g].sub_list[s].code);
+							if(!mb.open()) {
+								log(LOG_ERR, "Error " + mb.error + " opening " + mb.file);
 								continue;
 							}
 
@@ -946,7 +934,7 @@ while(client.socket.is_connected && !quit) {
 								if(ctrl_msg.length) {
 									switch(ctrl_msg[0].toLowerCase()) {
 										case "cancel":
-											target=msgbase.get_msg_header(ctrl_msg[1]);
+											target=mb.get_msg_header(ctrl_msg[1]);
 											if(target==null) {
 												log(LOG_NOTICE,"!Invalid Message-ID: " + ctrl_msg[1]);
 												break;
@@ -954,11 +942,11 @@ while(client.socket.is_connected && !quit) {
 											if(logged_in && ((target.from_ext==user.number
 												&& msg_area.grp_list[g].sub_list[s].settings&SUB_DEL)
 												|| msg_area.grp_list[g].sub_list[s].is_operator)) {
-												if(msgbase.remove_msg(ctrl_msg[1])) {
+												if(mb.remove_msg(ctrl_msg[1])) {
 													posted=true;
 													log(LOG_NOTICE,"Message deleted: " + ctrl_msg[1]);
 												} else
-													log(LOG_ERR,"!ERROR " + msgbase.error +
+													log(LOG_ERR,"!ERROR " + mb.error +
 														" deleting message: " + ctrl_msg[1]);
 												continue;
 											}
@@ -966,6 +954,7 @@ while(client.socket.is_connected && !quit) {
 									}
 								}
 								log(LOG_WARNING,"!Invalid control message: " + hdr.control);
+								mb.close();
 								break;
 							}
 
@@ -977,15 +966,16 @@ while(client.socket.is_connected && !quit) {
 							else
 								hdr.attr&=~MSG_MODERATED;
 
-						    if(msgbase.save_msg(hdr,client,body)) {
+						    if(mb.save_msg(hdr,client,body)) {
 							    log(format("%s posted a message (%u chars, %u lines) on %s (%s)"
-									,user.alias, body.length, lines, newsgroups[n], msgbase.cfg.code));
+									,user.alias, body.length, lines, newsgroups[n], mb.cfg.code));
 							    posted=true;
 								msgs_posted++;
 						    } else
-							    log(msgbase.status > 0 ? LOG_WARNING:LOG_ERR
+							    log(mb.status > 0 ? LOG_WARNING:LOG_ERR
 									,format("!ERROR %d saving mesage: %s"
-										,msgbase.status, msgbase.last_error));
+										,mb.status, mb.last_error));
+							mb.close();
 					    }
 			if(posted)
 			    writeln("240 article posted ok");
