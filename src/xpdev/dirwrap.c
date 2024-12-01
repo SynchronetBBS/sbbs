@@ -823,7 +823,7 @@ int delfiles(const char *inpath, const char *spec, size_t keep)
 			if(recursed >= 0)
 				files += recursed;
 			else
-				errors += recursed;
+				errors += (-recursed);
 			if(rmdir(fpath) != 0)
 				errors++;
 			continue;
