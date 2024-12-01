@@ -20,29 +20,29 @@ function get_news_from(hdr)
 {
 	if(!hdr.from_net_type || !hdr.from_net_addr)	/* local message */
 		return format("\"%s\" <%s@%s>"
-			,hdr.from
+			,mimehdr.encode(hdr.from)
 			,hdr.from.replace(/ /g,".").toLowerCase()
 			,system.inetaddr);
 	if(!hdr.from_net_addr.length)
-		return hdr.from;
+		return mimehdr.encode(hdr.from);
 	if(hdr.from_net_addr.indexOf('@')!=-1)
 		return format("\"%s\" <%s>"
-			,hdr.from
+			,mimehdr.encode(hdr.from)
 			,hdr.from_net_addr);
 	if(hdr.from_net_type == NET_FIDO)
 		return format("\"%s\" (%s) <%s>"
-			,hdr.from
+			,mimehdr.encode(hdr.from)
 			,hdr.from_net_addr
 			,fidoaddr_to_emailaddr(hdr.from, hdr.from_net_addr));
 	if(hdr.from_net_type == NET_QWK)
 		return format("\"%s\" (%s) <%s!%s@%s>"
-			,hdr.from
+			,mimehdr.encode(hdr.from)
 			,hdr.from_net_addr
 			,hdr.from_net_addr
 			,hdr.from.replace(/ /g,".")
 			,system.inetaddr);
 	return format("\"%s\" <%s@%s>"
-			,hdr.from
+			,mimehdr.encode(hdr.from)
 			,hdr.from.replace(/ /g,".").toLowerCase()
 			,hdr.from_net_addr);
 }
@@ -50,13 +50,13 @@ function get_news_from(hdr)
 function write_news_header(hdr,writeln)
 {
 	/* Required header fields */
-	writeln("To: " + hdr.to);
+	writeln("To: " + mimehdr.encode(hdr.to));
 	writeln("Subject: " + get_news_subject(hdr));
 	writeln("Message-ID: " + hdr.id);
 	writeln("Date: " + hdr.date);
 
 	/* Optional header fields */
-	writeln("X-Comment-To: " + hdr.to);
+	writeln("X-Comment-To: " + mimehdr.encode(hdr.to));
 	if(hdr.path!=undefined)
 		writeln("Path: " + system.inetaddr + "!" + hdr.path);
 	if(hdr.from_org!=undefined)
