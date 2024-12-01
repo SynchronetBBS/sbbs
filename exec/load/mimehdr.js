@@ -66,4 +66,39 @@ function to_cp437(val)
 	return result.join('');
 }
 
+function encode_word(word)
+{
+	var output = "=?utf-8?q?";
+	for(var i in word) {
+		var ch = word[i];
+		if(ascii(ch) < 0x80 && ch != '=')
+			output += ch;
+		else
+			output += format("=%02X", ascii(ch));
+	}
+	return output + "?=";
+}
+
+function encode(val)
+{
+	if(str_is_ascii(val))
+		return val;
+
+	var output = '';
+	var words = val.split(/\s+/g);
+	for(var i in words) {
+		if(output.length)
+			output += " ";
+		var word = words[i];
+		if(str_is_ascii(word)) {
+			output += word;
+			continue;
+		}
+		if(!str_is_utf8(word))
+			word = utf8_encode(word);
+		output += encode_word(word);
+	}
+	return output;
+}
+
 this;
