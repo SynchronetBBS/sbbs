@@ -4,6 +4,8 @@
 require("mailutil.js", 'mail_get_name');
 require("smbdefs.js", 'RFC822HEADER');
 
+const mimehdr = load("mimehdr.js");
+
 function get_news_subject(hdr)
 {
 	if(hdr.field_list !== undefined)
@@ -11,7 +13,7 @@ function get_news_subject(hdr)
 			if(hdr.field_list[i].type == RFC822SUBJECT)
 				return hdr.field_list[i].data;
 		}
-	return hdr.subject;
+	return mimehdr.encode(hdr.subject);
 }
 
 function get_news_from(hdr)

@@ -1623,7 +1623,7 @@ void alter_areas_ini(FILE* afilein, FILE* afileout, FILE* nmfile
 			continue;
 		}
 		/* Check for areas to add */
-		int add_index;
+		int add_index = 0;
 		if(add_all ||  (add_index = strListFind(add_area, echotag, /* case-sensitive */false)) >= 0) {
 			if(!add_all)
 				strListFastDelete(add_area, add_index, 1); /* So we can check other lists */
@@ -1740,7 +1740,7 @@ void alter_areas_bbs(FILE* afilein, FILE* afileout, FILE* nmfile
 			continue;
 		}
 		/* Check for areas to add */
-		int add_index;
+		int add_index = 0;
 		if(add_all || (add_index = strListFind(add_area, echotag, /* case-sensitive */false)) >= 0) {
 			if(!add_all)
 				strListFastDelete(add_area, add_index, 1); /* So we can check other lists */

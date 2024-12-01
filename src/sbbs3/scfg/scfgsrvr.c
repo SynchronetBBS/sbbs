@@ -844,6 +844,87 @@ static void https_srvr_cfg(web_startup_t* startup)
 	}
 }
 
+static void websrvr_cgi_cfg(web_startup_t* startup)
+{
+	static int cur, bar;
+	char tmp[256];
+	char str[256];
+
+	while(1) {
+		int i = 0;
+		snprintf(opt[i++], MAX_OPLN, "%-25s%s", "Enabled",  startup->options & WEB_OPT_NO_CGI ? "No" : "Yes");
+		snprintf(opt[i++], MAX_OPLN, "%-25s%s", "Directory", startup->cgi_dir);
+		snprintf(opt[i++], MAX_OPLN, "%-25s%s", "File Extensions", strListCombine(startup->cgi_ext, tmp, sizeof(tmp), ", "));
+		snprintf(opt[i++], MAX_OPLN, "%-25s%s", "Default Content-Type", startup->default_cgi_content);
+		snprintf(opt[i++], MAX_OPLN, "%-25s%s", "Max Inactivity", vduration(startup->max_cgi_inactivity));
+		opt[i][0] = '\0';
+
+		switch(uifc.list(WIN_ACT|WIN_ESC|WIN_MID|WIN_SAV, 0, 0, 0, &cur, &bar
+			,"Web Server CGI Support",opt)) {
+			case 0:
+				startup->options ^= WEB_OPT_NO_CGI;
+				break;
+			case 1:
+				uifc.input(WIN_MID|WIN_SAV, 0, 0, "CGI Directory"
+					,startup->cgi_dir, sizeof(startup->cgi_dir)-1, K_EDIT);
+				break;
+			case 2:
+				strListCombine(startup->cgi_ext, str, sizeof(str), ", ");
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "CGI File Extensions", str, sizeof(str)-1, K_EDIT) >= 0) {
+					strListFree(&startup->cgi_ext);
+					strListSplitCopy(&startup->cgi_ext, str, ", ");
+					uifc.changes = true;
+				}
+				break;
+			case 3:
+				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Default CGI MIME Content-Type"
+					,startup->default_cgi_content, sizeof(startup->default_cgi_content)-1, K_EDIT);
+				break;
+			case 4:
+				duration_to_str(startup->max_cgi_inactivity, str, sizeof(str));
+				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum CGI Inactivity", str, 10, K_EDIT) > 0)
+					startup->max_cgi_inactivity = (uint16_t)parse_duration(str);
+				break;
+			default:
+				return;
+		}
+	}
+}
+
+static void websrvr_filebase_cfg(web_startup_t* startup)
+{
+	static int cur, bar;
+
+	while(1) {
+		int i = 0;
+		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Enabled",  startup->options & WEB_OPT_NO_FILEBASE ? "No" : "Yes");
+		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Index Script", startup->file_index_script);
+		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "VPath Prefix", startup->file_vpath_prefix);
+		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "VPath for VHosts"
+			,startup->options & WEB_OPT_VIRTUAL_HOSTS ? startup->file_vpath_for_vhosts ? "Yes" : "No" : "N/A");
+		opt[i][0] = '\0';
+
+		switch(uifc.list(WIN_ACT|WIN_ESC|WIN_MID|WIN_SAV, 0, 0, 0, &cur, &bar
+			,"Web Server Filebase Support",opt)) {
+			case 0:
+				startup->options ^= WEB_OPT_NO_FILEBASE;
+				break;
+			case 1:
+				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Filebase Index Script"
+					,startup->file_index_script, sizeof(startup->file_index_script)-1, K_EDIT);
+				break;
+			case 2:
+				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Filebase Virtual Path Prefix"
+					,startup->file_vpath_prefix, sizeof(startup->file_vpath_prefix)-1, K_EDIT);
+				break;
+			case 3:
+				startup->file_vpath_for_vhosts = !startup->file_vpath_for_vhosts;
+				break;
+			default:
+				return;
+		}
+	}
+}
 
 static void websrvr_cfg(void)
 {
@@ -898,21 +979,11 @@ static void websrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Clients", maximum(startup.max_clients));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Inactivity", vduration(startup.max_inactivity));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Concurrent Connections", maximum(startup.max_concurrent_connections));
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Filebase Index Script", startup.file_index_script);
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Filebase VPath Prefix", startup.file_vpath_prefix);
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Filebase VPath for VHosts"
-			,startup.options & WEB_OPT_VIRTUAL_HOSTS ? startup.file_vpath_for_vhosts ? "Yes" : "No" : "N/A");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Authentication Methods", startup.default_auth_list);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%u ms", "Output Buffer Drain Timeout", startup.outbuf_drain_timeout);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Lookup Client Hostname", startup.options & BBS_OPT_NO_HOST_LOOKUP ? "No" : "Yes");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "CGI Support",  startup.options & WEB_OPT_NO_CGI ? "No" : "Yes");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "CGI Directory", startup.options & WEB_OPT_NO_CGI ? "N/A" : startup.cgi_dir);
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "CGI File Extensions"
-			,startup.options & WEB_OPT_NO_CGI ? "N/A" : strListCombine(startup.cgi_ext, tmp, sizeof(tmp), ", "));
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "CGI Default Content-Type"
-			,startup.options & WEB_OPT_NO_CGI ? "N/A" : startup.default_cgi_content);
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "CGI Max Inactivity"
-			,startup.options & WEB_OPT_NO_CGI ? "N/A" : vduration(startup.max_cgi_inactivity));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "CGI Support...",  startup.options & WEB_OPT_NO_CGI ? strDisabled : startup.cgi_dir);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Filebase Support...", startup.options & WEB_OPT_NO_FILEBASE ? strDisabled: startup.file_vpath_prefix);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Login Requirements", startup.login_ars);
 		strcpy(opt[i++], "JavaScript Settings...");
 		strcpy(opt[i++], "Failed Login Attempts...");
@@ -998,68 +1069,31 @@ static void websrvr_cfg(void)
 					startup.max_concurrent_connections = atoi(str);
 				break;
 			case 13:
-				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Filebase Index Script"
-					,startup.file_index_script, sizeof(startup.file_index_script)-1, K_EDIT);
-				break;
-			case 14:
-				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Filebase Virtual Path Prefix"
-					,startup.file_vpath_prefix, sizeof(startup.file_vpath_prefix)-1, K_EDIT);
-				break;
-			case 15:
-				startup.file_vpath_for_vhosts = !startup.file_vpath_for_vhosts;
-				break;
-			case 16:
 				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Authentication Methods"
 					,startup.default_auth_list, sizeof(startup.default_auth_list)-1, K_EDIT);
 				break;
-			case 17:
+			case 14:
 				SAFEPRINTF(str, "%u", startup.outbuf_drain_timeout);
 				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Output Buffer Drain Timeout (milliseconds)"
 					,str, 5, K_NUMBER|K_EDIT) > 0)
 					startup.outbuf_drain_timeout = atoi(str);
 				break;
-			case 18:
+			case 15:
 				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
 				break;
-			case 19:
-				startup.options ^= WEB_OPT_NO_CGI;
+			case 16:
+				websrvr_cgi_cfg(&startup);
 				break;
-			case 20:
-				if(startup.options & WEB_OPT_NO_CGI)
-					break;
-				uifc.input(WIN_MID|WIN_SAV, 0, 0, "CGI Directory"
-					,startup.cgi_dir, sizeof(startup.cgi_dir)-1, K_EDIT);
+			case 17:
+				websrvr_filebase_cfg(&startup);
 				break;
-			case 21:
-				if(startup.options & WEB_OPT_NO_CGI)
-					break;
-				strListCombine(startup.cgi_ext, str, sizeof(str), ", ");
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "CGI File Extensions", str, sizeof(str)-1, K_EDIT) >= 0) {
-					strListFree(&startup.cgi_ext);
-					strListSplitCopy(&startup.cgi_ext, str, ", ");
-					uifc.changes = true;
-				}
-				break;
-			case 22:
-				if(startup.options & WEB_OPT_NO_CGI)
-					break;
-				uifc.input(WIN_MID|WIN_SAV, 0, 0, "Default CGI MIME Content-Type"
-					,startup.default_cgi_content, sizeof(startup.default_cgi_content)-1, K_EDIT);
-				break;
-			case 23:
-				if(startup.options & WEB_OPT_NO_CGI)
-					break;
-				duration_to_str(startup.max_cgi_inactivity, str, sizeof(str));
-				if(uifc.input(WIN_MID|WIN_SAV, 0, 0, "Maximum CGI Inactivity", str, 10, K_EDIT) > 0)
-					startup.max_cgi_inactivity = (uint16_t)parse_duration(str);
-				break;
-			case 24:
+			case 18:
 				getar("Web Server Login", startup.login_ars);
 				break;
-			case 25:
+			case 19:
 				js_startup_cfg(&startup.js);
 				break;
-			case 26:
+			case 20:
 				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:

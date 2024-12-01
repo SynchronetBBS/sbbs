@@ -646,6 +646,8 @@ uint sbbs_t::logonstats()
 					node.misc|=NODE_EVENT;
 					putnodedat(i,&node); 
 				}
+				dstats_fname(&cfg, i, path, sizeof path);
+				backup(path, 90, /* rename: */false);
 				if((dsts = fopen_dstats(&cfg, i, /* for_write: */TRUE)) == NULL) /* doesn't have stats yet */
 					continue;
 
@@ -655,14 +657,12 @@ uint sbbs_t::logonstats()
 					continue;
 				}
 
-				dstats_fname(&cfg, i, path, sizeof path);
 				if(!fread_dstats(dsts, &stats)) {
 					errormsg(WHERE, ERR_READ, path, i);
 				} else {
 					stats.date = time(NULL);
 					fwrite_cstats(csts, &stats);
 					rolloverstats(&stats);
-					backup(path, 90, /* rename: */false);
 					if(!fwrite_dstats(dsts, &stats, __FUNCTION__))
 						errormsg(WHERE, ERR_WRITE, path, i);
 				}

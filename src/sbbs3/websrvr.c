@@ -3279,7 +3279,8 @@ static enum get_fullpath get_fullpath(http_session_t * session)
 	} else
 		safe_snprintf(str,sizeof(str),"%s%s",root_dir,session->req.physical_path);
 
-	if(startup->file_vpath_prefix[0] && (vhost == false || startup->file_vpath_for_vhosts == true)
+	if(!(startup->options & WEB_OPT_NO_FILEBASE)
+		&& startup->file_vpath_prefix[0] && (vhost == false || startup->file_vpath_for_vhosts == true)
 		&& strncmp(session->req.physical_path, startup->file_vpath_prefix, strlen(startup->file_vpath_prefix)) == 0) {
 		session->parsed_vpath = resolve_vpath(session, session->req.physical_path);
 		switch(session->parsed_vpath) {
@@ -6803,6 +6804,17 @@ void http_session_thread(void* arg)
 
 	session.subscan=(subscan_t*)calloc(scfg.total_subs, sizeof(subscan_t));
 
+	if(startup->max_concurrent_connections > 0) {
+		int ip_len = strlen(session.host_ip) + 1;
+		uint connections = listCountMatches(&current_connections, session.host_ip, ip_len);
+		if(connections > startup->max_concurrent_connections
+			&& !is_host_exempt(&scfg, session.host_ip, /* host_name */NULL)) {
+			lprintf(LOG_NOTICE, "%04d [%s] !Maximum concurrent connections (%u) exceeded"
+				,socket, session.host_ip, startup->max_concurrent_connections);
+			send_error(&session, __LINE__, error_429);
+		}
+	}
+
 	while(!session.finished) {
 		init_error=false;
 	    memset(&(session.req), 0, sizeof(session.req));
@@ -7425,23 +7437,6 @@ void web_server(void* arg)
 				startup->socket_open(startup->cbdata,true);
 
 			inet_addrtop(&client_addr, host_ip, sizeof(host_ip));
-
-			if(startup->max_concurrent_connections > 0) {
-				int ip_len = strlen(host_ip) + 1;
-				uint connections = listCountMatches(&current_connections, host_ip, ip_len);
-				if(connections >= startup->max_concurrent_connections
-					&& !is_host_exempt(&scfg, host_ip, /* host_name */NULL)) {
-					lprintf(LOG_NOTICE, "%04d [%s] !Maximum concurrent connections (%u) exceeded"
-						,client_socket, host_ip, startup->max_concurrent_connections);
-					static int len_429;
-					if(len_429 < 1)
-						len_429 = strlen(error_429);
-					if(sendsocket(client_socket, error_429, len_429) != len_429)
-						lprintf(LOG_ERR, "%04d FAILED sending error 429", client_socket);
-					close_socket(&client_socket);
-					continue;
-				}
-			}
 
 			if(trashcan(&scfg,host_ip,"ip-silent")) {
 				close_socket(&client_socket);
