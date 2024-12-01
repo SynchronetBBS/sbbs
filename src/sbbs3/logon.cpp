@@ -109,9 +109,9 @@ bool sbbs_t::logon()
 		return(false); 
 	}
 
-	getnodedat(cfg.node_num,&thisnode,1);
+	getnodedat(cfg.node_num,&thisnode, true);
 	if(thisnode.misc&NODE_LOCK) {
-		putnodedat(cfg.node_num,&thisnode);	/* must unlock! */
+		unlocknodedat(cfg.node_num);	/* must unlock! */
 		if(!SYSOP && !(useron.exempt&FLAG('N'))) {
 			bputs(text[NodeLocked]);
 			safe_snprintf(str, sizeof(str), "(%04u)  %-25s  Locked node logon attempt"
@@ -121,12 +121,12 @@ bool sbbs_t::logon()
 			return(false); 
 		}
 		if(yesno(text[RemoveNodeLockQ])) {
-			getnodedat(cfg.node_num,&thisnode,1);
+			getnodedat(cfg.node_num,&thisnode, true);
 			logline("S-","Removed Node Lock");
 			thisnode.misc&=~NODE_LOCK; 
 		}
 		else
-			getnodedat(cfg.node_num,&thisnode,1); 
+			getnodedat(cfg.node_num,&thisnode, true); 
 	}
 
 	if(useron.exempt&FLAG('H'))
@@ -515,20 +515,21 @@ bool sbbs_t::logon()
 
 	if(sys_status&SS_EVENT)
 		bprintf(text[ReducedTime],timestr(event_time));
-	getnodedat(cfg.node_num,&thisnode,1);
-	thisnode.misc&=~(NODE_AOFF|NODE_POFF);
-	if(useron.chat&CHAT_NOACT)
-		thisnode.misc|=NODE_AOFF;
-	if(useron.chat&CHAT_NOPAGE)
-		thisnode.misc|=NODE_POFF;
-	putnodedat(cfg.node_num,&thisnode);
+	if(getnodedat(cfg.node_num,&thisnode, true)) {
+		thisnode.misc&=~(NODE_AOFF|NODE_POFF);
+		if(useron.chat&CHAT_NOACT)
+			thisnode.misc|=NODE_AOFF;
+		if(useron.chat&CHAT_NOPAGE)
+			thisnode.misc|=NODE_POFF;
+		putnodedat(cfg.node_num,&thisnode);
+	}
 
 	getsmsg(useron.number); 		/* Moved from further down */
 	sync();
 	c=0;
 	for(i=1;i<=cfg.sys_nodes;i++) {
 		if(i!=cfg.node_num) {
-			getnodedat(i,&node,0);
+			getnodedat(i, &node);
 			if(!(cfg.sys_misc&SM_NONODELIST)
 				&& (node.status==NODE_INUSE
 					|| ((node.status==NODE_QUIET || node.errors) && SYSOP))) {
@@ -550,7 +551,7 @@ bool sbbs_t::logon()
 	}
 	for(i=1;i<=cfg.sys_nodes;i++) {
 		if(i!=cfg.node_num) {
-			getnodedat(i,&node,0);
+			getnodedat(i, &node);
 			if(thisnode.status!=NODE_QUIET
 				&& (node.status==NODE_INUSE || node.status==NODE_QUIET)
 				&& !(node.misc&NODE_AOFF) && node.useron!=useron.number) {
@@ -642,9 +643,10 @@ uint sbbs_t::logonstats()
 			close(file);
 			for(i=0;i<=cfg.sys_nodes;i++) {
 				if(i) {     /* updating a node */
-					getnodedat(i,&node,1);
-					node.misc|=NODE_EVENT;
-					putnodedat(i,&node); 
+					if(getnodedat(i,&node, true)) {
+						node.misc|=NODE_EVENT;
+						putnodedat(i,&node);
+					}
 				}
 				dstats_fname(&cfg, i, path, sizeof path);
 				backup(path, 90, /* rename: */false);

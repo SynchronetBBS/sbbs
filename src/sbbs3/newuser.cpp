@@ -39,7 +39,7 @@ bool sbbs_t::newuser()
 
 	max_socket_inactivity = startup->max_newuser_inactivity;
 	bputs(text[StartingNewUserRegistration]);
-	getnodedat(cfg.node_num,&thisnode,0);
+	getnodedat(cfg.node_num,&thisnode);
 	if(thisnode.misc&NODE_LOCK) {
 		bputs(text[NodeLocked]);
 		logline(LOG_WARNING,"N!","New user locked node logon attempt");
@@ -52,10 +52,11 @@ bool sbbs_t::newuser()
 		hangup();
 		return(false); 
 	}
-	getnodedat(cfg.node_num,&thisnode,1);
-	thisnode.status=NODE_NEWUSER;
-	thisnode.connection=node_connection;
-	putnodedat(cfg.node_num,&thisnode);
+	if(getnodedat(cfg.node_num,&thisnode, true)) {
+		thisnode.status=NODE_NEWUSER;
+		thisnode.connection=node_connection;
+		putnodedat(cfg.node_num,&thisnode);
+	}
 	memset(&useron,0,sizeof(user_t));	  /* Initialize user info to null */
 	newuserdefaults(&cfg, &useron);
 	if(cfg.new_pass[0] && online==ON_REMOTE) {

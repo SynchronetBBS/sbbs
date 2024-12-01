@@ -1386,9 +1386,10 @@ void sbbs_t::change_user(void)
 		,cfg.dir[usrdir[curlib][curdir[curlib]]]->code);
 	useron.number=i;
 	getuserdat(&cfg,&useron);
-	getnodedat(cfg.node_num,&thisnode,1);
-	thisnode.useron=useron.number;
-	putnodedat(cfg.node_num,&thisnode);
+	if(getnodedat(cfg.node_num,&thisnode, true)) {
+		thisnode.useron=useron.number;
+		putnodedat(cfg.node_num,&thisnode);
+	}
 	getmsgptrs();
 	if(REALSYSOP) sys_status&=~SS_TMPSYSOP;
 	else sys_status|=SS_TMPSYSOP;

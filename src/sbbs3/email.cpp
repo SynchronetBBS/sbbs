@@ -315,7 +315,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 	if(msgattr&MSG_ANONYMOUS)				/* Don't tell user if anonymous */
 		return(true);
 	for(i=1;i<=cfg.sys_nodes;i++) { /* Tell user, if online */
-		getnodedat(i,&node,0);
+		getnodedat(i, &node);
 		if(node.useron==usernumber && !(node.misc&NODE_POFF)
 			&& (node.status==NODE_INUSE || node.status==NODE_QUIET)) {
 			safe_snprintf(str,sizeof(str),text[EmailNodeMsg],cfg.node_num,useron.alias);

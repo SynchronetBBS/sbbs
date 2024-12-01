@@ -553,9 +553,10 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 	last=smb.status.last_msg;
 
 	if(mode&SCAN_CONT) {   /* update action */
-		getnodedat(cfg.node_num,&thisnode,1);
-		thisnode.action=NODE_RMSG;
-		putnodedat(cfg.node_num,&thisnode); 
+		if(getnodedat(cfg.node_num,&thisnode, true)) {
+			thisnode.action=NODE_RMSG;
+			putnodedat(cfg.node_num,&thisnode);
+		}
 	}
 	current_msg=&msg;	/* For MSG_* @-codes and bbs.msg_* property values */
 	while(online && !done) {

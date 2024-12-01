@@ -47,7 +47,7 @@ void sbbs_t::logout(bool logged_in)
 	}
 	lprintf(LOG_INFO, "logout initiated");
 	SAFECOPY(lastuseron,useron.alias); // TODO: race condition here
-	if(!online && getnodedat(cfg.node_num, &node, /* lock: */true) == 0) {
+	if(!online && getnodedat(cfg.node_num, &node, /* lock: */true)) {
 		node.status = NODE_LOGOUT;
 		putnodedat(cfg.node_num, &node);
 	}
@@ -60,7 +60,7 @@ void sbbs_t::logout(bool logged_in)
 	if(sys_status&SS_USERON && thisnode.status!=NODE_QUIET && !(useron.rest&FLAG('Q')) && logged_in)
 		for(i=1;i<=cfg.sys_nodes;i++)
 			if(i!=cfg.node_num) {
-				getnodedat(i,&node,0);
+				getnodedat(i, &node);
 				if((node.status==NODE_INUSE || node.status==NODE_QUIET)
 					&& !(node.misc&NODE_AOFF) && node.useron!=useron.number) {
 					putnmsg(i, format_text(NodeLoggedOff

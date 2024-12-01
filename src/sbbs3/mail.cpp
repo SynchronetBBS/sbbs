@@ -136,7 +136,7 @@ void sbbs_t::telluser(smbmsg_t* msg)
 			return; 
 	}
 	for(n=1;n<=cfg.sys_nodes;n++) { /* Tell user */
-		getnodedat(n,&node,0);
+		getnodedat(n, &node);
 		if(node.useron==usernumber
 		&& (node.status==NODE_INUSE
 		|| node.status==NODE_QUIET)) {

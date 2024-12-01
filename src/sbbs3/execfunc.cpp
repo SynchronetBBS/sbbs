@@ -256,14 +256,14 @@ int sbbs_t::exec_function(csi_t *csi)
 			else
 				bprintf(text[FileDoesNotExist],str);
 			for(i=1;i<=cfg.sys_nodes;i++) {
-				getnodedat(i,&node,0);
+				getnodedat(i, &node);
 				if(node.errors)
 					break; 
 			}
 			if(i<=cfg.sys_nodes || criterrs) {
 				if(text[ClearErrCounter][0]==0 || !noyes(text[ClearErrCounter])) {
 					for(i=1;i<=cfg.sys_nodes;i++) {
-						if(getnodedat(i,&node,true)==0) {
+						if(getnodedat(i,&node, true)) {
 							node.errors=0;
 							putnodedat(i,&node); 
 						}

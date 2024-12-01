@@ -1286,7 +1286,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 
 	if(!(cfg.xtrn[xtrnnum]->misc&MULTIUSER)) {
 		for(i=1;i<=cfg.sys_nodes;i++) {
-			getnodedat(i,&node,0);
+			getnodedat(i, &node);
 			c=i;
 			if((node.status==NODE_INUSE || node.status==NODE_QUIET)
 				&& node.action==NODE_XTRN && node.aux==(xtrnnum+1)) {
@@ -1349,10 +1349,11 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 		strlwr(name);
 	SAFECAT(path,name);
 	if(action!=NODE_PCHT) {
-		getnodedat(cfg.node_num,&thisnode,1);
-		thisnode.action=NODE_XTRN;
-		thisnode.aux=xtrnnum+1;
-		putnodedat(cfg.node_num,&thisnode);
+		if(getnodedat(cfg.node_num,&thisnode, true)) {
+			thisnode.action=NODE_XTRN;
+			thisnode.aux=xtrnnum+1;
+			putnodedat(cfg.node_num,&thisnode);
+		}
 	}
 	putuserstr(useron.number, USER_CURXTRN, cfg.xtrn[xtrnnum]->code);
 
@@ -1464,9 +1465,10 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 	if(cfg.xtrn[xtrnnum]->misc&MODUSERDAT) 	/* Modify user data */
 		moduserdat(xtrnnum);
 
-	getnodedat(cfg.node_num,&thisnode,1);
-	thisnode.aux=0;
-	putnodedat(cfg.node_num,&thisnode);
+	if(getnodedat(cfg.node_num,&thisnode, true)) {
+		thisnode.aux=0;
+		putnodedat(cfg.node_num,&thisnode);
+	}
 
 	if(cfg.xtrn[xtrnnum]->misc & XTRN_PAUSE)
 		pause();

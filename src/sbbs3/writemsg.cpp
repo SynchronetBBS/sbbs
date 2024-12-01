@@ -1637,7 +1637,7 @@ bool sbbs_t::forwardmsg(smb_t* smb, smbmsg_t* orgmsg, const char* to, const char
 	if(usernumber > 0) {
 		int i;
 		for(i=1;i<=cfg.sys_nodes;i++) { /* Tell user, if online */
-			getnodedat(i,&node,0);
+			getnodedat(i, &node);
 			if(node.useron==usernumber && !(node.misc&NODE_POFF)
 				&& (node.status==NODE_INUSE || node.status==NODE_QUIET)) {
 				SAFEPRINTF2(str,text[EmailNodeMsg],cfg.node_num,useron.alias);

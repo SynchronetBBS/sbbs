@@ -55,7 +55,7 @@ void sbbs_t::multinodechat(int channel)
 	if(useron.misc&(RIP) ||!(useron.misc&EXPERT))
 		menu("multchat");
 	bputs(text[WelcomeToMultiChat]);
-	if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+	if(getnodedat(cfg.node_num,&thisnode, true)) {
 		thisnode.aux=channel;
 		putnodedat(cfg.node_num,&thisnode);
 	}
@@ -82,7 +82,7 @@ void sbbs_t::multinodechat(int channel)
 	for(i=1;i<=cfg.sys_nodes && i<=cfg.sys_lastnode;i++) {
 		if(i==cfg.node_num)
 			continue;
-		getnodedat(i,&node,0);
+		getnodedat(i, &node);
 		if(node.action!=NODE_MCHT || node.status!=NODE_INUSE)
 			continue;
 		if(node.aux && (node.aux&0xff)!=channel)
@@ -105,7 +105,7 @@ void sbbs_t::multinodechat(int channel)
         for(i=1;i<=cfg.sys_nodes;i++) {
 			if(i==cfg.node_num)
 				continue;
-			getnodedat(i,&node,0);
+			getnodedat(i,&node);
 			if(node.action!=NODE_MCHT
 				|| (node.aux && channel && (node.aux&0xff)!=channel))
 				continue;
@@ -126,7 +126,7 @@ void sbbs_t::multinodechat(int channel)
 					if(preusr[i]==usr[j])
 						break;
 				if(j==usrs) {
-					getnodedat(preusr[i],&node,0);
+					getnodedat(preusr[i], &node);
 					if(node.misc&NODE_ANON)
 						sprintf(str,"%.80s",text[UNKNOWN_USER]);
 					else
@@ -148,7 +148,7 @@ void sbbs_t::multinodechat(int channel)
 					if(usr[i]==preusr[j])
 						break;
 				if(j==preusrs) {
-					getnodedat(usr[i],&node,0);
+					getnodedat(usr[i], &node);
 					if(node.misc&NODE_ANON)
 						sprintf(str,"%.80s",text[UNKNOWN_USER]);
 					else
@@ -184,7 +184,7 @@ void sbbs_t::multinodechat(int channel)
 					for(i=1;i<=cfg.sys_nodes;i++) {
 						if(i==cfg.node_num)
 							continue;
-						getnodedat(i,&node,0);
+						getnodedat(i, &node);
 						if(node.action!=NODE_MCHT
 							|| node.status!=NODE_INUSE)
 							continue;
@@ -273,7 +273,7 @@ void sbbs_t::multinodechat(int channel)
 						for(i=1;i<=cfg.sys_nodes;i++) {
 							if(i==cfg.node_num)
 								continue;
-							getnodedat(i,&node,0);
+							getnodedat(i, &node);
 							if(node.action!=NODE_MCHT
 								|| node.status!=NODE_INUSE)
 								continue;
@@ -282,7 +282,7 @@ void sbbs_t::multinodechat(int channel)
 							usr[usrs++]=(char)i;
 						}
 						preusrs=usrs;
-						if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+						if(getnodedat(cfg.node_num,&thisnode, true)) {
 							thisnode.aux=channel=0;
 							putnodedat(cfg.node_num,&thisnode);
 						}
@@ -320,7 +320,7 @@ void sbbs_t::multinodechat(int channel)
 					case 'L':	/* list nodes */
 						CRLF;
 						for(i=1;i<=cfg.sys_nodes && i<=cfg.sys_lastnode;i++) {
-							getnodedat(i,&node,0);
+							getnodedat(i, &node);
 							printnodedat(i,&node);
 						}
 						CRLF;
@@ -439,7 +439,7 @@ void sbbs_t::multinodechat(int channel)
 							p=pgraph+strlen(str);
 							n=atoi(p);
 							for(j=0;j<usrs;j++) {
-								getnodedat(usr[j],&node,0);
+								getnodedat(usr[j], &node);
 								if(usrs==1) /* no need to search */
 									break;
 								if(n) {
@@ -493,11 +493,11 @@ void sbbs_t::multinodechat(int channel)
 							for(i=0;i<usrs;i++) {
 								if(i==j)
 									continue;
-								getnodedat(usr[i],&node,0);
+								getnodedat(usr[i], &node);
 								putnmsg(usr[i],buf);
 							}
 							for(i=0;i<qusrs;i++) {
-								getnodedat(qusr[i],&node,0);
+								getnodedat(qusr[i], &node);
 								putnmsg(qusr[i],buf);
 							}
 							continue;
@@ -512,11 +512,11 @@ void sbbs_t::multinodechat(int channel)
 					if(useron.chat&CHAT_ECHO)
 						bputs(buf);
 					for(i=0;i<usrs;i++) {
-						getnodedat(usr[i],&node,0);
+						getnodedat(usr[i], &node);
 						putnmsg(usr[i],buf);
 					}
 					for(i=0;i<qusrs;i++) {
-						getnodedat(qusr[i],&node,0);
+						getnodedat(qusr[i], &node);
 						putnmsg(qusr[i],buf);
 					}
 					if(!usrs && channel && gurubuf
@@ -711,12 +711,12 @@ void sbbs_t::privchat(bool forced, int node_num)
 			bputs(text[NoNeedToPageSelf]);
 			return;
 		}
-		getnodedat(n,&node,0);
+		getnodedat(n, &node);
 		if(node.action==NODE_PCHT && node.aux!=cfg.node_num) {
 			bprintf(text[NodeNAlreadyInPChat],n);
 			return;
 		}
-		if(SYSOP && getnodedat(n, &node, true) == 0) {
+		if(SYSOP && getnodedat(n, &node, true)) {
 			node.misc |= NODE_FCHAT;
 			putnodedat(n, &node);
 		} else {
@@ -740,7 +740,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 			}
 		}
 
-		if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+		if(getnodedat(cfg.node_num,&thisnode, true)) {
 			thisnode.action=action=NODE_PAGE;
 			thisnode.aux=n;
 			putnodedat(cfg.node_num,&thisnode);
@@ -749,7 +749,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 		if(node.action!=NODE_PAGE || node.aux!=cfg.node_num) {
 			bprintf(text[WaitingForNodeInPChat],n);
 			while(online && !(sys_status&SS_ABORT)) {
-				getnodedat(n,&node,0);
+				getnodedat(n, &node);
 				if((node.action==NODE_PAGE || node.action==NODE_PCHT)
 					&& node.aux==cfg.node_num) {
 					bprintf(text[NodeJoinedPrivateChat]
@@ -768,7 +768,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 
 	gettimeleft();
 
-	if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+	if(getnodedat(cfg.node_num,&thisnode, true)) {
 		thisnode.action=action=NODE_PCHT;
 		thisnode.aux=n;
 		thisnode.misc&=~ (NODE_LCHAT|NODE_FCHAT);
@@ -834,13 +834,13 @@ void sbbs_t::privchat(bool forced, int node_num)
 	lseek(in,0L,SEEK_SET);
 	lseek(out,0L,SEEK_SET);
 
-	if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+	if(getnodedat(cfg.node_num,&thisnode, true)) {
 		thisnode.misc&=~NODE_RPCHT; 		/* Clear "reset pchat flag" */
 		putnodedat(cfg.node_num,&thisnode);
 	}
 
 	if(n) { // not local
-		if(getnodedat(n,&node,true)==0) {
+		if(getnodedat(n, &node, true)) {
 			node.misc|=NODE_RPCHT;				/* Set "reset pchat flag" */
 			putnodedat(n,&node); 				/* on other node */
 		}
@@ -848,10 +848,10 @@ void sbbs_t::privchat(bool forced, int node_num)
 											/* Wait for other node */
 											/* to acknowledge and reset */
 		while(online && !(sys_status&SS_ABORT)) {
-			getnodedat(n,&node,0);
+			getnodedat(n, &node);
 			if(!(node.misc&NODE_RPCHT))
 				break;
-			getnodedat(cfg.node_num,&thisnode,0);
+			getnodedat(cfg.node_num, &thisnode);
 			if(thisnode.misc&NODE_RPCHT)
 				break;
 			checkline();
@@ -1114,12 +1114,12 @@ void sbbs_t::privchat(bool forced, int node_num)
 
 			if(!localchar) {
 				if(sys_status&SS_SPLITP) {
-					getnodedat(cfg.node_num,&thisnode,0);
+					getnodedat(cfg.node_num, &thisnode);
 					if(thisnode.misc&NODE_INTR)
 						break;
 					if(thisnode.misc&NODE_UDAT && !(useron.rest&FLAG('G'))) {
 						getuserdat(&cfg,&useron);
-						if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+						if(getnodedat(cfg.node_num,&thisnode, true)) {
 							thisnode.misc&=~NODE_UDAT;
 							putnodedat(cfg.node_num,&thisnode);
 						}
@@ -1130,7 +1130,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 			}
 
 			if(n != 0) {
-				getnodedat(n,&node,0);
+				getnodedat(n, &node);
 				if((node.action!=NODE_PCHT && node.action!=NODE_PAGE)
 					|| node.aux!=cfg.node_num) {
 					bprintf(text[NodeLeftPrivateChat]
@@ -1139,7 +1139,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 					break;
 				}
 			}
-			getnodedat(cfg.node_num,&thisnode,0);
+			getnodedat(cfg.node_num, &thisnode);
 			if(thisnode.action!=NODE_PCHT) {
 				action=thisnode.action;
 				bputs(text[EndOfChat]);
@@ -1148,7 +1148,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 			if(thisnode.misc&NODE_RPCHT) {		/* pchat has been reset */
 				lseek(in,0L,SEEK_SET);			/* so seek to beginning */
 				lseek(out,0L,SEEK_SET);
-				if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+				if(getnodedat(cfg.node_num,&thisnode, true)) {
 					thisnode.misc&=~NODE_RPCHT;
 					putnodedat(cfg.node_num,&thisnode);
 				}
@@ -1175,12 +1175,12 @@ int sbbs_t::getnodetopage(int all, int telegram)
 	if(!lastnodemsg)
 		lastnodemsguser[0]=0;
 	if(lastnodemsg) {
-		getnodedat(lastnodemsg,&node,0);
+		getnodedat(lastnodemsg, &node);
 		if(node.status!=NODE_INUSE && !SYSOP)
 			lastnodemsg=1;
 	}
 	for(j=0,i=1;i<=cfg.sys_nodes && i<=cfg.sys_lastnode;i++) {
-		getnodedat(i,&node,0);
+		getnodedat(i, &node);
 		if(i==cfg.node_num)
 			continue;
 		if(node.status==NODE_INUSE || (SYSOP && node.status >= NODE_LOGON && node.status <= NODE_QUIET)) {
@@ -1215,7 +1215,7 @@ int sbbs_t::getnodetopage(int all, int telegram)
 
 	j=atoi(str);
 	if(j && j<=cfg.sys_lastnode && j<=cfg.sys_nodes) {
-		getnodedat(j,&node,0);
+		getnodedat(j, &node);
 		if(node.useron == 0 || (node.status!=NODE_INUSE && !SYSOP)) {
 			bprintf(text[NodeNIsNotInUse],j);
 			return(0);
@@ -1254,7 +1254,7 @@ int sbbs_t::getnodetopage(int all, int telegram)
 	}
 
 	for(i=1;i<=cfg.sys_nodes && i<=cfg.sys_lastnode;i++) {
-		getnodedat(i,&node,0);
+		getnodedat(i, &node);
 		if((node.status==NODE_INUSE || (SYSOP && node.status==NODE_QUIET))
 			&& node.useron==j) {
 			if(telegram && node.misc&NODE_POFF && !SYSOP) {
@@ -1296,7 +1296,7 @@ void sbbs_t::nodemsg()
 		return;
 	}
 	sys_status|=SS_IN_CTRLP;
-	getnodedat(cfg.node_num,&savenode,0);
+	getnodedat(cfg.node_num, &savenode);
 	wordwrap[0]=0;
 	while(online && !done) {
 		if(useron.rest&FLAG('C')) {
@@ -1312,7 +1312,7 @@ void sbbs_t::nodemsg()
 				break;
 			if(sys_status&SS_ABORT)
 				break;
-			if(getnodedat(cfg.node_num,&thisnode,false)==0) {
+			if(getnodedat(cfg.node_num,&thisnode, false)) {
 				if(thisnode.misc&(NODE_MSGW|NODE_NMSG)) {
 					lncntr=0;	/* prevent pause prompt */
 					saveline();
@@ -1392,7 +1392,7 @@ void sbbs_t::nodemsg()
 				if(!i)
 					break;
 				if(i!=-1) {
-					getnodedat(i,&node,0);
+					getnodedat(i, &node);
 					usernumber=node.useron;
 					if(node.misc&NODE_POFF && !SYSOP)
 						bprintf(text[CantPageNode],node.misc&NODE_ANON
@@ -1428,7 +1428,7 @@ void sbbs_t::nodemsg()
 					for(i=1;i<=cfg.sys_nodes;i++) {
 						if(i==cfg.node_num)
 							continue;
-						getnodedat(i,&node,0);
+						getnodedat(i, &node);
 						if((node.status==NODE_INUSE
 							|| (SYSOP && node.status==NODE_QUIET))
 							&& (SYSOP || !(node.misc&NODE_POFF)))
@@ -1457,7 +1457,7 @@ void sbbs_t::nodemsg()
 	nodemsg_inside--;
 	if(!nodemsg_inside)
 		sys_status&=~SS_IN_CTRLP;
-	if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+	if(getnodedat(cfg.node_num, &thisnode, true)) {
 		thisnode.action=action=savenode.action;
 		thisnode.aux=savenode.aux;
 		thisnode.extaux=savenode.extaux;
@@ -1931,7 +1931,7 @@ void sbbs_t::localguru(char *gurubuf, int gurunum)
 		}
 	}
 	bprintf(text[SysopIsHere],cfg.guru[gurunum]->name);
-	if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+	if(getnodedat(cfg.node_num,&thisnode, true)) {
 		thisnode.aux=gurunum;
 		putnodedat(cfg.node_num,&thisnode);
 	}

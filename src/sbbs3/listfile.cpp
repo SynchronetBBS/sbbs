@@ -92,9 +92,9 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 	}
 
 	if(!tofile) {
-		getnodedat(cfg.node_num,&thisnode,0);
+		getnodedat(cfg.node_num, &thisnode);
 		if(thisnode.action!=NODE_LFIL) {	/* was a sync */
-			if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+			if(getnodedat(cfg.node_num,&thisnode, true)) {
 				thisnode.action=NODE_LFIL;
 				putnodedat(cfg.node_num,&thisnode);
 			}
@@ -133,7 +133,7 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 				}
 				else
 					break;
-				getnodedat(cfg.node_num,&thisnode,0);
+				getnodedat(cfg.node_num,&thisnode);
 				nodesync();
 			}
 			else
@@ -318,7 +318,7 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 						found-=letter-'A'+1;
 					}
 				}
-				getnodedat(cfg.node_num,&thisnode,0);
+				getnodedat(cfg.node_num,&thisnode);
 				nodesync();
 				letter='A';
 			}
@@ -1050,7 +1050,7 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 						getfilepath(&cfg, f, str);
 						SAFEPRINTF2(path,"%s%s",cfg.temp_dir,f->name);
 						mv(str,path,1); /* copy the file to temp dir */
-						if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+						if(getnodedat(cfg.node_num,&thisnode, true)) {
 							thisnode.aux=0xf0;
 							putnodedat(cfg.node_num,&thisnode);
 						}

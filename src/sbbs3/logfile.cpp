@@ -310,11 +310,12 @@ void sbbs_t::errormsg(int line, const char* function, const char *src, const cha
 	}
 	safe_snprintf(str,sizeof(str),"ERROR %s %s", action, object);
 	if(cfg.node_num>0) {
-		getnodedat(cfg.node_num,&thisnode,1);
-		if(thisnode.errors<UCHAR_MAX)
-			thisnode.errors++;
-		criterrs=thisnode.errors;
-		putnodedat(cfg.node_num,&thisnode);
+		if(getnodedat(cfg.node_num,&thisnode, true)) {
+			if(thisnode.errors<UCHAR_MAX)
+				thisnode.errors++;
+			criterrs=thisnode.errors;
+			putnodedat(cfg.node_num,&thisnode);
+		}
 	}
 	now=time(NULL);
 

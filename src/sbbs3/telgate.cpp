@@ -440,7 +440,7 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, str_list_t
 					sync();
 				} else {
 					// Check if the node has been interrupted
-					getnodedat(cfg.node_num,&thisnode,0);
+					getnodedat(cfg.node_num,&thisnode);
 					if(thisnode.misc&NODE_INTR)
 						break;
 				}

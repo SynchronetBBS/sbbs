@@ -365,7 +365,7 @@ bool sbbs_t::start_batch_download()
 					,cfg.dir[batdn_dir[i]]->path
 					,fname);
 				mv(str,path,1); /* copy the file to temp dir */
-				if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+				if(getnodedat(cfg.node_num,&thisnode, true)) {
 					thisnode.aux=40; /* clear the seq dev # */
 					putnodedat(cfg.node_num,&thisnode);
 				}

@@ -1292,7 +1292,7 @@ js_nodesync(JSContext *cx, uintN argc, jsval *arglist)
 		clearline = JSVAL_TO_BOOLEAN(argv[0]);
 
 	rc=JS_SUSPENDREQUEST(cx);
-	sbbs->getnodedat(sbbs->cfg.node_num,&sbbs->thisnode,0);
+	sbbs->getnodedat(sbbs->cfg.node_num,&sbbs->thisnode);
 	sbbs->nodesync(clearline ? true : false);
 	JS_RESUMEREQUEST(cx, rc);
 
@@ -3434,7 +3434,7 @@ js_put_node_message(JSContext *cx, uintN argc, jsval *arglist)
 	int usernumber = 0;
 	node_t node{};
 	if(nodenum >= 1) {	/* !all */
-		sbbs->getnodedat(nodenum, &node, false);
+		sbbs->getnodedat(nodenum, &node);
 		usernumber = node.useron;
 		if((node.misc&NODE_POFF) && !is_user_sysop(&sbbs->useron)) {
 			sbbs->bprintf(sbbs->text[CantPageNode]
@@ -3480,7 +3480,7 @@ js_put_node_message(JSContext *cx, uintN argc, jsval *arglist)
 		for(int i=1; i<=sbbs->cfg.sys_nodes && success; i++) {
 			if(i==sbbs->cfg.node_num)
 				continue;
-			sbbs->getnodedat(i, &node, false);
+			sbbs->getnodedat(i, &node);
 			if((node.status==NODE_INUSE
 				|| (is_user_sysop(&sbbs->useron) && node.status==NODE_QUIET))
 				&& (is_user_sysop(&sbbs->useron) || !(node.misc&NODE_POFF)))

@@ -367,7 +367,7 @@ void sbbs_t::seqwait(uint devnum)
 		getnodedat(cfg.node_num,&thisnode,true);	/* open and lock this record */
 		for(i=1;i<=cfg.sys_nodes;i++) {
 			if(i==cfg.node_num) continue;
-			if(getnodedat(i,&node,true)==0) {
+			if(getnodedat(i,&node, true)) {
 				if((node.status==NODE_INUSE || node.status==NODE_QUIET)
 					&& node.action==NODE_RFSD && node.aux==devnum) {
 					putnodedat(i,&node);

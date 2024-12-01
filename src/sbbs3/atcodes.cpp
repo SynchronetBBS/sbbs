@@ -1013,7 +1013,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	if(!strncmp(sp,"NODE",4) && IS_DIGIT(sp[4])) {
 		i=atoi(sp+4);
 		if(i && i<=cfg.sys_nodes) {
-			getnodedat(i,&node,0);
+			getnodedat(i, &node);
 			printnodedat(i,&node);
 		}
 		return(nulstr);

@@ -1073,22 +1073,23 @@ public:
 	char* expand_atcodes(const char* src, char* buf, size_t size, const smbmsg_t* msg = NULL);
 
 	/* getnode.cpp */
-	int		getsmsg(int usernumber, bool clearline = false);
-	int		getnmsg(bool clearline = false);
+	bool	getsmsg(int usernumber, bool clearline = false);
+	bool	getnmsg(bool clearline = false);
 	int		whos_online(bool listself);/* Lists active nodes, returns active nodes */
 	void	nodelist(void);
-	int		getnodeext(uint number, char * str);
-	int		getnodedat(uint number, node_t * node, bool lock);
+	bool	getnodeext(uint number, char * str);
+	bool	getnodedat(uint number, node_t * node, bool lock = false);
 	void	nodesync(bool clearline = false);
 	user_t	nodesync_user{};
 	bool	nodesync_inside = false;
 	uint	count_nodes(bool self = true);
-	void	sync(bool clearline = false) { getnodedat(cfg.node_num, &thisnode, 0); nodesync(clearline); }
+	void	sync(bool clearline = false) { getnodedat(cfg.node_num, &thisnode); nodesync(clearline); }
 
 	/* putnode.cpp */
-	int		putnodedat(uint number, node_t * node);
-	int		putnodeext(uint number, char * str);
+	bool	putnodedat(uint number, node_t * node);
+	bool	putnodeext(uint number, char * str);
 	bool	putnode_downloading(off_t size);
+	bool	unlocknodedat(uint number);
 
 	/* login.ccp */
 	int		login(const char *user_name, const char *pw_prompt, const char* user_pw = NULL, const char* sys_pw = NULL);

@@ -456,7 +456,7 @@ bool sbbs_t::pause(bool set_abort)
 		lncntr=rows-2;
 	if(text[Pause][0]!='@')
 		backspace(len);
-	getnodedat(cfg.node_num,&thisnode,0);
+	getnodedat(cfg.node_num, &thisnode);
 	nodesync();
 	attr(tempattrs);
 	pause_inside = false;

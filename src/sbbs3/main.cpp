@@ -3047,12 +3047,13 @@ void event_thread(void* arg)
 			for(i=first_node;i<=last_node;i++) {
 				// Node Daily Event
 				node.status=NODE_INVALID_STATUS;
-				if(sbbs->getnodedat(i,&node,0)!=0)
+				if(!sbbs->getnodedat(i,&node))
 					continue;
 				if(node.misc&NODE_EVENT && node.status==NODE_WFC) {
-					sbbs->getnodedat(i,&node,1);
-					node.status=NODE_EVENT_RUNNING;
-					sbbs->putnodedat(i,&node);
+					if(sbbs->getnodedat(i,&node, true)) {
+						node.status=NODE_EVENT_RUNNING;
+						sbbs->putnodedat(i,&node);
+					}
 					if(sbbs->cfg.node_daily.cmd[0] && !(sbbs->cfg.node_daily.misc & EVENT_DISABLED)) {
 						sbbs->cfg.node_num=i;
 						SAFECOPY(sbbs->cfg.node_dir, sbbs->cfg.node_path[i-1]);
@@ -3067,11 +3068,12 @@ void event_thread(void* arg)
 						sbbs->console&=~CON_L_ECHO;
 						sbbs->online=false;
 					}
-					sbbs->getnodedat(i,&node,1);
-					node.misc&=~NODE_EVENT;
-					node.status=NODE_WFC;
-					node.useron=0;
-					sbbs->putnodedat(i,&node);
+					if(sbbs->getnodedat(i,&node, true)) {
+						node.misc&=~NODE_EVENT;
+						node.status=NODE_WFC;
+						node.useron=0;
+						sbbs->putnodedat(i,&node);
+					}
 				}
 			}
 			sbbs->event_code = nulstr;
@@ -3271,7 +3273,7 @@ void event_thread(void* arg)
 							if(now-start>10 && now-lastnodechk<10)
 								continue;
 							for(j=first_node;j<=last_node;j++) {
-								if(sbbs->getnodedat(j,&node,1)!=0)
+								if(!sbbs->getnodedat(j,&node, true))
 									continue;
 								if(node.status==NODE_WFC)
 									node.status=NODE_EVENT_LIMBO;
@@ -3311,7 +3313,7 @@ void event_thread(void* arg)
 							lastnodechk=now;
 							// Check/change the status of the nodes that we're in control of
 							for(j=first_node;j<=last_node;j++) {
-								if(sbbs->getnodedat(j,&node,1)!=0)
+								if(!sbbs->getnodedat(j,&node, true))
 									continue;
 								if(node.status==NODE_WFC) {
 									if(j==sbbs->cfg.event[i]->node)
@@ -3324,7 +3326,7 @@ void event_thread(void* arg)
 							}
 
 							for(j=1;j<=sbbs->cfg.sys_nodes;j++) {
-								if(sbbs->getnodedat(j,&node,0)!=0)
+								if(!sbbs->getnodedat(j,&node))
 									continue;
 								if(j==sbbs->cfg.event[i]->node) {
 									if(node.status!=NODE_EVENT_WAITING)
@@ -3367,7 +3369,7 @@ void event_thread(void* arg)
 					sbbs->cfg.event[i]->last=(time32_t)now;
 					for(j=first_node;j<=last_node;j++) {
 						node.status=NODE_INVALID_STATUS;
-						if(sbbs->getnodedat(j,&node,1)!=0)
+						if(!sbbs->getnodedat(j,&node, true))
 							continue;
 						node.status=NODE_WFC;
 						sbbs->putnodedat(j,&node);
@@ -3386,9 +3388,10 @@ void event_thread(void* arg)
 					if(fexistcase(str))
 						sbbs->fremove(WHERE, str);
 					if(sbbs->cfg.event[i]->node != NODE_ANY && (sbbs->cfg.event[i]->misc&EVENT_EXCL)) {
-						sbbs->getnodedat(sbbs->cfg.event[i]->node,&node,1);
-						node.status=NODE_EVENT_RUNNING;
-						sbbs->putnodedat(sbbs->cfg.event[i]->node,&node);
+						if(sbbs->getnodedat(sbbs->cfg.event[i]->node,&node, true)) {
+							node.status=NODE_EVENT_RUNNING;
+							sbbs->putnodedat(sbbs->cfg.event[i]->node,&node);
+						}
 					}
 					const char* cmd = sbbs->cfg.event[i]->cmd;
 					int ex_mode = EX_OFFLINE;
@@ -3433,7 +3436,7 @@ void event_thread(void* arg)
 						// Check/change the status of the nodes that we're in control of
 						for(j=first_node;j<=last_node;j++) {
 							node.status=NODE_INVALID_STATUS;
-							if(sbbs->getnodedat(j,&node,1)!=0)
+							if(!sbbs->getnodedat(j,&node, true))
 								continue;
 							node.status=NODE_WFC;
 							sbbs->putnodedat(j,&node);
@@ -3640,14 +3643,15 @@ bool sbbs_t::init()
 			catsyslog(true);
 		}
 
-		getnodedat(cfg.node_num,&thisnode,1);
-		/* thisnode.status=0; */
-		thisnode.action=0;
-		thisnode.useron=0;
-		thisnode.aux=0;
-		thisnode.misc&=(NODE_EVENT|NODE_LOCK|NODE_RRUN);
-		criterrs=thisnode.errors;
-		putnodedat(cfg.node_num,&thisnode);
+		if(getnodedat(cfg.node_num,&thisnode, true)) {
+			/* thisnode.status=0; */
+			thisnode.action=0;
+			thisnode.useron=0;
+			thisnode.aux=0;
+			thisnode.misc&=(NODE_EVENT|NODE_LOCK|NODE_RRUN);
+			criterrs=thisnode.errors;
+			putnodedat(cfg.node_num,&thisnode);
+		}
 
 		// remove any pending node messages
 		safe_snprintf(str, sizeof(str), "%smsgs/n%3.3u.msg",cfg.data_dir,cfg.node_num);
@@ -4383,7 +4387,7 @@ void node_thread(void* arg)
 				sbbs->getnodedat(sbbs->cfg.node_num, &sbbs->thisnode, /* lock: */false);
 				if(sbbs->thisnode.misc & NODE_UDAT && !(sbbs->useron.rest & FLAG('G'))) {   /* not guest */
 					getuserdat(&sbbs->cfg, &sbbs->useron);
-					if(sbbs->getnodedat(sbbs->cfg.node_num, &sbbs->thisnode, /* lock: */true) == 0) {
+					if(sbbs->getnodedat(sbbs->cfg.node_num, &sbbs->thisnode, /* lock: */true)) {
 						sbbs->thisnode.misc &= ~NODE_UDAT;
 						sbbs->putnodedat(sbbs->cfg.node_num, &sbbs->thisnode); 
 					}
@@ -4552,15 +4556,16 @@ void node_thread(void* arg)
 			sbbs->errormsg(WHERE, "truncating", "logfile", 0);
 	}
 
-	sbbs->getnodedat(sbbs->cfg.node_num,&node,1);
-	if(node.misc&NODE_DOWN)
-		node.status=NODE_OFFLINE;
-	else
-		node.status=NODE_WFC;
-	node.misc&=~(NODE_DOWN|NODE_INTR|NODE_MSGW|NODE_NMSG
-				|NODE_UDAT|NODE_POFF|NODE_AOFF|NODE_EXT);
-/*	node.useron=0; needed for hang-ups while in multinode chat */
-	sbbs->putnodedat(sbbs->cfg.node_num,&node);
+	if(sbbs->getnodedat(sbbs->cfg.node_num,&node, true)) {
+		if(node.misc&NODE_DOWN)
+			node.status=NODE_OFFLINE;
+		else
+			node.status=NODE_WFC;
+		node.misc&=~(NODE_DOWN|NODE_INTR|NODE_MSGW|NODE_NMSG
+					|NODE_UDAT|NODE_POFF|NODE_AOFF|NODE_EXT);
+	/*	node.useron=0; needed for hang-ups while in multinode chat */
+		sbbs->putnodedat(sbbs->cfg.node_num,&node);
+	}
 
 	{
 		/* crash here on Aug-4-2015:
@@ -4623,9 +4628,7 @@ void sbbs_t::daily_maint(void)
 	now=time(NULL);
 
 	if(cfg.node_num) {
-		if((i=getnodedat(cfg.node_num,&thisnode,true)) != 0)
-			errormsg(WHERE,ERR_LOCK,"node file",i);
-		else {
+		if(getnodedat(cfg.node_num,&thisnode, true)) {
 			thisnode.status=NODE_EVENT_RUNNING;
 			putnodedat(cfg.node_num,&thisnode);
 		}
@@ -5296,11 +5299,12 @@ NO_SSH:
 	last_node=startup->last_node;
 
 	for(int i=first_node;i<=last_node;i++) {
-		sbbs->getnodedat(i,&node,1);
-		node.status=NODE_WFC;
-		node.misc&=NODE_EVENT;	/* Note: Turns-off NODE_RRUN flag (and others) */
-		node.action=0;
-		sbbs->putnodedat(i,&node);
+		if(sbbs->getnodedat(i,&node, true)) {
+			node.status=NODE_WFC;
+			node.misc&=NODE_EVENT;	/* Note: Turns-off NODE_RRUN flag (and others) */
+			node.action=0;
+			sbbs->putnodedat(i,&node);
+		}
 	}
 
 	/* Setup recycle/shutdown semaphore file lists */
@@ -5665,13 +5669,13 @@ NO_SSH:
 		for(node_num=first_node; node_num <= last_node; node_num++) {
 			/* paranoia: make sure node.status!=NODE_WFC by default */
 			node.status=NODE_INVALID_STATUS;
-			if(sbbs->getnodedat(node_num,&node,1)!=0)
+			if(!sbbs->getnodedat(node_num,&node, true))
 				continue;
 			if(node.status==NODE_WFC) {
 				if(node_socket[node_num - 1] != INVALID_SOCKET) {
 					lprintf(LOG_CRIT, "%04d !Node %d status is WFC, but the node socket (%d) and thread are still in use!"
 						,client_socket, node_num, node_socket[node_num - 1]);
-					sbbs->putnodedat(node_num, &node);
+					sbbs->unlocknodedat(node_num);
 					continue;
 				}
 				node.status=NODE_LOGON;
@@ -5688,7 +5692,7 @@ NO_SSH:
 				sbbs->putnodedat(node_num, &node);
 				break;
 			}
-			sbbs->putnodedat(node_num, &node);
+			sbbs->unlocknodedat(node_num);
 		}
 
 		if(node_num>last_node) {
@@ -5728,17 +5732,19 @@ NO_SSH:
 					client_off(client_socket);
 					SSH_END(client_socket);
 					close_socket(client_socket);
-					sbbs->getnodedat(cfg->node_num,&node,true);
-					node.status = NODE_WFC;
-					sbbs->putnodedat(cfg->node_num,&node);
+					if(sbbs->getnodedat(cfg->node_num,&node, true)) {
+						node.status = NODE_WFC;
+						sbbs->putnodedat(cfg->node_num,&node);
+					}
 					continue;
 				}
 			}
 			cfg->node_num = node_num; // correct the node number
 			if(node.misc & NODE_RRUN) {
-				sbbs->getnodedat(cfg->node_num,&node,true);
-				node.misc &= ~NODE_RRUN;
-				sbbs->putnodedat(cfg->node_num,&node);
+				if(sbbs->getnodedat(cfg->node_num,&node,true)) {
+					node.misc &= ~NODE_RRUN;
+					sbbs->putnodedat(cfg->node_num,&node);
+				}
 			}
 			sbbs->bputs(crlf);
 		}
@@ -5774,9 +5780,10 @@ NO_SSH:
 			else
 				sbbs->putcom("\r\nSorry, initialization failed. Try again later.\r\n");
 			sbbs->flush_output(3000);
-			sbbs->getnodedat(new_node->cfg.node_num,&node,1);
-			node.status=NODE_WFC;
-			sbbs->putnodedat(new_node->cfg.node_num,&node);
+			if(sbbs->getnodedat(new_node->cfg.node_num,&node, true)) {
+				node.status=NODE_WFC;
+				sbbs->putnodedat(new_node->cfg.node_num,&node);
+			}
 			delete new_node;
 			node_socket[node_num-1]=INVALID_SOCKET;
 			client_off(client_socket);
@@ -6012,9 +6019,10 @@ NO_SSH:
 
     // Set all nodes' status to OFFLINE
     for(int i=first_node;i<=last_node;i++) {
-        sbbs->getnodedat(i,&node,1);
-        node.status=NODE_OFFLINE;
-        sbbs->putnodedat(i,&node);
+        if(sbbs->getnodedat(i,&node, true)) {
+			node.status=NODE_OFFLINE;
+			sbbs->putnodedat(i,&node);
+		}
     }
 
     if(events!=NULL) {

@@ -841,7 +841,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 				/* only check node for interrupt flag every 3 seconds of no I/O */
 				if((loop_since_io%30)==0) {
 					// Check if the node has been interrupted
-					getnodedat(cfg.node_num,&thisnode,0);
+					getnodedat(cfg.node_num, &thisnode);
 					if(thisnode.misc&NODE_INTR)
 						break;
 				}

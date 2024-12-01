@@ -440,14 +440,16 @@ bool sbbs_t::answer()
 								client.usernum = useron.number;
 								client_on(client_socket, &client,/* update: */TRUE);
 								SAFECOPY(connection, client.protocol);
-								if((useron.exempt&FLAG('Q') && useron.misc&QUIET))
-									thisnode.status = NODE_QUIET;
-								else
-									thisnode.status = NODE_INUSE;
-								thisnode.action = NODE_XFER;
-								thisnode.connection = NODE_CONNECTION_SFTP;
-								thisnode.useron = useron.number;
-								putnodedat(cfg.node_num, &thisnode);
+								if(getnodedat(cfg.node_num, &thisnode, true)) {
+									if((useron.exempt&FLAG('Q') && useron.misc&QUIET))
+										thisnode.status = NODE_QUIET;
+									else
+										thisnode.status = NODE_INUSE;
+									thisnode.action = NODE_XFER;
+									thisnode.connection = NODE_CONNECTION_SFTP;
+									thisnode.useron = useron.number;
+									putnodedat(cfg.node_num, &thisnode);
+								}
 								SAFECOPY(useron.modem, connection);
 								SAFECOPY(useron.ipaddr, client_ipaddr);
 								SAFECOPY(useron.comp, client_name);

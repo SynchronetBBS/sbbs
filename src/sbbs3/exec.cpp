@@ -1430,14 +1430,14 @@ int sbbs_t::exec(csi_t *csi)
 				csi->ip+=2;
 				return(0);
 			case CS_TOGGLE_NODE_MISC:
-				if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+				if(getnodedat(cfg.node_num,&thisnode, true)) {
 					thisnode.misc^=*(ushort *)csi->ip;
 					putnodedat(cfg.node_num,&thisnode);
 				}
 				csi->ip+=2;
 				return(0);
 			case CS_COMPARE_NODE_MISC:
-				getnodedat(cfg.node_num,&thisnode,0);
+				getnodedat(cfg.node_num, &thisnode);
 				if((thisnode.misc&*(ushort *)csi->ip)==*(ushort *)csi->ip)
 					csi->logic=LOGIC_TRUE;
 				else
@@ -1568,7 +1568,7 @@ int sbbs_t::exec(csi_t *csi)
 				action=*csi->ip++;
 				return(0);
 			case CS_NODE_STATUS:
-				if(getnodedat(cfg.node_num,&thisnode,true)==0) {
+				if(getnodedat(cfg.node_num,&thisnode, true)) {
 					thisnode.status=*csi->ip++;
 					putnodedat(cfg.node_num,&thisnode);
 				} else
@@ -1854,7 +1854,7 @@ int sbbs_t::exec(csi_t *csi)
 			csi->logic=!chksyspass();
 			return(0);
 		case CS_PUT_NODE:
-			if(getnodedat(cfg.node_num,&thisnode,true)==0)
+			if(getnodedat(cfg.node_num,&thisnode, true))
 				putnodedat(cfg.node_num,&thisnode);
 			return(0);
 		case CS_SYNC:

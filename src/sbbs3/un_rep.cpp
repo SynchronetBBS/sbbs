@@ -335,7 +335,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 				logline("E+",str);
 				if(cfg.node_num) {
 					for(k=1;k<=cfg.sys_nodes;k++) { /* Tell user, if online */
-						getnodedat(k,&node,0);
+						getnodedat(k, &node);
 						if(node.useron==usernum && !(node.misc&NODE_POFF)
 							&& (node.status==NODE_INUSE
 							|| node.status==NODE_QUIET)) {

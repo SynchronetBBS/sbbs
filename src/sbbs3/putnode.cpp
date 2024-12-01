@@ -26,7 +26,7 @@
 /* getnodedat(num,&node,1); must have been called before calling this func  */
 /*          NOTE: ------^   the indicates the node record has been locked   */
 /****************************************************************************/
-int sbbs_t::putnodedat(uint number, node_t* node)
+bool sbbs_t::putnodedat(uint number, node_t* node)
 {
 	char	str[256];
 	char	path[MAX_PATH+1];
@@ -34,12 +34,9 @@ int sbbs_t::putnodedat(uint number, node_t* node)
 	int		wrerr=0;
 	int		attempts;
 
-	if(!number)
-		return(-1);
-
-	if(number>cfg.sys_nodes) {
+	if(number < 1 || number>cfg.sys_nodes) {
 		errormsg(WHERE,ERR_CHK,"node number",number);
-		return(-1); 
+		return false; 
 	}
 	if(number==cfg.node_num) {
 		if((node->status==NODE_INUSE || node->status==NODE_QUIET)
@@ -70,58 +67,65 @@ int sbbs_t::putnodedat(uint number, node_t* node)
 		if((nodefile=nopen(path,O_CREAT|O_RDWR|O_DENYNONE))==-1) {
 			errormsg(WHERE,ERR_OPEN,path,O_CREAT|O_RDWR|O_DENYNONE);
 			pthread_mutex_unlock(&nodefile_mutex);
-			return(errno); 
+			return false;
 		}
 	}
 
-	number--;	/* make zero based */
 	for(attempts=0;attempts<10;attempts++) {
-		lseek(nodefile,(long)number*sizeof(node_t),SEEK_SET);
+		lseek(nodefile, (number - 1) * sizeof(node_t), SEEK_SET);
 		wr=write(nodefile,node,sizeof(node_t));
 		if(wr==sizeof(node_t))
 			break;
 		wrerr=errno;	/* save write error */
 		mswait(100);
 	}
-	unlock(nodefile,(long)number*sizeof(node_t),sizeof(node_t));
-	if(cfg.node_misc&NM_CLOSENODEDAB) {
-		close(nodefile);
-		nodefile=-1;
-	}
-	pthread_mutex_unlock(&nodefile_mutex);
+	unlocknodedat(number);
 
 	if(mqtt->connected) {
-		int result = mqtt_putnodedat(mqtt, number + 1, node);
+		int result = mqtt_putnodedat(mqtt, number, node);
 		if(result != MQTT_SUCCESS)
 			lprintf(LOG_WARNING, "ERROR %d (%d) publishing node status", result, errno);
 	}
 	if(wr!=sizeof(node_t)) {
 		errno=wrerr;
-		errormsg(WHERE,ERR_WRITE,"nodefile",number+1);
-		return(errno);
+		errormsg(WHERE,ERR_WRITE,"nodefile",number);
+		return false;
 	}
 
-	utime(path,NULL);	/* Update mod time for NFS/smbfs compatibility */
-
-	return(0);
+	return utime(path,NULL) == 0;	/* Update mod time for NFS/smbfs compatibility */
 }
 
-int sbbs_t::putnodeext(uint number, char *ext)
+bool sbbs_t::unlocknodedat(uint number)
+{
+	if(number < 1 || number > cfg.sys_nodes) {
+		errormsg(WHERE, ERR_CHK, "node number", number);
+		return false;
+	}
+	int result = unlock(nodefile, (number - 1) * sizeof(node_t), sizeof(node_t));
+	if(cfg.node_misc & NM_CLOSENODEDAB) {
+		close(nodefile);
+		nodefile = -1;
+	}
+	pthread_mutex_unlock(&nodefile_mutex);
+	return result == 0;
+}
+
+bool sbbs_t::putnodeext(uint number, char *ext)
 {
     char	str[MAX_PATH+1];
     int		count;
 	int		wr;
 
-	if(!number || number>cfg.sys_nodes) {
+	if(number < 1 || number>cfg.sys_nodes) {
 		errormsg(WHERE,ERR_CHK,"node number",number);
-		return(-1); 
+		return false;
 	}
 	number--;   /* make zero based */
 
 	sprintf(str,"%snode.exb",cfg.ctrl_dir);
 	if((node_ext=nopen(str,O_CREAT|O_RDWR|O_DENYNONE))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_CREAT|O_RDWR|O_DENYNONE);
-		return(errno); 
+		return false;
 	}
 	for(count=0;count<LOOP_NODEDAB;count++) {
 		if(count)
@@ -144,10 +148,10 @@ int sbbs_t::putnodeext(uint number, char *ext)
 	}
 	if(count==LOOP_NODEDAB) {
 		errormsg(WHERE,ERR_WRITE,"NODE.EXB",number+1);
-		return(-2); 
+		return false;
 	}
 
-	return(0);
+	return true;
 }
 
 bool sbbs_t::putnode_downloading(off_t size)
@@ -163,8 +167,8 @@ bool sbbs_t::putnode_downloading(off_t size)
 	struct tm tm;
 	if(localtime_r(&t, &tm) != NULL)
 		thisnode.aux = (tm.tm_hour * 60) + tm.tm_min;
-	if(getnodedat(cfg.node_num, &thisnode, /* lock-it: */true) != 0)
+	if(!getnodedat(cfg.node_num, &thisnode, /* lock-it: */true))
 		return false;
 	thisnode.action = action;
-	return putnodedat(cfg.node_num, &thisnode) == 0;
+	return putnodedat(cfg.node_num, &thisnode);
 }
