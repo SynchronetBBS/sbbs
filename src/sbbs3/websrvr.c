@@ -3279,7 +3279,8 @@ static enum get_fullpath get_fullpath(http_session_t * session)
 	} else
 		safe_snprintf(str,sizeof(str),"%s%s",root_dir,session->req.physical_path);
 
-	if(startup->file_vpath_prefix[0] && (vhost == false || startup->file_vpath_for_vhosts == true)
+	if(!(startup->options & WEB_OPT_NO_FILEBASE)
+		&& startup->file_vpath_prefix[0] && (vhost == false || startup->file_vpath_for_vhosts == true)
 		&& strncmp(session->req.physical_path, startup->file_vpath_prefix, strlen(startup->file_vpath_prefix)) == 0) {
 		session->parsed_vpath = resolve_vpath(session, session->req.physical_path);
 		switch(session->parsed_vpath) {
