@@ -108,6 +108,7 @@ static volatile bool	http_logging_thread_running=false;
 static protected_uint32_t active_clients;
 static protected_uint32_t thread_count;
 static volatile uint32_t client_highwater=0;
+static volatile uint32_t con_conn_highwater=0;
 static volatile bool	terminate_server=false;
 static volatile bool	terminate_js=false;
 static volatile bool	terminate_http_logging_thread=false;
@@ -6793,7 +6794,7 @@ void http_session_thread(void* arg)
 
 	if(startup->login_attempt.throttle
 		&& (login_attempts=loginAttempts(startup->login_attempt_list, &session.addr)) > 1) {
-		lprintf(LOG_DEBUG,"%04d %s Throttling suspicious connection from: %s (%lu login attempts)"
+		lprintf(LOG_DEBUG,"%04d %s [%s] Throttling suspicious connection (%lu login attempts)"
 			,socket, session.client.protocol, session.host_ip, login_attempts);
 		mswait(login_attempts*startup->login_attempt.throttle);
 	}
@@ -6804,13 +6805,18 @@ void http_session_thread(void* arg)
 
 	session.subscan=(subscan_t*)calloc(scfg.total_subs, sizeof(subscan_t));
 
+	uint connections = listCountMatches(&current_connections, session.host_ip, strlen(session.host_ip) + 1);
+	if(connections > con_conn_highwater) {
+		con_conn_highwater = connections;
+		if(con_conn_highwater > 1)
+			lprintf(LOG_NOTICE, "%04d %s [%s] New concurrent connections per client highwater mark: %u"
+				,socket, session.client.protocol, session.host_ip, con_conn_highwater);
+	}
 	if(startup->max_concurrent_connections > 0) {
-		int ip_len = strlen(session.host_ip) + 1;
-		uint connections = listCountMatches(&current_connections, session.host_ip, ip_len);
 		if(connections > startup->max_concurrent_connections
 			&& !is_host_exempt(&scfg, session.host_ip, /* host_name */NULL)) {
-			lprintf(LOG_NOTICE, "%04d [%s] !Maximum concurrent connections (%u) exceeded"
-				,socket, session.host_ip, startup->max_concurrent_connections);
+			lprintf(LOG_NOTICE, "%04d %s [%s] !Maximum concurrent connections (%u) exceeded"
+				,socket, session.client.protocol, session.host_ip, startup->max_concurrent_connections);
 			send_error(&session, __LINE__, error_429);
 		}
 	}
