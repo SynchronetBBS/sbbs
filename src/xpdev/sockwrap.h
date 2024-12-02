@@ -175,9 +175,7 @@ union xp_sockaddr {
 #define sa_family_t		ushort
 typedef uint32_t                in_addr_t;
 
-static  int wsa_error;
-#define ERROR_VALUE			((wsa_error=WSAGetLastError())>0 ? wsa_error-WSABASEERR : wsa_error)
-#define socket_errno		WSAGetLastError()
+#define ERROR_VALUE			socket_errno(true) // Deprecated
 #define sendsocket(s,b,l)	send(s,b,l,0)
 typedef ULONG nfds_t;
 /*
@@ -209,7 +207,6 @@ typedef ULONG nfds_t;
 #define closesocket		close
 #define ioctlsocket		ioctl
 #define ERROR_VALUE		errno
-#define socket_errno	errno
 #define sendsocket		write		/* FreeBSD send() is broken */
 
 #ifdef __WATCOMC__
@@ -217,6 +214,19 @@ typedef ULONG nfds_t;
 #endif
 
 #endif	/* __unix__ */
+
+static inline
+int socket_errno(bool normalize)
+{
+#if defined _WINSOCKAPI_
+	int wsa_error = WSAGetLastError();
+	if(normalize && wsa_error > 0)
+		return wsa_error - WSABASEERR;
+	return wsa_error;
+#else
+	return errno;
+#endif
+}
 
 #ifdef __cplusplus
 extern "C" {
@@ -238,8 +248,8 @@ DLLEXPORT uint16_t inet_addrport(union xp_sockaddr *addr);
 DLLEXPORT void inet_setaddrport(union xp_sockaddr *addr, uint16_t port);
 DLLEXPORT bool inet_addrmatch(union xp_sockaddr* addr1, union xp_sockaddr* addr2);
 DLLEXPORT char* socket_strerror(int, char*, size_t);
+#define SOCKET_STRERROR(str, size)	socket_strerror(socket_errno(false), str, size)
 DLLEXPORT void set_socket_errno(int);
-DLLEXPORT int get_socket_errno(void);
 DLLEXPORT int xp_inet_pton(int af, const char *src, void *dst);
 #if defined(_WIN32) // mingw and WinXP's WS2_32.DLL don't have inet_pton():
 	#define inet_pton	xp_inet_pton

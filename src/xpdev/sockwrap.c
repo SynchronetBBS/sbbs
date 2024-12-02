@@ -573,7 +573,7 @@ int retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
 			break;
 		if(lprintf!=NULL)
 			lprintf(i<retries ? LOG_WARNING:LOG_CRIT
-				,"%04d !ERROR %d binding %s socket%s: %s", s, ERROR_VALUE, prot, port_str, socket_strerror(socket_errno, err, sizeof(err)));
+				,"%04d !ERROR %d binding %s socket%s: %s", s, ERROR_VALUE, prot, port_str, SOCKET_STRERROR(err, sizeof(err)));
 		if(i<retries) {
 			if(lprintf!=NULL)
 				lprintf(LOG_WARNING,"%04d Will retry in %u seconds (%u of %u)"
@@ -728,16 +728,6 @@ DLLEXPORT void set_socket_errno(int err)
 	WSASetLastError(err);
 #else
 	errno = err;
-#endif
-}
-
-DLLEXPORT int get_socket_errno(void)
-{
-#if defined(_WINSOCKAPI_)
-	int wsa_error = WSAGetLastError();
-	return wsa_error >= WSABASEERR ? wsa_error - WSABASEERR : wsa_error;
-#else
-	return errno;
 #endif
 }
 

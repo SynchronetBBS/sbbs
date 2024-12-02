@@ -72,7 +72,7 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			*vp=DOUBLE_TO_JSVAL(ERROR_VALUE);
 			break;
 		case GLOB_PROP_SOCKET_ERRNO_STR:
-			if((js_str=JS_NewStringCopyZ(cx, socket_strerror(socket_errno, err, sizeof(err))))==NULL)
+			if((js_str=JS_NewStringCopyZ(cx, SOCKET_STRERROR(err, sizeof(err))))==NULL)
 				return(JS_FALSE);
 	        *vp = STRING_TO_JSVAL(js_str);
 			break;

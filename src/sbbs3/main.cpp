@@ -2674,7 +2674,7 @@ void output_thread(void* arg)
 				lprintf(LOG_NOTICE,"%s connection aborted by peer on send", node);
 			else
 				lprintf(LOG_WARNING,"%s !ERROR %d (%s) sending on socket %d"
-					,node, ERROR_VALUE, socket_strerror(socket_errno, errmsg, sizeof errmsg), sbbs->client_socket);
+					,node, ERROR_VALUE, SOCKET_STRERROR(errmsg, sizeof errmsg), sbbs->client_socket);
 			sbbs->online=false;
 			/* was break; on 4/7/00 */
 			i=buftop-bufbot;	// Pretend we sent it all

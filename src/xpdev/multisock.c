@@ -156,7 +156,7 @@ bool xpms_add(struct xpms_set *xpms_set, int domain, int type,
 				if(xpms_set->lprintf)
 					xpms_set->lprintf(LOG_WARNING, "%04d !%s ERROR %d listening on port %d: %s"
 						,xpms_set->socks[xpms_set->sock_count].sock, prot, ERROR_VALUE
-						,port, socket_strerror(socket_errno,err,sizeof(err)));
+						,port, SOCKET_STRERROR(err,sizeof(err)));
 				closesocket(xpms_set->socks[xpms_set->sock_count].sock);
 				FREE_AND_NULL(xpms_set->socks[xpms_set->sock_count].address);
 				FREE_AND_NULL(xpms_set->socks[xpms_set->sock_count].prot);
@@ -271,7 +271,7 @@ static bool read_socket(SOCKET sock, char *buffer, size_t len, int (*lprintf)(in
 				buffer[i] = ch;
 
 			} else {
-				lprintf(LOG_WARNING,"%04d multisock read_socket() - failed to read from socket. Got [%d] with error [%s]",sock,rd,socket_strerror(socket_errno,err,sizeof(err)));
+				lprintf(LOG_WARNING,"%04d multisock read_socket() - failed to read from socket. Got [%d] with error [%s]",sock,rd,SOCKET_STRERROR(err,sizeof(err)));
 				return false;
 			}
 
