@@ -215,7 +215,10 @@ typedef ULONG nfds_t;
 
 #endif	/* __unix__ */
 
-static inline
+static
+#ifndef __BORLANDC__
+inline
+#endif
 int socket_errno(bool normalize)
 {
 #if defined _WINSOCKAPI_
