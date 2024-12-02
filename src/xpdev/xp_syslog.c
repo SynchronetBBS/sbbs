@@ -85,7 +85,6 @@ void xp_openlog(const char *ident, int logopt, int facility)
 
 void xp_vsyslog(int priority, const char *message, va_list va)
 {
-	int orig_errno=ERROR_VALUE;
 	time_t	now;
 	char	timestr[32];
 	char	msg_to_send[1025];
