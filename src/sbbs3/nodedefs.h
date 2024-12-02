@@ -90,6 +90,7 @@ enum node_action {                  /* Node Action */
     ,NODE_PCHT                      /* In Private Chat */
     ,NODE_PAGE                      /* Paging another node for Private Chat */
     ,NODE_RFSD                      /* Retrieving file from seq dev (aux=dev)*/
+	,NODE_CUSTOM					/* Custom node action */
 
 	,NODE_LAST_ACTION				/* Must be last */
     };

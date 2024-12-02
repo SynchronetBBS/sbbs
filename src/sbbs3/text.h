@@ -736,7 +736,7 @@ enum text {
 	,NodeActionPrivateChat
 	,NodeActionPaging
 	,NodeActionRetrieving
-	,Unused720 /* Used to be YNQP */
+	,NodeActionCustom
 	,ViewSignatureQ
 	,DeleteSignatureQ
 	,CreateEditSignatureQ

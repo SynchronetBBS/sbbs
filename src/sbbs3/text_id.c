@@ -720,7 +720,7 @@ const char* const text_id[]={
 	,"NodeActionPrivateChat"
 	,"NodeActionPaging"
 	,"NodeActionRetrieving"
-	,"Unused720"
+	,"NodeActionCustom"
 	,"ViewSignatureQ"
 	,"DeleteSignatureQ"
 	,"CreateEditSignatureQ"
