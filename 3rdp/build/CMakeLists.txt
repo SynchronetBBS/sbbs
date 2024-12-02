@@ -71,6 +71,7 @@ set(PATCHES
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-fix-cbli-incompatible.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-mingw64-unicode-gibble.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-haiku-build.patch
+	${CMAKE_CURRENT_SOURCE_DIR}/cl-dont-validate-va-list.patch
 )
 
 FetchContent_Declare(CryptLib

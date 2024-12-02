@@ -98,6 +98,7 @@ set(PATCHES
 	cl-fix-cbli-incompatible.patch
 	cl-mingw64-unicode-gibble.patch
 	cl-haiku-build.patch
+	cl-dont-validate-va-list.patch
 )
 
 set(SOURCE
