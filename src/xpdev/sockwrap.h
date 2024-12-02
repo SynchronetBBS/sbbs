@@ -175,6 +175,7 @@ union xp_sockaddr {
 #define sa_family_t		ushort
 typedef uint32_t                in_addr_t;
 
+#define SOCKET_ERRNO		socket_errno(true)
 #define ERROR_VALUE			socket_errno(true) // Deprecated
 #define sendsocket(s,b,l)	send(s,b,l,0)
 typedef ULONG nfds_t;
@@ -206,6 +207,7 @@ typedef ULONG nfds_t;
 #define INVALID_SOCKET  (SOCKET)(~0)
 #define closesocket		close
 #define ioctlsocket		ioctl
+#define SOCKET_ERRNO	errno
 #define ERROR_VALUE		errno
 #define sendsocket		write		/* FreeBSD send() is broken */
 

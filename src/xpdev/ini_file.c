@@ -2052,13 +2052,13 @@ int iniGetSocketOptions(str_list_t list, const char* section, SOCKET sock
 
 	len=sizeof(type);
 	if((result=getsockopt(sock, SOL_SOCKET, SO_TYPE, (char*)&type, &len)) != 0) {
-		safe_snprintf(error,errlen,"%d (%s) getting socket type", ERROR_VALUE, SOCKET_STRERROR(err,sizeof(err)));
+		safe_snprintf(error,errlen,"%d (%s) getting socket type", SOCKET_ERRNO, SOCKET_STRERROR(err,sizeof(err)));
 		return(result);
 	}
 #ifdef IPPROTO_IPV6
 	len=sizeof(addr);
 	if((result=getsockname(sock, &addr.addr, &len)) != 0) {
-		safe_snprintf(error,errlen,"%d (%s) getting socket name", ERROR_VALUE, SOCKET_STRERROR(err,sizeof(err)));
+		safe_snprintf(error,errlen,"%d (%s) getting socket name", SOCKET_ERRNO, SOCKET_STRERROR(err,sizeof(err)));
 		return(result);
 	}
 #endif
@@ -2094,7 +2094,7 @@ int iniGetSocketOptions(str_list_t list, const char* section, SOCKET sock
 
 		if((result=setsockopt(sock,level,option,(const char *)vp,len)) != 0) {
 			safe_snprintf(error,errlen,"%d (%s) setting socket option (%s, %d) to %d"
-				,ERROR_VALUE, SOCKET_STRERROR(err,sizeof(err)), name, option, value);
+				,SOCKET_ERRNO, SOCKET_STRERROR(err,sizeof(err)), name, option, value);
 			return(result);
 		}
 	}

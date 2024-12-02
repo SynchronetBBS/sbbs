@@ -197,7 +197,7 @@ off_t sendfilesocket(int sock, int file, off_t *offset, off_t count)
 			wr=sendsocket(sock,buf+i,rd-i);
 			if(wr>0)
 				continue;
-			if(wr==SOCKET_ERROR && ERROR_VALUE==EWOULDBLOCK) {
+			if(wr==SOCKET_ERROR && SOCKET_ERRNO==EWOULDBLOCK) {
 				wr=0;
 				SLEEP(1);
 				continue;
@@ -337,7 +337,7 @@ bool socket_check(SOCKET sock, bool* rd_p, bool* wr_p, DWORD timeout)
 
 		if(pfd.revents & ~(POLLOUT) && (rd_p !=NULL || wr_p==NULL))  {
 			rd=recv(sock,&ch,1,MSG_PEEK);
-			if(rd==1 || (rd==SOCKET_ERROR && ERROR_VALUE==EMSGSIZE)) {
+			if(rd==1 || (rd==SOCKET_ERROR && SOCKET_ERRNO==EMSGSIZE)) {
 				if(rd_p!=NULL)
 					*rd_p=true;
 				return true;
@@ -400,7 +400,7 @@ bool socket_check(SOCKET sock, bool* rd_p, bool* wr_p, DWORD timeout)
 	if(rd_p !=NULL || wr_p==NULL)  {
 		rd=recv(sock,&ch,1,MSG_PEEK);
 		if(rd==1
-			|| (rd==SOCKET_ERROR && ERROR_VALUE==EMSGSIZE)) {
+			|| (rd==SOCKET_ERROR && SOCKET_ERRNO==EMSGSIZE)) {
 			if(rd_p!=NULL)
 				*rd_p=true;
 			return(true);
@@ -514,7 +514,7 @@ bool socket_recvdone(SOCKET sock, int timeout)
 		case 1:
 			if (pfd.revents) {
 				rd = recv(sock,&ch,1,MSG_PEEK);
-				if (rd == 1 || (rd==SOCKET_ERROR && ERROR_VALUE==EMSGSIZE))
+				if (rd == 1 || (rd==SOCKET_ERROR && SOCKET_ERRNO==EMSGSIZE))
 					return false;
 				return true;
 			}
@@ -548,7 +548,7 @@ bool socket_recvdone(SOCKET sock, int timeout)
 			return false;
 	}
 	rd = recv(sock,&ch,1,MSG_PEEK);
-	if (rd == 1 || (rd==SOCKET_ERROR && ERROR_VALUE==EMSGSIZE))
+	if (rd == 1 || (rd==SOCKET_ERROR && SOCKET_ERRNO==EMSGSIZE))
 		return false;
 	return true;
 #endif
@@ -573,7 +573,7 @@ int retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
 			break;
 		if(lprintf!=NULL)
 			lprintf(i<retries ? LOG_WARNING:LOG_CRIT
-				,"%04d !ERROR %d binding %s socket%s: %s", s, ERROR_VALUE, prot, port_str, SOCKET_STRERROR(err, sizeof(err)));
+				,"%04d !ERROR %d binding %s socket%s: %s", s, SOCKET_ERRNO, prot, port_str, SOCKET_STRERROR(err, sizeof(err)));
 		if(i<retries) {
 			if(lprintf!=NULL)
 				lprintf(LOG_WARNING,"%04d Will retry in %u seconds (%u of %u)"
@@ -592,7 +592,7 @@ int nonblocking_connect(SOCKET sock, struct sockaddr* addr, size_t size, unsigne
 	result=connect(sock, addr, size);
 
 	if(result==SOCKET_ERROR) {
-		result=ERROR_VALUE;
+		result=SOCKET_ERRNO;
 		if(result==EWOULDBLOCK || result==EINPROGRESS) {
 			if (socket_writable(sock, timeout * 1000)) {
 				result = 0;
@@ -600,7 +600,7 @@ int nonblocking_connect(SOCKET sock, struct sockaddr* addr, size_t size, unsigne
 			else {
 				optlen = sizeof(result);
 				if(getsockopt(sock, SOL_SOCKET, SO_ERROR, (void*)&result, &optlen)==SOCKET_ERROR)
-					result=ERROR_VALUE;
+					result=SOCKET_ERRNO;
 			}
 		}
 	}
