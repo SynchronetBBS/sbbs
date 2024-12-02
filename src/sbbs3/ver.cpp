@@ -56,7 +56,7 @@ char* socklib_version(char* str, size_t size, char* winsock_ver)
 {
 #if defined(_WINSOCKAPI_)
 
-	strlcpy(str, size, winsock_ver);
+	strlcpy(str, winsock_ver, size);
 
 #elif defined(__GLIBC__)
 
