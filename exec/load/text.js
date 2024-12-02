@@ -726,7 +726,7 @@ var NodeActionQWK=716;
 var NodeActionPrivateChat=717;
 var NodeActionPaging=718;
 var NodeActionRetrieving=719;
-var Unused720=720;
+var NodeActionCustom=720;
 var ViewSignatureQ=721;
 var DeleteSignatureQ=722;
 var CreateEditSignatureQ=723;
@@ -903,7 +903,8 @@ var Sep=893;
 var Oct=894;
 var Nov=895;
 var Dec=896;
+var SysopPageNotification=897;
 
-var TOTAL_TEXT=897;
+var TOTAL_TEXT=898;
 
 this;

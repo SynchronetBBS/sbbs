@@ -79,7 +79,8 @@ var   NODE_TQWK             =21;/* Transferring QWK packet					*/
 var   NODE_PCHT             =22;/* In Private Chat							*/
 var   NODE_PAGE             =23;/* Paging another node for Private Chat		*/
 var   NODE_RFSD             =24;/* Retrieving file from seq dev (aux=dev)	*/
-var   NODE_LAST_ACTION	    =25;/* Must be last								*/
+var   NODE_CUSTOM           =25;/* Custom Node action                       */
+var   NODE_LAST_ACTION	    =26;/* Must be last								*/
 								/********************************************/
 
 								/********************************************/
