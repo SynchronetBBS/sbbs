@@ -173,7 +173,7 @@ void sbbs_t::nodesync(bool clearline)
 		logline(LOG_NOTICE,nulstr,"Interrupted");
 		hangup();
 		nodesync_inside=0;
-		return; 
+		return;
 	}
 
 	if(thisnode.misc&NODE_LCHAT) { // pulled into local chat with sysop
@@ -194,14 +194,14 @@ void sbbs_t::nodesync(bool clearline)
 		if(getnodedat(cfg.node_num, &thisnode, true)) {
 			thisnode.action = action;
 			thisnode.misc &= ~NODE_FCHAT;
-			putnodedat(cfg.node_num, &thisnode); 
+			putnodedat(cfg.node_num, &thisnode);
 		}
 	}
-		
+
 	if(sys_status&SS_USERON && memcmp(&nodesync_user,&useron,sizeof(user_t))) {
 		getusrdirs();
 		getusrsubs();
-		memcpy(&nodesync_user,&useron,sizeof(nodesync_user)); 
+		memcpy(&nodesync_user,&useron,sizeof(nodesync_user));
 	}
 
 	if(sys_status&SS_USERON && online && (timeleft/60)<(5-timeleft_warn)
@@ -210,7 +210,7 @@ void sbbs_t::nodesync(bool clearline)
 		if(!(sys_status&SS_MOFF)) {
 			attr(LIGHTGRAY);
 			bprintf(text[OnlyXminutesLeft]
-				,((ushort)timeleft/60)+1,(timeleft/60) ? "s" : nulstr); 
+				,((ushort)timeleft/60)+1,(timeleft/60) ? "s" : nulstr);
 		}
 	}
 
@@ -264,7 +264,7 @@ bool sbbs_t::getnmsg(bool clearline)
 	if(clearline)
 		this->clearline();
 	else if(column)
-		CRLF; 
+		CRLF;
 	putmsg(buf,P_NOATCODES);
 	free(buf);
 
@@ -295,8 +295,8 @@ bool sbbs_t::getnodeext(uint number, char *ext)
 	for(count=0;count<LOOP_NODEDAB;count++) {
 		if(count)
 			mswait(100);
-		if(lock(node_ext,(long)number*128L,128)!=0) 
-			continue; 
+		if(lock(node_ext,(long)number*128L,128)!=0)
+			continue;
 		lseek(node_ext,(long)number*128L,SEEK_SET);
 		rd=read(node_ext,ext,128);
 		unlock(node_ext,(long)number*128L,128);
@@ -314,7 +314,7 @@ bool sbbs_t::getnodeext(uint number, char *ext)
 	if(count>(LOOP_NODEDAB/2)) {
 		SAFEPRINTF2(str,"NODE.EXB (node %d) COLLISION - Count: %d"
 			,number+1, count);
-		logline("!!",str); 
+		logline("!!",str);
 	}
 
 	return true;
@@ -338,8 +338,8 @@ bool sbbs_t::getsmsg(int usernumber, bool clearline)
 					&& (node.status==NODE_INUSE || node.status==NODE_QUIET)
 					&& node.misc&NODE_MSGW)
 				node.misc&=~NODE_MSGW;
-			putnodedat(i,&node); 
-		} 
+			putnodedat(i,&node);
+		}
 	}
 
 	if((buf = readsmsg(&cfg, usernumber)) == NULL)
@@ -377,14 +377,14 @@ int sbbs_t::whos_online(bool listself)
 		if(i==cfg.node_num) {
 			if(listself)
 				printnodedat(i,&node);
-			continue; 
+			continue;
 		}
 		if(node.status==NODE_INUSE || (SYSOP && node.status==NODE_QUIET)) {
 			printnodedat(i,&node);
 			if(!lastnodemsg)
 				lastnodemsg=i;
-			j++; 
-		} 
+			j++;
+		}
 	}
 	if(!j)
 		bputs(text[NoOtherActiveNodes]);
@@ -404,7 +404,7 @@ void sbbs_t::nodelist(void)
 	bputs(text[NodeLstHdr]);
 	for(int i=1;i<=cfg.sys_nodes && i<=cfg.sys_lastnode;i++) {
 		getnodedat(i,&node);
-		printnodedat(i,&node); 
+		printnodedat(i,&node);
 	}
 }
 
@@ -477,13 +477,13 @@ void sbbs_t::printnodedat(uint number, node_t* node)
 		case NODE_QUIET:
 			if(!SYSOP) {
 				bputs(text[NodeStatusWaitingForCall]);
-				break; 
+				break;
 			}
 		case NODE_INUSE:
 			if(node->misc&NODE_EXT) {
 				getnodeext(number,tmp);
 				bputs(tmp);
-				break; 
+				break;
 			}
 			attr(cfg.color[clr_nodeuser]);
 			if(node->misc&NODE_ANON && !SYSOP)
@@ -526,7 +526,7 @@ void sbbs_t::printnodedat(uint number, node_t* node)
 						if(SYSOP || chk_ar(cfg.xtrn[i]->ar,&useron,&client))
 							bputs(cfg.xtrn[node->aux-1]->name);
 						else
-							bputs("external program"); 
+							bputs("external program");
 					}
 					break;
 				case NODE_DFLT:
@@ -562,8 +562,8 @@ void sbbs_t::printnodedat(uint number, node_t* node)
 						if(node->aux&0x1f00) { /* password */
 							outchar('*');
 							if(SYSOP)
-								bprintf(" %s",unpackchatpass(tmp,node)); 
-						} 
+								bprintf(" %s",unpackchatpass(tmp,node));
+						}
 					}
 					else
 						bputs("in multinode global chat channel");
@@ -594,19 +594,20 @@ void sbbs_t::printnodedat(uint number, node_t* node)
 					break;
 				default:
 					bputs(ultoa(node->action,tmp,10));
-					break;  }
+					break;
+			}
 			bputs(node_connection_desc(this, node->connection, tmp));
 			if(node->action==NODE_DLNG) {
 				if(cfg.sys_misc&SM_MILITARY) {
 					hour=node->aux/60;
-					mer[0]=0; 
+					mer[0]=0;
 				}
 				else if((node->aux/60)>=12) {
 					if(node->aux/60==12)
 						hour=12;
 					else
 						hour=(node->aux/60)-12;
-					strcpy(mer,"pm"); 
+					strcpy(mer,"pm");
 				}
 				else {
 					if((node->aux/60)==0)    /* 12 midnite */
