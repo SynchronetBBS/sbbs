@@ -731,7 +731,7 @@ DLLEXPORT void set_socket_errno(int err)
 #endif
 }
 
-DLLEXPORT int get_socket_errrno(void)
+DLLEXPORT int get_socket_errno(void)
 {
 #if defined(_WINSOCKAPI_)
 	int wsa_error = WSAGetLastError();
