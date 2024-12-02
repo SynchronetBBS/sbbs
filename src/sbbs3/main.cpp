@@ -2477,6 +2477,7 @@ void passthru_thread(void* arg)
 void output_thread(void* arg)
 {
 	char		node[128];
+	char		errmsg[128];
 	char		stats[128];
 	char		spy_topic[128];
 	BYTE		buf[IO_THREAD_BUF_SIZE];
@@ -2672,8 +2673,8 @@ void output_thread(void* arg)
 			else if(ERROR_VALUE==ECONNABORTED)
 				lprintf(LOG_NOTICE,"%s connection aborted by peer on send", node);
 			else
-				lprintf(LOG_WARNING,"%s !ERROR %d sending on socket %d"
-					,node, ERROR_VALUE, sbbs->client_socket);
+				lprintf(LOG_WARNING,"%s !ERROR %d (%s) sending on socket %d"
+					,node, ERROR_VALUE, socket_strerror(socket_errno, errmsg, sizeof errmsg), sbbs->client_socket);
 			sbbs->online=false;
 			/* was break; on 4/7/00 */
 			i=buftop-bufbot;	// Pretend we sent it all
