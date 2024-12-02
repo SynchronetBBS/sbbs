@@ -29,6 +29,7 @@
 bool sbbs_t::putnodedat(uint number, node_t* node)
 {
 	char	str[256];
+	char	tmp[128];
 	char	path[MAX_PATH+1];
 	int		wr=0;
 	int		wrerr=0;
@@ -36,7 +37,7 @@ bool sbbs_t::putnodedat(uint number, node_t* node)
 
 	if(number < 1 || number>cfg.sys_nodes) {
 		errormsg(WHERE,ERR_CHK,"node number",number);
-		return false; 
+		return false;
 	}
 	if(number==cfg.node_num) {
 		if((node->status==NODE_INUSE || node->status==NODE_QUIET)
@@ -55,10 +56,10 @@ bool sbbs_t::putnodedat(uint number, node_t* node)
 				,node->aux&0xff
 				,node->connection
 				);
-			putnodeext(number,str); 
+			putnodeext(number, expand_atcodes(str, tmp, sizeof tmp));
 		}
 		else
-			node->misc&=~NODE_EXT; 
+			node->misc&=~NODE_EXT;
 	}
 
 	snprintf(path, sizeof path, "%snode.dab",cfg.ctrl_dir);
