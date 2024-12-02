@@ -8,11 +8,14 @@ int main(int argc, char** argv)
 	char* share = "NWA";
 	bool try_all = true;
 	bool loop = false;
+	bool rm = false;
 
 	if(argc < 2) {
 		printf("usage: sopenfile [-r] [-l] <path/filename> [share-mode]\n");
 		printf("\n");
 		printf("-r           open file read-only instead of read/write\n");
+		printf("-c           open file with create permissions\n");
+		printf("-R           remove file after open\n");
 		printf("-l           loop until failure\n");
 		printf("\n");
 		printf("share-mode:  N (deny-none)\n");
@@ -23,6 +26,14 @@ int main(int argc, char** argv)
 	int argn = 1;
 	if(strcmp(argv[argn], "-r") == 0) {
 		access = O_RDONLY;
+		++argn;
+	}
+	if(strcmp(argv[argn], "-c") == 0) {
+		access |= O_CREAT;
+		++argv;
+	}
+	if(strcmp(argv[argn], "-R") == 0) {
+		rm = true;
 		++argn;
 	}
 	if(strcmp(argv[argn], "-l") == 0) {
@@ -54,11 +65,13 @@ int main(int argc, char** argv)
 					return EXIT_FAILURE;
 			}
 			fprintf(stderr, "%s Deny-%c (share mode %x): ", path, toupper(share_flag), share_mode);
-			int file = sopen(path, access, share_mode);
+			int file = sopen(path, access, share_mode, DEFFILEMODE);
 			if(file < 0)
 				fprintf(stderr, "Error %d (%s)\n", errno, strerror(errno));
 			else {
 				printf("Success\n");
+				if(rm)
+					printf("remove(%s) = %d\n", path, unlink(path));
 				if(!try_all) {
 					fprintf(stderr, "Hit enter\n");
 					getchar();
