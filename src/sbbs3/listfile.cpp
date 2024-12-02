@@ -182,7 +182,7 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 					break;						/* big header */
 			if((!mode || !(useron.misc&EXPERT)) && !tofile && (!filespec[0]
 				|| (strchr(filespec,'*') || strchr(filespec,'?')))) {
-				sprintf(hdr,"%s%s.hdr",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
+				snprintf(hdr, sizeof hdr, "%s%s.hdr",cfg.dir[dirnum]->data_dir,cfg.dir[dirnum]->code);
 				if(fexistcase(hdr))
 					printfile(hdr,0);	/* Use DATA\DIRS\<CODE>.HDR */
 				else {
@@ -199,19 +199,19 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 						for(c=0;c<d;c++)
 							outchar('\xcd');
 						bputs("\xbb\r\n\xba ");
-						sprintf(hdr,text[BoxHdrLib],i+1,cfg.lib[usrlib[i]]->lname);
+						snprintf(hdr, sizeof hdr, text[BoxHdrLib],i+1,cfg.lib[usrlib[i]]->lname);
 						bputs(hdr);
 						for(c=bstrlen(hdr);c<d;c++)
 							outchar(' ');
 						attr(cfg.color[clr_filelsthdrbox]);
 						bputs("\xba\r\n\xba ");
-						sprintf(hdr,text[BoxHdrDir],j+1,cfg.dir[dirnum]->lname);
+						snprintf(hdr, sizeof hdr, text[BoxHdrDir],j+1,cfg.dir[dirnum]->lname);
 						bputs(hdr);
 						for(c=bstrlen(hdr);c<d;c++)
 							outchar(' ');
 						attr(cfg.color[clr_filelsthdrbox]);
 						bputs("\xba\r\n\xba ");
-						sprintf(hdr,text[BoxHdrFiles], file_count);
+						snprintf(hdr, sizeof hdr, text[BoxHdrFiles], file_count);
 						bputs(hdr);
 						for(c=bstrlen(hdr);c<d;c++)
 							outchar(' ');
@@ -228,7 +228,7 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 					c = fprintf(tofile,"\r\n(%u) %s ",i+1,cfg.lib[usrlib[i]]->sname) - 2;
 				}
 				else {
-					sprintf(hdr,text[ShortHdrLib],i+1,cfg.lib[usrlib[i]]->sname);
+					snprintf(hdr, sizeof hdr, text[ShortHdrLib],i+1,cfg.lib[usrlib[i]]->sname);
 					bputs("\1[\1>\r\n");
 					bputs(hdr);
 					c=bstrlen(hdr);
@@ -237,7 +237,7 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 					c += fprintf(tofile,"(%u) %s",j+1,cfg.dir[dirnum]->lname);
 				}
 				else {
-					sprintf(hdr,text[ShortHdrDir],j+1,cfg.dir[dirnum]->lname);
+					snprintf(hdr, sizeof hdr, text[ShortHdrDir],j+1,cfg.dir[dirnum]->lname);
 					bputs(hdr);
 					c+=bstrlen(hdr);
 				}
@@ -909,7 +909,7 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 						i=cfg.lib[cfg.dir[f->dir]->lib]->offline_dir;
 						if(i!=dirnum && i!=INVALID_DIR
 							&& !findfile(&cfg, i, f->name, NULL)) {
-							sprintf(str,text[AddToOfflineDirQ]
+							snprintf(str, sizeof str, text[AddToOfflineDirQ]
 								,f->name,cfg.lib[cfg.dir[i]->lib]->sname,cfg.dir[i]->sname);
 							if(yesno(str)) {
 								f->dir = i;

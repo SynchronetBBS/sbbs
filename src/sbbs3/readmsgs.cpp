@@ -770,14 +770,14 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 			lncntr--;
 		bprintf(text[ReadingSub],ugrp,cfg.grp[cfg.sub[subnum]->grp]->sname
 			,usub,cfg.sub[subnum]->sname,smb.curmsg+1,smb.msgs);
-		sprintf(str,"ABCDEFHILMNPQRTUVY?*<>[]{}-+()\b%c%c%c%c"
+		snprintf(str, sizeof str, "ABCDEFHILMNPQRTUVY?*<>[]{}-+()\b%c%c%c%c"
 			,TERM_KEY_LEFT
 			,TERM_KEY_RIGHT
 			,TERM_KEY_HOME
 			,TERM_KEY_END
 			);
 		if(thread_mode)
-			sprintf(str+strlen(str),"%c%c"
+			snprintf(str+strlen(str), 3, "%c%c"
 				,TERM_KEY_UP
 				,TERM_KEY_DOWN);
 
@@ -1148,7 +1148,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 				if(msg.id != NULL)
 					smb_hfield_str(&vote, RFC822REPLYID, msg.id);
 				
-				sprintf(str, "%u", useron.number);
+				snprintf(str, sizeof str, "%u", useron.number);
 				smb_hfield_str(&vote, SENDEREXT, str);
 
 				/* Security logging */

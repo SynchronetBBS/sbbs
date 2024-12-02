@@ -236,7 +236,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
 		else if(!(mode&P_NOXATTRS)
 			&& (cfg.sys_misc&SM_PCBOARD) && str[l]=='@' && str[l+1]=='X'
 			&& IS_HEXDIGIT(str[l+2]) && IS_HEXDIGIT(str[l+3])) {
-			sprintf(tmp2,"%.2s",str+l+2);
+			snprintf(tmp2, sizeof tmp2, "%.2s",str+l+2);
 			uint val = ahtoul(tmp2);
 			// @X00 saves the current color and @XFF restores that saved color
 			static uchar save_attr;
@@ -257,7 +257,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
 		else if(!(mode&P_NOXATTRS)
 			&& (cfg.sys_misc&SM_WILDCAT) && str[l]=='@' && str[l+3]=='@'
 			&& IS_HEXDIGIT(str[l+1]) && IS_HEXDIGIT(str[l+2])) {
-			sprintf(tmp2,"%.2s",str+l+1);
+			snprintf(tmp2, sizeof tmp2, "%.2s",str+l+1);
 			attr(ahtoul(tmp2));
 			// exatr=1;
 			l+=4;
@@ -265,7 +265,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
 		else if(!(mode&P_NOXATTRS)
 			&& (cfg.sys_misc&SM_RENEGADE) && str[l]=='|' && IS_DIGIT(str[l+1])
 			&& IS_DIGIT(str[l+2]) && !(useron.misc&RIP)) {
-			sprintf(tmp2,"%.2s",str+l+1);
+			snprintf(tmp2, sizeof tmp2, "%.2s",str+l+1);
 			i=atoi(tmp2);
 			if(i>=16) { 				/* setting background */
 				i-=16;

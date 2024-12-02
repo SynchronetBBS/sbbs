@@ -1842,7 +1842,7 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 									,sbbs->cfg.node_num);
 
 							char	buf[64];
-							sprintf(buf,"%c%c%c%c%c%c"
+							snprintf(buf, sizeof buf, "%c%c%c%c%c%c"
 								,TELNET_IAC,TELNET_SB
 								,TELNET_TERM_TYPE,TELNET_TERM_SEND
 								,TELNET_IAC,TELNET_SE);
@@ -1854,7 +1854,7 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 									,sbbs->cfg.node_num);
 
 							char	buf[64];
-							sprintf(buf,"%c%c%c%c%c%c"
+							snprintf(buf, sizeof buf, "%c%c%c%c%c%c"
 								,TELNET_IAC,TELNET_SB
 								,TELNET_TERM_SPEED,TELNET_TERM_SEND
 								,TELNET_IAC,TELNET_SE);
@@ -1867,7 +1867,7 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 									,sbbs->cfg.node_num);
 
 							char	buf[64];
-							int len=sprintf(buf,"%c%c%c%c%c%c"
+							int len=snprintf(buf, sizeof buf, "%c%c%c%c%c%c"
 								,TELNET_IAC,TELNET_SB
 								,TELNET_NEW_ENVIRON,TELNET_ENVIRON_SEND //,TELNET_ENVIRON_VAR
 								,TELNET_IAC,TELNET_SE);
@@ -1899,14 +1899,14 @@ void sbbs_t::send_telnet_cmd(uchar cmd, uchar opt)
 		if(startup->options&BBS_OPT_DEBUG_TELNET)
             lprintf(LOG_DEBUG,"sending telnet cmd: %s"
                 ,telnet_cmd_desc(cmd));
-		sprintf(buf,"%c%c",TELNET_IAC,cmd);
+		snprintf(buf, sizeof buf, "%c%c",TELNET_IAC,cmd);
 		result = sendsocket(client_socket, buf, sz = 2);
 	} else {
 		if(startup->options&BBS_OPT_DEBUG_TELNET)
 			lprintf(LOG_DEBUG,"sending telnet cmd: %s %s"
 				,telnet_cmd_desc(cmd)
 				,telnet_opt_desc(opt));
-		sprintf(buf,"%c%c%c",TELNET_IAC,cmd,opt);
+		snprintf(buf, sizeof buf, "%c%c%c",TELNET_IAC,cmd,opt);
 		result = sendsocket(client_socket, buf, sz = 3);
 	}
 	if(result != sz)

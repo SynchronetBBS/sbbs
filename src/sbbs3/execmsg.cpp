@@ -47,7 +47,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 							bprintf(text[CfgGrpLstFmt]
 								,i+1, cfg.grp[usrgrp[i]]->lname); } 
 					}
-					sprintf(str,text[JoinWhichGrp],curgrp+1);
+					snprintf(str, sizeof str, text[JoinWhichGrp],curgrp+1);
 					mnemonics(str);
 					j=getnum(usrgrps);
 					clear_hotspots();
@@ -58,14 +58,14 @@ int sbbs_t::exec_msg(csi_t *csi)
 					else
 						j--;
 				}
-				sprintf(str,"subs%u",usrgrp[j]+1);
+				snprintf(str, sizeof str, "subs%u",usrgrp[j]+1);
 				if(!menu(str, P_NOERROR)) {
 					CLS;
 					bprintf(text[SubLstHdr], cfg.grp[usrgrp[j]]->lname);
 					for(i=0;i<usrsubs[j] && !msgabort();i++) {
 						if(i==cursub[j]) outchar('*');
 						else outchar(' ');
-						sprintf(str,text[SubLstFmt],i+1
+						snprintf(str, sizeof str, text[SubLstFmt],i+1
 							,cfg.sub[usrsub[j][i]]->lname,nulstr
 							,getposts(&cfg,usrsub[j][i]));
 						if(i<9) outchar(' ');
@@ -73,7 +73,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 						add_hotspot(i+1);
 						bputs(str); } 
 				}
-				sprintf(str,text[JoinWhichSub],cursub[j]+1);
+				snprintf(str, sizeof str, text[JoinWhichSub],cursub[j]+1);
 				mnemonics(str);
 				i=getnum(usrsubs[j]);
 				clear_hotspots();
@@ -213,7 +213,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 
 		case CS_MSG_SHOW_SUBBOARDS:
 			if(!usrgrps) return(0);
-			sprintf(str,"subs%u",usrgrp[curgrp]+1);
+			snprintf(str, sizeof str, "subs%u",usrgrp[curgrp]+1);
 			if(menu(str, P_NOERROR)) {
 				return(0); 
 			}
@@ -222,7 +222,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 			for(i=0;i<usrsubs[curgrp] && !msgabort();i++) {
 				if(i==cursub[curgrp]) outchar('*');
 				else outchar(' ');
-				sprintf(str,text[SubLstFmt],i+1
+				snprintf(str, sizeof str, text[SubLstFmt],i+1
 					,cfg.sub[usrsub[curgrp][i]]->lname,nulstr
 					,getposts(&cfg,usrsub[curgrp][i]));
 				if(i<9) outchar(' ');

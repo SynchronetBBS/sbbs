@@ -271,12 +271,12 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 		/* QWKE compatible kludges */
 		if(msg->from_net.addr && subnum==INVALID_SUB && !(mode&QM_TO_QNET)) {
 			if(msg->from_net.type==NET_FIDO)
-				sprintf(from,"%.128s@%.128s"
+				snprintf(from, sizeof from, "%.128s@%.128s"
 					,msg->from,smb_faddrtoa((faddr_t *)msg->from_net.addr,tmp));
 			else if(msg->from_net.type==NET_INTERNET || strchr((char*)msg->from_net.addr,'@')!=NULL)
-				sprintf(from,"%.128s",(char*)msg->from_net.addr);
+				snprintf(from, sizeof from, "%.128s",(char*)msg->from_net.addr);
 			else
-				sprintf(from,"%.128s@%.128s",msg->from,(char*)msg->from_net.addr);
+				snprintf(from, sizeof from, "%.128s@%.128s",msg->from,(char*)msg->from_net.addr);
 		}
 		if(msg->hdr.attr&MSG_ANONYMOUS && !SYSOP)
 			SAFECOPY(from,text[Anonymous]);
@@ -287,9 +287,9 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 
 		if(msg->to_net.addr && subnum==INVALID_SUB) {
 			if(msg->to_net.type==NET_FIDO)
-				sprintf(to,"%.128s@%s",msg->to,smb_faddrtoa((faddr_t *)msg->to_net.addr,tmp));
+				snprintf(to, sizeof to, "%.128s@%s",msg->to,smb_faddrtoa((faddr_t *)msg->to_net.addr,tmp));
 			else if(msg->to_net.type==NET_INTERNET)
-				sprintf(to,"%.128s",(char*)msg->to_net.addr);
+				snprintf(to, sizeof to, "%.128s",(char*)msg->to_net.addr);
 			else if(msg->to_net.type==NET_QWK) {
 				if(mode&QM_TO_QNET) {
 					p=strchr((char *)msg->to_net.addr,'/');
@@ -299,13 +299,13 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 						size+=fprintf(qwk_fp,"%.128s@%.128s%c",msg->to,p,qwk_newline);
 					}
 					else
-						sprintf(to,"%.128s",msg->to);
+						snprintf(to, sizeof to, "%.128s",msg->to);
 				}
 				else
-					sprintf(to,"%.128s@%.128s",msg->to,(char*)msg->to_net.addr);
+					snprintf(to, sizeof to, "%.128s@%.128s",msg->to,(char*)msg->to_net.addr);
 			}
 			else
-				sprintf(to,"%.128s@%.128s",msg->to,(char*)msg->to_net.addr);
+				snprintf(to, sizeof to, "%.128s@%.128s",msg->to,(char*)msg->to_net.addr);
 		}
 		if((mode&QM_EXT) && strlen(to) > QWK_HFIELD_LEN) {
 			size+=fprintf(qwk_fp,"To: %.128s%c", to, qwk_newline);

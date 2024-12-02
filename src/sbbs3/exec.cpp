@@ -1467,7 +1467,7 @@ int sbbs_t::exec(csi_t *csi)
 					csi->logic=LOGIC_FALSE; 
 				}
 				else {
-					sprintf(csi->str,"%lu",l);
+					snprintf(csi->str, 128, "%lu",l);
 					csi->logic=LOGIC_TRUE; 
 				}
 				return(0);
@@ -1657,7 +1657,7 @@ int sbbs_t::exec(csi_t *csi)
 						i=matchuser(&cfg,csi->str,TRUE /*sysop_alias*/);
 						if(i && i!=useron.number)
 							break;
-						sprintf(useron.alias,"%.*s",LEN_ALIAS,csi->str);
+						snprintf(useron.alias, sizeof useron.alias, "%.*s",LEN_ALIAS,csi->str);
 						putuserstr(useron.number, USER_ALIAS, useron.alias);
 						putusername(&cfg,useron.number,useron.alias);
 						csi->logic=LOGIC_TRUE;
@@ -1668,7 +1668,7 @@ int sbbs_t::exec(csi_t *csi)
 						if(cfg.uq&UQ_DUPREAL
 							&& finduserstr(useron.number, USER_NAME, csi->str))
 							break;
-						sprintf(useron.name,"%.*s",LEN_NAME,csi->str);
+						snprintf(useron.name, sizeof useron.name, "%.*s",LEN_NAME,csi->str);
 						putuserstr(useron.number, USER_NAME
 							,useron.name);
 						csi->logic=LOGIC_TRUE;
@@ -1679,7 +1679,7 @@ int sbbs_t::exec(csi_t *csi)
 						if(cfg.uq&UQ_DUPHAND
 							&& finduserstr(useron.number, USER_HANDLE, csi->str))
 							break;
-						sprintf(useron.handle,"%.*s",LEN_HANDLE,csi->str);
+						snprintf(useron.handle, sizeof useron.handle, "%.*s",LEN_HANDLE,csi->str);
 						putuserstr(useron.number, USER_HANDLE
 							,useron.handle);
 						csi->logic=LOGIC_TRUE;
@@ -1691,31 +1691,31 @@ int sbbs_t::exec(csi_t *csi)
 						csi->logic=LOGIC_TRUE;
 						break;
 					case USER_STRING_NOTE:
-						sprintf(useron.note,"%.*s",LEN_NOTE,csi->str);
+						snprintf(useron.note, sizeof useron.note, "%.*s",LEN_NOTE,csi->str);
 						putuserstr(useron.number, USER_NOTE
 							,useron.note);
 						csi->logic=LOGIC_TRUE;
 						break;
 					case USER_STRING_ADDRESS:
-						sprintf(useron.address,"%.*s",LEN_ADDRESS,csi->str);
+						snprintf(useron.address, sizeof useron.address, "%.*s",LEN_ADDRESS,csi->str);
 						putuserstr(useron.number, USER_ADDRESS
 							,useron.address);
 						csi->logic=LOGIC_TRUE;
 						break;
 					case USER_STRING_LOCATION:
-						sprintf(useron.location,"%.*s",LEN_LOCATION,csi->str);
+						snprintf(useron.location, sizeof useron.location, "%.*s",LEN_LOCATION,csi->str);
 						putuserstr(useron.number, USER_LOCATION
 							,useron.location);
 						csi->logic=LOGIC_TRUE;
 						break;
 					case USER_STRING_ZIPCODE:
-						sprintf(useron.zipcode,"%.*s",LEN_ZIPCODE,csi->str);
+						snprintf(useron.zipcode, sizeof useron.zipcode, "%.*s",LEN_ZIPCODE,csi->str);
 						putuserstr(useron.number, USER_ZIPCODE
 							,useron.zipcode);
 						csi->logic=LOGIC_TRUE;
 						break;
 					case USER_STRING_PASSWORD:
-						sprintf(useron.pass,"%.*s",LEN_PASS,csi->str);
+						snprintf(useron.pass, sizeof useron.pass, "%.*s",LEN_PASS,csi->str);
 						putuserstr(useron.number, USER_PASS
 							,useron.pass);
 						csi->logic=LOGIC_TRUE;
@@ -1723,7 +1723,7 @@ int sbbs_t::exec(csi_t *csi)
 					case USER_STRING_BIRTHDAY:
 						if(!getage(&cfg,csi->str))
 							break;
-						sprintf(useron.birth,"%.*s",LEN_BIRTH,csi->str);
+						snprintf(useron.birth, sizeof useron.birth, "%.*s",LEN_BIRTH,csi->str);
 						putuserstr(useron.number, USER_BIRTH
 							,useron.birth);
 						csi->logic=LOGIC_TRUE;
@@ -1731,31 +1731,31 @@ int sbbs_t::exec(csi_t *csi)
 					case USER_STRING_PHONE:
 						if(trashcan(csi->str,"phone"))
 							break;
-						sprintf(useron.phone,"%.*s",LEN_PHONE,csi->str);
+						snprintf(useron.phone, sizeof useron.phone, "%.*s",LEN_PHONE,csi->str);
 						putuserstr(useron.number, USER_PHONE
 							,useron.phone);
 						csi->logic=LOGIC_TRUE;
 						break;
 					case USER_STRING_MODEM:
-						sprintf(useron.modem,"%.*s",LEN_MODEM,csi->str);
+						snprintf(useron.modem, sizeof useron.modem, "%.*s",LEN_MODEM,csi->str);
 						putuserstr(useron.number, USER_CONNECTION
 							,useron.phone);
 						csi->logic=LOGIC_TRUE;
 						break;
 					case USER_STRING_IPADDR:
-						sprintf(useron.ipaddr,"%.*s",LEN_IPADDR,csi->str);
+						snprintf(useron.ipaddr, sizeof useron.ipaddr, "%.*s",LEN_IPADDR,csi->str);
 						putuserstr(useron.number, USER_IPADDR
 							,useron.phone);
 						csi->logic=LOGIC_TRUE;
 						break;
 					case USER_STRING_COMMENT:
-						sprintf(useron.comment,"%.*s",LEN_COMMENT,csi->str);
+						snprintf(useron.comment, sizeof useron.comment, "%.*s",LEN_COMMENT,csi->str);
 						putuserstr(useron.number, USER_COMMENT
 							,useron.comment);
 						csi->logic=LOGIC_TRUE;
 						break;
 					case USER_STRING_NETMAIL:
-						sprintf(useron.netmail,"%.*s",LEN_NETMAIL,csi->str);
+						snprintf(useron.netmail, sizeof useron.netmail, "%.*s",LEN_NETMAIL,csi->str);
 						putuserstr(useron.number, USER_NETMAIL
 							,useron.netmail);
 						csi->logic=LOGIC_TRUE;

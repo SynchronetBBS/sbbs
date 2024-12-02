@@ -176,7 +176,7 @@ void sbbs_t::scanallsubs(int mode)
 				}
 				if(!found)
 					CRLF;
-				sprintf(tmp,"searched %u sub-boards for '%s'"
+				snprintf(tmp, sizeof tmp, "searched %u sub-boards for '%s'"
 					,subs_scanned,str);
 				logline(nulstr,tmp);
 				return;
@@ -260,7 +260,7 @@ void sbbs_t::new_scan_ptr_cfg()
 		}
 		sync();
 		mnemonics(text[WhichOrAll]);
-		sprintf(keys, "%c%c", all_key(), quit_key());
+		snprintf(keys, sizeof keys, "%c%c", all_key(), quit_key());
 		s=getkeys(keys,usrgrps);
 		if(!s || s==-1 || s==quit_key())
 			break;
@@ -325,7 +325,7 @@ void sbbs_t::new_scan_ptr_cfg()
 			}
 			sync();
 			mnemonics(text[WhichOrAll]);
-			sprintf(keys, "%c%c", all_key(), quit_key());
+			snprintf(keys, sizeof keys, "%c%c", all_key(), quit_key());
 			s=getkeys(keys,usrsubs[i]);
 			if(sys_status&SS_ABORT) {
 				lncntr=0;
@@ -445,7 +445,7 @@ void sbbs_t::new_scan_cfg(uint misc)
 				mnemonics(text[NScanCfgWhichSub]);
 			else
 				mnemonics(text[SScanCfgWhichSub]);
-			sprintf(keys, "%c%c", all_key(), quit_key());
+			snprintf(keys, sizeof keys, "%c%c", all_key(), quit_key());
 			s=getkeys(keys,usrsubs[i]);
 			if(sys_status&SS_ABORT) {
 				lncntr=0;

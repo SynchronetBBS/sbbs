@@ -1667,7 +1667,7 @@ extern "C" {
 	char *	readtext(int *line, FILE *stream, int dflt);
 
 	/* ver.cpp */
-	char*	socklib_version(char* str, char* winsock_ver);
+	char*	socklib_version(char* str, size_t, char* winsock_ver);
 
 	/* sortdir.cpp */
 	int		fnamecmp_a(char **str1, char **str2);	 /* for use with resort() */

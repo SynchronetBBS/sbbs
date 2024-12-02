@@ -140,7 +140,7 @@ void sbbs_t::telluser(smbmsg_t* msg)
 		if(node.useron==usernumber
 		&& (node.status==NODE_INUSE
 		|| node.status==NODE_QUIET)) {
-			sprintf(str
+			snprintf(str, sizeof str
 				,text[UserReadYourMailNodeMsg]
 				,cfg.node_num,useron.alias);
 			putnmsg(n,str);
@@ -149,7 +149,7 @@ void sbbs_t::telluser(smbmsg_t* msg)
 	}
 	if(n>cfg.sys_nodes) {
 		now=time(NULL);
-		sprintf(str,text[UserReadYourMail]
+		snprintf(str, sizeof str, text[UserReadYourMail]
 			,useron.alias,timestr(now));
 		putsmsg(usernumber,str);
 	}
@@ -170,7 +170,7 @@ void sbbs_t::delallmail(uint usernumber, int which, bool permanent, int lm_mode)
 		errormsg(WHERE,ERR_OPEN,"MAIL",i);
 		return; 
 	}
-	sprintf(smb.file,"%smail",cfg.data_dir);
+	snprintf(smb.file, sizeof smb.file, "%smail",cfg.data_dir);
 	smb.retry_time=cfg.smb_retry_time;
 	smb.subnum=INVALID_SUB;
 	if((i=smb_open(&smb))!=0) {

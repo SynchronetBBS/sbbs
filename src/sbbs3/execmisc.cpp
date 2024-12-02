@@ -980,7 +980,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					if(pp==NULL && lp!=NULL)
 						*lp=csi->cmd;
 					else if(pp!=NULL) {
-						sprintf(tmp,"%c",csi->cmd);
+						snprintf(tmp, sizeof tmp, "%c",csi->cmd);
 						*pp=copystrvar(csi,*pp,tmp);
 					}
 					return(0);

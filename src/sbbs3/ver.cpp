@@ -52,19 +52,19 @@ const char* beta_version = " "; /* Space if non-beta, " beta" otherwise */
 	#include <sys/utsname.h>	/* uname() */
 #endif
 
-char* socklib_version(char* str, char* winsock_ver)
+char* socklib_version(char* str, size_t size, char* winsock_ver)
 {
 #if defined(_WINSOCKAPI_)
 
-	strcpy(str,winsock_ver);
+	strlcpy(str, size, winsock_ver);
 
 #elif defined(__GLIBC__)
 
-	sprintf(str,"GLIBC %u.%u",__GLIBC__,__GLIBC_MINOR__);
+	snprintf(str, size, "GLIBC %u.%u",__GLIBC__,__GLIBC_MINOR__);
 
 #else
 
-	strcpy(str,"");
+	*str = '\0';
 
 #endif
 
@@ -86,7 +86,7 @@ void sbbs_t::ver()
 
 	DESCRIBE_COMPILER(compiler);
 
-	sprintf(str,"Revision %c%s %s  "
+	snprintf(str, sizeof str, "Revision %c%s %s  "
 		"SMBLIB %s  %s"
 		,toupper(REVISION)
 		,beta_version
@@ -99,7 +99,7 @@ void sbbs_t::ver()
 	center("https://gitlab.synchro.net - " GIT_BRANCH "/" GIT_HASH);
 	CRLF;
 
-	sprintf(str,"%s - http://synchro.net", COPYRIGHT_NOTICE);
+	snprintf(str, sizeof str, "%s - http://synchro.net", COPYRIGHT_NOTICE);
 	center(str);
 	CRLF;
 

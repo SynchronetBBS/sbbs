@@ -34,7 +34,7 @@ bool sbbs_t::lookup_netuser(char *into)
 		return(false);
 	SAFECOPY(to,into);
 	strupr(to);
-	sprintf(str,"%sqnet/users.dat", cfg.data_dir);
+	snprintf(str, sizeof str, "%sqnet/users.dat", cfg.data_dir);
 	if((stream=fnopen(&i,str,O_RDONLY))==NULL)
 		return(false);
 	while(!feof(stream)) {
@@ -49,7 +49,7 @@ bool sbbs_t::lookup_netuser(char *into)
 		SAFEPRINTF2(q,"Do you mean %s @%s",str,str+27);
 		if(strstr(name,to) && yesno(q)) {
 			fclose(stream);
-			sprintf(into,"%s@%s",str,str+27);
+			snprintf(into, 128, "%s@%s",str,str+27);
 			return(true); 
 		}
 		if(sys_status&SS_ABORT)

@@ -939,7 +939,7 @@ get_longname(sbbs_t *sbbs, const char *path, const char *link, sftp_file_attr_t 
 	}
 	sz = 0;
 	sftp_fattr_get_size(attr, &sz);
-	sprintf(szstr, "%8" PRIu64, sz);
+	snprintf(szstr, sizeof szstr, "%8" PRIu64, sz);
 	mtime = 0;
 	sftp_fattr_get_mtime(attr, &mtime);
 	format_time(sbbs, mtime, datestr, sizeof(datestr));
@@ -1729,11 +1729,11 @@ sftp_readdir(sftp_dirhandle_t handle, void *cb_data)
 			if (strcmp(cwd, tmppath))
 				continue;
 			if (static_files[dd->info.rootdir.idx].real_patt) {
-				sprintf(tmppath, static_files[dd->info.rootdir.idx].real_patt, sbbs->cfg.data_dir, sbbs->useron.number);
+				snprintf(tmppath, sizeof tmppath, static_files[dd->info.rootdir.idx].real_patt, sbbs->cfg.data_dir, sbbs->useron.number);
 				if (access(tmppath, F_OK))
 					continue;
 			}
-			sprintf(tmppath, static_files[dd->info.rootdir.idx].sftp_patt, sbbs->useron.alias);
+			snprintf(tmppath, sizeof tmppath, static_files[dd->info.rootdir.idx].sftp_patt, sbbs->useron.alias);
 			remove_trailing_slash(tmppath);
 			attr = get_attrs(sbbs, tmppath, &link);
 			if (attr == nullptr) {
@@ -1978,7 +1978,7 @@ sftp_readdir(sftp_dirhandle_t handle, void *cb_data)
 					return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Can't get file attributes");
 				}
 				strcpy(tmppath, file.name);
-				sprintf(cwd, "%s/%s", sbbs->cfg.dir[dd->info.filebase.dir]->path, file.name);
+				snprintf(cwd, sizeof cwd, "%s/%s", sbbs->cfg.dir[dd->info.filebase.dir]->path, file.name);
 				smb_freefilemem(&file);
 				if (access(cwd, R_OK)) {
 					sftp_fattr_free(attr);

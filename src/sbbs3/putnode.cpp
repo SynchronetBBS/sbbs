@@ -44,7 +44,7 @@ bool sbbs_t::putnodedat(uint number, node_t* node)
 			&& text[NodeActionMain+node->action][0]) {
 			node->misc|=NODE_EXT;
 			memset(str,0,128);
-			sprintf(str,text[NodeActionMain+node->action]
+			snprintf(str, sizeof str, text[NodeActionMain+node->action]
 				,useron.alias
 				,useron.level
 				,getage(&cfg,useron.birth)
@@ -61,7 +61,7 @@ bool sbbs_t::putnodedat(uint number, node_t* node)
 			node->misc&=~NODE_EXT; 
 	}
 
-	sprintf(path,"%snode.dab",cfg.ctrl_dir);
+	snprintf(path, sizeof path, "%snode.dab",cfg.ctrl_dir);
 	pthread_mutex_lock(&nodefile_mutex);
 	if(nodefile==-1) {
 		if((nodefile=nopen(path,O_CREAT|O_RDWR|O_DENYNONE))==-1) {
@@ -122,7 +122,7 @@ bool sbbs_t::putnodeext(uint number, char *ext)
 	}
 	number--;   /* make zero based */
 
-	sprintf(str,"%snode.exb",cfg.ctrl_dir);
+	snprintf(str, sizeof str, "%snode.exb",cfg.ctrl_dir);
 	if((node_ext=nopen(str,O_CREAT|O_RDWR|O_DENYNONE))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_CREAT|O_RDWR|O_DENYNONE);
 		return false;
@@ -142,7 +142,7 @@ bool sbbs_t::putnodeext(uint number, char *ext)
 	node_ext=-1;
 
 	if(count>(LOOP_NODEDAB/2) && count!=LOOP_NODEDAB) {
-		sprintf(str,"NODE.EXB (node %d) COLLISION - Count: %d"
+		snprintf(str, sizeof str, "NODE.EXB (node %d) COLLISION - Count: %d"
 			,number+1, count);
 		logline(LOG_NOTICE,"!!",str); 
 	}

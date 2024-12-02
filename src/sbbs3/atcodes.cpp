@@ -491,7 +491,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 			up = now-uptime;
 		char   days[64]="";
 		if((up/(24*60*60))>=2) {
-	        sprintf(days,"%u days ",(uint)(up/(24L*60L*60L)));
+	        snprintf(days, sizeof days, "%u days ",(uint)(up/(24L*60L*60L)));
 			up%=(24*60*60);
 		}
 		safe_snprintf(str,maxlen,"%s%u:%02u"
@@ -509,7 +509,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 
 	if(!strcmp(sp,"SOCKET_LIB"))
-		return(socklib_version(str,SOCKLIB_DESC));
+		return(socklib_version(str, maxlen, SOCKLIB_DESC));
 
 	if(!strcmp(sp,"MSG_LIB")) {
 		safe_snprintf(str,maxlen,"SMBLIB %s",smb_lib_ver());

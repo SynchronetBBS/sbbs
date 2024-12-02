@@ -810,7 +810,7 @@ js_getstr(JSContext *cx, uintN argc, jsval *arglist)
 			free(p);
 			return JS_FALSE;
 		}
-		sprintf(p,"%.*s",(int)maxlen,p2);
+		strlcpy(p, p2, maxlen);
 		free(p2);
 	}
 

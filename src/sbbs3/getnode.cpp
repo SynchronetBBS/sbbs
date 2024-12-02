@@ -424,7 +424,7 @@ static char* node_connection_desc(sbbs_t* sbbs, ushort conn, char* str)
 		case NODE_CONNECTION_RAW:
 			return sbbs->text[NodeConnectionRaw];
 		default:
-			sprintf(str,sbbs->text[NodeConnectionModem],conn);
+			snprintf(str,16,sbbs->text[NodeConnectionModem],conn);
 			break;
 	}
 

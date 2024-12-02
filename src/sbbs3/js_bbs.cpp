@@ -975,7 +975,7 @@ static JSBool js_bbs_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, j
 
 		case BBS_PROP_COMMAND_STR:
 			if(p != NULL)
-				sprintf(sbbs->main_csi.str, "%.*s", 1024, p);
+				strlcpy(sbbs->main_csi.str, p, 1024);
 			break;
 
 		default:
@@ -1643,7 +1643,7 @@ js_load_text(JSContext *cx, uintN argc, jsval *arglist)
 			sbbs->text[i]=sbbs->text_sav[i];
 		}
 	}
-	sprintf(path,"%s%s.dat"
+	snprintf(path, sizeof path, "%s%s.dat"
 		,sbbs->cfg.ctrl_dir,cstr);
 	free(cstr);
 
@@ -3463,7 +3463,7 @@ js_put_node_message(JSContext *cx, uintN argc, jsval *arglist)
 		if(result < 1)
 			return JS_TRUE;
 
-		sprintf(str, sbbs->text[nodenum >= 1 ? NodeMsgFmt : AllNodeMsgFmt]
+		snprintf(str, sizeof str, sbbs->text[nodenum >= 1 ? NodeMsgFmt : AllNodeMsgFmt]
 			,sbbs->cfg.node_num
 			,sbbs->thisnode.misc&NODE_ANON
 				? sbbs->text[UNKNOWN_USER] : sbbs->useron.alias, line);

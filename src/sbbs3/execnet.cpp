@@ -286,13 +286,13 @@ int sbbs_t::exec_net(csi_t* csi)
 			if(atoi(rsp)!=220)
 				return(0);
 
-			sprintf(str,"USER %s",*pp1);
+			snprintf(str, sizeof str, "USER %s",*pp1);
 
 			if(!ftp_cmd(csi,*lp,str,rsp))
 				return(0);
 			
 			if(atoi(rsp)==331) { /* Password needed */
-				sprintf(str,"PASS %s",*pp2);
+				snprintf(str, sizeof str, "PASS %s",*pp2);
 				if(!ftp_cmd(csi,*lp,str,rsp))
 					return(0);
 			}
@@ -343,7 +343,7 @@ int sbbs_t::exec_net(csi_t* csi)
 			if(!lp || !pp)
 				return(0);
 			
-			sprintf(str,"CWD %s",*pp);
+			snprintf(str, sizeof str, "CWD %s",*pp);
 			if(!ftp_cmd(csi,*lp,str,rsp))
 				return(0);
 
@@ -380,7 +380,7 @@ int sbbs_t::exec_net(csi_t* csi)
 			if(!lp || !pp)
 				return(0);
 			
-			sprintf(str,"DELE %s",*pp);
+			snprintf(str, sizeof str, "DELE %s",*pp);
 			if(!ftp_cmd(csi,*lp,str,rsp))
 				return(0);
 
@@ -444,7 +444,7 @@ bool sbbs_t::ftp_cmd(csi_t* csi, SOCKET sock, const char* cmdsrc, char* rsp)
 	time_t	start;
 
 	if(cmdsrc!=NULL) {
-		sprintf(cmd,"%s\r\n",cmdsrc);
+		snprintf(cmd, sizeof cmd, "%s\r\n",cmdsrc);
 
 		if(csi->ftp_mode&CS_FTP_ECHO_CMD)
 			bputs(cmd);
@@ -601,7 +601,7 @@ SOCKET sbbs_t::ftp_data_sock(csi_t* csi, SOCKET ctrl_sock, SOCKADDR_IN* addr)
 
 		ip_addr.dw=ntohl(ctrl_addr.sin_addr.s_addr);
 		port.w=ntohs(addr->sin_port);
-		sprintf(cmd,"PORT %u,%u,%u,%u,%u,%u"
+		snprintf(cmd, sizeof cmd, "PORT %u,%u,%u,%u,%u,%u"
 			,ip_addr.b[3]
 			,ip_addr.b[2]
 			,ip_addr.b[1]
@@ -654,9 +654,9 @@ bool sbbs_t::ftp_get(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest, bool d
 	}
 
 	if(dir)
-		sprintf(cmd,"LIST %s",src);
+		snprintf(cmd, sizeof cmd, "LIST %s",src);
 	else
-		sprintf(cmd,"RETR %s",src);
+		snprintf(cmd, sizeof cmd, "RETR %s",src);
 
 	if(!ftp_cmd(csi,ctrl_sock,cmd,rsp) 
 		|| atoi(rsp)!=150 /* Open data connection */) {
@@ -781,7 +781,7 @@ bool sbbs_t::ftp_put(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest)
 		return(false);
 	}
 
-	sprintf(cmd,"STOR %s",dest);
+	snprintf(cmd, sizeof cmd, "STOR %s",dest);
 
 	if(!ftp_cmd(csi,ctrl_sock,cmd,rsp) 
 		|| atoi(rsp)!=150 /* Open data connection */) {

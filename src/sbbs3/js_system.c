@@ -2905,7 +2905,7 @@ JSObject* js_CreateSystemObject(JSContext* cx, JSObject* parent
 		return(NULL);
 #endif
 
-	if((js_str=JS_NewStringCopyZ(cx, socklib_version(str, socklib_desc)))==NULL)
+	if((js_str=JS_NewStringCopyZ(cx, socklib_version(str, sizeof str, socklib_desc)))==NULL)
 		return(NULL);
 	val = STRING_TO_JSVAL(js_str);
 	if(!JS_SetProperty(cx, sysobj, "socket_lib", &val))

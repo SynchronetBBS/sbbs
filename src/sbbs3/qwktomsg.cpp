@@ -165,7 +165,7 @@ bool sbbs_t::qwk_new_msg(uint confnum, smbmsg_t* msg, char* hdrblk, int offset, 
 
 	smb_freemsgmem(msg);
 
-	sprintf(str,"%x",offset);
+	snprintf(str, sizeof str, "%x",offset);
 	msg_headers=iniGetSection(all_headers,str);
 	if(msg_headers == NULL && all_headers != NULL) {
 		errormsg(WHERE, ERR_CHK, "missing header section", offset);
@@ -175,7 +175,7 @@ bool sbbs_t::qwk_new_msg(uint confnum, smbmsg_t* msg, char* hdrblk, int offset, 
 	memset(msg,0,sizeof(smbmsg_t));		/* Initialize message header */
 	msg->hdr.version=smb_ver();
 
-	sprintf(to,"%25.25s",(char *)hdrblk+21);     /* To user */
+	snprintf(to, sizeof to, "%25.25s",(char *)hdrblk+21);     /* To user */
 	truncsp(to);
 
 	if(msg_headers!=NULL) {
@@ -202,13 +202,13 @@ bool sbbs_t::qwk_new_msg(uint confnum, smbmsg_t* msg, char* hdrblk, int offset, 
 		smb_hfield_str(msg,RECIPIENT,strip_ctrl(to, to));
 
 	if(parse_sender_hfields && msg->from==NULL) {
-		sprintf(str,"%25.25s",hdrblk+46);
+		snprintf(str, sizeof str, "%25.25s",hdrblk+46);
 		truncsp(str);
 		smb_hfield_str(msg,SENDER,strip_ctrl(str, str));
 	}
 
 	if(msg->subj==NULL) {
-		sprintf(str,"%25.25s",hdrblk+71);   /* Subject */
+		snprintf(str, sizeof str, "%25.25s",hdrblk+71);   /* Subject */
 		truncsp(str);
 		smb_hfield_str(msg,SUBJECT,strip_ctrl(str, str));
 	}
@@ -274,7 +274,7 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, uint blocks
 		/* duplicate message-IDs must be allowed in mail database */
 		dupechk_hashes&=~(1<<SMB_HASH_SOURCE_MSG_ID);
 
-		sprintf(str,"%u",touser);
+		snprintf(str, sizeof str, "%u",touser);
 		smb_hfield_str(msg,RECIPIENTEXT,str);
 	} else {
 
@@ -351,7 +351,7 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, uint blocks
 				continue;
 			if(!taillen && col==3 && bodylen>=3 && body[bodylen-3]=='-'
 				&& body[bodylen-2]=='-' && (body[bodylen-1]=='-' || body[bodylen-1]==' ')) {
-				taillen = sprintf(tail, "--%c", body[bodylen-1]); /* DO NOT USE SAFECOPY */
+				taillen = snprintf(tail, 128, "--%c", body[bodylen-1]); /* DO NOT USE SAFECOPY */
 				bodylen-=3;
 			}
 			col=0;
@@ -426,7 +426,7 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, uint blocks
 		smb_hfield_netaddr(msg, SENDERNETADDR, str, &net_type);
 		smb_hfield_bin(msg,SENDERNETTYPE,net_type);
 	} else {
-		sprintf(str,"%u",useron.number);
+		snprintf(str, sizeof str, "%u",useron.number);
 		smb_hfield_str(msg,SENDEREXT,str);
 		if(subnum!=INVALID_SUB && cfg.sub[subnum]->misc&SUB_NAME)
 			SAFECOPY(from,useron.name);

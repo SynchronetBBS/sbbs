@@ -62,7 +62,7 @@ void sbbs_t::multinodechat(int channel)
 	bprintf(text[WelcomeToChannelN],channel,cfg.chan[channel-1]->name);
 	if(cfg.chan[channel-1]->misc&CHAN_GURU && cfg.chan[channel-1]->guru<cfg.total_gurus
 		&& chk_ar(cfg.guru[cfg.chan[channel-1]->guru]->ar,&useron,&client)) {
-		sprintf(str,"%s%s.dat",cfg.ctrl_dir,cfg.guru[cfg.chan[channel-1]->guru]->code);
+		snprintf(str, sizeof str, "%s%s.dat",cfg.ctrl_dir,cfg.guru[cfg.chan[channel-1]->guru]->code);
 		if((file=nopen(str,O_RDONLY))==-1) {
 			errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 			return;
@@ -128,7 +128,7 @@ void sbbs_t::multinodechat(int channel)
 				if(j==usrs) {
 					getnodedat(preusr[i], &node);
 					if(node.misc&NODE_ANON)
-						sprintf(str,"%.80s",text[UNKNOWN_USER]);
+						snprintf(str, sizeof str, "%.80s",text[UNKNOWN_USER]);
 					else
 						username(&cfg,node.useron,str);
 					bprintf(text[NodeLeftMultiChat]
@@ -150,7 +150,7 @@ void sbbs_t::multinodechat(int channel)
 				if(j==preusrs) {
 					getnodedat(usr[i], &node);
 					if(node.misc&NODE_ANON)
-						sprintf(str,"%.80s",text[UNKNOWN_USER]);
+						snprintf(str, sizeof str, "%.80s",text[UNKNOWN_USER]);
 					else
 						username(&cfg,node.useron,str);
 					bprintf(text[NodeJoinedMultiChat]
@@ -217,7 +217,7 @@ void sbbs_t::multinodechat(int channel)
 						&& cfg.chan[savch-1]->guru<cfg.total_gurus
 						&& chk_ar(cfg.guru[cfg.chan[savch-1]->guru]->ar,&useron,&client
 						)) {
-						sprintf(str,"%s%s.dat",cfg.ctrl_dir
+						snprintf(str, sizeof str, "%s%s.dat",cfg.ctrl_dir
 							,cfg.guru[cfg.chan[savch-1]->guru]->code);
 						if((file=nopen(str,O_RDONLY))==-1) {
 							errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
@@ -341,7 +341,7 @@ void sbbs_t::multinodechat(int channel)
 						if(!getstr(line,66,K_LINE|K_MSG))
 							break;
 
-						sprintf(buf,text[ChatLineFmt]
+						snprintf(buf, sizeof buf, text[ChatLineFmt]
 							,thisnode.misc&NODE_ANON
 							? text[AnonUserChatHandle]
 							: useron.handle
@@ -405,12 +405,12 @@ void sbbs_t::multinodechat(int channel)
 					if(!getstr(line,66,K_WRAP|K_MSG|K_CHAT))
 						break;
 					if(j) {
-						sprintf(str,text[ChatLineFmt]
+						snprintf(str, sizeof str, text[ChatLineFmt]
 							,thisnode.misc&NODE_ANON
 							? text[AnonUserChatHandle]
 							: useron.handle
 							,cfg.node_num,':',nulstr);
-						sprintf(tmp,"%*s",(int)bstrlen(str),nulstr);
+						snprintf(tmp, sizeof tmp, "%*s",(int)bstrlen(str),nulstr);
 						SAFECAT(pgraph,tmp);
 					}
 					SAFECAT(pgraph,line);
@@ -425,10 +425,10 @@ void sbbs_t::multinodechat(int channel)
 							if(cfg.chatact[i]->actset
 								!=cfg.chan[channel-1]->actset)
 								continue;
-							sprintf(str,"%s ",cfg.chatact[i]->cmd);
+							snprintf(str, sizeof str, "%s ",cfg.chatact[i]->cmd);
 							if(!strnicmp(str,pgraph,strlen(str)))
 								break;
-							sprintf(str,"%.*s"
+							snprintf(str, sizeof str, "%.*s"
 								,LEN_CHATACTCMD+2,pgraph);
 							str[strlen(str)-2]=0;
 							if(!stricmp(cfg.chatact[i]->cmd,str))
@@ -474,7 +474,7 @@ void sbbs_t::multinodechat(int channel)
 
 							if(usrs && j<usrs) {
 								/* Display to dest user */
-								sprintf(buf,cfg.chatact[i]->out
+								snprintf(buf, sizeof buf, cfg.chatact[i]->out
 									,thisnode.misc&NODE_ANON
 									? text[UNKNOWN_USER] : useron.alias
 									,"you");
@@ -484,7 +484,7 @@ void sbbs_t::multinodechat(int channel)
 
 
 							/* Display to all other users */
-							sprintf(buf,cfg.chatact[i]->out
+							snprintf(buf, sizeof buf, cfg.chatact[i]->out
 								,thisnode.misc&NODE_ANON
 								? text[UNKNOWN_USER] : useron.alias
 								,str);
@@ -504,7 +504,7 @@ void sbbs_t::multinodechat(int channel)
 						}
 					}
 
-					sprintf(buf,text[ChatLineFmt]
+					snprintf(buf, sizeof buf, text[ChatLineFmt]
 						,thisnode.misc&NODE_ANON
 						? text[AnonUserChatHandle]
 						: useron.handle
@@ -560,7 +560,7 @@ bool sbbs_t::guru_page(void)
 		if(i<0)
 			return(false);
 	}
-	sprintf(path,"%s%s.dat",cfg.ctrl_dir,cfg.guru[i]->code);
+	snprintf(path, sizeof path, "%s%s.dat",cfg.ctrl_dir,cfg.guru[i]->code);
 	if((file=nopen(path,O_RDONLY))==-1) {
 		errormsg(WHERE,ERR_OPEN,path,O_RDONLY);
 		return(false);
@@ -730,11 +730,11 @@ void sbbs_t::privchat(bool forced, int node_num)
 				bprintf(text[PagingUser]
 					,node.misc&NODE_ANON ? text[UNKNOWN_USER] : username(&cfg,node.useron,tmp)
 					,node.misc&NODE_ANON ? 0 : node.useron);
-				sprintf(str,text[NodePChatPageMsg]
+				snprintf(str, sizeof str, text[NodePChatPageMsg]
 					,cfg.node_num,thisnode.misc&NODE_ANON
 						? text[UNKNOWN_USER] : useron.alias);
 				putnmsg(n,str);
-				sprintf(str,"paged %s on node %d to private chat"
+				snprintf(str, sizeof str, "paged %s on node %d to private chat"
 					,username(&cfg,node.useron,tmp),n);
 				logline("C",str);
 			}
@@ -801,16 +801,16 @@ void sbbs_t::privchat(bool forced, int node_num)
 			bputs(text[WelcomeToPrivateChat]);
 	}
 
-	sprintf(outpath,"%schat.dab",cfg.node_dir);
+	snprintf(outpath, sizeof outpath, "%schat.dab",cfg.node_dir);
 	if((out=sopen(outpath,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO,DEFFILEMODE))==-1) {
 		errormsg(WHERE,ERR_OPEN,outpath,O_RDWR|O_DENYNONE|O_CREAT);
 		return;
 	}
 
 	if(forced && n == 0)
-		sprintf(inpath,"%slchat.dab",cfg.node_dir);
+		snprintf(inpath, sizeof inpath, "%slchat.dab",cfg.node_dir);
 	else
-		sprintf(inpath,"%schat.dab",cfg.node_path[n-1]);
+		snprintf(inpath, sizeof inpath, "%schat.dab",cfg.node_path[n-1]);
 	if(!fexist(inpath))		/* Wait while it's created for the first time */
 		mswait(2000);
 	if((in=sopen(inpath,O_RDWR|O_CREAT|O_BINARY,SH_DENYNO,DEFFILEMODE))==-1) {
@@ -1191,7 +1191,7 @@ int sbbs_t::getnodetopage(int all, int telegram)
 	}
 
 	if(!lastnodemsguser[0])
-		sprintf(lastnodemsguser,"%u",lastnodemsg);
+		snprintf(lastnodemsguser, sizeof lastnodemsguser, "%u",lastnodemsg);
 
 	if(!j && !telegram) {
 		bputs(text[NoOtherActiveNodes]);
@@ -1199,9 +1199,9 @@ int sbbs_t::getnodetopage(int all, int telegram)
 	}
 
 	if(all)
-		sprintf(str,text[NodeToSendMsgTo],lastnodemsg);
+		snprintf(str, sizeof str, text[NodeToSendMsgTo],lastnodemsg);
 	else
-		sprintf(str,text[NodeToPrivateChat],lastnodemsg);
+		snprintf(str, sizeof str, text[NodeToPrivateChat],lastnodemsg);
 	mnemonics(str);
 
 	SAFECOPY(str,lastnodemsguser);
@@ -1354,7 +1354,7 @@ void sbbs_t::nodemsg()
 				now=time(NULL);
 				bprintf(text[SendingTelegramToUser]
 					,username(&cfg,usernumber,tmp),usernumber);
-				sprintf(buf,text[TelegramFmt]
+				snprintf(buf, sizeof buf, text[TelegramFmt]
 					,thisnode.misc&NODE_ANON ? text[UNKNOWN_USER] : useron.alias
 					,timestr(now));
 				i=0;
@@ -1379,7 +1379,7 @@ void sbbs_t::nodemsg()
 					break;
 				}
 				putsmsg(usernumber,buf);
-				sprintf(str,"sent telegram to %s #%u"
+				snprintf(str, sizeof str, "sent telegram to %s #%u"
 					,username(&cfg,usernumber,tmp),usernumber);
 				logline("C",str);
 				logline(nulstr,logbuf);
@@ -1405,14 +1405,14 @@ void sbbs_t::nodemsg()
 						bputs(text[NodeMsgPrompt]);
 						if(!getstr(line,69,K_LINE))
 							break;
-						sprintf(buf,text[NodeMsgFmt],cfg.node_num
+						snprintf(buf, sizeof buf, text[NodeMsgFmt],cfg.node_num
 							,thisnode.misc&NODE_ANON
 								? text[UNKNOWN_USER] : useron.alias,line);
 						putnmsg(i,buf);
 						if(!(node.misc&NODE_ANON))
 							bprintf(text[MsgSentToUser],"Message"
 								,username(&cfg,usernumber,tmp),usernumber);
-						sprintf(str,"sent message to %s on node %d:"
+						snprintf(str, sizeof str, "sent message to %s on node %d:"
 							,username(&cfg,usernumber,tmp),i);
 						logline("C",str);
 						logline(nulstr,line);
@@ -1422,7 +1422,7 @@ void sbbs_t::nodemsg()
 					bputs(text[NodeMsgPrompt]);
 					if(!getstr(line,70,K_LINE))
 						break;
-					sprintf(buf,text[AllNodeMsgFmt],cfg.node_num
+					snprintf(buf, sizeof buf, text[AllNodeMsgFmt],cfg.node_num
 						,thisnode.misc&NODE_ANON
 							? text[UNKNOWN_USER] : useron.alias,line);
 					for(i=1;i<=cfg.sys_nodes;i++) {
@@ -1613,7 +1613,7 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 							SAFECAT(theanswer,cfg.sys_id);
 							break;
 						case 'J':
-							sprintf(tmp,"%u",tm.tm_mday);
+							snprintf(tmp, sizeof tmp, "%u",tm.tm_mday);
 							break;
 						case 'L':
                     		if(sys_status&SS_USERON) {
@@ -1656,7 +1656,7 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 							SAFECAT(theanswer,cfg.sys_name);
 							break;
 						case 'T':
-							sprintf(tmp,"%u:%02u",tm.tm_hour>12 ? tm.tm_hour-12
+							snprintf(tmp, sizeof tmp, "%u:%02u",tm.tm_hour>12 ? tm.tm_hour-12
 								: tm.tm_hour,tm.tm_min);
 							SAFECAT(theanswer,tmp);
 							break;
@@ -1671,7 +1671,7 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 							SAFECAT(theanswer,weekday[tm.tm_wday]);
 							break;
 						case 'Y':   /* Current year */
-							sprintf(tmp,"%u",1900+tm.tm_year);
+							snprintf(tmp, sizeof tmp, "%u",1900+tm.tm_year);
 							SAFECAT(theanswer,tmp);
 							break;
 						case 'Z':
@@ -1747,7 +1747,7 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 					,cfg.sys_nodes+1,':',theanswer);
 			}
 			CRLF;
-			sprintf(str,"%sguru.log",cfg.logs_dir);
+			snprintf(str, sizeof str, "%sguru.log",cfg.logs_dir);
 			if((fp = fopenlog(&cfg, str)) == NULL)
 				errormsg(WHERE,ERR_OPEN,str,O_WRONLY|O_CREAT|O_APPEND);
 			else {

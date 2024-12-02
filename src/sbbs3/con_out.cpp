@@ -351,7 +351,7 @@ size_t sbbs_t::print_utf8_as_cp437(const char* str, size_t len)
 		outchar(CP437_INVERTED_QUESTION_MARK);
 		char seq[32] = "";
 		for(size_t i = 0; i < len; i++)
-			sprintf(seq + strlen(seq), "%02X ", (uchar)*(str + i));
+			snprintf(seq + strlen(seq), 4, "%02X ", (uchar)*(str + i));
 		lprintf(LOG_DEBUG, "Unsupported UTF-8 sequence: %s (U+%X)", seq, codepoint);
 	}
 	return len;

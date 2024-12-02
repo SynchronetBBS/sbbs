@@ -51,7 +51,7 @@ int sbbs_t::exec_file(csi_t *csi)
 								,i+1,cfg.lib[usrlib[i]]->lname); 
 						} 
 					}
-					sprintf(str,text[JoinWhichLib],curlib+1);
+					snprintf(str, sizeof str, text[JoinWhichLib],curlib+1);
 					mnemonics(str);
 					j=getnum(usrlibs);
 					clear_hotspots();
@@ -62,14 +62,14 @@ int sbbs_t::exec_file(csi_t *csi)
 					else
 						j--; 
 				}
-				sprintf(str,"dirs%u",usrlib[j]+1);
+				snprintf(str, sizeof str, "dirs%u",usrlib[j]+1);
 				if(!menu(str, P_NOERROR)) {
 					CLS;
 					bprintf(text[DirLstHdr], cfg.lib[usrlib[j]]->lname);
 					for(i=0;i<usrdirs[j] && !msgabort();i++) {
 						if(i==curdir[j]) outchar('*');
 						else outchar(' ');
-						sprintf(str,text[DirLstFmt],i+1
+						snprintf(str, sizeof str, text[DirLstFmt],i+1
 							,cfg.dir[usrdir[j][i]]->lname,nulstr
 							,getfiles(&cfg,usrdir[j][i]));
 						if(i<9) outchar(' ');
@@ -78,7 +78,7 @@ int sbbs_t::exec_file(csi_t *csi)
 						bputs(str); 
 					} 
 				}
-				sprintf(str,text[JoinWhichDir],curdir[j]+1);
+				snprintf(str, sizeof str, text[JoinWhichDir],curdir[j]+1);
 				mnemonics(str);
 				i=getnum(usrdirs[j]);
 				clear_hotspots();
@@ -207,7 +207,7 @@ int sbbs_t::exec_file(csi_t *csi)
 
 		case CS_FILE_SHOW_DIRECTORIES:
 			if(!usrlibs) return(0);
-			sprintf(str,"dirs%u",usrlib[curlib]+1);
+			snprintf(str, sizeof str, "dirs%u",usrlib[curlib]+1);
 			if(menu(str, P_NOERROR)) {
 				return(0); 
 			}
@@ -216,7 +216,7 @@ int sbbs_t::exec_file(csi_t *csi)
 			for(i=0;i<usrdirs[curlib] && !msgabort();i++) {
 				if(i==curdir[curlib]) outchar('*');
 				else outchar(' ');
-				sprintf(str,text[DirLstFmt],i+1
+				snprintf(str, sizeof str, text[DirLstFmt],i+1
 					,cfg.dir[usrdir[curlib][i]]->lname,nulstr
 					,getfiles(&cfg,usrdir[curlib][i]));
 				if(i<9) outchar(' ');

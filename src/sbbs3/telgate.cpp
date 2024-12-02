@@ -42,14 +42,14 @@ struct TelnetProxy
 		if (cmd < TELNET_WILL) {
 			if(sbbs->startup->options&BBS_OPT_DEBUG_TELNET)
 				sbbs->lprintf(LOG_DEBUG, "%s: %s", __FUNCTION__, telnet_cmd_desc(cmd));
-			sprintf(buf, "%c%c", TELNET_IAC, cmd);
+			snprintf(buf, sizeof buf, "%c%c", TELNET_IAC, cmd);
 			if (::sendsocket(sock, buf, 2) != 2)
 				lprintf(LOG_WARNING, "%s: Failed to send command: %s", __FUNCTION__, telnet_cmd_desc(cmd));
 		}
 		else {
 			if(sbbs->startup->options&BBS_OPT_DEBUG_TELNET)
 				sbbs->lprintf(LOG_DEBUG, "%s: %s %s", __FUNCTION__, telnet_cmd_desc(cmd), telnet_opt_desc(opt));
-			sprintf(buf, "%c%c%c", TELNET_IAC, cmd, opt);
+			snprintf(buf, sizeof buf, "%c%c%c", TELNET_IAC, cmd, opt);
 			if (::sendsocket(sock, buf, 3) != 3)
 				sbbs->lprintf(LOG_WARNING, "%s: Failed to send command: %s %s", __FUNCTION__, telnet_cmd_desc(cmd), telnet_opt_desc(opt));
 		}
@@ -320,14 +320,14 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, str_list_t
 			server_user_name = (mode&TG_RLOGINSWAP) ? useron.alias : useron.name;
 		p=(char*)buf;
 		*(p++)=0;
-		p+=sprintf(p,"%s",client_user_name);
+		p+=snprintf(p, 128, "%s",client_user_name);
 		p++;	// Add NULL
-		p+=sprintf(p,"%s",server_user_name);
+		p+=snprintf(p, 128, "%s",server_user_name);
 		p++;	// Add NULL
 		if(term_type!=NULL)
-			p+=sprintf(p,"%s",term_type);
+			p+=snprintf(p, 128, "%s",term_type);
 		else
-			p+=sprintf(p,"%s/%u",terminal, cur_rate);
+			p+=snprintf(p, 128, "%s/%u",terminal, cur_rate);
 		p++;	// Add NULL
 		l=p-(char*)buf;
 		if(sendsocket(remote_socket,(char*)buf,l) != (ssize_t)l)

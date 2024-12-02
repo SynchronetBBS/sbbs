@@ -220,7 +220,7 @@ int sbbs_t::exec_function(csi_t *csi)
 				return(0);
 			if(localtime_r(&now,&tm)==NULL)
 				return(0);
-			sprintf(str,"%slogs/%2.2d%2.2d%2.2d.log", cfg.logs_dir
+			snprintf(str, sizeof str, "%slogs/%2.2d%2.2d%2.2d.log", cfg.logs_dir
 				,tm.tm_mon+1,tm.tm_mday,TM_YEAR(tm.tm_year));
 			printfile(str,0);
 			return(0);
@@ -230,7 +230,7 @@ int sbbs_t::exec_function(csi_t *csi)
 			now-=(ulong)60L*24L*60L;
 			if(localtime_r(&now,&tm)==NULL)
 				return(0);
-			sprintf(str,"%slogs/%2.2d%2.2d%2.2d.log",cfg.logs_dir
+			snprintf(str, sizeof str, "%slogs/%2.2d%2.2d%2.2d.log",cfg.logs_dir
 				,tm.tm_mon+1,tm.tm_mday,TM_YEAR(tm.tm_year));
 			printfile(str,0);
 			return(0);
@@ -246,7 +246,7 @@ int sbbs_t::exec_function(csi_t *csi)
 		case CS_SHOW_MEM:
 			return(0);
 		case CS_ERROR_LOG:
-			sprintf(str,"%serror.log", cfg.logs_dir);
+			snprintf(str, sizeof str, "%serror.log", cfg.logs_dir);
 			if(fexist(str)) {
 				bputs(text[ErrorLogHdr]);
 				printfile(str,0);
@@ -292,7 +292,7 @@ int sbbs_t::exec_function(csi_t *csi)
 				editfile(str);
 			return(0);
 		case CS_GURU_LOG:
-			sprintf(str,"%sguru.log", cfg.logs_dir);
+			snprintf(str, sizeof str, "%sguru.log", cfg.logs_dir);
 			if(fexist(str)) {
 				printfile(str,0);
 				CRLF;

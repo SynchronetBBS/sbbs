@@ -214,14 +214,14 @@ void sbbs_t::userlist(int mode)
 					free(line[i]);
 				return; 
 			}
-			sprintf(name,"%s #%d",user.alias,i);
-			sprintf(line[j],text[UserListFmt],name
+			snprintf(name, sizeof name, "%s #%d",user.alias,i);
+			snprintf(line[j], 128, text[UserListFmt],name
 				,cfg.sys_misc&SM_LISTLOC ? user.location : user.note
 				,datestr(user.laston,tmp)
 				,user.modem); 
 		}
 		else {
-			sprintf(name,"%s #%u",user.alias,i);
+			snprintf(name, sizeof name, "%s #%u",user.alias,i);
 			bprintf(text[UserListFmt],name
 				,cfg.sys_misc&SM_LISTLOC ? user.location : user.note
 				,datestr(user.laston,tmp)
@@ -266,7 +266,7 @@ void sbbs_t::sif(char *fname, char *answers, int len)
 	int	length,l=0,m,top,a=0;
 
 	*answers = 0;
-	sprintf(str,"%s%s.sif",cfg.text_dir,fname);
+	snprintf(str, sizeof str, "%s%s.sif",cfg.text_dir,fname);
 	if((file=nopen(str,O_RDONLY))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 		return; 
@@ -436,7 +436,7 @@ void sbbs_t::sof(char *fname, char *answers, int len)
 	int length,l=0,m,a=0;
 
 	*answers = '\0';
-	sprintf(str,"%s%s.sif",cfg.text_dir,fname);
+	snprintf(str, sizeof str, "%s%s.sif",cfg.text_dir,fname);
 	if((file=nopen(str,O_RDONLY))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
 		return; 
@@ -962,7 +962,7 @@ bool sbbs_t::trashcan(const char *insearchof, const char *name, struct trash* tr
 
 	result=::trashcan2(&cfg, insearchof, NULL, name, trash);
 	if(result) {
-		sprintf(str,"%sbad%s.msg",cfg.text_dir,name);
+		snprintf(str, sizeof str, "%sbad%s.msg",cfg.text_dir,name);
 		if(fexistcase(str)) {
 			printfile(str,0);
 			flush_output(500); // give time for tx buffer to clear before disconnect
@@ -1319,7 +1319,7 @@ void sbbs_t::time_bank(void)
 			logline("  ","Minute Bank Deposit");
 			useron.min = (uint32_t)adjustuserval(&cfg, useron.number, USER_MIN, s);
 			useron.ttoday = (ushort)adjustuserval(&cfg, useron.number, USER_TTODAY, s);
-			sprintf(str,"Minute Adjustment: %u",s*cfg.cdt_min_value);
+			snprintf(str, sizeof str, "Minute Adjustment: %u",s*cfg.cdt_min_value);
 			logline("*+",str); 
 		} 
 	}
@@ -1348,9 +1348,9 @@ void sbbs_t::time_bank(void)
 			logline("  ","Credit to Minute Conversion");
 			useron.cdt = adjustuserval(&cfg, useron.number, USER_CDT, -(s*102400L));
 			useron.min = (uint32_t)adjustuserval(&cfg, useron.number, USER_MIN, s*(int)cfg.cdt_min_value);
-			sprintf(str,"Credit Adjustment: %ld",-(s*102400L));
+			snprintf(str, sizeof str, "Credit Adjustment: %ld",-(s*102400L));
 			logline("$-",str);
-			sprintf(str,"Minute Adjustment: %u",s*cfg.cdt_min_value);
+			snprintf(str, sizeof str, "Minute Adjustment: %u",s*cfg.cdt_min_value);
 			logline("*+",str); 
 		} 
 	}
@@ -1393,7 +1393,7 @@ void sbbs_t::change_user(void)
 	getmsgptrs();
 	if(REALSYSOP) sys_status&=~SS_TMPSYSOP;
 	else sys_status|=SS_TMPSYSOP;
-	sprintf(str,"Changed into %s #%u",useron.alias,useron.number);
+	snprintf(str, sizeof str, "Changed into %s #%u",useron.alias,useron.number);
 	logline("S+",str);
 }
 
@@ -1412,22 +1412,22 @@ char* sbbs_t::age_of_posted_item(char* buf, size_t max, time_t t)
 	}
 
 	if(diff < 60) {
-		sprintf(value, "%.0f", diff);
+		snprintf(value, sizeof value, "%.0f", diff);
 		units = text[Seconds];
 	} else if(diff < 60*60) {
-		sprintf(value, "%.0f", diff / 60.0);
+		snprintf(value, sizeof value, "%.0f", diff / 60.0);
 		units = text[Minutes];
 	} else if(diff < 60*60*24) {
-		sprintf(value, "%.1f", diff / (60.0 * 60.0));
+		snprintf(value, sizeof value, "%.1f", diff / (60.0 * 60.0));
 		units = text[Hours];
 	} else if(diff < 60*60*24*30) {
-		sprintf(value, "%.1f", diff / (60.0 * 60.0 * 24.0));
+		snprintf(value, sizeof value, "%.1f", diff / (60.0 * 60.0 * 24.0));
 		units = text[Days];
 	} else if(diff < 60*60*24*365) {
-		sprintf(value, "%.1f", diff / (60.0 * 60.0 * 24.0 * 30.0));
+		snprintf(value, sizeof value, "%.1f", diff / (60.0 * 60.0 * 24.0 * 30.0));
 		units = text[Months];
 	} else
-		sprintf(value, "%.1f", diff / (60.0 * 60.0 * 24.0 * 365.25));
+		snprintf(value, sizeof value, "%.1f", diff / (60.0 * 60.0 * 24.0 * 365.25));
 	safe_snprintf(buf, max, text[AgeOfPostedItem], value, units, past);
 	return buf;
 }

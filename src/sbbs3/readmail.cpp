@@ -283,7 +283,7 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 			bprintf(text[ReadingAllMail],smb.curmsg+1,smb.msgs);
 		else
 			bprintf(text[ReadingMail],smb.curmsg+1,smb.msgs);
-		sprintf(str,"ADFLNQRT?<>[]{}()-+/!%c%c%c%c"
+		snprintf(str, sizeof str, "ADFLNQRT?<>[]{}()-+/!%c%c%c%c"
 			,TERM_KEY_LEFT
 			,TERM_KEY_RIGHT
 			,TERM_KEY_HOME

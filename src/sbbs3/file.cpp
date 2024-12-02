@@ -178,8 +178,8 @@ bool sbbs_t::removefcdt(file_t* f)
 			cdt+=((ulong)((long)f->hdr.times_downloaded
 				*f->cost*(cfg.dir[f->dir]->dn_pct/100.0))/cur_cps)/60;
 		adjustuserval(&cfg, u, USER_MIN, -cdt);
-		sprintf(str,"%lu minute",cdt);
-		sprintf(tmp,text[FileRemovedUserMsg]
+		snprintf(str, sizeof str, "%lu minute",cdt);
+		snprintf(tmp, sizeof tmp, text[FileRemovedUserMsg]
 			,f->name,cdt ? str : text[No]);
 		putsmsg(u,tmp);
 	}
@@ -199,7 +199,7 @@ bool sbbs_t::removefcdt(file_t* f)
 			cdt = atol(str);
 		}
 		adjustuserval(&cfg, u, USER_CDT, -cdt);
-		sprintf(tmp,text[FileRemovedUserMsg]
+		snprintf(tmp, sizeof tmp, text[FileRemovedUserMsg]
 			,f->name,cdt > 0 ? ultoac(cdt,str) : text[No]);
 		putsmsg(u,tmp);
 	}

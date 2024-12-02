@@ -75,7 +75,7 @@ int sbbs_t::uselect(bool add, uint n, const char *title, const char *item, const
 			break;
 	if(u==uselect_total)
 		u=0;
-	sprintf(str,text[SelectItemWhich],u+1);
+	snprintf(str, sizeof str, text[SelectItemWhich],u+1);
 	mnemonics(str);
 	i=getnum(uselect_total);
 	t=uselect_total;

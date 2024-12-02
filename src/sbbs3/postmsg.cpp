@@ -293,7 +293,7 @@ bool sbbs_t::postmsg(int subnum, int wm_mode, smb_t* resmb, smbmsg_t* remsg)
 	SAFECOPY(str,cfg.sub[subnum]->misc&SUB_NAME ? useron.name : useron.alias);
 	smb_hfield_str(&msg,SENDER,str);
 
-	sprintf(str,"%u",useron.number);
+	snprintf(str, sizeof str, "%u",useron.number);
 	smb_hfield_str(&msg,SENDEREXT,str);
 
 	/* Security logging */
@@ -332,7 +332,7 @@ bool sbbs_t::postmsg(int subnum, int wm_mode, smb_t* resmb, smbmsg_t* remsg)
 	user_posted_msg(&cfg, &useron, 1);
 	bprintf(text[Posted],cfg.grp[cfg.sub[subnum]->grp]->sname
 		,cfg.sub[subnum]->lname);
-	sprintf(str,"posted to %s on %s %s"
+	snprintf(str, sizeof str, "posted to %s on %s %s"
 		,touser, cfg.grp[cfg.sub[subnum]->grp]->sname,cfg.sub[subnum]->lname);
 	logline("P+",str);
 

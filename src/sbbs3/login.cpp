@@ -72,7 +72,7 @@ int sbbs_t::login(const char *username, const char *pw_prompt, const char* user_
 		} else {
 			badlogin(username, NULL);
 			bputs(text[UnknownUser]);
-			sprintf(tmp,"Unknown User '%s'",username);
+			snprintf(tmp, sizeof tmp, "Unknown User '%s'",username);
 			logline(LOG_NOTICE,"+!",tmp); 
 		}
 		useron.misc=useron_misc;
