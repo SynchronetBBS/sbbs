@@ -568,7 +568,7 @@ static bool winsock_cleanup(void)
 	if(WSACleanup()==0)
 		return(TRUE);
 
-	lprintf(LOG_ERR,"!WinSock cleanup ERROR %d",ERROR_VALUE);
+	lprintf(LOG_ERR,"!WinSock cleanup ERROR %d",SOCKET_ERRNO);
 	return(FALSE);
 }
 

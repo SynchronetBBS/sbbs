@@ -175,7 +175,7 @@ int dns_getmx(char* name, char* mx, char* mx2
 
 	sock = socket(AF_INET, use_tcp ? SOCK_STREAM : SOCK_DGRAM, IPPROTO_IP);
 	if(sock == INVALID_SOCKET)
-		return(ERROR_VALUE);
+		return(SOCKET_ERRNO);
 
 	mail_open_socket(sock, "dns");
 	
@@ -187,7 +187,7 @@ int dns_getmx(char* name, char* mx, char* mx2
 
 	if(result != 0) {
 		mail_close_socket(&sock, &sess);
-		return(ERROR_VALUE);
+		return(SOCKET_ERRNO);
 	}
 
 	memset(&addr,0,sizeof(addr));
@@ -197,7 +197,7 @@ int dns_getmx(char* name, char* mx, char* mx2
 	
 	if((result=connect(sock, (struct sockaddr *)&addr, sizeof(addr)))!=0) {
 		mail_close_socket(&sock, &sess);
-		return(ERROR_VALUE);
+		return(SOCKET_ERRNO);
 	}
 
 	memset(&msghdr,0,sizeof(msghdr));
@@ -252,7 +252,7 @@ int dns_getmx(char* name, char* mx, char* mx2
 	i=send(sock,msg+offset,len,0);
 	if(i!=len) {
 		if(i==SOCKET_ERROR)
-			result=ERROR_VALUE;
+			result=SOCKET_ERRNO;
 		else
 			result=-2;
 		mail_close_socket(&sock, &sess);

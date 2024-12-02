@@ -1326,8 +1326,8 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 				break;
 			case -1:	// Error...
 				JS_RESUMEREQUEST(cx, rc);
-				if (ERROR_VALUE != EINTR) {
-					JS_ReportError(cx, "poll() returned with error %d", ERROR_VALUE);
+				if (SOCKET_ERRNO != EINTR) {
+					JS_ReportError(cx, "poll() returned with error %d", SOCKET_ERRNO);
 					ret = JS_FALSE;
 					goto done;
 				}

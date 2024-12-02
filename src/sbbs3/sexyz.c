@@ -347,7 +347,7 @@ int sendbuf(SOCKET s, void *buf, size_t buflen)
 #endif
 			ret=sendsocket(s,(char *)buf+sent,buflen-sent);
 		if(ret==SOCKET_ERROR) {
-			switch(ERROR_VALUE) {
+			switch(SOCKET_ERRNO) {
 				case EAGAIN:
 				case ENOBUFS:
 #if (EAGAIN != EWOULDBLOCK)
@@ -363,8 +363,8 @@ int sendbuf(SOCKET s, void *buf, size_t buflen)
 						FD_SET(sock,&socket_set);
 
 					if((ret=select(sock+1,NULL,&socket_set,NULL,NULL))<1) {
-						if(ret==SOCKET_ERROR && ERROR_VALUE != EINTR) {
-							lprintf(LOG_ERR,"ERROR %d selecting socket", ERROR_VALUE);
+						if(ret==SOCKET_ERROR && SOCKET_ERRNO != EINTR) {
+							lprintf(LOG_ERR,"ERROR %d selecting socket", SOCKET_ERRNO);
 							goto disconnect;
 						}
 					}
@@ -408,7 +408,7 @@ void send_telnet_cmd(SOCKET sock, uchar cmd, uchar opt)
 
 /*
  * Returns -1 on disconnect, 0 on timeout, or the number of bytes read.
- * Does not muck around with ERROR_VALUE (hopefully)
+ * Does not muck around with SOCKET_ERRNO (hopefully)
  */
 static int recv_buffer(int timeout /* seconds */)
 {
@@ -439,7 +439,7 @@ static int recv_buffer(int timeout /* seconds */)
 		{
 			i=recv(sock,inbuf,sizeof(inbuf),0);
 			if(i==SOCKET_ERROR)
-				magic_errno=ERROR_VALUE;
+				magic_errno=SOCKET_ERRNO;
 		}
 		if(i==SOCKET_ERROR) {
 			switch(magic_errno) {
@@ -527,7 +527,7 @@ int recv_byte(void* unused, unsigned timeout /* seconds */)
 			if(i==0) {
 				lprintf(LOG_WARNING,"Socket Disconnected");
 			} else
-				lprintf(LOG_ERR,"recv error %d (%d)",i,ERROR_VALUE);
+				lprintf(LOG_ERR,"recv error %d (%d)",i,SOCKET_ERRNO);
 			return(NOINP); 
 		}
 
@@ -651,7 +651,7 @@ int send_byte(void* unused, uchar ch, unsigned timeout)
 		buf[0]=ch;
 
 	i=sendbuf(sock,buf,len);
-	
+
 	if(i==len) {
 		if(debug_tx)
 			lprintf(LOG_DEBUG,"TX: %s",chr(ch));
@@ -689,7 +689,7 @@ static void output_thread(void* arg)
 			WaitForEvent(outbuf.data_event, INFINITE);
 			if(outbuf.highwater_mark)
 				WaitForEvent(outbuf.highwater_event, outbuf_drain_timeout);
-			continue; 
+			continue;
 		}
 
         if(bufbot==buftop) { /* linear buf empty, read from ring buf */
@@ -703,15 +703,15 @@ static void output_thread(void* arg)
         }
 		i=sendbuf(sock, (char*)buf+bufbot, buftop-bufbot);
 		if(i==SOCKET_ERROR) {
-        	if(ERROR_VALUE == ENOTSOCK)
+			if(SOCKET_ERRNO == ENOTSOCK)
                 lprintf(LOG_ERR,"client socket closed on send");
-            else if(ERROR_VALUE==ECONNRESET) 
+			else if(SOCKET_ERRNO==ECONNRESET)
 				lprintf(LOG_ERR,"connection reset by peer on send");
-            else if(ERROR_VALUE==ECONNABORTED) 
+			else if(SOCKET_ERRNO==ECONNABORTED)
 				lprintf(LOG_ERR,"connection aborted by peer on send");
 			else
 				lprintf(LOG_ERR,"ERROR %d sending on socket %d"
-                	,ERROR_VALUE, sock);
+					,SOCKET_ERRNO, sock);
 			break;
 		}
 

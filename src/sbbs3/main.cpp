@@ -403,8 +403,8 @@ int close_socket(SOCKET sock)
 	shutdown(sock,SHUT_RDWR);	/* required on Unix */
 	result=closesocket(sock);
 	call_socket_open_callback(false);
-	if(result!=0 && ERROR_VALUE!=ENOTSOCK)
-		lprintf(LOG_WARNING,"!ERROR %d closing socket %d",ERROR_VALUE,sock);
+	if(result!=0 && SOCKET_ERRNO!=ENOTSOCK)
+		lprintf(LOG_WARNING,"!ERROR %d closing socket %d",SOCKET_ERRNO,sock);
 	return(result);
 }
 
@@ -2252,23 +2252,23 @@ void input_thread(void *arg)
 #endif
 				if(!sbbs->online)	// sbbs_t::hangup() called?
 					break;
-				if(ERROR_VALUE == EAGAIN)
+				if(SOCKET_ERRNO == EAGAIN)
 					continue;
-	        	if(ERROR_VALUE == ENOTSOCK)
+				if(SOCKET_ERRNO == ENOTSOCK)
     	            lprintf(LOG_NOTICE,"Node %d socket closed by peer on receive", sbbs->cfg.node_num);
-        	    else if(ERROR_VALUE==ECONNRESET)
+				else if(SOCKET_ERRNO==ECONNRESET)
 					lprintf(LOG_NOTICE,"Node %d connection reset by peer on receive", sbbs->cfg.node_num);
-				else if(ERROR_VALUE==ESHUTDOWN)
+				else if(SOCKET_ERRNO==ESHUTDOWN)
 					lprintf(LOG_NOTICE,"Node %d socket shutdown on receive", sbbs->cfg.node_num);
-        	    else if(ERROR_VALUE==ECONNABORTED)
+				else if(SOCKET_ERRNO==ECONNABORTED)
 					lprintf(LOG_NOTICE,"Node %d connection aborted by peer on receive", sbbs->cfg.node_num);
 				else
 					lprintf(LOG_WARNING,"Node %d !ERROR %d receiving from socket %d"
-        	        	,sbbs->cfg.node_num, ERROR_VALUE, sock);
+						,sbbs->cfg.node_num, SOCKET_ERRNO, sock);
 				break;
 #ifdef __unix__
 			} else  {
-				if(ERROR_VALUE != EAGAIN)  {
+				if(SOCKET_ERRNO != EAGAIN)  {
 					lprintf(LOG_ERR,"Node %d !ERROR %d (%s) on local spy socket %d receive"
 						, sbbs->cfg.node_num, errno, strerror(errno), sock);
 					close_socket(uspy_socket[sbbs->cfg.node_num-1]);
@@ -2312,7 +2312,7 @@ void input_thread(void *arg)
 			if(socket_check(sbbs->passthru_socket, NULL, &writable, 1000) && writable) {
 				if(sendsocket(sbbs->passthru_socket, (char*)wrbuf, wr) != wr)
 					lprintf(LOG_ERR, "Node %d ERROR %d writing to passthru socket"
-						,sbbs->cfg.node_num, ERROR_VALUE);
+						,sbbs->cfg.node_num, SOCKET_ERRNO);
 			} else
 				lprintf(LOG_WARNING, "Node %d could not write to passthru socket (writable=%d)"
 					, sbbs->cfg.node_num, (int)writable);
@@ -2421,17 +2421,17 @@ void passthru_thread(void* arg)
 
 		if(rd == SOCKET_ERROR)
 		{
-	        if(ERROR_VALUE == ENOTSOCK)
+			if(SOCKET_ERRNO == ENOTSOCK)
     	        lprintf(LOG_NOTICE,"Node %d passthru socket closed by peer on receive", sbbs->cfg.node_num);
-        	else if(ERROR_VALUE==ECONNRESET)
+			else if(SOCKET_ERRNO==ECONNRESET)
 				lprintf(LOG_NOTICE,"Node %d passthru connection reset by peer on receive", sbbs->cfg.node_num);
-			else if(ERROR_VALUE==ESHUTDOWN)
+			else if(SOCKET_ERRNO==ESHUTDOWN)
 				lprintf(LOG_NOTICE,"Node %d passthru socket shutdown on receive", sbbs->cfg.node_num);
-        	else if(ERROR_VALUE==ECONNABORTED)
+			else if(SOCKET_ERRNO==ECONNABORTED)
 				lprintf(LOG_NOTICE,"Node %d passthru connection aborted by peer on receive", sbbs->cfg.node_num);
 			else
 				lprintf(LOG_WARNING,"Node %d !ERROR %d receiving from passthru socket %d"
-        	        ,sbbs->cfg.node_num, ERROR_VALUE, sbbs->passthru_socket);
+					,sbbs->cfg.node_num, SOCKET_ERRNO, sbbs->passthru_socket);
 			break;
 		}
 
@@ -2666,15 +2666,15 @@ void output_thread(void* arg)
 #endif
 			i=sendsocket(sbbs->client_socket, (char*)buf+bufbot, buftop-bufbot);
 		if(i==SOCKET_ERROR) {
-			if(ERROR_VALUE == ENOTSOCK)
+			if(SOCKET_ERRNO == ENOTSOCK)
 				lprintf(LOG_NOTICE,"%s client socket closed on send", node);
-			else if(ERROR_VALUE==ECONNRESET)
+			else if(SOCKET_ERRNO==ECONNRESET)
 				lprintf(LOG_NOTICE,"%s connection reset by peer on send", node);
-			else if(ERROR_VALUE==ECONNABORTED)
+			else if(SOCKET_ERRNO==ECONNABORTED)
 				lprintf(LOG_NOTICE,"%s connection aborted by peer on send", node);
 			else
 				lprintf(LOG_WARNING,"%s !ERROR %d (%s) sending on socket %d"
-					,node, ERROR_VALUE, SOCKET_STRERROR(errmsg, sizeof errmsg), sbbs->client_socket);
+					,node, SOCKET_ERRNO, SOCKET_STRERROR(errmsg, sizeof errmsg), sbbs->client_socket);
 			sbbs->online=false;
 			/* was break; on 4/7/00 */
 			i=buftop-bufbot;	// Pretend we sent it all
@@ -2697,12 +2697,12 @@ void output_thread(void* arg)
 						,node, result, errno, i, spy_topic);
 			}
 			if(spy_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET)
-				if(sendsocket(spy_socket[sbbs->cfg.node_num-1],(char*)buf+bufbot,i) != i && ERROR_VALUE != EPIPE)
-					lprintf(LOG_ERR, "%s ERROR %d writing to spy socket", node, ERROR_VALUE);
+				if(sendsocket(spy_socket[sbbs->cfg.node_num-1],(char*)buf+bufbot,i) != i && SOCKET_ERRNO != EPIPE)
+					lprintf(LOG_ERR, "%s ERROR %d writing to spy socket", node, SOCKET_ERRNO);
 #ifdef __unix__
 			if(uspy_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET)
 				if(sendsocket(uspy_socket[sbbs->cfg.node_num-1],(char*)buf+bufbot,i) != i)
-					lprintf(LOG_ERR, "%s ERROR %d writing to UNIX spy socket", node, ERROR_VALUE);
+					lprintf(LOG_ERR, "%s ERROR %d writing to UNIX spy socket", node, SOCKET_ERRNO);
 #endif
 		}
 
@@ -3557,7 +3557,7 @@ bool sbbs_t::init()
 		addr_len=sizeof(addr);
 		if((result=getsockname(client_socket, &addr.addr, &addr_len))!=0) {
 			lprintf(LOG_CRIT,"%04d %s !ERROR %d (%d) getting local address/port of socket"
-				,client_socket, client.protocol, result, ERROR_VALUE);
+				,client_socket, client.protocol, result, SOCKET_ERRNO);
 			return(false);
 		}
 		inet_addrtop(&addr, local_addr, sizeof(local_addr));
@@ -3972,11 +3972,11 @@ void sbbs_t::spymsg(const char* msg)
 
 	if(cfg.node_num && spy_socket[cfg.node_num-1]!=INVALID_SOCKET)
 		if(sendsocket(spy_socket[cfg.node_num-1],str,strlen(str)) < 1)
-			lprintf(LOG_ERR, "Node %d ERROR %d writing to spy socket", cfg.node_num, ERROR_VALUE);
+			lprintf(LOG_ERR, "Node %d ERROR %d writing to spy socket", cfg.node_num, SOCKET_ERRNO);
 #ifdef __unix__
 	if(cfg.node_num && uspy_socket[cfg.node_num-1]!=INVALID_SOCKET)
 		if(sendsocket(uspy_socket[cfg.node_num-1],str,strlen(str)) < 1)
-			lprintf(LOG_ERR, "Node %d ERROR %d writing to spy socket", cfg.node_num, ERROR_VALUE);
+			lprintf(LOG_ERR, "Node %d ERROR %d writing to spy socket", cfg.node_num, SOCKET_ERRNO);
 #endif
 }
 
@@ -4862,7 +4862,7 @@ static void cleanup(int code)
 
 #ifdef _WINSOCKAPI_
 	if(WSAInitialized && WSACleanup()!=0)
-		lprintf(LOG_ERR,"!WSACleanup ERROR %d",ERROR_VALUE);
+		lprintf(LOG_ERR,"!WSACleanup ERROR %d",SOCKET_ERRNO);
 #endif
 
 	free_cfg(&scfg);
@@ -5197,7 +5197,7 @@ void bbs_thread(void* arg)
 	/* open a socket and wait for a client */
 	ts_set = xpms_create(startup->bind_retry_count, startup->bind_retry_delay, lprintf);
 	if(ts_set==NULL) {
-		lprintf(LOG_CRIT,"!ERROR %d creating Terminal Server socket set", ERROR_VALUE);
+		lprintf(LOG_CRIT,"!ERROR %d creating Terminal Server socket set", SOCKET_ERRNO);
 		cleanup(1);
 		return;
 	}
@@ -5504,7 +5504,7 @@ NO_SSH:
 		socklen_t addr_len = sizeof(local_addr);
 		if(getsockname(client_socket, (struct sockaddr *)&local_addr, &addr_len) != 0) {
 			lprintf(LOG_CRIT,"%04d %s [%s] !ERROR %d getting local address/port of socket"
-				,client_socket, client.protocol, host_ip, ERROR_VALUE);
+				,client_socket, client.protocol, host_ip, SOCKET_ERRNO);
 			close_socket(client_socket);
 			continue;
 		}
@@ -5813,7 +5813,7 @@ NO_SSH:
 
 			if(tmp_sock == INVALID_SOCKET) {
 				lprintf(LOG_ERR,"Node %d !ERROR %d creating passthru listen socket"
-					,new_node->cfg.node_num, ERROR_VALUE);
+					,new_node->cfg.node_num, SOCKET_ERRNO);
 				goto NO_PASSTHRU;
 			}
 
@@ -5840,7 +5840,7 @@ NO_SSH:
 
 			if(result != 0) {
 				lprintf(LOG_ERR,"Node %d !ERROR %d (%d) listening on passthru socket"
-					,new_node->cfg.node_num, result, ERROR_VALUE);
+					,new_node->cfg.node_num, result, SOCKET_ERRNO);
 				close_socket(tmp_sock);
 				goto NO_PASSTHRU;
 			}
@@ -5848,7 +5848,7 @@ NO_SSH:
 			tmp_addr_len=sizeof(tmp_addr);
 			if(getsockname(tmp_sock, (struct sockaddr *)&tmp_addr, &tmp_addr_len)) {
 				lprintf(LOG_CRIT,"Node %d !ERROR %d getting passthru listener address/port of socket"
-					,new_node->cfg.node_num, ERROR_VALUE);
+					,new_node->cfg.node_num, SOCKET_ERRNO);
 				close_socket(tmp_sock);
 				goto NO_PASSTHRU;
 			}
@@ -5859,7 +5859,7 @@ NO_SSH:
 
 			if(new_node->passthru_socket == INVALID_SOCKET) {
 				lprintf(LOG_ERR,"Node %d !ERROR %d creating passthru connecting socket"
-					,new_node->cfg.node_num, ERROR_VALUE);
+					,new_node->cfg.node_num, SOCKET_ERRNO);
 				close_socket(tmp_sock);
 				goto NO_PASSTHRU;
 			}
@@ -5871,7 +5871,7 @@ NO_SSH:
 
 			if(result != 0) {
 				lprintf(LOG_ERR,"Node %d !ERROR %d (%d) connecting to passthru socket: %s port %u"
-					,new_node->cfg.node_num, result, ERROR_VALUE, inet_ntoa(tmp_addr.sin_addr), htons(tmp_addr.sin_port));
+					,new_node->cfg.node_num, result, SOCKET_ERRNO, inet_ntoa(tmp_addr.sin_addr), htons(tmp_addr.sin_port));
 				close_socket(new_node->passthru_socket);
 				new_node->passthru_socket=INVALID_SOCKET;
 				close_socket(tmp_sock);
@@ -5882,7 +5882,7 @@ NO_SSH:
 
 			if(new_node->client_socket_dup == INVALID_SOCKET) {
 				lprintf(LOG_ERR,"Node %d !ERROR (%d) accepting on passthru socket"
-					,new_node->cfg.node_num, ERROR_VALUE);
+					,new_node->cfg.node_num, SOCKET_ERRNO);
 				lprintf(LOG_WARNING,"Node %d !WARNING native doors which use sockets will not function"
 					,new_node->cfg.node_num);
 				close_socket(new_node->passthru_socket);

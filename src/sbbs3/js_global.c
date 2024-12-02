@@ -69,7 +69,7 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 
 	switch(tiny) {
 		case GLOB_PROP_SOCKET_ERRNO:
-			*vp=DOUBLE_TO_JSVAL(ERROR_VALUE);
+			*vp=DOUBLE_TO_JSVAL(SOCKET_ERRNO);
 			break;
 		case GLOB_PROP_SOCKET_ERRNO_STR:
 			if((js_str=JS_NewStringCopyZ(cx, SOCKET_STRERROR(err, sizeof(err))))==NULL)

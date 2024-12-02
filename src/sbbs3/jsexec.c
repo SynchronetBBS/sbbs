@@ -340,7 +340,7 @@ static int do_bail(int code)
 {
 #if defined(_WINSOCKAPI_)
 	if(WSAInitialized && WSACleanup()!=0)
-		lprintf(LOG_ERR,"!WSACleanup ERROR %d",ERROR_VALUE);
+		lprintf(LOG_ERR,"!WSACleanup ERROR %d", SOCKET_ERRNO);
 #endif
 
 	cooked_tty();

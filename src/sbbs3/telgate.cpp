@@ -277,8 +277,8 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, str_list_t
 	addr.sin_family = AF_INET;
 
 	if((i=bind(remote_socket, (struct sockaddr *) &addr, sizeof (addr)))!=0) {
-		lprintf(LOG_NOTICE,"!TELGATE ERROR %d (%d) binding to socket %d",i, ERROR_VALUE, remote_socket);
-		bprintf("!ERROR %d (%d) binding to socket\r\n",i, ERROR_VALUE);
+		lprintf(LOG_NOTICE,"!TELGATE ERROR %d (%d) binding to socket %d",i, SOCKET_ERRNO, remote_socket);
+		bprintf("!ERROR %d (%d) binding to socket\r\n",i, SOCKET_ERRNO);
 		close_socket(remote_socket);
 		return false;
 	}
@@ -291,7 +291,7 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, str_list_t
 	l=1;
 	if((i = ioctlsocket(remote_socket, FIONBIO, &l))!=0) {
 		lprintf(LOG_NOTICE,"!TELGATE ERROR %d (%d) disabling socket blocking"
-			,i, ERROR_VALUE);
+			,i, SOCKET_ERRNO);
 		close_socket(remote_socket);
 		return false;
 	}
@@ -303,9 +303,9 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, str_list_t
 
 	if((i=nonblocking_connect(remote_socket, (struct sockaddr *)&addr, sizeof(addr), timeout))!=0) {
 		lprintf(LOG_NOTICE,"!TELGATE ERROR %d (%d) connecting to server: %s"
-			,i,ERROR_VALUE, destaddr);
+			,i,SOCKET_ERRNO, destaddr);
 		bprintf("!ERROR %d (%d) connecting to server: %s\r\n"
-			,i,ERROR_VALUE, destaddr);
+			,i,SOCKET_ERRNO, destaddr);
 		close_socket(remote_socket);
 		return false;
 	}
@@ -331,7 +331,7 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, str_list_t
 		p++;	// Add NULL
 		l=p-(char*)buf;
 		if(sendsocket(remote_socket,(char*)buf,l) != (ssize_t)l)
-			lprintf(LOG_WARNING, "Error %d sending %lu bytes to server: %s", ERROR_VALUE, l, destaddr);
+			lprintf(LOG_WARNING, "Error %d sending %lu bytes to server: %s", SOCKET_ERRNO, l, destaddr);
 		mode|=TG_NOLF;	/* Send LF (to remote host) when Telnet client sends CRLF (when not in binary mode) */
 	} else if(!(mode & TG_RAW)) {
 		proxy = new TelnetProxy(remote_socket, this);
@@ -353,7 +353,7 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, str_list_t
 		for(i = 0; send_strings[i] != NULL; ++i) {
 			ssize_t len = strlen(send_strings[i]);
 			if(sendsocket(remote_socket, send_strings[i], len) != len)
-				lprintf(LOG_WARNING, "Error %d sending %d character to server: %s", ERROR_VALUE, (int)len, destaddr);
+				lprintf(LOG_WARNING, "Error %d sending %d character to server: %s", SOCKET_ERRNO, (int)len, destaddr);
 		}
 	}
 
@@ -423,19 +423,19 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, str_list_t
 				{
 					if((i=sendsocket(remote_socket,(char*)buf,rd))>=0)
 						break;
-					if(ERROR_VALUE!=EWOULDBLOCK)
+					if(SOCKET_ERRNO!=EWOULDBLOCK)
 						break;
 					mswait(500);
 				} 
 				if(i<0) {
-					lprintf(LOG_NOTICE,"!TELGATE ERROR %d sending on socket %d",ERROR_VALUE,remote_socket);
+					lprintf(LOG_NOTICE,"!TELGATE ERROR %d sending on socket %d",SOCKET_ERRNO,remote_socket);
 					break;
 				}
 			}
 		}
 		rd=recv(remote_socket,(char*)buf,sizeof(buf),0);
 		if(rd<0) {
-			if(ERROR_VALUE==EWOULDBLOCK) {
+			if(SOCKET_ERRNO==EWOULDBLOCK) {
 				if(mode&TG_NODESYNC) {
 					sync();
 				} else {
@@ -447,7 +447,7 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, str_list_t
 				YIELD();
 				continue;
 			}
-			lprintf(LOG_NOTICE,"!TELGATE ERROR %d receiving on socket %d",ERROR_VALUE,remote_socket);
+			lprintf(LOG_NOTICE,"!TELGATE ERROR %d receiving on socket %d",SOCKET_ERRNO,remote_socket);
 			break;
 		}
 		if(!rd) {

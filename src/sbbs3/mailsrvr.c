@@ -359,8 +359,8 @@ int mail_close_socket(SOCKET *sock, int *sess)
 		startup->socket_open(startup->cbdata,FALSE);
 	stats.sockets--;
 	if(result!=0) {
-		if(ERROR_VALUE!=ENOTSOCK)
-			lprintf(LOG_WARNING,"%04d !ERROR %d closing socket",*sock, ERROR_VALUE);
+		if(SOCKET_ERRNO!=ENOTSOCK)
+			lprintf(LOG_WARNING,"%04d !ERROR %d closing socket",*sock, SOCKET_ERRNO);
 	}
 #if 0 /*def _DEBUG */
 	else
@@ -435,16 +435,16 @@ int sockprintf(SOCKET sock, const char* prot, CRYPT_SESSION sess, char *fmt, ...
 		// It looks like this could stutter on partial sends -- Deuce
 		while((result=sendsocket(sock,sbuf,len))!=len) {
 			if(result==SOCKET_ERROR) {
-				if(ERROR_VALUE==EWOULDBLOCK) {
+				if(SOCKET_ERRNO==EWOULDBLOCK) {
 					YIELD();
 					continue;
 				}
-				if(ERROR_VALUE==ECONNRESET)
+				if(SOCKET_ERRNO==ECONNRESET)
 					lprintf(LOG_NOTICE,"%04d %s Connection reset by peer on send",sock,prot);
-				else if(ERROR_VALUE==ECONNABORTED)
+				else if(SOCKET_ERRNO==ECONNABORTED)
 					lprintf(LOG_NOTICE,"%04d %s Connection aborted by peer on send",sock, prot);
 				else
-					lprintf(LOG_NOTICE,"%04d %s !ERROR %d sending on socket",sock,prot,ERROR_VALUE);
+					lprintf(LOG_NOTICE,"%04d %s !ERROR %d sending on socket",sock,prot,SOCKET_ERRNO);
 				free(sbuf);
 				return(0);
 			}
@@ -461,15 +461,15 @@ static void sockerror(SOCKET socket, const char* prot, int rd, const char* actio
 		lprintf(LOG_NOTICE,"%04d %s Socket closed by peer on %s"
 			,socket, prot, action);
 	else if(rd==SOCKET_ERROR) {
-		if(ERROR_VALUE==ECONNRESET)
+		if(SOCKET_ERRNO==ECONNRESET)
 			lprintf(LOG_NOTICE,"%04d %s Connection reset by peer on %s"
 				,socket, prot, action);
-		else if(ERROR_VALUE==ECONNABORTED)
+		else if(SOCKET_ERRNO==ECONNABORTED)
 			lprintf(LOG_NOTICE,"%04d %s Connection aborted by peer on %s"
 				,socket, prot, action);
 		else
 			lprintf(LOG_NOTICE,"%04d %s !SOCKET ERROR %d on %s"
-				,socket, prot, ERROR_VALUE, action);
+				,socket, prot, SOCKET_ERRNO, action);
 	} else
 		lprintf(LOG_WARNING,"%04d %s !SOCKET ERROR: unexpected return value %d from %s"
 			,socket, prot, rd, action);
@@ -1107,7 +1107,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 	socklen_t addr_len = sizeof(server_addr);
 	if((i=getsockname(socket, &server_addr.addr, &addr_len))!=0) {
 		lprintf(LOG_CRIT,"%04d %s !ERROR %d (%d) getting local address/port of socket"
-			,socket, client.protocol, i, ERROR_VALUE);
+			,socket, client.protocol, i, SOCKET_ERRNO);
 		return false;
 	}
 
@@ -2988,7 +2988,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 
 	if((i=getsockname(socket, &server_addr.addr, &addr_len))!=0) {
 		lprintf(LOG_CRIT, "%04d %s !ERROR %d (%d) getting address/port of socket"
-			,socket, client.protocol, i, ERROR_VALUE);
+			,socket, client.protocol, i, SOCKET_ERRNO);
 		return false;
 	}
 
@@ -5263,7 +5263,7 @@ static BOOL sendmail_open_socket(SOCKET *sock, CRYPT_SESSION *session)
 		mail_close_socket(sock, session);
 
 	if((*sock=socket(AF_INET, SOCK_STREAM, IPPROTO_IP))==INVALID_SOCKET) {
-		lprintf(LOG_ERR,"0000 SEND !ERROR %d opening socket", ERROR_VALUE);
+		lprintf(LOG_ERR,"0000 SEND !ERROR %d opening socket", SOCKET_ERRNO);
 		return FALSE;
 	}
 	mail_open_socket(*sock,"smtp|sendmail");
@@ -5272,7 +5272,7 @@ static BOOL sendmail_open_socket(SOCKET *sock, CRYPT_SESSION *session)
 		long nbio=1;
 		if((i=ioctlsocket(*sock, FIONBIO, &nbio))!=0) {
 			lprintf(LOG_ERR,"%04d SEND !ERROR %d (%d) disabling blocking on socket"
-				,*sock, i, ERROR_VALUE);
+				,*sock, i, SOCKET_ERRNO);
 			return FALSE;
 		}
 	}
@@ -5283,7 +5283,7 @@ static BOOL sendmail_open_socket(SOCKET *sock, CRYPT_SESSION *session)
 
 	i=bind(*sock,(struct sockaddr *)&addr, sizeof(addr));
 	if(i!=0) {
-		lprintf(LOG_ERR,"%04d SEND !ERROR %d (%d) binding socket", *sock, i, ERROR_VALUE);
+		lprintf(LOG_ERR,"%04d SEND !ERROR %d (%d) binding socket", *sock, i, SOCKET_ERRNO);
 		return FALSE;
 	}
 	return TRUE;
@@ -5975,7 +5975,7 @@ static void cleanup(int code)
 
 #ifdef _WINSOCKAPI_
 	if(WSAInitialized && WSACleanup()!=0)
-		lprintf(LOG_ERR,"0000 !WSACleanup ERROR %d",ERROR_VALUE);
+		lprintf(LOG_ERR,"0000 !WSACleanup ERROR %d",SOCKET_ERRNO);
 #endif
 	thread_down();
 	if(terminate_server || code) {
@@ -6383,7 +6383,7 @@ void mail_server(void* arg)
 
 				if((i=ioctlsocket(client_socket, FIONBIO, &l))!=0) {
 					lprintf(LOG_CRIT,"%04d %s !ERROR %d (%d) disabling blocking on socket"
-						,client_socket, servprot, i, ERROR_VALUE);
+						,client_socket, servprot, i, SOCKET_ERRNO);
 					sockprintf(client_socket, servprot, session, is_smtp ? smtp_error : pop_error, "ioctlsocket error");
 					mswait(3000);
 					mail_close_socket(&client_socket, &session);

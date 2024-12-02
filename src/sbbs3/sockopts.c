@@ -35,7 +35,7 @@ int set_socket_options(scfg_t* cfg, SOCKET sock, const char* protocol, char* err
 	result=getsockopt(sock,SOL_SOCKET,SO_TYPE,(void*)&type,&len);
 	if(result) {
 		safe_snprintf(error,errlen,"%d getting socket option type (%d)"
-			,ERROR_VALUE, SO_TYPE);
+			,SOCKET_ERRNO, SO_TYPE);
 		return(result);
 	}
 

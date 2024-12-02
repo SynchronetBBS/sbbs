@@ -686,16 +686,16 @@ static int sess_sendbuf(http_session_t *session, const char *buf, size_t len, vo
 			else {
 				result=sendsocket(session->socket,buf+sent,len-sent);
 				if(result==SOCKET_ERROR) {
-					if(ERROR_VALUE==ECONNRESET)
+					if(SOCKET_ERRNO==ECONNRESET)
 						lprintf(LOG_NOTICE,"%04d Connection reset by peer on send",session->socket);
-					else if(ERROR_VALUE==ECONNABORTED)
+					else if(SOCKET_ERRNO==ECONNABORTED)
 						lprintf(LOG_NOTICE,"%04d Connection aborted by peer on send",session->socket);
 #ifdef EPIPE
-					else if(ERROR_VALUE==EPIPE)
+					else if(SOCKET_ERRNO==EPIPE)
 						lprintf(LOG_NOTICE,"%04d Unable to send to peer",session->socket);
 #endif
 					else if(session->socket != INVALID_SOCKET)
-						lprintf(LOG_WARNING,"%04d !ERROR %d sending on socket",session->socket,ERROR_VALUE);
+						lprintf(LOG_WARNING,"%04d !ERROR %d sending on socket",session->socket,SOCKET_ERRNO);
 					*failed=true;
 					return(sent);
 				}
@@ -1013,8 +1013,8 @@ static int close_socket(SOCKET *sock)
 		startup->socket_open(startup->cbdata,false);
 	}
 	if(result!=0) {
-		if(ERROR_VALUE!=ENOTSOCK)
-			lprintf(LOG_WARNING,"%04d !ERROR %d closing socket",*sock, ERROR_VALUE);
+		if(SOCKET_ERRNO!=ENOTSOCK)
+			lprintf(LOG_WARNING,"%04d !ERROR %d closing socket",*sock, SOCKET_ERRNO);
 	}
 
 	return(result);
@@ -1512,7 +1512,7 @@ static off_t sock_sendfile(http_session_t *session,char *path, off_t start, off_
 	else {
 		if(start || end) {
 			if(lseek(file, start, SEEK_SET)==-1) {
-				lprintf(LOG_WARNING,"%04d !ERROR %d seeking to position %" PRIuOFF " in %s",session->socket,ERROR_VALUE,start,path);
+				lprintf(LOG_WARNING,"%04d !ERROR %d seeking to position %" PRIuOFF " in %s",session->socket,SOCKET_ERRNO,start,path);
 				close(file);
 				return(0);
 			}
@@ -2218,10 +2218,10 @@ static int sockreadline(http_session_t * session, char *buf, size_t length)
 
 		switch(sess_recv(session, &ch, 1, 0)) {
 			case -1:
-				if(session->is_tls || ERROR_VALUE!=EAGAIN) {
+				if(session->is_tls || SOCKET_ERRNO!=EAGAIN) {
 					if (!session->is_tls) {
 						if(startup->options&WEB_OPT_DEBUG_RX)
-							lprintf(LOG_DEBUG,"%04d !ERROR %d receiving on socket",session->socket,ERROR_VALUE);
+							lprintf(LOG_DEBUG,"%04d !ERROR %d receiving on socket",session->socket,SOCKET_ERRNO);
 					}
 					close_session_socket(session);
 					return(-1);
@@ -2329,7 +2329,7 @@ static int recvbufsocket(http_session_t *session, char *buf, long count)
 		i=sess_recv(session,buf+rd,count-rd,0);
 		switch(i) {
 			case -1:
-				if (ERROR_VALUE == EAGAIN && !session->is_tls)
+				if (SOCKET_ERRNO == EAGAIN && !session->is_tls)
 					break;
 				// Fall-through...
 			case 0:
@@ -3183,7 +3183,7 @@ static bool get_request_headers(http_session_t * session)
 		/* Multi-line headers */
 		while((i=sess_recv(session,&next_char,1,MSG_PEEK))>0
 			&& (next_char=='\t' || next_char==' ')) {
-			if(i==-1 && (session->is_tls || ERROR_VALUE != EAGAIN))
+			if(i==-1 && (session->is_tls || SOCKET_ERRNO != EAGAIN))
 				close_session_socket(session);
 			i=strlen(head_line);
 			if(i>sizeof(head_line)-1) {
@@ -4022,7 +4022,7 @@ static SOCKET fastcgi_connect(const char *orig_path, SOCKET client_sock)
 #endif
 		if(connect(sock, (struct sockaddr*)&addr, addr_len) != 0) {
 			lprintf(LOG_ERR, "%04d ERROR %d connecting to UNIX domain FastCGI socket: %s"
-				,client_sock, ERROR_VALUE, addr.sun_path);
+				,client_sock, SOCKET_ERRNO, addr.sun_path);
 			closesocket(sock);
 			sock = INVALID_SOCKET;
 		}
@@ -4050,7 +4050,7 @@ static SOCKET fastcgi_connect(const char *orig_path, SOCKET client_sock)
 			result=connect(sock, cur->ai_addr, cur->ai_addrlen);
 
 			if (result==SOCKET_ERROR) {
-				if((ERROR_VALUE==EWOULDBLOCK || ERROR_VALUE==EINPROGRESS)) {
+				if((SOCKET_ERRNO==EWOULDBLOCK || SOCKET_ERRNO==EINPROGRESS)) {
 					if (socket_writable(sock, 1000 /* TODO: Make configurable! */))
 						result=0;	/* success */
 					else
@@ -4832,7 +4832,7 @@ static bool exec_fastcgi(http_session_t *session)
 	int result = sendsocket(sock, (void *)msg, msglen);
 	if (result != msglen) {
 		lprintf(LOG_ERR, "%04d %s [%s] !ERROR %d sending %d bytes to FastCGI socket (send returned %d)"
-			,session->socket, session->client.protocol, session->host_ip, ERROR_VALUE, msglen, result);
+			,session->socket, session->client.protocol, session->host_ip, SOCKET_ERRNO, msglen, result);
 		free(msg);
 		closesocket(sock);
 		return false;
@@ -7000,7 +7000,7 @@ static void cleanup(int code)
 
 #ifdef _WINSOCKAPI_
 	if(WSAInitialized && WSACleanup()!=0)
-		lprintf(LOG_ERR,"0000 !WSACleanup ERROR %d",ERROR_VALUE);
+		lprintf(LOG_ERR,"0000 !WSACleanup ERROR %d",SOCKET_ERRNO);
 #endif
 
 	thread_down();
@@ -7319,7 +7319,7 @@ void web_server(void* arg)
 		ws_set = xpms_create(startup->bind_retry_count, startup->bind_retry_delay, lprintf);
 
 		if(ws_set == NULL) {
-			lprintf(LOG_CRIT,"!ERROR %d creating HTTP socket set", ERROR_VALUE);
+			lprintf(LOG_CRIT,"!ERROR %d creating HTTP socket set", SOCKET_ERRNO);
 			cleanup(1);
 			return;
 		}
@@ -7466,7 +7466,7 @@ void web_server(void* arg)
 			socklen_t addr_len = sizeof(local_addr);
 			if(getsockname(client_socket, (struct sockaddr *)&local_addr, &addr_len) != 0) {
 				lprintf(LOG_CRIT,"%04d %s !ERROR %d getting local address/port of socket"
-					,client_socket, session->is_tls ? "HTTPS":"HTTP", ERROR_VALUE);
+					,client_socket, session->is_tls ? "HTTPS":"HTTP", SOCKET_ERRNO);
 				close_socket(&client_socket);
 				continue;
 			}

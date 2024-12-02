@@ -310,8 +310,8 @@ static int ftp_close_socket(SOCKET* sock, CRYPT_SESSION *sess, int line)
 		startup->socket_open(startup->cbdata,FALSE);
 
 	if(result!=0) {
-		if(ERROR_VALUE!=ENOTSOCK)
-			lprintf(LOG_WARNING,"%04d !ERROR %d closing socket from line %u",*sock,ERROR_VALUE,line);
+		if(SOCKET_ERRNO!=ENOTSOCK)
+			lprintf(LOG_WARNING,"%04d !ERROR %d closing socket from line %u",*sock,SOCKET_ERRNO,line);
 	}
 	*sock=INVALID_SOCKET;
 
@@ -385,16 +385,16 @@ static int sockprintf(SOCKET sock, CRYPT_SESSION sess, char *fmt, ...)
 	else {
 		while((result=sendsocket(sock,sbuf,len))!=len) {
 			if(result==SOCKET_ERROR) {
-				if(ERROR_VALUE==EWOULDBLOCK) {
+				if(SOCKET_ERRNO==EWOULDBLOCK) {
 					YIELD();
 					continue;
 				}
-				if(ERROR_VALUE==ECONNRESET)
+				if(SOCKET_ERRNO==ECONNRESET)
 					lprintf(LOG_WARNING,"%04d Connection reset by peer on send",sock);
-				else if(ERROR_VALUE==ECONNABORTED)
+				else if(SOCKET_ERRNO==ECONNABORTED)
 					lprintf(LOG_WARNING,"%04d Connection aborted by peer on send",sock);
 				else
-					lprintf(LOG_WARNING,"%04d !ERROR %d sending",sock,ERROR_VALUE);
+					lprintf(LOG_WARNING,"%04d !ERROR %d sending",sock,SOCKET_ERRNO);
 				return(0);
 			}
 			lprintf(LOG_WARNING,"%04d !ERROR: short send: %u instead of %u",sock,result,len);
@@ -409,15 +409,15 @@ void recverror(SOCKET socket, int rd, int line)
 		lprintf(LOG_NOTICE,"%04d Socket closed by peer on receive (line %u)"
 			,socket, line);
 	else if(rd==SOCKET_ERROR) {
-		if(ERROR_VALUE==ECONNRESET)
+		if(SOCKET_ERRNO==ECONNRESET)
 			lprintf(LOG_NOTICE,"%04d Connection reset by peer on receive (line %u)"
 				,socket, line);
-		else if(ERROR_VALUE==ECONNABORTED)
+		else if(SOCKET_ERRNO==ECONNABORTED)
 			lprintf(LOG_NOTICE,"%04d Connection aborted by peer on receive (line %u)"
 				,socket, line);
 		else
 			lprintf(LOG_NOTICE,"%04d !ERROR %d receiving on socket (line %u)"
-				,socket, ERROR_VALUE, line);
+				,socket, SOCKET_ERRNO, line);
 	} else
 		lprintf(LOG_WARNING,"%04d !ERROR: recv on socket returned unexpected value: %d (line %u)"
 			,socket, rd, line);
@@ -722,23 +722,23 @@ static void send_thread(void* arg)
 #endif
 		if(wr<1) {
 			if(wr==SOCKET_ERROR) {
-				if(ERROR_VALUE==EWOULDBLOCK) {
+				if(SOCKET_ERRNO==EWOULDBLOCK) {
 					/*lprintf(LOG_WARNING,"%04d DATA send would block, retrying",xfer.ctrl_sock);*/
 					YIELD();
 					continue;
 				}
-				else if(ERROR_VALUE==ECONNRESET)
+				else if(SOCKET_ERRNO==ECONNRESET)
 					lprintf(LOG_WARNING,"%04d <%s> DATA Connection reset by peer, sending on socket %d"
 						,xfer.ctrl_sock, xfer.user->alias,*xfer.data_sock);
-				else if(ERROR_VALUE==ECONNABORTED)
+				else if(SOCKET_ERRNO==ECONNABORTED)
 					lprintf(LOG_WARNING,"%04d <%s> DATA Connection aborted by peer, sending on socket %d"
 						,xfer.ctrl_sock, xfer.user->alias,*xfer.data_sock);
 				else
 					lprintf(LOG_WARNING,"%04d <%s> !DATA ERROR %d sending on data socket %d"
-						,xfer.ctrl_sock, xfer.user->alias,ERROR_VALUE,*xfer.data_sock);
+						,xfer.ctrl_sock, xfer.user->alias,SOCKET_ERRNO,*xfer.data_sock);
 				/* Send NAK */
 				sockprintf(xfer.ctrl_sock,xfer.ctrl_sess,"426 Error %d sending on DATA channel"
-					,ERROR_VALUE);
+					,SOCKET_ERRNO);
 				error=TRUE;
 				break;
 			}
@@ -749,7 +749,7 @@ static void send_thread(void* arg)
 				break;
 			}
 			lprintf(LOG_ERR,"%04d <%s> !DATA ERROR %d (%d) sending on socket %d"
-				,xfer.ctrl_sock, xfer.user->alias, wr, ERROR_VALUE, *xfer.data_sock);
+				,xfer.ctrl_sock, xfer.user->alias, wr, SOCKET_ERRNO, *xfer.data_sock);
 			sockprintf(xfer.ctrl_sock,xfer.ctrl_sess,"451 DATA send error");
 			error=TRUE;
 			break;
@@ -1010,23 +1010,23 @@ static void receive_thread(void* arg)
 				break;
 			}
 			if(rd==SOCKET_ERROR) {
-				if(ERROR_VALUE==EWOULDBLOCK) {
+				if(SOCKET_ERRNO==EWOULDBLOCK) {
 					/*lprintf(LOG_WARNING,"%04d DATA recv would block, retrying",xfer.ctrl_sock);*/
 					YIELD();
 					continue;
 				}
-				else if(ERROR_VALUE==ECONNRESET)
+				else if(SOCKET_ERRNO==ECONNRESET)
 					lprintf(LOG_WARNING,"%04d <%s> DATA Connection reset by peer, receiving on socket %d"
 						,xfer.ctrl_sock, xfer.user->alias,*xfer.data_sock);
-				else if(ERROR_VALUE==ECONNABORTED)
+				else if(SOCKET_ERRNO==ECONNABORTED)
 					lprintf(LOG_WARNING,"%04d <%s> DATA Connection aborted by peer, receiving on socket %d"
 						,xfer.ctrl_sock, xfer.user->alias,*xfer.data_sock);
 				else
 					lprintf(LOG_WARNING,"%04d <%s> !DATA ERROR %d receiving on data socket %d"
-						,xfer.ctrl_sock, xfer.user->alias,ERROR_VALUE,*xfer.data_sock);
+						,xfer.ctrl_sock, xfer.user->alias,SOCKET_ERRNO,*xfer.data_sock);
 				/* Send NAK */
 				sockprintf(xfer.ctrl_sock,xfer.ctrl_sess,"426 Error %d receiving on DATA channel"
-					,ERROR_VALUE);
+					,SOCKET_ERRNO);
 				error=TRUE;
 				break;
 			}
@@ -1253,8 +1253,8 @@ static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, CRYPT_SESSION ct
 	if(pasv_sock==INVALID_SOCKET) {	/* !PASV */
 
 		if((*data_sock=socket(addr->addr.sa_family, SOCK_STREAM, IPPROTO_IP)) == INVALID_SOCKET) {
-			lprintf(LOG_ERR,"%04d <%s> !DATA ERROR %d opening socket", ctrl_sock, user->alias, ERROR_VALUE);
-			sockprintf(ctrl_sock,ctrl_sess,"425 Error %d opening socket",ERROR_VALUE);
+			lprintf(LOG_ERR,"%04d <%s> !DATA ERROR %d opening socket", ctrl_sock, user->alias, SOCKET_ERRNO);
+			sockprintf(ctrl_sock,ctrl_sess,"425 Error %d opening socket",SOCKET_ERRNO);
 			if(tmpfile && !(startup->options&FTP_OPT_KEEP_TEMP_FILES))
 				ftp_remove(ctrl_sock, __LINE__, filename, user->alias, LOG_ERR);
 			*inprogress=FALSE;
@@ -1272,7 +1272,7 @@ static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, CRYPT_SESSION ct
 		addr_len = sizeof(server_addr);
 		if((result=getsockname(ctrl_sock, &server_addr.addr,&addr_len))!=0) {
 			lprintf(LOG_CRIT,"%04d <%s> !DATA ERROR %d (%d) getting address/port of command socket (%u)"
-				,ctrl_sock, user->alias,result,ERROR_VALUE,pasv_sock);
+				,ctrl_sock, user->alias,result,SOCKET_ERRNO,pasv_sock);
 			return;
 		}
 
@@ -1285,8 +1285,8 @@ static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, CRYPT_SESSION ct
 		}
 		if(result!=0) {
 			lprintf(LOG_ERR,"%04d <%s> DATA ERROR %d (%d) binding socket %d"
-				,ctrl_sock, user->alias, result, ERROR_VALUE, *data_sock);
-			sockprintf(ctrl_sock,ctrl_sess,"425 Error %d binding socket",ERROR_VALUE);
+				,ctrl_sock, user->alias, result, SOCKET_ERRNO, *data_sock);
+			sockprintf(ctrl_sock,ctrl_sess,"425 Error %d binding socket",SOCKET_ERRNO);
 			if(tmpfile && !(startup->options&FTP_OPT_KEEP_TEMP_FILES))
 				ftp_remove(ctrl_sock, __LINE__, filename, user->alias, LOG_ERR);
 			*inprogress=FALSE;
@@ -1297,9 +1297,9 @@ static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, CRYPT_SESSION ct
 		result=connect(*data_sock, &addr->addr,xp_sockaddr_len(addr));
 		if(result!=0) {
 			lprintf(LOG_WARNING,"%04d <%s> !DATA ERROR %d (%d) connecting to client %s port %u on socket %d"
-					,ctrl_sock, user->alias,result,ERROR_VALUE
+					,ctrl_sock, user->alias,result,SOCKET_ERRNO
 					,host_ip,inet_addrport(addr),*data_sock);
-			sockprintf(ctrl_sock,ctrl_sess,"425 Error %d connecting to socket",ERROR_VALUE);
+			sockprintf(ctrl_sock,ctrl_sess,"425 Error %d connecting to socket",SOCKET_ERRNO);
 			if(tmpfile && !(startup->options&FTP_OPT_KEEP_TEMP_FILES))
 				ftp_remove(ctrl_sock, __LINE__, filename, user->alias, LOG_ERR);
 			*inprogress=FALSE;
@@ -1328,7 +1328,7 @@ static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, CRYPT_SESSION ct
 			addr_len=sizeof(*addr);
 			if((result=getsockname(pasv_sock, &addr->addr,&addr_len))!=0)
 				lprintf(LOG_CRIT,"%04d <%s> PASV !DATA ERROR %d (%d) getting address/port of passive socket (%u)"
-					,ctrl_sock, user->alias,result,ERROR_VALUE,pasv_sock);
+					,ctrl_sock, user->alias,result,SOCKET_ERRNO,pasv_sock);
 			else
 				lprintf(LOG_DEBUG,"%04d <%s> PASV DATA socket %d listening on %s port %u"
 					,ctrl_sock, user->alias,pasv_sock,host_ip,inet_addrport(addr));
@@ -1337,7 +1337,7 @@ static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, CRYPT_SESSION ct
 		if (!socket_readable(pasv_sock, TIMEOUT_SOCKET_LISTEN * 1000)) {
 			lprintf(LOG_WARNING,"%04d <%s> PASV !WARNING socket not readable"
 				,ctrl_sock, user->alias);
-			sockprintf(ctrl_sock,ctrl_sess,"425 Error %d selecting socket for connection",ERROR_VALUE);
+			sockprintf(ctrl_sock,ctrl_sess,"425 Error %d selecting socket for connection",SOCKET_ERRNO);
 			if(tmpfile && !(startup->options&FTP_OPT_KEEP_TEMP_FILES))
 				ftp_remove(ctrl_sock, __LINE__, filename, user->alias, LOG_ERR);
 			*inprogress=FALSE;
@@ -1354,8 +1354,8 @@ static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, CRYPT_SESSION ct
 #endif
 		if(*data_sock==INVALID_SOCKET) {
 			lprintf(LOG_WARNING,"%04d <%s> PASV !DATA ERROR %d accepting connection on socket %d"
-				,ctrl_sock, user->alias,ERROR_VALUE,pasv_sock);
-			sockprintf(ctrl_sock,ctrl_sess,"425 Error %d accepting connection",ERROR_VALUE);
+				,ctrl_sock, user->alias,SOCKET_ERRNO,pasv_sock);
+			sockprintf(ctrl_sock,ctrl_sess,"425 Error %d accepting connection",SOCKET_ERRNO);
 			if(tmpfile && !(startup->options&FTP_OPT_KEEP_TEMP_FILES))
 				ftp_remove(ctrl_sock, __LINE__, filename, user->alias, LOG_ERR);
 			*inprogress=FALSE;
@@ -1384,9 +1384,9 @@ static void filexfer(union xp_sockaddr* addr, SOCKET ctrl_sock, CRYPT_SESSION ct
 
 		if(ioctlsocket(*data_sock, FIONBIO, &l)!=0) {
 			lprintf(LOG_ERR,"%04d <%s> !DATA ERROR %d disabling socket blocking"
-				,ctrl_sock, user->alias, ERROR_VALUE);
+				,ctrl_sock, user->alias, SOCKET_ERRNO);
 			sockprintf(ctrl_sock,ctrl_sess,"425 Error %d disabling socket blocking"
-				,ERROR_VALUE);
+				,SOCKET_ERRNO);
 			break;
 		}
 
@@ -2244,9 +2244,9 @@ static void ctrl_thread(void* arg)
 
 	if((i=ioctlsocket(sock, FIONBIO, &l))!=0) {
 		lprintf(LOG_ERR,"%04d !ERROR %d (%d) disabling socket blocking"
-			,sock, i, ERROR_VALUE);
+			,sock, i, SOCKET_ERRNO);
 		sockprintf(sock,sess,"425 Error %d disabling socket blocking"
-			,ERROR_VALUE);
+			,SOCKET_ERRNO);
 		ftp_close_socket(&sock,&sess,__LINE__);
 		thread_down();
 		return;
@@ -2261,7 +2261,7 @@ static void ctrl_thread(void* arg)
 	addr_len = sizeof(local_addr);
 	if(getsockname(sock, (struct sockaddr *)&local_addr, &addr_len) != 0) {
 		lprintf(LOG_CRIT,"%04d [%s] !ERROR %d getting local address/port of socket"
-			,sock, host_ip, ERROR_VALUE);
+			,sock, host_ip, SOCKET_ERRNO);
 		ftp_close_socket(&sock,&sess,__LINE__);
 		thread_down();
 		return;
@@ -2311,8 +2311,8 @@ static void ctrl_thread(void* arg)
 	/* For PASV mode */
 	addr_len=sizeof(pasv_addr);
 	if((result=getsockname(sock, &pasv_addr.addr,&addr_len))!=0) {
-		lprintf(LOG_CRIT,"%04d !ERROR %d (%d) getting address/por of socket", sock, result, ERROR_VALUE);
-		sockprintf(sock,sess,"425 Error %d getting address/port",ERROR_VALUE);
+		lprintf(LOG_CRIT,"%04d !ERROR %d (%d) getting address/por of socket", sock, result, SOCKET_ERRNO);
+		sockprintf(sock,sess,"425 Error %d getting address/port",SOCKET_ERRNO);
 		ftp_close_socket(&sock,&sess,__LINE__);
 		thread_down();
 		return;
@@ -2994,16 +2994,16 @@ static void ctrl_thread(void* arg)
 				ftp_close_socket(&pasv_sock,&pasv_sess,__LINE__);
 
 			if((pasv_sock=ftp_open_socket(pasv_addr.addr.sa_family, SOCK_STREAM))==INVALID_SOCKET) {
-				lprintf(LOG_WARNING,"%04d <%s> !PASV ERROR %d opening socket", sock, user.alias, ERROR_VALUE);
-				sockprintf(sock,sess,"425 Error %d opening PASV data socket", ERROR_VALUE);
+				lprintf(LOG_WARNING,"%04d <%s> !PASV ERROR %d opening socket", sock, user.alias, SOCKET_ERRNO);
+				sockprintf(sock,sess,"425 Error %d opening PASV data socket", SOCKET_ERRNO);
 				continue;
 			}
 
 			reuseaddr=FALSE;
 			if((result=setsockopt(pasv_sock,SOL_SOCKET,SO_REUSEADDR,(char*)&reuseaddr,sizeof(reuseaddr)))!=0) {
 				lprintf(LOG_WARNING,"%04d <%s> !PASV ERROR %d disabling REUSEADDR socket option"
-					,sock, user.alias, ERROR_VALUE);
-				sockprintf(sock,sess,"425 Error %d disabling REUSEADDR socket option", ERROR_VALUE);
+					,sock, user.alias, SOCKET_ERRNO);
+				sockprintf(sock,sess,"425 Error %d disabling REUSEADDR socket option", SOCKET_ERRNO);
 				continue;
 			}
 
@@ -3025,8 +3025,8 @@ static void ctrl_thread(void* arg)
 			}
 			if(result!= 0) {
 				lprintf(LOG_ERR,"%04d <%s> !PASV ERROR %d (%d) binding socket to port %u"
-					,sock, user.alias, result, ERROR_VALUE, port);
-				sockprintf(sock,sess,"425 Error %d binding data socket",ERROR_VALUE);
+					,sock, user.alias, result, SOCKET_ERRNO, port);
+				sockprintf(sock,sess,"425 Error %d binding data socket",SOCKET_ERRNO);
 				ftp_close_socket(&pasv_sock,&pasv_sess,__LINE__);
 				continue;
 			}
@@ -3036,16 +3036,16 @@ static void ctrl_thread(void* arg)
 			addr_len=sizeof(addr);
 			if((result=getsockname(pasv_sock, &addr.addr,&addr_len))!=0) {
 				lprintf(LOG_CRIT,"%04d <%s> !PASV ERROR %d (%d) getting address/port of socket"
-					,sock, user.alias, result, ERROR_VALUE);
-				sockprintf(sock,sess,"425 Error %d getting address/port",ERROR_VALUE);
+					,sock, user.alias, result, SOCKET_ERRNO);
+				sockprintf(sock,sess,"425 Error %d getting address/port",SOCKET_ERRNO);
 				ftp_close_socket(&pasv_sock,&pasv_sess,__LINE__);
 				continue;
 			}
 
 			if((result=listen(pasv_sock, 1))!= 0) {
 				lprintf(LOG_ERR,"%04d <%s> !PASV ERROR %d (%d) listening on port %u"
-					,sock, user.alias, result, ERROR_VALUE,port);
-				sockprintf(sock,sess,"425 Error %d listening on data socket",ERROR_VALUE);
+					,sock, user.alias, result, SOCKET_ERRNO,port);
+				sockprintf(sock,sess,"425 Error %d listening on data socket",SOCKET_ERRNO);
 				ftp_close_socket(&pasv_sock,&pasv_sess,__LINE__);
 				continue;
 			}
@@ -5016,7 +5016,7 @@ static void cleanup(int code, int line)
 
 #ifdef _WINSOCKAPI_
 	if(WSAInitialized && WSACleanup()!=0)
-		lprintf(LOG_ERR,"0000 !WSACleanup ERROR %d",ERROR_VALUE);
+		lprintf(LOG_ERR,"0000 !WSACleanup ERROR %d",SOCKET_ERRNO);
 #endif
 
 	thread_down();
@@ -5205,7 +5205,7 @@ void ftp_server(void* arg)
 		ftp_set = xpms_create(startup->bind_retry_count, startup->bind_retry_delay, lprintf);
 
 		if(ftp_set == NULL) {
-			lprintf(LOG_CRIT,"!ERROR %d creating FTP socket set", ERROR_VALUE);
+			lprintf(LOG_CRIT,"!ERROR %d creating FTP socket set", SOCKET_ERRNO);
 			cleanup(1, __LINE__);
 			return;
 		}
