@@ -1570,6 +1570,9 @@ char* nodestatus(scfg_t* cfg, node_t* node, char* buf, size_t buflen, int num)
                 case NODE_SYSP:
                     strcat(str,"performing sysop activities");
                     break;
+				case NODE_CUSTOM:
+					SAFECAT(str, "performing custom action");
+					break;
                 default:
                     sprintf(str+strlen(str),"%d",node->action);
                     break;

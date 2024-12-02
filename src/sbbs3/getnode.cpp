@@ -592,6 +592,9 @@ void sbbs_t::printnodedat(uint number, node_t* node)
 				case NODE_SYSP:
 					bputs("performing sysop activities");
 					break;
+				case NODE_CUSTOM:
+					bputs("performing custom action");
+					break;
 				default:
 					bputs(ultoa(node->action,tmp,10));
 					break;

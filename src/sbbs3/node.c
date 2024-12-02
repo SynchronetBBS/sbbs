@@ -387,9 +387,13 @@ void printnodedat(int number, node_t node)
 				case NODE_SYSP:
 					printf("performing sysop activities");
 					break;
+				case NODE_CUSTOM:
+					printf("performing custom action");
+					break;
 				default:
 					fputs(itoa(node.action,tmp,10),stdout);
-					break;  }
+					break;
+			}
 			printf(" %s",node_connection_desc(node.connection,tmp));
 			if(node.action==NODE_DLNG) {
 				if((node.aux/60)>=12) {
