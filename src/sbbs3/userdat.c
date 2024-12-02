@@ -49,6 +49,7 @@
 static const char user_field_separator[2] = { USER_FIELD_SEPARATOR, '\0' };
 
 #define LOOP_USERDAT 100
+#define RETRY_DELAY(x) mswait(((x / 10) * 100) + xp_random(200))
 
 char* userdat_filename(scfg_t* cfg, char* path, size_t size)
 {
@@ -285,7 +286,7 @@ bool lockuserdat(int file, unsigned user_number)
 	unsigned attempt=0;
 	while(attempt < LOOP_USERDAT && lock(file, offset, USER_RECORD_LINE_LEN) == -1) {
 		attempt++;
-		mswait((attempt / 10) * 100);
+		RETRY_DELAY(attempt);
 	}
 	return attempt < LOOP_USERDAT;
 }
@@ -1194,7 +1195,7 @@ int putnodedat(scfg_t* cfg, uint number, node_t* node, bool closeit, int file)
 		(void)lseek(file,(long)number*sizeof(node_t),SEEK_SET);
 		if((wr=write(file,node,sizeof(node_t)))==sizeof(node_t))
 			break;
-		mswait(((attempts + 1) / 10) * 100);
+		RETRY_DELAY(attempts + 1);
 	}
 	unlock(file,(long)number*sizeof(node_t),sizeof(node_t));
 	if(closeit)
