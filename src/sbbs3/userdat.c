@@ -2615,9 +2615,9 @@ int putuserstr(scfg_t* cfg, int usernumber, enum user_field fnum, const char *st
 		split_userdat(userdat, field);
 		field[fnum] = (char*)str;
 		if(!seekuserdat(file, usernumber))
-			retval = -4;
-		else
-			writeuserfields(cfg, field, file);
+			retval = USER_SEEK_ERROR;
+		else if(!writeuserfields(cfg, field, file))
+			retval = USER_WRITE_ERROR;
 		unlockuserdat(file, usernumber);
 	}
 	close(file);
