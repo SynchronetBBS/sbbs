@@ -28,7 +28,7 @@ deuce_ssh_serialized_byte_length(deuce_ssh_byte_t val)
 }
 
 void
-deuce_ssh_serialize_byte(deuce_ssh_byte_t val, uint8_t *buf, [[maybe_unused]] size_t bufsz, size_t *pos)
+deuce_ssh_serialize_byte(deuce_ssh_byte_t val, uint8_t *buf, MAYBE_UNUSED size_t bufsz, size_t *pos)
 {
 	assert(*pos + 1 <= bufsz);
 	buf[*pos] = val;
@@ -54,7 +54,7 @@ deuce_ssh_serialized_boolean_length(deuce_ssh_boolean_t val)
 }
 
 void
-deuce_ssh_serialize_boolean(deuce_ssh_boolean_t val, uint8_t *buf, [[maybe_unused]] size_t bufsz, size_t *pos)
+deuce_ssh_serialize_boolean(deuce_ssh_boolean_t val, uint8_t *buf, MAYBE_UNUSED size_t bufsz, size_t *pos)
 {
 	assert(*pos + 1 <= bufsz);
 	buf[*pos] = val;
@@ -78,7 +78,7 @@ deuce_ssh_serialized_uint32_length(deuce_ssh_uint32_t val)
 }
 
 void
-deuce_ssh_serialize_uint32(deuce_ssh_uint32_t val, uint8_t *buf, [[maybe_unused]] size_t bufsz, size_t *pos)
+deuce_ssh_serialize_uint32(deuce_ssh_uint32_t val, uint8_t *buf, MAYBE_UNUSED size_t bufsz, size_t *pos)
 {
 	assert(*pos + 4 <= bufsz);
 	buf[(*pos)++] = (val >> 24) & 0xff;
@@ -106,7 +106,7 @@ deuce_ssh_serialized_uint64_length(deuce_ssh_uint64_t val)
 }
 
 void
-deuce_ssh_serialize_uint64(deuce_ssh_uint64_t val, uint8_t *buf, [[maybe_unused]] size_t bufsz, size_t *pos)
+deuce_ssh_serialize_uint64(deuce_ssh_uint64_t val, uint8_t *buf, MAYBE_UNUSED size_t bufsz, size_t *pos)
 {
 	assert(*pos + 8 <= bufsz);
 	buf[(*pos)++] = (val >> 56) & 0xff;
@@ -156,7 +156,7 @@ deuce_ssh_serialized_string_length(deuce_ssh_string_t val)
 }
 
 void
-deuce_ssh_serialize_string(deuce_ssh_string_t val, uint8_t *buf, [[maybe_unused]] size_t bufsz, size_t *pos)
+deuce_ssh_serialize_string(deuce_ssh_string_t val, uint8_t *buf, MAYBE_UNUSED size_t bufsz, size_t *pos)
 {
 	assert(*pos + 4 + val->length <= bufsz);
 	deuce_ssh_serialize_uint32(val->length, buf, bufsz, pos);
@@ -197,7 +197,7 @@ deuce_ssh_serialized_mpint_length(deuce_ssh_mpint_t val)
 }
 
 void
-deuce_ssh_serialize_mpint(deuce_ssh_mpint_t val, uint8_t *buf, [[maybe_unused]] size_t bufsz, size_t *pos)
+deuce_ssh_serialize_mpint(deuce_ssh_mpint_t val, uint8_t *buf, MAYBE_UNUSED size_t bufsz, size_t *pos)
 {
 	assert(*pos + 4 <= bufsz);
 	*pos += BN_bn2mpi(val, &buf[*pos]);
@@ -272,7 +272,7 @@ deuce_ssh_serialized_namelist_length(deuce_ssh_namelist_t val)
 }
 
 void
-deuce_ssh_serialize_namelist(deuce_ssh_namelist_t val, uint8_t *buf, [[maybe_unused]] size_t bufsz, size_t *pos)
+deuce_ssh_serialize_namelist(deuce_ssh_namelist_t val, uint8_t *buf, MAYBE_UNUSED size_t bufsz, size_t *pos)
 {
 	assert(bufsz >= 4);
 
