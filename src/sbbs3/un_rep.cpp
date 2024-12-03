@@ -69,6 +69,8 @@ bool sbbs_t::unpack_rep(char* repfile)
 		logline(LOG_NOTICE,nulstr,"REP file not received");
 		return(false);
 	}
+	byte_estimate_to_str(flength(rep_fname), tmp, sizeof tmp, 1024, 1);
+	lprintf(LOG_INFO, "Unpacking QWK Reply Packet: %s (%s bytes)", rep_fname, tmp);
 	long file_count = extract_files_from_archive(rep_fname
 		,/* outdir: */cfg.temp_dir
 		,/* allowed_filename_chars: */SAFEST_FILENAME_CHARS
