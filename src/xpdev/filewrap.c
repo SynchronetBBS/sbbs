@@ -79,15 +79,16 @@ off_t filelength(int fd)
 	#warning Linux OFD locks not enabled!
 #endif
 
+#if defined(F_OFD_SETLK)
+	#undef F_SETLK
+	#define F_SETLK F_OFD_SETLK
+#endif
+
 /* Sets a lock on a portion of a file */
 int lock(int fd, off_t pos, off_t len)
 {
 #if !defined(BSD)
 	struct flock alock = {0};
-	int cmd = F_SETLK;
-	#ifdef F_OFD_SETLK
-		cmd = F_OFD_SETLK;
-	#endif
 
 	// fcntl() will return EBADF if we try to set a write lock a file opened O_RDONLY
 	int	flags;
@@ -101,7 +102,7 @@ int lock(int fd, off_t pos, off_t len)
 	alock.l_start = pos;
 	alock.l_len = (int)len;
 
-	int result = fcntl(fd, cmd, &alock);
+	int result = fcntl(fd, F_SETLK, &alock);
 	if(result == -1 && errno != EINVAL)
 		return -1;
 #elif !defined(__QNX__) && !defined(__solaris__)
@@ -118,15 +119,12 @@ int unlock(int fd, off_t pos, off_t len)
 
 #if !defined(BSD)
 	struct flock alock = {0};
-	int cmd = F_SETLK;
-#ifdef F_OFD_SETLK
-	cmd = F_OFD_SETLK;
-#endif
+
 	alock.l_type = F_UNLCK;   /* remove the lock */
 	alock.l_whence = L_SET;
 	alock.l_start = pos;
 	alock.l_len = (int)len;
-	int result = fcntl(fd, cmd, &alock);
+	int result = fcntl(fd, F_SETLK, &alock);
 	if(result == -1 && errno != EINVAL)
 		return -1;
 #elif !defined(__QNX__) && !defined(__solaris__)
@@ -183,7 +181,6 @@ int sopen(const char *fn, int sh_access, int share, ...)
 #else
 	int pmode=0;
 #endif
-	int	flock_op=LOCK_NB;	/* non-blocking */
     va_list ap;
 
     if(sh_access&O_CREAT) {
@@ -198,7 +195,24 @@ int sopen(const char *fn, int sh_access, int share, ...)
 	if (share == SH_DENYNO || share == SH_COMPAT) /* no lock needed */
 		return fd;
 
-#if !defined(__solaris__)
+#if !defined(BSD)
+
+	struct flock alock = {0}; // lock entire file from offset 0
+
+	if(share == SH_DENYWR)
+		alock.l_type = F_RDLCK; /* set read lock to prevent writes */
+	else
+		alock.l_type = F_WRLCK; /* set write lock to prevent all access */
+
+	if(fcntl(fd, F_SETLK, &alock) != 0) {
+		close(fd);
+		return -1;
+	}
+
+#elif !defined(__solaris__)
+
+	int	flock_op=LOCK_NB;	/* non-blocking */
+
 	/* use flock (doesn't work over NFS) */
 	if(share==SH_DENYRW)
 		flock_op|=LOCK_EX;
