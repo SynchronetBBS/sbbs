@@ -154,6 +154,15 @@ bool _fmutex_open(fmutex_t* fm, const char* text, long max_age, bool auto_remove
 		);
 	if(h == INVALID_HANDLE_VALUE)
 		return false;
+	if(!LockFile(h,
+		0,	// dwFileOffsetLow
+		0,	// dwFileOffsetHigh
+		1,	// nNumberOfBytesToLockLow
+		0	// nNumberOfBytesToLockHigh
+		)) {
+		CloseHandle(h);
+		return false;
+	}
 	if((fm->fd = _open_osfhandle((intptr_t)h, O_WRONLY)) == -1) {
 		CloseHandle(h);
 		return false;
