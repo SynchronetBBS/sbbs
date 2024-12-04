@@ -202,6 +202,9 @@
  *                              New user option & behavior: When selecting/toggling messages
  *                              in the message list, the user can now optionally have the cursor
  *                              go to the next message.
+ * 2024-12-04 Eric Oulashin     Version 1.96g
+ *                              Bug fix: For indexed newscan without snap-to-new, go back to
+ *                              remembering the user's previously selected sub-board
  */
 
 "use strict";
@@ -309,7 +312,7 @@ var hexdump = load('hexdump_lib.js');
 
 
 // Reader version information
-var READER_VERSION = "1.96f";
+var READER_VERSION = "1.96g";
 var READER_DATE = "2024-12-04";
 
 // Keyboard key codes for displaying on the screen
@@ -16777,7 +16780,8 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 	// Also, build an array of sub-board codes for each menu item.
 	this.indexedModeMenu.RemoveAllItems();
 	setIndexedSubBoardMenuSelectedItemIdx(this.indexedModeMenu, 0);
-	DigDistMsgReader_IndexedModeChooseSubBoard.selectedItemIdx = 0;
+	if (newScanOnly && this.userSettings.indexedModeMenuSnapToFirstWithNew)
+		DigDistMsgReader_IndexedModeChooseSubBoard.selectedItemIdx = 0;
 	var numSubBoards = 0;
 	var totalNewMsgs = 0;
 	for (var grpIdx = 0; grpIdx < msg_area.grp_list.length; ++grpIdx)
@@ -17082,6 +17086,7 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 		}
 	}
 	console.attributes = "N";
+	//DigDistMsgReader_IndexedModeChooseSubBoard.selectedItemIdx = this.indexedModeMenu.selectedItemIdx;
 	return retObj;
 }
 
