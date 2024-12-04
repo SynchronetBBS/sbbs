@@ -198,6 +198,10 @@
  *                              show the answers from the people who voted on it. This is to
  *                              basically mimic the fact that Synchronet shows who voted on your
  *                              poll and what they answered, but in the poll message itself.
+ * 2024-12-04 Eric Oulashin     Version 1.96f
+ *                              New user option & behavior: When selecting/toggling messages
+ *                              in the message list, the user can now optionally have the cursor
+ *                              go to the next message.
  */
 
 "use strict";
@@ -305,8 +309,8 @@ var hexdump = load('hexdump_lib.js');
 
 
 // Reader version information
-var READER_VERSION = "1.96e Beta";
-var READER_DATE = "2024-11-26";
+var READER_VERSION = "1.96f";
+var READER_DATE = "2024-12-04";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -953,6 +957,9 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.RefreshMsgHdrInArrays = DigDistMsgReader_RefreshMsgHdrInArrays;
 	this.WriteLightbarKeyHelpMsg = DigDistMsgReader_WriteLightbarKeyHelpMsg;
 
+	// Whether or not we're listing messages
+	this.isListingMessages = false;
+
 	// startMode specifies the mode for the reader to start in - List mode
 	// or reader mode, etc.  This is a setting that is read from the configuration
 	// file.  The configuration file can be either READER_MODE_READ or
@@ -1287,7 +1294,9 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		// Whether or not to display the 'replied' status character (for personal email)
 		displayMsgRepliedChar: true,
 		// Sub-board sorting for changing to another sub-board: None, Alphabetical, or LatestMsgDate
-		subBoardChangeSorting: SUB_BOARD_SORT_NONE
+		subBoardChangeSorting: SUB_BOARD_SORT_NONE,
+		// For the message list, whether to automatically move to the next message after selecting one
+		selectInMsgListMovesToNext: false
 	};
 	// Read the settings from the config file (some settings could set user settings)
 	this.cfgFileSuccessfullyRead = false;
@@ -2264,6 +2273,8 @@ function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
 		stoppedReading: false
 	};
 
+	this.isListingMessages = false;
+
 	// Set the sub-board code if applicable
 	var previousSubBoardCode = this.subBoardCode;
 	if (typeof(pSubBoardCode) === "string")
@@ -2364,6 +2375,7 @@ function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
 		switch (readerMode)
 		{
 			case READER_MODE_READ:
+				this.isListingMessages = false;
 				// Call the ReadMessages method - DOn't change the sub-board,
 				// and pass the selected index of the message to read.  If that
 				// index is -1, the ReadMessages method will use the user's
@@ -2396,6 +2408,7 @@ function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
 				// in list mode first.
 				// List messages
 				otherRetObj = this.ListMessages(null, pAllowChgArea);
+				this.isListingMessages = false;
 				// If the user wants to quit, set continueOn to false to get out
 				// of the loop.  Otherwise, set the selected message offset to
 				// what the user chose from the list.
@@ -3008,6 +3021,8 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 		messageListReturn: false
 	};
 
+	this.isListingMessages = false;
+
 	// If the passed-in sub-board code was different than what was set in the object before,
 	// then open the new message sub-board.
 	var previousSubBoardCode = this.subBoardCode;
@@ -3437,6 +3452,8 @@ function DigDistMsgReader_ListMessages(pSubBoardCode, pAllowChgSubBoard)
 		selectedMsgOffset: -1
 	};
 
+	this.isListingMessages = false;
+
 	// If the passed-in sub-board code was different than what was set in the object before,
 	// then open the new message sub-board.
 	var previousSubBoardCode = this.subBoardCode;
@@ -3516,6 +3533,8 @@ function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 		selectedMsgOffset: -1
 	};
 
+	this.isListingMessages = false;
+
 	// If the user doesn't have permission to read the current sub-board, then
 	// don't allow the user to read it.
 	if (this.subBoardCode != "mail")
@@ -3576,6 +3595,7 @@ function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 	// index accordingly.
 	if (this.tradListTopMsgIdx == -1)
 		this.SetUpTraditionalMsgListVars();
+	this.isListingMessages = true;
 	// Write the message list
 	var continueOn = true;
 	var retvalObj = null;
@@ -3901,6 +3921,8 @@ function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 
 	msgbase.close();
 
+	this.isListingMessages = false;
+
 	return retObj;
 }
 // For the DigDistMsgReader class: Performs the message listing, given a
@@ -3922,6 +3944,8 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 		lastUserInput: "",
 		selectedMsgOffset: -1
 	};
+
+	this.isListingMessages = false;
 
 	// If the user doesn't have permission to read the current sub-board, then
 	// don't allow the user to read it.
@@ -3984,6 +4008,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 		this.SetUpLightbarMsgListVars();
 	}
 
+	this.isListingMessages = true;
 	// Create a DDLightbarMenu for the message list and list messages
 	// and let the user choose one
 	var msgListMenu = this.CreateLightbarMsgListMenu();
@@ -4315,6 +4340,25 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 		else if (lastUserInputUpper == " ")
 		{
 			this.ToggleSelectedMessage(this.subBoardCode, this.lightbarListSelectedMsgIdx);
+			// TODO: Option to go to the next message after toggling
+			// New
+			var topItemIdxBackup = msgListMenu.topItemIdx;
+			if (this.userSettings.selectInMsgListMovesToNext && msgListMenu.selectedItemIdx < msgListMenu.NumItems())
+			{
+				msgListMenu.SetSelectedItemIdx(msgListMenu.selectedItemIdx+1);
+				this.lightbarListSelectedMsgIdx = msgListMenu.selectedItemIdx;
+				if (msgListMenu.topItemIdx == topItemIdxBackup)
+				{
+					// Refresh the two menu items on the screen
+					msgListMenu.WriteItemAtItsLocation(msgListMenu.selectedItemIdx-1, false, false);
+					msgListMenu.WriteItemAtItsLocation(msgListMenu.selectedItemIdx, true, false);
+				}
+			}
+			// If the top menu item index remained the same, have the menu draw only the
+			// check character column in the next iteration
+			if (msgListMenu.topItemIdx == topItemIdxBackup)
+				msgListMenu.nextDrawOnlyItemSubstr = { start: this.MSGNUM_LEN+1, end: this.MSGNUM_LEN+2 };
+			// End New
 			// Have the menu draw only the check character column in the
 			// next iteration
 			msgListMenu.nextDrawOnlyItemSubstr = { start: this.MSGNUM_LEN+1, end: this.MSGNUM_LEN+2 };
@@ -4457,6 +4501,8 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 	}
 	this.lightbarListSelectedMsgIdx = msgListMenu.selectedItemIdx;
 	this.lightbarListTopMsgIdx = msgListMenu.topItemIdx;
+
+	this.isListingMessages = false;
 
 	return retObj;
 }
@@ -15864,15 +15910,22 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn, pTopR
 		optBoxHeight += 3;
 	if (this.readingPersonalEmail)
 		++optBoxHeight;
-	var msgBoxTopRow = 1;
+	if (this.isListingMessages)
+		++optBoxHeight;
+	var optBoxTopRow = 1;
 	if (typeof(pTopRowOverride) === "number" && pTopRowOverride >= 1 && pTopRowOverride <= console.screen_rows - optBoxHeight + 1)
-		msgBoxTopRow = pTopRowOverride;
+		optBoxTopRow = pTopRowOverride;
 	else
-		msgBoxTopRow = this.msgAreaTop + 1;
+	{
+		if (this.isListingMessages)
+			optBoxTopRow = 3;
+		else
+			optBoxTopRow = this.msgAreaTop + 1;
+	}
 	var optBoxStartX = this.msgAreaLeft + Math.floor((this.msgAreaWidth/2) - (optBoxWidth/2));
 	if (optBoxStartX < this.msgAreaLeft)
 		optBoxStartX = this.msgAreaLeft;
-	var optionBox = new ChoiceScrollbox(optBoxStartX, msgBoxTopRow, optBoxWidth, optBoxHeight, optBoxTitle,
+	var optionBox = new ChoiceScrollbox(optBoxStartX, optBoxTopRow, optBoxWidth, optBoxHeight, optBoxTitle,
 										null/*gConfigSettings*/, false, true);
 	optionBox.addInputLoopExitKey(CTRL_U);
 	// Update the bottom help text to be more specific to the user settings box
@@ -15889,6 +15942,16 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn, pTopR
 	// Add the options to the option box
 	const checkIdx = 48;
 	const optionFormatStr = "%-" + (checkIdx-1) + "s[ ]";
+
+	// This setting is only for listing messages
+	var MSG_LIST_SELECT_MSG_MOVES_TO_NEXT_MSG_OPT_INDEX = -1;
+	if (this.isListingMessages)
+	{
+		MSG_LIST_SELECT_MSG_MOVES_TO_NEXT_MSG_OPT_INDEX = optionBox.addTextItem(format(optionFormatStr, "Select msg moves to next msg"));
+		if (this.userSettings.selectInMsgListMovesToNext)
+			optionBox.chgCharInTextItem(MSG_LIST_SELECT_MSG_MOVES_TO_NEXT_MSG_OPT_INDEX, checkIdx, CHECK_CHAR);
+	}
+
 	const ENH_SCROLLBAR_OPT_INDEX = optionBox.addTextItem(format(optionFormatStr, "Scrollbar in reader"));
 	if (this.userSettings.useEnhReaderScrollbar)
 		optionBox.chgCharInTextItem(ENH_SCROLLBAR_OPT_INDEX, checkIdx, CHECK_CHAR);
@@ -15951,6 +16014,7 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn, pTopR
 
 	// Create an object containing toggle values (true/false) for each option index
 	var optionToggles = {};
+	optionToggles[MSG_LIST_SELECT_MSG_MOVES_TO_NEXT_MSG_OPT_INDEX] = this.userSettings.selectInMsgListMovesToNext;
 	optionToggles[ENH_SCROLLBAR_OPT_INDEX] = this.userSettings.useEnhReaderScrollbar;
 	optionToggles[LIST_MESSAGES_IN_REVERSE_OPT_INDEX] = this.userSettings.listMessagesInReverse;
 	optionToggles[NEWSCAN_ONLY_SHOW_NEW_MSGS_INDEX] = this.userSettings.newscanOnlyShowNewMsgs;
@@ -15989,6 +16053,9 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn, pTopR
 				// Toggle the setting for the user in global user setting object.
 				switch (itemIndex)
 				{
+					case MSG_LIST_SELECT_MSG_MOVES_TO_NEXT_MSG_OPT_INDEX:
+						this.readerObj.userSettings.selectInMsgListMovesToNext = !this.readerObj.userSettings.selectInMsgListMovesToNext;
+						break;
 					case ENH_SCROLLBAR_OPT_INDEX:
 						this.readerObj.userSettings.useEnhReaderScrollbar = !this.readerObj.userSettings.useEnhReaderScrollbar;
 						break;
@@ -16048,7 +16115,7 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn, pTopR
 						retObj.needWholeScreenRefresh = true;
 						break;
 					case SUB_BOARD_CHANGE_SORTING_OPT_INDEX:
-						var sortOptMenu = CreateSubBoardChangeSortOptMenu(optBoxStartX, msgBoxTopRow, optBoxWidth, optBoxHeight, this.readerObj.userSettings.subBoardChangeSorting);
+						var sortOptMenu = CreateSubBoardChangeSortOptMenu(optBoxStartX, optBoxTopRow, optBoxWidth, optBoxHeight, this.readerObj.userSettings.subBoardChangeSorting);
 						var chosenSortOpt = sortOptMenu.GetVal();
 						console.attributes = "N";
 						if (typeof(chosenSortOpt) === "number")
