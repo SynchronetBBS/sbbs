@@ -128,7 +128,8 @@ function import_netuser_list(hdr, list)
 				objs.push({ name: list[i][u], data: i, created: new Date() });
 		}
 	}
-	if(!file.open("w")) {
+	printf("parsed %u avatars", objs.length);
+	if(!file.open("w+")) {
 		alert("Error opening " + file.name);
 		return false;
 	}
