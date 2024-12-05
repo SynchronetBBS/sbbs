@@ -31,6 +31,16 @@ function archive_date(file)
 	return t;
 }
 
+function proper_lib_name(name)
+{
+	for(var i in file_area.lib_list) {
+		var lib = file_area.lib_list[i];
+		if(lib.name.toLowerCase() == name.toLowerCase())
+			return lib.name;
+	}
+	return name;
+}
+
 var uploader;
 var listfile;
 var date_fmt;
@@ -78,7 +88,7 @@ for(var i = 0; i < argc; i++) {
 			continue;
 		}
 		if(opt.indexOf("lib=") == 0) {
-			var libname = opt.slice(4);
+			var libname = proper_lib_name(opt.slice(4));
 			if(!file_area.lib[libname]) {
 				alert("Library not found: " + libname);
 				exit(1);
