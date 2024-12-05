@@ -83,13 +83,15 @@ off_t filelength(int fd)
 	#if defined F_OFD_SETLK
 		#undef F_SETLK
 		#define F_SETLK F_OFD_SETLK
+		#undef F_SETLKW
+		#define F_SETLKW F_OFD_SETLKW
 	#else
 		#warning Linux OFD locks not enabled!
 	#endif
 #endif
 
 /* Sets a lock on a portion of a file */
-int lock(int fd, off_t pos, off_t len)
+int xp_lockfile(int fd, off_t pos, off_t len, bool block)
 {
 #if defined USE_FCNTL_LOCKS
 	struct flock alock = {0};
@@ -106,12 +108,15 @@ int lock(int fd, off_t pos, off_t len)
 	alock.l_start = pos;
 	alock.l_len = (int)len;
 
-	int result = fcntl(fd, F_SETLK, &alock);
+	int result = fcntl(fd, block ? F_SETLKW : F_SETLK, &alock);
 	if(result == -1 && errno != EINVAL)
 		return -1;
 #elif !defined(__QNX__) && !defined(__solaris__)
+	int op = LOCK_EX;
+	if(!block)
+		op |= LOCK_NB;
 	/* use flock (doesn't work over NFS) */
-	if(flock(fd,LOCK_EX|LOCK_NB)!=0  && errno != EOPNOTSUPP)
+	if(flock(fd, op) != 0  && errno != EOPNOTSUPP)
 		return(-1);
 #endif
 	return(0);
@@ -244,15 +249,17 @@ int sopen(const char *fn, int sh_access, int share, ...)
 	#define LK_UNLCK LK_UNLOCK
 #endif
 
-int lock(int file, off_t offset, off_t size) 
+int xp_lockfile(int file, off_t offset, off_t size, bool block)
 {
 	int	i;
 	off_t pos;
-   
+
 	pos=tell(file);
 	if(offset!=pos)
 		(void)lseek(file, offset, SEEK_SET);
-	i=_locking(file,LK_NBLCK,(long)size);
+	do {
+		i = _locking(file, block ? LK_LOCK : LK_NBLCK, (long)size);
+	} while(block && i != 0 && errno = EDEADLOCK);
 	if(offset!=pos)
 		(void)lseek(file, pos, SEEK_SET);
 	return(i);
@@ -262,7 +269,7 @@ int unlock(int file, off_t offset, off_t size)
 {
 	int	i;
 	off_t	pos;
-   
+
 	pos=tell(file);
 	if(offset!=pos)
 		(void)lseek(file, offset, SEEK_SET);
@@ -273,6 +280,11 @@ int unlock(int file, off_t offset, off_t size)
 }
 
 #endif	/* !__unix__ && (_MSC_VER || __MINGW32__ || __DMC__) */
+
+int lock(int fd, off_t pos, off_t len)
+{
+	return xp_lockfile(fd, pos, len, /* block */false);
+}
 
 #if defined(_WIN32 )
 static size_t

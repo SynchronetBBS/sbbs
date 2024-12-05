@@ -283,12 +283,7 @@ bool lockuserdat(int file, unsigned user_number)
 
 	off_t offset = userdatoffset(user_number);
 
-	unsigned attempt=0;
-	while(attempt < LOOP_USERDAT && lock(file, offset, USER_RECORD_LINE_LEN) == -1) {
-		attempt++;
-		RETRY_DELAY(attempt);
-	}
-	return attempt < LOOP_USERDAT;
+	return xp_lockfile(file, offset, USER_RECORD_LINE_LEN, /* block: */true) == 0;
 }
 
 bool unlockuserdat(int file, unsigned user_number)
