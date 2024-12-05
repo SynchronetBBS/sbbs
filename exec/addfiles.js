@@ -52,7 +52,7 @@ for(var i = 0; i < argc; i++) {
 			writeln("  -all            add files in all libraries/directories (implies -auto)");
 			writeln("  -lib=<name>     add files in all directories of specified library (implies -auto)");
 			writeln("  -auto           add files only to directories that have Auto-ADDFILES enabled");
-			writeln("  -dir=<code>     add files in directory (can be specified multiple times)");
+			writeln("  -dir=<code,...> add files in directories (can be specified multiple times)");
 			writeln("  -from=<name>    specify uploader's user name (may require quotes)");
 			writeln("  -file=<name>    specify files to add (wildcards supported, default: *)");
 			writeln("  -ex=<filename>  add to excluded filename list");
@@ -89,7 +89,7 @@ for(var i = 0; i < argc; i++) {
 			continue;
 		}
 		if(opt.indexOf("dir=") == 0) {
-			dir_list.push(opt.slice(4));
+			dir_list.push.apply(dir_list, opt.slice(4).split(','));
 			continue;
 		}
 		if(opt.indexOf("file=") == 0) {
