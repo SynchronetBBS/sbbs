@@ -22,6 +22,7 @@ _Static_assert(0, "threads.h support required");
 #define DEUCE_SSH_ERROR_TERMINATED -5
 #define DEUCE_SSH_ERROR_TOOLATE    -6
 #define DEUCE_SSH_ERROR_TOOMANY    -7
+#define DEUCE_SSH_ERROR_TOOLONG    -8
 
 typedef struct deuce_ssh_transport_state *deuce_ssh_transport_state_t;
 typedef int (*deuce_ssh_transport_io_cb_t)(uint8_t *buf, size_t bufsz, atomic_bool *terminate, void *cbdata);
@@ -49,5 +50,7 @@ typedef struct deuce_ssh_session {
 int deuce_ssh_session_init(deuce_ssh_session_t sess);
 bool deuce_ssh_session_terminate(deuce_ssh_session_t sess);
 void deuce_ssh_session_cleanup(deuce_ssh_session_t sess);
+
+int deuce_ssh_transport_set_callbacks(deuce_ssh_transport_io_cb_t tx, deuce_ssh_transport_io_cb_t rx, deuce_ssh_transport_rxline_cb_t rx_line, deuce_ssh_transport_extra_line_cb_t extra_line_cb);
 
 #endif

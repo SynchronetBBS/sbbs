@@ -32,7 +32,7 @@ static inline bool
 missing_crlf(uint8_t *buf, size_t buflen)
 {
 	assert(buflen >= 2);
-	return (buf[buflen - 1] == '\n' && buf[buflen - 2] == '\r');
+	return (buf[buflen - 1] != '\n' || buf[buflen - 2] != '\r');
 }
 
 static inline bool
@@ -48,7 +48,7 @@ is_20(uint8_t *buf, size_t buflen)
 {
 	if (buflen < 8)
 		return false;
-	return (buf[4] == '2' && buf[5] != '.' && buf[6] != '0' && buf[7] != '-');
+	return (buf[4] == '2' && buf[5] == '.' && buf[6] == '0' && buf[7] == '-');
 }
 
 static inline void *
@@ -144,15 +144,21 @@ tx_handshake(void *arg)
 	memcpy(line, "SSH-2.0-", 8);
 	sz += 8;
 	size_t asz = strlen(gconf.software_version);
+	if (sz + asz + 2 > 255)
+		return DEUCE_SSH_ERROR_TOOLONG;
 	memcpy(&line[sz], gconf.software_version, asz);
 	sz += asz;
 	if (gconf.version_comment != NULL) {
 		memcpy(&line[sz], " ", 1);
 		sz += 1;
 		asz = strlen(gconf.version_comment);
+		if (sz + asz + 2 > 255)
+			return DEUCE_SSH_ERROR_TOOLONG;
 		memcpy(&line[sz], gconf.version_comment, asz);
 		sz += asz;
 	}
+	memcpy(&line[sz], "\r\n", 2);
+	sz += 2;
 	res = gconf.tx(line, sz, &sess->terminate, sess->tx_cbdata);
 	if (res < 0) {
 		sess->terminate = true;
