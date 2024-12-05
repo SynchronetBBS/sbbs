@@ -70,24 +70,28 @@ off_t filelength(int fd)
 	return(st.st_size);
 }
 
-// See https://patchwork.kernel.org/patch/9289177/
-#if defined(F_OFD_SETLK) && _FILE_OFFSET_BITS != 64
-	#undef F_OFD_SETLK
-#endif
+/*************************************/
+/* Use OFD fcntl() locks when we can */
+/*************************************/
+#if defined __linux__
+	#define USE_FCNTL_LOCKS
+	// See https://patchwork.kernel.org/patch/9289177/
+	#if defined F_OFD_SETLK && _FILE_OFFSET_BITS != 64
+		#undef F_OFD_SETLK
+	#endif
 
-#if defined(__linux__) && !defined(F_OFD_SETLK)
-	#warning Linux OFD locks not enabled!
-#endif
-
-#if defined(F_OFD_SETLK)
-	#undef F_SETLK
-	#define F_SETLK F_OFD_SETLK
+	#if defined F_OFD_SETLK
+		#undef F_SETLK
+		#define F_SETLK F_OFD_SETLK
+	#else
+		#warning Linux OFD locks not enabled!
+	#endif
 #endif
 
 /* Sets a lock on a portion of a file */
 int lock(int fd, off_t pos, off_t len)
 {
-#if !defined(BSD)
+#if defined USE_FCNTL_LOCKS
 	struct flock alock = {0};
 
 	// fcntl() will return EBADF if we try to set a write lock a file opened O_RDONLY
@@ -117,7 +121,7 @@ int lock(int fd, off_t pos, off_t len)
 int unlock(int fd, off_t pos, off_t len)
 {
 
-#if !defined(BSD)
+#if defined USE_FCNTL_LOCKS
 	struct flock alock = {0};
 
 	alock.l_type = F_UNLCK;   /* remove the lock */
@@ -195,7 +199,7 @@ int sopen(const char *fn, int sh_access, int share, ...)
 	if (share == SH_DENYNO || share == SH_COMPAT) /* no lock needed */
 		return fd;
 
-#if !defined(BSD)
+#if defined USE_FCNTL_LOCKS
 
 	struct flock alock = {0}; // lock entire file from offset 0
 
