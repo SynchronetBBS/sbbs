@@ -159,7 +159,7 @@ var renamed = 0;
 var missing = [];
 for(var d = 0; d < dir_list.length; d++) {
 
-	var code = dir_list[d];
+	var code = dir_list[d].toLowerCase();
 	var dir = file_area.dir[code];
 	if(!dir) {
 		alert("Directory '" + code + "' does not exist in configuration");
