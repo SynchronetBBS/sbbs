@@ -271,14 +271,19 @@ void sbbs_t::logch(char ch, bool comma)
 void sbbs_t::errormsg(int line, const char* function, const char *src, const char* action, const char *object
 					  ,int access, const char *extinfo)
 {
-    char	str[2048];
+	char	repeat[128] = "";
 	char	errno_str[128];
 	char	errno_info[256] = "";
+	static const char* lastfunc;
+	static int lastline;
+	static time_t lasttime;
+	static uint repeat_count;
 
 	/* prevent recursion */
 	if(errormsg_inside)
 		return;
 	errormsg_inside=true;
+	now=time(NULL);
 
 	if(errno != 0 && strcmp(action, ERR_CHK) != 0)
 		safe_snprintf(errno_info, sizeof(errno_info), "%d (%s) "
@@ -291,25 +296,36 @@ void sbbs_t::errormsg(int line, const char* function, const char *src, const cha
 	#endif
 		);
 
-	safe_snprintf(str,sizeof(str),"ERROR %s"
+	int level = LOG_ERR;
+	if(function == lastfunc && line == lastline) {
+		++repeat_count;
+		snprintf(repeat, sizeof repeat, "[x%u]", repeat_count + 1);
+		// De-duplicate by reducing severity of log messages
+		if((now - lasttime) < 12*60*60)
+			level = LOG_WARNING;
+	} else
+		repeat_count = 0;
+	lastfunc = function;
+	lastline = line;
+	lasttime = now;
+	lprintf(level, "!ERROR%s %s"
 		"in %s line %u (%s) %s \"%s\" access=%d %s%s"
+		,repeat
 		,errno_info
 		,src, line, function, action, object, access
 		,extinfo==NULL ? "":"info="
 		,extinfo==NULL ? "":extinfo);
 
-	lprintf(LOG_ERR, "!%s", str);
 	if(online == ON_REMOTE) {
 		int savatr=curatr;
 		attr(cfg.color[clr_err]);
-		bprintf("\7\r\n!ERROR %s %s\r\n", action, object);   /* tell user about error */
+		bprintf("\7\r\n!ERROR%s %s %s\r\n", repeat, action, object);   /* tell user about error */
 		bputs("\r\nThe sysop has been notified.\r\n");
 		pause();
 		attr(savatr);
 		CRLF;
 	}
-	safe_snprintf(str,sizeof(str),"ERROR %s %s", action, object);
-	if(cfg.node_num>0) {
+	if(repeat_count == 0 && cfg.node_num>0) {
 		if(getnodedat(cfg.node_num,&thisnode, true)) {
 			if(thisnode.errors<UCHAR_MAX)
 				thisnode.errors++;
@@ -317,12 +333,14 @@ void sbbs_t::errormsg(int line, const char* function, const char *src, const cha
 			putnodedat(cfg.node_num,&thisnode);
 		}
 	}
-	now=time(NULL);
 
 	if(logfile_fp!=NULL) {
-		if(logcol!=1)
-			fputs(log_line_ending, logfile_fp);
-		fprintf(logfile_fp,"!! %s%s", str, log_line_ending);
+		fprintf(logfile_fp,"%s!! ERROR%s %s %s%s"
+			,logcol == 1 ? "" : log_line_ending
+			,repeat
+			,action
+			,object
+			,log_line_ending);
 		logcol=1;
 		fflush(logfile_fp);
 	}
