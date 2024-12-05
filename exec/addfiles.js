@@ -52,6 +52,7 @@ for(var i = 0; i < argc; i++) {
 			writeln("  -all            add files in all libraries/directories (implies -auto)");
 			writeln("  -lib=<name>     add files in all directories of specified library (implies -auto)");
 			writeln("  -auto           add files only to directories that have Auto-ADDFILES enabled");
+			writeln("  -dir=<code>     add files in directory (can be specified multiple times)");
 			writeln("  -from=<name>    specify uploader's user name (may require quotes)");
 			writeln("  -file=<name>    specify files to add (wildcards supported, default: *)");
 			writeln("  -ex=<filename>  add to excluded filename list");
@@ -85,6 +86,10 @@ for(var i = 0; i < argc; i++) {
 			for(var j = 0; j < file_area.lib[libname].dir_list.length; j++)
 				dir_list.push(file_area.lib[libname].dir_list[j].code);
 			options.auto = true;
+			continue;
+		}
+		if(opt.indexOf("dir=") == 0) {
+			dir_list.push(opt.slice(4));
 			continue;
 		}
 		if(opt.indexOf("file=") == 0) {
@@ -153,7 +158,7 @@ var updated = 0;
 var renamed = 0;
 var missing = [];
 for(var d = 0; d < dir_list.length; d++) {
-	
+
 	var code = dir_list[d];
 	var dir = file_area.dir[code];
 	if(!dir) {
@@ -163,7 +168,7 @@ for(var d = 0; d < dir_list.length; d++) {
 	if(options.auto && (dir.settings & DIR_NOAUTO))
 		continue;
 	writeln("Adding files to " + dir.lib_name + " " + dir.name);
-	
+
 	var filebase = new FileBase(code);
 	if(!filebase.open("r")) {
 		alert("Failed to open: " + filebase.file);
@@ -208,7 +213,6 @@ for(var d = 0; d < dir_list.length; d++) {
 	}
 	file_list = file_list.filter(function(obj) { return wildmatch(obj.name, include); });
 
-	
 	for(var i = 0; i < file_list.length; i++) {
 		var file = file_list[i];
 		file.from = uploader;
