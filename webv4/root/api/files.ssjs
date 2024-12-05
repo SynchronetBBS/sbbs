@@ -65,7 +65,7 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') && request
 				f.close();
 				f = undefined;
 				reply = false;
-				user.downloaded_file(dircode, file.path);
+				user.downloaded_file(dircode, file_getname(file.path));
 			}
 			break;
 		default:
