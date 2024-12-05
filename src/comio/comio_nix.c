@@ -362,15 +362,27 @@ bool comSetBits(COM_HANDLE handle, size_t byteSize, size_t stopBits)
 	switch(byteSize) {
 		case 5:
 			t.c_cflag |= CS5;
+#ifdef ISTRIP
+			t.c_iflag |= ISTRIP;
+#endif
 			break;
 		case 6:
 			t.c_cflag |= CS6;
+#ifdef ISTRIP
+			t.c_iflag |= ISTRIP;
+#endif
 			break;
 		case 7:
 			t.c_cflag |= CS7;
+#ifdef ISTRIP
+			t.c_iflag |= ISTRIP;
+#endif
 			break;
 		default:
 			t.c_cflag |= CS8;
+#ifdef ISTRIP
+			t.c_iflag &= ~(ISTRIP);
+#endif
 			break;
 	}
 	if(stopBits == 2)

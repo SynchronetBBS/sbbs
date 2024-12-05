@@ -9,9 +9,8 @@ deuce_ssh_session_init(deuce_ssh_session_t sess)
 		return DEUCE_SSH_ERROR_INIT;
 
 	res = deuce_ssh_transport_init(sess);
-	if (res < 0) {
+	if (res < 0)
 		return res;
-	}
 
 	sess->initialized = true;
 	return 0;
@@ -24,7 +23,7 @@ deuce_ssh_session_terminate(deuce_ssh_session_t sess)
 	if (atomic_compare_exchange_strong(&sess->initialized, &t, false)) {
 		sess->terminate = true;
 		int tres;
-		thrd_join(sess->transport_thread, &tres);
+		thrd_join(sess->trans->transport_thread, &tres);
 		sess->terminate = false;
 		return true;
 	}

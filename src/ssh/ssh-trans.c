@@ -5,7 +5,22 @@
 #include "ssh.h"
 #include "ssh-trans.h"
 
+typedef struct deuce_ssh_transport_global_config {
+	atomic_bool used;
+	const char *software_version;
+	const char *version_comment;
+	size_t kex_entries;
+	char **kex_name;
+	deuce_ssh_kex_handler_t *kex_handler;
+	deuce_ssh_kex_cleanup_t *kex_cleanup;
+	int (*tx)(uint8_t *buf, size_t bufsz, atomic_bool *terminate, void *cbdata);
+	int (*rx)(uint8_t *buf, size_t bufsz, atomic_bool *terminate, void *cbdata);
+	int (*rx_line)(uint8_t *buf, size_t bufsz, size_t *bytes_received, atomic_bool *terminate, void *cbdata);
+	int (*extra_line_cb)(uint8_t *buf, size_t bufsz, void *cbdata);
+} *deuce_ssh_transport_global_config_t;
+
 static const char * const sw_ver = "DeuceSSH-0.0";
+static struct deuce_ssh_transport_global_config gconf;
 
 static inline bool
 has_nulls(uint8_t *buf, size_t buflen)
@@ -17,7 +32,7 @@ static inline bool
 missing_crlf(uint8_t *buf, size_t buflen)
 {
 	assert(buflen >= 2);
-	return (buf[buflen - 1] == '\n' && buf[buflen - 2] == '\r');
+	return (buf[buflen - 1] != '\n' || buf[buflen - 2] != '\r');
 }
 
 static inline bool
@@ -33,7 +48,7 @@ is_20(uint8_t *buf, size_t buflen)
 {
 	if (buflen < 8)
 		return false;
-	return (buf[4] == '2' && buf[5] != '.' && buf[6] != '0' && buf[7] != '-');
+	return (buf[4] == '2' && buf[5] == '.' && buf[6] == '0' && buf[7] == '-');
 }
 
 static inline void *
@@ -53,7 +68,7 @@ version_ex(deuce_ssh_session_t sess)
 	uint8_t line[256];
 
 	while (!sess->terminate) {
-		res = sess->rx_line(line, sizeof(line) - 1, &received, &sess->terminate, sess->rx_line_cbdata);
+		res = gconf.rx_line(line, sizeof(line) - 1, &received, &sess->terminate, sess->rx_line_cbdata);
 		if (res < 0) {
 			sess->terminate = true;
 			return res;
@@ -83,9 +98,9 @@ version_ex(deuce_ssh_session_t sess)
 			assert(res == thrd_success);
 			return 0;
 		}
-		if (sess->extra_line_cb) {
+		if (gconf.extra_line_cb) {
 			line[received] = 0;
-			res = sess->extra_line_cb(line, received, sess->extra_line_cbdata);
+			res = gconf.extra_line_cb(line, received, sess->extra_line_cbdata);
 			if (res < 0) {
 				sess->terminate = true;
 				return res;
@@ -122,31 +137,32 @@ tx_handshake(void *arg)
 {
 	deuce_ssh_session_t sess = arg;
 	int res;
+	uint8_t line[255];
+	size_t sz = 0;
 
 	/* Handshake */
-	res = sess->tx((uint8_t *)"SSH-2.0-", 8, &sess->terminate, sess->tx_cbdata);
+	memcpy(line, "SSH-2.0-", 8);
+	sz += 8;
+	size_t asz = strlen(gconf.software_version);
+	if (sz + asz + 2 > 255)
+		return DEUCE_SSH_ERROR_TOOLONG;
+	memcpy(&line[sz], gconf.software_version, asz);
+	sz += asz;
+	if (gconf.version_comment != NULL) {
+		memcpy(&line[sz], " ", 1);
+		sz += 1;
+		asz = strlen(gconf.version_comment);
+		if (sz + asz + 2 > 255)
+			return DEUCE_SSH_ERROR_TOOLONG;
+		memcpy(&line[sz], gconf.version_comment, asz);
+		sz += asz;
+	}
+	memcpy(&line[sz], "\r\n", 2);
+	sz += 2;
+	res = gconf.tx(line, sz, &sess->terminate, sess->tx_cbdata);
 	if (res < 0) {
 		sess->terminate = true;
 		return res;
-	}
-	size_t sz = strlen(sess->software_version);
-	res = sess->tx((uint8_t *)sess->software_version, sz, &sess->terminate, sess->tx_cbdata);
-	if (res < 0) {
-		sess->terminate = true;
-		return res;
-	}
-	if (sess->version_comment != NULL) {
-		res = sess->tx((uint8_t *)" ", 1, &sess->terminate, sess->tx_cbdata);
-		if (res < 0) {
-			sess->terminate = true;
-			return res;
-		}
-		sz = strlen(sess->version_comment);
-		res = sess->tx((uint8_t *)sess->software_version, sz, &sess->terminate, sess->tx_cbdata);
-		if (res < 0) {
-			sess->terminate = true;
-			return res;
-		}
 	}
 	return 0;
 }
@@ -154,6 +170,11 @@ tx_handshake(void *arg)
 void
 deuce_ssh_transport_cleanup(deuce_ssh_session_t sess)
 {
+	if (sess->trans->kex_selected != SIZE_MAX) {
+		if (gconf.kex_cleanup[sess->trans->kex_selected] != NULL)
+			gconf.kex_cleanup[sess->trans->kex_selected](sess);
+		sess->trans->kex_selected = SIZE_MAX;
+	}
 	free(sess->remote_software_version);
 	sess->remote_software_version = NULL;
 	free(sess->remote_version_comment);
@@ -163,9 +184,13 @@ deuce_ssh_transport_cleanup(deuce_ssh_session_t sess)
 int
 deuce_ssh_transport_init(deuce_ssh_session_t sess)
 {
-	if (sess->software_version == NULL)
-		sess->software_version = sw_ver;
+	gconf.used = true;
+	if (gconf.software_version == NULL)
+		gconf.software_version = sw_ver;
 
+	sess->trans = calloc(1, sizeof(struct deuce_ssh_transport_state));
+	if (sess->trans == NULL)
+		return DEUCE_SSH_ERROR_ALLOC;
 	thrd_t thrd;
 	if (thrd_create(&thrd, rx_thread, sess) != thrd_success)
 		return DEUCE_SSH_ERROR_INIT;
@@ -176,7 +201,55 @@ deuce_ssh_transport_init(deuce_ssh_session_t sess)
 		thrd_join(thrd, &tres);
 		return res;
 	}
+	sess->trans->kex_selected = SIZE_MAX;
+	sess->trans->kex_state = 0;
 
-	sess->transport_thread = thrd;
+	sess->trans->transport_thread = thrd;
+	return 0;
+}
+
+int
+deuce_ssh_transport_register_kex(const char *name, deuce_ssh_kex_handler_t kex_handler, deuce_ssh_kex_cleanup_t kex_cleanup)
+{
+	if (gconf.used)
+		return DEUCE_SSH_ERROR_TOOLATE;
+	if (gconf.kex_entries + 1 == SIZE_MAX)
+		return DEUCE_SSH_ERROR_TOOMANY;
+	char **newnames = realloc(gconf.kex_name, sizeof(gconf.kex_name[0]) * (gconf.kex_entries + 1));
+	if (newnames == NULL)
+		return DEUCE_SSH_ERROR_ALLOC;
+	gconf.kex_name = newnames;
+	gconf.kex_name[gconf.kex_entries] = strdup(name);
+
+	deuce_ssh_kex_handler_t *newhandlers = realloc(gconf.kex_handler, sizeof(gconf.kex_handler[0]) * (gconf.kex_entries + 1));
+	if (newhandlers == NULL) {
+		free(gconf.kex_name[gconf.kex_entries]);
+		return DEUCE_SSH_ERROR_ALLOC;
+	}
+	gconf.kex_handler = newhandlers;
+	gconf.kex_handler[gconf.kex_entries] = kex_handler;
+
+	deuce_ssh_kex_cleanup_t *newcleanup = realloc(gconf.kex_cleanup, sizeof(gconf.kex_cleanup[0]) * (gconf.kex_entries + 1));
+	if (newcleanup == NULL) {
+		free(gconf.kex_name[gconf.kex_entries]);
+		return DEUCE_SSH_ERROR_ALLOC;
+	}
+	gconf.kex_cleanup = newcleanup;
+	gconf.kex_cleanup[gconf.kex_entries] = kex_cleanup;
+
+	gconf.kex_entries++;
+	return 0;
+}
+
+int
+deuce_ssh_transport_set_callbacks(deuce_ssh_transport_io_cb_t tx, deuce_ssh_transport_io_cb_t rx, deuce_ssh_transport_rxline_cb_t rx_line, deuce_ssh_transport_extra_line_cb_t extra_line_cb)
+{
+	if (gconf.used)
+		return DEUCE_SSH_ERROR_TOOLATE;
+	gconf.tx = tx;
+	gconf.rx = rx;
+	gconf.rx_line = rx_line;
+	gconf.extra_line_cb = extra_line_cb;
+
 	return 0;
 }
