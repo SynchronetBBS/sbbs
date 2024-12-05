@@ -57,30 +57,36 @@ for(var i = 0; i < argc; i++) {
 		while(opt[0] == '-')
 			opt = opt.slice(1);
 		if(opt == '?' || opt.toLowerCase() == "help") {
-			writeln("usage: [-options] [dir-code] [listfile] [desc-off]");
+			writeln("usage: [dir-spec] [-options] [listfile] [desc-off]");
+			writeln();
+			writeln("dir-spec:");
+			writeln("  -all              Add files in all directories of all libraries (implies -auto)");
+			writeln("  -lib=<name>     * Add files in all directories of specified library (implies -auto)");
+			writeln("  -dir=<code>,... * Add files in multiple specified directories");
+			writeln("   dir-code         Internal code of (one and only) directory to add files to");
+			writeln("                  * indicates parameters that can be combined and/or specified multiple times");
+			writeln("   Note: If no directories are specified, one will be prompted for.");
+			writeln();
 			writeln("options:");
-			writeln("  -all            add files in all libraries/directories (implies -auto)");
-			writeln("  -lib=<name>     add files in all directories of specified library (implies -auto)");
-			writeln("  -auto           add files only to directories that have Auto-ADDFILES enabled");
-			writeln("  -dir=<code,...> add files in directories (can be specified multiple times)");
-			writeln("  -from=<name>    specify uploader's user name (may require quotes)");
-			writeln("  -file=<name>    specify files to add (wildcards supported, default: *)");
-			writeln("  -ex=<filename>  add to excluded filename list");
-			writeln("                  (default: " + default_excludes.join(',') + ")");
-			writeln("  -diz            always extract/use description in archive");
-			writeln("  -update         update existing file entries (default is to skip them)");
-			writeln("  -readd          re-add existing file entries (so they appear as newly-uploaded");
-			writeln("  -date[=fmt]     include today's date in description");
-			writeln("  -fdate[=fmt]    include file's date in description");
-			writeln("  -adate[=fmt]    include newest archived file date in description");
-			writeln("                  (fmt = optional strftime date/time format string)");
-			writeln("  -delete         delete list after import");
-			writeln("  -v              increase verbosity of output");
-			writeln("  -debug          enable debug output");
-			writeln("optional:");
-			writeln("  dir-code:       File directory internal code");
-			writeln("  listfile:       Name of listfile (e.g. FILES.BBS)");
-			writeln("  desc-off:       Description character offset (number)");
+			writeln("  -auto             Add files only to directories that have Auto-ADDFILES enabled (in SCFG)");
+			writeln("  -from=<name>      Specify uploader's user name (may require quotes)");
+			writeln("  -file=<name>      Specify files to add (wildcards supported, default: *)");
+			writeln("  -ex=<filename>    Add to excluded filename list");
+			writeln("                    (default: " + default_excludes.join(',') + ")");
+			writeln("  -diz              Always extract/use description in archive (e.g. FILE_ID.DIZ)");
+			writeln("  -update           Update existing file entries (default is to skip them)");
+			writeln("  -readd            Re-add existing file entries (so they appear as newly-uploaded");
+			writeln("  -date[=fmt]       Include today's date in description");
+			writeln("  -fdate[=fmt]      Include file's date in description");
+			writeln("  -adate[=fmt]      Include newest archived file date in description");
+			writeln("                    (fmt = optional strftime date/time format string)");
+			writeln("  -delete           Delete list after import");
+			writeln("  -v                Increase verbosity of output");
+			writeln("  -debug            Enable debug output");
+			writeln();
+			writeln("optional listfile parameters:");
+			writeln("   listfile         Name of listfile to import (e.g. FILES.BBS)");
+			writeln("   desc-off         Description character-offset in listfile (e.g. 40)");
 			exit(0);
 		}
 		if(opt.indexOf("ex=") == 0) {
@@ -91,6 +97,9 @@ for(var i = 0; i < argc; i++) {
 			var libname = proper_lib_name(opt.slice(4));
 			if(!file_area.lib[libname]) {
 				alert("Library not found: " + libname);
+				writeln("Valid library names:");
+				for(var i in file_area.lib)
+					writeln("\t" + file_area.lib[i].name);
 				exit(1);
 			}
 			for(var j = 0; j < file_area.lib[libname].dir_list.length; j++)
@@ -126,6 +135,7 @@ for(var i = 0; i < argc; i++) {
 			continue;
 		}
 		if(opt == "all") {
+			dir_list.length = 0;
 			for(var dir in file_area.dir)
 				dir_list.push(dir);
 			options.auto = true;
