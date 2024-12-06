@@ -257,7 +257,7 @@ int unlock(int file, off_t offset, off_t size)
 	pos=tell(file);
 	if(offset!=pos)
 		(void)lseek(file, offset, SEEK_SET);
-	i=_locking(file,LK_UNLCK,(long)size);
+	i = locking(file,LK_UNLCK,(long)size);
 	if(offset!=pos)
 		(void)lseek(file, pos, SEEK_SET);
 	return(i);
@@ -412,7 +412,7 @@ FILE *_fsopen(const char *pszFilename, const char *pszMode, int shmode)
 #endif
 
 #ifdef _WIN32
-#include <sys/locking.h>	/* _locking */
+#include <sys/locking.h>	/* LK_LOCK */
 int xp_lockfile(int file, off_t offset, off_t size, bool block)
 {
 	int	i;
@@ -422,7 +422,7 @@ int xp_lockfile(int file, off_t offset, off_t size, bool block)
 	if(offset!=pos)
 		(void)lseek(file, offset, SEEK_SET);
 	do {
-		i = _locking(file, block ? LK_LOCK : LK_NBLCK, (long)size);
+		i = locking(file, block ? LK_LOCK : LK_NBLCK, (long)size);
 	} while(block && i != 0 && errno == EDEADLOCK);
 	if(offset!=pos)
 		(void)lseek(file, pos, SEEK_SET);
