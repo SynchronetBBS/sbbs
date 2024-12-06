@@ -64,10 +64,12 @@ bool sbbs_t::unpack_rep(char* repfile)
 	} else
 		SAFEPRINTF2(rep_fname,"%s%s.rep",cfg.temp_dir,cfg.sys_id);
 	if(!fexistcase(rep_fname)) {
-		bputs(text[QWKReplyNotReceived]);
-		logline(LOG_NOTICE,"U!",AttemptedToUploadREPpacket);
-		logline(LOG_NOTICE,nulstr,"REP file not received");
-		return(false);
+		if(online == ON_REMOTE) {
+			bputs(text[QWKReplyNotReceived]);
+			logline(LOG_NOTICE,"U!",AttemptedToUploadREPpacket);
+		} else
+			logline(LOG_NOTICE,nulstr,"REP file not received");
+		return false;
 	}
 	byte_estimate_to_str(flength(rep_fname), tmp, sizeof tmp, 1024, 1);
 	lprintf(LOG_INFO, "Unpacking QWK Reply Packet: %s (%s bytes)", rep_fname, tmp);
