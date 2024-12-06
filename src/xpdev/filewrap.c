@@ -412,6 +412,7 @@ FILE *_fsopen(const char *pszFilename, const char *pszMode, int shmode)
 #endif
 
 #ifdef _WIN32
+#include <sys/locking.h>	/* _locking */
 int xp_lockfile(int file, off_t offset, off_t size, bool block)
 {
 	int	i;
