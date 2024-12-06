@@ -259,7 +259,7 @@ int xp_lockfile(int file, off_t offset, off_t size, bool block)
 		(void)lseek(file, offset, SEEK_SET);
 	do {
 		i = _locking(file, block ? LK_LOCK : LK_NBLCK, (long)size);
-	} while(block && i != 0 && errno = EDEADLOCK);
+	} while(block && i != 0 && errno == EDEADLOCK);
 	if(offset!=pos)
 		(void)lseek(file, pos, SEEK_SET);
 	return(i);
