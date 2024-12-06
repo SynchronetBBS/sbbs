@@ -100,7 +100,7 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 
 	mail=loadmail(&smb,&smb.msgs,usernumber,which,lm_mode);
 	last_mode = lm_mode;
-	if(!smb.msgs) {
+	if(!smb.msgs || mail == nullptr) {
 		if(which==MAIL_SENT)
 			bputs(text[NoMailSent]);
 		else if(which==MAIL_ALL)
@@ -109,6 +109,7 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 			bprintf(text[NoMailWaiting], lm_mode&LM_UNREAD ? "un-read mail" : "mail");
 		smb_close(&smb);
 		smb_stack(&smb,SMB_STACK_POP);
+		free(mail);
 		return lm_mode;
 	}
 
@@ -793,8 +794,7 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 	if(msg.total_hfields)
 		smb_freemsgmem(&msg);
 
-	if(smb.msgs)
-		free(mail);
+	free(mail);
 
 	/***************************************/
 	/* Delete messages marked for deletion */
