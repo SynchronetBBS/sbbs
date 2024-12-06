@@ -34,10 +34,12 @@ typedef struct deuce_ssh_session {
 	mtx_t mtx;
 	atomic_bool initialized;
 	atomic_bool terminate;
+	bool is_server;
 
 	/* Transport Remote information */
 	char *remote_software_version;
 	char *remote_version_comment;
+	char **remote_languages;
 
 	void *tx_cbdata;
 	void *rx_cbdata;
