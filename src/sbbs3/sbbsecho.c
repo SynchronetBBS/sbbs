@@ -123,7 +123,7 @@ const char* sbbsecho_pid(void)
 {
 	static char str[256];
 
-	snprintf(str, sizeof str, "SBBSecho %u.%02u-%s %s/%s %s %s"
+	snprintf(str, sizeof str, "SBBSecho %u.%02u-%s %s/%s %.11s %s"
 		,SBBSECHO_VERSION_MAJOR,SBBSECHO_VERSION_MINOR,PLATFORM_DESC,GIT_BRANCH,GIT_HASH,GIT_DATE,compiler);
 
 	return str;
