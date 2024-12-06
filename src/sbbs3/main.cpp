@@ -2993,7 +2993,7 @@ void event_thread(void* arg)
 					/* putuserdat? */
 					if(success) {
 						sbbs->fremove(WHERE, fname, /* log-all-errors: */true);
-					} else {
+					} else if(fexist(fname)) {
 						char badpkt[MAX_PATH+1];
 						SAFEPRINTF2(badpkt, "%s.%" PRIx64 ".bad", fname, (uint64_t)time(NULL));
 						sbbs->fremove(WHERE, badpkt);
