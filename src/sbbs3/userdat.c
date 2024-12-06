@@ -2842,6 +2842,7 @@ bool user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
 	file_t f;
 	bool removed = false;
 
+	filename = getfname(filename);
 	if(!loadfile(cfg, dirnum, filename, &f, file_detail_normal))
 		return false;
 
@@ -2911,12 +2912,12 @@ bool user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
 			/* Inform uploader of downloaded file */
 			if(mod == 0)
 				SAFEPRINTF3(str, cfg->text[FreeDownloadUserMsg]
-					,getfname(filename)
+					,filename
 					,prefix
 					,username);
 			else
 				SAFEPRINTF4(str, cfg->text[DownloadUserMsg]
-					,getfname(filename)
+					,filename
 					,prefix
 					,username, tmp);
 			putsmsg(cfg, uploader.number, str);
