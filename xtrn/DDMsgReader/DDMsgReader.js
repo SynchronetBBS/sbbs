@@ -4343,8 +4343,6 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 		else if (lastUserInputUpper == " ")
 		{
 			this.ToggleSelectedMessage(this.subBoardCode, this.lightbarListSelectedMsgIdx);
-			// TODO: Option to go to the next message after toggling
-			// New
 			var topItemIdxBackup = msgListMenu.topItemIdx;
 			if (this.userSettings.selectInMsgListMovesToNext && msgListMenu.selectedItemIdx < msgListMenu.NumItems())
 			{
@@ -4361,10 +4359,6 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 			// check character column in the next iteration
 			if (msgListMenu.topItemIdx == topItemIdxBackup)
 				msgListMenu.nextDrawOnlyItemSubstr = { start: this.MSGNUM_LEN+1, end: this.MSGNUM_LEN+2 };
-			// End New
-			// Have the menu draw only the check character column in the
-			// next iteration
-			msgListMenu.nextDrawOnlyItemSubstr = { start: this.MSGNUM_LEN+1, end: this.MSGNUM_LEN+2 };
 		}
 		// Ctrl-A: Select/de-select all messages
 		else if (lastUserInputUpper == CTRL_A)
