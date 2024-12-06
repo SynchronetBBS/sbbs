@@ -392,7 +392,7 @@ Tree.prototype.getcmd = function(cmd) {
                     retval = this.deleteItem();
                     break;
                 case this.__commands__.SELECT:
-                    if(this.__properties__.index >= 0)
+                    if(this.current !== undefined && this.__properties__.index >= 0)
                         retval = this.current.action();
                     else
                         retval = this.close();
