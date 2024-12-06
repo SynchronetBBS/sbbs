@@ -110,6 +110,11 @@ bool sbbs_t::unpack_rep(char* repfile)
 		logline(LOG_NOTICE,nulstr,"MSG file not received");
 		return(false);
 	}
+	size = (long)flength(msg_fname);
+	if(size < QWK_BLOCK_LEN || (size % QWK_BLOCK_LEN) != 0) {
+		errormsg(WHERE, ERR_LEN, msg_fname, size);
+		return false;
+	}
 	if((rep=fnopen(&file,msg_fname,O_RDONLY))==NULL) {
 		errormsg(WHERE,ERR_OPEN,msg_fname,O_RDONLY);
 		return(false);

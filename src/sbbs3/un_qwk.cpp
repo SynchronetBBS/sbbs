@@ -39,6 +39,7 @@ static void log_qwk_import_stats(sbbs_t* sbbs, ulong msgs, time_t start)
 bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 {
 	char	str[MAX_PATH+1],fname[MAX_PATH+1];
+	char	msg_fname[MAX_PATH + 1];
 	char 	tmp[512];
 	char	error[256] = "";
 	char	inbox[MAX_PATH+1];
@@ -94,13 +95,18 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			return(false);
 		}
 	}
-	SAFEPRINTF(str,"%sMESSAGES.DAT",cfg.temp_dir);
-	if(!fexistcase(str)) {
-		lprintf(LOG_WARNING,"%s doesn't contain MESSAGES.DAT (%s)",packet,str);
+	SAFEPRINTF(msg_fname,"%sMESSAGES.DAT",cfg.temp_dir);
+	if(!fexistcase(msg_fname)) {
+		lprintf(LOG_WARNING,"%s doesn't contain MESSAGES.DAT (%s)",packet,msg_fname);
 		return(false);
 	}
-	if((qwk=fnopen(&file,str,O_RDONLY))==NULL) {
-		errormsg(WHERE,ERR_OPEN,str,O_RDONLY);
+	size = (long)flength(msg_fname);
+	if(size < QWK_BLOCK_LEN || (size % QWK_BLOCK_LEN) != 0) {
+		errormsg(WHERE, ERR_LEN, msg_fname, size);
+		return false;
+	}
+	if((qwk=fnopen(&file,msg_fname,O_RDONLY))==NULL) {
+		errormsg(WHERE,ERR_OPEN,msg_fname,O_RDONLY);
 		return(false);
 	}
 	size=(long)filelength(file);
@@ -146,16 +152,21 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 			lprintf(LOG_NOTICE,"!Terminated");
 			break;
 		}
-		fseek(qwk,l,SEEK_SET);
+		if(fseek(qwk,l,SEEK_SET) != 0) {
+			errormsg(WHERE, ERR_SEEK, msg_fname, l);
+			blocks=1;
+			errors++;
+			continue;
+		}
 		if(fread(block,QWK_BLOCK_LEN,1,qwk) != 1) {
-			errormsg(WHERE, ERR_READ, packet, QWK_BLOCK_LEN);
+			errormsg(WHERE, ERR_READ, msg_fname, QWK_BLOCK_LEN);
 			blocks=1;
 			errors++;
 			continue;
 		}
 		if(block[0]<' ' || block[0]&0x80) {
 			lprintf(LOG_NOTICE,"!Invalid QWK message status (%02X) at offset %lu in %s"
-				,block[0], l, packet);
+				,block[0], l, msg_fname);
 			blocks=1;
 			errors++;
 			continue;
@@ -166,13 +177,13 @@ bool sbbs_t::unpack_qwk(char *packet,uint hubnum)
 		if(blocks<2) {
 			if(block[0] == 'V' && blocks == 1 && voting != NULL) {	/* VOTING DATA */
 				if(!qwk_voting(&voting, l, NET_QWK, cfg.qhub[hubnum]->id, n, msg_filters, hubnum)) {
-					lprintf(LOG_WARNING, "QWK vote failure, offset %lu in %s", l, packet);
+					lprintf(LOG_WARNING, "QWK vote failure, offset %lu in %s", l, msg_fname);
 					errors++;
 				}
 				continue;
 			}
 			lprintf(LOG_NOTICE,"!Invalid number of QWK blocks (%d) at offset %lu in %s"
-				,blocks, l+116, packet);
+				,blocks, l+116, msg_fname);
 			errors++;
 			blocks=1;
 			continue;
