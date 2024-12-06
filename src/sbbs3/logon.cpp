@@ -109,7 +109,12 @@ bool sbbs_t::logon()
 		return(false); 
 	}
 
-	getnodedat(cfg.node_num,&thisnode, true);
+	if(!getnodedat(cfg.node_num,&thisnode, true)) {
+		errormsg(WHERE, ERR_LOCK, "nodefile", cfg.node_num);
+		hangup();
+		return false;
+	}
+
 	if(thisnode.misc&NODE_LOCK) {
 		unlocknodedat(cfg.node_num);	/* must unlock! */
 		if(!SYSOP && !(useron.exempt&FLAG('N'))) {
@@ -120,13 +125,16 @@ bool sbbs_t::logon()
 			hangup();
 			return(false); 
 		}
-		if(yesno(text[RemoveNodeLockQ])) {
-			getnodedat(cfg.node_num,&thisnode, true);
-			logline("S-","Removed Node Lock");
-			thisnode.misc&=~NODE_LOCK; 
+		bool rmlock = yesno(text[RemoveNodeLockQ]);
+		if(!getnodedat(cfg.node_num,&thisnode, true)) {
+			errormsg(WHERE, ERR_LOCK, "nodefile", cfg.node_num);
+			hangup();
+			return false;
 		}
-		else
-			getnodedat(cfg.node_num,&thisnode, true); 
+		if(rmlock) {
+			logline("S-","Removed Node Lock");
+			thisnode.misc&=~NODE_LOCK;
+		}
 	}
 
 	if(useron.exempt&FLAG('H'))
