@@ -624,9 +624,10 @@ int smb_open_dir(scfg_t* cfg, smb_t* smb, int dirnum)
 		smb->status.attr		= SMB_FILE_DIRECTORY;
 		if(cfg->dir[dirnum]->misc & DIR_NOHASH)
 			smb->status.attr |= SMB_NOHASH;
-		smb_create(smb);
+		if((retval = smb_create(smb)) != SMB_SUCCESS)
+			smb_close(smb);
 	}
-	return SMB_SUCCESS;
+	return retval;
 }
 
 int get_lang_count(scfg_t* cfg)
