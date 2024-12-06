@@ -58,7 +58,7 @@ function dir_index(dir)
 	var lib = file_area.lib[dir.lib_name];
 	writeln(lib.description.link(file_area.web_vpath_prefix + lib.vdir + "/") + "<br />");
 	writeln("<p>");
-	
+
 	var fb = new FileBase(dir.code);
 	if(!fb.open()) {
 		write("Error " + fb.error + " opening directory: " + dir.code);
@@ -84,7 +84,7 @@ function dir_index(dir)
 	        ,sorting_description[s]));
 	}
 	writeln("</select>");
-	writeln("</form>");	
+	writeln("</form>");
 	writeln('<input id="show-extdescs-switch" type="checkbox" onChange="showExtDescs(event)"><label title for="show-extdescs-switch">Show extended descriptions</label>');
 	writeln('</div>');
 	writeln('<div class="table-container">');
@@ -127,26 +127,64 @@ function lib_index(lib)
 	writeln("[" + root_link() + "] / ");
 	writeln(file_area.lib[lib].description + "<br />");
 	writeln("<p>");
-	
-    for(var d in file_area.dir) {
+
+	for(var d in file_area.dir) {
 		var dir = file_area.dir[d];
-        if(dir.lib_name != lib)
-            continue;
+		if(dir.lib_name != lib)
+			continue;
 		if(!dir.can_access)
 			continue;
-        write(dir.name.link(dir.vdir + "/") + "<br />");
-    }
+		write(dir.name.link(dir.vdir + "/") + "<br />");
+	}
+}
+
+function get_dir_desc(vpath)
+{
+	for(var i in file_area.dir) {
+		var dir = file_area.dir[i];
+		if((file_area.web_vpath_prefix + dir.vpath).toLowerCase() == vpath.toLowerCase())
+			return dir.description;
+	}
+	return null;
+}
+
+// List configured aliases to directories as shortcuts
+function shortcuts()
+{
+	var file = new File(system.ctrl_dir + "web_alias.ini");
+	if(!file.open("r"))
+		return;
+	var list = file.iniGetObject();
+	file.close();
+	if(!list)
+		return;
+	var dir = {};
+	for(var i in list) {
+		var desc = get_dir_desc(list[i]);
+		if(desc)
+			dir[i] = desc;
+	}
+	if(!Object.keys(dir).length)
+		return;
+	writeln("<h3>Directories</h3>");
+	writeln("<ul>");
+	for(var i in dir)
+		writeln("<a href=" + i + ">" + dir[i] + "</a><br />");
+	writeln("</ul>");
+	writeln("<p>");
 }
 
 // Listing all libraries
 function root_index()
 {
 	header("File Areas");
+	shortcuts();
+	writeln("<h3>Libraries</h3>");
 	for(var l in file_area.lib_list) {
 		var lib = file_area.lib_list[l];
 		write(lib.description.link(lib.vdir + "/")+ "<br />");
 	}
-}	
+}
 
 if(http_request.virtual_path[http_request.virtual_path.length - 1] != '/') {
 	http_reply.status = "301 Moved";
