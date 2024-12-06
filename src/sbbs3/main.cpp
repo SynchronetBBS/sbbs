@@ -286,6 +286,37 @@ int lprintf(int level, const char *fmt, ...)
 	return(lputs(level,sbuf));
 }
 
+DLLEXPORT uint repeated_error(int line, const char* function)
+{
+	static int lastline;
+	static const char* lastfunc;
+	static uint repeat_count;
+
+	if(line == lastline && function == lastfunc)
+		++repeat_count;
+	else
+		repeat_count = 0;
+	lastline = line;
+	lastfunc = function;
+	return repeat_count;
+}
+
+int errprintf(int level, int line, const char* function, const char* file, const char *fmt, ...)
+{
+	va_list argptr;
+	char sbuf[1024];
+
+	va_start(argptr,fmt);
+	vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
+	sbuf[sizeof(sbuf)-1]=0;
+	va_end(argptr);
+	if(repeated_error(line, function)) {
+		if(level < LOG_WARNING)
+			level = LOG_WARNING;
+	}
+	return lputs(level,sbuf);
+}
+
 void
 sbbs_t::log_crypt_error_status_sock(int status, const char *action)
 {
@@ -335,6 +366,22 @@ int sbbs_t::lprintf(int level, const char *fmt, ...)
 	sbuf[sizeof(sbuf)-1]=0;
     va_end(argptr);
     return(lputs(level,sbuf));
+}
+
+int sbbs_t::errprintf(int level, int line, const char* function, const char* file, const char* fmt, ...)
+{
+	va_list argptr;
+	char sbuf[1024];
+
+    va_start(argptr,fmt);
+    vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
+	sbuf[sizeof(sbuf)-1]=0;
+    va_end(argptr);
+	if(repeated_error(line, function)) {
+		if(level < LOG_WARNING)
+			level = LOG_WARNING;
+	}
+    return lputs(level,sbuf);
 }
 
 struct main_sock_cb_data {
@@ -1477,7 +1524,7 @@ bool sbbs_t::js_create_user_objects(JSContext* cx, JSObject* glob)
 	if(cx != NULL) {
 		JS_BEGINREQUEST(cx);
 		if(!js_CreateUserObjects(cx, glob, &cfg, &useron, &client, startup == NULL ? NULL :startup->web_file_vpath_prefix, subscan, mqtt))
-			lprintf(LOG_ERR,"!JavaScript ERROR creating user objects");
+			errprintf(LOG_ERR, WHERE, "!JavaScript ERROR creating user objects");
 		else
 			result = true;
 		JS_ENDREQUEST(cx);
@@ -2269,7 +2316,7 @@ void input_thread(void *arg)
 #ifdef __unix__
 			} else  {
 				if(SOCKET_ERRNO != EAGAIN)  {
-					lprintf(LOG_ERR,"Node %d !ERROR %d (%s) on local spy socket %d receive"
+					errprintf(LOG_ERR, WHERE, "Node %d !ERROR %d (%s) on local spy socket %d receive"
 						, sbbs->cfg.node_num, errno, strerror(errno), sock);
 					close_socket(uspy_socket[sbbs->cfg.node_num-1]);
 					uspy_socket[sbbs->cfg.node_num-1]=INVALID_SOCKET;
@@ -2300,7 +2347,7 @@ void input_thread(void *arg)
 		else
 			wrbuf=telnet_interpret(sbbs, inbuf, rd, telbuf, wr);
 		if(wr > (int)sizeof(telbuf)) {
-			lprintf(LOG_ERR,"!TELBUF OVERFLOW (%d>%d)",wr,(int)sizeof(telbuf));
+			errprintf(LOG_ERR, WHERE, "!TELBUF OVERFLOW (%d>%d)",wr,(int)sizeof(telbuf));
 			wr = sizeof(telbuf);
 		}
 
@@ -2311,7 +2358,7 @@ void input_thread(void *arg)
 			bool writable = false;
 			if(socket_check(sbbs->passthru_socket, NULL, &writable, 1000) && writable) {
 				if(sendsocket(sbbs->passthru_socket, (char*)wrbuf, wr) != wr)
-					lprintf(LOG_ERR, "Node %d ERROR %d writing to passthru socket"
+					errprintf(LOG_ERR, WHERE, "Node %d ERROR %d writing to passthru socket"
 						,sbbs->cfg.node_num, SOCKET_ERRNO);
 			} else
 				lprintf(LOG_WARNING, "Node %d could not write to passthru socket (writable=%d)"
@@ -2342,7 +2389,7 @@ void input_thread(void *arg)
 		avail=RingBufFree(&sbbs->inbuf);
 
         if(avail<wr)
-			lprintf(LOG_ERR,"!INPUT BUFFER FULL (%d free)", avail);
+			errprintf(LOG_ERR, WHERE, "!INPUT BUFFER FULL (%d free)", avail);
         else
 			RingBufWrite(&sbbs->inbuf, wrbuf, wr);
 //		if(wr>100)
@@ -2384,7 +2431,7 @@ void sbbs_t::passthru_socket_activate(bool activate)
 		/* Re-set socket options */
 		char err[512];
 		if(set_socket_options(&cfg, client_socket_dup, "passthru", err, sizeof(err)))
-			lprintf(LOG_ERR,"%04d !ERROR %s setting passthru socket options", client_socket, err);
+			errprintf(LOG_ERR, WHERE, "%04d !ERROR %s setting passthru socket options", client_socket, err);
 
 		do { // Allow time for the passthru_thread to move any pending socket data to the outbuf
 			SLEEP(100); // Before the node_thread starts sending its own data to the outbuf
@@ -2456,7 +2503,7 @@ void passthru_thread(void* arg)
 
 			int wr = RingBufWrite(&sbbs->outbuf, bp, rd);
     		if(wr != rd) {
-				lprintf(LOG_ERR,"Short-write (%d of %d bytes) from passthru socket to outbuf"
+				errprintf(LOG_ERR, WHERE, "Short-write (%d of %d bytes) from passthru socket to outbuf"
 					,wr, rd);
 				break;
 			}
@@ -2698,11 +2745,11 @@ void output_thread(void* arg)
 			}
 			if(spy_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET)
 				if(sendsocket(spy_socket[sbbs->cfg.node_num-1],(char*)buf+bufbot,i) != i && SOCKET_ERRNO != EPIPE)
-					lprintf(LOG_ERR, "%s ERROR %d writing to spy socket", node, SOCKET_ERRNO);
+					errprintf(LOG_ERR, WHERE, "%s ERROR %d writing to spy socket", node, SOCKET_ERRNO);
 #ifdef __unix__
 			if(uspy_socket[sbbs->cfg.node_num-1]!=INVALID_SOCKET)
 				if(sendsocket(uspy_socket[sbbs->cfg.node_num-1],(char*)buf+bufbot,i) != i)
-					lprintf(LOG_ERR, "%s ERROR %d writing to UNIX spy socket", node, SOCKET_ERRNO);
+					errprintf(LOG_ERR, WHERE, "%s ERROR %d writing to UNIX spy socket", node, SOCKET_ERRNO);
 #endif
 		}
 
@@ -2826,7 +2873,7 @@ void event_thread(void* arg)
 #ifdef JAVASCRIPT
 	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT)) {
 		if((sbbs->js_cx = sbbs->js_init(&sbbs->js_runtime, &sbbs->js_glob, "event")) == NULL) /* This must be done in the context of the events thread */
-			sbbs->lprintf(LOG_CRIT,"!JavaScript Initialization FAILURE");
+			sbbs->errprintf(LOG_CRIT, WHERE, "!JavaScript Initialization FAILURE");
 	}
 #endif
 
@@ -3494,7 +3541,7 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 			SAFECOPY(cfg.temp_dir,"../temp");
     	prep_dir(cfg.ctrl_dir, cfg.temp_dir, sizeof(cfg.temp_dir));
 		if((i = md(cfg.temp_dir)) != 0)
-			lprintf(LOG_CRIT,"!ERROR %d (%s) creating directory: %s", i, strerror(i), cfg.temp_dir);
+			errprintf(LOG_CRIT, WHERE, "!ERROR %d (%s) creating directory: %s", i, strerror(i), cfg.temp_dir);
 		if(sd==INVALID_SOCKET) {	/* events thread */
 			if(startup->first_node==1)
 				SAFEPRINTF(path,"%sevent",cfg.temp_dir);
@@ -3556,7 +3603,7 @@ bool sbbs_t::init()
 
 		addr_len=sizeof(addr);
 		if((result=getsockname(client_socket, &addr.addr, &addr_len))!=0) {
-			lprintf(LOG_CRIT,"%04d %s !ERROR %d (%d) getting local address/port of socket"
+			errprintf(LOG_CRIT, WHERE, "%04d %s !ERROR %d (%d) getting local address/port of socket"
 				,client_socket, client.protocol, result, SOCKET_ERRNO);
 			return(false);
 		}
@@ -3584,7 +3631,7 @@ bool sbbs_t::init()
 	}
 
 	if((i = md(cfg.temp_dir)) != 0) {
-		lprintf(LOG_CRIT,"!ERROR %d (%s) creating directory: %s", i, strerror(i), cfg.temp_dir);
+		errprintf(LOG_CRIT, WHERE, "!ERROR %d (%s) creating directory: %s", i, strerror(i), cfg.temp_dir);
 		return false;
 	}
 
@@ -3972,11 +4019,11 @@ void sbbs_t::spymsg(const char* msg)
 
 	if(cfg.node_num && spy_socket[cfg.node_num-1]!=INVALID_SOCKET)
 		if(sendsocket(spy_socket[cfg.node_num-1],str,strlen(str)) < 1)
-			lprintf(LOG_ERR, "Node %d ERROR %d writing to spy socket", cfg.node_num, SOCKET_ERRNO);
+			errprintf(LOG_ERR, WHERE, "Node %d ERROR %d writing to spy socket", cfg.node_num, SOCKET_ERRNO);
 #ifdef __unix__
 	if(cfg.node_num && uspy_socket[cfg.node_num-1]!=INVALID_SOCKET)
 		if(sendsocket(uspy_socket[cfg.node_num-1],str,strlen(str)) < 1)
-			lprintf(LOG_ERR, "Node %d ERROR %d writing to spy socket", cfg.node_num, SOCKET_ERRNO);
+			errprintf(LOG_ERR, WHERE, "Node %d ERROR %d writing to spy socket", cfg.node_num, SOCKET_ERRNO);
 #endif
 }
 
@@ -4365,7 +4412,7 @@ void node_thread(void* arg)
 #ifdef JAVASCRIPT
 	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT)) {
 		if((sbbs->js_cx = sbbs->js_init(&sbbs->js_runtime, &sbbs->js_glob, "node")) == NULL) /* This must be done in the context of the node thread */
-			lprintf(LOG_CRIT,"Node %d !JavaScript Initialization FAILURE",sbbs->cfg.node_num);
+			errprintf(LOG_CRIT, WHERE, "Node %d !JavaScript Initialization FAILURE",sbbs->cfg.node_num);
 	}
 #endif
 
@@ -4648,11 +4695,11 @@ void sbbs_t::daily_maint(void)
 		smb_t mail;
 		int result = smb_open_sub(&cfg, &mail, INVALID_SUB);
 		if(result != SMB_SUCCESS)
-			lprintf(LOG_ERR, "ERROR %d (%s) opening mail base", result, mail.last_error);
+			errprintf(LOG_ERR, WHERE, "ERROR %d (%s) opening mail base", result, mail.last_error);
 		else {
 			result = smb_lock(&mail);
 			if(result != SMB_SUCCESS)
-				lprintf(LOG_ERR, "ERROR %d (%s) locking mail base", result, mail.last_error);
+				errprintf(LOG_ERR, WHERE, "ERROR %d (%s) locking mail base", result, mail.last_error);
 			else {
 				SAFEPRINTF(str,"%smail.shd",cfg.data_dir);
 				backup(str,cfg.mail_backup_level,false);
@@ -4672,7 +4719,7 @@ void sbbs_t::daily_maint(void)
 				backup(str,cfg.mail_backup_level,false);
 				result = smb_unlock(&mail);
 				if(result != SMB_SUCCESS)
-					lprintf(LOG_ERR, "ERROR %d (%s) unlocking mail base", result, mail.last_error);
+					errprintf(LOG_ERR, WHERE, "ERROR %d (%s) unlocking mail base", result, mail.last_error);
 			}
 			smb_close(&mail);
 		}
@@ -5197,7 +5244,7 @@ void bbs_thread(void* arg)
 	/* open a socket and wait for a client */
 	ts_set = xpms_create(startup->bind_retry_count, startup->bind_retry_delay, lprintf);
 	if(ts_set==NULL) {
-		lprintf(LOG_CRIT,"!ERROR %d creating Terminal Server socket set", SOCKET_ERRNO);
+		lprintf(LOG_CRIT, "!ERROR %d creating Terminal Server socket set", SOCKET_ERRNO);
 		cleanup(1);
 		return;
 	}
@@ -5503,7 +5550,7 @@ NO_SSH:
 		memset(&local_addr, 0, sizeof(local_addr));
 		socklen_t addr_len = sizeof(local_addr);
 		if(getsockname(client_socket, (struct sockaddr *)&local_addr, &addr_len) != 0) {
-			lprintf(LOG_CRIT,"%04d %s [%s] !ERROR %d getting local address/port of socket"
+			errprintf(LOG_CRIT, WHERE, "%04d %s [%s] !ERROR %d getting local address/port of socket"
 				,client_socket, client.protocol, host_ip, SOCKET_ERRNO);
 			close_socket(client_socket);
 			continue;

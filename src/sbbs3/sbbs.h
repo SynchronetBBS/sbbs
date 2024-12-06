@@ -1151,6 +1151,11 @@ public:
     __attribute__ ((format (printf, 3, 4)));		// 1 is 'this'
 #endif
 	;
+	int		errprintf(int level, int line, const char* function, const char* file, const char *fmt, ...)
+#if defined(__GNUC__)   // Catch printf-format errors
+    __attribute__ ((format (printf, 6, 7)));		// 1 is 'this'
+#endif
+	;
 	void	printstatslog(uint node);
 	uint	logonstats(void);
 	void	logoffstats(void);
@@ -1386,6 +1391,7 @@ extern "C" {
 	extern const char* crlf;
 	DLLEXPORT int		sbbs_random(int);
 	DLLEXPORT void		sbbs_srand(void);
+	DLLEXPORT uint 		repeated_error(int line, const char* function);
 
 	/* postmsg.cpp */
 	DLLEXPORT int		savemsg(scfg_t*, smb_t*, smbmsg_t*, client_t*, const char* server, char* msgbuf, smbmsg_t* remsg);

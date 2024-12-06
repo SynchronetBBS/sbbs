@@ -274,10 +274,8 @@ void sbbs_t::errormsg(int line, const char* function, const char *src, const cha
 	char	repeat[128] = "";
 	char	errno_str[128];
 	char	errno_info[256] = "";
-	static const char* lastfunc;
-	static int lastline;
 	static time_t lasttime;
-	static uint repeat_count;
+	uint	repeat_count;
 
 	/* prevent recursion */
 	if(errormsg_inside)
@@ -297,16 +295,12 @@ void sbbs_t::errormsg(int line, const char* function, const char *src, const cha
 		);
 
 	int level = LOG_ERR;
-	if(function == lastfunc && line == lastline) {
-		++repeat_count;
+	if((repeat_count = repeated_error(line, function)) > 0) {
 		snprintf(repeat, sizeof repeat, "[x%u]", repeat_count + 1);
 		// De-duplicate by reducing severity of log messages
 		if((now - lasttime) < 12*60*60)
 			level = LOG_WARNING;
-	} else
-		repeat_count = 0;
-	lastfunc = function;
-	lastline = line;
+	}
 	lasttime = now;
 	lprintf(level, "!ERROR%s %s"
 		"in %s line %u (%s) %s \"%s\" access=%d %s%s"
