@@ -62,9 +62,9 @@ bool sbbs_t::printfile(const char* fname, int mode, int org_cols, JSObject* obj)
 	if(mode&P_NOABORT || rip) {
 		if(online==ON_REMOTE && console&CON_R_ECHO) {
 			rioctl(IOCM|ABORT);
-			rioctl(IOCS|ABORT); 
+			rioctl(IOCS|ABORT);
 		}
-		sys_status&=~SS_ABORT; 
+		sys_status&=~SS_ABORT;
 	}
 
 	if((stream=fnopen(&file,fpath,O_RDONLY|O_DENYNONE))==NULL) {
@@ -75,7 +75,7 @@ bool sbbs_t::printfile(const char* fname, int mode, int org_cols, JSObject* obj)
 			if(SYSOP) bputs(fpath);
 			CRLF;
 		}
-		return false; 
+		return false;
 	}
 
 	length=(int)filelength(file);
@@ -88,6 +88,7 @@ bool sbbs_t::printfile(const char* fname, int mode, int org_cols, JSObject* obj)
 		return true;
 	}
 
+	lprintf(LOG_DEBUG, "Printing file: %s", fpath);
 	if(!(mode&P_NOCRLF) && row > 0 && !rip) {
 		newline();
 	}
@@ -96,7 +97,7 @@ bool sbbs_t::printfile(const char* fname, int mode, int org_cols, JSObject* obj)
 		if((buf=(char*)malloc(length+1L))==NULL) {
 			fclose(stream);
 			errormsg(WHERE,ERR_ALLOC,fpath,length+1L);
-			return false; 
+			return false;
 		}
 		l=read(file,buf,length);
 		fclose(stream);
@@ -125,7 +126,7 @@ bool sbbs_t::printfile(const char* fname, int mode, int org_cols, JSObject* obj)
 		if((buf=(char*)malloc(length+1L))==NULL) {
 			fclose(stream);
 			errormsg(WHERE,ERR_ALLOC,fpath,length+1L);
-			return false; 
+			return false;
 		}
 		uint rainbow_sav[LEN_RAINBOW + 1];
 		memcpy(rainbow_sav, rainbow, sizeof rainbow_sav);
@@ -160,7 +161,7 @@ bool sbbs_t::printfile(const char* fname, int mode, int org_cols, JSObject* obj)
 
 	if((mode&P_NOABORT || rip) && online==ON_REMOTE) {
 		sync();
-		rioctl(IOSM|ABORT); 
+		rioctl(IOSM|ABORT);
 	}
 	if(rip)
 		ansi_getdims();
@@ -183,9 +184,9 @@ bool sbbs_t::printtail(const char* fname, int lines, int mode, int org_cols, JSO
 	if(mode&P_NOABORT) {
 		if(online==ON_REMOTE) {
 			rioctl(IOCM|ABORT);
-			rioctl(IOCS|ABORT); 
+			rioctl(IOCS|ABORT);
 		}
-		sys_status&=~SS_ABORT; 
+		sys_status&=~SS_ABORT;
 	}
 	if((fp=fnopen(&file,fpath,O_RDONLY|O_DENYNONE))==NULL) {
 		if(!(mode&P_NOERROR)) {
@@ -195,10 +196,7 @@ bool sbbs_t::printtail(const char* fname, int lines, int mode, int org_cols, JSO
 			if(SYSOP) bputs(fpath);
 			CRLF;
 		}
-		return false; 
-	}
-	if(!(mode&P_NOCRLF) && row > 0) {
-		newline();
+		return false;
 	}
 	length=(int)filelength(file);
 	if(length<0) {
@@ -206,14 +204,20 @@ bool sbbs_t::printtail(const char* fname, int lines, int mode, int org_cols, JSO
 		errormsg(WHERE,ERR_CHK,fpath,length);
 		return false;
 	}
+
+	lprintf(LOG_DEBUG, "Printing tail: %s", fpath);
+	if(!(mode&P_NOCRLF) && row > 0) {
+		newline();
+	}
+
 	if(length > lines * PRINTFILE_MAX_LINE_LEN) {
-		length = lines * PRINTFILE_MAX_LINE_LEN; 
+		length = lines * PRINTFILE_MAX_LINE_LEN;
 		(void)fseek(fp, -length, SEEK_END);
 	}
 	if((buf=(char*)malloc(length+1L))==NULL) {
 		fclose(fp);
 		errormsg(WHERE,ERR_ALLOC,fpath,length+1L);
-		return false; 
+		return false;
 	}
 	l=fread(buf, sizeof(char), length, fp);
 	fclose(fp);
@@ -228,15 +232,15 @@ bool sbbs_t::printtail(const char* fname, int lines, int mode, int org_cols, JSO
 				cur++;
 			if(cur>=lines) {
 				p++;
-				break; 
+				break;
 			}
-			p--; 
+			p--;
 		}
 		putmsg(p,mode,org_cols, obj);
 	}
 	if(mode&P_NOABORT && online==ON_REMOTE) {
 		sync();
-		rioctl(IOSM|ABORT); 
+		rioctl(IOSM|ABORT);
 	}
 	free(buf);
 	return true;
