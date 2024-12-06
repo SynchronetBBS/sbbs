@@ -155,8 +155,8 @@
 extern "C" {
 #endif
 
+DLLEXPORT int	xp_lockfile(int fd, off_t pos, off_t len, bool block);
 #if !defined(__BORLANDC__) && !defined(__WATCOMC__)
-	DLLEXPORT int	xp_lockfile(int fd, off_t pos, off_t len, bool block);
 	DLLEXPORT int	lock(int fd, off_t pos, off_t len);
 	DLLEXPORT int	unlock(int fd, off_t pos, off_t len);
 #endif
