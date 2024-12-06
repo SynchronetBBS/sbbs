@@ -1214,6 +1214,9 @@ int mkpath(const char* path)
 	char	dir[MAX_PATH+1];
 	int		result=0;
 
+	if(isdir(path))
+		return 0;
+
 #ifdef _WIN32
 	if(p[1]==':')	/* Skip drive letter, if specified */
 		p+=2;
