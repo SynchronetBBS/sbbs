@@ -514,7 +514,7 @@ js_inkey(JSContext *cx, uintN argc, jsval *arglist)
 	char		key[2];
 	int			ch;
 	int32		mode=0;
-	int32		timeout=0;
+	uint32		timeout=0;
 	sbbs_t*		sbbs;
     JSString*	js_str;
 	jsrefcount	rc;
@@ -529,7 +529,7 @@ js_inkey(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_FALSE;
 	}
 	if(argc>1) {
-		if(!JS_ValueToInt32(cx,argv[1],&timeout))
+		if(!JS_ValueToECMAUint32(cx,argv[1],&timeout))
 			return JS_FALSE;
 	}
 	rc=JS_SUSPENDREQUEST(cx);
