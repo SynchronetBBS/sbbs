@@ -32,7 +32,7 @@ target_link_libraries(deuce-ssh_static INTERFACE stdthreads)
 target_link_libraries(deuce-ssh_shared PRIVATE ${OPENSSL_CRYPTO_LIBRARIES})
 target_link_libraries(deuce-ssh_shared PRIVATE stdthreads)
 
-add_executable(client EXCLUDE_FROM_ALL client.c)
+add_executable(client EXCLUDE_FROM_ALL client.c enc/none.c mac/none.c comp/none.c)
 target_link_libraries(client PRIVATE stdthreads deuce-ssh)
 
 install(TARGETS deuce-ssh FILE_SET HEADERS)

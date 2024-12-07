@@ -9,6 +9,9 @@
 #include <threads.h>
 
 #include "ssh.h"
+#include "enc/none.h"
+#include "mac/none.h"
+#include "comp/none.h"
 
 int sock = -1;
 size_t txbufsz;
@@ -174,6 +177,12 @@ int main(int argc, char **argv)
 	if (connect(sock, (struct sockaddr *)&sa, sa.sin_len) == -1)
 		return 1;
 	if (deuce_ssh_transport_set_callbacks(tx, rx, rxline, extra_line) != 0)
+		return 1;
+	if (register_none_enc() != 0)
+		return 1;
+	if (register_none_mac() != 0)
+		return 1;
+	if (register_none_comp() != 0)
 		return 1;
 	thrd_t thr;
 	thrd_create(&thr, tx_thread, NULL);

@@ -73,7 +73,7 @@ typedef int (*deuce_ssh_enc_encrypt_t)(uint8_t *buf, uint8_t *bufsz, deuce_ssh_s
 typedef int (*deuce_ssh_enc_decrypt_t)(uint8_t *buf, uint8_t *bufsz, deuce_ssh_session_t sess);
 typedef void (*deuce_ssh_enc_cleanup_t)(deuce_ssh_session_t sess);
 
-typedef int (*deuce_ssh_mac_generate_t)(uint8_t *key, uint8_t *buf, uint8_t *bufsz, uint8_t *outbuf, deuce_ssh_session_t sess);
+typedef int (*deuce_ssh_mac_generate_t)(uint8_t *key, uint8_t *buf, size_t bufsz, uint8_t *outbuf, deuce_ssh_session_t sess);
 typedef void (*deuce_ssh_mac_cleanup_t)(deuce_ssh_session_t sess);
 
 typedef int (*deuce_ssh_comp_compress_t)(uint8_t *buf, uint8_t *bufsz, deuce_ssh_session_t sess);
@@ -112,8 +112,8 @@ typedef struct deuce_ssh_mac {
 	struct deuce_ssh_mac *next;
 	deuce_ssh_mac_generate_t generate;
 	deuce_ssh_mac_cleanup_t cleanup;
-	uint16_t *digest_size;
-	uint16_t *key_size;
+	uint16_t digest_size;
+	uint16_t key_size;
 	char name[];
 } *deuce_ssh_mac_t;
 
@@ -122,9 +122,6 @@ typedef struct deuce_ssh_comp {
 	deuce_ssh_comp_compress_t compress;
 	deuce_ssh_comp_uncompress_t uncompress;
 	deuce_ssh_comp_cleanup_t cleanup;
-	uint32_t flags;
-	uint16_t blocksize;
-	uint16_t key_size;
 	char name[];
 } *deuce_ssh_comp_t;
 
@@ -166,5 +163,11 @@ typedef struct deuce_ssh_transport_state {
 
 int deuce_ssh_transport_init(deuce_ssh_session_t sess);
 void deuce_ssh_transport_cleanup(deuce_ssh_session_t sess);
+int deuce_ssh_transport_register_kex(deuce_ssh_kex_t kex);
+int deuce_ssh_transport_register_key_algo(deuce_ssh_key_algo_t key_algo);
+int deuce_ssh_transport_register_enc(deuce_ssh_enc_t enc);
+int deuce_ssh_transport_register_mac(deuce_ssh_mac_t mac);
+int deuce_ssh_transport_register_comp(deuce_ssh_comp_t comp);
+int deuce_ssh_transport_register_lang(deuce_ssh_language_t lang);
 
 #endif
