@@ -129,8 +129,9 @@ rxline(uint8_t *buf, size_t bufsz, size_t *bytes_received, atomic_bool *terminat
 {
 	size_t pos = 0;
 	bool lastcr = false;
+	int ret = 0;
 
-	for (;;) {
+	while (!(*terminate)) {
 		int res = rx(&buf[pos], 1, terminate, cbdata);
 		if (res < 0)
 			return res;
@@ -138,11 +139,14 @@ rxline(uint8_t *buf, size_t bufsz, size_t *bytes_received, atomic_bool *terminat
 			lastcr = true;
 		if (buf[pos] == '\n' && lastcr) {
 			*bytes_received = pos + 1;
-			return 0;
+			return ret;
 		}
 		if (pos + 1 < bufsz)
 			pos++;
+		else
+			ret = DEUCE_SSH_ERROR_TOOLONG;
 	}
+	return DEUCE_SSH_ERROR_TERMINATED;
 }
 
 static int

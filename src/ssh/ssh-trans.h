@@ -40,6 +40,20 @@
 #define DEUCE_SSH_KEY_ALGO_FLAG_ENCRYPTION_CAPABLE UINT32_C(1<<0)
 #define DEUCE_SSH_KEY_ALGO_FLAG_SIGNATURE_CAPABLE  UINT32_C(1<<1)
 
+#ifndef SSH_TOTAL_BPP_PACKET_SIZE_MAX
+/*
+ * Defined in RFC 4253 s6.1, but may be larger "where they might be needed"
+ * and "if the identification string indicates that the other party is able to process them"
+ * which means that we would need to maintain a list of implementation id
+ * strings that support larger packets, *and* understand which message
+ * "need" a larger packet.
+ * 
+ * That seems like a never-ending job, so I'll just allow the user to
+ * override this and let them sort it out if the need to.
+ */
+#define SSH_TOTAL_BPP_PACKET_SIZE_MAX 35000
+#endif
+
 typedef struct deuce_ssh_transport_packet {
 	deuce_ssh_string_t payload;
 	deuce_ssh_string_t random_padding;
@@ -66,6 +80,59 @@ typedef int (*deuce_ssh_comp_compress_t)(uint8_t *buf, uint8_t *bufsz, deuce_ssh
 typedef int (*deuce_ssh_comp_uncompress_t)(uint8_t *buf, uint8_t *bufsz, deuce_ssh_session_t sess);
 typedef void (*deuce_ssh_comp_cleanup_t)(deuce_ssh_session_t sess);
 
+typedef struct deuce_ssh_kex {
+	struct deuce_ssh_kex *next;
+	deuce_ssh_kex_handler_t handler;
+	deuce_ssh_kex_cleanup_t cleanup;
+	uint32_t flags;
+	char name[];
+} *deuce_ssh_kex_t;
+
+typedef struct deuce_ssh_key_algo {
+	struct deuce_ssh_key_algo *next;
+	deuce_ssh_key_algo_sign_t sign;
+	deuce_ssh_key_algo_haskey_t haskey;
+	deuce_ssh_key_algo_cleanup_t cleanup;
+	uint32_t flags;
+	char name[];
+} *deuce_ssh_key_algo_t;
+
+typedef struct deuce_ssh_enc {
+	struct deuce_ssh_enc *next;
+	deuce_ssh_enc_encrypt_t encrypt;
+	deuce_ssh_enc_decrypt_t decrypt;
+	deuce_ssh_enc_cleanup_t cleanup;
+	uint32_t flags;
+	uint16_t blocksize;
+	uint16_t key_size;
+	char name[];
+} *deuce_ssh_enc_t;
+
+typedef struct deuce_ssh_mac {
+	struct deuce_ssh_mac *next;
+	deuce_ssh_mac_generate_t generate;
+	deuce_ssh_mac_cleanup_t cleanup;
+	uint16_t *digest_size;
+	uint16_t *key_size;
+	char name[];
+} *deuce_ssh_mac_t;
+
+typedef struct deuce_ssh_comp {
+	struct deuce_ssh_comp *next;
+	deuce_ssh_comp_compress_t compress;
+	deuce_ssh_comp_uncompress_t uncompress;
+	deuce_ssh_comp_cleanup_t cleanup;
+	uint32_t flags;
+	uint16_t blocksize;
+	uint16_t key_size;
+	char name[];
+} *deuce_ssh_comp_t;
+
+typedef struct deuce_ssh_language {
+	struct deuce_ssh_language *next;
+	char name;
+} *deuce_ssh_language_t;
+
 typedef struct deuce_ssh_transport_state {
 	uint32_t    tx_seq;
 	uint32_t    rx_seq;
@@ -73,10 +140,12 @@ typedef struct deuce_ssh_transport_state {
 
 	/* Transport options */
 	thrd_t transport_thread;
+	size_t id_str_sz;
+	char id_str[254];
 
 	/* KEX options */
 	void *kex_cbdata;
-	size_t kex_selected;
+	deuce_ssh_kex_t kex_selected;
 
 	/* KEX outputs */
 	size_t shared_secret_sz;
@@ -84,16 +153,14 @@ typedef struct deuce_ssh_transport_state {
 	size_t exchange_hash_sz;
 	uint8_t *exchange_hash;
 
-	/* Public Key Algorithms */
 	void *key_algo_cbdata;
-	size_t key_algo_selected;
-
+	deuce_ssh_key_algo_t key_algo_selected;
 	void *enc_cbdata;
-	size_t enc_selected;
+	deuce_ssh_enc_t enc_selected;
 	void *mac_cbdata;
-	size_t mac_selected;
+	deuce_ssh_mac_t mac_selected;
 	void *comp_cbdata;
-	size_t comp_selected;
+	deuce_ssh_comp_t comp_selected;
 
 } *deuce_ssh_transport_state_t;
 

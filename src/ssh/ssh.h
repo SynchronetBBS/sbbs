@@ -14,15 +14,16 @@ _Static_assert(0, "threads.h support required");
 #include <stdbool.h>
 #include <threads.h>
 
-#define DEUCE_SSH_ERROR_NONE        0
-#define DEUCE_SSH_ERROR_PARSE      -1
-#define DEUCE_SSH_ERROR_INVALID    -2
-#define DEUCE_SSH_ERROR_ALLOC      -3
-#define DEUCE_SSH_ERROR_INIT       -4
-#define DEUCE_SSH_ERROR_TERMINATED -5
-#define DEUCE_SSH_ERROR_TOOLATE    -6
-#define DEUCE_SSH_ERROR_TOOMANY    -7
-#define DEUCE_SSH_ERROR_TOOLONG    -8
+#define DEUCE_SSH_ERROR_NONE          0
+#define DEUCE_SSH_ERROR_PARSE        -1
+#define DEUCE_SSH_ERROR_INVALID      -2
+#define DEUCE_SSH_ERROR_ALLOC        -3
+#define DEUCE_SSH_ERROR_INIT         -4
+#define DEUCE_SSH_ERROR_TERMINATED   -5
+#define DEUCE_SSH_ERROR_TOOLATE      -6
+#define DEUCE_SSH_ERROR_TOOMANY      -7
+#define DEUCE_SSH_ERROR_TOOLONG      -8
+#define DEUCE_SSH_ERROR_MUST_BE_NULL -9
 
 typedef struct deuce_ssh_transport_state *deuce_ssh_transport_state_t;
 typedef int (*deuce_ssh_transport_io_cb_t)(uint8_t *buf, size_t bufsz, atomic_bool *terminate, void *cbdata);
@@ -37,8 +38,8 @@ typedef struct deuce_ssh_session {
 	bool is_server;
 
 	/* Transport Remote information */
-	char *remote_software_version;
-	char *remote_version_comment;
+	size_t remote_software_id_string_sz;
+	char remote_software_id_string[254];
 	char **remote_languages;
 
 	void *tx_cbdata;
