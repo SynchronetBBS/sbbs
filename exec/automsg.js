@@ -44,7 +44,7 @@ function automsg()
 					console.print(bbs.text(R_AutoMsg));
 					break;
 				}
-				bbs.action=NODE_AMSG;
+				bbs.node_action=NODE_AMSG;
 				bbs.nodesync();
 				console.print(options.intro || "\r\nMaximum of 3 lines:\r\n");
 				var str = console.getstr(str, options.max_line_len, K_WRAP|K_MSG);
