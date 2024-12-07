@@ -1306,7 +1306,7 @@ bool area_is_linked(unsigned area_num, const fidoaddr_t* addr)
 void link_area(unsigned area_num, const fidoaddr_t* addr)
 {
 	area_t* area = &cfg.area[area_num];
-	if((area->link = realloc_or_free(area->link, (sizeof *addr) * (area->links + 1))) == NULL) {
+	if((area->link = realloc_or_free(area->link, (sizeof addr) * (area->links + 1))) == NULL) {
 		lprintf(LOG_ERR,"ERROR line %d allocating memory for area "
 			"#%u links.",__LINE__, area_num + 1);
 		bail(1);
