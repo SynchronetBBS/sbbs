@@ -829,6 +829,7 @@ int main(int argc, char** argv)  {
 	int		main_bar=0;
 	int		sys_cur=0;
 	char	str[256],ctrl_dir[MAX_PATH + 1];
+	char*	text[TOTAL_TEXT] = {NULL};
 	int		i,j;
 	node_t	node;
 	int		nodefile = -1;
@@ -887,7 +888,7 @@ int main(int argc, char** argv)  {
 	memset(&cfg,0,sizeof(cfg));
 	cfg.size=sizeof(cfg);
 	SAFECOPY(cfg.ctrl_dir,bbs_startup.ctrl_dir);
-	if(!load_cfg(&cfg, /* text: */NULL, /* prep: */TRUE, /* node: */FALSE, str, sizeof(str))) {
+	if(!load_cfg(&cfg, text, /* prep: */TRUE, /* node: */FALSE, str, sizeof(str))) {
 		printf("ERROR! %s\n",str);
 		exit(1);
 	}
