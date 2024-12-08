@@ -183,11 +183,13 @@ if(request=="") {	// no specific user requested, give list of active users
 		if(node.misc&NODE_ANON)
 			continue;
 		u.number=node.useron;
-		var action;
-		if(node.action==NODE_XTRN && node.aux)
-			action=format("running %s", presence.xtrn_name(u.curxtrn));
-		else
-			action=format(NodeAction[node.action],node.aux);
+		var action = strip_ctrl(node.activity);
+		if(!action) {
+			if(node.action==NODE_XTRN && node.aux)
+				action=format("running %s", presence.xtrn_name(u.curxtrn));
+			else
+				action=format(NodeAction[node.action],node.aux);
+		}
 		action += presence.node_misc(node, /* is_sysop: */false);
 		t=time()-u.logontime;
 		if(t&0x80000000) t=0;
@@ -315,12 +317,14 @@ if(request.charAt(0)=='?' || request.charAt(0)=='.') {	// Handle "special" reque
 				if(node.misc&NODE_ANON)
 					continue;
 				u.number=node.useron;
-				var action;
-				if(node.action==NODE_XTRN && node.aux)
-					action=format("running %s", presence.xtrn_name(u.curxtrn));
-				else
-					action=format(NodeAction[node.action]
+				var action = strip_ctrl(node.activity);
+				if(!action) {
+					if(node.action==NODE_XTRN && node.aux)
+						action=format("running %s", presence.xtrn_name(u.curxtrn));
+					else
+						action=format(NodeAction[node.action]
 								,node.aux);
+				}
 				var t = time()-u.logontime;
 				if(t&0x80000000) t = 0;
 				list.push({ 
