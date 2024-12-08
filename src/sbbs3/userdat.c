@@ -1403,14 +1403,158 @@ char* getnodeext(scfg_t* cfg, int num, char* buf)
 	return buf;
 }
 
+char* node_vstatus(scfg_t* cfg, node_t* node, char* str, size_t size)
+{
+	char	tmp[128];
+
+    switch(node->status) {
+        case NODE_WFC:
+			return cfg->text != NULL ? cfg->text[NodeStatusWaitingForCall] : "Waiting for connection";
+        case NODE_OFFLINE:
+			return cfg->text != NULL ? cfg->text[NodeStatusOffline] : "Offline";
+        case NODE_NETTING:	/* Obsolete */
+            return "Networking";
+        case NODE_LOGON:
+			return cfg->text != NULL ? cfg->text[NodeStatusLogon] : "At login prompt";
+		case NODE_LOGOUT:
+			snprintf(str, sizeof str, cfg->text != NULL ? cfg->text[NodeStatusLogout] : "Logging out %s", username(cfg,node->useron,tmp));
+			return str;
+        case NODE_EVENT_WAITING:
+            return cfg->text != NULL ? cfg->text[NodeStatusEventWaiting] : "Waiting for all nodes to become inactive";
+        case NODE_EVENT_LIMBO:
+            snprintf(str, size, cfg->text != NULL ? cfg->text[NodeStatusEventLimbo] : "Waiting for node %d to finish external event"
+                ,node->aux);
+			break;
+        case NODE_EVENT_RUNNING:
+            return cfg->text != NULL ? cfg->text[NodeStatusEventRunning] : "Running external event";
+        case NODE_NEWUSER:
+            return cfg->text != NULL ? cfg->text[NodeStatusNewUser] : "New user applying for access";
+		case NODE_QUIET:
+		case NODE_INUSE:
+			return "In use";
+			break;
+		default:
+			snprintf(str, size, "Unknown status %u", node->status);
+			break;
+	}
+	return str;
+}
+
+char* node_activity(scfg_t* cfg, node_t* node, char* str, size_t size, int num)
+{
+	int xtrnnum;
+	int gurunum;
+	user_t	user = {0};
+
+	if(node->misc & NODE_EXT) {
+		getnodeext(cfg, num, str); // note assuming sizeof str is >= 128
+		return str;
+	}
+
+	switch(node->action) {
+		case NODE_MAIN:
+			return cfg->text != NULL ? cfg->text[NodeActivityMainMenu] : "at main menu";
+		case NODE_RMSG:
+			return cfg->text != NULL ? cfg->text[NodeActivityReadingMsgs] : "reading messages";
+		case NODE_RMAL:
+			return cfg->text != NULL ? cfg->text[NodeActivityReadingMail] : "reading mail";
+		case NODE_RSML:
+			return cfg->text != NULL ? cfg->text[NodeActivityReadingSentMail]: "reading sent mail";
+		case NODE_RTXT:
+			return cfg->text != NULL ? cfg->text[NodeActivityReadingTextFiles] : "reading text files";
+		case NODE_PMSG:
+			return cfg->text != NULL ? cfg->text[NodeActivityPostingMsg] : "posting message";
+		case NODE_SMAL:
+			return cfg->text != NULL ? cfg->text[NodeActivitySendingMail] : "sending mail";
+		case NODE_AMSG:
+			return cfg->text != NULL ? cfg->text[NodeActivityAutoMsg] : "posting auto-message";
+		case NODE_XTRN:
+			if(node->aux == 0)
+				return cfg->text != NULL ? cfg->text[NodeActivityXtrnMenu] : "at external program menu";
+			user.number = node->useron;
+			getuserdat(cfg, &user);
+			xtrnnum = getxtrnnum(cfg, user.curxtrn);
+			if(is_valid_xtrnnum(cfg, xtrnnum))
+				snprintf(str, size, "%s %s"
+					,cfg->text != NULL ? cfg->text[NodeActivityRunningXtrn] : "running"
+					,cfg->xtrn[xtrnnum]->name);
+			else if(*user.curxtrn != '\0')
+				snprintf(str, size, "%s external program %s"
+					,cfg->text != NULL ? cfg->text[NodeActivityRunningXtrn] : "running"
+					,user.curxtrn);
+			else
+				snprintf(str, size, "%s external program #%d"
+					,cfg->text != NULL ? cfg->text[NodeActivityRunningXtrn] : "running"
+					,node->aux);
+			break;
+		case NODE_DFLT:
+			return cfg->text != NULL ? cfg->text[NodeActivitySettings] : "changing defaults";
+		case NODE_XFER:
+			return cfg->text != NULL ? cfg->text[NodeActivityFileMenu] : "at transfer menu";
+		case NODE_RFSD:
+			snprintf(str, size,cfg->text != NULL ? cfg->text[NodeActivityRetrievingFile] : "retrieving from device #%d", node->aux);
+			break;
+		case NODE_DLNG:
+			return cfg->text != NULL ? cfg->text[NodeActivityDownloadingFile] : "downloading";
+		case NODE_ULNG:
+			return cfg->text != NULL ? cfg->text[NodeActivityUploadingFile] : "uploading";
+		case NODE_BXFR:
+			return cfg->text != NULL ? cfg->text[NodeActivityBiXferFile] : "transferring bidirectional";
+		case NODE_LFIL:
+			return cfg->text != NULL ? cfg->text[NodeActivityListingFiles] : "listing files";
+		case NODE_LOGN:
+			return cfg->text != NULL ? cfg->text[NodeActivityLoggingOn] : "logging on";
+		case NODE_LCHT:
+			snprintf(str, size, cfg->text != NULL ? cfg->text[NodeActivityLocalChat] : "chatting with %s", cfg->sys_op);
+			break;
+		case NODE_MCHT:
+			if(node->aux != 0)
+				snprintf(str, sizeof str
+					,cfg->text != NULL ? cfg->text[NodeActivityChatChannel] : "in multinode chat channel %d"
+					,node->aux & 0xff);
+			else
+				return cfg->text != NULL ? cfg->text[NodeActivityGlobalChat] : "in multinode global chat channel";
+			break;
+		case NODE_PAGE:
+			snprintf(str, size, cfg->text != NULL ? cfg->text[NodeActivityPagingNode] : "paging node %u for private chat", node->aux);
+			break;
+		case NODE_PCHT:
+			if(node->aux == 0)
+				snprintf(str, size
+					,cfg->text != NULL ? cfg->text[NodeActivityLocalChat] : "in local chat with %s"
+					,cfg->sys_op);
+			else
+				snprintf(str, size
+					,cfg->text != NULL ? cfg->text[NodeActivityNodeChat] : "in private chat with node %u"
+					,node->aux);
+			break;
+		case NODE_GCHT:
+			gurunum = node->aux;
+			if(gurunum >= cfg->total_gurus)
+				gurunum = 0;
+			snprintf(str, size, cfg->text != NULL ? cfg->text[NodeActivityLocalChat] : "chatting with %s", cfg->guru[gurunum]->name);
+			break;
+		case NODE_CHAT:
+			return cfg->text != NULL ? cfg->text[NodeActivityChatMenu] : "in chat section";
+		case NODE_TQWK:
+			return cfg->text != NULL ? cfg->text[NodeActivityQWKmenu] : "transferring QWK packet";
+		case NODE_SYSP:
+			return cfg->text != NULL ? cfg->text[NodeActivitySysop] : "performing sysop activities";
+		case NODE_CUSTOM:
+			return cfg->text != NULL ? cfg->text[NodeActivityCustom] : "performing custom action";
+		default:
+			snprintf(str, size, "unknown user action %d", node->action);
+			break;
+	}
+	return str;
+}
+
 char* nodestatus(scfg_t* cfg, node_t* node, char* buf, size_t buflen, int num)
 {
 	char	str[256];
 	char	tmp[128];
 	char*	mer;
 	int		hour;
-	int		xtrnnum;
-	user_t	user = {0};
 
 	if(node==NULL) {
 		strncpy(buf,"(null)",buflen);
@@ -1420,158 +1564,25 @@ char* nodestatus(scfg_t* cfg, node_t* node, char* buf, size_t buflen, int num)
 	str[0]=0;
     switch(node->status) {
         case NODE_WFC:
-            SAFECOPY(str,"Waiting for connection");
-            break;
         case NODE_OFFLINE:
-            strcpy(str,"Offline");
-            break;
-        case NODE_NETTING:	/* Obsolete */
-            SAFECOPY(str,"Networking");
-            break;
-        case NODE_LOGON:
-            SAFEPRINTF(str,"At login prompt %s"
-				,node_connection_desc(node->connection, tmp));
-            break;
+        case NODE_NETTING:
 		case NODE_LOGOUT:
-			SAFEPRINTF(str,"Logging out %s", username(cfg,node->useron,tmp));
-			break;
         case NODE_EVENT_WAITING:
-            SAFECOPY(str,"Waiting for all nodes to become inactive");
-            break;
         case NODE_EVENT_LIMBO:
-            SAFEPRINTF(str,"Waiting for node %d to finish external event"
-                ,node->aux);
-            break;
         case NODE_EVENT_RUNNING:
-            SAFECOPY(str,"Running external event");
-            break;
+			SAFECOPY(str, node_vstatus(cfg, node, tmp, sizeof tmp));
+			break;
+        case NODE_LOGON:
         case NODE_NEWUSER:
-            SAFEPRINTF(str,"New user applying for access %s"
-				,node_connection_desc(node->connection, tmp));
+			SAFECOPY(str, node_vstatus(cfg, node, tmp, sizeof tmp));
+			SAFECAT(str, " ");
+			SAFECAT(str, node_connection_desc(node->connection, tmp));
             break;
         case NODE_QUIET:
         case NODE_INUSE:
-			if(node->misc & NODE_EXT) {
-				getnodeext(cfg, num, str);
-				break;
-			}
             username(cfg,node->useron,str);
-            strcat(str," ");
-            switch(node->action) {
-                case NODE_MAIN:
-                    strcat(str,"at main menu");
-                    break;
-                case NODE_RMSG:
-                    strcat(str,"reading messages");
-                    break;
-                case NODE_RMAL:
-                    strcat(str,"reading mail");
-                    break;
-                case NODE_RSML:
-                    strcat(str,"reading sent mail");
-                    break;
-                case NODE_RTXT:
-                    strcat(str,"reading text files");
-                    break;
-                case NODE_PMSG:
-                    strcat(str,"posting message");
-                    break;
-                case NODE_SMAL:
-                    strcat(str,"sending mail");
-                    break;
-                case NODE_AMSG:
-                    strcat(str,"posting auto-message");
-                    break;
-                case NODE_XTRN:
-                    if(node->aux == 0) {
-                        strcat(str,"at external program menu");
-						break;
-					}
-					user.number = node->useron;
-					getuserdat(cfg, &user);
-					xtrnnum = getxtrnnum(cfg, user.curxtrn);
-					if(is_valid_xtrnnum(cfg, xtrnnum))
-						sprintf(str+strlen(str),"running %s"
-							,cfg->xtrn[xtrnnum]->name);
-					else if(*user.curxtrn != '\0')
-						sprintf(str+strlen(str),"running external program %s"
-							,user.curxtrn);
-					else
-						sprintf(str+strlen(str),"running external program #%d"
-							,node->aux);
-                    break;
-                case NODE_DFLT:
-                    strcat(str,"changing defaults");
-                    break;
-                case NODE_XFER:
-                    strcat(str,"at transfer menu");
-                    break;
-                case NODE_RFSD:
-                    sprintf(str+strlen(str),"retrieving from device #%d",node->aux);
-                    break;
-                case NODE_DLNG:
-                    strcat(str,"downloading");
-                    break;
-                case NODE_ULNG:
-                    strcat(str,"uploading");
-                    break;
-                case NODE_BXFR:
-                    strcat(str,"transferring bidirectional");
-                    break;
-                case NODE_LFIL:
-                    strcat(str,"listing files");
-                    break;
-                case NODE_LOGN:
-                    strcat(str,"logging on");
-                    break;
-                case NODE_LCHT:
-                    strcat(str,"in local chat with sysop");
-                    break;
-                case NODE_MCHT:
-                    if(node->aux) {
-                        sprintf(str+strlen(str),"in multinode chat channel %d"
-                            ,node->aux&0xff);
-                        if(node->aux&0x1f00) { /* password */
-                            strcat(str,"* ");
-                            unpackchatpass(str+strlen(str),node);
-                        }
-                    }
-                    else
-                        strcat(str,"in multinode global chat channel");
-                    break;
-                case NODE_PAGE:
-                    sprintf(str+strlen(str)
-						,"paging node %u for private chat",node->aux);
-                    break;
-                case NODE_PCHT:
-                    if(node->aux==0)
-                        sprintf(str+strlen(str)
-							,"in local chat with %s"
-							,cfg->sys_op);
-                    else
-                        sprintf(str+strlen(str)
-							,"in private chat with node %u"
-                            ,node->aux);
-                    break;
-                case NODE_GCHT:
-                    strcat(str,"chatting with The Guru");
-                    break;
-                case NODE_CHAT:
-                    strcat(str,"in chat section");
-                    break;
-                case NODE_TQWK:
-                    strcat(str,"transferring QWK packet");
-                    break;
-                case NODE_SYSP:
-                    strcat(str,"performing sysop activities");
-                    break;
-				case NODE_CUSTOM:
-					SAFECAT(str, "performing custom action");
-					break;
-                default:
-                    sprintf(str+strlen(str),"%d",node->action);
-                    break;
-			}
+            SAFECAT(str," ");
+			SAFECAT(str, node_activity(cfg, node, tmp, sizeof tmp, num));
 			sprintf(str+strlen(str)," %s",node_connection_desc(node->connection, tmp));
             if(node->action==NODE_DLNG) {
                 if((node->aux/60)>=12) {

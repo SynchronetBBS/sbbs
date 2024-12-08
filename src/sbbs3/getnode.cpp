@@ -284,8 +284,7 @@ bool sbbs_t::getnodeext(uint number, char *ext)
 		return false;
 	}
 
-	SAFEPRINTF(str,"%snode.exb",cfg.ctrl_dir);
-	if((node_ext=nopen(str,O_RDONLY|O_DENYNONE))==-1) {
+	if((node_ext=opennodeext(&cfg))==-1) {
 		memset(ext,0,128);
 		errormsg(WHERE,ERR_OPEN,str,O_RDONLY|O_DENYNONE);
 		return false;
@@ -480,11 +479,6 @@ void sbbs_t::printnodedat(uint number, node_t* node)
 				break;
 			}
 		case NODE_INUSE:
-			if(node->misc&NODE_EXT) {
-				getnodeext(number,tmp);
-				bputs(tmp);
-				break;
-			}
 			attr(cfg.color[clr_nodeuser]);
 			if(node->misc&NODE_ANON && !SYSOP)
 				bputs(text[UNKNOWN_USER]);
@@ -492,113 +486,7 @@ void sbbs_t::printnodedat(uint number, node_t* node)
 				bputs(username(&cfg,node->useron,tmp));
 			attr(cfg.color[clr_nodestatus]);
 			bputs(" ");
-			switch(node->action) {
-				case NODE_MAIN:
-					bputs("at main menu");
-					break;
-				case NODE_RMSG:
-					bputs("reading messages");
-					break;
-				case NODE_RMAL:
-					bputs("reading mail");
-					break;
-				case NODE_RSML:
-					bputs("reading sent mail");
-					break;
-				case NODE_RTXT:
-					bputs("reading text files");
-					break;
-				case NODE_PMSG:
-					bputs("posting message");
-					break;
-				case NODE_SMAL:
-					bputs("sending mail");
-					break;
-				case NODE_AMSG:
-					bputs("posting auto-message");
-					break;
-				case NODE_XTRN:
-					if(node->aux<1 || node->aux>cfg.total_xtrns)
-						bputs("at external program menu");
-					else {
-						bputs("running ");
-						i=node->aux-1;
-						if(SYSOP || chk_ar(cfg.xtrn[i]->ar,&useron,&client))
-							bputs(cfg.xtrn[node->aux-1]->name);
-						else
-							bputs("external program");
-					}
-					break;
-				case NODE_DFLT:
-					bputs("changing defaults");
-					break;
-				case NODE_XFER:
-					bputs("at transfer menu");
-					break;
-				case NODE_RFSD:
-					bprintf("retrieving from device #%d",node->aux);
-					break;
-				case NODE_DLNG:
-					bprintf("downloading");
-					break;
-				case NODE_ULNG:
-					bputs("uploading");
-					break;
-				case NODE_BXFR:
-					bputs("transferring bidirectional");
-					break;
-				case NODE_LFIL:
-					bputs("listing files");
-					break;
-				case NODE_LOGN:
-					bputs("logging on");
-					break;
-				case NODE_LCHT:
-					bprintf("in local chat with %s",cfg.sys_op);
-					break;
-				case NODE_MCHT:
-					if(node->aux) {
-						bprintf("in multinode chat channel %d",node->aux&0xff);
-						if(node->aux&0x1f00) { /* password */
-							outchar('*');
-							if(SYSOP)
-								bprintf(" %s",unpackchatpass(tmp,node));
-						}
-					}
-					else
-						bputs("in multinode global chat channel");
-					break;
-				case NODE_PAGE:
-					bprintf("paging node %u for private chat",node->aux);
-					break;
-				case NODE_PCHT:
-					if(node->aux)
-						bprintf("in private chat with node %u",node->aux);
-					else
-						bprintf("in local chat with %s",cfg.sys_op);
-					break;
-				case NODE_GCHT:
-					i=node->aux;
-					if(i>=cfg.total_gurus)
-						i=0;
-					bprintf("chatting with %s",cfg.guru[i]->name);
-					break;
-				case NODE_CHAT:
-					bputs("in chat section");
-					break;
-				case NODE_TQWK:
-					bputs("transferring QWK packet");
-					break;
-				case NODE_SYSP:
-					bputs("performing sysop activities");
-					break;
-				case NODE_CUSTOM:
-					bputs("performing custom action");
-					break;
-				default:
-					bputs(ultoa(node->action,tmp,10));
-					break;
-			}
+			bputs(node_activity(&cfg, node, tmp, sizeof tmp, number));
 			bputs(node_connection_desc(this, node->connection, tmp));
 			if(node->action==NODE_DLNG) {
 				if(cfg.sys_misc&SM_MILITARY) {

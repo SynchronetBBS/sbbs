@@ -851,31 +851,31 @@
 "Directory %u"                                          693 NoAccessDir
 "\1n\1hNode Status\r\n\1c"\                                694 NodeLstHdr
 	"\xc4\xc4\xc4\xc4 \xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\r\n"
-""                                                      695 NodeActionMain
-""                                                      696 NodeActionReadMsgs
-""                                                      697 NodeActionReadMail
-""                                                      698 NodeActionSendMail
-""                                                      699 NodeActionReadTxt
-""                                                      700 NodeActionReadSentMail
-""                                                      701 NodeActionPostMsg
+""                                                      695 NodeActionMainMenu
+""                                                      696 NodeActionReadingMsgs
+""                                                      697 NodeActionReadingMail
+""                                                      698 NodeActionSendingMail
+""                                                      699 NodeActionReadingTextFiles
+""                                                      700 NodeActionReadingSentMail
+""                                                      701 NodeActionPostingMsg
 ""                                                      702 NodeActionAutoMsg
-""                                                      703 NodeActionXtrn
-""                                                      704 NodeActionDefaults
-""                                                      705 NodeActionXfer
-""                                                      706 NodeActionDLing
-""                                                      707 NodeActionULing
-""                                                      708 NodeActionBiXfer
-""                                                      709 NodeActionListFiles
+""                                                      703 NodeActionXtrnMenu
+""                                                      704 NodeActionSettings
+""                                                      705 NodeActionFileMenu
+""                                                      706 NodeActionDownloadingFile
+""                                                      707 NodeActionUploadingFile
+""                                                      708 NodeActionBiXferFile
+""                                                      709 NodeActionListingFiles
 ""                                                      710 NodeActionLoggingOn
 ""                                                      711 NodeActionLocalChat
-""				       	                712 NodeActionMultiChat
+""				       	                                712 NodeActionMultiChat
 ""                                                      713 NodeActionGuruChat
-""                                                      714 NodeActionChatSec
-""                                                      715 NodeActionSysopAct
-""                                                      716 NodeActionQWK
+""                                                      714 NodeActionChatMenu
+""                                                      715 NodeActionSysop
+""                                                      716 NodeActionQWKmenu
 ""                                                      717 NodeActionPrivateChat
-""                                                      718 NodeActionPaging
-""                                                      719 NodeActionRetrieving
+""                                                      718 NodeActionPagingNode
+""                                                      719 NodeActionRetrievingFile
 ""                                                      720 NodeActionCustom
 "View signature"                                        721 ViewSignatureQ
 "Delete signature"                                      722 DeleteSignatureQ
@@ -1082,3 +1082,30 @@
 "Nov"                                                      895 Nov
 "Dec"                                                      896 Dec
 "\7@ALIAS@ paged you to chat from node @NODE@\7"           897 SysopPageNotification
+"at main menu"                                             898 NodeActivityMainMenu
+"reading messages"                                         899 NodeActivityReadingMsgs
+"reading mail"                                             900 NodeActivityReadingMail
+"sending mail"                                             901 NodeActivitySendingMail
+"reading text files"                                       902 NodeActivityReadingTextFiles
+"reading sent mail"                                        903 NodeActivityReadingSentMail
+"posting message"                                          904 NodeActivityPostingMsg
+"posting auto-message"                                     905 NodeActivityAutoMsg
+"at external program menu"                                 906 NodeActivityXtrnMenu
+"running"                                                  907 NodeActivityRunningXtrn
+"changing settings"                                        908 NodeActivitySettings
+"at file menu"                                             909 NodeActivityFileMenu
+"downloading files"                                        910 NodeActivityDownloadingFile
+"uploading files"                                          911 NodeActivityUploadingFile
+"transferring files bidirectional"                         912 NodeActivityBiXferFile
+"listing files"                                            913 NodeActivityListingFiles
+"logging on"                                               914 NodeActivityLoggingOn
+"chatting with %s"                                         915 NodeActivityLocalChat
+"in multinode chat channel %d"                             916 NodeActivityChatChannel
+"in multinode global chat channel"                         917 NodeActivityGlobalChat
+"in chat section"                                          918 NodeActivityChatMenu
+"performing sysop activity"                                919 NodeActivitySysop
+"transferring QWK packet"                                  920 NodeActivityQWKmenu
+"chatting with node %u"                                    921 NodeActivityNodeChat
+"paging node %u for private chat"                          922 NodeActivityPagingNode
+"retrieving file from device #%d"                          923 NodeActivityRetrievingFile
+"performing custom activity"                               924 NodeActivityCustom

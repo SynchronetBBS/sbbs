@@ -711,31 +711,31 @@ enum text {
 	,NoAccessLib
 	,NoAccessDir
 	,NodeLstHdr
-	,NodeActionMain
-	,NodeActionReadMsgs
-	,NodeActionReadMail
-	,NodeActionSendMail
-	,NodeActionReadTxt
-	,NodeActionReadSentMail
-	,NodeActionPostMsg
+	,NodeActionMainMenu
+	,NodeActionReadingMsgs
+	,NodeActionReadingMail
+	,NodeActionSendingMail
+	,NodeActionReadingTextFiles
+	,NodeActionReadingSentMail
+	,NodeActionPostingMsg
 	,NodeActionAutoMsg
-	,NodeActionXtrn
-	,NodeActionDefaults
-	,NodeActionXfer
-	,NodeActionDLing
-	,NodeActionULing
-	,NodeActionBiXfer
-	,NodeActionListFiles
+	,NodeActionXtrnMenu
+	,NodeActionSettings
+	,NodeActionFileMenu
+	,NodeActionDownloadingFile
+	,NodeActionUploadingFile
+	,NodeActionBiXferFile
+	,NodeActionListingFiles
 	,NodeActionLoggingOn
 	,NodeActionLocalChat
 	,NodeActionMultiChat
 	,NodeActionGuruChat
-	,NodeActionChatSec
-	,NodeActionSysopAct
-	,NodeActionQWK
+	,NodeActionChatMenu
+	,NodeActionSysop
+	,NodeActionQWKmenu
 	,NodeActionPrivateChat
-	,NodeActionPaging
-	,NodeActionRetrieving
+	,NodeActionPagingNode
+	,NodeActionRetrievingFile
 	,NodeActionCustom
 	,ViewSignatureQ
 	,DeleteSignatureQ
@@ -914,6 +914,33 @@ enum text {
 	,Nov
 	,Dec
 	,SysopPageNotification
+	,NodeActivityMainMenu
+	,NodeActivityReadingMsgs
+	,NodeActivityReadingMail
+	,NodeActivitySendingMail
+	,NodeActivityReadingTextFiles
+	,NodeActivityReadingSentMail
+	,NodeActivityPostingMsg
+	,NodeActivityAutoMsg
+	,NodeActivityXtrnMenu
+	,NodeActivityRunningXtrn
+	,NodeActivitySettings
+	,NodeActivityFileMenu
+	,NodeActivityDownloadingFile
+	,NodeActivityUploadingFile
+	,NodeActivityBiXferFile
+	,NodeActivityListingFiles
+	,NodeActivityLoggingOn
+	,NodeActivityLocalChat
+	,NodeActivityChatChannel
+	,NodeActivityGlobalChat
+	,NodeActivityChatMenu
+	,NodeActivitySysop
+	,NodeActivityQWKmenu
+	,NodeActivityNodeChat
+	,NodeActivityPagingNode
+	,NodeActivityRetrievingFile
+	,NodeActivityCustom
 
 	,TOTAL_TEXT
 };

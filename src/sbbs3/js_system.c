@@ -1529,6 +1529,7 @@ js_filter_ip(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_get_node(JSContext *cx, uintN argc, jsval *arglist)
 {
+	char		str[128];
 	JSObject*	obj=JS_THIS_OBJECT(cx, arglist);
 	JSObject*	nodeobj;
 	jsval*		argv=JS_ARGV(cx, arglist);
@@ -1565,8 +1566,10 @@ js_get_node(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_TRUE;
 	}
 	JS_DefineProperty(cx, nodeobj, "status", INT_TO_JSVAL((int)node.status), NULL, NULL, JSPROP_ENUMERATE);
+	JS_DefineProperty(cx, nodeobj, "vstatus", STRING_TO_JSVAL(JS_NewStringCopyZ(cx, node_vstatus(sys->cfg, &node, str, sizeof str))), NULL, NULL, JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, nodeobj, "errors", INT_TO_JSVAL((int)node.errors), NULL, NULL, JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, nodeobj, "action", INT_TO_JSVAL((int)node.action), NULL, NULL, JSPROP_ENUMERATE);
+	JS_DefineProperty(cx, nodeobj, "activity", STRING_TO_JSVAL(JS_NewStringCopyZ(cx, node_activity(sys->cfg, &node, str, sizeof str, node_num))), NULL, NULL, JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, nodeobj, "useron", INT_TO_JSVAL((int)node.useron), NULL, NULL, JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, nodeobj, "connection", INT_TO_JSVAL((int)node.connection), NULL, NULL, JSPROP_ENUMERATE);
 	JS_DefineProperty(cx, nodeobj, "misc", INT_TO_JSVAL((int)node.misc), NULL, NULL, JSPROP_ENUMERATE);
@@ -2384,8 +2387,10 @@ static jsSyncMethodSpec js_system_functions[] = {
 enum {
 	/* raw node_t fields */
 	 NODE_PROP_STATUS
+	,NODE_PROP_VSTATUS
 	,NODE_PROP_ERRORS
 	,NODE_PROP_ACTION
+	,NODE_PROP_ACTIVITY
 	,NODE_PROP_USERON
 	,NODE_PROP_CONNECTION
 	,NODE_PROP_MISC
@@ -2397,21 +2402,23 @@ enum {
 #ifdef BUILD_JSDOCS
 static const char* node_prop_desc[] = {
 	 "Status (see <tt>nodedefs.js</tt> for valid values)"
+	,"Verbal status - <small>READ ONLY</small>"
 	,"Error counter"
 	,"Current user action (see <tt>nodedefs.js</tt>)"
+	,"Current user activity - <small>READ ONLY</small>y"
 	,"Current user number"
 	,"Connection speed (<tt>0xffff</tt> = Telnet or RLogin)"
 	,"Miscellaneous bit-flags (see <tt>nodedefs.js</tt>)"
 	,"Auxiliary value"
 	,"Extended auxiliary value"
-	,"Node directory"
+	,"Node directory - <small>READ ONLY</small>"
 	,NULL
 };
 #endif
 
-
 static JSBool js_node_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 {
+	char tmp[128];
 	jsval idval;
 	uint		node_num;
     jsint       tiny;
@@ -2438,7 +2445,7 @@ static JSBool js_node_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 
 	rc=JS_SUSPENDREQUEST(cx);
 	memset(&node,0,sizeof(node));
-	if(getnodedat(sys->cfg, node_num, &node, /* lockit: */FALSE, &sys->nodefile)) {
+	if(getnodedat(sys->cfg, node_num, &node, /* lockit: */FALSE, &sys->nodefile) != 0) {
 		JS_RESUMEREQUEST(cx, rc);
 		return(JS_TRUE);
 	}
@@ -2449,11 +2456,21 @@ static JSBool js_node_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case NODE_PROP_STATUS:
 			*vp = INT_TO_JSVAL((int)node.status);
 			break;
+		case NODE_PROP_VSTATUS:
+			if((js_str=JS_NewStringCopyZ(cx, node_vstatus(sys->cfg, &node, tmp, sizeof tmp)))==NULL)
+				return(JS_FALSE);
+			*vp = STRING_TO_JSVAL(js_str);
+			break;
 		case NODE_PROP_ERRORS:
 			*vp = INT_TO_JSVAL((int)node.errors);
 			break;
 		case NODE_PROP_ACTION:
 			*vp = INT_TO_JSVAL((int)node.action);
+			break;
+		case NODE_PROP_ACTIVITY:
+			if((js_str=JS_NewStringCopyZ(cx, node_activity(sys->cfg, &node, tmp, sizeof tmp, node_num)))==NULL)
+				return(JS_FALSE);
+			*vp = STRING_TO_JSVAL(js_str);
 			break;
 		case NODE_PROP_USERON:
 			*vp = INT_TO_JSVAL((int)node.useron);
@@ -2551,17 +2568,19 @@ static JSBool js_node_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 }
 
 static jsSyncPropertySpec js_node_properties[] = {
-/*		 name,						tinyid,					flags,				ver	*/
+/*		 name,						tinyid,					flags,								ver	*/
 
 /* raw node_t fields */
-	{	"status",					NODE_PROP_STATUS,		JSPROP_ENUMERATE,	310 },
-	{	"errors",					NODE_PROP_ERRORS,		JSPROP_ENUMERATE,	310 },
-	{	"action",					NODE_PROP_ACTION,		JSPROP_ENUMERATE,	310 },
-	{	"useron",					NODE_PROP_USERON,		JSPROP_ENUMERATE,	310 },
-	{	"connection",				NODE_PROP_CONNECTION,	JSPROP_ENUMERATE,	310 },
-	{	"misc",						NODE_PROP_MISC,			JSPROP_ENUMERATE,	310 },
-	{	"aux",						NODE_PROP_AUX,			JSPROP_ENUMERATE,	310 },
-	{	"extaux",					NODE_PROP_EXTAUX,		JSPROP_ENUMERATE,	310 },
+	{	"status",					NODE_PROP_STATUS,		JSPROP_ENUMERATE,					310 },
+	{	"vstatus",					NODE_PROP_VSTATUS,		JSPROP_ENUMERATE|JSPROP_READONLY,	320 },
+	{	"errors",					NODE_PROP_ERRORS,		JSPROP_ENUMERATE,					310 },
+	{	"action",					NODE_PROP_ACTION,		JSPROP_ENUMERATE,					310 },
+	{	"activity",					NODE_PROP_ACTIVITY,		JSPROP_ENUMERATE|JSPROP_READONLY,	320 },
+	{	"useron",					NODE_PROP_USERON,		JSPROP_ENUMERATE,					310 },
+	{	"connection",				NODE_PROP_CONNECTION,	JSPROP_ENUMERATE,					310 },
+	{	"misc",						NODE_PROP_MISC,			JSPROP_ENUMERATE,					310 },
+	{	"aux",						NODE_PROP_AUX,			JSPROP_ENUMERATE,					310 },
+	{	"extaux",					NODE_PROP_EXTAUX,		JSPROP_ENUMERATE,					310 },
 	{	"dir",						NODE_PROP_DIR,			JSPROP_ENUMERATE|JSPROP_READONLY,	315 },
 	{0}
 };

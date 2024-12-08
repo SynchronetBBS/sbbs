@@ -93,6 +93,8 @@ DLLEXPORT int	opennodedat(scfg_t*);
 DLLEXPORT int	opennodeext(scfg_t*);
 DLLEXPORT int	getnodedat(scfg_t*, uint number, node_t *node, bool lockit, int* file);
 DLLEXPORT int	putnodedat(scfg_t*, uint number, node_t *node, bool closeit, int file);
+DLLEXPORT char* node_activity(scfg_t*, node_t* node, char* str, size_t size, int num);
+DLLEXPORT char* node_vstatus(scfg_t*, node_t* node, char* str, size_t size);
 DLLEXPORT char* nodestatus(scfg_t*, node_t* node, char* buf, size_t buflen, int num);
 DLLEXPORT void	printnodedat(scfg_t*, uint number, node_t* node);
 DLLEXPORT int	is_user_online(scfg_t*, uint usernumber);

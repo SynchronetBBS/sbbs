@@ -133,17 +133,6 @@ function user_age_and_gender(user, options)
 	return output;
 }
 
-function extended_status(num)
-{
-	var f = new File(system.ctrl_dir + "node.exb");
-	if(!f.open("rb"))
-		return "!error " + f.error + " opening " + f.name;
-	f.position = num * 128;
-	var str = f.read(128);
-	f.close();
-	return truncsp(str);
-}
-
 // Returns a string describing the node status, suitable for printing on a single line
 //
 // num is zero-based
@@ -169,14 +158,10 @@ function node_status(node, is_sysop, options, num)
 	switch(node_status) {
 		case NODE_QUIET:
 			if(!is_sysop)
-				return format(NodeStatus[NODE_WFC],node.aux);
+				return node.vstatus || format(NodeStatus[NODE_WFC],node.aux);
 			/* Fall-through */
 		case NODE_INUSE:
 		{
-			if(misc&NODE_EXT) {
-				output += extended_status(num);
-				break;
-			}
 			var user = new User(node.useron);
 
 			if (!options.exclude_username) {
@@ -191,22 +176,26 @@ function node_status(node, is_sysop, options, num)
 				output += options.status_prefix;
 			output += user_age_and_gender(user, options);
 			output += " ";
-			switch(node.action) {
-				case NODE_PCHT:
-					if(node.aux == 0)
-						output += NodeAction[NODE_LCHT];
-					else
+			if(node.activity)
+				output += node.activity;
+			else {
+				switch(node.action) {
+					case NODE_PCHT:
+						if(node.aux == 0)
+							output += NodeAction[NODE_LCHT];
+						else
+							output += format(NodeAction[node.action], node.aux);
+						break;
+					case NODE_XTRN:
+						if(node.aux)
+							output += "running " + xtrn_name(node.aux);
+						else
+							output += NodeAction[node.action];
+						break;
+					default:
 						output += format(NodeAction[node.action], node.aux);
-					break;
-				case NODE_XTRN:
-					if(node.aux)
-						output += "running " + xtrn_name(node.aux);
-					else
-						output += NodeAction[node.action];
-					break;
-				default:
-					output += format(NodeAction[node.action], node.aux);
-					break;
+						break;
+				}
 			}
 			if (!options.exclude_connection) {
 				if(options.connection_prefix)
@@ -217,11 +206,11 @@ function node_status(node, is_sysop, options, num)
 		}
 		case NODE_LOGON:
 		case NODE_NEWUSER:
-			output += format(NodeStatus[node_status], node.aux);
+			output += node.vstatus || format(NodeStatus[node_status], node.aux);
 			output += node_connection_desc(node);
 			break;
 		case NODE_LOGOUT:
-			output += NodeStatus[node_status];
+			output += node.vstatus || NodeStatus[node_status];
 
 			if(options.username_prefix)
 				output += options.username_prefix;
@@ -231,7 +220,7 @@ function node_status(node, is_sysop, options, num)
 				output += system.username(node.useron);
 			break;
 		default:
-			output += format(NodeStatus[node_status], node.aux);
+			output += node.vstatus || format(NodeStatus[node_status], node.aux);
 			break;
 	}
 

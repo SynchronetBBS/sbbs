@@ -28,7 +28,6 @@
 /****************************************************************************/
 bool sbbs_t::putnodedat(uint number, node_t* node)
 {
-	char	str[256];
 	char	tmp[128];
 	char	path[MAX_PATH+1];
 	int		wr=0;
@@ -42,21 +41,9 @@ bool sbbs_t::putnodedat(uint number, node_t* node)
 	if(number==cfg.node_num) {
 		if((node->status==NODE_INUSE || node->status==NODE_QUIET)
 			&& node->action<NODE_LAST_ACTION
-			&& text[NodeActionMain+node->action][0]) {
-			node->misc|=NODE_EXT;
-			memset(str,0,128);
-			snprintf(str, sizeof str, text[NodeActionMain+node->action]
-				,useron.alias
-				,useron.level
-				,getage(&cfg,useron.birth)
-				,useron.sex
-				,useron.comp
-				,useron.ipaddr
-				,datestr(useron.firston)
-				,node->aux&0xff
-				,node->connection
-				);
-			putnodeext(number, expand_atcodes(str, tmp, sizeof tmp));
+			&& text[NodeActionMainMenu+node->action][0]) {
+			node->misc |= NODE_EXT;
+			putnodeext(number, expand_atcodes(text[NodeActionMainMenu+node->action], tmp, sizeof tmp));
 		}
 		else
 			node->misc&=~NODE_EXT;
@@ -124,8 +111,7 @@ bool sbbs_t::putnodeext(uint number, char *ext)
 	}
 	number--;   /* make zero based */
 
-	snprintf(str, sizeof str, "%snode.exb",cfg.ctrl_dir);
-	if((node_ext=nopen(str,O_CREAT|O_RDWR|O_DENYNONE))==-1) {
+	if((node_ext=opennodeext(&cfg))==-1) {
 		errormsg(WHERE,ERR_OPEN,str,O_CREAT|O_RDWR|O_DENYNONE);
 		return false;
 	}
