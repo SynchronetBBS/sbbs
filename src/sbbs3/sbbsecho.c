@@ -1306,13 +1306,13 @@ bool area_is_linked(unsigned area_num, const fidoaddr_t* addr)
 void link_area(unsigned area_num, const fidoaddr_t* addr)
 {
 	area_t* area = &cfg.area[area_num];
-	if((area->link = realloc_or_free(area->link, sizeof(fidoaddr_t) * (area->links + 1))) == NULL) {
+	if((area->link = realloc_or_free(area->link, (sizeof *addr) * (area->links + 1))) == NULL) {
 		lprintf(LOG_ERR,"ERROR line %d allocating memory for area "
 			"#%u links.",__LINE__, area_num + 1);
 		bail(1);
 		return;
 	}
-	memcpy(&area->link[area->links++], &addr, sizeof *addr);
+	memcpy(&area->link[area->links++], addr, sizeof *addr);
 }
 
 /* Returns area index */
@@ -4964,16 +4964,25 @@ ulong export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool resca
 				}
 			}
 
-			if((!rescan && !(opt_export_ftn_echomail) && (msg.from_net.type==NET_FIDO))
-				|| !strnicmp(msg.subj,"NE:",3)) {   /* no echo */
+			if(!rescan && !(opt_export_ftn_echomail) && (msg.from_net.type==NET_FIDO)) {
 				smb_unlockmsghdr(&smb, &msg);
 				smb_freemsgmem(&msg);
 				continue;   /* From a Fido node, ignore it */
 			}
 
+			if(strnicmp(msg.subj,"NE:",3) == 0) {   /* no echo */
+				lprintf(LOG_DEBUG, "Ignoring %s message #%u with 'NO-ECHO' subject: %s"
+					,scfg.sub[subnum]->code, msg.hdr.number, msg.subj);
+				smb_unlockmsghdr(&smb, &msg);
+				smb_freemsgmem(&msg);
+				continue;
+			}
+
 			if(msg.from_net.type!=NET_NONE
 				&& msg.from_net.type!=NET_FIDO
 				&& !(scfg.sub[subnum]->misc&SUB_GATE)) {
+				lprintf(LOG_NOTICE, "GATEWAY VIOLATION: Ignoring %s non-Fido (type %u) network message #%u from %s to %s in area: %s"
+					,scfg.sub[subnum]->code, msg.from_net.type, msg.hdr.number, msg.from, msg.to, tag);
 				smb_unlockmsghdr(&smb, &msg);
 				smb_freemsgmem(&msg);
 				continue;
