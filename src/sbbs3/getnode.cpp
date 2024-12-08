@@ -286,7 +286,7 @@ bool sbbs_t::getnodeext(uint number, char *ext)
 
 	if((node_ext=opennodeext(&cfg))==-1) {
 		memset(ext,0,128);
-		errormsg(WHERE,ERR_OPEN,str,O_RDONLY|O_DENYNONE);
+		errormsg(WHERE,ERR_OPEN,"node.exb",O_RDONLY|O_DENYNONE);
 		return false;
 	}
 

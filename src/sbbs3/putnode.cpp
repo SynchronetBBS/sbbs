@@ -112,7 +112,7 @@ bool sbbs_t::putnodeext(uint number, char *ext)
 	number--;   /* make zero based */
 
 	if((node_ext=opennodeext(&cfg))==-1) {
-		errormsg(WHERE,ERR_OPEN,str,O_CREAT|O_RDWR|O_DENYNONE);
+		errormsg(WHERE,ERR_OPEN,"node.exb",O_CREAT|O_RDWR|O_DENYNONE);
 		return false;
 	}
 	for(count=0;count<LOOP_NODEDAB;count++) {
