@@ -487,6 +487,7 @@ void sbbs_t::printnodedat(uint number, node_t* node)
 			attr(cfg.color[clr_nodestatus]);
 			bputs(" ");
 			bputs(node_activity(&cfg, node, tmp, sizeof tmp, number));
+			attr(cfg.color[clr_nodestatus]);
 			bputs(node_connection_desc(this, node->connection, tmp));
 			if(node->action==NODE_DLNG) {
 				if(cfg.sys_misc&SM_MILITARY) {
