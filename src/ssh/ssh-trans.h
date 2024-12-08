@@ -152,13 +152,21 @@ typedef struct deuce_ssh_transport_state {
 
 	void *key_algo_cbdata;
 	deuce_ssh_key_algo_t key_algo_selected;
-	void *enc_cbdata;
-	deuce_ssh_enc_t enc_selected;
-	void *mac_cbdata;
-	deuce_ssh_mac_t mac_selected;
-	void *comp_cbdata;
-	deuce_ssh_comp_t comp_selected;
 
+	void *enc_c2s_cbdata;
+	deuce_ssh_enc_t enc_c2s_selected;
+	void *enc_s2c_cbdata;
+	deuce_ssh_enc_t enc_s2c_selected;
+
+	void *mac_c2s_cbdata;
+	deuce_ssh_mac_t mac_c2s_selected;
+	void *mac_s2c_cbdata;
+	deuce_ssh_mac_t mac_s2c_selected;
+
+	void *comp_c2s_cbdata;
+	deuce_ssh_comp_t comp_c2s_selected;
+	void *comp_s2c_cbdata;
+	deuce_ssh_comp_t comp_s2c_selected;
 } *deuce_ssh_transport_state_t;
 
 int deuce_ssh_transport_init(deuce_ssh_session_t sess);
