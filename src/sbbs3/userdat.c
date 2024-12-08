@@ -1417,7 +1417,7 @@ char* node_vstatus(scfg_t* cfg, node_t* node, char* str, size_t size)
         case NODE_LOGON:
 			return cfg->text != NULL ? cfg->text[NodeStatusLogon] : "At login prompt";
 		case NODE_LOGOUT:
-			snprintf(str, sizeof str, cfg->text != NULL ? cfg->text[NodeStatusLogout] : "Logging out %s", username(cfg,node->useron,tmp));
+			snprintf(str, size, cfg->text != NULL ? cfg->text[NodeStatusLogout] : "Logging out %s", username(cfg,node->useron,tmp));
 			return str;
         case NODE_EVENT_WAITING:
             return cfg->text != NULL ? cfg->text[NodeStatusEventWaiting] : "Waiting for all nodes to become inactive";
@@ -1509,7 +1509,7 @@ char* node_activity(scfg_t* cfg, node_t* node, char* str, size_t size, int num)
 			break;
 		case NODE_MCHT:
 			if(node->aux != 0)
-				snprintf(str, sizeof str
+				snprintf(str, size
 					,cfg->text != NULL ? cfg->text[NodeActivityChatChannel] : "in multinode chat channel %d"
 					,node->aux & 0xff);
 			else
