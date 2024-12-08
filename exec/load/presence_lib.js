@@ -197,6 +197,8 @@ function node_status(node, is_sysop, options, num)
 						break;
 				}
 			}
+			if(options.status_prefix)
+				output += options.status_prefix;
 			if (!options.exclude_connection) {
 				if(options.connection_prefix)
 					output += options.connection_prefix;
