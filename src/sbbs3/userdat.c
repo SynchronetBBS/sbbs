@@ -1644,7 +1644,8 @@ char* nodestatus(scfg_t* cfg, node_t* node, char* buf, size_t buflen, int num)
 		sprintf(str+strlen(str)
 			," %d error%c",node->errors, node->errors>1 ? 's' : '\0' );
 
-	strncpy(buf,str,buflen);
+	strip_ctrl(str, str);
+	strlcpy(buf,str,buflen);
 
 	return(buf);
 }
