@@ -147,6 +147,8 @@
  * 2024-11-24 Eric Oulashin     Version 2.25b
  *                              When editing file information, check whether cost and times_downloaded
  *                              exist in the metadata before accessing them
+ * 2024-12-08 Eric Oulashin     Version 2.25c
+ *                              Check whether 'desc' is a string in file metadata before trying to use it
  */
 
 "use strict";
@@ -188,8 +190,8 @@ var gAvatar = load({}, "avatar_lib.js");
 
 
 // Version information
-var LISTER_VERSION = "2.25b";
-var LISTER_DATE = "2024-11-24";
+var LISTER_VERSION = "2.25c";
+var LISTER_DATE = "2024-12-08";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1106,6 +1108,9 @@ function showFileInfo_ANSI(pFileMetadata)
 			fileMetadata = pFileMetadata;
 	}
 
+	// Short file description (ensure we have a string)
+	var shortFileDesc = (typeof(fileMetadata.desc) === "string" ? fileMetadata.desc : "");
+
 	// The width of the frame to display the file info (including borders).  This
 	// is declared early so that it can be used for string length adjustment.
 	//var frameWidth = pFileListMenu.size.width - 4; // TODO: Remove?
@@ -1154,7 +1159,7 @@ function showFileInfo_ANSI(pFileMetadata)
 		fileInfoStr += format(fieldFormatStr, "File SHA-1", str);
 	}
 	// Short description
-	str = lfexpand(word_wrap(fileMetadata.desc, frameInnerWidth)).replace(/\r\n$/, "");
+	str = lfexpand(word_wrap(shortFileDesc, frameInnerWidth)).replace(/\r\n$/, "");
 	fileInfoStr += format(fieldFormatStr, "Description", str);
 	// Author, group
 	var authorStr = fileMetadata.hasOwnProperty("author") ? fileMetadata.author : "";
@@ -1340,6 +1345,9 @@ function showFileInfo_noANSI(pFileMetadata)
 	if (!fileMetadata.hasOwnProperty("extdesc"))
 		fileMetadata = getFileInfoFromFilebase(dirCode, fileMetadata.name, FileBase.DETAIL.EXTENDED);
 
+	// Short file description (ensure we have a string)
+	var shortFileDesc = (typeof(fileMetadata.desc) === "string" ? fileMetadata.desc : "");
+
 	var labelLen = 16;
 	var lblSep = " : ";
 	var valueLen = console.screen_columns - labelLen - console.strlen(lblSep) - 1;
@@ -1370,7 +1378,7 @@ function showFileInfo_noANSI(pFileMetadata)
 	if (fileMetadata.hasOwnProperty("sha1"))
 		printf(generalFormatStr, "File SHA-1", fileMetadata.sha1.substr(0, valueLen));
 	formatStr = "\x01n\x01g%-" + labelLen + "s\x01h" + lblSep + "\x01n" + gColors.desc + "%-" + valueLen + "s\x01n\r\n";
-	printf(formatStr, "Description", fileMetadata.desc.substr(0, valueLen));
+	printf(formatStr, "Description", shortFileDesc.substr(0, valueLen));
 	var authorStr = fileMetadata.hasOwnProperty("author") ? fileMetadata.author : "";
 	printf(generalFormatStr, "Author", authorStr.substr(0, valueLen));
 	var groupStr = fileMetadata.hasOwnProperty("author_org") ? fileMetadata.author_org : "";
@@ -1993,7 +2001,8 @@ function editFileInfo(pFileList, pFileListMenu)
 	var promptText = bbs.text(bbs.text.EditDescription);
 	var editWidth = console.screen_columns - console.strlen(promptText) - 1;
 	console.mnemonics(promptText);
-	newMetadata.desc = console.getstr(fileMetadata.desc, editWidth, K_EDIT|K_LINE|K_NOSPIN); // K_NOCRLF
+	var shortFileDesc = (typeof(fileMetadata.desc) === "string" ? fileMetadata.desc : "");
+	newMetadata.desc = console.getstr(shortFileDesc, editWidth, K_EDIT|K_LINE|K_NOSPIN); // K_NOCRLF
 	if (console.aborted)
 		return retObj;
 	// Tags
@@ -5704,10 +5713,11 @@ function doFileView(pDirCode, pFilespec)
 								addToQueueSuccessful = batchDLFile.iniSetValue(fileMetadata.name, "dir", pDirCode);
 								if (addToQueueSuccessful)
 								{
-									addToQueueSuccessful = batchDLFile.iniSetValue(fileMetadata.name, "desc", fileMetadata.desc);
+									var shortFileDesc = (typeof(fileMetadata.desc) === "string" ? fileMetadata.desc : "");
+									addToQueueSuccessful = batchDLFile.iniSetValue(fileMetadata.name, "desc", shortFileDesc);
 									// Update the batch DL queue stats object
 									++(batchDLQueueStats.numFilesInQueue);
-									batchDLQueueStats.filenames.push({ filename: fileMetadata.name, desc: fileMetadata.desc });
+									batchDLQueueStats.filenames.push({ filename: fileMetadata.name, desc: shortFileDesc });
 									batchDLQueueStats.totalSize += fileMetadata.size;
 									if (fileMetadata.hasOwnProperty("cost"))
 										batchDLQueueStats.totalCost += fileMetadata.cost;

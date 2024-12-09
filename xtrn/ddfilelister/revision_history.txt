@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.25c    2024-12-08   Bug fix for trying to use 'desc' in file metadata and not
+                      checking whether it's defined.
 2.25b    2024-11-24   When editing file information, check whether cost and
                       times_downloaded exist in the metadata before accessing
                       them
