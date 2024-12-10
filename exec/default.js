@@ -203,10 +203,7 @@ while(bbs.online && !js.terminated) {
 		cmd = console.getstr();
 		if(cmd == '!')
 			cmd = last_str_cmd;
-		var script = system.mods_dir + "str_cmds.js";
-		if(!file_exists(script))
-			script = system.exec_dir + "str_cmds.js";
-		js.exec(script, {}, cmd);
+		load({}, "str_cmds.js", cmd);
 		last_str_cmd = cmd;
 		continue;
 	}

@@ -352,6 +352,11 @@ function str_cmds(str)
 		}
 
 		if(str=="HELP")
+			writeln("RELOAD\tReload the current shell (if JavaScript).");
+		if(str=="RELOAD")
+			exit(0);
+
+		if(str=="HELP")
 			writeln("SLOG\tExecutes the slog utility to display system statistics.");
 		if(str=="SLOG") {
 			bbs.exec(bbs.cmdstr("%!slog%. /p"),EX_STDIO|EX_NATIVE);
