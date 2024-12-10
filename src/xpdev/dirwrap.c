@@ -813,7 +813,9 @@ int delfiles(const char *inpath, const char *spec, size_t keep)
 	free(path);
 	if(keep >= g.gl_pathc)
 		return 0;
-	for(i = 0; i < g.gl_pathc && files < g.gl_pathc - keep; i++) {
+	for(i = 0; i < g.gl_pathc; i++) {
+		if(keep > 0 && files >= g.gl_pathc - keep)
+			break;
 		fpath = g.gl_pathv[i];
 		if(isdir(fpath)) {
 			fname = getfname(fpath);
