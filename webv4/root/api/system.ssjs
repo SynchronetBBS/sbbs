@@ -1,6 +1,6 @@
 require('sbbsdefs.js', 'SYS_CLOSED');
 require('nodedefs.js', 'NODE_WFC');
-require("presence_lib.js", 'extended_status');
+require("presence_lib.js", 'node_status');
 var settings = load('modopts.js', 'web') || { web_directory: '../webv4' };
 
 load(settings.web_directory + '/lib/init.js');
