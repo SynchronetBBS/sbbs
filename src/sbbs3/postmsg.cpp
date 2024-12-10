@@ -68,6 +68,7 @@ bool sbbs_t::postmsg(int subnum, int wm_mode, smb_t* resmb, smbmsg_t* remsg)
 {
 	char	str[256];
 	char	title[LEN_TITLE+1] = "";
+	char	org_title[LEN_TITLE+1] = "";
 	char	top[256] = "";
 	char	touser[64] = "";
 	char	from[64];
@@ -93,6 +94,7 @@ bool sbbs_t::postmsg(int subnum, int wm_mode, smb_t* resmb, smbmsg_t* remsg)
 
 	if(remsg) {
 		SAFECOPY_UTF8(title, msghdr_field(remsg, remsg->subj, NULL, term_supports(UTF8)));
+		SAFECOPY(org_title, title);
 		if(remsg->hdr.attr&MSG_ANONYMOUS)
 			SAFECOPY(from,text[Anonymous]);
 		else
@@ -300,6 +302,8 @@ bool sbbs_t::postmsg(int subnum, int wm_mode, smb_t* resmb, smbmsg_t* remsg)
 	msg_client_hfields(&msg,&client);
 	smb_hfield_str(&msg,SENDERSERVER, server_host_name());
 
+	if(remsg != NULL && remsg->subj != NULL && strcmp(title, org_title) == 0)
+		SAFECOPY(title, remsg->subj); // If msg subject not changed by user, use original (possibly UTF-8 encoded) subject
 	smb_hfield_str(&msg,SUBJECT,title);
 
 	add_msg_ids(&cfg, &smb, &msg, remsg);
