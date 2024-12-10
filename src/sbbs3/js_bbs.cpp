@@ -1549,6 +1549,14 @@ js_replace_text(JSContext *cx, uintN argc, jsval *arglist)
 	if(JSVAL_IS_NUMBER(argv[0])) {
 		if(!JS_ValueToECMAUint32(cx,argv[0],&i))
 			return JS_FALSE;
+	} else {
+		JSString* js_str = JS_ValueToString(cx, argv[0]);
+		if(js_str == NULL)
+			return JS_FALSE;
+		char* id = nullptr;
+		JSSTRING_TO_MSTRING(cx, js_str, id, NULL);
+		i = sbbs->get_text_num(id) + 1;
+		free(id);
 	}
 	if(i < 1 || i > TOTAL_TEXT)
 		return(JS_TRUE);
@@ -1584,11 +1592,22 @@ js_revert_text(JSContext *cx, uintN argc, jsval *arglist)
 	if((sbbs=js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist)))==NULL)
 		return(JS_FALSE);
 
-	if(argc && JSVAL_IS_NUMBER(argv[0])) {
+	if(!js_argc(cx, argc, 1))
+		return(JS_FALSE);
+
+	if(JSVAL_IS_NUMBER(argv[0])) {
 		if(!JS_ValueToECMAUint32(cx,argv[0],&i))
 			return JS_FALSE;
+		i--;
+	} else {
+		JSString* js_str = JS_ValueToString(cx, argv[0]);
+		if(js_str == NULL)
+			return JS_FALSE;
+		char* id = nullptr;
+		JSSTRING_TO_MSTRING(cx, js_str, id, NULL);
+		i = sbbs->get_text_num(id);
+		free(id);
 	}
-	i--;
 
 	if(i>=TOTAL_TEXT) {
 		for(i=0;i<TOTAL_TEXT;i++) {
@@ -1624,7 +1643,7 @@ js_load_text(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
- 	if(!js_argc(cx, argc, 1))
+	if(!js_argc(cx, argc, 1))
 		return(JS_FALSE);
 
 	if((js_str=JS_ValueToString(cx, argv[0]))==NULL) {
@@ -4615,13 +4634,13 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	)
 	,310
 	},
-	{"replace_text",	js_replace_text,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("index_number, text")
+	{"replace_text",	js_replace_text,	2,	JSTYPE_BOOLEAN,	JSDOCSTR("<i>number</i> index or <i>string</i> id, text")
 	,JSDOCSTR("Replace specified <tt>text.dat</tt> or <tt>text.ini</tt> string in memory")
 	,310
 	},
-	{"revert_text",		js_revert_text,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[<i>number</i> index=<i>all</i>]")
+	{"revert_text",		js_revert_text,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("[<i>number</i> index or <i>string</i> id]")
 	,JSDOCSTR("Revert specified text string to original <tt>text.dat</tt> or <tt>text.ini</tt> string; "
-		"if <i>index</i> unspecified, reverts all text lines")
+		"if <i>index</i> and <i>id</i> are unspecified, reverts all text lines")
 	,310
 	},
 	{"load_text",		js_load_text,		1,	JSTYPE_BOOLEAN,	JSDOCSTR("base_filename")
