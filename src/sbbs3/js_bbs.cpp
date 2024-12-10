@@ -4624,7 +4624,7 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	},
 	/* text.dat */
 	{"text",			js_text,			1,	JSTYPE_STRING,	JSDOCSTR("<i>number</i> index or <i>string</i> id [,<i>bool</i> default_text=false]")
-	,JSDOCSTR("Return current text string (specified via 1-based string index number or identifier string)"
+	,JSDOCSTR("Return current text string (specified via 1-based string index number or identifier string) "
 		"from <tt>text.dat</tt>, <tt>text.ini</tt> or replacement text or <i>null</i> upon error"
 		"<p>"
 		"<i>New in v3.20:</i><br>"
