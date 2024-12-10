@@ -581,6 +581,25 @@ static int lprintf(int level, const char *fmt, ...)
     return lputs(level, sbuf);
 }
 
+#if defined(__GNUC__)   // Catch printf-format errors with errprintf
+static int errprintf(int level, int line, const char* function, const char* file, const char *fmt, ...) __attribute__ ((format (printf, 5, 6)));
+#endif
+static int errprintf(int level, int line, const char* function, const char* file, const char *fmt, ...)
+{
+	va_list argptr;
+	char sbuf[1024];
+
+	va_start(argptr,fmt);
+	vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
+	sbuf[sizeof(sbuf)-1]=0;
+	va_end(argptr);
+	if(repeated_error(line, function)) {
+		if(level < LOG_WARNING)
+			level = LOG_WARNING;
+	}
+	return lputs(level, sbuf);
+}
+
 static int writebuf(http_session_t	*session, const char *buf, size_t len)
 {
 	size_t	sent=0;
@@ -731,7 +750,7 @@ static bool winsock_startup(void)
 		return (true);
 	}
 
-    lprintf(LOG_CRIT,"!WinSock startup ERROR %d", status);
+    errprintf(LOG_CRIT, WHERE, "!WinSock startup ERROR %d", status);
 	return (false);
 }
 
@@ -1302,7 +1321,7 @@ static bool send_headers(http_session_t *session, const char *status, int chunke
 	}
 	headers=malloc(MAX_HEADERS_SIZE);
 	if(headers==NULL)  {
-		lprintf(LOG_CRIT,"Could not allocate memory for response headers.");
+		errprintf(LOG_CRIT, WHERE, "Could not allocate memory for response headers.");
 		session->req.sent_headers=true;
 		return(false);
 	}
@@ -1689,7 +1708,7 @@ void http_logoff(http_session_t* session, SOCKET socket, int line)
 
 	SAFECOPY(session->username,unknown);
 	if(!logoutuserdat(&scfg, &session->user, time(NULL), session->logon_time))
-		lprintf(LOG_ERR,"%04d !ERROR in logoutuserdat", socket);
+		errprintf(LOG_ERR, WHERE, "%04d !ERROR in logoutuserdat", socket);
 	memset(&session->user,0,sizeof(session->user));
 	SAFECOPY(session->user.alias, unknown);
 	session->last_user_num=session->user.number;
@@ -1713,7 +1732,7 @@ bool http_checkuser(http_session_t * session)
 			if(!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, &session->user, &session->client
 				,startup->file_vpath_prefix, session->subscan /* subscan */, &mqtt)) {
 				JS_ENDREQUEST(session->js_cx);
-				lprintf(LOG_ERR,"%04d !JavaScript ERROR creating user objects",session->socket);
+				errprintf(LOG_ERR, WHERE, "%04d !JavaScript ERROR creating user objects",session->socket);
 				send_error(session,__LINE__,"500 Error initializing JavaScript User Objects");
 				return(false);
 			}
@@ -1722,7 +1741,7 @@ bool http_checkuser(http_session_t * session)
 			if(!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, /* user: */NULL, &session->client
 				,startup->file_vpath_prefix, session->subscan /* subscan */, &mqtt)) {
 				JS_ENDREQUEST(session->js_cx);
-				lprintf(LOG_ERR,"%04d !ERROR initializing JavaScript User Objects",session->socket);
+				errprintf(LOG_ERR, WHERE, "%04d !ERROR initializing JavaScript User Objects",session->socket);
 				send_error(session,__LINE__,"500 Error initializing JavaScript User Objects");
 				return(false);
 			}
@@ -3187,7 +3206,7 @@ static bool get_request_headers(http_session_t * session)
 				close_session_socket(session);
 			i=strlen(head_line);
 			if(i>sizeof(head_line)-1) {
-				lprintf(LOG_ERR,"%04d !ERROR long multi-line header. The web server is broken!", session->socket);
+				errprintf(LOG_ERR, WHERE, "%04d !ERROR long multi-line header. The web server is broken!", session->socket);
 				i=sizeof(head_line)/2;
 				break;
 			}
@@ -3538,7 +3557,7 @@ static bool exec_js_webctrl(http_session_t* session, char *name, char* script, c
 	char		redir_req[MAX_REQUEST_LINE+1];
 
 	if(!js_setup_cx(session)) {
-		lprintf(LOG_ERR,"%04d !ERROR setting up JavaScript context for %s", session->socket, name);
+		errprintf(LOG_ERR, WHERE, "%04d !ERROR setting up JavaScript context for %s", session->socket, name);
 		return false;
 	}
 
@@ -4522,7 +4541,7 @@ static int cgi_read_out(void *arg, char *buf, size_t sz)
 	struct cgi_data *cd = (struct cgi_data *)arg;
 
 	if(ReadFile(cd->rdpipe,buf,sz,&msglen,NULL)==false) {
-		lprintf(LOG_ERR,"%04d !ERROR %d reading from pipe"
+		errprintf(LOG_ERR, WHERE, "%04d !ERROR %d reading from pipe"
 			,cd->session->socket,GetLastError());
 		return -1;
 	}
@@ -4747,7 +4766,7 @@ static int do_cgi_stuff(http_session_t *session, struct cgi_api *cgi, bool orig_
 				i=cgi->read_err(cgi->arg,buf,sizeof(buf)-1);
 				if(i>0) {
 					buf[i]=0;
-					lprintf(LOG_ERR,"%04d CGI Error: %s",session->socket,buf);
+					errprintf(LOG_ERR, WHERE, "%04d CGI Error: %s",session->socket,buf);
 					start=time(NULL);
 				}
 			}
@@ -4770,7 +4789,7 @@ static int do_cgi_stuff(http_session_t *session, struct cgi_api *cgi, bool orig_
 		}
 		else  {
 			if((time(NULL)-start) >= startup->max_cgi_inactivity)  {
-				lprintf(LOG_ERR,"%04d CGI Process %s Timed out",session->socket,getfname(session->req.physical_path));
+				errprintf(LOG_ERR, WHERE, "%04d CGI Process %s Timed out",session->socket,getfname(session->req.physical_path));
 				done_reading=true;
 				start=0;
 				ret |= CGI_STUFF_TIMEDOUT;
@@ -4864,12 +4883,12 @@ static bool exec_fastcgi(http_session_t *session)
 	closesocket(sock);
 
 	if(!(ret & CGI_STUFF_VALID_HEADERS)) {
-		lprintf(LOG_ERR,"%04d FastCGI Process did not generate valid headers", session->socket);
+		errprintf(LOG_ERR, WHERE, "%04d FastCGI Process did not generate valid headers", session->socket);
 		return(false);
 	}
 
 	if(!(ret & CGI_STUFF_DONE_PARSING)) {
-		lprintf(LOG_ERR,"%04d FastCGI Process did not send data header termination", session->socket);
+		errprintf(LOG_ERR, WHERE, "%04d FastCGI Process did not send data header termination", session->socket);
 		return(false);
 	}
 
@@ -4918,7 +4937,7 @@ static bool exec_cgi(http_session_t *session)
 
 	if (session->tls_sess) {
 		if(pipe(in_pipe)!=0) {
-			lprintf(LOG_ERR,"%04d Can't create in_pipe",session->socket);
+			errprintf(LOG_ERR, WHERE, "%04d Can't create in_pipe",session->socket);
 			return(false);
 		}
 	}
@@ -4928,7 +4947,7 @@ static bool exec_cgi(http_session_t *session)
 			close(in_pipe[0]);
 			close(in_pipe[1]);
 		}
-		lprintf(LOG_ERR,"%04d Can't create out_pipe",session->socket);
+		errprintf(LOG_ERR, WHERE, "%04d Can't create out_pipe",session->socket);
 		return(false);
 	}
 
@@ -4939,7 +4958,7 @@ static bool exec_cgi(http_session_t *session)
 		}
 		close(out_pipe[0]);
 		close(out_pipe[1]);
-		lprintf(LOG_ERR,"%04d Can't create err_pipe",session->socket);
+		errprintf(LOG_ERR, WHERE, "%04d Can't create err_pipe",session->socket);
 		return(false);
 	}
 
@@ -4987,12 +5006,12 @@ static bool exec_cgi(http_session_t *session)
 			execle(cmdline,cmdline,NULL,env_list);
 		}
 
-		lprintf(LOG_ERR,"%04d !ERROR %d executing execle(%s)",session->socket, errno, cmdline);
+		errprintf(LOG_ERR, WHERE, "%04d !ERROR %d executing execle(%s)",session->socket, errno, cmdline);
 		exit(EXIT_FAILURE); /* Should never happen */
 	}
 
 	if(child==-1)  {
-		lprintf(LOG_ERR,"%04d !ERROR %d invoking fork()",session->socket,errno);
+		errprintf(LOG_ERR, WHERE, "%04d !ERROR %d invoking fork()",session->socket,errno);
 		if (session->tls_sess)
 			close(in_pipe[1]);	/* close write-end of pipe */
 		close(out_pipe[0]);		/* close read-end of pipe */
@@ -5077,7 +5096,7 @@ static bool exec_cgi(http_session_t *session)
 			i=read(err_pipe[0],buf,sizeof(buf)-1);
 			if(i!=-1 && i!=0) {
 				buf[i]=0;
-				lprintf(LOG_ERR,"%04d %s [%s] !CGI Error: %s",session->socket, session->client.protocol, session->host_ip, buf);
+				errprintf(LOG_ERR, WHERE, "%04d %s [%s] !CGI Error: %s",session->socket, session->client.protocol, session->host_ip, buf);
 			}
 		}
 
@@ -5098,13 +5117,13 @@ static bool exec_cgi(http_session_t *session)
 	close(out_pipe[0]);		/* close read-end of pipe */
 	close(err_pipe[0]);		/* close read-end of pipe */
 	if(!got_valid_headers) {
-		lprintf(LOG_ERR,"%04d CGI Process %s did not generate valid headers"
+		errprintf(LOG_ERR, WHERE, "%04d CGI Process %s did not generate valid headers"
 			,session->socket,getfname(cmdline));
 		return(false);
 	}
 
 	if(!done_parsing_headers) {
-		lprintf(LOG_ERR,"%04d CGI Process %s did not send data header termination"
+		errprintf(LOG_ERR, WHERE, "%04d CGI Process %s did not send data header termination"
 			,session->socket,getfname(cmdline));
 		return(false);
 	}
@@ -5169,14 +5188,14 @@ static bool exec_cgi(http_session_t *session)
 
 	/* Create the child output pipe (override default 4K buffer size) */
 	if(!CreatePipe(&rdoutpipe,&startup_info.hStdOutput,&sa,sizeof(buf))) {
-		lprintf(LOG_ERR,"%04d !ERROR %d creating stdout pipe",session->socket,GetLastError());
+		errprintf(LOG_ERR, WHERE, "%04d !ERROR %d creating stdout pipe",session->socket,GetLastError());
 		return(false);
 	}
 	startup_info.hStdError=startup_info.hStdOutput;
 
 	/* Create the child input pipe. */
 	if(!CreatePipe(&startup_info.hStdInput,&wrinpipe,&sa,0 /* default buffer size */)) {
-		lprintf(LOG_ERR,"%04d !ERROR %d creating stdin pipe",session->socket,GetLastError());
+		errprintf(LOG_ERR, WHERE, "%04d !ERROR %d creating stdin pipe",session->socket,GetLastError());
 		CloseHandle(rdoutpipe);
 		return(false);
 	}
@@ -5212,7 +5231,7 @@ static bool exec_cgi(http_session_t *session)
 	strListFreeBlock(env_block);
 
 	if(!success) {
-		lprintf(LOG_ERR,"%04d !ERROR %d running %s",session->socket,GetLastError(),cmdline);
+		errprintf(LOG_ERR, WHERE, "%04d !ERROR %d running %s",session->socket,GetLastError(),cmdline);
 		return(false);
     }
 
@@ -5228,7 +5247,7 @@ static bool exec_cgi(http_session_t *session)
 		got_valid_headers = true;
 
     if(GetExitCodeProcess(process_info.hProcess, &retval)==false)
-	    lprintf(LOG_ERR,"%04d !ERROR GetExitCodeProcess(%s) returned %d"
+	    errprintf(LOG_ERR, WHERE, "%04d !ERROR GetExitCodeProcess(%s) returned %d"
 			,session->socket,getfname(cmdline),GetLastError());
 
 	if(retval==STILL_ACTIVE) {
@@ -5680,7 +5699,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 	/* user-specific objects */
 	if(!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, &session->user, &session->client
 		,startup->file_vpath_prefix, session->subscan /* subscan */, &mqtt)) {
-		lprintf(LOG_ERR,"%04d !JavaScript ERROR creating user objects",session->socket);
+		errprintf(LOG_ERR, WHERE, "%04d !JavaScript ERROR creating user objects",session->socket);
 		send_error(session,__LINE__,"500 Error initializing JavaScript User Objects");
 		return(false);
 	}
@@ -5976,7 +5995,7 @@ static bool js_setup_cx(http_session_t* session)
 			,session->socket,startup->js.max_bytes);
 
 		if((session->js_runtime=jsrt_GetNew(startup->js.max_bytes, 5000, __FILE__, __LINE__))==NULL) {
-			lprintf(LOG_ERR,"%04d !ERROR creating JavaScript runtime",session->socket);
+			errprintf(LOG_ERR, WHERE, "%04d !ERROR creating JavaScript runtime",session->socket);
 			return(false);
 		}
 	}
@@ -6009,7 +6028,7 @@ static bool js_setup_cx(http_session_t* session)
 
 	lprintf(LOG_DEBUG,"%04d JavaScript: Initializing HttpRequest object",session->socket);
 	if(js_CreateHttpRequestObject(session->js_cx, session->js_glob, session)==NULL) {
-		lprintf(LOG_ERR,"%04d !ERROR initializing JavaScript HttpRequest object",session->socket);
+		errprintf(LOG_ERR, WHERE, "%04d !ERROR initializing JavaScript HttpRequest object",session->socket);
 		JS_ENDREQUEST(session->js_cx);
 		return(false);
 	}
@@ -6026,7 +6045,7 @@ static bool js_setup(http_session_t* session)
 
 	lprintf(LOG_DEBUG,"%04d JavaScript: Initializing HttpReply object",session->socket);
 	if(js_CreateHttpReplyObject(session->js_cx, session->js_glob, session)==NULL) {
-		lprintf(LOG_ERR,"%04d !ERROR initializing JavaScript HttpReply object",session->socket);
+		errprintf(LOG_ERR, WHERE, "%04d !ERROR initializing JavaScript HttpReply object",session->socket);
 		JS_ENDREQUEST(session->js_cx);
 		return(false);
 	}
@@ -6175,7 +6194,7 @@ static bool exec_ssjs(http_session_t* session, char* script)  {
 		lprintf(LOG_DEBUG,"%04d JavaScript: Compiling script: %s",session->socket,script);
 		if((js_script=JS_CompileFile(session->js_cx, session->js_glob
 			,script))==NULL) {
-			lprintf(LOG_ERR,"%04d !JavaScript FAILED to compile script (%s)"
+			errprintf(LOG_ERR, WHERE, "%04d !JavaScript FAILED to compile script (%s)"
 				,session->socket,script);
 			JS_RemoveObjectRoot(session->js_cx, &session->js_glob);
 			JS_ENDREQUEST(session->js_cx);
@@ -6315,7 +6334,7 @@ FILE *open_post_file(http_session_t *session)
 	// Create temporary file for post data.
 	SAFEPRINTF3(path,"%sSBBS_POST.%u.%u.data",scfg.temp_dir,getpid(),session->socket);
 	if((fp=fopen(path,"wb"))==NULL) {
-		lprintf(LOG_ERR,"%04d !ERROR %d (%s) opening/creating %s", session->socket, errno, strerror(errno), path);
+		errprintf(LOG_ERR, WHERE, "%04d !ERROR %d (%s) opening/creating %s", session->socket, errno, strerror(errno), path);
 		return fp;
 	}
 	if(session->req.cleanup_file[CLEANUP_POST_DATA]) {
@@ -6326,7 +6345,7 @@ FILE *open_post_file(http_session_t *session)
 	session->req.cleanup_file[CLEANUP_POST_DATA]=strdup(path);
 	if(session->req.post_data != NULL) {
 		if(fwrite(session->req.post_data, session->req.post_len, 1, fp)!=1) {
-			lprintf(LOG_ERR,"%04d !ERROR %d (%s) writing to %s", session->socket, errno, strerror(errno), path);
+			errprintf(LOG_ERR, WHERE, "%04d !ERROR %d (%s) writing to %s", session->socket, errno, strerror(errno), path);
 			fclose(fp);
 			return NULL;
 		}
@@ -6384,7 +6403,7 @@ int read_post_data(http_session_t * session)
 					/* FREE()d in close_request */
 					p=realloc(session->req.post_data, s);
 					if(p==NULL) {
-						lprintf(LOG_CRIT,"%04d !ERROR Allocating %lu bytes of memory",session->socket, (ulong)session->req.post_len);
+						errprintf(LOG_CRIT, WHERE, "%04d !ERROR Allocating %lu bytes of memory",session->socket, (ulong)session->req.post_len);
 						send_error(session,__LINE__,"413 Request entity too large");
 						FCLOSE_OPEN_FILE(fp);
 						return(false);
@@ -6442,7 +6461,7 @@ int read_post_data(http_session_t * session)
 				if(s < (MAX_POST_LEN+1) && (session->req.post_data=malloc((size_t)(s+1))) != NULL)
 					session->req.post_len=recvbufsocket(session,session->req.post_data,s);
 				else  {
-					lprintf(LOG_CRIT,"%04d !ERROR Allocating %lu bytes of memory",session->socket, (ulong)s);
+					errprintf(LOG_CRIT, WHERE, "%04d !ERROR Allocating %lu bytes of memory",session->socket, (ulong)s);
 					send_error(session,__LINE__,"413 Request entity too large");
 					return(false);
 				}
@@ -6704,7 +6723,7 @@ void http_session_thread(void* arg)
 	/* Start up the output buffer */
 	/* FREE()d in this block (RingBufDispose before all returns) */
 	if(RingBufInit(&(session.outbuf), OUTBUF_LEN)) {
-		lprintf(LOG_ERR,"%04d Canot create output ringbuffer!", session.socket);
+		errprintf(LOG_ERR, WHERE, "%04d Canot create output ringbuffer!", session.socket);
 		close_session_no_rb(&session);
 		thread_down();
 		return;
@@ -6839,7 +6858,7 @@ void http_session_thread(void* arg)
 		if(startup->options&WEB_OPT_HTTP_LOGGING) {
 			/* FREE()d in http_logging_thread... passed there by close_request() */
 			if((session.req.ld=(struct log_data*)malloc(sizeof(struct log_data)))==NULL)
-				lprintf(LOG_ERR,"%04d Cannot allocate memory for log data!",session.socket);
+				errprintf(LOG_ERR, WHERE, "%04d Cannot allocate memory for log data!",session.socket);
 		}
 		if(session.req.ld!=NULL) {
 			memset(session.req.ld,0,sizeof(struct log_data));
@@ -6854,21 +6873,21 @@ void http_session_thread(void* arg)
 			if(session.req.headers==NULL) {
 				/* FREE()d in close_request() */
 				if((session.req.headers=strListInit())==NULL) {
-					lprintf(LOG_ERR,"%04d !ERROR allocating memory for header list",session.socket);
+					errprintf(LOG_ERR, WHERE, "%04d !ERROR allocating memory for header list",session.socket);
 					init_error=true;
 				}
 			}
 			if(session.req.cgi_env==NULL) {
 				/* FREE()d in close_request() */
 				if((session.req.cgi_env=strListInit())==NULL) {
-					lprintf(LOG_ERR,"%04d !ERROR allocating memory for CGI environment list",session.socket);
+					errprintf(LOG_ERR, WHERE, "%04d !ERROR allocating memory for CGI environment list",session.socket);
 					init_error=true;
 				}
 			}
 			if(session.req.dynamic_heads==NULL) {
 				/* FREE()d in close_request() */
 				if((session.req.dynamic_heads=strListInit())==NULL) {
-					lprintf(LOG_ERR,"%04d !ERROR allocating memory for dynamic header list",session.socket);
+					errprintf(LOG_ERR, WHERE, "%04d !ERROR allocating memory for dynamic header list",session.socket);
 					init_error=true;
 				}
 			}
@@ -7075,7 +7094,7 @@ void http_logging_thread(void* arg)
 		if(ld==NULL) {
 			if(terminate_http_logging_thread)
 				break;
-			lprintf(LOG_ERR,"Web Server access-logging thread received NULL linked list log entry");
+			errprintf(LOG_ERR, WHERE, "Web Server access-logging thread received NULL linked list log entry");
 			continue;
 		}
 		SAFECOPY(newfilename,base);
@@ -7096,7 +7115,7 @@ void http_logging_thread(void* arg)
 			SAFECOPY(filename,newfilename);
 			logfile=fopen(filename,"ab");
 			if(logfile == NULL)
-				lprintf(LOG_ERR,"Web Server error %d (%s) opening/creating access-log file %s", errno, strerror(errno), filename);
+				errprintf(LOG_ERR, WHERE, "Web Server error %d (%s) opening/creating access-log file %s", errno, strerror(errno), filename);
 			else
 				lprintf(LOG_INFO,"Web Server access-log file is now: %s",filename);
 		}
@@ -7259,7 +7278,7 @@ void web_server(void* arg)
 			,ctime_r(&t,logstr),startup->options);
 
 		if(chdir(startup->ctrl_dir)!=0)
-			lprintf(LOG_ERR,"!ERROR %d (%s) changing directory to: %s", errno, strerror(errno), startup->ctrl_dir);
+			errprintf(LOG_ERR, WHERE, "!ERROR %d (%s) changing directory to: %s", errno, strerror(errno), startup->ctrl_dir);
 
 		/* Initial configuration and load from CNF files */
 		SAFECOPY(scfg.ctrl_dir,startup->ctrl_dir);
@@ -7319,7 +7338,7 @@ void web_server(void* arg)
 		ws_set = xpms_create(startup->bind_retry_count, startup->bind_retry_delay, lprintf);
 
 		if(ws_set == NULL) {
-			lprintf(LOG_CRIT,"!ERROR %d creating HTTP socket set", SOCKET_ERRNO);
+			errprintf(LOG_CRIT, WHERE, "!ERROR %d creating HTTP socket set", SOCKET_ERRNO);
 			cleanup(1);
 			return;
 		}
@@ -7419,7 +7438,7 @@ void web_server(void* arg)
 			if(session==NULL) {
 				/* FREE()d at the start of the session thread */
 				if((session=malloc(sizeof(http_session_t)))==NULL) {
-					lprintf(LOG_CRIT,"!ERROR allocating %lu bytes of memory for http_session_t", (ulong)sizeof(http_session_t));
+					errprintf(LOG_CRIT, WHERE, "!ERROR allocating %lu bytes of memory for http_session_t", (ulong)sizeof(http_session_t));
 					continue;
 				}
 				memset(session, 0, sizeof(http_session_t));
@@ -7465,7 +7484,7 @@ void web_server(void* arg)
 			memset(&local_addr, 0, sizeof(local_addr));
 			socklen_t addr_len = sizeof(local_addr);
 			if(getsockname(client_socket, (struct sockaddr *)&local_addr, &addr_len) != 0) {
-				lprintf(LOG_CRIT,"%04d %s !ERROR %d getting local address/port of socket"
+				errprintf(LOG_CRIT, WHERE, "%04d %s !ERROR %d getting local address/port of socket"
 					,client_socket, session->is_tls ? "HTTPS":"HTTP", SOCKET_ERRNO);
 				close_socket(&client_socket);
 				continue;
