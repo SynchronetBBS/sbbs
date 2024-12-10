@@ -230,6 +230,25 @@ static int lprintf(int level, const char *fmt, ...)
     return lputs(level, condense_whitespace(sbuf));
 }
 
+#if defined(__GNUC__)   // Catch printf-format errors with lprintf
+static int errprintf(int level, int line, const char* function, const char* file, const char *fmt, ...) __attribute__ ((format (printf, 5, 6)));
+#endif
+static int errprintf(int level, int line, const char* function, const char* file, const char *fmt, ...)
+{
+	va_list argptr;
+	char sbuf[1024];
+
+	va_start(argptr,fmt);
+	vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
+	sbuf[sizeof(sbuf)-1]=0;
+	va_end(argptr);
+	if(repeated_error(line, function)) {
+		if(level < LOG_WARNING)
+			level = LOG_WARNING;
+	}
+	return lputs(level, condense_whitespace(sbuf));
+}
+
 #ifdef _WINSOCKAPI_
 
 static WSADATA WSAData;
@@ -396,7 +415,7 @@ int sockprintf(SOCKET sock, const char* prot, CRYPT_SESSION sess, char *fmt, ...
     va_end(argptr);
 
 	if(len < 0 || sbuf == NULL) { /* format error or allocation error */
-		lprintf(LOG_CRIT, "%04d %s %s error (%d) formatting string: '%s'", sock, prot, __FUNCTION__, len, fmt);
+		errprintf(LOG_CRIT, WHERE, "%04d %s %s error (%d) formatting string: '%s'", sock, prot, __FUNCTION__, len, fmt);
 		free(sbuf);
 		return 0;
 	}
@@ -404,7 +423,7 @@ int sockprintf(SOCKET sock, const char* prot, CRYPT_SESSION sess, char *fmt, ...
 		lprintf(LOG_DEBUG,"%04d %s TX: %.*s", sock, prot, len, sbuf);
 	char* newp = realloc(sbuf, len + 2); // "\r\n"
 	if(newp == NULL) { /* format error or allocation error */
-		lprintf(LOG_CRIT, "%04d %s %s re-allocation failure of %d bytes", sock, prot, __FUNCTION__, len + 2);
+		errprintf(LOG_CRIT, WHERE, "%04d %s %s re-allocation failure of %d bytes", sock, prot, __FUNCTION__, len + 2);
 		free(sbuf);
 		return 0;
 	}
@@ -912,7 +931,7 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 			sockprintf(socket,prot,sess,"");
 			lprintf(LOG_INFO,"%04u %s MIME Encoding and sending %s", socket, prot, file_list[i]);
 			if(!mimeattach(socket,prot,sess,mime_boundary,file_list[i]))
-				lprintf(LOG_ERR,"%04u %s !ERROR opening/encoding/sending %s", socket, prot, file_list[i]);
+				errprintf(LOG_ERR, WHERE, "%04u %s !ERROR opening/encoding/sending %s", socket, prot, file_list[i]);
 			else {
 				if(msg->hdr.auxattr&MSG_KILLFILE)
 					if(remove(file_list[i])!=0)
@@ -1106,7 +1125,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 
 	socklen_t addr_len = sizeof(server_addr);
 	if((i=getsockname(socket, &server_addr.addr, &addr_len))!=0) {
-		lprintf(LOG_CRIT,"%04d %s !ERROR %d (%d) getting local address/port of socket"
+		errprintf(LOG_CRIT, WHERE, "%04d %s !ERROR %d (%d) getting local address/port of socket"
 			,socket, client.protocol, i, SOCKET_ERRNO);
 		return false;
 	}
@@ -1315,7 +1334,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 			break;
 		}
 		if((i=getuserdat(&scfg, &user))!=0) {
-			lprintf(LOG_ERR,"%04d %s [%s] !ERROR %d getting data on user (%s)"
+			errprintf(LOG_ERR, WHERE, "%04d %s [%s] !ERROR %d getting data on user (%s)"
 				,socket, client.protocol, host_ip, i, username);
 			break;
 		}
@@ -1389,7 +1408,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 		smb.retry_time=scfg.smb_retry_time;
 		smb.subnum=INVALID_SUB;
 		if((i=smb_open(&smb))!=SMB_SUCCESS) {
-			lprintf(LOG_ERR,"%04d %s [%s] <%s> !ERROR %d (%s) opening %s", socket, client.protocol, host_ip, user.alias, i, smb.last_error,smb.file);
+			errprintf(LOG_ERR, WHERE, "%04d %s [%s] <%s> !ERROR %d (%s) opening %s", socket, client.protocol, host_ip, user.alias, i, smb.last_error,smb.file);
 			sockprintf(socket,client.protocol,session,"-ERR %d opening %s",i,smb.file);
 			break;
 		}
@@ -1399,7 +1418,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 		for(l=bytes=0;l<msgs;l++) {
 			msg.hdr.number=mail[l].number;
 			if((i=smb_getmsgidx(&smb,&msg))!=SMB_SUCCESS) {
-				lprintf(LOG_ERR,"%04d %s <%s> !ERROR %d (%s) getting message index"
+				errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d (%s) getting message index"
 					,socket, client.protocol, user.alias, i, smb.last_error);
 				break;
 			}
@@ -1411,7 +1430,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 			i=smb_getmsghdr(&smb,&msg);
 			smb_unlockmsghdr(&smb,&msg);
 			if(i!=0) {
-				lprintf(LOG_ERR,"%04d %s <%s> !ERROR %d (%s) line %u, msg #%u"
+				errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d (%s) line %u, msg #%u"
 					,socket, client.protocol, user.alias, i, smb.last_error, __LINE__, msg.idx.number);
 				break;
 			}
@@ -1454,7 +1473,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 			}
 			if(!stricmp(buf, "RSET")) {
 				if((i=smb_locksmbhdr(&smb))!=SMB_SUCCESS) {
-					lprintf(LOG_ERR,"%04d %s <%s> !ERROR %d (%s) locking message base"
+					errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d (%s) locking message base"
 						,socket, client.protocol, user.alias, i, smb.last_error);
 					sockprintf(socket,client.protocol,session,"-ERR %d locking message base",i);
 					continue;
@@ -1462,7 +1481,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 				for(l=0;l<msgs;l++) {
 					msg.hdr.number=mail[l].number;
 					if((i=smb_getmsgidx(&smb,&msg))!=SMB_SUCCESS) {
-						lprintf(LOG_ERR,"%04d %s <%s> !ERROR %d (%s) getting message index"
+						errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d (%s) getting message index"
 							,socket, client.protocol, user.alias, i, smb.last_error);
 						break;
 					}
@@ -1473,13 +1492,13 @@ static bool pop3_client_thread(pop3_t* pop3)
 					}
 					if((i=smb_getmsghdr(&smb,&msg))!=SMB_SUCCESS) {
 						smb_unlockmsghdr(&smb,&msg);
-						lprintf(LOG_ERR,"%04d %s <%s> !ERROR %d (%s) line %u, msg #%u"
+						errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d (%s) line %u, msg #%u"
 							,socket, client.protocol, user.alias, i, smb.last_error, __LINE__, msg.idx.number);
 						break;
 					}
 					msg.hdr.attr=mail[l].attr;
 					if((i=smb_putmsg(&smb,&msg))!=SMB_SUCCESS)
-						lprintf(LOG_ERR,"%04d %s <%s> !ERROR %d (%s) updating message index"
+						errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d (%s) updating message index"
 							,socket, client.protocol, user.alias, i, smb.last_error);
 					smb_unlockmsghdr(&smb,&msg);
 					smb_freemsgmem(&msg);
@@ -1505,7 +1524,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 					}
 					msg.hdr.number=mail[msgnum-1].number;
 					if((i=smb_getmsgidx(&smb,&msg))!=SMB_SUCCESS) {
-						lprintf(LOG_ERR,"%04d %s <%s> !ERROR %d (%s) getting message index"
+						errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d (%s) getting message index"
 							,socket, client.protocol, user.alias, i, smb.last_error);
 						sockprintf(socket,client.protocol,session,"-ERR %d getting message index",i);
 						break;
@@ -1526,7 +1545,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 					smb_unlockmsghdr(&smb,&msg);
 					if(i!=0) {
 						smb_freemsgmem(&msg);
-						lprintf(LOG_ERR,"%04d %s <%s> !ERROR %d (%s) line %u, msg #%u"
+						errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d (%s) line %u, msg #%u"
 							,socket, client.protocol, user.alias, i, smb.last_error, __LINE__, msg.idx.number);
 						sockprintf(socket,client.protocol,session,"-ERR %d getting message header",i);
 						continue;
@@ -1544,7 +1563,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 				for(l=0;l<msgs;l++) {
 					msg.hdr.number=mail[l].number;
 					if((i=smb_getmsgidx(&smb,&msg))!=SMB_SUCCESS) {
-						lprintf(LOG_ERR,"%04d %s <%s> !ERROR %d (%s) getting message index"
+						errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d (%s) getting message index"
 							,socket, client.protocol, user.alias, i, smb.last_error);
 						break;
 					}
@@ -1559,7 +1578,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 					smb_unlockmsghdr(&smb,&msg);
 					if(i!=0) {
 						smb_freemsgmem(&msg);
-						lprintf(LOG_ERR,"%04d %s <%s> !ERROR %d (%s) line %u, msg #%u"
+						errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d (%s) line %u, msg #%u"
 							,socket, client.protocol, user.alias, i, smb.last_error, __LINE__, msg.idx.number);
 						break;
 					}
@@ -1598,7 +1617,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 					,socket, client.protocol, user.alias, msg.hdr.number, buf);
 
 				if((i=smb_getmsgidx(&smb,&msg))!=SMB_SUCCESS) {
-					lprintf(LOG_ERR,"%04d %s <%s> !ERROR %d (%s) getting message index"
+					errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d (%s) getting message index"
 						,socket, client.protocol, user.alias, i, smb.last_error);
 					sockprintf(socket,client.protocol,session,"-ERR %d getting message index",i);
 					continue;
@@ -1618,7 +1637,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 				i=smb_getmsghdr(&smb,&msg);
 				smb_unlockmsghdr(&smb,&msg);
 				if(i!=0) {
-					lprintf(LOG_ERR,"%04d %s <%s> !ERROR %d (%s) line %u, msg #%u"
+					errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d (%s) line %u, msg #%u"
 						,socket, client.protocol, user.alias, i, smb.last_error, __LINE__, msg.idx.number);
 					sockprintf(socket,client.protocol,session,"-ERR %d getting message header",i);
 					continue;
@@ -1626,7 +1645,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 
 				if((msgtxt=smb_getmsgtxt(&smb,&msg,GETMSGTXT_ALL))==NULL) {
 					smb_freemsgmem(&msg);
-					lprintf(LOG_ERR,"%04d %s <%s> !ERROR (%s) retrieving message #%u text"
+					errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR (%s) retrieving message #%u text"
 						,socket, client.protocol, user.alias, smb.last_error, msg.hdr.number);
 					sockprintf(socket,client.protocol,session,"-ERR retrieving message text");
 					continue;
@@ -1651,20 +1670,20 @@ static bool pop3_client_thread(pop3_t* pop3)
 						,socket, client.protocol, user.alias, lines_sent, msg.from);
 
 					if((i=smb_locksmbhdr(&smb))!=SMB_SUCCESS) {
-						lprintf(LOG_ERR,"%04d %s <%s> !ERROR %d (%s) locking message base"
+						errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d (%s) locking message base"
 							,socket, client.protocol, user.alias, i, smb.last_error);
 					} else {
 						if((i=smb_getmsgidx(&smb,&msg))!=SMB_SUCCESS) {
-							lprintf(LOG_ERR,"%04d %s <%s> !ERROR %d (%s) getting message index"
+							errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d (%s) getting message index"
 								,socket, client.protocol, user.alias, i, smb.last_error);
 						} else {
 							msg.hdr.attr|=MSG_READ;
 
 							if((i=smb_lockmsghdr(&smb,&msg))!=SMB_SUCCESS)
-								lprintf(LOG_ERR,"%04d %s <%s> !ERROR %d (%s) locking message header #%u"
+								errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d (%s) locking message header #%u"
 									,socket, client.protocol, user.alias, i, smb.last_error, msg.hdr.number);
 							if((i=smb_putmsg(&smb,&msg))!=SMB_SUCCESS)
-								lprintf(LOG_ERR,"%04d %s <%s> !ERROR %d (%s) marking message #%u as read"
+								errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d (%s) marking message #%u as read"
 									,socket, client.protocol, user.alias, i, smb.last_error, msg.hdr.number);
 							smb_unlockmsghdr(&smb,&msg);
 						}
@@ -1692,14 +1711,14 @@ static bool pop3_client_thread(pop3_t* pop3)
 					,socket, client.protocol, user.alias, msg.hdr.number);
 
 				if((i=smb_locksmbhdr(&smb))!=SMB_SUCCESS) {
-					lprintf(LOG_ERR,"%04d %s <%s> !ERROR %d (%s) locking message base"
+					errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d (%s) locking message base"
 						,socket, client.protocol, user.alias, i, smb.last_error);
 					sockprintf(socket,client.protocol,session,"-ERR %d locking message base",i);
 					continue;
 				}
 				if((i=smb_getmsgidx(&smb,&msg))!=SMB_SUCCESS) {
 					smb_unlocksmbhdr(&smb);
-					lprintf(LOG_ERR,"%04d %s <%s> !ERROR %d (%s) getting message index"
+					errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d (%s) getting message index"
 						,socket, client.protocol, user.alias, i, smb.last_error);
 					sockprintf(socket,client.protocol,session,"-ERR %d getting message index",i);
 					continue;
@@ -1714,7 +1733,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 				if((i=smb_getmsghdr(&smb,&msg))!=SMB_SUCCESS) {
 					smb_unlockmsghdr(&smb,&msg);
 					smb_unlocksmbhdr(&smb);
-					lprintf(LOG_ERR,"%04d %s <%s> !ERROR %d (%s) line %u, msg #%u"
+					errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d (%s) line %u, msg #%u"
 						,socket, client.protocol, user.alias, i, smb.last_error, __LINE__, msg.idx.number);
 					sockprintf(socket,client.protocol,session,"-ERR %d getting message header",i);
 					continue;
@@ -1723,14 +1742,14 @@ static bool pop3_client_thread(pop3_t* pop3)
 
 				if((i=smb_putmsg(&smb,&msg))==SMB_SUCCESS && msg.hdr.auxattr&MSG_FILEATTACH) {
 					if(!delfattach(&scfg,&msg))
-						lprintf(LOG_ERR, "%04d %s <%s> !ERROR %d deleting attachment: %s"
+						errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d deleting attachment: %s"
 							,socket, client.protocol, user.alias, errno, msg.subj);
 				}
 				smb_unlockmsghdr(&smb,&msg);
 				smb_unlocksmbhdr(&smb);
 				smb_freemsgmem(&msg);
 				if(i!=SMB_SUCCESS) {
-					lprintf(LOG_ERR,"%04d %s <%s> !ERROR %d (%s) marking message for deletion"
+					errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d (%s) marking message for deletion"
 						, socket, client.protocol, user.alias, i, smb.last_error);
 					sockprintf(socket,client.protocol,session,"-ERR %d marking message for deletion",i);
 					continue;
@@ -1750,7 +1769,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 				PlaySound(startup->sound.logout, NULL, SND_ASYNC|SND_FILENAME);
 #endif
 			if(!logoutuserdat(&scfg,&user,time(NULL),client.time))
-				lprintf(LOG_ERR,"%04d %s <%s> !ERROR in logoutuserdat", socket, client.protocol, user.alias);
+				errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR in logoutuserdat", socket, client.protocol, user.alias);
 			mqtt_user_logout(&mqtt, &client, client.time);
 		}
 
@@ -2030,7 +2049,7 @@ static void exempt_email_addr(const char* comment
 	if(!email_addr_is_exempt(to)) {
 		SAFEPRINTF(fname,"%sdnsbl_exempt.cfg",scfg.ctrl_dir);
 		if((fp=fnopen(NULL, fname, O_CREAT|O_WRONLY|O_APPEND))==NULL)
-			lprintf(LOG_ERR,"0000 !Error %d opening file: %s", errno, fname);
+			errprintf(LOG_ERR, WHERE, "0000 !Error %d opening file: %s", errno, fname);
 		else {
 			lprintf(LOG_INFO,"0000 %s: %s", comment, to);
 			fprintf(fp,"\n;%s from %s on %s\n%s\n"
@@ -2987,7 +3006,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 	addr_len=sizeof(server_addr);
 
 	if((i=getsockname(socket, &server_addr.addr, &addr_len))!=0) {
-		lprintf(LOG_CRIT, "%04d %s !ERROR %d (%d) getting address/port of socket"
+		errprintf(LOG_CRIT, WHERE, "%04d %s !ERROR %d (%d) getting address/port of socket"
 			,socket, client.protocol, i, SOCKET_ERRNO);
 		return false;
 	}
@@ -3126,7 +3145,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 	SAFEPRINTF3(rcptlst_fname,"%sSBBS_%s.%s.lst", scfg.temp_dir, client.protocol, session_id);
 	rcptlst=fopen(rcptlst_fname,"w+");
 	if(rcptlst==NULL) {
-		lprintf(LOG_CRIT,"%04d %s [%s] !ERROR %d creating recipient list: %s"
+		errprintf(LOG_CRIT, WHERE, "%04d %s [%s] !ERROR %d creating recipient list: %s"
 			,socket, client.protocol, host_ip, errno, rcptlst_fname);
 		sockprintf(socket,client.protocol,session,smtp_error, "fopen error");
 		return false;
@@ -3152,7 +3171,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 	BOOL* mailproc_to_match = calloc(sizeof(*mailproc_to_match), mailproc_count);
 	if(mailproc_to_match == NULL) {
 		fclose(rcptlst);
-		lprintf(LOG_CRIT,"%04d %s !ERROR allocating memory for mailproc_to_match", socket, client.protocol);
+		errprintf(LOG_CRIT, WHERE, "%04d %s !ERROR allocating memory for mailproc_to_match", socket, client.protocol);
 		sockprintf(socket,client.protocol,session,smtp_error, "malloc failure");
 		return false;
 	}
@@ -3184,13 +3203,13 @@ static bool smtp_client_thread(smtp_t* smtp)
 				cmd=SMTP_CMD_NONE;
 
 				if(msgtxt==NULL) {
-					lprintf(LOG_ERR,"%04d %s %s !NO MESSAGE TEXT FILE POINTER?", socket, client.protocol, client_id);
+					errprintf(LOG_ERR, WHERE, "%04d %s %s !NO MESSAGE TEXT FILE POINTER?", socket, client.protocol, client_id);
 					sockprintf(socket,client.protocol,session,"554 No message text");
 					continue;
 				}
 
 				if(ftell(msgtxt)<1) {
-					lprintf(LOG_ERR,"%04d %s %s !INVALID MESSAGE LENGTH: %ld (%lu lines)"
+					errprintf(LOG_ERR, WHERE, "%04d %s %s !INVALID MESSAGE LENGTH: %ld (%lu lines)"
 						, socket, client.protocol, client_id, ftell(msgtxt), lines);
 					sockprintf(socket,client.protocol,session,"554 No message text");
 					continue;
@@ -3254,14 +3273,14 @@ static bool smtp_client_thread(smtp_t* smtp)
 						safe_snprintf(str,sizeof(str),"%s%s%s",head,sender_addr,tail);
 
 					if((telegram_buf=(char*)malloc((size_t)(length+strlen(str)+1)))==NULL) {
-						lprintf(LOG_CRIT,"%04d %s %s !ERROR allocating %" PRIu64 " bytes of memory for telegram from %s"
+						errprintf(LOG_CRIT, WHERE, "%04d %s %s !ERROR allocating %" PRIu64 " bytes of memory for telegram from %s"
 							,socket, client.protocol, client_id, (uint64_t)(length+strlen(str)+1),sender_addr);
 						sockprintf(socket,client.protocol,session, insuf_stor);
 						continue;
 					}
 					strcpy(telegram_buf,str);	/* can't use SAFECOPY here */
 					if(fread(telegram_buf+strlen(str),1,(size_t)length,msgtxt)!=length) {
-						lprintf(LOG_ERR,"%04d %s %s !ERROR reading %" PRIuOFF " bytes from telegram file"
+						errprintf(LOG_ERR, WHERE, "%04d %s %s !ERROR reading %" PRIuOFF " bytes from telegram file"
 							,socket, client.protocol, client_id, length);
 						sockprintf(socket,client.protocol,session, insuf_stor);
 						free(telegram_buf);
@@ -3285,7 +3304,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 							lprintf(LOG_INFO,"%04d %s %s Created telegram (%" PRIdOFF "/%lu bytes) from '%s' to '%s' <%s>"
 								,socket, client.protocol, client_id, length, (ulong)strlen(telegram_buf), sender_addr, rcpt_to, rcpt_addr);
 						else
-							lprintf(LOG_ERR,"%04d %s %s !ERROR %d creating telegram from '%s' to '%s' <%s>"
+							errprintf(LOG_ERR, WHERE, "%04d %s %s !ERROR %d creating telegram from '%s' to '%s' <%s>"
 								,socket, client.protocol, client_id, i, sender_addr, rcpt_to, rcpt_addr);
 					}
 					iniFreeStringList(sec_list);
@@ -3425,7 +3444,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 				/* We must do this before continuing for handled msgs */
 				/* to prevent freopen(NULL) and orphaned temp files */
 				if((rcptlst=fopen(rcptlst_fname,fexist(rcptlst_fname) ? "r":"w+"))==NULL) {
-					lprintf(LOG_ERR,"%04d %s %s !ERROR %d re-opening recipient list: %s"
+					errprintf(LOG_ERR, WHERE, "%04d %s %s !ERROR %d re-opening recipient list: %s"
 						,socket, client.protocol, client_id, errno, rcptlst_fname);
 					if(!msg_handled)
 						sockprintf(socket,client.protocol,session,smtp_error, "fopen error");
@@ -3453,7 +3472,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 					remove(newtxt_fname);
 
 				if((msgtxt=fopen(msgtxt_fname,"rb"))==NULL) {
-					lprintf(LOG_ERR,"%04d %s %s !ERROR %d re-opening message file: %s"
+					errprintf(LOG_ERR, WHERE, "%04d %s %s !ERROR %d re-opening message file: %s"
 						,socket, client.protocol, client_id, errno, msgtxt_fname);
 					sockprintf(socket,client.protocol,session,smtp_error, "fopen error");
 					continue;
@@ -3534,7 +3553,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 							lprintf(LOG_WARNING,"%04d %s %s !MESSAGE HEADER EXCEEDS %u BYTES"
 								,socket, client.protocol, client_id, SMB_MAX_HDR_LEN);
 						else
-							lprintf(LOG_ERR,"%04d %s %s !ERROR %d adding header field: %s"
+							errprintf(LOG_ERR, WHERE, "%04d %s %s !ERROR %d adding header field: %s"
 								,socket, client.protocol, client_id, smb_error, buf);
 						break;
 					}
@@ -3691,7 +3710,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 				}
 
 				if((msgbuf=(char*)malloc((size_t)(length+1)))==NULL) {
-					lprintf(LOG_CRIT,"%04d %s %s !ERROR allocating %" PRIuOFF " bytes of memory"
+					errprintf(LOG_CRIT, WHERE, "%04d %s %s !ERROR allocating %" PRIuOFF " bytes of memory"
 						,socket, client.protocol, client_id, length+1);
 					sockprintf(socket,client.protocol,session, insuf_stor);
 					subnum=INVALID_SUB;
@@ -3787,7 +3806,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 						} else {
 							lprintf(LOG_DEBUG, "%04d %s %s Done searching SPAM database", socket, client.protocol, client_id);
 							if(i!=SMB_ERR_NOT_FOUND)
-								lprintf(LOG_ERR,"%04d %s %s !ERROR %d (%s) opening SPAM database"
+								errprintf(LOG_ERR, WHERE, "%04d %s %s !ERROR %d (%s) opening SPAM database"
 									,socket, client.protocol, client_id, i, spam.last_error);
 						}
 
@@ -3814,7 +3833,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 
 						smb_freehashes(hashes);
 					} else
-						lprintf(LOG_ERR,"%04d %s %s !smb_msghashes returned NULL", socket, client.protocol, client_id);
+						errprintf(LOG_ERR, WHERE, "%04d %s %s !smb_msghashes returned NULL", socket, client.protocol, client_id);
 
 					if(is_spam || ((startup->options&MAIL_OPT_DNSBL_IGNORE) && (dnsbl_recvhdr || dnsbl_result.s_addr))) {
 						free(msgbuf);
@@ -3854,7 +3873,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 				if(i!=SMB_SUCCESS) {
 					smb_close(&smb);
 					pthread_mutex_unlock(&savemsg_mutex);
-					lprintf(LOG_CRIT,"%04d %s %s !ERROR %d (%s) saving message from %s to %s"
+					errprintf(LOG_CRIT, WHERE, "%04d %s %s !ERROR %d (%s) saving message from %s to %s"
 						,socket, client.protocol, client_id, i, smb.last_error, sender_info, rcpt_info);
 					sockprintf(socket,client.protocol,session, "452 ERROR %d (%s) saving message"
 						,i,smb.last_error);
@@ -3884,13 +3903,13 @@ static bool smtp_client_thread(smtp_t* smtp)
 						safe_snprintf(rcpt_info, sizeof(rcpt_info), "'%s' %s", rcpt_to, angle_bracket(tmp, sizeof(tmp), rcpt_addr));
 
 					if(nettype==NET_NONE /* Local destination */ && usernum==0) {
-						lprintf(LOG_ERR,"%04d %s %s !Can't deliver mail from %s to user #0"
+						errprintf(LOG_ERR, WHERE, "%04d %s %s !Can't deliver mail from %s to user #0"
 							,socket, client.protocol, client_id, sender_info);
 						break;
 					}
 
 					if((i=smb_copymsgmem(&smb,&newmsg,&msg))!=SMB_SUCCESS) {
-						lprintf(LOG_ERR,"%04d %s %s !ERROR %d (%s) copying message from %s"
+						errprintf(LOG_ERR, WHERE, "%04d %s %s !ERROR %d (%s) copying message from %s"
 							,socket, client.protocol, client_id, i, smb.last_error, sender_info);
 						break;
 					}
@@ -3959,7 +3978,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 					i=smb_addmsghdr(&smb,&newmsg,smb_storage_mode(&scfg, &smb));
 					smb_freemsgmem(&newmsg);
 					if(i!=SMB_SUCCESS) {
-						lprintf(LOG_ERR,"%04d %s %s !ERROR %d (%s) adding message header from %s to %s"
+						errprintf(LOG_ERR, WHERE, "%04d %s %s !ERROR %d (%s) adding message header from %s to %s"
 							,socket, client.protocol, client_id, i, smb.last_error, sender_info, rcpt_info);
 						break;
 					}
@@ -4204,7 +4223,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 				break;
 			}
 			if((i=getuserdat(&scfg, &relay_user))!=0) {
-				lprintf(LOG_ERR,"%04d %s %s <%s> !ERROR %d getting user data"
+				errprintf(LOG_ERR, WHERE, "%04d %s %s <%s> !ERROR %d getting user data"
 					,socket, client.protocol, client_id, user_name, i);
 				badlogin(socket, session, badauth_rsp, NULL, NULL, &client, NULL);
 				break;
@@ -4294,7 +4313,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 				break;
 			}
 			if((i=getuserdat(&scfg, &relay_user))!=0) {
-				lprintf(LOG_ERR,"%04d %s %s !ERROR %d getting data on user (%s)"
+				errprintf(LOG_ERR, WHERE, "%04d %s %s !ERROR %d getting data on user (%s)"
 					,socket, client.protocol, client_id, i, user_name);
 				badlogin(socket, session, badauth_rsp, NULL, NULL, &client, NULL);
 				break;
@@ -4394,7 +4413,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 
 			/* reset recipient list */
 			if((rcptlst=freopen(rcptlst_fname,"w+",rcptlst))==NULL) {
-				lprintf(LOG_ERR,"%04d %s %s !ERROR %d re-opening %s"
+				errprintf(LOG_ERR, WHERE, "%04d %s %s !ERROR %d re-opening %s"
 					,socket, client.protocol, client_id, errno, rcptlst_fname);
 				sockprintf(socket,client.protocol,session,smtp_error, "fopen error");
 				break;
@@ -4451,7 +4470,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 
 			/* reset recipient list */
 			if((rcptlst=freopen(rcptlst_fname,"w+",rcptlst))==NULL) {
-				lprintf(LOG_ERR,"%04d %s %s !ERROR %d re-opening %s"
+				errprintf(LOG_ERR, WHERE, "%04d %s %s !ERROR %d re-opening %s"
 					,socket, client.protocol, client_id, errno, rcptlst_fname);
 				sockprintf(socket,client.protocol,session,smtp_error, "fopen error");
 				break;
@@ -4860,7 +4879,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 			}
 			user.number=usernum;
 			if((i=getuserdat(&scfg, &user))!=0) {
-				lprintf(LOG_ERR,"%04d %s %s !ERROR %d getting data on user-recipient #%u (%s)"
+				errprintf(LOG_ERR, WHERE, "%04d %s %s !ERROR %d getting data on user-recipient #%u (%s)"
 					,socket, client.protocol, client_id, i, usernum, p);
 				sockprintf(socket,client.protocol,session, "550 Unknown User: %s", rcpt_to);
 				continue;
@@ -4949,7 +4968,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 			}
 			remove(msgtxt_fname);
 			if((msgtxt=fopen(msgtxt_fname,"w+b"))==NULL) {
-				lprintf(LOG_ERR,"%04d %s %s !ERROR %d opening %s"
+				errprintf(LOG_ERR, WHERE, "%04d %s %s !ERROR %d opening %s"
 					,socket, client.protocol, client_id, errno, msgtxt_fname);
 				sockprintf(socket,client.protocol,session, insuf_stor);
 				continue;
@@ -4990,7 +5009,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 			}
 			if ((cstat=add_private_key(&scfg, lprintf, session)) != CRYPT_OK) {
 				GCESH(cstat, "SMTPS", socket, host_ip, session, "setting private key");
-				lprintf(LOG_ERR, "%04d SMTPS %s !Unable to set private key", socket, client_id);
+				errprintf(LOG_ERR, WHERE,  "%04d SMTPS %s !Unable to set private key", socket, client_id);
 				cryptDestroySession(session);
 				session = -1;
 				sockprintf(socket, client.protocol, session, "454 TLS not available");
@@ -5111,7 +5130,7 @@ BOOL bounce(SOCKET sock, smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 		,(char*)msg->to_net.addr);
 
 	if((i=smb_updatemsg(smb,msg))!=SMB_SUCCESS) {
-		lprintf(LOG_ERR,"%04d SEND !BOUNCE ERROR %d (%s) incrementing delivery attempt counter of message #%u"
+		errprintf(LOG_ERR, WHERE, "%04d SEND !BOUNCE ERROR %d (%s) incrementing delivery attempt counter of message #%u"
 			,sock, i, smb->last_error, msg->hdr.number);
 		return(FALSE);
 	}
@@ -5126,11 +5145,11 @@ BOOL bounce(SOCKET sock, smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 	i=smb_updatemsg(smb,msg);
 	if(msg->hdr.auxattr&MSG_FILEATTACH) {
 		if(!delfattach(&scfg,msg))
-			lprintf(LOG_ERR, "%04d SEND !ERROR %d deleting attachment: %s"
+			errprintf(LOG_ERR, WHERE,  "%04d SEND !ERROR %d deleting attachment: %s"
 				,sock, errno, msg->subj);
 	}
 	if(i!=SMB_SUCCESS) {
-		lprintf(LOG_ERR,"%04d SEND !BOUNCE ERROR %d (%s) deleting message"
+		errprintf(LOG_ERR, WHERE, "%04d SEND !BOUNCE ERROR %d (%s) deleting message"
 			,sock, i, smb->last_error);
 		return(FALSE);
 	}
@@ -5199,13 +5218,13 @@ BOOL bounce(SOCKET sock, smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 	smb_hfield_str(&newmsg, SMB_COMMENT, "\r\nOriginal message text follows:");
 
 	if((i=smb_addmsghdr(smb,&newmsg,smb_storage_mode(&scfg, smb)))!=SMB_SUCCESS)
-		lprintf(LOG_ERR,"%04d SEND !BOUNCE ERROR %d (%s) adding message header"
+		errprintf(LOG_ERR, WHERE, "%04d SEND !BOUNCE ERROR %d (%s) adding message header"
 			,sock,i,smb->last_error);
 	else {
 		lprintf(LOG_NOTICE,"%04d SEND !Delivery failure notification (message #%u) created for %s"
 			,sock, newmsg.hdr.number, reverse_path);
 		if((i=smb_incmsg_dfields(smb,&newmsg,1))!=SMB_SUCCESS)
-			lprintf(LOG_ERR,"%04d SEND !BOUNCE ERROR %d (%s) incrementing data allocation units"
+			errprintf(LOG_ERR, WHERE, "%04d SEND !BOUNCE ERROR %d (%s) incrementing data allocation units"
 				,sock, i,smb->last_error);
 	}
 
@@ -5230,7 +5249,7 @@ static int remove_msg_intransit(smb_t* smb, smbmsg_t* msg)
 	smb_unlockmsghdr(smb,msg);
 
 	if(i!=0)
-		lprintf(LOG_ERR,"0000 SEND !ERROR %d (%s) writing message header #%u"
+		errprintf(LOG_ERR, WHERE, "0000 SEND !ERROR %d (%s) writing message header #%u"
 			,i, smb->last_error, msg->idx.number);
 
 	return(i);
@@ -5263,7 +5282,7 @@ static BOOL sendmail_open_socket(SOCKET *sock, CRYPT_SESSION *session)
 		mail_close_socket(sock, session);
 
 	if((*sock=socket(AF_INET, SOCK_STREAM, IPPROTO_IP))==INVALID_SOCKET) {
-		lprintf(LOG_ERR,"0000 SEND !ERROR %d opening socket", SOCKET_ERRNO);
+		errprintf(LOG_ERR, WHERE, "0000 SEND !ERROR %d opening socket", SOCKET_ERRNO);
 		return FALSE;
 	}
 	mail_open_socket(*sock,"smtp|sendmail");
@@ -5271,7 +5290,7 @@ static BOOL sendmail_open_socket(SOCKET *sock, CRYPT_SESSION *session)
 	if(startup->connect_timeout) {	/* Use non-blocking socket */
 		long nbio=1;
 		if((i=ioctlsocket(*sock, FIONBIO, &nbio))!=0) {
-			lprintf(LOG_ERR,"%04d SEND !ERROR %d (%d) disabling blocking on socket"
+			errprintf(LOG_ERR, WHERE, "%04d SEND !ERROR %d (%d) disabling blocking on socket"
 				,*sock, i, SOCKET_ERRNO);
 			return FALSE;
 		}
@@ -5283,7 +5302,7 @@ static BOOL sendmail_open_socket(SOCKET *sock, CRYPT_SESSION *session)
 
 	i=bind(*sock,(struct sockaddr *)&addr, sizeof(addr));
 	if(i!=0) {
-		lprintf(LOG_ERR,"%04d SEND !ERROR %d (%d) binding socket", *sock, i, SOCKET_ERRNO);
+		errprintf(LOG_ERR, WHERE, "%04d SEND !ERROR %d (%d) binding socket", *sock, i, SOCKET_ERRNO);
 		return FALSE;
 	}
 	return TRUE;
@@ -5590,7 +5609,7 @@ static void sendmail_thread(void* arg)
 
 			msg.hdr.number=mail[u].number;
 			if((i=smb_getmsgidx(&smb,&msg))!=SMB_SUCCESS) {
-				lprintf(LOG_ERR,"0000 !SEND ERROR %d (%s) getting message index #%u"
+				errprintf(LOG_ERR, WHERE, "0000 !SEND ERROR %d (%s) getting message index #%u"
 					,i, smb.last_error, mail[u].number);
 				break;
 			}
@@ -5601,7 +5620,7 @@ static void sendmail_thread(void* arg)
 			}
 			if((i=smb_getmsghdr(&smb,&msg))!=SMB_SUCCESS) {
 				smb_unlockmsghdr(&smb,&msg);
-				lprintf(LOG_ERR,"0000 !SEND ERROR %d (%s) line %u, msg #%u"
+				errprintf(LOG_ERR, WHERE, "0000 !SEND ERROR %d (%s) line %u, msg #%u"
 					,i, smb.last_error, __LINE__, msg.idx.number);
 				continue;
 			}
@@ -5651,7 +5670,7 @@ static void sendmail_thread(void* arg)
 			lprintf(LOG_DEBUG,"0000 SEND getting message text");
 			if((msgtxt=smb_getmsgtxt(&smb,&msg,GETMSGTXT_ALL))==NULL) {
 				remove_msg_intransit(&smb,&msg);
-				lprintf(LOG_ERR,"0000 !SEND ERROR (%s) retrieving message text",smb.last_error);
+				errprintf(LOG_ERR, WHERE, "0000 !SEND ERROR (%s) retrieving message text",smb.last_error);
 				continue;
 			}
 
@@ -5881,11 +5900,11 @@ static void sendmail_thread(void* arg)
 			msg.hdr.netattr|=NETMSG_SENT;
 			msg.hdr.netattr&=~NETMSG_INTRANSIT;
 			if((i=smb_updatemsg(&smb,&msg))!=SMB_SUCCESS)
-				lprintf(LOG_ERR,"%04d %s !ERROR %d (%s) deleting message #%u"
+				errprintf(LOG_ERR, WHERE, "%04d %s !ERROR %d (%s) deleting message #%u"
 					,sock, prot, i, smb.last_error, msg.hdr.number);
 			if(msg.hdr.auxattr&MSG_FILEATTACH) {
 				if(!delfattach(&scfg,&msg))
-					lprintf(LOG_ERR, "%04d %s !ERROR %d deleting attachment: %s"
+					errprintf(LOG_ERR, WHERE,  "%04d %s !ERROR %d deleting attachment: %s"
 						,sock, prot, errno, msg.subj);
 			}
 
@@ -6219,7 +6238,7 @@ void mail_server(void* arg)
 		}
 
 		if((t=checktime())!=0) {   /* Check binary time */
-			lprintf(LOG_ERR,"!TIME PROBLEM (%" PRId64 ")",(int64_t)t);
+			errprintf(LOG_ERR, WHERE, "!TIME PROBLEM (%" PRId64 ")",(int64_t)t);
 		}
 
 		if(uptime==0)
@@ -6382,7 +6401,7 @@ void mail_server(void* arg)
 				l=1;
 
 				if((i=ioctlsocket(client_socket, FIONBIO, &l))!=0) {
-					lprintf(LOG_CRIT,"%04d %s !ERROR %d (%d) disabling blocking on socket"
+					errprintf(LOG_CRIT, WHERE, "%04d %s !ERROR %d (%d) disabling blocking on socket"
 						,client_socket, servprot, i, SOCKET_ERRNO);
 					sockprintf(client_socket, servprot, session, is_smtp ? smtp_error : pop_error, "ioctlsocket error");
 					mswait(3000);
@@ -6392,7 +6411,7 @@ void mail_server(void* arg)
 
 				if(is_smtp) {
 					if((smtp=malloc(sizeof(smtp_t)))==NULL) {
-						lprintf(LOG_CRIT,"%04d SMTP !ERROR allocating %lu bytes of memory for smtp_t"
+						errprintf(LOG_CRIT, WHERE, "%04d SMTP !ERROR allocating %lu bytes of memory for smtp_t"
 							,client_socket, (ulong)sizeof(smtp_t));
 						sockprintf(client_socket, servprot, session, smtp_error, "malloc failure");
 						mail_close_socket(&client_socket, &session);
@@ -6410,7 +6429,7 @@ void mail_server(void* arg)
 				}
 				else {
 					if((pop3=malloc(sizeof(pop3_t)))==NULL) {
-						lprintf(LOG_CRIT,"%04d POP3 !ERROR allocating %lu bytes of memory for pop3_t"
+						errprintf(LOG_CRIT, WHERE, "%04d POP3 !ERROR allocating %lu bytes of memory for pop3_t"
 							,client_socket,(ulong)sizeof(pop3_t));
 						sockprintf(client_socket, "POP3", session,"-ERR System error, please try again later.");
 						mswait(3000);
