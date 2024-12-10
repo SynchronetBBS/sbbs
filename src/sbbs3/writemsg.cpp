@@ -589,7 +589,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 			} else { // CP437
 				if(term_supports(UTF8) && (cfg.xedit[useron_xedit-1]->misc & XTRN_UTF8)) {
 					cp437_to_utf8_str(subj, str, sizeof(str) - 1, /* minval: */'\x80');
-					safe_snprintf(subj, LEN_TITLE, "%s", str);
+					safe_snprintf(subj, LEN_TITLE + 1, "%s", str);
 				}
 			}
 		}
@@ -653,7 +653,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 					if (fgets(str, sizeof(str), fp) != NULL) {
 						truncsp(str);
 						if(str[0] && !(mode&WM_SUBJ_RO))
-							safe_snprintf(subj, LEN_TITLE, "%s", str);
+							safe_snprintf(subj, LEN_TITLE + 1, "%s", str);
                         if (fgets(editor_details, sizeof(editor_details), fp) != NULL) {
                             truncsp(editor_details);
                         }
