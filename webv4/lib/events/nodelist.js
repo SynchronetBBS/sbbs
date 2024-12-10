@@ -1,4 +1,4 @@
-require("presence_lib.js", 'extended_status');
+require("presence_lib.js", 'node_status');
 
 var last_run = 0;
 var frequency = 15;
