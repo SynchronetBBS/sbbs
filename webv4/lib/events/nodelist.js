@@ -29,7 +29,9 @@ function scan_nodes() {
             change = true;
             const obj = {
                 status: n.status,
+		vstatus: strip_ctrl(n.vstatus),
                 action: n.action,
+		activity: strip_ctrl(n.activity),
                 aux: n.aux,
                 misc: n.misc,
                 extaux: n.extaux,
@@ -85,7 +87,7 @@ function scan() {
 
                 return {
                     node: i + 1,
-                    status: format(NodeStatus[e.status], e.aux, e.extaux),
+                    status: format(e.vstatus || NodeStatus[e.status], e.aux, e.extaux),
                     action: node_status(e, user.is_sysop, {exclude_username: true, exclude_connection: true}, i),
                     user: (e.misc & NODE_ANON) && !user.is_sysop ? "Anonymous" : usr.alias,
                     connection : NodeConnectionProper[e.connection] ? NodeConnectionProper[e.connection] : (e.connection + ' bps')
