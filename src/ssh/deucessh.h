@@ -30,7 +30,12 @@ typedef int (*deuce_ssh_transport_io_cb_t)(uint8_t *buf, size_t bufsz, atomic_bo
 typedef int (*deuce_ssh_transport_rxline_cb_t)(uint8_t *buf, size_t bufsz, size_t *bytes_received, atomic_bool *terminate, void *cbdata);
 typedef int (*deuce_ssh_transport_extra_line_cb_t)(uint8_t *buf, size_t bufsz, void *cbdata);
 
-typedef struct deuce_ssh_session {
+typedef struct deuce_ssh_session *deuce_ssh_session_t;
+
+#include "ssh-arch.h"
+#include "ssh-trans.h"
+
+struct deuce_ssh_session {
 	/* Global */
 	mtx_t mtx;
 	atomic_bool initialized;
@@ -47,16 +52,13 @@ typedef struct deuce_ssh_session {
 	void *rx_line_cbdata;
 	void *extra_line_cbdata;
 
-	deuce_ssh_transport_state_t trans;
-} *deuce_ssh_session_t;
+	struct deuce_ssh_transport_state trans;
+};
 
 int deuce_ssh_session_init(deuce_ssh_session_t sess);
 bool deuce_ssh_session_terminate(deuce_ssh_session_t sess);
 void deuce_ssh_session_cleanup(deuce_ssh_session_t sess);
 
 int deuce_ssh_transport_set_callbacks(deuce_ssh_transport_io_cb_t tx, deuce_ssh_transport_io_cb_t rx, deuce_ssh_transport_rxline_cb_t rx_line, deuce_ssh_transport_extra_line_cb_t extra_line_cb);
-
-#include "ssh-arch.h"
-#include "ssh-trans.h"
 
 #endif

@@ -156,9 +156,9 @@ tx_handshake(void *arg)
 		memcpy(&tx_packet[sz], gconf.version_comment, asz);
 		sz += asz;
 	}
-	memcpy(sess->trans->id_str, tx_packet, sz);
-	sess->trans->id_str_sz = sz;
-	sess->trans->id_str[sz] = 0;
+	memcpy(sess->trans.id_str, tx_packet, sz);
+	sess->trans.id_str_sz = sz;
+	sess->trans.id_str[sz] = 0;
 	memcpy(&tx_packet[sz], "\r\n", 2);
 	sz += 2;
 	res = gconf.tx(tx_packet, sz, &sess->terminate, sess->tx_cbdata);
@@ -172,45 +172,45 @@ tx_handshake(void *arg)
 void
 deuce_ssh_transport_cleanup(deuce_ssh_session_t sess)
 {
-	if (sess->trans->kex_selected) {
-		if (sess->trans->kex_selected->cleanup != NULL)
-			sess->trans->kex_selected->cleanup(sess);
-		sess->trans->kex_selected = NULL;
+	if (sess->trans.kex_selected) {
+		if (sess->trans.kex_selected->cleanup != NULL)
+			sess->trans.kex_selected->cleanup(sess);
+		sess->trans.kex_selected = NULL;
 	}
-	if (sess->trans->key_algo_selected) {
-		if (sess->trans->key_algo_selected->cleanup != NULL)
-			sess->trans->key_algo_selected->cleanup(sess);
-		sess->trans->key_algo_selected = NULL;
+	if (sess->trans.key_algo_selected) {
+		if (sess->trans.key_algo_selected->cleanup != NULL)
+			sess->trans.key_algo_selected->cleanup(sess);
+		sess->trans.key_algo_selected = NULL;
 	}
-	if (sess->trans->enc_c2s_selected) {
-		if (sess->trans->enc_c2s_selected->cleanup != NULL)
-			sess->trans->enc_c2s_selected->cleanup(sess);
-		sess->trans->enc_c2s_selected = NULL;
+	if (sess->trans.enc_c2s_selected) {
+		if (sess->trans.enc_c2s_selected->cleanup != NULL)
+			sess->trans.enc_c2s_selected->cleanup(sess);
+		sess->trans.enc_c2s_selected = NULL;
 	}
-	if (sess->trans->enc_s2c_selected) {
-		if (sess->trans->enc_s2c_selected->cleanup != NULL)
-			sess->trans->enc_s2c_selected->cleanup(sess);
-		sess->trans->enc_s2c_selected = NULL;
+	if (sess->trans.enc_s2c_selected) {
+		if (sess->trans.enc_s2c_selected->cleanup != NULL)
+			sess->trans.enc_s2c_selected->cleanup(sess);
+		sess->trans.enc_s2c_selected = NULL;
 	}
-	if (sess->trans->mac_c2s_selected) {
-		if (sess->trans->mac_c2s_selected->cleanup != NULL)
-			sess->trans->mac_c2s_selected->cleanup(sess);
-		sess->trans->mac_c2s_selected = NULL;
+	if (sess->trans.mac_c2s_selected) {
+		if (sess->trans.mac_c2s_selected->cleanup != NULL)
+			sess->trans.mac_c2s_selected->cleanup(sess);
+		sess->trans.mac_c2s_selected = NULL;
 	}
-	if (sess->trans->mac_s2c_selected) {
-		if (sess->trans->mac_s2c_selected->cleanup != NULL)
-			sess->trans->mac_s2c_selected->cleanup(sess);
-		sess->trans->mac_s2c_selected = NULL;
+	if (sess->trans.mac_s2c_selected) {
+		if (sess->trans.mac_s2c_selected->cleanup != NULL)
+			sess->trans.mac_s2c_selected->cleanup(sess);
+		sess->trans.mac_s2c_selected = NULL;
 	}
-	if (sess->trans->comp_c2s_selected) {
-		if (sess->trans->comp_c2s_selected->cleanup != NULL)
-			sess->trans->comp_c2s_selected->cleanup(sess);
-		sess->trans->comp_c2s_selected = NULL;
+	if (sess->trans.comp_c2s_selected) {
+		if (sess->trans.comp_c2s_selected->cleanup != NULL)
+			sess->trans.comp_c2s_selected->cleanup(sess);
+		sess->trans.comp_c2s_selected = NULL;
 	}
-	if (sess->trans->comp_s2c_selected) {
-		if (sess->trans->comp_s2c_selected->cleanup != NULL)
-			sess->trans->comp_s2c_selected->cleanup(sess);
-		sess->trans->comp_s2c_selected = NULL;
+	if (sess->trans.comp_s2c_selected) {
+		if (sess->trans.comp_s2c_selected->cleanup != NULL)
+			sess->trans.comp_s2c_selected->cleanup(sess);
+		sess->trans.comp_s2c_selected = NULL;
 	}
 
 	sess->remote_software_id_string_sz = 0;
@@ -230,9 +230,6 @@ deuce_ssh_transport_init(deuce_ssh_session_t sess)
 	if (gconf.software_version == NULL)
 		gconf.software_version = sw_ver;
 
-	sess->trans = calloc(1, sizeof(struct deuce_ssh_transport_state));
-	if (sess->trans == NULL)
-		return DEUCE_SSH_ERROR_ALLOC;
 	thrd_t thrd;
 	if (thrd_create(&thrd, rx_thread, sess) != thrd_success)
 		return DEUCE_SSH_ERROR_INIT;
@@ -243,15 +240,15 @@ deuce_ssh_transport_init(deuce_ssh_session_t sess)
 		thrd_join(thrd, &tres);
 		return res;
 	}
-	sess->trans->kex_selected = NULL;
-	sess->trans->key_algo_selected = NULL;
-	sess->trans->enc_c2s_selected = NULL;
-	sess->trans->enc_s2c_selected = NULL;
-	sess->trans->mac_c2s_selected = NULL;
-	sess->trans->mac_s2c_selected = NULL;
-	sess->trans->comp_c2s_selected = NULL;
-	sess->trans->comp_s2c_selected = NULL;
-	sess->trans->transport_thread = thrd;
+	sess->trans.kex_selected = NULL;
+	sess->trans.key_algo_selected = NULL;
+	sess->trans.enc_c2s_selected = NULL;
+	sess->trans.enc_s2c_selected = NULL;
+	sess->trans.mac_c2s_selected = NULL;
+	sess->trans.mac_s2c_selected = NULL;
+	sess->trans.comp_c2s_selected = NULL;
+	sess->trans.comp_s2c_selected = NULL;
+	sess->trans.transport_thread = thrd;
 	return 0;
 }
 

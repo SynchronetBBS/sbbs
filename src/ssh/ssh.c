@@ -22,7 +22,7 @@ deuce_ssh_session_terminate(deuce_ssh_session_t sess)
 	if (atomic_compare_exchange_strong(&sess->initialized, &t, false)) {
 		sess->terminate = true;
 		int tres;
-		thrd_join(sess->trans->transport_thread, &tres);
+		thrd_join(sess->trans.transport_thread, &tres);
 		sess->terminate = false;
 		return true;
 	}
