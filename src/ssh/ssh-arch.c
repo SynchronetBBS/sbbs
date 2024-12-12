@@ -35,6 +35,38 @@ deuce_ssh_serialize_byte(deuce_ssh_byte_t val, uint8_t *buf, MAYBE_UNUSED size_t
 }
 
 ssize_t
+deuce_ssh_parse_bytearray(uint8_t * buf, size_t bufsz, deuce_ssh_bytearray_t val)
+{
+	ssize_t ret;
+	uint32_t len;
+	size_t pos = 0;
+
+	assert(val->length > 1);
+	if (val->length < 2)
+		return DEUCE_SSH_ERROR_PARSE;
+	assert(bufsz >= val->length);
+	if (bufsz < val->length)
+		return DEUCE_SSH_ERROR_PARSE;
+	ret = val->length;
+	val->value = buf;
+	return ret;
+}
+
+size_t
+deuce_ssh_serialized_bytearray_length(deuce_ssh_bytearray_t val)
+{
+	return val->length + 4;
+}
+
+void
+deuce_ssh_serialize_bytearray(deuce_ssh_bytearray_t val, uint8_t *buf, MAYBE_UNUSED size_t bufsz, size_t *pos)
+{
+	assert(*pos + val->length <= bufsz);
+	memcpy(buf, val->value, val->length);
+	*pos += val->length;
+}
+
+ssize_t
 deuce_ssh_parse_boolean(uint8_t * buf, size_t bufsz, deuce_ssh_boolean_t *val)
 {
 	assert(bufsz >= 1);
@@ -140,7 +172,7 @@ deuce_ssh_parse_string(uint8_t * buf, size_t bufsz, deuce_ssh_string_t val)
 	if (bufsz < sz)
 		return DEUCE_SSH_ERROR_PARSE;
 	val->length = len;
-	memcpy(&val->value, &buf[ret], len);
+	val->value = &buf[ret];
 	return sz;
 }
 

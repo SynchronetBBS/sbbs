@@ -23,6 +23,7 @@ typedef struct deuce_ssh_string {
 	deuce_ssh_byte_t *value;
 	deuce_ssh_uint32_t length;
 } *deuce_ssh_string_t;
+typedef struct deuce_ssh_string *deuce_ssh_bytearray_t;
 typedef struct deuce_ssh_string *deuce_ssh_mpint_t;
 typedef struct deuce_ssh_namelist {
 	deuce_ssh_byte_t *value;
@@ -32,6 +33,7 @@ typedef struct deuce_ssh_namelist {
 
 #define deuce_ssh_parse(buf, bufsz, val) _Generic(val,                \
 	deuce_ssh_byte_t : deuce_ssh_parse_byte(buf, bufsz, val),      \
+	deuce_ssh_bytearray_t : deuce_ssh_parse_bytearray(buf, bufsz, val),      \
 	deuce_ssh_boolean_t : deuce_ssh_parse_boolean(buf, bufsz, val), \
 	deuce_ssh_uint32_t : deuce_ssh_parse_uint32(buf, bufsz, val),    \
 	deuce_ssh_uint64_t : deuce_ssh_parse_uint64(buf, bufsz, val),     \
@@ -41,6 +43,7 @@ typedef struct deuce_ssh_namelist {
 
 #define deuce_ssh_serialized_length(val) _Generic(val,                \
 	deuce_ssh_byte_t : deuce_ssh_serialized_byte_length(val),      \
+	deuce_ssh_bytearray_t : deuce_ssh_serialized_byte_length(val),      \
 	deuce_ssh_boolean_t : deuce_ssh_serialized_boolean_length(val), \
 	deuce_ssh_uint32_t : deuce_ssh_serialized_uint32_length(val),    \
 	deuce_ssh_uint64_t : deuce_ssh_serialized_uint64_length(val),     \
@@ -50,6 +53,7 @@ typedef struct deuce_ssh_namelist {
 
 #define deuce_ssh_serialize(val, buf, bufsz, pos) _Generic(val,                \
 	deuce_ssh_byte_t : deuce_ssh_serialize_byte(val, buf, bufsz, pos),      \
+	deuce_ssh_bytearray_t : deuce_ssh_serialize_byte(val, buf, bufsz, pos),      \
 	deuce_ssh_boolean_t : deuce_ssh_serialize_boolean(val, buf, bufsz, pos), \
 	deuce_ssh_uint32_t : deuce_ssh_serialize_uint32(val, buf, bufsz, pos),    \
 	deuce_ssh_uint64_t : deuce_ssh_serialize_uint64(val, buf, bufsz, pos),     \
@@ -60,6 +64,11 @@ typedef struct deuce_ssh_namelist {
 ssize_t deuce_ssh_parse_byte(uint8_t * buf, size_t bufsz, deuce_ssh_byte_t *val);
 size_t deuce_ssh_serialized_byte_length(deuce_ssh_byte_t val);
 void deuce_ssh_serialize_byte(deuce_ssh_byte_t val, uint8_t *buf, MAYBE_UNUSED size_t bufsz, size_t *pos);
+
+// A byte array is different because val->length *must* be set before parsing
+ssize_t deuce_ssh_parse_bytearray(uint8_t * buf, size_t bufsz, deuce_ssh_bytearray_t val);
+size_t deuce_ssh_serialized_bytearray_length(deuce_ssh_bytearray_t val);
+void deuce_ssh_serialize_bytearray(deuce_ssh_bytearray_t val, uint8_t *buf, MAYBE_UNUSED size_t bufsz, size_t *pos);
 
 ssize_t deuce_ssh_parse_boolean(uint8_t * buf, size_t bufsz, deuce_ssh_boolean_t *val);
 size_t deuce_ssh_serialized_boolean_length(deuce_ssh_boolean_t val);
