@@ -8,7 +8,7 @@
 #include <string.h>
 #include <threads.h>
 
-#include "ssh.h"
+#include "deucessh.h"
 #include "enc/none.h"
 #include "mac/none.h"
 #include "comp/none.h"

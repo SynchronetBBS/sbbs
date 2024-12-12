@@ -56,4 +56,7 @@ void deuce_ssh_session_cleanup(deuce_ssh_session_t sess);
 
 int deuce_ssh_transport_set_callbacks(deuce_ssh_transport_io_cb_t tx, deuce_ssh_transport_io_cb_t rx, deuce_ssh_transport_rxline_cb_t rx_line, deuce_ssh_transport_extra_line_cb_t extra_line_cb);
 
+#include "ssh-arch.h"
+#include "ssh-trans.h"
+
 #endif

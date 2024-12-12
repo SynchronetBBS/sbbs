@@ -1,10 +1,11 @@
 // RFC-4253
 
-#include "ssh.h"
-#include "ssh-arch.h"
-
 #ifndef DEUCE_SSH_TRANS_H
 #define DEUCE_SSH_TRANS_H
+
+#ifndef DEUCE_SSH_H
+#error Only include deucessh.h, do not directly include this file.
+#endif
 
 /* Transport layer generic */
 #define SSH_MSG_DISCONNECT      UINT8_C(1)

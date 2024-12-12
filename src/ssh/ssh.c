@@ -1,5 +1,4 @@
-#include "ssh.h"
-#include "ssh-trans.h"
+#include "deucessh.h"
 
 int
 deuce_ssh_session_init(deuce_ssh_session_t sess)

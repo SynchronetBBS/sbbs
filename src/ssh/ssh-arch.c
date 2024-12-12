@@ -3,8 +3,7 @@
 #include <assert.h>
 #include <string.h>
 
-#include "ssh.h"
-#include "ssh-arch.h"
+#include "deucessh.h"
 
 /*
  * Required by parse functions

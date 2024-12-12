@@ -3,6 +3,10 @@
 #ifndef DEUCE_SSH_ARCH_H
 #define DEUCE_SSH_ARCH_H
 
+#ifndef DEUCE_SSH_H
+#error Only include deucessh.h, do not directly include this file.
+#endif
+
 #include <inttypes.h>
 #include <stdbool.h>
 

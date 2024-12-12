@@ -2,8 +2,7 @@
 #include <string.h>
 #include <threads.h>
 
-#include "ssh.h"
-#include "ssh-trans.h"
+#include "deucessh.h"
 
 typedef struct deuce_ssh_transport_global_config {
 	atomic_bool used;
@@ -183,20 +182,35 @@ deuce_ssh_transport_cleanup(deuce_ssh_session_t sess)
 			sess->trans->key_algo_selected->cleanup(sess);
 		sess->trans->key_algo_selected = NULL;
 	}
-	if (sess->trans->enc_selected) {
-		if (sess->trans->enc_selected->cleanup != NULL)
-			sess->trans->enc_selected->cleanup(sess);
-		sess->trans->enc_selected = NULL;
+	if (sess->trans->enc_c2s_selected) {
+		if (sess->trans->enc_c2s_selected->cleanup != NULL)
+			sess->trans->enc_c2s_selected->cleanup(sess);
+		sess->trans->enc_c2s_selected = NULL;
 	}
-	if (sess->trans->mac_selected) {
-		if (sess->trans->mac_selected->cleanup != NULL)
-			sess->trans->mac_selected->cleanup(sess);
-		sess->trans->mac_selected = NULL;
+	if (sess->trans->enc_s2c_selected) {
+		if (sess->trans->enc_s2c_selected->cleanup != NULL)
+			sess->trans->enc_s2c_selected->cleanup(sess);
+		sess->trans->enc_s2c_selected = NULL;
 	}
-	if (sess->trans->comp_selected) {
-		if (sess->trans->comp_selected->cleanup != NULL)
-			sess->trans->comp_selected->cleanup(sess);
-		sess->trans->comp_selected = NULL;
+	if (sess->trans->mac_c2s_selected) {
+		if (sess->trans->mac_c2s_selected->cleanup != NULL)
+			sess->trans->mac_c2s_selected->cleanup(sess);
+		sess->trans->mac_c2s_selected = NULL;
+	}
+	if (sess->trans->mac_s2c_selected) {
+		if (sess->trans->mac_s2c_selected->cleanup != NULL)
+			sess->trans->mac_s2c_selected->cleanup(sess);
+		sess->trans->mac_s2c_selected = NULL;
+	}
+	if (sess->trans->comp_c2s_selected) {
+		if (sess->trans->comp_c2s_selected->cleanup != NULL)
+			sess->trans->comp_c2s_selected->cleanup(sess);
+		sess->trans->comp_c2s_selected = NULL;
+	}
+	if (sess->trans->comp_s2c_selected) {
+		if (sess->trans->comp_s2c_selected->cleanup != NULL)
+			sess->trans->comp_s2c_selected->cleanup(sess);
+		sess->trans->comp_s2c_selected = NULL;
 	}
 
 	sess->remote_software_id_string_sz = 0;
@@ -231,9 +245,12 @@ deuce_ssh_transport_init(deuce_ssh_session_t sess)
 	}
 	sess->trans->kex_selected = NULL;
 	sess->trans->key_algo_selected = NULL;
-	sess->trans->enc_selected = NULL;
-	sess->trans->mac_selected = NULL;
-	sess->trans->comp_selected = NULL;
+	sess->trans->enc_c2s_selected = NULL;
+	sess->trans->enc_s2c_selected = NULL;
+	sess->trans->mac_c2s_selected = NULL;
+	sess->trans->mac_s2c_selected = NULL;
+	sess->trans->comp_c2s_selected = NULL;
+	sess->trans->comp_s2c_selected = NULL;
 	sess->trans->transport_thread = thrd;
 	return 0;
 }
