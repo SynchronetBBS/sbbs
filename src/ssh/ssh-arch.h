@@ -20,13 +20,14 @@ typedef bool deuce_ssh_boolean_t;
 typedef uint32_t deuce_ssh_uint32_t;
 typedef uint64_t deuce_ssh_uint64_t;
 typedef struct deuce_ssh_string {
+	deuce_ssh_byte_t *value;
 	deuce_ssh_uint32_t length;
-	deuce_ssh_byte_t value[];
 } *deuce_ssh_string_t;
-typedef BIGNUM *deuce_ssh_mpint_t;
+typedef struct deuce_ssh_string *deuce_ssh_mpint_t;
 typedef struct deuce_ssh_namelist {
-	size_t   names;
-	uint8_t *name[];
+	deuce_ssh_byte_t *value;
+	deuce_ssh_uint32_t length;
+	deuce_ssh_uint32_t next;
 } *deuce_ssh_namelist_t;
 
 #define deuce_ssh_parse(buf, bufsz, val) _Generic(val,                \
@@ -72,16 +73,17 @@ ssize_t deuce_ssh_parse_uint64(uint8_t * buf, size_t bufsz, deuce_ssh_uint64_t *
 size_t deuce_ssh_serialized_uint64_length(deuce_ssh_uint64_t val);
 void deuce_ssh_serialize_uint64(deuce_ssh_uint64_t val, uint8_t *buf, MAYBE_UNUSED size_t bufsz, size_t *pos);
 
-ssize_t deuce_ssh_parse_string(uint8_t * buf, size_t bufsz, deuce_ssh_string_t *val);
+ssize_t deuce_ssh_parse_string(uint8_t * buf, size_t bufsz, deuce_ssh_string_t val);
 size_t deuce_ssh_serialized_string_length(deuce_ssh_string_t val);
 void deuce_ssh_serialize_string(deuce_ssh_string_t val, uint8_t *buf, MAYBE_UNUSED size_t bufsz, size_t *pos);
 
-ssize_t deuce_ssh_parse_mpint(uint8_t * buf, size_t bufsz, deuce_ssh_mpint_t *val);
+ssize_t deuce_ssh_parse_mpint(uint8_t * buf, size_t bufsz, deuce_ssh_mpint_t val);
 size_t deuce_ssh_serialized_mpint_length(deuce_ssh_mpint_t val);
 void deuce_ssh_serialize_mpint(deuce_ssh_mpint_t val, uint8_t *buf, MAYBE_UNUSED size_t bufsz, size_t *pos);
 
-ssize_t deuce_ssh_parse_namelist(uint8_t * buf, size_t bufsz, deuce_ssh_namelist_t *val);
+ssize_t deuce_ssh_parse_namelist(uint8_t * buf, size_t bufsz, deuce_ssh_namelist_t val);
 size_t deuce_ssh_serialized_namelist_length(deuce_ssh_namelist_t val);
 void deuce_ssh_serialize_namelist(deuce_ssh_namelist_t val, uint8_t *buf, MAYBE_UNUSED size_t bufsz, size_t *pos);
+ssize_t deuce_ssh_parse_namelist_next(deuce_ssh_string_t val, deuce_ssh_namelist_t nl);
 
 #endif

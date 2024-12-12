@@ -1,4 +1,4 @@
-#include "ssh-trans.h"
+#include "deucessh.h"
 
 static int
 generate(uint8_t *key, uint8_t *buf, size_t bufsz, uint8_t *outbuf, deuce_ssh_session_t sess)

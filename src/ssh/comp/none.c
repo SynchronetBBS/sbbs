@@ -1,4 +1,4 @@
-#include "ssh-trans.h"
+#include "deucessh.h"
 
 static int
 compress(uint8_t *buf, uint8_t *bufsz, deuce_ssh_session_t sess)
