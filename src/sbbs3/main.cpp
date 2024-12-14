@@ -3639,8 +3639,8 @@ bool sbbs_t::init()
 	SAFEPRINTF2(str,"%s%s",cfg.ctrl_dir,"node.dab");
 	pthread_mutex_lock(&nodefile_mutex);
 	if((nodefile=nopen(str,O_DENYNONE|O_RDWR|O_CREAT))==-1) {
-		errormsg(WHERE, ERR_OPEN, str, cfg.node_num);
 		pthread_mutex_unlock(&nodefile_mutex);
+		errormsg(WHERE, ERR_OPEN, str, cfg.node_num);
 		return(false);
 	}
 	memset(&node,0,sizeof(node_t));  /* write NULL to node struct */
@@ -3648,12 +3648,15 @@ bool sbbs_t::init()
 	while(filelength(nodefile)<(int)(cfg.sys_nodes*sizeof(node_t))) {
 		lseek(nodefile,0L,SEEK_END);
 		if(write(nodefile,&node,sizeof(node_t))!=sizeof(node_t)) {
+			pthread_mutex_unlock(&nodefile_mutex);
 			errormsg(WHERE,ERR_WRITE,str,sizeof(node_t));
 			break;
 		}
 	}
-	if(chsize(nodefile, (off_t)(cfg.sys_nodes*sizeof(node_t))) != 0)
+	if(chsize(nodefile, (off_t)(cfg.sys_nodes*sizeof(node_t))) != 0) {
+		pthread_mutex_unlock(&nodefile_mutex);
 		errormsg(WHERE, ERR_LEN, str, cfg.sys_nodes*sizeof(node_t));
+	}
 	for(i=0; cfg.node_num>0 && i<LOOP_NODEDAB; i++) {
 		if(lock(nodefile,(cfg.node_num-1)*sizeof(node_t),sizeof(node_t))==0) {
 			unlock(nodefile,(cfg.node_num-1)*sizeof(node_t),sizeof(node_t));
