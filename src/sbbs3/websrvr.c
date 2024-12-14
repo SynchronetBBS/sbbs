@@ -1681,7 +1681,7 @@ void http_logon(http_session_t * session, user_t *usr)
 		session->user.logontime = (time32_t)session->logon_time;
 		int result = putuserdat(&scfg, &session->user);
 		if(result != 0)
-			lprintf(LOG_ERR, "%04d %s [%s] <%s> !Error %d writing user data for user #%d"
+			errprintf(LOG_ERR, WHERE, "%04d %s [%s] <%s> !Error %d writing user data for user #%d"
 				,session->socket, session->client.protocol, session->host_ip
 				,session->username, result, session->user.number);
 
