@@ -1401,6 +1401,7 @@ extern "C" {
 	DLLEXPORT void		signal_sub_sem(scfg_t*, int subnum);
 	DLLEXPORT int		msg_client_hfields(smbmsg_t*, client_t*);
 	DLLEXPORT int		notify(scfg_t*, uint usernumber, const char* subject, const char* msg);
+	DLLEXPORT void		normalize_msg_hfield_encoding(const char* charset, char* str, size_t size);
 
 	/* logfile.cpp */
 	DLLEXPORT int		errorlog(scfg_t* cfg, struct mqtt*, int level, const char* host, const char* text);

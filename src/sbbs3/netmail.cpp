@@ -307,7 +307,9 @@ bool sbbs_t::netmail(const char *into, const char *title, int mode, smb_t* resmb
 
 	smb_hfield_str(&msg,RECIPIENT, to);
 	smb_hfield(&msg,RECIPIENTNETTYPE, sizeof(nettype), &nettype); 
-	smb_hfield(&msg,RECIPIENTNETADDR, sizeof(dest_addr), &dest_addr); 
+	smb_hfield(&msg,RECIPIENTNETADDR, sizeof(dest_addr), &dest_addr);
+
+	normalize_msg_hfield_encoding(charset, subj, sizeof subj);
 
 	smb_hfield_str(&msg,SUBJECT, subj);
 
@@ -1138,6 +1140,8 @@ bool sbbs_t::inetmail(const char *into, const char *subj, int mode, smb_t* resmb
 	msg_client_hfields(&msg,&client);
 	smb_hfield_str(&msg,SENDERSERVER, server_host_name());
 
+	normalize_msg_hfield_encoding(charset, title, sizeof title);
+
 	smb_hfield_str(&msg,SUBJECT,title);
 
 	editor_info_to_msg(&msg, editor, charset);
@@ -1421,6 +1425,8 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, int mode, smb_t* resmb
 	/* Security logging */
 	msg_client_hfields(&msg,&client);
 	smb_hfield_str(&msg,SENDERSERVER, server_host_name());
+
+	normalize_msg_hfield_encoding(charset, title, sizeof title);
 
 	smb_hfield_str(&msg,SUBJECT,title);
 

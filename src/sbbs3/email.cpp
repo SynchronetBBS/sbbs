@@ -280,6 +280,8 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 	msg_client_hfields(&msg,&client);
 	smb_hfield_str(&msg,SENDERSERVER,server_host_name());
 
+	normalize_msg_hfield_encoding(charset, title, sizeof title);
+
 	smb_hfield_str(&msg,SUBJECT,title);
 
 	add_msg_ids(&cfg, &smb, &msg, remsg);

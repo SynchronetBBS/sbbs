@@ -304,6 +304,7 @@ bool sbbs_t::postmsg(int subnum, int wm_mode, smb_t* resmb, smbmsg_t* remsg)
 
 	if(remsg != NULL && remsg->subj != NULL && strcmp(title, org_title) == 0)
 		SAFECOPY(title, remsg->subj); // If msg subject not changed by user, use original (possibly UTF-8 encoded) subject
+	normalize_msg_hfield_encoding(charset, title, sizeof title);
 	smb_hfield_str(&msg,SUBJECT,title);
 
 	add_msg_ids(&cfg, &smb, &msg, remsg);
@@ -367,6 +368,18 @@ bool sbbs_t::postmsg(int subnum, int wm_mode, smb_t* resmb, smbmsg_t* remsg)
 	user_event(EVENT_POST);
 
 	return(true);
+}
+
+// When message body is UTF-8 encoded, insure header files are UTF-8 (not CP437) encoded too
+extern "C" void normalize_msg_hfield_encoding(const char* charset, char* str, size_t size)
+{
+	char utf8_str[128];
+
+	if(charset != NULL && strcmp(charset, FIDO_CHARSET_UTF8) == 0) {
+		if(!str_is_ascii(str) && !utf8_str_is_valid(str))
+			if(cp437_to_utf8_str(str, utf8_str, sizeof utf8_str, '\x80') > 1)
+				strlcpy(str, utf8_str, size);
+	}
 }
 
 extern "C" void signal_sub_sem(scfg_t* cfg, int subnum)
