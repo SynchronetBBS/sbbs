@@ -5402,7 +5402,22 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 			warning="warning";
 		log_level=LOG_WARNING;
 	} else {
-		log_level=LOG_ERR;
+		static pthread_mutex_t mutex;
+		static bool mutex_initialized;
+		static char lastfile[MAX_PATH + 1];
+		static uint lastline;
+		if(!mutex_initialized) {
+			pthread_mutex_init(&mutex,NULL);
+			mutex_initialized = true;
+		}
+		pthread_mutex_lock(&mutex);
+		if(lastline == report->lineno && report->filename != NULL && strcmp(lastfile, report->filename) == 0)
+			log_level = LOG_WARNING;
+		else
+			log_level = LOG_ERR;
+		lastline = report->lineno;
+		SAFECOPY(lastfile, report->filename);
+		pthread_mutex_unlock(&mutex);
 		warning="";
 	}
 
