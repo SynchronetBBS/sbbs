@@ -5371,9 +5371,9 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 {
 	char	line[64];
 	char	file[MAX_PATH+1];
-	char*	warning;
+	char*	warning = "";
 	http_session_t* session;
-	int		log_level;
+	int		log_level = LOG_ERR;
 
 	if((session=(http_session_t*)JS_GetContextPrivate(cx))==NULL)
 		return;
@@ -5401,7 +5401,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 		else
 			warning="warning";
 		log_level=LOG_WARNING;
-	} else {
+	} else if(report->filename != NULL){
 		static pthread_mutex_t mutex;
 		static bool mutex_initialized;
 		static char lastfile[MAX_PATH + 1];
@@ -5411,14 +5411,11 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 			mutex_initialized = true;
 		}
 		pthread_mutex_lock(&mutex);
-		if(lastline == report->lineno && report->filename != NULL && strcmp(lastfile, report->filename) == 0)
+		if(lastline == report->lineno && strcmp(lastfile, report->filename) == 0)
 			log_level = LOG_WARNING;
-		else
-			log_level = LOG_ERR;
 		lastline = report->lineno;
 		SAFECOPY(lastfile, report->filename);
 		pthread_mutex_unlock(&mutex);
-		warning="";
 	}
 
 	lprintf(log_level,"%04d !JavaScript %s%s%s: %s, Request: %s"
