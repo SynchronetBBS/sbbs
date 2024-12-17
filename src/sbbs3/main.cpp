@@ -2965,9 +2965,7 @@ void event_thread(void* arg)
 					continue;
 				sbbs->useron.number = 0;
 				sbbs->lprintf(LOG_DEBUG, "Inbound QWK Reply Packet detected: %s", fname);
-				sbbs->useron.number = atoi(fname+offset);
-				getuserdat(&sbbs->cfg,&sbbs->useron);
-				if(sbbs->useron.number != 0 && !(sbbs->useron.misc&(DELETED|INACTIVE))) {
+				if(sbbs->getuseron(WHERE, atoi(fname+offset)) && !(sbbs->useron.misc&(DELETED|INACTIVE))) {
 					fmutex_t lockfile;
 					SAFEPRINTF(lockfile.name,"%s.lock",fname);
 					if(!fmutex_open(&lockfile, startup->host_name, TIMEOUT_MUTEX_FILE)) {
@@ -3028,16 +3026,12 @@ void event_thread(void* arg)
 					continue;
 				sbbs->useron.number = 0;
 				sbbs->lprintf(LOG_INFO, "QWK pack semaphore signaled: %s", fname);
-				int usernum = atoi(fname+offset);
-				sbbs->useron.number = usernum;
-				int retval = getuserdat(&sbbs->cfg,&sbbs->useron);
-				if(retval != 0) {
-					sbbs->lprintf(LOG_WARNING, "ERROR %d reading user data for user #%d", retval, usernum);
+				if(!sbbs->getuseron(WHERE, atoi(fname+offset))) {
 					sbbs->fremove(WHERE, fname, /* log-all-errors: */true);
 					continue;
 				}
 				fmutex_t lockfile;
-				SAFEPRINTF2(lockfile.name,"%spack%04u.lock",sbbs->cfg.data_dir,usernum);
+				SAFEPRINTF2(lockfile.name,"%spack%04u.lock",sbbs->cfg.data_dir, sbbs->useron.number);
 				if(!fmutex_open(&lockfile, startup->host_name, TIMEOUT_MUTEX_FILE)) {
 					if(difftime(time(NULL), lockfile.time) > 60)
 						sbbs->lprintf(LOG_INFO,"%s exists (pack in progress?) since %s", lockfile.name, time_as_hhmm(&sbbs->cfg, lockfile.time, str));
@@ -4437,8 +4431,7 @@ void node_thread(void* arg)
 				SLEEP(1000);
 				sbbs->getnodedat(sbbs->cfg.node_num, &sbbs->thisnode, /* lock: */false);
 				if(sbbs->thisnode.misc & NODE_UDAT && !(sbbs->useron.rest & FLAG('G'))) {   /* not guest */
-					getuserdat(&sbbs->cfg, &sbbs->useron);
-					if(sbbs->getnodedat(sbbs->cfg.node_num, &sbbs->thisnode, /* lock: */true)) {
+					if(sbbs->getuseron(WHERE) && sbbs->getnodedat(sbbs->cfg.node_num, &sbbs->thisnode, /* lock: */true)) {
 						sbbs->thisnode.misc &= ~NODE_UDAT;
 						sbbs->putnodedat(sbbs->cfg.node_num, &sbbs->thisnode); 
 					}

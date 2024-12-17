@@ -54,7 +54,7 @@ int sbbs_t::exec_function(csi_t *csi)
 		case CS_USER_DEFAULTS:
 			maindflts(&useron);
 			if(!(useron.rest&FLAG('G')))    /* not guest */
-				getuserdat(&cfg,&useron);
+				getuseron(WHERE);
 			return(0);
 		case CS_TEXT_FILE_SECTION:
 			text_sec();

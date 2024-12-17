@@ -297,3 +297,25 @@ uint sbbs_t::gettimeleft(bool handle_out_of_time)
 	}
 	return timeleft;
 }
+
+/****************************************************************************/
+/* Read the user.tab record for the specified usernumber					*/
+/* (or current useron.number) into 'useron'.								*/
+/* Logs error and does *not* change/zero-out 'useron' upon failure			*/
+/****************************************************************************/
+bool sbbs_t::getuseron(int line, const char* function, const char *source, uint usernum)
+{
+	user_t user{};
+	if(usernum == 0)
+		usernum = useron.number;
+	user.number = usernum;
+	int retval = getuserdat(&cfg, &user);
+	if(retval == USER_SUCCESS) {
+		useron = user;
+		return true;
+	}
+	char str[128];
+	snprintf(str, sizeof str, "getuserdat returned %d", retval);
+	errormsg(line, function, source, ERR_READ, USER_DATA_FILENAME, usernum, str);
+	return false;
+}

@@ -471,7 +471,7 @@ bool sbbs_t::newuser()
 	if(cfg.newuser_mod[0])
 		exec_bin(cfg.newuser_mod,&main_csi);
 	user_event(EVENT_NEWUSER);
-	getuserdat(&cfg,&useron);	// In case event(s) modified user data
+	getuseron(WHERE);	// In case event(s) modified user data
 	logline("N+","Successful new user logon");
 
 	return(true);

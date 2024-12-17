@@ -151,8 +151,7 @@ void sbbs_t::nodesync(bool clearline)
 			} 
 		}
 		if(thisnode.misc&NODE_UDAT && !(useron.rest&FLAG('G'))) {   /* not guest */
-			getuserdat(&cfg, &useron);
-			if(getnodedat(cfg.node_num,&thisnode, true)) {
+			if(getuseron(WHERE) && getnodedat(cfg.node_num,&thisnode, true)) {
 				thisnode.misc&=~NODE_UDAT;
 				putnodedat(cfg.node_num,&thisnode); 
 			}

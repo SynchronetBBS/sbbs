@@ -795,6 +795,7 @@ public:
 	int		getusrgrp(int subnum);
 	int		getusrdir(int dirnum);
 	int		getusrlib(int dirnum);
+	bool	getuseron(int line, const char* function, const char *source, uint usernum = 0);
 
 	bool	putuserstr(int usernumber, enum user_field, const char *str);
 	bool	putuserdatetime(int usernumber, enum user_field, time_t t);
