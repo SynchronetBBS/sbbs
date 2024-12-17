@@ -5401,7 +5401,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 		else
 			warning="warning";
 		log_level=LOG_WARNING;
-	} else if(report->filename != NULL){
+	} else if(report->filename != NULL) {
 		static pthread_mutex_t mutex;
 		static bool mutex_initialized;
 		static char lastfile[MAX_PATH + 1];
