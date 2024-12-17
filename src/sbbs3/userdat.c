@@ -253,9 +253,6 @@ int openuserdat(scfg_t* cfg, bool for_modify)
 {
 	char path[MAX_PATH+1];
 
-	if(!VALID_CFG(cfg))
-		return USER_INVALID_ARG;
-
 	return nopen(userdat_filename(cfg, path, sizeof(path)), for_modify ? (O_RDWR|O_CREAT|O_DENYNONE) : (O_RDONLY|O_DENYNONE));
 }
 
@@ -311,7 +308,7 @@ int readuserdat(scfg_t* cfg, unsigned user_number, char* userdat, size_t size, i
 		file = infile;
 	else {
 		if((file = openuserdat(cfg, /* for_modify: */false)) < 0)
-			return file;
+			return USER_OPEN_ERROR;
 	}
 
 	if(user_number > (unsigned)(filelength(file) / USER_RECORD_LINE_LEN)) {
@@ -498,7 +495,7 @@ int getuserdat(scfg_t* cfg, user_t *user)
 
 	if((file = openuserdat(cfg, /* for_modify: */false)) < 0) {
 		user->number = 0;
-		return file;
+		return USER_OPEN_ERROR;
 	}
 
 	if((retval = readuserdat(cfg, user->number, userdat, sizeof(userdat), file, /* leave_locked: */false)) != 0) {
@@ -1671,7 +1668,7 @@ uint finduserstr(scfg_t* cfg, uint usernumber, enum user_field fnum
 	if(!VALID_CFG(cfg) || str == NULL)
 		return(0);
 
-	if((file=openuserdat(cfg, /* for_modify: */false)) == -1)
+	if((file=openuserdat(cfg, /* for_modify: */false)) < 0)
 		return(0);
 	int last = (int)filelength(file) / USER_RECORD_LINE_LEN;
 	if(usernumber && next)
@@ -2526,7 +2523,7 @@ char* getuserstr(scfg_t* cfg, int usernumber, enum user_field fnum, char *str, s
 		return NULL;
 
 	memset(str, 0, size);
-	if((file = openuserdat(cfg, /* for_modify: */false)) == -1)
+	if((file = openuserdat(cfg, /* for_modify: */false)) < 0)
 		return str;
 
 	if(readuserdat(cfg, usernumber, userdat, sizeof(userdat), file, /* leave_locked: */false) == 0) {
@@ -2614,7 +2611,7 @@ int putuserstr(scfg_t* cfg, int usernumber, enum user_field fnum, const char *st
 	if(strchr(str, USER_FIELD_SEPARATOR) != NULL)
 		return USER_FORMAT_ERROR;
 
-	if((file = openuserdat(cfg, /* for_modify: */true)) == -1)
+	if((file = openuserdat(cfg, /* for_modify: */true)) < 0)
 		return USER_OPEN_ERROR;
 
 	retval = readuserdat(cfg, usernumber, userdat, sizeof(userdat), file, /* leave_locked: */true);
@@ -2705,7 +2702,7 @@ uint64_t adjustuserval(scfg_t* cfg, int usernumber, enum user_field fnum, int64_
 	if(!VALID_CFG(cfg) || !VALID_USER_NUMBER(usernumber) || !VALID_USER_FIELD(fnum))
 		return 0;
 
-	if((file = openuserdat(cfg, /* for_modify: */true)) == -1)
+	if((file = openuserdat(cfg, /* for_modify: */true)) < 0)
 		return 0;
 
 	if(readuserdat(cfg, usernumber, userdat, sizeof(userdat), file, /* leave_locked: */true) == 0) {
