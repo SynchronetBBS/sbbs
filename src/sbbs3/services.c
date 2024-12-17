@@ -640,10 +640,10 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 	char	file[MAX_PATH+1];
 	char*	prot="???";
 	SOCKET	sock=0;
-	char*	warning;
+	char*	warning = "";
 	service_client_t* client;
 	jsrefcount	rc;
-	int		log_level;
+	int		log_level = LOG_ERR;
 
 	if((client=(service_client_t*)JS_GetContextPrivate(cx))!=NULL) {
 		prot=client->service->protocol;
@@ -673,9 +673,21 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 		else
 			warning="warning";
 		log_level=LOG_WARNING;
-	} else {
-		log_level=LOG_ERR;
-		warning="";
+	} else if(report->filename != NULL) {
+		static pthread_mutex_t mutex;
+		static bool mutex_initialized;
+		static char lastfile[MAX_PATH + 1];
+		static uint lastline;
+		if(!mutex_initialized) {
+			pthread_mutex_init(&mutex,NULL);
+			mutex_initialized = true;
+		}
+		pthread_mutex_lock(&mutex);
+		if(lastline == report->lineno && strcmp(lastfile, report->filename) == 0)
+			log_level = LOG_WARNING;
+		lastline = report->lineno;
+		SAFECOPY(lastfile, report->filename);
+		pthread_mutex_unlock(&mutex);
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
