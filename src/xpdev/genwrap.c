@@ -1166,7 +1166,7 @@ char* safe_strerror(int errnum, char *buf, size_t buflen)
 	strerror_s(buf, buflen, errnum);
 #elif defined(_WIN32) || defined(__EMSCRIPTEN__)
 	strlcpy(buf, strerror(errnum), buflen);
-#elif defined(_GNU_SOURCE)
+#elif defined(_GNU_SOURCE) && defined(__USE_GNU)
 	char* ret = strerror_r(errnum, buf, buflen);
 	if (ret != buf)
 		strlcpy(buf, ret, buflen);
