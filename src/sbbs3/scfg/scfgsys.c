@@ -192,7 +192,7 @@ int edit_sys_timezone(int page, int total)
 	int i;
 	int bar;
 
-	i = !(cfg.sys_timezone & US_ZONE);
+	i = OTHER_ZONE(cfg.sys_timezone) || !(cfg.sys_timezone & US_ZONE);
 	uifc.helpbuf=
 		"`United States Time Zone:`\n"
 		"\n"
