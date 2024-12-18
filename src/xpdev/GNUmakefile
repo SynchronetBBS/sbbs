@@ -9,11 +9,6 @@ ifndef win
 endif
 
 CFLAGS +=  -I. $(XPDEV_CFLAGS)
-ifndef WITHOUT_ALSA_SOUND
-	ifeq ($(shell if [ -f /usr/include/alsa/asoundlib.h ] ; then echo YES ; fi),YES)
-		CFLAGS	+=	-DUSE_ALSA_SOUND
-	endif
-endif
 MT_CFLAGS	+=	$(XPDEV-MT_CFLAGS)
 
 ifdef WITH_SDL_AUDIO

@@ -214,9 +214,11 @@ ifndef WITHOUT_PORTAUDIO
   endif
  endif
 endif
-ifeq ($(shell if [ -f /usr/include/alsa/asoundlib.h ] ; then echo YES ; fi),YES)
- XPDEV-MT_LIBS += -ldl
- XPDEV_LIBS += -ldl
+ifndef WITHOUT_ALSA_SOUND
+	ifeq ($(shell if [ -f /usr/include/alsa/asoundlib.h ] ; then echo YES ; fi),YES)
+		XPDEV-MT_CFLAGS	+= -DUSE_ALSA_SOUND
+		XPDEV-MT_LIBS += -ldl
+	endif
 endif
 
 ifndef NO_PULSEAUDIO
