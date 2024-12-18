@@ -5,8 +5,10 @@
 
 General
 ~~~~~~~
-o New userbase (see https://wiki.synchro.net/history:newuserbase for details)
-o New primary configuration files: http://wiki.synchro.net/history:newcfgfiles
+o New user database (userbase) file format
+  see https://wiki.synchro.net/history:newuserbase for details
+o New primary configuration file format
+  see https://wiki.synchro.net/history:newcfgfiles for details
 o Improved UTF-8 terminal support
   - UNICODE characters sent to Terminal Server are automatically converted to
     CP437 (if possible) in most scenarios
@@ -18,12 +20,16 @@ o New statistics file formats
   - */dsts.dab (daily statistics and running totals) -> */dsts.ini
   - */csts.dab (cumulative statistics / log) -> */csts.tab
   - DSTSEDIT (daily stats editor) goes away: just edit the dsts.ini file
+o Fixed/system events:
+  - "Native Executable" and "Use shell" options for each fixed event
+  - "Monthly" fixed event (will run every new month, always)
 o New event time file format
   - ctrl/time.dab and qnet.dab are now converted to ctrl/time.ini
 o Increase maximum length of configured file/directory paths and command-lines
   from 63 to 100 characters
 o Internal codes (prefixes and suffixes) have doubled in maximum length
   from 8 to 16 characters (or 32 characters for prefixed-codes)
+o Repeated errors are reduced in severity (e.g. from Error to Warning)
 o User database (user.tab file) and node status (node.dab file) locking
   - incremental back-off on lock retries
   - increased total retry duration from 5 to 45 seconds
@@ -43,10 +49,11 @@ o New IRC service (ircd v2.0)
 o New command-line specifier: %- to represent the user's chat handle/call-sign
 o New configurable system date display/input formats (e.g. Year first)
   and configurable date value separators (e.g. '.', '-', ' ' instead of '/')
+  and optional "verbal" (instead of numeric) less ambiguous 8-char dates
 
 Security
 ~~~~~~~~
-o New cryptographic library (cryptlib) version 3.4.7 for TLS and SSH
+o New cryptographic library (cryptlib) version 3.4.8 for TLS and SSH
   - with many custom patches for bug fixes and Synchronet-specific features
 o Set the minimum TLS version for the FTP server and TLS services to TLS 1.2
 o Disallow new user aliases from matching an existing user's real name
@@ -68,6 +75,7 @@ o Filter files (e.g. text/*.can) now have optional expiration date and other
   - Configured via the sbbs.ini: LoginAttemptFilterDuration
     (default: 0/infinite)
     For details, https://wiki.synchro.net/config:filter_files#trash_can_files
+  - Managed by the new 'trashman' utility (e.g. configured to run monthly)
 
 Customization
 ~~~~~~~~~~~~~
@@ -75,6 +83,12 @@ o New preferred method of text.dat string sysop-customization: ctrl/text.ini
   See https://wiki.synchro.net/custom:text.ini for details
 o Attribute configuration file (attr.cfg) replaced with ctrl/attr.ini
   - auto-converted during upgrade process
+o Node status and user action/activity are now fully customizeable/localizable:
+  - NodeAction text.dat strings now represent just the action, nothing else
+  - @-codes are now supported/used in NodeAction text.dat strings (i.e. not %s)
+  - Ctrl-A codes supported in NodeStatus, NodeAction, and NodeActivity
+    text.dat strings
+  - For more details, see https://wiki.synchro.net/custom:node_status
 o New "Rainbow" (Elite Text) attribute code for auto-sequenced attributes
   - attribute sequence is configured via "rainbow" key in ctrl/attr.ini
   - New Ctrl-A codes: 'X' to turn on repeating/wrapping rainbow attributes,
@@ -158,6 +172,8 @@ o Updated text.dat strings:
   - YNQP - no longer used, replaced with first char of Yes/No/Quit/Password
   - DoYouMeanThisUserQ - Using mnemonic with @-codes
 o Better support for a blank (disabled) text.dat AreYouThere string
+o Terminal server now logs debug-level messages detailing every printed file
+  - help sysops to determine which files they might want to replace/modify
 o Mnemonic strings now support @-codes immediately following the tilde
   (e.g. ~@Yes@) to use the first character of a dynamically-replaced
   (e.g. localized/translated) text string as a command key
@@ -172,7 +188,7 @@ o New text.dat strings:
   - YouCantUseThatNetmail
   - NewUserValEmailSubj
   - InactivityAlert
-  - FreeDownloadUserMsg 
+  - FreeDownloadUserMsg
   - None
   - Which
   - Next
@@ -188,6 +204,9 @@ o New text.dat strings:
   - FREE
   - Sun - Sat
   - Jan - Dec
+  - NodeActionCustom
+  - SysopPageNotification
+  - NodeActivityMainMenu - NodeActivityCustom
 o New text.dat strings for received Fido and Internet mail
   - InternetMailReceived
   - InternetMailForwarded
@@ -333,6 +352,8 @@ o bbs.logoff() now returns boolean (false if log-off was denied)
 o bbs.text() now accepts an additional argument: default_text=false
 o bbs.text now has numeric properties named after each text ID
   (so load() or require() of text.js is no longer strictly required)
+o bbs.text(), replace_text(), and revert_text() now accept a string argument
+  - the text.dat string ID
 o bbs.editfile() now supports overriding the maximum lines (default: 10000)
   and message metadata fields place in external editor drop files
 o Argument to bbs.batch_clear() now optional (clear downlaod queue by default)
@@ -364,6 +385,7 @@ o Renamed console.crlf() to console.newline() (leaving crlf() as an alias)
 o File.readBin() and writeBin() methods now support 64-bit integer binary data
 o New method: File.iniRemoveSections()
 o Global exit() function now sets 'exit_code' to 0 by default
+o New "RELOAD" syspo command may be used to reload a JavaScript command shell
 o Prevent NULL pointer dereference when 'null' object passed to JS functions
 o The second parameter to FileBase.add() can be either:
   - undefined: will try to extract/use DIZ only if there's no ext desc already
@@ -436,6 +458,7 @@ o [BBS]
   DefaultTermHeight=24
 o Online user editor display more of the user's (long) password
 o Increase user's hostname field (aka user_t.comp) from 30 to 60 chars
+o Event thread can have its own (different) log level
 o Most sysops didn't know it, but if exec/feedback.* existed, it would be
   executed just before any user sent an email to the sysop (user #1),
   excluding new user validation requests:
@@ -457,6 +480,10 @@ o SSH max-severity of log messages is now configurable
 o SSH negotiation is now asynchronous/non-blocking, so other nodes can accept
   connections while any SSH negotiations are in progress
 o Removed remnants of (long unused/deprecated) WIP and HTML terminal support
+o Allow Telnet client to be in BINARY_TX mode persistently
+  - don't always return the client to NVT/ASCII mode after file transfers
+o Track (save/restore) Telnet BINARY_TX mode separately for each direction
+o Aborting operations via Ctrl-C now works even in Telnet BINARY_TX mode
 o Telnet/Rlogin gateway improvements
   - now supports "Raw TCP" (using TG_RAW mode flag)
   - now supports sending arbitratry text strings after connection
@@ -491,6 +518,7 @@ o fseditor.js
   - open the quote file in "binary" mode (only applicable on Windows)
 o addfiles.js
   - Better support for CD-ROM filenaming (no dashes in ISO 9660 filenames!)
+  - A lot of usability improvements (e.g. case-insensitivity)
 o logonlist.js
   - log the current connection protocol as a separate property in logon.jsonl
   - when passed a non-zero integer arg, display logons from that many days ago
@@ -592,6 +620,7 @@ o Sanity check sub-board's assigned FTN addresses when loading configuration
   (use nearest matching configured AKA)
 o Fixed QWKnet netmail dest user look-up (using qnet/users.dat)
   broken back in 2021
+o Verification of valid MESSAGES.DAT / QWK-ID.MSG file sizes before import
 o Don't use message times from QWK reply packets unless timezone also included
 o Default FTN charset to CP437 (not ASCII) for QWK-imported messages
 o Increase FidoNet echo/area tag max length from 40/50 to 60 chars (per FSC-74)
@@ -603,6 +632,8 @@ o Internal message editor now supports deletion of ranges of lines with /D cmd
 o Don't save draft messages upon disconnect for Guest or "no one" (user #0)
 o Fixes for moderated message bases (e.g. ignore deleted messages)
 o P-restricted users (including QWKnet accounts) can no-longer post polls
+o Removed the "prepack QWK" feature - nobody uses/needs this nowadays
+o Better support for multiple hosts handling QWK events
 o Ignore trailing white-space from message subjects before hashing
   Use new chksmb -S option to ignore resulting Subject CRC mismatch errors
 o Improved MIME/QP-encoded message text parsing
@@ -615,13 +646,22 @@ o Saving changes to an existing message header can increase the required
 
 SBBSecho
 ~~~~~~~~
+o Support alternate Area File format: areas.ini
+  - run 'jsexec make_areas_ini.js' to export your areas.bbs file to areas.ini
+  - or use the new export to areas.ini support in SCFG->Message Areas
+  - areas.bbs format still supported for those that wish to use it
 o Don't use libarchive for creating/appending bundles
   - Must use (have configured) external archive program (e.g. zip)
 o New EchoCfg->Global->Sort Linked Node List option
 o Supports filtering messages based on text/subject.can file
 o Rework NetMail routing logic to handle point destinations better
 o Default packet type is now configurable
+o Better/complete support for multiple file attachments/requests
+  - Support multiple comma or space-separated files in netmail message subject
 o Handle LF-terminated messages more "correctly" (convert to CR or CRLF)
+o Support AreaMgr request messages with -L (list) or -Q (query) but no body
+o Add support for AreaFix -R, -L, and -Q options in subject of AreaMgr requests
+o AreaManager passwords can no longer contains spaces
 o Options for handling of incoming bad packets
   - delete
   - rename *.bad (the previous behavior)
@@ -648,6 +688,8 @@ o Perform a JS garbage collection for each new request in a reused session
 o Add UNIX domain FastCGI support (in *nix builds only)
 o Fix use of IPv6 addresses in access log filenames on Windows
 o Fewer temp files (e.g. 0-byte) being created and potentially left behind
+o Can now limit maximum concurrent connections per client (IP address)
+  - default: 10, set to 0 for unlimited
 
 Mail Server
 ~~~~~~~~~~~
@@ -656,8 +698,11 @@ o Reject SMTP session from any client that sends illegally-long lines
 o SMTP mail server wasn't RFC 4954 compliant for "AUTH PLAIN" logins
   Fix for errant "Missing AUTH PLAIN argument" log message
 o Fix false FORGED mail header 'FROM' field detection/rejection
+o Fix POP3 "LIST" and "STAT" size values, for compatibility with Apple Mail app
 o Fix max_clients limit not being effectively-imposed on SMTPS connections
+o email.can file can be used for filtering sender and recipient *names*
 o MIME-encode words that contani non-ASCII values in text header fields
+o spamblock.cfg auto-added entries are now expirable (configurable duration)
 
 FTP Server
 ~~~~~~~~~~
