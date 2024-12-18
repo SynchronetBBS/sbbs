@@ -1,0 +1,11 @@
+--- io/tcp.h.orig	2024-12-18 18:06:20.460559000 -0500
++++ io/tcp.h	2024-12-18 18:06:48.242277000 -0500
+@@ -1318,7 +1318,7 @@
+ 
+ #if defined( socklen_t ) || defined( __socklen_t_defined ) || \
+ 	defined( _SOCKLEN_T ) || defined( _SOCKLEN_T_DECLARED ) || \
+-	defined( _SOCKLEN_T_DEFINED_ )
++	defined( _SOCKLEN_T_DEFINED_ ) || defined( __DEFINED_socklen_t )
+   #define SIZE_TYPE					socklen_t
+ #elif defined( __BEOS__ ) || defined( _CRAY ) || defined( __WINDOWS__ ) || \
+ 	  defined( __VxWorks__ )

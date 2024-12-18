@@ -99,6 +99,7 @@ set(PATCHES
 	cl-mingw64-unicode-gibble.patch
 	cl-haiku-build.patch
 	cl-dont-validate-va-list.patch
+	cl-musl-socklen_t.patch
 )
 
 set(SOURCE
