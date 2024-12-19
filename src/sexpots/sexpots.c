@@ -22,6 +22,9 @@
 /* ANSI C */
 #include <stdarg.h>
 #include <stdio.h>
+#if defined(__unix__)
+#include <signal.h>
+#endif
 
 /* xpdev lib */
 #include "dirwrap.h"
