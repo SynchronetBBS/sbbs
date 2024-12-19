@@ -48,8 +48,8 @@
 #define USER_FIELD_SEPARATOR '\t'
 static const char user_field_separator[2] = { USER_FIELD_SEPARATOR, '\0' };
 
-#define LOOP_USERDAT 100
-#define RETRY_DELAY(x) mswait(((x / 10) * 100) + xp_random(200))
+#define LOOP_USERDAT 200
+#define RETRY_DELAY(x) mswait(((x / 10) * 50) + xp_random(100))
 
 char* userdat_filename(scfg_t* cfg, char* path, size_t size)
 {
@@ -279,8 +279,12 @@ bool lockuserdat(int file, unsigned user_number)
 		return false;
 
 	off_t offset = userdatoffset(user_number);
-
-	return xp_lockfile(file, offset, USER_RECORD_LINE_LEN, /* block: */true) == 0;
+	unsigned attempt=0;
+	while(attempt < LOOP_USERDAT && lock(file, offset, USER_RECORD_LINE_LEN) == -1) {
+		attempt++;
+		RETRY_DELAY(attempt);
+	}
+	return attempt < LOOP_USERDAT;
 }
 
 bool unlockuserdat(int file, unsigned user_number)
