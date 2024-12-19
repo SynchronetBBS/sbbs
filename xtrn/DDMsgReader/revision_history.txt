@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.96h    2024-12-18   Bug fix: When reading messages with the scrolling
+                      interface, it now exits from user input timeout as it
+                      should.
 1.96g    2024-12-04   Bug fix: For indexed newscan without snap-to-new, go back
                       to remembering the user's previously selected sub-board
 1.96f    2024-12-04   New user option & behavior: When selecting/toggling

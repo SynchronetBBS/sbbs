@@ -205,6 +205,9 @@
  * 2024-12-04 Eric Oulashin     Version 1.96g
  *                              Bug fix: For indexed newscan without snap-to-new, go back to
  *                              remembering the user's previously selected sub-board
+ * 2024-12-18 Eric Oulashin     Version 1.96h
+ *                              When reading messages with the scrolling interface, pay attention
+ *                              to user input timeout via a check of the last user input.
  */
 
 "use strict";
@@ -312,8 +315,8 @@ var hexdump = load('hexdump_lib.js');
 
 
 // Reader version information
-var READER_VERSION = "1.96g";
-var READER_DATE = "2024-12-04";
+var READER_VERSION = "1.96h";
+var READER_DATE = "2024-12-18";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -6988,6 +6991,10 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				}
 				else
 					retObj.nextAction = ACTION_QUIT;
+				continueOn = false;
+				break;
+			case "": // User input timeout
+				retObj.nextAction = ACTION_QUIT;
 				continueOn = false;
 				break;
 			default:
@@ -20194,6 +20201,7 @@ function scrollTextLines(pTxtLines, pTopLineIdx, pTxtAttrib, pWriteTxtLines, pTo
 					writeTxtLines = true;
 				}
 				break;
+			case "": // User input timeout
 			default:
 				continueOn = false;
 				break;
