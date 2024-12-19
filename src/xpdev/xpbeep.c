@@ -1210,7 +1210,7 @@ void unix_beep(int freq, int dur)
 	}
 #endif
 
-#if !defined(__GNU__) && !defined(__QNX__) && !defined(__OpenBSD__) && !defined(__NetBSD__) && !defined(__APPLE__) && !defined(__CYGWIN__) && !defined(__HAIKU__) && !defined(__EMSCRIPTEN__)
+#if defined(__FreeBSD__) || defined(__solaris__)
 	static int console_fd=-1;
 
 	if(console_fd == -1) 
