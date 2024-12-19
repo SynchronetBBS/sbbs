@@ -73,6 +73,7 @@ set(PATCHES
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-haiku-build.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-dont-validate-va-list.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-musl-socklen_t.patch
+	${CMAKE_CURRENT_SOURCE_DIR}/cl-no-musl-backtrace.patch
 )
 
 FetchContent_Declare(CryptLib

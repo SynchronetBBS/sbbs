@@ -100,6 +100,7 @@ set(PATCHES
 	cl-haiku-build.patch
 	cl-dont-validate-va-list.patch
 	cl-musl-socklen_t.patch
+	cl-no-musl-backtrace.patch
 )
 
 set(SOURCE
