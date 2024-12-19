@@ -24,6 +24,7 @@
 #include "str_util.h"
 #include "nopen.h"
 #include "datewrap.h"
+#include "xpdatetime.h"
 #include "text.h"	/* TOTAL_TEXT */
 #include "ini_file.h"
 #if defined(SBBS) && defined(USE_CRYPTLIB)
@@ -533,6 +534,9 @@ ushort sys_timezone(scfg_t* cfg)
 {
 	time_t	now;
 	struct tm tm;
+
+	if(cfg->sys_timezone == SYS_TIMEZONE_AUTO)
+		return xpTimeZone_local();
 
 	if(cfg->sys_misc&SM_AUTO_DST && SMB_TZ_HAS_DST(cfg->sys_timezone)) {
 		now=time(NULL);

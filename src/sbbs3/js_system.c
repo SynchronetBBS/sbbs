@@ -167,12 +167,10 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			p=cfg->sys_location;
 			break;
 		case SYS_PROP_TIMEZONE:
-			sys_timezone(cfg);
-			*vp = INT_TO_JSVAL(cfg->sys_timezone);
+			*vp = INT_TO_JSVAL(sys_timezone(cfg));
 			break;
 		case SYS_PROP_TZ_OFFSET:
-			sys_timezone(cfg);
-			*vp = INT_TO_JSVAL(smb_tzutc(cfg->sys_timezone));
+			*vp = INT_TO_JSVAL(smb_tzutc(sys_timezone(cfg)));
 			break;
 		case SYS_PROP_NODES:
 			*vp = INT_TO_JSVAL(cfg->sys_nodes);

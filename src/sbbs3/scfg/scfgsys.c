@@ -185,6 +185,10 @@ static int configure_dst(int page, int total)
 	return i;
 }
 
+#define UTC_OFFSET_HELP \
+		"The UTC offset alone can be ambiguous as some time zones share the same\n" \
+		"offset from UTC as other time zones for some or all months of the year.\n"
+
 int edit_sys_timezone(int page, int total)
 {
 	int mode = WIN_SAV | WIN_MID;
@@ -192,6 +196,32 @@ int edit_sys_timezone(int page, int total)
 	int i;
 	int bar;
 
+	i = cfg.sys_timezone != SYS_TIMEZONE_AUTO;
+	uifc.helpbuf=
+		"`Automatically Determine Time Zone:`\n"
+		"\n"
+		"Query the operating system for the current local time zone as an offset\n"
+		"(i.e. minutes east or west) from UTC.\n"
+		"\n"
+		UTC_OFFSET_HELP
+		"\n"
+		"If enabled, this query will occur automatically each time the local time\n"
+		"zone is needed, so any affect of daylight saving time will be applied\n"
+		"automatically as well.\n"
+	;
+	if(page)
+		mode = wiz_help(page, total, uifc.helpbuf);
+	i = uifc.list(mode, 0, 15, 0, &i, 0
+		,"Automatically Determine Time Zone (as offset from UTC)"
+		,uifcYesNoOpts);
+	if(i==-1)
+		return -1;
+	if(i==0) {
+		cfg.sys_timezone = SYS_TIMEZONE_AUTO;
+		return 0;
+	}
+	if(cfg.sys_timezone == SYS_TIMEZONE_AUTO)
+		cfg.sys_timezone = 0;
 	i = OTHER_ZONE(cfg.sys_timezone) || !(cfg.sys_timezone & US_ZONE);
 	uifc.helpbuf=
 		"`United States Time Zone:`\n"
@@ -430,6 +460,8 @@ int edit_sys_timezone(int page, int total)
 				"\n"
 				"Enter your local time zone offset from Universal Time (UTC/GMT) in\n"
 				"`HH:MM` format.\n"
+				"\n"
+				UTC_OFFSET_HELP
 			;
 			if(page)
 				mode = wiz_help(page, total, uifc.helpbuf);
@@ -1705,8 +1737,9 @@ void sys_cfg(void)
 		i=0;
 		snprintf(opt[i++],MAX_OPLN,"%-20s%s","BBS Name",cfg.sys_name);
 		snprintf(opt[i++],MAX_OPLN,"%-20s%s","Location",cfg.sys_location);
-		snprintf(opt[i++],MAX_OPLN,"%-20s%s %s","Local Time Zone"
-			,smb_zonestr(cfg.sys_timezone,NULL)
+		snprintf(opt[i++],MAX_OPLN,"%-20s%s%s %s","Local Time Zone"
+			,cfg.sys_timezone == SYS_TIMEZONE_AUTO ? "Auto: " : ""
+			,smb_zonestr(sys_timezone(&cfg),NULL)
 			,SMB_TZ_HAS_DST(cfg.sys_timezone) && cfg.sys_misc&SM_AUTO_DST ? "(Auto-DST)" : "");
 		snprintf(opt[i++],MAX_OPLN,"%-20s%s (e.g. %s)","Short Date Format"
 			,date_format(&cfg, str, sizeof str)

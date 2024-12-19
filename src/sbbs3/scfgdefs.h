@@ -466,6 +466,7 @@ typedef struct
 	char 			sys_id[LEN_QWKID+1];/* System ID for QWK Packets */
 	char 			sys_inetaddr[128];	/* System's internet address */
 	char 			sys_location[41];	/* System Location */
+#define SYS_TIMEZONE_AUTO -1
 	int16_t			sys_timezone;		/* Time Zone of BBS */
 	enum date_fmt	sys_date_fmt;
 	char			sys_date_sep;
