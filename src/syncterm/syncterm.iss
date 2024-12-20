@@ -25,6 +25,7 @@ DisableProgramGroupPage=yes
 OutputBaseFilename=SyncTERM-{#MyAppVersion}-setup
 Compression=lzma
 SolidCompression=yes
+ArchitecturesInstallIn64BitMode=x64
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -34,8 +35,10 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Name: "systemlist"; Description: "Use the Official Synchronet BBS List as your System BBS List"; GroupDescription: "Options:";
 
 [Files]
-Source: "c:\bin\syncterm.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\bin\SDL2.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "c:\bin\syncterm.exe"; DestDir: "{app}"; Flags: ignoreversion; Check: not Is64BitInstallMode
+Source: "C:\bin\SDL2.dll"; DestDir: "{app}"; Flags: ignoreversion; Check: not Is64BitInstallMode
+Source: "c:\bin\x64\syncterm.exe"; DestDir: "{app}"; Flags: ignoreversion; Check: Is64BitInstallMode
+Source: "C:\bin\x64\SDL2.dll"; DestDir: "{app}"; Flags: ignoreversion; Check: Is64BitInstallMode
 Source: "c:\sbbs\src\syncterm\fonts\*"; DestDir: "{app}\fonts"; Flags: ignoreversion
 Source: "c:\sbbs\src\syncterm\syncterm.ini"; DestDir: "{userappdata}\{#MyAppName}"; Flags: ignoreversion confirmoverwrite
 Source: "s:\xfer\sbbs\syncterm.lst"; DestDir: "{commonappdata}\{#MyAppName}"; Tasks: systemlist; Flags: ignoreversion confirmoverwrite
