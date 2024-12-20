@@ -22,7 +22,7 @@ AppUpdatesURL={#MyAppURL}
 DefaultDirName={pf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
-OutputBaseFilename=install_SyncTERM_v{#MyAppVersion}
+OutputBaseFilename=SyncTERM-{#MyAppVersion}-setup
 Compression=lzma
 SolidCompression=yes
 
