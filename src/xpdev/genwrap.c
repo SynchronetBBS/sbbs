@@ -785,7 +785,6 @@ char* os_version(char *str, size_t size)
 	static NTSTATUS (WINAPI *pRtlGetVersion)(PRTL_OSVERSIONINFOW lpVersionInformation) = NULL;
 
 	winver.dwOSVersionInfoSize=sizeof(winver);
-	#pragma warning(suppress : 4996)
 
 	if(pRtlGetVersion == NULL) {
 		HINSTANCE ntdll = LoadLibrary("ntdll.dll");
@@ -794,9 +793,10 @@ char* os_version(char *str, size_t size)
 			FreeLibrary(ntdll);
 		}
 	}
-	if(pRtlGetVersion == NULL)
+	if(pRtlGetVersion == NULL) {
+		#pragma warning(suppress : 4996) // error C4996: 'GetVersionExA': was declared deprecated
 		GetVersionEx(&winver);
-	else
+	} else
 		pRtlGetVersion((PRTL_OSVERSIONINFOW)&winver);
 
 	switch(winver.dwPlatformId) {
