@@ -782,22 +782,11 @@ char* os_version(char *str, size_t size)
 	/* Windows Version */
 	char*			winflavor="";
 	OSVERSIONINFO	winver;
-	static NTSTATUS (WINAPI *pRtlGetVersion)(PRTL_OSVERSIONINFOW lpVersionInformation) = NULL;
 
 	winver.dwOSVersionInfoSize=sizeof(winver);
 
-	if(pRtlGetVersion == NULL) {
-		HINSTANCE ntdll = LoadLibrary("ntdll.dll");
-		if(ntdll != NULL) {
-			pRtlGetVersion = (NTSTATUS (WINAPI *)(PRTL_OSVERSIONINFOW))GetProcAddress(ntdll, "RtlGetVersion");
-			FreeLibrary(ntdll);
-		}
-	}
-	if(pRtlGetVersion == NULL) {
-		#pragma warning(suppress : 4996) // error C4996: 'GetVersionExA': was declared deprecated
-		GetVersionEx(&winver);
-	} else
-		pRtlGetVersion((PRTL_OSVERSIONINFOW)&winver);
+	#pragma warning(suppress : 4996) // error C4996: 'GetVersionExA': was declared deprecated
+	GetVersionEx(&winver);
 
 	switch(winver.dwPlatformId) {
 		case VER_PLATFORM_WIN32_NT:
@@ -812,6 +801,14 @@ char* os_version(char *str, size_t size)
 	}
 
 	if(winver.dwMajorVersion == 10 && winver.dwMinorVersion == 0) {
+		static NTSTATUS (WINAPI *pRtlGetVersion)(PRTL_OSVERSIONINFOW lpVersionInformation) = NULL;
+		if(pRtlGetVersion == NULL) {
+			HINSTANCE ntdll = LoadLibrary("ntdll.dll");
+			if(ntdll != NULL)
+				pRtlGetVersion = (NTSTATUS (WINAPI *)(PRTL_OSVERSIONINFOW))GetProcAddress(ntdll, "RtlGetVersion");
+		}
+		if(pRtlGetVersion != NULL)
+			pRtlGetVersion((PRTL_OSVERSIONINFOW)&winver);
 		if(winver.dwBuildNumber >= 22000)
 			winver.dwMajorVersion = 11;
 	}
@@ -823,6 +820,10 @@ char* os_version(char *str, size_t size)
 			winver.dwMinorVersion = wksta_info->wki100_ver_minor;
 			winver.dwBuildNumber = 0;
 		}
+	}
+	else if(winver.dwMajorVersion == 6 && winver.dwMinorVersion == 1) {
+		winver.dwMajorVersion = 7;
+		winver.dwMinorVersion = 0;
 	}
 
 	safe_snprintf(str, size, "Windows %sVersion %lu.%lu"
