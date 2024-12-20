@@ -782,10 +782,22 @@ char* os_version(char *str, size_t size)
 	/* Windows Version */
 	char*			winflavor="";
 	OSVERSIONINFO	winver;
+	static NTSTATUS (WINAPI *pRtlGetVersion)(PRTL_OSVERSIONINFOW lpVersionInformation) = NULL;
 
 	winver.dwOSVersionInfoSize=sizeof(winver);
 	#pragma warning(suppress : 4996)
-	GetVersionEx(&winver);
+
+	if(pRtlGetVersion == NULL) {
+		HINSTANCE ntdll = LoadLibrary("ntdll.dll");
+		if(ntdll != NULL) {
+			pRtlGetVersion = (NTSTATUS (WINAPI *)(PRTL_OSVERSIONINFOW))GetProcAddress(ntdll, "RtlGetVersion");
+			FreeLibrary(ntdll);
+		}
+	}
+	if(pRtlGetVersion == NULL)
+		GetVersionEx(&winver);
+	else
+		pRtlGetVersion((PRTL_OSVERSIONINFOW)&winver);
 
 	switch(winver.dwPlatformId) {
 		case VER_PLATFORM_WIN32_NT:
@@ -799,8 +811,12 @@ char* os_version(char *str, size_t size)
 			break;
 	}
 
-	/* Work-around Microsoft Windows 8.1 stupidity where GetVersionEx() lies about the current OS version */
-	if(winver.dwMajorVersion == 6 && winver.dwMinorVersion == 2) {
+	if(winver.dwMajorVersion == 10 && winver.dwMinorVersion == 0) {
+		if(winver.dwBuildNumber >= 22000)
+			winver.dwMajorVersion = 11;
+	}
+	else if(winver.dwMajorVersion == 6 && winver.dwMinorVersion == 2) {
+		/* Work-around Microsoft Windows 8.1 stupidity where GetVersionEx() lies about the current OS version */
 		WKSTA_INFO_100* wksta_info;
 		if(NetWkstaGetInfo(NULL, 100, (LPBYTE*)&wksta_info) == NERR_Success) {
 			winver.dwMajorVersion = wksta_info->wki100_ver_major;
