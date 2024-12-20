@@ -739,10 +739,13 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	if(!strcmp(sp,"QWKID"))
 		return(cfg.sys_id);
 
-	if(!strcmp(sp,"TIME") || !strcmp(sp,"SYSTIME")) {
+	if(!strcmp(sp,"TIME") || !strcmp(sp,"SYSTIME") || !strcmp(sp,"TIME_UTC")) {
 		now=time(NULL);
 		memset(&tm,0,sizeof(tm));
-		localtime_r(&now,&tm);
+		if(strcmp(sp, "TIME_UTC") == 0)
+			gmtime_r(&now, &tm);
+		else
+			localtime_r(&now, &tm);
 		if(cfg.sys_misc&SM_MILITARY)
 			safe_snprintf(str,maxlen,"%02d:%02d:%02d"
 		        	,tm.tm_hour,tm.tm_min,tm.tm_sec);
@@ -757,8 +760,11 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	if(!strcmp(sp,"TIMEZONE"))
 		return(smb_zonestr(sys_timezone(&cfg),str));
 
-	if(!strcmp(sp,"DATE") || !strcmp(sp,"SYSDATE")) {
-		return datestr(time(NULL));
+	if(!strcmp(sp,"DATE") || !strcmp(sp,"SYSDATE") || !strcmp(sp, "DATE_UTC")) {
+		now = time(NULL);
+		if(strcmp(sp, "DATE_UTC") == 0)
+			now -= xpTimeZone_local() * 60;
+		return datestr(now);
 	}
 
 	if(strncmp(sp, "DATE:", 5) == 0 || strncmp(sp, "TIME:", 5) == 0) {
@@ -771,8 +777,21 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 
+	if(strncmp(sp, "UTC:", 4) == 0) {
+		SAFECOPY(tmp, sp + 4);
+		c_unescape_str(tmp);
+		now = time(NULL);
+		memset(&tm, 0, sizeof(tm));
+		gmtime_r(&now, &tm);
+		strftime(str, maxlen, tmp, &tm);
+		return str;
+	}
+
 	if(!strcmp(sp,"DATETIME"))
 		return(timestr(time(NULL)));
+
+	if(!strcmp(sp,"DATETIME_UTC"))
+		return timestr(time(NULL) - (xpTimeZone_local() * 60));
 
 	if(!strcmp(sp,"DATETIMEZONE")) {
 		char zone[32];
@@ -2018,6 +2037,8 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return(current_msg->tags==NULL ? nulstr : current_msg->tags);
 	if(!strcmp(sp,"MSG_DATE") && current_msg!=NULL)
 		return(timestr(current_msg->hdr.when_written.time));
+	if(!strcmp(sp,"MSG_DATE_UTC") && current_msg!=NULL)
+		return(timestr(current_msg->hdr.when_written.time - (smb_tzutc(current_msg->hdr.when_written.zone) * 60)));
 	if(!strcmp(sp,"MSG_IMP_DATE") && current_msg!=NULL)
 		return(timestr(current_msg->hdr.when_imported.time));
 	if(!strcmp(sp,"MSG_AGE") && current_msg!=NULL)
