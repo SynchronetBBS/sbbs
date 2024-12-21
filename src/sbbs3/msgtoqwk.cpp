@@ -103,7 +103,7 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 		/* Time/Date/Zone info */
 		fprintf(voting,"WhenWritten:  %-20s %04hx\n"
 			,xpDateTime_to_isoDateTimeStr(
-				time_to_xpDateTime(msg->hdr.when_written.time,smb_tzutc(msg->hdr.when_written.zone))
+				time_to_xpDateTime(smb_time(msg->hdr.when_written), smb_tzutc(msg->hdr.when_written.zone))
 				,/* separators: */"","","", /* precision: */0
 				,str,sizeof(str))
 			,msg->hdr.when_written.zone
@@ -131,7 +131,7 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 		/* Time/Date/Zone info */
 		fprintf(hdrs,"WhenWritten:  %-20s %04hx\n"
 			,xpDateTime_to_isoDateTimeStr(
-				time_to_xpDateTime(msg->hdr.when_written.time,smb_tzutc(msg->hdr.when_written.zone))
+				time_to_xpDateTime(smb_time(msg->hdr.when_written), smb_tzutc(msg->hdr.when_written.zone))
 				,/* separators: */"","","", /* precision: */0
 				,str,sizeof(str))
 			,msg->hdr.when_written.zone
@@ -527,7 +527,7 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 	}
 	free(buf);
 
-	tt=msg->hdr.when_written.time;
+	tt=smb_time(msg->hdr.when_written);
 	if(localtime_r(&tt,&tm)==NULL)
 		memset(&tm,0,sizeof(tm));
 

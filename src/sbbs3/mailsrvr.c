@@ -3922,6 +3922,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 					if (session != -1)
 						with_val |= WITH_TLS;
 
+					when_t when = { .time = msg.hdr.when_imported.time, .zone = msg.hdr.when_imported.zone };
 					snprintf(hdrfield,sizeof(hdrfield),
 						"from %s (%s [%s%s])\r\n"
 						"          by %s [%s%s] (%s %s%c-%s) with %s\r\n"
@@ -3936,7 +3937,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 						,server_name
 						,VERSION, REVISION, PLATFORM_DESC
 						,with_clauses[with_val]
-						,forward_path,msgdate(msg.hdr.when_imported,date)
+						,forward_path,msgdate(when, date)
 						,reverse_path);
 					smb_hfield_add_str(&newmsg, SMTPRECEIVED, hdrfield, /* insert: */TRUE);
 

@@ -114,7 +114,7 @@ int lprintf(int level, char *fmt, ...)
 #endif
 ;
 int mv(const char *insrc, const char *indest, bool copy);
-time32_t fmsgtime(const char *str);
+time_t fmsgtime(const char *str);
 ulong export_echomail(const char *sub_code, const nodecfg_t*, bool rescan);
 const char* area_desc(const char* areatag);
 
@@ -380,7 +380,7 @@ echostat_msg_t* smsg_to_echostat_msg(const smbmsg_t* smsg, size_t msglen, fidoad
 	SAFECOPY(emsg.to	, smsg->to);
 	SAFECOPY(emsg.from	, smsg->from);
 	SAFECOPY(emsg.subj	, smsg->subj);
-	emsg.msg_time		= smsg->hdr.when_written.time;
+	emsg.msg_time		= smb_time(smsg->hdr.when_written);
 	emsg.localtime		= time(NULL);
 	SAFECOPY(emsg.msg_tz, smb_zonestr(smsg->hdr.when_written.zone, NULL));
 	if(smsg->from_net.type == NET_FIDO && smsg->from_net.addr != NULL)
@@ -1050,8 +1050,7 @@ int create_netmail(const char *to, const smbmsg_t* msg, const char *subject, con
 	bool	direct=false;
 
 	if(msg==NULL) {
-		when_written.time = time32(NULL);
-		when_written.zone = sys_timezone(&scfg);
+		when_written = smb_when(time(NULL), sys_timezone(&scfg));
 	} else {
 		from = msg->from;
 		when_written = msg->hdr.when_written;
@@ -1130,7 +1129,7 @@ int create_netmail(const char *to, const smbmsg_t* msg, const char *subject, con
 		direct = nodecfg->direct;
 	}
 
-	t = when_written.time;
+	t = smb_time(when_written);
 	tm = localtime(&t);
 	snprintf(hdr.time, sizeof hdr.time, "%02u %3.3s %02u  %02u:%02u:%02u"
 		,tm->tm_mday,mon[tm->tm_mon],TM_YEAR(tm->tm_year)
@@ -3207,7 +3206,7 @@ link_list_t user_list;
 /****************************************************************************/
 /* Converts goofy FidoNet time format into Unix format						*/
 /****************************************************************************/
-time32_t fmsgtime(const char *str)
+time_t fmsgtime(const char *str)
 {
 	char month[4];
 	struct tm tm;
@@ -3284,7 +3283,7 @@ time32_t fmsgtime(const char *str)
 		tm.tm_min=atoi(str+17);
 		tm.tm_sec=0;
 	}
-	return(mktime32(&tm));
+	return mktime(&tm);
 }
 
 static short fmsgzone(const char* p)
@@ -3410,16 +3409,17 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint usernumber, uint subnum)
 	msg.hdr.when_imported.time=now;
 	msg.hdr.when_imported.zone=sys_timezone(&scfg);
 	if(hdr->time[0]) {
-		msg.hdr.when_written.time=fmsgtime(hdr->time);
-		if(max_msg_age && (time32_t)msg.hdr.when_written.time < now
-			&& (now - msg.hdr.when_written.time) > max_msg_age) {
+		msg.hdr.when_written = smb_when(fmsgtime(hdr->time), msg.hdr.when_written.zone);
+		time_t when_written = smb_time(msg.hdr.when_written);
+		if(max_msg_age && when_written < now
+			&& (now - when_written) > max_msg_age) {
 			lprintf(LOG_INFO, "Filtering message from %s due to age: %1.1f days"
 				,hdr->from
-				,(now - msg.hdr.when_written.time) / (24.0*60.0*60.0));
+				,(now - when_written) / (24.0*60.0*60.0));
 			return IMPORT_FILTERED_AGE;
 		}
 	} else
-		msg.hdr.when_written = msg.hdr.when_imported;
+		msg.hdr.when_written = smb_when(msg.hdr.when_imported.time, msg.hdr.when_imported.zone);
 
 	origaddr.zone=hdr->origzone; 	/* only valid if NetMail */
 	origaddr.net=hdr->orignet;
@@ -4658,7 +4658,7 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 							,timestr(&scfg, time32(NULL), tmp), smb_zonestr(sys_timezone(&scfg),NULL));
 						bodylen += sprintf(body+bodylen, "by: %s (sysop: %s) @ %s\r"
 							,scfg.sys_name, scfg.sys_op, smb_faddrtoa(&scfg.faddr[match], NULL));
-						time_t t = (time_t)fmsgtime(hdr.time);
+						time_t t = fmsgtime(hdr.time);
 						bodylen += sprintf(body+bodylen, "\rThe received message header contained:\r\r"
 							"Subj: %s\r"
 							"Attr: %04hX%s\r"
@@ -4994,8 +4994,9 @@ ulong export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool resca
 				continue;
 			}
 
+			time_t when_written = smb_time(msg.hdr.when_written);
 			if(!rescan && cfg.max_echomail_age != 0
-				&& ((now > msg.hdr.when_written.time && (now - msg.hdr.when_written.time) > cfg.max_echomail_age)
+				&& ((now > when_written && (now - when_written) > cfg.max_echomail_age)
 				|| (now > msg.hdr.when_imported.time && (now - msg.hdr.when_imported.time) > cfg.max_echomail_age))) {
 				smb_unlockmsghdr(&smb, &msg);
 				smb_freemsgmem(&msg);
@@ -5014,7 +5015,7 @@ ulong export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool resca
 
 			SAFECOPY(hdr.from,msg.from);
 
-			tt = msg.hdr.when_written.time;
+			tt = smb_time(msg.hdr.when_written);
 			if((tm = localtime(&tt)) != NULL)
 				sprintf(hdr.time,"%02u %3.3s %02u  %02u:%02u:%02u"
 					,tm->tm_mday,mon[tm->tm_mon],TM_YEAR(tm->tm_year)

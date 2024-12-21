@@ -46,8 +46,7 @@ static bool qwk_parse_header_list(sbbs_t* sbbs, uint confnum, smbmsg_t* msg, str
 	if((p=iniPopKey(headers,ROOT_SECTION,"WhenWritten",value))!=NULL) {
 		xpDateTime_t dt=isoDateTimeStr_parse(p);
 
-		msg->hdr.when_written.time=(uint32_t)xpDateTime_to_localtime(dt);
-		msg->hdr.when_written.zone=dt.zone;
+		msg->hdr.when_written = smb_when(xpDateTime_to_localtime(dt), dt.zone);
 		sscanf(p,"%*s %s",zone);
 		if(zone[0])
 			msg->hdr.when_written.zone=(ushort)strtoul(zone,NULL,16);
@@ -195,7 +194,7 @@ bool sbbs_t::qwk_new_msg(uint confnum, smbmsg_t* msg, char* hdrblk, int offset, 
 		tm.tm_hour=((hdrblk[16]&0xf)*10)+(hdrblk[17]&0xf);
 		tm.tm_min=((hdrblk[19]&0xf)*10)+(hdrblk[20]&0xf);
 
-		msg->hdr.when_written.time=(uint32_t)sane_mktime(&tm);
+		msg->hdr.when_written = smb_when(sane_mktime(&tm), msg->hdr.when_written.zone);
 	}
 
 	if(msg->to==NULL)
@@ -263,7 +262,7 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, uint blocks
 	msg->hdr.when_imported.zone=sys_timezone(&cfg);
 
 	if(!(useron.rest&FLAG('Q')) && !fromhub && msg->hdr.when_written.zone==0)
-		msg->hdr.when_written = msg->hdr.when_imported;
+		msg->hdr.when_written = smb_when(msg->hdr.when_imported.time, msg->hdr.when_imported.zone);
 
 	hdrblk[116]=0;	// don't include number of blocks in "re: msg number"
 	if(!(useron.rest&FLAG('Q')) && !fromhub)

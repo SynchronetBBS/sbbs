@@ -622,7 +622,7 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case BBS_PROP_MSG_DATE:
 			if(sbbs->current_msg!=NULL)
-				val=sbbs->current_msg->hdr.when_written.time;
+				val=(uint32)smb_time(sbbs->current_msg->hdr.when_written);
 			break;
 		case BBS_PROP_MSG_TIMEZONE:
 			if(sbbs->current_msg!=NULL)

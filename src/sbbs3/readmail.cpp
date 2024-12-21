@@ -348,7 +348,7 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 				else						/* Reply to other */
 					text_num = RegardingByOn;
 				SAFECOPY(str2, format_text(text_num, msghdr_field(&msg, msg.subj), msghdr_field(&msg, msg.from, tmp)
-						,timestr(msg.hdr.when_written.time)));
+						,timestr(smb_time(msg.hdr.when_written))));
 
 				p=strrchr(str,'@');
 				if(p) { 							/* name @addr */

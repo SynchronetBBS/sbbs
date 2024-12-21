@@ -241,8 +241,9 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 	msg.hdr.attr=msgattr;
 	if(mode&WM_FILE)
 		msg.hdr.auxattr |= (MSG_FILEATTACH | MSG_KILLFILE);
-	msg.hdr.when_written.time=msg.hdr.when_imported.time=time32(NULL);
-	msg.hdr.when_written.zone=msg.hdr.when_imported.zone=sys_timezone(&cfg);
+	msg.hdr.when_imported.time = time32(NULL);
+	msg.hdr.when_imported.zone = sys_timezone(&cfg);
+	msg.hdr.when_written = smb_when(msg.hdr.when_imported.time, msg.hdr.when_imported.zone);
 
 	if(cfg.mail_maxcrcs) {
 		i=smb_addcrc(&smb,crc);

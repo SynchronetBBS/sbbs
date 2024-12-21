@@ -1481,7 +1481,7 @@ bool sbbs_t::forwardmsg(smb_t* smb, smbmsg_t* orgmsg, const char* to, const char
 	msg.hdr.auxattr = orgmsg->hdr.auxattr & (MSG_HFIELDS_UTF8 | MSG_MIMEATTACH);
 	msg.hdr.when_imported.time = time32(NULL);
 	msg.hdr.when_imported.zone = sys_timezone(&cfg);
-	msg.hdr.when_written = msg.hdr.when_imported;
+	msg.hdr.when_written = smb_when(msg.hdr.when_imported.time, msg.hdr.when_imported.zone);
 
 	smb_hfield_str(&msg, SUBJECT, subject);
 	add_msg_ids(&cfg, smb, &msg, orgmsg);

@@ -118,7 +118,7 @@ str_list_t smb_msghdr_str_list(smbmsg_t* msg)
 	}
 
 	/* fixed header fields */
-	tt=msg->hdr.when_written.time;
+	tt=smb_time(msg->hdr.when_written);
 	strListAppendFormat(&list, HFIELD_NAME_FMT "%08X %04hX %.24s %s"	,"when_written"
 		,msg->hdr.when_written.time, msg->hdr.when_written.zone
 		,ctime_r(&tt, tmp)

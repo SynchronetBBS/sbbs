@@ -26,6 +26,7 @@
 #include "crc32.h"
 #include "lzh.h"
 #include "datewrap.h"
+#include "xpdatetime.h"
 
 /****************************************************************************/
 /****************************************************************************/
@@ -235,11 +236,11 @@ int smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, int dupechk_hashes
 		}
 
 		if(msg->hdr.when_imported.time==0) {
-			msg->hdr.when_imported.time=(uint32_t)time(NULL);
-			msg->hdr.when_imported.zone=0;	/* how do we detect system TZ? */
+			msg->hdr.when_imported.time = (uint32_t)time(NULL);
+			msg->hdr.when_imported.zone = xpTimeZone_local();
 		}
-		if(msg->hdr.when_written.time==0)	/* Uninitialized */
-			msg->hdr.when_written = msg->hdr.when_imported;
+		if(msg->hdr.when_written.time==0) 	/* Uninitialized */
+			msg->hdr.when_written = smb_when(msg->hdr.when_imported.time, msg->hdr.when_imported.zone);
 
 		/* Look-up thread_back if RFC822 Reply-ID was specified */
 		if(msg->hdr.thread_back==0 && msg->reply_id!=NULL) {
@@ -339,10 +340,10 @@ int smb_addvote(smb_t* smb, smbmsg_t* msg, int storage)
 
 	if(msg->hdr.when_imported.time == 0) {
 		msg->hdr.when_imported.time = (uint32_t)time(NULL);
-		msg->hdr.when_imported.zone = 0;
+		msg->hdr.when_imported.zone = xpTimeZone_local();
 	}
 	if(msg->hdr.when_written.time == 0)	/* Uninitialized */
-		msg->hdr.when_written = msg->hdr.when_imported;
+		msg->hdr.when_written = smb_when(msg->hdr.when_imported.time, msg->hdr.when_imported.zone);
 
 	retval = smb_addmsghdr(smb, msg, storage);
 
@@ -379,10 +380,10 @@ int smb_addpoll(smb_t* smb, smbmsg_t* msg, int storage)
 
 	if(msg->hdr.when_imported.time == 0) {
 		msg->hdr.when_imported.time = (uint32_t)time(NULL);
-		msg->hdr.when_imported.zone = 0;
+		msg->hdr.when_imported.zone = xpTimeZone_local();
 	}
 	if(msg->hdr.when_written.time == 0)	/* Uninitialized */
-		msg->hdr.when_written = msg->hdr.when_imported;
+		msg->hdr.when_written = smb_when(msg->hdr.when_imported.time, msg->hdr.when_imported.zone);
 
 	retval = smb_addmsghdr(smb, msg, storage);
 
@@ -446,10 +447,10 @@ int smb_addpollclosure(smb_t* smb, smbmsg_t* msg, int storage)
 
 	if(msg->hdr.when_imported.time == 0) {
 		msg->hdr.when_imported.time = (uint32_t)time(NULL);
-		msg->hdr.when_imported.zone = 0;
+		msg->hdr.when_imported.zone = xpTimeZone_local();
 	}
 	if(msg->hdr.when_written.time == 0)	/* Uninitialized */
-		msg->hdr.when_written = msg->hdr.when_imported;
+		msg->hdr.when_written = smb_when(msg->hdr.when_imported.time, msg->hdr.when_imported.zone);
 
 	retval = smb_addmsghdr(smb, msg, storage);
 

@@ -34,10 +34,11 @@
 #include "smblib.h"
 #include "genwrap.h"
 #include "filewrap.h"
+#include "datewrap.h"
 
 /* Use smb_ver() and smb_lib_ver() to obtain these values */
-#define SMBLIB_VERSION		"3.00"      /* SMB library version */
-#define SMB_VERSION 		0x0300		/* SMB format version */
+#define SMBLIB_VERSION		"3.10"      /* SMB library version */
+#define SMB_VERSION 		0x0310		/* SMB format version */
 										/* High byte major, low byte minor */
 
 static char* nulstr="";
@@ -2115,6 +2116,46 @@ int smb_tzutc(int16_t zone)
 	if(zone&DAYLIGHT)
 		tz+=SMB_DST_OFFSET;				/* ToDo: Daylight Saving Time adjustment is *not* always +60 minutes */
 	return(tz);
+}
+
+/****************************************************************************/
+/* Decode the 2 possible encoding of when_t (when_written)					*/
+/****************************************************************************/
+time_t smb_time(when_t when)
+{
+	struct tm tm = {0};
+
+	if(when.time & ~SMB_DATE_MASK)
+		return when.time;
+
+	tm.tm_year = when.year;
+	tm.tm_mon = (when.time & SMB_DATE_MON_MASK) >> SMB_DATE_MON_SHIFT;
+	tm.tm_mday = (when.time & SMB_DATE_DAY_MASK) >> SMB_DATE_DAY_SHIFT;
+	tm.tm_hour = (when.time & SMB_DATE_HR_MASK) >> SMB_DATE_HR_SHIFT;
+	tm.tm_min = (when.time & SMB_DATE_MIN_MASK) >> SMB_DATE_MIN_SHIFT;
+	tm.tm_sec = (when.time & SMB_DATE_SEC_MASK) >> SMB_DATE_SEC_SHIFT;
+
+	return sane_mktime(&tm);
+}
+
+/****************************************************************************/
+/* Encode a time_t value into the new when_written.time (date) format		*/
+/****************************************************************************/
+when_t smb_when(time_t t, int16_t zone)
+{
+	struct tm tm = {0};
+	when_t when = {0};
+
+	localtime_r(&t, &tm);
+	when.year = 1900 + tm.tm_year;
+	when.time = (tm.tm_mon + 1) << SMB_DATE_MON_SHIFT;
+	when.time |= tm.tm_mday << SMB_DATE_DAY_SHIFT;
+	when.time |= tm.tm_hour << SMB_DATE_HR_SHIFT;
+	when.time |= tm.tm_min << SMB_DATE_MIN_SHIFT;
+	when.time |= tm.tm_sec << SMB_DATE_SEC_SHIFT;
+	when.zone = zone;
+
+	return when;
 }
 
 /****************************************************************************/

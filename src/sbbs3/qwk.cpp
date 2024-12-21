@@ -1027,8 +1027,7 @@ bool sbbs_t::qwk_vote(str_list_t ini, const char* section, smb_net_type_t net_ty
 	if((p=iniGetString(ini, section, "WhenWritten", NULL, NULL)) != NULL) {
 		char	zone[32];
 		xpDateTime_t dt=isoDateTimeStr_parse(p);
-		msg.hdr.when_written.time=(uint32_t)xpDateTime_to_localtime(dt);
-		msg.hdr.when_written.zone=dt.zone;
+		msg.hdr.when_written = smb_when(xpDateTime_to_localtime(dt), dt.zone);
 		sscanf(p,"%*s %s",zone);
 		if(zone[0])
 			msg.hdr.when_written.zone=(ushort)strtoul(zone,NULL,16);
@@ -1163,12 +1162,12 @@ bool sbbs_t::qwk_vote(str_list_t ini, const char* section, smb_net_type_t net_ty
 bool sbbs_t::qwk_msg_filtered(smbmsg_t* msg, msg_filters filters)
 {
 	uint32_t now = time32(NULL);
-
-	if(cfg.max_qwkmsgage && msg->hdr.when_written.time < now
-		&& (now-msg->hdr.when_written.time)/(24*60*60) > cfg.max_qwkmsgage) {
+	time_t when_written = smb_time(msg->hdr.when_written);
+	if(cfg.max_qwkmsgage && when_written < now
+		&& (now-when_written)/(24*60*60) > cfg.max_qwkmsgage) {
 		lprintf(LOG_NOTICE,"!Filtering QWK message from %s due to age: %u days"
 			,msg->from
-			,(unsigned int)(now-msg->hdr.when_written.time)/(24*60*60)); 
+			,(unsigned int)(now-when_written)/(24*60*60));
 		return true;
 	}
 

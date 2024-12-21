@@ -372,7 +372,7 @@ void sbbs_t::show_thread(uint32_t msgnum, post_t* post, unsigned curmsg, int thr
 			? text[Anonymous] : msghdr_field(&msg, msg.from)
 		,(unsigned)i == curmsg ? '<' : ' '
 		,msg_listing_flag(smb.subnum, &msg, &post[i])
-		,datestr(msg.hdr.when_written.time));
+		,datestr(smb_time(msg.hdr.when_written)));
 
 	if(thread_depth) {
 		if(msg.hdr.thread_first)
@@ -1010,7 +1010,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 					break;
 				SAFECOPY(str2, format_text(Regarding
 						,msghdr_field(&msg, msg.subj)
-						,timestr(msg.hdr.when_written.time)));
+						,timestr(smb_time(msg.hdr.when_written))));
 				if(msg.from_net.addr==NULL)
 					SAFECOPY_UTF8(str,msg.from);
 				else if(msg.from_net.type==NET_FIDO)

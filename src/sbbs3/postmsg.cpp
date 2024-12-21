@@ -113,7 +113,7 @@ bool sbbs_t::postmsg(int subnum, int wm_mode, smb_t* resmb, smbmsg_t* remsg)
 			,title
 			,from
 			,msghdr_field(remsg, remsg->to, NULL, term_supports(UTF8))
-			,timestr(remsg->hdr.when_written.time)
+			,timestr(smb_time(remsg->hdr.when_written))
 			,smb_zonestr(remsg->hdr.when_written.zone,NULL)));
 		if(remsg->tags != NULL)
 			SAFECOPY(tags, remsg->tags);
@@ -285,8 +285,9 @@ bool sbbs_t::postmsg(int subnum, int wm_mode, smb_t* resmb, smbmsg_t* remsg)
 
 	memset(&msg,0,sizeof(msg));
 	msg.hdr.attr=msgattr;
-	msg.hdr.when_written.time=msg.hdr.when_imported.time=time32(NULL);
-	msg.hdr.when_written.zone=msg.hdr.when_imported.zone=sys_timezone(&cfg);
+	msg.hdr.when_written = smb_when(time(NULL), sys_timezone(&cfg));
+	msg.hdr.when_imported.time = time32(NULL);
+	msg.hdr.when_imported.zone = msg.hdr.when_written.zone;
 
 	msg.hdr.number=smb.status.last_msg+1; /* this *should* be the new message number */
 
@@ -491,8 +492,8 @@ extern "C" int savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t* client,
 		msg->hdr.when_imported.time=time32(NULL);
 		msg->hdr.when_imported.zone=sys_timezone(cfg);
 	}
-	if(msg->hdr.when_written.time==0)	/* Uninitialized */
-		msg->hdr.when_written = msg->hdr.when_imported;
+	if(msg->hdr.when_written.time==0) 	/* Uninitialized */
+		msg->hdr.when_written = smb_when(msg->hdr.when_imported.time, msg->hdr.when_imported.zone);
 
 	msg->hdr.number=smb->status.last_msg+1;		/* needed for MSG-ID generation */
 
@@ -569,8 +570,6 @@ extern "C" int votemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, const char* smsgf
 		msg->hdr.when_imported.time = time32(NULL);
 		msg->hdr.when_imported.zone = sys_timezone(cfg);
 	}
-	if(msg->hdr.when_written.time == 0)	/* Uninitialized */
-		msg->hdr.when_written = msg->hdr.when_imported;
 
 	add_msg_ids(cfg, smb, msg, /* remsg: */NULL);
 
@@ -623,7 +622,7 @@ extern "C" int votemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, const char* smsgf
 				}
 			}
 			safe_snprintf(smsg, sizeof(smsg), smsgfmt
-				,timestr(cfg, msg->hdr.when_written.time, tstr)
+				,timestr(cfg, (time32_t)smb_time(msg->hdr.when_written), tstr)
 				,cfg->grp[cfg->sub[smb->subnum]->grp]->sname
 				,cfg->sub[smb->subnum]->sname
 				,from
@@ -645,7 +644,7 @@ extern "C" int closepoll(scfg_t* cfg, smb_t* smb, uint32_t msgnum, const char* u
 
 	msg.hdr.when_imported.time = time32(NULL);
 	msg.hdr.when_imported.zone = sys_timezone(cfg);
-	msg.hdr.when_written = msg.hdr.when_imported;
+	msg.hdr.when_written = smb_when(time(NULL), msg.hdr.when_imported.zone);
 	msg.hdr.thread_back = msgnum;
 	smb_hfield_str(&msg, SENDER, username);
 
@@ -664,7 +663,7 @@ extern "C" int postpoll(scfg_t* cfg, smb_t* smb, smbmsg_t* msg)
 		msg->hdr.when_imported.zone = sys_timezone(cfg);
 	}
 	if(msg->hdr.when_written.time == 0)
-		msg->hdr.when_written = msg->hdr.when_imported;
+		msg->hdr.when_written = smb_when(msg->hdr.when_imported.time, msg->hdr.when_imported.zone);
 
 	add_msg_ids(cfg, smb, msg, /* remsg: */NULL);
 
@@ -691,7 +690,7 @@ extern "C" int notify(scfg_t* cfg, uint usernumber, const char* subject, const c
 
 	msg.hdr.when_imported.time = time32(NULL);
 	msg.hdr.when_imported.zone = sys_timezone(cfg);
-	msg.hdr.when_written = msg.hdr.when_imported;
+	msg.hdr.when_written = smb_when(time(NULL), msg.hdr.when_imported.zone);
 	smb_hfield(&msg, SENDERAGENT, sizeof(agent), &agent);
 	smb_hfield_str(&msg, SENDER, cfg->sys_name);
 	smb_hfield_str(&msg, RECIPIENT, user.alias);

@@ -361,10 +361,25 @@ enum smb_priority {			/* msghdr_t.priority */
 
 typedef struct {		/* Time with time-zone */
 
-	uint32_t	time;			/* Local time (unix format) */
+	uint16_t	year;
+	uint32_t	time;			/* Month/Day/Hour/Minute/Second or (legacy) time_t */
 	int16_t		zone;			/* Time zone */
 
 } when_t;
+
+// We encode Month/Day/Hour/Min/Sec into 26 bits:
+#define SMB_DATE_MK_MASK(width, shift)	(((1 << (width + 1)) - 1) << shift)
+#define SMB_DATE_MON_SHIFT		22
+#define SMB_DATE_MON_MASK		SMB_DATE_MK_MASK(4, SMB_DATE_MON_SHIFT)
+#define SMB_DATE_DAY_SHIFT		17
+#define SMB_DATE_DAY_MASK		SMB_DATE_MK_MASK(5, SMB_DATE_DAY_SHIFT)
+#define SMB_DATE_HR_SHIFT		12
+#define SMB_DATE_HR_MASK		SMB_DATE_MK_MASK(5, SMB_DATE_HR_SHIFT)
+#define SMB_DATE_MIN_SHIFT		6
+#define SMB_DATE_MIN_MASK		SMB_DATE_MK_MASK(6, SMB_DATE_MIN_SHIFT)
+#define SMB_DATE_SEC_SHIFT		0
+#define SMB_DATE_SEC_MASK		SMB_DATE_MK_MASK(6, SMB_DATE_SEC_SHIFT)
+#define SMB_DATE_MASK			(SMB_DATE_MON_MASK | SMB_DATE_DAY_MASK | SMB_DATE_HR_MASK | SMB_DATE_MIN_MASK | SMB_DATE_SEC_MASK)
 
 typedef uint16_t smb_msg_attr_t;
 
@@ -503,9 +518,12 @@ typedef struct {		/* Message/File header */
     /* 08 */ uint16_t	length;				/* Total length of fixed record + all fields */
 	/* 0a */ uint16_t	attr;				/* Attributes (bit field) (duped in SID) */
 	/* 0c */ uint32_t	auxattr;			/* Auxiliary attributes (bit field) */
-    /* 10 */ uint32_t	netattr;			/* Network attributes */
-	/* 14 */ when_t		when_written;		/* Date/time/zone message was written */
-	/* 1a */ when_t		when_imported;		/* Date/time/zone message was imported */
+    /* 10 */ uint16_t	netattr;			/* Network attributes */
+	/* 12 */ when_t		when_written;		/* Date/time/zone message was written */
+	/* 1a */ struct {
+				uint32_t time;
+				int16_t  zone;
+			} when_imported;				/* Date/time/zone message was imported */
     /* 20 */ uint32_t	number;				/* Message number */
     /* 24 */ uint32_t	thread_back;		/* Message number for backwards threading (aka thread_orig) */
     /* 28 */ uint32_t	thread_next;		/* Next message in thread */

@@ -246,9 +246,9 @@ void postmsg(char type, char* to, char* to_number, char* to_address,
 	}
 
 	memset(&msg,0,sizeof(smbmsg_t));
-	msg.hdr.when_written.time=(uint32_t)time(NULL);
-	msg.hdr.when_written.zone=tzone;
-	msg.hdr.when_imported=msg.hdr.when_written;
+	msg.hdr.when_written = smb_when(time(NULL), tzone);
+	msg.hdr.when_imported.time = (time32_t)time(NULL);
+	msg.hdr.when_imported.zone = msg.hdr.when_written.zone;
 
 	if((to==NULL || stricmp(to,"All")==0) && to_address!=NULL)
 		to=to_address;
@@ -566,7 +566,7 @@ void listmsgs(ulong start, ulong count)
 		}
 		printf("%4lu/#%-4"PRIu32" ", start + l, msg.hdr.number);
 		if(verbosity > 0)
-			printf("%s ",my_timestr(msg.hdr.when_written.time));
+			printf("%s ",my_timestr(smb_time(msg.hdr.when_written)));
 		if(verbosity > 1)
 			printf("%-9s ", smb_zonestr(msg.hdr.when_written.zone,NULL));
 		printf("%-25.25s", msg.from);
@@ -1570,7 +1570,7 @@ void readmsgs(ulong start, ulong count)
 			if(msg.hdr.auxattr != 0)
 				printf("\nAux  : %08X (%s)", msg.hdr.auxattr, smb_auxattrstr(msg.hdr.auxattr, tmp, sizeof(tmp)));
 			if(msg.hdr.netattr != 0)
-				printf("\nNet  : %08X (%s)", msg.hdr.netattr, smb_netattrstr(msg.hdr.netattr, tmp, sizeof(tmp)));
+				printf("\nNet  : %04X (%s)", msg.hdr.netattr, smb_netattrstr(msg.hdr.netattr, tmp, sizeof(tmp)));
 			if(*msg.to) {
 				printf("\nTo   : %s",msg.to);
 				if(msg.to_net.type)
@@ -1580,7 +1580,7 @@ void readmsgs(ulong start, ulong count)
 			if(msg.from_net.type)
 				printf(" (%s)",smb_netaddr(&msg.from_net));
 			printf("\nDate : %.24s %s"
-				,my_timestr(msg.hdr.when_written.time)
+				,my_timestr(smb_time(msg.hdr.when_written))
 				,smb_zonestr(msg.hdr.when_written.zone,NULL));
 
 			printf("\n%s\n", msg.summary ? msg.summary : "");

@@ -40,7 +40,7 @@ char* msgdate(when_t when, char* buf)
 		tz=-tz;
 	}
 
-	tt=when.time;
+	tt=smb_time(when);
 	if(localtime_r(&tt,&tm)==NULL)
 		memset(&tm,0,sizeof(tm));
 	sprintf(buf,"%s, %d %s %d %02d:%02d:%02d %c%02u%02u"

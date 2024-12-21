@@ -162,6 +162,8 @@ SMBEXPORT uint		smb_hdrblocks(uint length);
 SMBEXPORT uint		smb_datblocks(off_t length);
 SMBEXPORT int		smb_copymsgmem(smb_t*, smbmsg_t* destmsg, smbmsg_t* srcmsg);
 SMBEXPORT int		smb_tzutc(int16_t timezone);
+SMBEXPORT time_t	smb_time(when_t);
+SMBEXPORT when_t	smb_when(time_t, int16_t zone);
 SMBEXPORT int		smb_updatethread(smb_t*, smbmsg_t* remsg, uint newmsgnum);
 SMBEXPORT int		smb_updatemsg(smb_t*, smbmsg_t*);
 SMBEXPORT bool		smb_valid_hdr_offset(smb_t*, uint offset);

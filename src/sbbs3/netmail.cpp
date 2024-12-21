@@ -544,7 +544,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 		tm.tm_sec=0;
 
 		tm.tm_isdst=-1;	/* Do not adjust for DST */
-		msg.hdr.when_written.time=mktime32(&tm);
+		msg.hdr.when_written = smb_when(mktime(&tm), msg.hdr.when_written.zone);
 
 		if(subject == NULL) {
 			snprintf(str, sizeof str, "%.25s", block+71);
@@ -1121,8 +1121,9 @@ bool sbbs_t::inetmail(const char *into, const char *subj, int mode, smb_t* resmb
 	msg.hdr.version=smb_ver();
 	if(mode&WM_FILE)
 		msg.hdr.auxattr |= (MSG_FILEATTACH | MSG_KILLFILE);
-	msg.hdr.when_written.time=msg.hdr.when_imported.time=time32(NULL);
-	msg.hdr.when_written.zone=msg.hdr.when_imported.zone=sys_timezone(&cfg);
+	msg.hdr.when_written = smb_when(time(NULL), sys_timezone(&cfg));
+	msg.hdr.when_imported.time = time32(NULL);
+	msg.hdr.when_imported.zone = sys_timezone(&cfg);
 
 	msg.hdr.netattr |= NETMSG_LOCAL;
 	if(cfg.inetmail_misc&NMAIL_KILL)
@@ -1405,8 +1406,9 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, int mode, smb_t* resmb
 	msg.hdr.version=smb_ver();
 	if(mode&WM_FILE)
 		msg.hdr.auxattr |= (MSG_FILEATTACH | MSG_KILLFILE);
-	msg.hdr.when_written.time=msg.hdr.when_imported.time=time32(NULL);
-	msg.hdr.when_written.zone=msg.hdr.when_imported.zone=sys_timezone(&cfg);
+	msg.hdr.when_written = smb_when(time(NULL), sys_timezone(&cfg));
+	msg.hdr.when_imported.time = time32(NULL);
+	msg.hdr.when_imported.zone = sys_timezone(&cfg);
 
 	msg.hdr.offset=(uint32_t)offset;
 

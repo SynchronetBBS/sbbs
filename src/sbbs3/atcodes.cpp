@@ -2036,14 +2036,14 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	if(!strcmp(sp,"MSG_TAGS") && current_msg!=NULL)
 		return(current_msg->tags==NULL ? nulstr : current_msg->tags);
 	if(!strcmp(sp,"MSG_DATE") && current_msg!=NULL)
-		return(timestr(current_msg->hdr.when_written.time));
+		return(timestr(smb_time(current_msg->hdr.when_written)));
 	if(!strcmp(sp,"MSG_DATE_UTC") && current_msg!=NULL)
-		return(timestr(current_msg->hdr.when_written.time - (smb_tzutc(current_msg->hdr.when_written.zone) * 60)));
+		return(timestr(smb_time(current_msg->hdr.when_written) - (smb_tzutc(current_msg->hdr.when_written.zone) * 60)));
 	if(!strcmp(sp,"MSG_IMP_DATE") && current_msg!=NULL)
 		return(timestr(current_msg->hdr.when_imported.time));
 	if(!strcmp(sp,"MSG_AGE") && current_msg!=NULL)
 		return age_of_posted_item(str, maxlen
-			, current_msg->hdr.when_written.time - (smb_tzutc(current_msg->hdr.when_written.zone) * 60));
+			,smb_time(current_msg->hdr.when_written) - (smb_tzutc(current_msg->hdr.when_written.zone) * 60));
 	if(!strcmp(sp,"MSG_TIMEZONE") && current_msg!=NULL)
 		return(smb_zonestr(current_msg->hdr.when_written.zone,NULL));
 	if(!strcmp(sp,"MSG_IMP_TIMEZONE") && current_msg!=NULL)

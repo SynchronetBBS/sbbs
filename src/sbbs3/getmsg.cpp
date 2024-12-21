@@ -223,10 +223,11 @@ void sbbs_t::show_msghdr(smb_t* smb, const smbmsg_t* msg, const char* subject, c
 				,msg->upvotes, msg->user_voted==1 ? text[PollAnswerChecked] : nulstr
 				,msg->downvotes, msg->user_voted==2 ? text[PollAnswerChecked] : nulstr
 				,msg->upvotes - msg->downvotes);
+		time_t t = smb_time(msg->hdr.when_written);
 		bprintf(text[MsgDate]
-			,timestr(msg->hdr.when_written.time)
+			,timestr(t)
 			,smb_zonestr(msg->hdr.when_written.zone,NULL)
-			,age_of_posted_item(age, sizeof(age), msg->hdr.when_written.time - (smb_tzutc(msg->hdr.when_written.zone) * 60)));
+			,age_of_posted_item(age, sizeof(age), t - (smb_tzutc(msg->hdr.when_written.zone) * 60)));
 		bputs(text[MsgHdrBodySeparator]);
 	}
 	for(i=0;i<msg->total_hfields;i++) {
@@ -495,7 +496,7 @@ bool sbbs_t::msgtotxt(smb_t* smb, smbmsg_t* msg, const char *fname, bool header,
 		if(msg->from_net.addr)
 			fprintf(out," (%s)",smb_netaddrstr(&msg->from_net,tmp));
 		fprintf(out,"\r\nDate : %.24s %s"
-			,timestr(msg->hdr.when_written.time)
+			,timestr(smb_time(msg->hdr.when_written))
 			,smb_zonestr(msg->hdr.when_written.zone,NULL));
 		fprintf(out,"\r\n\r\n");
 	}

@@ -330,7 +330,7 @@ int main(int argc, char **argv)
 							else
 								*(p++)=0;
 							safe_snprintf(str, sizeof(str), "%s %s:%s%c%s"
-								,unixtodstr(&cfg,msg.hdr.when_written.time,tmp)
+								,unixtodstr(&cfg,smb_time(msg.hdr.when_written),tmp)
 								,p,cfg.sys_id,p==addr ? 0 : '/'
 								,addr);
 							fprintf(route,"%s\r\n",str); 
@@ -340,7 +340,7 @@ int main(int argc, char **argv)
 							if(p) {
 								*(p++)=0;
 							fprintf(route,"%s %s:%.*s\r\n"
-								,unixtodstr(&cfg,msg.hdr.when_written.time,str)
+								,unixtodstr(&cfg,smb_time(msg.hdr.when_written),str)
 								,p
 								,(uint)(p-addr)
 								,addr); 
@@ -358,12 +358,12 @@ int main(int argc, char **argv)
 						if(p)
 							fprintf(users,"%-25.25s  %-8.8s  %s  (%s)\r\n"
 								,msg.from,p+1
-								,unixtodstr(&cfg,msg.hdr.when_written.time,tmp)
+								,unixtodstr(&cfg,smb_time(msg.hdr.when_written),tmp)
 								,str);
 						else
 							fprintf(users,"%-25.25s  %-8.8s  %s\r\n"
 								,msg.from,str
-								,unixtodstr(&cfg,msg.hdr.when_written.time,tmp)); 
+								,unixtodstr(&cfg,smb_time(msg.hdr.when_written),tmp));
 					}
 					if(cmd&NODES && msg.from_net.type==NET_QWK) {
 						if(mode&TAGS)
@@ -381,7 +381,7 @@ int main(int argc, char **argv)
 							else
 								fprintf(nodes,"%-8.8s  %s  (%s)\r\n"
 									,p+1
-									,unixtodstr(&cfg,msg.hdr.when_written.time,tmp)
+									,unixtodstr(&cfg,smb_time(msg.hdr.when_written),tmp)
 									,str); 
 						}
 						else
@@ -389,7 +389,7 @@ int main(int argc, char **argv)
 								,str
 								,mode&TAGS
 								? tag
-								: unixtodstr(&cfg,msg.hdr.when_written.time,tmp)); 
+								: unixtodstr(&cfg,smb_time(msg.hdr.when_written),tmp));
 					}
 				} 
 			}
