@@ -368,7 +368,7 @@ typedef struct {		/* Time with time-zone */
 } when_t;
 
 // We encode Month/Day/Hour/Min/Sec into 26 bits:
-#define SMB_DATE_MK_MASK(width, shift)	(((1 << (width + 1)) - 1) << shift)
+#define SMB_DATE_MK_MASK(width, shift)	(((1 << (width)) - 1) << shift)
 #define SMB_DATE_MON_SHIFT		22
 #define SMB_DATE_MON_MASK		SMB_DATE_MK_MASK(4, SMB_DATE_MON_SHIFT)
 #define SMB_DATE_DAY_SHIFT		17
