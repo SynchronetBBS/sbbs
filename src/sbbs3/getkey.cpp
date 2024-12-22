@@ -452,13 +452,13 @@ bool sbbs_t::pause(bool set_abort)
 	bool aborted = (ch==no_key() || ch==quit_key() || (sys_status & SS_ABORT));
 	if(set_abort && aborted)
 		sys_status|=SS_ABORT;
-	else if(ch==LF)	// down arrow == display one more line
-		lncntr=rows-2;
 	if(text[Pause][0]!='@')
 		backspace(len);
 	getnodedat(cfg.node_num, &thisnode);
 	nodesync();
 	attr(tempattrs);
+	if(ch==LF)	// down arrow == display one more line
+		lncntr=rows-2;
 	pause_inside = false;
 	return !aborted;
 }
