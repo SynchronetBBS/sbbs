@@ -587,9 +587,10 @@ static bool getfilecase(char *path, bool dir)
 	intptr_t handle;
 	struct _finddata_t f;
 
+#if 0
 	if(access(path, F_OK)==-1 && !strchr(path,'*') && !strchr(path,'?'))
 		return(false);
-
+#endif
 	if((handle=_findfirst((char*)path,&f))==-1)
 		return(false);
 
