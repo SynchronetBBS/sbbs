@@ -90,7 +90,7 @@ char* getfname(const char* path)
 		fname++;
 	else
 		fname=(char*)path;
-	return((char*)fname);
+	return (char*)fname;
 }
 
 /****************************************************************************/
@@ -123,8 +123,8 @@ char* getfext(const char* path)
 	fname=getfname(path);
 	fext=strrchr(fname,'.');
 	if(fext==NULL || fext==fname)
-		return(NULL);
-	return(fext);
+		return NULL;
+	return fext;
 }
 
 /****************************************************************************/
@@ -184,7 +184,7 @@ int	glob(const char *pattern, int flags, void* unused, glob_t* glob)
 	}
 
 	if(_dos_findfirst((char*)pattern,(flags&GLOB_PERIOD) ? _A_HIDDEN : _A_NORMAL,&ff)!=0)
-		return(GLOB_NOMATCH);
+		return GLOB_NOMATCH;
 
 	do {
 		if((flags&GLOB_PERIOD || ff.name[0]!='.') &&
@@ -192,7 +192,7 @@ int	glob(const char *pattern, int flags, void* unused, glob_t* glob)
 			if((new_pathv=realloc(glob->gl_pathv
 				,(glob->gl_pathc+1)*sizeof(char*)))==NULL) {
 				globfree(glob);
-				return(GLOB_NOSPACE);
+				return GLOB_NOSPACE;
 			}
 			glob->gl_pathv=new_pathv;
 
@@ -204,7 +204,7 @@ int	glob(const char *pattern, int flags, void* unused, glob_t* glob)
 
 			if((glob->gl_pathv[glob->gl_pathc]=malloc(strlen(path)+2))==NULL) {
 				globfree(glob);
-				return(GLOB_NOSPACE);
+				return GLOB_NOSPACE;
 			}
 			strcpy(glob->gl_pathv[glob->gl_pathc],path);
 			if(flags&GLOB_MARK && ff.attrib&_A_SUBDIR)
@@ -217,13 +217,13 @@ int	glob(const char *pattern, int flags, void* unused, glob_t* glob)
 	_dos_findclose(&ff);
 
 	if(found==0)
-		return(GLOB_NOMATCH);
+		return GLOB_NOMATCH;
 
 	if(!(flags&GLOB_NOSORT)) {
 		qsort(glob->gl_pathv,found,sizeof(char*),glob_compare);
 	}
 
-	return(0);	/* success */
+	return 0;	/* success */
 }
 
 #else
@@ -249,7 +249,7 @@ int	glob(const char *pattern, int flags, void* unused, glob_t* glob)
 			if((new_pathv=(char**)realloc(glob->gl_pathv
 				,(glob->gl_pathc+1)*sizeof(char*)))==NULL) {
 				globfree(glob);
-				return(GLOB_NOSPACE);
+				return GLOB_NOSPACE;
 			}
 			glob->gl_pathv=new_pathv;
 
@@ -261,7 +261,7 @@ int	glob(const char *pattern, int flags, void* unused, glob_t* glob)
 
 			if((glob->gl_pathv[glob->gl_pathc]=(char*)malloc(strlen(path)+2))==NULL) {
 				globfree(glob);
-				return(GLOB_NOSPACE);
+				return GLOB_NOSPACE;
 			}
 			strcpy(glob->gl_pathv[glob->gl_pathc],path);
 			if(flags&GLOB_MARK && ff.attrib&_A_SUBDIR)
@@ -277,13 +277,13 @@ int	glob(const char *pattern, int flags, void* unused, glob_t* glob)
 	}
 
 	if(found==0)
-		return(GLOB_NOMATCH);
+		return GLOB_NOMATCH;
 
 	if(!(flags&GLOB_NOSORT)) {
 		qsort(glob->gl_pathv,found,sizeof(char*),glob_compare);
 	}
 
-	return(0);	/* success */
+	return 0;	/* success */
 }
 
 #endif
@@ -365,7 +365,7 @@ size_t getdirsize(const char* path, bool include_subdirs, bool subdir_only)
 			count++;
 		}
 	globfree(&g);
-	return(count);
+	return count;
 }
 
 /****************************************************************************/
@@ -378,7 +378,7 @@ DIR* opendir(const char* dirname)
 
 	if((dir=(DIR*)calloc(1,sizeof(DIR)))==NULL) {
 		errno=ENOMEM;
-		return(NULL);
+		return NULL;
 	}
 	sprintf(dir->filespec,"%.*s",sizeof(dir->filespec)-5,dirname);
 	if(*dir->filespec && dir->filespec[strlen(dir->filespec)-1]!='\\')
@@ -388,30 +388,30 @@ DIR* opendir(const char* dirname)
 	if(dir->handle==-1) {
 		errno=ENOENT;
 		free(dir);
-		return(NULL);
+		return NULL;
 	}
-	return(dir);
+	return dir;
 }
 struct dirent* readdir(DIR* dir)
 {
 	if(dir==NULL)
-		return(NULL);
+		return NULL;
 	if(dir->end==true)
-		return(NULL);
+		return NULL;
 	if(dir->handle==-1)
-		return(NULL);
+		return NULL;
 	sprintf(dir->dirent.d_name,"%.*s",sizeof(struct dirent)-1,dir->finddata.name);
 	if(_findnext(dir->handle,&dir->finddata)!=0)
 		dir->end=true;
-	return(&dir->dirent);
+	return &dir->dirent;
 }
 int closedir (DIR* dir)
 {
 	if(dir==NULL)
-		return(-1);
+		return -1;
 	_findclose(dir->handle);
 	free(dir);
-	return(0);
+	return 0;
 }
 void rewinddir(DIR* dir)
 {
@@ -444,9 +444,9 @@ time_t fdate(const char* filename)
 	struct stat st;
 
 	if(stat(filename, &st)!=0)
-		return(-1);
+		return -1;
 
-	return(st.st_mtime);
+	return st.st_mtime;
 }
 
 /****************************************************************************/
@@ -461,7 +461,7 @@ int setfdate(const char* filename, time_t t)
 	ut.actime=t;
 	ut.modtime=t;
 
-	return(utime(filename,&ut));
+	return utime(filename,&ut);
 }
 
 /****************************************************************************/
@@ -476,20 +476,20 @@ off_t flength(const char *filename)
 	struct _finddata_t f;
 
 	if((handle=_findfirst((char*)filename,&f))==-1)
-		return(-1);
+		return -1;
 
  	_findclose(handle);
 
-	return(f.size);
+	return f.size;
 
 #else
 
 	struct stat st;
 
 	if(stat(filename, &st)!=0)
-		return(-1);
+		return -1;
 
-	return(st.st_size);
+	return st.st_size;
 
 #endif
 }
@@ -500,7 +500,7 @@ off_t flength(const char *filename)
 /* Returns true if it exists, false if it doesn't.                          */
 /* 'filename' may *NOT* contain wildcards!									*/
 /****************************************************************************/
-static bool fnameexist(const char *filename)
+static bool filename_exists(const char *filename)
 {
 	struct stat st;
 
@@ -511,6 +511,14 @@ static bool fnameexist(const char *filename)
 		return false;
 
 	return true;
+}
+
+/****************************************************************************/
+/* Returns true if the file path/name contains one or more wildcard chars	*/
+/****************************************************************************/
+static bool filename_has_wildcard(const char* filename)
+{
+	return (strchr(filename, '*') != NULL) || (strchr(filename, '?') != NULL);
 }
 
 /****************************************************************************/
@@ -526,11 +534,11 @@ bool fexist(const char *filespec)
 	struct _finddata_t f;
 	bool	found;
 
-	if(!strchr(filespec,'*') && !strchr(filespec,'?'))
-		return(fnameexist(filespec));
+	if(!filename_has_wildcard(filespec))
+		return filename_exists(filespec);
 
 	if((handle=_findfirst((char*)filespec,&f))==-1)
-		return(false);
+		return false;
 	found=true;
 	while(f.attrib&_A_SUBDIR)
 		if(_findnext(handle,&f)!=0) {
@@ -540,7 +548,7 @@ bool fexist(const char *filespec)
 
  	_findclose(handle);
 
-	return(found);
+	return found;
 
 #else /* Unix or OS/2 */
 
@@ -549,8 +557,8 @@ bool fexist(const char *filespec)
 	glob_t g;
     int c;
 
-	if(!strchr(filespec,'*') && !strchr(filespec,'?'))
-		return(fnameexist(filespec));
+	if(!filename_has_wildcard(filespec))
+		return filename_exists(filespec);
 
     /* start the search */
     glob(filespec, GLOB_MARK | GLOB_NOSORT, NULL, &g);
@@ -588,21 +596,21 @@ static bool getfilecase(char *path, bool dir)
 	struct _finddata_t f;
 
 #if 0
-	if(access(path, F_OK)==-1 && !strchr(path,'*') && !strchr(path,'?'))
-		return(false);
+	if(access(path, F_OK)==-1 && !filename_has_wildcard(path))
+		return false;
 #endif
 	if((handle=_findfirst((char*)path,&f))==-1)
-		return(false);
+		return false;
 
  	_findclose(handle);
 
 	if(INT_TO_BOOL(f.attrib&_A_SUBDIR) != dir)
-		return(false);
+		return false;
 
 	fname=getfname(path);	/* Find filename in path */
 	strcpy(fname,f.name);	/* Correct filename */
 
-	return(true);
+	return true;
 
 #else /* Unix or OS/2 */
 
@@ -616,8 +624,8 @@ static bool getfilecase(char *path, bool dir)
 	if(path[0]==0)		/* work around glibc bug 574274 */
 		return false;
 
-	if(!strchr(path,'*') && !strchr(path,'?') && fnameexist(path))
-		return(true);
+	if(!filename_has_wildcard(path) && filename_exists(path))
+		return true;
 
 	SAFECOPY(globme,path);
 	p=getfname(globme);
@@ -633,7 +641,7 @@ static bool getfilecase(char *path, bool dir)
 #if 0
 	if(strcspn(path,"?*")!=strlen(path))  {
 		sprintf(path,"%.*s",MAX_PATH,globme);
-		return(fexist(path));
+		return fexist(path);
 	}
 #endif
 
@@ -641,7 +649,7 @@ static bool getfilecase(char *path, bool dir)
 	#define GLOB_ONLYDIR 0
 #endif
 	if(glob(globme, dir ? GLOB_ONLYDIR : GLOB_MARK, NULL, &glb) != 0)
-		return(false);
+		return false;
 
 	if(glb.gl_pathc>0)  {
 		for(i=0;i<glb.gl_pathc;i++)  {
@@ -691,13 +699,13 @@ bool isdir(const char *filename)
 	}
 
 #if defined(__BORLANDC__) && !defined(__unix__)	/* stat() doesn't work right */
-	if(stat(path, &st)!=0 || strchr(path,'*')!=NULL || strchr(path,'?')!=NULL)
+	if(stat(path, &st)!=0 || filename_has_wildcard(path))
 #else
 	if(stat(path, &st)!=0)
 #endif
-		return(false);
+		return false;
 
-	return(S_ISDIR(st.st_mode) ? true : false);
+	return S_ISDIR(st.st_mode) ? true : false;
 }
 
 /****************************************************************************/
@@ -712,19 +720,19 @@ int getfattr(const char* filename)
 
 	if((handle=_findfirst((char*)filename,&finddata))==-1) {
 		errno=ENOENT;
-		return(-1);
+		return -1;
 	}
 	_findclose(handle);
-	return(finddata.attrib);
+	return finddata.attrib;
 #else
 	struct stat st;
 
 	if(stat(filename, &st)!=0) {
 		errno=ENOENT;
-		return(-1L);
+		return -1;
 	}
 
-	return(st.st_mode);
+	return st.st_mode;
 #endif
 }
 
@@ -752,8 +760,8 @@ int removecase(const char *path)
 	char *p;
 	int  i;
 
-	if(strchr(path,'?') || strchr(path,'*'))
-		return(-1);
+	if(filename_has_wildcard(path))
+		return -1;
 	SAFECOPY(inpath,path);
 	p=getfname(inpath);
 	fname[0]=0;
@@ -766,7 +774,7 @@ int removecase(const char *path)
 	}
 	*p=0;
 
-	return(delfiles(inpath,fname,0) >=1 ? 0 : -1);
+	return delfiles(inpath,fname,0) >=1 ? 0 : -1;
 }
 #endif
 
@@ -935,7 +943,7 @@ static uint64_t getdiskspace(const char* path, uint64_t unit, bool freespace)
 			&avail,		/* receives the number of bytes on disk avail to the caller */
 			&size,		/* receives the number of bytes on disk */
 			NULL))		/* receives the free bytes on disk */
-			return(0);
+			return 0;
 
 		total = freespace ? avail.QuadPart : size.QuadPart;
 		if (unit > 1)
@@ -952,13 +960,13 @@ static uint64_t getdiskspace(const char* path, uint64_t unit, bool freespace)
 		(PDWORD)&NumberOfFreeClusters,	/* pointer to number of free clusters */
 		(PDWORD)&TotalNumberOfClusters  /* pointer to total number of clusters */
 		))
-		return(0);
+		return 0;
 
 	if(freespace)
 		TotalNumberOfClusters = NumberOfFreeClusters;
 	if(unit>1)
 		TotalNumberOfClusters/=(DWORD)unit;
-	return(TotalNumberOfClusters*SectorsPerCluster*BytesPerSector);
+	return TotalNumberOfClusters*SectorsPerCluster*BytesPerSector;
 
 
 #elif defined(__solaris__) || (defined(__NetBSD_Version__) && (__NetBSD_Version__ >= 300000000 /* NetBSD 3.0 */))
@@ -999,7 +1007,7 @@ static uint64_t getdiskspace(const char* path, uint64_t unit, bool freespace)
 #else
 
 	fprintf(stderr,"\n*** !Missing getfreediskspace implementation ***\n");
-	return(0);
+	return 0;
 
 #endif
 }
@@ -1026,7 +1034,7 @@ char * _fullpath(char *target, const char *path, size_t size)  {
 	if(target==NULL)  {
 		size = MAX_PATH + 1;
 		if((target=malloc(size))==NULL) {
-			return(NULL);
+			return NULL;
 		}
 		target_alloced=true;
 	}
@@ -1039,7 +1047,7 @@ char * _fullpath(char *target, const char *path, size_t size)  {
 			if(p==NULL || strlen(p)+strlen(path)>=size) {
 				if(target_alloced)
 					free(target);
-				return(NULL);
+				return NULL;
 			}
 			strcpy(target,p);
 			out=strrchr(target,'\0');
@@ -1050,7 +1058,7 @@ char * _fullpath(char *target, const char *path, size_t size)  {
 			if(p==NULL || strlen(p)+strlen(path)>=size) {
 				if(target_alloced)
 					free(target);
-				return(NULL);
+				return NULL;
 			}
 			strcpy(target,p);
 			free(p);
@@ -1063,7 +1071,7 @@ char * _fullpath(char *target, const char *path, size_t size)  {
 	strncat(target,path,size-1);
 
 /*	if(stat(target,&sb))
-		return(NULL);
+		return NULL;
 	if(sb.st_mode&S_IFDIR)
 		strcat(target,"/"); */
 
@@ -1088,7 +1096,7 @@ char * _fullpath(char *target, const char *path, size_t size)  {
 		if (!*out)
 			break;
 	}
-	return(target);
+	return target;
 }
 #endif
 
@@ -1110,7 +1118,7 @@ char* backslash(char* path)
 		*p=PATH_DELIM;
 		*(++p)=0;
 	}
-	return(path);
+	return path;
 }
 
 /****************************************************************************/
@@ -1120,7 +1128,7 @@ bool isabspath(const char *filename)
 {
 	char path[MAX_PATH+1];
 
-	return(stricmp(filename,FULLPATH(path,filename,sizeof(path)))==0);
+	return stricmp(filename,FULLPATH(path,filename,sizeof(path)))==0;
 }
 
 /****************************************************************************/
@@ -1128,11 +1136,11 @@ bool isabspath(const char *filename)
 /****************************************************************************/
 bool isfullpath(const char* filename)
 {
-	return(filename[0]=='/'
+	return filename[0]=='/'
 #ifdef WIN32
 		|| filename[0]=='\\' || (IS_ALPHA(filename[0]) && filename[1]==':')
 #endif
-		);
+		;
 }
 
 /****************************************************************************/
@@ -1152,11 +1160,11 @@ bool wildmatch(const char *fname, const char *spec, bool path, bool case_sensiti
 		switch(*specp) {
 			case '?':
 				if(!(*fnamep))
-					return(false);
+					return false;
 				break;
 			case 0:
 				if(!*fnamep)
-					return(true);
+					return true;
 				break;
 			case '*':
 				while(*specp=='*')
@@ -1173,14 +1181,14 @@ bool wildmatch(const char *fname, const char *spec, bool path, bool case_sensiti
 					wildend=strchr(fnamep, 0);
 				for(;wildend >= fnamep;wildend--) {
 					if(wildmatch(wildend, specp, path, case_sensitive))
-						return(true);
+						return true;
 				}
-				return(false);
+				return false;
 			default:
 				if(case_sensitive && *specp != *fnamep)
-					return(false);
+					return false;
 				if((!case_sensitive) && toupper(*specp) != toupper(*fnamep))
-					return(false);
+					return false;
 		}
 		if(!(*specp && *fnamep))
 			break;
@@ -1188,10 +1196,10 @@ bool wildmatch(const char *fname, const char *spec, bool path, bool case_sensiti
 	while(*specp=='*')
 		specp++;
 	if(*specp==*fnamep)
-		return(true);
+		return true;
 	if((!case_sensitive) && toupper(*specp) == toupper(*fnamep))
-		return(true);
-	return(false);
+		return true;
+	return false;
 }
 
 /****************************************************************************/
@@ -1239,7 +1247,7 @@ int mkpath(const char* path)
 		p=tp;
 	}
 
-	return(result);
+	return result;
 }
 
 #if !defined _WIN32
