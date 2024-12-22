@@ -48,6 +48,7 @@ char tmp[256];
 char error[256];
 char* area_sort_desc[] = { "Index Position", "Long Name", "Short Name", "Internal Code Suffix", NULL };
 static char title[128];
+const char* hostname = NULL;
 int ciolib_mode = CIOLIB_MODE_AUTO;
 enum text_modes video_mode = LCD80X25;
 
@@ -471,7 +472,6 @@ int main(int argc, char **argv)
 
 	const char* import = NULL;
 	const char* grpname = NULL;
-	const char* hostname = NULL;
 	int grpnum = 0;
 	faddr_t faddr = {0};
 	uint32_t misc = 0;
@@ -2607,6 +2607,7 @@ void bail(int code)
         save_chat_cfg(&cfg);
 		save_xtrn_cfg(&cfg);
 
+		set_cfg_filename(hostname);
 		if(*cfg.filename) {
 			fp = iniOpenFile(cfg.filename, /* for_modify? */true);
 			if(fp == NULL)
