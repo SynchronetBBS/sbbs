@@ -44,4 +44,4 @@ while (bbs.online && !console.aborted) {
 }
 if(!displayed)
 	writeln("Sorry, no messages.");
-exit(displayed);
+displayed;
