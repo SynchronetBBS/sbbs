@@ -1438,7 +1438,7 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 	LAZY_UINTEGER("attr", p->msg.hdr.attr, JSPROP_ENUMERATE);
 	LAZY_UINTEGER("auxattr", p->msg.hdr.auxattr, JSPROP_ENUMERATE);
 	LAZY_UINTEGER("netattr", p->msg.hdr.netattr, JSPROP_ENUMERATE);
-	LAZY_UINTEGER("when_written_time", smb_time(p->msg.hdr.when_written), JSPROP_ENUMERATE);
+	LAZY_UINTEGER("when_written_time", (uint32_t)smb_time(p->msg.hdr.when_written), JSPROP_ENUMERATE);
 	LAZY_INTEGER("when_written_zone", p->msg.hdr.when_written.zone, JSPROP_ENUMERATE);
 	LAZY_INTEGER("when_written_zone_offset", smb_tzutc(p->msg.hdr.when_written.zone), JSPROP_ENUMERATE|JSPROP_READONLY);
 	LAZY_UINTEGER("when_imported_time", p->msg.hdr.when_imported.time, JSPROP_ENUMERATE);
