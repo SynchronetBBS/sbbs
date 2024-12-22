@@ -5711,6 +5711,8 @@ NO_SSH:
 		client_on(client_socket,&client,false /* update */);
 
 		for(node_num=first_node; node_num <= last_node; node_num++) {
+			if(node_socket[node_num - 1] != INVALID_SOCKET)
+				continue;
 			/* paranoia: make sure node.status!=NODE_WFC by default */
 			node.status=NODE_INVALID_STATUS;
 			if(!sbbs->getnodedat(node_num,&node, true))
