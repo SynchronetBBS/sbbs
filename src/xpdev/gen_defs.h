@@ -402,6 +402,12 @@ typedef struct {
 /* Handy Integer Macros */
 /************************/
 
+/* Multi-bit bit-fields with "defined behavior" */
+#define BITFIELD_MAX(width)					((1 << (width)) - 1)
+#define BITFIELD_MASK(width, pos)			(BITFIELD_MAX(width) << (pos))
+#define BITFIELD_ENCODE(val, width, pos)	(((val) & BITFIELD_MAX(width)) << (pos))
+#define BITFIELD_DECODE(val, width, pos)	(((val) & BITFIELD_MASK(width, pos)) >> (pos))
+
 /* Data Block Length Alignment Macro (returns required padding length for proper alignment) */
 #define PAD_LENGTH_FOR_ALIGNMENT(len,blk)       (((len)%(blk))==0 ? 0 : (blk)-((len)%(blk)))
 

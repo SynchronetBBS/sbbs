@@ -2118,6 +2118,13 @@ int smb_tzutc(int16_t zone)
 	return(tz);
 }
 
+#define SMB_DATE_MASK (\
+	BITFIELD_MASK(SMB_DATE_MON_BITWIDTH, SMB_DATE_MON_BITPOS) | \
+	BITFIELD_MASK(SMB_DATE_DAY_BITWIDTH, SMB_DATE_DAY_BITPOS) | \
+	BITFIELD_MASK(SMB_DATE_HR_BITWIDTH, SMB_DATE_HR_BITPOS) | \
+	BITFIELD_MASK(SMB_DATE_MIN_BITWIDTH, SMB_DATE_MIN_BITPOS) | \
+	BITFIELD_MASK(SMB_DATE_SEC_BITWIDTH, SMB_DATE_SEC_BITPOS))
+
 /****************************************************************************/
 /* Decode the 2 possible encoding of when_t (when_written)					*/
 /****************************************************************************/
@@ -2129,11 +2136,11 @@ time_t smb_time(when_t when)
 		return when.time;
 
 	tm.tm_year = when.year;
-	tm.tm_mon = (when.time & SMB_DATE_MON_MASK) >> SMB_DATE_MON_SHIFT;
-	tm.tm_mday = (when.time & SMB_DATE_DAY_MASK) >> SMB_DATE_DAY_SHIFT;
-	tm.tm_hour = (when.time & SMB_DATE_HR_MASK) >> SMB_DATE_HR_SHIFT;
-	tm.tm_min = (when.time & SMB_DATE_MIN_MASK) >> SMB_DATE_MIN_SHIFT;
-	tm.tm_sec = (when.time & SMB_DATE_SEC_MASK) >> SMB_DATE_SEC_SHIFT;
+	tm.tm_mon = BITFIELD_DECODE(when.time, SMB_DATE_MON_BITWIDTH, SMB_DATE_MON_BITPOS);
+	tm.tm_mday = BITFIELD_DECODE(when.time, SMB_DATE_DAY_BITWIDTH, SMB_DATE_DAY_BITPOS);
+	tm.tm_hour = BITFIELD_DECODE(when.time, SMB_DATE_HR_BITWIDTH, SMB_DATE_HR_BITPOS);
+	tm.tm_min = BITFIELD_DECODE(when.time, SMB_DATE_MIN_BITWIDTH, SMB_DATE_MIN_BITPOS);
+	tm.tm_sec = BITFIELD_DECODE(when.time, SMB_DATE_SEC_BITWIDTH, SMB_DATE_SEC_BITPOS);
 
 	return sane_mktime(&tm);
 }
@@ -2148,11 +2155,11 @@ when_t smb_when(time_t t, int16_t zone)
 
 	localtime_r(&t, &tm);
 	when.year = 1900 + tm.tm_year;
-	when.time = (tm.tm_mon + 1) << SMB_DATE_MON_SHIFT;
-	when.time |= tm.tm_mday << SMB_DATE_DAY_SHIFT;
-	when.time |= tm.tm_hour << SMB_DATE_HR_SHIFT;
-	when.time |= tm.tm_min << SMB_DATE_MIN_SHIFT;
-	when.time |= tm.tm_sec << SMB_DATE_SEC_SHIFT;
+	when.time = BITFIELD_ENCODE(tm.tm_mon + 1, SMB_DATE_MON_BITWIDTH, SMB_DATE_MON_BITPOS);
+	when.time |= BITFIELD_ENCODE(tm.tm_mday, SMB_DATE_DAY_BITWIDTH, SMB_DATE_DAY_BITPOS);
+	when.time |= BITFIELD_ENCODE(tm.tm_hour, SMB_DATE_HR_BITWIDTH, SMB_DATE_HR_BITPOS);
+	when.time |= BITFIELD_ENCODE(tm.tm_min, SMB_DATE_MIN_BITWIDTH, SMB_DATE_MIN_BITPOS);
+	when.time |= BITFIELD_ENCODE(tm.tm_sec, SMB_DATE_SEC_BITWIDTH, SMB_DATE_SEC_BITPOS);
 	when.zone = zone;
 
 	return when;

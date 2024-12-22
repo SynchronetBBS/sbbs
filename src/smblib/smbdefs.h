@@ -368,18 +368,16 @@ typedef struct {		/* Time with time-zone */
 } when_t;
 
 // We encode Month/Day/Hour/Min/Sec into 26 bits:
-#define SMB_DATE_MK_MASK(width, shift)	(((1 << (width)) - 1) << shift)
-#define SMB_DATE_MON_SHIFT		22
-#define SMB_DATE_MON_MASK		SMB_DATE_MK_MASK(4, SMB_DATE_MON_SHIFT)
-#define SMB_DATE_DAY_SHIFT		17
-#define SMB_DATE_DAY_MASK		SMB_DATE_MK_MASK(5, SMB_DATE_DAY_SHIFT)
-#define SMB_DATE_HR_SHIFT		12
-#define SMB_DATE_HR_MASK		SMB_DATE_MK_MASK(5, SMB_DATE_HR_SHIFT)
-#define SMB_DATE_MIN_SHIFT		6
-#define SMB_DATE_MIN_MASK		SMB_DATE_MK_MASK(6, SMB_DATE_MIN_SHIFT)
-#define SMB_DATE_SEC_SHIFT		0
-#define SMB_DATE_SEC_MASK		SMB_DATE_MK_MASK(6, SMB_DATE_SEC_SHIFT)
-#define SMB_DATE_MASK			(SMB_DATE_MON_MASK | SMB_DATE_DAY_MASK | SMB_DATE_HR_MASK | SMB_DATE_MIN_MASK | SMB_DATE_SEC_MASK)
+#define SMB_DATE_MON_BITWIDTH	4
+#define SMB_DATE_MON_BITPOS		22
+#define SMB_DATE_DAY_BITWIDTH	5
+#define SMB_DATE_DAY_BITPOS		17
+#define SMB_DATE_HR_BITWIDTH	5
+#define SMB_DATE_HR_BITPOS		12
+#define SMB_DATE_MIN_BITWIDTH	6
+#define SMB_DATE_MIN_BITPOS		6
+#define SMB_DATE_SEC_BITWIDTH	6
+#define SMB_DATE_SEC_BITPOS		0
 
 typedef uint16_t smb_msg_attr_t;
 
