@@ -5738,6 +5738,19 @@ NO_SSH:
 				sbbs->putnodedat(node_num, &node);
 				break;
 			}
+			switch(node.status) {
+				case NODE_LOGON:
+				case NODE_NEWUSER:
+				case NODE_INUSE:
+				case NODE_QUIET:
+					if(node_socket[node_num - 1] != INVALID_SOCKET)
+						break;
+					lprintf(LOG_CRIT, "%04d !Node %d status is %d, but the node socket is invalid, changing to WFC"
+						,client_socket, node_num, node.status);
+					node.status = NODE_WFC;
+					sbbs->putnodedat(node_num, &node);
+					continue;
+			}
 			sbbs->unlocknodedat(node_num);
 		}
 
