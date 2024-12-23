@@ -1431,9 +1431,9 @@ char* node_vstatus(scfg_t* cfg, node_t* node, char* str, size_t size)
         case NODE_NEWUSER:
             return cfg->text != NULL ? cfg->text[NodeStatusNewUser] : "New user applying for access";
 		case NODE_QUIET:
+			return "In use (quietly)";
 		case NODE_INUSE:
 			return "In use";
-			break;
 		default:
 			snprintf(str, size, "Unknown status %u", node->status);
 			break;
