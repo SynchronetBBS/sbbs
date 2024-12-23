@@ -66,11 +66,10 @@ when_t rfc822date(char* date)
 	char*	p=date;
 	char	str[32];
 	char	month[32];
-	when_t	when;
 	struct tm tm;
+	int16_t	zone = 0;
 
 	memset(&tm,0,sizeof(tm));
-	memset(&when,0,sizeof(when));
 
 	while(*p && *p<=' ') p++;
 	while(*p && !IS_DIGIT(*p)) p++;
@@ -131,33 +130,32 @@ when_t rfc822date(char* date)
 		if(IS_DIGIT(*p) || *p=='-' || *p=='+') { /* [+|-]HHMM format */
 			if(*p=='+') p++;
 			sprintf(str,"%.*s",*p=='-'? 3:2,p);
-			when.zone=atoi(str)*60;
+			zone=atoi(str)*60;
 			p+=(*p=='-') ? 3:2;
-			if(when.zone<0)
-				when.zone-=atoi(p);
+			if(zone<0)
+				zone-=atoi(p);
 			else
-				when.zone+=atoi(p);
+				zone+=atoi(p);
 		}
 		else if(!strnicmp(p,"PDT",3))
-			when.zone=(short)PDT;
+			zone=(short)PDT;
 		else if(!strnicmp(p,"MDT",3))
-			when.zone=(short)MDT;
+			zone=(short)MDT;
 		else if(!strnicmp(p,"CDT",3))
-			when.zone=(short)CDT;
+			zone=(short)CDT;
 		else if(!strnicmp(p,"EDT",3))
-			when.zone=(short)EDT;
+			zone=(short)EDT;
 		else if(!strnicmp(p,"PST",3))
-			when.zone=(short)PST;
+			zone=(short)PST;
 		else if(!strnicmp(p,"MST",3))
-			when.zone=(short)MST;
+			zone=(short)MST;
 		else if(!strnicmp(p,"CST",3))
-			when.zone=(short)CST;
+			zone=(short)CST;
 		else if(!strnicmp(p,"EST",3))
-			when.zone=(short)EST;
+			zone=(short)EST;
 	}
 
 	tm.tm_isdst=-1;	/* Don't adjust for daylight-savings-time */
-	when.time=(uint32_t)mktime(&tm);
 
-	return(when);
+	return smb_when(mktime(&tm), zone);
 }
