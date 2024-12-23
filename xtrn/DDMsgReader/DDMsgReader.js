@@ -208,6 +208,9 @@
  * 2024-12-18 Eric Oulashin     Version 1.96h
  *                              When reading messages with the scrolling interface, pay attention
  *                              to user input timeout via a check of the last user input.
+ * 2024-12-22 Eric Oulashin     Version 1.96i
+ *                              When doing an indexed newscan, display the progress percentage
+ *                              when doing the newscan
  */
 
 "use strict";
@@ -315,8 +318,8 @@ var hexdump = load('hexdump_lib.js');
 
 
 // Reader version information
-var READER_VERSION = "1.96h";
-var READER_DATE = "2024-12-18";
+var READER_VERSION = "1.96i";
+var READER_DATE = "2024-12-22";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -16777,14 +16780,30 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 	}
 	else
 		DigDistMsgReader_IndexedModeChooseSubBoard.selectedItemIdx = this.indexedModeMenu.selectedItemIdx;
+	// New
+	//console.print("\x01n\r\nScanning...\x01;"); // Temporary
+	//          1         2         3
+	// 123456789012345678901234567890
+	// Progress: 100%
+	//var numBlocks = console.screen_columns - 15;
+	//var numBlocksPerPercent = 100.0 / numBlocks;
+	// End New
 	// Ensure the menu is clear, and (re-)populate the menu with sub-board information w/ # of new messages in each, etc.
 	// Also, build an array of sub-board codes for each menu item.
+	// Also, display loading percentage while this is happening.
 	this.indexedModeMenu.RemoveAllItems();
 	setIndexedSubBoardMenuSelectedItemIdx(this.indexedModeMenu, 0);
 	if (newScanOnly && this.userSettings.indexedModeMenuSnapToFirstWithNew)
 		DigDistMsgReader_IndexedModeChooseSubBoard.selectedItemIdx = 0;
 	var numSubBoards = 0;
 	var totalNewMsgs = 0;
+	console.attributes = "N";
+	console.crlf();
+	printf("Loading: %0.2f%  ", 0.0);
+	// The total number of sub-boards we'll scan - For displaying the progress percentage
+	if (typeof(DigDistMsgReader_IndexedModeChooseSubBoard.totalNumSubBoards) !== "number")
+		DigDistMsgReader_IndexedModeChooseSubBoard.totalNumSubBoards = countSubBoardsForScanning(scanScope, newScanOnly);
+	// Load the menu
 	for (var grpIdx = 0; grpIdx < msg_area.grp_list.length; ++grpIdx)
 	{
 		// If scanning the user's current group or sub-board and this is the wrong group, then skip this group.
@@ -16805,6 +16824,11 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 				continue;
 
 			++numSubBoards;
+
+			// Calculate & display progress percentage (every other sub-board)
+			var progressPercentage = numSubBoards / DigDistMsgReader_IndexedModeChooseSubBoard.totalNumSubBoards * 100.0;
+			if (numSubBoards % 2 == 0)
+				printf("\rLoading: %0.2f%  ", progressPercentage);
 
 			var itemInfo = this.GetIndexedModeSubBoardMenuItemTextAndInfo(msg_area.grp_list[grpIdx].sub_list[subIdx].code);
 			// If configured to only show sub-boards with new messages and this sub-board
@@ -16842,6 +16866,10 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 			totalNewMsgs += itemInfo.numNewMsgs;
 		}
 	}
+	// For end of progress reporting
+	printf("\rLoading: 100.0%  \r\n");
+	if (totalNewMsgs > 0)
+		console.line_counter = 0; // To prevent a pause before the index mode sub-board menu comes up
 	// If there are no items on the menu, then show a message and return
 	if (this.indexedModeMenu.NumItems() == 0)
 	{
@@ -25717,6 +25745,32 @@ function countOccurrencesInStr(pStr, pSubstr)
 	return count;
 }
 
+// Counts the number of sub-boards that would be scanned for the user,
+// considering their sub-board access, for a particular scan scope
+function countSubBoardsForScanning(pScanScope, pNewScanOnly)
+{
+	var numSubBoards = 0;
+	for (var grpIdx = 0; grpIdx < msg_area.grp_list.length; ++grpIdx)
+	{
+		// If scanning the user's current group or sub-board and this is the wrong group, then skip this group.
+		if ((pScanScope == SCAN_SCOPE_GROUP || pScanScope == SCAN_SCOPE_SUB_BOARD) && bbs.curgrp != grpIdx)
+			continue;
+		for (var subIdx = 0; subIdx < msg_area.grp_list[grpIdx].sub_list.length; ++subIdx)
+		{
+			// Skip sub-boards that the user can't read or doesn't have configured for newscans
+			if (!msg_area.grp_list[grpIdx].sub_list[subIdx].can_read)
+				continue;
+			if (pNewScanOnly && !Boolean(msg_area.grp_list[grpIdx].sub_list[subIdx].scan_cfg & SCAN_CFG_NEW))
+				continue;
+			// If scanning the user's current sub-board and this is the wrong sub-board, then
+			// skip this sub-board (the other groups should have been skipped in the outer loop).
+			if (pScanScope == SCAN_SCOPE_SUB_BOARD && bbs.cursub != subIdx)
+				continue;
+			++numSubBoards;
+		}
+	}
+	return numSubBoards;
+}
 
 ///////////////////////////////////////////////////////////////////////////////////
 

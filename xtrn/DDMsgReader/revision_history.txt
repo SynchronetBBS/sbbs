@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.96i    2024-12-22   When doing an indexed newscan, display the progress
+                      percentage when doing the newscan
 1.96h    2024-12-18   Bug fix: When reading messages with the scrolling
                       interface, it now exits from user input timeout as it
                       should.
