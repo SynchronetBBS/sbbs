@@ -43,12 +43,11 @@ bool sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 
 	if(node!=&thisnode)
 		memset(node,0,sizeof(node_t));
-	SAFEPRINTF(str,"%snode.dab",cfg.ctrl_dir);
 	pthread_mutex_lock(&nodefile_mutex);
 	if(nodefile==-1) {
-		if((nodefile=nopen(str,O_RDWR|O_DENYNONE))==-1) {
+		if((nodefile=opennodedat(&cfg))==-1) {
 			pthread_mutex_unlock(&nodefile_mutex);
-			errormsg(WHERE,ERR_OPEN,str,O_RDWR|O_DENYNONE);
+			errormsg(WHERE,ERR_OPEN,"nodefile",number);
 			return false;
 		}
 	}

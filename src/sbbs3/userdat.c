@@ -1099,7 +1099,7 @@ int opennodedat(scfg_t* cfg)
 		return -1;
 
 	SAFEPRINTF(fname, "%snode.dab", cfg->ctrl_dir);
-	return nopen(fname, O_RDWR|O_DENYNONE);
+	return nopen(fname, O_RDWR | O_CREAT | O_DENYNONE);
 }
 
 /****************************************************************************/
