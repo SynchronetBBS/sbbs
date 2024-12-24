@@ -673,6 +673,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 		}
 		length=(long)filelength(file);
 		if(length < 0) {
+			close(file);
 			errormsg(WHERE, ERR_LEN, msgtmp, length);
 			free(buf);
 			return false;
