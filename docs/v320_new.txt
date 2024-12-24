@@ -46,7 +46,11 @@ o Optional configuration files for configuring behavior of TUI utilities
 	reverse_cursor (default: false)
 	esc_delay (default: 25[ms])
 o New IRC service (ircd v2.0)
+o SMBLIB v3.10 now stores message dates using a bit-encoded wall clock/date
+  - so changes to the system/OS time zone don't impact displayed message times
 o New command-line specifier: %- to represent the user's chat handle/call-sign
+o New option to automatically detect/use local time zone (as offset from UTC)
+  - enabled by default in new installs
 o New configurable system date display/input formats (e.g. Year first)
   and configurable date value separators (e.g. '.', '-', ' ' instead of '/')
   and optional "verbal" (instead of numeric) less ambiguous 8-char dates
@@ -109,12 +113,17 @@ o More new @-codes:
   - CPS
   - OS_CPU
   - GIT_DATE
+  - TIME_UTC
+  - DATE_UTC
+  - UTC:fmt
+  - DATETIME_UTC
   - TRUNCATE
   - TRUNCOFF
   - GETDIM
   - LINEDELAY[:n]
   - MSG_TO_FIRST
   - MSG_FROM_FIRST
+  - MSG_DATE_UTC
   - PROT
   - PROTNAME
   - TERMTYPE
@@ -237,7 +246,8 @@ o Many improvements to the Virtual UART Driver as a result of SVDM development:
 o Synchronet Control Panel (sbbsctrl.exe) now has a "Log Events to Disk"
   option, enabling writing of event thread log messages to data/events*.log
 o New useredit.exe (all new C++ version, but using the old Delphi forms)
-o scfg.exe and echocfg.exe are now Graphics/GDI applications
+o Better Windows version detection/reporting (for info purposes only)
+o scfg.exe and echocfg.exe are now Graphical/GDI applications
   (use -iw option if you want to use the old Windows "console" output mode)
 
 Configuration Utility (SCFG)
