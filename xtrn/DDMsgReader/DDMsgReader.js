@@ -16716,6 +16716,12 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 	var scanScope = (isValidScanScopeVal(pScanScope) ? pScanScope : SCAN_SCOPE_ALL);
 	var newScanOnly = (typeof(pNewscanOnly) === "boolean" ? pNewscanOnly : false);
 
+	// Display an initial loading text, since the following may take some time
+	// for BBSes with many sub-boards
+	console.attributes = "N";
+	console.crlf();
+	console.print("Loading...");
+
 	// Note: DDlightbarMenu supports non-ANSI terminals with a more traditional UI
 	// of listing the items and letting the user choose one by typing its number.
 	// If we are to use the traditional interface, the menu will be in numbered mode,
@@ -16780,14 +16786,6 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 	}
 	else
 		DigDistMsgReader_IndexedModeChooseSubBoard.selectedItemIdx = this.indexedModeMenu.selectedItemIdx;
-	// New
-	//console.print("\x01n\r\nScanning...\x01;"); // Temporary
-	//          1         2         3
-	// 123456789012345678901234567890
-	// Progress: 100%
-	//var numBlocks = console.screen_columns - 15;
-	//var numBlocksPerPercent = 100.0 / numBlocks;
-	// End New
 	// Ensure the menu is clear, and (re-)populate the menu with sub-board information w/ # of new messages in each, etc.
 	// Also, build an array of sub-board codes for each menu item.
 	// Also, display loading percentage while this is happening.
@@ -16797,12 +16795,9 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 		DigDistMsgReader_IndexedModeChooseSubBoard.selectedItemIdx = 0;
 	var numSubBoards = 0;
 	var totalNewMsgs = 0;
-	console.attributes = "N";
-	console.crlf();
-	printf("Loading: %0.2f%  ", 0.0);
 	// The total number of sub-boards we'll scan - For displaying the progress percentage
 	if (typeof(DigDistMsgReader_IndexedModeChooseSubBoard.totalNumSubBoards) !== "number")
-		DigDistMsgReader_IndexedModeChooseSubBoard.totalNumSubBoards = countSubBoardsForScanning(scanScope, newScanOnly);
+		DigDistMsgReader_IndexedModeChooseSubBoard.totalNumSubBoards = countSubBoardsForScanning(scanScope, newScanOnly, true);
 	// Load the menu
 	for (var grpIdx = 0; grpIdx < msg_area.grp_list.length; ++grpIdx)
 	{
@@ -25747,8 +25742,9 @@ function countOccurrencesInStr(pStr, pSubstr)
 
 // Counts the number of sub-boards that would be scanned for the user,
 // considering their sub-board access, for a particular scan scope
-function countSubBoardsForScanning(pScanScope, pNewScanOnly)
+function countSubBoardsForScanning(pScanScope, pNewScanOnly, pDisplayStatusDots)
 {
+	var displayStatusDots = (typeof(pDisplayStatusDots) === "boolean" ? pDisplayStatusDots : false);
 	var numSubBoards = 0;
 	for (var grpIdx = 0; grpIdx < msg_area.grp_list.length; ++grpIdx)
 	{
@@ -25767,6 +25763,9 @@ function countSubBoardsForScanning(pScanScope, pNewScanOnly)
 			if (pScanScope == SCAN_SCOPE_SUB_BOARD && bbs.cursub != subIdx)
 				continue;
 			++numSubBoards;
+			// If we are to display status dots, then display a dot for every 4 sub-boards
+			if (displayStatusDots && numSubBoards % 4 == 0)
+				console.print(".");
 		}
 	}
 	return numSubBoards;
