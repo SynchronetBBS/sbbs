@@ -3730,7 +3730,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 						if(dnsbl_recvhdr || dnsbl_result.s_addr) {
 							lprintf(LOG_NOTICE,"%04d %s %s !refusing to post message (on %s) from DNS-Blacklisted client: %s"
 								,socket, client.protocol, client_id, scfg.sub[subnum]->sname, sender_addr);
-							sockprintf(socket,client.protocol,session,"550 Insufficient access");
+							sockprintf(socket,client.protocol,session,"550 Insufficient access: DNS-blacklisted");
 							subnum = INVALID_SUB;
 							stats.msgs_refused++;
 							continue;
@@ -3738,10 +3738,11 @@ static bool smtp_client_thread(smtp_t* smtp)
 					}
 
 					if(!can_user_post(&scfg,subnum,&relay_user,&client,&reason)) {
-						lprintf(LOG_NOTICE,"%04d %s %s !%s (user #%u) cannot post on %s (reason: %u)"
+						strip_ctrl(text[reason], tmp);
+						lprintf(LOG_NOTICE,"%04d %s %s !%s (user #%u) cannot post on %s (reason[%u]: %s)"
 							,socket, client.protocol, client_id, sender_addr, relay_user.number
-							,scfg.sub[subnum]->sname, reason + 1);
-						sockprintf(socket,client.protocol,session,"550 Insufficient access");
+							,scfg.sub[subnum]->sname, reason + 1, tmp);
+						sockprintf(socket,client.protocol,session,"550 Insufficient access: %s", tmp);
 						subnum=INVALID_SUB;
 						stats.msgs_refused++;
 						continue;
