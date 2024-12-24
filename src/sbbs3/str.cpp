@@ -273,6 +273,7 @@ void sbbs_t::sif(char *fname, char *answers, int len)
 	}
 	length=(int)filelength(file);
 	if(length < 0) {
+		close(file);
 		errormsg(WHERE, ERR_CHK, str, length);
 		return;
 	}
