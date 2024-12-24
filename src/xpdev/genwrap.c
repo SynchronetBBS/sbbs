@@ -800,30 +800,22 @@ char* os_version(char *str, size_t size)
 			break;
 	}
 
-	if(winver.dwMajorVersion == 10 && winver.dwMinorVersion == 0) {
+	if(winver.dwMajorVersion == 6 && winver.dwMinorVersion == 1) {
+		winver.dwMajorVersion = 7;
+		winver.dwMinorVersion = 0;
+	}
+	else {
 		static NTSTATUS (WINAPI *pRtlGetVersion)(PRTL_OSVERSIONINFOW lpVersionInformation) = NULL;
 		if(pRtlGetVersion == NULL) {
 			HINSTANCE ntdll = LoadLibrary("ntdll.dll");
 			if(ntdll != NULL)
 				pRtlGetVersion = (NTSTATUS (WINAPI *)(PRTL_OSVERSIONINFOW))GetProcAddress(ntdll, "RtlGetVersion");
 		}
-		if(pRtlGetVersion != NULL)
+		if(pRtlGetVersion != NULL) {
 			pRtlGetVersion((PRTL_OSVERSIONINFOW)&winver);
-		if(winver.dwBuildNumber >= 22000)
-			winver.dwMajorVersion = 11;
-	}
-	else if(winver.dwMajorVersion == 6 && winver.dwMinorVersion == 2) {
-		/* Work-around Microsoft Windows 8.1 stupidity where GetVersionEx() lies about the current OS version */
-		WKSTA_INFO_100* wksta_info;
-		if(NetWkstaGetInfo(NULL, 100, (LPBYTE*)&wksta_info) == NERR_Success) {
-			winver.dwMajorVersion = wksta_info->wki100_ver_major;
-			winver.dwMinorVersion = wksta_info->wki100_ver_minor;
-			winver.dwBuildNumber = 0;
+			if(winver.dwMajorVersion == 10 && winver.dwMinorVersion == 0 &&  winver.dwBuildNumber >= 22000)
+				winver.dwMajorVersion = 11;
 		}
-	}
-	else if(winver.dwMajorVersion == 6 && winver.dwMinorVersion == 1) {
-		winver.dwMajorVersion = 7;
-		winver.dwMinorVersion = 0;
 	}
 
 	safe_snprintf(str, size, "Windows %sVersion %lu.%lu"
