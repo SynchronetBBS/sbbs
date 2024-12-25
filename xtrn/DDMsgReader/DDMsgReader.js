@@ -16764,7 +16764,7 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 	}
 
 	// Set text widths for the menu items
-	var newMsgWidthObj = findWidestNumMsgsAndNumNewMsgs(scanScope, newScanOnly);
+	var newMsgWidthObj = findWidestNumMsgsAndNumNewMsgs(scanScope, newScanOnly, true);
 	var numMsgsWidth = newMsgWidthObj.widestNumMsgs;
 	var numNewMsgsWidth = newMsgWidthObj.widestNumNewMsgs;
 	// Ensure the column widths for the last few columns (after description) are wide enough
@@ -16795,9 +16795,6 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 		DigDistMsgReader_IndexedModeChooseSubBoard.selectedItemIdx = 0;
 	var numSubBoards = 0;
 	var totalNewMsgs = 0;
-	// The total number of sub-boards we'll scan - For displaying the progress percentage
-	if (typeof(DigDistMsgReader_IndexedModeChooseSubBoard.totalNumSubBoards) !== "number")
-		DigDistMsgReader_IndexedModeChooseSubBoard.totalNumSubBoards = countSubBoardsForScanning(scanScope, newScanOnly, true);
 	// Load the menu
 	for (var grpIdx = 0; grpIdx < msg_area.grp_list.length; ++grpIdx)
 	{
@@ -16821,7 +16818,7 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 			++numSubBoards;
 
 			// Calculate & display progress percentage (every other sub-board)
-			var progressPercentage = numSubBoards / DigDistMsgReader_IndexedModeChooseSubBoard.totalNumSubBoards * 100.0;
+			var progressPercentage = numSubBoards / newMsgWidthObj.numSubBoards * 100.0;
 			if (numSubBoards % 2 == 0)
 				printf("\rLoading: %0.2f%  ", progressPercentage);
 
@@ -17309,19 +17306,24 @@ function DigDistMsgReader_ShowIndexedListHelp()
 //              This would be SCAN_SCOPE_SUB_BOARD, SCAN_SCOPE_GROUP, or SCAN_SCOPE_ALL.
 //  pForNewscanOnly: Boolean: Whether or not to only check sub-boards in the user's newscan configuration.
 //                   Defaults to false.
+// pDisplayStatusDots: Optional boolean - Whether or not to display status dots while this is running.
+//                     Defaults to false.
 //
 // Return value: An object with the following properties:
 //               widestNumMsgs: The biggest length of the number of messages in the sub-boards
 //               widestNumNewMsgs: The biggest length of the number of new (unread) messages in the sub-boards
-function findWidestNumMsgsAndNumNewMsgs(pScanScope, pForNewscanOnly)
+//               numSubBoards: The number of sub-boards in the newscan
+function findWidestNumMsgsAndNumNewMsgs(pScanScope, pForNewscanOnly, pDisplayStatusDots)
 {
 	var retObj = {
 		widestNumMsgs: 0,
-		widestNumNewMsgs: 0
+		widestNumNewMsgs: 0,
+		numSubBoards: 0
 	};
 
 	var scanScope = (isValidScanScopeVal(pScanScope) ? pScanScope : SCAN_SCOPE_ALL);
 	var onlyNewscanCfg = (typeof(pForNewscanOnly) === "boolean" ? pForNewscanOnly : false);
+	var displayStatusDots = (typeof(pDisplayStatusDots) === "boolean" ? pDisplayStatusDots : false);
 
 	for (var grpIdx = 0; grpIdx < msg_area.grp_list.length; ++grpIdx)
 	{
@@ -17349,6 +17351,10 @@ function findWidestNumMsgsAndNumNewMsgs(pScanScope, pForNewscanOnly)
 			var numNewMessagesInSubLen = latestPostInfo.numNewMsgs.toString().length;
 			if (numNewMessagesInSubLen > retObj.widestNumNewMsgs)
 				retObj.widestNumNewMsgs = numNewMessagesInSubLen;
+
+			// If we are to display status dots, then display a dot for every 4 sub-boards
+			if (displayStatusDots && retObj.numSubBoards % 4 == 0)
+				console.print(".");
 		}
 	}
 	return retObj;
@@ -25738,37 +25744,6 @@ function countOccurrencesInStr(pStr, pSubstr)
 		strIdx = pStr.indexOf(pSubstr, strIdx+1);
 	}
 	return count;
-}
-
-// Counts the number of sub-boards that would be scanned for the user,
-// considering their sub-board access, for a particular scan scope
-function countSubBoardsForScanning(pScanScope, pNewScanOnly, pDisplayStatusDots)
-{
-	var displayStatusDots = (typeof(pDisplayStatusDots) === "boolean" ? pDisplayStatusDots : false);
-	var numSubBoards = 0;
-	for (var grpIdx = 0; grpIdx < msg_area.grp_list.length; ++grpIdx)
-	{
-		// If scanning the user's current group or sub-board and this is the wrong group, then skip this group.
-		if ((pScanScope == SCAN_SCOPE_GROUP || pScanScope == SCAN_SCOPE_SUB_BOARD) && bbs.curgrp != grpIdx)
-			continue;
-		for (var subIdx = 0; subIdx < msg_area.grp_list[grpIdx].sub_list.length; ++subIdx)
-		{
-			// Skip sub-boards that the user can't read or doesn't have configured for newscans
-			if (!msg_area.grp_list[grpIdx].sub_list[subIdx].can_read)
-				continue;
-			if (pNewScanOnly && !Boolean(msg_area.grp_list[grpIdx].sub_list[subIdx].scan_cfg & SCAN_CFG_NEW))
-				continue;
-			// If scanning the user's current sub-board and this is the wrong sub-board, then
-			// skip this sub-board (the other groups should have been skipped in the outer loop).
-			if (pScanScope == SCAN_SCOPE_SUB_BOARD && bbs.cursub != subIdx)
-				continue;
-			++numSubBoards;
-			// If we are to display status dots, then display a dot for every 4 sub-boards
-			if (displayStatusDots && numSubBoards % 4 == 0)
-				console.print(".");
-		}
-	}
-	return numSubBoards;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
