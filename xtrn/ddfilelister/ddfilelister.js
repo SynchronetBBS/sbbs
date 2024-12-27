@@ -149,6 +149,9 @@
  *                              exist in the metadata before accessing them
  * 2024-12-08 Eric Oulashin     Version 2.25c
  *                              Check whether 'desc' is a string in file metadata before trying to use it
+ * 2024-12-27 Eric Oulashin     Version 2.26
+ *                              New configuration setting: useFilenameIfNoDescription - If a
+ *                              file's description is empty, show its filename in the list instead
  */
 
 "use strict";
@@ -190,8 +193,8 @@ var gAvatar = load({}, "avatar_lib.js");
 
 
 // Version information
-var LISTER_VERSION = "2.25c";
-var LISTER_DATE = "2024-12-08";
+var LISTER_VERSION = "2.26";
+var LISTER_DATE = "2024-12-27";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -334,6 +337,10 @@ var gTraditionalUseSyncStock = false;
 // Whether or not to display user avatars for the uploader in extended
 // file information
 var gDispayUserAvatars = true;
+
+// If a file's description is unavailable, whether or not to use the
+// filename instead
+var gUseFilenameIfNoDescription = true;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Script execution code
@@ -3398,6 +3405,10 @@ function createFileListMenu(pQuitKeys)
 		var desc = (typeof(gFileList[pIdx].desc) === "string" ? gFileList[pIdx].desc : "");
 		// Remove/replace any cursor movement codes in the description, which can corrupt the display
 		desc = removeOrReplaceSyncCursorMovementChars(desc, false);
+		// If there is no description and the option to use the filename is enabled, then use the
+		// filename.
+		if (gUseFilenameIfNoDescription && (desc == "" || /^\s+$/.test(desc)))
+			desc = gFileList[pIdx].name;
 		var fileSizeStr = file_size_str(gFileList[pIdx].size, null, FILE_SIZE_PRECISION);
 		menuItemObj.text = format(this.fileFormatStr,
 		                          filename,
@@ -4152,6 +4163,11 @@ function readConfigFile()
 					if (!file_exists(themeFilename))
 						themeFilename = js.exec_dir + settingsObj[prop];
 				}
+			}
+			else if (propUpper == "USEFILENAMEIFNODESCRIPTION")
+			{
+				if (typeof(settingsObj[prop]) === "boolean")
+					gUseFilenameIfNoDescription = settingsObj[prop];
 			}
 		}
 	}
@@ -5171,7 +5187,12 @@ function displayFileExtDescOnMainScreen(pFileIdx, pStartScreenRow, pEndScreenRow
 		lastScreenRow = pEndScreenRow;
 	// Remove/replace any cursor movement characters, as they can corrupt the display
 	fileDesc = removeOrReplaceSyncCursorMovementChars(fileDesc);
+	// If there is no description and the option to use the filename is enabled, then use the
+	// filename.
+	if (gUseFilenameIfNoDescription && (fileDesc == "" || /^\s+$/.test(fileDesc)))
+		fileDesc = lfexpand(word_wrap(fileMetadata.name + "\r\n(No description)", maxDescLen, null, false));
 	var fileDescArray = fileDesc.split("\r\n");
+	//if (user.is_sysop) console.print("\x01nfileDescArray is array: " + Array.isArray(fileDescArray) + "  \x01p"); // Temporary
 	console.attributes = "N";
 	// screenRowNum is to keep track of the row on the screen where the
 	// description line would be placed, in case the start row is after that

@@ -250,6 +250,11 @@ displayUserAvatars                    Whether or not to display uploader avatars
                                       in extended information for files. Valid
                                       values are true and false.
 
+useFilenameIfNoDescription            If a file's description is unavailable,
+                                      whether or not to use the filename in the
+                                      list instead. Valid values are true and
+                                      false.
+
 themeFilename                         The name of the configuration file to
                                       use for colors & string settings
 
