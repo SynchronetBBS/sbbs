@@ -4527,7 +4527,6 @@ void node_thread(void* arg)
 #endif
 
 	sbbs->hangup();	/* closes sockets, calls client_off, and shuts down the output_thread */
-    node_socket[sbbs->cfg.node_num-1]=INVALID_SOCKET;
 
 	sbbs->logout(login_success);
 
@@ -4600,6 +4599,7 @@ void node_thread(void* arg)
 	}
 
 	if(sbbs->getnodedat(sbbs->cfg.node_num,&node, true)) {
+	   node_socket[sbbs->cfg.node_num-1]=INVALID_SOCKET;
 		if(node.misc&NODE_DOWN)
 			node.status=NODE_OFFLINE;
 		else
@@ -4608,7 +4608,8 @@ void node_thread(void* arg)
 					|NODE_UDAT|NODE_POFF|NODE_AOFF|NODE_EXT);
 	/*	node.useron=0; needed for hang-ups while in multinode chat */
 		sbbs->putnodedat(sbbs->cfg.node_num,&node);
-	}
+	} else
+		node_socket[sbbs->cfg.node_num-1]=INVALID_SOCKET;
 
 	{
 		/* crash here on Aug-4-2015:
@@ -5716,6 +5717,18 @@ NO_SSH:
 			node.status=NODE_INVALID_STATUS;
 			if(!sbbs->getnodedat(node_num,&node, true))
 				continue;
+			switch(node.status) {
+				case NODE_LOGON:
+				case NODE_NEWUSER:
+				case NODE_INUSE:
+				case NODE_QUIET:
+					if(node_socket[node_num - 1] == INVALID_SOCKET) {
+						lprintf(LOG_CRIT, "%04d !Node %d status is %d, but the node socket is invalid, changing to WFC"
+							,client_socket, node_num, node.status);
+						node.status = NODE_WFC;
+					}
+					break;
+			}
 			if(node.status==NODE_WFC) {
 				if(node_socket[node_num - 1] != INVALID_SOCKET) {
 					lprintf(LOG_CRIT, "%04d !Node %d status is WFC, but the node socket (%d) and thread are still in use!"
@@ -5734,21 +5747,9 @@ NO_SSH:
 				else
 					node.connection=NODE_CONNECTION_TELNET;
 
+		        node_socket[node_num-1] = client_socket;
 				sbbs->putnodedat(node_num, &node);
 				break;
-			}
-			switch(node.status) {
-				case NODE_LOGON:
-				case NODE_NEWUSER:
-				case NODE_INUSE:
-				case NODE_QUIET:
-					if(node_socket[node_num - 1] != INVALID_SOCKET)
-						break;
-					lprintf(LOG_CRIT, "%04d !Node %d status is %d, but the node socket is invalid, changing to WFC"
-						,client_socket, node_num, node.status);
-					node.status = NODE_WFC;
-					sbbs->putnodedat(node_num, &node);
-					continue;
 			}
 			sbbs->unlocknodedat(node_num);
 		}
@@ -5792,8 +5793,10 @@ NO_SSH:
 					close_socket(client_socket);
 					if(sbbs->getnodedat(cfg->node_num,&node, true)) {
 						node.status = NODE_WFC;
+						node_socket[node_num - 1] = INVALID_SOCKET;
 						sbbs->putnodedat(cfg->node_num,&node);
-					}
+					} else
+						node_socket[node_num - 1] = INVALID_SOCKET;
 					continue;
 				}
 			}
@@ -5809,8 +5812,6 @@ NO_SSH:
 		// Copy event last-run info from global config
 		for(int e=0; e < cfg->total_events && e < scfg.total_events; e++)
 			cfg->event[e]->last = scfg.event[e]->last;
-
-        node_socket[node_num-1]=client_socket;
 
 		sbbs_t* new_node = new sbbs_t(node_num, &client_addr, client_addr_len, host_name
         	,client_socket
