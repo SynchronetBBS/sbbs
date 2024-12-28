@@ -1,12 +1,14 @@
 #ifndef DEUCE_SSH_H
 #define DEUCE_SSH_H
 
+#include <assert.h>
+
 #ifdef __STDC_NO_ATOMICS__
-_Static_assert(0, "stdatomic.h support required");
+static_assert(0, "stdatomic.h support required");
 #endif
 
 #ifdef __STDC_NO_THREADS__
-_Static_assert(0, "threads.h support required");
+static_assert(0, "threads.h support required");
 #endif
 
 #include <inttypes.h>
