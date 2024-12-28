@@ -1,7 +1,8 @@
 <!--
-  * For use with macOS/darwin, tested with Darwin Kernel Version 24.1.0
+  * For use with macOS/Darwin, tested with Darwin Kernel Version 24.1.0
   * Copy this file to /Library/LaunchDaemons/
-  * Install with 'sudo launchctl bootstrap system /Library/LaunchDaemons/net.synchro.sbbs'
+  * Install with 'sudo launchctl bootstrap system /Library/LaunchDaemons/net.synchro.sbbs.plist'
+  * Disable with 'sudo launchctl bootout system/net.synchro.sbbs'
 -->
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
