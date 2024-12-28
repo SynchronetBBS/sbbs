@@ -3397,8 +3397,9 @@ apc_handler(char *strbuf, size_t slen, void *apcd)
 				while (!feof(f)) {
 					rc = fread(buf, 1, 1024 * 32, f);
 					if (rc > 0)
-						MD5_calc(digest, buf, rc);
+						MD5_digest(&ctx, buf, rc);
 				}
+				MD5_close(&ctx, digest);
 				fclose(f);
 				MD5_hex(buf, digest);
 				conn_send(buf, strlen(buf), 0);
