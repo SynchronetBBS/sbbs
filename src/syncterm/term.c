@@ -3680,7 +3680,7 @@ apc_handler(char *strbuf, size_t slen, void *apcd)
 	}
 #ifdef WITH_JPEG_XL
 	else if (strncmp(strbuf, "SyncTERM:C;LoadJXL", 18) == 0) {
-                // Load PPM into memory buffer
+                // Load JPEG XL into memory buffer
 		load_jxl_str_handler(strbuf, slen, fn, apcd);
 	}
 #endif
@@ -3804,8 +3804,8 @@ apc_handler(char *strbuf, size_t slen, void *apcd)
 	}
 #ifdef WITH_JPEG_XL
 	else if (strncmp(strbuf, "SyncTERM:C;DrawJXL", 18) == 0) {
-                // Request to draw a 255 max PPM file from cache
-		//SyncTERM:C;DrawPPM;SX=x;SY=y;SW=w;SH=hDX=x;Dy=y;
+                // Request to draw a JPEG XL file from cache
+		//SyncTERM:C;DrawJXL;SX=x;SY=y;SW=w;SH=hDX=x;Dy=y;
 		draw_jxl_str_handler(strbuf, slen, fn, apcd);
 	}
 #endif
