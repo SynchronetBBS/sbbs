@@ -4,6 +4,7 @@ project (SyncTERM C)
 
 set(WITHOUT_CRYPTLIB OFF CACHE BOOL "Disable cryptlib (ssh and telnet over TLS")
 set(WITHOUT_OOII OFF CACHE BOOL "Disable Operation Overkill ][ Terminal")
+set(WITHOUT_JPEG_XL OFF CACHE BOOL "Disable JPEG XL")
 
 # CPack stuff...
 set(CPACK_PACKAGE_NAME SyncTERM)
@@ -25,6 +26,11 @@ INCLUDE(CPack)
 
 INCLUDE (../build/SynchronetMacros.cmake)
 INCLUDE (CheckIncludeFiles)
+
+find_package(PkgConfig)
+if(NOT WITHOUT_JPEG_XL)
+	pkg_check_modules(JPEG_XL libjxl)
+endif()
 
 set(SOURCE
 	bbslist.c
@@ -123,6 +129,16 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Haiku")
 		COMMAND rc -o ${CMAKE_CURRENT_BINARY_DIR}/syncterm.rsrc ${CMAKE_CURRENT_SOURCE_DIR}/haiku.rdef)
 	add_custom_command(TARGET syncterm POST_BUILD
 		COMMAND xres -o $<TARGET_FILE:syncterm> ${CMAKE_CURRENT_BINARY_DIR}/syncterm.rsrc)
+endif()
+if(NOT WITHOUT_JPEG_XL)
+	if(JPEG_XL_FOUND)
+		target_compile_definitions(syncterm PUBLIC WITH_JPEG_XL)
+		target_include_directories(syncterm PRIVATE ${JPEG_XL_INCLUDE_DIRS})
+		target_compile_options(syncterm PRIVATE ${JPEG_XL_CFLAGS})
+		target_link_directories(syncterm PRIVATE ${JPEG_XL_LIBRARY_DIRS})
+		target_link_libraries(syncterm ${JPEG_XL_LIBRARIES})
+		target_link_options(syncterm PRIVATE ${JPEG_XL_LDFLAGS})
+	endif()
 endif()
 
 install(TARGETS syncterm DESTINATION bin)

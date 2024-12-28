@@ -43,6 +43,12 @@
 #include "md5.h"
 #include "ripper.h"
 
+#ifdef WITH_JPEG_XL
+#include <jxl/decode.h>
+#include <jxl/encode.h>
+#include "xpmap.h"
+#endif
+
 #define ANSI_REPLY_BUFSIZE 2048
 static char ansi_replybuf[2048];
 
@@ -3076,6 +3082,320 @@ done:
 	free(maskfn);
 }
 
+#ifdef WITH_JPEG_XL
+static void *
+read_jxl(const char *fn)
+{
+	struct xpmapping *map = xpmap(fn, XPMAP_READ);
+	struct ciolib_pixels *pret = NULL;
+	uint8_t         *pbuf = NULL;
+	uintmax_t        width;
+	uintmax_t        height;
+
+	if (map == NULL)
+		return map;
+
+	// Decode
+	JxlDecoderStatus st;
+	JxlBasicInfo info;
+	JxlColorEncoding ce;
+	size_t sz = 0;
+	JxlPixelFormat format = {
+		.num_channels = 3,
+		.data_type = JXL_TYPE_UINT8,
+		.endianness = JXL_NATIVE_ENDIAN,
+		.align = 1
+	};
+	JxlColorEncodingSetToSRGB(&ce, JXL_FALSE);
+	JxlDecoder *dec = JxlDecoderCreate(NULL);
+	if (dec == NULL) {
+		xpunmap(map);
+		return NULL;
+	}
+	if (JxlDecoderSetInput(dec, map->addr, map->size) != JXL_DEC_SUCCESS) {
+		xpunmap(map);
+		JxlDecoderDestroy(dec);
+		return NULL;
+	}
+	JxlDecoderCloseInput(dec);
+	if (JxlDecoderSubscribeEvents(dec, JXL_DEC_BASIC_INFO | JXL_DEC_COLOR_ENCODING | JXL_DEC_FULL_IMAGE) != JXL_DEC_SUCCESS) {
+		xpunmap(map);
+		JxlDecoderDestroy(dec);
+		return NULL;
+	}
+	for (bool done = false; !done;) {
+		st = JxlDecoderProcessInput(dec);
+		switch(st) {
+			case JXL_DEC_ERROR:
+				done = true;
+				break;
+			case JXL_DEC_BASIC_INFO:
+				if (JxlDecoderGetBasicInfo(dec, &info) != JXL_DEC_SUCCESS) {
+					done = true;
+					break;
+				}
+				width = info.xsize;
+				height = info.ysize;
+				break;
+			case JXL_DEC_COLOR_ENCODING:
+				// TODO...
+				if (JxlDecoderSetPreferredColorProfile(dec, &ce) != JXL_DEC_SUCCESS) {
+					done = true;
+					break;
+				}
+				break;
+			case JXL_DEC_NEED_IMAGE_OUT_BUFFER:
+				if (JxlDecoderImageOutBufferSize(dec, &format, &sz) != JXL_DEC_SUCCESS) {
+					done = true;
+					break;
+				}
+				pbuf = malloc(sz);
+				if (pbuf == NULL) {
+					done = true;
+					break;
+				}
+				pret = alloc_ciolib_pixels(width, height);
+				if (pret == NULL) {
+					done = true;
+					break;
+				}
+				JxlDecoderSetImageOutBuffer(dec, &format, pbuf, sz);
+				break;
+			case JXL_DEC_FULL_IMAGE:
+				// Got a single frame... this is not necessarily the whole image though.
+				break;
+			case JXL_DEC_SUCCESS:
+				done = true;
+				break;
+			default:
+				// Everything else is fail.
+				done = true;
+				break;
+		}
+	}
+	if (st != JXL_DEC_SUCCESS) {
+		freepixels(pret);
+		pret = NULL;
+	}
+	else {
+		for (size_t i = 0; i < sz; i += 3) {
+			size_t j = i / 3;
+			pret->pixels[j] = 0x80000000;
+			pret->pixels[j] |= pbuf[i] << 16;
+			pret->pixels[j] |= pbuf[i+1] << 8;
+			pret->pixels[j] |= pbuf[i+2];
+		}
+	}
+	free(pbuf);
+	JxlDecoderReleaseInput(dec);
+	xpunmap(map);
+	JxlDecoderDestroy(dec);
+	return pret;
+}
+
+static void
+draw_jxl_str_handler(char *str, size_t slen, char *fn, void *apcd)
+{
+	struct ciolib_mask   *ctmask = NULL;
+	char                 *p;
+	char                 *p2;
+	void                 *mask = NULL;
+	char                 *maskfn = NULL;
+	char                 *jxlfn = NULL;
+	struct ciolib_pixels *jxlp = NULL;
+	unsigned long        *val;
+	unsigned long         sx = 0; // Source X to start at
+	unsigned long         sy = 0; // Source Y to start at
+	unsigned long         sw = 0; // Source width to show
+	unsigned long         sh = 0; // Source height to show
+	unsigned long         dx = 0; // Destination X to start at
+	unsigned long         dy = 0; // Destination Y to start at
+	unsigned long         mx = 0; // Mask X to start at
+	unsigned long         my = 0; // Mask Y to start at
+	unsigned long         mw = 0; // Width of the mask
+	unsigned long         mh = 0; // Height of the mask
+	size_t                mlen = 0;
+	bool                  mbuf = false;
+
+	for (p = str + 18; p && *p == ';'; p = strchr(p + 1, ';')) {
+		val = NULL;
+		switch (p[1]) {
+			case 'S':
+				switch (p[2]) {
+					case 'X':
+						val = &sx;
+						break;
+					case 'Y':
+						val = &sy;
+						break;
+					case 'W':
+						val = &sw;
+						break;
+					case 'H':
+						val = &sh;
+						break;
+				}
+				break;
+			case 'D':
+				switch (p[2]) {
+					case 'X':
+						val = &dx;
+						break;
+					case 'Y':
+						val = &dy;
+						break;
+				}
+				break;
+			case 'M':
+				if (p[2] == 'X') {
+					val = &mx;
+					break;
+				}
+				if (p[2] == 'Y') {
+					val = &my;
+					break;
+				}
+				if (p[2] == 'W') {
+					val = &mw;
+					break;
+				}
+				if (p[2] == 'H') {
+					val = &mh;
+					break;
+				}
+				if (strncmp(p + 2, "FILE=", 5) == 0) {
+					p2 = strchr(p + 7, ';');
+					if (p2 == NULL)
+						goto done;
+					if (!mbuf)
+						freemask(ctmask);
+					mbuf = false;
+					ctmask = NULL;
+					free(mask);
+					mask = strndup(p + 7, p2 - p - 7);
+					continue; // Avoid val check
+				}
+				else if (strncmp(p + 2, "ASK=", 4) == 0) {
+					p2 = strchr(p + 6, ';');
+					if (p2 == NULL)
+						goto done;
+					FREE_AND_NULL(mask);
+					if (!mbuf)
+						freemask(ctmask);
+					mbuf = false;
+					ctmask = alloc_ciolib_mask(0, 0);
+					ctmask->bits = b64_decode_alloc(p + 6, p2 - p + 5, &mlen);
+					if (ctmask->bits == NULL)
+						goto done;
+					continue; // Avoid val check
+				}
+				else if (strncmp(p + 2, "BUF", 3) == 0) {
+					freemask(ctmask);
+					ctmask = NULL;
+					mbuf = true;
+					continue; // Avoid val check
+				}
+				break;
+		}
+		if (val == NULL || p[3] != '=')
+			break;
+		*val = strtoul(p + 4, NULL, 10);
+	}
+
+	if (asprintf(&jxlfn, "%s%s", fn, p + 1) == -1)
+		goto done;
+	jxlp = read_jxl(jxlfn);
+	if (jxlp == NULL)
+		goto done;
+
+	if (sw == 0)
+		sw = jxlp->width - sx;
+	if (sh == 0)
+		sh = jxlp->height - sy;
+
+	if (ctmask != NULL) {
+		if (mlen < (sw * sh + 7) / 8)
+			goto done;
+		if (mw == 0)
+			mw = sw;
+		if (mh == 0)
+			mh = sh;
+		if (mlen < (mw * mh + 7) / 8)
+			goto done;
+		ctmask->width = mw;
+		ctmask->height = mh;
+	}
+
+	if (mask != NULL) {
+		if (asprintf(&maskfn, "%s%s", fn, (char*)mask) < 0)
+			goto done;
+	}
+
+	if (maskfn != NULL) {
+		freemask(ctmask);
+		ctmask = read_pbm(maskfn, true);
+		if (ctmask == NULL)
+			goto done;
+		if (ctmask->width < sw || ctmask->height < sh)
+			goto done;
+	}
+
+	if (mbuf)
+		ctmask = mask_buffer;
+
+	if (jxlp != NULL)
+		setpixels(dx, dy, dx + sw - 1, dy + sh - 1, sx, sy, mx, my, jxlp, ctmask);
+done:
+	free(mask);
+	free(maskfn);
+	if (!mbuf)
+		freemask(ctmask);
+	free(jxlfn);
+	freepixels(jxlp);
+}
+
+static void
+load_jxl_str_handler(char *str, size_t slen, char *fn, void *apcd)
+{
+	char                 *p;
+	char                 *jxlfn = NULL;
+	struct ciolib_pixels *jxlp = NULL;
+	unsigned long         bufnum = 0;
+	unsigned long        *val;
+
+	for (p = str + 18; p && *p == ';'; p = strchr(p + 1, ';')) {
+		val = NULL;
+		switch (p[1]) {
+			case 'B':
+				val = &bufnum;
+				break;
+		}
+		if (val == NULL || p[2] != '=')
+			break;
+		*val = strtoul(p + 3, NULL, 10);
+	}
+
+	if (bufnum >= sizeof(pixmap_buffer) / sizeof(pixmap_buffer[0]))
+		goto done;
+
+	freepixels(pixmap_buffer[bufnum]);
+	pixmap_buffer[bufnum] = NULL;
+
+	if (asprintf(&jxlfn, "%s%s", fn, p + 1) == -1)
+		goto done;
+	jxlp = read_jxl(jxlfn);
+	if (jxlp == NULL)
+		goto done;
+	pixmap_buffer[bufnum] = jxlp;
+	free(jxlfn);
+	return;
+
+done:
+	free(jxlfn);
+	freepixels(jxlp);
+}
+#endif
+
 static void
 copy_pixmap(char *str, size_t slen, char *fn, void *apcd)
 {
@@ -3358,6 +3678,12 @@ apc_handler(char *strbuf, size_t slen, void *apcd)
                 // Load PPM into memory buffer
 		load_pbm_str_handler(strbuf, slen, fn, apcd);
 	}
+#ifdef WITH_JPEG_XL
+	else if (strncmp(strbuf, "SyncTERM:C;LoadJXL", 18) == 0) {
+                // Load PPM into memory buffer
+		load_jxl_str_handler(strbuf, slen, fn, apcd);
+	}
+#endif
 	else if (strncmp(strbuf, "SyncTERM:C;L", 12) == 0) {
                 // Cache list
 		if ((strbuf[12] != 0) && (strbuf[12] != ';'))
@@ -3476,6 +3802,13 @@ apc_handler(char *strbuf, size_t slen, void *apcd)
 		//SyncTERM:C;DrawPPM;SX=x;SY=y;SW=w;SH=hDX=x;Dy=y;
 		draw_ppm_str_handler(strbuf, slen, fn, apcd);
 	}
+#ifdef WITH_JPEG_XL
+	else if (strncmp(strbuf, "SyncTERM:C;DrawJXL", 18) == 0) {
+                // Request to draw a 255 max PPM file from cache
+		//SyncTERM:C;DrawPPM;SX=x;SY=y;SW=w;SH=hDX=x;Dy=y;
+		draw_jxl_str_handler(strbuf, slen, fn, apcd);
+	}
+#endif
 	else if (strncmp(strbuf, "SyncTERM:P;Copy", 15) == 0) {
 		copy_pixmap(strbuf, slen, fn, apcd);
 	}
