@@ -1,4 +1,4 @@
-function SyncTERMCache = {
+function SyncTERMCache() {
 	this.supported = this.supports_syncterm_cache();
 };
 
@@ -63,7 +63,11 @@ SyncTERMCache.prototype.upload = function (fname, cache_fname)
 {
 	if (cache_fname === undefined)
 		cache_fname = fname;
-	var path = js.exec_dir + '/' + fname;
+	var path;
+	if (fname[0] != '/' && fname[1] != ':')
+		path = js.exec_dir + '/' + fname;
+	else
+		path = fname;
 	if (this.supported === undefined)
 		this.supported = this.supports_syncterm_cache();
 	if (!this.supported)
@@ -71,27 +75,48 @@ SyncTERMCache.prototype.upload = function (fname, cache_fname)
 
 	// Read file MD5
 	var f = new File(path);
+	if (!f.open("rb", true))
+		return false;
 	var hash = f.md5_hex;
-	if (typeof hash !== 'string')
+	if (typeof hash !== 'string') {
+		f.close();
 		return false;
-	if (hash.length != 32)
+	}
+	if (hash.length != 32) {
+		f.close();
 		return false;
+	}
 
 	// Check for the file in the cache...
-	console.write('\x1b_SyncTERM:C;L;cache_fname\x1b\\');
+	console.write('\x1b_SyncTERM:C;L;'+cache_fname+'\x1b\\');
 	var lst = read_apc();
 	var idx = lst.indexOf('\n' + cache_fname + '\t');
 	if (idx !== -1) {
 		idx += 2;
 		idx += cache_fname.length;
-		if (hash == lst.substr(idx, idx + 32))
+		if (hash == lst.substr(idx, idx + 32)) {
+			f.close();
 			return true;
+		}
 	}
 
-	if (!f.open("rb", true))
-		return false;
 	f.base64 = true;
-	var buf = "\x1b_SyncTERM:C;S;"+cache_fname+";"+f.read()+"\x1b\\";
+	console.write("\x1b_SyncTERM:C;S;"+cache_fname+";");
+	var buf;
+	while((!js.terminated) && bbs.online) {
+		var rdlen = console.output_buffer_space;
+		if (rdlen < 4) {
+			mswait(1);
+			continue;
+		}
+		rdlen = parseInt(rdlen / 4, 10);
+		rdlen *= 3;
+		buf = f.read(rdlen);
+		if (buf.length === 0)
+			break;
+		console.write(buf);
+	}
+	console.write("\x1b\\");
 	f.close();
 	return true;
 }
