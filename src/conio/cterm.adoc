@@ -403,8 +403,84 @@ does not support more than 255 values per colour channel
 and assumes it is correctly using the BT.709 gamma
 transfer.
 
+	`SyncTERM:C;DrawJXL Ps... Ps1` Draw a JPEG XL from Cache (`CTDJFC`)::
+	Draws a JPEG XL from the cache directory on the screen.
+	`Ps1` is the filename and is required.  Arguments for
+	`Ps` are optional.  The following options can be included
+	(separated by semi-colons):
++
+--
+		`SX=#`:::
+		Sets the left X position in the specified image
+		to copy from.  Default = 0.
+
+		`SY=#`:::
+		Sets the top Y position in the specified image
+		to copy from.  Default = 0.
+
+		`SW=#`:::
+		Sets the width of the portion of the image to
+		copy.  Default = Image width - `SX`
+
+		`SH=#`:::
+		Sets the height of the portion of the image to
+		copy.  Default = Image height - `SH`
+
+		`DX=#`:::
+		Sets the X position on the screen to draw the
+		image at.  Default = 0.
+
+		`DY=#`:::
+		Sets the Y position on the screen to draw the
+		image at.  Default = 0.
+
+		`MX=#`:::
+		Sets the X position in the mask to start
+		applying from.  Default = 0.
+
+		`MY=#`:::
+		Sets the Y position in the mask to start
+		applying from.  Default = 0.
+
+		`MW=#`:::
+		Sets the overall width of the mask (not the
+		width to apply).  If `MFILE` is not specified,
+		and a mask is (ie: using `MASK=`), this is
+		required.  If `MFILE` is specified, the width
+		is read from the file.
+
+		`MH=#`:::
+		Sets the overall height of the mask (not the
+		height to apply).  If MFILE is not specified,
+		and a mask is (ie: using MASK=), this is
+		required.  If MFILE is specified, the width
+		is read from the file.
+
+		`MFILE=<filename>`:::
+		Specifies a filename in the cache directory of
+		a PBM file specifying a mask of which pixels
+		to copy.  Any pixel set to black (ie: 1) in the
+		PBM will be drawn from the source image.  Pixels
+		set to white (ie: 0) will be left untouched.
+
+		`MASK=<maskbits>`:::
+		Specifies a base64-encoded bitmap, each set bit
+		will be drawn from the source image, cleared
+		bits will not be drawn.  Requires MW= and MH=
+		to be specified.
+
+		`MBUF`:::
+		Uses the loaded mask buffer.
+--
++
+
 	`SyncTERM:C;LoadPPM Ps... Ps0` Load a PPM to Buffer (`CTLPTB`)::
 	Loads a PPM to a buffer.  Ps0 is the filename
+		`B=#`:::
+		Selects the buffer (0 or 1 only) to paste from.
+
+	`SyncTERM:C;LoadJXL Ps... Ps0` Load a JPEG XL to Buffer (`CTLJTB`)::
+	Loads a JPEG XL to a buffer.  Ps0 is the filename
 		`B=#`:::
 		Selects the buffer (0 or 1 only) to paste from.
 
