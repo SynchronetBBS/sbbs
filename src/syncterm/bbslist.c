@@ -1094,13 +1094,13 @@ edit_name(char *itemname, struct bbslist **list, str_list_t inifile, bool edit_t
 		uifc.helpbuf = "`Directory Entry Name`\n\n"
 		    "Enter the name of the entry as it is to appear in the directory.";
 		if (itemname)
-			strcpy(tmp, itemname);
+			strlcpy(tmp, itemname, sizeof(tmp));
 		if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Name", tmp, LIST_NAME_MAX, K_EDIT) == -1)
 			return false;
 		check_exit(false);
 		if (quitting)
 			return false;
-		if ((edit_to_add || stricmp(tmp, itemname)) && list_name_check(list, tmp, NULL, false)) {
+		if ((edit_to_add || (itemname != NULL && stricmp(tmp, itemname))) && list_name_check(list, tmp, NULL, false)) {
 			uifc.helpbuf = "`Entry Name Already Exists`\n\n"
 			    "An entry with that name already exists in the directory.\n"
 			    "Please choose a unique name.\n";

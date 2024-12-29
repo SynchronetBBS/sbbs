@@ -271,6 +271,7 @@ modem_connect(struct bbslist *bbs)
 		/* Drain modem output buffer */
 		while (comReadByte(com, (uchar*)respbuf))
 			;
+		respbuf[0] = 0;
 
 		if (!bbs->hidepopups)
 			uifc.pop("Initializing...");

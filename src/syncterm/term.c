@@ -3088,8 +3088,8 @@ read_jxl(const char *fn)
 	struct xpmapping *map = xpmap(fn, XPMAP_READ);
 	struct ciolib_pixels *pret = NULL;
 	uint8_t         *pbuf = NULL;
-	uintmax_t        width;
-	uintmax_t        height;
+	uintmax_t        width = 0;
+	uintmax_t        height = 0;
 
 	if (map == NULL)
 		return map;
@@ -3151,15 +3151,22 @@ read_jxl(const char *fn)
 #endif
 				break;
 			case JXL_DEC_NEED_IMAGE_OUT_BUFFER:
+				if (width == 0 || height == 0 || width >= 0x40000000 || hewight >= 0x40000000) {
+					done = true;
+					break;
+				}
 				if (Jxl.DecoderImageOutBufferSize(dec, &format, &sz) != JXL_DEC_SUCCESS) {
 					done = true;
 					break;
 				}
+				// This may break things, but Coverity wants it.
+				free(pbuf);
 				pbuf = malloc(sz);
 				if (pbuf == NULL) {
 					done = true;
 					break;
 				}
+				freepixels(pret);
 				pret = alloc_ciolib_pixels(width, height);
 				if (pret == NULL) {
 					done = true;
