@@ -469,4 +469,5 @@ else {
 		console.ctrlkey_passthru = opt;
 	}
 }
+console.line_counter=0;
 console.ungetstr(' ');
