@@ -3706,7 +3706,8 @@ show_bbslist(char *current, int connected)
 						asprintf(&p,
 						    "`SyncTERM Build Options`\n\n"
 						    "%s Cryptlib (ie: SSH and TLS)\n"
-						    "%s Operation Overkill ][ Terminal\n\n"
+						    "%s Operation Overkill ][ Terminal\n"
+						    "%s JPEG XL support\n\n"
 						    "Video\n"
 						    "    %s SDL\n"
 						    "    %s X11 Support\n"
@@ -3729,6 +3730,11 @@ show_bbslist(char *current, int connected)
 						    "[ ]",
 #else
 						    "[`\xFB`]",
+#endif
+#ifdef WITH_JPEG_XL
+						    "[`\xFB`]",
+#else
+						    "[ ]",
 #endif
 #ifdef WITH_SDL
 						    "[`\xFB`]",
