@@ -35,6 +35,20 @@ else
  CRYPT_LIBS += $(CRYPT_LIB)
 endif
 
+ifndef win
+ ifeq ($(shell pkg-config libjxl --exists && echo YES), YES)
+  CFLAGS += $(shell pkg-config libjxl --cflags)
+  EXTRA_LIBS += $(shell pkg-config libjxl --libs)
+  CFLAGS += -DWITH_JPEG_XL
+  OBJS += $(MTOBJODIR)$(DIRSEP)libjxl$(OFILE)
+  ifeq ($(shell pkg-config libjxl_threads --exists && echo YES), YES)
+   CFLAGS += $(shell pkg-config libjxl_threads --cflags)
+   EXTRA_LIBS += $(shell pkg-config libjxl_threads --libs)
+   CFLAGS += -DWITH_JPEG_XL_THREADS
+  endif
+ endif
+endif
+
 $(MTOBJODIR)$(DIRSEP)conn$(OFILE): $(CRYPT_LIBS)
 $(MTOBJODIR)$(DIRSEP)ssh$(OFILE): $(CRYPT_LIBS)
 $(MTOBJODIR)$(DIRSEP)syncterm$(OFILE): $(CRYPT_LIBS) $(CIOLIB-MT)
