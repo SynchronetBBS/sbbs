@@ -21,6 +21,18 @@ $(WRAPTEST): $(MTOBJODIR)/wraptest.o $(DEPS) | $(EXEODIR)
 	@echo Linking $@
 	$(QUIET)$(CC) -o $@ $(LDFLAGS) $(MT_LDFLAGS) $^ $(XPDEV-MT_LIB_BUILD) -lm $(XPDEV-MT_LIBS)
 
+$(SOPENFILE): $(MTOBJODIR)/sopenfile.o $(DEPS) | $(EXEODIR)
+	@echo Linking $@
+	$(QUIET)$(CC) -o $@ $(LDFLAGS) $(MT_LDFLAGS) $^ $(XPDEV-MT_LIB_BUILD) -lm $(XPDEV-MT_LIBS)
+
+$(LOCKFILE): $(OBJODIR)/lockfile.o $(DEPS) | $(EXEODIR)
+	@echo Linking $@
+	$(QUIET)$(CC) -o $@ $(LDFLAGS) $^ $(XPDEV_LIB_BUILD) -lm $(XPDEV-LIBS)
+
+$(SHOWLOCKS): $(OBJODIR)/showlocks.o $(DEPS) | $(EXEODIR)
+	@echo Linking $@
+	$(QUIET)$(CC) -o $@ $(LDFLAGS) $^ $(XPDEV_LIB_BUILD) -lm $(XPDEV-LIBS)
+
 $(XPTIME): $(OBJODIR)/xptime.o $(XPDEV_LIB_BUILD)
 	@echo Linking $@
 	$(QUIET)$(CC) -o $@ $(LDFLAGS) $^ $(XPDEV_LIB_BUILD) -lm
