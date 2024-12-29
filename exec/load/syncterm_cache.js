@@ -94,7 +94,7 @@ SyncTERMCache.prototype.upload = function (fname, cache_fname)
 	if (idx !== -1) {
 		idx += 2;
 		idx += cache_fname.length;
-		if (hash == lst.substr(idx, idx + 32)) {
+		if (hash == lst.substr(idx, 32)) {
 			f.close();
 			return true;
 		}
