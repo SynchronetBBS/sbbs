@@ -28,9 +28,9 @@ bool load_jxl_funcs(void)
 	Jxl.ResizableParallelRunnerDestroy = JxlResizableParallelRunnerDestroy;
 	Jxl.ResizableParallelRunnerSetThreads = JxlResizableParallelRunnerSetThreads;
 	Jxl.ResizableParallelRunnerSuggestThreads = JxlResizableParallelRunnerSuggestThreads;
-	Jxl.status = JXL_STATUS_NOTHREADS;
-#else
 	Jxl.status = JXL_STATUS_OK;
+#else
+	Jxl.status = JXL_STATUS_NOTHREADS;
 #endif
 
 	return true;

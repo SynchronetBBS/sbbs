@@ -36,15 +36,18 @@ else
 endif
 
 ifdef win
- CFLAGS += -I${3RDP_ROOT}/win32.release/libjxl/include -DJXL_THREADS_STATIC_DEFINE -DJXL_STATIC_DEFINE
- LDFLAGS += -L${3RDP_ROOT}/${os}.release/libjxl/lib
- EXTRA_LIBS += -ljxl
- #EXTRA_LIBS += -ljxl_threads
- EXTRA_LIBS += -lbrotlidec
- EXTRA_LIBS += -lbrotlicommon
- EXTRA_LIBS += -lhwy
- CFLAGS += -DWITH_JPEG_XL -DWITH_STATIC_JXL
- OBJS += $(MTOBJODIR)$(DIRSEP)libjxl$(OFILE)
+ ifeq (${os}, "win32")
+  CFLAGS += -I${3RDP_ROOT}/win32.release/libjxl/include -DJXL_THREADS_STATIC_DEFINE -DJXL_STATIC_DEFINE
+  LDFLAGS += -L${3RDP_ROOT}/${os}.release/libjxl/lib -static-libstdc++ -static-libgcc
+  EXTRA_LIBS += -ljxl
+  EXTRA_LIBS += -ljxl_threads
+  EXTRA_LIBS += -lbrotlidec
+  EXTRA_LIBS += -lbrotlicommon
+  EXTRA_LIBS += -lhwy
+  CFLAGS += -DWITH_JPEG_XL -DWITH_STATIC_JXL
+  CFLAGS += -DWITH_JPEG_XL_THREADS
+  OBJS += $(MTOBJODIR)$(DIRSEP)libjxl$(OFILE)
+ endif
 else
  ifeq ($(shell pkg-config libjxl --exists && echo YES), YES)
   CFLAGS += $(shell pkg-config libjxl --cflags)

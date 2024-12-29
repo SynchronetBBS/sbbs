@@ -3094,7 +3094,6 @@ read_jxl(const char *fn)
 	if (map == NULL)
 		return map;
 
-	// Decode
 	JxlDecoderStatus st;
 	JxlBasicInfo info;
 	size_t sz = 0;
@@ -3146,8 +3145,9 @@ read_jxl(const char *fn)
 				width = info.xsize;
 				height = info.ysize;
 #ifdef WITH_JPEG_XL_THREADS
-				if (Jxl.status == JXL_STATUS_OK)
+				if (Jxl.status == JXL_STATUS_OK && rpr) {
 					Jxl.ResizableParallelRunnerSetThreads(rpr, Jxl.ResizableParallelRunnerSuggestThreads(info.xsize, info.ysize));
+				}
 #endif
 				break;
 			case JXL_DEC_NEED_IMAGE_OUT_BUFFER:
@@ -3165,7 +3165,10 @@ read_jxl(const char *fn)
 					done = true;
 					break;
 				}
-				Jxl.DecoderSetImageOutBuffer(dec, &format, pbuf, sz);
+				if (Jxl.DecoderSetImageOutBuffer(dec, &format, pbuf, sz) != JXL_DEC_SUCCESS) {
+					done = true;
+					break;
+				}
 				break;
 			case JXL_DEC_FULL_IMAGE:
 				// Got a single frame... this is not necessarily the whole image though.

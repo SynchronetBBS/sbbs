@@ -9,10 +9,10 @@
 #  ifndef JXL_CMS_EXPORT
 #    ifdef jxl_cms_EXPORTS
         /* We are building this library */
-#      define JXL_CMS_EXPORT __declspec(dllexport)
+#      define JXL_CMS_EXPORT 
 #    else
         /* We are using this library */
-#      define JXL_CMS_EXPORT __declspec(dllimport)
+#      define JXL_CMS_EXPORT 
 #    endif
 #  endif
 
