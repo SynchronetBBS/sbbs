@@ -217,7 +217,7 @@ struct cterminal {
 	int					sx_orig_cursor;	// Original value of cterm->cursor
 
 	/* APC Handler */
-	void				(*apc_handler)(char *strbuf, size_t strlen, void *cbdata);
+	void				(*apc_handler)(char *strbuf, size_t strlen, char *retbuf, size_t retsize, void *cbdata);
 	void				*apc_handler_data;
 
 	/* Mouse state change callback */

@@ -4427,7 +4427,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 					switch (cterm->string) {
 						case CTERM_STRING_APC:
 							if (cterm->apc_handler)
-								cterm->apc_handler(cterm->strbuf, cterm->strbuflen, cterm->apc_handler_data);
+								cterm->apc_handler(cterm->strbuf, cterm->strbuflen, retbuf, retsize, cterm->apc_handler_data);
 							break;
 						case CTERM_STRING_DCS:
 							if (cterm->sixel == SIXEL_STARTED)

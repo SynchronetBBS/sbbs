@@ -517,6 +517,12 @@ transfer.
 		`B=#`:::
 		Selects the buffer (0 or 1 only) to paste from.
 
+	`SyncTERM:Q;JXL` Query JXL Support (`CTQJS`)::
+	Queries support for the JXL image format.
+	SyncTERM will respond with a CTerm APC State Report of the form
+	`CSI = 1 ; pR - n`
+	pR is 0 if JXL support is not available, and 1 if it is.
+
 === `ESC c` Reset to Initial State (`RIS`)
 Resets all the terminal settings, clears the screen, and homes
 the cursor.

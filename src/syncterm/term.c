@@ -92,7 +92,6 @@ static uint8_t pnm_gamma[256] = {
 	254, 255, 255
 };
 static uint8_t pnm_gamma_max = 255;
-static bool jxl_support = false;
 
 void
 get_cterm_size(int *cols, int *rows, int ns)
@@ -3098,7 +3097,6 @@ read_jxl(const char *fn)
 	// Decode
 	JxlDecoderStatus st;
 	JxlBasicInfo info;
-	JxlColorEncoding ce;
 	size_t sz = 0;
 	JxlPixelFormat format = {
 		.num_channels = 3,
@@ -3106,7 +3104,6 @@ read_jxl(const char *fn)
 		.endianness = JXL_NATIVE_ENDIAN,
 		.align = 1
 	};
-	Jxl.ColorEncodingSetToSRGB(&ce, JXL_FALSE);
 	JxlDecoder *dec = Jxl.DecoderCreate(NULL);
 	if (dec == NULL) {
 		xpunmap(map);
@@ -3130,7 +3127,7 @@ read_jxl(const char *fn)
 		return NULL;
 	}
 	Jxl.DecoderCloseInput(dec);
-	if (Jxl.DecoderSubscribeEvents(dec, JXL_DEC_BASIC_INFO | JXL_DEC_COLOR_ENCODING | JXL_DEC_FULL_IMAGE) != JXL_DEC_SUCCESS) {
+	if (Jxl.DecoderSubscribeEvents(dec, JXL_DEC_BASIC_INFO | JXL_DEC_FULL_IMAGE) != JXL_DEC_SUCCESS) {
 		xpunmap(map);
 		Jxl.DecoderDestroy(dec);
 		return NULL;
@@ -3152,13 +3149,6 @@ read_jxl(const char *fn)
 				if (Jxl.status == JXL_STATUS_OK)
 					Jxl.ResizableParallelRunnerSetThreads(rpr, Jxl.ResizableParallelRunnerSuggestThreads(info.xsize, info.ysize));
 #endif
-				break;
-			case JXL_DEC_COLOR_ENCODING:
-				// TODO...
-				if (Jxl.DecoderSetPreferredColorProfile(dec, &ce) != JXL_DEC_SUCCESS) {
-					done = true;
-					break;
-				}
 				break;
 			case JXL_DEC_NEED_IMAGE_OUT_BUFFER:
 				if (Jxl.DecoderImageOutBufferSize(dec, &format, &sz) != JXL_DEC_SUCCESS) {
@@ -3637,7 +3627,7 @@ done:
 }
 
 static void
-apc_handler(char *strbuf, size_t slen, void *apcd)
+apc_handler(char *strbuf, size_t slen, char *retbuf, size_t retsize, void *apcd)
 {
 	char            fn[MAX_PATH + 1];
 	char            fn_root[MAX_PATH + 1];
@@ -3834,6 +3824,29 @@ apc_handler(char *strbuf, size_t slen, void *apcd)
 	}
 	else if (strncmp(strbuf, "SyncTERM:P;Paste", 16) == 0) {
 		paste_pixmap(strbuf, slen, fn, apcd);
+	}
+	else if (strncmp(strbuf, "SyncTERM:Q;JXL", 14) == 0) {
+		size_t rlen = strlen(retbuf);
+
+		if (rlen + 9 < retsize) {
+#ifdef WITH_JPEG_XL
+			if (cio_api.options & CONIO_OPT_SET_PIXEL) {
+				switch(Jxl.status) {
+					case JXL_STATUS_OK:
+					case JXL_STATUS_NOTHREADS:
+						memcpy(&retbuf[rlen], "\x1b[=1;1-n", 8);
+						break;
+					default:
+						memcpy(&retbuf[rlen], "\x1b[=1;0-n", 8);
+						break;
+				}
+			}
+			else
+				memcpy(&retbuf[rlen], "\x1b[=1;0-n", 8);
+#else
+			memcpy(&retbuf[rlen], "\x1b[=1;0-n", 8);
+#endif
+		}
 	}
 
 	// TODO: Copy PBM mask to memory
@@ -4152,7 +4165,8 @@ doterm(struct bbslist *bbs)
 	ooii_buf[0] = 0;
 #endif
 #ifdef WITH_JPEG_XL
-	jxl_support = load_jxl_funcs();
+	if (cio_api.options & CONIO_OPT_SET_PIXEL)
+		load_jxl_funcs();
 #endif
 
         /* Main input loop */
