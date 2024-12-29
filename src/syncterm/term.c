@@ -46,7 +46,9 @@
 #ifdef WITH_JPEG_XL
 #include <jxl/decode.h>
 #include <jxl/encode.h>
+#ifdef WITH_JPEG_XL_THREADS
 #include <jxl/resizable_parallel_runner.h>
+#endif
 #include "xpmap.h"
 #endif
 
@@ -3113,6 +3115,7 @@ read_jxl(const char *fn)
 		xpunmap(map);
 		return NULL;
 	}
+#ifdef WITH_JPEG_XL_THREADS
 	void *rpr = JxlResizableParallelRunnerCreate(NULL);
 	if (rpr) {
 		if (JxlDecoderSetParallelRunner(dec, JxlResizableParallelRunner, rpr) != JXL_DEC_SUCCESS) {
@@ -3120,6 +3123,7 @@ read_jxl(const char *fn)
 			rpr = NULL;
 		}
 	}
+#endif
 	if (JxlDecoderSetInput(dec, map->addr, map->size) != JXL_DEC_SUCCESS) {
 		xpunmap(map);
 		JxlDecoderDestroy(dec);
@@ -3144,7 +3148,9 @@ read_jxl(const char *fn)
 				}
 				width = info.xsize;
 				height = info.ysize;
+#ifdef WITH_JPEG_XL_THREADS
 				JxlResizableParallelRunnerSetThreads(rpr, JxlResizableParallelRunnerSuggestThreads(info.xsize, info.ysize));
+#endif
 				break;
 			case JXL_DEC_COLOR_ENCODING:
 				// TODO...
@@ -3196,8 +3202,10 @@ read_jxl(const char *fn)
 		}
 	}
 	free(pbuf);
+#ifdef WITH_JPEG_XL_THREADS
 	if (rpr)
 		JxlResizableParallelRunnerDestroy(rpr);
+#endif
 	JxlDecoderReleaseInput(dec);
 	xpunmap(map);
 	JxlDecoderDestroy(dec);
