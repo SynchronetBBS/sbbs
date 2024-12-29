@@ -42,7 +42,7 @@ int main()
 	char	fpath[MAX_PATH+1];
 	char*	path = ".";
 	char*	glob_pattern = "*wrap*";
-	int		i;
+	intptr_t	i;
 	int		ch;
 	uint	u;
 	time_t	t;
@@ -66,7 +66,7 @@ int main()
 	do {
 		rwlock_t lock;
 		if (!rwlock_init(&lock)) {
-			printf("rwlock_init() failed (%d)\n", i);
+			printf("rwlock_init() failed (%d)\n", errno);
 			continue;
 		}
 		// Start two copies of the rdlock thread...
@@ -238,7 +238,7 @@ int main()
 			printf("%s\n",g.gl_pathv[u]);
 		globfree(&g);
 	} else
-		printf("glob(%s) returned %d\n",glob_pattern,i);
+		printf("glob(%s) returned %d\n",glob_pattern,(int)i);
 
 	/* opendir (and other directory functions) test */
 	printf("\nopendir(%s) test\n",path);
@@ -247,7 +247,7 @@ int main()
 	dir=opendir(path);
 	while(dir!=NULL && (dirent=readdir(dir))!=NULL) {
 		t=fdate(dirent->d_name);
-		printf("%.24s %10lu  %06o  %s%c\n"
+		printf("%.24s %10" PRIuOFF "  %06o  %s%c\n"
 			,ctime(&t)
 			,flength(dirent->d_name)
 			,getfattr(dirent->d_name)
@@ -257,7 +257,7 @@ int main()
 	}
 	if(dir!=NULL)
 		closedir(dir);
-	printf("\nFree disk space: %lu kbytes\n",getfreediskspace(path,1024));
+	printf("\nFree disk space: %" PRIu64 " kbytes\n",getfreediskspace(path,1024));
 
 	/* Thread (and inter-process communication) test */
 	printf("\nSemaphore test\n");
@@ -433,8 +433,9 @@ static void sopen_test_thread(void* arg)
 static void sopen_child_thread(void* arg)
 {
 	int fd;
+	int instance = (intptr_t)arg;
 
-	printf("sopen_child_thread: %d begin\n",(int)arg);
+	printf("sopen_child_thread: %d begin\n", instance);
 	if((fd=sopen(LOCK_FNAME,O_RDWR,SH_DENYRW))!=-1) {
 		if(arg)
 			printf("!FAILURE: was able to reopen in child thread\n");
@@ -444,7 +445,7 @@ static void sopen_child_thread(void* arg)
 		close(fd);
 	} else if(arg==0)
 		perror(LOCK_FNAME);
-	printf("sopen_child_thread: %d end\n",(int)arg);
+	printf("sopen_child_thread: %d end\n", instance);
 }
 
 static void rwlock_rdlock_thread(void *arg)
