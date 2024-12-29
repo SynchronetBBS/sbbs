@@ -59,6 +59,12 @@ if(NOT WITHOUT_OOII)
 	list(APPEND SOURCE ooii.c ooii_bmenus.c ooii_cmenus.c ooii_logons.c ooii_sounds.c)
 endif()
 
+if(NOT WITHOUT_JPEG_XL)
+	if (JPEG_XL_FOUND)
+		list(APPEND SOURCE libjxl.c)
+	endif()
+endif()
+
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 	list(APPEND SOURCE DarwinWrappers.m)
 	find_library(FOUNDATION_LIBRARY Foundation)

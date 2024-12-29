@@ -44,11 +44,7 @@
 #include "ripper.h"
 
 #ifdef WITH_JPEG_XL
-#include <jxl/decode.h>
-#include <jxl/encode.h>
-#ifdef WITH_JPEG_XL_THREADS
-#include <jxl/resizable_parallel_runner.h>
-#endif
+#include "libjxl.h"
 #include "xpmap.h"
 #endif
 
@@ -95,7 +91,8 @@ static uint8_t pnm_gamma[256] = {
 	248, 249, 249, 250, 250, 251, 251, 251, 252, 252, 253, 253, 254,
 	254, 255, 255
 };
-uint8_t pnm_gamma_max = 255;
+static uint8_t pnm_gamma_max = 255;
+static bool jxl_support = false;
 
 void
 get_cterm_size(int *cols, int *rows, int ns)
@@ -3109,58 +3106,62 @@ read_jxl(const char *fn)
 		.endianness = JXL_NATIVE_ENDIAN,
 		.align = 1
 	};
-	JxlColorEncodingSetToSRGB(&ce, JXL_FALSE);
-	JxlDecoder *dec = JxlDecoderCreate(NULL);
+	Jxl.ColorEncodingSetToSRGB(&ce, JXL_FALSE);
+	JxlDecoder *dec = Jxl.DecoderCreate(NULL);
 	if (dec == NULL) {
 		xpunmap(map);
 		return NULL;
 	}
 #ifdef WITH_JPEG_XL_THREADS
-	void *rpr = JxlResizableParallelRunnerCreate(NULL);
-	if (rpr) {
-		if (JxlDecoderSetParallelRunner(dec, JxlResizableParallelRunner, rpr) != JXL_DEC_SUCCESS) {
-			JxlResizableParallelRunnerDestroy(rpr);
-			rpr = NULL;
+	void *rpr = NULL;
+	if (Jxl.status == JXL_STATUS_OK) {
+		rpr = Jxl.ResizableParallelRunnerCreate(NULL);
+		if (rpr) {
+			if (Jxl.DecoderSetParallelRunner(dec, Jxl.ResizableParallelRunner, rpr) != JXL_DEC_SUCCESS) {
+				Jxl.ResizableParallelRunnerDestroy(rpr);
+				rpr = NULL;
+			}
 		}
 	}
 #endif
-	if (JxlDecoderSetInput(dec, map->addr, map->size) != JXL_DEC_SUCCESS) {
+	if (Jxl.DecoderSetInput(dec, map->addr, map->size) != JXL_DEC_SUCCESS) {
 		xpunmap(map);
-		JxlDecoderDestroy(dec);
+		Jxl.DecoderDestroy(dec);
 		return NULL;
 	}
-	JxlDecoderCloseInput(dec);
-	if (JxlDecoderSubscribeEvents(dec, JXL_DEC_BASIC_INFO | JXL_DEC_COLOR_ENCODING | JXL_DEC_FULL_IMAGE) != JXL_DEC_SUCCESS) {
+	Jxl.DecoderCloseInput(dec);
+	if (Jxl.DecoderSubscribeEvents(dec, JXL_DEC_BASIC_INFO | JXL_DEC_COLOR_ENCODING | JXL_DEC_FULL_IMAGE) != JXL_DEC_SUCCESS) {
 		xpunmap(map);
-		JxlDecoderDestroy(dec);
+		Jxl.DecoderDestroy(dec);
 		return NULL;
 	}
 	for (bool done = false; !done;) {
-		st = JxlDecoderProcessInput(dec);
+		st = Jxl.DecoderProcessInput(dec);
 		switch(st) {
 			case JXL_DEC_ERROR:
 				done = true;
 				break;
 			case JXL_DEC_BASIC_INFO:
-				if (JxlDecoderGetBasicInfo(dec, &info) != JXL_DEC_SUCCESS) {
+				if (Jxl.DecoderGetBasicInfo(dec, &info) != JXL_DEC_SUCCESS) {
 					done = true;
 					break;
 				}
 				width = info.xsize;
 				height = info.ysize;
 #ifdef WITH_JPEG_XL_THREADS
-				JxlResizableParallelRunnerSetThreads(rpr, JxlResizableParallelRunnerSuggestThreads(info.xsize, info.ysize));
+				if (Jxl.status == JXL_STATUS_OK)
+					Jxl.ResizableParallelRunnerSetThreads(rpr, Jxl.ResizableParallelRunnerSuggestThreads(info.xsize, info.ysize));
 #endif
 				break;
 			case JXL_DEC_COLOR_ENCODING:
 				// TODO...
-				if (JxlDecoderSetPreferredColorProfile(dec, &ce) != JXL_DEC_SUCCESS) {
+				if (Jxl.DecoderSetPreferredColorProfile(dec, &ce) != JXL_DEC_SUCCESS) {
 					done = true;
 					break;
 				}
 				break;
 			case JXL_DEC_NEED_IMAGE_OUT_BUFFER:
-				if (JxlDecoderImageOutBufferSize(dec, &format, &sz) != JXL_DEC_SUCCESS) {
+				if (Jxl.DecoderImageOutBufferSize(dec, &format, &sz) != JXL_DEC_SUCCESS) {
 					done = true;
 					break;
 				}
@@ -3174,7 +3175,7 @@ read_jxl(const char *fn)
 					done = true;
 					break;
 				}
-				JxlDecoderSetImageOutBuffer(dec, &format, pbuf, sz);
+				Jxl.DecoderSetImageOutBuffer(dec, &format, pbuf, sz);
 				break;
 			case JXL_DEC_FULL_IMAGE:
 				// Got a single frame... this is not necessarily the whole image though.
@@ -3204,11 +3205,11 @@ read_jxl(const char *fn)
 	free(pbuf);
 #ifdef WITH_JPEG_XL_THREADS
 	if (rpr)
-		JxlResizableParallelRunnerDestroy(rpr);
+		Jxl.ResizableParallelRunnerDestroy(rpr);
 #endif
-	JxlDecoderReleaseInput(dec);
+	Jxl.DecoderReleaseInput(dec);
 	xpunmap(map);
-	JxlDecoderDestroy(dec);
+	Jxl.DecoderDestroy(dec);
 	return pret;
 }
 
@@ -4149,6 +4150,9 @@ doterm(struct bbslist *bbs)
 	zrqbuf[0] = 0;
 #ifndef WITHOUT_OOII
 	ooii_buf[0] = 0;
+#endif
+#ifdef WITH_JPEG_XL
+	jxl_support = load_jxl_funcs();
 #endif
 
         /* Main input loop */
