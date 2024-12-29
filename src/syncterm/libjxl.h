@@ -20,7 +20,6 @@ enum JxlStatus {
 };
 
 struct jxlfuncs {
-	void (*ColorEncodingSetToSRGB)(JxlColorEncoding*, JXL_BOOL);
 	void (*DecoderCloseInput)(JxlDecoder*);
 	JxlDecoder *(*DecoderCreate)(const JxlMemoryManager*);
 	void (*DecoderDestroy)(JxlDecoder*);

@@ -8,7 +8,6 @@ struct jxlfuncs Jxl;
 #ifdef WITH_STATIC_JXL
 bool load_jxl_funcs(void)
 {
-	Jxl.ColorEncodingSetToSRGB = JxlColorEncodingSetToSRGB;
 	Jxl.DecoderCloseInput = JxlDecoderCloseInput;
 	Jxl.DecoderCreate = JxlDecoderCreate;
 	Jxl.DecoderDestroy = JxlDecoderDestroy;
@@ -59,10 +58,6 @@ bool load_jxl_funcs(void)
 	if ((jxl_dll = xp_dlopen(libnames, RTLD_LAZY | RTLD_GLOBAL, JPEGXL_MAJOR_VERSION)) == NULL)
 		return false;
 
-	if ((Jxl.ColorEncodingSetToSRGB = xp_dlsym(jxl_dll, JxlColorEncodingSetToSRGB)) == NULL) {
-		xp_dlclose(jxl_dll);
-		return false;
-	}
 	if ((Jxl.DecoderCloseInput = xp_dlsym(jxl_dll, JxlDecoderCloseInput)) == NULL) {
 		xp_dlclose(jxl_dll);
 		return false;
