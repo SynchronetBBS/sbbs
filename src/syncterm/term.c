@@ -3151,7 +3151,7 @@ read_jxl(const char *fn)
 #endif
 				break;
 			case JXL_DEC_NEED_IMAGE_OUT_BUFFER:
-				if (width == 0 || height == 0 || width >= 0x40000000 || hewight >= 0x40000000) {
+				if (width == 0 || height == 0 || width >= 0x40000000 || height >= 0x40000000) {
 					done = true;
 					break;
 				}
