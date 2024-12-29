@@ -1115,9 +1115,11 @@ edit_name(char *itemname, struct bbslist **list, str_list_t inifile, bool edit_t
 				check_exit(false);
 			}
 			else {
-				if (!edit_to_add)
-					iniRenameSection(&inifile, itemname, tmp);
-				strcpy(itemname, tmp);
+				if (itemname) {
+					if (!edit_to_add)
+						iniRenameSection(&inifile, itemname, tmp);
+					strcpy(itemname, tmp);
+				}
 				return true;
 			}
 		}
