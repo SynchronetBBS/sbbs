@@ -35,7 +35,17 @@ else
  CRYPT_LIBS += $(CRYPT_LIB)
 endif
 
-ifndef win
+ifdef win
+ CFLAGS += -I${3RDP_ROOT}/win32.release/libjxl/include -DJXL_THREADS_STATIC_DEFINE -DJXL_STATIC_DEFINE
+ LDFLAGS += -L${3RDP_ROOT}/${os}.release/libjxl/lib
+ EXTRA_LIBS += -ljxl
+ EXTRA_LIBS += -ljxl_threads
+ EXTRA_LIBS += -lbrotlidec
+ EXTRA_LIBS += -lbrotlicommon
+ EXTRA_LIBS += -lhwy
+ CFLAGS += -DWITH_JPEG_XL -DWITH_JPEG_XL_THREADS -DWITH_STATIC_JXL
+ OBJS += $(MTOBJODIR)$(DIRSEP)libjxl$(OFILE)
+else
  ifeq ($(shell pkg-config libjxl --exists && echo YES), YES)
   CFLAGS += $(shell pkg-config libjxl --cflags)
   EXTRA_LIBS += $(shell pkg-config libjxl --libs)
@@ -126,7 +136,7 @@ $(MTOBJODIR)$(DIRSEP)ciolib_res$(OFILE): ${CIOLIB-MT}
 
 $(SYNCTERM): $(CRYPT_DEPS) $(EXEODIR) $(OBJS) $(BUILD_DEPENDS)
 	@echo Linking $@
-	${QUIET}$(CC) $(LDFLAGS) $(MT_LDFLAGS) $(OBJS) -o $@ $(UIFC-MT_LIBS) $(EXTRA_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS) $(ENCODE_LIBS) $(HASH_LIBS)
+	${QUIET}$(CXX) $(LDFLAGS) $(MT_LDFLAGS) $(OBJS) -o $@ $(UIFC-MT_LIBS) $(EXTRA_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS) $(ENCODE_LIBS) $(HASH_LIBS)
 ifeq ($(os),darwin)
 	-${QUIET}mkdir $(EXEODIR)/SyncTERM.app
 	-${QUIET}mkdir $(EXEODIR)/SyncTERM.app/Contents
