@@ -179,7 +179,7 @@ endif
 # Compiler-specific options
 CFLAGS	+=	-MMD -MP
 CC		?=	gcc
-CCPRE	?= ${shell if [ `echo __clang__ | $(CC) -E - | grep -v '^\#'` != __clang__ ] ; then echo clang ; elif [ `echo __INTEL_COMPILER | $(CC) -E - | grep -v '^\#'` != __INTEL_COMPILER ] ; then echo icc ; else echo gcc ; fi}
+CCPRE	?= ${shell if [ `echo __clang__ | $(CC) -E - | grep -v '^#'` != __clang__ ] ; then echo clang ; elif [ `echo __INTEL_COMPILER | $(CC) -E - | grep -v '^#'` != __INTEL_COMPILER ] ; then echo icc ; else echo gcc ; fi}
 ifeq ($(CCPRE),clang)
  ifeq ($(CC),cc)
   CXX	:= c++
