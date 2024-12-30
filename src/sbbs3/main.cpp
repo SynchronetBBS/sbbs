@@ -3655,7 +3655,7 @@ bool sbbs_t::init()
 			unlock(nodefile,(cfg.node_num-1)*sizeof(node_t),sizeof(node_t));
 			break;
 		}
-		mswait(100);
+		FILE_RETRY_DELAY(i + 1);
 	}
 	if(cfg.node_misc&NM_CLOSENODEDAB) {
 		close(nodefile);
@@ -3984,7 +3984,7 @@ int sbbs_t::nopen(char *str, int access)
 		access|=O_BINARY;
     while(((file=sopen(str,access,share,DEFFILEMODE))==-1)
         && FILE_RETRY_ERRNO(errno) && count++<LOOP_NOPEN)
-	    SLEEP((count / 10) * 100);
+	    FILE_RETRY_DELAY(count);
     if(count>(LOOP_NOPEN/2) && count<=LOOP_NOPEN) {
         SAFEPRINTF2(logstr,"NOPEN COLLISION - File: \"%s\" Count: %d"
             ,str,count);

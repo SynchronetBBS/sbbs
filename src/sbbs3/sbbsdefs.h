@@ -514,7 +514,8 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define SEC_CID 	  10	/* Ten second pause for caller ID				*/
 #define SEC_RING	   6	/* Maximum seconds between rings				*/
 
-#define LOOP_NODEDAB  50	/* Retries on node.dab locking/unlocking		*/
+#define LOOP_NODEDAB  200	/* Retries on node.dab locking/unlocking		*/
+#define FILE_RETRY_DELAY(x) mswait(((x / 10) * 50) + xp_random(100))
 
 							/* String lengths								*/
 #define LEN_ALIAS		25	/* User alias									*/

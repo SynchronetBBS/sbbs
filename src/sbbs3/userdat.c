@@ -49,7 +49,6 @@
 static const char user_field_separator[2] = { USER_FIELD_SEPARATOR, '\0' };
 
 #define LOOP_USERDAT 200
-#define RETRY_DELAY(x) mswait(((x / 10) * 50) + xp_random(100))
 
 char* userdat_filename(scfg_t* cfg, char* path, size_t size)
 {
@@ -282,7 +281,7 @@ bool lockuserdat(int file, unsigned user_number)
 	unsigned attempt=0;
 	while(attempt < LOOP_USERDAT && lock(file, offset, USER_RECORD_LINE_LEN) == -1) {
 		attempt++;
-		RETRY_DELAY(attempt);
+		FILE_RETRY_DELAY(attempt);
 	}
 	return attempt < LOOP_USERDAT;
 }
@@ -1141,8 +1140,6 @@ int getnodedat(scfg_t* cfg, uint number, node_t *node, bool lockit, int* fdp)
 	if(filelength(file)>=(long)(number*sizeof(node_t))) {
 		number--;	/* make zero based */
 		for(count=0;count<LOOP_NODEDAB;count++) {
-			if(count)
-				mswait(100);
 			(void)lseek(file,(long)number*sizeof(node_t),SEEK_SET);
 			if(lockit
 				&& lock(file,(long)number*sizeof(node_t),sizeof(node_t))!=0) {
@@ -1157,6 +1154,7 @@ int getnodedat(scfg_t* cfg, uint number, node_t *node, bool lockit, int* fdp)
 				result = USER_SUCCESS;
 				break;
 			}
+			FILE_RETRY_DELAY(count + 1);
 		}
 	}
 
@@ -1191,7 +1189,7 @@ int putnodedat(scfg_t* cfg, uint number, node_t* node, bool closeit, int file)
 		(void)lseek(file,(long)number*sizeof(node_t),SEEK_SET);
 		if((wr=write(file,node,sizeof(node_t)))==sizeof(node_t))
 			break;
-		RETRY_DELAY(attempts + 1);
+		FILE_RETRY_DELAY(attempts + 1);
 	}
 	unlock(file,(long)number*sizeof(node_t),sizeof(node_t));
 	if(closeit)

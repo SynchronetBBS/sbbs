@@ -65,7 +65,7 @@ bool sbbs_t::putnodedat(uint number, node_t* node)
 		if(wr==sizeof(node_t))
 			break;
 		wrerr=errno;	/* save write error */
-		mswait(100);
+		FILE_RETRY_DELAY(attempts + 1);
 	}
 	unlocknodedat(number);
 
@@ -116,8 +116,6 @@ bool sbbs_t::putnodeext(uint number, char *ext)
 		return false;
 	}
 	for(count=0;count<LOOP_NODEDAB;count++) {
-		if(count)
-			mswait(100);
 		lseek(node_ext,(long)number*128L,SEEK_SET);
 		if(lock(node_ext,(long)number*128L,128)==-1) 
 			continue; 
@@ -125,6 +123,7 @@ bool sbbs_t::putnodeext(uint number, char *ext)
 		unlock(node_ext,(long)number*128L,128);
 		if(wr==128)
 			break;
+		FILE_RETRY_DELAY(count + 1);
 	}
 	close(node_ext);
 	node_ext=-1;
