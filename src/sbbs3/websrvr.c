@@ -2418,10 +2418,16 @@ static void js_add_queryval(http_session_t * session, char *key, char *value)
 		alen=len;
 	}
 
-	lprintf(LOG_DEBUG,"%04d %s [%s] Adding query value %s=%s at pos %d"
-		,session->socket, session->client.protocol, session->host_ip, key,value,alen);
-	val=STRING_TO_JSVAL(JS_NewStringCopyZ(session->js_cx,value));
-	JS_SetElement(session->js_cx, keyarray, alen, &val);
+	JSString* js_str = JS_NewStringCopyZ(session->js_cx,value);
+	if(js_str == NULL)
+		errprintf(LOG_ERR, WHERE, "%04d %s [%s] failed to create JSString for query value '%s', key=%s"
+			,session->socket, session->client.protocol, session->host_ip, value, key);
+	else {
+		lprintf(LOG_DEBUG,"%04d %s [%s] Adding query value %s=%s at pos %d"
+			,session->socket, session->client.protocol, session->host_ip, key,value,alen);
+		val=STRING_TO_JSVAL(js_str);
+		JS_SetElement(session->js_cx, keyarray, alen, &val);
+	}
 }
 
 static void js_add_cookieval(http_session_t * session, char *key, char *value)
@@ -2450,10 +2456,16 @@ static void js_add_cookieval(http_session_t * session, char *key, char *value)
 		alen=len;
 	}
 
-	lprintf(LOG_DEBUG,"%04d %s [%s] Adding cookie value %s=%s at pos %d"
-		,session->socket, session->client.protocol, session->host_ip, key,value,alen);
-	val=STRING_TO_JSVAL(JS_NewStringCopyZ(session->js_cx,value));
-	JS_SetElement(session->js_cx, keyarray, alen, &val);
+	JSString* js_str = JS_NewStringCopyZ(session->js_cx,value);
+	if(js_str == NULL)
+		errprintf(LOG_ERR, WHERE, "%04d %s [%s] failed to create JSString for cookie value '%s', key=%s"
+			,session->socket, session->client.protocol, session->host_ip, value, key);
+	else {
+		lprintf(LOG_DEBUG,"%04d %s [%s] Adding cookie value %s=%s at pos %d"
+			,session->socket, session->client.protocol, session->host_ip, key,value,alen);
+		val=STRING_TO_JSVAL(js_str);
+		JS_SetElement(session->js_cx, keyarray, alen, &val);
+	}
 }
 
 static void js_add_request_property(http_session_t * session, char *key, char *value, size_t len, bool writeable)
@@ -5620,7 +5632,9 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 	lprintf(level,"%04d %s",session->socket,str);
 	JS_RESUMEREQUEST(cx, rc);
 
-	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(JS_NewStringCopyZ(cx, str)));
+	JSString* js_str = JS_NewStringCopyZ(cx, str);
+	if(js_str != NULL)
+		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
 
     return(JS_TRUE);
 }
@@ -6001,6 +6015,7 @@ js_initcx(http_session_t *session)
 static bool js_setup_cx(http_session_t* session)
 {
 	JSObject*	argv;
+	JSString*	js_str;
 
 	if(session->js_runtime == NULL) {
 		lprintf(LOG_DEBUG,"%04d JavaScript: Creating runtime: %u bytes"
@@ -6025,12 +6040,14 @@ static bool js_setup_cx(http_session_t* session)
 		JS_DefineProperty(session->js_cx, session->js_glob, "argc", INT_TO_JSVAL(0)
 			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 
-		JS_DefineProperty(session->js_cx, session->js_glob, "web_root_dir",
-			STRING_TO_JSVAL(JS_NewStringCopyZ(session->js_cx, root_dir))
-			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
-		JS_DefineProperty(session->js_cx, session->js_glob, "web_error_dir",
-			STRING_TO_JSVAL(JS_NewStringCopyZ(session->js_cx, session->req.error_dir?session->req.error_dir:error_dir))
-			,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		if((js_str = JS_NewStringCopyZ(session->js_cx, root_dir)) != NULL)
+			JS_DefineProperty(session->js_cx, session->js_glob, "web_root_dir",
+				STRING_TO_JSVAL(js_str)
+				,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
+		if((js_str = JS_NewStringCopyZ(session->js_cx, session->req.error_dir?session->req.error_dir:error_dir)) != NULL)
+			JS_DefineProperty(session->js_cx, session->js_glob, "web_error_dir",
+				STRING_TO_JSVAL(js_str)
+				,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE);
 		JS_ENDREQUEST(session->js_cx);
 	}
 	else {
