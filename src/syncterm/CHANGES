@@ -3,6 +3,7 @@ Version 1.4a
 Re-order BBS list entry fields
 Fix various Prestel mode bugs
 Add support for JPEG XL graphics in addition to PPM
+Fix error handling with telnets
 
 Version 1.3
 -----------
