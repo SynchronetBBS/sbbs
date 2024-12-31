@@ -4696,6 +4696,10 @@ doterm(struct bbslist *bbs)
 			if (key && (cterm->emulation == CTERM_EMULATION_ATASCII)) {
                                 /* Translate keys to ATASCII */
 				switch (key) {
+					case 253: // Undo Unicode: Atascii beep -> ^G
+						ch[0] = 7;
+						conn_send(ch, 1, 0);
+						break;
 					case CIO_KEY_DOWN:
 						ch[0] = 29;
 						conn_send(ch, 1, 0);
