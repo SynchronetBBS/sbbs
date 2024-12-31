@@ -1,8 +1,6 @@
 /* Copyright (C), 2007 by Stephen Hurd */
 
-#include <assert.h>
-
-#if __STDC_NO_ATOMICS__
+#if defined(__STDC_NO_ATOMICS__) && (__STDC_NO_ATOMICS__)
 #error Support for stdatomic.h is required.
 #endif
 
