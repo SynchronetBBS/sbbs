@@ -1,5 +1,12 @@
 /* Copyright (C), 2007 by Stephen Hurd */
 
+#include <assert.h>
+
+#if __STDC_NO_ATOMICS__
+#error Support for stdatomic.h is required.
+#endif
+
+#include <stdatomic.h>
 #include <stdlib.h>
 
 #include "bbslist.h"
@@ -18,7 +25,8 @@
 
 static SOCKET telnets_sock;
 static CRYPT_SESSION telnets_session;
-static int telnets_active = true;
+static atomic_bool telnets_active = true;
+static pthread_once_t telnets_active_once = PTHREAD_ONCE_INIT;
 static pthread_mutex_t telnets_mutex;
 
 void
@@ -30,7 +38,7 @@ telnets_input_thread(void *args)
 	size_t buffer;
 	SetThreadName("TelnetS Input");
 	conn_api.input_thread_running = 1;
-	while (telnets_active && !conn_api.terminate) {
+	while (atomic_load(&telnets_active) && !conn_api.terminate) {
 		if (!socket_readable(telnets_sock, 100))
 			continue;
 		pthread_mutex_lock(&telnets_mutex);
@@ -42,15 +50,11 @@ telnets_input_thread(void *args)
 			continue;
 		if (cryptStatusError(status)) {
 			if ((status == CRYPT_ERROR_COMPLETE) || (status == CRYPT_ERROR_READ)) { /* connection closed */
-				pthread_mutex_lock(&telnets_mutex);
-				telnets_active = false;
-				pthread_mutex_unlock(&telnets_mutex);
+				atomic_store(&telnets_active, false);
 				break;
 			}
 			cryptlib_error_message(status, "recieving data");
-			pthread_mutex_lock(&telnets_mutex);
-			telnets_active = false;
-			pthread_mutex_unlock(&telnets_mutex);
+			atomic_store(&telnets_active, false);
 			break;
 		}
 		else {
@@ -74,28 +78,24 @@ telnets_output_thread(void *args)
 	int    status;
 	SetThreadName("TelnetS Output");
 	conn_api.output_thread_running = 1;
-	while (telnets_active && !conn_api.terminate) {
+	while (atomic_load(&telnets_active) && !conn_api.terminate) {
 		pthread_mutex_lock(&(conn_outbuf.mutex));
 		wr = conn_buf_wait_bytes(&conn_outbuf, 1, 100);
 		if (wr) {
 			wr = conn_buf_get(&conn_outbuf, conn_api.wr_buf, conn_api.wr_buf_size);
 			pthread_mutex_unlock(&(conn_outbuf.mutex));
 			sent = 0;
-			while (telnets_active && sent < wr) {
+			while (atomic_load(&telnets_active) && sent < wr) {
 				pthread_mutex_lock(&telnets_mutex);
 				status = cryptPushData(telnets_session, conn_api.wr_buf + sent, wr - sent, &ret);
 				pthread_mutex_unlock(&telnets_mutex);
 				if (cryptStatusError(status)) {
 					if (status == CRYPT_ERROR_COMPLETE) { /* connection closed */
-						pthread_mutex_lock(&telnets_mutex);
-						telnets_active = false;
-						pthread_mutex_unlock(&telnets_mutex);
+						atomic_store(&telnets_active, false);
 						break;
 					}
 					cryptlib_error_message(status, "sending data");
-					pthread_mutex_lock(&telnets_mutex);
-					telnets_active = false;
-					pthread_mutex_unlock(&telnets_mutex);
+					atomic_store(&telnets_active, false);
 					break;
 				}
 				sent += ret;
@@ -113,6 +113,13 @@ telnets_output_thread(void *args)
 	conn_api.output_thread_running = 2;
 }
 
+static void
+init_once(void)
+{
+	// We do this with a once because there's no destroy function, and it may not be lock-free
+	atomic_init(&telnets_active, false);
+}
+
 
 int
 telnets_connect(struct bbslist *bbs)
@@ -123,12 +130,12 @@ telnets_connect(struct bbslist *bbs)
 	if (!bbs->hidepopups)
 		init_uifc(true, true);
 	pthread_mutex_init(&telnets_mutex, NULL);
+	pthread_once(&telnets_active_once, init_once);
+	atomic_store(&telnets_active, false);
 
 	telnets_sock = conn_socket_connect(bbs);
 	if (telnets_sock == INVALID_SOCKET)
 		return -1;
-
-	telnets_active = false;
 
 	if (!bbs->hidepopups)
 		uifc.pop("Creating Session");
@@ -182,7 +189,7 @@ telnets_connect(struct bbslist *bbs)
 		return -1;
 	}
 
-	telnets_active = true;
+	atomic_store(&telnets_active, true);
 	if (!bbs->hidepopups) {
                 /* Clear ownership */
 		uifc.pop(NULL); // TODO: Why is this called twice?
@@ -196,6 +203,7 @@ telnets_connect(struct bbslist *bbs)
 		conn_api.terminate = 1;
 		if (!bbs->hidepopups)
 			uifc.pop(NULL);
+		atomic_store(&telnets_active, false);
 		return -1;
 	}
 	if (!bbs->hidepopups)
@@ -225,7 +233,7 @@ telnets_close(void)
 	char garbage[1024];
 	conn_api.terminate = 1;
 	cryptSetAttribute(telnets_session, CRYPT_SESSINFO_ACTIVE, 0);
-	telnets_active = false;
+	atomic_store(&telnets_active, false);
 	while (conn_api.input_thread_running == 1 || conn_api.output_thread_running == 1) {
 		conn_recv_upto(garbage, sizeof(garbage), 0);
 		SLEEP(1);
