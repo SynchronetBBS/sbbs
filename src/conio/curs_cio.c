@@ -933,6 +933,7 @@ void curs_setcursortype(int type) {
 int curs_getch(void)
 {
 	wint_t ch;
+	wint_t newch;
 #ifdef NCURSES_VERSION_MAJOR
 	MEVENT mevnt;
 #endif
@@ -1160,8 +1161,10 @@ int curs_getch(void)
 
 			default:
 				// Don't translate CTRL-x "keys"...
-				if (ch >= 32)
-					ch = cpchar_from_unicode_cpoint(getcodepage(), ch, 0);
+				newch = cpchar_from_unicode_cpoint(getcodepage(), ch, 0);
+				if (newch == 0 && ch < 32)
+					newch = ch;
+				ch = newch;
 				break;
 		}
 	}

@@ -992,8 +992,7 @@ void sdl_video_event_thread(void *data)
 					sdl_add_key_uc(sdl_get_char_code(ev.key.keysym.sym, ev.key.keysym.mod), &cvstat);
 				}
 				else if (!isprint(ev.key.keysym.sym)) {
-					if (ev.key.keysym.sym < 128)
-						sdl_add_key_uc(ev.key.keysym.sym, &cvstat);
+					sdl_add_key_uc(ev.key.keysym.sym, &cvstat);
 				}
 				break;
 			case SDL_TEXTINPUT:
