@@ -19,6 +19,7 @@ var temp_dir = backslash(system.temp_path) + "sbbs-" + date_str;
 
 log(LOG_INFO,"Using temp directory: " + temp_dir);
 
+print("Remove files: " + rmfiles(temp_dir));
 var build_output = "build_output.txt";
 var repo = "git@gitlab.synchro.net:/main/sbbs";
 var cmd_line = "git clone " + repo + " " + temp_dir + " 2> " + build_output;
