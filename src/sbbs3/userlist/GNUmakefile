@@ -23,6 +23,9 @@ include ../Common.gmake
 CFLAGS	+=	$(SBBS_CFLAGS) $(SMBLIB_CFLAGS) $(XPDEV-MT_CFLAGS) `$(WX_CONFIG) $(WX_CONFFLAGS) --cflags`
 CXXFLAGS	+= $(CFLAGS)
 LDFLAGS	+=	`$(WX_CONFIG) $(WX_CONFFLAGS) --libs` $(SMBLIB_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(MT_LDFLAGS) $(SBBS_LDFLAGS) 
+ifeq ($(os),darwin)
+ LDFLAGS += -Wl,$(RPATH),@executable_path,$(RPATH),@executable_path/../../$(LIBODIR)
+endif
 
 $(USERLIST): $(SBBS) $(OBJS)
 	@echo Linking $@

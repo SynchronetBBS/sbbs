@@ -264,6 +264,12 @@ ifeq ($(os),darwin)
  endif
 endif
 
+ifeq ($(os),darwin)
+ RPATH := -rpath
+else
+ RPATH := --rpath
+endif
+
 ifeq ($(machine_uname),x86_64)
  machine_uname	:= x64
 endif

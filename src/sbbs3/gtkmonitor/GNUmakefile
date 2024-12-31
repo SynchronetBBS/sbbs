@@ -30,17 +30,16 @@ EXTRA_LIBS +=	`pkg-config gtk+-3.0 --libs`
 # Because pkg-config for libglade uses --rpath, we need to also, LD_RUN_PATH
 # won't work.  :-(
 ifeq ($(os),darwin)
- RPATH := -rpath
-else
- RPATH := --rpath
-endif
-ifdef SBBSDIR
- LDFLAGS	+=	-Wl,$(RPATH),$(SBBSDIR)/exec
-endif
-PARENT_DIR = $(shell dirname `pwd`)
-LDFLAGS	+=	-Wl,$(RPATH),$(PARENT_DIR)/$(LIBODIR)
-ifeq ($(os),sunos)
- LDFLAGS	+=	-Wl,$(RPATH),/opt/sfw/gcc-3/lib
+ LDFLAGS += -Wl,$(RPATH),@executable_path,$(RPATH),@executable_path/../../$(LIBODIR)
+else 
+ ifdef SBBSDIR
+  LDFLAGS	+=	-Wl,$(RPATH),$(SBBSDIR)/exec
+ endif
+ PARENT_DIR = $(shell dirname `pwd`)
+ LDFLAGS	+=	-Wl,$(RPATH),$(PARENT_DIR)/$(LIBODIR)
+ ifeq ($(os),sunos)
+  LDFLAGS	+=	-Wl,$(RPATH),/opt/sfw/gcc-3/lib
+ endif
 endif
 
 $(GTKMONITOR): $(OBJS)

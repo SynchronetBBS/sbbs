@@ -156,12 +156,15 @@ ifeq ($(os),sunos)
  SHLIBOPTS	:=
 else
  ifeq ($(os),darwin)
-  SHLIBOPTS	=	-shared -install_name `realpath $(SBBSDIR)`/$@
+  SHLIBOPTS	=	-shared -install_name @rpath/`VAR=$@; echo $${VAR\#\#*/}`
  else
   SHLIBOPTS	:=	-shared
  endif
  MKSHLIB		:=	$(CC)
  MKSHPPLIB		:=	$(CXX)
+endif
+ifeq ($(os),darwin)
+ LIB_RPATH := -Wl,$(RPATH),@executable_path,$(RPATH),@executable_path/../$(LIBDIR)
 endif
 
 CFLAGS	+=	$(JS_CFLAGS) $(CRYPT_CFLAGS) $(UIFC-MT_CFLAGS) $(XPDEV-MT_CFLAGS) $(SMBLIB_CFLAGS) $(CIOLIB-MT_CFLAGS) $(ENCODE_CFLAGS) $(HASH_CFLAGS)
@@ -190,27 +193,27 @@ endif
 # FTP Server Link Rule
 $(FTPSRVR): $(MTOBJODIR)/ftpsrvr.o
 	@echo Linking $@
-	$(QUIET)$(MKSHLIB) $(LDFLAGS) $(MTOBJODIR)/ftpsrvr.o $(SHLIBOPTS) -o $@ -lsbbs
+	$(QUIET)$(MKSHLIB) $(LDFLAGS) $(MTOBJODIR)/ftpsrvr.o $(SHLIBOPTS) $(LIB_RPATH) -o $@ -lsbbs
 
 # Mail Server Link Rule
 $(MAILSRVR): $(MAIL_OBJS)
 	@echo Linking $@
-	$(QUIET)$(MKSHLIB) $(LDFLAGS) $(MAIL_OBJS) $(SHLIBOPTS) -o $@ -lsbbs
+	$(QUIET)$(MKSHLIB) $(LDFLAGS) $(MAIL_OBJS) $(SHLIBOPTS) $(LIB_RPATH) -o $@ -lsbbs
 
 # Web Server Link Rule
 $(WEBSRVR): $(WEB_OBJS)
 	@echo Linking $@
-	$(QUIET)$(MKSHLIB) $(LDFLAGS) $(WEB_OBJS) $(SHLIBOPTS) -o $@ $(ENCODE_LIBS) -lsbbs $(XPDEV-MT_LIBS)
+	$(QUIET)$(MKSHLIB) $(LDFLAGS) $(WEB_OBJS) $(SHLIBOPTS) $(LIB_RPATH) -o $@ $(ENCODE_LIBS) -lsbbs $(XPDEV-MT_LIBS)
 
 # Services Link Rule
 $(SERVICES): $(SERVICE_OBJS)
 	@echo Linking $@
-	$(QUIET)$(MKSHLIB) $(LDFLAGS) $(SERVICE_OBJS) $(SHLIBOPTS) -o $@ -lsbbs
+	$(QUIET)$(MKSHLIB) $(LDFLAGS) $(SERVICE_OBJS) $(SHLIBOPTS) $(LIB_RPATH) -o $@ -lsbbs
 
 # Synchronet Console Build Rule
 $(SBBSCON): $(CON_OBJS) $(SBBS) $(FTPSRVR) $(WEBSRVR) $(MAILSRVR) $(SERVICES)
 	@echo Linking $@
-	$(QUIET)$(CXX) $(LDFLAGS) $(MT_LDFLAGS) -o $@ $(CON_OBJS) $(CON_LIBS) $(SMBLIB_LIBS) $(XPDEV-MT_LIBS)
+	$(QUIET)$(CXX) $(LDFLAGS) $(MT_LDFLAGS) $(LIB_RPATH) -o $@ $(CON_OBJS) $(CON_LIBS) $(SMBLIB_LIBS) $(XPDEV-MT_LIBS)
 
 # Baja Utility
 $(BAJA): $(BAJA_OBJS) | $(EXEODIR)
@@ -280,7 +283,7 @@ endif
 # JSEXEC
 $(JSEXEC): $(JSEXEC_OBJS) $(SBBS) $(CIOLIB-MT) | $(EXEODIR)
 	@echo Linking $@
-	$(QUIET)$(CXX) $(LDFLAGS) $(MT_LDFLAGS) -o $@ $(JSEXEC_OBJS) -lsbbs $(JS_LIBS) $(SMBLIB_LIBS) $(UIFC-MT_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS)
+	$(QUIET)$(CXX) $(LDFLAGS) $(MT_LDFLAGS) $(LIB_RPATH) -o $@ $(JSEXEC_OBJS) -lsbbs $(JS_LIBS) $(SMBLIB_LIBS) $(UIFC-MT_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS)
 ifeq ($(os), netbsd)
 	paxctl +m $(JSEXEC)
 endif
@@ -308,7 +311,7 @@ $(QWKNODES): $(QWKNODES_OBJS) | $(EXEODIR)
 # SLOG
 $(SLOG): $(SLOG_OBJS) $(SBBS) | $(EXEODIR)
 	@echo Linking $@
-	$(QUIET)$(CC) $(CONSOLE_LDFLAGS) -o $@ $(SLOG_OBJS) $(XPDEV_LIBS) -lsbbs
+	$(QUIET)$(CC) $(CONSOLE_LDFLAGS) $(LIB_RPATH) -o $@ $(SLOG_OBJS) $(XPDEV_LIBS) -lsbbs
 
 # DELFILES
 $(DELFILES): $(DELFILES_OBJS) $(ENCODE_LIB) | $(EXEODIR)
