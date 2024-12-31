@@ -1,6 +1,6 @@
 /* Copyright (C), 2007 by Stephen Hurd */
 
-#if defined(__STDC_NO_ATOMICS__) && (__STDC_NO_ATOMICS__)
+#if defined(__STDC_NO_ATOMICS__)
 #error Support for stdatomic.h is required.
 #endif
 
