@@ -1106,7 +1106,7 @@ static int init_window()
 	gcv.graphics_exposures = False;
 	gc=x11.XCreateGC(dpy, win, GCFunction | GCForeground | GCBackground | GCGraphicsExposures, &gcv);
 
-	x11.XSelectInput(dpy, win, KeyReleaseMask | KeyPressMask
+	x11.XSelectInput(dpy, win, KeyReleaseMask | KeyPressMask | KeyReleaseMask
 		     | ExposureMask | ButtonPressMask | PropertyChangeMask
 		     | ButtonReleaseMask | PointerMotionMask
 		     | StructureNotifyMask | FocusChangeMask);
@@ -1652,8 +1652,41 @@ handle_configuration(int w, int h, bool map, bool se)
 }
 
 static void
+handle_bios_key(uint32_t *bios_key, bool *bios_key_parsing, bool *zero_first)
+{
+	uint8_t ch;
+
+	if (*bios_key > 0 && *bios_key_parsing) {
+		if (*zero_first) {
+			// Unicode character
+			ch = cpchar_from_unicode_cpoint(getcodepage(), *bios_key, 0);
+			if (ch == 0)
+				x11.XBell(dpy, 100);
+			else {
+				write(key_pipe[1], &ch, 1);
+				if (ch == 0xe0)
+					write(key_pipe[1], &ch, 1);
+			}
+		}
+		else {
+			// Codepage character
+			ch = *bios_key;
+			write(key_pipe[1], &ch, 1);
+			if (ch == 0xe0)
+				write(key_pipe[1], &ch, 1);
+		}
+	}
+	*bios_key = 0;
+	*bios_key_parsing = false;
+	*zero_first = false;
+}
+
+static void
 x11_event(XEvent *ev)
 {
+	static uint32_t bios_key = 0;
+	static bool bios_key_parsing = false;
+	static bool zero_first = false;
 	bool resize;
 	int x, y, w, h;
 
@@ -1959,6 +1992,18 @@ x11_event(XEvent *ev)
 			break;
 
 		/* Keyboard Events */
+		case KeyRelease:
+			{
+				if (bios_key_parsing) {
+					KeySym ks = x11.XLookupKeysym((XKeyEvent *)ev, 0);
+					// If Mod1 (ie: ALT) is released, *and* the only bytes were KP numbers, do the BIOS thing.
+					if (ks == XK_Alt_L || ks == XK_Alt_R) {
+						handle_bios_key(&bios_key, &bios_key_parsing, &zero_first);
+					}
+				}
+			}
+			break;
+
 		case KeyPress:
 			{
 				static char buf[128];
@@ -1970,12 +2015,52 @@ x11_event(XEvent *ev)
 				int cnt;
 				int i;
 				uint8_t ch;
+				bool terminate_bios = false;
 
 				if (ic)
 					cnt = x11.XwcLookupString(ic, (XKeyPressedEvent *)ev, wbuf, sizeof(wbuf)/sizeof(wbuf[0]), &ks, &lus);
 				else {
 					cnt = x11.XLookupString((XKeyEvent *)ev, buf, sizeof(buf), &ks, NULL);
 					lus = XLookupKeySym;
+				}
+
+				if (bios_key_parsing) {
+					if (ks >= XK_KP_0 && ks <= XK_KP_9) {
+						if (bios_key == 0 && ks == XK_KP_0)
+							zero_first = true;
+						else {
+							if (zero_first) {
+								if (bios_key >= 429496730 ||
+								    (bios_key == 429496729 && ks > XK_KP_5)) {
+									terminate_bios = true;
+								}
+							}
+							else {
+								if (bios_key >= 26 ||
+								    (bios_key == 25 && ks > XK_KP_5)) {
+									terminate_bios = true;
+								}
+							}
+							if (terminate_bios) {
+								handle_bios_key(&bios_key, &bios_key_parsing, &zero_first);
+							}
+							else {
+								bios_key *= 10;
+								bios_key += (ks - XK_KP_0);
+								break;
+							}
+						}
+					}
+					else {
+						handle_bios_key(&bios_key, &bios_key_parsing, &zero_first);
+					}
+				}
+
+				if (ks == XK_Alt_L || ks == XK_Alt_R) {
+					bios_key = 0;
+					bios_key_parsing = true;
+					zero_first = false;
+					break;
 				}
 
 				switch(lus) {

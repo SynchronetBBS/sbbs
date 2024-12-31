@@ -119,6 +119,7 @@ struct x11 {
 	int (*XMoveWindow)(Display *, Window, int, int);
 	Status (*XGetWMNormalHints)(Display*, Window, XSizeHints*, long*);
 	int (*XMoveResizeWindow)(Display*, Window, int, int, unsigned int, unsigned int);
+	KeySym (*XLookupKeysym)(XKeyEvent *, int);
 #ifndef DefaultDepth
 	int (*DefaultDepth)(Display *, int);
 #endif

@@ -514,6 +514,10 @@ int x_initciolib(int mode)
 		xp_dlclose(dl);
 		return(-1);
 	}
+	if((x11.XLookupKeysym=xp_dlsym(dl,XLookupKeysym))==NULL) {
+		xp_dlclose(dl);
+		return(-1);
+	}
 #ifdef WITH_XRENDER
 	xrender_found = true;
 	if ((dl2 = xp_dlopen(libnames2,RTLD_LAZY,1)) == NULL)
