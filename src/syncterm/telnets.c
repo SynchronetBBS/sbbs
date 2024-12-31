@@ -4,6 +4,7 @@
 #if defined(__STDC_NO_ATOMICS__)
 #error Support for stdatomic.h is required.
 #endif
+#endif
 
 #include <stdatomic.h>
 #include <stdlib.h>
