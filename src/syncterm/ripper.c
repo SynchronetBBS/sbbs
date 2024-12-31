@@ -15870,297 +15870,299 @@ size_t
 parse_rip(BYTE *origbuf, unsigned blen, unsigned maxlen)
 {
 #ifdef HAS_VSTAT
-	unsigned pos = 0;
-	size_t   rip_start = maxlen + 1;
-	bool     copy = false;
-	BYTE    *buf = origbuf;
+	if (cio_api.options & CONIO_OPT_SET_PIXEL) {
+		unsigned pos = 0;
+		size_t   rip_start = maxlen + 1;
+		bool     copy = false;
+		BYTE    *buf = origbuf;
 
-        /*
-         * TODO: Downloads are broken when RIP is enabled...
-         *       This should certainly be fixed someday.
-         */
-	if ((rip.enabled == false) || rip_suspended)
-		return blen;
+ 	       /*
+        	 * TODO: Downloads are broken when RIP is enabled...
+        	 *       This should certainly be fixed someday.
+        	 */
+		if ((rip.enabled == false) || rip_suspended)
+			return blen;
 
-	shadow_palette();
-	switch (rip.state) {
-		case RIP_STATE_BOL:
-		case RIP_STATE_MOL:
-			break;
-		default:
-			rip_start = 0;
-			break;
-	}
-	if (blen == 0) {
-		if (rip_start == 0) {
-			unsigned zer = 0;
+		shadow_palette();
+		switch (rip.state) {
+			case RIP_STATE_BOL:
+			case RIP_STATE_MOL:
+				break;
+			default:
+				rip_start = 0;
+				break;
+		}
+		if (blen == 0) {
+			if (rip_start == 0) {
+				unsigned zer = 0;
 
-			handle_rip_line(origbuf, &zer, &pos, &rip_start, maxlen, RIP_STATE_FLUSHING);
-			copy = true;
-			blen = moredata_len;
-			if (blen == 0) {
+				handle_rip_line(origbuf, &zer, &pos, &rip_start, maxlen, RIP_STATE_FLUSHING);
+				copy = true;
+				blen = moredata_len;
+				if (blen == 0) {
+					normal_palette();
+					return blen;
+				}
+				buf = moredata;
+				moredata = NULL;
+				moredata_len = 0;
+				moredata_size = 0;
+			}
+			else {
 				normal_palette();
 				return blen;
 			}
-			buf = moredata;
-			moredata = NULL;
-			moredata_len = 0;
-			moredata_size = 0;
 		}
 		else {
-			normal_palette();
-			return blen;
-		}
-	}
-	else {
-		if ((rip.state == RIP_STATE_CR) && (buf[0] != '\n'))
-			handle_rip_line(buf, &blen, &pos, &rip_start, maxlen, RIP_STATE_BOL);
-	}
-
-	for (pos = 0; pos < blen; pos++) {
-                // TODO: \n handling could likely be moved into main switch
-		if ((rip.state == RIP_STATE_CR) && (buf[pos] != '\n')) {
-			if (pos > 0) {
-				pos--;
+			if ((rip.state == RIP_STATE_CR) && (buf[0] != '\n'))
 				handle_rip_line(buf, &blen, &pos, &rip_start, maxlen, RIP_STATE_BOL);
-				rip.lchars = 0;
-				continue;
-			}
 		}
-		if (buf[pos] == '\n') {
-			switch (rip.state) {
-                                // Normal ending to a RIP line...
-				case RIP_STATE_CR:
+
+		for (pos = 0; pos < blen; pos++) {
+        	        // TODO: \n handling could likely be moved into main switch
+			if ((rip.state == RIP_STATE_CR) && (buf[pos] != '\n')) {
+				if (pos > 0) {
+					pos--;
 					handle_rip_line(buf, &blen, &pos, &rip_start, maxlen, RIP_STATE_BOL);
 					rip.lchars = 0;
 					continue;
+				}
+			}
+			if (buf[pos] == '\n') {
+				switch (rip.state) {
+        	                        // Normal ending to a RIP line...
+					case RIP_STATE_CR:
+						handle_rip_line(buf, &blen, &pos, &rip_start, maxlen, RIP_STATE_BOL);
+						rip.lchars = 0;
+						continue;
 
-                                // Continuation of line ending in CRLF
-				case RIP_STATE_CONT_PIPE:
-				case RIP_STATE_CONT_LEVEL:
-				case RIP_STATE_CONT_SUBLEVEL:
-				case RIP_STATE_CONT_CMD:
-				case RIP_STATE_CONT_ENDED:
-					rip.state -= (RIP_STATE_CONT_PIPE - RIP_STATE_PIPE);
-					continue;
-					break;
+					// Continuation of line ending in CRLF
+					case RIP_STATE_CONT_PIPE:
+					case RIP_STATE_CONT_LEVEL:
+					case RIP_STATE_CONT_SUBLEVEL:
+					case RIP_STATE_CONT_CMD:
+					case RIP_STATE_CONT_ENDED:
+						rip.state -= (RIP_STATE_CONT_PIPE - RIP_STATE_PIPE);
+						continue;
+						break;
 
-                                // Not a RIP line...
-				case RIP_STATE_ESC:
-				case RIP_STATE_CSI:
-				case RIP_STATE_CSINUM:
-				case RIP_STATE_BANG:
-					unrip_line(buf, &blen, &pos, &rip_start, maxlen);
-					rip.state = RIP_STATE_MOL;
-					continue;
+					// Not a RIP line...
+					case RIP_STATE_ESC:
+					case RIP_STATE_CSI:
+					case RIP_STATE_CSINUM:
+					case RIP_STATE_BANG:
+						unrip_line(buf, &blen, &pos, &rip_start, maxlen);
+						rip.state = RIP_STATE_MOL;
+						continue;
 
-                                // No change in state
+ 	                               // No change in state
+					case RIP_STATE_BOL:
+					case RIP_STATE_MOL:
+						continue;
+
+	                                // (TODO: Incorrectly?) Interpreted as a parameter byte (or whatever)
+					default:
+						break;
+				}
+			}
+			else if (buf[pos] == '\r') {
+				switch (rip.state) {
+					case RIP_STATE_BACKSLASH_PIPE:
+					case RIP_STATE_BACKSLASH_LEVEL:
+					case RIP_STATE_BACKSLASH_SUBLEVEL:
+					case RIP_STATE_BACKSLASH_CMD:
+					case RIP_STATE_BACKSLASH_ENDED:
+						break;
+					case RIP_STATE_ESC:
+					case RIP_STATE_CSI:
+					case RIP_STATE_CSINUM:
+						unrip_line(buf, &blen, &pos, &rip_start, maxlen);
+						rip.state = RIP_STATE_BOL;
+						rip.lchars = 0;
+						continue;
+					case RIP_STATE_BOL:
+					case RIP_STATE_MOL:
+						rip.state = RIP_STATE_BOL;
+						rip.lchars = 0;
+						continue;
+					default:
+						rip.state = RIP_STATE_CR;
+						continue;
+				}
+			}
+			switch (rip.state) {
 				case RIP_STATE_BOL:
 				case RIP_STATE_MOL:
-					continue;
-
-                                // (TODO: Incorrectly?) Interpreted as a parameter byte (or whatever)
-				default:
+					switch (buf[pos]) {
+						case '!':
+							if (rip.state == RIP_STATE_MOL)
+								break;
+						case '\x01':
+						case '\x02':
+							if (rip.enabled) {
+								rip_start = pos;
+								rip.state = RIP_STATE_BANG;
+							}
+							break;
+						case '\x1b':
+							rip_start = pos;
+							rip.state = RIP_STATE_ESC;
+							break;
+						default:
+							if (buf[pos] == '\b') {
+								if (rip.lchars > 0)
+									rip.lchars--;
+								if (rip.lchars == 0) {
+									rip.state = RIP_STATE_BOL;
+									break;
+								}
+							}
+							else if (buf[pos] < 32) {
+								rip.lchars = -1;
+							}
+							else {
+								rip.lchars++;
+							}
+							rip.state = RIP_STATE_MOL;
+							break;
+					}
 					break;
-			}
-		}
-		else if (buf[pos] == '\r') {
-			switch (rip.state) {
+				case RIP_STATE_BANG:
+					if (buf[pos] == '|') {
+						rip.state = RIP_STATE_PIPE;
+						break;
+					}
+					unrip_line(buf, &blen, &pos, &rip_start, maxlen);
+					rip.state = RIP_STATE_MOL;
+					break;
+				case RIP_STATE_PIPE:
+					if ((buf[pos] >= '1') && (buf[pos] <= '9')) {
+						rip.state = RIP_STATE_LEVEL;
+						break;
+					}
+					rip.state = RIP_STATE_CMD;
+					break;
+				case RIP_STATE_LEVEL:
+					if ((buf[pos] >= '1') && (buf[pos] <= '9')) {
+						rip.state = RIP_STATE_SUBLEVEL;
+						break;
+					}
+					rip.state = RIP_STATE_CMD;
+					break;
+				case RIP_STATE_SUBLEVEL:
+					rip.state = RIP_STATE_CMD;
+					break;
+				case RIP_STATE_CMD:
+					if (buf[pos] == '\\') {
+						rip.state = RIP_STATE_BACKSLASH_CMD;
+						break;
+					}
+					if (buf[pos] == '|') {
+						rip.state = RIP_STATE_PIPE;
+						break;
+					}
+					break;
 				case RIP_STATE_BACKSLASH_PIPE:
 				case RIP_STATE_BACKSLASH_LEVEL:
 				case RIP_STATE_BACKSLASH_SUBLEVEL:
 				case RIP_STATE_BACKSLASH_CMD:
 				case RIP_STATE_BACKSLASH_ENDED:
+					if (buf[pos] == '\r') {
+						rip.state += (RIP_STATE_CONT_PIPE - RIP_STATE_BACKSLASH_PIPE);
+						break;
+					}
+					rip.state -= (RIP_STATE_BACKSLASH_PIPE - RIP_STATE_PIPE);
+					break;
+				case RIP_STATE_CR:
+        	                        // TODO: This is likely broken...
+					handle_rip_line(buf, &blen, &pos, &rip_start, maxlen, RIP_STATE_MOL);
 					break;
 				case RIP_STATE_ESC:
-				case RIP_STATE_CSI:
-				case RIP_STATE_CSINUM:
+					if (buf[pos] == '[') {
+						rip.state = RIP_STATE_CSI;
+						break;
+					}
 					unrip_line(buf, &blen, &pos, &rip_start, maxlen);
-					rip.state = RIP_STATE_BOL;
-					rip.lchars = 0;
-					continue;
-				case RIP_STATE_BOL:
-				case RIP_STATE_MOL:
-					rip.state = RIP_STATE_BOL;
-					rip.lchars = 0;
-					continue;
-				default:
-					rip.state = RIP_STATE_CR;
-					continue;
-			}
-		}
-		switch (rip.state) {
-			case RIP_STATE_BOL:
-			case RIP_STATE_MOL:
-				switch (buf[pos]) {
-					case '!':
-						if (rip.state == RIP_STATE_MOL)
-							break;
-					case '\x01':
-					case '\x02':
-						if (rip.enabled) {
-							rip_start = pos;
-							rip.state = RIP_STATE_BANG;
-						}
+					rip.state = RIP_STATE_MOL;
+					break;
+				case RIP_STATE_CSI:
+					if (buf[pos] == '!') {
+						handle_rip_line(buf, &blen, &pos, &rip_start, maxlen, RIP_STATE_MOL);
 						break;
-					case '\x1b':
-						rip_start = pos;
-						rip.state = RIP_STATE_ESC;
+					}
+					if ((buf[pos] >= '0') && (buf[pos] <= '9')) {
+						rip.state = RIP_STATE_CSINUM;
 						break;
-					default:
-						if (buf[pos] == '\b') {
-							if (rip.lchars > 0)
-								rip.lchars--;
-							if (rip.lchars == 0) {
-								rip.state = RIP_STATE_BOL;
+					}
+					unrip_line(buf, &blen, &pos, &rip_start, maxlen);
+					rip.state = RIP_STATE_MOL;
+					break;
+				case RIP_STATE_CSINUM:
+					if (buf[pos] == '!') {
+						handle_rip_line(buf, &blen, &pos, &rip_start, maxlen, RIP_STATE_MOL);
+						break;
+					}
+					if (((buf[pos] >= '0') && (buf[pos] <= '9')) || (buf[pos] == ';')) {
+						rip.state = RIP_STATE_SKYPIX;
+						break;
+					}
+					unrip_line(buf, &blen, &pos, &rip_start, maxlen);
+					rip.state = RIP_STATE_MOL;
+					break;
+				case RIP_STATE_SKYPIX:
+					if (((buf[pos] >= '0') && (buf[pos] <= '9')) || (buf[pos] == ';'))
+						break;
+					if (buf[pos] == '!') {
+						if (pendingcmp("\x1b[10;", &buf[rip_start]) == 0) {
+        	                                        // This seems to be how Reign of Fire is resetting the font...
+							if (pendingcmp("\x1b[10;0!", &buf[rip_start]) != 0) {
+								rip.state = RIP_STATE_SKYPIX_STR;
 								break;
 							}
 						}
-						else if (buf[pos] < 32) {
-							rip.lchars = -1;
-						}
-						else {
-							rip.lchars++;
-						}
-						rip.state = RIP_STATE_MOL;
-						break;
-				}
-				break;
-			case RIP_STATE_BANG:
-				if (buf[pos] == '|') {
-					rip.state = RIP_STATE_PIPE;
-					break;
-				}
-				unrip_line(buf, &blen, &pos, &rip_start, maxlen);
-				rip.state = RIP_STATE_MOL;
-				break;
-			case RIP_STATE_PIPE:
-				if ((buf[pos] >= '1') && (buf[pos] <= '9')) {
-					rip.state = RIP_STATE_LEVEL;
-					break;
-				}
-				rip.state = RIP_STATE_CMD;
-				break;
-			case RIP_STATE_LEVEL:
-				if ((buf[pos] >= '1') && (buf[pos] <= '9')) {
-					rip.state = RIP_STATE_SUBLEVEL;
-					break;
-				}
-				rip.state = RIP_STATE_CMD;
-				break;
-			case RIP_STATE_SUBLEVEL:
-				rip.state = RIP_STATE_CMD;
-				break;
-			case RIP_STATE_CMD:
-				if (buf[pos] == '\\') {
-					rip.state = RIP_STATE_BACKSLASH_CMD;
-					break;
-				}
-				if (buf[pos] == '|') {
-					rip.state = RIP_STATE_PIPE;
-					break;
-				}
-				break;
-			case RIP_STATE_BACKSLASH_PIPE:
-			case RIP_STATE_BACKSLASH_LEVEL:
-			case RIP_STATE_BACKSLASH_SUBLEVEL:
-			case RIP_STATE_BACKSLASH_CMD:
-			case RIP_STATE_BACKSLASH_ENDED:
-				if (buf[pos] == '\r') {
-					rip.state += (RIP_STATE_CONT_PIPE - RIP_STATE_BACKSLASH_PIPE);
-					break;
-				}
-				rip.state -= (RIP_STATE_BACKSLASH_PIPE - RIP_STATE_PIPE);
-				break;
-			case RIP_STATE_CR:
-                                // TODO: This is likely broken...
-				handle_rip_line(buf, &blen, &pos, &rip_start, maxlen, RIP_STATE_MOL);
-				break;
-			case RIP_STATE_ESC:
-				if (buf[pos] == '[') {
-					rip.state = RIP_STATE_CSI;
-					break;
-				}
-				unrip_line(buf, &blen, &pos, &rip_start, maxlen);
-				rip.state = RIP_STATE_MOL;
-				break;
-			case RIP_STATE_CSI:
-				if (buf[pos] == '!') {
-					handle_rip_line(buf, &blen, &pos, &rip_start, maxlen, RIP_STATE_MOL);
-					break;
-				}
-				if ((buf[pos] >= '0') && (buf[pos] <= '9')) {
-					rip.state = RIP_STATE_CSINUM;
-					break;
-				}
-				unrip_line(buf, &blen, &pos, &rip_start, maxlen);
-				rip.state = RIP_STATE_MOL;
-				break;
-			case RIP_STATE_CSINUM:
-				if (buf[pos] == '!') {
-					handle_rip_line(buf, &blen, &pos, &rip_start, maxlen, RIP_STATE_MOL);
-					break;
-				}
-				if (((buf[pos] >= '0') && (buf[pos] <= '9')) || (buf[pos] == ';')) {
-					rip.state = RIP_STATE_SKYPIX;
-					break;
-				}
-				unrip_line(buf, &blen, &pos, &rip_start, maxlen);
-				rip.state = RIP_STATE_MOL;
-				break;
-			case RIP_STATE_SKYPIX:
-				if (((buf[pos] >= '0') && (buf[pos] <= '9')) || (buf[pos] == ';'))
-					break;
-				if (buf[pos] == '!') {
-					if (pendingcmp("\x1b[10;", &buf[rip_start]) == 0) {
-                                                // This seems to be how Reign of Fire is resetting the font...
-						if (pendingcmp("\x1b[10;0!", &buf[rip_start]) != 0) {
+						if (pendingcmp("\x1b[16;", &buf[rip_start]) == 0) {
 							rip.state = RIP_STATE_SKYPIX_STR;
 							break;
 						}
-					}
-					if (pendingcmp("\x1b[16;", &buf[rip_start]) == 0) {
-						rip.state = RIP_STATE_SKYPIX_STR;
+						handle_rip_line(buf, &blen, &pos, &rip_start, maxlen, RIP_STATE_MOL);
 						break;
 					}
-					handle_rip_line(buf, &blen, &pos, &rip_start, maxlen, RIP_STATE_MOL);
+					unrip_line(buf, &blen, &pos, &rip_start, maxlen);
+					rip.state = RIP_STATE_MOL;
 					break;
-				}
-				unrip_line(buf, &blen, &pos, &rip_start, maxlen);
-				rip.state = RIP_STATE_MOL;
-				break;
-			case RIP_STATE_SKYPIX_STR:
-				if (buf[pos] == '!') {
-					handle_rip_line(buf, &blen, &pos, &rip_start, maxlen, RIP_STATE_MOL);
+				case RIP_STATE_SKYPIX_STR:
+					if (buf[pos] == '!') {
+						handle_rip_line(buf, &blen, &pos, &rip_start, maxlen, RIP_STATE_MOL);
+						break;
+					}
 					break;
-				}
-				break;
-			default:
-				rip.state = RIP_STATE_ENDED;
-				break;
+				default:
+					rip.state = RIP_STATE_ENDED;
+					break;
+			}
 		}
-	}
 
-        // We have some RIP, add to buffer...
-	normal_palette();
-	if (rip_start <= maxlen) {
-		buffer_rip(&buf[rip_start], blen - rip_start);
+        	// We have some RIP, add to buffer...
+		normal_palette();
+		if (rip_start <= maxlen) {
+			buffer_rip(&buf[rip_start], blen - rip_start);
+			if (copy) {
+				memcpy(origbuf, buf, rip_start);
+				free(buf);
+			}
+			if (rip.text_disabled)
+				return ansi_only(origbuf, rip_start);
+			return rip_start;
+		}
+
+ 	       // Everything is fine...
 		if (copy) {
-			memcpy(origbuf, buf, rip_start);
+			memcpy(origbuf, buf, blen);
 			free(buf);
 		}
 		if (rip.text_disabled)
-			return ansi_only(origbuf, rip_start);
-		return rip_start;
+			return ansi_only(origbuf, blen);
 	}
-
-        // Everything is fine...
-	if (copy) {
-		memcpy(origbuf, buf, blen);
-		free(buf);
-	}
-	if (rip.text_disabled)
-		return ansi_only(origbuf, blen);
 #endif
 	return blen;
 }
@@ -16169,13 +16171,15 @@ void
 suspend_rip(bool suspend)
 {
 #ifdef HAS_VSTAT
-	if (suspend) {
-		if (rip.enabled)
-			rip_suspended = true;
-	}
-	else {
-		if (rip.enabled)
-			rip_suspended = false;
+	if (cio_api.options & CONIO_OPT_SET_PIXEL) {
+		if (suspend) {
+			if (rip.enabled)
+				rip_suspended = true;
+		}
+		else {
+			if (rip.enabled)
+				rip_suspended = false;
+		}
 	}
 #endif
 }
@@ -16184,67 +16188,69 @@ void
 init_rip(struct bbslist *bbs)
 {
 #ifdef HAS_VSTAT
-	FREE_AND_NULL(rip.xmap);
-	FREE_AND_NULL(rip.ymap);
-	FREE_AND_NULL(rip.xunmap);
-	FREE_AND_NULL(rip.yunmap);
-	memset(&rip, 0, sizeof(rip));
-	rip.state = RIP_STATE_BOL;
-	rip.newstate = RIP_STATE_FLUSHING;
-	rip.enabled = (bbs->rip != RIP_VERSION_NONE) && (cio_api.options & CONIO_OPT_SET_PIXEL);
-	rip.version = bbs->rip;
-	rip.x = 0;
-	rip.y = 0;
-	rip.viewport.sx = 0;
-	rip.viewport.sy = 0;
-	rip.color = 7;
-	rip.font.num = 0;
-	rip.font.vertical = 0;
-	rip.font.size = 1;
-	rip.xor = false;
-	rip.fill_color = 7;
-	memcpy(rip.fill_pattern, "\xff\xff\xff\xff\xff\xff\xff\xff", 8);
-	rip.line_pattern = 0xffff;
-	rip.line_width = 1;
-	rip.x_dim = 640;
 	if (cio_api.options & CONIO_OPT_SET_PIXEL) {
-		pthread_mutex_lock(&vstatlock);
-		rip.x_max = vstat.scrnwidth;
-		rip.y_max = vstat.scrnheight;
-		pthread_mutex_unlock(&vstatlock);
-		if (rip.x_max > rip.x_dim)
-			rip.x_max = rip.x_dim;
-		rip.y_dim = 350;
-		if (rip.y_max > rip.y_dim)
-			rip.y_max = rip.y_dim;
-	}
-	rip.viewport.ex = rip.x_dim - 1;
-	rip.viewport.ey = rip.y_dim - 1;
-	rip.bbs = bbs;
-	if (rip.version == RIP_VERSION_1) {
-		rip.default_font = conio_fontdata[0].eight_by_eight;
-		rip.default_font_width = 8;
-		rip.default_font_height = 8;
-	}
-	else {
-		pthread_mutex_lock(&vstatlock);
-		rip.default_font = vstat.forced_font;
-		rip.default_font_width = vstat.charwidth;
-		rip.default_font_height = vstat.charheight;
-		pthread_mutex_unlock(&vstatlock);
-	}
+		FREE_AND_NULL(rip.xmap);
+		FREE_AND_NULL(rip.ymap);
+		FREE_AND_NULL(rip.xunmap);
+		FREE_AND_NULL(rip.yunmap);
+		memset(&rip, 0, sizeof(rip));
+		rip.state = RIP_STATE_BOL;
+		rip.newstate = RIP_STATE_FLUSHING;
+		rip.enabled = (bbs->rip != RIP_VERSION_NONE) && (cio_api.options & CONIO_OPT_SET_PIXEL);
+		rip.version = bbs->rip;
+		rip.x = 0;
+		rip.y = 0;
+		rip.viewport.sx = 0;
+		rip.viewport.sy = 0;
+		rip.color = 7;
+		rip.font.num = 0;
+		rip.font.vertical = 0;
+		rip.font.size = 1;
+		rip.xor = false;
+		rip.fill_color = 7;
+		memcpy(rip.fill_pattern, "\xff\xff\xff\xff\xff\xff\xff\xff", 8);
+		rip.line_pattern = 0xffff;
+		rip.line_width = 1;
+		rip.x_dim = 640;
+		if (cio_api.options & CONIO_OPT_SET_PIXEL) {
+			pthread_mutex_lock(&vstatlock);
+			rip.x_max = vstat.scrnwidth;
+			rip.y_max = vstat.scrnheight;
+			pthread_mutex_unlock(&vstatlock);
+			if (rip.x_max > rip.x_dim)
+				rip.x_max = rip.x_dim;
+			rip.y_dim = 350;
+			if (rip.y_max > rip.y_dim)
+				rip.y_max = rip.y_dim;
+		}
+		rip.viewport.ex = rip.x_dim - 1;
+		rip.viewport.ey = rip.y_dim - 1;
+		rip.bbs = bbs;
+		if (rip.version == RIP_VERSION_1) {
+			rip.default_font = conio_fontdata[0].eight_by_eight;
+			rip.default_font_width = 8;
+			rip.default_font_height = 8;
+		}
+		else {
+			pthread_mutex_lock(&vstatlock);
+			rip.default_font = vstat.forced_font;
+			rip.default_font_width = vstat.charwidth;
+			rip.default_font_height = vstat.charheight;
+			pthread_mutex_unlock(&vstatlock);
+		}
 
-	pending_len = 0;
-	if (pending)
-		pending[0] = 0;
-	moredata_len = 0;
-	if (moredata)
-		moredata[0] = 0;
-	if (bbs->rip) {
-		shadow_palette();
-		memcpy(&curr_ega_palette, &default_ega_palette, sizeof(curr_ega_palette));
-		set_ega_palette();
-		normal_palette();
+		pending_len = 0;
+		if (pending)
+			pending[0] = 0;
+		moredata_len = 0;
+		if (moredata)
+			moredata[0] = 0;
+		if (bbs->rip) {
+			shadow_palette();
+			memcpy(&curr_ega_palette, &default_ega_palette, sizeof(curr_ega_palette));
+			set_ega_palette();
+			normal_palette();
+		}
 	}
 #endif
 }
@@ -16253,7 +16259,7 @@ int
 rip_kbhit(void)
 {
 #ifdef HAS_VSTAT
-	if (rip.enabled)
+	if (rip.enabled && cio_api.options & CONIO_OPT_SET_PIXEL)
 		if (ripbuf)
 			return 1;
 #endif
@@ -16264,181 +16270,183 @@ int
 rip_getch(void)
 {
 #ifdef HAS_VSTAT
-	int                ch;
-	struct mouse_event mevent;
-	int                oldhold = hold_update;
+	if (cio_api.options & CONIO_OPT_SET_PIXEL) {
+		int                ch;
+		struct mouse_event mevent;
+		int                oldhold = hold_update;
 
-	hold_update = false;
+		hold_update = false;
 
-	struct mouse_field *pressed;
+		struct mouse_field *pressed;
 
-	if (ripbuf) {
-		ch = ripbuf[ripbufpos++];
-		if (ripbufpos == ripbuf_pos) {
-			free(ripbuf);
-			ripbuf = NULL;
-			ripbuf_size = 0;
-			ripbuf_pos = 0;
-			ripbufpos = 0;
+		if (ripbuf) {
+			ch = ripbuf[ripbufpos++];
+			if (ripbufpos == ripbuf_pos) {
+				free(ripbuf);
+				ripbuf = NULL;
+				ripbuf_size = 0;
+				ripbuf_pos = 0;
+				ripbufpos = 0;
+			}
+			return ch;
 		}
-		return ch;
-	}
-	if ((rip.enabled == false) || rip_suspended) {
+		if ((rip.enabled == false) || rip_suspended) {
+			ch = getch();
+			if ((ch == 0) || (ch == 0xe0)) {
+				ch |= getch() << 8;
+				if (ch == CIO_KEY_LITERAL_E0)
+					ch = 0xe0;
+			}
+			return ch;
+		}
+		struct mouse_state *ms = cterm->mouse_state_change_cbdata;
+
+		gotoxy(wherex(), wherey());
 		ch = getch();
 		if ((ch == 0) || (ch == 0xe0)) {
 			ch |= getch() << 8;
 			if (ch == CIO_KEY_LITERAL_E0)
 				ch = 0xe0;
 		}
-		return ch;
-	}
-	struct mouse_state *ms = cterm->mouse_state_change_cbdata;
 
-	gotoxy(wherex(), wherey());
-	ch = getch();
-	if ((ch == 0) || (ch == 0xe0)) {
-		ch |= getch() << 8;
-		if (ch == CIO_KEY_LITERAL_E0)
-			ch = 0xe0;
-	}
-
-	shadow_palette();
-	if (ch == CIO_KEY_MOUSE && (!(ms->flags & MS_FLAGS_DISABLED))) {
-		ch = -1;
-		getmouse(&mevent);
-		mevent.startx_res = unmap_rip_x(mevent.startx_res);
-		mevent.starty_res = unmap_rip_y(mevent.starty_res);
-		mevent.endx_res = unmap_rip_x(mevent.endx_res);
-		mevent.endy_res = unmap_rip_y(mevent.endy_res);
-		if (mevent.event == CIOLIB_BUTTON_1_PRESS) {
+		shadow_palette();
+		if (ch == CIO_KEY_MOUSE && (!(ms->flags & MS_FLAGS_DISABLED))) {
+			ch = -1;
+			getmouse(&mevent);
+			mevent.startx_res = unmap_rip_x(mevent.startx_res);
+			mevent.starty_res = unmap_rip_y(mevent.starty_res);
+			mevent.endx_res = unmap_rip_x(mevent.endx_res);
+			mevent.endy_res = unmap_rip_y(mevent.endy_res);
+			if (mevent.event == CIOLIB_BUTTON_1_PRESS) {
+				for (rip_pressed = rip.mfields; rip_pressed; rip_pressed = rip_pressed->next) {
+					if (rip_pressed->type == MOUSE_FIELD_BUTTON) {
+						if ((mevent.endx_res >= rip_pressed->data.button->box.x1)
+						    && (mevent.endx_res <= rip_pressed->data.button->box.x2)
+						    && (mevent.endy_res >= rip_pressed->data.button->box.y1)
+						    && (mevent.endy_res <= rip_pressed->data.button->box.y2))
+							break;
+					}
+					else if (rip_pressed->type == MOUSE_FIELD_HOT) {
+						if ((mevent.endx_res >= rip_pressed->data.hot->box.x1)
+						    && (mevent.endx_res <= rip_pressed->data.hot->box.x2)
+						    && (mevent.endy_res >= rip_pressed->data.hot->box.y1)
+						    && (mevent.endy_res <= rip_pressed->data.hot->box.y2))
+							break;
+					}
+				}
+				if (rip_pressed) {
+					if (rip_pressed->type == MOUSE_FIELD_BUTTON) {
+						if (rip_pressed->data.button->flags.invertable) {
+        	                                        // draw_button(rip_pressed->data.button, true);
+							invert_rect(rip_pressed->data.button->box.x1 - rip_pressed->data.button->bevel_size
+							    ,
+							    rip_pressed->data.button->box.y1 - rip_pressed->data.button->bevel_size
+							    ,
+							    rip_pressed->data.button->box.x2 - rip_pressed->data.button->bevel_size
+							    ,
+							    rip_pressed->data.button->box.y2
+							    - rip_pressed->data.button->bevel_size);
+						}
+					}
+					else if (rip_pressed->type == MOUSE_FIELD_HOT) {
+						if (rip_pressed->data.hot->invertable) {
+        	                                        // draw_button(rip_pressed->data.button, true);
+							invert_rect(rip_pressed->data.hot->box.x1,
+							    rip_pressed->data.hot->box.y1,
+							    rip_pressed->data.hot->box.x2,
+							    rip_pressed->data.hot->box.y2);
+						}
+					}
+				}
+			}
+			else if (mevent.event == CIOLIB_BUTTON_1_RELEASE) {
+				if (rip_pressed) {
+					if (rip_pressed->type == MOUSE_FIELD_BUTTON) {
+						if (rip_pressed->data.button->flags.invertable) {
+        	                                        // draw_button(rip_pressed->data.button, false);
+							invert_rect(rip_pressed->data.button->box.x1 - rip_pressed->data.button->bevel_size
+							    ,
+							    rip_pressed->data.button->box.y1 - rip_pressed->data.button->bevel_size
+							    ,
+							    rip_pressed->data.button->box.x2 - rip_pressed->data.button->bevel_size
+							    ,
+							    rip_pressed->data.button->box.y2
+							    - rip_pressed->data.button->bevel_size);
+						}
+						pressed = rip_pressed;
+						rip_pressed = NULL;
+						handle_mouse_button(pressed->data.button);
+					}
+					else if (rip_pressed->type == MOUSE_FIELD_HOT) {
+						if (rip_pressed->data.hot->invertable) {
+        	                                        // draw_button(rip_pressed->data.button, false);
+							invert_rect(rip_pressed->data.hot->box.x1,
+							    rip_pressed->data.hot->box.y1,
+							    rip_pressed->data.hot->box.x2,
+							    rip_pressed->data.hot->box.y2);
+						}
+						pressed = rip_pressed;
+						rip_pressed = NULL;
+						handle_command_str(pressed->data.hot->command);
+						if (rip.mfields) {
+							if (pressed->data.hot->resetafter)
+								rv_reset("RESET", NULL);
+						}
+					}
+				}
+				else {
+					if (rip.text_click) {
+						if ((mevent.endx >= cterm->left_margin - 1)
+						    && (mevent.endx <= cterm->right_margin - 1)
+						    && (mevent.endy >= cterm->top_margin - 1)
+						    && (mevent.endy <= cterm->bottom_margin - 1)) {
+							rip_mouse_event.x = mevent.endx;
+							rip_mouse_event.y = mevent.endy;
+							rip_mouse_event.buttons = mevent.bstate | 1;
+							mousestate(&rip_mouse_event.x,
+							    &rip_mouse_event.y,
+							    &rip_mouse_event.buttons);
+							rip_mouse_event.type = RIP_MOUSE_EVENT_TEXT;
+							handle_command_str(rip.text_click);
+							rip_mouse_event.type = RIP_MOUSE_EVENT_NONE;
+						}
+					}
+					if (rip.graphics_click) {
+						if ((mevent.endx_res >= rip.viewport.sx) && (mevent.endx_res <= rip.viewport.ex)
+						    && (mevent.endy_res >= rip.viewport.sy)
+						    && (mevent.endy_res <= rip.viewport.ey)) {
+							rip_mouse_event.x = mevent.endx_res;
+							rip_mouse_event.y = mevent.endy_res;
+							rip_mouse_event.buttons = mevent.bstate | 1;
+							mousestate_res(&rip_mouse_event.x,
+							    &rip_mouse_event.y,
+							    &rip_mouse_event.buttons);
+							rip_mouse_event.type = RIP_MOUSE_EVENT_GRAPHICS;
+							handle_command_str(rip.graphics_click);
+							rip_mouse_event.type = RIP_MOUSE_EVENT_NONE;
+						}
+					}
+				}
+			}
+		}
+		else {
 			for (rip_pressed = rip.mfields; rip_pressed; rip_pressed = rip_pressed->next) {
 				if (rip_pressed->type == MOUSE_FIELD_BUTTON) {
-					if ((mevent.endx_res >= rip_pressed->data.button->box.x1)
-					    && (mevent.endx_res <= rip_pressed->data.button->box.x2)
-					    && (mevent.endy_res >= rip_pressed->data.button->box.y1)
-					    && (mevent.endy_res <= rip_pressed->data.button->box.y2))
-						break;
-				}
-				else if (rip_pressed->type == MOUSE_FIELD_HOT) {
-					if ((mevent.endx_res >= rip_pressed->data.hot->box.x1)
-					    && (mevent.endx_res <= rip_pressed->data.hot->box.x2)
-					    && (mevent.endy_res >= rip_pressed->data.hot->box.y1)
-					    && (mevent.endy_res <= rip_pressed->data.hot->box.y2))
+					if (toupper(rip_pressed->data.button->hotkey) == toupper(ch))
 						break;
 				}
 			}
 			if (rip_pressed) {
-				if (rip_pressed->type == MOUSE_FIELD_BUTTON) {
-					if (rip_pressed->data.button->flags.invertable) {
-                                                // draw_button(rip_pressed->data.button, true);
-						invert_rect(rip_pressed->data.button->box.x1 - rip_pressed->data.button->bevel_size
-						    ,
-						    rip_pressed->data.button->box.y1 - rip_pressed->data.button->bevel_size
-						    ,
-						    rip_pressed->data.button->box.x2 - rip_pressed->data.button->bevel_size
-						    ,
-						    rip_pressed->data.button->box.y2
-						    - rip_pressed->data.button->bevel_size);
-					}
-				}
-				else if (rip_pressed->type == MOUSE_FIELD_HOT) {
-					if (rip_pressed->data.hot->invertable) {
-                                                // draw_button(rip_pressed->data.button, true);
-						invert_rect(rip_pressed->data.hot->box.x1,
-						    rip_pressed->data.hot->box.y1,
-						    rip_pressed->data.hot->box.x2,
-						    rip_pressed->data.hot->box.y2);
-					}
-				}
+				ch = -1;
+				handle_mouse_button(rip_pressed->data.button);
+				rip_pressed = NULL;
 			}
 		}
-		else if (mevent.event == CIOLIB_BUTTON_1_RELEASE) {
-			if (rip_pressed) {
-				if (rip_pressed->type == MOUSE_FIELD_BUTTON) {
-					if (rip_pressed->data.button->flags.invertable) {
-                                                // draw_button(rip_pressed->data.button, false);
-						invert_rect(rip_pressed->data.button->box.x1 - rip_pressed->data.button->bevel_size
-						    ,
-						    rip_pressed->data.button->box.y1 - rip_pressed->data.button->bevel_size
-						    ,
-						    rip_pressed->data.button->box.x2 - rip_pressed->data.button->bevel_size
-						    ,
-						    rip_pressed->data.button->box.y2
-						    - rip_pressed->data.button->bevel_size);
-					}
-					pressed = rip_pressed;
-					rip_pressed = NULL;
-					handle_mouse_button(pressed->data.button);
-				}
-				else if (rip_pressed->type == MOUSE_FIELD_HOT) {
-					if (rip_pressed->data.hot->invertable) {
-                                                // draw_button(rip_pressed->data.button, false);
-						invert_rect(rip_pressed->data.hot->box.x1,
-						    rip_pressed->data.hot->box.y1,
-						    rip_pressed->data.hot->box.x2,
-						    rip_pressed->data.hot->box.y2);
-					}
-					pressed = rip_pressed;
-					rip_pressed = NULL;
-					handle_command_str(pressed->data.hot->command);
-					if (rip.mfields) {
-						if (pressed->data.hot->resetafter)
-							rv_reset("RESET", NULL);
-					}
-				}
-			}
-			else {
-				if (rip.text_click) {
-					if ((mevent.endx >= cterm->left_margin - 1)
-					    && (mevent.endx <= cterm->right_margin - 1)
-					    && (mevent.endy >= cterm->top_margin - 1)
-					    && (mevent.endy <= cterm->bottom_margin - 1)) {
-						rip_mouse_event.x = mevent.endx;
-						rip_mouse_event.y = mevent.endy;
-						rip_mouse_event.buttons = mevent.bstate | 1;
-						mousestate(&rip_mouse_event.x,
-						    &rip_mouse_event.y,
-						    &rip_mouse_event.buttons);
-						rip_mouse_event.type = RIP_MOUSE_EVENT_TEXT;
-						handle_command_str(rip.text_click);
-						rip_mouse_event.type = RIP_MOUSE_EVENT_NONE;
-					}
-				}
-				if (rip.graphics_click) {
-					if ((mevent.endx_res >= rip.viewport.sx) && (mevent.endx_res <= rip.viewport.ex)
-					    && (mevent.endy_res >= rip.viewport.sy)
-					    && (mevent.endy_res <= rip.viewport.ey)) {
-						rip_mouse_event.x = mevent.endx_res;
-						rip_mouse_event.y = mevent.endy_res;
-						rip_mouse_event.buttons = mevent.bstate | 1;
-						mousestate_res(&rip_mouse_event.x,
-						    &rip_mouse_event.y,
-						    &rip_mouse_event.buttons);
-						rip_mouse_event.type = RIP_MOUSE_EVENT_GRAPHICS;
-						handle_command_str(rip.graphics_click);
-						rip_mouse_event.type = RIP_MOUSE_EVENT_NONE;
-					}
-				}
-			}
-		}
+		normal_palette();
+		hold_update = oldhold;
+		return ch;
 	}
-	else {
-		for (rip_pressed = rip.mfields; rip_pressed; rip_pressed = rip_pressed->next) {
-			if (rip_pressed->type == MOUSE_FIELD_BUTTON) {
-				if (toupper(rip_pressed->data.button->hotkey) == toupper(ch))
-					break;
-			}
-		}
-		if (rip_pressed) {
-			ch = -1;
-			handle_mouse_button(rip_pressed->data.button);
-			rip_pressed = NULL;
-		}
-	}
-	normal_palette();
-	hold_update = oldhold;
-	return ch;
-#else
+#endif
 	int                ch;
 
 	ch = getch();
@@ -16448,5 +16456,4 @@ rip_getch(void)
 			ch = 0xe0;
 	}
 	return ch;
-#endif
 }
