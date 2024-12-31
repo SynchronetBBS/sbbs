@@ -79,6 +79,7 @@ include:
       platform: 'aarch64'
       tagname: 'macOS-aarch64'
       gnu_make: 'make'
+      has_gtk: "yes"
       build_flags: 'RELEASE=1'
   - local: '.gitlab-ci-unix.yml'
     inputs:
