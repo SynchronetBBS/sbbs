@@ -150,12 +150,16 @@ ifndef NO_LD_RUN_PATH
 endif
 
 CON_LIBS	+= -lsbbs -lftpsrvr -lwebsrvr -lmailsrvr -lservices
-SHLIBOPTS	:=	-shared
 ifeq ($(os),sunos)
  MKSHLIB		:=	/usr/ccs/bin/ld -G
  MKSHPPLIB		:=	/usr/ccs/bin/ld -G
  SHLIBOPTS	:=
 else
+ ifeq ($(os),darwin)
+  SHLIBOPTS	=	-shared -install_name `realpath $(SBBSDIR)`/$@
+ else
+  SHLIBOPTS	:=	-shared
+ endif
  MKSHLIB		:=	$(CC)
  MKSHPPLIB		:=	$(CXX)
 endif

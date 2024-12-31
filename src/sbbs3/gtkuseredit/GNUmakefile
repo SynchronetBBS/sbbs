@@ -24,19 +24,23 @@ endif
 vpath %.c ..
 
 CFLAGS	+=	$(SBBSDEFS) -I.. -I../../comio $(SMBLIB_CFLAGS) $(HASH_CFLAGS) $(XPDEV-MT_CFLAGS) $(JS_CFLAGS) $(CRYPT_CFLAGS) `pkg-config gtk+-3.0 --cflags`
-# Hopefully, -Wl,-E exports all symbols dynamically everywhere.
-LDFLAGS	+=	-Wl,-E -L../$(LIBODIR) $(SMBLIB_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(MT_LDFLAGS)
+LDFLAGS	+=	-L../$(LIBODIR) $(SMBLIB_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(MT_LDFLAGS)
 EXTRA_LIBS += `pkg-config gtk+-3.0 --libs`
 
 # Because pkg-config for libglade uses --rpath, we need to also, LD_RUN_PATH
 # won't work.  :-(
+ifeq ($(os),darwin)
+ RPATH := -rpath
+else
+ RPATH := --rpath
+endif
 ifdef SBBSDIR
- LDFLAGS	+=	-Wl,--rpath -Wl,$(SBBSDIR)/exec
+ LDFLAGS	+=	-Wl,$(RPATH),$(SBBSDIR)/exec
 endif
 PARENT_DIR = $(shell dirname `pwd`)
-LDFLAGS	+=	-Wl,--rpath -Wl,$(PARENT_DIR)/$(LIBODIR)
+LDFLAGS	+=	-Wl,$(RPATH),$(PARENT_DIR)/$(LIBODIR)
 ifeq ($(os),sunos)
- LDFLAGS	+=	-Wl,--rpath -Wl,/opt/sfw/gcc-3/lib
+ LDFLAGS	+=	-Wl,$(RPATH),/opt/sfw/gcc-3/lib
 endif
 
 $(GTKUSEREDIT): $(OBJS)
