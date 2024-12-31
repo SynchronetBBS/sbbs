@@ -39,6 +39,7 @@ var whitelist = [];
 var rip = false;
 var lastrip = '';
 var syncterm_cache;
+var syncterm_cache_files={};
 
 var trainer_stats = [
 	{
@@ -17424,8 +17425,18 @@ function supports_syncterm_cache()
 
 	dk.console.print('\x1b_SyncTERM:C;L;test\x1b\\');
 	stat = read_apc(10000);
-	if (stat != undefined)
+	if (stat != undefined) {
+		dk.console.print('\x1b_SyncTERM:C;L;RIP/*.*\x1b\\');
+		var lst = read_apc(10000)
+		lst = lst.split('\n');
+		for (var entry in lst) {
+			var entryarr = lst[entry].split('\t');
+			if (entryarr.length == 2) {
+				syncterm_cache_files[entryarr[0]] = entryarr[1];
+			}
+		}
 		return true;
+	}
 	return false;
 }
 
@@ -17460,48 +17471,66 @@ function upload_if_newer(fname)
 
 	if (!file_exists(path))
 		return false;
+	if (syncterm_cache === undefined)
+		syncterm_cache = supports_syncterm_cache();
 	while (dk.console.waitkey(0))
 		dk.console.getkey();
 	dk.console.print('\r\x1b[K  Checking '+fname);
-	dk.console.print('\r!|1F030000'+fname+'\r\n');
-	stat = read_str(10000, /[01]\.[0-9]+\.[0-9]{2}\/[0-9]{2}\/[0-9]{2}\.[0-9]{2}:[0-9]{2}:[0-9]{2}/);
-	if (stat == '')
-		return false;
-	if (stat == '0') {
+	if (syncterm_cache) {
 		need_file = true;
-	}
-	else {
-		// 1.20345.01/02/93.03:04:30
-		m = stat.match(/^1\.([0-9]+)\.([0-9]{2})\/([0-9]{2})\/([0-9]{2})\.([0-9]{2}):([0-9]{2}):([0-9]{2})$/);
-		if (m === null) {
-			need_file = true;
-		}
-		else {
-			if (parseInt(m[1], 10) != file_size(path)) {
-				need_file = true;
-			}
-			else {
-				fdate.setTime(file_date(path));
-				rdate.setUTCMilliseconds(0);
-				rdate.setUTCSeconds(parseInt(m[7], 10));
-				rdate.setUTCMinutes(parseInt(m[6], 10));
-				rdate.setUTCHours(parseInt(m[5], 10));
-				rdate.setUTCDate(1);
-				yr = parseInt(m[4], 10) + 1900;
-				if (yr < new Date().getUTCFullYear() - 50)
-					yr += 100;
-				rdate.setUTCFullYear(yr);
-				rdate.setUTCDate(parseInt(m[3], 10));
-				rdate.setUTCMonth(parseInt(m[2], 10));
-				if (rdate < fdate) {
-					need_file = true;
+		if (syncterm_cache_files[fname] !== undefined) {
+			var f = new File(path);
+			var hash;
+			if (f.open("rb")) {
+				hash = f.md5_hex;
+				f.close();
+				if (hash === syncterm_cache_files[fname]) {
+					return true;
 				}
 			}
 		}
 	}
-	if (!need_file) {
-		dk.console.print('\r\x1b[K');
-		return true;
+	else {
+		dk.console.print('\r!|1F030000'+fname+'\r\n');
+		stat = read_str(10000, /[01]\.[0-9]+\.[0-9]{2}\/[0-9]{2}\/[0-9]{2}\.[0-9]{2}:[0-9]{2}:[0-9]{2}/);
+		if (stat == '')
+			return false;
+		if (stat == '0') {
+			need_file = true;
+		}
+		else {
+			// 1.20345.01/02/93.03:04:30
+			m = stat.match(/^1\.([0-9]+)\.([0-9]{2})\/([0-9]{2})\/([0-9]{2})\.([0-9]{2}):([0-9]{2}):([0-9]{2})$/);
+			if (m === null) {
+				need_file = true;
+			}
+			else {
+				if (parseInt(m[1], 10) != file_size(path)) {
+					need_file = true;
+				}
+				else {
+					fdate.setTime(file_date(path));
+					rdate.setUTCMilliseconds(0);
+					rdate.setUTCSeconds(parseInt(m[7], 10));
+					rdate.setUTCMinutes(parseInt(m[6], 10));
+					rdate.setUTCHours(parseInt(m[5], 10));
+					rdate.setUTCDate(1);
+					yr = parseInt(m[4], 10) + 1900;
+					if (yr < new Date().getUTCFullYear() - 50)
+						yr += 100;
+					rdate.setUTCFullYear(yr);
+					rdate.setUTCDate(parseInt(m[3], 10));
+					rdate.setUTCMonth(parseInt(m[2], 10));
+					if (rdate < fdate) {
+						need_file = true;
+					}
+				}
+			}
+		}
+		if (!need_file) {
+			dk.console.print('\r\x1b[K');
+			return true;
+		}
 	}
 	ret = upload(fname);
 	return ret;
