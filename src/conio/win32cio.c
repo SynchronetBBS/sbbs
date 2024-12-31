@@ -268,7 +268,7 @@ static int win32_keyboardio(int isgetch)
 		if(lastch)
 			continue;
 
-		if(!ReadConsoleInput(h, &input, 1, &num)
+		if(!ReadConsoleInputA(h, &input, 1, &num)
 				|| !num || (input.EventType!=KEY_EVENT && input.EventType!=MOUSE_EVENT && input.EventType != WINDOW_BUFFER_SIZE_EVENT))
 			continue;
 
@@ -827,7 +827,7 @@ int win32_gettext(int left, int top, int right, int bottom, void* buf)
 	ci=(CHAR_INFO *)alloca(sizeof(CHAR_INFO)*(bs.X*bs.Y));
 	if((h=GetStdHandle(STD_OUTPUT_HANDLE)) == INVALID_HANDLE_VALUE)
 		return 0; // failure
-	ReadConsoleOutput(h,ci,bs,bc,&reg);
+	ReadConsoleOutputA(h,ci,bs,bc,&reg);
 	for(y=0;y<=(bottom-top);y++) {
 		for(x=0;x<=(right-left);x++) {
 			bu[((y*bs.X)+x)*2]=ci[(y*bs.X)+x].Char.AsciiChar;
@@ -887,7 +887,7 @@ int win32_puttext(int left, int top, int right, int bottom, void* buf)
 		}
 	}
 	if((h=GetStdHandle(STD_OUTPUT_HANDLE)) != INVALID_HANDLE_VALUE)
-		WriteConsoleOutput(h,ci,bs,bc,&reg);
+		WriteConsoleOutputA(h,ci,bs,bc,&reg);
 	return 1;
 }
 
