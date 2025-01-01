@@ -457,7 +457,7 @@ bool sbbs_t::pause(bool set_abort)
 	getnodedat(cfg.node_num, &thisnode);
 	nodesync();
 	attr(tempattrs);
-	if(ch==LF)	// down arrow == display one more line
+	if(ch == TERM_KEY_DOWN)	// down arrow == display one more line
 		lncntr=rows-2;
 	pause_inside = false;
 	return !aborted;
