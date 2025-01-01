@@ -937,6 +937,31 @@ static int win_to_text_ypos(int winpos, struct video_stats *vs)
 	return (winpos * vs->rows / vs->scrnheight) + 1;
 }
 
+static void
+handle_bios_key(uint32_t *bios_key, bool *bios_key_parsing, bool *zero_first)
+{
+	uint8_t ch;
+
+	if (*bios_key > 0 && *bios_key_parsing) {
+		if (*zero_first) {
+			// Unicode character
+			ch = cpchar_from_unicode_cpoint(getcodepage(), *bios_key, 0);
+			if (ch == 0)
+				sdl_beep();
+			else
+				sdl_add_key(ch, NULL);
+		}
+		else {
+			// Codepage character
+			ch = *bios_key;
+			sdl_add_key(ch, NULL);
+		}
+	}
+	*bios_key = 0;
+	*bios_key_parsing = false;
+	*zero_first = false;
+}
+
 void sdl_video_event_thread(void *data)
 {
 	SDL_Event	ev;
@@ -944,12 +969,57 @@ void sdl_video_event_thread(void *data)
 	static SDL_Keycode last_sym = SDLK_UNKNOWN;
 	static Uint16 last_mod = 0;
 	struct video_stats cvstat = vstat;
+	uint32_t bios_key = 0;
+	bool bios_key_parsing = false;
+	bool zero_first = false;
 
 	while(1) {
 		if(sdl.WaitEventTimeout(&ev, 1)!=1)
 			continue;
 		switch (ev.type) {
 			case SDL_KEYDOWN:			/* Keypress */
+				if (bios_key_parsing) {
+					if (ev.key.keysym.sym >= SDLK_KP_1 && ev.key.keysym.sym <= SDLK_KP_0) {
+						if (bios_key == 0 && ev.key.keysym.sym == SDLK_KP_0)
+							zero_first = true;
+						else {
+							bool terminate_bios = false;
+							if (zero_first) {
+								if (bios_key >= 429496730 ||
+								    (bios_key == 429496729 && ((ev.key.keysym.sym > SDLK_KP_5) || (ev.key.keysym.sym == SDLK_KP_0)))) {
+									terminate_bios = true;
+								}
+							}
+							else {
+								if (bios_key >= 26 ||
+								    (bios_key == 429496729 && ((ev.key.keysym.sym > SDLK_KP_5) || (ev.key.keysym.sym == SDLK_KP_0)))) {
+									terminate_bios = true;
+								}
+							}
+							if (terminate_bios) {
+								handle_bios_key(&bios_key, &bios_key_parsing, &zero_first);
+							}
+							else {
+								bios_key *= 10;
+								if (ev.key.keysym.sym < SDLK_KP_0)
+									bios_key += ((ev.key.keysym.sym - SDLK_KP_1) + 1);
+								break;
+							}
+						}
+					}
+					else {
+						handle_bios_key(&bios_key, &bios_key_parsing, &zero_first);
+					}
+				}
+
+				if (ev.key.keysym.sym == SDLK_LALT || ev.key.keysym.sym == SDLK_RALT) {
+					block_text = 1;
+					bios_key = 0;
+					bios_key_parsing = true;
+					zero_first = false;
+					break;
+				}
+
 				last_mod = ev.key.keysym.mod;
 				last_sym = ev.key.keysym.sym;
 				if ((ev.key.keysym.mod & (KMOD_CTRL|KMOD_ALT|KMOD_GUI)) && !(ev.key.keysym.mod & KMOD_MODE)) {
@@ -1006,6 +1076,13 @@ void sdl_video_event_thread(void *data)
 				}
 				break;
 			case SDL_KEYUP:
+				if (bios_key_parsing) {
+					// If Mod1 (ie: ALT) is released, *and* the only bytes were KP numbers, do the BIOS thing.
+					if (ev.key.keysym.sym == SDLK_LALT || ev.key.keysym.sym == SDLK_RALT) {
+						handle_bios_key(&bios_key, &bios_key_parsing, &zero_first);
+					}
+				}
+
 				last_mod = ev.key.keysym.mod;
 				if (!(ev.key.keysym.mod & (KMOD_CTRL|KMOD_ALT|KMOD_GUI)))
 					block_text = 0;
