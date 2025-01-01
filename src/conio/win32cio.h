@@ -68,8 +68,12 @@ void win32_getcustomcursor(int *s, int *e, int *r, int *b, int *v);
 void win32_setcustomcursor(int s, int e, int r, int b, int v);
 int win32_getvideoflags(void);
 int win32_setpalette(uint32_t entry, uint16_t r, uint16_t g, uint16_t b);
+int win32_keyval_cmp(const void *key, const void *memb);
+bool win32_bios_keyup_handler(WORD wParam, void (*accept_key)(uint16_t key));
+bool win32_bios_keydown_handler(WORD wParam, void (*accept_key)(uint16_t key));
 
-extern const struct keyvals keyval[];
+#define WIN32_KEYVALS 89
+extern const struct keyvals keyval[WIN32_KEYVALS];
 #ifdef __cplusplus
 }
 #endif

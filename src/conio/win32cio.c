@@ -31,28 +31,41 @@
 #include "vidmodes.h"
 #include "win32cio.h"
 
-CIOLIBEXPORT const struct keyvals keyval[] =
+CIOLIBEXPORT const struct keyvals keyval[WIN32_KEYVALS] =
 {
-	{VK_BACK, 0x08, 0x08, 0x7f, 0x0e00},
-	{VK_TAB, 0x09, 0x0f00, 0x9400, 0xa500},
-	{VK_RETURN, 0x0d, 0x0d, 0x0a, 0xa600},
-	{VK_ESCAPE, 0x1b, 0x1b, 0x1b, 0x0100},
-	{VK_SPACE, 0x20, 0x20, 0x0300, 0x20,},
-	{'0', '0', ')', 0, 0x8100},
+	{VK_BACK, 0x08, 0x08, 0x7f, 0x0e00},        // 0x08
+	{VK_TAB, 0x09, 0x0f00, 0x9400, 0xa500},     // 0x09
+	{VK_RETURN, 0x0d, 0x0d, 0x0a, 0xa600},      // 0x0d
+	{VK_ESCAPE, 0x1b, 0x1b, 0x1b, 0x0100},      // 0x1b
+	{VK_SPACE, 0x20, 0x20, 0x0300, 0x20,},      // 0x20
+	{VK_PRIOR, 0x4900, 0x4900, 0x8400, 0x9900}, // 0x21
+	{VK_NEXT, 0x5100, 0x5100, 0x7600, 0xa100},  // 0x22
+	{VK_END, 0x4f00, 0x4f00, 0x7500, 0x9f00},   // 0x23
+	{VK_HOME, 0x4700, 0x4700, 0x7700, 0x9700},  // 0x24
+	{VK_LEFT, 0x4b00, 0x4b00, 0x7300, 0x9b00},  // 0x25
+
+	{VK_UP, 0x4800, 0x4800, 0x8d00, 0x9800},    // 0x26
+	{VK_RIGHT, 0x4d00, 0x4d00, 0x7400, 0x9d00}, // 0x27
+	{VK_DOWN, 0x5000, 0x5000, 0x9100, 0xa000},  // 0x28
+	{VK_INSERT, CIO_KEY_IC, CIO_KEY_SHIFT_IC, CIO_KEY_CTRL_IC, CIO_KEY_ALT_IC},  // 0x2d
+	{VK_DELETE, CIO_KEY_DC, CIO_KEY_SHIFT_DC, CIO_KEY_CTRL_DC, CIO_KEY_CTRL_IC}, // 0x2e
+	{'0', '0', ')', 0, 0x8100},                 // 0x30
 	{'1', '1', '!', 0, 0x7800},
 	{'2', '2', '@', 0x0300, 0x7900},
 	{'3', '3', '#', 0, 0x7a00},
 	{'4', '4', '$', 0, 0x7b00},
+
 	{'5', '5', '%', 0, 0x7c00},
 	{'6', '6', '^', 0x1e, 0x7d00},
 	{'7', '7', '&', 0, 0x7e00},
 	{'8', '8', '*', 0, 0x7f00},
 	{'9', '9', '(', 0, 0x8000},
-	{'A', 'a', 'A', 0x01, 0x1e00},
+	{'A', 'a', 'A', 0x01, 0x1e00},              // 0x41
 	{'B', 'b', 'B', 0x02, 0x3000},
 	{'C', 'c', 'C', 0x03, 0x2e00},
 	{'D', 'd', 'D', 0x04, 0x2000},
 	{'E', 'e', 'E', 0x05, 0x1200},
+
 	{'F', 'f', 'F', 0x06, 0x2100},
 	{'G', 'g', 'G', 0x07, 0x2200},
 	{'H', 'h', 'H', 0x08, 0x2300},
@@ -63,6 +76,7 @@ CIOLIBEXPORT const struct keyvals keyval[] =
 	{'M', 'm', 'M', 0x0d, 0x3200},
 	{'N', 'n', 'N', 0x0e, 0x3100},
 	{'O', 'o', 'O', 0x0f, 0x1800},
+
 	{'P', 'p', 'P', 0x10, 0x1900},
 	{'Q', 'q', 'Q', 0x11, 0x1000},
 	{'R', 'r', 'R', 0x12, 0x1300},
@@ -73,18 +87,9 @@ CIOLIBEXPORT const struct keyvals keyval[] =
 	{'W', 'w', 'W', 0x17, 0x1100},
 	{'X', 'x', 'X', 0x18, 0x2d00},
 	{'Y', 'y', 'Y', 0x19, 0x1500},
+
 	{'Z', 'z', 'Z', 0x1a, 0x2c00},
-	{VK_PRIOR, 0x4900, 0x4900, 0x8400, 0x9900},
-	{VK_NEXT, 0x5100, 0x5100, 0x7600, 0xa100},
-	{VK_END, 0x4f00, 0x4f00, 0x7500, 0x9f00},
-	{VK_HOME, 0x4700, 0x4700, 0x7700, 0x9700},
-	{VK_LEFT, 0x4b00, 0x4b00, 0x7300, 0x9b00},
-	{VK_UP, 0x4800, 0x4800, 0x8d00, 0x9800},
-	{VK_RIGHT, 0x4d00, 0x4d00, 0x7400, 0x9d00},
-	{VK_DOWN, 0x5000, 0x5000, 0x9100, 0xa000},
-	{VK_INSERT, CIO_KEY_IC, CIO_KEY_SHIFT_IC, CIO_KEY_CTRL_IC, CIO_KEY_ALT_IC},
-	{VK_DELETE, CIO_KEY_DC, CIO_KEY_SHIFT_DC, CIO_KEY_CTRL_DC, CIO_KEY_CTRL_IC},
-	{VK_NUMPAD0, '0', 0x5200, 0x9200, 0},
+	{VK_NUMPAD0, '0', 0x5200, 0x9200, 0},       // 0x60
 	{VK_NUMPAD1, '1', 0x4f00, 0x7500, 0},
 	{VK_NUMPAD2, '2', 0x5000, 0x9100, 0},
 	{VK_NUMPAD3, '3', 0x5100, 0x7600, 0},
@@ -93,16 +98,18 @@ CIOLIBEXPORT const struct keyvals keyval[] =
 	{VK_NUMPAD6, '6', 0x4d00, 0x7400, 0},
 	{VK_NUMPAD7, '7', 0x4700, 0x7700, 0},
 	{VK_NUMPAD8, '8', 0x4800, 0x8d00, 0},
+
 	{VK_NUMPAD9, '9', 0x4900, 0x8400, 0},
-	{VK_MULTIPLY, '*', '*', 0x9600, 0x3700},
-	{VK_ADD, '+', '+', 0x9000, 0x4e00},
-	{VK_SUBTRACT, '-', '-', 0x8e00, 0x4a00},
-	{VK_DECIMAL, '.', '.', 0x5300, 0x9300},
-	{VK_DIVIDE, '/', '/', 0x9500, 0xa400},
-	{VK_F1, 0x3b00, 0x5400, 0x5e00, 0x6800},
+	{VK_MULTIPLY, '*', '*', 0x9600, 0x3700},    // 0x6a
+	{VK_ADD, '+', '+', 0x9000, 0x4e00},         // 0x6b
+	{VK_SUBTRACT, '-', '-', 0x8e00, 0x4a00},    // 0x6d
+	{VK_DECIMAL, '.', '.', 0x5300, 0x9300},     // 0x6e
+	{VK_DIVIDE, '/', '/', 0x9500, 0xa400},      // 0x6f
+	{VK_F1, 0x3b00, 0x5400, 0x5e00, 0x6800},    // 0x70
 	{VK_F2, 0x3c00, 0x5500, 0x5f00, 0x6900},
 	{VK_F3, 0x3d00, 0x5600, 0x6000, 0x6a00},
 	{VK_F4, 0x3e00, 0x5700, 0x6100, 0x6b00},
+
 	{VK_F5, 0x3f00, 0x5800, 0x6200, 0x6c00},
 	{VK_F6, 0x4000, 0x5900, 0x6300, 0x6d00},
 	{VK_F7, 0x4100, 0x5a00, 0x6400, 0x6e00},
@@ -110,19 +117,19 @@ CIOLIBEXPORT const struct keyvals keyval[] =
 	{VK_F9, 0x4300, 0x5c00, 0x6600, 0x7000},
 	{VK_F10, 0x4400, 0x5d00, 0x6700, 0x7100},
 	{VK_F11, 0x8500, 0x8700, 0x8900, 0x8b00},
-	{VK_F12, 0x8600, 0x8800, 0x8a00, 0x8c00},
-	{0xdc, '\\', '|', 0x1c, 0x2b00},
-	{0xbf, '/', '?', 0, 0x3500},
-	{0xbd, '-', '_', 0x1f, 0x8200},
-	{0xbb, '=', '+', 0, 0x8300},
-	{0xdb, '[', '{', 0x1b, 0x1a00},
-	{0xdd, ']', '}', 0x1d, 0x1b00},
-	{0xba, ';', ':', 0, 0x2700},
-	{0xde, '\'', '"', 0, 0x2800},
-	{0xbc, ',', '<', 0, 0x3300},
-	{0xbe, '.', '>', 0, 0x3400},
-	{0xc0, '`', '~', 0, 0x2900},
-	{0, 0, 0, 0, 0}	/** END **/
+	{VK_F12, 0x8600, 0x8800, 0x8a00, 0x8c00},   // 0x7b
+	{0xba, ';', ':', 0, 0x2700},                // VK_OEM_1
+	{0xbb, '=', '+', 0, 0x8300},                // VK_OEM_PLUS
+
+	{0xbc, ',', '<', 0, 0x3300},                // VK_OEM_COMMA
+	{0xbd, '-', '_', 0x1f, 0x8200},             // VK_OEM_MINUS
+	{0xbe, '.', '>', 0, 0x3400},                // VK_OEM_PERIOD
+	{0xbf, '/', '?', 0, 0x3500},                // VK_OEM_2
+	{0xdb, '[', '{', 0x1b, 0x1a00},             // VK_OEM_4
+	{0xdc, '\\', '|', 0x1c, 0x2b00},            // VK_OEM_5
+	{0xdd, ']', '}', 0x1d, 0x1b00},             // VK_OEM_6
+	{0xde, '\'', '"', 0, 0x2800},               // VK_OEM_7
+	{0xc0, '`', '~', 0, 0x2900},                // VK_OEM_3
 };
 
 static uint8_t *win32cio_buffer = NULL;
@@ -205,28 +212,142 @@ static unsigned char WintoDOSAttr(WORD newattr)
 	return(ret);
 }
 
+int
+win32_keyval_cmp(const void *key, const void *memb)
+{
+	const WORD *k = key;
+	int i = *k;
+	const struct keyvals *m = memb;
+
+	return i - m->VirtualKeyCode;
+}
+
 static int win32_getchcode(WORD code, DWORD state)
 {
-	int i;
+	struct keyvals *k = bsearch(&code, keyval, WIN32_KEYVALS, sizeof(keyval[0]), win32_keyval_cmp);
 
-	for(i=0;keyval[i].Key;i++) {
-		if(keyval[i].VirtualKeyCode==code) {
-			if(state & (RIGHT_ALT_PRESSED|LEFT_ALT_PRESSED))
-				return(keyval[i].ALT);
-			if(state & (RIGHT_CTRL_PRESSED|LEFT_CTRL_PRESSED))
-				return(keyval[i].CTRL);
-			if((state & (CAPSLOCK_ON)) && isalpha(keyval[i].Key)) {
-				if(!(state & SHIFT_PRESSED))
-					return(keyval[i].Shift);
-			}
-			else {
-				if(state & (SHIFT_PRESSED))
-					return(keyval[i].Shift);
-			}
-			return(keyval[i].Key);
+	if (k) {
+		if(state & (RIGHT_ALT_PRESSED|LEFT_ALT_PRESSED))
+			return(k->ALT);
+		if(state & (RIGHT_CTRL_PRESSED|LEFT_CTRL_PRESSED))
+			return(k->CTRL);
+		if((state & (CAPSLOCK_ON)) && isalpha(k->Key)) {
+			if(!(state & SHIFT_PRESSED))
+				return(k->Shift);
 		}
+		else {
+			if(state & (SHIFT_PRESSED))
+				return(k->Shift);
+		}
+		return(k->Key);
 	}
 	return(0);
+}
+
+static bool
+handle_bios_key(uint32_t *bios_key, bool *bios_key_parsing, bool *zero_first, void (*accept_key)(uint16_t key))
+{
+	uint8_t ch;
+	bool ret = false;
+
+	if (*bios_key > 0 && *bios_key_parsing) {
+		if (*zero_first) {
+			// Unicode character
+			ch = cpchar_from_unicode_cpoint(getcodepage(), *bios_key, 0);
+			if (ch != 0)
+				MessageBeep(MB_ICONWARNING);
+			else {
+				accept_key(ch);
+				ret = true;
+			}
+		}
+		else {
+			// Codepage character
+			ch = *bios_key;
+			accept_key(ch);
+			ret = true;
+		}
+	}
+	*bios_key = 0;
+	*bios_key_parsing = false;
+	*zero_first = false;
+	return ret;
+}
+
+static uint32_t bios_key = 0;
+static bool bios_key_parsing = false;
+static bool zero_first = false;
+static WORD lastch = 0;
+
+static void
+set_last_key(uint16_t key)
+{
+	if (key) {
+		if (key == 0xe0)
+			lastch = CIO_KEY_LITERAL_E0;
+		else
+			lastch = key;
+	}
+}
+
+bool
+win32_bios_keyup_handler(WORD wParam, void (*accept_key)(uint16_t key))
+{
+	if (bios_key_parsing) {
+		if (wParam == VK_MENU) {
+			return handle_bios_key(&bios_key, &bios_key_parsing, &zero_first, accept_key);
+		}
+	}
+	return false;
+}
+
+bool
+win32_bios_keydown_handler(WORD wParam, void (*accept_key)(uint16_t key))
+{
+	if (bios_key_parsing) {
+		if (wParam >= VK_NUMPAD0 && wParam <= VK_NUMPAD9) {
+			if (bios_key == 0 && wParam == VK_NUMPAD0)
+				zero_first = true;
+			else {
+				bool terminate_bios = false;
+				if (zero_first) {
+					if (bios_key >= 429496730 ||
+					    (bios_key == 429496729 && wParam > VK_NUMPAD5)) {
+						terminate_bios = true;
+					}
+				}
+				else {
+					if (bios_key >= 26 ||
+					    (bios_key == 25 && wParam > VK_NUMPAD5)) {
+						terminate_bios = true;
+					}
+				}
+				if (terminate_bios) {
+					handle_bios_key(&bios_key, &bios_key_parsing, &zero_first, accept_key);
+				}
+				else {
+					bios_key *= 10;
+					bios_key += (wParam - VK_NUMPAD0);
+					return true;
+				}
+			}
+		}
+		else {
+			// Yeah, it keeps sending this in GDI mode...
+			if (wParam == VK_MENU)
+				return true;
+			handle_bios_key(&bios_key, &bios_key_parsing, &zero_first, accept_key);
+		}
+	}
+	else {
+		if (wParam == VK_MENU) {
+			bios_key = 0;
+			bios_key_parsing = true;
+			zero_first = false;
+			return true;
+		}
+	}
+	return false;
 }
 
 static int win32_keyboardio(int isgetch)
@@ -234,7 +355,6 @@ static int win32_keyboardio(int isgetch)
 	INPUT_RECORD input;
 	DWORD num=0;
 	HANDLE h;
-	static WORD lastch;
 
 	if((h=GetStdHandle(STD_INPUT_HANDLE)) == INVALID_HANDLE_VALUE)
 		return(0);
@@ -298,6 +418,8 @@ static int win32_keyboardio(int isgetch)
 #endif
 
 				if(input.Event.KeyEvent.bKeyDown) {
+					if (win32_bios_keydown_handler(input.Event.KeyEvent.wVirtualKeyCode, set_last_key))
+						break;
 					/* Is this an AltGr key? */
 					if(((input.Event.KeyEvent.dwControlKeyState & (RIGHT_ALT_PRESSED|LEFT_CTRL_PRESSED)) == (RIGHT_ALT_PRESSED|LEFT_CTRL_PRESSED))
 							&& (BYTE)input.Event.KeyEvent.uChar.AsciiChar) {
@@ -315,8 +437,12 @@ static int win32_keyboardio(int isgetch)
 					}
 					if (lastch == 0xe0)
 						lastch = CIO_KEY_LITERAL_E0;
-				} else if(input.Event.KeyEvent.wVirtualKeyCode == VK_MENU)
-					lastch=(BYTE)input.Event.KeyEvent.uChar.AsciiChar;
+				} else {
+					/* These two lines were added twenty years ago for Edit->Paste support of EX-ASCII */
+					//if(input.Event.KeyEvent.wVirtualKeyCode == VK_MENU)
+					//	lastch=(BYTE)input.Event.KeyEvent.uChar.AsciiChar;
+					win32_bios_keyup_handler(input.Event.KeyEvent.wVirtualKeyCode, set_last_key);
+				}
 
 				break;
 			case MOUSE_EVENT:
@@ -361,6 +487,7 @@ static int win32_keyboardio(int isgetch)
 						}
 					}
 				}
+				break;
 		}
 	}
 }

@@ -1993,13 +1993,11 @@ x11_event(XEvent *ev)
 
 		/* Keyboard Events */
 		case KeyRelease:
-			{
-				if (bios_key_parsing) {
-					KeySym ks = x11.XLookupKeysym((XKeyEvent *)ev, 0);
-					// If Mod1 (ie: ALT) is released, *and* the only bytes were KP numbers, do the BIOS thing.
-					if (ks == XK_Alt_L || ks == XK_Alt_R) {
-						handle_bios_key(&bios_key, &bios_key_parsing, &zero_first);
-					}
+			if (bios_key_parsing) {
+				KeySym ks = x11.XLookupKeysym((XKeyEvent *)ev, 0);
+				// If Mod1 (ie: ALT) is released, *and* the only bytes were KP numbers, do the BIOS thing.
+				if (ks == XK_Alt_L || ks == XK_Alt_R) {
+					handle_bios_key(&bios_key, &bios_key_parsing, &zero_first);
 				}
 			}
 			break;

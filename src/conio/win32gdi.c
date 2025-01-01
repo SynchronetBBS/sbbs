@@ -867,86 +867,90 @@ magic_message(MSG msg)
 				return false;
 			}
 
-			if (msg.message == WM_KEYUP || msg.message == WM_SYSKEYUP)
-				return false;
+			WORD wParam = msg.wParam;
+			if (msg.message == WM_KEYUP || msg.message == WM_SYSKEYUP) {
+				return win32_bios_keyup_handler(wParam, gdi_add_key);
+			}
 
-			for (i = 0; keyval[i].VirtualKeyCode != 0; i++) {
-				if (keyval[i].VirtualKeyCode == msg.wParam) {
-					if (msg.lParam & (1 << 29)) {
-						if (mods & (WMOD_CTRL | WMOD_LCTRL | WMOD_RCTRL)) {
-							// On Windows, AltGr maps to Alt + Ctrl, so don't handle it here.
-							return false;
+			if (win32_bios_keydown_handler(wParam, gdi_add_key))
+				return true;
+
+			struct keyvals *k = bsearch(&wParam, keyval, WIN32_KEYVALS, sizeof(keyval[0]), win32_keyval_cmp);
+
+			if (k) {
+				if (msg.lParam & (1 << 29)) {
+					if (mods & (WMOD_CTRL | WMOD_LCTRL | WMOD_RCTRL)) {
+						// On Windows, AltGr maps to Alt + Ctrl, so don't handle it here.
+						return false;
+					}
+					if (k->ALT > 255) {
+						if (k->VirtualKeyCode == VK_LEFT) {
+							gdi_snap(false);
 						}
-						if (keyval[i].ALT > 255) {
-							if (keyval[i].VirtualKeyCode == VK_LEFT) {
-								gdi_snap(false);
-							}
-							else if (keyval[i].VirtualKeyCode == VK_RIGHT) {
-								gdi_snap(true);
-							}
-							else if (keyval[i].VirtualKeyCode == VK_RETURN) {
-								fullscreen = !fullscreen;
-								if (fullscreen) {
-									HMONITOR hm = MonitorFromWindow(win, MONITOR_DEFAULTTONEAREST);
-									if (hm) {
-										MONITORINFO mi = {sizeof(mi)};
-										if (GetMonitorInfo(hm, &mi)) {
-											WINDOWINFO wi = {
-												.cbSize = sizeof(WINDOWINFO)
-											};
-											if (GetWindowInfo(win, &wi)) {
-												window_left = wi.rcWindow.left;
-												window_top = wi.rcWindow.top;
-											}
-											pthread_mutex_lock(&vstatlock);
-											window_scaling = (float)vstat.scaling;
-											pthread_mutex_unlock(&vstatlock);
-											SetWindowLongPtr(win, GWL_STYLE, STYLE);
-											PostMessageW(win, WM_USER_SETPOS, mi.rcMonitor.left, mi.rcMonitor.top);
-											PostMessageW(win, WM_USER_SETSIZE, mi.rcMonitor.right - mi.rcMonitor.left + 1, mi.rcMonitor.bottom - mi.rcMonitor.top + 1);
+						else if (k->VirtualKeyCode == VK_RIGHT) {
+							gdi_snap(true);
+						}
+						else if (k->VirtualKeyCode == VK_RETURN) {
+							fullscreen = !fullscreen;
+							if (fullscreen) {
+								HMONITOR hm = MonitorFromWindow(win, MONITOR_DEFAULTTONEAREST);
+								if (hm) {
+									MONITORINFO mi = {sizeof(mi)};
+									if (GetMonitorInfo(hm, &mi)) {
+										WINDOWINFO wi = {
+											.cbSize = sizeof(WINDOWINFO)
+										};
+										if (GetWindowInfo(win, &wi)) {
+											window_left = wi.rcWindow.left;
+											window_top = wi.rcWindow.top;
 										}
-										else
-											fullscreen = false;
+										pthread_mutex_lock(&vstatlock);
+										window_scaling = (float)vstat.scaling;
+										pthread_mutex_unlock(&vstatlock);
+										SetWindowLongPtr(win, GWL_STYLE, STYLE);
+										PostMessageW(win, WM_USER_SETPOS, mi.rcMonitor.left, mi.rcMonitor.top);
+										PostMessageW(win, WM_USER_SETSIZE, mi.rcMonitor.right - mi.rcMonitor.left + 1, mi.rcMonitor.bottom - mi.rcMonitor.top + 1);
 									}
 									else
 										fullscreen = false;
 								}
-								else {
-									int w, h;
+								else
+									fullscreen = false;
+							}
+							else {
+								int w, h;
 
-									bitmap_get_scaled_win_size(window_scaling, &w, &h, 0, 0);
-									SetWindowLongPtr(win, GWL_STYLE, STYLE);
-									PostMessageW(win, WM_USER_SETSIZE, w, h);
-									PostMessageW(win, WM_USER_SETPOS, window_left, window_top);
-								}
+								bitmap_get_scaled_win_size(window_scaling, &w, &h, 0, 0);
+								SetWindowLongPtr(win, GWL_STYLE, STYLE);
+								PostMessageW(win, WM_USER_SETSIZE, w, h);
+								PostMessageW(win, WM_USER_SETPOS, window_left, window_top);
 							}
-							if (keyval[i].ALT == 0x6b00) { // ALT-F4
-								gdi_add_key(CIO_KEY_QUIT);
-							}
-							else
-								gdi_add_key(keyval[i].ALT);
-							return true;
 						}
-					}
-					else if (mods & (WMOD_CTRL | WMOD_LCTRL | WMOD_RCTRL)) {
-						if (keyval[i].CTRL > 255) {
-							gdi_add_key(keyval[i].CTRL);
-							return true;
+						if (k->ALT == 0x6b00) { // ALT-F4
+							gdi_add_key(CIO_KEY_QUIT);
 						}
+						else
+							gdi_add_key(k->ALT);
+						return true;
 					}
-					else if (mods & (WMOD_SHIFT | WMOD_LSHIFT | WMOD_RSHIFT)) {
-						if (keyval[i].Shift > 255) {
-							gdi_add_key(keyval[i].Shift);
-							return true;
-						}
+				}
+				else if (mods & (WMOD_CTRL | WMOD_LCTRL | WMOD_RCTRL)) {
+					if (k->CTRL > 255) {
+						gdi_add_key(k->CTRL);
+						return true;
 					}
-					else {
-						if (keyval[i].Key > 255) {
-							gdi_add_key(keyval[i].Key);
-							return true;
-						}
+				}
+				else if (mods & (WMOD_SHIFT | WMOD_LSHIFT | WMOD_RSHIFT)) {
+					if (k->Shift > 255) {
+						gdi_add_key(k->Shift);
+						return true;
 					}
-					break;
+				}
+				else {
+					if (k->Key > 255) {
+						gdi_add_key(k->Key);
+						return true;
+					}
 				}
 			}
 			break;

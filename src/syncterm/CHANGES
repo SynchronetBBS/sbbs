@@ -1,6 +1,7 @@
 Version 1.4b
 ------------
 Fix crashes in text modes due to rip code being called
+Add support for ALT+XXX and ALT+0XXXXX key entry
 
 Version 1.4a
 ------------
