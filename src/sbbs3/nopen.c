@@ -24,7 +24,6 @@
 #include "filewrap.h"
 #include "sockwrap.h"
 #include "nopen.h"
-#include "sbbsdefs.h"
 #ifdef _WIN32
 	#include <io.h>
 #endif
