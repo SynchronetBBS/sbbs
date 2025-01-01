@@ -824,6 +824,22 @@ int main(int argc, char **argv)
 			"    `Text File Sections  ` Text file areas available for online viewing\n"
 			"\n"
 			"Use the arrow keys and ~ ENTER ~ to select an option, or ~ ESC ~ to exit.\n"
+			"\n"
+			"`More keys/combinations and (alternatives):`\n"
+			"\n"
+			"   ~ Ctrl-F ~        Find item in list\n"
+			"   ~ Ctrl-G ~        Find next item in list\n"
+			"   ~ Ctrl-U ~        Move up/back through list one screen-full (`PageUp`)\n"
+			"   ~ Ctrl-D ~        Move down through list one screen-full (`PageDown`)\n"
+			"   ~ Ctrl-B ~        Move to top of list or start of edited text (`Home`)\n"
+			"   ~ Ctrl-E ~        Move to end of list or end of edited text (`End`)\n"
+			"   ~ Insert ~        Insert an item (`+`) or toggle text overwrite mode\n"
+			"   ~ Delete ~        Delete an item (`-`) or a character of edited text\n"
+			"   ~ Ctrl-C ~        Copy item (`F5`, `Ctrl-Insert`)\n"
+			"   ~ Ctrl-X ~        Cut item (`Shift-Delete`)\n"
+			"   ~ Ctrl-V ~        Paste item (`F6`, `Shift-Insert`)\n"
+			"   ~ Ctrl-Z ~        Display help text (`F1`, `?`)\n"
+			"   ~ Backspace ~     Move back/up one menu (`ESC`) or erase character\n"
 		;
 		switch(uifc.list(WIN_ORG|WIN_MID|WIN_ESC|WIN_ACT,0,0,30,&main_dflt,0
 			,"Configure",mopt)) {
