@@ -1101,6 +1101,16 @@ int opennodedat(scfg_t* cfg)
 	return nopen(fname, O_RDWR | O_CREAT | O_DENYNONE);
 }
 
+off_t nodedatoffset(unsigned node_number)
+{
+	return (node_number - 1) * sizeof(node_t);
+}
+
+bool seeknodedat(int file, unsigned node_number)
+{
+	return lseek(file, nodedatoffset(node_number), SEEK_SET) == nodedatoffset(node_number);
+}
+
 /****************************************************************************/
 /****************************************************************************/
 int opennodeext(scfg_t* cfg)
@@ -1138,18 +1148,20 @@ int getnodedat(scfg_t* cfg, uint number, node_t *node, bool lockit, int* fdp)
 
 	int result = USER_SIZE_ERROR;
 	if(filelength(file)>=(long)(number*sizeof(node_t))) {
-		number--;	/* make zero based */
 		for(count=0;count<LOOP_NODEDAB;count++) {
-			(void)lseek(file,(long)number*sizeof(node_t),SEEK_SET);
+			if(!seeknodedat(file, number)) {
+				result = USER_SEEK_ERROR;
+				continue;
+			}
 			if(lockit
-				&& lock(file,(long)number*sizeof(node_t),sizeof(node_t))!=0) {
+				&& lock(file, nodedatoffset(number), sizeof(node_t))!=0) {
 				result = USER_LOCK_ERROR;
 				continue;
 			}
 			rd=read(file,node,sizeof(node_t));
 			if(rd!=sizeof(node_t)) {
 				result = USER_READ_ERROR;
-				unlock(file,(long)number*sizeof(node_t),sizeof(node_t));
+				unlock(file, nodedatoffset(number), sizeof(node_t));
 			} else {
 				result = USER_SUCCESS;
 				break;
@@ -1172,8 +1184,8 @@ int getnodedat(scfg_t* cfg, uint number, node_t *node, bool lockit, int* fdp)
 /****************************************************************************/
 int putnodedat(scfg_t* cfg, uint number, node_t* node, bool closeit, int file)
 {
-	size_t	wr=0;
 	int		attempts;
+	int		result = -1;
 
 	if(file<0)
 		return USER_INVALID_ARG;
@@ -1184,20 +1196,22 @@ int putnodedat(scfg_t* cfg, uint number, node_t* node, bool closeit, int file)
 		return USER_INVALID_ARG;
 	}
 
-	number--;	/* make zero based */
 	for(attempts=0;attempts<LOOP_USERDAT;attempts++) {
-		(void)lseek(file,(long)number*sizeof(node_t),SEEK_SET);
-		if((wr=write(file,node,sizeof(node_t)))==sizeof(node_t))
+		if(!seeknodedat(file, number))
+			result = USER_SEEK_ERROR;
+		else if(write(file,node,sizeof(node_t)) != sizeof(node_t))
+			result = USER_WRITE_ERROR;
+		else {
+			result = USER_SUCCESS;
 			break;
+		}
 		FILE_RETRY_DELAY(attempts + 1);
 	}
-	unlock(file,(long)number*sizeof(node_t),sizeof(node_t));
+	unlock(file, nodedatoffset(number), sizeof(node_t));
 	if(closeit)
 		close(file);
 
-	if(wr!=sizeof(node_t))
-		return USER_WRITE_ERROR;
-	return USER_SUCCESS;
+	return result;
 }
 
 /****************************************************************************/

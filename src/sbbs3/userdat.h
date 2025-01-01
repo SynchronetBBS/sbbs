@@ -90,6 +90,8 @@ DLLEXPORT char*	username(scfg_t*, int usernumber, char * str);
 DLLEXPORT char* usermailaddr(scfg_t*, char* addr, const char* name);
 DLLEXPORT void	smtp_netmailaddr(scfg_t*, smbmsg_t*, char* name, size_t namelen, char* addr, size_t addrlen);
 DLLEXPORT int	opennodedat(scfg_t*);
+DLLEXPORT off_t nodedatoffset(unsigned node_number);
+DLLEXPORT bool	seeknodedat(int file, unsigned node_number);
 DLLEXPORT int	opennodeext(scfg_t*);
 DLLEXPORT int	getnodedat(scfg_t*, uint number, node_t *node, bool lockit, int* file);
 DLLEXPORT int	putnodedat(scfg_t*, uint number, node_t *node, bool closeit, int file);

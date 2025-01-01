@@ -55,18 +55,18 @@ bool sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 	else
 		utime(str,NULL);		/* NFS fix... utime() forces a cache refresh */
 #endif
-	number--;	/* make zero based */
 	for(count=0;count<LOOP_NODEDAB;count++) {
-		if(lockit && lock(nodefile,(long)number*sizeof(node_t),sizeof(node_t))!=0) {
-			unlock(nodefile,(long)number*sizeof(node_t),sizeof(node_t));
+		if(lockit && lock(nodefile, nodedatoffset(number), sizeof(node_t))!=0) {
+			unlock(nodefile, nodedatoffset(number), sizeof(node_t));
 			continue;
 		}
-		lseek(nodefile,(long)number*sizeof(node_t),SEEK_SET);
-		rd=read(nodefile,node,sizeof(node_t));
-		if(rd!=sizeof(node_t))
-			unlock(nodefile,(long)number*sizeof(node_t),sizeof(node_t));
-		if(rd==sizeof(node_t))
-			break;
+		if(seeknodedat(nodefile, number)) {
+			rd=read(nodefile,node,sizeof(node_t));
+			if(rd!=sizeof(node_t))
+				unlock(nodefile, nodedatoffset(number), sizeof(node_t));
+			if(rd==sizeof(node_t))
+				break;
+		}
 		FILE_RETRY_DELAY(count + 1);
 	}
 	if(!lockit && cfg.node_misc&NM_CLOSENODEDAB) {

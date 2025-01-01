@@ -60,11 +60,12 @@ bool sbbs_t::putnodedat(uint number, node_t* node)
 	}
 
 	for(attempts=0;attempts<10;attempts++) {
-		lseek(nodefile, (number - 1) * sizeof(node_t), SEEK_SET);
-		wr=write(nodefile,node,sizeof(node_t));
-		if(wr==sizeof(node_t))
-			break;
-		wrerr=errno;	/* save write error */
+		if(seeknodedat(nodefile, number)) {
+			wr=write(nodefile,node,sizeof(node_t));
+			if(wr==sizeof(node_t))
+				break;
+			wrerr=errno;	/* save write error */
+		}
 		FILE_RETRY_DELAY(attempts + 1);
 	}
 	unlocknodedat(number);
