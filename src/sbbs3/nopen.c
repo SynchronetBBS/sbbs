@@ -24,6 +24,7 @@
 #include "filewrap.h"
 #include "sockwrap.h"
 #include "nopen.h"
+#include "sbbsdefs.h"
 #ifdef _WIN32
 	#include <io.h>
 #endif
@@ -52,7 +53,7 @@ int nopen(const char* str, uint access)
 #endif
     while(((file=sopen(str,access,share,DEFFILEMODE))==-1)
         && FILE_RETRY_ERRNO(errno) && count++<LOOP_NOPEN)
-		SLEEP((count / 10) * 100);
+		FILE_RETRY_DELAY(count);
     return(file);
 }
 
