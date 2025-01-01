@@ -118,12 +118,12 @@ bool sbbs_t::putnodeext(uint number, char *ext)
 	}
 	for(count=0;count<LOOP_NODEDAB;count++) {
 		lseek(node_ext,(long)number*128L,SEEK_SET);
-		if(lock(node_ext,(long)number*128L,128)==-1) 
-			continue; 
-		wr=write(node_ext,ext,128);
-		unlock(node_ext,(long)number*128L,128);
-		if(wr==128)
-			break;
+		if(lock(node_ext,(long)number*128L,128) == 0) {
+			wr=write(node_ext,ext,128);
+			unlock(node_ext,(long)number*128L,128);
+			if(wr==128)
+				break;
+		}
 		FILE_RETRY_DELAY(count + 1);
 	}
 	close(node_ext);
@@ -132,7 +132,7 @@ bool sbbs_t::putnodeext(uint number, char *ext)
 	if(count>(LOOP_NODEDAB/2) && count!=LOOP_NODEDAB) {
 		snprintf(str, sizeof str, "NODE.EXB (node %d) COLLISION - Count: %d"
 			,number+1, count);
-		logline(LOG_NOTICE,"!!",str); 
+		logline(LOG_NOTICE,"!!",str);
 	}
 	if(count==LOOP_NODEDAB) {
 		errormsg(WHERE,ERR_WRITE,"NODE.EXB",number+1);

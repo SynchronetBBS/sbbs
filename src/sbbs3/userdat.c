@@ -1149,6 +1149,8 @@ int getnodedat(scfg_t* cfg, uint number, node_t *node, bool lockit, int* fdp)
 	int result = USER_SIZE_ERROR;
 	if(filelength(file)>=(long)(number*sizeof(node_t))) {
 		for(count=0;count<LOOP_NODEDAB;count++) {
+			if(count > 0)
+				FILE_RETRY_DELAY(count + 1);
 			if(!seeknodedat(file, number)) {
 				result = USER_SEEK_ERROR;
 				continue;
@@ -1166,7 +1168,6 @@ int getnodedat(scfg_t* cfg, uint number, node_t *node, bool lockit, int* fdp)
 				result = USER_SUCCESS;
 				break;
 			}
-			FILE_RETRY_DELAY(count + 1);
 		}
 	}
 
