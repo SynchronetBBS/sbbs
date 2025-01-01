@@ -215,6 +215,38 @@ If there is an entry matching the URI, hostname, or entry name, the
 settings will be loaded from the BBS list, then modified per the
 command-line arguments.
 
+== Advanced Keyboard Controls
+
+The conio library directly implements some advanced keyboard controls.
+While these are not available in all output modes, they are available
+everywhere and not just in the menus or in the connected state.
+
+Keyboard Controls::
+
+	kbd:[Alt+→]:::
+	Snap the window size to the next smaller integer zoom level
+
+	kbd:[Alt+←]:::
+	Snap the window size to the next larger smaller integer zoom
+	level
+
+In addition, you can directly enter characters either by their "codepage"
+value or their unicode value.  A "codepage" value is an 8-bit value that
+indicates a character in the current codepage (such as the default CP437).
+
+To enter a codepage value, ensure kbd:[NumLock] is on, and hold down an
+kbd:[Alt] key, then enter the decimal value on the numeric keypad. Do
+not enter leading zeros, as that would indicate a unicode value.  Once
+the value is entered, release the kbd:[Alt] key.
+
+A unicode value is the Unicode codepoint number. Only unicode values that
+map to the current codepage can be passed through, so the majority of
+values can't be entered in a given mode.
+
+To enter a unicode value, ensure kbd:[NumLock] is on, and hold down an
+kbd:[Alt] key, press the kbd:[0] key on the numeric keypad, then enter
+the decimal value on the numeric keypad. Once the value is entered,
+release the kbd:[Alt] key.
 
 == The User InterFaCe
 
@@ -318,13 +350,6 @@ Keyboard Controls::
 	Any letter or number:::
 	Jumps to the next item that has that character
 	earliest in it's name.
-
-	kbd:[Alt+→]:::
-	Snap the window size to the next smaller integer zoom level
-
-	kbd:[Alt+←]:::
-	Snap the window size to the next larger smaller integer zoom
-	level
 
 	kbd:[Ctrl+F]:::
 	Find text in options
