@@ -57,6 +57,20 @@ else
    EXTRA_LIBS += $(shell pkg-config libjxl_threads --libs)
    CFLAGS += -DWITH_JPEG_XL_THREADS
   endif
+ else
+  # TODO: Add x86 libs too!
+  ifeq ($(os),darwin)
+   CFLAGS += -I$(3RDP_ROOT)/$(os).release/libjxl/include -DJXL_THREADS_STATIC_DEFINE -DJXL_STATIC_DEFINE
+   LDFLAGS += -L$(3RDP_ROOT)/$(os).release/libjxl/lib
+   EXTRA_LIBS += -ljxl
+   EXTRA_LIBS += -ljxl_threads
+   EXTRA_LIBS += -lbrotlidec
+   EXTRA_LIBS += -lbrotlicommon
+   EXTRA_LIBS += -lhwy
+   CFLAGS += -DWITH_JPEG_XL -DWITH_STATIC_JXL
+   CFLAGS += -DWITH_JPEG_XL_THREADS
+   OBJS += $(MTOBJODIR)$(DIRSEP)libjxl$(OFILE)
+  endif
  endif
 endif
 
