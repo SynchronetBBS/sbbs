@@ -1154,7 +1154,7 @@ int bitmap_setfont(int font, int force, int font_num)
 	}
 
 	if(changemode) {
-		gettextinfo(&ti);
+		ti = cio_textinfo;
 
 		attr=ti.attribute;
 		ow=ti.screenwidth;
