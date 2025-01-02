@@ -196,8 +196,8 @@ off_t sendfilesocket(int sock, int file, off_t *offset, off_t count)
 		for (i = wr = 0; i < rd; i += wr) {
 			wr = sendsocket(sock,buf+i,rd-i);
 			if (wr > 0) {
-				if ((SSIZE_MAX - i) < wr)
-					wr = SSIZE_MAX - i;
+				if ((rd - i) < wr)
+					wr = rd - i;
 				continue;
 			}
 			if (wr == SOCKET_ERROR && SOCKET_ERRNO == EWOULDBLOCK) {
