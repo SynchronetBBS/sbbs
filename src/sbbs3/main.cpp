@@ -2900,7 +2900,7 @@ void event_thread(void* arg)
 		}
 		// Read qnet.dab (legacy), and auto-upgrade to time.ini
 		SAFEPRINTF(str,"%sqnet.dab",sbbs->cfg.ctrl_dir);
-		if((file=sbbs->nopen(str,O_RDWR|O_CREAT))!=-1) {
+		if((file=sbbs->nopen(str,O_RDONLY))!=-1) {
 			for(i=0;i<sbbs->cfg.total_qhubs;i++) {
 				sbbs->cfg.qhub[i]->last=0;
 				if(read(file,&sbbs->cfg.qhub[i]->last,sizeof(sbbs->cfg.qhub[i]->last))!=sizeof(sbbs->cfg.qhub[i]->last))
