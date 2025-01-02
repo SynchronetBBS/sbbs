@@ -686,8 +686,6 @@ gdi_handle_getdpiscaledsize(WORD dpi, LPSIZE sz)
 static LRESULT
 gdi_handle_wm_activateapp(WPARAM wParam, LPARAM lParam)
 {
-	int w, h;
-
 	if (wParam == FALSE) {
 		if (fullscreen) {
 			// Minimize when we lose focus in fullscreen

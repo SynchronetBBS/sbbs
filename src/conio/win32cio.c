@@ -801,7 +801,7 @@ void win32_textmode(int mode)
 	COORD	sz;
 	SMALL_RECT	rc;
 	CONSOLE_SCREEN_BUFFER_INFOEX	bi;
-	int i;
+	size_t i;
 	DWORD oldmode;
 	DWORD cmode;
 	int wx, wy;
