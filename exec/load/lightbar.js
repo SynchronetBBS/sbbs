@@ -363,7 +363,7 @@ Lightbar.prototype.draw = function(current)
 	if(current!=undefined)
 		this.current=current;
 	if(!(user.settings & USER_ANSI)) {
-		alert("ANSI supported!");
+		alert("ANSI not supported!");
 		return;
 	}
 	if(!(user.settings & USER_COLOR)) {
