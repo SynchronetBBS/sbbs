@@ -7,27 +7,17 @@
 # $id: $
 
 all : 	\
-        cntnodes.bin \
- 	default.bin \
-        dir.bin \
-        file_io.bin \
-        ftp.bin \
-        getimlst.bin \
-        html.bin \
-        lbshell.bin \
+    ftp.bin \
+    getimlst.bin \
 	major.bin \
 	matrix.bin \
-	noyesbar.bin \
 	pcboard.bin \
-        qnet-ftp.bin \
 	ra_emu.bin \
 	renegade.bin \
 	sdos.bin \
 	simple.bin \
-	type.bin \
 	wildcat.bin \
-	wwiv.bin \
-	yesnobar.bin 
+	wwiv.bin
 
 
 .src.bin:
