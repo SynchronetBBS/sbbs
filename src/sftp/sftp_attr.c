@@ -321,6 +321,17 @@ sftp_getfattr(sftp_rx_pkt_t pkt)
 	if (ret->flags & SSH_FILEXFER_ATTR_EXTENDED) {
 		uint32_t extcnt = sftp_get32(pkt);
 		uint32_t ext;
+		/*
+		 * This is to silence Coverity...
+		 * Coverity knows extcnt is tainted, and
+		 * so I "should" range-check it before using
+		 * it to control loop iterations.
+		 * This loop is actually controlled by the
+		 * size of the buffer since sftp_getstring()
+		 * will fail long before we reach extcnt if
+		 * it has a maliciously high value.
+		 */
+		extcnt &= 0x3FFFFFFF;
 		for (ext = 0; ext < extcnt; ext++) {
 			sftp_str_t type = sftp_getstring(pkt);
 			if (type == NULL)
