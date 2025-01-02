@@ -188,17 +188,20 @@ off_t sendfilesocket(int sock, int file, off_t *offset, off_t count)
 	}
 
 	while(total<count) {
-		rd=read(file,buf,sizeof(buf));
-		if(rd==-1)
+		rd = read(file, buf, sizeof(buf));
+		if (rd < 0)
 			return(-1);
-		if(rd==0)
+		if (rd == 0)
 			break;
-		for(i=wr=0;i<rd;i+=wr) {
-			wr=sendsocket(sock,buf+i,rd-i);
-			if(wr>0)
+		for (i = wr = 0; i < rd; i += wr) {
+			wr = sendsocket(sock,buf+i,rd-i);
+			if (wr > 0) {
+				if ((SSIZE_MAX - i) < wr)
+					wr = SSIZE_MAX - i;
 				continue;
-			if(wr==SOCKET_ERROR && SOCKET_ERRNO==EWOULDBLOCK) {
-				wr=0;
+			}
+			if (wr == SOCKET_ERROR && SOCKET_ERRNO == EWOULDBLOCK) {
+				wr = 0;
 				SLEEP(1);
 				continue;
 			}
