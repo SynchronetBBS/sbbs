@@ -16,7 +16,6 @@ void ssh_output_thread(void *args);
 extern SOCKET          ssh_sock;
 extern CRYPT_SESSION   ssh_session;
 extern int             ssh_channel;
-extern bool            ssh_active;
 extern pthread_mutex_t ssh_mutex;
 extern int             sftp_channel;
 extern bool            sftp_active;

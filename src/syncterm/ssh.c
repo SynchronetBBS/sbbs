@@ -3,6 +3,7 @@
 /* $Id: ssh.c,v 1.31 2020/05/28 22:58:26 deuce Exp $ */
 
 #include <assert.h>
+#include <stdatomic.h>
 #include <stdlib.h>
 
 #include "base64.h"
@@ -30,11 +31,11 @@
 SOCKET          ssh_sock = INVALID_SOCKET;
 CRYPT_SESSION   ssh_session;
 int             ssh_channel = -1;
-bool            ssh_active;
+atomic_bool     ssh_active;
+atomic_bool     ssh_complete;
 pthread_mutex_t ssh_mutex;
 pthread_mutex_t ssh_tx_mutex;
 int             sftp_channel = -1;
-bool            sftp_active;
 sftpc_state_t   sftp_state;
 bool            pubkey_thread_running;
 
@@ -168,10 +169,11 @@ ssh_input_thread(void *args)
 
 	SetThreadName("SSH Input");
 	conn_api.input_thread_running = 1;
-	while (ssh_active && !conn_api.terminate) {
+	while (ssh_active && !conn_api.terminate && !ssh_complete) {
 		sftp_do_finish = false;
 		pthread_mutex_lock(&ssh_mutex);
 		if (FlushData(ssh_session) == CRYPT_ERROR_COMPLETE) {
+			ssh_complete = true;
 			pthread_mutex_unlock(&ssh_mutex);
 			break;
 		}
@@ -185,11 +187,14 @@ ssh_input_thread(void *args)
 				sftp_channel = -1;
 			}
 		}
-		if (ssh_channel == -1 && sftp_channel == -1) 
+		if (ssh_channel == -1 && sftp_channel == -1) {
 			both_gone = true;
+			ssh_complete = true;
+		}
 		pthread_mutex_unlock(&ssh_mutex);
-		if (both_gone)
+		if (both_gone) {
 			break;
+		}
 		if (sftp_do_finish) {
 			sftpc_finish(sftp_state);
 			sftp_do_finish = false;
@@ -199,11 +204,12 @@ ssh_input_thread(void *args)
 
 		pthread_mutex_lock(&ssh_mutex);
 		if (FlushData(ssh_session) == CRYPT_ERROR_COMPLETE) {
+			ssh_complete = true;
 			pthread_mutex_unlock(&ssh_mutex);
 			break;
 		}
 
-		// Check channels are active...
+		// Check channels are active (again)...
 		if (ssh_channel != -1) {
 			if (!check_channel_open(&ssh_channel))
 				ssh_channel = -1;
@@ -213,9 +219,11 @@ ssh_input_thread(void *args)
 				pthread_mutex_unlock(&ssh_mutex);
 				sftpc_finish(sftp_state);
 				pthread_mutex_lock(&ssh_mutex);
+				sftp_channel = -1;
 			}
 		}
 		if (ssh_channel == -1 && sftp_channel == -1) {
+			ssh_complete = true;
 			pthread_mutex_unlock(&ssh_mutex);
 			break;
 		}
@@ -285,7 +293,7 @@ ssh_input_thread(void *args)
 				pthread_mutex_unlock(&ssh_mutex);
 				if (rd > 0) {
 					buffered = 0;
-					while (buffered < rd) {
+					while (buffered < rd && ssh_active && !ssh_complete && !conn_api.terminate) {
 						pthread_mutex_lock(&(conn_inbuf.mutex));
 						buffer = conn_buf_wait_free(&conn_inbuf, rd - buffered, 100);
 						buffered += conn_buf_put(&conn_inbuf, conn_api.rd_buf + buffered, buffer);
@@ -312,7 +320,7 @@ ssh_output_thread(void *args)
 
 	SetThreadName("SSH Output");
 	conn_api.output_thread_running = 1;
-	while (ssh_active && !conn_api.terminate && !channel_gone) {
+	while (ssh_active && !conn_api.terminate && !channel_gone && !ssh_complete) {
 		pthread_mutex_lock(&(conn_outbuf.mutex));
 		wr = conn_buf_wait_bytes(&conn_outbuf, 1, 100);
 		if (wr) {
@@ -320,10 +328,11 @@ ssh_output_thread(void *args)
 			pthread_mutex_unlock(&(conn_outbuf.mutex));
 			sent = 0;
 			pthread_mutex_lock(&ssh_tx_mutex);
-			while (ssh_active && sent < wr) {
+			while (sent < wr && ssh_active && !conn_api.terminate && !channel_gone && !ssh_complete) {
 				ret = 0;
 				pthread_mutex_lock(&ssh_mutex);
 				if (ssh_channel == -1) {
+					ssh_complete = true;
 					pthread_mutex_unlock(&ssh_mutex);
 					channel_gone = true;
 					break;
@@ -335,14 +344,18 @@ ssh_output_thread(void *args)
 					if (cryptStatusOK(status))
 						FlushData(ssh_session);
 				}
-				pthread_mutex_unlock(&ssh_mutex);
 				if (cryptStatusError(status)) {
+					ssh_complete = true;
+					pthread_mutex_unlock(&ssh_mutex);
 					if ((status == CRYPT_ERROR_COMPLETE) || (status == CRYPT_ERROR_NOTFOUND)) { /* connection closed */
+						channel_gone = true;
 						break;
 					}
 					cryptlib_error_message(status, "sending data");
+					channel_gone = true;
 					break;
 				}
+				pthread_mutex_unlock(&ssh_mutex);
 				sent += ret;
 			}
 			pthread_mutex_unlock(&ssh_tx_mutex);
@@ -363,7 +376,7 @@ sftp_send(uint8_t *buf, size_t sz, void *cb_data)
 	if (sz == 0)
 		return true;
 	pthread_mutex_lock(&ssh_tx_mutex);
-	while (ssh_active && sent < sz) {
+	while (ssh_active && sent < sz && !ssh_complete) {
 		int status;
 		int ret = 0;
 		pthread_mutex_lock(&ssh_mutex);
@@ -436,7 +449,7 @@ key_not_present(sftp_filehandle_t f, const char *priv)
 	sftp_str_t r = NULL;
 	bool skipread = false;
 
-	while (ssh_active) {
+	while (ssh_active && !ssh_complete) {
 		if (skipread) {
 			old_bufpos = 0;
 			skipread = false;
@@ -508,7 +521,7 @@ add_public_key(void *vpriv)
 			}
 		}
 		pthread_mutex_unlock(&ssh_mutex);
-		if (!ssh_active)
+		if (ssh_complete || !ssh_active)
 			break;
 		SLEEP(10);
 	};
@@ -596,7 +609,7 @@ add_public_key(void *vpriv)
 		 * To avoid that, we'll sleep for a second to allow
 		 * the remote to close the channel if it wants to.
 		 */
-		for (unsigned sleep_count = 0; sleep_count < 100 && conn_api.terminate == 0 && ssh_active; sleep_count++) {
+		for (unsigned sleep_count = 0; sleep_count < 100 && conn_api.terminate == 0 && ssh_active && !ssh_complete; sleep_count++) {
 			SLEEP(10);
 		}
 		pthread_mutex_lock(&ssh_tx_mutex);
@@ -747,7 +760,7 @@ ssh_connect(struct bbslist *bbs)
 		return -1;
 	}
 	ssh_active = true;
-
+	ssh_complete = false;
 
 	/* we need to disable Nagle on the socket. */
 	if (setsockopt(ssh_sock, IPPROTO_TCP, TCP_NODELAY, (char *)&off, sizeof(off)))
@@ -1002,6 +1015,7 @@ ssh_close(void)
 	char garbage[1024];
 
 	conn_api.terminate = 1;
+	ssh_complete = true;
 	if (ssh_active) {
 		cryptSetAttribute(ssh_session, CRYPT_OPTION_NET_READTIMEOUT, 1);
 		cryptSetAttribute(ssh_session, CRYPT_OPTION_NET_WRITETIMEOUT, 1);
