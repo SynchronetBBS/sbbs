@@ -16232,11 +16232,20 @@ init_rip(struct bbslist *bbs)
 			rip.default_font_height = 8;
 		}
 		else {
+			/*
+			 * The temp variables here are just to
+			 * silence Coverity which uses the rip.*
+			 * members being set inside the lock as
+			 * an indication that they must be.
+			 */
 			pthread_mutex_lock(&vstatlock);
-			rip.default_font = vstat.forced_font;
-			rip.default_font_width = vstat.charwidth;
-			rip.default_font_height = vstat.charheight;
+			void *tmp_font = vstat.forced_font;
+			int tmp_width = vstat.charwidth;
+			int tmp_height = vstat.charheight;
 			pthread_mutex_unlock(&vstatlock);
+			rip.default_font = tmp_font;
+			rip.default_font_width = tmp_width;
+			rip.default_font_height = tmp_height;
 		}
 
 		pending_len = 0;
