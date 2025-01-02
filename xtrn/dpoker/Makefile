@@ -20,7 +20,7 @@ CFLAGS	=	$(CFLAGS) -I$(XSDK) -DUSE_XPDEV $(XPDEV-MT_CFLAGS) $(UIFC-MT_CFLAGS) $(
 
 $(DPOKER): $(OBJS)
 	@echo Linking $@
-	$(QUIET)$(CC) $(MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(LDFLAGS) $** -e$@ $(XPDEV-MT_LIBS)
+	$(QUIET)$(CC) $(MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(LDFLAGS) $** -e$@ $(XPDEV-MT_LIBS) IpHlpApi.lib
 
 $(DPCONFIG): $(DPCONFIG_OBJS)
 	@echo Linking $@
