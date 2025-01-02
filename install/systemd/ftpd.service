@@ -1,0 +1,44 @@
+# Synchronet FTP Server systemd 'unit configuration' file
+#
+# Only use if you want the FTP server to run as a separate process from the
+# other BBS servers and services.
+#
+# You should have [FTP] AutoStart=false set in your ctrl/sbbs.in file
+# or else, the FTP server will still start as part of your normal sbbs.service unit
+# (and thus part of the same 'sbbs' instance as the other server), not what you want.
+#
+# 1. Copy or symlink this file to the correct directory
+#    e.g. for Debian/Ubuntu Linux, that would be: /lib/systemd/system
+# 2. If necessary, modify the SBBSCTRL environment variable value to match your install
+# 3. If necessary, modify the User and Group values to match your install
+# 4. If necessary, modify the path in the ExecStart value to match your install
+#    Edits should be made using "sudo systemctl edit ftpd", thus creating the file:
+#    /etc/systemd/system/ftpd.service.d/override.conf
+# 5. Enable the BBS service by running "sudo systemctl enable ftpd"
+# 6. To run the BBS service without rebooting, run "sudo systemctl start ftpd"
+#
+# Tips:
+# A. To query the status of the BBS service, run "systemctl status ftpd"
+# B. To browse the log output of the BBS service, run "journalctl -u ftpd"
+# C. To monitor the live log outupt of the BBS service, run "journalctl -f -u ftpd"
+
+[Unit]
+Description=Synchronet FTP Server
+Documentation=http://wiki.synchro.net/
+After=syslog.target network-online.target
+
+[Service]
+Type=forking
+NotifyAccess=all
+Environment=SBBSCTRL=/sbbs/ctrl
+User=sbbs
+Group=sbbs
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+ExecStart=/sbbs/exec/sbbs d f!
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=30
+LimitNOFILE=10000
+
+[Install]
+WantedBy=multi-user.target
