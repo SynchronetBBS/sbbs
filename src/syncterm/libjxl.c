@@ -36,9 +36,12 @@ bool load_jxl_funcs(void)
 	return true;
 }
 #else
+static dll_handle jxl_dll;
+#ifdef WITH_JPEG_XL_THREADS
+static dll_handle jxlt_dll;
+#endif
 bool load_jxl_funcs(void)
 {
-	dll_handle jxl_dll;
 	const char *libnames[] = {"jxl", NULL};
 
 	if (Jxl.status == JXL_STATUS_OK)
@@ -49,7 +52,7 @@ bool load_jxl_funcs(void)
 		return false;
 
 	Jxl.status = JXL_STATUS_FAILED;
-	if ((jxl_dll = xp_dlopen(libnames, RTLD_LAZY | RTLD_GLOBAL, JPEGXL_MAJOR_VERSION)) == NULL)
+	if (jxl_dll == NULL && (jxl_dll = xp_dlopen(libnames, RTLD_LAZY | RTLD_GLOBAL, JPEGXL_MAJOR_VERSION)) == NULL)
 		return false;
 
 	if ((Jxl.DecoderCloseInput = xp_dlsym(jxl_dll, JxlDecoderCloseInput)) == NULL) {
@@ -109,7 +112,7 @@ bool load_jxl_funcs(void)
 	const char *tlibnames[] = {"jxl_threads", NULL};
 
 	Jxl.status = JXL_STATUS_FAILED;
-	if ((jxlt_dll = xp_dlopen(tlibnames, RTLD_LAZY | RTLD_GLOBAL, JPEGXL_MAJOR_VERSION)) == NULL)
+	if (jxlt_dll == NULL && (jxlt_dll = xp_dlopen(tlibnames, RTLD_LAZY | RTLD_GLOBAL, JPEGXL_MAJOR_VERSION)) == NULL)
 		return true;
 
 	if ((Jxl.ResizableParallelRunner = xp_dlsym(jxlt_dll, JxlResizableParallelRunner)) == NULL) {

@@ -182,20 +182,26 @@ void x11_mouse_thread(void *data)
 	}
 }
 
+static dll_handle dl;
+#ifdef WITH_XRENDER
+static dll_handle dl2;
+#endif
+#ifdef WITH_XINERAMA
+static dll_handle dl3;
+#endif
+#ifdef WITH_XRANDR
+static dll_handle dl4;
+#endif
 int x_initciolib(int mode)
 {
-	dll_handle	dl;
 	const char *libnames[]={"X11",NULL};
 #ifdef WITH_XRENDER
-	dll_handle	dl2;
 	const char *libnames2[]={"Xrender",NULL};
 #endif
 #ifdef WITH_XINERAMA
-	dll_handle	dl3;
 	const char *libnames3[]={"Xinerama",NULL};
 #endif
 #ifdef WITH_XRANDR
-	dll_handle	dl4;
 	const char *libnames4[]={"Xrandr",NULL};
 #endif
 	Status (*xit)(void);
@@ -216,7 +222,7 @@ int x_initciolib(int mode)
 		return(-1);
 
 	/* Load X11 functions */
-	if((dl=xp_dlopen(libnames,RTLD_LAZY,7))==NULL)
+	if(dl == NULL && (dl=xp_dlopen(libnames,RTLD_LAZY,7))==NULL)
 		return(-1);
 	if ((_Xdebug = xp_dlsym(dl,_Xdebug))!=NULL)
 		*_Xdebug=1;
@@ -520,7 +526,7 @@ int x_initciolib(int mode)
 	}
 #ifdef WITH_XRENDER
 	xrender_found = true;
-	if ((dl2 = xp_dlopen(libnames2,RTLD_LAZY,1)) == NULL)
+	if (dl2 == NULL && (dl2 = xp_dlopen(libnames2,RTLD_LAZY,1)) == NULL)
 		xrender_found = false;
 	if (xrender_found && ((x11.XRenderFindStandardFormat = xp_dlsym(dl2, XRenderFindStandardFormat)) == NULL)) {
 		xp_dlclose(dl2);
@@ -557,7 +563,7 @@ int x_initciolib(int mode)
 #endif
 #ifdef WITH_XINERAMA
 	xinerama_found = true;
-	if ((dl3 = xp_dlopen(libnames3,RTLD_LAZY,1)) == NULL)
+	if (dl3 == NULL && (dl3 = xp_dlopen(libnames3,RTLD_LAZY,1)) == NULL)
 		xinerama_found = false;
 	if (xinerama_found && ((x11.XineramaQueryVersion = xp_dlsym(dl3, XineramaQueryVersion)) == NULL)) {
 		xp_dlclose(dl3);
@@ -570,7 +576,7 @@ int x_initciolib(int mode)
 #endif
 #ifdef WITH_XRANDR
 	xrandr_found = true;
-	if ((dl4 = xp_dlopen(libnames4,RTLD_LAZY,2)) == NULL)
+	if (dl4 == NULL && (dl4 = xp_dlopen(libnames4,RTLD_LAZY,2)) == NULL)
 		xrandr_found = false;
 	if (xrandr_found && ((x11.XRRQueryVersion = xp_dlsym(dl4, XRRQueryVersion)) == NULL)) {
 		xp_dlclose(dl4);

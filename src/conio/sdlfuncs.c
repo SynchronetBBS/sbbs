@@ -21,13 +21,17 @@ static int sdl_funcs_loaded=0;
 
 static void QuitWrap(void);
 
+static dll_handle sdl_dll;
+#ifdef _WIN32
+static dll_handle userDLL;
+static dll_handle shcoreDLL;
+#endif
 int load_sdl_funcs(struct sdlfuncs *sdlf)
 {
-	dll_handle	sdl_dll;
 	const char *libnames[]={"SDL2", "SDL", NULL};
 
 	sdlf->gotfuncs=0;
-	if((sdl_dll=xp_dlopen(libnames,RTLD_LAZY|RTLD_GLOBAL,SDL_PATCHLEVEL))==NULL)
+	if(sdl_dll == NULL && (sdl_dll=xp_dlopen(libnames,RTLD_LAZY|RTLD_GLOBAL,SDL_PATCHLEVEL))==NULL)
 		return(-1);
 
 	if((sdlf->Init=xp_dlsym(sdl_dll, SDL_Init))==NULL) {
@@ -269,7 +273,8 @@ int init_sdl_video(void)
 	HRESULT(WINAPI *SetProcessDpiAwarenessContext)(enum D3_PROCESS_DPI_AWARENESS dpiAwareness) = NULL;
 
 	const char* user32dll[] = {"User32", NULL};
-	dll_handle userDLL = xp_dlopen(user32dll, RTLD_LAZY, 0);
+	if (!userDLL)
+		userDLL = xp_dlopen(user32dll, RTLD_LAZY, 0);
 
 	if (userDLL)
 	{
@@ -279,7 +284,8 @@ int init_sdl_video(void)
 
 
 	const char* shcoredll[] = {"SHCore", NULL};
-	dll_handle shcoreDLL = xp_dlopen(shcoredll, RTLD_LAZY, 0);
+	if (!shcoreDLL)
+		shcoreDLL = xp_dlopen(shcoredll, RTLD_LAZY, 0);
 
 	if (shcoreDLL)
 	{

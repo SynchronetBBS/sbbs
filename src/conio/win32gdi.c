@@ -195,6 +195,7 @@ sp_to_codepoint(uint16_t high, uint16_t low)
 	return (high - 0xd800) * 0x400 + (low - 0xdc00) + 0x10000;
 }
 
+static dll_handle userDLL;
 static BOOL
 gdiAdjustWindowRect(LPRECT r, DWORD style, BOOL menu, UINT dpi)
 {
@@ -205,7 +206,8 @@ gdiAdjustWindowRect(LPRECT r, DWORD style, BOOL menu, UINT dpi)
 
 	if (!gotPtr) {
 		const char* user32dll[] = {"User32", NULL};
-		dll_handle userDLL = xp_dlopen(user32dll, RTLD_LAZY, 0);
+		if (!userDLL)
+			userDLL = xp_dlopen(user32dll, RTLD_LAZY, 0);
 
 		if (userDLL) {
 			AWREFD = xp_dlsym(userDLL, AdjustWindowRectExForDpi);
@@ -1244,6 +1246,7 @@ gdi_get_window_info(int *width, int *height, int *xpos, int *ypos)
 	return(1);
 }
 
+static dll_handle shcoreDLL;
 int
 gdi_init(int mode)
 {
@@ -1269,7 +1272,8 @@ gdi_init(int mode)
 	HRESULT(WINAPI *SetProcessDpiAwarenessContext)(enum D3_PROCESS_DPI_AWARENESS dpiAwareness) = NULL;
 
 	const char* user32dll[] = {"User32", NULL};
-	dll_handle userDLL = xp_dlopen(user32dll, RTLD_LAZY, 0);
+	if (!userDLL)
+		userDLL = xp_dlopen(user32dll, RTLD_LAZY, 0);
 
 	if (userDLL)
 	{
@@ -1278,7 +1282,8 @@ gdi_init(int mode)
 	}
 
 	const char* shcoredll[] = {"SHCore", NULL};
-	dll_handle shcoreDLL = xp_dlopen(shcoredll, RTLD_LAZY, 0);
+	if (!shcoreDLL)
+		shcoreDLL = xp_dlopen(shcoredll, RTLD_LAZY, 0);
 
 	if (shcoreDLL)
 	{
