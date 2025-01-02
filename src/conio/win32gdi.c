@@ -825,7 +825,6 @@ static bool
 magic_message(MSG msg)
 {
 	static uint8_t mods = 0;
-	size_t i;
 	uint8_t set = 0;
 
 	/* Note that some messages go directly to gdi_WndProc(), so we can't
