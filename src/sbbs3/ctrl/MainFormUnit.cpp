@@ -763,7 +763,7 @@ __fastcall TMainForm::TMainForm(TComponent* Owner)
 
     /* These are SBBSCTRL-specific */
     LoginCommand="telnet://127.0.0.1";
-    ConfigCommand="%sscfg.exe %s -l25";
+    ConfigCommand="%sscfg.exe %s";
     MinimizeToSysTray=false;
     UndockableForms=false;
     UseFileAssociations=true;
