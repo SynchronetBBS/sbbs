@@ -211,10 +211,14 @@ DNS.prototype.handle_response = function(sock) {
 	var tmp;
 
 	function string_to_int16(str) {
+		if(!str)
+			return 0;
 		return ((ascii(str[0])<<8) | (ascii(str[1])));
 	}
 
 	function string_to_int32(str) {
+		if(!str)
+			return 0;
 		return ((ascii(str[0])<<24) | (ascii(str[1]) << 16) | (ascii(str[1]) << 8) | (ascii(str[1])));
 	}
 
@@ -393,6 +397,8 @@ DNS.prototype.handle_response = function(sock) {
 	delete this.outstanding[id];
 
 	ret.id = id;
+	if(!resp)
+		return null;
 	ret.response = !!(ascii(resp[2]) & 0x80);
 	if (!ret.response)
 		return null;
