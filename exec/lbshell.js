@@ -906,6 +906,7 @@ function draw_main(topline)
 
 function menu_opt(func)
 {
+	var i;
 	stop_mouse();
 	clear_screen();
 	func();

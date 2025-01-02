@@ -142,6 +142,7 @@ Lightbar.prototype.getval = function(current,key)
 	var ret=undefined;
 	var last_cur;
 	var mk;
+	var i;
 
 	if(!this.nodraw)
 		this.draw();
@@ -362,9 +363,11 @@ Lightbar.prototype.draw = function(current)
 	if(current!=undefined)
 		this.current=current;
 	if(!(user.settings & USER_ANSI)) {
+		alert("ANSI supported!");
 		return;
 	}
 	if(!(user.settings & USER_COLOR)) {
+		alert("Colour not supported!");
 		return;
 	}
 
