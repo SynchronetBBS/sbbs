@@ -108,7 +108,6 @@ bool load_jxl_funcs(void)
 
 	Jxl.status = JXL_STATUS_NOTHREADS;
 #ifdef WITH_JPEG_XL_THREADS
-	dll_handle jxlt_dll;
 	const char *tlibnames[] = {"jxl_threads", NULL};
 
 	Jxl.status = JXL_STATUS_FAILED;
