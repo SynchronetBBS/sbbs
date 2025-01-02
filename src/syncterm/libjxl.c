@@ -110,7 +110,6 @@ bool load_jxl_funcs(void)
 #ifdef WITH_JPEG_XL_THREADS
 	const char *tlibnames[] = {"jxl_threads", NULL};
 
-	Jxl.status = JXL_STATUS_FAILED;
 	if (jxlt_dll == NULL && (jxlt_dll = xp_dlopen(tlibnames, RTLD_LAZY | RTLD_GLOBAL, JPEGXL_MAJOR_VERSION)) == NULL)
 		return true;
 
