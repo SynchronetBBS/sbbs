@@ -2287,9 +2287,9 @@ all_done:
 					p++;
 				}
 				plen = get_hexstrlen(p, end);
-				p += plen * 2;
 				if (plen == -1)
 					return;
+				p += plen * 2;
 				mlen += ul * plen;
 				if (p <= end) {
 					if (*p == ';')
@@ -2321,6 +2321,8 @@ all_done:
 					p++;
 				}
 				plen = get_hexstrlen(p, end);
+				if (plen == -1)
+					return;
 				for (i = 0; i < ul; i++) {
 					get_hexstr(p, end, out);
 					out += plen;
@@ -2331,6 +2333,8 @@ all_done:
 			}
 			else {
 				plen = get_hexstrlen(p, end);
+				if (plen == -1)
+					return;
 				get_hexstr(p, end, out);
 				out += plen;
 				p += plen * 2;

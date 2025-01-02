@@ -2072,9 +2072,12 @@ xmodem_download(struct bbslist *bbs, long mode, char *path)
 			break;
 		if ((cps = (unsigned)(file_bytes / t)) == 0)
 			cps = 1;
-		if (--total_files <= 0)
+		if (total_files == 0 || --total_files == 0)
 			extra_pass = true;
-		total_bytes -= file_bytes;
+		if (file_bytes < total_bytes)
+			total_bytes -= file_bytes;
+		else
+			total_bytes = 0;
 		if ((total_files > 1) && total_bytes) {
 			lprintf(LOG_INFO, "Remaining - Time: %lu:%02lu  Files: %u  KBytes: %" PRId64,
 			    (total_bytes / cps) / 60,

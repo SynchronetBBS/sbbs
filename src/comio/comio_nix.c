@@ -408,7 +408,7 @@ int comGetModemStatus(COM_HANDLE handle)
 
 static bool comSetFlags(COM_HANDLE handle, int flags, bool set)
 {
-    int cmd = set ? TIOCMBIS : TIOCMBIC;
+    unsigned long cmd = set ? TIOCMBIS : TIOCMBIC;
 
     return (ioctl(handle, cmd, &flags) == 0);
 }

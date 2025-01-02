@@ -914,8 +914,14 @@ int zmodem_recv_data16(zmodem_t* zm, register unsigned char* p, unsigned maxlen,
 
 	crc = ucrc16(subpkt_type,crc);
 
-	rxd_crc  = zmodem_rx(zm) << 8;
-	rxd_crc |= zmodem_rx(zm);
+	c = zmodem_rx(zm);
+	if (c < 0)
+		return c;
+	rxd_crc  = c << 8;
+	c = zmodem_rx(zm);
+	if (c < 0)
+		return c;
+	rxd_crc |= c;
 
 	if(rxd_crc != crc) {
 		lprintf(zm, LOG_DEBUG, "%lu %s CRC ERROR (%04hX, expected: %04hX) Bytes=%u, subpacket type=%s"
@@ -1049,20 +1055,24 @@ int zmodem_recv_nibble(zmodem_t* zm)
 int zmodem_recv_hex(zmodem_t* zm)
 {
 	int n1;
+	unsigned un1;
 	int n0;
+	unsigned un0;
 	int ret;
 
 	n1 = zmodem_recv_nibble(zm);
 
 	if(n1 < 0)
 		return n1;
+	un1 = n1;
 
 	n0 = zmodem_recv_nibble(zm);
 
 	if(n0 < 0)
 		return n0;
+	un0 = n0;
 
-	ret = (n1 << 4) | n0;
+	ret = (un1 << 4) | un0;
 
 //	lprintf(zm,LOG_DEBUG, __FUNCTION__ " returning: 0x%02X", ret);
 
@@ -1539,9 +1549,13 @@ static unsigned new_window_size(zmodem_t* zm, time_t start, unsigned pos)
 	time_t elapsed = time(NULL) - start;
 	if(elapsed < 1)
 		elapsed = 1;
-	unsigned cps = (unsigned)(pos / elapsed);
-	if(cps < 1)
+	uint64_t cps = (uint64_t)(pos / elapsed);
+	if (cps < 1)
 		cps = 1;
+	if (cps > UINT_MAX)
+		cps = UINT_MAX;
+	if (cps * zm->target_window_size > UINT_MAX)
+		cps = UINT_MAX / zm->target_window_size;
 	return cps * zm->target_window_size;
 }
 

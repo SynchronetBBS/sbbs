@@ -87,9 +87,9 @@ modem_output_thread(void *args)
 			sent = 0;
 			while (com != COM_HANDLE_INVALID && sent < wr) {
 				ret = comWriteBuf(com, conn_api.wr_buf + sent, wr - sent);
-				sent += ret;
-				if (ret == COM_ERROR)
+				if (ret < 0)
 					break;
+				sent += ret;
 			}
 		}
 		else {

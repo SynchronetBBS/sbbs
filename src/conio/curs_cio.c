@@ -1242,8 +1242,12 @@ void curs_textmode(int mode)
 	getmaxyx(stdscr, maxy, maxx);
 	if (maxy > 255)
 		maxy = 255;
+	if (maxy < 0)
+		maxy = 24;
 	if (maxx > 255)
 		maxx = 255;
+	if (maxx < 0)
+		maxx = 80;
 	cio_textinfo.screenheight = maxy;
 	cio_textinfo.screenwidth = maxx;
 	if(has_colors())
