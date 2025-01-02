@@ -388,6 +388,8 @@ while(bbs.online && !js.terminated) {
 				thisuser.settings |= USER_AUTOTERM;
 				thisuser.settings &=
 					~(USER_ANSI | USER_RIP | USER_WIP | USER_HTML | USER_PETSCII | USER_UTF8);
+				if (user.number === thisuser.number)
+					thisuser.settings |= console.autoterm;
 			}
 			else if (!console.aborted)
 				thisuser.settings &= ~USER_AUTOTERM;

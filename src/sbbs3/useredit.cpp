@@ -869,6 +869,8 @@ void sbbs_t::maindflts(user_t* user)
 				if(yesno(text[AutoTerminalQ])) {
 					user->misc |= AUTOTERM;
 					user->misc &= ~(ANSI|RIP|PETSCII|UTF8);
+					if(user == &useron)
+						user->misc |= autoterm;
 				}
 				else
 					user->misc &= ~AUTOTERM;
