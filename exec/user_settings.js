@@ -362,7 +362,7 @@ while(bbs.online && !js.terminated) {
 				&& bbs.text(bbs.text.ForwardMailQ).length > 0
 				&& console.yesno(bbs.text(bbs.text.ForwardMailQ)))
 				thisuser.settings |= USER_NETMAIL;
-			else
+			else if (!console.aborted)
 				thisuser.settings &= ~USER_NETMAIL;
 			break;
 		case 'N':
@@ -379,7 +379,7 @@ while(bbs.online && !js.terminated) {
 			if (!(thisuser.settings & USER_SPIN)) {
 				if (console.yesno(bbs.text(bbs.text.SpinningCursorOnPauseQ)))
 					thisuser.settings &= ~USER_NOPAUSESPIN;
-				else
+				else if (!console.aborted)
 					thisuser.settings |= USER_NOPAUSESPIN;
 			}
 			break;
@@ -389,23 +389,23 @@ while(bbs.online && !js.terminated) {
 				thisuser.settings &=
 					~(USER_ANSI | USER_RIP | USER_WIP | USER_HTML | USER_PETSCII | USER_UTF8);
 			}
-			else
+			else if (!console.aborted)
 				thisuser.settings &= ~USER_AUTOTERM;
 			if (console.aborted)
 				break;
 			if (!(thisuser.settings & USER_AUTOTERM)) {
 				if (!console.noyes(bbs.text(bbs.text.Utf8TerminalQ)))
 					thisuser.settings |= USER_UTF8;
-				else
+				else if (!console.aborted)
 					thisuser.settings &= ~USER_UTF8;
 				if (console.yesno(bbs.text(bbs.text.AnsiTerminalQ))) {
 					thisuser.settings |= USER_ANSI;
 					thisuser.settings &= ~USER_PETSCII;
-				} else if (!(thisuser.settings & USER_UTF8)) {
+				} else if (!console.aborted && !(thisuser.settings & USER_UTF8)) {
 					thisuser.settings &= ~(USER_ANSI | USER_COLOR | USER_ICE_COLOR);
 					if (!console.noyes(bbs.text(bbs.text.PetTerminalQ)))
 						thisuser.settings |= USER_PETSCII|USER_COLOR;
-					else
+					else if (!console.aborted)
 						thisuser.settings &= ~USER_PETSCII;
 				}
 			}
@@ -422,7 +422,7 @@ while(bbs.online && !js.terminated) {
 					if (!(console.status & (CON_BLINK_FONT|CON_HBLINK_FONT))
 						&& !console.noyes(bbs.text(bbs.text.IceColorTerminalQ)))
 						thisuser.settings |= USER_ICE_COLOR;
-				} else
+				} else if (!console.aborted)
 					thisuser.settings &= ~USER_COLOR;
 			}
 			if (console.aborted)
@@ -430,7 +430,7 @@ while(bbs.online && !js.terminated) {
 			if (term & USER_ANSI) {
 				if (bbs.text(bbs.text.MouseTerminalQ).length && console.yesno(bbs.text(bbs.text.MouseTerminalQ)))
 					thisuser.settings |= USER_MOUSE;
-				else
+				else if (!console.aborted)
 					thisuser.settings &= ~USER_MOUSE;
 			}
 			if (console.aborted)
@@ -438,8 +438,10 @@ while(bbs.online && !js.terminated) {
 			if (!(term & USER_PETSCII)) {
 				if (!(term & USER_UTF8) && !console.yesno(bbs.text(bbs.text.ExAsciiTerminalQ)))
 					thisuser.settings |= USER_NO_EXASCII;
-				else
+				else if (!console.aborted)
 					thisuser.settings &= ~USER_NO_EXASCII;
+				if (console.aborted)
+					break;
 				thisuser.settings &= ~USER_SWAP_DELETE;
 				while(bbs.text(bbs.text.HitYourBackspaceKey).length
 					&& !(thisuser.settings & (USER_PETSCII | USER_SWAP_DELETE))
@@ -515,7 +517,7 @@ while(bbs.online && !js.terminated) {
 			}
 			if (console.yesno(bbs.text(bbs.text.CreateEditSignatureQ)))
 				console.editfile(userSigFilename);
-			else {
+			else if (!console.aborted) {
 				if (file_exists(userSigFilename)) {
 					if (console.yesno(bbs.text(bbs.text.DeleteSignatureQ)))
 						file_remove(userSigFilename);
@@ -541,7 +543,7 @@ while(bbs.online && !js.terminated) {
 			thisuser.download_protocol = kp;
 			if (kp && console.yesno(bbs.text(bbs.text.HangUpAfterXferQ)))
 				thisuser.settings |= USER_AUTOHANG;
-			else
+			else if (!console.aborted)
 				thisuser.settings &= ~USER_AUTOHANG;
 			break;
 		case 'Q':
