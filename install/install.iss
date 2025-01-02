@@ -24,7 +24,7 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppSupportURL}
 AppUpdatesURL={#MyAppDownloadURL}
-AppCopyright=Copyright 2024 {#MyAppPublisher}
+AppCopyright=Copyright 2025 {#MyAppPublisher}
 VersionInfoVersion=3.20.1
 AppMutex=sbbs_running,sbbsctrl_running
 DefaultDirName={sd}\sbbs
@@ -72,6 +72,7 @@ Source: "3rdp\win32.release\mozjs\bin\mozjs185-1.0.dll";      DestDir: "{app}\ex
 Source: "3rdp\win32.release\cryptlib\bin\cl32.dll";           DestDir: "{app}\exec";  Flags: ignoreversion
 Source: "3rdp\win32.release\libarchive\bin\archive.dll";      DestDir: "{app}\exec";  Flags: ignoreversion
 Source: "3rdp\win32.release\zlib\bin\zlib1.dll";              DestDir: "{app}\exec";  Flags: ignoreversion
+Source: "3rdp\win32.release\mosquitto\bin\mosquitto.dll";     DestDir: "{app}\exec";  Flags: ignoreversion
 Source: "src\sexpots\{#release}\sexpots.exe";                 DestDir: "{app}\exec";  Flags: ignoreversion
 Source: "s:\sbbs\exec\user.com";                              DestDir: "{app}\exec";  Flags: ignoreversion
 Source: "s:\sbbs\exec\mlabels.exe";                           DestDir: "{app}\exec";  Flags: ignoreversion
