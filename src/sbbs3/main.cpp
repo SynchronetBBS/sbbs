@@ -2975,7 +2975,7 @@ void event_thread(void* arg)
 					}
 					sbbs->lprintf(LOG_DEBUG, "Opened %s", lockfile.name);
 					if(!fexist(fname)) {
-						sbbs->lprintf(LOG_DEBUG, "%s already gone", fname);
+						sbbs->lprintf(LOG_NOTICE, "%s already gone", fname);
 						if(!fmutex_close(&lockfile))
 							sbbs->errormsg(WHERE, ERR_CLOSE, lockfile.name);
 						continue;
@@ -2991,15 +2991,15 @@ void event_thread(void* arg)
 					/* putuserdat? */
 					if(success) {
 						sbbs->fremove(WHERE, fname, /* log-all-errors: */true);
-					} else if(fexist(fname)) {
+					} else if(flength(fname) > 0) {
 						char badpkt[MAX_PATH+1];
 						SAFEPRINTF2(badpkt, "%s.%" PRIx64 ".bad", fname, (uint64_t)time(NULL));
 						sbbs->fremove(WHERE, badpkt);
 						if(rename(fname, badpkt) == 0)
 							sbbs->lprintf(LOG_NOTICE, "%s renamed to %s", fname, badpkt);
 						else
-							sbbs->lprintf(LOG_ERR, "!ERROR %d (%s) renaming %s to %s"
-								,errno, strerror(errno), fname, badpkt);
+							sbbs->lprintf(LOG_ERR, "!ERROR %d (%s) renaming %s (%ld bytes) to %s"
+								,errno, strerror(errno), fname, (long)flength(fname), badpkt);
 						SAFEPRINTF(badpkt, "%u.rep.*.bad", sbbs->useron.number);
 						SAFEPRINTF(str,"%sfile/", sbbs->cfg.data_dir);
 						sbbs->delfiles(str, badpkt, /* keep: */10);
