@@ -834,7 +834,7 @@ do_xp_play_sample(unsigned char *sampo, size_t sz, int *freed)
 	int need_copy = 0;
 #endif
 #ifdef AFMT_U8
-	int wr;
+	size_t wr;
 	int	i;
 #endif
 
@@ -976,12 +976,15 @@ do_xp_play_sample(unsigned char *sampo, size_t sz, int *freed)
 #endif
 
 #ifdef AFMT_U8
-	if(handle_type==SOUND_DEVICE_OSS) {
-		wr=0;
-		while(wr<sz) {
-			i=write(dsp, samp+wr, sz-wr);
-			if(i>=0)
-				wr+=i;
+	if (handle_type == SOUND_DEVICE_OSS) {
+		wr = 0;
+		while (wr < sz) {
+			i = write(dsp, samp + wr, sz - wr);
+			if (i >= 0) {
+				if ((SIZE_MAX - i) < wr)
+					wr = SIZE_MAX;
+				wr += i;
+			}
 		}
 		return true;
 	}
