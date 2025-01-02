@@ -249,7 +249,7 @@ function external_section_menu()
 		    break;
 	    }
 
-	    var sec_list=xtrn_area.sec_list.slice();    /* sec_list is a possibly-sorted copy of xtrn_area.sect_list */
+	    var sec_list=xtrn_area.sec_list.slice();    /* sec_list is a possibly-sorted copy of xtrn_area.sec_list */
 
 		system.node_list[bbs.node_num-1].aux=0; /* aux is 0, only if at menu */
 		bbs.node_action=NODE_XTRN;
