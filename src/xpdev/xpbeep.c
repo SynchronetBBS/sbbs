@@ -833,10 +833,6 @@ do_xp_play_sample(unsigned char *sampo, size_t sz, int *freed)
 #if defined(WITH_PORTAUDIO) || defined(_WIN32) || defined(WITH_SDL_AUDIO)
 	int need_copy = 0;
 #endif
-#ifdef AFMT_U8
-	size_t wr;
-	int	i;
-#endif
 
 #ifdef WITH_PORTAUDIO
 	if(handle_type==SOUND_DEVICE_PORTAUDIO) {
@@ -977,14 +973,14 @@ do_xp_play_sample(unsigned char *sampo, size_t sz, int *freed)
 
 #ifdef AFMT_U8
 	if (handle_type == SOUND_DEVICE_OSS) {
+		size_t wr = 0;
 		wr = 0;
 		while (wr < sz) {
-			i = write(dsp, samp + wr, sz - wr);
-			if (i >= 0) {
-				if ((SIZE_MAX - i) < wr)
-					wr = SIZE_MAX;
+			ssize_t i = write(dsp, samp + wr, sz - wr);
+			if (i >= 0)
 				wr += i;
-			}
+			else
+				return false;
 		}
 		return true;
 	}
