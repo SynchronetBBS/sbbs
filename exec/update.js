@@ -86,16 +86,16 @@ function update_birthdates()
 
 function install_logonlist()
 {
-	var maint_event = "?logonlist -m";
+	const cmdline = "?logonlist -m";
 	var f = new File(system.ctrl_dir + "main.ini");
 	if(!f.open(f.exists ? 'r+':'w+'))
 		return "!Failed to open " + f.name;
 	var cmd = f.iniGetValue("daily_event", "cmd");
 	if(cmd) {
 		f.close();
-		return format("System daily event already set to: '%s'", cmd);
+		return cmd == cmdline ? "Already installed" : format("System daily event already set to: '%s'", cmd);
 	}
-	var result = f.iniSetValue("daily_event", "cmd", maint_event);
+	var result = f.iniSetValue("daily_event", "cmd", cmdline);
 	f.close();
 	if(!result)
 		return "!Failed to write main.ini";
@@ -104,6 +104,7 @@ function install_logonlist()
 
 function install_trashman()
 {
+	const cmdline = "%!trashman%. %z*.can %kspamblock.cfg";
 	const section = "monthly_event";
 	var f = new File(system.ctrl_dir + "main.ini");
 	if(!f.open(f.exists ? 'r+':'w+'))
@@ -111,9 +112,9 @@ function install_trashman()
 	var cmd = f.iniGetValue(section, "cmd");
 	if(cmd) {
 		f.close();
-		return format("System monthly event already set to: '%s'", cmd);
+		return cmd == cmdline ? "Already installed" : format("System monthly event already set to: '%s'", cmd);
 	}
-	var result = f.iniSetValue(section, "cmd", "%!trashman%. %z*.can %kspamblock.cfg");
+	var result = f.iniSetValue(section, "cmd", cmdline);
 	result = result && f.iniSetValue(section, "settings", "0x4001");
 	f.close();
 	if(!result)
