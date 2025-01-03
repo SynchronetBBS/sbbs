@@ -241,6 +241,8 @@ char* smb_zonestr(int16_t zone, char* str)
 
 	if(zone>0)
 		plus="+";
+	else if((zone / 60) == 0)
+		plus="-";
 	else
 		plus="";
 	sprintf(str,"UTC%s%d:%02u", plus, zone/60, zone<0 ? (-zone)%60 : zone%60);
