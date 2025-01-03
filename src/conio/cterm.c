@@ -2199,7 +2199,9 @@ get_hexstr(char *str, char *end, char *out)
 	}
 }
 
-static void parse_macro_string(struct cterminal *cterm, bool finish)
+#define MAX_MACRO_LEN 0xfffff
+static void
+parse_macro_string(struct cterminal *cterm, bool finish)
 {
 	char *p = cterm->strbuf;
 	char *end = NULL;
@@ -2249,6 +2251,8 @@ all_done:
 	}
 	if (cterm->strbuflen == 0)
 		return;
+	if (cterm->strbuflen > MAX_MACRO_LEN)
+		return;
 	if (cterm->macro_encoding == MACRO_ENCODING_ASCII) {
 		cterm->macros[cterm->macro_num] = malloc(cterm->strbuflen + 1);
 		if (cterm->macros[cterm->macro_num]) {
@@ -2282,15 +2286,19 @@ all_done:
 					ul = strtoul(p, &p, 10);
 					if (*p != ';')
 						return;
-					if (ul == ULONG_MAX)
+					if (ul > MAX_MACRO_LEN)
 						return;
 					p++;
 				}
 				plen = get_hexstrlen(p, end);
-				if (plen == -1)
+				if (plen < 0)
+					return;
+				if (plen > MAX_MACRO_LEN)
 					return;
 				p += plen * 2;
 				mlen += ul * plen;
+				if (mlen > MAX_MACRO_LEN)
+					return;
 				if (p <= end) {
 					if (*p == ';')
 						p++;
@@ -2300,10 +2308,14 @@ all_done:
 			}
 			else {
 				plen = get_hexstrlen(p, end);
-				if (plen == -1)
+				if (plen < 0)
+					return;
+				if (plen > MAX_MACRO_LEN)
 					return;
 				p += plen * 2;
 				mlen += plen;
+				if (mlen > MAX_MACRO_LEN)
+					return;
 			}
 		}
 		cterm->macros[cterm->macro_num] = malloc(mlen + 1);
@@ -2318,11 +2330,21 @@ all_done:
 					ul = 1;
 				else {
 					ul = strtoul(p, &p, 10);
+					if (ul > MAX_MACRO_LEN) {
+						FREE_AND_NULL(cterm->macros[cterm->macro_num]);
+						return;
+					}
 					p++;
 				}
 				plen = get_hexstrlen(p, end);
-				if (plen == -1)
+				if (plen < 0) {
+					FREE_AND_NULL(cterm->macros[cterm->macro_num]);
 					return;
+				}
+				if (plen > MAX_MACRO_LEN) {
+					FREE_AND_NULL(cterm->macros[cterm->macro_num]);
+					return;
+				}
 				for (i = 0; i < ul; i++) {
 					get_hexstr(p, end, out);
 					out += plen;
@@ -2333,8 +2355,14 @@ all_done:
 			}
 			else {
 				plen = get_hexstrlen(p, end);
-				if (plen == -1)
+				if (plen < 0) {
+					FREE_AND_NULL(cterm->macros[cterm->macro_num]);
 					return;
+				}
+				if (plen > MAX_MACRO_LEN) {
+					FREE_AND_NULL(cterm->macros[cterm->macro_num]);
+					return;
+				}
 				get_hexstr(p, end, out);
 				out += plen;
 				p += plen * 2;
