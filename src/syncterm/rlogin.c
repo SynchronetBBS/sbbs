@@ -48,9 +48,9 @@ rlogin_input_thread(void *args)
 void
 rlogin_output_thread(void *args)
 {
-	int wr;
+	size_t sent;
+	size_t wr;
 	int ret;
-	int sent;
 
 	SetThreadName("RLogin Output");
 	conn_api.output_thread_running = 1;
@@ -62,7 +62,7 @@ rlogin_output_thread(void *args)
 			wr = conn_buf_get(&conn_outbuf, conn_api.wr_buf, conn_api.wr_buf_size);
 			pthread_mutex_unlock(&(conn_outbuf.mutex));
 			sent = 0;
-			while (rlogin_sock != INVALID_SOCKET && sent < wr) {
+			while (rlogin_sock != INVALID_SOCKET && sent < wr && !conn_api.terminate) {
 				if (socket_writable(rlogin_sock, 100)) {
 					ret = sendsocket(rlogin_sock, conn_api.wr_buf + sent, wr - sent);
 					if (ret < 0)
