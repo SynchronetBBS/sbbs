@@ -108,9 +108,6 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <OutputFile>.\msvc.win32.exe.debug/scfg.bsc</OutputFile>
     </Bscmake>
-    <Manifest>
-      <AdditionalManifestFiles>..\..\conio\ciolib.manifest</AdditionalManifestFiles>
-    </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Midl>
@@ -153,9 +150,6 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <OutputFile>.\msvc.win32.exe.release/scfg.bsc</OutputFile>
     </Bscmake>
-    <Manifest>
-      <AdditionalManifestFiles>..\..\conio\ciolib.manifest</AdditionalManifestFiles>
-    </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\dat_rec.c">
