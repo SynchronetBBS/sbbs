@@ -173,8 +173,8 @@ ssh_input_thread(void *args)
 		sftp_do_finish = false;
 		pthread_mutex_lock(&ssh_mutex);
 		if (FlushData(ssh_session) == CRYPT_ERROR_COMPLETE) {
-			ssh_complete = true;
 			pthread_mutex_unlock(&ssh_mutex);
+			ssh_complete = true;
 			break;
 		}
 		if (ssh_channel != -1) {
@@ -189,10 +189,10 @@ ssh_input_thread(void *args)
 		}
 		if (ssh_channel == -1 && sftp_channel == -1) {
 			both_gone = true;
-			ssh_complete = true;
 		}
 		pthread_mutex_unlock(&ssh_mutex);
 		if (both_gone) {
+			ssh_complete = true;
 			break;
 		}
 		if (sftp_do_finish) {
@@ -204,8 +204,8 @@ ssh_input_thread(void *args)
 
 		pthread_mutex_lock(&ssh_mutex);
 		if (FlushData(ssh_session) == CRYPT_ERROR_COMPLETE) {
-			ssh_complete = true;
 			pthread_mutex_unlock(&ssh_mutex);
+			ssh_complete = true;
 			break;
 		}
 
@@ -223,8 +223,8 @@ ssh_input_thread(void *args)
 			}
 		}
 		if (ssh_channel == -1 && sftp_channel == -1) {
-			ssh_complete = true;
 			pthread_mutex_unlock(&ssh_mutex);
+			ssh_complete = true;
 			break;
 		}
 
@@ -332,8 +332,8 @@ ssh_output_thread(void *args)
 				ret = 0;
 				pthread_mutex_lock(&ssh_mutex);
 				if (ssh_channel == -1) {
-					ssh_complete = true;
 					pthread_mutex_unlock(&ssh_mutex);
+					ssh_complete = true;
 					channel_gone = true;
 					break;
 				}
@@ -345,8 +345,8 @@ ssh_output_thread(void *args)
 						FlushData(ssh_session);
 				}
 				if (cryptStatusError(status)) {
-					ssh_complete = true;
 					pthread_mutex_unlock(&ssh_mutex);
+					ssh_complete = true;
 					if ((status == CRYPT_ERROR_COMPLETE) || (status == CRYPT_ERROR_NOTFOUND)) { /* connection closed */
 						channel_gone = true;
 						break;
