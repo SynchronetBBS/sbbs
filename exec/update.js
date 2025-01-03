@@ -91,9 +91,30 @@ function install_logonlist()
 	if(!f.open(f.exists ? 'r+':'w+'))
 		return "!Failed to open " + f.name;
 	var cmd = f.iniGetValue("daily_event", "cmd");
-	if(cmd)
+	if(cmd) {
+		f.close();
 		return format("System daily event already set to: '%s'", cmd);
+	}
 	var result = f.iniSetValue("daily_event", "cmd", maint_event);
+	f.close();
+	if(!result)
+		return "!Failed to write main.ini";
+	return "Successful";
+}
+
+function install_trashman()
+{
+	const section = "monthly_event";
+	var f = new File(system.ctrl_dir + "main.ini");
+	if(!f.open(f.exists ? 'r+':'w+'))
+		return "!Failed to open " + f.name;
+	var cmd = f.iniGetValue(section, "cmd");
+	if(cmd) {
+		f.close();
+		return format("System monthly event already set to: '%s'", cmd);
+	}
+	var result = f.iniSetValue(section, "cmd", "%!trashman%. %z*.can %kspamblock.cfg");
+	result = result && f.iniSetValue(section, "settings", "0x4001");
 	f.close();
 	if(!result)
 		return "!Failed to write main.ini";
@@ -184,7 +205,8 @@ if(!xtrn_area.prog["avatchoo"] && !xtrn_area.event["avat-out"]) {
 		js.exec("avatars.js", {}, "install");
 }
 
-print("Installing Logon List module: " + install_logonlist());
+print("Installing Logon List Daily Event: " + install_logonlist());
+print("Installing Trashman Monthly Event: " + install_trashman());
 
 print("Updating [General] Text File Section indexes");
 print(update_gfile_indexes() + " indexes updated.");
