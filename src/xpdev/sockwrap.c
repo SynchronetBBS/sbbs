@@ -188,7 +188,7 @@ off_t sendfilesocket(int sock, int file, off_t *offset, off_t count)
 			break;
 		while (sent < rd) {
 			ssize_t wr = sendsocket(sock, buf + sent, rd - sent);
-			if (wr > 0) {
+			if (wr > 0 && wr <= (rd - sent)) {
 				sent += wr;
 			}
 			else if (wr == SOCKET_ERROR && SOCKET_ERRNO == EWOULDBLOCK) {
