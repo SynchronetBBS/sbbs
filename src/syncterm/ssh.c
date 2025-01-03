@@ -917,6 +917,8 @@ ssh_connect(struct bbslist *bbs)
 		uifc.pop(NULL);
 		uifc.pop("Getting SSH Channel");
 	}
+	// Using ssh_channel outside of ssh_mutex (which doesn't exist yet)
+	/* coverity[missing_lock] */
 	status = cryptGetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, &ssh_channel);
 	if (cryptStatusError(status) || ssh_channel == -1) {
 		free(pubkey);

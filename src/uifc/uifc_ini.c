@@ -34,6 +34,8 @@ void read_uifc_ini(const char* path, uifcapi_t* uifc, int* ciolib_mode, enum tex
 	uifc->esc_delay = iniReadInteger(fp, section, "esc_delay", uifc->esc_delay);
 	if (ciolib_mode != NULL)
 		*ciolib_mode = iniReadInteger(fp, section, "ciolib_mode", *ciolib_mode);
+	// No vstatlock around ciolib_initial_scaling because the lock shouldn't exist yet
+	/* coverity[missing_lock] */
 	ciolib_initial_scaling = iniReadFloat(fp, section, "scaling", ciolib_initial_scaling);
 
 	if (fp != NULL)
