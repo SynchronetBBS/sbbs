@@ -780,8 +780,10 @@ static const struct {
 char *output_types[] = {
 	"Autodetect"
 #ifdef __unix__
+	/* coverity[missing_comma] */
 	" (X11, SDL, Curses, ANSI)"
 #elif defined(_WIN32)
+	/* coverity[missing_comma] */
 	" (GDI, SDL, Console, ANSI)"
 #endif
 #ifdef __unix__
