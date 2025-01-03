@@ -51,7 +51,7 @@ function DNS(synchronous, servers) {
 	if (servers === undefined)
 		servers = system.name_servers;
 
-	if (!servers || !servers.length)
+	if (servers.constructor !== Array || !servers.length)
 		throw new Error("No nameservers specified in constructor or configured in system");
 	servers.forEach(function(server) {
 		var sock = new Socket(SOCK_DGRAM, "dns", server.indexOf(':') >= 0);
@@ -210,20 +210,27 @@ DNS.prototype.handle_response = function(sock) {
 	var rdlen;
 	var tmp;
 
+	function ensure(resp, offset, bytes) {
+		if (resp.length < offset + bytes)
+			throw new Error("Corrupt DNS response");
+	}
+
 	function string_to_int16(str) {
-		if(!str)
-			return 0;
+		if (str.length < 2)
+			throw new Error('Not enough bytes for an int16');
 		return ((ascii(str[0])<<8) | (ascii(str[1])));
 	}
 
 	function string_to_int32(str) {
-		if(!str)
-			return 0;
+		if (str.length < 4)
+			throw new Error('Not enough bytes for an int32');
 		return ((ascii(str[0])<<24) | (ascii(str[1]) << 16) | (ascii(str[1]) << 8) | (ascii(str[1])));
 	}
 
 	function get_string(resp, offset) {
+		ensure(resp, offset, 1);
 		var len = ascii(resp[offset]);
+		ensure(resp, offset + 1, len);
 		return {'len':len + 1, 'string':resp.substr(offset + 1, len)};
 	}
 
@@ -234,11 +241,13 @@ DNS.prototype.handle_response = function(sock) {
 		var compressed = false;
 
 		do {
+			ensure(resp, offset, 1);
 			len = ascii(resp[offset]);
 			if (!compressed)
 				ret++;
 			offset++;
 			if (len > 63) {
+				ensure(resp, offset, 1);
 				offset = ((len & 0x3f) << 8) | ascii(resp[offset]);
 				if (!compressed)
 					ret++;
@@ -249,6 +258,7 @@ DNS.prototype.handle_response = function(sock) {
 					ret += len;
 				if (name.length > 0 && len > 0)
 					name += '.';
+				ensure(resp, offset, len);
 				name += resp.substr(offset, len);
 				offset += len;
 			}
@@ -265,6 +275,7 @@ DNS.prototype.handle_response = function(sock) {
 
 		switch(type) {
 			case 1:	 // A
+				ensure(resp, offset, 4);
 				return ascii(resp[offset]) + '.' +
 				       ascii(resp[offset + 1]) + '.' +
 				       ascii(resp[offset + 2]) + '.' +
@@ -295,6 +306,7 @@ DNS.prototype.handle_response = function(sock) {
 				return tmp;
 			case 11:  // WKS
 				tmp = {};
+				ensure(resp, offset, 5);
 				tmp.address = ascii(resp[offset]) + '.' +
 				              ascii(resp[offset + 1]) + '.' +
 				              ascii(resp[offset + 2]) + '.' +
@@ -303,6 +315,7 @@ DNS.prototype.handle_response = function(sock) {
 				tmp2 = 5;
 				tmp.ports = [];
 				while (tmp2 < len) {
+					ensure(resp, offset + tmp2, 1);
 					tmp3 = ascii(resp[offset + tmp2]);
 					for (tmp4 = 0; tmp4 < 8; tmp4++) {
 						if (tmp3 & (1 << tmp4))
@@ -330,6 +343,7 @@ DNS.prototype.handle_response = function(sock) {
 				} while (tmp2 < len);
 				return tmp;
 			case 28:  // AAAA
+				ensure(resp, offset + tmp2, 16);
 				return format("%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x",
 				               ascii(resp[offset + 0]),  ascii(resp[offset + 1]),
 				               ascii(resp[offset + 2]),  ascii(resp[offset + 3]),
@@ -389,6 +403,8 @@ DNS.prototype.handle_response = function(sock) {
 	}
 
 	resp = sock.recv(10000);
+	if (resp === undefined || resp.length < 12)
+		return null;
 	id = string_to_int16(resp);
 	if (this.outstanding[id] === undefined)
 		return null;
@@ -397,8 +413,6 @@ DNS.prototype.handle_response = function(sock) {
 	delete this.outstanding[id];
 
 	ret.id = id;
-	if(!resp)
-		return null;
 	ret.response = !!(ascii(resp[2]) & 0x80);
 	if (!ret.response)
 		return null;
