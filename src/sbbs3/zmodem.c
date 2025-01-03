@@ -1544,7 +1544,7 @@ BOOL zmodem_handle_zack(zmodem_t* zm, uint32_t min, uint32_t max)
 	return FALSE;
 }
 
-static unsigned new_window_size(zmodem_t* zm, time_t start, unsigned pos)
+static uint64_t new_window_size(zmodem_t* zm, time_t start, unsigned pos)
 {
 	time_t elapsed = time(NULL) - start;
 	if(elapsed < 1)
