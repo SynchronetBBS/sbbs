@@ -145,7 +145,7 @@
 "\1bLogons Today    : \1c%s\r\n"                          110 SiLogonsToday
 "\1bTotal Time      : \1c%s minutes\r\n"                  111 SiTotalTime
 "\1bTime Today      : \1c%s minutes\r\n"                  112 SiTimeToday
-"\r\nView system information file"                      113 ViewSysInfoFileQ
+"\r\nView system information file\1\\"                    113 ViewSysInfoFileQ
 "View logon message"                                    114 ViewLogonMsgQ
 "\r\n\r\nSorry, you can't read mail you've sent.\r\n"   115 R_ReadSentMail
 "\r\n\1w\1hMessage Scan "                                 116 MessageScan
@@ -403,7 +403,7 @@
 	"\1bB\1ci\1mr\1yt\1wh\1rd\1ga\1by \1ct\1mo \1yy\1wo\1ru\1g.\1b.\1c.\r\n\r\n"
 "\1w\1hYou haven't changed your password in more "\       330 TimeToChangePw
 	"than %d days.\r\n\r\n"
-"\r\nEnter a different password"                        331 NewPasswordQ
+"\r\nEnter a different password\1\\"                        331 NewPasswordQ
 "\1_\1?\1y\1hNew password (%u-%u chars)\1\\: "              332 NewPasswordPromptFmt
 "\1_\1y\1hVerify (enter again)\1\\: \1n"                  333 VerifyPassword
 "\7\1r\1hWrong!"                                          334 Wrong
@@ -422,7 +422,7 @@
 "\1_\1b\1h[\1c@CHECKMARK@\1b] \1yEnter your zip (or postal) code\1\\: \1w"   347 EnterYourZipCode
 "\1_\1y\1hClient (Name or Address)\1\\: \1w"                348 EnterYourComputer
 "Are you connecting from North America"                 349 CallingFromNorthAmericaQ
-"Is the above information correct"                      350 UserInfoCorrectQ
+"Is the above information correct\1\\"                      350 UserInfoCorrectQ
 "\1bUser #\1c%-4d      \1b: \1c%s\r\n"                      351 LiUserNumberName
 "\1bLogons Today    : \1c%-5u \1b(Max \1c%u\1b)\r\n"         352 LiLogonsToday
 "\1bTime on Today   : \1c%-5u \1b(Max \1c%u\1b)\r\n"        353 LiTimeonToday
@@ -449,7 +449,7 @@
 	"\1h\1wIMPORTANT:\1n\1g If you are not absolutely "\
 	"sure, hit \1h\1w\1iN\1n\1b\1h"
 "Does your terminal support IBM extended ASCII (CP437)"     369 ExAsciiTerminalQ
-"\1nYou can't use that name (duplicate or invalid).\r\n" 370 YouCantUseThatName
+"\1nYou can't use that name\1\\ (duplicate or invalid).\r\n" 370 YouCantUseThatName
 "\1l\1-\1gYour password is \1h%s\r\n"                       371 YourPasswordIs
 "\r\n\1_\1w\1hDon't forget and keep it "\                   372 NewUserPasswordVerify
 	"confidential.\r\n\r\n\1y\1hEnter this password "\
@@ -1056,7 +1056,7 @@
 "Quit"                                                     869 Quit
 "Language"                                                 870 Language
 "English"                                                  871 LANG
-"\1n\1b[\1h\1wI\1n\1b] \1h%-29s\1n\1b: \1c%s\r\n"          872 UserDefaultsLanguage
+"\1n\1b[\1h\1wI\1n\1b] \1h%-29s\1n\1b\1\\: \1c%s\r\n"      872 UserDefaultsLanguage
 "*"                                                        873 PasswordChar
 " via sftp"                                                874 NodeConnectionSFTP
 "\1n\1b[\1h\1wW\1n\1b] \1hWord-wrap Message Text       \1n\1b: \1c%s\r\n"	875  QWKSettingsWrapText
