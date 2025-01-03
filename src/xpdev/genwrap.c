@@ -61,8 +61,12 @@ int safe_snprintf(char *dst, size_t size, const char *fmt, ...)
 	if(numchars==-1)
 		numchars=strlen(dst);
 #endif
-	if ((size_t)numchars >= size && numchars > 0)
-		numchars = size - 1;
+	if ((size_t)numchars >= size && numchars > 0) {
+		if (size == 0)
+			numchars = 0;
+		else
+			numchars = size - 1;
+	}
 	return(numchars);
 }
 
