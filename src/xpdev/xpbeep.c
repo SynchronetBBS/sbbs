@@ -974,7 +974,6 @@ do_xp_play_sample(unsigned char *sampo, size_t sz, int *freed)
 #ifdef AFMT_U8
 	if (handle_type == SOUND_DEVICE_OSS) {
 		size_t wr = 0;
-		wr = 0;
 		while (wr < sz) {
 			ssize_t i = write(dsp, samp + wr, sz - wr);
 			if (i >= 0)
