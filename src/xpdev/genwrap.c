@@ -688,6 +688,7 @@ long xp_random(int n)
 	limit = ((1UL<<((sizeof(long)*CHAR_BIT)-1)) / n) * n - 1;
 
 	while(1) {
+		/* coverity[dont_call] */
 		curr=random();
 		if(curr <= limit)
 			return(curr % n);
