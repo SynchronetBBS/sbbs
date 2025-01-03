@@ -137,6 +137,7 @@ void __fastcall TConfigWizard::FormShow(TObject *Sender)
         Close();
         return;
     }
+	SysPass = scfg.sys_pass;
 
     if(scfg.new_install) {
         TIME_ZONE_INFORMATION tz;
@@ -229,15 +230,18 @@ void __fastcall TConfigWizard::FormShow(TObject *Sender)
             SAFECOPY(str,tz_str[i]);
         TimeZoneComboBox->Items->Add(str);
     }
-   	sprintf(str,"Other (%s)",smb_zonestr(scfg.sys_timezone,NULL));
+	if(scfg.sys_timezone == SYS_TIMEZONE_AUTO)
+		snprintf(str, sizeof str, "Automatic (%s)", smb_zonestr(sys_timezone(&scfg), NULL));
+	else
+		snprintf(str, sizeof str, "Other (%s)",smb_zonestr(scfg.sys_timezone,NULL));
     TimeZoneComboBox->Items->Add(str);
 
     for(i=0;i<sizeof(tz_val)/sizeof(tz_val[0]);i++)
         if((scfg.sys_timezone&((short)~DAYLIGHT))==tz_val[i])
             break;
     TimeZoneComboBox->ItemIndex=i;
-    DaylightCheckBox->Enabled=scfg.sys_timezone&US_ZONE;
-    DaylightCheckBox->Checked=scfg.sys_timezone&DAYLIGHT;
+    DaylightCheckBox->Enabled = SMB_TZ_HAS_DST(scfg.sys_timezone);
+    DaylightCheckBox->Checked = DaylightCheckBox->Enabled && (scfg.sys_timezone & DAYLIGHT);
     if(scfg.sys_misc&SM_MILITARY)
         Time24hrRadioButton->Checked=true;
     else
@@ -314,8 +318,22 @@ void __fastcall TConfigWizard::NextButtonClick(TObject *Sender)
         if(!save_cfg(&scfg)) {
         	Application->MessageBox("Error saving configuration"
             	,"ERROR",MB_OK|MB_ICONEXCLAMATION);
-        } else
+        } else {
+			if(strcmp(scfg.sys_pass, SysPass.c_str()) != 0) {
+				char path[MAX_PATH + 1];
+				snprintf(path, sizeof path, "%scryptlib.key", scfg.ctrl_dir);
+				if(fexist(path) && remove(path) != 0)
+					Application->MessageBox(path, "ERROR Removing File"
+						,MB_OK|MB_ICONEXCLAMATION);
+				else {
+					snprintf(path, sizeof path, "%sssl.cert", scfg.ctrl_dir);
+					if(fexist(path) && remove(path) != 0)
+						Application->MessageBox(path, "ERROR Removing File"
+							,MB_OK|MB_ICONEXCLAMATION);
+				}
+			}
         	refresh_cfg(&scfg);
+		}
         Close();
         return;
     }

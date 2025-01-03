@@ -101,6 +101,7 @@ __published:	// IDE-managed Components
     void __fastcall NewUsersCheckBoxClick(TObject *Sender);
 private:	// User declarations
     scfg_t  scfg;
+	AnsiString SysPass;
 public:		// User declarations
     __fastcall TConfigWizard(TComponent* Owner);
 };
