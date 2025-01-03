@@ -70,7 +70,8 @@ time32_t time32(time32_t* tp)
 	uint32_t t32;
 
 	t=time(NULL);
-	t32 = t & UINT32_MAX;
+	/* coverity[store_truncates_time_t] */
+	t32 = t;
 
 	if(tp!=NULL)
 		*tp=(time32_t)t32;
@@ -81,7 +82,8 @@ time32_t time32(time32_t* tp)
 time32_t mktime32(struct tm* tm)
 {
 	time_t t = mktime(tm);
-	uint32_t t32 = t & UINT32_MAX;
+	/* coverity[store_truncates_time_t] */
+	uint32_t t32 = t;
 	return (time32_t)t32;	/* don't use sane_mktime since tm->tm_mon is assumed to be already zero-based */
 }
 
