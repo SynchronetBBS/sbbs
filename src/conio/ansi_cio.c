@@ -706,6 +706,7 @@ static void ansi_keyparse(void *par)
 			sem_wait(&goahead);
 			sem_post(&got_input);
 			sem_wait(&used_input);
+			continue;
 		}
 		if(gotnull==2) {
 			// 0xe0 enhanced keyboard key... translate to 0x00 key for now.
