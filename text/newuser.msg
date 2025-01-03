@@ -1,4 +1,4 @@
-@CLEAR@
+@CLEAR@@WORDWRAP@
 nhInternet E-mail:
 ncYour Internet e-mail address here on h@BBS@nc is:
 <h@EMAILADDR@nc>
