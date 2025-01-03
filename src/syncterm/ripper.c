@@ -13844,12 +13844,20 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 									break;
 								}
 								pix->width = tmp + 1;
+								if (pix->width < 1)
+									pix->width = 1;
+								if (pix->width > 65536)
+									pix->width = 65536;
 								if (fread(&tmp, sizeof(tmp), 1, icn) != 1) {
 									free(pix);
 									fclose(icn);
 									break;
 								}
 								pix->height = tmp + 1;
+								if (pix->height < 1)
+									pix->height = 1;
+								if (pix->height > 65536)
+									pix->height = 65536;
 								if ((x1 + rip.viewport.sx + pix->width - 1
 								    > rip.viewport.ex)
 								    || (y1 + rip.viewport.sy + pix->height - 1
