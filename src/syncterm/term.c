@@ -334,6 +334,7 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 	static int        oldspeed = 0;
 	static int        lastmouse = 0;
 	int               newmouse;
+	double            timeond;
 	int               timeon;
 	char              sep;
 	int               oldfont_norm;
@@ -378,12 +379,13 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 	lastupd = now;
 	lastmouse = newmouse;
 	oldspeed = speed;
-	if (now > (bbs->connected + 359999))
+	timeond = difftime(now, bbs->connected);
+	if (timeond > 350000)
 		timeon = 350000;
-	else if (now < bbs->connected)
+	else if (timeond < 0)
 		timeon = 0;
 	else
-		timeon = (int)(now - bbs->connected);
+		timeon = timeond;
 	gettextinfo(&txtinfo);
 	oldscroll = _wscroll;
 	hold_update = true;
