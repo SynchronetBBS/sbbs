@@ -1218,6 +1218,7 @@ transfer_complete(bool success, bool was_binary)
 	lprintf(LOG_NOTICE, "Hit any key or wait %u seconds to continue...", timeout);
 	while (timeout > 0) {
 		if (kbhit()) {
+			/* coverity[cond_const:FALSE] */
 			if (getch() == (CIO_KEY_QUIT & 0xff)) {
 				if ((getch() << 8) == (CIO_KEY_QUIT & 0xff00))
 					check_exit(false);
