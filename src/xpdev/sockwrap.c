@@ -181,11 +181,11 @@ off_t sendfilesocket(int sock, int file, off_t *offset, off_t count)
 
 	while (total < count) {
 		ssize_t rd = read(file, buf, sizeof(buf));
+		ssize_t sent = 0;
 		if (rd < 0) // Error
 			return(-1);
 		if (rd == 0) // EOF
 			break;
-		ssize_t sent = 0;
 		while (sent < rd) {
 			ssize_t wr = sendsocket(sock, buf + sent, rd - sent);
 			if (wr > 0) {
