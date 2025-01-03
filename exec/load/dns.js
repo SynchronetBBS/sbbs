@@ -403,7 +403,7 @@ DNS.prototype.handle_response = function(sock) {
 	}
 
 	resp = sock.recv(10000);
-	if (resp === undefined || resp.length < 12)
+	if (resp === undefined || resp === null || resp.length < 12)
 		return null;
 	id = string_to_int16(resp);
 	if (this.outstanding[id] === undefined)
