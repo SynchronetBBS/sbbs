@@ -4,16 +4,16 @@
 
 # @format.tab-size 8, @format.use-tabs true
 
-# $id: $
-
 ifndef BAJAPATH
  BAJAPATH	:=	./baja
 endif
 
 all :	\
-        getimlst.bin \
+	ftp.bin \
+	getimlst.bin \
 	major.bin \
 	matrix.bin \
+	obv-2.bin \
 	pcboard.bin \
 	ra_emu.bin \
 	renegade.bin \
