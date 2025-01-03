@@ -62,10 +62,10 @@ modem_input_thread(void *args)
 void
 modem_output_thread(void *args)
 {
+	size_t wr;
+	size_t sent;
 	int  i;
-	int  wr;
 	int  ret;
-	int  sent;
 	bool monitor_dsr = true;
 
 	SetThreadName("Modem Output");
@@ -85,7 +85,7 @@ modem_output_thread(void *args)
 					conn_api.wr_buf[i] &= 0x7f;
 			}
 			sent = 0;
-			while (com != COM_HANDLE_INVALID && sent < wr) {
+			while (com != COM_HANDLE_INVALID && sent < wr && !conn_api.terminate) {
 				ret = comWriteBuf(com, conn_api.wr_buf + sent, wr - sent);
 				if (ret < 0)
 					break;
