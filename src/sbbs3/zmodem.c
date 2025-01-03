@@ -1049,30 +1049,25 @@ int zmodem_recv_nibble(zmodem_t* zm)
 		c -= '0';
 	}
 
+	if (c < 0 || c > 15)
+		return -1;
 	return c;
 }
 
 int zmodem_recv_hex(zmodem_t* zm)
 {
 	int n1;
-	unsigned un1;
 	int n0;
-	unsigned un0;
 	int ret;
 
 	n1 = zmodem_recv_nibble(zm);
-
-	if(n1 < 0)
+	if (n1 < 0)
 		return n1;
-	un1 = n1;
-
 	n0 = zmodem_recv_nibble(zm);
-
 	if(n0 < 0)
 		return n0;
-	un0 = n0;
 
-	ret = (un1 << 4) | un0;
+	ret = (n1 << 4) | n0;
 
 //	lprintf(zm,LOG_DEBUG, __FUNCTION__ " returning: 0x%02X", ret);
 
