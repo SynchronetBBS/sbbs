@@ -50,7 +50,7 @@ rlogin_output_thread(void *args)
 {
 	size_t sent;
 	size_t wr;
-	int ret;
+	ssize_t ret;
 
 	SetThreadName("RLogin Output");
 	conn_api.output_thread_running = 1;
@@ -74,7 +74,7 @@ rlogin_output_thread(void *args)
 		else {
 			pthread_mutex_unlock(&(conn_outbuf.mutex));
 		}
-		if (ret == -1)
+		if (ret < 0)
 			break;
 	}
 	conn_api.output_thread_running = 2;
