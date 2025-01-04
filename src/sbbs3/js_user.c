@@ -214,7 +214,7 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			s=p->user->birth;
 			break;
 		case USER_PROP_BIRTHYEAR:
-			val = getbirthyear(p->user->birth);
+			val = getbirthyear(scfg, p->user->birth);
 			break;
 		case USER_PROP_BIRTHMONTH:
 			val = getbirthmonth(scfg, p->user->birth);
@@ -549,8 +549,8 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 			putuserstr(scfg, p->user->number, USER_PHONE, str);
 			break;
 		case USER_PROP_BIRTH:
-			SAFECOPY(p->user->birth,str);
-			putuserstr(scfg, p->user->number, USER_BIRTH, str);
+			parse_birthdate(scfg, str, p->user->birth, sizeof p->user->birth);
+			putuserstr(scfg, p->user->number, USER_BIRTH, p->user->birth);
 			break;
 		case USER_PROP_BIRTHYEAR:
 			if(JS_ValueToECMAUint32(cx, *vp, &val))
@@ -558,11 +558,11 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 			break;
 		case USER_PROP_BIRTHMONTH:
 			if(JS_ValueToECMAUint32(cx, *vp, &val))
-				putuserdec32(scfg, p->user->number, USER_BIRTH, isoDate_create(getbirthyear(p->user->birth), val, getbirthday(scfg, p->user->birth)));
+				putuserdec32(scfg, p->user->number, USER_BIRTH, isoDate_create(getbirthyear(scfg, p->user->birth), val, getbirthday(scfg, p->user->birth)));
 			break;
 		case USER_PROP_BIRTHDAY:
 			if(JS_ValueToECMAUint32(cx, *vp, &val))
-				putuserdec32(scfg, p->user->number, USER_BIRTH, isoDate_create(getbirthyear(p->user->birth), getbirthmonth(scfg, p->user->birth), val));
+				putuserdec32(scfg, p->user->number, USER_BIRTH, isoDate_create(getbirthyear(scfg, p->user->birth), getbirthmonth(scfg, p->user->birth), val));
 			break;
 		case USER_PROP_MODEM:
 			SAFECOPY(p->user->modem,str);

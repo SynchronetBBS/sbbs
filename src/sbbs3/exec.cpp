@@ -1723,7 +1723,7 @@ int sbbs_t::exec(csi_t *csi)
 					case USER_STRING_BIRTHDAY:
 						if(!getage(&cfg,csi->str))
 							break;
-						snprintf(useron.birth, sizeof useron.birth, "%.*s",LEN_BIRTH,csi->str);
+						parse_birthdate(&cfg, csi->str, useron.birth, sizeof useron.birth);
 						putuserstr(useron.number, USER_BIRTH
 							,useron.birth);
 						csi->logic=LOGIC_TRUE;

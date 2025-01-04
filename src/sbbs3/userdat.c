@@ -897,7 +897,7 @@ int putusername(scfg_t* cfg, int number, const char *name)
 
 #define DECVAL(ch, mul)	(DEC_CHAR_TO_INT(ch) * (mul))
 
-int getbirthyear(const char* birth)
+int getbirthyear(scfg_t* cfg, const char* birth)
 {
 	if(IS_DIGIT(birth[2]))				// CCYYMMDD format
 		return DECVAL(birth[0], 1000)
@@ -910,7 +910,11 @@ int getbirthyear(const char* birth)
 	if(localtime_r(&now, &tm) == NULL)
 		return 0;
 	tm.tm_year += 1900;
-	int year = 1900 + DECVAL(birth[6], 10) + DECVAL(birth[7], 1);
+	int year = 1900;
+	if(cfg->sys_date_fmt == YYMMDD)
+		year += DECVAL(birth[0], 10) + DECVAL(birth[1], 1);
+	else // MMDDYY or DDMMYY
+		year += DECVAL(birth[6], 10) + DECVAL(birth[7], 1);
 	if(tm.tm_year - year > 105)
 		year += 100;
 	return year;
@@ -920,7 +924,7 @@ int getbirthmonth(scfg_t* cfg, const char* birth)
 {
 	if(IS_DIGIT(birth[5]))				// CCYYMMDD format
 		return DECVAL(birth[4], 10)	+ DECVAL(birth[5], 1);
-	if(cfg->sys_misc & SM_EURODATE) {	// DD/MM/YY format
+	if(cfg->sys_date_fmt != MMDDYY) {	// DD/MM/YY or YY/MM/DD format
 		return DECVAL(birth[3], 10) + DECVAL(birth[4], 1);
 	} else {							// MM/DD/YY format
 		return DECVAL(birth[0], 10) + DECVAL(birth[1], 1);
@@ -931,11 +935,15 @@ int getbirthday(scfg_t* cfg, const char* birth)
 {
 	if(IS_DIGIT(birth[5]))				// CCYYMMDD format
 		return DECVAL(birth[6], 10)	+ DECVAL(birth[7], 1);
-	if(cfg->sys_misc & SM_EURODATE) {	// DD/MM/YY format
-		return DECVAL(birth[0], 10) + DECVAL(birth[1], 1);
-	} else {							// MM/DD/YY format
-		return DECVAL(birth[3], 10) + DECVAL(birth[4], 1);
+	switch(cfg->sys_date_fmt) {
+		case DDMMYY:
+			return DECVAL(birth[0], 10) + DECVAL(birth[1], 1);
+		case MMDDYY:
+			return DECVAL(birth[3], 10) + DECVAL(birth[4], 1);
+		case YYMMDD:
+			return DECVAL(birth[6], 10) + DECVAL(birth[7], 1);
 	}
+	return 0;
 }
 
 // Always returns string in MM/DD/YY format
@@ -946,7 +954,7 @@ char* getbirthmmddyy(scfg_t* cfg, char sep, const char* birth, char* buf, size_t
 		, sep
 		, getbirthday(cfg, birth)
 		, sep
-		, getbirthyear(birth) % 100);
+		, getbirthyear(cfg, birth) % 100);
 	return buf;
 }
 
@@ -958,7 +966,7 @@ char* getbirthddmmyy(scfg_t* cfg, char sep, const char* birth, char* buf, size_t
 		, sep
 		, getbirthmonth(cfg, birth)
 		, sep
-		, getbirthyear(birth) % 100);
+		, getbirthyear(cfg, birth) % 100);
 	return buf;
 }
 
@@ -966,7 +974,7 @@ char* getbirthddmmyy(scfg_t* cfg, char sep, const char* birth, char* buf, size_t
 char* getbirthyymmdd(scfg_t* cfg, char sep, const char* birth, char* buf, size_t max)
 {
 	safe_snprintf(buf, max, "%02u%c%02u%c%02u"
-		, getbirthyear(birth) % 100
+		, getbirthyear(cfg, birth) % 100
 		, sep
 		, getbirthmonth(cfg, birth)
 		, sep
@@ -1006,7 +1014,7 @@ int getage(scfg_t* cfg, const char *birth)
 		return(0);
 
 	tm.tm_mon++;	/* convert to 1 based */
-	int year = getbirthyear(birth);
+	int year = getbirthyear(cfg, birth);
 	int age = (1900 + tm.tm_year) - year;
 	int mon = getbirthmonth(cfg, birth);
 	int day = getbirthday(cfg, birth);
@@ -1022,12 +1030,8 @@ int getage(scfg_t* cfg, const char *birth)
 /****************************************************************************/
 char* parse_birthdate(scfg_t* cfg, const char* birthdate, char* out, size_t maxlen)
 {
-	if (cfg->sys_date_fmt == YYMMDD)
-		safe_snprintf(out, maxlen, "%.4s%.2s%.2s", birthdate, birthdate + 5, birthdate + 8);
-	else if (cfg->sys_date_fmt == DDMMYY)
-		safe_snprintf(out, maxlen, "%.4s%.2s%.2s", birthdate + 6, birthdate + 3, birthdate);
-	else
-		safe_snprintf(out, maxlen, "%.4s%.2s%.2s", birthdate + 6, birthdate, birthdate + 3);
+	snprintf(out, maxlen, "%04u%02u%02u"
+		,getbirthyear(cfg, birthdate), getbirthmonth(cfg, birthdate), getbirthday(cfg, birthdate));
 	return out;
 }
 
@@ -1042,7 +1046,7 @@ char* format_birthdate(scfg_t* cfg, const char* birthdate, char* out, size_t max
 	if(*birthdate) {
 		if (cfg->sys_date_fmt == YYMMDD)
 			safe_snprintf(out, maxlen, "%04u%c%02u%c%02u"
-				, getbirthyear(birthdate)
+				, getbirthyear(cfg, birthdate)
 				, cfg->sys_date_sep
 				, getbirthmonth(cfg, birthdate)
 				, cfg->sys_date_sep
@@ -1053,14 +1057,14 @@ char* format_birthdate(scfg_t* cfg, const char* birthdate, char* out, size_t max
 				, cfg->sys_date_sep
 				, getbirthmonth(cfg, birthdate)
 				, cfg->sys_date_sep
-				, getbirthyear(birthdate));
+				, getbirthyear(cfg, birthdate));
 		else
 			safe_snprintf(out, maxlen, "%02u%c%02u%c%04u"
 				, getbirthmonth(cfg, birthdate)
 				, cfg->sys_date_sep
 				, getbirthday(cfg, birthdate)
 				, cfg->sys_date_sep
-				, getbirthyear(birthdate));
+				, getbirthyear(cfg, birthdate));
 	}
 	return out;
 }

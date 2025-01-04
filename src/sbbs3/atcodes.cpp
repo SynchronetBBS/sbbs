@@ -1107,7 +1107,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		SAFECOPY(tmp, sp + 6);
 		c_unescape_str(tmp);
 		memset(&tm,0,sizeof(tm));
-		tm.tm_year = getbirthyear(useron.birth) - 1900;
+		tm.tm_year = getbirthyear(&cfg, useron.birth) - 1900;
 		tm.tm_mon = getbirthmonth(&cfg, useron.birth) - 1;
 		tm.tm_mday = getbirthday(&cfg, useron.birth);
 		mktime(&tm);
@@ -1375,6 +1375,11 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	if(strcmp(sp,"FREESPACET") == 0) {
 		safe_snprintf(str,maxlen,"%" PRIu64,getfreediskspace(cfg.temp_dir, 1024 * 1024 * 1024) / 1024);
 		return(str);
+	}
+
+	if(strcmp(sp, "MINSPACE") == 0) {
+		byte_count_to_str(cfg.min_dspace, str, maxlen);
+		return str;
 	}
 
 	if(!strcmp(sp,"UPBYTES")) {
