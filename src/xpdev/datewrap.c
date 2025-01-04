@@ -37,7 +37,7 @@ time_t checktime(void)
 	tmp = gmtime_r(&t,&gmt);
 	if(tmp == NULL)
 		return -1;
-	return mktime(&tm) - mktime(tmp);
+	return (time_t)difftime(mktime(&tm), mktime(tmp));
 }
 
 /* Compensates for struct tm "weirdness" */
@@ -71,7 +71,7 @@ time32_t time32(time32_t* tp)
 
 	t=time(NULL);
 	/* coverity[store_truncates_time_t] */
-	t32 = t;
+	t32 = (uint32_t)t;
 
 	if(tp!=NULL)
 		*tp=(time32_t)t32;
@@ -83,7 +83,7 @@ time32_t mktime32(struct tm* tm)
 {
 	time_t t = mktime(tm);
 	/* coverity[store_truncates_time_t] */
-	uint32_t t32 = t;
+	uint32_t t32 = (uint32_t)t;
 	return (time32_t)t32;	/* don't use sane_mktime since tm->tm_mon is assumed to be already zero-based */
 }
 
