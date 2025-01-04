@@ -65,7 +65,7 @@ rlogin_output_thread(void *args)
 			while (rlogin_sock != INVALID_SOCKET && sent < wr && !conn_api.terminate) {
 				if (socket_writable(rlogin_sock, 100)) {
 					ret = sendsocket(rlogin_sock, conn_api.wr_buf + sent, wr - sent);
-					if (ret > 0 && ret <= (wr - sent))
+					if (ret > 0)
 						sent += ret;
 					if (ret < 0)
 						break;
