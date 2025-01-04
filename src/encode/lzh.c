@@ -56,6 +56,7 @@ typedef struct {
 	uint16_t getbuf;		/* Was just "unsigned" fixed 04/12/95 */
 	uint8_t  text_buf[LZH_STRBUF_SZ];
 	uint8_t  getlen;
+	size_t outsz;
 
 } lzh_decode_t;
 
@@ -70,6 +71,7 @@ typedef struct {
 	uint16_t match_length;
 	uint8_t  text_buf[LZH_STRBUF_SZ + LZH_LOOKAHD_SZ - 1];
 	uint8_t	 putlen;
+	size_t outsz;
 
 } lzh_encode_t;
 
@@ -319,12 +321,16 @@ static uint8_t lzh_getbyte(lzh_decode_t* lzh, const uint8_t *inbuf, uint32_t *in
 
 
 /* output c bits */
-static void lzh_putcode(lzh_encode_t* lzh, uint16_t l, uint16_t c, uint8_t *outbuf, uint32_t *outlen)
+static bool lzh_putcode(lzh_encode_t* lzh, uint16_t l, uint16_t c, uint8_t *outbuf, uint32_t *outlen)
 {
 	lzh->putbuf |= c >> lzh->putlen;
 	if ((lzh->putlen += l) >= 8) {
+		if (*outlen >= lzh->outsz || *outlen == UINT32_MAX)
+			return false;
 		outbuf[(*outlen)++]=(lzh->putbuf >> 8);
 		if ((lzh->putlen -= 8) >= 8) {
+			if (*outlen >= lzh->outsz || *outlen == UINT32_MAX)
+				return false;
 			outbuf[(*outlen)++]=lzh->putbuf;
 			lzh->putlen -= 8;
 			lzh->putbuf = c << (l - lzh->putlen);
@@ -332,6 +338,7 @@ static void lzh_putcode(lzh_encode_t* lzh, uint16_t l, uint16_t c, uint8_t *outb
 			lzh->putbuf <<= 8;
 		}
 	}
+	return true;
 }
 
 
@@ -460,7 +467,7 @@ static void lzh_update(huffman_t* huff, uint16_t c)
 	} while (((c = huff->parent[c]) != 0) && c < ((sizeof(huff->child)/sizeof(huff->child[0]))-1));	/* do it until reaching the root */
 }
 
-static void lzh_encode_char(lzh_encode_t* lzh, uint16_t c, uint8_t *outbuf, uint32_t *outlen)
+static bool lzh_encode_char(lzh_encode_t* lzh, uint16_t c, uint8_t *outbuf, uint32_t *outlen)
 {
 	uint16_t k;
 	uint16_t j;
@@ -483,27 +490,33 @@ static void lzh_encode_char(lzh_encode_t* lzh, uint16_t c, uint8_t *outbuf, uint
 
 		j++;
 	} while ((k = lzh->huff.parent[k]) != LZH_ROOT);
-	lzh_putcode(lzh, j, i, outbuf, outlen);
+	if (!lzh_putcode(lzh, j, i, outbuf, outlen))
+		return false;
 	lzh_update(&lzh->huff,c);
+	return true;
 }
 
-static void lzh_encode_position(lzh_encode_t* lzh, uint16_t c, uint8_t *outbuf, uint32_t *outlen)
+static bool lzh_encode_position(lzh_encode_t* lzh, uint16_t c, uint8_t *outbuf, uint32_t *outlen)
 {
 	unsigned i;
 
 	/* output upper 6 bits with encoding */
 	i = c >> 6;
-	lzh_putcode(lzh, lzh_p_len[i], (lzh_p_code[i] << 8), outbuf, outlen);
+	if (!lzh_putcode(lzh, lzh_p_len[i], (lzh_p_code[i] << 8), outbuf, outlen))
+		return false;
 
 	/* output lower 6 bits directly */
-	lzh_putcode(lzh, 6, (c & 0x3f) << 10, outbuf, outlen);
+	return lzh_putcode(lzh, 6, (c & 0x3f) << 10, outbuf, outlen);
 }
 
-static void lzh_encode_end(lzh_encode_t* lzh, uint8_t *outbuf, uint32_t *outlen)
+static bool lzh_encode_end(lzh_encode_t* lzh, uint8_t *outbuf, uint32_t *outlen)
 {
 	if (lzh->putlen) {
+		if (*outlen >= lzh->outsz || *outlen == UINT32_MAX)
+			return false;
 		outbuf[(*outlen)++]=(lzh->putbuf >> 8);
 	}
+	return true;
 }
 
 static uint16_t lzh_decode_char(lzh_decode_t* lzh, const uint8_t *inbuf, uint32_t *incnt, uint32_t inlen)
@@ -550,20 +563,21 @@ static uint16_t lzh_decode_position(lzh_decode_t* lzh, const uint8_t *inbuf, uin
 
 /* Encoding/Compressing */
 /* Returns length of outbuf */
-int32_t lzh_encode(const uint8_t *inbuf, uint32_t inlen, uint8_t *outbuf)
+uint32_t lzh_encode(const uint8_t *inbuf, uint32_t inlen, uint8_t *outbuf, size_t outsz)
 {
 	uint16_t i, c, len, r, s, last_match_length;
 	uint32_t incnt,outlen;
 	lzh_encode_t lzh;
 	memset(&lzh,0,sizeof(lzh));
+	lzh.outsz = outsz;
 
 	incnt=0;
 	inlen = LE_INT32(inlen);
 	memcpy(outbuf,&inlen,sizeof(inlen));
 	inlen = LE_INT32(inlen);
 	outlen=sizeof(inlen);
-	if(!inlen) {
-		return(outlen); }
+	if(!inlen)
+		return(0);
 	lzh_start_huff(&lzh.huff);
 	lzh_init_tree(&lzh);
 	s = 0;
@@ -581,12 +595,13 @@ int32_t lzh_encode(const uint8_t *inbuf, uint32_t inlen, uint8_t *outbuf)
 			lzh.match_length = len;
 		if (lzh.match_length <= LZH_THRESHOLD) {
 			lzh.match_length = 1;
-			lzh_encode_char(&lzh,lzh.text_buf[r],outbuf,&outlen);
+			if (!lzh_encode_char(&lzh,lzh.text_buf[r],outbuf,&outlen))
+				return 0;
 		} else {
-			lzh_encode_char(&lzh,(255 - LZH_THRESHOLD + lzh.match_length)
-				,outbuf,&outlen);
-			lzh_encode_position(&lzh,lzh.match_position
-				,outbuf,&outlen);
+			if (!lzh_encode_char(&lzh,(255 - LZH_THRESHOLD + lzh.match_length) ,outbuf,&outlen))
+				return 0;
+			if (!lzh_encode_position(&lzh,lzh.match_position,outbuf,&outlen))
+				return 0;
 		}
 		last_match_length = lzh.match_length;
 		for (i = 0; i < last_match_length && incnt<inlen; i++) {
@@ -606,7 +621,8 @@ int32_t lzh_encode(const uint8_t *inbuf, uint32_t inlen, uint8_t *outbuf)
 			if (--len) lzh_insert_node(&lzh,r);
 		}
 	} while (len > 0);
-	lzh_encode_end(&lzh,outbuf,&outlen);
+	if (!lzh_encode_end(&lzh,outbuf,&outlen))
+		return 0;
 /*
 	printf("input: %" PRId32 " bytes\n", inlen);
 	printf("output: %" PRId32 " bytes\n", outlen);
@@ -618,7 +634,7 @@ int32_t lzh_encode(const uint8_t *inbuf, uint32_t inlen, uint8_t *outbuf)
 
 /* Decoding/Uncompressing */
 /* Returns length of outbuf */
-int32_t lzh_decode(const uint8_t *inbuf, uint32_t inlen, uint8_t *outbuf)
+uint32_t lzh_decode(const uint8_t *inbuf, uint32_t inlen, uint8_t *outbuf, size_t outlen)
 {
 	uint16_t  i, j, k, r, c;
 	uint32_t count;
@@ -628,13 +644,16 @@ int32_t lzh_decode(const uint8_t *inbuf, uint32_t inlen, uint8_t *outbuf)
 	lzh_decode_t    lzh;
 
 	memset(&lzh,0,sizeof(lzh));
+	lzh.outsz = outlen;
 
 	incnt=0;
 	memcpy(&textsize,inbuf,sizeof(textsize));
 	textsize = LE_INT32(textsize);
+	if (textsize > outlen)
+		return 0;
 	incnt+=sizeof(textsize);
-	if (textsize == 0) {
-		return(textsize); }
+	if (textsize == 0)
+		return(textsize);
 	lzh_start_huff(&lzh.huff);
 	for (i = 0; i < LZH_STRBUF_SZ - LZH_LOOKAHD_SZ; i++)
 		*(lzh.text_buf+i) = ' ';
@@ -642,6 +661,8 @@ int32_t lzh_decode(const uint8_t *inbuf, uint32_t inlen, uint8_t *outbuf)
 	for (count = 0; count < textsize; ) {
 		c = lzh_decode_char(&lzh,inbuf,&incnt,inlen);
 		if (c < 256) {
+			if (count >= outlen || count == UINT32_MAX)
+				return 0;
 			outbuf[count]=(uint8_t)c;
 #if 0
 			if(r>(LZH_STRBUF_SZ + LZH_LOOKAHD_SZ - 1) || r<0) {
@@ -659,6 +680,8 @@ int32_t lzh_decode(const uint8_t *inbuf, uint32_t inlen, uint8_t *outbuf)
 			j = c - 255 + LZH_THRESHOLD;
 			for (k = 0; k < j && count<textsize; k++) {
 				c = lzh.text_buf[(i + k) & (LZH_STRBUF_SZ - 1)];
+				if (count >= outlen || count == UINT32_MAX)
+					return 0;
 				outbuf[count]=(uint8_t)c;
 #if 0
 				if(r>(LZH_STRBUF_SZ + LZH_LOOKAHD_SZ - 1) || r<0) {
@@ -676,7 +699,7 @@ int32_t lzh_decode(const uint8_t *inbuf, uint32_t inlen, uint8_t *outbuf)
 	printf("%12ld\n", count);
 ***/
 
-return(count);
+	return(count);
 }
 
 #ifdef LZH_TEST
@@ -18239,7 +18262,7 @@ int main(void)
 {
 	uint32_t lzh_len;
 
-	lzh_len = lzh_encode(plaintext, strlen((char*)plaintext), tmp);
+	lzh_len = lzh_encode(plaintext, strlen((char*)plaintext), tmp, sizeof(tmp));
 	printf("Compressed Len: %" PRId32 "\n", lzh_len);
 	if (lzh_len != sizeof(compressed))
 		printf("  Expected Len: %zu\n", sizeof(compressed));
@@ -18247,7 +18270,7 @@ int main(void)
 		if (memcmp(tmp, compressed, lzh_len))
 			printf("  Bytes different\n");
 
-	lzh_len = lzh_decode(compressed, sizeof(compressed), tmp);
+	lzh_len = lzh_decode(compressed, sizeof(compressed), tmp, sizeof(tmp));
 	printf("Uncompressed Size: %" PRId32 "\n", lzh_len);
 	if (lzh_len != strlen((char*)plaintext))
 		printf("  Expected Len: %zu\n", strlen((char*)plaintext));
@@ -18255,7 +18278,7 @@ int main(void)
 		if (memcmp(tmp, plaintext, lzh_len))
 			printf("  Bytes different\n");
 
-	lzh_len = lzh_encode(plaintext2, sizeof(plaintext2), tmp);
+	lzh_len = lzh_encode(plaintext2, sizeof(plaintext2), tmp, sizeof(tmp));
 	printf("Compressed Len: %" PRId32 "\n", lzh_len);
 	if (lzh_len != sizeof(compressed2))
 		printf("  Expected Len: %zu\n", sizeof(compressed2));
@@ -18263,7 +18286,7 @@ int main(void)
 		if (memcmp(tmp, compressed2, lzh_len))
 			printf("  Bytes different\n");
 
-	lzh_len = lzh_decode(compressed2, sizeof(compressed2), tmp);
+	lzh_len = lzh_decode(compressed2, sizeof(compressed2), tmp, sizeof(tmp));
 	printf("Uncompressed Size: %" PRId32 "\n", lzh_len);
 	if (lzh_len != sizeof(plaintext2))
 		printf("  Expected Len: %zu\n", sizeof(plaintext2));
@@ -18271,7 +18294,7 @@ int main(void)
 		if (memcmp(tmp, plaintext2, lzh_len))
 			printf("  Bytes different\n");
 
-	lzh_len = lzh_encode(ooii_snd_cackle, sizeof(ooii_snd_cackle), tmp);
+	lzh_len = lzh_encode(ooii_snd_cackle, sizeof(ooii_snd_cackle), tmp, sizeof(tmp));
 	printf("Compressed Len: %" PRId32 "\n", lzh_len);
 	if (lzh_len != sizeof(ooii_snd_cackle_compressed))
 		printf("  Expected Len: %zu\n", sizeof(ooii_snd_cackle_compressed));
@@ -18279,7 +18302,7 @@ int main(void)
 		if (memcmp(tmp, ooii_snd_cackle_compressed, lzh_len))
 			printf("  Bytes different\n");
 
-	lzh_len = lzh_decode(ooii_snd_cackle_compressed, sizeof(ooii_snd_cackle_compressed), tmp);
+	lzh_len = lzh_decode(ooii_snd_cackle_compressed, sizeof(ooii_snd_cackle_compressed), tmp, sizeof(tmp));
 	printf("Uncompressed Size: %" PRId32 "\n", lzh_len);
 	if (lzh_len != sizeof(ooii_snd_cackle))
 		printf("  Expected Len: %zu\n", sizeof(ooii_snd_cackle));

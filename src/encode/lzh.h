@@ -41,8 +41,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-LZHEXPORT int32_t lzh_encode(const uint8_t *inbuf, uint32_t inlen, uint8_t *outbuf);
-LZHEXPORT int32_t lzh_decode(const uint8_t *inbuf, uint32_t inlen, uint8_t *outbuf);
+LZHEXPORT uint32_t lzh_encode(const uint8_t *inbuf, uint32_t inlen, uint8_t *outbuf, size_t outlen);
+LZHEXPORT uint32_t lzh_decode(const uint8_t *inbuf, uint32_t inlen, uint8_t *outbuf, size_t outlen);
 #ifdef __cplusplus
 }
 #endif

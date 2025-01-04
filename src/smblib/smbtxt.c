@@ -23,6 +23,9 @@
 #include <stdlib.h>	/* malloc/realloc/free */
 #include <string.h>	/* strlen */
 
+/* XPDev */
+#include "xpendian.h"
+
 /* SMB-specific */
 #include "smblib.h"
 #include "base64.h"
@@ -38,7 +41,9 @@ char* smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, uint mode)
 	uint16_t	xlat;
 	uint 	i;
 	int		lzh;	/* bool */
-	int		l=0,lzhlen,length;
+	uint32_t lzhlen;
+	uint32_t lzh_decoded;
+	int		l=0,length;
 
 	if((buf=(char*)malloc(sizeof(char)))==NULL) {
 		safe_snprintf(smb->last_error, sizeof(smb->last_error)
@@ -146,7 +151,8 @@ char* smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, uint mode)
 				free(preamble);
 				return(NULL);
 			}
-			lzhlen=*(int32_t*)lzhbuf;
+			memcpy(&lzhlen, lzhbuf, sizeof(lzhlen));
+			lzhlen = LE_INT32(lzhlen);
 			if((p=(char*)realloc(buf,l+lzhlen+3L))==NULL) {
 				safe_snprintf(smb->last_error, sizeof(smb->last_error)
 					,"%s realloc failure of %d bytes for text buffer"
@@ -157,7 +163,16 @@ char* smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, uint mode)
 				return(NULL);
 			}
 			buf=p;
-			lzh_decode((uint8_t *)lzhbuf,length,(uint8_t *)buf+l);
+			lzh_decoded = lzh_decode((uint8_t *)lzhbuf,length,(uint8_t *)buf+l,l+lzhlen+3);
+			if (lzh_decoded < lzhlen) {
+				safe_snprintf(smb->last_error, sizeof(smb->last_error)
+					,"%s lzh_decode failure got %" PRIu32 " of %" PRIu32 " bytes for text buffer"
+					, __FUNCTION__, lzh_decoded, lzhlen);
+				free(lzhbuf);
+				free(buf);
+				free(preamble);
+				return(NULL);
+			}
 			free(lzhbuf);
 			l+=lzhlen;
 		}
