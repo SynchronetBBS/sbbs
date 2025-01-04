@@ -6,6 +6,7 @@ if(argv.indexOf("-help") >= 0 || argv.indexOf("-?") >= 0) {
 }
 
 var code = argv[0];
+var filename = argv[1];
 
 while(!file_area.dir[code] && !js.terminated) {
 	for(var d in file_area.dir)
@@ -24,6 +25,8 @@ if(!filebase.open()) {
 var file_list = filebase.get_list();
 for(var i = 0; i < file_list.length; i++) {
 	var file = file_list[i];
+	if(filename && !wildmatch(file.name, filename))
+		continue;
 	print(JSON.stringify(file, null, 4));
 	var hash = filebase.hash(file.name);
 	if(hash == null) {
