@@ -1057,9 +1057,9 @@ void sbbs_t::cleartoeol(void)
 		putcom("\x1b[K");
 	else {
 		i=j=column;
-		while(++i<cols)
+		while(++i<=cols)
 			outcom(' ');
-		while(++j<cols) {
+		while(++j<=cols) {
 			if(term&PETSCII)
 				outcom(PETSCII_LEFT);
 			else
