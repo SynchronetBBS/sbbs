@@ -60,6 +60,7 @@ static int ansix=1;
 static int ansiy=1;
 
 static int ansi_got_row=0;
+static int ansi_got_col=0;
 static int doorway_enabled=0;
 
 const int 	ansi_colours[8]={0,4,2,6,1,5,3,7};
@@ -778,14 +779,14 @@ static void ansi_keyparse(void *par)
 						if(strspn(seq,"\033[0123456789;R")==strlen(seq)) {
 							p=seq+2;
 							i=strtol(p,&p,10);
-							if(i>cio_textinfo.screenheight) {
+							ansi_got_row = i;
+							if(i>cio_textinfo.screenheight)
 								cio_textinfo.screenheight=i;
-								if(*p==';') {
-									i=strtol(p+1, NULL, 10);
-									if(i>cio_textinfo.screenwidth)
-										cio_textinfo.screenwidth=i;
-								}
-								ansi_got_row=cio_textinfo.screenheight;;
+							if(*p==';') {
+								i=strtol(p+1, NULL, 10);
+								ansi_got_col = i;
+								if(i>cio_textinfo.screenwidth)
+									cio_textinfo.screenwidth=i;
 							}
 						}
 						unknown=0;
@@ -1030,7 +1031,7 @@ int ansi_initio_cb(void)
 int ansi_initciolib(int inmode)
 {
 	int i;
-	char *init="\033[99B\033[99B\033[99B_\033[99C\033[99C\033[99C_\033[6n\033[0m_\033[2J\033[H";
+	char *init="\033[99B\033[99B\033[99B_\033[99C\033[99C\033[99C\033[1D_\033[6n\033[0m_\033[2J\033[H";
 	time_t start;
 
 	cio_api.options = 0;
@@ -1056,6 +1057,13 @@ int ansi_initciolib(int inmode)
 		cio_textinfo.screenheight=24;
 		cio_textinfo.screenwidth=80;
 		ansi_got_row=24;
+	}
+	else {
+		cio_textinfo.screenheight = ansi_got_row;
+		if (!ansi_got_col || ansi_got_col == 1)
+			cio_textinfo.screenwidth=80;
+		else
+			cio_textinfo.screenwidth=ansi_got_col;
 	}
 	ansivmem=(WORD *)malloc(cio_textinfo.screenheight*cio_textinfo.screenwidth*sizeof(WORD));
 	for(i=0;i<cio_textinfo.screenheight*cio_textinfo.screenwidth;i++)
