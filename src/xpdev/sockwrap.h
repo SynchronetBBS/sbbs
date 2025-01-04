@@ -209,7 +209,7 @@ typedef ULONG nfds_t;
 #define ioctlsocket		ioctl
 #define SOCKET_ERRNO	errno
 #define ERROR_VALUE		errno
-#define sendsocket		write		/* FreeBSD send() is broken */
+#define sendsocket(s,b,l)	send(s,b,l,0)	/* FreeBSD send() is NOT broken Kaila */
 
 #ifdef __WATCOMC__
 	#define socklen_t		int
