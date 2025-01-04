@@ -18,3 +18,6 @@ endif
 	$(QUIET)$(AR) rc $@ $(OBJS)
 	$(QUIET)$(RANLIB) $@
 
+# Test build
+lzh${EXEFILE}: lzh.c
+	$(QUIET)$(CC) -std=c11 $(CFLAGS) -DLZH_TEST $(CCFLAGS) -o $@ $<
