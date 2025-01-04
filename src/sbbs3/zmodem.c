@@ -1049,8 +1049,6 @@ int zmodem_recv_nibble(zmodem_t* zm)
 		c -= '0';
 	}
 
-	if (c < 0 || c > 15)
-		return -1;
 	return c;
 }
 
@@ -1063,9 +1061,13 @@ int zmodem_recv_hex(zmodem_t* zm)
 	n1 = zmodem_recv_nibble(zm);
 	if (n1 < 0)
 		return n1;
+	if (n1 > 15)
+		return -1;
 	n0 = zmodem_recv_nibble(zm);
 	if(n0 < 0)
 		return n0;
+	if (n1 > 15)
+		return -1;
 
 	ret = (n1 << 4) | n0;
 
