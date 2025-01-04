@@ -13621,6 +13621,11 @@ object MainForm: TMainForm
       object FileRunMenuItem: TMenuItem
         Caption = '&Run'
         ImageIndex = 0
+        object FileRunFileManMenuItem: TMenuItem
+          Caption = 'File Manager'
+          Hint = 'fileman.js'
+          OnClick = RunJSClick
+        end
         object FileRunUpdateMenuItem: TMenuItem
           Caption = 'Update'
           Hint = 'update.js'
