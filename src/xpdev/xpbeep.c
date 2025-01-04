@@ -975,6 +975,7 @@ do_xp_play_sample(unsigned char *sampo, size_t sz, int *freed)
 	if (handle_type == SOUND_DEVICE_OSS) {
 		size_t wr = 0;
 		while (wr < sz) {
+			// coverity[overflow]:SUPPRESS
 			ssize_t i = write(dsp, samp + wr, sz - wr);
 			if (i >= 0)
 				wr += i;

@@ -320,6 +320,7 @@ ssh_output_thread(void *args)
 
 	SetThreadName("SSH Output");
 	conn_api.output_thread_running = 1;
+	// coverity[thread1_checks_field]:SUPPRESS
 	while (ssh_active && !conn_api.terminate && !channel_gone && !ssh_complete) {
 		pthread_mutex_lock(&(conn_outbuf.mutex));
 		wr = conn_buf_wait_bytes(&conn_outbuf, 1, 100);

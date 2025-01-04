@@ -61,6 +61,7 @@ exit_function(SFTP_STATIC_TYPE state, bool retval)
 {
 	assert(state->running > 0);
 	state->running--;
+	// coverity[missing_lock]:SUPPRESS
 	pthread_mutex_unlock(&state->mtx);
 	return retval;
 }
