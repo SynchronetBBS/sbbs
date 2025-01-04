@@ -1163,7 +1163,7 @@ int bitmap_setfont(int font, int force, int font_num)
 		old=malloc(ow*oh*sizeof(*old));
 		if(old) {
 			bitmap_vmem_gettext(1,1,ow,oh,old);
-			/* coverity[sleep]:SUPPRESS */
+			/* coverity[sleep:SUPPRESS] */
 			textmode(newmode);
 			new=malloc(ti.screenwidth*ti.screenheight*sizeof(*new));
 			if(!new) {

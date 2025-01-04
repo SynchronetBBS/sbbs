@@ -86,7 +86,7 @@ modem_output_thread(void *args)
 			}
 			sent = 0;
 			while (com != COM_HANDLE_INVALID && sent < wr && !conn_api.terminate) {
-				// coverity[overlow]:SUPPRESS
+				// coverity[overlow:SUPPRESS]
 				ret = comWriteBuf(com, conn_api.wr_buf + sent, wr - sent);
 				if (ret > 0)
 					sent += ret;

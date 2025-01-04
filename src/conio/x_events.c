@@ -1727,7 +1727,7 @@ x11_event(XEvent *ev)
 								if (x_cvstat.winwidth != w || x_cvstat.winheight != h) {
 									x_cvstat.winwidth = w;
 									x_cvstat.winheight = h;
-									// coverity[missing_lock]:SUPPRESS
+									// coverity[missing_lock:SUPPRESS]
 									x_cvstat.scaling = bitmap_double_mult_inside(w, h);
 									resize_xim();
 								}
@@ -2044,7 +2044,7 @@ x11_event(XEvent *ev)
 								handle_bios_key(&bios_key, &bios_key_parsing, &zero_first);
 							}
 							else {
-								// coverity[overflow_const]:SUPPRESS
+								// coverity[overflow_const:SUPPRESS]
 								bios_key *= 10;
 								bios_key += (ks - XK_KP_0);
 								break;
