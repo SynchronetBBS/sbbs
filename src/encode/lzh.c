@@ -26,177 +26,165 @@
 	#include <malloc.h>
 #endif
 
+#include "xpendian.h"
 #include "lzh.h"
-
-#define REALLOC realloc
-#define LMALLOC malloc
-#define MALLOC malloc
-#define LFREE free
-#define FREE free
-
-
 
 /* LZSS Parameters */
 
-#define LZH_N			4096	/* Size of string buffer */
-#define LZH_F			60		/* Size of look-ahead buffer */
-#define LZH_THRESHOLD	2
-#define LZH_NIL 		LZH_N	/* End of tree's node  */
+#define LZH_STRBUF_SZ  4096          /* Size of string buffer */
+#define LZH_LOOKAHD_SZ 60            /* Size of look-ahead buffer */
+#define LZH_THRESHOLD  2
+#define LZH_NIL        LZH_STRBUF_SZ /* End of tree's node  */
 
 /* Huffman coding parameters */
 
-#define LZH_N_CHAR		(256 - LZH_THRESHOLD + LZH_F)
+#define LZH_N_CHAR     (256 - LZH_THRESHOLD + LZH_LOOKAHD_SZ)
 					/* character code (= 0..LZH_N_CHAR-1) */
-#define LZH_T		(LZH_N_CHAR * 2 - 1)	/* Size of table */
-#define LZH_R		(LZH_T - 1) 		/* root position */
-#define MAX_FREQ	0x8000
+#define LZH_TABLE_SZ   (LZH_N_CHAR * 2 - 1) /* Size of table */
+#define LZH_ROOT       (LZH_TABLE_SZ - 1)   /* root position */
+#define MAX_FREQ       0x8000
 					/* update when cumulative frequency */
 					/* reaches to this value */
+
+// Shared struct
+typedef struct {
+
+	uint16_t freq[LZH_TABLE_SZ + 1];   /* cumulative freq table */
+	uint16_t parent[LZH_TABLE_SZ + LZH_N_CHAR];
+	uint16_t child[LZH_TABLE_SZ + 1];		  /* bug fixed by Digital Dynamics */
+
+} huffman_t;
 
 /* Converted from global variables to struct Apr-21-2003 */
 typedef struct {
 
-#ifdef LZH_DYNAMIC_BUF
+	huffman_t huff;
+	uint16_t getbuf;		/* Was just "unsigned" fixed 04/12/95 */
+	// This likely only needs to be LZH_STRBUF_SZ
+	uint8_t  text_buf[LZH_STRBUF_SZ + LZH_LOOKAHD_SZ - 1];
+	uint8_t  getlen;
 
-	unsigned char*	text_buf;
-	short int		match_position, match_length,
-					*lson, *rson, *dad;
+} lzh_decode_t;
 
-	unsigned short*	freq;	 /* cumulative freq table */
+typedef struct {
 
-	/*
-	 * pointing parent nodes.
-	 * area [LZH_T..(LZH_T + LZH_N_CHAR - 1)] are pointers for leaves
-	 */
-	short int*		prnt;
+	uint32_t putbuf;
+	huffman_t huff;
+	uint16_t lchild[LZH_STRBUF_SZ + 1];
+	uint16_t rchild[LZH_STRBUF_SZ + 257];
+	uint16_t eparent[LZH_STRBUF_SZ + 1];
+	uint16_t match_position;
+	uint16_t match_length;
+	uint8_t  text_buf[LZH_STRBUF_SZ + LZH_LOOKAHD_SZ - 1];
+	uint8_t	 putlen;
 
-	/* pointing children nodes (son[], son[] + 1)*/
-	short int*		son;
+} lzh_encode_t;
 
-#else	/* STATIC */
-
-	unsigned char	text_buf[LZH_N + LZH_F - 1];
-	short int		match_position, match_length,
-					lson[LZH_N + 1], rson[LZH_N + 257], dad[LZH_N + 1];
-
-	unsigned short	freq[LZH_T + 1];   /* cumulative freq table */
-	short int		prnt[LZH_T + LZH_N_CHAR];
-	short int		son[LZH_T + 1];		  /* bug fixed by Digital Dynamics */
-
-#endif
-
-	unsigned short	getbuf;		/* Was just "unsigned" fixed 04/12/95 */
-	uint8_t			getlen;
-	unsigned		putbuf;
-	uint8_t			putlen;
-
-	unsigned short	code, len;
-
-} lzh_t;
-
-static void lzh_init_tree(lzh_t* lzh)  /* Initializing tree */
+static void lzh_init_tree(lzh_encode_t* lzh)  /* Initializing tree */
 {
-	short int  i;
+	unsigned i;
 
-	for (i = LZH_N + 1; i <= LZH_N + 256; i++)
-		lzh->rson[i] = LZH_NIL;			/* root */
-	for (i = 0; i < LZH_N; i++)
-		lzh->dad[i] = LZH_NIL;			/* node */
+	for (i = LZH_STRBUF_SZ + 1; i <= LZH_STRBUF_SZ + 256; i++)
+		lzh->rchild[i] = LZH_NIL;			/* root */
+	for (i = 0; i < LZH_STRBUF_SZ; i++)
+		lzh->eparent[i] = LZH_NIL;			/* node */
 }
 
 /******************************/
 /* Inserting node to the tree */
 /* Only used during encoding  */
 /******************************/
-static void lzh_insert_node(lzh_t* lzh, short int r)
+static void lzh_insert_node(lzh_encode_t* lzh, uint16_t r)
 {
-	short int  i, p, cmp;
-	unsigned char  *key;
+	unsigned i;
 	unsigned c;
+	int cmp;
+	uint16_t  p;
+	uint8_t *key;
 
 	cmp = 1;
 	key = lzh->text_buf+r;
-	p = LZH_N + 1 + key[0];
-	lzh->rson[r] = lzh->lson[r] = LZH_NIL;
+	p = LZH_STRBUF_SZ + 1 + key[0];
+	lzh->rchild[r] = lzh->lchild[r] = LZH_NIL;
 	lzh->match_length = 0;
 	for ( ; ; ) {
 		if (cmp >= 0) {
-			if (lzh->rson[p] != LZH_NIL)
-				p = lzh->rson[p];
+			if (lzh->rchild[p] != LZH_NIL)
+				p = lzh->rchild[p];
 			else {
-				lzh->rson[p] = r;
-				lzh->dad[r] = p;
+				lzh->rchild[p] = r;
+				lzh->eparent[r] = p;
 				return;
 			}
 		} else {
-			if (lzh->lson[p] != LZH_NIL)
-				p = lzh->lson[p];
+			if (lzh->lchild[p] != LZH_NIL)
+				p = lzh->lchild[p];
 			else {
-				lzh->lson[p] = r;
-				lzh->dad[r] = p;
+				lzh->lchild[p] = r;
+				lzh->eparent[r] = p;
 				return;
 			}
 		}
-		for (i = 1; i < LZH_F; i++)
+		for (i = 1; i < LZH_LOOKAHD_SZ; i++)
 			if ((cmp = key[i] - lzh->text_buf[p + i]) != 0)
 				break;
 		if (i > LZH_THRESHOLD) {
 			if (i > lzh->match_length) {
-				lzh->match_position = ((r - p) & (LZH_N - 1)) - 1;
-				if ((lzh->match_length = i) >= LZH_F)
+				lzh->match_position = ((r - p) & (LZH_STRBUF_SZ - 1)) - 1;
+				if ((lzh->match_length = i) >= LZH_LOOKAHD_SZ)
 					break;
 			}
 			if (i == lzh->match_length) {
-				if ((c = ((r - p) & (LZH_N - 1)) - 1) 
-					< (unsigned)lzh->match_position) {
+				if ((c = ((r - p) & (LZH_STRBUF_SZ - 1)) - 1) 
+					< lzh->match_position) {
 					lzh->match_position = c;
 				}
 			}
 		}
 	}
-	lzh->dad[r] = lzh->dad[p];
-	lzh->lson[r] = lzh->lson[p];
-	lzh->rson[r] = lzh->rson[p];
-	lzh->dad[lzh->lson[p]] = r;
-	lzh->dad[lzh->rson[p]] = r;
-	if (lzh->rson[lzh->dad[p]] == p)
-		lzh->rson[lzh->dad[p]] = r;
+	lzh->eparent[r] = lzh->eparent[p];
+	lzh->lchild[r] = lzh->lchild[p];
+	lzh->rchild[r] = lzh->rchild[p];
+	lzh->eparent[lzh->lchild[p]] = r;
+	lzh->eparent[lzh->rchild[p]] = r;
+	if (lzh->rchild[lzh->eparent[p]] == p)
+		lzh->rchild[lzh->eparent[p]] = r;
 	else
-		lzh->lson[lzh->dad[p]] = r;
-	lzh->dad[p] = LZH_NIL;  /* remove p */
+		lzh->lchild[lzh->eparent[p]] = r;
+	lzh->eparent[p] = LZH_NIL;  /* remove p */
 }
 
-static void lzh_delete_node(lzh_t* lzh, short int p)  /* Deleting node from the tree */
+static void lzh_delete_node(lzh_encode_t* lzh, uint16_t p)  /* Deleting node from the tree */
 {
-	short int  q;
+	uint16_t q;
 
-	if (lzh->dad[p] == LZH_NIL)
+	if (lzh->eparent[p] == LZH_NIL)
 		return;			/* unregistered */
-	if (lzh->rson[p] == LZH_NIL)
-		q = lzh->lson[p];
+	if (lzh->rchild[p] == LZH_NIL)
+		q = lzh->lchild[p];
 	else
-	if (lzh->lson[p] == LZH_NIL)
-		q = lzh->rson[p];
+	if (lzh->lchild[p] == LZH_NIL)
+		q = lzh->rchild[p];
 	else {
-		q = lzh->lson[p];
-		if (lzh->rson[q] != LZH_NIL) {
+		q = lzh->lchild[p];
+		if (lzh->rchild[q] != LZH_NIL) {
 			do {
-				q = lzh->rson[q];
-			} while (lzh->rson[q] != LZH_NIL);
-			lzh->rson[lzh->dad[q]] = lzh->lson[q];
-			lzh->dad[lzh->lson[q]] = lzh->dad[q];
-			lzh->lson[q] = lzh->lson[p];
-			lzh->dad[lzh->lson[p]] = q;
+				q = lzh->rchild[q];
+			} while (lzh->rchild[q] != LZH_NIL);
+			lzh->rchild[lzh->eparent[q]] = lzh->lchild[q];
+			lzh->eparent[lzh->lchild[q]] = lzh->eparent[q];
+			lzh->lchild[q] = lzh->lchild[p];
+			lzh->eparent[lzh->lchild[p]] = q;
 		}
-		lzh->rson[q] = lzh->rson[p];
-		lzh->dad[lzh->rson[p]] = q;
+		lzh->rchild[q] = lzh->rchild[p];
+		lzh->eparent[lzh->rchild[p]] = q;
 	}
-	lzh->dad[q] = lzh->dad[p];
-	if (lzh->rson[lzh->dad[p]] == p)
-		lzh->rson[lzh->dad[p]] = q;
+	lzh->eparent[q] = lzh->eparent[p];
+	if (lzh->rchild[lzh->eparent[p]] == p)
+		lzh->rchild[lzh->eparent[p]] = q;
 	else
-		lzh->lson[lzh->dad[p]] = q;
-	lzh->dad[p] = LZH_NIL;
+		lzh->lchild[lzh->eparent[p]] = q;
+	lzh->eparent[p] = LZH_NIL;
 }
 
 /*
@@ -298,45 +286,47 @@ static uint8_t lzh_d_len[256] = {
 };
 
 
-static int lzh_getbit(lzh_t* lzh, uint8_t *inbuf, int32_t *incnt, long inlen)    /* get one bit */
+static bool lzh_getbit(lzh_decode_t* lzh, const uint8_t *inbuf, uint32_t *incnt, uint32_t inlen)    /* get one bit */
 {
-	short int i;
+	bool ret;
+	uint8_t ch;
 
 	while (lzh->getlen <= 8) {
-		if((*incnt)>=inlen)
-			i=0;
+		if ((*incnt) >= inlen)
+			ch = 0;
 		else
-			i=inbuf[(*incnt)++];
-		lzh->getbuf |= i << (8 - lzh->getlen);
+			ch = inbuf[(*incnt)++];
+		lzh->getbuf |= ch << (8 - lzh->getlen);
 		lzh->getlen += 8;
 	}
-	i = lzh->getbuf;
+	ret = !!(lzh->getbuf & 0x8000);
 	lzh->getbuf <<= 1;
 	lzh->getlen--;
-	return (i < 0);
+	return (ret);
 }
 
-static short int lzh_getbyte(lzh_t* lzh, uint8_t *inbuf, int32_t *incnt, long inlen)   /* get a byte */
+static uint8_t lzh_getbyte(lzh_decode_t* lzh, const uint8_t *inbuf, uint32_t *incnt, uint32_t inlen)   /* get a byte */
 {
-	unsigned short i;
+	uint8_t ret;
+	uint8_t ch;
 
 	while (lzh->getlen <= 8) {
 		if((*incnt)>=inlen)
-			i=0;
+			ch = 0;
 		else
-			i=inbuf[(*incnt)++];
-		lzh->getbuf |= i << (8 - lzh->getlen);
+			ch = inbuf[(*incnt)++];
+		lzh->getbuf |= ch << (8 - lzh->getlen);
 		lzh->getlen += 8;
 	}
-	i = lzh->getbuf;
+	ret = lzh->getbuf >> 8;
 	lzh->getbuf <<= 8;
 	lzh->getlen -= 8;
-	return i >> 8;
+	return ret;
 }
 
 
 /* output c bits */
-static void lzh_putcode(lzh_t* lzh, short int l, unsigned short c, uint8_t *outbuf, int32_t *outlen)
+static void lzh_putcode(lzh_encode_t* lzh, uint16_t l, uint16_t c, uint8_t *outbuf, uint32_t *outlen)
 {
 	lzh->putbuf |= c >> lzh->putlen;
 	if ((lzh->putlen += l) >= 8) {
@@ -354,116 +344,138 @@ static void lzh_putcode(lzh_t* lzh, short int l, unsigned short c, uint8_t *outb
 
 /* initialize freq tree */
 
-static void lzh_start_huff(lzh_t* lzh)
+static void lzh_start_huff(huffman_t* huff)
 {
-	short int i, j;
+	unsigned i;
+	unsigned j;
 
 	for (i = 0; i < LZH_N_CHAR; i++) {
-		lzh->freq[i] = 1;
-		lzh->son[i] = i + LZH_T;
-		lzh->prnt[i + LZH_T] = i;
+		huff->freq[i] = 1;
+		huff->child[i] = i + LZH_TABLE_SZ;
+		huff->parent[i + LZH_TABLE_SZ] = i;
 	}
 	i = 0; j = LZH_N_CHAR;
-	while (j <= LZH_R) {
-		lzh->freq[j] = lzh->freq[i] + lzh->freq[i + 1];
-		lzh->son[j] = i;
-		lzh->prnt[i] = lzh->prnt[i + 1] = j;
+	while (j <= LZH_ROOT) {
+		huff->freq[j] = huff->freq[i] + huff->freq[i + 1];
+		huff->child[j] = i;
+		huff->parent[i] = huff->parent[i + 1] = j;
 		i += 2; j++;
 	}
-	lzh->freq[LZH_T] = 0xffff;
-    lzh->prnt[LZH_R] = 0;
+	huff->freq[LZH_TABLE_SZ] = 0xffff;
+	huff->parent[LZH_ROOT] = 0;
 }
 
 
 /* reconstruct freq tree */
 
-static void lzh_reconst(lzh_t* lzh)
+static void lzh_reconst(huffman_t* huff)
 {
-	short int i, j, k;
-	unsigned short f, l;
+	unsigned i;
+	unsigned j;
+	unsigned k;
+	uint16_t f;
+	uint16_t l;
 
 	/* halven cumulative freq for leaf nodes */
 	j = 0;
-	for (i = 0; i < LZH_T; i++) {
-		if (lzh->son[i] >= LZH_T) {
-			lzh->freq[j] = (lzh->freq[i] + 1) / 2;
-			lzh->son[j] = lzh->son[i];
+	for (i = 0; i < LZH_TABLE_SZ; i++) {
+		if (huff->child[i] >= LZH_TABLE_SZ) {
+			huff->freq[j] = (huff->freq[i] + 1) / 2;
+			huff->child[j] = huff->child[i];
 			j++;
 		}
 	}
 	/* make a tree : first, connect children nodes */
-	for (i = 0, j = LZH_N_CHAR; j < LZH_T; i += 2, j++) {
+	for (i = 0, j = LZH_N_CHAR; j < LZH_TABLE_SZ; i += 2, j++) {
 		k = i + 1;
-		f = lzh->freq[j] = lzh->freq[i] + lzh->freq[k];
-		for (k = j - 1; f < lzh->freq[k]; k--);
+		f = huff->freq[j] = huff->freq[i] + huff->freq[k];
+		for (k = j - 1; f < huff->freq[k]; k--);
 		k++;
 		l = (j - k) * 2;
 		
 		/* movmem() is Turbo-C dependent
 		   rewritten to memmove() by Kenji */
 		
-		/* movmem(&lzh->freq[k], &lzh->freq[k + 1], l); */
-		(void)memmove(lzh->freq+k+1,lzh->freq+k, l);
-		lzh->freq[k] = f;
-		/* movmem(&lzh->son[k], &lzh->son[k + 1], l); */
-		(void)memmove(lzh->son+k+1,lzh->son+k, l);
-		lzh->son[k] = i;
+		/* movmem(&huff->freq[k], &huff->freq[k + 1], l); */
+		(void)memmove(huff->freq+k+1,huff->freq+k, l);
+		huff->freq[k] = f;
+		/* movmem(&huff->child[k], &huff->child[k + 1], l); */
+		(void)memmove(huff->child+k+1,huff->child+k, l);
+		huff->child[k] = i;
 	}
 	/* connect parent nodes */
-	for (i = 0; i < LZH_T; i++) {
-		if ((k = lzh->son[i]) >= LZH_T) {
-			lzh->prnt[k] = i;
+	for (i = 0; i < LZH_TABLE_SZ; i++) {
+		if ((k = huff->child[i]) >= LZH_TABLE_SZ) {
+			huff->parent[k] = i;
 		} else {
-			lzh->prnt[k] = lzh->prnt[k + 1] = i;
+			huff->parent[k] = huff->parent[k + 1] = i;
 		}
 	}
 }
 
 /* update freq tree */
 
-static void lzh_update(lzh_t* lzh, short int c)
+static void lzh_update(huffman_t* huff, uint16_t c)
 {
-	short int i, j, k, l;
+	uint16_t l;
+	uint16_t tmp;
+	uint16_t tmp2;
 
-	if (lzh->freq[LZH_R] == MAX_FREQ) {
-		lzh_reconst(lzh);
+	// If freq is already max, halve all of them
+	if (huff->freq[LZH_ROOT] == MAX_FREQ) {
+		lzh_reconst(huff);
 	}
-	c = lzh->prnt[c + LZH_T];
+	c = huff->parent[c + LZH_TABLE_SZ];
 	do {
-		k = ++lzh->freq[c];
+		tmp = ++huff->freq[c];
 
-		/* swap nodes to keep the tree freq-ordered */
-		if (((unsigned)k) > ((unsigned)lzh->freq[l = c + 1])) {
-			while (l < LZH_T && k > lzh->freq[++l])
+		/*
+		 * If we now have a greater freq than the next node...
+		 * and are not already the last node
+		 */
+		if (c < LZH_TABLE_SZ && tmp > huff->freq[c + 1]) {
+			/*
+			 * Find the last node after the current one
+			 * that has a lower frequency than our new one
+			 */
+			for (l = c + 1; l <= LZH_TABLE_SZ && tmp > huff->freq[l]; l++)
 				;
-			l--;
-			lzh->freq[c] = lzh->freq[l];
-			lzh->freq[l] = k;
 
-			i = lzh->son[c];
-			lzh->prnt[i] = l;
-			if (i < LZH_T) lzh->prnt[i + 1] = l;
+			// If we exited before the end of table, decrement l
+			if (tmp <= huff->freq[l])
+				l--;
 
-			j = lzh->son[l];
-			lzh->son[l] = i;
+			// Now swap nodes
+			huff->freq[c] = huff->freq[l];
+			huff->freq[l] = tmp;
 
-			lzh->prnt[j] = c;
-			if (j < LZH_T) lzh->prnt[j + 1] = c;
-			lzh->son[c] = j;
+			tmp = huff->child[c];
+			huff->parent[tmp] = l;
+			if (tmp < LZH_TABLE_SZ)
+				huff->parent[tmp + 1] = l;
+
+			tmp2 = huff->child[l];
+			huff->child[l] = tmp;
+
+			huff->parent[tmp2] = c;
+			if (tmp2 < LZH_TABLE_SZ)
+				huff->parent[tmp2 + 1] = c;
+			huff->child[c] = tmp2;
 
 			c = l;
 		}
-	} while (((c = lzh->prnt[c]) != 0) && c < ((sizeof(lzh->son)/sizeof(lzh->son[0]))-1));	/* do it until reaching the root */
+	} while (((c = huff->parent[c]) != 0) && c < ((sizeof(huff->child)/sizeof(huff->child[0]))-1));	/* do it until reaching the root */
 }
 
-static void lzh_encode_char(lzh_t* lzh, unsigned short c, uint8_t *outbuf, int32_t *outlen)
+static void lzh_encode_char(lzh_encode_t* lzh, uint16_t c, uint8_t *outbuf, uint32_t *outlen)
 {
-	unsigned short i;
-	short int j, k;
+	uint16_t k;
+	uint16_t j;
+	uint16_t i;
 
 	i = 0;
 	j = 0;
-	k = lzh->prnt[c + LZH_T];
+	k = lzh->huff.parent[c + LZH_TABLE_SZ];
 
 	/* search connections from leaf node to the root */
 	do {
@@ -473,68 +485,70 @@ static void lzh_encode_char(lzh_t* lzh, unsigned short c, uint8_t *outbuf, int32
 		if node's address is odd, output 1
 		else output 0
 		*/
-		if (k & 1) i += 0x8000;
+		if (k & 1)
+			i |= 0x8000;
 
 		j++;
-	} while ((k = lzh->prnt[k]) != LZH_R);
+	} while ((k = lzh->huff.parent[k]) != LZH_ROOT);
 	lzh_putcode(lzh, j, i, outbuf, outlen);
-	lzh->code = i;
-	lzh->len = j;
-	lzh_update(lzh,c);
+	lzh_update(&lzh->huff,c);
 }
 
-static void lzh_encode_position(lzh_t* lzh, unsigned short c, uint8_t *outbuf, int32_t *outlen)
+static void lzh_encode_position(lzh_encode_t* lzh, uint16_t c, uint8_t *outbuf, uint32_t *outlen)
 {
-	unsigned short i;
+	unsigned i;
 
 	/* output upper 6 bits with encoding */
 	i = c >> 6;
-	lzh_putcode(lzh, lzh_p_len[i], (unsigned short)(lzh_p_code[i] << 8), outbuf, outlen);
+	lzh_putcode(lzh, lzh_p_len[i], (lzh_p_code[i] << 8), outbuf, outlen);
 
 	/* output lower 6 bits directly */
-	lzh_putcode(lzh, 6, (unsigned short)((c & 0x3f) << 10), outbuf, outlen);
+	lzh_putcode(lzh, 6, (c & 0x3f) << 10, outbuf, outlen);
 }
 
-static void lzh_encode_end(lzh_t* lzh, uint8_t *outbuf, int32_t *outlen)
+static void lzh_encode_end(lzh_encode_t* lzh, uint8_t *outbuf, uint32_t *outlen)
 {
 	if (lzh->putlen) {
 		outbuf[(*outlen)++]=(lzh->putbuf >> 8);
 	}
 }
 
-static short int lzh_decode_char(lzh_t* lzh, uint8_t *inbuf, int32_t *incnt, long inlen)
+static uint16_t lzh_decode_char(lzh_decode_t* lzh, const uint8_t *inbuf, uint32_t *incnt, uint32_t inlen)
 {
-	unsigned short c;
+	uint16_t c;
 
-	c = lzh->son[LZH_R];
+	c = lzh->huff.child[LZH_ROOT];
 
 	/*
 	 * start searching tree from the root to leaves.
-	 * choose node #(lzh.son[]) if input bit == 0
-	 * else choose #(lzh.son[]+1) (input bit == 1)
+	 * choose node #(lzh.child[]) if input bit == 0
+	 * else choose #(lzh.child[]+1) (input bit == 1)
 	 */
-	while (c < LZH_T) {
+	while (c < LZH_TABLE_SZ) {
 		c += lzh_getbit(lzh,inbuf,incnt,inlen);
-		c = lzh->son[c];
+		c = lzh->huff.child[c];
 	}
-	c -= LZH_T;
-	lzh_update(lzh,c);
+	c -= LZH_TABLE_SZ;
+	lzh_update(&lzh->huff,c);
 	return c;
 }
 
-static short int lzh_decode_position(lzh_t* lzh, uint8_t *inbuf, int32_t *incnt, long inlen)
+static uint16_t lzh_decode_position(lzh_decode_t* lzh, const uint8_t *inbuf, uint32_t *incnt, uint32_t inlen)
 {
-	unsigned short i, j, c;
+	unsigned i;
+	unsigned j;
+	uint16_t c;
 
 	/* decode upper 6 bits from given table */
 	i = lzh_getbyte(lzh,inbuf,incnt,inlen);
-	c = (unsigned)lzh_d_code[i] << 6;
+	c = lzh_d_code[i];
+	c <<= 6;
 	j = lzh_d_len[i];
 
 	/* input lower 6 bits directly */
 	j -= 2;
 	while (j--) {
-		i = (i << 1) + lzh_getbit(lzh,inbuf,incnt,inlen);
+		i = (i << 1) | lzh_getbit(lzh,inbuf,incnt,inlen);
 	}
 	return c | (i & 0x3f);
 }
@@ -543,76 +557,30 @@ static short int lzh_decode_position(lzh_t* lzh, uint8_t *inbuf, int32_t *incnt,
 
 /* Encoding/Compressing */
 /* Returns length of outbuf */
-int32_t lzh_encode(uint8_t *inbuf, int32_t inlen, uint8_t *outbuf)
+int32_t lzh_encode(const uint8_t *inbuf, uint32_t inlen, uint8_t *outbuf)
 {
-	short int  i, c, len, r, s, last_match_length;
-	int32_t incnt,outlen; /* textsize=0; */
-	lzh_t lzh;
+	uint16_t i, c, len, r, s, last_match_length;
+	uint32_t incnt,outlen;
+	lzh_encode_t lzh;
 	memset(&lzh,0,sizeof(lzh));
 
-#ifdef LZH_DYNAMIC_BUF
-
-	if((lzh.text_buf=(uint8_t *)malloc(LZH_N + LZH_F - 1))==NULL)
-		return(-1);
-	if((lzh.freq=(unsigned short*)malloc((LZH_T + 1)*sizeof(unsigned short)))==NULL) {
-		free(lzh.text_buf);
-		return(-1); }
-	if((lzh.prnt=(short *)malloc((LZH_T + LZH_N_CHAR)*sizeof(short)))==NULL) {
-		free(lzh.text_buf);
-		free(lzh.freq);
-		return(-1); }
-	if((lzh.son=(short *)malloc((LZH_T + 1) * sizeof(short)))==NULL) {
-		free(lzh.text_buf);
-		free(lzh.prnt);
-		free(lzh.freq);
-		return(-1); }
-	if((lzh.lson=(short *)malloc((LZH_N + 1)*sizeof(short)))==NULL) {
-		free(lzh.text_buf);
-		free(lzh.prnt);
-		free(lzh.freq);
-		free(lzh.son);
-		return(-1); }
-	if((lzh.rson=(short *)malloc((LZH_N + 257)*sizeof(short)))==NULL) {
-		free(lzh.text_buf);
-		free(lzh.prnt);
-		free(lzh.freq);
-		free(lzh.son);
-		free(lzh.lson);
-		return(-1); }
-	if((lzh.dad=(short *)malloc((LZH_N + 1)*sizeof(short)))==NULL) {
-		free(lzh.text_buf);
-		free(lzh.prnt);
-		free(lzh.freq);
-		free(lzh.son);
-        free(lzh.lson);
-		free(lzh.rson);
-		return(-1); }
-#endif
-
 	incnt=0;
+	inlen = LE_INT32(inlen);
 	memcpy(outbuf,&inlen,sizeof(inlen));
+	inlen = LE_INT32(inlen);
 	outlen=sizeof(inlen);
 	if(!inlen) {
-#ifdef LZH_DYNAMIC_BUF
-		free(lzh.text_buf);
-		free(lzh.prnt);
-		free(lzh.freq);
-		free(lzh.son);
-        free(lzh.lson);
-        free(lzh.rson);
-		free(lzh.dad);
-#endif
 		return(outlen); }
-	lzh_start_huff(&lzh);
+	lzh_start_huff(&lzh.huff);
 	lzh_init_tree(&lzh);
 	s = 0;
-	r = LZH_N - LZH_F;
+	r = LZH_STRBUF_SZ - LZH_LOOKAHD_SZ;
 	for (i = s; i < r; i++)
 		lzh.text_buf[i] = ' ';
-	for (len = 0; len < LZH_F && incnt<inlen; len++)
+	for (len = 0; len < LZH_LOOKAHD_SZ && incnt<inlen; len++)
 		lzh.text_buf[r + len] = inbuf[incnt++];
 	/* textsize = len; */
-	for (i = 1; i <= LZH_F; i++)
+	for (i = 1; i <= LZH_LOOKAHD_SZ; i++)
 		lzh_insert_node(&lzh,(short)(r - i));
 	lzh_insert_node(&lzh,r);
 	do {
@@ -622,7 +590,7 @@ int32_t lzh_encode(uint8_t *inbuf, int32_t inlen, uint8_t *outbuf)
 			lzh.match_length = 1;
 			lzh_encode_char(&lzh,lzh.text_buf[r],outbuf,&outlen);
 		} else {
-			lzh_encode_char(&lzh,(unsigned short)(255 - LZH_THRESHOLD + lzh.match_length)
+			lzh_encode_char(&lzh,(255 - LZH_THRESHOLD + lzh.match_length)
 				,outbuf,&outlen);
 			lzh_encode_position(&lzh,lzh.match_position
 				,outbuf,&outlen);
@@ -632,119 +600,81 @@ int32_t lzh_encode(uint8_t *inbuf, int32_t inlen, uint8_t *outbuf)
 			lzh_delete_node(&lzh,s);
 			c=inbuf[incnt++];
 			lzh.text_buf[s] = (uint8_t)c;
-			if (s < LZH_F - 1)
-				lzh.text_buf[s + LZH_N] = (uint8_t)c;
-			s = (s + 1) & (LZH_N - 1);
-			r = (r + 1) & (LZH_N - 1);
+			if (s < LZH_LOOKAHD_SZ - 1)
+				lzh.text_buf[s + LZH_STRBUF_SZ] = (uint8_t)c;
+			s = (s + 1) & (LZH_STRBUF_SZ - 1);
+			r = (r + 1) & (LZH_STRBUF_SZ - 1);
 			lzh_insert_node(&lzh,r);
 		}
-/***
-		if ((textsize += i) > printcount) {
-			printf("%12ld\r", textsize);
-			printcount += 1024;
-		}
-***/
 		while (i++ < last_match_length) {
 			lzh_delete_node(&lzh,s);
-			s = (s + 1) & (LZH_N - 1);
-			r = (r + 1) & (LZH_N - 1);
+			s = (s + 1) & (LZH_STRBUF_SZ - 1);
+			r = (r + 1) & (LZH_STRBUF_SZ - 1);
 			if (--len) lzh_insert_node(&lzh,r);
 		}
 	} while (len > 0);
 	lzh_encode_end(&lzh,outbuf,&outlen);
 /*
-	printf("input: %ld (%ld) bytes\n", inlen,textsize);
-	printf("output: %ld bytes\n", outlen);
+	printf("input: %" PRId32 " bytes\n", inlen);
+	printf("output: %" PRId32 " bytes\n", outlen);
 	printf("output/input: %.3f\n", (double)outlen / inlen);
 */
-
-#ifdef LZH_DYNAMIC_BUF
-	free(lzh.text_buf);
-	free(lzh.prnt);
-	free(lzh.freq);
-	free(lzh.son);
-	free(lzh.lson);
-	free(lzh.rson);
-	free(lzh.dad);
-#endif
 
 	return(outlen);
 }
 
 /* Decoding/Uncompressing */
 /* Returns length of outbuf */
-int32_t lzh_decode(uint8_t *inbuf, int32_t inlen, uint8_t *outbuf)
+int32_t lzh_decode(const uint8_t *inbuf, uint32_t inlen, uint8_t *outbuf)
 {
-	short int  i, j, k, r, c;
-	uint32_t	count;
-	int32_t		incnt,textsize;
-	lzh_t lzh;
+	uint16_t  i, j, k, r, c;
+	uint32_t count;
+
+	uint32_t incnt;
+	uint32_t textsize;
+	lzh_decode_t    lzh;
 
 	memset(&lzh,0,sizeof(lzh));
-#ifdef LZH_DYNAMIC_BUF
-
-	if((lzh.text_buf=(uint8_t *)malloc((LZH_N + LZH_F - 1)*2))==NULL)
-		return(-1);
-	if((lzh.freq=(unsigned short *)malloc((LZH_T + 1)*sizeof(unsigned short)))
-		==NULL) {
-		free(lzh.text_buf);
-		return(-1); }
-	if((lzh.prnt=(short *)malloc((LZH_T + LZH_N_CHAR)*sizeof(short)))==NULL) {
-		free(lzh.text_buf);
-		free(lzh.freq);
-		return(-1); }
-	if((lzh.son=(short *)malloc((LZH_T + 1) * sizeof(short)))==NULL) {
-		free(lzh.text_buf);
-		free(lzh.prnt);
-		free(lzh.freq);
-		return(-1); }
-
-#endif
 
 	incnt=0;
 	memcpy(&textsize,inbuf,sizeof(textsize));
+	textsize = LE_INT32(textsize);
 	incnt+=sizeof(textsize);
 	if (textsize == 0) {
-#ifdef LZH_DYNAMIC_BUF
-		free(lzh.text_buf);
-		free(lzh.prnt);
-		free(lzh.freq);
-		free(lzh.son);
-#endif
 		return(textsize); }
-	lzh_start_huff(&lzh);
-	for (i = 0; i < LZH_N - LZH_F; i++)
+	lzh_start_huff(&lzh.huff);
+	for (i = 0; i < LZH_STRBUF_SZ - LZH_LOOKAHD_SZ; i++)
 		*(lzh.text_buf+i) = ' ';
-	r = LZH_N - LZH_F;
-    for (count = 0; count < (unsigned long)textsize; ) {
+	r = LZH_STRBUF_SZ - LZH_LOOKAHD_SZ;
+	for (count = 0; count < textsize; ) {
 		c = lzh_decode_char(&lzh,inbuf,&incnt,inlen);
 		if (c < 256) {
 			outbuf[count]=(uint8_t)c;
 #if 0
-			if(r>(LZH_N + LZH_F - 1) || r<0) {
+			if(r>(LZH_STRBUF_SZ + LZH_LOOKAHD_SZ - 1) || r<0) {
 				printf("Overflow! (%d)\n",r);
-				getch();
+				//getch();
 				exit(-1); }
 #endif
 			*(lzh.text_buf+r) = (uint8_t)c;
 			r++;
-			r &= (LZH_N - 1);
+			r &= (LZH_STRBUF_SZ - 1);
 			count++;
 		} else {
 			i = (r - lzh_decode_position(&lzh,inbuf,&incnt,inlen) - 1)
-				& (LZH_N - 1);
+				& (LZH_STRBUF_SZ - 1);
 			j = c - 255 + LZH_THRESHOLD;
-			for (k = 0; k < j && count<(unsigned long)textsize; k++) {
-				c = lzh.text_buf[(i + k) & (LZH_N - 1)];
+			for (k = 0; k < j && count<textsize; k++) {
+				c = lzh.text_buf[(i + k) & (LZH_STRBUF_SZ - 1)];
 				outbuf[count]=(uint8_t)c;
 #if 0
-				if(r>(LZH_N + LZH_F - 1) || r<0) {
+				if(r>(LZH_STRBUF_SZ + LZH_LOOKAHD_SZ - 1) || r<0) {
 					printf("Overflow! (%d)\n",r);
 					exit(-1); }
 #endif
 				*(lzh.text_buf+r) = (uint8_t)c;
 				r++;
-				r &= (LZH_N - 1);
+				r &= (LZH_STRBUF_SZ - 1);
 				count++;
 			}
 		}
@@ -752,13 +682,6 @@ int32_t lzh_decode(uint8_t *inbuf, int32_t inlen, uint8_t *outbuf)
 /***
 	printf("%12ld\n", count);
 ***/
-
-#ifdef LZH_DYNAMIC_BUF
-	free(lzh.text_buf);
-	free(lzh.prnt);
-	free(lzh.freq);
-	free(lzh.son);
-#endif
 
 return(count);
 }
