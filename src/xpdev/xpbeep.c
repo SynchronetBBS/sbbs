@@ -1029,6 +1029,7 @@ void xp_play_sample_thread(void *data)
 		}
 		this_sample_size=sample_size;
 		FREE_AND_NULL(sample);
+		// coverity[def:SUPPRESS]
 		sample=(unsigned char *)malloc(sample_size);
 		if(sample==NULL) {
 				sem_post(&sample_complete_sem);
