@@ -149,6 +149,7 @@ o More new @-codes:
   - REMSUBS
   - FILEDESC
   - FILEFLAG
+  - MINSPACE
   - AUTOHANG
   - AUTOLOGON
   - QUIET
