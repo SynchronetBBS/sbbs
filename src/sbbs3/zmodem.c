@@ -1065,6 +1065,7 @@ int zmodem_recv_hex(zmodem_t* zm)
 	if(n0 < 0)
 		return n0;
 
+	// coverity[overflow:SUPPRESS]
 	ret = (n1 << 4) | n0;
 
 //	lprintf(zm,LOG_DEBUG, __FUNCTION__ " returning: 0x%02X", ret);
