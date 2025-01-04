@@ -78,6 +78,7 @@ Source: "s:\sbbs\exec\user.com";                              DestDir: "{app}\ex
 Source: "s:\sbbs\exec\mlabels.exe";                           DestDir: "{app}\exec";  Flags: ignoreversion
 Source: "s:\sbbs\exec\svdmansi.com";                          DestDir: "{app}\exec";  Flags: ignoreversion
 Source: "s:\sbbs\exec\dosxtrn.exe";                           DestDir: "{app}\exec";  Flags: ignoreversion
+Source: "s:\xfer\sbbs\sbbslist.json";                         DestDir: "{app}\data";
 Source: "node1\node.ini";                                     DestDir: "{app}\node1"; Flags: ignoreversion
 Source: "node1\node.ini";                                     DestDir: "{app}\node2"; Flags: ignoreversion
 Source: "node1\node.ini";                                     DestDir: "{app}\node3"; Flags: ignoreversion
