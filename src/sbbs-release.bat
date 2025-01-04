@@ -8,13 +8,15 @@ call release.bat /t:Clean
 call release.bat
 if errorlevel 1 goto fail
 cd ctrl
-build /B
+call build /B
 if errorlevel 1 goto fail
 cd ..\useredit
-build /B
+call build /B
 if errorlevel 1 goto fail
 cd ..\chat
-build /B
+call build /B
+if errorlevel 1 goto fail
+goto end
 :fail
 echo FAILED: See errors above!
 :end
