@@ -81,10 +81,10 @@ time32_t time32(time32_t* tp)
 
 time32_t mktime32(struct tm* tm)
 {
-	time_t t = mktime(tm);
+	time_t t = mktime(tm); /* don't use sane_mktime since tm->tm_mon is assumed to be already zero-based */
 	/* coverity[store_truncates_time_t] */
 	uint32_t t32 = (uint32_t)t;
-	return (time32_t)t32;	/* don't use sane_mktime since tm->tm_mon is assumed to be already zero-based */
+	return (time32_t)t32;
 }
 
 struct tm* localtime32(const time32_t* t32, struct tm* tm)
