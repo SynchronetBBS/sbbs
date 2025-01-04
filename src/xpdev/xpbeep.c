@@ -976,7 +976,7 @@ do_xp_play_sample(unsigned char *sampo, size_t sz, int *freed)
 		size_t wr = 0;
 		while (wr < sz) {
 			ssize_t i = write(dsp, samp + wr, sz - wr);
-			if (i >= 0 && i <= (sz - wr))
+			if (i >= 0)
 				wr += i;
 			else
 				return false;
