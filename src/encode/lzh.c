@@ -20,12 +20,6 @@
 #include <string.h>
 #include <ctype.h>
 
-/* FreeBSD's malloc.h is deprecated, it drops a warning and */
-/* #includes <stdlib.h>, which is already here.             */
-#if !defined(__unix__)
-	#include <malloc.h>
-#endif
-
 #include "xpendian.h"
 #include "lzh.h"
 
@@ -60,8 +54,7 @@ typedef struct {
 
 	huffman_t huff;
 	uint16_t getbuf;		/* Was just "unsigned" fixed 04/12/95 */
-	// This likely only needs to be LZH_STRBUF_SZ
-	uint8_t  text_buf[LZH_STRBUF_SZ + LZH_LOOKAHD_SZ - 1];
+	uint8_t  text_buf[LZH_STRBUF_SZ];
 	uint8_t  getlen;
 
 } lzh_decode_t;
