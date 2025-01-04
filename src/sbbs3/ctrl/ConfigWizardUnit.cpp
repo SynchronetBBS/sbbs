@@ -246,7 +246,7 @@ void __fastcall TConfigWizard::FormShow(TObject *Sender)
         Time24hrRadioButton->Checked=true;
     else
         Time12hrRadioButton->Checked=true;
-    if(scfg.sys_misc&SM_EURODATE)
+    if(scfg.sys_date_fmt == DDMMYY)
         DateEuRadioButton->Checked=true;
     else
         DateUsRadioButton->Checked=true;
@@ -284,7 +284,7 @@ void __fastcall TConfigWizard::NextButtonClick(TObject *Sender)
         SAFECOPY(scfg.qnet_tagline,QNetTaglineEdit->Text.c_str());
         scfg.sys_nodes=NodesUpDown->Position;
         if(TimeZoneComboBox->ItemIndex>=0
-        	&& TimeZoneComboBox->ItemIndex<=sizeof(tz_val)/sizeof(tz_val[0]))
+			&& TimeZoneComboBox->ItemIndex < sizeof(tz_val)/sizeof(tz_val[0]))
             scfg.sys_timezone=tz_val[TimeZoneComboBox->ItemIndex];
         if(DaylightCheckBox->Checked)
             scfg.sys_timezone|=DAYLIGHT;
@@ -293,9 +293,9 @@ void __fastcall TConfigWizard::NextButtonClick(TObject *Sender)
         else
             scfg.sys_misc&=~SM_MILITARY;
         if(DateEuRadioButton->Checked)
-            scfg.sys_misc|=SM_EURODATE;
+            scfg.sys_date_fmt = DDMMYY;
         else
-            scfg.sys_misc&=~SM_EURODATE;
+            scfg.sys_date_fmt = MMDDYY;
         if(NewUsersCheckBox->Checked)
             scfg.sys_misc&=~SM_CLOSED;
         else
