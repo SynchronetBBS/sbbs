@@ -28,6 +28,33 @@ static CRYPT_SESSION telnets_session;
 static atomic_bool telnets_active = false;
 static pthread_mutex_t telnets_mutex;
 
+static int
+FlushData(CRYPT_SESSION sess)
+{
+	int ret = cryptFlushData(sess);
+	if (ret == CRYPT_ERROR_COMPLETE)
+		telnets_active = false;
+	return ret;
+}
+
+static int
+PopData(CRYPT_HANDLE e, void *buf, int len, int *copied)
+{
+	int ret = cryptPopData(e, buf, len, copied);
+	if (ret == CRYPT_ERROR_COMPLETE)
+		telnets_active = false;
+	return ret;
+}
+
+static int
+PushData(CRYPT_HANDLE e, void *buf, int len, int *copied)
+{
+	int ret = cryptPushData(e, buf, len, copied);
+	if (ret == CRYPT_ERROR_COMPLETE)
+		telnets_active = false;
+	return ret;
+}
+
 void
 telnets_input_thread(void *args)
 {
@@ -41,8 +68,8 @@ telnets_input_thread(void *args)
 		if (!socket_readable(telnets_sock, 100))
 			continue;
 		pthread_mutex_lock(&telnets_mutex);
-		IGNORE_RESULT(cryptFlushData(telnets_session));
-		status = cryptPopData(telnets_session, conn_api.rd_buf, conn_api.rd_buf_size, &rd);
+		FlushData(telnets_session);
+		status = PopData(telnets_session, conn_api.rd_buf, conn_api.rd_buf_size, &rd);
 		pthread_mutex_unlock(&telnets_mutex);
                 // Handle case where there was socket activity without readable data (ie: rekey)
 		if (status == CRYPT_ERROR_TIMEOUT)
@@ -86,7 +113,7 @@ telnets_output_thread(void *args)
 			sent = 0;
 			while (telnets_active && sent < wr) {
 				pthread_mutex_lock(&telnets_mutex);
-				status = cryptPushData(telnets_session, conn_api.wr_buf + sent, wr - sent, &ret);
+				status = PushData(telnets_session, conn_api.wr_buf + sent, wr - sent, &ret);
 				pthread_mutex_unlock(&telnets_mutex);
 				if (cryptStatusError(status)) {
 					if (status == CRYPT_ERROR_COMPLETE) { /* connection closed */
@@ -101,7 +128,7 @@ telnets_output_thread(void *args)
 			}
 			if (sent) {
 				pthread_mutex_lock(&telnets_mutex);
-				IGNORE_RESULT(cryptFlushData(telnets_session));
+				FlushData(telnets_session);
 				pthread_mutex_unlock(&telnets_mutex);
 			}
 		}

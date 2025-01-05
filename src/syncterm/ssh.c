@@ -62,7 +62,30 @@ init_crypt(void)
 static int
 FlushData(CRYPT_SESSION sess)
 {
-	return cryptFlushData(sess);
+	int ret = cryptFlushData(sess);
+	if (ret == CRYPT_ERROR_COMPLETE)
+		ssh_complete = true;
+	return ret;
+}
+
+static int
+PopData(CRYPT_HANDLE e, void *buf, int len, int *copied)
+{
+	cryptSetAttribute(ssh_session, CRYPT_OPTION_NET_READTIMEOUT, 0);
+	int ret = cryptPopData(e, buf, len, copied);
+	cryptSetAttribute(ssh_session, CRYPT_OPTION_NET_READTIMEOUT, 30);
+	if (ret == CRYPT_ERROR_COMPLETE)
+		ssh_complete = true;
+	return ret;
+}
+
+static int
+PushData(CRYPT_HANDLE e, void *buf, int len, int *copied)
+{
+	int ret = cryptPushData(e, buf, len, copied);
+	if (ret == CRYPT_ERROR_COMPLETE)
+		ssh_complete = true;
+	return ret;
 }
 
 void
@@ -229,7 +252,7 @@ ssh_input_thread(void *args)
 		}
 
 		cryptSetAttribute(ssh_session, CRYPT_OPTION_NET_READTIMEOUT, 0);
-		popstatus = cryptPopData(ssh_session, conn_api.rd_buf, conn_api.rd_buf_size, &rd);
+		popstatus = PopData(ssh_session, conn_api.rd_buf, conn_api.rd_buf_size, &rd);
 		cryptSetAttribute(ssh_session, CRYPT_OPTION_NET_READTIMEOUT, 30);
 		if (cryptStatusOK(popstatus)) {
 			gchstatus = cryptGetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, &chan);
@@ -341,7 +364,7 @@ ssh_output_thread(void *args)
 				FlushData(ssh_session);
 				status = cryptSetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, ssh_channel);
 				if (cryptStatusOK(status)) {
-					status = cryptPushData(ssh_session, conn_api.wr_buf + sent, wr - sent, &ret);
+					status = PushData(ssh_session, conn_api.wr_buf + sent, wr - sent, &ret);
 					if (cryptStatusOK(status))
 						FlushData(ssh_session);
 				}
@@ -387,7 +410,7 @@ sftp_send(uint8_t *buf, size_t sz, void *cb_data)
 			active = 0;
 			status = cryptGetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_OPEN, &active);
 			if (cryptStatusOK(status) && active)
-				status = cryptPushData(ssh_session, buf + sent, sz - sent, &ret);
+				status = PushData(ssh_session, buf + sent, sz - sent, &ret);
 		}
 		pthread_mutex_unlock(&ssh_mutex);
 		if (cryptStatusError(status)) {
