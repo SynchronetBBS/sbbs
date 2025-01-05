@@ -164,7 +164,7 @@ else
  MKSHPPLIB		:=	$(CXX)
 endif
 ifeq ($(os),darwin)
- LIB_RPATH := -Wl,$(RPATH),@executable_path,$(RPATH),@executable_path/../$(LIBDIR)
+ LIB_RPATH := -Wl,$(RPATH),@executable_path,$(RPATH),@executable_path/../$(LIBODIR)
 endif
 
 CFLAGS	+=	$(JS_CFLAGS) $(CRYPT_CFLAGS) $(UIFC-MT_CFLAGS) $(XPDEV-MT_CFLAGS) $(SMBLIB_CFLAGS) $(CIOLIB-MT_CFLAGS) $(ENCODE_CFLAGS) $(HASH_CFLAGS)
