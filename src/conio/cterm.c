@@ -2758,6 +2758,8 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							break;
 						case 'S':		// XTerm graphics query
 							if (seq->param_str[0] == '?' && parse_parameters(seq)) {
+								seq_default(seq, 0, 0);
+								seq_default(seq, 1, 0);
 								if (seq->param_int[0] == 2 && seq->param_int[1] == 1) {
 									struct text_info ti;
 									int vmode;
