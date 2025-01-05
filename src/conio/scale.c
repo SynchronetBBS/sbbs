@@ -237,6 +237,9 @@ do_scale(struct rectlist* rect, int fwidth, int fheight)
 	uint32_t* nt;
 	bool swapxy = false;
 
+	if (rect->rect.width == 0 || rect->rect.height == 0 || fwidth == 0 || fheight == 0)
+		return NULL;
+
 	int xscale = fwidth / rect->rect.width;
 	int yscale = fheight / rect->rect.height;
 
