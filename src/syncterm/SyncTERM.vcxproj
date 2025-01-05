@@ -123,6 +123,7 @@
     <ClCompile Include="..\xpdev\xpbeep.c" />
     <ClCompile Include="bbslist.c" />
     <ClCompile Include="conn.c" />
+    <ClCompile Include="conn_conpty.c" />
     <ClCompile Include="conn_telnet.c" />
     <ClCompile Include="fonts.c" />
     <ClCompile Include="menu.c" />
