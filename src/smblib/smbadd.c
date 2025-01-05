@@ -34,7 +34,7 @@ int smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, int dupechk_hashes
 					   ,uint16_t xlat, const uchar* body, const uchar* tail)
 {
 	uchar*		lzhbuf=NULL;
-	int			lzhlen;
+	uint32_t	lzhlen;
 	int			retval;
 	size_t		n;
 	off_t		l;
@@ -113,7 +113,7 @@ int smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, int dupechk_hashes
 			/* LZH compress? */
 			if(xlat==XLAT_LZH && bodylen+taillen>=SDT_BLOCK_LEN
 				&& (lzhbuf=(uchar *)malloc(bodylen*2))!=NULL) {
-				lzhlen=lzh_encode((uchar*)body,bodylen-sizeof(xlat),lzhbuf);
+				lzhlen=lzh_encode((uchar*)body,bodylen-sizeof(xlat),lzhbuf,bodylen*2);
 				if(lzhlen>1
 					&& smb_datblocks(lzhlen+(sizeof(xlat)*2)+taillen) 
 						< smb_datblocks(bodylen+taillen)) {
