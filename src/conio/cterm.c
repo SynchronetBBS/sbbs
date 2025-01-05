@@ -2427,7 +2427,7 @@ static void parse_extended_colour(struct esc_seq *seq, int *i, struct cterminal 
 				*co = sub.param_int[2];
 				save_extended_colour_seq(cterm, fg, seq, *i, 1);
 			}
-			else if (sub.param_int[1] == 2) {
+			else if (sub.param_count >= 5 && sub.param_int[1] == 2) {
 				if (sub.param_count == 5) {
 					nc = map_rgb(sub.param_int[2]<<8, sub.param_int[3]<<8, sub.param_int[4]<<8);
 					if (nc != UINT32_MAX)
