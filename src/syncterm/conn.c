@@ -44,6 +44,9 @@
 #ifdef __unix__
  #include "conn_pty.h"
 #endif
+#ifdef _WIN32
+ #include "conn_conpty.h"
+#endif
 #include "conn_telnet.h"
 
 #ifdef _MSC_VER
@@ -416,6 +419,12 @@ conn_connect(struct bbslist *bbs)
 		case CONN_TYPE_SHELL:
 			conn_api.connect = pty_connect;
 			conn_api.close = pty_close;
+			break;
+#endif
+#ifdef HAS_CONPTY
+		case CONN_TYPE_SHELL:
+			conn_api.connect = conpty_connect;
+			conn_api.close = conpty_close;
 			break;
 #endif
 		default:

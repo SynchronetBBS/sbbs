@@ -1,4 +1,8 @@
 SRC_ROOT	:=	..
+WINVER ?= 0xA00
+WINNT ?= 0xA00
+WIN32_IE ?= 0xA00
+NTDDI ?= 0x0A000006
 include ${SRC_ROOT}/build/Common.gmake
 
 ifdef NEED_BITMAP
@@ -46,6 +50,7 @@ ifdef win
  CFLAGS += -DWITH_JPEG_XL -DWITH_STATIC_JXL
  CFLAGS += -DWITH_JPEG_XL_THREADS
  OBJS += $(MTOBJODIR)$(DIRSEP)libjxl$(OFILE)
+ OBJS += $(MTOBJODIR)$(DIRSEP)conn_conpty$(OFILE)
 else
  ifeq ($(shell pkg-config libjxl --exists && echo YES), YES)
   CFLAGS += $(shell pkg-config libjxl --cflags)
