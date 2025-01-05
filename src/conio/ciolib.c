@@ -1285,6 +1285,8 @@ CIOLIBEXPORT int ciolib_gettext(int a,int b,int c,int d,void *e)
 	CIOLIB_INIT();
 
 	if (cio_api.gettext == NULL) {
+		if (cio_api.vmem_gettext == NULL)
+			return 0;
 		buf = malloc((c-a+1)*(d-b+1)*sizeof(*buf));
 		if (buf == NULL)
 			return 0;
