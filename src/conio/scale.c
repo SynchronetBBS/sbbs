@@ -220,6 +220,9 @@ calc_scaling_factors(int *x, int *y, int winwidth, int winheight, int aspect_wid
 struct graphics_buffer *
 do_scale(struct rectlist* rect, int fwidth, int fheight)
 {
+	if (rect->rect.width == 0 || rect->rect.height == 0 || fwidth == 0 || fheight == 0)
+		return NULL;
+
 	struct graphics_buffer* ret1 = get_buffer();
 	struct graphics_buffer* ret2 = get_buffer();
 	int pointymult = 1;
@@ -236,9 +239,6 @@ do_scale(struct rectlist* rect, int fwidth, int fheight)
 	struct graphics_buffer *csrc;
 	uint32_t* nt;
 	bool swapxy = false;
-
-	if (rect->rect.width == 0 || rect->rect.height == 0 || fwidth == 0 || fheight == 0)
-		return NULL;
 
 	int xscale = fwidth / rect->rect.width;
 	int yscale = fheight / rect->rect.height;
