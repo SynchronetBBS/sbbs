@@ -1226,7 +1226,8 @@ static void resize_window()
 
 static void init_mode_internal(int mode)
 {
-	int mw, mh;
+	int mw = 0;
+	int mh = 0;
 
 	x11_get_maxsize(&mw, &mh);
 	free_last();
