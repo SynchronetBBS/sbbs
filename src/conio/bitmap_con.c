@@ -582,6 +582,8 @@ static int bitmap_draw_one_char(struct vmem_cell *vc, unsigned int xpos, unsigne
 	if (this_font == NULL) {
 		this_font = font[0];
 	}
+	if (this_font == NULL)
+		return(-1);
 	fdw = vstat.charwidth - (vstat.flags & VIDMODES_FLAG_EXPAND) ? 1 : 0;
 	fontoffset=(sch) * (vstat.charheight * ((fdw + 7) / 8));
 
