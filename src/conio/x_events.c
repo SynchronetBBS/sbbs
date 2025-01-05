@@ -982,7 +982,8 @@ static int init_window()
 	XWMHints *wmhints;
 	XClassHint *classhints;
 	int w, h;
-	int mw, mh;
+	int mw = 0;
+	int mh = 0;
 	int screen;
 #if (defined(WITH_XRENDER) || defined(WITH_XINERAMA))
 	int major, minor;
