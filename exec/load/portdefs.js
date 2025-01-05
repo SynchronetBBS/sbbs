@@ -46,6 +46,7 @@ var standard_service_port = {
 	"ws":			1123,	// SBBS
 	"hotline":		5500,
 	"irc":			6667,
+	"ircs-u":		6697,	// RFC 7194
 	"http-alt":		8080,
 	"json":			10088,	// SBBS
 	"wss":			11235,	// SBBS
