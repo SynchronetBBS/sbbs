@@ -2926,6 +2926,7 @@ show_bbslist(char *current, int connected)
 	for (;;) {
 		if (quitting) {
 			free(list);
+			free(copied);
 			return NULL;
 		}
 		if (!at_settings) {
@@ -2933,6 +2934,7 @@ show_bbslist(char *current, int connected)
 				sprintf(list_title, "Directory (%d items)", listcount);
 				if (quitting) {
 					free(list);
+					free(copied);
 					return NULL;
 				}
 				if (last_mode != cio_api.mode) {
@@ -3165,6 +3167,7 @@ show_bbslist(char *current, int connected)
 									    false);
 									free_list(&list[0], listcount);
 									free(list);
+									free(copied);
 									return &retlist;
 								}
 							}
@@ -3177,6 +3180,7 @@ show_bbslist(char *current, int connected)
 
 							free_list(&list[0], listcount);
 							free(list);
+							free(copied);
 							return NULL;
 						case -2:
 							nowait = false;
@@ -3484,6 +3488,7 @@ show_bbslist(char *current, int connected)
 						memcpy(&retlist, list[val], sizeof(struct bbslist));
 						free_list(&list[0], listcount);
 						free(list);
+						free(copied);
 						return &retlist;
 					}
 				}
@@ -3591,6 +3596,7 @@ show_bbslist(char *current, int connected)
 
 						free_list(&list[0], listcount);
 						free(list);
+						free(copied);
 						return NULL;
 					case 0:   /* Edit default connection settings */
 						edit_list(NULL, &defaults, settings.list_path, true);
@@ -3631,6 +3637,7 @@ show_bbslist(char *current, int connected)
 						else if (check_exit(false)) {
 							free_list(&list[0], listcount);
 							free(list);
+							free(copied);
 							return NULL;
 						}
 					}
