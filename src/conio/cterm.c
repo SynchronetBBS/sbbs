@@ -1555,9 +1555,13 @@ static bool parse_sub_parameters(struct sub_params *sub, struct esc_seq *seq, un
 
 	if (param >= seq->param_count)
 		return false;
-	for (p=seq->param[param]; *p; p++)
-		if (*p == ':')
+	for (p=seq->param[param]; *p; p++) {
+		if (*p == ':') {
+			if (sub->param_count == INT_MAX)
+				return false;
 			sub->param_count++;
+		}
+	}
 	if (sub->param_count == 0)
 		return true;
 	sub->param_int = malloc(sub->param_count * sizeof(sub->param_int[0]));
@@ -1626,6 +1630,12 @@ static bool parse_parameters(struct esc_seq *seq)
 			while(*start == '0' && start[1])
 				start++;
 			strListAppend(&seq->param, start, seq->param_count);
+			if (seq->param_count == INT_MAX) {
+				strListFree(&seq->param);
+				seq->param = NULL;
+				free(dup);
+				return false;
+			}
 			seq->param_count++;
 			start = NULL;
 		}
@@ -1635,6 +1645,12 @@ static bool parse_parameters(struct esc_seq *seq)
 	/* If the string ended with a semi-colon, there's a final zero-length parameter */
 	if (last_was_sc) {
 		strListAppend(&seq->param, "", seq->param_count);
+		if (seq->param_count == INT_MAX) {
+			strListFree(&seq->param);
+			seq->param = NULL;
+			free(dup);
+			return false;
+		}
 		seq->param_count++;
 	}
 	else if (start) {
@@ -1643,6 +1659,12 @@ static bool parse_parameters(struct esc_seq *seq)
 		while(*start == '0' && start[1])
 			start++;
 		strListAppend(&seq->param, start, seq->param_count);
+		if (seq->param_count == INT_MAX) {
+			strListFree(&seq->param);
+			seq->param = NULL;
+			free(dup);
+			return false;
+		}
 		seq->param_count++;
 	}
 
