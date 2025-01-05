@@ -497,6 +497,7 @@ key_not_present(sftp_filehandle_t f, const char *priv)
 			bufpos = bufpos - eol;
 		}
 	}
+	free(buf);
 	return false;
 }
 
