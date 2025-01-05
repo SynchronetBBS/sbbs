@@ -52,16 +52,17 @@ typedef struct {
 /* Converted from global variables to struct Apr-21-2003 */
 typedef struct {
 
+	size_t outsz;
 	huffman_t huff;
 	uint16_t getbuf;		/* Was just "unsigned" fixed 04/12/95 */
 	uint8_t  text_buf[LZH_STRBUF_SZ];
 	uint8_t  getlen;
-	size_t outsz;
 
 } lzh_decode_t;
 
 typedef struct {
 
+	size_t outsz;
 	uint32_t putbuf;
 	huffman_t huff;
 	uint16_t lchild[LZH_STRBUF_SZ + 1];
@@ -71,7 +72,6 @@ typedef struct {
 	uint16_t match_length;
 	uint8_t  text_buf[LZH_STRBUF_SZ + LZH_LOOKAHD_SZ - 1];
 	uint8_t	 putlen;
-	size_t outsz;
 
 } lzh_encode_t;
 
