@@ -664,12 +664,8 @@ uint32_t lzh_decode(const uint8_t *inbuf, uint32_t inlen, uint8_t *outbuf, size_
 			if (count >= outlen || count == UINT32_MAX)
 				return 0;
 			outbuf[count]=(uint8_t)c;
-#if 0
-			if(r>(LZH_STRBUF_SZ + LZH_LOOKAHD_SZ - 1) || r<0) {
-				printf("Overflow! (%d)\n",r);
-				//getch();
-				exit(-1); }
-#endif
+			if (r >= LZH_STRBUF_SZ)
+				return 0;
 			*(lzh.text_buf+r) = (uint8_t)c;
 			r++;
 			r &= (LZH_STRBUF_SZ - 1);
@@ -683,11 +679,8 @@ uint32_t lzh_decode(const uint8_t *inbuf, uint32_t inlen, uint8_t *outbuf, size_
 				if (count >= outlen || count == UINT32_MAX)
 					return 0;
 				outbuf[count]=(uint8_t)c;
-#if 0
-				if(r>(LZH_STRBUF_SZ + LZH_LOOKAHD_SZ - 1) || r<0) {
-					printf("Overflow! (%d)\n",r);
-					exit(-1); }
-#endif
+				if (r >= LZH_STRBUF_SZ)
+					return 0;
 				*(lzh.text_buf+r) = (uint8_t)c;
 				r++;
 				r &= (LZH_STRBUF_SZ - 1);
