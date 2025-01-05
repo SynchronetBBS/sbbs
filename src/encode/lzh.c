@@ -415,7 +415,7 @@ static void lzh_reconst(huffman_t* huff)
 
 /* update freq tree */
 
-static void lzh_update(huffman_t* huff, uint16_t c)
+static bool lzh_update(huffman_t* huff, uint16_t c)
 {
 	uint16_t l;
 	uint16_t tmp;
@@ -427,23 +427,31 @@ static void lzh_update(huffman_t* huff, uint16_t c)
 	}
 	c = huff->parent[c + LZH_TABLE_SZ];
 	do {
+		/*
+		 * This is not actually possible.
+		 */
+		if (c >= LZH_TABLE_SZ)
+			return false;
 		tmp = ++huff->freq[c];
 
 		/*
 		 * If we now have a greater freq than the next node...
 		 * and are not already the last node
 		 */
-		if (c < LZH_TABLE_SZ && tmp > huff->freq[c + 1]) {
+		if (tmp > huff->freq[c + 1]) {
 			/*
 			 * Find the last node after the current one
 			 * that has a lower frequency than our new one
+			 *
+			 * There's a sentry at LZH_TABLE_SZ, so we can't
+			 * "find" that one (and we don't actually need
+			 * the second test here)
+			 *
+			 * We can do the range check second because
+			 * huff->freq[LZH_TABLE_SZ] is valid
 			 */
-			for (l = c + 1; l <= LZH_TABLE_SZ && tmp > huff->freq[l]; l++)
+			for (l = c + 1; tmp > huff->freq[l + 1] && l < (LZH_TABLE_SZ - 1); l++)
 				;
-
-			// If we exited before the end of table, decrement l
-			if (tmp <= huff->freq[l])
-				l--;
 
 			// Now swap nodes
 			huff->freq[c] = huff->freq[l];
@@ -464,7 +472,8 @@ static void lzh_update(huffman_t* huff, uint16_t c)
 
 			c = l;
 		}
-	} while (((c = huff->parent[c]) != 0) && c < ((sizeof(huff->child)/sizeof(huff->child[0]))-1));	/* do it until reaching the root */
+	} while ((c = huff->parent[c]) != 0);	/* do it until reaching the root */
+	return true;
 }
 
 static bool lzh_encode_char(lzh_encode_t* lzh, uint16_t c, uint8_t *outbuf, uint32_t *outlen)
@@ -492,8 +501,7 @@ static bool lzh_encode_char(lzh_encode_t* lzh, uint16_t c, uint8_t *outbuf, uint
 	} while ((k = lzh->huff.parent[k]) != LZH_ROOT);
 	if (!lzh_putcode(lzh, j, i, outbuf, outlen))
 		return false;
-	lzh_update(&lzh->huff,c);
-	return true;
+	return lzh_update(&lzh->huff,c);
 }
 
 static bool lzh_encode_position(lzh_encode_t* lzh, uint16_t c, uint8_t *outbuf, uint32_t *outlen)
@@ -519,11 +527,9 @@ static bool lzh_encode_end(lzh_encode_t* lzh, uint8_t *outbuf, uint32_t *outlen)
 	return true;
 }
 
-static uint16_t lzh_decode_char(lzh_decode_t* lzh, const uint8_t *inbuf, uint32_t *incnt, uint32_t inlen)
+static bool lzh_decode_char(lzh_decode_t* lzh, const uint8_t *inbuf, uint32_t *incnt, uint32_t inlen, uint16_t *outc)
 {
-	uint16_t c;
-
-	c = lzh->huff.child[LZH_ROOT];
+	uint16_t c = lzh->huff.child[LZH_ROOT];
 
 	/*
 	 * start searching tree from the root to leaves.
@@ -535,8 +541,8 @@ static uint16_t lzh_decode_char(lzh_decode_t* lzh, const uint8_t *inbuf, uint32_
 		c = lzh->huff.child[c];
 	}
 	c -= LZH_TABLE_SZ;
-	lzh_update(&lzh->huff,c);
-	return c;
+	*outc = c;
+	return lzh_update(&lzh->huff,c);
 }
 
 static uint16_t lzh_decode_position(lzh_decode_t* lzh, const uint8_t *inbuf, uint32_t *incnt, uint32_t inlen)
@@ -659,7 +665,8 @@ uint32_t lzh_decode(const uint8_t *inbuf, uint32_t inlen, uint8_t *outbuf, size_
 		*(lzh.text_buf+i) = ' ';
 	r = LZH_STRBUF_SZ - LZH_LOOKAHD_SZ;
 	for (count = 0; count < textsize; ) {
-		c = lzh_decode_char(&lzh,inbuf,&incnt,inlen);
+		if (!lzh_decode_char(&lzh,inbuf,&incnt,inlen,&c))
+			return 0;
 		if (c < 256) {
 			if (count >= outlen || count == UINT32_MAX)
 				return 0;
