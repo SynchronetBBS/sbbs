@@ -1665,17 +1665,17 @@ handle_bios_key(uint32_t *bios_key, bool *bios_key_parsing, bool *zero_first)
 			if (ch == 0)
 				x11.XBell(dpy, 100);
 			else {
-				write(key_pipe[1], &ch, 1);
+				IGNORE_RESULT(write(key_pipe[1], &ch, 1));
 				if (ch == 0xe0)
-					write(key_pipe[1], &ch, 1);
+					IGNORE_RESULT(write(key_pipe[1], &ch, 1));
 			}
 		}
 		else {
 			// Codepage character
 			ch = *bios_key;
-			write(key_pipe[1], &ch, 1);
+			IGNORE_RESULT(write(key_pipe[1], &ch, 1));
 			if (ch == 0xe0)
-				write(key_pipe[1], &ch, 1);
+				IGNORE_RESULT(write(key_pipe[1], &ch, 1));
 		}
 	}
 	*bios_key = 0;
@@ -1701,11 +1701,7 @@ x11_event(XEvent *ev)
 		case ClientMessage:
 			if (ev->xclient.format == 32 && ev->xclient.data.l[0] == A(WM_DELETE_WINDOW) && A(WM_DELETE_WINDOW) != None) {
 				uint16_t key=CIO_KEY_QUIT;
-				// Bow to GCC
-				if (write(key_pipe[1], &key, 2) == EXIT_FAILURE)
-					return;
-				else
-					return;
+				IGNORE_RESULT(write(key_pipe[1], &key, 2));
 			}
 			else if(ev->xclient.format == 32 && ev->xclient.data.l[0] == A(_NET_WM_PING) && A(_NET_WM_PING) != None) {
 				ev->xclient.window = root;
@@ -2078,14 +2074,10 @@ x11_event(XEvent *ev)
 								else
 									ch = cpchar_from_unicode_cpoint(getcodepage(), wbuf[i], 0);
 								if (ch) {
-									// Bow to GCC
 									if (ch == 0xe0) // Double-up 0xe0
-										if (write(key_pipe[1], &ch, 1) == -1)
-											return;
-									if (write(key_pipe[1], &ch, 1) == EXIT_SUCCESS)
-										return;
-									else
-										return;
+										IGNORE_RESULT(write(key_pipe[1], &ch, 1));
+									IGNORE_RESULT(write(key_pipe[1], &ch, 1));
+									return;
 								}
 							}
 							break;
@@ -2296,13 +2288,9 @@ x11_event(XEvent *ev)
 							uint16_t key=scan;
 							if (key < 128)
 								key = cpchar_from_unicode_cpoint(getcodepage(), key, key);
-							// Bow to GCC
 							if (key == 0xe0)
 								key = CIO_KEY_LITERAL_E0;
-							if (write(key_pipe[1], &key, (scan & 0xff) ? 1 : 2) != EXIT_SUCCESS)
-								return;
-							else
-								return;
+							IGNORE_RESULT(write(key_pipe[1], &key, (scan & 0xff) ? 1 : 2));
 						}
 						break;
 				}

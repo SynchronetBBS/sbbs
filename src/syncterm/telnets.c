@@ -41,7 +41,7 @@ telnets_input_thread(void *args)
 		if (!socket_readable(telnets_sock, 100))
 			continue;
 		pthread_mutex_lock(&telnets_mutex);
-		cryptFlushData(telnets_session);
+		IGNORE_RESULT(cryptFlushData(telnets_session));
 		status = cryptPopData(telnets_session, conn_api.rd_buf, conn_api.rd_buf_size, &rd);
 		pthread_mutex_unlock(&telnets_mutex);
                 // Handle case where there was socket activity without readable data (ie: rekey)
@@ -101,7 +101,7 @@ telnets_output_thread(void *args)
 			}
 			if (sent) {
 				pthread_mutex_lock(&telnets_mutex);
-				cryptFlushData(telnets_session);
+				IGNORE_RESULT(cryptFlushData(telnets_session));
 				pthread_mutex_unlock(&telnets_mutex);
 			}
 		}

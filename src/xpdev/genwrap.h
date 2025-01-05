@@ -48,6 +48,18 @@
 	#endif
 #endif
 
+#if defined(REALLY_GCC)
+	#define IGNORE_RESULT(x) do {                               \
+		_Pragma("GCC diagnostic push")                       \
+		_Pragma("GCC diagnostic ignored \"-Wunused-result\"") \
+		(void)x;                                               \
+		_Pragma("GCC diagnostic pop")                           \
+	} while(0)
+
+#else
+	#define IGNORE_RESULT(x) ((void)(x))
+#endif
+
 #if !defined(_WIN32)
 	/* Simple Win32 function equivalents */
 	#define GetCurrentProcessId()		getpid()
