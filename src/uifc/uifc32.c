@@ -1890,8 +1890,14 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 		else
 			mswait(1);
 		if(mode&WIN_DYN) {
-			save_menu_cur=*cur;
-			save_menu_bar=*bar;
+			if (cur)
+				save_menu_cur=*cur;
+			else
+				save_menu_cur = -1;
+			if (bar)
+				save_menu_bar=*bar;
+			else
+				save_menu_bar=-1;
 			save_menu_opts=opts;
 			return(-2-gotkey);
 		}
