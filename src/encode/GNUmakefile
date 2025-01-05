@@ -20,4 +20,4 @@ endif
 
 # Test build
 lzh${EXEFILE}: lzh.c
-	$(QUIET)$(CC) -std=c11 $(CFLAGS) -DLZH_TEST $(CCFLAGS) -o $@ $<
+	$(QUIET)$(CC) -std=c11 $(CFLAGS) -Wall -pedantic -DLZH_TEST $(CCFLAGS) -o $@ $<
