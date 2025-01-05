@@ -314,6 +314,9 @@ CCPRE := $(lastword $(subst /, ,$(CCPRE)))
 ifeq ($(CCPRE),clang)
  CFLAGS += -Wno-invalid-source-encoding
 endif
+ifeq ($(CCPRE),gcc)
+ CFLAGS += -DREALLY_GCC
+endif
 LIBODIR :=	$(CCPRE).$(machine).lib.$(BUILDPATH)
 OBJODIR :=	$(CCPRE).$(machine).obj.$(BUILDPATH)
 MTOBJODIR :=	$(CCPRE).$(machine).obj.$(BUILDPATH)-mt
