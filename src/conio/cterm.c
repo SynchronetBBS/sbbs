@@ -5615,12 +5615,14 @@ CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int b
 										if (cterm->strbufsize > 1024 * 1024 * 512) {
 											FREE_AND_NULL(cterm->strbuf);
 											cterm->strbuflen = cterm->strbufsize = 0;
+											break;
 										}
 										else {
 											p = realloc(cterm->strbuf, cterm->strbufsize);
 											if (p == NULL) {
 												FREE_AND_NULL(cterm->strbuf);
 												cterm->strbuflen = cterm->strbufsize = 0;
+												break;
 											}
 											else
 												cterm->strbuf = p;
