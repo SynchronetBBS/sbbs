@@ -5701,6 +5701,7 @@ CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int b
 											FREE_AND_NULL(cterm->strbuf);
 											cterm->string = 0;
 											cterm->strbuflen = cterm->strbufsize = 0;
+											break;
 										}
 										else {
 											p = realloc(cterm->strbuf, cterm->strbufsize);
