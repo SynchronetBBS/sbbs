@@ -1,9 +1,9 @@
-#if NTDDI_VERSION >= 0x0A000006
-
 #define WIN32_LEAN_AND_MEAN
 #include <stdatomic.h>
 #include <windows.h>
 #include <wincon.h>
+
+#if NTDDI_VERSION >= 0x0A000006
 
 #include "bbslist.h"
 #include "conn.h"
