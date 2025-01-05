@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 	env_node=getenv("SBBSNODE");
 	if(env_node==NULL) {
 		printf("\nDomain Poker v%s-%s/XSDK v%s  Copyright %s Domain "
-				"Entertainment\n",VERSION,revision,xsdk_ver,__DATE__+7);
+				"Entertainment\n",VERSION,revision,xsdk_ver,&__DATE__[7]);
 		printf("\nERROR: SBBSNODE Environment variable not set!\n");
 		return(1);
 	}
@@ -199,7 +199,7 @@ int main(int argc, char **argv)
 			cleanup=TRUE;
 		else {
 			printf("\nDomain Poker v%s-%s/XSDK v%s  Copyright %s Domain "
-					"Entertainment\n",VERSION,revision,xsdk_ver,__DATE__+7);
+					"Entertainment\n",VERSION,revision,xsdk_ver,&__DATE__[7]);
 			printf("Compiler: %s\n", compiler);
 			printf("\nUsage: dpoker [-L] [-CLEAN]\n");
 			printf("\nOptions:\n");
@@ -342,7 +342,7 @@ int main(int argc, char **argv)
     }
     cls();
     center_wargs("\1n\1gWelcome to Domain Poker v%s-%s",VERSION,revision);
-    center_wargs("\1n\1gCopyright %s Domain Entertainment", __DATE__+7);
+    center_wargs("\1n\1gCopyright %s Domain Entertainment", &__DATE__[7]);
 
     do {
         mnehigh=GREEN|HIGH; mnelow=GREEN;

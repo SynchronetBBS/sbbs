@@ -72,7 +72,7 @@ int main(int argc, char **argv)
     if(argc>1) {
         if(!stricmp(argv[1],"/?")) {
             printf("\r\nThe Beast's Domain v%s/XSDK %s  Copyright %s Domain "
-                    "Entertainment\r\n",VERSION,xsdk_ver,__DATE__+7);
+                    "Entertainment\r\n",VERSION,xsdk_ver,&__DATE__[7]);
             fputs("\r\nUsage: TBD /(switch)\r\n",stdout);
             fputs("\r\nWhere '/(switch)' is one or more of the following:\r\n",stdout);
             fputs("\r\n      /MAINT will force a daily maintenance run (this may "
@@ -138,7 +138,7 @@ int main(int argc, char **argv)
 
     cls();
     center_wargs("\1n\1gWelcome to The Beast's Domain v%s (rev %s)",VERSION,revision);
-    center_wargs("\1n\1gCopyright %s Domain Entertainment",__DATE__+7);
+    center_wargs("\1n\1gCopyright %s Domain Entertainment",&__DATE__[7]);
 
     if(fexist("tbd.sys")) printfile("tbd.sys");
 
