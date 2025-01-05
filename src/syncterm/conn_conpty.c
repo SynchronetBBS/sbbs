@@ -216,6 +216,7 @@ int conpty_connect(struct bbslist *bbs)
 	}
 	conn_api.wr_buf_size = BUFFER_SIZE;
 
+	terminate = false;
 	_beginthread(conpty_output_thread, 0, NULL);
 	_beginthread(conpty_input_thread, 0, NULL);
 
