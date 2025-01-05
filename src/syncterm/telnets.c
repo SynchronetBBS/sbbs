@@ -32,7 +32,7 @@ static int
 FlushData(CRYPT_SESSION sess)
 {
 	int ret = cryptFlushData(sess);
-	if (ret == CRYPT_ERROR_COMPLETE)
+	if (ret == CRYPT_ERROR_COMPLETE || ret == CRYPT_ERROR_READ)
 		telnets_active = false;
 	return ret;
 }
@@ -41,7 +41,7 @@ static int
 PopData(CRYPT_HANDLE e, void *buf, int len, int *copied)
 {
 	int ret = cryptPopData(e, buf, len, copied);
-	if (ret == CRYPT_ERROR_COMPLETE)
+	if (ret == CRYPT_ERROR_COMPLETE || ret == CRYPT_ERROR_READ)
 		telnets_active = false;
 	return ret;
 }
@@ -116,7 +116,7 @@ telnets_output_thread(void *args)
 				status = PushData(telnets_session, conn_api.wr_buf + sent, wr - sent, &ret);
 				pthread_mutex_unlock(&telnets_mutex);
 				if (cryptStatusError(status)) {
-					if (status == CRYPT_ERROR_COMPLETE) { /* connection closed */
+					if (status == CRYPT_ERROR_COMPLETE || status == CRYPT_ERROR_READ) { /* connection closed */
 						telnets_active = false;
 						break;
 					}

@@ -63,7 +63,7 @@ static int
 FlushData(CRYPT_SESSION sess)
 {
 	int ret = cryptFlushData(sess);
-	if (ret == CRYPT_ERROR_COMPLETE)
+	if (ret == CRYPT_ERROR_COMPLETE || ret == CRYPT_ERROR_READ)
 		ssh_complete = true;
 	return ret;
 }
@@ -74,7 +74,7 @@ PopData(CRYPT_HANDLE e, void *buf, int len, int *copied)
 	cryptSetAttribute(ssh_session, CRYPT_OPTION_NET_READTIMEOUT, 0);
 	int ret = cryptPopData(e, buf, len, copied);
 	cryptSetAttribute(ssh_session, CRYPT_OPTION_NET_READTIMEOUT, 30);
-	if (ret == CRYPT_ERROR_COMPLETE)
+	if (ret == CRYPT_ERROR_COMPLETE || ret == CRYPT_ERROR_READ)
 		ssh_complete = true;
 	return ret;
 }
