@@ -75,12 +75,11 @@ telnets_input_thread(void *args)
 		if (status == CRYPT_ERROR_TIMEOUT)
 			continue;
 		if (cryptStatusError(status)) {
-			if ((status == CRYPT_ERROR_COMPLETE) || (status == CRYPT_ERROR_READ)) { /* connection closed */
+			if (telnets_active) {
+				if ((status != CRYPT_ERROR_COMPLETE) && (status != CRYPT_ERROR_READ)) /* connection closed */
+					cryptlib_error_message(status, "recieving data");
 				telnets_active = false;
-				break;
 			}
-			cryptlib_error_message(status, "recieving data");
-			telnets_active = false;
 			break;
 		}
 		else {
@@ -116,12 +115,12 @@ telnets_output_thread(void *args)
 				status = PushData(telnets_session, conn_api.wr_buf + sent, wr - sent, &ret);
 				pthread_mutex_unlock(&telnets_mutex);
 				if (cryptStatusError(status)) {
-					if (status == CRYPT_ERROR_COMPLETE || status == CRYPT_ERROR_READ) { /* connection closed */
+					if (telnets_active) {
+						if (status != CRYPT_ERROR_COMPLETE && status != CRYPT_ERROR_READ) { /* connection closed */
+							cryptlib_error_message(status, "sending data");
+						}
 						telnets_active = false;
-						break;
 					}
-					cryptlib_error_message(status, "sending data");
-					telnets_active = false;
 					break;
 				}
 				sent += ret;

@@ -83,7 +83,7 @@ static int
 PushData(CRYPT_HANDLE e, void *buf, int len, int *copied)
 {
 	int ret = cryptPushData(e, buf, len, copied);
-	if (ret == CRYPT_ERROR_COMPLETE)
+	if (ret == CRYPT_ERROR_COMPLETE || ret == CRYPT_ERROR_WRITE)
 		ssh_complete = true;
 	return ret;
 }
@@ -370,12 +370,11 @@ ssh_output_thread(void *args)
 				}
 				if (cryptStatusError(status)) {
 					pthread_mutex_unlock(&ssh_mutex);
-					ssh_complete = true;
-					if ((status == CRYPT_ERROR_COMPLETE) || (status == CRYPT_ERROR_NOTFOUND)) { /* connection closed */
-						channel_gone = true;
-						break;
+					if (!ssh_complete) {
+						ssh_complete = true;
+						if ((status != CRYPT_ERROR_COMPLETE) && (status != CRYPT_ERROR_NOTFOUND)) /* connection closed */
+							cryptlib_error_message(status, "sending data");
 					}
-					cryptlib_error_message(status, "sending data");
 					channel_gone = true;
 					break;
 				}
@@ -414,10 +413,10 @@ sftp_send(uint8_t *buf, size_t sz, void *cb_data)
 		}
 		pthread_mutex_unlock(&ssh_mutex);
 		if (cryptStatusError(status)) {
-			if (status == CRYPT_ERROR_COMPLETE || status == CRYPT_ERROR_NOTFOUND) { /* connection closed */
-				break;
+			if (status != CRYPT_ERROR_COMPLETE && status != CRYPT_ERROR_NOTFOUND) { /* connection closed */
+				if (!ssh_complete)
+					cryptlib_error_message(status, "sending sftp data");
 			}
-			cryptlib_error_message(status, "sending sftp data");
 			break;
 		}
 		sent += ret;
