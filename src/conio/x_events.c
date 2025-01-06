@@ -553,6 +553,7 @@ fullscreen_geometry(int *x_org, int *y_org, int *width, int *height)
 			}
 		}
 #endif
+	}
 	if (root == 0)
 		return false;
 	if (x11.XGetGeometry(dpy, root, (void *)&newroot, &wx, &wy, &rw, &rh, (void *)&dummy, (void *)&dummy) == 0)
