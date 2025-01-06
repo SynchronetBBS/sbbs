@@ -407,7 +407,7 @@ static off_t js_socket_sendfilesocket(js_socket_private_t *p, int file)
 		}
 		if (rd == 0)
 			break;
-		size_t sent = 0;
+		ssize_t sent = 0;
 		while (sent < rd) {
 			ptrdiff_t wr = js_socket_sendsocket(p, buf + sent, rd - sent, false);
 			if (wr > 0) {
