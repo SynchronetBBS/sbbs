@@ -2274,7 +2274,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 				return str;
 			}
 			if(strcmp(sp, "FILE_WEB_PATH") == 0) {
-				char* p = "";
+				const char* p = "";
 				if(cfg.dir[current_file->dir]->vpath[0] == '\0') {
 					p = startup->web_file_vpath_prefix;
 					if(*p == '/')
