@@ -5,6 +5,7 @@
 #ifdef __unix__
 
 #include <signal.h>   // kill()
+#include <stdatomic.h>
 #include <sys/wait.h> // WEXITSTATUS
 #include <unistd.h>   /* _POSIX_VDISABLE - needed when termios.h is broken */
 
@@ -146,6 +147,7 @@
 #include "uifcinit.h"
 #include "window.h"
 extern int default_font;
+static atomic_bool terminated;
 
 #ifdef NEEDS_CFMAKERAW
 
@@ -315,7 +317,7 @@ pty_input_thread(void *args)
 
 	SetThreadName("PTY Input");
 	conn_api.input_thread_running = 1;
-	while (master != -1 && !conn_api.terminate) {
+	while (master != -1 && !conn_api.terminate && !terminated) {
 		if ((i = waitpid(child_pid, &status, WNOHANG)))
 			break;
 		FD_ZERO(&rds);
@@ -330,17 +332,18 @@ pty_input_thread(void *args)
 		}
 		if (rd == 1) {
 			rd = read(master, conn_api.rd_buf, conn_api.rd_buf_size);
-			if (rd < 0)
-				continue;
+			if (rd <= 0)
+				break;
 		}
 		buffered = 0;
-		while (buffered < rd) {
+		while (buffered < rd && !conn_api.terminate && !terminated) {
 			pthread_mutex_lock(&(conn_inbuf.mutex));
 			buffer = conn_buf_wait_free(&conn_inbuf, rd - buffered, 100);
 			buffered += conn_buf_put(&conn_inbuf, conn_api.rd_buf + buffered, buffer);
 			pthread_mutex_unlock(&(conn_inbuf.mutex));
 		}
 	}
+	terminated = true;
 	conn_api.input_thread_running = 2;
 }
 
@@ -359,7 +362,7 @@ pty_output_thread(void *args)
 
 	SetThreadName("PTY Output");
 	conn_api.output_thread_running = 1;
-	while (master != -1 && !conn_api.terminate) {
+	while (master != -1 && !conn_api.terminate && !terminated) {
 		if (waitpid(child_pid, &status, WNOHANG))
 			break;
 		pthread_mutex_lock(&(conn_outbuf.mutex));
@@ -369,7 +372,7 @@ pty_output_thread(void *args)
 			wr = conn_buf_get(&conn_outbuf, conn_api.wr_buf, conn_api.wr_buf_size);
 			pthread_mutex_unlock(&(conn_outbuf.mutex));
 			sent = 0;
-			while (master != -1 && sent < wr) {
+			while (master != -1 && sent < wr && !conn_api.terminate && !terminated) {
 				FD_ZERO(&wds);
 				FD_SET(master, &wds);
 				tv.tv_sec = 0;
@@ -382,8 +385,10 @@ pty_output_thread(void *args)
 				}
 				if (ret == 1) {
 					ret = write(master, conn_api.wr_buf + sent, wr - sent);
-					if (ret == -1)
-						continue;
+					if (ret <= 0) {
+						ret = -1;
+						break;
+					}
 					sent += ret;
 				}
 			}
@@ -394,6 +399,7 @@ pty_output_thread(void *args)
 		if (ret == -1)
 			break;
 	}
+	terminated = true;
 	conn_api.output_thread_running = 2;
 }
 
@@ -558,6 +564,7 @@ pty_connect(struct bbslist *bbs)
 	}
 	conn_api.wr_buf_size = BUFFER_SIZE;
 
+	terminated = false;
 	_beginthread(pty_output_thread, 0, NULL);
 	_beginthread(pty_input_thread, 0, NULL);
 
@@ -571,6 +578,7 @@ pty_close(void)
 	char   garbage[1024];
 	int oldmaster;
 
+	terminated = true;
 	conn_api.terminate = 1;
 	start = time(NULL);
 	kill(child_pid, SIGHUP);

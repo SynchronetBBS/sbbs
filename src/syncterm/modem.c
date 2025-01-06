@@ -2,6 +2,7 @@
 
 /* $Id: modem.c,v 1.32 2020/06/27 08:27:39 deuce Exp $ */
 
+#include <stdatomic.h>
 #include <stdbool.h>
 #include <stdlib.h>
 
@@ -16,6 +17,7 @@
 
 static COM_HANDLE com = COM_HANDLE_INVALID;
 static bool seven_bits = false;
+static atomic_bool terminated;
 
 void
 modem_input_thread(void *args)
@@ -31,7 +33,7 @@ modem_input_thread(void *args)
 		if ((comGetModemStatus(com) & COM_DSR) == 0)
 			monitor_dsr = false;
 	}
-	while (com != COM_HANDLE_INVALID && !conn_api.terminate) {
+	while (com != COM_HANDLE_INVALID && !conn_api.terminate && !terminated) {
 		rd = comReadBuf(com, (char *)conn_api.rd_buf, conn_api.rd_buf_size, NULL, 100);
 		// Strip high bits... we *should* check the parity
 		if (seven_bits) {
@@ -39,7 +41,7 @@ modem_input_thread(void *args)
 				conn_api.rd_buf[i] &= 0x7f;
 		}
 		buffered = 0;
-		while (com != COM_HANDLE_INVALID && buffered < rd) {
+		while (com != COM_HANDLE_INVALID && buffered < rd && !conn_api.terminate && !terminated) {
 			pthread_mutex_lock(&(conn_inbuf.mutex));
 			buffer = conn_buf_wait_free(&conn_inbuf, rd - buffered, 100);
 			buffered += conn_buf_put(&conn_inbuf, conn_api.rd_buf + buffered, buffer);
@@ -54,6 +56,7 @@ modem_input_thread(void *args)
 				break;
 		}
 	}
+	terminated = true;
 	if (args != NULL)
 		comLowerDTR(com);
 	conn_api.input_thread_running = 2;
@@ -74,7 +77,7 @@ modem_output_thread(void *args)
 		if ((comGetModemStatus(com) & COM_DSR) == 0)
 			monitor_dsr = false;
 	}
-	while (com != COM_HANDLE_INVALID && !conn_api.terminate) {
+	while (com != COM_HANDLE_INVALID && !conn_api.terminate && !terminated) {
 		pthread_mutex_lock(&(conn_outbuf.mutex));
 		wr = conn_buf_wait_bytes(&conn_outbuf, 1, 100);
 		if (wr) {
@@ -85,7 +88,7 @@ modem_output_thread(void *args)
 					conn_api.wr_buf[i] &= 0x7f;
 			}
 			sent = 0;
-			while (com != COM_HANDLE_INVALID && sent < wr && !conn_api.terminate) {
+			while (com != COM_HANDLE_INVALID && sent < wr && !conn_api.terminate && !terminated) {
 				// coverity[overflow:SUPPRESS]
 				ret = comWriteBuf(com, conn_api.wr_buf + sent, wr - sent);
 				if (ret > 0)
@@ -106,6 +109,7 @@ modem_output_thread(void *args)
 				break;
 		}
 	}
+	terminated = true;
 	conn_api.output_thread_running = 2;
 }
 
@@ -382,6 +386,7 @@ modem_connect(struct bbslist *bbs)
 	}
 	conn_api.wr_buf_size = BUFFER_SIZE;
 
+	terminated = false;
 	if ((bbs->conn_type == CONN_TYPE_SERIAL) || (bbs->conn_type == CONN_TYPE_SERIAL_NORTS)) {
 		_beginthread(modem_output_thread, 0, (void *)-1);
 		_beginthread(modem_input_thread, 0, (void *)-1);
@@ -419,6 +424,7 @@ modem_close(void)
 	char   garbage[1024];
 	COM_HANDLE oldcom;
 
+	terminated = true;
 	conn_api.terminate = 1;
 
 	if ((comGetModemStatus(com) & COM_DCD) == 0) /* DCD already low */

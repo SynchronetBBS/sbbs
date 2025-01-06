@@ -2,6 +2,7 @@
 
 #ifndef _RLOGIN_H_
 #define _RLOGIN_H_
+void rlogin_clear_terminated(void);
 int rlogin_connect(struct bbslist *bbs);
 int rlogin_close(void);
 void rlogin_input_thread(void *args);
