@@ -453,7 +453,9 @@ bool sbbs_t::sendfile(file_t* f, char prot, bool autohang)
 	SAFEPRINTF2(str, "from %s %s"
 		,cfg.lib[cfg.dir[f->dir]->lib]->sname
 		,cfg.dir[f->dir]->sname);
+	current_file = f;
 	bool result = sendfile(getfilepath(&cfg, f, path), prot, str, autohang);
+	current_file = nullptr;
 	if(result == true) {
 		if(cfg.dir[f->dir]->misc&DIR_TFREE && cur_cps)
 			starttime += f->size / (ulong)cur_cps;

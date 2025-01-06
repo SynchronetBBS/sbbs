@@ -1096,6 +1096,8 @@ const char* prot_menu_file[] = {
 
 char* sbbs_t::xfer_prot_menu(enum XFER_TYPE type, user_t* user, char* keys, size_t size)
 {
+	if(type == XFER_DOWNLOAD && current_file != nullptr)
+		menu("download", P_NOERROR);
 	size_t count = 0;
 	bool menu_used = menu(prot_menu_file[type], P_NOERROR);
 	if(user == nullptr)
