@@ -1,4 +1,8 @@
+ifdef win
+SYNCTERM	=	$(EXEODIR)$(DIRSEP)syncterm$(SOFILE)
+else
 SYNCTERM	=	$(EXEODIR)$(DIRSEP)syncterm$(EXEFILE)
+endif
 
 all: xpdev-mt ciolib-mt uifc-mt sftp-mt $(MTOBJODIR) $(EXEODIR) $(SYNCTERM)
 

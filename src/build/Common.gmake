@@ -351,7 +351,7 @@ else
   EXEFILE		:=
  endif
 endif
-ifeq ($(os),win32)
+ifdef win
  SOFILE		:= .dll
 else
  SOFILE		:= .so

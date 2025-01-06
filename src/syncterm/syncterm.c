@@ -2328,3 +2328,43 @@ ciolib_to_screen(int ciolib)
 	}
 	return SCREEN_MODE_CURRENT;
 }
+
+#if defined(_WIN32) && defined(DLLIFY)
+__declspec(dllexport) int __cdecl stub_main(int argc, char *argv[], char **env)
+{
+	int n;
+	char *bufp, *appname;
+
+	/* Get the class name from argv[0] */
+	appname = argv[0];
+	if ( (bufp=strrchr(argv[0], '\\')) != NULL ) {
+		appname = bufp+1;
+	} else
+	if ( (bufp=strrchr(argv[0], '/')) != NULL ) {
+		appname = bufp+1;
+	}
+
+	if ( (bufp=strrchr(appname, '.')) == NULL )
+		n = strlen(appname);
+	else
+		n = (bufp-appname);
+
+	bufp = (char *)alloca(n+1);
+	if ( bufp == NULL ) {
+		return 1;
+	}
+	strncpy(bufp, appname, n);
+	bufp[n] = '\0';
+	ciolib_appname = bufp;
+
+	/* Run the application main() code */
+	n=CIOLIB_main(argc, argv);
+
+	/* Exit cleanly, calling atexit() functions */
+	exit(n);
+
+	/* Hush little compiler, don't you cry... */
+	return(n);
+}
+
+#endif

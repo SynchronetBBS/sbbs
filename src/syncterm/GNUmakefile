@@ -40,13 +40,14 @@ else
 endif
 
 ifdef win
- CFLAGS += -I${3RDP_ROOT}/win32.release/libjxl/include -DJXL_THREADS_STATIC_DEFINE -DJXL_STATIC_DEFINE
+ CFLAGS += -I${3RDP_ROOT}/win32.release/libjxl/include -DJXL_THREADS_STATIC_DEFINE -DJXL_STATIC_DEFINE -DDLLIFY
  LDFLAGS += -L${3RDP_ROOT}/${os}.release/libjxl/lib -static-libstdc++ -static-libgcc
  EXTRA_LIBS += -ljxl
  EXTRA_LIBS += -ljxl_threads
  EXTRA_LIBS += -lbrotlidec
  EXTRA_LIBS += -lbrotlicommon
  EXTRA_LIBS += -lhwy
+ EXTRA_LIBS += -mdll
  CFLAGS += -DWITH_JPEG_XL -DWITH_STATIC_JXL
  CFLAGS += -DWITH_JPEG_XL_THREADS
  OBJS += $(MTOBJODIR)$(DIRSEP)libjxl$(OFILE)
@@ -157,6 +158,10 @@ $(MTOBJODIR)$(DIRSEP)ciolib_res$(OFILE): ${CIOLIB-MT}
 $(SYNCTERM): $(CRYPT_DEPS) $(EXEODIR) $(OBJS) $(BUILD_DEPENDS)
 	@echo Linking $@
 	${QUIET}$(CXX) $(LDFLAGS) $(MT_LDFLAGS) $(OBJS) -o $@ $(UIFC-MT_LIBS) $(EXTRA_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS) $(ENCODE_LIBS) $(HASH_LIBS)
+ifdef win
+	${QUIET}$(CXX) $(LDFLAGS) $(MT_LDFLAGS) win32_stub.c -o $(EXEODIR)/syncterm.exe -L$(EXEODIR) -lsyncterm -mwindows
+	${QUIET}$(CXX) $(LDFLAGS) $(MT_LDFLAGS) win32_stub.c -o $(EXEODIR)/syncterm.com -L$(EXEODIR) -lsyncterm -mconsole
+endif
 ifeq ($(os),darwin)
 	-${QUIET}mkdir $(EXEODIR)/SyncTERM.app
 	-${QUIET}mkdir $(EXEODIR)/SyncTERM.app/Contents
