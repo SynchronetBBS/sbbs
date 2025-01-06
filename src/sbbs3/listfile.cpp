@@ -1016,7 +1016,9 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 				}
 				continue;
 			}
+			current_file = f;
 			xfer_prot_menu(XFER_DOWNLOAD, &useron, keys, sizeof keys);
+			current_file = nullptr;
 			sync();
 			mnemonics(text[ProtocolBatchQuitOrNext]);
 			SAFECAT(keys, "BN\r");
