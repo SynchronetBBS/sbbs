@@ -1,5 +1,6 @@
 #define WIN32_LEAN_AND_MEAN
 #include <stdatomic.h>
+#include <stdbool.h>
 #include <windows.h>
 #include <wincon.h>
 
@@ -7,23 +8,59 @@
 
 #include "bbslist.h"
 #include "conn.h"
+#include "fonts.h"
 #include "uifcinit.h"
 #include "window.h"
 
 HANDLE inputRead, inputWrite, outputRead, outputWrite;
 PROCESS_INFORMATION pi;
 HPCON cpty;
+enum ciolib_codepage codepage;
 
 static atomic_bool terminate;
+
+static size_t
+get_utf8_span(const uint8_t *b, size_t sz)
+{
+	size_t ret = 0;
+	const uint8_t *last = &b[sz - 1];
+
+	while (b <= last) {
+		if ((*b & 0x80) == 0) {
+			ret++;
+			b++;
+		}
+		else if ((*b & 0xe0) == 0xc0) {
+			b+= 2;
+			if ((b + 1) <= (last))
+				ret += 2;
+		}
+		else if ((*b & 0xf0) == 0xe0) {
+			b+= 3;
+			if ((b + 2) <= (last))
+				ret += 3;
+		}
+		else if ((*b & 0xf8) == 0xf0) {
+			b+= 4;
+			if ((b + 3) <= (last))
+				ret += 4;
+		}
+		else
+			return SIZE_MAX;
+	}
+	return ret;
+}
 
 static void
 conpty_input_thread(void *args)
 {
 	DWORD  rd;
-	int    buffered;
+	size_t buffered;
 	size_t buffer;
 	int    i;
 	DWORD  ec;
+	size_t fill = 0;
+	size_t utf8_span = 0;
 
 	SetThreadName("PTY Input");
 	conn_api.input_thread_running = 1;
@@ -35,16 +72,28 @@ conpty_input_thread(void *args)
 		else {
 			break;
 		}
-		if (!ReadFile(outputRead, conn_api.rd_buf, conn_api.rd_buf_size, &rd, NULL)) {
+		if (!ReadFile(outputRead, conn_api.rd_buf + fill, conn_api.rd_buf_size - fill, &rd, NULL)) {
 			break;
 		}
+		fill += rd;
+		utf8_span = get_utf8_span(conn_api.rd_buf, fill);
+		if (utf8_span == SIZE_MAX)
+			break;
+		size_t sz;
+		char *cps = utf8_to_cp(codepage, conn_api.rd_buf, '?', utf8_span, &sz);
+		if (cps == NULL)
+			break;
 		buffered = 0;
-		while (!terminate && !conn_api.terminate && buffered < rd) {
+		while (!terminate && !conn_api.terminate && buffered < sz) {
 			pthread_mutex_lock(&(conn_inbuf.mutex));
-			buffer = conn_buf_wait_free(&conn_inbuf, rd - buffered, 100);
-			buffered += conn_buf_put(&conn_inbuf, conn_api.rd_buf + buffered, buffer);
+			buffer = conn_buf_wait_free(&conn_inbuf, sz - buffered, 100);
+			buffered += conn_buf_put(&conn_inbuf, cps + buffered, buffer);
 			pthread_mutex_unlock(&(conn_inbuf.mutex));
 		}
+		fill -= utf8_span;
+		if (fill)
+			memmove(conn_api.rd_buf, &conn_api.rd_buf[utf8_span], fill);
+		free(cps);
 	}
 	terminate = true;
 	conn_api.input_thread_running = 2;
@@ -55,7 +104,6 @@ conpty_output_thread(void *args)
 {
 	int   wr;
 	DWORD ret;
-	int   sent;
 	DWORD ec;
 
 	SetThreadName("PTY Output");
@@ -74,19 +122,25 @@ conpty_output_thread(void *args)
 		if (wr) {
 			wr = conn_buf_get(&conn_outbuf, conn_api.wr_buf, conn_api.wr_buf_size);
 			pthread_mutex_unlock(&(conn_outbuf.mutex));
-			sent = 0;
-			while (!terminate && !conn_api.terminate && sent < wr) {
-				if (!WriteFile(inputWrite, conn_api.wr_buf + sent, wr - sent, &ret, NULL)) {
+			size_t sz;
+			uint8_t *utf = cp_to_utf8(codepage, conn_api.wr_buf, wr, &sz);
+			if (utf == NULL)
+				break;
+			size_t sent = 0;
+			while (!terminate && !conn_api.terminate && sent < sz) {
+				if (!WriteFile(inputWrite, utf + sent, sz - sent, &ret, NULL)) {
 					terminate = true;
 					break;
 				}
 				sent += ret;
 			}
+			free(utf);
 		}
 		else {
 			pthread_mutex_unlock(&(conn_outbuf.mutex));
 		}
 	}
+	terminate = true;
 	conn_api.output_thread_running = 2;
 }
 
@@ -96,6 +150,7 @@ int conpty_connect(struct bbslist *bbs)
 
 	int w, h;
 	get_term_win_size(&w, &h, NULL, NULL, &bbs->nostatus);
+	codepage = conio_fontdata[find_font_id(bbs->font)].cp;
 
 	COORD size = {
 		.X = w,
