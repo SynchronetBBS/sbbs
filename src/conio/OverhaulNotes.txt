@@ -206,3 +206,15 @@ Connection interface: For "remote" connections
                         - If so, this is where the "line at a time" telnet mode
                           needs to live, which is awkward.
 Unconnected UI: Settings, List, etc.
+
+Having a uint32_t (or uint64_t if needed) representation of a sequence will
+allow using binsearch() to find the handler.
+5 bits - one to indicate each of the following is populated
+       - if this bit isn't set, the corresponding bits must be zero
+1 bit  - Indicates more than one intermediate character
+5 bits for first char (ctrl function C0)
+6 bits for second char (ctrl code C1)
+2 bits for private parameter character
+4 bits for intermediate character
+6 bits for final character
+= 29 bits
