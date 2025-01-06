@@ -704,8 +704,8 @@ extern "C" int notify(scfg_t* cfg, uint usernumber, const char* subject, const c
 	char* msgsubj = strip_ctrl(subject, NULL);
 	smb_hfield_str(&msg, SUBJECT, msgsubj);
 	free(msgsubj);
-	add_msg_ids(cfg, &smb, &msg, /* remsg: */NULL);
 	if(msgbase_open(cfg, &smb, INVALID_SUB, &storage, &dupechk_hashes, &xlat) == SMB_SUCCESS) {
+		add_msg_ids(cfg, &smb, &msg, /* remsg: */NULL);
 		smb_addmsg(&smb, &msg, storage, dupechk_hashes, xlat, (uchar*)text, /* tail: */NULL);
 		smb_close(&smb);
 	}
