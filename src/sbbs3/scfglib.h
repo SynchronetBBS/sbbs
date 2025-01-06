@@ -81,6 +81,7 @@ DLLEXPORT bool	is_valid_xtrnsec(scfg_t*, int);
 DLLEXPORT char *	sub_newsgroup_name(scfg_t*, sub_t*, char*, size_t);
 DLLEXPORT char *	sub_area_tag(scfg_t*, sub_t*, char*, size_t);
 DLLEXPORT char *	dir_area_tag(scfg_t*, dir_t*, char*, size_t);
+DLLEXPORT char *	dir_vpath(scfg_t*, dir_t* dir, char* path, size_t);
 
 uint nearest_sysfaddr_index(scfg_t*, faddr_t*);
 faddr_t* nearest_sysfaddr(scfg_t*, faddr_t*);

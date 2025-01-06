@@ -26,6 +26,7 @@
 #include "cp437defs.h"
 #include "ver.h"
 #include "petdefs.h"
+#include "filedat.h"
 
 #if defined(_WINSOCKAPI_)
 	extern WSADATA WSAData;
@@ -2266,6 +2267,20 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 				return cfg.dir[current_file->dir]->code;
 			if(strcmp(sp, "FILE_DIR_NUM") == 0) {
 				safe_snprintf(str, maxlen, "%u", getusrdir(current_file->dir));
+				return str;
+			}
+			if(strcmp(sp, "FILE_FTP_PATH") == 0) {
+				getfilevpath(&cfg, current_file, str, maxlen);
+				return str;
+			}
+			if(strcmp(sp, "FILE_WEB_PATH") == 0) {
+				char* p = "";
+				if(cfg.dir[current_file->dir]->vpath[0] == '\0') {
+					p = startup->web_file_vpath_prefix;
+					if(*p == '/')
+						++p;
+				}
+				safe_snprintf(str, maxlen, "%s%s", p, getfilevpath(&cfg, current_file, tmp, sizeof tmp));
 				return str;
 			}
 		}

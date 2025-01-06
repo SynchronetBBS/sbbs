@@ -1764,8 +1764,8 @@ void dir_cfg(int libnum)
 	char* dir_transfer_path_help =
 		"`Transfer File Path:`\n"
 		"\n"
-		"This is the default storage path for files uploaded-to and available for\n"
-		"download-from this directory.\n"
+		"This is the physical storage path for files uploaded-to and available\n"
+		"for download-from this directory.\n"
 		"\n"
 		"If this setting is blank, the internal-code (lower-cased) is used as the\n"
 		"default directory name.\n"
@@ -1936,6 +1936,13 @@ void dir_cfg(int libnum)
 			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s%s","Internal Code"
 				,cfg.lib[cfg.dir[i]->lib]->code_prefix, cfg.dir[i]->code_suffix);
 			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","FidoNet Area Tag",area_tag);
+			if(cfg.dir[i]->vpath[0] != '\0')
+				SAFECOPY(str, cfg.dir[i]->vpath);
+			else {
+				init_vdir(&cfg, cfg.dir[i]);
+				SAFEPRINTF(str, "[%s]", dir_vpath(&cfg, cfg.dir[i], path, sizeof path));
+			}
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Virtual File Path", str);
 			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Access Requirements"
 				,cfg.dir[i]->arstr);
 			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Upload Requirements"
@@ -1964,8 +1971,7 @@ void dir_cfg(int libnum)
 				SAFECOPY(str, path);
 			else
 				SAFEPRINTF(str, "[%s]", path);
-			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Transfer File Path"
-				,str);
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Transfer File Path", str);
 			if(cfg.dir[i]->maxfiles)
 				sprintf(str, "%u", cfg.dir[i]->maxfiles);
 			else
@@ -2061,83 +2067,104 @@ void dir_cfg(int libnum)
 						SAFECOPY(cfg.dir[i]->area_tag, str);
 					break;
 				case 4:
+					uifc.helpbuf=
+						"`Virtual File Path:`\n"
+						"\n"
+						"This is the path, without leading or trailing slashes, where the files\n"
+						"in this directory will appear for users of the Synchronet FTP and Web\n"
+						"servers.\n"
+						"\n"
+						"If no path is specified here, then one is automatically generated and\n"
+						"displayed here within `[`brackets`]` for your information.\n"
+						"\n"
+						"Automatically generated virtual paths use the `Virtual Sub-directories`\n"
+						"naming convention as selected for the parent File Library.\n"
+						"\n"
+						"Setting this path implies that the sysop has `also` set corresponding\n"
+						"FTP and Web Server directory aliases (i.e. in their `ftpalias.cfg` and\n"
+						"`web_alias.ini` files).\n"
+						;
+					uifc.input(WIN_L2R|WIN_SAV,0,17,"Virtual File Path"
+						,cfg.dir[i]->vpath, sizeof(cfg.dir[i]->vpath) - 1, K_EDIT | K_NOSPACE);
+					break;
+				case 5:
 					sprintf(str,"%s Access",cfg.dir[i]->sname);
 					getar(str,cfg.dir[i]->arstr);
 					break;
-				case 5:
+				case 6:
 					sprintf(str,"%s Upload",cfg.dir[i]->sname);
 					getar(str,cfg.dir[i]->ul_arstr);
 					break;
-				case 6:
+				case 7:
 					sprintf(str,"%s Download",cfg.dir[i]->sname);
 					getar(str,cfg.dir[i]->dl_arstr);
 					break;
-				case 7:
+				case 8:
 					sprintf(str,"%s Operator",cfg.dir[i]->sname);
 					getar(str,cfg.dir[i]->op_arstr);
 					break;
-				case 8:
+				case 9:
 					sprintf(str,"%s Exemption",cfg.dir[i]->sname);
 					getar(str,cfg.dir[i]->ex_arstr);
 					break;
-				case 9:
+				case 10:
 					uifc.helpbuf = dir_transfer_path_help;
 					uifc.input(WIN_L2R|WIN_SAV,0,17,"Transfer File Path"
 						,cfg.dir[i]->path,sizeof(cfg.dir[i]->path)-1,K_EDIT);
 					break;
-				case 10:
+				case 11:
 					uifc.helpbuf = max_files_help;
 					sprintf(str,"%u",cfg.dir[i]->maxfiles);
 					uifc.input(WIN_L2R|WIN_SAV,0,17,"Maximum Number of Files (0=Unlimited)"
 						,str,5,K_EDIT|K_NUMBER);
 					cfg.dir[i]->maxfiles=atoi(str);
 					break;
-				case 11:
+				case 12:
 					sprintf(str,"%u",cfg.dir[i]->maxage);
 					uifc.helpbuf = max_age_help;
 					uifc.input(WIN_MID|WIN_SAV,0,17,"Maximum Age of Files (in days)"
 						,str,5,K_EDIT|K_NUMBER);
 					cfg.dir[i]->maxage=atoi(str);
 					break;
-				case 12:
+				case 13:
 					uifc.helpbuf = up_pct_help;
 					uifc.input(WIN_MID|WIN_SAV,0,0
 						,"Percentage of Credits to Credit Uploader on Upload"
 						,ultoa(cfg.dir[i]->up_pct,tmp,10),4,K_EDIT|K_NUMBER);
 					cfg.dir[i]->up_pct=atoi(tmp);
 					break;
-				case 13:
+				case 14:
 					uifc.helpbuf = dn_pct_help;
 					uifc.input(WIN_MID|WIN_SAV,0,0
 						,"Percentage of Credits to Credit Uploader on Download"
 						,ultoa(cfg.dir[i]->dn_pct,tmp,10),4,K_EDIT|K_NUMBER);
 					cfg.dir[i]->dn_pct=atoi(tmp);
 					break;
-				case 14:
+				case 15:
 					dir_toggle_options(cfg.dir[i]);
 					break;
-			case 15:
-				while(1) {
-					n=0;
-					snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Extensions Allowed"
-						,cfg.dir[i]->exts);
-					if(!cfg.dir[i]->data_dir[0])
-						sprintf(str,"[%sdirs/]",cfg.data_dir);
-					else
-						strcpy(str,cfg.dir[i]->data_dir);
-					snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Data Directory"
-						,str);
-					snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Upload Semaphore File"
-						,cfg.dir[i]->upload_sem);
-					snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Sort Value and Direction"
-						,file_sort_desc[cfg.dir[i]->sort]);
-					snprintf(opt[n++], MAX_OPLN, "%-27.27sNow %u / Was %u","Directory Index", i, cfg.dir[i]->dirnum);
-					opt[n][0]=0;
-					uifc.helpbuf=
-						"`Directory Advanced Options:`\n"
-						"\n"
-						"This is the advanced options menu for the selected file directory.\n"
-					;
+				case 16:
+					while(1) {
+						n=0;
+						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Extensions Allowed"
+							,cfg.dir[i]->exts);
+						if(!cfg.dir[i]->data_dir[0])
+							sprintf(str,"[%sdirs/]",cfg.data_dir);
+						else
+							strcpy(str,cfg.dir[i]->data_dir);
+						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Data Directory"
+							,str);
+						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Upload Semaphore File"
+							,cfg.dir[i]->upload_sem);
+						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Sort Value and Direction"
+							,file_sort_desc[cfg.dir[i]->sort]);
+						snprintf(opt[n++], MAX_OPLN, "%-27.27sNow %u / Was %u","Directory Index", i, cfg.dir[i]->dirnum);
+						opt[n][0]=0;
+						uifc.helpbuf=
+							"`Directory Advanced Options:`\n"
+							"\n"
+							"This is the advanced options menu for the selected file directory.\n"
+							;
 						n=uifc.list(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT,3,4,66,&adv_dflt,0
 							,"Advanced Options",opt);
 						if(n==-1)
@@ -2174,7 +2201,7 @@ void dir_cfg(int libnum)
 								break;
 						}
 					}
-				break;
+					break;
 			}
 		}
 	}

@@ -181,7 +181,7 @@ set_file_properties(JSContext *cx, JSObject* obj, file_t* f, enum file_detail de
 		|| !JS_DefineProperty(cx, obj, "name", STRING_TO_JSVAL(js_str), NULL, NULL, flags))
 		return false;
 
-	if((js_str = JS_NewStringCopyZ(cx, getfilevpath(scfg, f, path))) == NULL
+	if((js_str = JS_NewStringCopyZ(cx, getfilevpath(scfg, f, path, sizeof path))) == NULL
 		|| !JS_DefineProperty(cx, obj, "vpath", STRING_TO_JSVAL(js_str), NULL, NULL, flags | JSPROP_READONLY))
 	return false;
 

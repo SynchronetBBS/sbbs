@@ -308,6 +308,7 @@ bool read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 			cfg->lib[cfg->dir[i]->lib]->offline_dir=i;
 
 		init_vdir(cfg, cfg->dir[i]);
+		SAFECOPY(cfg->dir[i]->vpath, iniGetString(section, NULL, "vpath", "", value));
 
 		SAFECOPY(cfg->dir[i]->arstr, iniGetString(section, NULL, "ars", "", value));
 		SAFECOPY(cfg->dir[i]->ul_arstr, iniGetString(section, NULL, "upload_ars", "", value));

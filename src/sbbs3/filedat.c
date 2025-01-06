@@ -634,13 +634,14 @@ char* getfilepath(scfg_t* cfg, file_t* f, char* path)
 	return path;
 }
 
-char* getfilevpath(scfg_t* cfg, file_t* f, char* path)
+char* getfilevpath(scfg_t* cfg, file_t* f, char* path, size_t size)
 {
+	char vpath[LEN_DIR + 1];
 	const char* name = f->name == NULL ? f->file_idx.name : f->name;
 	if(!is_valid_dirnum(cfg, f->dir))
 		return "";
-	safe_snprintf(path, MAX_PATH, "%s/%s/%s"
-		,cfg->lib[cfg->dir[f->dir]->lib]->vdir, cfg->dir[f->dir]->vdir, name);
+	safe_snprintf(path, size, "%s/%s"
+		,dir_vpath(cfg, cfg->dir[f->dir], vpath, sizeof vpath), name);
 	return path;
 }
 

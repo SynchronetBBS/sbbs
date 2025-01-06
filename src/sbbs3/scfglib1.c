@@ -976,3 +976,16 @@ char* dir_area_tag(scfg_t* cfg, dir_t* dir, char* str, size_t size)
 	strupr(str);
 	return str;
 }
+
+/****************************************************************************/
+/* Returns virtual path for a file directory, without trailing slash		*/
+/****************************************************************************/
+char* dir_vpath(scfg_t* cfg, dir_t* dir, char* path, size_t size)
+{
+	if(dir->vpath[0] != '\0')
+		return dir->vpath;
+	else
+		safe_snprintf(path, size, "%s/%s"
+			,cfg->lib[dir->lib]->vdir, dir->vdir);
+	return path;
+}
