@@ -48,6 +48,7 @@ char tmp[256];
 char error[256];
 char* area_sort_desc[] = { "Index Position", "Long Name", "Short Name", "Internal Code Suffix", NULL };
 static char title[128];
+size_t title_len;
 const char* hostname = NULL;
 int ciolib_mode = CIOLIB_MODE_AUTO;
 enum text_modes video_mode = LCD80X25;
@@ -406,10 +407,10 @@ void display_filename(BOOL force)
 {
 	static char last[MAX_PATH + 1];
 	const char* fname = cfg.filename;
-	if(strlen(fname) + 30 > uifc.scrn_width)
+	if(strlen(fname) + title_len + 5 > uifc.scrn_width)
 		fname = getfname(fname);
 	if(force || strcmp(last, fname) != 0)
-		uifc.printf(29, 1, uifc.bclr|(uifc.cclr<<4), "%*s", uifc.scrn_width - 30, fname);
+		uifc.printf(title_len + 4, 1, uifc.bclr|(uifc.cclr<<4), "%*s", uifc.scrn_width - (title_len + 5), fname);
 	SAFECOPY(last, fname);
 }
 
@@ -764,6 +765,7 @@ int main(int argc, char **argv)
 		printf(" USCRN (len=%d) failed!\n",uifc.scrn_len+1);
 		bail(1);
 	}
+	title_len = strlen(title);
 
 	SAFEPRINTF(cfg_fname, "%smain.ini", cfg.ctrl_dir);
 	if(!fexist(cfg_fname)) {
