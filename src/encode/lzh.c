@@ -437,20 +437,27 @@ static bool lzh_update(huffman_t* huff, uint16_t c)
 		/*
 		 * If we now have a greater freq than the next node...
 		 * and are not already the last node
+		 * 
+		 * The first comparison is not stricly necessary, but
+		 * it shuts up Coverity since Coverity doesn't know that
+		 * freq[LZH_TABLE_SZ] can never be less than tmp.
+		 * 
+		 * It also prevents Coverity from thinking that c may
+		 * be UINT16_MAX, so c + 1 overflows.
 		 */
-		if (tmp > huff->freq[c + 1]) {
+		if (c < LZH_ROOT && tmp > huff->freq[c + 1]) {
 			/*
 			 * Find the last node after the current one
 			 * that has a lower frequency than our new one
 			 *
-			 * There's a sentry at LZH_TABLE_SZ, so we can't
-			 * "find" that one (and we don't actually need
-			 * the second test here)
+			 * There's a sentry at LZH_TABLE_SZ (one after
+			 * LZH_ROOT), so we can't "find" that one (and
+			 * we don't actually need the second test here)
 			 *
 			 * We can do the range check second because
 			 * huff->freq[LZH_TABLE_SZ] is valid
 			 */
-			for (l = c + 1; tmp > huff->freq[l + 1] && l < (LZH_TABLE_SZ - 1); l++)
+			for (l = c + 1; tmp > huff->freq[l + 1] && l < LZH_ROOT; l++)
 				;
 
 			// Now swap nodes
