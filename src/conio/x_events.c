@@ -469,92 +469,92 @@ fullscreen_geometry(int *x_org, int *y_org, int *width, int *height)
 	XineramaScreenInfo *xsi;
 #endif
 
-	if (win == 0)
-		return false;
-
+	if (win != 0) {
 #if defined(WITH_XRANDR) || defined(WITH_XINERAMA)
-	if (x11.XGetGeometry(dpy, win, (void *)&newroot, &wx, &wy, &rw, &rh, (void *)&dummy, (void *)&dummy) == 0)
-		return false;
+		if (x11.XGetGeometry(dpy, win, (void *)&newroot, &wx, &wy, &rw, &rh, (void *)&dummy, (void *)&dummy) == 0)
+			return false;
 
-	x11.XTranslateCoordinates(dpy, win, newroot, wx, wy, &cx, &cy, &cr);
-	cx += rw / 2;
-	cy += rh / 2;
+		x11.XTranslateCoordinates(dpy, win, newroot, wx, wy, &cx, &cy, &cr);
+		cx += rw / 2;
+		cy += rh / 2;
 #endif
 
 #ifdef WITH_XRANDR
-	// We likely don't actually need Ximerama... this is always better and almost certainly present
-	if (xrandr_found) {
-		searched = 0;
-		found = false;
-		while (searched < 10 && found == false) {
-			searched++;
-			if (xrrsr == NULL)
-				xrrsr = x11.XRRGetScreenResources(dpy, newroot);
-			if (xrrsr == NULL)
-				break;
-			for (i = 0; i < xrrsr->ncrtc; i++) {
+		// We likely don't actually need Ximerama... this is always better and almost certainly present
+		if (xrandr_found) {
+			searched = 0;
+			found = false;
+			while (searched < 10 && found == false) {
+				searched++;
+				if (xrrsr == NULL)
+					xrrsr = x11.XRRGetScreenResources(dpy, newroot);
+				if (xrrsr == NULL)
+					break;
+				for (i = 0; i < xrrsr->ncrtc; i++) {
+					if (xrrci != NULL)
+						x11.XRRFreeCrtcInfo(xrrci);
+					xrrci = x11.XRRGetCrtcInfo(dpy, xrrsr, xrrsr->crtcs[i]);
+					if (xrrci == NULL) {
+						x11.XRRFreeScreenResources(xrrsr);
+						xrrsr = NULL;
+						break;
+					}
+					if (cx >= xrrci->x && cx < xrrci->x + xrrci->width
+					    && cy >= xrrci->y && cy < xrrci->y + xrrci->height) {
+						found = true;
+						break;
+					}
+				}
+			}
+			if (xrrsr != NULL && !found) {
 				if (xrrci != NULL)
 					x11.XRRFreeCrtcInfo(xrrci);
-				xrrci = x11.XRRGetCrtcInfo(dpy, xrrsr, xrrsr->crtcs[i]);
-				if (xrrci == NULL) {
-					x11.XRRFreeScreenResources(xrrsr);
-					xrrsr = NULL;
-					break;
-				}
-				if (cx >= xrrci->x && cx < xrrci->x + xrrci->width
-				    && cy >= xrrci->y && cy < xrrci->y + xrrci->height) {
+				xrrci = x11.XRRGetCrtcInfo(dpy, xrrsr, xrrsr->crtcs[0]);
+				if (xrrci != NULL)
 					found = true;
-					break;
-				}
+			}
+			if (found) {
+				if (x_org)
+					*x_org = xrrci->x;
+				if (y_org)
+					*y_org = xrrci->y;
+				if (width)
+					*width = xrrci->width;
+				if (height)
+					*height = xrrci->height;
+				if (xrrci != NULL)
+					x11.XRRFreeCrtcInfo(xrrci);
+				return true;
 			}
 		}
-		if (xrrsr != NULL && !found) {
-			if (xrrci != NULL)
-				x11.XRRFreeCrtcInfo(xrrci);
-			xrrci = x11.XRRGetCrtcInfo(dpy, xrrsr, xrrsr->crtcs[0]);
-			if (xrrci != NULL)
-				found = true;
-		}
-		if (found) {
-			if (x_org)
-				*x_org = xrrci->x;
-			if (y_org)
-				*y_org = xrrci->y;
-			if (width)
-				*width = xrrci->width;
-			if (height)
-				*height = xrrci->height;
-			if (xrrci != NULL)
-				x11.XRRFreeCrtcInfo(xrrci);
-			return true;
-		}
-	}
 #endif
 #ifdef WITH_XINERAMA
-	if (xinerama_found) {
-		// NOTE: Xinerama is limited to a short for the entire screen dimensions.
-		if ((xsi = x11.XineramaQueryScreens(dpy, &nscrn)) != NULL && nscrn != 0) {
-			for (i = 0; i < nscrn; i++) {
-				if (cx >= xsi[i].x_org && cx < xsi[i].x_org + xsi[i].width
-				    && cy >= xsi[i].y_org && cy < xsi[i].y_org + xsi[i].height) {
-					break;
+		if (xinerama_found) {
+			// NOTE: Xinerama is limited to a short for the entire screen dimensions.
+			if ((xsi = x11.XineramaQueryScreens(dpy, &nscrn)) != NULL && nscrn != 0) {
+				for (i = 0; i < nscrn; i++) {
+					if (cx >= xsi[i].x_org && cx < xsi[i].x_org + xsi[i].width
+					    && cy >= xsi[i].y_org && cy < xsi[i].y_org + xsi[i].height) {
+						break;
+					}
 				}
+				if (i == nscrn)
+					i = 0;
+				if (x_org)
+					*x_org = xsi[i].x_org;
+				if (y_org)
+					*y_org = xsi[i].y_org;
+				if (width)
+					*width = xsi[i].width;
+				if (height)
+					*height = xsi[i].height;
+				x11.XFree(xsi);
+				return true;
 			}
-			if (i == nscrn)
-				i = 0;
-			if (x_org)
-				*x_org = xsi[i].x_org;
-			if (y_org)
-				*y_org = xsi[i].y_org;
-			if (width)
-				*width = xsi[i].width;
-			if (height)
-				*height = xsi[i].height;
-			x11.XFree(xsi);
-			return true;
 		}
-	}
 #endif
+	if (root == 0)
+		return false;
 	if (x11.XGetGeometry(dpy, root, (void *)&newroot, &wx, &wy, &rw, &rh, (void *)&dummy, (void *)&dummy) == 0)
 		return false;
 
