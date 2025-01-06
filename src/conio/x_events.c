@@ -449,7 +449,7 @@ set_win_property(enum UsedAtom atom, Atom type, int format, int action, const vo
 static bool
 fullscreen_geometry(int *x_org, int *y_org, int *width, int *height)
 {
-	Window root;
+	Window newroot;
 	uint64_t dummy;
 	unsigned int rw, rh;
 	int wx, wy;
@@ -472,11 +472,11 @@ fullscreen_geometry(int *x_org, int *y_org, int *width, int *height)
 	if (win == 0)
 		return false;
 
-	if (x11.XGetGeometry(dpy, win, (void *)&root, &wx, &wy, &rw, &rh, (void *)&dummy, (void *)&dummy) == 0)
+#if defined(WITH_XRANDR) || defined(WITH_XINERAMA)
+	if (x11.XGetGeometry(dpy, win, (void *)&newroot, &wx, &wy, &rw, &rh, (void *)&dummy, (void *)&dummy) == 0)
 		return false;
 
-#if defined(WITH_XRANDR) || defined(WITH_XINERAMA)
-	x11.XTranslateCoordinates(dpy, win, root, wx, wy, &cx, &cy, &cr);
+	x11.XTranslateCoordinates(dpy, win, newroot, wx, wy, &cx, &cy, &cr);
 	cx += rw / 2;
 	cy += rh / 2;
 #endif
@@ -489,7 +489,7 @@ fullscreen_geometry(int *x_org, int *y_org, int *width, int *height)
 		while (searched < 10 && found == false) {
 			searched++;
 			if (xrrsr == NULL)
-				xrrsr = x11.XRRGetScreenResources(dpy, root);
+				xrrsr = x11.XRRGetScreenResources(dpy, newroot);
 			if (xrrsr == NULL)
 				break;
 			for (i = 0; i < xrrsr->ncrtc; i++) {
@@ -555,6 +555,9 @@ fullscreen_geometry(int *x_org, int *y_org, int *width, int *height)
 		}
 	}
 #endif
+	if (x11.XGetGeometry(dpy, root, (void *)&newroot, &wx, &wy, &rw, &rh, (void *)&dummy, (void *)&dummy) == 0)
+		return false;
+
 	if (x_org)
 		*x_org = 0;
 	if (y_org)
