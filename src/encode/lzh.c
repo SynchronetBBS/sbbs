@@ -430,7 +430,7 @@ static bool lzh_update(huffman_t* huff, uint16_t c)
 		/*
 		 * This is not actually possible.
 		 */
-		if (c >= LZH_TABLE_SZ)
+		if (c > LZH_ROOT)
 			return false;
 		tmp = ++huff->freq[c];
 
@@ -455,8 +455,14 @@ static bool lzh_update(huffman_t* huff, uint16_t c)
 			 * we don't actually need the second test here)
 			 *
 			 * We can do the range check second because
-			 * huff->freq[LZH_TABLE_SZ] is valid
+			 * huff->freq[LZH_ROOT+1] is valid
 			 */
+			/*
+			 * Coverity thinks that c+1 can overflow despite
+			 * the c < LZH_ROOT test above.  Tell it it's
+			 * wrong.
+			 */
+			// coverity[cast_overflow:SUPPRESS]
 			for (l = c + 1; tmp > huff->freq[l + 1] && l < LZH_ROOT; l++)
 				;
 
