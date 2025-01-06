@@ -5,6 +5,7 @@
 #ifndef _CONN_H_
 #define _CONN_H_
 
+#include <stdatomic.h>
 #include <stdbool.h>
 
 #include "bbslist.h"
@@ -70,9 +71,9 @@ struct conn_api {
 	int               type;
 	int               nostatus;
 	cterm_emulation_t emulation;
-	volatile int      input_thread_running;
-	volatile int      output_thread_running;
-	volatile int      terminate;
+	atomic_int        input_thread_running;
+	atomic_int        output_thread_running;
+	atomic_bool       terminate;
 	unsigned char    *rd_buf;
 	size_t            rd_buf_size;
 	unsigned char    *wr_buf;
@@ -96,7 +97,7 @@ struct conn_buffer {
 int conn_recv_upto(void *buffer, size_t buflen, unsigned int timeout);
 int conn_send(const void *buffer, size_t buflen, unsigned int timeout);
 int conn_send_raw(const void *buffer, size_t buflen, unsigned int timeout);
-SOCKET conn_connect(struct bbslist *bbs);
+bool conn_connect(struct bbslist *bbs);
 int conn_close(void);
 bool conn_connected(void);
 size_t conn_data_waiting(void);

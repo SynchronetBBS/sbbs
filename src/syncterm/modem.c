@@ -2,7 +2,6 @@
 
 /* $Id: modem.c,v 1.32 2020/06/27 08:27:39 deuce Exp $ */
 
-#include <stdatomic.h>
 #include <stdbool.h>
 #include <stdlib.h>
 
@@ -17,7 +16,6 @@
 
 static COM_HANDLE com = COM_HANDLE_INVALID;
 static bool seven_bits = false;
-static atomic_bool terminated;
 
 void
 modem_input_thread(void *args)
@@ -33,7 +31,7 @@ modem_input_thread(void *args)
 		if ((comGetModemStatus(com) & COM_DSR) == 0)
 			monitor_dsr = false;
 	}
-	while (com != COM_HANDLE_INVALID && !conn_api.terminate && !terminated) {
+	while (com != COM_HANDLE_INVALID && !conn_api.terminate) {
 		rd = comReadBuf(com, (char *)conn_api.rd_buf, conn_api.rd_buf_size, NULL, 100);
 		// Strip high bits... we *should* check the parity
 		if (seven_bits) {
@@ -41,7 +39,7 @@ modem_input_thread(void *args)
 				conn_api.rd_buf[i] &= 0x7f;
 		}
 		buffered = 0;
-		while (com != COM_HANDLE_INVALID && buffered < rd && !conn_api.terminate && !terminated) {
+		while (com != COM_HANDLE_INVALID && buffered < rd && !conn_api.terminate) {
 			pthread_mutex_lock(&(conn_inbuf.mutex));
 			buffer = conn_buf_wait_free(&conn_inbuf, rd - buffered, 100);
 			buffered += conn_buf_put(&conn_inbuf, conn_api.rd_buf + buffered, buffer);
@@ -56,7 +54,7 @@ modem_input_thread(void *args)
 				break;
 		}
 	}
-	terminated = true;
+	conn_api.terminate = true;
 	if (args != NULL)
 		comLowerDTR(com);
 	conn_api.input_thread_running = 2;
@@ -77,7 +75,7 @@ modem_output_thread(void *args)
 		if ((comGetModemStatus(com) & COM_DSR) == 0)
 			monitor_dsr = false;
 	}
-	while (com != COM_HANDLE_INVALID && !conn_api.terminate && !terminated) {
+	while (com != COM_HANDLE_INVALID && !conn_api.terminate) {
 		pthread_mutex_lock(&(conn_outbuf.mutex));
 		wr = conn_buf_wait_bytes(&conn_outbuf, 1, 100);
 		if (wr) {
@@ -88,7 +86,7 @@ modem_output_thread(void *args)
 					conn_api.wr_buf[i] &= 0x7f;
 			}
 			sent = 0;
-			while (com != COM_HANDLE_INVALID && sent < wr && !conn_api.terminate && !terminated) {
+			while (com != COM_HANDLE_INVALID && sent < wr && !conn_api.terminate) {
 				// coverity[overflow:SUPPRESS]
 				ret = comWriteBuf(com, conn_api.wr_buf + sent, wr - sent);
 				if (ret > 0)
@@ -109,7 +107,7 @@ modem_output_thread(void *args)
 				break;
 		}
 	}
-	terminated = true;
+	conn_api.terminate = true;
 	conn_api.output_thread_running = 2;
 }
 
@@ -170,7 +168,7 @@ modem_connect(struct bbslist *bbs)
 			if (!bbs->hidepopups)
 				uifcmsg("Cannot Open Port", "`Cannot Open Port`\n\n"
 				    "Cannot open the specified serial device.\n");
-			conn_api.terminate = -1;
+			conn_api.terminate = true;
 			return -1;
 		}
 		if (bbs->bpsrate) {
@@ -178,7 +176,7 @@ modem_connect(struct bbslist *bbs)
 				if (!bbs->hidepopups)
 					uifcmsg("Cannot Set Baud Rate", "`Cannot Set Baud Rate`\n\n"
 					    "Cannot open the specified serial device.\n");
-				conn_api.terminate = -1;
+				conn_api.terminate = true;
 				comClose(com);
 				return -1;
 			}
@@ -187,7 +185,7 @@ modem_connect(struct bbslist *bbs)
 			if (!bbs->hidepopups)
 				uifcmsg("Cannot Set Parity", "`Cannot Set Parity`\n\n"
 				    "Cannot open the specified serial device.\n");
-			conn_api.terminate = -1;
+			conn_api.terminate = true;
 			comClose(com);
 			return -1;
 		}
@@ -195,7 +193,7 @@ modem_connect(struct bbslist *bbs)
 			if (!bbs->hidepopups)
 				uifcmsg("Cannot Set Data Bits", "`Cannot Set Data Bits`\n\n"
 				    "Cannot open the specified serial device.\n");
-			conn_api.terminate = -1;
+			conn_api.terminate = true;
 			comClose(com);
 			return -1;
 		}
@@ -213,7 +211,7 @@ modem_connect(struct bbslist *bbs)
 			if (!bbs->hidepopups)
 				uifcmsg("Cannot Raise DTR", "`Cannot Raise DTR`\n\n"
 				    "comRaiseDTR() returned an error.\n");
-			conn_api.terminate = -1;
+			conn_api.terminate = true;
 			comClose(com);
 			return -1;
 		}
@@ -223,7 +221,7 @@ modem_connect(struct bbslist *bbs)
 			if (!bbs->hidepopups)
 				uifcmsg("Cannot Open Modem", "`Cannot Open Modem`\n\n"
 				    "Cannot open the specified modem device.\n");
-			conn_api.terminate = -1;
+			conn_api.terminate = true;
 			return -1;
 		}
 		if (settings.mdm.com_rate) {
@@ -231,7 +229,7 @@ modem_connect(struct bbslist *bbs)
 				if (!bbs->hidepopups)
 					uifcmsg("Cannot Set Baud Rate", "`Cannot Set Baud Rate`\n\n"
 					    "Cannot open the specified modem device.\n");
-				conn_api.terminate = -1;
+				conn_api.terminate = true;
 				comClose(com);
 				return -1;
 			}
@@ -240,7 +238,7 @@ modem_connect(struct bbslist *bbs)
 			if (!bbs->hidepopups)
 				uifcmsg("Cannot Set Parity", "`Cannot Set Parity`\n\n"
 				    "Cannot open the specified serial device.\n");
-			conn_api.terminate = -1;
+			conn_api.terminate = true;
 			comClose(com);
 			return -1;
 		}
@@ -248,7 +246,7 @@ modem_connect(struct bbslist *bbs)
 			if (!bbs->hidepopups)
 				uifcmsg("Cannot Set Data Bits", "`Cannot Set Data Bits`\n\n"
 				    "Cannot open the specified serial device.\n");
-			conn_api.terminate = -1;
+			conn_api.terminate = true;
 			comClose(com);
 			return -1;
 		}
@@ -265,7 +263,7 @@ modem_connect(struct bbslist *bbs)
 			if (!bbs->hidepopups)
 				uifcmsg("Cannot Raise DTR", "`Cannot Raise DTR`\n\n"
 				    "comRaiseDTR() returned an error.\n");
-			conn_api.terminate = -1;
+			conn_api.terminate = true;
 			comClose(com);
 			return -1;
 		}
@@ -297,7 +295,7 @@ modem_connect(struct bbslist *bbs)
 						    "Check your init string and phone number.\n");
 					}
 				}
-				conn_api.terminate = -1;
+				conn_api.terminate = true;
 				return -1;
 			}
 			if (strstr(respbuf, settings.mdm.init_string)) /* Echo is on */
@@ -312,7 +310,7 @@ modem_connect(struct bbslist *bbs)
 				uifcmsg(respbuf, "`Initialization Error`\n\n"
 				    "The modem did not respond favorably to your initialization string.\n");
 			}
-			conn_api.terminate = -1;
+			conn_api.terminate = true;
 			return -1;
 		}
 
@@ -334,7 +332,7 @@ modem_connect(struct bbslist *bbs)
 						uifcmsg(respbuf, "`No Answer`\n\n"
 						    "The modem did not connect within 60 seconds.\n");
 				}
-				conn_api.terminate = -1;
+				conn_api.terminate = true;
 				return -1;
 			}
 			if (strstr(respbuf, bbs->addr)) /* Dial command echoed */
@@ -349,7 +347,7 @@ modem_connect(struct bbslist *bbs)
 				uifcmsg(respbuf, "`Connection Failed`\n\n"
 				    "SyncTERM was unable to establish a connection.\n");
 			}
-			conn_api.terminate = -1;
+			conn_api.terminate = true;
 			return -1;
 		}
 
@@ -386,7 +384,6 @@ modem_connect(struct bbslist *bbs)
 	}
 	conn_api.wr_buf_size = BUFFER_SIZE;
 
-	terminated = false;
 	if ((bbs->conn_type == CONN_TYPE_SERIAL) || (bbs->conn_type == CONN_TYPE_SERIAL_NORTS)) {
 		_beginthread(modem_output_thread, 0, (void *)-1);
 		_beginthread(modem_input_thread, 0, (void *)-1);
@@ -405,7 +402,7 @@ modem_connect(struct bbslist *bbs)
 int
 serial_close(void)
 {
-	conn_api.terminate = 1;
+	conn_api.terminate = true;
 
 	while (conn_api.input_thread_running == 1 || conn_api.output_thread_running == 1)
 		SLEEP(1);
@@ -424,8 +421,7 @@ modem_close(void)
 	char   garbage[1024];
 	COM_HANDLE oldcom;
 
-	terminated = true;
-	conn_api.terminate = 1;
+	conn_api.terminate = true;
 
 	if ((comGetModemStatus(com) & COM_DCD) == 0) /* DCD already low */
 		goto CLOSEIT;

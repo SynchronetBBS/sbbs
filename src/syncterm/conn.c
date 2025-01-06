@@ -365,7 +365,7 @@ conn_send(const void *vbuffer, size_t buflen, unsigned int timeout)
 	return found;
 }
 
-SOCKET
+bool
 conn_connect(struct bbslist *bbs)
 {
 	char str[64];
@@ -433,16 +433,16 @@ conn_connect(struct bbslist *bbs)
 			    "The connection type of this entry is not supported by this build.\n"
 			    "Either the protocol was disabled at compile time, or is\n"
 			    "unsupported on this plattform.");
-			conn_api.terminate = 1;
+			conn_api.terminate = true;
 	}
 	if (conn_api.connect) {
 		if (conn_api.connect(bbs)) {
-			conn_api.terminate = 1;
+			conn_api.terminate = true;
 			while (conn_api.input_thread_running == 1 || conn_api.output_thread_running == 1)
 				SLEEP(1);
 		}
 		else {
-			while (conn_api.terminate == 0
+			while ((!conn_api.terminate)
 			    && (conn_api.input_thread_running == 0 || conn_api.output_thread_running == 0))
 				SLEEP(1);
 		}
@@ -608,7 +608,7 @@ connected:
 		freeaddrinfo(res);
 	if (!bbs->hidepopups)
 		uifc.pop(NULL);
-	conn_api.terminate = -1;
+	conn_api.terminate = true;
 	if (!bbs->hidepopups) {
 		switch (failcode) {
 			case FAILURE_RESOLVE:

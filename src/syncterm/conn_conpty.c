@@ -1,5 +1,4 @@
 #define WIN32_LEAN_AND_MEAN
-#include <stdatomic.h>
 #include <stdbool.h>
 #include <windows.h>
 #include <wincon.h>
@@ -16,8 +15,6 @@ HANDLE inputRead, inputWrite, outputRead, outputWrite;
 PROCESS_INFORMATION pi;
 HPCON cpty;
 enum ciolib_codepage codepage;
-
-static atomic_bool terminate;
 
 static size_t
 get_utf8_span(const uint8_t *b, size_t sz)
@@ -64,7 +61,7 @@ conpty_input_thread(void *args)
 
 	SetThreadName("PTY Input");
 	conn_api.input_thread_running = 1;
-	while (!terminate && !conn_api.terminate) {
+	while (!conn_api.terminate) {
 		if (GetExitCodeProcess(pi.hProcess, &ec)) {
 			if (ec != STILL_ACTIVE)
 				break;
@@ -84,7 +81,7 @@ conpty_input_thread(void *args)
 		if (cps == NULL)
 			break;
 		buffered = 0;
-		while (!terminate && !conn_api.terminate && buffered < sz) {
+		while (!conn_api.terminate && buffered < sz) {
 			pthread_mutex_lock(&(conn_inbuf.mutex));
 			buffer = conn_buf_wait_free(&conn_inbuf, sz - buffered, 100);
 			buffered += conn_buf_put(&conn_inbuf, cps + buffered, buffer);
@@ -95,7 +92,7 @@ conpty_input_thread(void *args)
 			memmove(conn_api.rd_buf, &conn_api.rd_buf[utf8_span], fill);
 		free(cps);
 	}
-	terminate = true;
+	conn_api.terminate = true;
 	conn_api.input_thread_running = 2;
 }
 
@@ -108,7 +105,7 @@ conpty_output_thread(void *args)
 
 	SetThreadName("PTY Output");
 	conn_api.output_thread_running = 1;
-	while (!terminate && !conn_api.terminate) {
+	while (!conn_api.terminate) {
 		if (GetExitCodeProcess(pi.hProcess, &ec)) {
 			if (ec != STILL_ACTIVE)
 				break;
@@ -127,9 +124,9 @@ conpty_output_thread(void *args)
 			if (utf == NULL)
 				break;
 			size_t sent = 0;
-			while (!terminate && !conn_api.terminate && sent < sz) {
+			while (!conn_api.terminate && sent < sz) {
 				if (!WriteFile(inputWrite, utf + sent, sz - sent, &ret, NULL)) {
-					terminate = true;
+					conn_api.terminate = true;
 					break;
 				}
 				sent += ret;
@@ -140,7 +137,7 @@ conpty_output_thread(void *args)
 			pthread_mutex_unlock(&(conn_outbuf.mutex));
 		}
 	}
-	terminate = true;
+	conn_api.terminate = true;
 	conn_api.output_thread_running = 2;
 }
 
@@ -271,7 +268,6 @@ int conpty_connect(struct bbslist *bbs)
 	}
 	conn_api.wr_buf_size = BUFFER_SIZE;
 
-	terminate = false;
 	_beginthread(conpty_output_thread, 0, NULL);
 	_beginthread(conpty_input_thread, 0, NULL);
 
@@ -284,8 +280,7 @@ conpty_close(void)
 	char garbage[1024];
 	DWORD ret;
 
-	conn_api.terminate = 1;
-	terminate = true;
+	conn_api.terminate = true;
 	TerminateProcess(pi.hProcess, 0);
 	WaitForSingleObject(pi.hProcess, 1000);
 	ClosePseudoConsole(cpty);

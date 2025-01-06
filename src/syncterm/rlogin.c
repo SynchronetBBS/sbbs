@@ -2,7 +2,6 @@
 
 /* $Id: rlogin.c,v 1.38 2020/06/27 00:04:50 deuce Exp $ */
 
-#include <stdatomic.h>
 #include <stdlib.h>
 
 #include "bbslist.h"
@@ -11,12 +10,6 @@
 #include "uifcinit.h"
 
 SOCKET rlogin_sock = INVALID_SOCKET;
-static bool terminated;
-
-void rlogin_clear_terminated(void)
-{
-	terminated = false;
-}
 
 #ifdef __BORLANDC__
  #pragma argsused
@@ -31,13 +24,13 @@ rlogin_input_thread(void *args)
 
 	SetThreadName("RLogin Input");
 	conn_api.input_thread_running = 1;
-	while (rlogin_sock != INVALID_SOCKET && !conn_api.terminate && !terminated) {
+	while (rlogin_sock != INVALID_SOCKET && !conn_api.terminate) {
 		if (socket_readable(rlogin_sock, 100)) {
 			rd = recv(rlogin_sock, conn_api.rd_buf, conn_api.rd_buf_size, 0);
 			if (rd <= 0)
 				break;
 			buffered = 0;
-			while (rlogin_sock != INVALID_SOCKET && buffered < rd && !conn_api.terminate && !terminated) {
+			while (rlogin_sock != INVALID_SOCKET && buffered < rd && !conn_api.terminate) {
 				pthread_mutex_lock(&(conn_inbuf.mutex));
 				buffer = conn_buf_wait_free(&conn_inbuf, rd - buffered, 1000);
 				buffered += conn_buf_put(&conn_inbuf, conn_api.rd_buf + buffered, buffer);
@@ -45,7 +38,7 @@ rlogin_input_thread(void *args)
 			}
 		}
 	}
-	terminated = true;
+	conn_api.terminate = true;
 	conn_api.input_thread_running = 2;
 }
 
@@ -62,7 +55,7 @@ rlogin_output_thread(void *args)
 
 	SetThreadName("RLogin Output");
 	conn_api.output_thread_running = 1;
-	while (rlogin_sock != INVALID_SOCKET && !conn_api.terminate && !terminated) {
+	while (rlogin_sock != INVALID_SOCKET && !conn_api.terminate) {
 		pthread_mutex_lock(&(conn_outbuf.mutex));
 		ret = 0;
 		wr = conn_buf_wait_bytes(&conn_outbuf, 1, 100);
@@ -70,7 +63,7 @@ rlogin_output_thread(void *args)
 			wr = conn_buf_get(&conn_outbuf, conn_api.wr_buf, conn_api.wr_buf_size);
 			pthread_mutex_unlock(&(conn_outbuf.mutex));
 			sent = 0;
-			while (rlogin_sock != INVALID_SOCKET && sent < wr && !conn_api.terminate && !terminated) {
+			while (rlogin_sock != INVALID_SOCKET && sent < wr && !conn_api.terminate) {
 				if (socket_writable(rlogin_sock, 100)) {
 					// coverity[overflow:SUPPRESS]
 					ret = sendsocket(rlogin_sock, conn_api.wr_buf + sent, wr - sent);
@@ -87,7 +80,7 @@ rlogin_output_thread(void *args)
 		if (ret < 0)
 			break;
 	}
-	terminated = true;
+	conn_api.terminate = true;
 	conn_api.output_thread_running = 2;
 }
 
@@ -208,7 +201,6 @@ rlogin_connect(struct bbslist *bbs)
 			return -1;
 	}
 
-	terminated = false;
 	_beginthread(rlogin_output_thread, 0, NULL);
 	_beginthread(rlogin_input_thread, 0, NULL);
 
@@ -224,8 +216,7 @@ rlogin_close(void)
 	char garbage[1024];
 	SOCKET oldsock;
 
-	terminated = true;
-	conn_api.terminate = 1;
+	conn_api.terminate = true;
 	oldsock = rlogin_sock;
 	rlogin_sock = INVALID_SOCKET;
 	while (conn_api.input_thread_running == 1 || conn_api.output_thread_running == 1) {

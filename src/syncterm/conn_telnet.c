@@ -149,7 +149,6 @@ telnet_connect(struct bbslist *bbs)
 	conn_api.rx_parse_cb = telnet_rx_parse_cb;
 	conn_api.tx_parse_cb = telnet_tx_parse_cb;
 
-	rlogin_clear_terminated();
 	_beginthread(rlogin_output_thread, 0, NULL);
 	_beginthread(rlogin_input_thread, 0, bbs);
 	// Suppress Go Aheads (both directions)
