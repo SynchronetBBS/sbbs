@@ -159,8 +159,8 @@ $(SYNCTERM): $(CRYPT_DEPS) $(EXEODIR) $(OBJS) $(BUILD_DEPENDS)
 	@echo Linking $@
 	${QUIET}$(CXX) $(LDFLAGS) $(MT_LDFLAGS) $(OBJS) -o $@ $(UIFC-MT_LIBS) $(EXTRA_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS) $(ENCODE_LIBS) $(HASH_LIBS)
 ifdef win
-	${QUIET}$(CXX) $(LDFLAGS) $(MT_LDFLAGS) win32_stub.c -o $(EXEODIR)/syncterm.exe -L$(EXEODIR) -lsyncterm -mwindows
-	${QUIET}$(CXX) $(LDFLAGS) $(MT_LDFLAGS) win32_stub.c -o $(EXEODIR)/syncterm.com -L$(EXEODIR) -lsyncterm -mconsole
+	${QUIET}$(CXX) $(LDFLAGS) $(MT_LDFLAGS) win32_stub.c $(CIOLIB_SRC)/$(MTOBJODIR)/ciolib_res.o -s -o $(EXEODIR)/syncterm.exe -L$(EXEODIR) -lsyncterm -mwindows
+	${QUIET}$(CXX) $(LDFLAGS) $(MT_LDFLAGS) win32_stub.c $(CIOLIB_SRC)/$(MTOBJODIR)/ciolib_res.o -s -o $(EXEODIR)/syncterm.com -L$(EXEODIR) -lsyncterm -mconsole
 endif
 ifeq ($(os),darwin)
 	-${QUIET}mkdir $(EXEODIR)/SyncTERM.app
