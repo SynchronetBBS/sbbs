@@ -1,0 +1,584 @@
+21c21
+< "\1_\1?\1b\1hE-mail (User name or number): \1w"           010 Email
+---
+> "\1_\1?\1b\1hE-mail (User name or number)\1\\: \1w"       010 Email
+30c30
+< "\1n\1?\1mPosting on \1h%s\1n\1m %s\r\n"                  019 Posting
+---
+> "\1n\1?\1mPosting on \1h%s\1n\1m\1\\ %s\r\n"              019 Posting
+32,35c32,35
+< "\1_\r\n\1y\1hSubject: "                                   021 SubjectPrompt
+< "\1n\1g\r\nEnter message now (\1h%d\1n\1g lines max). "\     022 EnterMsgNow
+< 	"Type \1h/?\1n\1g on a new line for menu.\r\n\1n"
+< "\1n\1g\r\nRaw message input (\1h%u\1n\1g bytes max). "\    023 EnterMsgNowRaw
+---
+> "\1_\r\n\1y\1hSubject\1\\: "                              021 SubjectPrompt
+> "\1n\1g\r\nEnter message now (\1h%d\1n\1g lines max). "\  022 EnterMsgNow
+> 	"\1\\Type \1h/?\1n\1g on a new line for menu.\r\n\1n"
+> "\1n\1g\r\nRaw message input (\1h%u\1n\1g bytes max). "\  023 EnterMsgNowRaw
+57c57
+< "\r\nAuto Message - ~Read, ~Write, or ~Quit: "          043 AutoMsg
+---
+> "\r\nAuto Message\1\\ ~Read, ~Write, or ~@Quit@: "       043 AutoMsg
+64,76c64,78
+< 	" (\1w%u\1b of \1w%u\1b): \1n\1~"
+< "\1n\r\nYou can't reply to this message.\r\n"    	050 CantReplyToMsg
+< "  \1h\1bRe\1n\1b: \1h\1c%s\1n\r\n\r\n"                        051 Regarding
+< "  \1h\1bRe\1n\1b: \1h\1c%s\r\n  "\				   052 RegardingByOn
+< 	"\1bBy\1n\1b: \1h\1c%s \1bon \1c%s\1n\r\n\r\n"    	
+< "  \1h\1bRe\1n\1b: \1h\1c%s\r\n  "\  				   053 RegardingByToOn	
+< 	"\1bBy\1n\1b: \1h\1c%s \1bto \1c%s \1bon "\       
+< 	"\1c%s\1n\r\n\r\n"
+< "Delete mail from %s"                                   054 DeleteMailQ
+< "OK"                                                    055 OK
+< "\r\n\1_\1b\1hForward mail to: \1w"                         056 ForwardMailTo
+< "Save/Append message to another file"                  057 SaveMsgToFile
+< "\1_\1y\1hPath/Filename to write to: \1n"                   058 FileToWriteTo
+---
+> 	"\1\\ (\1w%u\1b of \1w%u\1b): \1n\1~"
+> "\1n\r\nYou can't reply to this message.\r\n"    	   050 CantReplyToMsg
+> "  \1h\1bRe\1n\1b: \1h\1c@MSG_SUBJECT@\1n\r\n\r\n"     051 Regarding
+> "  \1h\1bRe\1n\1b: \1h\1c@MSG_SUBJECT@\r\n  "\         052 RegardingByOn
+> 	"\1bBy\1n\1b: \1h\1c@MSG_FROM_NAME@ "\
+> 	"\1bon \1c@MSG_DATE@\1n\r\n\r\n"
+> "  \1h\1bRe\1n\1b: \1h\1c@MSG_SUBJECT@\r\n  "\         053 RegardingByToOn
+> 	"\1bBy\1n\1b: \1h\1c@MSG_FROM_NAME@ "\
+> 	"\1bto \1c@MSG_TO_NAME@ "\
+> 	"\1bon \1c@MSG_DATE@\1n\r\n\r\n"
+> "Delete mail from %s"                                    054 DeleteMailQ
+> "OK"                                                     055 OK
+> "\r\n\1_\1b\1hForward mail to\1\\: \1w"                  056 ForwardMailTo
+> "Save/Append message to another file"                    057 SaveMsgToFile
+> "\1_\1y\1hPath/Filename to write to\1\\: \1n"            058 FileToWriteTo
+78c80
+< "\r\n\1q\1g\1hMail that you've sent still pending (%s first):"\ 060 MailSentLstHdr
+---
+> "\r\n\1q\1g\1hMail that you've sent still pending\1\\ (%s first):"\ 060 MailSentLstHdr
+81c83
+< 	"(\1w\1`?\1b=Menu) (\1w%u\1b of \1w%u\1b): \1n\1~"
+---
+> 	"(\1w\1`?\1b=Menu)\1\\ (\1w%u\1b of \1w%u\1b): \1n\1~"
+83c85
+< 	"            From: \1w%s\r\n"
+---
+> 	"From: \1w%s\r\n"
+102c104
+< "\1_\r\n\1y\1hText to search for: "                      076 SearchStringPrompt
+---
+> "\1_\r\n\1y\1hText to search for\1\\: "                 076 SearchStringPrompt
+115c117
+< "\1_\r\n\1cWhich or \1h~Q\1n\1cuit: \1h"                      083 WhichTextSection
+---
+> "\r\n@MNE:C@@Which@ or ~@Quit@: "                           083 WhichTextSection
+118,119c120,121
+< "\r\nWhich, ~Add, ~Remove, ~Edit, or ~Quit: "           086 WhichTextFileSysop
+< "\1_\r\n\1n\1cWhich or \1h~Q\1n\1cuit: \1h"                    087 WhichTextFile
+---
+> "\r\n@MNE:C@@Which@, ~Add, ~Remove, ~Edit, or ~@Quit@: "   086 WhichTextFileSysop
+> "\r\n@MNE:C@@Which@ or ~@Quit@: "                       087 WhichTextFile
+124c126
+< "\1_\r\n\1y\1hRemove which: \1n"                            091 RemoveWhichTextFile
+---
+> "\1_\r\n\1y\1hRemove @Which@: \1n"                            091 RemoveWhichTextFile
+126c128
+< "\1_\r\n\1y\1hEdit which: \1n"                              093 EditWhichTextFile
+---
+> "\1_\r\n\1y\1hEdit @Which@: \1n"                              093 EditWhichTextFile
+146c148
+< "\r\nView system information file"                      113 ViewSysInfoFileQ
+---
+> "\r\nView system information file\1\\"                    113 ViewSysInfoFileQ
+164,165c166,167
+< "\r\nGroup to configure new message scan or ~Quit: "    129 NScanCfgWhichGrp
+< "\r\nGroup to configure your message scan or ~Quit: "   130 SScanCfgWhichGrp
+---
+> "\r\nGroup to configure new message scan or ~@Quit@: "    129 NScanCfgWhichGrp
+> "\r\nGroup to configure your message scan or ~@Quit@: "   130 SScanCfgWhichGrp
+171c173
+< 	", ~All, or ~Quit: "
+---
+> 	", ~@All@, or ~@Quit@: "
+173c175
+< 	", ~All, or ~Quit: "
+---
+> 	", ~@All@, or ~@Quit@: "
+175c177
+< "\r\nSet new-scan pointer for which, ~All, or ~Quit: "  138 WhichOrAll
+---
+> "\r\nSet new-scan pointer for\1\\ @Which@, ~@All@, or ~@Quit@: "  138 WhichOrAll
+177,178c179,180
+< "OFF"                                                   140 OFF
+< "ON"                                                    141 ON
+---
+> "OFF"                                                   140 Unused140 /* was OFF */
+> "ON"                                                    141 Unused141 /* was ON */
+191c193
+< "\1_\r\n\1y\1hChange to (User Name or Number): \1n"         154 ChUserPrompt
+---
+> "\1_\r\n\1y\1hChange to (User Name or Number)\1\\: \1n" 154 ChUserPrompt
+224c226
+< "\1n\r\nInvalid NetMail address: \1h%s\1n\r\n"                183 InvalidNetMailAddr
+---
+> "\1n\r\nInvalid NetMail address\1\\: \1h%s\1n\r\n"            183 InvalidNetMailAddr
+243c245
+< "\r\n\r\n\1r\1h\1iNot enough free disk space.\1n\r\n"\      200 LowDiskSpace
+---
+> "\1?\1r\1h\1iNot enough free disk space.\1n\r\n"\           200 LowDiskSpace
+245c247
+< "\r\n%s kilobytes free\r\n\r\n"                         201 DiskNBytesFree
+---
+> "\r\n%s bytes free\r\n\r\n"                                 201 DiskNBytesFree
+256c258
+< "\r\n\1r\1h\1i%s has already been uploaded!\1n\r\n"         211 FileAlreadyOnline
+---
+> "\r\n\1n\1h%s\1r\1h\1i has already been uploaded to\1n\1c %s \1h%s\1n\r\n" 211 FileAlreadyOnline
+259c261
+< "\1_\1y\1hSend file to (User name or number): \1n"          213 SendFileToUser
+---
+> "\1_\1y\1hSend file to (User name or number)\1\\: \1n"      213 SendFileToUser
+264c266
+< "\r\n\1-\1gAdded to destination user list: "\               217 UserAddedToDestList
+---
+> "\r\n\1-\1gAdded to destination user list\1\\: "\           217 UserAddedToDestList
+267c269
+< 	"(\1h\1wG\1n\1g, \1h\1wR\1n\1g, or \1h\1wX\1n\1g): \1n"
+---
+> 	"(\1h\1wG\1n\1g, \1h\1wR\1n\1g, or \1h\1wX\1n\1g)\1\\: \1n"
+276,277c278,279
+< "\r\nProtocol or ~Quit: "                               227 ProtocolOrQuit
+< "\r\nProtocol, ~Batch or ~Quit: "                       228 ProtocolBatchOrQuit
+---
+> "\r\nProtocol or ~@Quit@: "                               227 ProtocolOrQuit
+> "\r\nProtocol, ~Batch or ~@Quit@: "                       228 ProtocolBatchOrQuit
+280c282
+< 	"\1c - Files: \1h%u \1n\1c(\1h%u\1n\1c Max)\r\n"
+---
+> 	"\1c\1\\ - Files: \1h%u \1n\1c(\1h%u\1n\1c Max)\r\n"
+289,290c291,292
+< "\r\n~Quit or [~Next]: "                                233 QuitOrNext
+< "~Remove, ~Move, ~Edit, ~Desc, ~View, ~Quit, ~Prev or [~Next]: " 234 RExemptRemoveFilePrompt
+---
+> "\r\n~@Quit@ or [~Next]: "                                233 QuitOrNext
+> "~Remove, ~Move, ~Edit, ~Desc, ~View, ~@Quit@, ~Prev or [~Next]: " 234 RExemptRemoveFilePrompt
+298,299c300,301
+< 	"~Desc, ~View, ~Quit, ~Prev or [~Next]: "
+< "~Remove, ~Edit, ~Desc, ~View, ~Quit, ~Prev or [~Next]: "   242 UserRemoveFilePrompt
+---
+> 	"~Desc, ~View, ~@Quit@, ~Prev or [~Next]: "
+> "~Remove, ~Edit, ~Desc, ~View, ~@Quit@, ~Prev or [~Next]: "   242 UserRemoveFilePrompt
+306c308
+< "\1_\1y\1hCredits to remove: \1n"                           249 CreditsToRemove
+---
+> "\1_\1y\1hCredits to remove from uploader (%s): \1n"    249 CreditsToRemove
+322c324
+< "\r\nProtocol, ~Batch, ~Quit, or [~Next]: "             264 ProtocolBatchQuitOrNext
+---
+> "\r\nProtocol, ~Batch, ~@Quit@, or [~Next]: "             264 ProtocolBatchQuitOrNext
+325c327
+< "\1_\1y\1h%-12s\1w%7uk\1b:"                             266 BulkUploadDescPrompt
+---
+> "\1_\1y\1h%-12s\1w%7s\1b:"                                266 BulkUploadDescPrompt
+335,336c337,338
+< 	"        Description\r\n\r\n\1n"
+< "\1g\1h%2d: \1n\1g%-12s     %s\r\n"                          275 UploadQueueLstFmt
+---
+> 	"                               Description\r\n\r\n\1n"
+> "\1g\1h%2d: \1n\1g%-38s  %s\r\n"                          275 UploadQueueLstFmt
+338,341c340,344
+< 	"      Credits      Bytes        Time\r\n\r\n\1n"
+< "\1g\1h%2d: \1n\1g%-12s %11.11s %11.11s     %s\r\n"       277 DownloadQueueLstFmt
+< "\r\n\1w\1h         Totals: %11.11s %11.11s     %s\r\n"   278 DownloadQueueTotals
+< "\r\n\1-\1gRemove which file from upload "\               279 RemoveWhichFromUlQueue
+---
+> 	"                             Credits      Bytes        Time\r\n\r\n\1n"
+> "\1g\1h%2d: \1n\1g%-35s %11.11s %11.11s     %s\r\n"       277 DownloadQueueLstFmt
+> "\r\n\1w\1h                                "\	  	  278 DownloadQueueTotals
+> 	"Totals: %11.11s %11.11s     %s\r\n"
+> "\r\n\1-\1gRemove which file(s) from upload "\            279 RemoveWhichFromUlQueue
+343c346
+< "\r\n\1-\1gRemove which file from download "\             280 RemoveWhichFromDlQueue
+---
+> "\r\n\1-\1gRemove which file(s) from download "\          280 RemoveWhichFromDlQueue
+347c350
+< "\r\n\1w\1hStart transfer now (Ctrl-X to abort):\r\n\1n"   283 StartXferNow
+---
+> "\r\n\1w\1hStart %s transfer now (Ctrl-X to abort):\r\n\1n"   283 StartXferNow
+355c358
+< "\r\n~Extract file(s), ~View archive, or ~Quit: "       291 ExtractFilesPrompt
+---
+> "\r\n~Extract file(s), ~View archive, or ~@Quit@: "       291 ExtractFilesPrompt
+363c366
+< "\1h\1yEnter (space-separated) Tags: "                  298 TagFilePrompt
+---
+> "\1h\1yEnter (space-separated) Tags\1\\: "              298 TagFilePrompt
+365c368
+< "UNUSED300"                                             300 Unused300
+---
+> "\1_\1h\1w%s\1n\1c was %sdownloaded by \1h%s\r\n"       300 FreeDownloadUserMsg
+370c373
+< "\1n\r\n\1m\1h%s \1n\1madded to batch download queue -\r\n"\ 305 FileAddedToBatDlQueue
+---
+> "\1n\r\n\1m\1h%s \1n\1madded to batch download queue\1\\ -\r\n"\ 305 FileAddedToBatDlQueue
+380,381c383,384
+< "\1_\1h\1w%s was %sdownloaded by %s\r\n"\                  312 DownloadUserMsg
+< 	"\1n\1gYou were awarded %s credits.\r\n"
+---
+> "\1_\1h\1w%s\1n\1c was %sdownloaded by \1h%s\r\n"\         312 DownloadUserMsg
+> 	"\1n\1gYou were awarded \1h%s\1n\1g credits.\r\n"
+403,405c406,408
+< "\r\nEnter a different password"                        331 NewPasswordQ
+< "\1_\1?\1y\1hNew password (%u-%u chars): "                  332 NewPasswordPromptFmt
+< "\1_\1y\1hVerify (enter again): \1n"                        333 VerifyPassword
+---
+> "\r\nEnter a different password\1\\"                        331 NewPasswordQ
+> "\1_\1?\1y\1hNew password (%u-%u chars)\1\\: "              332 NewPasswordPromptFmt
+> "\1_\1y\1hVerify (enter again)\1\\: \1n"                  333 VerifyPassword
+422c425
+< "Is the above information correct"                      350 UserInfoCorrectQ
+---
+> "Is the above information correct\1\\"                      350 UserInfoCorrectQ
+440c443
+< "New User Password: "                                   364 NewUserPasswordPrompt
+---
+> "New User Password\1\\: "                               364 NewUserPasswordPrompt
+449c452
+< "\1nYou can't use that name (duplicate or invalid).\r\n" 370 YouCantUseThatName
+---
+> "\1nYou can't use that name\1\\ (duplicate or invalid).\r\n" 370 YouCantUseThatName
+470c473
+< "\r\n\1-\1cWhich or \1h~Q\1n\1cuit: \1h"                      384 WhichXtrnProg
+---
+> "\r\n@MNE:C@@Which@ or ~@Quit@: "                          384 WhichXtrnProg
+474c477
+< "UNUSED387"       						   387 MinimumModemSpeed
+---
+> "\1nYou can't use that mail address (duplicate or invalid).\r\n" 387 YouCantUseThatNetmail
+489,490c492,493
+< "\r\n\1-\1cCurrent New-Scan date/time: \1h"                400 NScanDate
+< "\1y\1hYear: \1w"                                          401 NScanYear
+---
+> "\r\n\1-\1cCurrent New-Scan date/time\1\\: \1h"           400 NScanDate
+> "\1y\1hYear: \1w"                                         401 NScanYear
+501,507c504,509
+< "\r\n\1nA) IBM (or compatible)\r\nB) Apple\r\nC) "\      412 ComputerTypeMenu
+< 	"Macintosh\r\nD) Amiga\r\nE) Other\r\n\r\n"
+< "\1_\1y\1hPrimary Computer: \1n"                            413 ComputerTypePrompt
+< "Apple"                                                 414 ComputerTypeB
+< "Macintosh"                                             415 ComputerTypeC
+< "Amiga"                                                 416 ComputerTypeD
+< "Other"                                                 417 ComputerTypeE
+---
+> "UNUSED412"                                                 412 Unused412
+> "UNUSED413"                                                 413 Unused413
+> "UNUSED414"                                                 414 Unused414
+> "UNUSED415"                                                 415 Unused415
+> "UNUSED416"                                                 416 Unused416
+> "UNUSED417"                                                 417 Unused417
+511,512c513,514
+< "\1n\1cAlias     : \1h%-30.30s  \1n\1cPassword     : "\      421 UeditAliasPassword
+< 	"\1h%-8.8s  %s\r\n"
+---
+> "\1n\1cAlias     : \1h%-30.30s  \1n\1cPass \1h%s\1n\1c: "\   421 UeditAliasPassword
+> 	"\1h%s\r\n"
+535,536c537,538
+< "\1n\1cNetMail   : \1h%s\r\n"                              432 UserNetMail
+< "\1n\1cUploads   : \1h%13.13s \1n\1cbytes in "\              433 UserUploads
+---
+> "\1n\1cNetMail   : \1h%s\r\n"                               432 UserNetMail
+> "\1n\1cUploads   : \1h%9.9s \1n\1cbytes in "\               433 UserUploads
+538c540
+< "\1n\1cDownloads : \1h%13.13s \1n\1cbytes in "\              434 UserDownloads
+---
+> "\1n\1cDownloads : \1h%9.9s \1n\1cbytes in "\               434 UserDownloads
+541c543
+< "\1n\1cCredits   : \1h%13.13s \1n\1cfree: \1h%s "\            436 UserCredits
+---
+> "\1n\1cCredits   : \1h%9.9s \1n\1cfree: \1h%s "\            436 UserCredits
+543c545
+< "\1n\1cMinutes   : \1h%13.13s\r\n"                         437 UserMinutes
+---
+> "\1n\1cMinutes   : \1h%9.9s\r\n"                           437 UserMinutes
+559,562c561,564
+< "\1_\1y\1hLast on: \1w"                                     451 UeditLastOn
+< "\1_\1y\1hFirst on: \1w"                                    452 UeditFirstOn
+< "\1_\1y\1hExpire: \1w"                                      453 UeditExpire
+< "\1_\1y\1hPassword Last Modified: \1w"                      454 UeditPwModDate
+---
+> "\1_\1y\1hLast on (@DATEFMT@): \1w"                         451 UeditLastOn
+> "\1_\1y\1hFirst on (@DATEFMT@): \1w"                        452 UeditFirstOn
+> "\1_\1y\1hExpire (@DATEFMT@): \1w"                          453 UeditExpire
+> "\1_\1y\1hPassword Last Modified (@DATEFMT@): \1w"          454 UeditPwModDate
+581,582c583,584
+< 	"Mega/Kilobytes, or $): \1n"
+< "\1_\1y\1hAdjust Minutes (- to subtract, H = Hours): \1n"   472 ModifyMinutes
+---
+> 	"Mega/Kilobytes, or $)\1\\: \1n"
+> "\1_\1y\1hAdjust Minutes (- to subtract, H = Hours)\1\\: \1n"   472 ModifyMinutes
+587c589
+< "\1n\1b[\1h\1wL\1n\1b] \1hTerminal Dimensions          \1n\1b\1\\: \1c%s %s\r\n" 477 UserDefaultsRows
+---
+> "\1n\1b[\1h\1wL\1n\1b] \1hTerminal Dimensions          \1n\1b\1\\: \1c%s, %s\r\n" 477 UserDefaultsRows
+590c592
+< "\1n\1b[\1h\1wH\1n\1b] \1hHot Keys                     \1n\1b: \1c%s\r\n"   480 UserDefaultsHotKey
+---
+> ""                                                                          480 UserDefaultsHotKey
+605c607
+< "\r\n\1n\1h\1bWhich or [\1wQ\1b]uit: \1c"                   494 UserDefaultsWhich
+---
+> "\r\n\1n\1h\1b@Which@ or [\1wQ\1b] to @Quit@: \1c"      494 UserDefaultsWhich
+616c618
+< "\r\nWhich, ~Quit or [%u]: "                            503 SelectItemWhich
+---
+> "\r\n@Which@, ~@Quit@ or [%u]: "                              503 SelectItemWhich
+645c647
+< 	"\1w'\1yHandle, or \1w^U\1yser list: \1w\1h"
+---
+> 	"\1w'\1yHandle,\1\\ or \1w^U\1yser list: \1w\1h"
+658c660
+< 	"\1w'\1yHandle, \1w^U\1yser list, or \1wAll\1y: \1w\1h"
+---
+> 	"\1w'\1yHandle,\1\\ \1w^U\1yser list, or \1wAll\1y: \1w\1h"
+661c663
+< "\1_\1y\1h\r\nMessage: "                                   536 NodeMsgPrompt
+---
+> "\1_\1y\1h\r\nMessage\1\\: "                                  536 NodeMsgPrompt
+676,677c678,679
+< "\1_\1b\1hDo you mean %s #%u "\                            547 DoYouMeanThisUserQ
+< 	"(\1cY\1bes, \1cN\1bo, or \1cQ\1buit) ? \1n"
+---
+> "Do you mean %s #%u "\                            547 DoYouMeanThisUserQ
+> 	"(~@Yes@, ~@No@, or ~@Quit@) ? "
+708c710
+< "\1_\1r\1h\1i\r\n\r\nConnection will be dropped in %d "\       569 UploadBeforeEvent
+---
+> "\1_\1r\1h\1i\1?Connection will be dropped in %d "\       569 UploadBeforeEvent
+731c733
+< 	"convert to minutes (\1w%u Max\1b): \1n"
+---
+> 	"convert\1\\ to minutes (\1w%u Max\1b): \1n"
+757c759
+< "View sub-board information file"                       610 SubInfoViewFileQ
+---
+> ""                                                         610 SubInfoViewFileQ
+763c765
+< "\1n\1h\1bView directory information file"                       616 DirInfoViewFileQ
+---
+> ""                                                                  616 DirInfoViewFileQ
+767,768c769,770
+< "\1n\1?\1mSending NetMail To: \1h%s\1n\1m (\1h%s\1n\1m)\r\n"\  619 NetMailing
+< 	"              From: \1h%s\1n\1m (\1h%s\1n\1m)\r\n"
+---
+> "\1n\1?\1mNetMail To: \1h%s\1n\1m (\1h%s\1n\1m)\r\n"\  619 NetMailing
+> 	"From: \1h%s\1n\1m (\1h%s\1n\1m)\r\n"
+770,772c772,774
+< "\r\n~Sub-board: @SUB@, ~Group: @GRP@, or ~All: "       621 SubGroupOrAll
+< "\r\n~Directory: @DIR@, ~Library: @LIB@, or ~All: "     622 DirLibOrAll
+< "\r\n\1_\1y\1hEnter path: "                                623 EnterPath
+---
+> "\r\n~Sub-board: @SUB@,\1\\ ~Group: @GRP@, or ~@All@: "       621 SubGroupOrAll
+> "\r\n~Directory: @DIR@,\1\\ ~Library: @LIB@, or ~@All@: "     622 DirLibOrAll
+> "\r\n\1_\1y\1hEnter path\1\\: "                        623 EnterPath
+784c786
+< "\r\n\1b\1hLine numbers (#,#), Range (#-#), \1w~L\1bist "\  635 QuoteLinesPrompt
+---
+> "\r\n\1b\1hLine numbers (#,#), Range (#-#),\1\\ \1w~L\1bist "\  635 QuoteLinesPrompt
+798,799c800,801
+< "\7\1n\1y\1h%s\1n\1c sent you E-mail.\r\n"                   648 UserSentYouMail
+< "\7\1n\1y\1h%s\1n\1c sent you a file.\r\n"                   649 UserSentYouFile
+---
+> "\1n\1y\1h%s\1n\1c sent you E-mail.\r\n"                   648 UserSentYouMail
+> "\1n\1y\1h%s\1n\1c sent you a file.\r\n"                   649 UserSentYouFile
+801,805c803,807
+< "\7\1_\1w\1hNode %2d: \1g%s\1n\1g read your E-mail.\r\n"      651 UserReadYourMailNodeMsg
+< "\r\nWhich, ~Quit, or [%u]: "                           652 JoinWhichGrp
+< "\r\nWhich, ~Quit, or [%u]: "                           653 JoinWhichSub
+< "\r\nWhich, ~Quit, or [%u]: "                           654 JoinWhichLib
+< "\r\nWhich, ~Quit, or [%u]: "                           655 JoinWhichDir
+---
+> "\1_\1w\1hNode %2d: \1g%s\1n\1g read your E-mail.\r\n"       651 UserReadYourMailNodeMsg
+> "\r\n@Which@, ~@Quit@, or [%u]: "                           652 JoinWhichGrp
+> "\r\n@Which@, ~@Quit@, or [%u]: "                           653 JoinWhichSub
+> "\r\n@Which@, ~@Quit@, or [%u]: "                           654 JoinWhichLib
+> "\r\n@Which@, ~@Quit@, or [%u]: "                           655 JoinWhichDir
+815,817c817,819
+< "\1\?Download attached file: \1w%s\1b (%s bytes)"         662 DownloadAttachedFileQ
+< "\r\n\r\n\1nTime left : %13u\r\n"                        663 FreeMinLeft
+< "\1b\1h\r\nTime left to deposit in minute bank "\         664 FreeMinToDeposit
+---
+> "\1\?Download attached file\1\\: \1w%s\1b (%s bytes)"     662 DownloadAttachedFileQ
+> "\r\n\r\n\1nTime left : %13u\r\n"                         663 FreeMinLeft
+> "\1b\1h\r\nTime left to deposit in minute bank\1\\ "\     664 FreeMinToDeposit
+852,858c854,860
+< ""                                                      695 NodeActionMain
+< ""                                                      696 NodeActionReadMsgs
+< ""                                                      697 NodeActionReadMail
+< ""                                                      698 NodeActionSendMail
+< ""                                                      699 NodeActionReadTxt
+< ""                                                      700 NodeActionReadSentMail
+< ""                                                      701 NodeActionPostMsg
+---
+> ""                                                      695 NodeActionMainMenu
+> ""                                                      696 NodeActionReadingMsgs
+> ""                                                      697 NodeActionReadingMail
+> ""                                                      698 NodeActionSendingMail
+> ""                                                      699 NodeActionReadingTextFiles
+> ""                                                      700 NodeActionReadingSentMail
+> ""                                                      701 NodeActionPostingMsg
+860,866c862,868
+< ""                                                      703 NodeActionXtrn
+< ""                                                      704 NodeActionDefaults
+< ""                                                      705 NodeActionXfer
+< ""                                                      706 NodeActionDLing
+< ""                                                      707 NodeActionULing
+< ""                                                      708 NodeActionBiXfer
+< ""                                                      709 NodeActionListFiles
+---
+> ""                                                      703 NodeActionXtrnMenu
+> ""                                                      704 NodeActionSettings
+> ""                                                      705 NodeActionFileMenu
+> ""                                                      706 NodeActionDownloadingFile
+> ""                                                      707 NodeActionUploadingFile
+> ""                                                      708 NodeActionBiXferFile
+> ""                                                      709 NodeActionListingFiles
+869,870c871
+< "\1h%s\1n\1g \1(%u\1) %u %c in multinode chat"\              712 NodeActionMultiChat
+< 	"%.0s%.0s%.0s channel %u"
+---
+> ""				       	                                712 NodeActionMultiChat
+872,874c873,875
+< ""                                                      714 NodeActionChatSec
+< ""                                                      715 NodeActionSysopAct
+< ""                                                      716 NodeActionQWK
+---
+> ""                                                      714 NodeActionChatMenu
+> ""                                                      715 NodeActionSysop
+> ""                                                      716 NodeActionQWKmenu
+876,878c877,879
+< ""                                                      718 NodeActionPaging
+< ""                                                      719 NodeActionRetrieving
+< "YNQ*"                                                  720 YNQP /* (Yes/No/Quit/Password chars) */
+---
+> ""                                                      718 NodeActionPagingNode
+> ""                                                      719 NodeActionRetrievingFile
+> ""                                                      720 NodeActionCustom
+914c915
+< "\r\n\1n\1h\1bWhich or [\1wQ\1b]uit: \1c"                   	756 QWKSettingsWhich
+---
+> "\r\n\1n\1h\1b@Which@ or [\1wQ\1b]uit: \1c"                   	756 QWKSettingsWhich
+916c917
+< "\1n\r\nSorry, you can't delete message #%lu.\r\n"	758 CantDeleteMsg
+---
+> "\1n\r\nSorry, you can't delete message #%u.\r\n"	758 CantDeleteMsg
+918c919
+< "\1n\r\nSorry, you can't post that message.\r\n"	760 CantPostMsg
+---
+> "\rSorry, you can't post that message.\1\\ Reason: %s\r\n"	760 CantPostMsg
+921c922
+< "\1n\1r\1iWARNING: You are reading messages past the last unvalidated message (%u)" 763 UnvalidatedWarning
+---
+> "\1n\1r\1iWARNING: You are reading messages\1\\ past the last unvalidated message (%u)" 763 UnvalidatedWarning
+962c963
+< "\r\nVote for message: ~Up, ~Down, or ~Quit: "               783 VoteMsgUpDownOrQuit
+---
+> "\r\nVote for message: ~Up, ~Down, or ~@Quit@: "               783 VoteMsgUpDownOrQuit
+972c973
+< "\r\nToggle which vote (up to %u), ~Quit or [Cast]: "           793 BallotVoteWhich
+---
+> "\r\nToggle @Which@ vote (up to %u), ~@Quit@ or [Cast]: "           793 BallotVoteWhich
+979c980
+< "Remove file"                               800 RemoveFileQ
+---
+> "Remove file from database"                 800 RemoveFileQ
+983,984c984,985
+< "\r\n\1h\1yEnter (space-separated) Tags: "  804 TagMessagePrompt
+< "\r\n\xb3 \1bTags\1n\1b: \1h\1c%.70s"          805 MsgTags
+---
+> "\r\n\1h\1yEnter (space-separated) Tags\1\\: "  804 TagMessagePrompt
+> "\r\n\xb3 \1bTags\1n\1b: \1h\1c%.70s"           805 MsgTags
+1007c1008
+< "\1n\1hLogging on to @BBS@ as @ALIAS@ @ELLIPSIS@\1n\r\n"\ 826 LoggingOn
+---
+> "\1n\1hLogging on to @BBS@\1\\ as @ALIAS@ @ELLIPSIS@\1n\r\n"\ 826 LoggingOn
+1033c1034
+< "\r\nEnter number of messages from end, ~Date, ~Quit, or"\ 849 SetMsgPtrPrompt
+---
+> "\r\nEnter number of messages from end,\1\\ ~Date, ~@Quit@, or"\ 849 SetMsgPtrPrompt
+1038c1039
+< "A"                                                        853 AllKey
+---
+> "A"                                                        853 Unused853
+1040,1041c1041,1111
+< "L"                                                        855 ListKey
+< 
+---
+> "List"                                                     855 List
+> "%.0s\1n\1mNew e-mail from \1h%s \1n<\1h%s\1n>\r\n"        856 InternetMailReceived
+> "\1n\1mand it was automatically forwarded to\1\\: \1h%s\1n\r\n" 857 InternetMailForwarded
+> "%.0s\1n\1h\1m%s \1n\1msent you NetMail%s\1\\ from \1h%s\1n\r\n" 858 FidoNetMailReceived
+> " with attachment"                                         859 WithAttachment
+> "%.0s\1n\1h\1m%s \1n\1msent you EchoMail on "\             860 FidoEchoMailReceived
+>     "\1h%s \1n\1m%s\1n\r\n"
+> "\1_\1w\1hCalculating file's hash values @ELLIPSIS@\1n"    861 HashingFile
+> "\1[\1>"                                                   862 HashedFile
+> "New User Validation"                                      863 NewUserValEmailSubj
+> "\7\7\7"                                                   864 InactivityAlert
+> "None"                                                     865 None
+> "Which"                                                    866 Which
+> "Next"                                                     867 Next
+> "Prev"                                                     868 Previous
+> "Quit"                                                     869 Quit
+> "Language"                                                 870 Language
+> "English"                                                  871 LANG
+> "\1n\1b[\1h\1wI\1n\1b] \1h%-29s\1n\1b\1\\: \1c%s\r\n"      872 UserDefaultsLanguage
+> "*"                                                        873 PasswordChar
+> " via sftp"                                                874 NodeConnectionSFTP
+> "\1n\1b[\1h\1wW\1n\1b] \1hWord-wrap Message Text       \1n\1b: \1c%s\r\n"	875  QWKSettingsWrapText
+> "\1/Unknown uploader (%s) of file\1\\: %s"			       876 UnknownUploader
+> "FREE"                                                     877 FREE
+> "Sun"                                                      878 Sun
+> "Mon"                                                      879 Mon
+> "Tue"                                                      880 Tue
+> "Wed"                                                      881 Wed
+> "Thu"                                                      882 Thu
+> "Fri"                                                      883 Fri
+> "Sat"                                                      884 Sat
+> "Jan"                                                      885 Jan
+> "Feb"                                                      886 Feb
+> "Mar"                                                      887 Mar
+> "Apr"                                                      888 Apr
+> "May"                                                      889 May
+> "Jun"                                                      890 Jun
+> "Jul"                                                      891 Jul
+> "Aug"                                                      892 Aug
+> "Sep"                                                      893 Sep
+> "Oct"                                                      894 Oct
+> "Nov"                                                      895 Nov
+> "Dec"                                                      896 Dec
+> "\7@ALIAS@ paged you to chat from node @NODE@\7"           897 SysopPageNotification
+> "at main menu"                                             898 NodeActivityMainMenu
+> "reading messages"                                         899 NodeActivityReadingMsgs
+> "reading mail"                                             900 NodeActivityReadingMail
+> "sending mail"                                             901 NodeActivitySendingMail
+> "reading text files"                                       902 NodeActivityReadingTextFiles
+> "reading sent mail"                                        903 NodeActivityReadingSentMail
+> "posting message"                                          904 NodeActivityPostingMsg
+> "posting auto-message"                                     905 NodeActivityAutoMsg
+> "at external program menu"                                 906 NodeActivityXtrnMenu
+> "running"                                                  907 NodeActivityRunningXtrn
+> "changing settings"                                        908 NodeActivitySettings
+> "at file menu"                                             909 NodeActivityFileMenu
+> "downloading files"                                        910 NodeActivityDownloadingFile
+> "uploading files"                                          911 NodeActivityUploadingFile
+> "transferring files bidirectional"                         912 NodeActivityBiXferFile
+> "listing files"                                            913 NodeActivityListingFiles
+> "logging on"                                               914 NodeActivityLoggingOn
+> "chatting with %s"                                         915 NodeActivityLocalChat
+> "in multinode chat channel %d"                             916 NodeActivityChatChannel
+> "in multinode global chat channel"                         917 NodeActivityGlobalChat
+> "in chat section"                                          918 NodeActivityChatMenu
+> "performing sysop activity"                                919 NodeActivitySysop
+> "transferring QWK packet"                                  920 NodeActivityQWKmenu
+> "chatting with node %u"                                    921 NodeActivityNodeChat
+> "paging node %u for private chat"                          922 NodeActivityPagingNode
+> "retrieving file from device #%d"                          923 NodeActivityRetrievingFile
+> "performing custom activity"                               924 NodeActivityCustom
