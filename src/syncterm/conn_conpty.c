@@ -158,7 +158,7 @@ int conpty_connect(struct bbslist *bbs)
 			.cb = sizeof(STARTUPINFOEXA)
 		}
 	};
-	size_t sz;
+	SIZE_T sz;
 	// "Note  This initial call will return an error by design. This is expected behavior."
 	!InitializeProcThreadAttributeList(NULL, 1, 0, &sz);
 	si.lpAttributeList = HeapAlloc(heap, 0, sz);
