@@ -372,7 +372,7 @@ static ptrdiff_t js_socket_sendsocket(js_socket_private_t *p, const void *msg, s
 			if(p->nonblocking)
 				return copied;
 			total += copied;
-			if(total >= (ptrdiff_t)len)
+			if(copied >= (ptrdiff_t)len)
 				return total;
 			do_CryptFlush(p);
 			len -= copied;
