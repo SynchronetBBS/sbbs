@@ -188,6 +188,7 @@ ssh_input_thread(void *args)
 	int    chan;
 	bool   both_gone = false;
 	bool   sftp_do_finish;
+	bool   data_avail;
 
 	SetThreadName("SSH Input");
 	conn_api.input_thread_running = 1;
@@ -221,7 +222,11 @@ ssh_input_thread(void *args)
 			sftpc_finish(sftp_state);
 			sftp_do_finish = false;
 		}
-		if (!socket_readable(ssh_sock, 100))
+		if (!socket_check(ssh_sock, &data_avail, NULL, 100)) {
+			conn_api.terminate = true;
+			break;
+		}
+		if (!data_avail)
 			continue;
 
 		pthread_mutex_lock(&ssh_mutex);

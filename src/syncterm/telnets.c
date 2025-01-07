@@ -57,7 +57,11 @@ telnets_input_thread(void *args)
 	SetThreadName("TelnetS Input");
 	conn_api.input_thread_running = 1;
 	while (!conn_api.terminate) {
-		if (!socket_readable(telnets_sock, 100))
+		bool data_avail;
+
+		if (!socket_check(telnets_sock, &data_avail, NULL, 100))
+			break;
+		if (!data_avail)
 			continue;
 		pthread_mutex_lock(&telnets_mutex);
 		FlushData(telnets_session);
