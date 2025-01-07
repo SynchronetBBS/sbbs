@@ -207,6 +207,7 @@ function unicode_cp437(uc)
 		case 0x2008: return String.fromCharCode(0x0020);
 		case 0x2009: return String.fromCharCode(0x0020);
 		case 0x200A: return String.fromCharCode(0x0020);
+		case 0x200C: return ''; // ZERO WIDTH NON-JOINER
 		case 0x2010: return String.fromCharCode(0x002D);
 		case 0x2011: return String.fromCharCode(0x002D);
 		case 0x2012: return String.fromCharCode(0x002D);
