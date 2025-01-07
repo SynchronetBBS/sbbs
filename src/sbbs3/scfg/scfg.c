@@ -385,7 +385,10 @@ void cfg_wizard(void)
 					"                                               digital man (rob)\n"
 					);
 				char* opts[] = { "Save Changes", "Discard Changes", NULL };
-				if(uifc.list(WIN_SAV | WIN_L2R | WIN_NOBRDR, 0, 14 ,0, NULL, NULL, NULL, opts) != 0) {
+				int sc = uifc.list(WIN_SAV | WIN_L2R | WIN_NOBRDR | WIN_ATEXIT, 0, 14 ,0, NULL, NULL, NULL, opts);
+				if(sc != 0) {
+					if (sc == -1)
+						uifc.exit_flags &= ~UIFC_XF_QUIT;
 					stage = -1;
 					continue;
 				}
@@ -1158,8 +1161,11 @@ int save_changes(int mode)
 		"these changes, select `No`. If you are not sure and want to review the\n"
 		"configuration before deciding, hit ~ ESC ~.\n"
 	;
-	i=uifc.list(mode|WIN_SAV,0,0,0,&i,0,"Save Changes",uifcYesNoOpts);
-	if(i!=-1)
+	i=uifc.list(mode|WIN_SAV|WIN_ATEXIT,0,0,0,&i,0,"Save Changes",uifcYesNoOpts);
+	if (i == -1) {
+		uifc.exit_flags &= ~UIFC_XF_QUIT;
+	}
+	else
 		uifc.changes=0;
 	return(i);
 }
