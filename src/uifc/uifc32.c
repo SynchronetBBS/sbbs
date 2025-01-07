@@ -1145,8 +1145,8 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 		gotkey=0;
 		textattr(((api->lbclr)&0x0f)|((api->lbclr >> 4)&0x0f));
 		gotoxy(s_left+lbrdrwidth+2+left, s_top+y);
-		if((api->exit_flags & UIFC_XF_QUIT) || dyn_kbwait(mode) || (mode&(WIN_POP|WIN_SEL))) {
-			if(api->exit_flags & UIFC_XF_QUIT)
+		if(((api->exit_flags & UIFC_XF_QUIT) && !(mode & WIN_ATEXIT)) || dyn_kbwait(mode) || (mode&(WIN_POP|WIN_SEL))) {
+			if((api->exit_flags & UIFC_XF_QUIT) && !(mode & WIN_ATEXIT))
 				gotkey = CIO_KEY_QUIT;
 			else if(mode&WIN_POP)
 				gotkey=ESC;

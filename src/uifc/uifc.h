@@ -165,6 +165,7 @@
 #define WIN_LEFTKEY		(1LL<<32)	/* Display left-arrow-key support indicator */
 #define WIN_RIGHTKEY	(1LL<<33)	/* Display right-arrow-key support indicator */
 #define WIN_BLANKOPTS	(1LL<<34)	/* Blank options are allowed (terminate list on NULL only) */
+#define WIN_ATEXIT      (1LL<<35)	/* Do not exit this because UIFC_XF_QUIT is set - for non-exiting menus */
 
 #define WIN_MID WIN_L2R|WIN_T2B  /* Place window in middle of screen */
 #define WIN_GET	WIN_COPY
