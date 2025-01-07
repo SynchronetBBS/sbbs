@@ -1789,7 +1789,8 @@ x11_event(XEvent *ev)
 		case MapNotify:
 			if (map_pending) {
 				map_pending = false;
-				handle_configuration(pending_width, pending_height, true, true);
+				if (pending_width && pending_height)
+					handle_configuration(pending_width, pending_height, true, true);
 			}
 			break;
 		case NoExpose:
