@@ -1031,7 +1031,7 @@ int main(int argc, char **argv)
 					"Otherwise, select `No` or hit ~ ESC ~.\n"
 				;
 				i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Exit SCFG",uifcYesNoOpts);
-				if(!i)
+				if(!i || uifc.exit_flags & UIFC_XF_QUIT)
 					bail(0);
 				break;
 		}
