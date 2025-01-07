@@ -303,7 +303,6 @@ static int sdl_user_func_ret(int func, ...)
 void exit_sdl_con(void)
 {
 	// Avoid calling exit(0) from an atexit() function...
-	ciolib_reaper = 0;
 	if (!sdl_sync_initialized)
 		sdl_initsync();
 	sdl_user_func_ret(SDL_USEREVENT_QUIT);
@@ -429,9 +428,8 @@ int sdl_init(int mode)
 		return(0);
 	}
 
-	ciolib_reaper = 0;
 	sdl_user_func_ret(SDL_USEREVENT_QUIT);
-	return(-1);
+	exit(0);
 }
 
 static void
@@ -1133,20 +1131,11 @@ void sdl_video_event_thread(void *data)
 				}
 				break;
 			case SDL_QUIT:
-				/*
-				 * SDL2: Do we still need the reaper?
-				 * This is what exit()s programs when the
-				 * X is hit.
-				 */
-				if (ciolib_reaper)
-					sdl_user_func(SDL_USEREVENT_QUIT);
+				if (sdl_init_good)
+					sdl_add_key(CIO_KEY_QUIT, &cvstat);
 				else {
-					if (sdl_init_good)
-						sdl_add_key(CIO_KEY_QUIT, &cvstat);
-					else {
-						sdl.QuitSubSystem(SDL_INIT_VIDEO);
-						return;
-					}
+					sdl.QuitSubSystem(SDL_INIT_VIDEO);
+					return;
 				}
 				break;
 			case SDL_WINDOWEVENT:
@@ -1181,8 +1170,6 @@ void sdl_video_event_thread(void *data)
 
 					case SDL_USEREVENT_QUIT:
 						sdl_ufunc_retval=0;
-						if (ciolib_reaper)
-							exit(0);
 						sdl.QuitSubSystem(SDL_INIT_VIDEO);
 						sem_post(&sdl_ufunc_ret);
 						return;
