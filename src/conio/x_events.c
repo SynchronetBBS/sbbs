@@ -1077,7 +1077,7 @@ static int init_window()
 		x11.XSetWMProperties(dpy, win, NULL, NULL, 0, 0, NULL, wmhints, classhints);
 		x11.XFree(wmhints);
 	}
-	Atom *tmp_icon = malloc((ciolib_initial_icon_width * ciolib_initial_icon_width + 2) * sizeof(Atom));
+	long *tmp_icon = malloc((ciolib_initial_icon_width * ciolib_initial_icon_width + 2) * sizeof(long));
 	if (tmp_icon) {
 		for (size_t pos = 0; pos < ciolib_initial_icon_width * ciolib_initial_icon_width; pos++)
 			tmp_icon[pos+2] = ((uint32_t*)ciolib_initial_icon)[pos];
