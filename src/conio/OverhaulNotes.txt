@@ -223,3 +223,6 @@ Possible names:
 PixelPerfect
 PixelPusher
 Glarmak
+
+SyncTERM should integrate with the "system" keyring
+
