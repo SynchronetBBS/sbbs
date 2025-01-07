@@ -88,7 +88,7 @@ $(JSLIB_BUILD): $(3RDP_ROOT)/dist/libmozjs.tgz $(3RDP_ROOT)/dist/libffi.tgz $(3R
 	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-disable-shell.patch
 	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-no-rwx-pages.patch
 	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-darwin-configure.patch
-	#$(QUIET)patch -b -p0 -d $(JS_SRC) < js-keep-ffi-cache.patch
+	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-keep-ffi-cache.patch
 	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-support-mingw-cross.patch
 	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-int-main-conf.patch
 	$(QUIET)patch -b -p0 -d $(JS_SRC) < js-include-headers.patch
