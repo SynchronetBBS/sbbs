@@ -2930,8 +2930,11 @@ int main(int argc, char **argv)
 							"Select `Yes` to save the config file, `No` to quit without saving,\n"
 							"or hit ~ ESC ~ to go back to the menu.\n\n";
 						i=0;
-						i=uifc.list(WIN_MID|WIN_SAV,0,0,0,&i,0,"Save Config File",uifcYesNoOpts);
-						if(i==-1) break;
+						i=uifc.list(WIN_MID|WIN_SAV|WIN_ATEXIT,0,0,0,&i,0,"Save Config File",uifcYesNoOpts);
+						if(i==-1) {
+							uifc.exit_flags &= ~UIFC_XF_QUIT;
+							break;
+						}
 						if(i == 0) {
 							uifc.pop("Writing config ...");
 							bool success = sbbsecho_write_ini(&cfg);
