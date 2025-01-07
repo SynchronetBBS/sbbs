@@ -1077,7 +1077,14 @@ static int init_window()
 		x11.XSetWMProperties(dpy, win, NULL, NULL, 0, 0, NULL, wmhints, classhints);
 		x11.XFree(wmhints);
 	}
-	set_win_property(ATOM__NET_WM_ICON, XA_CARDINAL, 32, PropModeReplace, ciolib_initial_icon, ciolib_initial_icon_width * ciolib_initial_icon_width);
+	uint32_t *tmp_icon = malloc(ciolib_initial_icon_width * ciolib_initial_icon_width * 4 + 2);
+	if (tmp_icon) {
+		memcpy(&tmp_icon[2], ciolib_initial_icon, ciolib_initial_icon_width * ciolib_initial_icon_width);
+		tmp_icon[0] = ciolib_initial_icon_width;
+		tmp_icon[1] = ciolib_initial_icon_width;
+		set_win_property(ATOM__NET_WM_ICON, XA_CARDINAL, 32, PropModeReplace, tmp_icon, ciolib_initial_icon_width * ciolib_initial_icon_width + 2);
+		free(tmp_icon);
+	}
 
 	pid_l = getpid();
 	set_win_property(ATOM__NET_WM_PID, XA_CARDINAL, 32, PropModeReplace, &pid_l, 1);
