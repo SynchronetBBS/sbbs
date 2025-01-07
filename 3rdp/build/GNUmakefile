@@ -105,7 +105,6 @@ else
 	$(QUIET)$(MAKE) -s -C $(JS_SRC)/js-1.8.5/js/src
 endif
 	$(QUIET)$(MAKE) -C $(JS_SRC)/js-1.8.5/js/src install
-	$(QUIET)$(MAKE) -C $(JS_SRC)/js-1.8.5/js/src/ctypes/libffi install
 
 $(CRYPT_SRC): | $(3RDPSRCDIR)
 	$(QUIET)$(IFNOTEXIST) mkdir $(CRYPT_SRC)
