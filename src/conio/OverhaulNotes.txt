@@ -218,3 +218,8 @@ allow using binsearch() to find the handler.
 4 bits for intermediate character
 6 bits for final character
 = 29 bits
+
+Possible names:
+PixelPerfect
+PixelPusher
+Glarmak
