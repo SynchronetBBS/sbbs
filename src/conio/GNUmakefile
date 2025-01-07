@@ -68,3 +68,7 @@ $(MTOBJODIR)$(DIRSEP)ciolib_res${OFILE}: ciolib.rc syncicon64.ico ciolib.manifes
 	@echo Creating $< ...
 	$(QUIET)${WINDRES} $(WINDRESFLAGS) -O coff -i ciolib.rc -o $@
 endif
+
+quittest: quittest.c $(CIOLIB-MT_BUILD)
+	${QUIET}$(CC) $(CFLAGS) $(MT_CFLAGS) $(LDFLAGS) $(MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) quittest.c -o $@ $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS)
+
