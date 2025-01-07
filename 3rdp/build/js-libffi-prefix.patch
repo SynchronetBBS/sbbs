@@ -1,0 +1,22 @@
+--- js-1.8.5/js/src/configure.orig	2025-01-07 07:01:33.936406000 -0500
++++ js-1.8.5/js/src/configure	2025-01-07 07:01:56.530360000 -0500
+@@ -16234,7 +16234,7 @@
+ # Build jsctypes if it's enabled.
+ if test "$JS_HAS_CTYPES"; then
+   # Run the libffi 'configure' script.
+-  ac_configure_args="--disable-shared --enable-static --disable-raw-api"
++  ac_configure_args="--disable-shared --enable-static --disable-raw-api --prefix=${prefix}"
+   if test "$MOZ_DEBUG"; then
+     ac_configure_args="$ac_configure_args --enable-debug"
+   fi
+--- js-1.8.5/js/src/configure.in.orig	2025-01-07 07:01:42.132746000 -0500
++++ js-1.8.5/js/src/configure.in	2025-01-07 07:02:05.979153000 -0500
+@@ -6093,7 +6093,7 @@
+ # Build jsctypes if it's enabled.
+ if test "$JS_HAS_CTYPES"; then
+   # Run the libffi 'configure' script.
+-  ac_configure_args="--disable-shared --enable-static --disable-raw-api"
++  ac_configure_args="--disable-shared --enable-static --disable-raw-api --prefix=${prefix}"
+   if test "$MOZ_DEBUG"; then
+     ac_configure_args="$ac_configure_args --enable-debug"
+   fi
