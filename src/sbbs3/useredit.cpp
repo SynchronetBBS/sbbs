@@ -389,7 +389,7 @@ void sbbs_t::useredit(int usernumber)
 			case 'M':
 				bputs(text[UeditML]);
 				ultoa(user.level,str,10);
-				if(getstr(str,2,K_NUMBER|K_LINE))
+				if(getstr(str,2,K_NUMBER|K_LINE|K_EDIT|K_AUTODEL))
 					putuserstr(user.number, USER_LEVEL, str);
 				break;
 			case 'N':
