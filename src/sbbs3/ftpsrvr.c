@@ -1503,6 +1503,24 @@ static BOOL ftpalias(char* fullalias, char* filename, user_t* user, client_t* cl
 		}
 	}
 
+	for(int i = 0; i < scfg.total_dirs; ++i) {
+		if(scfg.dir[i]->vshortcut[0] == '\0')
+			continue;
+		if(!can_user_access_dir(&scfg, i, user, client))
+			continue;
+		if(stricmp(scfg.dir[i]->vshortcut, alias) == 0) {
+			if(curdir != NULL)
+				*curdir = i;
+			if(p != NULL && filename != NULL) {
+				if(*p)
+					sprintf(filename, "%s%s", scfg.dir[i]->path, p);
+				else
+					sprintf(filename, "%s%s", scfg.dir[i]->path, fname);
+			}
+			return TRUE;
+		}
+	}
+
 	SAFEPRINTF(aliasfile,"%sftpalias.cfg",scfg.ctrl_dir);
 	if((fp=fopen(aliasfile,"r"))==NULL)
 		return FALSE;
@@ -3690,6 +3708,22 @@ static void ctrl_thread(void* arg)
 						}
 
 						/* File Aliases */
+						for(int i = 0; i < scfg.total_dirs; ++i) {
+							if(scfg.dir[i]->vshortcut[0] == '\0')
+								continue;
+							if(!can_user_access_dir(&scfg, i, &user, &client))
+								continue;
+							SAFEPRINTF2(aliaspath,"/%s/%s", scfg.lib[scfg.dir[i]->lib]->vdir, scfg.dir[i]->vdir);
+							get_unique(aliaspath, uniq);
+							if (cmd[3] == 'D')
+								send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", "el", UINT64_MAX, /* modify_date: */0, /* owner: */scfg.lib[scfg.dir[i]->lib]->vdir, uniq, 0, scfg.dir[i]->vshortcut);
+							else {
+								if(strcmp(mls_fname, scfg.dir[i]->vshortcut) != 0)
+									continue;
+								send_mlsx_entry(fp, sock, sess, mlsx_feats, "dir", "el", UINT64_MAX, /* modify_date: */0, /* owner: */scfg.lib[scfg.dir[i]->lib]->vdir, uniq, 0, aliaspath[0] ? aliaspath : mls_path);
+							}
+						}
+
 						sprintf(aliasfile,"%sftpalias.cfg",scfg.ctrl_dir);
 						if((alias_fp=fopen(aliasfile,"r"))!=NULL) {
 
@@ -3992,6 +4026,25 @@ static void ctrl_thread(void* arg)
 				}
 
 				/* File Aliases */
+				for(int i = 0; i < scfg.total_dirs; ++i) {
+					if(scfg.dir[i]->vshortcut[0] == '\0')
+						continue;
+					if(!wildmatchi(scfg.dir[i]->vshortcut, filespec, FALSE))
+						continue;
+					if(!can_user_access_dir(&scfg, i, &user, &client))
+						continue;
+					if(detail) {
+						fprintf(fp,"drwxrwxrwx   1 %-*s %-8s %9ld %s %2d %02d:%02d %s\r\n"
+							,NAME_LEN
+							,scfg.sys_id
+							,scfg.lib[scfg.dir[i]->lib]->vdir
+							,512L
+							,ftp_mon[cur_tm.tm_mon],cur_tm.tm_mday,cur_tm.tm_hour,cur_tm.tm_min
+							,scfg.dir[i]->vshortcut);
+					} else
+						fprintf(fp,"%s\r\n", scfg.dir[i]->vshortcut);
+				}
+
 				sprintf(aliasfile,"%sftpalias.cfg",scfg.ctrl_dir);
 				if((alias_fp=fopen(aliasfile,"r"))!=NULL) {
 
@@ -4360,6 +4413,14 @@ static void ctrl_thread(void* arg)
 					if(lib<0) {
 
 						/* File Aliases */
+						for(int i = 0; i < scfg.total_dirs; ++i) {
+							if(scfg.dir[i]->vshortcut[0] == '\0')
+								continue;
+							if(!can_user_access_dir(&scfg, i, &user, &client))
+								continue;
+							fprintf(fp,"%-*s %s\r\n",INDEX_FNAME_LEN, scfg.dir[i]->vshortcut, scfg.dir[i]->lname);
+						}
+
 						sprintf(aliasfile,"%sftpalias.cfg",scfg.ctrl_dir);
 						if((alias_fp=fopen(aliasfile,"r"))!=NULL) {
 

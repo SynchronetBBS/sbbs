@@ -177,6 +177,10 @@ void pathify(char* str)
 
 void init_vdir(scfg_t* cfg, dir_t* dir)
 {
+	if(dir->vdir_name[0] != '\0') {
+		SAFECOPY(dir->vdir, dir->vdir_name);
+		return;
+	}
 	switch(cfg->lib[dir->lib]->vdir_name) {
 		case VDIR_NAME_SHORT:
 			SAFECOPY(dir->vdir, dir->sname);

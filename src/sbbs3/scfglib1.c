@@ -982,8 +982,8 @@ char* dir_area_tag(scfg_t* cfg, dir_t* dir, char* str, size_t size)
 /****************************************************************************/
 char* dir_vpath(scfg_t* cfg, dir_t* dir, char* path, size_t size)
 {
-	if(dir->vpath[0] != '\0')
-		return dir->vpath;
+	if(dir->vshortcut[0] != '\0')
+		return dir->vshortcut;
 	else
 		safe_snprintf(path, size, "%s/%s"
 			,cfg->lib[dir->lib]->vdir, dir->vdir);

@@ -784,7 +784,8 @@ bool write_file_cfg(scfg_t* cfg)
 				iniSetString(&section, name, "area_tag", cfg->dir[i]->area_tag, &ini_style);
 				backslash(cfg->dir[i]->path);
 				iniSetString(&section, name, "path", cfg->dir[i]->path, &ini_style);
-				iniSetString(&section, name, "vpath", cfg->dir[i]->vpath, &ini_style);
+				iniSetString(&section, name, "vdir", cfg->dir[i]->vdir_name, &ini_style);
+				iniSetString(&section, name, "vshortcut", cfg->dir[i]->vshortcut, &ini_style);
 
 				if (cfg->dir[i]->misc&DIR_FCHK) {
 					SAFECOPY(path, cfg->dir[i]->path);

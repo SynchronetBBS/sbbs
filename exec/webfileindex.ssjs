@@ -151,18 +151,20 @@ function get_dir_desc(vpath)
 // List configured aliases to directories as shortcuts
 function shortcuts()
 {
-	var file = new File(system.ctrl_dir + "web_alias.ini");
-	if(!file.open("r"))
-		return;
-	var list = file.iniGetObject();
-	file.close();
-	if(!list)
-		return;
 	var dir = {};
-	for(var i in list) {
-		var desc = get_dir_desc(list[i]);
-		if(desc)
-			dir[i] = desc;
+	for(var i in file_area.dir) {
+		if(file_area.dir[i].vshortcut)
+			dir['/' + file_area.dir[i].vshortcut + '/'] = file_area.dir[i].description;
+	}
+	var file = new File(system.ctrl_dir + "web_alias.ini");
+	if(file.open("r")) {
+		var list = file.iniGetObject();
+		file.close();
+		for(var i in list) {
+			var desc = get_dir_desc(list[i]);
+			if(desc)
+				dir[i] = desc;
+		}
 	}
 	if(!Object.keys(dir).length)
 		return;

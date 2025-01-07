@@ -3337,6 +3337,37 @@ static enum get_fullpath get_fullpath(http_session_t * session)
 	return(isabspath(session->req.physical_path) ? FULLPATH_VALID : FULLPATH_INVALID);
 }
 
+// Create root-directory aliases from File Areas ... Virtual Shortcut config strings
+static void add_vshortcuts()
+{
+	int count;
+
+	COUNT_LIST_ITEMS(alias_list, count);
+	for(int i = 0; i < scfg.total_dirs; ++i) {
+		if(scfg.dir[i]->vshortcut[0] == '\0')
+			continue;
+		named_string_t** np = (named_string_t**)realloc(alias_list, sizeof(named_string_t*) * (count + 2));
+		if(np == NULL)
+			break;
+		alias_list = np;
+		if((alias_list[count] = (named_string_t*)malloc(sizeof(named_string_t)))==NULL)
+			break;
+		char name[LEN_DIR + 1];
+		snprintf(name, sizeof name, "/%s/", scfg.dir[i]->vshortcut);
+		if((alias_list[count]->name = strdup(name)) == NULL)
+			break;
+		char vpath[LEN_DIR + 1];
+		snprintf(vpath, sizeof vpath, "%s%s/%s/"
+			,startup->file_vpath_prefix
+			,scfg.lib[scfg.dir[i]->lib]->vdir
+			,scfg.dir[i]->vdir);
+		if((alias_list[count]->value = strdup(vpath)) == NULL)
+			break;
+		count++;
+	}
+	alias_list[count] = NULL;	/* terminate list */
+}
+
 static bool is_legal_host(const char *host, bool strip_port)
 {
 	char * stripped = NULL;
@@ -7350,6 +7381,8 @@ void web_server(void* arg)
 			,xjs_handlers, true);
 		iniFileName(web_alias_ini, sizeof(web_alias_ini), scfg.ctrl_dir, "web_alias.ini");
 		alias_list = read_ini_list(web_alias_ini, ROOT_SECTION, "Request path aliases", alias_list, false);
+		if(!(startup->options & WEB_OPT_NO_FILEBASE))
+			add_vshortcuts();
 
 		/* Don't do this for *each* CGI request, just once here during [re]init */
 		iniFileName(cgi_env_ini,sizeof(cgi_env_ini),scfg.ctrl_dir,"cgi_env.ini");

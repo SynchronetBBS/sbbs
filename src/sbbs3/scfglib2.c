@@ -307,8 +307,9 @@ bool read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		else if(!stricmp(cfg->dir[i]->sname,"OFFLINE"))	/* Offline files dir */
 			cfg->lib[cfg->dir[i]->lib]->offline_dir=i;
 
+		SAFECOPY(cfg->dir[i]->vdir_name, iniGetString(section, NULL, "vdir", "", value));
 		init_vdir(cfg, cfg->dir[i]);
-		SAFECOPY(cfg->dir[i]->vpath, iniGetString(section, NULL, "vpath", "", value));
+		SAFECOPY(cfg->dir[i]->vshortcut, iniGetString(section, NULL, "vshortcut", "", value));
 
 		SAFECOPY(cfg->dir[i]->arstr, iniGetString(section, NULL, "ars", "", value));
 		SAFECOPY(cfg->dir[i]->ul_arstr, iniGetString(section, NULL, "upload_ars", "", value));

@@ -38,7 +38,7 @@ static const char* lib_prop_desc[] = {
 	,"Name"
 	,"Description"
 	,"Access requirements"
-	,"Virtual directory name (for FTP or HTTP access)"
+	,"Virtual directory name (for FTP or Web access)"
 	,"User has sufficient access to this library's directories"
 	,"Internal code prefix (for directories)"
 	,NULL
@@ -71,8 +71,9 @@ static const char* dir_prop_desc[] = {
 	,"Configured maximum age (in days) of files before expiration"
 	,"Percent of file size awarded uploader in credits upon file upload"
 	,"Percent of file size awarded uploader in credits upon subsequent downloads"
-	,"Virtual directory name (for FTP or HTTP access)"
-	,"Virtual path (for FTP or HTTP access)"
+	,"Virtual directory name (for FTP or Web access)"
+	,"Virtual path (for FTP or Web access), with trailing slash"
+	,"Virtual shortcut (for FTP or Web access), optional"
 	,"Number of files currently in this directory"
 	,"Time-stamp of file base index of this directory"
 	,"User has sufficient access to view this directory (e.g. list files)"
@@ -187,7 +188,7 @@ static JSClass js_dir_class = {
 JSBool js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 {
 	char		str[128];
-	char		vpath[MAX_PATH+1];
+	char		vpath[128];
 	JSObject*	alllibs;
 	JSObject*	alldirs;
 	JSObject*	libobj;
@@ -549,16 +550,19 @@ JSBool js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 				if(!JS_SetProperty(cx, dirobj, "vdir", &val))
 					return JS_FALSE;
 
-				SAFEPRINTF2(vpath,"%s/%s/"
-					,p->cfg->lib[l]->vdir
-					,p->cfg->dir[d]->vdir
-					);
+				snprintf(vpath, sizeof vpath, "%s/", dir_vpath(p->cfg, p->cfg->dir[d], str, sizeof str));
 				if((js_str=JS_NewStringCopyZ(cx, vpath))==NULL)
 					return JS_FALSE;
 				val=STRING_TO_JSVAL(js_str);
 				if(!JS_SetProperty(cx, dirobj, "vpath", &val))
 					return JS_FALSE;
 				if(!JS_DefineProperties(cx, dirobj, js_dir_properties))
+					return JS_FALSE;
+
+				if((js_str=JS_NewStringCopyZ(cx, p->cfg->dir[d]->vshortcut))==NULL)
+					return JS_FALSE;
+				val=STRING_TO_JSVAL(js_str);
+				if(!JS_SetProperty(cx, dirobj, "vshortcut", &val))
 					return JS_FALSE;
 
 				val=BOOLEAN_TO_JSVAL(d==p->cfg->lib[l]->offline_dir);

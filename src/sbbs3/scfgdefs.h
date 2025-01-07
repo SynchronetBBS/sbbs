@@ -73,8 +73,9 @@ typedef struct {							/* Message group info */
 typedef struct {							/* Transfer Directory Info */
 	char		code[LEN_EXTCODE+1];		/* Internal code (with optional lib prefix) */
 	char		code_suffix[LEN_CODE+1];	/* Eight character code suffix */
-	char		vdir[LEN_SLNAME+1];			/* Virtual Directory name */
-	char		vpath[LEN_DIR+1];			/* Optional vpath (e.g. alias) */
+	char		vdir[LEN_DIR+1];			/* Virtual Directory name (dynamically generated) */
+	char		vdir_name[LEN_DIR+1];		/* Sysop-defined Virtual Directory name */
+	char		vshortcut[LEN_DIR+1];		/* Sysop-defined Virtual Directory shortcut (from root) */
 	char		area_tag[FIDO_AREATAG_LEN+1];
 	char		lname[LEN_SLNAME+1],		/* Long name - used for listing */
 				sname[LEN_SSNAME+1],		/* Short name - used for prompts */
