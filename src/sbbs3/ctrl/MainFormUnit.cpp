@@ -1894,7 +1894,7 @@ void __fastcall TMainForm::StartupTimerTick(TObject *Sender)
         CtrlDirectory=CtrlPathDialog->Edit->Text;
         delete CtrlPathDialog;
     }
-    if(CtrlDirectory.UpperCase().AnsiPos("main.ini"))
+    if(CtrlDirectory.LowerCase().AnsiPos("main.ini"))
 		CtrlDirectory.SetLength(CtrlDirectory.Length()-8);
     SAFECOPY(global.ctrl_dir,CtrlDirectory.c_str());
     memset(&cfg,0,sizeof(cfg));
