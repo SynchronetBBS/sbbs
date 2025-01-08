@@ -94,7 +94,7 @@ void sbbs_t::showfileinfo(file_t* f, bool show_extdesc)
 	bprintf(P_TRUNCATE, text[FiTimesDled],f->hdr.times_downloaded);
 	ulong timetodl = gettimetodl(&cfg, f, cur_cps);
 	if(timetodl > 0)
-		bprintf(text[FiTransferTime],sectostr(timetodl,tmp));
+		bprintf(text[FiTransferTime],sectostr(timetodl,tmp), cur_cps);
 	bputs(P_TRUNCATE, text[FileHdrDescSeparator]);
 	if(show_extdesc && f->extdesc != NULL && *f->extdesc) {
 		char* p = f->extdesc;

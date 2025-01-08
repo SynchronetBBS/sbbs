@@ -383,21 +383,21 @@
 "\1_\1h\1w%s\1n\1c was %sdownloaded by \1h%s\r\n"\         312 DownloadUserMsg
 	"\1n\1gYou were awarded \1h%s\1n\1g credits.\r\n"
 "partially "                                            313 Partially
-"\1l\1n\1gLibrary          :\1h (%u) %s"                  314 FiLib
-"\r\n\1n\1gDirectory        :\1h (%u) %s"                  315 FiDir
-"\r\n\1n\1gFilename         :\1h %s"                       316 FiFilename
-"\r\n\1n\1gFile size        :\1h %s (%s) bytes"            317 FiFileSize
-"\r\n\1n\1gCredit value     :\1h %s"                       318 FiCredits
-"\r\n\1n\1gDescription      :\1h %s"                       319 FiDescription
-"\r\n\1n\1gUploaded by      :\1h %s"                       320 FiUploadedBy
-"\r\n\1n\1gFile date        :\1h %s"                       321 FiFileDate
-"\r\n\1n\1gUploaded on      :\1h %s"                       322 FiDateUled
-"\r\n\1n\1gLast downloaded  :\1h %s"                       323 FiDateDled
-"\r\n\1n\1gTimes downloaded :\1h %u"                       324 FiTimesDled
-"\r\n\1n\1gTime to download :\1h %s"                       325 FiTransferTime
-"\r\n\1n\1gTags             :\1h %s"                       326 FiTags
-"\r\n\1n\1gUploaded to      :\1h %s"                       327 FiUploadedTo
-"\r\n\1n\1gFile %-6.6s      :\1h %s"                       328 FiChecksum
+"\1l\1n\1gLibrary     :\1h (%u) %s"                   314 FiLib
+"\r\n\1n\1gDirectory   :\1h (%u) %s"                  315 FiDir
+"\r\n\1n\1gFilename    :\1h %s"                       316 FiFilename
+"\r\n\1n\1gSize        :\1h %s (%s) bytes"            317 FiFileSize
+"\r\n\1n\1gCredit cost :\1h %s"                       318 FiCredits
+"\r\n\1n\1gDescription :\1h %s"                       319 FiDescription
+"\r\n\1n\1gUploaded by :\1h %s"                       320 FiUploadedBy
+"\r\n\1n\1gFile date   :\1h %s"                       321 FiFileDate
+"\r\n\1n\1gUploaded on :\1h %s"                       322 FiDateUled
+"\r\n\1n\1gLast D/L    :\1h %s"                       323 FiDateDled
+"\r\n\1n\1gTimes D/Led :\1h %u"                       324 FiTimesDled
+"\r\n\1n\1gTime to D/L :\1h %s at %u cps"             325 FiTransferTime
+"\r\n\1n\1gTags        :\1h %s"                       326 FiTags
+"\r\n\1n\1gUploaded to :\1h %s"                       327 FiUploadedTo
+"\r\n\1n\1g%-6.6s      :\1h %s"                       328 FiChecksum
 "\7\7\r\n\1h\1rH\1ba\1gp\1yp\1cy \1mB\1wi\1rr\1gt\1bh\1cd\1ma\1yy "\  329 HappyBirthday
 	"\1wt\1ro \1gy\1bo\1cu\r\n\7\7\1mH\1ya\1wp\1rp\1gy "\
 	"\1bB\1ci\1mr\1yt\1wh\1rd\1ga\1by \1ct\1mo \1yy\1wo\1ru\1g.\1b.\1c.\r\n\r\n"
