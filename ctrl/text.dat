@@ -1109,4 +1109,3 @@
 "paging node %u for private chat"                          922 NodeActivityPagingNode
 "retrieving file from device #%d"                          923 NodeActivityRetrievingFile
 "performing custom activity"                               924 NodeActivityCustom
-""                                                         925 FileURL
