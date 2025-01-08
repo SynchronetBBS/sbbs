@@ -119,7 +119,7 @@ struct video_params vparams[] = {
 	{VESA_132X60, COLOUR_PALETTE,        132, 60,  7,  7,  8, 8, 7, 0,  4, 3, 1056, 480},
 	/* Awesome modes */
 	{ST132X37_16_9, COLOUR_PALETTE,      132, 37, 14, 15, 16, 8, 7, 0, 16, 9, 1056, 600},
-	{ST132X52_5_4, COLOUR_PALETTE,       132, 52, 14, 15, 16, 8, 7, 0,  5, 4, 1056, 823},
+	{ST132X52_5_4, COLOUR_PALETTE,       132, 52, 14, 15, 16, 8, 7, 0,  5, 4, 1056, 832},
 	/* Stupid modes */
 	{VGA80X25, COLOUR_PALETTE,            80, 25, 14, 15, 16, 9, 7, CIOLIB_VIDEO_EXPAND | CIOLIB_VIDEO_LINE_GRAPHICS_EXPAND, 4, 3, 720, 400},
 	/* DigitalMon */
