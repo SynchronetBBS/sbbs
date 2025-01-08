@@ -28,7 +28,7 @@
 #endif
 
 SOCKET          ssh_sock = INVALID_SOCKET;
-CRYPT_SESSION   ssh_session;
+CRYPT_SESSION   ssh_session = -1;
 int             ssh_channel = -1;
 pthread_mutex_t ssh_mutex;
 pthread_mutex_t ssh_tx_mutex;
@@ -721,9 +721,12 @@ ssh_connect(struct bbslist *bbs)
 		init_uifc(true, true);
 	pthread_mutex_init(&ssh_mutex, NULL);
 	pthread_mutex_lock(&ssh_mutex);
-	ssh_channel = -1;
-	sftp_channel = -1;
-	ssh_socket = INVALID_SOCKET;
+	assert(ssh_session == -1);
+	assert(ssh_channel == -1);
+	assert(sftp_channel == -1);
+	assert(sftp_state == NULL);
+	assert(pubkey_thread_running == false);
+	assert(ssh_sock == INVALID_SOCKET);
 	pthread_mutex_unlock(&ssh_mutex);
 	pthread_mutex_init(&ssh_tx_mutex, NULL);
 
@@ -1057,13 +1060,17 @@ ssh_close(void)
 	}
 	pthread_mutex_lock(&ssh_mutex);
 	int sc = sftp_channel;
+	sftp_channel = -1;
 	pthread_mutex_unlock(&ssh_mutex);
 	if (sc != -1)
 		close_sftp_channel(sc);
-	if (sftp_state)
+	if (sftp_state) {
 		sftpc_end(sftp_state);
+		sftp_state = NULL;
+	}
 	close_ssh_channel();
 	cryptDestroySession(ssh_session);
+	ssh_session = -1;
 	if (ssh_sock != INVALID_SOCKET) {
 		closesocket(ssh_sock);
 		ssh_sock = INVALID_SOCKET;
