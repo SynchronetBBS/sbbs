@@ -4080,6 +4080,43 @@ normalize_entry(struct bbslist *bbs)
 	}
 }
 
+static void
+finish_scrollback(void)
+{
+	scrollback_buf = cterm->scrollback;
+	scrollback_cols = cterm->backwidth;
+	// TODO: Set scrollback_mode here?
+	if (cterm->scrollback != NULL) {
+		cterm_clearscreen(cterm, cterm->attr); /* Clear screen into
+							* scrollback */
+
+		// Now make the scrollback a linear buffer instead of a ring buffer
+		if (cterm->backstart) {
+			struct vmem_cell     *bottom;
+			int topsz = cterm->backlines - cterm->backstart;
+
+			bottom = malloc(cterm->backwidth * cterm->backstart * sizeof(*bottom));
+			if (bottom) {
+				memcpy(bottom, cterm->scrollback, cterm->backwidth * cterm->backstart * sizeof(*bottom));
+				memmove(cterm->scrollback, cterm->scrollback + cterm->backwidth * cterm->backstart, cterm->backwidth * topsz * sizeof(*cterm->scrollback));
+				memcpy(cterm->scrollback + cterm->backwidth * topsz, bottom, cterm->backwidth * cterm->backstart * sizeof(*bottom));
+				free(bottom);
+				scrollback_lines = cterm->backlines;
+			}
+			else {
+				memmove(cterm->scrollback, cterm->scrollback + cterm->backwidth * cterm->backstart, cterm->backwidth * topsz * sizeof(*cterm->scrollback));
+				scrollback_lines = topsz;
+			}
+		}
+		else {
+			scrollback_lines = cterm->backpos;
+		}
+	}
+	else {
+		scrollback_lines = 0;
+	}
+}
+
 bool
 doterm(struct bbslist *bbs)
 {
@@ -4153,7 +4190,6 @@ doterm(struct bbslist *bbs)
 	else {
 		FREE_AND_NULL(scrollback_buf);
 	}
-	scrollback_lines = 0;
 	scrollback_mode = txtinfo.currmode;
 	cterm = cterm_init(term.height,
 	        term.width,
@@ -4173,7 +4209,6 @@ doterm(struct bbslist *bbs)
 	cterm->mouse_state_change_cbdata = &ms;
 	cterm->mouse_state_query = mouse_state_query;
 	cterm->mouse_state_query_cbdata = &ms;
-	scrollback_cols = term.width;
 	cterm->music_enable = bbs->music;
 	ch[1] = 0;
 	zrqbuf[0] = 0;
@@ -4218,10 +4253,7 @@ doterm(struct bbslist *bbs)
 								uifcmsg("Disconnected",
 								    "`Disconnected`\n\nRemote host dropped connection");
 							check_exit(false);
-							scrollback_pos = cterm->backpos;
-							cterm_clearscreen(cterm, cterm->attr); /* Clear screen into
-                                                                                                * scrollback */
-							scrollback_lines = cterm->backpos;
+							finish_scrollback();
 							cterm_end(cterm, 0);
 							cterm = NULL;
 							// TODO: Do this before the popup to avoid being rude...
@@ -4559,10 +4591,7 @@ doterm(struct bbslist *bbs)
 					    "Selecting Yes closes the connection\n")) {
 						freescreen(savscrn);
 						setup_mouse_events(&ms);
-						scrollback_pos = cterm->backpos;
-						cterm_clearscreen(cterm, cterm->attr); /* Clear screen into
-                                                                                        * scrollback */
-						scrollback_lines = cterm->backpos;
+						finish_scrollback();
 						cterm_end(cterm, 0);
 						cterm = NULL;
 						conn_close();
@@ -4591,10 +4620,7 @@ doterm(struct bbslist *bbs)
 					j = wherey();
 					switch (syncmenu(bbs, &speed)) {
 						case -1:
-							scrollback_pos = cterm->backpos;
-							cterm_clearscreen(cterm, cterm->attr); /* Clear screen into
-                                                                                                * scrollback */
-							scrollback_lines = cterm->backpos;
+							finish_scrollback();
 							cterm_end(cterm, 0);
 							cterm = NULL;
 							conn_close();
@@ -4640,10 +4666,7 @@ doterm(struct bbslist *bbs)
 							break;
 						case 13:
 #endif
-							scrollback_pos = cterm->backpos;
-							cterm_clearscreen(cterm, cterm->attr); /* Clear screen into
-                                                                                                * scrollback */
-							scrollback_lines = cterm->backpos;
+							finish_scrollback();
 							cterm_end(cterm, 0);
 							cterm = NULL;
 							conn_close();
@@ -5089,5 +5112,6 @@ doterm(struct bbslist *bbs)
  *       hidemouse();
  *       hold_update=oldmc;
  */
+	finish_scrollback();
 	return false;
 }

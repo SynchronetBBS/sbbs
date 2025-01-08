@@ -1391,6 +1391,33 @@ scrolldown(struct cterminal *cterm)
 	GOTOXY(x, y);
 }
 
+static void
+cterm_line_to_scrollback(struct cterminal *cterm, int row)
+{
+	if(cterm->scrollback!=NULL) {
+		int getw;
+
+		cterm->backfilled++;
+		if (cterm->backfilled > cterm->backlines) {
+			cterm->backfilled--;
+			cterm->backstart++;
+			if (cterm->backstart == cterm->backlines)
+				cterm->backstart = 0;
+		}
+		getw = cterm->backwidth;
+		if (getw > cterm->width)
+			getw = cterm->width;
+		if (getw < cterm->backwidth) {
+			memset(cterm->scrollback + cterm->backpos * cterm->backwidth, 0, sizeof(*cterm->scrollback) * cterm->backwidth);
+		}
+		vmem_gettext(cterm->x, row, cterm->x + getw - 1, row, cterm->scrollback + cterm->backpos * cterm->backwidth);
+
+		cterm->backpos++;
+		if (cterm->backpos == cterm->backlines)
+			cterm->backpos = 0;
+	}
+}
+
 void
 cterm_scrollup(struct cterminal *cterm)
 {
@@ -1399,24 +1426,10 @@ cterm_scrollup(struct cterminal *cterm)
 	int maxx = TERM_MAXX;
 	int maxy = TERM_MAXY;
 	int x,y;
-	int getw;
 
-	cterm->backpos++;
 	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &minx, &miny);
 	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &maxx, &maxy);
-	if(cterm->scrollback!=NULL) {
-		if(cterm->backpos>cterm->backlines) {
-			memmove(cterm->scrollback, cterm->scrollback + cterm->backwidth, cterm->backwidth * sizeof(*cterm->scrollback) * (cterm->backlines - 1));
-			cterm->backpos--;
-		}
-		getw = cterm->backwidth;
-		if (getw > cterm->width)
-			getw = cterm->width;
-		if (getw < cterm->backwidth) {
-			memset(cterm->scrollback + (cterm->backpos - 1) * cterm->backwidth, 0, sizeof(*cterm->scrollback) * cterm->backwidth);
-		}
-		vmem_gettext(cterm->x, miny, cterm->x + getw - 1, miny, cterm->scrollback + (cterm->backpos - 1) * cterm->backwidth);
-	}
+	cterm_line_to_scrollback(cterm, miny);
 	MOVETEXT(minx, miny + 1, maxx, maxy, minx, miny);
 	CURR_XY(&x, &y);
 	cterm_clrblk(cterm, minx, maxy, minx + TERM_MAXX - 1, maxy);
@@ -1500,26 +1513,15 @@ clear2bol(struct cterminal * cterm)
 void
 cterm_clearscreen(struct cterminal *cterm, char attr)
 {
-	int getw;
-
 	if(!cterm->started)
 		cterm_start(cterm);
 
-	if(cterm->scrollback!=NULL) {
-		cterm->backpos+=cterm->height;
-		if(cterm->backpos>cterm->backlines) {
-			memmove(cterm->scrollback, cterm->scrollback + cterm->backwidth * (cterm->backpos - cterm->backlines), cterm->backwidth * sizeof(*cterm->scrollback) * (cterm->backlines - (cterm->backpos - cterm->backlines)));
-			cterm->backpos=cterm->backlines;
-		}
-		getw = cterm->backwidth;
-		if (getw > cterm->width)
-			getw = cterm->width;
-		if (getw < cterm->backwidth) {
-			memset(cterm->scrollback + (cterm->backpos - cterm->height) * cterm->backwidth, 0, sizeof(*cterm->scrollback) * cterm->backwidth * cterm->height);
-		}
-		vmem_gettext(cterm->x, cterm->y, cterm->x + getw - 1, cterm->y + cterm->height - 1,
-		    cterm->scrollback + (cterm->backpos - cterm->height) * cterm->backwidth);
-	}
+	int minx = TERM_MINX;
+	int miny = TERM_MINY;
+	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &minx, &miny);
+
+	for (int i = 0; i < cterm->height; i++)
+		cterm_line_to_scrollback(cterm, miny + i);
 	CLRSCR();
 	GOTOXY(CURR_MINX, CURR_MINY);
 }

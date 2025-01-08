@@ -99,6 +99,7 @@ struct cterminal {
 	int					right_margin;
 	int					quiet;			// No sounds are made
 	struct vmem_cell	*scrollback;
+	int					backfilled;		// Number of lines copied into scrollback
 	int					backlines;		// Number of lines in scrollback
 	int					backwidth;		// Number of columns in scrollback
 	char				DA[1024];		// Device Attributes
@@ -170,7 +171,8 @@ struct cterminal {
 	link_list_t			notes;
 	sem_t				playnote_thread_terminated;
 	sem_t				note_completed_sem;
-	int					backpos;
+	int					backpos; // Position where new lines will be added
+	int					backstart; // First line of scrollback
 	int					xpos;
 	int					ypos;
 	cterm_log_t			log;

@@ -368,6 +368,7 @@ viewofflinescroll(void)
 	struct  text_info  txtinfo;
 	struct  text_info  sbtxtinfo;
 	struct mouse_event mevent;
+	int scrollback_pos;
 
 	if (scrollback_buf == NULL)
 		return;
@@ -403,10 +404,11 @@ viewofflinescroll(void)
 	setfont(0, false, 4);
 	drawwin();
 	set_modepalette(palettes[COLOUR_PALETTE]);
-	top = scrollback_pos;
 	gotoxy(1, 1);
 	textattr(uifc.hclr | (uifc.bclr << 4) | BLINK);
 	gettextinfo(&sbtxtinfo);
+	scrollback_pos = scrollback_lines - sbtxtinfo.screenheight;
+	top = scrollback_pos;
 	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_START);
 	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_MOVE);
 	ciomouse_addevent(CIOLIB_BUTTON_1_DRAG_END);
@@ -415,10 +417,10 @@ viewofflinescroll(void)
 	showmouse();
 
 	for (i = 0; !i && !quitting;) {
-		if (top < 1)
-			top = 1;
-		if (top > (int)scrollback_lines)
-			top = scrollback_lines;
+		if (top < 0)
+			top = 0;
+		if (top > scrollback_pos)
+			top = scrollback_pos;
 		vmem_puttext(((sbtxtinfo.screenwidth - scrollback_cols) / 2) + 1, 1,
 		    (sbtxtinfo.screenwidth - scrollback_cols) / 2 + scrollback_cols,
 		    sbtxtinfo.screenheight,

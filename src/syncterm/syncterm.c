@@ -143,7 +143,6 @@ struct syncterm_settings settings;
 char                    *font_names[sizeof(conio_fontdata) / sizeof(struct conio_font_data_struct)];
 struct vmem_cell        *scrollback_buf = NULL;
 unsigned int             scrollback_lines = 0;
-unsigned int             scrollback_pos = 0;
 unsigned int             scrollback_mode = C80;
 unsigned int             scrollback_cols = 80;
 int                      safe_mode = 0;

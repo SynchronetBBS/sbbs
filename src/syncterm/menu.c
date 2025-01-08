@@ -35,19 +35,25 @@ viewscroll(void)
         /* too large for alloca() */
 	scrollback =
 	    malloc((scrollback_buf
-	        == NULL ? 0 : (term.width * sizeof(*scrollback) * settings.backlines))
+	        == NULL ? 0 : (term.width * sizeof(*scrollback) * cterm->backlines))
 	        + (txtinfo.screenheight * txtinfo.screenwidth * sizeof(*scrollback)));
 	if (scrollback == NULL)
 		return;
-	memcpy(scrollback, cterm->scrollback, term.width * sizeof(*scrollback) * settings.backlines);
-	vmem_gettext(1, 1, txtinfo.screenwidth, txtinfo.screenheight, scrollback + (cterm->backpos) * cterm->width);
+	int lines = 0;
+	if (cterm->backstart > 0) {
+		lines = cterm->backlines - cterm->backstart;
+		memcpy(scrollback, cterm->scrollback + term.width * cterm->backstart, term.width * lines * sizeof(*scrollback));
+	}
+	memcpy(scrollback + term.width * lines, cterm->scrollback, term.width * sizeof(*scrollback) * cterm->backpos);
+	int sblines = cterm->backpos + lines;
+	vmem_gettext(1, 1, txtinfo.screenwidth, txtinfo.screenheight, scrollback + sblines * cterm->width);
 	savscrn = savescreen();
 	setfont(0, false, 1);
 	setfont(0, false, 2);
 	setfont(0, false, 3);
 	setfont(0, false, 4);
 	drawwin();
-	top = cterm->backpos;
+	top = sblines;
 	set_modepalette(palettes[COLOUR_PALETTE]);
 	gotoxy(1, 1);
 	textattr(uifc.hclr | (uifc.bclr << 4) | BLINK);
@@ -57,10 +63,10 @@ viewscroll(void)
 	ciomouse_addevent(CIOLIB_BUTTON_4_PRESS);
 	ciomouse_addevent(CIOLIB_BUTTON_5_PRESS);
 	for (i = 0; (!i) && (!quitting);) {
-		if (top < 1)
-			top = 1;
-		if (top > cterm->backpos)
-			top = cterm->backpos;
+		if (top < 0)
+			top = 0;
+		if (top > sblines)
+			top = sblines;
 		vmem_puttext(term.x - 1, term.y - 1, term.x + term.width - 2, term.y + term.height - 2,
 		    scrollback + (term.width * top));
 		cputs("Scrollback");
@@ -86,7 +92,7 @@ viewscroll(void)
 								break;
 							case CIOLIB_BUTTON_5_PRESS:
 								top++;
-								if (top > cterm->backpos)
+								if (top > sblines)
 									i = 1;
 								break;
 						}
