@@ -2308,7 +2308,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 			return str;
 		}
 		if(strcmp(sp, "FILE_SIZE") == 0)
-			return byte_estimate_to_str(current_file->size, str, sizeof str, /* units: */1024, /* precision: */1);
+			return byte_estimate_to_str(current_file->size, str, maxlen, /* units: */1024, /* precision: */1);
 		if(strcmp(sp, "FILE_CREDITS") == 0) {
 			safe_snprintf(str, maxlen, "%" PRIu64, current_file->cost);
 			return str;
