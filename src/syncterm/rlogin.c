@@ -44,6 +44,7 @@ rlogin_input_thread(void *args)
 			break;
 	}
 	conn_api.terminate = true;
+	shutdown(rlogin_sock, SHUT_RDWR);
 	conn_api.input_thread_running = 2;
 }
 
@@ -86,6 +87,7 @@ rlogin_output_thread(void *args)
 			break;
 	}
 	conn_api.terminate = true;
+	shutdown(rlogin_sock, SHUT_RDWR);
 	conn_api.output_thread_running = 2;
 }
 

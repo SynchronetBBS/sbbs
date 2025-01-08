@@ -24,8 +24,10 @@ static int
 FlushData(CRYPT_SESSION sess)
 {
 	int ret = cryptFlushData(sess);
-	if (ret == CRYPT_ERROR_COMPLETE || ret == CRYPT_ERROR_READ)
+	if (ret == CRYPT_ERROR_COMPLETE || ret == CRYPT_ERROR_READ) {
 		conn_api.terminate = true;
+		shutdown(telnets_sock, SHUT_RDWR);
+	}
 	return ret;
 }
 
@@ -33,8 +35,10 @@ static int
 PopData(CRYPT_HANDLE e, void *buf, int len, int *copied)
 {
 	int ret = cryptPopData(e, buf, len, copied);
-	if (ret == CRYPT_ERROR_COMPLETE || ret == CRYPT_ERROR_READ)
+	if (ret == CRYPT_ERROR_COMPLETE || ret == CRYPT_ERROR_READ) {
 		conn_api.terminate = true;
+		shutdown(telnets_sock, SHUT_RDWR);
+	}
 	return ret;
 }
 
@@ -42,8 +46,10 @@ static int
 PushData(CRYPT_HANDLE e, void *buf, int len, int *copied)
 {
 	int ret = cryptPushData(e, buf, len, copied);
-	if (ret == CRYPT_ERROR_COMPLETE)
+	if (ret == CRYPT_ERROR_COMPLETE || ret == CRYPT_ERROR_WRITE) {
 		conn_api.terminate = true;
+		shutdown(telnets_sock, SHUT_RDWR);
+	}
 	return ret;
 }
 
@@ -88,6 +94,7 @@ telnets_input_thread(void *args)
 			}
 		}
 	}
+	shutdown(telnets_sock, SHUT_RDWR);
 	conn_api.input_thread_running = 2;
 }
 void
@@ -131,6 +138,7 @@ telnets_output_thread(void *args)
 			pthread_mutex_unlock(&(conn_outbuf.mutex));
 		}
 	}
+	shutdown(telnets_sock, SHUT_RDWR);
 	conn_api.output_thread_running = 2;
 }
 

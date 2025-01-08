@@ -4224,6 +4224,7 @@ doterm(struct bbslist *bbs)
 							scrollback_lines = cterm->backpos;
 							cterm_end(cterm, 0);
 							cterm = NULL;
+							// TODO: Do this before the popup to avoid being rude...
 							conn_close();
 							hidemouse();
 							return false;

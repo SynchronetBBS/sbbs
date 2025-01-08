@@ -60,8 +60,10 @@ static int
 FlushData(CRYPT_SESSION sess)
 {
 	int ret = cryptFlushData(sess);
-	if (ret == CRYPT_ERROR_COMPLETE || ret == CRYPT_ERROR_READ)
+	if (ret == CRYPT_ERROR_COMPLETE || ret == CRYPT_ERROR_READ) {
 		conn_api.terminate = true;
+		shutdown(ssh_sock, SHUT_RDWR);
+	}
 	return ret;
 }
 
@@ -71,8 +73,10 @@ PopData(CRYPT_HANDLE e, void *buf, int len, int *copied)
 	cryptSetAttribute(ssh_session, CRYPT_OPTION_NET_READTIMEOUT, 0);
 	int ret = cryptPopData(e, buf, len, copied);
 	cryptSetAttribute(ssh_session, CRYPT_OPTION_NET_READTIMEOUT, 30);
-	if (ret == CRYPT_ERROR_COMPLETE || ret == CRYPT_ERROR_READ)
+	if (ret == CRYPT_ERROR_COMPLETE || ret == CRYPT_ERROR_READ) {
 		conn_api.terminate = true;
+		shutdown(ssh_sock, SHUT_RDWR);
+	}
 	return ret;
 }
 
@@ -80,8 +84,10 @@ static int
 PushData(CRYPT_HANDLE e, void *buf, int len, int *copied)
 {
 	int ret = cryptPushData(e, buf, len, copied);
-	if (ret == CRYPT_ERROR_COMPLETE || ret == CRYPT_ERROR_WRITE)
+	if (ret == CRYPT_ERROR_COMPLETE || ret == CRYPT_ERROR_WRITE) {
 		conn_api.terminate = true;
+		shutdown(ssh_sock, SHUT_RDWR);
+	}
 	return ret;
 }
 
@@ -327,6 +333,7 @@ ssh_input_thread(void *args)
 		pthread_mutex_unlock(&ssh_mutex);
 	}
 	conn_api.terminate = true;
+	shutdown(ssh_sock, SHUT_RDWR);
 	conn_api.input_thread_running = 2;
 }
 
@@ -382,6 +389,7 @@ ssh_output_thread(void *args)
 		}
 	}
 	conn_api.terminate = true;
+	shutdown(ssh_sock, SHUT_RDWR);
 	conn_api.output_thread_running = 2;
 }
 
@@ -680,6 +688,10 @@ add_public_key(void *vpriv)
 static void
 error_popup(struct bbslist *bbs, const char *blurb, int status)
 {
+	if (ssh_sock != INVALID_SOCKET) {
+		closesocket(ssh_sock);
+		ssh_sock = INVALID_SOCKET;
+	}
 	if (!bbs->hidepopups)
 		cryptlib_error_message(status, blurb);
 	conn_api.terminate = true;
@@ -711,6 +723,7 @@ ssh_connect(struct bbslist *bbs)
 	pthread_mutex_lock(&ssh_mutex);
 	ssh_channel = -1;
 	sftp_channel = -1;
+	ssh_socket = INVALID_SOCKET;
 	pthread_mutex_unlock(&ssh_mutex);
 	pthread_mutex_init(&ssh_tx_mutex, NULL);
 
