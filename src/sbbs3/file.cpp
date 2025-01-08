@@ -60,6 +60,7 @@ void sbbs_t::showfileinfo(file_t* f, bool show_extdesc)
 		if(f->file_idx.hash.flags & SMB_HASH_SHA1)
 			bprintf(P_TRUNCATE, text[FiChecksum], "SHA-1", SHA1_hex(tmp, f->file_idx.hash.data.sha1));
 	}
+	bputs(P_TRUNCATE, text[FileURL]);
 	if(f->desc && f->desc[0])
 		bprintf(P_TRUNCATE, text[FiDescription],f->desc);
 	if(f->tags && f->tags[0])
