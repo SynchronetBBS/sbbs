@@ -4099,7 +4099,7 @@ static SOCKET fastcgi_connect(const char *orig_path, SOCKET client_sock)
 		hints.ai_flags = AI_ADDRCONFIG;
 		result = getaddrinfo(path, port, &hints, &res);
 		if(result != 0) {
-			lprintf(LOG_ERR, "%04d ERROR resolving FastCGI address %s port %s", client_sock, path, port);
+			errprintf(LOG_ERR, WHERE, "%04d ERROR resolving FastCGI address %s port %s", client_sock, path, port);
 			free(path);
 			return INVALID_SOCKET;
 		}
@@ -4128,7 +4128,7 @@ static SOCKET fastcgi_connect(const char *orig_path, SOCKET client_sock)
 		freeaddrinfo(res);
 	}
 	if(sock == INVALID_SOCKET) {
-		lprintf(LOG_ERR, "%04d ERROR unable to make FastCGI connection to %s", client_sock, orig_path);
+		errprintf(LOG_ERR, WHERE, "%04d ERROR unable to make FastCGI connection to %s", client_sock, orig_path);
 		free(path);
 		return sock;
 	}
@@ -4228,7 +4228,7 @@ static bool fastcgi_send_params(SOCKET sock, http_session_t *session)
 		if (end > 32000) {
 			msg->head.len = htons((uint16_t)end);
 			if (sendsocket(sock, (void *)msg, sizeof(struct fastcgi_header) + end) != (sizeof(struct fastcgi_header) + end)) {
-				lprintf(LOG_ERR, "%04d ERROR sending FastCGI params", session->socket);
+				errprintf(LOG_ERR, WHERE, "%04d ERROR sending FastCGI params", session->socket);
 				free(msg);
 				strListFree(&env);
 				return false;
@@ -4240,7 +4240,7 @@ static bool fastcgi_send_params(SOCKET sock, http_session_t *session)
 	if (end) {
 		msg->head.len = htons((uint16_t)end);
 		if (sendsocket(sock, (void *)msg, sizeof(struct fastcgi_header) + end) != (sizeof(struct fastcgi_header) + end)) {
-			lprintf(LOG_ERR, "%04d ERROR sending FastCGI params", session->socket);
+			errprintf(LOG_ERR, WHERE, "%04d ERROR sending FastCGI params", session->socket);
 			free(msg);
 			return false;
 		}
@@ -4248,7 +4248,7 @@ static bool fastcgi_send_params(SOCKET sock, http_session_t *session)
 	}
 	msg->head.len = htons((uint16_t)end);
 	if (sendsocket(sock, (void *)msg, sizeof(struct fastcgi_header) + end) != (sizeof(struct fastcgi_header) + end)) {
-		lprintf(LOG_ERR, "%04d ERROR sending FastCGI params", session->socket);
+		errprintf(LOG_ERR, WHERE, "%04d ERROR sending FastCGI params", session->socket);
 		free(msg);
 		return false;
 	}
@@ -4283,19 +4283,19 @@ static struct fastcgi_body * fastcgi_read_body(SOCKET sock)
 	if (recv(sock, (char*)&header.len
 			,sizeof(header) - offsetof(struct fastcgi_header, len), MSG_WAITALL)
 				!= sizeof(header) - offsetof(struct fastcgi_header, len)) {
-		lprintf(LOG_ERR, "Error reading FastCGI message header");
+		errprintf(LOG_ERR, WHERE, "Error reading FastCGI message header");
 		return NULL;
 	}
 	body = (struct fastcgi_body *)malloc(offsetof(struct fastcgi_body, data) + htons(header.len));
 	body->len = htons(header.len);
 	if (recv(sock, body->data, body->len, MSG_WAITALL) != body->len) {
 		free(body);
-		lprintf(LOG_ERR, "Error reading FastCGI message");
+		errprintf(LOG_ERR, WHERE, "Error reading FastCGI message");
 		return NULL;
 	}
 	if (recv(sock, padding, header.padlen, MSG_WAITALL) != header.padlen) {
 		free(body);
-		lprintf(LOG_ERR, "Error reading FastCGI padding");
+		errprintf(LOG_ERR, WHERE, "Error reading FastCGI padding");
 		return NULL;
 	}
 	return body;
@@ -4320,15 +4320,15 @@ static int fastcgi_read_wait_timeout(void *arg)
 
 	if (socket_readable(cd->sock, startup->max_cgi_inactivity*1000)) {
 		if (recv(cd->sock, (void *)&cd->header, offsetof(struct fastcgi_header, len), MSG_WAITALL) != offsetof(struct fastcgi_header, len)) {
-			lprintf(LOG_ERR, "FastCGI failed to read header");
+			errprintf(LOG_ERR, WHERE, "FastCGI failed to read header");
 			return ret;
 		}
 		if (cd->header.ver != FCGI_VERSION_1) {
-			lprintf(LOG_ERR, "Unknown FastCGI version %d", cd->header.ver);
+			errprintf(LOG_ERR, WHERE, "Unknown FastCGI version %d", cd->header.ver);
 			return ret;
 		}
 		if (htons(cd->header.id) != 1) {
-			lprintf(LOG_ERR, "Unknown FastCGI session ID %d", htons(cd->header.id));
+			errprintf(LOG_ERR, WHERE, "Unknown FastCGI session ID %d", htons(cd->header.id));
 			return ret;
 		}
 		switch(cd->header.type) {
@@ -4357,7 +4357,7 @@ static int fastcgi_read_wait_timeout(void *arg)
 				free(body);
 				break;
 			default:
-				lprintf(LOG_ERR, "Unhandled FastCGI message type %d", cd->header.type);
+				errprintf(LOG_ERR, WHERE, "Unhandled FastCGI message type %d", cd->header.type);
 				// Read and discard the entire message...
 				body = fastcgi_read_body(cd->sock);
 				if (body == NULL)
@@ -4866,7 +4866,7 @@ static bool exec_fastcgi(http_session_t *session)
 
 	lprintf(LOG_INFO,"%04d %s [%s] Executing FastCGI: %s",session->socket, session->client.protocol, session->host_ip, session->req.physical_path);
 	if (session->req.fastcgi_socket == NULL) {
-		lprintf(LOG_ERR, "%04d No FastCGI socket configured!",session->socket);
+		errprintf(LOG_ERR, WHERE, "%04d No FastCGI socket configured!",session->socket);
 		return false;
 	}
 
@@ -4882,7 +4882,7 @@ static bool exec_fastcgi(http_session_t *session)
 	msg = (struct fastcgi_message *)malloc(msglen);
 	if (msg == NULL) {
 		closesocket(sock);
-		lprintf(LOG_ERR, "%04d Failure to allocate memory for FastCGI message!", session->socket);
+		errprintf(LOG_ERR, WHERE, "%04d Failure to allocate memory for FastCGI message!", session->socket);
 		return false;
 	}
 	fastcgi_init_header(&msg->head, FCGI_BEGIN_REQUEST);
@@ -4893,7 +4893,7 @@ static bool exec_fastcgi(http_session_t *session)
 	memset(br->reserved, 0, sizeof(br->reserved));
 	int result = sendsocket(sock, (void *)msg, msglen);
 	if (result != msglen) {
-		lprintf(LOG_ERR, "%04d %s [%s] !ERROR %d sending %d bytes to FastCGI socket (send returned %d)"
+		errprintf(LOG_ERR, WHERE, "%04d %s [%s] !ERROR %d sending %d bytes to FastCGI socket (send returned %d)"
 			,session->socket, session->client.protocol, session->host_ip, SOCKET_ERRNO, msglen, result);
 		free(msg);
 		closesocket(sock);
