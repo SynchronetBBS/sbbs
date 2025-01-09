@@ -2285,7 +2285,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 			}
 			if(strcmp(sp, "FILE_COST") == 0) {
 				strlcpy(str, (cfg.dir[current_file->dir]->misc & DIR_FREE)
-					|| (current_file->size > 0 && current_file->cost <= 0)
+					|| (getfilesize(&cfg, current_file) > 0 && current_file->cost <= 0)
 						? text[FREE] : u64toac(current_file->cost,tmp), maxlen);
 				return str;
 			}
@@ -2293,7 +2293,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		if(strcmp(sp, "FILE_NAME") == 0)
 			return current_file->name;
 		if(strcmp(sp, "FILE_DESC") == 0)
-			return current_file->desc;
+			return current_file->desc == nullptr ? nulstr : current_file->desc;
 		if(strcmp(sp, "FILE_TAGS") == 0)
 			return current_file->tags == nullptr ? nulstr : current_file->tags;
 		if(strcmp(sp, "FILE_AUTHOR") == 0)
@@ -2304,11 +2304,11 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 			return (current_file->hdr.attr & MSG_ANONYMOUS) ? text[UNKNOWN_USER]
 				: (current_file->from == nullptr ? nulstr : current_file->from);
 		if(strcmp(sp, "FILE_BYTES") == 0) {
-			safe_snprintf(str, maxlen, "%ld", (long)current_file->size);
+			safe_snprintf(str, maxlen, "%" PRIi64, getfilesize(&cfg, current_file));
 			return str;
 		}
 		if(strcmp(sp, "FILE_SIZE") == 0)
-			return byte_estimate_to_str(current_file->size, str, maxlen, /* units: */1024, /* precision: */1);
+			return byte_estimate_to_str(getfilesize(&cfg, current_file), str, maxlen, /* units: */1024, /* precision: */1);
 		if(strcmp(sp, "FILE_CREDITS") == 0) {
 			safe_snprintf(str, maxlen, "%" PRIu64, current_file->cost);
 			return str;
@@ -2316,7 +2316,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		if(strcmp(sp, "FILE_CRC32") == 0) {
 			if((current_file->file_idx.hash.flags & SMB_HASH_CRC32)
 				&& getfilesize(&cfg, current_file) > 0
-				&& (uint64_t)current_file->size == smb_getfilesize(&current_file->idx)) {
+				&& (uint64_t)getfilesize(&cfg, current_file) == smb_getfilesize(&current_file->idx)) {
 				snprintf(str, maxlen, "%08x", current_file->file_idx.hash.data.crc32);
 				return str;
 			}
@@ -2325,7 +2325,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		if(strcmp(sp, "FILE_MD5") == 0) {
 			if((current_file->file_idx.hash.flags & SMB_HASH_MD5)
 				&& getfilesize(&cfg, current_file) > 0
-				&& (uint64_t)current_file->size == smb_getfilesize(&current_file->idx)) {
+				&& (uint64_t)getfilesize(&cfg, current_file) == smb_getfilesize(&current_file->idx)) {
 				strlcpy(str, MD5_hex(tmp, current_file->file_idx.hash.data.md5), maxlen);
 				return str;
 			}
@@ -2334,7 +2334,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		if(strcmp(sp, "FILE_SHA1") == 0) {
 			if((current_file->file_idx.hash.flags & SMB_HASH_SHA1)
 				&& getfilesize(&cfg, current_file) > 0
-				&& (uint64_t)current_file->size == smb_getfilesize(&current_file->idx)) {
+				&& (uint64_t)getfilesize(&cfg, current_file) == smb_getfilesize(&current_file->idx)) {
 				strlcpy(str, SHA1_hex(tmp, current_file->file_idx.hash.data.sha1), maxlen);
 				return str;
 			}
@@ -2342,13 +2342,13 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		}
 
 		if(strcmp(sp, "FILE_TIME") == 0)
-			return timestr(current_file->time);
+			return timestr(getfiletime(&cfg, current_file));
 		if(strcmp(sp, "FILE_TIME_ULED") == 0)
 			return timestr(current_file->hdr.when_imported.time);
 		if(strcmp(sp, "FILE_TIME_DLED") == 0)
 			return timestr(current_file->hdr.last_downloaded);
 		if(strcmp(sp, "FILE_DATE") == 0)
-			return datestr(current_file->time);
+			return datestr(getfiletime(&cfg, current_file));
 		if(strcmp(sp, "FILE_DATE_ULED") == 0)
 			return datestr(current_file->hdr.when_imported.time);
 		if(strcmp(sp, "FILE_DATE_DLED") == 0)
