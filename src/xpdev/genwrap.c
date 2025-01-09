@@ -1157,7 +1157,7 @@ int64_t xp_fast_timer64(void)
 		cid = CLOCK_MONOTONIC;
 
 	if (clock_gettime(cid, &ts) == 0)
-		ret = ts.tv_sec * 1000;
+		ret = ts.tv_sec;
 	else
 		ret = -1;
 #elif defined(_WIN32)
