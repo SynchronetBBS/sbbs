@@ -1414,6 +1414,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 		}
 
 		mail=loadmail(&smb,&msgs,user.number,MAIL_YOUR,lm_mode);
+		lprintf(LOG_DEBUG, "%04d %s <%s> Loaded %lu messages", socket, client.protocol, user.alias, (ulong)msgs);
 
 		for(l=bytes=0;l<msgs;l++) {
 			msg.hdr.number=mail[l].number;
@@ -1583,11 +1584,13 @@ static bool pop3_client_thread(pop3_t* pop3)
 						break;
 					}
 					if(!strnicmp(buf, "LIST",4)) {
-						sockprintf(socket,client.protocol,session,"%u %u",l+1,msg.hdr.length + smb_getmsgtxtlen(&msg));
+						i = sockprintf(socket,client.protocol,session,"%u %u",l+1,msg.hdr.length + smb_getmsgtxtlen(&msg));
 					} else /* UIDL */
-						sockprintf(socket,client.protocol,session,"%u %u",l+1,msg.hdr.number);
+						i = sockprintf(socket,client.protocol,session,"%u %u",l+1,msg.hdr.number);
 
 					smb_freemsgmem(&msg);
+					if(i < 1)
+						break;
 				}
 				sockprintf(socket,client.protocol,session,".");
 				continue;
