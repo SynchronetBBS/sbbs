@@ -931,7 +931,8 @@ var NodeActivityNodeChat=921;
 var NodeActivityPagingNode=922;
 var NodeActivityRetrievingFile=923;
 var NodeActivityCustom=924;
+var Never=925;
 
-var TOTAL_TEXT=925;
+var TOTAL_TEXT=926;
 
 this;
