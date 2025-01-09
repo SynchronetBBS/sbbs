@@ -147,7 +147,7 @@ var CON_MOUSE_CLK_PASSTHRU	=(1<<24); // Pass-through unhandled mouse button-clic
 var CON_MOUSE_REL_PASSTHRU	=(1<<25); // Pass-through unhandled mouse button-release reports
 var CON_MOUSE_SCROLL		=(1<<26); // Enable mouse scroll-wheel to arrow key translations
 var CON_CR_CLREOL			=(1<<31); // Sending '\r', clears to end-of-line first
-								
+
 								// Terminal mouse reporting mode (console.mouse_mode)
 var MOUSE_MODE_OFF	= 0;		// No terminal mouse reporting enabled/expected
 var MOUSE_MODE_X10	= (1<<0);	// X10 compatible mouse reporting enabled
@@ -214,6 +214,7 @@ var   P_MARKUP		=(1<<16);	/* Support StyleCodes/Rich/StructuredText	*/
 var   P_HIDEMARKS	=(1<<17);	/* Hide the mark-up tags					*/
 var   P_REMOTE		=(1<<18);	/* Only print when online == ON_REMOTE		*/
 var   P_INDENT		=(1<<19);	/* Indent lines to current cursor column	*/
+var   P_ATCODES		=(1<<20);	/* Trusted @-codes in formatted string		*/
 							    /********************************************/
 
     							/********************************************/
