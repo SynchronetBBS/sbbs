@@ -329,12 +329,11 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 	int               oldscroll;
 	int               olddmc = hold_update;
 	struct  text_info txtinfo;
-	time_t            now;
-	static time_t     lastupd = 0;
+	int64_t           now;
+	static int64_t    lastupd = 0;
 	static int        oldspeed = 0;
 	static int        lastmouse = 0;
 	int               newmouse;
-	double            timeond;
 	int               timeon;
 	char              sep;
 	int               oldfont_norm;
@@ -344,7 +343,7 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 	if (term.nostatus)
 		return;
 
-	now = time(NULL);
+	now = xp_fast_timer64();
 	newmouse = ((ms->mode == MM_OFF) ? 1 : 0) | (ms->flags & MS_FLAGS_DISABLED);
 	if (rip_did_reinit) {
 		rip_did_reinit = false;
@@ -378,13 +377,11 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 	lastupd = now;
 	lastmouse = newmouse;
 	oldspeed = speed;
-	timeond = difftime(now, bbs->connected);
-	if (timeond > 350000)
+	timeon = now - bbs->fast_connected;
+	if (timeon > 350000)
 		timeon = 350000;
-	else if (timeond < 0)
+	else if (timeon < 0)
 		timeon = 0;
-	else
-		timeon = timeond;
 	gettextinfo(&txtinfo);
 	oldscroll = _wscroll;
 	hold_update = true;
@@ -532,7 +529,7 @@ zmodem_check_abort(void *vp)
 	struct zmodem_cbdata *zcb = (struct zmodem_cbdata *)vp;
 	zmodem_t             *zm = zcb->zm;
 	static time_t         last_check = 0;
-	time_t                now = time(NULL);
+	int64_t               now = xp_fast_timer64();
 	int                   key;
 
 	if (zm == NULL)
@@ -1400,8 +1397,8 @@ static BOOL
 xmodem_check_abort(void *vp)
 {
 	xmodem_t     *xm = (xmodem_t *)vp;
-	static time_t last_check = 0;
-	time_t        now = time(NULL);
+	static uint64_t last_check = 0;
+	uint64_t      now = xp_fast_timer64();
 	int           key;
 
 	if (xm == NULL)

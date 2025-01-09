@@ -385,6 +385,7 @@ DLLEXPORT long		xp_random(int);
 
 DLLEXPORT long double xp_timer(void);
 DLLEXPORT uint64_t xp_timer64(void);
+DLLEXPORT int64_t xp_fast_timer64(void);
 DLLEXPORT char*		os_version(char *str, size_t);
 DLLEXPORT char*		os_cpuarch(char *str, size_t);
 DLLEXPORT char*		os_cmdshell(void);

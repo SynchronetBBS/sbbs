@@ -1117,6 +1117,57 @@ uint64_t xp_timer64(void)
 	return(ret);
 }
 
+/****************************************************************************/
+/* Returns the current value of the systems worst timer (in SECONDS)		*/
+/* A value of -1 may indicate an error										*/
+/****************************************************************************/
+int64_t xp_fast_timer64(void)
+{
+	int64_t ret;
+#if defined(__unix__)
+	struct timespec ts;
+	static clockid_t cid = CLOCK_REALTIME;
+
+#ifdef CLOCK_SECOND
+	if (cid == CLOCK_REALTIME) {
+		if (clock_getres(CLOCK_SECOND, &ts) == 0)
+			cid = CLOCK_SECOND;
+	}
+#endif
+#ifdef CLOCK_MONOTONIC_COARSE
+	if (cid == CLOCK_REALTIME) {
+		if (clock_getres(CLOCK_MONOTONIC_COARSE, &ts) == 0)
+			cid = CLOCK_MONOTONIC_COARSE;
+	}
+#endif
+#ifdef CLOCK_MONOTONIC_FAST
+	if (cid == CLOCK_REALTIME) {
+		if (clock_getres(CLOCK_MONOTONIC_FAST, &ts) == 0)
+			cid = CLOCK_MONOTONIC_FAST;
+	}
+#endif
+#ifdef CLOCK_MONOTONIC_RAW
+	if (cid == CLOCK_REALTIME) {
+		if (clock_getres(CLOCK_MONOTONIC_RAW, &ts) == 0)
+			cid = CLOCK_MONOTONIC_RAW;
+	}
+	cid = CLOCK_MONOTONIC_RAW;
+#endif
+	if (cid == CLOCK_REALTIME)
+		cid = CLOCK_MONOTONIC;
+
+	if (clock_gettime(cid, &ts) == 0)
+		ret = ts.tv_sec * 1000;
+	else
+		ret = -1;
+#elif defined(_WIN32)
+	ret=GetTickCount64() / 1000;
+#else
+#error no high-resolution time for this platform
+#endif
+	return(ret);
+}
+
 /* Returns true if specified process is running */
 bool check_pid(pid_t pid)
 {

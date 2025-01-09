@@ -116,9 +116,9 @@ modem_response(char *str, size_t maxlen, int timeout)
 {
 	char   ch;
 	size_t len = 0;
-	time_t start;
+	uint64_t start;
 
-	start = time(NULL);
+	start = xp_fast_timer64();
 	while (1) {
                 /* Abort with keystroke */
 		if (kbhit()) {
@@ -130,7 +130,7 @@ modem_response(char *str, size_t maxlen, int timeout)
 			return 1;
 		}
 
-		if (time(NULL) - start >= timeout)
+		if (xp_fast_timer64() - start >= timeout)
 			return -1;
 		if (len >= maxlen)
 			return -1;
@@ -417,7 +417,7 @@ serial_close(void)
 int
 modem_close(void)
 {
-	time_t start;
+	int64_t start;
 	char   garbage[1024];
 	COM_HANDLE oldcom;
 
@@ -432,10 +432,10 @@ modem_close(void)
 	if (!comLowerDTR(com))
 		goto CLOSEIT;
 
-	start = time(NULL);
+	start = xp_fast_timer64();
 	oldcom = com;
 	com = COM_HANDLE_INVALID;
-	while (time(NULL) - start <= 10) {
+	while (xp_fast_timer64() - start <= 10) {
 		if ((comGetModemStatus(com) & COM_DCD) == 0)
 			goto CLOSEIT;
 		SLEEP(1000);

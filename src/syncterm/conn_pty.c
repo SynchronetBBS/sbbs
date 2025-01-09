@@ -571,16 +571,16 @@ pty_connect(struct bbslist *bbs)
 int
 pty_close(void)
 {
-	time_t start;
+	uint64_t start;
 	char   garbage[1024];
 	int oldmaster;
 
 	conn_api.terminate = true;
-	start = time(NULL);
+	start = xp_fast_timer64();
 	kill(child_pid, SIGHUP);
 	while (waitpid(child_pid, &status, WNOHANG) == 0) {
                 /* Wait for 10 seconds */
-		if (time(NULL) - start >= 10)
+		if (xp_fast_timer64() - start >= 10)
 			break;
 		SLEEP(1);
 	}
