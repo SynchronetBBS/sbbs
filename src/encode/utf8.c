@@ -116,6 +116,12 @@ char* utf8_normalize_str(char* str)
 				continue;
 			}
 			if(*(src + 1) == '\xBC') {
+				/*
+				 * In these two cases, Coverity believes that it's not possible for
+				 * src[2] to be >= '\x81' && <= '\xBF' because it must be at least -127.
+				 * This is complete nonsense.
+				 */
+				// coverity[cond_at_least:SUPPRESS]
 				if(*(src + 2) >= '\x81' && *(src + 2) <= '\xBF') { // FULLWIDTH EXCLAMATION MARK through FULLWIDTH LOW LINE
 					src += 2;
 					*src -= '\x81';
@@ -125,6 +131,7 @@ char* utf8_normalize_str(char* str)
 				}
 			}
 			else if(*(src + 1) == '\xBD') {
+				// coverity[cond_at_least:SUPPRESS]
 				if(*(src + 2) >= '\x80' && *(src + 2) <= '\x9E') { // FULLWIDTH GRAVE ACCENT through FULLWIDTH TILDE
 					src += 2;
 					*src -= '\x80';
