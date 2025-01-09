@@ -3365,7 +3365,8 @@ static void add_vshortcuts()
 			break;
 		count++;
 	}
-	alias_list[count] = NULL;	/* terminate list */
+	if(alias_list != NULL)
+		alias_list[count] = NULL;	/* terminate list */
 }
 
 static bool is_legal_host(const char *host, bool strip_port)
