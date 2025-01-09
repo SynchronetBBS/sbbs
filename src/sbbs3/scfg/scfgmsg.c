@@ -1275,17 +1275,17 @@ void msg_opts()
 				strcpy(opt[0],"Daily");
 				strcpy(opt[1],"Immediately");
 				opt[2][0]=0;
-				i=cfg.sys_misc&SM_DELEMAIL ? 0:1;
+				i=cfg.sys_misc&SM_DELEMAIL ? 1:0;
 				uifc.helpbuf=
 					"`Purge Deleted E-mail:`\n"
 					"\n"
 					"If you wish to have deleted e-mail physically (and permanently) removed\n"
-					"from your e-mail database immediately after a users exits the reading\n"
+					"from your e-mail database immediately upon a user exiting the reading\n"
 					"e-mail prompt, set this option to `Immediately`.\n"
 					"\n"
 					"For the best system performance and to avoid delays when deleting e-mail\n"
 					"from a large e-mail database, set this option to `Daily` (the default).\n"
-					"Your system maintenance will automatically purge deleted e-mail once a\n"
+					"Your system maintenance will automatically purge deleted e-mail once per\n"
 					"day.\n"
 				;
 
