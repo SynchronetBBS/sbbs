@@ -497,7 +497,7 @@ bool sbbs_t::logon()
 
 	if(cfg.sys_logon.cmd[0] && !(cfg.sys_logon.misc & EVENT_DISABLED)) {				/* execute system logon event */
 		lprintf(LOG_DEBUG, "executing logon event: %s", cfg.sys_logon.cmd);
-		external(cmdstr(cfg.sys_logon.cmd,nulstr,nulstr,NULL), EX_STDOUT | cfg.sys_logon.misc); /* EX_SH */
+		external(cmdstr(cfg.sys_logon.cmd,nulstr,nulstr,NULL,cfg.sys_logon.misc), EX_STDOUT | cfg.sys_logon.misc); /* EX_SH */
 	}
 
 	if(sys_status&SS_QWKLOGON)

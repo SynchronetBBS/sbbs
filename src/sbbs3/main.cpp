@@ -3106,7 +3106,7 @@ void event_thread(void* arg)
 						sbbs->online=ON_LOCAL;
 						sbbs->console|=CON_L_ECHO;
 						sbbs->logentry("!:","Run node daily event");
-						const char* cmd = sbbs->cmdstr(sbbs->cfg.node_daily.cmd,nulstr,nulstr,NULL);
+						const char* cmd = sbbs->cmdstr(sbbs->cfg.node_daily.cmd,nulstr,nulstr,NULL,sbbs->cfg.node_daily.misc);
 						int result = sbbs->external(cmd, EX_OFFLINE | sbbs->cfg.node_daily.misc);
 						sbbs->lprintf(result ? LOG_ERR : LOG_INFO, "Node daily event: '%s' returned %d", cmd, result);
 						sbbs->console&=~CON_L_ECHO;
@@ -3272,7 +3272,7 @@ void event_thread(void* arg)
 					int ex_mode = EX_OFFLINE|EX_SH; /* sh for Unix perl scripts */
 					if(sbbs->cfg.qhub[i]->misc & QHUB_NATIVE)
 						ex_mode |= EX_NATIVE;
-					const char* cmd = sbbs->cmdstr(sbbs->cfg.qhub[i]->call, sbbs->cfg.qhub[i]->id,sbbs->cfg.qhub[i]->id,NULL);
+					const char* cmd = sbbs->cmdstr(sbbs->cfg.qhub[i]->call, sbbs->cfg.qhub[i]->id,sbbs->cfg.qhub[i]->id,NULL,ex_mode);
 					int result = sbbs->external(cmd, ex_mode);
 					sbbs->lprintf(result ? LOG_ERR : LOG_INFO, "Call-out to: %s (%s) returned %d", sbbs->cfg.qhub[i]->id, cmd, result);
 					sbbs->console&=~CON_L_ECHO;
@@ -3447,7 +3447,7 @@ void event_thread(void* arg)
 					ex_mode|=(sbbs->cfg.event[i]->misc&EX_NATIVE);
 					sbbs->online=ON_LOCAL;
 					sbbs->console|=CON_L_ECHO;
-					cmd = sbbs->cmdstr(cmd, nulstr, sbbs->cfg.event[i]->dir, NULL);
+					cmd = sbbs->cmdstr(cmd, nulstr, sbbs->cfg.event[i]->dir, NULL, ex_mode);
 					sbbs->lprintf(LOG_INFO,"Running %s%stimed event: %s"
 						,native_executable(&sbbs->cfg, cmd, ex_mode) ? "native ":"16-bit DOS "
 						,(ex_mode&EX_BG)		? "background ":""
@@ -4806,10 +4806,8 @@ void sbbs_t::daily_maint(void)
 			&& !(user.misc&(DELETED|INACTIVE))	 /* alive */
 			&& (cfg.sys_autodel && (now-user.laston)/(int)(24L*60L*60L)
 			> cfg.sys_autodel)) {			/* Inactive too long */
-			SAFEPRINTF4(str,"DAILY: Auto-Deleted %s (%s) #%u due to inactivity > %u days"
-				,user.alias, user.name, user.number, cfg.sys_autodel);
-			lputs(LOG_NOTICE, str);
-			delallmail(user.number, MAIL_ANY);
+			lprintf(LOG_NOTICE, "DAILY: Auto-Deleting user: %s (%s) #%u due to inactivity > %u days (pending e-mail: %d)"
+				,user.alias, user.name, user.number, cfg.sys_autodel, delallmail(user.number, MAIL_ANY));
 			putusername(&cfg,user.number,nulstr);
 			putusermisc(user.number, user.misc | DELETED);
 		}
@@ -4827,14 +4825,14 @@ void sbbs_t::daily_maint(void)
 			if((i=smb_locksmbhdr(&smb))!=0)
 				errormsg(WHERE,ERR_LOCK,smb.file,i,smb.last_error);
 			else
-				lprintf(LOG_INFO, "DAILY: Removed %d messages", delmail(0, MAIL_ALL));
+				lprintf(LOG_INFO, "DAILY: Removed %d e-mail messages", delmail(0, MAIL_ALL));
 		}
 		smb_close(&smb);
 	}
 
 	if(cfg.sys_daily.cmd[0] && !(cfg.sys_daily.misc & EVENT_DISABLED)) {
 		lputs(LOG_INFO, "DAILY: Running system event");
-		const char* cmd = cmdstr(cfg.sys_daily.cmd,nulstr,nulstr,NULL);
+		const char* cmd = cmdstr(cfg.sys_daily.cmd,nulstr,nulstr,NULL,cfg.sys_daily.misc);
 		online = ON_LOCAL;
 		int result = external(cmd, EX_OFFLINE | cfg.sys_daily.misc);
 		online = false;
@@ -4842,7 +4840,7 @@ void sbbs_t::daily_maint(void)
 	}
 	if((sys_status & SS_NEW_MONTH) && cfg.sys_monthly.cmd[0] && !(cfg.sys_monthly.misc & EVENT_DISABLED)) {
 		lputs(LOG_INFO, "DAILY: Running monthly event");
-		const char* cmd = cmdstr(cfg.sys_monthly.cmd,nulstr,nulstr,NULL);
+		const char* cmd = cmdstr(cfg.sys_monthly.cmd,nulstr,nulstr,NULL,cfg.sys_monthly.misc);
 		online = ON_LOCAL;
 		int result = external(cmd, EX_OFFLINE | cfg.sys_monthly.misc);
 		online = false;
