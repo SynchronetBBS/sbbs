@@ -1128,12 +1128,6 @@ int64_t xp_fast_timer64(void)
 	struct timespec ts;
 	static clockid_t cid = CLOCK_REALTIME;
 
-#ifdef CLOCK_SECOND
-	if (cid == CLOCK_REALTIME) {
-		if (clock_getres(CLOCK_SECOND, &ts) == 0)
-			cid = CLOCK_SECOND;
-	}
-#endif
 #ifdef CLOCK_MONOTONIC_COARSE
 	if (cid == CLOCK_REALTIME) {
 		if (clock_getres(CLOCK_MONOTONIC_COARSE, &ts) == 0)
