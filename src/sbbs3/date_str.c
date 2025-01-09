@@ -152,23 +152,25 @@ char* unixtodstr(scfg_t* cfg, time32_t t, char *str)
 }
 
 /****************************************************************************/
+/* Return 8-char numeric or verbal date										*/
 /****************************************************************************/
 char* datestr(scfg_t* cfg, time_t t, char* str)
 {
 	if(t == 0)
-		return "---------";
+		return "--------";
 	if(!cfg->sys_date_verbal)
 		return unixtodstr(cfg, (time32_t)t, str);
 	return verbal_datestr(cfg, t, str);
 }
 
 /****************************************************************************/
+/* return 8-char numeric date												*/
 /****************************************************************************/
 char* verbal_datestr(scfg_t* cfg, time_t t, char* str)
 {
 	struct tm tm = {0};
 	if(localtime_r(&t, &tm) == NULL)
-		return "!!!!!!!!!";
+		return "!!!!!!!!";
 	char fmt[32] = "";
 	switch(cfg->sys_date_fmt) {
 		case MMDDYY:
