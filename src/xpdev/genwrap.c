@@ -1155,7 +1155,11 @@ int64_t xp_fast_timer64(void)
 	else
 		ret = -1;
 #elif defined(_WIN32)
+#if WINVER < _WIN32_WINNT_VISTA
+	ret=GetTickCount() / 1000;
+#else
 	ret=GetTickCount64() / 1000;
+#endif
 #else
 #error no high-resolution time for this platform
 #endif
