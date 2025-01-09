@@ -742,7 +742,7 @@ function readSlyEditCfgFile()
 
 	if (!retObj.cfgSections.hasOwnProperty("DCT_COLORS"))
 		retObj.cfgSections.DCT_COLORS = {};
-	if (!retObj.cfgSections.ICE_COLORS.hasOwnProperty("ThemeFilename"))
+	if (!retObj.cfgSections.DCT_COLORS.hasOwnProperty("ThemeFilename"))
 		retObj.cfgSections.DCT_COLORS.ThemeFilename = "SlyDCTColors_Default.cfg";
 	return retObj;
 }
@@ -772,17 +772,14 @@ function saveSlyEditCfgFile()
 	// Open the configuration file and save the current settings to it
 	var saveSucceeded = false;
 	var cfgFile = new File(modsSlyEditCfgFilename);
-	if (cfgFile.open("r+")) // Reading and writing (file must exist)
+	if (cfgFile.open(cfgFile.exists ? "r+" : "w+")) // r+: Reading and writing (file must exist)
 	{
-		for (var settingName in gCfgInfo.cfgSections.BEHAVIOR)
-			cfgFile.iniSetValue("BEHAVIOR", settingName, gCfgInfo.cfgSections.BEHAVIOR[settingName]);
-		for (var settingName in gCfgInfo.cfgSections.ICE_COLORS)
-			cfgFile.iniSetValue("ICE_COLORS", settingName, gCfgInfo.cfgSections.ICE_COLORS[settingName]);
-		for (var settingName in gCfgInfo.cfgSections.DCT_COLORS)
-			cfgFile.iniSetValue("DCT_COLORS", settingName, gCfgInfo.cfgSections.DCT_COLORS[settingName]);
+		var behaviorSetSuccessful = cfgFile.iniSetObject("BEHAVIOR", gCfgInfo.cfgSections.BEHAVIOR);
+		var iceColorsSetSuccessful = cfgFile.iniSetObject("ICE_COLORS", gCfgInfo.cfgSections.ICE_COLORS);
+		var dctColorsSetSuccessful = cfgFile.iniSetObject("DCT_COLORS", gCfgInfo.cfgSections.DCT_COLORS);
 
 		cfgFile.close();
-		saveSucceeded = true;
+		saveSucceeded = behaviorSetSuccessful && iceColorsSetSuccessful && dctColorsSetSuccessful;
 	}
 
 	return saveSucceeded;
