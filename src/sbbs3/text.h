@@ -941,6 +941,7 @@ enum text {
 	,NodeActivityPagingNode
 	,NodeActivityRetrievingFile
 	,NodeActivityCustom
+	,Never
 
 	,TOTAL_TEXT
 };

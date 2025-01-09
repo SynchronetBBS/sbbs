@@ -925,4 +925,5 @@ const char* const text_id[]={
 	,"NodeActivityPagingNode"
 	,"NodeActivityRetrievingFile"
 	,"NodeActivityCustom"
+	,"Never"
 };

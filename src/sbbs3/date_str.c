@@ -152,12 +152,12 @@ char* unixtodstr(scfg_t* cfg, time32_t t, char *str)
 }
 
 /****************************************************************************/
-/* Return 8-char numeric or verbal date										*/
+/* Return 8-char numeric or verbal date	or "never" when passed 0			*/
 /****************************************************************************/
 char* datestr(scfg_t* cfg, time_t t, char* str)
 {
 	if(t == 0)
-		return "--------";
+		return cfg->text == NULL ? "--------" : cfg->text[Never];
 	if(!cfg->sys_date_verbal)
 		return unixtodstr(cfg, (time32_t)t, str);
 	return verbal_datestr(cfg, t, str);
