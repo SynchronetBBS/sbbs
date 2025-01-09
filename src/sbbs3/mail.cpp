@@ -197,7 +197,7 @@ int sbbs_t::delallmail(uint usernumber, int which, bool permanent, int lm_mode)
 	for(u=0;u<msgs;u++) {
 		progress(text[Deleting], u, msgs);
 		msg.idx.offset=0;						/* search by number */
-		if((mail[u].attr&MSG_PERMANENT) && !permanent)
+		if((mail[u].attr&(MSG_DELETE | MSG_PERMANENT)) && !permanent)
 			continue;
 		if(loadmsg(&msg,mail[u].number) >= 0) {	   /* message still there */
 			msg.hdr.attr|=MSG_DELETE;
@@ -215,7 +215,7 @@ int sbbs_t::delallmail(uint usernumber, int which, bool permanent, int lm_mode)
 
 	if(msgs)
 		free(mail);
-	if(permanent && deleted && (cfg.sys_misc&SM_DELEMAIL))
+	if(deleted && (permanent || (cfg.sys_misc&SM_DELEMAIL)))
 		delmail(usernumber,MAIL_ANY);
 	smb_unlocksmbhdr(&smb);
 	smb_close(&smb);
