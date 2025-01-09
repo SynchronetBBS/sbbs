@@ -378,8 +378,8 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 	lastmouse = newmouse;
 	oldspeed = speed;
 	timeon = now - bbs->fast_connected;
-	if (timeon > 350000)
-		timeon = 350000;
+	if (timeon > 360000)
+		timeon = 360000;
 	else if (timeon < 0)
 		timeon = 0;
 	gettextinfo(&txtinfo);
