@@ -36,6 +36,17 @@ static char mail_listing_flag(smbmsg_t* msg)
 	return '*';
 }
 
+static uint count_msgs(mail_t* mail, uint total)
+{
+	uint count = 0;
+
+	for(uint i = 0; i < total; ++i) {
+		if(!(mail[i].attr & MSG_DELETE))
+			++count;
+	}
+	return count;
+}
+
 /****************************************************************************/
 /* Reads mail waiting for usernumber.                                       */
 /****************************************************************************/
@@ -98,6 +109,7 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 		return lm_mode;
 	}
 
+	bool reload = false;
 	mail=loadmail(&smb,&smb.msgs,usernumber,which,lm_mode);
 	last_mode = lm_mode;
 	if(!smb.msgs || mail == nullptr) {
@@ -202,7 +214,8 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 		}
 		smb_unlocksmbhdr(&smb);
 
-		if(smb.status.last_msg!=last || lm_mode != last_mode) { 	/* New messages */
+		if(smb.status.last_msg!=last || lm_mode != last_mode || reload) { 	/* New messages */
+			reload = false;
 			last=smb.status.last_msg;
 			free(mail);
 			order = (lm_mode&LM_REVERSE) ? "newest" : "oldest";
@@ -279,11 +292,11 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 
 		sync();
 		if(which==MAIL_SENT)
-			bprintf(text[ReadingSentMail],smb.curmsg+1,smb.msgs);
+			bprintf(P_ATCODES, text[ReadingSentMail],smb.curmsg+1,smb.msgs);
 		else if(which==MAIL_ALL)
-			bprintf(text[ReadingAllMail],smb.curmsg+1,smb.msgs);
+			bprintf(P_ATCODES, text[ReadingAllMail],smb.curmsg+1,smb.msgs);
 		else
-			bprintf(text[ReadingMail],smb.curmsg+1,smb.msgs);
+			bprintf(P_ATCODES, text[ReadingMail],smb.curmsg+1,smb.msgs);
 		snprintf(str, sizeof str, "ADFLNQRT?<>[]{}()-+/!%c%c%c%c"
 			,TERM_KEY_LEFT
 			,TERM_KEY_RIGHT
@@ -403,7 +416,7 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 					if(loadmsg(&msg,msg.idx.number) >= 0) {
 						msg.hdr.attr^=MSG_DELETE;
 						msg.idx.attr=msg.hdr.attr;
-		//				  mail[smb.curmsg].attr=msg.hdr.attr;
+						mail[smb.curmsg].attr=msg.hdr.attr;
 						if((i=smb_putmsg(&smb,&msg))!=0)
 							errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error);
 						smb_unlockmsghdr(&smb,&msg); 
@@ -414,11 +427,21 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 				else done=1;
 				break;
 			case 'K':	/* Kill All Mail */
-				SAFEPRINTF(str,text[DeleteMailQ],"everyone");
-				if(!noyes(str))
-					bprintf(P_ATCODES, text[DeletedNumberItems], delallmail(usernumber, which, /* permanent: */false, lm_mode), text[E_Mails]);
+			{
 				domsg=false;
+				uint count = count_msgs(mail, smb.msgs);
+				if(!count) {
+					bputs(text[NoMessagesFound]);
+					break;
+				}
+				snprintf(tmp, sizeof tmp, "%s (%u %s)", text[All], count, text[E_Mails]);
+				snprintf(str, sizeof str, text[DeleteMailQ],tmp);
+				if(!noyes(str)) {
+					bprintf(P_ATCODES, text[DeletedNumberItems], delallmail(usernumber, which, /* permanent: */false, lm_mode), text[E_Mails]);
+					reload = true;
+				}
 				break;
+			}
 			case 'F':  /* Forward last piece */
 				domsg=0;
 				bputs(text[ForwardMailTo]);
@@ -441,7 +464,7 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 					if(loadmsg(&msg,msg.idx.number) >= 0) {
 						msg.hdr.attr|=MSG_DELETE;
 						msg.idx.attr=msg.hdr.attr;
-		//				  mail[smb.curmsg].attr=msg.hdr.attr;
+						mail[smb.curmsg].attr=msg.hdr.attr;
 						if((i=smb_putmsg(&smb,&msg))!=0)
 							errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error);
 						smb_unlockmsghdr(&smb,&msg); 
