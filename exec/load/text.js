@@ -425,8 +425,8 @@ var Unused415=415;
 var Unused416=416;
 var Unused417=417;
 var NoUserData=418;
-var Deleted=419;
-var Inactive=420;
+var DeletedUser=419;
+var InactiveUser=420;
 var UeditAliasPassword=421;
 var UeditRealNamePhone=422;
 var UeditAddressBirthday=423;
@@ -932,7 +932,13 @@ var NodeActivityPagingNode=922;
 var NodeActivityRetrievingFile=923;
 var NodeActivityCustom=924;
 var Never=925;
+var Deleting=926;
+var DoneDeleting=927;
+var Deleted=928;
+var DeletedNumberItems=929;
+var E_Mail=930;
+var E_Mails=931;
 
-var TOTAL_TEXT=926;
+var TOTAL_TEXT=932;
 
 this;
