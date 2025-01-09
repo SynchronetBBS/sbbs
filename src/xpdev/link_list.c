@@ -147,6 +147,7 @@ long listDettach(link_list_t* list)
 
 	listLock(list);
 	if((refs=--list->refs)==0) {
+		// coverity[sleep:SUPPRESS]
 		listUnlock(list);
 		listFree(list);
 	}
@@ -765,6 +766,7 @@ void* listRemoveTaggedNode(link_list_t* list, list_node_tag_t tag, bool free_dat
 
 	listLock(list);
 
+	// coverity[double_lock:SUPPRESS]
 	if((node=listFindTaggedNode(list, tag)) != NULL)
 		data = list_remove_node(list, node, free_data);
 
@@ -794,6 +796,7 @@ long listRemoveNodes(link_list_t* list, list_node_t* node, long max, bool free_d
 			break;
 	}
 
+	// coverity[double_unlock:SUPPRESS]
 	listUnlock(list);
 
 	return(count);
