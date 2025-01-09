@@ -508,8 +508,8 @@
 "UNUSED416"                                                 416 Unused416
 "UNUSED417"                                                 417 Unused417
 "\7\r\nNo user data defined.\r\n"                       418 NoUserData
-"\1r\1h\xAE\xAE\xAE \1iDELETED\1n\1r\1h \xAF\xAF\xAF\r\n"    419 Deleted
-"\1b\1h\xAE\xAE\xAE \1iINACTIVE\1n\1b\1h \xAF\xAF\xAF\r\n"   420 Inactive
+"\1r\1h\xAE\xAE\xAE \1iDELETED\1n\1r\1h \xAF\xAF\xAF\r\n"    419 DeletedUser
+"\1b\1h\xAE\xAE\xAE \1iINACTIVE\1n\1b\1h \xAF\xAF\xAF\r\n"   420 InactiveUser
 "\1n\1cAlias     : \1h%-30.30s  \1n\1cPass \1h%s\1n\1c: "\   421 UeditAliasPassword
 	"\1h%s\r\n"
 "\1n\1cReal Name : \1h%-30.30s  \1n\1cPhone number : "\      422 UeditRealNamePhone
@@ -1110,3 +1110,9 @@
 "retrieving file from device #%d"                          923 NodeActivityRetrievingFile
 "performing custom activity"                               924 NodeActivityCustom
 "never"                                                    925 Never
+"Deleting"                                                 926 Deleting
+"\1[\1>"                                                   927 DoneDeleting
+"Deleted"                                                  926 Deleted
+"@Deleted@ %d %s"                                          928 DeletedNumberItems
+"E-Mail"                                                   929 E_Mail
+"E-Mails"                                                  930 E_Mails

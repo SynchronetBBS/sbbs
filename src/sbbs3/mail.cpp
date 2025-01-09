@@ -58,6 +58,7 @@ int sbbs_t::delmail(uint usernumber, int which)
 	}
 	smb_rewind(smb.sid_fp);
 	for(l=0;l<smb.status.total_msgs;) {
+		progress(text[Deleting], l, smb.status.total_msgs);
 		memset(&msg, 0, sizeof(msg));
 		if(smb_fread(&smb,&msg.idx,sizeof(idxrec_t),smb.sid_fp)!=sizeof(idxrec_t))
 			break;
@@ -98,6 +99,7 @@ int sbbs_t::delmail(uint usernumber, int which)
 		idxbuf[l]=msg.idx;
 		l++; 
 	}
+	bputs(text[DoneDeleting]);
 	smb_rewind(smb.sid_fp);
 	for(i=0;i<l;i++) {
 		if(smb_fwrite(&smb,&idxbuf[i],sizeof(idxrec_t),smb.sid_fp) != sizeof(idxrec_t)) {
@@ -158,7 +160,7 @@ void sbbs_t::telluser(smbmsg_t* msg)
 /************************************************************************/
 /* Deletes all mail waiting for user number 'usernumber'                */
 /************************************************************************/
-void sbbs_t::delallmail(uint usernumber, int which, bool permanent, int lm_mode)
+int sbbs_t::delallmail(uint usernumber, int which, bool permanent, int lm_mode)
 {
 	int 		i;
 	int			deleted=0;
@@ -168,7 +170,7 @@ void sbbs_t::delallmail(uint usernumber, int which, bool permanent, int lm_mode)
 
 	if((i=smb_stack(&smb,SMB_STACK_PUSH))!=0) {
 		errormsg(WHERE,ERR_OPEN,"MAIL",i);
-		return; 
+		return 0;
 	}
 	snprintf(smb.file, sizeof smb.file, "%smail",cfg.data_dir);
 	smb.retry_time=cfg.smb_retry_time;
@@ -176,23 +178,24 @@ void sbbs_t::delallmail(uint usernumber, int which, bool permanent, int lm_mode)
 	if((i=smb_open(&smb))!=0) {
 		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
 		smb_stack(&smb,SMB_STACK_POP);
-		return; 
+		return 0;
 	}
 
 	mail=loadmail(&smb,&msgs,usernumber,which,lm_mode);
 	if(!msgs) {
 		smb_close(&smb);
 		smb_stack(&smb,SMB_STACK_POP);
-		return; 
+		return 0;
 	}
 	if((i=smb_locksmbhdr(&smb))!=0) {			/* Lock the base, so nobody */
 		smb_close(&smb);
 		smb_stack(&smb,SMB_STACK_POP);
 		free(mail);
 		errormsg(WHERE,ERR_LOCK,smb.file,i,smb.last_error);	/* messes with the index */
-		return; 
+		return 0;
 	}
 	for(u=0;u<msgs;u++) {
+		progress(text[Deleting], u, msgs);
 		msg.idx.offset=0;						/* search by number */
 		if((mail[u].attr&MSG_PERMANENT) && !permanent)
 			continue;
@@ -208,6 +211,7 @@ void sbbs_t::delallmail(uint usernumber, int which, bool permanent, int lm_mode)
 			smb_unlockmsghdr(&smb,&msg); 
 		} 
 	}
+	bputs(text[DoneDeleting]);
 
 	if(msgs)
 		free(mail);
@@ -216,5 +220,5 @@ void sbbs_t::delallmail(uint usernumber, int which, bool permanent, int lm_mode)
 	smb_unlocksmbhdr(&smb);
 	smb_close(&smb);
 	smb_stack(&smb,SMB_STACK_POP);
+	return deleted;
 }
-

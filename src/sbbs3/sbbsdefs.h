@@ -694,6 +694,7 @@ typedef enum {						/* Values for xtrn_t.event				*/
 #define P_HIDEMARKS	(1<<17)		/* Hide the mark-up characters				*/
 #define P_REMOTE	(1<<18)		/* Only print when online == ON_REMOTE		*/
 #define P_INDENT	(1<<19)		/* Indent lines to current cursor column	*/
+#define P_ATCODES	(1<<20)		/* Trusted @-codes in formatted string		*/
 
 								/* Bits in 'mode' for listfiles             */
 #define FL_ULTIME   (1<<0)		/* List files by upload time                */

@@ -149,9 +149,9 @@ void sbbs_t::useredit(int usernumber)
 		if(lncntr>=rows-2)
 			lncntr=0;
 		if(user.misc&DELETED)
-			center(text[Deleted]);
+			center(text[DeletedUser]);
 		else if(user.misc&INACTIVE)
-			center(text[Inactive]);
+			center(text[InactiveUser]);
 		else
 			CRLF;
 		l=lastuser(&cfg);
@@ -1168,7 +1168,7 @@ void sbbs_t::purgeuser(int usernumber)
 	getuserdat(&cfg,&user);
 	SAFEPRINTF2(str,"Purged %s #%u",user.alias,usernumber);
 	logentry("!*",str);
-	delallmail(usernumber, MAIL_ANY);
+	bprintf(P_ATCODES, text[DeletedNumberItems], delallmail(usernumber, MAIL_ANY), text[E_Mails]);
 	putusername(&cfg,usernumber,nulstr);
 	putusermisc(usernumber, user.misc | DELETED);
 }

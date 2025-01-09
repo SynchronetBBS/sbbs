@@ -891,7 +891,7 @@ public:
 	/* mail.cpp */
 	int		delmail(uint usernumber,int which);
 	void	telluser(smbmsg_t* msg);
-	void	delallmail(uint usernumber, int which, bool permanent=true, int lm_mode = 0);
+	int		delallmail(uint usernumber, int which, bool permanent=true, int lm_mode = 0);
 
 	/* getmsg.cpp */
 	int		loadmsg(smbmsg_t *msg, uint number);

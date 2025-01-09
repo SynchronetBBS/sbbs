@@ -416,7 +416,7 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 			case 'K':	/* Kill All Mail */
 				SAFEPRINTF(str,text[DeleteMailQ],"everyone");
 				if(!noyes(str))
-					delallmail(usernumber, which, /* permanent: */false, lm_mode);
+					bprintf(P_ATCODES, text[DeletedNumberItems], delallmail(usernumber, which, /* permanent: */false, lm_mode), text[E_Mails]);
 				domsg=false;
 				break;
 			case 'F':  /* Forward last piece */

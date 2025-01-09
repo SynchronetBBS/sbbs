@@ -99,6 +99,7 @@ int sbbs_t::bputs(const char *str, int mode)
 		}
 		if(!(mode&P_NOATCODES) && str[l]=='@') {
 			if(str==mnestr			/* Mnemonic string or */
+				|| (mode&P_ATCODES)	/* trusted parameters to formatted string */
 				|| (str>=text[0]	/* Straight out of TEXT.DAT */
 					&& str<=text[TOTAL_TEXT-1])) {
 				i=show_atcode(str+l);	/* return 0 if not valid @ code */

@@ -435,8 +435,8 @@ enum text {
 	,Unused416
 	,Unused417
 	,NoUserData
-	,Deleted
-	,Inactive
+	,DeletedUser
+	,InactiveUser
 	,UeditAliasPassword
 	,UeditRealNamePhone
 	,UeditAddressBirthday
@@ -942,6 +942,12 @@ enum text {
 	,NodeActivityRetrievingFile
 	,NodeActivityCustom
 	,Never
+	,Deleting
+	,DoneDeleting
+	,Deleted
+	,DeletedNumberItems
+	,E_Mail
+	,E_Mails
 
 	,TOTAL_TEXT
 };
