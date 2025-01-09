@@ -2012,6 +2012,7 @@ main(int argc, char **argv)
                          * ToDo: Disallow duplicate entries
                          */
 			bbs->connected = time(NULL);
+			bbs->fast_connected = xp_fast_timer64();
 			bbs->calls++;
 			if (bbs->id != -1) {
 				if (bbs->type == SYSTEM_BBSLIST) {
