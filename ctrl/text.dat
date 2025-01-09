@@ -1112,7 +1112,7 @@
 "never"                                                    925 Never
 "Deleting"                                                 926 Deleting
 "\1[\1>"                                                   927 DoneDeleting
-"Deleted"                                                  926 Deleted
-"@Deleted@ %d %s"                                          928 DeletedNumberItems
-"E-Mail"                                                   929 E_Mail
-"E-Mails"                                                  930 E_Mails
+"Deleted"                                                  928 Deleted
+"@Deleted@ %d %s"                                          929 DeletedNumberItems
+"E-Mail"                                                   930 E_Mail
+"E-Mails"                                                  931 E_Mails
