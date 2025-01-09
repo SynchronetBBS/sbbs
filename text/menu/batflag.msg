@@ -8,7 +8,7 @@
 
 nhcBatch Flagging Commands:
 
-nhb[nhcBnhb]atch                 ncAdd file(s) to queue (and [hDnc]ownload immediately)
+nhb[nhcBnhb]atch                 ncAdd file(s) to queue (and nhb[nhcDnhb]ownload immediatelync)
 nhb[nhcVnhb]iew Files‹ncView archive listing or contents of file(s)
 nhb[nhcEnhb]xtended InfoˆncDisplay extended information on file(s)
 nhb[nhcTnhb]oggle Description    ncToggle Extended/Short File Description Display
