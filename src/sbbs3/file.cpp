@@ -34,68 +34,70 @@ void sbbs_t::showfileinfo(file_t* f, bool show_extdesc)
 
 	current_file = f;
 	getfilepath(&cfg, f, path);
-	bprintf(P_TRUNCATE, text[FiLib], getusrlib(f->dir), cfg.lib[cfg.dir[f->dir]->lib]->lname);
-	bprintf(P_TRUNCATE, text[FiDir], getusrdir(f->dir), cfg.dir[f->dir]->lname);
-	bprintf(P_TRUNCATE, text[FiFilename],f->name);
+	if(!menu("fileinfo", P_NOCRLF | P_NOERROR)) {
+		bprintf(P_TRUNCATE, text[FiLib], getusrlib(f->dir), cfg.lib[cfg.dir[f->dir]->lib]->lname);
+		bprintf(P_TRUNCATE, text[FiDir], getusrdir(f->dir), cfg.dir[f->dir]->lname);
+		bprintf(P_TRUNCATE, text[FiFilename],f->name);
 
-	if(getfilesize(&cfg, f) >= 0)
-		bprintf(P_TRUNCATE, text[FiFileSize], u64toac(f->size,tmp)
-			, byte_estimate_to_str(f->size, tmp2, sizeof(tmp2), /* units: */1024, /* precision: */1));
+		if(getfilesize(&cfg, f) >= 0)
+			bprintf(P_TRUNCATE, text[FiFileSize], u64toac(f->size,tmp)
+				, byte_estimate_to_str(f->size, tmp2, sizeof(tmp2), /* units: */1024, /* precision: */1));
 
-	bprintf(P_TRUNCATE, text[FiCredits]
-		,(cfg.dir[f->dir]->misc&DIR_FREE || (f->size > 0 && f->cost <= 0)) ? text[FREE] : u64toac(f->cost,tmp));
-	if(getfilesize(&cfg, f) > 0 &&  (uint64_t)f->size == smb_getfilesize(&f->idx)) {
-#if 0 // I don't think anyone cares about the CRC-16 checksum value of a file
-		if(f->file_idx.hash.flags & SMB_HASH_CRC16) {
-			SAFEPRINTF(tmp, "%04x", f->file_idx.hash.data.crc16);
-			bprintf(P_TRUNCATE, text[FiChecksum], "CRC-16", tmp);
+		bprintf(P_TRUNCATE, text[FiCredits]
+			,(cfg.dir[f->dir]->misc&DIR_FREE || (f->size > 0 && f->cost <= 0)) ? text[FREE] : u64toac(f->cost,tmp));
+		if(getfilesize(&cfg, f) > 0 &&  (uint64_t)f->size == smb_getfilesize(&f->idx)) {
+	#if 0 // I don't think anyone cares about the CRC-16 checksum value of a file
+			if(f->file_idx.hash.flags & SMB_HASH_CRC16) {
+				SAFEPRINTF(tmp, "%04x", f->file_idx.hash.data.crc16);
+				bprintf(P_TRUNCATE, text[FiChecksum], "CRC-16", tmp);
+			}
+	#endif
+			if(f->file_idx.hash.flags & SMB_HASH_CRC32) {
+				SAFEPRINTF(tmp, "%08x", f->file_idx.hash.data.crc32);
+				bprintf(P_TRUNCATE, text[FiChecksum], "CRC-32", tmp);
+			}
+			if(f->file_idx.hash.flags & SMB_HASH_MD5)
+				bprintf(P_TRUNCATE, text[FiChecksum], "MD5", MD5_hex(tmp, f->file_idx.hash.data.md5));
+			if(f->file_idx.hash.flags & SMB_HASH_SHA1)
+				bprintf(P_TRUNCATE, text[FiChecksum], "SHA-1", SHA1_hex(tmp, f->file_idx.hash.data.sha1));
 		}
-#endif
-		if(f->file_idx.hash.flags & SMB_HASH_CRC32) {
-			SAFEPRINTF(tmp, "%08x", f->file_idx.hash.data.crc32);
-			bprintf(P_TRUNCATE, text[FiChecksum], "CRC-32", tmp);
+		if(f->desc && f->desc[0])
+			bprintf(P_TRUNCATE, text[FiDescription],f->desc);
+		if(f->tags && f->tags[0])
+			bprintf(P_TRUNCATE, text[FiTags], f->tags);
+		if(f->author)
+			bprintf(P_TRUNCATE, text[FiAuthor], f->author);
+		if(f->author_org)
+			bprintf(P_TRUNCATE, text[FiGroup], f->author_org);
+		char* p = f->hdr.attr&MSG_ANONYMOUS ? text[UNKNOWN_USER] : f->from;
+		if(p != NULL && *p != '\0') {
+			bprintf(P_TRUNCATE, text[FiUploadedBy], p);
+			if(f->from_prot != NULL)
+				bprintf(P_TRUNCATE, " via %s ", f->from_prot);
 		}
-		if(f->file_idx.hash.flags & SMB_HASH_MD5)
-			bprintf(P_TRUNCATE, text[FiChecksum], "MD5", MD5_hex(tmp, f->file_idx.hash.data.md5));
-		if(f->file_idx.hash.flags & SMB_HASH_SHA1)
-			bprintf(P_TRUNCATE, text[FiChecksum], "SHA-1", SHA1_hex(tmp, f->file_idx.hash.data.sha1));
-	}
-	if(f->desc && f->desc[0])
-		bprintf(P_TRUNCATE, text[FiDescription],f->desc);
-	if(f->tags && f->tags[0])
-		bprintf(P_TRUNCATE, text[FiTags], f->tags);
-	if(f->author)
-		bprintf(P_TRUNCATE, text[FiAuthor], f->author);
-	if(f->author_org)
-		bprintf(P_TRUNCATE, text[FiGroup], f->author_org);
-	char* p = f->hdr.attr&MSG_ANONYMOUS ? text[UNKNOWN_USER] : f->from;
-	if(p != NULL && *p != '\0') {
-		bprintf(P_TRUNCATE, text[FiUploadedBy], p);
-		if(f->from_prot != NULL)
-			bprintf(P_TRUNCATE, " via %s ", f->from_prot);
-	}
-	if(is_op) {
-		*tmp = '\0';
-		if(f->from_ip != NULL)
-			SAFEPRINTF(tmp, "[%s] ", f->from_ip);
-		if(f->from_host != NULL) {
-			SAFEPRINTF(tmp2, "%s ", f->from_host);
-			SAFECAT(tmp, tmp2);
+		if(is_op) {
+			*tmp = '\0';
+			if(f->from_ip != NULL)
+				SAFEPRINTF(tmp, "[%s] ", f->from_ip);
+			if(f->from_host != NULL) {
+				SAFEPRINTF(tmp2, "%s ", f->from_host);
+				SAFECAT(tmp, tmp2);
+			}
+			if(*tmp != '\0')
+				bprintf(P_TRUNCATE, text[FiUploadedBy], tmp);
 		}
-		if(*tmp != '\0')
-			bprintf(P_TRUNCATE, text[FiUploadedBy], tmp);
+		if(f->to_list != NULL && *f->to_list != '\0')
+			bprintf(P_TRUNCATE, text[FiUploadedTo], f->to_list);
+		bprintf(P_TRUNCATE, text[FiDateUled],timestr(f->hdr.when_imported.time));
+		if(getfiletime(&cfg, f) > 0)
+			bprintf(P_TRUNCATE, text[FiFileDate],timestr(f->time));
+		bprintf(P_TRUNCATE, text[FiDateDled],f->hdr.last_downloaded ? timestr(f->hdr.last_downloaded) : "Never");
+		bprintf(P_TRUNCATE, text[FiTimesDled],f->hdr.times_downloaded);
+		ulong timetodl = gettimetodl(&cfg, f, cur_cps);
+		if(timetodl > 0)
+			bprintf(text[FiTransferTime],sectostr(timetodl,tmp), cur_cps);
+		bputs(P_TRUNCATE, text[FileHdrDescSeparator]);
 	}
-	if(f->to_list != NULL && *f->to_list != '\0')
-		bprintf(P_TRUNCATE, text[FiUploadedTo], f->to_list);
-	bprintf(P_TRUNCATE, text[FiDateUled],timestr(f->hdr.when_imported.time));
-	if(getfiletime(&cfg, f) > 0)
-		bprintf(P_TRUNCATE, text[FiFileDate],timestr(f->time));
-	bprintf(P_TRUNCATE, text[FiDateDled],f->hdr.last_downloaded ? timestr(f->hdr.last_downloaded) : "Never");
-	bprintf(P_TRUNCATE, text[FiTimesDled],f->hdr.times_downloaded);
-	ulong timetodl = gettimetodl(&cfg, f, cur_cps);
-	if(timetodl > 0)
-		bprintf(text[FiTransferTime],sectostr(timetodl,tmp), cur_cps);
-	bputs(P_TRUNCATE, text[FileHdrDescSeparator]);
 	if(show_extdesc && f->extdesc != NULL && *f->extdesc) {
 		char* p = f->extdesc;
 		SKIP_CRLF(p);
