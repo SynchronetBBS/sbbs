@@ -799,6 +799,7 @@ set_attr(struct cterminal *cterm, unsigned char colour, bool bg)
 	if (cterm->emulation == CTERM_EMULATION_PRESTEL) {
 		if (cterm->extattr & CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT)
 			cterm->bg_color |= 0x01000000;
+		cterm->bg_color |= 0x02000000;
 	}
 	if (bg)
 		FREE_AND_NULL(cterm->bg_tc_str);
@@ -824,6 +825,7 @@ prestel_new_line(struct cterminal *cterm)
 	cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_CONCEAL | CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT | CTERM_EXTATTR_PRESTEL_HOLD | CTERM_EXTATTR_PRESTEL_MOSAIC | CTERM_EXTATTR_PRESTEL_SEPARATED);
 	cterm->attr = 7;
 	attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
+	cterm->bg_color |= 0x02000000;
 	cterm->prestel_last_mosaic = 0;
 	TEXTATTR(cterm->attr);
 	setcolour(cterm->fg_color, cterm->bg_color);
@@ -869,6 +871,7 @@ prestel_apply_ctrl_before(struct cterminal *cterm, uint8_t ch)
 			cterm->extattr |= CTERM_EXTATTR_PRESTEL_HOLD;
 			break;
 	}
+	cterm->bg_color |= 0x02000000;
 }
 
 static void
@@ -950,6 +953,7 @@ prestel_apply_ctrl_after(struct cterminal *cterm, uint8_t ch)
 			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_HOLD);
 			break;
 	}
+	cterm->bg_color |= 0x02000000;
 }
 
 static void
