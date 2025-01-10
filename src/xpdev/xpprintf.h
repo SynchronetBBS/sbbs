@@ -22,6 +22,8 @@
 #ifndef _XPPRINTF_H_
 #define _XPPRINTF_H_
 
+#if !defined(__BORLANDC__)
+
 #include <stdarg.h>
 #include "wrapdll.h"
 
@@ -36,10 +38,8 @@
 #define XP_PRINTF_TYPE_USHORT		XP_PRINTF_TYPE_UINT
 #define XP_PRINTF_TYPE_LONG			4
 #define XP_PRINTF_TYPE_ULONG		5
-#if !defined(__BORLANDC__)
-	#define XP_PRINTF_TYPE_LONGLONG		6
-	#define XP_PRINTF_TYPE_ULONGLONG	7
-#endif
+#define XP_PRINTF_TYPE_LONGLONG		6
+#define XP_PRINTF_TYPE_ULONGLONG	7
 #define XP_PRINTF_TYPE_CHARP		8
 #define XP_PRINTF_TYPE_DOUBLE		9
 #define XP_PRINTF_TYPE_FLOAT		XP_PRINTF_TYPE_DOUBLE	/* Floats are promoted to doubles */
@@ -61,6 +61,7 @@ DLLEXPORT char* xp_asprintf_next(char *format, int type, ...);
 DLLEXPORT char* xp_asprintf_end(char *format, size_t *endlen);
 DLLEXPORT char* xp_asprintf(const char *format, ...);
 DLLEXPORT char* xp_vasprintf(const char *format, va_list va);
+DLLEXPORT int xp_printf_get_next(char *format);
 DLLEXPORT int xp_printf_get_type(const char *format);
 #if defined(_MSC_VER) || defined(__MSVCRT__) || defined(__BORLANDC__)
 DLLEXPORT int vasprintf(char **strptr, const char *format, va_list va);
@@ -69,6 +70,8 @@ DLLEXPORT int asprintf(char **strptr, const char *format, ...);
 
 #if defined(__cplusplus)
 }
+#endif
+
 #endif
 
 #endif

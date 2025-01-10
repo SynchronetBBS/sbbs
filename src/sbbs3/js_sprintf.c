@@ -39,15 +39,25 @@ js_sprintf(JSContext *cx, uint argn, uintN argc, jsval *argv)
 
 	p=op;
 	p=xp_asprintf_start(p);
-    for(; argn<argc; argn++) {
-		if(JSVAL_IS_DOUBLE(argv[argn]))
-			p=xp_asprintf_next(p,XP_PRINTF_CONVERT|XP_PRINTF_TYPE_DOUBLE,JSVAL_TO_DOUBLE(argv[argn]));
-		else if(JSVAL_IS_INT(argv[argn]))
-			p=xp_asprintf_next(p,XP_PRINTF_CONVERT|XP_PRINTF_TYPE_INT,JSVAL_TO_INT(argv[argn]));
-		else if(JSVAL_IS_BOOLEAN(argv[argn]) && xp_printf_get_type(p)!=XP_PRINTF_TYPE_CHARP)
-			p=xp_asprintf_next(p,XP_PRINTF_CONVERT|XP_PRINTF_TYPE_INT,JSVAL_TO_BOOLEAN(argv[argn]));
+	int cur = 0;
+	for (;;) {
+		int next = xp_printf_get_next(p);
+		if (next < 0)
+			break;
+		if (next > 0 && next != (cur + 1))
+			cur = next;
+		else
+			cur++;
+		if (cur > argc)
+			break;
+		if(JSVAL_IS_DOUBLE(argv[cur]))
+			p=xp_asprintf_next(p,XP_PRINTF_CONVERT|XP_PRINTF_TYPE_DOUBLE,JSVAL_TO_DOUBLE(argv[cur]));
+		else if(JSVAL_IS_INT(argv[cur]))
+			p=xp_asprintf_next(p,XP_PRINTF_CONVERT|XP_PRINTF_TYPE_INT,JSVAL_TO_INT(argv[cur]));
+		else if(JSVAL_IS_BOOLEAN(argv[cur]) && xp_printf_get_type(p)!=XP_PRINTF_TYPE_CHARP)
+			p=xp_asprintf_next(p,XP_PRINTF_CONVERT|XP_PRINTF_TYPE_INT,JSVAL_TO_BOOLEAN(argv[cur]));
 		else {
-			JSVALUE_TO_RASTRING(cx, argv[argn], p2, &p2_sz, NULL);
+			JSVALUE_TO_RASTRING(cx, argv[cur], p2, &p2_sz, NULL);
 			if(JS_IsExceptionPending(cx))
 				JS_ClearPendingException(cx);
 			if(p2==NULL) {
