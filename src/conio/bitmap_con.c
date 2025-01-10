@@ -1400,13 +1400,12 @@ bitmap_movetext_screen(int x, int y, int tox, int toy, int direction, int height
 			direction = 1;
 		else
 			direction = -1;
-		height = vstat.rows - height;
+		height = vstat.rows - (height + (y - toy));
 		// If everything was moved, there's no lines to move back
-		if (height <= y - toy)
+		if (height <= 0)
 			return;
-		int otoy = toy;
-		toy = vstat.rows - (y - toy);
-		y = toy - (y - otoy);
+		toy = vstat.rows - (height - 1);
+		y = toy - (height);
 	}
 
 	int maxpos = screena.screenwidth * screena.screenheight;
