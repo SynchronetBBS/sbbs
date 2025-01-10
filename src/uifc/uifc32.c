@@ -2752,6 +2752,8 @@ void upop(const char *str)
 	if(!width)
 		return;
 	width += 7;
+	if(width > 80)
+		width = 80;
 	vmem_gettext((api->scrn_width-width+1)/2+1,(api->scrn_len-3+1)/2+1
 			,(api->scrn_width+width-1)/2+1,(api->scrn_len+3-1)/2+1,sav);
 	for(i=0; i < width*3; i++)
