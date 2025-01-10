@@ -1109,9 +1109,11 @@ int bitmap_puttext(int sx, int sy, int ex, int ey, void *fill)
 		return(0);
 	}
 
+	struct vmem_cell *va = malloc(((ex - sx + 1) * (ey - sy + 1))*sizeof(struct vmem_cell));
+	if (va == NULL)
+		return 0;
 	pthread_mutex_lock(&vstatlock);
 	vmem_ptr = get_vmem(&vstat);
-	struct vmem_cell va[(ex - sx + 1) * (ey - sy + 1)];
 	size_t c = 0;
 	for (y = sy - 1; y < ey; y++) {
 		for (x = sx - 1; x < ex; x++) {
@@ -1121,6 +1123,7 @@ int bitmap_puttext(int sx, int sy, int ex, int ey, void *fill)
 	bitmap_draw_vmem(sx, sy, ex, ey, va);
 	release_vmem(vmem_ptr);
 	pthread_mutex_unlock(&vstatlock);
+	free(va);
 	return ret;
 }
 
@@ -1502,12 +1505,14 @@ void bitmap_clreol(void)
 
 	if(!bitmap_initialized)
 		return;
+	struct vmem_cell *va = malloc((cio_textinfo.winright - (cio_textinfo.curx + cio_textinfo.winleft - 1) + 1) * sizeof(struct vmem_cell));
+	if (va == NULL)
+		return;
 
 	row = cio_textinfo.cury + cio_textinfo.wintop - 1;
 	pos=(row - 1)*cio_textinfo.screenwidth;
 	pthread_mutex_lock(&vstatlock);
 	vmem_ptr = get_vmem(&vstat);
-	struct vmem_cell va[cio_textinfo.winright - (cio_textinfo.curx + cio_textinfo.winleft - 1) + 1];
 	int c = 0;
 	for(x=cio_textinfo.curx+cio_textinfo.winleft-2; x<cio_textinfo.winright; x++) {
 		va[c++] = *set_vmem_cell(vmem_ptr, pos+x, fill, ciolib_fg, ciolib_bg);
@@ -1515,6 +1520,7 @@ void bitmap_clreol(void)
 	bitmap_draw_vmem(cio_textinfo.curx + cio_textinfo.winleft - 1, row, cio_textinfo.winright, row, va);
 	release_vmem(vmem_ptr);
 	pthread_mutex_unlock(&vstatlock);
+	free(va);
 }
 
 void bitmap_clrscr(void)
@@ -1522,9 +1528,9 @@ void bitmap_clrscr(void)
 	size_t x, y;
 	WORD fill = (cio_textinfo.attribute << 8) | ' ';
 	struct vstat_vmem *vmem_ptr;
-	struct vmem_cell va[(cio_textinfo.winright - cio_textinfo.winleft + 1) * (cio_textinfo.winbottom - cio_textinfo.wintop + 1)];
 	size_t c = 0;
 	int rows, cols;
+	struct vmem_cell *va = malloc(((cio_textinfo.winright - cio_textinfo.winleft + 1) * (cio_textinfo.winbottom - cio_textinfo.wintop + 1)) * sizeof(struct vmem_cell));
 
 	if(!bitmap_initialized)
 		return;
