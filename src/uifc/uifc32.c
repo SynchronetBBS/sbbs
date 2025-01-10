@@ -2736,24 +2736,28 @@ char *utimestr(time_t *intime)
 /****************************************************************************/
 /* Status popup/down function, see uifc.h for details.						*/
 /****************************************************************************/
-void upop(const char *str)
+void upop(const char *instr)
 {
-	static struct vmem_cell sav[80*3], buf[80*3];
+	char str[(MAX_COLS - 7) + 1];
+	static struct vmem_cell sav[MAX_COLS*3], buf[MAX_COLS*3];
 	int i,j,k;
 	static int width;
 
-	if(str == NULL) {
+	if(instr == NULL) {
 		vmem_puttext((api->scrn_width-width+1)/2+1,(api->scrn_len-3+1)/2+1
 			,(api->scrn_width+width-1)/2+1,(api->scrn_len+3-1)/2+1,sav);
 		return;
 	}
 
+	strlcpy(str, instr, sizeof str);
 	width = strlen(str);
 	if(!width)
 		return;
 	width += 7;
-	if(width > 80)
-		width = 80;
+	if(width > api->scrn_width) {
+		str[api->scrn_width - 7] = '\0';
+		width = api->scrn_width;
+	}
 	vmem_gettext((api->scrn_width-width+1)/2+1,(api->scrn_len-3+1)/2+1
 			,(api->scrn_width+width-1)/2+1,(api->scrn_len+3-1)/2+1,sav);
 	for(i=0; i < width*3; i++)
