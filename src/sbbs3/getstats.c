@@ -341,7 +341,7 @@ int getfiles(scfg_t* cfg, int dirnum)
 	char path[MAX_PATH + 1];
 	off_t l;
 
-	if(!is_valid_dirnum(cfg, dirnum))
+	if(!dirnum_is_valid(cfg, dirnum))
 		return 0;
 	SAFEPRINTF2(path, "%s%s.sid", cfg->dir[dirnum]->data_dir, cfg->dir[dirnum]->code);
 	l = flength(path);
@@ -355,7 +355,7 @@ int getfiles(scfg_t* cfg, int dirnum)
 /****************************************************************************/
 uint getposts(scfg_t* cfg, int subnum)
 {
-	if(!is_valid_subnum(cfg, subnum))
+	if(!subnum_is_valid(cfg, subnum))
 		return 0;
 	if(cfg->sub[subnum]->misc & SUB_NOVOTING) {
 		char path[MAX_PATH + 1];

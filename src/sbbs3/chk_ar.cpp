@@ -803,7 +803,7 @@ int sbbs_t::getusrgrp(int subnum)
 {
 	int	ugrp;
 
-	if(!is_valid_subnum(subnum))
+	if(!subnum_is_valid(subnum))
 		return(0);
 
 	if(usrgrps<=0)
@@ -836,7 +836,7 @@ int sbbs_t::getusrlib(int dirnum)
 {
 	int	ulib;
 
-	if(!is_valid_dirnum(dirnum))
+	if(!dirnum_is_valid(dirnum))
 		return 0;
 
 	if(usrlibs <= 0)
@@ -868,5 +868,5 @@ int sbbs_t::getusrdir(int dirnum)
 
 int sbbs_t::dir_op(int dirnum)
 {
-	return is_user_dirop(&cfg, dirnum, &useron, &client);
+	return user_is_dirop(&cfg, dirnum, &useron, &client);
 }

@@ -102,7 +102,7 @@ bool js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg, JSObject* subobj, in
 	jsval		val;
 	sub_t*		sub;
 
-	if(!is_valid_subnum(cfg, subnum))
+	if(!subnum_is_valid(cfg, subnum))
 		return(false);
 
 	sub=cfg->sub[subnum];
@@ -282,16 +282,16 @@ static JSBool js_sub_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 
 	switch(tiny) {
 		case SUB_PROP_CAN_ACCESS:
-			*vp = BOOLEAN_TO_JSVAL(p->user==NULL || can_user_access_sub(p->cfg, p->subnum, p->user, p->client));
+			*vp = BOOLEAN_TO_JSVAL(p->user==NULL || user_can_access_sub(p->cfg, p->subnum, p->user, p->client));
 			break;
 		case SUB_PROP_CAN_READ:
-			*vp = BOOLEAN_TO_JSVAL(p->user==NULL || can_user_read_sub(p->cfg, p->subnum, p->user, p->client));
+			*vp = BOOLEAN_TO_JSVAL(p->user==NULL || user_can_read_sub(p->cfg, p->subnum, p->user, p->client));
 			break;
 		case SUB_PROP_CAN_POST:
-			*vp = BOOLEAN_TO_JSVAL(p->user==NULL || can_user_post(p->cfg, p->subnum, p->user, p->client,/* reason: */NULL));
+			*vp = BOOLEAN_TO_JSVAL(p->user==NULL || user_can_post(p->cfg, p->subnum, p->user, p->client,/* reason: */NULL));
 			break;
 		case SUB_PROP_IS_OPERATOR:
-			*vp = BOOLEAN_TO_JSVAL(p->user == NULL || is_user_subop(p->cfg, p->subnum, p->user, p->client));
+			*vp = BOOLEAN_TO_JSVAL(p->user == NULL || user_is_subop(p->cfg, p->subnum, p->user, p->client));
 			break;
 		case SUB_PROP_IS_MODERATED:
 			if(p->cfg->sub[p->subnum]->mod_ar[0] != 0
@@ -575,7 +575,7 @@ JSBool js_msg_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 
 				val=OBJECT_TO_JSVAL(subobj);
 				sub_index=-1;
-				if(p->user==NULL || can_user_access_sub(p->cfg,d,p->user,p->client)) {
+				if(p->user==NULL || user_can_access_sub(p->cfg,d,p->user,p->client)) {
 
 					if(!JS_GetArrayLength(cx, sub_list, (jsuint*)&sub_index))
 						return JS_FALSE;

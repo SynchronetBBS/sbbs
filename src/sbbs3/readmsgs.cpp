@@ -24,7 +24,7 @@
 
 int sbbs_t::sub_op(int subnum)
 {
-	return(is_user_subop(&cfg, subnum, &useron, &client));
+	return(user_is_subop(&cfg, subnum, &useron, &client));
 }
 
 bool sbbs_t::can_view_deleted_msgs(int subnum)
@@ -1607,7 +1607,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 		free(post);
 	if(!quit
 		&& !(org_mode&(SCAN_CONT|SCAN_TOYOU|SCAN_FIND|SCAN_POLLS)) && !(cfg.sub[subnum]->misc&SUB_PONLY)
-		&& reads && can_user_post(&cfg, subnum, &useron, &client, /* reason: */NULL) && text[Post][0]) {
+		&& reads && user_can_post(&cfg, subnum, &useron, &client, /* reason: */NULL) && text[Post][0]) {
 		SAFEPRINTF2(str,text[Post],cfg.grp[cfg.sub[subnum]->grp]->sname
 			,cfg.sub[subnum]->lname);
 		if(!noyes(str))

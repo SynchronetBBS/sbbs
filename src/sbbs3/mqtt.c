@@ -913,7 +913,7 @@ static int mqtt_file_xfer(struct mqtt* mqtt, user_t* user, int dirnum, const cha
 	if(mqtt == NULL || mqtt->cfg == NULL || user == NULL || fname == NULL || client == NULL)
 		return MQTT_FAILURE;
 
-	if(!is_valid_dirnum(mqtt->cfg, dirnum))
+	if(!dirnum_is_valid(mqtt->cfg, dirnum))
 		return MQTT_FAILURE;
 
 	if(!mqtt->connected)

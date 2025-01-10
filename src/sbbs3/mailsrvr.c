@@ -3740,7 +3740,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 						}
 					}
 
-					if(!can_user_post(&scfg,subnum,&relay_user,&client,&reason)) {
+					if(!user_can_post(&scfg,subnum,&relay_user,&client,&reason)) {
 						strip_ctrl(text[reason], tmp);
 						lprintf(LOG_NOTICE,"%04d %s %s !%s (user #%u) cannot post on %s (reason[%u]: %s)"
 							,socket, client.protocol, client_id, sender_addr, relay_user.number
@@ -4005,7 +4005,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 							,sender, sender_addr, reverse_path, str));
 
 					if(!(startup->options&MAIL_OPT_NO_NOTIFY) && usernum) {
-						if(!newmsg.idx.to || startup->notify_offline_users || is_user_online(&scfg, usernum)) {
+						if(!newmsg.idx.to || startup->notify_offline_users || user_is_online(&scfg, usernum)) {
 							p=sender_addr;
 							if(stricmp(sender, sender_addr) == 0) {
 								if((p = strchr(sender_addr, '@')) == NULL)

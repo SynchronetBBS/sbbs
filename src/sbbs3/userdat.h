@@ -99,7 +99,7 @@ DLLEXPORT char* node_activity(scfg_t*, node_t* node, char* str, size_t size, int
 DLLEXPORT char* node_vstatus(scfg_t*, node_t* node, char* str, size_t size);
 DLLEXPORT char* nodestatus(scfg_t*, node_t* node, char* buf, size_t buflen, int num);
 DLLEXPORT void	printnodedat(scfg_t*, uint number, node_t* node);
-DLLEXPORT int	is_user_online(scfg_t*, uint usernumber);
+DLLEXPORT int	user_is_online(scfg_t*, uint usernumber);
 DLLEXPORT void	packchatpass(char *pass, node_t* node);
 DLLEXPORT char* unpackchatpass(char *pass, node_t* node);
 DLLEXPORT char* readsmsg(scfg_t*, int usernumber);
@@ -150,20 +150,20 @@ DLLEXPORT void	resetdailyuserdat(scfg_t*, user_t*, bool write);
 DLLEXPORT void	subtract_cdt(scfg_t*, user_t*, uint64_t amt);
 DLLEXPORT uint64_t user_available_credits(user_t*);
 DLLEXPORT size_t user_field_len(enum user_field);
-DLLEXPORT bool	can_user_access_all_libs(scfg_t*, user_t*, client_t*);
-DLLEXPORT bool	can_user_access_all_dirs(scfg_t*, int libnum, user_t*, client_t*);
-DLLEXPORT bool	can_user_access_lib(scfg_t*, int libnum, user_t*, client_t*);
-DLLEXPORT bool	can_user_access_dir(scfg_t*, int dirnum, user_t*, client_t* client);
-DLLEXPORT bool	can_user_access_sub(scfg_t*, int subnum, user_t*, client_t* client);
-DLLEXPORT bool	can_user_read_sub(scfg_t*, int subnum, user_t*, client_t* client);
-DLLEXPORT bool	can_user_post(scfg_t*, int subnum, user_t*, client_t* client, uint* reason);
-DLLEXPORT bool	can_user_upload(scfg_t*, int dirnum, user_t*, client_t* client, uint* reason);
-DLLEXPORT bool	can_user_download(scfg_t*, int dirnum, user_t*, client_t* client, uint* reason);
-DLLEXPORT bool	can_user_send_mail(scfg_t*, enum smb_net_type, uint usernumber, user_t*, uint* reason);
-DLLEXPORT bool	is_user_sysop(user_t*);
-DLLEXPORT bool	is_user_subop(scfg_t*, int subnum, user_t*, client_t* client);
-DLLEXPORT bool	is_user_dirop(scfg_t*, int dirnum, user_t*, client_t* client);
-DLLEXPORT bool	is_download_free(scfg_t*, int dirnum, user_t*, client_t* client);
+DLLEXPORT bool	user_can_access_all_libs(scfg_t*, user_t*, client_t*);
+DLLEXPORT bool	user_can_access_all_dirs(scfg_t*, int libnum, user_t*, client_t*);
+DLLEXPORT bool	user_can_access_lib(scfg_t*, int libnum, user_t*, client_t*);
+DLLEXPORT bool	user_can_access_dir(scfg_t*, int dirnum, user_t*, client_t* client);
+DLLEXPORT bool	user_can_access_sub(scfg_t*, int subnum, user_t*, client_t* client);
+DLLEXPORT bool	user_can_read_sub(scfg_t*, int subnum, user_t*, client_t* client);
+DLLEXPORT bool	user_can_post(scfg_t*, int subnum, user_t*, client_t* client, uint* reason);
+DLLEXPORT bool	user_can_upload(scfg_t*, int dirnum, user_t*, client_t* client, uint* reason);
+DLLEXPORT bool	user_can_download(scfg_t*, int dirnum, user_t*, client_t* client, uint* reason);
+DLLEXPORT bool	user_can_send_mail(scfg_t*, enum smb_net_type, uint usernumber, user_t*, uint* reason);
+DLLEXPORT bool	user_is_sysop(user_t*);
+DLLEXPORT bool	user_is_subop(scfg_t*, int subnum, user_t*, client_t* client);
+DLLEXPORT bool	user_is_dirop(scfg_t*, int dirnum, user_t*, client_t* client);
+DLLEXPORT bool	download_is_free(scfg_t*, int dirnum, user_t*, client_t* client);
 
 enum parsed_vpath {
 	PARSED_VPATH_NONE,

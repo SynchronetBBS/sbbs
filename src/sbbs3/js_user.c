@@ -424,7 +424,7 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			return(JS_TRUE);	/* intentional early return */
 
 		case USER_PROP_IS_SYSOP:
-			*vp = BOOLEAN_TO_JSVAL(is_user_sysop(p->user));
+			*vp = BOOLEAN_TO_JSVAL(user_is_sysop(p->user));
 			JS_RESUMEREQUEST(cx, rc);
 			return(JS_TRUE);	/* intentional early return */
 
@@ -1210,7 +1210,7 @@ js_downloaded_file(JSContext *cx, uintN argc, jsval *arglist)
 
 	rc=JS_SUSPENDREQUEST(cx);
 	js_getuserdat(scfg,p);
-	if(fname != NULL && is_valid_dirnum(scfg, dirnum)) {
+	if(fname != NULL && dirnum_is_valid(scfg, dirnum)) {
 		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(user_downloaded_file(scfg, p->user, p->client, dirnum, fname, bytes)));
 		mqtt_file_download(p->mqtt, p->user, dirnum, fname, bytes, p->client);
 	} else {

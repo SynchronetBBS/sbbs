@@ -593,7 +593,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 				}
 			}
 		}
-		editor_inf(useron_xedit,to,from,subj,mode, is_valid_subnum(subnum) ? cfg.sub[subnum]->sname : nulstr, tagfile);
+		editor_inf(useron_xedit,to,from,subj,mode, subnum_is_valid(subnum) ? cfg.sub[subnum]->sname : nulstr, tagfile);
 		if(cfg.xedit[useron_xedit-1]->type) {
 			gettimeleft();
 			xtrndat(mode&WM_ANON ? text[Anonymous]:from,cfg.node_dir,cfg.xedit[useron_xedit-1]->type
@@ -1692,7 +1692,7 @@ bool sbbs_t::editmsg(smb_t* smb, smbmsg_t *msg)
 	msg_tmp_fname(useron.xedit, msgtmp, sizeof(msgtmp));
 	(void)removecase(msgtmp);
 	msgtotxt(smb, msg, msgtmp, /* header: */false, /* mode: */is_msg ? GETMSGTXT_ALL : GETMSGTXT_BODY_ONLY);
-	if(!editfile(msgtmp, cfg.level_linespermsg[useron.level], msg->to, msg->from, msg->subj, is_valid_subnum(smb->subnum) ? cfg.sub[smb->subnum]->sname : nulstr))
+	if(!editfile(msgtmp, cfg.level_linespermsg[useron.level], msg->to, msg->from, msg->subj, subnum_is_valid(smb->subnum) ? cfg.sub[smb->subnum]->sname : nulstr))
 		return false;
 	length=(long)flength(msgtmp);
 	if(length<1L)

@@ -509,7 +509,7 @@ bool batch_file_add(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, file_t* f
 		return false;
 	}
 	fprintf(fp, "\n[%s]\n", f->name);
-	if(is_valid_dirnum(cfg, f->dir))
+	if(dirnum_is_valid(cfg, f->dir))
 		fprintf(fp, "dir=%s\n", cfg->dir[f->dir]->code);
 	if(f->desc != NULL)
 		fprintf(fp, "desc=%s\n", f->desc);
@@ -527,7 +527,7 @@ bool batch_file_get(scfg_t* cfg, str_list_t ini, const char* filename, file_t* f
 	if(!iniSectionExists(ini, filename))
 		return false;
 	f->dir = batch_file_dir(cfg, ini, filename);
-	if(!is_valid_dirnum(cfg, f->dir))
+	if(!dirnum_is_valid(cfg, f->dir))
 		return false;
 	smb_hfield_str(f, SMB_FILENAME, filename);
 	if((p = iniGetString(ini, filename, "desc", NULL, value)) != NULL)
@@ -584,7 +584,7 @@ ulong getuserxfers(scfg_t* cfg, const char* from, uint to)
 
 	if(cfg == NULL)
 		return 0;
-	if(!is_valid_dirnum(cfg, cfg->user_dir))
+	if(!dirnum_is_valid(cfg, cfg->user_dir))
 		return 0;
 
 	if(smb_open_dir(cfg, &smb, cfg->user_dir) != SMB_SUCCESS)
@@ -623,7 +623,7 @@ char* getfilepath(scfg_t* cfg, file_t* f, char* path)
 {
 	bool fchk = true;
 	const char* name = f->name == NULL ? f->file_idx.name : f->name;
-	if(!is_valid_dirnum(cfg, f->dir))
+	if(!dirnum_is_valid(cfg, f->dir))
 		safe_snprintf(path, MAX_PATH, "%s%s", cfg->temp_dir, name);
 	else {
 		safe_snprintf(path, MAX_PATH, "%s%s", cfg->dir[f->dir]->path, name);
@@ -638,7 +638,7 @@ char* getfilevpath(scfg_t* cfg, file_t* f, char* path, size_t size)
 {
 	char vpath[LEN_DIR + 1];
 	const char* name = f->name == NULL ? f->file_idx.name : f->name;
-	if(!is_valid_dirnum(cfg, f->dir))
+	if(!dirnum_is_valid(cfg, f->dir))
 		return "";
 	safe_snprintf(path, size, "%s/%s"
 		,dir_vpath(cfg, cfg->dir[f->dir], vpath, sizeof vpath), name);

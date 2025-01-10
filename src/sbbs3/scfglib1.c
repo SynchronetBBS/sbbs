@@ -423,7 +423,7 @@ bool read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		*p = '\0';
 		char* code = p + 1;
 		int grpnum = getgrpnum_from_name(cfg, group);
-		if(!is_valid_grpnum(cfg, grpnum))
+		if(!grpnum_is_valid(cfg, grpnum))
 			continue;
 		if((cfg->sub[i]=(sub_t *)malloc(sizeof(sub_t)))==NULL)
 			return allocerr(error, maxerrlen, fname, "sub", sizeof(sub_t));
@@ -560,7 +560,7 @@ bool read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 			SAFECOPY(subcode, iniGetString(subsection, NULL, "sub", "", value));
 			subnum = getsubnum(cfg, subcode);
 			mode = iniGetUInteger(subsection, NULL, "mode", 0);
-			if(is_valid_subnum(cfg, subnum)) {
+			if(subnum_is_valid(cfg, subnum)) {
 				cfg->sub[subnum]->misc |= SUB_QNET;
 				cfg->qhub[i]->sub[cfg->qhub[i]->subs]	= cfg->sub[subnum];
 				cfg->qhub[i]->mode[cfg->qhub[i]->subs]	= mode;
@@ -748,34 +748,34 @@ int getgrpnum(scfg_t* cfg, const char* code)
 
 char* lib_name(scfg_t* cfg, int dirnum)
 {
-	if(!is_valid_dirnum(cfg, dirnum))
+	if(!dirnum_is_valid(cfg, dirnum))
 		return "<invalid dir>";
 	int libnum = cfg->dir[dirnum]->lib;
-	if(!is_valid_libnum(cfg, libnum))
+	if(!libnum_is_valid(cfg, libnum))
 		return "<invalid lib>";
 	return cfg->lib[libnum]->sname;
 }
 
 char* dir_name(scfg_t* cfg, int dirnum)
 {
-	if(!is_valid_dirnum(cfg, dirnum))
+	if(!dirnum_is_valid(cfg, dirnum))
 		return "<invalid dir>";
 	return cfg->dir[dirnum]->sname;
 }
 
 char* grp_name(scfg_t* cfg, int subnum)
 {
-	if(!is_valid_subnum(cfg, subnum))
+	if(!subnum_is_valid(cfg, subnum))
 		return "<invalid sub>";
 	int grpnum = cfg->sub[subnum]->grp;
-	if(!is_valid_grpnum(cfg, grpnum))
+	if(!grpnum_is_valid(cfg, grpnum))
 		return "<invalid grp>";
 	return cfg->grp[grpnum]->sname;
 }
 
 char* sub_name(scfg_t* cfg, int subnum)
 {
-	if(!is_valid_subnum(cfg, subnum))
+	if(!subnum_is_valid(cfg, subnum))
 		return "<invalid sub>";
 	return cfg->sub[subnum]->sname;
 }
@@ -870,32 +870,32 @@ int getshellnum(scfg_t* cfg, const char* code)
 	return 0;
 }
 
-bool is_valid_dirnum(scfg_t* cfg, int dirnum)
+bool dirnum_is_valid(scfg_t* cfg, int dirnum)
 {
 	return (dirnum >= 0) && (cfg != NULL) && (dirnum < cfg->total_dirs);
 }
 
-bool is_valid_libnum(scfg_t* cfg, int libnum)
+bool libnum_is_valid(scfg_t* cfg, int libnum)
 {
 	return (libnum >= 0) && (cfg != NULL) && (libnum < cfg->total_libs);
 }
 
-bool is_valid_subnum(scfg_t* cfg, int subnum)
+bool subnum_is_valid(scfg_t* cfg, int subnum)
 {
 	return (subnum >= 0) && (cfg != NULL) && (subnum < cfg->total_subs);
 }
 
-bool is_valid_grpnum(scfg_t* cfg, int grpnum)
+bool grpnum_is_valid(scfg_t* cfg, int grpnum)
 {
 	return (grpnum >= 0) && (cfg != NULL) && (grpnum < cfg->total_grps);
 }
 
-bool is_valid_xtrnnum(scfg_t* cfg, int xtrnnum)
+bool xtrnnum_is_valid(scfg_t* cfg, int xtrnnum)
 {
 	return (xtrnnum >= 0) && (cfg != NULL) && (xtrnnum < cfg->total_xtrns);
 }
 
-bool is_valid_xtrnsec(scfg_t* cfg, int secnum)
+bool xtrnsec_is_valid(scfg_t* cfg, int secnum)
 {
 	return (secnum >= 0) && (cfg != NULL) && (secnum < cfg->total_xtrnsecs);
 }

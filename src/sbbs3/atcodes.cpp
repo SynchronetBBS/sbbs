@@ -1688,7 +1688,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		if(SMB_IS_OPEN(&smb)) {
 			if(smb.subnum==INVALID_SUB)
 				return("Local");
-			if(is_valid_subnum(smb.subnum))
+			if(subnum_is_valid(smb.subnum))
 				return(cfg.grp[cfg.sub[smb.subnum]->grp]->sname);
 		}
 		return(usrgrps ? cfg.grp[usrgrp[curgrp]]->sname : nulstr);
@@ -1698,7 +1698,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		if(SMB_IS_OPEN(&smb)) {
 			if(smb.subnum==INVALID_SUB)
 				return("Local");
-			if(is_valid_subnum(smb.subnum))
+			if(subnum_is_valid(smb.subnum))
 				return(cfg.grp[cfg.sub[smb.subnum]->grp]->lname);
 		}
 		return(usrgrps ? cfg.grp[usrgrp[curgrp]]->lname : nulstr);
@@ -1735,7 +1735,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		if(SMB_IS_OPEN(&smb)) {
 			if(smb.subnum==INVALID_SUB)
 				return("Mail");
-			else if(is_valid_subnum(smb.subnum))
+			else if(subnum_is_valid(smb.subnum))
 				return(cfg.sub[smb.subnum]->sname);
 		}
 		return(usrgrps ? cfg.sub[usrsub[curgrp][cursub[curgrp]]]->sname : nulstr);
@@ -1745,7 +1745,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		if(SMB_IS_OPEN(&smb)) {
 			if(smb.subnum==INVALID_SUB)
 				return("Mail");
-			else if(is_valid_subnum(smb.subnum))
+			else if(subnum_is_valid(smb.subnum))
 				return(cfg.sub[smb.subnum]->lname);
 		}
 		return(usrgrps  ? cfg.sub[usrsub[curgrp][cursub[curgrp]]]->lname : nulstr);
@@ -2149,7 +2149,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 	if(!strcmp(sp,"SMB_AREA")) {
-		if(is_valid_subnum(smb.subnum))
+		if(subnum_is_valid(smb.subnum))
 			safe_snprintf(str,maxlen,"%s %s"
 				,cfg.grp[cfg.sub[smb.subnum]->grp]->sname
 				,cfg.sub[smb.subnum]->sname);
@@ -2158,7 +2158,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return(str);
 	}
 	if(!strcmp(sp,"SMB_AREA_DESC")) {
-		if(is_valid_subnum(smb.subnum))
+		if(subnum_is_valid(smb.subnum))
 			safe_snprintf(str,maxlen,"%s %s"
 				,cfg.grp[cfg.sub[smb.subnum]->grp]->lname
 				,cfg.sub[smb.subnum]->lname);
@@ -2167,43 +2167,43 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return(str);
 	}
 	if(!strcmp(sp,"SMB_GROUP")) {
-		if(is_valid_subnum(smb.subnum))
+		if(subnum_is_valid(smb.subnum))
 			return(cfg.grp[cfg.sub[smb.subnum]->grp]->sname);
 		return(nulstr);
 	}
 	if(!strcmp(sp,"SMB_GROUP_DESC")) {
-		if(is_valid_subnum(smb.subnum))
+		if(subnum_is_valid(smb.subnum))
 			return(cfg.grp[cfg.sub[smb.subnum]->grp]->lname);
 		return(nulstr);
 	}
 	if(!strcmp(sp,"SMB_GROUP_NUM")) {
-		if(is_valid_subnum(smb.subnum))
+		if(subnum_is_valid(smb.subnum))
 			safe_snprintf(str,maxlen,"%u",getusrgrp(smb.subnum));
 		return(str);
 	}
 	if(!strcmp(sp,"SMB_SUB")) {
 		if(smb.subnum==INVALID_SUB)
 			return("Mail");
-		else if(is_valid_subnum(smb.subnum))
+		else if(subnum_is_valid(smb.subnum))
 			return(cfg.sub[smb.subnum]->sname);
 		return(nulstr);
 	}
 	if(!strcmp(sp,"SMB_SUB_DESC")) {
 		if(smb.subnum==INVALID_SUB)
 			return("Mail");
-		else if(is_valid_subnum(smb.subnum))
+		else if(subnum_is_valid(smb.subnum))
 			return(cfg.sub[smb.subnum]->lname);
 		return(nulstr);
 	}
 	if(!strcmp(sp,"SMB_SUB_CODE")) {
 		if(smb.subnum==INVALID_SUB)
 			return("MAIL");
-		else if(is_valid_subnum(smb.subnum))
+		else if(subnum_is_valid(smb.subnum))
 			return(cfg.sub[smb.subnum]->code);
 		return(nulstr);
 	}
 	if(!strcmp(sp,"SMB_SUB_NUM")) {
-		if(is_valid_subnum(smb.subnum))
+		if(subnum_is_valid(smb.subnum))
 			safe_snprintf(str,maxlen,"%u",getusrsub(smb.subnum));
 		return(str);
 	}
@@ -2238,7 +2238,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 
 	/* Currently viewed file */
 	if(current_file != NULL) {
-		if(is_valid_dirnum(current_file->dir)) {
+		if(dirnum_is_valid(current_file->dir)) {
 			if(strcmp(sp, "FILE_AREA") == 0) {
 				safe_snprintf(str, maxlen, "%s %s"
 					,cfg.lib[cfg.dir[current_file->dir]->lib]->sname

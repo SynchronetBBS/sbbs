@@ -409,7 +409,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 			}
 
 			uint reason = CantPostOnSub;
-			if(!can_user_post(&cfg, n, &useron, &client, &reason)) {
+			if(!user_can_post(&cfg, n, &useron, &client, &reason)) {
 				bputs(text[reason]);
 				SAFEPRINTF2(str, "QWK Post not allowed, reason = %u (%s)", reason, text[reason]);
 				logline(LOG_NOTICE, "P!", str);

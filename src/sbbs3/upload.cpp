@@ -206,7 +206,7 @@ bool sbbs_t::okay_to_upload(int dirnum)
 	char str[MAX_PATH + 1];
 	char path[MAX_PATH + 1];
 
-	if(!is_valid_dirnum(dirnum))
+	if(!dirnum_is_valid(dirnum))
 		return false;
 
 	SAFECOPY(path, cfg.dir[dirnum]->path);
@@ -400,7 +400,7 @@ bool sbbs_t::upload(int dirnum, const char* fname)
 					continue; 
 				}
 				getuserdat(&cfg,&user);
-				if(!can_user_download(&cfg, cfg.user_dir, &user, /* client: */NULL, /* reason: */NULL)) {
+				if(!user_can_download(&cfg, cfg.user_dir, &user, /* client: */NULL, /* reason: */NULL)) {
 					bprintf(text[UserWontBeAbleToDl],user.alias); 
 				} else {
 					bprintf(text[UserAddedToDestList],user.alias,usernum);

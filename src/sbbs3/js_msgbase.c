@@ -85,7 +85,7 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
-	if(!is_valid_subnum(scfg, p->smb.subnum)
+	if(!subnum_is_valid(scfg, p->smb.subnum)
 		&& strchr(p->smb.file,'/')==NULL
 		&& strchr(p->smb.file,'\\')==NULL) {
 		JS_ReportError(cx,"Unrecognized msgbase code: %s",p->smb.file);
@@ -93,7 +93,7 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc=JS_SUSPENDREQUEST(cx);
-	if(!is_valid_subnum(scfg, p->smb.subnum) && p->smb.subnum != INVALID_SUB)
+	if(!subnum_is_valid(scfg, p->smb.subnum) && p->smb.subnum != INVALID_SUB)
 		p->smb_result = smb_open(&(p->smb));
 	else
 		p->smb_result = smb_open_sub(scfg, &(p->smb), p->smb.subnum);
@@ -1614,23 +1614,23 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 				if(!(scfg->sys_misc&SM_SYSVDELM)) /* Noone can view deleted msgs */
 					break;
 				if(!(scfg->sys_misc&SM_USRVDELM)	/* Users can't view deleted msgs */
-					&& !is_user_subop(scfg, p->p->smb.subnum, user, client)) 	/* not sub-op */
+					&& !user_is_subop(scfg, p->p->smb.subnum, user, client)) 	/* not sub-op */
 					break;
 				if(user==NULL)
 					break;
-				if(!is_user_subop(scfg, p->p->smb.subnum, user, client)			/* not sub-op */
+				if(!user_is_subop(scfg, p->p->smb.subnum, user, client)			/* not sub-op */
 					&& p->msg.idx.from!=namecrc && p->msg.idx.from!=aliascrc)	/* not for you */
 					break;
 			}
 
 			if((p->msg.idx.attr&(MSG_MODERATED | MSG_VALIDATED | MSG_DELETE)) == MSG_MODERATED
-				&& !is_user_subop(scfg, p->p->smb.subnum, user, client))
+				&& !user_is_subop(scfg, p->p->smb.subnum, user, client))
 				break;
 
 			if(((p->p->smb.status.attr & SMB_EMAIL) == 0) && (p->msg.idx.attr&MSG_PRIVATE)) {
 				if(user==NULL)
 					break;
-				if(!is_user_subop(scfg, p->p->smb.subnum, user, client) && !(user->rest&FLAG('Q'))) {
+				if(!user_is_subop(scfg, p->p->smb.subnum, user, client) && !(user->rest&FLAG('Q'))) {
 					if(p->msg.idx.to!=namecrc && p->msg.idx.from!=namecrc
 						&& p->msg.idx.to!=aliascrc && p->msg.idx.from!=aliascrc
 						&& (user->number!=1 || p->msg.idx.to!=sysop))

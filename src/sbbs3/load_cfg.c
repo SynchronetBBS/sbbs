@@ -560,7 +560,7 @@ int smb_storage_mode(scfg_t* cfg, smb_t* smb)
 {
 	if(smb == NULL || smb->subnum == INVALID_SUB || (smb->status.attr&SMB_EMAIL))
 		return (cfg->sys_misc&SM_FASTMAIL) ? SMB_FASTALLOC : SMB_SELFPACK;
-	if(!is_valid_subnum(cfg, smb->subnum))
+	if(!subnum_is_valid(cfg, smb->subnum))
 		return (smb->status.attr&SMB_HYPERALLOC) ? SMB_HYPERALLOC : SMB_FASTALLOC;
 	if(cfg->sub[smb->subnum]->misc&SUB_HYPER) {
 		smb->status.attr |= SMB_HYPERALLOC;
@@ -578,7 +578,7 @@ int smb_open_sub(scfg_t* cfg, smb_t* smb, int subnum)
 	int retval;
 	smbstatus_t smb_status = {0};
 
-	if(subnum != INVALID_SUB && !is_valid_subnum(cfg, subnum))
+	if(subnum != INVALID_SUB && !subnum_is_valid(cfg, subnum))
 		return SMB_FAILURE;
 	memset(smb, 0, sizeof(smb_t));
 	if(subnum == INVALID_SUB) {
@@ -609,7 +609,7 @@ int smb_open_sub(scfg_t* cfg, smb_t* smb, int subnum)
 
 bool smb_init_dir(scfg_t* cfg, smb_t* smb, int dirnum)
 {
-	if(!is_valid_dirnum(cfg, dirnum))
+	if(!dirnum_is_valid(cfg, dirnum))
 		return false;
 	memset(smb, 0, sizeof(smb_t));
 	SAFEPRINTF2(smb->file, "%s%s", cfg->dir[dirnum]->data_dir, cfg->dir[dirnum]->code);

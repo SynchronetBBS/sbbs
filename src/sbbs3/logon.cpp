@@ -256,7 +256,7 @@ bool sbbs_t::logon()
 			const char* filename = filenames[i];
 			file_t f = {{}};
 			if(!batch_file_load(&cfg, ini, filename, &f)
-				|| !can_user_download(&cfg, f.dir, &useron, &client, /* reason: */NULL)) {
+				|| !user_can_download(&cfg, f.dir, &useron, &client, /* reason: */NULL)) {
 				lprintf(LOG_NOTICE, "Removing defunct file from user's batch download queue: %s", filename);
 				batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
 			}

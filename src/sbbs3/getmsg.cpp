@@ -249,7 +249,7 @@ void sbbs_t::show_msghdr(smb_t* smb, const smbmsg_t* msg, const char* subject, c
 bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, int p_mode, post_t* post)
 {
 	char*	txt;
-	BOOL	is_sub = is_valid_subnum(smb->subnum);
+	BOOL	is_sub = subnum_is_valid(smb->subnum);
 
 	if(is_sub) {
 		if((msg->hdr.type == SMB_MSG_TYPE_NORMAL && post != NULL && (post->upvotes || post->downvotes))
@@ -630,7 +630,7 @@ uint sbbs_t::getlastmsg(int subnum, uint32_t *ptr, time_t *t)
 		(*ptr)=0;
 	if(t)
 		(*t)=0;
-	if(!is_valid_subnum(subnum))
+	if(!subnum_is_valid(subnum))
 		return(0);
 
 	ZERO_VAR(smb);

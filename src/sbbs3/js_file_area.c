@@ -154,19 +154,19 @@ static JSBool js_dir_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			*vp = UINT_TO_JSVAL((uint32_t)dir_newfiletime(p->cfg, p->dirnum));
 			break;
 		case DIR_PROP_CAN_ACCESS:
-			*vp = BOOLEAN_TO_JSVAL(p->user == NULL || can_user_access_dir(p->cfg, p->dirnum, p->user, p->client));
+			*vp = BOOLEAN_TO_JSVAL(p->user == NULL || user_can_access_dir(p->cfg, p->dirnum, p->user, p->client));
 			break;
 		case DIR_PROP_CAN_UPLOAD:
-			*vp = BOOLEAN_TO_JSVAL(p->user == NULL || can_user_upload(p->cfg, p->dirnum, p->user, p->client, /* reason: */NULL));
+			*vp = BOOLEAN_TO_JSVAL(p->user == NULL || user_can_upload(p->cfg, p->dirnum, p->user, p->client, /* reason: */NULL));
 			break;
 		case DIR_PROP_CAN_DOWNLOAD:
-			*vp = BOOLEAN_TO_JSVAL(p->user == NULL || can_user_download(p->cfg, p->dirnum, p->user, p->client, /* reason: */NULL));
+			*vp = BOOLEAN_TO_JSVAL(p->user == NULL || user_can_download(p->cfg, p->dirnum, p->user, p->client, /* reason: */NULL));
 			break;
 		case DIR_PROP_IS_EXEMPT:
-			*vp = BOOLEAN_TO_JSVAL(p->user == NULL || is_download_free(p->cfg, p->dirnum, p->user, p->client));
+			*vp = BOOLEAN_TO_JSVAL(p->user == NULL || download_is_free(p->cfg, p->dirnum, p->user, p->client));
 			break;
 		case DIR_PROP_IS_OPERATOR:
-			*vp = BOOLEAN_TO_JSVAL(p->user == NULL || is_user_dirop(p->cfg, p->dirnum, p->user, p->client));
+			*vp = BOOLEAN_TO_JSVAL(p->user == NULL || user_is_dirop(p->cfg, p->dirnum, p->user, p->client));
 			break;
 	}
 	return JS_TRUE;
@@ -299,7 +299,7 @@ JSBool js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 
 			val=OBJECT_TO_JSVAL(libobj);
 			lib_index=-1;
-			if(p->user==NULL || can_user_access_lib(p->cfg, l, p->user, p->client)) {
+			if(p->user==NULL || user_can_access_lib(p->cfg, l, p->user, p->client)) {
 
 				if(!JS_GetArrayLength(cx, lib_list, (jsuint*)&lib_index))
 					return JS_FALSE;
@@ -382,7 +382,7 @@ JSBool js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 
 				val=OBJECT_TO_JSVAL(dirobj);
 				dir_index=-1;
-				if(p->user==NULL || can_user_access_dir(p->cfg, d, p->user, p->client)) {
+				if(p->user==NULL || user_can_access_dir(p->cfg, d, p->user, p->client)) {
 
 					if(!JS_GetArrayLength(cx, dir_list, (jsuint*)&dir_index))
 						return JS_FALSE;

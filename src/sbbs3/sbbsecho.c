@@ -1651,7 +1651,7 @@ void alter_areas_ini(FILE* afilein, FILE* afileout, FILE* nmfile
 				fprintf(nmfile,"%s added.\r\n",echotag);
 				(*added)++;
 			}
-			if(rescan && area_is_linked(areanum, &addr) && is_valid_subnum(&scfg, cfg.area[areanum].sub)) {
+			if(rescan && area_is_linked(areanum, &addr) && subnum_is_valid(&scfg, cfg.area[areanum].sub)) {
 				ulong exported = export_echomail(scfg.sub[cfg.area[areanum].sub]->code, nodecfg, true);
 				fprintf(nmfile,"%s rescanned and %lu messages exported.\r\n", echotag, exported);
 			}
@@ -1775,7 +1775,7 @@ void alter_areas_bbs(FILE* afilein, FILE* afileout, FILE* nmfile
 					fprintf(nmfile,"%s added.\r\n",echotag);
 					(*added)++;
 				}
-				if(rescan && area_is_linked(areanum,&addr) && is_valid_subnum(&scfg, cfg.area[areanum].sub)) {
+				if(rescan && area_is_linked(areanum,&addr) && subnum_is_valid(&scfg, cfg.area[areanum].sub)) {
 					ulong exported = export_echomail(scfg.sub[cfg.area[areanum].sub]->code, nodecfg, true);
 					fprintf(nmfile,"%s rescanned and %lu messages exported.\r\n", echotag, exported);
 				}
@@ -3002,7 +3002,7 @@ long getlastmsg(uint subnum, uint32_t *ptr, /* unused: */time_t *t)
 
 	if(ptr) (*ptr)=0;
 	ZERO_VAR(smbfile);
-	if(!is_valid_subnum(&scfg, subnum)) {
+	if(!subnum_is_valid(&scfg, subnum)) {
 		lprintf(LOG_ERR,"ERROR line %d getlastmsg %d",__LINE__,subnum);
 		bail(1);
 		return -1;
@@ -4883,7 +4883,7 @@ ulong export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool resca
 		if(!cfg.area[area].links)
 			continue;
 		int subnum = cfg.area[area].sub;
-		if(!is_valid_subnum(&scfg, subnum))	/* Don't scan pass-through areas */
+		if(!subnum_is_valid(&scfg, subnum))	/* Don't scan pass-through areas */
 			continue;
 		if(nodecfg != NULL ) { 		/* Skip areas not meant for this address */
 			if(!area_is_linked(area,&nodecfg->addr))
@@ -5314,7 +5314,7 @@ bool retoss_bad_echomail(void)
 		}
 
 		uint areanum = find_area(badmsg.ftn_area);
-		if(!area_is_valid(areanum) || !is_valid_subnum(&scfg, cfg.area[areanum].sub)) {
+		if(!area_is_valid(areanum) || !subnum_is_valid(&scfg, cfg.area[areanum].sub)) {
 			smb_unlockmsghdr(&badsmb,&badmsg);
 			smb_freemsgmem(&badmsg);
 			continue;
@@ -6251,7 +6251,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 				user_t user;
 				if(i!=cfg.badecho && cfg.echomail_notify && (user.number=lookup_user(&scfg, &user_list, hdr.to))!=0
 					&& getuserdat(&scfg, &user)==0
-					&& can_user_read_sub(&scfg, cfg.area[i].sub, &user, NULL)) {
+					&& user_can_read_sub(&scfg, cfg.area[i].sub, &user, NULL)) {
 					char tmp[128];
 					safe_snprintf(str, sizeof(str)
 						,text[FidoEchoMailReceived]

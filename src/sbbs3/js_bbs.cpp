@@ -431,7 +431,7 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 				val=sbbs->cursub[sbbs->curgrp];
 			break;
 		case BBS_PROP_CURSUB_CODE:
-			if(sbbs->is_valid_subnum(sbbs->cursubnum))
+			if(sbbs->subnum_is_valid(sbbs->cursubnum))
 				p=sbbs->cfg.sub[sbbs->cursubnum]->code;
 			else
 				p=nulstr;
@@ -445,7 +445,7 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 				val=sbbs->curdir[sbbs->curlib];
 			break;
 		case BBS_PROP_CURDIR_CODE:
-			if(sbbs->is_valid_dirnum(sbbs->curdirnum))
+			if(sbbs->dirnum_is_valid(sbbs->curdirnum))
 				p=sbbs->cfg.dir[sbbs->curdirnum]->code;
 			else
 				p=nulstr;
@@ -473,19 +473,19 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 
 		/* Currently Open Message Base (sbbs.smb) */
 		case BBS_PROP_SMB_GROUP:
-			if(!is_valid_subnum(&sbbs->cfg, sbbs->smb.subnum))
+			if(!subnum_is_valid(&sbbs->cfg, sbbs->smb.subnum))
 				p=nulstr;
 			else
 				p=sbbs->cfg.grp[sbbs->cfg.sub[sbbs->smb.subnum]->grp]->sname;
 			break;
 		case BBS_PROP_SMB_GROUP_DESC:
-			if(!is_valid_subnum(&sbbs->cfg, sbbs->smb.subnum))
+			if(!subnum_is_valid(&sbbs->cfg, sbbs->smb.subnum))
 				p=nulstr;
 			else
 				p=sbbs->cfg.grp[sbbs->cfg.sub[sbbs->smb.subnum]->grp]->lname;
 			break;
 		case BBS_PROP_SMB_GROUP_NUM:
-			if(sbbs->is_valid_subnum(sbbs->smb.subnum)) {
+			if(sbbs->subnum_is_valid(sbbs->smb.subnum)) {
 				int ugrp;
 				for(ugrp=0;ugrp<sbbs->usrgrps;ugrp++)
 					if(sbbs->usrgrp[ugrp]==sbbs->cfg.sub[sbbs->smb.subnum]->grp)
@@ -494,25 +494,25 @@ static JSBool js_bbs_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			}
 			break;
 		case BBS_PROP_SMB_SUB:
-			if(!is_valid_subnum(&sbbs->cfg, sbbs->smb.subnum))
+			if(!subnum_is_valid(&sbbs->cfg, sbbs->smb.subnum))
 				p=nulstr;
 			else
 				p=sbbs->cfg.sub[sbbs->smb.subnum]->sname;
 			break;
 		case BBS_PROP_SMB_SUB_DESC:
-			if(!is_valid_subnum(&sbbs->cfg, sbbs->smb.subnum))
+			if(!subnum_is_valid(&sbbs->cfg, sbbs->smb.subnum))
 				p=nulstr;
 			else
 				p=sbbs->cfg.sub[sbbs->smb.subnum]->lname;
 			break;
 		case BBS_PROP_SMB_SUB_CODE:
-			if(!is_valid_subnum(&sbbs->cfg, sbbs->smb.subnum))
+			if(!subnum_is_valid(&sbbs->cfg, sbbs->smb.subnum))
 				p=nulstr;
 			else
 				p=sbbs->cfg.sub[sbbs->smb.subnum]->code;
 			break;
 		case BBS_PROP_SMB_SUB_NUM:
-			if(sbbs->usrsubs && sbbs->is_valid_subnum(sbbs->smb.subnum)) {
+			if(sbbs->usrsubs && sbbs->subnum_is_valid(sbbs->smb.subnum)) {
 				int ugrp;
 				for(ugrp=0;ugrp<sbbs->usrgrps;ugrp++)
 					if(sbbs->usrgrp[ugrp]==sbbs->cfg.sub[sbbs->smb.subnum]->grp)
@@ -2574,7 +2574,7 @@ js_sub_info(JSContext *cx, uintN argc, jsval *arglist)
 	int subnum=get_subnum(cx,sbbs,argv,argc,0);
 
 	rc=JS_SUSPENDREQUEST(cx);
-	if(sbbs->is_valid_subnum(subnum))
+	if(sbbs->subnum_is_valid(subnum))
 		sbbs->subinfo(subnum);
 	JS_RESUMEREQUEST(cx, rc);
 
@@ -2595,7 +2595,7 @@ js_dir_info(JSContext *cx, uintN argc, jsval *arglist)
 
 	int dirnum=get_dirnum(cx,sbbs,argv[0],argc == 0);
 	rc=JS_SUSPENDREQUEST(cx);
-	if(sbbs->is_valid_dirnum(dirnum))
+	if(sbbs->dirnum_is_valid(dirnum))
 		sbbs->dirinfo(dirnum);
 	JS_RESUMEREQUEST(cx, rc);
 
@@ -3081,7 +3081,7 @@ js_upload_file(JSContext *cx, uintN argc, jsval *arglist)
 
 	dirnum=get_dirnum(cx,sbbs,argv[0], argc == 0);
 
-	if(!is_valid_dirnum(&sbbs->cfg, dirnum)) {
+	if(!dirnum_is_valid(&sbbs->cfg, dirnum)) {
 		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 		return(JS_TRUE);
 	}
@@ -3128,7 +3128,7 @@ js_bulkupload(JSContext *cx, uintN argc, jsval *arglist)
 
 	dirnum=get_dirnum(cx,sbbs,argv[0], argc == 0);
 
-	if(!is_valid_dirnum(&sbbs->cfg, dirnum)) {
+	if(!dirnum_is_valid(&sbbs->cfg, dirnum)) {
 		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 		return(JS_TRUE);
 	}
@@ -3455,7 +3455,7 @@ js_put_node_message(JSContext *cx, uintN argc, jsval *arglist)
 	if(nodenum >= 1) {	/* !all */
 		sbbs->getnodedat(nodenum, &node);
 		usernumber = node.useron;
-		if((node.misc&NODE_POFF) && !is_user_sysop(&sbbs->useron)) {
+		if((node.misc&NODE_POFF) && !user_is_sysop(&sbbs->useron)) {
 			sbbs->bprintf(sbbs->text[CantPageNode]
 				, node.misc&NODE_ANON ? sbbs->text[UNKNOWN_USER] : username(&sbbs->cfg,node.useron,tmp));
 			return JS_TRUE;
@@ -3501,8 +3501,8 @@ js_put_node_message(JSContext *cx, uintN argc, jsval *arglist)
 				continue;
 			sbbs->getnodedat(i, &node);
 			if((node.status==NODE_INUSE
-				|| (is_user_sysop(&sbbs->useron) && node.status==NODE_QUIET))
-				&& (is_user_sysop(&sbbs->useron) || !(node.misc&NODE_POFF)))
+				|| (user_is_sysop(&sbbs->useron) && node.status==NODE_QUIET))
+				&& (user_is_sysop(&sbbs->useron) || !(node.misc&NODE_POFF)))
 				if(putnmsg(&sbbs->cfg, i, msg) != 0)
 					success = FALSE;
 		}
@@ -3805,7 +3805,7 @@ js_listfiles(JSContext *cx, uintN argc, jsval *arglist)
 
 	dirnum=get_dirnum(cx,sbbs,argv[0], argc == 0);
 
-	if(!is_valid_dirnum(&sbbs->cfg, dirnum)) {
+	if(!dirnum_is_valid(&sbbs->cfg, dirnum)) {
 		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(0));
 		return(JS_TRUE);
 	}
@@ -3857,7 +3857,7 @@ js_listfileinfo(JSContext *cx, uintN argc, jsval *arglist)
 
 	dirnum=get_dirnum(cx,sbbs,argv[0], argc == 0);
 
-	if(!is_valid_dirnum(&sbbs->cfg, dirnum)) {
+	if(!dirnum_is_valid(&sbbs->cfg, dirnum)) {
 		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(0));
 		return(JS_TRUE);
 	}
@@ -3909,7 +3909,7 @@ js_post_msg(JSContext *cx, uintN argc, jsval *arglist)
 
 	subnum=get_subnum(cx,sbbs,argv,argc,0);
 
-	if(!is_valid_subnum(&sbbs->cfg, subnum))
+	if(!subnum_is_valid(&sbbs->cfg, subnum))
 		return(JS_TRUE);
 
 	ZERO_VAR(msg);
@@ -4387,7 +4387,7 @@ js_scanposts(JSContext *cx, uintN argc, jsval *arglist)
 
 	subnum=get_subnum(cx,sbbs,argv,argc,0);
 
-	if(!is_valid_subnum(&sbbs->cfg, subnum))
+	if(!subnum_is_valid(&sbbs->cfg, subnum))
 		return(JS_TRUE);
 
 	for(uintN i=1;i<argc;i++) {
@@ -4436,7 +4436,7 @@ js_listmsgs(JSContext *cx, uintN argc, jsval *arglist)
 
 	subnum=get_subnum(cx,sbbs,argv,argc,argn++);
 
-	if(!is_valid_subnum(&sbbs->cfg, subnum))
+	if(!subnum_is_valid(&sbbs->cfg, subnum))
 		return(JS_TRUE);
 
 	if(argc > argn && JSVAL_IS_NUMBER(argv[argn])) {

@@ -553,7 +553,7 @@ static void dirtyuserdat(scfg_t* cfg, uint usernumber)
 
 /****************************************************************************/
 /****************************************************************************/
-int is_user_online(scfg_t* cfg, uint usernumber)
+int user_is_online(scfg_t* cfg, uint usernumber)
 {
 	int i;
 	int file = -1;
@@ -1492,7 +1492,7 @@ char* node_activity(scfg_t* cfg, node_t* node, char* str, size_t size, int num)
 			user.number = node->useron;
 			getuserdat(cfg, &user);
 			xtrnnum = getxtrnnum(cfg, user.curxtrn);
-			if(is_valid_xtrnnum(cfg, xtrnnum))
+			if(xtrnnum_is_valid(cfg, xtrnnum))
 				snprintf(str, size, "%s %s"
 					,cfg->text != NULL ? cfg->text[NodeActivityRunningXtrn] : "running"
 					,cfg->xtrn[xtrnnum]->name);
@@ -2136,7 +2136,7 @@ static bool ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user, client_t* client)
 				else result=!not;
 				break;
 			case AR_SYSOP:
-				if(!is_user_sysop(user))
+				if(!user_is_sysop(user))
 					result=not;
 				else result=!not;
 				break;
@@ -2926,7 +2926,7 @@ bool user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
 			u64toac(mod,tmp,',');
 			const char* alias = user->alias[0] ? user->alias : cfg->text[UNKNOWN_USER];
 			char username[64];
-			if(client != NULL && is_user_sysop(&uploader)) {
+			if(client != NULL && user_is_sysop(&uploader)) {
 				if(client->host[0] != '\0' && strcmp(client->host, STR_NO_HOSTNAME) != 0)
 					SAFEPRINTF2(username,"%s [%s]", alias, client->host);
 				else
@@ -2957,7 +2957,7 @@ bool user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
 	/* Update Downloader's Info */
 	/****************************/
 	user_downloaded(cfg, user, /* files: */1, bytes);
-	if(!is_download_free(cfg, dirnum, user, client))
+	if(!download_is_free(cfg, dirnum, user, client))
 		subtract_cdt(cfg, user, f.cost);
 
 	bool result = true;
@@ -3434,11 +3434,11 @@ size_t user_field_len(enum user_field fnum)
 /****************************************************************************/
 /* Determine if the specified user can or cannot access the specified sub	*/
 /****************************************************************************/
-bool can_user_access_sub(scfg_t* cfg, int subnum, user_t* user, client_t* client)
+bool user_can_access_sub(scfg_t* cfg, int subnum, user_t* user, client_t* client)
 {
 	if(!VALID_CFG(cfg))
 		return false;
-	if(!is_valid_subnum(cfg, subnum))
+	if(!subnum_is_valid(cfg, subnum))
 		return false;
 	if(!chk_ar(cfg,cfg->grp[cfg->sub[subnum]->grp]->ar,user,client))
 		return false;
@@ -3451,9 +3451,9 @@ bool can_user_access_sub(scfg_t* cfg, int subnum, user_t* user, client_t* client
 /****************************************************************************/
 /* Determine if the specified user can or cannot read the specified sub		*/
 /****************************************************************************/
-bool can_user_read_sub(scfg_t* cfg, int subnum, user_t* user, client_t* client)
+bool user_can_read_sub(scfg_t* cfg, int subnum, user_t* user, client_t* client)
 {
-	if(!can_user_access_sub(cfg, subnum, user, client))
+	if(!user_can_access_sub(cfg, subnum, user, client))
 		return false;
 	return chk_ar(cfg,cfg->sub[subnum]->read_ar,user,client);
 }
@@ -3463,11 +3463,11 @@ bool can_user_read_sub(scfg_t* cfg, int subnum, user_t* user, client_t* client)
 /* 'reason' is an (optional) pointer to a text.dat item number, indicating	*/
 /* the reason the user cannot post, when returning false.					*/
 /****************************************************************************/
-bool can_user_post(scfg_t* cfg, int subnum, user_t* user, client_t* client, uint* reason)
+bool user_can_post(scfg_t* cfg, int subnum, user_t* user, client_t* client, uint* reason)
 {
 	if(reason!=NULL)
 		*reason=CantPostOnSub;
-	if(!can_user_access_sub(cfg, subnum, user, client))
+	if(!user_can_access_sub(cfg, subnum, user, client))
 		return false;
 	if(!chk_ar(cfg,cfg->sub[subnum]->post_ar,user,client))
 		return false;
@@ -3492,14 +3492,14 @@ bool can_user_post(scfg_t* cfg, int subnum, user_t* user, client_t* client, uint
 /****************************************************************************/
 // Determine if the specified user can access one or more directories of lib
 /****************************************************************************/
-bool can_user_access_lib(scfg_t* cfg, int libnum, user_t* user, client_t* client)
+bool user_can_access_lib(scfg_t* cfg, int libnum, user_t* user, client_t* client)
 {
 	uint count = 0;
 
 	for(int dirnum = 0; dirnum < cfg->total_dirs; dirnum++) {
 		if(cfg->dir[dirnum]->lib != libnum)
 			continue;
-		if(can_user_access_dir(cfg, dirnum, user, client)) // checks lib's AR already
+		if(user_can_access_dir(cfg, dirnum, user, client)) // checks lib's AR already
 			count++;
 	}
 	return count >= 1; // User has access to one or more directories of library
@@ -3508,10 +3508,10 @@ bool can_user_access_lib(scfg_t* cfg, int libnum, user_t* user, client_t* client
 /****************************************************************************/
 // Determine if the specified user can access ALL file libraries
 /****************************************************************************/
-bool can_user_access_all_libs(scfg_t* cfg, user_t* user, client_t* client)
+bool user_can_access_all_libs(scfg_t* cfg, user_t* user, client_t* client)
 {
 	for(int libnum = 0; libnum < cfg->total_libs; libnum++) {
-		if(!can_user_access_lib(cfg, libnum, user, client))
+		if(!user_can_access_lib(cfg, libnum, user, client))
 			return false;
 	}
 	return true;
@@ -3520,14 +3520,14 @@ bool can_user_access_all_libs(scfg_t* cfg, user_t* user, client_t* client)
 /****************************************************************************/
 // Determine if the specified user can all dirs of a lib
 /****************************************************************************/
-bool can_user_access_all_dirs(scfg_t* cfg, int libnum, user_t* user, client_t* client)
+bool user_can_access_all_dirs(scfg_t* cfg, int libnum, user_t* user, client_t* client)
 {
 	uint count = 0;
 
 	for(int dirnum = 0; dirnum < cfg->total_dirs; dirnum++) {
 		if(cfg->dir[dirnum]->lib != libnum)
 			continue;
-		if(can_user_access_dir(cfg, dirnum, user, client)) // checks lib's AR already
+		if(user_can_access_dir(cfg, dirnum, user, client)) // checks lib's AR already
 			count++;
 		else
 			return false;
@@ -3538,11 +3538,11 @@ bool can_user_access_all_dirs(scfg_t* cfg, int libnum, user_t* user, client_t* c
 /****************************************************************************/
 /* Determine if the specified user can or cannot access the specified dir	*/
 /****************************************************************************/
-bool can_user_access_dir(scfg_t* cfg, int dirnum, user_t* user, client_t* client)
+bool user_can_access_dir(scfg_t* cfg, int dirnum, user_t* user, client_t* client)
 {
 	if(!VALID_CFG(cfg))
 		return false;
-	if(!is_valid_dirnum(cfg, dirnum))
+	if(!dirnum_is_valid(cfg, dirnum))
 		return false;
 	if(!chk_ar(cfg,cfg->lib[cfg->dir[dirnum]->lib]->ar,user,client))
 		return false;
@@ -3557,11 +3557,11 @@ bool can_user_access_dir(scfg_t* cfg, int dirnum, user_t* user, client_t* client
 /* 'reason' is an (optional) pointer to a text.dat item number, indicating	*/
 /* the reason the user cannot post, when returning false.					*/
 /****************************************************************************/
-bool can_user_upload(scfg_t* cfg, int dirnum, user_t* user, client_t* client, uint* reason)
+bool user_can_upload(scfg_t* cfg, int dirnum, user_t* user, client_t* client, uint* reason)
 {
 	if(reason!=NULL)
 		*reason=CantUploadHere;
-	if(!can_user_access_dir(cfg, dirnum, user, client))
+	if(!user_can_access_dir(cfg, dirnum, user, client))
 		return false;
 	if(reason!=NULL)
 		*reason=R_Upload;
@@ -3570,7 +3570,7 @@ bool can_user_upload(scfg_t* cfg, int dirnum, user_t* user, client_t* client, ui
 	if(user->rest&FLAG('T'))			/* transfer restriction? */
 		return false;
 	if(!(user->exempt&FLAG('U'))		/* upload exemption */
-		&& !is_user_dirop(cfg, dirnum, user, client)) {
+		&& !user_is_dirop(cfg, dirnum, user, client)) {
 		if(reason!=NULL)
 			*reason=CantUploadHere;
 		if(!chk_ar(cfg, cfg->lib[cfg->dir[dirnum]->lib]->ul_ar, user, client))
@@ -3586,11 +3586,11 @@ bool can_user_upload(scfg_t* cfg, int dirnum, user_t* user, client_t* client, ui
 /* 'reason' is an (optional) pointer to a text.dat item number, indicating	*/
 /* the reason the user cannot post, when returning false.					*/
 /****************************************************************************/
-bool can_user_download(scfg_t* cfg, int dirnum, user_t* user, client_t* client, uint* reason)
+bool user_can_download(scfg_t* cfg, int dirnum, user_t* user, client_t* client, uint* reason)
 {
 	if(reason!=NULL)
 		*reason=CantDownloadFromDir;
-	if(dirnum != cfg->user_dir && !can_user_access_dir(cfg, dirnum, user, client))
+	if(dirnum != cfg->user_dir && !user_can_access_dir(cfg, dirnum, user, client))
 		return false;
 	if(!chk_ar(cfg,cfg->lib[cfg->dir[dirnum]->lib]->dl_ar,user,client))
 		return false;
@@ -3611,7 +3611,7 @@ bool can_user_download(scfg_t* cfg, int dirnum, user_t* user, client_t* client, 
 /* 'reason' is an (optional) pointer to a text.dat item number				*/
 /* usernumber==0 for netmail												*/
 /****************************************************************************/
-bool can_user_send_mail(scfg_t* cfg, enum smb_net_type net_type, uint usernumber, user_t* user, uint* reason)
+bool user_can_send_mail(scfg_t* cfg, enum smb_net_type net_type, uint usernumber, user_t* user, uint* reason)
 {
 	if(reason!=NULL)
 		*reason=R_Email;
@@ -3642,7 +3642,7 @@ bool can_user_send_mail(scfg_t* cfg, enum smb_net_type net_type, uint usernumber
 /****************************************************************************/
 /* Determine if the specified user is a system operator						*/
 /****************************************************************************/
-bool is_user_sysop(user_t* user)
+bool user_is_sysop(user_t* user)
 {
 	if(user == NULL)
 		return false;
@@ -3652,13 +3652,13 @@ bool is_user_sysop(user_t* user)
 /****************************************************************************/
 /* Determine if the specified user is a sub-board operator					*/
 /****************************************************************************/
-bool is_user_subop(scfg_t* cfg, int subnum, user_t* user, client_t* client)
+bool user_is_subop(scfg_t* cfg, int subnum, user_t* user, client_t* client)
 {
 	if(user==NULL)
 		return false;
-	if(!can_user_access_sub(cfg, subnum, user, client))
+	if(!user_can_access_sub(cfg, subnum, user, client))
 		return false;
-	if(is_user_sysop(user))
+	if(user_is_sysop(user))
 		return true;
 
 	return cfg->sub[subnum]->op_ar[0]!=0 && chk_ar(cfg,cfg->sub[subnum]->op_ar,user,client);
@@ -3667,13 +3667,13 @@ bool is_user_subop(scfg_t* cfg, int subnum, user_t* user, client_t* client)
 /****************************************************************************/
 /* Determine if the specified user is a directory operator					*/
 /****************************************************************************/
-bool is_user_dirop(scfg_t* cfg, int dirnum, user_t* user, client_t* client)
+bool user_is_dirop(scfg_t* cfg, int dirnum, user_t* user, client_t* client)
 {
 	if(user==NULL)
 		return false;
-	if(!can_user_access_dir(cfg, dirnum, user, client))
+	if(!user_can_access_dir(cfg, dirnum, user, client))
 		return false;
-	if(is_user_sysop(user))
+	if(user_is_sysop(user))
 		return true;
 
 	return (cfg->dir[dirnum]->op_ar[0]!=0 && chk_ar(cfg,cfg->dir[dirnum]->op_ar,user,client))
@@ -3684,12 +3684,12 @@ bool is_user_dirop(scfg_t* cfg, int dirnum, user_t* user, client_t* client)
 /* Determine if downloads from the specified directory are free for the		*/
 /* specified user															*/
 /****************************************************************************/
-bool is_download_free(scfg_t* cfg, int dirnum, user_t* user, client_t* client)
+bool download_is_free(scfg_t* cfg, int dirnum, user_t* user, client_t* client)
 {
 	if(!VALID_CFG(cfg))
 		return(false);
 
-	if(!is_valid_dirnum(cfg, dirnum))
+	if(!dirnum_is_valid(cfg, dirnum))
 		return(false);
 
 	if(cfg->dir[dirnum]->misc&DIR_FREE)

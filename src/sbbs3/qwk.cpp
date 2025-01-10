@@ -1075,7 +1075,7 @@ bool sbbs_t::qwk_vote(str_list_t ini, const char* section, smb_net_type_t net_ty
 	if (hubnum == -1 && strnicmp(section, "poll:", 5) == 0) {
 		char str[256];
 		uint reason = CantPostOnSub;
-		if(!can_user_post(&cfg, smb.subnum, &useron, &client, &reason)) {
+		if(!user_can_post(&cfg, smb.subnum, &useron, &client, &reason)) {
 			bputs(text[reason]);
 			SAFEPRINTF2(str, "QWK Poll not allowed, reason = %u (%s)", reason, text[reason]);
 			logline(LOG_NOTICE, "P!", str);

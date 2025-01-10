@@ -103,7 +103,7 @@ class path_map {
 	int find_lib_sz_(const char *libnam, size_t lnsz)
 	{
 		for (int l = 0; l < sbbs->cfg.total_libs; l++) {
-			if (!can_user_access_lib(&sbbs->cfg, l, &sbbs->useron, &sbbs->client))
+			if (!user_can_access_lib(&sbbs->cfg, l, &sbbs->useron, &sbbs->client))
 				continue;
 			char *exp {};
 			switch (tree_) {
@@ -134,7 +134,7 @@ class path_map {
 		for (int d = 0; d < sbbs->cfg.total_dirs; d++) {
 			if (sbbs->cfg.dir[d]->lib != lib)
 				continue;
-			if (!can_user_access_dir(&sbbs->cfg, d, &sbbs->useron, &sbbs->client))
+			if (!user_can_access_dir(&sbbs->cfg, d, &sbbs->useron, &sbbs->client))
 				continue;
 			char *exp {};
 			switch (tree_) {
@@ -306,7 +306,7 @@ public:
 				return;
 			}
 			if (mode == MAP_READ) {
-				if (!can_user_download(&sbbs->cfg, this->info.filebase.dir, &sbbs->useron, &sbbs->client, nullptr)) {
+				if (!user_can_download(&sbbs->cfg, this->info.filebase.dir, &sbbs->useron, &sbbs->client, nullptr)) {
 					result_ = MAP_PERMISSION_DENIED;
 					return;
 				}
@@ -977,7 +977,7 @@ get_dir_attrs(sbbs_t *sbbs, int32_t dir)
 
 	if (attr == nullptr)
 		return nullptr;
-	if (can_user_upload(&sbbs->cfg, dir, &sbbs->useron, &sbbs->client, nullptr))
+	if (user_can_upload(&sbbs->cfg, dir, &sbbs->useron, &sbbs->client, nullptr))
 		perms |= S_IWGRP;
 	sftp_fattr_set_permissions(attr, perms);
 	sftp_fattr_set_uid_gid(attr, 1, static_cast<uint32_t>(dir));
@@ -994,9 +994,9 @@ get_filebase_attrs(sbbs_t *sbbs, int32_t dir, smbfile_t *file)
 
 	if (attr == nullptr)
 		return nullptr;
-	if (can_user_download(&sbbs->cfg, dir, &sbbs->useron, &sbbs->client, nullptr))
+	if (user_can_download(&sbbs->cfg, dir, &sbbs->useron, &sbbs->client, nullptr))
 		perms |= S_IRGRP;
-	if (can_user_upload(&sbbs->cfg, dir, &sbbs->useron, &sbbs->client, nullptr))
+	if (user_can_upload(&sbbs->cfg, dir, &sbbs->useron, &sbbs->client, nullptr))
 		perms |= S_IWGRP;
 	sftp_fattr_set_permissions(attr, perms);
 	sftp_fattr_set_size(attr, smb_getfilesize(&file->idx));
@@ -1023,7 +1023,7 @@ find_lib(sbbs_t *sbbs, const char *path, enum sftp_dir_tree tree)
 	if (c)
 		*c = 0;
 	for (l = 0; l < sbbs->cfg.total_libs; l++) {
-		if (!can_user_access_lib(&sbbs->cfg, l, &sbbs->useron, &sbbs->client))
+		if (!user_can_access_lib(&sbbs->cfg, l, &sbbs->useron, &sbbs->client))
 			continue;
 		switch (tree) {
 			case SFTP_DTREE_FULL:
@@ -1077,7 +1077,7 @@ find_dir(sbbs_t *sbbs, const char *path, int lib, enum sftp_dir_tree tree)
 	for (d = 0; d < sbbs->cfg.total_dirs; d++) {
 		if (sbbs->cfg.dir[d]->lib != lib)
 			continue;
-		if (!can_user_access_dir(&sbbs->cfg, d, &sbbs->useron, &sbbs->client))
+		if (!user_can_access_dir(&sbbs->cfg, d, &sbbs->useron, &sbbs->client))
 			continue;
 		switch (tree) {
 			case SFTP_DTREE_FULL:
@@ -1788,7 +1788,7 @@ sftp_readdir(sftp_dirhandle_t handle, void *cb_data)
 						return fn.send();
 					return sftps_send_error(sbbs->sftp_state, SSH_FX_EOF, "No more files");
 				}
-				if (!can_user_access_lib(&sbbs->cfg, dd->info.filebase.idx, &sbbs->useron, &sbbs->client)) {
+				if (!user_can_access_lib(&sbbs->cfg, dd->info.filebase.idx, &sbbs->useron, &sbbs->client)) {
 					dd->info.filebase.idx++;
 					continue;
 				}
@@ -1864,7 +1864,7 @@ sftp_readdir(sftp_dirhandle_t handle, void *cb_data)
 					dd->info.filebase.idx++;
 					continue;
 				}
-				if (!can_user_access_dir(&sbbs->cfg, dd->info.filebase.idx, &sbbs->useron, &sbbs->client)) {
+				if (!user_can_access_dir(&sbbs->cfg, dd->info.filebase.idx, &sbbs->useron, &sbbs->client)) {
 					dd->info.filebase.idx++;
 					continue;
 				}

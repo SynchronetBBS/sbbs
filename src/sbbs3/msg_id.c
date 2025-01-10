@@ -113,7 +113,7 @@ char* get_msgid(scfg_t* cfg, int subnum, smbmsg_t* msg, char* msgid, size_t maxl
 		}
 	}
 
-	if(!is_valid_subnum(cfg, subnum))
+	if(!subnum_is_valid(cfg, subnum))
 		safe_snprintf(msgid,maxlen
 			,"<%08lX.%lu@%s>"
 			,msg_time(msg)
@@ -178,7 +178,7 @@ bool add_msg_ids(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, smbmsg_t* remsg)
 			if(smb_hfield_str(msg, FIDOMSGID, msg_id) != SMB_SUCCESS)
 				return false;
 		}
-		else if(is_valid_subnum(cfg, smb->subnum) && cfg->sub[smb->subnum]->misc&SUB_FIDO) {
+		else if(subnum_is_valid(cfg, smb->subnum) && cfg->sub[smb->subnum]->misc&SUB_FIDO) {
 			if(ftn_msgid(cfg->sub[smb->subnum], msg, msg_id, sizeof(msg_id)) != NULL) {
 				if(smb_hfield_str(msg, FIDOMSGID, msg_id) != SMB_SUCCESS)
 					return false;

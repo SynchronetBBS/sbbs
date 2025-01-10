@@ -71,12 +71,12 @@ char*	dir_name(scfg_t*, int dirnum);
 char*	grp_name(scfg_t*, int subnum);
 char*	sub_name(scfg_t*, int subnum);
 
-DLLEXPORT bool	is_valid_dirnum(scfg_t*, int);
-DLLEXPORT bool	is_valid_libnum(scfg_t*, int);
-DLLEXPORT bool	is_valid_subnum(scfg_t*, int);
-DLLEXPORT bool	is_valid_grpnum(scfg_t*, int);
-DLLEXPORT bool	is_valid_xtrnnum(scfg_t*, int);
-DLLEXPORT bool	is_valid_xtrnsec(scfg_t*, int);
+DLLEXPORT bool	dirnum_is_valid(scfg_t*, int);
+DLLEXPORT bool	libnum_is_valid(scfg_t*, int);
+DLLEXPORT bool	subnum_is_valid(scfg_t*, int);
+DLLEXPORT bool	grpnum_is_valid(scfg_t*, int);
+DLLEXPORT bool	xtrnnum_is_valid(scfg_t*, int);
+DLLEXPORT bool	xtrnsec_is_valid(scfg_t*, int);
 
 DLLEXPORT char *	sub_newsgroup_name(scfg_t*, sub_t*, char*, size_t);
 DLLEXPORT char *	sub_area_tag(scfg_t*, sub_t*, char*, size_t);

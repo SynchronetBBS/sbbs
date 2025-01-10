@@ -250,14 +250,14 @@ set_file_properties(JSContext *cx, JSObject* obj, file_t* f, enum file_detail de
 		if(!JS_DefineProperty(cx, obj, "cost", val, NULL, NULL, flags))
 			return false;
 	}
-	if(is_valid_dirnum(scfg, f->dir) && (scfg->dir[f->dir]->misc & DIR_FCHK) && detail >= file_detail_normal)
+	if(dirnum_is_valid(scfg, f->dir) && (scfg->dir[f->dir]->misc & DIR_FCHK) && detail >= file_detail_normal)
 		val = DOUBLE_TO_JSVAL((double)getfilesize(scfg, f));
 	else
 		val = DOUBLE_TO_JSVAL((double)smb_getfilesize(&f->idx));
 	if(!JS_DefineProperty(cx, obj, "size", val, NULL, NULL, flags))
 		return false;
 
-	if(is_valid_dirnum(scfg, f->dir) && (scfg->dir[f->dir]->misc & DIR_FCHK) && detail >= file_detail_normal)
+	if(dirnum_is_valid(scfg, f->dir) && (scfg->dir[f->dir]->misc & DIR_FCHK) && detail >= file_detail_normal)
 		val = DOUBLE_TO_JSVAL((double)getfiletime(scfg, f));
 	else
 		val = UINT_TO_JSVAL(f->hdr.when_written.time);
@@ -1229,7 +1229,7 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 	if(file.name != NULL) {
 		if((extdesc == NULL	|| use_diz_always == true)
 			&& !use_diz_never
-			&& is_valid_dirnum(scfg, file.dir)
+			&& dirnum_is_valid(scfg, file.dir)
 			&& (scfg->dir[file.dir]->misc & DIR_DIZ)) {
 			get_diz(scfg, &file, &extdesc);
 		}
@@ -1311,7 +1311,7 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 		}
 		if(p->smb_result == SMB_SUCCESS
 			&& (extdesc == NULL || use_diz_always == true)
-			&& is_valid_dirnum(scfg, file.dir)
+			&& dirnum_is_valid(scfg, file.dir)
 			&& (scfg->dir[file.dir]->misc & DIR_DIZ)) {
 			get_diz(scfg, &file, &extdesc);
 		}
@@ -1854,7 +1854,7 @@ js_filebase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 #endif
 
 	p->smb.dirnum = getdirnum(scfg, base);
-	if(is_valid_dirnum(scfg, p->smb.dirnum)) {
+	if(dirnum_is_valid(scfg, p->smb.dirnum)) {
 		safe_snprintf(p->smb.file, sizeof(p->smb.file), "%s%s"
 			,scfg->dir[p->smb.dirnum]->data_dir, scfg->dir[p->smb.dirnum]->code);
 	} else { /* unknown code */

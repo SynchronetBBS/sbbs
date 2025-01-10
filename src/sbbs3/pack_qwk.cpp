@@ -61,7 +61,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 	ex=EX_STDOUT;
 	if(prepack) {
 		ex|=EX_OFFLINE;
-		if(is_user_online(&cfg, useron.number)) { /* Don't pre-pack with user online */
+		if(user_is_online(&cfg, useron.number)) { /* Don't pre-pack with user online */
 			lprintf(LOG_NOTICE, "User #%u is concurrently logged-in, QWK packet creation aborted", useron.number);
 			return(false); 
 		}
@@ -660,7 +660,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 			file_t f = {{}};
 			if(!batch_file_load(&cfg, ini, filename, &f))
 				continue;
-			if(!is_download_free(&cfg, f.dir, &useron, &client)) {
+			if(!download_is_free(&cfg, f.dir, &useron, &client)) {
 				if(totalcdt + f.cost > (uint64_t)user_available_credits(&useron)) {
 					bprintf(text[YouOnlyHaveNCredits]
 						,u64toac(user_available_credits(&useron),tmp));
@@ -725,7 +725,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 	}
 
 	if(prepack) {
-		if(is_user_online(&cfg, useron.number)) { /* Don't pre-pack with user online */
+		if(user_is_online(&cfg, useron.number)) { /* Don't pre-pack with user online */
 			lprintf(LOG_NOTICE, "User #%u is concurrently logged-in, QWK packet creation aborted", useron.number);
 			return(false); 
 		}

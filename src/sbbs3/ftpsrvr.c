@@ -127,7 +127,7 @@ BOOL direxist(char *dir)
 
 BOOL dir_op(scfg_t* cfg, user_t* user, client_t* client, uint dirnum)
 {
-	return is_user_dirop(cfg, dirnum, user, client);
+	return user_is_dirop(cfg, dirnum, user, client);
 }
 
 static int lputs(int level, const char* str)
@@ -849,7 +849,7 @@ static void send_thread(void* arg)
 
 		if(xfer.credits) {
 			user_downloaded(&scfg, xfer.user, 1, total);
-			if(xfer.dir>=0 && !is_download_free(&scfg,xfer.dir,xfer.user,xfer.client))
+			if(xfer.dir>=0 && !download_is_free(&scfg,xfer.dir,xfer.user,xfer.client))
 				subtract_cdt(&scfg, xfer.user, xfer.credits);
 		}
 	}
@@ -1506,7 +1506,7 @@ static BOOL ftpalias(char* fullalias, char* filename, user_t* user, client_t* cl
 	for(int i = 0; i < scfg.total_dirs; ++i) {
 		if(scfg.dir[i]->vshortcut[0] == '\0')
 			continue;
-		if(!can_user_access_dir(&scfg, i, user, client))
+		if(!user_can_access_dir(&scfg, i, user, client))
 			continue;
 		if(stricmp(scfg.dir[i]->vshortcut, alias) == 0) {
 			if(curdir != NULL)
@@ -2075,7 +2075,7 @@ static BOOL can_delete(lib_t *lib, dir_t *dir, user_t *user, client_t *client, f
 
 static BOOL can_download(lib_t *lib, dir_t *dir, user_t *user, client_t *client, file_t *file)
 {
-	return can_user_download(&scfg, dir->dirnum, user, client,  /* reason */NULL);
+	return user_can_download(&scfg, dir->dirnum, user, client,  /* reason */NULL);
 }
 
 static void get_fileperm(lib_t *lib, dir_t *dir, user_t *user, client_t *client, file_t *file, char *permstr)
@@ -3711,7 +3711,7 @@ static void ctrl_thread(void* arg)
 						for(int i = 0; i < scfg.total_dirs; ++i) {
 							if(scfg.dir[i]->vshortcut[0] == '\0')
 								continue;
-							if(!can_user_access_dir(&scfg, i, &user, &client))
+							if(!user_can_access_dir(&scfg, i, &user, &client))
 								continue;
 							SAFEPRINTF2(aliaspath,"/%s/%s", scfg.lib[scfg.dir[i]->lib]->vdir, scfg.dir[i]->vdir);
 							get_unique(aliaspath, uniq);
@@ -4031,7 +4031,7 @@ static void ctrl_thread(void* arg)
 						continue;
 					if(!wildmatchi(scfg.dir[i]->vshortcut, filespec, FALSE))
 						continue;
-					if(!can_user_access_dir(&scfg, i, &user, &client))
+					if(!user_can_access_dir(&scfg, i, &user, &client))
 						continue;
 					if(detail) {
 						fprintf(fp,"drwxrwxrwx   1 %-*s %-8s %9ld %s %2d %02d:%02d %s\r\n"
@@ -4416,7 +4416,7 @@ static void ctrl_thread(void* arg)
 						for(int i = 0; i < scfg.total_dirs; ++i) {
 							if(scfg.dir[i]->vshortcut[0] == '\0')
 								continue;
-							if(!can_user_access_dir(&scfg, i, &user, &client))
+							if(!user_can_access_dir(&scfg, i, &user, &client))
 								continue;
 							fprintf(fp,"%-*s %s\r\n",INDEX_FNAME_LEN, scfg.dir[i]->vshortcut, scfg.dir[i]->lname);
 						}
@@ -4514,7 +4514,7 @@ static void ctrl_thread(void* arg)
 				}
 
 				if(!getsize && !getdate && !delecmd
-					&& !can_user_download(&scfg, dir, &user, &client, /* reason */NULL)) {
+					&& !user_can_download(&scfg, dir, &user, &client, /* reason */NULL)) {
 					lprintf(LOG_WARNING,"%04d <%s> has insufficient access to download from /%s/%s"
 						,sock,user.alias
 						,scfg.lib[scfg.dir[dir]->lib]->vdir
@@ -4545,7 +4545,7 @@ static void ctrl_thread(void* arg)
 
 				/* Verify credits */
 				if(!getsize && !getdate && !delecmd
-					&& !is_download_free(&scfg,dir,&user,&client)) {
+					&& !download_is_free(&scfg,dir,&user,&client)) {
 					file_t f;
 					if(filedat)
 						loadfile(&scfg, dir, p, &f, file_detail_normal);

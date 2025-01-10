@@ -62,7 +62,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 		bputs(text[UnknownUser]);
 		return(false);
 	}
-	bool to_sysop = is_user_sysop(&user);
+	bool to_sysop = user_is_sysop(&user);
 	if(to_sysop && useron.rest&FLAG('S')
 		&& (cfg.valuser!=usernumber || useron.fbacks || useron.emails)) { /* ! val fback */
 		bprintf(text[R_Feedback],cfg.sys_op);

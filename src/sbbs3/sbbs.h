@@ -779,8 +779,8 @@ public:
 	int 	sub_op(int subnum);
 	bool	can_view_deleted_msgs(int subnum);
 	int		dir_op(int dirnum);
-	bool	is_valid_subnum(int subnum) { return ::is_valid_subnum(&cfg, subnum); }
-	bool	is_valid_dirnum(int dirnum) { return ::is_valid_dirnum(&cfg, dirnum); }
+	bool	subnum_is_valid(int subnum) { return ::subnum_is_valid(&cfg, subnum); }
+	bool	dirnum_is_valid(int dirnum) { return ::dirnum_is_valid(&cfg, dirnum); }
 	char*	dir_name(int dirnum) { return ::dir_name(&cfg, dirnum); }
 	char*	lib_name(int dirnum) { return ::lib_name(&cfg, dirnum); }
 	char*	sub_name(int subnum) { return ::sub_name(&cfg, subnum); }

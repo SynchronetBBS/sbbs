@@ -275,7 +275,7 @@ int sbbs_t::exec_file(csi_t *csi)
 			if(usrlibs) {
 				i=usrdir[curlib][curdir[curlib]];
 				if(cfg.upload_dir!=INVALID_DIR
-					&& !can_user_upload(&cfg, i, &useron, &client, /* reason: */NULL))
+					&& !user_can_upload(&cfg, i, &useron, &client, /* reason: */NULL))
 					i=cfg.upload_dir; 
 			} else
 				i=cfg.upload_dir;

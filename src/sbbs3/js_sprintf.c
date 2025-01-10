@@ -39,7 +39,7 @@ js_sprintf(JSContext *cx, uint argn, uintN argc, jsval *argv)
 
 	p=op;
 	p=xp_asprintf_start(p);
-	int cur = 0;
+	uintN cur = 0;
 	for (;;) {
 		int next = xp_printf_get_next(p);
 		if (next < 0)

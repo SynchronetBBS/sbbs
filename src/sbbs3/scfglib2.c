@@ -288,7 +288,7 @@ bool read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		*p = '\0';
 		char* code = p + 1;
 		int libnum = getlibnum_from_name(cfg, lib);
-		if(!is_valid_libnum(cfg, libnum))
+		if(!libnum_is_valid(cfg, libnum))
 			continue;
 
 		if((cfg->dir[i]=(dir_t *)malloc(sizeof(dir_t)))==NULL)
@@ -460,7 +460,7 @@ bool read_xtrn_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		*p = '\0';
 		char* code = p + 1;
 		int secnum = getxtrnsec(cfg, sec);
-		if(!is_valid_xtrnsec(cfg, secnum))
+		if(!xtrnsec_is_valid(cfg, secnum))
 			continue;
 
 		if((cfg->xtrn[i]=(xtrn_t *)malloc(sizeof(xtrn_t)))==NULL)

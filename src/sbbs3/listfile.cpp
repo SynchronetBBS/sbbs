@@ -972,7 +972,7 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 				}
 				continue;
 			}
-			if(!is_download_free(&cfg,f->dir,&useron,&client)
+			if(!download_is_free(&cfg,f->dir,&useron,&client)
 				&& f->cost>user_available_credits(&useron)) {
 				sync();
 				bprintf(text[YouOnlyHaveNCredits]
@@ -984,7 +984,7 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 				}
 				continue;
 			}
-			if(!can_user_download(&cfg, f->dir, &useron, &client, /* reason: */NULL)) {
+			if(!user_can_download(&cfg, f->dir, &useron, &client, /* reason: */NULL)) {
 				sync();
 				bputs(text[CantDownloadFromDir]);
 				mnemonics(text[QuitOrNext]);

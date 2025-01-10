@@ -1999,13 +1999,13 @@ static bool check_ars(http_session_t * session)
 		if(session->user.number == 0) {
 			switch(session->parsed_vpath) {
 				case PARSED_VPATH_FULL:
-					return can_user_download(&scfg, session->file.dir, &session->user, &session->client, NULL);
+					return user_can_download(&scfg, session->file.dir, &session->user, &session->client, NULL);
 				case PARSED_VPATH_ROOT:
-					return can_user_access_all_libs(&scfg, &session->user, &session->client);
+					return user_can_access_all_libs(&scfg, &session->user, &session->client);
 				case PARSED_VPATH_LIB:
-					return can_user_access_all_dirs(&scfg, session->libnum, &session->user, &session->client);
+					return user_can_access_all_dirs(&scfg, session->libnum, &session->user, &session->client);
 				case PARSED_VPATH_DIR:
-					return can_user_access_dir(&scfg, session->file.dir, &session->user, &session->client);
+					return user_can_access_dir(&scfg, session->file.dir, &session->user, &session->client);
 				default:
 					return true;
 			}
@@ -2107,9 +2107,9 @@ static bool check_ars(http_session_t * session)
 	}
 
 	if(session->parsed_vpath == PARSED_VPATH_FULL) {
-		if(is_download_free(&scfg, session->file.dir, &session->user, &session->client)
+		if(download_is_free(&scfg, session->file.dir, &session->user, &session->client)
 			|| session->user.cdt >= session->file.cost)
-			authorized = can_user_download(&scfg, session->file.dir, &session->user, &session->client, NULL);
+			authorized = user_can_download(&scfg, session->file.dir, &session->user, &session->client, NULL);
 		else
 			authorized = false;
 	} else {
@@ -6232,8 +6232,8 @@ static bool exec_ssjs(http_session_t* session, char* script)  {
 	js_add_request_prop(session,"http_ver",http_vers[session->http_ver]);
 	js_add_request_prop(session,"remote_ip",session->host_ip);
 	js_add_request_prop(session,"remote_host",session->host_name);
-	js_add_request_prop(session, "lib", is_valid_libnum(&scfg, session->libnum) ? scfg.lib[session->libnum]->sname : NULL);
-	js_add_request_prop(session, "dir", is_valid_dirnum(&scfg, session->file.dir) ? scfg.dir[session->file.dir]->code : NULL);
+	js_add_request_prop(session, "lib", libnum_is_valid(&scfg, session->libnum) ? scfg.lib[session->libnum]->sname : NULL);
+	js_add_request_prop(session, "dir", dirnum_is_valid(&scfg, session->file.dir) ? scfg.dir[session->file.dir]->code : NULL);
 	if(session->req.query_str[0])  {
 		js_add_request_prop(session,"query_string",session->req.query_str);
 		js_parse_query(session,session->req.query_str);

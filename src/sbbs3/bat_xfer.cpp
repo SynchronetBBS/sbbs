@@ -219,7 +219,7 @@ bool sbbs_t::batch_upload()
 	delfiles(cfg.temp_dir,ALLFILES);
 	time_t elapsed = 0;
 	protocol(cfg.prot[i],XFER_BATCH_UPLOAD,str,nulstr, /* cd: */true, /* autohang: */true, &elapsed);
-	if(batup_total() < 1 && is_valid_dirnum(cfg.upload_dir) && !(cfg.dir[cfg.upload_dir]->misc&DIR_ULTIME))
+	if(batup_total() < 1 && dirnum_is_valid(cfg.upload_dir) && !(cfg.dir[cfg.upload_dir]->misc&DIR_ULTIME))
 		starttime+=elapsed;
 	bool result = process_batch_upload_queue();
 	delfiles(cfg.temp_dir,ALLFILES);
@@ -264,7 +264,7 @@ bool sbbs_t::start_batch_download()
 			batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
 		} else {
 			uint reason = R_Download;
-			if(!can_user_download(&cfg, f.dir, &useron, &client, &reason)) {
+			if(!user_can_download(&cfg, f.dir, &useron, &client, &reason)) {
 				bputs(text[reason]);
 				batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
 			}
@@ -298,7 +298,7 @@ bool sbbs_t::start_batch_download()
 			continue;
 		}
 		uint reason = R_Download;
-		if(!can_user_download(&cfg, f.dir, &useron, &client, &reason)) {
+		if(!user_can_download(&cfg, f.dir, &useron, &client, &reason)) {
 			bputs(text[reason]);
 			batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
 		} else
@@ -447,7 +447,7 @@ bool sbbs_t::create_batchdn_lst(bool native)
 		file_t f = {};
 		f.dir = batch_file_dir(&cfg, ini, filename);
 		uint reason = R_Download;
-		if(!can_user_download(&cfg, f.dir, &useron, &client, &reason)) {
+		if(!user_can_download(&cfg, f.dir, &useron, &client, &reason)) {
 			bputs(text[reason]);
 			batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
 			continue;
@@ -704,7 +704,7 @@ bool sbbs_t::addtobatdl(file_t* f)
 	uint64_t	totalcost, totalsize;
 	uint64_t	totaltime;
 
-	if(!can_user_download(&cfg, f->dir, &useron, &client, &reason)) {
+	if(!user_can_download(&cfg, f->dir, &useron, &client, &reason)) {
 		bprintf(text[CantAddToQueue],f->name);
 		bputs(text[reason]);
 		return false;
@@ -744,7 +744,7 @@ bool sbbs_t::addtobatdl(file_t* f)
 		}
 		if(cfg.dir[f->dir]->misc&DIR_FREE)
 			f->cost=0L;
-		if(!is_download_free(&cfg,f->dir,&useron,&client))
+		if(!download_is_free(&cfg,f->dir,&useron,&client))
 			totalcost += f->cost;
 		if(totalcost > user_available_credits(&useron)) {
 			bprintf(text[CantAddToQueue],f->name);
