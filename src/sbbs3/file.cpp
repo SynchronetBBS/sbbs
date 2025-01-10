@@ -91,7 +91,7 @@ void sbbs_t::showfileinfo(file_t* f, bool show_extdesc)
 		bprintf(P_TRUNCATE, text[FiDateUled],timestr(f->hdr.when_imported.time));
 		if(getfiletime(&cfg, f) > 0)
 			bprintf(P_TRUNCATE, text[FiFileDate],timestr(f->time));
-		bprintf(P_TRUNCATE, text[FiDateDled],f->hdr.last_downloaded ? timestr(f->hdr.last_downloaded) : "Never");
+		bprintf(P_TRUNCATE, text[FiDateDled], timestr(f->hdr.last_downloaded));
 		bprintf(P_TRUNCATE, text[FiTimesDled],f->hdr.times_downloaded);
 		ulong timetodl = gettimetodl(&cfg, f, cur_cps);
 		if(timetodl > 0)

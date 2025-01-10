@@ -261,6 +261,10 @@ char* timestr(scfg_t* cfg, time32_t t, char* str)
 	char** w = (cfg->text == NULL) ? (char**)wday : &cfg->text[Sun];
 	char** m = (cfg->text == NULL) ? (char**)mon : &cfg->text[Jan];
 
+	if(t == 0) {
+		strcpy(str, cfg->text == NULL ? "Never" : cfg->text[Never]);
+		return str;
+	}
 	if(localtime_r(&intime,&tm)==NULL) {
 		strcpy(str,"Invalid Time");
 		return(str);
