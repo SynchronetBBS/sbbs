@@ -668,6 +668,7 @@ draw_char_row(struct blockstate *bs, struct charstate *cs, uint32_t y)
 
 	uint8_t fb = cs->font[cs->fontoffset];
 	for(unsigned x = 0; x < vstat.charwidth; x++) {
+		unsigned bitnum = x & 0x07;
 		if (bs->expand && x == bs->font_data_width) {
 			if (cs->gexpand)
 				fbb = cs->font[cs->fontoffset - 1] & (0x80 >> ((x - 1) & 7));
@@ -675,9 +676,9 @@ draw_char_row(struct blockstate *bs, struct charstate *cs, uint32_t y)
 				fbb = 0;
 		}
 		else
-			fbb = fb & (0x80 >> (x & 7));
+			fbb = fb & (0x80 >> bitnum);
 
-		if ((x & 0x07) == 7) {
+		if (bitnum == 7) {
 			cs->fontoffset++;
 			fb = cs->font[cs->fontoffset];
 		}
@@ -725,6 +726,7 @@ draw_char_row_double(struct blockstate *bs, struct charstate *cs, uint32_t y)
 
 	uint8_t fb = cs->font[cs->fontoffset];
 	for(unsigned x = 0; x < vstat.charwidth; x++) {
+		unsigned bitnum = x & 0x07;
 		if (bs->expand && x == bs->font_data_width) {
 			if (cs->gexpand)
 				fbb = cs->font[cs->fontoffset - 1] & (0x80 >> ((x - 1) & 7));
@@ -732,9 +734,9 @@ draw_char_row_double(struct blockstate *bs, struct charstate *cs, uint32_t y)
 				fbb = 0;
 		}
 		else
-			fbb = fb & (0x80 >> (x & 7));
+			fbb = fb & (0x80 >> bitnum);
 
-		if ((x & 0x07) == 7) {
+		if (bitnum == 7) {
 			cs->fontoffset++;
 			fb = cs->font[cs->fontoffset];
 		}
