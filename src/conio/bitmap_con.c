@@ -1530,11 +1530,13 @@ void bitmap_clrscr(void)
 	struct vstat_vmem *vmem_ptr;
 	size_t c = 0;
 	int rows, cols;
-	struct vmem_cell *va = malloc(((cio_textinfo.winright - cio_textinfo.winleft + 1) * (cio_textinfo.winbottom - cio_textinfo.wintop + 1)) * sizeof(struct vmem_cell));
+	struct vmem_cell *va;
 
 	if(!bitmap_initialized)
 		return;
-
+	va = malloc(((cio_textinfo.winright - cio_textinfo.winleft + 1) * (cio_textinfo.winbottom - cio_textinfo.wintop + 1)) * sizeof(struct vmem_cell));
+	if (va == NULL)
+		return;
 	pthread_mutex_lock(&vstatlock);
 	vmem_ptr = get_vmem(&vstat);
 	rows = vstat.rows;
@@ -1545,6 +1547,7 @@ void bitmap_clrscr(void)
 		}
 	}
 	bitmap_draw_vmem(cio_textinfo.winleft, cio_textinfo.wintop, cio_textinfo.winright, cio_textinfo.winbottom, va);
+	free(va);
 	release_vmem(vmem_ptr);
 	pthread_mutex_unlock(&vstatlock);
 }
