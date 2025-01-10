@@ -747,7 +747,8 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 	}
 	if(flength(packet) < 1) {
 		remove(packet);
-		if((i = external(cmdstr(temp_cmd(ex),packet,path,NULL,ex), ex|EX_WILDCARD)) != 0)
+		cmdstr(temp_cmd(ex),packet,path,NULL,ex);
+		if((i = external(cmdstr_output, ex|EX_WILDCARD)) != 0)
 			errormsg(WHERE, ERR_EXEC, cmdstr_output, i);
 		if(flength(packet) < 1) {
 			bputs(text[QWKCompressionFailed]);
