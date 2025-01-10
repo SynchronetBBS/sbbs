@@ -1062,8 +1062,8 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 						if(file_type_match(f->name, cfg.dlevent[j]->ext)
 							&& chk_ar(cfg.dlevent[j]->ar,&useron,&client)) {
 							bputs(cfg.dlevent[j]->workstr);
-							external(cmdstr(cfg.dlevent[j]->cmd,path,nulstr,NULL)
-								,EX_OUTL);
+							external(cmdstr(cfg.dlevent[j]->cmd,path,nulstr,NULL,cfg.dlevent[j]->ex_mode)
+								,cfg.dlevent[j]->ex_mode);
 							clearline();
 						}
 					}

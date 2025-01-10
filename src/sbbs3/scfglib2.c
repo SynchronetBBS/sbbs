@@ -93,11 +93,12 @@ bool read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		SAFECOPY(cfg->fextr[i]->cmd, iniGetString(section, NULL, "cmd", "", value));
 		SAFECOPY(cfg->fextr[i]->arstr, iniGetString(section, NULL, "ars", "", value));
 		arstr(NULL, cfg->fextr[i]->arstr, cfg, cfg->fextr[i]->ar);
+		cfg->fextr[i]->ex_mode = iniGetUInt32(section, NULL, "ex_mode", 0);
 	}
 	iniFreeStringList(fextr_list);
 
 	/***************************/
-	/* Compressable File Types */
+	/* Compressible File Types */
 	/***************************/
 
 	str_list_t fcomp_list = iniGetParsedSectionList(sections, "compressor:");
@@ -115,6 +116,7 @@ bool read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		SAFECOPY(cfg->fcomp[i]->cmd, iniGetString(section, NULL, "cmd", "", value));
 		SAFECOPY(cfg->fcomp[i]->arstr, iniGetString(section, NULL, "ars", "", value));
 		arstr(NULL, cfg->fcomp[i]->arstr, cfg, cfg->fcomp[i]->ar);
+		cfg->fcomp[i]->ex_mode = iniGetUInt32(section, NULL, "ex_mode", 0);
 	}
 	iniFreeStringList(fcomp_list);
 
@@ -137,6 +139,7 @@ bool read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		SAFECOPY(cfg->fview[i]->cmd, iniGetString(section, NULL, "cmd", "", value));
 		SAFECOPY(cfg->fview[i]->arstr, iniGetString(section, NULL, "ars", "", value));
 		arstr(NULL, cfg->fview[i]->arstr, cfg, cfg->fview[i]->ar);
+		cfg->fview[i]->ex_mode = iniGetUInt32(section, NULL, "ex_mode", EX_STDIO|EX_SH);
 	}
 	iniFreeStringList(fview_list);
 
@@ -160,6 +163,7 @@ bool read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		SAFECOPY(cfg->ftest[i]->workstr, iniGetString(section, NULL, "working", "", value));
 		SAFECOPY(cfg->ftest[i]->arstr, iniGetString(section, NULL, "ars", "", value));
 		arstr(NULL, cfg->ftest[i]->arstr, cfg, cfg->ftest[i]->ar);
+		cfg->ftest[i]->ex_mode = iniGetUInt32(section, NULL, "ex_mode", 0);
 	}
 	iniFreeStringList(ftest_list);
 
@@ -183,6 +187,7 @@ bool read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		SAFECOPY(cfg->dlevent[i]->workstr, iniGetString(section, NULL, "working", "", value));
 		SAFECOPY(cfg->dlevent[i]->arstr, iniGetString(section, NULL, "ars", "", value));
 		arstr(NULL, cfg->dlevent[i]->arstr, cfg, cfg->dlevent[i]->ar);
+		cfg->dlevent[i]->ex_mode = iniGetUInt32(section, NULL, "ex_mode", 0);
 	}
 	iniFreeStringList(dlevent_list);
 

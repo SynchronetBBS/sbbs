@@ -93,8 +93,8 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 				lprintf(LOG_WARNING, "No extractable file type matching user's QWK packet type: %s", useron.tmpext);
 				return false;
 			}
-			p=cmdstr(cfg.fextr[k]->cmd,str,ALLFILES,NULL);
-			if((i=external(p,ex))==0)
+			p=cmdstr(cfg.fextr[k]->cmd,str,ALLFILES,NULL,cfg.fextr[k]->ex_mode);
+			if((i=external(p,ex|cfg.fextr[k]->ex_mode))==0)
 				preqwk=1; 
 			else 
 				errormsg(WHERE,ERR_EXEC,p,i);
@@ -747,8 +747,8 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 	}
 	if(flength(packet) < 1) {
 		remove(packet);
-		if((i = external(cmdstr(temp_cmd(),packet,path,NULL), ex|EX_WILDCARD)) != 0)
-			errormsg(WHERE,ERR_EXEC,cmdstr(temp_cmd(),packet,path,NULL),i);
+		if((i = external(cmdstr(temp_cmd(ex),packet,path,NULL,ex), ex|EX_WILDCARD)) != 0)
+			errormsg(WHERE, ERR_EXEC, cmdstr_output, i);
 		if(flength(packet) < 1) {
 			bputs(text[QWKCompressionFailed]);
 			return(false); 

@@ -72,7 +72,7 @@ bool sbbs_t::uploadfile(file_t* f)
 				fclose(stream); 
 			}
 			// Note: str (%s) is path/to/sbbsfile.des (used to be the description itself)
-			int result = external(cmdstr(cfg.ftest[i]->cmd, path, str, NULL), EX_OFFLINE);
+			int result = external(cmdstr(cfg.ftest[i]->cmd, path, str, NULL, cfg.ftest[i]->ex_mode), cfg.ftest[i]->ex_mode | EX_OFFLINE);
 			clearline();
 			if(result != 0) {
 				safe_snprintf(str,sizeof(str),"attempted to upload %s to %s %s (%s error code %d)"

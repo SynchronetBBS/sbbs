@@ -238,6 +238,7 @@ typedef struct {	                        /* Extractable file types */
 	char		arstr[LEN_ARSTR+1],			/* Access Requirements */
 				cmd[LEN_CMD+1]; 			/* Command line */
 	uchar		ar[LEN_ARSTR+1];
+	uint32_t	ex_mode;					// external() mode flags
 
 } fextr_t;
 
@@ -246,6 +247,7 @@ typedef struct {							/* Compressable file types */
 	char		arstr[LEN_ARSTR+1],			/* Access Requirements */
 				cmd[LEN_CMD+1]; 			/* Command line */
 	uchar		ar[LEN_ARSTR+1];
+	uint32_t	ex_mode;					// external() mode flags
 
 } fcomp_t;
 
@@ -254,6 +256,7 @@ typedef struct {							/* Viewable file types */
 	char		arstr[LEN_ARSTR+1],			/* Access Requirements */
 				cmd[LEN_CMD+1]; 			/* Command line */
 	uchar		ar[LEN_ARSTR+1];
+	uint32_t	ex_mode;					// external() mode flags
 
 } fview_t;
 
@@ -263,6 +266,7 @@ typedef struct {							/* Testable file types */
 				cmd[LEN_CMD+1], 			/* Command line */
 				workstr[41];				/* String to display while working */
 	uchar		ar[LEN_ARSTR+1];
+	uint32_t	ex_mode;					// external() mode flags
 
 } ftest_t;
 
@@ -272,6 +276,7 @@ typedef struct {							/* Download events */
 				cmd[LEN_CMD+1], 			/* Command line */
 				workstr[41];				/* String to display while working */
 	uchar		ar[LEN_ARSTR+1];
+	uint32_t	ex_mode;					// external() mode flags
 
 } dlevent_t;
 

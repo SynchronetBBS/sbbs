@@ -401,7 +401,7 @@ bool sbbs_t::start_batch_download()
 			if(!chk_ar(cfg.dlevent[j]->ar,&useron,&client))
 				continue;
 			bputs(cfg.dlevent[j]->workstr);
-			external(cmdstr(cfg.dlevent[j]->cmd,path,nulstr,NULL),EX_OUTL);
+			external(cmdstr(cfg.dlevent[j]->cmd,path,nulstr,NULL,cfg.dlevent[j]->ex_mode),cfg.dlevent[j]->ex_mode);
 			clearline(); 
 		}
 	}

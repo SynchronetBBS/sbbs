@@ -49,6 +49,9 @@ char* testable_files_help =
 	"for each testable file type.\n"
 ;
 
+extern char* native_help;
+extern char* native_opt;
+
 void xfer_opts()
 {
 	char	str[128],done;
@@ -330,7 +333,7 @@ void xfer_opts()
 			case __COUNTER__: 	/* Viewable file types */
 				while(1) {
 					for(i=0;i<cfg.total_fviews && i<MAX_OPTS;i++)
-						snprintf(opt[i], MAX_OPLN, "%-*s %-40s", MAX_FILEEXT_LEN, cfg.fview[i]->ext, cfg.fview[i]->cmd);
+						snprintf(opt[i], MAX_OPLN, "%-*s %s", MAX_FILEEXT_LEN, cfg.fview[i]->ext, cfg.fview[i]->cmd);
 					opt[i][0]=0;
 					i=WIN_RHT|WIN_ACT|WIN_SAV;	/* save cause size can change */
 					if(cfg.total_fviews<MAX_OPTS)
@@ -423,11 +426,13 @@ void xfer_opts()
 					done=0;
 					while(!done) {
 						j=0;
-						snprintf(opt[j++], MAX_OPLN, "%-22.22s%s","File Extension"
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s","File Extension"
 							,cfg.fview[i]->ext);
-						snprintf(opt[j++], MAX_OPLN, "%-22.22s%-40s","Command Line"
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s","Command Line"
 							,cfg.fview[i]->cmd);
-						snprintf(opt[j++], MAX_OPLN, "%-22.22s%s","Access Requirements"
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s", native_opt
+							,cfg.fview[i]->ex_mode & EX_NATIVE ? "Yes" : "No");
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s","Access Requirements"
 							,cfg.fview[i]->arstr);
 						opt[j][0]=0;
 						uifc_winmode_t wmode = WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT|WIN_EXTKEYS;
@@ -460,6 +465,9 @@ void xfer_opts()
 									,cfg.fview[i]->cmd,sizeof(cfg.fview[i]->cmd)-1,K_EDIT);
 								break;
 							case 2:
+								toggle_flag(native_opt, &cfg.fview[i]->ex_mode, EX_NATIVE, false, native_help);
+								break;
+							case 3:
 								sprintf(str,"Viewable File Type %s"
 									,cfg.fview[i]->ext);
 								getar(str,cfg.fview[i]->arstr);
@@ -471,7 +479,7 @@ void xfer_opts()
 			case __COUNTER__:    /* Testable file types */
 				while(1) {
 					for(i=0;i<cfg.total_ftests && i<MAX_OPTS;i++)
-						snprintf(opt[i], MAX_OPLN, "%-*s %-40s", MAX_FILEEXT_LEN, cfg.ftest[i]->ext, cfg.ftest[i]->cmd);
+						snprintf(opt[i], MAX_OPLN, "%-*s %s", MAX_FILEEXT_LEN, cfg.ftest[i]->ext, cfg.ftest[i]->cmd);
 					opt[i][0]=0;
 					i=WIN_RHT|WIN_ACT|WIN_SAV;	/* save cause size can change */
 					if(cfg.total_ftests<MAX_OPTS)
@@ -555,13 +563,15 @@ void xfer_opts()
 					done=0;
 					while(!done) {
 						j=0;
-						snprintf(opt[j++], MAX_OPLN, "%-22.22s%s","File Extension"
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s","File Extension"
 							,cfg.ftest[i]->ext);
-						snprintf(opt[j++], MAX_OPLN, "%-22.22s%-40s","Command Line"
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s","Command Line"
 							,cfg.ftest[i]->cmd);
-						snprintf(opt[j++], MAX_OPLN, "%-22.22s%s","Working String"
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s", native_opt
+							,cfg.ftest[i]->ex_mode & EX_NATIVE ? "Yes" : "No");
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s","Working String"
 							,cfg.ftest[i]->workstr);
-						snprintf(opt[j++], MAX_OPLN, "%-22.22s%s","Access Requirements"
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s","Access Requirements"
 							,cfg.ftest[i]->arstr);
 						opt[j][0]=0;
 						uifc.helpbuf = testable_files_help;
@@ -595,11 +605,14 @@ void xfer_opts()
 									,cfg.ftest[i]->cmd,sizeof(cfg.ftest[i]->cmd)-1,K_EDIT);
 								break;
 							case 2:
+								toggle_flag(native_opt, &cfg.ftest[i]->ex_mode, EX_NATIVE, false, native_help);
+								break;
+							case 3:
 								uifc.input(WIN_MID|WIN_SAV,0,0
 									,"Working String"
 									,cfg.ftest[i]->workstr,sizeof(cfg.ftest[i]->workstr)-1,K_EDIT|K_MSG);
 								break;
-							case 3:
+							case 4:
 								sprintf(str,"Testable File Type %s",cfg.ftest[i]->ext);
 								getar(str,cfg.ftest[i]->arstr);
 								break;
@@ -610,7 +623,7 @@ void xfer_opts()
 			case __COUNTER__:    /* Download Events */
 				while(1) {
 					for(i=0;i<cfg.total_dlevents && i<MAX_OPTS;i++)
-						snprintf(opt[i], MAX_OPLN, "%-*s %-40s", MAX_FILEEXT_LEN, cfg.dlevent[i]->ext, cfg.dlevent[i]->cmd);
+						snprintf(opt[i], MAX_OPLN, "%-*s %s", MAX_FILEEXT_LEN, cfg.dlevent[i]->ext, cfg.dlevent[i]->cmd);
 					opt[i][0]=0;
 					i=WIN_RHT|WIN_ACT|WIN_SAV;	/* save cause size can change */
 					if(cfg.total_dlevents<MAX_OPTS)
@@ -709,13 +722,15 @@ void xfer_opts()
 					done=0;
 					while(!done) {
 						j=0;
-						snprintf(opt[j++], MAX_OPLN, "%-22.22s%s","File Extension"
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s","File Extension"
 							,cfg.dlevent[i]->ext);
-						snprintf(opt[j++], MAX_OPLN, "%-22.22s%-40s","Command Line"
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s","Command Line"
 							,cfg.dlevent[i]->cmd);
-						snprintf(opt[j++], MAX_OPLN, "%-22.22s%s","Working String"
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s", native_opt
+							,cfg.dlevent[i]->ex_mode & EX_NATIVE ? "Yes" : "No");
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s","Working String"
 							,cfg.dlevent[i]->workstr);
-						snprintf(opt[j++], MAX_OPLN, "%-22.22s%s","Access Requirements"
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s","Access Requirements"
 							,cfg.dlevent[i]->arstr);
 						opt[j][0]=0;
 						uifc_winmode_t wmode = WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT|WIN_EXTKEYS;
@@ -748,11 +763,14 @@ void xfer_opts()
 									,cfg.dlevent[i]->cmd,sizeof(cfg.dlevent[i]->cmd)-1,K_EDIT);
 								break;
 							case 2:
+								toggle_flag(native_opt, &cfg.dlevent[i]->ex_mode, EX_NATIVE, false, native_help);
+								break;
+							case 3:
 								uifc.input(WIN_MID|WIN_SAV,0,0
 									,"Working String"
 									,cfg.dlevent[i]->workstr,sizeof(cfg.dlevent[i]->workstr)-1,K_EDIT|K_MSG);
 								break;
-							case 3:
+							case 4:
 								sprintf(str,"Download Event %s",cfg.dlevent[i]->ext);
 								getar(str,cfg.dlevent[i]->arstr);
 								break;
@@ -763,7 +781,7 @@ void xfer_opts()
 			case __COUNTER__:	 /* Extractable file types */
 				while(1) {
 					for(i=0;i<cfg.total_fextrs && i<MAX_OPTS;i++)
-						snprintf(opt[i], MAX_OPLN, "%-*s %-40s"
+						snprintf(opt[i], MAX_OPLN, "%-*s %s"
 							,MAX_FILEEXT_LEN, cfg.fextr[i]->ext, cfg.fextr[i]->cmd);
 					opt[i][0]=0;
 					i=WIN_RHT|WIN_ACT|WIN_SAV;  /* save cause size can change */
@@ -855,11 +873,13 @@ void xfer_opts()
 					done=0;
 					while(!done) {
 						j=0;
-						snprintf(opt[j++], MAX_OPLN, "%-22.22s%s","File Extension"
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s","File Extension"
 							,cfg.fextr[i]->ext);
-						snprintf(opt[j++], MAX_OPLN, "%-22.22s%-40s","Command Line"
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s","Command Line"
 							,cfg.fextr[i]->cmd);
-						snprintf(opt[j++], MAX_OPLN, "%-22.22s%s","Access Requirements"
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s", native_opt
+							,cfg.fextr[i]->ex_mode & EX_NATIVE ? "Yes" : "No");
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s","Access Requirements"
 							,cfg.fextr[i]->arstr);
 						opt[j][0]=0;
 						uifc_winmode_t wmode = WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT|WIN_EXTKEYS;
@@ -892,6 +912,9 @@ void xfer_opts()
 									,cfg.fextr[i]->cmd,sizeof(cfg.fextr[i]->cmd)-1,K_EDIT);
 								break;
 							case 2:
+								toggle_flag(native_opt, &cfg.fextr[i]->ex_mode, EX_NATIVE, false, native_help);
+								break;
+							case 3:
 								sprintf(str,"Extractable File Type %s"
 									,cfg.fextr[i]->ext);
 								getar(str,cfg.fextr[i]->arstr);
@@ -903,7 +926,7 @@ void xfer_opts()
 			case __COUNTER__:	 /* Compressible file types */
 				while(1) {
 					for(i=0;i<cfg.total_fcomps && i<MAX_OPTS;i++)
-						snprintf(opt[i], MAX_OPLN, "%-*s %-40s",MAX_FILEEXT_LEN, cfg.fcomp[i]->ext, cfg.fcomp[i]->cmd);
+						snprintf(opt[i], MAX_OPLN, "%-*s %s",MAX_FILEEXT_LEN, cfg.fcomp[i]->ext, cfg.fcomp[i]->cmd);
 					opt[i][0]=0;
 					i=WIN_RHT|WIN_ACT|WIN_SAV;	/* save cause size can change */
 					if(cfg.total_fcomps<MAX_OPTS)
@@ -993,11 +1016,13 @@ void xfer_opts()
 					done=0;
 					while(!done) {
 						j=0;
-						snprintf(opt[j++], MAX_OPLN, "%-22.22s%s","File Extension"
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s","File Extension"
 							,cfg.fcomp[i]->ext);
-						snprintf(opt[j++], MAX_OPLN, "%-22.22s%-40s","Command Line"
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s","Command Line"
 							,cfg.fcomp[i]->cmd);
-						snprintf(opt[j++], MAX_OPLN, "%-22.22s%s","Access Requirements"
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s", native_opt
+							,cfg.fcomp[i]->ex_mode & EX_NATIVE ? "Yes" : "No");
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s","Access Requirements"
 							,cfg.fcomp[i]->arstr);
 						opt[j][0]=0;
 						uifc_winmode_t wmode = WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT|WIN_EXTKEYS;
@@ -1030,6 +1055,9 @@ void xfer_opts()
 									,cfg.fcomp[i]->cmd,sizeof(cfg.fcomp[i]->cmd)-1,K_EDIT);
 								break;
 							case 2:
+								toggle_flag(native_opt, &cfg.fcomp[i]->ex_mode, EX_NATIVE, false, native_help);
+								break;
+							case 3:
 								sprintf(str,"Compressible File Type %s"
 									,cfg.fcomp[i]->ext);
 								getar(str,cfg.fcomp[i]->arstr);
@@ -1137,19 +1165,19 @@ void xfer_opts()
 						j=0;
 						snprintf(opt[j++], MAX_OPLN, "%-30.30s%c","Mnemonic (Command Key)"
 							,cfg.prot[i]->mnemonic);
-						snprintf(opt[j++], MAX_OPLN, "%-30.30s%-40s","Protocol Name"
+						snprintf(opt[j++], MAX_OPLN, "%-30.30s%s","Protocol Name"
 							,cfg.prot[i]->name);
-						snprintf(opt[j++], MAX_OPLN, "%-30.30s%-40s","Access Requirements"
+						snprintf(opt[j++], MAX_OPLN, "%-30.30s%s","Access Requirements"
 							,cfg.prot[i]->arstr);
-						snprintf(opt[j++], MAX_OPLN, "%-30.30s%-40s","Upload Command Line"
+						snprintf(opt[j++], MAX_OPLN, "%-30.30s%s","Upload Command Line"
 							,cfg.prot[i]->ulcmd);
-						snprintf(opt[j++], MAX_OPLN, "%-30.30s%-40s","Download Command Line"
+						snprintf(opt[j++], MAX_OPLN, "%-30.30s%s","Download Command Line"
 							,cfg.prot[i]->dlcmd);
-						snprintf(opt[j++], MAX_OPLN, "%-30.30s%-40s","Batch Upload Command Line"
+						snprintf(opt[j++], MAX_OPLN, "%-30.30s%s","Batch Upload Command Line"
 							,cfg.prot[i]->batulcmd);
-						snprintf(opt[j++], MAX_OPLN, "%-30.30s%-40s","Batch Download Command Line"
+						snprintf(opt[j++], MAX_OPLN, "%-30.30s%s","Batch Download Command Line"
 							,cfg.prot[i]->batdlcmd);
-						snprintf(opt[j++], MAX_OPLN, "%-30.30s%s",   "Native Executable/Script"
+						snprintf(opt[j++], MAX_OPLN, "%-30.30s%s",   native_opt
 							,cfg.prot[i]->misc&PROT_NATIVE ? "Yes" : "No");
 						snprintf(opt[j++], MAX_OPLN, "%-30.30s%s",	 "Supports DSZLOG"
 							,cfg.prot[i]->misc&PROT_DSZLOG ? "Yes":"No");
@@ -1217,14 +1245,7 @@ void xfer_opts()
 									,cfg.prot[i]->batdlcmd,sizeof(cfg.prot[i]->batdlcmd)-1,K_EDIT);
 								break;
 							case 7:
-								l=cfg.prot[i]->misc&PROT_NATIVE ? 0:1;
-								l=uifc.list(WIN_MID|WIN_SAV,0,0,0,&l,0
-									,"Native Executable/Script",uifcYesNoOpts);
-								if((l==0 && !(cfg.prot[i]->misc&PROT_NATIVE))
-									|| (l==1 && cfg.prot[i]->misc&PROT_NATIVE)) {
-									cfg.prot[i]->misc^=PROT_NATIVE;
-									uifc.changes=1;
-								}
+								toggle_flag(native_opt, &cfg.prot[i]->misc, PROT_NATIVE, false, native_help);
 								break;
 							case 8:
 								l=cfg.prot[i]->misc&PROT_DSZLOG ? 0:1;

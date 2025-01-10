@@ -654,11 +654,12 @@ bool write_file_cfg(scfg_t* cfg)
 		iniSetString(&section, name, "extension", cfg->fextr[i]->ext, &ini_style);
 		iniSetString(&section, name, "cmd", cfg->fextr[i]->cmd, &ini_style);
 		iniSetString(&section, name, "ars", cfg->fextr[i]->arstr, &ini_style);
+		iniSetHexInt(&section, name, "ex_mode", cfg->fextr[i]->ex_mode, &ini_style);
 		strListMerge(&ini, section);
 		free(section);
 	}
 
-	/* Compressable File Types */
+	/* Compressible File Types */
 
 	for(int i=0; i<cfg->total_fcomps; i++) {
 		SAFEPRINTF(name, "compressor:%u", i);
@@ -666,6 +667,7 @@ bool write_file_cfg(scfg_t* cfg)
 		iniSetString(&section, name, "extension", cfg->fcomp[i]->ext, &ini_style);
 		iniSetString(&section, name, "cmd", cfg->fcomp[i]->cmd, &ini_style);
 		iniSetString(&section, name, "ars", cfg->fcomp[i]->arstr, &ini_style);
+		iniSetHexInt(&section, name, "ex_mode", cfg->fcomp[i]->ex_mode, &ini_style);
 		strListMerge(&ini, section);
 		free(section);
 	}
@@ -678,6 +680,7 @@ bool write_file_cfg(scfg_t* cfg)
 		iniSetString(&section, name, "extension", cfg->fview[i]->ext, &ini_style);
 		iniSetString(&section, name, "cmd", cfg->fview[i]->cmd, &ini_style);
 		iniSetString(&section, name, "ars", cfg->fview[i]->arstr, &ini_style);
+		iniSetHexInt(&section, name, "ex_mode", cfg->fview[i]->ex_mode, &ini_style);
 		strListMerge(&ini, section);
 		free(section);
 	}
@@ -691,6 +694,7 @@ bool write_file_cfg(scfg_t* cfg)
 		iniSetString(&section, name, "cmd", cfg->ftest[i]->cmd, &ini_style);
 		iniSetString(&section, name, "working", cfg->ftest[i]->workstr, &ini_style);
 		iniSetString(&section, name, "ars", cfg->ftest[i]->arstr, &ini_style);
+		iniSetHexInt(&section, name, "ex_mode", cfg->ftest[i]->ex_mode, &ini_style);
 		strListMerge(&ini, section);
 		free(section);
 	}
@@ -704,6 +708,7 @@ bool write_file_cfg(scfg_t* cfg)
 		iniSetString(&section, name, "cmd", cfg->dlevent[i]->cmd, &ini_style);
 		iniSetString(&section, name, "working", cfg->dlevent[i]->workstr, &ini_style);
 		iniSetString(&section, name, "ars", cfg->dlevent[i]->arstr, &ini_style);
+		iniSetHexInt(&section, name, "ex_mode", cfg->dlevent[i]->ex_mode, &ini_style);
 		strListMerge(&ini, section);
 		free(section);
 	}

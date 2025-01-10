@@ -94,7 +94,7 @@ uint sbbs_t::create_filelist(const char *name, int mode)
 /* This function returns the command line for the temp file extension for	*/
 /* current user online. 													*/
 /****************************************************************************/
-const char* sbbs_t::temp_cmd(void)
+const char* sbbs_t::temp_cmd(int& ex_mode)
 {
 	int i;
 
@@ -104,7 +104,10 @@ const char* sbbs_t::temp_cmd(void)
 	}
 	for(i=0;i<cfg.total_fcomps;i++)
 		if(!stricmp(useron.tmpext,cfg.fcomp[i]->ext)
-			&& chk_ar(cfg.fcomp[i]->ar,&useron,&client))
+			&& chk_ar(cfg.fcomp[i]->ar,&useron,&client)) {
+			ex_mode |= cfg.fcomp[i]->ex_mode;
 			return(cfg.fcomp[i]->cmd);
+		}
+	ex_mode |= cfg.fcomp[0]->ex_mode;
 	return(cfg.fcomp[0]->cmd);
 }

@@ -97,7 +97,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 		ex=EX_STDOUT;
 		if(online!=ON_REMOTE)
 			ex|=EX_OFFLINE;
-		i=external(cmdstr(cfg.fextr[k]->cmd,rep_fname,ALLFILES,NULL),ex);
+		i=external(cmdstr(cfg.fextr[k]->cmd,rep_fname,ALLFILES,NULL,cfg.fextr[k]->ex_mode),ex|cfg.fextr[k]->ex_mode);
 		if(i) {
 			bputs(text[QWKExtractionFailed]);
 			logline(LOG_NOTICE,"U!",AttemptedToUploadREPpacket);

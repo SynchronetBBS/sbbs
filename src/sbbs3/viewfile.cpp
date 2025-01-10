@@ -89,7 +89,6 @@ int sbbs_t::viewfile(file_t* f, bool ext)
 bool sbbs_t::viewfile(const char* inpath)
 {
 	char	path[MAX_PATH + 1];
-    char	viewcmd[256];
     int		i;
 
 	SAFECOPY(path, inpath);
@@ -99,15 +98,15 @@ bool sbbs_t::viewfile(const char* inpath)
 	}
 	for(i=0;i<cfg.total_fviews;i++)
 		if(file_type_match(path, cfg.fview[i]->ext) && chk_ar(cfg.fview[i]->ar,&useron,&client)) {
-			SAFECOPY(viewcmd,cfg.fview[i]->cmd);
 			break;
 		}
 	if(i >= cfg.total_fviews) {
 		bprintf(text[NonviewableFile], getfname(path));
 		return false;
 	}
-	if((i=external(cmdstr(viewcmd, path, path, NULL), EX_STDIO|EX_SH))!=0) {
-		errormsg(WHERE,ERR_EXEC,viewcmd,i);    /* must have EX_SH to ^C */
+	fview_t* fview = cfg.fview[i];
+	if((i = external(cmdstr(fview->cmd, path, path, NULL, fview->ex_mode), fview->ex_mode)) != 0) {
+		errormsg(WHERE, ERR_EXEC, cmdstr_output, i);    /* must have EX_SH to ^C */
 		return false;
 	}
 	return true;

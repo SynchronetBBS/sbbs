@@ -1230,7 +1230,7 @@ public:
 
 	/* tmp_xfer.cpp */
 	void	temp_xfer(void);
-	const char*	temp_cmd(void);					/* Returns temp file command line */
+	const char*	temp_cmd(int& ex_mode);					/* Returns temp file command line */
 	uint	create_filelist(const char *name, int mode);
 
 	/* viewfile.cpp */
