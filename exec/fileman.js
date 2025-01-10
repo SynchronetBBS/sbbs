@@ -40,6 +40,32 @@ while(!js.terminated) {
 		"Search Offline Files"
 	];
 	try {
+		uifc.help_text =
+			"`Synchronet File Manager`\n" +
+			"\n" +
+			"This utility provides an alternate method for system oeprators to add\n" +
+			"and manage files in their Synchronet filebases.\n" +
+			"\n" +
+			"The operations available are:\n" +
+			"\n" +
+			"~ Browse ~\n" +
+			" Explore your file directories and add, edit, move, or remove files.\n" +
+			"\n" +
+			"~ Search Filenames ~\n" +
+			" Find files by name (including wildcards) in any and all directories.\n" +
+			"\n" +
+			"~ Search Meta Data ~\n" +
+			" Find text in any file meta data (e.g. description).\n" +
+			"\n" +
+			"~ Search Uploader ~\n" +
+			" Find files imported/uploaded by a specific user name.\n" +
+			"\n" +
+			"~ Search Pending Files ~\n" +
+			" Find files in storage directories that have not been indexed in bases.\n" +
+			"\n" +
+			"~ Search Offline Files ~\n" +
+			" Find files that are indexed in filebases, but don't physically exist.\n" +
+			"";
 		var result = uifc.list(WIN_ORG | WIN_ACT, "Operations", items, main_ctx);
 
 		if(result < 0)
