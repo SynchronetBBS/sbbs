@@ -52,7 +52,7 @@ function columns(verbose, usr)
 function type(verbose, usr)
 {
 	var term;
-	
+
 	if(usr === undefined) { // Use current user by default
 		usr = user;
 		term = console.term_supports(); // user current-detected terminal params
@@ -68,7 +68,7 @@ function type(verbose, usr)
 		type = "ANSI";
 	if(verbose !== true)
 		return type;
-	
+
 	// Verbose
 	if(term & USER_PETSCII)
 		return ((usr.settings & USER_AUTOTERM) ? bbs.text(TerminalAutoDetect) : "") + "CBM/PETSCII";
