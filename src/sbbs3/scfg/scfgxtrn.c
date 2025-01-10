@@ -37,13 +37,13 @@ static char* use_shell_help =
 	"context for it to execute within, for every invocation."
 	;
 static char* use_shell_prompt = "Use System Shell or New JavaScript Context to Execute";
-static char* native_help =
-	"`Native Executable/Script:`\n"
+char* native_help =
+	"`Native Executable:`\n"
 	"\n"
 	"If this program is `16-bit MS-DOS` executable, set this option to `No`,\n"
-	"otherwise (it is a native program or script) set this option to `Yes`.\n"
+	"otherwise (it is a native program `or script`) set this option to `Yes`.\n"
 	;
-static char* native_opt = "Native Executable/Script";
+char* native_opt = "Native Executable";
 
 #define CUT_XTRNSEC_NUM	USHRT_MAX
 
