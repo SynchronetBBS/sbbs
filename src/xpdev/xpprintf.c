@@ -853,10 +853,10 @@ char* xp_asprintf_next(char *format, int type, ...)
 							i=ul;
 							break;
 						case XP_PRINTF_TYPE_LONGLONG:
-							i=ll;
+							i=(int)ll;
 							break;
 						case XP_PRINTF_TYPE_ULONGLONG:
-							i=ull;
+							i=(int)ull;
 							break;
 						case XP_PRINTF_TYPE_CHARP:
 							if(cp)
@@ -893,10 +893,10 @@ char* xp_asprintf_next(char *format, int type, ...)
 							i=ul;
 							break;
 						case XP_PRINTF_TYPE_LONGLONG:
-							i=ll;
+							i=(int)ll;
 							break;
 						case XP_PRINTF_TYPE_ULONGLONG:
-							i=ull;
+							i=(int)ull;
 							break;
 						case XP_PRINTF_TYPE_CHARP:
 							if (cp)
@@ -931,10 +931,10 @@ char* xp_asprintf_next(char *format, int type, ...)
 							ui=ul;
 							break;
 						case XP_PRINTF_TYPE_LONGLONG:
-							ui=ll;
+							ui=(unsigned int)ll;
 							break;
 						case XP_PRINTF_TYPE_ULONGLONG:
-							ui=ull;
+							ui=(unsigned int)ull;
 							break;
 						case XP_PRINTF_TYPE_CHARP:
 							if (cp)
@@ -969,10 +969,10 @@ char* xp_asprintf_next(char *format, int type, ...)
 							l=ul;
 							break;
 						case XP_PRINTF_TYPE_LONGLONG:
-							l=ll;
+							l=(long)ll;
 							break;
 						case XP_PRINTF_TYPE_ULONGLONG:
-							l=ull;
+							l=(long)ull;
 							break;
 						case XP_PRINTF_TYPE_CHARP:
 							if (cp)
@@ -1007,10 +1007,10 @@ char* xp_asprintf_next(char *format, int type, ...)
 							ul=l;
 							break;
 						case XP_PRINTF_TYPE_LONGLONG:
-							ul=ll;
+							ul=(unsigned long)ll;
 							break;
 						case XP_PRINTF_TYPE_ULONGLONG:
-							ul=ull;
+							ul=(unsigned long)ull;
 							break;
 						case XP_PRINTF_TYPE_CHARP:
 							if (cp)
@@ -1057,10 +1057,10 @@ char* xp_asprintf_next(char *format, int type, ...)
 								ll = 0;
 							break;
 						case XP_PRINTF_TYPE_DOUBLE:
-							ll=d;
+							ll=(long long)d;
 							break;
 						case XP_PRINTF_TYPE_LONGDOUBLE:
-							ll=ld;
+							ll=(long long)ld;
 							break;
 						case XP_PRINTF_TYPE_VOIDP:
 							ll=(long long)((intptr_t)pntr);
@@ -1095,10 +1095,10 @@ char* xp_asprintf_next(char *format, int type, ...)
 								ull = 0;
 							break;
 						case XP_PRINTF_TYPE_DOUBLE:
-							ull=d;
+							ull=(unsigned long long)d;
 							break;
 						case XP_PRINTF_TYPE_LONGDOUBLE:
-							ull=ld;
+							ull=(unsigned long long)ld;
 							break;
 						case XP_PRINTF_TYPE_VOIDP:
 							ull=(unsigned long long int)((uintptr_t)pntr);
@@ -1173,10 +1173,10 @@ char* xp_asprintf_next(char *format, int type, ...)
 							d=ul;
 							break;
 						case XP_PRINTF_TYPE_LONGLONG:
-							d=ll;
+							d=(double)ll;
 							break;
 						case XP_PRINTF_TYPE_ULONGLONG:
-							d=ull;
+							d=(double)ull;
 							break;
 						case XP_PRINTF_TYPE_CHARP:
 							if (cp)
@@ -1211,10 +1211,10 @@ char* xp_asprintf_next(char *format, int type, ...)
 							ld=ul;
 							break;
 						case XP_PRINTF_TYPE_LONGLONG:
-							ld=ll;
+							ld=(long double)ll;
 							break;
 						case XP_PRINTF_TYPE_ULONGLONG:
-							ld=ull;
+							ld=(long double)ull;
 							break;
 						case XP_PRINTF_TYPE_CHARP:
 							if (cp)
@@ -1285,14 +1285,14 @@ char* xp_asprintf_next(char *format, int type, ...)
 							s=ul;
 							break;
 						case XP_PRINTF_TYPE_LONGLONG:
-							s=ll;
+							s=(size_t)ll;
 							break;
 						case XP_PRINTF_TYPE_ULONGLONG:
-							s=ull;
+							s=(size_t)ull;
 							break;
 						case XP_PRINTF_TYPE_CHARP:
 							if (cp)
-								s=strtoull(cp, NULL, 0);
+								s=(size_t)strtoull(cp, NULL, 0);
 							else
 								s = 0;
 							break;
@@ -1476,7 +1476,7 @@ build_arg_table(const char *format, va_list va)
 	next=xp_asprintf_start(format);
 	if(next==NULL)
 		return(NULL);
-	int curpos = 0;
+	unsigned curpos = 0;
 	while(*(size_t *)next) {
 		int newpos = xp_printf_get_next(next);
 		if (newpos == -1) {
@@ -1529,7 +1529,7 @@ build_arg_table(const char *format, va_list va)
 
 	// And finally, get all the values...
 	va_copy(wva, va);
-	for (int i = 0; i < maxarg; i++) {
+	for (unsigned i = 0; i < maxarg; i++) {
 		switch(ret[i].type) {
 			case XP_PRINTF_TYPE_CHAR:
 			case XP_PRINTF_TYPE_INT:
