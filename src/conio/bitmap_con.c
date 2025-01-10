@@ -1404,8 +1404,10 @@ bitmap_movetext_screen(int x, int y, int tox, int toy, int direction, int height
 			direction = -1;
 		height = vstat.rows - (height + (y - toy));
 		// If everything was moved, there's no lines to move back
-		if (height <= 0)
+		if (height <= 0) {
+			pthread_mutex_unlock(&screenlock);
 			return;
+		}
 		toy = vstat.rows - (height - 1);
 		y = toy - (height);
 	}
