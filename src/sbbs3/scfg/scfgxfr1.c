@@ -97,10 +97,10 @@ void xfer_opts()
 		snprintf(opt[i++], MAX_OPLN, "%-33.33s%u%%","Default Credit on Download"
 			,cfg.cdt_dn_pct);
 		if(cfg.leech_pct)
-			sprintf(str,"%u%% after %u seconds"
+			snprintf(str, sizeof str, "%u%% after %u seconds"
 				,cfg.leech_pct,cfg.leech_sec);
 		else
-			strcpy(str,"<disabled>");
+			SAFECOPY(str,"<disabled>");
 		snprintf(opt[i++], MAX_OPLN, "%-33.33s%s","Leech Protocol Detection",str);
 		if(cfg.file_misc & FM_SAFEST)
 			SAFECOPY(str, "Safest Subset");
@@ -110,12 +110,12 @@ void xfer_opts()
 				,cfg.file_misc & FM_SPACES ? "In" : "Ex");
 		snprintf(opt[i++], MAX_OPLN, "%-33.33s%u characters", "Allowed Filename Length", cfg.filename_maxlen);
 		snprintf(opt[i++], MAX_OPLN, "%-33.33s%s", "Allowed Filename Characters", str);
-		strcpy(opt[i++],"Viewable Files...");
-		strcpy(opt[i++],"Testable Files...");
-		strcpy(opt[i++],"Download Events...");
-		strcpy(opt[i++],"Extractable Files...");
-		strcpy(opt[i++],"Compressible Files...");
-		strcpy(opt[i++],"Transfer Protocols...");
+		snprintf(opt[i++], MAX_OPLN, "Viewable Files...");
+		snprintf(opt[i++], MAX_OPLN, "Testable Files...");
+		snprintf(opt[i++], MAX_OPLN, "Download Events...");
+		snprintf(opt[i++], MAX_OPLN, "Extractable Files...");
+		snprintf(opt[i++], MAX_OPLN, "Compressible Files...");
+		snprintf(opt[i++], MAX_OPLN, "Transfer Protocols...");
 		opt[i][0]=0;
 		uifc.helpbuf=
 			"`File Transfer Configuration:`\n"
@@ -256,11 +256,11 @@ void xfer_opts()
 				break;
 			case __COUNTER__:	/* Uploaded Filename characters allowed */
 				i = 0;
-				strcpy(opt[i++], "Safest Subset Only (A-Z, a-z, 0-9, -, _, and .)");
-				strcpy(opt[i++], "Most ASCII Characters, Excluding Spaces");
-				strcpy(opt[i++], "Most ASCII Characters, Including Spaces");
-				strcpy(opt[i++], "Most CP437 Characters, Excluding Spaces");
-				strcpy(opt[i++], "Most CP437 Characters, Including Spaces");
+				snprintf(opt[i++], MAX_OPLN,  "Safest Subset Only (A-Z, a-z, 0-9, -, _, and .)");
+				snprintf(opt[i++], MAX_OPLN,  "Most ASCII Characters, Excluding Spaces");
+				snprintf(opt[i++], MAX_OPLN,  "Most ASCII Characters, Including Spaces");
+				snprintf(opt[i++], MAX_OPLN,  "Most CP437 Characters, Excluding Spaces");
+				snprintf(opt[i++], MAX_OPLN,  "Most CP437 Characters, Including Spaces");
 				opt[i][0] = '\0';
 				if(cfg.file_misc & FM_SAFEST)
 					j = 0;
@@ -386,8 +386,9 @@ void xfer_opts()
 								continue;
 							}
 							memset(cfg.fview[0],0,sizeof(fview_t));
-							strcpy(cfg.fview[0]->ext,"*");
-							strcpy(cfg.fview[0]->cmd,"?archive list %f");
+							SAFECOPY(cfg.fview[0]->ext,"*");
+							SAFECOPY(cfg.fview[0]->cmd,"?archive list %f");
+							cfg.fview[0]->ex_mode = EX_NATIVE;
 						}
 						else {
 							for(j=cfg.total_fviews;j>i;j--)
@@ -468,8 +469,7 @@ void xfer_opts()
 								toggle_flag(native_opt, &cfg.fview[i]->ex_mode, EX_NATIVE, false, native_help);
 								break;
 							case 3:
-								sprintf(str,"Viewable File Type %s"
-									,cfg.fview[i]->ext);
+								snprintf(str, sizeof str, "Viewable File Type %s", cfg.fview[i]->ext);
 								getar(str,cfg.fview[i]->arstr);
 								break;
 						}
@@ -521,9 +521,10 @@ void xfer_opts()
 								continue;
 							}
 							memset(cfg.ftest[0],0,sizeof(ftest_t));
-							strcpy(cfg.ftest[0]->ext,"ZIP");
-							strcpy(cfg.ftest[0]->cmd,"%@unzip -tqq %f");
-							strcpy(cfg.ftest[0]->workstr,"Testing ZIP Integrity...");
+							SAFECOPY(cfg.ftest[0]->ext,"ZIP");
+							SAFECOPY(cfg.ftest[0]->cmd,"%@unzip -tqq %f");
+							SAFECOPY(cfg.ftest[0]->workstr,"Testing ZIP Integrity...");
+							cfg.ftest[0]->ex_mode = EX_NATIVE;
 						}
 						else {
 
@@ -613,7 +614,7 @@ void xfer_opts()
 									,cfg.ftest[i]->workstr,sizeof(cfg.ftest[i]->workstr)-1,K_EDIT|K_MSG);
 								break;
 							case 4:
-								sprintf(str,"Testable File Type %s",cfg.ftest[i]->ext);
+								snprintf(str, sizeof str, "Testable File Type %s",cfg.ftest[i]->ext);
 								getar(str,cfg.ftest[i]->arstr);
 								break;
 						}
@@ -680,9 +681,10 @@ void xfer_opts()
 								continue;
 							}
 							memset(cfg.dlevent[0],0,sizeof(dlevent_t));
-							strcpy(cfg.dlevent[0]->ext,"ZIP");
-							strcpy(cfg.dlevent[0]->cmd,"%@zip -z %f < %zzipmsg.txt");
-							strcpy(cfg.dlevent[0]->workstr,"Adding ZIP Comment...");
+							SAFECOPY(cfg.dlevent[0]->ext,"ZIP");
+							SAFECOPY(cfg.dlevent[0]->cmd,"%@zip -z %f < %zzipmsg.txt");
+							SAFECOPY(cfg.dlevent[0]->workstr,"Adding ZIP Comment...");
+							cfg.dlevent[0]->ex_mode = EX_NATIVE;
 						}
 						else {
 
@@ -771,7 +773,7 @@ void xfer_opts()
 									,cfg.dlevent[i]->workstr,sizeof(cfg.dlevent[i]->workstr)-1,K_EDIT|K_MSG);
 								break;
 							case 4:
-								sprintf(str,"Download Event %s",cfg.dlevent[i]->ext);
+								snprintf(str, sizeof str, "Download Event %s",cfg.dlevent[i]->ext);
 								getar(str,cfg.dlevent[i]->arstr);
 								break;
 						}
@@ -832,8 +834,9 @@ void xfer_opts()
 								continue;
 							}
 							memset(cfg.fextr[0],0,sizeof(fextr_t));
-							strcpy(cfg.fextr[0]->ext,"ZIP");
-							strcpy(cfg.fextr[0]->cmd,"%@unzip -Cojqq %f %s -d %g");
+							SAFECOPY(cfg.fextr[0]->ext,"ZIP");
+							SAFECOPY(cfg.fextr[0]->cmd,"%@unzip -Cojqq %f %s -d %g");
+							cfg.fextr[0]->ex_mode = EX_NATIVE;
 						}
 						else {
 
@@ -915,8 +918,7 @@ void xfer_opts()
 								toggle_flag(native_opt, &cfg.fextr[i]->ex_mode, EX_NATIVE, false, native_help);
 								break;
 							case 3:
-								sprintf(str,"Extractable File Type %s"
-									,cfg.fextr[i]->ext);
+								snprintf(str, sizeof str, "Extractable File Type %s", cfg.fextr[i]->ext);
 								getar(str,cfg.fextr[i]->arstr);
 								break;
 						}
@@ -976,8 +978,9 @@ void xfer_opts()
 								continue;
 							}
 							memset(cfg.fcomp[0],0,sizeof(fcomp_t));
-							strcpy(cfg.fcomp[0]->ext,"ZIP");
-							strcpy(cfg.fcomp[0]->cmd,"%@zip -jD %f %s");
+							SAFECOPY(cfg.fcomp[0]->ext,"ZIP");
+							SAFECOPY(cfg.fcomp[0]->cmd,"%@zip -jD %f %s");
+							cfg.fcomp[0]->ex_mode = EX_NATIVE;
 						}
 						else {
 							for(j=cfg.total_fcomps;j>i;j--)
@@ -1058,8 +1061,7 @@ void xfer_opts()
 								toggle_flag(native_opt, &cfg.fcomp[i]->ex_mode, EX_NATIVE, false, native_help);
 								break;
 							case 3:
-								sprintf(str,"Compressible File Type %s"
-									,cfg.fcomp[i]->ext);
+								snprintf(str, sizeof str, "Compressible File Type %s", cfg.fcomp[i]->ext);
 								getar(str,cfg.fcomp[i]->arstr);
 								break;
 						}
@@ -1126,6 +1128,7 @@ void xfer_opts()
 							}
 							memset(cfg.prot[0],0,sizeof(prot_t));
 							cfg.prot[0]->mnemonic='?';
+							cfg.prot[0]->misc = PROT_NATIVE;
 						} else {
 							for(j=cfg.total_prots;j>i;j--)
 								cfg.prot[j]=cfg.prot[j-1];
@@ -1217,7 +1220,7 @@ void xfer_opts()
 									,cfg.prot[i]->name,sizeof(cfg.prot[i]->name)-1,K_EDIT);
 								break;
 							case 2:
-								sprintf(str,"Protocol %s",cfg.prot[i]->name);
+								snprintf(str, sizeof str, "Protocol %s",cfg.prot[i]->name);
 								getar(str,cfg.prot[i]->arstr);
 								break;
 							case 3:
