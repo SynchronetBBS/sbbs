@@ -61,3 +61,6 @@ $(XPDEV-MT_SHLIB_BUILD): $(MTOBJS) | $(MTOBJODIR)
 	@echo Creating $@
 	$(QUIET)$(MKSHLIB) $(LDFLAGS) $(MTOBJS) $(SHLIBOPTS) -o $@
 
+xpprintf_test: xpprintf.c $(DEPS)
+	@echo Linking $@
+	$(QUIET)$(CC) $(CFLAGS) $(MT_CFLAGS) -DXP_PRINTF_TEST $< -o $@ $(LDFLAGS) $(MT_LDFLAGS) $(XPDEV-MT_LIB_BUILD) -lm $(XPDEV-MT_LIBS)

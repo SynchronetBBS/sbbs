@@ -68,9 +68,89 @@ int asprintf(char **strptr, const char *format, ...)
 /* Maximum length of a format specifier including the % */
 #define MAX_FORMAT_LEN	256
 
+struct arg_table_entry {
+	int type;
+	union {
+		int int_type;
+		unsigned uint_type;
+		long long_type;
+		unsigned long ulong_type;
+#if defined(XP_PRINTF_TYPE_LONGLONG)
+		long long longlong_type;
+#endif
+#if defined(XP_PRINTF_TYPE_ULONGLONG)
+		unsigned long long ulonglong_type;
+#endif
+		char *charp_type;
+		double double_type;
+		long double longdouble_type;
+		void *voidp_type;
+#if 0
+		intmax_t intmax_type;
+		uintmax_t uintmax_type;
+		ptrdiff_t ptrdiff_type;
+#endif
+		size_t size_type;
+	};
+};
+
 void xp_asprintf_free(char *format)
 {
 	free(format);
+}
+
+int xp_printf_get_next(char *format)
+{
+	char buf[6];
+	size_t bufpos = 0;
+	int j = 1;
+	long l;
+
+	if (!*(size_t *)format)
+		return (-1);
+	char *p = format + *(size_t *)format;
+	if (*p != '%')
+		return(-1);
+	p++;
+
+	while (j) {
+		switch(*p) {
+			case '0':
+				if (j > 1)
+					buf[bufpos++] = *p++;
+				else
+					j = 0;
+				break;
+			case '1':
+			case '2':
+			case '3':
+			case '4':
+			case '5':
+			case '6':
+			case '7':
+			case '8':
+			case '9':
+				j = 2;
+				buf[bufpos++] = *p++;
+				if (bufpos == sizeof(buf))
+					return -1;
+				break;
+			case '$':
+				buf[bufpos++] = 0;
+				j = 0;
+				break;
+			default:
+				j = 0;
+				break;
+		}
+	}
+	if (*p == '$' && bufpos) {
+		l = strtol(buf, NULL, 10);
+		if (l > 0 && l < 100000)
+			return l;
+		return -1;
+	}
+	return 0;
 }
 
 int xp_printf_get_type(const char *format)
@@ -86,6 +166,41 @@ int xp_printf_get_type(const char *format)
 	if(*p!='%')
 		return(0);
 	p++;
+
+	/*
+	 * Skip field specifier (zero or one)
+	 * Do not allow a leading zero
+	 */
+	j = 1;
+	while (j) {
+		switch(*p) {
+			case '0':
+				if (j > 1)
+					p++;
+				else
+					j = 0;
+				break;
+			case '1':
+			case '2':
+			case '3':
+			case '4':
+			case '5':
+			case '6':
+			case '7':
+			case '8':
+			case '9':
+				p++;
+				j = 2;
+				break;
+			case '$':
+				p++;
+				j = 0;
+				break;
+			default:
+				j = 0;
+				break;
+		}
+	}
 
 	/*
 	 * Skip flags (zero or more)
@@ -289,11 +404,36 @@ int xp_printf_get_type(const char *format)
 }
 
 /*
+ * Search for next non-%% separator and set offset
+ * to zero if none found for wrappers to know when
+ * they're done.
+ */
+static const char *
+find_next_replacement(char *format)
+{
+	/*
+	 * Find the next non %% format, leaving %% as it is
+	 */
+	char *p;
+	for (p = format + *(size_t *)format + 1; *p; p++) {
+		if (*p == '%') {
+			if (*(p + 1) == '%')
+				p++;
+			else
+				break;
+		}
+	}
+	if (!*p)
+		*(size_t *)format = 0;
+	else
+		*(size_t *)format = p - format;
+	return (format);
+}
+
+/*
  * Performs the next replacement in format using the variable
  * specified as the only vararg which is currently the type
  * specified in type (defined in xpprintf.h).
- *
- * Does not currently support the $ argument selector.
  *
  * Currently, the type is not overly useful, but this could be used for
  * automatic type conversions (ie: int to char *).  Right now it just assures
@@ -326,6 +466,7 @@ char* xp_asprintf_next(char *format, int type, ...)
 	char			*entry;
 	char			this_format[MAX_FORMAT_LEN];
 	char			*fmt;
+	char			*fmt_nofield;
 	int				modifier=0;
 	int				correct_type=0;
 	char			num_str[128];		/* More than enough room for a 256-bit int */
@@ -340,8 +481,45 @@ char* xp_asprintf_next(char *format, int type, ...)
 	offset=p-format;
 	format_len=*(size_t *)(format+sizeof(size_t))+sizeof(size_t)*2+1;
 	this_format[0]=0;
-	fmt=this_format;
+	fmt=fmt_nofield=this_format;
 	*(fmt++)=*(p++);
+
+	/*
+	 * Skip field specifier (zero or one)
+	 * Do not allow a leading zero
+	 */
+	j = 1;
+	while (j) {
+		switch(*p) {
+			case '0':
+				if (j > 1)
+					*(fmt++)=*(p++);
+				else
+					j = 0;
+				break;
+			case '1':
+			case '2':
+			case '3':
+			case '4':
+			case '5':
+			case '6':
+			case '7':
+			case '8':
+			case '9':
+				*(fmt++)=*(p++);
+				j = 2;
+				break;
+			case '$':
+				fmt_nofield = fmt;
+				*(fmt++)='%';
+				p++;
+				j = 0;
+				break;
+			default:
+				j = 0;
+				break;
+		}
+	}
 
 	/*
 	 * Skip flags (zero or more)
@@ -1185,42 +1363,42 @@ char* xp_asprintf_next(char *format, int type, ...)
 	switch(type) {
 		case XP_PRINTF_TYPE_CHAR:	/* Also includes char and short */
 		case XP_PRINTF_TYPE_INT:	/* Also includes char and short */
-			j=asprintf(&entry, this_format, i);
+			j=asprintf(&entry, fmt_nofield, i);
 			break;
 		case XP_PRINTF_TYPE_UINT:	/* Also includes char and short */
-			j=asprintf(&entry, this_format, ui);
+			j=asprintf(&entry, fmt_nofield, ui);
 			break;
 		case XP_PRINTF_TYPE_LONG:
-			j=asprintf(&entry, this_format, l);
+			j=asprintf(&entry, fmt_nofield, l);
 			break;
 		case XP_PRINTF_TYPE_ULONG:
-			j=asprintf(&entry, this_format, ul);
+			j=asprintf(&entry, fmt_nofield, ul);
 			break;
 #if defined(XP_PRINTF_TYPE_LONGLONG)
 		case XP_PRINTF_TYPE_LONGLONG:
-			j=asprintf(&entry, this_format, ll);
+			j=asprintf(&entry, fmt_nofield, ll);
 			break;
 		case XP_PRINTF_TYPE_ULONGLONG:
-			j=asprintf(&entry, this_format, ull);
+			j=asprintf(&entry, fmt_nofield, ull);
 			break;
 #endif
 		case XP_PRINTF_TYPE_CHARP:
 			if(cp==NULL)
-				j=asprintf(&entry, this_format, "<null>");
+				j=asprintf(&entry, fmt_nofield, "<null>");
 			else
-				j=asprintf(&entry, this_format, cp);
+				j=asprintf(&entry, fmt_nofield, cp);
 			break;
 		case XP_PRINTF_TYPE_DOUBLE:
-			j=asprintf(&entry, this_format, d);
+			j=asprintf(&entry, fmt_nofield, d);
 			break;
 		case XP_PRINTF_TYPE_LONGDOUBLE:
-			j=asprintf(&entry, this_format, ld);
+			j=asprintf(&entry, fmt_nofield, ld);
 			break;
 		case XP_PRINTF_TYPE_VOIDP:
-			j=asprintf(&entry, this_format, pntr);
+			j=asprintf(&entry, fmt_nofield, pntr);
 			break;
 		case XP_PRINTF_TYPE_SIZET:
-			j=asprintf(&entry, this_format, s);
+			j=asprintf(&entry, fmt_nofield, s);
 			break;
 		default:
 			j = -1;
@@ -1332,63 +1510,269 @@ char* xp_asprintf_end(char *format, size_t *lenret)
 	return(format);
 }
 
+static struct arg_table_entry *
+build_arg_table(const char *format, va_list va)
+{
+	char	*next;
+	va_list wva;
+	unsigned maxarg = 0;
+	static struct arg_table_entry *ret;
+
+	// First, count arguments...
+	next=xp_asprintf_start(format);
+	if(next==NULL)
+		return(NULL);
+	int curpos = 0;
+	while(*(size_t *)next) {
+		int newpos = xp_printf_get_next(next);
+		if (newpos == -1) {
+			free(next);
+			return(NULL);
+		}
+		if (newpos > 0 && newpos != (curpos + 1))
+			curpos = newpos;
+		else
+			curpos++;
+		if (curpos > maxarg)
+			maxarg = curpos;
+		find_next_replacement(next);
+	}
+	free(next);
+
+	// Now, allocate the table...
+	ret = calloc(maxarg, sizeof(*ret));
+	if (ret == NULL)
+		return NULL;
+
+	// Now go through again and get the types
+	next=xp_asprintf_start(format);
+	if(next==NULL) {
+		free(ret);
+		return(NULL);
+	}
+	curpos = 0;
+	while(*(size_t *)next) {
+		int newpos = xp_printf_get_next(next);
+		if (newpos == -1) {
+			free(next);
+			free(ret);
+			return(NULL);
+		}
+		if (newpos > 0 && newpos != (curpos + 1))
+			curpos = newpos;
+		else
+			curpos++;
+		int type = xp_printf_get_type(next);
+		if (type == XP_PRINTF_TYPE_AUTO) {
+			free(next);
+			free(ret);
+			return NULL;
+		}
+		ret[curpos - 1].type = type;
+		find_next_replacement(next);
+	}
+	free(next);
+
+	// And finally, get all the values...
+	va_copy(wva, va);
+	for (int i = 0; i < maxarg; i++) {
+		switch(ret[i].type) {
+			case XP_PRINTF_TYPE_CHAR:
+			case XP_PRINTF_TYPE_INT:
+				ret[i].int_type = va_arg(wva, int);
+				break;
+			case XP_PRINTF_TYPE_UINT:
+				ret[i].uint_type = va_arg(wva, unsigned);
+				break;
+			case XP_PRINTF_TYPE_LONG:
+				ret[i].long_type = va_arg(wva, long);
+				break;
+			case XP_PRINTF_TYPE_ULONG:
+				ret[i].ulong_type = va_arg(wva, unsigned long);
+				break;
+#ifdef XP_PRINTF_TYPE_LONGLONG
+			case XP_PRINTF_TYPE_LONGLONG:
+				ret[i].longlong_type = va_arg(wva, long long);
+				break;
+#endif
+#ifdef XP_PRINTF_TYPE_ULONGLONG
+			case XP_PRINTF_TYPE_ULONGLONG:
+				ret[i].ulonglong_type = va_arg(wva, unsigned long long);
+				break;
+#endif
+			case XP_PRINTF_TYPE_CHARP:
+				ret[i].charp_type = va_arg(wva, char *);
+				break;
+			case XP_PRINTF_TYPE_DOUBLE:
+				ret[i].double_type = va_arg(wva, double);
+				break;
+			case XP_PRINTF_TYPE_LONGDOUBLE:
+				ret[i].longdouble_type = va_arg(wva, long double);
+				break;
+			case XP_PRINTF_TYPE_VOIDP:
+				ret[i].voidp_type = va_arg(wva, void *);
+				break;
+			case XP_PRINTF_TYPE_SIZET:
+				ret[i].size_type = va_arg(wva, size_t);
+				break;
+			default:
+				va_end(wva);
+				free(ret);
+				return NULL;
+		}
+	}
+	va_end(wva);
+	return ret;
+}
+
 char* xp_vasprintf(const char *format, va_list va)
 {
 	char	*working;
 	char	*next;
 	int		type;
+	int curpos;
+	int newpos;
+	va_list wva;
+	struct arg_table_entry *atable = NULL;
 
 	next=xp_asprintf_start(format);
 	if(next==NULL)
 		return(NULL);
 	working=next;
+	va_copy(wva, va);
+	curpos = 1;
 	while(*(size_t *)working) {
-		type=xp_printf_get_type(working);
-		switch(type) {
-			case 0:
+		newpos = xp_printf_get_next(working);
+		if (atable == NULL) {
+			if (newpos == -1) {
+				va_end(wva);
 				free(working);
 				return(NULL);
-			case XP_PRINTF_TYPE_CHAR:
-			case XP_PRINTF_TYPE_INT:	/* Also includes char and short */
-				next=xp_asprintf_next(working, type, va_arg(va, int));
-				break;
-			case XP_PRINTF_TYPE_UINT:	/* Also includes char and short */
-				next=xp_asprintf_next(working, type, va_arg(va, unsigned int));
-				break;
-			case XP_PRINTF_TYPE_LONG:
-				next=xp_asprintf_next(working, type, va_arg(va, long));
-				break;
-			case XP_PRINTF_TYPE_ULONG:
-				next=xp_asprintf_next(working, type, va_arg(va, unsigned long));
-				break;
-#if defined(XP_PRINTF_TYPE_LONGLONG)
-			case XP_PRINTF_TYPE_LONGLONG:
-				next=xp_asprintf_next(working, type, va_arg(va, long long));
-				break;
-			case XP_PRINTF_TYPE_ULONGLONG:
-				next=xp_asprintf_next(working, type, va_arg(va, unsigned long long));
-				break;
-#endif
-			case XP_PRINTF_TYPE_CHARP:
-				next=xp_asprintf_next(working, type, va_arg(va, char *));
-				break;
-			case XP_PRINTF_TYPE_DOUBLE:
-				next=xp_asprintf_next(working, type, va_arg(va, double));
-				break;
-			case XP_PRINTF_TYPE_LONGDOUBLE:
-				next=xp_asprintf_next(working, type, va_arg(va, long double));
-				break;
-			case XP_PRINTF_TYPE_VOIDP:
-				next=xp_asprintf_next(working, type, va_arg(va, void *));
-				break;
-			case XP_PRINTF_TYPE_SIZET:
-				next=xp_asprintf_next(working, type, va_arg(va, size_t));
-				break;
+			}
+			if (newpos > 0 && newpos != curpos) {
+				va_end(wva);
+				va_copy(wva, va);
+				atable = build_arg_table(format, va);
+				if (atable == NULL) {
+					free(working);
+					return NULL;
+				}
+				continue;
+			}
+			else
+				curpos++;
+			type=xp_printf_get_type(working);
+			switch(type) {
+				case 0:
+					va_end(wva);
+					free(working);
+					return(NULL);
+				case XP_PRINTF_TYPE_CHAR:
+				case XP_PRINTF_TYPE_INT:	/* Also includes char and short */
+					next=xp_asprintf_next(working, type, va_arg(wva, int));
+					break;
+				case XP_PRINTF_TYPE_UINT:	/* Also includes char and short */
+					next=xp_asprintf_next(working, type, va_arg(wva, unsigned int));
+					break;
+				case XP_PRINTF_TYPE_LONG:
+					next=xp_asprintf_next(working, type, va_arg(wva, long));
+					break;
+				case XP_PRINTF_TYPE_ULONG:
+					next=xp_asprintf_next(working, type, va_arg(wva, unsigned long));
+					break;
+	#if defined(XP_PRINTF_TYPE_LONGLONG)
+				case XP_PRINTF_TYPE_LONGLONG:
+					next=xp_asprintf_next(working, type, va_arg(wva, long long));
+					break;
+				case XP_PRINTF_TYPE_ULONGLONG:
+					next=xp_asprintf_next(working, type, va_arg(wva, unsigned long long));
+					break;
+	#endif
+				case XP_PRINTF_TYPE_CHARP:
+					next=xp_asprintf_next(working, type, va_arg(wva, char *));
+					break;
+				case XP_PRINTF_TYPE_DOUBLE:
+					next=xp_asprintf_next(working, type, va_arg(wva, double));
+					break;
+				case XP_PRINTF_TYPE_LONGDOUBLE:
+					next=xp_asprintf_next(working, type, va_arg(wva, long double));
+					break;
+				case XP_PRINTF_TYPE_VOIDP:
+					next=xp_asprintf_next(working, type, va_arg(wva, void *));
+					break;
+				case XP_PRINTF_TYPE_SIZET:
+					next=xp_asprintf_next(working, type, va_arg(wva, size_t));
+					break;
+			}
 		}
-		if(next==NULL)
+		else {
+			if (newpos == -1) {
+				free(atable);
+				free(working);
+				return(NULL);
+			}
+			if (newpos > 0 && newpos != curpos)
+				curpos = newpos;
+			else
+				curpos++;
+			// Use atable
+			type = atable[curpos - 1].type;
+			switch(type) {
+				case 0:
+					free(atable);
+					free(working);
+					return(NULL);
+				case XP_PRINTF_TYPE_CHAR:
+				case XP_PRINTF_TYPE_INT:	/* Also includes char and short */
+					next=xp_asprintf_next(working, type, atable[curpos - 1].int_type);
+					break;
+				case XP_PRINTF_TYPE_UINT:	/* Also includes char and short */
+					next=xp_asprintf_next(working, type, atable[curpos - 1].uint_type);
+					break;
+				case XP_PRINTF_TYPE_LONG:
+					next=xp_asprintf_next(working, type, atable[curpos - 1].long_type);
+					break;
+				case XP_PRINTF_TYPE_ULONG:
+					next=xp_asprintf_next(working, type, atable[curpos - 1].ulong_type);
+					break;
+#if defined(XP_PRINTF_TYPE_LONGLONG)
+				case XP_PRINTF_TYPE_LONGLONG:
+					next=xp_asprintf_next(working, type, atable[curpos - 1].longlong_type);
+					break;
+#endif
+#if defined(XP_PRINTF_TYPE_ULONGLONG)
+				case XP_PRINTF_TYPE_ULONGLONG:
+					next=xp_asprintf_next(working, type, atable[curpos - 1].ulonglong_type);
+					break;
+#endif
+				case XP_PRINTF_TYPE_CHARP:
+					next=xp_asprintf_next(working, type, atable[curpos - 1].charp_type);
+					break;
+				case XP_PRINTF_TYPE_DOUBLE:
+					next=xp_asprintf_next(working, type, atable[curpos - 1].double_type);
+					break;
+				case XP_PRINTF_TYPE_LONGDOUBLE:
+					next=xp_asprintf_next(working, type, atable[curpos - 1].longdouble_type);
+					break;
+				case XP_PRINTF_TYPE_VOIDP:
+					next=xp_asprintf_next(working, type, atable[curpos - 1].voidp_type);
+					break;
+				case XP_PRINTF_TYPE_SIZET:
+					next=xp_asprintf_next(working, type, atable[curpos - 1].size_type);
+					break;
+			}
+		}
+		if(next==NULL) {
+			if (atable == NULL)
+				va_end(wva);
+			free(atable);
 			return(NULL);
+		}
 		working=next;
 	}
+	if (atable == NULL)
+		va_end(wva);
+	free(atable);
 	next=xp_asprintf_end(working, NULL);
 	if(next==NULL) {
 		free(working);
@@ -1427,6 +1811,11 @@ int main(int argc, char *argv[])
 	p=xp_asprintf("%%%%%*.*f %% %%%ss %cs %*.*lu",3,3,123.123456789,"%llutesting%",32,3,3,123);
 	printf("%s\n",p);
 	free(p);
+
+	p=xp_asprintf("%3$d %1$d %d",2, 3, 1);
+	printf("%s\n",p);
+	free(p);
+
 	if(argc < 2)
 		return(1);
 

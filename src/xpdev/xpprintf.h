@@ -50,7 +50,7 @@
 #define XP_PRINTF_TYPE_PTRDIFF		14	/* Not currently implemented */
 #define XP_PRINTF_TYPE_SIZET		15
 
-#define XP_PRINTF_CONVERT		(1<<31)	/* OR with type to request a conversion - Not implemented */
+#define XP_PRINTF_CONVERT		(1<<31)	/* OR with type to request a conversion to format-specified type */
 
 #if defined(__cplusplus)
 extern "C" {
