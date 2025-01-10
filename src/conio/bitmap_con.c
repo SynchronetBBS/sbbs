@@ -1392,11 +1392,18 @@ bitmap_movetext_screen(int x, int y, int tox, int toy, int direction, int height
 		if (screena.toprow < 0)
 			screena.toprow += screena.screenheight;
 
+		/*
+		 * Set up to move bits that were *not* moved back to
+		 * where they should have stayed.
+		 */
 		if (direction == -1)
 			direction = 1;
 		else
 			direction = -1;
 		height = vstat.rows - height;
+		// If everything was moved, there's no lines to move back
+		if (height <= y - toy)
+			return;
 		int otoy = toy;
 		toy = vstat.rows - (y - toy);
 		y = toy - (y - otoy);
