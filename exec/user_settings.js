@@ -251,9 +251,9 @@ while(bbs.online && !js.terminated) {
 					&& archivetypes.indexOf(file_cfg.compressor[code].extension) === -1)
 					archivetypes.push(file_cfg.compressor[code].extension);
 			}
-					
+
 			for (var i = 0; i < archivetypes.length; i++) {
-                console.uselect(i
+		                console.uselect(i
 					,bbs.text(bbs.text.ArchiveTypeHeading)
 					,archivetypes[i]);
 				if (archivetypes[i] === thisuser.temp_file_ext)
@@ -356,7 +356,7 @@ while(bbs.online && !js.terminated) {
 				break;
 			}
 			thisuser.netmail = email;
-			
+
 			if (thisuser.netmail.length > 0
 				&& (system.settings & SYS_FWDTONET)
 				&& bbs.text(bbs.text.ForwardMailQ).length > 0
@@ -415,7 +415,7 @@ while(bbs.online && !js.terminated) {
 				break;
 			var term = (user.number == thisuser.number) ?
 				console.term_supports() : thisuser.settings;
-			
+
 			if (term&(USER_AUTOTERM|USER_ANSI) && !(term & USER_PETSCII)) {
 				thisuser.settings |= USER_COLOR;
 				thisuser.settings &= ~USER_ICE_COLOR;
@@ -430,9 +430,15 @@ while(bbs.online && !js.terminated) {
 			if (console.aborted)
 				break;
 			if (term & USER_ANSI) {
-				if (bbs.text(bbs.text.MouseTerminalQ).length && console.yesno(bbs.text(bbs.text.MouseTerminalQ)))
-					thisuser.settings |= USER_MOUSE;
-				else if (!console.aborted)
+				if (bbs.text(bbs.text.MouseTerminalQ).length) {
+					if(term & USER_MOUSE) {
+						if (!console.yesno(bbs.text(bbs.text.MouseTerminalQ)) && !console.aborted)
+							thisuser.settings &= ~USER_MOUSE;
+					} else {
+						if (!console.noyes(bbs.text(bbs.text.MouseTerminalQ)) && !console.aborted)
+							thisuser.settings |= USER_MOUSE;
+					}
+				} else if (!console.aborted)
 					thisuser.settings &= ~USER_MOUSE;
 			}
 			if (console.aborted)
