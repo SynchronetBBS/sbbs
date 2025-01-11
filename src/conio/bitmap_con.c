@@ -671,7 +671,8 @@ draw_char_row(struct blockstate *bs, struct charstate *cs, uint32_t y)
 	for(unsigned x = 0; x < vstat.charwidth; x++) {
 		unsigned bitnum = x & 0x07;
 		if (bs->expand && x == bs->font_data_width) {
-			if (cs->gexpand)
+			// The comparison with x is to silence Coverity false-positive.
+			if (cs->gexpand && x)
 				fbb = cs->font[cs->fontoffset - 1] & (0x80 >> ((x - 1) & 7));
 			else
 				fbb = 0;
@@ -1764,6 +1765,7 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 	pthread_mutex_lock(&screenlock);
 	if (ex > screena.screenwidth || ey > screena.screenheight) {
 		pthread_mutex_unlock(&screenlock);
+		pthread_mutex_unlock(&vstatlock);
 		return 0;
 	}
 
