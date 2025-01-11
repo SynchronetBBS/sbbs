@@ -37,8 +37,12 @@ if(retval) {
 }
 
 var platform = system.platform.toLowerCase();
-if(system.architecture=="x64")
-	platform += "-x64";
+if(platform != "win32") {
+	if(system.architecture=="x64")
+		platform += "-x64";
+	else
+		platform += ("-" + system.architecture);
+}
 var archive;
 var archive_cmd;
 var cleanup;
@@ -72,7 +76,10 @@ if(platform=="win32") {
 		" -add -dir -max " + archive;
 	cleanup="rmdir /s /q ";
 } else {
-	archive="sbbs_src.tgz";
+	if(platform == "linux-x64")
+		archive = "sbbs_src.tgz";
+	else
+		archive = "sbbs_src-" + platform + ".tgz";
 	archive_cmd="tar --exclude=*output.txt --exclude=" + exclude_dirs.join(" --exclude=") +
 		" --exclude=3rdp/win32.release" +
 		" --exclude-vcs" +
@@ -112,8 +119,11 @@ if(platform=="win32") {
 																,"> " + build_output]);
 } else {	/* Unix */
 	builds.unshift(["src/sbbs3"			,"make GIT=yes gitinfo"]);
-	builds.push(["src/sbbs3"			,"cov-build --dir ../../cov-int make RELEASE=1 all" ,"2> " + build_output]);
-	builds.push(["src/sbbs3"			,"make RELEASE=1 gtkutils"	,"2> " + build_output]);
+	if(platform == "linux-x64") {
+		builds.push(["src/sbbs3"		,"cov-build --dir ../../cov-int make RELEASE=1 all" ,"2> " + build_output]);
+		builds.push(["src/sbbs3"		,"make RELEASE=1 gtkutils"	,"2> " + build_output]);
+	} else
+		builds.push(["src/sbbs3"		,"make RELEASE=1 all"		,"2> " + build_output]);
 }
 
 var win32_dist
@@ -138,9 +148,9 @@ var win32_dist
 var nix_dist
 	= [ "README.TXT",
 		"FILE_ID.DIZ",
-		"src/sbbs3/gcc.*.exe.release/*",
-		"src/sbbs3/gcc.*.lib.release/*",
-		"src/sbbs3/*/gcc.*.exe.release/*",
+		"src/sbbs3/*.*.exe.release/*",
+		"src/sbbs3/*.*.lib.release/*",
+		"src/sbbs3/*/*.*.exe.release/*",
 	];
 
 chdir(temp_dir);
@@ -237,10 +247,7 @@ system.exec("git checkout -b dailybuild_" + platform);
 system.exec("git merge master");
 system.exec("git push --set-upstream origin dailybuild_" + platform);
 
-var dest = file_area.dir["sbbs"].path+archive;
-log(LOG_INFO,format("Copying %s to %s",archive,dest));
-if(!file_copy(archive,dest))
-	log(LOG_ERR,format("!ERROR copying %s to %s",archive,dest));
+update_file(archive);
 
 var file = new File("README.TXT");
 if(file.open("wt")) {
@@ -278,24 +285,35 @@ if(platform=="win32") {
 	cmd_line = "pkzip25 -add " + archive 
 		+ " -exclude=v4upgrade.exe " + win32_dist.join(" ");
 } else {
-	cmd_line = 'tar czvf sbbs-cov.tgz cov-int && ' +
-			'curl --form token=' + cov_token + ' ' +
-			'--form email=rob@synchro.net ' +
-			'--form file=@sbbs-cov.tgz ' +
-			'--form version=' + system.version + system.revision + ' ' +
-			'--form description="Synchronet for ' + system.platform + '" ' +
-			'https://scan.coverity.com/builds?project=Synchronet';
-	log(LOG_INFO, "Executing: " + cmd_line);
-	system.exec(cmd_line);
-	archive = "sbbs_dev.tgz";
+	if(platform == "linux-x64") {
+		cmd_line = 'tar czvf sbbs-cov.tgz cov-int && ' +
+				'curl --form token=' + cov_token + ' ' +
+				'--form email=rob@synchro.net ' +
+				'--form file=@sbbs-cov.tgz ' +
+				'--form version=' + system.version + system.revision + ' ' +
+				'--form description="Synchronet for ' + system.platform + '" ' +
+				'https://scan.coverity.com/builds?project=Synchronet';
+		log(LOG_INFO, "Executing: " + cmd_line);
+		system.exec(cmd_line);
+	}
+	if(platform == "linux-x64")
+		archive = "sbbs_dev.tgz";
+	else
+		archive = "sbbs_dev-" + platform + ".tgz";
 	cmd_line = "pax -s :.*/::p -wzf " + archive + " " + nix_dist.join(" ");
 }
 
 if(!js.terminated) {
 	log(LOG_INFO, "Executing: " + cmd_line);
 	system.exec(cmd_line);
+	update_file(archive);
+}
+bail(0);
+/* end */
 
-	dest = file_area.dir["sbbs"].path+archive;
+function update_file(archive)
+{
+	var dest = file_area.dir["sbbs"].path+archive;
 
 	log(LOG_INFO,format("Copying %s to %s",archive,dest));
 	if(!file_copy(archive,dest))
@@ -310,8 +328,6 @@ if(!js.terminated) {
 		}
 	}
 }
-bail(0);
-/* end */
 
 function bail(code)
 {
