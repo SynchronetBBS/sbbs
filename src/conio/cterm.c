@@ -5542,6 +5542,9 @@ CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int b
 	const unsigned char *buf = (unsigned char *)vbuf;
 	unsigned char ch[2];
 	unsigned char prn[BUFSIZE];
+	unsigned char *prnpos;
+	const unsigned char *prnlast = &prn[BUFSIZE-sizeof(cterm->escbuf)-1];
+	size_t prntmp;
 	int i, j, k, x, y;
 	int sx, sy, ex, ey;
 	struct text_info	ti;
@@ -5602,12 +5605,14 @@ CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int b
 			if(cterm->log==CTERM_LOG_RAW && cterm->logfile != NULL)
 				fwrite(buf, buflen, 1, cterm->logfile);
 			prn[0]=0;
+			prnpos = prn;
 			if (cterm->emulation == CTERM_EMULATION_PRESTEL)
 				prestel_get_state(cterm);
 			for(j=0;j<buflen;j++) {
-				if(ustrlen(prn) >= sizeof(prn)-sizeof(cterm->escbuf)) {
+				if(prnpos >= prnlast) {
 					uctputs(cterm, prn);
 					prn[0]=0;
+					prnpos = prn;
 				}
 				ch[0]=buf[j];
 				if (cterm->string && !cterm->sequence) {
@@ -5624,6 +5629,7 @@ CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int b
 								if (ch[0] == 27) {
 									uctputs(cterm, prn);
 									prn[0]=0;
+									prnpos = prn;
 									cterm->sequence=1;
 									break;
 								}
@@ -5857,15 +5863,21 @@ CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int b
 						switch(legal_sequence(cterm->escbuf, sizeof(cterm->escbuf)-1)) {
 							case SEQ_BROKEN:
 								/* Broken sequence detected */
-								ustrcat(prn,"\033");
-								ustrcat(prn,cterm->escbuf);
+								*prnpos++ = '\033';
+								*prnpos = 0;
+								prntmp = strlen(cterm->escbuf);
+								memcpy(prnpos, cterm->escbuf, prntmp + 1);
+								prnpos += prntmp;
 								cterm->escbuf[0]=0;
 								cterm->sequence=0;
 								if(ch[0]=='\033') {	/* Broken sequence followed by a legal one! */
-									if(prn[0])	/* Don't display the ESC */
-										prn[ustrlen(prn)-1]=0;
+									if(prn[0]) {	/* Don't display the ESC */
+										prnpos--;
+										*prnpos = 0;
+									}
 									uctputs(cterm, prn);
 									prn[0]=0;
+									prnpos = prn;
 									cterm->sequence=1;
 								}
 								break;
@@ -6353,6 +6365,7 @@ CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int b
 							case 0: // NUL
 								uctputs(cterm, prn);
 								prn[0]=0;
+								prnpos = prn;
 								break;
 							case 5: // ENQ
 								prestel_send_memory(cterm, 0, retbuf, retsize);
@@ -6360,26 +6373,31 @@ CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int b
 							case 8: // APB (Active Position Packward)
 								uctputs(cterm, prn);
 								prn[0]=0;
+								prnpos = prn;
 								prestel_move(cterm, -1, 0);
 								break;
 							case 9: // APF (Active Position Forward)
 								uctputs(cterm, prn);
 								prn[0]=0;
+								prnpos = prn;
 								prestel_move(cterm, 1, 0);
 								break;
 							case 10: // APD (Active Position Down)
 								uctputs(cterm, prn);
 								prn[0]=0;
+								prnpos = prn;
 								prestel_move(cterm, 0, 1);
 								break;
 							case 11: // APU (Active Position Up)
 								uctputs(cterm, prn);
 								prn[0]=0;
+								prnpos = prn;
 								prestel_move(cterm, 0, -1);
 								break;
 							case 12: // CS (Clear Screen)
 								uctputs(cterm, prn);
 								prn[0]=0;
+								prnpos = prn;
 								cio_api.options &= ~(CONIO_OPT_PRESTEL_REVEAL);
 								prestel_new_line(cterm);
 								cterm_clearscreen(cterm, (char)cterm->attr);
@@ -6396,11 +6414,13 @@ CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int b
 							case 27: // ESC
 								uctputs(cterm, prn);
 								prn[0]=0;
+								prnpos = prn;
 								cterm->sequence=1;
 								break;
 							case 30: // APH (Active Position Home)
 								uctputs(cterm, prn);
 								prn[0]=0;
+								prnpos = prn;
 								GOTOXY(CURR_MINX, CURR_MINY);
 								prestel_new_line(cterm);
 								break;
@@ -6421,7 +6441,8 @@ CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int b
 											cterm->prestel_last_mosaic = ch[0];
 										}
 									}
-									ustrcat(prn,ch);
+									*prnpos++ = ch[0];
+									*prnpos = 0;
 								}
 								else if ((buf[j] >= 0x80) && (buf[j] <= 0x9f)) {
 									// "Raw" C1 control
@@ -6433,6 +6454,8 @@ CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int b
 					else {	/* ANSI-BBS */
 						if(cterm->doorway_char) {
 							uctputs(cterm, prn);
+							prn[0] = 0;
+							prnpos = prn;
 							tmpvc[0].ch = ch[0];
 							tmpvc[0].legacy_attr=cterm->attr;
 							tmpvc[0].fg = cterm->fg_color;
@@ -6456,6 +6479,7 @@ CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int b
 									lastch = 0;
 									uctputs(cterm, prn);
 									prn[0]=0;
+									prnpos = prn;
 									if(cterm->log==CTERM_LOG_ASCII && cterm->logfile != NULL)
 										fputs("\x07", cterm->logfile);
 									if(!cterm->quiet) {
@@ -6470,6 +6494,7 @@ CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int b
 									lastch = 0;
 									uctputs(cterm, prn);
 									prn[0]=0;
+									prnpos = prn;
 									if(cterm->log==CTERM_LOG_ASCII && cterm->logfile != NULL)
 										fputs("\x0c", cterm->logfile);
 									cterm_clearscreen(cterm, (char)cterm->attr);
@@ -6478,11 +6503,13 @@ CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int b
 								case 27:		/* ESC */
 									uctputs(cterm, prn);
 									prn[0]=0;
+									prnpos = prn;
 									cterm->sequence=1;
 									break;
 								default:
 									lastch = ch[0];
-									ustrcat(prn,ch);
+									*prnpos++ = ch[0];
+									*prnpos = 0;
 							}
 						}
 					}
@@ -6490,6 +6517,7 @@ CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int b
 			}
 			uctputs(cterm, prn);
 			prn[0]=0;
+			prnpos = prn;
 			break;
 	}
 	ABS_XY(&cterm->xpos, &cterm->ypos);
