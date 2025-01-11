@@ -1008,17 +1008,19 @@ static __inline void both_screens(int blink, struct bitmap_screen** current, str
 }
 
 static bool
-same_cell(struct vmem_cell *c1, struct vmem_cell *c2)
+same_cell(struct vmem_cell *bitmap_cell, struct vmem_cell *c2)
 {
-	if (c1->ch != c2->ch)
+	if (bitmap_cell->ch != c2->ch)
 		return false;
-	if (c1->bg != c2->bg)
+	if (bitmap_cell->bg != c2->bg)
 		return false;
-	if (c1->fg != c2->fg)
+	if (bitmap_cell->fg != c2->fg)
 		return false;
-	if (c1->font != c2->font)
+	if (bitmap_cell->fg & 0x04000000)	// Dirty.
 		return false;
-	if (c1->legacy_attr != c2->legacy_attr)
+	if (bitmap_cell->font != c2->font)
+		return false;
+	if (bitmap_cell->legacy_attr != c2->legacy_attr)
 		return false;
 	return true;
 }
@@ -1699,6 +1701,12 @@ int bitmap_attr2palette(uint8_t attr, uint32_t *fgp, uint32_t *bgp)
 int bitmap_setpixel(uint32_t x, uint32_t y, uint32_t colour)
 {
 	update_from_vmem(FALSE);
+	pthread_mutex_lock(&vstatlock);
+	size_t offset = y / vstat.charheight * vstat.cols + x / vstat.charwidth;
+	struct vstat_vmem *vmem_ptr = get_vmem(&vstat);
+	bitmap_drawn[offset].bg |= 0x04000000;
+	vmem_ptr->vmem[offset].bg |= 0x04000000;
+	release_vmem(vmem_ptr);
 	pthread_mutex_lock(&screenlock);
 	if (x < screena.screenwidth && y < screena.screenheight) {
 		if (screena.rect->data[pixel_offset(&screena, x, y)] != colour) {
@@ -1714,6 +1722,7 @@ int bitmap_setpixel(uint32_t x, uint32_t y, uint32_t colour)
 		}
 	}
 	pthread_mutex_unlock(&screenlock);
+	pthread_mutex_unlock(&vstatlock);
 
 	return 1;
 }
@@ -1750,6 +1759,8 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 	}
 
 	update_from_vmem(FALSE);
+	pthread_mutex_lock(&vstatlock);
+	struct vstat_vmem *vmem_ptr = get_vmem(&vstat);
 	pthread_mutex_lock(&screenlock);
 	if (ex > screena.screenwidth || ey > screena.screenheight) {
 		pthread_mutex_unlock(&screenlock);
@@ -1758,8 +1769,12 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 
 	for (y = sy; y <= ey; y++) {
 		pos = pixels->width*(y-sy+y_off)+x_off;
+		size_t offset;
 		if (mask == NULL) {
 			for (x = sx; x <= ex; x++) {
+				offset = y / vstat.charheight * vstat.cols + x / vstat.charwidth;
+				bitmap_drawn[offset].bg |= 0x04000000;
+				vmem_ptr->vmem[offset].bg |= 0x04000000;
 				if (screena.rect->data[pixel_offset(&screena, x, y)] != pixels->pixels[pos]) {
 					screena.rect->data[pixel_offset(&screena, x, y)] = pixels->pixels[pos];
 					screena.update_pixels = 1;
@@ -1782,6 +1797,9 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 		else {
 			mpos = mask->width * (y - sy + my_off) + mx_off;
 			for (x = sx; x <= ex; x++) {
+				offset = y / vstat.charheight * vstat.cols + x / vstat.charwidth;
+				bitmap_drawn[offset].bg |= 0x04000000;
+				vmem_ptr->vmem[offset].bg |= 0x04000000;
 				mask_byte = mpos / 8;
 				mask_bit = mpos % 8;
 				mask_bit = 0x80 >> mask_bit;
@@ -1809,6 +1827,8 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 		}
 	}
 	pthread_mutex_unlock(&screenlock);
+	release_vmem(vmem_ptr);
+	pthread_mutex_unlock(&vstatlock);
 
 	return 1;
 }
