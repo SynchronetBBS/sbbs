@@ -1757,6 +1757,26 @@ static void free_sequence(struct esc_seq * seq)
  * Returns true if the sequence is legal so far
  */
 
+static size_t
+range_span(const char *s, char min, char max)
+{
+	size_t ret = 0;
+
+	while (s[ret] >= min && s[ret] <= max)
+		ret++;
+	return ret;
+}
+
+static size_t
+range_span_exclude(char exclude, const char *s, char min, char max)
+{
+	size_t ret = 0;
+
+	while ((s[ret] >= min && s[ret] <= max) && s[ret] != exclude)
+		ret++;
+	return ret;
+}
+
 static enum {
 	SEQ_BROKEN,
 	SEQ_INCOMPLETE,
@@ -1772,7 +1792,7 @@ static enum {
 		goto incomplete;
 
 	/* Check that it's part of C1 set, part of the Independent control functions, or an nF sequence type (ECMA 35)*/
-	intermediate_len = strspn(&seq[0], " !\"#$%&'()*+,-./");
+	intermediate_len = range_span(&seq[0], ' ', '/');
 	if (seq[intermediate_len] == 0)
 		goto incomplete;
 	if (seq[intermediate_len] < 0x30 || seq[intermediate_len] > 0x7e)
@@ -1783,14 +1803,14 @@ static enum {
 		size_t parameter_len;
 
 		if (seq[1] >= '<' && seq[1] <= '?')
-			parameter_len = strspn(&seq[1], "0123456789:;<=>?");
+			parameter_len = range_span(&seq[1], '0', '?');
 		else
-			parameter_len = strspn(&seq[1], "0123456789:;");
+			parameter_len = range_span(&seq[1], '0', ';');
 
 		if (seq[1+parameter_len] == 0)
 			goto incomplete;
 
-		intermediate_len = strspn(&seq[1+parameter_len], " !\"#$%&'()*+,-./");
+		intermediate_len = range_span(&seq[1+parameter_len], ' ', '/');
 		if (seq[1+parameter_len+intermediate_len] == 0)
 			goto incomplete;
 
@@ -1816,7 +1836,7 @@ static struct esc_seq *parse_sequence(const char *seq)
 	ret->param_count = -1;
 
 	/* Check that it's part of C1 set, part of the Independent control functions, or an nF sequence type (ECMA 35)*/
-	intermediate_len = strspn(&seq[0], " !\"#$%&'()*+,-./");
+	intermediate_len = range_span(&seq[0], ' ', '/');
 	if (seq[intermediate_len] == 0)
 		goto fail;
 
@@ -1831,14 +1851,14 @@ static struct esc_seq *parse_sequence(const char *seq)
 	if (seq[0] == '[') {
 		size_t parameter_len;
 
-		parameter_len = strspn(&seq[1], "0123456789:;<=>?");
+		parameter_len = range_span(&seq[1], '0', '?');
 		ret->param_str = malloc(parameter_len + 1);
 		if (!ret->param_str)
 			goto fail;
 		memcpy(ret->param_str, &seq[1], parameter_len);
 		ret->param_str[parameter_len] = 0;
 
-		intermediate_len = strspn(&seq[1+parameter_len], " !\"#$%&'()*+,-./");
+		intermediate_len = range_span(&seq[1+parameter_len], ' ', '/');
 		if (seq[1+parameter_len+intermediate_len] < 0x40 || seq[1+parameter_len+intermediate_len] > 0x7e)
 			goto fail;
 		ret->ctrl_func = malloc(intermediate_len + 2);
@@ -5313,7 +5333,7 @@ static void parse_sixel_intro(struct cterminal *cterm)
 	if (cterm->sixel != SIXEL_POSSIBLE)
 		return;
 
-	i = strspn(cterm->strbuf, "0123456789;");
+	i = range_span_exclude(':', cterm->strbuf, '0', ';');
 
 	if (i >= cterm->strbuflen)
 		return;
@@ -5405,7 +5425,7 @@ static void parse_macro_intro(struct cterminal *cterm)
 	if (cterm->macro != MACRO_POSSIBLE)
 		return;
 
-	i = strspn(cterm->strbuf, "0123456789;");
+	i = range_span_exclude(':', cterm->strbuf, '0', ';');
 
 	if (i >= cterm->strbuflen)
 		return;
