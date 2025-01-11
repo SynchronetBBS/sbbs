@@ -148,7 +148,7 @@ long listDettach(link_list_t* list)
 	listLock(list);
 	if((refs=--list->refs)==0) {
 		listUnlock(list);
-		// converity[sleep:SUPPRESS]
+		// coverity[sleep:SUPPRESS]
 		listFree(list);
 	}
 	else
@@ -792,7 +792,7 @@ long listRemoveNodes(link_list_t* list, list_node_t* node, long max, bool free_d
 
 	for(count=0; node!=NULL && count<max; node=next_node, count++) {
 		next_node = node->next;
-		// converity[double_lock:SUPPRESS]
+		// coverity[double_lock:SUPPRESS]
 		if(listRemoveNode(list, node, free_data)==NULL)
 			break;
 	}
