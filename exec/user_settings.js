@@ -340,12 +340,19 @@ while(bbs.online && !js.terminated) {
 			if (val < 0)
 				break;
 			thisuser.screen_columns = val;
+			if (user.number === thisuser.number) {
+				user.screen_columns = thisuser.screen_columns;
+				console.getdimensions();
+			}
 			console.putmsg(bbs.text(bbs.text.HowManyRows));
 			val = console.getnum(999,0);
 			if (val < 0)
 				break;
-			if (user.number === thisuser.number)
+			thisuser.screen_rows = val;
+			if (user.number === thisuser.number) {
+				user.screen_rows = thisuser.screen_rows;
 				console.getdimensions();
+			}
 			break;
 		}
 		case 'M':
