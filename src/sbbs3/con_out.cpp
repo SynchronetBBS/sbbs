@@ -1108,12 +1108,11 @@ void sbbs_t::set_output_rate(enum output_rate speed)
 void sbbs_t::getdimensions()
 {
 	if(sys_status & SS_USERON) {
-		if(!ansi_getdims()) {
-			if(useron.rows >= TERM_ROWS_MIN && useron.rows <= TERM_ROWS_MAX)
-				rows = useron.rows;
-			if(useron.cols >= TERM_COLS_MIN && useron.cols <= TERM_COLS_MAX)
-				cols = useron.cols;
-		}
+		ansi_getdims();
+		if(useron.rows >= TERM_ROWS_MIN && useron.rows <= TERM_ROWS_MAX)
+			rows = useron.rows;
+		if(useron.cols >= TERM_COLS_MIN && useron.cols <= TERM_COLS_MAX)
+			cols = useron.cols;
 	}
 }
 
