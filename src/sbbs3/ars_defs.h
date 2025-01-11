@@ -115,6 +115,7 @@ enum {                              /* Access requirement binaries */
 	,AR_ASCII
 	,AR_UTF8
 	,AR_CP437
+	,AR_USERNAME
     };
 
 #endif		/* Don't add anything after this line */

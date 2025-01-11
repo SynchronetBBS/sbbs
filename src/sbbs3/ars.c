@@ -30,6 +30,7 @@ static BOOL ar_string_arg(int artype)
 		case AR_PROT:
 		case AR_HOST:
 		case AR_IP:
+		case AR_USERNAME:
 			return TRUE;	/* These ARS Keywords expect a string argument */
 	}
 	return FALSE;
@@ -550,6 +551,8 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf)
 			artype=AR_SUBCODE;
 		if(artype==AR_DIR && !IS_DIGIT(str[i]))
 			artype=AR_DIRCODE;
+		if(artype==AR_USER && !IS_DIGIT(str[i]))
+			artype=AR_USERNAME;
 
 		if(artype==AR_INVALID)
 			artype=AR_LEVEL;
@@ -630,6 +633,7 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf)
 			case AR_HOST:
 			case AR_IP:
 			case AR_TERM:
+			case AR_USERNAME:
 				/* String argument */
 				for(n=0;n<maxlen
 					&& str[i]
@@ -785,6 +789,7 @@ char *decompile_ars(uchar *ars, int len)
 
 				break;
 			case AR_USER:
+			case AR_USERNAME:
 				*(out++)='$';
 				*(out++)='U';
 
@@ -1144,6 +1149,7 @@ char *decompile_ars(uchar *ars, int len)
 			case AR_HOST:
 			case AR_IP:
 			case AR_TERM:
+			case AR_USERNAME:
 				if(not)
 					*(out++)='!';
 				if(equals)

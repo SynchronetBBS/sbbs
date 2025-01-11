@@ -2190,6 +2190,14 @@ static bool ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user, client_t* client)
 					result=!not;
 				(*ptrptr)++;
 				break;
+			case AR_USERNAME:
+				if(user != NULL && matchusername(cfg, user->alias, (char *)*ptrptr))
+					result=!not;
+				else
+					result=not;
+				while(*(*ptrptr))
+					(*ptrptr)++;
+				break;
 			case AR_GROUP:
 				if(user==NULL)
 					result=not;

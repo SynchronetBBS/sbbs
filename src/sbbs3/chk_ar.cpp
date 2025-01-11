@@ -324,6 +324,16 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 					noaccess_val=i; 
 				}
 				break;
+			case AR_USERNAME:
+				if(!matchusername(&cfg, user->alias, (char*)*ptrptr))
+					result=_not;
+				else
+					result=!_not;
+				while(*(*ptrptr))
+					(*ptrptr)++;
+				if(!result)
+					noaccess_str=text[NoAccessUser];
+				break;
 			case AR_GROUP:
 				if((equal
 					&& (cursubnum>=cfg.total_subs

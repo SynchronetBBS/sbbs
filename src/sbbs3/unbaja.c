@@ -936,6 +936,7 @@ char *decompile_ars(uchar *ars, int len)
 				
 				break;
 			case AR_USER:
+			case AR_USERNAME:
 				*(out++)='$';
 				*(out++)='U';
 				
@@ -1292,6 +1293,7 @@ char *decompile_ars(uchar *ars, int len)
 			case AR_PROT:
 			case AR_HOST:
 			case AR_IP:
+			case AR_USERNAME:
 				if(not)
 					*(out++)='!';
 				if(equals)
