@@ -6,6 +6,7 @@ Support Shell connections on Windows 10+
 Windows builds now include a .com (console) and a .exe (GUI) binary
 Better socket disconnect detection in SSH and telnets sessions
 Fix X11 mode scaling and fullscreen with minimal X servers
+Improve output performance up to 18 times
 
 Version 1.4a
 ------------
