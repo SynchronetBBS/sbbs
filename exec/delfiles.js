@@ -78,8 +78,9 @@ for(var i in dir_list) {
 		}
 		log("Removed " + removed + " offline files");
 	}
-	if(base.max_age) {
-		log("Purging old files, imposing max age of " + base.max_age + " days");
+	var max_age = base.max_age || dir.max_age;
+	if(max_age) {
+		log("Purging old files, imposing max age of " + max_age + " days");
 		var list = base.get_list(FileBase.DETAIL.NORM, /* sort: */false);
 		var removed = 0;
 		for(var j = 0; j < list.length; j++) {
@@ -94,7 +95,7 @@ for(var i in dir_list) {
 				age_desc = "last downloaded";
 			}
 			var file_age = Math.floor((now - t) / (24 * 60 * 60));
-			if(file_age > base.max_age) {
+			if(file_age > max_age) {
 				log("Removing " + base.get_path(file.name) + " " + age_desc + " " + file_age + " days ago");
 				if(options.test)
 					removed++;
@@ -106,13 +107,14 @@ for(var i in dir_list) {
 				}
 			}
 		}
-		log("Removed " + removed + " of " + list.length + " files due to age of " + base.max_age + " days");
+		log("Removed " + removed + " of " + list.length + " files due to age of " + max_age + " days");
 	}
-	if(base.max_files) {
-		log("Purging excess files, imposing max files limit of " + base.max_files);
+	var max_files = base.max_files || dir.max_files;
+	if(max_files) {
+		log("Purging excess files, imposing max files limit of " + max_files);
 		var list = base.get_list(FileBase.DETAIL.MIN, /* sort: */false);
 		var removed = 0;
-		var excess = list.length - base.max_files;
+		var excess = list.length - max_files;
 		for(var j = 0; j < list.length && removed < excess; j++) {
 			var file = list[j];
 			if(exclude.indexOf(file.name.toUpperCase()) >= 0)
@@ -127,7 +129,7 @@ for(var i in dir_list) {
 					removed++;
 			}
 		}
-		log("Removed " + removed + " of " + list.length + " files due to max file limit of " + base.max_files);
+		log("Removed " + removed + " of " + list.length + " files due to max file limit of " + max_files);
 	}
 
 	base.close();
