@@ -172,8 +172,7 @@ enum parsed_vpath {
 	PARSED_VPATH_DIR,
 	PARSED_VPATH_FULL
 };
-DLLEXPORT enum parsed_vpath parse_vpath(scfg_t*, const char* vpath, user_t*, client_t*, bool include_upload_only
-											,int* libnum, int* dirnum, char** filename);
+DLLEXPORT enum parsed_vpath parse_vpath(scfg_t*, const char* vpath, int* libnum, int* dirnum, char** filename);
 
 /* user .ini file access */
 DLLEXPORT bool	user_get_property(scfg_t*, unsigned user_number, const char* section, const char* key, char* value, size_t maxlen);

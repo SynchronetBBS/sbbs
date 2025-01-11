@@ -4359,8 +4359,7 @@ int lookup_user(scfg_t* cfg, link_list_t* list, const char *inname)
 }
 
 /* Parse a virtual filebase path of the form "[/]lib[/dir][/filename]" (e.g. main/games/filename.ext) */
-enum parsed_vpath parse_vpath(scfg_t* cfg, const char* vpath, user_t* user, client_t* client, bool include_upload_only
-	,int* lib, int* dir, char** filename)
+enum parsed_vpath parse_vpath(scfg_t* cfg, const char* vpath, int* lib, int* dir, char** filename)
 {
 	char*	p;
 	char*	tp;
@@ -4383,9 +4382,7 @@ enum parsed_vpath parse_vpath(scfg_t* cfg, const char* vpath, user_t* user, clie
 	tp=strchr(p,'/');
 	if(tp) *tp=0;
 	for(*lib = 0; *lib < cfg->total_libs; (*lib)++) {
-		if(!chk_ar(cfg,cfg->lib[*lib]->ar,user,client))
-			continue;
-		if(!stricmp(cfg->lib[*lib]->vdir,p))
+		if(stricmp(cfg->lib[*lib]->vdir,p) == 0)
 			break;
 	}
 	if(*lib >= cfg->total_libs)
@@ -4403,10 +4400,7 @@ enum parsed_vpath parse_vpath(scfg_t* cfg, const char* vpath, user_t* user, clie
 	for(*dir = 0; *dir < cfg->total_dirs; (*dir)++) {
 		if(cfg->dir[*dir]->lib != *lib)
 			continue;
-		if((!include_upload_only || (*dir != cfg->sysop_dir && *dir != cfg->upload_dir))
-			&& !chk_ar(cfg,cfg->dir[*dir]->ar,user,client))
-			continue;
-		if(!stricmp(cfg->dir[*dir]->vdir,p))
+		if(stricmp(cfg->dir[*dir]->vdir,p) == 0)
 			break;
 	}
 	if(*dir >= cfg->total_dirs) 

@@ -1472,10 +1472,13 @@ static int getdir_from_vpath(scfg_t* cfg, const char* vpath, user_t* user, clien
 	int lib = -1;
 	char* filename = NULL;
 
-	enum parsed_vpath result = parse_vpath(cfg, vpath, user, client, include_upload_only, &lib, &dir, &filename);
+	enum parsed_vpath result = parse_vpath(cfg, vpath, &lib, &dir, &filename);
 
-	if(result == PARSED_VPATH_DIR || result == PARSED_VPATH_FULL)
-		return dir;
+	if(result == PARSED_VPATH_DIR || result == PARSED_VPATH_FULL) {
+		if((include_upload_only && (dir == cfg->sysop_dir || dir == cfg->upload_dir))
+			|| user_can_access_dir(cfg, dir, user, client))
+			return dir;
+	}
 	return -1;
 }
 

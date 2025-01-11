@@ -2013,7 +2013,6 @@ static bool check_ars(http_session_t * session)
 		/* No auth required, allow */
 		return(true);
 	}
-
 	/* Require a password */
 	i = find_login_id(&scfg, session->req.auth.username);
 	if(i==0) {
@@ -2082,6 +2081,17 @@ static bool check_ars(http_session_t * session)
 			break;
 		}
 		default:
+			break;
+	}
+
+	switch(session->parsed_vpath) {
+		case PARSED_VPATH_LIB:
+			if(!user_can_access_lib(&scfg, session->libnum, &thisuser, &session->client))
+				return false;
+			break;
+		case PARSED_VPATH_DIR:
+			if(!user_can_access_dir(&scfg, session->file.dir, &thisuser, &session->client))
+				return false;
 			break;
 	}
 
@@ -3264,8 +3274,7 @@ static bool get_request_headers(http_session_t * session)
 static enum parsed_vpath resolve_vpath(http_session_t* session, char* vpath)
 {
 	char* filename = NULL;
-	enum parsed_vpath result = parse_vpath(&scfg, vpath + strlen(startup->file_vpath_prefix), &session->user, &session->client
-		,/* include_upload_only: */false, &session->libnum, &session->file.dir, &filename);
+	enum parsed_vpath result = parse_vpath(&scfg, vpath + strlen(startup->file_vpath_prefix), &session->libnum, &session->file.dir, &filename);
 	if(result != PARSED_VPATH_FULL)
 		return result;
 	char path[MAX_PATH + 1];
