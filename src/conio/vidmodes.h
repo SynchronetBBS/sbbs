@@ -71,6 +71,10 @@ struct  video_params {
 
 struct vstat_vmem {
 	unsigned refcount;
+	int top_row;
+	int width;
+	int height;
+	size_t count;
 	struct vmem_cell *vmem;
 };
 
@@ -128,6 +132,14 @@ extern struct dac_colors dac_default[TOTAL_DAC_SIZE];
 extern char vga_font_bitmap[4096];
 extern char vga_font_bitmap14[3584];
 extern char vga_font_bitmap8[2048];
+extern struct vmem_cell * vmem_cell_ptr(struct vstat_vmem *vm, int x, int y);
+extern struct vmem_cell * vmem_next_ptr(struct vstat_vmem *vm, struct vmem_cell *c);
+int vmem_cell_offset(struct vstat_vmem *vm, int x, int y);
+int vmem_next_offset(struct vstat_vmem *vm, int off);
+struct vmem_cell * vmem_next_row_ptr(struct vstat_vmem *vm, struct vmem_cell *c);
+struct vmem_cell * vmem_prev_row_ptr(struct vstat_vmem *vm, struct vmem_cell *c);
+int vmem_next_row_offset(struct vstat_vmem *vm, int off);
+int vmem_prev_row_offset(struct vstat_vmem *vm, int off);
 
 #ifdef __cplusplus
 extern "C" {

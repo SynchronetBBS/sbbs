@@ -326,13 +326,89 @@ static struct vstat_vmem *new_vmem(int cols, int rows, bool palette)
 	if (ret == NULL)
 		return ret;
 	ret->refcount = 1;
-	ret->vmem = malloc(cols * rows * sizeof(ret->vmem[0]));
+	ret->top_row = 0;
+	ret->width = cols;
+	ret->height = rows;
+	ret->count = cols * rows;
+	ret->vmem = malloc(ret->count * sizeof(ret->vmem[0]));
 	if (ret->vmem == NULL) {
 		free(ret);
 		return NULL;
 	}
 
 	return ret;
+}
+
+struct vmem_cell *
+vmem_cell_ptr(struct vstat_vmem *vm, int x, int y)
+{
+	int off = y * vm->width + x;
+	off += vm->top_row * vm->width;
+	if (off >= vm->count)
+		off -= vm->count;
+	return &vm->vmem[off];
+}
+
+int
+vmem_cell_offset(struct vstat_vmem *vm, int x, int y)
+{
+	int off = y * vm->width + x;
+	off += vm->top_row * vm->width;
+	if (off >= vm->count)
+		off -= vm->count;
+	return off;
+}
+
+struct vmem_cell *
+vmem_next_ptr(struct vstat_vmem *vm, struct vmem_cell *c)
+{
+	if (c == &vm->vmem[vm->count - 1])
+		return &vm->vmem[0];
+	return ++c;
+}
+
+struct vmem_cell *
+vmem_next_row_ptr(struct vstat_vmem *vm, struct vmem_cell *c)
+{
+	c += vm->width;
+	if (c >= &vm->vmem[vm->count])
+		c -= vm->count;
+	return c;
+}
+
+struct vmem_cell *
+vmem_prev_row_ptr(struct vstat_vmem *vm, struct vmem_cell *c)
+{
+	c -= vm->width;
+	if (c < &vm->vmem[0])
+		c += vm->count;
+	return c;
+}
+
+int
+vmem_next_offset(struct vstat_vmem *vm, int off)
+{
+	if (off == vm->count - 1)
+		return 0;
+	return ++off;
+}
+
+int
+vmem_next_row_offset(struct vstat_vmem *vm, int off)
+{
+	off += vm->width;
+	if (off >= vm->count)
+		off -= vm->count;
+	return off;
+}
+
+int
+vmem_prev_row_offset(struct vstat_vmem *vm, int off)
+{
+	off -= vm->width;
+	if (off < 0)
+		off += vm->count;
+	return off;
 }
 
 int load_vmode(struct video_stats *vs, int mode)
