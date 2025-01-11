@@ -1441,18 +1441,12 @@ bitmap_movetext_screen(int x, int y, int tox, int toy, int direction, int height
 		if (screena.toprow < 0)
 			screena.toprow += screena.screenheight;
 
-		/*
-		 * Set up to move bits that were *not* moved back to
-		 * where they should have stayed.
-		 */
-		if (direction == -1)
-			direction = 1;
-		else
-			direction = -1;
 		height = vstat.rows - height;
-		int moved = y - toy;
 		toy = vstat.rows - (height - 1);
-		y = toy - moved;
+		// Fill the bits with impossible data so they're redrawn
+		memset(&bitmap_drawn[(toy - 1) * vstat.cols], 0x04, sizeof(*bitmap_drawn) * height * vstat.cols);
+		pthread_mutex_unlock(&screenlock);
+		return;
 	}
 
 	int maxpos = screena.screenwidth * screena.screenheight;
