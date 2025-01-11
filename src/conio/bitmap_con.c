@@ -2183,6 +2183,8 @@ int bitmap_drv_init_mode(int mode, int *width, int *height, int maxwidth, int ma
 			bitmap_attr2palette_locked(vstat.currattr, &vstat.vmem->vmem[i].fg, &vstat.vmem->vmem[i].bg);
 		}
 	}
+	// Clear the bitmap draw cache
+	FREE_AND_NULL(bitmap_drawn);
 
 	if (init_screens(width, height))
 		return -1;
