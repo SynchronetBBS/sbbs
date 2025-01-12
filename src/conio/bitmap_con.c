@@ -1837,7 +1837,6 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 			for (x = sx; x <= ex; x++) {
 				struct vmem_cell *vc = vmem_cell_ptr(vmem_ptr, x / vstat.charwidth, y / vstat.charheight);
 				vc->bg |= 0x04000000;
-				vc->bg |= 0x04000000;
 				if (screena.rect->data[pixel_offset(&screena, x, y)] != pixels->pixels[pos]) {
 					screena.rect->data[pixel_offset(&screena, x, y)] = pixels->pixels[pos];
 					screena.update_pixels = 1;
@@ -1861,7 +1860,6 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 			mpos = mask->width * (y - sy + my_off) + mx_off;
 			for (x = sx; x <= ex; x++) {
 				struct vmem_cell *vc = vmem_cell_ptr(vmem_ptr, x / vstat.charwidth, y / vstat.charheight);
-				vc->bg |= 0x04000000;
 				vc->bg |= 0x04000000;
 				mask_byte = mpos / 8;
 				mask_bit = mpos % 8;
