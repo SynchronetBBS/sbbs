@@ -2093,6 +2093,8 @@ static bool check_ars(http_session_t * session)
 			if(!user_can_access_dir(&scfg, session->file.dir, &thisuser, &session->client))
 				return false;
 			break;
+		default:
+			break;
 	}
 
 	if(!chk_ars(&scfg, startup->login_ars, &thisuser, &session->client)) {
