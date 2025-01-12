@@ -1766,9 +1766,9 @@ int bitmap_setpixel(uint32_t x, uint32_t y, uint32_t colour)
 	update_from_vmem(FALSE);
 	do_rwlock_wrlock(&vstatlock);
 	struct vstat_vmem *vmem_ptr = get_vmem(&vstat);
-	struct vmem_cell *vc = vmem_cell_ptr(vmem_ptr, x / vstat.charwidth, y / vstat.charheight);
-	vc->bg |= 0x04000000;
-	vc->bg |= 0x04000000;
+	int off = vmem_cell_offset(vmem_ptr, x / vstat.charwidth, y / vstat.charheight);
+	vmem_ptr->vmem[off].bg |= 0x04000000;
+	bitmap_drawn[off].bg |= 0x04000000;
 	release_vmem(vmem_ptr);
 	pthread_mutex_lock(&screenlock);
 	if (x < screena.screenwidth && y < screena.screenheight) {
@@ -1835,8 +1835,9 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 		pos = pixels->width*(y-sy+y_off)+x_off;
 		if (mask == NULL) {
 			for (x = sx; x <= ex; x++) {
-				struct vmem_cell *vc = vmem_cell_ptr(vmem_ptr, x / vstat.charwidth, y / vstat.charheight);
-				vc->bg |= 0x04000000;
+				int off = vmem_cell_offset(vmem_ptr, x / vstat.charwidth, y / vstat.charheight);
+				vmem_ptr->vmem[off].bg |= 0x04000000;
+				bitmap_drawn[off].bg |= 0x04000000;
 				if (screena.rect->data[pixel_offset(&screena, x, y)] != pixels->pixels[pos]) {
 					screena.rect->data[pixel_offset(&screena, x, y)] = pixels->pixels[pos];
 					screena.update_pixels = 1;
@@ -1859,8 +1860,9 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 		else {
 			mpos = mask->width * (y - sy + my_off) + mx_off;
 			for (x = sx; x <= ex; x++) {
-				struct vmem_cell *vc = vmem_cell_ptr(vmem_ptr, x / vstat.charwidth, y / vstat.charheight);
-				vc->bg |= 0x04000000;
+				int off = vmem_cell_offset(vmem_ptr, x / vstat.charwidth, y / vstat.charheight);
+				vmem_ptr->vmem[off].bg |= 0x04000000;
+				bitmap_drawn[off].bg |= 0x04000000;
 				mask_byte = mpos / 8;
 				mask_bit = mpos % 8;
 				mask_bit = 0x80 >> mask_bit;
