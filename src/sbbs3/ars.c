@@ -547,12 +547,21 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf)
 
 		arg_expected=FALSE;
 
-		if(artype==AR_SUB && !IS_DIGIT(str[i]))
-			artype=AR_SUBCODE;
-		if(artype==AR_DIR && !IS_DIGIT(str[i]))
-			artype=AR_DIRCODE;
-		if(artype==AR_USER && !IS_DIGIT(str[i]))
-			artype=AR_USERNAME;
+		// Auto-detect AR keyword base on parameter class (numeric or alpha)
+		switch(artype) {
+			case AR_SUB:
+			case AR_SUBCODE:
+				artype = IS_DIGIT(str[i]) ? AR_SUB : AR_SUBCODE;
+				break;
+			case AR_DIR:
+			case AR_DIRCODE:
+				artype = IS_DIGIT(str[i]) ? AR_DIR : AR_DIRCODE;
+				break;
+			case AR_USER:
+			case AR_USERNAME:
+				artype = IS_DIGIT(str[i]) ? AR_USER : AR_USERNAME;
+				break;
+		}
 
 		if(artype==AR_INVALID)
 			artype=AR_LEVEL;
