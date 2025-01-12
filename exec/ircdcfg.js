@@ -1065,8 +1065,8 @@ if (Config_Filename.match(/[.][Cc][Oo][Nn][Ff]$/)) {
     Config_Filename = Config_Filename.replace(/[.][Cc][Oo][Nn][Ff]$/, ".ini");
 }
 
+var ctx = new uifc.list.CTX;
 while (!Main_Menu_Exit && !js.terminated) {
-    var ctx = new uifc.list.CTX;
     var result = uifc.list(
         WIN_ORG | WIN_MID | WIN_ACT,
         "Main Menu",
