@@ -851,7 +851,6 @@ bitmap_draw_vmem(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 				bs.pixeloffset -= bs.maxpix;
 		}
 		screenb.update_pixels = 1;
-		int coff = vmem_cell_offset(vm, 0, 0);
 		int foff = 0;
 		for (size_t vy = 0; vy < vheight; vy++) {
 			int coff = vmem_cell_offset(vm, sx - 1, sy - 1 + vy);
