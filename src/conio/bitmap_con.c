@@ -1478,7 +1478,7 @@ bitmap_movetext_screen(struct vstat_vmem *vm, int x, int y, int tox, int toy, in
 		int bdoff = vmem_cell_offset(vm, 0, toy - 1);
 		for (int vy = 0; vy < height; vy++) {
 			memset(&bitmap_drawn[bdoff], 0x04, sizeof(*bitmap_drawn) * vstat.cols);
-			bdoff = vmem_next_offset(vm, bdoff);
+			bdoff = vmem_next_row_offset(vm, bdoff);
 		}
 		pthread_mutex_unlock(&screenlock);
 		return;
