@@ -118,4 +118,47 @@ enum {                              /* Access requirement binaries */
 	,AR_USERNAME
     };
 
+enum ar_type {
+	 AR_BOOL
+	,AR_NUM
+	,AR_STRING
+};
+
+static inline enum ar_type ar_type(int artype)
+{
+	switch(artype) {
+		case AR_RIP:
+		case AR_WIP:
+		case AR_ANSI:
+		case AR_PETSCII:
+		case AR_ASCII:
+		case AR_UTF8:
+		case AR_CP437:
+		case AR_DOS:
+		case AR_OS2:
+		case AR_UNIX:
+		case AR_LINUX:
+		case AR_WIN32:
+		case AR_LOCAL:
+		case AR_ACTIVE:
+		case AR_INACTIVE:
+		case AR_DELETED:
+		case AR_EXPERT:
+		case AR_SYSOP:
+		case AR_GUEST:
+		case AR_QNODE:
+		case AR_QUIET:
+			return AR_BOOL;
+		case AR_SUBCODE:
+		case AR_DIRCODE:
+		case AR_SHELL:
+		case AR_PROT:
+		case AR_HOST:
+		case AR_IP:
+		case AR_USERNAME:
+			return AR_STRING;
+	}
+	return AR_NUM;
+}
+
 #endif		/* Don't add anything after this line */

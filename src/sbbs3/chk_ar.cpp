@@ -70,33 +70,8 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 		}
 
 		artype=(**ptrptr);
-		switch(artype) {
-			case AR_ANSI:				/* No arguments */
-			case AR_PETSCII:
-			case AR_ASCII:
-			case AR_UTF8:
-			case AR_CP437:
-			case AR_RIP:
-			case AR_WIP:
-			case AR_LOCAL:
-			case AR_EXPERT:
-			case AR_SYSOP:
-			case AR_GUEST:
-			case AR_QNODE:
-			case AR_QUIET:
-			case AR_OS2:
-			case AR_DOS:
-			case AR_WIN32:
-			case AR_UNIX:
-			case AR_LINUX:
-			case AR_ACTIVE:
-			case AR_INACTIVE:
-			case AR_DELETED:
-				break;
-			default:
-				(*ptrptr)++;
-				break; 
-		}
+		if(ar_type(artype) != AR_BOOL)
+			(*ptrptr)++;
 
 		n=(**ptrptr);
 		i=(*(short *)*ptrptr);

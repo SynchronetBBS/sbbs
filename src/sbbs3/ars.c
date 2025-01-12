@@ -21,19 +21,9 @@
 
 #include "ars_defs.h"
 
-static BOOL ar_string_arg(int artype)
+static inline BOOL ar_string_arg(int artype)
 {
-	switch(artype) {
-		case AR_SUBCODE:
-		case AR_DIRCODE:
-		case AR_SHELL:
-		case AR_PROT:
-		case AR_HOST:
-		case AR_IP:
-		case AR_USERNAME:
-			return TRUE;	/* These ARS Keywords expect a string argument */
-	}
-	return FALSE;
+	return ar_type(artype) == AR_STRING;
 }
 
 /* Converts ASCII ARS string into binary ARS buffer */
@@ -490,36 +480,14 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf)
 
 			if(n!=i)		/* one of the above */
 			{
-				arg_expected=TRUE;
-				switch(artype) {
-					case AR_RIP:
-					case AR_ANSI:
-					case AR_PETSCII:
-					case AR_ASCII:
-					case AR_UTF8:
-					case AR_CP437:
-					case AR_DOS:
-					case AR_OS2:
-					case AR_UNIX:
-					case AR_LINUX:
-					case AR_WIN32:
-					case AR_LOCAL:
-					case AR_ACTIVE:
-					case AR_INACTIVE:
-					case AR_DELETED:
-					case AR_EXPERT:
-					case AR_SYSOP:
-					case AR_GUEST:
-					case AR_QNODE:
-					case AR_QUIET:
-						/* Boolean (No arguments) */
-						if(not)
-							ar[j++]=AR_NOT;
-						not=0;
-						ar[j++]=artype;
-						artype=AR_INVALID;
-						arg_expected=FALSE;
-						break;
+				if(ar_type(artype) == AR_BOOL) {
+					/* Boolean (No arguments) */
+					if(not)
+						ar[j++]=AR_NOT;
+					not=0;
+					ar[j++]=artype;
+					artype=AR_INVALID;
+					arg_expected=FALSE;
 				}
 				continue;
 			}
