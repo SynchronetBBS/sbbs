@@ -1383,7 +1383,7 @@ CIOLIBEXPORT void ciolib_delay(long a)
 CIOLIBEXPORT int ciolib_putch(int ch)
 {
 	unsigned char a1=ch;
-	struct vmem_cell buf[1];
+	struct vmem_cell buf;
 	int i;
 	int old_puttext_can_move=puttext_can_move;
 
@@ -1394,11 +1394,11 @@ CIOLIBEXPORT int ciolib_putch(int ch)
 
 	puttext_can_move=1;
 
-	buf[0].ch=a1;
-	buf[0].legacy_attr=cio_textinfo.attribute;
-	buf[0].fg = ciolib_fg;
-	buf[0].bg = ciolib_bg;
-	buf[0].font = ciolib_attrfont(cio_textinfo.attribute);
+	buf.ch=a1;
+	buf.legacy_attr=cio_textinfo.attribute;
+	buf.fg = ciolib_fg;
+	buf.bg = ciolib_bg;
+	buf.font = ciolib_attrfont(cio_textinfo.attribute);
 
 	switch(a1) {
 		case '\r':
@@ -1413,12 +1413,12 @@ CIOLIBEXPORT int ciolib_putch(int ch)
 		case '\b':
 			if(cio_textinfo.curx>1) {
 				ciolib_gotoxy(cio_textinfo.curx-1,cio_textinfo.cury);
-				buf[0].ch=' ';
+				buf.ch=' ';
 				ciolib_vmem_puttext(cio_textinfo.curx+cio_textinfo.winleft-1
 						,cio_textinfo.cury+cio_textinfo.wintop-1
 						,cio_textinfo.curx+cio_textinfo.winleft-1
 						,cio_textinfo.cury+cio_textinfo.wintop-1
-						,buf);
+						,&buf);
 			}
 			break;
 		case 7:		/* Bell */
@@ -1427,13 +1427,13 @@ CIOLIBEXPORT int ciolib_putch(int ch)
 		case '\t':
 			for(i=0;i<(sizeof(tabs)/sizeof(int));i++) {
 				if(tabs[i]>cio_textinfo.curx) {
-					buf[0].ch=' ';
+					buf.ch=' ';
 					while(cio_textinfo.curx<tabs[i]) {
 						ciolib_vmem_puttext(cio_textinfo.curx+cio_textinfo.winleft-1
 								,cio_textinfo.cury+cio_textinfo.wintop-1
 								,cio_textinfo.curx+cio_textinfo.winleft-1
 								,cio_textinfo.cury+cio_textinfo.wintop-1
-								,buf);
+								,&buf);
 						ciolib_gotoxy(cio_textinfo.curx+1,cio_textinfo.cury);
 						if(cio_textinfo.curx==cio_textinfo.screenwidth)
 							break;
@@ -1456,7 +1456,7 @@ CIOLIBEXPORT int ciolib_putch(int ch)
 						,ciolib_wherey()+cio_textinfo.wintop-1
 						,ciolib_wherex()+cio_textinfo.winleft-1
 						,ciolib_wherey()+cio_textinfo.wintop-1
-						,buf);
+						,&buf);
 				ciolib_wscroll();
 				ciolib_gotoxy(1, cio_textinfo.winbottom-cio_textinfo.wintop+1);
 			}
@@ -1466,7 +1466,7 @@ CIOLIBEXPORT int ciolib_putch(int ch)
 							,ciolib_wherey()+cio_textinfo.wintop-1
 							,ciolib_wherex()+cio_textinfo.winleft-1
 							,ciolib_wherey()+cio_textinfo.wintop-1
-							,buf);
+							,&buf);
 					ciolib_gotoxy(1,cio_textinfo.cury+1);
 				}
 				else {
@@ -1474,7 +1474,7 @@ CIOLIBEXPORT int ciolib_putch(int ch)
 							,ciolib_wherey()+cio_textinfo.wintop-1
 							,ciolib_wherex()+cio_textinfo.winleft-1
 							,ciolib_wherey()+cio_textinfo.wintop-1
-							,buf);
+							,&buf);
 					ciolib_gotoxy(cio_textinfo.curx+1, cio_textinfo.cury);
 				}
 			}
