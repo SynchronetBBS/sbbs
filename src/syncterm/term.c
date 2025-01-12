@@ -4117,6 +4117,7 @@ doterm(struct bbslist *bbs)
 	BYTE              zrqinit[] = {ZDLE, ZHEX, '0', '0', 0};  /* for Zmodem auto-downloads */
 	BYTE              zrinit[] = {ZDLE, ZHEX, '0', '1', 0};   /* for Zmodem auto-uploads */
 	BYTE              zrqbuf[sizeof(zrqinit)];
+	size_t zrqlen;
 	int               inch = NOINP;
 	long double       nextchar = 0;
 	long double       lastchar = 0;
@@ -4130,6 +4131,7 @@ doterm(struct bbslist *bbs)
 
 #ifndef WITHOUT_OOII
 	BYTE              ooii_buf[256];
+	size_t ooii_buf_len;
 	BYTE              ooii_init1[] =
 	    "\xdb\b \xdb\b \xdb\b[\xdb\b[\xdb\b \xdb\bM\xdb\ba\xdb\bi\xdb\bn\xdb\bt\xdb\be\xdb\bn\xdb\ba\xdb\bn\xdb\bc\xdb\be\xdb\b \xdb\bC\xdb\bo\xdb\bm\xdb\bp\xdb\bl\xdb\be\xdb\bt\xdb\be\xdb\b \xdb\b]\xdb\b]\xdb\b \b\r\n\r\n\r\n\x1b[0;0;36mDo you have the Overkill Ansiterm installed? (y/N)  \xe9 ";            /*
                                                                                                                                                                                                                                                                                                                           *
@@ -4199,8 +4201,10 @@ doterm(struct bbslist *bbs)
 	cterm->music_enable = bbs->music;
 	ch[1] = 0;
 	zrqbuf[0] = 0;
+	zrqlen = 0;
 #ifndef WITHOUT_OOII
 	ooii_buf[0] = 0;
+	ooii_buf_len = 0;
 #endif
 #ifdef WITH_JPEG_XL
 	if (cio_api.options & CONIO_OPT_SET_PIXEL)
@@ -4293,11 +4297,10 @@ doterm(struct bbslist *bbs)
 								speedwatch = 0;
 								break;
 						}
-						j = strlen((char *)zrqbuf);
-						if ((inch == zrqinit[j]) || (inch == zrinit[j])) {
-							zrqbuf[j] = inch;
-							zrqbuf[++j] = 0;
-							if (j == sizeof(zrqinit) - 1) {
+						if ((inch == zrqinit[zrqlen]) || (inch == zrinit[zrqlen])) {
+							zrqbuf[zrqlen] = inch;
+							zrqbuf[++zrqlen] = 0;
+							if (zrqlen == sizeof(zrqinit) - 1) {
                                                                 /* Have full sequence (Assumes
                                                                  * zrinit and zrqinit are same
                                                                  * length */
@@ -4310,27 +4313,28 @@ doterm(struct bbslist *bbs)
 								setup_mouse_events(&ms);
 								suspend_rip(false);
 								zrqbuf[0] = 0;
+								zrqlen = 0;
 								remain = 1;
 							}
 						}
 						else {
 							zrqbuf[0] = 0;
+							zrqlen = 0;
 						}
 #ifndef WITHOUT_OOII
 						if (ooii_mode) {
 							if (ooii_buf[0] == 0) {
 								if (inch == 0xab) {
-									ooii_buf[0] = inch;
-									ooii_buf[1] = 0;
+									ooii_buf[ooii_buf_len++] = inch;
+									ooii_buf[ooii_buf_len] = 0;
 									continue;
 								}
 							}
 							else { /* Already have the start of the sequence */
-								j = strlen((char *)ooii_buf);
-								if (j + 1 >= sizeof(ooii_buf))
-									j--;
-								ooii_buf[j++] = inch;
-								ooii_buf[j] = 0;
+								if (ooii_buf_len + 1 >= sizeof(ooii_buf))
+									ooii_buf_len--;
+								ooii_buf[ooii_buf_len++] = inch;
+								ooii_buf[ooii_buf_len] = 0;
 								if (inch == '|') {
 									WRITE_OUTBUF();
 									if (handle_ooii_code(ooii_buf, &ooii_mode,
@@ -4343,38 +4347,41 @@ doterm(struct bbslist *bbs)
 										conn_send(ansi_replybuf,
 										    strlen((char *)ansi_replybuf), 0);
 									ooii_buf[0] = 0;
+									ooii_buf_len = 0;
 								}
 								continue;
 							}
 						}
 						else {
-							j = strlen((char *)ooii_buf);
-							if (inch == ooii_init1[j]) {
-								ooii_buf[j++] = inch;
-								ooii_buf[j] = 0;
-								if (ooii_init1[j] == 0) {
+							if (inch == ooii_init1[ooii_buf_len]) {
+								ooii_buf[ooii_buf_len++] = inch;
+								ooii_buf[ooii_buf_len] = 0;
+								if (ooii_init1[ooii_buf_len] == 0) {
 									if (strcmp((char *)ooii_buf,
 									    (char *)ooii_init1) == 0) {
 										ooii_mode = 1;
 										xptone_open();
 									}
 									ooii_buf[0] = 0;
+									ooii_buf_len = 0;
 								}
 							}
-							else if (inch == ooii_init2[j]) {
-								ooii_buf[j++] = inch;
-								ooii_buf[j] = 0;
-								if (ooii_init2[j] == 0) {
+							else if (inch == ooii_init2[ooii_buf_len]) {
+								ooii_buf[ooii_buf_len++] = inch;
+								ooii_buf[ooii_buf_len] = 0;
+								if (ooii_init2[ooii_buf_len] == 0) {
 									if (strcmp((char *)ooii_buf,
 									    (char *)ooii_init2) == 0) {
 										ooii_mode = 2;
 										xptone_open();
 									}
 									ooii_buf[0] = 0;
+									ooii_buf_len = 0;
 								}
 							}
 							else {
 								ooii_buf[0] = 0;
+								ooii_buf_len = 0;
 							}
 						}
 #endif /* ifndef WITHOUT_OOII */
