@@ -58,11 +58,13 @@ xp_sem_init(xp_sem_t *sem, int pshared, unsigned int value)
 		goto RETURN;
 	}
 
+#if XP_SEM_VALUE_MAX < UINT_MAX
 	if (value > XP_SEM_VALUE_MAX) {
 		errno = EINVAL;
 		retval = -1;
 		goto RETURN;
 	}
+#endif
 
 	*sem = (xp_sem_t)malloc(sizeof(struct xp_sem));
 	if (*sem == NULL) {
