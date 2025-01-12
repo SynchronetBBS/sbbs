@@ -224,7 +224,7 @@ rwlock_destroy(rwlock_t *lock)
 
 #elif defined(__unix__)
 
-// All macros...
+// All static inline functions
 
 #else
 

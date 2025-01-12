@@ -4,16 +4,51 @@
 #if defined(__unix__)
 
 #include <pthread.h>
+#include <stdbool.h>
+
 typedef pthread_rwlock_t rwlock_t;
 
-#define rwlock_init(lock) (pthread_rwlock_init(lock, NULL) == 0)
-#define rwlock_rdlock(lock) (pthread_rwlock_rdlock(lock) == 0)
-#define rwlock_tryrdlock(lock) (pthread_rwlock_tryrdlock(lock) == 0)
-#define rwlock_wrlock(lock) (pthread_rwlock_wrlock(lock) == 0)
-#define rwlock_trywrlock(lock) (pthread_rwlock_trywrlock(lock) == 0)
-#define rwlock_unlock(lock) (pthread_rwlock_unlock(lock) == 0)
-#define rwlock_destroy(lock) (pthread_rwlock_destroy(lock) == 0)
-#define rwlock_destroy_ign(lock) ((void)pthread_rwlock_destroy(lock))
+static inline bool
+rwlock_init(rwlock_t *lock)
+{
+	return pthread_rwlock_init(lock, NULL) == 0;
+}
+
+static inline bool
+rwlock_rdlock(rwlock_t *lock)
+{
+	return pthread_rwlock_rdlock(lock) == 0;
+}
+
+static inline bool
+rwlock_tryrdlock(rwlock_t *lock)
+{
+	return pthread_rwlock_tryrdlock(lock) == 0;
+}
+
+static inline bool
+rwlock_wrlock(rwlock_t *lock)
+{
+	return pthread_rwlock_wrlock(lock) == 0;
+}
+
+static inline bool
+rwlock_trywrlock(rwlock_t *lock)
+{
+	return pthread_rwlock_trywrlock(lock) == 0;
+}
+
+static inline bool
+rwlock_unlock(rwlock_t *lock)
+{
+	return pthread_rwlock_unlock(lock) == 0;
+}
+
+static inline bool
+rwlock_destroy(rwlock_t *lock)
+{
+	return pthread_rwlock_destroy(lock) == 0;
+}
 
 #elif defined(_WIN32)
 
