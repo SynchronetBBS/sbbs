@@ -110,7 +110,7 @@ static int outstanding_rects;
 
 /* Exported globals */
 
-pthread_rwlock_t		vstatlock;
+rwlock_t		vstatlock;
 
 /* Forward declarations */
 
