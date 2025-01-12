@@ -308,36 +308,43 @@ pty_input_thread(void *args)
 {
 	fd_set rds;
 	int    rd;
-	int    buffered;
-	size_t buffer;
+	size_t buffered;
 	int    i;
 	struct timeval tv;
+	size_t bufsz = 0;
 
 	SetThreadName("PTY Input");
 	conn_api.input_thread_running = 1;
 	while (master != -1 && !conn_api.terminate) {
 		if ((i = waitpid(child_pid, &status, WNOHANG)))
 			break;
-		FD_ZERO(&rds);
-		FD_SET(master, &rds);
-		tv.tv_sec = 0;
-		tv.tv_usec = 100000;
-		rd = select(master + 1, &rds, NULL, NULL, &tv);
-		if (rd == -1) {
-			if (errno == EBADF)
-				break;
-			rd = 0;
+		if (bufsz < BUFFER_SIZE) {
+			FD_ZERO(&rds);
+			FD_SET(master, &rds);
+			tv.tv_sec = 0;
+			if (bufsz)
+				tv.tv_usec = 0;
+			else
+				tv.tv_usec = 100000;
+			rd = select(master + 1, &rds, NULL, NULL, &tv);
+			if (rd == -1) {
+				if (errno == EBADF)
+					break;
+				rd = 0;
+			}
+			if (rd == 1) {
+				rd = read(master, conn_api.rd_buf + bufsz, conn_api.rd_buf_size - bufsz);
+				if (rd <= 0)
+					break;
+				bufsz += rd;
+			}
 		}
-		if (rd == 1) {
-			rd = read(master, conn_api.rd_buf, conn_api.rd_buf_size);
-			if (rd <= 0)
-				break;
-		}
-		buffered = 0;
-		while (buffered < rd && !conn_api.terminate) {
+		if (bufsz > 0) {
 			pthread_mutex_lock(&(conn_inbuf.mutex));
-			buffer = conn_buf_wait_free(&conn_inbuf, rd - buffered, 100);
-			buffered += conn_buf_put(&conn_inbuf, conn_api.rd_buf + buffered, buffer);
+			conn_buf_wait_free(&conn_inbuf, 1, 100);
+			buffered = conn_buf_put(&conn_inbuf, conn_api.rd_buf, bufsz);
+			memmove(conn_api.rd_buf, &conn_api.rd_buf[buffered], bufsz - buffered);
+			bufsz -= buffered;
 			pthread_mutex_unlock(&(conn_inbuf.mutex));
 		}
 	}
