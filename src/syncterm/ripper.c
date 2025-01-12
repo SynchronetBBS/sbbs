@@ -11590,7 +11590,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							handled = true;
 							arg1 = parse_mega(&args[0], 2);
 							arg2 = parse_mega(&args[2], 2);
-							if ((arg1 < 0) || (arg1 > 255))
+							if ((arg1 < 0) || (arg1 > 15))
 								break;
 							if ((arg2 < 0) || (arg2 > 63))
 								break;
@@ -14934,6 +14934,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 										break;
 								}
 								suspend_rip(false);
+								free(uldir);
 							}
 							break;
 					}
