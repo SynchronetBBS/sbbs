@@ -43,14 +43,12 @@ modem_input_thread(void *args)
 			bufsz += rd;
 		}
 		if (bufsz) {
-			while (com != COM_HANDLE_INVALID && buffered < rd && !conn_api.terminate) {
-				pthread_mutex_lock(&(conn_inbuf.mutex));
-				conn_buf_wait_free(&conn_inbuf, 1, 1000);
-				buffered = conn_buf_put(&conn_inbuf, conn_api.rd_buf, bufsz);
-				memmove(conn_api.rd_buf, &conn_api.rd_buf[buffered], bufsz - buffered);
-				bufsz -= buffered;
-				pthread_mutex_unlock(&(conn_inbuf.mutex));
-			}
+			pthread_mutex_lock(&(conn_inbuf.mutex));
+			conn_buf_wait_free(&conn_inbuf, 1, 1000);
+			buffered = conn_buf_put(&conn_inbuf, conn_api.rd_buf, bufsz);
+			memmove(conn_api.rd_buf, &conn_api.rd_buf[buffered], bufsz - buffered);
+			bufsz -= buffered;
+			pthread_mutex_unlock(&(conn_inbuf.mutex));
 		}
 		if (args == NULL) {
 			if ((comGetModemStatus(com) & COM_DCD) == 0)
