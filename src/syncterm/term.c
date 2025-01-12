@@ -2358,10 +2358,10 @@ capture_control(struct bbslist *bbs)
 
 #define WRITE_OUTBUF() \
 	if (outbuf_size > 0) { \
-		cterm_write(cterm, outbuf, outbuf_size, (char *)ansi_replybuf, sizeof(ansi_replybuf), &speed); \
+		size_t retbuf_len = cterm_write(cterm, outbuf, outbuf_size, (char *)ansi_replybuf, sizeof(ansi_replybuf), &speed); \
 		outbuf_size = 0; \
-		if (ansi_replybuf[0]) \
-		conn_send(ansi_replybuf, strlen((char *)ansi_replybuf), 0); \
+		if (retbuf_len) \
+			conn_send(ansi_replybuf, retbuf_len, 0); \
 		updated = true; \
 	}
 

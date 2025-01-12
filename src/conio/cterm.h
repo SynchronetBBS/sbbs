@@ -309,7 +309,7 @@ extern "C" {
 #endif
 
 CIOLIBEXPORT struct cterminal* cterm_init(int height, int width, int xpos, int ypos, int backlines, int backcols, struct vmem_cell *scrollback, int emulation);
-CIOLIBEXPORT char* cterm_write(struct cterminal *cterm, const void *buf, int buflen, char *retbuf, size_t retsize, int *speed);
+CIOLIBEXPORT size_t cterm_write(struct cterminal *cterm, const void *buf, int buflen, char *retbuf, size_t retsize, int *speed);
 CIOLIBEXPORT int cterm_openlog(struct cterminal *cterm, char *logfile, int logtype);
 CIOLIBEXPORT void cterm_closelog(struct cterminal *cterm);
 CIOLIBEXPORT void cterm_end(struct cterminal *cterm, int free_fonts);

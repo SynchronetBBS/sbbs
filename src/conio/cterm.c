@@ -5557,7 +5557,7 @@ prestel_handle_escaped(struct cterminal *cterm, uint8_t ctrl)
 	advance_char(cterm, &x, &y, 1);
 }
 
-CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int buflen, char *retbuf, size_t retsize, int *speed)
+CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int buflen, char *retbuf, size_t retsize, int *speed)
 {
 	const unsigned char *buf = (unsigned char *)vbuf;
 	unsigned char ch[2];
@@ -6561,7 +6561,9 @@ CIOLIBEXPORT char* cterm_write(struct cterminal * cterm, const void *vbuf, int b
 	setfont(orig_fonts[2], FALSE, 3);
 	setfont(orig_fonts[3], FALSE, 4);
 
-	return(retbuf);
+	if (retbuf[0])
+		return strlen(retbuf);
+	return 0;
 }
 
 int cterm_openlog(struct cterminal *cterm, char *logfile, int logtype)
