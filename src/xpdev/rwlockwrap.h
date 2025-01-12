@@ -80,10 +80,11 @@ bool rwlock_wrlock(rwlock_t *lock);
 bool rwlock_trywrlock(rwlock_t *lock);
 bool rwlock_unlock(rwlock_t *lock);
 bool rwlock_destroy(rwlock_t *lock);
-#define rwlock_destroy_ign(lock) ((void)rwlock_destroy(lock))
 
 #else
 #error Not implemented
 #endif
+
+#define rwlock_destroy_ign(lock) ((void)rwlock_destroy(lock))
 
 #endif
