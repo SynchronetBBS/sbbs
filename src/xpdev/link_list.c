@@ -142,13 +142,14 @@ long listDettach(link_list_t* list)
 {
 	int refs;
 
-	if(list==NULL || list->refs<1)
-		return(-1);
-
 	listLock(list);
+	if(list==NULL || list->refs<1) {
+		listUnlock(list);
+		return(-1);
+	}
+
 	if((refs=--list->refs)==0) {
 		listUnlock(list);
-		// coverity[sleep:SUPPRESS]
 		listFree(list);
 	}
 	else
@@ -501,10 +502,12 @@ bool listNodeIsLocked(const list_node_t* node)
 
 bool listLockNode(list_node_t* node)
 {
-	if(node==NULL || (node->flags&LINK_LIST_LOCKED))
-		return(false);
-
 	listLock(node->list);
+	if(node==NULL || (node->flags&LINK_LIST_LOCKED)) {
+		listUnlock(node->list);
+		return(false);
+	}
+
 	node->flags|=LINK_LIST_LOCKED;
 	listUnlock(node->list);
 
@@ -766,7 +769,6 @@ void* listRemoveTaggedNode(link_list_t* list, list_node_tag_t tag, bool free_dat
 
 	listLock(list);
 
-	// coverity[double_lock:SUPPRESS]
 	if((node=listFindTaggedNode(list, tag)) != NULL)
 		data = list_remove_node(list, node, free_data);
 
@@ -792,12 +794,10 @@ long listRemoveNodes(link_list_t* list, list_node_t* node, long max, bool free_d
 
 	for(count=0; node!=NULL && count<max; node=next_node, count++) {
 		next_node = node->next;
-		// coverity[double_lock:SUPPRESS]
 		if(listRemoveNode(list, node, free_data)==NULL)
 			break;
 	}
 
-	// coverity[double_unlock:SUPPRESS]
 	listUnlock(list);
 
 	return(count);
@@ -863,12 +863,14 @@ void listReverse(link_list_t* list)
 	if(list == NULL)
 		return;
 
+	listLock(list);
+
 	node = list->first;
 
-	if(node == NULL)
+	if(node == NULL) {
+		listUnlock(list);
 		return;
-
-	listLock(list);
+	}
 
 	list->last = list->first;
 
