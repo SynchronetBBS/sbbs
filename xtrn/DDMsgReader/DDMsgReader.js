@@ -16820,7 +16820,7 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 			// Calculate & display progress percentage (every other sub-board)
 			var progressPercentage = numSubBoards / newMsgWidthObj.numSubBoards * 100.0;
 			if (numSubBoards % 2 == 0)
-				printf("\rLoading: %0.2f%  ", progressPercentage);
+				printf("\rLoading: %0.2f%%  ", progressPercentage);
 
 			var itemInfo = this.GetIndexedModeSubBoardMenuItemTextAndInfo(msg_area.grp_list[grpIdx].sub_list[subIdx].code);
 			// If configured to only show sub-boards with new messages and this sub-board
@@ -16859,7 +16859,7 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 		}
 	}
 	// For end of progress reporting
-	printf("\rLoading: 100.0%  \r\n");
+	console.print("\rLoading: 100.00%  \r\n");
 	if (totalNewMsgs > 0)
 		console.line_counter = 0; // To prevent a pause before the index mode sub-board menu comes up
 	// If there are no items on the menu, then show a message and return
