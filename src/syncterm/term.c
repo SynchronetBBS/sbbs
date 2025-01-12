@@ -4250,6 +4250,7 @@ doterm(struct bbslist *bbs)
 						}
 						break;
 					default:
+						sleep = false;
 						if (speed) {
 							lastchar = xp_timer();
 							nextchar = lastchar + 1 / (long double)(speed / 10);
@@ -4398,6 +4399,7 @@ doterm(struct bbslist *bbs)
 
                 /* Get local input */
 		while (quitting || rip_kbhit()) {
+			sleep = false;
 			struct mouse_event mevent;
 
 			updated = true;
