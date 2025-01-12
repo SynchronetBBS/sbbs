@@ -14932,9 +14932,8 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 									case 7:
 										zmodem_upload(rip.bbs, fp, cache_path);
 										break;
-									default: // Can't happen, thanks Coverity
-										fclose(fp);
 								}
+								fclose(fp);
 								suspend_rip(false);
 								free(uldir);
 							}

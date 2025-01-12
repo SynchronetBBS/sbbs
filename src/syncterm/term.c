@@ -1046,11 +1046,9 @@ begin_upload(struct bbslist *bbs, bool autozm, int lastch)
 			case 5:
 				raw_upload(fp);
 				break;
-			default:
-				fclose(fp);
-				break;
 		}
 	}
+	fclose(fp);
 	suspend_rip(false);
 	uifcbail();
 	restorescreen(savscrn);
@@ -1156,7 +1154,6 @@ raw_upload(FILE *fp)
 		if (r == 0)
 			break;
 	}
-	fclose(fp);
 }
 
 void
@@ -1197,7 +1194,6 @@ ascii_upload(FILE *fp)
 			cterm_write(cterm, ch, 1, NULL, 0, NULL);
 		}
 	}
-	fclose(fp);
 }
 
 static void
@@ -1268,8 +1264,6 @@ zmodem_upload(struct bbslist *bbs, FILE *fp, char *path)
 
             /* ZRQINIT? */ true, /* start_time */ NULL, /* sent_bytes */ NULL)) == true)
 		zmodem_get_zfin(&zm);
-
-	fclose(fp);
 
 	transfer_complete(success, was_binary);
 }
@@ -1664,7 +1658,6 @@ xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int lastch)
 		    path, fsize / 1024, (mode & GMODE) ? "-g" : "");
 	}
 	else {
-		fclose(fp);
 		if (!was_binary)
 			conn_binary_mode_off();
 		return;
@@ -1684,8 +1677,6 @@ xmodem_upload(struct bbslist *bbs, FILE *fp, char *path, long mode, int lastch)
 			}
 		}
 	}
-
-	fclose(fp);
 
 	transfer_complete(success, was_binary);
 }
