@@ -991,7 +991,7 @@ gdi_thread(void *arg)
 	cl = RegisterClassW(&wc);
 	if (cl == 0)
 		goto fail;
-	rwlock_rwlock(&vstatlock);
+	rwlock_wrlock(&vstatlock);
 	if (ciolib_initial_scaling != 0) {
 		if (ciolib_initial_scaling < 1.0) {
 			if (get_monitor_size_pos(&vstat.winwidth, &vstat.winheight, &wx, &wy)) {
