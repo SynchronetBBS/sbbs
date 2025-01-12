@@ -7549,7 +7549,7 @@ void web_server(void* arg)
 				if (!len_503)
 					len_503 = strlen(error_503);
 				if(sendsocket(client_socket, error_503, len_503) != len_503)
-					lprintf(LOG_ERR, "%04d FAILED sending error 503", client_socket);
+					errprintf(LOG_ERR, WHERE, "%04d FAILED sending error 503", client_socket);
 				close_socket(&client_socket);
 				continue;
             }
