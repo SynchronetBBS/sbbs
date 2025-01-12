@@ -23,6 +23,7 @@ modem_input_thread(void *args)
 	int    rd;
 	int    buffered;
 	size_t buffer;
+	size_t bufsz = 0;
 	bool   monitor_dsr = true;
 
 	SetThreadName("Modem Input");
@@ -32,18 +33,24 @@ modem_input_thread(void *args)
 			monitor_dsr = false;
 	}
 	while (com != COM_HANDLE_INVALID && !conn_api.terminate) {
-		rd = comReadBuf(com, (char *)conn_api.rd_buf, conn_api.rd_buf_size, NULL, 100);
-		// Strip high bits... we *should* check the parity
-		if (seven_bits) {
-			for (int i = 0; i < rd; i++)
-				conn_api.rd_buf[i] &= 0x7f;
+		if (bufsz < BUFFER_SIZE) {
+			rd = comReadBuf(com, (char *)conn_api.rd_buf + bufsz, conn_api.rd_buf_size - bufsz, NULL, bufsz ? 0 : 100);
+			// Strip high bits... we *should* check the parity
+			if (seven_bits) {
+				for (int i = 0; i < rd; i++)
+					conn_api.rd_buf[bufsz + i] &= 0x7f;
+			}
+			bufsz += rd;
 		}
-		buffered = 0;
-		while (com != COM_HANDLE_INVALID && buffered < rd && !conn_api.terminate) {
-			pthread_mutex_lock(&(conn_inbuf.mutex));
-			buffer = conn_buf_wait_free(&conn_inbuf, rd - buffered, 100);
-			buffered += conn_buf_put(&conn_inbuf, conn_api.rd_buf + buffered, buffer);
-			pthread_mutex_unlock(&(conn_inbuf.mutex));
+		if (bufsz) {
+			while (com != COM_HANDLE_INVALID && buffered < rd && !conn_api.terminate) {
+				pthread_mutex_lock(&(conn_inbuf.mutex));
+				conn_buf_wait_free(&conn_inbuf, 1, 1000);
+				buffered = conn_buf_put(&conn_inbuf, conn_api.rd_buf, bufsz);
+				memmove(conn_api.rd_buf, &conn_api.rd_buf[buffered], bufsz - buffered);
+				bufsz -= buffered;
+				pthread_mutex_unlock(&(conn_inbuf.mutex));
+			}
 		}
 		if (args == NULL) {
 			if ((comGetModemStatus(com) & COM_DCD) == 0)

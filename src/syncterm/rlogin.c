@@ -20,24 +20,26 @@ rlogin_input_thread(void *args)
 {
 	int    rd = 0;
 	int    buffered;
-	size_t buffer;
+	size_t bufsz = 0;
 
 	SetThreadName("RLogin Input");
 	conn_api.input_thread_running = 1;
 	while (rlogin_sock != INVALID_SOCKET && !conn_api.terminate) {
 		bool data_avail;
-		if (socket_check(rlogin_sock, &data_avail, NULL, 100)) {
-			if (data_avail) {
-				rd = recv(rlogin_sock, conn_api.rd_buf, conn_api.rd_buf_size, 0);
+		if (socket_check(rlogin_sock, &data_avail, NULL, bufsz ? 0 : 100)) {
+			if (data_avail && bufsz < BUFFER_SIZE) {
+				rd = recv(rlogin_sock, conn_api.rd_buf + bufsz, conn_api.rd_buf_size - bufsz, 0);
 				if (rd <= 0)
 					break;
-				buffered = 0;
-				while (rlogin_sock != INVALID_SOCKET && buffered < rd && !conn_api.terminate) {
-					pthread_mutex_lock(&(conn_inbuf.mutex));
-					buffer = conn_buf_wait_free(&conn_inbuf, rd - buffered, 1000);
-					buffered += conn_buf_put(&conn_inbuf, conn_api.rd_buf + buffered, buffer);
-					pthread_mutex_unlock(&(conn_inbuf.mutex));
-				}
+				bufsz += rd;
+			}
+			if (bufsz) {
+				pthread_mutex_lock(&(conn_inbuf.mutex));
+				conn_buf_wait_free(&conn_inbuf, 1, 1000);
+				buffered = conn_buf_put(&conn_inbuf, conn_api.rd_buf, bufsz);
+				memmove(conn_api.rd_buf, &conn_api.rd_buf[buffered], bufsz - buffered);
+				bufsz -= buffered;
+				pthread_mutex_unlock(&(conn_inbuf.mutex));
 			}
 		}
 		else

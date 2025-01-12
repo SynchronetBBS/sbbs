@@ -59,37 +59,40 @@ telnets_input_thread(void *args)
 	int    status;
 	int    rd;
 	size_t buffered;
-	size_t buffer;
+	size_t bufsz = 0;
 	SetThreadName("TelnetS Input");
 	conn_api.input_thread_running = 1;
 	while (!conn_api.terminate) {
 		bool data_avail;
 
-		if (!socket_check(telnets_sock, &data_avail, NULL, 100))
+		if (!socket_check(telnets_sock, &data_avail, NULL, bufsz ? 0 : 100))
 			break;
-		if (!data_avail)
-			continue;
-		pthread_mutex_lock(&telnets_mutex);
-		FlushData(telnets_session);
-		status = PopData(telnets_session, conn_api.rd_buf, conn_api.rd_buf_size, &rd);
-		pthread_mutex_unlock(&telnets_mutex);
-                // Handle case where there was socket activity without readable data (ie: rekey)
-		if (status == CRYPT_ERROR_TIMEOUT)
-			continue;
-		if (cryptStatusError(status)) {
-			if (!conn_api.terminate) {
-				if ((status != CRYPT_ERROR_COMPLETE) && (status != CRYPT_ERROR_READ)) /* connection closed */
-					cryptlib_error_message(status, "recieving data");
-				conn_api.terminate = true;
+		if (data_avail && bufsz < BUFFER_SIZE) {
+			pthread_mutex_lock(&telnets_mutex);
+			FlushData(telnets_session);
+			status = PopData(telnets_session, conn_api.rd_buf + bufsz, conn_api.rd_buf_size - bufsz, &rd);
+			pthread_mutex_unlock(&telnets_mutex);
+			bufsz += rd;
+			// Handle case where there was socket activity without readable data (ie: rekey)
+			if (status == CRYPT_ERROR_TIMEOUT)
+				continue;
+			if (cryptStatusError(status)) {
+				if (!conn_api.terminate) {
+					if ((status != CRYPT_ERROR_COMPLETE) && (status != CRYPT_ERROR_READ)) /* connection closed */
+						cryptlib_error_message(status, "recieving data");
+					conn_api.terminate = true;
+				}
+				break;
 			}
-			break;
 		}
-		else {
+		if (bufsz) {
 			buffered = 0;
 			while (buffered < rd) {
 				pthread_mutex_lock(&(conn_inbuf.mutex));
-				buffer = conn_buf_wait_free(&conn_inbuf, rd - buffered, 100);
-				buffered += conn_buf_put(&conn_inbuf, conn_api.rd_buf + buffered, buffer);
+				conn_buf_wait_free(&conn_inbuf, 1, 1000);
+				buffered = conn_buf_put(&conn_inbuf, conn_api.rd_buf, bufsz);
+				memmove(conn_api.rd_buf, &conn_api.rd_buf[buffered], bufsz - buffered);
+				bufsz -= buffered;
 				pthread_mutex_unlock(&(conn_inbuf.mutex));
 			}
 		}
