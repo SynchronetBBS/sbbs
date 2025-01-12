@@ -22,7 +22,6 @@ modem_input_thread(void *args)
 {
 	int    rd;
 	int    buffered;
-	size_t buffer;
 	size_t bufsz = 0;
 	bool   monitor_dsr = true;
 
