@@ -107,6 +107,7 @@ static struct vmem_cell *bitmap_drawn;
 static int outstanding_rects;
 // win32gdi requires two rects...
 #define MAX_OUTSTANDING 2
+static protected_int32_t videoflags;
 
 /* Exported globals */
 
@@ -914,6 +915,7 @@ static int check_redraw(void)
 	return ret;
 }
 
+pthread_t bpid;
 /* Blinker Thread */
 static void blinker_thread(void *data)
 {
@@ -926,6 +928,7 @@ static void blinker_thread(void *data)
 	int lfc;
 	int blink;
 
+bpid = pthread_self();
 	SetThreadName("Blinker");
 	while(1) {
 		curs_changed = 0;
@@ -1675,11 +1678,11 @@ void bitmap_setcustomcursor(int s, int e, int r, int b, int v)
 	rwlock_unlock(&vstatlock);
 }
 
-int bitmap_getvideoflags(void)
+static void
+setvideoflags_from_vstat(void)
 {
-	int flags=0;
+	int flags = 0;
 
-	rwlock_rdlock(&vstatlock);
 	if(vstat.bright_background)
 		flags |= CIOLIB_VIDEO_BGBRIGHT;
 	if(vstat.no_bright)
@@ -1690,13 +1693,20 @@ int bitmap_getvideoflags(void)
 		flags |= CIOLIB_VIDEO_NOBLINK;
 	if(vstat.blink_altcharset)
 		flags |= CIOLIB_VIDEO_BLINKALTCHARS;
-	rwlock_unlock(&vstatlock);
-	return(flags);
+	protected_int32_set(&videoflags, flags);
+}
+
+int bitmap_getvideoflags(void)
+{
+	int flags=0;
+
+	return protected_int32_value(videoflags);
 }
 
 void bitmap_setvideoflags(int flags)
 {
 	rwlock_wrlock(&vstatlock);
+	protected_int32_set(&videoflags, flags);
 	if(flags & CIOLIB_VIDEO_BGBRIGHT)
 		vstat.bright_background=1;
 	else
@@ -2205,6 +2215,7 @@ int bitmap_drv_init_mode(int mode, int *width, int *height, int maxwidth, int ma
 	if(load_vmode(&vstat, mode)) {
 		return(-1);
 	}
+	setvideoflags_from_vstat();
 
 	// Save the old diagonal (no point is sqrting here)
 	os = ((int64_t)vstat.winwidth * vstat.winwidth) + ((int64_t)vstat.winheight * vstat.winheight);
@@ -2304,6 +2315,7 @@ int bitmap_drv_init(void (*drawrect_cb) (struct rectlist *data)
 			| CONIO_OPT_SET_PIXEL | CONIO_OPT_CUSTOM_CURSOR
 			| CONIO_OPT_FONT_SELECT | CONIO_OPT_EXTENDED_PALETTE | CONIO_OPT_PALETTE_SETTING
 			| CONIO_OPT_BLOCKY_SCALING;
+	protected_int32_init(&videoflags, 0);
 	pthread_mutex_init(&callbacks.lock, NULL);
 	rwlock_init(&vstatlock);
 	pthread_mutex_init(&screenlock, NULL);
