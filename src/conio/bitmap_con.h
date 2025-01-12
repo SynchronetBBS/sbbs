@@ -5,6 +5,7 @@
 
 #include "vidmodes.h"
 #include "threadwrap.h"
+#include "rwlockwrap.h"
 
 struct rectangle {
 	int x;
@@ -21,7 +22,7 @@ struct rectlist {
 };
 
 extern struct video_stats vstat;
-extern pthread_mutex_t vstatlock;
+extern rwlock_t vstatlock;
 
 #ifdef BITMAP_CIOLIB_DRIVER
 /* Called from drivers */

@@ -776,9 +776,9 @@ double x_getscaling(void)
 {
 	double ret;
 
-	pthread_mutex_lock(&vstatlock);
+	rwlock_rdlock(&vstatlock);
 	ret = vstat.scaling;
-	pthread_mutex_unlock(&vstatlock);
+	rwlock_unlock(&vstatlock);
 	return ret;
 }
 

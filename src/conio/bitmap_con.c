@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "threadwrap.h"
+#include "rwlockwrap.h"
 #include "semwrap.h"
 #include "gen_defs.h"
 #include "genwrap.h"
@@ -109,7 +110,7 @@ static int outstanding_rects;
 
 /* Exported globals */
 
-pthread_mutex_t		vstatlock;
+pthread_rwlock_t		vstatlock;
 
 /* Forward declarations */
 
@@ -388,7 +389,7 @@ static void	cb_drawrect(struct rectlist *data)
 	 * 4) If vstat.curs_blinks is false, the cursor does not blink.
 	 * 5) When blinking, the cursor is shown when vstat.blink is true.
 	 */
-	pthread_mutex_lock(&vstatlock);
+	rwlock_rdlock(&vstatlock);
 	curs_start = vstat.curs_start;
 	curs_end = vstat.curs_end;
 	curs_row = vstat.curs_row;
@@ -396,7 +397,7 @@ static void	cb_drawrect(struct rectlist *data)
 	charheight = vstat.charheight;
 	charwidth = vstat.charwidth;
 	if (cursor_visible_locked()) {
-		pthread_mutex_unlock(&vstatlock);
+		rwlock_unlock(&vstatlock);
 		cv = color_value(ciolib_fg);
 		for (y = curs_start; y <= curs_end; y++) {
 			pixel = &data->data[((curs_row - 1) * charheight + y) * data->rect.width + (curs_col - 1) * charwidth];
@@ -406,7 +407,7 @@ static void	cb_drawrect(struct rectlist *data)
 		}
 	}
 	else
-		pthread_mutex_unlock(&vstatlock);
+		rwlock_unlock(&vstatlock);
 	pthread_mutex_lock(&callbacks.lock);
 	callbacks.drawrect(data);
 	callbacks.rects++;
@@ -420,9 +421,9 @@ static void request_redraw_locked(void)
 
 static void request_redraw(void)
 {
-	pthread_mutex_lock(&vstatlock);
+	rwlock_wrlock(&vstatlock);
 	request_redraw_locked();
-	pthread_mutex_unlock(&vstatlock);
+	rwlock_unlock(&vstatlock);
 }
 
 /*
@@ -906,10 +907,10 @@ static int check_redraw(void)
 {
 	int ret;
 
-	pthread_mutex_lock(&vstatlock);
+	rwlock_wrlock(&vstatlock);
 	ret = force_redraws;
 	force_redraws = 0;
-	pthread_mutex_unlock(&vstatlock);
+	rwlock_unlock(&vstatlock);
 	return ret;
 }
 
@@ -932,7 +933,7 @@ static void blinker_thread(void *data)
 		SLEEP(10);
 		count++;
 
-		pthread_mutex_lock(&vstatlock);
+		rwlock_wrlock(&vstatlock);
 		if (count==25) {
 			curs_changed = cursor_visible_locked();
 			if(vstat.curs_blink)
@@ -958,7 +959,7 @@ static void blinker_thread(void *data)
 		lfc = force_cursor;
 		force_cursor = 0;
 		blink = vstat.blink;
-		pthread_mutex_unlock(&vstatlock);
+		rwlock_unlock(&vstatlock);
 
 		if (check_redraw()) {
 			if (update_from_vmem(TRUE))
@@ -1077,15 +1078,15 @@ static int update_from_vmem(int force)
 	if(!bitmap_initialized)
 		return(-1);
 
-	pthread_mutex_lock(&vstatlock);
+	rwlock_wrlock(&vstatlock);
 
 	if (vstat.vmem == NULL) {
-		pthread_mutex_unlock(&vstatlock);
+		rwlock_unlock(&vstatlock);
 		return -1;
 	}
 
 	if(vstat.vmem->vmem == NULL) {
-		pthread_mutex_unlock(&vstatlock);
+		rwlock_unlock(&vstatlock);
 		return -1;
 	}
 
@@ -1096,7 +1097,7 @@ static int update_from_vmem(int force)
 			vs.cols = 0;
 			vs.rows = 0;
 			free(bitmap_drawn);
-			pthread_mutex_unlock(&vstatlock);
+			rwlock_unlock(&vstatlock);
 			return -1;
 		}
 		bitmap_drawn = newl;
@@ -1161,7 +1162,7 @@ static int update_from_vmem(int force)
 	}
 	release_vmem(vmem_ptr);
 	vs = vstat;
-	pthread_mutex_unlock(&vstatlock);
+	rwlock_unlock(&vstatlock);
 
 	return(0);
 }
@@ -1193,7 +1194,7 @@ int bitmap_puttext(int sx, int sy, int ex, int ey, void *fill)
 		return(0);
 	}
 
-	pthread_mutex_lock(&vstatlock);
+	rwlock_wrlock(&vstatlock);
 	vmem_ptr = get_vmem(&vstat);
 	for (y = sy - 1; y < ey; y++) {
 		for (x = sx - 1; x < ex; x++) {
@@ -1201,7 +1202,7 @@ int bitmap_puttext(int sx, int sy, int ex, int ey, void *fill)
 		}
 	}
 	release_vmem(vmem_ptr);
-	pthread_mutex_unlock(&vstatlock);
+	rwlock_unlock(&vstatlock);
 	return ret;
 }
 
@@ -1210,9 +1211,9 @@ bitmap_vmem_puttext(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 {
 	int ret;
 
-	pthread_mutex_lock(&vstatlock);
+	rwlock_wrlock(&vstatlock);
 	ret = bitmap_vmem_puttext_locked(sx, sy, ex, ey, fill);
-	pthread_mutex_unlock(&vstatlock);
+	rwlock_unlock(&vstatlock);
 	return ret;
 }
 
@@ -1236,7 +1237,7 @@ int bitmap_vmem_gettext(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 		return(0);
 	}
 
-	pthread_mutex_lock(&vstatlock);
+	rwlock_rdlock(&vstatlock);
 	vmem_ptr = get_vmem(&vstat);
 	for(y=sy-1;y<ey;y++) {
 		struct vmem_cell *vc = vmem_cell_ptr(vmem_ptr, sx - 1, y);
@@ -1246,7 +1247,7 @@ int bitmap_vmem_gettext(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 		}
 	}
 	release_vmem(vmem_ptr);
-	pthread_mutex_unlock(&vstatlock);
+	rwlock_unlock(&vstatlock);
 	return(1);
 }
 
@@ -1255,7 +1256,7 @@ void bitmap_gotoxy(int x, int y)
 	if(!bitmap_initialized)
 		return;
 	/* Move cursor location */
-	pthread_mutex_lock(&vstatlock);
+	rwlock_wrlock(&vstatlock);
 	if (vstat.curs_col != x + cio_textinfo.winleft - 1 || vstat.curs_row != y + cio_textinfo.wintop - 1) {
 		cio_textinfo.curx=x;
 		cio_textinfo.cury=y;
@@ -1264,14 +1265,14 @@ void bitmap_gotoxy(int x, int y)
 		if (cursor_visible_locked())
 			force_cursor = 1;
 	}
-	pthread_mutex_unlock(&vstatlock);
+	rwlock_unlock(&vstatlock);
 }
 
 void bitmap_setcursortype(int type)
 {
 	if(!bitmap_initialized)
 		return;
-	pthread_mutex_lock(&vstatlock);
+	rwlock_wrlock(&vstatlock);
 	switch(type) {
 		case _NOCURSOR:
 			vstat.curs_start=0xff;
@@ -1288,7 +1289,7 @@ void bitmap_setcursortype(int type)
 			force_cursor = 1;
 			break;
 	}
-	pthread_mutex_unlock(&vstatlock);
+	rwlock_unlock(&vstatlock);
 }
 
 int bitmap_setfont(int font, int force, int font_num)
@@ -1316,7 +1317,7 @@ int bitmap_setfont(int font, int force, int font_num)
 	else if(conio_fontdata[font].eight_by_eight!=NULL)
 		newmode=C80X50;
 
-	pthread_mutex_lock(&vstatlock);
+	rwlock_wrlock(&vstatlock);
 	switch(vstat.charheight) {
 		case 8:
 			if(conio_fontdata[font].eight_by_eight==NULL) {
@@ -1374,7 +1375,7 @@ int bitmap_setfont(int font, int force, int font_num)
 			new=malloc(ti.screenwidth*ti.screenheight*sizeof(*new));
 			if(!new) {
 				free(old);
-				pthread_mutex_unlock(&vstatlock);
+				rwlock_unlock(&vstatlock);
 				return 0;
 			}
 			pold=old;
@@ -1420,11 +1421,11 @@ int bitmap_setfont(int font, int force, int font_num)
 		}
 	}
 	bitmap_loadfont_locked(NULL);
-	pthread_mutex_unlock(&vstatlock);
+	rwlock_unlock(&vstatlock);
 	return(1);
 
 error_return:
-	pthread_mutex_unlock(&vstatlock);
+	rwlock_unlock(&vstatlock);
 	return(0);
 }
 
@@ -1446,9 +1447,9 @@ int bitmap_loadfont(const char *filename)
 {
 	int ret;
 
-	pthread_mutex_lock(&vstatlock);
+	rwlock_wrlock(&vstatlock);
 	ret = bitmap_loadfont_locked(filename);
-	pthread_mutex_unlock(&vstatlock);
+	rwlock_unlock(&vstatlock);
 	return ret;
 }
 
@@ -1552,7 +1553,7 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 	int oheight = height;
 	bool oscrolldown = scrolldown;
 
-	pthread_mutex_lock(&vstatlock);
+	rwlock_wrlock(&vstatlock);
 	vmem_ptr = get_vmem(&vstat);
 	if (width == vstat.cols && height > vstat.rows / 2 && toy == 1) {
 		vmem_ptr->top_row += (y - toy);
@@ -1590,7 +1591,7 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 
 	bitmap_movetext_screen(vmem_ptr, x, oy, tox, otoy, oscrolldown ? -1 : 1, oheight, width);
 	release_vmem(vmem_ptr);
-	pthread_mutex_unlock(&vstatlock);
+	rwlock_unlock(&vstatlock);
 
 	return(1);
 }
@@ -1606,13 +1607,13 @@ void bitmap_clreol(void)
 		return;
 
 	row = cio_textinfo.cury + cio_textinfo.wintop - 1;
-	pthread_mutex_lock(&vstatlock);
+	rwlock_wrlock(&vstatlock);
 	vmem_ptr = get_vmem(&vstat);
 	for(x=cio_textinfo.curx+cio_textinfo.winleft-2; x<cio_textinfo.winright; x++) {
 		set_vmem_cell(vmem_ptr, x, row - 1, fill, ciolib_fg, ciolib_bg);
 	}
 	release_vmem(vmem_ptr);
-	pthread_mutex_unlock(&vstatlock);
+	rwlock_unlock(&vstatlock);
 }
 
 void bitmap_clrscr(void)
@@ -1624,7 +1625,7 @@ void bitmap_clrscr(void)
 
 	if(!bitmap_initialized)
 		return;
-	pthread_mutex_lock(&vstatlock);
+	rwlock_wrlock(&vstatlock);
 	vmem_ptr = get_vmem(&vstat);
 	rows = vstat.rows;
 	cols = vstat.cols;
@@ -1634,12 +1635,12 @@ void bitmap_clrscr(void)
 		}
 	}
 	release_vmem(vmem_ptr);
-	pthread_mutex_unlock(&vstatlock);
+	rwlock_unlock(&vstatlock);
 }
 
 void bitmap_getcustomcursor(int *s, int *e, int *r, int *b, int *v)
 {
-	pthread_mutex_lock(&vstatlock);
+	rwlock_rdlock(&vstatlock);
 	if(s)
 		*s=vstat.curs_start;
 	if(e)
@@ -1650,14 +1651,14 @@ void bitmap_getcustomcursor(int *s, int *e, int *r, int *b, int *v)
 		*b=vstat.curs_blinks;
 	if(v)
 		*v=vstat.curs_visible;
-	pthread_mutex_unlock(&vstatlock);
+	rwlock_unlock(&vstatlock);
 }
 
 void bitmap_setcustomcursor(int s, int e, int r, int b, int v)
 {
 	double ratio;
 
-	pthread_mutex_lock(&vstatlock);
+	rwlock_wrlock(&vstatlock);
 	if(r==0)
 		ratio=0;
 	else
@@ -1671,14 +1672,14 @@ void bitmap_setcustomcursor(int s, int e, int r, int b, int v)
 	if(v>=0)
 		vstat.curs_visible=v;
 	force_cursor = 1;
-	pthread_mutex_unlock(&vstatlock);
+	rwlock_unlock(&vstatlock);
 }
 
 int bitmap_getvideoflags(void)
 {
 	int flags=0;
 
-	pthread_mutex_lock(&vstatlock);
+	rwlock_rdlock(&vstatlock);
 	if(vstat.bright_background)
 		flags |= CIOLIB_VIDEO_BGBRIGHT;
 	if(vstat.no_bright)
@@ -1689,13 +1690,13 @@ int bitmap_getvideoflags(void)
 		flags |= CIOLIB_VIDEO_NOBLINK;
 	if(vstat.blink_altcharset)
 		flags |= CIOLIB_VIDEO_BLINKALTCHARS;
-	pthread_mutex_unlock(&vstatlock);
+	rwlock_unlock(&vstatlock);
 	return(flags);
 }
 
 void bitmap_setvideoflags(int flags)
 {
-	pthread_mutex_lock(&vstatlock);
+	rwlock_wrlock(&vstatlock);
 	if(flags & CIOLIB_VIDEO_BGBRIGHT)
 		vstat.bright_background=1;
 	else
@@ -1720,16 +1721,16 @@ void bitmap_setvideoflags(int flags)
 		vstat.blink_altcharset=1;
 	else
 		vstat.blink_altcharset=0;
-	pthread_mutex_unlock(&vstatlock);
+	rwlock_unlock(&vstatlock);
 }
 
 int bitmap_attr2palette(uint8_t attr, uint32_t *fgp, uint32_t *bgp)
 {
 	int ret;
 
-	pthread_mutex_lock(&vstatlock);
+	rwlock_rdlock(&vstatlock);
 	ret = bitmap_attr2palette_locked(attr, fgp, bgp);
-	pthread_mutex_unlock(&vstatlock);
+	rwlock_unlock(&vstatlock);
 
 	return ret;
 }
@@ -1737,7 +1738,7 @@ int bitmap_attr2palette(uint8_t attr, uint32_t *fgp, uint32_t *bgp)
 int bitmap_setpixel(uint32_t x, uint32_t y, uint32_t colour)
 {
 	update_from_vmem(FALSE);
-	pthread_mutex_lock(&vstatlock);
+	rwlock_wrlock(&vstatlock);
 	struct vstat_vmem *vmem_ptr = get_vmem(&vstat);
 	struct vmem_cell *vc = vmem_cell_ptr(vmem_ptr, x / vstat.charwidth, y / vstat.charheight);
 	vc->bg |= 0x04000000;
@@ -1758,7 +1759,7 @@ int bitmap_setpixel(uint32_t x, uint32_t y, uint32_t colour)
 		}
 	}
 	pthread_mutex_unlock(&screenlock);
-	pthread_mutex_unlock(&vstatlock);
+	rwlock_unlock(&vstatlock);
 
 	return 1;
 }
@@ -1795,12 +1796,12 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 	}
 
 	update_from_vmem(FALSE);
-	pthread_mutex_lock(&vstatlock);
+	rwlock_wrlock(&vstatlock);
 	struct vstat_vmem *vmem_ptr = get_vmem(&vstat);
 	pthread_mutex_lock(&screenlock);
 	if (ex > screena.screenwidth || ey > screena.screenheight) {
 		pthread_mutex_unlock(&screenlock);
-		pthread_mutex_unlock(&vstatlock);
+		rwlock_unlock(&vstatlock);
 		return 0;
 	}
 
@@ -1864,7 +1865,7 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 	}
 	pthread_mutex_unlock(&screenlock);
 	release_vmem(vmem_ptr);
-	pthread_mutex_unlock(&vstatlock);
+	rwlock_unlock(&vstatlock);
 
 	return 1;
 }
@@ -1925,17 +1926,17 @@ struct ciolib_pixels *bitmap_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, ui
 
 int bitmap_get_modepalette(uint32_t p[16])
 {
-	pthread_mutex_lock(&vstatlock);
+	rwlock_rdlock(&vstatlock);
 	memcpy(p, vstat.palette, sizeof(vstat.palette));
-	pthread_mutex_unlock(&vstatlock);
+	rwlock_unlock(&vstatlock);
 	return 1;
 }
 
 int bitmap_set_modepalette(uint32_t p[16])
 {
-	pthread_mutex_lock(&vstatlock);
+	rwlock_wrlock(&vstatlock);
 	memcpy(vstat.palette, p, sizeof(vstat.palette));
-	pthread_mutex_unlock(&vstatlock);
+	rwlock_unlock(&vstatlock);
 	return 1;
 }
 
@@ -2304,17 +2305,17 @@ int bitmap_drv_init(void (*drawrect_cb) (struct rectlist *data)
 			| CONIO_OPT_FONT_SELECT | CONIO_OPT_EXTENDED_PALETTE | CONIO_OPT_PALETTE_SETTING
 			| CONIO_OPT_BLOCKY_SCALING;
 	pthread_mutex_init(&callbacks.lock, NULL);
-	pthread_mutex_init(&vstatlock, NULL);
+	rwlock_init(&vstatlock);
 	pthread_mutex_init(&screenlock, NULL);
 	pthread_mutex_init(&free_rect_lock, NULL);
-	pthread_mutex_lock(&vstatlock);
+	rwlock_wrlock(&vstatlock);
 	vstat.flags = VIDMODES_FLAG_PALETTE_VMEM;
 	pthread_mutex_lock(&screenlock);
 	for (i = 0; i < sizeof(dac_default)/sizeof(struct dac_colors); i++) {
 		palette[i] = (0xffU << 24) | (dac_default[i].red << 16) | (dac_default[i].green << 8) | dac_default[i].blue;
 	}
 	pthread_mutex_unlock(&screenlock);
-	pthread_mutex_unlock(&vstatlock);
+	rwlock_unlock(&vstatlock);
 
 	callbacks.drawrect=drawrect_cb;
 	callbacks.flush=flush_cb;

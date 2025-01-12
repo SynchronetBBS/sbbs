@@ -370,18 +370,18 @@ static int sdl_init_mode(int mode, bool init)
 	int w, h;
 
 	if (mode != CIOLIB_MODE_CUSTOM) {
-		pthread_mutex_lock(&vstatlock);
+		rwlock_rdlock(&vstatlock);
 		if (mode == vstat.mode && !init) {
-			pthread_mutex_unlock(&vstatlock);
+			rwlock_unlock(&vstatlock);
 			return 0;
 		}
-		pthread_mutex_unlock(&vstatlock);
+		rwlock_unlock(&vstatlock);
 	}
 
 	sdl_user_func(SDL_USEREVENT_FLUSH);
 
 	pthread_mutex_lock(&win_mutex);
-	pthread_mutex_lock(&vstatlock);
+	rwlock_wrlock(&vstatlock);
 	if (!sdl_get_bounds(&w, &h)) {
 		w = 0;
 		h = 0;
@@ -395,7 +395,7 @@ static int sdl_init_mode(int mode, bool init)
 	pthread_mutex_lock(&sdl_mode_mutex);
 	sdl_mode = true;
 	pthread_mutex_unlock(&sdl_mode_mutex);
-	pthread_mutex_unlock(&vstatlock);
+	rwlock_unlock(&vstatlock);
 	pthread_mutex_unlock(&win_mutex);
 
 	sdl_user_func_ret(SDL_USEREVENT_SETVIDMODE, vstat.winwidth, vstat.winheight);
@@ -437,9 +437,9 @@ update_cvstat(struct video_stats *vs)
 {
 	if (vs != NULL && vs != &vstat) {
 		vstat.scaling = sdl_getscaling();
-		pthread_mutex_lock(&vstatlock);
+		rwlock_rdlock(&vstatlock);
 		*vs = vstat;
-		pthread_mutex_unlock(&vstatlock);
+		rwlock_unlock(&vstatlock);
 	}
 }
 
@@ -460,7 +460,7 @@ static void internal_setwinsize(struct video_stats *vs, bool force)
 	if (h < vs->scrnheight)
 		h = vs->scrnheight;
 	pthread_mutex_lock(&win_mutex);
-	pthread_mutex_lock(&vstatlock);
+	rwlock_wrlock(&vstatlock);
 	if (w == vstat.winwidth && h == vstat.winheight)
 		changed = force;
 	else {
@@ -468,7 +468,7 @@ static void internal_setwinsize(struct video_stats *vs, bool force)
 		vs->winheight = vstat.winheight = h;
 	}
 	if (changed) {
-		pthread_mutex_unlock(&vstatlock);
+		rwlock_unlock(&vstatlock);
 		pthread_mutex_unlock(&win_mutex);
 	}
 	else {
@@ -479,7 +479,7 @@ static void internal_setwinsize(struct video_stats *vs, bool force)
 			vs->winheight = h;
 			changed = true;
 		}
-		pthread_mutex_unlock(&vstatlock);
+		rwlock_unlock(&vstatlock);
 		pthread_mutex_unlock(&win_mutex);
 		vstat.scaling = sdl_getscaling();
 	}
@@ -509,9 +509,9 @@ void sdl_getwinsize_locked(int *w, int *h)
 
 void sdl_getwinsize(int *w, int *h)
 {
-	pthread_mutex_lock(&vstatlock);
+	rwlock_rdlock(&vstatlock);
 	sdl_getwinsize_locked(w, h);
-	pthread_mutex_unlock(&vstatlock);
+	rwlock_unlock(&vstatlock);
 }
 
 /* Called from main thread only */
@@ -597,12 +597,12 @@ int sdl_get_window_info(int *width, int *height, int *xpos, int *ypos)
 	}
 
 	if (width || height) {
-		pthread_mutex_lock(&vstatlock);
+		rwlock_rdlock(&vstatlock);
 		if(width)
 			*width=vstat.winwidth;
 		if(height)
 			*height=vstat.winheight;
-		pthread_mutex_unlock(&vstatlock);
+		rwlock_unlock(&vstatlock);
 	}
 
 	return(1);
@@ -639,9 +639,9 @@ static void setup_surfaces(struct video_stats *vs)
 #if (SDL_MINOR_VERSION > 0) || (SDL_PATCHLEVEL >= 1)
         flags |= SDL_WINDOW_ALLOW_HIGHDPI;
 #endif
-	pthread_mutex_lock(&vstatlock);
+	rwlock_rdlock(&vstatlock);
 	bitmap_get_scaled_win_size(1.0, &idealmw, &idealmh, 0, 0);
-	pthread_mutex_unlock(&vstatlock);
+	rwlock_unlock(&vstatlock);
 	pthread_mutex_lock(&win_mutex);
 	idealw = vs->winwidth;
 	idealh = vs->winheight;
@@ -705,10 +705,10 @@ static void setup_surfaces(struct video_stats *vs)
 		texture = newtexture;
 	}
 	if (vs != &vstat) {
-		pthread_mutex_lock(&vstatlock);
+		rwlock_wrlock(&vstatlock);
 		vstat.winwidth = vs->winwidth;
 		vstat.winheight = vs->winheight;
-		pthread_mutex_unlock(&vstatlock);
+		rwlock_unlock(&vstatlock);
 	}
 	sdl_bughack_minsize(idealmw, idealmh, new_win);
 
@@ -1034,9 +1034,9 @@ void sdl_video_event_thread(void *data)
 							h = 0;
 						}
 						pthread_mutex_unlock(&win_mutex);
-						pthread_mutex_lock(&vstatlock);
+						rwlock_wrlock(&vstatlock);
 						bitmap_snap(ev.key.keysym.sym == SDLK_RIGHT, w, h);
-						pthread_mutex_unlock(&vstatlock);
+						rwlock_unlock(&vstatlock);
 						update_cvstat(&cvstat);
 						setup_surfaces(&cvstat);
 						break;
@@ -1175,12 +1175,12 @@ void sdl_video_event_thread(void *data)
 						return;
 					case SDL_USEREVENT_FLUSH:
 						update_cvstat(&cvstat);
-						pthread_mutex_lock(&vstatlock);
+						rwlock_rdlock(&vstatlock);
 						// Get correct aspect ratio for dst...
 						int sw = cvstat.scrnwidth;
 						int sh = cvstat.scrnheight;
 						bitmap_get_scaled_win_size(cvstat.scaling, &dst.w, &dst.h, cvstat.winwidth, cvstat.winheight);
-						pthread_mutex_unlock(&vstatlock);
+						rwlock_unlock(&vstatlock);
 						pthread_mutex_lock(&win_mutex);
 						if (win != NULL) {
 							pthread_mutex_unlock(&win_mutex);
@@ -1438,9 +1438,9 @@ sdl_getscaling(void)
 	double ret;
 
 	// TODO: I hate having nested locks like this. :(
-	pthread_mutex_lock(&vstatlock);
+	rwlock_rdlock(&vstatlock);
 	ret = bitmap_double_mult_inside(vstat.winwidth, vstat.winheight);
-	pthread_mutex_unlock(&vstatlock);
+	rwlock_unlock(&vstatlock);
 	return ret;
 }
 
@@ -1449,9 +1449,9 @@ sdl_setscaling(double newval)
 {
 	int w, h;
 
-	pthread_mutex_lock(&vstatlock);
+	rwlock_rdlock(&vstatlock);
 	bitmap_get_scaled_win_size(newval, &w, &h, 0, 0);
-	pthread_mutex_unlock(&vstatlock);
+	rwlock_unlock(&vstatlock);
 	sdl_setwinsize(w, h);
 }
 
@@ -1460,9 +1460,9 @@ sdl_getscaling_type(void)
 {
 	enum ciolib_scaling ret;
 
-	pthread_mutex_lock(&vstatlock);
+	rwlock_rdlock(&vstatlock);
 	ret = (internal_scaling ? CIOLIB_SCALING_INTERNAL : CIOLIB_SCALING_EXTERNAL);
-	pthread_mutex_unlock(&vstatlock);
+	rwlock_unlock(&vstatlock);
 	return ret;
 }
 
@@ -1473,15 +1473,15 @@ sdl_setscaling_type(enum ciolib_scaling newval)
 	int w, h;
 
 	update_cvstat(&cvstat);
-	pthread_mutex_lock(&vstatlock);
+	rwlock_rdlock(&vstatlock);
 	if ((newval == CIOLIB_SCALING_INTERNAL) != internal_scaling) {
 		internal_scaling = (newval == CIOLIB_SCALING_INTERNAL);
 		w = vstat.winwidth;
 		h = vstat.winheight;
-		pthread_mutex_unlock(&vstatlock);
+		rwlock_unlock(&vstatlock);
 		sdl_user_func_ret(SDL_USEREVENT_SETVIDMODE, w, h);
 	}
 	else {
-		pthread_mutex_unlock(&vstatlock);
+		rwlock_unlock(&vstatlock);
 	}
 }
