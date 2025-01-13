@@ -1145,11 +1145,13 @@ int64_t xp_fast_timer64(void)
 		if (clock_getres(CLOCK_MONOTONIC_RAW, &ts) == 0)
 			cid = CLOCK_MONOTONIC_RAW;
 	}
-	cid = CLOCK_MONOTONIC_RAW;
 #endif
 #ifdef CLOCK_MONOTONIC
-	if (cid == CLOCK_REALTIME)
+	if (cid == CLOCK_REALTIME) {
 		cid = CLOCK_MONOTONIC;
+		if (clock_getres(CLOCK_MONOTONIC, &ts) == 0)
+			cid = CLOCK_MONOTONIC;
+	}
 #endif
 
 	if (clock_gettime(cid, &ts) == 0)
