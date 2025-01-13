@@ -54,24 +54,13 @@ static int dbg_pthread_mutex_unlock(pthread_mutex_t *lptr, unsigned line)
 	return ret;
 }
 
-static int dbg_pthread_mutex_trylock(pthread_mutex_t *lptr, unsigned line)
-{
-	int ret = pthread_mutex_trylock(lptr);
-
-	if (ret)
-		fprintf(stderr, "pthread_mutex_lock() returned %d at %u\n", ret, line);
-	return ret;
-}
-
 #define pthread_mutex_lock(a)		dbg_pthread_mutex_lock(a, __LINE__)
 #define pthread_mutex_unlock(a)		dbg_pthread_mutex_unlock(a, __LINE__)
-#define pthread_mutex_trylock(a)	dbg_pthread_trymutex_lock(a, __LINE__)
 
 #else
 #ifndef NDEBUG
 #define pthread_mutex_lock(a)		assert(pthread_mutex_lock(a) == 0)
 #define pthread_mutex_unlock(a)		assert(pthread_mutex_unlock(a) == 0)
-#define pthread_mutex_trylock(a)	assert(pthread_mutex_trylock(a) == 0)
 #endif
 #endif
 
