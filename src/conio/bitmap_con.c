@@ -933,7 +933,6 @@ static int check_redraw(void)
 	return ret;
 }
 
-pthread_t bpid;
 /* Blinker Thread */
 static void blinker_thread(void *data)
 {
@@ -946,7 +945,6 @@ static void blinker_thread(void *data)
 	int lfc;
 	int blink;
 
-bpid = pthread_self();
 	SetThreadName("Blinker");
 	while(1) {
 		curs_changed = 0;
