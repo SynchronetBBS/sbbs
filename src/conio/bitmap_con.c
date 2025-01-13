@@ -287,7 +287,6 @@ static int
 bitmap_vmem_puttext_locked(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 {
 	int x,y;
-	struct vstat_vmem *vmem_ptr;
 	struct vmem_cell *vc;
 	struct vmem_cell *fi = fill;
 
@@ -306,15 +305,13 @@ bitmap_vmem_puttext_locked(int sx, int sy, int ex, int ey, struct vmem_cell *fil
 		return(0);
 	}
 
-	vmem_ptr = get_vmem(&vstat);
 	for(y=sy-1;y<ey;y++) {
-		vc = vmem_cell_ptr(vmem_ptr, sx - 1, y);
+		vc = vmem_cell_ptr(vstat.vmem, sx - 1, y);
 		for(x=sx-1;x<ex;x++) {
 			*vc = *(fi++);
-			vc = vmem_next_ptr(vmem_ptr, vc);
+			vc = vmem_next_ptr(vstat.vmem, vc);
 		}
 	}
-	release_vmem(vmem_ptr);
 	return(1);
 }
 
@@ -627,13 +624,12 @@ calc_charstate(struct blockstate *bs, struct vmem_cell *vc, struct charstate *cs
 	cs->extra_rows = 0;
 
 	if (vstat.mode == PRESTEL_40X24 && (vc->bg & 0x02000000)) {
-		struct vstat_vmem *vmem_ptr = get_vmem(&vstat);
 		unsigned char lattr = vc->legacy_attr;
 		int x, y;
 		bool top = false;
 		bool bottom = false;
 
-		struct vmem_cell *pvc = vmem_cell_ptr(vmem_ptr, 0, 0);
+		struct vmem_cell *pvc = vmem_cell_ptr(vstat.vmem, 0, 0);
 		for (y = 0; y < ypos; y++) {
 			if (top) {
 				bottom = true;
@@ -645,15 +641,15 @@ calc_charstate(struct blockstate *bs, struct vmem_cell *vc, struct charstate *cs
 				for (x = 0; x < vstat.cols; x++) {
 					if (pvc->bg & 0x01000000) {
 						top = true;
-						pvc = vmem_cell_ptr(vmem_ptr, 0, y + 1);
+						pvc = vmem_cell_ptr(vstat.vmem, 0, y + 1);
 						break;
 					}
-					pvc = vmem_next_ptr(vmem_ptr, pvc);
+					pvc = vmem_next_ptr(vstat.vmem, pvc);
 				}
 			}
 		}
 		if (bottom) {
-			pvc = vmem_cell_ptr(vmem_ptr, xpos - 1, ypos - 2);
+			pvc = vmem_cell_ptr(vstat.vmem, xpos - 1, ypos - 2);
 			if (pvc->bg & 0x01000000) {
 				cs->double_height = true;
 				cs->extra_rows = -(vstat.charheight);
@@ -669,7 +665,7 @@ calc_charstate(struct blockstate *bs, struct vmem_cell *vc, struct charstate *cs
 			lattr = pvc->legacy_attr;
 		}
 		else {
-			pvc = vmem_cell_ptr(vmem_ptr, xpos - 1, ypos - 1);
+			pvc = vmem_cell_ptr(vstat.vmem, xpos - 1, ypos - 1);
 			if (ypos != vstat.rows) {
 				if (pvc->bg & 0x01000000) {
 					top = true;
@@ -677,7 +673,6 @@ calc_charstate(struct blockstate *bs, struct vmem_cell *vc, struct charstate *cs
 				}
 			}
 		}
-		release_vmem(vmem_ptr);
 		if (lattr & 0x08) {
 			if (!(cio_api.options & CONIO_OPT_PRESTEL_REVEAL)) {
 				draw_fg = false;
@@ -826,7 +821,6 @@ bitmap_draw_vmem(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 	bs.maxpix = screena.screenwidth * screena.screenheight;
 	bs.expand = vstat.flags & VIDMODES_FLAG_EXPAND;
 	bs.font_data_width = vstat.charwidth - (bs.expand ? 1 : 0);
-	struct vstat_vmem *vm = get_vmem(&vstat);
 
 	pthread_mutex_lock(&screenlock);
 	bs.pixeloffset = pixel_offset(&screena, xoffset, yoffset);
@@ -873,10 +867,10 @@ bitmap_draw_vmem(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 		screenb.update_pixels = 1;
 		int foff = 0;
 		for (size_t vy = 0; vy < vheight; vy++) {
-			int coff = vmem_cell_offset(vm, sx - 1, sy - 1 + vy);
+			int coff = vmem_cell_offset(vstat.vmem, sx - 1, sy - 1 + vy);
 			for (size_t vx = 0; vx < vwidth; vx++) {
 				bitmap_drawn[coff] = fill[foff++];
-				coff = vmem_next_offset(vm, coff);
+				coff = vmem_next_offset(vstat.vmem, coff);
 			}
 		}
 	}
@@ -884,10 +878,10 @@ bitmap_draw_vmem(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 		int foff = 0;
 		for (size_t vy = 0; vy < vheight; vy++) {
 			// Fill in charstate for this pass
-			int coff = vmem_cell_offset(vm, sx - 1, sy - 1 + vy);
+			int coff = vmem_cell_offset(vstat.vmem, sx - 1, sy - 1 + vy);
 			for (size_t vx = 0; vx < vwidth; vx++) {
 				bitmap_drawn[coff] = fill[foff++];
-				coff = vmem_next_offset(vm, coff);
+				coff = vmem_next_offset(vstat.vmem, coff);
 				calc_charstate(&bs, &fill[vy * vwidth + vx], &charstate[vx], sx + vx, sy + vy);
 			}
 			// Draw the characters...
@@ -905,7 +899,6 @@ bitmap_draw_vmem(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 		}
 	}
 	pthread_mutex_unlock(&screenlock);
-	release_vmem(vm);
 }
 
 /***********************************************************/
@@ -1087,7 +1080,6 @@ bitmap_draw_from_vmem(struct vstat_vmem *vm, int sx, int sy, int ex, int ey)
 static int update_from_vmem(int force)
 {
 	static struct video_stats vs;
-	struct vstat_vmem *vmem_ptr;
 	int x,y,width,height;
 	unsigned int pos;
 
@@ -1138,9 +1130,6 @@ static int update_from_vmem(int force)
 			vstat.bright_altcharset != vs.bright_altcharset)
 		bright_attr_changed = 1;
 
-	/* Get vmem pointer */
-	vmem_ptr = get_vmem(&vstat);
-
 	/*
 	 * Now we go through each character seeing if it's changed (or force is set)
 	 * We combine updates into rectangles by lines...
@@ -1152,14 +1141,14 @@ static int update_from_vmem(int force)
 
 	int sx = 0;
 	int ex = 0;
-	pos = vmem_cell_offset(vmem_ptr, 0, 0);
+	pos = vmem_cell_offset(vstat.vmem, 0, 0);
 	for(y=0;y<height;y++) {
 		for(x=0;x<width;x++) {
 			/* Has this char been updated? */
-			if(force || !same_cell(&bitmap_drawn[pos], &vmem_ptr->vmem[pos])
-			    || ((vmem_ptr->vmem[pos].legacy_attr & 0x80)
+			if(force || !same_cell(&bitmap_drawn[pos], &vstat.vmem->vmem[pos])
+			    || ((vstat.vmem->vmem[pos].legacy_attr & 0x80)
 				&& blink_attr_changed)
-			    || ((vmem_ptr->vmem[pos].legacy_attr & 0x08) && bright_attr_changed))
+			    || ((vstat.vmem->vmem[pos].legacy_attr & 0x08) && bright_attr_changed))
 			    {
 				ex = x + 1;
 				if (sx == 0) {
@@ -1168,18 +1157,17 @@ static int update_from_vmem(int force)
 			}
 			else {
 				if (sx) {
-					bitmap_draw_from_vmem(vmem_ptr, sx, y + 1, ex, y + 1);
+					bitmap_draw_from_vmem(vstat.vmem, sx, y + 1, ex, y + 1);
 					sx = ex = 0;
 				}
 			}
-			pos = vmem_next_offset(vmem_ptr, pos);
+			pos = vmem_next_offset(vstat.vmem, pos);
 		}
 		if (sx) {
-			bitmap_draw_from_vmem(vmem_ptr, sx, y + 1, ex, y + 1);
+			bitmap_draw_from_vmem(vstat.vmem, sx, y + 1, ex, y + 1);
 			sx = ex = 0;
 		}
 	}
-	release_vmem(vmem_ptr);
 	vs = vstat;
 	do_rwlock_unlock(&vstatlock);
 
@@ -1196,7 +1184,6 @@ int bitmap_puttext(int sx, int sy, int ex, int ey, void *fill)
 	size_t x, y;
 	int ret = 1;
 	uint16_t *buf = fill;
-	struct vstat_vmem *vmem_ptr;
 
 	if(!bitmap_initialized)
 		return(0);
@@ -1214,13 +1201,11 @@ int bitmap_puttext(int sx, int sy, int ex, int ey, void *fill)
 	}
 
 	do_rwlock_wrlock(&vstatlock);
-	vmem_ptr = get_vmem(&vstat);
 	for (y = sy - 1; y < ey; y++) {
 		for (x = sx - 1; x < ex; x++) {
-			set_vmem_cell(vmem_ptr, x, y, *(buf++), 0x00ffffff, 0x00ffffff);
+			set_vmem_cell(vstat.vmem, x, y, *(buf++), 0x00ffffff, 0x00ffffff);
 		}
 	}
-	release_vmem(vmem_ptr);
 	do_rwlock_unlock(&vstatlock);
 	return ret;
 }
@@ -1239,7 +1224,6 @@ bitmap_vmem_puttext(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 int bitmap_vmem_gettext(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 {
 	int x,y;
-	struct vstat_vmem *vmem_ptr;
 
 	if(!bitmap_initialized)
 		return(0);
@@ -1257,15 +1241,13 @@ int bitmap_vmem_gettext(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 	}
 
 	do_rwlock_rdlock(&vstatlock);
-	vmem_ptr = get_vmem(&vstat);
 	for(y=sy-1;y<ey;y++) {
-		struct vmem_cell *vc = vmem_cell_ptr(vmem_ptr, sx - 1, y);
+		struct vmem_cell *vc = vmem_cell_ptr(vstat.vmem, sx - 1, y);
 		for(x=sx-1;x<ex;x++) {
 			*(fill++) = *vc;
-			vc = vmem_next_ptr(vmem_ptr, vc);
+			vc = vmem_next_ptr(vstat.vmem, vc);
 		}
 	}
-	release_vmem(vmem_ptr);
 	do_rwlock_unlock(&vstatlock);
 	return(1);
 }
@@ -1541,7 +1523,6 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 	int	cy;
 	int width=ex-x+1;
 	int height=ey-y+1;
-	struct vstat_vmem *vmem_ptr;
 	int soff;
 	int doff;
 
@@ -1573,13 +1554,12 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 	bool oscrolldown = scrolldown;
 
 	do_rwlock_wrlock(&vstatlock);
-	vmem_ptr = get_vmem(&vstat);
 	if (width == vstat.cols && height > vstat.rows / 2 && toy == 1) {
-		vmem_ptr->top_row += (y - toy);
-		if (vmem_ptr->top_row >= vmem_ptr->height)
-			vmem_ptr->top_row -= vmem_ptr->height;
-		if (vmem_ptr->top_row < 0)
-			vmem_ptr->top_row += vmem_ptr->height;
+		vstat.vmem->top_row += (y - toy);
+		if (vstat.vmem->top_row >= vstat.vmem->height)
+			vstat.vmem->top_row -= vstat.vmem->height;
+		if (vstat.vmem->top_row < 0)
+			vstat.vmem->top_row += vstat.vmem->height;
 
 		// Set up the move back down...
 		scrolldown = !scrolldown;
@@ -1588,28 +1568,27 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 		y = toy - height + 1;
 	}
 	if (scrolldown) {
-		soff = vmem_cell_offset(vmem_ptr, x - 1, y + height - 2);
-		doff = vmem_cell_offset(vmem_ptr, tox - 1, toy + height - 2);
+		soff = vmem_cell_offset(vstat.vmem, x - 1, y + height - 2);
+		doff = vmem_cell_offset(vstat.vmem, tox - 1, toy + height - 2);
 	}
 	else {
-		soff = vmem_cell_offset(vmem_ptr, x - 1, y - 1);
-		doff = vmem_cell_offset(vmem_ptr, tox - 1, toy - 1);
+		soff = vmem_cell_offset(vstat.vmem, x - 1, y - 1);
+		doff = vmem_cell_offset(vstat.vmem, tox - 1, toy - 1);
 	}
 	for(cy=0; cy<height; cy++) {
-		memmove(&vmem_ptr->vmem[doff], &vmem_ptr->vmem[soff], sizeof(vmem_ptr->vmem[0])*width);
-		memmove(&bitmap_drawn[doff], &bitmap_drawn[soff], sizeof(vmem_ptr->vmem[0])*width);
+		memmove(&vstat.vmem->vmem[doff], &vstat.vmem->vmem[soff], sizeof(vstat.vmem->vmem[0])*width);
+		memmove(&bitmap_drawn[doff], &bitmap_drawn[soff], sizeof(vstat.vmem->vmem[0])*width);
 		if (scrolldown) {
-			soff = vmem_prev_row_offset(vmem_ptr, soff);
-			doff = vmem_prev_row_offset(vmem_ptr, doff);
+			soff = vmem_prev_row_offset(vstat.vmem, soff);
+			doff = vmem_prev_row_offset(vstat.vmem, doff);
 		}
 		else {
-			soff = vmem_next_row_offset(vmem_ptr, soff);
-			doff = vmem_next_row_offset(vmem_ptr, doff);
+			soff = vmem_next_row_offset(vstat.vmem, soff);
+			doff = vmem_next_row_offset(vstat.vmem, doff);
 		}
 	}
 
-	bitmap_movetext_screen(vmem_ptr, x, oy, tox, otoy, oscrolldown ? -1 : 1, oheight, width);
-	release_vmem(vmem_ptr);
+	bitmap_movetext_screen(vstat.vmem, x, oy, tox, otoy, oscrolldown ? -1 : 1, oheight, width);
 	do_rwlock_unlock(&vstatlock);
 
 	return(1);
@@ -1619,7 +1598,6 @@ void bitmap_clreol(void)
 {
 	int x;
 	WORD fill=(cio_textinfo.attribute<<8)|' ';
-	struct vstat_vmem *vmem_ptr;
 	int row;
 
 	if(!bitmap_initialized)
@@ -1627,11 +1605,9 @@ void bitmap_clreol(void)
 
 	row = cio_textinfo.cury + cio_textinfo.wintop - 1;
 	do_rwlock_wrlock(&vstatlock);
-	vmem_ptr = get_vmem(&vstat);
 	for(x=cio_textinfo.curx+cio_textinfo.winleft-2; x<cio_textinfo.winright; x++) {
-		set_vmem_cell(vmem_ptr, x, row - 1, fill, ciolib_fg, ciolib_bg);
+		set_vmem_cell(vstat.vmem, x, row - 1, fill, ciolib_fg, ciolib_bg);
 	}
-	release_vmem(vmem_ptr);
 	do_rwlock_unlock(&vstatlock);
 }
 
@@ -1639,21 +1615,18 @@ void bitmap_clrscr(void)
 {
 	size_t x, y;
 	WORD fill = (cio_textinfo.attribute << 8) | ' ';
-	struct vstat_vmem *vmem_ptr;
 	int rows, cols;
 
 	if(!bitmap_initialized)
 		return;
 	do_rwlock_wrlock(&vstatlock);
-	vmem_ptr = get_vmem(&vstat);
 	rows = vstat.rows;
 	cols = vstat.cols;
 	for (y = cio_textinfo.wintop - 1; y < cio_textinfo.winbottom && y < rows; y++) {
 		for (x = cio_textinfo.winleft - 1; x < cio_textinfo.winright && x < cols; x++) {
-			set_vmem_cell(vmem_ptr, x, y, fill, ciolib_fg, ciolib_bg);
+			set_vmem_cell(vstat.vmem, x, y, fill, ciolib_fg, ciolib_bg);
 		}
 	}
-	release_vmem(vmem_ptr);
 	do_rwlock_unlock(&vstatlock);
 }
 
@@ -1763,11 +1736,9 @@ int bitmap_setpixel(uint32_t x, uint32_t y, uint32_t colour)
 {
 	update_from_vmem(FALSE);
 	do_rwlock_wrlock(&vstatlock);
-	struct vstat_vmem *vmem_ptr = get_vmem(&vstat);
-	int off = vmem_cell_offset(vmem_ptr, x / vstat.charwidth, y / vstat.charheight);
-	vmem_ptr->vmem[off].bg |= 0x04000000;
+	int off = vmem_cell_offset(vstat.vmem, x / vstat.charwidth, y / vstat.charheight);
+	vstat.vmem->vmem[off].bg |= 0x04000000;
 	bitmap_drawn[off].bg |= 0x04000000;
-	release_vmem(vmem_ptr);
 	pthread_mutex_lock(&screenlock);
 	if (x < screena.screenwidth && y < screena.screenheight) {
 		if (screena.rect->data[pixel_offset(&screena, x, y)] != colour) {
@@ -1821,7 +1792,6 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 
 	update_from_vmem(FALSE);
 	do_rwlock_wrlock(&vstatlock);
-	struct vstat_vmem *vmem_ptr = get_vmem(&vstat);
 	pthread_mutex_lock(&screenlock);
 	if (ex > screena.screenwidth || ey > screena.screenheight) {
 		pthread_mutex_unlock(&screenlock);
@@ -1833,8 +1803,8 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 		pos = pixels->width*(y-sy+y_off)+x_off;
 		if (mask == NULL) {
 			for (x = sx; x <= ex; x++) {
-				int off = vmem_cell_offset(vmem_ptr, x / vstat.charwidth, y / vstat.charheight);
-				vmem_ptr->vmem[off].bg |= 0x04000000;
+				int off = vmem_cell_offset(vstat.vmem, x / vstat.charwidth, y / vstat.charheight);
+				vstat.vmem->vmem[off].bg |= 0x04000000;
 				bitmap_drawn[off].bg |= 0x04000000;
 				if (screena.rect->data[pixel_offset(&screena, x, y)] != pixels->pixels[pos]) {
 					screena.rect->data[pixel_offset(&screena, x, y)] = pixels->pixels[pos];
@@ -1858,8 +1828,8 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 		else {
 			mpos = mask->width * (y - sy + my_off) + mx_off;
 			for (x = sx; x <= ex; x++) {
-				int off = vmem_cell_offset(vmem_ptr, x / vstat.charwidth, y / vstat.charheight);
-				vmem_ptr->vmem[off].bg |= 0x04000000;
+				int off = vmem_cell_offset(vstat.vmem, x / vstat.charwidth, y / vstat.charheight);
+				vstat.vmem->vmem[off].bg |= 0x04000000;
 				bitmap_drawn[off].bg |= 0x04000000;
 				mask_byte = mpos / 8;
 				mask_bit = mpos % 8;
@@ -1888,7 +1858,6 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 		}
 	}
 	pthread_mutex_unlock(&screenlock);
-	release_vmem(vmem_ptr);
 	do_rwlock_unlock(&vstatlock);
 
 	return 1;
