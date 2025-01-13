@@ -278,6 +278,8 @@ function enter_file_section()
 		return;
 	if(!(user.settings & USER_ASK_NSCAN))
 		return;
+	if(user.new_file_time == 0)
+		return;
 	console.newline(2);
 	if(console.yesno("Search all libraries for new files"))
 		bbs.scan_dirs(FL_ULTIME, /* all */true);
