@@ -1147,8 +1147,10 @@ int64_t xp_fast_timer64(void)
 	}
 	cid = CLOCK_MONOTONIC_RAW;
 #endif
+#ifdef CLOCK_MONOTONIC
 	if (cid == CLOCK_REALTIME)
 		cid = CLOCK_MONOTONIC;
+#endif
 
 	if (clock_gettime(cid, &ts) == 0)
 		ret = ts.tv_sec;

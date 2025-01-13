@@ -814,15 +814,16 @@ bitmap_draw_vmem(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 
 	size_t xoffset = (sx-1) * vstat.charwidth;
 	size_t yoffset = (sy-1) * vstat.charheight;
+	bs.expand = vstat.flags & VIDMODES_FLAG_EXPAND;
+	bs.font_data_width = vstat.charwidth - (bs.expand ? 1 : 0);
+
+	pthread_mutex_lock(&screenlock);
 	assert(xoffset + vstat.charwidth <= screena.screenwidth);
 	assert(xoffset + vstat.charwidth <= screenb.screenwidth);
 	assert(yoffset + vstat.charheight <= screena.screenheight);
 	assert(yoffset + vstat.charheight <= screenb.screenheight);
 	bs.maxpix = screena.screenwidth * screena.screenheight;
-	bs.expand = vstat.flags & VIDMODES_FLAG_EXPAND;
-	bs.font_data_width = vstat.charwidth - (bs.expand ? 1 : 0);
 
-	pthread_mutex_lock(&screenlock);
 	bs.pixeloffset = pixel_offset(&screena, xoffset, yoffset);
 	bs.cheat_colour = fill[0].bg;
 	size_t rsz = screena.screenwidth - vstat.charwidth * vwidth;
@@ -971,6 +972,13 @@ static void blinker_thread(void *data)
 		lfc = force_cursor;
 		force_cursor = 0;
 		blink = vstat.blink;
+		pthread_mutex_lock(&screenlock);
+		if (screena.rect == NULL) {
+			pthread_mutex_unlock(&screenlock);
+			do_rwlock_unlock(&vstatlock);
+			continue;
+		}
+		pthread_mutex_unlock(&screenlock);
 		do_rwlock_unlock(&vstatlock);
 
 		if (check_redraw()) {

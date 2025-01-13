@@ -756,8 +756,8 @@ static void sdl_add_key(unsigned int keyval, struct video_stats *vs)
 	if(keyval <= 0xffff) {
 		pthread_mutex_lock(&sdl_keylock);
 		if(sdl_keynext+1==sdl_key) {
-			beep();
 			pthread_mutex_unlock(&sdl_keylock);
+			beep();
 			return;
 		}
 		if((sdl_keynext+2==sdl_key) && keyval > 0xff) {
@@ -990,7 +990,7 @@ void sdl_video_event_thread(void *data)
 							}
 							else {
 								if (bios_key >= 26 ||
-								    (bios_key == 429496729 && ((ev.key.keysym.sym > SDLK_KP_5) || (ev.key.keysym.sym == SDLK_KP_0)))) {
+								    (bios_key == 25 && ((ev.key.keysym.sym > SDLK_KP_5) || (ev.key.keysym.sym == SDLK_KP_0)))) {
 									terminate_bios = true;
 								}
 							}
@@ -1146,8 +1146,10 @@ void sdl_video_event_thread(void *data)
 					case SDL_WINDOWEVENT_SIZE_CHANGED:
 						// SDL2: User resized window
 					case SDL_WINDOWEVENT_RESIZED:
+						pthread_mutex_lock(&win_mutex);
 						fullscreen = !!(sdl.GetWindowFlags(win) & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP));
 						sdl.SetWindowResizable(win, fullscreen ? SDL_FALSE : SDL_TRUE);
+						pthread_mutex_unlock(&win_mutex);
 						cio_api.mode=fullscreen?CIOLIB_MODE_SDL_FULLSCREEN:CIOLIB_MODE_SDL;
 						pthread_mutex_lock(&sdl_mode_mutex);
 						if (sdl_mode) {
@@ -1326,17 +1328,17 @@ void sdl_video_event_thread(void *data)
 					case SDL_USEREVENT_INIT:
 						if(!sdl_init_good) {
 							if(sdl.WasInit(SDL_INIT_VIDEO)==SDL_INIT_VIDEO) {
-								pthread_mutex_lock(&win_mutex);
 								_beginthread(sdl_mouse_thread, 0, NULL);
 								sdl_init_good=1;
-								pthread_mutex_unlock(&win_mutex);
 							}
 						}
 						sdl_ufunc_retval=0;
 						sem_post(&sdl_ufunc_ret);
 						break;
 					case SDL_USEREVENT_GETWINPOS:
+						pthread_mutex_lock(&win_mutex);
 						sdl.GetWindowPosition(win, ev.user.data1, ev.user.data2);
+						pthread_mutex_unlock(&win_mutex);
 						sem_post(&sdl_ufunc_ret);
 						break;
 					case SDL_USEREVENT_MOUSEPOINTER:
@@ -1380,8 +1382,6 @@ void sdl_video_event_thread(void *data)
 				break;
 		}
 	}
-	sdl.QuitSubSystem(SDL_INIT_VIDEO);
-	return;
 }
 
 static int
