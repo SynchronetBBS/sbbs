@@ -146,7 +146,8 @@ rwlock_wrlock(rwlock_t *lock)
 		ret = true;
 	}
 	LeaveCriticalSection(&lock->lk);
-	LeaveCriticalSection(&lock->wlk);
+	if (!ret)
+		LeaveCriticalSection(&lock->wlk);
 	return ret;
 }
 
