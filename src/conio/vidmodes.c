@@ -342,7 +342,7 @@ static struct vstat_vmem *new_vmem(int cols, int rows, bool palette)
 struct vmem_cell *
 vmem_cell_ptr(struct vstat_vmem *vm, int x, int y)
 {
-	int off = y * vm->width + x;
+	size_t off = y * vm->width + x;
 	off += vm->top_row * vm->width;
 	if (off >= vm->count)
 		off -= vm->count;
@@ -352,7 +352,7 @@ vmem_cell_ptr(struct vstat_vmem *vm, int x, int y)
 int
 vmem_cell_offset(struct vstat_vmem *vm, int x, int y)
 {
-	int off = y * vm->width + x;
+	size_t off = y * vm->width + x;
 	off += vm->top_row * vm->width;
 	if (off >= vm->count)
 		off -= vm->count;
@@ -397,7 +397,7 @@ int
 vmem_next_row_offset(struct vstat_vmem *vm, int off)
 {
 	off += vm->width;
-	if (off >= vm->count)
+	if ((size_t)off >= vm->count)
 		off -= vm->count;
 	return off;
 }
