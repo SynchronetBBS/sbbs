@@ -1293,7 +1293,7 @@ js_datestr(JSContext *cx, uintN argc, jsval *arglist)
 		}
 		JS_ValueToECMAUint32(cx,argv[0],(uint32_t*)&t);
 	}
-	if((js_str = JS_NewStringCopyZ(cx, datestr(sys->cfg, t, str))==NULL)
+	if((js_str = JS_NewStringCopyZ(cx, datestr(sys->cfg, t, str)))==NULL)
 		return(JS_FALSE);
 
 	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
