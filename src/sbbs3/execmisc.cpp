@@ -567,8 +567,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					lp=getintvar(csi,*(int32_t *)csi->ip);
 					csi->ip+=4; /* Skip int variable name */
 					if(pp && lp) {
-						datestr(*lp, str);
-						*pp=copystrvar(csi,*pp,str);
+						*pp=copystrvar(csi,*pp,datestr(*lp, str));
 					}
 					return(0);
 				case SECOND_STR:
