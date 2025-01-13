@@ -205,7 +205,6 @@ endif
 
 ifndef WITHOUT_PORTAUDIO
  PORTAUDIO_PATH ?=      $(shell if [ -f /usr/local/include/portaudio.h ]; then echo /usr/local ; elif [ -f /usr/include/portaudio.h ] ; then echo /usr ; else echo NOTFOUND ; fi)
-
  ifneq ($(PORTAUDIO_PATH),NOTFOUND)
   XPDEV_CFLAGS += -DWITH_PORTAUDIO
   ifeq ($(os),linux)
@@ -214,18 +213,16 @@ ifndef WITHOUT_PORTAUDIO
   endif
  endif
 endif
+
 ifndef win
-	ifndef WITHOUT_ALSA_SOUND
-		ifeq ($(shell if [ -f /usr/include/alsa/asoundlib.h ] ; then echo YES ; fi),YES)
-			XPDEV-MT_CFLAGS	+= -DUSE_ALSA_SOUND
-			XPDEV-MT_LIBS += -ldl
-		else
-			ifeq ($(shell if [ -f /usr/local/include/alsa/asoundlib.h ] ; then echo YES ; fi),YES)
-				XPDEV-MT_CFLAGS	+= -DUSE_ALSA_SOUND
-				XPDEV-MT_LIBS += -ldl
-			endif
-		endif
-	endif
+ ifndef WITHOUT_ALSA_SOUND
+  ifeq ($(shell command -v pkg-config > /dev/null && pkg-config --exists alsa && echo 'YES'),YES)
+   XPDEV-MT_CFLAGS += -DUSE_ALSA_SOUND `pkg-config alsa --cflags`
+   ifeq ($(os),linux)
+    XPDEV-MT_LIBS += -ldl
+   endif
+  endif
+ endif
 endif
 
 ifndef NO_PULSEAUDIO
