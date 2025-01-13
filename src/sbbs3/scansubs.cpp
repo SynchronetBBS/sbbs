@@ -234,7 +234,7 @@ void sbbs_t::scanallsubs(int mode)
 	}
 	bprintf(text[MessageScanComplete],subs_scanned);
 	if(mode&SCAN_NEW && !(mode&(SCAN_MSGSONLY|SCAN_BACK|SCAN_TOYOU))
-		&& useron.misc&ANFSCAN && !(useron.rest&FLAG('T'))) {
+		&& useron.misc&ANFSCAN && !(useron.rest&FLAG('T')) && ns_time != 0) {
 		xfer_cmds++;
 		scanalldirs(FL_ULTIME);
 	}
