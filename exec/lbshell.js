@@ -309,7 +309,6 @@ function Filemenu()
 		,"L",width
 	);
 	if (bbs.new_file_time == 0) {
-	{
 		this.add(
 			 format_opt("Scan for |New Files")
 			,"N",width
