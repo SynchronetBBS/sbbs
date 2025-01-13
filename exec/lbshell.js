@@ -308,10 +308,19 @@ function Filemenu()
 		 format_opt("|List Dir ("+file_area.lib_list[bbs.curlib].dir_list[bbs.curdir].name+")",width,false)
 		,"L",width
 	);
-	this.add(
-		 format_opt("Scan for |New Files since "+scantime,width,true)
-		,"N",width
-	);
+	if (bbs.new_file_time == 0) {
+	{
+		this.add(
+			 format_opt("Scan for |New Files")
+			,"N",width
+		);
+	}
+	else {
+		this.add(
+			 format_opt("Scan for |New Files since "+scantime,width,true)
+			,"N",width
+		);
+	}
 	this.add(
 		 format_opt("Search for |Filenames",width,true)
 		,"F",width
