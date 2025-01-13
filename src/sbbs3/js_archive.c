@@ -705,11 +705,21 @@ JSClass js_archive_class = {
 
 JSObject* js_CreateArchiveClass(JSContext* cx, JSObject* parent)
 {
-	return JS_InitClass(cx, parent, NULL
+	JSObject* obj = JS_InitClass(cx, parent, NULL
 		,&js_archive_class
 		,js_archive_constructor
 		,1		/* number of constructor args */
 		,NULL	/* props, set in constructor */
 		,NULL	/* funcs, set in constructor */
 		,NULL, NULL);
+	if(obj != NULL) {
+		jsval val;
+		if(JS_GetProperty(cx, parent, js_archive_class.name, &val) && !JSVAL_NULL_OR_VOID(val)) {
+			JSObject* constructor;
+			JS_ValueToObject(cx, val, &constructor);
+			js_CreateArrayOfStrings(cx, constructor, "supported_formats", supported_archive_formats
+				,JSPROP_PERMANENT|JSPROP_ENUMERATE|JSPROP_READONLY);
+		}
+	}
+	return obj;
 }
