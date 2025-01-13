@@ -1490,8 +1490,6 @@ extern "C" {
 	DLLEXPORT JSBool	js_DefineSyncProperties(JSContext* cx, JSObject* obj, jsSyncPropertySpec*);
 	DLLEXPORT JSBool	js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertySpec* props, jsSyncMethodSpec* funcs, jsConstIntSpec* consts, int flags);
 	DLLEXPORT JSBool	js_DefineConstIntegers(JSContext* cx, JSObject* obj, jsConstIntSpec*, int flags);
-	DLLEXPORT JSBool	js_CreateArrayOfStrings(JSContext* cx, JSObject* parent
-														,const char* name, const char* str[], unsigned flags);
 	DLLEXPORT void*		js_GetClassPrivate(JSContext*, JSObject*, JSClass*);
 
 	DLLEXPORT bool	js_CreateCommonObjects(JSContext* cx
@@ -1547,6 +1545,8 @@ extern "C" {
 	DLLEXPORT char*		js_getstring(JSContext *cx, JSString *str);
 	DLLEXPORT JSBool	js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated);
 	DLLEXPORT JSBool	js_clear_event(JSContext *cx, jsval *arglist, js_callback_t *cb, enum js_event_type et, int ididx);
+	DLLEXPORT JSBool	js_CreateArrayOfStrings(JSContext* cx, JSObject* parent
+														,const char* name, const char* str[], unsigned flags);
 
 	/* js_system.c */
 	DLLEXPORT JSObject* js_CreateSystemObject(JSContext* cx, JSObject* parent

@@ -548,39 +548,6 @@ void* js_GetClassPrivate(JSContext *cx, JSObject *obj, JSClass* cls)
 	return ret;
 }
 
-JSBool
-js_CreateArrayOfStrings(JSContext* cx, JSObject* parent, const char* name, const char* str[],uintN flags)
-{
-	JSObject*	array;
-	JSString*	js_str;
-	jsval		val;
-	size_t		i;
-	jsuint		len=0;
-
-	if(JS_GetProperty(cx,parent,name,&val) && val!=JSVAL_VOID)
-		array=JSVAL_TO_OBJECT(val);
-	else
-		if((array=JS_NewArrayObject(cx, 0, NULL))==NULL)	/* Assertion here, in _heap_alloc_dbg, June-21-2004 */
-			return(JS_FALSE);								/* Caused by nntpservice.js? */
-
-	if(!JS_DefineProperty(cx, parent, name, OBJECT_TO_JSVAL(array)
-		,NULL,NULL,flags))
-		return(JS_FALSE);
-
-	if(array == NULL || !JS_GetArrayLength(cx, array, &len))
-		return(JS_FALSE);
-
-	for(i=0;str[i]!=NULL;i++) {
-		if((js_str = JS_NewStringCopyZ(cx, str[i]))==NULL)
-			break;
-		val = STRING_TO_JSVAL(js_str);
-		if(!JS_SetElement(cx, array, len+i, &val))
-			break;
-	}
-
-	return(JS_TRUE);
-}
-
 /* Convert from Synchronet-specific jsSyncMethodSpec to JSAPI's JSFunctionSpec */
 
 JSBool
