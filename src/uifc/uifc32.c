@@ -2759,7 +2759,7 @@ void upop(const char *instr)
 	if (!width)
 		return;
 	width += 7;
-	if (width > api->scrn_width) {
+	if ((uint)width > api->scrn_width) {
 		str[api->scrn_width - 7] = '\0';
 		width = api->scrn_width;
 	}
