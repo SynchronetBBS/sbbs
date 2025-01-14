@@ -408,8 +408,11 @@ int sdl_init(int mode)
 {
 	bitmap_drv_init(sdl_drawrect, sdl_flush);
 
-	if(mode==CIOLIB_MODE_SDL_FULLSCREEN)
+	if(mode==CIOLIB_MODE_SDL_FULLSCREEN) {
+		pthread_mutex_lock(&win_mutex);
 		fullscreen = 1;
+		pthread_mutex_unlock(&win_mutex);
+	}
 	// Needs to be *after* bitmap_drv_init()
 #if defined(__DARWIN__)
 	sem_post(&startsdl_sem);
@@ -632,10 +635,12 @@ static void setup_surfaces(struct video_stats *vs)
 	int idealmh;
 	int new_win = false;
 
+	pthread_mutex_lock(&win_mutex);
 	if(fullscreen)
 		flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 	else
 		flags |= SDL_WINDOW_RESIZABLE;
+	pthread_mutex_unlock(&win_mutex);
 #if (SDL_MINOR_VERSION > 0) || (SDL_PATCHLEVEL >= 1)
         flags |= SDL_WINDOW_ALLOW_HIGHDPI;
 #endif
@@ -1149,8 +1154,8 @@ void sdl_video_event_thread(void *data)
 						pthread_mutex_lock(&win_mutex);
 						fullscreen = !!(sdl.GetWindowFlags(win) & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP));
 						sdl.SetWindowResizable(win, fullscreen ? SDL_FALSE : SDL_TRUE);
-						pthread_mutex_unlock(&win_mutex);
 						cio_api.mode=fullscreen?CIOLIB_MODE_SDL_FULLSCREEN:CIOLIB_MODE_SDL;
+						pthread_mutex_unlock(&win_mutex);
 						pthread_mutex_lock(&sdl_mode_mutex);
 						if (sdl_mode) {
 							pthread_mutex_unlock(&sdl_mode_mutex);
