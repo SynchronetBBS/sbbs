@@ -396,7 +396,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 
 	if (!native && (startup->options & BBS_OPT_NO_DOS)) {
 		lprintf((mode & EX_OFFLINE) ? LOG_ERR : LOG_WARNING, "DOS programs not supported: %s", cmdline);
-		bprintf("Sorry, DOS programs are not supported on this node.\r\n");
+		bputs(text[NoDOS]);
 		return -1;
 	}
 	if (mode & EX_OFFLINE)
@@ -1200,7 +1200,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 	} else {
 		if (startup->options & BBS_OPT_NO_DOS) {
 			lprintf((mode & EX_OFFLINE) ? LOG_ERR : LOG_WARNING, "DOS programs not supported: %s", cmdline);
-			bprintf("Sorry, DOS programs are not supported on this node.\r\n");
+			bputs(text[NoDOS]);
 			return -1;
 		}
 #if defined(__FreeBSD__)
@@ -1333,7 +1333,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 		/* must have sbbs.ini bbs useDOSemu=1 (or empty), cannot be =0 */
 		if (!startup->usedosemu) {
 			lprintf((mode & EX_OFFLINE) ? LOG_ERR : LOG_WARNING, "DOSEMU disabled, program not run");
-			bprintf("Sorry, DOSEMU is not supported on this node.\r\n");
+			bputs(text[NoDOS]);
 			return -1;
 		}
 
@@ -1341,13 +1341,13 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 		SAFECOPY(dosemubinloc, (cmdstr(startup->dosemu_path, nulstr, nulstr, tok)));
 		if (dosemubinloc[0] == '\0') {
 			lprintf((mode & EX_OFFLINE) ? LOG_ERR : LOG_WARNING, "DOSEMU invalid DOSEmuPath, program not run");
-			bprintf("Sorry, DOSEMU is not supported on this node.\r\n");
+			bputs(text[NoDOS]);
 			return -1;
 		}
 
 		if (!fexist(dosemubinloc)) {
 			lprintf((mode & EX_OFFLINE) ? LOG_ERR : LOG_WARNING, "DOSEMU not found: %s", dosemubinloc);
-			bprintf("Sorry, DOSEMU is not supported on this node.\r\n");
+			bputs(text[NoDOS]);
 			return -1;
 		}
 
@@ -1594,7 +1594,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 
 #else
 		lprintf((mode & EX_OFFLINE) ? LOG_ERR : LOG_WARNING, "DOS programs not supported: %s", cmdline);
-		bprintf("Sorry, DOS programs are not supported on this node.\r\n");
+		bputs(text[NoDOS]);
 
 		return -1;
 #endif

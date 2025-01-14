@@ -948,6 +948,7 @@ enum text {
 	,DeletedNumberItems
 	,E_Mail
 	,E_Mails
+	,NoDOS
 
 	,TOTAL_TEXT
 };

@@ -938,7 +938,8 @@ var Deleted=928;
 var DeletedNumberItems=929;
 var E_Mail=930;
 var E_Mails=931;
+var NoDOS=932;
 
-var TOTAL_TEXT=932;
+var TOTAL_TEXT=933;
 
 this;

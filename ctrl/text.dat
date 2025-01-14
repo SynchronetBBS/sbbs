@@ -1116,3 +1116,4 @@
 "@Deleted@ %d %s"                                          929 DeletedNumberItems
 "E-Mail"                                                   930 E_Mail
 "E-Mails"                                                  931 E_Mails
+"Sorry, DOS programs are not supported on this node.\r\n"  932 NoDOS
