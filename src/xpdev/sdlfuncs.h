@@ -6,12 +6,12 @@
 #include "SDL_syswm.h"
 
 struct sdlfuncs {
-	int	(*Init)	(Uint32 flags);
-	void	(*Quit)	(void);
-	int	(*SemWait)	(SDL_sem *sem);
-	int	(*SemPost)	(SDL_sem *sem);
-	SDL_sem *(*SDL_CreateSemaphore)	(Uint32 initial_value);
-	void (*SDL_DestroySemaphore)	(SDL_sem *semaphore);
+	int (*Init) (Uint32 flags);
+	void (*Quit) (void);
+	int (*SemWait)  (SDL_sem *sem);
+	int (*SemPost)  (SDL_sem *sem);
+	SDL_sem *(*SDL_CreateSemaphore) (Uint32 initial_value);
+	void (*SDL_DestroySemaphore)    (SDL_sem *semaphore);
 	int (*InitSubSystem)(Uint32 flags);
 	void (*QuitSubSystem)(Uint32 flags);
 	int (*OpenAudio)(SDL_AudioSpec *desired, SDL_AudioSpec *obtained);
@@ -20,11 +20,11 @@ struct sdlfuncs {
 	void (*UnlockAudio)(void);
 	void (*PauseAudio)(int pause_on);
 	SDL_AudioStatus (*GetAudioStatus)(void);
-	int	gotfuncs;
+	int gotfuncs;
 };
 
-extern struct sdlfuncs	xpbeep_sdl;
-extern SDL_sem *sdl_exit_sem;
+extern struct sdlfuncs xpbeep_sdl;
+extern SDL_sem *       sdl_exit_sem;
 
 #ifdef __cplusplus
 extern "C" {

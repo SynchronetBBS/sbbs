@@ -28,13 +28,13 @@
 extern "C" {
 #endif
 
-DLLEXPORT char *	ftn_msgid(sub_t*, smbmsg_t*, char* msgid, size_t);
-DLLEXPORT char *	get_msgid(scfg_t*, int subnum, smbmsg_t*, char* msgid, size_t);
-DLLEXPORT char *	get_replyid(scfg_t*, smb_t*, smbmsg_t*, char* msgid, size_t maxlen);
-DLLEXPORT uint32_t	get_new_msg_number(smb_t*);
-DLLEXPORT bool		add_msg_ids(scfg_t*, smb_t*, smbmsg_t*, smbmsg_t* remsg);
-DLLEXPORT bool		add_reply_ids(scfg_t*, smb_t*, smbmsg_t*, smbmsg_t* remsg);
-DLLEXPORT char*		msg_program_id(char* pid, size_t);
+DLLEXPORT char *    ftn_msgid(sub_t*, smbmsg_t*, char* msgid, size_t);
+DLLEXPORT char *    get_msgid(scfg_t*, int subnum, smbmsg_t*, char* msgid, size_t);
+DLLEXPORT char *    get_replyid(scfg_t*, smb_t*, smbmsg_t*, char* msgid, size_t maxlen);
+DLLEXPORT uint32_t  get_new_msg_number(smb_t*);
+DLLEXPORT bool      add_msg_ids(scfg_t*, smb_t*, smbmsg_t*, smbmsg_t* remsg);
+DLLEXPORT bool      add_reply_ids(scfg_t*, smb_t*, smbmsg_t*, smbmsg_t* remsg);
+DLLEXPORT char*     msg_program_id(char* pid, size_t);
 
 #ifdef __cplusplus
 }

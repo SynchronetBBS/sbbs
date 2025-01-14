@@ -32,29 +32,29 @@ documentation and/or software.
 #ifndef H__MD5
 #define H__MD5
 
-#include <stddef.h>		/* size_t */
-#include <gen_defs.h>	/* uint32_t */
+#include <stddef.h>     /* size_t */
+#include <gen_defs.h>   /* uint32_t */
 
-#define MD5_DIGEST_SIZE		16
+#define MD5_DIGEST_SIZE     16
 
 #ifndef BYTE
-	typedef unsigned char BYTE;
+typedef unsigned char BYTE;
 #endif
 
 typedef struct
 {
-  uint32_t	state[4];
-  uint32_t	count[2];
-  BYTE	buffer[64];
+	uint32_t state[4];
+	uint32_t count[2];
+	BYTE buffer[64];
 } MD5;
 
 #if defined(_WIN32) && (defined(MD5_IMPORTS) || defined(MD5_EXPORTS))
 	#if defined(MD5_IMPORTS)
-		#define MD5EXPORT	__declspec(dllimport)
+		#define MD5EXPORT   __declspec(dllimport)
 	#else
-		#define MD5EXPORT	__declspec(dllexport)
+		#define MD5EXPORT   __declspec(dllexport)
 	#endif
-#else	/* !_WIN32 */
+#else   /* !_WIN32 */
 	#define MD5EXPORT
 #endif
 
@@ -62,11 +62,11 @@ typedef struct
 extern "C" {
 #endif
 
-MD5EXPORT void	MD5_open(MD5* ctx);
-MD5EXPORT void	MD5_digest(MD5* ctx, const void* buf, size_t len);
-MD5EXPORT void	MD5_close(MD5* ctx, BYTE digest[MD5_DIGEST_SIZE]);
-MD5EXPORT BYTE*	MD5_calc(BYTE digest[MD5_DIGEST_SIZE], const void* buf, size_t len);
-MD5EXPORT char*	MD5_hex(char* dest, const BYTE digest[MD5_DIGEST_SIZE]);
+MD5EXPORT void  MD5_open(MD5* ctx);
+MD5EXPORT void  MD5_digest(MD5* ctx, const void* buf, size_t len);
+MD5EXPORT void  MD5_close(MD5* ctx, BYTE digest[MD5_DIGEST_SIZE]);
+MD5EXPORT BYTE* MD5_calc(BYTE digest[MD5_DIGEST_SIZE], const void* buf, size_t len);
+MD5EXPORT char* MD5_hex(char* dest, const BYTE digest[MD5_DIGEST_SIZE]);
 
 #ifdef __cplusplus
 }

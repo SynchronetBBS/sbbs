@@ -25,13 +25,13 @@
 #include "ars_defs.h"
 #include "findstr.h"
 #include "ini_file.h"
-#include "sockwrap.h"	 // IPPORT_MQTT
+#include "sockwrap.h"    // IPPORT_MQTT
 #include "str_util.h"
 
 bool allocerr(char* error, size_t maxerrlen, const char* fname, const char *item, size_t size)
 {
 	safe_snprintf(error, maxerrlen, "%s: allocating %u bytes of memory for %s"
-		,fname, (uint)size, item);
+	              , fname, (uint)size, item);
 	return(false);
 }
 
@@ -40,15 +40,15 @@ bool allocerr(char* error, size_t maxerrlen, const char* fname, const char *item
 /****************************************************************************/
 bool read_node_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 {
-	char	errstr[256];
-	FILE*	fp;
-	str_list_t	ini;
-	char	value[INI_MAX_VALUE_LEN];
+	char        errstr[256];
+	FILE*       fp;
+	str_list_t  ini;
+	char        value[INI_MAX_VALUE_LEN];
 
 	const char* fname = "node.ini";
-	SAFEPRINTF2(cfg->filename,"%s%s",cfg->node_dir,fname);
-	if((fp = fnopen(NULL, cfg->filename, O_RDONLY)) == NULL) {
-		safe_snprintf(error, maxerrlen, "%d (%s) opening %s",errno,safe_strerror(errno, errstr, sizeof(errstr)),cfg->filename);
+	SAFEPRINTF2(cfg->filename, "%s%s", cfg->node_dir, fname);
+	if ((fp = fnopen(NULL, cfg->filename, O_RDONLY)) == NULL) {
+		safe_snprintf(error, maxerrlen, "%d (%s) opening %s", errno, safe_strerror(errno, errstr, sizeof(errstr)), cfg->filename);
 		return false;
 	}
 	ini = iniReadFile(fp);
@@ -74,17 +74,17 @@ bool read_node_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 /****************************************************************************/
 bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 {
-	bool	result = false;
-	char	errstr[256];
-	FILE*	fp;
-	str_list_t	ini = NULL;
-	char	value[INI_MAX_VALUE_LEN];
-	str_list_t section;
+	bool        result = false;
+	char        errstr[256];
+	FILE*       fp;
+	str_list_t  ini = NULL;
+	char        value[INI_MAX_VALUE_LEN];
+	str_list_t  section;
 
 	const char* fname = "main.ini";
-	SAFEPRINTF2(cfg->filename,"%s%s",cfg->ctrl_dir,fname);
-	if((fp = fnopen(NULL, cfg->filename, O_RDONLY)) == NULL) {
-		safe_snprintf(error, maxerrlen, "%d (%s) opening %s",errno,safe_strerror(errno, errstr, sizeof(errstr)),cfg->filename);
+	SAFEPRINTF2(cfg->filename, "%s%s", cfg->ctrl_dir, fname);
+	if ((fp = fnopen(NULL, cfg->filename, O_RDONLY)) == NULL) {
+		safe_snprintf(error, maxerrlen, "%d (%s) opening %s", errno, safe_strerror(errno, errstr, sizeof(errstr)), cfg->filename);
 	} else {
 		ini = iniReadFile(fp);
 		fclose(fp);
@@ -117,9 +117,9 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->cdt_per_dollar = (uint32_t)iniGetBytes(ini, ROOT_SECTION, "cdt_per_dollar", 1, 0);
 	cfg->guest_msgscan_init = iniGetInteger(ini, ROOT_SECTION, "guest_msgscan_init", 0);
 	cfg->min_pwlen = iniGetInteger(ini, ROOT_SECTION, "min_password_length", 0);
-	if(cfg->min_pwlen < MIN_PASS_LEN)
+	if (cfg->min_pwlen < MIN_PASS_LEN)
 		cfg->min_pwlen = MIN_PASS_LEN;
-	if(cfg->min_pwlen > LEN_PASS)
+	if (cfg->min_pwlen > LEN_PASS)
 		cfg->min_pwlen = LEN_PASS;
 	cfg->max_log_size = (uint32_t)iniGetBytes(ini, ROOT_SECTION, "max_log_size", 1, 0);
 	cfg->max_logs_kept = iniGetUInt16(ini, ROOT_SECTION, "max_logs_kept", 0);
@@ -148,11 +148,11 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 
 	named_str_list_t** sections = iniParseSections(ini);
 
-	section = iniGetParsedSection(sections, "node_dir", /* cut: */true);
+	section = iniGetParsedSection(sections, "node_dir", /* cut: */ true);
 
-	str_list_t node_dirs = iniGetKeyList(section, NULL);
+	str_list_t         node_dirs = iniGetKeyList(section, NULL);
 	cfg->sys_nodes = (uint16_t)strListCount(node_dirs);
-	for(size_t i=0; i<cfg->sys_nodes; i++) {
+	for (size_t i = 0; i < cfg->sys_nodes; i++) {
 		SAFECOPY(cfg->node_path[i], iniGetString(section, NULL, node_dirs[i], "", value));
 #if defined(__unix__)
 		strlwr(cfg->node_path[i]);
@@ -162,7 +162,7 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 
 	cfg->sys_lastnode = iniGetInteger(ini, ROOT_SECTION, "lastnode", cfg->sys_nodes);
 
-	section = iniGetParsedSection(sections, "dir", /* cut: */true);
+	section = iniGetParsedSection(sections, "dir", /* cut: */ true);
 	SAFECOPY(cfg->data_dir, iniGetString(section, NULL, "data", "../data/", value));
 	SAFECOPY(cfg->exec_dir, iniGetString(section, NULL, "exec", "../exec/", value));
 	SAFECOPY(cfg->mods_dir, iniGetString(section, NULL, "mods", "../mods/", value));
@@ -171,7 +171,7 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/*********************/
 	/* New User Settings */
 	/*********************/
-	section = iniGetParsedSection(sections, "newuser", /* cut: */true);
+	section = iniGetParsedSection(sections, "newuser", /* cut: */ true);
 	cfg->uq = iniGetUInteger(section, NULL, "questions", DEFAULT_NEWUSER_QS);
 
 	SAFECOPY(cfg->new_genders, iniGetString(section, NULL, "gender_options", "MFX", value));
@@ -202,7 +202,7 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/*************************/
 	/* Expired User Settings */
 	/*************************/
-	section = iniGetParsedSection(sections, "expired", /* cut: */true);
+	section = iniGetParsedSection(sections, "expired", /* cut: */ true);
 	cfg->expired_level = iniGetInteger(section, NULL, "level", 0);
 	cfg->expired_flags1 = iniGetUInt32(section, NULL, "flags1", 0);
 	cfg->expired_flags2 = iniGetUInt32(section, NULL, "flags2", 0);
@@ -214,7 +214,7 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/*****************/
 	/* MQTT Settings */
 	/*****************/
-	section = iniGetParsedSection(sections, "mqtt", /* cut: */true);
+	section = iniGetParsedSection(sections, "mqtt", /* cut: */ true);
 	cfg->mqtt.enabled = iniGetBool(section, NULL, "enabled", false);
 	cfg->mqtt.verbose = iniGetBool(section, NULL, "verbose", true);
 	SAFECOPY(cfg->mqtt.username, iniGetString(section, NULL, "username", "", value));
@@ -237,7 +237,7 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/***********/
 	/* Modules */
 	/***********/
-	section = iniGetParsedSection(sections, "module", /* cut: */true);
+	section = iniGetParsedSection(sections, "module", /* cut: */ true);
 	SAFECOPY(cfg->logon_mod, iniGetString(section, NULL, "logon", "logon", value));
 	SAFECOPY(cfg->logoff_mod, iniGetString(section, NULL, "logoff", "", value));
 	SAFECOPY(cfg->newuser_mod, iniGetString(section, NULL, "newuser", "newuser", value));
@@ -272,10 +272,10 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/* Validation Sets */
 	/*******************/
 
-	for(uint i=0; i<10; i++) {
+	for (uint i = 0; i < 10; i++) {
 		char name[128];
 		SAFEPRINTF(name, "valset:%u", i);
-		section = iniGetParsedSection(sections, name, /* cut: */true);
+		section = iniGetParsedSection(sections, name, /* cut: */ true);
 		cfg->val_level[i] = iniGetInteger(section, NULL, "level", 0);
 		cfg->val_expire[i] = iniGetInteger(section, NULL, "expire", 0);
 		cfg->val_flags1[i] = iniGetUInt32(section, NULL, "flags1", 0);
@@ -291,10 +291,10 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/* Security Level Settings */
 	/***************************/
 
-	for(uint i=0; i<100; i++) {
+	for (uint i = 0; i < 100; i++) {
 		char name[128];
 		SAFEPRINTF(name, "level:%u", i);
-		section = iniGetParsedSection(sections, name, /* cut: */true);
+		section = iniGetParsedSection(sections, name, /* cut: */ true);
 		cfg->level_timeperday[i] = iniGetInteger(section, NULL, "timeperday", i);
 		cfg->level_timepercall[i] = iniGetInteger(section, NULL, "timepercall", i);
 		cfg->level_callsperday[i] = iniGetInteger(section, NULL, "callsperday", i);
@@ -309,23 +309,23 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	str_list_t shell_list = iniGetParsedSectionList(sections, "shell:");
 	cfg->total_shells = strListCount(shell_list);
 
-	if((cfg->shell=(shell_t **)malloc(sizeof(shell_t *)*cfg->total_shells))==NULL)
-		return allocerr(error, maxerrlen, fname, "shells", sizeof(shell_t *)*cfg->total_shells);
+	if ((cfg->shell = (shell_t **)malloc(sizeof(shell_t *) * cfg->total_shells)) == NULL)
+		return allocerr(error, maxerrlen, fname, "shells", sizeof(shell_t *) * cfg->total_shells);
 
 	cfg->new_shell = 0;
-	for(int i=0; i<cfg->total_shells; i++) {
-		if((cfg->shell[i]=(shell_t *)malloc(sizeof(shell_t)))==NULL)
+	for (int i = 0; i < cfg->total_shells; i++) {
+		if ((cfg->shell[i] = (shell_t *)malloc(sizeof(shell_t))) == NULL)
 			return allocerr(error, maxerrlen, fname, "shell", sizeof(shell_t));
-		memset(cfg->shell[i],0,sizeof(shell_t));
+		memset(cfg->shell[i], 0, sizeof(shell_t));
 
 		const char* name = shell_list[i];
-		section = iniGetParsedSection(sections, name, /* cut: */true);
+		section = iniGetParsedSection(sections, name, /* cut: */ true);
 		SAFECOPY(cfg->shell[i]->code, name + 6);
 		SAFECOPY(cfg->shell[i]->name, iniGetString(section, NULL, "name", name + 6, value));
 		SAFECOPY(cfg->shell[i]->arstr, iniGetString(section, NULL, "ars", "", value));
-		arstr(NULL,cfg->shell[i]->arstr,cfg,cfg->shell[i]->ar);
+		arstr(NULL, cfg->shell[i]->arstr, cfg, cfg->shell[i]->ar);
 		cfg->shell[i]->misc = iniGetUInteger(section, NULL, "settings", 0);
-		if(stricmp(cfg->shell[i]->code, new_shell) == 0)
+		if (stricmp(cfg->shell[i]->code, new_shell) == 0)
 			cfg->new_shell = i;
 	}
 
@@ -341,15 +341,15 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 /****************************************************************************/
 bool read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 {
-	char	errstr[256];
-	FILE*	fp;
-	str_list_t	ini;
-	char	value[INI_MAX_VALUE_LEN];
+	char        errstr[256];
+	FILE*       fp;
+	str_list_t  ini;
+	char        value[INI_MAX_VALUE_LEN];
 
 	const char* fname = "msgs.ini";
-	SAFEPRINTF2(cfg->filename,"%s%s",cfg->ctrl_dir,fname);
-	if((fp = fnopen(NULL, cfg->filename, O_RDONLY)) == NULL) {
-		safe_snprintf(error, maxerrlen, "%d (%s) opening %s",errno,safe_strerror(errno, errstr, sizeof(errstr)),cfg->filename);
+	SAFEPRINTF2(cfg->filename, "%s%s", cfg->ctrl_dir, fname);
+	if ((fp = fnopen(NULL, cfg->filename, O_RDONLY)) == NULL) {
+		safe_snprintf(error, maxerrlen, "%d (%s) opening %s", errno, safe_strerror(errno, errstr, sizeof(errstr)), cfg->filename);
 		return false;
 	}
 	ini = iniReadFile(fp);
@@ -364,13 +364,13 @@ bool read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	named_str_list_t** sections = iniParseSections(ini);
 
 	/* QWK stuff */
-	str_list_t section = iniGetParsedSection(sections, "QWK", /* cut: */true);
+	str_list_t         section = iniGetParsedSection(sections, "QWK", /* cut: */ true);
 	cfg->max_qwkmsgs = iniGetInteger(section, NULL, "max_msgs", 0);
 	cfg->max_qwkmsgage = iniGetInteger(section, NULL, "max_age", 0);
 	SAFECOPY(cfg->qnet_tagline, iniGetString(section, NULL, "default_tagline", "", value));
 
 	/* E-Mail stuff */
-	section = iniGetParsedSection(sections, "mail", /* cut: */true);
+	section = iniGetParsedSection(sections, "mail", /* cut: */ true);
 	cfg->mail_maxcrcs = iniGetInteger(section, NULL, "max_crcs", 0);
 	cfg->mail_maxage = iniGetInteger(section, NULL, "max_age", 0);
 	cfg->max_spamage = iniGetInteger(section, NULL, "max_spam_age", 0);
@@ -382,16 +382,16 @@ bool read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	str_list_t grp_list = iniGetParsedSectionList(sections, "grp:");
 	cfg->total_grps = strListCount(grp_list);
 
-	if((cfg->grp=(grp_t **)malloc(sizeof(grp_t *)*cfg->total_grps))==NULL)
-		return allocerr(error, maxerrlen, fname, "groups", sizeof(grp_t *)*cfg->total_grps);
+	if ((cfg->grp = (grp_t **)malloc(sizeof(grp_t *) * cfg->total_grps)) == NULL)
+		return allocerr(error, maxerrlen, fname, "groups", sizeof(grp_t *) * cfg->total_grps);
 
-	for(int i=0; i<cfg->total_grps; i++) {
+	for (int i = 0; i < cfg->total_grps; i++) {
 
 		const char* name = grp_list[i];
-		if((cfg->grp[i]=(grp_t *)malloc(sizeof(grp_t)))==NULL)
+		if ((cfg->grp[i] = (grp_t *)malloc(sizeof(grp_t))) == NULL)
 			return allocerr(error, maxerrlen, fname, "group", sizeof(grp_t));
-		section = iniGetParsedSection(sections, name, /* cut: */true);
-		memset(cfg->grp[i],0,sizeof(grp_t));
+		section = iniGetParsedSection(sections, name, /* cut: */ true);
+		memset(cfg->grp[i], 0, sizeof(grp_t));
 		SAFECOPY(cfg->grp[i]->sname, name + 4);
 		SAFECOPY(cfg->grp[i]->lname, iniGetString(section, NULL, "description", name + 4, value));
 		SAFECOPY(cfg->grp[i]->code_prefix, iniGetString(section, NULL, "code_prefix", "", value));
@@ -408,27 +408,27 @@ bool read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	str_list_t sub_list = iniGetParsedSectionList(sections, "sub:");
 	cfg->total_subs = strListCount(sub_list);
 
-	if((cfg->sub=(sub_t **)malloc(sizeof(sub_t *)*cfg->total_subs))==NULL)
-		return allocerr(error, maxerrlen, fname, "subs", sizeof(sub_t *)*cfg->total_subs);
+	if ((cfg->sub = (sub_t **)malloc(sizeof(sub_t *) * cfg->total_subs)) == NULL)
+		return allocerr(error, maxerrlen, fname, "subs", sizeof(sub_t *) * cfg->total_subs);
 
 	cfg->total_subs = 0;
-	for(uint i=0; sub_list[i] != NULL; i++) {
+	for (uint i = 0; sub_list[i] != NULL; i++) {
 
-		char group[INI_MAX_VALUE_LEN];
+		char        group[INI_MAX_VALUE_LEN];
 		const char* name = sub_list[i];
 		SAFECOPY(group, name + 4);
-		char* p = strrchr(group, ':');
-		if(p == NULL)
+		char*       p = strrchr(group, ':');
+		if (p == NULL)
 			continue;
 		*p = '\0';
-		char* code = p + 1;
-		int grpnum = getgrpnum_from_name(cfg, group);
-		if(!grpnum_is_valid(cfg, grpnum))
+		char*       code = p + 1;
+		int         grpnum = getgrpnum_from_name(cfg, group);
+		if (!grpnum_is_valid(cfg, grpnum))
 			continue;
-		if((cfg->sub[i]=(sub_t *)malloc(sizeof(sub_t)))==NULL)
+		if ((cfg->sub[i] = (sub_t *)malloc(sizeof(sub_t))) == NULL)
 			return allocerr(error, maxerrlen, fname, "sub", sizeof(sub_t));
-		section = iniGetParsedSection(sections, name, /* cut: */true);
-		memset(cfg->sub[i],0,sizeof(sub_t));
+		section = iniGetParsedSection(sections, name, /* cut: */ true);
+		memset(cfg->sub[i], 0, sizeof(sub_t));
 		SAFECOPY(cfg->sub[i]->code_suffix, code);
 
 		cfg->sub[i]->subnum = i;
@@ -448,11 +448,11 @@ bool read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		arstr(NULL, cfg->sub[i]->read_arstr, cfg, cfg->sub[i]->read_ar);
 		arstr(NULL, cfg->sub[i]->post_arstr, cfg, cfg->sub[i]->post_ar);
 		arstr(NULL, cfg->sub[i]->op_arstr, cfg, cfg->sub[i]->op_ar);
-		arstr(NULL, cfg->sub[i]->mod_arstr, cfg,cfg->sub[i]->mod_ar);
+		arstr(NULL, cfg->sub[i]->mod_arstr, cfg, cfg->sub[i]->mod_ar);
 
 		cfg->sub[i]->misc = iniGetUInteger(section, NULL, "settings", 0);
-		if((cfg->sub[i]->misc&(SUB_FIDO|SUB_INET)) && !(cfg->sub[i]->misc&SUB_QNET))
-			cfg->sub[i]->misc|=SUB_NOVOTING;
+		if ((cfg->sub[i]->misc & (SUB_FIDO | SUB_INET)) && !(cfg->sub[i]->misc & SUB_QNET))
+			cfg->sub[i]->misc |= SUB_NOVOTING;
 
 		SAFECOPY(cfg->sub[i]->tagline, iniGetString(section, NULL, "qwknet_tagline", "", value));
 		SAFECOPY(cfg->sub[i]->origline, iniGetString(section, NULL, "fidonet_origin", "", value));
@@ -466,11 +466,11 @@ bool read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		cfg->sub[i]->maxage = iniGetInteger(section, NULL, "max_age", 0);
 		cfg->sub[i]->ptridx = iniGetInteger(section, NULL, "ptridx", 0);
 #ifdef SBBS
-		for(uint j=0; j<i; j++)
-			if(cfg->sub[i]->ptridx==cfg->sub[j]->ptridx) {
-				safe_snprintf(error, maxerrlen,"%s: Duplicate pointer index for subs %s and %s"
-					,fname
-					,cfg->sub[i]->code_suffix,cfg->sub[j]->code_suffix);
+		for (uint j = 0; j < i; j++)
+			if (cfg->sub[i]->ptridx == cfg->sub[j]->ptridx) {
+				safe_snprintf(error, maxerrlen, "%s: Duplicate pointer index for subs %s and %s"
+				              , fname
+				              , cfg->sub[i]->code_suffix, cfg->sub[j]->code_suffix);
 				return(false);
 			}
 #endif
@@ -486,19 +486,19 @@ bool read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/***********/
 	/* FidoNet */
 	/***********/
-	section = iniGetParsedSection(sections, "fidonet", /* cut: */true);
+	section = iniGetParsedSection(sections, "fidonet", /* cut: */ true);
 	str_list_t faddr_list = iniGetStringList(section, NULL, "addr_list", ",", "");
 	cfg->total_faddrs = strListCount(faddr_list);
 
-	if((cfg->faddr=(faddr_t *)malloc(sizeof(faddr_t)*cfg->total_faddrs))==NULL)
-		return allocerr(error, maxerrlen, fname, "fido_addrs", sizeof(faddr_t)*cfg->total_faddrs);
+	if ((cfg->faddr = (faddr_t *)malloc(sizeof(faddr_t) * cfg->total_faddrs)) == NULL)
+		return allocerr(error, maxerrlen, fname, "fido_addrs", sizeof(faddr_t) * cfg->total_faddrs);
 
-	for(int i=0;i<cfg->total_faddrs;i++)
+	for (int i = 0; i < cfg->total_faddrs; i++)
 		cfg->faddr[i] = smb_atofaddr(NULL, faddr_list[i]);
 	iniFreeStringList(faddr_list);
 
 	// Sanity-check each sub's FidoNet-style address
-	for(int i = 0; i < cfg->total_subs; i++)
+	for (int i = 0; i < cfg->total_subs; i++)
 		cfg->sub[i]->faddr = *nearest_sysfaddr(cfg, &cfg->sub[i]->faddr);
 
 	SAFECOPY(cfg->origline, iniGetString(section, NULL, "default_origin", "", value));
@@ -514,16 +514,16 @@ bool read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	str_list_t qhub_list = iniGetParsedSectionList(sections, "qhub:");
 	cfg->total_qhubs = strListCount(qhub_list);
 
-	if((cfg->qhub=(qhub_t **)malloc(sizeof(qhub_t *)*cfg->total_qhubs))==NULL)
-		return allocerr(error, maxerrlen, fname, "qhubs", sizeof(qhub_t*)*cfg->total_qhubs);
+	if ((cfg->qhub = (qhub_t **)malloc(sizeof(qhub_t *) * cfg->total_qhubs)) == NULL)
+		return allocerr(error, maxerrlen, fname, "qhubs", sizeof(qhub_t*) * cfg->total_qhubs);
 
 	cfg->total_qhubs = 0;
-	for(uint i=0; qhub_list[i] != NULL; i++) {
+	for (uint i = 0; qhub_list[i] != NULL; i++) {
 		const char* name = qhub_list[i];
-		if((cfg->qhub[i]=(qhub_t *)malloc(sizeof(qhub_t)))==NULL)
+		if ((cfg->qhub[i] = (qhub_t *)malloc(sizeof(qhub_t))) == NULL)
 			return allocerr(error, maxerrlen, fname, "qhub", sizeof(qhub_t));
-		section = iniGetParsedSection(sections, name, /* cut: */true);
-		memset(cfg->qhub[i],0,sizeof(qhub_t));
+		section = iniGetParsedSection(sections, name, /* cut: */ true);
+		memset(cfg->qhub[i], 0, sizeof(qhub_t));
 
 		SAFECOPY(cfg->qhub[i]->id, name + 5);
 		cfg->qhub[i]->enabled = iniGetBool(section, NULL, "enabled", true);
@@ -537,34 +537,34 @@ bool read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		SAFECOPY(cfg->qhub[i]->fmt, iniGetString(section, NULL, "format", "zip", value));
 		cfg->qhub[i]->misc = iniGetUInteger(section, NULL, "settings", 0);
 
-		char str[128];
+		char       str[128];
 		SAFEPRINTF(str, "qhubsub:%s:", cfg->qhub[i]->id);
 		str_list_t qsub_list = iniGetParsedSectionList(sections, str);
-		uint k = strListCount(qsub_list);
-		if(k) {
-			if((cfg->qhub[i]->sub=(sub_t**)malloc(sizeof(sub_t*)*k))==NULL)
-				return allocerr(error, maxerrlen, fname, "qhub sub", sizeof(sub_t)*k);
-			if((cfg->qhub[i]->conf=(uint16_t *)malloc(sizeof(uint16_t)*k))==NULL)
-				return allocerr(error, maxerrlen, fname, "qhub conf", sizeof(uint16_t)*k);
-			if((cfg->qhub[i]->mode=(uchar *)malloc(sizeof(uchar)*k))==NULL)
-				return allocerr(error, maxerrlen, fname, "qhub mode", sizeof(uchar)*k);
+		uint       k = strListCount(qsub_list);
+		if (k) {
+			if ((cfg->qhub[i]->sub = (sub_t**)malloc(sizeof(sub_t*) * k)) == NULL)
+				return allocerr(error, maxerrlen, fname, "qhub sub", sizeof(sub_t) * k);
+			if ((cfg->qhub[i]->conf = (uint16_t *)malloc(sizeof(uint16_t) * k)) == NULL)
+				return allocerr(error, maxerrlen, fname, "qhub conf", sizeof(uint16_t) * k);
+			if ((cfg->qhub[i]->mode = (uchar *)malloc(sizeof(uchar) * k)) == NULL)
+				return allocerr(error, maxerrlen, fname, "qhub mode", sizeof(uchar) * k);
 		}
 
-		for(uint j=0;j<k;j++) {
-			uint16_t	confnum;
-			int			subnum;
-			char		subcode[LEN_EXTCODE + 1];
-			uint		mode;
+		for (uint j = 0; j < k; j++) {
+			uint16_t   confnum;
+			int        subnum;
+			char       subcode[LEN_EXTCODE + 1];
+			uint       mode;
 			confnum = atoi(qsub_list[j] + strlen(str));
-			str_list_t subsection = iniGetParsedSection(sections, qsub_list[j], /* cut: */true);
+			str_list_t subsection = iniGetParsedSection(sections, qsub_list[j], /* cut: */ true);
 			SAFECOPY(subcode, iniGetString(subsection, NULL, "sub", "", value));
 			subnum = getsubnum(cfg, subcode);
 			mode = iniGetUInteger(subsection, NULL, "mode", 0);
-			if(subnum_is_valid(cfg, subnum)) {
+			if (subnum_is_valid(cfg, subnum)) {
 				cfg->sub[subnum]->misc |= SUB_QNET;
-				cfg->qhub[i]->sub[cfg->qhub[i]->subs]	= cfg->sub[subnum];
-				cfg->qhub[i]->mode[cfg->qhub[i]->subs]	= mode;
-				cfg->qhub[i]->conf[cfg->qhub[i]->subs]	= confnum;
+				cfg->qhub[i]->sub[cfg->qhub[i]->subs]   = cfg->sub[subnum];
+				cfg->qhub[i]->mode[cfg->qhub[i]->subs]  = mode;
+				cfg->qhub[i]->conf[cfg->qhub[i]->subs]  = confnum;
 				cfg->qhub[i]->subs++;
 			}
 		}
@@ -576,7 +576,7 @@ bool read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	/************/
 	/* Internet */
 	/************/
-	section = iniGetParsedSection(sections, "Internet", /* cut: */true);
+	section = iniGetParsedSection(sections, "Internet", /* cut: */ true);
 	SAFECOPY(cfg->sys_inetaddr, iniGetString(section, NULL, "addr", "", value));
 	SAFECOPY(cfg->inetmail_sem, iniGetString(section, NULL, "netmail_sem", "", value));
 	SAFECOPY(cfg->smtpmail_sem, iniGetString(section, NULL, "smtp_sem", "", value));
@@ -597,40 +597,40 @@ void free_main_cfg(scfg_t* cfg)
 {
 	int i;
 
-	if(cfg->shell!=NULL) {
-		for(i=0;i<cfg->total_shells;i++) {
+	if (cfg->shell != NULL) {
+		for (i = 0; i < cfg->total_shells; i++) {
 			FREE_AND_NULL(cfg->shell[i]);
 		}
 		FREE_AND_NULL(cfg->shell);
 	}
-	cfg->total_shells=0;
+	cfg->total_shells = 0;
 }
 
 void free_msgs_cfg(scfg_t* cfg)
 {
 	int i;
 
-	if(cfg->grp!=NULL) {
-		for(i=0;i<cfg->total_grps;i++) {
+	if (cfg->grp != NULL) {
+		for (i = 0; i < cfg->total_grps; i++) {
 			FREE_AND_NULL(cfg->grp[i]);
 		}
 		FREE_AND_NULL(cfg->grp);
 	}
-	cfg->total_grps=0;
+	cfg->total_grps = 0;
 
-	if(cfg->sub!=NULL) {
-		for(i=0;i<cfg->total_subs;i++) {
+	if (cfg->sub != NULL) {
+		for (i = 0; i < cfg->total_subs; i++) {
 			FREE_AND_NULL(cfg->sub[i]);
 		}
 		FREE_AND_NULL(cfg->sub);
 	}
-	cfg->total_subs=0;
+	cfg->total_subs = 0;
 
 	FREE_AND_NULL(cfg->faddr);
-	cfg->total_faddrs=0;
+	cfg->total_faddrs = 0;
 
-	if(cfg->qhub!=NULL) {
-		for(i=0;i<cfg->total_qhubs;i++) {
+	if (cfg->qhub != NULL) {
+		for (i = 0; i < cfg->total_qhubs; i++) {
 			FREE_AND_NULL(cfg->qhub[i]->mode);
 			FREE_AND_NULL(cfg->qhub[i]->conf);
 			FREE_AND_NULL(cfg->qhub[i]->sub);
@@ -638,15 +638,15 @@ void free_msgs_cfg(scfg_t* cfg)
 		}
 		FREE_AND_NULL(cfg->qhub);
 	}
-	cfg->total_qhubs=0;
+	cfg->total_qhubs = 0;
 
-	if(cfg->phub!=NULL) {
-		for(i=0;i<cfg->total_phubs;i++) {
+	if (cfg->phub != NULL) {
+		for (i = 0; i < cfg->total_phubs; i++) {
 			FREE_AND_NULL(cfg->phub[i]);
 		}
 		FREE_AND_NULL(cfg->phub);
 	}
-	cfg->total_phubs=0;
+	cfg->total_phubs = 0;
 }
 
 /************************************************************/
@@ -654,34 +654,34 @@ void free_msgs_cfg(scfg_t* cfg)
 /************************************************************/
 void make_data_dirs(scfg_t* cfg)
 {
-	char	str[MAX_PATH+1];
+	char str[MAX_PATH + 1];
 
 	md(cfg->data_dir);
-	SAFEPRINTF(str,"%ssubs",cfg->data_dir);
+	SAFEPRINTF(str, "%ssubs", cfg->data_dir);
 	md(str);
-	SAFEPRINTF(str,"%sdirs",cfg->data_dir);
+	SAFEPRINTF(str, "%sdirs", cfg->data_dir);
 	md(str);
-	SAFEPRINTF(str,"%stext",cfg->data_dir);
+	SAFEPRINTF(str, "%stext", cfg->data_dir);
 	md(str);
-	SAFEPRINTF(str,"%smsgs",cfg->data_dir);
+	SAFEPRINTF(str, "%smsgs", cfg->data_dir);
 	md(str);
-	SAFEPRINTF(str,"%suser",cfg->data_dir);
+	SAFEPRINTF(str, "%suser", cfg->data_dir);
 	md(str);
-	SAFEPRINTF(str,"%sqnet",cfg->data_dir);
+	SAFEPRINTF(str, "%sqnet", cfg->data_dir);
 	md(str);
-	SAFEPRINTF(str,"%sfile",cfg->data_dir);
+	SAFEPRINTF(str, "%sfile", cfg->data_dir);
 	md(str);
 
 	md(cfg->logs_dir);
-	SAFEPRINTF(str,"%slogs",cfg->logs_dir);
+	SAFEPRINTF(str, "%slogs", cfg->logs_dir);
 	md(str);
 
-	if(cfg->mods_dir[0])
+	if (cfg->mods_dir[0])
 		md(cfg->mods_dir);
 
-	for(int i = 0; i < cfg->total_dirs; i++) {
+	for (int i = 0; i < cfg->total_dirs; i++) {
 		md(cfg->dir[i]->data_dir);
-		if(cfg->dir[i]->misc & DIR_FCHK)
+		if (cfg->dir[i]->misc & DIR_FCHK)
 			md(cfg->dir[i]->path);
 	}
 }
@@ -689,18 +689,18 @@ void make_data_dirs(scfg_t* cfg)
 int getdirnum(scfg_t* cfg, const char* code)
 {
 	char fullcode[LEN_EXTCODE + 1];
-	int i;
+	int  i;
 
-	if(code == NULL || *code == '\0')
+	if (code == NULL || *code == '\0')
 		return -1;
 
-	for(i=0;i<cfg->total_dirs;i++) {
-		if(cfg->dir[i]->code[0] == '\0' && cfg->dir[i]->lib < cfg->total_libs ) {
+	for (i = 0; i < cfg->total_dirs; i++) {
+		if (cfg->dir[i]->code[0] == '\0' && cfg->dir[i]->lib < cfg->total_libs) {
 			SAFEPRINTF2(fullcode, "%s%s", cfg->lib[cfg->dir[i]->lib]->code_prefix, cfg->dir[i]->code_suffix);
-			if(stricmp(fullcode, code) == 0)
+			if (stricmp(fullcode, code) == 0)
 				return i;
 		} else {
-			if(stricmp(cfg->dir[i]->code, code)==0)
+			if (stricmp(cfg->dir[i]->code, code) == 0)
 				return i;
 		}
 	}
@@ -711,7 +711,7 @@ int getlibnum(scfg_t* cfg, const char* code)
 {
 	int i = getdirnum(cfg, code);
 
-	if(i >= 0)
+	if (i >= 0)
 		return cfg->dir[i]->lib;
 	return i;
 }
@@ -719,18 +719,18 @@ int getlibnum(scfg_t* cfg, const char* code)
 int getsubnum(scfg_t* cfg, const char* code)
 {
 	char fullcode[LEN_EXTCODE + 1];
-	int i;
+	int  i;
 
-	if(code == NULL || *code == '\0')
+	if (code == NULL || *code == '\0')
 		return -1;
 
-	for(i=0;i<cfg->total_subs;i++) {
-		if(cfg->sub[i]->code[0] == '\0' && cfg->sub[i]->grp < cfg->total_grps ) {
+	for (i = 0; i < cfg->total_subs; i++) {
+		if (cfg->sub[i]->code[0] == '\0' && cfg->sub[i]->grp < cfg->total_grps) {
 			SAFEPRINTF2(fullcode, "%s%s", cfg->grp[cfg->sub[i]->grp]->code_prefix, cfg->sub[i]->code_suffix);
-			if(stricmp(fullcode, code) == 0)
+			if (stricmp(fullcode, code) == 0)
 				return i;
 		} else {
-			if(stricmp(cfg->sub[i]->code,code) == 0)
+			if (stricmp(cfg->sub[i]->code, code) == 0)
 				return i;
 		}
 	}
@@ -741,41 +741,41 @@ int getgrpnum(scfg_t* cfg, const char* code)
 {
 	int i = getdirnum(cfg, code);
 
-	if(i >= 0)
+	if (i >= 0)
 		return cfg->sub[i]->grp;
 	return i;
 }
 
 char* lib_name(scfg_t* cfg, int dirnum)
 {
-	if(!dirnum_is_valid(cfg, dirnum))
+	if (!dirnum_is_valid(cfg, dirnum))
 		return "<invalid dir>";
 	int libnum = cfg->dir[dirnum]->lib;
-	if(!libnum_is_valid(cfg, libnum))
+	if (!libnum_is_valid(cfg, libnum))
 		return "<invalid lib>";
 	return cfg->lib[libnum]->sname;
 }
 
 char* dir_name(scfg_t* cfg, int dirnum)
 {
-	if(!dirnum_is_valid(cfg, dirnum))
+	if (!dirnum_is_valid(cfg, dirnum))
 		return "<invalid dir>";
 	return cfg->dir[dirnum]->sname;
 }
 
 char* grp_name(scfg_t* cfg, int subnum)
 {
-	if(!subnum_is_valid(cfg, subnum))
+	if (!subnum_is_valid(cfg, subnum))
 		return "<invalid sub>";
 	int grpnum = cfg->sub[subnum]->grp;
-	if(!grpnum_is_valid(cfg, grpnum))
+	if (!grpnum_is_valid(cfg, grpnum))
 		return "<invalid grp>";
 	return cfg->grp[grpnum]->sname;
 }
 
 char* sub_name(scfg_t* cfg, int subnum)
 {
-	if(!subnum_is_valid(cfg, subnum))
+	if (!subnum_is_valid(cfg, subnum))
 		return "<invalid sub>";
 	return cfg->sub[subnum]->sname;
 }
@@ -784,8 +784,8 @@ int getgrpnum_from_name(scfg_t* cfg, const char* name)
 {
 	int i;
 
-	for(i = 0; i < cfg->total_grps; i++) {
-		if(stricmp(cfg->grp[i]->sname, name) == 0)
+	for (i = 0; i < cfg->total_grps; i++) {
+		if (stricmp(cfg->grp[i]->sname, name) == 0)
 			break;
 	}
 	return i;
@@ -795,8 +795,8 @@ int getlibnum_from_name(scfg_t* cfg, const char* name)
 {
 	int i;
 
-	for(i = 0; i < cfg->total_libs; i++) {
-		if(stricmp(cfg->lib[i]->sname, name) == 0)
+	for (i = 0; i < cfg->total_libs; i++) {
+		if (stricmp(cfg->lib[i]->sname, name) == 0)
 			break;
 	}
 	return i;
@@ -806,8 +806,8 @@ int getxtrnnum(scfg_t* cfg, const char* code)
 {
 	int i;
 
-	for(i = 0; i < cfg->total_xtrns; i++) {
-		if(stricmp(cfg->xtrn[i]->code, code) == 0)
+	for (i = 0; i < cfg->total_xtrns; i++) {
+		if (stricmp(cfg->xtrn[i]->code, code) == 0)
 			break;
 	}
 	return i;
@@ -817,8 +817,8 @@ int getxtrnsec(scfg_t* cfg, const char* code)
 {
 	int i;
 
-	for(i = 0; i < cfg->total_xtrnsecs; i++) {
-		if(stricmp(cfg->xtrnsec[i]->code, code) == 0)
+	for (i = 0; i < cfg->total_xtrnsecs; i++) {
+		if (stricmp(cfg->xtrnsec[i]->code, code) == 0)
 			break;
 	}
 	return i;
@@ -828,8 +828,8 @@ int getgurunum(scfg_t* cfg, const char* code)
 {
 	int i;
 
-	for(i = 0; i < cfg->total_gurus; i++) {
-		if(stricmp(cfg->guru[i]->code, code) == 0)
+	for (i = 0; i < cfg->total_gurus; i++) {
+		if (stricmp(cfg->guru[i]->code, code) == 0)
 			break;
 	}
 	return i;
@@ -839,8 +839,8 @@ int getchatactset(scfg_t* cfg, const char* name)
 {
 	int i;
 
-	for(i = 0; i < cfg->total_actsets; i++) {
-		if(stricmp(cfg->actset[i]->name, name) == 0)
+	for (i = 0; i < cfg->total_actsets; i++) {
+		if (stricmp(cfg->actset[i]->name, name) == 0)
 			break;
 	}
 	return i;
@@ -851,8 +851,8 @@ int getxeditnum(scfg_t* cfg, const char* code)
 {
 	int i;
 
-	for(i = 0; i < cfg->total_xedits; ++i) {
-		if(stricmp(cfg->xedit[i]->code, code) == 0)
+	for (i = 0; i < cfg->total_xedits; ++i) {
+		if (stricmp(cfg->xedit[i]->code, code) == 0)
 			return i + 1;
 	}
 	return 0;
@@ -863,8 +863,8 @@ int getshellnum(scfg_t* cfg, const char* code)
 {
 	int i;
 
-	for(i = 0; i < cfg->total_shells; ++i) {
-		if(stricmp(cfg->shell[i]->code, code) == 0)
+	for (i = 0; i < cfg->total_shells; ++i) {
+		if (stricmp(cfg->shell[i]->code, code) == 0)
 			return i;
 	}
 	return 0;
@@ -902,25 +902,25 @@ bool xtrnsec_is_valid(scfg_t* cfg, int secnum)
 
 uint nearest_sysfaddr_index(scfg_t* cfg, faddr_t* addr)
 {
-	int i;
+	int  i;
 	uint nearest = 0;
-	int min = INT_MAX;
+	int  min = INT_MAX;
 
-	for(i=0; i < cfg->total_faddrs; i++)
-		if(memcmp(addr, &cfg->faddr[i], sizeof(*addr)) == 0)
+	for (i = 0; i < cfg->total_faddrs; i++)
+		if (memcmp(addr, &cfg->faddr[i], sizeof(*addr)) == 0)
 			return i;
-	for(i=0; i < cfg->total_faddrs; i++)
-		if(addr->zone == cfg->faddr[i].zone
-			&& addr->net == cfg->faddr[i].net
-			&& addr->node == cfg->faddr[i].node)
+	for (i = 0; i < cfg->total_faddrs; i++)
+		if (addr->zone == cfg->faddr[i].zone
+		    && addr->net == cfg->faddr[i].net
+		    && addr->node == cfg->faddr[i].node)
 			return i;
-	for(i=0; i < cfg->total_faddrs; i++)
-		if(addr->zone == cfg->faddr[i].zone
-			&& addr->net == cfg->faddr[i].net)
+	for (i = 0; i < cfg->total_faddrs; i++)
+		if (addr->zone == cfg->faddr[i].zone
+		    && addr->net == cfg->faddr[i].net)
 			return i;
-	for(i=0; i < cfg->total_faddrs; i++) {
+	for (i = 0; i < cfg->total_faddrs; i++) {
 		int diff = abs((int)addr->zone - (int)cfg->faddr[i].zone);
-		if(diff < min) {
+		if (diff < min) {
 			min = diff;
 			nearest = i;
 		}
@@ -931,14 +931,14 @@ uint nearest_sysfaddr_index(scfg_t* cfg, faddr_t* addr)
 faddr_t* nearest_sysfaddr(scfg_t* cfg, faddr_t* addr)
 {
 	int i = nearest_sysfaddr_index(cfg, addr);
-	if(i < 0 || i >= cfg->total_faddrs)
+	if (i < 0 || i >= cfg->total_faddrs)
 		return addr;
 	return &cfg->faddr[i];
 }
 
 char* sub_newsgroup_name(scfg_t* cfg, sub_t* sub, char* str, size_t size)
 {
-	if(sub->newsgroup[0])
+	if (sub->newsgroup[0])
 		strlcpy(str, sub->newsgroup, size);
 	else
 		snprintf(str, size, "%s.%s", cfg->grp[sub->grp]->sname, sub->sname);
@@ -950,9 +950,9 @@ char* sub_area_tag(scfg_t* cfg, sub_t* sub, char* str, size_t size)
 	char* p;
 
 	memset(str, 0, size);
-	if(sub->area_tag[0])
+	if (sub->area_tag[0])
 		strncpy(str, sub->area_tag, size - 1);
-	else if(sub->newsgroup[0])
+	else if (sub->newsgroup[0])
 		strncpy(str, sub->newsgroup, size - 1);
 	else {
 		strncpy(str, sub->sname, size - 1);
@@ -967,7 +967,7 @@ char* dir_area_tag(scfg_t* cfg, dir_t* dir, char* str, size_t size)
 	char* p;
 
 	memset(str, 0, size);
-	if(dir->area_tag[0])
+	if (dir->area_tag[0])
 		strncpy(str, dir->area_tag, size - 1);
 	else {
 		strncpy(str, dir->sname, size - 1);
@@ -982,10 +982,10 @@ char* dir_area_tag(scfg_t* cfg, dir_t* dir, char* str, size_t size)
 /****************************************************************************/
 char* dir_vpath(scfg_t* cfg, dir_t* dir, char* path, size_t size)
 {
-	if(dir->vshortcut[0] != '\0')
+	if (dir->vshortcut[0] != '\0')
 		return dir->vshortcut;
 	else
 		safe_snprintf(path, size, "%s/%s"
-			,cfg->lib[dir->lib]->vdir, dir->vdir);
+		              , cfg->lib[dir->lib]->vdir, dir->vdir);
 	return path;
 }

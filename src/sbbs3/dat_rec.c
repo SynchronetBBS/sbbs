@@ -27,17 +27,17 @@
 /* Places into 'strout' CR or ETX terminated string starting at             */
 /* 'start' and ending at 'start'+'length' or terminator from 'strin'        */
 /****************************************************************************/
-int getrec(const char *strin,int start,int length,char *strout)
+int getrec(const char *strin, int start, int length, char *strout)
 {
-    int i=0,stop;
+	int i = 0, stop;
 
-	stop=start+length;
-	while(start<stop) {
-		if(strin[start]==ETX || strin[start]==CR || strin[start]==LF)
+	stop = start + length;
+	while (start < stop) {
+		if (strin[start] == ETX || strin[start] == CR || strin[start] == LF)
 			break;
-		strout[i++]=strin[start++]; 
+		strout[i++] = strin[start++];
 	}
-	strout[i]=0;
+	strout[i] = 0;
 	return i;
 }
 
@@ -45,13 +45,13 @@ int getrec(const char *strin,int start,int length,char *strout)
 /* Places into 'strout', 'strin' starting at 'start' and ending at          */
 /* 'start'+'length'                                                         */
 /****************************************************************************/
-void putrec(char *strout,int start,int length, const char *strin)
+void putrec(char *strout, int start, int length, const char *strin)
 {
-    int i=0,j;
+	int i = 0, j;
 
-	j=strlen(strin);
-	while(i<j && i<length)
-		strout[start++]=strin[i++];
-	while(i++<length)
-		strout[start++]=ETX;
+	j = strlen(strin);
+	while (i < j && i < length)
+		strout[start++] = strin[i++];
+	while (i++ < length)
+		strout[start++] = ETX;
 }

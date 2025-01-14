@@ -31,11 +31,11 @@
 extern "C" {
 #endif
 
-DLLEXPORT bool		findstr(const char *insearch, const char *fname);
-DLLEXPORT bool		find2strs(const char *str1, const char* str2, const char *fname, char* metadata);
-DLLEXPORT bool		findstr_in_string(const char* insearchof, const char* pattern);
-DLLEXPORT bool		findstr_in_list(const char* insearchof, str_list_t list, char* metadata);
-DLLEXPORT bool		find2strs_in_list(const char* str1, const char* str2, str_list_t list, char* metadata);
+DLLEXPORT bool      findstr(const char *insearch, const char *fname);
+DLLEXPORT bool      find2strs(const char *str1, const char* str2, const char *fname, char* metadata);
+DLLEXPORT bool      findstr_in_string(const char* insearchof, const char* pattern);
+DLLEXPORT bool      findstr_in_list(const char* insearchof, str_list_t list, char* metadata);
+DLLEXPORT bool      find2strs_in_list(const char* str1, const char* str2, str_list_t list, char* metadata);
 DLLEXPORT str_list_t findstr_list(const char* fname);
 
 #ifdef __cplusplus

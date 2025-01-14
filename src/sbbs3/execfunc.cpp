@@ -24,24 +24,24 @@
 
 int sbbs_t::exec_function(csi_t *csi)
 {
-	char	str[256];
-	uchar*	p;
-	int		s;
-	int 	i,j,k;
-	long	l;
-	node_t	node;
-	struct	tm tm;
-	uint8_t	cmd = *(csi->ip++);
+	char       str[256];
+	uchar*     p;
+	int        s;
+	int        i, j, k;
+	long       l;
+	node_t     node;
+	struct  tm tm;
+	uint8_t    cmd = *(csi->ip++);
 
-	switch(cmd) {
+	switch (cmd) {
 
 		case CS_PRINTFILE_STR:
-			printfile(csi->str,P_NOATCODES);
+			printfile(csi->str, P_NOATCODES);
 			return(0);
 
-	/********************************/
-	/* General Main Menu Type Stuff */
-	/********************************/
+		/********************************/
+		/* General Main Menu Type Stuff */
+		/********************************/
 		case CS_AUTO_MESSAGE:
 			automsg();
 			return(0);
@@ -53,7 +53,7 @@ int sbbs_t::exec_function(csi_t *csi)
 			return(0);
 		case CS_USER_DEFAULTS:
 			maindflts(&useron);
-			if(!(useron.rest&FLAG('G')))    /* not guest */
+			if (!(useron.rest & FLAG('G')))    /* not guest */
 				getuseron(WHERE);
 			return(0);
 		case CS_TEXT_FILE_SECTION:
@@ -62,44 +62,44 @@ int sbbs_t::exec_function(csi_t *csi)
 		case CS_INFO_SYSTEM:   /* System information */
 			sys_info();
 			return(0);
-		case CS_INFO_SUBBOARD:	 /* Sub-board information */
-			if(!usrgrps) return(0);
+		case CS_INFO_SUBBOARD:   /* Sub-board information */
+			if (!usrgrps) return(0);
 			subinfo(usrsub[curgrp][cursub[curgrp]]);
 			return(0);
 		case CS_INFO_DIRECTORY:   /* Sub-board information */
-			if(!usrlibs) return(0);
+			if (!usrlibs) return(0);
 			dirinfo(usrdir[curlib][curdir[curlib]]);
 			return(0);
-		case CS_INFO_VERSION:	/* Version */
+		case CS_INFO_VERSION:   /* Version */
 			ver();
 			return(0);
-		case CS_INFO_USER:	 /* User's statistics */
+		case CS_INFO_USER:   /* User's statistics */
 			user_info();
 			return(0);
 		case CS_INFO_XFER_POLICY:
 			xfer_policy();
 			return(0);
 		case CS_XTRN_EXEC:
-			csi->logic=LOGIC_TRUE;
-			for(i=0;i<cfg.total_xtrns;i++)
-				if(!stricmp(cfg.xtrn[i]->code,csi->str))
+			csi->logic = LOGIC_TRUE;
+			for (i = 0; i < cfg.total_xtrns; i++)
+				if (!stricmp(cfg.xtrn[i]->code, csi->str))
 					break;
-			if(i<cfg.total_xtrns)
+			if (i < cfg.total_xtrns)
 				exec_xtrn(i);
 			else
-				csi->logic=LOGIC_FALSE;
+				csi->logic = LOGIC_FALSE;
 			return(0);
 		case CS_XTRN_SECTION:
 			xtrn_sec();
 			return(0);
 		case CS_LOGOFF:
-			if(text[LogOffQ][0]==0 || !noyes(text[LogOffQ])) {
-				if(cfg.logoff_mod[0])
-					exec_bin(cfg.logoff_mod,csi);
+			if (text[LogOffQ][0] == 0 || !noyes(text[LogOffQ])) {
+				if (cfg.logoff_mod[0])
+					exec_bin(cfg.logoff_mod, csi);
 				user_event(EVENT_LOGOFF);
 				menu("logoff");
 				sync();
-				hangup(); 
+				hangup();
 			}
 			return(0);
 		case CS_LOGOFF_FAST:
@@ -125,13 +125,13 @@ int sbbs_t::exec_function(csi_t *csi)
 			logonlist();
 			return(0);
 		case CS_PAGE_SYSOP:
-			csi->logic=sysop_page() ? LOGIC_TRUE:LOGIC_FALSE;
+			csi->logic = sysop_page() ? LOGIC_TRUE:LOGIC_FALSE;
 			return(0);
 		case CS_PAGE_GURU:
-			csi->logic=guru_page() ? LOGIC_TRUE:LOGIC_FALSE;
+			csi->logic = guru_page() ? LOGIC_TRUE:LOGIC_FALSE;
 			return(0);
 		case CS_SPY:
-			csi->logic=spy(atoi(csi->str)) ? LOGIC_TRUE:LOGIC_FALSE;
+			csi->logic = spy(atoi(csi->str)) ? LOGIC_TRUE:LOGIC_FALSE;
 			return(0);
 		case CS_PRIVATE_CHAT:
 			privchat();
@@ -140,69 +140,69 @@ int sbbs_t::exec_function(csi_t *csi)
 			nodemsg();
 			return(0);
 
-	/*******************/
-	/* Sysop Functions */
-	/*******************/
+		/*******************/
+		/* Sysop Functions */
+		/*******************/
 		case CS_USER_EDIT:
 			useredit(csi->str[0] ? finduser(csi->str) : 0);
 			return(0);
 
 
-	/******************/
-	/* Mail Functions */
-	/******************/
+		/******************/
+		/* Mail Functions */
+		/******************/
 
-		case CS_MAIL_READ:	 /* Read E-mail */
-			readmail(useron.number,MAIL_YOUR);
+		case CS_MAIL_READ:   /* Read E-mail */
+			readmail(useron.number, MAIL_YOUR);
 			return(0);
-		case CS_MAIL_READ_SENT: 	  /* Kill/read sent mail */
-			readmail(useron.number,MAIL_SENT);
+		case CS_MAIL_READ_SENT:       /* Kill/read sent mail */
+			readmail(useron.number, MAIL_SENT);
 			return(0);
 		case CS_MAIL_READ_ALL:
-			readmail(useron.number,MAIL_ALL);
+			readmail(useron.number, MAIL_ALL);
 			return(0);
-		case CS_MAIL_SEND:		 /* Send E-mail */
-			if(strchr(csi->str,'@')) {
-				i=1;
-				netmail(csi->str); 
+		case CS_MAIL_SEND:       /* Send E-mail */
+			if (strchr(csi->str, '@')) {
+				i = 1;
+				netmail(csi->str);
 			}
-			else if((i=finduser(csi->str))!=0 
-				|| (cfg.msg_misc&MM_REALNAME && (i=finduserstr(0, USER_NAME, csi->str))!=0))
+			else if ((i = finduser(csi->str)) != 0
+			         || (cfg.msg_misc & MM_REALNAME && (i = finduserstr(0, USER_NAME, csi->str)) != 0))
 				email(i);
-			csi->logic=!i;
+			csi->logic = !i;
 			return(0);
-		case CS_MAIL_SEND_FEEDBACK: 	  /* Feedback */
-			if((i=finduser(csi->str))!=0)
-				email(i,text[ReFeedback]);
-			csi->logic=!i;
+		case CS_MAIL_SEND_FEEDBACK:       /* Feedback */
+			if ((i = finduser(csi->str)) != 0)
+				email(i, text[ReFeedback]);
+			csi->logic = !i;
 			return(0);
 		case CS_MAIL_SEND_NETMAIL:
 		case CS_MAIL_SEND_NETFILE:
 		{
 			bputs(text[EnterNetMailAddress]);
-			csi->logic=LOGIC_FALSE;
-			if(getstr(str,60,K_LINE)) {
-				if(netmail(str, NULL, cmd == CS_MAIL_SEND_NETFILE ? WM_FILE : WM_NONE)) {
-					csi->logic=LOGIC_TRUE; 
+			csi->logic = LOGIC_FALSE;
+			if (getstr(str, 60, K_LINE)) {
+				if (netmail(str, NULL, cmd == CS_MAIL_SEND_NETFILE ? WM_FILE : WM_NONE)) {
+					csi->logic = LOGIC_TRUE;
 				}
 			}
 			return(0);
 		}
 		case CS_MAIL_SEND_FILE:   /* Upload Attached File to E-mail */
-			if(strchr(csi->str,'@')) {
-				i=1;
-				netmail(csi->str,NULL,WM_FILE); 
+			if (strchr(csi->str, '@')) {
+				i = 1;
+				netmail(csi->str, NULL, WM_FILE);
 			}
-			else if((i=finduser(csi->str))!=0
-				|| (cfg.msg_misc&MM_REALNAME && (i=finduserstr(0, USER_NAME, csi->str))!=0))
-				email(i,NULL,NULL,WM_FILE);
-			csi->logic=!i;
+			else if ((i = finduser(csi->str)) != 0
+			         || (cfg.msg_misc & MM_REALNAME && (i = finduserstr(0, USER_NAME, csi->str)) != 0))
+				email(i, NULL, NULL, WM_FILE);
+			csi->logic = !i;
 			return(0);
 		case CS_MAIL_SEND_BULK:
-			if(csi->str[0])
-				p=arstr(NULL,csi->str, &cfg,NULL);
+			if (csi->str[0])
+				p = arstr(NULL, csi->str, &cfg, NULL);
 			else
-				p=NULL;
+				p = NULL;
 			bulkmail(p);
 			free(p);
 			return(0);
@@ -216,23 +216,23 @@ int sbbs_t::exec_function(csi_t *csi)
 			return(0);
 
 		case CS_SYSTEM_LOG:                 /* System log */
-			if(!chksyspass())
+			if (!chksyspass())
 				return(0);
-			if(localtime_r(&now,&tm)==NULL)
+			if (localtime_r(&now, &tm) == NULL)
 				return(0);
 			snprintf(str, sizeof str, "%slogs/%2.2d%2.2d%2.2d.log", cfg.logs_dir
-				,tm.tm_mon+1,tm.tm_mday,TM_YEAR(tm.tm_year));
-			printfile(str,0);
+			         , tm.tm_mon + 1, tm.tm_mday, TM_YEAR(tm.tm_year));
+			printfile(str, 0);
 			return(0);
 		case CS_SYSTEM_YLOG:                /* Yesterday's log */
-			if(!chksyspass())
+			if (!chksyspass())
 				return(0);
-			now-=(ulong)60L*24L*60L;
-			if(localtime_r(&now,&tm)==NULL)
+			now -= (ulong)60L * 24L * 60L;
+			if (localtime_r(&now, &tm) == NULL)
 				return(0);
-			snprintf(str, sizeof str, "%slogs/%2.2d%2.2d%2.2d.log",cfg.logs_dir
-				,tm.tm_mon+1,tm.tm_mday,TM_YEAR(tm.tm_year));
-			printfile(str,0);
+			snprintf(str, sizeof str, "%slogs/%2.2d%2.2d%2.2d.log", cfg.logs_dir
+			         , tm.tm_mon + 1, tm.tm_mday, TM_YEAR(tm.tm_year));
+			printfile(str, 0);
 			return(0);
 		case CS_SYSTEM_STATS:               /* System Statistics */
 			sys_stats();
@@ -247,57 +247,57 @@ int sbbs_t::exec_function(csi_t *csi)
 			return(0);
 		case CS_ERROR_LOG:
 			snprintf(str, sizeof str, "%serror.log", cfg.logs_dir);
-			if(fexist(str)) {
+			if (fexist(str)) {
 				bputs(text[ErrorLogHdr]);
-				printfile(str,0);
-				if(text[DeleteErrorLogQ][0] && !noyes(text[DeleteErrorLogQ]))
-					(void)remove(str); 
+				printfile(str, 0);
+				if (text[DeleteErrorLogQ][0] && !noyes(text[DeleteErrorLogQ]))
+					(void)remove(str);
 			}
 			else
-				bprintf(text[FileDoesNotExist],str);
-			for(i=1;i<=cfg.sys_nodes;i++) {
+				bprintf(text[FileDoesNotExist], str);
+			for (i = 1; i <= cfg.sys_nodes; i++) {
 				getnodedat(i, &node);
-				if(node.errors)
-					break; 
+				if (node.errors)
+					break;
 			}
-			if(i<=cfg.sys_nodes || criterrs) {
-				if(text[ClearErrCounter][0]==0 || !noyes(text[ClearErrCounter])) {
-					for(i=1;i<=cfg.sys_nodes;i++) {
-						if(getnodedat(i,&node, true)) {
-							node.errors=0;
-							putnodedat(i,&node); 
+			if (i <= cfg.sys_nodes || criterrs) {
+				if (text[ClearErrCounter][0] == 0 || !noyes(text[ClearErrCounter])) {
+					for (i = 1; i <= cfg.sys_nodes; i++) {
+						if (getnodedat(i, &node, true)) {
+							node.errors = 0;
+							putnodedat(i, &node);
 						}
-					criterrs=0; 
-					} 
+						criterrs = 0;
+					}
 				}
 			}
 			return(0);
 		case CS_ANSI_CAPTURE:           /* Capture ANSI codes */
-			sys_status^=SS_ANSCAP;
+			sys_status ^= SS_ANSCAP;
 			bprintf(text[ANSICaptureIsNow]
-				,sys_status&SS_ANSCAP ? text[On] : text[Off]);
+			        , sys_status & SS_ANSCAP ? text[On] : text[Off]);
 			return(0);
 		case CS_LIST_TEXT_FILE:              /* View ASCII/ANSI/Ctrl-A file */
-			if(!chksyspass())
+			if (!chksyspass())
 				return(0);
 			bputs(text[Filename]);
-			if(getstr(str,60,K_TRIM))
-				printfile(str,0);
+			if (getstr(str, 60, K_TRIM))
+				printfile(str, 0);
 			return(0);
 		case CS_EDIT_TEXT_FILE:              /* Edit ASCII/Ctrl-A file */
-			if(!chksyspass())
+			if (!chksyspass())
 				return(0);
 			bputs(text[Filename]);
-			if(getstr(str,60,K_TRIM))
+			if (getstr(str, 60, K_TRIM))
 				editfile(str);
 			return(0);
 		case CS_GURU_LOG:
 			snprintf(str, sizeof str, "%sguru.log", cfg.logs_dir);
-			if(fexist(str)) {
-				printfile(str,0);
+			if (fexist(str)) {
+				printfile(str, 0);
 				CRLF;
-				if(text[DeleteGuruLogQ][0] && !noyes(text[DeleteGuruLogQ]))
-					remove(str); 
+				if (text[DeleteGuruLogQ][0] && !noyes(text[DeleteGuruLogQ]))
+					remove(str);
 			}
 			return(0);
 		case CS_FILE_SET_ALT_PATH:
@@ -308,48 +308,48 @@ int sbbs_t::exec_function(csi_t *csi)
 			return 0;
 
 		case CS_FILE_GET:
-			if(!fexist(csi->str)) {
+			if (!fexist(csi->str)) {
 				bputs(text[FileNotFound]);
-				return(0); 
-			}
-			if(!chksyspass())
 				return(0);
-			// fall-through
+			}
+			if (!chksyspass())
+				return(0);
+		// fall-through
 		case CS_FILE_SEND:
 
-			csi->logic=sendfile(csi->str) ? LOGIC_TRUE:LOGIC_FALSE;
+			csi->logic = sendfile(csi->str) ? LOGIC_TRUE:LOGIC_FALSE;
 			return(0);
 
 		case CS_FILE_PUT:
-			csi->logic=LOGIC_FALSE;
-			if(!chksyspass())
+			csi->logic = LOGIC_FALSE;
+			if (!chksyspass())
 				return(0);
-			// fall-through
+		// fall-through
 		case CS_FILE_RECEIVE:
-			csi->logic=recvfile(csi->str) ? LOGIC_TRUE:LOGIC_FALSE;
+			csi->logic = recvfile(csi->str) ? LOGIC_TRUE:LOGIC_FALSE;
 			return(0);
 
 		case CS_FILE_UPLOAD_BULK:
 
-			if(!usrlibs) return(0);
+			if (!usrlibs) return(0);
 
-			if(!stricmp(csi->str,"ALL")) {     /* all libraries */
-				for(i=0;i<usrlibs;i++)
-					for(j=0;j<usrdirs[i];j++) {
-						if(cfg.lib[i]->offline_dir==usrdir[i][j])
+			if (!stricmp(csi->str, "ALL")) {     /* all libraries */
+				for (i = 0; i < usrlibs; i++)
+					for (j = 0; j < usrdirs[i]; j++) {
+						if (cfg.lib[i]->offline_dir == usrdir[i][j])
 							continue;
-						if(bulkupload(usrdir[i][j])) return(0); 
+						if (bulkupload(usrdir[i][j])) return(0);
 					}
-				return(0); 
+				return(0);
 			}
-			if(!stricmp(csi->str,"LIB")) {     /* current library */
-				for(i=0;i<usrdirs[curlib];i++) {
-					if(cfg.lib[usrlib[curlib]]->offline_dir
-						==usrdir[curlib][i])
+			if (!stricmp(csi->str, "LIB")) {     /* current library */
+				for (i = 0; i < usrdirs[curlib]; i++) {
+					if (cfg.lib[usrlib[curlib]]->offline_dir
+					    == usrdir[curlib][i])
 						continue;
-					if(bulkupload(usrdir[curlib][i])) return(0); 
+					if (bulkupload(usrdir[curlib][i])) return(0);
 				}
-				return(0); 
+				return(0);
 			}
 			bulkupload(usrdir[curlib][curdir[curlib]]); /* current dir */
 			return(0);
@@ -358,75 +358,75 @@ int sbbs_t::exec_function(csi_t *csi)
 		case CS_FILE_FIND_OPEN:
 		case CS_FILE_FIND_OFFLINE:
 		case CS_FILE_FIND_OLD_UPLOADS:
-			if(!usrlibs) return(0);
-			if(!getfilespec(str))
+			if (!usrlibs) return(0);
+			if (!getfilespec(str))
 				return(0);
-			k=0;
+			k = 0;
 			bputs("\r\nSearching ");
-			if(!stricmp(csi->str,"ALL"))
+			if (!stricmp(csi->str, "ALL"))
 				bputs("all libraries");
-			else if(!stricmp(csi->str,"LIB"))
+			else if (!stricmp(csi->str, "LIB"))
 				bputs("library");
 			else
 				bputs("directory");
 			bputs(" for files ");
-			if(*(csi->ip-1)==CS_FILE_FIND_OLD_UPLOADS) {
-				l=FI_OLDUL;
-				bprintf("uploaded before %s\r\n",timestr(ns_time)); 
+			if (*(csi->ip - 1) == CS_FILE_FIND_OLD_UPLOADS) {
+				l = FI_OLDUL;
+				bprintf("uploaded before %s\r\n", timestr(ns_time));
 			}
-			else if(*(csi->ip-1)==CS_FILE_FIND_OLD) { /* go by download date */
-				l=FI_OLD;
-				bprintf("not downloaded since %s\r\n",timestr(ns_time)); 
+			else if (*(csi->ip - 1) == CS_FILE_FIND_OLD) { /* go by download date */
+				l = FI_OLD;
+				bprintf("not downloaded since %s\r\n", timestr(ns_time));
 			}
-			else if(*(csi->ip-1)==CS_FILE_FIND_OFFLINE) {
-				l=FI_OFFLINE;
-				bputs("not online...\r\n"); 
+			else if (*(csi->ip - 1) == CS_FILE_FIND_OFFLINE) {
+				l = FI_OFFLINE;
+				bputs("not online...\r\n");
 			}
 			else {
 				// e.g. FI_CLOSE;
 				return 0;
 			}
-			if(!stricmp(csi->str,"ALL")) {
-				for(i=0;i<usrlibs;i++)
-					for(j=0;j<usrdirs[i];j++) {
-						if(cfg.lib[i]->offline_dir==usrdir[i][j])
+			if (!stricmp(csi->str, "ALL")) {
+				for (i = 0; i < usrlibs; i++)
+					for (j = 0; j < usrdirs[i]; j++) {
+						if (cfg.lib[i]->offline_dir == usrdir[i][j])
 							continue;
-						if((s=listfileinfo(usrdir[i][j],str,(char)l))==-1)
+						if ((s = listfileinfo(usrdir[i][j], str, (char)l)) == -1)
 							return(0);
-						else k+=s; 
-					} 
+						else k += s;
+					}
 			}
-			else if(!stricmp(csi->str,"LIB")) {
-				for(i=0;i<usrdirs[curlib];i++) {
-					if(cfg.lib[usrlib[curlib]]->offline_dir==usrdir[curlib][i])
-							continue;
-					if((s=listfileinfo(usrdir[curlib][i],str,(char)l))==-1)
+			else if (!stricmp(csi->str, "LIB")) {
+				for (i = 0; i < usrdirs[curlib]; i++) {
+					if (cfg.lib[usrlib[curlib]]->offline_dir == usrdir[curlib][i])
+						continue;
+					if ((s = listfileinfo(usrdir[curlib][i], str, (char)l)) == -1)
 						return(0);
-					else k+=s; 
-				} 
+					else k += s;
+				}
 			}
 			else {
-				s=listfileinfo(usrdir[curlib][curdir[curlib]],str,(char)l);
-				if(s==-1)
+				s = listfileinfo(usrdir[curlib][curdir[curlib]], str, (char)l);
+				if (s == -1)
 					return(0);
-				k=s; 
+				k = s;
 			}
-			if(k>1) {
-				bprintf(text[NFilesListed],k); 
+			if (k > 1) {
+				bprintf(text[NFilesListed], k);
 			}
-			return(0); 
+			return(0);
 	}
 
-	if(*(csi->ip-1)>=CS_MSG_SET_AREA && *(csi->ip-1)<=CS_MSG_UNUSED1) {
+	if (*(csi->ip - 1) >= CS_MSG_SET_AREA && *(csi->ip - 1) <= CS_MSG_UNUSED1) {
 		csi->ip--;
-		return(exec_msg(csi)); 
+		return(exec_msg(csi));
 	}
 
-	if(*(csi->ip-1)>=CS_FILE_SET_AREA && *(csi->ip-1)<=CS_FILE_RECEIVE) {
+	if (*(csi->ip - 1) >= CS_FILE_SET_AREA && *(csi->ip - 1) <= CS_FILE_RECEIVE) {
 		csi->ip--;
-		return(exec_file(csi)); 
+		return(exec_file(csi));
 	}
 
-	errormsg(WHERE,ERR_CHK,"shell function",*(csi->ip-1));
+	errormsg(WHERE, ERR_CHK, "shell function", *(csi->ip - 1));
 	return(0);
 }

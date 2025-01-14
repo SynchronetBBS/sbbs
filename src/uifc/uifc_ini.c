@@ -23,7 +23,7 @@
 
 void read_uifc_ini(const char* path, uifcapi_t* uifc, int* ciolib_mode, enum text_modes* video_mode)
 {
-	FILE* fp = iniOpenFile(path, /* update: */false);
+	FILE*       fp = iniOpenFile(path, /* update: */ false);
 
 	const char* section = ROOT_SECTION;
 	if (video_mode != NULL)

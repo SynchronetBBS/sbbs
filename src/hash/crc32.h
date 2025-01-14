@@ -22,8 +22,8 @@
 #ifndef _CRC32_H_
 #define _CRC32_H_
 
-#include <stdio.h>	/* FILE */
-#include "gen_defs.h"	/* uint32_t */
+#include <stdio.h>  /* FILE */
+#include "gen_defs.h"   /* uint32_t */
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,7 +38,7 @@ uint32_t fcrc32(FILE* fp, size_t);
 }
 #endif
 
-#define ucrc32(ch,crc) (crc32tbl[(crc^(ch))&0xff]^(crc>>8))
-#define crc32(x,y) crc32i(0xffffffff,x,y)
+#define ucrc32(ch, crc) (crc32tbl[(crc ^ (ch)) & 0xff] ^ (crc >> 8))
+#define crc32(x, y) crc32i(0xffffffff, x, y)
 
-#endif	/* Don't add anything after this line */
+#endif  /* Don't add anything after this line */

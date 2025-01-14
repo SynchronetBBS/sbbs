@@ -19,37 +19,37 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include <stdlib.h>		/* malloc */
-#include <string.h>		/* memset */
+#include <stdlib.h>     /* malloc */
+#include <string.h>     /* memset */
 
-#include "genwrap.h"	/* msclock() */
-#include "threadwrap.h"	/* pthread_self */
+#include "genwrap.h"    /* msclock() */
+#include "threadwrap.h" /* pthread_self */
 #include "msg_queue.h"
 
 msg_queue_t* msgQueueInit(msg_queue_t* q, long flags)
 {
-	if(q==NULL) {
-		if((q=(msg_queue_t*)malloc(sizeof(msg_queue_t)))==NULL)
+	if (q == NULL) {
+		if ((q = (msg_queue_t*)malloc(sizeof(msg_queue_t))) == NULL)
 			return(NULL);
 		flags |= MSG_QUEUE_MALLOC;
-	} 
+	}
 
-	memset(q,0,sizeof(msg_queue_t));
+	memset(q, 0, sizeof(msg_queue_t));
 
 	q->flags = flags;
 	q->refs = 1;
 	q->owner_thread_id = pthread_self();
 
-	if(q->flags&MSG_QUEUE_BIDIR)
-		listInit(&q->in,LINK_LIST_SEMAPHORE|LINK_LIST_MUTEX);
-	listInit(&q->out,LINK_LIST_SEMAPHORE|LINK_LIST_MUTEX);
+	if (q->flags & MSG_QUEUE_BIDIR)
+		listInit(&q->in, LINK_LIST_SEMAPHORE | LINK_LIST_MUTEX);
+	listInit(&q->out, LINK_LIST_SEMAPHORE | LINK_LIST_MUTEX);
 
 	return(q);
 }
 
 bool msgQueueOwner(msg_queue_t* q)
 {
-	if(q==NULL)
+	if (q == NULL)
 		return(false);
 
 	return q->owner_thread_id == pthread_self();
@@ -57,13 +57,13 @@ bool msgQueueOwner(msg_queue_t* q)
 
 bool msgQueueFree(msg_queue_t* q)
 {
-	if(q==NULL)
+	if (q == NULL)
 		return(false);
 
 	listFree(&q->in);
 	listFree(&q->out);
 
-	if(q->flags&MSG_QUEUE_MALLOC)
+	if (q->flags & MSG_QUEUE_MALLOC)
 		free(q);
 
 	return(true);
@@ -71,7 +71,7 @@ bool msgQueueFree(msg_queue_t* q)
 
 long msgQueueAttach(msg_queue_t* q)
 {
-	if(q==NULL)
+	if (q == NULL)
 		return(-1);
 
 	q->refs++;
@@ -83,13 +83,13 @@ long msgQueueDetach(msg_queue_t* q)
 {
 	int refs;
 
-	if(q==NULL || q->refs<1)
+	if (q == NULL || q->refs < 1)
 		return(-1);
 
-	if(msgQueueOwner(q))
+	if (msgQueueOwner(q))
 		q->flags |= MSG_QUEUE_ORPHAN;
 
-	if((refs=--q->refs)==0)
+	if ((refs = --q->refs) == 0)
 		msgQueueFree(q);
 
 	return(refs);
@@ -99,39 +99,39 @@ void* msgQueueSetPrivateData(msg_queue_t* q, void* p)
 {
 	void* old;
 
-	if(q==NULL)
+	if (q == NULL)
 		return(NULL);
 
-	old=q->private_data;
-	q->private_data=p;
+	old = q->private_data;
+	q->private_data = p;
 	return(old);
 }
 
 void* msgQueueGetPrivateData(msg_queue_t* q)
 {
-	if(q==NULL)
+	if (q == NULL)
 		return(NULL);
 	return(q->private_data);
 }
 
 static link_list_t* msgQueueReadList(msg_queue_t* q)
 {
-	if(q==NULL)
+	if (q == NULL)
 		return(NULL);
 
-	if((q->flags&MSG_QUEUE_BIDIR)
-		&& q->owner_thread_id == pthread_self())
+	if ((q->flags & MSG_QUEUE_BIDIR)
+	    && q->owner_thread_id == pthread_self())
 		return(&q->in);
 	return(&q->out);
 }
 
 static link_list_t* msgQueueWriteList(msg_queue_t* q)
 {
-	if(q==NULL)
+	if (q == NULL)
 		return(NULL);
 
-	if(!(q->flags&MSG_QUEUE_BIDIR)
-		|| q->owner_thread_id == pthread_self())
+	if (!(q->flags & MSG_QUEUE_BIDIR)
+	    || q->owner_thread_id == pthread_self())
 		return(&q->out);
 	return(&q->in);
 }
@@ -144,21 +144,21 @@ long msgQueueReadLevel(msg_queue_t* q)
 static bool list_wait(link_list_t* list, long timeout)
 {
 #if defined(LINK_LIST_THREADSAFE)
-	if(timeout<0)	/* infinite */
+	if (timeout < 0)   /* infinite */
 		return listSemWait(list);
-	if(timeout==0)	/* poll */
+	if (timeout == 0)  /* poll */
 		return listSemTryWait(list);
 
-	return listSemTryWaitBlock(list,timeout);
+	return listSemTryWaitBlock(list, timeout);
 #else
-	clock_t	start;
-	long	count;
-	
-	start=msclock();
-	while((count=listCountNodes(list))==0) {
-		if(timeout==0)
+	clock_t start;
+	long    count;
+
+	start = msclock();
+	while ((count = listCountNodes(list)) == 0) {
+		if (timeout == 0)
 			break;
-		if(timeout>0 && msclock()-start > timeout)
+		if (timeout > 0 && msclock() - start > timeout)
 			break;
 		YIELD();
 	}
@@ -168,12 +168,12 @@ static bool list_wait(link_list_t* list, long timeout)
 
 bool msgQueueWait(msg_queue_t* q, long timeout)
 {
-	bool			result;
-	link_list_t*	list = msgQueueReadList(q);
+	bool         result;
+	link_list_t* list = msgQueueReadList(q);
 
-	if((result=list_wait(list,timeout))==true)
+	if ((result = list_wait(list, timeout)) == true)
 #if defined(LINK_LIST_THREADSAFE)
-		listSemPost(list)	/* Replace the semaphore we just cleared */
+		listSemPost(list)   /* Replace the semaphore we just cleared */
 #endif
 		;
 
@@ -182,34 +182,34 @@ bool msgQueueWait(msg_queue_t* q, long timeout)
 
 void* msgQueueRead(msg_queue_t* q, long timeout)
 {
-	link_list_t*	list = msgQueueReadList(q);
+	link_list_t* list = msgQueueReadList(q);
 
-	list_wait(list,timeout);
+	list_wait(list, timeout);
 
 	return listShiftNode(list);
 }
 
 void* msgQueuePeek(msg_queue_t* q, long timeout)
 {
-	link_list_t*	list = msgQueueReadList(q);
+	link_list_t* list = msgQueueReadList(q);
 
-	if(list_wait(list,timeout))
+	if (list_wait(list, timeout))
 #if defined(LINK_LIST_THREADSAFE)
-		listSemPost(list)	/* Replace the semaphore we just cleared */
+		listSemPost(list)   /* Replace the semaphore we just cleared */
 #endif
 		;
 
-	return  listNodeData(listFirstNode(list));
+	return listNodeData(listFirstNode(list));
 }
 
 void* msgQueueFind(msg_queue_t* q, const void* data, size_t length)
 {
-	link_list_t*	list = msgQueueReadList(q);
-	list_node_t*	node;
+	link_list_t* list = msgQueueReadList(q);
+	list_node_t* node;
 
-	if((node=listFindNode(list,data,length))==NULL)
+	if ((node = listFindNode(list, data, length)) == NULL)
 		return(NULL);
-	return listRemoveNode(list,node,/* Free Data? */false);
+	return listRemoveNode(list, node, /* Free Data? */ false);
 }
 
 list_node_t* msgQueueFirstNode(msg_queue_t* q)
@@ -229,6 +229,6 @@ long msgQueueWriteLevel(msg_queue_t* q)
 
 bool msgQueueWrite(msg_queue_t* q, const void* data, size_t length)
 {
-	return listPushNodeData(msgQueueWriteList(q),data,length)!=NULL;
+	return listPushNodeData(msgQueueWriteList(q), data, length) != NULL;
 }
 

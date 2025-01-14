@@ -12,8 +12,8 @@
 #include "cmdshell.h"
 #include "ars_defs.h"
 
-int indent=0;
-int indenteol=0;
+int indent = 0;
+int indenteol = 0;
 
 /* table of variables for use by bsearch() */
 
@@ -175,55 +175,55 @@ struct var_table_t {
 	{ 0xfeef10b5, "o2" },
 };
 
-#define members(x) (sizeof(x)/sizeof(x[0]))
+#define members(x) (sizeof(x) / sizeof(x[0]))
 
-const char *char_table="________________________________________________123456789!_______BCDEFGHIJKLMNOPQRSTUVWXYZ0____A________________________________________________________________________________________________________________________________________________________________";
-const char *first_char_table="_________________________________________________________________BCDEFGHIJKLMNOPQRSTUVWXYZ!____A________________________________________________________________________________________________________________________________________________________________";
-unsigned char *brute_buf=NULL;
-uint32_t *brute_crc_buf=NULL;
-size_t brute_len=0;
-char **bruted=NULL;
-size_t bruted_len=0;
-char **badbruted=NULL;
-size_t badbruted_len=0;
+const char *   char_table = "________________________________________________123456789!_______BCDEFGHIJKLMNOPQRSTUVWXYZ0____A________________________________________________________________________________________________________________________________________________________________";
+const char *   first_char_table = "_________________________________________________________________BCDEFGHIJKLMNOPQRSTUVWXYZ!____A________________________________________________________________________________________________________________________________________________________________";
+unsigned char *brute_buf = NULL;
+uint32_t *     brute_crc_buf = NULL;
+size_t         brute_len = 0;
+char **        bruted = NULL;
+size_t         bruted_len = 0;
+char **        badbruted = NULL;
+size_t         badbruted_len = 0;
 
 void add_bruted(unsigned long name, char good, char *val, int save)
 {
 	char **new_bruted;
-	char *p;
-	FILE	*cache;
+	char * p;
+	FILE * cache;
 
 	bruted_len++;
-	p=(char *)malloc(strlen(val)+6);
-	if(p==NULL)
+	p = (char *)malloc(strlen(val) + 6);
+	if (p == NULL)
 		return;
-	new_bruted=realloc(bruted, sizeof(char *)*bruted_len);
-	if(new_bruted==NULL) {
+	new_bruted = realloc(bruted, sizeof(char *) * bruted_len);
+	if (new_bruted == NULL) {
 		free(p);
 		return;
 	}
-	*(int32_t *)p=name;
-	p[4]=good;
-	strcpy(p+5,val);
-	new_bruted[bruted_len-1]=p;
-	bruted=new_bruted;
-	if(*val && save) {
-		cache=fopen("unbaja.brute","a");
-		if(cache!=NULL) {
-			fprintf(cache,"%08lx,%hhd,%s\n",name,good,val);
+	*(int32_t *)p = name;
+	p[4] = good;
+	strcpy(p + 5, val);
+	new_bruted[bruted_len - 1] = p;
+	bruted = new_bruted;
+	if (*val && save) {
+		cache = fopen("unbaja.brute", "a");
+		if (cache != NULL) {
+			fprintf(cache, "%08lx,%hhd,%s\n", name, good, val);
 			fclose(cache);
 		}
 	}
 }
 
-int check_bruted(long name,unsigned char *val)
+int check_bruted(long name, unsigned char *val)
 {
 	size_t i;
 
-	for(i=0; i<bruted_len; i++) {
-		if(*(int32_t *)bruted[i]==name) {
-			if(!strcmp((char*)val,bruted[i]+5))
-				return(*(bruted[i]+4));
+	for (i = 0; i < bruted_len; i++) {
+		if (*(int32_t *)bruted[i] == name) {
+			if (!strcmp((char*)val, bruted[i] + 5))
+				return(*(bruted[i] + 4));
 		}
 	}
 	return(2);
@@ -233,93 +233,93 @@ char *find_bruted(long name)
 {
 	size_t i;
 
-	for(i=0; i<bruted_len; i++) {
-		if(*(int32_t *)bruted[i]==name && *(bruted[i]+4))
-			return(bruted[i]+5);
+	for (i = 0; i < bruted_len; i++) {
+		if (*(int32_t *)bruted[i] == name && *(bruted[i] + 4))
+			return(bruted[i] + 5);
 	}
 	return(NULL);
 }
 
 char* bruteforce(unsigned long name)
 {
-	uint32_t	this_crc=0;
-	char	*ret;
-	int	counter=0;
-	unsigned char	*pos;
-	size_t	l=0;
-	size_t	i;
+	uint32_t       this_crc = 0;
+	char *         ret;
+	int            counter = 0;
+	unsigned char *pos;
+	size_t         l = 0;
+	size_t         i;
 
-	if(!brute_len)
+	if (!brute_len)
 		return(NULL);
-	if((ret=find_bruted(name))!=NULL) {
-		if(!(*ret))
+	if ((ret = find_bruted(name)) != NULL) {
+		if (!(*ret))
 			return(NULL);
 		return(ret);
 	}
-	memset(brute_buf,0,brute_len+1);
-	memset(brute_crc_buf,0,brute_len*sizeof(int32_t));
-	printf("Brute forcing var_%08lx\n",name);
-	this_crc=crc32((char *)brute_buf,0);
-	for(;;) {
-		pos=brute_buf+l;
-		if(pos>brute_buf) {
+	memset(brute_buf, 0, brute_len + 1);
+	memset(brute_crc_buf, 0, brute_len * sizeof(int32_t));
+	printf("Brute forcing var_%08lx\n", name);
+	this_crc = crc32((char *)brute_buf, 0);
+	for (;;) {
+		pos = brute_buf + l;
+		if (pos > brute_buf) {
 			pos--;
-			while(pos>brute_buf) {
-				if(*pos!='9') {	/* last char from more_chars */
-					*pos=char_table[*pos];
+			while (pos > brute_buf) {
+				if (*pos != '9') { /* last char from more_chars */
+					*pos = char_table[*pos];
 					pos++;
-					i=(size_t)(pos-brute_buf);
-					memset(pos,'_',l-i);
+					i = (size_t)(pos - brute_buf);
+					memset(pos, '_', l - i);
 					/* Calculate all the following CRCs */
-					for(i--;brute_buf[i];i++)
-						brute_crc_buf[i]=ucrc32(brute_buf[i],brute_crc_buf[i-1]);
+					for (i--; brute_buf[i]; i++)
+						brute_crc_buf[i] = ucrc32(brute_buf[i], brute_crc_buf[i - 1]);
 					goto LOOP_END;
 				}
 				else
 					pos--;
 			}
 		}
-		if(*pos=='Z' || *pos==0) {		/* last char from first_chars */
+		if (*pos == 'Z' || *pos == 0) {      /* last char from first_chars */
 			/* This the max? */
-			if(l==brute_len) {
-				printf("\r%s Not found.\n",brute_buf);
-				add_bruted(name,1,"",0);
+			if (l == brute_len) {
+				printf("\r%s Not found.\n", brute_buf);
+				add_bruted(name, 1, "", 0);
 				return(NULL);
 			}
 			/* Set string to '_' with one extra at end */
-			memset(brute_buf,'_',++l);
-			brute_crc_buf[0]=ucrc32(brute_buf[0],~0UL);
-			for(i=1;brute_buf[i];i++)
-				brute_crc_buf[i]=ucrc32(brute_buf[i],brute_crc_buf[i-1]);
+			memset(brute_buf, '_', ++l);
+			brute_crc_buf[0] = ucrc32(brute_buf[0], ~0UL);
+			for (i = 1; brute_buf[i]; i++)
+				brute_crc_buf[i] = ucrc32(brute_buf[i], brute_crc_buf[i - 1]);
 			/* String is pre-filled with zeros so no need to terminate */
 			goto LOOP_END;
 		}
-		*pos=first_char_table[*pos];
-		memset(brute_buf+1,'_',l-1);
-		brute_crc_buf[0]=ucrc32(brute_buf[0],~0UL);
-		for(i=1;brute_buf[i];i++)
-			brute_crc_buf[i]=ucrc32(brute_buf[i],brute_crc_buf[i-1]);
+		*pos = first_char_table[*pos];
+		memset(brute_buf + 1, '_', l - 1);
+		brute_crc_buf[0] = ucrc32(brute_buf[0], ~0UL);
+		for (i = 1; brute_buf[i]; i++)
+			brute_crc_buf[i] = ucrc32(brute_buf[i], brute_crc_buf[i - 1]);
 
 LOOP_END:
-		this_crc=~(brute_crc_buf[l-1]);
-		if(this_crc==name) {
-			switch(check_bruted(name,brute_buf)) {
+		this_crc = ~(brute_crc_buf[l - 1]);
+		if (this_crc == name) {
+			switch (check_bruted(name, brute_buf)) {
 				case 0:
 					break;
 				case 2:
-					add_bruted(name,1,(char*)brute_buf,1);
+					add_bruted(name, 1, (char*)brute_buf, 1);
 				case 1:
 					goto BRUTE_DONE;
 			}
-			if(check_bruted(name,brute_buf))
+			if (check_bruted(name, brute_buf))
 				break;
 		}
-		if(!((++counter)%10000))
-			printf("\r%s ",brute_buf);
+		if (!((++counter) % 10000))
+			printf("\r%s ", brute_buf);
 	}
 
 BRUTE_DONE:
-	printf("\r%s Found!\n",brute_buf);
+	printf("\r%s Found!\n", brute_buf);
 	return((char*)brute_buf);
 }
 
@@ -332,21 +332,21 @@ static int vt_compare(const void *key, const void *table) {
 
 char *getvar(long name)
 {
-	static char varname[20];
+	static char         varname[20];
 	struct var_table_t *found;
-	char *brute;
+	char *              brute;
 
 	found = (struct var_table_t *)bsearch( &name, var_table, members( var_table ),
-		sizeof( struct var_table_t ), vt_compare );
+	                                       sizeof(struct var_table_t), vt_compare );
 
 	if (found) {
 		strcpy( varname, (*found).var );
 	} else {
-		brute=bruteforce(name);
-		if(brute)
-			strcpy(varname,brute);
+		brute = bruteforce(name);
+		if (brute)
+			strcpy(varname, brute);
 		else
-			sprintf(varname,"var_%08lx",name);
+			sprintf(varname, "var_%08lx", name);
 	}
 
 	return(varname);
@@ -355,7 +355,7 @@ char *getvar(long name)
 size_t my_fread(void* buf, size_t size, size_t n, FILE* fp)
 {
 	size_t result = fread(buf, size, n, fp);
-	if(result != n)
+	if (result != n)
 		perror("reading file");
 	return result;
 }
@@ -365,7 +365,7 @@ void write_var(FILE *bin, char *src)
 	int32_t lng;
 
 	my_fread(&lng, 1, 4, bin);
-	sprintf(strchr(src,0),"%s ",getvar(lng));
+	sprintf(strchr(src, 0), "%s ", getvar(lng));
 }
 
 void write_cstr(FILE *bin, char *src)
@@ -373,869 +373,869 @@ void write_cstr(FILE *bin, char *src)
 	uchar ch;
 	char* p;
 
-	strcat(src,"\"");
-	while(my_fread(&ch,1,1,bin)==1) {
-		if(ch==0)
+	strcat(src, "\"");
+	while (my_fread(&ch, 1, 1, bin) == 1) {
+		if (ch == 0)
 			break;
-		if((p=c_escape_char(ch))!=NULL)
-			sprintf(strchr(src,0),"%s",p);
-		else if(ch<' ' || ch > 126)
-			sprintf(strchr(src,0), "\\%03d", ch);
+		if ((p = c_escape_char(ch)) != NULL)
+			sprintf(strchr(src, 0), "%s", p);
+		else if (ch < ' ' || ch > 126)
+			sprintf(strchr(src, 0), "\\%03d", ch);
 		else
-			sprintf(strchr(src,0), "%c", ch);
+			sprintf(strchr(src, 0), "%c", ch);
 	}
-	strcat(src,"\" ");
+	strcat(src, "\" ");
 }
 
 void write_lng(FILE *bin, char *src)
 {
 	int32_t lng;
 
-	my_fread(&lng,4,1,bin);
-	sprintf(strchr(src,0),"%"PRId32" ",lng);
+	my_fread(&lng, 4, 1, bin);
+	sprintf(strchr(src, 0), "%" PRId32 " ", lng);
 }
 
 void write_short(FILE *bin, char *src)
 {
 	int16_t sht;
 
-	my_fread(&sht,2,1,bin);
-	sprintf(strchr(src,0),"%d ",sht);
+	my_fread(&sht, 2, 1, bin);
+	sprintf(strchr(src, 0), "%d ", sht);
 }
 
 void write_ushort(FILE *bin, char *src)
 {
 	uint16_t sht;
 
-	my_fread(&sht,2,1,bin);
-	sprintf(strchr(src,0),"%d ",sht);
+	my_fread(&sht, 2, 1, bin);
+	sprintf(strchr(src, 0), "%d ", sht);
 }
 
 void write_ch(FILE *bin, char *src)
 {
 	char ch;
 
-	my_fread(&ch,1,1,bin);
-	sprintf(strchr(src,0),"%c ",ch);
+	my_fread(&ch, 1, 1, bin);
+	sprintf(strchr(src, 0), "%c ", ch);
 }
 
 void write_uchar(FILE *bin, char *src)
 {
 	uchar uch;
 
-	my_fread(&uch,1,1,bin);
-	sprintf(strchr(src,0),"%u ",uch);
+	my_fread(&uch, 1, 1, bin);
+	sprintf(strchr(src, 0), "%u ", uch);
 }
 
 void write_logic(FILE *bin, char *src)
 {
 	char ch;
-	my_fread(&ch,1,1,bin);
-	if(ch==LOGIC_TRUE)
-		strcat(src,"TRUE ");
+	my_fread(&ch, 1, 1, bin);
+	if (ch == LOGIC_TRUE)
+		strcat(src, "TRUE ");
 	else
-		strcat(src,"FALSE ");
+		strcat(src, "FALSE ");
 }
 
 int write_key(FILE *bin, char *src, int keyset)
 {
 	uchar uch;
-	my_fread(&uch,1,1,bin);
-	if(uch==0 && keyset)
+	my_fread(&uch, 1, 1, bin);
+	if (uch == 0 && keyset)
 		return(uch);
-	if(uch==CS_DIGIT)
-		strcat(src,"DIGIT");
-	else if(uch==CS_EDIGIT)
-		strcat(src,"EDIGIT");
-	else if(uch==CR)
-		strcat(src,"\\r");
-	else if(uch==LF)
-		strcat(src,"\\n");
-	else if(uch==TAB)
-		strcat(src,"\\t");
-	else if(uch==BS)
-		strcat(src,"\\b");
-	else if(uch==BEL)
-		strcat(src,"\\a");
-	else if(uch==FF)
-		strcat(src,"\\f");
-	else if(uch==11)
-		strcat(src,"\\v");
-	else if(uch & 0x80)
-		sprintf(strchr(src,0),"/%c",uch&0x7f);
-	else if(uch < ' ')
-		sprintf(strchr(src,0),"^%c",uch+0x40);
-	else if(uch=='\\')
-		strcat(src,"'\\'");
-	else if(uch=='^')
-		strcat(src,"'^'");
-	else if(uch=='/')
-		strcat(src,"'/'");
-	else if(uch=='\'')
-		strcat(src,"\\'");
+	if (uch == CS_DIGIT)
+		strcat(src, "DIGIT");
+	else if (uch == CS_EDIGIT)
+		strcat(src, "EDIGIT");
+	else if (uch == CR)
+		strcat(src, "\\r");
+	else if (uch == LF)
+		strcat(src, "\\n");
+	else if (uch == TAB)
+		strcat(src, "\\t");
+	else if (uch == BS)
+		strcat(src, "\\b");
+	else if (uch == BEL)
+		strcat(src, "\\a");
+	else if (uch == FF)
+		strcat(src, "\\f");
+	else if (uch == 11)
+		strcat(src, "\\v");
+	else if (uch & 0x80)
+		sprintf(strchr(src, 0), "/%c", uch & 0x7f);
+	else if (uch < ' ')
+		sprintf(strchr(src, 0), "^%c", uch + 0x40);
+	else if (uch == '\\')
+		strcat(src, "'\\'");
+	else if (uch == '^')
+		strcat(src, "'^'");
+	else if (uch == '/')
+		strcat(src, "'/'");
+	else if (uch == '\'')
+		strcat(src, "\\'");
 	else
-		sprintf(strchr(src,0),"%c",uch);
-	if(!keyset)
-		strcat(src," ");
+		sprintf(strchr(src, 0), "%c", uch);
+	if (!keyset)
+		strcat(src, " ");
 	return(uch);;
 }
 
 void write_keys(FILE *bin, char *src)
 {
-	while(write_key(bin,src,TRUE));
-	strcat(src," ");
+	while (write_key(bin, src, TRUE));
+	strcat(src, " ");
 }
 
 void eol(char *src)
 {
 	char *p;
-	p=strchr(src,0);
+	p = strchr(src, 0);
 	p--;
-	*p='\n';
-	indent+=indenteol;
-	indenteol=0;
+	*p = '\n';
+	indent += indenteol;
+	indenteol = 0;
 }
 
-#define WRITE_NAME(name)	if(indent<0) indent=0; \
-							sprintf(strchr(src,0),"%.*s"name" ",indent,"\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t") \
-							/* printf("%s\n",name) */
+#define WRITE_NAME(name)    if (indent < 0) indent = 0; \
+		sprintf(strchr(src, 0), "%.*s"name" ", indent, "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t") \
+		/* printf("%s\n",name) */
 
 
-#define KEYS(name)		WRITE_NAME(name); \
-						write_keys(bin,src); \
-						eol(src);			 \
-						break
+#define KEYS(name)      WRITE_NAME(name); \
+		write_keys(bin, src); \
+		eol(src);            \
+		break
 
-#define KEY(name)		WRITE_NAME(name); \
-						write_key(bin,src,FALSE); \
-						eol(src);			 \
-						break
+#define KEY(name)       WRITE_NAME(name); \
+		write_key(bin, src, FALSE); \
+		eol(src);            \
+		break
 
-#define LGC(name)		WRITE_NAME(name); \
-						write_logic(bin,src); \
-						eol(src);			 \
-						break
+#define LGC(name)       WRITE_NAME(name); \
+		write_logic(bin, src); \
+		eol(src);            \
+		break
 
-#define NONE(name)		WRITE_NAME(name); \
-						eol(src);			 \
-						break
+#define NONE(name)      WRITE_NAME(name); \
+		eol(src);            \
+		break
 
-#define VAR(name)		WRITE_NAME(name); \
-						write_var(bin,src);  \
-						eol(src);			 \
-						break
+#define VAR(name)       WRITE_NAME(name); \
+		write_var(bin, src);  \
+		eol(src);            \
+		break
 
-#define CH(name)		WRITE_NAME(name); \
-						write_ch(bin,src);  \
-						eol(src);			 \
-						break
+#define CH(name)        WRITE_NAME(name); \
+		write_ch(bin, src);  \
+		eol(src);            \
+		break
 
-#define CHCH(name)		WRITE_NAME(name); \
-						write_ch(bin,src);  \
-						write_ch(bin,src);  \
-						eol(src);			 \
-						break
+#define CHCH(name)      WRITE_NAME(name); \
+		write_ch(bin, src);  \
+		write_ch(bin, src);  \
+		eol(src);            \
+		break
 
-#define UCH(name)		WRITE_NAME(name); \
-						write_uchar(bin,src);  \
-						eol(src);			 \
-						break
+#define UCH(name)       WRITE_NAME(name); \
+		write_uchar(bin, src);  \
+		eol(src);            \
+		break
 
-#define UCHUCH(name)	WRITE_NAME(name); \
-						write_uchar(bin,src);  \
-						write_uchar(bin,src);  \
-						eol(src);			 \
-						break
+#define UCHUCH(name)    WRITE_NAME(name); \
+		write_uchar(bin, src);  \
+		write_uchar(bin, src);  \
+		eol(src);            \
+		break
 
-#define SHT(name)		WRITE_NAME(name); \
-						write_short(bin,src);  \
-						eol(src);			 \
-						break
+#define SHT(name)       WRITE_NAME(name); \
+		write_short(bin, src);  \
+		eol(src);            \
+		break
 
 
-#define LNG(name)		WRITE_NAME(name); \
-						write_lng(bin,src);  \
-						eol(src);			 \
-						break
+#define LNG(name)       WRITE_NAME(name); \
+		write_lng(bin, src);  \
+		eol(src);            \
+		break
 
-#define STR(name)		WRITE_NAME(name); \
-						write_cstr(bin,src); \
-						eol(src);			 \
-						break
+#define STR(name)       WRITE_NAME(name); \
+		write_cstr(bin, src); \
+		eol(src);            \
+		break
 
-#define VARVAR(name)	WRITE_NAME(name); \
-						write_var(bin,src);  \
-						write_var(bin,src);  \
-						eol(src);			 \
-						break
+#define VARVAR(name)    WRITE_NAME(name); \
+		write_var(bin, src);  \
+		write_var(bin, src);  \
+		eol(src);            \
+		break
 
-#define VARUCH(name)	WRITE_NAME(name); \
-						write_var(bin,src);  \
-						write_uchar(bin,src);  \
-						eol(src);			 \
-						break
+#define VARUCH(name)    WRITE_NAME(name); \
+		write_var(bin, src);  \
+		write_uchar(bin, src);  \
+		eol(src);            \
+		break
 
-#define VARVARVAR(name)	WRITE_NAME(name); \
-						write_var(bin,src);  \
-						write_var(bin,src);  \
-						write_var(bin,src);  \
-						eol(src);			 \
-						break
+#define VARVARVAR(name) WRITE_NAME(name); \
+		write_var(bin, src);  \
+		write_var(bin, src);  \
+		write_var(bin, src);  \
+		eol(src);            \
+		break
 
-#define VARSTR(name)	WRITE_NAME(name); \
-						write_var(bin,src);  \
-						write_cstr(bin,src); \
-						eol(src);			 \
-						break
+#define VARSTR(name)    WRITE_NAME(name); \
+		write_var(bin, src);  \
+		write_cstr(bin, src); \
+		eol(src);            \
+		break
 
-#define VARLNG(name)	WRITE_NAME(name); \
-						write_var(bin,src);  \
-						write_lng(bin,src);  \
-						eol(src);			 \
-						break
+#define VARLNG(name)    WRITE_NAME(name); \
+		write_var(bin, src);  \
+		write_lng(bin, src);  \
+		eol(src);            \
+		break
 
-#define MUCH(name)		WRITE_NAME(name); \
-						if(usevar) {		 \
-							sprintf(strchr(src,0),"%s ",getvar(var)); \
-							usevar=FALSE;	 \
-							my_fread(buf,1,1,bin); \
-						} else {				 \
-							write_uchar(bin,src);  \
-						}					 \
-						eol(src);			 \
-						break
+#define MUCH(name)      WRITE_NAME(name); \
+		if (usevar) {         \
+			sprintf(strchr(src, 0), "%s ", getvar(var)); \
+			usevar = FALSE;    \
+			my_fread(buf, 1, 1, bin); \
+		} else {                 \
+			write_uchar(bin, src);  \
+		}                    \
+		eol(src);            \
+		break
 
-#define MSHT(name)		WRITE_NAME(name); \
-						if(usevar) {		 \
-							sprintf(strchr(src,0),"%s ",getvar(var)); \
-							usevar=FALSE;	 \
-							my_fread(buf,2,1,bin); \
-						} else {				 \
-							write_short(bin,src);  \
-						}					 \
-						eol(src);			 \
-						break
+#define MSHT(name)      WRITE_NAME(name); \
+		if (usevar) {         \
+			sprintf(strchr(src, 0), "%s ", getvar(var)); \
+			usevar = FALSE;    \
+			my_fread(buf, 2, 1, bin); \
+		} else {                 \
+			write_short(bin, src);  \
+		}                    \
+		eol(src);            \
+		break
 
-#define MVARLNG(name)	WRITE_NAME(name); \
-						write_var(bin,src);  \
-						if(usevar) {		 \
-							sprintf(strchr(src,0),"%s ",getvar(var)); \
-							usevar=FALSE;	 \
-							my_fread(buf,4,1,bin); \
-						} else {				 \
-							write_lng(bin,src);  \
-						}					 \
-						eol(src);			 \
-						break
+#define MVARLNG(name)   WRITE_NAME(name); \
+		write_var(bin, src);  \
+		if (usevar) {         \
+			sprintf(strchr(src, 0), "%s ", getvar(var)); \
+			usevar = FALSE;    \
+			my_fread(buf, 4, 1, bin); \
+		} else {                 \
+			write_lng(bin, src);  \
+		}                    \
+		eol(src);            \
+		break
 
-#define MVARSHTUCH(name)	WRITE_NAME(name); \
-						write_var(bin,src);  \
-						write_short(bin,src);  \
-						if(usevar) {		 \
-							sprintf(strchr(src,0),"%s ",getvar(var)); \
-							usevar=FALSE;	 \
-							my_fread(buf,1,1,bin); \
-						} else {				 \
-							write_uchar(bin,src);		 \
-						}					 \
-						eol(src);			 \
-						break
+#define MVARSHTUCH(name)    WRITE_NAME(name); \
+		write_var(bin, src);  \
+		write_short(bin, src);  \
+		if (usevar) {         \
+			sprintf(strchr(src, 0), "%s ", getvar(var)); \
+			usevar = FALSE;    \
+			my_fread(buf, 1, 1, bin); \
+		} else {                 \
+			write_uchar(bin, src);        \
+		}                    \
+		eol(src);            \
+		break
 
-#define MVARSHT(name)	WRITE_NAME(name); \
-						write_var(bin,src);  \
-						if(usevar) {		 \
-							sprintf(strchr(src,0),"%s ",getvar(var)); \
-							usevar=FALSE;	 \
-							my_fread(buf,2,1,bin); \
-						} else {				 \
-							write_short(bin,src);  \
-						}					 \
-						eol(src);			 \
-						break
+#define MVARSHT(name)   WRITE_NAME(name); \
+		write_var(bin, src);  \
+		if (usevar) {         \
+			sprintf(strchr(src, 0), "%s ", getvar(var)); \
+			usevar = FALSE;    \
+			my_fread(buf, 2, 1, bin); \
+		} else {                 \
+			write_short(bin, src);  \
+		}                    \
+		eol(src);            \
+		break
 
-#define MVARUCH(name)	WRITE_NAME(name); \
-						write_var(bin,src);  \
-						if(usevar) {		 \
-							sprintf(strchr(src,0),"%s ",getvar(var)); \
-							usevar=FALSE;	 \
-							my_fread(buf,1,1,bin); \
-						} else {				 \
-							write_uchar(bin,src);  \
-						}					 \
-						eol(src);			 \
-						break
+#define MVARUCH(name)   WRITE_NAME(name); \
+		write_var(bin, src);  \
+		if (usevar) {         \
+			sprintf(strchr(src, 0), "%s ", getvar(var)); \
+			usevar = FALSE;    \
+			my_fread(buf, 1, 1, bin); \
+		} else {                 \
+			write_uchar(bin, src);  \
+		}                    \
+		eol(src);            \
+		break
 
-#define MVARVARNZUST(name)	WRITE_NAME(name); \
-							write_var(bin,src);  \
-							write_var(bin,src);  \
-							if(usevar) {		 \
-								sprintf(strchr(src,0),"%s ",getvar(var)); \
-								usevar=FALSE;	 \
-								my_fread(buf,2,1,bin); \
-							} else {				 \
-								my_fread(&ush, 2, 1, bin); \
-								if(ush)					\
-									sprintf(strchr(src,0),"%u ",ush);  \
-							}					 \
-							eol(src);			 \
-							break
+#define MVARVARNZUST(name)  WRITE_NAME(name); \
+		write_var(bin, src);  \
+		write_var(bin, src);  \
+		if (usevar) {         \
+			sprintf(strchr(src, 0), "%s ", getvar(var)); \
+			usevar = FALSE;    \
+			my_fread(buf, 2, 1, bin); \
+		} else {                 \
+			my_fread(&ush, 2, 1, bin); \
+			if (ush)                 \
+			sprintf(strchr(src, 0), "%u ", ush);  \
+		}                    \
+		eol(src);            \
+		break
 
-#define MVARVARUST(name)	WRITE_NAME(name); \
-							write_var(bin,src);  \
-							write_var(bin,src);  \
-							if(usevar) {		 \
-								sprintf(strchr(src,0),"%s ",getvar(var)); \
-								usevar=FALSE;	 \
-								my_fread(buf,2,1,bin); \
-							} else {				 \
-								write_ushort(bin,src);  \
-							}					 \
-							eol(src);			 \
-							break
+#define MVARVARUST(name)    WRITE_NAME(name); \
+		write_var(bin, src);  \
+		write_var(bin, src);  \
+		if (usevar) {         \
+			sprintf(strchr(src, 0), "%s ", getvar(var)); \
+			usevar = FALSE;    \
+			my_fread(buf, 2, 1, bin); \
+		} else {                 \
+			write_ushort(bin, src);  \
+		}                    \
+		eol(src);            \
+		break
 
-#define MVARUSTVAR(name)	WRITE_NAME(name); \
-							write_var(bin,src);  \
-							if(usevar) {		 \
-								sprintf(strchr(src,0),"%s ",getvar(var)); \
-								usevar=FALSE;	 \
-								my_fread(buf,2,1,bin); \
-							} else {				 \
-								write_ushort(bin,src);  \
-							}					 \
-							write_var(bin,src);  \
-							eol(src);			 \
-							break
+#define MVARUSTVAR(name)    WRITE_NAME(name); \
+		write_var(bin, src);  \
+		if (usevar) {         \
+			sprintf(strchr(src, 0), "%s ", getvar(var)); \
+			usevar = FALSE;    \
+			my_fread(buf, 2, 1, bin); \
+		} else {                 \
+			write_ushort(bin, src);  \
+		}                    \
+		write_var(bin, src);  \
+		eol(src);            \
+		break
 
-#define MVARUSTSTR(name)	WRITE_NAME(name); \
-							write_var(bin,src);  \
-							if(usevar) {		 \
-								sprintf(strchr(src,0),"%s ",getvar(var)); \
-								usevar=FALSE;	 \
-								my_fread(buf,2,1,bin); \
-							} else {				 \
-								write_ushort(bin,src);  \
-							}					 \
-							write_cstr(bin,src);  \
-							eol(src);			 \
-							break
+#define MVARUSTSTR(name)    WRITE_NAME(name); \
+		write_var(bin, src);  \
+		if (usevar) {         \
+			sprintf(strchr(src, 0), "%s ", getvar(var)); \
+			usevar = FALSE;    \
+			my_fread(buf, 2, 1, bin); \
+		} else {                 \
+			write_ushort(bin, src);  \
+		}                    \
+		write_cstr(bin, src);  \
+		eol(src);            \
+		break
 
-#define MLNG(name)	WRITE_NAME(name); \
-						if(usevar) {		 \
-							sprintf(strchr(src,0),"%s ",getvar(var)); \
-							usevar=FALSE;	 \
-							my_fread(buf,4,1,bin); \
-						} else {				 \
-							write_lng(bin,src);  \
-						}					 \
-						eol(src);			 \
-						break
+#define MLNG(name)  WRITE_NAME(name); \
+		if (usevar) {         \
+			sprintf(strchr(src, 0), "%s ", getvar(var)); \
+			usevar = FALSE;    \
+			my_fread(buf, 4, 1, bin); \
+		} else {                 \
+			write_lng(bin, src);  \
+		}                    \
+		eol(src);            \
+		break
 
-#define MLNGVAR(name)	WRITE_NAME(name); \
-						if(usevar) {		 \
-							sprintf(strchr(src,0),"%s ",getvar(var)); \
-							usevar=FALSE;	 \
-							my_fread(buf,4,1,bin); \
-						} else {				 \
-							write_lng(bin,src);  \
-						}					 \
-						write_var(bin,src);  \
-						eol(src);			 \
-						break
+#define MLNGVAR(name)   WRITE_NAME(name); \
+		if (usevar) {         \
+			sprintf(strchr(src, 0), "%s ", getvar(var)); \
+			usevar = FALSE;    \
+			my_fread(buf, 4, 1, bin); \
+		} else {                 \
+			write_lng(bin, src);  \
+		}                    \
+		write_var(bin, src);  \
+		eol(src);            \
+		break
 
-#define MSHTSTR(name)	WRITE_NAME(name); \
-						if(usevar) {		 \
-							sprintf(strchr(src,0),"%s ",getvar(var)); \
-							usevar=FALSE;	 \
-							my_fread(buf,2,1,bin); \
-						} else {				 \
-							write_short(bin,src);  \
-						}					 \
-						write_cstr(bin,src);  \
-						eol(src);			 \
-						break
+#define MSHTSTR(name)   WRITE_NAME(name); \
+		if (usevar) {         \
+			sprintf(strchr(src, 0), "%s ", getvar(var)); \
+			usevar = FALSE;    \
+			my_fread(buf, 2, 1, bin); \
+		} else {                 \
+			write_short(bin, src);  \
+		}                    \
+		write_cstr(bin, src);  \
+		eol(src);            \
+		break
 
-#define MLNGSTR(name)	WRITE_NAME(name); \
-						if(usevar) {		 \
-							sprintf(strchr(src,0),"%s ",getvar(var)); \
-							usevar=FALSE;	 \
-							my_fread(buf,4,1,bin); \
-						} else {				 \
-							write_lng(bin,src);  \
-						}					 \
-						write_cstr(bin,src);  \
-						eol(src);			 \
-						break
+#define MLNGSTR(name)   WRITE_NAME(name); \
+		if (usevar) {         \
+			sprintf(strchr(src, 0), "%s ", getvar(var)); \
+			usevar = FALSE;    \
+			my_fread(buf, 4, 1, bin); \
+		} else {                 \
+			write_lng(bin, src);  \
+		}                    \
+		write_cstr(bin, src);  \
+		eol(src);            \
+		break
 
-#define MVARLNGLNG(name)	WRITE_NAME(name); \
-							write_var(bin,src);  \
-							if(usevar) {		 \
-								sprintf(strchr(src,0),"%s ",getvar(var)); \
-								usevar=FALSE;	 \
-								my_fread(buf,4,1,bin); \
-							} else {				 \
-								write_lng(bin,src);  \
-							}					 \
-							write_lng(bin,src);  \
-							eol(src);			 \
-							break
+#define MVARLNGLNG(name)    WRITE_NAME(name); \
+		write_var(bin, src);  \
+		if (usevar) {         \
+			sprintf(strchr(src, 0), "%s ", getvar(var)); \
+			usevar = FALSE;    \
+			my_fread(buf, 4, 1, bin); \
+		} else {                 \
+			write_lng(bin, src);  \
+		}                    \
+		write_lng(bin, src);  \
+		eol(src);            \
+		break
 
-#define MVARUCHLNG(name)	WRITE_NAME(name); \
-							write_var(bin,src);  \
-							if(usevar) {		 \
-								sprintf(strchr(src,0),"%s ",getvar(var)); \
-								usevar=FALSE;	 \
-								my_fread(buf,1,1,bin); \
-							} else {				 \
-								write_uchar(bin,src);  \
-							}					 \
-							write_lng(bin,src);  \
-							eol(src);			 \
-							break
+#define MVARUCHLNG(name)    WRITE_NAME(name); \
+		write_var(bin, src);  \
+		if (usevar) {         \
+			sprintf(strchr(src, 0), "%s ", getvar(var)); \
+			usevar = FALSE;    \
+			my_fread(buf, 1, 1, bin); \
+		} else {                 \
+			write_uchar(bin, src);  \
+		}                    \
+		write_lng(bin, src);  \
+		eol(src);            \
+		break
 
-#define MVARCH(name)	WRITE_NAME(name); \
-						write_var(bin,src);  \
-						if(usevar) {		 \
-							sprintf(strchr(src,0),"%s ",getvar(var)); \
-							usevar=FALSE;	 \
-							my_fread(buf,1,1,bin); \
-						} else {				 \
-							write_ch(bin,src);  \
-						}					 \
-						eol(src);			 \
-						break
+#define MVARCH(name)    WRITE_NAME(name); \
+		write_var(bin, src);  \
+		if (usevar) {         \
+			sprintf(strchr(src, 0), "%s ", getvar(var)); \
+			usevar = FALSE;    \
+			my_fread(buf, 1, 1, bin); \
+		} else {                 \
+			write_ch(bin, src);  \
+		}                    \
+		eol(src);            \
+		break
 
-#define VARSTRVAR(name)	WRITE_NAME(name); \
-						write_var(bin,src);  \
-						write_cstr(bin,src); \
-						write_var(bin,src);  \
-						eol(src);			 \
-						break
+#define VARSTRVAR(name) WRITE_NAME(name); \
+		write_var(bin, src);  \
+		write_cstr(bin, src); \
+		write_var(bin, src);  \
+		eol(src);            \
+		break
 
-#define UCHVARSTR(name)	WRITE_NAME(name); \
-						write_uchar(bin,src); \
-						write_var(bin,src);  \
-						write_cstr(bin,src);  \
-						eol(src);			 \
-						break
+#define UCHVARSTR(name) WRITE_NAME(name); \
+		write_uchar(bin, src); \
+		write_var(bin, src);  \
+		write_cstr(bin, src);  \
+		eol(src);            \
+		break
 
-#define UCHVARVAR(name)	WRITE_NAME(name); \
-						write_uchar(bin,src); \
-						write_var(bin,src);  \
-						write_var(bin,src);  \
-						eol(src);			 \
-						break
+#define UCHVARVAR(name) WRITE_NAME(name); \
+		write_uchar(bin, src); \
+		write_var(bin, src);  \
+		write_var(bin, src);  \
+		eol(src);            \
+		break
 
-#define UCHVAR(name)	WRITE_NAME(name); \
-						write_uchar(bin,src); \
-						write_var(bin,src);  \
-						eol(src);			 \
-						break
+#define UCHVAR(name)    WRITE_NAME(name); \
+		write_uchar(bin, src); \
+		write_var(bin, src);  \
+		eol(src);            \
+		break
 
-#define UCHSTR(name)	WRITE_NAME(name); \
-						write_uchar(bin,src); \
-						write_cstr(bin,src);  \
-						eol(src);			 \
-						break
+#define UCHSTR(name)    WRITE_NAME(name); \
+		write_uchar(bin, src); \
+		write_cstr(bin, src);  \
+		eol(src);            \
+		break
 
-#define CHSTR(name)		WRITE_NAME(name); \
-						write_ch(bin,src); \
-						write_cstr(bin,src);  \
-						eol(src);			 \
-						break
+#define CHSTR(name)     WRITE_NAME(name); \
+		write_ch(bin, src); \
+		write_cstr(bin, src);  \
+		eol(src);            \
+		break
 
-#define VARCH(name)		WRITE_NAME(name); \
-						write_var(bin,src);  \
-						write_ch(bin,src);	 \
-						eol(src);			 \
-						break
+#define VARCH(name)     WRITE_NAME(name); \
+		write_var(bin, src);  \
+		write_ch(bin, src);   \
+		eol(src);            \
+		break
 
-#define CHVAR(name)		WRITE_NAME(name); \
-						write_ch(bin,src);	 \
-						write_var(bin,src);  \
-						eol(src);			 \
-						break
+#define CHVAR(name)     WRITE_NAME(name); \
+		write_ch(bin, src);   \
+		write_var(bin, src);  \
+		eol(src);            \
+		break
 
-#define VARVARSHT(name)	WRITE_NAME(name); \
-						write_var(bin,src);  \
-						write_var(bin,src);  \
-						write_short(bin,src);\
-						eol(src);			 \
-						break
+#define VARVARSHT(name) WRITE_NAME(name); \
+		write_var(bin, src);  \
+		write_var(bin, src);  \
+		write_short(bin, src); \
+		eol(src);            \
+		break
 
-#define VARVARUST(name)	WRITE_NAME(name); \
-						write_var(bin,src);  \
-						write_var(bin,src);  \
-						write_ushort(bin,src);\
-						eol(src);			 \
-						break
+#define VARVARUST(name) WRITE_NAME(name); \
+		write_var(bin, src);  \
+		write_var(bin, src);  \
+		write_ushort(bin, src); \
+		eol(src);            \
+		break
 
 char *decompile_ars(uchar *ars, int len)
 {
-	static char	buf[1024];
-	char	*out;
-	uchar	*in;
-	uint	n;
-	int		equals=0;
-	int		not=0;
+	static char buf[1024];
+	char *      out;
+	uchar *     in;
+	uint        n;
+	int         equals = 0;
+	int         not = 0;
 
-	out=buf;
-	buf[0]=0;
-	for(in=ars;in<ars+len;in++) {
-		switch(*in) {
+	out = buf;
+	buf[0] = 0;
+	for (in = ars; in < ars + len; in++) {
+		switch (*in) {
 			case AR_NULL:
 				break;
 			case AR_OR:
-				*(out++)='|';
-				
+				*(out++) = '|';
+
 				break;
 			case AR_NOT:
-				not=1;
+				not = 1;
 				break;
 			case AR_EQUAL:
-				equals=1;
+				equals = 1;
 				break;
 			case AR_BEGNEST:
-				if(not)
-					*(out++)='!';
-				not=0;
-				*(out++)='(';
-				
+				if (not)
+					*(out++) = '!';
+				not = 0;
+				*(out++) = '(';
+
 				break;
 			case AR_ENDNEST:
-				*(out++)=')';
-				
+				*(out++) = ')';
+
 				break;
 			case AR_LEVEL:
-				*(out++)='$';
-				*(out++)='L';
-				
+				*(out++) = '$';
+				*(out++) = 'L';
+
 				break;
 			case AR_AGE:
-				*(out++)='$';
-				*(out++)='A';
-				
+				*(out++) = '$';
+				*(out++) = 'A';
+
 				break;
 			case AR_BPS:
-				*(out++)='$';
-				*(out++)='B';
-				
+				*(out++) = '$';
+				*(out++) = 'B';
+
 				break;
 			case AR_NODE:
-				*(out++)='$';
-				*(out++)='N';
-				
+				*(out++) = '$';
+				*(out++) = 'N';
+
 				break;
 			case AR_TLEFT:
-				*(out++)='$';
-				*(out++)='R';
-				
+				*(out++) = '$';
+				*(out++) = 'R';
+
 				break;
 			case AR_TUSED:
-				*(out++)='$';
-				*(out++)='O';
-				
+				*(out++) = '$';
+				*(out++) = 'O';
+
 				break;
 			case AR_USER:
 			case AR_USERNAME:
-				*(out++)='$';
-				*(out++)='U';
-				
+				*(out++) = '$';
+				*(out++) = 'U';
+
 				break;
 			case AR_TIME:
-				*(out++)='$';
-				*(out++)='T';
-				
+				*(out++) = '$';
+				*(out++) = 'T';
+
 				break;
 			case AR_PCR:
-				*(out++)='$';
-				*(out++)='P';
-				
+				*(out++) = '$';
+				*(out++) = 'P';
+
 				break;
 			case AR_FLAG1:
-				*(out++)='$';
-				*(out++)='F';
-				*(out++)='1';
-				
+				*(out++) = '$';
+				*(out++) = 'F';
+				*(out++) = '1';
+
 				break;
 			case AR_FLAG2:
-				*(out++)='$';
-				*(out++)='F';
-				*(out++)='2';
-				
+				*(out++) = '$';
+				*(out++) = 'F';
+				*(out++) = '2';
+
 				break;
 			case AR_FLAG3:
-				*(out++)='$';
-				*(out++)='F';
-				*(out++)='3';
-				
+				*(out++) = '$';
+				*(out++) = 'F';
+				*(out++) = '3';
+
 				break;
 			case AR_FLAG4:
-				*(out++)='$';
-				*(out++)='F';
-				*(out++)='4';
-				
+				*(out++) = '$';
+				*(out++) = 'F';
+				*(out++) = '4';
+
 				break;
 			case AR_EXEMPT:
-				*(out++)='$';
-				*(out++)='X';
-				
+				*(out++) = '$';
+				*(out++) = 'X';
+
 				break;
 			case AR_REST:
-				*(out++)='$';
-				*(out++)='Z';
-				
+				*(out++) = '$';
+				*(out++) = 'Z';
+
 				break;
 			case AR_SEX:
-				*(out++)='$';
-				*(out++)='S';
-				
+				*(out++) = '$';
+				*(out++) = 'S';
+
 				break;
 			case AR_UDR:
-				*(out++)='$';
-				*(out++)='K';
-				
+				*(out++) = '$';
+				*(out++) = 'K';
+
 				break;
 			case AR_UDFR:
-				*(out++)='$';
-				*(out++)='D';
-				
+				*(out++) = '$';
+				*(out++) = 'D';
+
 				break;
 			case AR_EXPIRE:
-				*(out++)='$';
-				*(out++)='E';
-				
+				*(out++) = '$';
+				*(out++) = 'E';
+
 				break;
 			case AR_CREDIT:
-				*(out++)='$';
-				*(out++)='C';
-				
+				*(out++) = '$';
+				*(out++) = 'C';
+
 				break;
 			case AR_DAY:
-				*(out++)='$';
-				*(out++)='W';
-				
+				*(out++) = '$';
+				*(out++) = 'W';
+
 				break;
 			case AR_ANSI:
-				if(not)
-					*(out++)='!';
-				not=0;
-				*(out++)='$';
-				*(out++)='[';
-				
+				if (not)
+					*(out++) = '!';
+				not = 0;
+				*(out++) = '$';
+				*(out++) = '[';
+
 				break;
 			case AR_RIP:
-				if(not)
-					*(out++)='!';
-				not=0;
-				*(out++)='$';
-				*(out++)='*';
-				
+				if (not)
+					*(out++) = '!';
+				not = 0;
+				*(out++) = '$';
+				*(out++) = '*';
+
 				break;
 			case AR_LOCAL:
-				if(not)
-					*(out++)='!';
-				not=0;
-				*(out++)='$';
-				*(out++)='G';
-				
+				if (not)
+					*(out++) = '!';
+				not = 0;
+				*(out++) = '$';
+				*(out++) = 'G';
+
 				break;
 			case AR_GROUP:
-				*(out++)='$';
-				*(out++)='M';
-				
+				*(out++) = '$';
+				*(out++) = 'M';
+
 				break;
 			case AR_SUB:
-				*(out++)='$';
-				*(out++)='H';
-				
+				*(out++) = '$';
+				*(out++) = 'H';
+
 				break;
 			case AR_LIB:
-				*(out++)='$';
-				*(out++)='I';
-				
+				*(out++) = '$';
+				*(out++) = 'I';
+
 				break;
 			case AR_DIR:
-				*(out++)='$';
-				*(out++)='J';
-				
+				*(out++) = '$';
+				*(out++) = 'J';
+
 				break;
-			case AR_EXPERT :
-				if(not)
-					*(out++)='!';
-				not=0;
-				*out=0;
-				strcat(out,"EXPERT");
-				out=strchr(out,0);
-				
+			case AR_EXPERT:
+				if (not)
+					*(out++) = '!';
+				not = 0;
+				*out = 0;
+				strcat(out, "EXPERT");
+				out = strchr(out, 0);
+
 				break;
 			case AR_SYSOP:
-				if(not)
-					*(out++)='!';
-				not=0;
-				*out=0;
-				strcat(out,"SYSOP");
-				out=strchr(out,0);
-				
+				if (not)
+					*(out++) = '!';
+				not = 0;
+				*out = 0;
+				strcat(out, "SYSOP");
+				out = strchr(out, 0);
+
 				break;
 			case AR_QUIET:
-				if(not)
-					*(out++)='!';
-				not=0;
-				*out=0;
-				strcat(out,"QUIET");
-				out=strchr(out,0);
-				
+				if (not)
+					*(out++) = '!';
+				not = 0;
+				*out = 0;
+				strcat(out, "QUIET");
+				out = strchr(out, 0);
+
 				break;
 			case AR_MAIN_CMDS:
-				*out=0;
-				strcat(out,"MAIN_CMDS");
-				out=strchr(out,0);
-				
+				*out = 0;
+				strcat(out, "MAIN_CMDS");
+				out = strchr(out, 0);
+
 				break;
 			case AR_FILE_CMDS:
-				*out=0;
-				strcat(out,"FILE_CMDS");
-				out=strchr(out,0);
-				
+				*out = 0;
+				strcat(out, "FILE_CMDS");
+				out = strchr(out, 0);
+
 				break;
 			case AR_RANDOM:
-				*(out++)='$';
-				*(out++)='Q';
-				
+				*(out++) = '$';
+				*(out++) = 'Q';
+
 				break;
 			case AR_LASTON:
-				*(out++)='$';
-				*(out++)='Y';
-				
+				*(out++) = '$';
+				*(out++) = 'Y';
+
 				break;
 			case AR_LOGONS:
-				*(out++)='$';
-				*(out++)='V';
-				
+				*(out++) = '$';
+				*(out++) = 'V';
+
 				break;
 			case AR_WIP:
-				if(not)
-					*(out++)='!';
-				not=0;
-				*out=0;
-				strcat(out,"WIP");
-				out=strchr(out,0);
-				
+				if (not)
+					*(out++) = '!';
+				not = 0;
+				*out = 0;
+				strcat(out, "WIP");
+				out = strchr(out, 0);
+
 				break;
 			case AR_SUBCODE:
-				*out=0;
-				strcat(out,"SUB ");
-				out=strchr(out,0);
-				
+				*out = 0;
+				strcat(out, "SUB ");
+				out = strchr(out, 0);
+
 				break;
 			case AR_DIRCODE:
-				*out=0;
-				strcat(out,"DIR ");
-				out=strchr(out,0);
-				
+				*out = 0;
+				strcat(out, "DIR ");
+				out = strchr(out, 0);
+
 				break;
 			case AR_OS2:
-				if(not)
-					*(out++)='!';
-				not=0;
-				*out=0;
-				strcat(out,"OS2");
-				out=strchr(out,0);
-				
+				if (not)
+					*(out++) = '!';
+				not = 0;
+				*out = 0;
+				strcat(out, "OS2");
+				out = strchr(out, 0);
+
 				break;
 			case AR_DOS:
-				if(not)
-					*(out++)='!';
-				not=0;
-				*out=0;
-				strcat(out,"DOS");
-				out=strchr(out,0);
-				
+				if (not)
+					*(out++) = '!';
+				not = 0;
+				*out = 0;
+				strcat(out, "DOS");
+				out = strchr(out, 0);
+
 				break;
 			case AR_WIN32:
-				if(not)
-					*(out++)='!';
-				not=0;
-				*out=0;
-				strcat(out,"WIN32");
-				out=strchr(out,0);
-				
+				if (not)
+					*(out++) = '!';
+				not = 0;
+				*out = 0;
+				strcat(out, "WIN32");
+				out = strchr(out, 0);
+
 				break;
 			case AR_UNIX:
-				if(not)
-					*(out++)='!';
-				not=0;
-				*out=0;
-				strcat(out,"UNIX");
-				out=strchr(out,0);
-				
+				if (not)
+					*(out++) = '!';
+				not = 0;
+				*out = 0;
+				strcat(out, "UNIX");
+				out = strchr(out, 0);
+
 				break;
-			case AR_LINUX :
-				if(not)
-					*(out++)='!';
-				not=0;
-				*out=0;
-				strcat(out,"LINUX");
-				out=strchr(out,0);
-				
+			case AR_LINUX:
+				if (not)
+					*(out++) = '!';
+				not = 0;
+				*out = 0;
+				strcat(out, "LINUX");
+				out = strchr(out, 0);
+
 				break;
 			case AR_SHELL:
-				*out=0;
-				strcat(out,"SHELL ");
-				out=strchr(out,0);
-				
+				*out = 0;
+				strcat(out, "SHELL ");
+				out = strchr(out, 0);
+
 				break;
 			case AR_PROT:
-				*out=0;
-				strcat(out,"PROT ");
-				out=strchr(out,0);
-				
+				*out = 0;
+				strcat(out, "PROT ");
+				out = strchr(out, 0);
+
 				break;
 			case AR_HOST:
-				*out=0;
-				strcat(out,"HOST ");
-				out=strchr(out,0);
-				
+				*out = 0;
+				strcat(out, "HOST ");
+				out = strchr(out, 0);
+
 				break;
 			case AR_IP:
-				*out=0;
-				strcat(out,"IP ");
-				out=strchr(out,0);
-				
+				*out = 0;
+				strcat(out, "IP ");
+				out = strchr(out, 0);
+
 				break;
 			case AR_GUEST:
-				if(not)
-					*(out++)='!';
-				not=0;
-				*out=0;
-				strcat(out,"GUEST");
-				out=strchr(out,0);
-				
+				if (not)
+					*(out++) = '!';
+				not = 0;
+				*out = 0;
+				strcat(out, "GUEST");
+				out = strchr(out, 0);
+
 				break;
 			case AR_QNODE:
-				if(not)
-					*(out++)='!';
-				not=0;
-				*out=0;
-				strcat(out,"QNODE");
-				out=strchr(out,0);
-				
+				if (not)
+					*(out++) = '!';
+				not = 0;
+				*out = 0;
+				strcat(out, "QNODE");
+				out = strchr(out, 0);
+
 				break;
 			default:
-				printf("Error decoding AR: %02Xh, offset: %ld\n", *in, (long)(in-ars));
+				printf("Error decoding AR: %02Xh, offset: %ld\n", *in, (long)(in - ars));
 				return("Unknown ARS String");
 		}
-		switch(*in) {
+		switch (*in) {
 			case AR_TIME:
-				if(not)
-					*(out++)='!';
-				if(equals)
-					*(out++)='=';
-				not=equals=0;
+				if (not)
+					*(out++) = '!';
+				if (equals)
+					*(out++) = '=';
+				not = equals = 0;
 				in++;
-				n=*((short *)in);
+				n = *((short *)in);
 				in++;
-				out+=sprintf(out,"%02d:%02d",n/60,n%60);
+				out += sprintf(out, "%02d:%02d", n / 60, n % 60);
 				break;
 			case AR_AGE:    /* byte operands */
 			case AR_PCR:
@@ -1245,13 +1245,13 @@ char *decompile_ars(uchar *ars, int len)
 			case AR_LEVEL:
 			case AR_TLEFT:
 			case AR_TUSED:
-				if(not)
-					*(out++)='!';
-				if(equals)
-					*(out++)='=';
-				not=equals=0;
+				if (not)
+					*(out++) = '!';
+				if (equals)
+					*(out++) = '=';
+				not = equals = 0;
 				in++;
-				out+=sprintf(out,"%d",*in);
+				out += sprintf(out, "%d", *in);
 				break;
 			case AR_BPS:    /* int operands */
 			case AR_MAIN_CMDS:
@@ -1262,31 +1262,31 @@ char *decompile_ars(uchar *ars, int len)
 			case AR_RANDOM:
 			case AR_LASTON:
 			case AR_LOGONS:
-				if(not)
-					*(out++)='!';
-				if(equals)
-					*(out++)='=';
-				not=equals=0;
+				if (not)
+					*(out++) = '!';
+				if (equals)
+					*(out++) = '=';
+				not = equals = 0;
 				in++;
-    			n=*((short *)in);
+				n = *((short *)in);
 				in++;
-				out+=sprintf(out,"%d",n);
-    			break;
+				out += sprintf(out, "%d", n);
+				break;
 			case AR_GROUP:
 			case AR_LIB:
 			case AR_DIR:
 			case AR_SUB:
-				if(not)
-					*(out++)='!';
-				if(equals)
-					*(out++)='=';
-				not=equals=0;
+				if (not)
+					*(out++) = '!';
+				if (equals)
+					*(out++) = '=';
+				not = equals = 0;
 				in++;
-    			n=*((short *)in);
+				n = *((short *)in);
 				n++;              /* convert from to 0 base */
 				in++;
-				out+=sprintf(out,"%d",n);
-    			break;
+				out += sprintf(out, "%d", n);
+				break;
 			case AR_SUBCODE:
 			case AR_DIRCODE:
 			case AR_SHELL:
@@ -1294,15 +1294,15 @@ char *decompile_ars(uchar *ars, int len)
 			case AR_HOST:
 			case AR_IP:
 			case AR_USERNAME:
-				if(not)
-					*(out++)='!';
-				if(equals)
-					*(out++)='=';
-				not=equals=0;
+				if (not)
+					*(out++) = '!';
+				if (equals)
+					*(out++) = '=';
+				not = equals = 0;
 				in++;
-				n=sprintf(out,"%s ",in);
-				out+=n;
-				in+=n-1;
+				n = sprintf(out, "%s ", in);
+				out += n;
+				in += n - 1;
 				break;
 			case AR_FLAG1:
 			case AR_FLAG2:
@@ -1311,66 +1311,66 @@ char *decompile_ars(uchar *ars, int len)
 			case AR_EXEMPT:
 			case AR_SEX:
 			case AR_REST:
-				if(not)
-					*(out++)='!';
-				if(equals)
-					*(out++)='=';
-				not=equals=0;
+				if (not)
+					*(out++) = '!';
+				if (equals)
+					*(out++) = '=';
+				not = equals = 0;
 				in++;
-				*(out++)=*in;
+				*(out++) = *in;
 				break;
 		}
 	}
-	*out=0;
+	*out = 0;
 	return(buf);
 }
 
 void decompile(FILE *bin, FILE *srcfile)
 {
-	int i;
-	char	ch;
-	uchar	uch;
-	ushort	ush;
-	int32_t	lng;
-	int32_t	lng2;
-	int		usevar=FALSE;
-	uint32_t	var=0;
-	char	buf[80];
-	char	*p;
-	char	src[2048];
-	int		redo=FALSE;
-	char	*labels;
-	off_t	currpos=0;
+	int      i;
+	char     ch;
+	uchar    uch;
+	ushort   ush;
+	int32_t  lng;
+	int32_t  lng2;
+	int      usevar = FALSE;
+	uint32_t var = 0;
+	char     buf[80];
+	char *   p;
+	char     src[2048];
+	int      redo = FALSE;
+	char *   labels;
+	off_t    currpos = 0;
 
-	currpos=filelength(fileno(bin));
-	labels=(char *)calloc(1,(size_t)filelength(fileno(bin)));
-	if(labels==NULL) {
+	currpos = filelength(fileno(bin));
+	labels = (char *)calloc(1, (size_t)filelength(fileno(bin)));
+	if (labels == NULL) {
 		printf("ERROR allocating memory for labels\n");
 		return;
 	}
-	while(1) {
-		currpos=ftell(bin);
+	while (1) {
+		currpos = ftell(bin);
 
-		if(my_fread(&uch,1,1,bin)!=1) {
-			if(redo)
+		if (my_fread(&uch, 1, 1, bin) != 1) {
+			if (redo)
 				break;
-			redo=TRUE;
+			redo = TRUE;
 			printf("Second pass...\n");
 			rewind(bin);
 			continue;
 		}
-		src[0]=0;
-		if(labels[currpos])
-			sprintf(src,":label_%04" XP_PRIsize_t "x\n", (size_t)currpos);
-		switch(uch) {
+		src[0] = 0;
+		if (labels[currpos])
+			sprintf(src, ":label_%04" XP_PRIsize_t "x\n", (size_t)currpos);
+		switch (uch) {
 			case CS_USE_INT_VAR:
-				usevar=TRUE;
-				my_fread(&var,4,1,bin);
-				my_fread(&buf,2,1,bin);	/* offset/length */
+				usevar = TRUE;
+				my_fread(&var, 4, 1, bin);
+				my_fread(&buf, 2, 1, bin); /* offset/length */
 				continue;
 			case CS_VAR_INSTRUCTION:
-				my_fread(&uch,1,1,bin);
-				switch(uch) {
+				my_fread(&uch, 1, 1, bin);
+				switch (uch) {
 					case SHOW_VARS:
 						WRITE_NAME("SHOW_VARS");
 						eol(src);
@@ -1379,16 +1379,16 @@ void decompile(FILE *bin, FILE *srcfile)
 						VAR("PRINT");
 					case VAR_PRINTF:
 					case VAR_PRINTF_LOCAL:
-						if(uch==VAR_PRINTF) {
+						if (uch == VAR_PRINTF) {
 							WRITE_NAME("PRINTF");
 						}
 						else {
 							WRITE_NAME("LPRINTF");
 						}
-						write_cstr(bin,src);
+						write_cstr(bin, src);
 						my_fread(&uch, 1, 1, bin);
-						for(i=0; i<uch; i++) {
-							write_var(bin,src);
+						for (i = 0; i < uch; i++) {
+							write_var(bin, src);
 						}
 						eol(src);
 						break;
@@ -1428,11 +1428,11 @@ void decompile(FILE *bin, FILE *srcfile)
 						VARVAR("STRCAT");
 					case FORMAT_STR_VAR:
 						WRITE_NAME("SPRINTF");
-						write_var(bin,src);
-						write_cstr(bin,src);
+						write_var(bin, src);
+						write_cstr(bin, src);
 						my_fread(&uch, 1, 1, bin);
-						for(i=0; i<uch; i++) {
-							write_var(bin,src);
+						for (i = 0; i < uch; i++) {
+							write_var(bin, src);
 						}
 						eol(src);
 						break;
@@ -1540,28 +1540,28 @@ void decompile(FILE *bin, FILE *srcfile)
 						CHSTR("RECEIVE_FILE_VIA");
 					case RECEIVE_FILE_VIA_VAR:
 						CHVAR("RECEIVE_FILE_VIA");
-					case TELNET_GATE_STR:				/* TELNET_GATE reverses argument order */
+					case TELNET_GATE_STR:               /* TELNET_GATE reverses argument order */
 						WRITE_NAME("TELNET_GATE");
-						my_fread(&lng,4,1,bin);
-						write_cstr(bin,src);
-						if(usevar) {
-							sprintf(strchr(src,0),"%s ",getvar(var));
-							usevar=FALSE;
+						my_fread(&lng, 4, 1, bin);
+						write_cstr(bin, src);
+						if (usevar) {
+							sprintf(strchr(src, 0), "%s ", getvar(var));
+							usevar = FALSE;
 						} else {
-							sprintf(strchr(src,0),"%"PRId32" ",lng);
+							sprintf(strchr(src, 0), "%" PRId32 " ", lng);
 						}
 						eol(src);
 						break;
-					case TELNET_GATE_VAR:				/* TELNET_GATE reverses argument order */
+					case TELNET_GATE_VAR:               /* TELNET_GATE reverses argument order */
 						WRITE_NAME("TELNET_GATE");
-						my_fread(&lng,4,1,bin);
+						my_fread(&lng, 4, 1, bin);
 						my_fread(&lng2, 1, 4, bin);
-						sprintf(strchr(src,0),"%s ",getvar(lng2));
-						if(usevar) {
-							sprintf(strchr(src,0),"%s ",getvar(var));
-							usevar=FALSE;
+						sprintf(strchr(src, 0), "%s ", getvar(lng2));
+						if (usevar) {
+							sprintf(strchr(src, 0), "%s ", getvar(var));
+							usevar = FALSE;
 						} else {
-							sprintf(strchr(src,0),"%"PRId32" ",lng);
+							sprintf(strchr(src, 0), "%" PRId32 " ", lng);
 						}
 						eol(src);
 						break;
@@ -1578,21 +1578,21 @@ void decompile(FILE *bin, FILE *srcfile)
 					case MATCHUSER:
 						VARVAR("MATCHUSER");
 					default:
-						printf("ERROR!  Unknown variable-length instruction: %02x%02X\n",CS_VAR_INSTRUCTION,uch);
+						printf("ERROR!  Unknown variable-length instruction: %02x%02X\n", CS_VAR_INSTRUCTION, uch);
 						printf("Cannot continue.\n");
 						free(labels);
 						return;
 				}
 				break;
 			case CS_IF_TRUE:
-				indenteol=1;
+				indenteol = 1;
 				NONE("IF_TRUE");
 			case CS_IF_FALSE:
-				indenteol=1;
+				indenteol = 1;
 				NONE("IF_FALSE");
 			case CS_ELSE:
 				indent--;
-				indenteol=1;
+				indenteol = 1;
 				NONE("ELSE");
 			case CS_ENDIF:
 				indent--;
@@ -1667,19 +1667,19 @@ void decompile(FILE *bin, FILE *srcfile)
 			case CS_RESTORELINE:
 				NONE("RESTORELINE");
 			case CS_IF_GREATER:
-				indenteol=1;
+				indenteol = 1;
 				NONE("IF_GREATER");
 			case CS_IF_GREATER_OR_EQUAL:
-				indenteol=1;
+				indenteol = 1;
 				NONE("IF_GREATER_OR_EQUAL");
 			case CS_IF_LESS:
-				indenteol=1;
+				indenteol = 1;
 				NONE("IF_LESS");
 			case CS_IF_LESS_OR_EQUAL:
-				indenteol=1;
+				indenteol = 1;
 				NONE("IF_LESS_OR_EQUAL");
 			case CS_DEFAULT:
-				indenteol=1;
+				indenteol = 1;
 				NONE("DEFAULT");
 			case CS_END_SWITCH:
 				indent--;
@@ -1692,8 +1692,8 @@ void decompile(FILE *bin, FILE *srcfile)
 			case CS_GETCHAR:
 				NONE("GETCHAR");
 			case CS_ONE_MORE_BYTE:
-				my_fread(&uch,1,1,bin);
-				switch(uch) {
+				my_fread(&uch, 1, 1, bin);
+				switch (uch) {
 					case CS_ONLINE:
 						NONE("ONLINE");
 					case CS_OFFLINE:
@@ -1707,7 +1707,7 @@ void decompile(FILE *bin, FILE *srcfile)
 					case CS_EXIT:
 						NONE("EXIT");
 					case CS_LOOP_BEGIN:
-						indenteol=1;
+						indenteol = 1;
 						NONE("LOOP_BEGIN");
 					case CS_CONTINUE_LOOP:
 						NONE("CONTINUE_LOOP");
@@ -1717,11 +1717,11 @@ void decompile(FILE *bin, FILE *srcfile)
 						indent--;
 						NONE("END_LOOP");
 					default:
-						printf("ERROR!  Unknown one-byte instruction: %02x%02X\n",CS_ONE_MORE_BYTE,uch);
+						printf("ERROR!  Unknown one-byte instruction: %02x%02X\n", CS_ONE_MORE_BYTE, uch);
 				}
 				break;
 			case CS_CMDKEY:
-				indenteol=1;
+				indenteol = 1;
 				KEY("CMDKEY");
 			case CS_NODE_ACTION:
 				MUCH("NODE_ACTION");
@@ -1746,33 +1746,33 @@ void decompile(FILE *bin, FILE *srcfile)
 			case CS_NODE_STATUS:
 				MUCH("NODE_STATUS");
 			case CS_CMDCHAR:
-				indenteol=1;
+				indenteol = 1;
 				CH("CMDCHAR");
 			case CS_COMPARE_CHAR:
 				CH("COMPARE_CHAR");
 			case CS_MULTINODE_CHAT:
 				MUCH("MULTINODE_CHAT");
 			case CS_TWO_MORE_BYTES:
-				my_fread(&uch,1,1,bin);
-				switch(uch) {
+				my_fread(&uch, 1, 1, bin);
+				switch (uch) {
 					case CS_USER_EVENT:
 						MUCH("USER_EVENT");
 					default:
-						printf("ERROR!  Unknown two-byte instruction: %02x%02X\n",CS_ONE_MORE_BYTE,uch);
+						printf("ERROR!  Unknown two-byte instruction: %02x%02X\n", CS_ONE_MORE_BYTE, uch);
 				}
 				break;
 			case CS_GOTO:
-				my_fread(&ush,2,1,bin);
-				labels[ush]=TRUE;
+				my_fread(&ush, 2, 1, bin);
+				labels[ush] = TRUE;
 				WRITE_NAME("GOTO");
-				sprintf(strchr(src,0),"label_%04x ",ush);
+				sprintf(strchr(src, 0), "label_%04x ", ush);
 				eol(src);
 				break;
 			case CS_CALL:
-				my_fread(&ush,2,1,bin);
-				labels[ush]=TRUE;
+				my_fread(&ush, 2, 1, bin);
+				labels[ush] = TRUE;
 				WRITE_NAME("CALL");
-				sprintf(strchr(src,0),"label_%04x ",ush);
+				sprintf(strchr(src, 0), "label_%04x ", ush);
 				eol(src);
 				break;
 			case CS_TOGGLE_NODE_MISC:
@@ -1839,7 +1839,7 @@ void decompile(FILE *bin, FILE *srcfile)
 			case CS_SET_MENU_FILE:
 				STR("SET_MENU_FILE");
 			case CS_CMDSTR:
-				indenteol=1;
+				indenteol = 1;
 				STR("CMDSTR");
 			case CS_CHKFILE:
 				STR("CHKFILE");
@@ -1852,29 +1852,29 @@ void decompile(FILE *bin, FILE *srcfile)
 			case CS_READ_SIF:
 				STR("READ_SIF");
 			case CS_CMDKEYS:
-				indenteol=1;
+				indenteol = 1;
 				KEYS("CMDKEYS");
 			case CS_COMPARE_KEYS:
 				KEYS("COMPARE_KEYS");
 			case CS_STR_FUNCTION:
-				my_fread(&uch,1,1,bin);
-				switch(uch) {
+				my_fread(&uch, 1, 1, bin);
+				switch (uch) {
 					case CS_LOGIN:
 						STR("LOGIN");
 					case CS_LOAD_TEXT:
 						STR("LOAD_TEXT");
 					default:
-						printf("ERROR!  Unknown string instruction: %02x%02X\n",CS_STR_FUNCTION,uch);
-						ch=0;
-						while(ch) my_fread(&ch,1,1,bin);
+						printf("ERROR!  Unknown string instruction: %02x%02X\n", CS_STR_FUNCTION, uch);
+						ch = 0;
+						while (ch) my_fread(&ch, 1, 1, bin);
 				}
 				break;
 			case CS_COMPARE_ARS:
-				my_fread(&uch,1,1,bin);
-				if((p=(char *)malloc(uch)) != NULL) {
-					my_fread(p,uch,1,bin);
+				my_fread(&uch, 1, 1, bin);
+				if ((p = (char *)malloc(uch)) != NULL) {
+					my_fread(p, uch, 1, bin);
 					WRITE_NAME("COMPARE_ARS");
-					sprintf(strchr(src,0),"%s\n",decompile_ars((uchar*)p,uch));
+					sprintf(strchr(src, 0), "%s\n", decompile_ars((uchar*)p, uch));
 					free(p);
 				}
 				break;
@@ -1893,14 +1893,14 @@ void decompile(FILE *bin, FILE *srcfile)
 			case CS_COMPARE_USER_QWK:
 				MLNG("COMPARE_USER_QWK");
 			case CS_SWITCH:
-				indenteol=1;
+				indenteol = 1;
 				VAR("SWITCH");
 			case CS_CASE:
-				indenteol=1;
+				indenteol = 1;
 				LNG("CASE");
 			case CS_NET_FUNCTION:
-				my_fread(&uch,1,1,bin);
-				switch(uch) {
+				my_fread(&uch, 1, 1, bin);
+				switch (uch) {
 					case CS_SOCKET_OPEN:
 						VAR("SOCKET_OPEN");
 					case CS_SOCKET_CLOSE:
@@ -1940,15 +1940,15 @@ void decompile(FILE *bin, FILE *srcfile)
 					case CS_FTP_DELETE:
 						VARVAR("FTP_DELETE");
 					default:
-						printf("ERROR!  Unknown net function %02x%02X\n",CS_NET_FUNCTION,uch);
+						printf("ERROR!  Unknown net function %02x%02X\n", CS_NET_FUNCTION, uch);
 						printf("Cannot continue.\n");
 						free(labels);
 						return;
 				}
 				break;
 			case CS_FIO_FUNCTION:
-				my_fread(&uch,1,1,bin);
-				switch(uch) {
+				my_fread(&uch, 1, 1, bin);
+				switch (uch) {
 					case FIO_OPEN:
 						MVARUSTSTR("FOPEN");
 					case FIO_CLOSE:
@@ -1969,28 +1969,28 @@ void decompile(FILE *bin, FILE *srcfile)
 						VARVAR("FGET_POS");
 					case FIO_SEEK:
 						WRITE_NAME("FSET_POS");
-						write_var(bin,src);
-						write_lng(bin,src);
-						my_fread(&ush,2,1,bin);
-						if(ush==SEEK_CUR)
-							strcat(src,"CUR ");
-						else if(ush==SEEK_END)
-							strcat(src,"END ");
+						write_var(bin, src);
+						write_lng(bin, src);
+						my_fread(&ush, 2, 1, bin);
+						if (ush == SEEK_CUR)
+							strcat(src, "CUR ");
+						else if (ush == SEEK_END)
+							strcat(src, "END ");
 						else
-							sprintf(strchr(src,0), "%d ",ush);
+							sprintf(strchr(src, 0), "%d ", ush);
 						eol(src);
 						break;
 					case FIO_SEEK_VAR:
 						WRITE_NAME("FSET_POS");
-						write_var(bin,src);
-						write_var(bin,src);
-						my_fread(&ush,2,1,bin);
-						if(ush==SEEK_CUR)
-							strcat(src,"CUR ");
-						else if(ush==SEEK_END)
-							strcat(src,"END ");
+						write_var(bin, src);
+						write_var(bin, src);
+						my_fread(&ush, 2, 1, bin);
+						if (ush == SEEK_CUR)
+							strcat(src, "CUR ");
+						else if (ush == SEEK_END)
+							strcat(src, "END ");
 						else
-							sprintf(strchr(src,0), "%d ",ush);
+							sprintf(strchr(src, 0), "%d ", ush);
 						eol(src);
 						break;
 					case FIO_LOCK:
@@ -2007,11 +2007,11 @@ void decompile(FILE *bin, FILE *srcfile)
 						VARVAR("FSET_LENGTH");
 					case FIO_PRINTF:
 						WRITE_NAME("FPRINTF");
-						write_var(bin,src);
-						write_cstr(bin,src);
+						write_var(bin, src);
+						write_cstr(bin, src);
 						my_fread(&uch, 1, 1, bin);
-						for(i=0; i<uch; i++) {
-							write_var(bin,src);
+						for (i = 0; i < uch; i++) {
+							write_var(bin, src);
 						}
 						eol(src);
 						break;
@@ -2054,7 +2054,7 @@ void decompile(FILE *bin, FILE *srcfile)
 					case CLOSE_DIR:
 						VAR("CLOSE_DIR");
 					default:
-						printf("ERROR!  Unknown file function %02x%02X\n",CS_FIO_FUNCTION,uch);
+						printf("ERROR!  Unknown file function %02x%02X\n", CS_FIO_FUNCTION, uch);
 						printf("Cannot continue.\n");
 						free(labels);
 						return;
@@ -2080,7 +2080,7 @@ void decompile(FILE *bin, FILE *srcfile)
 				NONE("MAIL_SEND_NETFILE");
 			case CS_LOGOFF:
 				NONE("LOGOFF");
-    		case CS_LOGOFF_FAST:
+			case CS_LOGOFF_FAST:
 				NONE("LOGOFF_FAST");;
 			case CS_AUTO_MESSAGE:
 				NONE("AUTO_MESSAGE");
@@ -2090,15 +2090,15 @@ void decompile(FILE *bin, FILE *srcfile)
 				NONE("MSG_SELECT_AREA");
 			case CS_MSG_SHOW_GROUPS:
 				NONE("MSG_SHOW_GROUPS");
-    		case CS_MSG_SHOW_SUBBOARDS:
+			case CS_MSG_SHOW_SUBBOARDS:
 				NONE("MSG_SHOW_SUBBOARDS");;
 			case CS_MSG_GROUP_UP:
 				NONE("MSG_GROUP_UP");
-    		case CS_MSG_GROUP_DOWN:
+			case CS_MSG_GROUP_DOWN:
 				NONE("MSG_GROUP_DOWN");;
-    		case CS_MSG_SUBBOARD_UP:
+			case CS_MSG_SUBBOARD_UP:
 				NONE("MSG_SUBBOARD_UP");;
-    		case CS_MSG_SUBBOARD_DOWN:
+			case CS_MSG_SUBBOARD_DOWN:
 				NONE("MSG_SUBBOARD_DOWN");
 			case CS_MSG_GET_SUB_NUM:
 				NONE("MSG_GET_SUB_NUM");
@@ -2124,7 +2124,7 @@ void decompile(FILE *bin, FILE *srcfile)
 				NONE("MSG_CONT_SCAN");
 			case CS_MSG_CONT_SCAN_ALL:
 				NONE("MSG_CONT_SCAN_ALL");
-			case CS_MSG_BROWSE_SCAN :
+			case CS_MSG_BROWSE_SCAN:
 				NONE("MSG_BROWSE_SCAN ");
 			case CS_MSG_BROWSE_SCAN_ALL:
 				NONE("MSG_BROWSE_SCAN_ALL");
@@ -2188,7 +2188,7 @@ void decompile(FILE *bin, FILE *srcfile)
 				NONE("FILE_DOWNLOAD_USER");
 			case CS_FILE_DOWNLOAD_BATCH:
 				NONE("FILE_DOWNLOAD_BATCH");
-			case CS_FILE_REMOVE :
+			case CS_FILE_REMOVE:
 				NONE("FILE_REMOVE ");
 			case CS_FILE_BATCH_SECTION:
 				NONE("FILE_BATCH_SECTION");
@@ -2256,14 +2256,14 @@ void decompile(FILE *bin, FILE *srcfile)
 				NONE("USERLIST_DIR");
 			case CS_USERLIST_ALL:
 				NONE("USERLIST_ALL");
-    		case CS_USERLIST_LOGONS:
+			case CS_USERLIST_LOGONS:
 				NONE("USERLIST_LOGONS");;
 			case CS_PAGE_SYSOP:
 				NONE("PAGE_SYSOP");
-    		case CS_PRIVATE_CHAT:
+			case CS_PRIVATE_CHAT:
 				NONE("PRIVATE_CHAT");;
 			case CS_PRIVATE_MESSAGE:
-    			NONE("PRIVATE_MESSAGE");;
+				NONE("PRIVATE_MESSAGE");;
 			case CS_MINUTE_BANK:
 				NONE("MINUTE_BANK");
 			case CS_GURU_LOG:
@@ -2317,53 +2317,53 @@ void decompile(FILE *bin, FILE *srcfile)
 			case CS_SPY:
 				NONE("SPY");
 			default:
-				printf("ERROR!  Unknown instruction: %02X\n",uch);
+				printf("ERROR!  Unknown instruction: %02X\n", uch);
 				printf("Cannot continue.\n");
 				free(labels);
 				return;
 		}
-		if(redo)
-			fputs(src,srcfile);
+		if (redo)
+			fputs(src, srcfile);
 	}
 	free(labels);
 }
 
 int main(int argc, char **argv)
 {
-	int		f;
-	FILE	*bin;
-	FILE	*src;
-	char 	newname[MAX_PATH+1];
-	char	*p;
-	FILE	*cache;
-	char	cache_line[1024];
-	char	*crc,*good,*str;
+	int   f;
+	FILE *bin;
+	FILE *src;
+	char  newname[MAX_PATH + 1];
+	char *p;
+	FILE *cache;
+	char  cache_line[1024];
+	char *crc, *good, *str;
 
 	printf("\nUNBAJA v%s-%s - Synchronet Baja Shell/Module De-compiler\n"
-		,VERSION, PLATFORM_DESC);
+	       , VERSION, PLATFORM_DESC);
 
-	for(f=1; f<argc; f++) {
-		if(!strncmp(argv[f],"-b",2)) {
-			brute_len=atoi(argv[f]+2);
-			if(brute_len) {
-				brute_buf=malloc(brute_len+1);
-				if(!brute_buf)
-					brute_len=0;
-				brute_crc_buf=(uint32_t *)malloc(brute_len*sizeof(uint32_t));
-				if(!brute_crc_buf) {
+	for (f = 1; f < argc; f++) {
+		if (!strncmp(argv[f], "-b", 2)) {
+			brute_len = atoi(argv[f] + 2);
+			if (brute_len) {
+				brute_buf = malloc(brute_len + 1);
+				if (!brute_buf)
+					brute_len = 0;
+				brute_crc_buf = (uint32_t *)malloc(brute_len * sizeof(uint32_t));
+				if (!brute_crc_buf) {
 					free(brute_buf);
-					brute_len=0;
+					brute_len = 0;
 				}
-				if((cache=fopen("unbaja.brute","r"))!=NULL) {
-					while(fgets(cache_line,sizeof(cache_line),cache)) {
+				if ((cache = fopen("unbaja.brute", "r")) != NULL) {
+					while (fgets(cache_line, sizeof(cache_line), cache)) {
 						truncnl(cache_line);
-						crc=strtok(cache_line,",");
-						if(crc!=NULL) {
-							good=strtok(NULL,",");
-							if(good!=NULL) {
-								str=strtok(NULL,",");
-								if(str!=NULL) {
-									add_bruted(strtoul(crc,NULL,16),(char)strtoul(good,NULL,10),str,0);
+						crc = strtok(cache_line, ",");
+						if (crc != NULL) {
+							good = strtok(NULL, ",");
+							if (good != NULL) {
+								str = strtok(NULL, ",");
+								if (str != NULL) {
+									add_bruted(strtoul(crc, NULL, 16), (char)strtoul(good, NULL, 10), str, 0);
 								}
 							}
 						}
@@ -2371,26 +2371,26 @@ int main(int argc, char **argv)
 					fclose(cache);
 				}
 			}
-			printf("Will brute-force up to %" XP_PRIsize_t "d chars\n",brute_len);
+			printf("Will brute-force up to %" XP_PRIsize_t "d chars\n", brute_len);
 			continue;
 		}
-		bin=fopen(argv[f],"rb");
-		if(bin==NULL)
+		bin = fopen(argv[f], "rb");
+		if (bin == NULL)
 			perror(argv[f]);
 		else {
 			SAFECOPY(newname, argv[f]);
-			p=strrchr(newname, '.');
-			if(p==NULL)
-				p=strchr(newname,0);
-			strcpy(p,".decompiled");
-			src=fopen(newname,"w");
-			if(src == NULL)
+			p = strrchr(newname, '.');
+			if (p == NULL)
+				p = strchr(newname, 0);
+			strcpy(p, ".decompiled");
+			src = fopen(newname, "w");
+			if (src == NULL)
 				perror(newname);
 			else {
-				printf("\nDecompiling %s to %s\n",argv[f],newname);
-				fputs("!include sbbsdefs.inc\n",src);
-				fputs("!include file_io.inc\n",src);
-				fputs("!include dir_attr.inc\n\n",src);
+				printf("\nDecompiling %s to %s\n", argv[f], newname);
+				fputs("!include sbbsdefs.inc\n", src);
+				fputs("!include file_io.inc\n", src);
+				fputs("!include dir_attr.inc\n\n", src);
 				decompile(bin, src);
 				fclose(src);
 			}

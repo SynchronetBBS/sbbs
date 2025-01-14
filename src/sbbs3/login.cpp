@@ -24,14 +24,14 @@
 
 const char* sbbs_t::parse_login(const char* str)
 {
-	sys_status &= ~(SS_QWKLOGON|SS_FASTLOGON);
+	sys_status &= ~(SS_QWKLOGON | SS_FASTLOGON);
 
-	if(*str == '*') {
+	if (*str == '*') {
 		sys_status |= SS_QWKLOGON;
 		return str + 1;
 	}
 
-	if(*str == '!') {
+	if (*str == '!') {
 		sys_status |= SS_FASTLOGON;
 		return str + 1;
 	}
@@ -40,89 +40,89 @@ const char* sbbs_t::parse_login(const char* str)
 
 int sbbs_t::login(const char *username, const char *pw_prompt, const char* user_pw, const char* sys_pw)
 {
-	char	str[128];
-	char 	tmp[512];
-	long	useron_misc=useron.misc;
+	char str[128];
+	char tmp[512];
+	long useron_misc = useron.misc;
 
 	username = parse_login(username);
 
 	useron.number = find_login_id(&cfg, username);
-	if(useron.number) {
-		getuserdat(&cfg,&useron);
-		if(useron.number && useron.misc&(DELETED|INACTIVE))
-			useron.number=0;
+	if (useron.number) {
+		getuserdat(&cfg, &useron);
+		if (useron.number && useron.misc & (DELETED | INACTIVE))
+			useron.number = 0;
 	}
 
-	if(!useron.number) {
-		if((cfg.sys_login & LOGIN_PWPROMPT) && pw_prompt != NULL) {
-			SAFECOPY(useron.alias,username);
+	if (!useron.number) {
+		if ((cfg.sys_login & LOGIN_PWPROMPT) && pw_prompt != NULL) {
+			SAFECOPY(useron.alias, username);
 			bputs(pw_prompt);
-			console|=CON_R_ECHOX;
-			getstr(str,LEN_PASS*2,K_UPPER|K_LOWPRIO|K_TAB);
-			console&=~(CON_R_ECHOX|CON_L_ECHOX);
+			console |= CON_R_ECHOX;
+			getstr(str, LEN_PASS * 2, K_UPPER | K_LOWPRIO | K_TAB);
+			console &= ~(CON_R_ECHOX | CON_L_ECHOX);
 			badlogin(useron.alias, str);
-			bputs(text[InvalidLogon]);	/* why does this always fail? */
-			if(cfg.sys_misc&SM_ECHO_PW) 
+			bputs(text[InvalidLogon]);  /* why does this always fail? */
+			if (cfg.sys_misc & SM_ECHO_PW)
 				snprintf(tmp, sizeof tmp, "(%04u)  %-25s  FAILED Password attempt: '%s'"
-					,0,useron.alias,str);
+				         , 0, useron.alias, str);
 			else
 				snprintf(tmp, sizeof tmp, "(%04u)  %-25s  FAILED Password attempt"
-					,0,useron.alias);
-			logline(LOG_NOTICE,"+!",tmp); 
+				         , 0, useron.alias);
+			logline(LOG_NOTICE, "+!", tmp);
 		} else {
 			badlogin(username, NULL);
 			bputs(text[UnknownUser]);
-			snprintf(tmp, sizeof tmp, "Unknown User '%s'",username);
-			logline(LOG_NOTICE,"+!",tmp); 
+			snprintf(tmp, sizeof tmp, "Unknown User '%s'", username);
+			logline(LOG_NOTICE, "+!", tmp);
 		}
-		useron.misc=useron_misc;
-		return(LOGIC_FALSE); 
+		useron.misc = useron_misc;
+		return(LOGIC_FALSE);
 	}
 
-	if(!online) {
-		useron.number=0;
-		return(LOGIC_FALSE); 
+	if (!online) {
+		useron.number = 0;
+		return(LOGIC_FALSE);
 	}
 
-	if(useron.pass[0] || REALSYSOP) {
-		if(user_pw != NULL)
+	if (useron.pass[0] || REALSYSOP) {
+		if (user_pw != NULL)
 			SAFECOPY(str, user_pw);
 		else {
-			if(pw_prompt != NULL)
+			if (pw_prompt != NULL)
 				bputs(pw_prompt);
 			console |= CON_R_ECHOX;
 			getstr(str, LEN_PASS * 2, K_UPPER | K_LOWPRIO | K_TAB);
 			console &= ~(CON_R_ECHOX | CON_L_ECHOX);
 		}
-		if(!online) {
-			useron.number=0;
-			return(LOGIC_FALSE); 
+		if (!online) {
+			useron.number = 0;
+			return(LOGIC_FALSE);
 		}
-		if(stricmp(useron.pass,str)) {
+		if (stricmp(useron.pass, str)) {
 			badlogin(useron.alias, str);
 			bputs(text[InvalidLogon]);
-			if(cfg.sys_misc&SM_ECHO_PW) 
+			if (cfg.sys_misc & SM_ECHO_PW)
 				snprintf(tmp, sizeof tmp, "(%04u)  %-25s  FAILED Password attempt: '%s' expected: '%s'"
-					,useron.number,useron.alias,str,useron.pass);
+				         , useron.number, useron.alias, str, useron.pass);
 			else
 				snprintf(tmp, sizeof tmp, "(%04u)  %-25s  FAILED Password attempt"
-					,useron.number,useron.alias);
-			logline(LOG_NOTICE,"+!",tmp);
-			useron.number=0;
-			useron.misc=useron_misc;
-			return(LOGIC_FALSE); 
+				         , useron.number, useron.alias);
+			logline(LOG_NOTICE, "+!", tmp);
+			useron.number = 0;
+			useron.misc = useron_misc;
+			return(LOGIC_FALSE);
 		}
-		if(REALSYSOP && (cfg.sys_misc&SM_SYSPASSLOGIN) && (cfg.sys_misc&SM_R_SYSOP) && !chksyspass(sys_pw)) {
+		if (REALSYSOP && (cfg.sys_misc & SM_SYSPASSLOGIN) && (cfg.sys_misc & SM_R_SYSOP) && !chksyspass(sys_pw)) {
 			bputs(text[InvalidLogon]);
-			useron.number=0;
-			useron.misc=useron_misc;
-			return(LOGIC_FALSE); 
-		} 
+			useron.number = 0;
+			useron.misc = useron_misc;
+			return(LOGIC_FALSE);
+		}
 	}
 
 #ifdef _WIN32
-	if(startup->sound.login[0] && !sound_muted(&cfg))
-		PlaySound(startup->sound.login, NULL, SND_ASYNC|SND_FILENAME);
+	if (startup->sound.login[0] && !sound_muted(&cfg))
+		PlaySound(startup->sound.login, NULL, SND_ASYNC | SND_FILENAME);
 #endif
 
 	return(LOGIC_TRUE);
@@ -130,42 +130,42 @@ int sbbs_t::login(const char *username, const char *pw_prompt, const char* user_
 
 void sbbs_t::badlogin(const char* user, const char* passwd, const char* protocol, xp_sockaddr* addr, bool delay)
 {
-	char tmp[128];
-	char reason[128];
-	char host_name[128];
-	ulong count;
+	char            tmp[128];
+	char            reason[128];
+	char            host_name[128];
+	ulong           count;
 	login_attempt_t attempt;
 
-	if(protocol == NULL)
+	if (protocol == NULL)
 		protocol = connection;
-	if(addr == NULL)
+	if (addr == NULL)
 		addr = &client_addr;
 
 	SAFECOPY(host_name, STR_NO_HOSTNAME);
 	socklen_t addr_len = sizeof(*addr);
-	SAFEPRINTF(reason,"%s LOGIN", protocol);
-	count=loginFailure(startup->login_attempt_list, addr, protocol, user, passwd, &attempt);
+	SAFEPRINTF(reason, "%s LOGIN", protocol);
+	count = loginFailure(startup->login_attempt_list, addr, protocol, user, passwd, &attempt);
 	if (count > 1)
 		lprintf(LOG_NOTICE, "!%lu " STR_FAILED_LOGIN_ATTEMPTS " in %s"
-			,count, duration_estimate_to_vstr(attempt.time - attempt.first, tmp, sizeof tmp, 1, 1));
+		        , count, duration_estimate_to_vstr(attempt.time - attempt.first, tmp, sizeof tmp, 1, 1));
 	mqtt_user_login_fail(mqtt, &client, user);
-	if(user!=NULL && startup->login_attempt.hack_threshold && count>=startup->login_attempt.hack_threshold) {
+	if (user != NULL && startup->login_attempt.hack_threshold && count >= startup->login_attempt.hack_threshold) {
 		getnameinfo(&addr->addr, addr_len, host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD);
 		::hacklog(&cfg, mqtt, reason, user, passwd, host_name, addr);
 #ifdef _WIN32
-		if(startup->sound.hack[0] && !sound_muted(&cfg))
-			PlaySound(startup->sound.hack, NULL, SND_ASYNC|SND_FILENAME);
+		if (startup->sound.hack[0] && !sound_muted(&cfg))
+			PlaySound(startup->sound.hack, NULL, SND_ASYNC | SND_FILENAME);
 #endif
 	}
-	if(startup->login_attempt.filter_threshold && count>=startup->login_attempt.filter_threshold) {
+	if (startup->login_attempt.filter_threshold && count >= startup->login_attempt.filter_threshold) {
 		char ipaddr[INET6_ADDRSTRLEN];
 		inet_addrtop(addr, ipaddr, sizeof(ipaddr));
 		getnameinfo(&addr->addr, addr_len, host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD);
 		snprintf(reason, sizeof reason, "%lu " STR_FAILED_LOGIN_ATTEMPTS " in %s"
-			,count, duration_estimate_to_str(attempt.time - attempt.first, tmp, sizeof tmp, 1, 1));
-		filter_ip(&cfg, protocol, reason, host_name, ipaddr, user, /* fname: */NULL, startup->login_attempt.filter_duration);
+		         , count, duration_estimate_to_str(attempt.time - attempt.first, tmp, sizeof tmp, 1, 1));
+		filter_ip(&cfg, protocol, reason, host_name, ipaddr, user, /* fname: */ NULL, startup->login_attempt.filter_duration);
 	}
 
-	if(delay)
+	if (delay)
 		mswait(startup->login_attempt.delay);
 }

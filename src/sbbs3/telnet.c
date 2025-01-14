@@ -19,8 +19,8 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include <stdio.h>		/* sprintf */
-#include <string.h>		/* memchr */
+#include <stdio.h>      /* sprintf */
+#include <string.h>     /* memchr */
 #include "gen_defs.h"
 #include "telnet.h"
 
@@ -28,107 +28,107 @@ const char* telnet_cmd_desc(uchar cmd)
 {
 	static char unknown[32];
 
-	switch(cmd) {
-    	case TELNET_IAC: 	return("IAC");
-    	case TELNET_DONT:	return("DON'T");
-    	case TELNET_DO:		return("DO");
-    	case TELNET_WONT:	return("WON'T");
-    	case TELNET_WILL:	return("WILL");
+	switch (cmd) {
+		case TELNET_IAC:    return("IAC");
+		case TELNET_DONT:   return("DON'T");
+		case TELNET_DO:     return("DO");
+		case TELNET_WONT:   return("WON'T");
+		case TELNET_WILL:   return("WILL");
 
-    	case TELNET_SB:		return("SB");
-    	case TELNET_GA:		return("GA");
-    	case TELNET_EL:		return("EL");
-    	case TELNET_EC:		return("EC");
-    	case TELNET_AYT: 	return("AYT");
-    	case TELNET_AO:		return("AO");
-    	case TELNET_IP:		return("IP");
-    	case TELNET_BRK: 	return("BRK");
-    	case TELNET_SYNC:	return("SYNC");
-    	case TELNET_NOP: 	return("NOP");
+		case TELNET_SB:     return("SB");
+		case TELNET_GA:     return("GA");
+		case TELNET_EL:     return("EL");
+		case TELNET_EC:     return("EC");
+		case TELNET_AYT:    return("AYT");
+		case TELNET_AO:     return("AO");
+		case TELNET_IP:     return("IP");
+		case TELNET_BRK:    return("BRK");
+		case TELNET_SYNC:   return("SYNC");
+		case TELNET_NOP:    return("NOP");
 
-        default:
-			sprintf(unknown,"%d",cmd);
-            return(unknown);
+		default:
+			sprintf(unknown, "%d", cmd);
+			return(unknown);
 	}
 }
 
-char* telnet_option_descriptions[]={
-	
-	 "Binary Transmission"
-	,"Echo"
-	,"Reconnection"
-	,"Suppress Go Ahead"                   
-	,"Approx Message Size Negotiation"
-	,"Status"                               
-	,"Timing Mark"                          
-	,"Remote Controlled Trans and Echo"     
-	,"Output Line Width"                   
-	,"Output Page Size"                     
-	,"Output Carriage-Return Disposition"   /* 10 */
-	,"Output Horizontal Tab Stops"          
-	,"Output Horizontal Tab Disposition"    
-	,"Output Formfeed Disposition"          
-	,"Output Vertical Tab Stops"             
-	,"Output Vertical Tab Disposition"      
-	,"Output Linefeed Disposition"          
-	,"Extended ASCII"                       
-	,"Logout"                               
-	,"Byte Macro"							
-	,"Data Entry Terminal"					/* 20 */
-	,"SUPDUP"
-	,"SUPDUP Output"
-	,"Send Location"
-	,"Terminal Type"
-	,"End of Record"
-	,"TACACS User Identification"
-	,"Output Marking"
-	,"Terminal Location Number"
-	,"Telnet 3270 Regime"					
-	,"X.3 PAD"								/* 30 */
-	,"Negotiate About Window Size"
-	,"Terminal Speed"
-	,"Remote Flow Control"
-	,"Linemode"
-	,"X Display Location"
-	,"Environment Option"
-	,"Authentication Option"
-	,"Encryption Option"
-	,"New Environment Option"				
-	,"TN3270E"								/* 40 */
+char* telnet_option_descriptions[] = {
+
+	"Binary Transmission"
+	, "Echo"
+	, "Reconnection"
+	, "Suppress Go Ahead"
+	, "Approx Message Size Negotiation"
+	, "Status"
+	, "Timing Mark"
+	, "Remote Controlled Trans and Echo"
+	, "Output Line Width"
+	, "Output Page Size"
+	, "Output Carriage-Return Disposition"   /* 10 */
+	, "Output Horizontal Tab Stops"
+	, "Output Horizontal Tab Disposition"
+	, "Output Formfeed Disposition"
+	, "Output Vertical Tab Stops"
+	, "Output Vertical Tab Disposition"
+	, "Output Linefeed Disposition"
+	, "Extended ASCII"
+	, "Logout"
+	, "Byte Macro"
+	, "Data Entry Terminal"                  /* 20 */
+	, "SUPDUP"
+	, "SUPDUP Output"
+	, "Send Location"
+	, "Terminal Type"
+	, "End of Record"
+	, "TACACS User Identification"
+	, "Output Marking"
+	, "Terminal Location Number"
+	, "Telnet 3270 Regime"
+	, "X.3 PAD"                              /* 30 */
+	, "Negotiate About Window Size"
+	, "Terminal Speed"
+	, "Remote Flow Control"
+	, "Linemode"
+	, "X Display Location"
+	, "Environment Option"
+	, "Authentication Option"
+	, "Encryption Option"
+	, "New Environment Option"
+	, "TN3270E"                              /* 40 */
 };
 
 const char* telnet_opt_desc(uchar opt)
 {
 	static char unknown[32];
 
-	if(opt<sizeof(telnet_option_descriptions)/sizeof(char*))
+	if (opt < sizeof(telnet_option_descriptions) / sizeof(char*))
 		return(telnet_option_descriptions[opt]);
 
-	if(opt==TELNET_EXOPL)
+	if (opt == TELNET_EXOPL)
 		return("Extended Options List");
 
-	sprintf(unknown,"%d",opt);
-    return(unknown);
+	sprintf(unknown, "%d", opt);
+	return(unknown);
 }
 
 uchar telnet_opt_ack(uchar cmd)
 {
-	switch(cmd) {
-		case TELNET_DO:		return TELNET_WILL;
-		case TELNET_DONT:	return TELNET_WONT;
-		case TELNET_WILL:	return TELNET_DO;
-		case TELNET_WONT:	return TELNET_DONT;
+	switch (cmd) {
+		case TELNET_DO:     return TELNET_WILL;
+		case TELNET_DONT:   return TELNET_WONT;
+		case TELNET_WILL:   return TELNET_DO;
+		case TELNET_WONT:   return TELNET_DONT;
 	}
 	return 0;
 }
 
 uchar telnet_opt_nak(uchar cmd)
 {
-	switch(cmd) {
-		case TELNET_DO:		return TELNET_WONT;
-		case TELNET_DONT:	return TELNET_WILL;
-		case TELNET_WILL:	return TELNET_DONT;
-		case TELNET_WONT:	return TELNET_DO;
+	switch (cmd) {
+		case TELNET_DO:     return TELNET_WONT;
+		case TELNET_DONT:   return TELNET_WILL;
+		case TELNET_WILL:   return TELNET_DONT;
+		case TELNET_WONT:   return TELNET_DO;
 	}
 	return 0;
 }
@@ -145,35 +145,35 @@ bool telnet_opt_enabled(uchar val)
 /*****************************************************************************/
 size_t telnet_expand(const uchar* inbuf, size_t inlen, uchar* outbuf, size_t outlen, bool expand_cr, uchar** result)
 {
-    BYTE* first_iac = (BYTE*)memchr(inbuf, TELNET_IAC, inlen);
-	BYTE*   first_cr=NULL;
-	if(expand_cr)
-	    first_cr = (BYTE*)memchr(inbuf, '\r', inlen);
+	BYTE* first_iac = (BYTE*)memchr(inbuf, TELNET_IAC, inlen);
+	BYTE* first_cr = NULL;
+	if (expand_cr)
+		first_cr = (BYTE*)memchr(inbuf, '\r', inlen);
 
-	if(first_iac == NULL && first_cr==NULL) {	/* Nothing to expand */
-		if(result != NULL)
+	if (first_iac == NULL && first_cr == NULL) {   /* Nothing to expand */
+		if (result != NULL)
 			*result = (uchar*)inbuf;
 		return inlen;
 	}
 
 	size_t o;
 
-	if(first_iac != NULL && (first_cr == NULL || first_iac < first_cr))
+	if (first_iac != NULL && (first_cr == NULL || first_iac < first_cr))
 		o = first_iac - inbuf;
 	else
 		o = first_cr - inbuf;
 	memcpy(outbuf, inbuf, o);
 
-	for(size_t i = o; i < inlen && o < outlen; i++) {
-		if(inbuf[i] == TELNET_IAC)
+	for (size_t i = o; i < inlen && o < outlen; i++) {
+		if (inbuf[i] == TELNET_IAC)
 			outbuf[o++] = TELNET_IAC;
-		if(o >= outlen)
+		if (o >= outlen)
 			break;
 		outbuf[o++] = inbuf[i];
-		if(expand_cr && inbuf[i] == '\r' && o < outlen)
+		if (expand_cr && inbuf[i] == '\r' && o < outlen)
 			outbuf[o++] = '\n'; // See RFC5198
 	}
-	if(result != NULL)
+	if (result != NULL)
 		*result = outbuf;
 	return o;
 }

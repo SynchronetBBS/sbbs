@@ -30,4 +30,4 @@ void    mimetextpartheader(SOCKET socket, const char* prot, int sess, char * bou
 bool    mimeattach(SOCKET socket, const char* prot, int sess, char * boundary, char * pathfile);
 void    endmime(SOCKET socket, const char* prot, int sess, char * boundary);
 
-#endif	/* Don't add anything after this line */
+#endif  /* Don't add anything after this line */

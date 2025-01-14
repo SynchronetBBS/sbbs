@@ -5,18 +5,18 @@
 #if !defined _MSC_VER && !defined __BORLANDC__
 char* itoa(int val, char* str, int radix)
 {
-	switch(radix) {
+	switch (radix) {
 		case 8:
-			sprintf(str,"%o",val);
+			sprintf(str, "%o", val);
 			break;
 		case 10:
-			sprintf(str,"%u",val);
+			sprintf(str, "%u", val);
 			break;
 		case 16:
-			sprintf(str,"%x",val);
+			sprintf(str, "%x", val);
 			break;
 		default:
-			sprintf(str,"bad radix: %d",radix);
+			sprintf(str, "bad radix: %d", radix);
 			break;
 	}
 	return(str);
@@ -24,18 +24,18 @@ char* itoa(int val, char* str, int radix)
 
 char* ltoa(long val, char* str, int radix)
 {
-	switch(radix) {
+	switch (radix) {
 		case 8:
-			sprintf(str,"%lo",val);
+			sprintf(str, "%lo", val);
 			break;
 		case 10:
-			sprintf(str,"%lu",val);
+			sprintf(str, "%lu", val);
 			break;
 		case 16:
-			sprintf(str,"%lx",val);
+			sprintf(str, "%lx", val);
 			break;
 		default:
-			sprintf(str,"bad radix: %d",radix);
+			sprintf(str, "bad radix: %d", radix);
 			break;
 	}
 	return(str);
@@ -62,7 +62,7 @@ strnlen(const char *s, size_t maxlen)
 char *
 strndup(const char *str, size_t maxlen)
 {
-	char *copy;
+	char * copy;
 	size_t len;
 
 	len = strnlen(str, maxlen);

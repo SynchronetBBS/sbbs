@@ -28,89 +28,89 @@
 /****************************************************************************/
 int sbbs_t::delmail(uint usernumber, int which)
 {
-	uint	i,l;
-	time_t	now;
+	uint      i, l;
+	time_t    now;
 	idxrec_t *idxbuf;
-	smbmsg_t msg;
-	int		removed = 0;
+	smbmsg_t  msg;
+	int       removed = 0;
 
-	now=time(NULL);
-	if((i=smb_getstatus(&smb))!=0) {
-		errormsg(WHERE,ERR_READ,smb.file,i,smb.last_error);
+	now = time(NULL);
+	if ((i = smb_getstatus(&smb)) != 0) {
+		errormsg(WHERE, ERR_READ, smb.file, i, smb.last_error);
 		return 0;
 	}
-	if(!smb.status.total_msgs)
+	if (!smb.status.total_msgs)
 		return 0;
-	if((idxbuf=(idxrec_t *)malloc(smb.status.total_msgs*sizeof(idxrec_t)))==NULL) {
-		errormsg(WHERE,ERR_ALLOC,smb.file,smb.status.total_msgs*sizeof(idxrec_t));
+	if ((idxbuf = (idxrec_t *)malloc(smb.status.total_msgs * sizeof(idxrec_t))) == NULL) {
+		errormsg(WHERE, ERR_ALLOC, smb.file, smb.status.total_msgs * sizeof(idxrec_t));
 		return 0;
 	}
-	if((i=smb_open_da(&smb))!=0) {
-		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
+	if ((i = smb_open_da(&smb)) != 0) {
+		errormsg(WHERE, ERR_OPEN, smb.file, i, smb.last_error);
 		free(idxbuf);
 		return 0;
 	}
-	if((i=smb_open_ha(&smb))!=0) {
+	if ((i = smb_open_ha(&smb)) != 0) {
 		smb_close_da(&smb);
-		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
+		errormsg(WHERE, ERR_OPEN, smb.file, i, smb.last_error);
 		free(idxbuf);
 		return 0;
 	}
 	smb_rewind(smb.sid_fp);
-	for(l=0;l<smb.status.total_msgs;) {
+	for (l = 0; l < smb.status.total_msgs;) {
 		progress(text[Deleting], l, smb.status.total_msgs);
 		memset(&msg, 0, sizeof(msg));
-		if(smb_fread(&smb,&msg.idx,sizeof(idxrec_t),smb.sid_fp)!=sizeof(idxrec_t))
+		if (smb_fread(&smb, &msg.idx, sizeof(idxrec_t), smb.sid_fp) != sizeof(idxrec_t))
 			break;
-		if(!(msg.idx.attr&MSG_PERMANENT)
-			&& ((which==MAIL_SENT && usernumber==msg.idx.from)
-				|| (which==MAIL_YOUR && usernumber==msg.idx.to)
-				|| (which==MAIL_ANY	&& (usernumber==msg.idx.to || usernumber==msg.idx.from))
-				|| which==MAIL_ALL)) {
-			if(smb.status.max_age && (now<0?0:(uintmax_t)now)>msg.idx.time
-				&& (now-msg.idx.time)/(24L*60L*60L)>smb.status.max_age)
-				msg.idx.attr|=MSG_DELETE;
-			else if((msg.idx.attr&MSG_SPAM)
-				&& cfg.max_spamage && (now<0?0:(uintmax_t)now) > msg.idx.time
-				&& (now-msg.idx.time)/(24L*60L*60L) > cfg.max_spamage)
-				msg.idx.attr|=MSG_DELETE;
-			else if(msg.idx.attr&MSG_KILLREAD && msg.idx.attr&MSG_READ)
-				msg.idx.attr|=MSG_DELETE;
-			if(msg.idx.attr&MSG_DELETE) {
+		if (!(msg.idx.attr & MSG_PERMANENT)
+		    && ((which == MAIL_SENT && usernumber == msg.idx.from)
+		        || (which == MAIL_YOUR && usernumber == msg.idx.to)
+		        || (which == MAIL_ANY && (usernumber == msg.idx.to || usernumber == msg.idx.from))
+		        || which == MAIL_ALL)) {
+			if (smb.status.max_age && (now < 0?0:(uintmax_t)now) > msg.idx.time
+			    && (now - msg.idx.time) / (24L * 60L * 60L) > smb.status.max_age)
+				msg.idx.attr |= MSG_DELETE;
+			else if ((msg.idx.attr & MSG_SPAM)
+			         && cfg.max_spamage && (now < 0?0:(uintmax_t)now) > msg.idx.time
+			         && (now - msg.idx.time) / (24L * 60L * 60L) > cfg.max_spamage)
+				msg.idx.attr |= MSG_DELETE;
+			else if (msg.idx.attr & MSG_KILLREAD && msg.idx.attr & MSG_READ)
+				msg.idx.attr |= MSG_DELETE;
+			if (msg.idx.attr & MSG_DELETE) {
 				/* Don't need to lock message because base is locked */
-				if((i=smb_getmsghdr(&smb,&msg))!=0)
-					errormsg(WHERE,ERR_READ,smb.file,i,smb.last_error);
+				if ((i = smb_getmsghdr(&smb, &msg)) != 0)
+					errormsg(WHERE, ERR_READ, smb.file, i, smb.last_error);
 				else {
-					if(msg.hdr.attr!=msg.idx.attr) {
-						msg.hdr.attr=msg.idx.attr;
-						if((i=smb_putmsghdr(&smb,&msg))!=0)
-							errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error); 
+					if (msg.hdr.attr != msg.idx.attr) {
+						msg.hdr.attr = msg.idx.attr;
+						if ((i = smb_putmsghdr(&smb, &msg)) != 0)
+							errormsg(WHERE, ERR_WRITE, smb.file, i, smb.last_error);
 					}
-					if((i=smb_freemsg(&smb,&msg))!=0)
-						errormsg(WHERE,ERR_REMOVE,smb.file,i,smb.last_error);
-					if(msg.hdr.auxattr&MSG_FILEATTACH)
-						delfattach(&cfg,&msg);
-					smb_freemsgmem(&msg); 
+					if ((i = smb_freemsg(&smb, &msg)) != 0)
+						errormsg(WHERE, ERR_REMOVE, smb.file, i, smb.last_error);
+					if (msg.hdr.auxattr & MSG_FILEATTACH)
+						delfattach(&cfg, &msg);
+					smb_freemsgmem(&msg);
 				}
 				removed++;
-				continue; 
+				continue;
 			}
 		}
-		idxbuf[l]=msg.idx;
-		l++; 
+		idxbuf[l] = msg.idx;
+		l++;
 	}
 	bputs(text[DoneDeleting]);
 	smb_rewind(smb.sid_fp);
-	for(i=0;i<l;i++) {
-		if(smb_fwrite(&smb,&idxbuf[i],sizeof(idxrec_t),smb.sid_fp) != sizeof(idxrec_t)) {
+	for (i = 0; i < l; i++) {
+		if (smb_fwrite(&smb, &idxbuf[i], sizeof(idxrec_t), smb.sid_fp) != sizeof(idxrec_t)) {
 			errormsg(WHERE, ERR_WRITE, smb.file, i);
 			break;
 		}
 	}
 	smb_fflush(smb.sid_fp);
-	if(smb_fsetlength(smb.sid_fp, i * sizeof(idxrec_t)) != 0)
+	if (smb_fsetlength(smb.sid_fp, i * sizeof(idxrec_t)) != 0)
 		errormsg(WHERE, "truncating", smb.file, i * sizeof(idxrec_t));
-	smb.status.total_msgs=i;
+	smb.status.total_msgs = i;
 	smb_putstatus(&smb);
 	free(idxbuf);
 	smb_close_ha(&smb);
@@ -124,36 +124,36 @@ int sbbs_t::delmail(uint usernumber, int which)
 /***********************************************/
 void sbbs_t::telluser(smbmsg_t* msg)
 {
-	char str[256];
-	uint usernumber,n;
+	char   str[256];
+	uint   usernumber, n;
 	node_t node;
 
-	if(msg->from_net.type)
+	if (msg->from_net.type)
 		return;
-	if(msg->from_ext)
-		usernumber=atoi(msg->from_ext);
+	if (msg->from_ext)
+		usernumber = atoi(msg->from_ext);
 	else {
-		usernumber=matchuser(&cfg,msg->from,TRUE /*sysop_alias*/);
-		if(!usernumber)
-			return; 
+		usernumber = matchuser(&cfg, msg->from, TRUE /*sysop_alias*/);
+		if (!usernumber)
+			return;
 	}
-	for(n=1;n<=cfg.sys_nodes;n++) { /* Tell user */
+	for (n = 1; n <= cfg.sys_nodes; n++) { /* Tell user */
 		getnodedat(n, &node);
-		if(node.useron==usernumber
-		&& (node.status==NODE_INUSE
-		|| node.status==NODE_QUIET)) {
+		if (node.useron == usernumber
+		    && (node.status == NODE_INUSE
+		        || node.status == NODE_QUIET)) {
 			snprintf(str, sizeof str
-				,text[UserReadYourMailNodeMsg]
-				,cfg.node_num,useron.alias);
-			putnmsg(n,str);
-			break; 
-		} 
+			         , text[UserReadYourMailNodeMsg]
+			         , cfg.node_num, useron.alias);
+			putnmsg(n, str);
+			break;
+		}
 	}
-	if(n>cfg.sys_nodes) {
-		now=time(NULL);
+	if (n > cfg.sys_nodes) {
+		now = time(NULL);
 		snprintf(str, sizeof str, text[UserReadYourMail]
-			,useron.alias,timestr(now));
-		putsmsg(usernumber,str);
+		         , useron.alias, timestr(now));
+		putsmsg(usernumber, str);
 	}
 }
 
@@ -162,63 +162,63 @@ void sbbs_t::telluser(smbmsg_t* msg)
 /************************************************************************/
 int sbbs_t::delallmail(uint usernumber, int which, bool permanent, int lm_mode)
 {
-	int 		i;
-	int			deleted=0;
-	uint32_t	msgs,u;
-	mail_t		*mail;
-	smbmsg_t 	msg;
+	int      i;
+	int      deleted = 0;
+	uint32_t msgs, u;
+	mail_t * mail;
+	smbmsg_t msg;
 
-	if((i=smb_stack(&smb,SMB_STACK_PUSH))!=0) {
-		errormsg(WHERE,ERR_OPEN,"MAIL",i);
+	if ((i = smb_stack(&smb, SMB_STACK_PUSH)) != 0) {
+		errormsg(WHERE, ERR_OPEN, "MAIL", i);
 		return 0;
 	}
-	snprintf(smb.file, sizeof smb.file, "%smail",cfg.data_dir);
-	smb.retry_time=cfg.smb_retry_time;
-	smb.subnum=INVALID_SUB;
-	if((i=smb_open(&smb))!=0) {
-		errormsg(WHERE,ERR_OPEN,smb.file,i,smb.last_error);
-		smb_stack(&smb,SMB_STACK_POP);
+	snprintf(smb.file, sizeof smb.file, "%smail", cfg.data_dir);
+	smb.retry_time = cfg.smb_retry_time;
+	smb.subnum = INVALID_SUB;
+	if ((i = smb_open(&smb)) != 0) {
+		errormsg(WHERE, ERR_OPEN, smb.file, i, smb.last_error);
+		smb_stack(&smb, SMB_STACK_POP);
 		return 0;
 	}
 
-	mail=loadmail(&smb,&msgs,usernumber,which,lm_mode);
-	if(!msgs) {
+	mail = loadmail(&smb, &msgs, usernumber, which, lm_mode);
+	if (!msgs) {
 		smb_close(&smb);
-		smb_stack(&smb,SMB_STACK_POP);
+		smb_stack(&smb, SMB_STACK_POP);
 		return 0;
 	}
-	if((i=smb_locksmbhdr(&smb))!=0) {			/* Lock the base, so nobody */
+	if ((i = smb_locksmbhdr(&smb)) != 0) {           /* Lock the base, so nobody */
 		smb_close(&smb);
-		smb_stack(&smb,SMB_STACK_POP);
+		smb_stack(&smb, SMB_STACK_POP);
 		free(mail);
-		errormsg(WHERE,ERR_LOCK,smb.file,i,smb.last_error);	/* messes with the index */
+		errormsg(WHERE, ERR_LOCK, smb.file, i, smb.last_error); /* messes with the index */
 		return 0;
 	}
-	for(u=0;u<msgs;u++) {
+	for (u = 0; u < msgs; u++) {
 		progress(text[Deleting], u, msgs);
-		msg.idx.offset=0;						/* search by number */
-		if((mail[u].attr&(MSG_DELETE | MSG_PERMANENT)) && !permanent)
+		msg.idx.offset = 0;                       /* search by number */
+		if ((mail[u].attr & (MSG_DELETE | MSG_PERMANENT)) && !permanent)
 			continue;
-		if(loadmsg(&msg,mail[u].number) >= 0) {	   /* message still there */
-			msg.hdr.attr|=MSG_DELETE;
-			msg.hdr.attr&=~MSG_PERMANENT;
-			msg.idx.attr=msg.hdr.attr;
-			if((i=smb_putmsg(&smb,&msg))!=0)
-				errormsg(WHERE,ERR_WRITE,smb.file,i,smb.last_error);
+		if (loadmsg(&msg, mail[u].number) >= 0) {    /* message still there */
+			msg.hdr.attr |= MSG_DELETE;
+			msg.hdr.attr &= ~MSG_PERMANENT;
+			msg.idx.attr = msg.hdr.attr;
+			if ((i = smb_putmsg(&smb, &msg)) != 0)
+				errormsg(WHERE, ERR_WRITE, smb.file, i, smb.last_error);
 			else
 				deleted++;
 			smb_freemsgmem(&msg);
-			smb_unlockmsghdr(&smb,&msg); 
-		} 
+			smb_unlockmsghdr(&smb, &msg);
+		}
 	}
 	bputs(text[DoneDeleting]);
 
-	if(msgs)
+	if (msgs)
 		free(mail);
-	if(deleted && (permanent || (cfg.sys_misc&SM_DELEMAIL)))
-		delmail(usernumber,MAIL_ANY);
+	if (deleted && (permanent || (cfg.sys_misc & SM_DELEMAIL)))
+		delmail(usernumber, MAIL_ANY);
 	smb_unlocksmbhdr(&smb);
 	smb_close(&smb);
-	smb_stack(&smb,SMB_STACK_POP);
+	smb_stack(&smb, SMB_STACK_POP);
 	return deleted;
 }

@@ -27,53 +27,53 @@
 /************************/
 /* byte-swapping macros */
 /************************/
-#define BYTE_SWAP_16(x)	((((WORD)(x)&0xff00)>>8) | (((WORD)(x)&0x00ff)<<8))
-#define BYTE_SWAP_32(x)	((((DWORD)(x)&0xff000000)>>24) | (((DWORD)(x)&0x00ff0000)>>8) | (((DWORD)(x)&0x0000ff00)<<8) | (((DWORD)(x)&0x000000ff)<<24))
-#define BYTE_SWAP_64(x)	((((uint64_t)(x) & 0xff00000000000000ULL) >> 56) | \
-						( ((uint64_t)(x) & 0x00ff000000000000ULL) >> 40) | \
-						( ((uint64_t)(x) & 0x0000ff0000000000ULL) >> 24) | \
-						( ((uint64_t)(x) & 0x000000ff00000000ULL) >> 8)  | \
-						( ((uint64_t)(x) & 0x00000000ff000000ULL) << 8)  | \
-						( ((uint64_t)(x) & 0x0000000000ff0000ULL) << 24) | \
-						( ((uint64_t)(x) & 0x000000000000ff00ULL) << 40) | \
-						( ((uint64_t)(x) & 0x00000000000000ffULL) << 56))
+#define BYTE_SWAP_16(x) ((((WORD)(x) & 0xff00) >> 8) | (((WORD)(x) & 0x00ff) << 8))
+#define BYTE_SWAP_32(x) ((((DWORD)(x) & 0xff000000) >> 24) | (((DWORD)(x) & 0x00ff0000) >> 8) | (((DWORD)(x) & 0x0000ff00) << 8) | (((DWORD)(x) & 0x000000ff) << 24))
+#define BYTE_SWAP_64(x) ((((uint64_t)(x) & 0xff00000000000000ULL) >> 56) | \
+						 (((uint64_t)(x) & 0x00ff000000000000ULL) >> 40) | \
+						 (((uint64_t)(x) & 0x0000ff0000000000ULL) >> 24) | \
+						 (((uint64_t)(x) & 0x000000ff00000000ULL) >> 8)  | \
+						 (((uint64_t)(x) & 0x00000000ff000000ULL) << 8)  | \
+						 (((uint64_t)(x) & 0x0000000000ff0000ULL) << 24) | \
+						 (((uint64_t)(x) & 0x000000000000ff00ULL) << 40) | \
+						 (((uint64_t)(x) & 0x00000000000000ffULL) << 56))
 
 /* auto-detect integer size */
-#define BYTE_SWAP_INT(x)	(sizeof(x)==2 ? BYTE_SWAP_16(x) : sizeof(x)==4 ? BYTE_SWAP_32(x) : sizeof(x)==8 ? BYTE_SWAP_64(x) : (x))
+#define BYTE_SWAP_INT(x)    (sizeof(x) == 2 ? BYTE_SWAP_16(x) : sizeof(x) == 4 ? BYTE_SWAP_32(x) : sizeof(x) == 8 ? BYTE_SWAP_64(x) : (x))
 
 /********************************/
 /* Architecture-specific macros */
 /********************************/
-#ifdef __BIG_ENDIAN__	/* e.g. Motorola */
+#ifdef __BIG_ENDIAN__   /* e.g. Motorola */
 
-	#define BE_SHORT(x)		(x)
-	#define BE_LONG(x)		(x)
-	#define BE_INT16(x)		(x)
-	#define BE_INT32(x)		(x)
-	#define BE_INT64(x)		(x)
-	#define BE_INT(x)		(x)
-	#define LE_SHORT(x)		BYTE_SWAP_16(x)
-	#define LE_LONG(x)		BYTE_SWAP_32(x)
-	#define LE_INT16(x)		BYTE_SWAP_16(x)
-	#define LE_INT32(x)		BYTE_SWAP_32(x)
-	#define LE_INT64(x)		BYTE_SWAP_64(x)
-	#define LE_INT(x)		BYTE_SWAP_INT(x)
+	#define BE_SHORT(x)     (x)
+	#define BE_LONG(x)      (x)
+	#define BE_INT16(x)     (x)
+	#define BE_INT32(x)     (x)
+	#define BE_INT64(x)     (x)
+	#define BE_INT(x)       (x)
+	#define LE_SHORT(x)     BYTE_SWAP_16(x)
+	#define LE_LONG(x)      BYTE_SWAP_32(x)
+	#define LE_INT16(x)     BYTE_SWAP_16(x)
+	#define LE_INT32(x)     BYTE_SWAP_32(x)
+	#define LE_INT64(x)     BYTE_SWAP_64(x)
+	#define LE_INT(x)       BYTE_SWAP_INT(x)
 
-#else	/* Little Endian (e.g. Intel) */
+#else   /* Little Endian (e.g. Intel) */
 
-	#define LE_SHORT(x)		(x)
-	#define LE_LONG(x)		(x)
-	#define LE_INT16(x)		(x)
-	#define LE_INT32(x)		(x)
-	#define LE_INT64(x)		(x)
-	#define LE_INT(x)		(x)
-	#define BE_SHORT(x)		BYTE_SWAP_16(x)
-	#define BE_LONG(x)		BYTE_SWAP_32(x)
-	#define BE_INT16(x)		BYTE_SWAP_16(x)
-	#define BE_INT32(x)		BYTE_SWAP_32(x)
-	#define BE_INT64(x)		BYTE_SWAP_64(x)
-	#define BE_INT(x)		BYTE_SWAP_INT(x)
+	#define LE_SHORT(x)     (x)
+	#define LE_LONG(x)      (x)
+	#define LE_INT16(x)     (x)
+	#define LE_INT32(x)     (x)
+	#define LE_INT64(x)     (x)
+	#define LE_INT(x)       (x)
+	#define BE_SHORT(x)     BYTE_SWAP_16(x)
+	#define BE_LONG(x)      BYTE_SWAP_32(x)
+	#define BE_INT16(x)     BYTE_SWAP_16(x)
+	#define BE_INT32(x)     BYTE_SWAP_32(x)
+	#define BE_INT64(x)     BYTE_SWAP_64(x)
+	#define BE_INT(x)       BYTE_SWAP_INT(x)
 
 #endif
 
-#endif	/* Don't add anything after this line */
+#endif  /* Don't add anything after this line */

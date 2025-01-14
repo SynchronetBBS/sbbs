@@ -23,73 +23,73 @@
 #include "ident.h"
 
 bool identify(union xp_sockaddr *client_addr, u_short local_port, char* buf
-			   ,size_t maxlen, int timeout)
+              , size_t maxlen, int timeout)
 {
-	char		req[128];
-	int			result;
-	int			rd;
-	ulong		val;
-	SOCKET		sock=INVALID_SOCKET;
-	union xp_sockaddr	addr;
-	bool		success=FALSE;
+	char              req[128];
+	int               result;
+	int               rd;
+	ulong             val;
+	SOCKET            sock = INVALID_SOCKET;
+	union xp_sockaddr addr;
+	bool              success = FALSE;
 
-	if(client_addr->addr.sa_family != AF_INET && client_addr->addr.sa_family != AF_INET6)
+	if (client_addr->addr.sa_family != AF_INET && client_addr->addr.sa_family != AF_INET6)
 		return FALSE;
-	if(timeout<=0)
-		timeout=IDENT_DEFAULT_TIMEOUT;
+	if (timeout <= 0)
+		timeout = IDENT_DEFAULT_TIMEOUT;
 
 	do {
-		if((sock = open_socket(PF_INET, SOCK_STREAM, "ident")) == INVALID_SOCKET) {
-			sprintf(buf,"ERROR %d creating socket",ERROR_VALUE);
+		if ((sock = open_socket(PF_INET, SOCK_STREAM, "ident")) == INVALID_SOCKET) {
+			sprintf(buf, "ERROR %d creating socket", ERROR_VALUE);
 			break;
 		}
 
-		val=1;
-		ioctlsocket(sock,FIONBIO,&val);	
+		val = 1;
+		ioctlsocket(sock, FIONBIO, &val);
 
 		memcpy(&addr, client_addr, xp_sockaddr_len(client_addr));
 		inet_setaddrport(&addr, IPPORT_IDENT);
 
-		result=connect(sock, &addr.addr, xp_sockaddr_len(&addr));
+		result = connect(sock, &addr.addr, xp_sockaddr_len(&addr));
 
-		if(result==SOCKET_ERROR
-			&& (ERROR_VALUE==EWOULDBLOCK || ERROR_VALUE==EINPROGRESS)) {
+		if (result == SOCKET_ERROR
+		    && (ERROR_VALUE == EWOULDBLOCK || ERROR_VALUE == EINPROGRESS)) {
 			if (socket_writable(sock, timeout * 1000))
-				result=0;	/* success */
+				result = 0; /* success */
 		}
-		if(result!=0) {
-			sprintf(buf,"ERROR %d connecting to server",ERROR_VALUE);
+		if (result != 0) {
+			sprintf(buf, "ERROR %d connecting to server", ERROR_VALUE);
 			break;
 		}
 
-		val=0;
-		ioctlsocket(sock,FIONBIO,&val);	
+		val = 0;
+		ioctlsocket(sock, FIONBIO, &val);
 
-		if(!socket_writable(sock, 10000)) {
-			sprintf(buf,"ERROR %d selecting socket for send",ERROR_VALUE);
+		if (!socket_writable(sock, 10000)) {
+			sprintf(buf, "ERROR %d selecting socket for send", ERROR_VALUE);
 			break;
 		}
 
-		sprintf(req,"%u,%u\r\n", inet_addrport(client_addr), local_port);
-		if(sendsocket(sock,req,strlen(req))!=(int)strlen(req)) {
-			sprintf(buf,"ERROR %d sending request",ERROR_VALUE);
+		sprintf(req, "%u,%u\r\n", inet_addrport(client_addr), local_port);
+		if (sendsocket(sock, req, strlen(req)) != (int)strlen(req)) {
+			sprintf(buf, "ERROR %d sending request", ERROR_VALUE);
 			break;
 		}
 
-		if(!socket_readable(sock, 10000)) {
-			sprintf(buf,"ERROR %d detecting response",ERROR_VALUE);
+		if (!socket_readable(sock, 10000)) {
+			sprintf(buf, "ERROR %d detecting response", ERROR_VALUE);
 			break;
 		}
 
-		rd=recv(sock,buf,maxlen,0);
-		if(rd<1) {
-			sprintf(buf,"ERROR %d receiving response",ERROR_VALUE);
+		rd = recv(sock, buf, maxlen, 0);
+		if (rd < 1) {
+			sprintf(buf, "ERROR %d receiving response", ERROR_VALUE);
 			break;
 		}
-		buf[rd]=0;
+		buf[rd] = 0;
 		truncsp(buf);
-		success=TRUE;
-	} while(0);
+		success = TRUE;
+	} while (0);
 
 	close_socket(sock);
 

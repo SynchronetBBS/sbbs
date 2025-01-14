@@ -20,29 +20,29 @@
  ****************************************************************************/
 
 #include <string.h>     /* strlen() */
-#include <stdarg.h>		/* vsnprintf() */
-#include <stdlib.h>		/* RAND_MAX */
-#include <fcntl.h>		/* O_NOCTTY */
-#include <time.h>		/* clock() */
-#include <errno.h>		/* errno */
-#include <ctype.h>		/* toupper/tolower */
-#include <limits.h>		/* CHAR_BIT */
-#include <math.h>		/* fmod */
+#include <stdarg.h>     /* vsnprintf() */
+#include <stdlib.h>     /* RAND_MAX */
+#include <fcntl.h>      /* O_NOCTTY */
+#include <time.h>       /* clock() */
+#include <errno.h>      /* errno */
+#include <ctype.h>      /* toupper/tolower */
+#include <limits.h>     /* CHAR_BIT */
+#include <math.h>       /* fmod */
 
-#include "strwrap.h"		/* strdup */
+#include "strwrap.h"        /* strdup */
 #include "ini_file.h"
 
 #if defined(__unix__)
-	#include <sys/ioctl.h>		/* ioctl() */
-	#include <sys/utsname.h>	/* uname() */
+	#include <sys/ioctl.h>      /* ioctl() */
+	#include <sys/utsname.h>    /* uname() */
 	#include <signal.h>
 #elif defined(_WIN32)
 	#include <windows.h>
-	#include <lm.h>		/* NetWkstaGetInfo() */
+	#include <lm.h>     /* NetWkstaGetInfo() */
 #endif
 
-#include "genwrap.h"	/* Verify prototypes */
-#include "xpendian.h"	/* BYTE_SWAP */
+#include "genwrap.h"    /* Verify prototypes */
+#include "xpendian.h"   /* BYTE_SWAP */
 
 /****************************************************************************/
 /* Used to replace snprintf()  guarantees to terminate.			  			*/
@@ -52,14 +52,14 @@ int safe_snprintf(char *dst, size_t size, const char *fmt, ...)
 	va_list argptr;
 	int     numchars;
 
-	va_start(argptr,fmt);
-	numchars= vsnprintf(dst,size,fmt,argptr);
+	va_start(argptr, fmt);
+	numchars = vsnprintf(dst, size, fmt, argptr);
 	va_end(argptr);
 	if (size > 0)
-		dst[size-1]=0;
+		dst[size - 1] = 0;
 #ifdef _MSC_VER
-	if(numchars==-1)
-		numchars=strlen(dst);
+	if (numchars == -1)
+		numchars = strlen(dst);
 #endif
 	if ((size_t)numchars >= size && numchars > 0) {
 		if (size == 0)
@@ -74,7 +74,7 @@ int safe_snprintf(char *dst, size_t size, const char *fmt, ...)
 size_t strlcpy(char *dst, const char *src, size_t dsize)
 {
 	const char *osrc = src;
-	size_t nleft = dsize;
+	size_t      nleft = dsize;
 
 	/* Copy as many bytes as will fit. */
 	if (nleft != 0) {
@@ -100,8 +100,8 @@ strlcat(char *dst, const char *src, size_t dsize)
 {
 	const char *odst = dst;
 	const char *osrc = src;
-	size_t n = dsize;
-	size_t dlen;
+	size_t      n = dsize;
+	size_t      dlen;
 
 	/* Find the end of dst and adjust bytes left but don't go past end. */
 	while (n-- != 0 && *dst != '\0')
@@ -131,10 +131,10 @@ strlcat(char *dst, const char *src, size_t dsize)
 char* strcasestr(const char* haystack, const char* needle)
 {
 	const char* p;
-	size_t len = strlen(needle);
+	size_t      len = strlen(needle);
 
-	for(p = haystack; *p != '\0'; p++) {
-		if(strnicmp(p, needle, len) == 0)
+	for (p = haystack; *p != '\0'; p++) {
+		if (strnicmp(p, needle, len) == 0)
 			return (char*)p;
 	}
 	return NULL;
@@ -146,12 +146,12 @@ char* strcasestr(const char* haystack, const char* needle)
 /****************************************************************************/
 char* lastchar(const char* str)
 {
-	size_t	len;
+	size_t len;
 
 	len = strlen(str);
 
-	if(len)
-		return((char*)&str[len-1]);
+	if (len)
+		return((char*)&str[len - 1]);
 
 	return((char*)str);
 }
@@ -161,15 +161,15 @@ char* lastchar(const char* str)
 /****************************************************************************/
 char c_unescape_char(char ch)
 {
-	switch(ch) {
-		case 'e':	return(ESC);	/* non-standard */
-		case 'a':	return('\a');
-		case 'b':	return('\b');
-		case 'f':	return('\f');
-		case 'n':	return('\n');
-		case 'r':	return('\r');
-		case 't':	return('\t');
-		case 'v':	return('\v');
+	switch (ch) {
+		case 'e':   return(ESC);    /* non-standard */
+		case 'a':   return('\a');
+		case 'b':   return('\b');
+		case 'f':   return('\f');
+		case 'n':   return('\n');
+		case 'r':   return('\r');
+		case 't':   return('\t');
+		case 'v':   return('\v');
 	}
 	return(ch);
 }
@@ -180,44 +180,44 @@ char c_unescape_char(char ch)
 /****************************************************************************/
 char c_unescape_char_ptr(const char* str, char** endptr)
 {
-	char	ch;
+	char ch;
 
-	if(*str == 'x') {
-		int digits = 0;		// \x## for hexadecimal character literals (only 2 digits supported)
+	if (*str == 'x') {
+		int digits = 0;     // \x## for hexadecimal character literals (only 2 digits supported)
 		++str;
 		ch = 0;
-		while(digits < 2 && IS_HEXDIGIT(*str)) {
-			ch *= 0x10;	
+		while (digits < 2 && IS_HEXDIGIT(*str)) {
+			ch *= 0x10;
 			ch += HEX_CHAR_TO_INT(*str);
 			str++;
 			digits++;
 		}
 #ifdef C_UNESCAPE_OCTAL_SUPPORT
-	} else if(IS_OCTDIGIT(*str)) {
-		int digits = 0;		// \### for octal character literals (only 3 digits supported)
+	} else if (IS_OCTDIGIT(*str)) {
+		int digits = 0;     // \### for octal character literals (only 3 digits supported)
 		ch = 0;
-		while(digits < 3 && IS_OCTDIGIT(*str)) {
+		while (digits < 3 && IS_OCTDIGIT(*str)) {
 			ch *= 8;
 			ch += OCT_CHAR_TO_INT(*str);
 			str++;
 			digits++;
 		}
 #else
-	} else if(IS_DIGIT(*str)) {
-		int digits = 0;		// \### for decimal character literals (only 3 digits supported)
+	} else if (IS_DIGIT(*str)) {
+		int digits = 0;     // \### for decimal character literals (only 3 digits supported)
 		ch = 0;
-		while(digits < 3 && IS_DIGIT(*str)) {
+		while (digits < 3 && IS_DIGIT(*str)) {
 			ch *= 10;
 			ch += DEC_CHAR_TO_INT(*str);
 			str++;
 			digits++;
 		}
 #endif
-	 } else
-		ch=c_unescape_char(*(str++));
+	} else
+		ch = c_unescape_char(*(str++));
 
-	if(endptr!=NULL)
-		*endptr=(char*)str;
+	if (endptr != NULL)
+		*endptr = (char*)str;
 
 	return ch;
 }
@@ -227,61 +227,61 @@ char c_unescape_char_ptr(const char* str, char** endptr)
 /****************************************************************************/
 char* c_unescape_str(char* str)
 {
-	char	ch;
-	char*	buf;
-	char*	src;
-	char*	dst;
+	char  ch;
+	char* buf;
+	char* src;
+	char* dst;
 
-	if(str==NULL || (buf=strdup(str))==NULL)
+	if (str == NULL || (buf = strdup(str)) == NULL)
 		return(NULL);
 
-	src=buf;
-	dst=str;
-	while((ch=*(src++))!=0) {
-		if(ch=='\\')	/* escape */
-			ch=c_unescape_char_ptr(src,&src);
-		*(dst++)=ch;
+	src = buf;
+	dst = str;
+	while ((ch = *(src++)) != 0) {
+		if (ch == '\\')    /* escape */
+			ch = c_unescape_char_ptr(src, &src);
+		*(dst++) = ch;
 	}
-	*dst=0;
+	*dst = 0;
 	free(buf);
 	return(str);
 }
 
 char* c_escape_char(char ch)
 {
-	switch(ch) {
-		case 0:		return("\\x00");
-		case 1:		return("\\x01");
-		case ESC:	return("\\e");		/* non-standard */
-		case '\a':	return("\\a");
-		case '\b':	return("\\b");
-		case '\f':	return("\\f");
-		case '\n':	return("\\n");
-		case '\r':	return("\\r");
-		case '\t':	return("\\t");
-		case '\v':	return("\\v");
-		case '\\':	return("\\\\");
-		case '\"':	return("\\\"");
-		case '\'':	return("\\'");
+	switch (ch) {
+		case 0:     return("\\x00");
+		case 1:     return("\\x01");
+		case ESC:   return("\\e");      /* non-standard */
+		case '\a':  return("\\a");
+		case '\b':  return("\\b");
+		case '\f':  return("\\f");
+		case '\n':  return("\\n");
+		case '\r':  return("\\r");
+		case '\t':  return("\\t");
+		case '\v':  return("\\v");
+		case '\\':  return("\\\\");
+		case '\"':  return("\\\"");
+		case '\'':  return("\\'");
 	}
 	return(NULL);
 }
 
 char* c_escape_str(const char* src, char* dst, size_t maxlen, bool ctrl_only)
 {
-	const char*	s;
-	char*		d;
-	const char*	e;
+	const char* s;
+	char*       d;
+	const char* e;
 
-	for(s=src,d=dst;*s && (size_t)(d-dst)<maxlen;s++) {
-		if((!ctrl_only || (uchar)*s < ' ') && (e=c_escape_char(*s))!=NULL) {
-			strncpy(d,e,maxlen-(d-dst));
-			d+=strlen(d);
-		} else if((uchar)*s < ' ' || (uchar)*s >= '\x7f') {
-			d += safe_snprintf(d, maxlen-(d-dst), "\\x%02X", (uchar)*s);
-		} else *d++=*s;
+	for (s = src, d = dst; *s && (size_t)(d - dst) < maxlen; s++) {
+		if ((!ctrl_only || (uchar) * s < ' ') && (e = c_escape_char(*s)) != NULL) {
+			strncpy(d, e, maxlen - (d - dst));
+			d += strlen(d);
+		} else if ((uchar) * s < ' ' || (uchar) * s >= '\x7f') {
+			d += safe_snprintf(d, maxlen - (d - dst), "\\x%02X", (uchar) * s);
+		} else *d++ = *s;
 	}
-	*d=0;
+	*d = 0;
 
 	return(dst);
 }
@@ -289,49 +289,49 @@ char* c_escape_str(const char* src, char* dst, size_t maxlen, bool ctrl_only)
 /* Returns a byte count parsed from the 'str' argument, supporting power-of-2
  * short-hands (e.g. 'K' for kibibytes).
  * If 'unit' is specified (greater than 1), result is divided by this amount.
- * 
+ *
  * Moved from ini_file.c/parseBytes()
  */
 int64_t parse_byte_count(const char* str, uint64_t unit)
 {
-	char*	p=NULL;
-	double	bytes;
+	char*  p = NULL;
+	double bytes;
 
-	bytes=strtod(str,&p);
-	if(p!=NULL) {
+	bytes = strtod(str, &p);
+	if (p != NULL) {
 		SKIP_WHITESPACE(p);
-		switch(toupper(*p)) {
+		switch (toupper(*p)) {
 			case 'E':
-				bytes*=1024;
-				/* fall-through */
+				bytes *= 1024;
+			/* fall-through */
 			case 'P':
-				bytes*=1024;
-				/* fall-through */
+				bytes *= 1024;
+			/* fall-through */
 			case 'T':
-				bytes*=1024;
-				/* fall-through */
+				bytes *= 1024;
+			/* fall-through */
 			case 'G':
-				bytes*=1024;
-				/* fall-through */
+				bytes *= 1024;
+			/* fall-through */
 			case 'M':
-				bytes*=1024;
-				/* fall-through */
+				bytes *= 1024;
+			/* fall-through */
 			case 'K':
-				bytes*=1024;
+				bytes *= 1024;
 				break;
 		}
 	}
-	if(unit > 1)
+	if (unit > 1)
 		bytes /= unit;
-	if(bytes < 0 || bytes > (double)INT64_MAX)
+	if (bytes < 0 || bytes > (double)INT64_MAX)
 		return INT64_MAX;
 	return (int64_t)bytes;
 }
 
-static const double one_pebibyte = 1024.0*1024.0*1024.0*1024.0*1024.0;
-static const double one_tebibyte = 1024.0*1024.0*1024.0*1024.0;
-static const double one_gibibyte = 1024.0*1024.0*1024.0;
-static const double one_mebibyte = 1024.0*1024.0;
+static const double one_pebibyte = 1024.0 * 1024.0 * 1024.0 * 1024.0 * 1024.0;
+static const double one_tebibyte = 1024.0 * 1024.0 * 1024.0 * 1024.0;
+static const double one_gibibyte = 1024.0 * 1024.0 * 1024.0;
+static const double one_mebibyte = 1024.0 * 1024.0;
 static const double one_kibibyte = 1024.0;
 
 /* Convert an exact byte count to a string with a floating point value
@@ -340,18 +340,18 @@ static const double one_kibibyte = 1024.0;
 */
 char* byte_count_to_str(uint64_t bytes, char* str, size_t size)
 {
-	if(bytes && fmod((double)bytes,one_pebibyte)==0)
-		safe_snprintf(str, size, "%gP",bytes/one_pebibyte);
-	else if(bytes && fmod((double)bytes,one_tebibyte)==0)
-		safe_snprintf(str, size, "%gT",bytes/one_tebibyte);
-	else if(bytes && fmod((double)bytes,one_gibibyte)==0)
-		safe_snprintf(str, size, "%gG",bytes/one_gibibyte);
-	else if(bytes && fmod((double)bytes,one_mebibyte)==0)
-		safe_snprintf(str, size, "%gM",bytes/one_mebibyte);
-	else if(bytes && fmod((double)bytes,one_kibibyte)==0)
-		safe_snprintf(str, size, "%gK",bytes/one_kibibyte);
+	if (bytes && fmod((double)bytes, one_pebibyte) == 0)
+		safe_snprintf(str, size, "%gP", bytes / one_pebibyte);
+	else if (bytes && fmod((double)bytes, one_tebibyte) == 0)
+		safe_snprintf(str, size, "%gT", bytes / one_tebibyte);
+	else if (bytes && fmod((double)bytes, one_gibibyte) == 0)
+		safe_snprintf(str, size, "%gG", bytes / one_gibibyte);
+	else if (bytes && fmod((double)bytes, one_mebibyte) == 0)
+		safe_snprintf(str, size, "%gM", bytes / one_mebibyte);
+	else if (bytes && fmod((double)bytes, one_kibibyte) == 0)
+		safe_snprintf(str, size, "%gK", bytes / one_kibibyte);
 	else
-		safe_snprintf(str, size, "%"PRIi64, bytes);
+		safe_snprintf(str, size, "%" PRIi64, bytes);
 
 	return str;
 }
@@ -362,26 +362,26 @@ char* byte_count_to_str(uint64_t bytes, char* str, size_t size)
 */
 char* byte_estimate_to_str(uint64_t bytes, char* str, size_t size, uint64_t unit, int precision)
 {
-	if(bytes >= one_pebibyte)
-		safe_snprintf(str, size, "%1.*fP", precision, bytes/one_pebibyte);
-	else if(bytes >= one_tebibyte || unit == one_tebibyte)
-		safe_snprintf(str, size, "%1.*fT", precision, bytes/one_tebibyte);
-	else if(bytes >= one_gibibyte || unit == one_gibibyte)
-		safe_snprintf(str, size, "%1.*fG", precision, bytes/one_gibibyte);
-	else if(bytes >= one_mebibyte || unit == one_mebibyte)
-		safe_snprintf(str, size, "%1.*fM", precision, bytes/one_mebibyte);
-	else if(bytes >= one_kibibyte || unit == one_kibibyte)
-		safe_snprintf(str, size, "%1.*fK", precision, bytes/one_kibibyte);
+	if (bytes >= one_pebibyte)
+		safe_snprintf(str, size, "%1.*fP", precision, bytes / one_pebibyte);
+	else if (bytes >= one_tebibyte || unit == one_tebibyte)
+		safe_snprintf(str, size, "%1.*fT", precision, bytes / one_tebibyte);
+	else if (bytes >= one_gibibyte || unit == one_gibibyte)
+		safe_snprintf(str, size, "%1.*fG", precision, bytes / one_gibibyte);
+	else if (bytes >= one_mebibyte || unit == one_mebibyte)
+		safe_snprintf(str, size, "%1.*fM", precision, bytes / one_mebibyte);
+	else if (bytes >= one_kibibyte || unit == one_kibibyte)
+		safe_snprintf(str, size, "%1.*fK", precision, bytes / one_kibibyte);
 	else
-		safe_snprintf(str, size, "%"PRIi64, bytes);
+		safe_snprintf(str, size, "%" PRIi64, bytes);
 
 	return str;
 }
 
-static const double one_year   = 365.0*24.0*60.0*60.0; // Actually, 365.2425
-static const double one_week   =   7.0*24.0*60.0*60.0;
-static const double one_day    =       24.0*60.0*60.0;
-static const double one_hour   =            60.0*60.0;
+static const double one_year   = 365.0 * 24.0 * 60.0 * 60.0; // Actually, 365.2425
+static const double one_week   =   7.0 * 24.0 * 60.0 * 60.0;
+static const double one_day    =       24.0 * 60.0 * 60.0;
+static const double one_hour   =            60.0 * 60.0;
 static const double one_minute =                 60.0;
 
 /* Parse a duration string, default unit is in seconds */
@@ -390,68 +390,68 @@ static const double one_minute =                 60.0;
 /* Return value is in seconds */
 double parse_duration(const char* str)
 {
-	char*	p=NULL;
-	double	t;
+	char*  p = NULL;
+	double t;
 
-	t=strtod(str,&p);
-	if(p!=NULL) {
+	t = strtod(str, &p);
+	if (p != NULL) {
 		SKIP_WHITESPACE(p);
-		switch(toupper(*p)) {
-			case 'Y':	t*= one_year; break;
-			case 'W':	t*= one_week; break;
-			case 'D':	t*= one_day; break;
-			case 'H':	t*= one_hour; break;
-			case 'M':	t*= one_minute; break;
+		switch (toupper(*p)) {
+			case 'Y':   t *= one_year; break;
+			case 'W':   t *= one_week; break;
+			case 'D':   t *= one_day; break;
+			case 'H':   t *= one_hour; break;
+			case 'M':   t *= one_minute; break;
 		}
 	}
 	return t;
 }
 
 /* Convert a duration (in seconds) to a string
- * with a single letter multiplier/suffix: 
+ * with a single letter multiplier/suffix:
  * (y)ears, (w)eeks, (d)ays, (h)ours, (m)inutes, or (s)econds
  */
 char* duration_to_str(double value, char* str, size_t size)
 {
-	if(value && fmod(value, one_year)==0)
-		safe_snprintf(str, size, "%gy",value/one_year);
-	else if(value && fmod(value, one_week)==0)
-		safe_snprintf(str, size, "%gw",value/one_week);
-	else if(value && fmod(value, one_day)==0)
-		safe_snprintf(str, size, "%gd",value/one_day);
-	else if(value && fmod(value, one_hour)==0)
-		safe_snprintf(str, size, "%gh",value/one_hour);
-	else if(value && fmod(value, one_minute)==0)
-		safe_snprintf(str, size, "%gm",value/one_minute);
+	if (value && fmod(value, one_year) == 0)
+		safe_snprintf(str, size, "%gy", value / one_year);
+	else if (value && fmod(value, one_week) == 0)
+		safe_snprintf(str, size, "%gw", value / one_week);
+	else if (value && fmod(value, one_day) == 0)
+		safe_snprintf(str, size, "%gd", value / one_day);
+	else if (value && fmod(value, one_hour) == 0)
+		safe_snprintf(str, size, "%gh", value / one_hour);
+	else if (value && fmod(value, one_minute) == 0)
+		safe_snprintf(str, size, "%gm", value / one_minute);
 	else
-		safe_snprintf(str, size, "%gs",value);
+		safe_snprintf(str, size, "%gs", value);
 
 	return str;
 }
 
 /* Convert a duration (in seconds) to a verbose string
- * with a word clarifier / modifier: 
+ * with a word clarifier / modifier:
  * year[s], week[s], day[s], hour[s], minute[s] or second[s]
  */
 char* duration_to_vstr(double value, char* str, size_t size)
 {
-	if(value && fmod(value, one_year)==0) {
+	if (value && fmod(value, one_year) == 0) {
 		value /= one_year;
 		safe_snprintf(str, size, "%g year%s", value, value == 1 ? "":"s");
 	}
-	else if(value && fmod(value, one_week)==0) {
+	else if (value && fmod(value, one_week) == 0) {
 		value /= one_week;
 		safe_snprintf(str, size, "%g week%s", value, value == 1 ? "":"s");
 	}
-	else if(value && fmod(value, one_day)==0) {
+	else if (value && fmod(value, one_day) == 0) {
 		value /= one_day;
 		safe_snprintf(str, size, "%g day%s", value, value == 1 ? "":"s");
 	}
-	else if(value && fmod(value, one_hour)==0) {
+	else if (value && fmod(value, one_hour) == 0) {
 		value /= one_hour;
 		safe_snprintf(str, size, "%g hour%s", value, value == 1 ? "":"s");
 	}
-	else if(value && fmod(value, one_minute)==0) {
+	else if (value && fmod(value, one_minute) == 0) {
 		value /= one_minute;
 		safe_snprintf(str, size, "%g minute%s", value, value == 1 ? "":"s");
 	}
@@ -467,28 +467,28 @@ char* duration_to_vstr(double value, char* str, size_t size)
  */
 char* duration_estimate_to_str(double value, char* str, size_t size, double unit, int precision)
 {
-	if(value && fmod(value, one_year) == 0)
-		safe_snprintf(str, size, "%gy", value/one_year);
-	else if(value >= one_year || unit == one_year)
-		safe_snprintf(str, size, "%1.*fy", precision, value/one_year);
-	else if(value && fmod(value, one_week) == 0)
-		safe_snprintf(str, size, "%gw", value/one_week);
-	else if(unit == one_week) // prefer "90 days" over "12.9 weeks"
-		safe_snprintf(str, size, "%1.*fw", precision, value/one_week);
-	else if(value && fmod(value, one_day) == 0)
-		safe_snprintf(str, size, "%gd", value/one_day);
-	else if(value >= one_day || unit == one_day)
-		safe_snprintf(str, size, "%1.*fd", precision, value/one_day);
-	else if(value && fmod(value, one_hour) == 0)
-		safe_snprintf(str, size, "%gh", value/one_hour);
-	else if(value >= one_hour || unit == one_hour)
-		safe_snprintf(str, size, "%1.*fh", precision, value/one_hour);
-	else if(value && fmod(value, one_minute) == 0)
-		safe_snprintf(str, size, "%gm", value/one_minute);
-	else if(value >= one_minute || unit == one_minute)
-		safe_snprintf(str, size, "%1.*fm", precision, value/one_minute);
+	if (value && fmod(value, one_year) == 0)
+		safe_snprintf(str, size, "%gy", value / one_year);
+	else if (value >= one_year || unit == one_year)
+		safe_snprintf(str, size, "%1.*fy", precision, value / one_year);
+	else if (value && fmod(value, one_week) == 0)
+		safe_snprintf(str, size, "%gw", value / one_week);
+	else if (unit == one_week) // prefer "90 days" over "12.9 weeks"
+		safe_snprintf(str, size, "%1.*fw", precision, value / one_week);
+	else if (value && fmod(value, one_day) == 0)
+		safe_snprintf(str, size, "%gd", value / one_day);
+	else if (value >= one_day || unit == one_day)
+		safe_snprintf(str, size, "%1.*fd", precision, value / one_day);
+	else if (value && fmod(value, one_hour) == 0)
+		safe_snprintf(str, size, "%gh", value / one_hour);
+	else if (value >= one_hour || unit == one_hour)
+		safe_snprintf(str, size, "%1.*fh", precision, value / one_hour);
+	else if (value && fmod(value, one_minute) == 0)
+		safe_snprintf(str, size, "%gm", value / one_minute);
+	else if (value >= one_minute || unit == one_minute)
+		safe_snprintf(str, size, "%1.*fm", precision, value / one_minute);
 	else
-		safe_snprintf(str, size, "%gs",value);
+		safe_snprintf(str, size, "%gs", value);
 
 	return str;
 }
@@ -499,43 +499,43 @@ char* duration_estimate_to_str(double value, char* str, size_t size, double unit
  */
 char* duration_estimate_to_vstr(double value, char* str, size_t size, double unit, int precision)
 {
-	if(value && fmod(value, one_year) == 0) {
+	if (value && fmod(value, one_year) == 0) {
 		value /= one_year;
 		safe_snprintf(str, size, "%g year%s", value, value == 1 ? "":"s");
 	}
-	else if(value >= one_year || unit == one_year) {
+	else if (value >= one_year || unit == one_year) {
 		value /= one_year;
 		safe_snprintf(str, size, "%1.*f year%s", precision, value, value == 1 ? "":"s");
 	}
-	else if(value && fmod(value, one_week) == 0) {
+	else if (value && fmod(value, one_week) == 0) {
 		value /= one_week;
 		safe_snprintf(str, size, "%g week%s", value, value == 1 ? "":"s");
 	}
-	else if(unit == one_week) { // prefer "90 days" over "12.9 weeks"
+	else if (unit == one_week) { // prefer "90 days" over "12.9 weeks"
 		value /= one_week;
 		safe_snprintf(str, size, "%1.*f week%s", precision, value, value == 1 ? "":"s");
 	}
-	else if(value && fmod(value, one_day) == 0) {
+	else if (value && fmod(value, one_day) == 0) {
 		value /= one_day;
 		safe_snprintf(str, size, "%g day%s", value, value == 1 ? "":"s");
 	}
-	else if(value >= one_day || unit == one_day) {
+	else if (value >= one_day || unit == one_day) {
 		value /= one_day;
 		safe_snprintf(str, size, "%1.*f day%s", precision, value, value == 1 ? "":"s");
 	}
-	else if(value && fmod(value, one_hour) == 0) {
+	else if (value && fmod(value, one_hour) == 0) {
 		value /= one_hour;
 		safe_snprintf(str, size, "%g hour%s", value, value == 1 ? "":"s");
 	}
-	else if(value >= one_hour || unit == one_hour) {
+	else if (value >= one_hour || unit == one_hour) {
 		value /= one_hour;
 		safe_snprintf(str, size, "%1.*f hour%s", precision, value, value == 1 ? "":"s");
 	}
-	else if(value && fmod(value, one_minute) == 0) {
+	else if (value && fmod(value, one_minute) == 0) {
 		value /= one_minute;
 		safe_snprintf(str, size, "%g minute%s", value, value == 1 ? "":"s");
 	}
-	else if(value >= one_minute || unit == one_minute) {
+	else if (value >= one_minute || unit == one_minute) {
 		value /= one_minute;
 		safe_snprintf(str, size, "%1.*f minute%s", precision, value, value == 1 ? "":"s");
 	}
@@ -551,10 +551,10 @@ char* duration_estimate_to_vstr(double value, char* str, size_t size, double uni
 #if defined(__unix__)
 char* strupr(char* str)
 {
-	char*	p=str;
+	char* p = str;
 
-	while(*p) {
-		*p=toupper(*p);
+	while (*p) {
+		*p = toupper(*p);
 		p++;
 	}
 	return(str);
@@ -564,10 +564,10 @@ char* strupr(char* str)
 /****************************************************************************/
 char* strlwr(char* str)
 {
-	char*	p=str;
+	char* p = str;
 
-	while(*p) {
-		*p=tolower(*p);
+	while (*p) {
+		*p = tolower(*p);
 		p++;
 	}
 	return(str);
@@ -577,12 +577,12 @@ char* strlwr(char* str)
 /****************************************************************************/
 char* strrev(char* str)
 {
-    char t, *i=str, *j=str+strlen(str);
+	char t, *i = str, *j = str + strlen(str);
 
-    while (i<j) {
-        t=*i; *(i++)=*(--j); *j=t;
-    }
-    return str;
+	while (i < j) {
+		t = *i; *(i++) = *(--j); *j = t;
+	}
+	return str;
 }
 #endif
 
@@ -594,35 +594,35 @@ char* strrev(char* str)
 /****************************************************************************/
 char* strtok_r(char *str, const char *delim, char **last)
 {
-    char* token;
+	char* token;
 
-    if (str==NULL)      /* subsequent call */
-        str = *last;    /* start where we left off */
+	if (str == NULL)      /* subsequent call */
+		str = *last;    /* start where we left off */
 
-    /* skip characters in delimiter (will terminate at '\0') */
-    while(*str && strchr(delim, *str))
-        ++str;
+	/* skip characters in delimiter (will terminate at '\0') */
+	while (*str && strchr(delim, *str))
+		++str;
 
-    if(!*str) {         /* no more tokens */
+	if (!*str) {         /* no more tokens */
 		*last = str;
-        return NULL;
+		return NULL;
 	}
 
-    token = str;
+	token = str;
 
-    /* skip valid token characters to terminate token and
-     * prepare for the next call (will terminate at '\0)
-     */
-    *last = token + 1;
-    while(**last && !strchr(delim, **last))
-        ++*last;
+	/* skip valid token characters to terminate token and
+	 * prepare for the next call (will terminate at '\0)
+	 */
+	*last = token + 1;
+	while (**last && !strchr(delim, **last))
+		++*last;
 
-    if (**last) {
-        **last = '\0';
-        ++*last;
-    }
+	if (**last) {
+		**last = '\0';
+		++*last;
+	}
 
-    return token;
+	return token;
 }
 
 #endif
@@ -633,9 +633,9 @@ char* strtok_r(char *str, const char *delim, char **last)
 void xp_randomize(void)
 {
 #if !(defined(HAS_SRANDOMDEV_FUNC) && defined(HAS_RANDOM_FUNC))
-	unsigned seed=~0;
+	unsigned seed = ~0;
 #if defined(HAS_DEV_URANDOM) && defined(URANDOM_DEV)
-	int		rf;
+	int      rf;
 #endif
 #endif
 
@@ -645,30 +645,30 @@ void xp_randomize(void)
 #else
 
 #if defined(HAS_DEV_URANDOM) && defined(URANDOM_DEV)
-	if((rf=open(URANDOM_DEV, O_RDONLY))!=-1) {
-		if(read(rf, &seed, sizeof(seed)) != sizeof seed)
+	if ((rf = open(URANDOM_DEV, O_RDONLY)) != -1) {
+		if (read(rf, &seed, sizeof(seed)) != sizeof seed)
 			seed = UINT_MAX;
 		close(rf);
 	}
 	else {
 #endif
-		unsigned curtime	= (unsigned)time(NULL);
-		unsigned process_id = (unsigned)GetCurrentProcessId();
+	unsigned curtime    = (unsigned)time(NULL);
+	unsigned process_id = (unsigned)GetCurrentProcessId();
 
-		seed = curtime ^ BYTE_SWAP_INT(process_id);
+	seed = curtime ^ BYTE_SWAP_INT(process_id);
 
 		#if defined(_WIN32) || defined(GetCurrentThreadId)
-			seed ^= (unsigned)(uintptr_t)GetCurrentThreadId();
+	seed ^= (unsigned)(uintptr_t)GetCurrentThreadId();
 		#endif
 
 #if defined(HAS_DEV_URANDOM) && defined(URANDOM_DEV)
-	}
+}
 #endif
 
 #ifdef HAS_RANDOM_FUNC
- 	srandom(seed);
+	srandom(seed);
 #else
- 	srand(seed);
+	srand(seed);
 #endif
 #endif
 }
@@ -679,30 +679,30 @@ void xp_randomize(void)
 long xp_random(int n)
 {
 #ifdef HAS_RANDOM_FUNC
-	long			curr;
-	unsigned long	limit;
+	long          curr;
+	unsigned long limit;
 
-	if(n<2)
+	if (n < 2)
 		return(0);
 
-	limit = ((1UL<<((sizeof(long)*CHAR_BIT)-1)) / n) * n - 1;
+	limit = ((1UL << ((sizeof(long) * CHAR_BIT) - 1)) / n) * n - 1;
 
-	while(1) {
+	while (1) {
 		/* coverity[dont_call] */
-		curr=random();
-		if(curr <= limit)
+		curr = random();
+		if (curr <= limit)
 			return(curr % n);
 	}
 #else
-	double f=0;
-	int ret;
+	double f = 0;
+	int    ret;
 
-	if(n<2)
+	if (n < 2)
 		return(0);
 	do {
-		f=(double)rand()/(double)(RAND_MAX+1);
-		ret=(int)(n*f);
-	} while(ret==n);
+		f = (double)rand() / (double)(RAND_MAX + 1);
+		ret = (int)(n * f);
+	} while (ret == n);
 
 	return(ret);
 #endif
@@ -715,18 +715,18 @@ long xp_random(int n)
 #if !defined(_MSC_VER) && !defined(__BORLANDC__) && !defined(__WATCOMC__)
 char* ultoa(ulong val, char* str, int radix)
 {
-	switch(radix) {
+	switch (radix) {
 		case 8:
-			sprintf(str,"%lo",val);
+			sprintf(str, "%lo", val);
 			break;
 		case 10:
-			sprintf(str,"%lu",val);
+			sprintf(str, "%lu", val);
 			break;
 		case 16:
-			sprintf(str,"%lx",val);
+			sprintf(str, "%lx", val);
 			break;
 		default:
-			sprintf(str,"bad radix: %d",radix);
+			sprintf(str, "bad radix: %d", radix);
 			break;
 	}
 	return(str);
@@ -735,18 +735,18 @@ char* ultoa(ulong val, char* str, int radix)
 #if (defined(__GNUC__) && (__GNUC__ < 5)) || !defined(__MINGW32__)
 char* _i64toa(int64_t val, char* str, int radix)
 {
-	switch(radix) {
+	switch (radix) {
 		case 8:
-			sprintf(str,"%"PRIo64,val);
+			sprintf(str, "%" PRIo64, val);
 			break;
 		case 10:
-			sprintf(str,"%"PRId64,val);
+			sprintf(str, "%" PRId64, val);
 			break;
 		case 16:
-			sprintf(str,"%"PRIx64,val);
+			sprintf(str, "%" PRIx64, val);
 			break;
 		default:
-			sprintf(str,"bad radix: %d",radix);
+			sprintf(str, "bad radix: %d", radix);
 			break;
 	}
 	return str;
@@ -754,18 +754,18 @@ char* _i64toa(int64_t val, char* str, int radix)
 
 char* _ui64toa(uint64_t val, char* str, int radix)
 {
-	switch(radix) {
+	switch (radix) {
 		case 8:
-			sprintf(str,"%"PRIo64,val);
+			sprintf(str, "%" PRIo64, val);
 			break;
 		case 10:
-			sprintf(str,"%"PRIu64,val);
+			sprintf(str, "%" PRIu64, val);
 			break;
 		case 16:
-			sprintf(str,"%"PRIx64,val);
+			sprintf(str, "%" PRIx64, val);
 			break;
 		default:
-			sprintf(str,"bad radix: %d",radix);
+			sprintf(str, "bad radix: %d", radix);
 			break;
 	}
 	return str;
@@ -780,84 +780,84 @@ char* os_version(char *str, size_t size)
 {
 #if defined(__OS2__) && defined(__BORLANDC__)
 
-	safe_snprintf(str, size, "OS/2 %u.%u (%u.%u)",_osmajor/10,_osminor/10,_osmajor,_osminor);
+	safe_snprintf(str, size, "OS/2 %u.%u (%u.%u)", _osmajor / 10, _osminor / 10, _osmajor, _osminor);
 
 #elif defined(_WIN32)
 
 	/* Windows Version */
-	char*			winflavor="";
-	OSVERSIONINFO	winver;
+	char*         winflavor = "";
+	OSVERSIONINFO winver;
 
-	winver.dwOSVersionInfoSize=sizeof(winver);
+	winver.dwOSVersionInfoSize = sizeof(winver);
 
 	#pragma warning(suppress : 4996) // error C4996: 'GetVersionExA': was declared deprecated
 	GetVersionEx(&winver);
 
-	switch(winver.dwPlatformId) {
+	switch (winver.dwPlatformId) {
 		case VER_PLATFORM_WIN32_NT:
-			winflavor="NT ";
+			winflavor = "NT ";
 			break;
 		case VER_PLATFORM_WIN32s:
-			winflavor="Win32s ";
+			winflavor = "Win32s ";
 			break;
 		case VER_PLATFORM_WIN32_WINDOWS:
-			winver.dwBuildNumber&=0xffff;
+			winver.dwBuildNumber &= 0xffff;
 			break;
 	}
 
-	if(winver.dwMajorVersion == 6 && winver.dwMinorVersion == 1) {
+	if (winver.dwMajorVersion == 6 && winver.dwMinorVersion == 1) {
 		winver.dwMajorVersion = 7;
 		winver.dwMinorVersion = 0;
 	}
 	else {
-		static NTSTATUS (WINAPI *pRtlGetVersion)(PRTL_OSVERSIONINFOW lpVersionInformation) = NULL;
-		if(pRtlGetVersion == NULL) {
+		static NTSTATUS (WINAPI * pRtlGetVersion)(PRTL_OSVERSIONINFOW lpVersionInformation) = NULL;
+		if (pRtlGetVersion == NULL) {
 			HINSTANCE ntdll = LoadLibrary("ntdll.dll");
-			if(ntdll != NULL)
+			if (ntdll != NULL)
 				pRtlGetVersion = (NTSTATUS (WINAPI *)(PRTL_OSVERSIONINFOW))GetProcAddress(ntdll, "RtlGetVersion");
 		}
-		if(pRtlGetVersion != NULL) {
+		if (pRtlGetVersion != NULL) {
 			pRtlGetVersion((PRTL_OSVERSIONINFOW)&winver);
-			if(winver.dwMajorVersion == 10 && winver.dwMinorVersion == 0 &&  winver.dwBuildNumber >= 22000)
+			if (winver.dwMajorVersion == 10 && winver.dwMinorVersion == 0 &&  winver.dwBuildNumber >= 22000)
 				winver.dwMajorVersion = 11;
 		}
 	}
 
 	safe_snprintf(str, size, "Windows %sVersion %lu.%lu"
-			,winflavor
-			,winver.dwMajorVersion, winver.dwMinorVersion);
-	if(winver.dwBuildNumber)
-		sprintf(str+strlen(str), " (Build %lu)", winver.dwBuildNumber);
-	if(winver.szCSDVersion[0])
-		sprintf(str+strlen(str), " %s", winver.szCSDVersion);
+	              , winflavor
+	              , winver.dwMajorVersion, winver.dwMinorVersion);
+	if (winver.dwBuildNumber)
+		sprintf(str + strlen(str), " (Build %lu)", winver.dwBuildNumber);
+	if (winver.szCSDVersion[0])
+		sprintf(str + strlen(str), " %s", winver.szCSDVersion);
 
 #elif defined(__unix__)
 	FILE* fp = fopen("/etc/os-release", "r");
-	if(fp == NULL)
+	if (fp == NULL)
 		fp = fopen("/usr/lib/os-release", "r");
-	if(fp != NULL) {
-		char value[INI_MAX_VALUE_LEN];
+	if (fp != NULL) {
+		char  value[INI_MAX_VALUE_LEN];
 		char* p = iniReadString(fp, NULL, "PRETTY_NAME", "Unix", value);
 		fclose(fp);
 		SKIP_CHAR(p, '"');
 		strncpy(str, p, size);
 		p = lastchar(str);
-		if(*p == '"')
+		if (*p == '"')
 			*p = '\0';
 	} else {
 		struct utsname unixver;
 
-		if(uname(&unixver) != 0)
-			safe_snprintf(str, size, "Unix (uname errno: %d)",errno);
+		if (uname(&unixver) != 0)
+			safe_snprintf(str, size, "Unix (uname errno: %d)", errno);
 		else
 			safe_snprintf(str, size, "%s %s"
-				,unixver.sysname	/* e.g. "Linux" */
-				,unixver.release	/* e.g. "2.2.14-5.0" */
-				);
+			              , unixver.sysname /* e.g. "Linux" */
+			              , unixver.release /* e.g. "2.2.14-5.0" */
+			              );
 	}
-#else	/* DOS */
+#else   /* DOS */
 
-	safe_snprintf(str, size, "DOS %u.%02u",_osmajor,_osminor);
+	safe_snprintf(str, size, "DOS %u.%02u", _osmajor, _osminor);
 
 #endif
 
@@ -877,7 +877,7 @@ char* os_cpuarch(char *str, size_t size)
 #else
 	GetNativeSystemInfo(&sysinfo);
 #endif
-	switch(sysinfo.wProcessorArchitecture) {
+	switch (sysinfo.wProcessorArchitecture) {
 		case PROCESSOR_ARCHITECTURE_AMD64:
 			safe_snprintf(str, size, "x64");
 			break;
@@ -904,7 +904,7 @@ char* os_cpuarch(char *str, size_t size)
 
 	struct utsname unixver;
 
-	if(uname(&unixver) == 0)
+	if (uname(&unixver) == 0)
 		safe_snprintf(str, size, "%s", unixver.machine);
 	else
 		safe_snprintf(str, size, "unknown");
@@ -916,14 +916,14 @@ char* os_cpuarch(char *str, size_t size)
 
 char* os_cmdshell(void)
 {
-	char*	shell=getenv(OS_CMD_SHELL_ENV_VAR);
+	char* shell = getenv(OS_CMD_SHELL_ENV_VAR);
 
 #if defined(__unix__)
-	if(shell==NULL)
+	if (shell == NULL)
 #ifdef _PATH_BSHELL
-		shell=_PATH_BSHELL;
+		shell = _PATH_BSHELL;
 #else
-		shell="/bin/sh";
+		shell = "/bin/sh";
 #endif
 #endif
 
@@ -937,7 +937,7 @@ clock_t msclock(void)
 {
 	uint64_t t = (uint64_t)(xp_timer() * 1000);
 
-	return (clock_t)(t&0xffffffff);
+	return (clock_t)(t & 0xffffffff);
 }
 
 /****************************************************************************/
@@ -954,14 +954,14 @@ char* skipsp(char* str)
 /****************************************************************************/
 char* truncsp(char* str)
 {
-	size_t i,len;
+	size_t i, len;
 
-	if(str!=NULL) {
-		i=len=strlen(str);
-		while(i && IS_WHITESPACE(str[i-1]))
+	if (str != NULL) {
+		i = len = strlen(str);
+		while (i && IS_WHITESPACE(str[i - 1]))
 			i--;
-		if(i!=len)
-			str[i]=0;	/* truncate */
+		if (i != len)
+			str[i] = 0; /* truncate */
 	}
 	return(str);
 }
@@ -976,20 +976,20 @@ char* truncsp_lines(char* dst)
 	char* dp;
 	char* src;
 
-	if((src=strdup(dst))==NULL)
+	if ((src = strdup(dst)) == NULL)
 		return(dst);
 
-	for(sp=src, dp=dst; *sp!=0; sp++) {
-		if(*sp=='\n') {
-			while(dp!=dst
-				&& (*(dp-1)==' ' || *(dp-1)=='\t' || *(dp-1)=='\r'))
-					dp--;
-			if(sp!=src && *(sp-1)=='\r')
-				*(dp++)='\r';
+	for (sp = src, dp = dst; *sp != 0; sp++) {
+		if (*sp == '\n') {
+			while (dp != dst
+			       && (*(dp - 1) == ' ' || *(dp - 1) == '\t' || *(dp - 1) == '\r'))
+				dp--;
+			if (sp != src && *(sp - 1) == '\r')
+				*(dp++) = '\r';
 		}
-		*(dp++)=*sp;
+		*(dp++) = *sp;
 	}
-	*dp=0;
+	*dp = 0;
 
 	free(src);
 	return(dst);
@@ -1000,14 +1000,14 @@ char* truncsp_lines(char* dst)
 /****************************************************************************/
 char* truncnl(char* str)
 {
-	size_t i,len;
+	size_t i, len;
 
-	if(str!=NULL) {
-		i=len=strlen(str);
-		while(i && (str[i-1]=='\r' || str[i-1]=='\n'))
+	if (str != NULL) {
+		i = len = strlen(str);
+		while (i && (str[i - 1] == '\r' || str[i - 1] == '\n'))
 			i--;
-		if(i!=len)
-			str[i]=0;	/* truncate */
+		if (i != len)
+			str[i] = 0; /* truncate */
 	}
 	return(str);
 }
@@ -1025,9 +1025,9 @@ int get_errno(void)
 /* Returns the current value of the systems best timer (in SECONDS)			*/
 /* Any value < 0 indicates an error											*/
 /****************************************************************************/
-long double	xp_timer(void)
+long double xp_timer(void)
 {
-	long double ret;
+	long double     ret;
 #if defined(__unix__)
 	struct timespec ts;
 
@@ -1038,20 +1038,20 @@ long double	xp_timer(void)
 	else
 		ret = -1;
 #elif defined(_WIN32)
-	LARGE_INTEGER	freq;
-	LARGE_INTEGER	tick;
-	if(QueryPerformanceFrequency(&freq) && QueryPerformanceCounter(&tick)) {
+	LARGE_INTEGER freq;
+	LARGE_INTEGER tick;
+	if (QueryPerformanceFrequency(&freq) && QueryPerformanceCounter(&tick)) {
 #if 0
-		ret=((long double)tick.HighPart*4294967296)+((long double)tick.LowPart);
-		ret /= ((long double)freq.HighPart*4294967296)+((long double)freq.LowPart);
+		ret = ((long double)tick.HighPart * 4294967296) + ((long double)tick.LowPart);
+		ret /= ((long double)freq.HighPart * 4294967296) + ((long double)freq.LowPart);
 #else
 		/* In MSVC, a long double does NOT have 19 decimals of precision */
-		ret=(((long double)(tick.QuadPart%freq.QuadPart))/freq.QuadPart);
-		ret+=tick.QuadPart/freq.QuadPart;
+		ret = (((long double)(tick.QuadPart % freq.QuadPart)) / freq.QuadPart);
+		ret += tick.QuadPart / freq.QuadPart;
 #endif
 	}
 	else {
-		ret=GetTickCount();
+		ret = GetTickCount();
 		ret /= 1000;
 	}
 #else
@@ -1066,7 +1066,7 @@ long double	xp_timer(void)
 /****************************************************************************/
 uint64_t xp_timer64(void)
 {
-	uint64_t ret;
+	uint64_t        ret;
 #if defined(__unix__)
 	struct timespec ts;
 
@@ -1077,19 +1077,19 @@ uint64_t xp_timer64(void)
 	else
 		ret = -1;
 #elif defined(_WIN32)
-	static bool can_use_QPF = true;
-	static bool intable = false;
-	static bool initialized = false;
+	static bool     can_use_QPF = true;
+	static bool     intable = false;
+	static bool     initialized = false;
 	static uint32_t msfreq;
-	static double msdfreq;
-	LARGE_INTEGER	tick;
+	static double   msdfreq;
+	LARGE_INTEGER   tick;
 
 	if (!initialized) {
-		LARGE_INTEGER	freq;
+		LARGE_INTEGER freq;
 		if (!QueryPerformanceFrequency(&freq))
 			can_use_QPF = false;
 		else
-        		intable = (freq.QuadPart % 1000) == 0;
+			intable = (freq.QuadPart % 1000) == 0;
 
 		if (intable)
 			msfreq = (uint32_t)(freq.QuadPart / 1000);
@@ -1109,7 +1109,7 @@ uint64_t xp_timer64(void)
 			ret = (uint32_t)(((double)tick.QuadPart) / msdfreq);
 	}
 	else {
-		ret=GetTickCount();
+		ret = GetTickCount();
 	}
 #else
 #error no high-resolution time for this platform
@@ -1123,9 +1123,9 @@ uint64_t xp_timer64(void)
 /****************************************************************************/
 int64_t xp_fast_timer64(void)
 {
-	int64_t ret;
+	int64_t          ret;
 #if defined(__unix__)
-	struct timespec ts;
+	struct timespec  ts;
 	static clockid_t cid = CLOCK_REALTIME;
 
 #ifdef CLOCK_MONOTONIC_COARSE
@@ -1160,9 +1160,9 @@ int64_t xp_fast_timer64(void)
 		ret = -1;
 #elif defined(_WIN32)
 #if WINVER < 0x0600
-	ret=GetTickCount() / 1000;
+	ret = GetTickCount() / 1000;
 #else
-	ret=GetTickCount64() / 1000;
+	ret = GetTickCount64() / 1000;
 #endif
 #else
 #error no high-resolution time for this platform
@@ -1178,20 +1178,20 @@ bool check_pid(pid_t pid)
 	return false;
 #else
 #if defined(__unix__)
-	return(kill(pid,0)==0);
+	return(kill(pid, 0) == 0);
 #elif defined(_WIN32)
-	HANDLE	h;
-	bool	result=false;
+	HANDLE h;
+	bool   result = false;
 
-	if((h=OpenProcess(PROCESS_QUERY_INFORMATION,/* inheritable: */false, pid)) != NULL) {
-		DWORD	code;
-		if(GetExitCodeProcess(h,(PDWORD)&code)==true && code==STILL_ACTIVE)
-			result=true;
+	if ((h = OpenProcess(PROCESS_QUERY_INFORMATION, /* inheritable: */ false, pid)) != NULL) {
+		DWORD code;
+		if (GetExitCodeProcess(h, (PDWORD)&code) == true && code == STILL_ACTIVE)
+			result = true;
 		CloseHandle(h);
 	}
 	return result;
 #else
-	return false;	/* Need check_pid() definition! */
+	return false;   /* Need check_pid() definition! */
 #endif
 #endif
 }
@@ -1204,19 +1204,19 @@ bool terminate_pid(pid_t pid)
 	return false;
 #else
 #if defined(__unix__)
-	return(kill(pid,SIGKILL)==0);
+	return(kill(pid, SIGKILL) == 0);
 #elif defined(_WIN32)
-	HANDLE	h;
-	bool	result=false;
+	HANDLE h;
+	bool   result = false;
 
-	if((h=OpenProcess(PROCESS_TERMINATE,/* inheritable: */false, pid)) != NULL) {
-		if(TerminateProcess(h,255))
-			result=true;
+	if ((h = OpenProcess(PROCESS_TERMINATE, /* inheritable: */ false, pid)) != NULL) {
+		if (TerminateProcess(h, 255))
+			result = true;
 		CloseHandle(h);
 	}
 	return result;
 #else
-	return false;	/* Need check_pid() definition! */
+	return false;   /* Need check_pid() definition! */
 #endif
 #endif
 }
@@ -1250,7 +1250,7 @@ char* safe_strerror(int errnum, char *buf, size_t buflen)
 void* realloc_or_free(void* p, size_t size)
 {
 	void* n = realloc(p, size);
-	if(n == NULL)
+	if (n == NULL)
 		free(p);
 	return n;
 }

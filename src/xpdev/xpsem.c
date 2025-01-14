@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2000 Jason Evans <jasone@freebsd.org>.
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -15,7 +15,7 @@
  *    notice(s), this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER(S) ``AS IS'' AND ANY
  * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -42,7 +42,7 @@
 int
 xp_sem_init(xp_sem_t *sem, int pshared, unsigned int value)
 {
-	int	retval;
+	int retval;
 
 	/*
 	 * Range check the arguments.
@@ -84,28 +84,28 @@ xp_sem_init(xp_sem_t *sem, int pshared, unsigned int value)
 	}
 
 	if (pthread_cond_init(&(*sem)->gtzero, NULL) != 0) {
-		while(pthread_mutex_destroy(&(*sem)->lock)==EBUSY)
+		while (pthread_mutex_destroy(&(*sem)->lock) == EBUSY)
 			SLEEP(1);
 		free(*sem);
 		errno = ENOSPC;
 		retval = -1;
 		goto RETURN;
 	}
-	
+
 	(*sem)->count = (uint32_t)value;
 	(*sem)->nwaiters = 0;
 	(*sem)->magic = XP_SEM_MAGIC;
 
 	retval = 0;
-  RETURN:
+RETURN:
 	return retval;
 }
 
 int
 xp_sem_destroy(xp_sem_t *sem)
 {
-	int	retval;
-	
+	int retval;
+
 	_SEM_CHECK_VALIDITY(sem);
 
 	/* Make sure there are no waiters. */
@@ -117,17 +117,17 @@ xp_sem_destroy(xp_sem_t *sem)
 		goto RETURN;
 	}
 	pthread_mutex_unlock(&(*sem)->lock);
-	
-	while(pthread_mutex_destroy(&(*sem)->lock)==EBUSY)
+
+	while (pthread_mutex_destroy(&(*sem)->lock) == EBUSY)
 		SLEEP(1);
-	while(pthread_cond_destroy(&(*sem)->gtzero)==EBUSY)
+	while (pthread_cond_destroy(&(*sem)->gtzero) == EBUSY)
 		SLEEP(1);
 	(*sem)->magic = 0;
 
 	free(*sem);
 
 	retval = 0;
-  RETURN:
+RETURN:
 	return retval;
 }
 
@@ -155,7 +155,7 @@ xp_sem_unlink(const char *name)
 int
 xp_sem_wait(xp_sem_t *sem)
 {
-	int	retval;
+	int retval;
 
 	_SEM_CHECK_VALIDITY(sem);
 
@@ -171,7 +171,7 @@ xp_sem_wait(xp_sem_t *sem)
 	pthread_mutex_unlock(&(*sem)->lock);
 
 	retval = 0;
-  RETURN:
+RETURN:
 
 	return retval;
 }
@@ -179,7 +179,7 @@ xp_sem_wait(xp_sem_t *sem)
 int
 xp_sem_trywait(xp_sem_t *sem)
 {
-	int	retval;
+	int retval;
 
 	_SEM_CHECK_VALIDITY(sem);
 
@@ -192,17 +192,17 @@ xp_sem_trywait(xp_sem_t *sem)
 		errno = EAGAIN;
 		retval = -1;
 	}
-	
+
 	pthread_mutex_unlock(&(*sem)->lock);
 
-  RETURN:
+RETURN:
 	return retval;
 }
 
 int
 xp_sem_post(xp_sem_t *sem)
 {
-	int	retval;
+	int retval;
 
 	_SEM_CHECK_VALIDITY(sem);
 
@@ -222,14 +222,14 @@ xp_sem_post(xp_sem_t *sem)
 	pthread_mutex_unlock(&(*sem)->lock);
 
 	retval = 0;
-  RETURN:
+RETURN:
 	return retval;
 }
 
 int
 xp_sem_getvalue(xp_sem_t *sem, int *sval)
 {
-	int	retval;
+	int retval;
 
 	_SEM_CHECK_VALIDITY(sem);
 
@@ -238,19 +238,19 @@ xp_sem_getvalue(xp_sem_t *sem, int *sval)
 	pthread_mutex_unlock(&(*sem)->lock);
 
 	retval = 0;
-  RETURN:
+RETURN:
 	return retval;
 }
 
 int
 xp_sem_setvalue(xp_sem_t *sem, int sval)
 {
-	int	retval;
+	int retval;
 
 	_SEM_CHECK_VALIDITY(sem);
 
 	pthread_mutex_lock(&(*sem)->lock);
-	(*sem)->count=(uint32_t)sval;
+	(*sem)->count = (uint32_t)sval;
 	if (((*sem)->nwaiters > 0) && sval) {
 		/*
 		 * We must use pthread_cond_broadcast() rather than
@@ -263,14 +263,14 @@ xp_sem_setvalue(xp_sem_t *sem, int sval)
 	pthread_mutex_unlock(&(*sem)->lock);
 
 	retval = 0;
-  RETURN:
+RETURN:
 	return retval;
 }
 
 int
 xp_sem_timedwait(xp_sem_t *sem, const struct timespec *abs_timeout)
 {
-	int	retval=0;
+	int retval = 0;
 
 	_SEM_CHECK_VALIDITY(sem);
 
@@ -278,20 +278,20 @@ xp_sem_timedwait(xp_sem_t *sem, const struct timespec *abs_timeout)
 
 	while ((*sem)->count == 0) {
 		(*sem)->nwaiters++;
-		retval=pthread_cond_timedwait(&(*sem)->gtzero, &(*sem)->lock, abs_timeout);
+		retval = pthread_cond_timedwait(&(*sem)->gtzero, &(*sem)->lock, abs_timeout);
 		(*sem)->nwaiters--;
-		if(retval)  {
-			errno=retval;
-			retval=-1;
+		if (retval)  {
+			errno = retval;
+			retval = -1;
 			break;
 		}
 	}
-	if(retval==0)
+	if (retval == 0)
 		(*sem)->count--;
 
 	pthread_mutex_unlock(&(*sem)->lock);
 
-  RETURN:
+RETURN:
 
 	return retval;
 }

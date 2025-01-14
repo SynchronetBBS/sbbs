@@ -32,41 +32,41 @@ extern "C" {
 #if defined(__unix__)
 	#if defined(USE_XP_SEMAPHORES)
 		#include "xpsem.h"
-		#define 	sem_init(x, y, z)	xp_sem_init(x, y, z)
-		#define 	sem_destroy(x)		xp_sem_destroy(x)
-		#define 	sem_close(x)		xp_sem_close(x)
-		#define 	sem_unlink(x)		xp_sem_unlink(x)
-		#define 	sem_wait(x)			xp_sem_wait(x)
-		#define 	sem_trywait(x)		xp_sem_trywait(x)
-		#define 	sem_post(x)			xp_sem_post(x)
-		#define 	sem_getvalue(x,y)		xp_sem_getvalue(x,y)
-		#define		sem_timedwait(x,y)	xp_sem_timedwait(x,y)
-		#define		sem_t				xp_sem_t
+		#define     sem_init(x, y, z)   xp_sem_init(x, y, z)
+		#define     sem_destroy(x)      xp_sem_destroy(x)
+		#define     sem_close(x)        xp_sem_close(x)
+		#define     sem_unlink(x)       xp_sem_unlink(x)
+		#define     sem_wait(x)         xp_sem_wait(x)
+		#define     sem_trywait(x)      xp_sem_trywait(x)
+		#define     sem_post(x)         xp_sem_post(x)
+		#define     sem_getvalue(x, y)       xp_sem_getvalue(x, y)
+		#define     sem_timedwait(x, y)  xp_sem_timedwait(x, y)
+		#define     sem_t               xp_sem_t
 	#else
-		#include <semaphore.h>	/* POSIX semaphores */
+		#include <semaphore.h>  /* POSIX semaphores */
 	#endif
 
-#elif defined(_WIN32)	
+#elif defined(_WIN32)
 
-	#include <process.h>	/* _beginthread */
+	#include <process.h>    /* _beginthread */
 
-	/* POSIX semaphores */
-	typedef HANDLE sem_t;
-	DLLEXPORT int sem_init(sem_t*, int pshared, unsigned int value);
-	DLLEXPORT int sem_post(sem_t*);
-	DLLEXPORT int sem_getvalue(sem_t*, int* value);
-	DLLEXPORT int sem_destroy(sem_t*);
-	#define sem_wait(psem)				sem_trywait_block(psem,INFINITE)
-	#define sem_trywait(psem)			sem_trywait_block(psem,0)
+/* POSIX semaphores */
+typedef HANDLE sem_t;
+DLLEXPORT int sem_init(sem_t*, int pshared, unsigned int value);
+DLLEXPORT int sem_post(sem_t*);
+DLLEXPORT int sem_getvalue(sem_t*, int* value);
+DLLEXPORT int sem_destroy(sem_t*);
+	#define sem_wait(psem)              sem_trywait_block(psem, INFINITE)
+	#define sem_trywait(psem)           sem_trywait_block(psem, 0)
 
-#elif defined(__OS2__)	/* These have *not* been tested! */
+#elif defined(__OS2__)  /* These have *not* been tested! */
 
-	/* POSIX semaphores */
-	typedef HEV sem_t;
-	#define	sem_init(psem,ps,v)			DosCreateEventSem(NULL,psem,0,0);
-	#define sem_wait(psem)				DosWaitEventSem(*(psem),-1)
-	#define sem_post(psem)				DosPostEventSem(*(psem))
-	#define sem_destroy(psem)			DosCloseEventSem(*(psem))
+/* POSIX semaphores */
+typedef HEV sem_t;
+	#define sem_init(psem, ps, v)         DosCreateEventSem(NULL, psem, 0, 0);
+	#define sem_wait(psem)              DosWaitEventSem(*(psem), -1)
+	#define sem_post(psem)              DosPostEventSem(*(psem))
+	#define sem_destroy(psem)           DosCloseEventSem(*(psem))
 
 #else
 
@@ -80,13 +80,13 @@ DLLEXPORT int sem_trywait_block(sem_t* psem, unsigned long timeout);
 
 /* Change semaphore to "unsignaled" (NOT POSIX) */
 #ifdef USE_XP_SEMAPHORES
-#define	sem_reset(psem)					xp_sem_setvalue((psem), 0)
+#define sem_reset(psem)                 xp_sem_setvalue((psem), 0)
 #else
-#define sem_reset(psem)					while(sem_trywait(psem)==0)
+#define sem_reset(psem)                 while (sem_trywait(psem) == 0)
 #endif
 
 #if defined(__cplusplus)
 }
 #endif
 
-#endif	/* Don't add anything after this line */
+#endif  /* Don't add anything after this line */

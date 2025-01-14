@@ -26,7 +26,7 @@
 #include "userdat.h"
 #include "nopen.h"
 
-bool no_msghdr=false,all_msghdr=false;
+bool               no_msghdr = false, all_msghdr = false;
 static ini_style_t ini_style = { .key_prefix = "\t", .section_separator = "" };
 
 /****************************************************************************/
@@ -35,23 +35,23 @@ bool save_cfg(scfg_t* cfg)
 {
 	int i;
 
-	if(cfg->prepped)
+	if (cfg->prepped)
 		return(false);
 
-	if(!write_main_cfg(cfg))
+	if (!write_main_cfg(cfg))
 		return(false);
-	if(!write_msgs_cfg(cfg))
+	if (!write_msgs_cfg(cfg))
 		return(false);
-	if(!write_file_cfg(cfg))
+	if (!write_file_cfg(cfg))
 		return(false);
-	if(!write_chat_cfg(cfg))
+	if (!write_chat_cfg(cfg))
 		return(false);
-	if(!write_xtrn_cfg(cfg))
+	if (!write_xtrn_cfg(cfg))
 		return(false);
 
-	for(i=0;i<cfg->sys_nodes;i++) {
-		cfg->node_num=i+1;
-		if(!write_node_cfg(cfg))
+	for (i = 0; i < cfg->sys_nodes; i++) {
+		cfg->node_num = i + 1;
+		if (!write_node_cfg(cfg))
 			return(false);
 	}
 
@@ -62,17 +62,17 @@ bool save_cfg(scfg_t* cfg)
 /****************************************************************************/
 bool write_node_cfg(scfg_t* cfg)
 {
-	bool	result = false;
-	char	inipath[MAX_PATH+1];
-	FILE*	fp;
+	bool  result = false;
+	char  inipath[MAX_PATH + 1];
+	FILE* fp;
 
-	if(cfg->prepped)
+	if (cfg->prepped)
 		return false;
 
-	if(cfg->node_num<1 || cfg->node_num>MAX_NODES)
+	if (cfg->node_num < 1 || cfg->node_num > MAX_NODES)
 		return false;
 
-	SAFECOPY(inipath, cfg->node_path[cfg->node_num-1]);
+	SAFECOPY(inipath, cfg->node_path[cfg->node_num - 1]);
 	prep_dir(cfg->ctrl_dir, inipath, sizeof(inipath));
 	md(inipath);
 	SAFECAT(inipath, "node.ini");
@@ -88,7 +88,7 @@ bool write_node_cfg(scfg_t* cfg)
 
 	iniSetHexInt(&ini, ROOT_SECTION, "settings", cfg->node_misc, NULL);
 
-	if((fp = fopen(inipath, "w")) != NULL) {
+	if ((fp = fopen(inipath, "w")) != NULL) {
 		result = iniWriteFile(fp, ini);
 		fclose(fp);
 	}
@@ -101,13 +101,13 @@ bool write_node_cfg(scfg_t* cfg)
 /****************************************************************************/
 bool write_main_cfg(scfg_t* cfg)
 {
-	bool	result = false;
-	char	inipath[MAX_PATH+1];
-	char	name[INI_MAX_VALUE_LEN];
-	char	tmp[128];
-	FILE*	fp;
+	bool  result = false;
+	char  inipath[MAX_PATH + 1];
+	char  name[INI_MAX_VALUE_LEN];
+	char  tmp[128];
+	FILE* fp;
 
-	if(cfg->prepped)
+	if (cfg->prepped)
 		return false;
 
 	SAFEPRINTF(inipath, "%smain.ini", cfg->ctrl_dir);
@@ -154,10 +154,10 @@ bool write_main_cfg(scfg_t* cfg)
 	iniSetUInteger(&ini, ROOT_SECTION, "erruser", cfg->erruser, NULL);
 	iniSetUInteger(&ini, ROOT_SECTION, "errlevel", cfg->errlevel, NULL);
 
-	for(uint i=0;i<cfg->sys_nodes;i++) {
+	for (uint i = 0; i < cfg->sys_nodes; i++) {
 		char key[128];
 		SAFEPRINTF(key, "%u", i + 1);
-		if(cfg->node_path[i][0] == 0)
+		if (cfg->node_path[i][0] == 0)
 			SAFEPRINTF(cfg->node_path[i], "../node%u", i + 1);
 		iniSetString(&ini, "node_dir", key, cfg->node_path[i], &ini_style);
 	}
@@ -189,9 +189,9 @@ bool write_main_cfg(scfg_t* cfg)
 		iniSetUInteger(&ini, name, "minutes", cfg->new_min, &ini_style);
 		iniSetString(&ini, name, "editor", cfg->new_xedit, &ini_style);
 		iniSetUInteger(&ini, name, "expiration_days", cfg->new_expire, &ini_style);
-		if(cfg->new_shell>=cfg->total_shells)
-			cfg->new_shell=0;
-		if(cfg->total_shells > 0)
+		if (cfg->new_shell >= cfg->total_shells)
+			cfg->new_shell = 0;
+		if (cfg->total_shells > 0)
 			iniSetString(&ini, name, "command_shell", cfg->shell[cfg->new_shell]->code, &ini_style);
 		iniSetHexInt(&ini, name, "settings", cfg->new_misc, &ini_style);
 		iniSetHexInt(&ini, name, "chat_settings", cfg->new_chat, &ini_style);
@@ -234,7 +234,7 @@ bool write_main_cfg(scfg_t* cfg)
 		iniSetInteger(&ini, name, "Subscribe_QOS", cfg->mqtt.subscribe_qos, &ini_style);
 		iniSetString(&ini, name, "Username", cfg->mqtt.username, &ini_style);
 		iniSetString(&ini, name, "Password", cfg->mqtt.password, &ini_style);
-		iniSetLogLevel(&ini, name , "LogLevel", cfg->mqtt.log_level, &ini_style);
+		iniSetLogLevel(&ini, name, "LogLevel", cfg->mqtt.log_level, &ini_style);
 		// TLS
 		iniSetInteger(&ini, name, "TLS_mode", cfg->mqtt.tls.mode, &ini_style);
 		iniSetString(&ini, name, "TLS_cafile", cfg->mqtt.tls.cafile, &ini_style);
@@ -281,7 +281,7 @@ bool write_main_cfg(scfg_t* cfg)
 		iniSetString(&ini, name, "tempxfer", cfg->tempxfer_mod, &ini_style);
 	}
 
-	for(uint i=0; i<10; i++) {
+	for (uint i = 0; i < 10; i++) {
 		SAFEPRINTF(name, "valset:%u", i);
 		str_list_t section = strListInit();
 		iniSetUInteger(&section, name, "level", cfg->val_level[i], &ini_style);
@@ -297,7 +297,7 @@ bool write_main_cfg(scfg_t* cfg)
 		free(section);
 	}
 
-	for(uint i=0; i<100; i++) {
+	for (uint i = 0; i < 100; i++) {
 		SAFEPRINTF(name, "level:%u", i);
 		str_list_t section = strListInit();
 		iniSetUInteger(&section, name, "timeperday", cfg->level_timeperday[i], &ini_style);
@@ -314,7 +314,7 @@ bool write_main_cfg(scfg_t* cfg)
 	}
 
 	/* Command Shells */
-	for(int i=0; i<cfg->total_shells; i++) {
+	for (int i = 0; i < cfg->total_shells; i++) {
 		SAFEPRINTF(name, "shell:%s", cfg->shell[i]->code);
 		str_list_t section = strListInit();
 		iniSetString(&section, name, "name", cfg->shell[i]->name, &ini_style);
@@ -324,7 +324,7 @@ bool write_main_cfg(scfg_t* cfg)
 		free(section);
 	}
 
-	if((fp = fopen(inipath, "w")) != NULL) {
+	if ((fp = fopen(inipath, "w")) != NULL) {
 		result = iniWriteFile(fp, ini);
 		fclose(fp);
 	}
@@ -337,15 +337,15 @@ bool write_main_cfg(scfg_t* cfg)
 /****************************************************************************/
 bool write_msgs_cfg(scfg_t* cfg)
 {
-	bool	result = false;
-	char	path[MAX_PATH+1];
-	char	inipath[MAX_PATH+1];
-	char	name[INI_MAX_VALUE_LEN];
-	char	tmp[INI_MAX_VALUE_LEN];
-	FILE*	fp;
-	smb_t	smb;
+	bool  result = false;
+	char  path[MAX_PATH + 1];
+	char  inipath[MAX_PATH + 1];
+	char  name[INI_MAX_VALUE_LEN];
+	char  tmp[INI_MAX_VALUE_LEN];
+	FILE* fp;
+	smb_t smb;
 
-	if(cfg->prepped)
+	if (cfg->prepped)
 		return false;
 
 	ZERO_VAR(smb);
@@ -373,7 +373,7 @@ bool write_msgs_cfg(scfg_t* cfg)
 
 	/* Message Groups */
 
-	for(int i=0;i<cfg->total_grps;i++) {
+	for (int i = 0; i < cfg->total_grps; i++) {
 		SAFEPRINTF(name, "grp:%s", cfg->grp[i]->sname);
 		str_list_t section = strListInit();
 		iniSetString(&section, name, "description", cfg->grp[i]->lname, &ini_style);
@@ -386,22 +386,22 @@ bool write_msgs_cfg(scfg_t* cfg)
 
 	/* Message Sub-boards */
 
-	for(int grp = 0; grp < cfg->total_grps; grp++) {
-		for(int i=0; i<cfg->total_subs; i++) {
-			if(cfg->sub[i]->lname[0] == 0
-				|| cfg->sub[i]->sname[0] == 0
-				|| cfg->sub[i]->code_suffix[0] == 0)
+	for (int grp = 0; grp < cfg->total_grps; grp++) {
+		for (int i = 0; i < cfg->total_subs; i++) {
+			if (cfg->sub[i]->lname[0] == 0
+			    || cfg->sub[i]->sname[0] == 0
+			    || cfg->sub[i]->code_suffix[0] == 0)
 				continue;
-			if(cfg->sub[i]->grp != grp)
+			if (cfg->sub[i]->grp != grp)
 				continue;
 			SAFEPRINTF2(name, "sub:%s:%s"
-				,cfg->grp[grp]->sname, cfg->sub[i]->code_suffix);
+			            , cfg->grp[grp]->sname, cfg->sub[i]->code_suffix);
 			str_list_t section = strListInit();
 			iniSetString(&section, name, "description", cfg->sub[i]->lname, &ini_style);
 			iniSetString(&section, name, "name", cfg->sub[i]->sname, &ini_style);
 			iniSetString(&section, name, "qwk_name", cfg->sub[i]->qwkname, &ini_style);
 	#if 1
-			if(cfg->sub[i]->data_dir[0]) {
+			if (cfg->sub[i]->data_dir[0]) {
 				backslash(cfg->sub[i]->data_dir);
 				md(cfg->sub[i]->data_dir);
 			}
@@ -411,7 +411,7 @@ bool write_msgs_cfg(scfg_t* cfg)
 			iniSetString(&section, name, "read_ars", cfg->sub[i]->read_arstr, &ini_style);
 			iniSetString(&section, name, "post_ars", cfg->sub[i]->post_arstr, &ini_style);
 			iniSetString(&section, name, "operator_ars", cfg->sub[i]->op_arstr, &ini_style);
-			iniSetHexInt(&section, name, "settings", cfg->sub[i]->misc&(~SUB_HDRMOD), &ini_style);    /* Don't write mod bit */
+			iniSetHexInt(&section, name, "settings", cfg->sub[i]->misc & (~SUB_HDRMOD), &ini_style);    /* Don't write mod bit */
 			iniSetString(&section, name, "qwknet_tagline", cfg->sub[i]->tagline, &ini_style);
 			iniSetString(&section, name, "fidonet_origin", cfg->sub[i]->origline, &ini_style);
 			iniSetString(&section, name, "post_sem", cfg->sub[i]->post_sem, &ini_style);
@@ -429,60 +429,60 @@ bool write_msgs_cfg(scfg_t* cfg)
 			strListMerge(&ini, section);
 			free(section);
 
-			if(all_msghdr || (cfg->sub[i]->misc&SUB_HDRMOD && !no_msghdr)) {
-				if(!cfg->sub[i]->data_dir[0])
-					SAFEPRINTF(smb.file,"%ssubs",cfg->data_dir);
+			if (all_msghdr || (cfg->sub[i]->misc & SUB_HDRMOD && !no_msghdr)) {
+				if (!cfg->sub[i]->data_dir[0])
+					SAFEPRINTF(smb.file, "%ssubs", cfg->data_dir);
 				else
-					SAFECOPY(smb.file,cfg->sub[i]->data_dir);
-				prep_dir(cfg->ctrl_dir,smb.file,sizeof(smb.file));
+					SAFECOPY(smb.file, cfg->sub[i]->data_dir);
+				prep_dir(cfg->ctrl_dir, smb.file, sizeof(smb.file));
 				md(smb.file);
-				SAFEPRINTF2(path,"%s%s"
-					,cfg->grp[cfg->sub[i]->grp]->code_prefix
-					,cfg->sub[i]->code_suffix);
+				SAFEPRINTF2(path, "%s%s"
+				            , cfg->grp[cfg->sub[i]->grp]->code_prefix
+				            , cfg->sub[i]->code_suffix);
 				strlwr(path);
-				SAFECAT(smb.file,path);
-				if(smb_open(&smb) != SMB_SUCCESS) {
+				SAFECAT(smb.file, path);
+				if (smb_open(&smb) != SMB_SUCCESS) {
 					result = false;
 					continue;
 				}
-				if(!filelength(fileno(smb.shd_fp))) {
-					smb.status.max_crcs=cfg->sub[i]->maxcrcs;
-					smb.status.max_msgs=cfg->sub[i]->maxmsgs;
-					smb.status.max_age=cfg->sub[i]->maxage;
-					smb.status.attr=cfg->sub[i]->misc&SUB_HYPER ? SMB_HYPERALLOC :0;
-					if(smb_create(&smb)!=0)
+				if (!filelength(fileno(smb.shd_fp))) {
+					smb.status.max_crcs = cfg->sub[i]->maxcrcs;
+					smb.status.max_msgs = cfg->sub[i]->maxmsgs;
+					smb.status.max_age = cfg->sub[i]->maxage;
+					smb.status.attr = cfg->sub[i]->misc & SUB_HYPER ? SMB_HYPERALLOC :0;
+					if (smb_create(&smb) != 0)
 						/* errormsg(WHERE,ERR_CREATE,smb.file,x) */;
 					smb_close(&smb);
-					continue; 
+					continue;
 				}
-				if(smb_locksmbhdr(&smb)!=0) {
+				if (smb_locksmbhdr(&smb) != 0) {
 					smb_close(&smb);
 					/* errormsg(WHERE,ERR_LOCK,smb.file,x) */;
-					continue; 
+					continue;
 				}
-				if(smb_getstatus(&smb)!=0) {
+				if (smb_getstatus(&smb) != 0) {
 					smb_close(&smb);
 					/* errormsg(WHERE,ERR_READ,smb.file,x) */;
-					continue; 
+					continue;
 				}
-				if((!(cfg->sub[i]->misc&SUB_HYPER) || smb.status.attr&SMB_HYPERALLOC)
-					&& smb.status.max_msgs==cfg->sub[i]->maxmsgs
-					&& smb.status.max_crcs==cfg->sub[i]->maxcrcs
-					&& smb.status.max_age==cfg->sub[i]->maxage) {	/* No change */
+				if ((!(cfg->sub[i]->misc & SUB_HYPER) || smb.status.attr & SMB_HYPERALLOC)
+				    && smb.status.max_msgs == cfg->sub[i]->maxmsgs
+				    && smb.status.max_crcs == cfg->sub[i]->maxcrcs
+				    && smb.status.max_age == cfg->sub[i]->maxage) {   /* No change */
 					smb_close(&smb);
-					continue; 
+					continue;
 				}
-				smb.status.max_msgs=cfg->sub[i]->maxmsgs;
-				smb.status.max_crcs=cfg->sub[i]->maxcrcs;
-				smb.status.max_age=cfg->sub[i]->maxage;
-				if(cfg->sub[i]->misc&SUB_HYPER)
-					smb.status.attr|=SMB_HYPERALLOC;
-				if(smb_putstatus(&smb)!=0) {
+				smb.status.max_msgs = cfg->sub[i]->maxmsgs;
+				smb.status.max_crcs = cfg->sub[i]->maxcrcs;
+				smb.status.max_age = cfg->sub[i]->maxage;
+				if (cfg->sub[i]->misc & SUB_HYPER)
+					smb.status.attr |= SMB_HYPERALLOC;
+				if (smb_putstatus(&smb) != 0) {
 					smb_close(&smb);
 					/* errormsg(WHERE,ERR_WRITE,smb.file,x); */
-					continue; 
+					continue;
 				}
-				smb_close(&smb); 
+				smb_close(&smb);
 			}
 		}
 	}
@@ -490,9 +490,9 @@ bool write_msgs_cfg(scfg_t* cfg)
 	/* FidoNet */
 	{
 		const char* name = "FidoNet";
-		str_list_t section = strListInit();
-		str_list_t addr_list = strListInit();
-		for(int i=0; i<cfg->total_faddrs; i++)
+		str_list_t  section = strListInit();
+		str_list_t  addr_list = strListInit();
+		for (int i = 0; i < cfg->total_faddrs; i++)
 			strListPush(&addr_list, smb_faddrtoa(&cfg->faddr[i], tmp));
 		iniSetStringList(&section, name, "addr_list", ",", addr_list, &ini_style);
 		strListFree(&addr_list);
@@ -510,7 +510,7 @@ bool write_msgs_cfg(scfg_t* cfg)
 	}
 
 	/* QWKnet Config */
-	for(int i=0; i<cfg->total_qhubs; i++) {
+	for (int i = 0; i < cfg->total_qhubs; i++) {
 		SAFEPRINTF(name, "qhub:%s", cfg->qhub[i]->id);
 		str_list_t section = strListInit();
 		iniSetBool(&section, name, "enabled", cfg->qhub[i]->enabled, &ini_style);
@@ -525,16 +525,16 @@ bool write_msgs_cfg(scfg_t* cfg)
 		iniSetString(&section, name, "format", cfg->qhub[i]->fmt, &ini_style);
 		strListMerge(&ini, section);
 		free(section);
-		for(int j=0; j<cfg->qhub[i]->subs; j++) {
-			sub_t* sub = cfg->qhub[i]->sub[j];
-			if(sub == NULL)
+		for (int j = 0; j < cfg->qhub[i]->subs; j++) {
+			sub_t*     sub = cfg->qhub[i]->sub[j];
+			if (sub == NULL)
 				continue;
 			SAFEPRINTF2(name, "qhubsub:%s:%u", cfg->qhub[i]->id, cfg->qhub[i]->conf[j]);
 			str_list_t section = strListInit();
-			char code[LEN_EXTCODE + 1];
-			SAFEPRINTF2(code,"%s%s"
-				,cfg->grp[sub->grp]->code_prefix
-				,sub->code_suffix);
+			char       code[LEN_EXTCODE + 1];
+			SAFEPRINTF2(code, "%s%s"
+			            , cfg->grp[sub->grp]->code_prefix
+			            , sub->code_suffix);
 			iniSetString(&section, name, "sub", code, &ini_style);
 			iniSetHexInt(&section, name, "settings", cfg->qhub[i]->mode[j], &ini_style);
 			strListMerge(&ini, section);
@@ -544,7 +544,7 @@ bool write_msgs_cfg(scfg_t* cfg)
 
 	{
 		const char* name = "Internet";
-		str_list_t section = strListInit();
+		str_list_t  section = strListInit();
 		iniSetString(&section, name, "addr", cfg->sys_inetaddr, &ini_style); /* Internet address */
 		iniSetString(&section, name, "netmail_sem", cfg->inetmail_sem, &ini_style);
 		iniSetHexInt(&section, name, "netmail_settings", cfg->inetmail_misc, &ini_style);
@@ -554,7 +554,7 @@ bool write_msgs_cfg(scfg_t* cfg)
 		free(section);
 	}
 
-	if((fp = fopen(inipath, "w")) != NULL) {
+	if ((fp = fopen(inipath, "w")) != NULL) {
 		result = iniWriteFile(fp, ini);
 		fclose(fp);
 	}
@@ -563,40 +563,40 @@ bool write_msgs_cfg(scfg_t* cfg)
 
 	/* MUST BE AT END */
 
-	if(!no_msghdr) {
+	if (!no_msghdr) {
 		char dir[MAX_PATH + 1];
 		SAFECOPY(dir, cfg->data_dir);
-		prep_dir(cfg->ctrl_dir,dir,sizeof(dir));
+		prep_dir(cfg->ctrl_dir, dir, sizeof(dir));
 		md(dir);
-		SAFEPRINTF(smb.file,"%smail",dir);
-		if(smb_open(&smb)!=0) {
-			return(false); 
+		SAFEPRINTF(smb.file, "%smail", dir);
+		if (smb_open(&smb) != 0) {
+			return(false);
 		}
-		if(!filelength(fileno(smb.shd_fp))) {
-			smb.status.max_msgs=0;
-			smb.status.max_crcs=cfg->mail_maxcrcs;
-			smb.status.max_age=cfg->mail_maxage;
-			smb.status.attr=SMB_EMAIL;
-			int i=smb_create(&smb);
+		if (!filelength(fileno(smb.shd_fp))) {
+			smb.status.max_msgs = 0;
+			smb.status.max_crcs = cfg->mail_maxcrcs;
+			smb.status.max_age = cfg->mail_maxage;
+			smb.status.attr = SMB_EMAIL;
+			int i = smb_create(&smb);
 			smb_close(&smb);
 			return(i == SMB_SUCCESS);
 		}
-		if(smb_locksmbhdr(&smb)!=0) {
+		if (smb_locksmbhdr(&smb) != 0) {
 			smb_close(&smb);
-			return(false); 
+			return(false);
 		}
-		if(smb_getstatus(&smb)!=0) {
+		if (smb_getstatus(&smb) != 0) {
 			smb_close(&smb);
-			return(false); 
+			return(false);
 		}
-		smb.status.max_msgs=0;
-		smb.status.max_crcs=cfg->mail_maxcrcs;
-		smb.status.max_age=cfg->mail_maxage;
-		if(smb_putstatus(&smb)!=0) {
+		smb.status.max_msgs = 0;
+		smb.status.max_crcs = cfg->mail_maxcrcs;
+		smb.status.max_age = cfg->mail_maxage;
+		if (smb_putstatus(&smb) != 0) {
 			smb_close(&smb);
-			return(false); 
+			return(false);
 		}
-		smb_close(&smb); 
+		smb_close(&smb);
 	}
 
 	return result;
@@ -623,12 +623,12 @@ static void write_dir_defaults_cfg(str_list_t* ini, const char* section, dir_t* 
 /****************************************************************************/
 bool write_file_cfg(scfg_t* cfg)
 {
-	bool	result = false;
-	char	path[MAX_PATH+1];
-	char	inipath[MAX_PATH+1];
-	char	name[INI_MAX_VALUE_LEN];
+	bool result = false;
+	char path[MAX_PATH + 1];
+	char inipath[MAX_PATH + 1];
+	char name[INI_MAX_VALUE_LEN];
 
-	if(cfg->prepped)
+	if (cfg->prepped)
 		return false;
 
 	SAFEPRINTF(inipath, "%sfile.ini", cfg->ctrl_dir);
@@ -638,7 +638,7 @@ bool write_file_cfg(scfg_t* cfg)
 	iniSetBytes(&ini, ROOT_SECTION, "min_dspace", 1, cfg->min_dspace, NULL);
 	iniSetUInteger(&ini, ROOT_SECTION, "max_batup", cfg->max_batup, NULL);
 	iniSetUInteger(&ini, ROOT_SECTION, "max_batdn", cfg->max_batdn, NULL);
-	iniSetUInteger(&ini, ROOT_SECTION, "max_userxfer" ,cfg->max_userxfer, NULL);
+	iniSetUInteger(&ini, ROOT_SECTION, "max_userxfer", cfg->max_userxfer, NULL);
 	iniSetUInteger(&ini, ROOT_SECTION, "upload_credit_pct", cfg->cdt_up_pct, NULL);
 	iniSetUInteger(&ini, ROOT_SECTION, "download_credit_pct", cfg->cdt_dn_pct, NULL);
 	iniSetUInteger(&ini, ROOT_SECTION, "leech_pct", cfg->leech_pct, NULL);
@@ -648,7 +648,7 @@ bool write_file_cfg(scfg_t* cfg)
 
 	/* Extractable File Types */
 
-	for(int i=0; i<cfg->total_fextrs; i++) {
+	for (int i = 0; i < cfg->total_fextrs; i++) {
 		SAFEPRINTF(name, "extractor:%u", i);
 		str_list_t section = strListInit();
 		iniSetString(&section, name, "extension", cfg->fextr[i]->ext, &ini_style);
@@ -661,7 +661,7 @@ bool write_file_cfg(scfg_t* cfg)
 
 	/* Compressible File Types */
 
-	for(int i=0; i<cfg->total_fcomps; i++) {
+	for (int i = 0; i < cfg->total_fcomps; i++) {
 		SAFEPRINTF(name, "compressor:%u", i);
 		str_list_t section = strListInit();
 		iniSetString(&section, name, "extension", cfg->fcomp[i]->ext, &ini_style);
@@ -674,7 +674,7 @@ bool write_file_cfg(scfg_t* cfg)
 
 	/* Viewable File Types */
 
-	for(int i=0; i<cfg->total_fviews; i++) {
+	for (int i = 0; i < cfg->total_fviews; i++) {
 		SAFEPRINTF(name, "viewer:%u", i);
 		str_list_t section = strListInit();
 		iniSetString(&section, name, "extension", cfg->fview[i]->ext, &ini_style);
@@ -687,7 +687,7 @@ bool write_file_cfg(scfg_t* cfg)
 
 	/* Testable File Types */
 
-	for(int i=0; i<cfg->total_ftests; i++) {
+	for (int i = 0; i < cfg->total_ftests; i++) {
 		SAFEPRINTF(name, "tester:%u", i);
 		str_list_t section = strListInit();
 		iniSetString(&section, name, "extension", cfg->ftest[i]->ext, &ini_style);
@@ -701,7 +701,7 @@ bool write_file_cfg(scfg_t* cfg)
 
 	/* Download Events */
 
-	for(int i=0; i<cfg->total_dlevents; i++) {
+	for (int i = 0; i < cfg->total_dlevents; i++) {
 		SAFEPRINTF(name, "dlevent:%u", i);
 		str_list_t section = strListInit();
 		iniSetString(&section, name, "extension", cfg->dlevent[i]->ext, &ini_style);
@@ -715,8 +715,8 @@ bool write_file_cfg(scfg_t* cfg)
 
 	/* File Transfer Protocols */
 
-	for(int i=0; i<cfg->total_prots; i++) {
-		char str[128];
+	for (int i = 0; i < cfg->total_prots; i++) {
+		char       str[128];
 		SAFEPRINTF(name, "protocol:%u", i);
 		str_list_t section = strListInit();
 		SAFEPRINTF(str, "%c", cfg->prot[i]->mnemonic);
@@ -734,7 +734,7 @@ bool write_file_cfg(scfg_t* cfg)
 
 	/* File Libraries */
 
-	for(int i=0; i<cfg->total_libs; i++) {
+	for (int i = 0; i < cfg->total_libs; i++) {
 		SAFEPRINTF(name, "lib:%s", cfg->lib[i]->sname);
 		str_list_t section = strListInit();
 		iniSetString(&section, name, "description", cfg->lib[i]->lname, &ini_style);
@@ -761,17 +761,17 @@ bool write_file_cfg(scfg_t* cfg)
 
 	/* File Directories */
 
-	unsigned int dirnum = 0;	/* New directory numbering (as saved) */
+	unsigned int dirnum = 0;    /* New directory numbering (as saved) */
 	for (int j = 0; j < cfg->total_libs; j++) {
 		for (int i = 0; i < cfg->total_dirs; i++) {
 			if (cfg->dir[i]->lname[0] == 0
-				|| cfg->dir[i]->sname[0] == 0
-				|| cfg->dir[i]->code_suffix[0] == 0)
+			    || cfg->dir[i]->sname[0] == 0
+			    || cfg->dir[i]->code_suffix[0] == 0)
 				continue;
 			if (cfg->dir[i]->lib == j) {
 				cfg->dir[i]->dirnum = dirnum++;
 				SAFEPRINTF2(name, "dir:%s:%s"
-					,cfg->lib[j]->sname, cfg->dir[i]->code_suffix);
+				            , cfg->lib[j]->sname, cfg->dir[i]->code_suffix);
 				str_list_t section = strListInit();
 				iniSetString(&section, name, "description", cfg->dir[i]->lname, &ini_style);
 				iniSetString(&section, name, "name", cfg->dir[i]->sname, &ini_style);
@@ -792,19 +792,19 @@ bool write_file_cfg(scfg_t* cfg)
 				iniSetString(&section, name, "vdir", cfg->dir[i]->vdir_name, &ini_style);
 				iniSetString(&section, name, "vshortcut", cfg->dir[i]->vshortcut, &ini_style);
 
-				if (cfg->dir[i]->misc&DIR_FCHK) {
+				if (cfg->dir[i]->misc & DIR_FCHK) {
 					SAFECOPY(path, cfg->dir[i]->path);
-					if (!path[0]) {		/* no file storage path specified */
+					if (!path[0]) {     /* no file storage path specified */
 						SAFEPRINTF2(path, "%s%s"
-							, cfg->lib[cfg->dir[i]->lib]->code_prefix
-							, cfg->dir[i]->code_suffix);
+						            , cfg->lib[cfg->dir[i]->lib]->code_prefix
+						            , cfg->dir[i]->code_suffix);
 						strlwr(path);
 					}
-					if(cfg->lib[cfg->dir[i]->lib]->parent_path[0])
+					if (cfg->lib[cfg->dir[i]->lib]->parent_path[0])
 						prep_dir(cfg->lib[cfg->dir[i]->lib]->parent_path, path, sizeof(path));
 					else {
 						char str[MAX_PATH + 1];
-						if(cfg->dir[i]->data_dir[0])
+						if (cfg->dir[i]->data_dir[0])
 							SAFECOPY(str, cfg->dir[i]->data_dir);
 						else
 							SAFEPRINTF(str, "%sdirs", cfg->data_dir);
@@ -822,12 +822,12 @@ bool write_file_cfg(scfg_t* cfg)
 
 	/* Text File Sections */
 
-	for(int i=0; i<cfg->total_txtsecs; i++) {
+	for (int i = 0; i < cfg->total_txtsecs; i++) {
 		char str[LEN_CODE + 1];
 #if 1
-		SAFECOPY(str,cfg->txtsec[i]->code);
+		SAFECOPY(str, cfg->txtsec[i]->code);
 		strlwr(str);
-		safe_snprintf(path,sizeof(path),"%stext/%s",cfg->data_dir,str);
+		safe_snprintf(path, sizeof(path), "%stext/%s", cfg->data_dir, str);
 		md(path);
 #endif
 		SAFEPRINTF(name, "text:%s", cfg->txtsec[i]->code);
@@ -839,7 +839,7 @@ bool write_file_cfg(scfg_t* cfg)
 	}
 
 	FILE* fp = fopen(inipath, "w");
-	if(fp != NULL) {
+	if (fp != NULL) {
 		result = iniWriteFile(fp, ini);
 		fclose(fp);
 	}
@@ -853,32 +853,32 @@ bool write_file_cfg(scfg_t* cfg)
 /****************************************************************************/
 bool write_chat_cfg(scfg_t* cfg)
 {
-	bool	result = false;
-	char	inipath[MAX_PATH+1];
-	char	section[INI_MAX_VALUE_LEN];
+	bool result = false;
+	char inipath[MAX_PATH + 1];
+	char section[INI_MAX_VALUE_LEN];
 
-	if(cfg->prepped)
+	if (cfg->prepped)
 		return false;
 
 	SAFEPRINTF(inipath, "%schat.ini", cfg->ctrl_dir);
 	backup(inipath, cfg->config_backup_level, true);
 
 	str_list_t ini = strListInit();
-	for(int i=0; i<cfg->total_gurus; i++) {
+	for (int i = 0; i < cfg->total_gurus; i++) {
 		SAFEPRINTF(section, "guru:%s", cfg->guru[i]->code);
 		iniSetString(&ini, section, "name", cfg->guru[i]->name, &ini_style);
 		iniSetString(&ini, section, "ars", cfg->guru[i]->arstr, &ini_style);
 	}
 
-	for(int i=0; i<cfg->total_actsets; i++) {
+	for (int i = 0; i < cfg->total_actsets; i++) {
 		SAFEPRINTF(section, "actions:%s", cfg->actset[i]->name);
-		for(int j=0; j<cfg->total_chatacts; j++) {
-			if(cfg->chatact[j]->actset == i)
+		for (int j = 0; j < cfg->total_chatacts; j++) {
+			if (cfg->chatact[j]->actset == i)
 				iniSetString(&ini, section, cfg->chatact[j]->cmd, cfg->chatact[j]->out, &ini_style);
 		}
 	}
 
-	for(int i=0; i<cfg->total_chans; i++) {
+	for (int i = 0; i < cfg->total_chans; i++) {
 		SAFEPRINTF(section, "chan:%s", cfg->chan[i]->code);
 		iniSetString(&ini, section, "actions", cfg->actset[cfg->chan[i]->actset]->name, &ini_style);
 		iniSetString(&ini, section, "name", cfg->chan[i]->name, &ini_style);
@@ -888,7 +888,7 @@ bool write_chat_cfg(scfg_t* cfg)
 		iniSetHexInt(&ini, section, "settings", cfg->chan[i]->misc, &ini_style);
 	}
 
-	for(int i=0; i<cfg->total_pages; i++) {
+	for (int i = 0; i < cfg->total_pages; i++) {
 		SAFEPRINTF(section, "pager:%u", i);
 		iniSetString(&ini, section, "cmd", cfg->page[i]->cmd, &ini_style);
 		iniSetString(&ini, section, "ars", cfg->page[i]->arstr, &ini_style);
@@ -896,7 +896,7 @@ bool write_chat_cfg(scfg_t* cfg)
 	}
 
 	FILE* fp = fopen(inipath, "w");
-	if(fp != NULL) {
+	if (fp != NULL) {
 		result = iniWriteFile(fp, ini);
 		fclose(fp);
 	}
@@ -910,18 +910,18 @@ bool write_chat_cfg(scfg_t* cfg)
 /****************************************************************************/
 bool write_xtrn_cfg(scfg_t* cfg)
 {
-	bool	result = false;
-	char	inipath[MAX_PATH+1];
-	char	name[INI_MAX_VALUE_LEN];
+	bool result = false;
+	char inipath[MAX_PATH + 1];
+	char name[INI_MAX_VALUE_LEN];
 
-	if(cfg->prepped)
+	if (cfg->prepped)
 		return false;
 
 	SAFEPRINTF(inipath, "%sxtrn.ini", cfg->ctrl_dir);
 	backup(inipath, cfg->config_backup_level, true);
 
 	str_list_t ini = strListInit();
-	for(int i=0; i<cfg->total_xedits; i++) {
+	for (int i = 0; i < cfg->total_xedits; i++) {
 		SAFEPRINTF(name, "editor:%s", cfg->xedit[i]->code);
 		str_list_t section = strListInit();
 		iniSetString(&section, name, "name", cfg->xedit[i]->name, &ini_style);
@@ -935,7 +935,7 @@ bool write_xtrn_cfg(scfg_t* cfg)
 		free(section);
 	}
 
-	for(int i=0; i<cfg->total_xtrnsecs; i++) {
+	for (int i = 0; i < cfg->total_xtrnsecs; i++) {
 		SAFEPRINTF(name, "sec:%s", cfg->xtrnsec[i]->code);
 		str_list_t section = strListInit();
 		iniSetString(&section, name, "name", cfg->xtrnsec[i]->name, &ini_style);
@@ -944,12 +944,12 @@ bool write_xtrn_cfg(scfg_t* cfg)
 		free(section);
 	}
 
-	for(int sec=0; sec<cfg->total_xtrnsecs; sec++) {
-		for(int i=0; i<cfg->total_xtrns; i++) {
-			if(cfg->xtrn[i]->name[0] == 0
-				|| cfg->xtrn[i]->code[0] == 0)
+	for (int sec = 0; sec < cfg->total_xtrnsecs; sec++) {
+		for (int i = 0; i < cfg->total_xtrns; i++) {
+			if (cfg->xtrn[i]->name[0] == 0
+			    || cfg->xtrn[i]->code[0] == 0)
 				continue;
-			if(cfg->xtrn[i]->sec!=sec)
+			if (cfg->xtrn[i]->sec != sec)
 				continue;
 			SAFEPRINTF2(name, "prog:%s:%s", cfg->xtrnsec[sec]->code, cfg->xtrn[i]->code);
 			str_list_t section = strListInit();
@@ -971,7 +971,7 @@ bool write_xtrn_cfg(scfg_t* cfg)
 		}
 	}
 
-	for(int i=0; i<cfg->total_events; i++) {
+	for (int i = 0; i < cfg->total_events; i++) {
 		SAFEPRINTF(name, "event:%s", cfg->event[i]->code);
 		str_list_t section = strListInit();
 		iniSetString(&section, name, "cmd", cfg->event[i]->cmd, &ini_style);
@@ -988,18 +988,18 @@ bool write_xtrn_cfg(scfg_t* cfg)
 		free(section);
 	}
 
-	for(int i=0; i<cfg->total_natvpgms; i++) {
+	for (int i = 0; i < cfg->total_natvpgms; i++) {
 		SAFEPRINTF(name, "native:%s", cfg->natvpgm[i]->name);
 		iniAddSection(&ini, name, &ini_style);
 	}
 
-	for(int i=0; i<cfg->total_hotkeys; i++) {
+	for (int i = 0; i < cfg->total_hotkeys; i++) {
 		SAFEPRINTF(name, "hotkey:%u", cfg->hotkey[i]->key);
 		iniSetString(&ini, name, "cmd", cfg->hotkey[i]->cmd, &ini_style);
 	}
 
 	FILE* fp = fopen(inipath, "w");
-	if(fp != NULL) {
+	if (fp != NULL) {
 		result = iniWriteFile(fp, ini);
 		fclose(fp);
 	}
@@ -1010,19 +1010,19 @@ bool write_xtrn_cfg(scfg_t* cfg)
 
 void refresh_cfg(scfg_t* cfg)
 {
-	char	str[MAX_PATH+1];
-    int		i;
-	int		file = -1;
-    node_t	node;
-    
-    for(i=0;i<cfg->sys_nodes;i++) {
-       	if(getnodedat(cfg,i+1,&node, /* lockit: */true, &file)!=0)
+	char   str[MAX_PATH + 1];
+	int    i;
+	int    file = -1;
+	node_t node;
+
+	for (i = 0; i < cfg->sys_nodes; i++) {
+		if (getnodedat(cfg, i + 1, &node, /* lockit: */ true, &file) != 0)
 			continue;
-        node.misc|=NODE_RRUN;
-        if(putnodedat(cfg,i+1,&node, /* closeit: */false, file))
-            break;
-    }
+		node.misc |= NODE_RRUN;
+		if (putnodedat(cfg, i + 1, &node, /* closeit: */ false, file))
+			break;
+	}
 	CLOSE_OPEN_FILE(file);
 
-	SAFEPRINTF(str,"%srecycle",cfg->ctrl_dir);		ftouch(str);
+	SAFEPRINTF(str, "%srecycle", cfg->ctrl_dir);      ftouch(str);
 }

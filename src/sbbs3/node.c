@@ -21,7 +21,7 @@
 
 /* Platform-specific headers */
 #ifdef _WIN32
-	#include <io.h>			/* open/close */
+	#include <io.h>         /* open/close */
 	#include <windows.h>
 #endif
 
@@ -30,88 +30,88 @@
 #include <fcntl.h>
 #include <string.h>
 #include <errno.h>
-#include <ctype.h>		/* isdigit */
+#include <ctype.h>      /* isdigit */
 
 /* Synchronet-specific */
 #include "sbbsdefs.h"
-#include "genwrap.h"	/* stricmp */
-#include "filewrap.h"	/* lock/unlock/sopen */
+#include "genwrap.h"    /* stricmp */
+#include "filewrap.h"   /* lock/unlock/sopen */
 #include "getctrl.h"
-#include "str_util.h"	// strip_ctrl()
+#include "str_util.h"   // strip_ctrl()
 #define NO_SOCKET_SUPPORT
 #include "ini_file.h"
 
 enum {
-	 MODE_LIST
-	,MODE_ANON
-	,MODE_LOCK
-	,MODE_INTR
-	,MODE_RRUN
-	,MODE_DOWN
-	,MODE_EVENT
-	,MODE_NOPAGE
-	,MODE_NOALERTS
-	,MODE_STATUS
-	,MODE_USERON
-	,MODE_ACTION
-	,MODE_ERRORS
-	,MODE_MISC
-	,MODE_CONN
-	,MODE_AUX
-	,MODE_EXTAUX
-	};
+	MODE_LIST
+	, MODE_ANON
+	, MODE_LOCK
+	, MODE_INTR
+	, MODE_RRUN
+	, MODE_DOWN
+	, MODE_EVENT
+	, MODE_NOPAGE
+	, MODE_NOALERTS
+	, MODE_STATUS
+	, MODE_USERON
+	, MODE_ACTION
+	, MODE_ERRORS
+	, MODE_MISC
+	, MODE_CONN
+	, MODE_AUX
+	, MODE_EXTAUX
+};
 
 char tmp[256];
-int nodefile;
-int nodeexb;
+int  nodefile;
+int  nodeexb;
 
-#if defined(_WIN32)	/* Microsoft-supplied cls() routine - ugh! */
+#if defined(_WIN32) /* Microsoft-supplied cls() routine - ugh! */
 
 /* Standard error macro for reporting API errors */
-#define PERR(bSuccess, api){if(!(bSuccess)) printf("%s:Error %d from %s \
+#define PERR(bSuccess, api){if (!(bSuccess)) printf("%s:Error %d from %s \
     on line %d\n", __FILE__, GetLastError(), api, __LINE__);}
 
 void cls(void)
 {
-    COORD coordScreen = { 0, 0 };    /* here's where we'll home the
-                                        cursor */
-    BOOL bSuccess;
-    DWORD cCharsWritten;
-    CONSOLE_SCREEN_BUFFER_INFO csbi; /* to get buffer info */
-    DWORD dwConSize;                 /* number of character cells in
-                                        the current buffer */
-	HANDLE hConsole;
+	COORD                      coordScreen = { 0, 0 }; /* here's where we'll home the
+	                                    cursor */
+	BOOL                       bSuccess;
+	DWORD                      cCharsWritten;
+	CONSOLE_SCREEN_BUFFER_INFO csbi; /* to get buffer info */
+	DWORD                      dwConSize; /* number of character cells in
+	                                    the current buffer */
+	HANDLE                     hConsole;
 
 	hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 
-    /* get the number of character cells in the current buffer */
+	/* get the number of character cells in the current buffer */
 
-    bSuccess = GetConsoleScreenBufferInfo( hConsole, &csbi );
-    PERR( bSuccess, "GetConsoleScreenBufferInfo" );
-    dwConSize = csbi.dwSize.X * csbi.dwSize.Y;
+	bSuccess = GetConsoleScreenBufferInfo( hConsole, &csbi );
+	PERR( bSuccess, "GetConsoleScreenBufferInfo" );
+	dwConSize = csbi.dwSize.X * csbi.dwSize.Y;
 
-    /* fill the entire screen with blanks */
+	/* fill the entire screen with blanks */
 
-    bSuccess = FillConsoleOutputCharacter( hConsole, (TCHAR) ' ',
-       dwConSize, coordScreen, &cCharsWritten );
-    PERR( bSuccess, "FillConsoleOutputCharacter" );
+	bSuccess = FillConsoleOutputCharacter( hConsole, (TCHAR) ' ',
+	                                       dwConSize, coordScreen, &cCharsWritten );
+	PERR( bSuccess, "FillConsoleOutputCharacter" );
 
-    /* get the current text attribute */
+	/* get the current text attribute */
 
-    bSuccess = GetConsoleScreenBufferInfo( hConsole, &csbi );
-    PERR( bSuccess, "ConsoleScreenBufferInfo" );
+	bSuccess = GetConsoleScreenBufferInfo( hConsole, &csbi );
+	PERR( bSuccess, "ConsoleScreenBufferInfo" );
 
-    /* now set the buffer's attributes accordingly */
+	/* now set the buffer's attributes accordingly */
 
-    bSuccess = FillConsoleOutputAttribute( hConsole, csbi.wAttributes,
-       dwConSize, coordScreen, &cCharsWritten );
-    PERR( bSuccess, "FillConsoleOutputAttribute" );
+	bSuccess = FillConsoleOutputAttribute( hConsole, csbi.wAttributes,
+	                                       dwConSize, coordScreen, &cCharsWritten );
+	PERR( bSuccess, "FillConsoleOutputAttribute" );
 
-    /* put the cursor at (0, 0) */
+	/* put the cursor at (0, 0) */
 
-    bSuccess = SetConsoleCursorPosition( hConsole, coordScreen );
-    PERR( bSuccess, "SetConsoleCursorPosition" );
-    return;
+	bSuccess = SetConsoleCursorPosition( hConsole, coordScreen );
+	PERR( bSuccess, "SetConsoleCursorPosition" );
+	return;
 }
 #else /* !_WIN32 */
 
@@ -122,18 +122,18 @@ void cls(void)
 #if !defined _MSC_VER && !defined __BORLANDC__
 char* itoa(int val, char* str, int radix)
 {
-	switch(radix) {
+	switch (radix) {
 		case 8:
-			sprintf(str,"%o",val);
+			sprintf(str, "%o", val);
 			break;
 		case 10:
-			sprintf(str,"%u",val);
+			sprintf(str, "%u", val);
 			break;
 		case 16:
-			sprintf(str,"%x",val);
+			sprintf(str, "%x", val);
 			break;
 		default:
-			sprintf(str,"bad radix: %d",radix);
+			sprintf(str, "bad radix: %d", radix);
 			break;
 	}
 	return(str);
@@ -149,22 +149,22 @@ void getnodedat(int number, node_t *node, int lockit)
 {
 	int count;
 
-	number--;	/* make zero based */
-	for(count=0;count<LOOP_NODEDAB;count++) {
-		if(count)
+	number--;   /* make zero based */
+	for (count = 0; count < LOOP_NODEDAB; count++) {
+		if (count)
 			SLEEP(100);
-		lseek(nodefile,(long)number*sizeof(node_t),SEEK_SET);
-		if(lockit
-			&& lock(nodefile,(long)number*sizeof(node_t),sizeof(node_t))==-1) 
-			continue; 
-		if(read(nodefile,node,sizeof(node_t))==sizeof(node_t))
+		lseek(nodefile, (long)number * sizeof(node_t), SEEK_SET);
+		if (lockit
+		    && lock(nodefile, (long)number * sizeof(node_t), sizeof(node_t)) == -1)
+			continue;
+		if (read(nodefile, node, sizeof(node_t)) == sizeof(node_t))
 			break;
 	}
-	if(count>=(LOOP_NODEDAB/2))
+	if (count >= (LOOP_NODEDAB / 2))
 		printf("NODE.DAB (node %d) COLLISION (READ) - Count: %d\n"
-			,number+1, count);
-	if(count>=LOOP_NODEDAB) {
-		printf("!Error %d reading nodefile for node %d\n", errno, number+1);
+		       , number + 1, count);
+	if (count >= LOOP_NODEDAB) {
+		printf("!Error %d reading nodefile for node %d\n", errno, number + 1);
 	}
 }
 
@@ -175,14 +175,14 @@ void getnodedat(int number, node_t *node, int lockit)
 /****************************************************************************/
 void putnodedat(int number, node_t node)
 {
-	number--;	/* make zero based */
-	lseek(nodefile,(long)number*sizeof(node_t),SEEK_SET);
-	if(write(nodefile,&node,sizeof(node_t))!=sizeof(node_t)) {
-		unlock(nodefile,(long)number*sizeof(node_t),sizeof(node_t));
-		printf("Error writing to nodefile for node %d\n",number+1);
+	number--;   /* make zero based */
+	lseek(nodefile, (long)number * sizeof(node_t), SEEK_SET);
+	if (write(nodefile, &node, sizeof(node_t)) != sizeof(node_t)) {
+		unlock(nodefile, (long)number * sizeof(node_t), sizeof(node_t));
+		printf("Error writing to nodefile for node %d\n", number + 1);
 		return;
 	}
-	unlock(nodefile,(long)number*sizeof(node_t),sizeof(node_t));
+	unlock(nodefile, (long)number * sizeof(node_t), sizeof(node_t));
 }
 
 /****************************************************************************/
@@ -191,46 +191,46 @@ void putnodedat(int number, node_t node)
 /****************************************************************************/
 char *unpackchatpass(char *pass, node_t node)
 {
-	char 	bits;
-	int 	i;
+	char bits;
+	int  i;
 
-	pass[0]=(node.aux&0x1f00)>>8;
-	pass[1]=(char)(((node.aux&0xe000)>>13)|((node.extaux&0x3)<<3));
-	bits=2;
-	for(i=2;i<8;i++) {
-		pass[i]=(char)((node.extaux>>bits)&0x1f);
-		bits+=5;
+	pass[0] = (node.aux & 0x1f00) >> 8;
+	pass[1] = (char)(((node.aux & 0xe000) >> 13) | ((node.extaux & 0x3) << 3));
+	bits = 2;
+	for (i = 2; i < 8; i++) {
+		pass[i] = (char)((node.extaux >> bits) & 0x1f);
+		bits += 5;
 	}
-	pass[8]=0;
-	for(i=0;i<8;i++)
-		if(pass[i])
-			pass[i]+=64;
+	pass[8] = 0;
+	for (i = 0; i < 8; i++)
+		if (pass[i])
+			pass[i] += 64;
 	return(pass);
 }
 
 static char* node_connection_desc(ushort conn, char* str)
 {
-	switch(conn) {
+	switch (conn) {
 		case NODE_CONNECTION_LOCAL:
-			strcpy(str,"Locally");
+			strcpy(str, "Locally");
 			break;
 		case NODE_CONNECTION_TELNET:
-			strcpy(str,"via telnet");
+			strcpy(str, "via telnet");
 			break;
 		case NODE_CONNECTION_RLOGIN:
-			strcpy(str,"via rlogin");
+			strcpy(str, "via rlogin");
 			break;
 		case NODE_CONNECTION_SSH:
-			strcpy(str,"via ssh");
+			strcpy(str, "via ssh");
 			break;
 		case NODE_CONNECTION_SFTP:
-			strcpy(str,"via sftp");
+			strcpy(str, "via sftp");
 			break;
 		case NODE_CONNECTION_RAW:
-			strcpy(str,"via raw");
+			strcpy(str, "via raw");
 			break;
 		default:
-			sprintf(str,"at %ubps",conn);
+			sprintf(str, "at %ubps", conn);
 			break;
 	}
 
@@ -239,10 +239,10 @@ static char* node_connection_desc(ushort conn, char* str)
 
 static char* extended_status(int num, char* str)
 {
-	if(nodeexb < 0)
+	if (nodeexb < 0)
 		return "No extended status file open";
 	lseek(nodeexb, num * 128, SEEK_SET);
-	if(read(nodeexb, str, 128) != 128)
+	if (read(nodeexb, str, 128) != 128)
 		*str = '\0';
 	else
 		str[127] = 0;
@@ -255,11 +255,11 @@ static char* extended_status(int num, char* str)
 /****************************************************************************/
 void printnodedat(int number, node_t node)
 {
-    char hour,mer[3];
+	char hour, mer[3];
 	char tmp[128];
 
-	printf("Node %2d: ",number);
-	switch(node.status) {
+	printf("Node %2d: ", number);
+	switch (node.status) {
 		case NODE_WFC:
 			printf("Waiting for connection");
 			break;
@@ -279,7 +279,7 @@ void printnodedat(int number, node_t node)
 			printf("Waiting for all nodes to become inactive");
 			break;
 		case NODE_EVENT_LIMBO:
-			printf("Waiting for node %d to finish external event",node.aux);
+			printf("Waiting for node %d to finish external event", node.aux);
 			break;
 		case NODE_EVENT_RUNNING:
 			printf("Running external event");
@@ -287,17 +287,17 @@ void printnodedat(int number, node_t node)
 		case NODE_NEWUSER:
 			printf("New user");
 			printf(" applying for access ");
-			printf("%s",node_connection_desc(node.connection,tmp));
+			printf("%s", node_connection_desc(node.connection, tmp));
 			break;
 		case NODE_QUIET:
 		case NODE_INUSE:
-			if(node.misc&NODE_EXT) {
+			if (node.misc & NODE_EXT) {
 				printf("%s", extended_status(number - 1, tmp));
 				break;
 			}
-			printf("User #%d",node.useron);
+			printf("User #%d", node.useron);
 			printf(" ");
-			switch(node.action) {
+			switch (node.action) {
 				case NODE_MAIN:
 					printf("at main menu");
 					break;
@@ -323,10 +323,10 @@ void printnodedat(int number, node_t node)
 					printf("posting auto-message");
 					break;
 				case NODE_XTRN:
-					if(!node.aux)
+					if (!node.aux)
 						printf("at external program menu");
 					else
-						printf("running external program #%d",node.aux);
+						printf("running external program #%d", node.aux);
 					break;
 				case NODE_DFLT:
 					printf("changing defaults");
@@ -335,7 +335,7 @@ void printnodedat(int number, node_t node)
 					printf("at transfer menu");
 					break;
 				case NODE_RFSD:
-					printf("retrieving from device #%d",node.aux);
+					printf("retrieving from device #%d", node.aux);
 					break;
 				case NODE_DLNG:
 					printf("downloading");
@@ -356,24 +356,24 @@ void printnodedat(int number, node_t node)
 					printf("in local chat with sysop (deprecated)");
 					break;
 				case NODE_MCHT:
-					if(node.aux) {
-						printf("in multinode chat channel %d",node.aux&0xff);
-						if(node.aux&0x1f00) { /* password */
+					if (node.aux) {
+						printf("in multinode chat channel %d", node.aux & 0xff);
+						if (node.aux & 0x1f00) { /* password */
 							putchar('*');
-							printf(" %s",unpackchatpass(tmp,node));
+							printf(" %s", unpackchatpass(tmp, node));
 						}
 					}
 					else
 						printf("in multinode global chat channel");
 					break;
 				case NODE_PAGE:
-					printf("paging node %u for private chat",node.aux);
+					printf("paging node %u for private chat", node.aux);
 					break;
 				case NODE_PCHT:
-					if(node.aux==0)
+					if (node.aux == 0)
 						printf("in local chat with sysop");
 					else
-						printf("in private chat with node %u",node.aux);
+						printf("in private chat with node %u", node.aux);
 					break;
 				case NODE_GCHT:
 					printf("chatting with The Guru");
@@ -391,75 +391,75 @@ void printnodedat(int number, node_t node)
 					printf("performing custom action");
 					break;
 				default:
-					fputs(itoa(node.action,tmp,10),stdout);
+					fputs(itoa(node.action, tmp, 10), stdout);
 					break;
 			}
-			printf(" %s",node_connection_desc(node.connection,tmp));
-			if(node.action==NODE_DLNG) {
-				if((node.aux/60)>=12) {
-					if(node.aux/60==12)
-						hour=12;
+			printf(" %s", node_connection_desc(node.connection, tmp));
+			if (node.action == NODE_DLNG) {
+				if ((node.aux / 60) >= 12) {
+					if (node.aux / 60 == 12)
+						hour = 12;
 					else
-						hour=(node.aux/60)-12;
-					SAFECOPY(mer,"pm");
+						hour = (node.aux / 60) - 12;
+					SAFECOPY(mer, "pm");
 				}
 				else {
-					if((node.aux/60)==0)    /* 12 midnite */
-						hour=12;
-					else hour=node.aux/60;
-					SAFECOPY(mer,"am");
+					if ((node.aux / 60) == 0)    /* 12 midnite */
+						hour = 12;
+					else hour = node.aux / 60;
+					SAFECOPY(mer, "am");
 				}
 				printf(" ETA %02d:%02d %s"
-					,hour,node.aux-((node.aux/60)*60),mer);
+				       , hour, node.aux - ((node.aux / 60) * 60), mer);
 			}
 			break;
-}
-	if(node.misc&(NODE_LOCK|NODE_POFF|NODE_AOFF|NODE_MSGW|NODE_NMSG)) {
+	}
+	if (node.misc & (NODE_LOCK | NODE_POFF | NODE_AOFF | NODE_MSGW | NODE_NMSG)) {
 		printf(" (");
-		if(node.misc&NODE_AOFF)
+		if (node.misc & NODE_AOFF)
 			putchar('A');
-		if(node.misc&NODE_LOCK)
+		if (node.misc & NODE_LOCK)
 			putchar('L');
-		if(node.misc&NODE_MSGW)
+		if (node.misc & NODE_MSGW)
 			putchar('M');
-		if(node.misc&NODE_NMSG)
+		if (node.misc & NODE_NMSG)
 			putchar('N');
-		if(node.misc&NODE_POFF)
+		if (node.misc & NODE_POFF)
 			putchar('P');
 		putchar(')');
 	}
-	if(((node.misc
-		&(NODE_ANON|NODE_UDAT|NODE_INTR|NODE_RRUN|NODE_EVENT|NODE_DOWN))
-		|| node.status==NODE_QUIET)) {
+	if (((node.misc
+	      & (NODE_ANON | NODE_UDAT | NODE_INTR | NODE_RRUN | NODE_EVENT | NODE_DOWN))
+	     || node.status == NODE_QUIET)) {
 		printf(" [");
-		if(node.misc&NODE_ANON)
+		if (node.misc & NODE_ANON)
 			putchar('A');
-		if(node.misc&NODE_INTR)
+		if (node.misc & NODE_INTR)
 			putchar('I');
-		if(node.misc&NODE_RRUN)
+		if (node.misc & NODE_RRUN)
 			putchar('R');
-		if(node.misc&NODE_UDAT)
+		if (node.misc & NODE_UDAT)
 			putchar('U');
-		if(node.status==NODE_QUIET)
+		if (node.status == NODE_QUIET)
 			putchar('Q');
-		if(node.misc&NODE_EVENT)
+		if (node.misc & NODE_EVENT)
 			putchar('E');
-		if(node.misc&NODE_DOWN)
+		if (node.misc & NODE_DOWN)
 			putchar('D');
-		if(node.misc&NODE_LCHAT)
+		if (node.misc & NODE_LCHAT)
 			putchar('C');
-		if(node.misc&NODE_FCHAT)
+		if (node.misc & NODE_FCHAT)
 			putchar('F');
 		putchar(']');
 	}
-	if(node.errors)
-		printf(" %d error%c",node.errors, node.errors>1 ? 's' : '\0' );
+	if (node.errors)
+		printf(" %d error%c", node.errors, node.errors > 1 ? 's' : '\0' );
 }
 
 void usage()
 {
 	printf("usage: node [-v[key]] [-debug] <action [on|off]> [node numbers] [...]"
-		"\n\n");
+	       "\n\n");
 	printf("actions:\n\n");
 	printf("    list        = list status\n");
 	printf("    anon        = anonymous user\n");
@@ -495,239 +495,239 @@ void usage()
 /****************************/
 int main(int argc, char **argv)
 {
-	char str[256],ctrl_dir[MAX_PATH + 1],debug=0;
-	int sys_nodes,node_num=0,onoff=0;
-	int i,j,mode=-1,misc;
-	int	modify=0;
-	int loop=0;
-	int pause=0;
-	long value=0;
-	node_t node;
-	bool verbose = false;
+	char       str[256], ctrl_dir[MAX_PATH + 1], debug = 0;
+	int        sys_nodes, node_num = 0, onoff = 0;
+	int        i, j, mode = -1, misc;
+	int        modify = 0;
+	int        loop = 0;
+	int        pause = 0;
+	long       value = 0;
+	node_t     node;
+	bool       verbose = false;
 	str_list_t key_list = strListInit();
 
 	printf("\nSynchronet Node Display/Control Utility v%s\n\n", VERSION);
 
-	if(sizeof(node_t)!=SIZEOF_NODE_T) {
+	if (sizeof(node_t) != SIZEOF_NODE_T) {
 		printf("COMPILER ERROR: sizeof(node_t)=%" XP_PRIsize_t "u instead of %d\n"
-			,sizeof(node_t),SIZEOF_NODE_T);
+		       , sizeof(node_t), SIZEOF_NODE_T);
 		return(-1);
 	}
 
-	if(argc<2) {
+	if (argc < 2) {
 		usage();
 	}
 
-	SAFECOPY(ctrl_dir, get_ctrl_dir(/* warn: */TRUE));
-	if(ctrl_dir[strlen(ctrl_dir)-1]!='\\'
-		&& ctrl_dir[strlen(ctrl_dir)-1]!='/')
-		strcat(ctrl_dir,"/");
+	SAFECOPY(ctrl_dir, get_ctrl_dir(/* warn: */ TRUE));
+	if (ctrl_dir[strlen(ctrl_dir) - 1] != '\\'
+	    && ctrl_dir[strlen(ctrl_dir) - 1] != '/')
+		strcat(ctrl_dir, "/");
 
-	SAFEPRINTF(str,"%snode.dab",ctrl_dir);
-	if((nodefile=sopen(str,O_RDWR|O_BINARY,SH_DENYNO))==-1) {
-		printf("\7\nError %d opening %s.\n",errno,str);
+	SAFEPRINTF(str, "%snode.dab", ctrl_dir);
+	if ((nodefile = sopen(str, O_RDWR | O_BINARY, SH_DENYNO)) == -1) {
+		printf("\7\nError %d opening %s.\n", errno, str);
 		exit(1);
 	}
 
-	SAFEPRINTF(str,"%snode.exb",ctrl_dir);
-	nodeexb=sopen(str,O_RDWR|O_BINARY,SH_DENYNO);
+	SAFEPRINTF(str, "%snode.exb", ctrl_dir);
+	nodeexb = sopen(str, O_RDWR | O_BINARY, SH_DENYNO);
 
-	sys_nodes=(int)(filelength(nodefile)/sizeof(node_t));
-	if(!sys_nodes) {
-		printf("%s reflects 0 nodes!\n",str);
+	sys_nodes = (int)(filelength(nodefile) / sizeof(node_t));
+	if (!sys_nodes) {
+		printf("%s reflects 0 nodes!\n", str);
 		exit(1);
 	}
 
-	for(i=1;i<argc;i++) {
-		if(isdigit(argv[i][0]))
-			node_num=atoi(argv[i]);
+	for (i = 1; i < argc; i++) {
+		if (isdigit(argv[i][0]))
+			node_num = atoi(argv[i]);
 		else {
-			node_num=onoff=value=0;
-			if(!stricmp(argv[i],"-DEBUG"))
-				debug=1;
-			else if(!stricmp(argv[i],"-LOOP"))
-				loop=1;
-			else if(!stricmp(argv[i],"-PAUSE"))
-				pause=1;
-			else if(strncmp(argv[i], "-v", 2) == 0) {
+			node_num = onoff = value = 0;
+			if (!stricmp(argv[i], "-DEBUG"))
+				debug = 1;
+			else if (!stricmp(argv[i], "-LOOP"))
+				loop = 1;
+			else if (!stricmp(argv[i], "-PAUSE"))
+				pause = 1;
+			else if (strncmp(argv[i], "-v", 2) == 0) {
 				verbose = true;
-				if(argv[i][2])
+				if (argv[i][2])
 					strListPush(&key_list, argv[i] + 2);
 			}
-			else if(!stricmp(argv[i],"LIST"))
-				mode=MODE_LIST;
-			else if(!stricmp(argv[i],"LOCK"))
-				mode=MODE_LOCK;
-			else if(!stricmp(argv[i],"ANON"))
-				mode=MODE_ANON;
-			else if(!stricmp(argv[i],"INTR"))
-				mode=MODE_INTR;
-			else if(!stricmp(argv[i],"DOWN"))
-				mode=MODE_DOWN;
-			else if(!stricmp(argv[i],"RERUN"))
-				mode=MODE_RRUN;
-			else if(!stricmp(argv[i],"EVENT"))
-				mode=MODE_EVENT;
-			else if(!stricmp(argv[i],"NOPAGE"))
-				mode=MODE_NOPAGE;
-			else if(!stricmp(argv[i],"NOALERTS"))
-				mode=MODE_NOALERTS;
-			else if(!stricmp(argv[i],"ON"))
-				onoff=1;
-			else if(!stricmp(argv[i],"OFF"))
-				onoff=2;
-			else if(!strnicmp(argv[i],"STATUS=",7)) {
-				mode=MODE_STATUS;
-				value=strtoul(argv[i]+7, NULL, 0);
+			else if (!stricmp(argv[i], "LIST"))
+				mode = MODE_LIST;
+			else if (!stricmp(argv[i], "LOCK"))
+				mode = MODE_LOCK;
+			else if (!stricmp(argv[i], "ANON"))
+				mode = MODE_ANON;
+			else if (!stricmp(argv[i], "INTR"))
+				mode = MODE_INTR;
+			else if (!stricmp(argv[i], "DOWN"))
+				mode = MODE_DOWN;
+			else if (!stricmp(argv[i], "RERUN"))
+				mode = MODE_RRUN;
+			else if (!stricmp(argv[i], "EVENT"))
+				mode = MODE_EVENT;
+			else if (!stricmp(argv[i], "NOPAGE"))
+				mode = MODE_NOPAGE;
+			else if (!stricmp(argv[i], "NOALERTS"))
+				mode = MODE_NOALERTS;
+			else if (!stricmp(argv[i], "ON"))
+				onoff = 1;
+			else if (!stricmp(argv[i], "OFF"))
+				onoff = 2;
+			else if (!strnicmp(argv[i], "STATUS=", 7)) {
+				mode = MODE_STATUS;
+				value = strtoul(argv[i] + 7, NULL, 0);
 			}
-			else if(!strnicmp(argv[i],"ERRORS=",7)) {
-				mode=MODE_ERRORS;
-				value=strtoul(argv[i]+7, NULL, 0);
+			else if (!strnicmp(argv[i], "ERRORS=", 7)) {
+				mode = MODE_ERRORS;
+				value = strtoul(argv[i] + 7, NULL, 0);
 			}
-			else if(!strnicmp(argv[i],"USERON=",7)) {
-				mode=MODE_USERON;
-				value=strtoul(argv[i]+7, NULL, 0);
+			else if (!strnicmp(argv[i], "USERON=", 7)) {
+				mode = MODE_USERON;
+				value = strtoul(argv[i] + 7, NULL, 0);
 			}
-			else if(!strnicmp(argv[i],"ACTION=",7)) {
-				mode=MODE_ACTION;
-				value=strtoul(argv[i]+7, NULL, 0);
+			else if (!strnicmp(argv[i], "ACTION=", 7)) {
+				mode = MODE_ACTION;
+				value = strtoul(argv[i] + 7, NULL, 0);
 			}
-			else if(!strnicmp(argv[i],"CONN=",5)) {
-				mode=MODE_CONN;
-				value=strtoul(argv[i]+5, NULL, 0);
+			else if (!strnicmp(argv[i], "CONN=", 5)) {
+				mode = MODE_CONN;
+				value = strtoul(argv[i] + 5, NULL, 0);
 			}
-			else if(!strnicmp(argv[i],"MISC=",5)) {
-				mode=MODE_MISC;
-				value=strtoul(argv[i]+5, NULL, 0);
+			else if (!strnicmp(argv[i], "MISC=", 5)) {
+				mode = MODE_MISC;
+				value = strtoul(argv[i] + 5, NULL, 0);
 			}
-			else if(!strnicmp(argv[i],"AUX=",4)) {
-				mode=MODE_AUX;
-				value=strtoul(argv[i]+4, NULL, 0);
+			else if (!strnicmp(argv[i], "AUX=", 4)) {
+				mode = MODE_AUX;
+				value = strtoul(argv[i] + 4, NULL, 0);
 			}
-			else if(!strnicmp(argv[i],"EXTAUX=",7)) {
-				mode=MODE_EXTAUX;
-				value=strtoul(argv[i]+7, NULL, 0);
+			else if (!strnicmp(argv[i], "EXTAUX=", 7)) {
+				mode = MODE_EXTAUX;
+				value = strtoul(argv[i] + 7, NULL, 0);
 			}
 			else usage();
 		}
-		if(mode < 0)
+		if (mode < 0)
 			usage();
-		if(mode!=MODE_LIST)
-			modify=1;
+		if (mode != MODE_LIST)
+			modify = 1;
 
-		if(node_num || i+1==argc)
-			while(1) {
-				for(j=1;j<=sys_nodes;j++)
-					if(!node_num || j==node_num) {
-						getnodedat(j,&node,modify);
-						misc=0;
-						switch(mode) {
+		if (node_num || i + 1 == argc)
+			while (1) {
+				for (j = 1; j <= sys_nodes; j++)
+					if (!node_num || j == node_num) {
+						getnodedat(j, &node, modify);
+						misc = 0;
+						switch (mode) {
 							case MODE_ANON:
-								misc=NODE_ANON;
+								misc = NODE_ANON;
 								break;
 							case MODE_LOCK:
-								misc=NODE_LOCK;
+								misc = NODE_LOCK;
 								break;
 							case MODE_INTR:
-								misc=NODE_INTR;
+								misc = NODE_INTR;
 								break;
 							case MODE_DOWN:
-					            if(node.status==NODE_WFC)
-            						node.status=NODE_OFFLINE;
+								if (node.status == NODE_WFC)
+									node.status = NODE_OFFLINE;
 								else
-									misc=NODE_DOWN;
+									misc = NODE_DOWN;
 								break;
 							case MODE_RRUN:
-								misc=NODE_RRUN;
+								misc = NODE_RRUN;
 								break;
 							case MODE_EVENT:
-								misc=NODE_EVENT;
+								misc = NODE_EVENT;
 								break;
 							case MODE_NOPAGE:
-								misc=NODE_POFF;
+								misc = NODE_POFF;
 								break;
 							case MODE_NOALERTS:
-								misc=NODE_AOFF;
+								misc = NODE_AOFF;
 								break;
 							case MODE_STATUS:
-								node.status=(uchar)value;
+								node.status = (uchar)value;
 								break;
 							case MODE_ERRORS:
-								node.errors=(uchar)value;
+								node.errors = (uchar)value;
 								break;
 							case MODE_ACTION:
-								node.action=(uchar)value;
+								node.action = (uchar)value;
 								break;
 							case MODE_USERON:
-								node.useron=(uint16_t)value;
+								node.useron = (uint16_t)value;
 								break;
 							case MODE_MISC:
-								node.misc=(uint16_t)value;
+								node.misc = (uint16_t)value;
 								break;
 							case MODE_CONN:
-								node.connection=(uint16_t)value;
+								node.connection = (uint16_t)value;
 								break;
 							case MODE_AUX:
-								node.aux=(uint16_t)value;
+								node.aux = (uint16_t)value;
 								break;
 							case MODE_EXTAUX:
-								node.extaux=value;
+								node.extaux = value;
 								break;
 						}
-						if(misc) {
-							if(onoff==0)
-								node.misc^=misc;
-							else if(onoff==1)
-								node.misc|=misc;
-							else if(onoff==2)
-								node.misc&=~misc;
+						if (misc) {
+							if (onoff == 0)
+								node.misc ^= misc;
+							else if (onoff == 1)
+								node.misc |= misc;
+							else if (onoff == 2)
+								node.misc &= ~misc;
 						}
-						if(modify)
-							putnodedat(j,node);
-						printnodedat(j,node);
-						if(verbose && NODE_CLIENT_CONNECTED(node.status)) {
-							char client_path[MAX_PATH + 1];
+						if (modify)
+							putnodedat(j, node);
+						printnodedat(j, node);
+						if (verbose && NODE_CLIENT_CONNECTED(node.status)) {
+							char  client_path[MAX_PATH + 1];
 							snprintf(client_path, sizeof(client_path), "%s../node%u/client.ini", ctrl_dir, j);
-							FILE* fp = iniOpenFile(client_path, /* modify: */false);
-							if(fp != NULL) {
+							FILE* fp = iniOpenFile(client_path, /* modify: */ false);
+							if (fp != NULL) {
 								str_list_t ini = iniReadFile(fp);
 								iniCloseFile(fp);
-								if(key_list[0] == NULL) {
-									for(int k = 0; ini[k] != NULL; ++k) {
+								if (key_list[0] == NULL) {
+									for (int k = 0; ini[k] != NULL; ++k) {
 										printf("\n\t%s", ini[k]);
 									}
 								} else {
-									for(int k = 0; key_list[k] != NULL; ++k) {
+									for (int k = 0; key_list[k] != NULL; ++k) {
 										printf("\n\t%s=%s"
-											, key_list[k], iniGetString(ini, NULL, key_list[k], NULL, NULL));
+										       , key_list[k], iniGetString(ini, NULL, key_list[k], NULL, NULL));
 									}
 								}
 								iniFreeStringList(ini);
 							}
 						}
 						printf("\n");
-						if(debug) {
-							printf("\tstatus=%u\n",node.status);
-							printf("\terrors=%u\n",node.errors);
-							printf("\taction=%d\n",node.action);
-							printf("\tuseron=%u\n",node.useron);
-							printf("\tconn=%u\n",node.connection);
-							printf("\tmisc=%u\n",node.misc);
-							printf("\taux=%u\n",node.aux);
-							printf("\textaux=%"PRIu32"\n",node.extaux); 
+						if (debug) {
+							printf("\tstatus=%u\n", node.status);
+							printf("\terrors=%u\n", node.errors);
+							printf("\taction=%d\n", node.action);
+							printf("\tuseron=%u\n", node.useron);
+							printf("\tconn=%u\n", node.connection);
+							printf("\tmisc=%u\n", node.misc);
+							printf("\taux=%u\n", node.aux);
+							printf("\textaux=%" PRIu32 "\n", node.extaux);
 						}  /* debug */
 
 					} /* if(!node_num) */
 
-				if(pause) {
+				if (pause) {
 					printf("\nHit enter...");
 					fflush(stdout);
 					getchar();
 					printf("\n");
 				}
-				if(!loop)
+				if (!loop)
 					break;
-				if(!pause)
+				if (!pause)
 					SLEEP(1000);
 				cls();
 			} /* while(1) */

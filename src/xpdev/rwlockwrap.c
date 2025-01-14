@@ -8,7 +8,7 @@
 static struct rwlock_reader_thread *
 find_self(rwlock_t *lock, struct rwlock_reader_thread ***prev)
 {
-	DWORD self = GetCurrentThreadId();
+	DWORD                        self = GetCurrentThreadId();
 	struct rwlock_reader_thread *ret;
 
 	if (prev)
@@ -55,7 +55,7 @@ rwlock_rdlock(rwlock_t *lock)
 		LeaveCriticalSection(&lock->lk);
 		return false;
 	}
-	while(rc->count == 0 && (lock->writers || lock->writers_waiting)) {
+	while (rc->count == 0 && (lock->writers || lock->writers_waiting)) {
 		LeaveCriticalSection(&lock->lk);
 		if (WaitForSingleObject(lock->zerow, INFINITE) != WAIT_OBJECT_0) {
 			EnterCriticalSection(&lock->lk);
@@ -94,7 +94,7 @@ rwlock_rdlock(rwlock_t *lock)
 bool
 rwlock_tryrdlock(rwlock_t *lock)
 {
-	bool ret = false;
+	bool                         ret = false;
 	struct rwlock_reader_thread *rc;
 
 	EnterCriticalSection(&lock->lk);
@@ -174,7 +174,7 @@ rwlock_trywrlock(rwlock_t *lock)
 bool
 rwlock_unlock(rwlock_t *lock)
 {
-	struct rwlock_reader_thread *rc;
+	struct rwlock_reader_thread * rc;
 	struct rwlock_reader_thread **prev;
 
 	EnterCriticalSection(&lock->lk);

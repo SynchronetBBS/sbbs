@@ -18,9 +18,9 @@
  ****************************************************************************/
 
 /* HAPROXY PROTO BINARY DEFINITIONS */
-#define HAPROXY_AFINET			0x1		/* IPv4 Connection */
-#define HAPROXY_AFINET6			0x2		/* IPv6 Connection */
+#define HAPROXY_AFINET          0x1     /* IPv4 Connection */
+#define HAPROXY_AFINET6         0x2     /* IPv6 Connection */
 
 /* HAPROXY COMMANDS */
-#define HAPROXY_LOCAL			0x0		/* Connections instigated by the proxy, eg: health-check */
-#define HAPROXY_PROXY			0x1		/* Relay connections */
+#define HAPROXY_LOCAL           0x0     /* Connections instigated by the proxy, eg: health-check */
+#define HAPROXY_PROXY           0x1     /* Relay connections */

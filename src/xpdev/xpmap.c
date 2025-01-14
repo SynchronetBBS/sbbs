@@ -20,11 +20,11 @@
  ****************************************************************************/
 
 #include "xpmap.h"
-#include <stdlib.h>	// malloc()
+#include <stdlib.h> // malloc()
 
 #if defined(__unix__)
 
-#include <unistd.h>	// close()
+#include <unistd.h> // close()
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/types.h>
@@ -32,55 +32,55 @@
 
 struct xpmapping* xpmap(const char *filename, enum xpmap_type type)
 {
-	int					fd;
-	void				*addr=NULL;
-	int					oflags;
-	int					mflags;
-	int					mprot;
-	struct stat			sb;
-	struct xpmapping	*ret;
+	int               fd;
+	void *            addr = NULL;
+	int               oflags;
+	int               mflags;
+	int               mprot;
+	struct stat       sb;
+	struct xpmapping *ret;
 
-	switch(type) {
+	switch (type) {
 		case XPMAP_READ:
-			oflags=O_RDONLY;
-			mflags=MAP_PRIVATE;
-			mprot=PROT_READ;
+			oflags = O_RDONLY;
+			mflags = MAP_PRIVATE;
+			mprot = PROT_READ;
 			break;
 		case XPMAP_WRITE:
-			oflags=O_RDWR;
-			mflags=MAP_SHARED;
-			mprot=PROT_READ|PROT_WRITE;
+			oflags = O_RDWR;
+			mflags = MAP_SHARED;
+			mprot = PROT_READ | PROT_WRITE;
 			break;
 		case XPMAP_COPY:
-			oflags=O_RDWR;
-			mflags=MAP_PRIVATE;
-			mprot=PROT_READ|PROT_WRITE;
+			oflags = O_RDWR;
+			mflags = MAP_PRIVATE;
+			mprot = PROT_READ | PROT_WRITE;
 			break;
 		default:
 			return NULL;
 	}
 
-	fd=open(filename, oflags);
-	if(fd == -1)
+	fd = open(filename, oflags);
+	if (fd == -1)
 		return NULL;
-	if(fstat(fd, &sb)==-1) {
+	if (fstat(fd, &sb) == -1) {
 		close(fd);
 		return NULL;
 	}
-	addr=mmap(NULL, sb.st_size, mprot, mflags, fd, 0);
-	if(addr==MAP_FAILED) {
+	addr = mmap(NULL, sb.st_size, mprot, mflags, fd, 0);
+	if (addr == MAP_FAILED) {
 		close(fd);
 		return NULL;
 	}
-	ret=(struct xpmapping *)malloc(sizeof(struct xpmapping));
-	if(ret==NULL) {
+	ret = (struct xpmapping *)malloc(sizeof(struct xpmapping));
+	if (ret == NULL) {
 		munmap(addr, sb.st_size);
 		close(fd);
 		return NULL;
 	}
-	ret->addr=addr;
-	ret->fd=fd;
-	ret->size=sb.st_size;
+	ret->addr = addr;
+	ret->fd = fd;
+	ret->size = sb.st_size;
 	return ret;
 }
 
@@ -95,56 +95,56 @@ void xpunmap(struct xpmapping *map)
 
 struct xpmapping* xpmap(const char *filename, enum xpmap_type type)
 {
-	HANDLE				fd;
-	HANDLE				md;
-	DWORD				caccess;
-	DWORD				cshare;
-	DWORD				mprot;
-	DWORD				maccess;
-	DWORD				size;
-	void				*addr;
-	struct xpmapping	*ret;
+	HANDLE            fd;
+	HANDLE            md;
+	DWORD             caccess;
+	DWORD             cshare;
+	DWORD             mprot;
+	DWORD             maccess;
+	DWORD             size;
+	void *            addr;
+	struct xpmapping *ret;
 
-	switch(type) {
+	switch (type) {
 		case XPMAP_READ:
 			caccess = GENERIC_READ;
 			cshare = FILE_SHARE_READ | FILE_SHARE_WRITE;
-			mprot=PAGE_READONLY;
-			maccess=FILE_MAP_READ;
+			mprot = PAGE_READONLY;
+			maccess = FILE_MAP_READ;
 			break;
 		case XPMAP_WRITE:
 			caccess = GENERIC_READ | GENERIC_WRITE;
 			cshare = FILE_SHARE_READ | FILE_SHARE_WRITE;
-			mprot=PAGE_READWRITE;
-			maccess=FILE_MAP_WRITE;
+			mprot = PAGE_READWRITE;
+			maccess = FILE_MAP_WRITE;
 			break;
 		case XPMAP_COPY:
 			caccess = GENERIC_READ;
 			cshare = FILE_SHARE_READ | FILE_SHARE_WRITE;
-			mprot=PAGE_WRITECOPY;
-			maccess=FILE_MAP_COPY;
+			mprot = PAGE_WRITECOPY;
+			maccess = FILE_MAP_COPY;
 			break;
 	}
 
-	fd=CreateFile(filename, caccess, cshare, NULL, OPEN_EXISTING, 0, NULL);
-	if(fd == INVALID_HANDLE_VALUE)
+	fd = CreateFile(filename, caccess, cshare, NULL, OPEN_EXISTING, 0, NULL);
+	if (fd == INVALID_HANDLE_VALUE)
 		return NULL;
-	if((size=GetFileSize(fd, NULL))==INVALID_FILE_SIZE)
+	if ((size = GetFileSize(fd, NULL)) == INVALID_FILE_SIZE)
 		return NULL;
-	md=CreateFileMapping(fd, NULL, mprot, 0, size, NULL);
-	if(md==NULL)
+	md = CreateFileMapping(fd, NULL, mprot, 0, size, NULL);
+	if (md == NULL)
 		return NULL;
-	addr=MapViewOfFile(md, maccess, 0, 0, size);
-	ret=(struct xpmapping *)malloc(sizeof(struct xpmapping));
-	if(ret==NULL) {
+	addr = MapViewOfFile(md, maccess, 0, 0, size);
+	ret = (struct xpmapping *)malloc(sizeof(struct xpmapping));
+	if (ret == NULL) {
 		CloseHandle(md);
 		UnmapViewOfFile(addr);
 		return NULL;
 	}
-	ret->addr=addr;
-	ret->fd=fd;
-	ret->md=md;
-	ret->size=size;
+	ret->addr = addr;
+	ret->fd = fd;
+	ret->md = md;
+	ret->size = size;
 	return ret;
 }
 

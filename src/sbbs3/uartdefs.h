@@ -39,71 +39,71 @@
 #define _UARTDEFS_H
 
 /* UART Registers */
-#define UART_BASE				0		/* tx/rx data */
-#define UART_IER				1		/* interrupt enable */
-#define UART_IIR				2		/* interrupt identification */
-#define UART_FCR				2		/* FIFO control */
-#define UART_LCR				3		/* line control */
-#define UART_MCR				4		/* modem control */
-#define UART_LSR				5		/* line status */
-#define UART_MSR				6		/* modem status */
-#define UART_SCRATCH			7		/* scratch */
-#define UART_IO_RANGE			UART_SCRATCH
+#define UART_BASE               0       /* tx/rx data */
+#define UART_IER                1       /* interrupt enable */
+#define UART_IIR                2       /* interrupt identification */
+#define UART_FCR                2       /* FIFO control */
+#define UART_LCR                3       /* line control */
+#define UART_MCR                4       /* modem control */
+#define UART_LSR                5       /* line status */
+#define UART_MSR                6       /* modem status */
+#define UART_SCRATCH            7       /* scratch */
+#define UART_IO_RANGE           UART_SCRATCH
 
 const char* uart_reg_desc[] = { "base", "IER", "IIR", "LCR", "MCR", "LSR", "MSR", "scratch" };
 
-#define UART_IER_MODEM_STATUS	(1<<3)
-#define UART_IER_LINE_STATUS	(1<<2)
-#define UART_IER_TX_EMPTY		(1<<1)
-#define UART_IER_RX_DATA		(1<<0)
+#define UART_IER_MODEM_STATUS   (1 << 3)
+#define UART_IER_LINE_STATUS    (1 << 2)
+#define UART_IER_TX_EMPTY       (1 << 1)
+#define UART_IER_RX_DATA        (1 << 0)
 
-#define UART_IIR_MODEM_STATUS	0x00
-#define UART_IIR_NONE			0x01	/* Bit 0=0, Interrupt Pending */
-#define UART_IIR_TX_EMPTY		0x02	/* THRE (Transmit Holding Register Empty) */
-#define UART_IIR_RX_DATA		0x04
-#define UART_IIR_LINE_STATUS	0x06	/* "This is usually an error condition" */
-#define UART_IIR_FIFO_ENABLED	0xc0	/* Bits 7 and 6 */
+#define UART_IIR_MODEM_STATUS   0x00
+#define UART_IIR_NONE           0x01    /* Bit 0=0, Interrupt Pending */
+#define UART_IIR_TX_EMPTY       0x02    /* THRE (Transmit Holding Register Empty) */
+#define UART_IIR_RX_DATA        0x04
+#define UART_IIR_LINE_STATUS    0x06    /* "This is usually an error condition" */
+#define UART_IIR_FIFO_ENABLED   0xc0    /* Bits 7 and 6 */
 
-#define UART_FCR_ENABLE_FIFO	(1<<0)
+#define UART_FCR_ENABLE_FIFO    (1 << 0)
 
-#define UART_LSR_FIFO_ERROR		(1<<7)
-#define UART_LSR_EMPTY_DATA		(1<<6)
-#define UART_LSR_EMPTY_XMIT		(1<<5)
-#define UART_LSR_BREAK			(1<<4)
-#define UART_LSR_FRAME_ERROR	(1<<3)
-#define UART_LSR_PARITY_ERROR	(1<<2)
-#define UART_LSR_OVERRUN_ERROR	(1<<1)
-#define UART_LSR_DATA_READY		(1<<0)
+#define UART_LSR_FIFO_ERROR     (1 << 7)
+#define UART_LSR_EMPTY_DATA     (1 << 6)
+#define UART_LSR_EMPTY_XMIT     (1 << 5)
+#define UART_LSR_BREAK          (1 << 4)
+#define UART_LSR_FRAME_ERROR    (1 << 3)
+#define UART_LSR_PARITY_ERROR   (1 << 2)
+#define UART_LSR_OVERRUN_ERROR  (1 << 1)
+#define UART_LSR_DATA_READY     (1 << 0)
 
-#define UART_MSR_DCD			(1<<7)
-#define UART_MSR_RING			(1<<6)
-#define UART_MSR_DSR			(1<<5)
-#define UART_MSR_CTS			(1<<4)
-#define UART_MSR_DCD_CHANGE		(1<<3)
-#define UART_MSR_RING_CHANGE	(1<<2)
-#define UART_MSR_DSR_CHANGE		(1<<1)
-#define UART_MSR_CTS_CHANGE		(1<<0)
+#define UART_MSR_DCD            (1 << 7)
+#define UART_MSR_RING           (1 << 6)
+#define UART_MSR_DSR            (1 << 5)
+#define UART_MSR_CTS            (1 << 4)
+#define UART_MSR_DCD_CHANGE     (1 << 3)
+#define UART_MSR_RING_CHANGE    (1 << 2)
+#define UART_MSR_DSR_CHANGE     (1 << 1)
+#define UART_MSR_CTS_CHANGE     (1 << 0)
 
-#define UART_LCR_DLAB			(1<<7)
-#define UART_LCR_BREAK			(1<<6)
-#define UART_LCR_8_DATA_BITS	0x03		/* 8 data bits */
+#define UART_LCR_DLAB           (1 << 7)
+#define UART_LCR_BREAK          (1 << 6)
+#define UART_LCR_8_DATA_BITS    0x03        /* 8 data bits */
 
-#define UART_MCR_DTR			(1<<0)
-#define UART_MCR_RTS			(1<<1)
-#define UART_MCR_AUX1			(1<<2)
-#define UART_MCR_AUX2			(1<<3)
-#define UART_MCR_LOOPBACK		(1<<4)
+#define UART_MCR_DTR            (1 << 0)
+#define UART_MCR_RTS            (1 << 1)
+#define UART_MCR_AUX1           (1 << 2)
+#define UART_MCR_AUX2           (1 << 3)
+#define UART_MCR_LOOPBACK       (1 << 4)
 
 /* I/O Ports */
-#define UART_COM1_IO_BASE		0x3f8
-#define UART_COM2_IO_BASE		0x2f8
-#define UART_COM3_IO_BASE		0x3e8
-#define UART_COM4_IO_BASE		0x2e8
+#define UART_COM1_IO_BASE       0x3f8
+#define UART_COM2_IO_BASE       0x2f8
+#define UART_COM3_IO_BASE       0x3e8
+#define UART_COM4_IO_BASE       0x2e8
 
 /* IRQs */
-#define UART_COM1_IRQ			4
-#define UART_COM2_IRQ			3
-#define UART_COM3_IRQ			4
-#define UART_COM4_IRQ			3
+#define UART_COM1_IRQ           4
+#define UART_COM2_IRQ           3
+#define UART_COM3_IRQ           4
+#define UART_COM4_IRQ           3
 
 #endif /* Don't add anything after this line */

@@ -22,7 +22,7 @@
 #if defined(__unix__)
 
 #include <stdlib.h>
-#include <string.h>	/* memcpy */
+#include <string.h> /* memcpy */
 #include <unistd.h>
 #include <termios.h>
 
@@ -30,12 +30,12 @@
 #include <sys/types.h>
 #include <signal.h>
 
-#include "conwrap.h"				/* Verify prototypes */
+#include "conwrap.h"                /* Verify prototypes */
 
-static struct termios current;		/* our current term settings			*/
+static struct termios current;      /* our current term settings			*/
 static struct termios original;     /* old termios settings					*/
-static int beensetup = 0;           /* has _termios_setup() been called?	*/
-static int istty = 0;				/* is stdin a tty?						*/		
+static int            beensetup = 0; /* has _termios_setup() been called?	*/
+static int            istty = 0;    /* is stdin a tty?						*/
 
 /* Resets the termios to its previous state */
 void _termios_reset(void)
@@ -47,24 +47,24 @@ void _termios_reset(void)
   This pair of functions handles Ctrl-Z presses
 ************************************************/
 #if defined(__BORLANDC__)
-        #pragma argsused
+		#pragma argsused
 #endif
 #ifndef __EMSCRIPTEN__
 void _sighandler_stop(int sig)
 {
-    /* clean up the terminal */
-    _termios_reset();
+	/* clean up the terminal */
+	_termios_reset();
 
-    /* ... and stop */
+	/* ... and stop */
 	kill(getpid(), SIGSTOP);
 }
 #endif
 #if defined(__BORLANDC__)
-        #pragma argsused
+		#pragma argsused
 #endif
 void _sighandler_cont(int sig)
 {
-    /* restore terminal */
+	/* restore terminal */
 	tcsetattr(STDIN_FILENO, TCSANOW, &current);
 }
 
@@ -73,61 +73,61 @@ void _sighandler_cont(int sig)
 void _termios_setup(void)
 {
 	beensetup = 1;
-    
+
 	tcgetattr(STDIN_FILENO, &original);
-  
+
 	memcpy(&current, &original, sizeof(struct termios));
 	current.c_cc[VMIN] = 1;           /* read() will return with one char */
 	current.c_cc[VTIME] = 0;          /* read() blocks forever */
 	current.c_lflag &= ~ICANON;       /* character mode */
-    current.c_lflag &= ~ECHO;         /* turn off echoing */
+	current.c_lflag &= ~ECHO;         /* turn off echoing */
 	tcsetattr(STDIN_FILENO, TCSANOW, &current);
 
-    /* Let's install an exit function, also.  This way, we can reset
-     * the termios silently
+	/* Let's install an exit function, also.  This way, we can reset
+	 * the termios silently
 	 */
-    atexit(_termios_reset);
+	atexit(_termios_reset);
 
-    /* install the Ctrl-Z handler */
+	/* install the Ctrl-Z handler */
 #ifndef __EMSCRIPTEN__
-    signal(SIGTSTP, _sighandler_stop);
+	signal(SIGTSTP, _sighandler_stop);
 #endif
-    signal(SIGCONT, _sighandler_cont);
+	signal(SIGCONT, _sighandler_cont);
 }
 
 void _echo_on(void)
 {
 	tcgetattr(STDIN_FILENO, &current);
-    current.c_lflag |= ECHO;         /* turn on echoing */
+	current.c_lflag |= ECHO;         /* turn on echoing */
 	tcsetattr(STDIN_FILENO, TCSANOW, &current);
 }
 
 void _echo_off(void)
 {
 	tcgetattr(STDIN_FILENO, &current);
-    current.c_lflag &= ~ECHO;         /* turn off echoing */
+	current.c_lflag &= ~ECHO;         /* turn off echoing */
 	tcsetattr(STDIN_FILENO, TCSANOW, &current);
 }
 
 int kbhit(void)
 {
-	fd_set inp;
+	fd_set         inp;
 	struct timeval timeout = {0, 0};
 
-	if(!istty) {
+	if (!istty) {
 		istty = isatty(STDIN_FILENO);
-		if(!istty)
+		if (!istty)
 			return 0;
 	}
 
-	if(!beensetup)
+	if (!beensetup)
 		_termios_setup();
 
 	/* set up select() args */
 	FD_ZERO(&inp);
 	FD_SET(STDIN_FILENO, &inp);
 
-	if(select(STDIN_FILENO+1, &inp, NULL, NULL, &timeout)<1)
+	if (select(STDIN_FILENO + 1, &inp, NULL, NULL, &timeout) < 1)
 		return 0;
 	return 1;
 }
@@ -136,14 +136,14 @@ int getch(void)
 {
 	char c;
 
-    if(!beensetup)
-    	_termios_setup();
+	if (!beensetup)
+		_termios_setup();
 
-    /* get a char out of stdin */
-    if(read(STDIN_FILENO, &c, 1)==-1)
+	/* get a char out of stdin */
+	if (read(STDIN_FILENO, &c, 1) == -1)
 		return 0;
 
-    return c;
+	return c;
 }
 
 #endif /* __unix__ */

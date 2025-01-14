@@ -26,9 +26,9 @@ typedef struct {
 
 	STARTUP_COMMON_ELEMENTS
 	struct in_addr outgoing4;
-	struct in6_addr	outgoing6;
-	str_list_t		interfaces;
-	char	services_ini[128];	// services.ini filename
+	struct in6_addr outgoing6;
+	str_list_t interfaces;
+	char services_ini[128];     // services.ini filename
 
 	/* JavaScript operating parameters */
 	js_startup_t js;
@@ -37,40 +37,40 @@ typedef struct {
 
 #if 0
 /* startup options that requires re-initialization/recycle when changed */
-static struct init_field services_init_fields[] = { 
-	 OFFSET_AND_SIZE(services_startup_t,outgoing4)
-	 OFFSET_AND_SIZE(services_startup_t,outgoing6)
-	,OFFSET_AND_SIZE(services_startup_t,ctrl_dir)
-	,{ 0,0 }	/* terminator */
+static struct init_field services_init_fields[] = {
+	OFFSET_AND_SIZE(services_startup_t, outgoing4)
+	OFFSET_AND_SIZE(services_startup_t, outgoing6)
+	, OFFSET_AND_SIZE(services_startup_t, ctrl_dir)
+	, { 0, 0 }    /* terminator */
 };
 #endif
 
 /* Option bit definitions	*/
-#define SERVICE_OPT_UDP			(1<<0)	/* UDP Socket */
-#define SERVICE_OPT_STATIC		(1<<1)	/* Static service (accepts client connectsions) */
-#define SERVICE_OPT_STATIC_LOOP (1<<2)	/* Loop static service until terminated */
-#define SERVICE_OPT_NATIVE		(1<<3)	/* non-JavaScript service */
-#define SERVICE_OPT_FULL_ACCEPT	(1<<4)	/* Accept/close connections when server is full */
-#define SERVICE_OPT_TLS			(1<<5)	/* Use TLS */
+#define SERVICE_OPT_UDP         (1 << 0)  /* UDP Socket */
+#define SERVICE_OPT_STATIC      (1 << 1)  /* Static service (accepts client connectsions) */
+#define SERVICE_OPT_STATIC_LOOP (1 << 2)  /* Loop static service until terminated */
+#define SERVICE_OPT_NATIVE      (1 << 3)  /* non-JavaScript service */
+#define SERVICE_OPT_FULL_ACCEPT (1 << 4)  /* Accept/close connections when server is full */
+#define SERVICE_OPT_TLS         (1 << 5)  /* Use TLS */
 
 /* services_startup_t.options bits that require re-init/recycle when changed */
-#define SERVICE_INIT_OPTS	(0)
+#define SERVICE_INIT_OPTS   (0)
 
 #if defined(STARTUP_INI_BITDESC_TABLES) || defined(SERVICES_INI_BITDESC_TABLE)
 static ini_bitdesc_t service_options[] = {
 
-	{ BBS_OPT_NO_HOST_LOOKUP		,"NO_HOST_LOOKUP"		},
-	{ BBS_OPT_GET_IDENT				,"GET_IDENT"			},
-	{ BBS_OPT_NO_RECYCLE			,"NO_RECYCLE"			},
-	{ BBS_OPT_MUTE					,"MUTE"					},
-	{ SERVICE_OPT_UDP				,"UDP"					},
-	{ SERVICE_OPT_STATIC			,"STATIC"				},
-	{ SERVICE_OPT_STATIC_LOOP		,"LOOP"					},
-	{ SERVICE_OPT_NATIVE			,"NATIVE"				},
-	{ SERVICE_OPT_FULL_ACCEPT		,"FULL_ACCEPT"			},
-	{ SERVICE_OPT_TLS				,"TLS"					},
-	/* terminator */				
-	{ 0 							,NULL					}
+	{ BBS_OPT_NO_HOST_LOOKUP, "NO_HOST_LOOKUP"       },
+	{ BBS_OPT_GET_IDENT, "GET_IDENT"            },
+	{ BBS_OPT_NO_RECYCLE, "NO_RECYCLE"           },
+	{ BBS_OPT_MUTE, "MUTE"                 },
+	{ SERVICE_OPT_UDP, "UDP"                  },
+	{ SERVICE_OPT_STATIC, "STATIC"               },
+	{ SERVICE_OPT_STATIC_LOOP, "LOOP"                 },
+	{ SERVICE_OPT_NATIVE, "NATIVE"               },
+	{ SERVICE_OPT_FULL_ACCEPT, "FULL_ACCEPT"          },
+	{ SERVICE_OPT_TLS, "TLS"                  },
+	/* terminator */
+	{ 0, NULL                   }
 };
 #endif
 
@@ -102,9 +102,9 @@ extern "C" {
 #endif
 
 /* arg is pointer to static bbs_startup_t* */
-DLLEXPORT void			DLLCALL services_thread(void* arg);
-DLLEXPORT void			DLLCALL services_terminate(void);
-DLLEXPORT const char*	DLLCALL services_ver(void);
+DLLEXPORT void DLLCALL services_thread(void* arg);
+DLLEXPORT void DLLCALL services_terminate(void);
+DLLEXPORT const char*   DLLCALL services_ver(void);
 
 #ifdef __cplusplus
 }

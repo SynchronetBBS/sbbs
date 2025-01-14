@@ -31,25 +31,25 @@
 extern "C" {
 #endif
 
-const char* git_hash = GIT_HASH;
-const char* git_date = GIT_DATE;
+const char*  git_hash = GIT_HASH;
+const char*  git_date = GIT_DATE;
 const time_t git_time = GIT_TIME;
-const char* git_branch = GIT_BRANCH;
-const char* beta_version = " "; /* Space if non-beta, " beta" otherwise */
+const char*  git_branch = GIT_BRANCH;
+const char*  beta_version = " "; /* Space if non-beta, " beta" otherwise */
 
 #ifdef __cplusplus
 }
 #endif
 
 #if defined(_WINSOCKAPI_)
-	extern WSADATA WSAData;
+extern WSADATA WSAData;
 	#define SOCKLIB_DESC WSAData.szDescription
 #else
-	#define	SOCKLIB_DESC NULL
+	#define SOCKLIB_DESC NULL
 #endif
 
 #if defined(__unix__)
-	#include <sys/utsname.h>	/* uname() */
+	#include <sys/utsname.h>    /* uname() */
 #endif
 
 char* socklib_version(char* str, size_t size, char* winsock_ver)
@@ -60,7 +60,7 @@ char* socklib_version(char* str, size_t size, char* winsock_ver)
 
 #elif defined(__GLIBC__)
 
-	snprintf(str, size, "GLIBC %u.%u",__GLIBC__,__GLIBC_MINOR__);
+	snprintf(str, size, "GLIBC %u.%u", __GLIBC__, __GLIBC_MINOR__);
 
 #else
 
@@ -77,9 +77,9 @@ void sbbs_t::ver()
 	char str[128], compiler[32], os[128], cpu[128];
 
 	CRLF;
-	strcpy(str,VERSION_NOTICE);
+	strcpy(str, VERSION_NOTICE);
 #if defined(_DEBUG)
-	strcat(str,"  Debug");
+	strcat(str, "  Debug");
 #endif
 	center(str);
 	CRLF;
@@ -87,11 +87,11 @@ void sbbs_t::ver()
 	DESCRIBE_COMPILER(compiler);
 
 	snprintf(str, sizeof str, "Revision %c%s %s  "
-		"SMBLIB %s  %s"
-		,toupper(REVISION)
-		,beta_version
-		,git_date
-		,smb_lib_ver(),compiler);
+	         "SMBLIB %s  %s"
+	         , toupper(REVISION)
+	         , beta_version
+	         , git_date
+	         , smb_lib_ver(), compiler);
 
 	center(str);
 	CRLF;
@@ -104,15 +104,15 @@ void sbbs_t::ver()
 	CRLF;
 
 #ifdef JAVASCRIPT
-	if(!(startup->options&BBS_OPT_NO_JAVASCRIPT)) {
+	if (!(startup->options & BBS_OPT_NO_JAVASCRIPT)) {
 		center((char *)JS_GetImplementationVersion());
 		CRLF;
 	}
 #endif
 
 #ifdef USE_CRYPTLIB
-	if(is_crypt_initialized()) {
-		int cl_major=0, cl_minor=0, cl_step=0;
+	if (is_crypt_initialized()) {
+		int cl_major = 0, cl_minor = 0, cl_step = 0;
 		int result;
 		result = cryptGetAttribute(CRYPT_UNUSED, CRYPT_OPTION_INFO_MAJORVERSION, &cl_major);
 		result = cryptGetAttribute(CRYPT_UNUSED, CRYPT_OPTION_INFO_MINORVERSION, &cl_minor);

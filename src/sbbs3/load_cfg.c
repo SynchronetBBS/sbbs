@@ -25,7 +25,7 @@
 #include "nopen.h"
 #include "datewrap.h"
 #include "xpdatetime.h"
-#include "text.h"	/* TOTAL_TEXT */
+#include "text.h"   /* TOTAL_TEXT */
 #include "ini_file.h"
 #if defined(SBBS) && defined(USE_CRYPTLIB)
 	#include "ssl.h"
@@ -33,10 +33,10 @@
 
 static void prep_cfg(scfg_t* cfg);
 
-int 	lprintf(int level, const char *fmt, ...);	/* log output */
+int     lprintf(int level, const char *fmt, ...);   /* log output */
 
 /* readtext.c */
-char *	readtext(int *line, FILE *stream, long dflt);
+char *  readtext(int *line, FILE *stream, long dflt);
 
 // Returns 0-based text string index
 int get_text_num(const char* id)
@@ -59,81 +59,81 @@ int get_text_num(const char* id)
 /****************************************************************************/
 bool load_cfg(scfg_t* cfg, char* text[], bool prep, bool req_cfg, char* error, size_t maxerrlen)
 {
-	int		i;
-	int		line=0;
-	FILE*	fp;
-	char	str[256];
+	int   i;
+	int   line = 0;
+	FILE* fp;
+	char  str[256];
 
-	if(cfg->size!=sizeof(scfg_t)) {
-		safe_snprintf(error, maxerrlen,"cfg->size (%"PRIu32") != sizeof(scfg_t) (%" XP_PRIsize_t "d)"
-			,cfg->size,sizeof(scfg_t));
+	if (cfg->size != sizeof(scfg_t)) {
+		safe_snprintf(error, maxerrlen, "cfg->size (%" PRIu32 ") != sizeof(scfg_t) (%" XP_PRIsize_t "d)"
+		              , cfg->size, sizeof(scfg_t));
 		return(false);
 	}
 
-	free_cfg(cfg);	/* free allocated config parameters */
+	free_cfg(cfg);  /* free allocated config parameters */
 
-	if(cfg->node_num<1)
-		cfg->node_num=1;
+	if (cfg->node_num < 1)
+		cfg->node_num = 1;
 
 	backslash(cfg->ctrl_dir);
-	if(read_main_cfg(cfg, error, maxerrlen)==false && req_cfg)
+	if (read_main_cfg(cfg, error, maxerrlen) == false && req_cfg)
 		return(false);
 
-	if(prep)
-		for(i=0;i<cfg->sys_nodes;i++) 
+	if (prep)
+		for (i = 0; i < cfg->sys_nodes; i++)
 			prep_dir(cfg->ctrl_dir, cfg->node_path[i], sizeof(cfg->node_path[i]));
 
-	SAFECOPY(cfg->node_dir,cfg->node_path[cfg->node_num-1]);
+	SAFECOPY(cfg->node_dir, cfg->node_path[cfg->node_num - 1]);
 	prep_dir(cfg->ctrl_dir, cfg->node_dir, sizeof(cfg->node_dir));
-	if(read_node_cfg(cfg, error, maxerrlen)==false && req_cfg)
+	if (read_node_cfg(cfg, error, maxerrlen) == false && req_cfg)
 		return(false);
-	if(read_msgs_cfg(cfg, error, maxerrlen)==false)
+	if (read_msgs_cfg(cfg, error, maxerrlen) == false)
 		return(false);
-	if(read_file_cfg(cfg, error, maxerrlen)==false)
+	if (read_file_cfg(cfg, error, maxerrlen) == false)
 		return(false);
-	if(read_xtrn_cfg(cfg, error, maxerrlen)==false)
+	if (read_xtrn_cfg(cfg, error, maxerrlen) == false)
 		return(false);
-	if(read_chat_cfg(cfg, error, maxerrlen)==false)
+	if (read_chat_cfg(cfg, error, maxerrlen) == false)
 		return(false);
-	if(read_attr_cfg(cfg, error, maxerrlen)==false)
+	if (read_attr_cfg(cfg, error, maxerrlen) == false)
 		return(false);
 
-	if(text!=NULL) {
+	if (text != NULL) {
 
 		/* Free existing text if allocated */
 		free_text(text);
 
-		SAFEPRINTF(str,"%stext.dat",cfg->ctrl_dir);
-		if((fp=fnopen(NULL,str,O_RDONLY))==NULL) {
-			safe_snprintf(error, maxerrlen,"%d opening %s",errno,str);
-			return(false); 
+		SAFEPRINTF(str, "%stext.dat", cfg->ctrl_dir);
+		if ((fp = fnopen(NULL, str, O_RDONLY)) == NULL) {
+			safe_snprintf(error, maxerrlen, "%d opening %s", errno, str);
+			return(false);
 		}
-		for(i=0;i<TOTAL_TEXT;i++)
-			if((text[i]=readtext(&line,fp,i))==NULL) {
+		for (i = 0; i < TOTAL_TEXT; i++)
+			if ((text[i] = readtext(&line, fp, i)) == NULL) {
 				i--;
 				break;
 			}
 		fclose(fp);
 
-		if(i<TOTAL_TEXT) {
-			safe_snprintf(error, maxerrlen,"line %d: Less than TOTAL_TEXT (%u) strings defined in %s."
-				,i
-				,TOTAL_TEXT,str);
-			return(false); 
+		if (i < TOTAL_TEXT) {
+			safe_snprintf(error, maxerrlen, "line %d: Less than TOTAL_TEXT (%u) strings defined in %s."
+			              , i
+			              , TOTAL_TEXT, str);
+			return(false);
 		}
 
 		SAFEPRINTF(str, "%stext.ini", cfg->ctrl_dir);
 		if ((fp = fnopen(NULL, str, O_RDONLY)) != NULL) {
-			bool success = true;
-			str_list_t ini = iniReadFile(fp);
+			bool             success = true;
+			str_list_t       ini = iniReadFile(fp);
 			fclose(fp);
 			named_string_t** list = iniGetNamedStringList(ini, ROOT_SECTION);
 			for (i = 0; list != NULL && list[i] != NULL; ++i) {
 				int n = get_text_num(list[i]->name);
 				if (n >= TOTAL_TEXT) {
 					safe_snprintf(error, maxerrlen, "%s text ID (%s) not recognized"
-						,str
-						,list[i]->name);
+					              , str
+					              , list[i]->name);
 					success = false;
 					break;
 				}
@@ -149,11 +149,11 @@ bool load_cfg(scfg_t* cfg, char* text[], bool prep, bool req_cfg, char* error, s
 		cfg->text = text;
 	}
 
-    /* Override com-port settings */
-    cfg->com_base=0xf;	/* All nodes use FOSSIL */
-    cfg->com_port=1;	/* All nodes use "COM1" */
+	/* Override com-port settings */
+	cfg->com_base = 0xf;  /* All nodes use FOSSIL */
+	cfg->com_port = 1;    /* All nodes use "COM1" */
 
-	if(prep)
+	if (prep)
 		prep_cfg(cfg);
 
 	/* Auto-toggle daylight savings time in US time-zones */
@@ -166,7 +166,7 @@ void pathify(char* str)
 {
 	char* p;
 
-	if(strchr(str, '.') == NULL) {
+	if (strchr(str, '.') == NULL) {
 		REPLACE_CHARS(str, ' ', '.', p);
 	} else {
 		REPLACE_CHARS(str, ' ', '_', p);
@@ -177,11 +177,11 @@ void pathify(char* str)
 
 void init_vdir(scfg_t* cfg, dir_t* dir)
 {
-	if(dir->vdir_name[0] != '\0') {
+	if (dir->vdir_name[0] != '\0') {
 		SAFECOPY(dir->vdir, dir->vdir_name);
 		return;
 	}
-	switch(cfg->lib[dir->lib]->vdir_name) {
+	switch (cfg->lib[dir->lib]->vdir_name) {
 		case VDIR_NAME_SHORT:
 			SAFECOPY(dir->vdir, dir->sname);
 			break;
@@ -216,58 +216,58 @@ void prep_cfg(scfg_t* cfg)
 	prep_path(cfg->echomail_sem);
 	prep_path(cfg->inetmail_sem);
 
-	for(i=0;i<cfg->total_subs;i++) {
+	for (i = 0; i < cfg->total_subs; i++) {
 
-		if(!cfg->sub[i]->data_dir[0])	/* no data storage path specified */
-			SAFEPRINTF(cfg->sub[i]->data_dir,"%ssubs",cfg->data_dir);
+		if (!cfg->sub[i]->data_dir[0])   /* no data storage path specified */
+			SAFEPRINTF(cfg->sub[i]->data_dir, "%ssubs", cfg->data_dir);
 		prep_dir(cfg->ctrl_dir, cfg->sub[i]->data_dir, sizeof(cfg->sub[i]->data_dir));
 
 		/* default QWKnet tagline */
-		if(!cfg->sub[i]->tagline[0])
-			SAFECOPY(cfg->sub[i]->tagline,cfg->qnet_tagline);
+		if (!cfg->sub[i]->tagline[0])
+			SAFECOPY(cfg->sub[i]->tagline, cfg->qnet_tagline);
 
 		/* default origin line */
-		if(!cfg->sub[i]->origline[0])
-			SAFECOPY(cfg->sub[i]->origline,cfg->origline);
+		if (!cfg->sub[i]->origline[0])
+			SAFECOPY(cfg->sub[i]->origline, cfg->origline);
 
 		/* A sub-board's internal code is the combination of the grp's code_prefix & the sub's code_suffix */
-		SAFEPRINTF2(cfg->sub[i]->code,"%s%s"
-			,cfg->grp[cfg->sub[i]->grp]->code_prefix
-			,cfg->sub[i]->code_suffix);
+		SAFEPRINTF2(cfg->sub[i]->code, "%s%s"
+		            , cfg->grp[cfg->sub[i]->grp]->code_prefix
+		            , cfg->sub[i]->code_suffix);
 
-		strlwr(cfg->sub[i]->code); 		/* data filenames are all lowercase */
+		strlwr(cfg->sub[i]->code);      /* data filenames are all lowercase */
 
 		prep_path(cfg->sub[i]->post_sem);
 	}
 
-	for(i=0;i<cfg->total_libs;i++) {
-		if(cfg->lib[i]->parent_path[0])
+	for (i = 0; i < cfg->total_libs; i++) {
+		if (cfg->lib[i]->parent_path[0])
 			prep_dir(cfg->ctrl_dir, cfg->lib[i]->parent_path, sizeof(cfg->lib[i]->parent_path));
-		if((cfg->lib[i]->misc&LIB_DIRS) == 0 || cfg->lib[i]->parent_path[0] == 0)
+		if ((cfg->lib[i]->misc & LIB_DIRS) == 0 || cfg->lib[i]->parent_path[0] == 0)
 			continue;
-		char path[MAX_PATH+1];
+		char   path[MAX_PATH + 1];
 		SAFECOPY(path, cfg->lib[i]->parent_path);
 		backslash(path);
 		strcat(path, ALLFILES);
 		glob_t g;
-		if(glob(path, GLOB_MARK, NULL, &g))
+		if (glob(path, GLOB_MARK, NULL, &g))
 			continue;
-   		for(uint gi=0;gi<g.gl_pathc;gi++) {
+		for (uint gi = 0; gi < g.gl_pathc; gi++) {
 			char* p = g.gl_pathv[gi];
 			char* tp = lastchar(p);
-			if(*tp != '/')
+			if (*tp != '/')
 				continue;
 			*tp = 0; // Remove trailing slash
 			char* dirname = getfname(p);
 			*tp = PATH_DELIM;
-			int j;
-			for(j = 0; j < cfg->total_dirs; j++) {
-				if(cfg->dir[j]->lib != i)
+			int   j;
+			for (j = 0; j < cfg->total_dirs; j++) {
+				if (cfg->dir[j]->lib != i)
 					continue;
-				if(strcmp(cfg->dir[j]->path, p) == 0 || strcmp(cfg->dir[j]->path, dirname) == 0)
+				if (strcmp(cfg->dir[j]->path, p) == 0 || strcmp(cfg->dir[j]->path, dirname) == 0)
 					break;
 			}
-			if(j < cfg->total_dirs)	// duplicate
+			if (j < cfg->total_dirs) // duplicate
 				continue;
 			dir_t dir = cfg->lib[i]->dir_defaults;
 			dir.lib = i;
@@ -275,42 +275,42 @@ void prep_cfg(scfg_t* cfg)
 			*tp = 0; // Remove trailing slash
 			SAFECOPY(dir.lname, dirname);
 			SAFECOPY(dir.sname, dir.lname);
-			char code_suffix[LEN_EXTCODE+1];
+			char code_suffix[LEN_EXTCODE + 1];
 			SAFECOPY(code_suffix, dir.lname);
 			prep_code(code_suffix, cfg->lib[i]->code_prefix);
 			SAFECOPY(dir.code_suffix, code_suffix);
-			SAFEPRINTF2(dir.code,"%s%s"
-				,cfg->lib[i]->code_prefix
-				,dir.code_suffix);
+			SAFEPRINTF2(dir.code, "%s%s"
+			            , cfg->lib[i]->code_prefix
+			            , dir.code_suffix);
 			init_vdir(cfg, &dir);
 
 			dir_t** new_dirs;
-			if((new_dirs=(dir_t **)realloc(cfg->dir, sizeof(dir_t *)*(cfg->total_dirs+2)))==NULL)
+			if ((new_dirs = (dir_t **)realloc(cfg->dir, sizeof(dir_t *) * (cfg->total_dirs + 2))) == NULL)
 				continue;
 			cfg->dir  = new_dirs;
-			if((cfg->dir[cfg->total_dirs] = malloc(sizeof(dir_t))) == NULL)
+			if ((cfg->dir[cfg->total_dirs] = malloc(sizeof(dir_t))) == NULL)
 				continue;
 			*cfg->dir[cfg->total_dirs++] = dir;
 		}
 		globfree(&g);
 	}
 
-	for(i=0;i<cfg->total_dirs;i++) {
+	for (i = 0; i < cfg->total_dirs; i++) {
 
-		if(!cfg->dir[i]->data_dir[0])	/* no data storage path specified */
-			SAFEPRINTF(cfg->dir[i]->data_dir,"%sdirs",cfg->data_dir);
+		if (!cfg->dir[i]->data_dir[0])   /* no data storage path specified */
+			SAFEPRINTF(cfg->dir[i]->data_dir, "%sdirs", cfg->data_dir);
 		prep_dir(cfg->ctrl_dir, cfg->dir[i]->data_dir, sizeof(cfg->dir[i]->data_dir));
 
 		/* A directory's internal code is the combination of the lib's code_prefix & the dir's code_suffix */
-		SAFEPRINTF2(cfg->dir[i]->code,"%s%s"
-			,cfg->lib[cfg->dir[i]->lib]->code_prefix
-			,cfg->dir[i]->code_suffix);
+		SAFEPRINTF2(cfg->dir[i]->code, "%s%s"
+		            , cfg->lib[cfg->dir[i]->lib]->code_prefix
+		            , cfg->dir[i]->code_suffix);
 
-		strlwr(cfg->dir[i]->code); 		/* data filenames are all lowercase */
+		strlwr(cfg->dir[i]->code);      /* data filenames are all lowercase */
 
-		if(!cfg->dir[i]->path[0])
+		if (!cfg->dir[i]->path[0])
 			SAFECOPY(cfg->dir[i]->path, cfg->dir[i]->code);
-		if(cfg->lib[cfg->dir[i]->lib]->parent_path[0])
+		if (cfg->lib[cfg->dir[i]->lib]->parent_path[0])
 			prep_dir(cfg->lib[cfg->dir[i]->lib]->parent_path, cfg->dir[i]->path, sizeof(cfg->dir[i]->path));
 		else
 			prep_dir(cfg->dir[i]->data_dir, cfg->dir[i]->path, sizeof(cfg->dir[i]->path));
@@ -319,36 +319,36 @@ void prep_cfg(scfg_t* cfg)
 	}
 
 	/* make data filenames are all lowercase */
-	for(i=0;i<cfg->total_shells;i++)
+	for (i = 0; i < cfg->total_shells; i++)
 		strlwr(cfg->shell[i]->code);
 
-	for(i=0;i<cfg->total_gurus;i++)
-		strlwr(cfg->guru[i]->code); 
+	for (i = 0; i < cfg->total_gurus; i++)
+		strlwr(cfg->guru[i]->code);
 
-	for(i=0;i<cfg->total_txtsecs;i++)
+	for (i = 0; i < cfg->total_txtsecs; i++)
 		strlwr(cfg->txtsec[i]->code);
 
-	for(i=0;i<cfg->total_xtrnsecs;i++)
+	for (i = 0; i < cfg->total_xtrnsecs; i++)
 		strlwr(cfg->xtrnsec[i]->code);
 
-	for(i=0;i<cfg->total_xtrns;i++) 
+	for (i = 0; i < cfg->total_xtrns; i++)
 	{
 		strlwr(cfg->xtrn[i]->code);
 		prep_dir(cfg->ctrl_dir, cfg->xtrn[i]->path, sizeof(cfg->xtrn[i]->path));
 	}
-	for(i=0;i<cfg->total_events;i++) {
-		strlwr(cfg->event[i]->code); 	/* data filenames are all lowercase */
+	for (i = 0; i < cfg->total_events; i++) {
+		strlwr(cfg->event[i]->code);    /* data filenames are all lowercase */
 		prep_dir(cfg->ctrl_dir, cfg->event[i]->dir, sizeof(cfg->event[i]->dir));
 	}
-	for(i=0;i<cfg->total_xedits;i++) 
+	for (i = 0; i < cfg->total_xedits; i++)
 		strlwr(cfg->xedit[i]->code);
 
-	cfg->prepped=true;	/* data prepared for run-time, DO NOT SAVE TO DISK! */
+	cfg->prepped = true;  /* data prepared for run-time, DO NOT SAVE TO DISK! */
 }
 
 void free_cfg(scfg_t* cfg)
 {
-	if(cfg->prepped) {
+	if (cfg->prepped) {
 		cfg->prepped = false;
 	}
 	free_node_cfg(cfg);
@@ -358,7 +358,7 @@ void free_cfg(scfg_t* cfg)
 	free_chat_cfg(cfg);
 	free_xtrn_cfg(cfg);
 
-	if(cfg->text != NULL)
+	if (cfg->text != NULL)
 		free_text(cfg->text);
 }
 
@@ -366,11 +366,11 @@ void free_text(char* text[])
 {
 	int i;
 
-	if(text==NULL)
+	if (text == NULL)
 		return;
 
-	for(i=0;i<TOTAL_TEXT;i++) {
-		FREE_AND_NULL(text[i]); 
+	for (i = 0; i < TOTAL_TEXT; i++) {
+		FREE_AND_NULL(text[i]);
 	}
 }
 
@@ -379,32 +379,32 @@ void free_text(char* text[])
 /****************************************************************************/
 int md(const char* inpath)
 {
-	char	path[MAX_PATH+1];
-	char*	p;
+	char  path[MAX_PATH + 1];
+	char* p;
 
-	if(inpath[0]==0)
+	if (inpath[0] == 0)
 		return EINVAL;
 
-	SAFECOPY(path,inpath);
+	SAFECOPY(path, inpath);
 
 	/* Remove trailing '.' if present */
 	p = lastchar(path);
-	if(*p=='.')
+	if (*p == '.')
 		*p = '\0';
 
 	/* Remove trailing slash if present */
 	p = lastchar(path);
-	if(*p == '\\' || *p == '/')
+	if (*p == '\\' || *p == '/')
 		*p = '\0';
 
-	if(!isdir(path)) {
-		if(mkpath(path) != 0) {
+	if (!isdir(path)) {
+		if (mkpath(path) != 0) {
 			int result = errno;
-			if(!isdir(path)) // race condition: did another thread make the directory already?
+			if (!isdir(path)) // race condition: did another thread make the directory already?
 				return result;
 		}
 	}
-	
+
 	return 0;
 }
 
@@ -413,39 +413,39 @@ int md(const char* inpath)
 /****************************************************************************/
 bool read_attr_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 {
-    char    value[INI_MAX_VALUE_LEN];
-	char	path[MAX_PATH + 1];
-    FILE*	fp;
-    str_list_t ini;
+	char       value[INI_MAX_VALUE_LEN];
+	char       path[MAX_PATH + 1];
+	FILE*      fp;
+	str_list_t ini;
 
-	SAFEPRINTF(path,"%sattr.ini",cfg->ctrl_dir);
+	SAFEPRINTF(path, "%sattr.ini", cfg->ctrl_dir);
 	fp = fnopen(NULL, path, O_RDONLY);
 
 	ini = iniReadFile(fp);
-	if(fp != NULL)
+	if (fp != NULL)
 		fclose(fp);
 
-	cfg->color[clr_mnehigh]			= strtoattr(iniGetString(ini, ROOT_SECTION, "mnehigh", "WH", value), /* endptr: */NULL);
-	cfg->color[clr_mnelow]			= strtoattr(iniGetString(ini, ROOT_SECTION, "mnelow", "G", value), /* endptr: */NULL);
-	cfg->color[clr_mnecmd]			= strtoattr(iniGetString(ini, ROOT_SECTION, "mnecmd", "WH", value), /* endptr: */NULL);
-	cfg->color[clr_inputline]		= strtoattr(iniGetString(ini, ROOT_SECTION, "inputline", "WH4E", value), /* endptr: */NULL);
-	cfg->color[clr_err]				= strtoattr(iniGetString(ini, ROOT_SECTION, "error", "RH", value), /* endptr: */NULL);
-	cfg->color[clr_nodenum]			= strtoattr(iniGetString(ini, ROOT_SECTION, "nodenum", "WH", value), /* endptr: */NULL);
-	cfg->color[clr_nodeuser]		= strtoattr(iniGetString(ini, ROOT_SECTION, "nodeuser", "GH", value), /* endptr: */NULL);
-	cfg->color[clr_nodestatus]		= strtoattr(iniGetString(ini, ROOT_SECTION, "nodestatus", "G", value), /* endptr: */NULL);
-	cfg->color[clr_filename]		= strtoattr(iniGetString(ini, ROOT_SECTION, "filename", "BH", value), /* endptr: */NULL);
-	cfg->color[clr_filecdt]			= strtoattr(iniGetString(ini, ROOT_SECTION, "filecdt", "M", value), /* endptr: */NULL);
-	cfg->color[clr_filedesc]		= strtoattr(iniGetString(ini, ROOT_SECTION, "filedesc", "W", value), /* endptr: */NULL);
-	cfg->color[clr_filelsthdrbox]	= strtoattr(iniGetString(ini, ROOT_SECTION, "filelisthdrbox", "YH", value), /* endptr: */NULL);
-	cfg->color[clr_filelstline]		= strtoattr(iniGetString(ini, ROOT_SECTION, "filelistline", "B", value), /* endptr: */NULL);
-	cfg->color[clr_chatlocal]		= strtoattr(iniGetString(ini, ROOT_SECTION, "chatlocal", "GH", value), /* endptr: */NULL);
-	cfg->color[clr_chatremote]		= strtoattr(iniGetString(ini, ROOT_SECTION, "chatremote", "G", value), /* endptr: */NULL);
-	cfg->color[clr_multichat]		= strtoattr(iniGetString(ini, ROOT_SECTION, "multichat", "W", value), /* endptr: */NULL);
-	cfg->color[clr_external]		= strtoattr(iniGetString(ini, ROOT_SECTION, "external", "WH", value), /* endptr: */NULL);
-	cfg->color[clr_votes_full]		= strtoattr(iniGetString(ini, ROOT_SECTION, "votes_full", "WH5", value), /* endptr: */NULL);
-	cfg->color[clr_votes_empty]		= strtoattr(iniGetString(ini, ROOT_SECTION, "votes_empty", "WH", value), /* endptr: */NULL);
-	cfg->color[clr_progress_full]	= strtoattr(iniGetString(ini, ROOT_SECTION, "progress_full", "WH5", value), /* endptr: */NULL);
-	cfg->color[clr_progress_empty]	= strtoattr(iniGetString(ini, ROOT_SECTION, "progress_empty", "WH", value), /* endptr: */NULL);
+	cfg->color[clr_mnehigh]         = strtoattr(iniGetString(ini, ROOT_SECTION, "mnehigh", "WH", value), /* endptr: */ NULL);
+	cfg->color[clr_mnelow]          = strtoattr(iniGetString(ini, ROOT_SECTION, "mnelow", "G", value), /* endptr: */ NULL);
+	cfg->color[clr_mnecmd]          = strtoattr(iniGetString(ini, ROOT_SECTION, "mnecmd", "WH", value), /* endptr: */ NULL);
+	cfg->color[clr_inputline]       = strtoattr(iniGetString(ini, ROOT_SECTION, "inputline", "WH4E", value), /* endptr: */ NULL);
+	cfg->color[clr_err]             = strtoattr(iniGetString(ini, ROOT_SECTION, "error", "RH", value), /* endptr: */ NULL);
+	cfg->color[clr_nodenum]         = strtoattr(iniGetString(ini, ROOT_SECTION, "nodenum", "WH", value), /* endptr: */ NULL);
+	cfg->color[clr_nodeuser]        = strtoattr(iniGetString(ini, ROOT_SECTION, "nodeuser", "GH", value), /* endptr: */ NULL);
+	cfg->color[clr_nodestatus]      = strtoattr(iniGetString(ini, ROOT_SECTION, "nodestatus", "G", value), /* endptr: */ NULL);
+	cfg->color[clr_filename]        = strtoattr(iniGetString(ini, ROOT_SECTION, "filename", "BH", value), /* endptr: */ NULL);
+	cfg->color[clr_filecdt]         = strtoattr(iniGetString(ini, ROOT_SECTION, "filecdt", "M", value), /* endptr: */ NULL);
+	cfg->color[clr_filedesc]        = strtoattr(iniGetString(ini, ROOT_SECTION, "filedesc", "W", value), /* endptr: */ NULL);
+	cfg->color[clr_filelsthdrbox]   = strtoattr(iniGetString(ini, ROOT_SECTION, "filelisthdrbox", "YH", value), /* endptr: */ NULL);
+	cfg->color[clr_filelstline]     = strtoattr(iniGetString(ini, ROOT_SECTION, "filelistline", "B", value), /* endptr: */ NULL);
+	cfg->color[clr_chatlocal]       = strtoattr(iniGetString(ini, ROOT_SECTION, "chatlocal", "GH", value), /* endptr: */ NULL);
+	cfg->color[clr_chatremote]      = strtoattr(iniGetString(ini, ROOT_SECTION, "chatremote", "G", value), /* endptr: */ NULL);
+	cfg->color[clr_multichat]       = strtoattr(iniGetString(ini, ROOT_SECTION, "multichat", "W", value), /* endptr: */ NULL);
+	cfg->color[clr_external]        = strtoattr(iniGetString(ini, ROOT_SECTION, "external", "WH", value), /* endptr: */ NULL);
+	cfg->color[clr_votes_full]      = strtoattr(iniGetString(ini, ROOT_SECTION, "votes_full", "WH5", value), /* endptr: */ NULL);
+	cfg->color[clr_votes_empty]     = strtoattr(iniGetString(ini, ROOT_SECTION, "votes_empty", "WH", value), /* endptr: */ NULL);
+	cfg->color[clr_progress_full]   = strtoattr(iniGetString(ini, ROOT_SECTION, "progress_full", "WH5", value), /* endptr: */ NULL);
+	cfg->color[clr_progress_empty]  = strtoattr(iniGetString(ini, ROOT_SECTION, "progress_empty", "WH", value), /* endptr: */ NULL);
 
 	iniGetString(ini, ROOT_SECTION, "rainbow", "WH,W,CH,C,MH,M,BH,B,YH,Y,GH,G,RH,R,KH", value);
 	memset(cfg->rainbow, 0, sizeof cfg->rainbow);
@@ -457,32 +457,32 @@ bool read_attr_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 char* prep_dir(const char* base, char* path, size_t buflen)
 {
 #ifdef __unix__
-	char	*p;
+	char *p;
 #endif
-	char	str[MAX_PATH+1];
-	char	abspath[MAX_PATH+1];
-	char	ch;
+	char  str[MAX_PATH + 1];
+	char  abspath[MAX_PATH + 1];
+	char  ch;
 
-	if(!path[0])
+	if (!path[0])
 		return(path);
-	if(path[0]!='\\' && path[0]!='/' && path[1]!=':') {	/* Relative directory */
-		ch=*lastchar(base);
-		if(ch=='\\' || ch=='/')
-			SAFEPRINTF2(str,"%s%s",base,path);
+	if (path[0] != '\\' && path[0] != '/' && path[1] != ':') { /* Relative directory */
+		ch = *lastchar(base);
+		if (ch == '\\' || ch == '/')
+			SAFEPRINTF2(str, "%s%s", base, path);
 		else
-			SAFEPRINTF3(str,"%s%c%s",base,PATH_DELIM,path);
+			SAFEPRINTF3(str, "%s%c%s", base, PATH_DELIM, path);
 	} else
-		SAFECOPY(str,path);
+		SAFECOPY(str, path);
 
-#ifdef __unix__				/* Change backslashes to forward slashes on Unix */
-	for(p=str;*p;p++)
-		if(*p=='\\') 
-			*p='/';
+#ifdef __unix__             /* Change backslashes to forward slashes on Unix */
+	for (p = str; *p; p++)
+		if (*p == '\\')
+			*p = '/';
 #endif
 
 	backslashcolon(str);
-	SAFECAT(str,".");               /* Change C: to C:. and C:\SBBS\ to C:\SBBS\. */
-	FULLPATH(abspath,str,buflen);	/* Change C:\SBBS\NODE1\..\EXEC to C:\SBBS\EXEC */
+	SAFECAT(str, ".");               /* Change C: to C:. and C:\SBBS\ to C:\SBBS\. */
+	FULLPATH(abspath, str, buflen);   /* Change C:\SBBS\NODE1\..\EXEC to C:\SBBS\EXEC */
 	backslash(abspath);
 
 	strncpy(path, abspath, buflen);
@@ -491,12 +491,12 @@ char* prep_dir(const char* base, char* path, size_t buflen)
 
 char* prep_path(char* path)
 {
-#ifdef __unix__				/* Change backslashes to forward slashes on Unix */
-	char	*p;
+#ifdef __unix__             /* Change backslashes to forward slashes on Unix */
+	char *p;
 
-	for(p=path;*p;p++)
-		if(*p=='\\') 
-			*p='/';
+	for (p = path; *p; p++)
+		if (*p == '\\')
+			*p = '/';
 #endif
 
 	return(path);
@@ -507,27 +507,27 @@ char* prep_path(char* path)
 char* prep_code(char *str, const char* prefix)
 {
 	char tmp[1024];
-	int i,j;
+	int  i, j;
 
-	if(prefix!=NULL) {	/* skip the grp/lib prefix, if specified */
-		i=strlen(prefix);
-		if(i && strnicmp(str,prefix,i)==0 && strlen(str)!=i)
-			str+=i;
+	if (prefix != NULL) {  /* skip the grp/lib prefix, if specified */
+		i = strlen(prefix);
+		if (i && strnicmp(str, prefix, i) == 0 && strlen(str) != i)
+			str += i;
 	}
-	for(i=j=0;str[i] && i<sizeof(tmp);i++)
-		if(str[i]>' ' && !(str[i]&0x80) && str[i]!='*' && str[i]!='?' && str[i]!='.'
-			&& strchr(ILLEGAL_FILENAME_CHARS,str[i])==NULL)
-			tmp[j++]=toupper(str[i]);
-	tmp[j]=0;
-	strcpy(str,tmp);
-	if(j>LEN_CODE) {	/* Extra chars? Strip symbolic chars */
-		for(i=j=0;str[i];i++)
-			if(IS_ALPHANUMERIC(str[i]))
-				tmp[j++]=str[i];
-		tmp[j]=0;
-		strcpy(str,tmp);
+	for (i = j = 0; str[i] && i < sizeof(tmp); i++)
+		if (str[i] > ' ' && !(str[i] & 0x80) && str[i] != '*' && str[i] != '?' && str[i] != '.'
+		    && strchr(ILLEGAL_FILENAME_CHARS, str[i]) == NULL)
+			tmp[j++] = toupper(str[i]);
+	tmp[j] = 0;
+	strcpy(str, tmp);
+	if (j > LEN_CODE) {    /* Extra chars? Strip symbolic chars */
+		for (i = j = 0; str[i]; i++)
+			if (IS_ALPHANUMERIC(str[i]))
+				tmp[j++] = str[i];
+		tmp[j] = 0;
+		strcpy(str, tmp);
 	}
-	str[LEN_CODE]=0;
+	str[LEN_CODE] = 0;
 	return(str);
 }
 
@@ -536,19 +536,19 @@ char* prep_code(char *str, const char* prefix)
 /****************************************************************************/
 ushort sys_timezone(scfg_t* cfg)
 {
-	time_t	now;
+	time_t    now;
 	struct tm tm;
 
-	if(cfg->sys_timezone == SYS_TIMEZONE_AUTO)
+	if (cfg->sys_timezone == SYS_TIMEZONE_AUTO)
 		return xpTimeZone_local();
 
-	if(cfg->sys_misc&SM_AUTO_DST && SMB_TZ_HAS_DST(cfg->sys_timezone)) {
-		now=time(NULL);
-		if(localtime_r(&now,&tm)!=NULL) {
-			if(tm.tm_isdst>0)
-				cfg->sys_timezone|=DAYLIGHT;
-			else if(tm.tm_isdst==0)
-				cfg->sys_timezone&=~DAYLIGHT;
+	if (cfg->sys_misc & SM_AUTO_DST && SMB_TZ_HAS_DST(cfg->sys_timezone)) {
+		now = time(NULL);
+		if (localtime_r(&now, &tm) != NULL) {
+			if (tm.tm_isdst > 0)
+				cfg->sys_timezone |= DAYLIGHT;
+			else if (tm.tm_isdst == 0)
+				cfg->sys_timezone &= ~DAYLIGHT;
 		}
 	}
 
@@ -558,15 +558,15 @@ ushort sys_timezone(scfg_t* cfg)
 
 int smb_storage_mode(scfg_t* cfg, smb_t* smb)
 {
-	if(smb == NULL || smb->subnum == INVALID_SUB || (smb->status.attr&SMB_EMAIL))
-		return (cfg->sys_misc&SM_FASTMAIL) ? SMB_FASTALLOC : SMB_SELFPACK;
-	if(!subnum_is_valid(cfg, smb->subnum))
-		return (smb->status.attr&SMB_HYPERALLOC) ? SMB_HYPERALLOC : SMB_FASTALLOC;
-	if(cfg->sub[smb->subnum]->misc&SUB_HYPER) {
+	if (smb == NULL || smb->subnum == INVALID_SUB || (smb->status.attr & SMB_EMAIL))
+		return (cfg->sys_misc & SM_FASTMAIL) ? SMB_FASTALLOC : SMB_SELFPACK;
+	if (!subnum_is_valid(cfg, smb->subnum))
+		return (smb->status.attr & SMB_HYPERALLOC) ? SMB_HYPERALLOC : SMB_FASTALLOC;
+	if (cfg->sub[smb->subnum]->misc & SUB_HYPER) {
 		smb->status.attr |= SMB_HYPERALLOC;
 		return SMB_HYPERALLOC;
 	}
-	if(cfg->sub[smb->subnum]->misc&SUB_FAST)
+	if (cfg->sub[smb->subnum]->misc & SUB_FAST)
 		return SMB_FASTALLOC;
 	return SMB_SELFPACK;
 }
@@ -575,33 +575,33 @@ int smb_storage_mode(scfg_t* cfg, smb_t* smb)
 /* If return value is not SMB_SUCCESS, sub-board is not left open */
 int smb_open_sub(scfg_t* cfg, smb_t* smb, int subnum)
 {
-	int retval;
+	int         retval;
 	smbstatus_t smb_status = {0};
 
-	if(subnum != INVALID_SUB && !subnum_is_valid(cfg, subnum))
+	if (subnum != INVALID_SUB && !subnum_is_valid(cfg, subnum))
 		return SMB_FAILURE;
 	memset(smb, 0, sizeof(smb_t));
-	if(subnum == INVALID_SUB) {
+	if (subnum == INVALID_SUB) {
 		SAFEPRINTF(smb->file, "%smail", cfg->data_dir);
-		smb_status.max_crcs	= cfg->mail_maxcrcs;
-		smb_status.max_msgs	= 0;
-		smb_status.max_age	= cfg->mail_maxage;
-		smb_status.attr		= SMB_EMAIL;
+		smb_status.max_crcs = cfg->mail_maxcrcs;
+		smb_status.max_msgs = 0;
+		smb_status.max_age  = cfg->mail_maxage;
+		smb_status.attr     = SMB_EMAIL;
 	} else {
 		SAFEPRINTF2(smb->file, "%s%s", cfg->sub[subnum]->data_dir, cfg->sub[subnum]->code);
-		smb_status.max_crcs	= cfg->sub[subnum]->maxcrcs;
-		smb_status.max_msgs	= cfg->sub[subnum]->maxmsgs;
-		smb_status.max_age	= cfg->sub[subnum]->maxage;
-		smb_status.attr		= cfg->sub[subnum]->misc&SUB_HYPER ? SMB_HYPERALLOC :0;
+		smb_status.max_crcs = cfg->sub[subnum]->maxcrcs;
+		smb_status.max_msgs = cfg->sub[subnum]->maxmsgs;
+		smb_status.max_age  = cfg->sub[subnum]->maxage;
+		smb_status.attr     = cfg->sub[subnum]->misc & SUB_HYPER ? SMB_HYPERALLOC :0;
 	}
 	smb->retry_time = cfg->smb_retry_time;
-	if((retval = smb_open(smb)) == SMB_SUCCESS) {
-		if(smb_fgetlength(smb->shd_fp) < sizeof(smbhdr_t) + sizeof(smb->status)) {
+	if ((retval = smb_open(smb)) == SMB_SUCCESS) {
+		if (smb_fgetlength(smb->shd_fp) < sizeof(smbhdr_t) + sizeof(smb->status)) {
 			smb->status = smb_status;
-			if((retval = smb_create(smb)) != SMB_SUCCESS)
+			if ((retval = smb_create(smb)) != SMB_SUCCESS)
 				smb_close(smb);
 		}
-		if(retval == SMB_SUCCESS)
+		if (retval == SMB_SUCCESS)
 			smb->subnum = subnum;
 	}
 	return retval;
@@ -609,7 +609,7 @@ int smb_open_sub(scfg_t* cfg, smb_t* smb, int subnum)
 
 bool smb_init_dir(scfg_t* cfg, smb_t* smb, int dirnum)
 {
-	if(!dirnum_is_valid(cfg, dirnum))
+	if (!dirnum_is_valid(cfg, dirnum))
 		return false;
 	memset(smb, 0, sizeof(smb_t));
 	SAFEPRINTF2(smb->file, "%s%s", cfg->dir[dirnum]->data_dir, cfg->dir[dirnum]->code);
@@ -621,18 +621,18 @@ int smb_open_dir(scfg_t* cfg, smb_t* smb, int dirnum)
 {
 	int retval;
 
-	if(!smb_init_dir(cfg, smb, dirnum))
+	if (!smb_init_dir(cfg, smb, dirnum))
 		return SMB_FAILURE;
-	if((retval = smb_open(smb)) != SMB_SUCCESS)
+	if ((retval = smb_open(smb)) != SMB_SUCCESS)
 		return retval;
 	smb->dirnum = dirnum;
-	if(filelength(fileno(smb->shd_fp)) < 1) {
-		smb->status.max_files	= cfg->dir[dirnum]->maxfiles;
-		smb->status.max_age		= cfg->dir[dirnum]->maxage;
-		smb->status.attr		= SMB_FILE_DIRECTORY;
-		if(cfg->dir[dirnum]->misc & DIR_NOHASH)
+	if (filelength(fileno(smb->shd_fp)) < 1) {
+		smb->status.max_files   = cfg->dir[dirnum]->maxfiles;
+		smb->status.max_age     = cfg->dir[dirnum]->maxage;
+		smb->status.attr        = SMB_FILE_DIRECTORY;
+		if (cfg->dir[dirnum]->misc & DIR_NOHASH)
 			smb->status.attr |= SMB_NOHASH;
-		if((retval = smb_create(smb)) != SMB_SUCCESS)
+		if ((retval = smb_create(smb)) != SMB_SUCCESS)
 			smb_close(smb);
 	}
 	return retval;
@@ -640,9 +640,9 @@ int smb_open_dir(scfg_t* cfg, smb_t* smb, int dirnum)
 
 int get_lang_count(scfg_t* cfg)
 {
-	char path[MAX_PATH + 1];
+	char   path[MAX_PATH + 1];
 	glob_t g;
-	int count;
+	int    count;
 
 	snprintf(path, sizeof path, "%stext.*.ini", cfg->ctrl_dir);
 	if (glob(path, GLOB_MARK, NULL, &g) != 0)
@@ -656,9 +656,9 @@ int get_lang_count(scfg_t* cfg)
 str_list_t get_lang_list(scfg_t* cfg)
 {
 	str_list_t list = strListInit();
-	char path[MAX_PATH + 1];
-	glob_t g;
-	const int prefix_len = strlen(cfg->ctrl_dir) + 5; // strlen("text.")
+	char       path[MAX_PATH + 1];
+	glob_t     g;
+	const int  prefix_len = strlen(cfg->ctrl_dir) + 5; // strlen("text.")
 
 	strListPush(&list, ""); // default is blank
 
@@ -680,9 +680,9 @@ str_list_t get_lang_list(scfg_t* cfg)
 str_list_t get_lang_desc_list(scfg_t* cfg, char* text[])
 {
 	str_list_t list = strListInit();
-	char path[MAX_PATH + 1];
-	char value[INI_MAX_VALUE_LEN];
-	glob_t g;
+	char       path[MAX_PATH + 1];
+	char       value[INI_MAX_VALUE_LEN];
+	glob_t     g;
 
 	strListPush(&list, text[LANG]);
 
@@ -691,11 +691,11 @@ str_list_t get_lang_desc_list(scfg_t* cfg, char* text[])
 		return list;
 
 	for (size_t i = 0; i < g.gl_pathc; ++i) {
-		FILE* fp = iniOpenFile(g.gl_pathv[i], /* for_modify */false);
+		FILE* fp = iniOpenFile(g.gl_pathv[i], /* for_modify */ false);
 		if (fp == NULL)
 			continue;
 		char* p = iniReadString(fp, ROOT_SECTION, "LANG", NULL, value);
-		if(p != NULL)
+		if (p != NULL)
 			strListPush(&list, p);
 		iniCloseFile(fp);
 	}

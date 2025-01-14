@@ -2,7 +2,7 @@
 #define _JS_CRYPTCERT_H_
 
 struct js_cryptcert_private_data {
-	CRYPT_CERTIFICATE	cert;
+	CRYPT_CERTIFICATE cert;
 };
 
 extern JSClass js_cryptcert_class;

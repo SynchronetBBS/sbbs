@@ -29,19 +29,19 @@
 #include "scfglib.h"
 
 // dsts.ini (Daily Statistics) keys:
-#define strStatsDate			"Date"
-#define strStatsTotal			"Total"
-#define strStatsToday			"Today"
-#define strStatsLogons			"Logons"
-#define strStatsTimeon			"Timeon"
-#define strStatsUploads			"Uploads"
-#define strStatsUploadBytes		"UploadB"
-#define strStatsDownloads		"Dnloads"
-#define strStatsDownloadBytes	"DnloadB"
-#define strStatsPosts			"Posts"
-#define strStatsEmail			"Email"
-#define strStatsFeedback		"Feedback"
-#define strStatsNewUsers		"NewUsers"
+#define strStatsDate            "Date"
+#define strStatsTotal           "Total"
+#define strStatsToday           "Today"
+#define strStatsLogons          "Logons"
+#define strStatsTimeon          "Timeon"
+#define strStatsUploads         "Uploads"
+#define strStatsUploadBytes     "UploadB"
+#define strStatsDownloads       "Dnloads"
+#define strStatsDownloadBytes   "DnloadB"
+#define strStatsPosts           "Posts"
+#define strStatsEmail           "Email"
+#define strStatsFeedback        "Feedback"
+#define strStatsNewUsers        "NewUsers"
 
 static ini_style_t ini_style = { .key_prefix = "\t", .section_separator = "" };
 
@@ -50,7 +50,7 @@ static ini_style_t ini_style = { .key_prefix = "\t", .section_separator = "" };
 /****************************************************************************/
 char* dstats_fname(scfg_t* cfg, uint node, char* path, size_t size)
 {
-	safe_snprintf(path, size, "%sdsts.ini", node > 0 && node <= cfg->sys_nodes ? cfg->node_path[node-1] : cfg->ctrl_dir);
+	safe_snprintf(path, size, "%sdsts.ini", node > 0 && node <= cfg->sys_nodes ? cfg->node_path[node - 1] : cfg->ctrl_dir);
 	return path;
 }
 
@@ -59,7 +59,7 @@ char* dstats_fname(scfg_t* cfg, uint node, char* path, size_t size)
 /****************************************************************************/
 char* cstats_fname(scfg_t* cfg, uint node, char* path, size_t size)
 {
-	safe_snprintf(path, size, "%scsts.tab", node > 0 && node <= cfg->sys_nodes ? cfg->node_path[node-1] : cfg->ctrl_dir);
+	safe_snprintf(path, size, "%scsts.tab", node > 0 && node <= cfg->sys_nodes ? cfg->node_path[node - 1] : cfg->ctrl_dir);
 	return path;
 }
 
@@ -67,20 +67,20 @@ char* cstats_fname(scfg_t* cfg, uint node, char* path, size_t size)
 /****************************************************************************/
 FILE* fopen_dstats(scfg_t* cfg, uint node, bool for_write)
 {
-    char path[MAX_PATH+1];
+	char path[MAX_PATH + 1];
 
 	dstats_fname(cfg, node, path, sizeof(path));
-	return fnopen(NULL, path, for_write ? O_CREAT|O_RDWR : O_RDONLY);
+	return fnopen(NULL, path, for_write ? O_CREAT | O_RDWR : O_RDONLY);
 }
 
 /****************************************************************************/
 /****************************************************************************/
 FILE* fopen_cstats(scfg_t* cfg, uint node, bool for_write)
 {
-    char path[MAX_PATH+1];
+	char path[MAX_PATH + 1];
 
 	cstats_fname(cfg, node, path, sizeof(path));
-	return fnopen(NULL, path, for_write ? O_CREAT|O_WRONLY|O_APPEND : O_RDONLY);
+	return fnopen(NULL, path, for_write ? O_CREAT | O_WRONLY | O_APPEND : O_RDONLY);
 }
 
 /****************************************************************************/
@@ -102,9 +102,9 @@ static void gettotals(str_list_t ini, const char* section, totals_t* stats)
 	stats->logons  = iniGetUInteger(ini, section, strStatsLogons, 0);
 	stats->timeon  = iniGetUInteger(ini, section, strStatsTimeon, 0);
 	stats->uls     = iniGetUInteger(ini, section, strStatsUploads, 0);
-	stats->ulb     = iniGetBytes(ini,   section, strStatsUploadBytes, /* unit: */1, 0);
+	stats->ulb     = iniGetBytes(ini,   section, strStatsUploadBytes, /* unit: */ 1, 0);
 	stats->dls     = iniGetUInteger(ini, section, strStatsDownloads, 0);
-	stats->dlb     = iniGetBytes(ini,   section, strStatsDownloadBytes, /* unit: */1, 0);
+	stats->dlb     = iniGetBytes(ini,   section, strStatsDownloadBytes, /* unit: */ 1, 0);
 	stats->posts   = iniGetUInteger(ini, section, strStatsPosts, 0);
 	stats->email   = iniGetUInteger(ini, section, strStatsEmail, 0);
 	stats->fbacks  = iniGetUInteger(ini, section, strStatsFeedback, 0);
@@ -118,11 +118,11 @@ bool fread_dstats(FILE* fp, stats_t* stats)
 {
 	str_list_t ini;
 
-	if(fp == NULL)
+	if (fp == NULL)
 		return false;
 
 	memset(stats, 0, sizeof(*stats));
-	if((ini = iniReadFile(fp)) == NULL)
+	if ((ini = iniReadFile(fp)) == NULL)
 		return false;
 	stats->date    = iniGetDateTime(ini, NULL, strStatsDate, 0);
 	gettotals(ini, strStatsToday, &stats->today);
@@ -138,37 +138,37 @@ bool fread_dstats(FILE* fp, stats_t* stats)
 /****************************************************************************/
 bool getstats(scfg_t* cfg, uint node, stats_t* stats)
 {
-    char path[MAX_PATH+1];
-	bool result;
+	char  path[MAX_PATH + 1];
+	bool  result;
 
 	memset(stats, 0, sizeof(*stats));
 	dstats_fname(cfg, node, path, sizeof(path));
 	FILE* fp = fnopen(NULL, path, O_RDONLY);
-	if(fp == NULL) {
+	if (fp == NULL) {
 		int file;
-		if(fexist(path))
+		if (fexist(path))
 			return false;
 		// Upgrading from v3.19?
-		struct {									/* System/Node Statistics */
-			uint32_t	date,						/* When last rolled-over */
-						logons,						/* Total Logons on System */
-						ltoday,						/* Total Logons Today */
-						timeon,						/* Total Time on System */
-						ttoday,						/* Total Time Today */
-						uls,						/* Total Uploads Today */
-						ulb,						/* Total Upload Bytes Today */
-						dls,						/* Total Downloads Today */
-						dlb,						/* Total Download Bytes Today */
-						ptoday,						/* Total Posts Today */
-						etoday,						/* Total Emails Today */
-						ftoday; 					/* Total Feedbacks Today */
-			uint16_t	nusers; 					/* Total New Users Today */
+		struct {                                    /* System/Node Statistics */
+			uint32_t date,                          /* When last rolled-over */
+			         logons,                        /* Total Logons on System */
+			         ltoday,                        /* Total Logons Today */
+			         timeon,                        /* Total Time on System */
+			         ttoday,                        /* Total Time Today */
+			         uls,                           /* Total Uploads Today */
+			         ulb,                           /* Total Upload Bytes Today */
+			         dls,                           /* Total Downloads Today */
+			         dlb,                           /* Total Download Bytes Today */
+			         ptoday,                        /* Total Posts Today */
+			         etoday,                        /* Total Emails Today */
+			         ftoday;                        /* Total Feedbacks Today */
+			uint16_t nusers;                        /* Total New Users Today */
 		} legacy_stats;
 
-		SAFEPRINTF(path,"%sdsts.dab",node ? cfg->node_path[node-1] : cfg->ctrl_dir);
-		if(!fexistcase(path))
+		SAFEPRINTF(path, "%sdsts.dab", node ? cfg->node_path[node - 1] : cfg->ctrl_dir);
+		if (!fexistcase(path))
 			return true;
-		if((file=nopen(path,O_RDONLY))==-1) {
+		if ((file = nopen(path, O_RDONLY)) == -1) {
 			return(false);
 		}
 		int rd = read(file, &legacy_stats, sizeof(legacy_stats));
@@ -177,7 +177,7 @@ bool getstats(scfg_t* cfg, uint node, stats_t* stats)
 		stats->date     = LE_INT(legacy_stats.date);
 		stats->logons   = LE_INT(legacy_stats.logons);
 		stats->ltoday   = LE_INT(legacy_stats.ltoday);
-		stats->timeon	= LE_INT(legacy_stats.timeon);
+		stats->timeon   = LE_INT(legacy_stats.timeon);
 		stats->ttoday   = LE_INT(legacy_stats.ttoday);
 		stats->uls      = LE_INT(legacy_stats.uls);
 		stats->ulb      = LE_INT(legacy_stats.ulb);
@@ -199,9 +199,9 @@ static void settotals(str_list_t* ini, const char* section, const totals_t* stat
 	iniSetUInteger(ini, section, strStatsLogons, stats->logons, &ini_style);
 	iniSetUInteger(ini, section, strStatsTimeon, stats->timeon, &ini_style);
 	iniSetUInteger(ini, section, strStatsUploads, stats->uls, &ini_style);
-	iniSetBytes(ini,   section, strStatsUploadBytes, /* unit: */1, stats->ulb, &ini_style);
+	iniSetBytes(ini,   section, strStatsUploadBytes, /* unit: */ 1, stats->ulb, &ini_style);
 	iniSetUInteger(ini, section, strStatsDownloads, stats->dls, &ini_style);
-	iniSetBytes(ini,   section, strStatsDownloadBytes, /* unit: */1, stats->dlb, &ini_style);
+	iniSetBytes(ini,   section, strStatsDownloadBytes, /* unit: */ 1, stats->dlb, &ini_style);
 	iniSetUInteger(ini, section, strStatsPosts, stats->posts, &ini_style);
 	iniSetUInteger(ini, section, strStatsEmail, stats->email, &ini_style);
 	iniSetUInteger(ini, section, strStatsFeedback, stats->fbacks, &ini_style);
@@ -212,14 +212,14 @@ static void settotals(str_list_t* ini, const char* section, const totals_t* stat
 /****************************************************************************/
 static bool write_dstats(FILE* fp, str_list_t* ini, const char* function)
 {
-	time_t now = time(NULL);
-	char tstr[32];
-	char value[INI_MAX_VALUE_LEN + 1];
+	time_t      now = time(NULL);
+	char        tstr[32];
+	char        value[INI_MAX_VALUE_LEN + 1];
 	const char* key = "LastWrite";
-	if(ini == NULL)
+	if (ini == NULL)
 		return false;
-	char* last = iniGetString(*ini, ROOT_SECTION, key, NULL, value);
-	if(last != NULL)
+	char*       last = iniGetString(*ini, ROOT_SECTION, key, NULL, value);
+	if (last != NULL)
 		iniSetString(ini, ROOT_SECTION, "PrevLastWrite", last, NULL);
 	safe_snprintf(value, sizeof value, "%.24s by %s", ctime_r(&now, tstr), function);
 	iniSetString(ini, ROOT_SECTION, key, value, NULL);
@@ -230,15 +230,15 @@ static bool write_dstats(FILE* fp, str_list_t* ini, const char* function)
 /****************************************************************************/
 bool fwrite_dstats(FILE* fp, const stats_t* stats, const char* function)
 {
-	bool result = false;
+	bool       result = false;
 	str_list_t ini;
 
-	if(fp == NULL)
+	if (fp == NULL)
 		return false;
 
 	ini = iniReadFile(fp);
-	if(ini != NULL) {
-		iniSetDateTime(&ini, NULL, strStatsDate, /* include_time: */false, stats->date, /* style: */NULL);
+	if (ini != NULL) {
+		iniSetDateTime(&ini, NULL, strStatsDate, /* include_time: */ false, stats->date, /* style: */ NULL);
 		settotals(&ini, strStatsToday, &stats->today);
 		settotals(&ini, strStatsTotal, &stats->total);
 		result = write_dstats(fp, &ini, function);
@@ -253,10 +253,10 @@ bool fwrite_dstats(FILE* fp, const stats_t* stats, const char* function)
 /****************************************************************************/
 bool putstats(scfg_t* cfg, uint node, const stats_t* stats)
 {
-	bool result;
+	bool  result;
 
-	FILE* fp = fopen_dstats(cfg, node, /* for_write: */true);
-	if(fp == NULL)
+	FILE* fp = fopen_dstats(cfg, node, /* for_write: */ true);
+	if (fp == NULL)
 		return false;
 	result = fwrite_dstats(fp, stats, __FUNCTION__);
 	iniCloseFile(fp);
@@ -275,46 +275,46 @@ void rolloverstats(stats_t* stats)
 /****************************************************************************/
 bool fwrite_cstats(FILE* fp, const stats_t* stats)
 {
-	int len;
+	int  len;
 	char pad[LEN_CSTATS_RECORD];
 	memset(pad, '\t', sizeof(pad) - 1);
 	TERMINATE(pad);
 	fseek(fp, 0, SEEK_END);
-	if(ftell(fp) == 0) {
+	if (ftell(fp) == 0) {
 		len = fprintf(fp
-			,"%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t"
-			,strStatsDate
-			,strStatsLogons
-			,strStatsTimeon
-			,strStatsUploads
-			,strStatsUploadBytes
-			,strStatsDownloads
-			,strStatsDownloadBytes
-			,strStatsPosts
-			,strStatsEmail
-			,strStatsFeedback
-			,strStatsNewUsers
-		);
-		if(len >= sizeof(pad))
+		              , "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t"
+		              , strStatsDate
+		              , strStatsLogons
+		              , strStatsTimeon
+		              , strStatsUploads
+		              , strStatsUploadBytes
+		              , strStatsDownloads
+		              , strStatsDownloadBytes
+		              , strStatsPosts
+		              , strStatsEmail
+		              , strStatsFeedback
+		              , strStatsNewUsers
+		              );
+		if (len >= sizeof(pad))
 			return false;
-		if(fprintf(fp, "%.*s\n", (int)(sizeof(pad) - (len + 1)), pad) <= 0)
+		if (fprintf(fp, "%.*s\n", (int)(sizeof(pad) - (len + 1)), pad) <= 0)
 			return false;
 	}
 	len = fprintf(fp
-		,"%" PRIu32 "\t%u\t%u\t%u\t%" PRIu64 "\t%u\t%" PRIu64 "\t%u\t%u\t%u\t%u\t"
-		,time_to_isoDate(stats->date)
-		,stats->ltoday
-		,stats->ttoday
-		,stats->uls
-		,stats->ulb
-		,stats->dls
-		,stats->dlb
-		,stats->ptoday
-		,stats->etoday
-		,stats->ftoday
-		,stats->nusers
-	);
-	if(len >= sizeof(pad))
+	              , "%" PRIu32 "\t%u\t%u\t%u\t%" PRIu64 "\t%u\t%" PRIu64 "\t%u\t%u\t%u\t%u\t"
+	              , time_to_isoDate(stats->date)
+	              , stats->ltoday
+	              , stats->ttoday
+	              , stats->uls
+	              , stats->ulb
+	              , stats->dls
+	              , stats->dlb
+	              , stats->ptoday
+	              , stats->etoday
+	              , stats->ftoday
+	              , stats->nusers
+	              );
+	if (len >= sizeof(pad))
 		return false;
 	return fprintf(fp, "%.*s\n", (int)(sizeof(pad) - (len + 1)), pad) > 0;
 }
@@ -338,14 +338,14 @@ void parse_cstats(str_list_t record, stats_t* stats)
 /****************************************************************************/
 int getfiles(scfg_t* cfg, int dirnum)
 {
-	char path[MAX_PATH + 1];
+	char  path[MAX_PATH + 1];
 	off_t l;
 
-	if(!dirnum_is_valid(cfg, dirnum))
+	if (!dirnum_is_valid(cfg, dirnum))
 		return 0;
 	SAFEPRINTF2(path, "%s%s.sid", cfg->dir[dirnum]->data_dir, cfg->dir[dirnum]->code);
 	l = flength(path);
-	if(l <= 0)
+	if (l <= 0)
 		return 0;
 	return (int)(l / sizeof(fileidxrec_t));
 }
@@ -355,15 +355,15 @@ int getfiles(scfg_t* cfg, int dirnum)
 /****************************************************************************/
 uint getposts(scfg_t* cfg, int subnum)
 {
-	if(!subnum_is_valid(cfg, subnum))
+	if (!subnum_is_valid(cfg, subnum))
 		return 0;
-	if(cfg->sub[subnum]->misc & SUB_NOVOTING) {
-		char path[MAX_PATH + 1];
+	if (cfg->sub[subnum]->misc & SUB_NOVOTING) {
+		char  path[MAX_PATH + 1];
 		off_t l;
 
 		SAFEPRINTF2(path, "%s%s.sid", cfg->sub[subnum]->data_dir, cfg->sub[subnum]->code);
 		l = flength(path);
-		if(l < sizeof(idxrec_t))
+		if (l < sizeof(idxrec_t))
 			return 0;
 		return (uint)(l / sizeof(idxrec_t));
 	}
@@ -371,7 +371,7 @@ uint getposts(scfg_t* cfg, int subnum)
 	SAFEPRINTF2(smb.file, "%s%s", cfg->sub[subnum]->data_dir, cfg->sub[subnum]->code);
 	smb.retry_time = cfg->smb_retry_time;
 	smb.subnum = subnum;
-	if(smb_open_index(&smb) != SMB_SUCCESS)
+	if (smb_open_index(&smb) != SMB_SUCCESS)
 		return 0;
 	size_t result = smb_msg_count(&smb, (1 << SMB_MSG_TYPE_NORMAL) | (1 << SMB_MSG_TYPE_POLL));
 	smb_close(&smb);
@@ -381,20 +381,20 @@ uint getposts(scfg_t* cfg, int subnum)
 static void inc_xfer_stat_keys(str_list_t* ini, const char* section, uint files, uint64_t bytes, const char* files_key, const char* bytes_key)
 {
 	iniSetUInteger(ini, section, files_key, iniGetUInteger(*ini, section, files_key, 0) + files, &ini_style);
-	iniSetBytes(ini, section, bytes_key, /* unit: */1, iniGetBytes(*ini, section, bytes_key, /* unit: */1, 0) + bytes, &ini_style);
+	iniSetBytes(ini, section, bytes_key, /* unit: */ 1, iniGetBytes(*ini, section, bytes_key, /* unit: */ 1, 0) + bytes, &ini_style);
 }
 
 static bool inc_xfer_stats(scfg_t* cfg, uint node, uint files, uint64_t bytes, const char* files_key, const char* bytes_key)
 {
-	FILE* fp;
+	FILE*      fp;
 	str_list_t ini;
-	bool result = false;
+	bool       result = false;
 
-	fp = fopen_dstats(cfg, node, /* for_write: */true);
-	if(fp == NULL)
+	fp = fopen_dstats(cfg, node, /* for_write: */ true);
+	if (fp == NULL)
 		return false;
 	ini = iniReadFile(fp);
-	if(ini != NULL) {
+	if (ini != NULL) {
 		inc_xfer_stat_keys(&ini, strStatsTotal, files, bytes, files_key, bytes_key);
 		inc_xfer_stat_keys(&ini, strStatsToday, files, bytes, files_key, bytes_key);
 		result = write_dstats(fp, &ini, __FUNCTION__);
@@ -408,9 +408,9 @@ static bool inc_xfer_stats(scfg_t* cfg, uint node, uint files, uint64_t bytes, c
 static bool inc_all_xfer_stats(scfg_t* cfg, uint files, uint64_t bytes, const char* files_key, const char* bytes_key)
 {
 	bool success = true;
-	if(cfg->node_num)
+	if (cfg->node_num)
 		success = inc_xfer_stats(cfg, cfg->node_num, files, bytes, files_key, bytes_key);
-	return inc_xfer_stats(cfg, /* system = node_num 0 */0, files, bytes, files_key, bytes_key) && success;
+	return inc_xfer_stats(cfg, /* system = node_num 0 */ 0, files, bytes, files_key, bytes_key) && success;
 }
 
 bool inc_upload_stats(scfg_t* cfg, uint files, uint64_t bytes)
@@ -425,15 +425,15 @@ bool inc_download_stats(scfg_t* cfg, uint files, uint64_t bytes)
 
 static bool inc_post_stat(scfg_t* cfg, uint node, uint count)
 {
-	FILE* fp;
+	FILE*      fp;
 	str_list_t ini;
-	bool result = false;
+	bool       result = false;
 
-	fp = fopen_dstats(cfg, node, /* for_write: */true);
-	if(fp == NULL)
+	fp = fopen_dstats(cfg, node, /* for_write: */ true);
+	if (fp == NULL)
 		return false;
 	ini = iniReadFile(fp);
-	if(ini != NULL) {
+	if (ini != NULL) {
 		iniSetUInteger(&ini, strStatsToday, strStatsPosts, iniGetUInteger(ini, strStatsToday, strStatsPosts, 0) + count, &ini_style);
 		iniSetUInteger(&ini, strStatsTotal, strStatsPosts, iniGetUInteger(ini, strStatsTotal, strStatsPosts, 0) + count, &ini_style);
 		result = write_dstats(fp, &ini, __FUNCTION__);
@@ -447,23 +447,23 @@ static bool inc_post_stat(scfg_t* cfg, uint node, uint count)
 bool inc_post_stats(scfg_t* cfg, uint count)
 {
 	bool success = true;
-	if(cfg->node_num)
+	if (cfg->node_num)
 		success = inc_post_stat(cfg, cfg->node_num, count);
-	return inc_post_stat(cfg, /* system = node_num 0 */0, count) && success;
+	return inc_post_stat(cfg, /* system = node_num 0 */ 0, count) && success;
 }
 
 static bool inc_email_stat(scfg_t* cfg, uint node, uint count, bool feedback)
 {
-	FILE* fp;
-	str_list_t ini;
-	bool result = false;
+	FILE*       fp;
+	str_list_t  ini;
+	bool        result = false;
 	const char* key = feedback ? strStatsFeedback : strStatsEmail;
 
-	fp = fopen_dstats(cfg, node, /* for_write: */true);
-	if(fp == NULL)
+	fp = fopen_dstats(cfg, node, /* for_write: */ true);
+	if (fp == NULL)
 		return false;
 	ini = iniReadFile(fp);
-	if(ini != NULL) {
+	if (ini != NULL) {
 		iniSetUInteger(&ini, strStatsToday, key, iniGetUInteger(ini, strStatsToday, key, 0) + count, &ini_style);
 		iniSetUInteger(&ini, strStatsTotal, key, iniGetUInteger(ini, strStatsTotal, key, 0) + count, &ini_style);
 		result = write_dstats(fp, &ini, __FUNCTION__);
@@ -477,7 +477,7 @@ static bool inc_email_stat(scfg_t* cfg, uint node, uint count, bool feedback)
 bool inc_email_stats(scfg_t* cfg, uint count, bool feedback)
 {
 	bool success = true;
-	if(cfg->node_num)
+	if (cfg->node_num)
 		success = inc_email_stat(cfg, cfg->node_num, count, feedback);
-	return inc_email_stat(cfg, /* system = node_num 0 */0, count, feedback) && success;
+	return inc_email_stat(cfg, /* system = node_num 0 */ 0, count, feedback) && success;
 }

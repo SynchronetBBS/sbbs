@@ -34,94 +34,94 @@
 
 char* mimegetboundary()
 {
-    int		i, num;
-    char*	boundaryString = (char*)malloc(SIZEOF_MIMEBOUNDARY + 1);
+	int   i, num;
+	char* boundaryString = (char*)malloc(SIZEOF_MIMEBOUNDARY + 1);
 
-    srand((unsigned int)time(NULL));
-    if (boundaryString == NULL) 
-        return NULL;
-    for (i=0;i<SIZEOF_MIMEBOUNDARY;i++) {
-        num=(rand()%62);    
-        if(num<10)
-            num+=48;  
-        else if(num>=10 && num<36)
-            num+=55;
-        else
-            num+=61;
-        boundaryString[i]=(char)num;
-    }
-    boundaryString[i]='\0';
-    return boundaryString;
+	srand((unsigned int)time(NULL));
+	if (boundaryString == NULL)
+		return NULL;
+	for (i = 0; i < SIZEOF_MIMEBOUNDARY; i++) {
+		num = (rand() % 62);
+		if (num < 10)
+			num += 48;
+		else if (num >= 10 && num < 36)
+			num += 55;
+		else
+			num += 61;
+		boundaryString[i] = (char)num;
+	}
+	boundaryString[i] = '\0';
+	return boundaryString;
 }
 
 void mimeheaders(SOCKET socket, const char* prot, int sess, char* boundary)
 {
-    sockprintf(socket,prot,sess,"MIME-Version: 1.0");
-    sockprintf(socket,prot,sess,"Content-Type: multipart/mixed;");
-    sockprintf(socket,prot,sess," boundary=\"%s\"",boundary);
+	sockprintf(socket, prot, sess, "MIME-Version: 1.0");
+	sockprintf(socket, prot, sess, "Content-Type: multipart/mixed;");
+	sockprintf(socket, prot, sess, " boundary=\"%s\"", boundary);
 }
 
 void mimeblurb(SOCKET socket, const char* prot, int sess, char* boundary)
 {
-    sockprintf(socket,prot,sess,"This is a multi-part message in MIME format.");
-    sockprintf(socket,prot,sess,"");
+	sockprintf(socket, prot, sess, "This is a multi-part message in MIME format.");
+	sockprintf(socket, prot, sess, "");
 }
 
 void mimetextpartheader(SOCKET socket, const char* prot, int sess, char* boundary
-	,const char* text_subtype, const char* charset)
+                        , const char* text_subtype, const char* charset)
 {
-	if(text_subtype == NULL || *text_subtype == '\0')
+	if (text_subtype == NULL || *text_subtype == '\0')
 		text_subtype = "plain";
-    sockprintf(socket,prot,sess,"--%s",boundary);
-    sockprintf(socket,prot,sess,"Content-Type: text/%s;", text_subtype);
-    sockprintf(socket,prot,sess," charset=\"%s\"", charset);
-    sockprintf(socket,prot,sess,"Content-Transfer-Encoding: 8bit");
+	sockprintf(socket, prot, sess, "--%s", boundary);
+	sockprintf(socket, prot, sess, "Content-Type: text/%s;", text_subtype);
+	sockprintf(socket, prot, sess, " charset=\"%s\"", charset);
+	sockprintf(socket, prot, sess, "Content-Transfer-Encoding: 8bit");
 }
 
 bool base64out(SOCKET socket, const char* prot, int sess, char* pathfile)
 {
-    FILE *  fp;
-    char    in[57];
-    char    out[77];
-    int     bytesread;
+	FILE * fp;
+	char   in[57];
+	char   out[77];
+	int    bytesread;
 
-    if((fp=fopen(pathfile,"rb"))==NULL) 
-        return(false);
-    while(1) {
-        bytesread=fread(in,1,sizeof(in),fp);
-		if((b64_encode(out,sizeof(out),in,bytesread)==-1)
-				|| !sockprintf(socket,prot,sess, "%s", out))  {
+	if ((fp = fopen(pathfile, "rb")) == NULL)
+		return(false);
+	while (1) {
+		bytesread = fread(in, 1, sizeof(in), fp);
+		if ((b64_encode(out, sizeof(out), in, bytesread) == -1)
+		    || !sockprintf(socket, prot, sess, "%s", out))  {
 			fclose(fp);
 			return(false);
 		}
-        if(bytesread!=sizeof(in) || feof(fp))
-            break;
-    }
+		if (bytesread != sizeof(in) || feof(fp))
+			break;
+	}
 	fclose(fp);
-    sockprintf(socket,prot,sess,"");
+	sockprintf(socket, prot, sess, "");
 	return(true);
 }
 
 bool mimeattach(SOCKET socket, const char* prot, int sess, char* boundary, char* pathfile)
 {
-    char* fname = getfname(pathfile);
+	char* fname = getfname(pathfile);
 
-    sockprintf(socket,prot,sess,"--%s",boundary);
-    sockprintf(socket,prot,sess,"Content-Type: application/octet-stream;");
-    sockprintf(socket,prot,sess," name=\"%s\"",fname);
-    sockprintf(socket,prot,sess,"Content-Transfer-Encoding: base64");
-    sockprintf(socket,prot,sess,"Content-Disposition: attachment;");
-    sockprintf(socket,prot,sess," filename=\"%s\"",fname);
-    sockprintf(socket,prot,sess,"");
-    if(!base64out(socket,prot,sess,pathfile))
+	sockprintf(socket, prot, sess, "--%s", boundary);
+	sockprintf(socket, prot, sess, "Content-Type: application/octet-stream;");
+	sockprintf(socket, prot, sess, " name=\"%s\"", fname);
+	sockprintf(socket, prot, sess, "Content-Transfer-Encoding: base64");
+	sockprintf(socket, prot, sess, "Content-Disposition: attachment;");
+	sockprintf(socket, prot, sess, " filename=\"%s\"", fname);
+	sockprintf(socket, prot, sess, "");
+	if (!base64out(socket, prot, sess, pathfile))
 		return(false);
-    sockprintf(socket,prot,sess,"");
+	sockprintf(socket, prot, sess, "");
 	return(true);
 }
 
 void endmime(SOCKET socket, const char* prot, int sess, char* boundary)
 {
 	/* last boundary */
-    sockprintf(socket,prot,sess,"--%s--",boundary);
-    sockprintf(socket,prot,sess,"");
+	sockprintf(socket, prot, sess, "--%s--", boundary);
+	sockprintf(socket, prot, sess, "");
 }

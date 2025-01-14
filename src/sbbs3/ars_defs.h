@@ -40,93 +40,93 @@ extern "C"
 #endif
 uchar *arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf);
 
-#define AR_INVALID	-1				/* Unspecified keyword */
+#define AR_INVALID  -1              /* Unspecified keyword */
 
 enum {                              /* Access requirement binaries */
-     AR_NULL
-    ,AR_OR
-    ,AR_NOT
-    ,AR_EQUAL
-    ,AR_BEGNEST
-    ,AR_ENDNEST
-    ,AR_LEVEL
-    ,AR_AGE
-    ,AR_BPS
-    ,AR_NODE
-    ,AR_TLEFT
-    ,AR_TUSED
-    ,AR_USER		/* 12 */
-	,AR_TIME
-    ,AR_PCR
-	,AR_FLAG1
-	,AR_FLAG2
-	,AR_FLAG3
-	,AR_FLAG4
-	,AR_EXEMPT
-	,AR_REST		/* 20 */
-    ,AR_SEX
-	,AR_UDR
-	,AR_UDFR
-	,AR_EXPIRE
-	,AR_CREDIT
-	,AR_DAY
-	,AR_ANSI
-	,AR_RIP
-	,AR_LOCAL
-	,AR_GROUP		/* 30 */
-	,AR_SUB
-	,AR_LIB
-	,AR_DIR
-	,AR_EXPERT
-	,AR_SYSOP
-	,AR_QUIET
-	,AR_MAIN_CMDS
-	,AR_FILE_CMDS
-	,AR_RANDOM
-	,AR_LASTON		/* 40 */
-	,AR_LOGONS		
-	,AR_WIP
-	,AR_SUBCODE
-	,AR_DIRCODE
-	,AR_OS2
-	,AR_DOS
-	,AR_WIN32
-	,AR_UNIX
-	,AR_LINUX
-	,AR_SHELL		/* 50 */
-	,AR_PROT
-	,AR_GUEST
-	,AR_QNODE
-	,AR_ACTIVE
-	,AR_INACTIVE
-	,AR_DELETED
-	,AR_ULS
-	,AR_ULK
-	,AR_ULM
-	,AR_DLS			/* 60 */
-	,AR_DLK
-	,AR_DLM
-	,AR_HOST	/* Remote/client hostname (wildcards allowed) */
-	,AR_IP		/* Remote/client IP address (wildcards allowed) */
-	,AR_TERM
-	,AR_COLS
-	,AR_ROWS
-	,AR_PETSCII
-	,AR_ASCII
-	,AR_UTF8
-	,AR_CP437
-	,AR_USERNAME
-    };
+	AR_NULL
+	, AR_OR
+	, AR_NOT
+	, AR_EQUAL
+	, AR_BEGNEST
+	, AR_ENDNEST
+	, AR_LEVEL
+	, AR_AGE
+	, AR_BPS
+	, AR_NODE
+	, AR_TLEFT
+	, AR_TUSED
+	, AR_USER        /* 12 */
+	, AR_TIME
+	, AR_PCR
+	, AR_FLAG1
+	, AR_FLAG2
+	, AR_FLAG3
+	, AR_FLAG4
+	, AR_EXEMPT
+	, AR_REST        /* 20 */
+	, AR_SEX
+	, AR_UDR
+	, AR_UDFR
+	, AR_EXPIRE
+	, AR_CREDIT
+	, AR_DAY
+	, AR_ANSI
+	, AR_RIP
+	, AR_LOCAL
+	, AR_GROUP       /* 30 */
+	, AR_SUB
+	, AR_LIB
+	, AR_DIR
+	, AR_EXPERT
+	, AR_SYSOP
+	, AR_QUIET
+	, AR_MAIN_CMDS
+	, AR_FILE_CMDS
+	, AR_RANDOM
+	, AR_LASTON      /* 40 */
+	, AR_LOGONS
+	, AR_WIP
+	, AR_SUBCODE
+	, AR_DIRCODE
+	, AR_OS2
+	, AR_DOS
+	, AR_WIN32
+	, AR_UNIX
+	, AR_LINUX
+	, AR_SHELL       /* 50 */
+	, AR_PROT
+	, AR_GUEST
+	, AR_QNODE
+	, AR_ACTIVE
+	, AR_INACTIVE
+	, AR_DELETED
+	, AR_ULS
+	, AR_ULK
+	, AR_ULM
+	, AR_DLS         /* 60 */
+	, AR_DLK
+	, AR_DLM
+	, AR_HOST    /* Remote/client hostname (wildcards allowed) */
+	, AR_IP      /* Remote/client IP address (wildcards allowed) */
+	, AR_TERM
+	, AR_COLS
+	, AR_ROWS
+	, AR_PETSCII
+	, AR_ASCII
+	, AR_UTF8
+	, AR_CP437
+	, AR_USERNAME
+};
 
 enum ar_type {
-	 AR_BOOL
-	,AR_NUM
-	,AR_STRING
+	AR_BOOL
+	, AR_NUM
+	, AR_STRING
 };
 
 static inline enum ar_type ar_type(int artype)
 {
-	switch(artype) {
+	switch (artype) {
 		case AR_RIP:
 		case AR_WIP:
 		case AR_ANSI:
@@ -161,4 +161,4 @@ static inline enum ar_type ar_type(int artype)
 	return AR_NUM;
 }
 
-#endif		/* Don't add anything after this line */
+#endif      /* Don't add anything after this line */

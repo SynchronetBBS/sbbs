@@ -22,13 +22,13 @@
 #ifndef _NOPEN_H
 #define _NOPEN_H
 
-#include <stdio.h>			/* FILE */
-#include <fcntl.h>			/* O_RDONLY */
-#include "gen_defs.h"		/* bool */
-#include "dirwrap.h"		/* MAX_PATH */
+#include <stdio.h>          /* FILE */
+#include <fcntl.h>          /* O_RDONLY */
+#include "gen_defs.h"       /* bool */
+#include "dirwrap.h"        /* MAX_PATH */
 
-#define FNOPEN_BUF_SIZE		(2*1024)
-#define LOOP_NOPEN	  100	/* Retries before file access denied			*/
+#define FNOPEN_BUF_SIZE     (2 * 1024)
+#define LOOP_NOPEN    100   /* Retries before file access denied			*/
 
 typedef struct {
 	int fd;
@@ -40,18 +40,18 @@ typedef struct {
 extern "C" {
 #endif
 
-int		nopen(const char* str, uint access);
-FILE *	fnopen(int* file, const char* str, uint access);
-bool	ftouch(const char* fname);
-bool	fmutex(const char* fname, const char* text, long max_age, time_t*);
+int     nopen(const char* str, uint access);
+FILE *  fnopen(int* file, const char* str, uint access);
+bool    ftouch(const char* fname);
+bool    fmutex(const char* fname, const char* text, long max_age, time_t*);
 fmutex_t fmutex_init(void);
-bool	fmutex_open(fmutex_t*, const char* text, long max_age);
-bool	fmutex_close(fmutex_t*);
-bool	fcompare(const char* fn1, const char* fn2);
-bool	backup(const char* org, int backup_level, bool ren);
+bool    fmutex_open(fmutex_t*, const char* text, long max_age);
+bool    fmutex_close(fmutex_t*);
+bool    fcompare(const char* fn1, const char* fn2);
+bool    backup(const char* org, int backup_level, bool ren);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif	/* Don't add anything after this line */
+#endif  /* Don't add anything after this line */

@@ -7,35 +7,35 @@
 #if defined(__unix__)
 	#include <dlfcn.h>
 
-	typedef void * dll_handle;
-	DLLEXPORT dll_handle xp_dlopen(const char **name, int mode, int major);
-	#define xp_dlsym(handle, name)				dlsym(handle, #name)
-	#define xp_dlclose(handle)					dlclose(handle)
+typedef void * dll_handle;
+DLLEXPORT dll_handle xp_dlopen(const char **name, int mode, int major);
+	#define xp_dlsym(handle, name)              dlsym(handle, #name)
+	#define xp_dlclose(handle)                  dlclose(handle)
 #elif defined(_WIN32)
 	#define WIN32_LEAN_AND_MEAN
 	#include <windows.h>
 	#undef WIN32_LEAN_AND_MEAN
 
-	typedef HMODULE dll_handle;
-	DLLEXPORT dll_handle xp_dlopen(const char **name, int mode, int major);
-	#define xp_dlsym(handle, name)				((void *)GetProcAddress(handle, #name))
-	#define xp_dlclose(handle)					(FreeLibrary(handle)?0:-1)
+typedef HMODULE dll_handle;
+DLLEXPORT dll_handle xp_dlopen(const char **name, int mode, int major);
+	#define xp_dlsym(handle, name)              ((void *)GetProcAddress(handle, #name))
+	#define xp_dlclose(handle)                  (FreeLibrary(handle)?0:-1)
 
-	/* Unused values for *nix compatability */
-	enum {
-		 RTLD_LAZY
-		,RTLD_NOW
-		,RTLD_GLOBAL
-		,RTLD_LOCAL
-		,RTLD_TRACE
-	};
+/* Unused values for *nix compatability */
+enum {
+	RTLD_LAZY
+	, RTLD_NOW
+	, RTLD_GLOBAL
+	, RTLD_LOCAL
+	, RTLD_TRACE
+};
 #endif
 #else
-	typedef void* dll_handle;
+typedef void* dll_handle;
 
-	#define xp_dlopen(name, mode, major)	(name)
-	#define xp_dlsym(handle, name)			(name)
-	#define xp_dlclose(handle)				(0)
+	#define xp_dlopen(name, mode, major)    (name)
+	#define xp_dlsym(handle, name)          (name)
+	#define xp_dlclose(handle)              (0)
 #endif
 
 #endif

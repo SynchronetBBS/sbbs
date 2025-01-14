@@ -19,9 +19,9 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include <time.h>		/* time()	*/
-#include <string.h>		/* strdup() */
-#include <ctype.h>		/* isspace()*/
+#include <time.h>       /* time()	*/
+#include <string.h>     /* strdup() */
+#include <ctype.h>      /* isspace()*/
 #include "smblib.h"
 #include "md5.h"
 #include "sha1.h"
@@ -30,79 +30,79 @@
 #include "genwrap.h"
 
 /* If return value is SMB_ERR_NOT_FOUND, hash file is left open */
-int smb_findhash(smb_t* smb, hash_t** compare, hash_t* found_hash, 
-						 int source_mask, bool mark)
+int smb_findhash(smb_t* smb, hash_t** compare, hash_t* found_hash,
+                 int source_mask, bool mark)
 {
-	int		retval;
-	bool	found=false;
-	size_t	c,count;
-	hash_t	hash;
+	int    retval;
+	bool   found = false;
+	size_t c, count;
+	hash_t hash;
 
-	if(found_hash!=NULL)
-		memset(found_hash,0,sizeof(hash_t));
+	if (found_hash != NULL)
+		memset(found_hash, 0, sizeof(hash_t));
 
-	if((retval=smb_open_hash(smb))!=SMB_SUCCESS)
+	if ((retval = smb_open_hash(smb)) != SMB_SUCCESS)
 		return(retval);
 
 	COUNT_LIST_ITEMS(compare, count);
 
-	if(count && source_mask!=SMB_HASH_SOURCE_NONE) {
+	if (count && source_mask != SMB_HASH_SOURCE_NONE) {
 
 		rewind(smb->hash_fp);
 		clearerr(smb->hash_fp);
-		while(!feof(smb->hash_fp)) {
-			if(smb_fread(smb,&hash,sizeof(hash),smb->hash_fp)!=sizeof(hash))
+		while (!feof(smb->hash_fp)) {
+			if (smb_fread(smb, &hash, sizeof(hash), smb->hash_fp) != sizeof(hash))
 				break;
 
-			if(hash.flags==0)
-				continue;		/* invalid hash record (!?) */
+			if (hash.flags == 0)
+				continue;       /* invalid hash record (!?) */
 
-			if((source_mask&(1<<hash.source))==0)	/* not checking this source type */
+			if ((source_mask & (1 << hash.source)) == 0)   /* not checking this source type */
 				continue;
 
-			for(c=0;compare[c]!=NULL;c++) {
+			for (c = 0; compare[c] != NULL; c++) {
 
-				if(compare[c]->source!=hash.source)
-					continue;	/* wrong source */
-				if(compare[c]->length!=hash.length)
-					continue;	/* wrong source length */
-				if(compare[c]->flags&SMB_HASH_MARKED)
-					continue;	/* already marked */
-				if((compare[c]->flags&SMB_HASH_PROC_COMP_MASK)!=(hash.flags&SMB_HASH_PROC_COMP_MASK))
-					continue;	/* wrong pre-process flags */
-				if((compare[c]->flags&hash.flags&SMB_HASH_MASK)==0)	
-					continue;	/* no matching hashes */
-				if((compare[c]->flags&hash.flags&SMB_HASH_CRC16)
-					&& compare[c]->data.crc16!=hash.data.crc16)
-					continue;	/* wrong crc-16 */
-				if((compare[c]->flags&hash.flags&SMB_HASH_CRC32)
-					&& compare[c]->data.crc32!=hash.data.crc32)
-					continue;	/* wrong crc-32 */
-				if((compare[c]->flags&hash.flags&SMB_HASH_MD5)
-					&& memcmp(compare[c]->data.md5,hash.data.md5,sizeof(hash.data.md5)))
-					continue;	/* wrong MD5 */
-				if((compare[c]->flags&hash.flags&SMB_HASH_SHA1)
-					&& memcmp(compare[c]->data.sha1,hash.data.sha1,sizeof(hash.data.sha1)))
-					continue;	/* wrong SHA1 */
+				if (compare[c]->source != hash.source)
+					continue;   /* wrong source */
+				if (compare[c]->length != hash.length)
+					continue;   /* wrong source length */
+				if (compare[c]->flags & SMB_HASH_MARKED)
+					continue;   /* already marked */
+				if ((compare[c]->flags & SMB_HASH_PROC_COMP_MASK) != (hash.flags & SMB_HASH_PROC_COMP_MASK))
+					continue;   /* wrong pre-process flags */
+				if ((compare[c]->flags & hash.flags & SMB_HASH_MASK) == 0)
+					continue;   /* no matching hashes */
+				if ((compare[c]->flags & hash.flags & SMB_HASH_CRC16)
+				    && compare[c]->data.crc16 != hash.data.crc16)
+					continue;   /* wrong crc-16 */
+				if ((compare[c]->flags & hash.flags & SMB_HASH_CRC32)
+				    && compare[c]->data.crc32 != hash.data.crc32)
+					continue;   /* wrong crc-32 */
+				if ((compare[c]->flags & hash.flags & SMB_HASH_MD5)
+				    && memcmp(compare[c]->data.md5, hash.data.md5, sizeof(hash.data.md5)))
+					continue;   /* wrong MD5 */
+				if ((compare[c]->flags & hash.flags & SMB_HASH_SHA1)
+				    && memcmp(compare[c]->data.sha1, hash.data.sha1, sizeof(hash.data.sha1)))
+					continue;   /* wrong SHA1 */
 
 				/* successful match! */
-				break;	/* can't match more than one, so stop comparing */
+				break;  /* can't match more than one, so stop comparing */
 			}
 
-			if(compare[c]==NULL)
-				continue;	/* no match */
+			if (compare[c] == NULL)
+				continue;   /* no match */
 
-			found=true;
+			found = true;
 
-			if(found_hash!=NULL)
-				memcpy(found_hash,&hash,sizeof(hash));
+			if (found_hash != NULL)
+				memcpy(found_hash, &hash, sizeof(hash));
 
-			if(!mark)
+			if (!mark)
 				break;
 
-			compare[c]->flags|=SMB_HASH_MARKED;
+			compare[c]->flags |= SMB_HASH_MARKED;
 		}
-		if(found) {
+		if (found) {
 			smb_close_hash(smb);
 			return(SMB_SUCCESS);
 		}
@@ -114,29 +114,29 @@ int smb_findhash(smb_t* smb, hash_t** compare, hash_t* found_hash,
 
 int smb_addhashes(smb_t* smb, hash_t** hashes, bool skip_marked)
 {
-	int		retval;
-	size_t	h;
+	int    retval;
+	size_t h;
 
 	COUNT_LIST_ITEMS(hashes, h);
-	if(!h) { /* nothing to add */
+	if (!h) { /* nothing to add */
 		smb_close_hash(smb);
 		return(SMB_SUCCESS);
 	}
 
-	if((retval=smb_open_hash(smb))!=SMB_SUCCESS)
+	if ((retval = smb_open_hash(smb)) != SMB_SUCCESS)
 		return(retval);
 
-	fseek(smb->hash_fp,0,SEEK_END);
+	fseek(smb->hash_fp, 0, SEEK_END);
 
-	for(h=0;hashes[h]!=NULL;h++) {
+	for (h = 0; hashes[h] != NULL; h++) {
 
 		/* skip hashes marked by smb_findhash() */
-		if(skip_marked && hashes[h]->flags&SMB_HASH_MARKED)	
-			continue;	
-	
+		if (skip_marked && hashes[h]->flags & SMB_HASH_MARKED)
+			continue;
+
 		/* can't think of any reason to strip SMB_HASH_MARKED flag right now */
-		if(smb_fwrite(smb,hashes[h],sizeof(hash_t),smb->hash_fp)!=sizeof(hash_t)) {
-			retval=SMB_ERR_WRITE;
+		if (smb_fwrite(smb, hashes[h], sizeof(hash_t), smb->hash_fp) != sizeof(hash_t)) {
+			retval = SMB_ERR_WRITE;
 			break;
 		}
 	}
@@ -148,28 +148,28 @@ int smb_addhashes(smb_t* smb, hash_t** hashes, bool skip_marked)
 
 static char* strip_chars(uchar* dst, const uchar* src, uchar* set)
 {
-	while(*src) {
-		if(strchr((char *)set,*src)==NULL)
-			*(dst++)=*src;
+	while (*src) {
+		if (strchr((char *)set, *src) == NULL)
+			*(dst++) = *src;
 		src++;
 	}
-	*dst=0;
+	*dst = 0;
 
 	return((char *)dst);
 }
 
 static char* strip_ctrla(uchar* dst, const uchar* src)
 {
-	while(*src) {
-		if(*src==CTRL_A) {
+	while (*src) {
+		if (*src == CTRL_A) {
 			src++;
-			if(*src)
+			if (*src)
 				src++;
 		}
 		else
-			*(dst++)=*(src++);
+			*(dst++) = *(src++);
 	}
-	*dst=0;
+	*dst = 0;
 
 	return((char *)dst);
 }
@@ -177,29 +177,29 @@ static char* strip_ctrla(uchar* dst, const uchar* src)
 /* Allocates and calculates hashes of data (based on flags)					*/
 /* Returns NULL on failure													*/
 hash_t* smb_hash(uint msgnum, uint32_t t, unsigned source, unsigned flags
-						 ,const void* data, size_t length)
+                 , const void* data, size_t length)
 {
-	hash_t*	hash;
+	hash_t* hash;
 
-	if(length==0)		/* Don't hash 0-length sources (e.g. empty/blank message bodies) */
+	if (length == 0)       /* Don't hash 0-length sources (e.g. empty/blank message bodies) */
 		return(NULL);
 
-	if((hash=(hash_t*)malloc(sizeof(hash_t)))==NULL)
+	if ((hash = (hash_t*)malloc(sizeof(hash_t))) == NULL)
 		return(NULL);
 
-	memset(hash,0,sizeof(hash_t));
-	hash->number=msgnum;
-	hash->time=t;
-	hash->length=length;
-	hash->source=source;
-	hash->flags=flags;
-	if(flags&SMB_HASH_CRC16)
-		hash->data.crc16=crc16((char*)data,length);
-	if(flags&SMB_HASH_CRC32)
-		hash->data.crc32=crc32((char*)data,length);
-	if(flags&SMB_HASH_MD5)
-		MD5_calc(hash->data.md5,data,length);
-	if(flags&SMB_HASH_SHA1)
+	memset(hash, 0, sizeof(hash_t));
+	hash->number = msgnum;
+	hash->time = t;
+	hash->length = length;
+	hash->source = source;
+	hash->flags = flags;
+	if (flags & SMB_HASH_CRC16)
+		hash->data.crc16 = crc16((char*)data, length);
+	if (flags & SMB_HASH_CRC32)
+		hash->data.crc32 = crc32((char*)data, length);
+	if (flags & SMB_HASH_MD5)
+		MD5_calc(hash->data.md5, data, length);
+	if (flags & SMB_HASH_SHA1)
 		SHA1_calc(hash->data.sha1, data, length);
 
 	return(hash);
@@ -209,27 +209,27 @@ hash_t* smb_hash(uint msgnum, uint32_t t, unsigned source, unsigned flags
 /* Supports string hash "pre-processing" (e.g. lowercase, strip whitespace)	*/
 /* Returns NULL on failure													*/
 hash_t* smb_hashstr(uint msgnum, uint32_t t, unsigned source, unsigned flags
-							,const char* str)
+                    , const char* str)
 {
-	char*	p=NULL;
-	hash_t*	hash;
+	char*   p = NULL;
+	hash_t* hash;
 
-	if(flags&SMB_HASH_PROC_MASK) {	/* string pre-processing */
-		if((p=strdup(str))==NULL)
+	if (flags & SMB_HASH_PROC_MASK) {  /* string pre-processing */
+		if ((p = strdup(str)) == NULL)
 			return(NULL);
-		if(flags&SMB_HASH_STRIP_CTRL_A)
-			strip_ctrla((uchar *)p,(uchar *)p);
-		if(flags&SMB_HASH_STRIP_WSP)
-			strip_chars((uchar *)p,(uchar *)p,(uchar *)" \t\r\n");
-		if(flags&SMB_HASH_LOWERCASE)
+		if (flags & SMB_HASH_STRIP_CTRL_A)
+			strip_ctrla((uchar *)p, (uchar *)p);
+		if (flags & SMB_HASH_STRIP_WSP)
+			strip_chars((uchar *)p, (uchar *)p, (uchar *)" \t\r\n");
+		if (flags & SMB_HASH_LOWERCASE)
 			strlwr(p);
 	}
 
-	if(p!=NULL) {
-		hash=smb_hash(msgnum, t, source, flags, p, strlen(p));
+	if (p != NULL) {
+		hash = smb_hash(msgnum, t, source, flags, p, strlen(p));
 		free(p);
 	} else
-		hash=smb_hash(msgnum, t, source, flags, str, strlen(str));
+		hash = smb_hash(msgnum, t, source, flags, str, strlen(str));
 
 	return(hash);
 }
@@ -238,43 +238,43 @@ hash_t* smb_hashstr(uint msgnum, uint32_t t, unsigned source, unsigned flags
 /* Returns NULL on failure													*/
 hash_t** smb_msghashes(smbmsg_t* msg, const uchar* body, int source_mask)
 {
-	size_t		h=0;
-	uchar		flags=SMB_HASH_CRC16|SMB_HASH_CRC32|SMB_HASH_MD5|SMB_HASH_SHA1;
-	hash_t**	hashes;	/* This is a NULL-terminated list of hashes */
-	hash_t*		hash;
-	time_t		t=time(NULL);
+	size_t   h = 0;
+	uchar    flags = SMB_HASH_CRC16 | SMB_HASH_CRC32 | SMB_HASH_MD5 | SMB_HASH_SHA1;
+	hash_t** hashes;    /* This is a NULL-terminated list of hashes */
+	hash_t*  hash;
+	time_t   t = time(NULL);
 
-	if((hashes=(hash_t**)malloc(sizeof(hash_t*)*(SMB_HASH_SOURCE_TYPES+1)))==NULL)
+	if ((hashes = (hash_t**)malloc(sizeof(hash_t*) * (SMB_HASH_SOURCE_TYPES + 1))) == NULL)
 		return(NULL);
 
-	memset(hashes, 0, sizeof(hash_t*)*(SMB_HASH_SOURCE_TYPES+1));
+	memset(hashes, 0, sizeof(hash_t*) * (SMB_HASH_SOURCE_TYPES + 1));
 
-	if(msg->id!=NULL && (source_mask&(1<<SMB_HASH_SOURCE_MSG_ID)) &&
-		(hash=smb_hashstr(msg->hdr.number, (uint32_t)t, SMB_HASH_SOURCE_MSG_ID, flags, msg->id))!=NULL)
-		hashes[h++]=hash;
+	if (msg->id != NULL && (source_mask & (1 << SMB_HASH_SOURCE_MSG_ID)) &&
+	    (hash = smb_hashstr(msg->hdr.number, (uint32_t)t, SMB_HASH_SOURCE_MSG_ID, flags, msg->id)) != NULL)
+		hashes[h++] = hash;
 
-	if(msg->ftn_msgid!=NULL	&& (source_mask&(1<<SMB_HASH_SOURCE_FTN_ID)) &&
-		(hash=smb_hashstr(msg->hdr.number, (uint32_t)t, SMB_HASH_SOURCE_FTN_ID, flags, msg->ftn_msgid))!=NULL)
-		hashes[h++]=hash;
+	if (msg->ftn_msgid != NULL && (source_mask & (1 << SMB_HASH_SOURCE_FTN_ID)) &&
+	    (hash = smb_hashstr(msg->hdr.number, (uint32_t)t, SMB_HASH_SOURCE_FTN_ID, flags, msg->ftn_msgid)) != NULL)
+		hashes[h++] = hash;
 
-	if(body!=NULL && (source_mask&(1<<SMB_HASH_SOURCE_BODY)) &&
-		(hash=smb_hashstr(msg->hdr.number, (uint32_t)t, SMB_HASH_SOURCE_BODY, flags|SMB_HASH_STRIP_WSP|SMB_HASH_STRIP_CTRL_A, (const char *)body))!=NULL)
-		hashes[h++]=hash;
+	if (body != NULL && (source_mask & (1 << SMB_HASH_SOURCE_BODY)) &&
+	    (hash = smb_hashstr(msg->hdr.number, (uint32_t)t, SMB_HASH_SOURCE_BODY, flags | SMB_HASH_STRIP_WSP | SMB_HASH_STRIP_CTRL_A, (const char *)body)) != NULL)
+		hashes[h++] = hash;
 
-	if(msg->subj!=NULL && (source_mask&(1<<SMB_HASH_SOURCE_SUBJECT))) {
-		char*	p=msg->subj;
-		while(*p) {
-			char* tp=strchr(p,':');
-			char* sp=strchr(p,' ');
-			if(tp!=NULL && (sp==NULL || tp<sp)) {
-				p=tp+1;
+	if (msg->subj != NULL && (source_mask & (1 << SMB_HASH_SOURCE_SUBJECT))) {
+		char* p = msg->subj;
+		while (*p) {
+			char* tp = strchr(p, ':');
+			char* sp = strchr(p, ' ');
+			if (tp != NULL && (sp == NULL || tp < sp)) {
+				p = tp + 1;
 				SKIP_WHITESPACE(p);
 				continue;
 			}
 			break;
 		}
-		if((hash=smb_hashstr(msg->hdr.number, (uint32_t)t, SMB_HASH_SOURCE_SUBJECT, flags, p))!=NULL)
-			hashes[h++]=hash;
+		if ((hash = smb_hashstr(msg->hdr.number, (uint32_t)t, SMB_HASH_SOURCE_SUBJECT, flags, p)) != NULL)
+			hashes[h++] = hash;
 	}
 
 	return(hashes);
@@ -282,113 +282,113 @@ hash_t** smb_msghashes(smbmsg_t* msg, const uchar* body, int source_mask)
 
 void smb_freehashes(hash_t** hashes)
 {
-	size_t		n;
+	size_t n;
 
-	FREE_LIST(hashes,n);
+	FREE_LIST(hashes, n);
 }
 
 /* Calculates and stores the hashes for a single message					*/
 int smb_hashmsg(smb_t* smb, smbmsg_t* msg, const uchar* text, bool update)
 {
-	size_t		n;
-	int			retval=SMB_SUCCESS;
-	hash_t		found;
-	hash_t**	hashes;	/* This is a NULL-terminated list of hashes */
+	size_t   n;
+	int      retval = SMB_SUCCESS;
+	hash_t   found;
+	hash_t** hashes;    /* This is a NULL-terminated list of hashes */
 
-	if(smb->status.attr&(SMB_EMAIL | SMB_NOHASH | SMB_FILE_DIRECTORY))
+	if (smb->status.attr & (SMB_EMAIL | SMB_NOHASH | SMB_FILE_DIRECTORY))
 		return(SMB_SUCCESS);
 
-	hashes=smb_msghashes(msg,text,SMB_HASH_SOURCE_DUPE);
+	hashes = smb_msghashes(msg, text, SMB_HASH_SOURCE_DUPE);
 
-	if(smb_findhash(smb, hashes, &found, SMB_HASH_SOURCE_DUPE, update)==SMB_SUCCESS && !update) {
-		retval=SMB_DUPE_MSG;
-		safe_snprintf(smb->last_error,sizeof(smb->last_error)
-			,"%s duplicate %s: %s found in message #%u", __FUNCTION__
-			,smb_hashsourcetype(found.source)
-			,smb_hashsource(msg,found.source)
-			,(uint)found.number);
+	if (smb_findhash(smb, hashes, &found, SMB_HASH_SOURCE_DUPE, update) == SMB_SUCCESS && !update) {
+		retval = SMB_DUPE_MSG;
+		safe_snprintf(smb->last_error, sizeof(smb->last_error)
+		              , "%s duplicate %s: %s found in message #%u", __FUNCTION__
+		              , smb_hashsourcetype(found.source)
+		              , smb_hashsource(msg, found.source)
+		              , (uint)found.number);
 	} else
-		if((retval=smb_addhashes(smb,hashes,/* skip_marked? */true))==SMB_SUCCESS)
-			msg->flags|=MSG_FLAG_HASHED;
+	if ((retval = smb_addhashes(smb, hashes, /* skip_marked? */ true)) == SMB_SUCCESS)
+		msg->flags |= MSG_FLAG_HASHED;
 
-	FREE_LIST(hashes,n);
+	FREE_LIST(hashes, n);
 
 	return(retval);
 }
 
 /* length=0 specifies ASCIIZ data											*/
 int smb_getmsgidx_by_hash(smb_t* smb, smbmsg_t* msg, unsigned source
-								 ,unsigned flags, const void* data, size_t length)
+                          , unsigned flags, const void* data, size_t length)
 {
-	int			retval;
-	size_t		n=2;
-	hash_t**	hashes;
-	hash_t		found;
+	int      retval;
+	size_t   n = 2;
+	hash_t** hashes;
+	hash_t   found;
 
-	if((hashes=(hash_t**)calloc(n, sizeof(hash_t*)))==NULL)
+	if ((hashes = (hash_t**)calloc(n, sizeof(hash_t*))) == NULL)
 		return(SMB_ERR_MEM);
 
-	if(length==0)
-		hashes[0]=smb_hashstr(0,0,source,flags,data);
+	if (length == 0)
+		hashes[0] = smb_hashstr(0, 0, source, flags, data);
 	else
-		hashes[0]=smb_hash(0,0,source,flags,data,length);
-	if(hashes[0]==NULL) {
-		FREE_LIST(hashes,n);
+		hashes[0] = smb_hash(0, 0, source, flags, data, length);
+	if (hashes[0] == NULL) {
+		FREE_LIST(hashes, n);
 		return(SMB_ERR_MEM);
 	}
 
-	if((retval=smb_findhash(smb, hashes, &found, 1<<source, false))==SMB_SUCCESS) {
-		if(found.number==0)
-			retval=SMB_FAILURE;	/* use better error value here? */
+	if ((retval = smb_findhash(smb, hashes, &found, 1 << source, false)) == SMB_SUCCESS) {
+		if (found.number == 0)
+			retval = SMB_FAILURE; /* use better error value here? */
 		else {
-			msg->hdr.number=found.number;
-			retval=smb_getmsgidx(smb, msg);
+			msg->hdr.number = found.number;
+			retval = smb_getmsgidx(smb, msg);
 		}
 	}
 
-	FREE_LIST(hashes,n);
+	FREE_LIST(hashes, n);
 
 	return(retval);
 }
 
 int smb_getmsghdr_by_hash(smb_t* smb, smbmsg_t* msg, unsigned source
-								 ,unsigned flags, const void* data, size_t length)
+                          , unsigned flags, const void* data, size_t length)
 {
 	int retval;
 
-	if((retval=smb_getmsgidx_by_hash(smb,msg,source,flags,data,length))!=SMB_SUCCESS)
+	if ((retval = smb_getmsgidx_by_hash(smb, msg, source, flags, data, length)) != SMB_SUCCESS)
 		return(retval);
 
-	if((retval=smb_lockmsghdr(smb,msg))!=SMB_SUCCESS)
+	if ((retval = smb_lockmsghdr(smb, msg)) != SMB_SUCCESS)
 		return(retval);
 
-	retval=smb_getmsghdr(smb,msg);
+	retval = smb_getmsghdr(smb, msg);
 
-	smb_unlockmsghdr(smb,msg); 
+	smb_unlockmsghdr(smb, msg);
 
 	return(retval);
 }
 
 uint16_t smb_subject_crc(const char* subj)
 {
-	char*	str;
-	uint16_t	crc;
+	char*    str;
+	uint16_t crc;
 
-	if(subj==NULL)
+	if (subj == NULL)
 		return(0);
 
-	while(!strnicmp(subj,"RE:",3)) {
-		subj+=3;
-		while(*subj==' ')
-			subj++; 
+	while (!strnicmp(subj, "RE:", 3)) {
+		subj += 3;
+		while (*subj == ' ')
+			subj++;
 	}
 
-	if((str=strdup(subj))==NULL)
+	if ((str = strdup(subj)) == NULL)
 		return(0xffff);
 
 	strlwr(str);
 	truncsp(str);
-	crc=crc16(str,0	/* auto-length */);
+	crc = crc16(str, 0 /* auto-length */);
 	free(str);
 
 	return(crc);
@@ -396,18 +396,18 @@ uint16_t smb_subject_crc(const char* subj)
 
 uint16_t smb_name_crc(const char* name)
 {
-	char*	str;
-	uint16_t	crc;
+	char*    str;
+	uint16_t crc;
 
-	if(name==NULL)
+	if (name == NULL)
 		return(0);
 
-	if((str=strdup(name))==NULL)
+	if ((str = strdup(name)) == NULL)
 		return(0xffff);
 
 	strlwr(str);
 	truncsp(str);
-	crc=crc16(str,0	/* auto-length */);
+	crc = crc16(str, 0 /* auto-length */);
 	free(str);
 
 	return(crc);
@@ -416,15 +416,15 @@ uint16_t smb_name_crc(const char* name)
 // Returns hashflags_t on success
 int smb_hashfile(const char* path, off_t size, struct hash_data* data)
 {
-	char buf[256 * 1024];
-	FILE*	fp;
-	MD5 md5_ctx;
+	char     buf[256 * 1024];
+	FILE*    fp;
+	MD5      md5_ctx;
 	SHA1_CTX sha1_ctx;
 
-	if(size < 1)
+	if (size < 1)
 		return 0;
 
-	if((fp = fopen(path, "rb")) == NULL)
+	if ((fp = fopen(path, "rb")) == NULL)
 		return 0;
 
 	MD5_open(&md5_ctx);
@@ -432,9 +432,9 @@ int smb_hashfile(const char* path, off_t size, struct hash_data* data)
 	data->crc16 = 0;
 	data->crc32 = 0;
 	off_t off = 0;
-	while(!feof(fp) && off < size) {
+	while (!feof(fp) && off < size) {
 		size_t rd = fread(buf, sizeof(uint8_t), sizeof(buf), fp);
-		if(rd < 1)
+		if (rd < 1)
 			break;
 		data->crc32 = crc32i(~data->crc32, buf, rd);
 		data->crc16 = icrc16(data->crc16, buf, rd);

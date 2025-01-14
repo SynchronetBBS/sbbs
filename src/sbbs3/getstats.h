@@ -20,33 +20,33 @@
 #ifndef _GETSTATS_H_
 #define _GETSTATS_H_
 
-#include <stdio.h>		// FILE
-#include "scfgdefs.h"	// scfg_t
+#include <stdio.h>      // FILE
+#include "scfgdefs.h"   // scfg_t
 #include "dllexport.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-DLLEXPORT char*		dstats_fname(scfg_t*, uint node, char* path, size_t);
-DLLEXPORT char*		cstats_fname(scfg_t*, uint node, char* path, size_t);
-DLLEXPORT FILE*		fopen_dstats(scfg_t*, uint node, bool for_write);
-DLLEXPORT FILE*		fopen_cstats(scfg_t*, uint node, bool for_write);
-DLLEXPORT bool		fclose_cstats(FILE*);
-DLLEXPORT bool		fclose_dstats(FILE*);
-DLLEXPORT bool		fread_dstats(FILE*, stats_t*);
-DLLEXPORT bool		fwrite_dstats(FILE*, const stats_t*, const char* function);
-DLLEXPORT bool		fwrite_cstats(FILE*, const stats_t*);
-DLLEXPORT void		parse_cstats(str_list_t, stats_t*);
-DLLEXPORT bool		getstats(scfg_t*, uint node, stats_t*);
-DLLEXPORT bool		putstats(scfg_t*, uint node, const stats_t*);
-DLLEXPORT uint		getposts(scfg_t*, int subnum);
-DLLEXPORT int		getfiles(scfg_t*, int dirnum);
-DLLEXPORT void		rolloverstats(stats_t*);
-DLLEXPORT bool		inc_post_stats(scfg_t*, uint count);
-DLLEXPORT bool		inc_email_stats(scfg_t*, uint count, bool feedback);
-DLLEXPORT bool		inc_upload_stats(scfg_t*, uint files, uint64_t bytes);
-DLLEXPORT bool		inc_download_stats(scfg_t*, uint files, uint64_t bytes);
+DLLEXPORT char*     dstats_fname(scfg_t*, uint node, char* path, size_t);
+DLLEXPORT char*     cstats_fname(scfg_t*, uint node, char* path, size_t);
+DLLEXPORT FILE*     fopen_dstats(scfg_t*, uint node, bool for_write);
+DLLEXPORT FILE*     fopen_cstats(scfg_t*, uint node, bool for_write);
+DLLEXPORT bool      fclose_cstats(FILE*);
+DLLEXPORT bool      fclose_dstats(FILE*);
+DLLEXPORT bool      fread_dstats(FILE*, stats_t*);
+DLLEXPORT bool      fwrite_dstats(FILE*, const stats_t*, const char* function);
+DLLEXPORT bool      fwrite_cstats(FILE*, const stats_t*);
+DLLEXPORT void parse_cstats(str_list_t, stats_t*);
+DLLEXPORT bool      getstats(scfg_t*, uint node, stats_t*);
+DLLEXPORT bool      putstats(scfg_t*, uint node, const stats_t*);
+DLLEXPORT uint      getposts(scfg_t*, int subnum);
+DLLEXPORT int       getfiles(scfg_t*, int dirnum);
+DLLEXPORT void      rolloverstats(stats_t*);
+DLLEXPORT bool      inc_post_stats(scfg_t*, uint count);
+DLLEXPORT bool      inc_email_stats(scfg_t*, uint count, bool feedback);
+DLLEXPORT bool      inc_upload_stats(scfg_t*, uint files, uint64_t bytes);
+DLLEXPORT bool      inc_download_stats(scfg_t*, uint files, uint64_t bytes);
 
 #ifdef __cplusplus
 }

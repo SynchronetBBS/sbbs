@@ -24,29 +24,29 @@
 
 #if defined(__unix__)
 
-#include <sys/time.h>	/* timespec */
-#include <stdlib.h>	/* NULL */
+#include <sys/time.h>   /* timespec */
+#include <stdlib.h> /* NULL */
 
 int
 sem_trywait_block(sem_t *sem, unsigned long timeout)
 {
-	int	retval;
+	int             retval;
 	struct timespec abstime;
-	struct timeval currtime;
-	
-	gettimeofday(&currtime,NULL);
-	abstime.tv_sec=currtime.tv_sec + (currtime.tv_usec/1000 + timeout)/1000;
-	abstime.tv_nsec=(currtime.tv_usec*1000 + timeout*1000000)%1000000000;
+	struct timeval  currtime;
 
-	retval=sem_timedwait(sem, &abstime);
-	if(retval && errno==ETIMEDOUT)
-		errno=EAGAIN;
+	gettimeofday(&currtime, NULL);
+	abstime.tv_sec = currtime.tv_sec + (currtime.tv_usec / 1000 + timeout) / 1000;
+	abstime.tv_nsec = (currtime.tv_usec * 1000 + timeout * 1000000) % 1000000000;
+
+	retval = sem_timedwait(sem, &abstime);
+	if (retval && errno == ETIMEDOUT)
+		errno = EAGAIN;
 	return retval;
 }
 
 #elif defined(_WIN32)
 
-#include <limits.h>		/* INT_MAX */
+#include <limits.h>     /* INT_MAX */
 
 #if defined(__BORLANDC__)
 	#pragma argsused
@@ -54,16 +54,16 @@ sem_trywait_block(sem_t *sem, unsigned long timeout)
 int sem_init(sem_t* psem, int pshared, unsigned int value)
 {
 
-	if((*(psem)=CreateSemaphore(NULL,value,INT_MAX,NULL))==NULL)
+	if ((*(psem) = CreateSemaphore(NULL, value, INT_MAX, NULL)) == NULL)
 		return -1;
-		
+
 	return 0;
 }
 
 int sem_trywait_block(sem_t* psem, unsigned long timeout)
 {
-	if(WaitForSingleObject(*(psem),timeout)!=WAIT_OBJECT_0) {
-		errno=EAGAIN;
+	if (WaitForSingleObject(*(psem), timeout) != WAIT_OBJECT_0) {
+		errno = EAGAIN;
 		return -1;
 	}
 
@@ -72,7 +72,7 @@ int sem_trywait_block(sem_t* psem, unsigned long timeout)
 
 int sem_post(sem_t* psem)
 {
-	if(ReleaseSemaphore(*(psem),1,NULL)==TRUE)
+	if (ReleaseSemaphore(*(psem), 1, NULL) == TRUE)
 		return 0;
 
 	return -1;
@@ -80,20 +80,20 @@ int sem_post(sem_t* psem)
 
 int sem_getvalue(sem_t* psem, int* vp)
 {
-#if 0		/* This only works on 9x *sniff* */
-	ReleaseSemaphore(*(psem),0,(LPLONG)vp);
+#if 0       /* This only works on 9x *sniff* */
+	ReleaseSemaphore(*(psem), 0, (LPLONG)vp);
 	return 0;
 #else
 	/* Note, this should REALLY be in a critical section... */
-	int	retval=0;
+	int retval = 0;
 
-	if(WaitForSingleObject(*(psem),0)!=WAIT_OBJECT_0)
-		*vp=0;
+	if (WaitForSingleObject(*(psem), 0) != WAIT_OBJECT_0)
+		*vp = 0;
 	else {
-		if(ReleaseSemaphore(*(psem),1,(LPLONG)vp))
+		if (ReleaseSemaphore(*(psem), 1, (LPLONG)vp))
 			(*vp)++;
 		else
-			retval=-1;
+			retval = -1;
 	}
 	return(retval);
 #endif
@@ -101,7 +101,7 @@ int sem_getvalue(sem_t* psem, int* vp)
 
 int sem_destroy(sem_t* psem)
 {
-	if(CloseHandle(*(psem))==TRUE)
+	if (CloseHandle(*(psem)) == TRUE)
 		return 0;
 	return -1;
 }

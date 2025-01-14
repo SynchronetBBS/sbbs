@@ -38,11 +38,11 @@
 
 #if defined(_WIN32) && (defined(B64_IMPORTS) || defined(B64_EXPORTS))
 	#if defined(B64_IMPORTS)
-		#define B64EXPORT	__declspec(dllimport)
+		#define B64EXPORT   __declspec(dllimport)
 	#else
-		#define B64EXPORT	__declspec(dllexport)
+		#define B64EXPORT   __declspec(dllexport)
 	#endif
-#else	/* !_WIN32 */
+#else   /* !_WIN32 */
 	#define B64EXPORT
 #endif
 

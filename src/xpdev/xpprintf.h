@@ -28,29 +28,29 @@
 #include "wrapdll.h"
 
 /* Supported printf argument types */
-#define XP_PRINTF_TYPE_AUTO			0
-#define XP_PRINTF_TYPE_INT			1
-#define XP_PRINTF_TYPE_UINT			2
-#define XP_PRINTF_TYPE_CHAR			3		/* Assumes a signed char */
-#define XP_PRINTF_TYPE_SCHAR		XP_PRINTF_TYPE_INT
-#define XP_PRINTF_TYPE_UCHAR		XP_PRINTF_TYPE_UINT
-#define XP_PRINTF_TYPE_SHORT		XP_PRINTF_TYPE_INT
-#define XP_PRINTF_TYPE_USHORT		XP_PRINTF_TYPE_UINT
-#define XP_PRINTF_TYPE_LONG			4
-#define XP_PRINTF_TYPE_ULONG		5
-#define XP_PRINTF_TYPE_LONGLONG		6
-#define XP_PRINTF_TYPE_ULONGLONG	7
-#define XP_PRINTF_TYPE_CHARP		8
-#define XP_PRINTF_TYPE_DOUBLE		9
-#define XP_PRINTF_TYPE_FLOAT		XP_PRINTF_TYPE_DOUBLE	/* Floats are promoted to doubles */
-#define XP_PRINTF_TYPE_LONGDOUBLE	10
-#define XP_PRINTF_TYPE_VOIDP		11
-#define XP_PRINTF_TYPE_INTMAX		12	/* Not currently implemented */
-#define XP_PRINTF_TYPE_UINTMAX		13	/* Not currently implemented */
-#define XP_PRINTF_TYPE_PTRDIFF		14	/* Not currently implemented */
-#define XP_PRINTF_TYPE_SIZET		15
+#define XP_PRINTF_TYPE_AUTO         0
+#define XP_PRINTF_TYPE_INT          1
+#define XP_PRINTF_TYPE_UINT         2
+#define XP_PRINTF_TYPE_CHAR         3       /* Assumes a signed char */
+#define XP_PRINTF_TYPE_SCHAR        XP_PRINTF_TYPE_INT
+#define XP_PRINTF_TYPE_UCHAR        XP_PRINTF_TYPE_UINT
+#define XP_PRINTF_TYPE_SHORT        XP_PRINTF_TYPE_INT
+#define XP_PRINTF_TYPE_USHORT       XP_PRINTF_TYPE_UINT
+#define XP_PRINTF_TYPE_LONG         4
+#define XP_PRINTF_TYPE_ULONG        5
+#define XP_PRINTF_TYPE_LONGLONG     6
+#define XP_PRINTF_TYPE_ULONGLONG    7
+#define XP_PRINTF_TYPE_CHARP        8
+#define XP_PRINTF_TYPE_DOUBLE       9
+#define XP_PRINTF_TYPE_FLOAT        XP_PRINTF_TYPE_DOUBLE   /* Floats are promoted to doubles */
+#define XP_PRINTF_TYPE_LONGDOUBLE   10
+#define XP_PRINTF_TYPE_VOIDP        11
+#define XP_PRINTF_TYPE_INTMAX       12  /* Not currently implemented */
+#define XP_PRINTF_TYPE_UINTMAX      13  /* Not currently implemented */
+#define XP_PRINTF_TYPE_PTRDIFF      14  /* Not currently implemented */
+#define XP_PRINTF_TYPE_SIZET        15
 
-#define XP_PRINTF_CONVERT		(1<<31)	/* OR with type to request a conversion to format-specified type */
+#define XP_PRINTF_CONVERT       (1 << 31) /* OR with type to request a conversion to format-specified type */
 
 #if defined(__cplusplus)
 extern "C" {

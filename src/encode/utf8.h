@@ -26,7 +26,7 @@
 #include "gen_defs.h" // bool
 #include "unicode_defs.h"
 
-#define UTF8_MAX_LEN 6	// Longest possible UTF-8 sequence
+#define UTF8_MAX_LEN 6  // Longest possible UTF-8 sequence
 
 #if defined(__cplusplus)
 extern "C" {

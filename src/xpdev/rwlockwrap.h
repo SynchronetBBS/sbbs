@@ -52,7 +52,7 @@ rwlock_destroy(rwlock_t *lock)
 
 #elif defined(_WIN32)
 
-#include "gen_defs.h"	// For windows.h and bool
+#include "gen_defs.h"   // For windows.h and bool
 #include "threadwrap.h"
 
 struct rwlock_reader_thread {

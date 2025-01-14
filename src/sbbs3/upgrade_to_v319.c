@@ -27,14 +27,14 @@
 #include "filedat.h"
 #include "dat_rec.h"
 
-scfg_t scfg;
-BOOL overwrite_existing_files=TRUE;
+scfg_t      scfg;
+BOOL        overwrite_existing_files = TRUE;
 ini_style_t style = { 25, NULL, NULL, " = ", NULL };
 
 ssize_t my_write(int fd, const void* buf, size_t count)
 {
 	ssize_t wr = write(fd, buf, count);
-	if(wr != count)
+	if (wr != count)
 		perror("writing file");
 	return wr;
 }
@@ -42,20 +42,20 @@ ssize_t my_write(int fd, const void* buf, size_t count)
 ssize_t my_read(int fd, void* buf, size_t count)
 {
 	ssize_t rd = read(fd, buf, count);
-	if(rd != count)
+	if (rd != count)
 		perror("reading file");
 	return rd;
 }
 
 BOOL overwrite(const char* path)
 {
-	char	str[128];
+	char str[128];
 
-	if(!overwrite_existing_files && fexist(path)) {
-		printf("\n%s already exists, overwrite? ",path);
-		if(fgets(str,sizeof(str),stdin) == NULL)
+	if (!overwrite_existing_files && fexist(path)) {
+		printf("\n%s already exists, overwrite? ", path);
+		if (fgets(str, sizeof(str), stdin) == NULL)
 			*str = '\0';
-		if(toupper(*str)!='Y')
+		if (toupper(*str) != 'Y')
 			return(FALSE);
 	}
 
@@ -65,13 +65,13 @@ BOOL overwrite(const char* path)
 int lprintf(int level, const char *fmt, ...)
 {
 	va_list argptr;
-	char sbuf[1024];
+	char    sbuf[1024];
 
-    va_start(argptr,fmt);
-    vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
-	sbuf[sizeof(sbuf)-1]=0;
-    va_end(argptr);
-    return(puts(sbuf));
+	va_start(argptr, fmt);
+	vsnprintf(sbuf, sizeof(sbuf), fmt, argptr);
+	sbuf[sizeof(sbuf) - 1] = 0;
+	va_end(argptr);
+	return(puts(sbuf));
 }
 
 /****************************************************************************/
@@ -79,116 +79,118 @@ int lprintf(int level, const char *fmt, ...)
 /****************************************************************************/
 long dstrtodate(scfg_t* cfg, char *instr)
 {
-	char*	p;
-	char*	day;
-	char	str[16];
+	char*     p;
+	char*     day;
+	char      str[16];
 	struct tm tm;
 
-	if(!instr[0] || !strncmp(instr,"00/00/00",8))
+	if (!instr[0] || !strncmp(instr, "00/00/00", 8))
 		return(0);
 
-	if(isdigit(instr[0]) && isdigit(instr[1])
-		&& isdigit(instr[3]) && isdigit(instr[4])
-		&& isdigit(instr[6]) && isdigit(instr[7]))
-		p=instr;	/* correctly formatted */
+	if (isdigit(instr[0]) && isdigit(instr[1])
+	    && isdigit(instr[3]) && isdigit(instr[4])
+	    && isdigit(instr[6]) && isdigit(instr[7]))
+		p = instr;  /* correctly formatted */
 	else {
-		p=instr;	/* incorrectly formatted */
-		while(*p && isdigit(*p)) p++;
-		if(*p==0)
+		p = instr;    /* incorrectly formatted */
+		while (*p && isdigit(*p)) p++;
+		if (*p == 0)
 			return(0);
 		p++;
-		day=p;
-		while(*p && isdigit(*p)) p++;
-		if(*p==0)
+		day = p;
+		while (*p && isdigit(*p)) p++;
+		if (*p == 0)
 			return(0);
 		p++;
-		sprintf(str,"%02u/%02u/%02u"
-			,atoi(instr)%100,atoi(day)%100,atoi(p)%100);
-		p=str;
+		sprintf(str, "%02u/%02u/%02u"
+		        , atoi(instr) % 100, atoi(day) % 100, atoi(p) % 100);
+		p = str;
 	}
 
-	memset(&tm,0,sizeof(tm));
-	tm.tm_year=((p[6]&0xf)*10)+(p[7]&0xf);
-	if(cfg->sys_misc&SM_EURODATE) {
-		tm.tm_mon=((p[3]&0xf)*10)+(p[4]&0xf);
-		tm.tm_mday=((p[0]&0xf)*10)+(p[1]&0xf); }
+	memset(&tm, 0, sizeof(tm));
+	tm.tm_year = ((p[6] & 0xf) * 10) + (p[7] & 0xf);
+	if (cfg->sys_misc & SM_EURODATE) {
+		tm.tm_mon = ((p[3] & 0xf) * 10) + (p[4] & 0xf);
+		tm.tm_mday = ((p[0] & 0xf) * 10) + (p[1] & 0xf);
+	}
 	else {
-		tm.tm_mon=((p[0]&0xf)*10)+(p[1]&0xf);
-		tm.tm_mday=((p[3]&0xf)*10)+(p[4]&0xf); }
+		tm.tm_mon = ((p[0] & 0xf) * 10) + (p[1] & 0xf);
+		tm.tm_mday = ((p[3] & 0xf) * 10) + (p[4] & 0xf);
+	}
 
-	return(((tm.tm_year+1900)*10000)+(tm.tm_mon*100)+tm.tm_mday);
+	return(((tm.tm_year + 1900) * 10000) + (tm.tm_mon * 100) + tm.tm_mday);
 }
 
 /*****************************/
 /* LEGACY FILEBASE CONSTANTS */
 /*****************************/
-#define LEN_FCDT		 9	/* 9 digits for file credit values				*/
+#define LEN_FCDT         9  /* 9 digits for file credit values				*/
 /****************************************************************************/
 /* Offsets into DIR .DAT file for different fields for each file 			*/
 /****************************************************************************/
-#define F_CDT		0				/* Offset in DIR#.DAT file for cdts		*/
-#define F_DESC		(F_CDT+LEN_FCDT)/* Description							*/
-#define F_ULER		(F_DESC+LEN_FDESC+2)   /* Uploader						*/
-#define F_TIMESDLED (F_ULER+30+2) 	/* Number of times downloaded 			*/
-#define F_OPENCOUNT	(F_TIMESDLED+5+2)
-#define F_MISC		(F_OPENCOUNT+3+2)
-#define F_ALTPATH	(F_MISC+1)		/* Two hex digit alternate path */
-#define F_LEN		(F_ALTPATH+2+2) /* Total length of all fdat in file		*/
+#define F_CDT       0               /* Offset in DIR#.DAT file for cdts		*/
+#define F_DESC      (F_CDT + LEN_FCDT)/* Description							*/
+#define F_ULER      (F_DESC + LEN_FDESC + 2)   /* Uploader						*/
+#define F_TIMESDLED (F_ULER + 30 + 2)   /* Number of times downloaded 			*/
+#define F_OPENCOUNT (F_TIMESDLED + 5 + 2)
+#define F_MISC      (F_OPENCOUNT + 3 + 2)
+#define F_ALTPATH   (F_MISC + 1)      /* Two hex digit alternate path */
+#define F_LEN       (F_ALTPATH + 2 + 2) /* Total length of all fdat in file		*/
 
-#define F_IXBSIZE	22				/* Length of each index entry			*/
+#define F_IXBSIZE   22              /* Length of each index entry			*/
 
-#define F_EXBSIZE	512				/* Length of each ext-desc entry		*/
+#define F_EXBSIZE   512             /* Length of each ext-desc entry		*/
 
 /***********************/
 /* LEGACY FILEBASE API */
 /***********************/
-typedef struct {						/* File (transfers) Data */
-	char    name[13],					/* Name of file FILENAME.EXT */
-			desc[LEN_FDESC+1],			/* Uploader's Description */
-			uler[LEN_ALIAS+1];			/* User who uploaded */
-	uchar	opencount;					/* Times record is currently open */
-	time32_t  date,						/* File date/time */
-			dateuled,					/* Date/Time (Unix) Uploaded */
-			datedled;					/* Date/Time (Unix) Last downloaded */
-	uint16_t	dir,						/* Directory file is in */
-			altpath,
-			timesdled,					/* Total times downloaded */
-			timetodl;					/* How long transfer time */
-	int32_t	datoffset,					/* Offset into .DAT file */
-			size,						/* Size of file */
-			misc;						/* Miscellaneous bits */
-	uint32_t	cdt;						/* Credit value for this file */
+typedef struct {                        /* File (transfers) Data */
+	char name[13],                      /* Name of file FILENAME.EXT */
+	     desc[LEN_FDESC + 1],           /* Uploader's Description */
+	     uler[LEN_ALIAS + 1];           /* User who uploaded */
+	uchar opencount;                    /* Times record is currently open */
+	time32_t date,                      /* File date/time */
+	         dateuled,                  /* Date/Time (Unix) Uploaded */
+	         datedled;                  /* Date/Time (Unix) Last downloaded */
+	uint16_t dir,                           /* Directory file is in */
+	         altpath,
+	         timesdled,                 /* Total times downloaded */
+	         timetodl;                  /* How long transfer time */
+	int32_t datoffset,                  /* Offset into .DAT file */
+	        size,                       /* Size of file */
+	        misc;                       /* Miscellaneous bits */
+	uint32_t cdt;                           /* Credit value for this file */
 
 } oldfile_t;
 
-                                    /* Bit values for file_t.misc */
-#define FM_EXTDESC  (1<<0)          /* Extended description exists */
-#define FM_ANON 	(1<<1)			/* Anonymous upload */
+/* Bit values for file_t.misc */
+#define FM_EXTDESC  (1 << 0)          /* Extended description exists */
+#define FM_ANON     (1 << 1)          /* Anonymous upload */
 
 /****************************************************************************/
 /* Turns FILE.EXT into FILE    .EXT                                         */
 /****************************************************************************/
 char* padfname(const char *filename, char *str)
 {
-    int c,d;
+	int c, d;
 
-	for(c=0;c<8;c++)
-		if(filename[c]=='.' || !filename[c]) break;
-		else str[c]=filename[c];
-	d=c;
-	if(filename[c]=='.') c++;
-	while(d<8)
-		str[d++]=' ';
-	if(filename[c]>' ')	/* Change "FILE" to "FILE        " */
-		str[d++]='.';	/* (don't add a dot if there's no extension) */
+	for (c = 0; c < 8; c++)
+		if (filename[c] == '.' || !filename[c]) break;
+		else str[c] = filename[c];
+	d = c;
+	if (filename[c] == '.') c++;
+	while (d < 8)
+		str[d++] = ' ';
+	if (filename[c] > ' ') /* Change "FILE" to "FILE        " */
+		str[d++] = '.'; /* (don't add a dot if there's no extension) */
 	else
-		str[d++]=' ';
-	while(d<12)
-		if(!filename[c]) break;
-		else str[d++]=filename[c++];
-	while(d<12)
-		str[d++]=' ';
-	str[d]=0;
+		str[d++] = ' ';
+	while (d < 12)
+		if (!filename[c]) break;
+		else str[d++] = filename[c++];
+	while (d < 12)
+		str[d++] = ' ';
+	str[d] = 0;
 	return(str);
 }
 
@@ -197,11 +199,11 @@ char* padfname(const char *filename, char *str)
 /****************************************************************************/
 char* unpadfname(const char *filename, char *str)
 {
-    int c,d;
+	int c, d;
 
-	for(c=0,d=0;filename[c];c++)
-		if(filename[c]!=' ') str[d++]=filename[c];
-	str[d]=0;
+	for (c = 0, d = 0; filename[c]; c++)
+		if (filename[c] != ' ') str[d++] = filename[c];
+	str[d] = 0;
 	return(str);
 }
 
@@ -210,17 +212,17 @@ char* unpadfname(const char *filename, char *str)
 /****************************************************************************/
 char* getoldfilepath(scfg_t* cfg, oldfile_t* f, char* path)
 {
-	char	fname[MAX_PATH+1];
+	char fname[MAX_PATH + 1];
 
-	unpadfname(f->name,fname);
-	if(f->dir>=cfg->total_dirs)
-		safe_snprintf(path,MAX_PATH,"%s%s",cfg->temp_dir,fname);
+	unpadfname(f->name, fname);
+	if (f->dir >= cfg->total_dirs)
+		safe_snprintf(path, MAX_PATH, "%s%s", cfg->temp_dir, fname);
 	else
-		safe_snprintf(path,MAX_PATH,"%s%s",cfg->dir[f->dir]->path,fname);
-	if(!fexistcase(path)) {
+		safe_snprintf(path, MAX_PATH, "%s%s", cfg->dir[f->dir]->path, fname);
+	if (!fexistcase(path)) {
 		char tmp[MAX_PATH + 1];
-		safe_snprintf(tmp,MAX_PATH,"%s%s",cfg->dir[f->dir]->path,f->desc);
-		if(fexistcase(tmp))
+		safe_snprintf(tmp, MAX_PATH, "%s%s", cfg->dir[f->dir]->path, f->desc);
+		if (fexistcase(tmp))
 			strcpy(path, tmp);
 	}
 	return(path);
@@ -241,60 +243,60 @@ int file_uldate_compare(const void* v1, const void* v2)
 /****************************************************************************/
 BOOL getfiledat(scfg_t* cfg, oldfile_t* f)
 {
-	char buf[F_LEN+1],str[MAX_PATH+1];
-	int file;
+	char buf[F_LEN + 1], str[MAX_PATH + 1];
+	int  file;
 	long length;
 
-	SAFEPRINTF2(str,"%s%s.dat",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
-	if((file=sopen(str,O_RDONLY|O_BINARY,SH_DENYWR))==-1) {
-		return(FALSE); 
+	SAFEPRINTF2(str, "%s%s.dat", cfg->dir[f->dir]->data_dir, cfg->dir[f->dir]->code);
+	if ((file = sopen(str, O_RDONLY | O_BINARY, SH_DENYWR)) == -1) {
+		return(FALSE);
 	}
-	length=(long)filelength(file);
-	if(f->datoffset>length) {
+	length = (long)filelength(file);
+	if (f->datoffset > length) {
 		close(file);
-		return(FALSE); 
+		return(FALSE);
 	}
-	if(length%F_LEN) {
+	if (length % F_LEN) {
 		close(file);
-		return(FALSE); 
+		return(FALSE);
 	}
-	lseek(file,f->datoffset,SEEK_SET);
-	if(read(file,buf,F_LEN)!=F_LEN) {
+	lseek(file, f->datoffset, SEEK_SET);
+	if (read(file, buf, F_LEN) != F_LEN) {
 		close(file);
-		return(FALSE); 
+		return(FALSE);
 	}
 	close(file);
-	getrec(buf,F_ALTPATH,2,str);
-	f->altpath=hptoi(str);
-	getrec(buf,F_CDT,LEN_FCDT,str);
-	f->cdt=atol(str);
+	getrec(buf, F_ALTPATH, 2, str);
+	f->altpath = hptoi(str);
+	getrec(buf, F_CDT, LEN_FCDT, str);
+	f->cdt = atol(str);
 
-	if(f->size == 0) {					// only read disk if f->size == 0
+	if (f->size == 0) {                  // only read disk if f->size == 0
 		struct stat st;
-		getoldfilepath(cfg,f,str);
-		if(stat(str, &st) == 0) {
+		getoldfilepath(cfg, f, str);
+		if (stat(str, &st) == 0) {
 			f->size = (int32_t)st.st_size;
 			f->date = (time32_t)st.st_mtime;
 		} else
-			f->size = -1;	// indicates file does not exist
+			f->size = -1;   // indicates file does not exist
 	}
 #if 0
-	if((f->size>0L) && cur_cps)
-		f->timetodl=(ushort)(f->size/(ulong)cur_cps);
+	if ((f->size > 0L) && cur_cps)
+		f->timetodl = (ushort)(f->size / (ulong)cur_cps);
 	else
 #endif
-		f->timetodl=0;
+	f->timetodl = 0;
 
-	getrec(buf,F_DESC,LEN_FDESC,f->desc);
-	getrec(buf,F_ULER,LEN_ALIAS,f->uler);
-	getrec(buf,F_TIMESDLED,5,str);
-	f->timesdled=atoi(str);
-	getrec(buf,F_OPENCOUNT,3,str);
-	f->opencount=atoi(str);
-	if(buf[F_MISC]!=ETX)
-		f->misc=buf[F_MISC]-' ';
+	getrec(buf, F_DESC, LEN_FDESC, f->desc);
+	getrec(buf, F_ULER, LEN_ALIAS, f->uler);
+	getrec(buf, F_TIMESDLED, 5, str);
+	f->timesdled = atoi(str);
+	getrec(buf, F_OPENCOUNT, 3, str);
+	f->opencount = atoi(str);
+	if (buf[F_MISC] != ETX)
+		f->misc = buf[F_MISC] - ' ';
 	else
-		f->misc=0;
+		f->misc = 0;
 	return(TRUE);
 }
 
@@ -304,43 +306,43 @@ BOOL getfiledat(scfg_t* cfg, oldfile_t* f)
 /****************************************************************************/
 BOOL putfiledat(scfg_t* cfg, oldfile_t* f)
 {
-    char buf[F_LEN+1],str[MAX_PATH+1],tmp[128];
-    int file;
-    long length;
+	char buf[F_LEN + 1], str[MAX_PATH + 1], tmp[128];
+	int  file;
+	long length;
 
-	putrec(buf,F_CDT,LEN_FCDT,ultoa(f->cdt,tmp,10));
-	putrec(buf,F_DESC,LEN_FDESC,f->desc);
-	putrec(buf,F_DESC+LEN_FDESC,2, "\r\n");
-	putrec(buf,F_ULER,LEN_ALIAS+5,f->uler);
-	putrec(buf,F_ULER+LEN_ALIAS+5,2, "\r\n");
-	putrec(buf,F_TIMESDLED,5,ultoa(f->timesdled,tmp,10));
-	putrec(buf,F_TIMESDLED+5,2, "\r\n");
-	putrec(buf,F_OPENCOUNT,3,ultoa(f->opencount,tmp,10));
-	putrec(buf,F_OPENCOUNT+3,2, "\r\n");
-	buf[F_MISC]=(char)f->misc+' ';
-	putrec(buf,F_ALTPATH,2,hexplus(f->altpath,tmp));
-	putrec(buf,F_ALTPATH+2,2, "\r\n");
-	SAFEPRINTF2(str,"%s%s.dat",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
-	if((file=sopen(str,O_WRONLY|O_BINARY,SH_DENYRW))==-1) {
-		return(FALSE); 
+	putrec(buf, F_CDT, LEN_FCDT, ultoa(f->cdt, tmp, 10));
+	putrec(buf, F_DESC, LEN_FDESC, f->desc);
+	putrec(buf, F_DESC + LEN_FDESC, 2, "\r\n");
+	putrec(buf, F_ULER, LEN_ALIAS + 5, f->uler);
+	putrec(buf, F_ULER + LEN_ALIAS + 5, 2, "\r\n");
+	putrec(buf, F_TIMESDLED, 5, ultoa(f->timesdled, tmp, 10));
+	putrec(buf, F_TIMESDLED + 5, 2, "\r\n");
+	putrec(buf, F_OPENCOUNT, 3, ultoa(f->opencount, tmp, 10));
+	putrec(buf, F_OPENCOUNT + 3, 2, "\r\n");
+	buf[F_MISC] = (char)f->misc + ' ';
+	putrec(buf, F_ALTPATH, 2, hexplus(f->altpath, tmp));
+	putrec(buf, F_ALTPATH + 2, 2, "\r\n");
+	SAFEPRINTF2(str, "%s%s.dat", cfg->dir[f->dir]->data_dir, cfg->dir[f->dir]->code);
+	if ((file = sopen(str, O_WRONLY | O_BINARY, SH_DENYRW)) == -1) {
+		return(FALSE);
 	}
-	length=(long)filelength(file);
-	if(length%F_LEN) {
+	length = (long)filelength(file);
+	if (length % F_LEN) {
 		close(file);
-		return(FALSE); 
+		return(FALSE);
 	}
-	if(f->datoffset>length) {
+	if (f->datoffset > length) {
 		close(file);
-		return(FALSE); 
+		return(FALSE);
 	}
-	lseek(file,f->datoffset,SEEK_SET);
-	if(write(file,buf,F_LEN)!=F_LEN) {
+	lseek(file, f->datoffset, SEEK_SET);
+	if (write(file, buf, F_LEN) != F_LEN) {
 		close(file);
-		return(FALSE); 
+		return(FALSE);
 	}
-	length=(long)filelength(file);
+	length = (long)filelength(file);
 	close(file);
-	if(length%F_LEN) {
+	if (length % F_LEN) {
 		return(FALSE);
 	}
 	return(TRUE);
@@ -353,48 +355,48 @@ BOOL putfiledat(scfg_t* cfg, oldfile_t* f)
 /****************************************************************************/
 BOOL getfileixb(scfg_t* cfg, oldfile_t* f)
 {
-	char			str[MAX_PATH+1],fname[13];
-	uchar *	ixbbuf;
-	int				file;
-	long			l,length;
+	char    str[MAX_PATH + 1], fname[13];
+	uchar * ixbbuf;
+	int     file;
+	long    l, length;
 
-	SAFEPRINTF2(str,"%s%s.ixb",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
-	if((file=sopen(str,O_RDONLY|O_BINARY,SH_DENYWR))==-1) {
-		return(FALSE); 
+	SAFEPRINTF2(str, "%s%s.ixb", cfg->dir[f->dir]->data_dir, cfg->dir[f->dir]->code);
+	if ((file = sopen(str, O_RDONLY | O_BINARY, SH_DENYWR)) == -1) {
+		return(FALSE);
 	}
-	length=(long)filelength(file);
-	if(length%F_IXBSIZE) {
+	length = (long)filelength(file);
+	if (length % F_IXBSIZE) {
 		close(file);
-		return(FALSE); 
+		return(FALSE);
 	}
-	if((ixbbuf=(uchar *)malloc(length))==NULL) {
+	if ((ixbbuf = (uchar *)malloc(length)) == NULL) {
 		close(file);
-		return(FALSE); 
+		return(FALSE);
 	}
-	if(read(file,ixbbuf,length)!=length) {
+	if (read(file, ixbbuf, length) != length) {
 		close(file);
 		free(ixbbuf);
-		return(FALSE); 
+		return(FALSE);
 	}
 	close(file);
-	SAFECOPY(fname,f->name);
-	for(l=8;l<12;l++)	/* Turn FILENAME.EXT into FILENAMEEXT */
-		fname[l]=fname[l+1];
-	for(l=0;l<length;l+=F_IXBSIZE) {
-		SAFEPRINTF(str,"%11.11s",ixbbuf+l);
-		if(!stricmp(str,fname))
-			break; 
+	SAFECOPY(fname, f->name);
+	for (l = 8; l < 12; l++)   /* Turn FILENAME.EXT into FILENAMEEXT */
+		fname[l] = fname[l + 1];
+	for (l = 0; l < length; l += F_IXBSIZE) {
+		SAFEPRINTF(str, "%11.11s", ixbbuf + l);
+		if (!stricmp(str, fname))
+			break;
 	}
-	if(l>=length) {
+	if (l >= length) {
 		free(ixbbuf);
-		return(FALSE); 
+		return(FALSE);
 	}
-	l+=11;
-	f->datoffset=ixbbuf[l]|((long)ixbbuf[l+1]<<8)|((long)ixbbuf[l+2]<<16);
-	f->dateuled=ixbbuf[l+3]|((long)ixbbuf[l+4]<<8)
-		|((long)ixbbuf[l+5]<<16)|((long)ixbbuf[l+6]<<24);
-	f->datedled=ixbbuf[l+7]|((long)ixbbuf[l+8]<<8)
-		|((long)ixbbuf[l+9]<<16)|((long)ixbbuf[l+10]<<24);
+	l += 11;
+	f->datoffset = ixbbuf[l] | ((long)ixbbuf[l + 1] << 8) | ((long)ixbbuf[l + 2] << 16);
+	f->dateuled = ixbbuf[l + 3] | ((long)ixbbuf[l + 4] << 8)
+	              | ((long)ixbbuf[l + 5] << 16) | ((long)ixbbuf[l + 6] << 24);
+	f->datedled = ixbbuf[l + 7] | ((long)ixbbuf[l + 8] << 8)
+	              | ((long)ixbbuf[l + 9] << 16) | ((long)ixbbuf[l + 10] << 24);
 	free(ixbbuf);
 	return(TRUE);
 }
@@ -404,48 +406,48 @@ BOOL getfileixb(scfg_t* cfg, oldfile_t* f)
 /****************************************************************************/
 BOOL putfileixb(scfg_t* cfg, oldfile_t* f)
 {
-	char	str[MAX_PATH+1],fname[13];
-	uchar*	ixbbuf;
-	int		file;
-	long	l,length;
+	char   str[MAX_PATH + 1], fname[13];
+	uchar* ixbbuf;
+	int    file;
+	long   l, length;
 
-	SAFEPRINTF2(str,"%s%s.ixb",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
-	if((file=sopen(str,O_RDWR|O_BINARY,SH_DENYRW))==-1) {
-		return(FALSE); 
+	SAFEPRINTF2(str, "%s%s.ixb", cfg->dir[f->dir]->data_dir, cfg->dir[f->dir]->code);
+	if ((file = sopen(str, O_RDWR | O_BINARY, SH_DENYRW)) == -1) {
+		return(FALSE);
 	}
-	length=(long)filelength(file);
-	if(length%F_IXBSIZE) {
+	length = (long)filelength(file);
+	if (length % F_IXBSIZE) {
 		close(file);
-		return(FALSE); 
+		return(FALSE);
 	}
-	if((ixbbuf=(uchar *)malloc(length))==NULL) {
+	if ((ixbbuf = (uchar *)malloc(length)) == NULL) {
 		close(file);
-		return(FALSE); 
+		return(FALSE);
 	}
-	if(read(file,ixbbuf,length)!=length) {
+	if (read(file, ixbbuf, length) != length) {
 		close(file);
 		free(ixbbuf);
-		return(FALSE); 
+		return(FALSE);
 	}
-	SAFECOPY(fname,f->name);
-	for(l=8;l<12;l++)	/* Turn FILENAME.EXT into FILENAMEEXT */
-		fname[l]=fname[l+1];
-	for(l=0;l<length;l+=F_IXBSIZE) {
-		SAFEPRINTF(str,"%11.11s",ixbbuf+l);
-		if(!stricmp(str,fname))
-			break; 
+	SAFECOPY(fname, f->name);
+	for (l = 8; l < 12; l++)   /* Turn FILENAME.EXT into FILENAMEEXT */
+		fname[l] = fname[l + 1];
+	for (l = 0; l < length; l += F_IXBSIZE) {
+		SAFEPRINTF(str, "%11.11s", ixbbuf + l);
+		if (!stricmp(str, fname))
+			break;
 	}
 	free(ixbbuf);
 
-	if(l>=length) {
+	if (l >= length) {
 		close(file);
-		return(FALSE); 
+		return(FALSE);
 	}
-	
-	lseek(file,l+11+3,SEEK_SET);
 
-	my_write(file,&f->dateuled,4);
-	my_write(file,&f->datedled,4);
+	lseek(file, l + 11 + 3, SEEK_SET);
+
+	my_write(file, &f->dateuled, 4);
+	my_write(file, &f->datedled, 4);
 
 	close(file);
 
@@ -454,14 +456,14 @@ BOOL putfileixb(scfg_t* cfg, oldfile_t* f)
 
 int openextdesc(scfg_t* cfg, uint dirnum)
 {
-	char str[MAX_PATH+1];
-	SAFEPRINTF2(str,"%s%s.exb",cfg->dir[dirnum]->data_dir,cfg->dir[dirnum]->code);
-	return nopen(str,O_RDONLY);
+	char str[MAX_PATH + 1];
+	SAFEPRINTF2(str, "%s%s.exb", cfg->dir[dirnum]->data_dir, cfg->dir[dirnum]->code);
+	return nopen(str, O_RDONLY);
 }
 
 void closeextdesc(int file)
 {
-	if(file >= 0)
+	if (file >= 0)
 		close(file);
 }
 
@@ -469,37 +471,37 @@ void getextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext)
 {
 	int file;
 
-	memset(ext,0,F_EXBSIZE+1);
-	if((file=openextdesc(cfg, dirnum))==-1)
+	memset(ext, 0, F_EXBSIZE + 1);
+	if ((file = openextdesc(cfg, dirnum)) == -1)
 		return;
-	lseek(file,(datoffset/F_LEN)*F_EXBSIZE,SEEK_SET);
-	my_read(file,ext,F_EXBSIZE);
+	lseek(file, (datoffset / F_LEN) * F_EXBSIZE, SEEK_SET);
+	my_read(file, ext, F_EXBSIZE);
 	close(file);
 }
 
 // fast (operates on open .exb file)
 void fgetextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext, int file)
 {
-	lseek(file,(datoffset/F_LEN)*F_EXBSIZE,SEEK_SET);
-	my_read(file,ext,F_EXBSIZE);
+	lseek(file, (datoffset / F_LEN) * F_EXBSIZE, SEEK_SET);
+	my_read(file, ext, F_EXBSIZE);
 }
 
 void putextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext)
 {
-	char str[MAX_PATH+1],nulbuf[F_EXBSIZE];
-	int file;
+	char str[MAX_PATH + 1], nulbuf[F_EXBSIZE];
+	int  file;
 
 	strip_ansi(ext);
-	strip_invalid_attr(ext);	/* eliminate bogus ctrl-a codes */
-	memset(nulbuf,0,sizeof(nulbuf));
-	SAFEPRINTF2(str,"%s%s.exb",cfg->dir[dirnum]->data_dir,cfg->dir[dirnum]->code);
-	if((file=nopen(str,O_WRONLY|O_CREAT))==-1)
+	strip_invalid_attr(ext);    /* eliminate bogus ctrl-a codes */
+	memset(nulbuf, 0, sizeof(nulbuf));
+	SAFEPRINTF2(str, "%s%s.exb", cfg->dir[dirnum]->data_dir, cfg->dir[dirnum]->code);
+	if ((file = nopen(str, O_WRONLY | O_CREAT)) == -1)
 		return;
-	lseek(file,0L,SEEK_END);
-	while(filelength(file)<(long)(datoffset/F_LEN)*F_EXBSIZE)
-		my_write(file,nulbuf,sizeof(nulbuf));
-	lseek(file,(datoffset/F_LEN)*F_EXBSIZE,SEEK_SET);
-	my_write(file,ext,F_EXBSIZE);
+	lseek(file, 0L, SEEK_END);
+	while (filelength(file) < (long)(datoffset / F_LEN) * F_EXBSIZE)
+		my_write(file, nulbuf, sizeof(nulbuf));
+	lseek(file, (datoffset / F_LEN) * F_EXBSIZE, SEEK_SET);
+	my_write(file, ext, F_EXBSIZE);
 	close(file);
 }
 
@@ -508,112 +510,112 @@ void putextdesc(scfg_t* cfg, uint dirnum, ulong datoffset, char *ext)
 /****************************************************************************/
 int update_uldate(scfg_t* cfg, oldfile_t* f)
 {
-	char str[MAX_PATH+1],fname[13];
-	int i,file;
-	long l,length;
+	char str[MAX_PATH + 1], fname[13];
+	int  i, file;
+	long l, length;
 
 	/*******************/
 	/* Update IXB File */
 	/*******************/
-	SAFEPRINTF2(str,"%s%s.ixb",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
-	if((file=nopen(str,O_RDWR))==-1)
-		return(errno); 
-	length=(long)filelength(file);
-	if(length%F_IXBSIZE) {
+	SAFEPRINTF2(str, "%s%s.ixb", cfg->dir[f->dir]->data_dir, cfg->dir[f->dir]->code);
+	if ((file = nopen(str, O_RDWR)) == -1)
+		return(errno);
+	length = (long)filelength(file);
+	if (length % F_IXBSIZE) {
 		close(file);
-		return(-1); 
+		return(-1);
 	}
-	SAFECOPY(fname,f->name);
-	for(i=8;i<12;i++)   /* Turn FILENAME.EXT into FILENAMEEXT */
-		fname[i]=fname[i+1];
-	for(l=0;l<length;l+=F_IXBSIZE) {
-		my_read(file,str,F_IXBSIZE);      /* Look for the filename in the IXB file */
-		str[11]=0;
-		if(!stricmp(fname,str)) break; 
+	SAFECOPY(fname, f->name);
+	for (i = 8; i < 12; i++)   /* Turn FILENAME.EXT into FILENAMEEXT */
+		fname[i] = fname[i + 1];
+	for (l = 0; l < length; l += F_IXBSIZE) {
+		my_read(file, str, F_IXBSIZE);      /* Look for the filename in the IXB file */
+		str[11] = 0;
+		if (!stricmp(fname, str)) break;
 	}
-	if(l>=length) {
+	if (l >= length) {
 		close(file);
-		return(-2); 
+		return(-2);
 	}
-	lseek(file,l+14,SEEK_SET);
-	my_write(file,&f->dateuled,4);
+	lseek(file, l + 14, SEEK_SET);
+	my_write(file, &f->dateuled, 4);
 	close(file);
 
 	/*******************************************/
 	/* Update last upload date/time stamp file */
 	/*******************************************/
-	SAFEPRINTF2(str,"%s%s.dab",cfg->dir[f->dir]->data_dir,cfg->dir[f->dir]->code);
-	if((file=nopen(str,O_WRONLY|O_CREAT))==-1)
+	SAFEPRINTF2(str, "%s%s.dab", cfg->dir[f->dir]->data_dir, cfg->dir[f->dir]->code);
+	if ((file = nopen(str, O_WRONLY | O_CREAT)) == -1)
 		return(errno);
 
-	my_write(file,&f->dateuled,4);
-	close(file); 
+	my_write(file, &f->dateuled, 4);
+	close(file);
 	return(0);
 }
 
 bool upgrade_file_bases(bool hash)
 {
-	int result;
-	ulong total_files = 0;
+	int    result;
+	ulong  total_files = 0;
 	time_t start = time(NULL);
 
 	printf("Upgrading File Bases...\n");
 
-	for(int i = 0; i < scfg.total_dirs; i++) {
+	for (int i = 0; i < scfg.total_dirs; i++) {
 		smb_t smb;
 
 		(void)smb_init_dir(&scfg, &smb, i);
-		if((result = smb_open(&smb)) != SMB_SUCCESS) {
+		if ((result = smb_open(&smb)) != SMB_SUCCESS) {
 			fprintf(stderr, "Error %d (%s) opening %s\n", result, smb.last_error, smb.file);
 			return false;
 		}
 		smb.status.attr = SMB_FILE_DIRECTORY;
-		if(!hash || (scfg.dir[i]->misc & DIR_NOHASH))
+		if (!hash || (scfg.dir[i]->misc & DIR_NOHASH))
 			smb.status.attr |= SMB_NOHASH;
 		smb.status.max_age = scfg.dir[i]->maxage;
 		smb.status.max_msgs = scfg.dir[i]->maxfiles;
-		if((result = smb_create(&smb)) != SMB_SUCCESS) {
+		if ((result = smb_create(&smb)) != SMB_SUCCESS) {
 			fprintf(stderr, "Error %d (%s) creating %s\n", result, smb.last_error, smb.file);
 			return false;
 		}
 
-		char str[MAX_PATH+1];
-		int file;
-		int extfile = openextdesc(&scfg, i);
+		char str[MAX_PATH + 1];
+		int  file;
+		int  extfile = openextdesc(&scfg, i);
 
-		sprintf(str,"%s%s.ixb",scfg.dir[i]->data_dir,scfg.dir[i]->code);
-		if((file=open(str,O_RDONLY|O_BINARY))==-1) {
+		sprintf(str, "%s%s.ixb", scfg.dir[i]->data_dir, scfg.dir[i]->code);
+		if ((file = open(str, O_RDONLY | O_BINARY)) == -1) {
 			smb_close(&smb);
 			closeextdesc(extfile);
 			continue;
 		}
-		long l=(long)filelength(file);
-		if(!l) {
+		long l = (long)filelength(file);
+		if (!l) {
 			close(file);
 			smb_close(&smb);
 			closeextdesc(extfile);
 			continue;
 		}
 		uchar* ixbbuf;
-		if((ixbbuf=(uchar *)malloc(l))==NULL) {
+		if ((ixbbuf = (uchar *)malloc(l)) == NULL) {
 			close(file);
-			printf("\7ERR_ALLOC %s %lu\n",str,l);
+			printf("\7ERR_ALLOC %s %lu\n", str, l);
 			smb_close(&smb);
 			closeextdesc(extfile);
 			continue;
 		}
-		if(read(file,ixbbuf,l)!=(int)l) {
+		if (read(file, ixbbuf, l) != (int)l) {
 			close(file);
-			printf("\7ERR_READ %s %lu\n",str,l);
+			printf("\7ERR_READ %s %lu\n", str, l);
 			free(ixbbuf);
 			smb_close(&smb);
 			closeextdesc(extfile);
 			continue;
 		}
 		close(file);
-		size_t file_count = l / F_IXBSIZE;
+		size_t     file_count = l / F_IXBSIZE;
 		oldfile_t* filelist = malloc(sizeof(*filelist) * file_count);
-		if(filelist == NULL) {
+		if (filelist == NULL) {
 			printf("malloc failure");
 			free(ixbbuf);
 			smb_close(&smb);
@@ -622,22 +624,22 @@ bool upgrade_file_bases(bool hash)
 		}
 		memset(filelist, 0, sizeof(*filelist) * file_count);
 		oldfile_t* f = filelist;
-		long m=0L;
-		while(m + F_IXBSIZE <= l) {
+		long       m = 0L;
+		while (m + F_IXBSIZE <= l) {
 			int j;
 			f->dir = i;
-			for(j=0;j<12 && m<l;j++)
-				if(j==8)
-					f->name[j]=ixbbuf[m]>' ' ? '.' : ' ';
+			for (j = 0; j < 12 && m < l; j++)
+				if (j == 8)
+					f->name[j] = ixbbuf[m] > ' ' ? '.' : ' ';
 				else
-					f->name[j]=ixbbuf[m++]; /* Turns FILENAMEEXT into FILENAME.EXT */
-			f->name[j]=0;
-			f->datoffset=ixbbuf[m]|((long)ixbbuf[m+1]<<8)|((long)ixbbuf[m+2]<<16);
-			f->dateuled=(ixbbuf[m+3]|((long)ixbbuf[m+4]<<8)|((long)ixbbuf[m+5]<<16)
-				|((long)ixbbuf[m+6]<<24));
-			f->datedled =(ixbbuf[m+7]|((long)ixbbuf[m+8]<<8)|((long)ixbbuf[m+9]<<16)
-				|((long)ixbbuf[m+10]<<24));
-			m+=11;
+					f->name[j] = ixbbuf[m++]; /* Turns FILENAMEEXT into FILENAME.EXT */
+			f->name[j] = 0;
+			f->datoffset = ixbbuf[m] | ((long)ixbbuf[m + 1] << 8) | ((long)ixbbuf[m + 2] << 16);
+			f->dateuled = (ixbbuf[m + 3] | ((long)ixbbuf[m + 4] << 8) | ((long)ixbbuf[m + 5] << 16)
+			               | ((long)ixbbuf[m + 6] << 24));
+			f->datedled = (ixbbuf[m + 7] | ((long)ixbbuf[m + 8] << 8) | ((long)ixbbuf[m + 9] << 16)
+			               | ((long)ixbbuf[m + 10] << 24));
+			m += 11;
 			f++;
 		};
 
@@ -645,13 +647,13 @@ bool upgrade_file_bases(bool hash)
 		qsort(filelist, file_count, sizeof(*filelist), file_uldate_compare);
 
 		time_t latest = 0;
-		for(size_t fi = 0; fi < file_count; fi++) {
+		for (size_t fi = 0; fi < file_count; fi++) {
 			f = &filelist[fi];
-			if(!getfiledat(&scfg, f)) {
+			if (!getfiledat(&scfg, f)) {
 				fprintf(stderr, "\nError getting file data for %s %s\n", scfg.dir[i]->code, f->name);
 				continue;
 			}
-			char fpath[MAX_PATH+1];
+			char   fpath[MAX_PATH + 1];
 			getoldfilepath(&scfg, f, fpath);
 			file_t file;
 			memset(&file, 0, sizeof(file));
@@ -662,76 +664,76 @@ bool upgrade_file_bases(bool hash)
 			smb_hfield_str(&file, SMB_FILEDESC, f->desc);
 			smb_hfield_str(&file, SENDER, f->uler);
 			smb_hfield_bin(&file, SMB_COST, f->cdt);
-			if(f->misc&FM_ANON)
+			if (f->misc & FM_ANON)
 				file.hdr.attr |= FILE_ANONYMOUS;
 			{
 				const char* body = NULL;
-				char extdesc[F_EXBSIZE+1] = {0};
-				if(f->misc&FM_EXTDESC && extfile > 0) {
+				char        extdesc[F_EXBSIZE + 1] = {0};
+				if (f->misc & FM_EXTDESC && extfile > 0) {
 					fgetextdesc(&scfg, i, f->datoffset, extdesc, extfile);
 					truncsp(extdesc);
-					if(*extdesc)
+					if (*extdesc)
 						body = extdesc;
 				}
-				result = smb_addfile(&smb, &file, SMB_FASTALLOC, body, /* contents: */NULL, fpath);
+				result = smb_addfile(&smb, &file, SMB_FASTALLOC, body, /* contents: */ NULL, fpath);
 			}
-			if(result != SMB_SUCCESS) {
+			if (result != SMB_SUCCESS) {
 				fprintf(stderr, "\n!Error %d (%s) adding file to %s\n", result, smb.last_error, smb.file);
 			} else {
 				total_files++;
 				time_t diff = time(NULL) - start;
 				printf("\r%-16s (%-5u bases remain) %lu files imported (%lu files/second)"
-					, scfg.dir[i]->code, scfg.total_dirs - (i + 1), total_files, (ulong)(diff ? total_files / diff : total_files));
+				       , scfg.dir[i]->code, scfg.total_dirs - (i + 1), total_files, (ulong)(diff ? total_files / diff : total_files));
 			}
-			if(f->dateuled > latest)
+			if (f->dateuled > latest)
 				latest = f->dateuled;
 			smb_freefilemem(&file);
 		}
 		free(filelist);
 		off_t new_count = filelength(fileno(smb.sid_fp)) / smb_idxreclen(&smb);
 		smb_close(&smb);
-		if(latest > 0)
+		if (latest > 0)
 			update_newfiletime(&smb, latest);
 		closeextdesc(extfile);
 		free(ixbbuf);
-		if(new_count != file_count) {
+		if (new_count != file_count) {
 			printf("\n%s: New file base index has %u records instead of %u\n"
-				,scfg.dir[i]->code, (uint)new_count, (uint)file_count);
+			       , scfg.dir[i]->code, (uint)new_count, (uint)file_count);
 		}
 	}
 	time_t diff = time(NULL) - start;
 	printf("\r%lu files imported in %u directories (%lu files/second)%40s\n"
-		,total_files, scfg.total_dirs, (ulong)(diff ? total_files / diff : total_files), "");
+	       , total_files, scfg.total_dirs, (ulong)(diff ? total_files / diff : total_files), "");
 
 	return true;
 }
 
-char *usage="\nusage: upgrade [ctrl_dir]\n";
+char *usage = "\nusage: upgrade [ctrl_dir]\n";
 
 int main(int argc, char** argv)
 {
-	char	error[512];
+	char error[512];
 
-	fprintf(stderr,"\nupgrade - Upgrade Synchronet BBS to %s\n"
-		,VERSION
-		);
+	fprintf(stderr, "\nupgrade - Upgrade Synchronet BBS to %s\n"
+	        , VERSION
+	        );
 
 	memset(&scfg, 0, sizeof(scfg));
 	scfg.size = sizeof(scfg);
-	SAFECOPY(scfg.ctrl_dir, get_ctrl_dir(/* warn: */true));
+	SAFECOPY(scfg.ctrl_dir, get_ctrl_dir(/* warn: */ true));
 
-	if(chdir(scfg.ctrl_dir) != 0)
-		fprintf(stderr,"!ERROR changing directory to: %s", scfg.ctrl_dir);
+	if (chdir(scfg.ctrl_dir) != 0)
+		fprintf(stderr, "!ERROR changing directory to: %s", scfg.ctrl_dir);
 
-	printf("\nLoading configuration files from %s\n",scfg.ctrl_dir);
-	if(!load_cfg(&scfg, NULL, TRUE, /* node: **/FALSE, error, sizeof(error))) {
-		fprintf(stderr,"!ERROR loading configuration files: %s\n",error);
+	printf("\nLoading configuration files from %s\n", scfg.ctrl_dir);
+	if (!load_cfg(&scfg, NULL, TRUE, /* node: **/ FALSE, error, sizeof(error))) {
+		fprintf(stderr, "!ERROR loading configuration files: %s\n", error);
 		return EXIT_FAILURE + __COUNTER__;
 	}
 
-	if(!upgrade_file_bases(/* hash: */true))
+	if (!upgrade_file_bases(/* hash: */ true))
 		return EXIT_FAILURE + __COUNTER__;
 
 	printf("Upgrade successful.\n");
-    return EXIT_SUCCESS;
+	return EXIT_SUCCESS;
 }

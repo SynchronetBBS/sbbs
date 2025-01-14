@@ -2,7 +2,7 @@
 
 #include "gen_defs.h"
 #include "fidodefs.h"
-#include "dirwrap.h"	/* _PATH_DEVNULL */
+#include "dirwrap.h"    /* _PATH_DEVNULL */
 #include <stdio.h>
 #include <string.h>
 
@@ -12,16 +12,16 @@ FILE* ctrlfp;
 
 char* freadstr(FILE* fp, char* str, size_t maxlen)
 {
-	int		ch;
-	size_t	len=0;
+	int    ch;
+	size_t len = 0;
 
-	while((ch=fgetc(fp))!=EOF && len<maxlen) {
-		str[len++]=ch;
-		if(ch==0)
+	while ((ch = fgetc(fp)) != EOF && len < maxlen) {
+		str[len++] = ch;
+		if (ch == 0)
 			break;
 	}
 
-	str[maxlen-1]=0;
+	str[maxlen - 1] = 0;
 
 	return(str);
 }
@@ -31,7 +31,7 @@ const char* fmsgattr_str(uint16_t attr)
 	char str[64] = "";
 
 	str[0] = '\0';
-#define FIDO_ATTR_CHECK(a, f) if(a&FIDO_##f)	sprintf(str + strlen(str), "%s%s", str[0] == 0 ? "" : ", ", #f);
+#define FIDO_ATTR_CHECK(a, f) if (a & FIDO_ ## f)    sprintf(str + strlen(str), "%s%s", str[0] == 0 ? "" : ", ", #f);
 	FIDO_ATTR_CHECK(attr, PRIVATE);
 	FIDO_ATTR_CHECK(attr, CRASH);
 	FIDO_ATTR_CHECK(attr, RECV);
@@ -47,7 +47,7 @@ const char* fmsgattr_str(uint16_t attr)
 	FIDO_ATTR_CHECK(attr, RR);
 	FIDO_ATTR_CHECK(attr, AUDIT);
 	FIDO_ATTR_CHECK(attr, FUPREQ);
-	if(str[0] == 0)
+	if (str[0] == 0)
 		return "";
 
 	static char buf[128];
@@ -57,86 +57,86 @@ const char* fmsgattr_str(uint16_t attr)
 
 int msgdump(FILE* fp, const char* fname)
 {
-	int			ch;
-	long		end;
-	fmsghdr_t	hdr;
+	int       ch;
+	long      end;
+	fmsghdr_t hdr;
 
-	if(fread(&hdr,sizeof(hdr),1,fp) != 1) {
-		fprintf(stderr,"%s !Error reading msg hdr (%" XP_PRIsize_t "u bytes)\n"
-			,fname,sizeof(hdr));
+	if (fread(&hdr, sizeof(hdr), 1, fp) != 1) {
+		fprintf(stderr, "%s !Error reading msg hdr (%" XP_PRIsize_t "u bytes)\n"
+		        , fname, sizeof(hdr));
 		return(__COUNTER__);
 	}
 
-	fseek(fp,-1L,SEEK_END);
+	fseek(fp, -1L, SEEK_END);
 	ch = fgetc(fp);
 	end = ftell(fp);
-	if(ch != FIDO_STORED_MSG_TERMINATOR) {
-		fprintf(stderr,"%s !Message missing terminator (%02X instead of %02X)\n"
-			,fname, (uchar)ch, FIDO_STORED_MSG_TERMINATOR);
+	if (ch != FIDO_STORED_MSG_TERMINATOR) {
+		fprintf(stderr, "%s !Message missing terminator (%02X instead of %02X)\n"
+		        , fname, (uchar)ch, FIDO_STORED_MSG_TERMINATOR);
 //		return(-2);
 	}
 
-	if(hdr.from[sizeof(hdr.from)-1] != 0)
-		fprintf(stderr,"%s Unterminated 'from' field\n", fname);
-	if(hdr.to[sizeof(hdr.to)-1] != 0)
-		fprintf(stderr,"%s Unterminated 'to' field\n", fname);
-	if(hdr.subj[sizeof(hdr.subj)-1] != 0)
-		fprintf(stderr,"%s Unterminated 'subj' field\n", fname);
-	if(hdr.time[sizeof(hdr.time)-1] != 0)
-		fprintf(stderr,"%s Unterminated 'time' field\n", fname);
+	if (hdr.from[sizeof(hdr.from) - 1] != 0)
+		fprintf(stderr, "%s Unterminated 'from' field\n", fname);
+	if (hdr.to[sizeof(hdr.to) - 1] != 0)
+		fprintf(stderr, "%s Unterminated 'to' field\n", fname);
+	if (hdr.subj[sizeof(hdr.subj) - 1] != 0)
+		fprintf(stderr, "%s Unterminated 'subj' field\n", fname);
+	if (hdr.time[sizeof(hdr.time) - 1] != 0)
+		fprintf(stderr, "%s Unterminated 'time' field\n", fname);
 
 	TERMINATE(hdr.subj);
-	printf("Subj: %.*s\n", (int)sizeof(hdr.subj)-1, hdr.subj);
+	printf("Subj: %.*s\n", (int)sizeof(hdr.subj) - 1, hdr.subj);
 	printf("Attr: 0x%04hX %s\n", hdr.attr, fmsgattr_str(hdr.attr));
 	TERMINATE(hdr.to);
-	printf("To  : %.*s (%u:%u/%u.%u)\n", (int)sizeof(hdr.to)-1, hdr.to
-		,hdr.destzone, hdr.destnet, hdr.destnode, hdr.destpoint);
+	printf("To  : %.*s (%u:%u/%u.%u)\n", (int)sizeof(hdr.to) - 1, hdr.to
+	       , hdr.destzone, hdr.destnet, hdr.destnode, hdr.destpoint);
 	TERMINATE(hdr.from);
-	printf("From: %.*s (%u:%u/%u.%u)\n", (int)sizeof(hdr.from)-1, hdr.from
-		,hdr.origzone, hdr.orignet, hdr.orignode, hdr.origpoint);
+	printf("From: %.*s (%u:%u/%u.%u)\n", (int)sizeof(hdr.from) - 1, hdr.from
+	       , hdr.origzone, hdr.orignet, hdr.orignode, hdr.origpoint);
 	TERMINATE(hdr.time);
-	printf("Time: %.*s\n", (int)sizeof(hdr.time)-1, hdr.time);
+	printf("Time: %.*s\n", (int)sizeof(hdr.time) - 1, hdr.time);
 
-	if(end <= sizeof(hdr)+1) {
+	if (end <= sizeof(hdr) + 1) {
 		fprintf(stderr, "!No body text\n");
 		return(__COUNTER__);
 	}
 
-	long len = end - sizeof(hdr);
+	long  len = end - sizeof(hdr);
 	char* body = calloc(len + 1, 1);
-	if(body == NULL) {
+	if (body == NULL) {
 		fprintf(stderr, "!MALLOC failure\n");
 		return __COUNTER__;
 	}
 	fseek(fp, sizeof(hdr), SEEK_SET);
-	if(fread(body, len, 1, fp) != 1) {
+	if (fread(body, len, 1, fp) != 1) {
 		perror("reading body text");
 		free(body);
 		return __COUNTER__;
 	}
 	fprintf(bodyfp, "\n-start of message text-\n");
 	char* p = body;
-	while(*p && p < body + len) {
-		if((p == body || *(p - 1) == '\r') && *p == 1) {
+	while (*p && p < body + len) {
+		if ((p == body || *(p - 1) == '\r') && *p == 1) {
 			fputc('@', ctrlfp);
 			p++;
-			while(*p && *p != '\r')
+			while (*p && *p != '\r')
 				fputc(*(p++), ctrlfp);
-			if(*p)
+			if (*p)
 				p++;
 			fputc('\n', ctrlfp);
 			continue;
 		}
-		for(; *p && *p != '\r'; p++) {
-			if(*p != '\n')
+		for (; *p && *p != '\r'; p++) {
+			if (*p != '\n')
 				fputc(*p, bodyfp);
 		}
-		if(*p) {
+		if (*p) {
 			p++;
 			fputc('\n', bodyfp);
 		}
 	}
-	if(p == (body + len) - 1)
+	if (p == (body + len) - 1)
 		fprintf(bodyfp, "-end of message text-\n");
 	else
 		fprintf(bodyfp, "-PREMATURE end of message text-\n");
@@ -150,45 +150,45 @@ char* usage = "usage: fmsgdump [-body | -ctrl] <file1.msg> [file2.msg] [...]\n";
 
 int main(int argc, char** argv)
 {
-	FILE*	fp;
-	int		i;
+	FILE* fp;
+	int   i;
 
-	fprintf(stderr,"fmsgdump rev 3.7 - Dump FidoNet Stored Messages\n\n");
+	fprintf(stderr, "fmsgdump rev 3.7 - Dump FidoNet Stored Messages\n\n");
 
-	if(argc<2) {
-		fprintf(stderr,"%s",usage);
+	if (argc < 2) {
+		fprintf(stderr, "%s", usage);
 		return -1;
 	}
 
-	if((nulfp=fopen(_PATH_DEVNULL,"w+"))==NULL) {
+	if ((nulfp = fopen(_PATH_DEVNULL, "w+")) == NULL) {
 		perror(_PATH_DEVNULL);
 		return -1;
 	}
-	bodyfp=nulfp;
-	ctrlfp=nulfp;
+	bodyfp = nulfp;
+	ctrlfp = nulfp;
 
-	if(sizeof(fmsghdr_t)!=FIDO_STORED_MSG_HDR_LEN) {
-		printf("sizeof(fmsghdr_t)=%" XP_PRIsize_t "u, expected: %d\n",sizeof(fmsghdr_t),FIDO_STORED_MSG_HDR_LEN);
+	if (sizeof(fmsghdr_t) != FIDO_STORED_MSG_HDR_LEN) {
+		printf("sizeof(fmsghdr_t)=%" XP_PRIsize_t "u, expected: %d\n", sizeof(fmsghdr_t), FIDO_STORED_MSG_HDR_LEN);
 		return(-1);
 	}
 
-	for(i=1;i<argc;i++) {
-		if(argv[i][0]=='-') {
-			switch(tolower(argv[i][1])) {
+	for (i = 1; i < argc; i++) {
+		if (argv[i][0] == '-') {
+			switch (tolower(argv[i][1])) {
 				case 'b':
-					bodyfp=stdout;
-					// fall-through
+					bodyfp = stdout;
+				// fall-through
 				case 'c':
-					ctrlfp=stdout;
+					ctrlfp = stdout;
 					break;
 				default:
-					printf("%s",usage);
+					printf("%s", usage);
 					return(0);
 			}
 			continue;
 		}
-		fprintf(stdout,"Opening %s\n",argv[i]);
-		if((fp=fopen(argv[i],"rb"))==NULL) {
+		fprintf(stdout, "Opening %s\n", argv[i]);
+		if ((fp = fopen(argv[i], "rb")) == NULL) {
 			perror(argv[i]);
 			continue;
 		}

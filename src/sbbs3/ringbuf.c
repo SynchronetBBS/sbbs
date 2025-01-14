@@ -30,32 +30,32 @@
 #endif
 
 #include "ringbuf.h"
-#include "genwrap.h"	/* SLEEP() */
+#include "genwrap.h"    /* SLEEP() */
 
 #ifdef RINGBUF_USE_STD_RTL
 
 	#ifndef VTOOLSD
 
-	/* FreeBSD uses <stdlib.h> instead of <malloc.h> */
+/* FreeBSD uses <stdlib.h> instead of <malloc.h> */
 	#ifdef __unix__
 		#include <stdlib.h>
 	#else
-		#include <malloc.h>		/* malloc prototype */
+		#include <malloc.h>     /* malloc prototype */
 	#endif
-	#include <string.h>			/* memcpy prototype */
-    #endif	/* !VTOOLSD */
+	#include <string.h>         /* memcpy prototype */
+	#endif  /* !VTOOLSD */
 
-	#define os_malloc	malloc
-	#define rb_malloc	malloc
-	#define os_free 	free
-	#define rb_free 	free
-	#define os_memcpy	memcpy
-	#define rb_memcpy	memcpy
+	#define os_malloc   malloc
+	#define rb_malloc   malloc
+	#define os_free     free
+	#define rb_free     free
+	#define os_memcpy   memcpy
+	#define rb_memcpy   memcpy
 
 #else
 
-	void (*rb_free)(void *);
-	void *(*rb_memcpy)(void *, const void *, size_t);
+void  (*rb_free)(void *);
+void *(*rb_memcpy)(void *, const void *, size_t);
 
 #endif
 /****************************************************************************/
@@ -63,36 +63,36 @@
 /****************************************************************************/
 int RingBufInit( RingBuf* rb, DWORD size
 #ifndef RINGBUF_USE_STD_RTL
-	,void *(os_malloc)(size_t)
-	,void (os_free)(void *)
-	,void *(os_memcpy)(void *, const void *, size_t)
+                 , void *(os_malloc)(size_t)
+                 , void (os_free)(void *)
+                 , void *(os_memcpy)(void *, const void *, size_t)
 #endif
-	)
+                 )
 {
-	memset(rb,0,sizeof(RingBuf));
-	if((rb->pStart=(BYTE *)os_malloc(size+1))==NULL)
+	memset(rb, 0, sizeof(RingBuf));
+	if ((rb->pStart = (BYTE *)os_malloc(size + 1)) == NULL)
 		return(-1);
 #ifndef RINGBUF_USE_STD_RTL
-	rb_free=os_free;
-	rb_memcpy=os_memcpy;
+	rb_free = os_free;
+	rb_memcpy = os_memcpy;
 #endif
-	rb->pHead=rb->pTail=rb->pStart;
-	rb->pEnd=rb->pStart+size;
-    rb->size=size;
+	rb->pHead = rb->pTail = rb->pStart;
+	rb->pEnd = rb->pStart + size;
+	rb->size = size;
 #ifdef RINGBUF_EVENT
-	rb->data_event=CreateEvent(NULL, /*  ManualReset: */TRUE, /* InitialState: */FALSE, NULL);
-	rb->highwater_event=CreateEvent(NULL, /*  ManualReset: */TRUE, /* InitialState: */FALSE, NULL);
-	rb->empty_event=CreateEvent(NULL, /* ManualReset: */TRUE, /* InitialState: */TRUE, NULL);
+	rb->data_event = CreateEvent(NULL, /*  ManualReset: */ TRUE, /* InitialState: */ FALSE, NULL);
+	rb->highwater_event = CreateEvent(NULL, /*  ManualReset: */ TRUE, /* InitialState: */ FALSE, NULL);
+	rb->empty_event = CreateEvent(NULL, /* ManualReset: */ TRUE, /* InitialState: */ TRUE, NULL);
 #endif
 #ifdef RINGBUF_MUTEX
-	pthread_mutex_init(&rb->mutex,NULL);
+	pthread_mutex_init(&rb->mutex, NULL);
 #endif
 	return(0);
 }
 
 void RingBufDispose( RingBuf* rb)
 {
-    if(rb->pStart!=NULL)
+	if (rb->pStart != NULL)
 		os_free(rb->pStart);
 #ifdef RINGBUF_EVENT
 	/*
@@ -100,27 +100,27 @@ void RingBufDispose( RingBuf* rb)
 	 *       and the old semaphore posted an extra time
 	 *       "just incase"
 	 */
-	if(rb->empty_event!=NULL)
+	if (rb->empty_event != NULL)
 		CloseEvent(rb->empty_event);
-	if(rb->data_event!=NULL)
+	if (rb->data_event != NULL)
 		CloseEvent(rb->data_event);
-	if(rb->highwater_event!=NULL)
+	if (rb->highwater_event != NULL)
 		CloseEvent(rb->highwater_event);
 
 #endif
 #ifdef RINGBUF_MUTEX
-	while(pthread_mutex_destroy(&rb->mutex)==EBUSY)
+	while (pthread_mutex_destroy(&rb->mutex) == EBUSY)
 		SLEEP(1);
 #endif
-	memset(rb,0,sizeof(RingBuf));
+	memset(rb, 0, sizeof(RingBuf));
 }
 
-#define RINGBUF_FILL_LEVEL(rb)	(rb->pHead >= rb->pTail ? (rb->pHead - rb->pTail) \
+#define RINGBUF_FILL_LEVEL(rb)  (rb->pHead >= rb->pTail ? (rb->pHead - rb->pTail) \
 								: (rb->size - (rb->pTail - (rb->pHead + 1))))
 
 DWORD RingBufFull( RingBuf* rb )
 {
-	DWORD	retval;
+	DWORD retval;
 
 #ifdef RINGBUF_MUTEX
 	pthread_mutex_lock(&rb->mutex);
@@ -148,24 +148,24 @@ DWORD RingBufWrite( RingBuf* rb, const BYTE* src,  DWORD cnt )
 {
 	DWORD max, first, remain, fill_level;
 
-	if(cnt==0)
+	if (cnt == 0)
 		return(cnt);
 
-	if(rb->pStart==NULL)
+	if (rb->pStart == NULL)
 		return(0);
 
 #ifdef RINGBUF_MUTEX
 	pthread_mutex_lock(&rb->mutex);
 #endif
 
-    /* allowed to write at pEnd */
+	/* allowed to write at pEnd */
 	max = rb->pEnd - rb->pHead + 1;
 
 	fill_level = RINGBUF_FILL_LEVEL(rb);
-	if(fill_level + cnt > rb->size)
+	if (fill_level + cnt > rb->size)
 		cnt = rb->size - fill_level;
 
-	if( max >= cnt ) {
+	if (max >= cnt) {
 		first = cnt;
 		remain = 0;
 	} else {
@@ -175,24 +175,24 @@ DWORD RingBufWrite( RingBuf* rb, const BYTE* src,  DWORD cnt )
 
 	rb_memcpy( rb->pHead, src, first );
 	rb->pHead += first;
-    src += first;
+	src += first;
 
-	if(remain) {
+	if (remain) {
 
 		rb->pHead = rb->pStart;
 		rb_memcpy(rb->pHead, src, remain);
 		rb->pHead += remain;
 	}
 
-    if(rb->pHead > rb->pEnd)
-    	rb->pHead = rb->pStart;
+	if (rb->pHead > rb->pEnd)
+		rb->pHead = rb->pStart;
 
 #ifdef RINGBUF_EVENT
-	if(rb->empty_event!=NULL)
+	if (rb->empty_event != NULL)
 		ResetEvent(rb->empty_event);
-	if (rb->data_event!=NULL)
+	if (rb->data_event != NULL)
 		SetEvent(rb->data_event);
-	if(rb->highwater_event!=NULL && rb->highwater_mark!=0 && RINGBUF_FILL_LEVEL(rb)>=rb->highwater_mark)
+	if (rb->highwater_event != NULL && rb->highwater_mark != 0 && RINGBUF_FILL_LEVEL(rb) >= rb->highwater_mark)
 		SetEvent(rb->highwater_event);
 #endif
 
@@ -214,13 +214,13 @@ DWORD RingBufRead( RingBuf* rb, BYTE* dst,  DWORD cnt )
 
 	len = RINGBUF_FILL_LEVEL(rb);
 
-	if( len < cnt )
-        cnt = len;
+	if (len < cnt)
+		cnt = len;
 
 	/* allowed to read at pEnd */
 	max = rb->pEnd - rb->pTail + 1;
 
-	if( max >= cnt ) {
+	if (max >= cnt) {
 		first = cnt;
 		remain = 0;
 	} else {
@@ -228,29 +228,29 @@ DWORD RingBufRead( RingBuf* rb, BYTE* dst,  DWORD cnt )
 		remain = cnt - first;
 	}
 
-    if(first && dst!=NULL) {
+	if (first && dst != NULL) {
 		rb_memcpy( dst, rb->pTail, first );
 		dst += first;
-    }
+	}
 	rb->pTail += first;
 
-	if( remain ){
+	if (remain) {
 
 		rb->pTail = rb->pStart;
-        if(dst!=NULL)
+		if (dst != NULL)
 			rb_memcpy( dst, rb->pTail, remain );
 		rb->pTail += remain;
 	}
 
-    if(rb->pTail > rb->pEnd)
+	if (rb->pTail > rb->pEnd)
 		rb->pTail = rb->pStart;
 
 #ifdef RINGBUF_EVENT
-	if(rb->empty_event!=NULL && RINGBUF_FILL_LEVEL(rb)==0) {
+	if (rb->empty_event != NULL && RINGBUF_FILL_LEVEL(rb) == 0) {
 		SetEvent(rb->empty_event);
 		ResetEvent(rb->data_event);
 	}
-	if(rb->highwater_event!=NULL && rb->highwater_mark!=0 && RINGBUF_FILL_LEVEL(rb)<rb->highwater_mark)
+	if (rb->highwater_event != NULL && rb->highwater_mark != 0 && RINGBUF_FILL_LEVEL(rb) < rb->highwater_mark)
 		ResetEvent(rb->highwater_event);
 #endif
 
@@ -266,20 +266,20 @@ DWORD RingBufPeek( RingBuf* rb, BYTE* dst,  DWORD cnt)
 	DWORD max, first, remain, len;
 
 	len = RingBufFull( rb );
-	if( len == 0 )
+	if (len == 0)
 		return(0);
 
 #ifdef RINGBUF_MUTEX
 	pthread_mutex_lock(&rb->mutex);
 #endif
 
-	if( len < cnt )
-        cnt = len;
+	if (len < cnt)
+		cnt = len;
 
-    /* allowed to read at pEnd */
+	/* allowed to read at pEnd */
 	max = rb->pEnd - rb->pTail + 1;
 
-	if( max >= cnt ) {
+	if (max >= cnt) {
 		first = cnt;
 		remain = 0;
 	} else {
@@ -290,7 +290,7 @@ DWORD RingBufPeek( RingBuf* rb, BYTE* dst,  DWORD cnt)
 	rb_memcpy( dst, rb->pTail, first );
 	dst += first;
 
-	if(remain) {
+	if (remain) {
 		rb_memcpy( dst, rb->pStart, remain );
 	}
 
@@ -309,11 +309,11 @@ void RingBufReInit(RingBuf* rb)
 #endif
 	rb->pHead = rb->pTail = rb->pStart;
 #ifdef RINGBUF_EVENT
-	if(rb->empty_event!=NULL)
+	if (rb->empty_event != NULL)
 		SetEvent(rb->empty_event);
-	if (rb->data_event!=NULL)
+	if (rb->data_event != NULL)
 		ResetEvent(rb->data_event);
-	if(rb->highwater_event!=NULL && rb->highwater_mark!=0 && RINGBUF_FILL_LEVEL(rb)>=rb->highwater_mark)
+	if (rb->highwater_event != NULL && rb->highwater_mark != 0 && RINGBUF_FILL_LEVEL(rb) >= rb->highwater_mark)
 		ResetEvent(rb->highwater_event);
 #endif
 #ifdef RINGBUF_MUTEX

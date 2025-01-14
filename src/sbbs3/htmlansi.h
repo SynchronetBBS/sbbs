@@ -13,24 +13,24 @@
 /* color fix pack. According to him, the "correct" range is 0-252 (not 255) */
 /* with half and quarter values of 168 and 84, respectively */
 
-const char *htmlansi[256]=
+const char *htmlansi[256] =
 {
-	"color: black; background-color: black;",		/* black */
-	"color: #a80000; background-color: black;",		/* dark red */
-	"color: #00a800; background-color: black;",		/* dark green */
-	"color: #a85400; background-color: black;",		/* brown (dark yellow) */
-	"color: #0000a8; background-color: black;",		/* dark blue */
-	"color: #a800a8; background-color: black;",		/* magenta */
-	"color: #00a8a8; background-color: black;",		/* cyan */
-	"color: #a8a8a8; background-color: black;",		/* white */
-	"color: #545454; background-color: black;",		/* bright black (grey) */
-	"color: #fc5454; background-color: black;",		/* bright red */
-	"color: #54fc54; background-color: black;",		/* bright green */
-	"color: #fcfc54; background-color: black;",		/* bright yellow */
-	"color: #5454fc; background-color: black;",		/* bright blue */
-	"color: #fc54fc; background-color: black;",		/* bright magenta */
-	"color: #54fcfc; background-color: black;",		/* bright cyan */
-	"color: white; background-color: black;",		/* bright white */
+	"color: black; background-color: black;",       /* black */
+	"color: #a80000; background-color: black;",     /* dark red */
+	"color: #00a800; background-color: black;",     /* dark green */
+	"color: #a85400; background-color: black;",     /* brown (dark yellow) */
+	"color: #0000a8; background-color: black;",     /* dark blue */
+	"color: #a800a8; background-color: black;",     /* magenta */
+	"color: #00a8a8; background-color: black;",     /* cyan */
+	"color: #a8a8a8; background-color: black;",     /* white */
+	"color: #545454; background-color: black;",     /* bright black (grey) */
+	"color: #fc5454; background-color: black;",     /* bright red */
+	"color: #54fc54; background-color: black;",     /* bright green */
+	"color: #fcfc54; background-color: black;",     /* bright yellow */
+	"color: #5454fc; background-color: black;",     /* bright blue */
+	"color: #fc54fc; background-color: black;",     /* bright magenta */
+	"color: #54fcfc; background-color: black;",     /* bright cyan */
+	"color: white; background-color: black;",       /* bright white */
 	/* Background: red */
 	"color: black; background-color: #a80000;",
 	"color: #a80000; background-color: #a80000;",
@@ -280,8 +280,8 @@ const char *htmlansi[256]=
 	"text-decoration: blink; color: white; background-color: #a8a8a8;",
 };
 
-#define HTML_COLOR_PREFIX		"</span><span style=\""
-#define HTML_COLOR_SUFFIX		"\">"
+#define HTML_COLOR_PREFIX       "</span><span style=\""
+#define HTML_COLOR_SUFFIX       "\">"
 
 #define MAX_COLOR_STRING 100
 

@@ -38,24 +38,24 @@
 #include "xmodem.h"
 #include "zmodem.h"
 
-#define MAXERRORS	10
+#define MAXERRORS   10
 
-#define SEND			(1<<0)	/* Sending file(s)							*/
-#define RECV			(1<<1)	/* Receiving file(s)						*/
-#define XMODEM			(1<<2)	/* Use Xmodem								*/
-#define YMODEM			(1<<3)	/* Use Ymodem								*/
-#define ZMODEM			(1<<4)	/* Use Zmodem								*/
-#define CRC 			(1<<5)	/* Use CRC error correction 				*/
-#define GMODE			(1<<6)	/* For Xmodem-G and Ymodem-G				*/
-#define RECVDIR 		(1<<7)	/* Directory specified to download to		*/
-#define OVERWRITE		(1<<9)	/* Overwrite receiving files				*/
+#define SEND            (1 << 0)  /* Sending file(s)							*/
+#define RECV            (1 << 1)  /* Receiving file(s)						*/
+#define XMODEM          (1 << 2)  /* Use Xmodem								*/
+#define YMODEM          (1 << 3)  /* Use Ymodem								*/
+#define ZMODEM          (1 << 4)  /* Use Zmodem								*/
+#define CRC             (1 << 5)  /* Use CRC error correction 				*/
+#define GMODE           (1 << 6)  /* For Xmodem-G and Ymodem-G				*/
+#define RECVDIR         (1 << 7)  /* Directory specified to download to		*/
+#define OVERWRITE       (1 << 9)  /* Overwrite receiving files				*/
 
-							/* Zmodem mode bits 						*/
-#define CTRL_ESC	(1<<0)	/* Escape all control chars 				*/
-#define VAR_HDRS	(1<<1)	/* Use variable headers 					*/
+/* Zmodem mode bits 						*/
+#define CTRL_ESC    (1 << 0)  /* Escape all control chars 				*/
+#define VAR_HDRS    (1 << 1)  /* Use variable headers 					*/
 
-#define SUCCESS		0
-#define NOINP		-1			/* input buffer empty (incom only) */
-#define FAILURE		-2			/* xmodem_get_block() failure */
-#define NOT_YMODEM	-3			/* Expected block zero, got block one */
-#define NOT_XMODEM	-4			/* Expected block one, got block zero */
+#define SUCCESS     0
+#define NOINP       -1          /* input buffer empty (incom only) */
+#define FAILURE     -2          /* xmodem_get_block() failure */
+#define NOT_YMODEM  -3          /* Expected block zero, got block one */
+#define NOT_XMODEM  -4          /* Expected block one, got block zero */

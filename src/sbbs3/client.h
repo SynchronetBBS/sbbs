@@ -22,20 +22,20 @@
 #ifndef _CLIENT_H
 #define _CLIENT_H
 
-#include "gen_defs.h"	/* WORD, DWORD */
-#include "sockwrap.h"	/* INET6_ADDRSTRLEN */
-#include <time.h>		/* time_t */
+#include "gen_defs.h"   /* WORD, DWORD */
+#include "sockwrap.h"   /* INET6_ADDRSTRLEN */
+#include <time.h>       /* time_t */
 
 /* Used for sbbsctrl->client window */
 typedef struct {
-	size_t		size;		/* size of this struct */
-	char		addr[128];	/* IP address */
-	char		host[256];	/* host name */
-	uint16_t	port;		/* TCP port number */
-	time32_t	time;		/* connect time */
-	char		protocol[32];	/* protocol description */
-	char		user[32];	/* user name */
-	uint32_t	usernum;	/* user number (authenticated when non-zero) */
+	size_t size;            /* size of this struct */
+	char addr[128];         /* IP address */
+	char host[256];         /* host name */
+	uint16_t port;          /* TCP port number */
+	time32_t time;          /* connect time */
+	char protocol[32];          /* protocol description */
+	char user[32];          /* user name */
+	uint32_t usernum;       /* user number (authenticated when non-zero) */
 } client_t;
 
 

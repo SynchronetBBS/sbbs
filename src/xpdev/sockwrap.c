@@ -19,113 +19,113 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include <stdlib.h>		/* alloca/free on FreeBSD */
-#include <string.h>		/* bzero (for FD_ZERO) on FreeBSD */
-#include <errno.h>		/* ENOMEM */
-#include <stdio.h>		/* SEEK_SET */
+#include <stdlib.h>     /* alloca/free on FreeBSD */
+#include <string.h>     /* bzero (for FD_ZERO) on FreeBSD */
+#include <errno.h>      /* ENOMEM */
+#include <stdio.h>      /* SEEK_SET */
 #include <string.h>
 #if defined(_WIN32)
- #include <malloc.h>	/* alloca() on Win32 */
+ #include <malloc.h>    /* alloca() on Win32 */
 #endif
 
-#include "genwrap.h"	/* SLEEP */
-#include "gen_defs.h"	/* bool/LOG_WARNING */
-#include "sockwrap.h"	/* sendsocket */
-#include "filewrap.h"	/* filelength */
+#include "genwrap.h"    /* SLEEP */
+#include "gen_defs.h"   /* bool/LOG_WARNING */
+#include "sockwrap.h"   /* sendsocket */
+#include "filewrap.h"   /* filelength */
 
 static socket_option_t socket_options[] = {
-	{ "TYPE",				0,				SOL_SOCKET,		SO_TYPE				},
-	{ "ERROR",				0,				SOL_SOCKET,		SO_ERROR			},
-	{ "DEBUG",				0,				SOL_SOCKET,		SO_DEBUG			},
-	{ "LINGER",				SOCK_STREAM,	SOL_SOCKET,		SO_LINGER			},
-	{ "SNDBUF",				0,				SOL_SOCKET,		SO_SNDBUF			},
-	{ "RCVBUF",				0,				SOL_SOCKET,		SO_RCVBUF			},
+	{ "TYPE",               0,              SOL_SOCKET,     SO_TYPE             },
+	{ "ERROR",              0,              SOL_SOCKET,     SO_ERROR            },
+	{ "DEBUG",              0,              SOL_SOCKET,     SO_DEBUG            },
+	{ "LINGER",             SOCK_STREAM,    SOL_SOCKET,     SO_LINGER           },
+	{ "SNDBUF",             0,              SOL_SOCKET,     SO_SNDBUF           },
+	{ "RCVBUF",             0,              SOL_SOCKET,     SO_RCVBUF           },
 
-#ifndef _WINSOCKAPI_	/* Defined, but not supported, by WinSock */
-	{ "SNDLOWAT",			0,				SOL_SOCKET,		SO_SNDLOWAT			},
-	{ "RCVLOWAT",			0,				SOL_SOCKET,		SO_RCVLOWAT			},
-	{ "SNDTIMEO",			0,				SOL_SOCKET,		SO_SNDTIMEO			},
-	{ "RCVTIMEO",			0,				SOL_SOCKET,		SO_RCVTIMEO			},
-#ifdef SO_USELOOPBACK	/* SunOS */
-	{ "USELOOPBACK",		0,				SOL_SOCKET,		SO_USELOOPBACK		},
+#ifndef _WINSOCKAPI_    /* Defined, but not supported, by WinSock */
+	{ "SNDLOWAT",           0,              SOL_SOCKET,     SO_SNDLOWAT         },
+	{ "RCVLOWAT",           0,              SOL_SOCKET,     SO_RCVLOWAT         },
+	{ "SNDTIMEO",           0,              SOL_SOCKET,     SO_SNDTIMEO         },
+	{ "RCVTIMEO",           0,              SOL_SOCKET,     SO_RCVTIMEO         },
+#ifdef SO_USELOOPBACK   /* SunOS */
+	{ "USELOOPBACK",        0,              SOL_SOCKET,     SO_USELOOPBACK      },
 #endif
 #endif
 
-	{ "REUSEADDR",			0,				SOL_SOCKET,		SO_REUSEADDR		},
-#ifdef SO_REUSEPORT	/* BSD */
-	{ "REUSEPORT",			0,				SOL_SOCKET,		SO_REUSEPORT		},
+	{ "REUSEADDR",          0,              SOL_SOCKET,     SO_REUSEADDR        },
+#ifdef SO_REUSEPORT /* BSD */
+	{ "REUSEPORT",          0,              SOL_SOCKET,     SO_REUSEPORT        },
 #endif
 #ifdef SO_EXCLUSIVEADDRUSE /* WinSock */
-	{ "EXCLUSIVEADDRUSE",	0,				SOL_SOCKET,		SO_EXCLUSIVEADDRUSE },
+	{ "EXCLUSIVEADDRUSE",   0,              SOL_SOCKET,     SO_EXCLUSIVEADDRUSE },
 #endif
-	{ "KEEPALIVE",			SOCK_STREAM,	SOL_SOCKET,		SO_KEEPALIVE		},
-	{ "DONTROUTE",			0,				SOL_SOCKET,		SO_DONTROUTE		},
-	{ "BROADCAST",			SOCK_DGRAM,		SOL_SOCKET,		SO_BROADCAST		},
-	{ "OOBINLINE",			SOCK_STREAM,	SOL_SOCKET,		SO_OOBINLINE		},
+	{ "KEEPALIVE",          SOCK_STREAM,    SOL_SOCKET,     SO_KEEPALIVE        },
+	{ "DONTROUTE",          0,              SOL_SOCKET,     SO_DONTROUTE        },
+	{ "BROADCAST",          SOCK_DGRAM,     SOL_SOCKET,     SO_BROADCAST        },
+	{ "OOBINLINE",          SOCK_STREAM,    SOL_SOCKET,     SO_OOBINLINE        },
 
 #ifdef SO_ACCEPTCONN
-	{ "ACCEPTCONN",			SOCK_STREAM,	SOL_SOCKET,		SO_ACCEPTCONN		},
+	{ "ACCEPTCONN",         SOCK_STREAM,    SOL_SOCKET,     SO_ACCEPTCONN       },
 #endif
-#ifdef SO_PRIORITY		/* Linux */
-	{ "PRIORITY",			0,				SOL_SOCKET,		SO_PRIORITY			},
+#ifdef SO_PRIORITY      /* Linux */
+	{ "PRIORITY",           0,              SOL_SOCKET,     SO_PRIORITY         },
 #endif
-#ifdef SO_NO_CHECK		/* Linux */
-	{ "NO_CHECK",			0,				SOL_SOCKET,		SO_NO_CHECK			},
+#ifdef SO_NO_CHECK      /* Linux */
+	{ "NO_CHECK",           0,              SOL_SOCKET,     SO_NO_CHECK         },
 #endif
-#ifdef SO_PROTOTYPE		/* SunOS */
-	{ "PROTOTYPE",			0,				SOL_SOCKET,		SO_PROTOTYPE		},
+#ifdef SO_PROTOTYPE     /* SunOS */
+	{ "PROTOTYPE",          0,              SOL_SOCKET,     SO_PROTOTYPE        },
 #endif
-#ifdef SO_MAX_MSG_SIZE	/* WinSock2 */
-	{ "MAX_MSG_SIZE",		SOCK_DGRAM,		SOL_SOCKET,		SO_MAX_MSG_SIZE		},
+#ifdef SO_MAX_MSG_SIZE  /* WinSock2 */
+	{ "MAX_MSG_SIZE",       SOCK_DGRAM,     SOL_SOCKET,     SO_MAX_MSG_SIZE     },
 #endif
-#ifdef SO_CONNECT_TIME	/* WinSock2 */
-	{ "CONNECT_TIME",		SOCK_STREAM,	SOL_SOCKET,		SO_CONNECT_TIME		},
+#ifdef SO_CONNECT_TIME  /* WinSock2 */
+	{ "CONNECT_TIME",       SOCK_STREAM,    SOL_SOCKET,     SO_CONNECT_TIME     },
 #endif
 
 	/* IPPROTO-level socket options */
-	{ "TCP_NODELAY",		SOCK_STREAM,	IPPROTO_TCP,	TCP_NODELAY			},
+	{ "TCP_NODELAY",        SOCK_STREAM,    IPPROTO_TCP,    TCP_NODELAY         },
 	/* The following are platform-specific */
 #ifdef TCP_MAXSEG
-	{ "TCP_MAXSEG",			SOCK_STREAM,	IPPROTO_TCP,	TCP_MAXSEG			},
+	{ "TCP_MAXSEG",         SOCK_STREAM,    IPPROTO_TCP,    TCP_MAXSEG          },
 #endif
 #ifdef TCP_CORK
-	{ "TCP_CORK",			SOCK_STREAM,	IPPROTO_TCP,	TCP_CORK			},
+	{ "TCP_CORK",           SOCK_STREAM,    IPPROTO_TCP,    TCP_CORK            },
 #endif
 #ifdef TCP_KEEPIDLE
-	{ "TCP_KEEPIDLE",		SOCK_STREAM,	IPPROTO_TCP,	TCP_KEEPIDLE		},
+	{ "TCP_KEEPIDLE",       SOCK_STREAM,    IPPROTO_TCP,    TCP_KEEPIDLE        },
 #endif
 #ifdef TCP_KEEPINTVL
-	{ "TCP_KEEPINTVL",		SOCK_STREAM,	IPPROTO_TCP,	TCP_KEEPINTVL		},
+	{ "TCP_KEEPINTVL",      SOCK_STREAM,    IPPROTO_TCP,    TCP_KEEPINTVL       },
 #endif
 #ifdef TCP_KEEPCNT
-	{ "TCP_KEEPCNT",		SOCK_STREAM,	IPPROTO_TCP,	TCP_KEEPCNT			},
+	{ "TCP_KEEPCNT",        SOCK_STREAM,    IPPROTO_TCP,    TCP_KEEPCNT         },
 #endif
-#ifdef TCP_KEEPALIVE	/* SunOS */
-	{ "TCP_KEEPALIVE",		SOCK_STREAM,	IPPROTO_TCP,	TCP_KEEPALIVE		},
+#ifdef TCP_KEEPALIVE    /* SunOS */
+	{ "TCP_KEEPALIVE",      SOCK_STREAM,    IPPROTO_TCP,    TCP_KEEPALIVE       },
 #endif
 #ifdef TCP_SYNCNT
-	{ "TCP_SYNCNT",			SOCK_STREAM,	IPPROTO_TCP,	TCP_SYNCNT			},
+	{ "TCP_SYNCNT",         SOCK_STREAM,    IPPROTO_TCP,    TCP_SYNCNT          },
 #endif
 #ifdef TCP_LINGER2
-	{ "TCP_LINGER2",		SOCK_STREAM,	IPPROTO_TCP,	TCP_LINGER2			},
+	{ "TCP_LINGER2",        SOCK_STREAM,    IPPROTO_TCP,    TCP_LINGER2         },
 #endif
 #ifdef TCP_DEFER_ACCEPT
-	{ "TCP_DEFER_ACCEPT",	SOCK_STREAM,	IPPROTO_TCP,	TCP_DEFER_ACCEPT	},
+	{ "TCP_DEFER_ACCEPT",   SOCK_STREAM,    IPPROTO_TCP,    TCP_DEFER_ACCEPT    },
 #endif
 #ifdef TCP_WINDOW_CLAMP
-	{ "TCP_WINDOW_CLAMP",	SOCK_STREAM,	IPPROTO_TCP,	TCP_WINDOW_CLAMP	},
+	{ "TCP_WINDOW_CLAMP",   SOCK_STREAM,    IPPROTO_TCP,    TCP_WINDOW_CLAMP    },
 #endif
 #ifdef TCP_QUICKACK
-	{ "TCP_QUICKACK",		SOCK_STREAM,	IPPROTO_TCP,	TCP_QUICKACK		},
+	{ "TCP_QUICKACK",       SOCK_STREAM,    IPPROTO_TCP,    TCP_QUICKACK        },
 #endif
 #ifdef TCP_NOPUSH
-	{ "TCP_NOPUSH",			SOCK_STREAM,	IPPROTO_TCP,	TCP_NOPUSH			},
+	{ "TCP_NOPUSH",         SOCK_STREAM,    IPPROTO_TCP,    TCP_NOPUSH          },
 #endif
 #ifdef TCP_NOOPT
-	{ "TCP_NOOPT",			SOCK_STREAM,	IPPROTO_TCP,	TCP_NOOPT			},
+	{ "TCP_NOOPT",          SOCK_STREAM,    IPPROTO_TCP,    TCP_NOOPT           },
 #endif
 #if defined(IPV6_V6ONLY) && defined(IPPROTO_IPV6)
-	{ "IPV6_V6ONLY",		0,				IPPROTO_IPV6,	IPV6_V6ONLY			},
+	{ "IPV6_V6ONLY",        0,              IPPROTO_IPV6,   IPV6_V6ONLY         },
 #endif
 	{ NULL }
 };
@@ -134,18 +134,18 @@ int getSocketOptionByName(const char* name, int* level)
 {
 	int i;
 
-	if(level!=NULL)
-		*level=SOL_SOCKET;	/* default option level */
-	for(i=0;socket_options[i].name;i++) {
-		if(stricmp(name,socket_options[i].name)==0) {
-			if(level!=NULL)
+	if (level != NULL)
+		*level = SOL_SOCKET; /* default option level */
+	for (i = 0; socket_options[i].name; i++) {
+		if (stricmp(name, socket_options[i].name) == 0) {
+			if (level != NULL)
 				*level = socket_options[i].level;
 			return(socket_options[i].value);
 		}
 	}
-	if(!IS_DIGIT(*name))	/* unknown option name */
+	if (!IS_DIGIT(*name))    /* unknown option name */
 		return(-1);
-	return(strtol(name,NULL,0));
+	return(strtol(name, NULL, 0));
 }
 
 socket_option_t* getSocketOptionList(void)
@@ -187,16 +187,16 @@ bool socket_check(SOCKET sock, bool* rd_p, bool* wr_p, DWORD timeout)
 {
 #ifdef PREFER_POLL
 	struct pollfd pfd = {0};
-	int j, rd;
-	char ch;
+	int           j, rd;
+	char          ch;
 
-	if(rd_p!=NULL)
-		*rd_p=false;
+	if (rd_p != NULL)
+		*rd_p = false;
 
-	if(wr_p!=NULL)
-		*wr_p=false;
+	if (wr_p != NULL)
+		*wr_p = false;
 
-	if(sock==INVALID_SOCKET)
+	if (sock == INVALID_SOCKET)
 		return(false);
 
 	pfd.fd = sock;
@@ -219,11 +219,11 @@ bool socket_check(SOCKET sock, bool* rd_p, bool* wr_p, DWORD timeout)
 		if (pfd.revents & (POLLERR | POLLNVAL | POLLHUP))
 			return false;
 
-		if(pfd.revents & ~(POLLOUT) && (rd_p !=NULL || wr_p==NULL))  {
-			rd=recv(sock,&ch,1,MSG_PEEK);
-			if(rd==1 || (rd==SOCKET_ERROR && SOCKET_ERRNO==EMSGSIZE)) {
-				if(rd_p!=NULL)
-					*rd_p=true;
+		if (pfd.revents & ~(POLLOUT) && (rd_p != NULL || wr_p == NULL))  {
+			rd = recv(sock, &ch, 1, MSG_PEEK);
+			if (rd == 1 || (rd == SOCKET_ERROR && SOCKET_ERRNO == EMSGSIZE)) {
+				if (rd_p != NULL)
+					*rd_p = true;
 				return true;
 			}
 		}
@@ -237,56 +237,56 @@ bool socket_check(SOCKET sock, bool* rd_p, bool* wr_p, DWORD timeout)
 
 	return false;
 #else
-	char	ch;
-	int		i,rd;
-	fd_set	rd_set;
-	fd_set*	rd_set_p=&rd_set;
-	fd_set	wr_set;
-	fd_set*	wr_set_p=NULL;
-	struct	timeval tv;
+	char            ch;
+	int             i, rd;
+	fd_set          rd_set;
+	fd_set*         rd_set_p = &rd_set;
+	fd_set          wr_set;
+	fd_set*         wr_set_p = NULL;
+	struct  timeval tv;
 
-	if(rd_p!=NULL)
-		*rd_p=false;
+	if (rd_p != NULL)
+		*rd_p = false;
 
-	if(wr_p!=NULL)
-		*wr_p=false;
+	if (wr_p != NULL)
+		*wr_p = false;
 
-	if(sock==INVALID_SOCKET)
+	if (sock == INVALID_SOCKET)
 		return(false);
 
 	FD_ZERO(&rd_set);
-	FD_SET(sock,&rd_set);
-	if(wr_p!=NULL) {
-		wr_set_p=&wr_set;
+	FD_SET(sock, &rd_set);
+	if (wr_p != NULL) {
+		wr_set_p = &wr_set;
 		FD_ZERO(wr_set_p);
-		FD_SET(sock,wr_set_p);
-		if(rd_p==NULL)
-			rd_set_p=NULL;
+		FD_SET(sock, wr_set_p);
+		if (rd_p == NULL)
+			rd_set_p = NULL;
 	}
 
 	/* Convert timeout from ms to sec/usec */
-	tv.tv_sec=timeout/1000;
-	tv.tv_usec=(timeout%1000)*1000;
+	tv.tv_sec = timeout / 1000;
+	tv.tv_usec = (timeout % 1000) * 1000;
 
-	i=select(sock+1,rd_set_p,wr_set_p,NULL,&tv);
-	if(i==SOCKET_ERROR)
+	i = select(sock + 1, rd_set_p, wr_set_p, NULL, &tv);
+	if (i == SOCKET_ERROR)
 		return(false);
 
-	if(i==0)
+	if (i == 0)
 		return(true);
 
-	if(wr_p!=NULL && FD_ISSET(sock,wr_set_p)) {
-		*wr_p=true;
-		if(i==1)
+	if (wr_p != NULL && FD_ISSET(sock, wr_set_p)) {
+		*wr_p = true;
+		if (i == 1)
 			return(true);
 	}
 
-	if(rd_p !=NULL || wr_p==NULL)  {
-		rd=recv(sock,&ch,1,MSG_PEEK);
-		if(rd==1
-			|| (rd==SOCKET_ERROR && SOCKET_ERRNO==EMSGSIZE)) {
-			if(rd_p!=NULL)
-				*rd_p=true;
+	if (rd_p != NULL || wr_p == NULL)  {
+		rd = recv(sock, &ch, 1, MSG_PEEK);
+		if (rd == 1
+		    || (rd == SOCKET_ERROR && SOCKET_ERRNO == EMSGSIZE)) {
+			if (rd_p != NULL)
+				*rd_p = true;
 			return(true);
 		}
 	}
@@ -313,8 +313,8 @@ bool socket_readable(SOCKET sock, int timeout)
 		return true;
 	return false;
 #else
-	fd_set rd_set;
-	struct timeval tv = {0};
+	fd_set          rd_set;
+	struct timeval  tv = {0};
 	struct timeval *tvp = &tv;
 
 	FD_ZERO(&rd_set);
@@ -326,8 +326,8 @@ bool socket_readable(SOCKET sock, int timeout)
 		tv.tv_usec = (timeout % 1000) * 1000;
 	}
 
-	switch (select(sock+1, &rd_set, NULL, NULL, tvp)) {
-		case 0:		// Nothing to read
+	switch (select(sock + 1, &rd_set, NULL, NULL, tvp)) {
+		case 0:     // Nothing to read
 			return false;
 		case 1:
 			return true;
@@ -355,8 +355,8 @@ bool socket_writable(SOCKET sock, int timeout)
 		return true;
 	return false;
 #else
-	fd_set wr_set;
-	struct timeval tv = {0};
+	fd_set          wr_set;
+	struct timeval  tv = {0};
 	struct timeval *tvp = &tv;
 
 	FD_ZERO(&wr_set);
@@ -368,8 +368,8 @@ bool socket_writable(SOCKET sock, int timeout)
 		tv.tv_usec = (timeout % 1000) * 1000;
 	}
 
-	switch (select(sock+1, NULL, &wr_set, NULL, tvp)) {
-		case 0:		// Nothing to read
+	switch (select(sock + 1, NULL, &wr_set, NULL, tvp)) {
+		case 0:     // Nothing to read
 			return false;
 		case 1:
 			return true;
@@ -391,14 +391,14 @@ bool socket_recvdone(SOCKET sock, int timeout)
 	struct pollfd pfd = {0};
 	pfd.fd = sock;
 	pfd.events = POLLIN;
-	char ch;
-	int rd;
+	char          ch;
+	int           rd;
 
 	switch (poll(&pfd, 1, timeout)) {
 		case 1:
 			if (pfd.revents) {
-				rd = recv(sock,&ch,1,MSG_PEEK);
-				if (rd == 1 || (rd==SOCKET_ERROR && SOCKET_ERRNO==EMSGSIZE))
+				rd = recv(sock, &ch, 1, MSG_PEEK);
+				if (rd == 1 || (rd == SOCKET_ERROR && SOCKET_ERRNO == EMSGSIZE))
 					return false;
 				return true;
 			}
@@ -410,11 +410,11 @@ bool socket_recvdone(SOCKET sock, int timeout)
 	}
 	return false;
 #else
-	fd_set rd_set;
-	struct timeval tv = {0};
+	fd_set          rd_set;
+	struct timeval  tv = {0};
 	struct timeval *tvp = &tv;
-	char ch;
-	int rd;
+	char            ch;
+	int             rd;
 
 	FD_ZERO(&rd_set);
 	FD_SET(sock, &rd_set);
@@ -425,44 +425,44 @@ bool socket_recvdone(SOCKET sock, int timeout)
 		tv.tv_usec = (timeout % 1000) * 1000;
 	}
 
-	switch (select(sock+1, &rd_set, NULL, NULL, tvp)) {
-		case -1:	// Error, call this disconnected
+	switch (select(sock + 1, &rd_set, NULL, NULL, tvp)) {
+		case -1:    // Error, call this disconnected
 			return true;
-		case 0:		// Nothing to read
+		case 0:     // Nothing to read
 			return false;
 	}
-	rd = recv(sock,&ch,1,MSG_PEEK);
-	if (rd == 1 || (rd==SOCKET_ERROR && SOCKET_ERRNO==EMSGSIZE))
+	rd = recv(sock, &ch, 1, MSG_PEEK);
+	if (rd == 1 || (rd == SOCKET_ERROR && SOCKET_ERRNO == EMSGSIZE))
 		return false;
 	return true;
 #endif
 }
 
 int retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
-			   ,uint retries, uint wait_secs
-			   ,const char* prot
-			   ,int (*lprintf)(int level, const char *fmt, ...))
+               , uint retries, uint wait_secs
+               , const char* prot
+               , int (*lprintf)(int level, const char *fmt, ...))
 {
-	char	port_str[128];
-	char	err[256];
-	int		result=-1;
-	uint	i;
+	char port_str[128];
+	char err[256];
+	int  result = -1;
+	uint i;
 
-	if(addr->sa_family==AF_INET)
-		SAFEPRINTF(port_str," to port %u",ntohs(((SOCKADDR_IN *)(addr))->sin_port));
+	if (addr->sa_family == AF_INET)
+		SAFEPRINTF(port_str, " to port %u", ntohs(((SOCKADDR_IN *)(addr))->sin_port));
 	else
-		port_str[0]=0;
-	for(i=0;i<=retries;i++) {
-		if((result=bind(s,addr,addrlen))==0)
+		port_str[0] = 0;
+	for (i = 0; i <= retries; i++) {
+		if ((result = bind(s, addr, addrlen)) == 0)
 			break;
-		if(lprintf!=NULL)
-			lprintf(i<retries ? LOG_WARNING:LOG_CRIT
-				,"%04d !ERROR %d binding %s socket%s: %s", s, SOCKET_ERRNO, prot, port_str, SOCKET_STRERROR(err, sizeof(err)));
-		if(i<retries) {
-			if(lprintf!=NULL)
-				lprintf(LOG_WARNING,"%04d Will retry in %u seconds (%u of %u)"
-					,s, wait_secs, i+1, retries);
-			SLEEP(wait_secs*1000);
+		if (lprintf != NULL)
+			lprintf(i < retries ? LOG_WARNING:LOG_CRIT
+			        , "%04d !ERROR %d binding %s socket%s: %s", s, SOCKET_ERRNO, prot, port_str, SOCKET_STRERROR(err, sizeof(err)));
+		if (i < retries) {
+			if (lprintf != NULL)
+				lprintf(LOG_WARNING, "%04d Will retry in %u seconds (%u of %u)"
+				        , s, wait_secs, i + 1, retries);
+			SLEEP(wait_secs * 1000);
 		}
 	}
 	return(result);
@@ -470,21 +470,21 @@ int retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
 
 int nonblocking_connect(SOCKET sock, struct sockaddr* addr, size_t size, unsigned timeout)
 {
-	int result;
+	int       result;
 	socklen_t optlen;
 
-	result=connect(sock, addr, size);
+	result = connect(sock, addr, size);
 
-	if(result==SOCKET_ERROR) {
-		result=SOCKET_ERRNO;
-		if(result==EWOULDBLOCK || result==EINPROGRESS) {
+	if (result == SOCKET_ERROR) {
+		result = SOCKET_ERRNO;
+		if (result == EWOULDBLOCK || result == EINPROGRESS) {
 			if (socket_writable(sock, timeout * 1000)) {
 				result = 0;
 			}
 			else {
 				optlen = sizeof(result);
-				if(getsockopt(sock, SOL_SOCKET, SO_ERROR, (void*)&result, &optlen)==SOCKET_ERROR)
-					result=SOCKET_ERRNO;
+				if (getsockopt(sock, SOL_SOCKET, SO_ERROR, (void*)&result, &optlen) == SOCKET_ERROR)
+					result = SOCKET_ERRNO;
 			}
 		}
 	}
@@ -494,48 +494,48 @@ int nonblocking_connect(SOCKET sock, struct sockaddr* addr, size_t size, unsigne
 
 union xp_sockaddr* inet_ptoaddr(const char *addr_str, union xp_sockaddr *addr, size_t size)
 {
-    struct addrinfo hints = {0};
-    struct addrinfo *res, *cur;
+	struct addrinfo  hints = {0};
+	struct addrinfo *res, *cur;
 
-    hints.ai_flags = AI_NUMERICHOST|AI_PASSIVE;
-    if(getaddrinfo(addr_str, NULL, &hints, &res))
-        return NULL;
+	hints.ai_flags = AI_NUMERICHOST | AI_PASSIVE;
+	if (getaddrinfo(addr_str, NULL, &hints, &res))
+		return NULL;
 
-    for(cur = res; cur; cur = cur->ai_next) {
-        if(cur->ai_addr->sa_family == AF_INET6)
-            break;
-        if(cur->ai_addr->sa_family == AF_INET)
-            break;
-    }
-    if(!cur) {
-        freeaddrinfo(res);
-        return NULL;
-    }
-    if (size < sizeof(struct sockaddr_in6)) {
-        freeaddrinfo(res);
-        return NULL;
+	for (cur = res; cur; cur = cur->ai_next) {
+		if (cur->ai_addr->sa_family == AF_INET6)
+			break;
+		if (cur->ai_addr->sa_family == AF_INET)
+			break;
+	}
+	if (!cur) {
+		freeaddrinfo(res);
+		return NULL;
+	}
+	if (size < sizeof(struct sockaddr_in6)) {
+		freeaddrinfo(res);
+		return NULL;
 	}
 	size = sizeof(struct sockaddr_in6);
-    memcpy(addr, ((struct sockaddr_in6 *)(cur->ai_addr)), size);
-    freeaddrinfo(res);
-    return addr;
+	memcpy(addr, ((struct sockaddr_in6 *)(cur->ai_addr)), size);
+	freeaddrinfo(res);
+	return addr;
 }
 
 const char* inet_addrtop(union xp_sockaddr *addr, char *dest, size_t size)
 {
 #ifdef _WIN32
-	if(getnameinfo(&addr->addr, xp_sockaddr_len(addr), dest, size, NULL, 0, NI_NUMERICHOST))
+	if (getnameinfo(&addr->addr, xp_sockaddr_len(addr), dest, size, NULL, 0, NI_NUMERICHOST))
 		safe_snprintf(dest, size, "<Error %u converting address, family=%u>", WSAGetLastError(), addr->addr.sa_family);
 	return dest;
 #else
-	switch(addr->addr.sa_family) {
+	switch (addr->addr.sa_family) {
 		case AF_INET:
 			return inet_ntop(addr->in.sin_family, &addr->in.sin_addr, dest, size);
 		case AF_INET6:
 			return inet_ntop(addr->in6.sin6_family, &addr->in6.sin6_addr, dest, size);
 		case AF_UNIX:
 			strncpy(dest, addr->un.sun_path, size);
-			dest[size-1]=0;
+			dest[size - 1] = 0;
 			return dest;
 		default:
 			safe_snprintf(dest, size, "<unknown address family: %u>", addr->addr.sa_family);
@@ -546,7 +546,7 @@ const char* inet_addrtop(union xp_sockaddr *addr, char *dest, size_t size)
 
 uint16_t inet_addrport(union xp_sockaddr *addr)
 {
-	switch(addr->addr.sa_family) {
+	switch (addr->addr.sa_family) {
 		case AF_INET:
 			return ntohs(addr->in.sin_port);
 		case AF_INET6:
@@ -558,7 +558,7 @@ uint16_t inet_addrport(union xp_sockaddr *addr)
 
 void inet_setaddrport(union xp_sockaddr *addr, uint16_t port)
 {
-	switch(addr->addr.sa_family) {
+	switch (addr->addr.sa_family) {
 		case AF_INET:
 			addr->in.sin_port = htons(port);
 			break;
@@ -571,10 +571,10 @@ void inet_setaddrport(union xp_sockaddr *addr, uint16_t port)
 /* Return true if the 2 addresses are the same host (type and address) */
 bool inet_addrmatch(union xp_sockaddr* addr1, union xp_sockaddr* addr2)
 {
-	if(addr1->addr.sa_family != addr2->addr.sa_family)
+	if (addr1->addr.sa_family != addr2->addr.sa_family)
 		return false;
 
-	switch(addr1->addr.sa_family) {
+	switch (addr1->addr.sa_family) {
 		case AF_INET:
 			return memcmp(&addr1->in.sin_addr, &addr2->in.sin_addr, sizeof(addr1->in.sin_addr)) == 0;
 		case AF_INET6:
@@ -589,15 +589,15 @@ DLLEXPORT char* socket_strerror(int error_number, char* buf, size_t buflen)
 #if defined(_WINSOCKAPI_)
 	strncpy(buf, "Unknown error", buflen);
 	buf[buflen - 1] = 0;
-	if(error_number > 0 && error_number < WSABASEERR)
+	if (error_number > 0 && error_number < WSABASEERR)
 		error_number += WSABASEERR;
-	if(!FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,	// dwFlags
-		NULL,			// lpSource
-		error_number,	// dwMessageId
-		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),    // dwLanguageId
-		buf,
-		buflen,
-		NULL))
+	if (!FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_MAX_WIDTH_MASK,  // dwFlags
+	                    NULL, // lpSource
+	                    error_number, // dwMessageId
+	                    MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // dwLanguageId
+	                    buf,
+	                    buflen,
+	                    NULL))
 		safe_snprintf(buf, buflen, "Error %d getting error description", GetLastError());
 	truncsp(buf);
 	return buf;
@@ -617,7 +617,7 @@ DLLEXPORT void set_socket_errno(int err)
 
 DLLEXPORT int xp_inet_pton(int af, const char *src, void *dst)
 {
-	struct addrinfo hints = {0};
+	struct addrinfo  hints = {0};
 	struct addrinfo *res, *cur;
 
 	if (af != AF_INET && af != AF_INET6) {
@@ -625,19 +625,19 @@ DLLEXPORT int xp_inet_pton(int af, const char *src, void *dst)
 		return -1;
 	}
 
-	hints.ai_flags = AI_NUMERICHOST|AI_PASSIVE;
-	if(getaddrinfo(src, NULL, &hints, &res))
+	hints.ai_flags = AI_NUMERICHOST | AI_PASSIVE;
+	if (getaddrinfo(src, NULL, &hints, &res))
 		return -1;
 
-	for(cur = res; cur; cur++) {
-		if(cur->ai_addr->sa_family == af)
+	for (cur = res; cur; cur++) {
+		if (cur->ai_addr->sa_family == af)
 			break;
 	}
-	if(!cur) {
+	if (!cur) {
 		freeaddrinfo(res);
 		return 0;
 	}
-	switch(af) {
+	switch (af) {
 		case AF_INET:
 			memcpy(dst, &(((struct sockaddr_in *)cur->ai_addr)->sin_addr), sizeof(((struct sockaddr_in *)cur->ai_addr)->sin_addr));
 			break;
@@ -654,12 +654,12 @@ DLLEXPORT int
 socketpair(int domain, int type, int protocol, SOCKET *sv)
 {
 	union xp_sockaddr la = {0};
-	const int ra = 1;
-	SOCKET ls;
-	SOCKET *check;
-	fd_set rfd;
-	struct timeval tv;
-	socklen_t sa_len;
+	const int         ra = 1;
+	SOCKET            ls;
+	SOCKET *          check;
+	fd_set            rfd;
+	struct timeval    tv;
+	socklen_t         sa_len;
 
 	sv[0] = sv[1] = INVALID_SOCKET;
 	ls = socket(domain, type, protocol);

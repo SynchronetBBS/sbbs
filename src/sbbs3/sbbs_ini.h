@@ -23,11 +23,11 @@
 #define _SBBS_INI_H
 
 #include "ini_file.h"
-#include "startup.h"	/* bbs_startup_t */
-#include "ftpsrvr.h"	/* ftp_startup_t */
-#include "mailsrvr.h"	/* mail_startup_t */
-#include "services.h"	/* services_startup_t */
-#include "websrvr.h"	/* services_startup_t */
+#include "startup.h"    /* bbs_startup_t */
+#include "ftpsrvr.h"    /* ftp_startup_t */
+#include "mailsrvr.h"   /* mail_startup_t */
+#include "services.h"   /* services_startup_t */
+#include "websrvr.h"    /* services_startup_t */
 #include "scfgdefs.h"   /* scfg_t */
 
 #if defined(__cplusplus)
@@ -35,64 +35,64 @@ extern "C" {
 #endif
 
 void sbbs_get_ini_fname(
-	 char* ini_file
-	,const char* ctrl_dir
+	char* ini_file
+	, const char* ctrl_dir
 	);
 
 void sbbs_read_ini(
-	 FILE*					fp
-	,const char*			ini_fname
-	,global_startup_t*		global
-	,bool*					run_bbs
-	,bbs_startup_t*			bbs_startup
-	,bool*					run_ftp
-	,ftp_startup_t*			ftp_startup
-	,bool*					run_web
-	,web_startup_t*			web_startup
-	,bool*					run_mail
-	,mail_startup_t*		mail_startup
-	,bool*					run_services
-	,services_startup_t*	services_startup
+	FILE*                  fp
+	, const char*            ini_fname
+	, global_startup_t*      global
+	, bool*                  run_bbs
+	, bbs_startup_t*         bbs_startup
+	, bool*                  run_ftp
+	, ftp_startup_t*         ftp_startup
+	, bool*                  run_web
+	, web_startup_t*         web_startup
+	, bool*                  run_mail
+	, mail_startup_t*        mail_startup
+	, bool*                  run_services
+	, services_startup_t*    services_startup
 	);
 
 void sbbs_free_ini(
-	 global_startup_t*		global
-	,bbs_startup_t*			bbs_startup
-	,ftp_startup_t*			ftp_startup
-	,web_startup_t*			web_startup
-	,mail_startup_t*		mail_startup
-	,services_startup_t*	services_startup
+	global_startup_t*      global
+	, bbs_startup_t*         bbs_startup
+	, ftp_startup_t*         ftp_startup
+	, web_startup_t*         web_startup
+	, mail_startup_t*        mail_startup
+	, services_startup_t*    services_startup
 	);
 
 void sbbs_get_js_settings(
-	 str_list_t list
-	,const char* section
-	,js_startup_t* js
-	,js_startup_t* defaults
+	str_list_t list
+	, const char* section
+	, js_startup_t* js
+	, js_startup_t* defaults
 	);
 
 bool sbbs_set_js_settings(
-	 str_list_t* list
-	,const char* section
-	,js_startup_t* js
-	,js_startup_t* defaults
-	,ini_style_t*
+	str_list_t* list
+	, const char* section
+	, js_startup_t* js
+	, js_startup_t* defaults
+	, ini_style_t*
 	);
 
 bool sbbs_write_ini(
-	 FILE*					fp
-    ,scfg_t*                cfg
-	,global_startup_t*		global
-	,bool					run_bbs
-	,bbs_startup_t*			bbs
-	,bool					run_ftp
-	,ftp_startup_t*			ftp
-	,bool					run_web
-	,web_startup_t*			web
-	,bool					run_mail
-	,mail_startup_t*		mail
-	,bool					run_services
-	,services_startup_t*	services
+	FILE*                  fp
+	, scfg_t*                cfg
+	, global_startup_t*      global
+	, bool run_bbs
+	, bbs_startup_t*         bbs
+	, bool run_ftp
+	, ftp_startup_t*         ftp
+	, bool run_web
+	, web_startup_t*         web
+	, bool run_mail
+	, mail_startup_t*        mail
+	, bool run_services
+	, services_startup_t*    services
 	);
 
 
@@ -100,4 +100,4 @@ bool sbbs_write_ini(
 }
 #endif
 
-#endif	/* Don't add anything after this line */
+#endif  /* Don't add anything after this line */

@@ -22,8 +22,8 @@
 #ifndef __MSDIRENT_H
 #define __MSDIRENT_H
 
-#include <io.h>			/* Microsoft _findfirst stuff */
-#include <windows.h>	/* BOOL definition */
+#include <io.h>         /* Microsoft _findfirst stuff */
+#include <windows.h>    /* BOOL definition */
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,8 +33,8 @@ extern "C" {
 /* dirent structure returned by readdir().
  */
 struct dirent
-{	
-    char        d_name[260];	/* filename */
+{
+	char d_name[260];           /* filename */
 };
 
 /* DIR type returned by opendir().  The members of this structure
@@ -42,18 +42,18 @@ struct dirent
  */
 typedef struct
 {
-	char				filespec[260];
-	struct dirent		dirent;
-    long				handle;
-	struct _finddata_t	finddata;
-	BOOL				end;		/* End of directory flag */
+	char filespec[260];
+	struct dirent dirent;
+	long handle;
+	struct _finddata_t finddata;
+	BOOL end;                       /* End of directory flag */
 } DIR;
 
 
 /* Prototypes.
  */
-DIR            *	opendir  (const char *__dirname);
-struct dirent  *	readdir  (DIR *__dir);
+DIR            *    opendir  (const char *__dirname);
+struct dirent  *    readdir  (DIR *__dir);
 int                 closedir (DIR *__dir);
 void                rewinddir(DIR *__dir);
 

@@ -36,24 +36,24 @@
  ****************************************************************************/
 
 #include "msdirent.h"
-#include <errno.h>		/* ENOMEM & ENOENT definitions */
-#include <stdio.h>		/* sprintf prototype */
+#include <errno.h>      /* ENOMEM & ENOENT definitions */
+#include <stdio.h>      /* sprintf prototype */
 
 DIR* opendir(const char* dirname)
 {
-	DIR*	dir;
+	DIR* dir;
 
-	if((dir=(DIR*)calloc(1,sizeof(DIR)))==NULL) {
-		errno=ENOMEM;
+	if ((dir = (DIR*)calloc(1, sizeof(DIR))) == NULL) {
+		errno = ENOMEM;
 		return(NULL);
 	}
-	sprintf(dir->filespec,"%.*s",sizeof(dir->filespec)-5,dirname);
-	if(*dir->filespec && dir->filespec[strlen(dir->filespec)-1]!='\\')
-		strcat(dir->filespec,"\\");
-	strcat(dir->filespec,"*.*");
-	dir->handle=_findfirst(dir->filespec,&dir->finddata);
-	if(dir->handle==-1) {
-		errno=ENOENT;
+	sprintf(dir->filespec, "%.*s", sizeof(dir->filespec) - 5, dirname);
+	if (*dir->filespec && dir->filespec[strlen(dir->filespec) - 1] != '\\')
+		strcat(dir->filespec, "\\");
+	strcat(dir->filespec, "*.*");
+	dir->handle = _findfirst(dir->filespec, &dir->finddata);
+	if (dir->handle == -1) {
+		errno = ENOENT;
 		free(dir);
 		return(NULL);
 	}
@@ -61,20 +61,20 @@ DIR* opendir(const char* dirname)
 }
 struct dirent* readdir(DIR* dir)
 {
-	if(dir==NULL)
+	if (dir == NULL)
 		return(NULL);
-	if(dir->end==TRUE)
+	if (dir->end == TRUE)
 		return(NULL);
-	if(dir->handle==-1)
+	if (dir->handle == -1)
 		return(NULL);
-	sprintf(dir->dirent.d_name,"%.*s",sizeof(struct dirent)-1,dir->finddata.name);
-	if(_findnext(dir->handle,&dir->finddata)!=0)
-		dir->end=TRUE;
+	sprintf(dir->dirent.d_name, "%.*s", sizeof(struct dirent) - 1, dir->finddata.name);
+	if (_findnext(dir->handle, &dir->finddata) != 0)
+		dir->end = TRUE;
 	return(&dir->dirent);
 }
 int closedir (DIR* dir)
 {
-	if(dir==NULL)
+	if (dir == NULL)
 		return(-1);
 	_findclose(dir->handle);
 	free(dir);
@@ -82,9 +82,9 @@ int closedir (DIR* dir)
 }
 void rewinddir(DIR* dir)
 {
-	if(dir==NULL)
+	if (dir == NULL)
 		return;
 	_findclose(dir->handle);
-	dir->end=FALSE;
-	dir->handle=_findfirst(dir->filespec,&dir->finddata);
+	dir->end = FALSE;
+	dir->handle = _findfirst(dir->filespec, &dir->finddata);
 }

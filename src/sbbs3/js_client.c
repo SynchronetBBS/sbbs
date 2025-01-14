@@ -25,29 +25,29 @@
 
 /* Client Object Properites */
 enum {
-	 CLIENT_PROP_ADDR		/* IP address */
-	,CLIENT_PROP_HOST		/* host name */
-	,CLIENT_PROP_PORT		/* TCP port number */
-	,CLIENT_PROP_TIME		/* connect time */
-	,CLIENT_PROP_PROTOCOL	/* protocol description */
-	,CLIENT_PROP_USER		/* user name */
-	,CLIENT_PROP_USERNUM	/* user number */
+	CLIENT_PROP_ADDR        /* IP address */
+	, CLIENT_PROP_HOST       /* host name */
+	, CLIENT_PROP_PORT       /* TCP port number */
+	, CLIENT_PROP_TIME       /* connect time */
+	, CLIENT_PROP_PROTOCOL   /* protocol description */
+	, CLIENT_PROP_USER       /* user name */
+	, CLIENT_PROP_USERNUM    /* user number */
 };
 
 #ifdef BUILD_JSDOCS
 static const char* client_prop_desc[] = {
-	 "Client's IPv4 or IPv6 address"
-	,"Client's host name (up to 64 characters)"
-	,"Client's TCP or UDP port number"
-	,"Date/time of initial connection (in time_t format)"
-	,"Protocol/service name (e.g. 'Telnet', 'FTP', etc.)"
-	,"User's name/alias"
-	,"User's number (non-zero if logged in)"
+	"Client's IPv4 or IPv6 address"
+	, "Client's host name (up to 64 characters)"
+	, "Client's TCP or UDP port number"
+	, "Date/time of initial connection (in time_t format)"
+	, "Protocol/service name (e.g. 'Telnet', 'FTP', etc.)"
+	, "User's name/alias"
+	, "User's number (non-zero if logged in)"
 
 	/* this next one must be last */
-	,"Instance of <a href=#Socket_class>Socket class</a> representing client's TCP/IP connection"
-	,NULL
-	};
+	, "Instance of <a href=#Socket_class>Socket class</a> representing client's TCP/IP connection"
+	, NULL
+};
 #endif
 
 static JSBool js_client_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
@@ -57,46 +57,46 @@ static JSBool js_client_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 
 static JSBool js_client_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 {
-	jsval idval;
-	const char*	p=NULL;
-	int32		val=0;
-    jsint       tiny;
-	JSString*	js_str;
-	client_t*	client;
+	jsval       idval;
+	const char* p = NULL;
+	int32       val = 0;
+	jsint       tiny;
+	JSString*   js_str;
+	client_t*   client;
 
-	if((client=(client_t*)JS_GetPrivate(cx,obj))==NULL)
+	if ((client = (client_t*)JS_GetPrivate(cx, obj)) == NULL)
 		return(JS_FALSE);
 
-    JS_IdToValue(cx, id, &idval);
-    tiny = JSVAL_TO_INT(idval);
+	JS_IdToValue(cx, id, &idval);
+	tiny = JSVAL_TO_INT(idval);
 
-	switch(tiny) {
-		case CLIENT_PROP_ADDR: 
-			p=client->addr;
+	switch (tiny) {
+		case CLIENT_PROP_ADDR:
+			p = client->addr;
 			break;
 		case CLIENT_PROP_HOST:
-			p=client->host;
+			p = client->host;
 			break;
 		case CLIENT_PROP_PORT:
-			val=client->port;
+			val = client->port;
 			break;
 		case CLIENT_PROP_TIME:
-			val=(int32)client->time;
+			val = (int32)client->time;
 			break;
 		case CLIENT_PROP_PROTOCOL:
-			p=(char*)client->protocol;
+			p = (char*)client->protocol;
 			break;
 		case CLIENT_PROP_USER:
-			p=client->user;
+			p = client->user;
 			break;
 		case CLIENT_PROP_USERNUM:
-			val=client->usernum;
+			val = client->usernum;
 			break;
 		default:
 			return(JS_TRUE);
 	}
-	if(p!=NULL) {
-		if((js_str=JS_NewStringCopyZ(cx, p))==NULL)
+	if (p != NULL) {
+		if ((js_str = JS_NewStringCopyZ(cx, p)) == NULL)
 			return(JS_FALSE);
 		*vp = STRING_TO_JSVAL(js_str);
 	} else
@@ -105,39 +105,39 @@ static JSBool js_client_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	return(JS_TRUE);
 }
 
-#define CLIENT_PROP_FLAGS JSPROP_ENUMERATE|JSPROP_READONLY
+#define CLIENT_PROP_FLAGS JSPROP_ENUMERATE | JSPROP_READONLY
 
 static jsSyncPropertySpec js_client_properties[] = {
 /*		 name				,tinyid					,flags,					ver	*/
 
-	{	"ip_address"		,CLIENT_PROP_ADDR 		,CLIENT_PROP_FLAGS,		310},
-	{	"host_name"			,CLIENT_PROP_HOST		,CLIENT_PROP_FLAGS,		310},
-	{	"port"				,CLIENT_PROP_PORT	 	,CLIENT_PROP_FLAGS,		310},
-	{	"connect_time"		,CLIENT_PROP_TIME	 	,CLIENT_PROP_FLAGS,		310},
-	{	"protocol"			,CLIENT_PROP_PROTOCOL 	,CLIENT_PROP_FLAGS,		310},
-	{	"user_name"			,CLIENT_PROP_USER	 	,CLIENT_PROP_FLAGS,		310},
-	{	"user_number"		,CLIENT_PROP_USERNUM	,CLIENT_PROP_FLAGS,		31702},
+	{   "ip_address", CLIENT_PROP_ADDR, CLIENT_PROP_FLAGS,     310},
+	{   "host_name", CLIENT_PROP_HOST, CLIENT_PROP_FLAGS,     310},
+	{   "port", CLIENT_PROP_PORT, CLIENT_PROP_FLAGS,     310},
+	{   "connect_time", CLIENT_PROP_TIME, CLIENT_PROP_FLAGS,     310},
+	{   "protocol", CLIENT_PROP_PROTOCOL, CLIENT_PROP_FLAGS,     310},
+	{   "user_name", CLIENT_PROP_USER, CLIENT_PROP_FLAGS,     310},
+	{   "user_number", CLIENT_PROP_USERNUM, CLIENT_PROP_FLAGS,     31702},
 	{0}
 };
 
 static JSBool js_client_resolve(JSContext *cx, JSObject *obj, jsid id)
 {
-	char*			name=NULL;
-	JSBool			ret;
+	char*  name = NULL;
+	JSBool ret;
 
-	if(id != JSID_VOID && id != JSID_EMPTY) {
+	if (id != JSID_VOID && id != JSID_EMPTY) {
 		jsval idval;
-		
+
 		JS_IdToValue(cx, id, &idval);
-		if(JSVAL_IS_STRING(idval)) {
+		if (JSVAL_IS_STRING(idval)) {
 			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
-			if(name==NULL)
+			if (name == NULL)
 				return JS_FALSE;
 		}
 	}
 
-	ret=js_SyncResolve(cx, obj, name, js_client_properties, NULL, NULL, 0);
-	if(name)
+	ret = js_SyncResolve(cx, obj, name, js_client_properties, NULL, NULL, 0);
+	if (name)
 		free(name);
 	return ret;
 }
@@ -148,33 +148,33 @@ static JSBool js_client_enumerate(JSContext *cx, JSObject *obj)
 }
 
 static JSClass js_client_class = {
-     "Client"				/* name			*/
-    ,JSCLASS_HAS_PRIVATE	/* flags		*/
-	,JS_PropertyStub		/* addProperty	*/
-	,JS_PropertyStub		/* delProperty	*/
-	,js_client_get			/* getProperty	*/
-	,js_client_set			/* setProperty	*/
-	,js_client_enumerate	/* enumerate	*/
-	,js_client_resolve		/* resolve		*/
-	,JS_ConvertStub			/* convert		*/
-	,JS_FinalizeStub		/* finalize		*/
+	"Client"                /* name			*/
+	, JSCLASS_HAS_PRIVATE    /* flags		*/
+	, JS_PropertyStub        /* addProperty	*/
+	, JS_PropertyStub        /* delProperty	*/
+	, js_client_get          /* getProperty	*/
+	, js_client_set          /* setProperty	*/
+	, js_client_enumerate    /* enumerate	*/
+	, js_client_resolve      /* resolve		*/
+	, JS_ConvertStub         /* convert		*/
+	, JS_FinalizeStub        /* finalize		*/
 };
 
 JSObject* js_CreateClientObject(JSContext* cx, JSObject* parent
-										,const char* name, client_t* client, SOCKET sock, CRYPT_CONTEXT session)
+                                , const char* name, client_t* client, SOCKET sock, CRYPT_CONTEXT session)
 {
-	JSObject*	obj;
+	JSObject* obj;
 
 	obj = JS_DefineObject(cx, parent, name, &js_client_class, NULL
-		,JSPROP_ENUMERATE|JSPROP_READONLY);
+	                      , JSPROP_ENUMERATE | JSPROP_READONLY);
 
-	if(obj==NULL)
+	if (obj == NULL)
 		return(NULL);
 
-	JS_SetPrivate(cx, obj, client);	/* Store a pointer to client_t */
+	JS_SetPrivate(cx, obj, client); /* Store a pointer to client_t */
 
 #ifdef BUILD_JSDOCS
-	js_DescribeSyncObject(cx,obj,"Represents a TCP/IP client session",310);
+	js_DescribeSyncObject(cx, obj, "Represents a TCP/IP client session", 310);
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", client_prop_desc, JSPROP_READONLY);
 #endif
 
@@ -183,4 +183,4 @@ JSObject* js_CreateClientObject(JSContext* cx, JSObject* parent
 	return(obj);
 }
 
-#endif	/* JAVSCRIPT */
+#endif  /* JAVSCRIPT */

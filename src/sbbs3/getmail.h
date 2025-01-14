@@ -28,11 +28,11 @@
 extern "C" {
 #endif
 
-DLLEXPORT int		getmail(scfg_t* cfg, int usernumber, bool sent, int attr);
-DLLEXPORT mail_t *	loadmail(smb_t* smb, uint32_t* msgs, uint usernumber
-							,int which, long mode);
-DLLEXPORT void		freemail(mail_t* mail);
-DLLEXPORT bool		delfattach(scfg_t*, smbmsg_t*);
+DLLEXPORT int       getmail(scfg_t* cfg, int usernumber, bool sent, int attr);
+DLLEXPORT mail_t *  loadmail(smb_t* smb, uint32_t* msgs, uint usernumber
+                             , int which, long mode);
+DLLEXPORT void      freemail(mail_t* mail);
+DLLEXPORT bool      delfattach(scfg_t*, smbmsg_t*);
 
 #ifdef __cplusplus
 }

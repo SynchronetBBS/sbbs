@@ -25,24 +25,24 @@
 #include <ctype.h>
 #include "yenc.h"
 
-#define YENC_BIAS			42
-#define YENC_ESCAPE_CHAR	'='
-#define YENC_ESCAPE_BIAS	64
-	
+#define YENC_BIAS           42
+#define YENC_ESCAPE_CHAR    '='
+#define YENC_ESCAPE_BIAS    64
+
 int ydecode(char *target, size_t tlen, const char *source, size_t slen)
 {
-	char	ch;
-	size_t	rd=0;
-	size_t	wr=0;
+	char   ch;
+	size_t rd = 0;
+	size_t wr = 0;
 
-	if(slen==0)
-		slen=strlen(source);
-	while(rd<slen && wr<tlen) {
-		ch=source[rd++];
-		if(ch==YENC_ESCAPE_CHAR && rd<slen)
-			ch=source[rd++]-YENC_ESCAPE_BIAS;
-		ch-=YENC_BIAS;
-		target[wr++]=ch;
+	if (slen == 0)
+		slen = strlen(source);
+	while (rd < slen && wr < tlen) {
+		ch = source[rd++];
+		if (ch == YENC_ESCAPE_CHAR && rd < slen)
+			ch = source[rd++] - YENC_ESCAPE_BIAS;
+		ch -= YENC_BIAS;
+		target[wr++] = ch;
 	}
 
 	return(wr);
@@ -50,34 +50,34 @@ int ydecode(char *target, size_t tlen, const char *source, size_t slen)
 
 int yencode(char *target, size_t tlen, const char *source, size_t slen)
 {
-	char	ch;
-	size_t	rd=0;
-	size_t	wr=0;
-	int		done=0;
+	char   ch;
+	size_t rd = 0;
+	size_t wr = 0;
+	int    done = 0;
 
-	if(slen==0)
-		slen=strlen(source);
-	while(rd<=slen && wr<tlen && !done) {
-		ch=source[rd++];
-		ch+=YENC_BIAS;
-		switch(ch) {
+	if (slen == 0)
+		slen = strlen(source);
+	while (rd <= slen && wr < tlen && !done) {
+		ch = source[rd++];
+		ch += YENC_BIAS;
+		switch (ch) {
 			case 0:
 			case '\r':
 			case '\n':
 			case YENC_ESCAPE_CHAR:
-				if(wr+1>=tlen) {	/* no room for escaped char */
-					done=1;
+				if (wr + 1 >= tlen) {    /* no room for escaped char */
+					done = 1;
 					continue;
 				}
-				ch+=YENC_ESCAPE_BIAS;
-				target[wr++]=YENC_ESCAPE_CHAR;
+				ch += YENC_ESCAPE_BIAS;
+				target[wr++] = YENC_ESCAPE_CHAR;
 				break;
 		}
-		target[wr++]=ch;
+		target[wr++] = ch;
 	}
 
-	if(wr<tlen)
-		target[wr++]=0;
+	if (wr < tlen)
+		target[wr++] = 0;
 	return(wr);
 }
 
@@ -87,64 +87,64 @@ static char* truncstr(char* str, const char* set)
 {
 	char* p;
 
-	p=strpbrk(str,set);
-	if(p!=NULL)
-		*p=0;
+	p = strpbrk(str, set);
+	if (p != NULL)
+		*p = 0;
 
 	return(p);
 }
 
 int main(int argc, char**argv)
 {
-	char	str[1024];
-	char	buf[256];
-	char*	p;
-	FILE*	in;
-	FILE*	out=NULL;
-	int		len;
-	int		line;
+	char  str[1024];
+	char  buf[256];
+	char* p;
+	FILE* in;
+	FILE* out = NULL;
+	int   len;
+	int   line;
 
-	if(argc<2) {
-		fprintf(stderr,"usage: %s infile\n",argv[0]);
+	if (argc < 2) {
+		fprintf(stderr, "usage: %s infile\n", argv[0]);
 		return 1;
 	}
 
-	if((in=fopen(argv[1],"rb"))==NULL) {
+	if ((in = fopen(argv[1], "rb")) == NULL) {
 		perror(argv[1]);
 		return 1;
 	}
 
-	while(!feof(in)) {
-		memset(str,0,sizeof(str));
-		if(fgets(str,sizeof(str),in)==NULL)
+	while (!feof(in)) {
+		memset(str, 0, sizeof(str));
+		if (fgets(str, sizeof(str), in) == NULL)
 			break;
-		truncstr(str,"\r\n");
-		if(strncmp(str,"=ybegin ",8)==0) {
-			p=strstr(str,"name=");
-			p+=5;
-			if((out=fopen(p,"wb"))==NULL) {
+		truncstr(str, "\r\n");
+		if (strncmp(str, "=ybegin ", 8) == 0) {
+			p = strstr(str, "name=");
+			p += 5;
+			if ((out = fopen(p, "wb")) == NULL) {
 				perror(p);
 				return 1;
 			}
-			fprintf(stderr,"Creating %s\n",p);
-			line=1;
+			fprintf(stderr, "Creating %s\n", p);
+			line = 1;
 			continue;
 		}
-		if(strncmp(str,"=yend ",6)==0) {
-			if(out!=NULL) {
+		if (strncmp(str, "=yend ", 6) == 0) {
+			if (out != NULL) {
 				fclose(out);
-				out=NULL;
+				out = NULL;
 			}
 			continue;
 		}
-		if(out==NULL)
+		if (out == NULL)
 			continue;
-		len=ydecode(buf,sizeof(buf),str,0);
-		if(len<0) {
-			fprintf(stderr,"!Error decoding: %s\n",str);
+		len = ydecode(buf, sizeof(buf), str, 0);
+		if (len < 0) {
+			fprintf(stderr, "!Error decoding: %s\n", str);
 			break;
 		}
-		fwrite(buf,len,1,out);
+		fwrite(buf, len, 1, out);
 		line++;
 	}
 
@@ -154,29 +154,29 @@ int main(int argc, char**argv)
 
 int main(int argc, char**argv)
 {
-	char	str[1024];
-	char	buf[256];
-	FILE*	in;
-	int		len;
+	char  str[1024];
+	char  buf[256];
+	FILE* in;
+	int   len;
 
-	if(argc<2) {
-		fprintf(stderr,"usage: %s infile\n",argv[0]);
+	if (argc < 2) {
+		fprintf(stderr, "usage: %s infile\n", argv[0]);
 		return 1;
 	}
 
-	if((in=fopen(argv[1],"rb"))==NULL) {
+	if ((in = fopen(argv[1], "rb")) == NULL) {
 		perror(argv[1]);
 		return 1;
 	}
 
-	while(!feof(in)) {
-		len=fread(buf,1,45,in);
-		if(len<0)
+	while (!feof(in)) {
+		len = fread(buf, 1, 45, in);
+		if (len < 0)
 			break;
-		len=yencode(str,sizeof(str),buf,len);
-		if(len<1)
+		len = yencode(str, sizeof(str), buf, len);
+		if (len < 1)
 			break;
-		printf("%.*s",len,str);
+		printf("%.*s", len, str);
 	}
 
 	return 0;

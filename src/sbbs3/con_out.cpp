@@ -27,12 +27,12 @@
 
 char* sbbs_t::auto_utf8(const char* str, int& mode)
 {
-	if(strncmp(str, "\xEF\xBB\xBF", 3) == 0) {
+	if (strncmp(str, "\xEF\xBB\xBF", 3) == 0) {
 		mode |= P_UTF8;
 		return (char*)str;
 	}
-	if(mode & P_AUTO_UTF8) {
-		if(!str_is_ascii(str) && utf8_str_is_valid(str))
+	if (mode & P_AUTO_UTF8) {
+		if (!str_is_ascii(str) && utf8_str_is_valid(str))
 			mode |= P_UTF8;
 	}
 	return (char*)str;
@@ -51,20 +51,20 @@ char* sbbs_t::auto_utf8(const char* str, int& mode)
  ****************************************************************************/
 int sbbs_t::bputs(const char *str, int mode)
 {
-	int i;
-    size_t l=0;
-	int term = term_supports();
+	int    i;
+	size_t l = 0;
+	int    term = term_supports();
 
-	if((mode & P_REMOTE) && online != ON_REMOTE)
+	if ((mode & P_REMOTE) && online != ON_REMOTE)
 		return 0;
 
-	if(online==ON_LOCAL && console&CON_L_ECHO) 	/* script running as event */
+	if (online == ON_LOCAL && console & CON_L_ECHO)  /* script running as event */
 		return(lputs(LOG_INFO, str));
 
 	str = auto_utf8(str, mode);
 	size_t len = strlen(str);
-	while(l < len && online) {
-		switch(str[l]) {
+	while (l < len && online) {
+		switch (str[l]) {
 			case '\b':
 			case '\r':
 			case '\n':
@@ -72,58 +72,58 @@ int sbbs_t::bputs(const char *str, int mode)
 			case CTRL_A:
 				break;
 			default: // printing char
-				if((mode&P_TRUNCATE) && column >= (cols - 1)) {
+				if ((mode & P_TRUNCATE) && column >= (cols - 1)) {
 					l++;
 					continue;
 				}
 		}
-		if(str[l]==CTRL_A && str[l+1]!=0) {
+		if (str[l] == CTRL_A && str[l + 1] != 0) {
 			l++;
-			if(str[l] == 'Z')	/* EOF (uppercase 'Z' only) */
+			if (str[l] == 'Z')   /* EOF (uppercase 'Z' only) */
 				break;
-			if(str[l] == '~') { // Mouse hot-spot (hungry)
+			if (str[l] == '~') { // Mouse hot-spot (hungry)
 				l++;
-				if(str[l] >= ' ')
-					add_hotspot(str[l], /* hungry */true);
+				if (str[l] >= ' ')
+					add_hotspot(str[l], /* hungry */ true);
 				else
-					add_hotspot('\r', /* hungry */true);
+					add_hotspot('\r', /* hungry */ true);
 				continue;
 			}
-			if(str[l] == '`' && str[l + 1] >= ' ') { // Mouse hot-spot (strict)
+			if (str[l] == '`' && str[l + 1] >= ' ') { // Mouse hot-spot (strict)
 				l++;
-				add_hotspot(str[l], /* hungry */false);
+				add_hotspot(str[l], /* hungry */ false);
 				continue;
 			}
 			ctrl_a(str[l++]);
 			continue;
 		}
-		if(!(mode&P_NOATCODES) && str[l]=='@') {
-			if(str==mnestr			/* Mnemonic string or */
-				|| (mode&P_ATCODES)	/* trusted parameters to formatted string */
-				|| (str>=text[0]	/* Straight out of TEXT.DAT */
-					&& str<=text[TOTAL_TEXT-1])) {
-				i=show_atcode(str+l);	/* return 0 if not valid @ code */
-				l+=i;					/* i is length of code string */
-				if(i)					/* if valid string, go to top */
+		if (!(mode & P_NOATCODES) && str[l] == '@') {
+			if (str == mnestr          /* Mnemonic string or */
+			    || (mode & P_ATCODES) /* trusted parameters to formatted string */
+			    || (str >= text[0]    /* Straight out of TEXT.DAT */
+			        && str <= text[TOTAL_TEXT - 1])) {
+				i = show_atcode(str + l);   /* return 0 if not valid @ code */
+				l += i;                   /* i is length of code string */
+				if (i)                   /* if valid string, go to top */
 					continue;
 			}
-			for(i=0;i<TOTAL_TEXT;i++)
-				if(str==text[i])
+			for (i = 0; i < TOTAL_TEXT; i++)
+				if (str == text[i])
 					break;
-			if(i<TOTAL_TEXT) {		/* Replacement text */
-				i=show_atcode(str+l);
-				l+=i;
-				if(i)
+			if (i < TOTAL_TEXT) {      /* Replacement text */
+				i = show_atcode(str + l);
+				l += i;
+				if (i)
 					continue;
 			}
 		}
-		if(mode&P_PETSCII) {
-			if(term&PETSCII)
+		if (mode & P_PETSCII) {
+			if (term & PETSCII)
 				outcom(str[l++]);
 			else
 				petscii_to_ansibbs(str[l++]);
-		} else if((str[l]&0x80) && (mode&P_UTF8)) {
-			if(term&UTF8)
+		} else if ((str[l] & 0x80) && (mode & P_UTF8)) {
+			if (term & UTF8)
 				outcom(str[l++]);
 			else
 				l += print_utf8_as_cp437(str + l, len - l);
@@ -139,22 +139,22 @@ int sbbs_t::bputs(const char *str, int mode)
 size_t sbbs_t::bstrlen(const char *str, int mode)
 {
 	str = auto_utf8(str, mode);
-	size_t count = 0;
+	size_t      count = 0;
 	const char* end = str + strlen(str);
 	while (str < end) {
 		int len = 1;
-		if(*str == CTRL_A) {
+		if (*str == CTRL_A) {
 			str++;
-			if(*str == 0 || *str == 'Z')	// EOF
+			if (*str == 0 || *str == 'Z')    // EOF
 				break;
-			if(*str == '[') // CR
+			if (*str == '[') // CR
 				count = 0;
-			else if(*str == '<' && count) // ND-Backspace
+			else if (*str == '<' && count) // ND-Backspace
 				count--;
-		} else if(((*str) & 0x80) && (mode&P_UTF8)) {
+		} else if (((*str) & 0x80) && (mode & P_UTF8)) {
 			enum unicode_codepoint codepoint = UNICODE_UNDEFINED;
 			len = utf8_getc(str, end - str, &codepoint);
-			if(len < 1)
+			if (len < 1)
 				break;
 			count += unicode_width(codepoint, unicode_zerowidth);
 		} else
@@ -168,79 +168,79 @@ size_t sbbs_t::bstrlen(const char *str, int mode)
 /* Perform PETSCII terminal output translation (from ASCII/CP437) */
 unsigned char cp437_to_petscii(unsigned char ch)
 {
-	if(IS_ALPHA(ch))
-		return ch ^ 0x20;	/* swap upper/lower case */
-	switch(ch) {
-		case '\1':		return '@';
-		case '\x10':	return '>';
-		case '\x11':	return '<';
+	if (IS_ALPHA(ch))
+		return ch ^ 0x20;   /* swap upper/lower case */
+	switch (ch) {
+		case '\1':      return '@';
+		case '\x10':    return '>';
+		case '\x11':    return '<';
 		case '\x18':
-		case '\x1e':	return PETSCII_UPARROW;
+		case '\x1e':    return PETSCII_UPARROW;
 		case '\x19':
-		case '\x1f':	return 'V';
-		case '\x1a':	return '>';
-		case '|':		return PETSCII_VERTLINE;
-		case '\\':		return PETSCII_BACKSLASH;
-		case '`':		return PETSCII_BACKTICK;
-		case '~':		return PETSCII_TILDE;
-		case '_':		return PETSCII_UNDERSCORE;
-		case '{':		return '(';
-		case '}':		return ')';
-		case '\b':		return PETSCII_LEFT;
-		case 156:		return PETSCII_BRITPOUND;
-		case 251:		return PETSCII_CHECKMARK;
-		case 176:		return PETSCII_LIGHTHASH;
-		case 177:		return PETSCII_MEDIUMHASH;
-		case 178:		return PETSCII_HEAVYHASH;
-		case 219:		return PETSCII_SOLID;
-		case 220:		return PETSCII_BOTTOMHALF;
-		case 221:		return PETSCII_LEFTHALF;
-		case 222:		return PETSCII_RIGHTHALF;
-		case 223:		return PETSCII_TOPHALF;
-		case 254:		return PETSCII_UPRLFTBOX;
+		case '\x1f':    return 'V';
+		case '\x1a':    return '>';
+		case '|':       return PETSCII_VERTLINE;
+		case '\\':      return PETSCII_BACKSLASH;
+		case '`':       return PETSCII_BACKTICK;
+		case '~':       return PETSCII_TILDE;
+		case '_':       return PETSCII_UNDERSCORE;
+		case '{':       return '(';
+		case '}':       return ')';
+		case '\b':      return PETSCII_LEFT;
+		case 156:       return PETSCII_BRITPOUND;
+		case 251:       return PETSCII_CHECKMARK;
+		case 176:       return PETSCII_LIGHTHASH;
+		case 177:       return PETSCII_MEDIUMHASH;
+		case 178:       return PETSCII_HEAVYHASH;
+		case 219:       return PETSCII_SOLID;
+		case 220:       return PETSCII_BOTTOMHALF;
+		case 221:       return PETSCII_LEFTHALF;
+		case 222:       return PETSCII_RIGHTHALF;
+		case 223:       return PETSCII_TOPHALF;
+		case 254:       return PETSCII_UPRLFTBOX;
 		/* Line drawing chars */
 		case 186:
-		case 179:		return PETSCII_VERTLINE;
+		case 179:       return PETSCII_VERTLINE;
 		case 205:
-		case 196:		return PETSCII_HORZLINE;
+		case 196:       return PETSCII_HORZLINE;
 		case 206:
 		case 215:
 		case 216:
-		case 197:		return PETSCII_CROSS;
+		case 197:       return PETSCII_CROSS;
 		case 188:
 		case 189:
 		case 190:
-		case 217:		return '\xBD';
+		case 217:       return '\xBD';
 		case 201:
 		case 213:
 		case 214:
-		case 218:		return '\xB0';
+		case 218:       return '\xB0';
 		case 183:
 		case 184:
 		case 187:
-		case 191:		return '\xAE';
+		case 191:       return '\xAE';
 		case 200:
 		case 211:
 		case 212:
-		case 192:		return '\xAD';
+		case 192:       return '\xAD';
 		case 198:
 		case 199:
 		case 204:
-		case 195:		return '\xAB';
+		case 195:       return '\xAB';
 		case 180:
 		case 181:
 		case 182:
-		case 185:		return '\xB3';
+		case 185:       return '\xB3';
 		case 203:
 		case 209:
 		case 210:
-		case 194:		return '\xB2';
+		case 194:       return '\xB2';
 		case 202:
 		case 207:
 		case 208:
-		case 193:		return '\xB1';
+		case 193:       return '\xB1';
 	}
-	if(ch&0x80)
+	if (ch & 0x80)
 		return exascii_to_ascii_char(ch);
 	return ch;
 }
@@ -248,73 +248,73 @@ unsigned char cp437_to_petscii(unsigned char ch)
 /* Perform PETSCII conversion to ANSI-BBS/CP437 */
 int sbbs_t::petscii_to_ansibbs(unsigned char ch)
 {
-	if((ch&0xe0) == 0xc0)	/* "Codes $60-$7F are, actually, copies of codes $C0-$DF" */
-		ch = 0x60 | (ch&0x1f);
-	if(IS_ALPHA(ch))
-		return outchar(ch ^ 0x20);	/* swap upper/lower case */
-	switch(ch) {
-		case '\r':					newline();		break;
-		case PETSCII_HOME:			cursor_home();	break;
-		case PETSCII_CLEAR:			return CLS;
-		case PETSCII_DELETE:		backspace();	break;
-		case PETSCII_LEFT:			cursor_left();	break;
-		case PETSCII_RIGHT:			cursor_right();	break;
-		case PETSCII_UP:			cursor_up();	break;
-		case PETSCII_DOWN:			cursor_down();	break;
+	if ((ch & 0xe0) == 0xc0)   /* "Codes $60-$7F are, actually, copies of codes $C0-$DF" */
+		ch = 0x60 | (ch & 0x1f);
+	if (IS_ALPHA(ch))
+		return outchar(ch ^ 0x20);  /* swap upper/lower case */
+	switch (ch) {
+		case '\r':                  newline();      break;
+		case PETSCII_HOME:          cursor_home();  break;
+		case PETSCII_CLEAR:         return CLS;
+		case PETSCII_DELETE:        backspace();    break;
+		case PETSCII_LEFT:          cursor_left();  break;
+		case PETSCII_RIGHT:         cursor_right(); break;
+		case PETSCII_UP:            cursor_up();    break;
+		case PETSCII_DOWN:          cursor_down();  break;
 
-		case PETSCII_BRITPOUND:		return outchar((char)156);
-		case PETSCII_CHECKMARK:		return outchar((char)251);
+		case PETSCII_BRITPOUND:     return outchar((char)156);
+		case PETSCII_CHECKMARK:     return outchar((char)251);
 		case PETSCII_CHECKERBRD:
-		case PETSCII_LIGHTHASH:		return outchar((char)176);
+		case PETSCII_LIGHTHASH:     return outchar((char)176);
 		case 0x7e:
-		case PETSCII_MEDIUMHASH:	return outchar((char)177);
-		case PETSCII_HEAVYHASH:		return outchar((char)178);
-		case PETSCII_SOLID:			return outchar((char)219);
-		case PETSCII_BOTTOMHALF:	return outchar((char)220);
-		case PETSCII_LEFTHALF:		return outchar((char)221);
-		case PETSCII_RIGHTHALF:		return outchar((char)222);
-		case PETSCII_TOPHALF:		return outchar((char)223);
+		case PETSCII_MEDIUMHASH:    return outchar((char)177);
+		case PETSCII_HEAVYHASH:     return outchar((char)178);
+		case PETSCII_SOLID:         return outchar((char)219);
+		case PETSCII_BOTTOMHALF:    return outchar((char)220);
+		case PETSCII_LEFTHALF:      return outchar((char)221);
+		case PETSCII_RIGHTHALF:     return outchar((char)222);
+		case PETSCII_TOPHALF:       return outchar((char)223);
 		case PETSCII_LWRLFTBOX:
 		case PETSCII_LWRRHTBOX:
 		case PETSCII_UPRRHTBOX:
-		case PETSCII_UPRLFTBOX:		return outchar((char)254);
+		case PETSCII_UPRLFTBOX:     return outchar((char)254);
 
 		/* Line drawing chars */
 		case 0x7D:
-		case PETSCII_VERTLINE:		return outchar((char)179);
-		case PETSCII_HORZLINE:		return outchar((char)196);
+		case PETSCII_VERTLINE:      return outchar((char)179);
+		case PETSCII_HORZLINE:      return outchar((char)196);
 		case 0x7B:
-		case PETSCII_CROSS:			return outchar((char)197);
-		case (uchar)'\xBD':			return outchar((char)217);
-		case (uchar)'\xB0':			return outchar((char)218);
-		case (uchar)'\xAE':			return outchar((char)191);
-		case (uchar)'\xAD':			return outchar((char)192);
-		case (uchar)'\xAB':			return outchar((char)195);
-		case (uchar)'\xB3':			return outchar((char)180);
-		case (uchar)'\xB2':			return outchar((char)194);
-		case (uchar)'\xB1':			return outchar((char)193);
-		case PETSCII_BLACK:			return attr(BLACK);
-		case PETSCII_WHITE:			return attr(WHITE);
-		case PETSCII_RED:			return attr(RED);
-		case PETSCII_GREEN:			return attr(GREEN);
-		case PETSCII_BLUE:			return attr(BLUE);
-		case PETSCII_ORANGE:		return attr(MAGENTA);
-		case PETSCII_BROWN:			return attr(BROWN);
-		case PETSCII_YELLOW:		return attr(YELLOW);
-		case PETSCII_CYAN:			return attr(LIGHTCYAN);
-		case PETSCII_LIGHTRED:		return attr(LIGHTRED);
-		case PETSCII_DARKGRAY:		return attr(DARKGRAY);
-		case PETSCII_MEDIUMGRAY:	return attr(CYAN);
-		case PETSCII_LIGHTGREEN:	return attr(LIGHTGREEN);
-		case PETSCII_LIGHTBLUE:		return attr(LIGHTBLUE);
-		case PETSCII_LIGHTGRAY:		return attr(LIGHTGRAY);
-		case PETSCII_PURPLE:		return attr(LIGHTMAGENTA);
-		case PETSCII_REVERSE_ON:	return attr((curatr&0x07) << 4);
-		case PETSCII_REVERSE_OFF:	return attr(curatr >> 4);
-		case PETSCII_FLASH_ON:		return attr(curatr | BLINK);
-		case PETSCII_FLASH_OFF:		return attr(curatr & ~BLINK);
+		case PETSCII_CROSS:         return outchar((char)197);
+		case (uchar)'\xBD':         return outchar((char)217);
+		case (uchar)'\xB0':         return outchar((char)218);
+		case (uchar)'\xAE':         return outchar((char)191);
+		case (uchar)'\xAD':         return outchar((char)192);
+		case (uchar)'\xAB':         return outchar((char)195);
+		case (uchar)'\xB3':         return outchar((char)180);
+		case (uchar)'\xB2':         return outchar((char)194);
+		case (uchar)'\xB1':         return outchar((char)193);
+		case PETSCII_BLACK:         return attr(BLACK);
+		case PETSCII_WHITE:         return attr(WHITE);
+		case PETSCII_RED:           return attr(RED);
+		case PETSCII_GREEN:         return attr(GREEN);
+		case PETSCII_BLUE:          return attr(BLUE);
+		case PETSCII_ORANGE:        return attr(MAGENTA);
+		case PETSCII_BROWN:         return attr(BROWN);
+		case PETSCII_YELLOW:        return attr(YELLOW);
+		case PETSCII_CYAN:          return attr(LIGHTCYAN);
+		case PETSCII_LIGHTRED:      return attr(LIGHTRED);
+		case PETSCII_DARKGRAY:      return attr(DARKGRAY);
+		case PETSCII_MEDIUMGRAY:    return attr(CYAN);
+		case PETSCII_LIGHTGREEN:    return attr(LIGHTGREEN);
+		case PETSCII_LIGHTBLUE:     return attr(LIGHTBLUE);
+		case PETSCII_LIGHTGRAY:     return attr(LIGHTGRAY);
+		case PETSCII_PURPLE:        return attr(LIGHTMAGENTA);
+		case PETSCII_REVERSE_ON:    return attr((curatr & 0x07) << 4);
+		case PETSCII_REVERSE_OFF:   return attr(curatr >> 4);
+		case PETSCII_FLASH_ON:      return attr(curatr | BLINK);
+		case PETSCII_FLASH_OFF:     return attr(curatr & ~BLINK);
 		default:
-			if(ch&0x80)				return bprintf("#%3d", ch);
+			if (ch & 0x80)             return bprintf("#%3d", ch);
 			return outchar(ch);
 		case PETSCII_UPPERLOWER:
 		case PETSCII_UPPERGRFX:
@@ -327,32 +327,32 @@ int sbbs_t::petscii_to_ansibbs(unsigned char ch)
 // Return length of sequence
 size_t sbbs_t::print_utf8_as_cp437(const char* str, size_t len)
 {
-	if(((*str)&0x80) == 0) {
+	if (((*str) & 0x80) == 0) {
 		outchar(*str);
 		return sizeof(char);
 	}
 	enum unicode_codepoint codepoint = UNICODE_UNDEFINED;
 	len = utf8_getc(str, len, &codepoint);
-	if((int)len < 2) {
-		outchar(*str);	// Assume it's a CP437 character
-		lprintf(LOG_DEBUG, "Invalid UTF-8 sequence: %02X (error = %d)", (uchar)*str, (int)len);
+	if ((int)len < 2) {
+		outchar(*str);  // Assume it's a CP437 character
+		lprintf(LOG_DEBUG, "Invalid UTF-8 sequence: %02X (error = %d)", (uchar) * str, (int)len);
 		return 1;
 	}
-	for(int i = 1; i < 0x100; i++) {
-		if(cp437_unicode_tbl[i]
-			&& cp437_unicode_tbl[i] == codepoint) {
+	for (int i = 1; i < 0x100; i++) {
+		if (cp437_unicode_tbl[i]
+		    && cp437_unicode_tbl[i] == codepoint) {
 			outchar(i);
 			return len;
 		}
 	}
 	char ch = unicode_to_cp437(codepoint);
-	if(ch)
+	if (ch)
 		outchar(ch);
-	else if(unicode_width(codepoint, unicode_zerowidth) > 0) {
+	else if (unicode_width(codepoint, unicode_zerowidth) > 0) {
 		outchar(CP437_INVERTED_QUESTION_MARK);
 		char seq[32] = "";
-		for(size_t i = 0; i < len; i++)
-			snprintf(seq + strlen(seq), 4, "%02X ", (uchar)*(str + i));
+		for (size_t i = 0; i < len; i++)
+			snprintf(seq + strlen(seq), 4, "%02X ", (uchar) * (str + i));
 		lprintf(LOG_DEBUG, "Unsupported UTF-8 sequence: %s (U+%X)", seq, codepoint);
 	}
 	return len;
@@ -367,43 +367,43 @@ size_t sbbs_t::print_utf8_as_cp437(const char* str, size_t len)
 /****************************************************************************/
 int sbbs_t::rputs(const char *str, size_t len)
 {
-    size_t	l;
+	size_t l;
 
-	if(console&CON_ECHO_OFF)
+	if (console & CON_ECHO_OFF)
 		return 0;
-	if(len==0)
-		len=strlen(str);
-	int term = term_supports();
+	if (len == 0)
+		len = strlen(str);
+	int  term = term_supports();
 	char utf8[UTF8_MAX_LEN + 1] = "";
-	for(l=0;l<len && online;l++) {
+	for (l = 0; l < len && online; l++) {
 		uchar ch = str[l];
 		utf8[0] = 0;
-		if(term&PETSCII) {
+		if (term & PETSCII) {
 			ch = cp437_to_petscii(ch);
-			if(ch == PETSCII_SOLID)
+			if (ch == PETSCII_SOLID)
 				outcom(PETSCII_REVERSE_ON);
 		}
-		else if((term&NO_EXASCII) && (ch&0x80))
+		else if ((term & NO_EXASCII) && (ch & 0x80))
 			ch = exascii_to_ascii_char(ch);  /* seven bit table */
-		else if(term&UTF8) {
+		else if (term & UTF8) {
 			enum unicode_codepoint codepoint = cp437_unicode_tbl[(uchar)ch];
-			if(codepoint != 0)
+			if (codepoint != 0)
 				utf8_putc(utf8, sizeof(utf8) - 1, codepoint);
 		}
-		if(utf8[0])
+		if (utf8[0])
 			putcom(utf8);
 		else {
-			if(outcom(ch)!=0)
+			if (outcom(ch) != 0)
 				break;
-			if((char)ch == (char)TELNET_IAC && !(telnet_mode&TELNET_MODE_OFF))
-				outcom(TELNET_IAC);	/* Must escape Telnet IAC char (255) */
-			if((term&PETSCII) && ch == PETSCII_SOLID)
+			if ((char)ch == (char)TELNET_IAC && !(telnet_mode & TELNET_MODE_OFF))
+				outcom(TELNET_IAC); /* Must escape Telnet IAC char (255) */
+			if ((term & PETSCII) && ch == PETSCII_SOLID)
 				outcom(PETSCII_REVERSE_OFF);
 		}
-		if(ch == '\n')
-			lbuflen=0;
-		else if(lbuflen<LINE_BUFSIZE) {
-			if(lbuflen == 0)
+		if (ch == '\n')
+			lbuflen = 0;
+		else if (lbuflen < LINE_BUFSIZE) {
+			if (lbuflen == 0)
 				latr = curatr;
 			lbuf[lbuflen++] = str[l]; // save non-translated char to line buffer
 		}
@@ -417,13 +417,13 @@ int sbbs_t::rputs(const char *str, size_t len)
 int sbbs_t::bprintf(const char *fmt, ...)
 {
 	va_list argptr;
-	char sbuf[4096];
+	char    sbuf[4096];
 
-	if(strchr(fmt,'%')==NULL)
+	if (strchr(fmt, '%') == NULL)
 		return(bputs(fmt));
-	va_start(argptr,fmt);
-	vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
-	sbuf[sizeof(sbuf)-1]=0;	/* force termination */
+	va_start(argptr, fmt);
+	vsnprintf(sbuf, sizeof(sbuf), fmt, argptr);
+	sbuf[sizeof(sbuf) - 1] = 0; /* force termination */
 	va_end(argptr);
 	return(bputs(sbuf));
 }
@@ -434,13 +434,13 @@ int sbbs_t::bprintf(const char *fmt, ...)
 int sbbs_t::bprintf(int mode, const char *fmt, ...)
 {
 	va_list argptr;
-	char sbuf[4096];
+	char    sbuf[4096];
 
-	if(strchr(fmt,'%')==NULL)
+	if (strchr(fmt, '%') == NULL)
 		return(bputs(fmt, mode));
-	va_start(argptr,fmt);
-	vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
-	sbuf[sizeof(sbuf)-1]=0;	/* force termination */
+	va_start(argptr, fmt);
+	vsnprintf(sbuf, sizeof(sbuf), fmt, argptr);
+	sbuf[sizeof(sbuf) - 1] = 0; /* force termination */
 	va_end(argptr);
 	return(bputs(sbuf, mode));
 }
@@ -451,11 +451,11 @@ int sbbs_t::bprintf(int mode, const char *fmt, ...)
 int sbbs_t::rprintf(const char *fmt, ...)
 {
 	va_list argptr;
-	char sbuf[4096];
+	char    sbuf[4096];
 
-	va_start(argptr,fmt);
-	vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
-	sbuf[sizeof(sbuf)-1]=0;	/* force termination */
+	va_start(argptr, fmt);
+	vsnprintf(sbuf, sizeof(sbuf), fmt, argptr);
+	sbuf[sizeof(sbuf) - 1] = 0; /* force termination */
 	va_end(argptr);
 	return(rputs(sbuf));
 }
@@ -466,11 +466,11 @@ int sbbs_t::rprintf(const char *fmt, ...)
 int sbbs_t::comprintf(const char *fmt, ...)
 {
 	va_list argptr;
-	char sbuf[4096];
+	char    sbuf[4096];
 
-	va_start(argptr,fmt);
-	vsnprintf(sbuf,sizeof(sbuf),fmt,argptr);
-	sbuf[sizeof(sbuf)-1]=0;	/* force termination */
+	va_start(argptr, fmt);
+	vsnprintf(sbuf, sizeof(sbuf), fmt, argptr);
+	sbuf[sizeof(sbuf) - 1] = 0; /* force termination */
 	va_end(argptr);
 	return(putcom(sbuf));
 }
@@ -480,20 +480,20 @@ int sbbs_t::comprintf(const char *fmt, ...)
 /****************************************************************************/
 void sbbs_t::backspace(int count)
 {
-	if(count < 1)
+	if (count < 1)
 		return;
-	if(!(console&CON_ECHO_OFF)) {
-		for(int i = 0; i < count; i++) {
-			if(term_supports(PETSCII))
+	if (!(console & CON_ECHO_OFF)) {
+		for (int i = 0; i < count; i++) {
+			if (term_supports(PETSCII))
 				outcom(PETSCII_DELETE);
 			else {
 				outcom('\b');
 				outcom(' ');
 				outcom('\b');
 			}
-			if(column > 0)
+			if (column > 0)
 				column--;
-			if(lbuflen > 0)
+			if (lbuflen > 0)
 				lbuflen--;
 		}
 	}
@@ -506,17 +506,17 @@ void sbbs_t::backspace(int count)
 /****************************************************************************/
 int sbbs_t::term_supports(int cmp_flags)
 {
-	int flags = ((sys_status&(SS_USERON|SS_NEWUSER)) && !(useron.misc&AUTOTERM)) ? useron.misc : autoterm;
+	int flags = ((sys_status & (SS_USERON | SS_NEWUSER)) && !(useron.misc & AUTOTERM)) ? useron.misc : autoterm;
 
-	if((sys_status&(SS_USERON|SS_NEWUSER)) && (useron.misc&AUTOTERM))
+	if ((sys_status & (SS_USERON | SS_NEWUSER)) && (useron.misc & AUTOTERM))
 		flags |= useron.misc & (NO_EXASCII | SWAP_DELETE | COLOR | ICE_COLOR | MOUSE);
 
-	return(cmp_flags ? ((flags&cmp_flags)==cmp_flags) : (flags&TERM_FLAGS));
+	return(cmp_flags ? ((flags & cmp_flags) == cmp_flags) : (flags & TERM_FLAGS));
 }
 
 char* sbbs_t::term_rows(user_t* user, char* str, size_t size)
 {
-	if(user->rows >= TERM_ROWS_MIN && user->rows <= TERM_ROWS_MAX)
+	if (user->rows >= TERM_ROWS_MIN && user->rows <= TERM_ROWS_MAX)
 		rows = user->rows;
 	safe_snprintf(str, size, "%s%d %s", user->rows ? nulstr:text[TerminalAutoDetect], rows, text[TerminalRows]);
 	return str;
@@ -524,7 +524,7 @@ char* sbbs_t::term_rows(user_t* user, char* str, size_t size)
 
 char* sbbs_t::term_cols(user_t* user, char* str, size_t size)
 {
-	if(user->cols >= TERM_COLS_MIN && user->cols <= TERM_COLS_MAX)
+	if (user->cols >= TERM_COLS_MIN && user->cols <= TERM_COLS_MAX)
 		cols = user->cols;
 	safe_snprintf(str, size, "%s%d %s", user->cols ? nulstr:text[TerminalAutoDetect], cols, text[TerminalColumns]);
 	return str;
@@ -535,17 +535,17 @@ char* sbbs_t::term_cols(user_t* user, char* str, size_t size)
 /****************************************************************************/
 char* sbbs_t::term_type(user_t* user, int term, char* str, size_t size)
 {
-	if(term & PETSCII)
+	if (term & PETSCII)
 		safe_snprintf(str, size, "%sCBM/PETSCII"
-						,(user->misc & AUTOTERM) ? text[TerminalAutoDetect] : nulstr);
+		              , (user->misc & AUTOTERM) ? text[TerminalAutoDetect] : nulstr);
 	else
 		safe_snprintf(str, size, "%s%s / %s %s%s%s"
-						,(user->misc & AUTOTERM) ? text[TerminalAutoDetect] : nulstr
-						,term_charset(term)
-						,term_type(term)
-						,(term & COLOR) ? (term&ICE_COLOR ? text[TerminalIceColor] : text[TerminalColor]) : text[TerminalMonochrome]
-						,(term & MOUSE) ? text[TerminalMouse] : ""
-						,(term & SWAP_DELETE) ? "DEL=BS" : nulstr);
+		              , (user->misc & AUTOTERM) ? text[TerminalAutoDetect] : nulstr
+		              , term_charset(term)
+		              , term_type(term)
+		              , (term & COLOR) ? (term & ICE_COLOR ? text[TerminalIceColor] : text[TerminalColor]) : text[TerminalMonochrome]
+		              , (term & MOUSE) ? text[TerminalMouse] : ""
+		              , (term & SWAP_DELETE) ? "DEL=BS" : nulstr);
 	truncsp(str);
 	return str;
 }
@@ -555,13 +555,13 @@ char* sbbs_t::term_type(user_t* user, int term, char* str, size_t size)
 /****************************************************************************/
 const char* sbbs_t::term_type(int term)
 {
-	if(term == -1)
+	if (term == -1)
 		term = term_supports();
-	if(term&PETSCII)
+	if (term & PETSCII)
 		return "PETSCII";
-	if(term&RIP)
+	if (term & RIP)
 		return "RIP";
-	if(term&ANSI)
+	if (term & ANSI)
 		return "ANSI";
 	return "DUMB";
 }
@@ -571,13 +571,13 @@ const char* sbbs_t::term_type(int term)
 /****************************************************************************/
 const char* sbbs_t::term_charset(int term)
 {
-	if(term == -1)
+	if (term == -1)
 		term = term_supports();
-	if(term&PETSCII)
+	if (term & PETSCII)
 		return "CBM-ASCII";
-	if(term&UTF8)
+	if (term & UTF8)
 		return "UTF-8";
-	if(term&NO_EXASCII)
+	if (term & NO_EXASCII)
 		return "US-ASCII";
 	return "CP437";
 }
@@ -587,7 +587,7 @@ const char* sbbs_t::term_charset(int term)
 /****************************************************************************/
 bool sbbs_t::update_nodeterm(void)
 {
-	str_list_t	ini = strListInit();
+	str_list_t ini = strListInit();
 	iniSetInteger(&ini, ROOT_SECTION, "cols", cols, NULL);
 	iniSetInteger(&ini, ROOT_SECTION, "rows", rows, NULL);
 	iniSetString(&ini, ROOT_SECTION, "desc", terminal, NULL);
@@ -597,30 +597,30 @@ bool sbbs_t::update_nodeterm(void)
 	iniSetHexInt(&ini, ROOT_SECTION, "mouse", mouse_mode, NULL);
 	iniSetHexInt(&ini, ROOT_SECTION, "console", console, NULL);
 
-	char path[MAX_PATH + 1];
+	char  path[MAX_PATH + 1];
 	SAFEPRINTF(path, "%sterminal.ini", cfg.node_dir);
-	FILE* fp = iniOpenFile(path, /* for_modify: */TRUE);
-	bool result = false;
-	if(fp != NULL) {
+	FILE* fp = iniOpenFile(path, /* for_modify: */ TRUE);
+	bool  result = false;
+	if (fp != NULL) {
 		result = iniWriteFile(fp, ini);
 		iniCloseFile(fp);
 	}
 	strListFree(&ini);
 
-	if(mqtt->connected) {
+	if (mqtt->connected) {
 		char str[256];
 		char topic[128];
 		SAFEPRINTF(topic, "node/%u/terminal", cfg.node_num);
 		snprintf(str, sizeof(str), "%u\t%u\t%s\t%s\t%s\t%x\t%x\t%x"
-			,cols
-			,rows
-			,terminal
-			,term_type()
-			,term_charset()
-			,term_supports()
-			,mouse_mode
-			,console
-		);
+		         , cols
+		         , rows
+		         , terminal
+		         , term_type()
+		         , term_charset()
+		         , term_supports()
+		         , mouse_mode
+		         , console
+		         );
 		mqtt_pub_strval(mqtt, TOPIC_BBS, topic, str);
 	}
 	return result;
@@ -636,37 +636,37 @@ bool sbbs_t::update_nodeterm(void)
 /****************************************************************************/
 int sbbs_t::outchar(char ch)
 {
-	if(console&CON_ECHO_OFF)
+	if (console & CON_ECHO_OFF)
 		return 0;
-	if(ch == ESC && outchar_esc < ansiState_string)
+	if (ch == ESC && outchar_esc < ansiState_string)
 		outchar_esc = ansiState_esc;
-	else if(outchar_esc == ansiState_esc) {
-		if(ch == '[')
+	else if (outchar_esc == ansiState_esc) {
+		if (ch == '[')
 			outchar_esc = ansiState_csi;
-		else if(ch == '_' || ch == 'P' || ch == '^' || ch == ']')
+		else if (ch == '_' || ch == 'P' || ch == '^' || ch == ']')
 			outchar_esc = ansiState_string;
-		else if(ch=='X')
+		else if (ch == 'X')
 			outchar_esc = ansiState_sos;
-		else if(ch >= '@' && ch <= '_')
+		else if (ch >= '@' && ch <= '_')
 			outchar_esc = ansiState_final;
 		else
 			outchar_esc = ansiState_none;
 	}
-	else if(outchar_esc == ansiState_csi) {
-		if(ch >= '@' && ch <= '~')
+	else if (outchar_esc == ansiState_csi) {
+		if (ch >= '@' && ch <= '~')
 			outchar_esc = ansiState_final;
 	}
-	else if(outchar_esc == ansiState_string) {	// APS, DCS, PM, or OSC
+	else if (outchar_esc == ansiState_string) {  // APS, DCS, PM, or OSC
 		if (ch == ESC)
 			outchar_esc = ansiState_esc;
 		if (!((ch >= '\b' && ch <= '\r') || (ch >= ' ' && ch <= '~')))
 			outchar_esc = ansiState_none;
 	}
-	else if(outchar_esc == ansiState_sos) {	// SOS
+	else if (outchar_esc == ansiState_sos) { // SOS
 		if (ch == ESC)
 			outchar_esc = ansiState_sos_esc;
 	}
-	else if(outchar_esc == ansiState_sos_esc) {	// ESC inside SOS
+	else if (outchar_esc == ansiState_sos_esc) { // ESC inside SOS
 		if (ch == '\\')
 			outchar_esc = ansiState_esc;
 		else if (ch == 'X')
@@ -677,121 +677,121 @@ int sbbs_t::outchar(char ch)
 	else
 		outchar_esc = ansiState_none;
 
-	if(outchar_esc == ansiState_none && rainbow_index >= 0) {
+	if (outchar_esc == ansiState_none && rainbow_index >= 0) {
 		attr(rainbow[rainbow_index]);
-		if(rainbow[rainbow_index + 1] == 0) {
-			if(rainbow_repeat)
+		if (rainbow[rainbow_index + 1] == 0) {
+			if (rainbow_repeat)
 				rainbow_index = 0;
 		} else
 			++rainbow_index;
 	}
-	int term = term_supports();
+	int  term = term_supports();
 	char utf8[UTF8_MAX_LEN + 1] = "";
-	if(!(term&PETSCII)) {
-		if((term&NO_EXASCII) && (ch&0x80))
+	if (!(term & PETSCII)) {
+		if ((term & NO_EXASCII) && (ch & 0x80))
 			ch = exascii_to_ascii_char(ch);  /* seven bit table */
-		else if(term&UTF8) {
+		else if (term & UTF8) {
 			enum unicode_codepoint codepoint = cp437_unicode_tbl[(uchar)ch];
-			if(codepoint != 0)
+			if (codepoint != 0)
 				utf8_putc(utf8, sizeof(utf8) - 1, codepoint);
 		}
 	}
 
-	if(ch==FF && lncntr > 0 && row > 0) {
-		lncntr=0;
+	if (ch == FF && lncntr > 0 && row > 0) {
+		lncntr = 0;
 		newline();
-		if(!(sys_status&SS_PAUSEOFF)) {
+		if (!(sys_status & SS_PAUSEOFF)) {
 			pause();
-			while(lncntr && online && !(sys_status&SS_ABORT))
+			while (lncntr && online && !(sys_status & SS_ABORT))
 				pause();
 		}
 	}
 
-	if(!(console&CON_R_ECHO))
+	if (!(console & CON_R_ECHO))
 		return 0;
 
-	if((console&CON_R_ECHOX) && (uchar)ch>=' ' && outchar_esc == ansiState_none) {
+	if ((console & CON_R_ECHOX) && (uchar)ch >= ' ' && outchar_esc == ansiState_none) {
 		ch = *text[PasswordChar];
 	}
-	if(ch==FF)
+	if (ch == FF)
 		clearscreen(term);
-	else if(ch == '\t') {
+	else if (ch == '\t') {
 		outcom(' ');
 		column++;
-		while(column%tabstop) {
+		while (column % tabstop) {
 			outcom(' ');
 			column++;
 		}
 	}
 	else {
-		if(ch==(char)TELNET_IAC && !(telnet_mode&TELNET_MODE_OFF))
-			outcom(TELNET_IAC);	/* Must escape Telnet IAC char (255) */
-		if(ch == '\r' && (console&CON_CR_CLREOL))
+		if (ch == (char)TELNET_IAC && !(telnet_mode & TELNET_MODE_OFF))
+			outcom(TELNET_IAC); /* Must escape Telnet IAC char (255) */
+		if (ch == '\r' && (console & CON_CR_CLREOL))
 			cleartoeol();
-		if(ch == '\n' && line_delay)
+		if (ch == '\n' && line_delay)
 			SLEEP(line_delay);
-		if(term&PETSCII) {
+		if (term & PETSCII) {
 			uchar pet = cp437_to_petscii(ch);
-			if(pet == PETSCII_SOLID)
+			if (pet == PETSCII_SOLID)
 				outcom(PETSCII_REVERSE_ON);
 			outcom(pet);
-			if(pet == PETSCII_SOLID)
+			if (pet == PETSCII_SOLID)
 				outcom(PETSCII_REVERSE_OFF);
-			if(ch == '\r' && (curatr&0xf0) != 0) // reverse video is disabled upon CR
+			if (ch == '\r' && (curatr & 0xf0) != 0) // reverse video is disabled upon CR
 				curatr >>= 4;
 		} else {
-			if(utf8[0] != 0)
+			if (utf8[0] != 0)
 				putcom(utf8);
 			else
 				outcom(ch);
 		}
 	}
-	if(outchar_esc == ansiState_none) {
+	if (outchar_esc == ansiState_none) {
 		/* Track cursor position locally */
-		switch(ch) {
-			case '\a':	// 7
-			case '\t':	// 9
+		switch (ch) {
+			case '\a':  // 7
+			case '\t':  // 9
 				/* Non-printing or handled elsewhere */
 				break;
-			case '\b':	// 8
-				if(column > 0)
+			case '\b':  // 8
+				if (column > 0)
 					column--;
-				if(lbuflen<LINE_BUFSIZE) {
-					if(lbuflen == 0)
+				if (lbuflen < LINE_BUFSIZE) {
+					if (lbuflen == 0)
 						latr = curatr;
 					lbuf[lbuflen++] = ch;
 				}
 				break;
-			case '\n':	// 10
+			case '\n':  // 10
 				inc_row(1);
-				if(lncntr || lastlinelen)
+				if (lncntr || lastlinelen)
 					lncntr++;
-				lbuflen=0;
+				lbuflen = 0;
 				break;
-			case FF:	// 12
-				lncntr=0;
-				lbuflen=0;
-				row=0;
-				column=0;
-			case '\r':	// 13
+			case FF:    // 12
+				lncntr = 0;
+				lbuflen = 0;
+				row = 0;
+				column = 0;
+			case '\r':  // 13
 				lastlinelen = column;
-				column=0;
+				column = 0;
 				break;
 			default:
 				inc_column(1);
-				if(!lbuflen)
-					latr=curatr;
-				if(lbuflen<LINE_BUFSIZE)
-					lbuf[lbuflen++]=ch;
+				if (!lbuflen)
+					latr = curatr;
+				if (lbuflen < LINE_BUFSIZE)
+					lbuf[lbuflen++] = ch;
 				break;
 		}
 	}
-	if(outchar_esc == ansiState_final)
+	if (outchar_esc == ansiState_final)
 		outchar_esc = ansiState_none;
 
-	if(lncntr==rows-1 && ((useron.misc&(UPAUSE^(console&CON_PAUSEOFF))) || sys_status&SS_PAUSEON)
-		&& !(sys_status&(SS_PAUSEOFF|SS_ABORT))) {
-		lncntr=0;
+	if (lncntr == rows - 1 && ((useron.misc & (UPAUSE ^ (console & CON_PAUSEOFF))) || sys_status & SS_PAUSEON)
+	    && !(sys_status & (SS_PAUSEOFF | SS_ABORT))) {
+		lncntr = 0;
 		pause();
 	}
 	return 0;
@@ -799,16 +799,16 @@ int sbbs_t::outchar(char ch)
 
 int sbbs_t::outchar(enum unicode_codepoint codepoint, const char* cp437_fallback)
 {
-	if(term_supports(UTF8)) {
+	if (term_supports(UTF8)) {
 		char str[UTF8_MAX_LEN];
-		int len = utf8_putc(str, sizeof(str), codepoint);
-		if(len < 1)
+		int  len = utf8_putc(str, sizeof(str), codepoint);
+		if (len < 1)
 			return len;
 		putcom(str, len);
 		inc_column(unicode_width(codepoint, unicode_zerowidth));
 		return 0;
 	}
-	if(cp437_fallback == NULL)
+	if (cp437_fallback == NULL)
 		return 0;
 	return bputs(cp437_fallback);
 }
@@ -822,7 +822,7 @@ int sbbs_t::outchar(enum unicode_codepoint codepoint, char cp437_fallback)
 void sbbs_t::inc_column(int count)
 {
 	column += count;
-	if(column >= cols) {	// assume terminal has/will auto-line-wrap
+	if (column >= cols) {    // assume terminal has/will auto-line-wrap
 		lncntr++;
 		lbuflen = 0;
 		lastlinelen = column;
@@ -834,7 +834,7 @@ void sbbs_t::inc_column(int count)
 void sbbs_t::inc_row(int count)
 {
 	row += count;
-	if(row >= rows) {
+	if (row >= rows) {
 		scroll_hotspots((row - rows) + 1);
 		row = rows - 1;
 	}
@@ -842,19 +842,19 @@ void sbbs_t::inc_row(int count)
 
 void sbbs_t::center(const char *instr, bool msg, unsigned int columns)
 {
-	char str[256];
+	char   str[256];
 	size_t len;
 
-	if(columns < 1)
+	if (columns < 1)
 		columns = cols;
 
-	SAFECOPY(str,instr);
+	SAFECOPY(str, instr);
 	truncsp(str);
 	len = bstrlen(str);
 	carriage_return();
-	if(len < columns)
+	if (len < columns)
 		cursor_right((columns - len) / 2);
-	if(msg)
+	if (msg)
 		putmsg(str, P_NONE);
 	else
 		bputs(str);
@@ -864,8 +864,8 @@ void sbbs_t::center(const char *instr, bool msg, unsigned int columns)
 void sbbs_t::wide(const char* str)
 {
 	int term = term_supports();
-	while(*str != '\0') {
-		if((term&UTF8) && *str >= '!' && *str <= '~')
+	while (*str != '\0') {
+		if ((term & UTF8) && *str >= '!' && *str <= '~')
 			outchar((enum unicode_codepoint)(UNICODE_FULLWIDTH_EXCLAMATION_MARK + (*str - '!')));
 		else {
 			outchar(*str);
@@ -879,10 +879,10 @@ void sbbs_t::wide(const char* str)
 // Send a bare carriage return, hopefully moving the cursor to the far left, current row
 void sbbs_t::carriage_return(int count)
 {
-	if(count < 1)
+	if (count < 1)
 		return;
-	for(int i = 0; i < count; i++) {
-		if(term_supports(PETSCII))
+	for (int i = 0; i < count; i++) {
+		if (term_supports(PETSCII))
 			cursor_left(column);
 		else
 			outcom('\r');
@@ -893,10 +893,10 @@ void sbbs_t::carriage_return(int count)
 // Send a bare line_feed, hopefully moving the cursor down one row, current column
 void sbbs_t::line_feed(int count)
 {
-	if(count < 1)
+	if (count < 1)
 		return;
-	for(int i = 0; i < count; i++) {
-		if(term_supports(PETSCII))
+	for (int i = 0; i < count; i++) {
+		if (term_supports(PETSCII))
 			outcom(PETSCII_DOWN);
 		else
 			outcom('\n');
@@ -906,9 +906,9 @@ void sbbs_t::line_feed(int count)
 
 void sbbs_t::newline(int count)
 {
-	if(count < 1)
+	if (count < 1)
 		return;
-	for(int i = 0; i < count; i++) {
+	for (int i = 0; i < count; i++) {
 		outchar('\r');
 		outchar('\n');
 	}
@@ -917,15 +917,15 @@ void sbbs_t::newline(int count)
 void sbbs_t::clearscreen(int term)
 {
 	clear_hotspots();
-	if(term&ANSI)
-		putcom("\x1b[2J\x1b[H");	/* clear screen, home cursor */
-	else if(term&PETSCII)
+	if (term & ANSI)
+		putcom("\x1b[2J\x1b[H");    /* clear screen, home cursor */
+	else if (term & PETSCII)
 		outcom(PETSCII_CLEAR);
 	else
 		outcom(FF);
-	row=0;
-	column=0;
-	lncntr=0;
+	row = 0;
+	column = 0;
+	lncntr = 0;
 }
 
 void sbbs_t::clearline(void)
@@ -937,29 +937,29 @@ void sbbs_t::clearline(void)
 void sbbs_t::cursor_home(void)
 {
 	int term = term_supports();
-	if(term&ANSI)
+	if (term & ANSI)
 		putcom("\x1b[H");
-	else if(term&PETSCII)
+	else if (term & PETSCII)
 		outcom(PETSCII_HOME);
 	else
-		outchar(FF);	/* this will clear some terminals, do nothing with others */
-	row=0;
-	column=0;
+		outchar(FF);    /* this will clear some terminals, do nothing with others */
+	row = 0;
+	column = 0;
 }
 
 void sbbs_t::cursor_up(int count)
 {
-	if(count<1)
+	if (count < 1)
 		return;
 	int term = term_supports();
-	if(term&ANSI) {
-		if(count>1)
-			comprintf("\x1b[%dA",count);
+	if (term & ANSI) {
+		if (count > 1)
+			comprintf("\x1b[%dA", count);
 		else
 			putcom("\x1b[A");
 	} else {
-		if(term&PETSCII) {
-			for(int i=0;i<count;i++)
+		if (term & PETSCII) {
+			for (int i = 0; i < count; i++)
 				outcom(PETSCII_UP);
 		}
 	}
@@ -967,71 +967,71 @@ void sbbs_t::cursor_up(int count)
 
 void sbbs_t::cursor_down(int count)
 {
-	if(count<1)
+	if (count < 1)
 		return;
-	if(term_supports(ANSI)) {
-		if(count>1)
-			comprintf("\x1b[%dB",count);
+	if (term_supports(ANSI)) {
+		if (count > 1)
+			comprintf("\x1b[%dB", count);
 		else
 			putcom("\x1b[B");
 		inc_row(count);
 	} else {
-		for(int i=0;i<count;i++)
+		for (int i = 0; i < count; i++)
 			line_feed();
 	}
 }
 
 void sbbs_t::cursor_right(int count)
 {
-	if(count<1)
+	if (count < 1)
 		return;
 	int term = term_supports();
-	if(term&ANSI) {
-		if(count>1)
-			comprintf("\x1b[%dC",count);
+	if (term & ANSI) {
+		if (count > 1)
+			comprintf("\x1b[%dC", count);
 		else
 			putcom("\x1b[C");
 	} else {
-		for(int i=0;i<count;i++) {
-			if(term&PETSCII)
+		for (int i = 0; i < count; i++) {
+			if (term & PETSCII)
 				outcom(PETSCII_RIGHT);
 			else
 				outcom(' ');
 		}
 	}
-	column+=count;
+	column += count;
 }
 
 void sbbs_t::cursor_left(int count)
 {
-	if(count<1)
+	if (count < 1)
 		return;
 	int term = term_supports();
-	if(term&ANSI) {
-		if(count>1)
-			comprintf("\x1b[%dD",count);
+	if (term & ANSI) {
+		if (count > 1)
+			comprintf("\x1b[%dD", count);
 		else
 			putcom("\x1b[D");
 	} else {
-		for(int i=0;i<count;i++) {
-			if(term&PETSCII)
+		for (int i = 0; i < count; i++) {
+			if (term & PETSCII)
 				outcom(PETSCII_LEFT);
 			else
 				outcom('\b');
 		}
 	}
-	if(column > count)
-		column-=count;
+	if (column > count)
+		column -= count;
 	else
-		column=0;
+		column = 0;
 }
 
 bool sbbs_t::cursor_xy(int x, int y)
 {
 	int term = term_supports();
-	if(term&ANSI)
+	if (term & ANSI)
 		return ansi_gotoxy(x, y);
-	if(term&PETSCII) {
+	if (term & PETSCII) {
 		outcom(PETSCII_HOME);
 		cursor_down(y - 1);
 		cursor_right(x - 1);
@@ -1042,7 +1042,7 @@ bool sbbs_t::cursor_xy(int x, int y)
 
 bool sbbs_t::cursor_getxy(int* x, int* y)
 {
-	if(term_supports(ANSI))
+	if (term_supports(ANSI))
 		return ansi_getxy(x, y);
 	*x = column + 1;
 	*y = row + 1;
@@ -1051,17 +1051,17 @@ bool sbbs_t::cursor_getxy(int* x, int* y)
 
 void sbbs_t::cleartoeol(void)
 {
-	int i,j;
+	int i, j;
 
 	int term = term_supports();
-	if(term&ANSI)
+	if (term & ANSI)
 		putcom("\x1b[K");
 	else {
-		i=j=column;
-		while(++i<=cols)
+		i = j = column;
+		while (++i <= cols)
 			outcom(' ');
-		while(++j<=cols) {
-			if(term&PETSCII)
+		while (++j <= cols) {
+			if (term & PETSCII)
 				outcom(PETSCII_LEFT);
 			else
 				outcom('\b');
@@ -1071,29 +1071,29 @@ void sbbs_t::cleartoeol(void)
 
 void sbbs_t::cleartoeos(void)
 {
-	if(term_supports(ANSI))
+	if (term_supports(ANSI))
 		putcom("\x1b[J");
 }
 
 void sbbs_t::set_output_rate(enum output_rate speed)
 {
-	if(term_supports(ANSI)) {
+	if (term_supports(ANSI)) {
 		unsigned int val = speed;
-		switch(val) {
-			case 0:		val = 0; break;
-			case 600:	val = 2; break;
-			case 1200:	val = 3; break;
-			case 2400:	val = 4; break;
-			case 4800:	val = 5; break;
-			case 9600:	val = 6; break;
-			case 19200:	val = 7; break;
+		switch (val) {
+			case 0:     val = 0; break;
+			case 600:   val = 2; break;
+			case 1200:  val = 3; break;
+			case 2400:  val = 4; break;
+			case 4800:  val = 5; break;
+			case 9600:  val = 6; break;
+			case 19200: val = 7; break;
 			case 38400: val = 8; break;
 			case 57600: val = 9; break;
 			case 76800: val = 10; break;
 			default:
-				if(val <= 300)
+				if (val <= 300)
 					val = 1;
-				else if(val > 76800)
+				else if (val > 76800)
 					val = 11;
 				break;
 		}
@@ -1107,11 +1107,11 @@ void sbbs_t::set_output_rate(enum output_rate speed)
 /****************************************************************************/
 void sbbs_t::getdimensions()
 {
-	if(sys_status & SS_USERON) {
+	if (sys_status & SS_USERON) {
 		ansi_getdims();
-		if(useron.rows >= TERM_ROWS_MIN && useron.rows <= TERM_ROWS_MAX)
+		if (useron.rows >= TERM_ROWS_MIN && useron.rows <= TERM_ROWS_MAX)
 			rows = useron.rows;
-		if(useron.cols >= TERM_COLS_MIN && useron.cols <= TERM_COLS_MAX)
+		if (useron.cols >= TERM_COLS_MIN && useron.cols <= TERM_COLS_MAX)
 			cols = useron.cols;
 	}
 }
@@ -1121,103 +1121,103 @@ void sbbs_t::getdimensions()
 /****************************************************************************/
 void sbbs_t::ctrl_a(char x)
 {
-	uint	atr = curatr;
-	struct	tm tm;
+	uint       atr = curatr;
+	struct  tm tm;
 
-	if(x && (uchar)x<=CTRL_Z) {    /* Ctrl-A through Ctrl-Z for users with MF only */
-		if(!(useron.flags1&FLAG(x+64)))
-			console^=(CON_ECHO_OFF);
+	if (x && (uchar)x <= CTRL_Z) {    /* Ctrl-A through Ctrl-Z for users with MF only */
+		if (!(useron.flags1 & FLAG(x + 64)))
+			console ^= (CON_ECHO_OFF);
 		return;
 	}
-	switch(toupper(x)) {
+	switch (toupper(x)) {
 		case '!':   /* level 10 or higher */
-			if(useron.level<10)
-				console^=CON_ECHO_OFF;
+			if (useron.level < 10)
+				console ^= CON_ECHO_OFF;
 			break;
 		case '@':   /* level 20 or higher */
-			if(useron.level<20)
-				console^=CON_ECHO_OFF;
+			if (useron.level < 20)
+				console ^= CON_ECHO_OFF;
 			break;
 		case '#':   /* level 30 or higher */
-			if(useron.level<30)
-				console^=CON_ECHO_OFF;
+			if (useron.level < 30)
+				console ^= CON_ECHO_OFF;
 			break;
 		case '$':   /* level 40 or higher */
-			if(useron.level<40)
-				console^=CON_ECHO_OFF;
+			if (useron.level < 40)
+				console ^= CON_ECHO_OFF;
 			break;
 		case '%':   /* level 50 or higher */
-			if(useron.level<50)
-				console^=CON_ECHO_OFF;
+			if (useron.level < 50)
+				console ^= CON_ECHO_OFF;
 			break;
 		case '^':   /* level 60 or higher */
-			if(useron.level<60)
-				console^=CON_ECHO_OFF;
+			if (useron.level < 60)
+				console ^= CON_ECHO_OFF;
 			break;
 		case '&':   /* level 70 or higher */
-			if(useron.level<70)
-				console^=CON_ECHO_OFF;
+			if (useron.level < 70)
+				console ^= CON_ECHO_OFF;
 			break;
 		case '*':   /* level 80 or higher */
-			if(useron.level<80)
-				console^=CON_ECHO_OFF;
+			if (useron.level < 80)
+				console ^= CON_ECHO_OFF;
 			break;
 		case '(':   /* level 90 or higher */
-			if(useron.level<90)
-				console^=CON_ECHO_OFF;
+			if (useron.level < 90)
+				console ^= CON_ECHO_OFF;
 			break;
 		case ')':   /* turn echo back on */
-			console&=~CON_ECHO_OFF;
+			console &= ~CON_ECHO_OFF;
 			break;
 	}
-	if(console & CON_ECHO_OFF)
+	if (console & CON_ECHO_OFF)
 		return;
 
-	if((uchar)x>0x7f) {
-		cursor_right((uchar)x-0x7f);
+	if ((uchar)x > 0x7f) {
+		cursor_right((uchar)x - 0x7f);
 		return;
 	}
-	if(valid_ctrl_a_attr(x))
+	if (valid_ctrl_a_attr(x))
 		rainbow_index = -1;
-	if(IS_DIGIT(x)) {	/* background color */
-		atr &= (BG_BRIGHT|BLINK|0x0f);
+	if (IS_DIGIT(x)) {   /* background color */
+		atr &= (BG_BRIGHT | BLINK | 0x0f);
 	}
-	switch(toupper(x)) {
-		case '+':	/* push current attribute */
-			if(attr_sp<(int)(sizeof(attr_stack) / sizeof(attr_stack[0])))
-				attr_stack[attr_sp++]=curatr;
+	switch (toupper(x)) {
+		case '+':   /* push current attribute */
+			if (attr_sp < (int)(sizeof(attr_stack) / sizeof(attr_stack[0])))
+				attr_stack[attr_sp++] = curatr;
 			break;
-		case '-':	/* pop current attribute OR optimized "normal" */
-			if(attr_sp>0)
+		case '-':   /* pop current attribute OR optimized "normal" */
+			if (attr_sp > 0)
 				attr(attr_stack[--attr_sp]);
-			else									/* turn off all attributes if */
-				if(atr&(HIGH|BLINK|BG_LIGHTGRAY))	/* high intensity, blink or */
-					attr(LIGHTGRAY);				/* background bits are set */
+			else                                    /* turn off all attributes if */
+			if (atr & (HIGH | BLINK | BG_LIGHTGRAY)) /* high intensity, blink or */
+				attr(LIGHTGRAY);                    /* background bits are set */
 			break;
-		case '_':								/* turn off all attributes if */
-			if(atr&(BLINK|BG_LIGHTGRAY))		/* blink or background is set */
+		case '_':                               /* turn off all attributes if */
+			if (atr & (BLINK | BG_LIGHTGRAY))        /* blink or background is set */
 				attr(LIGHTGRAY);
 			break;
-		case 'P':	/* Pause */
+		case 'P':   /* Pause */
 			pause();
 			break;
 		case 'Q':   /* Pause reset */
-			lncntr=0;
+			lncntr = 0;
 			break;
 		case 'T':   /* Time */
-			now=time(NULL);
-			localtime_r(&now,&tm);
-			if(cfg.sys_misc&SM_MILITARY)
+			now = time(NULL);
+			localtime_r(&now, &tm);
+			if (cfg.sys_misc & SM_MILITARY)
 				bprintf("%02u:%02u:%02u"
-					,tm.tm_hour, tm.tm_min, tm.tm_sec);
+				        , tm.tm_hour, tm.tm_min, tm.tm_sec);
 			else
 				bprintf("%02d:%02d %s"
-					,tm.tm_hour==0 ? 12
-					: tm.tm_hour>12 ? tm.tm_hour-12
-					: tm.tm_hour, tm.tm_min, tm.tm_hour>11 ? "pm":"am");
+				        , tm.tm_hour == 0 ? 12
+				    : tm.tm_hour > 12 ? tm.tm_hour - 12
+				    : tm.tm_hour, tm.tm_min, tm.tm_hour > 11 ? "pm":"am");
 			break;
 		case 'D':   /* Date */
-			now=time(NULL);
+			now = time(NULL);
 			bputs(datestr(now));
 			break;
 		case ',':   /* Delay 1/10 sec */
@@ -1232,14 +1232,14 @@ void sbbs_t::ctrl_a(char x)
 		case 'S':   /* Synchronize */
 			sync();
 			break;
-		case 'J':	/* clear to end-of-screen */
+		case 'J':   /* clear to end-of-screen */
 			cleartoeos();
 			break;
-		case 'L':	/* CLS (form feed) */
+		case 'L':   /* CLS (form feed) */
 			CLS;
 			break;
-		case '\'':	/* Home cursor */
-		case '`':	// usurped by strict hot-spot
+		case '\'':  /* Home cursor */
+		case '`':   // usurped by strict hot-spot
 			cursor_home();
 			break;
 		case '>':   /* CLREOL */
@@ -1248,13 +1248,13 @@ void sbbs_t::ctrl_a(char x)
 		case '<':   /* Non-destructive backspace */
 			cursor_left();
 			break;
-		case '/':	/* Conditional new-line */
+		case '/':   /* Conditional new-line */
 			cond_newline();
 			break;
-		case '\\':	/* Conditional New-line / Continuation prefix (if cols < 80) */
+		case '\\':  /* Conditional New-line / Continuation prefix (if cols < 80) */
 			cond_contline();
 			break;
-		case '?':	/* Conditional blank-line */
+		case '?':   /* Conditional blank-line */
 			cond_blankline();
 			break;
 		case '[':   /* Carriage return */
@@ -1266,88 +1266,88 @@ void sbbs_t::ctrl_a(char x)
 		case 'A':   /* Ctrl-A */
 			outchar(CTRL_A);
 			break;
-		case 'Z':	/* Ctrl-Z */
+		case 'Z':   /* Ctrl-Z */
 			outchar(CTRL_Z);
 			break;
-		case 'H': 	/* High intensity */
-			atr|=HIGH;
+		case 'H':   /* High intensity */
+			atr |= HIGH;
 			attr(atr);
 			break;
 		case 'I':
- 			if((term_supports()&(ICE_COLOR|PETSCII)) != ICE_COLOR)
-				attr(atr|BLINK);
+			if ((term_supports() & (ICE_COLOR | PETSCII)) != ICE_COLOR)
+				attr(atr | BLINK);
 			break;
 		case 'E': /* Bright Background */
- 			if(term_supports()&(ICE_COLOR|PETSCII))
-				attr(atr|BG_BRIGHT);
+			if (term_supports() & (ICE_COLOR | PETSCII))
+				attr(atr | BG_BRIGHT);
 			break;
-		case 'F':	/* Blink, only if alt Blink Font is loaded */
-			if(((atr&HIGH) && (console&CON_HBLINK_FONT)) || (!(atr&HIGH) && (console&CON_BLINK_FONT)))
-				attr(atr|BLINK);
-			else if(x == 'F' && !(atr&HIGH))	/* otherwise, set HIGH attribute (only if capital 'F') */
-				attr(atr|HIGH);
+		case 'F':   /* Blink, only if alt Blink Font is loaded */
+			if (((atr & HIGH) && (console & CON_HBLINK_FONT)) || (!(atr & HIGH) && (console & CON_BLINK_FONT)))
+				attr(atr | BLINK);
+			else if (x == 'F' && !(atr & HIGH))    /* otherwise, set HIGH attribute (only if capital 'F') */
+				attr(atr | HIGH);
 			break;
-		case 'N': 	/* Normal */
+		case 'N':   /* Normal */
 			attr(LIGHTGRAY);
 			break;
 		case 'R':
-			atr=(atr&0xf8)|RED;
+			atr = (atr & 0xf8) | RED;
 			attr(atr);
 			break;
 		case 'G':
-			atr=(atr&0xf8)|GREEN;
+			atr = (atr & 0xf8) | GREEN;
 			attr(atr);
 			break;
 		case 'B':
-			atr=(atr&0xf8)|BLUE;
+			atr = (atr & 0xf8) | BLUE;
 			attr(atr);
 			break;
-		case 'W':	/* White */
-			atr=(atr&0xf8)|LIGHTGRAY;
+		case 'W':   /* White */
+			atr = (atr & 0xf8) | LIGHTGRAY;
 			attr(atr);
 			break;
 		case 'C':
-			atr=(atr&0xf8)|CYAN;
+			atr = (atr & 0xf8) | CYAN;
 			attr(atr);
 			break;
 		case 'M':
-			atr=(atr&0xf8)|MAGENTA;
+			atr = (atr & 0xf8) | MAGENTA;
 			attr(atr);
 			break;
 		case 'Y':   /* Yellow */
-			atr=(atr&0xf8)|BROWN;
+			atr = (atr & 0xf8) | BROWN;
 			attr(atr);
 			break;
-		case 'K':	/* Black */
-			atr=(atr&0xf8)|BLACK;
+		case 'K':   /* Black */
+			atr = (atr & 0xf8) | BLACK;
 			attr(atr);
 			break;
-		case '0':	/* Black Background */
+		case '0':   /* Black Background */
 			attr(atr);
 			break;
-		case '1':	/* Red Background */
+		case '1':   /* Red Background */
 			attr(atr | BG_RED);
 			break;
-		case '2':	/* Green Background */
+		case '2':   /* Green Background */
 			attr(atr | BG_GREEN);
 			break;
-		case '3':	/* Yellow Background */
+		case '3':   /* Yellow Background */
 			attr(atr | BG_BROWN);
 			break;
-		case '4':	/* Blue Background */
+		case '4':   /* Blue Background */
 			attr(atr | BG_BLUE);
 			break;
-		case '5':	/* Magenta Background */
-			attr(atr |BG_MAGENTA);
+		case '5':   /* Magenta Background */
+			attr(atr | BG_MAGENTA);
 			break;
-		case '6':	/* Cyan Background */
+		case '6':   /* Cyan Background */
 			attr(atr | BG_CYAN);
 			break;
-		case '7':	/* White Background */
+		case '7':   /* White Background */
 			attr(atr | BG_LIGHTGRAY);
 			break;
-		case 'X':	// Rainbow
-			if(rainbow[rainbow_index + 1] != 0)
+		case 'X':   // Rainbow
+			if (rainbow[rainbow_index + 1] != 0)
 				++rainbow_index;
 			rainbow_repeat = (x == 'X');
 			break;
@@ -1359,25 +1359,25 @@ void sbbs_t::ctrl_a(char x)
 /****************************************************************************/
 int sbbs_t::attr(int atr)
 {
-	char	str[16];
-	int		newatr = atr;
+	char str[16];
+	int  newatr = atr;
 
-	int term = term_supports();
-	if(term&PETSCII) {
-		if(atr&(0x70|BG_BRIGHT)) {	// background color (reverse video for PETSCII)
-			if(atr&BG_BRIGHT)
+	int  term = term_supports();
+	if (term & PETSCII) {
+		if (atr & (0x70 | BG_BRIGHT)) {  // background color (reverse video for PETSCII)
+			if (atr & BG_BRIGHT)
 				atr |= HIGH;
 			else
 				atr &= ~HIGH;
-			atr = (atr&(BLINK|HIGH)) | ((atr&0x70)>>4);
+			atr = (atr & (BLINK | HIGH)) | ((atr & 0x70) >> 4);
 			outcom(PETSCII_REVERSE_ON);
 		} else
 			outcom(PETSCII_REVERSE_OFF);
-		if(atr&BLINK)
+		if (atr & BLINK)
 			outcom(PETSCII_FLASH_ON);
 		else
 			outcom(PETSCII_FLASH_OFF);
-		switch(atr&0x0f) {
+		switch (atr & 0x0f) {
 			case BLACK:
 				outcom(PETSCII_BLACK);
 				break;
@@ -1428,9 +1428,9 @@ int sbbs_t::attr(int atr)
 				break;
 		}
 	}
-	else if(term&ANSI)
-		rputs(ansi(newatr,curatr,str));
-	curatr=newatr;
+	else if (term & ANSI)
+		rputs(ansi(newatr, curatr, str));
+	curatr = newatr;
 	return 0;
 }
 
@@ -1442,36 +1442,36 @@ bool sbbs_t::msgabort(bool clear)
 {
 	static uint counter;
 
-	if(sys_status&SS_SYSPAGE && !(++counter%100))
+	if (sys_status & SS_SYSPAGE && !(++counter % 100))
 		sbbs_beep(400 + sbbs_random(800), 10);
 
-	if(sys_status&SS_ABORT) {
-		if(clear)
+	if (sys_status & SS_ABORT) {
+		if (clear)
 			sys_status &= ~SS_ABORT;
 		return(true);
 	}
-	if(!online)
+	if (!online)
 		return(true);
 	return(false);
 }
 
 int sbbs_t::backfill(const char* instr, float pct, int full_attr, int empty_attr)
 {
-	uint atr;
-	uint save_atr = curatr;
-	int len;
+	uint  atr;
+	uint  save_atr = curatr;
+	int   len;
 	char* str = strip_ctrl(instr, NULL);
 
 	len = strlen(str);
-	if(!(term_supports()&(ANSI|PETSCII)))
+	if (!(term_supports() & (ANSI | PETSCII)))
 		bputs(str, P_REMOTE);
 	else {
-		for(int i=0; i<len; i++) {
-			if(((float)(i+1) / len)*100.0 <= pct)
+		for (int i = 0; i < len; i++) {
+			if (((float)(i + 1) / len) * 100.0 <= pct)
 				atr = full_attr;
 			else
 				atr = empty_attr;
-			if(curatr != atr) attr(atr);
+			if (curatr != atr) attr(atr);
 			outchar(str[i]);
 		}
 		attr(save_atr);
@@ -1482,15 +1482,15 @@ int sbbs_t::backfill(const char* instr, float pct, int full_attr, int empty_attr
 
 void sbbs_t::progress(const char* text, int count, int total, int interval)
 {
-	char str[128];
+	char   str[128];
 
-	if(cfg.node_num == 0)
-		return;	// Don't output this for events
+	if (cfg.node_num == 0)
+		return; // Don't output this for events
 	double now = xp_timer();
-	if(count > 0 && count < total && (now - last_progress) * 1000 < interval)
+	if (count > 0 && count < total && (now - last_progress) * 1000 < interval)
 		return;
-	if(text == NULL) text = "";
-	float pct = total ? ((float)count/total)*100.0F : 100.0F;
+	if (text == NULL) text = "";
+	float  pct = total ? ((float)count / total) * 100.0F : 100.0F;
 	SAFEPRINTF2(str, "[ %-8s  %4.1f%% ]", text, pct);
 	cond_newline();
 	cursor_left(backfill(str, pct, cfg.color[clr_progress_full], cfg.color[clr_progress_empty]));
@@ -1498,10 +1498,10 @@ void sbbs_t::progress(const char* text, int count, int total, int interval)
 }
 
 struct savedline {
-	char 	buf[LINE_BUFSIZE+1];	/* Line buffer (i.e. ANSI-encoded) */
-	uint	beg_attr;				/* Starting attribute of each line */
-	uint	end_attr;				/* Ending attribute of each line */
-	int		column;					/* Current column number */
+	char buf[LINE_BUFSIZE + 1];     /* Line buffer (i.e. ANSI-encoded) */
+	uint beg_attr;                  /* Starting attribute of each line */
+	uint end_attr;                  /* Ending attribute of each line */
+	int column;                     /* Current column number */
 };
 
 bool sbbs_t::saveline(void)
@@ -1515,22 +1515,22 @@ bool sbbs_t::saveline(void)
 	line.column = column;
 	snprintf(line.buf, sizeof(line.buf), "%.*s", lbuflen, lbuf);
 	TERMINATE(line.buf);
-	lbuflen=0;
+	lbuflen = 0;
 	return listPushNodeData(&savedlines, &line, sizeof(line)) != NULL;
 }
 
 bool sbbs_t::restoreline(void)
 {
 	struct savedline* line = (struct savedline*)listPopNode(&savedlines);
-	if(line == NULL)
+	if (line == NULL)
 		return false;
 #ifdef _DEBUG
 	lprintf(LOG_DEBUG, "Restoring %d chars, cursor at col %d: '%s'", (int)strlen(line->buf), line->column, line->buf);
 #endif
-	lbuflen=0;
+	lbuflen = 0;
 	attr(line->beg_attr);
 	rputs(line->buf);
-	if(term_supports(PETSCII))
+	if (term_supports(PETSCII))
 		column = strlen(line->buf);
 	curatr = line->end_attr;
 	carriage_return();

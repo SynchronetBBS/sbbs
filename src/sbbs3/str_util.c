@@ -36,48 +36,48 @@
 /****************************************************************************/
 char* remove_ctrl_a(const char *str, char *dest)
 {
-	int	i,j;
+	int i, j;
 
-	if(dest==NULL && (dest=strdup(str))==NULL)
+	if (dest == NULL && (dest = strdup(str)) == NULL)
 		return NULL;
-	for(i=j=0;str[i];i++) {
-		if(str[i]==CTRL_A) {
+	for (i = j = 0; str[i]; i++) {
+		if (str[i] == CTRL_A) {
 			i++;
-			if(str[i]==0 || str[i]=='Z')	/* EOF */
+			if (str[i] == 0 || str[i] == 'Z')    /* EOF */
 				break;
 			/* convert non-destructive backspace to a destructive backspace */
-			if(str[i]=='<' && j)	
+			if (str[i] == '<' && j)
 				j--;
-			else if(str[i] == '/') { // Conditional new-line
+			else if (str[i] == '/') { // Conditional new-line
 				dest[j++] = '\r';
 				dest[j++] = '\n';
 			}
 		}
-		else dest[j++]=str[i]; 
+		else dest[j++] = str[i];
 	}
-	dest[j]=0;
+	dest[j] = 0;
 	return dest;
 }
 
 char* strip_ctrl(const char *str, char* dest)
 {
-	int	i,j;
+	int i, j;
 
-	if(dest==NULL && (dest=strdup(str))==NULL)
+	if (dest == NULL && (dest = strdup(str)) == NULL)
 		return NULL;
-	for(i=j=0;str[i];i++) {
-		if(str[i]==CTRL_A) {
+	for (i = j = 0; str[i]; i++) {
+		if (str[i] == CTRL_A) {
 			i++;
-			if(str[i]==0 || str[i]=='Z')	/* EOF */
+			if (str[i] == 0 || str[i] == 'Z')    /* EOF */
 				break;
 			/* convert non-destructive backspace to a destructive backspace */
-			if(str[i]=='<' && j)	
+			if (str[i] == '<' && j)
 				j--;
 		}
-		else if((uchar)str[i]>=' ' && str[i] != DEL)
-			dest[j++]=str[i];
+		else if ((uchar)str[i] >= ' ' && str[i] != DEL)
+			dest[j++] = str[i];
 	}
-	dest[j]=0;
+	dest[j] = 0;
 	return dest;
 }
 
@@ -85,12 +85,12 @@ char* strip_ansi(char* str)
 {
 	char* s = str;
 	char* d = str;
-	while(*s != '\0') {
-		if(*s == ESC && *(s + 1) == '[') {
+	while (*s != '\0') {
+		if (*s == ESC && *(s + 1) == '[') {
 			s += 2;
-			while(*s != '\0' && (*s < '@' || *s > '~'))
+			while (*s != '\0' && (*s < '@' || *s > '~'))
 				s++;
-			if(*s != '\0') // Skip "final byte""
+			if (*s != '\0') // Skip "final byte""
 				s++;
 		} else {
 			*(d++) = *(s++);
@@ -104,39 +104,39 @@ char* strip_ansi(char* str)
 char* convert_ansi(const char* src, char* dest, size_t len, int width, bool ice_color)
 {
 	const char* s = src;
-	char* d = dest;
-	char* p;
-	ulong n[10];
-	size_t nc;
-	int column = 0;
-	while(*s != '\0' && d < dest + len) {
-		if(*s == ESC && *(s + 1) == '[') {
+	char*       d = dest;
+	char*       p;
+	ulong       n[10];
+	size_t      nc;
+	int         column = 0;
+	while (*s != '\0' && d < dest + len) {
+		if (*s == ESC && *(s + 1) == '[') {
 			s += 2;
 			nc = 0;
 			do {
 				n[nc] = strtoul(s, &p, 10);
-				if(p == s || p == NULL)
+				if (p == s || p == NULL)
 					break;
 				nc++;
 				s = p;
-				if(*s != ';')
+				if (*s != ';')
 					break;
 				s++;
-			} while(nc < sizeof(n) / sizeof(n[0]));
-			while(*s != '\0' && (*s < '@' || *s > '~'))
+			} while (nc < sizeof(n) / sizeof(n[0]));
+			while (*s != '\0' && (*s < '@' || *s > '~'))
 				s++;
-			if(*s == 'C') {	// Cursor right
-				if(n[0] < 1)
+			if (*s == 'C') { // Cursor right
+				if (n[0] < 1)
 					n[0] = 1;
-				while(n[0] >= 1 && d < dest + len) {
+				while (n[0] >= 1 && d < dest + len) {
 					*(d++) = ' ';
 					n[0]--;
 					column++;
 				}
-			} else if(*s == 'm') { // Color / Attributes
-				for(size_t i = 0; i < nc && d < dest + len; i++) {
+			} else if (*s == 'm') { // Color / Attributes
+				for (size_t i = 0; i < nc && d < dest + len; i++) {
 					*(d++) = CTRL_A;
-					switch(n[i]) {
+					switch (n[i]) {
 						case 0:
 						case 2:
 							*(d++) = 'N';
@@ -146,7 +146,7 @@ char* convert_ansi(const char* src, char* dest, size_t len, int width, bool ice_
 							break;
 						case 3:
 						case 4:
-						case 5: 				/* blink */
+						case 5:                 /* blink */
 						case 6:
 						case 7:
 							*(d++) = ice_color ? 'E': 'I';
@@ -188,15 +188,15 @@ char* convert_ansi(const char* src, char* dest, size_t len, int width, bool ice_
 					}
 				}
 			}
-			if(*s != '\0') // Skip "final byte"
+			if (*s != '\0') // Skip "final byte"
 				s++;
 		} else {
-			if(*s == '\r' || *s == '\n') {
+			if (*s == '\r' || *s == '\n') {
 				*(d++) = *(s++);
 				column = 0;
 			} else {
-				if(width && column >= width) {
-					d += sprintf(d, "\1+\1N\1/\1-");	// Save, normal, cond-newline, restore
+				if (width && column >= width) {
+					d += sprintf(d, "\1+\1N\1/\1-");    // Save, normal, cond-newline, restore
 					column = 0;
 				}
 				*(d++) = *(s++);
@@ -210,41 +210,41 @@ char* convert_ansi(const char* src, char* dest, size_t len, int width, bool ice_
 
 char* strip_exascii(const char *str, char* dest)
 {
-	int	i,j;
+	int i, j;
 
-	if(dest==NULL && (dest=strdup(str))==NULL)
+	if (dest == NULL && (dest = strdup(str)) == NULL)
 		return NULL;
-	for(i=j=0;str[i];i++)
-		if(!(str[i]&0x80))
-			dest[j++]=str[i];
-	dest[j]=0;
+	for (i = j = 0; str[i]; i++)
+		if (!(str[i] & 0x80))
+			dest[j++] = str[i];
+	dest[j] = 0;
 	return dest;
 }
 
 char* strip_cp437_graphics(const char *str, char* dest)
 {
-	int	i,j;
+	int i, j;
 
-	if(dest==NULL && (dest=strdup(str))==NULL)
+	if (dest == NULL && (dest = strdup(str)) == NULL)
 		return NULL;
-	for(i=j=0;str[i];i++)
-		if((uchar)str[i] <= (uchar)CP437_INVERTED_EXCLAMATION_MARK
-			|| (uchar)str[i] >= (uchar)CP437_GREEK_SMALL_LETTER_ALPHA)
-			dest[j++]=str[i];
-	dest[j]=0;
+	for (i = j = 0; str[i]; i++)
+		if ((uchar)str[i] <= (uchar)CP437_INVERTED_EXCLAMATION_MARK
+		    || (uchar)str[i] >= (uchar)CP437_GREEK_SMALL_LETTER_ALPHA)
+			dest[j++] = str[i];
+	dest[j] = 0;
 	return dest;
 }
 
 char* strip_space(const char *str, char* dest)
 {
-	int	i,j;
+	int i, j;
 
-	if(dest==NULL && (dest=strdup(str))==NULL)
+	if (dest == NULL && (dest = strdup(str)) == NULL)
 		return NULL;
-	for(i=j=0;str[i];i++)
-		if(!IS_WHITESPACE(str[i]))
-			dest[j++]=str[i];
-	dest[j]=0;
+	for (i = j = 0; str[i]; i++)
+		if (!IS_WHITESPACE(str[i]))
+			dest[j++] = str[i];
+	dest[j] = 0;
 	return dest;
 }
 
@@ -252,11 +252,11 @@ char* strip_char(const char* str, char* dest, char ch)
 {
 	const char* src;
 
-	if(dest == NULL && (dest = strdup(str)) == NULL)
+	if (dest == NULL && (dest = strdup(str)) == NULL)
 		return NULL;
-	char* retval = dest;
-	for(src = str; *src != '\0'; src++) {
-		if(*src != ch)
+	char*       retval = dest;
+	for (src = str; *src != '\0'; src++) {
+		if (*src != ch)
 			*(dest++) = *src;
 	}
 	*dest = '\0';
@@ -270,16 +270,16 @@ char* strip_char(const char* str, char* dest, char ch)
 char* u32toac(uint32_t l, char *string, char sep)
 {
 	char str[256];
-	int i,j,k;
+	int  i, j, k;
 
-	ultoa(l,str,10);
-	i=strlen(str)-1;
-	j=i/3+1+i;
-	string[j--]=0;
-	for(k=1;i>-1;k++) {
-		string[j--]=str[i--];
-		if(j>0 && !(k%3))
-			string[j--]=sep; 
+	ultoa(l, str, 10);
+	i = strlen(str) - 1;
+	j = i / 3 + 1 + i;
+	string[j--] = 0;
+	for (k = 1; i > -1; k++) {
+		string[j--] = str[i--];
+		if (j > 0 && !(k % 3))
+			string[j--] = sep;
 	}
 	return(string);
 }
@@ -287,16 +287,16 @@ char* u32toac(uint32_t l, char *string, char sep)
 char* u64toac(uint64_t l, char *string, char sep)
 {
 	char str[256];
-	int i,j,k;
+	int  i, j, k;
 
-	_ui64toa(l,str,10);
-	i=strlen(str)-1;
-	j=i/3+1+i;
-	string[j--]=0;
-	for(k=1;i>-1;k++) {
-		string[j--]=str[i--];
-		if(j>0 && !(k%3))
-			string[j--]=sep; 
+	_ui64toa(l, str, 10);
+	i = strlen(str) - 1;
+	j = i / 3 + 1 + i;
+	string[j--] = 0;
+	for (k = 1; i > -1; k++) {
+		string[j--] = str[i--];
+		if (j > 0 && !(k % 3))
+			string[j--] = sep;
 	}
 	return string;
 }
@@ -310,9 +310,9 @@ char* truncstr(char* str, const char* set)
 {
 	char* p;
 
-	p=strpbrk(str,set);
-	if(p!=NULL && *p!=0)
-		*p=0;
+	p = strpbrk(str, set);
+	if (p != NULL && *p != 0)
+		*p = 0;
 
 	return(p);
 }
@@ -332,16 +332,16 @@ char* truncated_str(char* str, const char* set)
 /****************************************************************************/
 char* rot13(char* str)
 {
-	char ch, cap;
+	char  ch, cap;
 	char* p;
-  
-	p=str;
-	while((ch=*p)!=0) {
+
+	p = str;
+	while ((ch = *p) != 0) {
 		cap = ch & 32;
 		ch &= ~cap;
 		ch = ((ch >= 'A') && (ch <= 'Z') ? ((ch - 'A' + 13) % 26 + 'A') : ch) | cap;
-		*(p++)=ch;
-    }
+		*(p++) = ch;
+	}
 
 	return(str);
 }
@@ -351,12 +351,12 @@ char* rot13(char* str)
 /****************************************************************************/
 char* backslashcolon(char *str)
 {
-    int i;
+	int i;
 
-	i=strlen(str);
-	if(i && !IS_PATH_DELIM(str[i-1]) && str[i-1]!=':') {
-		str[i]=PATH_DELIM; 
-		str[i+1]=0; 
+	i = strlen(str);
+	if (i && !IS_PATH_DELIM(str[i - 1]) && str[i - 1] != ':') {
+		str[i] = PATH_DELIM;
+		str[i + 1] = 0;
 	}
 
 	return str;
@@ -367,7 +367,7 @@ char* backslashcolon(char *str)
 /****************************************************************************/
 int pstrcmp(const char **str1, const char **str2)
 {
-	return(strcmp(*str1,*str2));
+	return(strcmp(*str1, *str2));
 }
 
 /****************************************************************************/
@@ -375,10 +375,10 @@ int pstrcmp(const char **str1, const char **str2)
 /****************************************************************************/
 int strsame(const char *str1, const char *str2)
 {
-	int i,j=0;
+	int i, j = 0;
 
-	for(i=0;str1[i];i++)
-		if(str1[i]==str2[i]) j++;
+	for (i = 0; str1[i]; i++)
+		if (str1[i] == str2[i]) j++;
 	return(j);
 }
 
@@ -388,10 +388,10 @@ int strsame(const char *str1, const char *str2)
 /****************************************************************************/
 char *hexplus(uint num, char *str)
 {
-	sprintf(str,"%03x",num);
-	str[0]=num/0x100 ? 'f'+(num/0x10)-0xf : str[1];
-	str[1]=str[2];
-	str[2]=0;
+	sprintf(str, "%03x", num);
+	str[0] = num / 0x100 ? 'f' + (num / 0x10) - 0xf : str[1];
+	str[1] = str[2];
+	str[2] = 0;
 	return(str);
 }
 
@@ -401,10 +401,10 @@ char *hexplus(uint num, char *str)
 /****************************************************************************/
 ulong ahtoul(const char *str)
 {
-    ulong l,val=0;
+	ulong l, val = 0;
 
-	while((l=(*str++)|0x20)!=0x20)
-		val=(l&0xf)+(l>>6&1)*9+val*16;
+	while ((l = (*str++) | 0x20) != 0x20)
+		val = (l & 0xf) + (l >> 6 & 1) * 9 + val * 16;
 	return(val);
 }
 
@@ -414,10 +414,10 @@ ulong ahtoul(const char *str)
 /****************************************************************************/
 uint32_t ahtou32(const char *str)
 {
-    uint32_t l,val=0;
+	uint32_t l, val = 0;
 
-	while((l=(*str++)|0x20)!=0x20)
-		val=(l&0xf)+(l>>6&1)*9+val*16;
+	while ((l = (*str++) | 0x20) != 0x20)
+		val = (l & 0xf) + (l >> 6 & 1) * 9 + val * 16;
 	return(val);
 }
 
@@ -429,11 +429,11 @@ uint hptoi(const char *str)
 	char tmp[128];
 	uint i;
 
-	if(!str[1] || toupper(str[0])<='F')
+	if (!str[1] || toupper(str[0]) <= 'F')
 		return(ahtoul(str));
-	SAFECOPY(tmp,str);
-	tmp[0]='F';
-	i=ahtoul(tmp)+((toupper(str[0])-'F')*0x10);
+	SAFECOPY(tmp, str);
+	tmp[0] = 'F';
+	i = ahtoul(tmp) + ((toupper(str[0]) - 'F') * 0x10);
 	return(i);
 }
 
@@ -442,24 +442,24 @@ uint hptoi(const char *str)
 /****************************************************************************/
 bool valid_ctrl_a_attr(char a)
 {
-	switch(toupper(a)) {
-		case '+':	/* push attr	*/
+	switch (toupper(a)) {
+		case '+':   /* push attr	*/
 		case '-':   /* pop attr		*/
 		case '_':   /* clear        */
 		case 'B':   /* blue     fg  */
 		case 'C':   /* cyan     fg  */
 		case 'G':   /* green    fg  */
 		case 'H':   /* high     fg  */
-		case 'E':	/* high		bg	*/
+		case 'E':   /* high		bg	*/
 		case 'I':   /* blink        */
 		case 'K':   /* black    fg  */
 		case 'M':   /* magenta  fg  */
 		case 'N':   /* normal       */
 		case 'R':   /* red      fg  */
 		case 'W':   /* white    fg  */
-/* "Rainbow" attribute is not valid for messages (no ANSI equivalent)
-		case 'X':	// rainbow
-*/
+        /* "Rainbow" attribute is not valid for messages (no ANSI equivalent)
+        		case 'X':	// rainbow
+        */
 		case 'Y':   /* yellow   fg  */
 		case '0':   /* black    bg  */
 		case '1':   /* red      bg  */
@@ -469,7 +469,7 @@ bool valid_ctrl_a_attr(char a)
 		case '5':   /* magenta  bg  */
 		case '6':   /* cyan     bg  */
 		case '7':   /* white    bg  */
-			return(true); 
+			return(true);
 	}
 	return(false);
 }
@@ -479,10 +479,10 @@ bool valid_ctrl_a_attr(char a)
 /****************************************************************************/
 bool valid_ctrl_a_code(char a)
 {
-	switch(toupper(a)) {
-		case 'P':		/* Pause */
-		case 'L':		/* CLS */
-		case ',':		/* 100ms delay */
+	switch (toupper(a)) {
+		case 'P':       /* Pause */
+		case 'L':       /* CLS */
+		case ',':       /* 100ms delay */
 			return true;
 	}
 	return valid_ctrl_a_attr(a);
@@ -492,14 +492,14 @@ bool valid_ctrl_a_code(char a)
 /****************************************************************************/
 char ctrl_a_to_ascii_char(char a)
 {
-	switch(toupper(a)) {
+	switch (toupper(a)) {
 		case 'L':   /* cls          */
 			return FF;
-		case '<':	/* backspace	*/
+		case '<':   /* backspace	*/
 			return '\b';
-		case '[':	/* CR			*/
+		case '[':   /* CR			*/
 			return '\r';
-		case ']':	/* LF			*/
+		case ']':   /* LF			*/
 			return '\n';
 	}
 	return 0;
@@ -511,26 +511,26 @@ char ctrl_a_to_ascii_char(char a)
 /****************************************************************************/
 size_t strip_invalid_attr(char *str)
 {
-    char*	dest;
-    size_t	a,c,d;
+	char*  dest;
+	size_t a, c, d;
 
-	dest=str;
-	for(a=c=d=0;str[c];c++) {
-		if(str[c]==CTRL_A) {
+	dest = str;
+	for (a = c = d = 0; str[c]; c++) {
+		if (str[c] == CTRL_A) {
 			a++;
-			if(str[c+1]==0)
+			if (str[c + 1] == 0)
 				break;
-			if(!valid_ctrl_a_attr(str[c+1])) {
+			if (!valid_ctrl_a_attr(str[c + 1])) {
 				/* convert non-destructive backspace to a destructive backspace */
-				if(str[c+1]=='<' && d)	
+				if (str[c + 1] == '<' && d)
 					d--;
 				c++;
-				continue; 
+				continue;
 			}
 		}
-		dest[d++]=str[c]; 
+		dest[d++] = str[c];
 	}
-	dest[d]=0;
+	dest[d] = 0;
 	return(a);
 }
 
@@ -540,10 +540,10 @@ size_t strip_invalid_attr(char *str)
 bool contains_ctrl_a_attr(const char *str)
 {
 
-	while(*str != '\0') {
-		if(*str == CTRL_A) {
+	while (*str != '\0') {
+		if (*str == CTRL_A) {
 			++str;
-			if(valid_ctrl_a_attr(*str))
+			if (valid_ctrl_a_attr(*str))
 				return true;
 		}
 		++str;
@@ -556,19 +556,19 @@ bool contains_ctrl_a_attr(const char *str)
 char exascii_to_ascii_char(uchar ch)
 {
 	/* Seven bit table for EXASCII to ASCII conversion */
-	const char *sbtbl="CUeaaaaceeeiiiAAEaAooouuyOUcLYRfaiounNao?--24!<>"
-			"###||||++||++++++--|-+||++--|-+----++++++++##[]#"
-			"abrpEout*ono%0ENE+><rj%=o*.+n2* ";
+	const char *sbtbl = "CUeaaaaceeeiiiAAEaAooouuyOUcLYRfaiounNao?--24!<>"
+	                    "###||||++||++++++--|-+||++--|-+----++++++++##[]#"
+	                    "abrpEout*ono%0ENE+><rj%=o*.+n2* ";
 
-	if(ch&0x80)
-		return sbtbl[ch^0x80];
+	if (ch & 0x80)
+		return sbtbl[ch ^ 0x80];
 	return ch;
 }
 
 bool str_is_ascii(const char* str)
 {
-	for(const char* p = str; *p != 0; p++) {
-		if(*p < 0)
+	for (const char* p = str; *p != 0; p++) {
+		if (*p < 0)
 			return false;
 	}
 	return true;
@@ -576,8 +576,8 @@ bool str_is_ascii(const char* str)
 
 bool str_has_ctrl(const char* str)
 {
-	for(const char* p = str; *p != 0; p++) {
-		if((uchar)*p < ' ')
+	for (const char* p = str; *p != 0; p++) {
+		if ((uchar) * p < ' ')
 			return true;
 	}
 	return false;
@@ -588,88 +588,88 @@ bool str_has_ctrl(const char* str)
 /****************************************************************************/
 char* ascii_str(uchar* str)
 {
-	uchar*	p=str;
+	uchar* p = str;
 
-	while(*p) {
-		if((*p)&0x80)
-			*p=exascii_to_ascii_char(*p);	
+	while (*p) {
+		if ((*p) & 0x80)
+			*p = exascii_to_ascii_char(*p);
 		p++;
 	}
 	return((char*)str);
 }
 
-char* replace_named_values(const char* src	 
-    ,char* buf	 
-    ,size_t buflen       /* includes '\0' terminator */	 
-    ,const char* escape_seq	 
-    ,named_string_t* string_list	 
-    ,named_int_t* int_list	 
-    ,bool case_sensitive)	 
- {	 
-     char    val[32];	 
-     size_t  i;	 
-     size_t  esc_len=0;	 
-     size_t  name_len;	 
-     size_t  value_len;	 
-     char*   p = buf;	 
-     int (*cmp)(const char*, const char*, size_t);	 
- 
-     if(case_sensitive)	 
-         cmp=strncmp;	 
-     else	 
-         cmp=strnicmp;	 
- 
-     if(escape_seq!=NULL)	 
-         esc_len = strlen(escape_seq);	 
- 
-     while(*src && (size_t)(p-buf) < buflen-1) {	 
-         if(esc_len) {	 
-             if(cmp(src, escape_seq, esc_len)!=0) {	 
-                 *p++ = *src++;	 
-                 continue;	 
-             }	 
-             src += esc_len; /* skip the escape seq */	 
-         }	 
-         if(string_list) {	 
-             for(i=0; string_list[i].name!=NULL /* terminator */; i++) {	 
-                 name_len = strlen(string_list[i].name);	 
-                 if(cmp(src, string_list[i].name, name_len)==0) {	 
-                     value_len = strlen(string_list[i].value);	 
-                     if((p-buf)+value_len > buflen-1)        /* buffer overflow? */	 
-                         value_len = (buflen-1)-(p-buf); /* truncate value */	 
-                     memcpy(p, string_list[i].value, value_len);	 
-                     p += value_len;	 
-                     src += name_len;	 
-                     break;	 
-                 }	 
-             }	 
-             if(string_list[i].name!=NULL) /* variable match */	 
-                 continue;	 
-         }	 
-         if(int_list) {	 
-             for(i=0; int_list[i].name!=NULL /* terminator */; i++) {	 
-                 name_len = strlen(int_list[i].name);	 
-                 if(cmp(src, int_list[i].name, name_len)==0) {	 
-                     SAFEPRINTF(val,"%d",int_list[i].value);	 
-                     value_len = strlen(val);	 
-                     if((p-buf)+value_len > buflen-1)        /* buffer overflow? */	 
-                         value_len = (buflen-1)-(p-buf); /* truncate value */	 
-                     memcpy(p, val, value_len);	 
-                     p += value_len;	 
-                     src += name_len;	 
-                     break;	 
-                 }	 
-             }	 
-             if(int_list[i].name!=NULL) /* variable match */	 
-                 continue;	 
-         }	 
+char* replace_named_values(const char* src
+                           , char* buf
+                           , size_t buflen /* includes '\0' terminator */
+                           , const char* escape_seq
+                           , named_string_t* string_list
+                           , named_int_t* int_list
+                           , bool case_sensitive)
+{
+	char   val[32];
+	size_t i;
+	size_t esc_len = 0;
+	size_t name_len;
+	size_t value_len;
+	char*  p = buf;
+	int    (*cmp)(const char*, const char*, size_t);
 
-         *p++ = *src++;	 
-     }	 
-     *p=0;   /* terminate string in destination buffer */	 
- 
-     return(buf);	 
- }
+	if (case_sensitive)
+		cmp = strncmp;
+	else
+		cmp = strnicmp;
+
+	if (escape_seq != NULL)
+		esc_len = strlen(escape_seq);
+
+	while (*src && (size_t)(p - buf) < buflen - 1) {
+		if (esc_len) {
+			if (cmp(src, escape_seq, esc_len) != 0) {
+				*p++ = *src++;
+				continue;
+			}
+			src += esc_len;  /* skip the escape seq */
+		}
+		if (string_list) {
+			for (i = 0; string_list[i].name != NULL /* terminator */; i++) {
+				name_len = strlen(string_list[i].name);
+				if (cmp(src, string_list[i].name, name_len) == 0) {
+					value_len = strlen(string_list[i].value);
+					if ((p - buf) + value_len > buflen - 1)  /* buffer overflow? */
+						value_len = (buflen - 1) - (p - buf); /* truncate value */
+					memcpy(p, string_list[i].value, value_len);
+					p += value_len;
+					src += name_len;
+					break;
+				}
+			}
+			if (string_list[i].name != NULL) /* variable match */
+				continue;
+		}
+		if (int_list) {
+			for (i = 0; int_list[i].name != NULL /* terminator */; i++) {
+				name_len = strlen(int_list[i].name);
+				if (cmp(src, int_list[i].name, name_len) == 0) {
+					SAFEPRINTF(val, "%d", int_list[i].value);
+					value_len = strlen(val);
+					if ((p - buf) + value_len > buflen - 1)  /* buffer overflow? */
+						value_len = (buflen - 1) - (p - buf); /* truncate value */
+					memcpy(p, val, value_len);
+					p += value_len;
+					src += name_len;
+					break;
+				}
+			}
+			if (int_list[i].name != NULL) /* variable match */
+				continue;
+		}
+
+		*p++ = *src++;
+	}
+	*p = 0;  /* terminate string in destination buffer */
+
+	return(buf);
+}
 
 /****************************************************************************/
 /****************************************************************************/
@@ -688,8 +688,8 @@ char* condense_whitespace(char* str)
 {
 	char* s = str;
 	char* d = str;
-	while(*s != '\0') {
-		if(IS_WHITESPACE(*s)) {
+	while (*s != '\0') {
+		if (IS_WHITESPACE(*s)) {
 			*(d++) = ' ';
 			SKIP_WHITESPACE(s);
 		} else {
@@ -703,28 +703,28 @@ char* condense_whitespace(char* str)
 uint32_t str_to_bits(uint32_t val, const char *str)
 {
 	/* op can be 0 for replace, + for add, or - for remove */
-	int op=0;
+	int         op = 0;
 	const char *s;
-	char ctrl;
+	char        ctrl;
 
-	for(s=str; *s; s++) {
-		if(*s=='+')
-			op=1;
-		else if(*s=='-')
-			op=2;
+	for (s = str; *s; s++) {
+		if (*s == '+')
+			op = 1;
+		else if (*s == '-')
+			op = 2;
 		else {
-			if(!op) {
-				val=0;
-				op=1;
+			if (!op) {
+				val = 0;
+				op = 1;
 			}
-			ctrl=toupper(*s);
-			ctrl&=0x1f;			/* Ensure it fits */
-			switch(op) {
-				case 1:		/* Add to the set */
-					val |= 1<<ctrl;
+			ctrl = toupper(*s);
+			ctrl &= 0x1f;         /* Ensure it fits */
+			switch (op) {
+				case 1:     /* Add to the set */
+					val |= 1 << ctrl;
 					break;
-				case 2:		/* Remove from the set */
-					val &= ~(1<<ctrl);
+				case 2:     /* Remove from the set */
+					val &= ~(1 << ctrl);
 					break;
 			}
 		}
@@ -737,25 +737,25 @@ char* utf8_to_cp437_inplace(char* str)
 {
 	utf8_normalize_str(str);
 	return utf8_replace_chars(str, unicode_to_cp437
-		,/* unsupported char: */CP437_INVERTED_QUESTION_MARK
-		,/* unsupported zero-width ch: */0
-		,/* decode error char: */CP437_INVERTED_EXCLAMATION_MARK);
+	                          , /* unsupported char: */ CP437_INVERTED_QUESTION_MARK
+	                          , /* unsupported zero-width ch: */ 0
+	                          , /* decode error char: */ CP437_INVERTED_EXCLAMATION_MARK);
 }
 
 char* separate_thousands(const char* src, char *dest, size_t maxlen, char sep)
 {
-	if(strlen(src) * 1.3 > maxlen)
+	if (strlen(src) * 1.3 > maxlen)
 		return (char*)src;
 	const char* tail = src;
-	while(*tail && IS_DIGIT(*tail))
+	while (*tail && IS_DIGIT(*tail))
 		tail++;
-	if(tail == src)
+	if (tail == src)
 		return (char*)src;
 	size_t digits = tail - src;
-	char* d = dest;
-	for(size_t i = 0; i < digits; d++, i++) {
+	char*  d = dest;
+	for (size_t i = 0; i < digits; d++, i++) {
 		*d = src[i];
-		if(i + 3 < digits && (digits - (i + 1)) % 3 == 0)
+		if (i + 3 < digits && (digits - (i + 1)) % 3 == 0)
 			*(++d) = sep;
 	}
 	*d = 0;
@@ -766,24 +766,24 @@ char* separate_thousands(const char* src, char *dest, size_t maxlen, char sep)
 // Update 'str' to conform with RFC 5536 requirements of a newsgroup name
 char* make_newsgroup_name(char* str)
 {
-   /*
-	* From RFC5536:
-	* newsgroup-name  =  component *( "." component )
-	* component       =  1*component-char
-	* component-char  =  ALPHA / DIGIT / "+" / "-" / "_"
-	*/
+	/*
+	 * From RFC5536:
+	 * newsgroup-name  =  component *( "." component )
+	 * component       =  1*component-char
+	 * component-char  =  ALPHA / DIGIT / "+" / "-" / "_"
+	 */
 	if (str[0] == '.')
 		str[0] = '_';
 	size_t c;
-	for(c = 0; str[c] != 0; c++) {
+	for (c = 0; str[c] != 0; c++) {
 		/* Legal characters */
 		if ((str[c] >= 'A' && str[c] <= 'Z')
-				|| (str[c] >= 'a' && str[c] <= 'z')
-				|| (str[c] >= '0' && str[c] <= '9')
-				|| str[c] == '+'
-				|| str[c] == '-'
-				|| str[c] == '_'
-				|| str[c] == '.')
+		    || (str[c] >= 'a' && str[c] <= 'z')
+		    || (str[c] >= '0' && str[c] <= '9')
+		    || str[c] == '+'
+		    || str[c] == '-'
+		    || str[c] == '_'
+		    || str[c] == '.')
 			continue;
 		str[c] = '_';
 	}

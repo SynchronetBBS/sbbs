@@ -25,11 +25,11 @@
 
 #if defined(_WIN32) && (defined(WRAPPER_IMPORTS) || defined(WRAPPER_EXPORTS))
 	#if defined(WRAPPER_IMPORTS)
-		#define DLLEXPORT	__declspec(dllimport)
+		#define DLLEXPORT   __declspec(dllimport)
 	#else
-		#define DLLEXPORT	__declspec(dllexport)
+		#define DLLEXPORT   __declspec(dllexport)
 	#endif
-#else	/* !_WIN32 || !_DLL*/
+#else   /* !_WIN32 || !_DLL*/
 	#define DLLEXPORT
 #endif
 

@@ -26,222 +26,222 @@
 #ifdef BUILD_JSDOCS
 
 static const char* msg_area_prop_desc[] = {
-	  "Message area settings (bit-flags) - see <tt>MM_*</tt> in <tt>sbbsdefs.js</tt> for details"
-	 ,"FidoNet NetMail settings (bit-flags) - see <tt>NMAIL_*</tt> in <tt>sbbsdefs.js</tt> for details"
-	 ,"Internet NetMail settings (bit-flags) - see <tt>NMAIL_*</tt> in <tt>sbbsdefs.js</tt> for details"
-	,NULL
+	"Message area settings (bit-flags) - see <tt>MM_*</tt> in <tt>sbbsdefs.js</tt> for details"
+	, "FidoNet NetMail settings (bit-flags) - see <tt>NMAIL_*</tt> in <tt>sbbsdefs.js</tt> for details"
+	, "Internet NetMail settings (bit-flags) - see <tt>NMAIL_*</tt> in <tt>sbbsdefs.js</tt> for details"
+	, NULL
 };
 
 static const char* msg_grp_prop_desc[] = {
-	 "Index into grp_list array (or -1 if not in array)"
-	,"Unique (zero-based) number for this message group"
-	,"Group name"
-	,"Group description"
-	,"Group access requirements"
-	,"User has sufficient access to list this group's sub-boards"
-	,"Internal code prefix (for sub-boards)"
-	,NULL
+	"Index into grp_list array (or -1 if not in array)"
+	, "Unique (zero-based) number for this message group"
+	, "Group name"
+	, "Group description"
+	, "Group access requirements"
+	, "User has sufficient access to list this group's sub-boards"
+	, "Internal code prefix (for sub-boards)"
+	, NULL
 };
 
 static const char* msg_sub_prop_desc[] = {
 
-	 "Index into sub_list array (or -1 if not in array)</i>"
-	,"Group's index into grp_list array</i>"
-	,"Unique (zero-based) number for this sub-board"
-	,"Group number"
-	,"Group name</i>"
-	,"Sub-board internal code"
-	,"Sub-board name"
-	,"Sub-board description"
-	,"QWK conference name"
-	,"Area tag for FidoNet-style echoes, a.k.a. EchoTag"
-	,"Newsgroup name (as configured or dynamically generated)"
-	,"Sub-board access requirements"
-	,"Sub-board reading requirements"
-	,"Sub-board posting requirements"
-	,"Sub-board operator requirements"
-	,"Sub-board moderated-user requirements (if non-blank)"
-	,"Sub-board data storage location"
-	,"FidoNet node address"
-	,"FidoNet origin line"
-	,"QWK Network tagline"
-	,"Toggle options (bit-flags) - see <tt>SUB_*</tt> in <tt>sbbsdefs.js</tt> for details"
-	,"Index into message scan configuration/pointer file"
-	,"QWK conference number"
-	,"Configured maximum number of message CRCs to store (for dupe checking)"
-	,"Configured maximum number of messages before purging"
-	,"Configured maximum age (in days) of messages before expiration"
-	,"Additional print mode flags to use when printing messages - see <tt>P_*</tt> in <tt>sbbsdefs.js</tt> for details"
-	,"Print mode flags to <i>negate</i> when printing messages - see <tt>P_*</tt> in <tt>sbbsdefs.js</tt> for details"
+	"Index into sub_list array (or -1 if not in array)</i>"
+	, "Group's index into grp_list array</i>"
+	, "Unique (zero-based) number for this sub-board"
+	, "Group number"
+	, "Group name</i>"
+	, "Sub-board internal code"
+	, "Sub-board name"
+	, "Sub-board description"
+	, "QWK conference name"
+	, "Area tag for FidoNet-style echoes, a.k.a. EchoTag"
+	, "Newsgroup name (as configured or dynamically generated)"
+	, "Sub-board access requirements"
+	, "Sub-board reading requirements"
+	, "Sub-board posting requirements"
+	, "Sub-board operator requirements"
+	, "Sub-board moderated-user requirements (if non-blank)"
+	, "Sub-board data storage location"
+	, "FidoNet node address"
+	, "FidoNet origin line"
+	, "QWK Network tagline"
+	, "Toggle options (bit-flags) - see <tt>SUB_*</tt> in <tt>sbbsdefs.js</tt> for details"
+	, "Index into message scan configuration/pointer file"
+	, "QWK conference number"
+	, "Configured maximum number of message CRCs to store (for dupe checking)"
+	, "Configured maximum number of messages before purging"
+	, "Configured maximum age (in days) of messages before expiration"
+	, "Additional print mode flags to use when printing messages - see <tt>P_*</tt> in <tt>sbbsdefs.js</tt> for details"
+	, "Print mode flags to <i>negate</i> when printing messages - see <tt>P_*</tt> in <tt>sbbsdefs.js</tt> for details"
 	/* Insert here */
-	,"User has sufficient access to see this sub-board"
-	,"User has sufficient access to read messages in this sub-board"
-	,"User has sufficient access to post messages in this sub-board"
-	,"User has operator access to this sub-board"
-	,"User's posts are moderated"
-	,"User's current new message scan pointer (highest-read message number)"
-	,"User's message scan configuration (bit-flags) - see <tt>SCAN_CFG_*</tt> in <tt>sbbsdefs.js</tt> for details"
-	,"User's last-read message number"
-	,"Number of messages currently posted to this sub-board"
-	,NULL
+	, "User has sufficient access to see this sub-board"
+	, "User has sufficient access to read messages in this sub-board"
+	, "User has sufficient access to post messages in this sub-board"
+	, "User has operator access to this sub-board"
+	, "User's posts are moderated"
+	, "User's current new message scan pointer (highest-read message number)"
+	, "User's message scan configuration (bit-flags) - see <tt>SCAN_CFG_*</tt> in <tt>sbbsdefs.js</tt> for details"
+	, "User's last-read message number"
+	, "Number of messages currently posted to this sub-board"
+	, NULL
 };
 #endif
 
 struct js_msg_area_priv {
-	scfg_t		*cfg;
-	user_t		*user;
-	client_t	*client;
-	subscan_t	*subscan;
-	int			subnum;
+	scfg_t *cfg;
+	user_t *user;
+	client_t *client;
+	subscan_t *subscan;
+	int subnum;
 };
 
 bool js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg, JSObject* subobj, int subnum)
 {
-	char		str[128];
-	JSString*	js_str;
-	jsval		val;
-	sub_t*		sub;
+	char      str[128];
+	JSString* js_str;
+	jsval     val;
+	sub_t*    sub;
 
-	if(!subnum_is_valid(cfg, subnum))
-		return(false);
-
-	sub=cfg->sub[subnum];
-
-	if(!JS_DefineProperty(cx, subobj, "number", INT_TO_JSVAL(subnum)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+	if (!subnum_is_valid(cfg, subnum))
 		return(false);
 
-	if(!JS_DefineProperty(cx, subobj, "grp_number", INT_TO_JSVAL(sub->grp)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+	sub = cfg->sub[subnum];
+
+	if (!JS_DefineProperty(cx, subobj, "number", INT_TO_JSVAL(subnum)
+	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
 		return(false);
 
-	if((js_str=JS_NewStringCopyZ(cx, cfg->grp[sub->grp]->sname))==NULL)
-		return(false);
-	if(!JS_DefineProperty(cx, subobj, "grp_name", STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+	if (!JS_DefineProperty(cx, subobj, "grp_number", INT_TO_JSVAL(sub->grp)
+	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
 		return(false);
 
-	if((js_str=JS_NewStringCopyZ(cx, sub->code))==NULL)
+	if ((js_str = JS_NewStringCopyZ(cx, cfg->grp[sub->grp]->sname)) == NULL)
 		return(false);
-	if(!JS_DefineProperty(cx, subobj, "code", STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-		return(false);
-
-	if((js_str=JS_NewStringCopyZ(cx, sub->sname))==NULL)
-		return(false);
-	if(!JS_DefineProperty(cx, subobj, "name", STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+	if (!JS_DefineProperty(cx, subobj, "grp_name", STRING_TO_JSVAL(js_str)
+	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
 		return(false);
 
-	if((js_str=JS_NewStringCopyZ(cx, sub->lname))==NULL)
+	if ((js_str = JS_NewStringCopyZ(cx, sub->code)) == NULL)
 		return(false);
-	if(!JS_DefineProperty(cx, subobj, "description", STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-		return(false);
-
-	if((js_str=JS_NewStringCopyZ(cx, sub->qwkname))==NULL)
-		return(false);
-	if(!JS_DefineProperty(cx, subobj, "qwk_name", STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+	if (!JS_DefineProperty(cx, subobj, "code", STRING_TO_JSVAL(js_str)
+	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
 		return(false);
 
-	if((js_str=JS_NewStringCopyZ(cx, sub_area_tag(cfg, sub, str, sizeof(str))))==NULL)
+	if ((js_str = JS_NewStringCopyZ(cx, sub->sname)) == NULL)
 		return(false);
-	if(!JS_DefineProperty(cx, subobj, "area_tag", STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-		return(false);
-
-	if((js_str=JS_NewStringCopyZ(cx, sub_newsgroup_name(cfg, sub, str, sizeof(str))))==NULL)
-		return(false);
-	if(!JS_DefineProperty(cx, subobj, "newsgroup", STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+	if (!JS_DefineProperty(cx, subobj, "name", STRING_TO_JSVAL(js_str)
+	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
 		return(false);
 
-	if((js_str=JS_NewStringCopyZ(cx, sub->arstr))==NULL)
+	if ((js_str = JS_NewStringCopyZ(cx, sub->lname)) == NULL)
 		return(false);
-	if(!JS_DefineProperty(cx, subobj, "ars", STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-		return(false);
-
-	if((js_str=JS_NewStringCopyZ(cx, sub->read_arstr))==NULL)
-		return(false);
-	if(!JS_DefineProperty(cx, subobj, "read_ars", STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+	if (!JS_DefineProperty(cx, subobj, "description", STRING_TO_JSVAL(js_str)
+	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
 		return(false);
 
-	if((js_str=JS_NewStringCopyZ(cx, sub->post_arstr))==NULL)
+	if ((js_str = JS_NewStringCopyZ(cx, sub->qwkname)) == NULL)
 		return(false);
-	if(!JS_DefineProperty(cx, subobj, "post_ars", STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-		return(false);
-
-	if((js_str=JS_NewStringCopyZ(cx, sub->op_arstr))==NULL)
-		return(false);
-	if(!JS_DefineProperty(cx, subobj, "operator_ars", STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+	if (!JS_DefineProperty(cx, subobj, "qwk_name", STRING_TO_JSVAL(js_str)
+	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
 		return(false);
 
-	if((js_str=JS_NewStringCopyZ(cx, sub->mod_arstr))==NULL)
+	if ((js_str = JS_NewStringCopyZ(cx, sub_area_tag(cfg, sub, str, sizeof(str)))) == NULL)
 		return(false);
-	if(!JS_DefineProperty(cx, subobj, "moderated_ars", STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-		return(false);
-
-	if((js_str=JS_NewStringCopyZ(cx, sub->data_dir))==NULL)
-		return(false);
-	if(!JS_DefineProperty(cx, subobj, "data_dir", STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+	if (!JS_DefineProperty(cx, subobj, "area_tag", STRING_TO_JSVAL(js_str)
+	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
 		return(false);
 
-	if((js_str = JS_NewStringCopyZ(cx, smb_faddrtoa(&sub->faddr, str))) == NULL)
+	if ((js_str = JS_NewStringCopyZ(cx, sub_newsgroup_name(cfg, sub, str, sizeof(str)))) == NULL)
+		return(false);
+	if (!JS_DefineProperty(cx, subobj, "newsgroup", STRING_TO_JSVAL(js_str)
+	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
+		return(false);
+
+	if ((js_str = JS_NewStringCopyZ(cx, sub->arstr)) == NULL)
+		return(false);
+	if (!JS_DefineProperty(cx, subobj, "ars", STRING_TO_JSVAL(js_str)
+	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
+		return(false);
+
+	if ((js_str = JS_NewStringCopyZ(cx, sub->read_arstr)) == NULL)
+		return(false);
+	if (!JS_DefineProperty(cx, subobj, "read_ars", STRING_TO_JSVAL(js_str)
+	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
+		return(false);
+
+	if ((js_str = JS_NewStringCopyZ(cx, sub->post_arstr)) == NULL)
+		return(false);
+	if (!JS_DefineProperty(cx, subobj, "post_ars", STRING_TO_JSVAL(js_str)
+	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
+		return(false);
+
+	if ((js_str = JS_NewStringCopyZ(cx, sub->op_arstr)) == NULL)
+		return(false);
+	if (!JS_DefineProperty(cx, subobj, "operator_ars", STRING_TO_JSVAL(js_str)
+	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
+		return(false);
+
+	if ((js_str = JS_NewStringCopyZ(cx, sub->mod_arstr)) == NULL)
+		return(false);
+	if (!JS_DefineProperty(cx, subobj, "moderated_ars", STRING_TO_JSVAL(js_str)
+	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
+		return(false);
+
+	if ((js_str = JS_NewStringCopyZ(cx, sub->data_dir)) == NULL)
+		return(false);
+	if (!JS_DefineProperty(cx, subobj, "data_dir", STRING_TO_JSVAL(js_str)
+	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
+		return(false);
+
+	if ((js_str = JS_NewStringCopyZ(cx, smb_faddrtoa(&sub->faddr, str))) == NULL)
 		return false;
-	if(!JS_DefineProperty(cx, subobj, "fidonet_addr", STRING_TO_JSVAL(js_str)
-		,NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
+	if (!JS_DefineProperty(cx, subobj, "fidonet_addr", STRING_TO_JSVAL(js_str)
+	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
 		return false;
 
-	if((js_str=JS_NewStringCopyZ(cx, sub->origline))==NULL)
+	if ((js_str = JS_NewStringCopyZ(cx, sub->origline)) == NULL)
 		return(false);
-	if(!JS_DefineProperty(cx, subobj, "fidonet_origin", STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
-		return(false);
-
-	if((js_str=JS_NewStringCopyZ(cx, sub->tagline))==NULL)
-		return(false);
-	if(!JS_DefineProperty(cx, subobj, "qwknet_tagline", STRING_TO_JSVAL(js_str)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+	if (!JS_DefineProperty(cx, subobj, "fidonet_origin", STRING_TO_JSVAL(js_str)
+	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
 		return(false);
 
-	val=UINT_TO_JSVAL(sub->misc);
-	if(!JS_DefineProperty(cx, subobj, "settings", val
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+	if ((js_str = JS_NewStringCopyZ(cx, sub->tagline)) == NULL)
+		return(false);
+	if (!JS_DefineProperty(cx, subobj, "qwknet_tagline", STRING_TO_JSVAL(js_str)
+	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
 		return(false);
 
-	if(!JS_DefineProperty(cx, subobj, "ptridx", INT_TO_JSVAL(sub->ptridx)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+	val = UINT_TO_JSVAL(sub->misc);
+	if (!JS_DefineProperty(cx, subobj, "settings", val
+	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
 		return(false);
 
-	if(!JS_DefineProperty(cx, subobj, "qwk_conf", INT_TO_JSVAL(sub->qwkconf)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+	if (!JS_DefineProperty(cx, subobj, "ptridx", INT_TO_JSVAL(sub->ptridx)
+	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
 		return(false);
 
-	if(!JS_DefineProperty(cx, subobj, "max_crcs", INT_TO_JSVAL(sub->maxcrcs)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+	if (!JS_DefineProperty(cx, subobj, "qwk_conf", INT_TO_JSVAL(sub->qwkconf)
+	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
 		return(false);
 
-	if(!JS_DefineProperty(cx, subobj, "max_msgs", INT_TO_JSVAL(sub->maxmsgs)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+	if (!JS_DefineProperty(cx, subobj, "max_crcs", INT_TO_JSVAL(sub->maxcrcs)
+	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
 		return(false);
 
-	if(!JS_DefineProperty(cx, subobj, "max_age", INT_TO_JSVAL(sub->maxage)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+	if (!JS_DefineProperty(cx, subobj, "max_msgs", INT_TO_JSVAL(sub->maxmsgs)
+	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
 		return(false);
 
-	if(!JS_DefineProperty(cx, subobj, "print_mode", INT_TO_JSVAL(sub->pmode)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+	if (!JS_DefineProperty(cx, subobj, "max_age", INT_TO_JSVAL(sub->maxage)
+	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
 		return(false);
 
-	if(!JS_DefineProperty(cx, subobj, "print_mode_neg", INT_TO_JSVAL(sub->n_pmode)
-		,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+	if (!JS_DefineProperty(cx, subobj, "print_mode", INT_TO_JSVAL(sub->pmode)
+	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
+		return(false);
+
+	if (!JS_DefineProperty(cx, subobj, "print_mode_neg", INT_TO_JSVAL(sub->n_pmode)
+	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
 		return(false);
 
 
@@ -256,62 +256,62 @@ bool js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg, JSObject* subobj, in
 /* Dynamic Sub-board Object Properites */
 /***************************************/
 enum {
-	 SUB_PROP_CAN_ACCESS
-	,SUB_PROP_CAN_READ
-	,SUB_PROP_CAN_POST
-	,SUB_PROP_IS_OPERATOR
-	,SUB_PROP_IS_MODERATED
-	,SUB_PROP_SCAN_PTR
-	,SUB_PROP_SCAN_CFG
-	,SUB_PROP_LAST_READ
-	,SUB_PROP_POSTS
+	SUB_PROP_CAN_ACCESS
+	, SUB_PROP_CAN_READ
+	, SUB_PROP_CAN_POST
+	, SUB_PROP_IS_OPERATOR
+	, SUB_PROP_IS_MODERATED
+	, SUB_PROP_SCAN_PTR
+	, SUB_PROP_SCAN_CFG
+	, SUB_PROP_LAST_READ
+	, SUB_PROP_POSTS
 };
 
 static JSBool js_sub_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 {
-	jsval idval;
-    jsint       tiny;
+	jsval                    idval;
+	jsint                    tiny;
 	struct js_msg_area_priv *p;
 
-	if((p=(struct js_msg_area_priv*)JS_GetPrivate(cx, obj))==NULL)
+	if ((p = (struct js_msg_area_priv*)JS_GetPrivate(cx, obj)) == NULL)
 		return JS_TRUE;
-	subscan_t*	scan = p->subscan;
+	subscan_t*               scan = p->subscan;
 
-    JS_IdToValue(cx, id, &idval);
-    tiny = JSVAL_TO_INT(idval);
+	JS_IdToValue(cx, id, &idval);
+	tiny = JSVAL_TO_INT(idval);
 
-	switch(tiny) {
+	switch (tiny) {
 		case SUB_PROP_CAN_ACCESS:
-			*vp = BOOLEAN_TO_JSVAL(p->user==NULL || user_can_access_sub(p->cfg, p->subnum, p->user, p->client));
+			*vp = BOOLEAN_TO_JSVAL(p->user == NULL || user_can_access_sub(p->cfg, p->subnum, p->user, p->client));
 			break;
 		case SUB_PROP_CAN_READ:
-			*vp = BOOLEAN_TO_JSVAL(p->user==NULL || user_can_read_sub(p->cfg, p->subnum, p->user, p->client));
+			*vp = BOOLEAN_TO_JSVAL(p->user == NULL || user_can_read_sub(p->cfg, p->subnum, p->user, p->client));
 			break;
 		case SUB_PROP_CAN_POST:
-			*vp = BOOLEAN_TO_JSVAL(p->user==NULL || user_can_post(p->cfg, p->subnum, p->user, p->client,/* reason: */NULL));
+			*vp = BOOLEAN_TO_JSVAL(p->user == NULL || user_can_post(p->cfg, p->subnum, p->user, p->client, /* reason: */ NULL));
 			break;
 		case SUB_PROP_IS_OPERATOR:
 			*vp = BOOLEAN_TO_JSVAL(p->user == NULL || user_is_subop(p->cfg, p->subnum, p->user, p->client));
 			break;
 		case SUB_PROP_IS_MODERATED:
-			if(p->cfg->sub[p->subnum]->mod_ar[0] != 0
-				&& p->user != NULL 
-				&& chk_ar(p->cfg,p->cfg->sub[p->subnum]->mod_ar, p->user, p->client))
+			if (p->cfg->sub[p->subnum]->mod_ar[0] != 0
+			    && p->user != NULL
+			    && chk_ar(p->cfg, p->cfg->sub[p->subnum]->mod_ar, p->user, p->client))
 				*vp = JSVAL_TRUE;
 			else
 				*vp = JSVAL_FALSE;
 			break;
 		case SUB_PROP_SCAN_PTR:
-			if(scan != NULL) *vp=UINT_TO_JSVAL(scan->ptr);
+			if (scan != NULL) *vp = UINT_TO_JSVAL(scan->ptr);
 			break;
 		case SUB_PROP_SCAN_CFG:
-			if(scan != NULL) *vp=UINT_TO_JSVAL(scan->cfg);
+			if (scan != NULL) *vp = UINT_TO_JSVAL(scan->cfg);
 			break;
 		case SUB_PROP_LAST_READ:
-			if(scan != NULL) *vp=UINT_TO_JSVAL(scan->last);
+			if (scan != NULL) *vp = UINT_TO_JSVAL(scan->last);
 			break;
 		case SUB_PROP_POSTS:
-			*vp=UINT_TO_JSVAL(getposts(p->cfg, p->subnum));
+			*vp = UINT_TO_JSVAL(getposts(p->cfg, p->subnum));
 			break;
 	}
 
@@ -320,33 +320,33 @@ static JSBool js_sub_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 
 static JSBool js_sub_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
 {
-	jsval idval;
-	uint32_t	val=0;
-    jsint       tiny;
+	jsval                    idval;
+	uint32_t                 val = 0;
+	jsint                    tiny;
 	struct js_msg_area_priv *p;
 
-	if((p=(struct js_msg_area_priv*)JS_GetPrivate(cx, obj))==NULL)
+	if ((p = (struct js_msg_area_priv*)JS_GetPrivate(cx, obj)) == NULL)
 		return JS_FALSE;
 
-	subscan_t*	scan = p->subscan;
-	if(scan == NULL)
+	subscan_t* scan = p->subscan;
+	if (scan == NULL)
 		return JS_TRUE;
 
-    JS_IdToValue(cx, id, &idval);
-    tiny = JSVAL_TO_INT(idval);
+	JS_IdToValue(cx, id, &idval);
+	tiny = JSVAL_TO_INT(idval);
 
-	switch(tiny) {
+	switch (tiny) {
 		case SUB_PROP_SCAN_PTR:
-			if(!JS_ValueToECMAUint32(cx, *vp, &scan->ptr))
+			if (!JS_ValueToECMAUint32(cx, *vp, &scan->ptr))
 				return JS_FALSE;
 			break;
 		case SUB_PROP_SCAN_CFG:
-			if(!JS_ValueToECMAUint32(cx, *vp, &val))
+			if (!JS_ValueToECMAUint32(cx, *vp, &val))
 				return JS_FALSE;
-			scan->cfg=(ushort)val;
+			scan->cfg = (ushort)val;
 			break;
 		case SUB_PROP_LAST_READ:
-			if(!JS_ValueToECMAUint32(cx, *vp, &scan->last))
+			if (!JS_ValueToECMAUint32(cx, *vp, &scan->last))
 				return JS_FALSE;
 			break;
 	}
@@ -357,257 +357,257 @@ static JSBool js_sub_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, j
 static struct JSPropertySpec js_sub_properties[] = {
 /*		 name				,tinyid		,flags	*/
 
-	{	"can_access"	,SUB_PROP_CAN_ACCESS	,JSPROP_ENUMERATE|JSPROP_SHARED|JSPROP_READONLY },
-	{	"can_read"		,SUB_PROP_CAN_READ		,JSPROP_ENUMERATE|JSPROP_SHARED|JSPROP_READONLY },
-	{	"can_post"		,SUB_PROP_CAN_POST		,JSPROP_ENUMERATE|JSPROP_SHARED|JSPROP_READONLY },
-	{	"is_operator"	,SUB_PROP_IS_OPERATOR	,JSPROP_ENUMERATE|JSPROP_SHARED|JSPROP_READONLY },
-	{	"is_moderated"	,SUB_PROP_IS_MODERATED	,JSPROP_ENUMERATE|JSPROP_SHARED|JSPROP_READONLY },
-	{	"scan_ptr"		,SUB_PROP_SCAN_PTR		,JSPROP_ENUMERATE|JSPROP_SHARED },
-	{	"scan_cfg"		,SUB_PROP_SCAN_CFG		,JSPROP_ENUMERATE|JSPROP_SHARED },
-	{	"last_read"		,SUB_PROP_LAST_READ		,JSPROP_ENUMERATE|JSPROP_SHARED },
-	{	"posts"			,SUB_PROP_POSTS			,JSPROP_ENUMERATE|JSPROP_SHARED|JSPROP_READONLY },
+	{   "can_access", SUB_PROP_CAN_ACCESS, JSPROP_ENUMERATE | JSPROP_SHARED | JSPROP_READONLY },
+	{   "can_read", SUB_PROP_CAN_READ, JSPROP_ENUMERATE | JSPROP_SHARED | JSPROP_READONLY },
+	{   "can_post", SUB_PROP_CAN_POST, JSPROP_ENUMERATE | JSPROP_SHARED | JSPROP_READONLY },
+	{   "is_operator", SUB_PROP_IS_OPERATOR, JSPROP_ENUMERATE | JSPROP_SHARED | JSPROP_READONLY },
+	{   "is_moderated", SUB_PROP_IS_MODERATED, JSPROP_ENUMERATE | JSPROP_SHARED | JSPROP_READONLY },
+	{   "scan_ptr", SUB_PROP_SCAN_PTR, JSPROP_ENUMERATE | JSPROP_SHARED },
+	{   "scan_cfg", SUB_PROP_SCAN_CFG, JSPROP_ENUMERATE | JSPROP_SHARED },
+	{   "last_read", SUB_PROP_LAST_READ, JSPROP_ENUMERATE | JSPROP_SHARED },
+	{   "posts", SUB_PROP_POSTS, JSPROP_ENUMERATE | JSPROP_SHARED | JSPROP_READONLY },
 	{0}
 };
 
-static void 
+static void
 js_msg_area_finalize(JSContext *cx, JSObject *obj)
 {
 	struct js_msg_area_priv *p;
 
-	if((p=(struct js_msg_area_priv*)JS_GetPrivate(cx,obj))==NULL)
+	if ((p = (struct js_msg_area_priv*)JS_GetPrivate(cx, obj)) == NULL)
 		return;
 
 	free(p);
-	JS_SetPrivate(cx,obj,NULL);
+	JS_SetPrivate(cx, obj, NULL);
 }
 
 static JSClass js_sub_class = {
-     "MsgSub"				/* name			*/
-    ,JSCLASS_HAS_PRIVATE	/* flags		*/
-	,JS_PropertyStub		/* addProperty	*/
-	,JS_PropertyStub		/* delProperty	*/
-	,js_sub_get				/* getProperty	*/
-	,js_sub_set				/* setProperty	*/
-	,JS_EnumerateStub		/* enumerate	*/
-	,JS_ResolveStub			/* resolve		*/
-	,JS_ConvertStub			/* convert		*/
-	,js_msg_area_finalize	/* finalize		*/
+	"MsgSub"                /* name			*/
+	, JSCLASS_HAS_PRIVATE    /* flags		*/
+	, JS_PropertyStub        /* addProperty	*/
+	, JS_PropertyStub        /* delProperty	*/
+	, js_sub_get             /* getProperty	*/
+	, js_sub_set             /* setProperty	*/
+	, JS_EnumerateStub       /* enumerate	*/
+	, JS_ResolveStub         /* resolve		*/
+	, JS_ConvertStub         /* convert		*/
+	, js_msg_area_finalize   /* finalize		*/
 };
 
 JSBool js_msg_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 {
-	JSObject*	allgrps;
-	JSObject*	allsubs;
-	JSObject*	grpobj_proto;
-	JSObject*	grpobj;
-	JSObject*	subobj_proto;
-	JSObject*	subobj;
-	JSObject*	grp_list;
-	JSObject*	sub_list;
-	JSString*	js_str;
-	jsval		val;
-	jsint		grp_index;
-	jsint		sub_index;
-	int			l,d;
-	char*		name=NULL;
+	JSObject*                allgrps;
+	JSObject*                allsubs;
+	JSObject*                grpobj_proto;
+	JSObject*                grpobj;
+	JSObject*                subobj_proto;
+	JSObject*                subobj;
+	JSObject*                grp_list;
+	JSObject*                sub_list;
+	JSString*                js_str;
+	jsval                    val;
+	jsint                    grp_index;
+	jsint                    sub_index;
+	int                      l, d;
+	char*                    name = NULL;
 	struct js_msg_area_priv *p;
 
-	if((p=(struct js_msg_area_priv*)JS_GetPrivate(cx,areaobj))==NULL)
+	if ((p = (struct js_msg_area_priv*)JS_GetPrivate(cx, areaobj)) == NULL)
 		return JS_FALSE;
 
-	if(id != JSID_VOID && id != JSID_EMPTY) {
+	if (id != JSID_VOID && id != JSID_EMPTY) {
 		jsval idval;
-		
+
 		JS_IdToValue(cx, id, &idval);
-		if(JSVAL_IS_STRING(idval))
+		if (JSVAL_IS_STRING(idval))
 			JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(idval), name, NULL);
 	}
 
 #ifdef BUILD_JSDOCS
-	js_DescribeSyncObject(cx,areaobj,"Message Areas",310);
+	js_DescribeSyncObject(cx, areaobj, "Message Areas", 310);
 #endif
 
 	/* msg_area.properties */
-	if (name==NULL || strcmp(name, "settings")==0) {
+	if (name == NULL || strcmp(name, "settings") == 0) {
 		if (name)
 			free(name);
-		if(!JS_NewNumberValue(cx,p->cfg->msg_misc,&val))
+		if (!JS_NewNumberValue(cx, p->cfg->msg_misc, &val))
 			return JS_FALSE;
-		if(!JS_SetProperty(cx, areaobj, "settings", &val)) 
+		if (!JS_SetProperty(cx, areaobj, "settings", &val))
 			return JS_FALSE;
 		if (name)
 			return JS_TRUE;
 	}
-	if (name==NULL || strcmp(name, "fido_netmail_settings")==0) {
+	if (name == NULL || strcmp(name, "fido_netmail_settings") == 0) {
 		if (name)
 			free(name);
-		if(!JS_NewNumberValue(cx,p->cfg->netmail_misc,&val))
+		if (!JS_NewNumberValue(cx, p->cfg->netmail_misc, &val))
 			return JS_FALSE;
-		if(!JS_SetProperty(cx, areaobj, "fido_netmail_settings", &val)) 
+		if (!JS_SetProperty(cx, areaobj, "fido_netmail_settings", &val))
 			return JS_FALSE;
 		if (name)
 			return JS_TRUE;
 	}
-	if (name==NULL || strcmp(name, "inet_netmail_settings")==0) {
+	if (name == NULL || strcmp(name, "inet_netmail_settings") == 0) {
 		if (name)
 			free(name);
-		if(!JS_NewNumberValue(cx,p->cfg->inetmail_misc,&val))
+		if (!JS_NewNumberValue(cx, p->cfg->inetmail_misc, &val))
 			return JS_FALSE;
-		if(!JS_SetProperty(cx, areaobj, "inet_netmail_settings", &val)) 
+		if (!JS_SetProperty(cx, areaobj, "inet_netmail_settings", &val))
 			return JS_FALSE;
 		if (name)
 			return JS_TRUE;
 	}
 
-	if (name==NULL || strcmp(name, "grp")==0 || strcmp(name, "sub")==0 || strcmp(name, "grp_list")==0) {
+	if (name == NULL || strcmp(name, "grp") == 0 || strcmp(name, "sub") == 0 || strcmp(name, "grp_list") == 0) {
 		if (name)
 			FREE_AND_NULL(name);
 		/* msg_area.grp[] */
-		if((allgrps=JS_NewObject(cx, NULL, NULL, areaobj))==NULL)
+		if ((allgrps = JS_NewObject(cx, NULL, NULL, areaobj)) == NULL)
 			return JS_FALSE;
 
-		val=OBJECT_TO_JSVAL(allgrps);
-		if(!JS_SetProperty(cx, areaobj, "grp", &val))
+		val = OBJECT_TO_JSVAL(allgrps);
+		if (!JS_SetProperty(cx, areaobj, "grp", &val))
 			return JS_FALSE;
 
 		/* msg_area.sub[] */
-		if((allsubs=JS_NewObject(cx, NULL, NULL, areaobj))==NULL)
+		if ((allsubs = JS_NewObject(cx, NULL, NULL, areaobj)) == NULL)
 			return JS_FALSE;
 
-		val=OBJECT_TO_JSVAL(allsubs);
-		if(!JS_SetProperty(cx, areaobj, "sub", &val))
+		val = OBJECT_TO_JSVAL(allsubs);
+		if (!JS_SetProperty(cx, areaobj, "sub", &val))
 			return JS_FALSE;
 
 		/* msg_area.grp_list[] */
-		if((grp_list=JS_NewArrayObject(cx, 0, NULL))==NULL) 
+		if ((grp_list = JS_NewArrayObject(cx, 0, NULL)) == NULL)
 			return JS_FALSE;
 
-		val=OBJECT_TO_JSVAL(grp_list);
-		if(!JS_SetProperty(cx, areaobj, "grp_list", &val)) 
+		val = OBJECT_TO_JSVAL(grp_list);
+		if (!JS_SetProperty(cx, areaobj, "grp_list", &val))
 			return JS_FALSE;
 
-		if((grpobj_proto=JS_NewObject(cx, NULL, NULL, areaobj))==NULL)
+		if ((grpobj_proto = JS_NewObject(cx, NULL, NULL, areaobj)) == NULL)
 			return JS_FALSE;
-		if((subobj_proto=JS_NewObject(cx, NULL, NULL, areaobj))==NULL)
+		if ((subobj_proto = JS_NewObject(cx, NULL, NULL, areaobj)) == NULL)
 			return JS_FALSE;
-		for(l=0;l<p->cfg->total_grps;l++) {
+		for (l = 0; l < p->cfg->total_grps; l++) {
 
-			if((grpobj=JS_NewObject(cx, NULL, grpobj_proto, NULL))==NULL)
+			if ((grpobj = JS_NewObject(cx, NULL, grpobj_proto, NULL)) == NULL)
 				return JS_FALSE;
 
-			val=OBJECT_TO_JSVAL(grpobj);
-			grp_index=-1;
-			if(p->user==NULL || chk_ar(p->cfg,p->cfg->grp[l]->ar,p->user,p->client)) {
+			val = OBJECT_TO_JSVAL(grpobj);
+			grp_index = -1;
+			if (p->user == NULL || chk_ar(p->cfg, p->cfg->grp[l]->ar, p->user, p->client)) {
 
-				if(!JS_GetArrayLength(cx, grp_list, (jsuint*)&grp_index))
+				if (!JS_GetArrayLength(cx, grp_list, (jsuint*)&grp_index))
 					return JS_FALSE;
 
-				if(!JS_SetElement(cx, grp_list, grp_index, &val))
+				if (!JS_SetElement(cx, grp_list, grp_index, &val))
 					return JS_FALSE;
 			}
 
 			/* Add as property (associative array element) */
-			if(!JS_DefineProperty(cx, allgrps, p->cfg->grp[l]->sname, val
-				,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
+			if (!JS_DefineProperty(cx, allgrps, p->cfg->grp[l]->sname, val
+			                       , NULL, NULL, JSPROP_READONLY | JSPROP_ENUMERATE))
 				return JS_FALSE;
 
-			val=INT_TO_JSVAL(grp_index);
-			if(!JS_SetProperty(cx, grpobj, "index", &val))
+			val = INT_TO_JSVAL(grp_index);
+			if (!JS_SetProperty(cx, grpobj, "index", &val))
 				return JS_FALSE;
 
-			val=INT_TO_JSVAL(l);
-			if(!JS_SetProperty(cx, grpobj, "number", &val))
+			val = INT_TO_JSVAL(l);
+			if (!JS_SetProperty(cx, grpobj, "number", &val))
 				return JS_FALSE;
 
-			if((js_str=JS_NewStringCopyZ(cx, p->cfg->grp[l]->sname))==NULL)
+			if ((js_str = JS_NewStringCopyZ(cx, p->cfg->grp[l]->sname)) == NULL)
 				return JS_FALSE;
-			val=STRING_TO_JSVAL(js_str);
-			if(!JS_SetProperty(cx, grpobj, "name", &val))
-				return JS_FALSE;
-
-			if((js_str=JS_NewStringCopyZ(cx, p->cfg->grp[l]->lname))==NULL)
-				return JS_FALSE;
-			val=STRING_TO_JSVAL(js_str);
-			if(!JS_SetProperty(cx, grpobj, "description", &val))
+			val = STRING_TO_JSVAL(js_str);
+			if (!JS_SetProperty(cx, grpobj, "name", &val))
 				return JS_FALSE;
 
-			if((js_str=JS_NewStringCopyZ(cx, p->cfg->grp[l]->arstr))==NULL)
+			if ((js_str = JS_NewStringCopyZ(cx, p->cfg->grp[l]->lname)) == NULL)
 				return JS_FALSE;
-			if(!JS_DefineProperty(cx, grpobj, "ars", STRING_TO_JSVAL(js_str)
-				,NULL,NULL,JSPROP_ENUMERATE|JSPROP_READONLY))
+			val = STRING_TO_JSVAL(js_str);
+			if (!JS_SetProperty(cx, grpobj, "description", &val))
+				return JS_FALSE;
+
+			if ((js_str = JS_NewStringCopyZ(cx, p->cfg->grp[l]->arstr)) == NULL)
+				return JS_FALSE;
+			if (!JS_DefineProperty(cx, grpobj, "ars", STRING_TO_JSVAL(js_str)
+			                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
 				return JS_FALSE;
 
 			val = BOOLEAN_TO_JSVAL(grp_index >= 0);
-			if(!JS_SetProperty(cx, grpobj, "can_access", &val))
+			if (!JS_SetProperty(cx, grpobj, "can_access", &val))
 				return JS_FALSE;
 
-			if((js_str=JS_NewStringCopyZ(cx, p->cfg->grp[l]->code_prefix))==NULL)
+			if ((js_str = JS_NewStringCopyZ(cx, p->cfg->grp[l]->code_prefix)) == NULL)
 				return JS_FALSE;
-			val=STRING_TO_JSVAL(js_str);
-			if(!JS_SetProperty(cx, grpobj, "code_prefix", &val))
+			val = STRING_TO_JSVAL(js_str);
+			if (!JS_SetProperty(cx, grpobj, "code_prefix", &val))
 				return JS_FALSE;
 
 #ifdef BUILD_JSDOCS
-			js_DescribeSyncObject(cx,grpobj,"Message Groups (current user has access to)",310);
+			js_DescribeSyncObject(cx, grpobj, "Message Groups (current user has access to)", 310);
 #endif
 
 			/* sub_list[] */
-			if((sub_list=JS_NewArrayObject(cx, 0, NULL))==NULL) 
+			if ((sub_list = JS_NewArrayObject(cx, 0, NULL)) == NULL)
 				return JS_FALSE;
 
-			val=OBJECT_TO_JSVAL(sub_list);
-			if(!JS_SetProperty(cx, grpobj, "sub_list", &val)) 
+			val = OBJECT_TO_JSVAL(sub_list);
+			if (!JS_SetProperty(cx, grpobj, "sub_list", &val))
 				return JS_FALSE;
 
-			for(d=0;d<p->cfg->total_subs;d++) {
-				if(p->cfg->sub[d]->grp!=l)
+			for (d = 0; d < p->cfg->total_subs; d++) {
+				if (p->cfg->sub[d]->grp != l)
 					continue;
-				if((subobj=JS_NewObject(cx, &js_sub_class, subobj_proto, NULL))==NULL)
+				if ((subobj = JS_NewObject(cx, &js_sub_class, subobj_proto, NULL)) == NULL)
 					return JS_FALSE;
 				struct js_msg_area_priv *np = malloc(sizeof(struct js_msg_area_priv));
-				if(np == NULL)
+				if (np == NULL)
 					continue;
 				*np = *p;
-				if(p->subscan != NULL)
+				if (p->subscan != NULL)
 					np->subscan = &p->subscan[d];
 				np->subnum = d;
 				JS_SetPrivate(cx, subobj, np);
 
-				val=OBJECT_TO_JSVAL(subobj);
-				sub_index=-1;
-				if(p->user==NULL || user_can_access_sub(p->cfg,d,p->user,p->client)) {
+				val = OBJECT_TO_JSVAL(subobj);
+				sub_index = -1;
+				if (p->user == NULL || user_can_access_sub(p->cfg, d, p->user, p->client)) {
 
-					if(!JS_GetArrayLength(cx, sub_list, (jsuint*)&sub_index))
+					if (!JS_GetArrayLength(cx, sub_list, (jsuint*)&sub_index))
 						return JS_FALSE;
 
-					if(!JS_SetElement(cx, sub_list, sub_index, &val))
+					if (!JS_SetElement(cx, sub_list, sub_index, &val))
 						return JS_FALSE;
 				}
 
 				/* Add as property (associative array element) */
-				if(!JS_DefineProperty(cx, allsubs, p->cfg->sub[d]->code, val
-					,NULL,NULL,JSPROP_READONLY|JSPROP_ENUMERATE))
+				if (!JS_DefineProperty(cx, allsubs, p->cfg->sub[d]->code, val
+				                       , NULL, NULL, JSPROP_READONLY | JSPROP_ENUMERATE))
 					return JS_FALSE;
 
-				val=INT_TO_JSVAL(sub_index);
-				if(!JS_SetProperty(cx, subobj, "index", &val))
+				val = INT_TO_JSVAL(sub_index);
+				if (!JS_SetProperty(cx, subobj, "index", &val))
 					return JS_FALSE;
 
-				val=INT_TO_JSVAL(grp_index);
-				if(!JS_SetProperty(cx, subobj, "grp_index", &val))
+				val = INT_TO_JSVAL(grp_index);
+				if (!JS_SetProperty(cx, subobj, "grp_index", &val))
 					return JS_FALSE;
 
-				if(!js_CreateMsgAreaProperties(cx, p->cfg, subobj, d))
+				if (!js_CreateMsgAreaProperties(cx, p->cfg, subobj, d))
 					return JS_FALSE;
 
-				if(!JS_DefineProperties(cx, subobj, js_sub_properties))
+				if (!JS_DefineProperties(cx, subobj, js_sub_properties))
 					return JS_FALSE;
 
 #ifdef BUILD_JSDOCS
-				js_DescribeSyncObject(cx,subobj,"Message Sub-boards (current user has access to)</h2>"
-					"(all properties are <small>READ ONLY</small> except for "
-					"<i>scan_ptr</i>, <i>scan_cfg</i>, and <i>last_read</i>)"
-					,310);
+				js_DescribeSyncObject(cx, subobj, "Message Sub-boards (current user has access to)</h2>"
+				                      "(all properties are <small>READ ONLY</small> except for "
+				                      "<i>scan_ptr</i>, <i>scan_cfg</i>, and <i>last_read</i>)"
+				                      , 310);
 #endif
 
 			}
@@ -620,16 +620,16 @@ JSBool js_msg_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 #ifdef BUILD_JSDOCS
 		js_CreateArrayOfStrings(cx, areaobj, "_property_desc_list", msg_area_prop_desc, JSPROP_READONLY);
 
-		js_DescribeSyncObject(cx,allgrps,"Associative array of all groups (use name as index)",312);
-		JS_DefineProperty(cx,allgrps,"_dont_document",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
+		js_DescribeSyncObject(cx, allgrps, "Associative array of all groups (use name as index)", 312);
+		JS_DefineProperty(cx, allgrps, "_dont_document", JSVAL_TRUE, NULL, NULL, JSPROP_READONLY);
 #endif
 
 #ifdef BUILD_JSDOCS
-		js_DescribeSyncObject(cx,allsubs,"Associative array of all sub-boards (use internal code as index)",311);
-		JS_DefineProperty(cx,allsubs,"_dont_document",JSVAL_TRUE,NULL,NULL,JSPROP_READONLY);
+		js_DescribeSyncObject(cx, allsubs, "Associative array of all sub-boards (use internal code as index)", 311);
+		JS_DefineProperty(cx, allsubs, "_dont_document", JSVAL_TRUE, NULL, NULL, JSPROP_READONLY);
 #endif
 	}
-	if(name)
+	if (name)
 		free(name);
 
 	return JS_TRUE;
@@ -641,41 +641,41 @@ static JSBool js_msg_area_enumerate(JSContext *cx, JSObject *obj)
 }
 
 static JSClass js_msg_area_class = {
-     "MsgArea"				/* name			*/
-    ,JSCLASS_HAS_PRIVATE	/* flags		*/
-	,JS_PropertyStub		/* addProperty	*/
-	,JS_PropertyStub		/* delProperty	*/
-	,JS_PropertyStub		/* getProperty	*/
-	,JS_StrictPropertyStub		/* setProperty	*/
-	,js_msg_area_enumerate	/* enumerate	*/
-	,js_msg_area_resolve	/* resolve		*/
-	,JS_ConvertStub			/* convert		*/
-	,js_msg_area_finalize	/* finalize		*/
+	"MsgArea"               /* name			*/
+	, JSCLASS_HAS_PRIVATE    /* flags		*/
+	, JS_PropertyStub        /* addProperty	*/
+	, JS_PropertyStub        /* delProperty	*/
+	, JS_PropertyStub        /* getProperty	*/
+	, JS_StrictPropertyStub      /* setProperty	*/
+	, js_msg_area_enumerate  /* enumerate	*/
+	, js_msg_area_resolve    /* resolve		*/
+	, JS_ConvertStub         /* convert		*/
+	, js_msg_area_finalize   /* finalize		*/
 };
 
 JSObject* js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
-								  ,user_t* user, client_t* client, subscan_t* subscan)
+                                 , user_t* user, client_t* client, subscan_t* subscan)
 {
-	JSObject* obj;
+	JSObject*                obj;
 	struct js_msg_area_priv *p;
 
 	obj = JS_DefineObject(cx, parent, "msg_area", &js_msg_area_class, NULL
-		,JSPROP_ENUMERATE|JSPROP_READONLY);
+	                      , JSPROP_ENUMERATE | JSPROP_READONLY);
 
-	if(obj==NULL)
+	if (obj == NULL)
 		return(NULL);
 
 	p = (struct js_msg_area_priv *)malloc(sizeof(struct js_msg_area_priv));
 	if (p == NULL)
 		return NULL;
 
-	memset(p,0,sizeof(*p));
+	memset(p, 0, sizeof(*p));
 	p->cfg = cfg;
 	p->user = user;
 	p->client = client;
 	p->subscan = subscan;
 
-	if(!JS_SetPrivate(cx, obj, p)) {
+	if (!JS_SetPrivate(cx, obj, p)) {
 		free(p);
 		return(NULL);
 	}
@@ -688,4 +688,4 @@ JSObject* js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
 	return(obj);
 }
 
-#endif	/* JAVSCRIPT */
+#endif  /* JAVSCRIPT */

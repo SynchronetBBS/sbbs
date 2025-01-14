@@ -34,25 +34,25 @@ static void ProgressLoadingMsgPtrs(void* cbdata, int count, int total)
 /****************************************************************************/
 void sbbs_t::getmsgptrs()
 {
-	if(!useron.number)
+	if (!useron.number)
 		return;
-	::getmsgptrs(&cfg,&useron,subscan,online == ON_REMOTE ? ProgressLoadingMsgPtrs : NULL,this);
-	if(online == ON_REMOTE)
+	::getmsgptrs(&cfg, &useron, subscan, online == ON_REMOTE ? ProgressLoadingMsgPtrs : NULL, this);
+	if (online == ON_REMOTE)
 		bputs(text[LoadedMsgPtrs]);
 }
 
 void sbbs_t::putmsgptrs()
 {
-	if(useron.number == 0 || useron.rest&FLAG('G'))
+	if (useron.number == 0 || useron.rest & FLAG('G'))
 		return;
-	char path[MAX_PATH + 1];
+	char       path[MAX_PATH + 1];
 	msgptrs_filename(&cfg, useron.number, path, sizeof path);
 	const uint access = O_RDWR | O_CREAT | O_TEXT;
-	FILE* fp = fnopen(NULL, path, access);
+	FILE*      fp = fnopen(NULL, path, access);
 	if (fp == NULL) {
 		errormsg(WHERE, ERR_OPEN, path, access);
 	} else {
-		if(!putmsgptrs_fp(&cfg,&useron,subscan, fp))
+		if (!putmsgptrs_fp(&cfg, &useron, subscan, fp))
 			errormsg(WHERE, ERR_WRITE, "message pointers", 0);
 		fclose(fp);
 	}
@@ -60,7 +60,7 @@ void sbbs_t::putmsgptrs()
 
 void sbbs_t::reinit_msg_ptrs()
 {
-	for(int i = 0; i < cfg.total_subs; ++i) {
+	for (int i = 0; i < cfg.total_subs; ++i) {
 		subscan[i].ptr = subscan[i].sav_ptr;
 		subscan[i].last = subscan[i].sav_last;
 	}
@@ -81,10 +81,10 @@ static void ProgressSearchingUsers(void* cbdata, int count, int total)
 /* Returns the usernumber of the dupe if found, 0 if not                    */
 /****************************************************************************/
 uint sbbs_t::finduserstr(uint usernumber, enum user_field fnum, const char* str
-    ,bool del, bool next)
+                         , bool del, bool next)
 {
-	uint i=::finduserstr(&cfg, usernumber, fnum, str, del, next, online == ON_REMOTE ? ProgressSearchingUsers : NULL, this);
-	if(online == ON_REMOTE)
+	uint i = ::finduserstr(&cfg, usernumber, fnum, str, del, next, online == ON_REMOTE ? ProgressSearchingUsers : NULL, this);
+	if (online == ON_REMOTE)
 		bputs(text[SearchedForDupes]);
 	return(i);
 }
@@ -95,9 +95,9 @@ uint sbbs_t::finduserstr(uint usernumber, enum user_field fnum, const char* str
 bool sbbs_t::putuserdat(user_t* user)
 {
 	int result = ::putuserdat(&cfg, user);
-	if(result != 0) {
+	if (result != 0) {
 		lprintf(LOG_ERR, "!Error %d writing user data for user #%d"
-			,result, user->number);
+		        , result, user->number);
 		return false;
 	}
 	return true;
@@ -106,7 +106,7 @@ bool sbbs_t::putuserdat(user_t* user)
 bool sbbs_t::putuserstr(int usernumber, enum user_field fnum, const char *str)
 {
 	int result = ::putuserstr(&cfg, usernumber, fnum, str);
-	if(result != 0) {
+	if (result != 0) {
 		errormsg(WHERE, ERR_WRITE, USER_DATA_FILENAME, result);
 		return false;
 	}
@@ -116,7 +116,7 @@ bool sbbs_t::putuserstr(int usernumber, enum user_field fnum, const char *str)
 bool sbbs_t::putuserdatetime(int usernumber, enum user_field fnum, time_t t)
 {
 	int result = ::putuserdatetime(&cfg, usernumber, fnum, (time32_t)t);
-	if(result != 0) {
+	if (result != 0) {
 		errormsg(WHERE, ERR_WRITE, USER_DATA_FILENAME, result);
 		return false;
 	}
@@ -126,7 +126,7 @@ bool sbbs_t::putuserdatetime(int usernumber, enum user_field fnum, time_t t)
 bool sbbs_t::putuserflags(int usernumber, enum user_field fnum, uint32_t flags)
 {
 	int result = ::putuserflags(&cfg, usernumber, fnum, flags);
-	if(result != 0) {
+	if (result != 0) {
 		errormsg(WHERE, ERR_WRITE, USER_DATA_FILENAME, result);
 		return false;
 	}
@@ -136,7 +136,7 @@ bool sbbs_t::putuserflags(int usernumber, enum user_field fnum, uint32_t flags)
 bool sbbs_t::putuserhex32(int usernumber, enum user_field fnum, uint32_t value)
 {
 	int result = ::putuserhex32(&cfg, usernumber, fnum, value);
-	if(result != 0) {
+	if (result != 0) {
 		errormsg(WHERE, ERR_WRITE, USER_DATA_FILENAME, result);
 		return false;
 	}
@@ -146,7 +146,7 @@ bool sbbs_t::putuserhex32(int usernumber, enum user_field fnum, uint32_t value)
 bool sbbs_t::putuserdec32(int usernumber, enum user_field fnum, uint32_t value)
 {
 	int result = ::putuserdec32(&cfg, usernumber, fnum, value);
-	if(result != 0) {
+	if (result != 0) {
 		errormsg(WHERE, ERR_WRITE, USER_DATA_FILENAME, result);
 		return false;
 	}
@@ -156,7 +156,7 @@ bool sbbs_t::putuserdec32(int usernumber, enum user_field fnum, uint32_t value)
 bool sbbs_t::putuserdec64(int usernumber, enum user_field fnum, uint64_t value)
 {
 	int result = ::putuserdec64(&cfg, usernumber, fnum, value);
-	if(result != 0) {
+	if (result != 0) {
 		errormsg(WHERE, ERR_WRITE, USER_DATA_FILENAME, result);
 		return false;
 	}
@@ -166,7 +166,7 @@ bool sbbs_t::putuserdec64(int usernumber, enum user_field fnum, uint64_t value)
 bool sbbs_t::putusermisc(int usernumber, uint32_t value)
 {
 	int result = ::putusermisc(&cfg, usernumber, value);
-	if(result != 0) {
+	if (result != 0) {
 		errormsg(WHERE, ERR_WRITE, USER_DATA_FILENAME, result);
 		return false;
 	}
@@ -176,7 +176,7 @@ bool sbbs_t::putusermisc(int usernumber, uint32_t value)
 bool sbbs_t::putuserchat(int usernumber, uint32_t value)
 {
 	int result = ::putuserchat(&cfg, usernumber, value);
-	if(result != 0) {
+	if (result != 0) {
 		errormsg(WHERE, ERR_WRITE, USER_DATA_FILENAME, result);
 		return false;
 	}
@@ -186,7 +186,7 @@ bool sbbs_t::putuserchat(int usernumber, uint32_t value)
 bool sbbs_t::putuserqwk(int usernumber, uint32_t value)
 {
 	int result = ::putuserqwk(&cfg, usernumber, value);
-	if(result != 0) {
+	if (result != 0) {
 		errormsg(WHERE, ERR_WRITE, USER_DATA_FILENAME, result);
 		return false;
 	}

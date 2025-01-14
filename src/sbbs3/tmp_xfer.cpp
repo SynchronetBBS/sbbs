@@ -27,9 +27,9 @@
 /*****************************************************************************/
 void sbbs_t::temp_xfer()
 {
-	if(!cfg.tempxfer_mod[0]) {
+	if (!cfg.tempxfer_mod[0]) {
 		bprintf(text[DirectoryDoesNotExist], "temp (module)");
-		return; 
+		return;
 	}
 	exec_bin(cfg.tempxfer_mod, &main_csi);
 }
@@ -40,51 +40,51 @@ void sbbs_t::temp_xfer()
 /****************************************************************************/
 uint sbbs_t::create_filelist(const char *name, int mode)
 {
-    char	str[256];
-	FILE*	fp;
-	int		i,j,d;
-	int		l,k;
+	char  str[256];
+	FILE* fp;
+	int   i, j, d;
+	int   l, k;
 
-	if(online == ON_REMOTE)
-		bprintf(text[CreatingFileList],name);
-	SAFEPRINTF2(str,"%s%s",cfg.temp_dir,name);
-	if((fp = fopen(str,"ab")) == NULL) {
-		errormsg(WHERE,ERR_OPEN,str,O_CREAT|O_WRONLY|O_APPEND);
+	if (online == ON_REMOTE)
+		bprintf(text[CreatingFileList], name);
+	SAFEPRINTF2(str, "%s%s", cfg.temp_dir, name);
+	if ((fp = fopen(str, "ab")) == NULL) {
+		errormsg(WHERE, ERR_OPEN, str, O_CREAT | O_WRONLY | O_APPEND);
 		return(0);
 	}
-	k=0;
-	if(mode&FL_ULTIME) {
+	k = 0;
+	if (mode & FL_ULTIME) {
 		fprintf(fp, "New files since: %s\r\n", timestr(ns_time));
 	}
 	unsigned total_dirs = 0;
-	for(i=0; i < usrlibs ;i++)
+	for (i = 0; i < usrlibs ; i++)
 		total_dirs += usrdirs[i];
-	for(i=j=d=0;i<usrlibs;i++) {
-		for(j=0;j<usrdirs[i];j++,d++) {
+	for (i = j = d = 0; i < usrlibs; i++) {
+		for (j = 0; j < usrdirs[i]; j++, d++) {
 			progress(text[Scanning], d, total_dirs);
-			if(mode&FL_ULTIME /* New-scan */
-				&& (cfg.lib[usrlib[i]]->offline_dir==usrdir[i][j]
-				|| cfg.dir[usrdir[i][j]]->misc&DIR_NOSCAN))
+			if (mode & FL_ULTIME /* New-scan */
+			    && (cfg.lib[usrlib[i]]->offline_dir == usrdir[i][j]
+			        || cfg.dir[usrdir[i][j]]->misc & DIR_NOSCAN))
 				continue;
-			l=listfiles(usrdir[i][j], nulstr, fp, mode);
-			if(l==-1)
+			l = listfiles(usrdir[i][j], nulstr, fp, mode);
+			if (l == -1)
 				break;
-			k+=l;
+			k += l;
 		}
-		if(j<usrdirs[i])
+		if (j < usrdirs[i])
 			break;
 	}
 	progress(text[Done], d, total_dirs);
-	if(k>1) {
-		fprintf(fp,"\r\n%d Files Listed.\r\n",k);
+	if (k > 1) {
+		fprintf(fp, "\r\n%d Files Listed.\r\n", k);
 	}
 	fclose(fp);
-	if(k)
-		bprintf(text[CreatedFileList],name);
+	if (k)
+		bprintf(text[CreatedFileList], name);
 	else {
-		if(online == ON_REMOTE)
+		if (online == ON_REMOTE)
 			bputs(text[NoFiles]);
-		SAFEPRINTF2(str,"%s%s",cfg.temp_dir,name);
+		SAFEPRINTF2(str, "%s%s", cfg.temp_dir, name);
 		remove(str);
 	}
 	return(k);
@@ -98,13 +98,13 @@ const char* sbbs_t::temp_cmd(int& ex_mode)
 {
 	int i;
 
-	if(!cfg.total_fcomps) {
-		errormsg(WHERE,ERR_CHK,"compressible file types",0);
-		return(nulstr); 
+	if (!cfg.total_fcomps) {
+		errormsg(WHERE, ERR_CHK, "compressible file types", 0);
+		return(nulstr);
 	}
-	for(i=0;i<cfg.total_fcomps;i++)
-		if(!stricmp(useron.tmpext,cfg.fcomp[i]->ext)
-			&& chk_ar(cfg.fcomp[i]->ar,&useron,&client)) {
+	for (i = 0; i < cfg.total_fcomps; i++)
+		if (!stricmp(useron.tmpext, cfg.fcomp[i]->ext)
+		    && chk_ar(cfg.fcomp[i]->ar, &useron, &client)) {
 			ex_mode |= cfg.fcomp[i]->ex_mode;
 			return(cfg.fcomp[i]->cmd);
 		}

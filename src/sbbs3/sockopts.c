@@ -20,28 +20,28 @@
  ****************************************************************************/
 
 #include "sbbs.h"
-#include "ini_file.h"	/* ini file API */
+#include "ini_file.h"   /* ini file API */
 
 int set_socket_options(scfg_t* cfg, SOCKET sock, const char* protocol, char* error, size_t errlen)
 {
-	char		cfgfile[MAX_PATH+1];
-	FILE*		fp;
-	int			type=0;		// Assignment is to silence Valgrind
-	int			result=0;
-	str_list_t	list;
-	socklen_t	len;
+	char       cfgfile[MAX_PATH + 1];
+	FILE*      fp;
+	int        type = 0;    // Assignment is to silence Valgrind
+	int        result = 0;
+	str_list_t list;
+	socklen_t  len;
 
 	len = sizeof(type);
-	result=getsockopt(sock,SOL_SOCKET,SO_TYPE,(void*)&type,&len);
-	if(result) {
-		safe_snprintf(error,errlen,"%d getting socket option type (%d)"
-			,SOCKET_ERRNO, SO_TYPE);
+	result = getsockopt(sock, SOL_SOCKET, SO_TYPE, (void*)&type, &len);
+	if (result) {
+		safe_snprintf(error, errlen, "%d getting socket option type (%d)"
+		              , SOCKET_ERRNO, SO_TYPE);
 		return(result);
 	}
 
 	/* Set user defined socket options */
-	iniFileName(cfgfile,sizeof(cfgfile),cfg->ctrl_dir,"sockopts.ini");
-	if((fp=iniOpenFile(cfgfile,FALSE))==NULL) {
+	iniFileName(cfgfile, sizeof(cfgfile), cfg->ctrl_dir, "sockopts.ini");
+	if ((fp = iniOpenFile(cfgfile, FALSE)) == NULL) {
 		int optval = 1;
 #if defined(IPPROTO_IPV6) && defined(IPV6_V6ONLY)
 		// Set the only sane choice...
@@ -49,21 +49,21 @@ int set_socket_options(scfg_t* cfg, SOCKET sock, const char* protocol, char* err
 #endif
 		return(0);
 	}
-	list=iniReadFile(fp);
+	list = iniReadFile(fp);
 	fclose(fp);
 
-	result=iniGetSocketOptions(list,ROOT_SECTION,sock,error,errlen);
+	result = iniGetSocketOptions(list, ROOT_SECTION, sock, error, errlen);
 
-	if(result==0) {
-		const char* section = (type==SOCK_STREAM) ? "tcp":"udp";
+	if (result == 0) {
+		const char*     section = (type == SOCK_STREAM) ? "tcp":"udp";
 		struct sockaddr sockaddr;
-		socklen_t len = sizeof(sockaddr);
-		if(getsockname(sock, &sockaddr, &len) == 0 && sockaddr.sa_family == PF_UNIX)
+		socklen_t       len = sizeof(sockaddr);
+		if (getsockname(sock, &sockaddr, &len) == 0 && sockaddr.sa_family == PF_UNIX)
 			section = "unix";
-		result=iniGetSocketOptions(list,section,sock,error,errlen);
+		result = iniGetSocketOptions(list, section, sock, error, errlen);
 	}
-	if(result==0 && protocol!=NULL && *protocol!=0)
-		result=iniGetSocketOptions(list,protocol,sock,error,errlen);
+	if (result == 0 && protocol != NULL && *protocol != 0)
+		result = iniGetSocketOptions(list, protocol, sock, error, errlen);
 
 	iniFreeStringList(list);
 

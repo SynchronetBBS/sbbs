@@ -19,22 +19,22 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#include <stdio.h>		/* NULL */
-#include <stdlib.h>		/* malloc() */
+#include <stdio.h>      /* NULL */
+#include <stdlib.h>     /* malloc() */
 #include "eventwrap.h"
 #include "genwrap.h"
 
 xpevent_t
 CreateEvent(void *sec, BOOL bManualReset, BOOL bInitialState, const char *name)
 {
-	xpevent_t	event;
+	xpevent_t event;
 
 	event = (xpevent_t)malloc(sizeof(struct xpevent));
 	if (event == NULL) {
 		errno = ENOSPC;
 		return(NULL);
 	}
-	memset(event,0,sizeof(struct xpevent));
+	memset(event, 0, sizeof(struct xpevent));
 
 	/*
 	 * Initialize
@@ -46,17 +46,17 @@ CreateEvent(void *sec, BOOL bManualReset, BOOL bInitialState, const char *name)
 	}
 
 	if (pthread_cond_init(&event->gtzero, NULL) != 0) {
-		while(pthread_mutex_destroy(&event->lock)==EBUSY)
+		while (pthread_mutex_destroy(&event->lock) == EBUSY)
 			SLEEP(1);
 		free(event);
 		errno = ENOSPC;
 		return(NULL);
 	}
 
-	event->mreset=bManualReset;
-	event->value=bInitialState;
+	event->mreset = bManualReset;
+	event->value = bInitialState;
 	event->nwaiters = 0;
-	event->magic=EVENT_MAGIC;
+	event->magic = EVENT_MAGIC;
 
 	return(event);
 }
@@ -64,14 +64,14 @@ CreateEvent(void *sec, BOOL bManualReset, BOOL bInitialState, const char *name)
 BOOL
 SetEvent(xpevent_t event)
 {
-	if (event==NULL || (event->magic != EVENT_MAGIC)) {
+	if (event == NULL || (event->magic != EVENT_MAGIC)) {
 		errno = EINVAL;
 		return(FALSE);
 	}
 
 	pthread_mutex_lock(&event->lock);
 
-	event->value=TRUE;
+	event->value = TRUE;
 	if (event->nwaiters > 0) {
 		/*
 		 * We must use pthread_cond_broadcast() rather than
@@ -90,14 +90,14 @@ SetEvent(xpevent_t event)
 BOOL
 ResetEvent(xpevent_t event)
 {
-	if (event==NULL || (event->magic != EVENT_MAGIC)) {
+	if (event == NULL || (event->magic != EVENT_MAGIC)) {
 		errno = EINVAL;
 		return(FALSE);
 	}
 
 	pthread_mutex_lock(&event->lock);
 
-	event->value=FALSE;
+	event->value = FALSE;
 
 	pthread_mutex_unlock(&event->lock);
 
@@ -107,7 +107,7 @@ ResetEvent(xpevent_t event)
 BOOL
 CloseEvent(xpevent_t event)
 {
-	if (event==NULL || (event->magic != EVENT_MAGIC)) {
+	if (event == NULL || (event->magic != EVENT_MAGIC)) {
 		errno = EINVAL;
 		return(FALSE);
 	}
@@ -122,9 +122,9 @@ CloseEvent(xpevent_t event)
 
 	pthread_mutex_unlock(&event->lock);
 
-	while(pthread_mutex_destroy(&event->lock)==EBUSY)
+	while (pthread_mutex_destroy(&event->lock) == EBUSY)
 		SLEEP(1);
-	while(pthread_cond_destroy(&event->gtzero)==EBUSY)
+	while (pthread_cond_destroy(&event->gtzero) == EBUSY)
 		SLEEP(1);
 	event->magic = 0;
 
@@ -136,54 +136,54 @@ CloseEvent(xpevent_t event)
 DWORD
 WaitForEvent(xpevent_t event, DWORD ms)
 {
-	DWORD	retval=WAIT_FAILED;
+	DWORD           retval = WAIT_FAILED;
 	struct timespec abstime;
-	struct timeval currtime;
+	struct timeval  currtime;
 
-	if (event==NULL || (event->magic != EVENT_MAGIC)) {
+	if (event == NULL || (event->magic != EVENT_MAGIC)) {
 		errno = EINVAL;
 		return(WAIT_FAILED);
 	}
 
-	if(ms && ms!=INFINITE) {
-		gettimeofday(&currtime,NULL);
-		abstime.tv_sec=currtime.tv_sec + ((currtime.tv_usec/1000 + ms)/1000);
-		abstime.tv_nsec=(currtime.tv_usec*1000 + ms*1000000)%1000000000;
+	if (ms && ms != INFINITE) {
+		gettimeofday(&currtime, NULL);
+		abstime.tv_sec = currtime.tv_sec + ((currtime.tv_usec / 1000 + ms) / 1000);
+		abstime.tv_nsec = (currtime.tv_usec * 1000 + ms * 1000000) % 1000000000;
 	}
 
 	pthread_mutex_lock(&event->lock);
 
-	if(event->value)
-		retval=WAIT_OBJECT_0;
+	if (event->value)
+		retval = WAIT_OBJECT_0;
 
-	while ((!(event->value)) || (event->verify!=NULL && !event->verify(event->cbdata))) {
+	while ((!(event->value)) || (event->verify != NULL && !event->verify(event->cbdata))) {
 		event->nwaiters++;
-		switch(ms) {
+		switch (ms) {
 			case 0:
-				if(event->value)
-					retval=WAIT_OBJECT_0;
+				if (event->value)
+					retval = WAIT_OBJECT_0;
 				else
-					retval=WAIT_TIMEOUT;
+					retval = WAIT_TIMEOUT;
 				event->nwaiters--;
 				goto DONE;
 				break;
 			case INFINITE:
-				retval=pthread_cond_wait(&event->gtzero, &event->lock);
-				if(retval) {
-					errno=retval;
-					retval=WAIT_FAILED;
+				retval = pthread_cond_wait(&event->gtzero, &event->lock);
+				if (retval) {
+					errno = retval;
+					retval = WAIT_FAILED;
 					event->nwaiters--;
 					goto DONE;
 				}
 				break;
 			default:
-				retval=pthread_cond_timedwait(&event->gtzero, &event->lock, &abstime);
-				if(retval)  {
-					if(retval==ETIMEDOUT)
-						retval=WAIT_TIMEOUT;
+				retval = pthread_cond_timedwait(&event->gtzero, &event->lock, &abstime);
+				if (retval)  {
+					if (retval == ETIMEDOUT)
+						retval = WAIT_TIMEOUT;
 					else {
-						errno=retval;
-						retval=WAIT_FAILED;
+						errno = retval;
+						retval = WAIT_FAILED;
 					}
 					event->nwaiters--;
 					goto DONE;
@@ -192,11 +192,11 @@ WaitForEvent(xpevent_t event, DWORD ms)
 		event->nwaiters--;
 	}
 
-  DONE:
+DONE:
 
-	if(retval==WAIT_OBJECT_0) {
-		if(!event->mreset)
-			event->value=FALSE;
+	if (retval == WAIT_OBJECT_0) {
+		if (!event->mreset)
+			event->value = FALSE;
 	}
 
 	pthread_mutex_unlock(&event->lock);

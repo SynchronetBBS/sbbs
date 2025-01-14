@@ -15,7 +15,7 @@ char* ltoa(long val, char* str, int radix);
 #endif
 
 #if (!defined(__MINGW32__)) || (__GNUC__ < 5)
-#define strset(x,y)	memset(x, y, strlen(x))
+#define strset(x, y) memset(x, y, strlen(x))
 #endif
 
 #endif

@@ -30,30 +30,30 @@
 /****************************************************************************/
 int sbbs_t::viewfile(file_t* f, bool ext)
 {
-	char	ch,str[256];
-	char	fname[13];	/* This is one of the only 8.3 filename formats left! (used for display purposes only) */
-	format_filename(f->name, fname, sizeof(fname)-1, /* pad: */FALSE);
+	char ch, str[256];
+	char fname[13];     /* This is one of the only 8.3 filename formats left! (used for display purposes only) */
+	format_filename(f->name, fname, sizeof(fname) - 1, /* pad: */ FALSE);
 
-	curdirnum=f->dir;	/* for ARS */
-	bool	can_edit = dir_op(f->dir) || useron.exempt&FLAG('R') || stricmp(f->from, useron.alias) == 0;
-	while(online) {
+	curdirnum = f->dir;   /* for ARS */
+	bool can_edit = dir_op(f->dir) || useron.exempt & FLAG('R') || stricmp(f->from, useron.alias) == 0;
+	while (online) {
 		sys_status &= ~SS_ABORT;
 		SAFEPRINTF(str, text[FileInfoPrompt], fname);
-		if(ext) {
+		if (ext) {
 			showfileinfo(f);
-			if(can_edit)
+			if (can_edit)
 				SAFEPRINTF(str, text[FileInfoEditPrompt], fname);
 		} else
 			viewfilecontents(f);
 		sync();
 		mnemonics(str);
 		SAFECOPY(str, "BEVQPN\b-\r");
-		if(can_edit)
+		if (can_edit)
 			SAFECAT(str, "D");
-		ch=(char)getkeys(str, 0);
-		if(ch=='Q' || sys_status&SS_ABORT)
+		ch = (char)getkeys(str, 0);
+		if (ch == 'Q' || sys_status & SS_ABORT)
 			return(0);
-		switch(ch) {
+		switch (ch) {
 			case 'B':
 				addtobatdl(f);
 				CRLF;
@@ -62,8 +62,8 @@ int sbbs_t::viewfile(file_t* f, bool ext)
 				editfiledesc(f);
 				continue;
 			case 'E':
-				if(ext && can_edit) {
-					if(!editfiledesc(f))
+				if (ext && can_edit) {
+					if (!editfiledesc(f))
 						continue;
 					editfileinfo(f);
 				} else
@@ -78,8 +78,8 @@ int sbbs_t::viewfile(file_t* f, bool ext)
 				return -2;
 			case 'N':
 			case CR:
-				return(1); 
-		} 
+				return(1);
+		}
 	}
 	return(0);
 }
@@ -88,24 +88,24 @@ int sbbs_t::viewfile(file_t* f, bool ext)
 /*****************************************************************************/
 bool sbbs_t::viewfile(const char* inpath)
 {
-	char	path[MAX_PATH + 1];
-    int		i;
+	char path[MAX_PATH + 1];
+	int  i;
 
 	SAFECOPY(path, inpath);
-	if(!fexistcase(path)) {
+	if (!fexistcase(path)) {
 		bputs(text[FileNotFound]);
-		return false; 
+		return false;
 	}
-	for(i=0;i<cfg.total_fviews;i++)
-		if(file_type_match(path, cfg.fview[i]->ext) && chk_ar(cfg.fview[i]->ar,&useron,&client)) {
+	for (i = 0; i < cfg.total_fviews; i++)
+		if (file_type_match(path, cfg.fview[i]->ext) && chk_ar(cfg.fview[i]->ar, &useron, &client)) {
 			break;
 		}
-	if(i >= cfg.total_fviews) {
+	if (i >= cfg.total_fviews) {
 		bprintf(text[NonviewableFile], getfname(path));
 		return false;
 	}
 	fview_t* fview = cfg.fview[i];
-	if((i = external(cmdstr(fview->cmd, path, path, NULL, fview->ex_mode), fview->ex_mode)) != 0) {
+	if ((i = external(cmdstr(fview->cmd, path, path, NULL, fview->ex_mode), fview->ex_mode)) != 0) {
 		errormsg(WHERE, ERR_EXEC, cmdstr_output, i);    /* must have EX_SH to ^C */
 		return false;
 	}
@@ -116,11 +116,11 @@ bool sbbs_t::viewfile(const char* inpath)
 /****************************************************************************/
 bool sbbs_t::viewfilecontents(file_t* f)
 {
-	char	path[MAX_PATH + 1];
+	char path[MAX_PATH + 1];
 
 	getfilepath(&cfg, f, path);
 	uint savedir = curdirnum;
-	curdirnum = f->dir;	/* for ARS */
+	curdirnum = f->dir; /* for ARS */
 	bool result = viewfile(path);
 	curdirnum = savedir;
 	return result;

@@ -37,6 +37,6 @@ uint16_t icrc16(uint16_t crc, const char* data, size_t len);
 }
 #endif
 
-#define ucrc16(ch,crc) (crc16tbl[((crc>>8)&0xff)^(unsigned char)ch]^(crc << 8))
+#define ucrc16(ch, crc) (crc16tbl[((crc >> 8) & 0xff) ^ (unsigned char)ch] ^ (crc << 8))
 
-#endif	/* Don't add anything after this line */
+#endif  /* Don't add anything after this line */

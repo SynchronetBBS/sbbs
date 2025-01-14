@@ -10,8 +10,8 @@ void child(void* arg)
 	char* path = (char*)arg;
 
 	printf("Opening in child thread: ");
-	int fd = open(path, access_, DEFFILEMODE);
-	if(fd < 0)
+	int   fd = open(path, access_, DEFFILEMODE);
+	if (fd < 0)
 		perror(path);
 	else {
 		printf("Success\n");
@@ -22,13 +22,13 @@ void child(void* arg)
 int main(int argc, char** argv)
 {
 	char* share = "NWA";
-	bool try_all = true;
-	bool loop = false;
-	bool rm = false;
-	bool second = false;
-	bool thread = false;
+	bool  try_all = true;
+	bool  loop = false;
+	bool  rm = false;
+	bool  second = false;
+	bool  thread = false;
 
-	if(argc < 2) {
+	if (argc < 2) {
 		printf("usage: sopenfile [-opts] <path/filename> [share-mode]\n");
 		printf("\n");
 		printf("-r           open file read-only instead of read/write\n");
@@ -44,33 +44,33 @@ int main(int argc, char** argv)
 		return EXIT_SUCCESS;
 	}
 	int argn = 1;
-	for(; argn < argc; ++argn) {
-		if(strcmp(argv[argn], "-r") == 0)
+	for (; argn < argc; ++argn) {
+		if (strcmp(argv[argn], "-r") == 0)
 			access_ = O_RDONLY;
-		else if(strcmp(argv[argn], "-c") == 0)
+		else if (strcmp(argv[argn], "-c") == 0)
 			access_ |= O_CREAT;
-		else if(strcmp(argv[argn], "-2") == 0)
+		else if (strcmp(argv[argn], "-2") == 0)
 			second = true;
-		else if(strcmp(argv[argn], "-t") == 0)
+		else if (strcmp(argv[argn], "-t") == 0)
 			thread = true;
-		else if(strcmp(argv[argn], "-l") == 0)
+		else if (strcmp(argv[argn], "-l") == 0)
 			loop = true;
-		else if(strcmp(argv[argn], "-R") == 0)
+		else if (strcmp(argv[argn], "-R") == 0)
 			rm = true;
 		else
 			break;
 	}
 	const char* path = argv[argn++];
-	if(argc > argn) {
+	if (argc > argn) {
 		share = argv[argn++];
 		try_all = false;
 	}
 
 	do {
-		for(int i = 0; share[i] != '\0'; ++i) {
-			int share_mode = 0;
+		for (int i = 0; share[i] != '\0'; ++i) {
+			int  share_mode = 0;
 			char share_flag = share[i];
-			switch(toupper(share_flag)) {
+			switch (toupper(share_flag)) {
 				case 'N':
 					share_mode = SH_DENYNO;
 					break;
@@ -86,32 +86,32 @@ int main(int argc, char** argv)
 			}
 			fprintf(stderr, "%s Deny-%c (share mode %x): ", path, toupper(share_flag), share_mode);
 			int file = sopen(path, access_, share_mode, DEFFILEMODE);
-			if(file < 0)
+			if (file < 0)
 				fprintf(stderr, "Error %d (%s)\n", errno, strerror(errno));
 			else {
 				printf("Success\n");
-				if(second) {
+				if (second) {
 					printf("Opening second descriptor: ");
 					int fd2 = open(path, access_, DEFFILEMODE);
-					if(fd2 < 0)
+					if (fd2 < 0)
 						fprintf(stderr, "Error %d (%s)\n", errno, strerror(errno));
 					else {
 						printf("Success\n");
 						printf("close(%s) = %d\n", path, close(fd2));
 					}
 				}
-				if(thread)
+				if (thread)
 					_beginthread(child, 0, (void*)path);
-				if(rm)
+				if (rm)
 					printf("remove(%s) = %d\n", path, unlink(path));
-				if(!try_all) {
+				if (!try_all) {
 					fprintf(stderr, "Hit enter\n");
 					getchar();
 				}
 				close(file);
 			}
 		}
-	} while(loop && errno == 0);
+	} while (loop && errno == 0);
 	return errno == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 

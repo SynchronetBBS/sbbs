@@ -22,23 +22,23 @@
 /* OS-specific */
 #if defined(__unix__)
 
-#include <stdarg.h>		/* va_list */
+#include <stdarg.h>     /* va_list */
 #include <string.h>     /* strlen() */
 #include <unistd.h>     /* getpid() */
 #include <fcntl.h>      /* fcntl() file/record locking */
-#include <sys/file.h>	/* L_SET for Solaris */
+#include <sys/file.h>   /* L_SET for Solaris */
 #include <errno.h>
-#include <sys/param.h>	/* BSD */
+#include <sys/param.h>  /* BSD */
 
 #endif
 
 /* ANSI */
-#include <sys/types.h>	/* _dev_t */
-#include <sys/stat.h>	/* struct stat */
-#include <limits.h>	/* struct stat */
-#include <stdlib.h>		/* realloc() */
+#include <sys/types.h>  /* _dev_t */
+#include <sys/stat.h>   /* struct stat */
+#include <limits.h> /* struct stat */
+#include <stdlib.h>     /* realloc() */
 
-#include "filewrap.h"	/* Verify prototypes */
+#include "filewrap.h"   /* Verify prototypes */
 
 /****************************************************************************/
 /* Returns the modification time of the file in 'fd'						*/
@@ -48,7 +48,7 @@ time_t filetime(int fd)
 {
 	struct stat st;
 
-	if(fstat(fd, &st)!=0)
+	if (fstat(fd, &st) != 0)
 		return(-1);
 
 	return(st.st_mtime);
@@ -64,7 +64,7 @@ off_t filelength(int fd)
 {
 	struct stat st;
 
-	if(fstat(fd, &st)!=0)
+	if (fstat(fd, &st) != 0)
 		return(-1L);
 
 	return(st.st_size);
@@ -75,7 +75,7 @@ off_t filelength(int fd)
 /*************************************/
 #if defined __linux__
 	#define USE_FCNTL_LOCKS
-	// See https://patchwork.kernel.org/patch/9289177/
+// See https://patchwork.kernel.org/patch/9289177/
 	#if defined F_OFD_SETLK && _FILE_OFFSET_BITS != 64
 		#undef F_OFD_SETLK
 	#endif
@@ -97,26 +97,26 @@ int xp_lockfile(int fd, off_t pos, off_t len, bool block)
 	struct flock alock = {0};
 
 	// fcntl() will return EBADF if we try to set a write lock a file opened O_RDONLY
-	int	flags;
-	if((flags=fcntl(fd,F_GETFL))==-1)
+	int          flags;
+	if ((flags = fcntl(fd, F_GETFL)) == -1)
 		return -1;
-	if((flags & (O_RDONLY|O_RDWR|O_WRONLY))==O_RDONLY)
+	if ((flags & (O_RDONLY | O_RDWR | O_WRONLY)) == O_RDONLY)
 		alock.l_type = F_RDLCK; /* set read lock to prevent writes */
 	else
 		alock.l_type = F_WRLCK; /* set write lock to prevent all access */
-	alock.l_whence = L_SET;		/* SEEK_SET */
+	alock.l_whence = L_SET;     /* SEEK_SET */
 	alock.l_start = pos;
 	alock.l_len = (int)len;
 
 	int result = fcntl(fd, block ? F_SETLKW : F_SETLK, &alock);
-	if(result == -1 && errno != EINVAL)
+	if (result == -1 && errno != EINVAL)
 		return -1;
 #elif !defined(__QNX__) && !defined(__solaris__)
 	int op = LOCK_EX;
-	if(!block)
+	if (!block)
 		op |= LOCK_NB;
 	/* use flock (doesn't work over NFS) */
-	if(flock(fd, op) != 0  && errno != EOPNOTSUPP)
+	if (flock(fd, op) != 0  && errno != EOPNOTSUPP)
 		return(-1);
 #endif
 	return(0);
@@ -134,11 +134,11 @@ int unlock(int fd, off_t pos, off_t len)
 	alock.l_start = pos;
 	alock.l_len = (int)len;
 	int result = fcntl(fd, F_SETLK, &alock);
-	if(result == -1 && errno != EINVAL)
+	if (result == -1 && errno != EINVAL)
 		return -1;
 #elif !defined(__QNX__) && !defined(__solaris__)
 	/* use flock (doesn't work over NFS) */
-	if(flock(fd,LOCK_UN|LOCK_NB)!=0 && errno != EOPNOTSUPP)
+	if (flock(fd, LOCK_UN | LOCK_NB) != 0 && errno != EOPNOTSUPP)
 		return(-1);
 #endif
 
@@ -148,10 +148,10 @@ int unlock(int fd, off_t pos, off_t len)
 /* Opens a file in specified sharing (file-locking) mode */
 /*
  * This is how it *SHOULD* work:
- * Values of DOS 2-6.22 file sharing behavior: 
- *          | Second and subsequent Opens 
- * First    |Compat Deny   Deny   Deny   Deny 
- * Open     |       All    Write  Read   None 
+ * Values of DOS 2-6.22 file sharing behavior:
+ *          | Second and subsequent Opens
+ * First    |Compat Deny   Deny   Deny   Deny
+ * Open     |       All    Write  Read   None
  *          |R W RW R W RW R W RW R W RW R W RW
  * - - - - -| - - - - - - - - - - - - - - - - -
  * Compat R |Y Y Y  N N N  1 N N  N N N  1 N N
@@ -165,38 +165,38 @@ int unlock(int fd, off_t pos, off_t len)
  * Deny   R |2 C C  N N N  Y N N  N N N  Y N N
  * Write  W |C C C  N N N  N N N  Y N N  Y N N
  *        RW|C C C  N N N  N N N  N N N  Y N N
- * - - - - -| 
+ * - - - - -|
  * Deny   R |C C C  N N N  N Y N  N N N  N Y N
  * Read   W |C C C  N N N  N N N  N Y N  N Y N
  *        RW|C C C  N N N  N N N  N N N  N Y N
- * - - - - -| 
+ * - - - - -|
  * Deny   R |2 C C  N N N  Y Y Y  N N N  Y Y Y
  * None   W |C C C  N N N  N N N  Y Y Y  Y Y Y
  *        RW|C C C  N N N  N N N  N N N  Y Y Y
- * 
+ *
  * Legend:
- * Y = open succeeds, 
- * N = open fails with error code 05h. 
- * C = open fails, INT 24 generated. 
- * 1 = open succeeds if file read-only, else fails with error code. 
- * 2 = open succeeds if file read-only, else fails with INT 24 
+ * Y = open succeeds,
+ * N = open fails with error code 05h.
+ * C = open fails, INT 24 generated.
+ * 1 = open succeeds if file read-only, else fails with error code.
+ * 2 = open succeeds if file read-only, else fails with INT 24
  */
 #if !defined(__QNX__)
 int sopen(const char *fn, int sh_access, int share, ...)
 {
-	int fd;
+	int     fd;
 #ifdef S_IREAD
-	int pmode=S_IREAD;
+	int     pmode = S_IREAD;
 #else
-	int pmode=0;
+	int     pmode = 0;
 #endif
-    va_list ap;
+	va_list ap;
 
-    if(sh_access&O_CREAT) {
-        va_start(ap,share);
-        pmode = va_arg(ap,unsigned int);
-        va_end(ap);
-    }
+	if (sh_access & O_CREAT) {
+		va_start(ap, share);
+		pmode = va_arg(ap, unsigned int);
+		va_end(ap);
+	}
 
 	if ((fd = open(fn, sh_access, pmode)) < 0)
 		return -1;
@@ -208,28 +208,28 @@ int sopen(const char *fn, int sh_access, int share, ...)
 
 	struct flock alock = {0}; // lock entire file from offset 0
 
-	if(share == SH_DENYWR)
+	if (share == SH_DENYWR)
 		alock.l_type = F_RDLCK; /* set read lock to prevent writes */
 	else
 		alock.l_type = F_WRLCK; /* set write lock to prevent all access */
 
-	if(fcntl(fd, F_SETLK, &alock) != 0) {
+	if (fcntl(fd, F_SETLK, &alock) != 0) {
 		close(fd);
 		return -1;
 	}
 
 #elif !defined(__solaris__)
 
-	int	flock_op=LOCK_NB;	/* non-blocking */
+	int flock_op = LOCK_NB;   /* non-blocking */
 
 	/* use flock (doesn't work over NFS) */
-	if(share==SH_DENYRW)
-		flock_op|=LOCK_EX;
+	if (share == SH_DENYRW)
+		flock_op |= LOCK_EX;
 	else   /* SH_DENYWR */
-		flock_op|=LOCK_SH;
-	if(flock(fd,flock_op)!=0 && errno != EOPNOTSUPP) { /* That object doesn't do locks */
-		if(errno==EWOULDBLOCK) 
-			errno=EAGAIN;
+		flock_op |= LOCK_SH;
+	if (flock(fd, flock_op) != 0 && errno != EOPNOTSUPP) { /* That object doesn't do locks */
+		if (errno == EWOULDBLOCK)
+			errno = EAGAIN;
 		close(fd);
 		return(-1);
 	}
@@ -240,9 +240,9 @@ int sopen(const char *fn, int sh_access, int share, ...)
 
 #elif defined(_MSC_VER) || defined(__MINGW32__) || defined(__DMC__)
 
-#include <io.h>				/* tell */
-#include <stdio.h>			/* SEEK_SET */
-#include <sys/locking.h>	/* _locking */
+#include <io.h>             /* tell */
+#include <stdio.h>          /* SEEK_SET */
+#include <sys/locking.h>    /* _locking */
 
 /* Fix MinGW locking.h typo */
 #if defined LK_UNLOCK && !defined LK_UNLCK
@@ -251,30 +251,30 @@ int sopen(const char *fn, int sh_access, int share, ...)
 
 int unlock(int file, off_t offset, off_t size)
 {
-	int	i;
-	off_t	pos;
+	int   i;
+	off_t pos;
 
-	pos=tell(file);
-	if(offset!=pos)
+	pos = tell(file);
+	if (offset != pos)
 		(void)lseek(file, offset, SEEK_SET);
-	i = _locking(file,LK_UNLCK,(long)size);
-	if(offset!=pos)
+	i = _locking(file, LK_UNLCK, (long)size);
+	if (offset != pos)
 		(void)lseek(file, pos, SEEK_SET);
 	return(i);
 }
 
-#endif	/* !__unix__ && (_MSC_VER || __MINGW32__ || __DMC__) */
+#endif  /* !__unix__ && (_MSC_VER || __MINGW32__ || __DMC__) */
 
 int lock(int fd, off_t pos, off_t len)
 {
-	return xp_lockfile(fd, pos, len, /* block */false);
+	return xp_lockfile(fd, pos, len, /* block */ false);
 }
 
-#if defined(_WIN32 )
+#if defined(_WIN32)
 static size_t
 p2roundup(size_t n)
 {
-	if(n & (n-1)) {	// If n isn't a power of two already...
+	if (n & (n - 1)) { // If n isn't a power of two already...
 		n--;
 		n |= n >> 1;
 		n |= n >> 2;
@@ -291,18 +291,18 @@ p2roundup(size_t n)
 
 static int expandtofit(char **linep, size_t len, size_t *linecapp)
 {
-	char	*newline;
-	size_t	newcap;
+	char * newline;
+	size_t newcap;
 
-	if(len+1 >= LONG_MAX)
+	if (len + 1 >= LONG_MAX)
 		return -1;
-	if(len > *linecapp) {
-		if(len == LONG_MAX)
+	if (len > *linecapp) {
+		if (len == LONG_MAX)
 			newcap = LONG_MAX;
 		else
 			newcap = p2roundup(len);
 		newline = (char *)realloc(*linep, newcap);
-		if(newline == NULL)
+		if (newline == NULL)
 			return -1;
 		*linecapp = newcap;
 		*linep = newline;
@@ -312,33 +312,33 @@ static int expandtofit(char **linep, size_t len, size_t *linecapp)
 
 long getdelim(char **linep, size_t *linecapp, int delimiter, FILE *stream)
 {
-	size_t	linelen;
-	int		ch;
+	size_t linelen;
+	int    ch;
 
-	if(linep == NULL || linecapp == NULL)
+	if (linep == NULL || linecapp == NULL)
 		return -1;
-	if(*linep == NULL)
+	if (*linep == NULL)
 		*linecapp = 0;
-	if(feof(stream)) {
-		if(expandtofit(linep, 1, linecapp))
+	if (feof(stream)) {
+		if (expandtofit(linep, 1, linecapp))
 			return -1;
-		(*linep)[0]=0;
+		(*linep)[0] = 0;
 		return -1;
 	}
 
 	linelen = 0;
-	for(;;) {
+	for (;;) {
 		ch = fgetc(stream);
-		if(ch == EOF)
+		if (ch == EOF)
 			break;
-		if(expandtofit(linep, linelen+2, linecapp))
+		if (expandtofit(linep, linelen + 2, linecapp))
 			return -1;
-		(*linep)[linelen++]=ch;
-		if(ch == delimiter)
+		(*linep)[linelen++] = ch;
+		if (ch == delimiter)
 			break;
 	}
-	(*linep)[linelen]=0;
-	if(linelen==0)
+	(*linep)[linelen] = 0;
+	if (linelen == 0)
 		return -1;
 	return linelen;
 }
@@ -351,11 +351,11 @@ FILE *_fsopen(const char *pszFilename, const char *pszMode, int shmode)
 	fprintf(stderr, "%s not implemented\n", __func__);
 	return NULL;
 #else
-	int file;
-	int Mode=0;
+	int         file;
+	int         Mode = 0;
 	const char *p;
-	
-	for(p=pszMode;*p;p++)  {
+
+	for (p = pszMode; *p; p++)  {
 		switch (*p)  {
 			case 'r':
 				Mode |= 1;
@@ -373,61 +373,61 @@ FILE *_fsopen(const char *pszFilename, const char *pszMode, int shmode)
 			case 't':
 				break;
 			default:
-				errno=EINVAL;
-			return(NULL);
+				errno = EINVAL;
+				return(NULL);
 		}
 	}
-	switch(Mode)  {
+	switch (Mode)  {
 		case 1:
-			Mode =O_RDONLY;
+			Mode = O_RDONLY;
 			break;
 		case 2:
-			Mode=O_WRONLY|O_CREAT|O_TRUNC;
+			Mode = O_WRONLY | O_CREAT | O_TRUNC;
 			break;
 		case 4:
-			Mode=O_APPEND|O_WRONLY|O_CREAT;
+			Mode = O_APPEND | O_WRONLY | O_CREAT;
 			break;
 		case 9:
-			Mode=O_RDWR|O_CREAT;
+			Mode = O_RDWR | O_CREAT;
 			break;
 		case 10:
-			Mode=O_RDWR|O_CREAT|O_TRUNC;
+			Mode = O_RDWR | O_CREAT | O_TRUNC;
 			break;
 		case 12:
-			Mode=O_RDWR|O_APPEND|O_CREAT;
+			Mode = O_RDWR | O_APPEND | O_CREAT;
 			break;
 		default:
-			errno=EINVAL;
+			errno = EINVAL;
 			return(NULL);
 	}
-	if(Mode&O_CREAT)
-		file=sopen(pszFilename,Mode,shmode,S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+	if (Mode & O_CREAT)
+		file = sopen(pszFilename, Mode, shmode, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 	else
-		file=sopen(pszFilename,Mode,shmode);
-	if(file==-1)
+		file = sopen(pszFilename, Mode, shmode);
+	if (file == -1)
 		return(NULL);
-	return(fdopen(file,pszMode));
+	return(fdopen(file, pszMode));
 #endif
 }
 #endif
 
 #ifdef _WIN32
-#include <sys/locking.h>	/* LK_LOCK */
+#include <sys/locking.h>    /* LK_LOCK */
 #if defined __BORLANDC__
 	#define _locking locking
 #endif
 int xp_lockfile(int file, off_t offset, off_t size, bool block)
 {
-	int	i;
+	int   i;
 	off_t pos;
 
-	pos=tell(file);
-	if(offset!=pos)
+	pos = tell(file);
+	if (offset != pos)
 		(void)lseek(file, offset, SEEK_SET);
 	do {
 		i = _locking(file, block ? LK_LOCK : LK_NBLCK, (long)size);
-	} while(block && i != 0 && errno == EDEADLOCK);
-	if(offset!=pos)
+	} while (block && i != 0 && errno == EDEADLOCK);
+	if (offset != pos)
 		(void)lseek(file, pos, SEEK_SET);
 	return(i);
 }

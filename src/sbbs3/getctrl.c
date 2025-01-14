@@ -26,8 +26,8 @@
 const char* get_ctrl_dir(bool warn)
 {
 	char* p = getenv("SBBSCTRL");
-	if(p == NULL || *p == '\0') {
-		if(warn)
+	if (p == NULL || *p == '\0') {
+		if (warn)
 			fprintf(stderr, "!SBBSCTRL environment variable not set, using default value: " SBBSCTRL_DEFAULT "\n\n");
 		p = SBBSCTRL_DEFAULT;
 	}

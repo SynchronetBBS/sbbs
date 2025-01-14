@@ -35,7 +35,7 @@
 #include "js_request.h"
 #include "jsdebug.h"
 
-scfg_t		scfg;
+scfg_t scfg;
 
 void js_do_lock_input(JSContext *cx, JSBool lock)
 {
@@ -51,9 +51,9 @@ void* DLLCALL js_GetClassPrivate(JSContext *cx, JSObject *obj, JSClass* cls)
 {
 	void *ret = JS_GetInstancePrivate(cx, obj, cls, NULL);
 
-	if(ret == NULL)
+	if (ret == NULL)
 		JS_ReportError(cx, "'%s' instance: No Private Data or Class Mismatch"
-			, cls == NULL ? "???" : cls->name);
+		               , cls == NULL ? "???" : cls->name);
 	return ret;
 }
 
@@ -63,36 +63,36 @@ void call_socket_open_callback(bool open)
 
 SOCKET open_socket(int domain, int type, const char* protocol)
 {
-	SOCKET	sock;
-	char	error[256];
+	SOCKET sock;
+	char   error[256];
 
-	sock=socket(domain, type, IPPROTO_IP);
-	if(sock!=INVALID_SOCKET && set_socket_options(&scfg, sock, protocol, error, sizeof(error)))
-		lprintf(LOG_ERR,"%04d !ERROR %s",sock,error);
+	sock = socket(domain, type, IPPROTO_IP);
+	if (sock != INVALID_SOCKET && set_socket_options(&scfg, sock, protocol, error, sizeof(error)))
+		lprintf(LOG_ERR, "%04d !ERROR %s", sock, error);
 
 	return(sock);
 }
 
 SOCKET accept_socket(SOCKET s, union xp_sockaddr* addr, socklen_t* addrlen)
 {
-	SOCKET	sock;
+	SOCKET sock;
 
-	sock=accept(s,&addr->addr,addrlen);
+	sock = accept(s, &addr->addr, addrlen);
 
 	return(sock);
 }
 
 int close_socket(SOCKET sock)
 {
-	int		result;
+	int result;
 
-	if(sock==INVALID_SOCKET || sock==0)
+	if (sock == INVALID_SOCKET || sock == 0)
 		return(0);
 
-	shutdown(sock,SHUT_RDWR);	/* required on Unix */
-	result=closesocket(sock);
-	if(result!=0 && ERROR_VALUE!=ENOTSOCK)
-		lprintf(LOG_WARNING,"!ERROR %d closing socket %d",ERROR_VALUE,sock);
+	shutdown(sock, SHUT_RDWR);   /* required on Unix */
+	result = closesocket(sock);
+	if (result != 0 && ERROR_VALUE != ENOTSOCK)
+		lprintf(LOG_WARNING, "!ERROR %d closing socket %d", ERROR_VALUE, sock);
 	return(result);
 }
 
@@ -102,18 +102,18 @@ DLLEXPORT void DLLCALL sbbs_srand()
 
 	xp_randomize();
 #if defined(HAS_DEV_RANDOM) && defined(RANDOM_DEV)
-	int     rf,rd=0;
+	int   rf, rd = 0;
 
-	if((rf=open(RANDOM_DEV, O_RDONLY|O_NONBLOCK))!=-1) {
-		rd=read(rf, &seed, sizeof(seed));
+	if ((rf = open(RANDOM_DEV, O_RDONLY | O_NONBLOCK)) != -1) {
+		rd = read(rf, &seed, sizeof(seed));
 		close(rf);
 	}
 	if (rd != sizeof(seed))
 #endif
-		seed = time32(NULL) ^ (uintmax_t)GetCurrentThreadId();
+	seed = time32(NULL) ^ (uintmax_t)GetCurrentThreadId();
 
- 	srand(seed);
-	sbbs_random(10);	/* Throw away first number */
+	srand(seed);
+	sbbs_random(10);    /* Throw away first number */
 }
 
 int DLLCALL sbbs_random(int n)
@@ -126,14 +126,14 @@ DLLCALL js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec
 {
 	uint i;
 
-	for(i=0;props[i].name;i++) {
+	for (i = 0; props[i].name; i++) {
 		if (props[i].tinyid < 256 && props[i].tinyid > -129) {
-			if(!JS_DefinePropertyWithTinyId(cx, obj, 
-			    props[i].name,props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
+			if (!JS_DefinePropertyWithTinyId(cx, obj,
+			                                 props[i].name, props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags | JSPROP_SHARED))
 				return(JS_FALSE);
 		}
 		else {
-			if(!JS_DefineProperty(cx, obj, props[i].name, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
+			if (!JS_DefineProperty(cx, obj, props[i].name, JSVAL_VOID, NULL, NULL, props[i].flags | JSPROP_SHARED))
 				return(JS_FALSE);
 		}
 
@@ -143,13 +143,13 @@ DLLCALL js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec
 }
 
 
-JSBool 
+JSBool
 DLLCALL js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec *funcs)
 {
 	uint i;
 
-	for(i=0;funcs[i].name;i++)
-		if(!JS_DefineFunction(cx, obj, funcs[i].name, funcs[i].call, funcs[i].nargs, 0))
+	for (i = 0; funcs[i].name; i++)
+		if (!JS_DefineFunction(cx, obj, funcs[i].name, funcs[i].call, funcs[i].nargs, 0))
 			return(JS_FALSE);
 	return(JS_TRUE);
 }
@@ -157,45 +157,45 @@ DLLCALL js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec *fun
 JSBool
 DLLCALL js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertySpec* props, jsSyncMethodSpec* funcs, jsConstIntSpec* consts, int flags)
 {
-	uint i;
-	jsval	val;
+	uint  i;
+	jsval val;
 
-	if(props) {
-		for(i=0;props[i].name;i++) {
-			if(name==NULL || strcmp(name, props[i].name)==0) {
+	if (props) {
+		for (i = 0; props[i].name; i++) {
+			if (name == NULL || strcmp(name, props[i].name) == 0) {
 				if (props[i].tinyid < 256 && props[i].tinyid > -129) {
-					if(!JS_DefinePropertyWithTinyId(cx, obj, 
-					    props[i].name,props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
+					if (!JS_DefinePropertyWithTinyId(cx, obj,
+					                                 props[i].name, props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags | JSPROP_SHARED))
 						return(JS_FALSE);
 				}
 				else {
-					if(!JS_DefineProperty(cx, obj, props[i].name, JSVAL_VOID, NULL, NULL, props[i].flags|JSPROP_SHARED))
+					if (!JS_DefineProperty(cx, obj, props[i].name, JSVAL_VOID, NULL, NULL, props[i].flags | JSPROP_SHARED))
 						return(JS_FALSE);
 				}
-				if(name)
+				if (name)
 					return(JS_TRUE);
 			}
 		}
 	}
-	if(funcs) {
-		for(i=0;funcs[i].name;i++) {
-			if(name==NULL || strcmp(name, funcs[i].name)==0) {
-				if(!JS_DefineFunction(cx, obj, funcs[i].name, funcs[i].call, funcs[i].nargs, 0))
+	if (funcs) {
+		for (i = 0; funcs[i].name; i++) {
+			if (name == NULL || strcmp(name, funcs[i].name) == 0) {
+				if (!JS_DefineFunction(cx, obj, funcs[i].name, funcs[i].call, funcs[i].nargs, 0))
 					return(JS_FALSE);
-				if(name)
+				if (name)
 					return(JS_TRUE);
 			}
 		}
 	}
-	if(consts) {
-		for(i=0;consts[i].name;i++) {
-			if(name==NULL || strcmp(name, consts[i].name)==0) {
-				val=INT_TO_JSVAL(consts[i].val);
+	if (consts) {
+		for (i = 0; consts[i].name; i++) {
+			if (name == NULL || strcmp(name, consts[i].name) == 0) {
+				val = INT_TO_JSVAL(consts[i].val);
 
-				if(!JS_DefineProperty(cx, obj, consts[i].name, val ,NULL, NULL, flags))
+				if (!JS_DefineProperty(cx, obj, consts[i].name, val, NULL, NULL, flags))
 					return(JS_FALSE);
 
-				if(name)
+				if (name)
 					return(JS_TRUE);
 			}
 		}
@@ -215,26 +215,26 @@ JSObject* js_CreateConsoleObject(JSContext* cx, JSObject* parent)
 }
 
 bool DLLCALL js_CreateCommonObjects(JSContext* js_cx
-										,scfg_t *unused1
-										,scfg_t *unused2
-										,jsSyncMethodSpec* methods	/* global */
-										,time_t uptime				/* system */
-										,char* host_name			/* system */
-										,char* socklib_desc			/* system */
-										,js_callback_t* cb			/* js */
-										,js_startup_t* js_startup	/* js */
-										,client_t* client			/* client */
-										,SOCKET client_socket		/* client */
-										,CRYPT_CONTEXT session		/* client */
-										,js_server_props_t* props	/* server */
-										,JSObject** glob
-										,struct mqtt* mqtt
-										)
+                                    , scfg_t *unused1
+                                    , scfg_t *unused2
+                                    , jsSyncMethodSpec* methods     /* global */
+                                    , time_t uptime                 /* system */
+                                    , char* host_name               /* system */
+                                    , char* socklib_desc            /* system */
+                                    , js_callback_t* cb             /* js */
+                                    , js_startup_t* js_startup      /* js */
+                                    , client_t* client              /* client */
+                                    , SOCKET client_socket          /* client */
+                                    , CRYPT_CONTEXT session         /* client */
+                                    , js_server_props_t* props      /* server */
+                                    , JSObject** glob
+                                    , struct mqtt* mqtt
+                                    )
 {
-	bool	success=FALSE;
+	bool success = FALSE;
 
 	/* Global Object */
-	if(!js_CreateGlobalObject(js_cx, &scfg, methods, js_startup, glob))
+	if (!js_CreateGlobalObject(js_cx, &scfg, methods, js_startup, glob))
 		return(FALSE);
 #ifdef JS_HAS_CTYPES
 	JS_InitCTypesClass(js_cx, *glob);
@@ -242,67 +242,67 @@ bool DLLCALL js_CreateCommonObjects(JSContext* js_cx
 
 	do {
 		/* System Object */
-		if(js_CreateSystemObject(js_cx, *glob, &scfg, uptime, host_name, socklib_desc, mqtt)==NULL)
+		if (js_CreateSystemObject(js_cx, *glob, &scfg, uptime, host_name, socklib_desc, mqtt) == NULL)
 			break;
 
 		/* Internal JS Object */
-		if(cb!=NULL 
-			&& js_CreateInternalJsObject(js_cx, *glob, cb, js_startup)==NULL)
+		if (cb != NULL
+		    && js_CreateInternalJsObject(js_cx, *glob, cb, js_startup) == NULL)
 			break;
 
 		/* Client Object */
-		if(client!=NULL 
-			&& js_CreateClientObject(js_cx, *glob, "client", client, client_socket, session)==NULL)
+		if (client != NULL
+		    && js_CreateClientObject(js_cx, *glob, "client", client, client_socket, session) == NULL)
 			break;
 
 		/* Server */
-		if(props!=NULL
-			&& js_CreateServerObject(js_cx, *glob, props)==NULL)
+		if (props != NULL
+		    && js_CreateServerObject(js_cx, *glob, props) == NULL)
 			break;
 
 		/* Socket Class */
-		if(js_CreateSocketClass(js_cx, *glob)==NULL)
+		if (js_CreateSocketClass(js_cx, *glob) == NULL)
 			break;
 
 		/* Queue Class */
-		if(js_CreateQueueClass(js_cx, *glob)==NULL)
+		if (js_CreateQueueClass(js_cx, *glob) == NULL)
 			break;
 
 		/* File Class */
-		if(js_CreateFileClass(js_cx, *glob)==NULL)
+		if (js_CreateFileClass(js_cx, *glob) == NULL)
 			break;
 
 		/* Archive Class */
-		if(js_CreateArchiveClass(js_cx, *glob)==NULL)
+		if (js_CreateArchiveClass(js_cx, *glob) == NULL)
 			break;
 
 		/* COM Class */
-		if(js_CreateCOMClass(js_cx, *glob)==NULL)
+		if (js_CreateCOMClass(js_cx, *glob) == NULL)
 			break;
 
 		/* CryptContext Class */
-		if(js_CreateCryptContextClass(js_cx, *glob)==NULL)
+		if (js_CreateCryptContextClass(js_cx, *glob) == NULL)
 			break;
 
 		/* CryptKeyset Class */
-		if(js_CreateCryptKeysetClass(js_cx, *glob)==NULL)
+		if (js_CreateCryptKeysetClass(js_cx, *glob) == NULL)
 			break;
 
 		/* CryptCert Class */
-		if(js_CreateCryptCertClass(js_cx, *glob)==NULL)
+		if (js_CreateCryptCertClass(js_cx, *glob) == NULL)
 			break;
 
-		success=TRUE;
-	} while(0);
+		success = TRUE;
+	} while (0);
 
-	if(!success)
+	if (!success)
 		JS_RemoveObjectRoot(js_cx, glob);
 
 	return(success);
 }
 
-#define PROG_NAME	"JSDoor"
-#define PROG_NAME_LC	"jsdoor"
+#define PROG_NAME   "JSDoor"
+#define PROG_NAME_LC    "jsdoor"
 #define JSDOOR
 
 #include "jsexec.c"

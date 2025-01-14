@@ -22,7 +22,7 @@
 #ifndef hex_h_
 #define hex_h_
 
-#include <stdlib.h>	 // size_t
+#include <stdlib.h>  // size_t
 
 #ifdef __cplusplus
 extern "C" {

@@ -20,10 +20,10 @@
  ****************************************************************************/
 
 #include "dat_file.h"
-#include "genwrap.h"	/* lastchar */
-#include "filewrap.h"	/* chsize */
-#include <stdlib.h>		/* malloc */
-#include "strwrap.h"		/* strdup */
+#include "genwrap.h"    /* lastchar */
+#include "filewrap.h"   /* chsize */
+#include <stdlib.h>     /* malloc */
+#include "strwrap.h"        /* strdup */
 
 /***********************************/
 /* CSV (Comma Separated Value) API */
@@ -41,56 +41,56 @@ static char* csvEncode(char* field)
 	char* nl;
 	bool  enclose;
 
-	if((buf=malloc(strlen(field)*2))==NULL)
+	if ((buf = malloc(strlen(field) * 2)) == NULL)
 		return(NULL);
 
-	nl=strchr(field,'\n');
-	comma=strchr(field,',');
-	quote=strchr(field,'"');
-	first=field[0];
-	last=*lastchar(field);
+	nl = strchr(field, '\n');
+	comma = strchr(field, ',');
+	quote = strchr(field, '"');
+	first = field[0];
+	last = *lastchar(field);
 
-	enclose = (quote || comma || nl || first==' ' || last==' ');
+	enclose = (quote || comma || nl || first == ' ' || last == ' ');
 
-	dst=buf;
-	if(enclose)
-		*(dst++)='"';
-	src=field;
-	while(*src) {
-		if(*src=='"')
-			*(dst++)='"';	/* escape quotes */
-		*(dst++)=*src++;
+	dst = buf;
+	if (enclose)
+		*(dst++) = '"';
+	src = field;
+	while (*src) {
+		if (*src == '"')
+			*(dst++) = '"'; /* escape quotes */
+		*(dst++) = *src++;
 	}
-	if(enclose)
-		*(dst++)='"';
+	if (enclose)
+		*(dst++) = '"';
 
-	*dst=0;
+	*dst = 0;
 
 	return(buf);
 }
 
 char* csvLineCreator(const str_list_t columns)
 {
-	char*	str=NULL;
-	char*	p;
-	char*	val;
-	size_t	i,len;
+	char*  str = NULL;
+	char*  p;
+	char*  val;
+	size_t i, len;
 
-	if(columns==NULL)
+	if (columns == NULL)
 		return(NULL);
 
-	for(i=0;columns[i]!=NULL;i++) {
-		len=strlen(columns[i])*2;
-		if(str)
-			len+=strlen(str);
-		if((p=realloc(str,len))==NULL)
+	for (i = 0; columns[i] != NULL; i++) {
+		len = strlen(columns[i]) * 2;
+		if (str)
+			len += strlen(str);
+		if ((p = realloc(str, len)) == NULL)
 			break;
-		str=p;
-		if(i) strcat(str,",");
-		else  *str=0;
-		if((val=csvEncode(columns[i]))==NULL)
+		str = p;
+		if (i) strcat(str, ",");
+		else *str = 0;
+		if ((val = csvEncode(columns[i])) == NULL)
 			break;
-		strcat(str,val);
+		strcat(str, val);
 		free(val);
 	}
 
@@ -99,24 +99,24 @@ char* csvLineCreator(const str_list_t columns)
 
 str_list_t csvLineParser(const char* line)
 {
-	char*		p;
-	char*		buf;
-	char*		tmp;
-	size_t		count=0;
-	str_list_t	list;
+	char*      p;
+	char*      buf;
+	char*      tmp;
+	size_t     count = 0;
+	str_list_t list;
 
-	if((list=strListInit())==NULL)
+	if ((list = strListInit()) == NULL)
 		return(NULL);
 
-	if((buf=strdup(line))==NULL) {
+	if ((buf = strdup(line)) == NULL) {
 		strListFree(&list);
 		return(NULL);
 	}
 
 	truncsp(buf);
 
-	for(p=strtok_r(buf,",",&tmp);p;p=strtok_r(NULL,",",&tmp))
-		strListAppend(&list,p,count++);
+	for (p = strtok_r(buf, ",", &tmp); p; p = strtok_r(NULL, ",", &tmp))
+		strListAppend(&list, p, count++);
 
 	free(buf);
 
@@ -129,23 +129,23 @@ str_list_t csvLineParser(const char* line)
 
 char* tabLineCreator(const str_list_t columns)
 {
-	char*	str=NULL;
-	char*	p;
-	size_t	i,len;
+	char*  str = NULL;
+	char*  p;
+	size_t i, len;
 
-	if(columns==NULL)
+	if (columns == NULL)
 		return(NULL);
 
-	for(i=0;columns[i]!=NULL;i++) {
-		len=strlen(columns[i])*2;
-		if(str)
-			len+=strlen(str);
-		if((p=realloc(str,len))==NULL)
+	for (i = 0; columns[i] != NULL; i++) {
+		len = strlen(columns[i]) * 2;
+		if (str)
+			len += strlen(str);
+		if ((p = realloc(str, len)) == NULL)
 			break;
-		str=p;
-		if(i) strcat(str,"\t");
-		else  *str=0;
-		strcat(str,columns[i]);
+		str = p;
+		if (i) strcat(str, "\t");
+		else *str = 0;
+		strcat(str, columns[i]);
 	}
 
 	return(str);
@@ -153,22 +153,22 @@ char* tabLineCreator(const str_list_t columns)
 
 str_list_t tabLineParser(const char* line)
 {
-	char*		p;
-	char*		buf;
-	char*		tmp;
-	size_t		count=0;
-	str_list_t	list;
+	char*      p;
+	char*      buf;
+	char*      tmp;
+	size_t     count = 0;
+	str_list_t list;
 
-	if((list=strListInit())==NULL)
+	if ((list = strListInit()) == NULL)
 		return(NULL);
 
-	if((buf=strdup(line))==NULL) {
+	if ((buf = strdup(line)) == NULL) {
 		strListFree(&list);
 		return(NULL);
 	}
 
-	for(p=strtok_r(buf,"\t",&tmp);p;p=strtok_r(NULL,"\t",&tmp))
-		strListAppend(&list,p,count++);
+	for (p = strtok_r(buf, "\t", &tmp); p; p = strtok_r(NULL, "\t", &tmp))
+		strListAppend(&list, p, count++);
 
 	free(buf);
 
@@ -179,24 +179,24 @@ str_list_t tabLineParser(const char* line)
 
 str_list_t dataCreateList(const str_list_t records[], const str_list_t columns, dataLineCreator_t lineCreator)
 {
-	char*		p;
-	str_list_t	list;
-	size_t		i;
-	size_t		li=0;
+	char*      p;
+	str_list_t list;
+	size_t     i;
+	size_t     li = 0;
 
-	if((list=strListInit())==NULL)
+	if ((list = strListInit()) == NULL)
 		return(NULL);
 
-	if(columns!=NULL) {
-		p=lineCreator(columns);
-		strListAppend(&list,p,li++);
+	if (columns != NULL) {
+		p = lineCreator(columns);
+		strListAppend(&list, p, li++);
 		free(p);
 	}
-		
-	if(records!=NULL)
-		for(i=0;records[i]!=NULL;i++) {
-			p=lineCreator(records[i]);
-			strListAppend(&list,p,li++);
+
+	if (records != NULL)
+		for (i = 0; records[i] != NULL; i++) {
+			p = lineCreator(records[i]);
+			strListAppend(&list, p, li++);
 			free(p);
 		}
 
@@ -204,25 +204,25 @@ str_list_t dataCreateList(const str_list_t records[], const str_list_t columns, 
 }
 
 bool dataWriteFile(FILE* fp, const str_list_t records[], const str_list_t columns, const char* separator
-				   ,dataLineCreator_t lineCreator)
+                   , dataLineCreator_t lineCreator)
 {
 #ifdef __EMSCRIPTEN__
 	fprintf(stderr, "%s not implemented.\n", __func__);
 	return FALSE;
 #else
-	size_t		count,total;
-	str_list_t	list;
+	size_t     count, total;
+	str_list_t list;
 
 	rewind(fp);
 
-	if(chsize(fileno(fp),0)!=0)	/* truncate */
+	if (chsize(fileno(fp), 0) != 0) /* truncate */
 		return(FALSE);
 
-	if((list=dataCreateList(records,columns,lineCreator))==NULL)
+	if ((list = dataCreateList(records, columns, lineCreator)) == NULL)
 		return(FALSE);
 
 	total = strListCount(list);
-	count = strListWriteFile(fp,list,separator);
+	count = strListWriteFile(fp, list, separator);
 	strListFree(&list);
 
 	return(count == total);
@@ -231,47 +231,47 @@ bool dataWriteFile(FILE* fp, const str_list_t records[], const str_list_t column
 
 str_list_t* dataParseList(const str_list_t records, str_list_t* columns, dataLineParser_t lineParser)
 {
-	size_t		ri=0;
-	size_t		li=0;
+	size_t      ri = 0;
+	size_t      li = 0;
 	str_list_t* list;
 
-	if(records==NULL)
+	if (records == NULL)
 		return(NULL);
 
-	if((list=(str_list_t*)malloc(sizeof(str_list_t)*(strListCount(records)+1)))==NULL)
+	if ((list = (str_list_t*)malloc(sizeof(str_list_t) * (strListCount(records) + 1))) == NULL)
 		return(NULL);
 
-	if(columns!=NULL) {
-		if((*columns=lineParser(records[ri++]))==NULL) {
+	if (columns != NULL) {
+		if ((*columns = lineParser(records[ri++])) == NULL) {
 			free(list);
 			return(NULL);
 		}
 	}
 
-	while(records[ri]!=NULL)
-		list[li++]=lineParser(records[ri++]);
+	while (records[ri] != NULL)
+		list[li++] = lineParser(records[ri++]);
 
-	list[li]=NULL; /* terminate */
+	list[li] = NULL; /* terminate */
 
 	return(list);
 }
 
-str_list_t*	dataReadFile(FILE* fp, str_list_t* columns, dataLineParser_t lineParser)
+str_list_t* dataReadFile(FILE* fp, str_list_t* columns, dataLineParser_t lineParser)
 {
-	str_list_t*	records;
-	str_list_t	lines;
-	size_t		i;
+	str_list_t* records;
+	str_list_t  lines;
+	size_t      i;
 
 	rewind(fp);
 
-	if((lines=strListReadFile(fp, NULL, 0))==NULL)
+	if ((lines = strListReadFile(fp, NULL, 0)) == NULL)
 		return(NULL);
 
 	/* truncate line-feed chars off end of strings */
-	for(i=0; lines[i]!=NULL; i++)
+	for (i = 0; lines[i] != NULL; i++)
 		truncnl(lines[i]);
 
-	records=dataParseList(lines,columns,lineParser);
+	records = dataParseList(lines, columns, lineParser);
 
 	strListFree(&lines);
 
@@ -280,11 +280,11 @@ str_list_t*	dataReadFile(FILE* fp, str_list_t* columns, dataLineParser_t linePar
 
 bool dataListFree(str_list_t* list)
 {
-	size_t		i;
+	size_t i;
 
-	if(list == NULL)
+	if (list == NULL)
 		return FALSE;
-	for(i=0; list[i]!=NULL; i++)
+	for (i = 0; list[i] != NULL; i++)
 		strListFree(&list[i]);
 
 	strListFree(list);

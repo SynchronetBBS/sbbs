@@ -19,16 +19,16 @@
 #endif
 #ifdef _WIN32
 	#ifdef SBBS_EXPORTS
-		#define DLLEXPORT	__declspec(dllexport)
+		#define DLLEXPORT   __declspec(dllexport)
 	#else
-		#define DLLEXPORT	__declspec(dllimport)
+		#define DLLEXPORT   __declspec(dllimport)
 	#endif
 	#ifdef __BORLANDC__
 		#define DLLCALL
 	#else
 		#define DLLCALL
 	#endif
-#else	/* !_WIN32 */
+#else   /* !_WIN32 */
 	#define DLLEXPORT
 	#define DLLCALL
 #endif

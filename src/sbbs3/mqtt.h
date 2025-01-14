@@ -34,9 +34,9 @@
 #ifdef USE_MOSQUITTO
 	#include <mosquitto.h>
 	#include <mqtt_protocol.h>
-	typedef struct mosquitto* mqtt_handle_t;
+typedef struct mosquitto* mqtt_handle_t;
 #else
-	typedef void* mqtt_handle_t;
+typedef void* mqtt_handle_t;
 #endif
 
 struct mqtt {
@@ -56,15 +56,15 @@ struct mqtt {
 
 enum topic_depth {
 	TOPIC_OTHER,
-	TOPIC_ROOT,			// sbbs/*
-	TOPIC_BBS_LEVEL,	// sbbs/BBSID
-	TOPIC_BBS,			// sbbs/BBSID/*
-	TOPIC_BBS_ACTION,	// sbbs/BBSID/action/*
-	TOPIC_HOST_LEVEL,	// sbbs/BBSID/host/HOSTNAME
-	TOPIC_HOST,			// sbbs/BBSID/host/HOSTNAME/*
-	TOPIC_HOST_EVENT,	// sbbs/BBSID/host/HOSTNAME/event/*
+	TOPIC_ROOT,         // sbbs/*
+	TOPIC_BBS_LEVEL,    // sbbs/BBSID
+	TOPIC_BBS,          // sbbs/BBSID/*
+	TOPIC_BBS_ACTION,   // sbbs/BBSID/action/*
+	TOPIC_HOST_LEVEL,   // sbbs/BBSID/host/HOSTNAME
+	TOPIC_HOST,         // sbbs/BBSID/host/HOSTNAME/*
+	TOPIC_HOST_EVENT,   // sbbs/BBSID/host/HOSTNAME/event/*
 	TOPIC_SERVER_LEVEL, // sbbs/BBSID/host/HOSTNAME/server/SERVER
-	TOPIC_SERVER,		// sbbs/BBSID/host/HOSTNAME/server/SERVER/*
+	TOPIC_SERVER,       // sbbs/BBSID/host/HOSTNAME/server/SERVER/*
 };
 
 #define MQTT_SUCCESS 0 // Same as MOSQ_ERR_SUCCESS
@@ -76,7 +76,7 @@ extern "C" {
 
 DLLEXPORT int mqtt_init(struct mqtt*, scfg_t*, struct startup*);
 DLLEXPORT int mqtt_startup(struct mqtt*, scfg_t*, struct startup*, const char* version
-	,int (*lputs)(int level, const char* str));
+                           , int (*lputs)(int level, const char* str));
 DLLEXPORT int mqtt_online(struct mqtt*);
 DLLEXPORT int mqtt_server_state(struct mqtt*, enum server_state);
 DLLEXPORT int mqtt_errormsg(struct mqtt*, int level, const char*);

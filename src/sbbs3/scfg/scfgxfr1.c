@@ -18,7 +18,7 @@
  ****************************************************************************/
 
 #include "scfg.h"
-#include "ciolib.h"	// CIO_KEY_*
+#include "ciolib.h" // CIO_KEY_*
 
 char* testable_files_help =
 	"`Testable File Types:`\n"
@@ -54,60 +54,60 @@ extern char* native_opt;
 
 void xfer_opts()
 {
-	char	str[128],done;
-	int		i,j,l;
-	static int xfr_dflt;
-	static int fextr_dflt;
-	static int fextr_bar;
-	static int fextr_opt;
-	static int fview_dflt;
-	static int fview_bar;
-	static int fview_opt;
-	static int ftest_dflt;
-	static int ftest_bar;
-	static int ftest_opt;
-	static int fcomp_dflt;
-	static int fcomp_bar;
-	static int fcomp_opt;
-	static int prot_dflt;
-	static int prot_bar;
-	static int prot_opt;
-	static int dlevent_dflt;
-	static int dlevent_bar;
-	static int dlevent_opt;
-	static fextr_t savfextr;
-	static fview_t savfview;
-	static ftest_t savftest;
-	static fcomp_t savfcomp;
-	static prot_t savprot;
+	char             str[128], done;
+	int              i, j, l;
+	static int       xfr_dflt;
+	static int       fextr_dflt;
+	static int       fextr_bar;
+	static int       fextr_opt;
+	static int       fview_dflt;
+	static int       fview_bar;
+	static int       fview_opt;
+	static int       ftest_dflt;
+	static int       ftest_bar;
+	static int       ftest_opt;
+	static int       fcomp_dflt;
+	static int       fcomp_bar;
+	static int       fcomp_opt;
+	static int       prot_dflt;
+	static int       prot_bar;
+	static int       prot_opt;
+	static int       dlevent_dflt;
+	static int       dlevent_bar;
+	static int       dlevent_opt;
+	static fextr_t   savfextr;
+	static fview_t   savfview;
+	static ftest_t   savftest;
+	static fcomp_t   savfcomp;
+	static prot_t    savprot;
 	static dlevent_t savdlevent;
 
-	while(1) {
-		i=0;
-		snprintf(opt[i++], MAX_OPLN, "%-33.33s%s","Min Bytes Free Disk Space"
-			,byte_count_to_str(cfg.min_dspace, str, sizeof(str)));
-		snprintf(opt[i++], MAX_OPLN, "%-33.33s%u","Max Files in Batch UL Queue"
-			,cfg.max_batup);
-		snprintf(opt[i++], MAX_OPLN, "%-33.33s%u","Max Files in Batch DL Queue"
-			,cfg.max_batdn);
-		snprintf(opt[i++], MAX_OPLN, "%-33.33s%u","Max Users in User Transfers"
-			,cfg.max_userxfer);
-		snprintf(opt[i++], MAX_OPLN, "%-33.33s%u%%","Default Credit on Upload"
-			,cfg.cdt_up_pct);
-		snprintf(opt[i++], MAX_OPLN, "%-33.33s%u%%","Default Credit on Download"
-			,cfg.cdt_dn_pct);
-		if(cfg.leech_pct)
+	while (1) {
+		i = 0;
+		snprintf(opt[i++], MAX_OPLN, "%-33.33s%s", "Min Bytes Free Disk Space"
+		         , byte_count_to_str(cfg.min_dspace, str, sizeof(str)));
+		snprintf(opt[i++], MAX_OPLN, "%-33.33s%u", "Max Files in Batch UL Queue"
+		         , cfg.max_batup);
+		snprintf(opt[i++], MAX_OPLN, "%-33.33s%u", "Max Files in Batch DL Queue"
+		         , cfg.max_batdn);
+		snprintf(opt[i++], MAX_OPLN, "%-33.33s%u", "Max Users in User Transfers"
+		         , cfg.max_userxfer);
+		snprintf(opt[i++], MAX_OPLN, "%-33.33s%u%%", "Default Credit on Upload"
+		         , cfg.cdt_up_pct);
+		snprintf(opt[i++], MAX_OPLN, "%-33.33s%u%%", "Default Credit on Download"
+		         , cfg.cdt_dn_pct);
+		if (cfg.leech_pct)
 			snprintf(str, sizeof str, "%u%% after %u seconds"
-				,cfg.leech_pct,cfg.leech_sec);
+			         , cfg.leech_pct, cfg.leech_sec);
 		else
-			SAFECOPY(str,"<disabled>");
-		snprintf(opt[i++], MAX_OPLN, "%-33.33s%s","Leech Protocol Detection",str);
-		if(cfg.file_misc & FM_SAFEST)
+			SAFECOPY(str, "<disabled>");
+		snprintf(opt[i++], MAX_OPLN, "%-33.33s%s", "Leech Protocol Detection", str);
+		if (cfg.file_misc & FM_SAFEST)
 			SAFECOPY(str, "Safest Subset");
 		else
 			SAFEPRINTF2(str, "Most %s, %scluding Spaces"
-				,cfg.file_misc & FM_EXASCII ? "CP437" : "ASCII"
-				,cfg.file_misc & FM_SPACES ? "In" : "Ex");
+			            , cfg.file_misc & FM_EXASCII ? "CP437" : "ASCII"
+			            , cfg.file_misc & FM_SPACES ? "In" : "Ex");
 		snprintf(opt[i++], MAX_OPLN, "%-33.33s%u characters", "Allowed Filename Length", cfg.filename_maxlen);
 		snprintf(opt[i++], MAX_OPLN, "%-33.33s%s", "Allowed Filename Characters", str);
 		snprintf(opt[i++], MAX_OPLN, "Viewable Files...");
@@ -116,98 +116,98 @@ void xfer_opts()
 		snprintf(opt[i++], MAX_OPLN, "Extractable Files...");
 		snprintf(opt[i++], MAX_OPLN, "Compressible Files...");
 		snprintf(opt[i++], MAX_OPLN, "Transfer Protocols...");
-		opt[i][0]=0;
-		uifc.helpbuf=
+		opt[i][0] = 0;
+		uifc.helpbuf =
 			"`File Transfer Configuration:`\n"
 			"\n"
 			"This menu has options and sub-menus that pertain specifically to the\n"
 			"file transfer section of the BBS.\n"
 		;
-		switch(uifc.list(WIN_ORG|WIN_ACT|WIN_CHE,0,0,72,&xfr_dflt,0
-			,"File Transfer Configuration",opt)) {
+		switch (uifc.list(WIN_ORG | WIN_ACT | WIN_CHE, 0, 0, 72, &xfr_dflt, 0
+		                  , "File Transfer Configuration", opt)) {
 			case -1:
-				i=save_changes(WIN_MID);
-				if(i==-1)
+				i = save_changes(WIN_MID);
+				if (i == -1)
 					break;
-				if(!i) {
+				if (!i) {
 					save_file_cfg(&cfg);
 					refresh_cfg(&cfg);
 				}
 				return;
 			case __COUNTER__:
-				uifc.helpbuf=
+				uifc.helpbuf =
 					"`Minimum Byte Free Disk Space to Allow Uploads:`\n"
 					"\n"
 					"This is the minimum free space in a file directory to allow user\n"
 					"uploads.\n"
 				;
 				byte_count_to_str(cfg.min_dspace, str, sizeof(str));
-				if(uifc.input(WIN_MID,0,0
-					,"Minimum Bytes Free Disk Space to Allow Uploads"
-					,str, 10, K_UPPER|K_EDIT) > 0)
+				if (uifc.input(WIN_MID, 0, 0
+				               , "Minimum Bytes Free Disk Space to Allow Uploads"
+				               , str, 10, K_UPPER | K_EDIT) > 0)
 					cfg.min_dspace = parse_byte_count(str, 1);
 				break;
 			case __COUNTER__:
-				uifc.helpbuf=
+				uifc.helpbuf =
 					"`Maximum Files in Batch Upload Queue:`\n"
 					"\n"
 					"This is the maximum number of files that can be placed in the batch\n"
 					"upload queue.\n"
 				;
-				uifc.input(WIN_MID,0,0,"Maximum Files in Batch Upload Queue"
-					,ultoa(cfg.max_batup,tmp,10),5,K_EDIT|K_NUMBER);
-				cfg.max_batup=atoi(tmp);
+				uifc.input(WIN_MID, 0, 0, "Maximum Files in Batch Upload Queue"
+				           , ultoa(cfg.max_batup, tmp, 10), 5, K_EDIT | K_NUMBER);
+				cfg.max_batup = atoi(tmp);
 				break;
 			case __COUNTER__:
-				uifc.helpbuf=
+				uifc.helpbuf =
 					"`Maximum Files in Batch Download Queue:`\n"
 					"\n"
 					"This is the maximum number of files that can be placed in the batch\n"
 					"download queue.\n"
 				;
-				uifc.input(WIN_MID,0,0,"Maximum Files in Batch Download Queue"
-					,ultoa(cfg.max_batdn,tmp,10),5,K_EDIT|K_NUMBER);
-				cfg.max_batdn=atoi(tmp);
+				uifc.input(WIN_MID, 0, 0, "Maximum Files in Batch Download Queue"
+				           , ultoa(cfg.max_batdn, tmp, 10), 5, K_EDIT | K_NUMBER);
+				cfg.max_batdn = atoi(tmp);
 				break;
 			case __COUNTER__:
-				uifc.helpbuf=
+				uifc.helpbuf =
 					"`Maximum Destination Users in User to User Transfers:`\n"
 					"\n"
 					"This is the maximum number of users allowed in the destination user list\n"
 					"of a user to user file upload.\n"
 				;
-				uifc.input(WIN_MID,0,0
-					,"Maximum Destination Users in User to User Transfers"
-					,ultoa(cfg.max_userxfer,tmp,10),5,K_EDIT|K_NUMBER);
-				cfg.max_userxfer=atoi(tmp);
+				uifc.input(WIN_MID, 0, 0
+				           , "Maximum Destination Users in User to User Transfers"
+				           , ultoa(cfg.max_userxfer, tmp, 10), 5, K_EDIT | K_NUMBER);
+				cfg.max_userxfer = atoi(tmp);
 				break;
 			case __COUNTER__:
-				uifc.helpbuf=
+				uifc.helpbuf =
 					"`Default Percentage of Credits to Credit Uploader on Upload:`\n"
 					"\n"
 					"This is the default setting that will be used when new file\n"
 					"directories are created.\n"
 				;
-				uifc.input(WIN_MID,0,0
-					,"Default Percentage of Credits to Credit Uploader on Upload"
-					,ultoa(cfg.cdt_up_pct,tmp,10),4,K_EDIT|K_NUMBER);
-				cfg.cdt_up_pct=atoi(tmp);
+				uifc.input(WIN_MID, 0, 0
+				           , "Default Percentage of Credits to Credit Uploader on Upload"
+				           , ultoa(cfg.cdt_up_pct, tmp, 10), 4, K_EDIT | K_NUMBER);
+				cfg.cdt_up_pct = atoi(tmp);
 				break;
 			case __COUNTER__:
-				uifc.helpbuf=
+				uifc.helpbuf =
 					"`Default Percentage of Credits to Credit Uploader on Download:`\n"
 					"\n"
 					"This is the default setting that will be used when new file\n"
 					"directories are created.\n"
 				;
-				uifc.input(WIN_MID,0,0
-					,"Default Percentage of Credits to Credit Uploader on Download"
-					,ultoa(cfg.cdt_dn_pct,tmp,10),4,K_EDIT|K_NUMBER);
-				cfg.cdt_dn_pct=atoi(tmp);
+				uifc.input(WIN_MID, 0, 0
+				           , "Default Percentage of Credits to Credit Uploader on Download"
+				           , ultoa(cfg.cdt_dn_pct, tmp, 10), 4, K_EDIT | K_NUMBER);
+				cfg.cdt_dn_pct = atoi(tmp);
 				break;
 
 			case __COUNTER__:
-				uifc.helpbuf=
+				uifc.helpbuf =
 					"`Leech Protocol Detection Percentage:`\n"
 					"\n"
 					"This value is the sensitivity of the leech protocol detection feature of\n"
@@ -217,13 +217,13 @@ void xfer_opts()
 					"protocol error is issued and the user's leech download counter is\n"
 					"incremented. Setting this value to `0` disables leech protocol detection.\n"
 				;
-				uifc.input(WIN_MID|WIN_SAV,0,0
-					,"Leech Protocol Detection Percentage (0=Disabled)"
-					,ultoa(cfg.leech_pct,tmp,10),3,K_EDIT|K_NUMBER);
-				cfg.leech_pct=atoi(tmp);
-				if(!cfg.leech_pct)
+				uifc.input(WIN_MID | WIN_SAV, 0, 0
+				           , "Leech Protocol Detection Percentage (0=Disabled)"
+				           , ultoa(cfg.leech_pct, tmp, 10), 3, K_EDIT | K_NUMBER);
+				cfg.leech_pct = atoi(tmp);
+				if (!cfg.leech_pct)
 					break;
-				uifc.helpbuf=
+				uifc.helpbuf =
 					"`Leech Protocol Minimum Time (in Seconds):`\n"
 					"\n"
 					"This option allows you to adjust the sensitivity of the leech protocol\n"
@@ -231,13 +231,13 @@ void xfer_opts()
 					"(in seconds) that must elapse before an aborted transfer will be\n"
 					"considered a possible leech attempt.\n"
 				;
-				uifc.input(WIN_MID,0,0
-					,"Leech Protocol Minimum Time (in Seconds)"
-					,ultoa(cfg.leech_sec,tmp,10),3,K_EDIT|K_NUMBER);
-				cfg.leech_sec=atoi(tmp);
+				uifc.input(WIN_MID, 0, 0
+				           , "Leech Protocol Minimum Time (in Seconds)"
+				           , ultoa(cfg.leech_sec, tmp, 10), 3, K_EDIT | K_NUMBER);
+				cfg.leech_sec = atoi(tmp);
 				break;
 			case __COUNTER__:
-				uifc.helpbuf=
+				uifc.helpbuf =
 					"`Maximum Uploaded Filename Length Allowed:`\n"
 					"\n"
 					"This value is the maximum length of filenames allowed to be uploaded.\n"
@@ -249,12 +249,12 @@ void xfer_opts()
 					"\n"
 					"The absolute maximum filename length supported is `65535` characters."
 				;
-				uifc.input(WIN_MID|WIN_SAV,0,0
-					,"Maximum Uploaded Filename Length Allowed (in characters)"
-					,ultoa(cfg.filename_maxlen,tmp,10), 5, K_EDIT|K_NUMBER);
-				cfg.filename_maxlen=atoi(tmp);
+				uifc.input(WIN_MID | WIN_SAV, 0, 0
+				           , "Maximum Uploaded Filename Length Allowed (in characters)"
+				           , ultoa(cfg.filename_maxlen, tmp, 10), 5, K_EDIT | K_NUMBER);
+				cfg.filename_maxlen = atoi(tmp);
 				break;
-			case __COUNTER__:	/* Uploaded Filename characters allowed */
+			case __COUNTER__:   /* Uploaded Filename characters allowed */
 				i = 0;
 				snprintf(opt[i++], MAX_OPLN,  "Safest Subset Only (A-Z, a-z, 0-9, -, _, and .)");
 				snprintf(opt[i++], MAX_OPLN,  "Most ASCII Characters, Excluding Spaces");
@@ -262,16 +262,16 @@ void xfer_opts()
 				snprintf(opt[i++], MAX_OPLN,  "Most CP437 Characters, Excluding Spaces");
 				snprintf(opt[i++], MAX_OPLN,  "Most CP437 Characters, Including Spaces");
 				opt[i][0] = '\0';
-				if(cfg.file_misc & FM_SAFEST)
+				if (cfg.file_misc & FM_SAFEST)
 					j = 0;
 				else {
 					j = 1;
-					if(cfg.file_misc & FM_EXASCII)
+					if (cfg.file_misc & FM_EXASCII)
 						j = 3;
-					if(cfg.file_misc & FM_SPACES)
+					if (cfg.file_misc & FM_SPACES)
 						j++;
 				}
-				uifc.helpbuf=
+				uifc.helpbuf =
 					"`Allowed Characters in Uploaded Filenames:`\n"
 					"\n"
 					"Here you can control which characters will be allowed in the names of\n"
@@ -293,36 +293,36 @@ void xfer_opts()
 					"    Filenames containing control characters (ASCII 0-31 and 127)\n"
 				;
 				i = uifc.list(WIN_RHT, 0, 0, 0, &j, NULL, "Allowed Characters in Uploaded Filenames", opt);
-				switch(i) {
+				switch (i) {
 					case 0:
-						if(cfg.file_misc != FM_SAFEST) {
+						if (cfg.file_misc != FM_SAFEST) {
 							cfg.file_misc |= FM_SAFEST;
 							cfg.file_misc &= ~(FM_EXASCII | FM_SPACES);
 							uifc.changes = TRUE;
 						}
 						break;
 					case 1:
-						if(cfg.file_misc) {
+						if (cfg.file_misc) {
 							cfg.file_misc &= ~(FM_SAFEST | FM_SPACES | FM_EXASCII);
 							uifc.changes = TRUE;
 						}
 						break;
 					case 2:
-						if(cfg.file_misc != FM_SPACES) {
+						if (cfg.file_misc != FM_SPACES) {
 							cfg.file_misc &= ~(FM_SAFEST | FM_EXASCII);
 							cfg.file_misc |= FM_SPACES;
 							uifc.changes = TRUE;
 						}
 						break;
 					case 3:
-						if(cfg.file_misc != FM_EXASCII) {
+						if (cfg.file_misc != FM_EXASCII) {
 							cfg.file_misc &= ~(FM_SAFEST | FM_SPACES);
 							cfg.file_misc |= FM_EXASCII;
 							uifc.changes = TRUE;
 						}
 						break;
 					case 4:
-						if(cfg.file_misc != (FM_EXASCII | FM_SPACES)) {
+						if (cfg.file_misc != (FM_EXASCII | FM_SPACES)) {
 							cfg.file_misc &= ~(FM_SAFEST);
 							cfg.file_misc |= FM_EXASCII | FM_SPACES;
 							uifc.changes = TRUE;
@@ -330,19 +330,19 @@ void xfer_opts()
 						break;
 				}
 				break;
-			case __COUNTER__: 	/* Viewable file types */
-				while(1) {
-					for(i=0;i<cfg.total_fviews && i<MAX_OPTS;i++)
+			case __COUNTER__:   /* Viewable file types */
+				while (1) {
+					for (i = 0; i < cfg.total_fviews && i < MAX_OPTS; i++)
 						snprintf(opt[i], MAX_OPLN, "%-*s %s", MAX_FILEEXT_LEN, cfg.fview[i]->ext, cfg.fview[i]->cmd);
-					opt[i][0]=0;
-					i=WIN_RHT|WIN_ACT|WIN_SAV;	/* save cause size can change */
-					if(cfg.total_fviews<MAX_OPTS)
-						i|=WIN_INS|WIN_XTR;
-					if(cfg.total_fviews)
-						i|=WIN_DEL|WIN_COPY|WIN_CUT;
-					if(savfview.cmd[0])
-						i|=WIN_PASTE | WIN_PASTEXTR;
-					uifc.helpbuf=
+					opt[i][0] = 0;
+					i = WIN_RHT | WIN_ACT | WIN_SAV;  /* save cause size can change */
+					if (cfg.total_fviews < MAX_OPTS)
+						i |= WIN_INS | WIN_XTR;
+					if (cfg.total_fviews)
+						i |= WIN_DEL | WIN_COPY | WIN_CUT;
+					if (savfview.cmd[0])
+						i |= WIN_PASTE | WIN_PASTEXTR;
+					uifc.helpbuf =
 						"`Viewable File Types:`\n"
 						"\n"
 						"This is a list of file types (extensions) that have content information\n"
@@ -354,286 +354,286 @@ void xfer_opts()
 						"\n"
 						"Specify the filename argument on the command-line with `%s` or `%f`."
 					;
-					i=uifc.list(i,0,0,50,&fview_dflt,&fview_bar,"Viewable File Types",opt);
-					if(i==-1)
+					i = uifc.list(i, 0, 0, 50, &fview_dflt, &fview_bar, "Viewable File Types", opt);
+					if (i == -1)
 						break;
 					int msk = i & MSK_ON;
 					i &= MSK_OFF;
-					if(msk == MSK_DEL || msk == MSK_CUT) {
-						if(msk == MSK_CUT)
+					if (msk == MSK_DEL || msk == MSK_CUT) {
+						if (msk == MSK_CUT)
 							savfview = *cfg.fview[i];
 						free(cfg.fview[i]);
 						cfg.total_fviews--;
-						while(i<cfg.total_fviews) {
-							cfg.fview[i]=cfg.fview[i+1];
+						while (i < cfg.total_fviews) {
+							cfg.fview[i] = cfg.fview[i + 1];
 							i++;
 						}
-						uifc.changes=1;
+						uifc.changes = 1;
 						continue;
 					}
-					if(msk == MSK_INS) {
-						if((cfg.fview=(fview_t **)realloc_or_free(cfg.fview
-							,sizeof(fview_t *)*(cfg.total_fviews+1)))==NULL) {
-							errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_fviews+1);
-							cfg.total_fviews=0;
+					if (msk == MSK_INS) {
+						if ((cfg.fview = (fview_t **)realloc_or_free(cfg.fview
+						                                             , sizeof(fview_t *) * (cfg.total_fviews + 1))) == NULL) {
+							errormsg(WHERE, ERR_ALLOC, nulstr, cfg.total_fviews + 1);
+							cfg.total_fviews = 0;
 							bail(1);
 							continue;
 						}
-						if(!cfg.total_fviews) {
-							if((cfg.fview[0]=(fview_t *)malloc(
-								sizeof(fview_t)))==NULL) {
-								errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(fview_t));
+						if (!cfg.total_fviews) {
+							if ((cfg.fview[0] = (fview_t *)malloc(
+									 sizeof(fview_t))) == NULL) {
+								errormsg(WHERE, ERR_ALLOC, nulstr, sizeof(fview_t));
 								continue;
 							}
-							memset(cfg.fview[0],0,sizeof(fview_t));
-							SAFECOPY(cfg.fview[0]->ext,"*");
-							SAFECOPY(cfg.fview[0]->cmd,"?archive list %f");
+							memset(cfg.fview[0], 0, sizeof(fview_t));
+							SAFECOPY(cfg.fview[0]->ext, "*");
+							SAFECOPY(cfg.fview[0]->cmd, "?archive list %f");
 							cfg.fview[0]->ex_mode = EX_NATIVE;
 						}
 						else {
-							for(j=cfg.total_fviews;j>i;j--)
-								cfg.fview[j]=cfg.fview[j-1];
-							if((cfg.fview[i]=(fview_t *)malloc(
-								sizeof(fview_t)))==NULL) {
-								errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(fview_t));
+							for (j = cfg.total_fviews; j > i; j--)
+								cfg.fview[j] = cfg.fview[j - 1];
+							if ((cfg.fview[i] = (fview_t *)malloc(
+									 sizeof(fview_t))) == NULL) {
+								errormsg(WHERE, ERR_ALLOC, nulstr, sizeof(fview_t));
 								continue;
 							}
-							if(i>=cfg.total_fviews)
-								j=i-1;
+							if (i >= cfg.total_fviews)
+								j = i - 1;
 							else
-								j=i+1;
-							*cfg.fview[i]=*cfg.fview[j];
+								j = i + 1;
+							*cfg.fview[i] = *cfg.fview[j];
 						}
 						cfg.total_fviews++;
-						uifc.changes=1;
+						uifc.changes = 1;
 						continue;
 					}
-					if(msk == MSK_COPY) {
-						savfview=*cfg.fview[i];
+					if (msk == MSK_COPY) {
+						savfview = *cfg.fview[i];
 						continue;
 					}
-					if(msk == MSK_PASTE) {
-						if((cfg.fview = (fview_t**)new_item(cfg.fview, sizeof(fview_t), i, &cfg.total_fviews)) == NULL) {
+					if (msk == MSK_PASTE) {
+						if ((cfg.fview = (fview_t**)new_item(cfg.fview, sizeof(fview_t), i, &cfg.total_fviews)) == NULL) {
 							errormsg(WHERE, ERR_ALLOC, "fviews", sizeof(fview_t) * (cfg.total_fviews + 1));
 							cfg.total_fviews = 0;
 							bail(1);
 						}
-						*cfg.fview[i]=savfview;
-						uifc.changes=1;
+						*cfg.fview[i] = savfview;
+						uifc.changes = 1;
 						continue;
 					}
 					if (msk != 0)
 						continue;
-					done=0;
-					while(!done) {
-						j=0;
-						snprintf(opt[j++], MAX_OPLN, "%-22s%s","File Extension"
-							,cfg.fview[i]->ext);
-						snprintf(opt[j++], MAX_OPLN, "%-22s%s","Command Line"
-							,cfg.fview[i]->cmd);
+					done = 0;
+					while (!done) {
+						j = 0;
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s", "File Extension"
+						         , cfg.fview[i]->ext);
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s", "Command Line"
+						         , cfg.fview[i]->cmd);
 						snprintf(opt[j++], MAX_OPLN, "%-22s%s", native_opt
-							,cfg.fview[i]->ex_mode & EX_NATIVE ? "Yes" : "No");
-						snprintf(opt[j++], MAX_OPLN, "%-22s%s","Access Requirements"
-							,cfg.fview[i]->arstr);
-						opt[j][0]=0;
-						uifc_winmode_t wmode = WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT|WIN_EXTKEYS;
-						if(i > 0)
+						         , cfg.fview[i]->ex_mode & EX_NATIVE ? "Yes" : "No");
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s", "Access Requirements"
+						         , cfg.fview[i]->arstr);
+						opt[j][0] = 0;
+						uifc_winmode_t wmode = WIN_RHT | WIN_BOT | WIN_SAV | WIN_ACT | WIN_EXTKEYS;
+						if (i > 0)
 							wmode |= WIN_LEFTKEY;
-						if(i + 1 < cfg.total_fviews)
+						if (i + 1 < cfg.total_fviews)
 							wmode |= WIN_RIGHTKEY;
-						switch(uifc.list(wmode,0,0,0,&fview_opt,0
-							,"Viewable File Type",opt)) {
+						switch (uifc.list(wmode, 0, 0, 0, &fview_opt, 0
+						                  , "Viewable File Type", opt)) {
 							case -1:
-								done=1;
+								done = 1;
 								break;
-							case -CIO_KEY_LEFT-2:
-								if(i > 0)
+							case -CIO_KEY_LEFT - 2:
+								if (i > 0)
 									i--;
 								break;
-							case -CIO_KEY_RIGHT-2:
-								if(i + 1 < cfg.total_fviews)
+							case -CIO_KEY_RIGHT - 2:
+								if (i + 1 < cfg.total_fviews)
 									i++;
 								break;
 							case 0:
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Viewable File Type Extension"
-									,cfg.fview[i]->ext,sizeof(cfg.fview[i]->ext)-1,K_EDIT);
+								uifc.input(WIN_MID | WIN_SAV, 0, 0
+								           , "Viewable File Type Extension"
+								           , cfg.fview[i]->ext, sizeof(cfg.fview[i]->ext) - 1, K_EDIT);
 								break;
 							case 1:
 								uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Command"
-									,cfg.fview[i]->cmd,sizeof(cfg.fview[i]->cmd)-1,K_EDIT);
+								uifc.input(WIN_MID | WIN_SAV, 0, 0
+								           , "Command"
+								           , cfg.fview[i]->cmd, sizeof(cfg.fview[i]->cmd) - 1, K_EDIT);
 								break;
 							case 2:
 								toggle_flag(native_opt, &cfg.fview[i]->ex_mode, EX_NATIVE, false, native_help);
 								break;
 							case 3:
 								snprintf(str, sizeof str, "Viewable File Type %s", cfg.fview[i]->ext);
-								getar(str,cfg.fview[i]->arstr);
+								getar(str, cfg.fview[i]->arstr);
 								break;
 						}
 					}
 				}
 				break;
 			case __COUNTER__:    /* Testable file types */
-				while(1) {
-					for(i=0;i<cfg.total_ftests && i<MAX_OPTS;i++)
+				while (1) {
+					for (i = 0; i < cfg.total_ftests && i < MAX_OPTS; i++)
 						snprintf(opt[i], MAX_OPLN, "%-*s %s", MAX_FILEEXT_LEN, cfg.ftest[i]->ext, cfg.ftest[i]->cmd);
-					opt[i][0]=0;
-					i=WIN_RHT|WIN_ACT|WIN_SAV;	/* save cause size can change */
-					if(cfg.total_ftests<MAX_OPTS)
-						i|=WIN_INS|WIN_XTR;
-					if(cfg.total_ftests)
-						i|=WIN_DEL|WIN_COPY|WIN_CUT;
-					if(savftest.cmd[0])
-						i|=WIN_PASTE | WIN_PASTEXTR;
+					opt[i][0] = 0;
+					i = WIN_RHT | WIN_ACT | WIN_SAV;  /* save cause size can change */
+					if (cfg.total_ftests < MAX_OPTS)
+						i |= WIN_INS | WIN_XTR;
+					if (cfg.total_ftests)
+						i |= WIN_DEL | WIN_COPY | WIN_CUT;
+					if (savftest.cmd[0])
+						i |= WIN_PASTE | WIN_PASTEXTR;
 					uifc.helpbuf = testable_files_help;
-					i=uifc.list(i,0,0,50,&ftest_dflt,&ftest_bar,"Testable File Types",opt);
-					if(i==-1)
+					i = uifc.list(i, 0, 0, 50, &ftest_dflt, &ftest_bar, "Testable File Types", opt);
+					if (i == -1)
 						break;
 					int msk = i & MSK_ON;
 					i &= MSK_OFF;
-					if(msk == MSK_DEL || msk == MSK_CUT) {
-						if(msk == MSK_CUT)
+					if (msk == MSK_DEL || msk == MSK_CUT) {
+						if (msk == MSK_CUT)
 							savftest = *cfg.ftest[i];
 						free(cfg.ftest[i]);
 						cfg.total_ftests--;
-						while(i<cfg.total_ftests) {
-							cfg.ftest[i]=cfg.ftest[i+1];
+						while (i < cfg.total_ftests) {
+							cfg.ftest[i] = cfg.ftest[i + 1];
 							i++;
 						}
-						uifc.changes=1;
+						uifc.changes = 1;
 						continue;
 					}
-					if(msk == MSK_INS) {
-						if((cfg.ftest=(ftest_t **)realloc_or_free(cfg.ftest
-							,sizeof(ftest_t *)*(cfg.total_ftests+1)))==NULL) {
-							errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_ftests+1);
-							cfg.total_ftests=0;
+					if (msk == MSK_INS) {
+						if ((cfg.ftest = (ftest_t **)realloc_or_free(cfg.ftest
+						                                             , sizeof(ftest_t *) * (cfg.total_ftests + 1))) == NULL) {
+							errormsg(WHERE, ERR_ALLOC, nulstr, cfg.total_ftests + 1);
+							cfg.total_ftests = 0;
 							bail(1);
 							continue;
 						}
-						if(!cfg.total_ftests) {
-							if((cfg.ftest[0]=(ftest_t *)malloc(
-								sizeof(ftest_t)))==NULL) {
-								errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(ftest_t));
+						if (!cfg.total_ftests) {
+							if ((cfg.ftest[0] = (ftest_t *)malloc(
+									 sizeof(ftest_t))) == NULL) {
+								errormsg(WHERE, ERR_ALLOC, nulstr, sizeof(ftest_t));
 								continue;
 							}
-							memset(cfg.ftest[0],0,sizeof(ftest_t));
-							SAFECOPY(cfg.ftest[0]->ext,"ZIP");
-							SAFECOPY(cfg.ftest[0]->cmd,"%@unzip -tqq %f");
-							SAFECOPY(cfg.ftest[0]->workstr,"Testing ZIP Integrity...");
+							memset(cfg.ftest[0], 0, sizeof(ftest_t));
+							SAFECOPY(cfg.ftest[0]->ext, "ZIP");
+							SAFECOPY(cfg.ftest[0]->cmd, "%@unzip -tqq %f");
+							SAFECOPY(cfg.ftest[0]->workstr, "Testing ZIP Integrity...");
 							cfg.ftest[0]->ex_mode = EX_NATIVE;
 						}
 						else {
 
-							for(j=cfg.total_ftests;j>i;j--)
-								cfg.ftest[j]=cfg.ftest[j-1];
-							if((cfg.ftest[i]=(ftest_t *)malloc(
-								sizeof(ftest_t)))==NULL) {
-								errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(ftest_t));
+							for (j = cfg.total_ftests; j > i; j--)
+								cfg.ftest[j] = cfg.ftest[j - 1];
+							if ((cfg.ftest[i] = (ftest_t *)malloc(
+									 sizeof(ftest_t))) == NULL) {
+								errormsg(WHERE, ERR_ALLOC, nulstr, sizeof(ftest_t));
 								continue;
 							}
-							if(i>=cfg.total_ftests)
-								j=i-1;
+							if (i >= cfg.total_ftests)
+								j = i - 1;
 							else
-								j=i+1;
-							*cfg.ftest[i]=*cfg.ftest[j];
+								j = i + 1;
+							*cfg.ftest[i] = *cfg.ftest[j];
 						}
 						cfg.total_ftests++;
-						uifc.changes=1;
+						uifc.changes = 1;
 						continue;
 					}
-					if(msk == MSK_COPY) {
-						savftest=*cfg.ftest[i];
+					if (msk == MSK_COPY) {
+						savftest = *cfg.ftest[i];
 						continue;
 					}
-					if(msk == MSK_PASTE) {
-						if((cfg.ftest = (ftest_t**)new_item(cfg.ftest, sizeof(ftest_t), i, &cfg.total_ftests)) == NULL) {
+					if (msk == MSK_PASTE) {
+						if ((cfg.ftest = (ftest_t**)new_item(cfg.ftest, sizeof(ftest_t), i, &cfg.total_ftests)) == NULL) {
 							errormsg(WHERE, ERR_ALLOC, "ftests", sizeof(ftest_t) * (cfg.total_ftests + 1));
 							cfg.total_ftests = 0;
 							bail(1);
 						}
-						*cfg.ftest[i]=savftest;
-						uifc.changes=1;
+						*cfg.ftest[i] = savftest;
+						uifc.changes = 1;
 						continue;
 					}
 					if (msk != 0)
 						continue;
-					done=0;
-					while(!done) {
-						j=0;
-						snprintf(opt[j++], MAX_OPLN, "%-22s%s","File Extension"
-							,cfg.ftest[i]->ext);
-						snprintf(opt[j++], MAX_OPLN, "%-22s%s","Command Line"
-							,cfg.ftest[i]->cmd);
+					done = 0;
+					while (!done) {
+						j = 0;
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s", "File Extension"
+						         , cfg.ftest[i]->ext);
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s", "Command Line"
+						         , cfg.ftest[i]->cmd);
 						snprintf(opt[j++], MAX_OPLN, "%-22s%s", native_opt
-							,cfg.ftest[i]->ex_mode & EX_NATIVE ? "Yes" : "No");
-						snprintf(opt[j++], MAX_OPLN, "%-22s%s","Working String"
-							,cfg.ftest[i]->workstr);
-						snprintf(opt[j++], MAX_OPLN, "%-22s%s","Access Requirements"
-							,cfg.ftest[i]->arstr);
-						opt[j][0]=0;
+						         , cfg.ftest[i]->ex_mode & EX_NATIVE ? "Yes" : "No");
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s", "Working String"
+						         , cfg.ftest[i]->workstr);
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s", "Access Requirements"
+						         , cfg.ftest[i]->arstr);
+						opt[j][0] = 0;
 						uifc.helpbuf = testable_files_help;
-						uifc_winmode_t wmode = WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT|WIN_EXTKEYS;
-						if(i > 0)
+						uifc_winmode_t wmode = WIN_RHT | WIN_BOT | WIN_SAV | WIN_ACT | WIN_EXTKEYS;
+						if (i > 0)
 							wmode |= WIN_LEFTKEY;
-						if(i + 1 < cfg.total_ftests)
+						if (i + 1 < cfg.total_ftests)
 							wmode |= WIN_RIGHTKEY;
-						switch(uifc.list(wmode,0,0,0,&ftest_opt,0
-							,"Testable File Type",opt)) {
+						switch (uifc.list(wmode, 0, 0, 0, &ftest_opt, 0
+						                  , "Testable File Type", opt)) {
 							case -1:
-								done=1;
+								done = 1;
 								break;
-							case -CIO_KEY_LEFT-2:
-								if(i > 0)
+							case -CIO_KEY_LEFT - 2:
+								if (i > 0)
 									i--;
 								break;
-							case -CIO_KEY_RIGHT-2:
-								if(i + 1 < cfg.total_ftests)
+							case -CIO_KEY_RIGHT - 2:
+								if (i + 1 < cfg.total_ftests)
 									i++;
 								break;
 							case 0:
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Testable File Type Extension"
-									,cfg.ftest[i]->ext,sizeof(cfg.ftest[i]->ext)-1,K_EDIT);
+								uifc.input(WIN_MID | WIN_SAV, 0, 0
+								           , "Testable File Type Extension"
+								           , cfg.ftest[i]->ext, sizeof(cfg.ftest[i]->ext) - 1, K_EDIT);
 								break;
 							case 1:
 								uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Command"
-									,cfg.ftest[i]->cmd,sizeof(cfg.ftest[i]->cmd)-1,K_EDIT);
+								uifc.input(WIN_MID | WIN_SAV, 0, 0
+								           , "Command"
+								           , cfg.ftest[i]->cmd, sizeof(cfg.ftest[i]->cmd) - 1, K_EDIT);
 								break;
 							case 2:
 								toggle_flag(native_opt, &cfg.ftest[i]->ex_mode, EX_NATIVE, false, native_help);
 								break;
 							case 3:
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Working String"
-									,cfg.ftest[i]->workstr,sizeof(cfg.ftest[i]->workstr)-1,K_EDIT|K_MSG);
+								uifc.input(WIN_MID | WIN_SAV, 0, 0
+								           , "Working String"
+								           , cfg.ftest[i]->workstr, sizeof(cfg.ftest[i]->workstr) - 1, K_EDIT | K_MSG);
 								break;
 							case 4:
-								snprintf(str, sizeof str, "Testable File Type %s",cfg.ftest[i]->ext);
-								getar(str,cfg.ftest[i]->arstr);
+								snprintf(str, sizeof str, "Testable File Type %s", cfg.ftest[i]->ext);
+								getar(str, cfg.ftest[i]->arstr);
 								break;
 						}
 					}
 				}
 				break;
 			case __COUNTER__:    /* Download Events */
-				while(1) {
-					for(i=0;i<cfg.total_dlevents && i<MAX_OPTS;i++)
+				while (1) {
+					for (i = 0; i < cfg.total_dlevents && i < MAX_OPTS; i++)
 						snprintf(opt[i], MAX_OPLN, "%-*s %s", MAX_FILEEXT_LEN, cfg.dlevent[i]->ext, cfg.dlevent[i]->cmd);
-					opt[i][0]=0;
-					i=WIN_RHT|WIN_ACT|WIN_SAV;	/* save cause size can change */
-					if(cfg.total_dlevents<MAX_OPTS)
-						i|=WIN_INS|WIN_XTR;
-					if(cfg.total_dlevents)
-						i|=WIN_DEL|WIN_COPY|WIN_CUT;
-					if(savdlevent.cmd[0])
-						i|=WIN_PASTE | WIN_PASTEXTR;
-					uifc.helpbuf=
+					opt[i][0] = 0;
+					i = WIN_RHT | WIN_ACT | WIN_SAV;  /* save cause size can change */
+					if (cfg.total_dlevents < MAX_OPTS)
+						i |= WIN_INS | WIN_XTR;
+					if (cfg.total_dlevents)
+						i |= WIN_DEL | WIN_COPY | WIN_CUT;
+					if (savdlevent.cmd[0])
+						i |= WIN_PASTE | WIN_PASTEXTR;
+					uifc.helpbuf =
 						"`Download Events:`\n"
 						"\n"
 						"This is a list of file types that will have a command line executed to\n"
@@ -649,151 +649,151 @@ void xfer_opts()
 						"a text string is displayed to the user. This `working string` can be set\n"
 						"for each file type and command line listed.\n"
 					;
-					i=uifc.list(i,0,0,50,&dlevent_dflt,&dlevent_bar,"Download Events",opt);
-					if(i==-1)
+					i = uifc.list(i, 0, 0, 50, &dlevent_dflt, &dlevent_bar, "Download Events", opt);
+					if (i == -1)
 						break;
 					int msk = i & MSK_ON;
 					i &= MSK_OFF;
-					if(msk == MSK_DEL || msk == MSK_CUT) {
-						if(msk == MSK_CUT)
+					if (msk == MSK_DEL || msk == MSK_CUT) {
+						if (msk == MSK_CUT)
 							savdlevent = *cfg.dlevent[i];
 						free(cfg.dlevent[i]);
 						cfg.total_dlevents--;
-						while(i<cfg.total_dlevents) {
-							cfg.dlevent[i]=cfg.dlevent[i+1];
+						while (i < cfg.total_dlevents) {
+							cfg.dlevent[i] = cfg.dlevent[i + 1];
 							i++;
 						}
-						uifc.changes=1;
+						uifc.changes = 1;
 						continue;
 					}
-					if(msk == MSK_INS) {
-						if((cfg.dlevent=(dlevent_t **)realloc_or_free(cfg.dlevent
-							,sizeof(dlevent_t *)*(cfg.total_dlevents+1)))==NULL) {
-							errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_dlevents+1);
-							cfg.total_dlevents=0;
+					if (msk == MSK_INS) {
+						if ((cfg.dlevent = (dlevent_t **)realloc_or_free(cfg.dlevent
+						                                                 , sizeof(dlevent_t *) * (cfg.total_dlevents + 1))) == NULL) {
+							errormsg(WHERE, ERR_ALLOC, nulstr, cfg.total_dlevents + 1);
+							cfg.total_dlevents = 0;
 							bail(1);
 							continue;
 						}
-						if(!cfg.total_dlevents) {
-							if((cfg.dlevent[0]=(dlevent_t *)malloc(
-								sizeof(dlevent_t)))==NULL) {
-								errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(dlevent_t));
+						if (!cfg.total_dlevents) {
+							if ((cfg.dlevent[0] = (dlevent_t *)malloc(
+									 sizeof(dlevent_t))) == NULL) {
+								errormsg(WHERE, ERR_ALLOC, nulstr, sizeof(dlevent_t));
 								continue;
 							}
-							memset(cfg.dlevent[0],0,sizeof(dlevent_t));
-							SAFECOPY(cfg.dlevent[0]->ext,"ZIP");
-							SAFECOPY(cfg.dlevent[0]->cmd,"%@zip -z %f < %zzipmsg.txt");
-							SAFECOPY(cfg.dlevent[0]->workstr,"Adding ZIP Comment...");
+							memset(cfg.dlevent[0], 0, sizeof(dlevent_t));
+							SAFECOPY(cfg.dlevent[0]->ext, "ZIP");
+							SAFECOPY(cfg.dlevent[0]->cmd, "%@zip -z %f < %zzipmsg.txt");
+							SAFECOPY(cfg.dlevent[0]->workstr, "Adding ZIP Comment...");
 							cfg.dlevent[0]->ex_mode = EX_NATIVE;
 						}
 						else {
 
-							for(j=cfg.total_dlevents;j>i;j--)
-								cfg.dlevent[j]=cfg.dlevent[j-1];
-							if((cfg.dlevent[i]=(dlevent_t *)malloc(
-								sizeof(dlevent_t)))==NULL) {
-								errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(dlevent_t));
+							for (j = cfg.total_dlevents; j > i; j--)
+								cfg.dlevent[j] = cfg.dlevent[j - 1];
+							if ((cfg.dlevent[i] = (dlevent_t *)malloc(
+									 sizeof(dlevent_t))) == NULL) {
+								errormsg(WHERE, ERR_ALLOC, nulstr, sizeof(dlevent_t));
 								continue;
 							}
-							if(i>=cfg.total_dlevents)
-								j=i-1;
+							if (i >= cfg.total_dlevents)
+								j = i - 1;
 							else
-								j=i+1;
-							*cfg.dlevent[i]=*cfg.dlevent[j];
+								j = i + 1;
+							*cfg.dlevent[i] = *cfg.dlevent[j];
 						}
 						cfg.total_dlevents++;
-						uifc.changes=1;
+						uifc.changes = 1;
 						continue;
 					}
-					if(msk == MSK_COPY) {
-						savdlevent=*cfg.dlevent[i];
+					if (msk == MSK_COPY) {
+						savdlevent = *cfg.dlevent[i];
 						continue;
 					}
-					if(msk == MSK_PASTE) {
-						if((cfg.dlevent = (dlevent_t**)new_item(cfg.dlevent, sizeof(dlevent_t), i, &cfg.total_dlevents)) == NULL) {
+					if (msk == MSK_PASTE) {
+						if ((cfg.dlevent = (dlevent_t**)new_item(cfg.dlevent, sizeof(dlevent_t), i, &cfg.total_dlevents)) == NULL) {
 							errormsg(WHERE, ERR_ALLOC, "dlevents", sizeof(dlevent_t) * (cfg.total_dlevents + 1));
 							cfg.total_dlevents = 0;
 							bail(1);
 						}
-						*cfg.dlevent[i]=savdlevent;
-						uifc.changes=1;
+						*cfg.dlevent[i] = savdlevent;
+						uifc.changes = 1;
 						continue;
 					}
 					if (msk != 0)
 						continue;
-					done=0;
-					while(!done) {
-						j=0;
-						snprintf(opt[j++], MAX_OPLN, "%-22s%s","File Extension"
-							,cfg.dlevent[i]->ext);
-						snprintf(opt[j++], MAX_OPLN, "%-22s%s","Command Line"
-							,cfg.dlevent[i]->cmd);
+					done = 0;
+					while (!done) {
+						j = 0;
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s", "File Extension"
+						         , cfg.dlevent[i]->ext);
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s", "Command Line"
+						         , cfg.dlevent[i]->cmd);
 						snprintf(opt[j++], MAX_OPLN, "%-22s%s", native_opt
-							,cfg.dlevent[i]->ex_mode & EX_NATIVE ? "Yes" : "No");
-						snprintf(opt[j++], MAX_OPLN, "%-22s%s","Working String"
-							,cfg.dlevent[i]->workstr);
-						snprintf(opt[j++], MAX_OPLN, "%-22s%s","Access Requirements"
-							,cfg.dlevent[i]->arstr);
-						opt[j][0]=0;
-						uifc_winmode_t wmode = WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT|WIN_EXTKEYS;
-						if(i > 0)
+						         , cfg.dlevent[i]->ex_mode & EX_NATIVE ? "Yes" : "No");
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s", "Working String"
+						         , cfg.dlevent[i]->workstr);
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s", "Access Requirements"
+						         , cfg.dlevent[i]->arstr);
+						opt[j][0] = 0;
+						uifc_winmode_t wmode = WIN_RHT | WIN_BOT | WIN_SAV | WIN_ACT | WIN_EXTKEYS;
+						if (i > 0)
 							wmode |= WIN_LEFTKEY;
-						if(i + 1 < cfg.total_dlevents)
+						if (i + 1 < cfg.total_dlevents)
 							wmode |= WIN_RIGHTKEY;
-						switch(uifc.list(wmode,0,0,0,&dlevent_opt,0
-							,"Download Event",opt)) {
+						switch (uifc.list(wmode, 0, 0, 0, &dlevent_opt, 0
+						                  , "Download Event", opt)) {
 							case -1:
-								done=1;
+								done = 1;
 								break;
-							case -CIO_KEY_LEFT-2:
-								if(i > 0)
+							case -CIO_KEY_LEFT - 2:
+								if (i > 0)
 									i--;
 								break;
-							case -CIO_KEY_RIGHT-2:
-								if(i + 1 < cfg.total_dlevents)
+							case -CIO_KEY_RIGHT - 2:
+								if (i + 1 < cfg.total_dlevents)
 									i++;
 								break;
 							case 0:
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Download Event Extension"
-									,cfg.dlevent[i]->ext,sizeof(cfg.dlevent[i]->ext)-1,K_EDIT);
+								uifc.input(WIN_MID | WIN_SAV, 0, 0
+								           , "Download Event Extension"
+								           , cfg.dlevent[i]->ext, sizeof(cfg.dlevent[i]->ext) - 1, K_EDIT);
 								break;
 							case 1:
 								uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Command"
-									,cfg.dlevent[i]->cmd,sizeof(cfg.dlevent[i]->cmd)-1,K_EDIT);
+								uifc.input(WIN_MID | WIN_SAV, 0, 0
+								           , "Command"
+								           , cfg.dlevent[i]->cmd, sizeof(cfg.dlevent[i]->cmd) - 1, K_EDIT);
 								break;
 							case 2:
 								toggle_flag(native_opt, &cfg.dlevent[i]->ex_mode, EX_NATIVE, false, native_help);
 								break;
 							case 3:
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Working String"
-									,cfg.dlevent[i]->workstr,sizeof(cfg.dlevent[i]->workstr)-1,K_EDIT|K_MSG);
+								uifc.input(WIN_MID | WIN_SAV, 0, 0
+								           , "Working String"
+								           , cfg.dlevent[i]->workstr, sizeof(cfg.dlevent[i]->workstr) - 1, K_EDIT | K_MSG);
 								break;
 							case 4:
-								snprintf(str, sizeof str, "Download Event %s",cfg.dlevent[i]->ext);
-								getar(str,cfg.dlevent[i]->arstr);
+								snprintf(str, sizeof str, "Download Event %s", cfg.dlevent[i]->ext);
+								getar(str, cfg.dlevent[i]->arstr);
 								break;
 						}
 					}
 				}
 				break;
-			case __COUNTER__:	 /* Extractable file types */
-				while(1) {
-					for(i=0;i<cfg.total_fextrs && i<MAX_OPTS;i++)
+			case __COUNTER__:    /* Extractable file types */
+				while (1) {
+					for (i = 0; i < cfg.total_fextrs && i < MAX_OPTS; i++)
 						snprintf(opt[i], MAX_OPLN, "%-*s %s"
-							,MAX_FILEEXT_LEN, cfg.fextr[i]->ext, cfg.fextr[i]->cmd);
-					opt[i][0]=0;
-					i=WIN_RHT|WIN_ACT|WIN_SAV;  /* save cause size can change */
-					if(cfg.total_fextrs<MAX_OPTS)
-						i|=WIN_INS|WIN_XTR;
-					if(cfg.total_fextrs)
-						i|=WIN_DEL|WIN_COPY|WIN_CUT;
-					if(savfextr.cmd[0])
-						i|=WIN_PASTE | WIN_PASTEXTR;
-					uifc.helpbuf=
+						         , MAX_FILEEXT_LEN, cfg.fextr[i]->ext, cfg.fextr[i]->cmd);
+					opt[i][0] = 0;
+					i = WIN_RHT | WIN_ACT | WIN_SAV;  /* save cause size can change */
+					if (cfg.total_fextrs < MAX_OPTS)
+						i |= WIN_INS | WIN_XTR;
+					if (cfg.total_fextrs)
+						i |= WIN_DEL | WIN_COPY | WIN_CUT;
+					if (savfextr.cmd[0])
+						i |= WIN_PASTE | WIN_PASTEXTR;
+					uifc.helpbuf =
 						"`Extractable File Types:`\n"
 						"\n"
 						"List of external extraction methods available by file type/extension.\n"
@@ -802,142 +802,142 @@ void xfer_opts()
 						"is built-into Synchronet (requires no external program), however may be\n"
 						"extended via external archive/extraction programs configured here."
 					;
-					i=uifc.list(i,0,0,50,&fextr_dflt,&fextr_bar,"Extractable File Types",opt);
-					if(i==-1)
+					i = uifc.list(i, 0, 0, 50, &fextr_dflt, &fextr_bar, "Extractable File Types", opt);
+					if (i == -1)
 						break;
 					int msk = i & MSK_ON;
 					i &= MSK_OFF;
-					if(msk == MSK_DEL || msk == MSK_CUT) {
-						if(msk == MSK_CUT)
+					if (msk == MSK_DEL || msk == MSK_CUT) {
+						if (msk == MSK_CUT)
 							savfextr = *cfg.fextr[i];
 						free(cfg.fextr[i]);
 						cfg.total_fextrs--;
-						while(i<cfg.total_fextrs) {
-							cfg.fextr[i]=cfg.fextr[i+1];
+						while (i < cfg.total_fextrs) {
+							cfg.fextr[i] = cfg.fextr[i + 1];
 							i++;
 						}
-						uifc.changes=1;
+						uifc.changes = 1;
 						continue;
 					}
-					if(msk == MSK_INS) {
-						if((cfg.fextr=(fextr_t **)realloc_or_free(cfg.fextr
-							,sizeof(fextr_t *)*(cfg.total_fextrs+1)))==NULL) {
-							errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_fextrs+1);
-							cfg.total_fextrs=0;
+					if (msk == MSK_INS) {
+						if ((cfg.fextr = (fextr_t **)realloc_or_free(cfg.fextr
+						                                             , sizeof(fextr_t *) * (cfg.total_fextrs + 1))) == NULL) {
+							errormsg(WHERE, ERR_ALLOC, nulstr, cfg.total_fextrs + 1);
+							cfg.total_fextrs = 0;
 							bail(1);
 							continue;
 						}
-						if(!cfg.total_fextrs) {
-							if((cfg.fextr[0]=(fextr_t *)malloc(
-								sizeof(fextr_t)))==NULL) {
-								errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(fextr_t));
+						if (!cfg.total_fextrs) {
+							if ((cfg.fextr[0] = (fextr_t *)malloc(
+									 sizeof(fextr_t))) == NULL) {
+								errormsg(WHERE, ERR_ALLOC, nulstr, sizeof(fextr_t));
 								continue;
 							}
-							memset(cfg.fextr[0],0,sizeof(fextr_t));
-							SAFECOPY(cfg.fextr[0]->ext,"ZIP");
-							SAFECOPY(cfg.fextr[0]->cmd,"%@unzip -Cojqq %f %s -d %g");
+							memset(cfg.fextr[0], 0, sizeof(fextr_t));
+							SAFECOPY(cfg.fextr[0]->ext, "ZIP");
+							SAFECOPY(cfg.fextr[0]->cmd, "%@unzip -Cojqq %f %s -d %g");
 							cfg.fextr[0]->ex_mode = EX_NATIVE;
 						}
 						else {
 
-							for(j=cfg.total_fextrs;j>i;j--)
-								cfg.fextr[j]=cfg.fextr[j-1];
-							if((cfg.fextr[i]=(fextr_t *)malloc(
-								sizeof(fextr_t)))==NULL) {
-								errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(fextr_t));
+							for (j = cfg.total_fextrs; j > i; j--)
+								cfg.fextr[j] = cfg.fextr[j - 1];
+							if ((cfg.fextr[i] = (fextr_t *)malloc(
+									 sizeof(fextr_t))) == NULL) {
+								errormsg(WHERE, ERR_ALLOC, nulstr, sizeof(fextr_t));
 								continue;
 							}
-							if(i>=cfg.total_fextrs)
-								j=i-1;
+							if (i >= cfg.total_fextrs)
+								j = i - 1;
 							else
-								j=i+1;
-							*cfg.fextr[i]=*cfg.fextr[j];
+								j = i + 1;
+							*cfg.fextr[i] = *cfg.fextr[j];
 						}
 						cfg.total_fextrs++;
-						uifc.changes=1;
+						uifc.changes = 1;
 						continue;
 					}
-					if(msk == MSK_COPY) {
-						savfextr=*cfg.fextr[i];
+					if (msk == MSK_COPY) {
+						savfextr = *cfg.fextr[i];
 						continue;
 					}
-					if(msk == MSK_PASTE) {
-						if((cfg.fextr = (fextr_t**)new_item(cfg.fextr, sizeof(fextr_t), i, &cfg.total_fextrs)) == NULL) {
+					if (msk == MSK_PASTE) {
+						if ((cfg.fextr = (fextr_t**)new_item(cfg.fextr, sizeof(fextr_t), i, &cfg.total_fextrs)) == NULL) {
 							errormsg(WHERE, ERR_ALLOC, "fextrs", sizeof(fextr_t) * (cfg.total_fextrs + 1));
 							cfg.total_fextrs = 0;
 							bail(1);
 						}
-						*cfg.fextr[i]=savfextr;
-						uifc.changes=1;
+						*cfg.fextr[i] = savfextr;
+						uifc.changes = 1;
 						continue;
 					}
 					if (msk != 0)
 						continue;
-					done=0;
-					while(!done) {
-						j=0;
-						snprintf(opt[j++], MAX_OPLN, "%-22s%s","File Extension"
-							,cfg.fextr[i]->ext);
-						snprintf(opt[j++], MAX_OPLN, "%-22s%s","Command Line"
-							,cfg.fextr[i]->cmd);
+					done = 0;
+					while (!done) {
+						j = 0;
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s", "File Extension"
+						         , cfg.fextr[i]->ext);
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s", "Command Line"
+						         , cfg.fextr[i]->cmd);
 						snprintf(opt[j++], MAX_OPLN, "%-22s%s", native_opt
-							,cfg.fextr[i]->ex_mode & EX_NATIVE ? "Yes" : "No");
-						snprintf(opt[j++], MAX_OPLN, "%-22s%s","Access Requirements"
-							,cfg.fextr[i]->arstr);
-						opt[j][0]=0;
-						uifc_winmode_t wmode = WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT|WIN_EXTKEYS;
-						if(i > 0)
+						         , cfg.fextr[i]->ex_mode & EX_NATIVE ? "Yes" : "No");
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s", "Access Requirements"
+						         , cfg.fextr[i]->arstr);
+						opt[j][0] = 0;
+						uifc_winmode_t wmode = WIN_RHT | WIN_BOT | WIN_SAV | WIN_ACT | WIN_EXTKEYS;
+						if (i > 0)
 							wmode |= WIN_LEFTKEY;
-						if(i + 1 < cfg.total_fextrs)
+						if (i + 1 < cfg.total_fextrs)
 							wmode |= WIN_RIGHTKEY;
-						switch(uifc.list(wmode,0,0,0,&fextr_opt,0
-							,"Extractable File Type",opt)) {
+						switch (uifc.list(wmode, 0, 0, 0, &fextr_opt, 0
+						                  , "Extractable File Type", opt)) {
 							case -1:
-								done=1;
+								done = 1;
 								break;
-							case -CIO_KEY_LEFT-2:
-								if(i > 0)
+							case -CIO_KEY_LEFT - 2:
+								if (i > 0)
 									i--;
 								break;
-							case -CIO_KEY_RIGHT-2:
-								if(i + 1 < cfg.total_fextrs)
+							case -CIO_KEY_RIGHT - 2:
+								if (i + 1 < cfg.total_fextrs)
 									i++;
 								break;
 							case 0:
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Extractable File Type Extension"
-									,cfg.fextr[i]->ext,sizeof(cfg.fextr[i]->ext)-1,K_EDIT);
+								uifc.input(WIN_MID | WIN_SAV, 0, 0
+								           , "Extractable File Type Extension"
+								           , cfg.fextr[i]->ext, sizeof(cfg.fextr[i]->ext) - 1, K_EDIT);
 								break;
 							case 1:
 								uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Command"
-									,cfg.fextr[i]->cmd,sizeof(cfg.fextr[i]->cmd)-1,K_EDIT);
+								uifc.input(WIN_MID | WIN_SAV, 0, 0
+								           , "Command"
+								           , cfg.fextr[i]->cmd, sizeof(cfg.fextr[i]->cmd) - 1, K_EDIT);
 								break;
 							case 2:
 								toggle_flag(native_opt, &cfg.fextr[i]->ex_mode, EX_NATIVE, false, native_help);
 								break;
 							case 3:
 								snprintf(str, sizeof str, "Extractable File Type %s", cfg.fextr[i]->ext);
-								getar(str,cfg.fextr[i]->arstr);
+								getar(str, cfg.fextr[i]->arstr);
 								break;
 						}
 					}
 				}
 				break;
-			case __COUNTER__:	 /* Compressible file types */
-				while(1) {
-					for(i=0;i<cfg.total_fcomps && i<MAX_OPTS;i++)
-						snprintf(opt[i], MAX_OPLN, "%-*s %s",MAX_FILEEXT_LEN, cfg.fcomp[i]->ext, cfg.fcomp[i]->cmd);
-					opt[i][0]=0;
-					i=WIN_RHT|WIN_ACT|WIN_SAV;	/* save cause size can change */
-					if(cfg.total_fcomps<MAX_OPTS)
-						i|=WIN_INS|WIN_XTR;
-					if(cfg.total_fcomps)
-						i|=WIN_DEL|WIN_COPY|WIN_CUT;
-					if(savfcomp.cmd[0])
-						i|=WIN_PASTE | WIN_PASTEXTR;
-					uifc.helpbuf=
+			case __COUNTER__:    /* Compressible file types */
+				while (1) {
+					for (i = 0; i < cfg.total_fcomps && i < MAX_OPTS; i++)
+						snprintf(opt[i], MAX_OPLN, "%-*s %s", MAX_FILEEXT_LEN, cfg.fcomp[i]->ext, cfg.fcomp[i]->cmd);
+					opt[i][0] = 0;
+					i = WIN_RHT | WIN_ACT | WIN_SAV;  /* save cause size can change */
+					if (cfg.total_fcomps < MAX_OPTS)
+						i |= WIN_INS | WIN_XTR;
+					if (cfg.total_fcomps)
+						i |= WIN_DEL | WIN_COPY | WIN_CUT;
+					if (savfcomp.cmd[0])
+						i |= WIN_PASTE | WIN_PASTEXTR;
+					uifc.helpbuf =
 						"`Compressible File Types:`\n"
 						"\n"
 						"List of external compression methods available by file type/extension.\n"
@@ -946,142 +946,142 @@ void xfer_opts()
 						"is built-into Synchronet (requires no external program), however may be\n"
 						"extended via external compression/archive programs configured here."
 					;
-					i=uifc.list(i,0,0,50,&fcomp_dflt,&fcomp_bar,"Compressible File Types",opt);
-					if(i==-1)
+					i = uifc.list(i, 0, 0, 50, &fcomp_dflt, &fcomp_bar, "Compressible File Types", opt);
+					if (i == -1)
 						break;
 					int msk = i & MSK_ON;
 					i &= MSK_OFF;
-					if(msk == MSK_DEL || msk == MSK_CUT) {
-						if(msk == MSK_CUT)
+					if (msk == MSK_DEL || msk == MSK_CUT) {
+						if (msk == MSK_CUT)
 							savfcomp = *cfg.fcomp[i];
 						free(cfg.fcomp[i]);
 						cfg.total_fcomps--;
-						while(i<cfg.total_fcomps) {
-							cfg.fcomp[i]=cfg.fcomp[i+1];
+						while (i < cfg.total_fcomps) {
+							cfg.fcomp[i] = cfg.fcomp[i + 1];
 							i++;
 						}
-						uifc.changes=1;
+						uifc.changes = 1;
 						continue;
 					}
-					if(msk == MSK_INS) {
-						if((cfg.fcomp=(fcomp_t **)realloc_or_free(cfg.fcomp
-							,sizeof(fcomp_t *)*(cfg.total_fcomps+1)))==NULL) {
-							errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_fcomps+1);
-							cfg.total_fcomps=0;
+					if (msk == MSK_INS) {
+						if ((cfg.fcomp = (fcomp_t **)realloc_or_free(cfg.fcomp
+						                                             , sizeof(fcomp_t *) * (cfg.total_fcomps + 1))) == NULL) {
+							errormsg(WHERE, ERR_ALLOC, nulstr, cfg.total_fcomps + 1);
+							cfg.total_fcomps = 0;
 							bail(1);
 							continue;
 						}
-						if(!cfg.total_fcomps) {
-							if((cfg.fcomp[0]=(fcomp_t *)malloc(
-								sizeof(fcomp_t)))==NULL) {
-								errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(fcomp_t));
+						if (!cfg.total_fcomps) {
+							if ((cfg.fcomp[0] = (fcomp_t *)malloc(
+									 sizeof(fcomp_t))) == NULL) {
+								errormsg(WHERE, ERR_ALLOC, nulstr, sizeof(fcomp_t));
 								continue;
 							}
-							memset(cfg.fcomp[0],0,sizeof(fcomp_t));
-							SAFECOPY(cfg.fcomp[0]->ext,"ZIP");
-							SAFECOPY(cfg.fcomp[0]->cmd,"%@zip -jD %f %s");
+							memset(cfg.fcomp[0], 0, sizeof(fcomp_t));
+							SAFECOPY(cfg.fcomp[0]->ext, "ZIP");
+							SAFECOPY(cfg.fcomp[0]->cmd, "%@zip -jD %f %s");
 							cfg.fcomp[0]->ex_mode = EX_NATIVE;
 						}
 						else {
-							for(j=cfg.total_fcomps;j>i;j--)
-								cfg.fcomp[j]=cfg.fcomp[j-1];
-							if((cfg.fcomp[i]=(fcomp_t *)malloc(
-								sizeof(fcomp_t)))==NULL) {
-								errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(fcomp_t));
+							for (j = cfg.total_fcomps; j > i; j--)
+								cfg.fcomp[j] = cfg.fcomp[j - 1];
+							if ((cfg.fcomp[i] = (fcomp_t *)malloc(
+									 sizeof(fcomp_t))) == NULL) {
+								errormsg(WHERE, ERR_ALLOC, nulstr, sizeof(fcomp_t));
 								continue;
 							}
-							if(i>=cfg.total_fcomps)
-								j=i-1;
+							if (i >= cfg.total_fcomps)
+								j = i - 1;
 							else
-								j=i+1;
-							*cfg.fcomp[i]=*cfg.fcomp[j];
+								j = i + 1;
+							*cfg.fcomp[i] = *cfg.fcomp[j];
 						}
 						cfg.total_fcomps++;
-						uifc.changes=1;
+						uifc.changes = 1;
 						continue;
 					}
-					if(msk == MSK_COPY) {
-						savfcomp=*cfg.fcomp[i];
+					if (msk == MSK_COPY) {
+						savfcomp = *cfg.fcomp[i];
 						continue;
 					}
-					if(msk == MSK_PASTE) {
-						if((cfg.fcomp = (fcomp_t**)new_item(cfg.fcomp, sizeof(fcomp_t), i, &cfg.total_fcomps)) == NULL) {
+					if (msk == MSK_PASTE) {
+						if ((cfg.fcomp = (fcomp_t**)new_item(cfg.fcomp, sizeof(fcomp_t), i, &cfg.total_fcomps)) == NULL) {
 							errormsg(WHERE, ERR_ALLOC, "fcomps", sizeof(fcomp_t) * (cfg.total_fcomps + 1));
 							cfg.total_fcomps = 0;
 							bail(1);
 						}
-						*cfg.fcomp[i]=savfcomp;
-						uifc.changes=1;
+						*cfg.fcomp[i] = savfcomp;
+						uifc.changes = 1;
 						continue;
 					}
 					if (msk != 0)
 						continue;
-					done=0;
-					while(!done) {
-						j=0;
-						snprintf(opt[j++], MAX_OPLN, "%-22s%s","File Extension"
-							,cfg.fcomp[i]->ext);
-						snprintf(opt[j++], MAX_OPLN, "%-22s%s","Command Line"
-							,cfg.fcomp[i]->cmd);
+					done = 0;
+					while (!done) {
+						j = 0;
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s", "File Extension"
+						         , cfg.fcomp[i]->ext);
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s", "Command Line"
+						         , cfg.fcomp[i]->cmd);
 						snprintf(opt[j++], MAX_OPLN, "%-22s%s", native_opt
-							,cfg.fcomp[i]->ex_mode & EX_NATIVE ? "Yes" : "No");
-						snprintf(opt[j++], MAX_OPLN, "%-22s%s","Access Requirements"
-							,cfg.fcomp[i]->arstr);
-						opt[j][0]=0;
-						uifc_winmode_t wmode = WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT|WIN_EXTKEYS;
-						if(i > 0)
+						         , cfg.fcomp[i]->ex_mode & EX_NATIVE ? "Yes" : "No");
+						snprintf(opt[j++], MAX_OPLN, "%-22s%s", "Access Requirements"
+						         , cfg.fcomp[i]->arstr);
+						opt[j][0] = 0;
+						uifc_winmode_t wmode = WIN_RHT | WIN_BOT | WIN_SAV | WIN_ACT | WIN_EXTKEYS;
+						if (i > 0)
 							wmode |= WIN_LEFTKEY;
-						if(i + 1 < cfg.total_fcomps)
+						if (i + 1 < cfg.total_fcomps)
 							wmode |= WIN_RIGHTKEY;
-						switch(uifc.list(wmode,0,0,0,&fcomp_opt,0
-							,"Compressible File Type",opt)) {
+						switch (uifc.list(wmode, 0, 0, 0, &fcomp_opt, 0
+						                  , "Compressible File Type", opt)) {
 							case -1:
-								done=1;
+								done = 1;
 								break;
-							case -CIO_KEY_LEFT-2:
-								if(i > 0)
+							case -CIO_KEY_LEFT - 2:
+								if (i > 0)
 									i--;
 								break;
-							case -CIO_KEY_RIGHT-2:
-								if(i + 1 < cfg.total_fcomps)
+							case -CIO_KEY_RIGHT - 2:
+								if (i + 1 < cfg.total_fcomps)
 									i++;
 								break;
 							case 0:
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Compressible File Type Extension"
-									,cfg.fcomp[i]->ext,sizeof(cfg.fcomp[i]->ext)-1,K_EDIT);
+								uifc.input(WIN_MID | WIN_SAV, 0, 0
+								           , "Compressible File Type Extension"
+								           , cfg.fcomp[i]->ext, sizeof(cfg.fcomp[i]->ext) - 1, K_EDIT);
 								break;
 							case 1:
 								uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Command"
-									,cfg.fcomp[i]->cmd,sizeof(cfg.fcomp[i]->cmd)-1,K_EDIT);
+								uifc.input(WIN_MID | WIN_SAV, 0, 0
+								           , "Command"
+								           , cfg.fcomp[i]->cmd, sizeof(cfg.fcomp[i]->cmd) - 1, K_EDIT);
 								break;
 							case 2:
 								toggle_flag(native_opt, &cfg.fcomp[i]->ex_mode, EX_NATIVE, false, native_help);
 								break;
 							case 3:
 								snprintf(str, sizeof str, "Compressible File Type %s", cfg.fcomp[i]->ext);
-								getar(str,cfg.fcomp[i]->arstr);
+								getar(str, cfg.fcomp[i]->arstr);
 								break;
 						}
 					}
 				}
 				break;
-			case __COUNTER__:	/* Transfer protocols */
-				while(1) {
-					for(i=0;i<cfg.total_prots && i<MAX_OPTS;i++)
+			case __COUNTER__:   /* Transfer protocols */
+				while (1) {
+					for (i = 0; i < cfg.total_prots && i < MAX_OPTS; i++)
 						snprintf(opt[i], MAX_OPLN, "%c  %s"
-							,cfg.prot[i]->mnemonic,cfg.prot[i]->name);
-					opt[i][0]=0;
-					uifc_winmode_t wmode = WIN_RHT|WIN_ACT|WIN_SAV;	/* WIN_SAV because size can change */
-					if(cfg.total_prots<MAX_OPTS)
-						wmode |= WIN_INS|WIN_XTR;
-					if(cfg.total_prots)
-						wmode |= WIN_DEL|WIN_COPY|WIN_CUT;
-					if(savprot.mnemonic)
+						         , cfg.prot[i]->mnemonic, cfg.prot[i]->name);
+					opt[i][0] = 0;
+					uifc_winmode_t wmode = WIN_RHT | WIN_ACT | WIN_SAV; /* WIN_SAV because size can change */
+					if (cfg.total_prots < MAX_OPTS)
+						wmode |= WIN_INS | WIN_XTR;
+					if (cfg.total_prots)
+						wmode |= WIN_DEL | WIN_COPY | WIN_CUT;
+					if (savprot.mnemonic)
 						wmode |= WIN_PASTE | WIN_PASTEXTR;
-					uifc.helpbuf=
+					uifc.helpbuf =
 						"`File Transfer Protocols:`\n"
 						"\n"
 						"This is a list of file transfer protocols that can be used to transfer\n"
@@ -1095,179 +1095,179 @@ void xfer_opts()
 						"don't wish it to be available for a certain method of transfer, leave\n"
 						"the command line for that method blank.\n"
 					;
-					i=uifc.list(wmode,0,0,34,&prot_dflt,&prot_bar,"File Transfer Protocols",opt);
-					if(i==-1)
+					i = uifc.list(wmode, 0, 0, 34, &prot_dflt, &prot_bar, "File Transfer Protocols", opt);
+					if (i == -1)
 						break;
 					int msk = i & MSK_ON;
 					i &= MSK_OFF;
-					if(msk == MSK_DEL || msk == MSK_CUT) {
-						if(msk == MSK_CUT)
+					if (msk == MSK_DEL || msk == MSK_CUT) {
+						if (msk == MSK_CUT)
 							savprot = *cfg.prot[i];
 						free(cfg.prot[i]);
 						cfg.total_prots--;
-						while(i<cfg.total_prots) {
-							cfg.prot[i]=cfg.prot[i+1];
+						while (i < cfg.total_prots) {
+							cfg.prot[i] = cfg.prot[i + 1];
 							i++;
 						}
-						uifc.changes=1;
+						uifc.changes = 1;
 						continue;
 					}
-					if(msk == MSK_INS) {
-						if((cfg.prot=(prot_t **)realloc(cfg.prot
-							,sizeof(prot_t *)*(cfg.total_prots+1)))==NULL) {
-							errormsg(WHERE,ERR_ALLOC,nulstr,cfg.total_prots+1);
-							cfg.total_prots=0;
+					if (msk == MSK_INS) {
+						if ((cfg.prot = (prot_t **)realloc(cfg.prot
+						                                   , sizeof(prot_t *) * (cfg.total_prots + 1))) == NULL) {
+							errormsg(WHERE, ERR_ALLOC, nulstr, cfg.total_prots + 1);
+							cfg.total_prots = 0;
 							bail(1);
 							continue;
 						}
-						if(!cfg.total_prots) {
-							if((cfg.prot[0]=(prot_t *)malloc(
-								sizeof(prot_t)))==NULL) {
-								errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(prot_t));
+						if (!cfg.total_prots) {
+							if ((cfg.prot[0] = (prot_t *)malloc(
+									 sizeof(prot_t))) == NULL) {
+								errormsg(WHERE, ERR_ALLOC, nulstr, sizeof(prot_t));
 								continue;
 							}
-							memset(cfg.prot[0],0,sizeof(prot_t));
-							cfg.prot[0]->mnemonic='?';
+							memset(cfg.prot[0], 0, sizeof(prot_t));
+							cfg.prot[0]->mnemonic = '?';
 							cfg.prot[0]->misc = PROT_NATIVE;
 						} else {
-							for(j=cfg.total_prots;j>i;j--)
-								cfg.prot[j]=cfg.prot[j-1];
-							if((cfg.prot[i]=(prot_t *)malloc(
-								sizeof(prot_t)))==NULL) {
-								errormsg(WHERE,ERR_ALLOC,nulstr,sizeof(prot_t));
+							for (j = cfg.total_prots; j > i; j--)
+								cfg.prot[j] = cfg.prot[j - 1];
+							if ((cfg.prot[i] = (prot_t *)malloc(
+									 sizeof(prot_t))) == NULL) {
+								errormsg(WHERE, ERR_ALLOC, nulstr, sizeof(prot_t));
 								continue;
 							}
-							if(i>=cfg.total_prots)
-								j=i-1;
+							if (i >= cfg.total_prots)
+								j = i - 1;
 							else
-								j=i+1;
-							*cfg.prot[i]=*cfg.prot[j];
+								j = i + 1;
+							*cfg.prot[i] = *cfg.prot[j];
 						}
 						cfg.total_prots++;
-						uifc.changes=1;
+						uifc.changes = 1;
 						continue;
 					}
-					if(msk == MSK_COPY) {
-						savprot=*cfg.prot[i];
+					if (msk == MSK_COPY) {
+						savprot = *cfg.prot[i];
 						continue;
 					}
-					if(msk == MSK_PASTE) {
-						if((cfg.prot = (prot_t**)new_item(cfg.prot, sizeof(prot_t), i, &cfg.total_prots)) == NULL) {
+					if (msk == MSK_PASTE) {
+						if ((cfg.prot = (prot_t**)new_item(cfg.prot, sizeof(prot_t), i, &cfg.total_prots)) == NULL) {
 							errormsg(WHERE, ERR_ALLOC, "prots", sizeof(prot_t) * (cfg.total_prots + 1));
-							cfg.total_prots=0;
+							cfg.total_prots = 0;
 							bail(1);
 						}
-						*cfg.prot[i]=savprot;
-						uifc.changes=1;
+						*cfg.prot[i] = savprot;
+						uifc.changes = 1;
 						continue;
 					}
 					if (msk != 0)
 						continue;
-					done=0;
-					while(!done) {
-						j=0;
-						snprintf(opt[j++], MAX_OPLN, "%-30.30s%c","Mnemonic (Command Key)"
-							,cfg.prot[i]->mnemonic);
-						snprintf(opt[j++], MAX_OPLN, "%-30.30s%s","Protocol Name"
-							,cfg.prot[i]->name);
-						snprintf(opt[j++], MAX_OPLN, "%-30.30s%s","Access Requirements"
-							,cfg.prot[i]->arstr);
-						snprintf(opt[j++], MAX_OPLN, "%-30.30s%s","Upload Command Line"
-							,cfg.prot[i]->ulcmd);
-						snprintf(opt[j++], MAX_OPLN, "%-30.30s%s","Download Command Line"
-							,cfg.prot[i]->dlcmd);
-						snprintf(opt[j++], MAX_OPLN, "%-30.30s%s","Batch Upload Command Line"
-							,cfg.prot[i]->batulcmd);
-						snprintf(opt[j++], MAX_OPLN, "%-30.30s%s","Batch Download Command Line"
-							,cfg.prot[i]->batdlcmd);
+					done = 0;
+					while (!done) {
+						j = 0;
+						snprintf(opt[j++], MAX_OPLN, "%-30.30s%c", "Mnemonic (Command Key)"
+						         , cfg.prot[i]->mnemonic);
+						snprintf(opt[j++], MAX_OPLN, "%-30.30s%s", "Protocol Name"
+						         , cfg.prot[i]->name);
+						snprintf(opt[j++], MAX_OPLN, "%-30.30s%s", "Access Requirements"
+						         , cfg.prot[i]->arstr);
+						snprintf(opt[j++], MAX_OPLN, "%-30.30s%s", "Upload Command Line"
+						         , cfg.prot[i]->ulcmd);
+						snprintf(opt[j++], MAX_OPLN, "%-30.30s%s", "Download Command Line"
+						         , cfg.prot[i]->dlcmd);
+						snprintf(opt[j++], MAX_OPLN, "%-30.30s%s", "Batch Upload Command Line"
+						         , cfg.prot[i]->batulcmd);
+						snprintf(opt[j++], MAX_OPLN, "%-30.30s%s", "Batch Download Command Line"
+						         , cfg.prot[i]->batdlcmd);
 						snprintf(opt[j++], MAX_OPLN, "%-30.30s%s",   native_opt
-							,cfg.prot[i]->misc&PROT_NATIVE ? "Yes" : "No");
-						snprintf(opt[j++], MAX_OPLN, "%-30.30s%s",	 "Supports DSZLOG"
-							,cfg.prot[i]->misc&PROT_DSZLOG ? "Yes":"No");
-						snprintf(opt[j++], MAX_OPLN, "%-30.30s%s",	 "Socket I/O"
-							,cfg.prot[i]->misc&PROT_SOCKET ? "Yes":"No");
-						opt[j][0]=0;
-						wmode = WIN_RHT|WIN_BOT|WIN_SAV|WIN_ACT|WIN_EXTKEYS;
-						if(i > 0)
+						         , cfg.prot[i]->misc & PROT_NATIVE ? "Yes" : "No");
+						snprintf(opt[j++], MAX_OPLN, "%-30.30s%s",   "Supports DSZLOG"
+						         , cfg.prot[i]->misc & PROT_DSZLOG ? "Yes":"No");
+						snprintf(opt[j++], MAX_OPLN, "%-30.30s%s",   "Socket I/O"
+						         , cfg.prot[i]->misc & PROT_SOCKET ? "Yes":"No");
+						opt[j][0] = 0;
+						wmode = WIN_RHT | WIN_BOT | WIN_SAV | WIN_ACT | WIN_EXTKEYS;
+						if (i > 0)
 							wmode |= WIN_LEFTKEY;
-						if(i + 1 < cfg.total_prots)
+						if (i + 1 < cfg.total_prots)
 							wmode |= WIN_RIGHTKEY;
-						switch(uifc.list(wmode,0,0,70,&prot_opt,0
-							,"File Transfer Protocol",opt)) {
+						switch (uifc.list(wmode, 0, 0, 70, &prot_opt, 0
+						                  , "File Transfer Protocol", opt)) {
 							case -1:
-								done=1;
+								done = 1;
 								break;
-							case -CIO_KEY_LEFT-2:
-								if(i > 0)
+							case -CIO_KEY_LEFT - 2:
+								if (i > 0)
 									i--;
 								break;
-							case -CIO_KEY_RIGHT-2:
-								if(i + 1 < cfg.total_prots)
+							case -CIO_KEY_RIGHT - 2:
+								if (i + 1 < cfg.total_prots)
 									i++;
 								break;
 							case 0:
-								str[0]=cfg.prot[i]->mnemonic;
-								str[1]=0;
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Mnemonic (Command Key)"
-									,str,1,K_UPPER|K_EDIT);
-								if(str[0])
-									cfg.prot[i]->mnemonic=str[0];
+								str[0] = cfg.prot[i]->mnemonic;
+								str[1] = 0;
+								uifc.input(WIN_MID | WIN_SAV, 0, 0
+								           , "Mnemonic (Command Key)"
+								           , str, 1, K_UPPER | K_EDIT);
+								if (str[0])
+									cfg.prot[i]->mnemonic = str[0];
 								break;
 							case 1:
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Protocol Name"
-									,cfg.prot[i]->name,sizeof(cfg.prot[i]->name)-1,K_EDIT);
+								uifc.input(WIN_MID | WIN_SAV, 0, 0
+								           , "Protocol Name"
+								           , cfg.prot[i]->name, sizeof(cfg.prot[i]->name) - 1, K_EDIT);
 								break;
 							case 2:
-								snprintf(str, sizeof str, "Protocol %s",cfg.prot[i]->name);
-								getar(str,cfg.prot[i]->arstr);
+								snprintf(str, sizeof str, "Protocol %s", cfg.prot[i]->name);
+								getar(str, cfg.prot[i]->arstr);
 								break;
 							case 3:
 								uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Command"
-									,cfg.prot[i]->ulcmd,sizeof(cfg.prot[i]->ulcmd)-1,K_EDIT);
+								uifc.input(WIN_MID | WIN_SAV, 0, 0
+								           , "Command"
+								           , cfg.prot[i]->ulcmd, sizeof(cfg.prot[i]->ulcmd) - 1, K_EDIT);
 								break;
 							case 4:
 								uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Command"
-									,cfg.prot[i]->dlcmd,sizeof(cfg.prot[i]->dlcmd)-1,K_EDIT);
+								uifc.input(WIN_MID | WIN_SAV, 0, 0
+								           , "Command"
+								           , cfg.prot[i]->dlcmd, sizeof(cfg.prot[i]->dlcmd) - 1, K_EDIT);
 								break;
 							case 5:
 								uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Command"
-									,cfg.prot[i]->batulcmd,sizeof(cfg.prot[i]->batulcmd)-1,K_EDIT);
+								uifc.input(WIN_MID | WIN_SAV, 0, 0
+								           , "Command"
+								           , cfg.prot[i]->batulcmd, sizeof(cfg.prot[i]->batulcmd) - 1, K_EDIT);
 								break;
 							case 6:
 								uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;
-								uifc.input(WIN_MID|WIN_SAV,0,0
-									,"Command"
-									,cfg.prot[i]->batdlcmd,sizeof(cfg.prot[i]->batdlcmd)-1,K_EDIT);
+								uifc.input(WIN_MID | WIN_SAV, 0, 0
+								           , "Command"
+								           , cfg.prot[i]->batdlcmd, sizeof(cfg.prot[i]->batdlcmd) - 1, K_EDIT);
 								break;
 							case 7:
 								toggle_flag(native_opt, &cfg.prot[i]->misc, PROT_NATIVE, false, native_help);
 								break;
 							case 8:
-								l=cfg.prot[i]->misc&PROT_DSZLOG ? 0:1;
-								l=uifc.list(WIN_MID|WIN_SAV,0,0,0,&l,0
-									,"Uses DSZLOG",uifcYesNoOpts);
-								if((l==0 && !(cfg.prot[i]->misc&PROT_DSZLOG))
-									|| (l==1 && cfg.prot[i]->misc&PROT_DSZLOG)) {
-									cfg.prot[i]->misc^=PROT_DSZLOG;
-									uifc.changes=1;
+								l = cfg.prot[i]->misc & PROT_DSZLOG ? 0:1;
+								l = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &l, 0
+								              , "Uses DSZLOG", uifcYesNoOpts);
+								if ((l == 0 && !(cfg.prot[i]->misc & PROT_DSZLOG))
+								    || (l == 1 && cfg.prot[i]->misc & PROT_DSZLOG)) {
+									cfg.prot[i]->misc ^= PROT_DSZLOG;
+									uifc.changes = 1;
 								}
 								break;
 							case 9:
-								l=cfg.prot[i]->misc&PROT_SOCKET ? 0:1l;
-								l=uifc.list(WIN_MID|WIN_SAV,0,0,0,&l,0
-									,"Uses Socket I/O",uifcYesNoOpts);
-								if((l==0 && !(cfg.prot[i]->misc&PROT_SOCKET))
-									|| (l==1 && cfg.prot[i]->misc&PROT_SOCKET)) {
-									cfg.prot[i]->misc^=PROT_SOCKET;
-									uifc.changes=1;
+								l = cfg.prot[i]->misc & PROT_SOCKET ? 0:1l;
+								l = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &l, 0
+								              , "Uses Socket I/O", uifcYesNoOpts);
+								if ((l == 0 && !(cfg.prot[i]->misc & PROT_SOCKET))
+								    || (l == 1 && cfg.prot[i]->misc & PROT_SOCKET)) {
+									cfg.prot[i]->misc ^= PROT_SOCKET;
+									uifc.changes = 1;
 								}
 								break;
 						}

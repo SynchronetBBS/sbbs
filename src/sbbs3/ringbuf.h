@@ -42,14 +42,14 @@
 #include "gen_defs.h"
 
 #ifdef RINGBUF_EVENT
-	#include "eventwrap.h"	/* xpevent_t */
+	#include "eventwrap.h"  /* xpevent_t */
 #endif
 #ifdef RINGBUF_MUTEX
-	#include "threadwrap.h"	/* pthread_mutex_t */
+	#include "threadwrap.h" /* pthread_mutex_t */
 #endif
 
 #ifndef NULL
-#define NULL	0
+#define NULL    0
 #endif
 
 #define RINGBUF_USE_STD_RTL
@@ -60,19 +60,19 @@
 
 typedef struct {
 
-	BYTE* 	pStart;
-	BYTE* 	pHead;			/* next space available for data */
-	BYTE* 	pTail;			/* next byte to be consumed */
-	BYTE* 	pEnd; 			/* end of the buffer, used for wrap around */
-    DWORD	size;
+	BYTE* pStart;
+	BYTE* pHead;            /* next space available for data */
+	BYTE* pTail;            /* next byte to be consumed */
+	BYTE* pEnd;             /* end of the buffer, used for wrap around */
+	DWORD size;
 #ifdef RINGBUF_EVENT
 	xpevent_t empty_event;
 	xpevent_t data_event;
 	xpevent_t highwater_event;
-	DWORD	highwater_mark;
+	DWORD highwater_mark;
 #endif
 #ifdef RINGBUF_MUTEX
-	pthread_mutex_t mutex;	/* mutex used to protect ring buffer pointers */
+	pthread_mutex_t mutex;  /* mutex used to protect ring buffer pointers */
 #endif
 
 } RingBuf;
@@ -85,23 +85,23 @@ extern "C" {
 /* Function Prototypes */
 /***********************/
 
-int 	RingBufInit( RingBuf* rb, DWORD size
+int RingBufInit( RingBuf * rb, DWORD size
 #ifndef RINGBUF_USE_STD_RTL
-			,void *(os_malloc)(size_t)
-			,void (os_free)(void *)
-			,void *(os_memcpy)(void *, const void *, size_t)
+                 , void *(os_malloc)(size_t)
+                 , void (os_free)(void *)
+                 , void *(os_memcpy)(void *, const void *, size_t)
 #endif
-			);
-void	RingBufDispose( RingBuf* rb );
-DWORD	RingBufFull( RingBuf* rb );
-DWORD	RingBufFree( RingBuf* rb );
-DWORD	RingBufWrite( RingBuf* rb, const BYTE *src,	DWORD cnt );
-DWORD	RingBufRead( RingBuf* rb, BYTE *dst,  DWORD cnt );
-DWORD	RingBufPeek( RingBuf* rb, BYTE *dst,  DWORD cnt );
-void	RingBufReInit( RingBuf* rb );
+                 );
+void    RingBufDispose( RingBuf* rb );
+DWORD   RingBufFull( RingBuf* rb );
+DWORD   RingBufFree( RingBuf* rb );
+DWORD   RingBufWrite( RingBuf* rb, const BYTE *src, DWORD cnt );
+DWORD   RingBufRead( RingBuf* rb, BYTE *dst,  DWORD cnt );
+DWORD   RingBufPeek( RingBuf* rb, BYTE *dst,  DWORD cnt );
+void    RingBufReInit( RingBuf* rb );
 
-#ifdef	__cplusplus
+#ifdef  __cplusplus
 }
 #endif
 
-#endif	/* Don't add anything after this line */
+#endif  /* Don't add anything after this line */

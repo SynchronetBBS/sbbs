@@ -41,23 +41,23 @@ struct trash {
 extern "C" {
 #endif
 
-DLLEXPORT char*		trashcan_fname(scfg_t* cfg, const char *name, char* fname, size_t);
-DLLEXPORT char*		twitlist_fname(scfg_t* cfg, char* fname, size_t);
-DLLEXPORT bool		trashcan(scfg_t* cfg, const char *insearch, const char *name);
-DLLEXPORT bool		trashcan2(scfg_t* cfg, const char* str1, const char* str2, const char *name, struct trash*);
-DLLEXPORT bool		trash_in_list(const char* str1, const char* str2, str_list_t list, struct trash*);
-DLLEXPORT bool		trash_parse_details(const char* p, struct trash* trash, char* item, size_t);
-DLLEXPORT char *	trash_details(const struct trash*, char* str, size_t);
+DLLEXPORT char*     trashcan_fname(scfg_t* cfg, const char *name, char* fname, size_t);
+DLLEXPORT char*     twitlist_fname(scfg_t* cfg, char* fname, size_t);
+DLLEXPORT bool      trashcan(scfg_t* cfg, const char *insearch, const char *name);
+DLLEXPORT bool      trashcan2(scfg_t* cfg, const char* str1, const char* str2, const char *name, struct trash*);
+DLLEXPORT bool      trash_in_list(const char* str1, const char* str2, str_list_t list, struct trash*);
+DLLEXPORT bool      trash_parse_details(const char* p, struct trash* trash, char* item, size_t);
+DLLEXPORT char *    trash_details(const struct trash*, char* str, size_t);
 DLLEXPORT str_list_t trashcan_list(scfg_t* cfg, const char* name);
-DLLEXPORT bool		is_host_exempt(scfg_t*, const char* ip_addr, const char* host_name);
-DLLEXPORT bool		filter_ip(scfg_t*, const char* prot, const char* reason, const char* host
-								  ,const char* ip_addr, const char* username, const char* fname, uint duration);
-DLLEXPORT bool		is_twit(scfg_t*, const char* name);
-DLLEXPORT bool		list_twit(scfg_t*, const char* name, const char* comment);
+DLLEXPORT bool      is_host_exempt(scfg_t*, const char* ip_addr, const char* host_name);
+DLLEXPORT bool      filter_ip(scfg_t*, const char* prot, const char* reason, const char* host
+                              , const char* ip_addr, const char* username, const char* fname, uint duration);
+DLLEXPORT bool      is_twit(scfg_t*, const char* name);
+DLLEXPORT bool      list_twit(scfg_t*, const char* name, const char* comment);
 DLLEXPORT str_list_t list_of_twits(scfg_t*);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif	/* Don't add anything after this line */
+#endif  /* Don't add anything after this line */

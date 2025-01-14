@@ -18,7 +18,7 @@
  ****************************************************************************/
 
 #include "scfg.h"
-#include "ciolib.h"	// CIO_KEY_*
+#include "ciolib.h" // CIO_KEY_*
 
 static sub_t** cut_qhub_sub;
 
@@ -35,18 +35,18 @@ bool new_sub(int new_subnum, int group_num, sub_t* pasted_sub, long misc)
 	/* ToDo: Define these defaults somewhere else: */
 	new_subboard->misc = (SUB_NSDEF | SUB_SSDEF | SUB_QUOTE | SUB_TOUSER | SUB_FAST);
 	new_subboard->misc |= misc;
-	if(new_subboard->misc&(SUB_FIDO | SUB_INET))
+	if (new_subboard->misc & (SUB_FIDO | SUB_INET))
 		new_subboard->misc |= SUB_NOVOTING;
 	new_subboard->pmode = P_MARKUP | P_HIDEMARKS | P_NOATCODES;
 	new_subboard->maxmsgs = 500;
 
 	/* Use last sub in group (if exists) as a template for new subs */
 	for (int u = 0; u < cfg.total_subs; u++) {
-		if(cfg.sub[u]->grp == group_num) {
+		if (cfg.sub[u]->grp == group_num) {
 			*new_subboard = *cfg.sub[u];
 			new_subboard->misc &= ~SUB_TEMPLATE;
 			new_subboard->arstr[0] = 0;
-			if(cfg.sub[u]->misc & SUB_TEMPLATE)	/* Use this sub (not last) if marked as template */
+			if (cfg.sub[u]->misc & SUB_TEMPLATE) /* Use this sub (not last) if marked as template */
 				break;
 		}
 	}
@@ -71,7 +71,7 @@ bool new_sub(int new_subnum, int group_num, sub_t* pasted_sub, long misc)
 	}
 
 	sub_t **new_sub_list;
-	if ((new_sub_list = (sub_t **)realloc(cfg.sub, sizeof(sub_t *)*(cfg.total_subs + 1))) == NULL) {
+	if ((new_sub_list = (sub_t **)realloc(cfg.sub, sizeof(sub_t *) * (cfg.total_subs + 1))) == NULL) {
 		errormsg(WHERE, ERR_ALLOC, "sub list", cfg.total_subs + 1);
 		free(new_subboard);
 		return false;
@@ -93,13 +93,13 @@ bool new_sub(int new_subnum, int group_num, sub_t* pasted_sub, long misc)
 void remove_sub(scfg_t* cfg, int subnum, bool cut)
 {
 	sub_t* sub = cfg->sub[subnum];
-	if(cut)
+	if (cut)
 		cut_qhub_sub = NULL;
 	// Remove the sub-board from any QWKnet hub sub-boards
 	for (int q = 0; q < cfg->total_qhubs; q++) {
 		for (int s = 0; s < cfg->qhub[q]->subs; s++) {
 			if (cfg->qhub[q]->sub[s] == sub) {
-				if(cut && cut_qhub_sub == NULL)
+				if (cut && cut_qhub_sub == NULL)
 					cut_qhub_sub = &cfg->qhub[q]->sub[s];
 				cfg->qhub[q]->sub[s] = NULL;
 			}
@@ -113,8 +113,8 @@ void remove_sub(scfg_t* cfg, int subnum, bool cut)
 
 static int next_subnum(sub_t* sub)
 {
-	for(int i = sub->subnum + 1; i < cfg.total_subs; i++) {
-		if(cfg.sub[i]->grp == sub->grp)
+	for (int i = sub->subnum + 1; i < cfg.total_subs; i++) {
+		if (cfg.sub[i]->grp == sub->grp)
 			return i;
 	}
 	return sub->subnum;
@@ -122,8 +122,8 @@ static int next_subnum(sub_t* sub)
 
 static int prev_subnum(sub_t* sub)
 {
-	for(int i = sub->subnum - 1; i >= 0; i--) {
-		if(cfg.sub[i]->grp == sub->grp)
+	for (int i = sub->subnum - 1; i >= 0; i--) {
+		if (cfg.sub[i]->grp == sub->grp)
 			return i;
 	}
 	return sub->subnum;
@@ -131,15 +131,15 @@ static int prev_subnum(sub_t* sub)
 
 void sub_cfg(int grpnum)
 {
-	static int dflt,tog_dflt,tog_bar,opt_dflt,net_dflt,adv_dflt,bar;
-	char str[128],str2[128],done=0,code[128];
-	char path[MAX_PATH+1];
-	char data_dir[MAX_PATH+1];
-	int j,m,n;
-	int i,subnum[MAX_OPTS+1];
+	static int   dflt, tog_dflt, tog_bar, opt_dflt, net_dflt, adv_dflt, bar;
+	char         str[128], str2[128], done = 0, code[128];
+	char         path[MAX_PATH + 1];
+	char         data_dir[MAX_PATH + 1];
+	int          j, m, n;
+	int          i, subnum[MAX_OPTS + 1];
 	static sub_t savsub;
 
-	char* sub_long_name_help =
+	char*        sub_long_name_help =
 		"`Sub-board Long Name:`\n"
 		"\n"
 		"This is a description of the message sub-board which is displayed in all\n"
@@ -151,7 +151,7 @@ void sub_cfg(int grpnum)
 		"want to use a short name (less than or equal to 25 characters in length)\n"
 		"for both the Sub-board Long Name and Short Name, there is no harm in"
 		"doing that."
-		;
+	;
 	char* sub_short_name_help =
 		"`Sub-board Short Name:`\n"
 		"\n"
@@ -160,7 +160,7 @@ void sub_cfg(int grpnum)
 		"a full message area description (Long Name) is unnecessary.\n"
 		"\n"
 		"Sub-board Short Names are limited to 25 characters in length.\n"
-		;
+	;
 	char* sub_code_help =
 		"`Sub-board Internal Code Suffix:`\n"
 		"\n"
@@ -175,23 +175,23 @@ void sub_cfg(int grpnum)
 		"Changing a sub-board's internal code (suffix or prefix) changes the\n"
 		"underlying database file filenames used for that sub-board, so change\n"
 		"these values with caution."
-		;
+	;
 
-	while(1) {
-		if(uifc.changes && cfg.grp[grpnum]->sort)
+	while (1) {
+		if (uifc.changes && cfg.grp[grpnum]->sort)
 			sort_subs(grpnum);
-		int maxlen = 0;
+		int  maxlen = 0;
 		bool template_shown = false;
-		for(i=0,j=0;i<cfg.total_subs && j<MAX_OPTS;i++)
-			if(cfg.sub[i]->grp==grpnum) {
-				subnum[j]=i;
-				int len = 0;
+		for (i = 0, j = 0; i < cfg.total_subs && j < MAX_OPTS; i++)
+			if (cfg.sub[i]->grp == grpnum) {
+				subnum[j] = i;
+				int   len = 0;
 				opt[j][0] = 0;
-				if(cfg.sub[subnum[0]]->qwkconf)
+				if (cfg.sub[subnum[0]]->qwkconf)
 					len += snprintf(opt[j], MAX_OPLN, "%-5u ", cfg.sub[i]->qwkconf);
 				char* name = cfg.sub[i]->lname;
-				int name_len = LEN_SLNAME;
-				switch(cfg.grp[grpnum]->sort) {
+				int   name_len = LEN_SLNAME;
+				switch (cfg.grp[grpnum]->sort) {
 					case AREA_SORT_SNAME:
 						name = cfg.sub[i]->sname;
 						name_len = LEN_SSNAME;
@@ -200,29 +200,29 @@ void sub_cfg(int grpnum)
 						name = cfg.sub[i]->code_suffix;
 						name_len = LEN_CODE;
 						break;
-					default:	/* Defeat stupid GCC warning */
+					default:    /* Defeat stupid GCC warning */
 						break;
 				}
-				sprintf(str, "%-*s %c", name_len, name, (cfg.sub[i]->misc&SUB_TEMPLATE && !template_shown) ? '*' : ' ');
-				if(cfg.sub[i]->misc&SUB_TEMPLATE)
+				sprintf(str, "%-*s %c", name_len, name, (cfg.sub[i]->misc & SUB_TEMPLATE && !template_shown) ? '*' : ' ');
+				if (cfg.sub[i]->misc & SUB_TEMPLATE)
 					template_shown = true;
 				truncsp(str);
 				len += sprintf(opt[j] + strlen(opt[j]), "%s", str);
-				if(len > maxlen)
+				if (len > maxlen)
 					maxlen = len;
 				j++;
 			}
-		subnum[j]=cfg.total_subs;
-		opt[j][0]=0;
-		sprintf(str,"%s Sub-boards (%u)",cfg.grp[grpnum]->sname, j);
-		int mode = WIN_SAV|WIN_ACT|WIN_RHT;
-		if(j)
-			mode |= WIN_DEL|WIN_COPY|WIN_CUT|WIN_DELACT;
-		if(j<MAX_OPTS)
-			mode |= WIN_INS|WIN_XTR|WIN_PASTEXTR|WIN_INSACT;
-		if(savsub.sname[0])
+		subnum[j] = cfg.total_subs;
+		opt[j][0] = 0;
+		sprintf(str, "%s Sub-boards (%u)", cfg.grp[grpnum]->sname, j);
+		int mode = WIN_SAV | WIN_ACT | WIN_RHT;
+		if (j)
+			mode |= WIN_DEL | WIN_COPY | WIN_CUT | WIN_DELACT;
+		if (j < MAX_OPTS)
+			mode |= WIN_INS | WIN_XTR | WIN_PASTEXTR | WIN_INSACT;
+		if (savsub.sname[0])
 			mode |= WIN_PASTE;
-		uifc.helpbuf=
+		uifc.helpbuf =
 			"`Message Sub-boards:`\n"
 			"\n"
 			"This is a list of message sub-boards that have been configured for the\n"
@@ -238,167 +238,167 @@ void sub_cfg(int grpnum)
 			"\n"
 			"To configure a sub-board, select it with the arrow keys and hit ~ ENTER ~.\n"
 		;
-		i = uifc.list(mode, 0, 0, maxlen+5, &dflt, &bar, str, opt);
-		if((signed)i==-1)
+		i = uifc.list(mode, 0, 0, maxlen + 5, &dflt, &bar, str, opt);
+		if ((signed)i == -1)
 			return;
 		int msk = i & MSK_ON;
 		i &= MSK_OFF;
-		if((int)i > j)
+		if ((int)i > j)
 			continue;
-		if(msk==MSK_INS) {
-			strcpy(str,"General");
-			uifc.helpbuf=sub_long_name_help;
-			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Sub-board Long Name",str,LEN_SLNAME
-				,K_EDIT)<1)
+		if (msk == MSK_INS) {
+			strcpy(str, "General");
+			uifc.helpbuf = sub_long_name_help;
+			if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Sub-board Long Name", str, LEN_SLNAME
+			               , K_EDIT) < 1)
 				continue;
-			sprintf(str2,"%.*s",LEN_SSNAME,str);
-			uifc.helpbuf=sub_short_name_help;
-			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Sub-board Short Name",str2,LEN_SSNAME
-				,K_EDIT)<1)
+			sprintf(str2, "%.*s", LEN_SSNAME, str);
+			uifc.helpbuf = sub_short_name_help;
+			if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Sub-board Short Name", str2, LEN_SSNAME
+			               , K_EDIT) < 1)
 				continue;
 	#if 0
-			sprintf(str3,"%.10s",str2);
-			uifc.helpbuf=
+			sprintf(str3, "%.10s", str2);
+			uifc.helpbuf =
 				"`Sub-board QWK Name:`\n"
 				"\n"
 				"This is the name of the sub-board used for QWK off-line readers.\n"
 			;
-			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Sub-board QWK Name",str3,10
-				,K_EDIT)<1)
+			if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Sub-board QWK Name", str3, 10
+			               , K_EDIT) < 1)
 				continue;
 	#endif
-			SAFECOPY(code,str2);
-			prep_code(code,/* prefix: */NULL);
-			uifc.helpbuf=sub_code_help;
-			if(uifc.input(WIN_MID|WIN_SAV,0,0,"Sub-board Internal Code Suffix",code,LEN_CODE
-				,K_EDIT|K_UPPER|K_NOSPACE)<1)
+			SAFECOPY(code, str2);
+			prep_code(code, /* prefix: */ NULL);
+			uifc.helpbuf = sub_code_help;
+			if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Sub-board Internal Code Suffix", code, LEN_CODE
+			               , K_EDIT | K_UPPER | K_NOSPACE) < 1)
 				continue;
 			SAFEPRINTF2(tmp, "%s%s", cfg.grp[grpnum]->code_prefix, code);
-			if(getsubnum(&cfg, tmp) >= 0) {
+			if (getsubnum(&cfg, tmp) >= 0) {
 				uifc.msg(strDuplicateCode);
 				continue;
 			}
-			if(!code_ok(code)) {
-				uifc.helpbuf=invalid_code;
+			if (!code_ok(code)) {
+				uifc.helpbuf = invalid_code;
 				uifc.msg(strInvalidCode);
-				uifc.helpbuf=0;
+				uifc.helpbuf = 0;
 				continue;
 			}
 
-			if (!new_sub(subnum[i], grpnum, /* pasted_sub: */NULL, /* misc: */0))
+			if (!new_sub(subnum[i], grpnum, /* pasted_sub: */ NULL, /* misc: */ 0))
 				continue;
 
-			SAFECOPY(cfg.sub[subnum[i]]->code_suffix,code);
-			SAFECOPY(cfg.sub[subnum[i]]->lname,str);
-			SAFECOPY(cfg.sub[subnum[i]]->sname,str2);
-			SAFECOPY(cfg.sub[subnum[i]]->qwkname,code);
-			if(strchr(str,'.') && strchr(str,' ')==NULL) {
-				SAFECOPY(cfg.sub[subnum[i]]->newsgroup,str);
+			SAFECOPY(cfg.sub[subnum[i]]->code_suffix, code);
+			SAFECOPY(cfg.sub[subnum[i]]->lname, str);
+			SAFECOPY(cfg.sub[subnum[i]]->sname, str2);
+			SAFECOPY(cfg.sub[subnum[i]]->qwkname, code);
+			if (strchr(str, '.') && strchr(str, ' ') == NULL) {
+				SAFECOPY(cfg.sub[subnum[i]]->newsgroup, str);
 				make_newsgroup_name(cfg.sub[subnum[i]]->newsgroup);
 			}
 			uifc.changes = TRUE;
 			continue;
 		}
-		if(msk == MSK_DEL || msk == MSK_CUT) {
+		if (msk == MSK_DEL || msk == MSK_CUT) {
 			if (msk == MSK_DEL) {
-				uifc.helpbuf=
+				uifc.helpbuf =
 					"`Delete Data in Sub-board:`\n"
 					"\n"
 					"If you want to delete all the messages for this sub-board, select `Yes`.\n"
 				;
-				j=1;
-				SAFEPRINTF2(str,"%s%s.*"
-					,cfg.grp[cfg.sub[subnum[i]]->grp]->code_prefix
-					,cfg.sub[subnum[i]]->code_suffix);
+				j = 1;
+				SAFEPRINTF2(str, "%s%s.*"
+				            , cfg.grp[cfg.sub[subnum[i]]->grp]->code_prefix
+				            , cfg.sub[subnum[i]]->code_suffix);
 				strlwr(str);
-				if(!cfg.sub[subnum[i]]->data_dir[0])
-					SAFEPRINTF(data_dir,"%ssubs/",cfg.data_dir);
+				if (!cfg.sub[subnum[i]]->data_dir[0])
+					SAFEPRINTF(data_dir, "%ssubs/", cfg.data_dir);
 				else
-					SAFECOPY(data_dir,cfg.sub[subnum[i]]->data_dir);
+					SAFECOPY(data_dir, cfg.sub[subnum[i]]->data_dir);
 
-				SAFEPRINTF2(path,"%s%s",data_dir,str);
-				if(fexist(path)) {
-					SAFEPRINTF(str2,"Delete %s",path);
-					j=uifc.list(WIN_MID|WIN_SAV,0,0,0,&j,0
-						,str2,uifcYesNoOpts);
-					if(j==-1)
+				SAFEPRINTF2(path, "%s%s", data_dir, str);
+				if (fexist(path)) {
+					SAFEPRINTF(str2, "Delete %s", path);
+					j = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &j, 0
+					              , str2, uifcYesNoOpts);
+					if (j == -1)
 						continue;
-					if(j==0)
-						delfiles(data_dir,str, /* keep: */0);
+					if (j == 0)
+						delfiles(data_dir, str, /* keep: */ 0);
 				}
 			}
-			if(msk == MSK_CUT)
+			if (msk == MSK_CUT)
 				savsub = *cfg.sub[subnum[i]];
 			remove_sub(&cfg, subnum[i], msk == MSK_CUT);
 			uifc.changes = TRUE;
 			continue;
 		}
-		if(msk==MSK_COPY) {
-			savsub=*cfg.sub[subnum[i]];
+		if (msk == MSK_COPY) {
+			savsub = *cfg.sub[subnum[i]];
 			cut_qhub_sub = NULL;
 			continue;
 		}
-		if(msk == MSK_PASTE) {
-			if (!new_sub(subnum[i], grpnum, &savsub, /* misc: */0))
+		if (msk == MSK_PASTE) {
+			if (!new_sub(subnum[i], grpnum, &savsub, /* misc: */ 0))
 				continue;
 			uifc.changes = TRUE;
 			continue;
 		}
-		i=subnum[i];
-		j=0;
-		done=0;
-		while(!done) {
-			n=0;
+		i = subnum[i];
+		j = 0;
+		done = 0;
+		while (!done) {
+			n = 0;
 			char area_tag[sizeof(cfg.sub[i]->area_tag) + 2];
-			if(cfg.sub[i]->area_tag[0])
+			if (cfg.sub[i]->area_tag[0])
 				SAFECOPY(area_tag, cfg.sub[i]->area_tag);
 			else
 				SAFEPRINTF(area_tag, "[%s]", sub_area_tag(&cfg, cfg.sub[i], tmp, sizeof(tmp)));
 			char newsgroup_name[sizeof(cfg.sub[i]->newsgroup) + 2];
-			if(cfg.sub[i]->newsgroup[0]) {
+			if (cfg.sub[i]->newsgroup[0]) {
 				SAFECOPY(newsgroup_name, cfg.sub[i]->newsgroup);
 				make_newsgroup_name(newsgroup_name);
 			} else
 				SAFEPRINTF(newsgroup_name, "[%s]", sub_newsgroup_name(&cfg, cfg.sub[i], tmp, sizeof(tmp)));
-			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Long Name",cfg.sub[i]->lname);
-			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Short Name",cfg.sub[i]->sname);
-			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","QWK Name",cfg.sub[i]->qwkname);
-			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s%s","Internal Code"
-				,cfg.grp[cfg.sub[i]->grp]->code_prefix, cfg.sub[i]->code_suffix);
-			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Newsgroup Name", newsgroup_name);
-			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","FidoNet Area Tag", area_tag);
-			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Access Requirements"
-				,cfg.sub[i]->arstr);
-			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Reading Requirements"
-				,cfg.sub[i]->read_arstr);
-			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Posting Requirements"
-				,cfg.sub[i]->post_arstr);
-			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Operator Requirements"
-				,cfg.sub[i]->op_arstr);
-			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Moderated Posting User"
-				,cfg.sub[i]->mod_arstr);
-			if(cfg.sub[i]->maxmsgs)
-				sprintf(str, "%"PRIu32, cfg.sub[i]->maxmsgs);
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s", "Long Name", cfg.sub[i]->lname);
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s", "Short Name", cfg.sub[i]->sname);
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s", "QWK Name", cfg.sub[i]->qwkname);
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s%s", "Internal Code"
+			         , cfg.grp[cfg.sub[i]->grp]->code_prefix, cfg.sub[i]->code_suffix);
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s", "Newsgroup Name", newsgroup_name);
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s", "FidoNet Area Tag", area_tag);
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s", "Access Requirements"
+			         , cfg.sub[i]->arstr);
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s", "Reading Requirements"
+			         , cfg.sub[i]->read_arstr);
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s", "Posting Requirements"
+			         , cfg.sub[i]->post_arstr);
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s", "Operator Requirements"
+			         , cfg.sub[i]->op_arstr);
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s", "Moderated Posting User"
+			         , cfg.sub[i]->mod_arstr);
+			if (cfg.sub[i]->maxmsgs)
+				sprintf(str, "%" PRIu32, cfg.sub[i]->maxmsgs);
 			else
 				strcpy(str, "Unlimited");
-			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Maximum Messages", str);
-			if(cfg.sub[i]->maxage)
-				sprintf(str,"Enabled (%u days old)",cfg.sub[i]->maxage);
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s", "Maximum Messages", str);
+			if (cfg.sub[i]->maxage)
+				sprintf(str, "Enabled (%u days old)", cfg.sub[i]->maxage);
 			else
-				strcpy(str,"Disabled");
-			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Purge by Age",str);
-			if(cfg.sub[i]->maxcrcs)
-				sprintf(str,"Enabled (%"PRIu32" message CRCs)",cfg.sub[i]->maxcrcs);
+				strcpy(str, "Disabled");
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s", "Purge by Age", str);
+			if (cfg.sub[i]->maxcrcs)
+				sprintf(str, "Enabled (%" PRIu32 " message CRCs)", cfg.sub[i]->maxcrcs);
 			else
-				strcpy(str,"Disabled");
-			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Duplicate Checking",str);
+				strcpy(str, "Disabled");
+			snprintf(opt[n++], MAX_OPLN, "%-27.27s%s", "Duplicate Checking", str);
 
-			strcpy(opt[n++],"Toggle Options...");
-			strcpy(opt[n++],"Network Options...");
-			strcpy(opt[n++],"Advanced Options...");
-			opt[n][0]=0;
-			sprintf(str,"%s Sub-board", cfg.sub[i]->sname);
-			uifc.helpbuf=
+			strcpy(opt[n++], "Toggle Options...");
+			strcpy(opt[n++], "Network Options...");
+			strcpy(opt[n++], "Advanced Options...");
+			opt[n][0] = 0;
+			sprintf(str, "%s Sub-board", cfg.sub[i]->sname);
+			uifc.helpbuf =
 				"`Sub-board Configuration:`\n"
 				"\n"
 				"This menu allows you to configure the individual selected sub-board.\n"
@@ -406,39 +406,39 @@ void sub_cfg(int grpnum)
 				"\n"
 				"The left and right arrow keys may be used to cycle through sub-boards.\n"
 			;
-			uifc_winmode_t wmode = WIN_ACT|WIN_SAV|WIN_BOT|WIN_L2R|WIN_EXTKEYS;
-			int prev = prev_subnum(cfg.sub[i]);
-			int next = next_subnum(cfg.sub[i]);
-			if(prev != i)
+			uifc_winmode_t wmode = WIN_ACT | WIN_SAV | WIN_BOT | WIN_L2R | WIN_EXTKEYS;
+			int            prev = prev_subnum(cfg.sub[i]);
+			int            next = next_subnum(cfg.sub[i]);
+			if (prev != i)
 				wmode |= WIN_LEFTKEY;
-			if(next != i)
+			if (next != i)
 				wmode |= WIN_RIGHTKEY;
-			switch(uifc.list(wmode,0,0,72,&opt_dflt,0,str,opt)) {
+			switch (uifc.list(wmode, 0, 0, 72, &opt_dflt, 0, str, opt)) {
 				case -1:
-					done=1;
+					done = 1;
 					break;
-				case -CIO_KEY_LEFT-2:
+				case -CIO_KEY_LEFT - 2:
 					i = prev;
 					break;
-				case -CIO_KEY_RIGHT-2:
+				case -CIO_KEY_RIGHT - 2:
 					i = next;
 					break;
 				case 0:
-					uifc.helpbuf=sub_long_name_help;
+					uifc.helpbuf = sub_long_name_help;
 					SAFECOPY(str, cfg.sub[i]->lname);
-					if(uifc.input(WIN_MID|WIN_SAV,0,17,"Name to use for Listings"
-						,str,LEN_SLNAME,K_EDIT) > 0)
+					if (uifc.input(WIN_MID | WIN_SAV, 0, 17, "Name to use for Listings"
+					               , str, LEN_SLNAME, K_EDIT) > 0)
 						SAFECOPY(cfg.sub[i]->lname, str);
 					break;
 				case 1:
-					uifc.helpbuf=sub_short_name_help;
+					uifc.helpbuf = sub_short_name_help;
 					SAFECOPY(str, cfg.sub[i]->sname);
-					if(uifc.input(WIN_MID|WIN_SAV,0,17,"Name to use for Prompts"
-						,str,LEN_SSNAME,K_EDIT) > 0)
+					if (uifc.input(WIN_MID | WIN_SAV, 0, 17, "Name to use for Prompts"
+					               , str, LEN_SSNAME, K_EDIT) > 0)
 						SAFECOPY(cfg.sub[i]->sname, str);
 					break;
 				case 2:
-					uifc.helpbuf=
+					uifc.helpbuf =
 						"`Sub-board QWK Conference Name:`\n"
 						"\n"
 						"This is the name of the sub-board to be used in the CONTROL.DAT file\n"
@@ -450,29 +450,29 @@ void sub_cfg(int grpnum)
 						"\n"
 						"QWK Conference Names are not used in QWK networks."
 					;
-					uifc.input(WIN_MID|WIN_SAV,0,17,"QWK Conference Name"
-						,cfg.sub[i]->qwkname, sizeof(cfg.sub[i]->qwkname)-1, K_EDIT);
+					uifc.input(WIN_MID | WIN_SAV, 0, 17, "QWK Conference Name"
+					           , cfg.sub[i]->qwkname, sizeof(cfg.sub[i]->qwkname) - 1, K_EDIT);
 					break;
 				case 3:
-					uifc.helpbuf=sub_code_help;
-					SAFECOPY(str,cfg.sub[i]->code_suffix);
-					uifc.input(WIN_MID|WIN_SAV,0,17,"Internal Code Suffix (unique)"
-						,str,LEN_CODE,K_EDIT|K_UPPER|K_NOSPACE);
-					if(strcmp(str,cfg.sub[i]->code_suffix) == 0)
+					uifc.helpbuf = sub_code_help;
+					SAFECOPY(str, cfg.sub[i]->code_suffix);
+					uifc.input(WIN_MID | WIN_SAV, 0, 17, "Internal Code Suffix (unique)"
+					           , str, LEN_CODE, K_EDIT | K_UPPER | K_NOSPACE);
+					if (strcmp(str, cfg.sub[i]->code_suffix) == 0)
 						break;
 					SAFEPRINTF2(tmp, "%s%s", cfg.grp[cfg.sub[i]->grp]->code_prefix, str);
-					if(getsubnum(&cfg, tmp) >= 0)
+					if (getsubnum(&cfg, tmp) >= 0)
 						uifc.msg(strDuplicateCode);
-					else if(code_ok(str))
-						SAFECOPY(cfg.sub[i]->code_suffix,str);
+					else if (code_ok(str))
+						SAFECOPY(cfg.sub[i]->code_suffix, str);
 					else {
-						uifc.helpbuf=invalid_code;
+						uifc.helpbuf = invalid_code;
 						uifc.msg(strInvalidCode);
-						uifc.helpbuf=0;
+						uifc.helpbuf = 0;
 					}
 					break;
 				case 4:
-					uifc.helpbuf=
+					uifc.helpbuf =
 						"`Newsgroup Name:`\n"
 						"\n"
 						"This is the name of the sub-board used for newsgroup readers. If no name\n"
@@ -483,12 +483,12 @@ void sub_cfg(int grpnum)
 						"    [`a-z`], [`A-Z`], [`0-9`], '`+`', '`_`', '`-`', and '`.`'.\n"
 						"A newsgroup name may not begin or end with a '`.`'.\n"
 					;
-					if(uifc.input(WIN_MID|WIN_SAV,0,17,""
-						,cfg.sub[i]->newsgroup,sizeof(cfg.sub[i]->newsgroup)-1,K_EDIT) > 0)
+					if (uifc.input(WIN_MID | WIN_SAV, 0, 17, ""
+					               , cfg.sub[i]->newsgroup, sizeof(cfg.sub[i]->newsgroup) - 1, K_EDIT) > 0)
 						make_newsgroup_name(cfg.sub[i]->newsgroup);
 					break;
 				case 5:
-					uifc.helpbuf=
+					uifc.helpbuf =
 						"`FidoNet Area Tag:`\n"
 						"\n"
 						"This field may be used to specify the FidoNet-style `Echo/Area Tag` for\n"
@@ -498,32 +498,32 @@ void sub_cfg(int grpnum)
 						"\n"
 						"This tag may ~ not ~ contain spaces."
 					;
-					uifc.input(WIN_MID|WIN_SAV, 0, 17, "FidoNet Area Tag"
-						,cfg.sub[i]->area_tag, sizeof(cfg.sub[i]->area_tag)-1, K_EDIT|K_UPPER|K_NOSPACE);
+					uifc.input(WIN_MID | WIN_SAV, 0, 17, "FidoNet Area Tag"
+					           , cfg.sub[i]->area_tag, sizeof(cfg.sub[i]->area_tag) - 1, K_EDIT | K_UPPER | K_NOSPACE);
 					break;
 				case 6:
-					sprintf(str,"%s Access",cfg.sub[i]->sname);
-					getar(str,cfg.sub[i]->arstr);
+					sprintf(str, "%s Access", cfg.sub[i]->sname);
+					getar(str, cfg.sub[i]->arstr);
 					break;
 				case 7:
-					sprintf(str,"%s Reading",cfg.sub[i]->sname);
-					getar(str,cfg.sub[i]->read_arstr);
+					sprintf(str, "%s Reading", cfg.sub[i]->sname);
+					getar(str, cfg.sub[i]->read_arstr);
 					break;
 				case 8:
-					sprintf(str,"%s Posting",cfg.sub[i]->sname);
-					getar(str,cfg.sub[i]->post_arstr);
+					sprintf(str, "%s Posting", cfg.sub[i]->sname);
+					getar(str, cfg.sub[i]->post_arstr);
 					break;
 				case 9:
-					sprintf(str,"%s Operator",cfg.sub[i]->sname);
-					getar(str,cfg.sub[i]->op_arstr);
+					sprintf(str, "%s Operator", cfg.sub[i]->sname);
+					getar(str, cfg.sub[i]->op_arstr);
 					break;
 				case 10:
-					sprintf(str,"%s Moderated Posting User",cfg.sub[i]->sname);
-					getar(str,cfg.sub[i]->mod_arstr);
+					sprintf(str, "%s Moderated Posting User", cfg.sub[i]->sname);
+					getar(str, cfg.sub[i]->mod_arstr);
 					break;
 				case 11:
-					sprintf(str,"%"PRIu32,cfg.sub[i]->maxmsgs);
-					uifc.helpbuf=
+					sprintf(str, "%" PRIu32, cfg.sub[i]->maxmsgs);
+					uifc.helpbuf =
 						"`Maximum Number of Messages:`\n"
 						"\n"
 						"This value is the maximum number of messages that will be kept in the\n"
@@ -536,14 +536,14 @@ void sub_cfg(int grpnum)
 						"A value of `0` means no maximum number of stored messages will be\n"
 						"imposed during message-base maintenance."
 					;
-					uifc.input(WIN_MID|WIN_SAV,0,17,"Maximum Number of Messages (0=Unlimited)"
-						,str,9,K_EDIT|K_NUMBER);
-					cfg.sub[i]->maxmsgs=atoi(str);
-					cfg.sub[i]->misc|=SUB_HDRMOD;
+					uifc.input(WIN_MID | WIN_SAV, 0, 17, "Maximum Number of Messages (0=Unlimited)"
+					           , str, 9, K_EDIT | K_NUMBER);
+					cfg.sub[i]->maxmsgs = atoi(str);
+					cfg.sub[i]->misc |= SUB_HDRMOD;
 					break;
 				case 12:
-					sprintf(str,"%u",cfg.sub[i]->maxage);
-					uifc.helpbuf=
+					sprintf(str, "%u", cfg.sub[i]->maxage);
+					uifc.helpbuf =
 						"`Maximum Age of Messages:`\n"
 						"\n"
 						"This value is the maximum number of days that messages will be kept in\n"
@@ -558,14 +558,14 @@ void sub_cfg(int grpnum)
 						"A value of `0` means no maximum age of stored messages will be\n"
 						"imposed during message-base maintenance."
 					;
-					uifc.input(WIN_MID|WIN_SAV,0,17,"Maximum Age of Messages (in days)"
-						,str,5,K_EDIT|K_NUMBER);
-					cfg.sub[i]->maxage=atoi(str);
-					cfg.sub[i]->misc|=SUB_HDRMOD;
+					uifc.input(WIN_MID | WIN_SAV, 0, 17, "Maximum Age of Messages (in days)"
+					           , str, 5, K_EDIT | K_NUMBER);
+					cfg.sub[i]->maxage = atoi(str);
+					cfg.sub[i]->misc |= SUB_HDRMOD;
 					break;
 				case 13:
-					sprintf(str,"%"PRIu32,cfg.sub[i]->maxcrcs);
-					uifc.helpbuf=
+					sprintf(str, "%" PRIu32, cfg.sub[i]->maxcrcs);
+					uifc.helpbuf =
 						"`Maximum Number of CRCs:`\n"
 						"\n"
 						"This value is the maximum number of 32-bit CRCs that will be retained in\n"
@@ -579,88 +579,88 @@ void sub_cfg(int grpnum)
 						"\n"
 						"Note: Hashing and duplicate-checking of `Message-IDs` cannot be disabled."
 					;
-					uifc.input(WIN_MID|WIN_SAV,0,17,"Maximum Number of CRCs"
-						,str,9,K_EDIT|K_NUMBER);
-					cfg.sub[i]->maxcrcs=atol(str);
-					cfg.sub[i]->misc|=SUB_HDRMOD;
+					uifc.input(WIN_MID | WIN_SAV, 0, 17, "Maximum Number of CRCs"
+					           , str, 9, K_EDIT | K_NUMBER);
+					cfg.sub[i]->maxcrcs = atol(str);
+					cfg.sub[i]->misc |= SUB_HDRMOD;
 					break;
 				case 14:
-					while(1) {
-						n=0;
-						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Allow Private Posts"
-							,cfg.sub[i]->misc&SUB_PRIV ? cfg.sub[i]->misc&SUB_PONLY
-							? "Only":"Yes":"No");
-						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Allow Anonymous Posts"
-							,cfg.sub[i]->misc&SUB_ANON ? cfg.sub[i]->misc&SUB_AONLY
-							? "Only":"Yes":"No");
-						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Post Using Real Names"
-							,cfg.sub[i]->misc&SUB_NAME ? "Yes":"No");
-						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Users Can Edit Posts"
-							,cfg.sub[i]->misc&SUB_EDIT ? cfg.sub[i]->misc&SUB_EDITLAST
-							? "Last" : "Yes" : "No");
-						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Users Can Delete Posts"
-							,cfg.sub[i]->misc&SUB_DEL ? cfg.sub[i]->misc&SUB_DELLAST
-							? "Last" : "Yes" : "No");
-						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Default On for New Scan"
-							,cfg.sub[i]->misc&SUB_NSDEF ? "Yes":"No");
-						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Forced On for New Scan"
-							,cfg.sub[i]->misc&SUB_FORCED ? "Yes":"No");
-						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Default On for Your Scan"
-							,cfg.sub[i]->misc&SUB_SSDEF ? "Yes":"No");
-						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Public 'To' User"
-							,cfg.sub[i]->misc&SUB_TOUSER ? "Yes":"No");
-						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Allow Message Voting"
-							,cfg.sub[i]->misc&SUB_NOVOTING ? "No":"Yes");
-						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Allow Message Quoting"
-							,cfg.sub[i]->misc&SUB_QUOTE ? "Yes":"No");
-						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Allow Message Tagging"
-							,cfg.sub[i]->misc&SUB_MSGTAGS ? "Yes":"No");
-						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Suppress User Signatures"
-							,cfg.sub[i]->misc&SUB_NOUSERSIG ? "Yes":"No");
-						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Permanent Operator Msgs"
-							,cfg.sub[i]->misc&SUB_SYSPERM ? "Yes":"No");
+					while (1) {
+						n = 0;
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s", "Allow Private Posts"
+						         , cfg.sub[i]->misc & SUB_PRIV ? cfg.sub[i]->misc & SUB_PONLY
+						    ? "Only":"Yes":"No");
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s", "Allow Anonymous Posts"
+						         , cfg.sub[i]->misc & SUB_ANON ? cfg.sub[i]->misc & SUB_AONLY
+						    ? "Only":"Yes":"No");
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s", "Post Using Real Names"
+						         , cfg.sub[i]->misc & SUB_NAME ? "Yes":"No");
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s", "Users Can Edit Posts"
+						         , cfg.sub[i]->misc & SUB_EDIT ? cfg.sub[i]->misc & SUB_EDITLAST
+						    ? "Last" : "Yes" : "No");
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s", "Users Can Delete Posts"
+						         , cfg.sub[i]->misc & SUB_DEL ? cfg.sub[i]->misc & SUB_DELLAST
+						    ? "Last" : "Yes" : "No");
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s", "Default On for New Scan"
+						         , cfg.sub[i]->misc & SUB_NSDEF ? "Yes":"No");
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s", "Forced On for New Scan"
+						         , cfg.sub[i]->misc & SUB_FORCED ? "Yes":"No");
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s", "Default On for Your Scan"
+						         , cfg.sub[i]->misc & SUB_SSDEF ? "Yes":"No");
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s", "Public 'To' User"
+						         , cfg.sub[i]->misc & SUB_TOUSER ? "Yes":"No");
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s", "Allow Message Voting"
+						         , cfg.sub[i]->misc & SUB_NOVOTING ? "No":"Yes");
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s", "Allow Message Quoting"
+						         , cfg.sub[i]->misc & SUB_QUOTE ? "Yes":"No");
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s", "Allow Message Tagging"
+						         , cfg.sub[i]->misc & SUB_MSGTAGS ? "Yes":"No");
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s", "Suppress User Signatures"
+						         , cfg.sub[i]->misc & SUB_NOUSERSIG ? "Yes":"No");
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s", "Permanent Operator Msgs"
+						         , cfg.sub[i]->misc & SUB_SYSPERM ? "Yes":"No");
 	#if 0 /* this is not actually implemented (yet?) */
-						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Kill Read Messages"
-							,cfg.sub[i]->misc&SUB_KILL ? "Yes"
-							: (cfg.sub[i]->misc&SUB_KILLP ? "Pvt" : "No"));
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s", "Kill Read Messages"
+						         , cfg.sub[i]->misc & SUB_KILL ? "Yes"
+						    : (cfg.sub[i]->misc & SUB_KILLP ? "Pvt" : "No"));
 	#endif
-						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Compress Messages (LZH)"
-							,cfg.sub[i]->misc&SUB_LZH ? "Yes" : "No");
-						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Apply Markup Codes"
-							,cfg.sub[i]->pmode&P_MARKUP ? ((cfg.sub[i]->pmode&P_HIDEMARKS)  ? "Hide" : "Yes") : "No");
-						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Extra Attribute Codes"
-							,cfg.sub[i]->pmode&P_NOXATTRS ? "No" : "Yes");
-						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Word-wrap Messages"
-							,cfg.sub[i]->n_pmode&P_WORDWRAP ? "No" : "Yes");
-						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Auto-detect UTF-8 Msgs"
-							,cfg.sub[i]->pmode&P_AUTO_UTF8 ? "Yes" : "No");
-						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Expand @-codes in Sysop Msgs"
-							,cfg.sub[i]->pmode&P_NOATCODES ? "No" : "Yes");
-						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s","Template for New Subs"
-							,cfg.sub[i]->misc&SUB_TEMPLATE ? "Yes" : "No");
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s", "Compress Messages (LZH)"
+						         , cfg.sub[i]->misc & SUB_LZH ? "Yes" : "No");
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s", "Apply Markup Codes"
+						         , cfg.sub[i]->pmode & P_MARKUP ? ((cfg.sub[i]->pmode & P_HIDEMARKS)  ? "Hide" : "Yes") : "No");
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s", "Extra Attribute Codes"
+						         , cfg.sub[i]->pmode & P_NOXATTRS ? "No" : "Yes");
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s", "Word-wrap Messages"
+						         , cfg.sub[i]->n_pmode & P_WORDWRAP ? "No" : "Yes");
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s", "Auto-detect UTF-8 Msgs"
+						         , cfg.sub[i]->pmode & P_AUTO_UTF8 ? "Yes" : "No");
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s", "Expand @-codes in Sysop Msgs"
+						         , cfg.sub[i]->pmode & P_NOATCODES ? "No" : "Yes");
+						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s", "Template for New Subs"
+						         , cfg.sub[i]->misc & SUB_TEMPLATE ? "Yes" : "No");
 
-						opt[n][0]=0;
-						uifc.helpbuf=
+						opt[n][0] = 0;
+						uifc.helpbuf =
 							"`Sub-board Toggle Options:`\n"
 							"\n"
 							"This menu allows you to toggle certain options for the selected\n"
 							"sub-board between two or more settings, such as `Yes` and `No`.\n"
 						;
-						n=uifc.list(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT,0,0,0,&tog_dflt, &tog_bar
-							,"Toggle Options",opt);
-						if(n==-1)
+						n = uifc.list(WIN_ACT | WIN_SAV | WIN_RHT | WIN_BOT, 0, 0, 0, &tog_dflt, &tog_bar
+						              , "Toggle Options", opt);
+						if (n == -1)
 							break;
-						switch(n) {
+						switch (n) {
 							case __COUNTER__:
-								if(cfg.sub[i]->misc&SUB_PONLY)
-									n=2;
+								if (cfg.sub[i]->misc & SUB_PONLY)
+									n = 2;
 								else
-									n=(cfg.sub[i]->misc&SUB_PRIV) ? 0:1;
-								strcpy(opt[0],"Yes");
-								strcpy(opt[1],"No");
-								strcpy(opt[2],"Only");
-								opt[3][0]=0;
-								uifc.helpbuf=
+									n = (cfg.sub[i]->misc & SUB_PRIV) ? 0:1;
+								strcpy(opt[0], "Yes");
+								strcpy(opt[1], "No");
+								strcpy(opt[2], "Only");
+								opt[3][0] = 0;
+								uifc.helpbuf =
 									"`Allow Private Posts on Sub-board:`\n"
 									"\n"
 									"If you want users to be able to post private messages to other users\n"
@@ -668,38 +668,38 @@ void sub_cfg(int grpnum)
 									"preferred method of private communication. If you want users to be able\n"
 									"to post private messages only on this sub-board, select `Only`.\n"
 								;
-								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
-									,"Allow Private Posts",opt);
-								if(n==-1)
+								n = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &n, 0
+								              , "Allow Private Posts", opt);
+								if (n == -1)
 									break;
-								if(!n && (cfg.sub[i]->misc&(SUB_PRIV|SUB_PONLY))
-									!=SUB_PRIV) {
+								if (!n && (cfg.sub[i]->misc & (SUB_PRIV | SUB_PONLY))
+								    != SUB_PRIV) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_PONLY;
-									cfg.sub[i]->misc|=SUB_PRIV;
-									break;
-								}
-								if(n==1 && cfg.sub[i]->misc&SUB_PRIV) {
-									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_PRIV;
+									cfg.sub[i]->misc &= ~SUB_PONLY;
+									cfg.sub[i]->misc |= SUB_PRIV;
 									break;
 								}
-								if(n==2 && (cfg.sub[i]->misc&(SUB_PRIV|SUB_PONLY))
-									!=(SUB_PRIV|SUB_PONLY)) {
+								if (n == 1 && cfg.sub[i]->misc & SUB_PRIV) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc|=(SUB_PRIV|SUB_PONLY);
+									cfg.sub[i]->misc &= ~SUB_PRIV;
+									break;
+								}
+								if (n == 2 && (cfg.sub[i]->misc & (SUB_PRIV | SUB_PONLY))
+								    != (SUB_PRIV | SUB_PONLY)) {
+									uifc.changes = TRUE;
+									cfg.sub[i]->misc |= (SUB_PRIV | SUB_PONLY);
 								}
 								break;
 							case __COUNTER__:
-								if(cfg.sub[i]->misc&SUB_AONLY)
-									n=2;
+								if (cfg.sub[i]->misc & SUB_AONLY)
+									n = 2;
 								else
-									n=(cfg.sub[i]->misc&SUB_ANON) ? 0:1;
-								strcpy(opt[0],"Yes");
-								strcpy(opt[1],"No");
-								strcpy(opt[2],"Only");
-								opt[3][0]=0;
-								uifc.helpbuf=
+									n = (cfg.sub[i]->misc & SUB_ANON) ? 0:1;
+								strcpy(opt[0], "Yes");
+								strcpy(opt[1], "No");
+								strcpy(opt[2], "Only");
+								opt[3][0] = 0;
+								uifc.helpbuf =
 									"`Allow Anonymous Posts on Sub-board:`\n"
 									"\n"
 									"If you want users with the `A` exemption to be able to post anonymously on\n"
@@ -707,107 +707,107 @@ void sub_cfg(int grpnum)
 									"forced anonymous, select `Only`. If you do not want anonymous posts allowed\n"
 									"on this sub-board at all, select `No`.\n"
 								;
-								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
-									,"Allow Anonymous Posts",opt);
-								if(n==-1)
+								n = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &n, 0
+								              , "Allow Anonymous Posts", opt);
+								if (n == -1)
 									break;
-								if(!n && (cfg.sub[i]->misc&(SUB_ANON|SUB_AONLY))
-									!=SUB_ANON) {
+								if (!n && (cfg.sub[i]->misc & (SUB_ANON | SUB_AONLY))
+								    != SUB_ANON) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_AONLY;
-									cfg.sub[i]->misc|=SUB_ANON;
-									break;
-								}
-								if(n==1 && cfg.sub[i]->misc&(SUB_ANON|SUB_AONLY)) {
-									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~(SUB_ANON|SUB_AONLY);
+									cfg.sub[i]->misc &= ~SUB_AONLY;
+									cfg.sub[i]->misc |= SUB_ANON;
 									break;
 								}
-								if(n==2 && (cfg.sub[i]->misc&(SUB_ANON|SUB_AONLY))
-									!=(SUB_ANON|SUB_AONLY)) {
+								if (n == 1 && cfg.sub[i]->misc & (SUB_ANON | SUB_AONLY)) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc|=(SUB_ANON|SUB_AONLY);
+									cfg.sub[i]->misc &= ~(SUB_ANON | SUB_AONLY);
+									break;
+								}
+								if (n == 2 && (cfg.sub[i]->misc & (SUB_ANON | SUB_AONLY))
+								    != (SUB_ANON | SUB_AONLY)) {
+									uifc.changes = TRUE;
+									cfg.sub[i]->misc |= (SUB_ANON | SUB_AONLY);
 								}
 								break;
 							case __COUNTER__:
-								n=(cfg.sub[i]->misc&SUB_NAME) ? 0:1;
-								uifc.helpbuf=
+								n = (cfg.sub[i]->misc & SUB_NAME) ? 0:1;
+								uifc.helpbuf =
 									"`User Real Names in Posts on Sub-board:`\n"
 									"\n"
 									"If you allow aliases on your system, you can have messages on this\n"
 									"sub-board automatically use the real name of the posting user by setting\n"
 									"this option to `Yes`.\n"
 								;
-								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
-									,"Use Real Names in Posts",uifcYesNoOpts);
-								if(n==-1)
+								n = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &n, 0
+								              , "Use Real Names in Posts", uifcYesNoOpts);
+								if (n == -1)
 									break;
-								if(!n && !(cfg.sub[i]->misc&SUB_NAME)) {
+								if (!n && !(cfg.sub[i]->misc & SUB_NAME)) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc|=SUB_NAME;
+									cfg.sub[i]->misc |= SUB_NAME;
 									break;
 								}
-								if(n==1 && cfg.sub[i]->misc&SUB_NAME) {
+								if (n == 1 && cfg.sub[i]->misc & SUB_NAME) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_NAME;
+									cfg.sub[i]->misc &= ~SUB_NAME;
 								}
 								break;
 							case __COUNTER__:
-								if(cfg.sub[i]->misc&SUB_EDITLAST)
-									n=2;
+								if (cfg.sub[i]->misc & SUB_EDITLAST)
+									n = 2;
 								else
-									n=(cfg.sub[i]->misc&SUB_EDIT) ? 0:1;
-								strcpy(opt[0],"Yes");
-								strcpy(opt[1],"No");
-								strcpy(opt[2],"Last Post Only");
-								opt[3][0]=0;
-								uifc.helpbuf=
+									n = (cfg.sub[i]->misc & SUB_EDIT) ? 0:1;
+								strcpy(opt[0], "Yes");
+								strcpy(opt[1], "No");
+								strcpy(opt[2], "Last Post Only");
+								opt[3][0] = 0;
+								uifc.helpbuf =
 									"`Users Can Edit Posts on Sub-board:`\n"
 									"\n"
 									"If you wish to allow users to edit their messages after they have been\n"
 									"posted, this option to `Yes`. If you wish to allow users to edit only the\n"
 									"last message on a message base, set this option to `Last Post Only`.\n"
 								;
-								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
-									,"Users Can Edit Messages",opt);
-								if(n==-1)
+								n = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &n, 0
+								              , "Users Can Edit Messages", opt);
+								if (n == -1)
 									break;
-								if(n==0 /* yes */
-									&& (cfg.sub[i]->misc&(SUB_EDIT|SUB_EDITLAST))
-									!=SUB_EDIT
-									) {
+								if (n == 0 /* yes */
+								    && (cfg.sub[i]->misc & (SUB_EDIT | SUB_EDITLAST))
+								    != SUB_EDIT
+								    ) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc|=SUB_EDIT;
-									cfg.sub[i]->misc&=~SUB_EDITLAST;
-									break;
-								}
-								if(n==1 /* no */
-									&& cfg.sub[i]->misc&(SUB_EDIT|SUB_EDITLAST)
-									) {
-									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~(SUB_EDIT|SUB_EDITLAST);
+									cfg.sub[i]->misc |= SUB_EDIT;
+									cfg.sub[i]->misc &= ~SUB_EDITLAST;
 									break;
 								}
-								if(n==2 /* last only */
-									&& (cfg.sub[i]->misc&(SUB_EDIT|SUB_EDITLAST))
-									!=(SUB_EDIT|SUB_EDITLAST)
-									) {
+								if (n == 1 /* no */
+								    && cfg.sub[i]->misc & (SUB_EDIT | SUB_EDITLAST)
+								    ) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc|=(SUB_EDIT|SUB_EDITLAST);
+									cfg.sub[i]->misc &= ~(SUB_EDIT | SUB_EDITLAST);
+									break;
+								}
+								if (n == 2 /* last only */
+								    && (cfg.sub[i]->misc & (SUB_EDIT | SUB_EDITLAST))
+								    != (SUB_EDIT | SUB_EDITLAST)
+								    ) {
+									uifc.changes = TRUE;
+									cfg.sub[i]->misc |= (SUB_EDIT | SUB_EDITLAST);
 									break;
 								}
 								break;
 							case __COUNTER__:
-								if(cfg.sub[i]->misc&SUB_DELLAST)
-									n=2;
+								if (cfg.sub[i]->misc & SUB_DELLAST)
+									n = 2;
 								else
-									n=(cfg.sub[i]->misc&SUB_DEL) ? 0:1;
+									n = (cfg.sub[i]->misc & SUB_DEL) ? 0:1;
 
-								strcpy(opt[0],"Yes");
-								strcpy(opt[1],"No");
-								strcpy(opt[2],"Last Post Only");
-								opt[3][0]=0;
-								uifc.helpbuf=
+								strcpy(opt[0], "Yes");
+								strcpy(opt[1], "No");
+								strcpy(opt[2], "Last Post Only");
+								opt[3][0] = 0;
+								uifc.helpbuf =
 									"`Users Can Delete Posts on Sub-board:`\n"
 									"\n"
 									"If you want users to be able to delete any of their own posts on this\n"
@@ -816,271 +816,271 @@ void sub_cfg(int grpnum)
 									"sub-board, select `Last Post Only`. If you want to disallow users from\n"
 									"deleting any of their posts, set this option to `No`.\n"
 								;
-								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
-									,"Users Can Delete Posts",opt);
-								if(n==-1)
+								n = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &n, 0
+								              , "Users Can Delete Posts", opt);
+								if (n == -1)
 									break;
-								if(!n && (cfg.sub[i]->misc&(SUB_DEL|SUB_DELLAST))
-									!=SUB_DEL) {
+								if (!n && (cfg.sub[i]->misc & (SUB_DEL | SUB_DELLAST))
+								    != SUB_DEL) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_DELLAST;
-									cfg.sub[i]->misc|=SUB_DEL;
-									break;
-								}
-								if(n==1 && cfg.sub[i]->misc&SUB_DEL) {
-									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_DEL;
+									cfg.sub[i]->misc &= ~SUB_DELLAST;
+									cfg.sub[i]->misc |= SUB_DEL;
 									break;
 								}
-								if(n==2 && (cfg.sub[i]->misc&(SUB_DEL|SUB_DELLAST))
-									!=(SUB_DEL|SUB_DELLAST)) {
+								if (n == 1 && cfg.sub[i]->misc & SUB_DEL) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc|=(SUB_DEL|SUB_DELLAST);
+									cfg.sub[i]->misc &= ~SUB_DEL;
+									break;
+								}
+								if (n == 2 && (cfg.sub[i]->misc & (SUB_DEL | SUB_DELLAST))
+								    != (SUB_DEL | SUB_DELLAST)) {
+									uifc.changes = TRUE;
+									cfg.sub[i]->misc |= (SUB_DEL | SUB_DELLAST);
 								}
 								break;
 							case __COUNTER__:
-								n=(cfg.sub[i]->misc&SUB_NSDEF) ? 0:1;
-								uifc.helpbuf=
+								n = (cfg.sub[i]->misc & SUB_NSDEF) ? 0:1;
+								uifc.helpbuf =
 									"`Default On for New Scan:`\n"
 									"\n"
 									"If you want this sub-board to be included in all user new message scans\n"
 									"by default, set this option to `Yes`.\n"
 								;
-								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
-									,"Default On for New Scan",uifcYesNoOpts);
-								if(n==-1)
+								n = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &n, 0
+								              , "Default On for New Scan", uifcYesNoOpts);
+								if (n == -1)
 									break;
-								if(!n && !(cfg.sub[i]->misc&SUB_NSDEF)) {
+								if (!n && !(cfg.sub[i]->misc & SUB_NSDEF)) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc|=SUB_NSDEF;
+									cfg.sub[i]->misc |= SUB_NSDEF;
 									break;
 								}
-								if(n==1 && cfg.sub[i]->misc&SUB_NSDEF) {
+								if (n == 1 && cfg.sub[i]->misc & SUB_NSDEF) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_NSDEF;
+									cfg.sub[i]->misc &= ~SUB_NSDEF;
 								}
 								break;
 							case __COUNTER__:
-								n=(cfg.sub[i]->misc&SUB_FORCED) ? 0:1;
-								uifc.helpbuf=
+								n = (cfg.sub[i]->misc & SUB_FORCED) ? 0:1;
+								uifc.helpbuf =
 									"`Forced On for New Scan:`\n"
 									"\n"
 									"If you want this sub-board to be included in all user new message scans\n"
 									"even if the user has removed it from their new scan configuration, set\n"
 									"this option to `Yes`.\n"
 								;
-								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
-									,"Forced New Scan",uifcYesNoOpts);
-								if(n==-1)
+								n = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &n, 0
+								              , "Forced New Scan", uifcYesNoOpts);
+								if (n == -1)
 									break;
-								if(!n && !(cfg.sub[i]->misc&SUB_FORCED)) {
+								if (!n && !(cfg.sub[i]->misc & SUB_FORCED)) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc|=SUB_FORCED;
+									cfg.sub[i]->misc |= SUB_FORCED;
 									break;
 								}
-								if(n==1 && cfg.sub[i]->misc&SUB_FORCED) {
+								if (n == 1 && cfg.sub[i]->misc & SUB_FORCED) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_FORCED;
+									cfg.sub[i]->misc &= ~SUB_FORCED;
 								}
 								break;
 							case __COUNTER__:
-								n=(cfg.sub[i]->misc&SUB_SSDEF) ? 0:1;
-								uifc.helpbuf=
+								n = (cfg.sub[i]->misc & SUB_SSDEF) ? 0:1;
+								uifc.helpbuf =
 									"`Default On for Your Scan:`\n"
 									"\n"
 									"If you want this sub-board to be included in all user personal message\n"
 									"scans by default, set this option to `Yes`.\n"
 								;
-								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
-									,"Default On for Your Scan",uifcYesNoOpts);
-								if(n==-1)
+								n = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &n, 0
+								              , "Default On for Your Scan", uifcYesNoOpts);
+								if (n == -1)
 									break;
-								if(!n && !(cfg.sub[i]->misc&SUB_SSDEF)) {
+								if (!n && !(cfg.sub[i]->misc & SUB_SSDEF)) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc|=SUB_SSDEF;
+									cfg.sub[i]->misc |= SUB_SSDEF;
 									break;
 								}
-								if(n==1 && cfg.sub[i]->misc&SUB_SSDEF) {
+								if (n == 1 && cfg.sub[i]->misc & SUB_SSDEF) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_SSDEF;
+									cfg.sub[i]->misc &= ~SUB_SSDEF;
 								}
 								break;
 							case __COUNTER__:
-								n=(cfg.sub[i]->misc&SUB_TOUSER) ? 0:1;
-								uifc.helpbuf=
+								n = (cfg.sub[i]->misc & SUB_TOUSER) ? 0:1;
+								uifc.helpbuf =
 									"`Prompt for 'To' User on Public Posts:`\n"
 									"\n"
 									"If you want all posts on this sub-board to be prompted for a 'To' user,\n"
 									"set this option to `Yes`. This is a useful option for sub-boards that\n"
 									"are on a network that does not allow private posts.\n"
 								;
-								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
-									,"Prompt for 'To' User on Public Posts",uifcYesNoOpts);
-								if(n==-1)
+								n = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &n, 0
+								              , "Prompt for 'To' User on Public Posts", uifcYesNoOpts);
+								if (n == -1)
 									break;
-								if(!n && !(cfg.sub[i]->misc&SUB_TOUSER)) {
+								if (!n && !(cfg.sub[i]->misc & SUB_TOUSER)) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc|=SUB_TOUSER;
+									cfg.sub[i]->misc |= SUB_TOUSER;
 									break;
 								}
-								if(n==1 && cfg.sub[i]->misc&SUB_TOUSER) {
+								if (n == 1 && cfg.sub[i]->misc & SUB_TOUSER) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_TOUSER;
+									cfg.sub[i]->misc &= ~SUB_TOUSER;
 								}
 								break;
 							case __COUNTER__:
-								n=(cfg.sub[i]->misc&SUB_NOVOTING) ? 1:0;
-								uifc.helpbuf=
+								n = (cfg.sub[i]->misc & SUB_NOVOTING) ? 1:0;
+								uifc.helpbuf =
 									"`Allow Message Voting:`\n"
 									"\n"
 									"If you want users to be allowed to Up-Vote or Down-Vote messages on this\n"
 									"sub-board, set this option to `Yes`.\n"
 								;
-								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
-									,"Allow Message Voting",uifcYesNoOpts);
-								if(n==-1)
+								n = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &n, 0
+								              , "Allow Message Voting", uifcYesNoOpts);
+								if (n == -1)
 									break;
-								if(!n && (cfg.sub[i]->misc&SUB_NOVOTING)) {
+								if (!n && (cfg.sub[i]->misc & SUB_NOVOTING)) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->misc ^= SUB_NOVOTING;
 									break;
 								}
-								if(n==1 && !(cfg.sub[i]->misc&SUB_NOVOTING)) {
+								if (n == 1 && !(cfg.sub[i]->misc & SUB_NOVOTING)) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->misc ^= SUB_NOVOTING;
 								}
 								break;
 							case __COUNTER__:
-								n=(cfg.sub[i]->misc&SUB_QUOTE) ? 0:1;
-								uifc.helpbuf=
+								n = (cfg.sub[i]->misc & SUB_QUOTE) ? 0:1;
+								uifc.helpbuf =
 									"`Allow Message Quoting:`\n"
 									"\n"
 									"If you want users to be allowed to quote messages on this sub-board, set\n"
 									"this option to `Yes`.\n"
 								;
-								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
-									,"Allow Message Quoting",uifcYesNoOpts);
-								if(n==-1)
+								n = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &n, 0
+								              , "Allow Message Quoting", uifcYesNoOpts);
+								if (n == -1)
 									break;
-								if(!n && !(cfg.sub[i]->misc&SUB_QUOTE)) {
+								if (!n && !(cfg.sub[i]->misc & SUB_QUOTE)) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc|=SUB_QUOTE;
+									cfg.sub[i]->misc |= SUB_QUOTE;
 									break;
 								}
-								if(n==1 && cfg.sub[i]->misc&SUB_QUOTE) {
+								if (n == 1 && cfg.sub[i]->misc & SUB_QUOTE) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_QUOTE;
+									cfg.sub[i]->misc &= ~SUB_QUOTE;
 								}
 								break;
 							case __COUNTER__:
-								n=(cfg.sub[i]->misc&SUB_MSGTAGS) ? 0:1;
-								uifc.helpbuf=
+								n = (cfg.sub[i]->misc & SUB_MSGTAGS) ? 0:1;
+								uifc.helpbuf =
 									"`Allow Message Tagging:`\n"
 									"\n"
 									"If you want users to be allowed to add tags to messages on this sub-board, \n"
 									"set this option to `Yes` (not to be confused with 'tag-lines').\n"
 								;
-								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
-									,"Allow Message Tagging",uifcYesNoOpts);
-								if(n==-1)
+								n = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &n, 0
+								              , "Allow Message Tagging", uifcYesNoOpts);
+								if (n == -1)
 									break;
-								if(!n && !(cfg.sub[i]->misc&SUB_MSGTAGS)) {
+								if (!n && !(cfg.sub[i]->misc & SUB_MSGTAGS)) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc|=SUB_MSGTAGS;
+									cfg.sub[i]->misc |= SUB_MSGTAGS;
 									break;
 								}
-								if(n==1 && cfg.sub[i]->misc&SUB_MSGTAGS) {
+								if (n == 1 && cfg.sub[i]->misc & SUB_MSGTAGS) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_MSGTAGS;
+									cfg.sub[i]->misc &= ~SUB_MSGTAGS;
 								}
 								break;
 							case __COUNTER__:
-								n=(cfg.sub[i]->misc&SUB_NOUSERSIG) ? 0:1;
-								uifc.helpbuf=
+								n = (cfg.sub[i]->misc & SUB_NOUSERSIG) ? 0:1;
+								uifc.helpbuf =
 									"Suppress User Signatures:\n"
 									"\n"
 									"If you do not wish to have user signatures automatically appended to\n"
 									"messages posted in this sub-board, set this option to Yes.\n"
 								;
-								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
-									,"Suppress User Signatures",uifcYesNoOpts);
-								if(n==-1)
+								n = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &n, 0
+								              , "Suppress User Signatures", uifcYesNoOpts);
+								if (n == -1)
 									break;
-								if(!n && !(cfg.sub[i]->misc&SUB_NOUSERSIG)) {
+								if (!n && !(cfg.sub[i]->misc & SUB_NOUSERSIG)) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc|=SUB_NOUSERSIG;
+									cfg.sub[i]->misc |= SUB_NOUSERSIG;
 									break;
 								}
-								if(n==1 && cfg.sub[i]->misc&SUB_NOUSERSIG) {
+								if (n == 1 && cfg.sub[i]->misc & SUB_NOUSERSIG) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_NOUSERSIG;
+									cfg.sub[i]->misc &= ~SUB_NOUSERSIG;
 								}
 								break;
 							case __COUNTER__:
-								n=(cfg.sub[i]->misc&SUB_SYSPERM) ? 0:1;
-								uifc.helpbuf=
+								n = (cfg.sub[i]->misc & SUB_SYSPERM) ? 0:1;
+								uifc.helpbuf =
 									"`Operator Messages Automatically Permanent:`\n"
 									"\n"
 									"If you want messages posted by `System` and `Sub-board Operators` to be\n"
 									"automatically permanent (non-purgeable) for this sub-board, set this\n"
 									"option to `Yes`.\n"
 								;
-								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
-									,"Permanent Operator Messages",uifcYesNoOpts);
-								if(n==-1)
+								n = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &n, 0
+								              , "Permanent Operator Messages", uifcYesNoOpts);
+								if (n == -1)
 									break;
-								if(!n && !(cfg.sub[i]->misc&SUB_SYSPERM)) {
+								if (!n && !(cfg.sub[i]->misc & SUB_SYSPERM)) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc|=SUB_SYSPERM;
+									cfg.sub[i]->misc |= SUB_SYSPERM;
 									break;
 								}
-								if(n==1 && cfg.sub[i]->misc&SUB_SYSPERM) {
+								if (n == 1 && cfg.sub[i]->misc & SUB_SYSPERM) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_SYSPERM;
+									cfg.sub[i]->misc &= ~SUB_SYSPERM;
 								}
 								break;
 	#if 0 /* This is not actually implemented (yet?) */
 							case 12:
-								if(cfg.sub[i]->misc&SUB_KILLP)
-									n=2;
+								if (cfg.sub[i]->misc & SUB_KILLP)
+									n = 2;
 								else
-									n=(cfg.sub[i]->misc&SUB_KILL) ? 0:1;
-								strcpy(opt[0],"Yes");
-								strcpy(opt[1],"No");
-								strcpy(opt[2],"Private");
-								opt[3][0]=0;
-								uifc.helpbuf=
+									n = (cfg.sub[i]->misc & SUB_KILL) ? 0:1;
+								strcpy(opt[0], "Yes");
+								strcpy(opt[1], "No");
+								strcpy(opt[2], "Private");
+								opt[3][0] = 0;
+								uifc.helpbuf =
 									"`Kill Read Messages Automatically:`\n"
 									"\n"
 									"If you want messages that have been read by the intended recipient to\n"
 									"be automatically deleted by `SMBUTIL`, set this option to `Yes` or\n"
 									"`Private` if you want only private messages to be automatically deleted.\n"
 								;
-								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
-									,"Kill Read Messages",opt);
-								if(n==-1)
+								n = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &n, 0
+								              , "Kill Read Messages", opt);
+								if (n == -1)
 									break;
-								if(!n && !(cfg.sub[i]->misc&SUB_KILL)) {
+								if (!n && !(cfg.sub[i]->misc & SUB_KILL)) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc|=SUB_KILL;
-									cfg.sub[i]->misc&=~SUB_KILLP;
+									cfg.sub[i]->misc |= SUB_KILL;
+									cfg.sub[i]->misc &= ~SUB_KILLP;
 									break;
 								}
-								if(n==1 && cfg.sub[i]->misc&(SUB_KILL|SUB_KILLP)) {
+								if (n == 1 && cfg.sub[i]->misc & (SUB_KILL | SUB_KILLP)) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~(SUB_KILL|SUB_KILLP);
+									cfg.sub[i]->misc &= ~(SUB_KILL | SUB_KILLP);
 								}
-								if(n==2 && !(cfg.sub[i]->misc&SUB_KILLP)) {
+								if (n == 2 && !(cfg.sub[i]->misc & SUB_KILLP)) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc|=SUB_KILLP;
-									cfg.sub[i]->misc&=~SUB_KILL;
+									cfg.sub[i]->misc |= SUB_KILLP;
+									cfg.sub[i]->misc &= ~SUB_KILL;
 									break;
 								}
 								break;
 	#endif
 							case __COUNTER__:
-								n=(cfg.sub[i]->misc&SUB_LZH) ? 0:1;
-								uifc.helpbuf=
+								n = (cfg.sub[i]->misc & SUB_LZH) ? 0:1;
+								uifc.helpbuf =
 									"`Compress Messages with LZH Encoding:`\n"
 									"\n"
 									"If you want all messages in this sub-board to be automatically\n"
@@ -1093,23 +1093,23 @@ void sub_cfg(int grpnum)
 									"Before setting this option to `Yes`, make sure that all of the SMB\n"
 									"compatible mail programs you use support the `LZH` translation.\n"
 								;
-								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
-									,"Compress Messages (LZH)",uifcYesNoOpts);
-								if(n==-1)
+								n = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &n, 0
+								              , "Compress Messages (LZH)", uifcYesNoOpts);
+								if (n == -1)
 									break;
-								if(!n && !(cfg.sub[i]->misc&SUB_LZH)) {
+								if (!n && !(cfg.sub[i]->misc & SUB_LZH)) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc|=SUB_LZH;
+									cfg.sub[i]->misc |= SUB_LZH;
 									break;
 								}
-								if(n==1 && cfg.sub[i]->misc&SUB_LZH) {
+								if (n == 1 && cfg.sub[i]->misc & SUB_LZH) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_LZH;
+									cfg.sub[i]->misc &= ~SUB_LZH;
 								}
 								break;
 							case __COUNTER__:
-								n = (cfg.sub[i]->pmode&P_MARKUP) ? (cfg.sub[i]->pmode&P_HIDEMARKS ? 1 : 0) : 2;
-								uifc.helpbuf=
+								n = (cfg.sub[i]->pmode & P_MARKUP) ? (cfg.sub[i]->pmode & P_HIDEMARKS ? 1 : 0) : 2;
+								uifc.helpbuf =
 									"`Interpret/Display Markup Codes in Messages:`\n"
 									"\n"
 									"Markup codes are called 'StyleCodes' in GoldEd, 'Rich Text' in SemPoint,\n"
@@ -1122,75 +1122,75 @@ void sub_cfg(int grpnum)
 									"\n"
 									"Markup characters cannot be combined.\n"
 								;
-								strcpy(opt[0],"Yes");
-								strcpy(opt[1],"Yes and Hide the Markup Characters");
-								strcpy(opt[2],"No");
-								opt[3][0]=0;
-								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
-									,"Interpret/Display Markup Codes in Messages", opt);
-								if(n==-1)
+								strcpy(opt[0], "Yes");
+								strcpy(opt[1], "Yes and Hide the Markup Characters");
+								strcpy(opt[2], "No");
+								opt[3][0] = 0;
+								n = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &n, 0
+								              , "Interpret/Display Markup Codes in Messages", opt);
+								if (n == -1)
 									break;
-								if(n == 0 && (cfg.sub[i]->pmode&(P_MARKUP|P_HIDEMARKS)) != P_MARKUP) {
+								if (n == 0 && (cfg.sub[i]->pmode & (P_MARKUP | P_HIDEMARKS)) != P_MARKUP) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->pmode |= P_MARKUP;
 									cfg.sub[i]->pmode &= ~P_HIDEMARKS;
 								}
-								else if(n == 1 && (cfg.sub[i]->pmode&(P_MARKUP|P_HIDEMARKS)) != (P_MARKUP|P_HIDEMARKS)) {
+								else if (n == 1 && (cfg.sub[i]->pmode & (P_MARKUP | P_HIDEMARKS)) != (P_MARKUP | P_HIDEMARKS)) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->pmode |= (P_MARKUP|P_HIDEMARKS);
+									cfg.sub[i]->pmode |= (P_MARKUP | P_HIDEMARKS);
 								}
-								else if(n == 2 && (cfg.sub[i]->pmode&(P_MARKUP|P_HIDEMARKS)) != 0) {
+								else if (n == 2 && (cfg.sub[i]->pmode & (P_MARKUP | P_HIDEMARKS)) != 0) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->pmode &= ~(P_MARKUP|P_HIDEMARKS);
+									cfg.sub[i]->pmode &= ~(P_MARKUP | P_HIDEMARKS);
 								}
 								break;
 							case __COUNTER__:
-								n=(cfg.sub[i]->pmode&P_NOXATTRS) ? 1:0;
-								uifc.helpbuf=
+								n = (cfg.sub[i]->pmode & P_NOXATTRS) ? 1:0;
+								uifc.helpbuf =
 									"`Extra Attribute Codes:`\n"
 									"\n"
 									"Set this option to `No` to disable the interpretation of so-called\n"
 									"Extra Attribute Codes (printable color codes for other BBS software\n"
 									"e.g. pipe codes).\n"
 								;
-								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
-									,"Interpret/Display Extra Attribute Codes in Messages",uifcYesNoOpts);
-								if(n==-1)
+								n = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &n, 0
+								              , "Interpret/Display Extra Attribute Codes in Messages", uifcYesNoOpts);
+								if (n == -1)
 									break;
-								if(n == 0 && (cfg.sub[i]->pmode&P_NOXATTRS)) {
+								if (n == 0 && (cfg.sub[i]->pmode & P_NOXATTRS)) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->pmode ^= P_NOXATTRS;
 								}
-								else if(n == 1 && !(cfg.sub[i]->pmode&P_NOXATTRS)) {
+								else if (n == 1 && !(cfg.sub[i]->pmode & P_NOXATTRS)) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->pmode ^= P_NOXATTRS;
 								}
 								break;
 							case __COUNTER__:
-								n=(cfg.sub[i]->n_pmode&P_WORDWRAP) ? 1:0;
-								uifc.helpbuf=
+								n = (cfg.sub[i]->n_pmode & P_WORDWRAP) ? 1:0;
+								uifc.helpbuf =
 									"`Word-wrap Message Text:`\n"
 									"\n"
 									"Set this option to `No` to disable the automatic reflowing (word-wrapping)\n"
 									"of the lines of text of messages in this sub-board when viewed from the\n"
 									"Terminal Server."
 								;
-								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
-									,"Word-wrap Message Text",uifcYesNoOpts);
-								if(n==-1)
+								n = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &n, 0
+								              , "Word-wrap Message Text", uifcYesNoOpts);
+								if (n == -1)
 									break;
-								if(n == 0 && (cfg.sub[i]->n_pmode&P_WORDWRAP)) {
+								if (n == 0 && (cfg.sub[i]->n_pmode & P_WORDWRAP)) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->n_pmode ^= P_WORDWRAP;
 								}
-								else if(n == 1 && !(cfg.sub[i]->n_pmode&P_WORDWRAP)) {
+								else if (n == 1 && !(cfg.sub[i]->n_pmode & P_WORDWRAP)) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->n_pmode ^= P_WORDWRAP;
 								}
 								break;
 							case __COUNTER__:
-								n=(cfg.sub[i]->pmode&P_AUTO_UTF8) ? 0:1;
-								uifc.helpbuf=
+								n = (cfg.sub[i]->pmode & P_AUTO_UTF8) ? 0:1;
+								uifc.helpbuf =
 									"`Automatically Detect UTF-8 Message Text:`\n"
 									"\n"
 									"Set this option to `Yes` to enable automatic detection of UTF-8 message\n"
@@ -1199,44 +1199,44 @@ void sub_cfg(int grpnum)
 									"Note: Setting this option to `Yes` does *not* enable automatic detection\n"
 									"of UTF-8 header field values (e.g. To, From, Subject)."
 								;
-								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
-									,"Automatically Detect UTF-8 Message Text",uifcYesNoOpts);
-								if(n==-1)
+								n = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &n, 0
+								              , "Automatically Detect UTF-8 Message Text", uifcYesNoOpts);
+								if (n == -1)
 									break;
-								if(n == 0 && !(cfg.sub[i]->pmode&P_AUTO_UTF8)) {
+								if (n == 0 && !(cfg.sub[i]->pmode & P_AUTO_UTF8)) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->pmode ^= P_AUTO_UTF8;
 								}
-								else if(n == 1 && (cfg.sub[i]->pmode&P_AUTO_UTF8)) {
+								else if (n == 1 && (cfg.sub[i]->pmode & P_AUTO_UTF8)) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->pmode ^= P_AUTO_UTF8;
 								}
 								break;
 							case __COUNTER__:
-								n=(cfg.sub[i]->pmode&P_NOATCODES) ? 1:0;
-								uifc.helpbuf=
+								n = (cfg.sub[i]->pmode & P_NOATCODES) ? 1:0;
+								uifc.helpbuf =
 									"`Expand @-codes in Sysop-Posted Messages:`\n"
 									"\n"
 									"Set this option to `Yes` to enable the interpretation and expansion of\n"
 									"message variables (@-codes) in messages posted by the local sysop\n"
 									"(user #1).\n"
 								;
-								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
-									,"Expand @-codes in Sysop-Posted Messages",uifcYesNoOpts);
-								if(n==-1)
+								n = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &n, 0
+								              , "Expand @-codes in Sysop-Posted Messages", uifcYesNoOpts);
+								if (n == -1)
 									break;
-								if(n == 0 && (cfg.sub[i]->pmode & P_NOATCODES)) {
+								if (n == 0 && (cfg.sub[i]->pmode & P_NOATCODES)) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->pmode ^= P_NOATCODES;
 								}
-								else if(n == 1 && !(cfg.sub[i]->pmode & P_NOATCODES)) {
+								else if (n == 1 && !(cfg.sub[i]->pmode & P_NOATCODES)) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->pmode ^= P_NOATCODES;
 								}
 								break;
 							case __COUNTER__:
-								n=(cfg.sub[i]->misc&SUB_TEMPLATE) ? 0:1;
-								uifc.helpbuf=
+								n = (cfg.sub[i]->misc & SUB_TEMPLATE) ? 0:1;
+								uifc.helpbuf =
 									"`Use this Sub-board as a Template for New Subs:`\n"
 									"\n"
 									"If you want this sub-board's options / settings to be used as the\n"
@@ -1246,103 +1246,103 @@ void sub_cfg(int grpnum)
 									"If multiple sub-boards have this option enabled, only the first will be\n"
 									"used as the template."
 								;
-								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
-									,"Use this Sub-board as a Template for New Subs",uifcYesNoOpts);
-								if(n==-1)
+								n = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &n, 0
+								              , "Use this Sub-board as a Template for New Subs", uifcYesNoOpts);
+								if (n == -1)
 									break;
-								if(!n && !(cfg.sub[i]->misc&SUB_TEMPLATE)) {
+								if (!n && !(cfg.sub[i]->misc & SUB_TEMPLATE)) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc|=SUB_TEMPLATE;
+									cfg.sub[i]->misc |= SUB_TEMPLATE;
 									break;
 								}
-								if(n==1 && cfg.sub[i]->misc&SUB_TEMPLATE) {
+								if (n == 1 && cfg.sub[i]->misc & SUB_TEMPLATE) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_TEMPLATE;
+									cfg.sub[i]->misc &= ~SUB_TEMPLATE;
 								}
 								break;
-							}
 						}
+					}
 					break;
 				case 15:
-					while(1) {
-						n=0;
-						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Append Tag/Origin Line"
-							,cfg.sub[i]->misc&SUB_NOTAG ? "No":"Yes");
-						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Export ASCII Only"
-							,cfg.sub[i]->misc&SUB_ASCII ? "Yes":"No");
-						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Gate Between Net Types"
-							,cfg.sub[i]->misc&SUB_GATE ? "Yes":"No");
-						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","QWK Networked"
-							,cfg.sub[i]->misc&SUB_QNET ? "Yes":"No");
+					while (1) {
+						n = 0;
+						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s", "Append Tag/Origin Line"
+						         , cfg.sub[i]->misc & SUB_NOTAG ? "No":"Yes");
+						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s", "Export ASCII Only"
+						         , cfg.sub[i]->misc & SUB_ASCII ? "Yes":"No");
+						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s", "Gate Between Net Types"
+						         , cfg.sub[i]->misc & SUB_GATE ? "Yes":"No");
+						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s", "QWK Networked"
+						         , cfg.sub[i]->misc & SUB_QNET ? "Yes":"No");
 						snprintf(opt[n++], MAX_OPLN, "QWK Tagline");
-						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Internet (UUCP/NNTP)"
-							,cfg.sub[i]->misc&SUB_INET ? "Yes":"No");
-						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","FidoNet EchoMail"
-							,cfg.sub[i]->misc&SUB_FIDO ? "Yes":"No");
-						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","FidoNet Address"
-							,smb_faddrtoa(&cfg.sub[i]->faddr,tmp));
+						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s", "Internet (UUCP/NNTP)"
+						         , cfg.sub[i]->misc & SUB_INET ? "Yes":"No");
+						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s", "FidoNet EchoMail"
+						         , cfg.sub[i]->misc & SUB_FIDO ? "Yes":"No");
+						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s", "FidoNet Address"
+						         , smb_faddrtoa(&cfg.sub[i]->faddr, tmp));
 						snprintf(opt[n++], MAX_OPLN, "EchoMail Origin Line");
-						opt[n][0]=0;
-						uifc.helpbuf=
+						opt[n][0] = 0;
+						uifc.helpbuf =
 							"`Sub-board Network Options:`\n"
 							"\n"
 							"This menu contains options for the selected sub-board that pertain\n"
 							"specifically to message networking.\n"
 						;
-						n=uifc.list(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT,3,2,60,&net_dflt,0
-							,"Network Options",opt);
-						if(n==-1)
+						n = uifc.list(WIN_ACT | WIN_SAV | WIN_RHT | WIN_BOT, 3, 2, 60, &net_dflt, 0
+						              , "Network Options", opt);
+						if (n == -1)
 							break;
-						switch(n) {
+						switch (n) {
 							case 0:
-								n=0;
-								uifc.helpbuf=
+								n = 0;
+								uifc.helpbuf =
 									"`Append Tag/Origin Line to Posts:`\n"
 									"\n"
 									"If you want to disable the automatic addition of a network tagline or\n"
 									"origin line to the bottom of outgoing networked posts from this\n"
 									"sub-board, set this option to `No`.\n"
 								;
-								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
-									,"Append Tag/Origin Line to Posts",uifcYesNoOpts);
-								if(n==-1)
+								n = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &n, 0
+								              , "Append Tag/Origin Line to Posts", uifcYesNoOpts);
+								if (n == -1)
 									break;
-								if(!n && cfg.sub[i]->misc&SUB_NOTAG) {
+								if (!n && cfg.sub[i]->misc & SUB_NOTAG) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_NOTAG;
+									cfg.sub[i]->misc &= ~SUB_NOTAG;
 									break;
 								}
-								if(n==1 && !(cfg.sub[i]->misc&SUB_NOTAG)) {
+								if (n == 1 && !(cfg.sub[i]->misc & SUB_NOTAG)) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc|=SUB_NOTAG;
+									cfg.sub[i]->misc |= SUB_NOTAG;
 								}
 								break;
 							case 1:
-								n=0;
-								uifc.helpbuf=
+								n = 0;
+								uifc.helpbuf =
 									"`Export ASCII Characters Only:`\n"
 									"\n"
 									"If the network that this sub-board is echoed on does not allow extended\n"
 									"ASCII (>127) or control codes (<20, not including CR), set this option\n"
 									"to `Yes`.\n"
 								;
-								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
-									,"Export ASCII Characters Only",uifcYesNoOpts);
-								if(n==-1)
+								n = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &n, 0
+								              , "Export ASCII Characters Only", uifcYesNoOpts);
+								if (n == -1)
 									break;
-								if(n && cfg.sub[i]->misc&SUB_ASCII) {
+								if (n && cfg.sub[i]->misc & SUB_ASCII) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_ASCII;
+									cfg.sub[i]->misc &= ~SUB_ASCII;
 									break;
 								}
-								if(!n && !(cfg.sub[i]->misc&SUB_ASCII)) {
+								if (!n && !(cfg.sub[i]->misc & SUB_ASCII)) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc|=SUB_ASCII;
+									cfg.sub[i]->misc |= SUB_ASCII;
 								}
 								break;
 							case 2:
-								n=1;
-								uifc.helpbuf=
+								n = 1;
+								uifc.helpbuf =
 									"`Gate Between Net Types:`\n"
 									"\n"
 									"If this sub-board is networked using more than one network technology,\n"
@@ -1358,23 +1358,23 @@ void sub_cfg(int grpnum)
 									"This option does not affect the exporting of messages created on your\n"
 									"BBS.\n"
 								;
-								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
-									,"Gate Between Net Types",uifcYesNoOpts);
-								if(n==-1)
+								n = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &n, 0
+								              , "Gate Between Net Types", uifcYesNoOpts);
+								if (n == -1)
 									break;
-								if(!n && !(cfg.sub[i]->misc&SUB_GATE)) {
+								if (!n && !(cfg.sub[i]->misc & SUB_GATE)) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc|=SUB_GATE;
+									cfg.sub[i]->misc |= SUB_GATE;
 									break;
 								}
-								if(n==1 && cfg.sub[i]->misc&SUB_GATE) {
+								if (n == 1 && cfg.sub[i]->misc & SUB_GATE) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_GATE;
+									cfg.sub[i]->misc &= ~SUB_GATE;
 								}
 								break;
 							case 3:
-								n=1;
-								uifc.helpbuf=
+								n = 1;
+								uifc.helpbuf =
 									"`Sub-board Networked via QWK Packets:`\n"
 									"\n"
 									"If this sub-board is networked with other BBSs via QWK packets, this\n"
@@ -1383,34 +1383,34 @@ void sub_cfg(int grpnum)
 									"25 characters. It also allows the `N`etwork restriction to function\n"
 									"properly.\n"
 								;
-								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
-									,"Networked via QWK Packets",uifcYesNoOpts);
-								if(n==-1)
+								n = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &n, 0
+								              , "Networked via QWK Packets", uifcYesNoOpts);
+								if (n == -1)
 									break;
-								if(!n && !(cfg.sub[i]->misc&SUB_QNET)) {
+								if (!n && !(cfg.sub[i]->misc & SUB_QNET)) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc|=SUB_QNET;
+									cfg.sub[i]->misc |= SUB_QNET;
 									break;
 								}
-								if(n==1 && cfg.sub[i]->misc&SUB_QNET) {
+								if (n == 1 && cfg.sub[i]->misc & SUB_QNET) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_QNET;
+									cfg.sub[i]->misc &= ~SUB_QNET;
 								}
 								break;
 							case 4:
-								uifc.helpbuf=
+								uifc.helpbuf =
 									"`Sub-board QWK Network Tagline:`\n"
 									"\n"
 									"If you want to use a different QWK tagline than the configured default\n"
 									"tagline in the `Networks` configuration, you should enter that tagline\n"
 									"here. If this option is left blank, the default tagline is used.\n"
 								;
-								uifc.input(WIN_MID|WIN_SAV,0,0,"",cfg.sub[i]->tagline
-									,sizeof(cfg.sub[i]->tagline)-1,K_MSG|K_EDIT);
+								uifc.input(WIN_MID | WIN_SAV, 0, 0, "", cfg.sub[i]->tagline
+								           , sizeof(cfg.sub[i]->tagline) - 1, K_MSG | K_EDIT);
 								break;
 							case 5:
-								n=1;
-								uifc.helpbuf=
+								n = 1;
+								uifc.helpbuf =
 									"`Sub-board Networked via Internet:`\n"
 									"\n"
 									"If this sub-board is networked to the Internet via UUCP or NNTP, this\n"
@@ -1418,70 +1418,70 @@ void sub_cfg(int grpnum)
 									"\n"
 									"It will allow the `N`etwork user restriction to function properly.\n"
 								;
-								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
-									,"Networked via Internet",uifcYesNoOpts);
-								if(n==-1)
+								n = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &n, 0
+								              , "Networked via Internet", uifcYesNoOpts);
+								if (n == -1)
 									break;
-								if(!n && !(cfg.sub[i]->misc&SUB_INET)) {
+								if (!n && !(cfg.sub[i]->misc & SUB_INET)) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc|=SUB_INET;
+									cfg.sub[i]->misc |= SUB_INET;
 									break;
 								}
-								if(n==1 && cfg.sub[i]->misc&SUB_INET) {
+								if (n == 1 && cfg.sub[i]->misc & SUB_INET) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_INET;
+									cfg.sub[i]->misc &= ~SUB_INET;
 								}
 								break;
 							case 6:
-								n=1;
-								uifc.helpbuf=
+								n = 1;
+								uifc.helpbuf =
 									"`Sub-board Networked via FidoNet EchoMail:`\n"
 									"\n"
 									"If this sub-board is networked with a FidoNet-technology Network (FTN)\n"
 									"EchoMail conference (public message area) set this option to `Yes`.\n"
 								;
-								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
-									,"Networked via FidoNet EchoMail",uifcYesNoOpts);
-								if(n==-1)
+								n = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &n, 0
+								              , "Networked via FidoNet EchoMail", uifcYesNoOpts);
+								if (n == -1)
 									break;
-								if(!n && !(cfg.sub[i]->misc&SUB_FIDO)) {
+								if (!n && !(cfg.sub[i]->misc & SUB_FIDO)) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc|=SUB_FIDO;
+									cfg.sub[i]->misc |= SUB_FIDO;
 									break;
 								}
-								if(n==1 && cfg.sub[i]->misc&SUB_FIDO) {
+								if (n == 1 && cfg.sub[i]->misc & SUB_FIDO) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~SUB_FIDO;
+									cfg.sub[i]->misc &= ~SUB_FIDO;
 								}
 								break;
 							case 7:
 							{
 								int k = 0;
-								if(!cfg.total_faddrs) {
+								if (!cfg.total_faddrs) {
 									uifc.msg("You must configure a FidoNet address in Networks->FidoNet");
 									break;
 								}
-								uifc.helpbuf=
+								uifc.helpbuf =
 									"`Sub-board FidoNet Address:`\n"
 									"\n"
 									"If this sub-board is part of a FidoNet EchoMail conference, this is\n"
 									"the address used for this sub-board.\n"
 								;
-								for(n=0; n<cfg.total_faddrs && n<MAX_OPTS; n++) {
-									if(memcmp(&cfg.sub[i]->faddr, &cfg.faddr[n], sizeof(cfg.faddr[n])) == 0)
+								for (n = 0; n < cfg.total_faddrs && n < MAX_OPTS; n++) {
+									if (memcmp(&cfg.sub[i]->faddr, &cfg.faddr[n], sizeof(cfg.faddr[n])) == 0)
 										k = i;
-									strcpy(opt[n], smb_faddrtoa(&cfg.faddr[n],NULL));
+									strcpy(opt[n], smb_faddrtoa(&cfg.faddr[n], NULL));
 								}
-								opt[n][0]=0;
-								n = uifc.list(WIN_RHT|WIN_SAV|WIN_ACT|WIN_INSACT, 0, 0, 0, &k, NULL, "FidoNet Address", opt);
-								if(n >= 0 && n < cfg.total_faddrs) {
+								opt[n][0] = 0;
+								n = uifc.list(WIN_RHT | WIN_SAV | WIN_ACT | WIN_INSACT, 0, 0, 0, &k, NULL, "FidoNet Address", opt);
+								if (n >= 0 && n < cfg.total_faddrs) {
 									cfg.sub[i]->faddr = cfg.faddr[n];
 									uifc.changes = TRUE;
 								}
 								break;
 							}
 							case 8:
-								uifc.helpbuf=
+								uifc.helpbuf =
 									"`Sub-board FidoNet Origin Line:`\n"
 									"\n"
 									"If this sub-board is part of a FidoNet EchoMail conference and you\n"
@@ -1490,47 +1490,47 @@ void sub_cfg(int grpnum)
 									"\n"
 									"If this option is blank, the default origin line is used.\n"
 								;
-								uifc.input(WIN_MID|WIN_SAV,0,0,"",cfg.sub[i]->origline
-									,sizeof(cfg.sub[i]->origline)-1,K_EDIT);
+								uifc.input(WIN_MID | WIN_SAV, 0, 0, "", cfg.sub[i]->origline
+								           , sizeof(cfg.sub[i]->origline) - 1, K_EDIT);
 								break;
 						}
 					}
 					break;
 				case 16:
-					while(1) {
-						n=0;
-						if(cfg.sub[i]->qwkconf)
-							sprintf(str,"Static (%u)",cfg.sub[i]->qwkconf);
+					while (1) {
+						n = 0;
+						if (cfg.sub[i]->qwkconf)
+							sprintf(str, "Static (%u)", cfg.sub[i]->qwkconf);
 						else
-							strcpy(str,"Dynamic");
-						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","QWK Conference Number"
-							,str);
-						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Storage Method"
-							,cfg.sub[i]->misc&SUB_HYPER ? "Hyper Allocation"
-							: cfg.sub[i]->misc&SUB_FAST ? "Fast Allocation"
-							: "Self-packing");
-						if(!cfg.sub[i]->data_dir[0])
-							sprintf(str,"%ssubs/",cfg.data_dir);
+							strcpy(str, "Dynamic");
+						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s", "QWK Conference Number"
+						         , str);
+						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s", "Storage Method"
+						         , cfg.sub[i]->misc & SUB_HYPER ? "Hyper Allocation"
+						    : cfg.sub[i]->misc & SUB_FAST ? "Fast Allocation"
+						    : "Self-packing");
+						if (!cfg.sub[i]->data_dir[0])
+							sprintf(str, "%ssubs/", cfg.data_dir);
 						else
-							strcpy(str,cfg.sub[i]->data_dir);
-						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Storage Directory",str);
-						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s","Semaphore File",cfg.sub[i]->post_sem);
-						snprintf(opt[n++], MAX_OPLN, "%-27.27s%u","Pointer File Index",cfg.sub[i]->ptridx);
-						snprintf(opt[n++], MAX_OPLN, "%-27.27sNow %u / Was %u","Sub-board Index", i, cfg.sub[i]->subnum);
-						opt[n][0]=0;
-						uifc.helpbuf=
+							strcpy(str, cfg.sub[i]->data_dir);
+						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s", "Storage Directory", str);
+						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s", "Semaphore File", cfg.sub[i]->post_sem);
+						snprintf(opt[n++], MAX_OPLN, "%-27.27s%u", "Pointer File Index", cfg.sub[i]->ptridx);
+						snprintf(opt[n++], MAX_OPLN, "%-27.27sNow %u / Was %u", "Sub-board Index", i, cfg.sub[i]->subnum);
+						opt[n][0] = 0;
+						uifc.helpbuf =
 							"`Sub-board Advanced Options:`\n"
 							"\n"
 							"This menu contains options for the selected sub-board that are advanced\n"
 							"in nature.\n"
 						;
-						n=uifc.list(WIN_ACT|WIN_SAV|WIN_RHT|WIN_BOT,3,2,60,&adv_dflt,0
-							,"Advanced Options",opt);
-						if(n==-1)
+						n = uifc.list(WIN_ACT | WIN_SAV | WIN_RHT | WIN_BOT, 3, 2, 60, &adv_dflt, 0
+						              , "Advanced Options", opt);
+						if (n == -1)
 							break;
-						switch(n) {
+						switch (n) {
 							case 0:
-								uifc.helpbuf=
+								uifc.helpbuf =
 									"`Sub-board QWK Conference Number:`\n"
 									"\n"
 									"If you wish to have the QWK conference number for this sub-board\n"
@@ -1541,22 +1541,22 @@ void sub_cfg(int grpnum)
 									"regardless of which user access it, set this option to `Static`\n"
 									"by entering the conference number you want to use.\n"
 								;
-								if(cfg.sub[i]->qwkconf)
-									sprintf(str,"%u",cfg.sub[i]->qwkconf);
+								if (cfg.sub[i]->qwkconf)
+									sprintf(str, "%u", cfg.sub[i]->qwkconf);
 								else
-									str[0]=0;
-								if(uifc.input(WIN_MID|WIN_SAV,0,17
-									,"QWK Conference Number (0=Dynamic)"
-									,str,5,K_EDIT|K_NUMBER)>=0)
-									cfg.sub[i]->qwkconf=atoi(str);
+									str[0] = 0;
+								if (uifc.input(WIN_MID | WIN_SAV, 0, 17
+								               , "QWK Conference Number (0=Dynamic)"
+								               , str, 5, K_EDIT | K_NUMBER) >= 0)
+									cfg.sub[i]->qwkconf = atoi(str);
 								break;
 							case 1:
-								n=cfg.sub[i]->misc&SUB_HYPER ? 0 : cfg.sub[i]->misc&SUB_FAST ? 1 : 2;
-								strcpy(opt[0],"Hyper Allocation");
-								strcpy(opt[1],"Fast Allocation");
-								strcpy(opt[2],"Self-packing");
-								opt[3][0]=0;
-								uifc.helpbuf=
+								n = cfg.sub[i]->misc & SUB_HYPER ? 0 : cfg.sub[i]->misc & SUB_FAST ? 1 : 2;
+								strcpy(opt[0], "Hyper Allocation");
+								strcpy(opt[1], "Fast Allocation");
+								strcpy(opt[2], "Self-packing");
+								opt[3][0] = 0;
+								uifc.helpbuf =
 									"`Self-Packing` is the slowest storage method because it conserves disk\n"
 									"  space as it imports messages by using deleted message header and data\n"
 									"  blocks for new messages automatically. If you use this storage method,\n"
@@ -1575,86 +1575,86 @@ void sub_cfg(int grpnum)
 									"  the message base data files in your `data/subs` directory for this\n"
 									"  sub-board. You must use `smbutil p` as with the fast allocation method.\n"
 								;
-								n=uifc.list(WIN_SAV|WIN_MID,0,0,0,&n,0
-									,"Storage Method",opt);
-								if(n==-1)
+								n = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &n, 0
+								              , "Storage Method", opt);
+								if (n == -1)
 									break;
-								if(!n && !(cfg.sub[i]->misc&SUB_HYPER)) {
+								if (!n && !(cfg.sub[i]->misc & SUB_HYPER)) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc|=SUB_HYPER;
-									cfg.sub[i]->misc&=~SUB_FAST;
-									cfg.sub[i]->misc|=SUB_HDRMOD;
+									cfg.sub[i]->misc |= SUB_HYPER;
+									cfg.sub[i]->misc &= ~SUB_FAST;
+									cfg.sub[i]->misc |= SUB_HDRMOD;
 									break;
 								}
-								if(!n)
+								if (!n)
 									break;
-								if(cfg.sub[i]->misc&SUB_HYPER) {	/* Switching from hyper */
-									strcpy(opt[0],"Yes");
-									strcpy(opt[1],"No, I want to use Hyper Allocation");
-									opt[2][0]=0;
-									m=0;
-									if(uifc.list(WIN_SAV|WIN_MID,0,0,0,&m,0
-										,"Delete all data for this sub-board?",opt)!=0)
+								if (cfg.sub[i]->misc & SUB_HYPER) {    /* Switching from hyper */
+									strcpy(opt[0], "Yes");
+									strcpy(opt[1], "No, I want to use Hyper Allocation");
+									opt[2][0] = 0;
+									m = 0;
+									if (uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &m, 0
+									              , "Delete all data for this sub-board?", opt) != 0)
 										break;
-									if(cfg.sub[i]->data_dir[0])
-										sprintf(str,"%s",cfg.sub[i]->data_dir);
+									if (cfg.sub[i]->data_dir[0])
+										sprintf(str, "%s", cfg.sub[i]->data_dir);
 									else
-										sprintf(str,"%ssubs/",cfg.data_dir);
-									sprintf(str2,"%s%s.*"
-										,cfg.grp[cfg.sub[i]->grp]->code_prefix
-										,cfg.sub[i]->code_suffix);
+										sprintf(str, "%ssubs/", cfg.data_dir);
+									sprintf(str2, "%s%s.*"
+									        , cfg.grp[cfg.sub[i]->grp]->code_prefix
+									        , cfg.sub[i]->code_suffix);
 									strlwr(str2);
-									delfiles(str,str2, /* keep: */0);
+									delfiles(str, str2, /* keep: */ 0);
 								}
 
-								if(cfg.sub[i]->misc&SUB_HYPER)
-									cfg.sub[i]->misc|=SUB_HDRMOD;
-								if(n==1 && !(cfg.sub[i]->misc&SUB_FAST)) {
+								if (cfg.sub[i]->misc & SUB_HYPER)
+									cfg.sub[i]->misc |= SUB_HDRMOD;
+								if (n == 1 && !(cfg.sub[i]->misc & SUB_FAST)) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc|=SUB_FAST;
-									cfg.sub[i]->misc&=~SUB_HYPER;
+									cfg.sub[i]->misc |= SUB_FAST;
+									cfg.sub[i]->misc &= ~SUB_HYPER;
 									break;
 								}
-								if(n==2 && cfg.sub[i]->misc&(SUB_FAST|SUB_HYPER)) {
+								if (n == 2 && cfg.sub[i]->misc & (SUB_FAST | SUB_HYPER)) {
 									uifc.changes = TRUE;
-									cfg.sub[i]->misc&=~(SUB_FAST|SUB_HYPER);
+									cfg.sub[i]->misc &= ~(SUB_FAST | SUB_HYPER);
 									break;
 								}
 								break;
 							case 2:
-								uifc.helpbuf=
+								uifc.helpbuf =
 									"`Sub-board Storage Directory:`\n"
 									"\n"
 									"Use this if you wish to place the data directory for this sub-board on\n"
 									"another drive or in another directory besides the default setting.\n"
 								;
-								uifc.input(WIN_MID|WIN_SAV,0,17,"Directory"
-									,cfg.sub[i]->data_dir,sizeof(cfg.sub[i]->data_dir)-1,K_EDIT);
+								uifc.input(WIN_MID | WIN_SAV, 0, 17, "Directory"
+								           , cfg.sub[i]->data_dir, sizeof(cfg.sub[i]->data_dir) - 1, K_EDIT);
 								break;
 							case 3:
-								uifc.helpbuf=
+								uifc.helpbuf =
 									"`Sub-board Semaphore File:`\n"
 									"\n"
 									"This is a filename that will be created as a semaphore (signal) to an\n"
 									"external program or event whenever a message is posted in this\n"
 									"sub-board.\n"
 								;
-								uifc.input(WIN_MID|WIN_SAV,0,17,"Semaphore File"
-									,cfg.sub[i]->post_sem,sizeof(cfg.sub[i]->post_sem)-1,K_EDIT);
+								uifc.input(WIN_MID | WIN_SAV, 0, 17, "Semaphore File"
+								           , cfg.sub[i]->post_sem, sizeof(cfg.sub[i]->post_sem) - 1, K_EDIT);
 								break;
 							case 4:
-								uifc.helpbuf=
+								uifc.helpbuf =
 									"`Sub-board Pointer Index:`\n"
 									"\n"
 									"You should normally have no reason to modify this value. If you get\n"
 									"crossed-up or duplicate ptridx values, then you may want to adjust\n"
 									"this value, but do so with great care and trepidation.\n"
 								;
-								sprintf(str,"%u",cfg.sub[i]->ptridx);
-								if(uifc.input(WIN_MID|WIN_SAV,0,17
-									,"Pointer File Index (Danger!)"
-									,str,5,K_EDIT|K_NUMBER)>=0)
-									cfg.sub[i]->ptridx=atoi(str);
+								sprintf(str, "%u", cfg.sub[i]->ptridx);
+								if (uifc.input(WIN_MID | WIN_SAV, 0, 17
+								               , "Pointer File Index (Danger!)"
+								               , str, 5, K_EDIT | K_NUMBER) >= 0)
+									cfg.sub[i]->ptridx = atoi(str);
 								break;
 							case 5:
 								uifc.msg("This value cannot be changed.");

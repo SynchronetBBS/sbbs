@@ -22,23 +22,23 @@
 #ifndef _NTSVCS_H_
 #define _NTSVCS_H_
 
-#define NTSVC_NAME_BBS		"SynchronetBBS"
-#define NTSVC_NAME_EVENT	"SynchronetEvent"	/* This is not (currently) a separate service */
-#define NTSVC_NAME_FTP		"SynchronetFTP"
-#define NTSVC_NAME_WEB		"SynchronetWeb"
-#define NTSVC_NAME_MAIL		"SynchronetMail"
+#define NTSVC_NAME_BBS      "SynchronetBBS"
+#define NTSVC_NAME_EVENT    "SynchronetEvent"   /* This is not (currently) a separate service */
+#define NTSVC_NAME_FTP      "SynchronetFTP"
+#define NTSVC_NAME_WEB      "SynchronetWeb"
+#define NTSVC_NAME_MAIL     "SynchronetMail"
 #define NTSVC_NAME_SERVICES "SynchronetServices"
 
 /* User-defined control codes */
 enum {
-	 SERVICE_CONTROL_RECYCLE=128
+	SERVICE_CONTROL_RECYCLE = 128
 };
 
 typedef struct {
-	SYSTEMTIME	time;
-	char		level;
-	char		buf[1000];
-	uint32_t	repeated;
+	SYSTEMTIME time;
+	char level;
+	char buf[1000];
+	uint32_t repeated;
 } log_msg_t;
 
-#endif	/* Don't add anything after this line */
+#endif  /* Don't add anything after this line */

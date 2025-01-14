@@ -28,8 +28,8 @@
 extern "C" {
 #endif
 
-DLLEXPORT int	getrec(const char *instr, int start, int length, char *outstr); /* Retrieve a record from a string */
-DLLEXPORT void	putrec(char *outstr, int start, int length, const char *instr); /* Place a record into a string */
+DLLEXPORT int   getrec(const char *instr, int start, int length, char *outstr); /* Retrieve a record from a string */
+DLLEXPORT void  putrec(char *outstr, int start, int length, const char *instr); /* Place a record into a string */
 
 #ifdef __cplusplus
 }

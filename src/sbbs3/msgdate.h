@@ -22,17 +22,17 @@
 #ifndef _MSGDATE_H_
 #define _MSGDATE_H_
 
-#include <time.h>		// time_t
-#include "scfgdefs.h"	// scfg_t
-#include "smbdefs.h"	// when_t
+#include <time.h>       // time_t
+#include "scfgdefs.h"   // scfg_t
+#include "smbdefs.h"    // when_t
 #include "dllexport.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-DLLEXPORT when_t	rfc822date(char* p);
-DLLEXPORT char *	msgdate(when_t when, char* buf);
+DLLEXPORT when_t    rfc822date(char* p);
+DLLEXPORT char *    msgdate(when_t when, char* buf);
 
 #ifdef __cplusplus
 }

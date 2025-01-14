@@ -16,7 +16,7 @@
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
- 
+
 #include "sauce.h"
 #include "genwrap.h"
 #include "filewrap.h"
@@ -26,17 +26,17 @@
 bool sauce_fread_record(FILE* fp, sauce_record_t* record)
 {
 	off_t offset = ftello(fp);
-	
-	if(offset == -1)
+
+	if (offset == -1)
 		return false;
-	
-	if(fseeko(fp, -(int)sizeof(*record), SEEK_END) != 0)
+
+	if (fseeko(fp, -(int)sizeof(*record), SEEK_END) != 0)
 		return false;
-	
+
 	bool result = fread(record, sizeof(*record), 1, fp) == 1
-		&& memcmp(record->id, SAUCE_ID, SAUCE_LEN_ID) == 0
-		&& memcmp(record->ver, SAUCE_VERSION, SAUCE_LEN_VERSION) == 0;
-	
+	              && memcmp(record->id, SAUCE_ID, SAUCE_LEN_ID) == 0
+	              && memcmp(record->ver, SAUCE_VERSION, SAUCE_LEN_VERSION) == 0;
+
 	(void)fseeko(fp, offset, SEEK_SET);
 	return result;
 }
@@ -46,15 +46,15 @@ bool sauce_fread_charinfo(FILE* fp, enum sauce_char_filetype* type, struct sauce
 {
 	sauce_record_t record;
 
-	if(!sauce_fread_record(fp, &record))
+	if (!sauce_fread_record(fp, &record))
 		return false;
 
-	if(record.datatype != sauce_datatype_char)
+	if (record.datatype != sauce_datatype_char)
 		return false;
 
-	if(type != NULL)
+	if (type != NULL)
 		*type = record.filetype;
-	if(info != NULL) {
+	if (info != NULL) {
 		memset(info, 0, sizeof(*info));
 		strncpy(info->title, record.title, sizeof info->title); TERMINATE(info->title); truncsp(info->title);
 		strncpy(info->author, record.author, sizeof info->author); TERMINATE(info->author); truncsp(info->author);
@@ -62,11 +62,11 @@ bool sauce_fread_charinfo(FILE* fp, enum sauce_char_filetype* type, struct sauce
 		strncpy(info->date, record.date, sizeof info->date); TERMINATE(info->date); truncsp(info->date);
 		info->width = record.tinfo1;
 		info->height = record.tinfo2;
-		switch(record.filetype) {
+		switch (record.filetype) {
 			case sauce_char_filetype_ascii:
 			case sauce_char_filetype_ansi:
 			case sauce_char_filetype_ansimation:
-				if(record.tflags & sauce_ansiflag_nonblink)
+				if (record.tflags & sauce_ansiflag_nonblink)
 					info->ice_color = true;
 				break;
 		}

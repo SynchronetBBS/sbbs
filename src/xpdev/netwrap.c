@@ -20,60 +20,60 @@
  ****************************************************************************/
 
 #include "sockwrap.h"
-#include "genwrap.h"	/* truncsp */
-#include "netwrap.h"	/* verify prototypes */
+#include "genwrap.h"    /* truncsp */
+#include "netwrap.h"    /* verify prototypes */
 
-#include <stdlib.h>		/* malloc() */
+#include <stdlib.h>     /* malloc() */
 
 #if defined(_WIN32)
-	#include <iphlpapi.h>	/* GetNetworkParams */
+	#include <iphlpapi.h>   /* GetNetworkParams */
 #endif
 
 str_list_t getNameServerList(void)
 {
-#ifdef __unix__	/* Look up DNS server address */
-	FILE*	fp;
-	char*	p;
-	char	str[128];
-	str_list_t	list;
+#ifdef __unix__ /* Look up DNS server address */
+	FILE*      fp;
+	char*      p;
+	char       str[128];
+	str_list_t list;
 
-	if((list=strListInit())==NULL)
+	if ((list = strListInit()) == NULL)
 		return(NULL);
-	if((fp=fopen("/etc/resolv.conf","r"))!=NULL) {
-		while(!feof(fp)) {
-			if(fgets(str,sizeof(str),fp)==NULL)
+	if ((fp = fopen("/etc/resolv.conf", "r")) != NULL) {
+		while (!feof(fp)) {
+			if (fgets(str, sizeof(str), fp) == NULL)
 				break;
 			truncsp(str);
-			p=str;
+			p = str;
 			SKIP_WHITESPACE(p);
-			if(strnicmp(p,"nameserver",10)!=0) /* no match */
+			if (strnicmp(p, "nameserver", 10) != 0) /* no match */
 				continue;
-			FIND_WHITESPACE(p);	/* skip "nameserver" */
-			SKIP_WHITESPACE(p);	/* skip more white-space */
-			strListPush(&list,p);
+			FIND_WHITESPACE(p); /* skip "nameserver" */
+			SKIP_WHITESPACE(p); /* skip more white-space */
+			strListPush(&list, p);
 		}
 		fclose(fp);
 	}
 	return(list);
 
 #elif defined(_WIN32)
-	FIXED_INFO* FixedInfo=NULL;
-	ULONG    	FixedInfoLen=0;
+	FIXED_INFO*     FixedInfo = NULL;
+	ULONG           FixedInfoLen = 0;
 	IP_ADDR_STRING* ip;
-	str_list_t	list;
+	str_list_t      list;
 
-	if((list=strListInit())==NULL)
+	if ((list = strListInit()) == NULL)
 		return(NULL);
-	if(GetNetworkParams(FixedInfo,&FixedInfoLen) == ERROR_BUFFER_OVERFLOW) {
-        FixedInfo=(FIXED_INFO*)malloc(FixedInfoLen);
-		if(GetNetworkParams(FixedInfo,&FixedInfoLen) == ERROR_SUCCESS) {
-			ip=&FixedInfo->DnsServerList;
-			for(; ip!=NULL; ip=ip->Next)
-				strListPush(&list,ip->IpAddress.String);
+	if (GetNetworkParams(FixedInfo, &FixedInfoLen) == ERROR_BUFFER_OVERFLOW) {
+		FixedInfo = (FIXED_INFO*)malloc(FixedInfoLen);
+		if (GetNetworkParams(FixedInfo, &FixedInfoLen) == ERROR_SUCCESS) {
+			ip = &FixedInfo->DnsServerList;
+			for (; ip != NULL; ip = ip->Next)
+				strListPush(&list, ip->IpAddress.String);
 		}
-        if(FixedInfo!=NULL)
-            free(FixedInfo);
-    }
+		if (FixedInfo != NULL)
+			free(FixedInfo);
+	}
 	return(list);
 #else
 	#error "Need a get_nameserver() implementation for this platform"
@@ -82,18 +82,18 @@ str_list_t getNameServerList(void)
 
 const char* getHostNameByAddr(const char* str)
 {
-	HOSTENT*	h;
-	uint32_t	ip;
+	HOSTENT* h;
+	uint32_t ip;
 
 #ifdef _WIN32
-	WSADATA wsaData;
+	WSADATA  wsaData;
 	WSAStartup(MAKEWORD(2, 2), &wsaData);
 #endif
-	if(str==NULL)
+	if (str == NULL)
 		return NULL;
-	if((ip=parseIPv4Address(str)) == INADDR_NONE)
+	if ((ip = parseIPv4Address(str)) == INADDR_NONE)
 		return str;
-	if((h=gethostbyaddr((char *)&ip,sizeof(ip),AF_INET))==NULL)
+	if ((h = gethostbyaddr((char *)&ip, sizeof(ip), AF_INET)) == NULL)
 		return NULL;
 
 #ifdef _WIN32
@@ -114,13 +114,13 @@ uint32_t parseIPv4Address(const char* value)
 {
 	uint32_t result = 0;
 
-	if(strchr(value,'.') == NULL)
+	if (strchr(value, '.') == NULL)
 		return strtol(value, NULL, 10);
 
 #if defined(__BORLANDC__) || defined(__MINGW32__)
 	result = inet_addr(value); // deprecated function call
 #else
-	if(inet_pton(AF_INET, value, &result) != 1)
+	if (inet_pton(AF_INET, value, &result) != 1)
 		result = INADDR_NONE;
 #endif
 	return ntohl(result);
@@ -128,19 +128,19 @@ uint32_t parseIPv4Address(const char* value)
 
 struct in6_addr parseIPv6Address(const char* value)
 {
-	struct addrinfo hints = {0};
+	struct addrinfo  hints = {0};
 	struct addrinfo *res, *cur;
-	struct in6_addr ret = {{{0}}};
+	struct in6_addr  ret = {{{0}}};
 
-	hints.ai_flags = AI_NUMERICHOST|AI_PASSIVE;
-	if(getaddrinfo(value, NULL, &hints, &res))
+	hints.ai_flags = AI_NUMERICHOST | AI_PASSIVE;
+	if (getaddrinfo(value, NULL, &hints, &res))
 		return ret;
 
-	for(cur = res; cur; cur++) {
-		if(cur->ai_addr->sa_family == AF_INET6)
+	for (cur = res; cur; cur++) {
+		if (cur->ai_addr->sa_family == AF_INET6)
 			break;
 	}
-	if(!cur) {
+	if (!cur) {
 		freeaddrinfo(res);
 		return ret;
 	}
@@ -152,17 +152,17 @@ struct in6_addr parseIPv6Address(const char* value)
 const char* IPv4AddressToStr(uint32_t addr, char* dest, size_t size)
 {
 #if defined _WIN32
-	int result;
-	WSADATA wsaData;
+	int         result;
+	WSADATA     wsaData;
 	SOCKADDR_IN sockaddr = {0};
 	sockaddr.sin_family = AF_INET;
 	sockaddr.sin_addr.s_addr = htonl(addr);
 
-	if(WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
+	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
 		return NULL;
 	result = getnameinfo((SOCKADDR*)&sockaddr, sizeof(sockaddr), dest, size, NULL, 0, NI_NUMERICHOST);
 	WSACleanup();
-	if(result != 0)
+	if (result != 0)
 		return NULL;
 	return dest;
 #else
@@ -187,7 +187,7 @@ isValidHostnameString(const char *str)
 {
 	size_t seglen = 0;
 	size_t totallen = 0;
-	bool last_was_hyphen = false;
+	bool   last_was_hyphen = false;
 
 	if (!*str)
 		return false;
@@ -238,7 +238,7 @@ isValidHostnameString(const char *str)
 bool
 isValidAddressString(const char *str)
 {
-	struct sockaddr_in in;
+	struct sockaddr_in  in;
 	struct sockaddr_in6 in6;
 
 	/*
@@ -267,9 +267,9 @@ isValidHostname(const char *str)
 bool
 isResolvableHostname(const char *str)
 {
-	struct addrinfo hints = {0};
+	struct addrinfo  hints = {0};
 	struct addrinfo *res = NULL;
-	const char portnum[2] = "1";
+	const char       portnum[2] = "1";
 
 	if (!isValidHostname(str)) {
 		return false;
@@ -293,16 +293,16 @@ isResolvableHostname(const char *str)
 #if NETWRAP_TEST
 int main(int argc, char** argv)
 {
-	size_t		i;
-	str_list_t	list;
+	size_t     i;
+	str_list_t list;
 
-	if((list=getNameServerList())!=NULL) {
-		for(i=0;list[i]!=NULL;i++)
-			printf("%s\n",list[i]);
+	if ((list = getNameServerList()) != NULL) {
+		for (i = 0; list[i] != NULL; i++)
+			printf("%s\n", list[i]);
 		freeNameServerList(list);
 	}
 
-	if(argc>1)
+	if (argc > 1)
 		printf("%s\n", getHostNameByAddr(argv[1]));
 
 	return 0;

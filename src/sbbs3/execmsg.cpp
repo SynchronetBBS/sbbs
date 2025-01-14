@@ -24,254 +24,256 @@
 
 int sbbs_t::exec_msg(csi_t *csi)
 {
-	char	str[256],ch;
-	int		i,j;
-	
-	switch(*(csi->ip++)) {
+	char str[256], ch;
+	int  i, j;
+
+	switch (*(csi->ip++)) {
 
 		case CS_MSG_SELECT_AREA:
-			csi->logic=LOGIC_FALSE;
-			if(!usrgrps) return(0);
-			while(online) {
-				j=0;
-				if(usrgrps>1) {
-					if(!menu("grps", P_NOERROR)) {
+			csi->logic = LOGIC_FALSE;
+			if (!usrgrps) return(0);
+			while (online) {
+				j = 0;
+				if (usrgrps > 1) {
+					if (!menu("grps", P_NOERROR)) {
 						bputs(text[CfgGrpLstHdr]);
-						for(i=0;i<usrgrps && !msgabort();i++) {
-							if(i==curgrp)
+						for (i = 0; i < usrgrps && !msgabort(); i++) {
+							if (i == curgrp)
 								outchar('*');
 							else outchar(' ');
-							if(i<9) outchar(' ');
-							if(i<99) outchar(' ');
-							add_hotspot(i+1);
+							if (i < 9) outchar(' ');
+							if (i < 99) outchar(' ');
+							add_hotspot(i + 1);
 							bprintf(text[CfgGrpLstFmt]
-								,i+1, cfg.grp[usrgrp[i]]->lname); } 
+							        , i + 1, cfg.grp[usrgrp[i]]->lname);
+						}
 					}
-					snprintf(str, sizeof str, text[JoinWhichGrp],curgrp+1);
+					snprintf(str, sizeof str, text[JoinWhichGrp], curgrp + 1);
 					mnemonics(str);
-					j=getnum(usrgrps);
+					j = getnum(usrgrps);
 					clear_hotspots();
-					if((int)j==-1)
+					if ((int)j == -1)
 						return(0);
-					if(!j)
-						j=curgrp;
+					if (!j)
+						j = curgrp;
 					else
 						j--;
 				}
-				snprintf(str, sizeof str, "subs%u",usrgrp[j]+1);
-				if(!menu(str, P_NOERROR)) {
+				snprintf(str, sizeof str, "subs%u", usrgrp[j] + 1);
+				if (!menu(str, P_NOERROR)) {
 					CLS;
 					bprintf(text[SubLstHdr], cfg.grp[usrgrp[j]]->lname);
-					for(i=0;i<usrsubs[j] && !msgabort();i++) {
-						if(i==cursub[j]) outchar('*');
+					for (i = 0; i < usrsubs[j] && !msgabort(); i++) {
+						if (i == cursub[j]) outchar('*');
 						else outchar(' ');
-						snprintf(str, sizeof str, text[SubLstFmt],i+1
-							,cfg.sub[usrsub[j][i]]->lname,nulstr
-							,getposts(&cfg,usrsub[j][i]));
-						if(i<9) outchar(' ');
-						if(i<99) outchar(' ');
-						add_hotspot(i+1);
-						bputs(str); } 
+						snprintf(str, sizeof str, text[SubLstFmt], i + 1
+						         , cfg.sub[usrsub[j][i]]->lname, nulstr
+						         , getposts(&cfg, usrsub[j][i]));
+						if (i < 9) outchar(' ');
+						if (i < 99) outchar(' ');
+						add_hotspot(i + 1);
+						bputs(str);
+					}
 				}
-				snprintf(str, sizeof str, text[JoinWhichSub],cursub[j]+1);
+				snprintf(str, sizeof str, text[JoinWhichSub], cursub[j] + 1);
 				mnemonics(str);
-				i=getnum(usrsubs[j]);
+				i = getnum(usrsubs[j]);
 				clear_hotspots();
-				if((int)i==-1) {
-					if(usrgrps==1)
+				if ((int)i == -1) {
+					if (usrgrps == 1)
 						return(0);
-					continue; 
+					continue;
 				}
-				if(!i)
-					i=cursub[j];
+				if (!i)
+					i = cursub[j];
 				else
 					i--;
-				curgrp=j;
-				cursub[curgrp]=i;
-				csi->logic=LOGIC_TRUE;
-				return(0); 
+				curgrp = j;
+				cursub[curgrp] = i;
+				csi->logic = LOGIC_TRUE;
+				return(0);
 			}
 			return(0);
 
 		case CS_MSG_GET_SUB_NUM:
 
-			if(useron.misc&COLDKEYS) {
-				i=atoi(csi->str);
-				if(i && usrgrps && i<=usrsubs[curgrp])
-					cursub[curgrp]=i-1;
-				return(0); 
+			if (useron.misc & COLDKEYS) {
+				i = atoi(csi->str);
+				if (i && usrgrps && i <= usrsubs[curgrp])
+					cursub[curgrp] = i - 1;
+				return(0);
 			}
 
-			ch=getkey(K_UPPER);
+			ch = getkey(K_UPPER);
 			outchar(ch);
-			if(usrgrps && (ch&0xf)*10<=usrsubs[curgrp] && (ch&0xf)) {
-				i=(ch&0xf)*10;
-				ch=getkey(K_UPPER);
-				if(!IS_DIGIT(ch) && ch!=CR) {
+			if (usrgrps && (ch & 0xf) * 10 <= usrsubs[curgrp] && (ch & 0xf)) {
+				i = (ch & 0xf) * 10;
+				ch = getkey(K_UPPER);
+				if (!IS_DIGIT(ch) && ch != CR) {
 					ungetkey(ch);
-					cursub[curgrp]=(i/10)-1;
-					return(0); 
+					cursub[curgrp] = (i / 10) - 1;
+					return(0);
 				}
 				outchar(ch);
-				if(ch==CR) {
-					cursub[curgrp]=(i/10)-1;
-					return(0); 
+				if (ch == CR) {
+					cursub[curgrp] = (i / 10) - 1;
+					return(0);
 				}
-				logch(ch,0);
-				i+=ch&0xf;
-				if(i*10<=usrsubs[curgrp]) { 	/* 100+ subs */
-					i*=10;
-					ch=getkey(K_UPPER);
-					if(!IS_DIGIT(ch) && ch!=CR) {
+				logch(ch, 0);
+				i += ch & 0xf;
+				if (i * 10 <= usrsubs[curgrp]) {     /* 100+ subs */
+					i *= 10;
+					ch = getkey(K_UPPER);
+					if (!IS_DIGIT(ch) && ch != CR) {
 						ungetkey(ch);
-						cursub[curgrp]=(i/10)-1;
-						return(0); 
+						cursub[curgrp] = (i / 10) - 1;
+						return(0);
 					}
 					outchar(ch);
-					if(ch==CR) {
-						cursub[curgrp]=(i/10)-1;
-						return(0); 
+					if (ch == CR) {
+						cursub[curgrp] = (i / 10) - 1;
+						return(0);
 					}
-					logch(ch,0);
-					i+=ch&0xf; 
+					logch(ch, 0);
+					i += ch & 0xf;
 				}
-				if(i<=usrsubs[curgrp])
-					cursub[curgrp]=i-1;
-				if(keybuf_level() && (ch=getkey(K_UPPER)) != '\r')
-					ungetkey(ch, /* insert: */true);
-				return(0); 
+				if (i <= usrsubs[curgrp])
+					cursub[curgrp] = i - 1;
+				if (keybuf_level() && (ch = getkey(K_UPPER)) != '\r')
+					ungetkey(ch, /* insert: */ true);
+				return(0);
 			}
-			if((ch&0xf)<=usrsubs[curgrp] && (ch&0xf) && usrgrps)
-				cursub[curgrp]=(ch&0xf)-1;
+			if ((ch & 0xf) <= usrsubs[curgrp] && (ch & 0xf) && usrgrps)
+				cursub[curgrp] = (ch & 0xf) - 1;
 			return(0);
 
 		case CS_MSG_GET_GRP_NUM:
 
-			if(useron.misc&COLDKEYS) {
-				i=atoi(csi->str);
-				if(i && i<=usrgrps)
-					curgrp=i-1;
-				return(0); 
+			if (useron.misc & COLDKEYS) {
+				i = atoi(csi->str);
+				if (i && i <= usrgrps)
+					curgrp = i - 1;
+				return(0);
 			}
 
-			ch=getkey(K_UPPER);
+			ch = getkey(K_UPPER);
 			outchar(ch);
-			if((ch&0xf)*10<=usrgrps && (ch&0xf)) {
-				i=(ch&0xf)*10;
-				ch=getkey(K_UPPER);
-				if(!IS_DIGIT(ch) && ch!=CR) {
+			if ((ch & 0xf) * 10 <= usrgrps && (ch & 0xf)) {
+				i = (ch & 0xf) * 10;
+				ch = getkey(K_UPPER);
+				if (!IS_DIGIT(ch) && ch != CR) {
 					ungetkey(ch);
-					curgrp=(i/10)-1;
-					return(0); 
+					curgrp = (i / 10) - 1;
+					return(0);
 				}
 				outchar(ch);
-				if(ch==CR) {
-					curgrp=(i/10)-1;
-					return(0); 
+				if (ch == CR) {
+					curgrp = (i / 10) - 1;
+					return(0);
 				}
-				logch(ch,0);
-				i+=ch&0xf;
-				if(i<=usrgrps)
-					curgrp=i-1;
-				if(keybuf_level() && (ch=getkey(K_UPPER)) != '\r')
-					ungetkey(ch, /* insert: */true);
-				return(0); 
+				logch(ch, 0);
+				i += ch & 0xf;
+				if (i <= usrgrps)
+					curgrp = i - 1;
+				if (keybuf_level() && (ch = getkey(K_UPPER)) != '\r')
+					ungetkey(ch, /* insert: */ true);
+				return(0);
 			}
-			if((ch&0xf)<=usrgrps && (ch&0xf))
-				curgrp=(ch&0xf)-1;
-			if(keybuf_level() && (ch=getkey(K_UPPER)) != '\r')
-				ungetkey(ch, /* insert: */true);
+			if ((ch & 0xf) <= usrgrps && (ch & 0xf))
+				curgrp = (ch & 0xf) - 1;
+			if (keybuf_level() && (ch = getkey(K_UPPER)) != '\r')
+				ungetkey(ch, /* insert: */ true);
 			return(0);
 
 		case CS_MSG_SET_GROUP:
-			csi->logic=LOGIC_TRUE;
-			for(i=0;i<usrgrps;i++)
-				if(!stricmp(cfg.grp[usrgrp[i]]->sname,csi->str))
+			csi->logic = LOGIC_TRUE;
+			for (i = 0; i < usrgrps; i++)
+				if (!stricmp(cfg.grp[usrgrp[i]]->sname, csi->str))
 					break;
-			if(i<usrgrps)
-				curgrp=i;
+			if (i < usrgrps)
+				curgrp = i;
 			else
-				csi->logic=LOGIC_FALSE;
+				csi->logic = LOGIC_FALSE;
 			return(0);
 
 		case CS_MSG_SHOW_GROUPS:
-			if(!usrgrps) return(0);
-			if(menu("grps", P_NOERROR)) {
-				return(0); 
+			if (!usrgrps) return(0);
+			if (menu("grps", P_NOERROR)) {
+				return(0);
 			}
 			bputs(text[GrpLstHdr]);
-			for(i=0;i<usrgrps && !msgabort();i++) {
-				if(i==curgrp)
+			for (i = 0; i < usrgrps && !msgabort(); i++) {
+				if (i == curgrp)
 					outchar('*');
 				else outchar(' ');
-				if(i<9) outchar(' ');
-				add_hotspot(i+1);
-				bprintf(text[GrpLstFmt],i+1
-					,cfg.grp[usrgrp[i]]->lname,nulstr,usrsubs[i]); 
+				if (i < 9) outchar(' ');
+				add_hotspot(i + 1);
+				bprintf(text[GrpLstFmt], i + 1
+				        , cfg.grp[usrgrp[i]]->lname, nulstr, usrsubs[i]);
 			}
 			return(0);
 
 		case CS_MSG_SHOW_SUBBOARDS:
-			if(!usrgrps) return(0);
-			snprintf(str, sizeof str, "subs%u",usrgrp[curgrp]+1);
-			if(menu(str, P_NOERROR)) {
-				return(0); 
+			if (!usrgrps) return(0);
+			snprintf(str, sizeof str, "subs%u", usrgrp[curgrp] + 1);
+			if (menu(str, P_NOERROR)) {
+				return(0);
 			}
 			CRLF;
-			bprintf(text[SubLstHdr],cfg.grp[usrgrp[curgrp]]->lname);
-			for(i=0;i<usrsubs[curgrp] && !msgabort();i++) {
-				if(i==cursub[curgrp]) outchar('*');
+			bprintf(text[SubLstHdr], cfg.grp[usrgrp[curgrp]]->lname);
+			for (i = 0; i < usrsubs[curgrp] && !msgabort(); i++) {
+				if (i == cursub[curgrp]) outchar('*');
 				else outchar(' ');
-				snprintf(str, sizeof str, text[SubLstFmt],i+1
-					,cfg.sub[usrsub[curgrp][i]]->lname,nulstr
-					,getposts(&cfg,usrsub[curgrp][i]));
-				if(i<9) outchar(' ');
-				if(i<99) outchar(' ');
-				add_hotspot(i+1);
-				bputs(str); 
+				snprintf(str, sizeof str, text[SubLstFmt], i + 1
+				         , cfg.sub[usrsub[curgrp][i]]->lname, nulstr
+				         , getposts(&cfg, usrsub[curgrp][i]));
+				if (i < 9) outchar(' ');
+				if (i < 99) outchar(' ');
+				add_hotspot(i + 1);
+				bputs(str);
 			}
 			return(0);
 
 		case CS_MSG_GROUP_UP:
 			curgrp++;
-			if(curgrp>=usrgrps)
-				curgrp=0;
+			if (curgrp >= usrgrps)
+				curgrp = 0;
 			return(0);
 		case CS_MSG_GROUP_DOWN:
-			if(!curgrp)
-				curgrp=usrgrps-1;
+			if (!curgrp)
+				curgrp = usrgrps - 1;
 			else curgrp--;
 			return(0);
 		case CS_MSG_SUBBOARD_UP:
-			if(!usrgrps) return(0);
+			if (!usrgrps) return(0);
 			cursub[curgrp]++;
-			if(cursub[curgrp]>=usrsubs[curgrp])
-				cursub[curgrp]=0;
+			if (cursub[curgrp] >= usrsubs[curgrp])
+				cursub[curgrp] = 0;
 			return(0);
 		case CS_MSG_SUBBOARD_DOWN:
-			if(!usrgrps) return(0);
-			if(!cursub[curgrp])
-				cursub[curgrp]=usrsubs[curgrp]-1;
+			if (!usrgrps) return(0);
+			if (!cursub[curgrp])
+				cursub[curgrp] = usrsubs[curgrp] - 1;
 			else cursub[curgrp]--;
 			return(0);
 		case CS_MSG_SET_AREA:
-			csi->logic=LOGIC_TRUE;
-			for(i=0;i<usrgrps;i++)
-				for(j=0;j<usrsubs[i];j++)
-					if(!stricmp(csi->str,cfg.sub[usrsub[i][j]]->code)) {
-						curgrp=i;
-						cursub[i]=j;
-						return(0); 
+			csi->logic = LOGIC_TRUE;
+			for (i = 0; i < usrgrps; i++)
+				for (j = 0; j < usrsubs[i]; j++)
+					if (!stricmp(csi->str, cfg.sub[usrsub[i][j]]->code)) {
+						curgrp = i;
+						cursub[i] = j;
+						return(0);
 					}
-			csi->logic=LOGIC_FALSE;
+			csi->logic = LOGIC_FALSE;
 			return(0);
 		case CS_MSG_READ:
-			if(!usrgrps) return(0);
-			csi->logic=scanposts(usrsub[curgrp][cursub[curgrp]],0,nulstr);
+			if (!usrgrps) return(0);
+			csi->logic = scanposts(usrsub[curgrp][cursub[curgrp]], 0, nulstr);
 			return(0);
 		case CS_MSG_POST:
-			if(!usrgrps) return(0);
-			csi->logic=!postmsg(usrsub[curgrp][cursub[curgrp]],0,0);
+			if (!usrgrps) return(0);
+			csi->logic = !postmsg(usrsub[curgrp][cursub[curgrp]], 0, 0);
 			return(0);
 		case CS_MSG_QWK:
 			qwk_sec();
@@ -290,22 +292,22 @@ int sbbs_t::exec_msg(csi_t *csi)
 			scansubs(SCAN_NEW);
 			return(0);
 		case CS_MSG_NEW_SCAN_SUB:
-			csi->logic=scanposts(usrsub[curgrp][cursub[curgrp]],SCAN_NEW,nulstr);
+			csi->logic = scanposts(usrsub[curgrp][cursub[curgrp]], SCAN_NEW, nulstr);
 			return(0);
 		case CS_MSG_NEW_SCAN_ALL:
 			scanallsubs(SCAN_NEW);
 			return(0);
 		case CS_MSG_CONT_SCAN:
-			scansubs(SCAN_NEW|SCAN_CONT);
+			scansubs(SCAN_NEW | SCAN_CONT);
 			return(0);
 		case CS_MSG_CONT_SCAN_ALL:
-			scanallsubs(SCAN_NEW|SCAN_CONT);
+			scanallsubs(SCAN_NEW | SCAN_CONT);
 			return(0);
 		case CS_MSG_BROWSE_SCAN:
-			scansubs(SCAN_NEW|SCAN_BACK);
+			scansubs(SCAN_NEW | SCAN_BACK);
 			return(0);
 		case CS_MSG_BROWSE_SCAN_ALL:
-			scanallsubs(SCAN_BACK|SCAN_NEW);
+			scanallsubs(SCAN_BACK | SCAN_NEW);
 			return(0);
 		case CS_MSG_FIND_TEXT:
 			scansubs(SCAN_FIND);
@@ -323,9 +325,9 @@ int sbbs_t::exec_msg(csi_t *csi)
 			scanallsubs(SCAN_TOYOU);
 			return(0);
 		case CS_MSG_LIST:
-			listsub(usrsub[curgrp][cursub[curgrp]], SCAN_INDEX, /* start: */0, /* search: */NULL);
+			listsub(usrsub[curgrp][cursub[curgrp]], SCAN_INDEX, /* start: */ 0, /* search: */ NULL);
 			return(0);
 	}
-	errormsg(WHERE,ERR_CHK,"shell function",*(csi->ip-1));
+	errormsg(WHERE, ERR_CHK, "shell function", *(csi->ip - 1));
 	return(0);
 }

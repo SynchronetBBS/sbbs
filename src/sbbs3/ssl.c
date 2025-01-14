@@ -10,12 +10,12 @@
 #include "ssl.h"
 
 static pthread_once_t crypt_init_once = PTHREAD_ONCE_INIT;
-static bool cryptlib_initialized;
-static int cryptInit_error;
-static char cert_path[INI_MAX_VALUE_LEN + 8];
+static bool           cryptlib_initialized;
+static int            cryptInit_error;
+static char           cert_path[INI_MAX_VALUE_LEN + 8];
 
-static unsigned cert_epoch;      // Current epoch for valid certs in cert_list
-static rwlock_t cert_epoch_lock; // Protects all access to cert_epoch, ssl_cert_list_mutex is locked inside it
+static unsigned       cert_epoch; // Current epoch for valid certs in cert_list
+static rwlock_t       cert_epoch_lock; // Protects all access to cert_epoch, ssl_cert_list_mutex is locked inside it
 
 struct cert_list {
 	struct cert_list *next;
@@ -24,12 +24,12 @@ struct cert_list {
 	unsigned epoch;
 };
 static struct cert_list *sess_list;         // List of certificates currently in use
-static pthread_mutex_t ssl_sess_list_mutex; // Protects all accesses to sess_list
+static pthread_mutex_t   ssl_sess_list_mutex; // Protects all accesses to sess_list
 static struct cert_list *cert_list;         // List of unused certficiates
-static pthread_mutex_t ssl_cert_list_mutex; // Protects all accesses to cert_list, is locked inside a write cert_epoch_lock
-static time_t tls_cert_file_date;           // Last modified date of certificate file
-static rwlock_t tls_cert_file_date_lock;    // Protects all access to tls_cert_file_date
-static pthread_mutex_t get_ssl_cert_mutex;  // Prevents multiple access to cryptlib in get_ssl_cert()
+static pthread_mutex_t   ssl_cert_list_mutex; // Protects all accesses to cert_list, is locked inside a write cert_epoch_lock
+static time_t            tls_cert_file_date; // Last modified date of certificate file
+static rwlock_t          tls_cert_file_date_lock; // Protects all access to tls_cert_file_date
+static pthread_mutex_t   get_ssl_cert_mutex; // Prevents multiple access to cryptlib in get_ssl_cert()
 
 void free_crypt_attrstr(char *attr)
 {
@@ -72,7 +72,7 @@ char* get_crypt_error(CRYPT_HANDLE sess)
 
 static int crypt_ll(int error)
 {
-	switch(error) {
+	switch (error) {
 		case CRYPT_ERROR_INCOMPLETE:
 		case CRYPT_ERROR_NOSECURE:
 		case CRYPT_ERROR_BADDATA:
@@ -94,7 +94,7 @@ static int crypt_ll(int error)
 
 static const char *crypt_lstr(int level)
 {
-	switch(level) {
+	switch (level) {
 		case LOG_EMERG:
 			return "!ERROR";
 		case LOG_ALERT:
@@ -117,9 +117,9 @@ static const char *crypt_lstr(int level)
 
 bool get_crypt_error_string(int status, CRYPT_HANDLE sess, char **estr, const char *action, int *lvl)
 {
-	char	*emsg = NULL;
-	bool	allocated = false;
-	int	level;
+	char *emsg = NULL;
+	bool  allocated = false;
+	int   level;
 
 	if (cryptStatusOK(status)) {
 		if (estr)
@@ -137,7 +137,7 @@ bool get_crypt_error_string(int status, CRYPT_HANDLE sess, char **estr, const ch
 		if (emsg != NULL)
 			allocated = true;
 		if (emsg == NULL) {
-			switch(status) {
+			switch (status) {
 				case CRYPT_ERROR_PARAM1:
 					emsg = "Bad argument, parameter 1";
 					break;
@@ -252,13 +252,13 @@ bool get_crypt_error_string(int status, CRYPT_HANDLE sess, char **estr, const ch
 			}
 		}
 		if (emsg) {
-			if(asprintf(estr, "%s '%s' (%d) %s", crypt_lstr(level), emsg, status, action) < 0)
+			if (asprintf(estr, "%s '%s' (%d) %s", crypt_lstr(level), emsg, status, action) < 0)
 				*estr = NULL;
 			if (allocated)
 				free_crypt_attrstr(emsg);
 		}
 		else {
-			if(asprintf(estr, "%s (%d) %s", crypt_lstr(level), status, action) < 0)
+			if (asprintf(estr, "%s (%d) %s", crypt_lstr(level), status, action) < 0)
 				*estr = NULL;
 		}
 	}
@@ -273,11 +273,11 @@ static void do_cryptEnd(void)
 static char *cryptfail = NULL;
 static void internal_do_cryptInit(void)
 {
-	int ret;
-	int maj;
-	int min;
-	int stp;
-	int tmp;
+	int  ret;
+	int  maj;
+	int  min;
+	int  stp;
+	int  tmp;
 	char patches[32];
 
 	cryptInit_error = CRYPT_ERROR_NOTINITED;
@@ -307,14 +307,14 @@ static void internal_do_cryptInit(void)
 		return;
 	}
 
-	if((ret=cryptInit())==CRYPT_OK) {
-		cryptAddRandom(NULL,CRYPT_RANDOM_SLOWPOLL);
+	if ((ret = cryptInit()) == CRYPT_OK) {
+		cryptAddRandom(NULL, CRYPT_RANDOM_SLOWPOLL);
 		atexit(do_cryptEnd);
 		cryptlib_initialized = true;
 		cryptInit_error = CRYPT_OK;
 	}
 	else {
-		cryptInit_error = ret; 
+		cryptInit_error = ret;
 	}
 	ret = cryptGetAttribute(CRYPT_UNUSED, CRYPT_OPTION_INFO_MAJORVERSION, &maj);
 	if (cryptStatusError(ret)) {
@@ -367,10 +367,10 @@ bool do_cryptInit(int (*lprintf)(int level, const char* fmt, ...))
 	}
 	if (!cryptlib_initialized) {
 		if (cryptfail) {
-			lprintf(LOG_ERR,"cryptInit() returned %d: %s", cryptInit_error, cryptfail);
+			lprintf(LOG_ERR, "cryptInit() returned %d: %s", cryptInit_error, cryptfail);
 		}
 		else
-			lprintf(LOG_ERR,"cryptInit() returned %d", cryptInit_error);
+			lprintf(LOG_ERR, "cryptInit() returned %d", cryptInit_error);
 	}
 	return cryptlib_initialized;
 }
@@ -387,7 +387,7 @@ bool ssl_sync(scfg_t *scfg, int (*lprintf)(int level, const char* fmt, ...))
 	if (!do_cryptInit(lprintf))
 		return false;
 	if (!cert_path[0])
-		SAFEPRINTF2(cert_path,"%s%s",scfg->ctrl_dir,"ssl.cert");
+		SAFEPRINTF2(cert_path, "%s%s", scfg->ctrl_dir, "ssl.cert");
 	time_t fd = fdate(cert_path);
 	if (!rwlock_rdlock(&tls_cert_file_date_lock)) {
 		lprintf(LOG_ERR, "Unable to lock tls_cert_file_date_lock for read at %d", __LINE__);
@@ -431,7 +431,7 @@ static bool
 log_cryptlib_error(int status, int line, CRYPT_HANDLE handle, const char *action, int (*lprintf)(int level, const char* fmt, ...))
 {
 	char *estr;
-	int	level;
+	int   level;
 
 	get_crypt_error_string(status, handle, &estr, action, &level);
 	lprintf(level, "---- TLS %s", estr);
@@ -443,17 +443,17 @@ log_cryptlib_error(int status, int line, CRYPT_HANDLE handle, const char *action
 
 static struct cert_list * get_ssl_cert(scfg_t *cfg, int (*lprintf)(int level, const char* fmt, ...))
 {
-	CRYPT_KEYSET		ssl_keyset;
-	CRYPT_CERTIFICATE	ssl_cert;
-	char			sysop_email[sizeof(cfg->sys_inetaddr)+6];
+	CRYPT_KEYSET      ssl_keyset;
+	CRYPT_CERTIFICATE ssl_cert;
+	char              sysop_email[sizeof(cfg->sys_inetaddr) + 6];
 	struct cert_list *cert_entry;
-	int DOtmp;
+	int               DOtmp;
 
-	if(!do_cryptInit(lprintf))
+	if (!do_cryptInit(lprintf))
 		return NULL;
 	ssl_sync(cfg, lprintf);
 	cert_entry = malloc(sizeof(*cert_entry));
-	if(cert_entry == NULL) {
+	if (cert_entry == NULL) {
 		lprintf(LOG_CRIT, "%s line %d: FAILED TO ALLOCATE %u bytes of memory", __FUNCTION__, __LINE__, sizeof *cert_entry);
 		return NULL;
 	}
@@ -473,8 +473,8 @@ static struct cert_list * get_ssl_cert(scfg_t *cfg, int (*lprintf)(int level, co
 
 	pthread_mutex_lock(&get_ssl_cert_mutex);
 	/* Get the certificate... first try loading it from a file... */
-	if(cryptStatusOK(cryptKeysetOpen(&ssl_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, cert_path, CRYPT_KEYOPT_READONLY))) {
-		if(!DO("getting private key", ssl_keyset, cryptGetPrivateKey(ssl_keyset, &cert_entry->cert, CRYPT_KEYID_NAME, "ssl_cert", cfg->sys_pass))) {
+	if (cryptStatusOK(cryptKeysetOpen(&ssl_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, cert_path, CRYPT_KEYOPT_READONLY))) {
+		if (!DO("getting private key", ssl_keyset, cryptGetPrivateKey(ssl_keyset, &cert_entry->cert, CRYPT_KEYID_NAME, "ssl_cert", cfg->sys_pass))) {
 			pthread_mutex_unlock(&get_ssl_cert_mutex);
 			free(cert_entry);
 			return NULL;
@@ -482,49 +482,49 @@ static struct cert_list * get_ssl_cert(scfg_t *cfg, int (*lprintf)(int level, co
 	}
 	else {
 		/* Couldn't do that... create a new context and use the cert from there... */
-		if(!DO("creating TLS context", CRYPT_UNUSED,cryptCreateContext(&cert_entry->cert, CRYPT_UNUSED, CRYPT_ALGO_RSA))) {
+		if (!DO("creating TLS context", CRYPT_UNUSED, cryptCreateContext(&cert_entry->cert, CRYPT_UNUSED, CRYPT_ALGO_RSA))) {
 			pthread_mutex_unlock(&get_ssl_cert_mutex);
 			free(cert_entry);
 			return NULL;
 		}
-		if(!DO("setting label", cert_entry->cert, cryptSetAttributeString(cert_entry->cert, CRYPT_CTXINFO_LABEL, "ssl_cert", 8)))
+		if (!DO("setting label", cert_entry->cert, cryptSetAttributeString(cert_entry->cert, CRYPT_CTXINFO_LABEL, "ssl_cert", 8)))
 			goto failure_return_1;
-		if(!DO("generating key", cert_entry->cert, cryptGenerateKey(cert_entry->cert)))
+		if (!DO("generating key", cert_entry->cert, cryptGenerateKey(cert_entry->cert)))
 			goto failure_return_1;
-		if(!DO("opening keyset", CRYPT_UNUSED, cryptKeysetOpen(&ssl_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, cert_path, CRYPT_KEYOPT_CREATE)))
+		if (!DO("opening keyset", CRYPT_UNUSED, cryptKeysetOpen(&ssl_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, cert_path, CRYPT_KEYOPT_CREATE)))
 			goto failure_return_1;
-		if(!DO("adding private key", ssl_keyset, cryptAddPrivateKey(ssl_keyset, cert_entry->cert, cfg->sys_pass)))
+		if (!DO("adding private key", ssl_keyset, cryptAddPrivateKey(ssl_keyset, cert_entry->cert, cfg->sys_pass)))
 			goto failure_return_2;
-		if(!DO("creating certificate", CRYPT_UNUSED, cryptCreateCert(&ssl_cert, CRYPT_UNUSED, CRYPT_CERTTYPE_CERTIFICATE)))
+		if (!DO("creating certificate", CRYPT_UNUSED, cryptCreateCert(&ssl_cert, CRYPT_UNUSED, CRYPT_CERTTYPE_CERTIFICATE)))
 			goto failure_return_2;
-		if(!DO("setting public key", ssl_cert, cryptSetAttribute(ssl_cert, CRYPT_CERTINFO_SUBJECTPUBLICKEYINFO, cert_entry->cert)))
+		if (!DO("setting public key", ssl_cert, cryptSetAttribute(ssl_cert, CRYPT_CERTINFO_SUBJECTPUBLICKEYINFO, cert_entry->cert)))
 			goto failure_return_3;
-		if(!DO("signing certificate", ssl_cert, cryptSetAttribute(ssl_cert, CRYPT_CERTINFO_SELFSIGNED, 1)))
+		if (!DO("signing certificate", ssl_cert, cryptSetAttribute(ssl_cert, CRYPT_CERTINFO_SELFSIGNED, 1)))
 			goto failure_return_3;
-		if(!DO("verifying certificate", ssl_cert, cryptSetAttribute(ssl_cert, CRYPT_OPTION_CERT_VALIDITY, 3650)))
+		if (!DO("verifying certificate", ssl_cert, cryptSetAttribute(ssl_cert, CRYPT_OPTION_CERT_VALIDITY, 3650)))
 			goto failure_return_3;
-		if(!DO("setting country name", ssl_cert, cryptSetAttributeString(ssl_cert, CRYPT_CERTINFO_COUNTRYNAME, "ZZ", 2)))
+		if (!DO("setting country name", ssl_cert, cryptSetAttributeString(ssl_cert, CRYPT_CERTINFO_COUNTRYNAME, "ZZ", 2)))
 			goto failure_return_3;
-		if(!DO("setting organization name", ssl_cert, cryptSetAttributeString(ssl_cert, CRYPT_CERTINFO_ORGANIZATIONNAME, cfg->sys_name, strlen(cfg->sys_name))))
+		if (!DO("setting organization name", ssl_cert, cryptSetAttributeString(ssl_cert, CRYPT_CERTINFO_ORGANIZATIONNAME, cfg->sys_name, strlen(cfg->sys_name))))
 			goto failure_return_3;
-		if(!DO("setting DNS name", ssl_cert, cryptSetAttributeString(ssl_cert, CRYPT_CERTINFO_DNSNAME, cfg->sys_inetaddr, strlen(cfg->sys_inetaddr))))
+		if (!DO("setting DNS name", ssl_cert, cryptSetAttributeString(ssl_cert, CRYPT_CERTINFO_DNSNAME, cfg->sys_inetaddr, strlen(cfg->sys_inetaddr))))
 			goto failure_return_3;
-		if(!DO("setting Common Name", ssl_cert, cryptSetAttributeString(ssl_cert, CRYPT_CERTINFO_COMMONNAME, cfg->sys_inetaddr, strlen(cfg->sys_inetaddr))))
+		if (!DO("setting Common Name", ssl_cert, cryptSetAttributeString(ssl_cert, CRYPT_CERTINFO_COMMONNAME, cfg->sys_inetaddr, strlen(cfg->sys_inetaddr))))
 			goto failure_return_3;
 		sprintf(sysop_email, "sysop@%s", cfg->sys_inetaddr);
-		if(!DO("setting email", ssl_cert, cryptSetAttributeString(ssl_cert, CRYPT_CERTINFO_RFC822NAME, sysop_email, strlen(sysop_email))))
+		if (!DO("setting email", ssl_cert, cryptSetAttributeString(ssl_cert, CRYPT_CERTINFO_RFC822NAME, sysop_email, strlen(sysop_email))))
 			goto failure_return_3;
-		if(!DO("signing certificate", ssl_cert, cryptSignCert(ssl_cert, cert_entry->cert)))
+		if (!DO("signing certificate", ssl_cert, cryptSignCert(ssl_cert, cert_entry->cert)))
 			goto failure_return_3;
-		if(!DO("adding public key", ssl_keyset, cryptAddPublicKey(ssl_keyset, ssl_cert)))
+		if (!DO("adding public key", ssl_keyset, cryptAddPublicKey(ssl_keyset, ssl_cert)))
 			goto failure_return_3;
 		cryptDestroyCert(ssl_cert);
 		cryptKeysetClose(ssl_keyset);
 		cryptDestroyContext(cert_entry->cert);
 		cert_entry->cert = -1;
 		// Finally, load it from the file.
-		if(cryptStatusOK(cryptKeysetOpen(&ssl_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, cert_path, CRYPT_KEYOPT_READONLY))) {
-			if(!DO("getting private key", ssl_keyset, cryptGetPrivateKey(ssl_keyset, &cert_entry->cert, CRYPT_KEYID_NAME, "ssl_cert", cfg->sys_pass))) {
+		if (cryptStatusOK(cryptKeysetOpen(&ssl_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, cert_path, CRYPT_KEYOPT_READONLY))) {
+			if (!DO("getting private key", ssl_keyset, cryptGetPrivateKey(ssl_keyset, &cert_entry->cert, CRYPT_KEYID_NAME, "ssl_cert", cfg->sys_pass))) {
 				cert_entry->cert = -1;
 			}
 			else {
@@ -600,7 +600,7 @@ static struct cert_list *get_sess_list_entry(scfg_t *cfg, int (*lprintf)(int lev
 int add_private_key(scfg_t *cfg, int (*lprintf)(int level, const char* fmt, ...), CRYPT_SESSION csess)
 {
 	struct cert_list *sess;
-	int ret;
+	int               ret;
 
 	sess = get_sess_list_entry(cfg, lprintf, csess);
 	if (sess == NULL) {
@@ -627,7 +627,7 @@ int destroy_session(int (*lprintf)(int level, const char* fmt, ...), CRYPT_SESSI
 {
 	struct cert_list *sess;
 	struct cert_list *psess = NULL;
-	int ret = CRYPT_ERROR_NOTFOUND;
+	int               ret = CRYPT_ERROR_NOTFOUND;
 
 	pthread_mutex_lock(&ssl_sess_list_mutex);
 	sess = sess_list;

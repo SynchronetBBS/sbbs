@@ -26,12 +26,12 @@
 /****************************************************************************/
 void sbbs_t::scandirs(int mode)
 {
-	char	keys[32];
-	char	ch,str[256]="";
-	int		s;
-	int		i,k;
+	char keys[32];
+	char ch, str[256] = "";
+	int  s;
+	int  i, k;
 
-	if(cfg.scandirs_mod[0] && !scandirs_inside) {
+	if (cfg.scandirs_mod[0] && !scandirs_inside) {
 		char cmdline[256];
 
 		scandirs_inside = true;
@@ -41,65 +41,65 @@ void sbbs_t::scandirs(int mode)
 		return;
 	}
 
-	if(!usrlibs) return;
+	if (!usrlibs) return;
 	mnemonics(text[DirLibOrAll]);
 	SAFEPRINTF2(keys, "%s%c\r", text[DirLibKeys], all_key());
-	ch=(char)getkeys(keys, 0);
-	if(sys_status&SS_ABORT || ch==CR) {
-		lncntr=0;
-		return; 
+	ch = (char)getkeys(keys, 0);
+	if (sys_status & SS_ABORT || ch == CR) {
+		lncntr = 0;
+		return;
 	}
-	if(ch!=all_key()) {
-		if(mode&FL_ULTIME) {			/* New file scan */
-			bprintf(text[NScanHdr],timestr(ns_time));
+	if (ch != all_key()) {
+		if (mode & FL_ULTIME) {            /* New file scan */
+			bprintf(text[NScanHdr], timestr(ns_time));
 		}
-		else if(mode==FL_NO_HDR) {		/* Search for a string */
-			if(!getfilespec(str))
+		else if (mode == FL_NO_HDR) {      /* Search for a string */
+			if (!getfilespec(str))
 				return;
 		}
-		else if(mode==FL_FIND) {	/* Find text in description */
-			if(text[DisplayExtendedFileInfoQ][0] && !noyes(text[DisplayExtendedFileInfoQ]))
+		else if (mode == FL_FIND) {    /* Find text in description */
+			if (text[DisplayExtendedFileInfoQ][0] && !noyes(text[DisplayExtendedFileInfoQ]))
 				mode |= FL_EXT;
-			if(sys_status&SS_ABORT) {
-				lncntr=0;
-				return; 
+			if (sys_status & SS_ABORT) {
+				lncntr = 0;
+				return;
 			}
 			bputs(text[SearchStringPrompt]);
-			if(!getstr(str,40,K_LINE|K_UPPER)) {
-				lncntr=0;
-				return; 
-			} 
+			if (!getstr(str, 40, K_LINE | K_UPPER)) {
+				lncntr = 0;
+				return;
+			}
 		}
 	}
-	if(ch==text[DirLibKeys][0]) {
-		if((s=listfiles(usrdir[curlib][curdir[curlib]],str,0,mode))==-1)
+	if (ch == text[DirLibKeys][0]) {
+		if ((s = listfiles(usrdir[curlib][curdir[curlib]], str, 0, mode)) == -1)
 			return;
 		bputs(text[Scanned]);
-		if(s>1)
-			bprintf(text[NFilesListed],s);
-		else if(!s && !(mode&FL_ULTIME))
+		if (s > 1)
+			bprintf(text[NFilesListed], s);
+		else if (!s && !(mode & FL_ULTIME))
 			bputs(text[FileNotFound]);
-		return; 
+		return;
 	}
-	if(ch==text[DirLibKeys][1]) {
-		k=0;
-		for(i=0;i<usrdirs[curlib] && !msgabort();i++) {
+	if (ch == text[DirLibKeys][1]) {
+		k = 0;
+		for (i = 0; i < usrdirs[curlib] && !msgabort(); i++) {
 			progress(text[Scanning], i, usrdirs[curlib]);
-			if(mode&FL_ULTIME	/* New-scan */
-				&& (cfg.lib[usrlib[curlib]]->offline_dir==usrdir[curlib][i]
-				|| cfg.dir[usrdir[curlib][i]]->misc&DIR_NOSCAN))
+			if (mode & FL_ULTIME   /* New-scan */
+			    && (cfg.lib[usrlib[curlib]]->offline_dir == usrdir[curlib][i]
+			        || cfg.dir[usrdir[curlib][i]]->misc & DIR_NOSCAN))
 				continue;
-			else if((s=listfiles(usrdir[curlib][i],str,0,mode))==-1)
+			else if ((s = listfiles(usrdir[curlib][i], str, 0, mode)) == -1)
 				return;
-			else k+=s; 
+			else k += s;
 		}
 		progress(text[Done], i, usrdirs[curlib]);
 		bputs(text[Scanned]);
-		if(k>1)
-			bprintf(text[NFilesListed],k);
-		else if(!k && !(mode&FL_ULTIME))
+		if (k > 1)
+			bprintf(text[NFilesListed], k);
+		else if (!k && !(mode & FL_ULTIME))
 			bputs(text[FileNotFound]);
-		return; 
+		return;
 	}
 
 	scanalldirs(mode);
@@ -110,11 +110,11 @@ void sbbs_t::scandirs(int mode)
 /****************************************************************************/
 void sbbs_t::scanalldirs(int mode)
 {
-	char	str[256]="";
-	int		s;
-	int		i,j,k,d;
+	char str[256] = "";
+	int  s;
+	int  i, j, k, d;
 
-	if(cfg.scandirs_mod[0] && !scandirs_inside) {
+	if (cfg.scandirs_mod[0] && !scandirs_inside) {
 		char cmdline[256];
 
 		scandirs_inside = true;
@@ -124,52 +124,52 @@ void sbbs_t::scanalldirs(int mode)
 		return;
 	}
 
-	if(!usrlibs) return;
-	k=0;
-	if(mode&FL_ULTIME) {			/* New file scan */
-		bprintf(text[NScanHdr],timestr(ns_time));
+	if (!usrlibs) return;
+	k = 0;
+	if (mode & FL_ULTIME) {            /* New file scan */
+		bprintf(text[NScanHdr], timestr(ns_time));
 	}
-	else if(mode==FL_NO_HDR) {		/* Search for a string */
-		if(!getfilespec(str))
+	else if (mode == FL_NO_HDR) {      /* Search for a string */
+		if (!getfilespec(str))
 			return;
 	}
-	else if(mode==FL_FIND) {	/* Find text in description */
-		if(text[DisplayExtendedFileInfoQ][0] && !noyes(text[DisplayExtendedFileInfoQ]))
+	else if (mode == FL_FIND) {    /* Find text in description */
+		if (text[DisplayExtendedFileInfoQ][0] && !noyes(text[DisplayExtendedFileInfoQ]))
 			mode |= FL_EXT;
-		if(sys_status&SS_ABORT) {
-			lncntr=0;
-			return; 
+		if (sys_status & SS_ABORT) {
+			lncntr = 0;
+			return;
 		}
 		bputs(text[SearchStringPrompt]);
-		if(!getstr(str,40,K_LINE|K_UPPER)) {
-			lncntr=0;
-			return; 
+		if (!getstr(str, 40, K_LINE | K_UPPER)) {
+			lncntr = 0;
+			return;
 		}
 	}
 	unsigned total_dirs = 0;
-	for(i=0; i < usrlibs ;i++)
+	for (i = 0; i < usrlibs ; i++)
 		total_dirs += usrdirs[i];
-	for(i=d=0;i<usrlibs;i++) {
-		for(j=0;j<usrdirs[i] && !msgabort();j++,d++) {
+	for (i = d = 0; i < usrlibs; i++) {
+		for (j = 0; j < usrdirs[i] && !msgabort(); j++, d++) {
 			progress(text[Scanning], d, total_dirs);
-			if(mode&FL_ULTIME /* New-scan */
-				&& (cfg.lib[usrlib[i]]->offline_dir==usrdir[i][j]
-				|| cfg.dir[usrdir[i][j]]->misc&DIR_NOSCAN))
+			if (mode & FL_ULTIME /* New-scan */
+			    && (cfg.lib[usrlib[i]]->offline_dir == usrdir[i][j]
+			        || cfg.dir[usrdir[i][j]]->misc & DIR_NOSCAN))
 				continue;
-			else if((s=listfiles(usrdir[i][j],str,0,mode))==-1) {
+			else if ((s = listfiles(usrdir[i][j], str, 0, mode)) == -1) {
 				bputs(text[Scanned]);
 				return;
 			}
-			else k+=s; 
+			else k += s;
 		}
-		if(j<usrdirs[i])   /* aborted */
-			break; 
+		if (j < usrdirs[i])   /* aborted */
+			break;
 	}
 	progress(text[Done], d, total_dirs);
 	bputs(text[Scanned]);
-	if(k>1)
-		bprintf(text[NFilesListed],k);
-	else if(!k && !(mode&FL_ULTIME))
+	if (k > 1)
+		bprintf(text[NFilesListed], k);
+	else if (!k && !(mode & FL_ULTIME))
 		bputs(text[FileNotFound]);
 }
 

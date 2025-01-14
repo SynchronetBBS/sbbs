@@ -19,7 +19,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <limits.h>	/* USHRT_MAX */
+#include <limits.h> /* USHRT_MAX */
 
 #include "scfgsave.h"
 #include "scfglib.h"
@@ -38,47 +38,47 @@
 
 #define SETHELP(where)  uifc.sethelp(where)
 
-#define SCFG_CMDLINE_PREFIX_HELP "\n"																				\
-								"Command lines may begin with a special `prefix` character to indicate:\n"			\
-								"\n"																				\
-								"  `*`   Program is either a JavaScript (`.js`) or Baja (`.bin`) module\n"			\
-								"  `?`   Program is a JavaScript (`.js`) module\n"
+#define SCFG_CMDLINE_PREFIX_HELP "\n"                                                                               \
+		"Command lines may begin with a special `prefix` character to indicate:\n"          \
+		"\n"                                                                                \
+		"  `*`   Program is either a JavaScript (`.js`) or Baja (`.bin`) module\n"          \
+		"  `?`   Program is a JavaScript (`.js`) module\n"
 
-#define SCFG_CMDLINE_SPEC_HELP 	"\n"																				\
-								"The following is a list of commonly-used command line specifiers:\n"				\
-								"\n"																				\
-								"  `%f`  The path/filename of the file to act upon or door/game `drop file`\n"		\
-								"  `%s`  File specification (e.g. `*.txt`) or the current `Startup Directory`\n"	\
-								"  `%.`  Executable file extension (`.exe`, or blank for Unix systems)\n"			\
-								"  `%!`  The Synchronet `exec directory` (use `%@` for non-Unix only)\n"			\
-								"  `%g`  The Synchronet `temp directory`\n"											\
-								"  `%j`  The Synchronet `data directory`\n"											\
-								"  `%k`  The Synchronet `ctrl directory`\n"											\
-								"  `%z`  The Synchronet `text directory`\n"											\
-								"  `%n`  The current `node directory`\n"											\
-								"  `%#`  The current `node number`\n"												\
-								"  `%a`  The current `user's alias`\n"												\
-								"  `%1`  The current `user's number` (use `%2`, `%3`, etc. for 0-padded values)\n"	\
-								"  `%h`  The current TCP/IP `socket` descriptor (handle) value\n"					\
-								"  `%p`  The current connection type (protocol, e.g. `telnet`, `rlogin`, etc.)\n"	\
-								"  `%r`  The current user's terminal height (`rows`)\n"								\
-								"  `%w`  The current user's terminal width (`columns`)\n"							\
-								"\n"																				\
-								"For a complete list of the supported command-line specifiers, see:\n"				\
-								"`http://wiki.synchro.net/config:cmdline`\n"
+#define SCFG_CMDLINE_SPEC_HELP  "\n"                                                                                \
+		"The following is a list of commonly-used command line specifiers:\n"               \
+		"\n"                                                                                \
+		"  `%f`  The path/filename of the file to act upon or door/game `drop file`\n"      \
+		"  `%s`  File specification (e.g. `*.txt`) or the current `Startup Directory`\n"    \
+		"  `%.`  Executable file extension (`.exe`, or blank for Unix systems)\n"           \
+		"  `%!`  The Synchronet `exec directory` (use `%@` for non-Unix only)\n"            \
+		"  `%g`  The Synchronet `temp directory`\n"                                         \
+		"  `%j`  The Synchronet `data directory`\n"                                         \
+		"  `%k`  The Synchronet `ctrl directory`\n"                                         \
+		"  `%z`  The Synchronet `text directory`\n"                                         \
+		"  `%n`  The current `node directory`\n"                                            \
+		"  `%#`  The current `node number`\n"                                               \
+		"  `%a`  The current `user's alias`\n"                                              \
+		"  `%1`  The current `user's number` (use `%2`, `%3`, etc. for 0-padded values)\n"  \
+		"  `%h`  The current TCP/IP `socket` descriptor (handle) value\n"                   \
+		"  `%p`  The current connection type (protocol, e.g. `telnet`, `rlogin`, etc.)\n"   \
+		"  `%r`  The current user's terminal height (`rows`)\n"                             \
+		"  `%w`  The current user's terminal width (`columns`)\n"                           \
+		"\n"                                                                                \
+		"For a complete list of the supported command-line specifiers, see:\n"              \
+		"`http://wiki.synchro.net/config:cmdline`\n"
 
-#define strInvalidCode			"Invalid Internal Code Rejected!"
-#define strInvalidCodePrefix	"Invalid Internal Code Prefix Rejected!"
-#define strDuplicateCode		"Duplicate Internal Code Rejected!"
-#define strDuplicateCodePrefix	"Duplicate Internal Code Prefix Rejected!"
+#define strInvalidCode          "Invalid Internal Code Rejected!"
+#define strInvalidCodePrefix    "Invalid Internal Code Prefix Rejected!"
+#define strDuplicateCode        "Duplicate Internal Code Rejected!"
+#define strDuplicateCodePrefix  "Duplicate Internal Code Prefix Rejected!"
 
 /*************/
 /* Constants */
 /*************/
 
-#define SUB_HDRMOD	(1U<<31)		/* Modified sub-board header info */
+#define SUB_HDRMOD  (1U << 31)        /* Modified sub-board header info */
 
-#define MAX_UNIQUE_CODE_ATTEMPTS (36*36*36)
+#define MAX_UNIQUE_CODE_ATTEMPTS (36 * 36 * 36)
 
 enum import_list_type {
 	IMPORT_LIST_TYPE_SUBS_TXT,
@@ -98,16 +98,16 @@ enum import_list_type {
 /********************/
 /* Global Variables */
 /********************/
-extern scfg_t cfg;
-extern uifcapi_t uifc;
-extern char item;
-extern char **opt;
-extern char tmp[256];
-extern char error[256];
+extern scfg_t      cfg;
+extern uifcapi_t   uifc;
+extern char        item;
+extern char **     opt;
+extern char        tmp[256];
+extern char        error[256];
 extern const char *nulstr;
-extern char *invalid_code,*num_flags;
-extern bool new_install;
-extern char* area_sort_desc[AREA_SORT_TYPES+1];
+extern char *      invalid_code, *num_flags;
+extern bool        new_install;
+extern char*       area_sort_desc[AREA_SORT_TYPES + 1];
 
 /***********************/
 /* Function Prototypes */
@@ -189,7 +189,7 @@ bool save_chat_cfg(scfg_t*);
 bool save_xtrn_cfg(scfg_t*);
 
 long import_msg_areas(enum import_list_type, FILE*, int grpnum, int min_confnum, int max_confnum
-	, qhub_t*, const char* pkt_orig, faddr_t* faddr, uint32_t misc, long* added);
+                      , qhub_t*, const char* pkt_orig, faddr_t* faddr, uint32_t misc, long* added);
 
 /* Prepare a string to be used as an internal code; Note: use the return value, Luke */
 char* prep_code(char *str, const char* prefix);

@@ -28,41 +28,41 @@
 /****************************************************************************/
 int getmail(scfg_t* cfg, int usernumber, bool sent, int attr)
 {
-    char    path[MAX_PATH+1];
-    int     i=0;
-    long    l;
-    idxrec_t idx;
-	smb_t	smb;
+	char     path[MAX_PATH + 1];
+	int      i = 0;
+	long     l;
+	idxrec_t idx;
+	smb_t    smb;
 
 	ZERO_VAR(smb);
-	SAFEPRINTF(smb.file,"%smail",cfg->data_dir);
-	smb.retry_time=1;	//cfg->smb_retry_time;
-	SAFEPRINTF(path,"%s.sid",smb.file);
-	l=(long)flength(path);
-	if(l<(long)sizeof(idxrec_t))
+	SAFEPRINTF(smb.file, "%smail", cfg->data_dir);
+	smb.retry_time = 1;   //cfg->smb_retry_time;
+	SAFEPRINTF(path, "%s.sid", smb.file);
+	l = (long)flength(path);
+	if (l < (long)sizeof(idxrec_t))
 		return(0);
-	if(usernumber == 0 && attr == 0) 
-		return(l/sizeof(idxrec_t)); 	/* Total system e-mail */
-	smb.subnum=INVALID_SUB;
+	if (usernumber == 0 && attr == 0)
+		return(l / sizeof(idxrec_t));   /* Total system e-mail */
+	smb.subnum = INVALID_SUB;
 
-	if(smb_open_fp(&smb,&smb.sid_fp,SH_DENYNO)!=0) 
-		return(0); 
+	if (smb_open_fp(&smb, &smb.sid_fp, SH_DENYNO) != 0)
+		return(0);
 
-	while(!smb_feof(smb.sid_fp)) {
-		if(smb_fread(&smb,&idx,sizeof(idx),smb.sid_fp) != sizeof(idx))
+	while (!smb_feof(smb.sid_fp)) {
+		if (smb_fread(&smb, &idx, sizeof(idx), smb.sid_fp) != sizeof(idx))
 			break;
-		if(idx.number==0)	/* invalid message number, ignore */
+		if (idx.number == 0)   /* invalid message number, ignore */
 			continue;
-		if(idx.attr&MSG_DELETE)
+		if (idx.attr & MSG_DELETE)
 			continue;
-		if(attr < 0 && (idx.attr & (~attr)) != 0)
+		if (attr < 0 && (idx.attr & (~attr)) != 0)
 			continue;
-		if(attr > 0 && (idx.attr & attr) != attr)
+		if (attr > 0 && (idx.attr & attr) != attr)
 			continue;
-		if(usernumber == 0
-			|| (!sent && idx.to==usernumber)
-			|| (sent && idx.from==usernumber))
-			i++; 
+		if (usernumber == 0
+		    || (!sent && idx.to == usernumber)
+		    || (sent && idx.from == usernumber))
+			i++;
 	}
 	smb_close(&smb);
 	return(i);
@@ -74,32 +74,32 @@ int getmail(scfg_t* cfg, int usernumber, bool sent, int attr)
 /***************************/
 bool delfattach(scfg_t* cfg, smbmsg_t* msg)
 {
-    char dir[MAX_PATH+1];
-	char path[MAX_PATH+1];
-	char files[128];
-	char *tp,*sp,*p;
+	char  dir[MAX_PATH + 1];
+	char  path[MAX_PATH + 1];
+	char  files[128];
+	char *tp, *sp, *p;
 
-	if(msg->idx.to==0) 	/* netmail */
+	if (msg->idx.to == 0)  /* netmail */
 		SAFEPRINTF2(dir, "%sfile/%04u.out", cfg->data_dir, msg->idx.from);
 	else
 		SAFEPRINTF2(dir, "%sfile/%04u.in", cfg->data_dir, msg->idx.to);
-		
+
 	SAFECOPY(files, msg->subj);
-	tp=files;
-	while(1) {
-		p=strchr(tp,' ');
-		if(p) *p=0;
-		sp=strrchr(tp,'/');              /* sp is slash pointer */
-		if(!sp) sp=strrchr(tp,'\\');
-		if(sp) tp=sp+1;
-		if(strcspn(tp, ILLEGAL_FILENAME_CHARS) == strlen(tp)) {
+	tp = files;
+	while (1) {
+		p = strchr(tp, ' ');
+		if (p) *p = 0;
+		sp = strrchr(tp, '/');              /* sp is slash pointer */
+		if (!sp) sp = strrchr(tp, '\\');
+		if (sp) tp = sp + 1;
+		if (strcspn(tp, ILLEGAL_FILENAME_CHARS) == strlen(tp)) {
 			SAFEPRINTF2(path, "%s/%s", dir, tp);
-			if(fexist(path) && remove(path) != 0)
+			if (fexist(path) && remove(path) != 0)
 				return false;
 		}
-		if(!p)
+		if (!p)
 			break;
-		tp=p+1; 
+		tp = p + 1;
 	}
 	rmdir(dir);                     /* remove the dir if it's empty */
 	return true;
@@ -111,60 +111,60 @@ bool delfattach(scfg_t* cfg, smbmsg_t* msg)
 /* smb_open(&smb) must be called prior										*/
 /****************************************************************************/
 mail_t* loadmail(smb_t* smb, uint32_t* msgs, uint usernumber
-			   ,int which, long mode)
+                 , int which, long mode)
 {
-	ulong		l=0;
-    idxrec_t    idx;
-	mail_t*		mail=NULL;
+	ulong    l = 0;
+	idxrec_t idx;
+	mail_t*  mail = NULL;
 
-	if(msgs==NULL)
+	if (msgs == NULL)
 		return(NULL);
 
-	*msgs=0;
+	*msgs = 0;
 
-	if(smb==NULL)
+	if (smb == NULL)
 		return(NULL);
 
-	if(smb_locksmbhdr(smb)!=0)  				/* Be sure noone deletes or */
-		return(NULL);							/* adds while we're reading */
+	if (smb_locksmbhdr(smb) != 0)                  /* Be sure noone deletes or */
+		return(NULL);                           /* adds while we're reading */
 
 	smb_rewind(smb->sid_fp);
-	while(!smb_feof(smb->sid_fp)) {
-		if(smb_fread(smb,&idx,sizeof(idx),smb->sid_fp) != sizeof(idx))
+	while (!smb_feof(smb->sid_fp)) {
+		if (smb_fread(smb, &idx, sizeof(idx), smb->sid_fp) != sizeof(idx))
 			break;
-		if(idx.number==0)	/* invalid message number, ignore */
+		if (idx.number == 0)   /* invalid message number, ignore */
 			continue;
-		if((which==MAIL_SENT && idx.from!=usernumber)
-			|| (which==MAIL_YOUR && idx.to!=usernumber)
-			|| (which==MAIL_ANY && idx.from!=usernumber && idx.to!=usernumber))
+		if ((which == MAIL_SENT && idx.from != usernumber)
+		    || (which == MAIL_YOUR && idx.to != usernumber)
+		    || (which == MAIL_ANY && idx.from != usernumber && idx.to != usernumber))
 			continue;
-		if(idx.attr&MSG_DELETE && !(mode&LM_INCDEL))	/* Don't included deleted msgs */
-			continue;					
-		if(mode&LM_UNREAD && idx.attr&MSG_READ)
+		if (idx.attr & MSG_DELETE && !(mode & LM_INCDEL))    /* Don't included deleted msgs */
 			continue;
-		if(mode&LM_NOSPAM && idx.attr&MSG_SPAM)
+		if (mode & LM_UNREAD && idx.attr & MSG_READ)
 			continue;
-		if(mode&LM_SPAMONLY && !(idx.attr&MSG_SPAM))
+		if (mode & LM_NOSPAM && idx.attr & MSG_SPAM)
+			continue;
+		if (mode & LM_SPAMONLY && !(idx.attr & MSG_SPAM))
 			continue;
 		mail_t* np;
-		if((np = realloc(mail, sizeof(mail_t) * (l+1))) == NULL) {
+		if ((np = realloc(mail, sizeof(mail_t) * (l + 1))) == NULL) {
 			free(mail);
 			smb_unlocksmbhdr(smb);
-			return(NULL); 
+			return(NULL);
 		}
 		mail = np;
-		mail[l]=idx;
-		l++; 
+		mail[l] = idx;
+		l++;
 	}
 	smb_unlocksmbhdr(smb);
-	*msgs=l;
-	if(l && (mode&LM_REVERSE)) {
-		mail_t*	reversed = malloc(sizeof(mail_t) * l);
-		if(reversed == NULL) {
+	*msgs = l;
+	if (l && (mode & LM_REVERSE)) {
+		mail_t* reversed = malloc(sizeof(mail_t) * l);
+		if (reversed == NULL) {
 			free(mail);
 			return NULL;
 		}
-		for(ulong n = 0; n < l; n++)
+		for (ulong n = 0; n < l; n++)
 			reversed[n] = mail[l - (n + 1)];
 		free(mail);
 		mail = reversed;
@@ -174,6 +174,6 @@ mail_t* loadmail(smb_t* smb, uint32_t* msgs, uint usernumber
 
 void freemail(mail_t* mail)
 {
-	if(mail!=NULL)
+	if (mail != NULL)
 		free(mail);
 }
