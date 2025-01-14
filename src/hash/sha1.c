@@ -254,7 +254,8 @@ void SHA1Final(
         int j;
 
         for (j = 0; j < 4; t >>= 8, j++)
-            *--fcp = (uint8_t) t}
+            *--fcp = (uint8_t) t;
+    }
 #else
     for (i = 0; i < 8; i++)
     {
