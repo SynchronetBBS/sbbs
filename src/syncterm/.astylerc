@@ -1,0 +1,30 @@
+--style=stroustrup
+--indent=tab=8
+--attach-extern-c
+--attach-closing-while
+--indent-switches
+# Maybe...
+#--indent-after-parens
+--indent-continuation=1
+
+--indent-preproc-block
+--pad-oper
+--pad-include
+--pad-header
+--unpad-paren
+--unpad-brackets
+--squeeze-lines=2
+--squeeze-ws
+--align-pointer=name
+--align-reference=type
+--min-conditional-indent=3
+
+--break-closing-braces
+--break-one-line-headers
+# Danger!
+--remove-braces
+--break-return-type
+--attach-return-type-decl
+--convert-tabs
+--max-code-length=115
+
