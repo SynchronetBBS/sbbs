@@ -1254,7 +1254,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 	#if 0 /* ftime */
 					if(lp1 && (uint)*lp1<csi->files && lp2) {
 						ft=unixtoftime(*lp2);
-						setftime(fileno(csi->file[*lp1),&ft);
+						setftime(fileno(csi->file[*lp1]),&ft);
 					}
 	#endif
 					return(0);
