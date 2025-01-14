@@ -502,7 +502,8 @@ void sbbs_t::printnodedat(uint number, node_t* node)
 				else {
 					if ((node->aux / 60) == 0)    /* 12 midnite */
 						hour = 12;
-					else hour = node->aux / 60;
+					else
+						hour = node->aux / 60;
 					strcpy(mer, "am");
 				}
 				bprintf(" ETA %02d:%02d %s"

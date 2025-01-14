@@ -101,8 +101,10 @@ void sbbs_t::logout(bool logged_in)
 	if (i > cfg.level_timepercall[useron.level])      /* i=amount of time without min */
 		i = cfg.level_timepercall[useron.level];
 	j = (int)(now - starttime) / 60;          /* j=billable time online in min */
-	if (i < 0) i = 0;
-	if (j < 0) j = 0;
+	if (i < 0)
+		i = 0;
+	if (j < 0)
+		j = 0;
 
 	if (useron.min && j > i) {
 		j -= i;                               /* j=time to deduct from min */

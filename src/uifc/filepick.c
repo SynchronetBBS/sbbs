@@ -132,9 +132,9 @@ char *insensitive_mask(char *mask)
 			*(out++) = *in;
 	}
 	*out = 0;
-	return(nmask);
+	return nmask;
 #else
-	return(mask);
+	return mask;
 #endif
 }
 
@@ -146,7 +146,7 @@ char **get_file_opt_list(char **fns, int files, int dirsonly, int root)
 
 	opts = (char **)malloc((files + 2) * sizeof(char *));
 	if (opts == NULL)
-		return(NULL);
+		return NULL;
 	memset(opts, 0, (files + 2) * sizeof(char *));
 	if (dirsonly) {
 		if (!root)
@@ -163,7 +163,7 @@ char **get_file_opt_list(char **fns, int files, int dirsonly, int root)
 		}
 	}
 	opts[j] = "";
-	return(opts);
+	return opts;
 }
 
 void display_current_path(uifcapi_t *api, char *path)
@@ -247,7 +247,7 @@ int mousetofield(uifcapi_t* api, int currfield, int opts, int height, int width,
 			ungetmouse(&mevnt);
 		}
 	}
-	return(newfield);
+	return newfield;
 }
 
 int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char *msk, int opts)
@@ -299,11 +299,11 @@ int filepick(uifcapi_t *api, char *title, struct file_pick *fp, char *dir, char 
 
 	/* No struct passed */
 	if (fp == NULL)
-		return(-1);
+		return -1;
 
 	/* Illegal options */
 	if ((opts & UIFC_FP_MULTI) == UIFC_FP_MULTI && (opts & (UIFC_FP_ALLOWENTRY | UIFC_FP_OVERPROMPT | UIFC_FP_CREATPROMPT)))
-		return(-1);
+		return -1;
 
 	if (opts & UIFC_FP_DIRSEL)
 		currfield = lastfield = DIR_LIST;
@@ -709,7 +709,7 @@ cleanup:        /* Cleans up allocated variables returns from function */
 	FREE_AND_NULL(tmplastpath);
 	free_opt_list(&file_list);
 	free_opt_list(&dir_list);
-	return(retval);
+	return retval;
 }
 
 int filepick_free(struct file_pick *fp)
@@ -720,5 +720,5 @@ int filepick_free(struct file_pick *fp)
 		FREE_AND_NULL(fp->selected[i]);
 	}
 	FREE_AND_NULL(fp->selected);
-	return(0);
+	return 0;
 }

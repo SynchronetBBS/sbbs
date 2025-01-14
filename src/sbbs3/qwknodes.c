@@ -121,8 +121,10 @@ void gettag(smbmsg_t* msg, char *tag)
 	truncsp(buf);
 	stripctrla(buf);
 	p = strrchr(buf, LF);
-	if (!p) p = buf;
-	else p++;
+	if (!p)
+		p = buf;
+	else
+		p++;
 	if (!strnicmp(p, " þ Synchronet þ ", 16))
 		p += 16;
 	if (!strnicmp(p, " * Synchronet * ", 16))

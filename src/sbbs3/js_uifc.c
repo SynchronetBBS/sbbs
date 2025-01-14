@@ -340,11 +340,16 @@ static JSBool js_list_ctx_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 	p->bar = INT_MAX;
-	if (argc > 0 && JSVAL_IS_NUMBER(argv[0])) p->cur = JSVAL_TO_INT(argv[0]);
-	if (argc > 1 && JSVAL_IS_NUMBER(argv[1])) p->bar = JSVAL_TO_INT(argv[1]);
-	if (argc > 2 && JSVAL_IS_NUMBER(argv[2])) p->left = JSVAL_TO_INT(argv[2]);
-	if (argc > 3 && JSVAL_IS_NUMBER(argv[3])) p->top = JSVAL_TO_INT(argv[3]);
-	if (argc > 4 && JSVAL_IS_NUMBER(argv[4])) p->width = JSVAL_TO_INT(argv[4]);
+	if (argc > 0 && JSVAL_IS_NUMBER(argv[0]))
+		p->cur = JSVAL_TO_INT(argv[0]);
+	if (argc > 1 && JSVAL_IS_NUMBER(argv[1]))
+		p->bar = JSVAL_TO_INT(argv[1]);
+	if (argc > 2 && JSVAL_IS_NUMBER(argv[2]))
+		p->left = JSVAL_TO_INT(argv[2]);
+	if (argc > 3 && JSVAL_IS_NUMBER(argv[3]))
+		p->top = JSVAL_TO_INT(argv[3]);
+	if (argc > 4 && JSVAL_IS_NUMBER(argv[4]))
+		p->width = JSVAL_TO_INT(argv[4]);
 	js_SyncResolve(cx, obj, NULL, js_uifc_list_class_properties, NULL, NULL, 0);
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx, obj, "Class used to retain UIFC list menu context", 317);
@@ -366,12 +371,18 @@ static JSBool js_showbuf_ctx_constructor(JSContext *cx, uintN argc, jsval *argli
 	}
 	p->height = INT_MAX;
 	p->width = INT_MAX;
-	if (argc > 0 && JSVAL_IS_NUMBER(argv[0])) p->cur = JSVAL_TO_INT(argv[0]);
-	if (argc > 1 && JSVAL_IS_NUMBER(argv[1])) p->bar = JSVAL_TO_INT(argv[1]);
-	if (argc > 2 && JSVAL_IS_NUMBER(argv[2])) p->left = JSVAL_TO_INT(argv[2]);
-	if (argc > 3 && JSVAL_IS_NUMBER(argv[3])) p->top = JSVAL_TO_INT(argv[3]);
-	if (argc > 4 && JSVAL_IS_NUMBER(argv[4])) p->width = JSVAL_TO_INT(argv[4]);
-	if (argc > 5 && JSVAL_IS_NUMBER(argv[5])) p->height = JSVAL_TO_INT(argv[5]);
+	if (argc > 0 && JSVAL_IS_NUMBER(argv[0]))
+		p->cur = JSVAL_TO_INT(argv[0]);
+	if (argc > 1 && JSVAL_IS_NUMBER(argv[1]))
+		p->bar = JSVAL_TO_INT(argv[1]);
+	if (argc > 2 && JSVAL_IS_NUMBER(argv[2]))
+		p->left = JSVAL_TO_INT(argv[2]);
+	if (argc > 3 && JSVAL_IS_NUMBER(argv[3]))
+		p->top = JSVAL_TO_INT(argv[3]);
+	if (argc > 4 && JSVAL_IS_NUMBER(argv[4]))
+		p->width = JSVAL_TO_INT(argv[4]);
+	if (argc > 5 && JSVAL_IS_NUMBER(argv[5]))
+		p->height = JSVAL_TO_INT(argv[5]);
 	if (!JS_SetPrivate(cx, obj, p)) {
 		JS_ReportError(cx, "JS_SetPrivate failed");
 		return JS_FALSE;

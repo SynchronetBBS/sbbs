@@ -185,7 +185,8 @@ int sbbs_t::protocol(prot_t* prot, enum XFER_TYPE type
 	}
 
 	CRLF;
-	if (autohang) sys_status |= SS_PAUSEOFF; /* Pause off after download */
+	if (autohang)
+		sys_status |= SS_PAUSEOFF;           /* Pause off after download */
 	if (elapsed != nullptr) {
 		*elapsed = end - start;
 		if (*elapsed < 0)
@@ -208,7 +209,8 @@ void sbbs_t::autohangup()
 	sync();
 	sys_status &= ~SS_PAUSEOFF;       /* turn pause back on */
 	rioctl(IOFI);
-	if (!autohang) return;
+	if (!autohang)
+		return;
 	lncntr = 0;
 	bputs(text[Disconnecting]);
 	attr(GREEN);
@@ -366,7 +368,8 @@ void sbbs_t::seqwait(uint devnum)
 			break;
 		getnodedat(cfg.node_num, &thisnode, true);    /* open and lock this record */
 		for (i = 1; i <= cfg.sys_nodes; i++) {
-			if (i == cfg.node_num) continue;
+			if (i == cfg.node_num)
+				continue;
 			if (getnodedat(i, &node, true)) {
 				if ((node.status == NODE_INUSE || node.status == NODE_QUIET)
 				    && node.action == NODE_RFSD && node.aux == devnum) {

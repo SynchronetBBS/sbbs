@@ -1024,7 +1024,8 @@ void sbbs_t::privchat(bool forced, int node_num)
 					ch = 0;
 				}
 				(void)lseek(in, -1L, SEEK_CUR);
-				if (!ch) break;               /* char from other node */
+				if (!ch)
+					break;                    /* char from other node */
 				if (ch < ' ')
 					lprintf(LOG_DEBUG, "read control character %u (%s) from %s", ch, c_escape_char(ch), inpath);
 				else
@@ -1797,7 +1798,8 @@ bool sbbs_t::guruexp(char **ptrptr, char *line)
 				(*ptrptr)++;
 			(*ptrptr)++;
 			cp = strchr(str, ']');
-			if (cp) *cp = 0;
+			if (cp)
+				*cp = 0;
 			ar = arstr(NULL, str, &cfg, NULL);
 			c = chk_ar(ar, &useron, &client);
 			free(ar);

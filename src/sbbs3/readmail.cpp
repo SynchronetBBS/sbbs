@@ -23,16 +23,26 @@
 
 static char mail_listing_flag(smbmsg_t* msg)
 {
-	if (msg->hdr.attr & MSG_DELETE)                return '-';
-	if (msg->hdr.attr & MSG_SPAM)                  return 'S';
-	if (msg->hdr.attr & MSG_REPLIED)               return 'R';
-	if (msg->hdr.attr & MSG_READ)                  return ' ';
-	if (msg->hdr.attr & MSG_PERMANENT)             return 'p';
-	if (msg->hdr.attr & MSG_LOCKED)                return 'L';
-	if (msg->hdr.attr & MSG_KILLREAD)              return 'K';
-	if (msg->hdr.attr & MSG_NOREPLY)               return '#';
-	if (msg->from_net.type || msg->to_net.type)  return 'N';
-	if (msg->hdr.attr & MSG_ANONYMOUS)             return 'A';
+	if (msg->hdr.attr & MSG_DELETE)
+		return '-';
+	if (msg->hdr.attr & MSG_SPAM)
+		return 'S';
+	if (msg->hdr.attr & MSG_REPLIED)
+		return 'R';
+	if (msg->hdr.attr & MSG_READ)
+		return ' ';
+	if (msg->hdr.attr & MSG_PERMANENT)
+		return 'p';
+	if (msg->hdr.attr & MSG_LOCKED)
+		return 'L';
+	if (msg->hdr.attr & MSG_KILLREAD)
+		return 'K';
+	if (msg->hdr.attr & MSG_NOREPLY)
+		return '#';
+	if (msg->from_net.type || msg->to_net.type)
+		return 'N';
+	if (msg->hdr.attr & MSG_ANONYMOUS)
+		return 'A';
 	return '*';
 }
 
@@ -288,7 +298,8 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 				}
 			}
 		}
-		else domsg = 1;
+		else
+			domsg = 1;
 
 		sync();
 		if (which == MAIL_SENT)
@@ -398,8 +409,10 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 				}
 
 				if (msg.hdr.attr & MSG_DELETE || noyes(str2)) {
-					if (smb.curmsg < smb.msgs - 1) smb.curmsg++;
-					else done = 1;
+					if (smb.curmsg < smb.msgs - 1)
+						smb.curmsg++;
+					else
+						done = 1;
 					break;
 				}
 			/* Case 'D': must follow! */
@@ -424,8 +437,10 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 					}
 					smb_unlocksmbhdr(&smb);
 				}
-				if (smb.curmsg < smb.msgs - 1) smb.curmsg++;
-				else done = 1;
+				if (smb.curmsg < smb.msgs - 1)
+					smb.curmsg++;
+				else
+					done = 1;
 				break;
 			case 'K':   /* Kill All Mail */
 			{
@@ -452,8 +467,10 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 				if (!forwardmsg(&smb, &msg, str))
 					break;
 				domsg = 1;
-				if (smb.curmsg < smb.msgs - 1) smb.curmsg++;
-				else done = 1;
+				if (smb.curmsg < smb.msgs - 1)
+					smb.curmsg++;
+				else
+					done = 1;
 				if (msg.hdr.attr & (MSG_PERMANENT | MSG_DELETE))
 					break;
 				SAFEPRINTF(str2, text[DeleteMailQ], msghdr_field(&msg, msg.from));
@@ -647,14 +664,17 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 			// fall-through
 			case 0:
 			case '+':
-				if (smb.curmsg < smb.msgs - 1) smb.curmsg++;
-				else done = 1;
+				if (smb.curmsg < smb.msgs - 1)
+					smb.curmsg++;
+				else
+					done = 1;
 				break;
 			case TERM_KEY_LEFT:
 				newline();
 			// fall-through
 			case '-':
-				if (smb.curmsg > 0) smb.curmsg--;
+				if (smb.curmsg > 0)
+					smb.curmsg--;
 				break;
 			case 'S':
 				domsg = 0;
@@ -679,7 +699,8 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 			case 'T':
 				domsg = 0;
 				u = smb.curmsg;
-				if (u) u++;
+				if (u)
+					u++;
 				v = u + 10;
 				if (v > smb.msgs)
 					v = smb.msgs;
@@ -790,7 +811,8 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 					domsg = false;
 				} else {
 					purgeuser(msg.idx.from);
-					if (smb.curmsg < smb.msgs - 1) smb.curmsg++;
+					if (smb.curmsg < smb.msgs - 1)
+						smb.curmsg++;
 				}
 				break;
 			case '/':

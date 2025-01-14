@@ -168,9 +168,12 @@ int main(int argc, char **argv)
 					case '=':
 					case '?':
 						ch = fgetc(in);      /* First digit */
-						if (IS_DIGIT(ch)) ch = fgetc(in); /* l or h ? */
-						if (IS_DIGIT(ch)) ch = fgetc(in);
-						if (IS_DIGIT(ch)) fgetc(in);
+						if (IS_DIGIT(ch))
+							ch = fgetc(in);               /* l or h ? */
+						if (IS_DIGIT(ch))
+							ch = fgetc(in);
+						if (IS_DIGIT(ch))
+							fgetc(in);
 						break;
 					case 'f':
 					case 'H':

@@ -1539,7 +1539,8 @@ static BOOL ftpalias(char* fullalias, char* filename, user_t* user, client_t* cl
 
 		tp = p;       /* terminator */
 		FIND_WHITESPACE(tp);
-		if (*tp) *tp = 0;
+		if (*tp)
+			*tp = 0;
 
 		if (stricmp(p, alias))   /* Not a match */
 			continue;
@@ -1549,7 +1550,8 @@ static BOOL ftpalias(char* fullalias, char* filename, user_t* user, client_t* cl
 
 		tp = p;       /* terminator */
 		FIND_WHITESPACE(tp);
-		if (*tp) *tp = 0;
+		if (*tp)
+			*tp = 0;
 
 		if (filename == NULL /* CWD? */ && (*lastchar(p) != '/' || (*fname != 0 && strcmp(fname, alias)))) {
 			fclose(fp);
@@ -1563,7 +1565,8 @@ static BOOL ftpalias(char* fullalias, char* filename, user_t* user, client_t* cl
 				continue;
 			}
 			p = strrchr(p, '/');
-			if (p != NULL) p++;
+			if (p != NULL)
+				p++;
 			if (p != NULL && filename != NULL) {
 				if (*p)
 					sprintf(filename, "%s%s", scfg.dir[dir]->path, p);
@@ -1725,8 +1728,10 @@ char* root_dir(char* path)
 
 	if (!strncmp(root, "\\\\", 2)) {   /* network path */
 		p = strchr(root + 2, '\\');
-		if (p) p = strchr(p + 1, '\\');
-		if (p) *(p + 1) = 0;        /* truncate at \\computer\sharename\ */
+		if (p)
+			p = strchr(p + 1, '\\');
+		if (p)
+			*(p + 1) = 0;           /* truncate at \\computer\sharename\ */
 	}
 	else if (!strncmp(root + 1, ":/", 2) || !strncmp(root + 1, ":\\", 2))
 		root[3] = 0;
@@ -3744,14 +3749,16 @@ static void ctrl_thread(void* arg)
 
 								tp = p;       /* terminator pointer */
 								FIND_WHITESPACE(tp);
-								if (*tp) *tp = 0;
+								if (*tp)
+									*tp = 0;
 
 								np = tp + 1;    /* filename pointer */
 								SKIP_WHITESPACE(np);
 
 								tp = np;      /* terminator pointer */
 								FIND_WHITESPACE(tp);
-								if (*tp) *tp = 0;
+								if (*tp)
+									*tp = 0;
 
 								dp = tp + 1;    /* description pointer */
 								SKIP_WHITESPACE(dp);
@@ -4065,14 +4072,16 @@ static void ctrl_thread(void* arg)
 
 						tp = p;       /* terminator pointer */
 						FIND_WHITESPACE(tp);
-						if (*tp) *tp = 0;
+						if (*tp)
+							*tp = 0;
 
 						np = tp + 1;    /* filename pointer */
 						SKIP_WHITESPACE(np);
 
 						tp = np;      /* terminator pointer */
 						FIND_WHITESPACE(tp);
-						if (*tp) *tp = 0;
+						if (*tp)
+							*tp = 0;
 
 						dp = tp + 1;    /* description pointer */
 						SKIP_WHITESPACE(dp);
@@ -4439,7 +4448,8 @@ static void ctrl_thread(void* arg)
 
 								tp = p;       /* terminator pointer */
 								FIND_WHITESPACE(tp);
-								if (*tp) *tp = 0;
+								if (*tp)
+									*tp = 0;
 
 								np = tp + 1;    /* filename pointer */
 								SKIP_WHITESPACE(np);
@@ -4888,9 +4898,11 @@ static void ctrl_thread(void* arg)
 			else if (!strcmp(p, "."))
 				success = TRUE;
 			if (!success  && (curlib < 0 || *p == '/')) { /* Root dir */
-				if (*p == '/') p++;
+				if (*p == '/')
+					p++;
 				tp = strchr(p, '/');
-				if (tp) *tp = 0;
+				if (tp)
+					*tp = 0;
 				for (i = 0; i < scfg.total_libs; i++) {
 					if (!chk_ar(&scfg, scfg.lib[i]->ar, &user, &client))
 						continue;
@@ -4906,7 +4918,8 @@ static void ctrl_thread(void* arg)
 				if (tp)
 					p = tp + 1;
 				tp = lastchar(p);
-				if (tp && *tp == '/') *tp = 0;
+				if (tp && *tp == '/')
+					*tp = 0;
 				for (i = 0; i < scfg.total_dirs; i++) {
 					if (scfg.dir[i]->lib != curlib)
 						continue;
@@ -5167,11 +5180,16 @@ void ftp_server(void* arg)
 		protected_uint32_init(&active_clients, 0);
 
 		/* Setup intelligent defaults */
-		if (startup->port == 0)                    startup->port = IPPORT_FTP;
-		if (startup->qwk_timeout == 0)             startup->qwk_timeout = FTP_DEFAULT_QWK_TIMEOUT;  /* seconds */
-		if (startup->max_inactivity == 0)          startup->max_inactivity = FTP_DEFAULT_MAX_INACTIVITY; /* seconds */
-		if (startup->sem_chk_freq == 0)            startup->sem_chk_freq = DEFAULT_SEM_CHK_FREQ; /* seconds */
-		if (startup->index_file_name[0] == 0)      SAFECOPY(startup->index_file_name, "00index");
+		if (startup->port == 0)
+			startup->port = IPPORT_FTP;
+		if (startup->qwk_timeout == 0)
+			startup->qwk_timeout = FTP_DEFAULT_QWK_TIMEOUT;                                         /* seconds */
+		if (startup->max_inactivity == 0)
+			startup->max_inactivity = FTP_DEFAULT_MAX_INACTIVITY;                                        /* seconds */
+		if (startup->sem_chk_freq == 0)
+			startup->sem_chk_freq = DEFAULT_SEM_CHK_FREQ;                                        /* seconds */
+		if (startup->index_file_name[0] == 0)
+			SAFECOPY(startup->index_file_name, "00index");
 
 		(void)protected_uint32_adjust(&thread_count, 1);
 		thread_up(FALSE /* setuid */);

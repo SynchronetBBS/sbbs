@@ -588,7 +588,8 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf)
 				case AR_LIB:
 				case AR_DIR:
 				case AR_SUB:
-					if (n > 0) n--;             /* convert to 0 base */
+					if (n > 0)
+						n--;                    /* convert to 0 base */
 					ar[j++] = n & 0xff;
 					ar[j++] = (n >> 8) & 0xff;
 					break;
@@ -674,7 +675,8 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf)
 					ar[j++] = 4;
 				else if (toupper(str[i]) == 'F')               /* Friday */
 					ar[j++] = 5;
-				else ar[j++] = 6;                           /* Saturday */
+				else
+					ar[j++] = 6;                            /* Saturday */
 				while (IS_ALPHA(str[i + 1])) i++;
 				break;
 			default:    /* Badly formed ARS, digit expected */

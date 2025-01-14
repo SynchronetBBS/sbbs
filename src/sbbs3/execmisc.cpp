@@ -1073,14 +1073,22 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					if (lp) {
 						/* Access flags are not cross-platform, so convert */
 						i = 0;
-						if (w & 0x001) i |= O_RDONLY;
-						if (w & 0x002) i |= O_WRONLY;
-						if (w & 0x004) i |= O_RDWR;
-						if (w & 0x040) i |= O_DENYNONE;
-						if (w & 0x100) i |= O_CREAT;
-						if (w & 0x200) i |= O_TRUNC;
-						if (w & 0x400) i |= O_EXCL;
-						if (w & 0x800) i |= O_APPEND;
+						if (w & 0x001)
+							i |= O_RDONLY;
+						if (w & 0x002)
+							i |= O_WRONLY;
+						if (w & 0x004)
+							i |= O_RDWR;
+						if (w & 0x040)
+							i |= O_DENYNONE;
+						if (w & 0x100)
+							i |= O_CREAT;
+						if (w & 0x200)
+							i |= O_TRUNC;
+						if (w & 0x400)
+							i |= O_EXCL;
+						if (w & 0x800)
+							i |= O_APPEND;
 						fp = fnopen((int *)&j, str, i);
 						if (fp != NULL) {
 							for (i = 0; i < csi->files; i++)
@@ -1150,13 +1158,15 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						buf[j] = 0;
 						if (csi->etx) {
 							p = strchr(buf, csi->etx);
-							if (p) *p = 0;
+							if (p)
+								*p = 0;
 						}
 						*pp = copystrvar(csi, *pp, buf);
 					}
 					else {
 						*lp2 = 0;
-						if (i > 4 || i < 1) i = 4;
+						if (i > 4 || i < 1)
+							i = 4;
 						if (fread(lp2, 1, i, csi->file[*lp1]) == (size_t)i)
 							csi->logic = LOGIC_TRUE;
 					}
@@ -1183,7 +1193,8 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					buf[i] = 0;
 					if (csi->etx) {
 						p = strchr(buf, csi->etx);
-						if (p) *p = 0;
+						if (p)
+							*p = 0;
 					}
 					if (pp)
 						*pp = copystrvar(csi, *pp, buf);
@@ -1216,8 +1227,10 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						return 0;
 					if (pp) {
 						j = strlen(*pp);
-						if (i < 1) i = j;
-						if (j > i) j = i;
+						if (i < 1)
+							i = j;
+						if (j > i)
+							j = i;
 						if (fwrite(*pp, 1, j, csi->file[*lp1]) != (size_t)j)
 							csi->logic = LOGIC_FALSE;
 						else {
@@ -1228,7 +1241,8 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 							csi->logic = LOGIC_TRUE;
 						}
 					} else {
-						if (i < 1 || i > 4) i = 4;
+						if (i < 1 || i > 4)
+							i = 4;
 						if (fwrite(lp2, 1, i, csi->file[*lp1]) == (size_t)i)
 							csi->logic = LOGIC_TRUE;
 					}

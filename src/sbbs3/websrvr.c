@@ -7295,17 +7295,28 @@ void web_server(void* arg)
 		protected_uint32_init(&active_clients, 0);
 
 		/* Setup intelligent defaults */
-		if (startup->port == 0)                    startup->port = IPPORT_HTTP;
-		if (startup->root_dir[0] == 0)             SAFECOPY(startup->root_dir, WEB_DEFAULT_ROOT_DIR);
-		if (startup->error_dir[0] == 0)            SAFECOPY(startup->error_dir, WEB_DEFAULT_ERROR_DIR);
-		if (startup->default_auth_list[0] == 0)    SAFECOPY(startup->default_auth_list, WEB_DEFAULT_AUTH_LIST);
-		if (startup->cgi_dir[0] == 0)              SAFECOPY(startup->cgi_dir, WEB_DEFAULT_CGI_DIR);
-		if (startup->default_cgi_content[0] == 0)  SAFECOPY(startup->default_cgi_content, WEB_DEFAULT_CGI_CONTENT);
-		if (startup->max_inactivity == 0)          startup->max_inactivity = WEB_DEFAULT_MAX_INACTIVITY; /* seconds */
-		if (startup->max_cgi_inactivity == 0)      startup->max_cgi_inactivity = WEB_DEFAULT_MAX_CGI_INACTIVITY; /* seconds */
-		if (startup->sem_chk_freq == 0)            startup->sem_chk_freq = DEFAULT_SEM_CHK_FREQ; /* seconds */
-		if (startup->js.max_bytes == 0)            startup->js.max_bytes = JAVASCRIPT_MAX_BYTES;
-		if (startup->ssjs_ext[0] == 0)             SAFECOPY(startup->ssjs_ext, ".ssjs");
+		if (startup->port == 0)
+			startup->port = IPPORT_HTTP;
+		if (startup->root_dir[0] == 0)
+			SAFECOPY(startup->root_dir, WEB_DEFAULT_ROOT_DIR);
+		if (startup->error_dir[0] == 0)
+			SAFECOPY(startup->error_dir, WEB_DEFAULT_ERROR_DIR);
+		if (startup->default_auth_list[0] == 0)
+			SAFECOPY(startup->default_auth_list, WEB_DEFAULT_AUTH_LIST);
+		if (startup->cgi_dir[0] == 0)
+			SAFECOPY(startup->cgi_dir, WEB_DEFAULT_CGI_DIR);
+		if (startup->default_cgi_content[0] == 0)
+			SAFECOPY(startup->default_cgi_content, WEB_DEFAULT_CGI_CONTENT);
+		if (startup->max_inactivity == 0)
+			startup->max_inactivity = WEB_DEFAULT_MAX_INACTIVITY;                                        /* seconds */
+		if (startup->max_cgi_inactivity == 0)
+			startup->max_cgi_inactivity = WEB_DEFAULT_MAX_CGI_INACTIVITY;                                        /* seconds */
+		if (startup->sem_chk_freq == 0)
+			startup->sem_chk_freq = DEFAULT_SEM_CHK_FREQ;                                        /* seconds */
+		if (startup->js.max_bytes == 0)
+			startup->js.max_bytes = JAVASCRIPT_MAX_BYTES;
+		if (startup->ssjs_ext[0] == 0)
+			SAFECOPY(startup->ssjs_ext, ".ssjs");
 
 		(void)protected_uint32_adjust(&thread_count, 1);
 		thread_up(false /* setuid */);
@@ -7322,7 +7333,8 @@ void web_server(void* arg)
 		prep_dir(root_dir, cgi_dir, sizeof(cgi_dir));
 
 		/* Trim off trailing slash/backslash */
-		if (IS_PATH_DELIM(*(p = lastchar(root_dir))))  *p = 0;
+		if (IS_PATH_DELIM(*(p = lastchar(root_dir))))
+			*p = 0;
 
 		memset(&scfg, 0, sizeof(scfg));
 

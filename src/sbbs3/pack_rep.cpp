@@ -157,7 +157,8 @@ bool sbbs_t::pack_rep(uint hubnum)
 			mode = QM_TO_QNET | QM_REP;
 			mode |= (cfg.qhub[hubnum]->misc & (QHUB_EXT | QHUB_CTRL_A | QHUB_UTF8));
 			/* For an unclear reason, kludge lines (including @VIA and @TZ) were not included in NetMail previously */
-			if (!(cfg.qhub[hubnum]->misc & QHUB_NOHEADERS)) mode |= (QM_VIA | QM_TZ | QM_MSGID | QM_REPLYTO);
+			if (!(cfg.qhub[hubnum]->misc & QHUB_NOHEADERS))
+				mode |= (QM_VIA | QM_TZ | QM_MSGID | QM_REPLYTO);
 			if (msgtoqwk(&msg, rep, mode, &smb, /* confnum: */ 0, hdrs) > 0)
 				packedmail++;
 			smb_unlockmsghdr(&smb, &msg);
@@ -230,7 +231,8 @@ bool sbbs_t::pack_rep(uint hubnum)
 
 			mode = cfg.qhub[hubnum]->mode[i] | QM_TO_QNET | QM_REP;
 			mode |= (cfg.qhub[hubnum]->misc & (QHUB_EXT | QHUB_CTRL_A | QHUB_UTF8));
-			if (!(cfg.qhub[hubnum]->misc & QHUB_NOHEADERS)) mode |= (QM_VIA | QM_TZ | QM_MSGID | QM_REPLYTO);
+			if (!(cfg.qhub[hubnum]->misc & QHUB_NOHEADERS))
+				mode |= (QM_VIA | QM_TZ | QM_MSGID | QM_REPLYTO);
 			if (msg.from_net.type != NET_QWK)
 				mode |= QM_TAGLINE;
 

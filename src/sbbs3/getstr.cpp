@@ -60,7 +60,8 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 		SAFECOPY(str1, wordwrap);
 		wordwrap[0] = 0;
 	}
-	else str1[0] = 0;
+	else
+		str1[0] = 0;
 	if (mode & K_EDIT)
 		SAFECAT(str1, strout);
 	else
@@ -323,7 +324,8 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 			case CTRL_L:    /* Ctrl-L   Center line (used to be Ctrl-V) */
 				str1[l] = 0;
 				l = bstrlen(str1);
-				if (!l) break;
+				if (!l)
+					break;
 				for (x = 0; x < (maxlen - l) / 2; x++)
 					str2[x] = ' ';
 				str2[x] = 0;
@@ -624,7 +626,8 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 	}
 	else
 		l = 0;
-	if (mode & K_LINE && !(mode & K_NOECHO)) attr(LIGHTGRAY);
+	if (mode & K_LINE && !(mode & K_NOECHO))
+		attr(LIGHTGRAY);
 	if (!(mode & (K_NOCRLF | K_NOECHO))) {
 		if (!(mode & K_MSG && sys_status & SS_ABORT)) {
 			CRLF;

@@ -89,7 +89,8 @@ bool sbbs_t::quotemsg(smb_t* smb, smbmsg_t* msg, bool tails)
 
 	bool  result = false;
 	ulong mode = GETMSGTXT_PLAIN;
-	if (tails) mode |= GETMSGTXT_TAILS;
+	if (tails)
+		mode |= GETMSGTXT_TAILS;
 	if ((buf = smb_getmsgtxt(smb, msg, mode)) != NULL) {
 		strip_invalid_attr(buf);
 		truncsp(buf);
@@ -1401,10 +1402,13 @@ bool sbbs_t::copyfattach(uint to, uint from, const char* subj)
 	tp = str;
 	while (1) {
 		p = strchr(tp, ' ');
-		if (p) *p = 0;
+		if (p)
+			*p = 0;
 		sp = strrchr(tp, '/');              /* sp is slash pointer */
-		if (!sp) sp = strrchr(tp, '\\');
-		if (sp) tp = sp + 1;
+		if (!sp)
+			sp = strrchr(tp, '\\');
+		if (sp)
+			tp = sp + 1;
 		if (strcspn(tp, ILLEGAL_FILENAME_CHARS) == strlen(tp)) {
 			SAFEPRINTF2(dest, "%s/%s", dir, tp);
 			SAFEPRINTF3(src, "%sfile/%04u.in/%s", cfg.data_dir, from, tp);

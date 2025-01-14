@@ -107,7 +107,8 @@ uint matchuser(scfg_t* cfg, const char *name, bool sysop_alias)
 		if (fread(dat, sizeof(dat), 1, stream) != 1)
 			break;
 		for (c = 0; c < LEN_ALIAS; c++)
-			if (dat[c] == ETX) break;
+			if (dat[c] == ETX)
+				break;
 		dat[c] = 0;
 		if (c < 1) // Deleted user
 			continue;
@@ -837,7 +838,8 @@ char* username(scfg_t* cfg, int usernumber, char *name)
 		memset(name, ETX, LEN_ALIAS);
 	close(file);
 	for (c = 0; c < LEN_ALIAS; c++)
-		if (name[c] == ETX) break;
+		if (name[c] == ETX)
+			break;
 	name[c] = 0;
 	if (!c)
 		strcpy(name, "DELETED USER");
@@ -1612,7 +1614,8 @@ char* nodestatus(scfg_t* cfg, node_t* node, char* buf, size_t buflen, int num)
 				} else {
 					if ((node->aux / 60) == 0)    /* 12 midnite */
 						hour = 12;
-					else hour = node->aux / 60;
+					else
+						hour = node->aux / 60;
 					mer = "am";
 				}
 				sprintf(str + strlen(str), " ETA %02d:%02d %s"
@@ -2025,32 +2028,38 @@ static bool ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user, client_t* client)
 			case AR_ANSI:
 				if (user == NULL || !(user->misc & ANSI))
 					result = not;
-				else result = !not;
+				else
+					result = !not;
 				break;
 			case AR_PETSCII:
 				if (user == NULL || (user->misc & CHARSET_FLAGS) != CHARSET_PETSCII)
 					result = not;
-				else result = !not;
+				else
+					result = !not;
 				break;
 			case AR_ASCII:
 				if (user == NULL || (user->misc & CHARSET_FLAGS) != CHARSET_ASCII)
 					result = not;
-				else result = !not;
+				else
+					result = !not;
 				break;
 			case AR_UTF8:
 				if (user == NULL || (user->misc & CHARSET_FLAGS) != CHARSET_UTF8)
 					result = not;
-				else result = !not;
+				else
+					result = !not;
 				break;
 			case AR_CP437:
 				if (user == NULL || (user->misc & CHARSET_FLAGS) != CHARSET_CP437)
 					result = not;
-				else result = !not;
+				else
+					result = !not;
 				break;
 			case AR_RIP:
 				if (user == NULL || !(user->misc & RIP))
 					result = not;
-				else result = !not;
+				else
+					result = !not;
 				break;
 			case AR_WIP:
 				result = not;
@@ -2093,37 +2102,44 @@ static bool ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user, client_t* client)
 			case AR_ACTIVE:
 				if (user == NULL || user->misc & (DELETED | INACTIVE))
 					result = not;
-				else result = !not;
+				else
+					result = !not;
 				break;
 			case AR_INACTIVE:
 				if (user == NULL || !(user->misc & INACTIVE))
 					result = not;
-				else result = !not;
+				else
+					result = !not;
 				break;
 			case AR_DELETED:
 				if (user == NULL || !(user->misc & DELETED))
 					result = not;
-				else result = !not;
+				else
+					result = !not;
 				break;
 			case AR_EXPERT:
 				if (user == NULL || !(user->misc & EXPERT))
 					result = not;
-				else result = !not;
+				else
+					result = !not;
 				break;
 			case AR_SYSOP:
 				if (!user_is_sysop(user))
 					result = not;
-				else result = !not;
+				else
+					result = !not;
 				break;
 			case AR_GUEST:
 				if (user == NULL || !(user->rest & FLAG('G')))
 					result = not;
-				else result = !not;
+				else
+					result = !not;
 				break;
 			case AR_QNODE:
 				if (user == NULL || !(user->rest & FLAG('Q')))
 					result = not;
-				else result = !not;
+				else
+					result = !not;
 				break;
 			case AR_QUIET:
 				result = not;
@@ -2309,7 +2325,8 @@ static bool ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user, client_t* client)
 					result = not;
 				else {
 					l = user->dlb;
-					if (!l) l = 1;
+					if (!l)
+						l = 1;
 					if (user->dlb > user->ulb
 					    && (!user->ulb || 100 / ((float)l / user->ulb) < n))
 						result = not;
@@ -2322,7 +2339,8 @@ static bool ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user, client_t* client)
 					result = not;
 				else {
 					i = user->dls;
-					if (!i) i = 1;
+					if (!i)
+						i = 1;
 					if (user->dls > user->uls
 					    && (!user->uls || 100 / ((float)i / user->uls) < n))
 						result = not;
@@ -3031,22 +3049,28 @@ void resetdailyuserdat(scfg_t* cfg, user_t* user, bool write)
 
 	/* logons today */
 	user->ltoday = 0;
-	if (write) putuserstr(cfg, user->number, USER_LTODAY, "0");
+	if (write)
+		putuserstr(cfg, user->number, USER_LTODAY, "0");
 	/* e-mails today */
 	user->etoday = 0;
-	if (write) putuserstr(cfg, user->number, USER_ETODAY, "0");
+	if (write)
+		putuserstr(cfg, user->number, USER_ETODAY, "0");
 	/* posts today */
 	user->ptoday = 0;
-	if (write) putuserstr(cfg, user->number, USER_PTODAY, "0");
+	if (write)
+		putuserstr(cfg, user->number, USER_PTODAY, "0");
 	/* free credits per day */
 	user->freecdt = cfg->level_freecdtperday[user->level];
-	if (write) putuserdec64(cfg, user->number, USER_FREECDT, user->freecdt);
+	if (write)
+		putuserdec64(cfg, user->number, USER_FREECDT, user->freecdt);
 	/* time used today */
 	user->ttoday = 0;
-	if (write) putuserstr(cfg, user->number, USER_TTODAY, "0");
+	if (write)
+		putuserstr(cfg, user->number, USER_TTODAY, "0");
 	/* extra time today */
 	user->textra = 0;
-	if (write) putuserstr(cfg, user->number, USER_TEXTRA, "0");
+	if (write)
+		putuserstr(cfg, user->number, USER_TEXTRA, "0");
 }
 
 /****************************************************************************/
@@ -3256,7 +3280,8 @@ int newuserdat(scfg_t* cfg, user_t* user)
 			if (fread(str, LEN_ALIAS + 2, 1, stream) != 1)
 				memset(str, ETX, LEN_ALIAS);
 			for (c = 0; c < LEN_ALIAS; c++)
-				if (str[c] == ETX) break;
+				if (str[c] == ETX)
+					break;
 			str[c] = 0;
 			if (!c) {     /* should be a deleted user */
 				user_t deluser;
@@ -3714,7 +3739,8 @@ time_t gettimeleft(scfg_t* cfg, user_t* user, time_t starttime)
 	else {
 		tleft = (((long)cfg->level_timeperday[user->level] - user->ttoday)
 		         + user->textra) * 60L;
-		if (tleft < 0) tleft = 0;
+		if (tleft < 0)
+			tleft = 0;
 		if (tleft > cfg->level_timepercall[user->level] * 60)
 			tleft = cfg->level_timepercall[user->level] * 60;
 		tleft += user->min * 60L;
@@ -4363,7 +4389,8 @@ enum parsed_vpath parse_vpath(scfg_t* cfg, const char* vpath, int* lib, int* dir
 		return PARSED_VPATH_ROOT;
 
 	tp = strchr(p, '/');
-	if (tp) *tp = 0;
+	if (tp)
+		*tp = 0;
 	for (*lib = 0; *lib < cfg->total_libs; (*lib)++) {
 		if (stricmp(cfg->lib[*lib]->vdir, p) == 0)
 			break;

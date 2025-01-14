@@ -1090,9 +1090,12 @@ int smb_getmsghdr(smb_t* smb, smbmsg_t* msg)
 	}
 
 	/* These convenience pointers must point to something */
-	if (msg->from == NULL) msg->from = nulstr;
-	if (msg->to == NULL)   msg->to = nulstr;
-	if (msg->subj == NULL) msg->subj = nulstr;
+	if (msg->from == NULL)
+		msg->from = nulstr;
+	if (msg->to == NULL)
+		msg->to = nulstr;
+	if (msg->subj == NULL)
+		msg->subj = nulstr;
 
 	/* If no reverse path specified, use sender's address */
 	if (msg->reverse_path == NULL && msg->from_net.type == NET_INTERNET)

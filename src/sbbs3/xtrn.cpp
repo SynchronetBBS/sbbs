@@ -1306,25 +1306,29 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 		REPLACE_CHARS(ctrldir_dos, '/', '\\', p);
 
 		p = lastchar(ctrldir_dos);
-		if (*p == '\\') *p = 0;
+		if (*p == '\\')
+			*p = 0;
 
 		SAFECOPY(datadir_dos, cfg.data_dir);
 		REPLACE_CHARS(datadir_dos, '/', '\\', p);
 
 		p = lastchar(datadir_dos);
-		if (*p == '\\') *p = 0;
+		if (*p == '\\')
+			*p = 0;
 
 		SAFECOPY(execdir_dos, cfg.exec_dir);
 		REPLACE_CHARS(execdir_dos, '/', '\\', p);
 
 		p = lastchar(execdir_dos);
-		if (*p == '\\') *p = 0;
+		if (*p == '\\')
+			*p = 0;
 
 		SAFECOPY(nodedir_dos, cfg.node_dir);
 		REPLACE_CHARS(nodedir_dos, '/', '\\', p);
 
 		p = lastchar(nodedir_dos);
-		if (*p == '\\') *p = 0;
+		if (*p == '\\')
+			*p = 0;
 
 		/* must have sbbs.ini bbs useDOSemu=1 (or empty), cannot be =0 */
 		if (!startup->usedosemu) {
@@ -1370,13 +1374,17 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 						errormsg(WHERE, ERR_READ, str, 0);
 						return -1;
 					}
-					else SAFECOPY(dosemuconf, str); /* using system conf */
+					else
+						SAFECOPY(dosemuconf, str);  /* using system conf */
 				}
-				else SAFECOPY(dosemuconf, str); /* using system conf */
+				else
+					SAFECOPY(dosemuconf, str);  /* using system conf */
 			}
-			else SAFECOPY(dosemuconf, str);  /* using global conf */
+			else
+				SAFECOPY(dosemuconf, str);   /* using global conf */
 		}
-		else SAFECOPY(dosemuconf, str); /* using door-specific conf */
+		else
+			SAFECOPY(dosemuconf, str);  /* using door-specific conf */
 
 		/* Create the external bat here to be placed in the node dir. */
 		SAFEPRINTF2(str, "%s%s", cfg.node_dir, external_bat_fn);

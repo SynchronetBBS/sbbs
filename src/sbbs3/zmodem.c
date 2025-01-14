@@ -2022,7 +2022,8 @@ int zmodem_recv_files(zmodem_t* zm, const char* download_dir, uint64_t* bytes_re
 	while (zmodem_recv_init(zm) == ZFILE) {
 		bytes = zm->current_file_size;
 		kbytes = bytes / 1024;
-		if (kbytes < 1) kbytes = 0;
+		if (kbytes < 1)
+			kbytes = 0;
 		lprintf(zm, LOG_INFO, "Downloading %s (%" PRId64 " KBytes) via ZMODEM", zm->current_file_name, kbytes);
 
 		do {    /* try */

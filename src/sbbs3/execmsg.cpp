@@ -31,7 +31,8 @@ int sbbs_t::exec_msg(csi_t *csi)
 
 		case CS_MSG_SELECT_AREA:
 			csi->logic = LOGIC_FALSE;
-			if (!usrgrps) return 0;
+			if (!usrgrps)
+				return 0;
 			while (online) {
 				j = 0;
 				if (usrgrps > 1) {
@@ -40,9 +41,12 @@ int sbbs_t::exec_msg(csi_t *csi)
 						for (i = 0; i < usrgrps && !msgabort(); i++) {
 							if (i == curgrp)
 								outchar('*');
-							else outchar(' ');
-							if (i < 9) outchar(' ');
-							if (i < 99) outchar(' ');
+							else
+								outchar(' ');
+							if (i < 9)
+								outchar(' ');
+							if (i < 99)
+								outchar(' ');
 							add_hotspot(i + 1);
 							bprintf(text[CfgGrpLstFmt]
 							        , i + 1, cfg.grp[usrgrp[i]]->lname);
@@ -64,13 +68,17 @@ int sbbs_t::exec_msg(csi_t *csi)
 					CLS;
 					bprintf(text[SubLstHdr], cfg.grp[usrgrp[j]]->lname);
 					for (i = 0; i < usrsubs[j] && !msgabort(); i++) {
-						if (i == cursub[j]) outchar('*');
-						else outchar(' ');
+						if (i == cursub[j])
+							outchar('*');
+						else
+							outchar(' ');
 						snprintf(str, sizeof str, text[SubLstFmt], i + 1
 						         , cfg.sub[usrsub[j][i]]->lname, nulstr
 						         , getposts(&cfg, usrsub[j][i]));
-						if (i < 9) outchar(' ');
-						if (i < 99) outchar(' ');
+						if (i < 9)
+							outchar(' ');
+						if (i < 99)
+							outchar(' ');
 						add_hotspot(i + 1);
 						bputs(str);
 					}
@@ -197,7 +205,8 @@ int sbbs_t::exec_msg(csi_t *csi)
 			return 0;
 
 		case CS_MSG_SHOW_GROUPS:
-			if (!usrgrps) return 0;
+			if (!usrgrps)
+				return 0;
 			if (menu("grps", P_NOERROR)) {
 				return 0;
 			}
@@ -205,8 +214,10 @@ int sbbs_t::exec_msg(csi_t *csi)
 			for (i = 0; i < usrgrps && !msgabort(); i++) {
 				if (i == curgrp)
 					outchar('*');
-				else outchar(' ');
-				if (i < 9) outchar(' ');
+				else
+					outchar(' ');
+				if (i < 9)
+					outchar(' ');
 				add_hotspot(i + 1);
 				bprintf(text[GrpLstFmt], i + 1
 				        , cfg.grp[usrgrp[i]]->lname, nulstr, usrsubs[i]);
@@ -214,7 +225,8 @@ int sbbs_t::exec_msg(csi_t *csi)
 			return 0;
 
 		case CS_MSG_SHOW_SUBBOARDS:
-			if (!usrgrps) return 0;
+			if (!usrgrps)
+				return 0;
 			snprintf(str, sizeof str, "subs%u", usrgrp[curgrp] + 1);
 			if (menu(str, P_NOERROR)) {
 				return 0;
@@ -222,13 +234,17 @@ int sbbs_t::exec_msg(csi_t *csi)
 			CRLF;
 			bprintf(text[SubLstHdr], cfg.grp[usrgrp[curgrp]]->lname);
 			for (i = 0; i < usrsubs[curgrp] && !msgabort(); i++) {
-				if (i == cursub[curgrp]) outchar('*');
-				else outchar(' ');
+				if (i == cursub[curgrp])
+					outchar('*');
+				else
+					outchar(' ');
 				snprintf(str, sizeof str, text[SubLstFmt], i + 1
 				         , cfg.sub[usrsub[curgrp][i]]->lname, nulstr
 				         , getposts(&cfg, usrsub[curgrp][i]));
-				if (i < 9) outchar(' ');
-				if (i < 99) outchar(' ');
+				if (i < 9)
+					outchar(' ');
+				if (i < 99)
+					outchar(' ');
 				add_hotspot(i + 1);
 				bputs(str);
 			}
@@ -242,19 +258,23 @@ int sbbs_t::exec_msg(csi_t *csi)
 		case CS_MSG_GROUP_DOWN:
 			if (!curgrp)
 				curgrp = usrgrps - 1;
-			else curgrp--;
+			else
+				curgrp--;
 			return 0;
 		case CS_MSG_SUBBOARD_UP:
-			if (!usrgrps) return 0;
+			if (!usrgrps)
+				return 0;
 			cursub[curgrp]++;
 			if (cursub[curgrp] >= usrsubs[curgrp])
 				cursub[curgrp] = 0;
 			return 0;
 		case CS_MSG_SUBBOARD_DOWN:
-			if (!usrgrps) return 0;
+			if (!usrgrps)
+				return 0;
 			if (!cursub[curgrp])
 				cursub[curgrp] = usrsubs[curgrp] - 1;
-			else cursub[curgrp]--;
+			else
+				cursub[curgrp]--;
 			return 0;
 		case CS_MSG_SET_AREA:
 			csi->logic = LOGIC_TRUE;
@@ -268,11 +288,13 @@ int sbbs_t::exec_msg(csi_t *csi)
 			csi->logic = LOGIC_FALSE;
 			return 0;
 		case CS_MSG_READ:
-			if (!usrgrps) return 0;
+			if (!usrgrps)
+				return 0;
 			csi->logic = scanposts(usrsub[curgrp][cursub[curgrp]], 0, nulstr);
 			return 0;
 		case CS_MSG_POST:
-			if (!usrgrps) return 0;
+			if (!usrgrps)
+				return 0;
 			csi->logic = !postmsg(usrsub[curgrp][cursub[curgrp]], 0, 0);
 			return 0;
 		case CS_MSG_QWK:

@@ -246,7 +246,8 @@ int main(int argc, char **argv)
 		ZERO_VAR(smb);
 		SAFECOPY(smb.file, argv[x]);
 		p = getfext(smb.file);
-		if (p != NULL && stricmp(p, ".shd") == 0) *p = 0;
+		if (p != NULL && stricmp(p, ".shd") == 0)
+			*p = 0;
 
 		SAFEPRINTF(str, "%s.shd", smb.file);
 		if (!fexist(str)) {

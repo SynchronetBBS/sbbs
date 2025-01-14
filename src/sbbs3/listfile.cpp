@@ -193,7 +193,8 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 						d = strlen(cfg.lib[usrlib[i]]->lname) > strlen(cfg.dir[dirnum]->lname) ?
 						    strlen(cfg.lib[usrlib[i]]->lname) + 17
 						    : strlen(cfg.dir[dirnum]->lname) + 17;
-						if (i > 8 || j > 8) d++;
+						if (i > 8 || j > 8)
+							d++;
 						attr(cfg.color[clr_filelsthdrbox]);
 						bputs("\xc9\xcd");            /* use to start with \r\n */
 						for (c = 0; c < d; c++)
@@ -331,7 +332,8 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 			flagprompt = 1;
 		}
 		m = next;
-		if (mode & FL_FIND) continue;
+		if (mode & FL_FIND)
+			continue;
 		if (filespec[0] && !strchr(filespec, '*') && !strchr(filespec, '?') && m)
 			break;
 	}
@@ -543,8 +545,10 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 					if (str[c] == '*' || strchr(str + c, '.')) {     /* filename or spec given */
 //						f.dir=dirnum;
 						p = strchr(str + c, ' ');
-						if (!p) p = strchr(str + c, ',');
-						if (p) *p = 0;
+						if (!p)
+							p = strchr(str + c, ',');
+						if (p)
+							*p = 0;
 						for (i = 0; i < total; i++) {
 							if (batdn_total() >= cfg.max_batdn) {
 								bprintf(text[BatchDlQueueIsFull], str + c);
@@ -595,8 +599,10 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 					if (str[c] == '*' || strchr(str + c, '.')) {     /* filename or spec given */
 //						f.dir=dirnum;
 						p = strchr(str + c, ' ');
-						if (!p) p = strchr(str + c, ',');
-						if (p) *p = 0;
+						if (!p)
+							p = strchr(str + c, ',');
+						if (p)
+							*p = 0;
 						for (i = 0; i < total; i++) {
 							if (filematch(bf[i]->name, str + c)) {
 								if (!viewfile(bf[i], ch == 'E'))
@@ -674,7 +680,8 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 						return 2;
 					if (!md)
 						md = usrdirs[ml] - 1;
-					else md--;
+					else
+						md--;
 					CRLF;
 				}
 				lncntr = 0;
@@ -682,8 +689,10 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 					if (str[c] == '*' || strchr(str + c, '.')) {     /* filename or spec given */
 //						f.dir=dirnum;
 						p = strchr(str + c, ' ');
-						if (!p) p = strchr(str + c, ',');
-						if (p) *p = 0;
+						if (!p)
+							p = strchr(str + c, ',');
+						if (p)
+							*p = 0;
 						for (i = 0; i < total; i++) {
 							if (!(bf[i]->hdr.attr & MSG_DELETE) && filematch(bf[i]->name, str + c)) {
 								if (ch == 'R') {
@@ -786,7 +795,8 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 		f = &file_list[m];
 		if (mode == FI_REMOVE && dir_op(dirnum))
 			action = NODE_SYSP;
-		else action = NODE_LFIL;
+		else
+			action = NODE_LFIL;
 		if (msgabort()) {
 			found = -1;
 			break;
@@ -946,7 +956,8 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 						continue;
 					if (!j)
 						j = usrdirs[i] - 1;
-					else j--;
+					else
+						j--;
 					CRLF;
 					movefile(&smb, f, usrdir[i][j]);
 					break;

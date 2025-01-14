@@ -298,7 +298,8 @@ void sbbs_t::sif(char *fname, char *answers, int len)
 				buf[m] = 0;
 				break;
 			}
-		if (l >= length) break;
+		if (l >= length)
+			break;
 		if (online == ON_REMOTE) {
 			rioctl(IOCM | ABORT);
 			rioctl(IOCS | ABORT);
@@ -468,7 +469,8 @@ void sbbs_t::sof(char *fname, char *answers, int len)
 				buf[m] = 0;
 				break;
 			}
-		if (l >= length) break;
+		if (l >= length)
+			break;
 		if (online == ON_REMOTE) {
 			rioctl(IOCM | ABORT);
 			rioctl(IOCS | ABORT);
@@ -1076,7 +1078,8 @@ void sbbs_t::user_info()
 
 void sbbs_t::xfer_policy()
 {
-	if (!usrlibs) return;
+	if (!usrlibs)
+		return;
 	if (!menu("tpolicy", P_NOERROR)) {
 		bprintf(text[TransferPolicyHdr], cfg.sys_name);
 		bprintf(text[TpUpload]
@@ -1140,7 +1143,8 @@ void sbbs_t::node_stats(uint node_num)
 		bputs(text[InvalidNode]);
 		return;
 	}
-	if (!node_num) node_num = cfg.node_num;
+	if (!node_num)
+		node_num = cfg.node_num;
 	bprintf(text[NodeStatsHdr], node_num);
 	getstats(&cfg, node_num, &stats);
 	bprintf(text[StatsTotalLogons], ultoac(stats.logons, tmp));
@@ -1303,11 +1307,13 @@ void sbbs_t::time_bank(void)
 
 	if (cfg.sys_misc & SM_TIMEBANK) {  /* Allow users to deposit free time */
 		s = (cfg.level_timeperday[useron.level] - useron.ttoday) + useron.textra;
-		if (s < 0) s = 0;
+		if (s < 0)
+			s = 0;
 		if (s > cfg.level_timepercall[useron.level])
 			s = cfg.level_timepercall[useron.level];
 		s -= (int)(now - starttime) / 60;
-		if (s < 0) s = 0;
+		if (s < 0)
+			s = 0;
 		bprintf(text[FreeMinLeft], s);
 		bprintf(text[UserMinutes], ultoac(useron.min, tmp));
 		if (cfg.max_minutes && useron.min >= cfg.max_minutes) {
@@ -1394,8 +1400,10 @@ void sbbs_t::change_user(void)
 		putnodedat(cfg.node_num, &thisnode);
 	}
 	getmsgptrs();
-	if (REALSYSOP) sys_status &= ~SS_TMPSYSOP;
-	else sys_status |= SS_TMPSYSOP;
+	if (REALSYSOP)
+		sys_status &= ~SS_TMPSYSOP;
+	else
+		sys_status |= SS_TMPSYSOP;
 	snprintf(str, sizeof str, "Changed into %s #%u", useron.alias, useron.number);
 	logline("S+", str);
 }

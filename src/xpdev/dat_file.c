@@ -86,8 +86,10 @@ char* csvLineCreator(const str_list_t columns)
 		if ((p = realloc(str, len)) == NULL)
 			break;
 		str = p;
-		if (i) strcat(str, ",");
-		else *str = 0;
+		if (i)
+			strcat(str, ",");
+		else
+			*str = 0;
 		if ((val = csvEncode(columns[i])) == NULL)
 			break;
 		strcat(str, val);
@@ -143,8 +145,10 @@ char* tabLineCreator(const str_list_t columns)
 		if ((p = realloc(str, len)) == NULL)
 			break;
 		str = p;
-		if (i) strcat(str, "\t");
-		else *str = 0;
+		if (i)
+			strcat(str, "\t");
+		else
+			*str = 0;
 		strcat(str, columns[i]);
 	}
 

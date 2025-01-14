@@ -290,7 +290,8 @@ bool sbbs_t::upload(int dirnum, const char* fname)
 	else
 		SAFEPRINTF3(str, text[UploadToCurDirQ], fname, cfg.lib[cfg.dir[dirnum]->lib]->sname
 		            , cfg.dir[dirnum]->sname);
-	if (!yesno(str)) return false;
+	if (!yesno(str))
+		return false;
 	action = NODE_ULNG;
 	SAFECOPY(f.file_idx.name, fname);
 	getfilepath(&cfg, &f, path);
@@ -317,7 +318,8 @@ bool sbbs_t::upload(int dirnum, const char* fname)
 		bputs(text[TheseFileExtsOnly]);
 		bputs(cfg.dir[dirnum]->exts);
 		CRLF;
-		if (!dir_op(dirnum)) return false;
+		if (!dir_op(dirnum))
+			return false;
 	}
 	bputs(text[SearchingForDupes]);
 	bool found = findfile(&cfg, dirnum, fname, NULL);

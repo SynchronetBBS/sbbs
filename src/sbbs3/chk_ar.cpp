@@ -111,7 +111,8 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 			case AR_ANSI:
 				if (!term_supports(ANSI))
 					result = _not;
-				else result = !_not;
+				else
+					result = !_not;
 				if (!result) {
 					noaccess_str = text[NoAccessTerminal];
 					noaccess_val = ANSI;
@@ -120,7 +121,8 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 			case AR_PETSCII:
 				if ((term_supports() & CHARSET_FLAGS) != CHARSET_PETSCII)
 					result = _not;
-				else result = !_not;
+				else
+					result = !_not;
 				if (!result) {
 					noaccess_str = text[NoAccessTerminal];
 					noaccess_val = PETSCII;
@@ -129,7 +131,8 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 			case AR_ASCII:
 				if ((term_supports() & CHARSET_FLAGS) != CHARSET_ASCII)
 					result = _not;
-				else result = !_not;
+				else
+					result = !_not;
 				if (!result) {
 					noaccess_str = text[NoAccessTerminal];
 					noaccess_val = NO_EXASCII;
@@ -138,7 +141,8 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 			case AR_UTF8:
 				if ((term_supports() & CHARSET_FLAGS) != CHARSET_UTF8)
 					result = _not;
-				else result = !_not;
+				else
+					result = !_not;
 				if (!result) {
 					noaccess_str = text[NoAccessTerminal];
 					noaccess_val = UTF8;
@@ -147,7 +151,8 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 			case AR_CP437:
 				if ((term_supports() & CHARSET_FLAGS) != CHARSET_CP437)
 					result = _not;
-				else result = !_not;
+				else
+					result = !_not;
 				if (!result) {
 					noaccess_str = text[NoAccessTerminal];
 					noaccess_val = 0;
@@ -156,7 +161,8 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 			case AR_RIP:
 				if (!term_supports(RIP))
 					result = _not;
-				else result = !_not;
+				else
+					result = !_not;
 				if (!result) {
 					noaccess_str = text[NoAccessTerminal];
 					noaccess_val = RIP;
@@ -210,47 +216,56 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 			case AR_ACTIVE:
 				if (user->misc & (DELETED | INACTIVE))
 					result = _not;
-				else result = !_not;
+				else
+					result = !_not;
 				break;
 			case AR_INACTIVE:
 				if (!(user->misc & INACTIVE))
 					result = _not;
-				else result = !_not;
+				else
+					result = !_not;
 				break;
 			case AR_DELETED:
 				if (!(user->misc & DELETED))
 					result = _not;
-				else result = !_not;
+				else
+					result = !_not;
 				break;
 			case AR_EXPERT:
 				if (!(user->misc & EXPERT))
 					result = _not;
-				else result = !_not;
+				else
+					result = !_not;
 				break;
 			case AR_SYSOP:
 				if (user->level < SYSOP_LEVEL && !(sys_status & SS_TMPSYSOP))
 					result = _not;
-				else result = !_not;
+				else
+					result = !_not;
 				break;
 			case AR_GUEST:
 				if (!(user->rest & FLAG('G')))
 					result = _not;
-				else result = !_not;
+				else
+					result = !_not;
 				break;
 			case AR_QNODE:
 				if (!(user->rest & FLAG('Q')))
 					result = _not;
-				else result = !_not;
+				else
+					result = !_not;
 				break;
 			case AR_QUIET:
 				if (thisnode.status != NODE_QUIET)
 					result = _not;
-				else result = !_not;
+				else
+					result = !_not;
 				break;
 			case AR_LOCAL:
 				if (online != ON_LOCAL)
 					result = _not;
-				else result = !_not;
+				else
+					result = !_not;
 				break;
 			case AR_DAY:
 				now = time(NULL);
@@ -478,7 +493,8 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 				break;
 			case AR_UDR:    /* up/download byte ratio (by percentage) */
 				l = user->dlb;
-				if (!l) l = 1;
+				if (!l)
+					l = 1;
 				if (user->dlb > user->ulb
 				    && (!user->ulb || (100 / ((float)l / user->ulb)) < n))
 					result = _not;
@@ -491,7 +507,8 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 				break;
 			case AR_UDFR:   /* up/download file ratio (in percentage) */
 				i = user->dls;
-				if (!i) i = 1;
+				if (!i)
+					i = 1;
 				if (user->dls > user->uls
 				    && (!user->uls || (100 / ((float)i / user->uls)) < n))
 					result = _not;
@@ -734,7 +751,8 @@ void sbbs_t::getusrsubs()
 		if (!chk_ar(cfg.grp[i]->ar, &useron, &client))
 			continue;
 		for (k = 0, l = 0; l < cfg.total_subs; l++) {
-			if (cfg.sub[l]->grp != i) continue;
+			if (cfg.sub[l]->grp != i)
+				continue;
 			if (!chk_ar(cfg.sub[l]->ar, &useron, &client))
 				continue;
 			usrsub[j][k++] = l;
@@ -767,7 +785,8 @@ void sbbs_t::getusrdirs()
 		if (!chk_ar(cfg.lib[i]->ar, &useron, &client))
 			continue;
 		for (k = 0, l = 0; l < cfg.total_dirs; l++) {
-			if (cfg.dir[l]->lib != i) continue;
+			if (cfg.dir[l]->lib != i)
+				continue;
 			if (!chk_ar(cfg.dir[l]->ar, &useron, &client))
 				continue;
 			usrdir[j][k++] = l;

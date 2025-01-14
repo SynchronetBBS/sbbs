@@ -105,7 +105,8 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 		mode = QM_EXPCTLA;
 	else if (useron.qwk & QWK_RETCTLA)
 		mode = QM_RETCTLA;
-	else mode = 0;
+	else
+		mode = 0;
 	if (useron.qwk & QWK_TZ)
 		mode |= QM_TZ;
 	if (useron.qwk & QWK_VIA)

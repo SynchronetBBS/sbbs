@@ -799,7 +799,8 @@ js_getstr(JSContext *cx, uintN argc, jsval *arglist)
 		}
 	}
 
-	if (!maxlen) maxlen = 128;
+	if (!maxlen)
+		maxlen = 128;
 
 	if ((p = (char *)calloc(1, maxlen + 1)) == NULL)
 		return JS_FALSE;

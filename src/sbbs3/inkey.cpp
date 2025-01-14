@@ -565,8 +565,10 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 							lprintf(LOG_DEBUG, "received ANSI cursor position report: %ux%u"
 							        , x, y);
 							/* Sanity check the coordinates in the response: */
-							if (useron.cols == TERM_COLS_AUTO && x >= TERM_COLS_MIN && x <= TERM_COLS_MAX) cols = x;
-							if (useron.rows == TERM_ROWS_AUTO && y >= TERM_ROWS_MIN && y <= TERM_ROWS_MAX) rows = y;
+							if (useron.cols == TERM_COLS_AUTO && x >= TERM_COLS_MIN && x <= TERM_COLS_MAX)
+								cols = x;
+							if (useron.rows == TERM_ROWS_AUTO && y >= TERM_ROWS_MIN && y <= TERM_ROWS_MAX)
+								rows = y;
 							if (useron.cols == TERM_COLS_AUTO || useron.rows == TERM_ROWS_AUTO)
 								update_nodeterm();
 						}
@@ -589,18 +591,28 @@ void sbbs_t::set_mouse(int flags)
 	int term = term_supports();
 	if ((term & ANSI) && ((term & MOUSE) || flags == MOUSE_MODE_OFF)) {
 		int mode = mouse_mode & ~flags;
-		if (mode & MOUSE_MODE_X10)   ansi_mouse(ANSI_MOUSE_X10, false);
-		if (mode & MOUSE_MODE_NORM)  ansi_mouse(ANSI_MOUSE_NORM, false);
-		if (mode & MOUSE_MODE_BTN)   ansi_mouse(ANSI_MOUSE_BTN, false);
-		if (mode & MOUSE_MODE_ANY)   ansi_mouse(ANSI_MOUSE_ANY, false);
-		if (mode & MOUSE_MODE_EXT)   ansi_mouse(ANSI_MOUSE_EXT, false);
+		if (mode & MOUSE_MODE_X10)
+			ansi_mouse(ANSI_MOUSE_X10, false);
+		if (mode & MOUSE_MODE_NORM)
+			ansi_mouse(ANSI_MOUSE_NORM, false);
+		if (mode & MOUSE_MODE_BTN)
+			ansi_mouse(ANSI_MOUSE_BTN, false);
+		if (mode & MOUSE_MODE_ANY)
+			ansi_mouse(ANSI_MOUSE_ANY, false);
+		if (mode & MOUSE_MODE_EXT)
+			ansi_mouse(ANSI_MOUSE_EXT, false);
 
 		mode = flags & ~mouse_mode;
-		if (mode & MOUSE_MODE_X10)   ansi_mouse(ANSI_MOUSE_X10, true);
-		if (mode & MOUSE_MODE_NORM)  ansi_mouse(ANSI_MOUSE_NORM, true);
-		if (mode & MOUSE_MODE_BTN)   ansi_mouse(ANSI_MOUSE_BTN, true);
-		if (mode & MOUSE_MODE_ANY)   ansi_mouse(ANSI_MOUSE_ANY, true);
-		if (mode & MOUSE_MODE_EXT)   ansi_mouse(ANSI_MOUSE_EXT, true);
+		if (mode & MOUSE_MODE_X10)
+			ansi_mouse(ANSI_MOUSE_X10, true);
+		if (mode & MOUSE_MODE_NORM)
+			ansi_mouse(ANSI_MOUSE_NORM, true);
+		if (mode & MOUSE_MODE_BTN)
+			ansi_mouse(ANSI_MOUSE_BTN, true);
+		if (mode & MOUSE_MODE_ANY)
+			ansi_mouse(ANSI_MOUSE_ANY, true);
+		if (mode & MOUSE_MODE_EXT)
+			ansi_mouse(ANSI_MOUSE_EXT, true);
 
 		if (mouse_mode != flags) {
 #if 0

@@ -175,10 +175,13 @@ char* padfname(const char *filename, char *str)
 	int c, d;
 
 	for (c = 0; c < 8; c++)
-		if (filename[c] == '.' || !filename[c]) break;
-		else str[c] = filename[c];
+		if (filename[c] == '.' || !filename[c])
+			break;
+		else
+			str[c] = filename[c];
 	d = c;
-	if (filename[c] == '.') c++;
+	if (filename[c] == '.')
+		c++;
 	while (d < 8)
 		str[d++] = ' ';
 	if (filename[c] > ' ') /* Change "FILE" to "FILE        " */
@@ -186,8 +189,10 @@ char* padfname(const char *filename, char *str)
 	else
 		str[d++] = ' ';
 	while (d < 12)
-		if (!filename[c]) break;
-		else str[d++] = filename[c++];
+		if (!filename[c])
+			break;
+		else
+			str[d++] = filename[c++];
 	while (d < 12)
 		str[d++] = ' ';
 	str[d] = 0;
@@ -202,7 +207,8 @@ char* unpadfname(const char *filename, char *str)
 	int c, d;
 
 	for (c = 0, d = 0; filename[c]; c++)
-		if (filename[c] != ' ') str[d++] = filename[c];
+		if (filename[c] != ' ')
+			str[d++] = filename[c];
 	str[d] = 0;
 	return str;
 }
@@ -531,7 +537,8 @@ int update_uldate(scfg_t* cfg, oldfile_t* f)
 	for (l = 0; l < length; l += F_IXBSIZE) {
 		my_read(file, str, F_IXBSIZE);      /* Look for the filename in the IXB file */
 		str[11] = 0;
-		if (!stricmp(fname, str)) break;
+		if (!stricmp(fname, str))
+			break;
 	}
 	if (l >= length) {
 		close(file);

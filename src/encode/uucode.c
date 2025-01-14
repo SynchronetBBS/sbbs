@@ -50,7 +50,8 @@ int uudecode(char *target, size_t tlen, const char *source, size_t slen)
 			/* Remove space bias */
 			for (i = 0; i < sizeof(cell) && rd < slen; i++) {
 				cell[i] = source[rd++];
-				if (cell[i] >= ' ') cell[i] -= ' ';
+				if (cell[i] >= ' ')
+					cell[i] -= ' ';
 			}
 			/* Convert block of 4 6-bit chars into 3 8-bit chars */
 			target[wr] = (cell[0] & 0x3f) << 2;       /* lower 6 (s1) to upper 6 (d1) */

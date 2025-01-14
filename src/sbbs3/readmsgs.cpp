@@ -36,20 +36,33 @@ bool sbbs_t::can_view_deleted_msgs(int subnum)
 
 uchar sbbs_t::msg_listing_flag(int subnum, smbmsg_t* msg, post_t* post)
 {
-	if (msg->hdr.attr & MSG_DELETE)                        return '-';
+	if (msg->hdr.attr & MSG_DELETE)
+		return '-';
 	if ((stricmp(msg->to, useron.alias) == 0 || stricmp(msg->to, useron.name) == 0)
-	    && !(msg->hdr.attr & MSG_READ))                   return '!';
-	if (msg->hdr.attr & MSG_PERMANENT)                     return 'p';
-	if (msg->hdr.attr & MSG_LOCKED)                        return 'L';
-	if (msg->hdr.attr & MSG_KILLREAD)                      return 'K';
-	if (msg->hdr.attr & MSG_NOREPLY)                       return '#';
-	if (msg->hdr.number > subscan[subnum].ptr)           return '*';
-	if (msg->hdr.attr & MSG_PRIVATE)                       return 'P';
-	if (msg->hdr.attr & MSG_POLL)                          return '?';
-	if (post->upvotes > post->downvotes)                 return 251;
-	if (post->upvotes || post->downvotes)                return 'v';
-	if (msg->hdr.attr & MSG_REPLIED)                       return 'R';
-	if (sub_op(subnum) && msg->hdr.attr & MSG_ANONYMOUS)   return 'A';
+	    && !(msg->hdr.attr & MSG_READ))
+		return '!';
+	if (msg->hdr.attr & MSG_PERMANENT)
+		return 'p';
+	if (msg->hdr.attr & MSG_LOCKED)
+		return 'L';
+	if (msg->hdr.attr & MSG_KILLREAD)
+		return 'K';
+	if (msg->hdr.attr & MSG_NOREPLY)
+		return '#';
+	if (msg->hdr.number > subscan[subnum].ptr)
+		return '*';
+	if (msg->hdr.attr & MSG_PRIVATE)
+		return 'P';
+	if (msg->hdr.attr & MSG_POLL)
+		return '?';
+	if (post->upvotes > post->downvotes)
+		return 251;
+	if (post->upvotes || post->downvotes)
+		return 'v';
+	if (msg->hdr.attr & MSG_REPLIED)
+		return 'R';
+	if (sub_op(subnum) && msg->hdr.attr & MSG_ANONYMOUS)
+		return 'A';
 	return ' ';
 }
 
@@ -757,10 +770,13 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 				}
 			}
 		}
-		else domsg = 1;
+		else
+			domsg = 1;
 		if (mode & SCAN_CONT) {
-			if (smb.curmsg < smb.msgs - 1) smb.curmsg++;
-			else done = 1;
+			if (smb.curmsg < smb.msgs - 1)
+				smb.curmsg++;
+			else
+				done = 1;
 			continue;
 		}
 		sync();
@@ -840,8 +856,10 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 				return 0;
 			case 'C':   /* Continuous */
 				mode |= SCAN_CONT;
-				if (smb.curmsg < smb.msgs - 1) smb.curmsg++;
-				else done = 1;
+				if (smb.curmsg < smb.msgs - 1)
+					smb.curmsg++;
+				else
+					done = 1;
 				break;
 			case 'D':       /* Delete message on sub-board */
 				if (!(msg.hdr.attr & MSG_DELETE) && msg.hdr.type == SMB_MSG_TYPE_POLL
@@ -1183,7 +1201,8 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 					}
 					break;
 				}
-				if (smb.curmsg > 0) smb.curmsg--;
+				if (smb.curmsg > 0)
+					smb.curmsg--;
 				do_find = false;
 				break;
 			case 'O':   /* Operator commands */
@@ -1398,7 +1417,8 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 			case ')':   /* Thread forward */
 			case TERM_KEY_DOWN: /* down-arrow */
 				l = msg.hdr.thread_next;
-				if (!l) l = msg.hdr.thread_first;
+				if (!l)
+					l = msg.hdr.thread_first;
 				if (!l) {
 					domsg = 0;
 					outchar('\a');
@@ -1428,7 +1448,8 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 					break;
 				}
 				l = msg.hdr.thread_first;
-				if (!l) l = msg.hdr.thread_next;
+				if (!l)
+					l = msg.hdr.thread_next;
 				if (!l) {
 					domsg = 0;
 					outchar('\a');
@@ -1447,7 +1468,8 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 				break;
 			case TERM_KEY_LEFT: /* left arrow */
 				if (!thread_mode) {
-					if (smb.curmsg > 0) smb.curmsg--;
+					if (smb.curmsg > 0)
+						smb.curmsg--;
 					newline();
 					break;
 				}
@@ -1592,8 +1614,10 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 						done = 1;
 					break;
 				}
-				if (smb.curmsg < smb.msgs - 1) smb.curmsg++;
-				else done = 1;
+				if (smb.curmsg < smb.msgs - 1)
+					smb.curmsg++;
+				else
+					done = 1;
 				break;
 			case '?':
 				menu("msgscan");

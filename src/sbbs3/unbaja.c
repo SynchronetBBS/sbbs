@@ -325,8 +325,10 @@ BRUTE_DONE:
 
 /* comparison function for var_table */
 static int vt_compare(const void *key, const void *table) {
-	if (*(uint32_t *)key == (*(struct var_table_t *)table).crc) return 0;
-	if (*(uint32_t *)key < (*(struct var_table_t *)table).crc) return -1;
+	if (*(uint32_t *)key == (*(struct var_table_t *)table).crc)
+		return 0;
+	if (*(uint32_t *)key < (*(struct var_table_t *)table).crc)
+		return -1;
 	return 1;
 }
 

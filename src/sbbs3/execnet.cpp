@@ -184,7 +184,8 @@ int sbbs_t::exec_net(csi_t* csi)
 				buf[rcv_count] = 0;
 				if (csi->etx) {
 					p = strchr(buf, csi->etx);
-					if (p) *p = 0;
+					if (p)
+						*p = 0;
 				}
 				*pp = copystrvar(csi, *pp, buf);
 			} else
@@ -242,7 +243,8 @@ int sbbs_t::exec_net(csi_t* csi)
 
 			if (csi->etx) {
 				p = strchr(buf, csi->etx);
-				if (p) *p = 0;
+				if (p)
+					*p = 0;
 			}
 			*pp = copystrvar(csi, *pp, buf);
 			csi->logic = LOGIC_TRUE;

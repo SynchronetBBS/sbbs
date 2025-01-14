@@ -117,18 +117,21 @@ when_t rfc822date(char* date)
 	tm.tm_hour = atoi(p);
 	while (*p && IS_DIGIT(*p)) p++;
 	/* MINUTE */
-	if (*p) p++;
+	if (*p)
+		p++;
 	tm.tm_min = atoi(p);
 	while (*p && IS_DIGIT(*p)) p++;
 	/* SECONDS */
-	if (*p) p++;
+	if (*p)
+		p++;
 	tm.tm_sec = atoi(p);
 	while (*p && IS_DIGIT(*p)) p++;
 	/* TIME ZONE */
 	while (*p && *p <= ' ') p++;
 	if (*p) {
 		if (IS_DIGIT(*p) || *p == '-' || *p == '+') { /* [+|-]HHMM format */
-			if (*p == '+') p++;
+			if (*p == '+')
+				p++;
 			sprintf(str, "%.*s", *p == '-'? 3:2, p);
 			zone = atoi(str) * 60;
 			p += (*p == '-') ? 3:2;

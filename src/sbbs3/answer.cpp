@@ -633,8 +633,10 @@ bool sbbs_t::answer()
 						        , cursor_pos_report, x, y);
 						if (cursor_pos_report == 1) {
 							/* Sanity check the coordinates in the response: */
-							if (x >= TERM_COLS_MIN && x <= TERM_COLS_MAX) cols = x;
-							if (y >= TERM_ROWS_MIN && y <= TERM_ROWS_MAX) rows = y;
+							if (x >= TERM_COLS_MIN && x <= TERM_COLS_MAX)
+								cols = x;
+							if (y >= TERM_ROWS_MIN && y <= TERM_ROWS_MAX)
+								rows = y;
 						} else {    // second report
 							if (x < 3) { // ZWNBSP didn't move cursor (more than one column)
 								autoterm |= UTF8;

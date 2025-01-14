@@ -406,7 +406,8 @@ void printnodedat(int number, node_t node)
 				else {
 					if ((node.aux / 60) == 0)    /* 12 midnite */
 						hour = 12;
-					else hour = node.aux / 60;
+					else
+						hour = node.aux / 60;
 					SAFECOPY(mer, "am");
 				}
 				printf(" ETA %02d:%02d %s"
@@ -608,7 +609,8 @@ int main(int argc, char **argv)
 				mode = MODE_EXTAUX;
 				value = strtoul(argv[i] + 7, NULL, 0);
 			}
-			else usage();
+			else
+				usage();
 		}
 		if (mode < 0)
 			usage();

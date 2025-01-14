@@ -286,8 +286,10 @@ int fixsmb(char* sub)
 			/* Allocate header blocks */
 			/**************************/
 			fseek(smb.sha_fp, (l - smb.status.header_offset) / SHD_BLOCK_LEN, SEEK_SET);
-			if (msg.hdr.attr & MSG_DELETE) c = 0;   /* mark as free */
-			else c = 1;                             /* or allocated */
+			if (msg.hdr.attr & MSG_DELETE)
+				c = 0;                              /* mark as free */
+			else
+				c = 1;                              /* or allocated */
 
 			for (i = 0; i < (int)(size / SHD_BLOCK_LEN); i++)
 				fputc(c, smb.sha_fp);

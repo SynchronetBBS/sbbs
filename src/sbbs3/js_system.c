@@ -2617,13 +2617,16 @@ static JSBool js_system_resolve(JSContext *cx, JSObject *obj, jsid id)
 #if defined(_DEBUG)
 		strcat(str, " Debug");
 #endif
-		if (name) free(name);
+		if (name)
+			free(name);
 		if ((js_str = JS_NewStringCopyZ(cx, str)) != NULL) {
 			val = STRING_TO_JSVAL(js_str);
 			JS_SetProperty(cx, obj, "full_version", &val);
-			if (name) return JS_TRUE;
+			if (name)
+				return JS_TRUE;
 		}
-		else if (name) return JS_TRUE;
+		else if (name)
+			return JS_TRUE;
 	}
 
 	LAZY_STRING("version_notice", VERSION_NOTICE);
@@ -2650,7 +2653,8 @@ static JSBool js_system_resolve(JSContext *cx, JSObject *obj, jsid id)
 #ifndef JSDOOR
 	/* fido_addr_list property */
 	if (name == NULL || strcmp(name, "fido_addr_list") == 0) {
-		if (name) free(name);
+		if (name)
+			free(name);
 
 		js_system_private_t* sys;
 		if ((sys = (js_system_private_t*)js_GetClassPrivate(cx, obj, &js_system_class)) == NULL)
@@ -2670,11 +2674,13 @@ static JSBool js_system_resolve(JSContext *cx, JSObject *obj, jsid id)
 			val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, smb_faddrtoa(&sys->cfg->faddr[i], str)));
 			JS_SetElement(cx, newobj, i, &val);
 		}
-		if (name) return JS_TRUE;
+		if (name)
+			return JS_TRUE;
 	}
 
 	if (name == NULL || strcmp(name, "stats") == 0) {
-		if (name) free(name);
+		if (name)
+			free(name);
 
 		js_system_private_t* sys;
 		if ((sys = (js_system_private_t*)js_GetClassPrivate(cx, obj, &js_system_class)) == NULL)
@@ -2691,12 +2697,14 @@ static JSBool js_system_resolve(JSContext *cx, JSObject *obj, jsid id)
 		js_DescribeSyncObject(cx, newobj, "System statistics", 310);
 		js_CreateArrayOfStrings(cx, newobj, "_property_desc_list", sysstat_prop_desc, JSPROP_READONLY);
 #endif
-		if (name) return JS_TRUE;
+		if (name)
+			return JS_TRUE;
 	}
 
 	/* node_list property */
 	if (name == NULL || strcmp(name, "node_list") == 0) {
-		if (name) free(name);
+		if (name)
+			free(name);
 
 		js_system_private_t* sys;
 		if ((sys = (js_system_private_t*)js_GetClassPrivate(cx, obj, &js_system_class)) == NULL)
@@ -2735,12 +2743,14 @@ static JSBool js_system_resolve(JSContext *cx, JSObject *obj, jsid id)
 			if (!JS_SetElement(cx, newobj, i, &val))
 				return JS_FALSE;
 		}
-		if (name) return JS_TRUE;
+		if (name)
+			return JS_TRUE;
 	}
 #endif
 
 	ret = js_SyncResolve(cx, obj, name, js_system_properties, js_system_functions, NULL, 0);
-	if (name) free(name);
+	if (name)
+		free(name);
 	return ret;
 }
 

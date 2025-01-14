@@ -302,13 +302,16 @@ static JSBool js_sub_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 				*vp = JSVAL_FALSE;
 			break;
 		case SUB_PROP_SCAN_PTR:
-			if (scan != NULL) *vp = UINT_TO_JSVAL(scan->ptr);
+			if (scan != NULL)
+				*vp = UINT_TO_JSVAL(scan->ptr);
 			break;
 		case SUB_PROP_SCAN_CFG:
-			if (scan != NULL) *vp = UINT_TO_JSVAL(scan->cfg);
+			if (scan != NULL)
+				*vp = UINT_TO_JSVAL(scan->cfg);
 			break;
 		case SUB_PROP_LAST_READ:
-			if (scan != NULL) *vp = UINT_TO_JSVAL(scan->last);
+			if (scan != NULL)
+				*vp = UINT_TO_JSVAL(scan->last);
 			break;
 		case SUB_PROP_POSTS:
 			*vp = UINT_TO_JSVAL(getposts(p->cfg, p->subnum));

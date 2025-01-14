@@ -34,7 +34,8 @@ int sbbs_t::exec_file(csi_t *csi)
 
 		case CS_FILE_SELECT_AREA:
 			csi->logic = LOGIC_FALSE;
-			if (!usrlibs) return 0;
+			if (!usrlibs)
+				return 0;
 			while (online) {
 				j = 0;
 				if (usrlibs > 1) {
@@ -43,9 +44,12 @@ int sbbs_t::exec_file(csi_t *csi)
 						for (i = 0; i < usrlibs && !msgabort(); i++) {
 							if (i == curlib)
 								outchar('*');
-							else outchar(' ');
-							if (i < 9) outchar(' ');
-							if (i < 99) outchar(' ');
+							else
+								outchar(' ');
+							if (i < 9)
+								outchar(' ');
+							if (i < 99)
+								outchar(' ');
 							add_hotspot(i + 1);
 							bprintf(text[CfgLibLstFmt]
 							        , i + 1, cfg.lib[usrlib[i]]->lname);
@@ -67,13 +71,17 @@ int sbbs_t::exec_file(csi_t *csi)
 					CLS;
 					bprintf(text[DirLstHdr], cfg.lib[usrlib[j]]->lname);
 					for (i = 0; i < usrdirs[j] && !msgabort(); i++) {
-						if (i == curdir[j]) outchar('*');
-						else outchar(' ');
+						if (i == curdir[j])
+							outchar('*');
+						else
+							outchar(' ');
 						snprintf(str, sizeof str, text[DirLstFmt], i + 1
 						         , cfg.dir[usrdir[j][i]]->lname, nulstr
 						         , getfiles(&cfg, usrdir[j][i]));
-						if (i < 9) outchar(' ');
-						if (i < 99) outchar(' ');
+						if (i < 9)
+							outchar(' ');
+						if (i < 99)
+							outchar(' ');
 						add_hotspot(i + 1);
 						bputs(str);
 					}
@@ -189,7 +197,8 @@ int sbbs_t::exec_file(csi_t *csi)
 			return 0;
 
 		case CS_FILE_SHOW_LIBRARIES:
-			if (!usrlibs) return 0;
+			if (!usrlibs)
+				return 0;
 			if (menu("libs", P_NOERROR)) {
 				return 0;
 			}
@@ -197,8 +206,10 @@ int sbbs_t::exec_file(csi_t *csi)
 			for (i = 0; i < usrlibs && !msgabort(); i++) {
 				if (i == curlib)
 					outchar('*');
-				else outchar(' ');
-				if (i < 9) outchar(' ');
+				else
+					outchar(' ');
+				if (i < 9)
+					outchar(' ');
 				add_hotspot(i + 1);
 				bprintf(text[LibLstFmt], i + 1
 				        , cfg.lib[usrlib[i]]->lname, nulstr, usrdirs[i]);
@@ -206,7 +217,8 @@ int sbbs_t::exec_file(csi_t *csi)
 			return 0;
 
 		case CS_FILE_SHOW_DIRECTORIES:
-			if (!usrlibs) return 0;
+			if (!usrlibs)
+				return 0;
 			snprintf(str, sizeof str, "dirs%u", usrlib[curlib] + 1);
 			if (menu(str, P_NOERROR)) {
 				return 0;
@@ -214,13 +226,17 @@ int sbbs_t::exec_file(csi_t *csi)
 			CRLF;
 			bprintf(text[DirLstHdr], cfg.lib[usrlib[curlib]]->lname);
 			for (i = 0; i < usrdirs[curlib] && !msgabort(); i++) {
-				if (i == curdir[curlib]) outchar('*');
-				else outchar(' ');
+				if (i == curdir[curlib])
+					outchar('*');
+				else
+					outchar(' ');
 				snprintf(str, sizeof str, text[DirLstFmt], i + 1
 				         , cfg.dir[usrdir[curlib][i]]->lname, nulstr
 				         , getfiles(&cfg, usrdir[curlib][i]));
-				if (i < 9) outchar(' ');
-				if (i < 99) outchar(' ');
+				if (i < 9)
+					outchar(' ');
+				if (i < 99)
+					outchar(' ');
 				add_hotspot(i + 1);
 				bputs(str);
 			}
@@ -234,19 +250,23 @@ int sbbs_t::exec_file(csi_t *csi)
 		case CS_FILE_LIBRARY_DOWN:
 			if (!curlib)
 				curlib = usrlibs - 1;
-			else curlib--;
+			else
+				curlib--;
 			return 0;
 		case CS_FILE_DIRECTORY_UP:
-			if (!usrlibs) return 0;
+			if (!usrlibs)
+				return 0;
 			curdir[curlib]++;
 			if (curdir[curlib] >= usrdirs[curlib])
 				curdir[curlib] = 0;
 			return 0;
 		case CS_FILE_DIRECTORY_DOWN:
-			if (!usrlibs) return 0;
+			if (!usrlibs)
+				return 0;
 			if (!curdir[curlib])
 				curdir[curlib] = usrdirs[curlib] - 1;
-			else curdir[curlib]--;
+			else
+				curdir[curlib]--;
 			return 0;
 		case CS_FILE_SET_AREA:
 			csi->logic = LOGIC_TRUE;
@@ -298,7 +318,8 @@ int sbbs_t::exec_file(csi_t *csi)
 			csi->logic = upload(cfg.sysop_dir) ? LOGIC_TRUE:LOGIC_FALSE;
 			return 0;
 		case CS_FILE_DOWNLOAD:
-			if (!usrlibs) return 0;
+			if (!usrlibs)
+				return 0;
 			if (useron.rest & FLAG('D')) {
 				bputs(text[R_Download]);
 				return 0;
@@ -321,7 +342,8 @@ int sbbs_t::exec_file(csi_t *csi)
 				bputs(text[SearchingAllLibs]);
 				for (i = 0; i < usrlibs; i++) {
 					progress(text[Scanning], i, usrlibs);
-					if (i == curlib) continue;
+					if (i == curlib)
+						continue;
 					for (j = 0; j < usrdirs[i]; j++) {
 						if (msgabort()) {
 							bputs(text[Aborted]);
@@ -385,7 +407,8 @@ int sbbs_t::exec_file(csi_t *csi)
 			return 0;
 
 		case CS_FILE_VIEW:
-			if (!usrlibs) return 0;
+			if (!usrlibs)
+				return 0;
 			csi->logic = LOGIC_TRUE;
 			if (listfiles(usrdir[curlib][curdir[curlib]], csi->str, 0, FL_VIEW)
 			    || strcmp(csi->str, ALLFILES) == 0)
@@ -397,7 +420,8 @@ int sbbs_t::exec_file(csi_t *csi)
 					return 0;
 				}
 				progress(text[Scanning], i, usrdirs[curlib]);
-				if (i == curdir[curlib]) continue;
+				if (i == curdir[curlib])
+					continue;
 				if (listfiles(usrdir[curlib][i], csi->str, 0, FL_VIEW))
 					break;
 			}
@@ -407,7 +431,8 @@ int sbbs_t::exec_file(csi_t *csi)
 			bputs(text[SearchingAllLibs]);
 			for (i = 0; i < usrlibs; i++) {
 				progress(text[Scanning], i, usrlibs);
-				if (i == curlib) continue;
+				if (i == curlib)
+					continue;
 				for (j = 0; j < usrdirs[i]; j++) {
 					if (msgabort()) {
 						bputs(text[Aborted]);
@@ -422,7 +447,8 @@ int sbbs_t::exec_file(csi_t *csi)
 			bputs(text[FileNotFound]);
 			return 0;
 		case CS_FILE_LIST:    /* List files in current dir */
-			if (!usrlibs) return 0;
+			if (!usrlibs)
+				return 0;
 			csi->logic = LOGIC_FALSE;
 			if (!getfiles(&cfg, usrdir[curlib][curdir[curlib]])) {
 				bputs(text[EmptyDir]);
@@ -435,7 +461,8 @@ int sbbs_t::exec_file(csi_t *csi)
 			csi->logic = !s;
 			return 0;
 		case CS_FILE_LIST_EXTENDED: /* Extended Information on files */
-			if (!usrlibs) return 0;
+			if (!usrlibs)
+				return 0;
 			if (!listfileinfo(usrdir[curlib][curdir[curlib]], csi->str, FI_INFO)
 			    && strcmp(csi->str, ALLFILES) != 0) {
 				bputs(text[SearchingAllDirs]);
@@ -454,7 +481,8 @@ int sbbs_t::exec_file(csi_t *csi)
 				bputs(text[SearchingAllLibs]);
 				for (i = 0; i < usrlibs; i++) {
 					progress(text[Scanning], i, usrlibs);
-					if (i == curlib) continue;
+					if (i == curlib)
+						continue;
 					for (j = 0; j < usrdirs[i]; j++) {
 						if (msgabort()) {
 							bputs(text[Aborted]);
@@ -496,7 +524,8 @@ int sbbs_t::exec_file(csi_t *csi)
 			scanalldirs(FL_ULTIME);
 			return 0;
 		case CS_FILE_REMOVE:
-			if (!usrlibs) return 0;
+			if (!usrlibs)
+				return 0;
 			if (useron.rest & FLAG('R')) {
 				bputs(text[R_RemoveFiles]);
 				return 0;
@@ -524,7 +553,8 @@ int sbbs_t::exec_file(csi_t *csi)
 				bputs(text[SearchingAllLibs]);
 				for (i = 0; i < usrlibs; i++) {
 					progress(text[Scanning], i, usrlibs);
-					if (i == curlib || i == cfg.user_dir) continue;
+					if (i == curlib || i == cfg.user_dir)
+						continue;
 					for (j = 0; j < usrdirs[i]; j++) {
 						if (msgabort()) {
 							bputs(text[Aborted]);

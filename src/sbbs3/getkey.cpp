@@ -107,7 +107,8 @@ char sbbs_t::getkey(int mode)
 				return toupper(ch);
 			return ch;
 		}
-		if (sys_status & SS_USERON && !(sys_status & SS_LCHAT)) gettimeleft();
+		if (sys_status & SS_USERON && !(sys_status & SS_LCHAT))
+			gettimeleft();
 		else if (online && now - answertime > SEC_LOGON && !(sys_status & SS_LCHAT)) {
 			console &= ~(CON_R_ECHOX | CON_L_ECHOX);
 			console |= (CON_R_ECHO | CON_L_ECHO);

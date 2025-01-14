@@ -322,9 +322,11 @@ echostat_msg_t parse_echostat_msg(str_list_t ini, const char* section, const cha
 	snprintf(key, sizeof key, "%s.localtime", prefix),  msg.localtime = iniGetDateTime(ini, section, key, 0);
 	snprintf(key, sizeof key, "%s.length", prefix),     msg.length = (size_t)iniGetBytes(ini, section, key, 1, 0);
 	snprintf(key, sizeof key, "%s.origaddr", prefix),   iniGetString(ini, section, key, NULL, str);
-	if (str[0])   msg.origaddr = atofaddr(str);
+	if (str[0])
+		msg.origaddr = atofaddr(str);
 	snprintf(key, sizeof key, "%s.pkt_orig", prefix),   iniGetString(ini, section, key, NULL, str);
-	if (str[0])   msg.pkt_orig = atofaddr(str);
+	if (str[0])
+		msg.pkt_orig = atofaddr(str);
 
 	return msg;
 }
@@ -479,16 +481,24 @@ void fwrite_echostat_msg(FILE* fp, const echostat_msg_t* msg, const char* prefix
 	echostat_msg_t zero = {{0}};
 	if (memcmp(msg, &zero, sizeof(*msg)) == 0)
 		return;
-	if (msg->to[0])          fprintf(fp, "%s.to = %s\n", prefix, msg->to);
-	if (msg->from[0])        fprintf(fp, "%s.from = %s\n", prefix, msg->from);
-	if (msg->subj[0])        fprintf(fp, "%s.subj = %s\n", prefix, msg->subj);
-	if (msg->msg_id[0])      fprintf(fp, "%s.msg_id = %s\n", prefix, msg->msg_id);
-	if (msg->reply_id[0])    fprintf(fp, "%s.reply_id = %s\n", prefix, msg->reply_id);
-	if (msg->pid[0])         fprintf(fp, "%s.pid = %s\n", prefix, msg->pid);
-	if (msg->tid[0])         fprintf(fp, "%s.tid = %s\n", prefix, msg->tid);
+	if (msg->to[0])
+		fprintf(fp, "%s.to = %s\n", prefix, msg->to);
+	if (msg->from[0])
+		fprintf(fp, "%s.from = %s\n", prefix, msg->from);
+	if (msg->subj[0])
+		fprintf(fp, "%s.subj = %s\n", prefix, msg->subj);
+	if (msg->msg_id[0])
+		fprintf(fp, "%s.msg_id = %s\n", prefix, msg->msg_id);
+	if (msg->reply_id[0])
+		fprintf(fp, "%s.reply_id = %s\n", prefix, msg->reply_id);
+	if (msg->pid[0])
+		fprintf(fp, "%s.pid = %s\n", prefix, msg->pid);
+	if (msg->tid[0])
+		fprintf(fp, "%s.tid = %s\n", prefix, msg->tid);
 	fprintf(fp, "%s.length = %lu\n", prefix, (ulong)msg->length);
 	fprintf(fp, "%s.msg_time = %s\n", prefix, iniTimeStr(msg->msg_time));
-	if (msg->msg_tz[0])      fprintf(fp, "%s.msg_tz = %s\n", prefix, msg->msg_tz);
+	if (msg->msg_tz[0])
+		fprintf(fp, "%s.msg_tz = %s\n", prefix, msg->msg_tz);
 	fprintf(fp, "%s.localtime = %s\n", prefix, iniTimeStr(msg->localtime));
 	if (msg->origaddr.zone)
 		fprintf(fp, "%s.origaddr = %s\n", prefix, faddrtoa(&msg->origaddr));
@@ -925,8 +935,10 @@ bool parse_pkthdr(const fpkthdr_t* hdr, fidoaddr_t* orig_addr, fidoaddr_t* dest_
 		type = PKT_TYPE_2_EXT;
 		orig.point = hdr->type2plus.origpoint;
 		dest.point = hdr->type2plus.destpoint;
-		if (orig.zone == 0) orig.zone = hdr->type2plus.origzone;
-		if (dest.zone == 0) dest.zone = hdr->type2plus.destzone;
+		if (orig.zone == 0)
+			orig.zone = hdr->type2plus.origzone;
+		if (dest.zone == 0)
+			dest.zone = hdr->type2plus.destzone;
 		if (hdr->type2plus.auxnet != 0) {    /* strictly speaking, auxnet may be 0 and a valid 2+ packet */
 			type = PKT_TYPE_2_PLUS;
 			if (orig.point != 0 && orig.net == 0xffff)   /* see FSC-0048 for details */
@@ -1065,7 +1077,8 @@ int create_netmail(const char *to, const smbmsg_t* msg, const char *subject, con
 
 	if (to == NULL || *to == 0)
 		to = "Sysop";
-	if (!startmsg) startmsg = 1;
+	if (!startmsg)
+		startmsg = 1;
 	if ((nodecfg = findnodecfg(&cfg, dest, /* exact: */ false)) != NULL) {
 		if (nodecfg->status == MAIL_STATUS_NORMAL && !nodecfg->direct)
 			nodecfg = findnodecfg(&cfg, dest, /* skip exact match: */ 2);
@@ -1458,7 +1471,8 @@ void netmail_arealist(enum arealist_type type, fidoaddr_t addr, const char* to)
 			for (u = 0; u < cfg.listcfgs; u++) {
 				match = 0;
 				for (k = 0; cfg.listcfg[u].keys[k]; k++) {
-					if (match) break;
+					if (match)
+						break;
 					for (x = 0; nodecfg->keys[x]; x++) {
 						if (!stricmp(cfg.listcfg[u].keys[k]
 						             , nodecfg->keys[x])) {
@@ -1506,7 +1520,8 @@ void netmail_arealist(enum arealist_type type, fidoaddr_t addr, const char* to)
 			int longest = 0;
 			for (u = 0; area_list[u] != NULL; u++) {
 				int len = strlen(area_list[u]);
-				if (len > longest) longest = len;
+				if (len > longest)
+					longest = len;
 			}
 			for (u = 0; area_list[u] != NULL; u++)
 				fprintf(fp, "%-*s %s\r\n", longest, area_list[u], area_desc(area_list[u]));
@@ -1529,7 +1544,8 @@ int check_elists(const char *areatag, nodecfg_t* nodecfg)
 	for (u = 0; u < cfg.listcfgs; u++) {
 		quit = 0;
 		for (k = 0; cfg.listcfg[u].keys[k]; k++) {
-			if (quit) break;
+			if (quit)
+				break;
 			for (x = 0; nodecfg->keys[x] ; x++)
 				if (!stricmp(cfg.listcfg[u].keys[k]
 				             , nodecfg->keys[x])) {
@@ -1809,7 +1825,8 @@ void add_areas_from_echolists(FILE* afileout, FILE* nmfile
 	for (j = 0; j < cfg.listcfgs; j++) {
 		match = 0;
 		for (k = 0; cfg.listcfg[j].keys[k] ; k++) {
-			if (match) break;
+			if (match)
+				break;
 			for (x = 0; nodecfg->keys[x] ; x++) {
 				if (!stricmp(cfg.listcfg[j].keys[k]
 				             , nodecfg->keys[x])) {
@@ -2417,7 +2434,8 @@ char* process_areamgr(fidoaddr_t addr, char* inbuf, const char* subj, const char
 			while (*(p + l) && *(p + l) != '\r') l++;
 			continue;
 		}
-		if (!(*(p + l))) break;
+		if (!(*(p + l)))
+			break;
 		if (*(p + l) == '+' || *(p + l) == '-' || *(p + l) == '%') {
 			action = *(p + l);
 			l++;
@@ -3000,7 +3018,8 @@ long getlastmsg(uint subnum, uint32_t *ptr, /* unused: */ time_t *t)
 	int   i;
 	smb_t smbfile;
 
-	if (ptr) (*ptr) = 0;
+	if (ptr)
+		(*ptr) = 0;
 	ZERO_VAR(smbfile);
 	if (!subnum_is_valid(&scfg, subnum)) {
 		lprintf(LOG_ERR, "ERROR line %d getlastmsg %d", __LINE__, subnum);
@@ -3015,12 +3034,14 @@ long getlastmsg(uint subnum, uint32_t *ptr, /* unused: */ time_t *t)
 	}
 
 	if (!filelength(fileno(smbfile.shd_fp))) {           /* Empty base */
-		if (ptr) (*ptr) = 0;
+		if (ptr)
+			(*ptr) = 0;
 		smb_close(&smbfile);
 		return 0;
 	}
 	smb_close(&smbfile);
-	if (ptr) (*ptr) = smbfile.status.last_msg;
+	if (ptr)
+		(*ptr) = smbfile.status.last_msg;
 	return smbfile.status.total_msgs;
 }
 
@@ -3131,7 +3152,8 @@ void cleanup(void)
 			int longest = 0;
 			for (int i = 0; bad_areas[i] != NULL; i++) {
 				int len = strlen(bad_areas[i]);
-				if (len > longest) longest = len;
+				if (len > longest)
+					longest = len;
 			}
 			strListSortAlpha(bad_areas);
 			for (int i = 0; bad_areas[i] != NULL; i++) {
@@ -4080,7 +4102,8 @@ void gen_psb(addrlist_t *seenbys, addrlist_t *paths, const char *inbuf, uint16_t
 	FREE_AND_NULL(seenbys->addr);
 	addr.zone = addr.net = addr.node = addr.point = seenbys->addrs = 0;
 	p = strstr(fbuf, "\rSEEN-BY:");
-	if (!p) p = strstr(fbuf, "\nSEEN-BY:");
+	if (!p)
+		p = strstr(fbuf, "\nSEEN-BY:");
 	if (p) {
 		while (1) {
 			snprintf(str, sizeof str, "%-.100s", p + 10);
@@ -5739,7 +5762,8 @@ void pack_netmail(void)
 			if (hdr.attr & FIDO_FILE) {
 				// Parse Kill-File-Sent (KFS) from FLAGS from control paragraph (kludge line) within msg body
 				const char* flags = strstr(fmsgbuf, "\1FLAGS ");
-				if (flags != NULL && flags != fmsgbuf && *(flags - 1) != '\r' && *(flags - 1) != '\n') flags = NULL;
+				if (flags != NULL && flags != fmsgbuf && *(flags - 1) != '\r' && *(flags - 1) != '\n')
+					flags = NULL;
 				const char* kfs = NULL;
 				if (flags != NULL) {
 					flags += 7;

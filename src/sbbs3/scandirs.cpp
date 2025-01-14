@@ -41,7 +41,8 @@ void sbbs_t::scandirs(int mode)
 		return;
 	}
 
-	if (!usrlibs) return;
+	if (!usrlibs)
+		return;
 	mnemonics(text[DirLibOrAll]);
 	SAFEPRINTF2(keys, "%s%c\r", text[DirLibKeys], all_key());
 	ch = (char)getkeys(keys, 0);
@@ -91,7 +92,8 @@ void sbbs_t::scandirs(int mode)
 				continue;
 			else if ((s = listfiles(usrdir[curlib][i], str, 0, mode)) == -1)
 				return;
-			else k += s;
+			else
+				k += s;
 		}
 		progress(text[Done], i, usrdirs[curlib]);
 		bputs(text[Scanned]);
@@ -124,7 +126,8 @@ void sbbs_t::scanalldirs(int mode)
 		return;
 	}
 
-	if (!usrlibs) return;
+	if (!usrlibs)
+		return;
 	k = 0;
 	if (mode & FL_ULTIME) {            /* New file scan */
 		bprintf(text[NScanHdr], timestr(ns_time));
@@ -160,7 +163,8 @@ void sbbs_t::scanalldirs(int mode)
 				bputs(text[Scanned]);
 				return;
 			}
-			else k += s;
+			else
+				k += s;
 		}
 		if (j < usrdirs[i])   /* aborted */
 			break;

@@ -63,11 +63,13 @@ int sbbs_t::exec_function(csi_t *csi)
 			sys_info();
 			return 0;
 		case CS_INFO_SUBBOARD:   /* Sub-board information */
-			if (!usrgrps) return 0;
+			if (!usrgrps)
+				return 0;
 			subinfo(usrsub[curgrp][cursub[curgrp]]);
 			return 0;
 		case CS_INFO_DIRECTORY:   /* Sub-board information */
-			if (!usrlibs) return 0;
+			if (!usrlibs)
+				return 0;
 			dirinfo(usrdir[curlib][curdir[curlib]]);
 			return 0;
 		case CS_INFO_VERSION:   /* Version */
@@ -331,14 +333,16 @@ int sbbs_t::exec_function(csi_t *csi)
 
 		case CS_FILE_UPLOAD_BULK:
 
-			if (!usrlibs) return 0;
+			if (!usrlibs)
+				return 0;
 
 			if (!stricmp(csi->str, "ALL")) {     /* all libraries */
 				for (i = 0; i < usrlibs; i++)
 					for (j = 0; j < usrdirs[i]; j++) {
 						if (cfg.lib[i]->offline_dir == usrdir[i][j])
 							continue;
-						if (bulkupload(usrdir[i][j])) return 0;
+						if (bulkupload(usrdir[i][j]))
+							return 0;
 					}
 				return 0;
 			}
@@ -347,7 +351,8 @@ int sbbs_t::exec_function(csi_t *csi)
 					if (cfg.lib[usrlib[curlib]]->offline_dir
 					    == usrdir[curlib][i])
 						continue;
-					if (bulkupload(usrdir[curlib][i])) return 0;
+					if (bulkupload(usrdir[curlib][i]))
+						return 0;
 				}
 				return 0;
 			}
@@ -358,7 +363,8 @@ int sbbs_t::exec_function(csi_t *csi)
 		case CS_FILE_FIND_OPEN:
 		case CS_FILE_FIND_OFFLINE:
 		case CS_FILE_FIND_OLD_UPLOADS:
-			if (!usrlibs) return 0;
+			if (!usrlibs)
+				return 0;
 			if (!getfilespec(str))
 				return 0;
 			k = 0;
@@ -393,7 +399,8 @@ int sbbs_t::exec_function(csi_t *csi)
 							continue;
 						if ((s = listfileinfo(usrdir[i][j], str, (char)l)) == -1)
 							return 0;
-						else k += s;
+						else
+							k += s;
 					}
 			}
 			else if (!stricmp(csi->str, "LIB")) {
@@ -402,7 +409,8 @@ int sbbs_t::exec_function(csi_t *csi)
 						continue;
 					if ((s = listfileinfo(usrdir[curlib][i], str, (char)l)) == -1)
 						return 0;
-					else k += s;
+					else
+						k += s;
 				}
 			}
 			else {

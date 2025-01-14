@@ -314,7 +314,8 @@ int sbbs_t::petscii_to_ansibbs(unsigned char ch)
 		case PETSCII_FLASH_ON:      return attr(curatr | BLINK);
 		case PETSCII_FLASH_OFF:     return attr(curatr & ~BLINK);
 		default:
-			if (ch & 0x80)             return bprintf("#%3d", ch);
+			if (ch & 0x80)
+				return bprintf("#%3d", ch);
 			return outchar(ch);
 		case PETSCII_UPPERLOWER:
 		case PETSCII_UPPERGRFX:
@@ -1471,7 +1472,8 @@ int sbbs_t::backfill(const char* instr, float pct, int full_attr, int empty_attr
 				atr = full_attr;
 			else
 				atr = empty_attr;
-			if (curatr != atr) attr(atr);
+			if (curatr != atr)
+				attr(atr);
 			outchar(str[i]);
 		}
 		attr(save_atr);
@@ -1489,8 +1491,9 @@ void sbbs_t::progress(const char* text, int count, int total, int interval)
 	double now = xp_timer();
 	if (count > 0 && count < total && (now - last_progress) * 1000 < interval)
 		return;
-	if (text == NULL) text = "";
-	float  pct = total ? ((float)count / total) * 100.0F : 100.0F;
+	if (text == NULL)
+		text = "";
+	float pct = total ? ((float)count / total) * 100.0F : 100.0F;
 	SAFEPRINTF2(str, "[ %-8s  %4.1f%% ]", text, pct);
 	cond_newline();
 	cursor_left(backfill(str, pct, cfg.color[clr_progress_full], cfg.color[clr_progress_empty]));

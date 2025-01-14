@@ -172,73 +172,94 @@ long import_msg_areas(enum import_list_type type, FILE* stream, int grpnum
 		} else {
 			if (feof(stream))
 				break;
-			if (!fgets(str, sizeof(str), stream)) break;
+			if (!fgets(str, sizeof(str), stream))
+				break;
 			truncsp(str);
 			if (!str[0])
 				continue;
 			if (type == IMPORT_LIST_TYPE_SUBS_TXT) {
 				sprintf(tmpsub.lname, "%.*s", LEN_SLNAME, str);
-				if (!fgets(str, 128, stream)) break;
+				if (!fgets(str, 128, stream))
+					break;
 				truncsp(str);
 				sprintf(tmpsub.sname, "%.*s", LEN_SSNAME, str);
-				if (!fgets(str, 128, stream)) break;
+				if (!fgets(str, 128, stream))
+					break;
 				truncsp(str);
 				sprintf(tmpsub.qwkname, "%.*s", 10, str);
-				if (!fgets(str, 128, stream)) break;
+				if (!fgets(str, 128, stream))
+					break;
 				truncsp(str);
 				SAFECOPY(tmp_code, str);
-				if (!fgets(str, 128, stream)) break;
+				if (!fgets(str, 128, stream))
+					break;
 				truncsp(str);
 				sprintf(tmpsub.data_dir, "%.*s", LEN_DIR, str);
-				if (!fgets(str, 128, stream)) break;
+				if (!fgets(str, 128, stream))
+					break;
 				truncsp(str);
 				sprintf(tmpsub.arstr, "%.*s", LEN_ARSTR, str);
-				if (!fgets(str, 128, stream)) break;
+				if (!fgets(str, 128, stream))
+					break;
 				truncsp(str);
 				sprintf(tmpsub.read_arstr, "%.*s", LEN_ARSTR, str);
-				if (!fgets(str, 128, stream)) break;
+				if (!fgets(str, 128, stream))
+					break;
 				truncsp(str);
 				sprintf(tmpsub.post_arstr, "%.*s", LEN_ARSTR, str);
-				if (!fgets(str, 128, stream)) break;
+				if (!fgets(str, 128, stream))
+					break;
 				truncsp(str);
 				sprintf(tmpsub.op_arstr, "%.*s", LEN_ARSTR, str);
-				if (!fgets(str, 128, stream)) break;
+				if (!fgets(str, 128, stream))
+					break;
 				truncsp(str);
 				tmpsub.misc = ahtoul(str);
-				if (!fgets(str, 128, stream)) break;
+				if (!fgets(str, 128, stream))
+					break;
 				truncsp(str);
 				sprintf(tmpsub.tagline, "%.*s", 80, str);
-				if (!fgets(str, 128, stream)) break;
+				if (!fgets(str, 128, stream))
+					break;
 				truncsp(str);
 				sprintf(tmpsub.origline, "%.*s", 50, str);
-				if (!fgets(str, 128, stream)) break;
+				if (!fgets(str, 128, stream))
+					break;
 				truncsp(str);
 				sprintf(tmpsub.post_sem, "%.*s", LEN_DIR, str);
-				if (!fgets(str, 128, stream)) break;
+				if (!fgets(str, 128, stream))
+					break;
 				truncsp(str);
 				SAFECOPY(tmpsub.newsgroup, str);
-				if (!fgets(str, 128, stream)) break;
+				if (!fgets(str, 128, stream))
+					break;
 				truncsp(str);
 				tmpsub.faddr = atofaddr(str);
-				if (!fgets(str, 128, stream)) break;
+				if (!fgets(str, 128, stream))
+					break;
 				truncsp(str);
 				tmpsub.maxmsgs = atol(str);
-				if (!fgets(str, 128, stream)) break;
+				if (!fgets(str, 128, stream))
+					break;
 				truncsp(str);
 				tmpsub.maxcrcs = atol(str);
-				if (!fgets(str, 128, stream)) break;
+				if (!fgets(str, 128, stream))
+					break;
 				truncsp(str);
 				tmpsub.maxage = atoi(str);
-				if (!fgets(str, 128, stream)) break;
+				if (!fgets(str, 128, stream))
+					break;
 				truncsp(str);
 				tmpsub.ptridx = atoi(str);
-				if (!fgets(str, 128, stream)) break;
+				if (!fgets(str, 128, stream))
+					break;
 				truncsp(str);
 				sprintf(tmpsub.mod_arstr, "%.*s", LEN_ARSTR, str);
 
 				while (!feof(stream)
 				       && strcmp(str, "***END-OF-SUB***")) {
-					if (!fgets(str, 128, stream)) break;
+					if (!fgets(str, 128, stream))
+						break;
 					truncsp(str);
 				}
 			}
@@ -247,7 +268,8 @@ long import_msg_areas(enum import_list_type type, FILE* stream, int grpnum
 					break;
 				read_qwk_confs++;
 				qwk_confnum = atoi(str);
-				if (!fgets(str, 128, stream)) break;
+				if (!fgets(str, 128, stream))
+					break;
 				if (qwk_confnum < min_confnum || qwk_confnum > max_confnum)
 					continue;
 				truncsp(str);
@@ -616,7 +638,8 @@ void msgs_cfg()
 					if (cfg.sub[j]->grp == grpnum) {    /* delete subs of this group */
 						remove_sub(&cfg, j, /* cut: */ false);
 					}
-					else j++;
+					else
+						j++;
 				}
 				for (j = 0; j < cfg.total_subs; j++)    /* move sub group numbers down */
 					if (cfg.sub[j]->grp > grpnum)
@@ -891,8 +914,10 @@ void msgs_cfg()
 						              , "File Exists", opt);
 						if (j == -1)
 							break;
-						if (j == 0) j = O_WRONLY | O_TRUNC;
-						else j = O_WRONLY | O_APPEND;
+						if (j == 0)
+							j = O_WRONLY | O_TRUNC;
+						else
+							j = O_WRONLY | O_APPEND;
 					}
 					else
 						j = O_WRONLY | O_CREAT;

@@ -1977,8 +1977,10 @@ void services_thread(void* arg)
 
 	do {
 		/* Setup intelligent defaults */
-		if (startup->sem_chk_freq == 0)            startup->sem_chk_freq = DEFAULT_SEM_CHK_FREQ;
-		if (startup->js.max_bytes == 0)            startup->js.max_bytes = JAVASCRIPT_MAX_BYTES;
+		if (startup->sem_chk_freq == 0)
+			startup->sem_chk_freq = DEFAULT_SEM_CHK_FREQ;
+		if (startup->js.max_bytes == 0)
+			startup->js.max_bytes = JAVASCRIPT_MAX_BYTES;
 
 		thread_up(false /* setuid */);
 

@@ -1995,7 +1995,8 @@ static void parse_mail_address(const char* p
 			tp = strchr(p, '>');
 		} else                                  /* name, then address in brackets */
 			tp = strchr(p, '<');
-		if (tp) *tp = 0;
+		if (tp)
+			*tp = 0;
 		sprintf(name, "%.*s", (int)name_len, p);
 		truncsp(name);
 		strip_char(name, name, '\\');
@@ -4054,7 +4055,8 @@ static bool smtp_client_thread(smtp_t* smtp)
 			}
 			if (state == SMTP_STATE_DATA_BODY) {
 				p = buf;
-				if (*p == '.') p++; /* Transparency (RFC821 4.5.2) */
+				if (*p == '.')
+					p++;            /* Transparency (RFC821 4.5.2) */
 				if (strlen(p) > RFC822_MAX_LINE_LEN) {
 					lprintf(LOG_NOTICE, "%04d %s %s !%s sent an ILLEGALLY-LONG body line (%d chars > %d): '%s'"
 					        , socket, client.protocol, client_id, reverse_path, (int)strlen(p), RFC822_MAX_LINE_LEN, p);
@@ -4850,7 +4852,8 @@ static bool smtp_client_thread(smtp_t* smtp)
 					/* convert "user.name" to "user name" */
 					SAFECOPY(rcpt_name, p);
 					for (tp = rcpt_name; *tp; tp++)
-						if (*tp == '.') *tp = ' ';
+						if (*tp == '.')
+							*tp = ' ';
 
 					if (!stricmp(p, scfg.sys_op) || !stricmp(rcpt_name, scfg.sys_op))
 						usernum = 1;        /* RX by "sysop.alias" */
@@ -6125,17 +6128,28 @@ void mail_server(void* arg)
 		protected_uint32_init(&active_clients, 0);
 
 		/* Setup intelligent defaults */
-		if (startup->relay_port == 0)              startup->relay_port = IPPORT_SMTP;
-		if (startup->submission_port == 0)         startup->submission_port = IPPORT_SUBMISSION;
-		if (startup->submissions_port == 0)        startup->submissions_port = IPPORT_SUBMISSIONS;
-		if (startup->smtp_port == 0)               startup->smtp_port = IPPORT_SMTP;
-		if (startup->pop3_port == 0)               startup->pop3_port = IPPORT_POP3;
-		if (startup->pop3s_port == 0)              startup->pop3s_port = IPPORT_POP3S;
-		if (startup->rescan_frequency == 0)        startup->rescan_frequency = MAIL_DEFAULT_RESCAN_FREQUENCY;
-		if (startup->max_delivery_attempts == 0)   startup->max_delivery_attempts = MAIL_DEFAULT_MAX_DELIVERY_ATTEMPTS;
-		if (startup->max_inactivity == 0)          startup->max_inactivity = MAIL_DEFAULT_MAX_INACTIVITY; /* seconds */
-		if (startup->sem_chk_freq == 0)            startup->sem_chk_freq = DEFAULT_SEM_CHK_FREQ;
-		if (startup->js.max_bytes == 0)            startup->js.max_bytes = JAVASCRIPT_MAX_BYTES;
+		if (startup->relay_port == 0)
+			startup->relay_port = IPPORT_SMTP;
+		if (startup->submission_port == 0)
+			startup->submission_port = IPPORT_SUBMISSION;
+		if (startup->submissions_port == 0)
+			startup->submissions_port = IPPORT_SUBMISSIONS;
+		if (startup->smtp_port == 0)
+			startup->smtp_port = IPPORT_SMTP;
+		if (startup->pop3_port == 0)
+			startup->pop3_port = IPPORT_POP3;
+		if (startup->pop3s_port == 0)
+			startup->pop3s_port = IPPORT_POP3S;
+		if (startup->rescan_frequency == 0)
+			startup->rescan_frequency = MAIL_DEFAULT_RESCAN_FREQUENCY;
+		if (startup->max_delivery_attempts == 0)
+			startup->max_delivery_attempts = MAIL_DEFAULT_MAX_DELIVERY_ATTEMPTS;
+		if (startup->max_inactivity == 0)
+			startup->max_inactivity = MAIL_DEFAULT_MAX_INACTIVITY;                                        /* seconds */
+		if (startup->sem_chk_freq == 0)
+			startup->sem_chk_freq = DEFAULT_SEM_CHK_FREQ;
+		if (startup->js.max_bytes == 0)
+			startup->js.max_bytes = JAVASCRIPT_MAX_BYTES;
 
 		(void)protected_uint32_adjust(&thread_count, 1);
 		thread_up(FALSE /* setuid */);

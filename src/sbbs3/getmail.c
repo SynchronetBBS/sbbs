@@ -88,10 +88,13 @@ bool delfattach(scfg_t* cfg, smbmsg_t* msg)
 	tp = files;
 	while (1) {
 		p = strchr(tp, ' ');
-		if (p) *p = 0;
+		if (p)
+			*p = 0;
 		sp = strrchr(tp, '/');              /* sp is slash pointer */
-		if (!sp) sp = strrchr(tp, '\\');
-		if (sp) tp = sp + 1;
+		if (!sp)
+			sp = strrchr(tp, '\\');
+		if (sp)
+			tp = sp + 1;
 		if (strcspn(tp, ILLEGAL_FILENAME_CHARS) == strlen(tp)) {
 			SAFEPRINTF2(path, "%s/%s", dir, tp);
 			if (fexist(path) && remove(path) != 0)

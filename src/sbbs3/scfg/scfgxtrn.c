@@ -2273,7 +2273,8 @@ void xtrnsec_cfg()
 							k++;
 						}
 					}
-					else j++;
+					else
+						j++;
 				}
 				for (j = 0; j < cfg.total_xtrns; j++)    /* move xtrn group numbers down */
 					if (cfg.xtrn[j]->sec > xtrnsec_num)

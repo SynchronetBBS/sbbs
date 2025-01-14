@@ -97,8 +97,10 @@ void sbbs_t::scansubs(int mode)
 		i = scanposts(usrsub[curgrp][cursub[curgrp]], mode, str);
 		subs_scanned++;
 		bputs(text[MessageScan]);
-		if (i) bputs(text[MessageScanAborted]);
-		else bprintf(text[MessageScanComplete], subs_scanned);
+		if (i)
+			bputs(text[MessageScanAborted]);
+		else
+			bprintf(text[MessageScanComplete], subs_scanned);
 		return;
 	}
 	if (ch == text[SubGroupKeys][1] /* 'G' */) {
@@ -123,8 +125,10 @@ void sbbs_t::scansubs(int mode)
 			cleartoeol();
 		}
 		bputs(text[MessageScan]);
-		if (i == usrsubs[curgrp]) bprintf(text[MessageScanComplete], subs_scanned);
-		else bputs(text[MessageScanAborted]);
+		if (i == usrsubs[curgrp])
+			bprintf(text[MessageScanComplete], subs_scanned);
+		else
+			bputs(text[MessageScanAborted]);
 		return;
 	}
 
@@ -254,8 +258,10 @@ void sbbs_t::new_scan_ptr_cfg()
 		bputs(text[CfgGrpLstHdr]);
 		for (i = 0; i < usrgrps && !msgabort(); i++) {
 			checkline();
-			if (i < 9) outchar(' ');
-			if (i < 99) outchar(' ');
+			if (i < 9)
+				outchar(' ');
+			if (i < 99)
+				outchar(' ');
 			bprintf(text[CfgGrpLstFmt], i + 1, cfg.grp[usrgrp[i]]->lname);
 		}
 		sync();
@@ -315,8 +321,10 @@ void sbbs_t::new_scan_ptr_cfg()
 			bprintf(text[CfgSubLstHdr], cfg.grp[usrgrp[i]]->lname);
 			for (j = 0; j < usrsubs[i] && !msgabort(); j++) {
 				checkline();
-				if (j < 9) outchar(' ');
-				if (j < 99) outchar(' ');
+				if (j < 9)
+					outchar(' ');
+				if (j < 99)
+					outchar(' ');
 				t = getmsgtime(usrsub[i][j], subscan[usrsub[i][j]].ptr);
 				if (t > l)
 					l = (uint32_t)t;
@@ -413,8 +421,10 @@ void sbbs_t::new_scan_cfg(uint misc)
 		bputs(text[CfgGrpLstHdr]);
 		for (i = 0; i < usrgrps && !msgabort(); i++) {
 			checkline();
-			if (i < 9) outchar(' ');
-			if (i < 99) outchar(' ');
+			if (i < 9)
+				outchar(' ');
+			if (i < 99)
+				outchar(' ');
 			bprintf(text[CfgGrpLstFmt], i + 1, cfg.grp[usrgrp[i]]->lname);
 		}
 		sync();
@@ -432,8 +442,10 @@ void sbbs_t::new_scan_cfg(uint misc)
 			bprintf(text[CfgSubLstHdr], cfg.grp[usrgrp[i]]->lname);
 			for (j = 0; j < usrsubs[i] && !msgabort(); j++) {
 				checkline();
-				if (j < 9) outchar(' ');
-				if (j < 99) outchar(' ');
+				if (j < 9)
+					outchar(' ');
+				if (j < 99)
+					outchar(' ');
 				bprintf(text[CfgSubLstFmt], j + 1
 				        , cfg.sub[usrsub[i][j]]->lname
 				        , subscan[usrsub[i][j]].cfg & misc ?
@@ -460,7 +472,8 @@ void sbbs_t::new_scan_cfg(uint misc)
 						misc |= SUB_CFG_YSCAN;
 				for (j = 0; j < usrsubs[i] && online; j++) {
 					checkline();
-					if (t) subscan[usrsub[i][j]].cfg &= ~misc;
+					if (t)
+						subscan[usrsub[i][j]].cfg &= ~misc;
 					else  {
 						if (misc & SUB_CFG_NSCAN)
 							subscan[usrsub[i][j]].cfg &= ~SUB_CFG_YSCAN;

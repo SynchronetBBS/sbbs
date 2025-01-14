@@ -1396,7 +1396,8 @@ void qhub_edit(int num)
 			case __COUNTER__:
 				i = cfg.qhub[num]->misc & QHUB_CTRL_A;
 				i++;
-				if (i == QHUB_CTRL_A) i = 0;
+				if (i == QHUB_CTRL_A)
+					i = 0;
 				cfg.qhub[num]->misc &= ~QHUB_CTRL_A;
 				cfg.qhub[num]->misc |= i;
 				uifc.changes = 1;
@@ -1666,9 +1667,11 @@ char *daystr(char days)
 
 	days &= 0x7f;
 
-	if (days == 0)     return "None";
+	if (days == 0)
+		return "None";
 
-	if (days == 0x7f)  return "All";
+	if (days == 0x7f)
+		return "All";
 
 	str[0] = 0;
 	for (i = 0; i < 7; i++) {

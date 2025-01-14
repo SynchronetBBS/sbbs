@@ -1375,12 +1375,14 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 
 	/* If we have already enumerated, we're done here... */
 	if ((p = (privatemsg_t*)JS_GetPrivate(cx, obj)) == NULL || p->enumerated) {
-		if (name) free(name);
+		if (name)
+			free(name);
 		return JS_TRUE;
 	}
 
 	if ((p->msg).hdr.number == 0) { /* No valid message number/id/offset specified */
-		if (name) free(name);
+		if (name)
+			free(name);
 		return JS_TRUE;
 	}
 
@@ -1463,7 +1465,8 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 	LAZY_BOOLEAN("is_utf8", smb_msg_is_utf8(&p->msg), JSPROP_ENUMERATE | JSPROP_READONLY);
 
 	if (name == NULL || strcmp(name, "reply_id") == 0) {
-		if (name) free(name);
+		if (name)
+			free(name);
 		/* Reply-ID (References) */
 		if ((p->msg).reply_id != NULL)
 			val = (p->msg).reply_id;
@@ -1494,7 +1497,8 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 
 	/* Message-ID */
 	if (name == NULL || strcmp(name, "id") == 0) {
-		if (name) free(name);
+		if (name)
+			free(name);
 		if (p->expand_fields || (p->msg).id != NULL) {
 			get_msgid(scfg, p->p->smb.subnum, &(p->msg), msg_id, sizeof(msg_id));
 			val = msg_id;
@@ -1527,7 +1531,8 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 	LAZY_STRING_TRUNCSP_NULL("ftn_bbsid", p->msg.ftn_bbsid, JSPROP_ENUMERATE);
 
 	if (name == NULL || strcmp(name, "field_list") == 0) {
-		if (name) free(name);
+		if (name)
+			free(name);
 		/* Create hdr.field_list[] with repeating header fields (including type and data) */
 		if ((array = JS_NewArrayObject(cx, 0, NULL)) != NULL) {
 			JS_DefineProperty(cx, obj, "field_list", OBJECT_TO_JSVAL(array)
@@ -1578,7 +1583,8 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 	}
 
 	if (name == NULL || strcmp(name, "can_read") == 0) {
-		if (name) free(name);
+		if (name)
+			free(name);
 		v = BOOLEAN_TO_JSVAL(JS_FALSE);
 
 		do {
@@ -1654,7 +1660,8 @@ static JSBool js_get_msg_header_resolve(JSContext *cx, JSObject *obj, jsid id)
 		if (name)
 			return JS_TRUE;
 	}
-	if (name) free(name);
+	if (name)
+		free(name);
 
 	/* DO NOT RETURN JS_FALSE on unknown names */
 	/* Doing so will prevent toString() among others from working. */

@@ -28,7 +28,8 @@ char ** sbbs_t::getstrvar(csi_t *bin, uint32_t name)
 {
 	int i;
 
-	if (sysvar_pi >= MAX_SYSVARS) sysvar_pi = 0;
+	if (sysvar_pi >= MAX_SYSVARS)
+		sysvar_pi = 0;
 	switch (name) {
 		case 0:
 			return (char **)&(bin->str);
@@ -113,7 +114,8 @@ int32_t * sbbs_t::getintvar(csi_t *bin, uint32_t name)
 {
 	int i;
 
-	if (sysvar_li >= MAX_SYSVARS) sysvar_li = 0;
+	if (sysvar_li >= MAX_SYSVARS)
+		sysvar_li = 0;
 	switch (name) {
 		case 0:
 			sysvar_l[sysvar_li] = strtol((char*)bin->str, 0, 0);

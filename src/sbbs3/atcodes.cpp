@@ -381,7 +381,8 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 					fallback = ch;
 				outchar(codepoint, fallback);
 			}
-			else return NULL; // Invalid @-code
+			else
+				return NULL;  // Invalid @-code
 		}
 		return nulstr;
 	}
@@ -963,7 +964,8 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	if (strncmp(sp, "FILL:", 5) == 0) {
 		SAFECOPY(tmp, sp + 5);
 		int margin = centered ? column : 1;
-		if (margin < 1) margin = 1;
+		if (margin < 1)
+			margin = 1;
 		c_unescape_str(tmp);
 		while (*tmp && online && column < cols - margin)
 			bputs(tmp, P_TRUNCATE);
@@ -1052,7 +1054,8 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	if (!strcmp(sp, "FIRST")) {
 		safe_snprintf(str, maxlen, "%s", useron.alias);
 		tp = strchr(str, ' ');
-		if (tp) *tp = 0;
+		if (tp)
+			*tp = 0;
 		return str;
 	}
 
@@ -1832,22 +1835,27 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 
 	if (!strcmp(sp, "LAST")) {
 		tp = strrchr(useron.alias, ' ');
-		if (tp) tp++;
-		else tp = useron.alias;
+		if (tp)
+			tp++;
+		else
+			tp = useron.alias;
 		return tp;
 	}
 
 	if (!strcmp(sp, "REAL") || !strcmp(sp, "FIRSTREAL")) {
 		safe_snprintf(str, maxlen, "%s", useron.name);
 		tp = strchr(str, ' ');
-		if (tp) *tp = 0;
+		if (tp)
+			*tp = 0;
 		return str;
 	}
 
 	if (!strcmp(sp, "LASTREAL")) {
 		tp = strrchr(useron.name, ' ');
-		if (tp) tp++;
-		else tp = useron.name;
+		if (tp)
+			tp++;
+		else
+			tp = useron.name;
 		return tp;
 	}
 

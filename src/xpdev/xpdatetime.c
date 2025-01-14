@@ -362,7 +362,8 @@ char* xpDateTime_to_isoDateTimeStr(xpDateTime_t dt
 	char date_str[16];
 	char time_str[16];
 
-	if (datetime_sep == NULL)  datetime_sep = "T";
+	if (datetime_sep == NULL)
+		datetime_sep = "T";
 
 	snprintf(str, maxlen, "%s%s%s%s"
 	         , xpDate_to_isoDateStr(dt.date, date_sep, date_str, sizeof(date_str))

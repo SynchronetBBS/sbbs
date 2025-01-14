@@ -180,10 +180,10 @@ int kbwait(void) {
 	int timeout = 0;
 	while (timeout++ < 50) {
 		if (kbhit())
-			return(TRUE);
+			return TRUE;
 		mswait(1);
 	}
-	return(FALSE);
+	return FALSE;
 }
 
 static int
@@ -203,7 +203,7 @@ int inkey(void)
 		if (c == CIO_KEY_LITERAL_E0)
 			c = 0xe0;
 	}
-	return(c);
+	return c;
 }
 
 int uifcini32(uifcapi_t* uifcapi)
@@ -212,7 +212,7 @@ int uifcini32(uifcapi_t* uifcapi)
 	struct  text_info txtinfo;
 
 	if (uifcapi == NULL || uifcapi->size != sizeof(uifcapi_t))
-		return(-1);
+		return -1;
 
 	api = uifcapi;
 	if (api->chars == NULL)
@@ -288,7 +288,7 @@ int uifcini32(uifcapi_t* uifcapi)
 		uifcbail();
 		printf("\r\nUIFC: Screen length (%u) must be %d lines or greater\r\n"
 		       , api->scrn_len, MIN_LINES);
-		return(-2);
+		return -2;
 	}
 	api->scrn_len--; /* account for status line */
 
@@ -296,7 +296,7 @@ int uifcini32(uifcapi_t* uifcapi)
 		uifcbail();
 		printf("\r\nUIFC: Screen width (%u) must be at least 40 characters\r\n"
 		       , txtinfo.screenwidth);
-		return(-3);
+		return -3;
 	}
 	api->scrn_width = txtinfo.screenwidth;
 
@@ -328,17 +328,17 @@ int uifcini32(uifcapi_t* uifcapi)
 	if ((blk_scrn = (struct vmem_cell *)malloc(blk_scrn_len * sizeof(*blk_scrn))) == NULL)  {
 		cprintf("UIFC line %d: error allocating %u bytes."
 		        , __LINE__, blk_scrn_len * sizeof(*blk_scrn));
-		return(-1);
+		return -1;
 	}
 	if ((tmp_buffer = (struct vmem_cell *)malloc(blk_scrn_len * sizeof(*blk_scrn))) == NULL)  {
 		cprintf("UIFC line %d: error allocating %u bytes."
 		        , __LINE__, blk_scrn_len * sizeof(*blk_scrn));
-		return(-1);
+		return -1;
 	}
 	if ((tmp_buffer2 = (struct vmem_cell *)malloc(blk_scrn_len * sizeof(*blk_scrn))) == NULL)  {
 		cprintf("UIFC line %d: error allocating %u bytes."
 		        , __LINE__, blk_scrn_len * sizeof(*blk_scrn));
-		return(-1);
+		return -1;
 	}
 	for (i = 0; i < blk_scrn_len; i++) {
 		blk_scrn[i].legacy_attr = api->cclr | (api->bclr << 4);
@@ -369,7 +369,7 @@ int uifcini32(uifcapi_t* uifcapi)
 
 	api->initialized = TRUE;
 
-	return(0);
+	return 0;
 }
 
 static BOOL restore(void)
@@ -509,30 +509,30 @@ static int uifc_getmouse(struct mouse_event *mevent)
 	if (api->mode & UIFC_MOUSE) {
 		getmouse(mevent);
 		if (mevent->event == CIOLIB_BUTTON_3_CLICK)
-			return(ESC);
+			return ESC;
 		if (mevent->event == CIOLIB_BUTTON_1_DRAG_START) {
 			docopy();
-			return(0);
+			return 0;
 		}
 		if (mevent->starty == api->buttony) {
 			if (mevent->startx >= api->exitstart
 			    && mevent->startx <= api->exitend
 			    && mevent->event == CIOLIB_BUTTON_1_CLICK) {
-				return(ESC);
+				return ESC;
 			}
 			if (mevent->startx >= api->helpstart
 			    && mevent->startx <= api->helpend
 			    && mevent->event == CIOLIB_BUTTON_1_CLICK) {
-				return(CIO_KEY_F(1));
+				return CIO_KEY_F(1);
 			}
 		}
 		if (mevent->event == CIOLIB_BUTTON_4_PRESS)
-			return(CIO_KEY_UP);
+			return CIO_KEY_UP;
 		if (mevent->event == CIOLIB_BUTTON_5_PRESS)
-			return(CIO_KEY_DOWN);
-		return(0);
+			return CIO_KEY_DOWN;
+		return 0;
 	}
-	return(-1);
+	return -1;
 }
 
 void uifcbail(void)
@@ -563,12 +563,12 @@ int uscrn(const char *str)
 	gotoxy(3, 1);
 	cputs(str);
 	if (!vmem_puttext(1, 2, api->scrn_width, api->scrn_len, blk_scrn))
-		return(-1);
+		return -1;
 	gotoxy(1, api->scrn_len + 1);
 	clreol();
 	reset_dynamic();
 	setname(str);
-	return(0);
+	return 0;
 }
 
 /****************************************************************************/
@@ -674,7 +674,8 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 	uchar              hclr, lclr, bclr, cclr, lbclr;
 	BOOL               shadow = api->scrn_width >= 80;
 
-	if (cur == NULL) cur = &tmpcur;
+	if (cur == NULL)
+		cur = &tmpcur;
 	hclr = api->hclr;
 	lclr = api->lclr;
 	bclr = api->bclr;
@@ -713,7 +714,8 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 	while (option != NULL && opts < MAX_OPTS) {
 		if (option[opts] == NULL || (!(mode & WIN_BLANKOPTS) && option[opts][0] == 0))
 			break;
-		else opts++;
+		else
+			opts++;
 	}
 	if (mode & WIN_XTR && opts < MAX_OPTS)
 		opts++;
@@ -845,7 +847,7 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 						free(title);
 						if (!(api->mode & UIFC_NHM))
 							uifc_mouse_enable();
-						return(-1);
+						return -1;
 					}
 					win_t* s = &sav[api->savnum];
 					s->left = s_left + left;
@@ -870,7 +872,7 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 				free(title);
 				if (!(api->mode & UIFC_NHM))
 					uifc_mouse_enable();
-				return(-1);
+				return -1;
 			}
 			win_t* s = &sav[api->savnum];
 			s->left = s_left + left;
@@ -1124,7 +1126,7 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 		uifc_mouse_enable();
 
 	if (mode & WIN_IMM) {
-		return(-2);
+		return -2;
 	}
 
 	if (mode & WIN_ORG) {
@@ -1181,7 +1183,7 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 								        , __LINE__, (width + 3) * (height + 2) * sizeof(*win));
 								if (!(api->mode & UIFC_NHM))
 									uifc_mouse_enable();
-								return(-1);
+								return -1;
 							}
 							inactive_win(win, s_left + left, s_top + top, s_left + left + width - 1, s_top + top + height - 1, y, hbrdrsize, cclr, lclr, hclr, top);
 							free(win);
@@ -1196,8 +1198,8 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 								uifc_mouse_enable();
 						}
 						if (mode & WIN_XTR && (*cur) == opts - 1)
-							return(MSK_INS | *cur);
-						return(*cur);
+							return MSK_INS | *cur;
+						return *cur;
 					}
 					/* Clicked Scroll Up */
 					else if (mevnt.startx == s_left + left + lbrdrwidth
@@ -1610,22 +1612,22 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 							else if (mode & WIN_SAV) {
 								restore();
 							}
-							return((*cur) | MSK_EDIT);
+							return (*cur) | MSK_EDIT;
 						}
 						break;
 					case CIO_KEY_F(5):      /* F5 - Copy */
 					case CIO_KEY_CTRL_IC:   /* Ctrl-Insert */
 						if (mode & WIN_COPY && !(mode & WIN_XTR && (*cur) == opts - 1))
-							return((*cur) | MSK_COPY);
+							return (*cur) | MSK_COPY;
 						break;
 					case CIO_KEY_SHIFT_DC:  /* Shift-Del: Cut */
 						if (mode & WIN_CUT && !(mode & WIN_XTR && (*cur) == opts - 1))
-							return((*cur) | MSK_CUT);
+							return (*cur) | MSK_CUT;
 						break;
 					case CIO_KEY_SHIFT_IC:  /* Shift-Insert: Paste */
 					case CIO_KEY_F(6):      /* F6 - Paste */
 						if (mode & WIN_PASTE && (mode & WIN_PASTEXTR || !(mode & WIN_XTR && (*cur) == opts - 1)))
-							return((*cur) | MSK_PASTE);
+							return (*cur) | MSK_PASTE;
 						break;
 					case CIO_KEY_IC:    /* insert */
 						if (mode & WIN_INS) {
@@ -1637,9 +1639,9 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 								restore();
 							}
 							if (!opts) {
-								return(MSK_INS);
+								return MSK_INS;
 							}
-							return((*cur) | MSK_INS);
+							return (*cur) | MSK_INS;
 						}
 						break;
 					case CIO_KEY_DC:    /* delete */
@@ -1653,12 +1655,12 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 							else if (mode & WIN_SAV) {
 								restore();
 							}
-							return((*cur) | MSK_DEL);
+							return (*cur) | MSK_DEL;
 						}
 						break;
 					default:
 						if (mode & WIN_EXTKEYS)
-							return(-2 - gotkey);
+							return -2 - gotkey;
 						break;
 				}
 			}
@@ -1686,8 +1688,10 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 						    && strlen(option[j]) > (size_t)b
 						    && ((!a && s && !strnicmp(option[j] + b, search, s + 1))
 						        || ((a || !s) && toupper(option[j][b]) == toupper(gotkey)))) {
-							if (a) s = 0;
-							else s++;
+							if (a)
+								s = 0;
+							else
+								s++;
 							if (y + (j - (*cur)) + 2 > height + top) {
 								(*cur) = j;
 								gotoxy(s_left + left + lbrdrwidth, s_top + top + tbrdrwidth);
@@ -1776,8 +1780,8 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 								restore();
 							}
 							if (mode & WIN_XTR && (*cur) == opts - 1)
-								return(MSK_INS | *cur);
-							return(*cur);
+								return MSK_INS | *cur;
+							return *cur;
 						case 3:
 						case ESC:
 							if (mode & WIN_SAV)
@@ -1793,7 +1797,7 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 							else if (mode & WIN_SAV) {
 								restore();
 							}
-							return(-1);
+							return -1;
 						case CTRL_F:            /* find */
 						case CTRL_G:
 							if (/*!(api->mode&UIFC_NOCTRL)*/ 1) { // No no, *this* control key is fine!
@@ -1876,7 +1880,7 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 							break;
 						default:
 							if (mode & WIN_EXTKEYS)
-								return(-2 - gotkey);
+								return -2 - gotkey;
 					}
 			}
 			/* Update the status bar to reflect the Put/Paste option applicability */
@@ -1899,7 +1903,7 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 			else
 				save_menu_bar = -1;
 			save_menu_opts = opts;
-			return(-2 - gotkey);
+			return -2 - gotkey;
 		}
 	}
 }
@@ -2073,7 +2077,7 @@ int uinput(uifc_winmode_t mode, int left, int top, const char *inprompt, char *s
 		vmem_puttext(1, api->scrn_len + 1, api->scrn_width, api->scrn_len + 1, save_bottomline);
 	}
 	free(prompt);
-	return(i);
+	return i;
 }
 
 /****************************************************************************/
@@ -2194,7 +2198,7 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 		cprintf("UIFC line %d: error allocating %u bytes\r\n"
 		        , __LINE__, (max + 1));
 		_setcursortype(cursor);
-		return(-1);
+		return -1;
 	}
 	gotoxy(left, top);
 	set_cursor_type(api);
@@ -2237,7 +2241,7 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 					if (lastkey)
 						*lastkey = CIO_KEY_MOUSE;
 					ungetmouse(&mevnt);
-					return(j);
+					return j;
 				}
 				if (mevnt.startx >= left
 				    && mevnt.startx <= left + width
@@ -2295,7 +2299,8 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 	ch = 0;
 	while (ch != CR)
 	{
-		if (i > j) j = i;
+		if (i > j)
+			j = i;
 		str[j] = 0;
 		getstrupd(left, top, width, str, i, &soffset, mode);
 		if (f || pb != NULL || (ch = inkey()) != 0)
@@ -2457,7 +2462,7 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 						free(pastebuf);
 						pastebuf = NULL;
 					}
-					return(-1);
+					return -1;
 				}
 				case CR:
 					break;
@@ -2549,7 +2554,7 @@ int ugetstr(int left, int top, int width, char *outstr, int max, long mode, int 
 	_setcursortype(cursor);
 	if (pastebuf != NULL)
 		free(pastebuf);
-	return(j);
+	return j;
 }
 
 /****************************************************************************/
@@ -2568,7 +2573,7 @@ static int uprintf(int x, int y, unsigned attr, char *fmat, ...)
 	for (i = 0; str[i]; i++)
 		set_vmem(&buf[i], str[i], attr, 0);
 	vmem_puttext(x, y, x + (i - 1), y, buf);
-	return(i);
+	return i;
 }
 
 
@@ -2730,7 +2735,7 @@ char *utimestr(time_t *intime)
 	}
 	safe_snprintf(str, sizeof(str), "%s %s %02d %4d %02d:%02d %s", wday, mon, gm->tm_mday, 1900 + gm->tm_year
 	              , hour, gm->tm_min, mer);
-	return(str);
+	return str;
 }
 
 /****************************************************************************/

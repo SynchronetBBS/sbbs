@@ -1167,9 +1167,12 @@ void packmsgs(ulong packable)
 			smb_close_ha(&smb);
 			smb_close_da(&smb);
 		}
-		if (tmp_sdt != NULL) fclose(tmp_sdt);
-		if (tmp_shd != NULL) fclose(tmp_shd);
-		if (tmp_sid != NULL) fclose(tmp_sid);
+		if (tmp_sdt != NULL)
+			fclose(tmp_sdt);
+		if (tmp_shd != NULL)
+			fclose(tmp_shd);
+		if (tmp_sid != NULL)
+			fclose(tmp_sid);
 		fprintf(errfp, "\n%s!Error opening temp files\n", beep);
 		return;
 	}
@@ -1671,7 +1674,8 @@ short str2tzone(const char* str)
 	short zone;
 
 	if (IS_DIGIT(*str) || *str == '-' || *str == '+') { /* [+|-]HHMM format */
-		if (*str == '+') str++;
+		if (*str == '+')
+			str++;
 		sprintf(tmp, "%.*s", *str == '-'? 3:2, str);
 		zone = atoi(tmp) * 60;
 		str += (*str == '-') ? 3:2;

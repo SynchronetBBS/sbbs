@@ -56,7 +56,8 @@ bool route_circ(char *via, char *id)
 	SKIP_WHITESPACE(p);
 	while (*p) {
 		sp = strchr(p, '/');
-		if (sp) *sp = 0;
+		if (sp)
+			*sp = 0;
 		if (!stricmp(p, id))
 			return true;
 		if (!sp)
@@ -75,8 +76,10 @@ extern "C" int qwk_route(scfg_t* cfg, const char *inaddr, char *fulladdr, size_t
 	fulladdr[0] = 0;
 	SAFECOPY(str, inaddr);
 	p = strrchr(str, '/');
-	if (p) p++;
-	else p = str;
+	if (p)
+		p++;
+	else
+		p = str;
 	SAFECOPY(node, p);                 /* node = destination node */
 	truncsp(node);
 
@@ -99,7 +102,8 @@ extern "C" int qwk_route(scfg_t* cfg, const char *inaddr, char *fulladdr, size_t
 
 	SAFECOPY(node, inaddr);            /* node = next hop */
 	p = strchr(node, '/');
-	if (p) *p = 0;
+	if (p)
+		*p = 0;
 	truncsp(node);
 
 	if (strchr(inaddr, '/')) {                /* Multiple hops */
@@ -122,7 +126,8 @@ extern "C" int qwk_route(scfg_t* cfg, const char *inaddr, char *fulladdr, size_t
 	}
 
 	p = strchr(node, ' ');
-	if (p) *p = 0;
+	if (p)
+		*p = 0;
 
 	if (strlen(node) > LEN_QWKID)
 		return 0;
@@ -150,7 +155,8 @@ extern "C" int qwk_route(scfg_t* cfg, const char *inaddr, char *fulladdr, size_t
 
 	SAFECOPY(node, fulladdr);
 	p = strchr(node, '/');
-	if (p) *p = 0;
+	if (p)
+		*p = 0;
 	truncsp(node);
 
 	for (i = 0; i < cfg->total_qhubs; i++)             /* Check if first hop is our hub */
@@ -206,11 +212,13 @@ void sbbs_t::update_qwkroute(char *via)
 				truncsp(str);
 				t = dstrtounix(MMDDYY, str);
 				p = strchr(str, ':');
-				if (!p) continue;
+				if (!p)
+					continue;
 				*p = 0;
 				snprintf(node, sizeof node, "%.8s", str + 9);
 				tp = strchr(node, ' ');        /* change "node bbs:" to "node:" */
-				if (tp) *tp = 0;
+				if (tp)
+					*tp = 0;
 				for (i = 0; i < total_qwknodes; i++)
 					if (!stricmp(qwknode[i].id, node))
 						break;
@@ -241,9 +249,11 @@ void sbbs_t::update_qwkroute(char *via)
 		p++;
 		snprintf(node, sizeof node, "%.8s", p);
 		tp = strchr(node, '/');
-		if (tp) *tp = 0;
+		if (tp)
+			*tp = 0;
 		tp = strchr(node, ' ');        /* no spaces allowed */
-		if (tp) *tp = 0;
+		if (tp)
+			*tp = 0;
 		truncsp(node);
 		for (i = 0; i < total_qwknodes; i++)
 			if (!stricmp(qwknode[i].id, node))
@@ -1152,7 +1162,8 @@ bool sbbs_t::qwk_vote(str_list_t ini, const char* section, smb_net_type_t net_ty
 				errormsg(WHERE, ERR_WRITE, smb.file, result, smb.last_error);
 		}
 	}
-	else result = SMB_SUCCESS;
+	else
+		result = SMB_SUCCESS;
 
 	smb_close(&smb);
 	smb_freemsgmem(&msg);

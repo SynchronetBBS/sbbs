@@ -53,7 +53,8 @@ char* remove_ctrl_a(const char *str, char *dest)
 				dest[j++] = '\n';
 			}
 		}
-		else dest[j++] = str[i];
+		else
+			dest[j++] = str[i];
 	}
 	dest[j] = 0;
 	return dest;
@@ -378,7 +379,8 @@ int strsame(const char *str1, const char *str2)
 	int i, j = 0;
 
 	for (i = 0; str1[i]; i++)
-		if (str1[i] == str2[i]) j++;
+		if (str1[i] == str2[i])
+			j++;
 	return j;
 }
 

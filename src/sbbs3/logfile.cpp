@@ -176,7 +176,8 @@ void sbbs_t::logentry(const char *code, const char *entry)
 /****************************************************************************/
 void sbbs_t::log(const char *str)
 {
-	if (logfile_fp == NULL || online == ON_LOCAL) return;
+	if (logfile_fp == NULL || online == ON_LOCAL)
+		return;
 	if (logcol >= 78 || (logcol > 1 && (78 - logcol) < strlen(str))) {
 		fputs(log_line_ending, logfile_fp);
 		logcol = 1;
@@ -209,7 +210,8 @@ void sbbs_t::logline(int level, const char *code, const char *str)
 {
 	if (strchr(str, '\n') == NULL)  // Keep the console log pretty
 		lputs(level, str);
-	if (logfile_fp == NULL || (online == ON_LOCAL && strcmp(code, "!!"))) return;
+	if (logfile_fp == NULL || (online == ON_LOCAL && strcmp(code, "!!")))
+		return;
 	if (logcol != 1)
 		fputs(log_line_ending, logfile_fp);
 	fprintf(logfile_fp, "%-2.2s %s%s", code, str, log_line_ending);
@@ -238,7 +240,8 @@ void sbbs_t::llprintf(int level, const char* code, const char *fmt, ...)
 void sbbs_t::logch(char ch, bool comma)
 {
 
-	if (logfile_fp == NULL || (online == ON_LOCAL)) return;
+	if (logfile_fp == NULL || (online == ON_LOCAL))
+		return;
 	if ((uchar)ch < ' ')   /* Don't log control chars */
 		return;
 	if (logcol == 1) {

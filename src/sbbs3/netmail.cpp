@@ -186,10 +186,14 @@ bool sbbs_t::netmail(const char *into, const char *title, int mode, smb_t* resmb
 	smb_faddrtoa(&cfg.faddr[i], str);
 	bprintf(text[NetMailing], to, smb_faddrtoa(&dest_addr, tmp), from, str);
 
-	if (cfg.netmail_misc & NMAIL_CRASH) msg.hdr.netattr |= NETMSG_CRASH;
-	if (cfg.netmail_misc & NMAIL_HOLD)  msg.hdr.netattr |= NETMSG_HOLD;
-	if (cfg.netmail_misc & NMAIL_KILL)  msg.hdr.netattr |= NETMSG_KILLSENT;
-	if (mode & WM_FILE) msg.hdr.auxattr |= (MSG_FILEATTACH | MSG_KILLFILE);
+	if (cfg.netmail_misc & NMAIL_CRASH)
+		msg.hdr.netattr |= NETMSG_CRASH;
+	if (cfg.netmail_misc & NMAIL_HOLD)
+		msg.hdr.netattr |= NETMSG_HOLD;
+	if (cfg.netmail_misc & NMAIL_KILL)
+		msg.hdr.netattr |= NETMSG_KILLSENT;
+	if (mode & WM_FILE)
+		msg.hdr.auxattr |= (MSG_FILEATTACH | MSG_KILLFILE);
 
 	if (remsg != NULL && resmb != NULL && !(mode & WM_QUOTE)) {
 		if (quotemsg(resmb, remsg, /* include tails: */ true))
@@ -440,7 +444,8 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 
 	SAFECOPY(name, to);
 	p = strchr(name, '@');
-	if (p) *p = 0;
+	if (p)
+		*p = 0;
 	truncsp(name);
 
 
@@ -493,7 +498,8 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 			if (!strncmp(qwkbuf + l, "@VIA:", 5)) {
 				snprintf(str, sizeof str, "%.128s", qwkbuf + l + 5);
 				cp = strchr(str, QWK_NEWLINE);
-				if (cp) *cp = 0;
+				if (cp)
+					*cp = 0;
 				l += strlen(str) + 1;
 				cp = str;
 				while (*cp && *cp <= ' ') cp++;
@@ -524,7 +530,8 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 		if (!strncmp(qwkbuf + l, "@TZ:", 4)) {
 			snprintf(str, sizeof str, "%.128s", qwkbuf + l);
 			cp = strchr(str, QWK_NEWLINE);
-			if (cp) *cp = 0;
+			if (cp)
+				*cp = 0;
 			l += strlen(str) + 1;
 			cp = str + 4;
 			while (*cp && *cp <= ' ') cp++;
@@ -534,7 +541,8 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 			msg.hdr.when_written.zone = sys_timezone(&cfg);
 		memset(&tm, 0, sizeof(tm));
 		tm.tm_mon = ((qwkbuf[8] & 0xf) * 10) + (qwkbuf[9] & 0xf);
-		if (tm.tm_mon) tm.tm_mon--; /* 0 based */
+		if (tm.tm_mon)
+			tm.tm_mon--;            /* 0 based */
 		tm.tm_mday = ((qwkbuf[11] & 0xf) * 10) + (qwkbuf[12] & 0xf);
 		tm.tm_year = ((qwkbuf[14] & 0xf) * 10) + (qwkbuf[15] & 0xf);
 		if (tm.tm_year < Y2K_2DIGIT_WINDOW)
@@ -805,7 +813,8 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 	smb_faddrtoa(&cfg.faddr[i], str);
 	bprintf(text[NetMailing], hdr.to, smb_faddrtoa(&fidoaddr, tmp), hdr.from, str);
 	tm.tm_mon = ((qwkbuf[8] & 0xf) * 10) + (qwkbuf[9] & 0xf);
-	if (tm.tm_mon) tm.tm_mon--;
+	if (tm.tm_mon)
+		tm.tm_mon--;
 	tm.tm_mday = ((qwkbuf[11] & 0xf) * 10) + (qwkbuf[12] & 0xf);
 	tm.tm_year = ((qwkbuf[14] & 0xf) * 10) + (qwkbuf[15] & 0xf) + 1900;
 	tm.tm_hour = ((qwkbuf[16] & 0xf) * 10) + (qwkbuf[17] & 0xf);
@@ -816,9 +825,12 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 	              , tm.tm_hour, tm.tm_min, tm.tm_sec);
 	hdr.attr = (FIDO_LOCAL | FIDO_PRIVATE);
 
-	if (cfg.netmail_misc & NMAIL_CRASH) hdr.attr |= FIDO_CRASH;
-	if (cfg.netmail_misc & NMAIL_HOLD)  hdr.attr |= FIDO_HOLD;
-	if (cfg.netmail_misc & NMAIL_KILL)  hdr.attr |= FIDO_KILLSENT;
+	if (cfg.netmail_misc & NMAIL_CRASH)
+		hdr.attr |= FIDO_CRASH;
+	if (cfg.netmail_misc & NMAIL_HOLD)
+		hdr.attr |= FIDO_HOLD;
+	if (cfg.netmail_misc & NMAIL_KILL)
+		hdr.attr |= FIDO_KILLSENT;
 
 	snprintf(str, sizeof str, "%.25s", block + 71);      /* Title */
 	truncsp(str);
@@ -826,28 +838,32 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 	if ((SYSOP || useron.exempt & FLAG('F'))
 	    && !strnicmp(p, "CR:", 3)) {     /* Crash over-ride by sysop */
 		p += 3;               /* skip CR: */
-		if (*p == ' ') p++;  /* skip extra space if it exists */
+		if (*p == ' ')
+			p++;             /* skip extra space if it exists */
 		hdr.attr |= FIDO_CRASH;
 	}
 
 	if ((SYSOP || useron.exempt & FLAG('F'))
 	    && !strnicmp(p, "FR:", 3)) {     /* File request */
 		p += 3;               /* skip FR: */
-		if (*p == ' ') p++;
+		if (*p == ' ')
+			p++;
 		hdr.attr |= FIDO_FREQ;
 	}
 
 	if ((SYSOP || useron.exempt & FLAG('F'))
 	    && !strnicmp(p, "RR:", 3)) {     /* Return receipt request */
 		p += 3;               /* skip RR: */
-		if (*p == ' ') p++;
+		if (*p == ' ')
+			p++;
 		hdr.attr |= FIDO_RRREQ;
 	}
 
 	if ((SYSOP || useron.exempt & FLAG('F'))
 	    && !strnicmp(p, "FA:", 3)) {     /* File attachment */
 		p += 3;               /* skip FA: */
-		if (*p == ' ') p++;
+		if (*p == ' ')
+			p++;
 		hdr.attr |= FIDO_FILE;
 	}
 

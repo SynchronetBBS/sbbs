@@ -49,8 +49,10 @@ off_t smb_allocdat(smb_t* smb, off_t length, uint16_t refs)
 		if (smb_fread(smb, &i, sizeof(i), smb->sda_fp) != sizeof(i))
 			break;
 		offset += SDT_BLOCK_LEN;
-		if (!i) j++;
-		else j = 0;
+		if (!i)
+			j++;
+		else
+			j = 0;
 		if (j == blocks) {
 			offset -= (blocks * SDT_BLOCK_LEN);
 			break;
@@ -398,8 +400,10 @@ off_t smb_allochdr(smb_t* smb, uint length)
 		if (smb_fread(smb, &c, sizeof(c), smb->sha_fp) != sizeof(c))
 			break;
 		offset += SHD_BLOCK_LEN;
-		if (!c) i++;
-		else i = 0;
+		if (!c)
+			i++;
+		else
+			i = 0;
 		if (i == blocks) {
 			offset -= (blocks * SHD_BLOCK_LEN);
 			break;

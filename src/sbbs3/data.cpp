@@ -58,11 +58,13 @@ uint sbbs_t::finduser(const char* name, bool silent_failure)
 	while (pass < 3) {
 		fseek(stream, 0L, SEEK_SET);  /* seek to beginning for each pass */
 		for (l = 0; l < length; l += LEN_ALIAS + 2) {
-			if (!online) break;
+			if (!online)
+				break;
 			if (fread(buf, LEN_ALIAS + 2, 1, stream) != 1)
 				break;
 			for (c = 0; c < LEN_ALIAS; c++)
-				if (buf[c] == ETX) break;
+				if (buf[c] == ETX)
+					break;
 			buf[c] = 0;
 			if (!c)      /* deleted user */
 				continue;

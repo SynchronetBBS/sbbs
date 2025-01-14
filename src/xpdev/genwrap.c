@@ -279,7 +279,8 @@ char* c_escape_str(const char* src, char* dst, size_t maxlen, bool ctrl_only)
 			d += strlen(d);
 		} else if ((uchar) * s < ' ' || (uchar) * s >= '\x7f') {
 			d += safe_snprintf(d, maxlen - (d - dst), "\\x%02X", (uchar) * s);
-		} else *d++ = *s;
+		} else
+			*d++ = *s;
 	}
 	*d = 0;
 

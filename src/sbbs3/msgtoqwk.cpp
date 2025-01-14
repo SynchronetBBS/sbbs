@@ -505,8 +505,10 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 				SAFEPRINTF(str, "\1n---%c", qwk_newline);      /* so add one */
 			else
 				SAFECOPY(str, "\1n");
-			if (cfg.sub[subnum]->misc & SUB_ASCII) ch = '*';
-			else ch = CP437_BLACK_SQUARE;
+			if (cfg.sub[subnum]->misc & SUB_ASCII)
+				ch = '*';
+			else
+				ch = CP437_BLACK_SQUARE;
 			safe_snprintf(tmp, sizeof(tmp), " %c \1g%.10s\1n %c %.127s%c"
 			              , ch, VERSION_NOTICE, ch, cfg.sub[subnum]->tagline, qwk_newline);
 			char* tail = tmp;

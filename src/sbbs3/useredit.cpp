@@ -247,7 +247,8 @@ void sbbs_t::useredit(int usernumber)
 						break;
 					if (sys_status & SS_ABORT)
 						break;
-					if (c == CR) break;
+					if (c == CR)
+						break;
 					if (c == '?') {
 						menu("exempt");
 						continue;
@@ -279,7 +280,8 @@ void sbbs_t::useredit(int usernumber)
 						break;
 					if (sys_status & SS_ABORT)
 						break;
-					if (c == CR) break;
+					if (c == CR)
+						break;
 					if (c == '?') {
 						SAFEPRINTF(str, "flags%d", i);
 						menu(str);
@@ -316,11 +318,13 @@ void sbbs_t::useredit(int usernumber)
 						i = atoi(str);
 						if (i > lastuser(&cfg))
 							break;
-						if (i) user.number = i;
+						if (i)
+							user.number = i;
 					}
 					else {
 						i = finduser(str);
-						if (i) user.number = i;
+						if (i)
+							user.number = i;
 					}
 				}
 				break;
@@ -530,7 +534,8 @@ void sbbs_t::useredit(int usernumber)
 						break;
 					if (sys_status & SS_ABORT)
 						break;
-					if (c == CR) break;
+					if (c == CR)
+						break;
 					if (c == '?') {
 						menu("restrict");
 						continue;
@@ -636,13 +641,15 @@ void sbbs_t::useredit(int usernumber)
 			case ']':
 				if (user.number == lastuser(&cfg))
 					user.number = 1;
-				else user.number++;
+				else
+					user.number++;
 				break;
 			case TERM_KEY_LEFT:
 			case '[':
 				if (user.number == 1)
 					user.number = lastuser(&cfg);
-				else user.number--;
+				else
+					user.number--;
 				break;
 			case TERM_KEY_HOME:
 				user.number = 1;

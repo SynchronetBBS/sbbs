@@ -765,7 +765,8 @@ char *u32toaf(uint32_t l, char *str)
 	while (c < 26) {
 		if (l & (1 << c))
 			str[c] = 'A' + c;
-		else str[c] = ' ';
+		else
+			str[c] = ' ';
 		c++;
 	}
 	str[c] = 0;

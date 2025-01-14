@@ -183,7 +183,8 @@ static JSBool js_server_resolve(JSContext *cx, JSObject *obj, jsid id)
 
 	/* interface_ip_address property */
 	if (name == NULL || strcmp(name, "interface_ip_addr_list") == 0) {
-		if (name) free(name);
+		if (name)
+			free(name);
 
 		if ((props = (js_server_props_t*)JS_GetPrivate(cx, obj)) == NULL)
 			return JS_FALSE;
@@ -208,7 +209,8 @@ static JSBool js_server_resolve(JSContext *cx, JSObject *obj, jsid id)
 			JS_SetElement(cx, newobj, i, &val);
 		}
 		JS_DeepFreezeObject(cx, newobj);
-		if (name) return JS_TRUE;
+		if (name)
+			return JS_TRUE;
 	}
 
 	ret = js_SyncResolve(cx, obj, name, js_server_properties, NULL, NULL, 0);

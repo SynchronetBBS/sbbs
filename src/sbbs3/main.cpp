@@ -1373,7 +1373,8 @@ JSContext* sbbs_t::js_init(JSRuntime** runtime, JSObject** glob, const char* des
 {
 	JSContext* js_cx;
 
-	if (startup->js.max_bytes == 0)            startup->js.max_bytes = JAVASCRIPT_MAX_BYTES;
+	if (startup->js.max_bytes == 0)
+		startup->js.max_bytes = JAVASCRIPT_MAX_BYTES;
 
 	lprintf(LOG_DEBUG, "JavaScript: Creating %s runtime: %u bytes"
 	        , desc, startup->js.max_bytes);
@@ -3722,7 +3723,8 @@ bool sbbs_t::init()
 		for (j = k = 0; j < cfg.total_subs; j++)
 			if (cfg.sub[j]->grp == i)
 				k++;    /* k = number of subs per grp[i] */
-		if (k > l) l = k; /* l = the largest number of subs per grp */
+		if (k > l)
+			l = k;        /* l = the largest number of subs per grp */
 	}
 	if (l)
 		for (i = 0; i < cfg.total_grps; i++)
@@ -3760,7 +3762,8 @@ bool sbbs_t::init()
 		for (j = k = 0; j < cfg.total_dirs; j++)
 			if (cfg.dir[j]->lib == i)
 				k++;
-		if (k > l) l = k; /* l = largest number of dirs in a lib */
+		if (k > l)
+			l = k;        /* l = largest number of dirs in a lib */
 	}
 	if (l) {
 		l++;    /* for temp dir */
@@ -3947,8 +3950,10 @@ int sbbs_t::nopen(char *str, int access)
 		share = SH_DENYNO;
 		access &= ~O_DENYNONE;
 	}
-	else if (access == O_RDONLY) share = SH_DENYWR;
-	else share = SH_DENYRW;
+	else if (access == O_RDONLY)
+		share = SH_DENYWR;
+	else
+		share = SH_DENYRW;
 	if (!(access & O_TEXT))
 		access |= O_BINARY;
 	while (((file = sopen(str, access, share, DEFFILEMODE)) == -1)
@@ -4976,14 +4981,20 @@ void bbs_thread(void* arg)
 
 	do {
 		/* Setup intelligent defaults */
-		if (startup->telnet_port == 0)             startup->telnet_port = IPPORT_TELNET;
-		if (startup->rlogin_port == 0)             startup->rlogin_port = 513;
+		if (startup->telnet_port == 0)
+			startup->telnet_port = IPPORT_TELNET;
+		if (startup->rlogin_port == 0)
+			startup->rlogin_port = 513;
 #ifdef USE_CRYPTLIB
-		if (startup->ssh_port == 0)                startup->ssh_port = 22;
+		if (startup->ssh_port == 0)
+			startup->ssh_port = 22;
 #endif
-		if (startup->outbuf_drain_timeout == 0)    startup->outbuf_drain_timeout = 10;
-		if (startup->sem_chk_freq == 0)            startup->sem_chk_freq = DEFAULT_SEM_CHK_FREQ;
-		if (startup->temp_dir[0])                backslash(startup->temp_dir);
+		if (startup->outbuf_drain_timeout == 0)
+			startup->outbuf_drain_timeout = 10;
+		if (startup->sem_chk_freq == 0)
+			startup->sem_chk_freq = DEFAULT_SEM_CHK_FREQ;
+		if (startup->temp_dir[0])
+			backslash(startup->temp_dir);
 
 		protected_uint32_init(&node_threads_running, 0);
 		protected_uint32_init(&ssh_sessions, 0);

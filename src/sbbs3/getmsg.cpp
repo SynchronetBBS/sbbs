@@ -288,7 +288,8 @@ bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, int p_mode, post_t* post)
 			float pct = post->total_votes ? ((float)post->votes[answers] / post->total_votes) * 100.0F : 0.0F;
 			char  str[128];
 			int   width = longest_answer;
-			if (width < cols / 3) width = cols / 3;
+			if (width < cols / 3)
+				width = cols / 3;
 			else if (width > cols - 20)
 				width = cols - 20;
 			bprintf(text[PollAnswerNumber], answers + 1);
@@ -405,7 +406,8 @@ void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del, bool 
 		tp = subj;
 		while (online) {
 			p = strchr(tp, ' ');
-			if (p) *p = 0;
+			if (p)
+				*p = 0;
 			tp = getfname(tp);
 			if (strcspn(tp, ILLEGAL_FILENAME_CHARS) == strlen(tp)) {
 				SAFEPRINTF3(fpath, "%sfile/%04u.in/%s"  /* path is path/fname */

@@ -72,7 +72,8 @@ bool sbbs_t::printfile(const char* fname, int mode, int org_cols, JSObject* obj)
 			lprintf(LOG_NOTICE, "!Error %d (%s) opening: %s"
 			        , errno, strerror(errno), fpath);
 			bputs(text[FileNotFound]);
-			if (SYSOP) bputs(fpath);
+			if (SYSOP)
+				bputs(fpath);
 			CRLF;
 		}
 		return false;
@@ -193,7 +194,8 @@ bool sbbs_t::printtail(const char* fname, int lines, int mode, int org_cols, JSO
 			lprintf(LOG_NOTICE, "!Error %d (%s) opening: %s"
 			        , errno, strerror(errno), fpath);
 			bputs(text[FileNotFound]);
-			if (SYSOP) bputs(fpath);
+			if (SYSOP)
+				bputs(fpath);
 			CRLF;
 		}
 		return false;
@@ -226,7 +228,8 @@ bool sbbs_t::printtail(const char* fname, int lines, int mode, int org_cols, JSO
 	else {
 		buf[l] = 0;
 		p = (buf + l) - 1;
-		if (*p == LF) p--;
+		if (*p == LF)
+			p--;
 		while (*p && p > buf) {
 			if (*p == LF)
 				cur++;

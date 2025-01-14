@@ -75,7 +75,8 @@ time_t juliantounix(uint j)
 	int       leap, counter;
 	struct tm tm;
 
-	if (!j) return 0L;
+	if (!j)
+		return 0L;
 
 	tm.tm_year = ((100L * j) / 36525L) - 1900;
 	temp = (long)date.da_year * 36525L;
@@ -86,7 +87,8 @@ time_t juliantounix(uint j)
 		j++;
 		leap = 1;
 	}
-	else leap = 0;
+	else
+		leap = 0;
 
 	for (date.da_mon = counter = 0; counter < 12; counter++)
 		if (days[leap][counter] < j)
@@ -564,11 +566,16 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		exitinfo.UserInfo.LastTime = tmp;
 		SAFEPRINTF3(tmp, "%02u/%02u/%02u", TM_MONTH(tm.tm_mon), tm.tm_mday, TM_YEAR(tm.tm_year));
 		exitinfo.UserInfo.LastDate = tmp;
-		if (useron.misc & DELETED) exitinfo.UserInfo.Attrib |= QBBS::USER_ATTRIB_DELETED;
-		if (useron.misc & CLRSCRN) exitinfo.UserInfo.Attrib |= QBBS::USER_ATTRIB_CLRSCRN;
-		if (useron.misc & UPAUSE)  exitinfo.UserInfo.Attrib |= QBBS::USER_ATTRIB_MORE;
-		if (term & ANSI)         exitinfo.UserInfo.Attrib |= QBBS::USER_ATTRIB_ANSI;
-		if (useron.sex == 'F')     exitinfo.UserInfo.Attrib |= QBBS::USER_ATTRIB_FEMALE;
+		if (useron.misc & DELETED)
+			exitinfo.UserInfo.Attrib |= QBBS::USER_ATTRIB_DELETED;
+		if (useron.misc & CLRSCRN)
+			exitinfo.UserInfo.Attrib |= QBBS::USER_ATTRIB_CLRSCRN;
+		if (useron.misc & UPAUSE)
+			exitinfo.UserInfo.Attrib |= QBBS::USER_ATTRIB_MORE;
+		if (term & ANSI)
+			exitinfo.UserInfo.Attrib |= QBBS::USER_ATTRIB_ANSI;
+		if (useron.sex == 'F')
+			exitinfo.UserInfo.Attrib |= QBBS::USER_ATTRIB_FEMALE;
 		exitinfo.UserInfo.Flags = useron.flags1;
 		exitinfo.UserInfo.TimesPosted = useron.posts;
 		exitinfo.UserInfo.SecLvl = useron.level;
@@ -611,7 +618,8 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 			return;
 		}
 
-		if (online == ON_LOCAL) i = 5;
+		if (online == ON_LOCAL)
+			i = 5;
 		else
 			switch (dte_rate) {
 				case 300:
@@ -736,7 +744,8 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		sys.UserRecNo = useron.number;
 		SAFECOPY(tmp, name);
 		p = strchr(tmp, ' ');
-		if (p) *p = 0;
+		if (p)
+			*p = 0;
 		sys.FirstName = tmp;
 		sys.Password = useron.pass;
 		if (localtime_r(&logontime, &tm) != NULL)

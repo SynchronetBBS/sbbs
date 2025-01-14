@@ -350,7 +350,8 @@ int main(int argc, char **argv)
 			fprintf(out, "%s\n", fname);
 		}
 		if (!smb.status.total_files) {
-			if (misc & AUTO) fclose(out);
+			if (misc & AUTO)
+				fclose(out);
 			continue;
 		}
 		int longest_filename = 12;
@@ -446,7 +447,8 @@ int main(int argc, char **argv)
 		smb_close(&smb);
 		if (dir_files)
 			fprintf(out, "\n"); /* blank line at end of dir */
-		if (misc & AUTO) fclose(out);
+		if (misc & AUTO)
+			fclose(out);
 		freefiles(file_list, file_count);
 	}
 

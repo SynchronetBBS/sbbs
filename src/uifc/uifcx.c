@@ -64,7 +64,7 @@ static int uprintf(int x, int y, unsigned attr, char *fmat, ...)
 	vsprintf(str, fmat, argptr);
 	va_end(argptr);
 	i = printf("%s", str);
-	return(i);
+	return i;
 }
 
 static void showbuf(uifc_winmode_t mode, int left, int top, int width, int height
@@ -83,7 +83,7 @@ int uifcinix(uifcapi_t* uifcapi)
 	static char* yesNoOpts[] = {"Yes", "No", NULL};
 
 	if (uifcapi == NULL || uifcapi->size != sizeof(uifcapi_t))
-		return(-1);
+		return -1;
 
 	api = uifcapi;
 
@@ -112,7 +112,7 @@ int uifcinix(uifcapi_t* uifcapi)
 	api->scrn_width = 132;
 	api->initialized = TRUE;
 
-	return(0);
+	return 0;
 }
 
 /****************************************************************************/
@@ -129,7 +129,7 @@ void uifcbail(void)
 /****************************************************************************/
 int uscrn(const char *str)
 {
-	return(0);
+	return 0;
 }
 
 static int getstr(char* str, int maxlen)
@@ -153,7 +153,8 @@ static int getstr(char* str, int maxlen)
 		if (ch == '\r' || ch == '\n')    /* enter */
 			break;
 		if (ch == '\b' || ch == DEL) {   /* backspace */
-			if (len) len--;
+			if (len)
+				len--;
 			continue;
 		}
 		if (len < maxlen)
@@ -161,7 +162,7 @@ static int getstr(char* str, int maxlen)
 	}
 	str[len] = 0; /* we need The Terminator */
 
-	return(len);
+	return len;
 }
 
 /****************************************************************************/
@@ -178,7 +179,7 @@ static int which(char* prompt, int max)
 		getstr(str, sizeof(str) - 1);
 		i = atoi(str);
 		if (i > 0 && i <= max)
-			return(i - 1);
+			return i - 1;
 	}
 }
 
@@ -255,7 +256,7 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 		i = atoi(str);
 		if (i > 0 && i <= opts) {
 			*cur = --i;
-			return(*cur);
+			return *cur;
 		}
 		i = atoi(str + 1);
 		switch (toupper(*str)) {
@@ -263,17 +264,17 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 			case ESC:
 			case 'Q':
 				printf("Quit\n");
-				return(-1);
+				return -1;
 			case 'Y':
 				if (!yesno)
 					break;
 				printf("Yes\n");
-				return(0);
+				return 0;
 			case 'N':
 				if (!yesno)
 					break;
 				printf("No\n");
-				return(1);
+				return 1;
 			case 'H':
 			case '?':
 				printf("Help\n");
@@ -283,50 +284,50 @@ int ulist(uifc_winmode_t mode, int left, int top, int width, int *cur, int *bar
 				if (!(mode & WIN_INS))
 					break;
 				if (!opts)
-					return(MSK_INS);
+					return MSK_INS;
 				if (i > 0 && i <= opts + 1)
-					return((i - 1) | MSK_INS);
-				return(which("Add before", opts + 1) | MSK_INS);
+					return (i - 1) | MSK_INS;
+				return which("Add before", opts + 1) | MSK_INS;
 			case 'D':   /* Delete */
 				if (!(mode & WIN_DEL))
 					break;
 				if (!opts)
 					break;
 				if (i > 0 && i <= opts)
-					return((i - 1) | MSK_DEL);
+					return (i - 1) | MSK_DEL;
 				if (opts == 1)
-					return(MSK_DEL);
-				return(which("Delete", opts) | MSK_DEL);
+					return MSK_DEL;
+				return which("Delete", opts) | MSK_DEL;
 			case 'C':   /* Copy */
 				if (!(mode & WIN_COPY))
 					break;
 				if (!opts)
 					break;
 				if (i > 0 && i <= opts)
-					return((i - 1) | MSK_COPY);
+					return (i - 1) | MSK_COPY;
 				if (opts == 1)
-					return(MSK_COPY);
-				return(which("Copy", opts) | MSK_COPY);
+					return MSK_COPY;
+				return which("Copy", opts) | MSK_COPY;
 			case 'X':   /* Cut */
 				if (!(mode & WIN_CUT))
 					break;
 				if (!opts)
 					break;
 				if (i > 0 && i <= opts)
-					return((i - 1) | MSK_CUT);
+					return (i - 1) | MSK_CUT;
 				if (opts == 1)
-					return(MSK_CUT);
-				return(which("Cut", opts) | MSK_CUT);
+					return MSK_CUT;
+				return which("Cut", opts) | MSK_CUT;
 			case 'P':   /* Paste */
 				if (!(mode & WIN_PASTE))
 					break;
 				if (!opts)
 					break;
 				if (i > 0 && i <= opts + 1)
-					return((i - 1) | MSK_PASTE);
+					return (i - 1) | MSK_PASTE;
 				if (opts == 1)
-					return(MSK_PASTE);
-				return(which("Insert pasted item before", opts + 1) | MSK_PASTE);
+					return MSK_PASTE;
+				return which("Insert pasted item before", opts + 1) | MSK_PASTE;
 		}
 	}
 }
@@ -353,7 +354,7 @@ int uinput(uifc_winmode_t mode, int left, int top, const char *prompt, char *out
 	if (kmode & K_UPPER)   /* convert to uppercase? */
 		strupr(str);
 	strcpy(outstr, str);
-	return(strlen(outstr));
+	return strlen(outstr);
 }
 
 /****************************************************************************/

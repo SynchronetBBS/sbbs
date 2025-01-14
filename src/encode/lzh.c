@@ -637,7 +637,8 @@ uint32_t lzh_encode(const uint8_t *inbuf, uint32_t inlen, uint8_t *outbuf, size_
 			lzh_delete_node(&lzh, s);
 			s = (s + 1) & (LZH_STRBUF_SZ - 1);
 			r = (r + 1) & (LZH_STRBUF_SZ - 1);
-			if (--len) lzh_insert_node(&lzh, r);
+			if (--len)
+				lzh_insert_node(&lzh, r);
 		}
 	} while (len > 0);
 	if (!lzh_encode_end(&lzh, outbuf, &outlen))

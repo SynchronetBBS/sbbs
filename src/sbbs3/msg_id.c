@@ -42,7 +42,8 @@ uint32_t get_new_msg_number(smb_t* smb)
 	if (smb_getstatus(smb) != SMB_SUCCESS)
 		return 0;
 
-	if (!locked) smb_unlocksmbhdr(smb);
+	if (!locked)
+		smb_unlocksmbhdr(smb);
 	return smb->status.last_msg + 1;
 }
 

@@ -804,7 +804,8 @@ void xmodem_progress(void* unused, unsigned block_num, int64_t offset, int64_t f
 			cps = 1;            /* cps so far */
 		l = (long)(fsize / cps);    /* total transfer est time */
 		l -= t;                   /* now, it's est time left */
-		if (l < 0) l = 0;
+		if (l < 0)
+			l = 0;
 		if (mode & SEND) {
 			total_blocks = num_blocks(block_num, offset, fsize, xm.block_size);
 			fprintf(statfp, "\rBlock (%lu%s): %u/%" PRId64 "  Byte: %" PRId64 "  "
@@ -875,7 +876,8 @@ void zmodem_progress(void* cbdata, int64_t current_pos)
 			cps = 1;                        /* cps so far */
 		l = (long)(zm.current_file_size / cps); /* total transfer est time */
 		l -= t;                               /* now, it's est time left */
-		if (l < 0) l = 0;
+		if (l < 0)
+			l = 0;
 		fprintf(statfp, "\rKByte: %" PRId64 "/%" PRId64 "  %u/CRC-%u  "
 		        "Time: %lu:%02lu/%lu:%02lu  %u cps  %lu%% "
 		        , current_pos / 1024
@@ -1059,7 +1061,8 @@ static int send_files(char** fname, uint fnames)
 	}
 	if (xm.total_files > 1) {
 		t = time(NULL) - startall;
-		if (!t) t = 1;
+		if (!t)
+			t = 1;
 		lprintf(LOG_INFO, "Overall - Time %02lu:%02lu  KBytes: %" PRId64 "  CPS: %lu"
 		        , t / 60, t % 60, total_bytes / 1024, total_bytes / t);
 	}
@@ -1340,7 +1343,8 @@ static int receive_files(char** fname_list, int fnames)
 		fclose(fp);
 
 		t = time(NULL) - startfile;
-		if (!t) t = 1;
+		if (!t)
+			t = 1;
 		if (zm.file_skipped)
 			lprintf(LOG_WARNING, "File Skipped");
 		else if (success)

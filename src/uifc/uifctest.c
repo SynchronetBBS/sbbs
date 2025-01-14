@@ -135,7 +135,7 @@ int main(int argc, char** argv)  {
 	sprintf(title, "Synchronet Test Suite");
 	if (uifc.scrn(title)) {
 		printf(" USCRN (len=%d) failed!\n", uifc.scrn_len + 1);
-		return(1);
+		return 1;
 	}
 
 	strcpy(mopt[0], "Long Title");
@@ -155,7 +155,7 @@ int main(int argc, char** argv)  {
 
 		if (j == -1) {
 			uifc.bail();
-			return(0);
+			return 0;
 		}
 
 		if (j == 0) {

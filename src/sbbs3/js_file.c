@@ -481,7 +481,8 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 
 	if (p->etx) {
 		cp = strchr(buf, p->etx);
-		if (cp) *cp = 0;
+		if (cp)
+			*cp = 0;
 		len = strlen(buf);
 	}
 
@@ -559,7 +560,8 @@ js_readln(JSContext *cx, uintN argc, jsval *arglist)
 		buf[len] = 0;
 		if (p->etx) {
 			cp = strchr(buf, p->etx);
-			if (cp) *cp = 0;
+			if (cp)
+				*cp = 0;
 		}
 		if (p->rot13)
 			rot13(buf);

@@ -113,7 +113,8 @@ static bool iniSetStringWithGlobalDefault(str_list_t* lp, const char* section, c
 static void sbbs_fix_js_settings(js_startup_t* js)
 {
 	/* Some sanity checking here */
-	if (js->max_bytes == 0)    js->max_bytes = JAVASCRIPT_MAX_BYTES;
+	if (js->max_bytes == 0)
+		js->max_bytes = JAVASCRIPT_MAX_BYTES;
 }
 
 void sbbs_get_js_settings(
@@ -390,19 +391,29 @@ void sbbs_read_ini(
 	get_ini_globals(list, global);
 
 	if (global->ctrl_dir[0]) {
-		if (bbs != NULL)       SAFECOPY(bbs->ctrl_dir, global->ctrl_dir);
-		if (ftp != NULL)       SAFECOPY(ftp->ctrl_dir, global->ctrl_dir);
-		if (web != NULL)       SAFECOPY(web->ctrl_dir, global->ctrl_dir);
-		if (mail != NULL)      SAFECOPY(mail->ctrl_dir, global->ctrl_dir);
-		if (services != NULL)  SAFECOPY(services->ctrl_dir, global->ctrl_dir);
+		if (bbs != NULL)
+			SAFECOPY(bbs->ctrl_dir, global->ctrl_dir);
+		if (ftp != NULL)
+			SAFECOPY(ftp->ctrl_dir, global->ctrl_dir);
+		if (web != NULL)
+			SAFECOPY(web->ctrl_dir, global->ctrl_dir);
+		if (mail != NULL)
+			SAFECOPY(mail->ctrl_dir, global->ctrl_dir);
+		if (services != NULL)
+			SAFECOPY(services->ctrl_dir, global->ctrl_dir);
 	}
 
 	if (ini_fname != NULL && ini_fname[0]) {
-		if (bbs != NULL)       SAFECOPY(bbs->ini_fname, ini_fname);
-		if (ftp != NULL)       SAFECOPY(ftp->ini_fname, ini_fname);
-		if (web != NULL)       SAFECOPY(web->ini_fname, ini_fname);
-		if (mail != NULL)      SAFECOPY(mail->ini_fname, ini_fname);
-		if (services != NULL)  SAFECOPY(services->ini_fname, ini_fname);
+		if (bbs != NULL)
+			SAFECOPY(bbs->ini_fname, ini_fname);
+		if (ftp != NULL)
+			SAFECOPY(ftp->ini_fname, ini_fname);
+		if (web != NULL)
+			SAFECOPY(web->ini_fname, ini_fname);
+		if (mail != NULL)
+			SAFECOPY(mail->ini_fname, ini_fname);
+		if (services != NULL)
+			SAFECOPY(services->ini_fname, ini_fname);
 	}
 
 	global_interfaces = strListCombine(global->interfaces, NULL, 16384, ",");
