@@ -74,6 +74,10 @@ set(PATCHES
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-dont-validate-va-list.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-musl-socklen_t.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-no-musl-backtrace.patch
+	${CMAKE_CURRENT_SOURCE_DIR}/cl-fix-constptrptr.patch
+	${CMAKE_CURRENT_SOURCE_DIR}/cl-fix-void-ptrs.patch
+	${CMAKE_CURRENT_SOURCE_DIR}/cl-intptr-t.patch
+	${CMAKE_CURRENT_SOURCE_DIR}/cl-wrong-string-length.patch
 )
 
 FetchContent_Declare(CryptLib

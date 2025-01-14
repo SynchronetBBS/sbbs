@@ -101,6 +101,10 @@ set(PATCHES
 	cl-dont-validate-va-list.patch
 	cl-musl-socklen_t.patch
 	cl-no-musl-backtrace.patch
+	cl-fix-constptrptr.patch
+	cl-fix-void-ptrs.patch
+	cl-intptr-t.patch
+	cl-wrong-string-length.patch
 )
 
 set(SOURCE

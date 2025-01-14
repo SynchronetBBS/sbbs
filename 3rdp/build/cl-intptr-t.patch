@@ -1,0 +1,11 @@
+--- misc/os_spec.c.orig	2025-01-13 23:17:13.713937000 -0500
++++ misc/os_spec.c	2025-01-13 23:18:28.874268000 -0500
+@@ -3194,7 +3194,7 @@
+ #if defined( _MSC_VER ) && ( _MSC_VER >= 1400 )
+   #define PTR_TYPE	INT_PTR 
+ #else
+-  #define PTR_TYPE	long
++  #define PTR_TYPE	intptr_t
+ #endif /* Newer versions of VC++ */
+ 
+ #define getPageStartAddress( address ) \

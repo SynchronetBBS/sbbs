@@ -1,0 +1,13 @@
+--- io/dns.c.orig	2025-01-13 23:28:49.754092000 -0500
++++ io/dns.c	2025-01-13 23:29:39.674287000 -0500
+@@ -56,8 +56,8 @@
+ 									 errorStringBuffer, 1024, NULL );
+ 	if( errorStringLen <= 0 )
+ 		{
+-		memcpy( errorStringBuffer, "<Unknown>", 13 );
+-		errorStringLen = 13;
++		memcpy( errorStringBuffer, "<Unknown>", 10 );
++		errorStringLen = 9;
+ 		}
+ 	setErrorString( NETSTREAM_ERRINFO, errorStringBuffer, errorStringLen );
+   #elif defined( USE_IPv6 )

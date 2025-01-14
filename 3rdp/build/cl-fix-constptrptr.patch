@@ -1,0 +1,11 @@
+--- device/pkcs11_init.c.orig	2025-01-13 22:37:33.955357000 -0500
++++ device/pkcs11_init.c	2025-01-13 22:38:58.131669000 -0500
+@@ -1054,7 +1054,7 @@
+ 	CK_RV status;
+ 	PKCS11_INFO *pkcs11Info = deviceInfo->devicePKCS11;
+ 	const PKCS11_MECHANISM_INFO *mechanismInfoPtr;
+-	char *labelPtr;
++	const char *labelPtr;
+ 	int tokenSlot = DEFAULT_SLOT, labelLength, mechanismInfoSize;
+ 	LOOP_INDEX i;
+ 	int cryptStatus, cryptStatus2;
