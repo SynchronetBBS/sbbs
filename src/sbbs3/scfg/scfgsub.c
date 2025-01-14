@@ -1279,9 +1279,11 @@ void sub_cfg(int grpnum)
 						         , cfg.sub[i]->misc & SUB_INET ? "Yes":"No");
 						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s", "FidoNet EchoMail"
 						         , cfg.sub[i]->misc & SUB_FIDO ? "Yes":"No");
-						snprintf(opt[n++], MAX_OPLN, "%-27.27s%s", "FidoNet Address"
-						         , smb_faddrtoa(&cfg.sub[i]->faddr, tmp));
-						snprintf(opt[n++], MAX_OPLN, "EchoMail Origin Line");
+						if (cfg.sub[i]->misc & SUB_FIDO) {
+							snprintf(opt[n++], MAX_OPLN, "%-27.27s%s", "FidoNet Address"
+									 , smb_faddrtoa(&cfg.sub[i]->faddr, tmp));
+							snprintf(opt[n++], MAX_OPLN, "EchoMail Origin Line");
+						}
 						opt[n][0] = 0;
 						uifc.helpbuf =
 							"`Sub-board Network Options:`\n"
