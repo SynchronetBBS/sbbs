@@ -1359,7 +1359,8 @@ int edit_sys_datefmt(int page, int total)
 		"MM.DD.YY", "DD.MM.YY", "YY.MM.DD",
 		"MM-DD-YY", "DD-MM-YY", "YY-MM-DD",
 		"MM DD YY", "DD MM YY", "YY MM DD",
-		NULL };
+		NULL
+	};
 	uifc.helpbuf=
 		"`Numeric Date Format:`\n"
 		"\n"
