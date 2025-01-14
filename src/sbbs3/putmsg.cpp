@@ -72,7 +72,7 @@ char sbbs_t::putmsg(const char *buf, int mode, int org_cols, JSObject* obj)
 
 	line_delay = org_line_delay;
 
-	return(ret);
+	return ret;
 }
 
 // Print a message fragment, doesn't save/restore any console states (e.g. attributes, auto-pause)

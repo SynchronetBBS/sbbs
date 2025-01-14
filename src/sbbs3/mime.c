@@ -86,20 +86,20 @@ bool base64out(SOCKET socket, const char* prot, int sess, char* pathfile)
 	int    bytesread;
 
 	if ((fp = fopen(pathfile, "rb")) == NULL)
-		return(false);
+		return false;
 	while (1) {
 		bytesread = fread(in, 1, sizeof(in), fp);
 		if ((b64_encode(out, sizeof(out), in, bytesread) == -1)
 		    || !sockprintf(socket, prot, sess, "%s", out))  {
 			fclose(fp);
-			return(false);
+			return false;
 		}
 		if (bytesread != sizeof(in) || feof(fp))
 			break;
 	}
 	fclose(fp);
 	sockprintf(socket, prot, sess, "");
-	return(true);
+	return true;
 }
 
 bool mimeattach(SOCKET socket, const char* prot, int sess, char* boundary, char* pathfile)
@@ -114,9 +114,9 @@ bool mimeattach(SOCKET socket, const char* prot, int sess, char* boundary, char*
 	sockprintf(socket, prot, sess, " filename=\"%s\"", fname);
 	sockprintf(socket, prot, sess, "");
 	if (!base64out(socket, prot, sess, pathfile))
-		return(false);
+		return false;
 	sockprintf(socket, prot, sess, "");
-	return(true);
+	return true;
 }
 
 void endmime(SOCKET socket, const char* prot, int sess, char* boundary)

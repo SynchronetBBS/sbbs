@@ -41,7 +41,7 @@ int lprintf(int level, const char *fmat, ...)
 	va_end(argptr);
 	truncsp(sbuf);
 	printf("%s\n", sbuf);
-	return(chcount);
+	return chcount;
 }
 
 char *usage = "\nusage: makeuser [ctrl_dir] name [-param value] [...]\n"
@@ -84,7 +84,7 @@ int main(int argc, char **argv)
 
 	if (argc < 2) {
 		printf("%s", usage);
-		return(1);
+		return 1;
 	}
 
 	if (strcspn(argv[first_arg], "/\\") != strlen(argv[first_arg]))
@@ -119,7 +119,7 @@ int main(int argc, char **argv)
 		if (argv[i][0] == '-') {
 			if (argv[i + 1] == NULL) {
 				printf("%s", usage);
-				return(1);
+				return 1;
 			}
 			switch (toupper(argv[i++][1])) {
 				case 'A':
@@ -159,7 +159,7 @@ int main(int argc, char **argv)
 							break;
 						default:
 							printf("%s", usage);
-							return(1);
+							return 1;
 					}
 					break;
 				case 'G':
@@ -189,7 +189,7 @@ int main(int argc, char **argv)
 					break;
 				default:
 					printf("%s", usage);
-					return(1);
+					return 1;
 			}
 		}
 		else
@@ -198,12 +198,12 @@ int main(int argc, char **argv)
 
 	if (user.alias[0] == 0) {
 		printf("%s", usage);
-		return(1);
+		return 1;
 	}
 
 	if ((i = matchuser(&scfg, user.alias, FALSE)) != 0) {
 		printf("!User (%s #%d) already exists\n", user.alias, i);
-		return(2);
+		return 2;
 	}
 
 	if (user.handle[0] == 0)
@@ -213,11 +213,11 @@ int main(int argc, char **argv)
 
 	if ((i = newuserdat(&scfg, &user)) != 0) {
 		fprintf(stderr, "!ERROR %d adding new user record\n", i);
-		return(i);
+		return i;
 	}
 
 	printf("User record #%d (%s) created successfully.\n", user.number, user.alias);
 
-	return(0);
+	return 0;
 }
 

@@ -62,7 +62,7 @@ time32_t dstrtounix(enum date_fmt fmt, const char *instr)
 	struct tm   tm;
 
 	if (instr == NULL || !instr[0] || !strncmp(instr, "00/00/00", 8))
-		return(0);
+		return 0;
 
 	if (IS_DIGIT(instr[0]) && IS_DIGIT(instr[1])
 	    && IS_DIGIT(instr[3]) && IS_DIGIT(instr[4])
@@ -72,12 +72,12 @@ time32_t dstrtounix(enum date_fmt fmt, const char *instr)
 		p = instr;    /* incorrectly formatted */
 		while (*p && IS_DIGIT(*p)) p++;
 		if (*p == 0)
-			return(0);
+			return 0;
 		p++;
 		day = p;
 		while (*p && IS_DIGIT(*p)) p++;
 		if (*p == 0)
-			return(0);
+			return 0;
 		p++;
 		sprintf(str, "%02u/%02u/%02u"
 		        , atoi(instr) % 100, atoi(day) % 100, atoi(p) % 100);
@@ -105,7 +105,7 @@ time32_t dstrtounix(enum date_fmt fmt, const char *instr)
 	if (tm.tm_mon)
 		tm.tm_mon--;    /* zero-based month field */
 	tm.tm_isdst = -1;     /* Do not adjust for DST */
-	return(mktime32(&tm));
+	return mktime32(&tm);
 }
 
 /****************************************************************************/
@@ -198,7 +198,7 @@ char* sectostr(uint sec, char *str)
 	min = (sec / 60) - (hour * 60);
 	sec2 = sec - ((min + (hour * 60)) * 60);
 	sprintf(str, "%2.2d:%2.2d:%2.2d", hour, min, sec2);
-	return(str);
+	return str;
 }
 
 /* Returns a shortened version of "HH:MM:SS" formatted seconds value */
@@ -232,7 +232,7 @@ char* tm_as_hhmm(scfg_t* cfg, struct tm* tm, char* str)
 		sprintf(str, "%02d:%02d%c"
 		        , tm->tm_hour > 12 ? tm->tm_hour - 12 : tm->tm_hour == 0 ? 12 : tm->tm_hour
 		        , tm->tm_min, tm->tm_hour >= 12 ? 'p' : 'a');
-	return(str);
+	return str;
 }
 
 /****************************************************************************/
@@ -267,13 +267,13 @@ char* timestr(scfg_t* cfg, time32_t t, char* str)
 	}
 	if (localtime_r(&intime, &tm) == NULL) {
 		strcpy(str, "Invalid Time");
-		return(str);
+		return str;
 	}
 	if (cfg->sys_misc & SM_MILITARY) {
 		snprintf(str, LEN_DATETIME + 1, "%s %s %02u %4u %02u:%02u:%02u"
 		         , w[tm.tm_wday], m[tm.tm_mon], tm.tm_mday, 1900 + tm.tm_year
 		         , tm.tm_hour, tm.tm_min, tm.tm_sec);
-		return(str);
+		return str;
 	}
 	if (tm.tm_hour >= 12) {
 		if (tm.tm_hour == 12)
@@ -291,6 +291,6 @@ char* timestr(scfg_t* cfg, time32_t t, char* str)
 	snprintf(str, LEN_DATETIME + 1, "%s %s %02u %4u %02u:%02u %s"
 	         , w[tm.tm_wday], m[tm.tm_mon], tm.tm_mday, 1900 + tm.tm_year
 	         , hour, tm.tm_min, mer);
-	return(str);
+	return str;
 }
 

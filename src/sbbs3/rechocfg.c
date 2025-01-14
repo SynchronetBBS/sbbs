@@ -50,7 +50,7 @@ faddr_t atofaddr(const char *instr)
 	*p = 0;
 	if (!stricmp(str, "ALL")) {
 		addr.zone = addr.net = addr.node = addr.point = 0xffff;
-		return(addr);
+		return addr;
 	}
 	addr.zone = addr.net = addr.node = addr.point = 0;
 	if ((p = strchr(str, ':')) != NULL) {
@@ -89,7 +89,7 @@ faddr_t atofaddr(const char *instr)
 		else
 			addr.point = atoi(p);
 	}
-	return(addr);
+	return addr;
 }
 
 /****************************************************************************/
@@ -125,7 +125,7 @@ const char *faddrtoa(const faddr_t* addr)
 			}
 		}
 	}
-	return(str);
+	return str;
 }
 
 bool faddr_contains_wildcard(const faddr_t* addr)
@@ -146,7 +146,7 @@ int matchnode(sbbsecho_cfg_t* cfg, faddr_t addr, int exact)
 			if (!memcmp(&cfg->nodecfg[i].addr, &addr, sizeof(faddr_t)))
 				break;
 		if (exact || i < cfg->nodecfgs)
-			return(i);
+			return i;
 	}
 
 	for (i = 0; i < cfg->nodecfgs; i++)                    /* Look for point match */
@@ -156,7 +156,7 @@ int matchnode(sbbsecho_cfg_t* cfg, faddr_t addr, int exact)
 		    && addr.node == cfg->nodecfg[i].addr.node)
 			break;
 	if (i < cfg->nodecfgs)
-		return(i);
+		return i;
 
 	for (i = 0; i < cfg->nodecfgs; i++)                    /* Look for node match */
 		if (cfg->nodecfg[i].addr.node == 0xffff
@@ -164,19 +164,19 @@ int matchnode(sbbsecho_cfg_t* cfg, faddr_t addr, int exact)
 		    && addr.net == cfg->nodecfg[i].addr.net)
 			break;
 	if (i < cfg->nodecfgs)
-		return(i);
+		return i;
 
 	for (i = 0; i < cfg->nodecfgs; i++)                    /* Look for net match */
 		if (cfg->nodecfg[i].addr.net == 0xffff
 		    && addr.zone == cfg->nodecfg[i].addr.zone)
 			break;
 	if (i < cfg->nodecfgs)
-		return(i);
+		return i;
 
 	for (i = 0; i < cfg->nodecfgs; i++)                    /* Look for total wild */
 		if (cfg->nodecfg[i].addr.zone == 0xffff)
 			break;
-	return(i);
+	return i;
 }
 
 nodecfg_t* findnodecfg(sbbsecho_cfg_t* cfg, faddr_t addr, int exact)

@@ -29,26 +29,26 @@ const char* telnet_cmd_desc(uchar cmd)
 	static char unknown[32];
 
 	switch (cmd) {
-		case TELNET_IAC:    return("IAC");
-		case TELNET_DONT:   return("DON'T");
-		case TELNET_DO:     return("DO");
-		case TELNET_WONT:   return("WON'T");
-		case TELNET_WILL:   return("WILL");
+		case TELNET_IAC:    return "IAC";
+		case TELNET_DONT:   return "DON'T";
+		case TELNET_DO:     return "DO";
+		case TELNET_WONT:   return "WON'T";
+		case TELNET_WILL:   return "WILL";
 
-		case TELNET_SB:     return("SB");
-		case TELNET_GA:     return("GA");
-		case TELNET_EL:     return("EL");
-		case TELNET_EC:     return("EC");
-		case TELNET_AYT:    return("AYT");
-		case TELNET_AO:     return("AO");
-		case TELNET_IP:     return("IP");
-		case TELNET_BRK:    return("BRK");
-		case TELNET_SYNC:   return("SYNC");
-		case TELNET_NOP:    return("NOP");
+		case TELNET_SB:     return "SB";
+		case TELNET_GA:     return "GA";
+		case TELNET_EL:     return "EL";
+		case TELNET_EC:     return "EC";
+		case TELNET_AYT:    return "AYT";
+		case TELNET_AO:     return "AO";
+		case TELNET_IP:     return "IP";
+		case TELNET_BRK:    return "BRK";
+		case TELNET_SYNC:   return "SYNC";
+		case TELNET_NOP:    return "NOP";
 
 		default:
 			sprintf(unknown, "%d", cmd);
-			return(unknown);
+			return unknown;
 	}
 }
 
@@ -102,13 +102,13 @@ const char* telnet_opt_desc(uchar opt)
 	static char unknown[32];
 
 	if (opt < sizeof(telnet_option_descriptions) / sizeof(char*))
-		return(telnet_option_descriptions[opt]);
+		return telnet_option_descriptions[opt];
 
 	if (opt == TELNET_EXOPL)
-		return("Extended Options List");
+		return "Extended Options List";
 
 	sprintf(unknown, "%d", opt);
-	return(unknown);
+	return unknown;
 }
 
 uchar telnet_opt_ack(uchar cmd)

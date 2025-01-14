@@ -55,17 +55,17 @@ bool sbbs_t::bulkmail(uchar *ar)
 	              , &editor
 	              , &charset)) {
 		bputs(text[Aborted]);
-		return(false);
+		return false;
 	}
 
 	if ((fp = fopen(msgpath, "r")) == NULL) {
 		errormsg(WHERE, ERR_OPEN, msgpath, O_RDONLY);
-		return(false);
+		return false;
 	}
 
 	if ((length = (long)filelength(fileno(fp))) <= 0) {
 		fclose(fp);
-		return(false);
+		return false;
 	}
 
 	bputs(text[WritingIndx]);
@@ -74,14 +74,14 @@ bool sbbs_t::bulkmail(uchar *ar)
 	if ((msgbuf = (char*)malloc(length + 1)) == NULL) {
 		fclose(fp);
 		errormsg(WHERE, ERR_ALLOC, msgpath, length + 1);
-		return(false);
+		return false;
 	}
 	length = fread(msgbuf, sizeof(char), length, fp);
 	fclose(fp);
 	if (length < 0) {
 		free(msgbuf);
 		errormsg(WHERE, ERR_READ, msgpath, length);
-		return(false);
+		return false;
 	}
 	msgbuf[length] = 0;   /* ASCIIZ */
 
@@ -103,7 +103,7 @@ bool sbbs_t::bulkmail(uchar *ar)
 	if (i != 0) {
 		smb_close(&smb);
 		smb_freemsgmem(&msg);
-		return(false);
+		return false;
 	}
 
 	j = lastuser(&cfg);
@@ -150,13 +150,13 @@ bool sbbs_t::bulkmail(uchar *ar)
 
 	if (i != SMB_SUCCESS) {
 		errormsg(WHERE, ERR_OPEN, smb.file, i, smb.last_error);
-		return(false);
+		return false;
 	}
 
 	putuserdec32(useron.number, USER_EMAILS, useron.emails);
 	putuserdec32(useron.number, USER_ETODAY, useron.etoday);
 
-	return(true);
+	return true;
 }
 
 
@@ -171,10 +171,10 @@ int sbbs_t::bulkmailhdr(smb_t* smb, smbmsg_t* msg, uint usernum)
 
 	user.number = usernum;
 	if (getuserdat(&cfg, &user) != 0)
-		return(0);
+		return 0;
 
 	if ((i = smb_copymsgmem(NULL, &newmsg, msg)) != SMB_SUCCESS)
-		return(i);
+		return i;
 
 	SAFECOPY(str, user.alias);
 	smb_hfield_str(&newmsg, RECIPIENT, str);
@@ -191,7 +191,7 @@ int sbbs_t::bulkmailhdr(smb_t* smb, smbmsg_t* msg, uint usernum)
 	j = smb_addmsghdr(smb, &newmsg, smb_storage_mode(&cfg, smb));
 	smb_freemsgmem(&newmsg);
 	if (j != SMB_SUCCESS)
-		return(j);
+		return j;
 
 	lncntr = 0;
 	bprintf(text[Emailing], user.alias, usernum);
@@ -214,6 +214,6 @@ int sbbs_t::bulkmailhdr(smb_t* smb, smbmsg_t* msg, uint usernum)
 		SAFEPRINTF(str, text[UserSentYouMail], useron.alias);
 		putsmsg(usernum, str);
 	}
-	return(0);
+	return 0;
 }
 

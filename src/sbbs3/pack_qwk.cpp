@@ -63,7 +63,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 		ex |= EX_OFFLINE;
 		if (user_is_online(&cfg, useron.number)) { /* Don't pre-pack with user online */
 			lprintf(LOG_NOTICE, "User #%u is concurrently logged-in, QWK packet creation aborted", useron.number);
-			return(false);
+			return false;
 		}
 	}
 
@@ -122,14 +122,14 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 		SAFEPRINTF(str, "%sCONTROL.DAT", cfg.temp_dir);
 		if ((stream = fopen(str, "wb")) == NULL) {
 			errormsg(WHERE, ERR_OPEN, str, 0);
-			return(false);
+			return false;
 		}
 
 		now = time(NULL);
 		if (localtime_r(&now, &tm) == NULL) {
 			fclose(stream);
 			errormsg(WHERE, ERR_CHK, "time", (uint)now);
-			return(false);
+			return false;
 		}
 
 		fprintf(stream, "%s\r\n%s\r\n%s\r\n%s, Sysop\r\n0000,%s\r\n"
@@ -168,7 +168,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 		SAFEPRINTF(str, "%sDOOR.ID", cfg.temp_dir);
 		if ((stream = fopen(str, "wb")) == NULL) {
 			errormsg(WHERE, ERR_OPEN, str, 0);
-			return(false);
+			return false;
 		}
 		p = "CONTROLTYPE = ";
 		fprintf(stream, "DOOR = %.10s\r\nVERSION = %s%c\r\n"
@@ -208,7 +208,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 			SAFEPRINTF(str, "%sNETFLAGS.DAT", cfg.temp_dir);
 			if ((stream = fopen(str, "wb")) == NULL) {
 				errormsg(WHERE, ERR_CREATE, str, 0);
-				return(false);
+				return false;
 			}
 			ch = 1;                       /* Net enabled */
 			if (usrgrps)
@@ -225,7 +225,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 		SAFEPRINTF(str, "%sTOREADER.EXT", cfg.temp_dir);
 		if ((stream = fopen(str, "wb")) == NULL) {
 			errormsg(WHERE, ERR_OPEN, str, 0);
-			return(false);
+			return false;
 		}
 
 		fprintf(stream, "ALIAS %s\r\n", useron.alias);
@@ -288,14 +288,14 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 		fmode = "w+b";
 	if ((qwk = fopen(str, fmode)) == NULL) {
 		errormsg(WHERE, ERR_OPEN, str, 0);
-		return(false);
+		return false;
 	}
 	if (useron.qwk & QWK_HEADERS) {
 		SAFEPRINTF(str, "%sHEADERS.DAT", cfg.temp_dir);
 		if ((hdrs = fopen(str, "a")) == NULL) {
 			fclose(qwk);
 			errormsg(WHERE, ERR_OPEN, str, 0);
-			return(false);
+			return false;
 		}
 	}
 	if (useron.qwk & QWK_VOTING) {
@@ -305,7 +305,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 			if (hdrs != NULL)
 				fclose(hdrs);
 			errormsg(WHERE, ERR_OPEN, str, 0);
-			return(false);
+			return false;
 		}
 	}
 	l = (int)filelength(fileno(qwk));
@@ -334,7 +334,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 			if (voting != NULL)
 				fclose(voting);
 			errormsg(WHERE, ERR_OPEN, str, 0);
-			return(false);
+			return false;
 		}
 	}
 	else
@@ -364,7 +364,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 					smb_close(&smb);
 					errormsg(WHERE, ERR_OPEN, str, 0);
 					free(mail);
-					return(false);
+					return false;
 				}
 			}
 			else
@@ -498,7 +498,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 						smb_close(&smb);
 						errormsg(WHERE, ERR_OPEN, str, 0);
 						free(post);
-						return(false);
+						return false;
 					}
 				}
 				else
@@ -626,7 +626,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 
 	if (!prepack && online != ON_LOCAL && ((sys_status & SS_ABORT) || !online)) {
 		bputs(text[Aborted]);
-		return(false);
+		return false;
 	}
 
 	if (/*!prepack && */ useron.rest & FLAG('Q')) { /* If QWK Net node, check for files */
@@ -688,7 +688,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 	    && (prepack || !preqwk)) {
 		if (online == ON_REMOTE)
 			bputs(text[QWKNoNewMessages]);
-		return(false);
+		return false;
 	}
 
 	if (!(useron.rest & FLAG('Q'))) {                  /* Don't include in network */
@@ -727,7 +727,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 	if (prepack) {
 		if (user_is_online(&cfg, useron.number)) { /* Don't pre-pack with user online */
 			lprintf(LOG_NOTICE, "User #%u is concurrently logged-in, QWK packet creation aborted", useron.number);
-			return(false);
+			return false;
 		}
 	}
 
@@ -752,7 +752,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 			errormsg(WHERE, ERR_EXEC, cmdstr_output, i);
 		if (flength(packet) < 1) {
 			bputs(text[QWKCompressionFailed]);
-			return(false);
+			return false;
 		}
 	}
 
@@ -769,5 +769,5 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 			closedir(dir);
 	}
 
-	return(true);
+	return true;
 }

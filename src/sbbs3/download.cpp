@@ -92,16 +92,16 @@ const char* sbbs_t::protcmdline(prot_t* prot, enum XFER_TYPE type)
 {
 	switch (type) {
 		case XFER_UPLOAD:
-			return(prot->ulcmd);
+			return prot->ulcmd;
 		case XFER_DOWNLOAD:
-			return(prot->dlcmd);
+			return prot->dlcmd;
 		case XFER_BATCH_UPLOAD:
-			return(prot->batulcmd);
+			return prot->batulcmd;
 		case XFER_BATCH_DOWNLOAD:
-			return(prot->batdlcmd);
+			return prot->batdlcmd;
 	}
 
-	return("invalid transfer type");
+	return "invalid transfer type";
 }
 
 void sbbs_t::data_transfer_begin(uchar& local_binary_tx, uchar& remote_binary_tx)
@@ -147,7 +147,7 @@ int sbbs_t::protocol(prot_t* prot, enum XFER_TYPE type
 			autohang = yesno(text[HangUpAfterXferQ]);
 	}
 	if (sys_status & SS_ABORT || !online) {    /* if ctrl-c or hangup */
-		return(-1);
+		return -1;
 	}
 	bprintf(text[StartXferNow], prot->name);
 	if (cd)
@@ -191,7 +191,7 @@ int sbbs_t::protocol(prot_t* prot, enum XFER_TYPE type
 		if (*elapsed < 0)
 			*elapsed = 0;
 	}
-	return(i);
+	return i;
 }
 
 /****************************************************************************/
@@ -298,7 +298,7 @@ bool sbbs_t::checkdszlog(const char* fpath)
 		}
 	}
 	fclose(fp);
-	return(success);
+	return success;
 }
 
 

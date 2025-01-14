@@ -40,21 +40,21 @@ int fchksum(const char* fname, long length,
 
 	if ((fp = fopen(fname, "rb")) == NULL) {
 		perror(fname);
-		return(-1);
+		return -1;
 	}
 
 	if (length && (buf = malloc(length)) == NULL) {
 		printf("!Error allocating %ld bytes of memory for %s\n"
 		       , length, fname);
 		fclose(fp);
-		return(-1);
+		return -1;
 	}
 
 	if (fread(buf, sizeof(BYTE), length, fp) != length) {
 		perror(fname);
 		fclose(fp);
 		FREE_AND_NULL(buf);
-		return(-1);
+		return -1;
 	}
 
 	fclose(fp);
@@ -64,7 +64,7 @@ int fchksum(const char* fname, long length,
 	*chksum = crc32(buf, length);
 #endif
 	FREE_AND_NULL(buf);
-	return(0);
+	return 0;
 }
 
 char* timestr(void)
@@ -73,7 +73,7 @@ char* timestr(void)
 	time_t t = time(NULL);
 	p = ctime(&t);
 	p[19] = 0;        /* chop off year and \n */
-	return(p + 4);    /* skip day-of-week */
+	return p + 4;    /* skip day-of-week */
 }
 
 int searchdir(const char* path, BOOL recursive, ulong compare_bytes)
@@ -86,7 +86,7 @@ int searchdir(const char* path, BOOL recursive, ulong compare_bytes)
 	printf("%s begin searching %s\n", timestr(), path);
 	if ((dir = opendir(path)) == NULL) {
 		perror(path);
-		return(1);
+		return 1;
 	}
 
 	while ((ent = readdir(dir)) != NULL) {
@@ -132,7 +132,7 @@ int searchdir(const char* path, BOOL recursive, ulong compare_bytes)
 
 	closedir(dir);
 	printf("%s done searching %s\n", timestr(), path);
-	return(0);
+	return 0;
 }
 
 int compare_files(const file_t *f1, const file_t *f2 )
@@ -141,14 +141,14 @@ int compare_files(const file_t *f1, const file_t *f2 )
 
 	/* Sort first by size (descending) */
 	if ((result = f2->length - f1->length) != 0)
-		return(result);
+		return result;
 
 	/* Then by chksum (ascending) */
 	if ((result = memcmp(&f1->chksum, &f2->chksum, sizeof(f1->chksum))) != 0)
-		return(result);
+		return result;
 
 	/* Then by date (descending) */
-	return(f2->date - f1->date);
+	return f2->date - f1->date;
 }
 
 int main(int argc, char** argv)
@@ -191,7 +191,7 @@ int main(int argc, char** argv)
 
 	if (!file_count) {
 		printf("no files.\n");
-		return(0);
+		return 0;
 	}
 
 	printf("%s begin sorting (%lu files)\n", timestr(), file_count);
@@ -227,5 +227,5 @@ int main(int argc, char** argv)
 	printf("%s done (%lu duplicates found)\n", timestr(), dupe_count);
 	if (del_files)
 		printf("%lu bytes deleted in %lu files\n", del_bytes, del_files);
-	return(0);
+	return 0;
 }

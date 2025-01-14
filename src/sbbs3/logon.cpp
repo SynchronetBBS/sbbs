@@ -43,10 +43,10 @@ bool sbbs_t::logon()
 
 	now = time(NULL);
 	if (localtime_r(&now, &tm) == NULL)
-		return(false);
+		return false;
 
 	if (!useron.number)
-		return(false);
+		return false;
 
 	SAFECOPY(client.user, useron.alias);
 	client.usernum = useron.number;
@@ -106,7 +106,7 @@ bool sbbs_t::logon()
 		              , useron.number, useron.alias, cfg.node_arstr);
 		logline(LOG_NOTICE, "+!", str);
 		hangup();
-		return(false);
+		return false;
 	}
 
 	if (!getnodedat(cfg.node_num, &thisnode, true)) {
@@ -123,7 +123,7 @@ bool sbbs_t::logon()
 			              , useron.number, useron.alias);
 			logline(LOG_NOTICE, "+!", str);
 			hangup();
-			return(false);
+			return false;
 		}
 		bool rmlock = yesno(text[RemoveNodeLockQ]);
 		if (!getnodedat(cfg.node_num, &thisnode, true)) {
@@ -331,7 +331,7 @@ bool sbbs_t::logon()
 			              , useron.number, useron.alias);
 			logline(LOG_NOTICE, "+!", str);
 			hangup();
-			return(false);
+			return false;
 		}
 		if (useron.rest & FLAG('L') && useron.ltoday > 1) {
 			bputs(text[R_Logons]);
@@ -339,7 +339,7 @@ bool sbbs_t::logon()
 			              , useron.number, useron.alias);
 			logline(LOG_NOTICE, "+!", str);
 			hangup();
-			return(false);
+			return false;
 		}
 		kmode = (cfg.uq & UQ_NOEXASC) | K_TRIM;
 		if (!(cfg.uq & UQ_NOUPRLWR))
@@ -445,7 +445,7 @@ bool sbbs_t::logon()
 		safe_snprintf(str, sizeof(str), "(%04u)  %-25s  Unsuccessful logon"
 		              , useron.number, useron.alias);
 		logline(LOG_NOTICE, "+!", str);
-		return(false);
+		return false;
 	}
 	SAFECOPY(useron.modem, connection);
 	SAFECOPY(useron.ipaddr, client_ipaddr);
@@ -461,7 +461,7 @@ bool sbbs_t::logon()
 		safe_snprintf(str, sizeof(str), "(%04u)  %-25s  QWK Network Connection"
 		              , useron.number, useron.alias);
 		logline("++", str);
-		return(true);
+		return true;
 	}
 
 	/********************/
@@ -480,7 +480,7 @@ bool sbbs_t::logon()
 		safe_snprintf(path, sizeof(path), "%slogon.lst", cfg.data_dir);
 		if ((file = nopen(path, O_WRONLY | O_CREAT | O_APPEND)) == -1) {
 			errormsg(WHERE, ERR_OPEN, path, O_RDWR | O_CREAT | O_APPEND);
-			return(false);
+			return false;
 		}
 		getuserstr(&cfg, useron.number, USER_NOTE, useron.note, sizeof(useron.note));
 		getuserstr(&cfg, useron.number, USER_LOCATION, useron.location, sizeof(useron.location));
@@ -501,7 +501,7 @@ bool sbbs_t::logon()
 	}
 
 	if (sys_status & SS_QWKLOGON)
-		return(true);
+		return true;
 
 	sys_status |= SS_PAUSEON; /* always force pause on during this section */
 	mailw = getmail(&cfg, useron.number, /* Sent: */ FALSE, /* attr: */ 0);
@@ -553,7 +553,7 @@ bool sbbs_t::logon()
 				logline(LOG_NOTICE, "+!", str);
 				bputs(text[UserOnTwoNodes]);
 				hangup();
-				return(false);
+				return false;
 			}
 		}
 	}
@@ -599,7 +599,7 @@ bool sbbs_t::logon()
 		scanallsubs(SCAN_NEW);
 	if (usrgrps && useron.misc & ASK_SSCAN && text[SScanAllGrpsQ][0] && yesno(text[SScanAllGrpsQ]))
 		scanallsubs(SCAN_TOYOU | SCAN_UNREAD);
-	return(true);
+	return true;
 }
 
 /****************************************************************************/
@@ -630,9 +630,9 @@ uint sbbs_t::logonstats()
 		if (stats.date > now + (24L * 60L * 60L)) /* More than a day in the future? */
 			errormsg(WHERE, ERR_CHK, "Daily stats date/time stamp", (ulong)stats.date);
 		if (localtime_r(&stats.date, &update_tm) == NULL)
-			return(0);
+			return 0;
 		if (localtime_r(&now, &tm) == NULL)
-			return(0);
+			return 0;
 		if ((tm.tm_mday > update_tm.tm_mday && tm.tm_mon == update_tm.tm_mon)
 		    || tm.tm_mon > update_tm.tm_mon || tm.tm_year > update_tm.tm_year) {
 
@@ -646,7 +646,7 @@ uint sbbs_t::logonstats()
 			int file;
 			if ((file = nopen(path, O_TRUNC | O_CREAT | O_WRONLY)) == -1) {
 				errormsg(WHERE, ERR_OPEN, path, O_TRUNC | O_CREAT | O_WRONLY);
-				return(0L);
+				return 0L;
 			}
 			close(file);
 			for (i = 0; i <= cfg.sys_nodes; i++) {
@@ -682,19 +682,19 @@ uint sbbs_t::logonstats()
 		}
 	}
 	if (cfg.node_num == 0) /* called from event_thread() */
-		return(0);
+		return 0;
 
 	if (thisnode.status == NODE_QUIET)       /* Quiet users aren't counted */
-		return(0);
+		return 0;
 
 	if (REALSYSOP && !(cfg.sys_misc & SM_SYSSTAT))
-		return(0);
+		return 0;
 
 	for (i = 0; i < 2; i++) {
 		FILE* fp = fopen_dstats(&cfg, i ? 0 : cfg.node_num, /* for_write: */ TRUE);
 		if (fp == NULL) {
 			errormsg(WHERE, ERR_OPEN, "dsts.ini", i);
-			return(0L);
+			return 0L;
 		}
 		if (!fread_dstats(fp, &stats)) {
 			errormsg(WHERE, ERR_READ, "dsts.ini", i);
@@ -707,5 +707,5 @@ uint sbbs_t::logonstats()
 		fclose_dstats(fp);
 	}
 
-	return(stats.logons);
+	return stats.logons;
 }

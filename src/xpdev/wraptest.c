@@ -109,7 +109,7 @@ int main()
 	printf("\nsopen() test\n");
 	if ((fd = sopen(LOCK_FNAME, O_RDWR | O_CREAT, SH_DENYRW, S_IREAD | S_IWRITE)) == -1) {
 		perror(LOCK_FNAME);
-		return(errno);
+		return errno;
 	}
 	printf("%s is opened with an exclusive (read/write) lock\n", LOCK_FNAME);
 	getkey();
@@ -127,7 +127,7 @@ int main()
 	printf("\nlock() test\n");
 	if ((fd = sopen(LOCK_FNAME, O_RDWR | O_CREAT, SH_DENYNO, S_IREAD | S_IWRITE)) == -1) {
 		perror(LOCK_FNAME);
-		return(errno);
+		return errno;
 	}
 	write(fd, "lock testing\n", LOCK_LEN);
 	if (lock(fd, LOCK_OFFSET, LOCK_LEN) == 0)

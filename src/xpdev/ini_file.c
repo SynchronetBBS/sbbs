@@ -54,12 +54,12 @@ static char* logLevelStringList[]
 
 str_list_t iniLogLevelStringList(void)
 {
-	return(logLevelStringList);
+	return logLevelStringList;
 }
 
 static bool is_eof(char* str)
 {
-	return(*str == '!' && stricmp(truncsp(str), INI_EOF_DIRECTIVE) == 0);
+	return *str == '!' && stricmp(truncsp(str), INI_EOF_DIRECTIVE) == 0;
 }
 
 static char* section_name(char* p)
@@ -68,16 +68,16 @@ static char* section_name(char* p)
 
 	SKIP_WHITESPACE(p);
 	if (*p != INI_OPEN_SECTION_CHAR)
-		return(NULL);
+		return NULL;
 	p++;
 	SKIP_WHITESPACE(p);
 	tp = strrchr(p, INI_CLOSE_SECTION_CHAR);
 	if (tp == NULL)
-		return(NULL);
+		return NULL;
 	*tp = 0;
 	truncsp(p);
 
-	return(p);
+	return p;
 }
 
 static bool section_match(const char* name, const char* compare, bool case_sensitive)
@@ -111,7 +111,7 @@ static bool section_match(const char* name, const char* compare, bool case_sensi
 	strListFree(&names);
 	strListFree(&comps);
 
-	return(found);
+	return found;
 }
 
 static bool seek_section(FILE* fp, const char* section)
@@ -122,7 +122,7 @@ static bool seek_section(FILE* fp, const char* section)
 	rewind(fp);
 
 	if (section == ROOT_SECTION)
-		return(true);
+		return true;
 
 	/* Perform case-sensitive search first */
 	while (!feof(fp)) {
@@ -133,7 +133,7 @@ static bool seek_section(FILE* fp, const char* section)
 		if ((p = section_name(str)) == NULL)
 			continue;
 		if (section_match(p, section, /* case-sensitive */ true))
-			return(true);
+			return true;
 	}
 
 	/* Then perform case-insensitive search */
@@ -146,10 +146,10 @@ static bool seek_section(FILE* fp, const char* section)
 		if ((p = section_name(str)) == NULL)
 			continue;
 		if (section_match(p, section, /* case-sensitive */ false))
-			return(true);
+			return true;
 	}
 
-	return(false);
+	return false;
 }
 
 static size_t find_section_index(str_list_t list, const char* section)
@@ -162,21 +162,21 @@ static size_t find_section_index(str_list_t list, const char* section)
 	for (i = 0; list[i] != NULL; i++) {
 		SAFECOPY(str, list[i]);
 		if (is_eof(str))
-			return(strListCount(list));
+			return strListCount(list);
 		if ((p = section_name(str)) != NULL && section_match(p, section, /* case-sensitive */ true))
-			return(i);
+			return i;
 	}
 
 	/* Then perform case-insensitive search */
 	for (i = 0; list[i] != NULL; i++) {
 		SAFECOPY(str, list[i]);
 		if (is_eof(str))
-			return(strListCount(list));
+			return strListCount(list);
 		if ((p = section_name(str)) != NULL && section_match(p, section, /* case-sensitive */ false))
-			return(i);
+			return i;
 	}
 
-	return(i);
+	return i;
 }
 
 static size_t section_start(str_list_t list, size_t index)
@@ -212,14 +212,14 @@ static char* key_name(char* p, char** vp, bool literals_supported)
 	*vp = NULL;
 
 	if (p == NULL)
-		return(NULL);
+		return NULL;
 
 	/* Parse value name */
 	SKIP_WHITESPACE(p);
 	if (*p == INI_COMMENT_CHAR)
-		return(NULL);
+		return NULL;
 	if (*p == INI_OPEN_SECTION_CHAR)
-		return(INI_NEW_SECTION);
+		return INI_NEW_SECTION;
 	equal = strchr(p, '=');
 	colon = strchr(p, ':');
 	if (colon == NULL || (equal != NULL && equal < colon)) {
@@ -229,7 +229,7 @@ static char* key_name(char* p, char** vp, bool literals_supported)
 		*vp = colon;
 
 	if (*vp == NULL)
-		return(NULL);
+		return NULL;
 
 	*(*vp) = 0;
 	truncsp(p);
@@ -250,7 +250,7 @@ static char* key_name(char* p, char** vp, bool literals_supported)
 	} else
 		truncsp(*vp);       /* "key = value" - truncate all white-space chars */
 
-	return(p);
+	return p;
 }
 
 static char* clean_value(char* str)
@@ -270,10 +270,10 @@ static char* read_value(FILE* fp, const char* section, const char* key, char* va
 	char  str[INI_MAX_LINE_LEN];
 
 	if (fp == NULL)
-		return(NULL);
+		return NULL;
 
 	if (!seek_section(fp, section))
-		return(NULL);
+		return NULL;
 
 	while (!feof(fp)) {
 		if (fgets(str, sizeof(str), fp) == NULL)
@@ -293,7 +293,7 @@ static char* read_value(FILE* fp, const char* section, const char* key, char* va
 		return clean_value(value);
 	}
 
-	return(NULL);
+	return NULL;
 }
 
 static size_t get_value(str_list_t list, const char* section, const char* key, char* value, char** vpp, bool literals_supported)
@@ -326,10 +326,10 @@ static size_t get_value(str_list_t list, const char* section, const char* key, c
 		}
 		if (vpp != NULL)
 			*vpp = list[i] + (vp - str);
-		return(i);
+		return i;
 	}
 
-	return(i);
+	return i;
 }
 
 bool iniSectionExists(str_list_t list, const char* section)
@@ -337,13 +337,13 @@ bool iniSectionExists(str_list_t list, const char* section)
 	size_t i;
 
 	if (list == NULL)
-		return(false);
+		return false;
 
 	if (section == ROOT_SECTION)
-		return(true);
+		return true;
 
 	i = find_section_index(list, section);
-	return(list[i] != NULL);
+	return list[i] != NULL;
 }
 
 str_list_t iniGetSection(str_list_t list, const char *section)
@@ -353,10 +353,10 @@ str_list_t iniGetSection(str_list_t list, const char *section)
 	char *     p;
 
 	if (list == NULL)
-		return(NULL);
+		return NULL;
 
 	if ((retval = strListInit()) == NULL)
-		return(NULL);
+		return NULL;
 
 	i = find_section(list, section);
 	if (list[i] != NULL) {
@@ -370,7 +370,7 @@ str_list_t iniGetSection(str_list_t list, const char *section)
 				strListPush(&retval, list[i]);
 		}
 	}
-	return(retval);
+	return retval;
 }
 
 bool iniKeyExists(str_list_t list, const char* section, const char* key)
@@ -378,14 +378,14 @@ bool iniKeyExists(str_list_t list, const char* section, const char* key)
 	size_t i;
 
 	if (list == NULL)
-		return(false);
+		return false;
 
 	i = get_value(list, section, key, NULL, NULL, /* literals_supported: */ false);
 
 	if (list[i] == NULL || *(list[i]) == INI_OPEN_SECTION_CHAR)
-		return(false);
+		return false;
 
-	return(true);
+	return true;
 }
 
 bool iniValueExists(str_list_t list, const char* section, const char* key)
@@ -394,7 +394,7 @@ bool iniValueExists(str_list_t list, const char* section, const char* key)
 
 	get_value(list, section, key, NULL, &vp, /* literals_supported: */ false);
 
-	return(vp != NULL && *vp != 0);
+	return vp != NULL && *vp != 0;
 }
 
 bool iniRemoveKey(str_list_t* list, const char* section, const char* key)
@@ -423,12 +423,12 @@ bool iniRemoveValue(str_list_t* list, const char* section, const char* key)
 	get_value(*list, section, key, NULL, &vp, /* literals_supported: */ false);
 
 	if (vp == NULL)
-		return(false);
+		return false;
 
 	while (*vp != '\0' && isspace(*(vp - 1)))
 		--vp;
 	*vp = 0;
-	return(true);
+	return true;
 }
 
 bool iniRemoveSection(str_list_t* list, const char* section)
@@ -437,12 +437,12 @@ bool iniRemoveSection(str_list_t* list, const char* section)
 
 	i = find_section_index(*list, section);
 	if ((*list)[i] == NULL)    /* not found */
-		return(false);
+		return false;
 	do {
 		strListDelete(list, i);
 	} while ((*list)[i] != NULL && *(*list)[i] != INI_OPEN_SECTION_CHAR);
 
-	return(true);
+	return true;
 }
 
 bool iniRemoveSectionFast(str_list_t list, const char* section)
@@ -451,12 +451,12 @@ bool iniRemoveSectionFast(str_list_t list, const char* section)
 
 	i = find_section_index(list, section);
 	if (list[i] == NULL)   /* not found */
-		return(false);
+		return false;
 	do {
 		strListFastDelete(list, i, /* count: */ 1);
 	} while (list[i] != NULL && *list[i] != INI_OPEN_SECTION_CHAR);
 
-	return(true);
+	return true;
 }
 
 str_list_t iniCutSection(str_list_t list, const char *section)
@@ -478,11 +478,11 @@ bool iniRemoveSections(str_list_t* list, const char* prefix)
 	sections = iniGetSectionList(*list, prefix);
 	while ((section = strListPop(&sections)) != NULL)
 		if (!iniRemoveSection(list, section))
-			return(false);
+			return false;
 
 	strListFree(&sections);
 
-	return(true);
+	return true;
 }
 
 // This sorts comments too, so should not be used on human created/edited files
@@ -536,20 +536,20 @@ bool iniRenameSection(str_list_t* list, const char* section, const char* newname
 	size_t i;
 
 	if (section == ROOT_SECTION)
-		return(false);
+		return false;
 
 	if (stricmp(section, newname) != 0) {
 		i = find_section_index(*list, newname);
 		if ((*list)[i] != NULL)    /* duplicate */
-			return(false);
+			return false;
 	}
 
 	i = find_section_index(*list, section);
 	if ((*list)[i] == NULL)    /* not found */
-		return(false);
+		return false;
 
 	SAFEPRINTF(str, "[%s]", newname);
-	return(strListReplace(*list, i, str) != NULL);
+	return strListReplace(*list, i, str) != NULL;
 }
 
 static size_t ini_add_section(str_list_t* list, const char* section
@@ -558,10 +558,10 @@ static size_t ini_add_section(str_list_t* list, const char* section
 	char str[INI_MAX_LINE_LEN];
 
 	if (section == ROOT_SECTION)
-		return(0);
+		return 0;
 
 	if ((*list)[index] != NULL)
-		return(index);
+		return index;
 
 	if (style == NULL)
 		style = &default_style;
@@ -570,13 +570,13 @@ static size_t ini_add_section(str_list_t* list, const char* section
 	SAFEPRINTF(str, "[%s]", section);
 	strListAppend(list, str, index);
 
-	return(index);
+	return index;
 }
 
 size_t iniAddSection(str_list_t* list, const char* section, ini_style_t* style)
 {
 	if (section == ROOT_SECTION)
-		return(0);
+		return 0;
 
 	return ini_add_section(list, section, style, find_section_index(*list, section));
 }
@@ -584,7 +584,7 @@ size_t iniAddSection(str_list_t* list, const char* section, ini_style_t* style)
 size_t iniAppendSection(str_list_t* list, const char* section, ini_style_t* style)
 {
 	if (section == ROOT_SECTION)
-		return(0);
+		return 0;
 
 	return ini_add_section(list, section, style, strListCount(*list));
 }
@@ -593,7 +593,7 @@ size_t iniAppendSectionWithKeys(str_list_t* list, const char* section, const str
                                 , ini_style_t* style)
 {
 	if (section == ROOT_SECTION)
-		return(0);
+		return 0;
 
 	ini_add_section(list, section, style, strListCount(*list));
 
@@ -627,7 +627,7 @@ static char* ini_set_string(str_list_t* list, const char* section, const char* k
 	iniAddSection(list, section, style);
 
 	if (key == NULL)
-		return(NULL);
+		return NULL;
 	if (style->key_prefix != NULL)
 		key_prefix = style->key_prefix;
 	if (style->value_separator != NULL)
@@ -651,7 +651,7 @@ static char* ini_set_string(str_list_t* list, const char* section, const char* k
 	}
 
 	if (strcmp(curval, value) == 0)
-		return((*list)[i]); /* no change */
+		return (*list)[i]; /* no change */
 
 	return strListReplace(*list, i, str);
 }
@@ -1001,7 +1001,7 @@ static char* default_value(const char* deflt, char* value)
 	if (deflt != NULL && deflt != value && value != NULL)
 		sprintf(value, "%.*s", INI_MAX_VALUE_LEN - 1, deflt);
 
-	return((char*)deflt);
+	return (char*)deflt;
 }
 
 /* Supports string literals: */
@@ -1010,7 +1010,7 @@ char* iniReadString(FILE* fp, const char* section, const char* key, const char* 
 	if (read_value(fp, section, key, value, /* literals_supported: */ true) == NULL || *value == 0 /* blank */)
 		return default_value(deflt, value);
 
-	return(value);
+	return value;
 }
 
 char* iniReadSString(FILE* fp, const char* section, const char* key, const char* deflt, char* value, size_t sz)
@@ -1044,7 +1044,7 @@ char* iniReadValue(FILE* fp, const char* section, const char* key, const char* d
 	if (read_value(fp, section, key, value, /* literals_supported: */ false) == NULL || *value == 0 /* blank */)
 		return default_value(deflt, value);
 
-	return(value);
+	return value;
 }
 
 /* Supports string literals: */
@@ -1060,7 +1060,7 @@ char* iniGetString(str_list_t list, const char* section, const char* key, const 
 	if (value != NULL)   /* return the modified (trimmed) value */
 		return value;
 
-	return(vp);
+	return vp;
 }
 
 char* iniGetSString(str_list_t list, const char* section, const char* key, const char* deflt, char* value, size_t sz)
@@ -1101,7 +1101,7 @@ char* iniGetValue(str_list_t list, const char* section, const char* key, const c
 	if (value != NULL)   /* return the modified (trimmed) value */
 		return value;
 
-	return(vp);
+	return vp;
 }
 
 /* Does NOT support string literals: */
@@ -1119,7 +1119,7 @@ char* iniPopKey(str_list_t* list, const char* section, const char* key, char* va
 
 	strListDelete(list, i);
 
-	return(value);
+	return value;
 }
 
 /* Supports string literals: */
@@ -1137,24 +1137,24 @@ char* iniPopString(str_list_t* list, const char* section, const char* key, char*
 
 	strListDelete(list, i);
 
-	return(value);
+	return value;
 }
 
 char* iniReadExistingString(FILE* fp, const char* section, const char* key, const char* deflt, char* value)
 {
 	if (read_value(fp, section, key, value, /* literals_supported: */ true) == NULL)
-		return(NULL);
+		return NULL;
 
 	if (*value == 0 /* blank */)
 		return default_value(deflt, value);
 
-	return(value);
+	return value;
 }
 
 char* iniGetExistingString(str_list_t list, const char* section, const char* key, const char* deflt, char* value)
 {
 	if (!iniKeyExists(list, section, key))
-		return(NULL);
+		return NULL;
 
 	return iniGetString(list, section, key, deflt, value);
 }
@@ -1162,18 +1162,18 @@ char* iniGetExistingString(str_list_t list, const char* section, const char* key
 char* iniReadExistingValue(FILE* fp, const char* section, const char* key, const char* deflt, char* value)
 {
 	if (read_value(fp, section, key, value, /* literals_supported: */ false) == NULL)
-		return(NULL);
+		return NULL;
 
 	if (*value == 0 /* blank */)
 		return default_value(deflt, value);
 
-	return(value);
+	return value;
 }
 
 char* iniGetExistingValue(str_list_t list, const char* section, const char* key, const char* deflt, char* value)
 {
 	if (!iniKeyExists(list, section, key))
-		return(NULL);
+		return NULL;
 
 	return iniGetValue(list, section, key, deflt, value);
 }
@@ -1187,7 +1187,7 @@ static str_list_t splitList(char* list, const char* sep)
 	str_list_t lp;
 
 	if ((lp = strListInit()) == NULL)
-		return(NULL);
+		return NULL;
 
 	if (sep == NULL)
 		sep = ",";
@@ -1201,7 +1201,7 @@ static str_list_t splitList(char* list, const char* sep)
 		token = strtok_r(NULL, sep, &tmp);
 	}
 
-	return(lp);
+	return lp;
 }
 
 str_list_t iniReadStringList(FILE* fp, const char* section, const char* key
@@ -1215,11 +1215,11 @@ str_list_t iniReadStringList(FILE* fp, const char* section, const char* key
 		value = (char*)deflt;
 
 	if (value == NULL)
-		return(NULL);
+		return NULL;
 
 	SAFECOPY(list, value);
 
-	return(splitList(list, sep));
+	return splitList(list, sep);
 }
 
 str_list_t iniGetStringList(str_list_t list, const char* section, const char* key
@@ -1231,17 +1231,17 @@ str_list_t iniGetStringList(str_list_t list, const char* section, const char* ke
 
 	if (*value == 0 /* blank value or missing key */) {
 		if (deflt == NULL)
-			return(NULL);
+			return NULL;
 		SAFECOPY(value, deflt);
 	}
 
-	return(splitList(value, sep));
+	return splitList(value, sep);
 }
 
 void* iniFreeStringList(str_list_t list)
 {
 	strListFree(&list);
-	return(list);
+	return list;
 }
 
 void* iniFreeNamedStringList(named_string_t** list)
@@ -1249,7 +1249,7 @@ void* iniFreeNamedStringList(named_string_t** list)
 	ulong i;
 
 	if (list == NULL)
-		return(NULL);
+		return NULL;
 
 	for (i = 0; list[i] != NULL; i++) {
 		if (list[i]->name != NULL)
@@ -1260,7 +1260,7 @@ void* iniFreeNamedStringList(named_string_t** list)
 	}
 
 	free(list);
-	return(NULL);
+	return NULL;
 }
 
 static str_list_t ini_read_section_list(FILE* fp, const char* prefix, bool include_dupes)
@@ -1271,10 +1271,10 @@ static str_list_t ini_read_section_list(FILE* fp, const char* prefix, bool inclu
 	str_list_t lp;
 
 	if ((lp = strListInit()) == NULL)
-		return(NULL);
+		return NULL;
 
 	if (fp == NULL)
-		return(lp);
+		return lp;
 
 	rewind(fp);
 
@@ -1294,7 +1294,7 @@ static str_list_t ini_read_section_list(FILE* fp, const char* prefix, bool inclu
 			break;
 	}
 
-	return(lp);
+	return lp;
 }
 
 str_list_t iniReadSectionList(FILE* fp, const char* prefix)
@@ -1315,10 +1315,10 @@ static str_list_t ini_get_section_list(str_list_t list, const char* prefix, bool
 	str_list_t lp;
 
 	if ((lp = strListInit()) == NULL)
-		return(NULL);
+		return NULL;
 
 	if (list == NULL)
-		return(lp);
+		return lp;
 
 	for (i = 0; list[i] != NULL; i++) {
 		SAFECOPY(str, list[i]);
@@ -1335,7 +1335,7 @@ static str_list_t ini_get_section_list(str_list_t list, const char* prefix, bool
 			break;
 	}
 
-	return(lp);
+	return lp;
 }
 
 str_list_t iniGetSectionList(str_list_t list, const char* prefix)
@@ -1355,7 +1355,7 @@ size_t iniGetSectionCount(str_list_t list, const char* prefix)
 	size_t i, items = 0;
 
 	if (list == NULL)
-		return(0);
+		return 0;
 
 	for (i = 0; list[i] != NULL; i++) {
 		SAFECOPY(str, list[i]);
@@ -1369,7 +1369,7 @@ size_t iniGetSectionCount(str_list_t list, const char* prefix)
 		items++;
 	}
 
-	return(items);
+	return items;
 }
 
 size_t iniReadSectionCount(FILE* fp, const char* prefix)
@@ -1379,7 +1379,7 @@ size_t iniReadSectionCount(FILE* fp, const char* prefix)
 	ulong items = 0;
 
 	if (fp == NULL)
-		return(0);
+		return 0;
 
 	rewind(fp);
 
@@ -1396,7 +1396,7 @@ size_t iniReadSectionCount(FILE* fp, const char* prefix)
 		items++;
 	}
 
-	return(items);
+	return items;
 }
 
 
@@ -1409,15 +1409,15 @@ str_list_t iniReadKeyList(FILE* fp, const char* section)
 	str_list_t lp;
 
 	if ((lp = strListInit()) == NULL)
-		return(NULL);
+		return NULL;
 
 	if (fp == NULL)
-		return(lp);
+		return lp;
 
 	rewind(fp);
 
 	if (!seek_section(fp, section))
-		return(lp);
+		return lp;
 
 	while (!feof(fp)) {
 		if (fgets(str, sizeof(str), fp) == NULL)
@@ -1432,7 +1432,7 @@ str_list_t iniReadKeyList(FILE* fp, const char* section)
 			break;
 	}
 
-	return(lp);
+	return lp;
 }
 
 str_list_t iniGetKeyList(str_list_t list, const char* section)
@@ -1444,10 +1444,10 @@ str_list_t iniGetKeyList(str_list_t list, const char* section)
 	str_list_t lp;
 
 	if ((lp = strListInit()) == NULL)
-		return(NULL);
+		return NULL;
 
 	if (list == NULL)
-		return(lp);
+		return lp;
 
 	for (i = find_section(list, section); list[i] != NULL; i++) {
 		SAFECOPY(str, list[i]);
@@ -1461,7 +1461,7 @@ str_list_t iniGetKeyList(str_list_t list, const char* section)
 			break;
 	}
 
-	return(lp);
+	return lp;
 }
 
 
@@ -1476,16 +1476,16 @@ iniReadNamedStringList(FILE* fp, const char* section)
 	named_string_t** np;
 
 	if (fp == NULL)
-		return(NULL);
+		return NULL;
 
 	rewind(fp);
 
 	if (!seek_section(fp, section))
-		return(NULL);
+		return NULL;
 
 	/* New behavior, if section exists but is empty, return single element array (terminator only) */
 	if ((lp = (named_string_t**)malloc(sizeof(named_string_t*))) == NULL)
-		return(NULL);
+		return NULL;
 
 	while (!feof(fp)) {
 		if (fgets(str, sizeof(str), fp) == NULL)
@@ -1510,7 +1510,7 @@ iniReadNamedStringList(FILE* fp, const char* section)
 
 	lp[items] = NULL; /* terminate list */
 
-	return(lp);
+	return lp;
 }
 
 named_string_t**
@@ -1524,15 +1524,15 @@ iniGetNamedStringList(str_list_t list, const char* section)
 	named_string_t** np;
 
 	if (list == NULL)
-		return(NULL);
+		return NULL;
 
 	i = find_section(list, section);
 	if (section != ROOT_SECTION && list[i] == NULL)
-		return(NULL);
+		return NULL;
 
 	/* New behavior, if section exists but is empty, return single element array (terminator only) */
 	if ((lp = (named_string_t**)malloc(sizeof(named_string_t*))) == NULL)
-		return(NULL);
+		return NULL;
 
 	for (; list[i] != NULL; i++) {
 		SAFECOPY(str, list[i]);
@@ -1556,7 +1556,7 @@ iniGetNamedStringList(str_list_t list, const char* section)
 
 	lp[items] = NULL; /* terminate list */
 
-	return(lp);
+	return lp;
 }
 
 // the 'list' must remain allocated/valid through-out the life of the returned named_str_list
@@ -1711,33 +1711,33 @@ static bool isTrue(const char* value)
 static int parseInteger(const char* value)
 {
 	if (isTrue(value))
-		return(true);
+		return true;
 
-	return((int)strtol(value, NULL, 0));
+	return (int)strtol(value, NULL, 0);
 }
 
 static uint parseUInteger(const char* value)
 {
 	if (isTrue(value))
-		return(true);
+		return true;
 
-	return((uint)strtoul(value, NULL, 0));
+	return (uint)strtoul(value, NULL, 0);
 }
 
 static long parseLongInteger(const char* value)
 {
 	if (isTrue(value))
-		return(true);
+		return true;
 
-	return(strtol(value, NULL, 0));
+	return strtol(value, NULL, 0);
 }
 
 static ulong parseULongInteger(const char* value)
 {
 	if (isTrue(value))
-		return(true);
+		return true;
 
-	return(strtoul(value, NULL, 0));
+	return strtoul(value, NULL, 0);
 }
 
 #if !defined __BORLANDC__
@@ -1760,7 +1760,7 @@ static uint64_t parseUInt64(const char* value)
 
 static bool parseBool(const char* value)
 {
-	return(INT_TO_BOOL(parseInteger(value)));
+	return INT_TO_BOOL(parseInteger(value));
 }
 
 int iniReadInteger(FILE* fp, const char* section, const char* key, int deflt)
@@ -1769,12 +1769,12 @@ int iniReadInteger(FILE* fp, const char* section, const char* key, int deflt)
 	char  buf[INI_MAX_VALUE_LEN];
 
 	if ((value = read_value(fp, section, key, buf, /* literals_supported: */ false)) == NULL)
-		return(deflt);
+		return deflt;
 
 	if (*value == 0)       /* blank value */
-		return(deflt);
+		return deflt;
 
-	return(parseInteger(value));
+	return parseInteger(value);
 }
 
 uint iniReadUInteger(FILE* fp, const char* section, const char* key, uint deflt)
@@ -1783,12 +1783,12 @@ uint iniReadUInteger(FILE* fp, const char* section, const char* key, uint deflt)
 	char  buf[INI_MAX_VALUE_LEN];
 
 	if ((value = read_value(fp, section, key, buf, /* literals_supported: */ false)) == NULL)
-		return(deflt);
+		return deflt;
 
 	if (*value == 0)       /* blank value */
-		return(deflt);
+		return deflt;
 
-	return(parseUInteger(value));
+	return parseUInteger(value);
 }
 
 int iniGetInteger(str_list_t list, const char* section, const char* key, int deflt)
@@ -1798,9 +1798,9 @@ int iniGetInteger(str_list_t list, const char* section, const char* key, int def
 	get_value(list, section, key, NULL, &vp, /* literals_supported: */ false);
 
 	if (vp == NULL || *vp == 0)  /* blank value or missing key */
-		return(deflt);
+		return deflt;
 
-	return(parseInteger(vp));
+	return parseInteger(vp);
 }
 
 /* Returns the default value if key value is out of range */
@@ -1846,29 +1846,29 @@ uint iniGetUInteger(str_list_t list, const char* section, const char* key, uint 
 	get_value(list, section, key, NULL, &vp, /* literals_supported: */ false);
 
 	if (vp == NULL || *vp == 0)  /* blank value or missing key */
-		return(deflt);
+		return deflt;
 
-	return(parseUInteger(vp));
+	return parseUInteger(vp);
 }
 
 short iniReadShortInt(FILE* fp, const char* section, const char* key, short deflt)
 {
-	return((short)iniReadInteger(fp, section, key, deflt));
+	return (short)iniReadInteger(fp, section, key, deflt);
 }
 
 ushort iniReadUShortInt(FILE* fp, const char* section, const char* key, ushort deflt)
 {
-	return((ushort)iniReadUInteger(fp, section, key, deflt));
+	return (ushort)iniReadUInteger(fp, section, key, deflt);
 }
 
 short iniGetShortInt(str_list_t list, const char* section, const char* key, short deflt)
 {
-	return((short)iniGetInteger(list, section, key, deflt));
+	return (short)iniGetInteger(list, section, key, deflt);
 }
 
 ushort iniGetUShortInt(str_list_t list, const char* section, const char* key, ushort deflt)
 {
-	return((ushort)iniGetUInteger(list, section, key, deflt));
+	return (ushort)iniGetUInteger(list, section, key, deflt);
 }
 
 long iniReadLongInt(FILE* fp, const char* section, const char* key, long deflt)
@@ -1877,12 +1877,12 @@ long iniReadLongInt(FILE* fp, const char* section, const char* key, long deflt)
 	char  buf[INI_MAX_VALUE_LEN];
 
 	if ((value = read_value(fp, section, key, buf, /* literals_supported: */ false)) == NULL)
-		return(deflt);
+		return deflt;
 
 	if (*value == 0)       /* blank value */
-		return(deflt);
+		return deflt;
 
-	return(parseLongInteger(value));
+	return parseLongInteger(value);
 }
 
 ulong iniReadULongInt(FILE* fp, const char* section, const char* key, ulong deflt)
@@ -1891,12 +1891,12 @@ ulong iniReadULongInt(FILE* fp, const char* section, const char* key, ulong defl
 	char  buf[INI_MAX_VALUE_LEN];
 
 	if ((value = read_value(fp, section, key, buf, /* literals_supported: */ false)) == NULL)
-		return(deflt);
+		return deflt;
 
 	if (*value == 0)       /* blank value */
-		return(deflt);
+		return deflt;
 
-	return(parseULongInteger(value));
+	return parseULongInteger(value);
 }
 
 long iniGetLongInt(str_list_t list, const char* section, const char* key, long deflt)
@@ -1906,9 +1906,9 @@ long iniGetLongInt(str_list_t list, const char* section, const char* key, long d
 	get_value(list, section, key, NULL, &vp, /* literals_supported: */ false);
 
 	if (vp == NULL || *vp == 0)  /* blank value or missing key */
-		return(deflt);
+		return deflt;
 
-	return(parseLongInteger(vp));
+	return parseLongInteger(vp);
 }
 
 ulong iniGetULongInt(str_list_t list, const char* section, const char* key, ulong deflt)
@@ -1918,9 +1918,9 @@ ulong iniGetULongInt(str_list_t list, const char* section, const char* key, ulon
 	get_value(list, section, key, NULL, &vp, /* literals_supported: */ false);
 
 	if (vp == NULL || *vp == 0)  /* blank value or missing key */
-		return(deflt);
+		return deflt;
 
-	return(parseULongInteger(vp));
+	return parseULongInteger(vp);
 }
 
 #if !defined __BORLANDC__
@@ -1983,12 +1983,12 @@ int64_t iniReadBytes(FILE* fp, const char* section, const char* key, uint unit, 
 	char  buf[INI_MAX_VALUE_LEN];
 
 	if ((value = read_value(fp, section, key, buf, /* literals_supported: */ false)) == NULL)
-		return(deflt);
+		return deflt;
 
 	if (*value == 0)       /* blank value */
-		return(deflt);
+		return deflt;
 
-	return(parse_byte_count(value, unit));
+	return parse_byte_count(value, unit);
 }
 
 int64_t iniGetBytes(str_list_t list, const char* section, const char* key, uint unit, int64_t deflt)
@@ -1998,9 +1998,9 @@ int64_t iniGetBytes(str_list_t list, const char* section, const char* key, uint 
 	get_value(list, section, key, NULL, &vp, /* literals_supported: */ false);
 
 	if (vp == NULL || *vp == 0)  /* blank value or missing key */
-		return(deflt);
+		return deflt;
 
-	return(parse_byte_count(vp, unit));
+	return parse_byte_count(vp, unit);
 }
 
 double iniReadDuration(FILE* fp, const char* section, const char* key, double deflt)
@@ -2009,12 +2009,12 @@ double iniReadDuration(FILE* fp, const char* section, const char* key, double de
 	char  buf[INI_MAX_VALUE_LEN];
 
 	if ((value = read_value(fp, section, key, buf, /* literals_supported: */ false)) == NULL)
-		return(deflt);
+		return deflt;
 
 	if (*value == 0)       /* blank value */
-		return(deflt);
+		return deflt;
 
-	return(parse_duration(value));
+	return parse_duration(value);
 }
 
 double iniGetDuration(str_list_t list, const char* section, const char* key, double deflt)
@@ -2024,9 +2024,9 @@ double iniGetDuration(str_list_t list, const char* section, const char* key, dou
 	get_value(list, section, key, NULL, &vp, /* literals_supported: */ false);
 
 	if (vp == NULL || *vp == 0)  /* blank value or missing key */
-		return(deflt);
+		return deflt;
 
-	return(parse_duration(vp));
+	return parse_duration(vp);
 }
 
 #if !defined(NO_SOCKET_SUPPORT)
@@ -2053,13 +2053,13 @@ int iniGetSocketOptions(str_list_t list, const char* section, SOCKET sock
 	len = sizeof(type);
 	if ((result = getsockopt(sock, SOL_SOCKET, SO_TYPE, (char*)&type, &len)) != 0) {
 		safe_snprintf(error, errlen, "%d (%s) getting socket type", SOCKET_ERRNO, SOCKET_STRERROR(err, sizeof(err)));
-		return(result);
+		return result;
 	}
 #ifdef IPPROTO_IPV6
 	len = sizeof(addr);
 	if ((result = getsockname(sock, &addr.addr, &len)) != 0) {
 		safe_snprintf(error, errlen, "%d (%s) getting socket name", SOCKET_ERRNO, SOCKET_STRERROR(err, sizeof(err)));
-		return(result);
+		return result;
 	}
 #endif
 	for (i = 0; socket_options[i].name != NULL; i++) {
@@ -2095,11 +2095,11 @@ int iniGetSocketOptions(str_list_t list, const char* section, SOCKET sock
 		if ((result = setsockopt(sock, level, option, (const char *)vp, len)) != 0) {
 			safe_snprintf(error, errlen, "%d (%s) setting socket option (%s, %d) to %d"
 			              , SOCKET_ERRNO, SOCKET_STRERROR(err, sizeof(err)), name, option, value);
-			return(result);
+			return result;
 		}
 	}
 
-	return(0);
+	return 0;
 }
 
 uint32_t iniReadIpAddress(FILE* fp, const char* section, const char* key, uint32_t deflt)
@@ -2108,10 +2108,10 @@ uint32_t iniReadIpAddress(FILE* fp, const char* section, const char* key, uint32
 	char* value;
 
 	if ((value = read_value(fp, section, key, buf, /* literals_supported: */ false)) == NULL)
-		return(deflt);
+		return deflt;
 
 	if (*value == 0)       /* blank value */
-		return(deflt);
+		return deflt;
 
 	return parseIPv4Address(value);
 }
@@ -2122,10 +2122,10 @@ struct in6_addr iniReadIp6Address(FILE* fp, const char* section, const char* key
 	char* value;
 
 	if ((value = read_value(fp, section, key, buf, /* literals_supported: */ false)) == NULL)
-		return(deflt);
+		return deflt;
 
 	if (*value == 0)       /* blank value */
-		return(deflt);
+		return deflt;
 
 	return parseIPv6Address(value);
 }
@@ -2137,7 +2137,7 @@ uint32_t iniGetIpAddress(str_list_t list, const char* section, const char* key, 
 	get_value(list, section, key, NULL, &vp, /* literals_supported: */ false);
 
 	if (vp == NULL || *vp == 0)      /* blank value or missing key */
-		return(deflt);
+		return deflt;
 
 	return parseIPv4Address(vp);
 }
@@ -2149,7 +2149,7 @@ struct in6_addr iniGetIp6Address(str_list_t list, const char* section, const cha
 	get_value(list, section, key, NULL, &vp, /* literals_supported: */ false);
 
 	if (vp == NULL || *vp == 0)      /* blank value or missing key */
-		return(deflt);
+		return deflt;
 
 	return parseIPv6Address(vp);
 }
@@ -2179,12 +2179,12 @@ char* iniFileName(char* dest, size_t maxlen, const char* indir, const char* infn
 		if (gethostname(hostname, sizeof(hostname)) == 0) {
 			safe_snprintf(dest, maxlen, "%s%s.%s%s", dir, fname, hostname, ext);
 			if (fexistcase(dest))        /* path/file.host.domain.ini */
-				return(dest);
+				return dest;
 			if ((p = strchr(hostname, '.')) != NULL) {
 				*p = 0;
 				safe_snprintf(dest, maxlen, "%s%s.%s%s", dir, fname, hostname, ext);
 				if (fexistcase(dest))    /* path/file.host.ini */
-					return(dest);
+					return dest;
 			}
 		}
 	}
@@ -2192,11 +2192,11 @@ char* iniFileName(char* dest, size_t maxlen, const char* indir, const char* infn
 
 	safe_snprintf(dest, maxlen, "%s%s.%s%s", dir, fname, PLATFORM_DESC, ext);
 	if (fexistcase(dest))    /* path/file.platform.ini */
-		return(dest);
+		return dest;
 
 	safe_snprintf(dest, maxlen, "%s%s%s", dir, fname, ext);
 	fexistcase(dest);   /* path/file.ini */
-	return(dest);
+	return dest;
 }
 
 double iniReadFloat(FILE* fp, const char* section, const char* key, double deflt)
@@ -2205,12 +2205,12 @@ double iniReadFloat(FILE* fp, const char* section, const char* key, double deflt
 	char* value;
 
 	if ((value = read_value(fp, section, key, buf, /* literals_supported: */ false)) == NULL)
-		return(deflt);
+		return deflt;
 
 	if (*value == 0)       /* blank value */
-		return(deflt);
+		return deflt;
 
-	return(atof(value));
+	return atof(value);
 }
 
 double iniGetFloat(str_list_t list, const char* section, const char* key, double deflt)
@@ -2220,9 +2220,9 @@ double iniGetFloat(str_list_t list, const char* section, const char* key, double
 	get_value(list, section, key, NULL, &vp, /* literals_supported: */ false);
 
 	if (vp == NULL || *vp == 0)      /* blank value or missing key */
-		return(deflt);
+		return deflt;
 
-	return(atof(vp));
+	return atof(vp);
 }
 
 bool iniReadBool(FILE* fp, const char* section, const char* key, bool deflt)
@@ -2231,12 +2231,12 @@ bool iniReadBool(FILE* fp, const char* section, const char* key, bool deflt)
 	char* value;
 
 	if ((value = read_value(fp, section, key, buf, /* literals_supported: */ false)) == NULL)
-		return(deflt);
+		return deflt;
 
 	if (*value == 0)       /* blank value */
-		return(deflt);
+		return deflt;
 
-	return(parseBool(value));
+	return parseBool(value);
 }
 
 bool iniGetBool(str_list_t list, const char* section, const char* key, bool deflt)
@@ -2246,15 +2246,15 @@ bool iniGetBool(str_list_t list, const char* section, const char* key, bool defl
 	get_value(list, section, key, NULL, &vp, /* literals_supported: */ false);
 
 	if (vp == NULL || *vp == 0)      /* blank value or missing key */
-		return(deflt);
+		return deflt;
 
-	return(parseBool(vp));
+	return parseBool(vp);
 }
 
 static bool validDate(struct tm* tm)
 {
-	return(tm->tm_mon && tm->tm_mon <= 12
-	       && tm->tm_mday && tm->tm_mday <= 31);
+	return tm->tm_mon && tm->tm_mon <= 12
+	       && tm->tm_mday && tm->tm_mday <= 31;
 }
 
 static time_t fixedDateTime(struct tm* tm, const char* tstr, char pm)
@@ -2273,7 +2273,7 @@ static time_t fixedDateTime(struct tm* tm, const char* tstr, char pm)
 
 	tm->tm_isdst = -1;    /* auto-detect */
 
-	return(mktime(tm));
+	return mktime(tm);
 }
 
 static int getMonth(const char* month)
@@ -2284,9 +2284,9 @@ static int getMonth(const char* month)
 
 	for (i = 0; mon[i] != NULL; i++)
 		if (strnicmp(month, mon[i], 3) == 0)
-			return(i + 1);
+			return i + 1;
 
-	return(atoi(month));
+	return atoi(month);
 }
 
 static time_t parseDateTime(const char* value)
@@ -2313,62 +2313,62 @@ static time_t parseDateTime(const char* value)
 	/* CCYYMMDDTHHMMSS <--- ISO-8601 date and time format */
 	if (sscanf(value, "%uT%u"
 	           , &isoDate, &isoTime) >= 2)
-		return(isoDateTime_to_time(isoDate, isoTime));
+		return isoDateTime_to_time(isoDate, isoTime);
 
 	/* DD.MM.[CC]YY [time] [p] <-- Euro/Canadian numeric date format */
 	if (sscanf(value, "%u.%u.%u %s %c"
 	           , &tm.tm_mday, &tm.tm_mon, &tm.tm_year, tstr, &pm) >= 2
 	    && validDate(&tm))
-		return(fixedDateTime(&tm, tstr, pm));
+		return fixedDateTime(&tm, tstr, pm);
 
 	/* MM/DD/[CC]YY [time] [p] <-- American numeric date format */
 	if (sscanf(value, "%u%*c %u%*c %u %s %c"
 	           , &tm.tm_mon, &tm.tm_mday, &tm.tm_year, tstr, &pm) >= 2
 	    && validDate(&tm))
-		return(fixedDateTime(&tm, tstr, pm));
+		return fixedDateTime(&tm, tstr, pm);
 
 	/* DD[-]Mon [CC]YY [time] [p] <-- Perversion of RFC822 date format */
 	if (sscanf(value, "%u%*c %s %u %s %c"
 	           , &tm.tm_mday, month, &tm.tm_year, tstr, &pm) >= 2
 	    && (tm.tm_mon = getMonth(month)) != 0
 	    && validDate(&tm))
-		return(fixedDateTime(&tm, tstr, pm));
+		return fixedDateTime(&tm, tstr, pm);
 
 	/* Wday, DD Mon YYYY [time] <-- IETF standard (RFC2822) date format */
 	if (sscanf(value, "%*s %u %s %u %s"
 	           , &tm.tm_mday, month, &tm.tm_year, tstr) >= 2
 	    && (tm.tm_mon = getMonth(month)) != 0
 	    && validDate(&tm))
-		return(fixedDateTime(&tm, tstr, 0));
+		return fixedDateTime(&tm, tstr, 0);
 
 	/* Mon DD[,] [CC]YY [time] [p] <-- Preferred date format */
 	if (sscanf(value, "%s %u%*c %u %s %c"
 	           , month, &tm.tm_mday, &tm.tm_year, tstr, &pm) >= 2
 	    && (tm.tm_mon = getMonth(month)) != 0
 	    && validDate(&tm))
-		return(fixedDateTime(&tm, tstr, pm));
+		return fixedDateTime(&tm, tstr, pm);
 
 	/* Wday Mon DD YYYY [time] <-- JavaScript (SpiderMonkey) Date.toString() format */
 	if (sscanf(value, "%*s %s %u %u %s"
 	           , month, &tm.tm_mday, &tm.tm_year, tstr) >= 2
 	    && (tm.tm_mon = getMonth(month)) != 0
 	    && validDate(&tm))
-		return(fixedDateTime(&tm, tstr, 0));
+		return fixedDateTime(&tm, tstr, 0);
 
 	/* Wday Mon DD [time] YYYY <-- ctime() format */
 	if (sscanf(value, "%*s %s %u %s %u"
 	           , month, &tm.tm_mday, tstr, &tm.tm_year) >= 2
 	    && (tm.tm_mon = getMonth(month)) != 0
 	    && validDate(&tm))
-		return(fixedDateTime(&tm, tstr, 0));
+		return fixedDateTime(&tm, tstr, 0);
 
 	if ((t = xpDateTime_to_time(isoDateTimeStr_parse(value))) != INVALID_TIME)
 		return t;
 
 #if defined __BORLANDC__
-	return((time_t)strtoul(value, NULL, 0));
+	return (time_t)strtoul(value, NULL, 0);
 #else
-	return((time_t)strtoull(value, NULL, 0));
+	return (time_t)strtoull(value, NULL, 0);
 #endif
 }
 
@@ -2378,12 +2378,12 @@ time_t iniReadDateTime(FILE* fp, const char* section, const char* key, time_t de
 	char* value;
 
 	if ((value = read_value(fp, section, key, buf, /* literals_supported: */ false)) == NULL)
-		return(deflt);
+		return deflt;
 
 	if (*value == 0)       /* blank value */
-		return(deflt);
+		return deflt;
 
-	return(parseDateTime(value));
+	return parseDateTime(value);
 }
 
 time_t iniGetDateTime(str_list_t list, const char* section, const char* key, time_t deflt)
@@ -2393,9 +2393,9 @@ time_t iniGetDateTime(str_list_t list, const char* section, const char* key, tim
 	get_value(list, section, key, NULL, &vp, /* literals_supported: */ false);
 
 	if (vp == NULL || *vp == 0)      /* blank value or missing key */
-		return(deflt);
+		return deflt;
 
-	return(parseDateTime(vp));
+	return parseDateTime(vp);
 }
 
 // Like stricmp(), but either string may be shorter than the other and still match
@@ -2431,12 +2431,12 @@ static unsigned parseEnum(const char* value, str_list_t names, unsigned deflt)
 	/* Look for exact matches first */
 	for (i = 0; i < count; i++)
 		if (stricmp(names[i], val) == 0)
-			return(i);
+			return i;
 
 	/* Look for partial matches second */
 	for (i = 0; i < count; i++)
 		if (partial_stricmp(names[i], val) == 0)
-			return(i);
+			return i;
 
 	i = strtoul(val, &endptr, 0);
 	if (*endptr != 0 && !IS_WHITESPACE(*endptr))
@@ -2486,12 +2486,12 @@ unsigned iniReadEnum(FILE* fp, const char* section, const char* key, str_list_t 
 	char* value;
 
 	if ((value = read_value(fp, section, key, buf, /* literals_supported: */ false)) == NULL)
-		return(deflt);
+		return deflt;
 
 	if (*value == 0)       /* blank value */
-		return(deflt);
+		return deflt;
 
-	return(parseEnum(value, names, deflt));
+	return parseEnum(value, names, deflt);
 }
 
 unsigned* iniReadEnumList(FILE* fp, const char* section, const char* key
@@ -2510,7 +2510,7 @@ unsigned* iniReadEnumList(FILE* fp, const char* section, const char* key
 	if ((value = read_value(fp, section, key, buf, /* literals_supported: */ false)) == NULL || *value == 0 /* blank */)
 		value = (char*)deflt;
 
-	return(parseEnumList(value, sep, names, cp));
+	return parseEnumList(value, sep, names, cp);
 }
 
 unsigned iniGetEnum(str_list_t list, const char* section, const char* key, str_list_t names, unsigned deflt)
@@ -2520,9 +2520,9 @@ unsigned iniGetEnum(str_list_t list, const char* section, const char* key, str_l
 	get_value(list, section, key, NULL, &vp, /* literals_supported: */ false);
 
 	if (vp == NULL || *vp == 0)      /* blank value or missing key */
-		return(deflt);
+		return deflt;
 
-	return(parseEnum(vp, names, deflt));
+	return parseEnum(vp, names, deflt);
 }
 
 unsigned* iniGetEnumList(str_list_t list, const char* section, const char* key
@@ -2540,10 +2540,10 @@ unsigned* iniGetEnumList(str_list_t list, const char* section, const char* key
 
 	if (vp == NULL || *vp == 0 /* blank value or missing key */) {
 		if (deflt == NULL)
-			return(NULL);
+			return NULL;
 		vp = (char*)deflt;
 	}
-	return(parseEnumList(vp, sep, names, cp));
+	return parseEnumList(vp, sep, names, cp);
 }
 
 static int parseNamedInt(const char* value, named_int_t* names)
@@ -2553,14 +2553,14 @@ static int parseNamedInt(const char* value, named_int_t* names)
 	/* Look for exact matches first */
 	for (i = 0; names[i].name != NULL; i++)
 		if (stricmp(names[i].name, value) == 0)
-			return(names[i].value);
+			return names[i].value;
 
 	/* Look for partial matches second */
 	for (i = 0; names[i].name != NULL; i++)
 		if (partial_stricmp(names[i].name, value) == 0)
-			return(names[i].value);
+			return names[i].value;
 
-	return(parseInteger(value));
+	return parseInteger(value);
 }
 
 int iniReadNamedInt(FILE* fp, const char* section, const char* key
@@ -2570,12 +2570,12 @@ int iniReadNamedInt(FILE* fp, const char* section, const char* key
 	char* value;
 
 	if ((value = read_value(fp, section, key, buf, /* literals_supported: */ false)) == NULL)
-		return(deflt);
+		return deflt;
 
 	if (*value == 0)       /* blank value */
-		return(deflt);
+		return deflt;
 
-	return(parseNamedInt(value, names));
+	return parseNamedInt(value, names);
 }
 
 int iniGetNamedInt(str_list_t list, const char* section, const char* key
@@ -2586,9 +2586,9 @@ int iniGetNamedInt(str_list_t list, const char* section, const char* key
 	get_value(list, section, key, NULL, &vp, /* literals_supported: */ false);
 
 	if (vp == NULL || *vp == 0)      /* blank value or missing key */
-		return(deflt);
+		return deflt;
 
-	return(parseNamedInt(vp, names));
+	return parseNamedInt(vp, names);
 }
 
 static ulong parseNamedULongInt(const char* value, named_ulong_t* names)
@@ -2598,14 +2598,14 @@ static ulong parseNamedULongInt(const char* value, named_ulong_t* names)
 	/* Look for exact matches first */
 	for (i = 0; names[i].name != NULL; i++)
 		if (stricmp(names[i].name, value) == 0)
-			return(names[i].value);
+			return names[i].value;
 
 	/* Look for partial matches second */
 	for (i = 0; names[i].name != NULL; i++)
 		if (partial_stricmp(names[i].name, value) == 0)
-			return(names[i].value);
+			return names[i].value;
 
-	return(parseULongInteger(value));
+	return parseULongInteger(value);
 }
 
 ulong iniReadNamedULongInt(FILE* fp, const char* section, const char* key
@@ -2615,12 +2615,12 @@ ulong iniReadNamedULongInt(FILE* fp, const char* section, const char* key
 	char* value;
 
 	if ((value = read_value(fp, section, key, buf, /* literals_supported: */ false)) == NULL)
-		return(deflt);
+		return deflt;
 
 	if (*value == 0)       /* blank value */
-		return(deflt);
+		return deflt;
 
-	return(parseNamedULongInt(value, names));
+	return parseNamedULongInt(value, names);
 }
 
 ulong iniGetNamedULongInt(str_list_t list, const char* section, const char* key
@@ -2631,9 +2631,9 @@ ulong iniGetNamedULongInt(str_list_t list, const char* section, const char* key
 	get_value(list, section, key, NULL, &vp, /* literals_supported: */ false);
 
 	if (vp == NULL || *vp == 0)      /* blank value or missing key */
-		return(deflt);
+		return deflt;
 
-	return(parseNamedULongInt(vp, names));
+	return parseNamedULongInt(vp, names);
 }
 
 static double parseNamedFloat(const char* value, named_double_t* names)
@@ -2643,14 +2643,14 @@ static double parseNamedFloat(const char* value, named_double_t* names)
 	/* Look for exact matches first */
 	for (i = 0; names[i].name != NULL; i++)
 		if (stricmp(names[i].name, value) == 0)
-			return(names[i].value);
+			return names[i].value;
 
 	/* Look for partial matches second */
 	for (i = 0; names[i].name != NULL; i++)
 		if (partial_stricmp(names[i].name, value) == 0)
-			return(names[i].value);
+			return names[i].value;
 
-	return(atof(value));
+	return atof(value);
 }
 
 double iniReadNamedFloat(FILE* fp, const char* section, const char* key
@@ -2660,12 +2660,12 @@ double iniReadNamedFloat(FILE* fp, const char* section, const char* key
 	char* value;
 
 	if ((value = read_value(fp, section, key, buf, /* literals_supported: */ false)) == NULL)
-		return(deflt);
+		return deflt;
 
 	if (*value == 0)       /* blank value */
-		return(deflt);
+		return deflt;
 
-	return(parseNamedFloat(value, names));
+	return parseNamedFloat(value, names);
 }
 
 double iniGetNamedFloat(str_list_t list, const char* section, const char* key
@@ -2676,9 +2676,9 @@ double iniGetNamedFloat(str_list_t list, const char* section, const char* key
 	get_value(list, section, key, NULL, &vp, /* literals_supported: */ false);
 
 	if (vp == NULL || *vp == 0)      /* blank value or missing key */
-		return(deflt);
+		return deflt;
 
-	return(parseNamedFloat(vp, names));
+	return parseNamedFloat(vp, names);
 }
 
 static ulong parseBitField(char* value, ini_bitdesc_t* bitdesc)
@@ -2710,7 +2710,7 @@ static ulong parseBitField(char* value, ini_bitdesc_t* bitdesc)
 		SKIP_WHITESPACE(p);
 	}
 
-	return(v);
+	return v;
 }
 
 uint iniReadBitField(FILE* fp, const char* section, const char* key,
@@ -2720,9 +2720,9 @@ uint iniReadBitField(FILE* fp, const char* section, const char* key,
 	char  buf[INI_MAX_VALUE_LEN];
 
 	if ((value = read_value(fp, section, key, buf, /* literals_supported: */ false)) == NULL)    /* missing key */
-		return(deflt);
+		return deflt;
 
-	return(parseBitField(value, bitdesc));
+	return parseBitField(value, bitdesc);
 }
 
 uint iniGetBitField(str_list_t list, const char* section, const char* key,
@@ -2733,9 +2733,9 @@ uint iniGetBitField(str_list_t list, const char* section, const char* key,
 	get_value(list, section, key, NULL, &vp, /* literals_supported: */ false);
 
 	if (vp == NULL)        /* missing key */
-		return(deflt);
+		return deflt;
 
-	return(parseBitField(vp, bitdesc));
+	return parseBitField(vp, bitdesc);
 }
 
 int* parseIntList(const char* values, const char* sep, unsigned* count)
@@ -2818,12 +2818,12 @@ FILE* iniOpenFile(const char* fname, bool for_modify)
 	if (for_modify)
 		mode = fexist(fname) ? "r+" : "w+";
 
-	return(fopen(fname, mode));
+	return fopen(fname, mode);
 }
 
 bool iniCloseFile(FILE* fp)
 {
-	return(fclose(fp) == 0);
+	return fclose(fp) == 0;
 }
 
 str_list_t iniReadFile(FILE* fp)
@@ -2842,7 +2842,7 @@ str_list_t iniReadFile(FILE* fp)
 
 	list = strListReadFile(fp, NULL, INI_MAX_LINE_LEN);
 	if (list == NULL)
-		return(NULL);
+		return NULL;
 
 	/* Look for !include directives */
 	inc_len = strlen(INI_INCLUDE_DIRECTIVE);
@@ -2882,7 +2882,7 @@ str_list_t iniReadFile(FILE* fp)
 	for (i = 0; list[i] != NULL; i++)
 		truncnl(list[i]);
 
-	return(list);
+	return list;
 }
 
 bool iniHasInclude(const str_list_t list)
@@ -2908,11 +2908,11 @@ bool iniWriteFile(FILE* fp, const str_list_t list)
 	fflush(fp);
 	pos = ftell(fp);
 	if (pos == -1)
-		return (false);
+		return false;
 	if (chsize(fileno(fp), pos) != 0)  /* truncate */
-		return(false);
+		return false;
 
-	return(count == strListCount(list));
+	return count == strListCount(list);
 }
 
 #ifdef INI_FILE_TEST

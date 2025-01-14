@@ -137,7 +137,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 			if (strstr(str1, "çç")) {
 				bputs("\r\n\r\nYou must set your terminal to NO PARITY, "
 				      "8 DATA BITS, and 1 STOP BIT (N-8-1).\7\r\n");
-				return(0);
+				return 0;
 			}
 		}
 		getstr_offset = i;
@@ -331,7 +331,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 				strcpy(strout, str2);
 				l = strlen(strout);
 				if (mode & K_NOECHO)
-					return(l);
+					return l;
 				if (mode & K_MSG)
 					redrwstr(strout, i, l, K_MSG);
 				else {
@@ -343,7 +343,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 				}
 				if (!(mode & K_NOCRLF))
 					CRLF;
-				return(l);
+				return l;
 
 			case CTRL_N:    /* Ctrl-N Next word */
 				if (i < l && term & (ANSI | PETSCII)) {
@@ -499,7 +499,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 				if (mode & K_LINE && !(mode & K_NOECHO))
 					attr(LIGHTGRAY);
 				console |= CON_UPARROW;
-				return(l);
+				return l;
 #else
 				console |= CON_UPARROW;
 				break;
@@ -534,7 +534,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 							redrwstr(strout, i, l, K_MSG);
 						if (!(mode & (K_NOECHO | K_NOCRLF)))
 							CRLF;
-						return(i);
+						return i;
 					}
 					x = i - 1;
 					z = 1;
@@ -548,7 +548,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 							redrwstr(strout, i, l, K_MSG);
 						if (!(mode & (K_NOECHO | K_NOCRLF)))
 							CRLF;
-						return(i);
+						return i;
 					}
 					wordwrap[z] = 0;
 					if (!(mode & K_NOECHO))
@@ -563,7 +563,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 						redrwstr(strout, i, x, mode);
 					if (!(mode & (K_NOECHO | K_NOCRLF)))
 						CRLF;
-					return(x);
+					return x;
 				}
 				if (i < maxlen && ch >= ' ') {
 					if (ch == ' ' && (mode & K_TRIM) && i && str1[i - 1] == ' ')
@@ -607,11 +607,11 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 		if (i > l)
 			l = i;
 		if (mode & K_CHAT && !l)
-			return(0);
+			return 0;
 	}
 	getstr_offset = i;
 	if (!online)
-		return(0);
+		return 0;
 	if (i > l)
 		l = i;
 	str1[l] = 0;
@@ -632,7 +632,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 			carriage_return();
 		lncntr = 0;
 	}
-	return(l);
+	return l;
 }
 
 /****************************************************************************/
@@ -659,19 +659,19 @@ int sbbs_t::getnum(uint max, uint dflt)
 			}
 			CRLF;
 			lncntr = 0;
-			return(-1);
+			return -1;
 		}
 		else if (sys_status & SS_ABORT) {
 			CRLF;
 			lncntr = 0;
-			return(-1);
+			return -1;
 		}
 		else if (ch == CR) {
 			CRLF;
 			lncntr = 0;
 			if (!n)
-				return(dflt);
-			return(i);
+				return dflt;
+			return i;
 		}
 		else if ((ch == BS || ch == DEL) && n) {
 			backspace();
@@ -686,11 +686,11 @@ int sbbs_t::getnum(uint max, uint dflt)
 			if (i * 10UL > max && !(useron.misc & COLDKEYS) && keybuf_level() < 1) {
 				CRLF;
 				lncntr = 0;
-				return(i);
+				return i;
 			}
 		}
 	}
-	return(0);
+	return 0;
 }
 
 void sbbs_t::insert_indicator(void)

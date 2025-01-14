@@ -495,14 +495,14 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 			menu("batflag");
 			if (lncntr)
 				pause();
-			return(2);
+			return 2;
 		}
 		if (ch == quit_key() || sys_status & SS_ABORT)
-			return(-1);
+			return -1;
 		if (ch == 'S')
-			return(0);
+			return 0;
 		if (ch == 'P' || ch == '-')
-			return(3);
+			return 3;
 		if (ch == 'T') {
 			useron.misc ^= EXTDESC;
 			putusermisc(useron.number, useron.misc);
@@ -511,14 +511,14 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 		if (ch == 'B' || ch == 'D') {    /* Flag for batch download */
 			if (useron.rest & FLAG('D')) {
 				bputs(text[R_Download]);
-				return(2);
+				return 2;
 			}
 			if (total == 1) {
 				addtobatdl(bf[0]);
 				if (ch == 'D')
 					start_batch_download();
 				CRLF;
-				return(2);
+				return 2;
 			}
 			link_list_t saved_hotspots = mouse_hotspots;
 			ZERO_VAR(mouse_hotspots);
@@ -530,7 +530,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 			mouse_hotspots = saved_hotspots;
 			lncntr = 0;
 			if (sys_status & SS_ABORT)
-				return(-1);
+				return -1;
 			if (d > 0) {     /* d is string length */
 				strupr(str);
 				CRLF;
@@ -564,7 +564,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 				if (ch == 'D')
 					start_batch_download();
 				CRLF;
-				return(2);
+				return 2;
 			}
 			clearline();
 			continue;
@@ -573,8 +573,8 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 		if (ch == 'E' || ch == 'V') {    /* Extended Info */
 			if (total == 1) {
 				if (!viewfile(bf[0], ch == 'E'))
-					return(-1);
-				return(2);
+					return -1;
+				return 2;
 			}
 			link_list_t saved_hotspots = mouse_hotspots;
 			ZERO_VAR(mouse_hotspots);
@@ -586,7 +586,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 			mouse_hotspots = saved_hotspots;
 			lncntr = 0;
 			if (sys_status & SS_ABORT)
-				return(-1);
+				return -1;
 			if (d > 0) {     /* d is string length */
 				strupr(str);
 				CRLF;
@@ -600,7 +600,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 						for (i = 0; i < total; i++) {
 							if (filematch(bf[i]->name, str + c)) {
 								if (!viewfile(bf[i], ch == 'E'))
-									return(-1);
+									return -1;
 							}
 						}
 					}
@@ -608,11 +608,11 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 						c += strlen(str + c);
 					else if (str[c] < 'A' + (char)total && str[c] >= 'A') {
 						if (!viewfile(bf[str[c] - 'A'], ch == 'E'))
-							return(-1);
+							return -1;
 					}
 				}
 				cond_newline();
-				return(2);
+				return 2;
 			}
 			clearline();
 			continue;
@@ -637,14 +637,14 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 			}
 			lncntr = 0;
 			if (sys_status & SS_ABORT)
-				return(-1);
+				return -1;
 			if (d > 0) {     /* d is string length */
 				strupr(str);
 				if (total > 1)
 					newline();
 				if (ch == 'R') {
 					if (noyes(text[RemoveFileQ]))
-						return(2);
+						return 2;
 					remcdt = true;
 					remfile = true;
 					if (dir_op(smb->dirnum)) {
@@ -659,7 +659,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 					sync();
 					bprintf(text[MoveToLibPrompt], cfg.dir[smb->dirnum]->lib + 1);
 					if ((int)(ml = getnum(usrlibs)) == -1)
-						return(2);
+						return 2;
 					if (!ml)
 						ml = cfg.dir[smb->dirnum]->lib;
 					else
@@ -671,7 +671,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 					sync();
 					bprintf(text[MoveToDirPrompt], usrdirs[ml]);
 					if ((int)(md = getnum(usrdirs[ml])) == -1)
-						return(2);
+						return 2;
 					if (!md)
 						md = usrdirs[ml] - 1;
 					else md--;
@@ -721,16 +721,16 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 						}
 					}
 				}
-				return(2);
+				return 2;
 			}
 			clearline();
 			continue;
 		}
 
-		return(1);
+		return 1;
 	}
 
-	return(-1);
+	return -1;
 }
 
 /****************************************************************************/
@@ -1087,7 +1087,7 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 	}
 	freefiles(file_list, file_count);
 	smb_close(&smb);
-	return(found);
+	return found;
 }
 
 /****************************************************************************/
@@ -1118,5 +1118,5 @@ int extdesclines(char *str)
 			lc++;
 			last = i;
 		}
-	return(lc);
+	return lc;
 }

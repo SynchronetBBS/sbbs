@@ -31,7 +31,7 @@ char ** sbbs_t::getstrvar(csi_t *bin, uint32_t name)
 	if (sysvar_pi >= MAX_SYSVARS) sysvar_pi = 0;
 	switch (name) {
 		case 0:
-			return((char **)&(bin->str));
+			return (char **)&(bin->str);
 		case 0x490873f1:
 			sysvar_p[sysvar_pi] = (char*)useron.alias;
 			break;
@@ -85,7 +85,7 @@ char ** sbbs_t::getstrvar(csi_t *bin, uint32_t name)
 			sysvar_p[sysvar_pi] = (char*)cid;
 			break;
 		case 0x15755030:
-			return((char **)&comspec);
+			return (char **)&comspec;
 		case 0x5E049062:
 			sysvar_p[sysvar_pi] = question;
 			break;
@@ -98,15 +98,15 @@ char ** sbbs_t::getstrvar(csi_t *bin, uint32_t name)
 			if (bin->str_var && bin->str_var_name)
 				for (i = 0; i < bin->str_vars; i++)
 					if (bin->str_var_name[i] == name)
-						return((char **)&(bin->str_var[i]));
+						return (char **)&(bin->str_var[i]);
 			if (global_str_var && global_str_var_name)
 				for (i = 0; i < global_str_vars; i++)
 					if (global_str_var_name[i] == name)
-						return(&(global_str_var[i]));
-			return(NULL);
+						return &(global_str_var[i]);
+			return NULL;
 	}
 
-	return((char **)&sysvar_p[sysvar_pi++]);
+	return (char **)&sysvar_p[sysvar_pi++];
 }
 
 int32_t * sbbs_t::getintvar(csi_t *bin, uint32_t name)
@@ -182,74 +182,74 @@ int32_t * sbbs_t::getintvar(csi_t *bin, uint32_t name)
 			sysvar_l[sysvar_li] = useron.leech;
 			break;
 		case 0x7c602a37:
-			return((int32_t *)&useron.misc);
+			return (int32_t *)&useron.misc;
 		case 0x61be0d36:
-			return((int32_t *)&useron.qwk);
+			return (int32_t *)&useron.qwk;
 		case 0x665ac227:
-			return((int32_t *)&useron.chat);
+			return (int32_t *)&useron.chat;
 		case 0x951341ab:
-			return((int32_t *)&useron.flags1);
+			return (int32_t *)&useron.flags1;
 		case 0x0c1a1011:
-			return((int32_t *)&useron.flags2);
+			return (int32_t *)&useron.flags2;
 		case 0x7b1d2087:
-			return((int32_t *)&useron.flags3);
+			return (int32_t *)&useron.flags3;
 		case 0xe579b524:
-			return((int32_t *)&useron.flags4);
+			return (int32_t *)&useron.flags4;
 		case 0x12e7d6d2:
-			return((int32_t *)&useron.exempt);
+			return (int32_t *)&useron.exempt;
 		case 0xfed3115d:
-			return((int32_t *)&useron.rest);
+			return (int32_t *)&useron.rest;
 		case 0xb65dd6d4:
-			return((int32_t *)&useron.ulb);
+			return (int32_t *)&useron.ulb;
 		case 0xabb91f93:
-			return((int32_t *)&useron.dlb);
+			return (int32_t *)&useron.dlb;
 		case 0x92fb364f:
-			return((int32_t *)&useron.cdt);
+			return (int32_t *)&useron.cdt;
 		case 0xd0a99c72:
-			return((int32_t *)&useron.min);
+			return (int32_t *)&useron.min;
 		case 0xd7ae3022:
-			return((int32_t *)&useron.freecdt);
+			return (int32_t *)&useron.freecdt;
 		case 0x1ef214ef:
-			return((int32_t *)&useron.firston);
+			return (int32_t *)&useron.firston;
 		case 0x0ea515b1:
-			return((int32_t *)&useron.laston);
+			return (int32_t *)&useron.laston;
 		case 0x2aaf9bd3:
-			return((int32_t *)&useron.expire);
+			return (int32_t *)&useron.expire;
 		case 0x89c91dc8:
-			return((int32_t *)&useron.pwmod);
+			return (int32_t *)&useron.pwmod;
 		case 0x5b0d0c54:
-			return((int32_t *)&useron.ns_time);
+			return (int32_t *)&useron.ns_time;
 
 		case 0xae256560:
-			return((int32_t *)&cur_rate);
+			return (int32_t *)&cur_rate;
 		case 0x2b3c257f:
-			return((int32_t *)&cur_cps);
+			return (int32_t *)&cur_cps;
 		case 0x1c4455ee:
-			return((int32_t *)&dte_rate);
+			return (int32_t *)&dte_rate;
 		case 0x7fbf958e:
-			return((int32_t *)&lncntr);
+			return (int32_t *)&lncntr;
 //		case 0x5c1c1500:
 //			return((int32_t *)&tos);
 		case 0x613b690e:
-			return((int32_t *)&rows);
+			return (int32_t *)&rows;
 		case 0x205ace36:
-			return((int32_t *)&autoterm);
+			return (int32_t *)&autoterm;
 		case 0x7d0ed0d1:
-			return((int32_t *)&console);
+			return (int32_t *)&console;
 		case 0xbf31a280:
-			return((int32_t *)&answertime);
+			return (int32_t *)&answertime;
 		case 0x83aa2a6a:
-			return((int32_t *)&logontime);
+			return (int32_t *)&logontime;
 		case 0xb50cb889:
-			return((int32_t *)&ns_time);
+			return (int32_t *)&ns_time;
 		case 0xae92d249:
-			return((int32_t *)&last_ns_time);
+			return (int32_t *)&last_ns_time;
 		case 0x97f99eef:
-			return((int32_t *)&online);
+			return (int32_t *)&online;
 		case 0x381d3c2a:
-			return((int32_t *)&sys_status);
+			return (int32_t *)&sys_status;
 		case 0x7e29c819:
-			return((int32_t *)&cfg.sys_misc);
+			return (int32_t *)&cfg.sys_misc;
 		case 0x02408dc5:
 			sysvar_l[sysvar_li] = sys_timezone(&cfg);
 			break;
@@ -275,7 +275,7 @@ int32_t * sbbs_t::getintvar(csi_t *bin, uint32_t name)
 			sysvar_l[sysvar_li] = cfg.sys_autonode;
 			break;
 		case 0x709c07da:
-			return((int32_t *)&cfg.node_misc);
+			return (int32_t *)&cfg.node_misc;
 		case 0xb17e7914:
 			sysvar_l[sysvar_li] = cfg.valuser;
 			break;
@@ -286,26 +286,26 @@ int32_t * sbbs_t::getintvar(csi_t *bin, uint32_t name)
 			sysvar_l[sysvar_li] = cfg.new_level;
 			break;
 		case 0xccfe7c5d:
-			return((int32_t *)&cfg.new_flags1);
+			return (int32_t *)&cfg.new_flags1;
 		case 0x55f72de7:
-			return((int32_t *)&cfg.new_flags2);
+			return (int32_t *)&cfg.new_flags2;
 		case 0x22f01d71:
-			return((int32_t *)&cfg.new_flags3);
+			return (int32_t *)&cfg.new_flags3;
 		case 0xbc9488d2:
-			return((int32_t *)&cfg.new_flags4);
+			return (int32_t *)&cfg.new_flags4;
 		case 0x4b0aeb24:
-			return((int32_t *)&cfg.new_exempt);
+			return (int32_t *)&cfg.new_exempt;
 		case 0x20cb6325:
-			return((int32_t *)&cfg.new_rest);
+			return (int32_t *)&cfg.new_rest;
 		case 0x31178ba2:
-			return((int32_t *)&cfg.new_cdt);
+			return (int32_t *)&cfg.new_cdt;
 		case 0x7345219f:
-			return((int32_t *)&cfg.new_min);
+			return (int32_t *)&cfg.new_min;
 		case 0xb3f64be4:
 			sysvar_l[sysvar_li] = cfg.new_shell;
 			break;
 		case 0xa278584f:
-			return((int32_t *)&cfg.new_misc);
+			return (int32_t *)&cfg.new_misc;
 		case 0x7342a625:
 			sysvar_l[sysvar_li] = cfg.new_expire;
 			break;
@@ -316,17 +316,17 @@ int32_t * sbbs_t::getintvar(csi_t *bin, uint32_t name)
 			sysvar_l[sysvar_li] = cfg.expired_level;
 			break;
 		case 0x89b69753:
-			return((int32_t *)&cfg.expired_flags1);
+			return (int32_t *)&cfg.expired_flags1;
 		case 0x10bfc6e9:
-			return((int32_t *)&cfg.expired_flags2);
+			return (int32_t *)&cfg.expired_flags2;
 		case 0x67b8f67f:
-			return((int32_t *)&cfg.expired_flags3);
+			return (int32_t *)&cfg.expired_flags3;
 		case 0xf9dc63dc:
-			return((int32_t *)&cfg.expired_flags4);
+			return (int32_t *)&cfg.expired_flags4;
 		case 0x0e42002a:
-			return((int32_t *)&cfg.expired_exempt);
+			return (int32_t *)&cfg.expired_exempt;
 		case 0x4569c62e:
-			return((int32_t *)&cfg.expired_rest);
+			return (int32_t *)&cfg.expired_rest;
 		case 0xfcf3542e:
 			sysvar_l[sysvar_li] = (int32_t)(cfg.min_dspace / 1024);
 			break;
@@ -334,7 +334,7 @@ int32_t * sbbs_t::getintvar(csi_t *bin, uint32_t name)
 			sysvar_l[sysvar_li] = cfg.cdt_min_value;
 			break;
 		case 0xfcb5b274:
-			return((int32_t *)&cfg.cdt_per_dollar);
+			return (int32_t *)&cfg.cdt_per_dollar;
 		case 0x4db200d2:
 			sysvar_l[sysvar_li] = cfg.leech_pct;
 			break;
@@ -342,31 +342,31 @@ int32_t * sbbs_t::getintvar(csi_t *bin, uint32_t name)
 			sysvar_l[sysvar_li] = cfg.leech_sec;
 			break;
 		case 0x396b7167:
-			return((int32_t *)&cfg.netmail_cost);
+			return (int32_t *)&cfg.netmail_cost;
 		case 0x5eeaff21:
 			sysvar_l[sysvar_li] = cfg.netmail_misc;
 			break;
 		case 0x82d9484e:
-			return((int32_t *)&cfg.inetmail_cost);
+			return (int32_t *)&cfg.inetmail_cost;
 		case 0xe558c608:
-			return((int32_t *)&cfg.inetmail_misc);
+			return (int32_t *)&cfg.inetmail_misc;
 
 		case 0xc6e8539d:
-			return((int32_t *)&logon_ulb);
+			return (int32_t *)&logon_ulb;
 		case 0xdb0c9ada:
-			return((int32_t *)&logon_dlb);
+			return (int32_t *)&logon_dlb;
 		case 0xac58736f:
-			return((int32_t *)&logon_uls);
+			return (int32_t *)&logon_uls;
 		case 0xb1bcba28:
-			return((int32_t *)&logon_dls);
+			return (int32_t *)&logon_dls;
 		case 0x9c5051c9:
-			return((int32_t *)&logon_posts);
+			return (int32_t *)&logon_posts;
 		case 0xc82ba467:
-			return((int32_t *)&logon_emails);
+			return (int32_t *)&logon_emails;
 		case 0x8e395209:
-			return((int32_t *)&logon_fbacks);
+			return (int32_t *)&logon_fbacks;
 		case 0x8b12ba9d:
-			return((int32_t *)&posts_read);
+			return (int32_t *)&posts_read;
 		case 0xe51c1956:
 			sysvar_l[sysvar_li] = (ulong)logfile_fp;
 			break;
@@ -390,21 +390,21 @@ int32_t * sbbs_t::getintvar(csi_t *bin, uint32_t name)
 			break;
 
 		case 0x1e5052a7:
-			return((int32_t *)&cfg.max_minutes);
+			return (int32_t *)&cfg.max_minutes;
 		case 0xedc643f1:
-			return((int32_t *)&cfg.max_qwkmsgs);
+			return (int32_t *)&cfg.max_qwkmsgs;
 
 		case 0x430178ec:
-			return((int32_t *)&cfg.uq);
+			return (int32_t *)&cfg.uq;
 
 		case 0x455CB929:
-			return(&bin->ftp_mode);
+			return &bin->ftp_mode;
 
 		case 0x2105D2B9:
-			return(&bin->socket_error);
+			return &bin->socket_error;
 
 		case 0xA0023A2E:
-			return((int32_t *)&startup->options);
+			return (int32_t *)&startup->options;
 
 		case 0x16E2585F:
 			sysvar_l[sysvar_li] = client_socket;
@@ -414,15 +414,15 @@ int32_t * sbbs_t::getintvar(csi_t *bin, uint32_t name)
 			if (bin->int_var && bin->int_var_name)
 				for (i = 0; i < bin->int_vars; i++)
 					if (bin->int_var_name[i] == name)
-						return(&bin->int_var[i]);
+						return &bin->int_var[i];
 			if (global_int_var && global_int_var_name)
 				for (i = 0; i < global_int_vars; i++)
 					if (global_int_var_name[i] == name)
-						return(&global_int_var[i]);
-			return(NULL);
+						return &global_int_var[i];
+			return NULL;
 	}
 
-	return((int32_t*)&sysvar_l[sysvar_li++]);
+	return (int32_t*)&sysvar_l[sysvar_li++];
 }
 
 void sbbs_t::clearvars(csi_t *bin)
@@ -499,7 +499,7 @@ char * sbbs_t::copystrvar(csi_t *csi, char *p, char *str)
 	}
 	if (p)
 		strcpy(p, str);
-	return(p);
+	return p;
 }
 
 #ifdef JAVASCRIPT
@@ -513,7 +513,7 @@ js_OperationCallback(JSContext *cx)
 	JS_SetOperationCallback(cx, NULL);
 	if ((sbbs = (sbbs_t*)JS_GetContextPrivate(cx)) == NULL) {
 		JS_SetOperationCallback(cx, js_OperationCallback);
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	if (sbbs->js_callback.auto_terminate && !sbbs->online
@@ -521,7 +521,7 @@ js_OperationCallback(JSContext *cx)
 		JS_ReportWarning(cx, "Disconnected");
 		sbbs->js_callback.counter = 0;
 		JS_SetOperationCallback(cx, js_OperationCallback);
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	ret = js_CommonOperationCallback(cx, &sbbs->js_callback);
@@ -750,7 +750,7 @@ int sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scop
 
 	JS_ENDREQUEST(js_cx);
 
-	return(result);
+	return result;
 }
 
 // Execute a JS Module in its own temporary JS runtime and context
@@ -798,16 +798,16 @@ int sbbs_t::exec_bin(const char *cmdline, csi_t *csi, const char* startup_dir)
 
 #ifdef JAVASCRIPT
 	if ((p = getfext(mod)) != NULL && stricmp(p, ".js") == 0)
-		return(js_execfile(cmdline, startup_dir));
+		return js_execfile(cmdline, startup_dir);
 	if (p == NULL && startup_dir != NULL && *startup_dir) {
 		SAFEPRINTF2(str, "%s%s.js", startup_dir, mod);
 		if (fexistcase(str))
-			return(js_execfile(cmdline, startup_dir));
+			return js_execfile(cmdline, startup_dir);
 	}
 	if (cfg.mods_dir[0]) {
 		SAFEPRINTF2(str, "%s%s.js", cfg.mods_dir, mod);
 		if (fexistcase(str))
-			return(js_execfile(cmdline, startup_dir));
+			return js_execfile(cmdline, startup_dir);
 	}
 #endif
 
@@ -821,7 +821,7 @@ int sbbs_t::exec_bin(const char *cmdline, csi_t *csi, const char* startup_dir)
 #ifdef JAVASCRIPT
 		SAFEPRINTF2(str, "%s%s.js", cfg.exec_dir, mod);
 		if (fexistcase(str))
-			return(js_execfile(cmdline, startup_dir));
+			return js_execfile(cmdline, startup_dir);
 #endif
 
 		SAFEPRINTF2(str, "%s%s", cfg.exec_dir, modname);
@@ -833,7 +833,7 @@ int sbbs_t::exec_bin(const char *cmdline, csi_t *csi, const char* startup_dir)
 	}
 	if ((file = nopen(str, O_RDONLY)) == -1) {
 		errormsg(WHERE, ERR_OPEN, str, O_RDONLY);
-		return(-1);
+		return -1;
 	}
 
 	memcpy(&bin, csi, sizeof(csi_t));
@@ -847,13 +847,13 @@ int sbbs_t::exec_bin(const char *cmdline, csi_t *csi, const char* startup_dir)
 	if ((bin.cs = (uchar *)malloc(bin.length)) == NULL) {
 		close(file);
 		errormsg(WHERE, ERR_ALLOC, str, bin.length);
-		return(-1);
+		return -1;
 	}
 	if (read(file, bin.cs, bin.length) != (ssize_t)bin.length) {
 		close(file);
 		errormsg(WHERE, ERR_READ, str, bin.length);
 		free(bin.cs);
-		return(-1);
+		return -1;
 	}
 	close(file);
 
@@ -873,7 +873,7 @@ int sbbs_t::exec_bin(const char *cmdline, csi_t *csi, const char* startup_dir)
 	free(bin.cs);
 	csi->logic = bin.logic;
 //	sys_status &=~ SS_ABORT;
-	return(bin.retval);
+	return bin.retval;
 }
 
 /****************************************************************************/
@@ -1215,17 +1215,17 @@ int sbbs_t::exec(csi_t *csi)
 	now = time(NULL);
 
 	if (csi->ip >= csi->cs + csi->length)
-		return(1);
+		return 1;
 
 	if (*csi->ip >= CS_FUNCTIONS)
-		return(exec_function(csi));
+		return exec_function(csi);
 
 	/**********************************************/
 	/* Miscellaneous variable length instructions */
 	/**********************************************/
 
 	if (*csi->ip >= CS_MISC)
-		return(exec_misc(csi, path));
+		return exec_misc(csi, path);
 
 	/********************************/
 	/* ASCIIZ argument instructions */
@@ -1279,7 +1279,7 @@ int sbbs_t::exec(csi_t *csi)
 						break;
 				}
 				while (*(csi->ip++));    /* Find NULL */
-				return(0);
+				return 0;
 			case CS_LOG:
 				log(cmdstr((char*)csi->ip, path, csi->str, (char*)buf));
 				break;
@@ -1293,7 +1293,7 @@ int sbbs_t::exec(csi_t *csi)
 					while (*(csi->ip++));       /* Find NULL */
 					skipto(csi, CS_END_CMD);
 					csi->ip++;
-					return(0);
+					return 0;
 				}
 				break;
 			case CS_CMDKEYS:
@@ -1304,7 +1304,7 @@ int sbbs_t::exec(csi_t *csi)
 					while (*(csi->ip++));       /* Find NULL */
 					skipto(csi, CS_END_CMD);
 					csi->ip++;
-					return(0);
+					return 0;
 				}
 				break;
 			case CS_GET_TEMPLATE:
@@ -1408,34 +1408,34 @@ int sbbs_t::exec(csi_t *csi)
 				break;
 		}
 		while (*(csi->ip++));    /* Find NULL */
-		return(0);
+		return 0;
 	}
 
 	if (*csi->ip >= CS_THREE_BYTE) {
 		switch (*(csi->ip++)) {
 			case CS_THREE_MORE_BYTES:
 				errormsg(WHERE, ERR_CHK, "shell instruction", *(csi->ip - 1));
-				return(0);
+				return 0;
 			case CS_GOTO:
 				csi->ip = csi->cs + *((ushort *)(csi->ip));
-				return(0);
+				return 0;
 			case CS_CALL:
 				if (csi->rets < MAX_RETS) {
 					csi->ret[csi->rets++] = csi->ip + 2;
 					csi->ip = csi->cs + *((ushort *)(csi->ip));
 				}
-				return(0);
+				return 0;
 			case CS_MSWAIT:
 				mswait(*(ushort *)csi->ip);
 				csi->ip += 2;
-				return(0);
+				return 0;
 			case CS_TOGGLE_NODE_MISC:
 				if (getnodedat(cfg.node_num, &thisnode, true)) {
 					thisnode.misc ^= *(ushort *)csi->ip;
 					putnodedat(cfg.node_num, &thisnode);
 				}
 				csi->ip += 2;
-				return(0);
+				return 0;
 			case CS_COMPARE_NODE_MISC:
 				getnodedat(cfg.node_num, &thisnode);
 				if ((thisnode.misc & *(ushort *)csi->ip) == *(ushort *)csi->ip)
@@ -1443,7 +1443,7 @@ int sbbs_t::exec(csi_t *csi)
 				else
 					csi->logic = LOGIC_FALSE;
 				csi->ip += 2;
-				return(0);
+				return 0;
 			case CS_ADJUST_USER_CREDITS:
 				i = *(short *)csi->ip;
 				l = i * 1024L;
@@ -1452,12 +1452,12 @@ int sbbs_t::exec(csi_t *csi)
 				else
 					useron.cdt = adjustuserval(&cfg, useron.number, USER_CDT, l);
 				csi->ip += 2;
-				return(0);
+				return 0;
 			case CS_ADJUST_USER_MINUTES:
 				i = *(short *)csi->ip;
 				useron.min = (uint32_t)adjustuserval(&cfg, useron.number, USER_MIN, i);
 				csi->ip += 2;
-				return(0);
+				return 0;
 			case CS_GETNUM:
 				i = *(short *)csi->ip;
 				csi->ip += 2;
@@ -1470,7 +1470,7 @@ int sbbs_t::exec(csi_t *csi)
 					snprintf(csi->str, 128, "%lu", l);
 					csi->logic = LOGIC_TRUE;
 				}
-				return(0);
+				return 0;
 
 			case CS_TOGGLE_USER_FLAG:
 				i = *(csi->ip++);
@@ -1502,9 +1502,9 @@ int sbbs_t::exec(csi_t *csi)
 						break;
 					default:
 						errormsg(WHERE, ERR_CHK, "user flag type", *(csi->ip - 2));
-						return(0);
+						return 0;
 				}
-				return(0);
+				return 0;
 			case CS_REVERT_TEXT:
 				i = *(ushort *)csi->ip;
 				csi->ip += 2;
@@ -1514,20 +1514,20 @@ int sbbs_t::exec(csi_t *csi)
 							free(text[i]);
 						text[i] = text_sav[i];
 					}
-					return(0);
+					return 0;
 				}
 				i--;
 				if (i >= TOTAL_TEXT) {
 					errormsg(WHERE, ERR_CHK, "revert text #", i);
-					return(0);
+					return 0;
 				}
 				if (text[i] != text_sav[i] && text[i] != nulstr)
 					free(text[i]);
 				text[i] = text_sav[i];
-				return(0);
+				return 0;
 			default:
 				errormsg(WHERE, ERR_CHK, "shell instruction", *(csi->ip - 1));
-				return(0);
+				return 0;
 		}
 	}
 
@@ -1537,46 +1537,46 @@ int sbbs_t::exec(csi_t *csi)
 				switch (*(csi->ip++)) {
 					case CS_USER_EVENT:
 						user_event((user_event_t)*(csi->ip++));
-						return(0);
+						return 0;
 				}
 				errormsg(WHERE, ERR_CHK, "shell instruction", *(csi->ip - 1));
-				return(0);
+				return 0;
 			case CS_SETLOGIC:
 				csi->logic = *csi->ip++;
-				return(0);
+				return 0;
 			case CS_CMDKEY:
 				if (((*csi->ip) == CS_DIGIT && IS_DIGIT(csi->cmd))
 				    || ((*csi->ip) == CS_EDIGIT && csi->cmd & 0x80
 				        && IS_DIGIT(csi->cmd & 0x7f))) {
 					csi->ip++;
-					return(0);
+					return 0;
 				}
 				if (csi->cmd != *csi->ip) {
 					csi->ip++;
 					skipto(csi, CS_END_CMD);         /* skip code */
 				}
 				csi->ip++;                          /* skip key */
-				return(0);
+				return 0;
 			case CS_CMDCHAR:
 				if (csi->cmd != *csi->ip) {
 					csi->ip++;
 					skipto(csi, CS_END_CMD);         /* skip code */
 				}
 				csi->ip++;                          /* skip key */
-				return(0);
+				return 0;
 			case CS_NODE_ACTION:
 				action = *csi->ip++;
-				return(0);
+				return 0;
 			case CS_NODE_STATUS:
 				if (getnodedat(cfg.node_num, &thisnode, true)) {
 					thisnode.status = *csi->ip++;
 					putnodedat(cfg.node_num, &thisnode);
 				} else
 					csi->ip++;
-				return(0);
+				return 0;
 			case CS_MULTINODE_CHAT:
 				multinodechat(*csi->ip++);
-				return(0);
+				return 0;
 			case CS_GETSTR:
 				csi->logic = LOGIC_TRUE;
 				getstr(csi->str, *csi->ip++, 0);
@@ -1588,7 +1588,7 @@ int sbbs_t::exec(csi_t *csi)
 					csi->cmd = csi->str[1] | 0x80;
 				else
 					csi->cmd = csi->str[0];
-				return(0);
+				return 0;
 			case CS_GETLINE:
 				getstr(csi->str, *csi->ip++, K_LINE);
 				if (sys_status & SS_ABORT)
@@ -1597,7 +1597,7 @@ int sbbs_t::exec(csi_t *csi)
 					csi->cmd = csi->str[1] | 0x80;
 				else
 					csi->cmd = csi->str[0];
-				return(0);
+				return 0;
 			case CS_GETSTRUPR:
 				getstr(csi->str, *csi->ip++, K_UPPER);
 				if (sys_status & SS_ABORT)
@@ -1606,12 +1606,12 @@ int sbbs_t::exec(csi_t *csi)
 					csi->cmd = csi->str[1] | 0x80;
 				else
 					csi->cmd = csi->str[0];
-				return(0);
+				return 0;
 			case CS_GETNAME:
 				getstr(csi->str, *csi->ip++, K_UPRLWR);
 				if (sys_status & SS_ABORT)
 					csi->str[0] = 0;
-				return(0);
+				return 0;
 			case CS_SHIFT_STR:
 				i = *(csi->ip++);
 				j = strlen(csi->str);
@@ -1619,7 +1619,7 @@ int sbbs_t::exec(csi_t *csi)
 					i = j;
 				if (i)
 					memmove(csi->str, csi->str + i, j + 1);
-				return(0);
+				return 0;
 			case CS_COMPARE_KEY:
 				if (((*csi->ip) == CS_DIGIT && IS_DIGIT(csi->cmd))
 				    || ((*csi->ip) == CS_EDIGIT && csi->cmd & 0x80
@@ -1633,22 +1633,22 @@ int sbbs_t::exec(csi_t *csi)
 					else
 						csi->logic = LOGIC_FALSE;
 				}
-				return(0);
+				return 0;
 			case CS_COMPARE_CHAR:
 				if (csi->cmd == *(csi->ip++))
 					csi->logic = LOGIC_TRUE;
 				else
 					csi->logic = LOGIC_FALSE;
-				return(0);
+				return 0;
 			case CS_SET_USER_LEVEL:
 				useron.level = *(csi->ip++);
 				putuserdec32(useron.number, USER_LEVEL, useron.level);
-				return(0);
+				return 0;
 			case CS_SET_USER_STRING:
 				csi->logic = LOGIC_FALSE;
 				if (!csi->str[0]) {
 					csi->ip++;
-					return(0);
+					return 0;
 				}
 				switch (*(csi->ip++)) {
 					case USER_STRING_ALIAS:
@@ -1762,12 +1762,12 @@ int sbbs_t::exec(csi_t *csi)
 						break;
 					default:
 						errormsg(WHERE, ERR_CHK, "user string type", *(csi->ip - 1));
-						return(0);
+						return 0;
 				}
-				return(0);
+				return 0;
 			default:
 				errormsg(WHERE, ERR_CHK, "shell instruction", *(csi->ip - 1));
-				return(0);
+				return 0;
 		}
 	}
 
@@ -1781,116 +1781,116 @@ int sbbs_t::exec(csi_t *csi)
 			switch (*(csi->ip++)) {
 				case CS_OFFLINE:
 					csi->misc |= CS_OFFLINE_EXEC;
-					return(0);
+					return 0;
 				case CS_ONLINE:
 					csi->misc &= ~CS_OFFLINE_EXEC;
-					return(0);
+					return 0;
 				case CS_NEWUSER:
 					if (newuser())
 						csi->logic = LOGIC_TRUE;
 					else
 						csi->logic = LOGIC_FALSE;
-					return(0);
+					return 0;
 				case CS_LOGON:
 					if (logon())
 						csi->logic = LOGIC_TRUE;
 					else
 						csi->logic = LOGIC_FALSE;
-					return(0);
+					return 0;
 				case CS_LOGOUT:
 					logout();
-					return(0);
+					return 0;
 				case CS_EXIT:
-					return(1);
+					return 1;
 				case CS_LOOP_BEGIN:
 					if (csi->loops < MAX_LOOPDEPTH)
 						csi->loop_home[csi->loops++] = (csi->ip - 1);
-					return(0);
+					return 0;
 				case CS_BREAK_LOOP:
 					if (csi->loops) {
 						skipto(csi, CS_END_LOOP);
 						csi->ip += 2;
 						csi->loops--;
 					}
-					return(0);
+					return 0;
 				case CS_END_LOOP:
 				case CS_CONTINUE_LOOP:
 					if (csi->loops)
 						csi->ip = csi->loop_home[csi->loops - 1];
-					return(0);
+					return 0;
 				default:
 					errormsg(WHERE, ERR_CHK, "one byte extended function"
 					         , *(csi->ip - 1));
-					return(0);
+					return 0;
 			}
 		case CS_CRLF:
 			CRLF;
-			return(0);
+			return 0;
 		case CS_CLS:
 			CLS;
-			return(0);
+			return 0;
 		case CS_PAUSE:
 			pause();
-			return(0);
+			return 0;
 		case CS_PAUSE_RESET:
 			lncntr = 0;
-			return(0);
+			return 0;
 		case CS_GETLINES:
 			getdimensions();
-			return(0);
+			return 0;
 		case CS_HANGUP:
 			hangup();
-			return(0);
+			return 0;
 		case CS_LOGKEY:
 			logch(csi->cmd, 0);
-			return(0);
+			return 0;
 		case CS_LOGKEY_COMMA:
 			logch(csi->cmd, 1);
-			return(0);
+			return 0;
 		case CS_LOGSTR:
 			log(csi->str);
-			return(0);
+			return 0;
 		case CS_CHKSYSPASS:
 			csi->logic = !chksyspass();
-			return(0);
+			return 0;
 		case CS_PUT_NODE:
 			if (getnodedat(cfg.node_num, &thisnode, true))
 				putnodedat(cfg.node_num, &thisnode);
-			return(0);
+			return 0;
 		case CS_SYNC:
 			sync();
-			return(0);
+			return 0;
 		case CS_ASYNC:
 			sync();
-			return(0);
+			return 0;
 		case CS_GETTIMELEFT:
 			gettimeleft();
-			return(0);
+			return 0;
 		case CS_RETURN:
 			if (!csi->rets)
-				return(1);
+				return 1;
 			csi->ip = csi->ret[--csi->rets];
-			return(0);
+			return 0;
 		case CS_GETKEY:
 			csi->cmd = getkey(K_UPPER);
-			return(0);
+			return 0;
 		case CS_GETCHAR:
 			csi->cmd = getkey(0);
-			return(0);
+			return 0;
 		case CS_INKEY:
 			csi->cmd = toupper(inkey(K_NONE, 1));
 			if (csi->cmd)
 				csi->logic = LOGIC_TRUE;
 			else
 				csi->logic = LOGIC_FALSE;
-			return(0);
+			return 0;
 		case CS_INCHAR:
 			csi->cmd = inkey(K_NONE, 1);
 			if (csi->cmd)
 				csi->logic = LOGIC_TRUE;
 			else
 				csi->logic = LOGIC_FALSE;
-			return(0);
+			return 0;
 		case CS_GETKEYE:
 			csi->cmd = getkey(K_UPPER);
 			if (csi->cmd == '/') {
@@ -1898,22 +1898,22 @@ int sbbs_t::exec(csi_t *csi)
 				csi->cmd = getkey(K_UPPER);
 				csi->cmd |= 0x80;
 			}
-			return(0);
+			return 0;
 		case CS_GETFILESPEC:
 			if (getfilespec(csi->str))
 				csi->logic = LOGIC_TRUE;
 			else
 				csi->logic = LOGIC_FALSE;
-			return(0);
+			return 0;
 		case CS_SAVELINE:
 			saveline();
-			return(0);
+			return 0;
 		case CS_RESTORELINE:
 			restoreline();
-			return(0);
+			return 0;
 		case CS_SELECT_SHELL:
 			csi->logic = select_shell() ? LOGIC_TRUE:LOGIC_FALSE;
-			return(0);
+			return 0;
 		case CS_SET_SHELL:
 			csi->logic = LOGIC_TRUE;
 			for (i = 0; i < cfg.total_shells; i++)
@@ -1926,11 +1926,11 @@ int sbbs_t::exec(csi_t *csi)
 			}
 			else
 				csi->logic = LOGIC_FALSE;
-			return(0);
+			return 0;
 
 		case CS_SELECT_EDITOR:
 			csi->logic = select_editor() ? LOGIC_TRUE:LOGIC_FALSE;
-			return(0);
+			return 0;
 		case CS_SET_EDITOR:
 			csi->logic = LOGIC_TRUE;
 			for (i = 0; i < cfg.total_xedits; i++)
@@ -1943,11 +1943,11 @@ int sbbs_t::exec(csi_t *csi)
 			}
 			else
 				csi->logic = LOGIC_FALSE;
-			return(0);
+			return 0;
 
 		case CS_CLEAR_ABORT:
 			sys_status &= ~SS_ABORT;
-			return(0);
+			return 0;
 		case CS_FINDUSER:
 			i = finduser(csi->str);
 			if (i) {
@@ -1956,88 +1956,88 @@ int sbbs_t::exec(csi_t *csi)
 			}
 			else
 				csi->logic = LOGIC_FALSE;
-			return(0);
+			return 0;
 		case CS_UNGETKEY:
 			ungetkey(csi->cmd & 0x7f, /* insert: */ true);
-			return(0);
+			return 0;
 		case CS_UNGETSTR:
 			j = strlen(csi->str);
 			for (i = 0; i < j; i++)
 				ungetkey(csi->str[i]);
-			return(0);
+			return 0;
 		case CS_PRINTKEY:
 			if ((csi->cmd & 0x7f) >= ' ')
 				outchar(csi->cmd & 0x7f);
-			return(0);
+			return 0;
 		case CS_PRINTSTR:
 			putmsg(csi->str, P_SAVEATR | P_NOABORT | P_NOATCODES);
-			return(0);
+			return 0;
 		case CS_CMD_HOME:
 			if (csi->cmdrets < MAX_CMDRETS)
 				csi->cmdret[csi->cmdrets++] = (csi->ip - 1);
-			return(0);
+			return 0;
 		case CS_END_CMD:
 			if (csi->cmdrets)
 				csi->ip = csi->cmdret[--csi->cmdrets];
-			return(0);
+			return 0;
 		case CS_CMD_POP:
 			if (csi->cmdrets)
 				csi->cmdrets--;
-			return(0);
+			return 0;
 		case CS_IF_TRUE:
 			if (csi->logic != LOGIC_TRUE) {
 				skipto(csi, CS_ELSEORENDIF);
 				csi->ip++;
 			}
-			return(0);
+			return 0;
 		case CS_IF_GREATER:
 			if (csi->logic != LOGIC_GREATER) {
 				skipto(csi, CS_ELSEORENDIF);
 				csi->ip++;
 			}
-			return(0);
+			return 0;
 		case CS_IF_GREATER_OR_EQUAL:
 			if (csi->logic != LOGIC_GREATER && csi->logic != LOGIC_EQUAL) {
 				skipto(csi, CS_ELSEORENDIF);
 				csi->ip++;
 			}
-			return(0);
+			return 0;
 		case CS_IF_LESS:
 			if (csi->logic != LOGIC_LESS) {
 				skipto(csi, CS_ELSEORENDIF);
 				csi->ip++;
 			}
-			return(0);
+			return 0;
 		case CS_IF_LESS_OR_EQUAL:
 			if (csi->logic != LOGIC_LESS && csi->logic != LOGIC_EQUAL) {
 				skipto(csi, CS_ELSEORENDIF);
 				csi->ip++;
 			}
-			return(0);
+			return 0;
 		case CS_IF_FALSE:
 			if (csi->logic == LOGIC_TRUE) {
 				skipto(csi, CS_ELSEORENDIF);
 				csi->ip++;
 			}
-			return(0);
+			return 0;
 		case CS_ELSE:
 			skipto(csi, CS_ENDIF);
 			csi->ip++;
-			return(0);
+			return 0;
 		case CS_END_CASE:
 			skipto(csi, CS_END_SWITCH);
 			csi->misc &= ~CS_IN_SWITCH;
 			csi->ip++;
-			return(0);
+			return 0;
 		case CS_DEFAULT:
 		case CS_END_SWITCH:
 			csi->misc &= ~CS_IN_SWITCH;
-			return(0);
+			return 0;
 		case CS_ENDIF:
-			return(0);
+			return 0;
 		default:
 			errormsg(WHERE, ERR_CHK, "shell instruction", *(csi->ip - 1));
-			return(0);
+			return 0;
 	}
 }
 
@@ -2050,9 +2050,9 @@ bool sbbs_t::select_shell(void)
 	if ((i = uselect(0, useron.shell, 0, 0, 0)) >= 0) {
 		useron.shell = i;
 		putuserstr(useron.number, USER_SHELL, cfg.shell[i]->code);
-		return(true);
+		return true;
 	}
-	return(false);
+	return false;
 }
 
 bool sbbs_t::select_editor(void)
@@ -2065,7 +2065,7 @@ bool sbbs_t::select_editor(void)
 		useron.xedit = i + 1;
 		if (useron.number > 0)
 			putuserstr(useron.number, USER_XEDIT, cfg.xedit[i]->code);
-		return(true);
+		return true;
 	}
-	return(false);
+	return false;
 }

@@ -18,16 +18,16 @@ char *faddrtoa(struct fidoaddr* addr, char* outstr)
 	static char str[64];
 
 	if (addr == NULL)
-		return("0:0/0");
+		return "0:0/0";
 	sprintf(str, "%hu:%hu/%hu", addr->zone, addr->net, addr->node);
 	if (addr->point)
 		sprintf(str + strlen(str), ".%hu", addr->point);
 	if (addr->domain[0])
 		sprintf(str + strlen(str), "@%s", addr->domain);
 	if (outstr == NULL)
-		return(str);
+		return str;
 	strcpy(outstr, str);
-	return(outstr);
+	return outstr;
 }
 
 bool freadstr(FILE* fp, char* str, size_t maxlen)
@@ -85,7 +85,7 @@ int pktdump(FILE* fp, const char* fname, FILE* good, FILE* bad)
 	if (fread(&pkthdr, sizeof(pkthdr), 1, fp) != 1) {
 		fprintf(stderr, "%s !Error reading pkthdr (%" XP_PRIsize_t "u bytes)\n"
 		        , fname, sizeof(pkthdr));
-		return(-1);
+		return -1;
 	}
 
 	fseek(fp, -(int)(sizeof terminator), SEEK_END);
@@ -281,7 +281,7 @@ int pktdump(FILE* fp, const char* fname, FILE* good, FILE* bad)
 		fputc('\0', bad);
 	}
 
-	return(0);
+	return 0;
 }
 
 char* usage = "usage: pktdump [-body | -ctrl] [-recover | -split] <file1.pkt> [file2.pkt] [...]\n";
@@ -309,15 +309,15 @@ int main(int argc, char** argv)
 
 	if (sizeof(fpkthdr_t) != FIDO_PACKET_HDR_LEN) {
 		printf("sizeof(fpkthdr_t)=%" XP_PRIsize_t "u, expected: %d\n", sizeof(fpkthdr_t), FIDO_PACKET_HDR_LEN);
-		return(-1);
+		return -1;
 	}
 	if (sizeof(fpkdmsg_t) != FIDO_PACKED_MSG_HDR_LEN) {
 		printf("sizeof(fpkdmsg_t)=%" XP_PRIsize_t "u, expected: %d\n", sizeof(fpkdmsg_t), FIDO_PACKED_MSG_HDR_LEN);
-		return(-1);
+		return -1;
 	}
 	if (sizeof(fmsghdr_t) != FIDO_STORED_MSG_HDR_LEN) {
 		printf("sizeof(fmsghdr_t)=%" XP_PRIsize_t "u, expected: %d\n", sizeof(fmsghdr_t), FIDO_STORED_MSG_HDR_LEN);
-		return(-1);
+		return -1;
 	}
 
 	for (i = 1; i < argc; i++) {
@@ -337,7 +337,7 @@ int main(int argc, char** argv)
 					break;
 				default:
 					printf("%s", usage);
-					return(0);
+					return 0;
 			}
 			continue;
 		}
@@ -390,5 +390,5 @@ int main(int argc, char** argv)
 		fclose(fp);
 	}
 
-	return(0);
+	return 0;
 }

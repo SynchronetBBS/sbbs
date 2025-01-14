@@ -31,12 +31,12 @@ bool sbbs_t::lookup_netuser(char *into)
 	FILE *stream;
 
 	if (into == NULL || into[0] == 0 || strchr(into, '@'))
-		return(false);
+		return false;
 	SAFECOPY(to, into);
 	strupr(to);
 	snprintf(str, sizeof str, "%sqnet/users.dat", cfg.data_dir);
 	if ((stream = fnopen(&i, str, O_RDONLY)) == NULL)
-		return(false);
+		return false;
 	while (!feof(stream)) {
 		if (!fgets(str, sizeof(str), stream))
 			break;
@@ -50,11 +50,11 @@ bool sbbs_t::lookup_netuser(char *into)
 		if (strstr(name, to) && yesno(q)) {
 			fclose(stream);
 			snprintf(into, 128, "%s@%s", str, str + 27);
-			return(true);
+			return true;
 		}
 		if (sys_status & SS_ABORT)
 			break;
 	}
 	fclose(stream);
-	return(false);
+	return false;
 }

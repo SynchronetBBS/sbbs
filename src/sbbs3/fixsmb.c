@@ -40,7 +40,7 @@ char* usage = "usage: fixsmb [-renumber] [-undelete] [-fixnums] [-rehash] <smb_f
 
 int compare_index(const idxrec_t* idx1, const idxrec_t* idx2)
 {
-	return(idx1->number - idx2->number);
+	return idx1->number - idx2->number;
 }
 
 void sort_index(smb_t* smb)
@@ -320,7 +320,7 @@ int fixsmb(char* sub)
 	unlock_msgbase();
 	printf("Done.\n");
 	FREE_AND_NULL(numbers);
-	return(0);
+	return 0;
 }
 
 int main(int argc, char **argv)

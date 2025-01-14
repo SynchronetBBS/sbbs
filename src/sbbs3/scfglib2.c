@@ -730,11 +730,11 @@ char *readline(long *offset, char *outstr, int maxlen, FILE *instream)
 	char str[257];
 
 	if (fgets(str, 256, instream) == NULL)
-		return(NULL);
+		return NULL;
 	sprintf(outstr, "%.*s", maxlen, str);
 	truncsp(outstr);
 	(*offset) += maxlen;
-	return(outstr);
+	return outstr;
 }
 
 /****************************************************************************/
@@ -752,7 +752,7 @@ uint32_t aftou32(const char *str)
 			l |= FLAG(ch);
 		c++;
 	}
-	return(l);
+	return l;
 }
 
 /*****************************************************************************/
@@ -769,7 +769,7 @@ char *u32toaf(uint32_t l, char *str)
 		c++;
 	}
 	str[c] = 0;
-	return(str);
+	return str;
 }
 
 /****************************************************************************/
@@ -849,7 +849,7 @@ uint strtoattr(const char *str, char** endptr)
 	}
 	if (endptr != NULL)
 		*endptr = (char*)str + l;
-	return(atr);
+	return atr;
 }
 
 void parse_attr_str_list(uint* list, int max, const char* str)

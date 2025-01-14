@@ -46,10 +46,10 @@ bool semfile_check(time_t* t, const char* fname)
 		*t = time(NULL);
 
 	if ((ft = fdate(fname)) == -1 || ft <= *t)
-		return(false);
+		return false;
 
 	*t = ft;
-	return(true);
+	return true;
 }
 
 /****************************************************************************/
@@ -67,7 +67,7 @@ char* semfile_list_check(time_t* t, str_list_t filelist)
 		if (semfile_check(t, filelist[i]))
 			signaled = filelist[i];
 
-	return(signaled);
+	return signaled;
 }
 
 str_list_t semfile_list_init(const char* parent,
@@ -79,7 +79,7 @@ str_list_t semfile_list_init(const char* parent,
 	str_list_t list;
 
 	if ((list = strListInit()) == NULL)
-		return(NULL);
+		return NULL;
 	SAFEPRINTF2(path, "%s%s", parent, action);
 	strListPush(&list, path);
 	SAFEPRINTF3(path, "%s%s.%s", parent, action, service);
@@ -99,7 +99,7 @@ str_list_t semfile_list_init(const char* parent,
 		}
 	}
 #endif
-	return(list);
+	return list;
 }
 
 void semfile_list_add(str_list_t* filelist, const char* path)
@@ -124,7 +124,7 @@ bool semfile_signal(const char* fname, const char* text)
 		text = hostname;
 #endif
 	if ((file = open(fname, O_CREAT | O_WRONLY, DEFFILEMODE)) < 0)  /* use sopen instead? */
-		return(false);
+		return false;
 	if (text != NULL)
 		wrlen = write(file, text, textlen = strlen(text));
 	close(file);

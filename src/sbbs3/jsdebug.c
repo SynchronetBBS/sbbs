@@ -333,7 +333,7 @@ static enum debug_action script_debug_prompt(struct debugger *dbg, JSScript *scr
 		    strncmp(line, "q\n", 2) == 0
 		    ) {
 			free(line);
-			return (DEBUG_EXIT);
+			return DEBUG_EXIT;
 		}
 		if (strncmp(line, "eval ", 5) == 0 ||
 		    strncmp(line, "e ", 2) == 0

@@ -71,7 +71,7 @@ int main(int argc, char **argv)
 
 	if (argc < 2) {
 		print_usage(argv[0]);
-		return(0);
+		return 0;
 	}
 
 	for (i = 1; i < argc; i++)  {
@@ -111,12 +111,12 @@ int main(int argc, char **argv)
 		} else if (in == stdin) {
 			if ((in = fopen(argv[i], "rb")) == NULL) {
 				perror(argv[i]);
-				return(1);
+				return 1;
 			}
 		} else if (out == stdout) {
 			if ((out = fopen(argv[i], "wb")) == NULL) {
 				perror(argv[i]);
-				return(1);
+				return 1;
 			}
 		}
 	}
@@ -338,6 +338,6 @@ int main(int argc, char **argv)
 		fprintf(out, "\r\n");
 	if (pause)
 		fprintf(out, "%sp", ctrl_a);
-	return(0);
+	return 0;
 }
 

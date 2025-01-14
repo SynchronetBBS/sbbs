@@ -132,7 +132,7 @@ bool sbbs_t::uploadfile(file_t* f)
 						              , f->name
 						              , cfg.lib[cfg.dir[f->dir]->lib]->sname, cfg.dir[f->dir]->sname);
 						logline(LOG_NOTICE, "U!", str);
-						return(false);   /* File is in database for another dir */
+						return false;   /* File is in database for another dir */
 					}
 				}
 			}
@@ -214,7 +214,7 @@ bool sbbs_t::okay_to_upload(int dirnum)
 	if (!isdir(path)) {
 		bprintf(text[DirectoryDoesNotExist], path);
 		lprintf(LOG_ERR, "File directory does not exist: %s", path);
-		return(false);
+		return false;
 	}
 
 	/* get free disk space */
@@ -224,7 +224,7 @@ bool sbbs_t::okay_to_upload(int dirnum)
 		bputs(text[LowDiskSpace]);
 		lprintf(LOG_ERR, "Disk space is low: %s (%s bytes)", path, str);
 		if (!dir_op(dirnum))
-			return(false);
+			return false;
 	}
 	bprintf(text[DiskNBytesFree], str);
 	return true;
@@ -248,21 +248,21 @@ bool sbbs_t::upload(int dirnum, const char* fname)
 	/* Security Checks */
 	if (useron.rest & FLAG('U')) {
 		bputs(text[R_Upload]);
-		return(false);
+		return false;
 	}
 	if (dirnum == INVALID_DIR) {
 		bputs(text[CantUploadHere]);
-		return(false);
+		return false;
 	}
 	if (!(useron.exempt & FLAG('U')) && !dir_op(dirnum)) {
 		if (!chk_ar(cfg.dir[dirnum]->ul_ar, &useron, &client) || !chk_ar(cfg.lib[cfg.dir[dirnum]->lib]->ul_ar, &useron, &client)) {
 			bputs(dirnum == cfg.user_dir ? text[CantUploadToUser] :
 			      dirnum == cfg.sysop_dir ? text[CantUploadToSysop] : text[CantUploadHere]);
-			return(false);
+			return false;
 		}
 		if (cfg.dir[dirnum]->maxfiles && getfiles(&cfg, dirnum) >= cfg.dir[dirnum]->maxfiles) {
 			bputs(dirnum == cfg.user_dir ? text[UserDirFull] : text[DirFull]);
-			return(false);
+			return false;
 		}
 	}
 
@@ -290,17 +290,17 @@ bool sbbs_t::upload(int dirnum, const char* fname)
 	else
 		SAFEPRINTF3(str, text[UploadToCurDirQ], fname, cfg.lib[cfg.dir[dirnum]->lib]->sname
 		            , cfg.dir[dirnum]->sname);
-	if (!yesno(str)) return(false);
+	if (!yesno(str)) return false;
 	action = NODE_ULNG;
 	SAFECOPY(f.file_idx.name, fname);
 	getfilepath(&cfg, &f, path);
 	if (fexistcase(path)) {   /* File is on disk */
 		if (!dir_op(dirnum) && online != ON_LOCAL) {        /* local users or sysops */
 			bprintf(text[FileAlreadyThere], fname);
-			return(false);
+			return false;
 		}
 		if (!yesno(text[FileOnDiskAddQ]))
-			return(false);
+			return false;
 	}
 	char* ext = getfext(fname);
 	SAFECOPY(str, cfg.dir[dirnum]->exts);
@@ -317,14 +317,14 @@ bool sbbs_t::upload(int dirnum, const char* fname)
 		bputs(text[TheseFileExtsOnly]);
 		bputs(cfg.dir[dirnum]->exts);
 		CRLF;
-		if (!dir_op(dirnum)) return(false);
+		if (!dir_op(dirnum)) return false;
 	}
 	bputs(text[SearchingForDupes]);
 	bool found = findfile(&cfg, dirnum, fname, NULL);
 	bputs(text[SearchedForDupes]);
 	if (found) {
 		bprintf(text[FileAlreadyOnline], fname, lib_name(dirnum), dir_name(dirnum));
-		return(false);   /* File is already in database */
+		return false;   /* File is already in database */
 	}
 	for (i = k = 0; i < usrlibs; i++) {
 		progress(text[SearchingForDupes], i, usrlibs);
@@ -336,7 +336,7 @@ bool sbbs_t::upload(int dirnum, const char* fname)
 				bputs(text[SearchedForDupes]);
 				bprintf(text[FileAlreadyOnline], fname, lib_name(usrdir[i][j]), dir_name(usrdir[i][j]));
 				if (!dir_op(dirnum))
-					return(false);   /* File is in database for another dir */
+					return false;  /* File is in database for another dir */
 			}
 			if (msgabort(true)) {
 				bputs(text[SearchedForDupes]);
@@ -350,7 +350,7 @@ bool sbbs_t::upload(int dirnum, const char* fname)
 		bputs(text[RateThisFile]);
 		ch = getkey(K_ALPHA);
 		if (!IS_ALPHA(ch) || sys_status & SS_ABORT)
-			return(false);
+			return false;
 		CRLF;
 		SAFEPRINTF(descbeg, text[Rated], toupper(ch));
 	}
@@ -366,10 +366,10 @@ bool sbbs_t::upload(int dirnum, const char* fname)
 		if (!noyes(text[MultipleDiskQ])) {
 			bputs(text[HowManyDisksTotal]);
 			if ((int)(i = getnum(99)) < 2)
-				return(false);
+				return false;
 			bputs(text[NumberOfFile]);
 			if ((int)(j = getnum(i)) < 1)
-				return(false);
+				return false;
 			if (j == 1)
 				upload_lastdesc[0] = 0;
 			if (i > 9)
@@ -421,7 +421,7 @@ bool sbbs_t::upload(int dirnum, const char* fname)
 	getstr(upload_lastdesc, i, K_LINE | K_EDIT | K_AUTODEL | K_TRIM);
 	if (sys_status & SS_ABORT) {
 		strListFree(&dest_user_list);
-		return(false);
+		return false;
 	}
 	if (descend[0])      /* end of desc specified, so pad desc with spaces */
 		safe_snprintf(fdesc, sizeof(fdesc), "%s%-*s%s", descbeg, i, upload_lastdesc, descend);
@@ -553,8 +553,8 @@ bool sbbs_t::bulkupload(int dirnum)
 	strListFree(&list);
 	smb_freemsgmem(&f);
 	if (sys_status & SS_ABORT)
-		return(true);
-	return(false);
+		return true;
+	return false;
 }
 
 bool sbbs_t::recvfile(char *fname, char prot, bool autohang)
@@ -574,7 +574,7 @@ bool sbbs_t::recvfile(char *fname, char prot, bool autohang)
 		ch = (char)getkeys(keys, 0);
 
 		if (ch == quit_key() || sys_status & SS_ABORT)
-			return(false);
+			return false;
 	}
 	i = protnum(ch, XFER_UPLOAD);
 	if (i < cfg.total_prots) {
@@ -583,5 +583,5 @@ bool sbbs_t::recvfile(char *fname, char prot, bool autohang)
 		autohangup();
 	}
 
-	return(result);
+	return result;
 }

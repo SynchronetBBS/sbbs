@@ -418,7 +418,7 @@ static JSBool js_cryptkeyset_resolve(JSContext *cx, JSObject *obj, jsid id)
 
 static JSBool js_cryptkeyset_enumerate(JSContext *cx, JSObject *obj)
 {
-	return(js_cryptkeyset_resolve(cx, obj, JSID_VOID));
+	return js_cryptkeyset_resolve(cx, obj, JSID_VOID);
 }
 
 static JSClass js_cryptkeyset_class = {
@@ -463,7 +463,7 @@ js_cryptkeyset_constructor(JSContext *cx, uintN argc, jsval *arglist)
 
 	if ((p = (struct private_data *)malloc(sizeof(struct private_data))) == NULL) {
 		JS_ReportError(cx, "malloc failed");
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 	memset(p, 0, sizeof(struct private_data));
 
@@ -484,7 +484,7 @@ js_cryptkeyset_constructor(JSContext *cx, uintN argc, jsval *arglist)
 
 	if (!JS_SetPrivate(cx, obj, p)) {
 		JS_ReportError(cx, "JS_SetPrivate failed");
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 #ifdef BUILD_JSDOCS
@@ -497,7 +497,7 @@ js_cryptkeyset_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", cryptkeyset_prop_desc, JSPROP_READONLY);
 #endif
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 #ifdef BUILD_JSDOCS
@@ -543,5 +543,5 @@ JSObject* js_CreateCryptKeysetClass(JSContext* cx, JSObject* parent)
 		}
 	}
 
-	return(cksobj);
+	return cksobj;
 }

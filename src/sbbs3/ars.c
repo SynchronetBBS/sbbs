@@ -688,13 +688,13 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf)
 		if ((ar_buf = (uchar *)calloc(j + 4, 1)) == NULL) { /* Padded for ushort dereferencing */
 			if (count)
 				(*count) = 0;
-			return(NULL);
+			return NULL;
 		}
 	}
 	memcpy(ar_buf, ar, j);
 	if (count)
 		(*count) = j;
-	return(ar_buf);
+	return ar_buf;
 }
 
 #ifdef ARS_VERIFY   /* Verification for arstr() */
@@ -1053,7 +1053,7 @@ char *decompile_ars(uchar *ars, int len)
 				break;
 			default:
 				printf("Error decoding AR: %02Xh, offset: %u\n", *in, in - ars);
-				return("Unknown ARS String");
+				return "Unknown ARS String";
 		}
 		switch (*in) {
 			case AR_TIME:
@@ -1155,7 +1155,7 @@ char *decompile_ars(uchar *ars, int len)
 		}
 	}
 	*out = 0;
-	return(buf);
+	return buf;
 }
 
 void main(void)

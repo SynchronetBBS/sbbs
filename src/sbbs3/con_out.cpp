@@ -59,7 +59,7 @@ int sbbs_t::bputs(const char *str, int mode)
 		return 0;
 
 	if (online == ON_LOCAL && console & CON_L_ECHO)  /* script running as event */
-		return(lputs(LOG_INFO, str));
+		return lputs(LOG_INFO, str);
 
 	str = auto_utf8(str, mode);
 	size_t len = strlen(str);
@@ -130,7 +130,7 @@ int sbbs_t::bputs(const char *str, int mode)
 		} else
 			outchar(str[l++]);
 	}
-	return(l);
+	return l;
 }
 
 /****************************************************************************/
@@ -408,7 +408,7 @@ int sbbs_t::rputs(const char *str, size_t len)
 			lbuf[lbuflen++] = str[l]; // save non-translated char to line buffer
 		}
 	}
-	return(l);
+	return l;
 }
 
 /****************************************************************************/
@@ -420,12 +420,12 @@ int sbbs_t::bprintf(const char *fmt, ...)
 	char    sbuf[4096];
 
 	if (strchr(fmt, '%') == NULL)
-		return(bputs(fmt));
+		return bputs(fmt);
 	va_start(argptr, fmt);
 	vsnprintf(sbuf, sizeof(sbuf), fmt, argptr);
 	sbuf[sizeof(sbuf) - 1] = 0; /* force termination */
 	va_end(argptr);
-	return(bputs(sbuf));
+	return bputs(sbuf);
 }
 
 /****************************************************************************/
@@ -437,12 +437,12 @@ int sbbs_t::bprintf(int mode, const char *fmt, ...)
 	char    sbuf[4096];
 
 	if (strchr(fmt, '%') == NULL)
-		return(bputs(fmt, mode));
+		return bputs(fmt, mode);
 	va_start(argptr, fmt);
 	vsnprintf(sbuf, sizeof(sbuf), fmt, argptr);
 	sbuf[sizeof(sbuf) - 1] = 0; /* force termination */
 	va_end(argptr);
-	return(bputs(sbuf, mode));
+	return bputs(sbuf, mode);
 }
 
 /****************************************************************************/
@@ -457,7 +457,7 @@ int sbbs_t::rprintf(const char *fmt, ...)
 	vsnprintf(sbuf, sizeof(sbuf), fmt, argptr);
 	sbuf[sizeof(sbuf) - 1] = 0; /* force termination */
 	va_end(argptr);
-	return(rputs(sbuf));
+	return rputs(sbuf);
 }
 
 /****************************************************************************/
@@ -472,7 +472,7 @@ int sbbs_t::comprintf(const char *fmt, ...)
 	vsnprintf(sbuf, sizeof(sbuf), fmt, argptr);
 	sbuf[sizeof(sbuf) - 1] = 0; /* force termination */
 	va_end(argptr);
-	return(putcom(sbuf));
+	return putcom(sbuf);
 }
 
 /****************************************************************************/
@@ -511,7 +511,7 @@ int sbbs_t::term_supports(int cmp_flags)
 	if ((sys_status & (SS_USERON | SS_NEWUSER)) && (useron.misc & AUTOTERM))
 		flags |= useron.misc & (NO_EXASCII | SWAP_DELETE | COLOR | ICE_COLOR | MOUSE);
 
-	return(cmp_flags ? ((flags & cmp_flags) == cmp_flags) : (flags & TERM_FLAGS));
+	return cmp_flags ? ((flags & cmp_flags) == cmp_flags) : (flags & TERM_FLAGS);
 }
 
 char* sbbs_t::term_rows(user_t* user, char* str, size_t size)
@@ -1448,11 +1448,11 @@ bool sbbs_t::msgabort(bool clear)
 	if (sys_status & SS_ABORT) {
 		if (clear)
 			sys_status &= ~SS_ABORT;
-		return(true);
+		return true;
 	}
 	if (!online)
-		return(true);
-	return(false);
+		return true;
+	return false;
 }
 
 int sbbs_t::backfill(const char* instr, float pct, int full_attr, int empty_attr)

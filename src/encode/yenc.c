@@ -45,7 +45,7 @@ int ydecode(char *target, size_t tlen, const char *source, size_t slen)
 		target[wr++] = ch;
 	}
 
-	return(wr);
+	return wr;
 }
 
 int yencode(char *target, size_t tlen, const char *source, size_t slen)
@@ -78,7 +78,7 @@ int yencode(char *target, size_t tlen, const char *source, size_t slen)
 
 	if (wr < tlen)
 		target[wr++] = 0;
-	return(wr);
+	return wr;
 }
 
 #if defined(YDECODE_TEST)
@@ -91,7 +91,7 @@ static char* truncstr(char* str, const char* set)
 	if (p != NULL)
 		*p = 0;
 
-	return(p);
+	return p;
 }
 
 int main(int argc, char**argv)

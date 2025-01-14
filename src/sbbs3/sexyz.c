@@ -154,11 +154,11 @@ static BOOL winsock_startup(void)
 
 	if ((status = WSAStartup(MAKEWORD(1, 1), &WSAData)) == 0) {
 		fprintf(statfp, "%s %s\n", WSAData.szDescription, WSAData.szSystemStatus);
-		return(TRUE);
+		return TRUE;
 	}
 
 	fprintf(errfp, "!WinSock startup ERROR %d\n", status);
-	return(FALSE);
+	return FALSE;
 }
 
 #else /* No WINSOCK */
@@ -223,7 +223,7 @@ static int lprintf(int level, const char *fmt, ...)
 	vsnprintf(sbuf, sizeof(sbuf), fmt, argptr);
 	sbuf[sizeof(sbuf) - 1] = 0;
 	va_end(argptr);
-	return(lputs(NULL, level, sbuf));
+	return lputs(NULL, level, sbuf);
 }
 
 void break_handler(int type)
@@ -264,10 +264,10 @@ char* dszlog_filename(char* str)
 		p = getfname(p);
 
 	if (!dszlog_quotes)
-		return(p);
+		return p;
 
 	SAFEPRINTF(path, "\"%s\"", p);
-	return(path);
+	return path;
 }
 
 static char *chr(uchar ch)
@@ -276,46 +276,46 @@ static char *chr(uchar ch)
 
 	if (mode & ZMODEM) {
 		switch (ch) {
-			case ZRQINIT:   return("ZRQINIT");
-			case ZRINIT:    return("ZRINIT");
-			case ZSINIT:    return("ZSINIT");
-			case ZACK:      return("ZACK");
-			case ZFILE:     return("ZFILE");
-			case ZSKIP:     return("ZSKIP");
-			case ZNAK:      return("ZNAK");
-			case ZABORT:    return("ZABORT");
-			case ZFIN:      return("ZFIN");
-			case ZRPOS:     return("ZRPOS");
-			case ZDATA:     return("ZDATA");
-			case ZEOF:      return("ZEOF");
-			case ZPAD:      return("ZPAD");
-			case ZDLE:      return("ZDLE");
-			case ZDLEE:     return("ZDLEE");
-			case ZBIN:      return("ZBIN");
-			case ZHEX:      return("ZHEX");
-			case ZBIN32:    return("ZBIN32");
-			case ZRESC:     return("ZRESC");
-			case ZCRCE:     return("ZCRCE");
-			case ZCRCG:     return("ZCRCG");
-			case ZCRCQ:     return("ZCRCQ");
-			case ZCRCW:     return("ZCRCW");
+			case ZRQINIT:   return "ZRQINIT";
+			case ZRINIT:    return "ZRINIT";
+			case ZSINIT:    return "ZSINIT";
+			case ZACK:      return "ZACK";
+			case ZFILE:     return "ZFILE";
+			case ZSKIP:     return "ZSKIP";
+			case ZNAK:      return "ZNAK";
+			case ZABORT:    return "ZABORT";
+			case ZFIN:      return "ZFIN";
+			case ZRPOS:     return "ZRPOS";
+			case ZDATA:     return "ZDATA";
+			case ZEOF:      return "ZEOF";
+			case ZPAD:      return "ZPAD";
+			case ZDLE:      return "ZDLE";
+			case ZDLEE:     return "ZDLEE";
+			case ZBIN:      return "ZBIN";
+			case ZHEX:      return "ZHEX";
+			case ZBIN32:    return "ZBIN32";
+			case ZRESC:     return "ZRESC";
+			case ZCRCE:     return "ZCRCE";
+			case ZCRCG:     return "ZCRCG";
+			case ZCRCQ:     return "ZCRCQ";
+			case ZCRCW:     return "ZCRCW";
 		}
 	} else {
 		switch (ch) {
-			case SOH:   return("SOH");
-			case STX:   return("STX");
-			case ETX:   return("ETX");
-			case EOT:   return("EOT");
-			case ACK:   return("ACK");
-			case NAK:   return("NAK");
-			case CAN:   return("CAN");
+			case SOH:   return "SOH";
+			case STX:   return "STX";
+			case ETX:   return "ETX";
+			case EOT:   return "EOT";
+			case ACK:   return "ACK";
+			case NAK:   return "NAK";
+			case CAN:   return "CAN";
 		}
 	}
 	if (ch >= ' ' && ch <= '~')
 		sprintf(str, "'%c' (%02Xh)", ch, ch);
 	else
 		sprintf(str, "%u (%02Xh)", ch, ch);
-	return(str);
+	return str;
 }
 
 void dump(BYTE* buf, int len)
@@ -376,7 +376,7 @@ int sendbuf(SOCKET s, void *buf, size_t buflen)
 		else {
 			sent += ret;
 			if (sent >= buflen)
-				return(sent);
+				return sent;
 		}
 	}
 
@@ -419,7 +419,7 @@ static int recv_buffer(int timeout /* seconds */)
 
 	for (;;) {
 		if (inbuf_len > inbuf_pos)
-			return(inbuf_len - inbuf_pos);
+			return inbuf_len - inbuf_pos;
 #ifdef __unix__
 		if (stdio) {
 			i = read(STDIN_FILENO, inbuf, sizeof(inbuf));
@@ -528,7 +528,7 @@ int recv_byte(void* unused, unsigned timeout /* seconds */)
 				lprintf(LOG_WARNING, "Socket Disconnected");
 			} else
 				lprintf(LOG_ERR, "recv error %d (%d)", i, SOCKET_ERRNO);
-			return(NOINP);
+			return NOINP;
 		}
 
 		if (telnet) {
@@ -544,7 +544,7 @@ int recv_byte(void* unused, unsigned timeout /* seconds */)
 					telnet_cmdlen = 0;
 					if (debug_rx)
 						lprintf(LOG_DEBUG, "RX: %s", chr(TELNET_IAC));
-					return(TELNET_IAC);
+					return TELNET_IAC;
 				}
 			}
 			if (telnet_cmdlen) {
@@ -575,10 +575,10 @@ int recv_byte(void* unused, unsigned timeout /* seconds */)
 		}
 		if (debug_rx)
 			lprintf(LOG_DEBUG, "RX: %s", chr(ch));
-		return(ch);
+		return ch;
 	}
 
-	return(NOINP);
+	return NOINP;
 }
 
 #if !SINGLE_THREADED
@@ -614,12 +614,12 @@ int send_byte(void* unused, uchar ch, unsigned timeout)
 			newline = TRUE;
 			if ((result = RingBufFree(&outbuf)) < len) {
 				lprintf(LOG_ERR, "Still not enough space in ring buffer (need %d, avail=%d)", len, result);
-				return(-1);
+				return -1;
 			}
 		}
 		if ((result = RingBufFree(&outbuf)) < len) {
 			lprintf(LOG_ERR, "Not enough space in ring buffer (need %d, avail=%d) although empty event is set!", len, result);
-			return(-1);
+			return -1;
 		}
 	}
 
@@ -631,7 +631,7 @@ int send_byte(void* unused, uchar ch, unsigned timeout)
 	if (debug_tx)
 		lprintf(LOG_DEBUG, "TX: %s", chr(ch));
 #endif
-	return(0);
+	return 0;
 }
 
 #else
@@ -655,10 +655,10 @@ int send_byte(void* unused, uchar ch, unsigned timeout)
 	if (i == len) {
 		if (debug_tx)
 			lprintf(LOG_DEBUG, "TX: %s", chr(ch));
-		return(0);
+		return 0;
 	}
 
-	return(-1);
+	return -1;
 }
 #endif
 
@@ -771,7 +771,7 @@ uint64_t num_blocks(unsigned block_num, uint64_t offset, uint64_t len, unsigned 
 	blocks = block_num + (remain / block_size);
 	if (remain % block_size)
 		blocks++;
-	return(blocks);
+	return blocks;
 }
 
 /************************************************/
@@ -932,7 +932,7 @@ static int send_files(char** fname, uint fnames)
 
 	if (xm.total_files < 1) {
 		lprintf(LOG_ERR, "No files to send");
-		return(-1);
+		return -1;
 	}
 	if (xm.total_files > 1)
 		lprintf(LOG_INFO, "Sending %lu files (%" PRId64 " KB total)"
@@ -1037,13 +1037,13 @@ static int send_files(char** fname, uint fnames)
 		zmodem_get_zfin(&zm);
 
 	if (fnum < fnames) /* error occurred */
-		return(-1);
+		return -1;
 
 	if (!success)
-		return(-1);
+		return -1;
 
 	if (mode & XMODEM)
-		return(0);
+		return 0;
 	if (mode & YMODEM) {
 
 		if (xmodem_get_mode(&xm)) {
@@ -1063,7 +1063,7 @@ static int send_files(char** fname, uint fnames)
 		lprintf(LOG_INFO, "Overall - Time %02lu:%02lu  KBytes: %" PRId64 "  CPS: %lu"
 		        , t / 60, t % 60, total_bytes / 1024, total_bytes / t);
 	}
-	return(0);  /* success */
+	return 0;  /* success */
 }
 
 static int receive_files(char** fname_list, int fnames)
@@ -1118,11 +1118,11 @@ static int receive_files(char** fname_list, int fnames)
 				if (errors > xm.max_errors || xm.cancelled) {
 					lprintf(LOG_ERR, "Error fetching YMODEM header block");
 					xmodem_cancel(&xm);
-					return(1);
+					return 1;
 				}
 				if (!block[0]) {
 					lprintf(LOG_INFO, "Received YMODEM termination block");
-					return(0);
+					return 0;
 				}
 				ftime = total_files = 0;
 				total_bytes = 0;
@@ -1143,9 +1143,9 @@ static int receive_files(char** fname_list, int fnames)
 				i = zmodem_recv_init(&zm);
 
 				if (zm.cancelled)
-					return(1);
+					return 1;
 				if (i < 0)
-					return(-1);
+					return -1;
 				switch (i) {
 					case ZFILE:
 						SAFECOPY(fname, zm.current_file_name);
@@ -1156,9 +1156,9 @@ static int receive_files(char** fname_list, int fnames)
 						break;
 					case ZFIN:
 					case ZCOMPL:
-						return(!success);
+						return !success;
 					default:
-						return(-1);
+						return -1;
 				}
 			}
 			file_bytes_left = file_bytes;
@@ -1217,7 +1217,7 @@ static int receive_files(char** fname_list, int fnames)
 				continue;
 			}
 			xmodem_cancel(&xm);
-			return(1);
+			return 1;
 		}
 
 		if (!(mode & XMODEM) && max_file_size != 0 && file_bytes > max_file_size) {
@@ -1227,7 +1227,7 @@ static int receive_files(char** fname_list, int fnames)
 				continue;
 			}
 			xmodem_cancel(&xm);
-			return(1);
+			return 1;
 		}
 
 		if (lc_filenames) {
@@ -1242,7 +1242,7 @@ static int receive_files(char** fname_list, int fnames)
 				continue;
 			}
 			xmodem_cancel(&xm);
-			return(1);
+			return 1;
 		}
 
 		if (mode & XMODEM)
@@ -1318,7 +1318,7 @@ static int receive_files(char** fname_list, int fnames)
 					        , errno, wr, (uint64_t)ftello(fp));
 					fclose(fp);
 					xmodem_cancel(&xm);
-					return(1);
+					return 1;
 				}
 				file_bytes_left -= wr;
 				block_num++;
@@ -1392,7 +1392,7 @@ static int receive_files(char** fname_list, int fnames)
 			        , total_bytes / 1024
 			        );
 	}
-	return(!success);   /* 0=success */
+	return !success;   /* 0=success */
 }
 
 void bail(int code)
@@ -1490,7 +1490,7 @@ static void init_stdio(void)
 
 BOOL    RingBufIsEmpty(void *buf)
 {
-	return(RingBufFull(buf) == 0);
+	return RingBufFull(buf) == 0;
 }
 
 #endif

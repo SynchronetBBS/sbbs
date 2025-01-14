@@ -311,7 +311,7 @@ js_get_attribute_string(JSContext *cx, uintN argc, jsval *arglist)
 	JS_RESUMEREQUEST(cx, rc);
 	if ((js_str = JS_NewStringCopyN(cx, val, len)) == NULL) {
 		free(val);
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 	free(val);
 
@@ -370,7 +370,7 @@ js_get_attribute_time(JSContext *cx, uintN argc, jsval *arglist)
 	msec *= 1000;
 	dobj = JS_NewDateObjectMsec(cx, msec);
 	if (dobj == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(dobj));
 	return JS_TRUE;
 }
@@ -604,7 +604,7 @@ js_cryptcert_attrstr_get(JSContext *cx, jsval *vp, CRYPT_CERTIFICATE cert, CRYPT
 	}
 	if ((js_str = JS_NewStringCopyN(cx, val, len)) == NULL) {
 		free(val);
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 	free(val);
 	*vp = STRING_TO_JSVAL(js_str);
@@ -639,7 +639,7 @@ js_cryptcert_attrtime_get(JSContext *cx, jsval *vp, CRYPT_CERTIFICATE cert, CRYP
 	msec *= 1000;
 	dobj = JS_NewDateObjectMsec(cx, msec);
 	if (dobj == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 	*vp = OBJECT_TO_JSVAL(dobj);
 
 	return JS_TRUE;
@@ -3023,7 +3023,7 @@ static JSBool js_cryptcert_resolve(JSContext *cx, JSObject *obj, jsid id)
 
 static JSBool js_cryptcert_enumerate(JSContext *cx, JSObject *obj)
 {
-	return(js_cryptcert_resolve(cx, obj, JSID_VOID));
+	return js_cryptcert_resolve(cx, obj, JSID_VOID);
 }
 
 JSClass js_cryptcert_class = {
@@ -3086,13 +3086,13 @@ js_cryptcert_constructor(JSContext *cx, uintN argc, jsval *arglist)
 
 	if ((p = (struct js_cryptcert_private_data *)malloc(sizeof(struct js_cryptcert_private_data))) == NULL) {
 		JS_ReportError(cx, "malloc failed");
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 	memset(p, 0, sizeof(struct js_cryptcert_private_data));
 
 	if (!JS_SetPrivate(cx, obj, p)) {
 		JS_ReportError(cx, "JS_SetPrivate failed");
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	if (JSVAL_IS_STRING(argv[0])) {
@@ -3131,7 +3131,7 @@ js_cryptcert_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	                           );
 #endif
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 #ifdef BUILD_JSDOCS
@@ -3916,5 +3916,5 @@ JSObject* js_CreateCryptCertClass(JSContext* cx, JSObject* parent)
 		}
 	}
 
-	return(cksobj);
+	return cksobj;
 }

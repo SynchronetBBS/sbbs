@@ -69,7 +69,7 @@ static JSBool js_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	js_callback_t* top_cb;
 
 	if ((cb = (js_callback_t*)JS_GetPrivate(cx, obj)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	JS_IdToValue(cx, id, &idval);
 	tiny = JSVAL_TO_INT(idval);
@@ -136,7 +136,7 @@ static JSBool js_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 	}
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool js_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
@@ -146,7 +146,7 @@ static JSBool js_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval
 	js_callback_t* cb;
 
 	if ((cb = (js_callback_t*)JS_GetPrivate(cx, obj)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	JS_IdToValue(cx, id, &idval);
 	tiny = JSVAL_TO_INT(idval);
@@ -187,7 +187,7 @@ static JSBool js_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval
 			break;
 	}
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 #define PROP_FLAGS  JSPROP_ENUMERATE | JSPROP_READONLY
@@ -268,7 +268,7 @@ js_CommonOperationCallback(JSContext *cx, js_callback_t* cb)
 			if (top_cb->terminated != NULL && *top_cb->terminated) {
 				JS_ReportWarning(cx, "Terminated");
 				cb->counter = 0;
-				return(JS_FALSE);
+				return JS_FALSE;
 			}
 		}
 	}
@@ -277,7 +277,7 @@ js_CommonOperationCallback(JSContext *cx, js_callback_t* cb)
 	if (cb->limit && cb->counter > cb->limit) {
 		JS_ReportError(cx, "Infinite loop (%lu operation callbacks) detected", cb->counter);
 		cb->counter = 0;
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	/* Give up timeslices every once in a while */
@@ -296,7 +296,7 @@ js_CommonOperationCallback(JSContext *cx, js_callback_t* cb)
 	if (cb->gc_interval && (cb->counter % cb->gc_interval) == 0)
 		JS_MaybeGC(cx), cb->gc_attempts++;
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 // This is kind of halfway between js_execfile() in exec.cpp and js_load
@@ -324,20 +324,20 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 
 	if (argc < 1) {
 		JS_ReportError(cx, "No filename passed");
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	jsval *argv = JS_ARGV(cx, arglist);
 
 	if (!JSVAL_IS_STRING(argv[arg])) {
 		JS_ReportError(cx, "Invalid script name");
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 	JSVALUE_TO_MSTRING(cx, argv[arg++], cmd, NULL);
 	HANDLE_PENDING(cx, cmd);
 	if (cmd == NULL) {
 		JS_ReportError(cx, "Invalid NULL string");
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	if (argc > arg) {
@@ -347,7 +347,7 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 			if (startup_dir == NULL) {
 				free(cmd);
 				JS_ReportError(cx, "Invalid NULL string");
-				return(JS_FALSE);
+				return JS_FALSE;
 			}
 		}
 	}
@@ -358,14 +358,14 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 			free(cmd);
 			free(startup_dir);
 			JS_ReportError(cx, "Invalid Scope");
-			return(JS_FALSE);
+			return JS_FALSE;
 		}
 	}
 	if (js_scope == NULL) {
 		free(cmd);
 		free(startup_dir);
 		JS_ReportError(cx, "Invalid Scope");
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	pscope = scope;
@@ -481,7 +481,7 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 			JS_SET_RVAL(cx, arglist, rval);
 		}
 		JS_ClearPendingException(cx);
-		return(JS_TRUE);
+		return JS_TRUE;
 	}
 
 	JS_ExecuteScript(cx, js_scope, js_script, &rval);
@@ -528,18 +528,18 @@ js_eval(JSContext *parent_cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if (argc < 1)
-		return(JS_TRUE);
+		return JS_TRUE;
 
 	if ((str = JS_ValueToString(parent_cx, argv[0])) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 	JSSTRING_TO_MSTRING(parent_cx, str, buf, &buflen);
 	HANDLE_PENDING(parent_cx, buf);
 	if (buf == NULL)
-		return(JS_TRUE);
+		return JS_TRUE;
 
 	if ((cx = JS_NewContext(JS_GetRuntime(parent_cx), JAVASCRIPT_CONTEXT_STACK)) == NULL) {
 		free(buf);
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	/* Use the error reporter from the parent context */
@@ -555,7 +555,7 @@ js_eval(JSContext *parent_cx, uintN argc, jsval *arglist)
 	    || !JS_InitStandardClasses(cx, obj)) {
 		JS_DestroyContext(cx);
 		free(buf);
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	if ((script = JS_CompileScript(cx, obj, buf, buflen, NULL, 0)) != NULL) {
@@ -568,7 +568,7 @@ js_eval(JSContext *parent_cx, uintN argc, jsval *arglist)
 
 	JS_DestroyContext(cx);
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -582,7 +582,7 @@ js_gc(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((cb = (js_callback_t*)JS_GetPrivate(cx, obj)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	if (argc)
 		JS_ValueToBoolean(cx, argv[0], &forced);
@@ -594,7 +594,7 @@ js_gc(JSContext *cx, uintN argc, jsval *arglist)
 
 	cb->gc_attempts++;
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -615,9 +615,9 @@ js_report_error(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if (argc > 1 && argv[1] == JSVAL_TRUE)
-		return(JS_FALSE);   /* fatal */
+		return JS_FALSE;  /* fatal */
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -635,7 +635,7 @@ js_on_exit(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((pd = (global_private_t*)JS_GetPrivate(cx, glob)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 	if (glob == scope) {
 		if (pd->exit_func == NULL)
 			pd->exit_func = strListInit();
@@ -677,7 +677,7 @@ js_on_exit(JSContext *cx, uintN argc, jsval *arglist)
 		else
 			oes->onexit = list;
 	}
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -692,7 +692,7 @@ js_get_parent(JSContext *cx, uintN argc, jsval *arglist)
 	    && (parent = JS_GetParent(cx, child)) != NULL)
 		JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(parent));
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool js_getsize(JSContext *cx, uintN argc, jsval *arglist)
@@ -702,13 +702,13 @@ static JSBool js_getsize(JSContext *cx, uintN argc, jsval *arglist)
 
 	if (!JSVAL_IS_OBJECT(argv[0])) {
 		JS_ReportError(cx, "Parameter is not an object.");
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 	tmp_obj = JSVAL_TO_OBJECT(argv[0]);
 	if (!tmp_obj)
-		return(JS_FALSE);
+		return JS_FALSE;
 	JS_SET_RVAL(cx, arglist, DOUBLE_TO_JSVAL(JS_GetObjectTotalSize(cx, tmp_obj)));
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool js_flatten(JSContext *cx, uintN argc, jsval *arglist)
@@ -717,11 +717,11 @@ static JSBool js_flatten(JSContext *cx, uintN argc, jsval *arglist)
 
 	if (!JSVAL_IS_STRING(argv[0])) {
 		JS_ReportError(cx, "Parameter is not a string.");
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 	JS_FlattenString(cx, JSVAL_TO_STRING(argv[0]));
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -736,7 +736,7 @@ js_setTimeout(JSContext *cx, uintN argc, jsval *arglist)
 	jsdouble              timeout;
 
 	if ((cb = (js_callback_t*)JS_GetPrivate(cx, obj)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	if (!cb->events_supported) {
 		JS_ReportError(cx, "events not supported");
@@ -825,7 +825,7 @@ js_internal_clear_event(JSContext *cx, uintN argc, jsval *arglist, enum js_event
 		return JS_FALSE;
 	}
 	if ((cb = (js_callback_t*)JS_GetPrivate(cx, obj)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	return js_clear_event(cx, arglist, cb, et, 0);
 }
@@ -854,7 +854,7 @@ js_setInterval(JSContext *cx, uintN argc, jsval *arglist)
 	jsdouble              period;
 
 	if ((cb = (js_callback_t*)JS_GetPrivate(cx, obj)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	if (!cb->events_supported) {
 		JS_ReportError(cx, "events not supported");
@@ -908,7 +908,7 @@ js_setImmediate(JSContext *cx, uintN argc, jsval *arglist)
 	struct js_runq_entry *rqe;
 
 	if ((cb = (js_callback_t*)JS_GetPrivate(cx, obj)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	if (argc < 1) {
 		JS_ReportError(cx, "js.setImmediate() requires a callback");
@@ -955,7 +955,7 @@ js_addEventListener(JSContext *cx, uintN argc, jsval *arglist)
 	js_callback_t *           cb;
 
 	if ((cb = (js_callback_t*)JS_GetPrivate(cx, obj)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	if (argc < 2) {
 		JS_ReportError(cx, "js.addEventListener() requires exactly two parameters");
@@ -999,7 +999,7 @@ js_removeEventListener(JSContext *cx, uintN argc, jsval *arglist)
 	js_callback_t *            cb;
 
 	if ((cb = (js_callback_t*)JS_GetPrivate(cx, obj)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	if (argc < 1) {
 		JS_ReportError(cx, "js.removeEventListener() requires exactly one parameter");
@@ -1049,7 +1049,7 @@ js_dispatchEvent(JSContext *cx, uintN argc, jsval *arglist)
 	js_callback_t *           cb;
 
 	if ((cb = (js_callback_t*)JS_GetPrivate(cx, obj)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	if (argc < 1) {
 		JS_ReportError(cx, "js.dispatchEvent() requires a event name");
@@ -1532,12 +1532,12 @@ static JSBool js_internal_resolve(JSContext *cx, JSObject *obj, jsid id)
 	ret = js_SyncResolve(cx, obj, name, js_properties, js_functions, NULL, 0);
 	if (name)
 		free(name);
-	return(ret);
+	return ret;
 }
 
 static JSBool js_internal_enumerate(JSContext *cx, JSObject *obj)
 {
-	return(js_internal_resolve(cx, obj, JSID_VOID));
+	return js_internal_resolve(cx, obj, JSID_VOID);
 }
 
 static JSClass js_internal_class = {
@@ -1624,10 +1624,10 @@ JSObject* js_CreateInternalJsObject(JSContext* cx, JSObject* parent, js_callback
 
 	if ((obj = JS_DefineObject(cx, parent, "js", &js_internal_class, NULL
 	                           , JSPROP_ENUMERATE | JSPROP_READONLY)) == NULL)
-		return(NULL);
+		return NULL;
 
 	if (!JS_SetPrivate(cx, obj, cb)) /* Store a pointer to js_callback_t */
-		return(NULL);
+		return NULL;
 
 	if (startup != NULL) {
 		JSObject*  load_path_list;
@@ -1635,10 +1635,10 @@ JSObject* js_CreateInternalJsObject(JSContext* cx, JSObject* parent, js_callback
 		str_list_t load_path;
 
 		if ((load_path_list = JS_NewArrayObject(cx, 0, NULL)) == NULL)
-			return(NULL);
+			return NULL;
 		val = OBJECT_TO_JSVAL(load_path_list);
 		if (!JS_SetProperty(cx, obj, JAVASCRIPT_LOAD_PATH_LIST, &val))
-			return(NULL);
+			return NULL;
 
 		if ((load_path = strListSplitCopy(NULL, startup->load_path, ",")) != NULL) {
 			JSString* js_str;
@@ -1660,7 +1660,7 @@ JSObject* js_CreateInternalJsObject(JSContext* cx, JSObject* parent, js_callback
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", prop_desc, JSPROP_READONLY);
 #endif
 
-	return(obj);
+	return obj;
 }
 
 #if defined(_MSC_VER)
@@ -1726,14 +1726,14 @@ js_CreateArrayOfStrings(JSContext* cx, JSObject* parent, const char* name, const
 		array = JSVAL_TO_OBJECT(val);
 	else
 	if ((array = JS_NewArrayObject(cx, 0, NULL)) == NULL)   /* Assertion here, in _heap_alloc_dbg, June-21-2004 */
-		return(JS_FALSE);                                   /* Caused by nntpservice.js? */
+		return JS_FALSE;                                  /* Caused by nntpservice.js? */
 
 	if (!JS_DefineProperty(cx, parent, name, OBJECT_TO_JSVAL(array)
 	                       , NULL, NULL, flags))
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	if (array == NULL || !JS_GetArrayLength(cx, array, &len))
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	for (i = 0; str[i] != NULL; i++) {
 		if ((js_str = JS_NewStringCopyZ(cx, str[i])) == NULL)
@@ -1743,6 +1743,6 @@ js_CreateArrayOfStrings(JSContext* cx, JSObject* parent, const char* name, const
 			break;
 	}
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 

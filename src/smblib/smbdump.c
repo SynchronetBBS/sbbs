@@ -37,7 +37,7 @@ static char *binstr(uchar *buf, uint16_t length, char* str)
 			sprintf(str, "'%s'", buf);
 			return str;
 		}
-		return((char*)buf);
+		return (char*)buf;
 	}
 	for (i = 0; i < length; i++) {
 		sprintf(str + strlen(str), "%02X ", buf[i]);
@@ -47,7 +47,7 @@ static char *binstr(uchar *buf, uint16_t length, char* str)
 		}
 	}
 	truncsp(str);
-	return(str);
+	return str;
 }
 
 str_list_t smb_msghdr_str_list(smbmsg_t* msg)

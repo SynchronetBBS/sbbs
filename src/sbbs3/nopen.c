@@ -53,7 +53,7 @@ int nopen(const char* str, uint access)
 	while (((file = sopen(str, access, share, DEFFILEMODE)) == -1)
 	       && FILE_RETRY_ERRNO(errno) && count++ < LOOP_NOPEN)
 		FILE_RETRY_DELAY(count);
-	return(file);
+	return file;
 }
 
 /****************************************************************************/
@@ -67,7 +67,7 @@ FILE* fnopen(int* fd, const char* str, uint access)
 	FILE * stream;
 
 	if ((file = nopen(str, access)) == -1)
-		return(NULL);
+		return NULL;
 
 	if (fd != NULL)
 		*fd = file;
@@ -91,10 +91,10 @@ FILE* fnopen(int* fd, const char* str, uint access)
 	stream = fdopen(file, mode);
 	if (stream == NULL) {
 		close(file);
-		return(NULL);
+		return NULL;
 	}
 	setvbuf(stream, NULL, _IOFBF, FNOPEN_BUF_SIZE);
-	return(stream);
+	return stream;
 }
 
 bool ftouch(const char* fname)
@@ -245,7 +245,7 @@ bool fcompare(const char* fn1, const char* fn2)
 	fclose(fp1);
 	fclose(fp2);
 
-	return(success);
+	return success;
 }
 
 

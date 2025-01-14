@@ -29,7 +29,7 @@ int sbbs_t::text_sec()
 {
 	if (!cfg.textsec_mod[0]) {
 		bputs(text[NoTextSections]);
-		return(1);
+		return 1;
 	}
 	return exec_bin(cfg.textsec_mod, &main_csi);
 }

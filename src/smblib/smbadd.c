@@ -56,7 +56,7 @@ int smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, int dupechk_hashes
 	if (filelength(fileno(smb->shd_fp)) < 1) {  /* Create it if it doesn't exist */
 		/* smb->status.max_crcs, max_msgs, max_age, and attr should be pre-initialized */
 		if ((retval = smb_create(smb)) != SMB_SUCCESS)
-			return(retval);
+			return retval;
 	}
 
 	if (!smb->locked && smb_locksmbhdr(smb) != SMB_SUCCESS)
@@ -309,7 +309,7 @@ int smb_addmsg(smb_t* smb, smbmsg_t* msg, int storage, int dupechk_hashes
 	FREE_AND_NULL(lzhbuf);
 	FREE_LIST(hashes, n);
 
-	return(retval);
+	return retval;
 }
 
 int smb_addvote(smb_t* smb, smbmsg_t* msg, int storage)

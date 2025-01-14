@@ -537,7 +537,7 @@ bool sbbs_t::answer()
 					bputs(text[InvalidLogon]);
 					hangup();
 					useron.number = 0;
-					return(false);
+					return false;
 				}
 			}
 		}
@@ -677,7 +677,7 @@ bool sbbs_t::answer()
 
 		if (!online) {
 			useron.number = 0;
-			return(false);
+			return false;
 		}
 
 		if (!(telnet_mode & TELNET_MODE_OFF)) {
@@ -772,19 +772,19 @@ bool sbbs_t::answer()
 			exec_bin(cfg.login_mod, &main_csi);
 		} else  /* auto logon here */
 		if (logon() == false)
-			return(false);
+			return false;
 	}
 
 	if (!useron.number)
 		hangup();
 
 	if (!online)
-		return(false);
+		return false;
 
 	if (!(sys_status & SS_USERON)) {
 		errormsg(WHERE, ERR_CHK, "User not logged on", sys_status);
 		hangup();
-		return(false);
+		return false;
 	}
 
 	if (useron.pass[0])
@@ -792,5 +792,5 @@ bool sbbs_t::answer()
 
 	if (!term_output_disabled)
 		max_socket_inactivity = startup->max_session_inactivity;
-	return(true);
+	return true;
 }

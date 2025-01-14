@@ -147,12 +147,12 @@ static bool parse_recipient_object(JSContext* cx, private_t* p, JSObject* hdr, s
 		HANDLE_PENDING(cx, cp);
 		if (cp == NULL) {
 			JS_ReportError(cx, "Invalid \"to\" string in recipient object");
-			return(false);
+			return false;
 		}
 	} else {
 		if ((p != NULL) && (p->smb.status.attr & SMB_EMAIL)) { /* e-mail */
 			JS_ReportError(cx, "\"to\" property not included in email recipient object");
-			return(false);                  /* "to" property required */
+			return false;                  /* "to" property required */
 		}
 		cp = strdup("All");
 	}
@@ -173,7 +173,7 @@ static bool parse_recipient_object(JSContext* cx, private_t* p, JSObject* hdr, s
 		HANDLE_PENDING(cx, cp);
 		if (cp == NULL) {
 			JS_ReportError(cx, "Invalid \"to_list\" string in recipient object");
-			return(false);
+			return false;
 		}
 		if ((smb_result = smb_hfield_str(msg, RECIPIENTLIST, cp)) != SMB_SUCCESS) {
 			free(cp);
@@ -187,7 +187,7 @@ static bool parse_recipient_object(JSContext* cx, private_t* p, JSObject* hdr, s
 		HANDLE_PENDING(cx, cp);
 		if (cp == NULL) {
 			JS_ReportError(cx, "Invalid \"cc_list\" string in recipient object");
-			return(false);
+			return false;
 		}
 		if ((smb_result = smb_hfield_str(msg, SMB_CARBONCOPY, cp)) != SMB_SUCCESS) {
 			free(cp);
@@ -201,7 +201,7 @@ static bool parse_recipient_object(JSContext* cx, private_t* p, JSObject* hdr, s
 		HANDLE_PENDING(cx, cp);
 		if (cp == NULL) {
 			JS_ReportError(cx, "Invalid \"to_ext\" string in recipient object");
-			return(false);
+			return false;
 		}
 		if ((smb_result = smb_hfield_str(msg, RECIPIENTEXT, cp)) != SMB_SUCCESS) {
 			free(cp);
@@ -217,7 +217,7 @@ static bool parse_recipient_object(JSContext* cx, private_t* p, JSObject* hdr, s
 		HANDLE_PENDING(cx, cp);
 		if (cp == NULL) {
 			JS_ReportError(cx, "Invalid \"to_org\" string in recipient object");
-			return(false);
+			return false;
 		}
 		if ((smb_result = smb_hfield_str(msg, RECIPIENTORG, cp)) != SMB_SUCCESS) {
 			free(cp);
@@ -229,7 +229,7 @@ static bool parse_recipient_object(JSContext* cx, private_t* p, JSObject* hdr, s
 	if (JS_GetProperty(cx, hdr, "to_net_type", &val) && !JSVAL_NULL_OR_VOID(val)) {
 		if (!JS_ValueToInt32(cx, val, &i32)) {
 			free(cp);
-			return(false);
+			return false;
 		}
 		nettype = (ushort)i32;
 	}
@@ -239,7 +239,7 @@ static bool parse_recipient_object(JSContext* cx, private_t* p, JSObject* hdr, s
 		HANDLE_PENDING(cx, cp);
 		if (cp == NULL) {
 			JS_ReportError(cx, "Invalid \"to_net_addr\" string in recipient object");
-			return(false);
+			return false;
 		}
 		if ((smb_result = smb_hfield_netaddr(msg, RECIPIENTNETADDR, cp, &nettype)) != SMB_SUCCESS) {
 			free(cp);
@@ -257,7 +257,7 @@ static bool parse_recipient_object(JSContext* cx, private_t* p, JSObject* hdr, s
 				if (fulladdr[0] == 0) {
 					JS_ReportError(cx, "Unroutable QWKnet \"to_net_addr\" (%s) in recipient object"
 					               , msg->to_net.addr);
-					return(false);
+					return false;
 				}
 				if ((smb_result = smb_hfield_str(msg, RECIPIENTNETADDR, fulladdr)) != SMB_SUCCESS) {
 					JS_ReportError(cx, "Error %d adding RECIPIENTADDR field to message header"
@@ -292,12 +292,12 @@ static bool parse_recipient_object(JSContext* cx, private_t* p, JSObject* hdr, s
 		}
 	}
 
-	return(true);
+	return true;
 
 err:
 	if (smb_result != SMB_SUCCESS && p != NULL)
 		p->smb_result = smb_result;
-	return(false);
+	return false;
 
 }
 
@@ -993,14 +993,14 @@ static bool parse_header_object(JSContext* cx, private_t* p, JSObject* hdr, smbm
 
 	if (cp)
 		free(cp);
-	return(true);
+	return true;
 
 err:
 	if (smb_result != SMB_SUCCESS && p != NULL)
 		p->smb_result = smb_result;
 	if (cp)
 		free(cp);
-	return(false);
+	return false;
 }
 
 /* obj *may* have been previously returned from get_msg_header() */
@@ -1012,10 +1012,10 @@ bool js_ParseMsgHeaderObject(JSContext* cx, JSObject* obj, smbmsg_t* msg)
 
 	if (!parse_header_object(cx, p == NULL ? NULL : p->p, obj, msg, /* recipient */ true)) {
 		smb_freemsgmem(msg);
-		return(false);
+		return false;
 	}
 
-	return(true);
+	return true;
 }
 
 /* obj must've been previously returned from get_msg_header() */
@@ -1044,10 +1044,10 @@ static bool msg_offset_by_id(private_t* p, char* id, int32_t* offset)
 	smbmsg_t msg;
 
 	if ((p->smb_result = smb_getmsgidx_by_msgid(&(p->smb), &msg, id)) != SMB_SUCCESS)
-		return(false);
+		return false;
 
 	*offset = msg.idx_offset;
-	return(true);
+	return true;
 }
 
 static bool set_msg_idx_properties(JSContext* cx, JSObject* obj, idxrec_t* idx, int32_t offset)
@@ -2186,7 +2186,7 @@ js_put_msg_header(JSContext *cx, uintN argc, jsval *arglist)
 	smb_freemsgmem(&msg);
 	JS_RESUMEREQUEST(cx, rc);
 
-	return(ret);
+	return ret;
 }
 
 static JSBool
@@ -2274,18 +2274,18 @@ static char* get_msg_text(private_t* p, smbmsg_t* msg, bool strip_ctrl_a, bool d
 
 	if (existing) {
 		if ((p->smb_result = smb_lockmsghdr(&(p->smb), msg)) != SMB_SUCCESS)
-			return(NULL);
+			return NULL;
 	}
 	else {
 		if ((p->smb_result = smb_getmsgidx(&(p->smb), msg)) != SMB_SUCCESS)
-			return(NULL);
+			return NULL;
 
 		if ((p->smb_result = smb_lockmsghdr(&(p->smb), msg)) != SMB_SUCCESS)
-			return(NULL);
+			return NULL;
 
 		if ((p->smb_result = smb_getmsghdr(&(p->smb), msg)) != SMB_SUCCESS) {
 			smb_unlockmsghdr(&(p->smb), msg);
-			return(NULL);
+			return NULL;
 		}
 	}
 
@@ -2293,7 +2293,7 @@ static char* get_msg_text(private_t* p, smbmsg_t* msg, bool strip_ctrl_a, bool d
 		smb_unlockmsghdr(&(p->smb), msg);
 		if (!existing)
 			smb_freemsgmem(msg);
-		return(NULL);
+		return NULL;
 	}
 
 	smb_unlockmsghdr(&(p->smb), msg);
@@ -2318,7 +2318,7 @@ static char* get_msg_text(private_t* p, smbmsg_t* msg, bool strip_ctrl_a, bool d
 		}
 	}
 
-	return(buf);
+	return buf;
 }
 
 static JSBool
@@ -2701,7 +2701,7 @@ js_save_msg(JSContext *cx, uintN argc, jsval *arglist)
 
 	smb_freemsgmem(&msg);
 
-	return(ret);
+	return ret;
 }
 
 static JSBool
@@ -3312,7 +3312,7 @@ static JSBool js_msgbase_resolve(JSContext *cx, JSObject *obj, jsid id)
 
 static JSBool js_msgbase_enumerate(JSContext *cx, JSObject *obj)
 {
-	return(js_msgbase_resolve(cx, obj, JSID_VOID));
+	return js_msgbase_resolve(cx, obj, JSID_VOID);
 }
 
 JSClass js_msgbase_class = {
@@ -3465,7 +3465,7 @@ JSObject* js_CreateMsgBaseClass(JSContext* cx, JSObject* parent)
 		(void)pobj;
 	}
 
-	return(obj);
+	return obj;
 }
 
 

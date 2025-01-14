@@ -43,7 +43,7 @@ int sbbs_t::exec_net(csi_t* csi)
 			csi->logic = LOGIC_FALSE;
 			csi->socket_error = 0;
 			if (csi->sockets >= MAX_SOCKETS)
-				return(0);
+				return 0;
 			if (lp != NULL) {
 
 				SOCKET sock = open_socket(PF_INET, SOCK_STREAM, NULL);
@@ -58,7 +58,7 @@ int sbbs_t::exec_net(csi_t* csi)
 					if ((i = bind(sock, (struct sockaddr *) &addr, sizeof (addr))) != 0) {
 						csi->socket_error = SOCKET_ERRNO;
 						close_socket(sock);
-						return(0);
+						return 0;
 					}
 
 					*lp = sock;
@@ -72,7 +72,7 @@ int sbbs_t::exec_net(csi_t* csi)
 					csi->logic = LOGIC_TRUE;
 				}
 			}
-			return(0);
+			return 0;
 		case CS_SOCKET_CLOSE:
 			lp = getintvar(csi, *(int32_t *)csi->ip);
 			csi->ip += 4;
@@ -86,7 +86,7 @@ int sbbs_t::exec_net(csi_t* csi)
 						csi->socket[i] = 0;
 				*lp = 0;
 			}
-			return(0);
+			return 0;
 		case CS_SOCKET_CHECK:
 			lp = getintvar(csi, *(int32_t *)csi->ip);
 			csi->ip += 4;
@@ -94,14 +94,14 @@ int sbbs_t::exec_net(csi_t* csi)
 			csi->socket_error = 0;
 
 			if (lp == NULL || *lp == INVALID_SOCKET)
-				return(0);
+				return 0;
 
 			if (socket_check(*lp, NULL, NULL, 0) == TRUE)
 				csi->logic = LOGIC_TRUE;
 			else
 				csi->socket_error = SOCKET_ERRNO;
 
-			return(0);
+			return 0;
 		case CS_SOCKET_CONNECT:
 			lp = getintvar(csi, *(int32_t *)csi->ip);      /* socket */
 			csi->ip += 4;
@@ -116,12 +116,12 @@ int sbbs_t::exec_net(csi_t* csi)
 			csi->socket_error = 0;
 
 			if (!lp || !*lp || !pp || !*pp || !w)
-				return(0);
+				return 0;
 
 			ulong ip_addr;
 
 			if ((ip_addr = resolve_ip(*pp)) == INADDR_NONE)
-				return(0);
+				return 0;
 
 			SOCKADDR_IN addr;
 
@@ -132,16 +132,16 @@ int sbbs_t::exec_net(csi_t* csi)
 
 			if ((i = connect(*lp, (struct sockaddr *)&addr, sizeof(addr))) != 0) {
 				csi->socket_error = SOCKET_ERRNO;
-				return(0);
+				return 0;
 			}
 			csi->logic = LOGIC_TRUE;
-			return(0);
+			return 0;
 		case CS_SOCKET_ACCEPT:
 			lp1 = getintvar(csi, *(int32_t *)csi->ip);     /* socket */
 			csi->ip += 4;
 			csi->socket_error = 0;
 			/* TODO */
-			return(0);
+			return 0;
 		case CS_SOCKET_NREAD:
 			lp1 = getintvar(csi, *(int32_t *)csi->ip);     /* socket */
 			csi->ip += 4;
@@ -152,13 +152,13 @@ int sbbs_t::exec_net(csi_t* csi)
 			csi->socket_error = 0;
 
 			if (!lp1 || !lp2)
-				return(0);
+				return 0;
 
 			if (ioctlsocket(*lp1, FIONREAD, (ulong*)lp2) == 0)
 				csi->logic = LOGIC_TRUE;
 			else
 				csi->socket_error = SOCKET_ERRNO;
-			return(0);
+			return 0;
 		case CS_SOCKET_PEEK:
 		case CS_SOCKET_READ:
 			lp = getintvar(csi, *(int32_t *)csi->ip);          /* socket */
@@ -172,7 +172,7 @@ int sbbs_t::exec_net(csi_t* csi)
 			csi->socket_error = 0;
 
 			if (!lp || !pp)
-				return(0);
+				return 0;
 
 			if (w < 1 || w > sizeof(buf) - 1)
 				w = sizeof(buf) - 1;
@@ -189,7 +189,7 @@ int sbbs_t::exec_net(csi_t* csi)
 				*pp = copystrvar(csi, *pp, buf);
 			} else
 				csi->socket_error = SOCKET_ERRNO;
-			return(0);
+			return 0;
 		case CS_SOCKET_READLINE:
 			lp = getintvar(csi, *(int32_t *)csi->ip);          /* socket */
 			csi->ip += 4;
@@ -202,7 +202,7 @@ int sbbs_t::exec_net(csi_t* csi)
 			csi->socket_error = 0;
 
 			if (!lp || !pp)
-				return(0);
+				return 0;
 
 			if (w < 1 || w > sizeof(buf) - 1)
 				w = sizeof(buf) - 1;
@@ -211,23 +211,23 @@ int sbbs_t::exec_net(csi_t* csi)
 			for (i = 0; i < w;) {
 
 				if (!online)
-					return(1);
+					return 1;
 
 				if (!socket_check(*lp, &rd, NULL, 1000))
-					return(0);
+					return 0;
 
 				if (!rd) {
 					if (time(NULL) - start > TIMEOUT_SOCK_READLINE) {
 						lprintf(LOG_WARNING, "!socket_readline: timeout (%d) exceeded"
 						        , TIMEOUT_SOCK_READLINE);
-						return(0);
+						return 0;
 					}
 					continue;
 				}
 
 				if (recv(*lp, &ch, 1, 0) != 1) {
 					csi->socket_error = SOCKET_ERRNO;
-					return(0);
+					return 0;
 				}
 
 				if (ch == '\n' && i >= 1)
@@ -246,7 +246,7 @@ int sbbs_t::exec_net(csi_t* csi)
 			}
 			*pp = copystrvar(csi, *pp, buf);
 			csi->logic = LOGIC_TRUE;
-			return(0);
+			return 0;
 		case CS_SOCKET_WRITE:
 			lp = getintvar(csi, *(int32_t *)csi->ip);          /* socket */
 			csi->ip += 4;
@@ -257,13 +257,13 @@ int sbbs_t::exec_net(csi_t* csi)
 			csi->socket_error = 0;
 
 			if (!lp || !pp || !(*pp))
-				return(0);
+				return 0;
 
 			if (sendsocket(*lp, *pp, strlen(*pp)) > 0)
 				csi->logic = LOGIC_TRUE;
 			else
 				csi->socket_error = SOCKET_ERRNO;
-			return(0);
+			return 0;
 
 		/* FTP Functions */
 		case CS_FTP_LOGIN:
@@ -278,28 +278,28 @@ int sbbs_t::exec_net(csi_t* csi)
 			csi->socket_error = 0;
 
 			if (!lp || !pp1 || !pp2)
-				return(0);
+				return 0;
 
 			if (!ftp_cmd(csi, *lp, NULL, rsp))
-				return(0);
+				return 0;
 
 			if (atoi(rsp) != 220)
-				return(0);
+				return 0;
 
 			snprintf(str, sizeof str, "USER %s", *pp1);
 
 			if (!ftp_cmd(csi, *lp, str, rsp))
-				return(0);
+				return 0;
 
 			if (atoi(rsp) == 331) { /* Password needed */
 				snprintf(str, sizeof str, "PASS %s", *pp2);
 				if (!ftp_cmd(csi, *lp, str, rsp))
-					return(0);
+					return 0;
 			}
 
 			if (atoi(rsp) == 230)  /* Login successful */
 				csi->logic = LOGIC_TRUE;
-			return(0);
+			return 0;
 
 		case CS_FTP_LOGOUT:
 			lp = getintvar(csi, *(int32_t *)csi->ip);          /* socket */
@@ -308,14 +308,14 @@ int sbbs_t::exec_net(csi_t* csi)
 			csi->socket_error = 0;
 
 			if (!lp)
-				return(0);
+				return 0;
 
 			if (!ftp_cmd(csi, *lp, "QUIT", rsp))
-				return(0);
+				return 0;
 
 			if (atoi(rsp) == 221)  /* Logout successful */
 				csi->logic = LOGIC_TRUE;
-			return(0);
+			return 0;
 
 		case CS_FTP_PWD:
 			lp = getintvar(csi, *(int32_t *)csi->ip);          /* socket */
@@ -323,14 +323,14 @@ int sbbs_t::exec_net(csi_t* csi)
 			csi->logic = LOGIC_FALSE;
 			csi->socket_error = 0;
 			if (!lp)
-				return(0);
+				return 0;
 
 			if (!ftp_cmd(csi, *lp, "PWD", rsp))
-				return(0);
+				return 0;
 
 			if (atoi(rsp) == 257)  /* pathname */
 				csi->logic = LOGIC_TRUE;
-			return(0);
+			return 0;
 
 		case CS_FTP_CWD:
 			lp = getintvar(csi, *(int32_t *)csi->ip);          /* socket */
@@ -341,16 +341,16 @@ int sbbs_t::exec_net(csi_t* csi)
 			csi->logic = LOGIC_FALSE;
 			csi->socket_error = 0;
 			if (!lp || !pp)
-				return(0);
+				return 0;
 
 			snprintf(str, sizeof str, "CWD %s", *pp);
 			if (!ftp_cmd(csi, *lp, str, rsp))
-				return(0);
+				return 0;
 
 			if (atoi(rsp) == 250)
 				csi->logic = LOGIC_TRUE;
 
-			return(0);
+			return 0;
 
 		case CS_FTP_DIR:
 			lp = getintvar(csi, *(int32_t *)csi->ip);          /* socket */
@@ -362,12 +362,12 @@ int sbbs_t::exec_net(csi_t* csi)
 			csi->socket_error = 0;
 
 			if (!lp || !pp)
-				return(0);
+				return 0;
 
 			if (ftp_get(csi, *lp, *pp, NULL /* unused */, true /* DIR */) == true)
 				csi->logic = LOGIC_TRUE;
 
-			return(0);
+			return 0;
 
 		case CS_FTP_DELETE:
 			lp = getintvar(csi, *(int32_t *)csi->ip);          /* socket */
@@ -378,16 +378,16 @@ int sbbs_t::exec_net(csi_t* csi)
 			csi->logic = LOGIC_FALSE;
 			csi->socket_error = 0;
 			if (!lp || !pp)
-				return(0);
+				return 0;
 
 			snprintf(str, sizeof str, "DELE %s", *pp);
 			if (!ftp_cmd(csi, *lp, str, rsp))
-				return(0);
+				return 0;
 
 			if (atoi(rsp) == 250)
 				csi->logic = LOGIC_TRUE;
 
-			return(0);
+			return 0;
 
 
 		case CS_FTP_GET:
@@ -402,12 +402,12 @@ int sbbs_t::exec_net(csi_t* csi)
 			csi->socket_error = 0;
 
 			if (!lp || !pp1 || !pp2)
-				return(0);
+				return 0;
 
 			if (ftp_get(csi, *lp, *pp1, *pp2) == true)
 				csi->logic = LOGIC_TRUE;
 
-			return(0);
+			return 0;
 
 		case CS_FTP_PUT:
 			lp = getintvar(csi, *(int32_t *)csi->ip);          /* socket */
@@ -421,17 +421,17 @@ int sbbs_t::exec_net(csi_t* csi)
 			csi->socket_error = 0;
 
 			if (!lp || !pp1 || !pp2)
-				return(0);
+				return 0;
 
 			if (ftp_put(csi, *lp, *pp1, *pp2) == true)
 				csi->logic = LOGIC_TRUE;
 
-			return(0);
+			return 0;
 
 
 		default:
 			errormsg(WHERE, ERR_CHK, "net sub-instruction", *(csi->ip - 1));
-			return(0);
+			return 0;
 	}
 }
 
@@ -452,7 +452,7 @@ bool sbbs_t::ftp_cmd(csi_t* csi, SOCKET sock, const char* cmdsrc, char* rsp)
 		len = strlen(cmd);
 		if (sendsocket(sock, cmd, len) != len) {
 			csi->socket_error = SOCKET_ERRNO;
-			return(FALSE);
+			return FALSE;
 		}
 	}
 
@@ -468,23 +468,23 @@ bool sbbs_t::ftp_cmd(csi_t* csi, SOCKET sock, const char* cmdsrc, char* rsp)
 			while (rd < 500) {
 
 				if (!online)
-					return(FALSE);
+					return FALSE;
 
 				if (!socket_check(sock, &data_avail, NULL, 1000))
-					return(FALSE);
+					return FALSE;
 
 				if (!data_avail) {
 					if (time(NULL) - start > TIMEOUT_FTP_RESPONSE) {
 						lprintf(LOG_WARNING, "!ftp_cmd: TIMEOUT_FTP_RESPONSE (%d) exceeded"
 						        , TIMEOUT_FTP_RESPONSE);
-						return(FALSE);
+						return FALSE;
 					}
 					continue;
 				}
 
 				if (recv(sock, &ch, 1, 0) != 1) {
 					csi->socket_error = SOCKET_ERRNO;
-					return(FALSE);
+					return FALSE;
 				}
 
 				if (ch == '\n' && rd >= 1)
@@ -500,7 +500,7 @@ bool sbbs_t::ftp_cmd(csi_t* csi, SOCKET sock, const char* cmdsrc, char* rsp)
 		}
 	}
 
-	return(TRUE);
+	return TRUE;
 }
 
 SOCKET sbbs_t::ftp_data_sock(csi_t* csi, SOCKET ctrl_sock, SOCKADDR_IN* addr)
@@ -527,12 +527,12 @@ SOCKET sbbs_t::ftp_data_sock(csi_t* csi, SOCKET ctrl_sock, SOCKADDR_IN* addr)
 		strcpy(cmd, "TYPE I");
 	if (!ftp_cmd(csi, ctrl_sock, cmd, rsp)
 	    || atoi(rsp) != 200) {
-		return(INVALID_SOCKET);
+		return INVALID_SOCKET;
 	}
 
 	if ((data_sock = open_socket(PF_INET, SOCK_STREAM, "ftp")) == INVALID_SOCKET) {
 		csi->socket_error = SOCKET_ERRNO;
-		return(INVALID_SOCKET);
+		return INVALID_SOCKET;
 	}
 
 	memset(addr, 0, sizeof(SOCKADDR_IN));
@@ -542,7 +542,7 @@ SOCKET sbbs_t::ftp_data_sock(csi_t* csi, SOCKET ctrl_sock, SOCKADDR_IN* addr)
 	if (bind(data_sock, (struct sockaddr *)addr, xp_sockaddr_len(addr)) != 0) {
 		csi->socket_error = SOCKET_ERRNO;
 		close_socket(data_sock);
-		return(INVALID_SOCKET);
+		return INVALID_SOCKET;
 	}
 
 	if (csi->ftp_mode & CS_FTP_PASV) {
@@ -551,14 +551,14 @@ SOCKET sbbs_t::ftp_data_sock(csi_t* csi, SOCKET ctrl_sock, SOCKADDR_IN* addr)
 		    || atoi(rsp) != 227 /* PASV response */) {
 			bprintf("ftp: failure, line %d", __LINE__);
 			close_socket(data_sock);
-			return(INVALID_SOCKET);
+			return INVALID_SOCKET;
 		}
 
 		p = strchr(rsp, '(');
 		if (p == NULL) {
 			bprintf("ftp: failure, line %d", __LINE__);
 			close_socket(data_sock);
-			return(INVALID_SOCKET);
+			return INVALID_SOCKET;
 		}
 		p++;
 		if (sscanf(p, "%u,%u,%u,%u,%u,%u"
@@ -566,7 +566,7 @@ SOCKET sbbs_t::ftp_data_sock(csi_t* csi, SOCKET ctrl_sock, SOCKADDR_IN* addr)
 		           , &port_b[0], &port_b[1]) != 6) {
 			bprintf("ftp: failure, line %d", __LINE__);
 			close_socket(data_sock);
-			return(INVALID_SOCKET);
+			return INVALID_SOCKET;
 		}
 
 		ip_addr.b[0] = ip_b[0];   ip_addr.b[1] = ip_b[1];
@@ -582,7 +582,7 @@ SOCKET sbbs_t::ftp_data_sock(csi_t* csi, SOCKET ctrl_sock, SOCKADDR_IN* addr)
 		if (getsockname(data_sock, (struct sockaddr *)addr, &addr_len) != 0) {
 			csi->socket_error = SOCKET_ERRNO;
 			close_socket(data_sock);
-			return(INVALID_SOCKET);
+			return INVALID_SOCKET;
 		}
 
 		SOCKADDR_IN ctrl_addr;
@@ -590,13 +590,13 @@ SOCKET sbbs_t::ftp_data_sock(csi_t* csi, SOCKET ctrl_sock, SOCKADDR_IN* addr)
 		if (getsockname(ctrl_sock, (struct sockaddr *)&ctrl_addr, &addr_len) != 0) {
 			csi->socket_error = SOCKET_ERRNO;
 			close_socket(data_sock);
-			return(INVALID_SOCKET);
+			return INVALID_SOCKET;
 		}
 
 		if (listen(data_sock, 1) != 0) {
 			csi->socket_error = SOCKET_ERRNO;
 			close_socket(data_sock);
-			return(INVALID_SOCKET);
+			return INVALID_SOCKET;
 		}
 
 		ip_addr.dw = ntohl(ctrl_addr.sin_addr.s_addr);
@@ -613,12 +613,12 @@ SOCKET sbbs_t::ftp_data_sock(csi_t* csi, SOCKET ctrl_sock, SOCKADDR_IN* addr)
 		if (!ftp_cmd(csi, ctrl_sock, cmd, rsp)
 		    || atoi(rsp) != 200 /* PORT response */) {
 			close_socket(data_sock);
-			return(INVALID_SOCKET);
+			return INVALID_SOCKET;
 		}
 
 	}
 
-	return(data_sock);
+	return data_sock;
 }
 
 bool sbbs_t::ftp_get(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest, bool dir)
@@ -635,7 +635,7 @@ bool sbbs_t::ftp_get(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest, bool d
 	FILE*             fp = NULL;
 
 	if ((data_sock = ftp_data_sock(csi, ctrl_sock, &addr.in)) == INVALID_SOCKET)
-		return(false);
+		return false;
 
 	if (csi->ftp_mode & CS_FTP_PASV) {
 
@@ -649,7 +649,7 @@ bool sbbs_t::ftp_get(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest, bool d
 		if (connect(data_sock, &addr.addr, sizeof(SOCKADDR_IN)) != 0) {
 			csi->socket_error = SOCKET_ERRNO;
 			close_socket(data_sock);
-			return(false);
+			return false;
 		}
 	}
 
@@ -661,14 +661,14 @@ bool sbbs_t::ftp_get(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest, bool d
 	if (!ftp_cmd(csi, ctrl_sock, cmd, rsp)
 	    || atoi(rsp) != 150 /* Open data connection */) {
 		close_socket(data_sock);
-		return(false);
+		return false;
 	}
 
 	if (!(csi->ftp_mode & CS_FTP_PASV)) {  /* Normal (Active) FTP */
 		if (!socket_readable(data_sock, TIMEOUT_SOCK_LISTEN * 1000)) {
 			csi->socket_error = SOCKET_ERRNO;
 			closesocket(data_sock);
-			return(false);
+			return false;
 		}
 
 		SOCKET accept_sock;
@@ -678,7 +678,7 @@ bool sbbs_t::ftp_get(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest, bool d
 		    == INVALID_SOCKET) {
 			csi->socket_error = SOCKET_ERRNO;
 			closesocket(data_sock);
-			return(false);
+			return false;
 		}
 
 		close_socket(data_sock);
@@ -688,7 +688,7 @@ bool sbbs_t::ftp_get(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest, bool d
 	if (!dir)
 		if ((fp = fopen(dest, "wb")) == NULL) {
 			close_socket(data_sock);
-			return(false);
+			return false;
 		}
 
 	while (online) {
@@ -728,11 +728,11 @@ bool sbbs_t::ftp_get(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest, bool d
 
 	if (!ftp_cmd(csi, ctrl_sock, NULL, rsp)
 	    || atoi(rsp) != 226 /* Download complete */)
-		return(false);
+		return false;
 
 	bprintf("ftp: %lu bytes received.\r\n", total);
 
-	return(true);
+	return true;
 }
 
 bool sbbs_t::ftp_put(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest)
@@ -752,11 +752,11 @@ bool sbbs_t::ftp_put(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest)
 	SAFECOPY(path, src);
 
 	if (!fexistcase(path))
-		return(false);
+		return false;
 
 	if ((data_sock = ftp_data_sock(csi, ctrl_sock, &addr.in)) == INVALID_SOCKET) {
 		bprintf("ftp: failure, line %d", __LINE__);
-		return(false);
+		return false;
 	}
 
 	if (csi->ftp_mode & CS_FTP_PASV) {
@@ -771,14 +771,14 @@ bool sbbs_t::ftp_put(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest)
 			bprintf("ftp: failure, line %d", __LINE__);
 			csi->socket_error = SOCKET_ERRNO;
 			close_socket(data_sock);
-			return(false);
+			return false;
 		}
 	}
 
 	if ((fp = fopen(path, "rb")) == NULL) {
 		bprintf("ftp: failure, line %d", __LINE__);
 		close_socket(data_sock);
-		return(false);
+		return false;
 	}
 
 	snprintf(cmd, sizeof cmd, "STOR %s", dest);
@@ -788,7 +788,7 @@ bool sbbs_t::ftp_put(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest)
 		bprintf("ftp: failure, line %d", __LINE__);
 		close_socket(data_sock);
 		fclose(fp);
-		return(false);
+		return false;
 	}
 
 	if (!(csi->ftp_mode & CS_FTP_PASV)) {  /* Normal (Active) FTP */
@@ -796,7 +796,7 @@ bool sbbs_t::ftp_put(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest)
 			csi->socket_error = SOCKET_ERRNO;
 			closesocket(data_sock);
 			fclose(fp);
-			return(false);
+			return false;
 		}
 
 		SOCKET accept_sock;
@@ -807,7 +807,7 @@ bool sbbs_t::ftp_put(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest)
 			csi->socket_error = SOCKET_ERRNO;
 			closesocket(data_sock);
 			fclose(fp);
-			return(false);
+			return false;
 		}
 
 		close_socket(data_sock);
@@ -844,10 +844,10 @@ bool sbbs_t::ftp_put(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest)
 
 	if (!ftp_cmd(csi, ctrl_sock, NULL, rsp)
 	    || atoi(rsp) != 226 /* Upload complete */)
-		return(false);
+		return false;
 
 	if (!error)
 		bprintf("ftp: %lu bytes sent.\r\n", total);
 
-	return(!error);
+	return !error;
 }

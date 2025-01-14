@@ -42,7 +42,7 @@ static char* csvEncode(char* field)
 	bool  enclose;
 
 	if ((buf = malloc(strlen(field) * 2)) == NULL)
-		return(NULL);
+		return NULL;
 
 	nl = strchr(field, '\n');
 	comma = strchr(field, ',');
@@ -66,7 +66,7 @@ static char* csvEncode(char* field)
 
 	*dst = 0;
 
-	return(buf);
+	return buf;
 }
 
 char* csvLineCreator(const str_list_t columns)
@@ -77,7 +77,7 @@ char* csvLineCreator(const str_list_t columns)
 	size_t i, len;
 
 	if (columns == NULL)
-		return(NULL);
+		return NULL;
 
 	for (i = 0; columns[i] != NULL; i++) {
 		len = strlen(columns[i]) * 2;
@@ -94,7 +94,7 @@ char* csvLineCreator(const str_list_t columns)
 		free(val);
 	}
 
-	return(str);
+	return str;
 }
 
 str_list_t csvLineParser(const char* line)
@@ -106,11 +106,11 @@ str_list_t csvLineParser(const char* line)
 	str_list_t list;
 
 	if ((list = strListInit()) == NULL)
-		return(NULL);
+		return NULL;
 
 	if ((buf = strdup(line)) == NULL) {
 		strListFree(&list);
-		return(NULL);
+		return NULL;
 	}
 
 	truncsp(buf);
@@ -120,7 +120,7 @@ str_list_t csvLineParser(const char* line)
 
 	free(buf);
 
-	return(list);
+	return list;
 }
 
 /*********************/
@@ -134,7 +134,7 @@ char* tabLineCreator(const str_list_t columns)
 	size_t i, len;
 
 	if (columns == NULL)
-		return(NULL);
+		return NULL;
 
 	for (i = 0; columns[i] != NULL; i++) {
 		len = strlen(columns[i]) * 2;
@@ -148,7 +148,7 @@ char* tabLineCreator(const str_list_t columns)
 		strcat(str, columns[i]);
 	}
 
-	return(str);
+	return str;
 }
 
 str_list_t tabLineParser(const char* line)
@@ -160,11 +160,11 @@ str_list_t tabLineParser(const char* line)
 	str_list_t list;
 
 	if ((list = strListInit()) == NULL)
-		return(NULL);
+		return NULL;
 
 	if ((buf = strdup(line)) == NULL) {
 		strListFree(&list);
-		return(NULL);
+		return NULL;
 	}
 
 	for (p = strtok_r(buf, "\t", &tmp); p; p = strtok_r(NULL, "\t", &tmp))
@@ -172,7 +172,7 @@ str_list_t tabLineParser(const char* line)
 
 	free(buf);
 
-	return(list);
+	return list;
 }
 
 /* Generic API */
@@ -185,7 +185,7 @@ str_list_t dataCreateList(const str_list_t records[], const str_list_t columns, 
 	size_t     li = 0;
 
 	if ((list = strListInit()) == NULL)
-		return(NULL);
+		return NULL;
 
 	if (columns != NULL) {
 		p = lineCreator(columns);
@@ -200,7 +200,7 @@ str_list_t dataCreateList(const str_list_t records[], const str_list_t columns, 
 			free(p);
 		}
 
-	return(list);
+	return list;
 }
 
 bool dataWriteFile(FILE* fp, const str_list_t records[], const str_list_t columns, const char* separator
@@ -216,16 +216,16 @@ bool dataWriteFile(FILE* fp, const str_list_t records[], const str_list_t column
 	rewind(fp);
 
 	if (chsize(fileno(fp), 0) != 0) /* truncate */
-		return(FALSE);
+		return FALSE;
 
 	if ((list = dataCreateList(records, columns, lineCreator)) == NULL)
-		return(FALSE);
+		return FALSE;
 
 	total = strListCount(list);
 	count = strListWriteFile(fp, list, separator);
 	strListFree(&list);
 
-	return(count == total);
+	return count == total;
 #endif
 }
 
@@ -236,15 +236,15 @@ str_list_t* dataParseList(const str_list_t records, str_list_t* columns, dataLin
 	str_list_t* list;
 
 	if (records == NULL)
-		return(NULL);
+		return NULL;
 
 	if ((list = (str_list_t*)malloc(sizeof(str_list_t) * (strListCount(records) + 1))) == NULL)
-		return(NULL);
+		return NULL;
 
 	if (columns != NULL) {
 		if ((*columns = lineParser(records[ri++])) == NULL) {
 			free(list);
-			return(NULL);
+			return NULL;
 		}
 	}
 
@@ -253,7 +253,7 @@ str_list_t* dataParseList(const str_list_t records, str_list_t* columns, dataLin
 
 	list[li] = NULL; /* terminate */
 
-	return(list);
+	return list;
 }
 
 str_list_t* dataReadFile(FILE* fp, str_list_t* columns, dataLineParser_t lineParser)
@@ -265,7 +265,7 @@ str_list_t* dataReadFile(FILE* fp, str_list_t* columns, dataLineParser_t linePar
 	rewind(fp);
 
 	if ((lines = strListReadFile(fp, NULL, 0)) == NULL)
-		return(NULL);
+		return NULL;
 
 	/* truncate line-feed chars off end of strings */
 	for (i = 0; lines[i] != NULL; i++)
@@ -275,7 +275,7 @@ str_list_t* dataReadFile(FILE* fp, str_list_t* columns, dataLineParser_t linePar
 
 	strListFree(&lines);
 
-	return(records);
+	return records;
 }
 
 bool dataListFree(str_list_t* list)

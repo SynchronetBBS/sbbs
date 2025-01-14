@@ -30,10 +30,10 @@ str_list_t strListInit(void)
 	str_list_t list;
 
 	if ((list = (str_list_t)malloc(sizeof(char*))) == NULL)
-		return(NULL);
+		return NULL;
 
 	list[0] = NULL;   /* terminated by default */
-	return(list);
+	return list;
 }
 
 size_t strListCount(const str_list_t list)
@@ -42,7 +42,7 @@ size_t strListCount(const str_list_t list)
 
 	COUNT_LIST_ITEMS(list, i);
 
-	return(i);
+	return i;
 }
 
 bool strListIsEmpty(const str_list_t list)
@@ -90,13 +90,13 @@ static char* str_list_append(str_list_t* list, char* str, size_t index)
 	str_list_t lp;
 
 	if ((lp = (str_list_t)realloc(*list, sizeof(char*) * (index + 2))) == NULL)
-		return(NULL);
+		return NULL;
 
 	*list = lp;
 	lp[index++] = str;
 	lp[index] = NULL; /* terminate list */
 
-	return(str);
+	return str;
 }
 
 static char* str_list_insert(str_list_t* list, char* str, size_t index)
@@ -109,18 +109,18 @@ static char* str_list_insert(str_list_t* list, char* str, size_t index)
 		*list = strListInit();
 	count = strListCount(*list);
 	if (index > count)   /* invalid index, do nothing */
-		return(NULL);
+		return NULL;
 
 	count++;
 	if ((lp = (str_list_t)realloc(*list, sizeof(char*) * (count + 1))) == NULL)
-		return(NULL);
+		return NULL;
 
 	*list = lp;
 	for (i = count; i > index; i--)
 		lp[i] = lp[i - 1];
 	lp[index] = str;
 
-	return(str);
+	return str;
 }
 
 char* strListRemove(str_list_t* list, size_t index)
@@ -136,11 +136,11 @@ char* strListRemove(str_list_t* list, size_t index)
 		index = count - 1;
 
 	if (index >= count)  /* invalid index, do nothing */
-		return(NULL);
+		return NULL;
 
 	count--;
 	if ((lp = (str_list_t)realloc(*list, sizeof(char*) * (count + 1))) == NULL)
-		return(NULL);
+		return NULL;
 
 	*list = lp;
 	str = lp[index];
@@ -148,7 +148,7 @@ char* strListRemove(str_list_t* list, size_t index)
 		lp[i] = lp[i + 1];
 	lp[count] = NULL;
 
-	return(str);
+	return str;
 }
 
 // Remove without realloc
@@ -176,11 +176,11 @@ bool strListDelete(str_list_t* list, size_t index)
 	char* str;
 
 	if ((str = strListRemove(list, index)) == NULL)
-		return(false);
+		return false;
 
 	free(str);
 
-	return(true);
+	return true;
 }
 
 bool strListFastDelete(str_list_t list, size_t index, size_t count)
@@ -212,7 +212,7 @@ char* strListReplace(const str_list_t list, size_t index, const char* str)
 	size_t count;
 
 	if (str == NULL)
-		return(NULL);
+		return NULL;
 
 	count = strListCount(list);
 
@@ -220,15 +220,15 @@ char* strListReplace(const str_list_t list, size_t index, const char* str)
 		index = count - 1;
 
 	if (index >= count)  /* invalid index, do nothing */
-		return(NULL);
+		return NULL;
 
 	if ((buf = (char*)realloc(list[index], strlen(str) + 1)) == NULL)
-		return(NULL);
+		return NULL;
 
 	list[index] = buf;
 	strcpy(buf, str);
 
-	return(buf);
+	return buf;
 }
 
 size_t strListModifyEach(const str_list_t list, char*(modify(size_t, char*, void*)), void* cbdata)
@@ -263,13 +263,13 @@ bool strListSwap(const str_list_t list, size_t index1, size_t index2)
 		index2 = count - 1;
 
 	if (index1 >= count || index2 >= count || index1 == index2)
-		return(false);  /* invalid index, do nothing */
+		return false; /* invalid index, do nothing */
 
 	tmp = list[index1];
 	list[index1] = list[index2];
 	list[index2] = tmp;
 
-	return(true);
+	return true;
 }
 
 char* strListAnnex(str_list_t* list, const char* str, size_t index)
@@ -292,10 +292,10 @@ char* strListAppend(str_list_t* list, const char* str, size_t index)
 	char *ret;
 
 	if (str == NULL)
-		return(NULL);
+		return NULL;
 
 	if ((buf = strdup(str)) == NULL)
-		return(NULL);
+		return NULL;
 
 	if (index == STR_LIST_LAST_INDEX)
 		index = strListCount(*list);
@@ -315,7 +315,7 @@ size_t strListAppendList(str_list_t* list, const str_list_t add_list)
 	for (i = 0; add_list != NULL && add_list[i] != NULL; i++)
 		strListAppend(list, add_list[i], count++);
 
-	return(count);
+	return count;
 }
 
 #if !defined(__BORLANDC__) // Doesn't have asprintf() or va_copy()_vscprintf()
@@ -346,10 +346,10 @@ char* strListInsert(str_list_t* list, const char* str, size_t index)
 	char* ret;
 
 	if (str == NULL)
-		return(NULL);
+		return NULL;
 
 	if ((buf = strdup(str)) == NULL)
-		return(NULL);
+		return NULL;
 
 	ret = str_list_insert(list, buf, index);
 	if (ret == NULL)
@@ -368,7 +368,7 @@ size_t strListInsertList(str_list_t* list, const str_list_t add_list, size_t ind
 		if (strListInsert(list, add_list[i], index++) == NULL)
 			break;
 
-	return(i);
+	return i;
 }
 
 #if !defined(__BORLANDC__) // Doesn't have asprintf() or va_copy()_vscprintf()
@@ -402,11 +402,11 @@ str_list_t strListSplit(str_list_t* lp, char* str, const char* delimit)
 	str_list_t list;
 
 	if (str == NULL || delimit == NULL)
-		return(NULL);
+		return NULL;
 
 	if (lp == NULL) {
 		if ((list = strListInit()) == NULL)
-			return(NULL);
+			return NULL;
 		lp = &list;
 		count = 0;
 	} else
@@ -416,7 +416,7 @@ str_list_t strListSplit(str_list_t* lp, char* str, const char* delimit)
 		if (strListAppend(lp, token, count++) == NULL)
 			break;
 
-	return(*lp);
+	return *lp;
 }
 
 str_list_t strListSplitCopy(str_list_t* list, const char* str, const char* delimit)
@@ -425,10 +425,10 @@ str_list_t strListSplitCopy(str_list_t* list, const char* str, const char* delim
 	str_list_t new_list;
 
 	if (str == NULL || delimit == NULL)
-		return(NULL);
+		return NULL;
 
 	if ((buf = strdup(str)) == NULL)
-		return(NULL);
+		return NULL;
 
 	new_list = strListSplit(list, buf, delimit);
 
@@ -437,7 +437,7 @@ str_list_t strListSplitCopy(str_list_t* list, const char* str, const char* delim
 	if (list != NULL)
 		*list = new_list;
 
-	return(new_list);
+	return new_list;
 }
 
 // Consecutive delimiters are treated as multiple (empty strings are supported)
@@ -484,7 +484,7 @@ size_t strListMerge(str_list_t* list, str_list_t add_list)
 	for (i = 0; add_list[i] != NULL; i++)
 		str_list_append(list, add_list[i], count++);
 
-	return(i);
+	return i;
 }
 
 char* strListCombine(str_list_t list, char* buf, size_t maxlen, const char* delimit)
@@ -494,11 +494,11 @@ char* strListCombine(str_list_t list, char* buf, size_t maxlen, const char* deli
 	char*  ptr;
 
 	if (maxlen < 1)
-		return(NULL);
+		return NULL;
 
 	if (buf == NULL)
 		if ((buf = (char*)malloc(maxlen)) == NULL)
-			return(NULL);
+			return NULL;
 
 	memset(buf, 0, maxlen);
 	if (list == NULL)
@@ -508,7 +508,7 @@ char* strListCombine(str_list_t list, char* buf, size_t maxlen, const char* deli
 	for (i = 0, ptr = buf; list[i] != NULL && buf < end; i++)
 		ptr += safe_snprintf(ptr, end - ptr, "%s%s", i ? delimit:"", list[i]);
 
-	return(buf);
+	return buf;
 }
 
 #if defined(_WIN32)
@@ -652,7 +652,7 @@ str_list_t strListReadFile(FILE* fp, str_list_t* lp, size_t max_line_len)
 
 	if (lp == NULL) {
 		if ((list = strListInit()) == NULL)
-			return(NULL);
+			return NULL;
 		lp = &list;
 	}
 
@@ -675,7 +675,7 @@ str_list_t strListReadFile(FILE* fp, str_list_t* lp, size_t max_line_len)
 	}
 	free(buf);
 
-	return(*lp);
+	return *lp;
 }
 
 size_t strListInsertFile(FILE* fp, str_list_t* lp, size_t index, size_t max_line_len)
@@ -684,13 +684,13 @@ size_t strListInsertFile(FILE* fp, str_list_t* lp, size_t index, size_t max_line
 	size_t     count;
 
 	if ((list = strListReadFile(fp, NULL, max_line_len)) == NULL)
-		return(0);
+		return 0;
 
 	count = strListInsertList(lp, list, index);
 
 	strListFree(&list);
 
-	return(count);
+	return count;
 }
 
 size_t strListWriteFile(FILE* fp, const str_list_t list, const char* separator)
@@ -698,7 +698,7 @@ size_t strListWriteFile(FILE* fp, const str_list_t list, const char* separator)
 	size_t i;
 
 	if (list == NULL)
-		return(0);
+		return 0;
 
 	for (i = 0; list[i] != NULL; i++) {
 		if (fputs(list[i], fp) == EOF)
@@ -707,7 +707,7 @@ size_t strListWriteFile(FILE* fp, const str_list_t list, const char* separator)
 			break;
 	}
 
-	return(i);
+	return i;
 }
 
 char* strListJoin(const str_list_t list, char* buf, size_t buflen, const char* separator)
@@ -742,7 +742,7 @@ size_t strListBlockLength(char* block)
 	size_t block_len = 0;
 
 	if (block == NULL)
-		return(0);
+		return 0;
 
 	/* calculate total block length */
 	while ((str_len = strlen(p)) != 0) {
@@ -754,7 +754,7 @@ size_t strListBlockLength(char* block)
 		block_len = 1;
 	block_len++;
 
-	return(block_len);
+	return block_len;
 }
 
 char* strListCopyBlock(char* block)
@@ -763,12 +763,12 @@ char* strListCopyBlock(char* block)
 	size_t block_len;
 
 	if ((block_len = strListBlockLength(block)) == 0)
-		return(NULL);
+		return NULL;
 
 	if ((p = (char*)malloc(block_len)) == NULL)
-		return(NULL);
+		return NULL;
 	memcpy(p, block, block_len);
-	return(p);
+	return p;
 }
 
 char* strListAppendBlock(char* block, str_list_t list)
@@ -787,7 +787,7 @@ char* strListAppendBlock(char* block, str_list_t list)
 			continue;   /* can't include empty strings in block */
 		if ((p = (char*)realloc(block, block_len + str_len + 1)) == NULL) {
 			FREE_AND_NULL(block);
-			return(block);
+			return block;
 		}
 		block = p;
 		strcpy(block + block_len, list[i]);
@@ -800,17 +800,17 @@ char* strListAppendBlock(char* block, str_list_t list)
 	block_len++;
 	if ((p = (char*)realloc(block, block_len)) == NULL) {
 		FREE_AND_NULL(block);
-		return(block);
+		return block;
 	}
 	block = p;
 	memset(block + (block_len - 2), 0, 2);
 
-	return(block);
+	return block;
 }
 
 char* strListCreateBlock(str_list_t list)
 {
-	return(strListAppendBlock(NULL, list));
+	return strListAppendBlock(NULL, list);
 }
 
 void strListFreeBlock(char* block)
@@ -823,7 +823,7 @@ int strListTruncateTrailingWhitespaces(str_list_t list)
 	size_t i;
 
 	if (list == NULL)
-		return(0);
+		return 0;
 
 	for (i = 0; list[i] != NULL; i++) {
 		truncsp(list[i]);
@@ -836,7 +836,7 @@ int strListTruncateTrailingLineEndings(str_list_t list)
 	size_t i;
 
 	if (list == NULL)
-		return(0);
+		return 0;
 
 	for (i = 0; list[i] != NULL; i++) {
 		truncnl(list[i]);
@@ -851,7 +851,7 @@ int strListTruncateStrings(str_list_t list, const char* set)
 	char*  p;
 
 	if (list == NULL)
-		return(0);
+		return 0;
 
 	for (i = 0; list[i] != NULL; i++) {
 		p = strpbrk(list[i], set);

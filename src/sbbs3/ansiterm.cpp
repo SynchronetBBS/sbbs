@@ -35,51 +35,51 @@ const char *sbbs_t::ansi(int atr)
 
 		/* Special case */
 		case ANSI_NORMAL:
-			return("\x1b[0m");
+			return "\x1b[0m";
 		case BLINK:
 		case BG_BRIGHT:
-			return("\x1b[5m");
+			return "\x1b[5m";
 
 		/* Foreground */
 		case HIGH:
-			return("\x1b[1m");
+			return "\x1b[1m";
 		case BLACK:
-			return("\x1b[30m");
+			return "\x1b[30m";
 		case RED:
-			return("\x1b[31m");
+			return "\x1b[31m";
 		case GREEN:
-			return("\x1b[32m");
+			return "\x1b[32m";
 		case BROWN:
-			return("\x1b[33m");
+			return "\x1b[33m";
 		case BLUE:
-			return("\x1b[34m");
+			return "\x1b[34m";
 		case MAGENTA:
-			return("\x1b[35m");
+			return "\x1b[35m";
 		case CYAN:
-			return("\x1b[36m");
+			return "\x1b[36m";
 		case LIGHTGRAY:
-			return("\x1b[37m");
+			return "\x1b[37m";
 
 		/* Background */
 		case BG_BLACK:
-			return("\x1b[40m");
+			return "\x1b[40m";
 		case BG_RED:
-			return("\x1b[41m");
+			return "\x1b[41m";
 		case BG_GREEN:
-			return("\x1b[42m");
+			return "\x1b[42m";
 		case BG_BROWN:
-			return("\x1b[43m");
+			return "\x1b[43m";
 		case BG_BLUE:
-			return("\x1b[44m");
+			return "\x1b[44m";
 		case BG_MAGENTA:
-			return("\x1b[45m");
+			return "\x1b[45m";
 		case BG_CYAN:
-			return("\x1b[46m");
+			return "\x1b[46m";
 		case BG_LIGHTGRAY:
-			return("\x1b[47m");
+			return "\x1b[47m";
 	}
 
-	return("-Invalid use of ansi()-");
+	return "-Invalid use of ansi()-";
 }
 
 /* insure str is at least 14 bytes in size! */
@@ -264,11 +264,11 @@ bool sbbs_t::ansi_getxy(int* x, int* y)
 		}
 		if (time(NULL) - start > TIMEOUT_ANSI_GETXY) {
 			lprintf(LOG_NOTICE, "!TIMEOUT in ansi_getxy");
-			return(false);
+			return false;
 		}
 	}
 
-	return(true);
+	return true;
 }
 
 bool sbbs_t::ansi_gotoxy(int x, int y)

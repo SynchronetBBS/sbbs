@@ -265,7 +265,7 @@ BYTE* MD5_calc(BYTE digest[MD5_DIGEST_SIZE], const void* buf, size_t len)
 	MD5_digest(&ctx, buf, len);
 	MD5_close(&ctx, digest);
 
-	return(digest);
+	return digest;
 }
 
 /* conversion for 16 character binary md5 to hex */

@@ -310,7 +310,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 	    == NULL) {
 		errormsg(WHERE, ERR_ALLOC, fname
 		         , (cfg.level_linespermsg[useron_level] * MAX_LINE_LEN) + 1);
-		return(false);
+		return false;
 	}
 
 	if (mode & WM_NETMAIL ||
@@ -346,7 +346,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 			if ((stream = fnopen(NULL, path, O_RDONLY)) == NULL) {
 				errormsg(WHERE, ERR_OPEN, path, O_RDONLY);
 				free(buf);
-				return(false);
+				return false;
 			}
 			if (cfg.xedit[useron_xedit - 1]->type == XTRN_WWIV) { // 2 lines of metadata
 				if (fgets(str, sizeof(str), stream) == NULL)
@@ -358,7 +358,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 				errormsg(WHERE, ERR_OPEN, msgtmp, O_WRONLY | O_CREAT | O_TRUNC);
 				free(buf);
 				fclose(stream);
-				return(false);
+				return false;
 			}
 
 			while (!feof(stream) && !ferror(stream)) {
@@ -384,7 +384,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 			if ((stream = fnopen(&file, path, O_RDONLY)) == NULL) {
 				errormsg(WHERE, ERR_OPEN, path, O_RDONLY);
 				free(buf);
-				return(false);
+				return false;
 			}
 
 			if (useron_xedit > 0 && cfg.xedit[useron_xedit - 1]->type == XTRN_WWIV) { // 2 lines of metadata
@@ -398,7 +398,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 				errormsg(WHERE, ERR_OPEN, msgtmp, O_WRONLY | O_CREAT | O_TRUNC);
 				free(buf);
 				fclose(stream);
-				return(false);
+				return false;
 			}
 
 			l = (long)ftell(stream);          /* l now points to start of message */
@@ -411,7 +411,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 					fclose(stream);
 					close(file);
 					free(buf);
-					return(false);
+					return false;
 				}
 				if (!i && linesquoted)
 					break;
@@ -494,7 +494,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 
 	if (!online || sys_status & SS_ABORT) {
 		free(buf);
-		return(false);
+		return false;
 	}
 
 	if (!(mode & (WM_EXTDESC | WM_SUBJ_RO))) {
@@ -515,25 +515,25 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 		if (!getstr(subj, max_title_len, mode & WM_FILE ? K_LINE | K_TRIM : K_LINE | K_EDIT | K_AUTODEL | K_TRIM | K_UTF8)
 		    && useron_level && useron.logons) {
 			free(buf);
-			return(false);
+			return false;
 		}
 		if ((mode & WM_FILE) && !checkfname(subj)) {
 			free(buf);
 			bprintf(text[BadFilename], subj);
-			return(false);
+			return false;
 		}
 		if (!(mode & (WM_EMAIL | WM_NETMAIL)) && cfg.sub[subnum]->misc & SUB_QNET
 		    && !SYSOP
 		    && (!stricmp(subj, "DROP") || !stricmp(subj, "ADD")
 		        || !strnicmp(to, "SBBS", 4))) {
 			free(buf);   /* Users can't post DROP or ADD in QWK netted subs */
-			return(false); /* or messages to "SBBS" */
+			return false; /* or messages to "SBBS" */
 		}
 	}
 
 	if (!online || sys_status & SS_ABORT) {
 		free(buf);
-		return(false);
+		return false;
 	}
 
 	editor_details[0] = 0;
@@ -560,7 +560,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 			c = getkey(0);
 			if (sys_status & SS_ABORT) {  /* Ctrl-C */
 				free(buf);
-				return(false);
+				return false;
 			}
 			if ((c == ESC || c == CTRL_A) && useron.rest & FLAG('A')) /* ANSI restriction */
 				continue;
@@ -642,7 +642,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 		if (result != EXIT_SUCCESS || !fexistcase(msgtmp) || !online
 		    || (linesquoted && qlen == flength(msgtmp) && qtime == fdate(msgtmp))) {
 			free(buf);
-			return(false);
+			return false;
 		}
 		SAFEPRINTF(str, "%sRESULT.ED", cfg.node_dir);
 		if (!(mode & (WM_EXTDESC | WM_FILE))
@@ -669,7 +669,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 		if ((file = nopen(msgtmp, O_RDONLY)) == -1) {
 			errormsg(WHERE, ERR_OPEN, msgtmp, O_RDONLY);
 			free(buf);
-			return(false);
+			return false;
 		}
 		length = (long)filelength(file);
 		if (length < 0) {
@@ -724,7 +724,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 				}
 			}
 			free(buf);  /* Assertion here Dec-17-2003, think I fixed in block above (rev 1.52) */
-			return(false);
+			return false;
 		}
 	}
 
@@ -734,7 +734,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 	if ((stream = fnopen(NULL, fname, O_WRONLY | O_CREAT | O_TRUNC)) == NULL) {
 		errormsg(WHERE, ERR_OPEN, fname, O_WRONLY | O_CREAT | O_TRUNC);
 		free(buf);
-		return(false);
+		return false;
 	}
 	l = process_edited_text(buf, stream, mode, &lines, cfg.level_linespermsg[useron_level]);
 	if (editor_details[0] && editor != NULL)
@@ -792,7 +792,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 	fclose(stream);
 	free((char *)buf);
 	bprintf(text[SavedNBytes], l, lines);
-	return(true);
+	return true;
 }
 
 void sbbs_t::editor_info_to_msg(smbmsg_t* msg, const char* editor, const char* charset)
@@ -961,7 +961,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 
 	if ((str = strListDivide(NULL, buf, "\n")) == NULL) {
 		errormsg(WHERE, ERR_ALLOC, "msgeditor", strlen(buf));
-		return(0);
+		return 0;
 	}
 	lines = strListCount(str);
 	while (lines > maxlines)
@@ -1068,7 +1068,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 			}
 			else if (!stricmp(strin, "/ABT")) {
 				strListFree(&str);
-				return(0);
+				return 0;
 			}
 			else if (toupper(strin[1]) == 'D') {   // delete line(s)
 				lines = strListCount(str);
@@ -1259,7 +1259,7 @@ upload:
 	strListFree(&str);
 	if (!online)
 		return 0;
-	return(lines);
+	return lines;
 }
 
 /****************************************************************************/
@@ -1809,18 +1809,18 @@ bool sbbs_t::movemsg(smbmsg_t* msg, int subnum)
 	for (i = 0; i < usrgrps; i++)       /* Select New Group */
 		uselect(1, i, "Message Group", cfg.grp[usrgrp[i]]->lname, 0);
 	if ((newgrp = uselect(0, 0, 0, 0, 0)) < 0)
-		return(false);
+		return false;
 
 	for (i = 0; i < usrsubs[newgrp]; i++)       /* Select New Sub-Board */
 		uselect(1, i, "Sub-Board", cfg.sub[usrsub[newgrp][i]]->lname, 0);
 	if ((newsub = uselect(0, 0, 0, 0, 0)) < 0)
-		return(false);
+		return false;
 	newsub = usrsub[newgrp][newsub];
 
 	length = smb_getmsgdatlen(msg);
 	if ((buf = (char *)malloc(length)) == NULL) {
 		errormsg(WHERE, ERR_ALLOC, smb.file, length);
-		return(false);
+		return false;
 	}
 
 	fseek(smb.sdt_fp, msg->hdr.offset, SEEK_SET);
@@ -1836,7 +1836,7 @@ bool sbbs_t::movemsg(smbmsg_t* msg, int subnum)
 	if ((i = smb_open(&newsmb)) != SMB_SUCCESS) {
 		free(buf);
 		errormsg(WHERE, ERR_OPEN, newsmb.file, i, newsmb.last_error);
-		return(false);
+		return false;
 	}
 
 	if (filelength(fileno(newsmb.shd_fp)) < 1) {    /* Create it if it doesn't exist */
@@ -1848,7 +1848,7 @@ bool sbbs_t::movemsg(smbmsg_t* msg, int subnum)
 			free(buf);
 			smb_close(&newsmb);
 			errormsg(WHERE, ERR_CREATE, newsmb.file, i, newsmb.last_error);
-			return(false);
+			return false;
 		}
 	}
 
@@ -1856,14 +1856,14 @@ bool sbbs_t::movemsg(smbmsg_t* msg, int subnum)
 		free(buf);
 		smb_close(&newsmb);
 		errormsg(WHERE, ERR_LOCK, newsmb.file, i, newsmb.last_error);
-		return(false);
+		return false;
 	}
 
 	if ((i = smb_getstatus(&newsmb)) != SMB_SUCCESS) {
 		free(buf);
 		smb_close(&newsmb);
 		errormsg(WHERE, ERR_READ, newsmb.file, i, newsmb.last_error);
-		return(false);
+		return false;
 	}
 
 	if (newsmb.status.attr & SMB_HYPERALLOC) {
@@ -1875,7 +1875,7 @@ bool sbbs_t::movemsg(smbmsg_t* msg, int subnum)
 			free(buf);
 			smb_close(&newsmb);
 			errormsg(WHERE, ERR_OPEN, newsmb.file, i, newsmb.last_error);
-			return(false);
+			return false;
 		}
 		if (cfg.sub[newsub]->misc & SUB_FAST) {
 			offset = smb_fallocdat(&newsmb, length, 1);
@@ -1909,7 +1909,7 @@ bool sbbs_t::movemsg(smbmsg_t* msg, int subnum)
 	if (i) {
 		errormsg(WHERE, ERR_WRITE, newsmb.file, i, newsmb.last_error);
 		smb_freemsg_dfields(&newsmb, &newmsg, 1);
-		return(false);
+		return false;
 	}
 
 	bprintf("\r\nMoved to %s %s\r\n\r\n"
@@ -1920,7 +1920,7 @@ bool sbbs_t::movemsg(smbmsg_t* msg, int subnum)
 	logline("M+", str);
 	signal_sub_sem(&cfg, newsub);
 
-	return(true);
+	return true;
 }
 
 ushort sbbs_t::chmsgattr(const smbmsg_t* msg)
@@ -1973,8 +1973,8 @@ ushort sbbs_t::chmsgattr(const smbmsg_t* msg)
 				attr ^= MSG_REPLIED;
 				break;
 			default:
-				return(attr);
+				return attr;
 		}
 	}
-	return(attr);
+	return attr;
 }

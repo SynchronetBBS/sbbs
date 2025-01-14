@@ -403,7 +403,7 @@ static off_t js_socket_sendfilesocket(js_socket_private_t *p, int file)
 		if (rd < 0) {
 			if (p->session != -1)
 				do_CryptFlush(p);
-			return (-1);
+			return -1;
 		}
 		if (rd == 0)
 			break;
@@ -420,20 +420,20 @@ static off_t js_socket_sendfilesocket(js_socket_private_t *p, int file)
 			else {
 				if (p->session != -1)
 					do_CryptFlush(p);
-				return (wr);
+				return wr;
 			}
 		}
 		if (sent != rd) {
 			if (p->session != -1)
 				do_CryptFlush(p);
-			return (-1);
+			return -1;
 		}
 		total += rd;
 	}
 
 	if (p->session != -1)
 		do_CryptFlush(p);
-	return (total);
+	return total;
 }
 
 static void dbprintf(bool error, js_socket_private_t* p, char* fmt, ...)
@@ -484,7 +484,7 @@ js_close(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((p = (js_socket_private_t*)js_GetClassPrivate(cx, obj, &js_socket_class)) == NULL) {
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
@@ -492,7 +492,7 @@ js_close(JSContext *cx, uintN argc, jsval *arglist)
 	dbprintf(false, p, "closed");
 	JS_RESUMEREQUEST(cx, rc);
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static ushort js_port(JSContext* cx, jsval val, int type)
@@ -505,22 +505,22 @@ static ushort js_port(JSContext* cx, jsval val, int type)
 
 	if (JSVAL_IS_NUMBER(val)) {
 		JS_ValueToInt32(cx, val, &i);
-		return((ushort)i);
+		return (ushort)i;
 	}
 	if (JSVAL_IS_STRING(val)) {
 		str = JS_ValueToString(cx, val);
 		JSSTRING_TO_ASTRING(cx, str, cp, 16, NULL);
 		if (cp != NULL) {
 			if (IS_DIGIT(*cp))
-				return((ushort)strtol(cp, NULL, 0));
+				return (ushort)strtol(cp, NULL, 0);
 			rc = JS_SUSPENDREQUEST(cx);
 			serv = getservbyname(cp, type == SOCK_STREAM ? "tcp":"udp");
 			JS_RESUMEREQUEST(cx, rc);
 			if (serv != NULL)
-				return(htons(serv->s_port));
+				return htons(serv->s_port);
 		}
 	}
-	return(0);
+	return 0;
 }
 
 SOCKET js_socket(JSContext *cx, jsval val)
@@ -539,7 +539,7 @@ SOCKET js_socket(JSContext *cx, jsval val)
 			sock = i;
 	}
 
-	return(sock);
+	return sock;
 }
 
 #ifdef PREFER_POLL
@@ -739,7 +739,7 @@ js_bind(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
 	if ((p = (js_socket_private_t*)js_GetClassPrivate(cx, obj, &js_socket_class)) == NULL) {
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	memset(&addr, 0, sizeof(addr));
@@ -762,7 +762,7 @@ js_bind(JSContext *cx, uintN argc, jsval *arglist)
 		JS_RESUMEREQUEST(cx, rc);
 		dbprintf(TRUE, p, "getaddrinfo(%s, %s) failed with error %d", cstr, portstr, ret);
 		store_socket_error(p, ret, gai_strerror(ret));
-		return(JS_TRUE);
+		return JS_TRUE;
 	}
 	for (tres = res; tres; tres = tres->ai_next) {
 		if (bind(p->sock, tres->ai_addr, tres->ai_addrlen) != 0) {
@@ -771,7 +771,7 @@ js_bind(JSContext *cx, uintN argc, jsval *arglist)
 				dbprintf(TRUE, p, "bind failed with error %d", SOCKET_ERRNO);
 				freeaddrinfo(res);
 				JS_RESUMEREQUEST(cx, rc);
-				return(JS_TRUE);
+				return JS_TRUE;
 			}
 		}
 		else
@@ -782,7 +782,7 @@ js_bind(JSContext *cx, uintN argc, jsval *arglist)
 	dbprintf(false, p, "bound to port %u", port);
 	JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	JS_RESUMEREQUEST(cx, rc);
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -797,7 +797,7 @@ js_listen(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((p = (js_socket_private_t*)js_GetClassPrivate(cx, obj, &js_socket_class)) == NULL) {
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	if (argc && argv[0] != JSVAL_VOID)
@@ -809,13 +809,13 @@ js_listen(JSContext *cx, uintN argc, jsval *arglist)
 		dbprintf(TRUE, p, "listen failed with error %d", SOCKET_ERRNO);
 		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 		JS_RESUMEREQUEST(cx, rc);
-		return(JS_TRUE);
+		return JS_TRUE;
 	}
 
 	dbprintf(false, p, "listening, backlog=%d", backlog);
 	JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	JS_RESUMEREQUEST(cx, rc);
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -832,7 +832,7 @@ js_accept(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((p = (js_socket_private_t*)js_GetClassPrivate(cx, obj, &js_socket_class)) == NULL) {
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	addrlen = sizeof(p->remote_addr);
@@ -843,7 +843,7 @@ js_accept(JSContext *cx, uintN argc, jsval *arglist)
 			store_socket_error(p, SOCKET_ERRNO, NULL);
 			dbprintf(TRUE, p, "accept failed with error %d", SOCKET_ERRNO);
 			JS_RESUMEREQUEST(cx, rc);
-			return(JS_TRUE);
+			return JS_TRUE;
 		}
 		call_socket_open_callback(TRUE);
 	}
@@ -852,7 +852,7 @@ js_accept(JSContext *cx, uintN argc, jsval *arglist)
 			store_socket_error(p, SOCKET_ERRNO, NULL);
 			dbprintf(TRUE, p, "accept failed with error %d", SOCKET_ERRNO);
 			JS_RESUMEREQUEST(cx, rc);
-			return(JS_TRUE);
+			return JS_TRUE;
 		}
 	}
 
@@ -860,11 +860,11 @@ js_accept(JSContext *cx, uintN argc, jsval *arglist)
 		closesocket(new_socket);
 		JS_RESUMEREQUEST(cx, rc);
 		JS_ReportError(cx, "Error creating new socket object");
-		return(JS_TRUE);
+		return JS_TRUE;
 	}
 	if ((new_p = (js_socket_private_t*)JS_GetPrivate(cx, sockobj)) == NULL) {
 		JS_RESUMEREQUEST(cx, rc);
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	new_p->type = p->type;
@@ -876,7 +876,7 @@ js_accept(JSContext *cx, uintN argc, jsval *arglist)
 	dbprintf(false, p, "accepted connection");
 	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(sockobj));
 	JS_RESUMEREQUEST(cx, rc);
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 struct js_connect_event_args {
@@ -1034,7 +1034,7 @@ js_connect(JSContext *cx, uintN argc, jsval *arglist)
 	int                  timeout = 10000; /* Default time-out */
 
 	if ((p = (js_socket_private_t*)js_GetClassPrivate(cx, obj, &js_socket_class)) == NULL) {
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	str = JS_ValueToString(cx, argv[0]);
@@ -1061,7 +1061,7 @@ js_connect(JSContext *cx, uintN argc, jsval *arglist)
 		store_socket_error(p, result, gai_strerror(result));
 		dbprintf(TRUE, p, "getaddrinfo(%s) failed with error %d", p->hostname, result);
 		JS_RESUMEREQUEST(cx, rc);
-		return(JS_TRUE);
+		return JS_TRUE;
 	}
 	/* always set to nonblocking here */
 	val = 1;
@@ -1103,7 +1103,7 @@ js_connect(JSContext *cx, uintN argc, jsval *arglist)
 		dbprintf(TRUE, p, "connect failed with error %d", result);
 		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 		JS_RESUMEREQUEST(cx, rc);
-		return(JS_TRUE);
+		return JS_TRUE;
 	}
 	memcpy(&p->remote_addr, cur->ai_addr, cur->ai_addrlen);
 	freeaddrinfo(res);
@@ -1113,7 +1113,7 @@ js_connect(JSContext *cx, uintN argc, jsval *arglist)
 	dbprintf(false, p, "connected to %s on port %u at %s", ip_str, port, p->hostname);
 	JS_RESUMEREQUEST(cx, rc);
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -1131,7 +1131,7 @@ js_send(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((p = (js_socket_private_t*)js_GetClassPrivate(cx, obj, &js_socket_class)) == NULL) {
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	str = JS_ValueToString(cx, argv[0]);
@@ -1152,7 +1152,7 @@ js_send(JSContext *cx, uintN argc, jsval *arglist)
 	free(cp);
 	JS_RESUMEREQUEST(cx, rc);
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -1169,7 +1169,7 @@ js_sendline(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((p = (js_socket_private_t*)js_GetClassPrivate(cx, obj, &js_socket_class)) == NULL) {
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
@@ -1191,7 +1191,7 @@ js_sendline(JSContext *cx, uintN argc, jsval *arglist)
 	free(cp);
 	JS_RESUMEREQUEST(cx, rc);
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -1213,7 +1213,7 @@ js_sendto(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((p = (js_socket_private_t*)js_GetClassPrivate(cx, obj, &js_socket_class)) == NULL) {
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
@@ -1252,7 +1252,7 @@ js_sendto(JSContext *cx, uintN argc, jsval *arglist)
 		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 		free(cp);
 		JS_RESUMEREQUEST(cx, rc);
-		return(JS_TRUE);
+		return JS_TRUE;
 	}
 
 	for (cur = res; cur; cur = cur->ai_next) {
@@ -1272,7 +1272,7 @@ js_sendto(JSContext *cx, uintN argc, jsval *arglist)
 	freeaddrinfo(res);
 	JS_RESUMEREQUEST(cx, rc);
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 
@@ -1290,7 +1290,7 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((p = (js_socket_private_t*)js_GetClassPrivate(cx, obj, &js_socket_class)) == NULL) {
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
@@ -1299,14 +1299,14 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 	HANDLE_PENDING(cx, fname);
 	if (fname == NULL) {
 		JS_ReportError(cx, "Failure reading filename");
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
 	if ((file = nopen(fname, O_RDONLY | O_BINARY)) == -1) {
 		free(fname);
 		JS_RESUMEREQUEST(cx, rc);
-		return(JS_TRUE);
+		return JS_TRUE;
 	}
 
 	len = js_socket_sendfilesocket(p, file);
@@ -1321,7 +1321,7 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 	free(fname);
 
 	JS_RESUMEREQUEST(cx, rc);
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -1341,7 +1341,7 @@ js_sendbin(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
 	if ((p = (js_socket_private_t*)js_GetClassPrivate(cx, obj, &js_socket_class)) == NULL) {
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	if (argc && argv[0] != JSVAL_VOID)
@@ -1381,7 +1381,7 @@ js_sendbin(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	JS_RESUMEREQUEST(cx, rc);
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 
@@ -1400,7 +1400,7 @@ js_recv(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((p = (js_socket_private_t*)js_GetClassPrivate(cx, obj, &js_socket_class)) == NULL) {
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	if (argc && argv[0] != JSVAL_VOID) {
@@ -1413,7 +1413,7 @@ js_recv(JSContext *cx, uintN argc, jsval *arglist)
 
 	if ((buf = (char*)malloc(len + 1)) == NULL) {
 		JS_ReportError(cx, "Error allocating %u bytes", len + 1);
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
@@ -1423,14 +1423,14 @@ js_recv(JSContext *cx, uintN argc, jsval *arglist)
 		store_socket_error(p, SOCKET_ERRNO, NULL);
 		JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 		free(buf);
-		return(JS_TRUE);
+		return JS_TRUE;
 	}
 	buf[len] = 0;
 
 	str = JS_NewStringCopyN(cx, buf, len);
 	if (str == NULL) {
 		free(buf);
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(str));
@@ -1439,7 +1439,7 @@ js_recv(JSContext *cx, uintN argc, jsval *arglist)
 	JS_RESUMEREQUEST(cx, rc);
 
 	free(buf);
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -1468,7 +1468,7 @@ js_recvfrom(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((p = (js_socket_private_t*)js_GetClassPrivate(cx, obj, &js_socket_class)) == NULL) {
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
@@ -1513,14 +1513,14 @@ js_recvfrom(JSContext *cx, uintN argc, jsval *arglist)
 
 		if (rd != len) {
 			store_socket_error(p, SOCKET_ERRNO, NULL);
-			return(JS_TRUE);
+			return JS_TRUE;
 		}
 
 	} else {        /* String Data */
 
 		if ((buf = (char*)malloc(len + 1)) == NULL) {
 			JS_ReportError(cx, "Error allocating %u bytes", len + 1);
-			return(JS_FALSE);
+			return JS_FALSE;
 		}
 
 		rc = JS_SUSPENDREQUEST(cx);
@@ -1529,7 +1529,7 @@ js_recvfrom(JSContext *cx, uintN argc, jsval *arglist)
 		if (len < 0) {
 			store_socket_error(p, SOCKET_ERRNO, NULL);
 			free(buf);
-			return(JS_TRUE);
+			return JS_TRUE;
 		}
 		buf[len] = 0;
 
@@ -1537,7 +1537,7 @@ js_recvfrom(JSContext *cx, uintN argc, jsval *arglist)
 		free(buf);
 
 		if (str == NULL)
-			return(JS_FALSE);
+			return JS_FALSE;
 
 		data_val = STRING_TO_JSVAL(str);
 	}
@@ -1545,7 +1545,7 @@ js_recvfrom(JSContext *cx, uintN argc, jsval *arglist)
 
 	if ((retobj = JS_NewObject(cx, NULL, NULL, obj)) == NULL) {
 		JS_ReportError(cx, "JS_NewObject failed");
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	JS_DefineProperty(cx, retobj, "data"
@@ -1554,14 +1554,14 @@ js_recvfrom(JSContext *cx, uintN argc, jsval *arglist)
 
 	sprintf(port, "%u", inet_addrport(&addr));
 	if ((str = JS_NewStringCopyZ(cx, port)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 	JS_DefineProperty(cx, retobj, "port"
 	                  , STRING_TO_JSVAL(str)
 	                  , NULL, NULL, JSPROP_ENUMERATE);
 
 	inet_addrtop(&addr, ip_addr, sizeof(ip_addr));
 	if ((str = JS_NewStringCopyZ(cx, ip_addr)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 	JS_DefineProperty(cx, retobj, "ip_address"
 	                  , STRING_TO_JSVAL(str)
 	                  , NULL, NULL, JSPROP_ENUMERATE);
@@ -1572,7 +1572,7 @@ js_recvfrom(JSContext *cx, uintN argc, jsval *arglist)
 	dbprintf(false, p, "received %u bytes from %s:%s", len, ip_addr, port);
 	JS_RESUMEREQUEST(cx, rc);
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 
@@ -1590,7 +1590,7 @@ js_peek(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((p = (js_socket_private_t*)js_GetClassPrivate(cx, obj, &js_socket_class)) == NULL) {
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	if (argc && argv[0] != JSVAL_VOID)
@@ -1598,7 +1598,7 @@ js_peek(JSContext *cx, uintN argc, jsval *arglist)
 
 	if ((buf = (char*)malloc(len + 1)) == NULL) {
 		JS_ReportError(cx, "Error allocating %u bytes", len + 1);
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 	rc = JS_SUSPENDREQUEST(cx);
 	if (p->session == -1)
@@ -1610,14 +1610,14 @@ js_peek(JSContext *cx, uintN argc, jsval *arglist)
 		store_socket_error(p, SOCKET_ERRNO, NULL);
 		JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 		free(buf);
-		return(JS_TRUE);
+		return JS_TRUE;
 	}
 	buf[len] = 0;
 
 	str = JS_NewStringCopyN(cx, buf, len);
 	free(buf);
 	if (str == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(str));
 	rc = JS_SUSPENDREQUEST(cx);
@@ -1625,7 +1625,7 @@ js_peek(JSContext *cx, uintN argc, jsval *arglist)
 	         , len, SOCKET_ERRNO);
 	JS_RESUMEREQUEST(cx, rc);
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 /* Returns 0 if there is rx data waiting */
@@ -1671,7 +1671,7 @@ js_recvline(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
 	if ((p = (js_socket_private_t*)js_GetClassPrivate(cx, obj, &js_socket_class)) == NULL) {
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	if (argc && argv[0] != JSVAL_VOID)
@@ -1679,7 +1679,7 @@ js_recvline(JSContext *cx, uintN argc, jsval *arglist)
 
 	if ((buf = (char*)malloc(len + 1)) == NULL) {
 		JS_ReportError(cx, "Error allocating %u bytes", len + 1);
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	if (argc > 1 && argv[1] != JSVAL_VOID)
@@ -1711,7 +1711,7 @@ js_recvline(JSContext *cx, uintN argc, jsval *arglist)
 			if (i == 0) {           // no data received
 				JS_RESUMEREQUEST(cx, rc);
 				free(buf);          // so return null (not an empty string)
-				return(JS_TRUE);
+				return JS_TRUE;
 			}
 			break;
 		}
@@ -1730,7 +1730,7 @@ js_recvline(JSContext *cx, uintN argc, jsval *arglist)
 	str = JS_NewStringCopyZ(cx, buf);
 	free(buf);
 	if (str == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(str));
 	rc = JS_SUSPENDREQUEST(cx);
@@ -1738,7 +1738,7 @@ js_recvline(JSContext *cx, uintN argc, jsval *arglist)
 	         , i, SOCKET_ERRNO);
 	JS_RESUMEREQUEST(cx, rc);
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -1757,7 +1757,7 @@ js_recvbin(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(-1));
 
 	if ((p = (js_socket_private_t*)js_GetClassPrivate(cx, obj, &js_socket_class)) == NULL) {
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	if (argc && argv[0] != JSVAL_VOID)
@@ -1789,7 +1789,7 @@ js_recvbin(JSContext *cx, uintN argc, jsval *arglist)
 		store_socket_error(p, SOCKET_ERRNO, NULL);
 
 	JS_RESUMEREQUEST(cx, rc);
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 
@@ -1811,14 +1811,14 @@ js_getsockopt(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(-1));
 
 	if ((p = (js_socket_private_t*)js_GetClassPrivate(cx, obj, &js_socket_class)) == NULL) {
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
 	JSVALUE_TO_ASTRING(cx, argv[0], cstr, 64, NULL);
 	if ((opt = getSocketOptionByName(cstr, &level)) == -1) {
 		JS_RESUMEREQUEST(cx, rc);
-		return(JS_TRUE);
+		return JS_TRUE;
 	}
 
 	if (opt == SO_LINGER) {
@@ -1840,7 +1840,7 @@ js_getsockopt(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	JS_RESUMEREQUEST(cx, rc);
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 
@@ -1862,7 +1862,7 @@ js_setsockopt(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((p = (js_socket_private_t*)js_GetClassPrivate(cx, obj, &js_socket_class)) == NULL) {
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 	if (p->sock == INVALID_SOCKET)
 		return JS_TRUE;
@@ -1892,7 +1892,7 @@ js_setsockopt(JSContext *cx, uintN argc, jsval *arglist)
 	store_socket_error(p, SOCKET_ERRNO, NULL);
 
 	JS_RESUMEREQUEST(cx, rc);
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -1908,7 +1908,7 @@ js_ioctlsocket(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((p = (js_socket_private_t*)js_GetClassPrivate(cx, obj, &js_socket_class)) == NULL) {
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	if (argc && argv[0] != JSVAL_VOID)
@@ -1928,7 +1928,7 @@ js_ioctlsocket(JSContext *cx, uintN argc, jsval *arglist)
 
 	store_socket_error(p, SOCKET_ERRNO, NULL);
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -1958,13 +1958,13 @@ js_poll(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((p = (js_socket_private_t*)js_GetClassPrivate(cx, obj, &js_socket_class)) == NULL) {
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	if (p->sock == INVALID_SOCKET && p->set == NULL) {
 		dbprintf(TRUE, p, "INVALID SOCKET in call to poll");
 		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(-1));
-		return(JS_TRUE);
+		return JS_TRUE;
 	}
 
 	for (argn = 0; argn < argc; argn++) {
@@ -2029,7 +2029,7 @@ js_poll(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(result));
 	JS_RESUMEREQUEST(cx, rc);
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static js_callback_t *
@@ -2092,7 +2092,7 @@ js_install_event(JSContext *cx, uintN argc, jsval *arglist, bool once)
 	size_t               slen;
 
 	if ((p = (js_socket_private_t*)js_GetClassPrivate(cx, obj, &js_socket_class)) == NULL) {
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	/*
@@ -2284,7 +2284,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 
 	if ((p = (js_socket_private_t*)JS_GetPrivate(cx, obj)) == NULL) {
 		// Prototype access
-		return(JS_TRUE);
+		return JS_TRUE;
 	}
 
 	JS_IdToValue(cx, id, &idval);
@@ -2414,7 +2414,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 			break;
 	}
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
@@ -2433,7 +2433,7 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 
 	if ((p = (js_socket_private_t*)JS_GetPrivate(cx, obj)) == NULL) {
 		// Protoype access
-		return(JS_TRUE);
+		return JS_TRUE;
 	}
 
 	JS_IdToValue(cx, id, &idval);
@@ -2509,11 +2509,11 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case SOCK_PROP_LOCAL_IP:
 			if (p->sock != INVALID_SOCKET) {
 				if (getsockname(p->sock, (struct sockaddr *)&addr, &len) != 0)
-					return(JS_FALSE);
+					return JS_FALSE;
 				JS_RESUMEREQUEST(cx, rc);
 				inet_addrtop(&addr, str, sizeof(str));
 				if ((js_str = JS_NewStringCopyZ(cx, str)) == NULL)
-					return(JS_FALSE);
+					return JS_FALSE;
 				*vp = STRING_TO_JSVAL(js_str);
 				rc = JS_SUSPENDREQUEST(cx);
 			}
@@ -2525,7 +2525,7 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 				*vp = INT_TO_JSVAL(p->local_port);
 			} else if (p->sock != INVALID_SOCKET) {
 				if (getsockname(p->sock, &addr.addr, &len) != 0)
-					return(JS_FALSE);
+					return JS_FALSE;
 				JS_RESUMEREQUEST(cx, rc);
 				*vp = INT_TO_JSVAL(inet_addrport(&addr));
 				rc = JS_SUSPENDREQUEST(cx);
@@ -2538,7 +2538,7 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 				JS_RESUMEREQUEST(cx, rc);
 				inet_addrtop(&p->remote_addr, str, sizeof(str));
 				if ((js_str = JS_NewStringCopyZ(cx, str)) == NULL)
-					return(JS_FALSE);
+					return JS_FALSE;
 				*vp = STRING_TO_JSVAL(js_str);
 				rc = JS_SUSPENDREQUEST(cx);
 			}
@@ -2558,7 +2558,7 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			if (p->sock != INVALID_SOCKET) {
 				JS_RESUMEREQUEST(cx, rc);
 				if (getsockname(p->sock, &addr.addr, &len) != 0)
-					return(JS_FALSE);
+					return JS_FALSE;
 				*vp = INT_TO_JSVAL(addr.addr.sa_family);
 				rc = JS_SUSPENDREQUEST(cx);
 			}
@@ -2580,7 +2580,7 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	}
 
 	JS_RESUMEREQUEST(cx, rc);
-	return(TRUE);
+	return TRUE;
 }
 
 #define SOCK_PROP_FLAGS JSPROP_ENUMERATE | JSPROP_READONLY
@@ -2725,7 +2725,7 @@ static JSBool js_socket_resolve(JSContext *cx, JSObject *obj, jsid id)
 
 static JSBool js_socket_enumerate(JSContext *cx, JSObject *obj)
 {
-	return(js_socket_resolve(cx, obj, JSID_VOID));
+	return js_socket_resolve(cx, obj, JSID_VOID);
 }
 
 JSClass js_socket_class = {
@@ -2776,14 +2776,14 @@ static bool js_DefineSocketOptionsArray(JSContext *cx, JSObject *obj, int type)
 	socket_option_t* options;
 
 	if ((options = getSocketOptionList()) == NULL)
-		return(false);
+		return false;
 
 	if ((array = JS_NewArrayObject(cx, 0, NULL)) == NULL)
-		return(false);
+		return false;
 
 	if (!JS_DefineProperty(cx, obj, "option_list", OBJECT_TO_JSVAL(array)
 	                       , NULL, NULL, JSPROP_ENUMERATE))
-		return(false);
+		return false;
 
 	for (i = 0; options[i].name != NULL; i++) {
 		if (options[i].type && options[i].type != type)
@@ -2791,7 +2791,7 @@ static bool js_DefineSocketOptionsArray(JSContext *cx, JSObject *obj, int type)
 		val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, options[i].name));
 		JS_SetElement(cx, array, count++, &val);
 	}
-	return(TRUE);
+	return TRUE;
 }
 
 /* Socket Constructor (creates socket descriptor) */
@@ -2806,16 +2806,16 @@ JSObject* js_CreateSocketObjectWithoutParent(JSContext* cx, SOCKET sock, CRYPT_C
 	obj = JS_NewObject(cx, &js_socket_class, NULL, NULL);
 
 	if (obj == NULL)
-		return(NULL);
+		return NULL;
 
 	len = sizeof(type);
 	getsockopt(sock, SOL_SOCKET, SO_TYPE, (void*)&type, &len);
 
 	if (!js_DefineSocketOptionsArray(cx, obj, type))
-		return(NULL);
+		return NULL;
 
 	if ((p = (js_socket_private_t*)malloc(sizeof(js_socket_private_t))) == NULL)
-		return(NULL);
+		return NULL;
 	memset(p, 0, sizeof(js_socket_private_t));
 
 	p->sock = sock;
@@ -2833,12 +2833,12 @@ JSObject* js_CreateSocketObjectWithoutParent(JSContext* cx, SOCKET sock, CRYPT_C
 
 	if (!JS_SetPrivate(cx, obj, p)) {
 		dbprintf(TRUE, p, "JS_SetPrivate failed");
-		return(NULL);
+		return NULL;
 	}
 
 	dbprintf(false, p, "object created");
 
-	return(obj);
+	return obj;
 }
 
 static bool
@@ -3187,7 +3187,7 @@ connected:
 	if (!JS_SetPrivate(cx, obj, p)) {
 		JS_ReportError(cx, "JS_SetPrivate failed");
 		free(p);
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 #ifdef BUILD_JSDOCS
@@ -3206,10 +3206,10 @@ connected:
 #endif
 
 	if (!js_DefineSocketOptionsArray(cx, obj, type))
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	dbprintf(false, p, "object constructed");
-	return(JS_TRUE);
+	return JS_TRUE;
 
 fail:
 	if (p)
@@ -3364,7 +3364,7 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ReportError(cx, "malloc failed");
 		free(protocol);
 		free(set);
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 	memset(p, 0, sizeof(js_socket_private_t));
 	p->type = type;
@@ -3381,13 +3381,13 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ReportError(cx, "JS_SetPrivate failed");
 		free(p);
 		free(set);
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	if (!js_DefineSocketOptionsArray(cx, obj, type)) {
 		free(p);
 		free(set);
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 #ifdef BUILD_JSDOCS
@@ -3408,7 +3408,7 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 
 	dbprintf(false, p, "object constructed");
 
-	return(JS_TRUE);
+	return JS_TRUE;
 
 fail:
 	free(protocol);
@@ -3472,7 +3472,7 @@ js_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ReportError(cx, "malloc failed");
 		if (protocol)
 			free(protocol);
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 	memset(p, 0, sizeof(js_socket_private_t));
 
@@ -3481,7 +3481,7 @@ js_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		if (protocol)
 			free(protocol);
 		free(p);
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 	if (protocol)
 		free(protocol);
@@ -3494,7 +3494,7 @@ js_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	if (!JS_SetPrivate(cx, obj, p)) {
 		JS_ReportError(cx, "JS_SetPrivate failed");
 		free(p);
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 #ifdef BUILD_JSDOCS
@@ -3511,10 +3511,10 @@ js_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 #endif
 
 	if (!js_DefineSocketOptionsArray(cx, obj, type))
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	dbprintf(false, p, "object constructed");
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 JSObject* js_CreateSocketClass(JSContext* cx, JSObject* parent)
@@ -3564,7 +3564,7 @@ JSObject* js_CreateSocketClass(JSContext* cx, JSObject* parent)
 	                        , NULL, NULL);
 	(void)lsockobj;
 
-	return(sockobj);
+	return sockobj;
 }
 
 JSObject* js_CreateSocketObject(JSContext* cx, JSObject* parent, char *name, SOCKET sock, CRYPT_CONTEXT session)
@@ -3573,10 +3573,10 @@ JSObject* js_CreateSocketObject(JSContext* cx, JSObject* parent, char *name, SOC
 
 	obj = js_CreateSocketObjectWithoutParent(cx, sock, session);
 	if (obj == NULL)
-		return(NULL);
+		return NULL;
 	JS_DefineProperty(cx, parent, name, OBJECT_TO_JSVAL(obj), NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
 
-	return(obj);
+	return obj;
 }
 
 JSObject* js_CreateSocketObjectFromSet(JSContext* cx, JSObject* parent, char *name, struct xpms_set *set)
@@ -3590,7 +3590,7 @@ JSObject* js_CreateSocketObjectFromSet(JSContext* cx, JSObject* parent, char *na
 	                      , JSPROP_ENUMERATE | JSPROP_READONLY);
 
 	if (obj == NULL)
-		return(NULL);
+		return NULL;
 
 	if (set->sock_count < 1)
 		return NULL;
@@ -3599,10 +3599,10 @@ JSObject* js_CreateSocketObjectFromSet(JSContext* cx, JSObject* parent, char *na
 	getsockopt(set->socks[0].sock, SOL_SOCKET, SO_TYPE, (void*)&type, &len);
 
 	if (!js_DefineSocketOptionsArray(cx, obj, type))
-		return(NULL);
+		return NULL;
 
 	if ((p = (js_socket_private_t*)malloc(sizeof(js_socket_private_t))) == NULL)
-		return(NULL);
+		return NULL;
 	memset(p, 0, sizeof(js_socket_private_t));
 
 	p->set = set;
@@ -3615,12 +3615,12 @@ JSObject* js_CreateSocketObjectFromSet(JSContext* cx, JSObject* parent, char *na
 
 	if (!JS_SetPrivate(cx, obj, p)) {
 		dbprintf(TRUE, p, "JS_SetPrivate failed");
-		return(NULL);
+		return NULL;
 	}
 
 	dbprintf(false, p, "object created");
 
-	return(obj);
+	return obj;
 }
 
 #endif  /* JAVSCRIPT */

@@ -54,7 +54,7 @@ char* msgdate(when_t when, char* buf)
 	        /* RFC1123: implementations SHOULD use numeric timezones instead of timezone names */
 	        , plus, tz / 60, tz % 60
 	        );
-	return(buf);
+	return buf;
 }
 
 /****************************************************************************/

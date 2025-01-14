@@ -136,7 +136,7 @@ char* itoa(int val, char* str, int radix)
 			sprintf(str, "bad radix: %d", radix);
 			break;
 	}
-	return(str);
+	return str;
 }
 #endif
 
@@ -205,7 +205,7 @@ char *unpackchatpass(char *pass, node_t node)
 	for (i = 0; i < 8; i++)
 		if (pass[i])
 			pass[i] += 64;
-	return(pass);
+	return pass;
 }
 
 static char* node_connection_desc(ushort conn, char* str)
@@ -511,7 +511,7 @@ int main(int argc, char **argv)
 	if (sizeof(node_t) != SIZEOF_NODE_T) {
 		printf("COMPILER ERROR: sizeof(node_t)=%" XP_PRIsize_t "u instead of %d\n"
 		       , sizeof(node_t), SIZEOF_NODE_T);
-		return(-1);
+		return -1;
 	}
 
 	if (argc < 2) {
@@ -735,5 +735,5 @@ int main(int argc, char **argv)
 	} /* for i<argc */
 
 	close(nodefile);
-	return(0);
+	return 0;
 }

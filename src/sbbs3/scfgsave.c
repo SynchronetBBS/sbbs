@@ -36,26 +36,26 @@ bool save_cfg(scfg_t* cfg)
 	int i;
 
 	if (cfg->prepped)
-		return(false);
+		return false;
 
 	if (!write_main_cfg(cfg))
-		return(false);
+		return false;
 	if (!write_msgs_cfg(cfg))
-		return(false);
+		return false;
 	if (!write_file_cfg(cfg))
-		return(false);
+		return false;
 	if (!write_chat_cfg(cfg))
-		return(false);
+		return false;
 	if (!write_xtrn_cfg(cfg))
-		return(false);
+		return false;
 
 	for (i = 0; i < cfg->sys_nodes; i++) {
 		cfg->node_num = i + 1;
 		if (!write_node_cfg(cfg))
-			return(false);
+			return false;
 	}
 
-	return(true);
+	return true;
 }
 
 /****************************************************************************/
@@ -570,7 +570,7 @@ bool write_msgs_cfg(scfg_t* cfg)
 		md(dir);
 		SAFEPRINTF(smb.file, "%smail", dir);
 		if (smb_open(&smb) != 0) {
-			return(false);
+			return false;
 		}
 		if (!filelength(fileno(smb.shd_fp))) {
 			smb.status.max_msgs = 0;
@@ -579,22 +579,22 @@ bool write_msgs_cfg(scfg_t* cfg)
 			smb.status.attr = SMB_EMAIL;
 			int i = smb_create(&smb);
 			smb_close(&smb);
-			return(i == SMB_SUCCESS);
+			return i == SMB_SUCCESS;
 		}
 		if (smb_locksmbhdr(&smb) != 0) {
 			smb_close(&smb);
-			return(false);
+			return false;
 		}
 		if (smb_getstatus(&smb) != 0) {
 			smb_close(&smb);
-			return(false);
+			return false;
 		}
 		smb.status.max_msgs = 0;
 		smb.status.max_crcs = cfg->mail_maxcrcs;
 		smb.status.max_age = cfg->mail_maxage;
 		if (smb_putstatus(&smb) != 0) {
 			smb_close(&smb);
-			return(false);
+			return false;
 		}
 		smb_close(&smb);
 	}

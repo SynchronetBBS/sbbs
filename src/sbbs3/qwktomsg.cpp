@@ -287,7 +287,7 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, uint blocks
 
 	if ((qwkbuf = (char *)calloc(blocks, QWK_BLOCK_LEN)) == NULL) { // over-allocate for NULL termination
 		errormsg(WHERE, ERR_ALLOC, "QWK msg buf", (blocks - 1) * QWK_BLOCK_LEN);
-		return(false);
+		return false;
 	}
 
 	if (fread(qwkbuf, QWK_BLOCK_LEN, blocks - 1, qwk_fp) != blocks - 1) {
@@ -300,7 +300,7 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, uint blocks
 	if ((body = (char *)malloc((blocks - 1L) * QWK_BLOCK_LEN * 2L)) == NULL) {
 		free(qwkbuf);
 		errormsg(WHERE, ERR_ALLOC, "QWK msg body", (blocks - 1L) * QWK_BLOCK_LEN * 2L);
-		return(false);
+		return false;
 	}
 
 	taillen = 0;
@@ -308,7 +308,7 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, uint blocks
 		free(qwkbuf);
 		free(body);
 		errormsg(WHERE, ERR_ALLOC, "QWK msg tail", (blocks - 1L) * QWK_BLOCK_LEN * 2L);
-		return(false);
+		return false;
 	}
 
 	kludges = strListInit();
@@ -406,7 +406,7 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, uint blocks
 				strListFree(&kludges);
 				free(body);
 				free(tail);
-				return(false);
+				return false;
 			}
 			SAFEPRINTF2(str, "%s/%s"
 			            , fromhub ? cfg.qhub[fromhub - 1]->id : useron.alias, p);
@@ -515,6 +515,6 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, uint blocks
 	free(body);
 	free(tail);
 
-	return(success);
+	return success;
 }
 

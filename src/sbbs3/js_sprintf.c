@@ -35,7 +35,7 @@ js_sprintf(JSContext *cx, uint argn, uintN argc, jsval *argv)
 	if (JS_IsExceptionPending(cx))
 		JS_ClearPendingException(cx);
 	if (op == NULL)
-		return(NULL);
+		return NULL;
 
 	p = op;
 	p = xp_asprintf_start(p);

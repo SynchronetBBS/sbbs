@@ -38,7 +38,7 @@ str_list_t getNameServerList(void)
 	str_list_t list;
 
 	if ((list = strListInit()) == NULL)
-		return(NULL);
+		return NULL;
 	if ((fp = fopen("/etc/resolv.conf", "r")) != NULL) {
 		while (!feof(fp)) {
 			if (fgets(str, sizeof(str), fp) == NULL)
@@ -54,7 +54,7 @@ str_list_t getNameServerList(void)
 		}
 		fclose(fp);
 	}
-	return(list);
+	return list;
 
 #elif defined(_WIN32)
 	FIXED_INFO*     FixedInfo = NULL;
@@ -63,7 +63,7 @@ str_list_t getNameServerList(void)
 	str_list_t      list;
 
 	if ((list = strListInit()) == NULL)
-		return(NULL);
+		return NULL;
 	if (GetNetworkParams(FixedInfo, &FixedInfoLen) == ERROR_BUFFER_OVERFLOW) {
 		FixedInfo = (FIXED_INFO*)malloc(FixedInfoLen);
 		if (GetNetworkParams(FixedInfo, &FixedInfoLen) == ERROR_SUCCESS) {
@@ -74,7 +74,7 @@ str_list_t getNameServerList(void)
 		if (FixedInfo != NULL)
 			free(FixedInfo);
 	}
-	return(list);
+	return list;
 #else
 	#error "Need a get_nameserver() implementation for this platform"
 #endif

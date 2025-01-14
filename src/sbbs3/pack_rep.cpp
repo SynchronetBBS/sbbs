@@ -124,7 +124,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 		if (voting != NULL)
 			fclose(voting);
 		errormsg(WHERE, ERR_OPEN, smb.file, i, smb.last_error);
-		return(false);
+		return false;
 	}
 
 	/***********************/
@@ -278,7 +278,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 
 	if (!msgcnt && !netfiles && !packedmail && !voting_data) {
 		lprintf(LOG_INFO, "%s", remove_ctrl_a(text[QWKNoNewMessages], tmp));
-		return(true);   // Changed from false Mar-11-2005 (needs to be true to save updated ptrs)
+		return true;   // Changed from false Mar-11-2005 (needs to be true to save updated ptrs)
 	}
 
 	/*******************/
@@ -303,7 +303,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 	if (!fexistcase(str)) {
 		lprintf(LOG_WARNING, "%s", remove_ctrl_a(text[QWKCompressionFailed], tmp));
 		lprintf(LOG_ERR, "Couldn't compress REP packet");
-		return(false);
+		return false;
 	}
 	SAFEPRINTF2(str, "%sqnet/%s.out/", cfg.data_dir, hubid_lower);
 	delfiles(str, ALLFILES);
@@ -314,7 +314,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 		smb.subnum = INVALID_SUB;
 		if ((i = smb_open(&smb)) != 0) {
 			errormsg(WHERE, ERR_OPEN, smb.file, i, smb.last_error);
-			return(true);
+			return true;
 		}
 
 		mail = loadmail(&smb, &mailmsgs, 0, MAIL_YOUR, 0);
@@ -324,7 +324,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 				free(mail);
 			smb_close(&smb);
 			errormsg(WHERE, ERR_LOCK, smb.file, i, smb.last_error); /* messes with the index */
-			return(true);
+			return true;
 		}
 
 		if ((i = smb_getstatus(&smb)) != 0) {
@@ -332,7 +332,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 				free(mail);
 			smb_close(&smb);
 			errormsg(WHERE, ERR_READ, smb.file, i, smb.last_error);
-			return(true);
+			return true;
 		}
 
 		deleted = 0;
@@ -372,5 +372,5 @@ bool sbbs_t::pack_rep(uint hubnum)
 		lprintf(LOG_INFO, "Deleted %ld sent NetMail messages", deleted);
 	}
 
-	return(true);
+	return true;
 }

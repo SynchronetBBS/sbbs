@@ -169,7 +169,7 @@ bool getstats(scfg_t* cfg, uint node, stats_t* stats)
 		if (!fexistcase(path))
 			return true;
 		if ((file = nopen(path, O_RDONLY)) == -1) {
-			return(false);
+			return false;
 		}
 		int rd = read(file, &legacy_stats, sizeof(legacy_stats));
 		close(file);

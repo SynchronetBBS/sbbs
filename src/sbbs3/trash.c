@@ -163,21 +163,21 @@ bool filter_ip(scfg_t* cfg, const char* prot, const char* reason, const char* ho
 	time_t now = time(NULL);
 
 	if (ip_addr == NULL)
-		return(false);
+		return false;
 
 	SAFEPRINTF2(exempt, "%s%s", cfg->ctrl_dir, strIpFilterExemptConfigFile);
 	if (find2strs(ip_addr, host, exempt, NULL))
-		return(false);
+		return false;
 
 	SAFEPRINTF(ip_can, "%sip.can", cfg->text_dir);
 	if (fname == NULL)
 		fname = ip_can;
 
 	if (findstr(ip_addr, fname)) /* Already filtered? */
-		return(true);
+		return true;
 
 	if ((fp = fnopen(NULL, fname, O_CREAT | O_APPEND | O_WRONLY)) == NULL)
-		return(false);
+		return false;
 
 	fprintf(fp, "%s\tt=%s"
 	        , ip_addr
@@ -195,7 +195,7 @@ bool filter_ip(scfg_t* cfg, const char* prot, const char* reason, const char* ho
 	fputc('\n', fp);
 
 	fclose(fp);
-	return(true);
+	return true;
 }
 
 bool is_twit(scfg_t* cfg, const char* name)

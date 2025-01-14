@@ -71,7 +71,7 @@ bool sbbs_t::unpack_qwk(char *packet, uint hubnum)
 	start = time(NULL);
 	if ((l = (long)flength(packet)) < 1) {
 		errormsg(WHERE, ERR_LEN, packet, l);
-		return(false);
+		return false;
 	}
 	delfiles(cfg.temp_dir, ALLFILES);
 	long file_count = extract_files_from_archive(packet
@@ -92,13 +92,13 @@ bool sbbs_t::unpack_qwk(char *packet, uint hubnum)
 		i = external(cmdstr(cfg.qhub[hubnum]->unpack, packet, ALLFILES, NULL), EX_OFFLINE);
 		if (i) {
 			errormsg(WHERE, ERR_EXEC, cmdstr(cfg.qhub[hubnum]->unpack, packet, ALLFILES, NULL), i);
-			return(false);
+			return false;
 		}
 	}
 	SAFEPRINTF(msg_fname, "%sMESSAGES.DAT", cfg.temp_dir);
 	if (!fexistcase(msg_fname)) {
 		lprintf(LOG_WARNING, "%s doesn't contain MESSAGES.DAT (%s)", packet, msg_fname);
-		return(false);
+		return false;
 	}
 	size = (long)flength(msg_fname);
 	if (size < QWK_BLOCK_LEN || (size % QWK_BLOCK_LEN) != 0) {
@@ -107,7 +107,7 @@ bool sbbs_t::unpack_qwk(char *packet, uint hubnum)
 	}
 	if ((qwk = fnopen(&file, msg_fname, O_RDONLY)) == NULL) {
 		errormsg(WHERE, ERR_OPEN, msg_fname, O_RDONLY);
-		return(false);
+		return false;
 	}
 	size = (long)filelength(file);
 

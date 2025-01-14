@@ -40,13 +40,13 @@ int getmail(scfg_t* cfg, int usernumber, bool sent, int attr)
 	SAFEPRINTF(path, "%s.sid", smb.file);
 	l = (long)flength(path);
 	if (l < (long)sizeof(idxrec_t))
-		return(0);
+		return 0;
 	if (usernumber == 0 && attr == 0)
-		return(l / sizeof(idxrec_t));   /* Total system e-mail */
+		return l / sizeof(idxrec_t);  /* Total system e-mail */
 	smb.subnum = INVALID_SUB;
 
 	if (smb_open_fp(&smb, &smb.sid_fp, SH_DENYNO) != 0)
-		return(0);
+		return 0;
 
 	while (!smb_feof(smb.sid_fp)) {
 		if (smb_fread(&smb, &idx, sizeof(idx), smb.sid_fp) != sizeof(idx))
@@ -65,7 +65,7 @@ int getmail(scfg_t* cfg, int usernumber, bool sent, int attr)
 			i++;
 	}
 	smb_close(&smb);
-	return(i);
+	return i;
 }
 
 
@@ -118,15 +118,15 @@ mail_t* loadmail(smb_t* smb, uint32_t* msgs, uint usernumber
 	mail_t*  mail = NULL;
 
 	if (msgs == NULL)
-		return(NULL);
+		return NULL;
 
 	*msgs = 0;
 
 	if (smb == NULL)
-		return(NULL);
+		return NULL;
 
 	if (smb_locksmbhdr(smb) != 0)                  /* Be sure noone deletes or */
-		return(NULL);                           /* adds while we're reading */
+		return NULL;                          /* adds while we're reading */
 
 	smb_rewind(smb->sid_fp);
 	while (!smb_feof(smb->sid_fp)) {
@@ -150,7 +150,7 @@ mail_t* loadmail(smb_t* smb, uint32_t* msgs, uint usernumber
 		if ((np = realloc(mail, sizeof(mail_t) * (l + 1))) == NULL) {
 			free(mail);
 			smb_unlocksmbhdr(smb);
-			return(NULL);
+			return NULL;
 		}
 		mail = np;
 		mail[l] = idx;
@@ -169,7 +169,7 @@ mail_t* loadmail(smb_t* smb, uint32_t* msgs, uint usernumber
 		free(mail);
 		mail = reversed;
 	}
-	return(mail);
+	return mail;
 }
 
 void freemail(mail_t* mail)

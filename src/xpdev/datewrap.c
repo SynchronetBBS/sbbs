@@ -93,10 +93,10 @@ struct tm* localtime32(const time32_t* t32, struct tm* tm)
 	struct tm* tmp;
 
 	if ((tmp = localtime(&t)) == NULL)
-		return(NULL);
+		return NULL;
 
 	*tm = *tmp;
-	return(tm);
+	return tm;
 }
 
 
@@ -164,10 +164,10 @@ struct tm* gmtime_r(const time_t* t, struct tm* tm)
 	struct tm* tmp = gmtime(t);
 
 	if (tmp == NULL)
-		return(NULL);
+		return NULL;
 
 	*tm = *tmp;
-	return(tm);
+	return tm;
 }
 
 struct tm* localtime_r(const time_t* t, struct tm* tm)
@@ -175,10 +175,10 @@ struct tm* localtime_r(const time_t* t, struct tm* tm)
 	struct tm* tmp = localtime(t);
 
 	if (tmp == NULL)
-		return(NULL);
+		return NULL;
 
 	*tm = *tmp;
-	return(tm);
+	return tm;
 }
 
 char* ctime_r(const time_t *t, char *buf)
@@ -186,10 +186,10 @@ char* ctime_r(const time_t *t, char *buf)
 	char* p = ctime(t);
 
 	if (p == NULL)
-		return(NULL);
+		return NULL;
 
 	strcpy(buf, p);
-	return(buf);
+	return buf;
 }
 
 char* asctime_r(const struct tm *tm, char *buf)
@@ -197,10 +197,10 @@ char* asctime_r(const struct tm *tm, char *buf)
 	char* p = asctime(tm);
 
 	if (p == NULL)
-		return(NULL);
+		return NULL;
 
 	strcpy(buf, p);
-	return(buf);
+	return buf;
 }
 
 #endif  /* !defined(__unix__) */

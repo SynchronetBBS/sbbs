@@ -296,7 +296,7 @@ unsigned vdd_read(BYTE* p, unsigned count)
 		lputs(LOG_ERR, "!VDD_READ: RingBufRead read 0 (after wait)");
 	}
 
-	return(count);
+	return count;
 }
 
 unsigned yields = 0;
@@ -341,7 +341,7 @@ static char *chr(uchar ch)
 		sprintf(str, "^%c  (%02Xh)", '@' + ch, ch);
 	else
 		sprintf(str, "%u (%02Xh)", ch, ch);
-	return(str);
+	return str;
 }
 
 VOID uart_wrport(WORD port, BYTE data)

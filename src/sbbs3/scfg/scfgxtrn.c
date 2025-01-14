@@ -178,7 +178,7 @@ static char* monthstr(uint16_t months)
 	static char str[256];
 
 	if (months == 0)
-		return("Any");
+		return "Any";
 
 	str[0] = 0;
 	for (i = 0; i < 12; i++) {
@@ -189,7 +189,7 @@ static char* monthstr(uint16_t months)
 		SAFECAT(str, mon[i]);
 	}
 
-	return(str);
+	return str;
 }
 
 static char* mdaystr(long mdays)
@@ -199,7 +199,7 @@ static char* mdaystr(long mdays)
 	static char str[256];
 
 	if (mdays == 0 || mdays == 1)
-		return("Any");
+		return "Any";
 
 	str[0] = 0;
 	for (i = 1; i < 32; i++) {
@@ -211,7 +211,7 @@ static char* mdaystr(long mdays)
 		strcat(str, tmp);
 	}
 
-	return(str);
+	return str;
 }
 
 static char* dropfile(int type, ulong misc)
@@ -2174,7 +2174,7 @@ int natvpgm_cfg()
 		               , K_EDIT) > 0)
 			SAFECOPY(cfg.natvpgm[i]->name, str);
 	}
-	return(0);
+	return 0;
 }
 
 static int progs_in_sec(int sec)

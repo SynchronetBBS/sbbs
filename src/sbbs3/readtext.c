@@ -138,13 +138,13 @@ char *readtext(int *line, FILE *stream, int dflt)
 		goto use_default;
 	}
 	strcpy(p, str);
-	return(p);
+	return p;
 use_default:
 	if (dflt < TOTAL_TEXT) {
 		p = strdup(text_defaults[dflt]);
 		if (p == NULL)
 			lprintf(LOG_CRIT, "Error duplicating %s text defaults", text_defaults[dflt]);
-		return(p);
+		return p;
 	}
 	lprintf(LOG_CRIT, "Text defaults missing %d", dflt);
 	return NULL;

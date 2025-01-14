@@ -115,7 +115,7 @@ size_t dns_name(char* name, size_t* namelen, size_t maxlen, BYTE* srcbuf, char* 
 			offset = ntohs(*(WORD*)p);
 			(*p) |= 0xC0;
 			dns_name(name, namelen, maxlen, srcbuf, (char*)srcbuf + offset);
-			return(len + 2);
+			return len + 2;
 		}
 		plen = (*p);
 		if ((*namelen) + plen > maxlen)
@@ -127,7 +127,7 @@ size_t dns_name(char* name, size_t* namelen, size_t maxlen, BYTE* srcbuf, char* 
 		len += plen;
 	}
 	name[(*namelen)++] = 0;
-	return(len + 1);
+	return len + 1;
 }
 
 #if defined(MX_LOOKUP_TEST)
@@ -175,7 +175,7 @@ int dns_getmx(char* name, char* mx, char* mx2
 
 	sock = socket(AF_INET, use_tcp ? SOCK_STREAM : SOCK_DGRAM, IPPROTO_IP);
 	if (sock == INVALID_SOCKET)
-		return(SOCKET_ERRNO);
+		return SOCKET_ERRNO;
 
 	mail_open_socket(sock, "dns");
 
@@ -187,7 +187,7 @@ int dns_getmx(char* name, char* mx, char* mx2
 
 	if (result != 0) {
 		mail_close_socket(&sock, &sess);
-		return(SOCKET_ERRNO);
+		return SOCKET_ERRNO;
 	}
 
 	memset(&addr, 0, sizeof(addr));
@@ -197,7 +197,7 @@ int dns_getmx(char* name, char* mx, char* mx2
 
 	if ((result = connect(sock, (struct sockaddr *)&addr, sizeof(addr))) != 0) {
 		mail_close_socket(&sock, &sess);
-		return(SOCKET_ERRNO);
+		return SOCKET_ERRNO;
 	}
 
 	memset(&msghdr, 0, sizeof(msghdr));
@@ -241,7 +241,7 @@ int dns_getmx(char* name, char* mx, char* mx2
 	if (!socket_writable(sock, timeout * 1000)) {
 		result = -1;
 		mail_close_socket(&sock, &sess);
-		return(result);
+		return result;
 	}
 
 	/* send query */
@@ -256,14 +256,14 @@ int dns_getmx(char* name, char* mx, char* mx2
 		else
 			result = -2;
 		mail_close_socket(&sock, &sess);
-		return(result);
+		return result;
 	}
 
 	/* check for readability */
 	if (!socket_readable(sock, timeout * 1000)) {
 		result = -1;
 		mail_close_socket(&sock, &sess);
-		return(result);
+		return result;
 	}
 
 	/* receive response */
@@ -334,7 +334,7 @@ int dns_getmx(char* name, char* mx, char* mx2
 		strcpy(mx, name);
 	}
 	mail_close_socket(&sock, &sess);
-	return(0);
+	return 0;
 }
 
 #ifdef MX_LOOKUP_TEST

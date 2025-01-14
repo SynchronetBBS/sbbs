@@ -38,7 +38,7 @@ char *utos(char *str)
 		else
 			out[i] = str[i];
 	out[i] = 0;
-	return(out);
+	return out;
 }
 
 static bool code_prefix_exists(const char* prefix)

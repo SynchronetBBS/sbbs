@@ -1773,7 +1773,7 @@ static JSBool js_filebase_resolve(JSContext *cx, JSObject *obj, jsid id)
 
 static JSBool js_filebase_enumerate(JSContext *cx, JSObject *obj)
 {
-	return(js_filebase_resolve(cx, obj, JSID_VOID));
+	return js_filebase_resolve(cx, obj, JSID_VOID);
 }
 
 JSClass js_filebase_class = {

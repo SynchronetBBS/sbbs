@@ -699,7 +699,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 				break;
 		}
 	}
-	return(result);
+	return result;
 }
 
 bool sbbs_t::chk_ar(const uchar *ar, user_t* user, client_t* client)
@@ -707,9 +707,9 @@ bool sbbs_t::chk_ar(const uchar *ar, user_t* user, client_t* client)
 	const uchar *p;
 
 	if (ar == NULL)
-		return(true);
+		return true;
 	p = ar;
-	return(ar_exp(&p, user, client));
+	return ar_exp(&p, user, client);
 }
 
 /****************************************************************************/
@@ -789,16 +789,16 @@ int sbbs_t::getusrgrp(int subnum)
 	int ugrp;
 
 	if (!subnum_is_valid(subnum))
-		return(0);
+		return 0;
 
 	if (usrgrps <= 0)
-		return(0);
+		return 0;
 
 	for (ugrp = 0; ugrp < usrgrps; ugrp++)
 		if (usrgrp[ugrp] == cfg.sub[subnum]->grp)
 			break;
 
-	return(ugrp + 1);
+	return ugrp + 1;
 }
 
 int sbbs_t::getusrsub(int subnum)
@@ -808,13 +808,13 @@ int sbbs_t::getusrsub(int subnum)
 
 	ugrp = getusrgrp(subnum);
 	if (ugrp <= 0)
-		return(0);
+		return 0;
 	ugrp--;
 	for (usub = 0; usub < usrsubs[ugrp]; usub++)
 		if (usrsub[ugrp][usub] == subnum)
 			break;
 
-	return(usub + 1);
+	return usub + 1;
 }
 
 int sbbs_t::getusrlib(int dirnum)

@@ -297,7 +297,7 @@ static bool lzh_getbit(lzh_decode_t* lzh, const uint8_t *inbuf, uint32_t *incnt,
 	ret = !!(lzh->getbuf & 0x8000);
 	lzh->getbuf <<= 1;
 	lzh->getlen--;
-	return (ret);
+	return ret;
 }
 
 static uint8_t lzh_getbyte(lzh_decode_t* lzh, const uint8_t *inbuf, uint32_t *incnt, uint32_t inlen)   /* get a byte */
@@ -596,7 +596,7 @@ uint32_t lzh_encode(const uint8_t *inbuf, uint32_t inlen, uint8_t *outbuf, size_
 	inlen = LE_INT32(inlen);
 	outlen = sizeof(inlen);
 	if (!inlen)
-		return(0);
+		return 0;
 	lzh_start_huff(&lzh.huff);
 	lzh_init_tree(&lzh);
 	s = 0;
@@ -648,7 +648,7 @@ uint32_t lzh_encode(const uint8_t *inbuf, uint32_t inlen, uint8_t *outbuf, size_
 	printf("output/input: %.3f\n", (double)outlen / inlen);
 */
 
-	return(outlen);
+	return outlen;
 }
 
 /* Decoding/Uncompressing */
@@ -672,7 +672,7 @@ uint32_t lzh_decode(const uint8_t *inbuf, uint32_t inlen, uint8_t *outbuf, size_
 		return 0;
 	incnt += sizeof(textsize);
 	if (textsize == 0)
-		return(textsize);
+		return textsize;
 	lzh_start_huff(&lzh.huff);
 	for (i = 0; i < LZH_STRBUF_SZ - LZH_LOOKAHD_SZ; i++)
 		*(lzh.text_buf + i) = ' ';
@@ -712,7 +712,7 @@ uint32_t lzh_decode(const uint8_t *inbuf, uint32_t inlen, uint8_t *outbuf, size_
 	printf("%12ld\n", count);
 ***/
 
-	return(count);
+	return count;
 }
 
 #ifdef LZH_TEST

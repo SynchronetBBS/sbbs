@@ -669,20 +669,20 @@ int sbbs_t::searchup(char *search, int usernum)
 	uint i = usernum + 1;
 
 	if (!search[0])
-		return(usernum);
+		return usernum;
 	if ((file = openuserdat(&cfg, /* for_modify: */ FALSE)) < 0)
-		return(usernum);
+		return usernum;
 
 	while (readuserdat(&cfg, i, userdat, sizeof(userdat), file, /* leave_locked: */ FALSE) == 0) {
 		strupr(userdat);
 		if (strstr(userdat, search)) {
 			close(file);
-			return(i);
+			return i;
 		}
 		i++;
 	}
 	close(file);
-	return(usernum);
+	return usernum;
 }
 
 /****************************************************************************/
@@ -699,20 +699,20 @@ int sbbs_t::searchdn(char *search, int usernum)
 	uint i = usernum - 1;
 
 	if (!search[0])
-		return(usernum);
+		return usernum;
 	if ((file = openuserdat(&cfg, /* for_modify: */ FALSE)) < 0)
-		return(usernum);
+		return usernum;
 
 	while (i > 0 && readuserdat(&cfg, i, userdat, sizeof(userdat), file, /* leave_locked: */ FALSE) == 0) {
 		strupr(userdat);
 		if (strstr(userdat, search)) {
 			close(file);
-			return(i);
+			return i;
 		}
 		i--;
 	}
 	close(file);
-	return(usernum);
+	return usernum;
 }
 
 /****************************************************************************/

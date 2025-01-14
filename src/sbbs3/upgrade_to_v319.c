@@ -56,10 +56,10 @@ BOOL overwrite(const char* path)
 		if (fgets(str, sizeof(str), stdin) == NULL)
 			*str = '\0';
 		if (toupper(*str) != 'Y')
-			return(FALSE);
+			return FALSE;
 	}
 
-	return(TRUE);
+	return TRUE;
 }
 
 int lprintf(int level, const char *fmt, ...)
@@ -71,7 +71,7 @@ int lprintf(int level, const char *fmt, ...)
 	vsnprintf(sbuf, sizeof(sbuf), fmt, argptr);
 	sbuf[sizeof(sbuf) - 1] = 0;
 	va_end(argptr);
-	return(puts(sbuf));
+	return puts(sbuf);
 }
 
 /****************************************************************************/
@@ -85,7 +85,7 @@ long dstrtodate(scfg_t* cfg, char *instr)
 	struct tm tm;
 
 	if (!instr[0] || !strncmp(instr, "00/00/00", 8))
-		return(0);
+		return 0;
 
 	if (isdigit(instr[0]) && isdigit(instr[1])
 	    && isdigit(instr[3]) && isdigit(instr[4])
@@ -95,12 +95,12 @@ long dstrtodate(scfg_t* cfg, char *instr)
 		p = instr;    /* incorrectly formatted */
 		while (*p && isdigit(*p)) p++;
 		if (*p == 0)
-			return(0);
+			return 0;
 		p++;
 		day = p;
 		while (*p && isdigit(*p)) p++;
 		if (*p == 0)
-			return(0);
+			return 0;
 		p++;
 		sprintf(str, "%02u/%02u/%02u"
 		        , atoi(instr) % 100, atoi(day) % 100, atoi(p) % 100);
@@ -118,7 +118,7 @@ long dstrtodate(scfg_t* cfg, char *instr)
 		tm.tm_mday = ((p[3] & 0xf) * 10) + (p[4] & 0xf);
 	}
 
-	return(((tm.tm_year + 1900) * 10000) + (tm.tm_mon * 100) + tm.tm_mday);
+	return ((tm.tm_year + 1900) * 10000) + (tm.tm_mon * 100) + tm.tm_mday;
 }
 
 /*****************************/
@@ -191,7 +191,7 @@ char* padfname(const char *filename, char *str)
 	while (d < 12)
 		str[d++] = ' ';
 	str[d] = 0;
-	return(str);
+	return str;
 }
 
 /****************************************************************************/
@@ -204,7 +204,7 @@ char* unpadfname(const char *filename, char *str)
 	for (c = 0, d = 0; filename[c]; c++)
 		if (filename[c] != ' ') str[d++] = filename[c];
 	str[d] = 0;
-	return(str);
+	return str;
 }
 
 /****************************************************************************/
@@ -225,7 +225,7 @@ char* getoldfilepath(scfg_t* cfg, oldfile_t* f, char* path)
 		if (fexistcase(tmp))
 			strcpy(path, tmp);
 	}
-	return(path);
+	return path;
 }
 
 int file_uldate_compare(const void* v1, const void* v2)
@@ -249,21 +249,21 @@ BOOL getfiledat(scfg_t* cfg, oldfile_t* f)
 
 	SAFEPRINTF2(str, "%s%s.dat", cfg->dir[f->dir]->data_dir, cfg->dir[f->dir]->code);
 	if ((file = sopen(str, O_RDONLY | O_BINARY, SH_DENYWR)) == -1) {
-		return(FALSE);
+		return FALSE;
 	}
 	length = (long)filelength(file);
 	if (f->datoffset > length) {
 		close(file);
-		return(FALSE);
+		return FALSE;
 	}
 	if (length % F_LEN) {
 		close(file);
-		return(FALSE);
+		return FALSE;
 	}
 	lseek(file, f->datoffset, SEEK_SET);
 	if (read(file, buf, F_LEN) != F_LEN) {
 		close(file);
-		return(FALSE);
+		return FALSE;
 	}
 	close(file);
 	getrec(buf, F_ALTPATH, 2, str);
@@ -297,7 +297,7 @@ BOOL getfiledat(scfg_t* cfg, oldfile_t* f)
 		f->misc = buf[F_MISC] - ' ';
 	else
 		f->misc = 0;
-	return(TRUE);
+	return TRUE;
 }
 
 /****************************************************************************/
@@ -324,28 +324,28 @@ BOOL putfiledat(scfg_t* cfg, oldfile_t* f)
 	putrec(buf, F_ALTPATH + 2, 2, "\r\n");
 	SAFEPRINTF2(str, "%s%s.dat", cfg->dir[f->dir]->data_dir, cfg->dir[f->dir]->code);
 	if ((file = sopen(str, O_WRONLY | O_BINARY, SH_DENYRW)) == -1) {
-		return(FALSE);
+		return FALSE;
 	}
 	length = (long)filelength(file);
 	if (length % F_LEN) {
 		close(file);
-		return(FALSE);
+		return FALSE;
 	}
 	if (f->datoffset > length) {
 		close(file);
-		return(FALSE);
+		return FALSE;
 	}
 	lseek(file, f->datoffset, SEEK_SET);
 	if (write(file, buf, F_LEN) != F_LEN) {
 		close(file);
-		return(FALSE);
+		return FALSE;
 	}
 	length = (long)filelength(file);
 	close(file);
 	if (length % F_LEN) {
-		return(FALSE);
+		return FALSE;
 	}
-	return(TRUE);
+	return TRUE;
 }
 
 /****************************************************************************/
@@ -362,21 +362,21 @@ BOOL getfileixb(scfg_t* cfg, oldfile_t* f)
 
 	SAFEPRINTF2(str, "%s%s.ixb", cfg->dir[f->dir]->data_dir, cfg->dir[f->dir]->code);
 	if ((file = sopen(str, O_RDONLY | O_BINARY, SH_DENYWR)) == -1) {
-		return(FALSE);
+		return FALSE;
 	}
 	length = (long)filelength(file);
 	if (length % F_IXBSIZE) {
 		close(file);
-		return(FALSE);
+		return FALSE;
 	}
 	if ((ixbbuf = (uchar *)malloc(length)) == NULL) {
 		close(file);
-		return(FALSE);
+		return FALSE;
 	}
 	if (read(file, ixbbuf, length) != length) {
 		close(file);
 		free(ixbbuf);
-		return(FALSE);
+		return FALSE;
 	}
 	close(file);
 	SAFECOPY(fname, f->name);
@@ -389,7 +389,7 @@ BOOL getfileixb(scfg_t* cfg, oldfile_t* f)
 	}
 	if (l >= length) {
 		free(ixbbuf);
-		return(FALSE);
+		return FALSE;
 	}
 	l += 11;
 	f->datoffset = ixbbuf[l] | ((long)ixbbuf[l + 1] << 8) | ((long)ixbbuf[l + 2] << 16);
@@ -398,7 +398,7 @@ BOOL getfileixb(scfg_t* cfg, oldfile_t* f)
 	f->datedled = ixbbuf[l + 7] | ((long)ixbbuf[l + 8] << 8)
 	              | ((long)ixbbuf[l + 9] << 16) | ((long)ixbbuf[l + 10] << 24);
 	free(ixbbuf);
-	return(TRUE);
+	return TRUE;
 }
 
 /****************************************************************************/
@@ -413,21 +413,21 @@ BOOL putfileixb(scfg_t* cfg, oldfile_t* f)
 
 	SAFEPRINTF2(str, "%s%s.ixb", cfg->dir[f->dir]->data_dir, cfg->dir[f->dir]->code);
 	if ((file = sopen(str, O_RDWR | O_BINARY, SH_DENYRW)) == -1) {
-		return(FALSE);
+		return FALSE;
 	}
 	length = (long)filelength(file);
 	if (length % F_IXBSIZE) {
 		close(file);
-		return(FALSE);
+		return FALSE;
 	}
 	if ((ixbbuf = (uchar *)malloc(length)) == NULL) {
 		close(file);
-		return(FALSE);
+		return FALSE;
 	}
 	if (read(file, ixbbuf, length) != length) {
 		close(file);
 		free(ixbbuf);
-		return(FALSE);
+		return FALSE;
 	}
 	SAFECOPY(fname, f->name);
 	for (l = 8; l < 12; l++)   /* Turn FILENAME.EXT into FILENAMEEXT */
@@ -441,7 +441,7 @@ BOOL putfileixb(scfg_t* cfg, oldfile_t* f)
 
 	if (l >= length) {
 		close(file);
-		return(FALSE);
+		return FALSE;
 	}
 
 	lseek(file, l + 11 + 3, SEEK_SET);
@@ -451,7 +451,7 @@ BOOL putfileixb(scfg_t* cfg, oldfile_t* f)
 
 	close(file);
 
-	return(TRUE);
+	return TRUE;
 }
 
 int openextdesc(scfg_t* cfg, uint dirnum)
@@ -519,11 +519,11 @@ int update_uldate(scfg_t* cfg, oldfile_t* f)
 	/*******************/
 	SAFEPRINTF2(str, "%s%s.ixb", cfg->dir[f->dir]->data_dir, cfg->dir[f->dir]->code);
 	if ((file = nopen(str, O_RDWR)) == -1)
-		return(errno);
+		return errno;
 	length = (long)filelength(file);
 	if (length % F_IXBSIZE) {
 		close(file);
-		return(-1);
+		return -1;
 	}
 	SAFECOPY(fname, f->name);
 	for (i = 8; i < 12; i++)   /* Turn FILENAME.EXT into FILENAMEEXT */
@@ -535,7 +535,7 @@ int update_uldate(scfg_t* cfg, oldfile_t* f)
 	}
 	if (l >= length) {
 		close(file);
-		return(-2);
+		return -2;
 	}
 	lseek(file, l + 14, SEEK_SET);
 	my_write(file, &f->dateuled, 4);
@@ -546,11 +546,11 @@ int update_uldate(scfg_t* cfg, oldfile_t* f)
 	/*******************************************/
 	SAFEPRINTF2(str, "%s%s.dab", cfg->dir[f->dir]->data_dir, cfg->dir[f->dir]->code);
 	if ((file = nopen(str, O_WRONLY | O_CREAT)) == -1)
-		return(errno);
+		return errno;
 
 	my_write(file, &f->dateuled, 4);
 	close(file);
-	return(0);
+	return 0;
 }
 
 bool upgrade_file_bases(bool hash)

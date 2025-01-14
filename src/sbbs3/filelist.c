@@ -54,7 +54,7 @@ int lprintf(int level, const char *fmat, ...)
 	va_end(argptr);
 	truncsp(sbuf);
 	printf("%s\n", sbuf);
-	return(chcount);
+	return chcount;
 }
 
 char* byteStr(uint64_t value)
@@ -454,5 +454,5 @@ int main(int argc, char **argv)
 		fprintf(out, "TOTALS\n------\n%" PRIu64 " credits/bytes in %lu files.\n"
 		        , total_cdt, total_files);
 	printf("\nDone.\n");
-	return(0);
+	return 0;
 }

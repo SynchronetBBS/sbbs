@@ -262,11 +262,11 @@ static BOOL winsock_startup(void)
 	if ((status = WSAStartup(MAKEWORD(1, 1), &WSAData)) == 0) {
 		lprintf(LOG_DEBUG, "%s %s", WSAData.szDescription, WSAData.szSystemStatus);
 		WSAInitialized = TRUE;
-		return (TRUE);
+		return TRUE;
 	}
 
 	lprintf(LOG_CRIT, "!WinSock startup ERROR %d", status);
-	return (FALSE);
+	return FALSE;
 }
 
 #else /* No WINSOCK */
@@ -370,7 +370,7 @@ int mail_close_socket(SOCKET *sock, int *sess)
 		*sess = -1;
 	}
 	if (*sock == INVALID_SOCKET)
-		return(-1);
+		return -1;
 
 	shutdown(*sock, SHUT_RDWR);  /* required on Unix */
 	result = closesocket(*sock);
@@ -388,7 +388,7 @@ int mail_close_socket(SOCKET *sock, int *sess)
 
 	*sock = -1;
 
-	return(result);
+	return result;
 }
 
 int sockprintf(SOCKET sock, const char* prot, CRYPT_SESSION sess, char *fmt, ...)
@@ -400,14 +400,14 @@ int sockprintf(SOCKET sock, const char* prot, CRYPT_SESSION sess, char *fmt, ...
 
 	if (sock == INVALID_SOCKET) {
 		lprintf(LOG_WARNING, "%s !INVALID SOCKET in call to sockprintf", prot);
-		return(0);
+		return 0;
 	}
 
 	/* Check socket for writability */
 	if (!socket_writable(sock, 300000)) {
 		lprintf(LOG_NOTICE, "%04d %s !NOTICE socket did not become writable"
 		        , sock, prot);
-		return(0);
+		return 0;
 	}
 
 	va_start(argptr, fmt);
@@ -465,13 +465,13 @@ int sockprintf(SOCKET sock, const char* prot, CRYPT_SESSION sess, char *fmt, ...
 				else
 					lprintf(LOG_NOTICE, "%04d %s !ERROR %d sending on socket", sock, prot, SOCKET_ERRNO);
 				free(sbuf);
-				return(0);
+				return 0;
 			}
 			lprintf(LOG_WARNING, "%04d %s !ERROR: short send on socket: %d instead of %d", sock, prot, result, len);
 		}
 	}
 	free(sbuf);
-	return(len);
+	return len;
 }
 
 static void sockerror(SOCKET socket, const char* prot, int rd, const char* action)
@@ -521,7 +521,7 @@ static int sock_recvbyte(SOCKET sock, const char* prot, CRYPT_SESSION sess, char
 			if (startup->max_inactivity && (time(NULL) - start) > startup->max_inactivity) {
 				lprintf(LOG_WARNING, "%04d %s !TIMEOUT in sock_recvbyte (%u seconds):  INACTIVE SOCKET"
 				        , sock, prot, startup->max_inactivity);
-				return(-1);
+				return -1;
 			}
 		}
 	}
@@ -530,7 +530,7 @@ static int sock_recvbyte(SOCKET sock, const char* prot, CRYPT_SESSION sess, char
 			if (startup->max_inactivity && (time(NULL) - start) > startup->max_inactivity) {
 				lprintf(LOG_WARNING, "%04d %s !TIMEOUT in sock_recvbyte (%u seconds):  INACTIVE SOCKET"
 				        , sock, prot, startup->max_inactivity);
-				return(-1);
+				return -1;
 			}
 			return 0;
 		}
@@ -553,20 +553,20 @@ static int sockreadline(SOCKET socket, const char* prot, CRYPT_SESSION sess, cha
 
 	if (socket == INVALID_SOCKET) {
 		lprintf(LOG_WARNING, "%s !INVALID SOCKET in call to sockreadline", prot);
-		return(-1);
+		return -1;
 	}
 
 	while (rd < len - 1) {
 
 		if (terminated || terminate_server) {
 			lprintf(LOG_WARNING, "%04d %s !ABORTING sockreadline", socket, prot);
-			return(-1);
+			return -1;
 		}
 
 		i = sock_recvbyte(socket, prot, sess, &ch, start);
 
 		if (i < 1)
-			return(-1);
+			return -1;
 
 		if (ch == '\n' /* && rd>=1 */) { /* Mar-9-2003: terminate on sole LF */
 			break;
@@ -577,7 +577,7 @@ static int sockreadline(SOCKET socket, const char* prot, CRYPT_SESSION sess, cha
 		rd--;
 	buf[rd] = 0;
 
-	return(rd);
+	return rd;
 }
 
 static BOOL sockgetrsp(SOCKET socket, const char* prot, CRYPT_SESSION sess, char* rsp, char *buf, int len)
@@ -589,7 +589,7 @@ static BOOL sockgetrsp(SOCKET socket, const char* prot, CRYPT_SESSION sess, char
 		if (rd < 1) {
 			if (rd == 0 && rsp != NULL)
 				lprintf(LOG_NOTICE, "%04d %s !RECEIVED BLANK RESPONSE, Expected '%s'", socket, prot, rsp);
-			return(FALSE);
+			return FALSE;
 		}
 		if (buf[3] == '-') { /* Multi-line response */
 			if (startup->options & MAIL_OPT_DEBUG_RX_RSP)
@@ -598,13 +598,13 @@ static BOOL sockgetrsp(SOCKET socket, const char* prot, CRYPT_SESSION sess, char
 		}
 		if (rsp != NULL && strnicmp(buf, rsp, strlen(rsp))) {
 			lprintf(LOG_NOTICE, "%04d %s !INVALID RESPONSE: '%s' Expected: '%s'", socket, prot, buf, rsp);
-			return(FALSE);
+			return FALSE;
 		}
 		break;
 	}
 	if (startup->options & MAIL_OPT_DEBUG_RX_RSP)
 		lprintf(LOG_DEBUG, "%04d %s RX: %s", socket, prot, buf);
-	return(TRUE);
+	return TRUE;
 }
 
 static int sockgetrsp_opt(SOCKET socket, const char* prot, CRYPT_SESSION sess, char* rsp, char *opt, char *buf, int len)
@@ -625,7 +625,7 @@ static int sockgetrsp_opt(SOCKET socket, const char* prot, CRYPT_SESSION sess, c
 			if (rd == 0)
 				lprintf(LOG_NOTICE, "%04d %s !RECEIVED BLANK RESPONSE, Expected '%s'", socket, prot, rsp);
 			free(mopt);
-			return(-1);
+			return -1;
 		}
 		if (buf[3] == '-') { /* Multi-line response */
 			if (strncmp(buf, mopt, moptlen) == 0)
@@ -637,7 +637,7 @@ static int sockgetrsp_opt(SOCKET socket, const char* prot, CRYPT_SESSION sess, c
 		if (strnicmp(buf, rsp, strlen(rsp))) {
 			lprintf(LOG_NOTICE, "%04d %s !INVALID RESPONSE: '%s' Expected: '%s'", socket, prot, buf, rsp);
 			free(mopt);
-			return(-1);
+			return -1;
 		}
 		break;
 	}
@@ -647,7 +647,7 @@ static int sockgetrsp_opt(SOCKET socket, const char* prot, CRYPT_SESSION sess, c
 	free(mopt);
 	if (startup->options & MAIL_OPT_DEBUG_RX_RSP)
 		lprintf(LOG_DEBUG, "%04d %s RX: %s", socket, prot, buf);
-	return(ret);
+	return ret;
 }
 
 /* non-standard, but documented (mostly) in draft-newman-msgheader-originfo-05 */
@@ -752,15 +752,15 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 
 	if (msg->reverse_path != NULL)
 		if (!sockprintf(socket, prot, sess, "Return-Path: %s", msg->reverse_path))
-			return(0);
+			return 0;
 
 	for (i = 0; i < msg->total_hfields; i++)
 		if (msg->hfield[i].type == SMTPRECEIVED && msg->hfield_dat[i] != NULL)
 			if (!sockprintf(socket, prot, sess, "Received: %s", (char*)msg->hfield_dat[i]))
-				return(0);
+				return 0;
 
 	if (!sockprintf(socket, prot, sess, "Date: %s", msgdate(msg->hdr.when_written, date)))
-		return(0);
+		return 0;
 
 	if ((p = smb_get_hfield(msg, RFC822FROM, NULL)) != NULL)
 		s = sockprintf(socket, prot, sess, "From: %s", p); /* use original RFC822 header field */
@@ -773,21 +773,21 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 		               , angle_bracket(tmp, sizeof(tmp), fromaddr));
 	}
 	if (!s)
-		return(0);
+		return 0;
 
 	if ((p = smb_get_hfield(msg, RFC822ORG, NULL)) != NULL) {
 		if (!sockprintf(socket, prot, sess, "Organization: %s", p))
-			return(0);
+			return 0;
 	} else {
 		if (msg->from_org != NULL || msg->from_net.type == NET_NONE)
 			if (!sockprintf(socket, prot, sess, "Organization: %s"
 			                , encode_header_field(msg->from_org == NULL ? scfg.sys_name : msg->from_org, encoded_text, sizeof encoded_text, msg)))
-				return(0);
+				return 0;
 	}
 
 	p = smb_get_hfield(msg, RFC822SUBJECT, NULL);
 	if (!sockprintf(socket, prot, sess, "Subject: %s", p == NULL ? encode_header_field(msg->subj, encoded_text, sizeof encoded_text, msg) : p))
-		return(0);
+		return 0;
 
 	if ((p = smb_get_hfield(msg, RFC822TO, NULL)) != NULL)
 		s = sockprintf(socket, prot, sess, "To: %s", p); /* use original RFC822 header field (MIME-Encoded) */
@@ -811,10 +811,10 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 		}
 	}
 	if (!s)
-		return(0);
+		return 0;
 	if ((p = smb_get_hfield(msg, RFC822CC, NULL)) != NULL || msg->cc_list != NULL)
 		if (!sockprintf(socket, prot, sess, "Cc: %s", p == NULL ? msg->cc_list : p))
-			return(0);
+			return 0;
 	np = NULL;
 	p = smb_get_hfield(msg, RFC822REPLYTO, NULL);
 	if (p == NULL && (p = msg->replyto_list) == NULL) {
@@ -829,16 +829,16 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 			s = sockprintf(socket, prot, sess, "Reply-To: %s", p);
 	}
 	if (!s)
-		return(0);
+		return 0;
 	if (!sockprintf(socket, prot, sess, "Message-ID: %s", get_msgid(&scfg, INVALID_SUB, msg, msgid, sizeof(msgid))))
-		return(0);
+		return 0;
 	if (msg->reply_id != NULL)
 		if (!sockprintf(socket, prot, sess, "In-Reply-To: %s", msg->reply_id))
-			return(0);
+			return 0;
 
 	if (msg->hdr.priority != SMB_PRIORITY_UNSPECIFIED)
 		if (!sockprintf(socket, prot, sess, "X-Priority: %u", (uint)msg->hdr.priority))
-			return(0);
+			return 0;
 
 	originator_info(socket, prot, sess, msg);
 
@@ -855,14 +855,14 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 			case FIDOFLAGS:
 			case FIDOTID:
 				if (!sockprintf(socket, prot, sess, "%s: %s", smb_hfieldtype(msg->hfield[i].type), (char*)msg->hfield_dat[i]))
-					return(0);
+					return 0;
 				break;
 		}
 	}
 	for (i = 0; i < msg->total_hfields; i++) {
 		if (msg->hfield[i].type == RFC822HEADER) {
 			if (!sockprintf(socket, prot, sess, "%s", (char*)msg->hfield_dat[i]))
-				return(0);
+				return 0;
 		}
 	}
 	const char* charset = msg->text_charset;
@@ -889,7 +889,7 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 		}
 	}
 	if (!sockprintf(socket, prot, sess, ""))    /* Header Terminator */
-		return(0);
+		return 0;
 
 	/* MESSAGE BODY */
 	lines = 0;
@@ -941,7 +941,7 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 		}
 	}
 	sockprintf(socket, prot, sess, ".");   /* End of text */
-	return(lines);
+	return lines;
 }
 
 static ulong sockmsgtxt(SOCKET socket, const char* prot, CRYPT_SESSION sess, smbmsg_t* msg, char* msgtxt, ulong maxlines)
@@ -995,7 +995,7 @@ static ulong sockmsgtxt(SOCKET socket, const char* prot, CRYPT_SESSION sess, smb
 	if (boundary != NULL)
 		free(boundary);
 
-	return(retval);
+	return retval;
 }
 
 static in_addr_t resolve_ip(const char *inaddr)
@@ -1019,7 +1019,7 @@ static in_addr_t resolve_ip(const char *inaddr)
 		if (*p != '.' && !IS_DIGIT(*p))
 			break;
 	if (!(*p))
-		return(inet_addr(addr));
+		return inet_addr(addr);
 
 	if ((host = gethostbyname(inaddr)) == NULL)
 		return INADDR_NONE;
@@ -1902,7 +1902,7 @@ static in_addr_t rblchk(SOCKET sock, const char* prot, union xp_sockaddr *addr, 
 	lprintf(LOG_DEBUG, "%04d %s DNSBL Query: %s", sock, prot, name);
 
 	if ((host = gethostbyname(name)) == NULL)
-		return(0);
+		return 0;
 
 	if (host->h_addr_list[0] == NULL)
 		return 0;
@@ -1911,7 +1911,7 @@ static in_addr_t rblchk(SOCKET sock, const char* prot, union xp_sockaddr *addr, 
 	lprintf(LOG_INFO, "%04d %s DNSBL Query: %s resolved to: %s"
 	        , sock, prot, name, inet_ntoa(dnsbl_result));
 
-	return(dnsbl_result.s_addr);
+	return dnsbl_result.s_addr;
 }
 
 static ulong dns_blacklisted(SOCKET sock, const char* prot, union xp_sockaddr *addr, char* host_name, char* list, char* dnsbl_ip)
@@ -1927,11 +1927,11 @@ static ulong dns_blacklisted(SOCKET sock, const char* prot, union xp_sockaddr *a
 	SAFEPRINTF(fname, "%sdnsbl_exempt.cfg", scfg.ctrl_dir);
 	inet_addrtop(addr, ip, sizeof(ip));
 	if (find2strs(ip, host_name, fname, NULL))
-		return(FALSE);
+		return FALSE;
 
 	SAFEPRINTF(fname, "%sdns_blacklist.cfg", scfg.ctrl_dir);
 	if ((fp = fopen(fname, "r")) == NULL)
-		return(FALSE);
+		return FALSE;
 
 	while (!feof(fp) && !found) {
 		if (fgets(str, sizeof(str), fp) == NULL)
@@ -1956,7 +1956,7 @@ static ulong dns_blacklisted(SOCKET sock, const char* prot, union xp_sockaddr *a
 	if (found)
 		strcpy(dnsbl_ip, ip);
 
-	return(found);
+	return found;
 }
 
 static void parse_mail_address(const char* p
@@ -2013,13 +2013,13 @@ static BOOL chk_email_addr(SOCKET socket, const char* prot, char* p, char* host_
 
 	struct trash trash;
 	if (!trashcan2(&scfg, name, addr, "email", &trash))
-		return(TRUE);
+		return TRUE;
 	char         details[128];
 	lprintf(LOG_NOTICE, "%04d %s [%s] !BLOCKED %s e-mail address: %s %s"
 	        , socket, prot, host_ip, source, p, trash_details(&trash, details, sizeof details));
 	SAFEPRINTF2(tmp, "Blocked %s e-mail address: %s", source, p);
 	spamlog(&scfg, &mqtt, (char*)prot, "REFUSED", tmp, host_name, host_ip, to, from);
-	return(FALSE);
+	return FALSE;
 }
 
 static BOOL email_addr_is_exempt(const char* addr)
@@ -2182,7 +2182,7 @@ static char* mailcmdstr(char* instr, char* msgpath, char* newpath, char* logpath
 	}
 	cmd[j] = 0;
 
-	return(cmd);
+	return cmd;
 }
 #ifdef JAVASCRIPT
 
@@ -2253,7 +2253,7 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((p = (private_t*)JS_GetContextPrivate(cx)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	if (JSVAL_IS_NUMBER(argv[i])) {
 		if (!JS_ValueToInt32(cx, argv[i++], &level))
@@ -2264,7 +2264,7 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 		JSVALUE_TO_RASTRING(cx, argv[i], lstr, &lstr_sz, NULL);
 		HANDLE_PENDING(cx, lstr);
 		if (lstr == NULL)
-			return(JS_TRUE);
+			return JS_TRUE;
 		rc = JS_SUSPENDREQUEST(cx);
 		lprintf(level, "%04d %s %s %s"
 		        , p->sock, p->log_prefix, p->proc_name, lstr);
@@ -2275,7 +2275,7 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 	if (lstr)
 		free(lstr);
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -2289,11 +2289,11 @@ js_alert(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((p = (private_t*)JS_GetContextPrivate(cx)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], line, NULL);
 	if (line == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	rc = JS_SUSPENDREQUEST(cx);
 	lprintf(LOG_ERR, "%04d %s %s %s"
@@ -2303,7 +2303,7 @@ js_alert(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, argv[0]);
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 
@@ -2500,7 +2500,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 
 	JS_ENDREQUEST(*js_cx);
 
-	return(success);
+	return success;
 }
 
 void js_cleanup(JSRuntime* js_runtime, JSContext* js_cx, JSObject** js_glob)
@@ -2749,7 +2749,7 @@ static int chk_received_hdr(SOCKET socket, const char* prot, const char *buf, IN
 
 	fromstr = strdup(buf);
 	if (fromstr == NULL)
-		return(0);
+		return 0;
 	strlwr(fromstr);
 	do {
 		p = strstr(fromstr, "from ");
@@ -2798,7 +2798,7 @@ static int chk_received_hdr(SOCKET socket, const char* prot, const char *buf, IN
 			        , socket, prot, ip, dnsbl, host_name, inet_ntoa(*dnsbl_result));
 	} while (0);
 	free(fromstr);
-	return(dnsbl_result->s_addr);
+	return dnsbl_result->s_addr;
 }
 
 static BOOL checktag(scfg_t *scfg, char *tag, uint usernum)
@@ -2806,9 +2806,9 @@ static BOOL checktag(scfg_t *scfg, char *tag, uint usernum)
 	char fname[MAX_PATH + 1];
 
 	if (tag == NULL)
-		return(FALSE);
+		return FALSE;
 	SAFEPRINTF2(fname, "%suser/%04d.smtpblock", scfg->data_dir, usernum);
-	return(findstr(tag, fname));
+	return findstr(tag, fname);
 }
 
 static BOOL smtp_splittag(char *in, char **name, char **tag)
@@ -2816,14 +2816,14 @@ static BOOL smtp_splittag(char *in, char **name, char **tag)
 	char *last;
 
 	if (in == NULL)
-		return(FALSE);
+		return FALSE;
 
 	*name = strtok_r(in, "#", &last);
 	if (*name) {
 		*tag = strtok_r(NULL, "", &last);
-		return(TRUE);
+		return TRUE;
 	}
-	return(FALSE);
+	return FALSE;
 }
 
 static uint smtp_matchuser(scfg_t *scfg, char *str, BOOL aliases, BOOL datdupe)
@@ -2834,7 +2834,7 @@ static uint smtp_matchuser(scfg_t *scfg, char *str, BOOL aliases, BOOL datdupe)
 	uint  usernum = 0;
 
 	if (!user)
-		return(0);
+		return 0;
 
 	if (!smtp_splittag(user, &name, &tag))
 		goto end;
@@ -2852,7 +2852,7 @@ static uint smtp_matchuser(scfg_t *scfg, char *str, BOOL aliases, BOOL datdupe)
 
 end:
 	free(user);
-	return(usernum);
+	return usernum;
 }
 
 #define WITH_ESMTP  (1 << 0)
@@ -5137,11 +5137,11 @@ BOOL bounce(SOCKET sock, smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 	if ((i = smb_updatemsg(smb, msg)) != SMB_SUCCESS) {
 		errprintf(LOG_ERR, WHERE, "%04d SEND !BOUNCE ERROR %d (%s) incrementing delivery attempt counter of message #%u"
 		          , sock, i, smb->last_error, msg->hdr.number);
-		return(FALSE);
+		return FALSE;
 	}
 
 	if (!immediate && msg->hdr.delivery_attempts < startup->max_delivery_attempts)
-		return(TRUE);
+		return TRUE;
 
 	newmsg = *msg;
 	/* Mark original message as deleted */
@@ -5156,7 +5156,7 @@ BOOL bounce(SOCKET sock, smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 	if (i != SMB_SUCCESS) {
 		errprintf(LOG_ERR, WHERE, "%04d SEND !BOUNCE ERROR %d (%s) deleting message"
 		          , sock, i, smb->last_error);
-		return(FALSE);
+		return FALSE;
 	}
 
 	if (msg->from_agent == AGENT_SMTPSYSMSG    /* don't bounce 'bounce messages' */
@@ -5164,7 +5164,7 @@ BOOL bounce(SOCKET sock, smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 	    || (msg->idx.from == 0 && msg->from_net.type == NET_NONE)
 	    || (msg->reverse_path != NULL && *msg->reverse_path == 0)) {
 		lprintf(LOG_NOTICE, "%04d SEND !Deleted undeliverable message from %s", sock, msg->from);
-		return(TRUE);
+		return TRUE;
 	}
 
 	newmsg.hfield = NULL;
@@ -5237,7 +5237,7 @@ BOOL bounce(SOCKET sock, smb_t* smb, smbmsg_t* msg, char* err, BOOL immediate)
 	newmsg.hdr.total_dfields = 0;
 	smb_freemsgmem(&newmsg);
 
-	return(TRUE);
+	return TRUE;
 }
 
 static int remove_msg_intransit(smb_t* smb, smbmsg_t* msg)
@@ -5247,7 +5247,7 @@ static int remove_msg_intransit(smb_t* smb, smbmsg_t* msg)
 	if ((i = smb_lockmsghdr(smb, msg)) != SMB_SUCCESS) {
 		lprintf(LOG_WARNING, "0000 SEND !ERROR %d (%s) locking message header #%u"
 		        , i, smb->last_error, msg->idx.number);
-		return(i);
+		return i;
 	}
 	msg->hdr.netattr &= ~NETMSG_INTRANSIT;
 	i = smb_putmsghdr(smb, msg);
@@ -5257,7 +5257,7 @@ static int remove_msg_intransit(smb_t* smb, smbmsg_t* msg)
 		errprintf(LOG_ERR, WHERE, "0000 SEND !ERROR %d (%s) writing message header #%u"
 		          , i, smb->last_error, msg->idx.number);
 
-	return(i);
+	return i;
 }
 
 void get_dns_server(char* dns_server, size_t len)
@@ -6053,7 +6053,7 @@ const char* mail_ver(void)
 	        , GIT_DATE, compiler
 	        );
 
-	return(ver);
+	return ver;
 }
 
 void mail_server(void* arg)

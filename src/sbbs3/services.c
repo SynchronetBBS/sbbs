@@ -184,11 +184,11 @@ static bool winsock_startup(void)
 	if ((status = WSAStartup(MAKEWORD(1, 1), &WSAData)) == 0) {
 		lprintf(LOG_DEBUG, "%s %s", WSAData.szDescription, WSAData.szSystemStatus);
 		WSAInitialized = true;
-		return (true);
+		return true;
 	}
 
 	lprintf(LOG_CRIT, "!WinSock startup ERROR %d", status);
-	return (false);
+	return false;
 }
 
 #else /* No WINSOCK */
@@ -226,7 +226,7 @@ static ulong active_clients(void)
 	for (i = 0; i < services; i++)
 		total_clients += protected_uint32_value(service[i].clients);
 
-	return(total_clients);
+	return total_clients;
 }
 
 static void update_clients(void)
@@ -296,7 +296,7 @@ static SOCKET open_socket(int family, int type, service_t* serv)
 	sock = socket(family, type, IPPROTO_IP);
 	if (sock != INVALID_SOCKET)
 		open_socket_cb(sock, serv);
-	return(sock);
+	return sock;
 }
 
 static int close_socket(SOCKET sock)
@@ -305,7 +305,7 @@ static int close_socket(SOCKET sock)
 	int  result;
 
 	if (sock == INVALID_SOCKET)
-		return(-1);
+		return -1;
 
 	shutdown(sock, SHUT_RDWR);   /* required on Unix */
 	result = closesocket(sock);
@@ -314,7 +314,7 @@ static int close_socket(SOCKET sock)
 	if (result != 0)
 		lprintf(LOG_WARNING, "%04d !ERROR %d closing socket: %s", sock, SOCKET_ERRNO, SOCKET_STRERROR(err, sizeof(err)));
 
-	return(result);
+	return result;
 }
 
 /* Global JavaScript Methods */
@@ -333,10 +333,10 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((client = (service_client_t*)JS_GetContextPrivate(cx)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	if (startup == NULL || startup->lputs == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	if (argc > 1 && JSVAL_IS_NUMBER(argv[i])) {
 		if (!JS_ValueToInt32(cx, argv[i++], &level))
@@ -348,7 +348,7 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 		JSVALUE_TO_MSTRING(cx, argv[i], line, NULL);
 		HANDLE_PENDING(cx, line);
 		if (line == NULL)
-			return(JS_FALSE);
+			return JS_FALSE;
 		strncat(str, line, sizeof(str) / 2);
 		free(line);
 		strcat(str, " ");
@@ -367,7 +367,7 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(JS_NewStringCopyZ(cx, str)));
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static void badlogin(SOCKET sock, char* user, char* passwd, client_t* client, union xp_sockaddr* addr)
@@ -414,18 +414,18 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(JS_FALSE));
 
 	if ((client = (service_client_t*)JS_GetContextPrivate(cx)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	/* User name or number */
 	JSVALUE_TO_ASTRING(cx, argv[0], user, 128, NULL);
 	if (user == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	/* Password */
 	if (argc > 1) {
 		JSVALUE_TO_ASTRING(cx, argv[1], pass, LEN_PASS + 2, NULL);
 		if (pass == NULL)
-			return(JS_FALSE);
+			return JS_FALSE;
 	}
 	rc = JS_SUSPENDREQUEST(cx);
 	memset(&client->user, 0, sizeof(user_t));
@@ -444,14 +444,14 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 		        , client->socket, client->service->protocol, user);
 		badlogin(client->socket, user, pass, client->client, &client->addr);
 		JS_RESUMEREQUEST(cx, rc);
-		return(JS_TRUE);
+		return JS_TRUE;
 	}
 
 	if (client->user.misc & (DELETED | INACTIVE)) {
 		lprintf(LOG_WARNING, "%04d %s !DELETED OR INACTIVE USER #%d: %s"
 		        , client->socket, client->service->protocol, client->user.number, user);
 		JS_RESUMEREQUEST(cx, rc);
-		return(JS_TRUE);
+		return JS_TRUE;
 	}
 
 	/* Password */
@@ -460,21 +460,21 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 		        , client->socket, client->service->protocol, client->user.alias);
 		badlogin(client->socket, user, pass, client->client, &client->addr);
 		JS_RESUMEREQUEST(cx, rc);
-		return(JS_TRUE);
+		return JS_TRUE;
 	}
 	if (!chk_ars(&scfg, startup->login_ars, &client->user, client->client)) {
 		lprintf(LOG_NOTICE, "%04d %s <%s> !Insufficient server access: %s"
 		        , client->socket, client->service->protocol, client->user.alias, startup->login_ars);
 		badlogin(client->socket, user, NULL, client->client, &client->addr);
 		JS_RESUMEREQUEST(cx, rc);
-		return(JS_TRUE);
+		return JS_TRUE;
 	}
 	if (!chk_ars(&scfg, client->service->login_ars, &client->user, client->client)) {
 		lprintf(LOG_NOTICE, "%04d %s <%s> !Insufficient service access: %s"
 		        , client->socket, client->service->protocol, client->user.alias, client->service->login_ars);
 		badlogin(client->socket, user, NULL, client->client, &client->addr);
 		JS_RESUMEREQUEST(cx, rc);
-		return(JS_TRUE);
+		return JS_TRUE;
 	}
 
 	JS_RESUMEREQUEST(cx, rc);
@@ -545,7 +545,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 
 	mqtt_user_login(&mqtt, client->client);
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -559,10 +559,10 @@ js_logout(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(JS_FALSE));
 
 	if ((client = (service_client_t*)JS_GetContextPrivate(cx)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	if (client->user.number < 1)   /* Not logged in */
-		return(JS_TRUE);
+		return JS_TRUE;
 
 	rc = JS_SUSPENDREQUEST(cx);
 	if (!logoutuserdat(&scfg, &client->user, time(NULL), client->logintime))
@@ -582,7 +582,7 @@ js_logout(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(JS_TRUE));
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 /*
@@ -714,7 +714,7 @@ js_client_add(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((service_client = (service_client_t*)JS_GetContextPrivate(cx)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	protected_uint32_adjust(&service_client->service->clients, 1);
 	update_clients();
@@ -757,7 +757,7 @@ js_client_add(JSContext *cx, uintN argc, jsval *arglist)
 	if (cstr)
 		free(cstr);
 	JS_RESUMEREQUEST(cx, rc);
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -775,7 +775,7 @@ js_client_update(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((service_client = (service_client_t*)JS_GetContextPrivate(cx)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	memset(&client, 0, sizeof(client));
 	client.size = sizeof(client);
@@ -811,7 +811,7 @@ js_client_update(JSContext *cx, uintN argc, jsval *arglist)
 	if (cstr)
 		free(cstr);
 	JS_RESUMEREQUEST(cx, rc);
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 
@@ -826,7 +826,7 @@ js_client_remove(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((service_client = (service_client_t*)JS_GetContextPrivate(cx)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	sock = js_socket(cx, argv[0]);
 	if (sock < 0)
@@ -851,7 +851,7 @@ js_client_remove(JSContext *cx, uintN argc, jsval *arglist)
 	lprintf(LOG_DEBUG, "%s client_remove(%04u)"
 	        , service_client->service->protocol, sock);
 #endif
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSContext*
@@ -864,7 +864,7 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 
 	if ((js_cx = JS_NewContext(js_runtime, JAVASCRIPT_CONTEXT_STACK)) == NULL) {
 		errprintf(LOG_CRIT, WHERE, "%04d %s JavaScript: Failed to create new context", sock, service_client->service->protocol);
-		return(NULL);
+		return NULL;
 	}
 	JS_SetOptions(js_cx, startup->js.options);
 	JS_BEGINREQUEST(js_cx);
@@ -978,10 +978,10 @@ js_initcx(JSRuntime* js_runtime, SOCKET sock, service_client_t* service_client, 
 			JS_RemoveObjectRoot(js_cx, glob);
 		JS_ENDREQUEST(js_cx);
 		JS_DestroyContext(js_cx);
-		return(NULL);
+		return NULL;
 	}
 
-	return(js_cx);
+	return js_cx;
 }
 
 static JSBool
@@ -993,7 +993,7 @@ js_OperationCallback(JSContext *cx)
 	JS_SetOperationCallback(cx, NULL);
 	if ((client = (service_client_t*)JS_GetContextPrivate(cx)) == NULL) {
 		JS_SetOperationCallback(cx, js_OperationCallback);
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	/* Terminated? */
@@ -1001,7 +1001,7 @@ js_OperationCallback(JSContext *cx)
 		JS_ReportWarning(cx, "Terminated");
 		client->callback.counter = 0;
 		JS_SetOperationCallback(cx, js_OperationCallback);
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	ret = js_CommonOperationCallback(cx, &client->callback);
@@ -1687,7 +1687,7 @@ static service_t* read_services_ini(const char* services_ini, service_t* service
 
 	if ((fp = fopen(services_ini, "r")) == NULL) {
 		errprintf(LOG_CRIT, WHERE, "!ERROR %d (%s) opening %s", errno, strerror(errno), services_ini);
-		return(NULL);
+		return NULL;
 	}
 
 	lprintf(LOG_DEBUG, "Reading %s", services_ini);
@@ -1771,7 +1771,7 @@ static service_t* read_services_ini(const char* services_ini, service_t* service
 			errprintf(LOG_CRIT, WHERE, "!MALLOC FAILURE");
 			free(default_interfaces);
 			iniFreeStringList(sec_list);
-			return(service);
+			return service;
 		}
 		service = np;
 		service[*services] = serv;
@@ -1781,7 +1781,7 @@ static service_t* read_services_ini(const char* services_ini, service_t* service
 	iniFreeStringList(sec_list);
 	strListFree(&list);
 
-	return(service);
+	return service;
 }
 
 static void cleanup(int code)
@@ -1845,7 +1845,7 @@ const char* services_ver(void)
 	        , GIT_DATE, compiler
 	        );
 
-	return(ver);
+	return ver;
 }
 
 void service_udp_sock_cb(SOCKET sock, void *cbdata)

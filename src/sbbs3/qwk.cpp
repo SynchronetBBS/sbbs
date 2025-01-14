@@ -41,7 +41,7 @@ float ltomsbin(int32_t val)
 	sign = t.uc[3] / 0x80;
 	exp = ((t.ui[1] >> 7) - 0x7f + 0x81) & 0xff;
 	t.ui[1] = (t.ui[1] & 0x7f) | (sign << 7) | (exp << 8);
-	return(t.f[0]);
+	return t.f[0];
 }
 
 bool route_circ(char *via, char *id)
@@ -49,7 +49,7 @@ bool route_circ(char *via, char *id)
 	char str[256], *p, *sp;
 
 	if (via == NULL || id == NULL)
-		return(false);
+		return false;
 
 	SAFECOPY(str, via);
 	p = str;
@@ -58,12 +58,12 @@ bool route_circ(char *via, char *id)
 		sp = strchr(p, '/');
 		if (sp) *sp = 0;
 		if (!stricmp(p, id))
-			return(true);
+			return true;
 		if (!sp)
 			break;
 		p = sp + 1;
 	}
-	return(false);
+	return false;
 }
 
 extern "C" int qwk_route(scfg_t* cfg, const char *inaddr, char *fulladdr, size_t maxlen)
@@ -85,14 +85,14 @@ extern "C" int qwk_route(scfg_t* cfg, const char *inaddr, char *fulladdr, size_t
 			break;
 	if (i < cfg->total_qhubs) {
 		strncpy(fulladdr, node, maxlen);
-		return(0);
+		return 0;
 	}
 
 	i = matchuser(cfg, node, FALSE);            /* Check if destination is a node */
 	if (i) {
 		if (getuserflags(cfg, i, USER_REST) & FLAG('Q')) {
 			strncpy(fulladdr, node, maxlen);
-			return(i);
+			return i;
 		}
 
 	}
@@ -109,14 +109,14 @@ extern "C" int qwk_route(scfg_t* cfg, const char *inaddr, char *fulladdr, size_t
 				break;
 		if (i < cfg->total_qhubs) {
 			strncpy(fulladdr, inaddr, maxlen);
-			return(0);
+			return 0;
 		}
 
 		i = matchuser(cfg, node, FALSE);            /* Check if next hop is a node */
 		if (i) {
 			if (getuserflags(cfg, i, USER_REST) & FLAG('Q')) {
 				strncpy(fulladdr, inaddr, maxlen);
-				return(i);
+				return i;
 			}
 		}
 	}
@@ -129,7 +129,7 @@ extern "C" int qwk_route(scfg_t* cfg, const char *inaddr, char *fulladdr, size_t
 
 	SAFEPRINTF(path, "%sqnet/route.dat", cfg->data_dir);
 	if ((stream = fnopen(&file, path, O_RDONLY)) == NULL)
-		return(0);
+		return 0;
 
 	strcat(node, ":");
 	fulladdr[0] = 0;
@@ -146,7 +146,7 @@ extern "C" int qwk_route(scfg_t* cfg, const char *inaddr, char *fulladdr, size_t
 
 	fclose(stream);
 	if (!fulladdr[0])            /* First hop not found in ROUTE.DAT */
-		return(0);
+		return 0;
 
 	SAFECOPY(node, fulladdr);
 	p = strchr(node, '/');
@@ -157,15 +157,15 @@ extern "C" int qwk_route(scfg_t* cfg, const char *inaddr, char *fulladdr, size_t
 		if (!stricmp(cfg->qhub[i]->id, node))
 			break;
 	if (i < cfg->total_qhubs)
-		return(0);
+		return 0;
 
 	i = matchuser(cfg, node, FALSE);                /* Check if first hop is a node */
 	if (i) {
 		if (getuserflags(cfg, i, USER_REST) & FLAG('Q'))
-			return(i);
+			return i;
 	}
 	fulladdr[0] = 0;
-	return(0);
+	return 0;
 }
 
 /* Via is in format: NODE/NODE/... */

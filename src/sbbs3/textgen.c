@@ -20,12 +20,12 @@ char *readtext(FILE *stream, char **comment_ret)
 	int  i, j, k;
 
 	if (!fgets(buf, 256, stream))
-		return(NULL);
+		return NULL;
 	if (buf[0] == '#')
-		return(NULL);
+		return NULL;
 	p = strrchr(buf, '"');
 	if (!p) {
-		return(NULL);
+		return NULL;
 	}
 	comment[0] = 0;
 	if (*(p + 1) == '\\') {  /* merge multiple lines */
@@ -34,7 +34,7 @@ char *readtext(FILE *stream, char **comment_ret)
 		SAFECAT(comment, cp);
 		while (strlen(buf) < 2000) {
 			if (!fgets(str, 255, stream))
-				return(NULL);
+				return NULL;
 			p2 = strchr(str, '"');
 			if (!p2)
 				continue;
@@ -120,12 +120,12 @@ char *readtext(FILE *stream, char **comment_ret)
 	str[j] = 0;
 	if ((p = (char *)calloc(1, j + 2)) == NULL) { /* +1 for terminator, +1 for YNQX line */
 		fprintf(stderr, "Error allocating %u bytes of memory from text.dat", j);
-		return(NULL);
+		return NULL;
 	}
 	strcpy(p, str);
 	if (comment_ret)
 		*comment_ret = strdup(comment);
-	return(p);
+	return p;
 }
 
 char *format_as_cstr(const char *orig)
@@ -143,7 +143,7 @@ char *format_as_cstr(const char *orig)
 
 	ret = (char *)malloc(len);
 	if (ret == NULL)
-		return(ret);
+		return ret;
 	strcpy(ret, "\"");
 	for (in = orig; *in; in++) {
 		sprintf(hex, "\\x%02x", (unsigned char)*in);
@@ -152,7 +152,7 @@ char *format_as_cstr(const char *orig)
 			strcat(ret, "\"\n\t\t\"");
 	}
 	strcat(ret, "\"");
-	return(ret);
+	return ret;
 }
 
 int main(int argc, char **argv)

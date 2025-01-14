@@ -140,17 +140,17 @@ int getSocketOptionByName(const char* name, int* level)
 		if (stricmp(name, socket_options[i].name) == 0) {
 			if (level != NULL)
 				*level = socket_options[i].level;
-			return(socket_options[i].value);
+			return socket_options[i].value;
 		}
 	}
 	if (!IS_DIGIT(*name))    /* unknown option name */
-		return(-1);
-	return(strtol(name, NULL, 0));
+		return -1;
+	return strtol(name, NULL, 0);
 }
 
 socket_option_t* getSocketOptionList(void)
 {
-	return(socket_options);
+	return socket_options;
 }
 
 /* Return true if connected, optionally sets *rd_p to true if read data available */
@@ -197,7 +197,7 @@ bool socket_check(SOCKET sock, bool* rd_p, bool* wr_p, DWORD timeout)
 		*wr_p = false;
 
 	if (sock == INVALID_SOCKET)
-		return(false);
+		return false;
 
 	pfd.fd = sock;
 	pfd.events = POLLIN | POLLHUP;
@@ -252,7 +252,7 @@ bool socket_check(SOCKET sock, bool* rd_p, bool* wr_p, DWORD timeout)
 		*wr_p = false;
 
 	if (sock == INVALID_SOCKET)
-		return(false);
+		return false;
 
 	FD_ZERO(&rd_set);
 	FD_SET(sock, &rd_set);
@@ -270,15 +270,15 @@ bool socket_check(SOCKET sock, bool* rd_p, bool* wr_p, DWORD timeout)
 
 	i = select(sock + 1, rd_set_p, wr_set_p, NULL, &tv);
 	if (i == SOCKET_ERROR)
-		return(false);
+		return false;
 
 	if (i == 0)
-		return(true);
+		return true;
 
 	if (wr_p != NULL && FD_ISSET(sock, wr_set_p)) {
 		*wr_p = true;
 		if (i == 1)
-			return(true);
+			return true;
 	}
 
 	if (rd_p != NULL || wr_p == NULL)  {
@@ -287,11 +287,11 @@ bool socket_check(SOCKET sock, bool* rd_p, bool* wr_p, DWORD timeout)
 		    || (rd == SOCKET_ERROR && SOCKET_ERRNO == EMSGSIZE)) {
 			if (rd_p != NULL)
 				*rd_p = true;
-			return(true);
+			return true;
 		}
 	}
 
-	return(false);
+	return false;
 #endif
 }
 
@@ -465,7 +465,7 @@ int retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
 			SLEEP(wait_secs * 1000);
 		}
 	}
-	return(result);
+	return result;
 }
 
 int nonblocking_connect(SOCKET sock, struct sockaddr* addr, size_t size, unsigned timeout)

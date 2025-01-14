@@ -49,11 +49,11 @@ int b64_decode(char *target, size_t tlen, const char *source, size_t slen)
 		working <<= 6;
 		i = strchr(base64alphabet, (char)*inp);
 		if (i == NULL) {
-			return(-1);
+			return -1;
 		}
 		if (*i == '=')  { /* pad char */
 			if ((working & 0xFF) != 0)
-				return(-1);
+				return -1;
 			break;
 		}
 		bits += 6;
@@ -65,22 +65,22 @@ int b64_decode(char *target, size_t tlen, const char *source, size_t slen)
 	}
 	if (outp == outend)  {
 		*(--outp) = 0;
-		return(-1);
+		return -1;
 	}
 	*outp = 0;
-	return(outp - target);
+	return outp - target;
 }
 
 static int add_char(char *pos, char ch, int done, char *end)
 {
 	if (pos >= end)  {
-		return(1);
+		return 1;
 	}
 	if (done)
 		*pos = base64alphabet[64];
 	else
 		*pos = base64alphabet[(int)ch];
-	return(0);
+	return 0;
 }
 
 int b64_encode(char *target, size_t tlen, const char *source, size_t slen)  {
@@ -97,7 +97,7 @@ int b64_encode(char *target, size_t tlen, const char *source, size_t slen)  {
 	if (source == target)  {
 		tmpbuf = (char *)malloc(tlen);
 		if (tmpbuf == NULL)
-			return(-1);
+			return -1;
 		outp = tmpbuf;
 	}
 	else
@@ -111,7 +111,7 @@ int b64_encode(char *target, size_t tlen, const char *source, size_t slen)  {
 		enc = (enc & 0xFC) >> 2;
 		if (add_char(outp++, enc, done, outend)) {
 			FREE_AND_NULL(tmpbuf);
-			return(-1);
+			return -1;
 		}
 		if (inp >= inend)
 			enc = buf;
@@ -119,7 +119,7 @@ int b64_encode(char *target, size_t tlen, const char *source, size_t slen)  {
 			enc = buf | ((*inp & 0xF0) >> 4);
 		if (add_char(outp++, enc, done, outend)) {
 			FREE_AND_NULL(tmpbuf);
-			return(-1);
+			return -1;
 		}
 		if (inp == inend)
 			done = 1;
@@ -132,7 +132,7 @@ int b64_encode(char *target, size_t tlen, const char *source, size_t slen)  {
 		}
 		if (add_char(outp++, enc, done, outend)) {
 			FREE_AND_NULL(tmpbuf);
-			return(-1);
+			return -1;
 		}
 		if (inp == inend)
 			done = 1;
@@ -140,7 +140,7 @@ int b64_encode(char *target, size_t tlen, const char *source, size_t slen)  {
 			enc = ((int)*(inp++)) & 0x3F;
 		if (add_char(outp++, enc, done, outend)) {
 			FREE_AND_NULL(tmpbuf);
-			return(-1);
+			return -1;
 		}
 		if (inp == inend)
 			done = 1;

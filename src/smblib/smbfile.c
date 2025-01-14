@@ -23,47 +23,47 @@
 
 int smb_feof(FILE* fp)
 {
-	return(feof(fp));
+	return feof(fp);
 }
 
 int smb_ferror(FILE* fp)
 {
-	return(ferror(fp));
+	return ferror(fp);
 }
 
 int smb_fflush(FILE* fp)
 {
-	return(fflush(fp));
+	return fflush(fp);
 }
 
 int smb_fgetc(FILE* fp)
 {
-	return(fgetc(fp));
+	return fgetc(fp);
 }
 
 int smb_fputc(int ch, FILE* fp)
 {
-	return(fputc(ch, fp));
+	return fputc(ch, fp);
 }
 
 int smb_fseek(FILE* fp, off_t offset, int whence)
 {
-	return(fseeko(fp, offset, whence));
+	return fseeko(fp, offset, whence);
 }
 
 off_t smb_ftell(FILE* fp)
 {
-	return(ftello(fp));
+	return ftello(fp);
 }
 
 off_t smb_fgetlength(FILE* fp)
 {
-	return(filelength(fileno(fp)));
+	return filelength(fileno(fp));
 }
 
 int smb_fsetlength(FILE* fp, off_t length)
 {
-	return(chsize(fileno(fp), length));
+	return chsize(fileno(fp), length);
 }
 
 void smb_rewind(FILE* fp)
@@ -83,9 +83,9 @@ size_t smb_fread(smb_t* smb, void* buf, size_t bytes, FILE* fp)
 
 	while (1) {
 		if ((ret = fread(buf, sizeof(char), bytes, fp)) == bytes)
-			return(ret);
+			return ret;
 		if (feof(fp) || !FILE_RETRY_ERRNO(get_errno()))
-			return(ret);
+			return ret;
 		if (!start)
 			start = time(NULL);
 		else
@@ -93,7 +93,7 @@ size_t smb_fread(smb_t* smb, void* buf, size_t bytes, FILE* fp)
 			break;
 		SLEEP(smb->retry_delay);
 	}
-	return(ret);
+	return ret;
 }
 
 #if defined(__BORLANDC__)
@@ -102,7 +102,7 @@ size_t smb_fread(smb_t* smb, void* buf, size_t bytes, FILE* fp)
 
 size_t smb_fwrite(smb_t* smb, const void* buf, size_t bytes, FILE* fp)
 {
-	return(fwrite(buf, 1, bytes, fp));
+	return fwrite(buf, 1, bytes, fp);
 }
 
 /****************************************************************************/
@@ -133,11 +133,11 @@ int smb_open_fp(smb_t* smb, FILE** fp, int share)
 		safe_snprintf(smb->last_error, sizeof(smb->last_error)
 		              , "%s opening %s: Illegal FILE* pointer argument: %p", __FUNCTION__
 		              , smb->file, fp);
-		return(SMB_ERR_OPEN);
+		return SMB_ERR_OPEN;
 	}
 
 	if (*fp != NULL)   /* Already open! */
-		return(SMB_SUCCESS);
+		return SMB_SUCCESS;
 
 	SAFEPRINTF2(path, "%s.%s", smb->file, ext);
 
@@ -148,7 +148,7 @@ int smb_open_fp(smb_t* smb, FILE** fp, int share)
 			safe_snprintf(smb->last_error, sizeof(smb->last_error)
 			              , "%s %d '%s' opening %s", __FUNCTION__
 			              , get_errno(), strerror(get_errno()), path);
-			return(SMB_ERR_OPEN);
+			return SMB_ERR_OPEN;
 		}
 		if (!start)
 			start = time(NULL);
@@ -157,7 +157,7 @@ int smb_open_fp(smb_t* smb, FILE** fp, int share)
 			safe_snprintf(smb->last_error, sizeof(smb->last_error)
 			              , "%s timeout opening %s (errno=%d, retry_time=%lu)", __FUNCTION__
 			              , path, get_errno(), (ulong)smb->retry_time);
-			return(SMB_ERR_TIMEOUT);
+			return SMB_ERR_TIMEOUT;
 		}
 		SLEEP(smb->retry_delay);
 	}
@@ -166,10 +166,10 @@ int smb_open_fp(smb_t* smb, FILE** fp, int share)
 		              , "%s %d '%s' fdopening %s (%d)", __FUNCTION__
 		              , get_errno(), strerror(get_errno()), path, file);
 		close(file);
-		return(SMB_ERR_OPEN);
+		return SMB_ERR_OPEN;
 	}
 	setvbuf(*fp, NULL, _IOFBF, 2 * 1024);
-	return(SMB_SUCCESS);
+	return SMB_SUCCESS;
 }
 
 /****************************************************************************/

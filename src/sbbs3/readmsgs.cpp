@@ -24,7 +24,7 @@
 
 int sbbs_t::sub_op(int subnum)
 {
-	return(user_is_subop(&cfg, subnum, &useron, &client));
+	return user_is_subop(&cfg, subnum, &useron, &client);
 }
 
 bool sbbs_t::can_view_deleted_msgs(int subnum)
@@ -79,7 +79,7 @@ int sbbs_t::listmsgs(int subnum, int mode, post_t *post, int start, int posts, b
 		listed++;
 	}
 
-	return(listed);
+	return listed;
 }
 
 void sbbs_t::dump_msghdr(smbmsg_t* msg)
@@ -110,20 +110,20 @@ post_t * sbbs_t::loadposts(uint32_t *posts, int subnum, uint ptr, int mode, uint
 	post_t * post;
 
 	if (posts == NULL)
-		return(NULL);
+		return NULL;
 
 	(*posts) = 0;
 
 	if ((i = smb_locksmbhdr(&smb)) != 0) {               /* Be sure noone deletes or */
 		errormsg(WHERE, ERR_LOCK, smb.file, i, smb.last_error);     /* adds while we're reading */
-		return(NULL);
+		return NULL;
 	}
 
 	total = (int)filelength(fileno(smb.sid_fp)) / sizeof(idxrec_t); /* total msgs in sub */
 
 	if (!total) {            /* empty */
 		smb_unlocksmbhdr(&smb);
-		return(NULL);
+		return NULL;
 	}
 
 	namecrc = smb_name_crc(useron.name);
@@ -136,7 +136,7 @@ post_t * sbbs_t::loadposts(uint32_t *posts, int subnum, uint ptr, int mode, uint
 	if ((post = (post_t *)malloc(alloc_len)) == NULL) {  /* alloc for max */
 		smb_unlocksmbhdr(&smb);
 		errormsg(WHERE, ERR_ALLOC, smb.file, alloc_len);
-		return(NULL);
+		return NULL;
 	}
 	memset(post, 0, alloc_len);
 
@@ -293,7 +293,7 @@ post_t * sbbs_t::loadposts(uint32_t *posts, int subnum, uint ptr, int mode, uint
 	if (visible != NULL)   /* Total number of currently visible/readable messages to the user */
 		*visible = curmsg;
 	(*posts) = l;
-	return(post);
+	return post;
 }
 
 int64_t sbbs_t::get_start_msgnum(smb_t* smb, int next)
@@ -307,10 +307,10 @@ int64_t sbbs_t::get_start_msgnum(smb_t* smb, int next)
 		j = 1;
 	bprintf(text[StartWithN], j);
 	if ((i = getnum(smb->msgs)) < 0)
-		return(i);
+		return i;
 	if (i == 0)
-		return(j - 1);
-	return(i - 1);
+		return j - 1;
+	return i - 1;
 }
 
 static int score_post(post_t* post)
@@ -429,7 +429,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 	if (!chk_ar(cfg.sub[subnum]->read_ar, &useron, &client)) {
 		bprintf(text[CantReadSub]
 		        , cfg.grp[cfg.sub[subnum]->grp]->sname, cfg.sub[subnum]->sname);
-		return(0);
+		return 0;
 	}
 	ZERO_VAR(msg);              /* init to NULL, specify not-allocated */
 	if (!(mode & SCAN_CONT))
@@ -441,7 +441,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 		else if (!(mode & SCAN_POLLS))
 			bprintf(text[NoMsgsOnSub]
 			        , cfg.grp[cfg.sub[subnum]->grp]->sname, cfg.sub[subnum]->sname);
-		return(0);
+		return 0;
 	}
 	if (mode & SCAN_NEW && subscan[subnum].ptr >= last && !(mode & SCAN_BACK)) {
 		if (subscan[subnum].ptr > last)
@@ -450,12 +450,12 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 			subscan[subnum].last = last;
 		bprintf(text[NScanStatusFmt]
 		        , cfg.grp[cfg.sub[subnum]->grp]->sname, cfg.sub[subnum]->lname, 0L, msgs);
-		return(0);
+		return 0;
 	}
 
 	if ((i = smb_stack(&smb, SMB_STACK_PUSH)) != 0) {
 		errormsg(WHERE, ERR_OPEN, cfg.sub[subnum]->code, i);
-		return(0);
+		return 0;
 	}
 	SAFEPRINTF2(smb.file, "%s%s", cfg.sub[subnum]->data_dir, cfg.sub[subnum]->code);
 	smb.retry_time = cfg.smb_retry_time;
@@ -463,7 +463,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 	if ((i = smb_open(&smb)) != 0) {
 		errormsg(WHERE, ERR_OPEN, smb.file, i, smb.last_error);
 		smb_stack(&smb, SMB_STACK_POP);
-		return(0);
+		return 0;
 	}
 	usub = getusrsub(subnum);
 	ugrp = getusrgrp(subnum);
@@ -488,7 +488,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 		if (!smb.msgs) {       /* no messages at all */
 			smb_close(&smb);
 			smb_stack(&smb, SMB_STACK_POP);
-			return(0);
+			return 0;
 		}
 		if (smb.curmsg == smb.msgs) {  /* no new messages */
 			if (!(mode & SCAN_BACK)) {
@@ -496,7 +496,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 					free(post);
 				smb_close(&smb);
 				smb_stack(&smb, SMB_STACK_POP);
-				return(0);
+				return 0;
 			}
 			smb.curmsg = smb.msgs - 1;
 		}
@@ -513,7 +513,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 				        , cfg.grp[cfg.sub[subnum]->grp]->sname, cfg.sub[subnum]->sname);
 			smb_close(&smb);
 			smb_stack(&smb, SMB_STACK_POP);
-			return(0);
+			return 0;
 		}
 		if (mode & SCAN_FIND) {
 			bprintf(text[SearchSubFmt]
@@ -541,13 +541,13 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 		smb_close(&smb);
 		errormsg(WHERE, ERR_LOCK, smb.file, i, smb.last_error);
 		smb_stack(&smb, SMB_STACK_POP);
-		return(0);
+		return 0;
 	}
 	if ((i = smb_getstatus(&smb)) != 0) {
 		smb_close(&smb);
 		errormsg(WHERE, ERR_READ, smb.file, i, smb.last_error);
 		smb_stack(&smb, SMB_STACK_POP);
-		return(0);
+		return 0;
 	}
 	smb_unlocksmbhdr(&smb);
 	last = smb.status.last_msg;
@@ -837,7 +837,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 				smb_close(&smb);
 				smb_stack(&smb, SMB_STACK_POP);
 				current_msg = NULL;
-				return(0);
+				return 0;
 			case 'C':   /* Continuous */
 				mode |= SCAN_CONT;
 				if (smb.curmsg < smb.msgs - 1) smb.curmsg++;
@@ -1619,7 +1619,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 	smb_close(&smb);
 	smb_stack(&smb, SMB_STACK_POP);
 	current_msg = NULL;
-	return(quit);
+	return quit;
 }
 
 /****************************************************************************/
@@ -1645,7 +1645,7 @@ int sbbs_t::listsub(int subnum, int mode, int start, const char* search)
 
 	if ((i = smb_stack(&smb, SMB_STACK_PUSH)) != 0) {
 		errormsg(WHERE, ERR_OPEN, cfg.sub[subnum]->code, i);
-		return(0);
+		return 0;
 	}
 	SAFEPRINTF2(smb.file, "%s%s", cfg.sub[subnum]->data_dir, cfg.sub[subnum]->code);
 	smb.retry_time = cfg.smb_retry_time;
@@ -1653,7 +1653,7 @@ int sbbs_t::listsub(int subnum, int mode, int start, const char* search)
 	if ((i = smb_open(&smb)) != 0) {
 		errormsg(WHERE, ERR_OPEN, smb.file, i, smb.last_error);
 		smb_stack(&smb, SMB_STACK_POP);
-		return(0);
+		return 0;
 	}
 	if (!(mode & SCAN_TOYOU))
 		lp_mode |= LP_OTHERS;
@@ -1680,7 +1680,7 @@ int sbbs_t::listsub(int subnum, int mode, int start, const char* search)
 
 	smb_stack(&smb, SMB_STACK_POP);
 
-	return(displayed);
+	return displayed;
 }
 
 /****************************************************************************/
@@ -1724,7 +1724,7 @@ int sbbs_t::searchposts(int subnum, post_t *post, int start, int posts
 		smb_freemsgmem(&msg);
 	}
 
-	return(found);
+	return found;
 }
 
 /****************************************************************************/
@@ -1780,5 +1780,5 @@ int sbbs_t::showposts_toyou(int subnum, post_t *post, uint start, int posts, int
 	if (msg.total_hfields)
 		smb_freemsgmem(&msg);
 
-	return(found);
+	return found;
 }

@@ -553,7 +553,7 @@ js_do_encrption(JSContext *cx, uintN argc, jsval *arglist, int encrypt)
 	str = JS_NewStringCopyN(cx, cipherText, len);
 	free(cipherText);
 	if (str == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(str));
 	return JS_TRUE;
 }
@@ -627,7 +627,7 @@ js_create_signature(JSContext *cx, uintN argc, jsval *arglist)
 	str = JS_NewStringCopyN(cx, signature, len);
 	free(signature);
 	if (str == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(str));
 	return JS_TRUE;
 }
@@ -793,7 +793,7 @@ js_cryptcon_attrstr_get(JSContext *cx, jsval *vp, CRYPT_CONTEXT ctx, CRYPT_ATTRI
 	}
 	if ((js_str = JS_NewStringCopyN(cx, val, len)) == NULL) {
 		free(val);
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 	free(val);
 	*vp = STRING_TO_JSVAL(js_str);
@@ -910,7 +910,7 @@ static JSBool js_cryptcon_resolve(JSContext *cx, JSObject *obj, jsid id)
 
 static JSBool js_cryptcon_enumerate(JSContext *cx, JSObject *obj)
 {
-	return(js_cryptcon_resolve(cx, obj, JSID_VOID));
+	return js_cryptcon_resolve(cx, obj, JSID_VOID);
 }
 
 JSClass js_cryptcon_class = {
@@ -973,13 +973,13 @@ js_cryptcon_constructor(JSContext *cx, uintN argc, jsval *arglist)
 
 	if ((p = (struct js_cryptcon_private_data *)malloc(sizeof(struct js_cryptcon_private_data))) == NULL) {
 		JS_ReportError(cx, "malloc failed");
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 	memset(p, 0, sizeof(struct js_cryptcon_private_data));
 
 	if (!JS_SetPrivate(cx, obj, p)) {
 		JS_ReportError(cx, "JS_SetPrivate failed");
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
@@ -999,7 +999,7 @@ js_cryptcon_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", cryptcon_prop_desc, JSPROP_READONLY);
 #endif
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 #ifdef BUILD_JSDOCS
@@ -1156,5 +1156,5 @@ JSObject* js_CreateCryptContextClass(JSContext* cx, JSObject* parent)
 		}
 	}
 
-	return(ccobj);
+	return ccobj;
 }

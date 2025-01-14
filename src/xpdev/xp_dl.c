@@ -17,46 +17,46 @@ DLLEXPORT dll_handle xp_dlopen(const char **names, int mode, int major)
 		/* Try for version match */
 		sprintf(fname, "lib%s.so.%d", name, major);
 		if ((ret = dlopen(fname, mode)) != NULL)
-			return(ret);
+			return ret;
 
 		/* Try for name match */
 		sprintf(fname, "lib%s.so", name);
 		if ((ret = dlopen(fname, mode)) != NULL)
-			return(ret);
+			return ret;
 
 		/* Try for name match without the prefix */
 		sprintf(fname, "%s.so", name);
 		if ((ret = dlopen(fname, mode)) != NULL)
-			return(ret);
+			return ret;
 
 		/* Try all previous major versions */
 		for (i = major - 1; i >= 0; i--) {
 			sprintf(fname, "lib%s.so.%d", name, i);
 			if ((ret = dlopen(fname, mode)) != NULL)
-				return(ret);
+				return ret;
 		}
 
 #if defined(__APPLE__) && defined(__MACH__)
 		/* Try for version match */
 		sprintf(fname, "lib%s.%d.dylib", name, major);
 		if ((ret = dlopen(fname, mode)) != NULL)
-			return(ret);
+			return ret;
 
 		/* Try for name match */
 		sprintf(fname, "lib%s.dylib", name);
 		if ((ret = dlopen(fname, mode)) != NULL)
-			return(ret);
+			return ret;
 
 		/* Try all previous major versions */
 		for (i = major - 1; i >= 0; i--) {
 			sprintf(fname, "lib%s.%d.dylib", name, i);
 			if ((ret = dlopen(fname, mode)) != NULL)
-				return(ret);
+				return ret;
 		}
 #endif  /* OS X */
 	}
 
-	return(NULL);
+	return NULL;
 }
 #elif defined(_WIN32)
 DLLEXPORT dll_handle xp_dlopen(const char **names, int mode, int major)
@@ -69,9 +69,9 @@ DLLEXPORT dll_handle xp_dlopen(const char **names, int mode, int major)
 	for (; *names && (*names)[0]; names++) {
 		sprintf(fname, "%s.dll", *names);
 		if ((ret = LoadLibrary(fname)) != NULL)
-			return(ret);
+			return ret;
 	}
-	return(NULL);
+	return NULL;
 }
 #endif  /* __unix__,_WIN32 */
 

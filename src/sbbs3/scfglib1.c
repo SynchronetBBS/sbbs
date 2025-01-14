@@ -32,7 +32,7 @@ bool allocerr(char* error, size_t maxerrlen, const char* fname, const char *item
 {
 	safe_snprintf(error, maxerrlen, "%s: allocating %u bytes of memory for %s"
 	              , fname, (uint)size, item);
-	return(false);
+	return false;
 }
 
 /****************************************************************************/
@@ -471,7 +471,7 @@ bool read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 				safe_snprintf(error, maxerrlen, "%s: Duplicate pointer index for subs %s and %s"
 				              , fname
 				              , cfg->sub[i]->code_suffix, cfg->sub[j]->code_suffix);
-				return(false);
+				return false;
 			}
 #endif
 

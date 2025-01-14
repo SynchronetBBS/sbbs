@@ -64,7 +64,7 @@ int uudecode(char *target, size_t tlen, const char *source, size_t slen)
 #if 0
 		if (block != len) {
 			fprintf(stderr, "block (%d) != len (%d)\n", block, len);
-			return(-1);
+			return -1;
 		}
 #endif
 		while (rd < slen && source[rd] > ' ')
@@ -73,7 +73,7 @@ int uudecode(char *target, size_t tlen, const char *source, size_t slen)
 			rd++;   /* skip whitespace separating blocks/lines */
 	}
 
-	return(wr);
+	return wr;
 }
 
 #define BIAS(b) if ((b) == 0) (b) = '`'; else (b) += ' ';
@@ -89,7 +89,7 @@ int uuencode(char *target, size_t tlen, const char *source, size_t slen)
 		slen = strlen(source);
 
 	if (tlen < 3)
-		return(-1);
+		return -1;
 	tlen -= 3;    /* reserve room for terminator */
 	while (rd <= slen && wr < tlen) {
 		len = 45;
@@ -122,7 +122,7 @@ int uuencode(char *target, size_t tlen, const char *source, size_t slen)
 
 	if (wr < tlen)
 		target[wr++] = 0;
-	return(wr);
+	return wr;
 }
 
 #ifdef UUDECODE_TEST
@@ -135,7 +135,7 @@ static char* truncstr(char* str, const char* set)
 	if (p != NULL)
 		*p = 0;
 
-	return(p);
+	return p;
 }
 
 int main(int argc, char**argv)

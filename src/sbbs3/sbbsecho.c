@@ -577,7 +577,7 @@ int lprintf(int level, char *fmt, ...)
 		fprintf(fidologfile, "%s %s\n", timestamp, sbuf);
 		fflush(fidologfile);
 	}
-	return(chcount);
+	return chcount;
 }
 
 bool delfile(const char *filename, int line)
@@ -821,7 +821,7 @@ size_t fwrite_crlf(const char* buf, size_t len, FILE* fp)
 		last_ch = ch;
 	}
 
-	return(wr);
+	return wr;
 }
 
 bool fidoctrl_line_exists(const smbmsg_t* msg, const char* prefix)
@@ -1082,12 +1082,12 @@ int create_netmail(const char *to, const smbmsg_t* msg, const char *subject, con
 	}
 	if (!i) {
 		lprintf(LOG_WARNING, "Directory full: %s", scfg.netmail_dir);
-		return(-1);
+		return -1;
 	}
 	startmsg = i + 1;
 	if ((fp = fnopen(NULL, fname, O_RDWR | O_CREAT)) == NULL) {
 		lprintf(LOG_ERR, "ERROR %u (%s) line %d opening netmail: %s", errno, strerror(errno), __LINE__, fname);
-		return(-1);
+		return -1;
 	}
 
 	if (src != NULL)
@@ -1557,12 +1557,12 @@ int check_elists(const char *areatag, nodecfg_t* nodecfg)
 					fclose(stream);
 					quit = 1;
 					if (match)
-						return(match);
+						return match;
 					break;
 				}
 		}
 	}
-	return(match);
+	return match;
 }
 
 // areafile is in (new) .ini format (e.g. data/areas.ini)
@@ -2394,7 +2394,7 @@ char* process_areamgr(fidoaddr_t addr, char* inbuf, const char* subj, const char
 		               , "Your node is not configured for AreaMgr, please contact your hub sysop.\r\n"
 		               , /* dest: */ addr, /* src: */ NULL);
 		strcat(body, "This node is not configured for AreaMgr operations.\r\n");
-		return(body);
+		return body;
 	}
 
 	if (stricmp(nodecfg->password, password)) {
@@ -2405,7 +2405,7 @@ char* process_areamgr(fidoaddr_t addr, char* inbuf, const char* subj, const char
 		        , password
 		        , (nodecfg->password[0]) ? nodecfg->password
 		     : "[None Defined]");
-		return(body);
+		return body;
 	}
 
 	m = strlen(p);
@@ -2450,7 +2450,7 @@ char* process_areamgr(fidoaddr_t addr, char* inbuf, const char* subj, const char
 		strcat(body, "No valid AreaMgr commands were detected.\r\n");
 		strListFree(&add_area);
 		strListFree(&del_area);
-		return(body);
+		return body;
 	}
 	if (!strListIsEmpty(add_area) || !strListIsEmpty(del_area))
 		alter_areas(add_area, del_area, nodecfg, name, rescan);
@@ -2463,7 +2463,7 @@ char* process_areamgr(fidoaddr_t addr, char* inbuf, const char* subj, const char
 	if (query)
 		netmail_arealist(AREALIST_CONNECTED, addr, name);
 
-	return(NULL);
+	return NULL;
 }
 /******************************************************************************
  This function will compare the archive signatures defined in the CFG file and
@@ -2513,7 +2513,7 @@ int unpack(const char *infile, const char* outdir)
 
 	if (u == cfg.arcdefs) {
 		lprintf(LOG_ERR, "ERROR determining type of archive: %s", infile);
-		return(1);
+		return 1;
 	}
 
 	return execute(cmdstr(&scfg, /* user: */ NULL, cfg.arcdef[u].unpack, infile, outdir, tmp, sizeof(tmp)));
@@ -2599,19 +2599,19 @@ int attachment(const char *bundlename, fidoaddr_t dest, enum attachment_mode mod
 #if 1
 	if (bundlename == NULL && mode != ATTACHMENT_NETMAIL) {
 		lprintf(LOG_ERR, "ERROR line %d NULL bundlename", __LINE__);
-		return(1);
+		return 1;
 	}
 	SAFEPRINTF(bundle_list_filename, "%sbbsecho.bundles", cfg.outbound);
 	if ((stream = fnopen(&file, bundle_list_filename, O_RDWR | O_CREAT)) == NULL) {
 		lprintf(LOG_ERR, "ERROR %u (%s) line %d opening %s", errno, strerror(errno), __LINE__, bundle_list_filename);
-		return(1);
+		return 1;
 	}
 
 	if (mode == ATTACHMENT_NETMAIL) {              /* Create netmail attaches */
 
 		if (!filelength(file)) {
 			fclose(stream);
-			return(0);
+			return 0;
 		}
 		/* Get attach names from existing MSGs */
 #ifdef __unix__
@@ -2679,7 +2679,7 @@ int attachment(const char *bundlename, fidoaddr_t dest, enum attachment_mode mod
 			delfile(bundle_list_filename, __LINE__);    /* used to truncate here, August-20-2002 */
 		if (num_mfncrc)
 			free(mfncrc);
-		return(0);
+		return 0;
 	}
 
 	while (!feof(stream)) {
@@ -2688,7 +2688,7 @@ int attachment(const char *bundlename, fidoaddr_t dest, enum attachment_mode mod
 		TERMINATE(attach.filename);
 		if (stricmp(attach.filename, bundlename) == 0) {
 			fclose(stream);
-			return(0);
+			return 0;
 		}
 	}
 
@@ -2698,7 +2698,7 @@ int attachment(const char *bundlename, fidoaddr_t dest, enum attachment_mode mod
 	(void)fwrite(&attach, sizeof(attach_t), 1, stream);
 	fclose(stream);
 #endif
-	return(0);
+	return 0;
 }
 
 /******************************************************************************
@@ -2902,10 +2902,10 @@ bool unpack_bundle(const char* inbound)
 		}
 		delfile(fname, __LINE__);   /* successful, so delete bundle */
 		bundles_unpacked++;
-		return(true);
+		return true;
 	}
 
-	return(false);
+	return false;
 }
 
 /****************************************************************************/
@@ -2926,11 +2926,11 @@ int mv(const char *insrc, const char *indest, bool copy)
 	SAFECOPY(src, insrc);
 	SAFECOPY(dest, indest);
 	if (!strcmp(src, dest))   /* source and destination are the same! */
-		return(0);
+		return 0;
 //	lprintf(LOG_DEBUG, "%s file from %s to %s", copy ? "Copying":"Moving", src, dest);
 	if (!fexistcase(src)) {
 		lprintf(LOG_WARNING, "MV ERROR: Source file doesn't exist '%s'", src);
-		return(-1);
+		return -1;
 	}
 	if (isdir(dest)) {
 		backslash(dest);
@@ -2938,7 +2938,7 @@ int mv(const char *insrc, const char *indest, bool copy)
 	}
 	if (!copy && fexistcase(dest)) {
 		lprintf(LOG_WARNING, "MV ERROR: Destination file already exists '%s'", dest);
-		return(-1);
+		return -1;
 	}
 	if (!copy
 #ifndef __unix__
@@ -2947,29 +2947,29 @@ int mv(const char *insrc, const char *indest, bool copy)
 #endif
 	    ) {
 		if (rename(src, dest) == 0)     /* same drive, so move */
-			return(0);
+			return 0;
 		/* rename failed, so attempt copy */
 	}
 	if ((ind = nopen(src, O_RDONLY)) == -1) {
 		lprintf(LOG_ERR, "MV ERROR %u (%s) opening '%s'", errno, strerror(errno), src);
-		return(-1);
+		return -1;
 	}
 	if ((inp = fdopen(ind, "rb")) == NULL) {
 		close(ind);
 		lprintf(LOG_ERR, "MV ERROR %u (%s) fdopening '%s'", errno, strerror(errno), src);
-		return(-1);
+		return -1;
 	}
 	setvbuf(inp, NULL, _IOFBF, 8 * 1024);
 	if ((outd = nopen(dest, O_WRONLY | O_CREAT | O_TRUNC)) == -1) {
 		fclose(inp);
 		lprintf(LOG_ERR, "MV ERROR %u (%s) opening '%s'", errno, strerror(errno), dest);
-		return(-1);
+		return -1;
 	}
 	if ((outp = fdopen(outd, "wb")) == NULL) {
 		close(outd);
 		fclose(inp);
 		lprintf(LOG_ERR, "MV ERROR %u (%s) fdopening '%s'", errno, strerror(errno), dest);
-		return(-1);
+		return -1;
 	}
 	setvbuf(outp, NULL, _IOFBF, 8 * 1024);
 	length = filelength(ind);
@@ -3017,11 +3017,11 @@ long getlastmsg(uint subnum, uint32_t *ptr, /* unused: */ time_t *t)
 	if (!filelength(fileno(smbfile.shd_fp))) {           /* Empty base */
 		if (ptr) (*ptr) = 0;
 		smb_close(&smbfile);
-		return(0);
+		return 0;
 	}
 	smb_close(&smbfile);
 	if (ptr) (*ptr) = smbfile.status.last_msg;
-	return(smbfile.status.total_msgs);
+	return smbfile.status.total_msgs;
 }
 
 
@@ -3033,7 +3033,7 @@ ulong loadmsgs(smb_t* smb, post_t** post, ulong ptr)
 
 	if ((i = smb_locksmbhdr(smb)) != SMB_SUCCESS) {
 		lprintf(LOG_ERR, "ERROR %d (%s) line %d locking %s", i, smb->last_error, __LINE__, smb->file);
-		return(0);
+		return 0;
 	}
 
 	/* total msgs in sub */
@@ -3041,7 +3041,7 @@ ulong loadmsgs(smb_t* smb, post_t** post, ulong ptr)
 
 	if (!total) {            /* empty */
 		smb_unlocksmbhdr(smb);
-		return(0);
+		return 0;
 	}
 
 	if (((*post) = (post_t*)malloc((size_t)(sizeof(post_t) * total)))    /* alloc for max */
@@ -3049,7 +3049,7 @@ ulong loadmsgs(smb_t* smb, post_t** post, ulong ptr)
 		smb_unlocksmbhdr(smb);
 		lprintf(LOG_ERR, "ERROR line %d allocating %lu bytes for %s", __LINE__
 		        , sizeof(post_t *) * total, smb->file);
-		return(0);
+		return 0;
 	}
 
 	if (fseek(smb->sid_fp, 0L, SEEK_SET) != 0) {
@@ -3078,7 +3078,7 @@ ulong loadmsgs(smb_t* smb, post_t** post, ulong ptr)
 	smb_unlocksmbhdr(smb);
 	if (!l)
 		FREE_AND_NULL(*post);
-	return(l);
+	return l;
 }
 
 const char* area_desc(const char* areatag)
@@ -3307,8 +3307,8 @@ static short fmsgzone(const char* p)
 	val += atoi(min);
 
 	if (west)
-		return(-val);
-	return(val);
+		return -val;
+	return val;
 }
 
 char* getfmsg(FILE* stream, ulong* outlen)
@@ -3334,7 +3334,7 @@ char* getfmsg(FILE* stream, ulong* outlen)
 	if ((fbuf = malloc(length + 1)) == NULL) {
 		lprintf(LOG_ERR, "ERROR line %d allocating %lu bytes of memory", __LINE__, length + 1);
 		bail(1);
-		return(NULL);
+		return NULL;
 	}
 
 	(void)fseeko(stream, start, SEEK_SET);
@@ -3349,7 +3349,7 @@ char* getfmsg(FILE* stream, ulong* outlen)
 
 	if (outlen)
 		*outlen = length;
-	return((char*)fbuf);
+	return (char*)fbuf;
 }
 
 #define MAX_TAILLEN 1024
@@ -3772,7 +3772,7 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint usernumber, uint subnum)
 	smb_freemsgmem(&msg);
 
 	free(sbody);
-	return(i);
+	return i;
 }
 
 /***********************************************************************/
@@ -4056,7 +4056,7 @@ off_t find_packet_terminator(FILE* stream)
 		    && terminator == FIDO_PACKET_TERMINATOR)
 			offset -= sizeof(terminator);
 	}
-	return(offset);
+	return offset;
 }
 
 /******************************************************************************
@@ -4217,9 +4217,9 @@ bool check_psb(const addrlist_t* addrlist, fidoaddr_t compaddr)
 			continue;
 		if (compaddr.point != addrlist->addr[u].point)
 			continue;
-		return(true); /* match found */
+		return true; /* match found */
 	}
-	return(false);  /* match not found */
+	return false;  /* match not found */
 }
 
 /******************************************************************************
@@ -4547,7 +4547,7 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 		} else
 			lprintf(LOG_INFO, "%s Ignored", info);
 
-		return(-1);
+		return -1;
 	}
 
 	if (!sysfaddr_is_valid(match) && !cfg.ignore_netmail_dest_addr) {
@@ -4556,25 +4556,25 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 			printf(" - ");
 			pkt_to_msg(fp, &hdr, info, inbound);
 		}
-		return(2);
+		return 2;
 	}
 
 	if (path[0]) {   /* .msg file, not .pkt */
 		if (hdr.attr & FIDO_ORPHAN) {
 			printf("Orphaned");
-			return(1);
+			return 1;
 		}
 		if ((hdr.attr & FIDO_RECV) && !cfg.ignore_netmail_recv_attr) {
 			printf("Already received");
-			return(3);
+			return 3;
 		}
 		if ((hdr.attr & FIDO_LOCAL) && !cfg.ignore_netmail_local_attr) {
 			printf("Created locally");
-			return(4);
+			return 4;
 		}
 		if (hdr.attr & FIDO_INTRANS) {
 			printf("In-transit");
-			return(5);
+			return 5;
 		}
 	}
 
@@ -4698,7 +4698,7 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 				}
 			}
 			FREE_AND_NULL(fmsgbuf);
-			return(-2);
+			return -2;
 		}
 
 		usernumber = atoi(hdr.to);
@@ -4715,7 +4715,7 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 				printf(" - ");
 				pkt_to_msg(fp, &hdr, info, inbound);
 			}
-			return(2);
+			return 2;
 		}
 	}
 
@@ -4746,7 +4746,7 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 	}
 	if (i) {
 		FREE_AND_NULL(fmsgbuf);
-		return(0);
+		return 0;
 	}
 
 	if (usernumber) {
@@ -4803,7 +4803,7 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 		fwrite(&hdr,sizeof(fmsghdr_t),1,fp); }
 	***/
 	lprintf(LOG_INFO, "%s Imported", info);
-	return(0);
+	return 0;
 }
 
 static uint32_t read_export_ptr(int subnum, const char* tag)
@@ -5540,7 +5540,7 @@ char* freadstr(FILE* fp, char* str, size_t maxlen)
 	str[maxlen - 1] = 0;    /* Force terminator */
 	truncsp(str);
 
-	return(str);
+	return str;
 }
 
 bool netmail_sent(const char* fname)
@@ -7015,5 +7015,5 @@ int main(int argc, char **argv)
 		}
 	}
 	bail(0);
-	return(0);
+	return 0;
 }

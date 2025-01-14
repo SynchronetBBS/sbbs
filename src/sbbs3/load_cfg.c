@@ -67,7 +67,7 @@ bool load_cfg(scfg_t* cfg, char* text[], bool prep, bool req_cfg, char* error, s
 	if (cfg->size != sizeof(scfg_t)) {
 		safe_snprintf(error, maxerrlen, "cfg->size (%" PRIu32 ") != sizeof(scfg_t) (%" XP_PRIsize_t "d)"
 		              , cfg->size, sizeof(scfg_t));
-		return(false);
+		return false;
 	}
 
 	free_cfg(cfg);  /* free allocated config parameters */
@@ -77,7 +77,7 @@ bool load_cfg(scfg_t* cfg, char* text[], bool prep, bool req_cfg, char* error, s
 
 	backslash(cfg->ctrl_dir);
 	if (read_main_cfg(cfg, error, maxerrlen) == false && req_cfg)
-		return(false);
+		return false;
 
 	if (prep)
 		for (i = 0; i < cfg->sys_nodes; i++)
@@ -86,17 +86,17 @@ bool load_cfg(scfg_t* cfg, char* text[], bool prep, bool req_cfg, char* error, s
 	SAFECOPY(cfg->node_dir, cfg->node_path[cfg->node_num - 1]);
 	prep_dir(cfg->ctrl_dir, cfg->node_dir, sizeof(cfg->node_dir));
 	if (read_node_cfg(cfg, error, maxerrlen) == false && req_cfg)
-		return(false);
+		return false;
 	if (read_msgs_cfg(cfg, error, maxerrlen) == false)
-		return(false);
+		return false;
 	if (read_file_cfg(cfg, error, maxerrlen) == false)
-		return(false);
+		return false;
 	if (read_xtrn_cfg(cfg, error, maxerrlen) == false)
-		return(false);
+		return false;
 	if (read_chat_cfg(cfg, error, maxerrlen) == false)
-		return(false);
+		return false;
 	if (read_attr_cfg(cfg, error, maxerrlen) == false)
-		return(false);
+		return false;
 
 	if (text != NULL) {
 
@@ -106,7 +106,7 @@ bool load_cfg(scfg_t* cfg, char* text[], bool prep, bool req_cfg, char* error, s
 		SAFEPRINTF(str, "%stext.dat", cfg->ctrl_dir);
 		if ((fp = fnopen(NULL, str, O_RDONLY)) == NULL) {
 			safe_snprintf(error, maxerrlen, "%d opening %s", errno, str);
-			return(false);
+			return false;
 		}
 		for (i = 0; i < TOTAL_TEXT; i++)
 			if ((text[i] = readtext(&line, fp, i)) == NULL) {
@@ -119,7 +119,7 @@ bool load_cfg(scfg_t* cfg, char* text[], bool prep, bool req_cfg, char* error, s
 			safe_snprintf(error, maxerrlen, "line %d: Less than TOTAL_TEXT (%u) strings defined in %s."
 			              , i
 			              , TOTAL_TEXT, str);
-			return(false);
+			return false;
 		}
 
 		SAFEPRINTF(str, "%stext.ini", cfg->ctrl_dir);
@@ -159,7 +159,7 @@ bool load_cfg(scfg_t* cfg, char* text[], bool prep, bool req_cfg, char* error, s
 	/* Auto-toggle daylight savings time in US time-zones */
 	sys_timezone(cfg);
 
-	return(true);
+	return true;
 }
 
 void pathify(char* str)
@@ -451,7 +451,7 @@ bool read_attr_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	memset(cfg->rainbow, 0, sizeof cfg->rainbow);
 	parse_attr_str_list(cfg->rainbow, LEN_RAINBOW, value);
 	iniFreeStringList(ini);
-	return(true);
+	return true;
 }
 
 char* prep_dir(const char* base, char* path, size_t buflen)
@@ -464,7 +464,7 @@ char* prep_dir(const char* base, char* path, size_t buflen)
 	char  ch;
 
 	if (!path[0])
-		return(path);
+		return path;
 	if (path[0] != '\\' && path[0] != '/' && path[1] != ':') { /* Relative directory */
 		ch = *lastchar(base);
 		if (ch == '\\' || ch == '/')
@@ -486,7 +486,7 @@ char* prep_dir(const char* base, char* path, size_t buflen)
 	backslash(abspath);
 
 	strncpy(path, abspath, buflen);
-	return(path);
+	return path;
 }
 
 char* prep_path(char* path)
@@ -499,7 +499,7 @@ char* prep_path(char* path)
 			*p = '/';
 #endif
 
-	return(path);
+	return path;
 }
 
 /* Prepare a string to be used as an internal code */
@@ -528,7 +528,7 @@ char* prep_code(char *str, const char* prefix)
 		strcpy(str, tmp);
 	}
 	str[LEN_CODE] = 0;
-	return(str);
+	return str;
 }
 
 /****************************************************************************/
@@ -552,7 +552,7 @@ ushort sys_timezone(scfg_t* cfg)
 		}
 	}
 
-	return(cfg->sys_timezone);
+	return cfg->sys_timezone;
 }
 
 

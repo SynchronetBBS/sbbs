@@ -50,9 +50,9 @@ xpDateTime_t xpDateTime_now(void)
 	SYSTEMTIME systime;
 
 	GetLocalTime(&systime);
-	return(xpDateTime_create(systime.wYear, systime.wMonth, systime.wDay
+	return xpDateTime_create(systime.wYear, systime.wMonth, systime.wDay
 	                         , systime.wHour, systime.wMinute, (float)systime.wSecond + (systime.wMilliseconds * 0.001F)
-	                         , xpTimeZone_local()));
+	                         , xpTimeZone_local());
 #else   /* !Win32 (e.g. Unix) */
 	struct tm      tm;
 	struct timeval tv;
@@ -76,7 +76,7 @@ xpTimeZone_t xpTimeZone_local(void)
 	time_t    t = time(NULL);
 
 	localtime_r(&t, &tm);
-	return(tm.tm_gmtoff / 60);
+	return tm.tm_gmtoff / 60;
 #elif defined(_WIN32)
 	TIME_ZONE_INFORMATION tz;
 	DWORD                 tzRet;
@@ -116,7 +116,7 @@ time_t xpDateTime_to_time(xpDateTime_t xpDateTime)
 	ZERO_VAR(tm);
 
 	if (xpDateTime.date.year == 0)
-		return(INVALID_TIME);
+		return INVALID_TIME;
 
 	tm.tm_year  = xpDateTime.date.year;
 	tm.tm_mon   = xpDateTime.date.month;
@@ -148,7 +148,7 @@ xpDateTime_t time_to_xpDateTime(time_t ti, xpTimeZone_t zone)
 	ZERO_VAR(never);
 	ZERO_VAR(tm);
 	if (localtime_r(&ti, &tm) == NULL)
-		return(never);
+		return never;
 
 	return xpDateTime_create(1900 + tm.tm_year, 1 + tm.tm_mon, tm.tm_mday
 	                         , tm.tm_hour, tm.tm_min, (float)tm.tm_sec
@@ -177,7 +177,7 @@ xpDateTime_t gmtime_to_xpDateTime(time_t ti)
 	ZERO_VAR(never);
 	ZERO_VAR(tm);
 	if (gmtime_r(&ti, &tm) == NULL)
-		return(never);
+		return never;
 
 	return xpDateTime_create(1900 + tm.tm_year, 1 + tm.tm_mon, tm.tm_mday
 	                         , tm.tm_hour, tm.tm_min, (float)tm.tm_sec
@@ -194,7 +194,7 @@ isoDate_t xpDateTime_to_isoDateTime(xpDateTime_t xpDateTime, isoTime_t* isoTime)
 		*isoTime = 0;
 
 	if (xpDateTime.date.year == 0)
-		return(0);
+		return 0;
 
 	if (isoTime != NULL)
 		*isoTime = isoTime_create(xpDateTime.time.hour, xpDateTime.time.minute, xpDateTime.time.second);
@@ -217,7 +217,7 @@ isoDate_t time_to_isoDateTime(time_t ti, isoTime_t* isoTime)
 
 	ZERO_VAR(tm);
 	if (localtime_r(&ti, &tm) == NULL)
-		return(0);
+		return 0;
 
 	if (isoTime != NULL)
 		*isoTime = isoTime_create(tm.tm_hour, tm.tm_min, tm.tm_sec);
@@ -243,7 +243,7 @@ isoDate_t gmtime_to_isoDateTime(time_t ti, isoTime_t* isoTime)
 
 	ZERO_VAR(tm);
 	if (gmtime_r(&ti, &tm) == NULL)
-		return(0);
+		return 0;
 
 	if (isoTime != NULL)
 		*isoTime = isoTime_create(tm.tm_hour, tm.tm_min, tm.tm_sec);
@@ -267,7 +267,7 @@ time_t isoDateTime_to_time(isoDate_t date, isoTime_t ti)
 	ZERO_VAR(tm);
 
 	if (date == 0)
-		return(INVALID_TIME);
+		return INVALID_TIME;
 
 	tm.tm_year  = isoDate_year(date);
 	tm.tm_mon   = isoDate_month(date);

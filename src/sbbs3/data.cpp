@@ -44,14 +44,14 @@ uint sbbs_t::finduser(const char* name, bool silent_failure)
 	if (i > 0) {
 		username(&cfg, i, buf);
 		if (buf[0] && strcmp(buf, "DELETED USER"))
-			return(i);
+			return i;
 	}
 	SAFEPRINTF(path, "%suser/name.dat", cfg.data_dir);
 	if (flength(path) < 1L)
-		return(0);
+		return 0;
 	if ((stream = fnopen(&file, path, O_RDONLY)) == NULL) {
 		errormsg(WHERE, ERR_OPEN, path, O_RDONLY);
-		return(0);
+		return 0;
 	}
 	SAFEPRINTF3(ynq, "%c%c%c", yes_key(), no_key(), quit_key());
 	length = (int)filelength(file);
@@ -68,7 +68,7 @@ uint sbbs_t::finduser(const char* name, bool silent_failure)
 				continue;
 			if (pass == 1 && matchusername(&cfg, name, buf)) {
 				fclose(stream);
-				return((l / (LEN_ALIAS + 2)) + 1);
+				return (l / (LEN_ALIAS + 2)) + 1;
 			}
 			if (pass == 2 && strcasestr(buf, name)) {
 				char tmp[256];
@@ -79,16 +79,16 @@ uint sbbs_t::finduser(const char* name, bool silent_failure)
 				c = (char)getkeys(ynq, 0);
 				if (sys_status & SS_ABORT) {
 					fclose(stream);
-					return(0);
+					return 0;
 				}
 				if (c == yes_key()) {
 					fclose(stream);
-					return((l / (LEN_ALIAS + 2)) + 1);
+					return (l / (LEN_ALIAS + 2)) + 1;
 				}
 				if (c == quit_key()) {
 					fclose(stream);
 					sys_status |= SS_ABORT;
-					return(0);
+					return 0;
 				}
 			}
 		}
@@ -97,7 +97,7 @@ uint sbbs_t::finduser(const char* name, bool silent_failure)
 	if (!silent_failure)
 		bputs(text[UnknownUser]);
 	fclose(stream);
-	return(0);
+	return 0;
 }
 
 /****************************************************************************/

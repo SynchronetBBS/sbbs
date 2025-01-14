@@ -30,7 +30,7 @@ msg_queue_t* msgQueueInit(msg_queue_t* q, long flags)
 {
 	if (q == NULL) {
 		if ((q = (msg_queue_t*)malloc(sizeof(msg_queue_t))) == NULL)
-			return(NULL);
+			return NULL;
 		flags |= MSG_QUEUE_MALLOC;
 	}
 
@@ -44,13 +44,13 @@ msg_queue_t* msgQueueInit(msg_queue_t* q, long flags)
 		listInit(&q->in, LINK_LIST_SEMAPHORE | LINK_LIST_MUTEX);
 	listInit(&q->out, LINK_LIST_SEMAPHORE | LINK_LIST_MUTEX);
 
-	return(q);
+	return q;
 }
 
 bool msgQueueOwner(msg_queue_t* q)
 {
 	if (q == NULL)
-		return(false);
+		return false;
 
 	return q->owner_thread_id == pthread_self();
 }
@@ -58,7 +58,7 @@ bool msgQueueOwner(msg_queue_t* q)
 bool msgQueueFree(msg_queue_t* q)
 {
 	if (q == NULL)
-		return(false);
+		return false;
 
 	listFree(&q->in);
 	listFree(&q->out);
@@ -66,17 +66,17 @@ bool msgQueueFree(msg_queue_t* q)
 	if (q->flags & MSG_QUEUE_MALLOC)
 		free(q);
 
-	return(true);
+	return true;
 }
 
 long msgQueueAttach(msg_queue_t* q)
 {
 	if (q == NULL)
-		return(-1);
+		return -1;
 
 	q->refs++;
 
-	return(q->refs);
+	return q->refs;
 }
 
 long msgQueueDetach(msg_queue_t* q)
@@ -84,7 +84,7 @@ long msgQueueDetach(msg_queue_t* q)
 	int refs;
 
 	if (q == NULL || q->refs < 1)
-		return(-1);
+		return -1;
 
 	if (msgQueueOwner(q))
 		q->flags |= MSG_QUEUE_ORPHAN;
@@ -92,7 +92,7 @@ long msgQueueDetach(msg_queue_t* q)
 	if ((refs = --q->refs) == 0)
 		msgQueueFree(q);
 
-	return(refs);
+	return refs;
 }
 
 void* msgQueueSetPrivateData(msg_queue_t* q, void* p)
@@ -100,40 +100,40 @@ void* msgQueueSetPrivateData(msg_queue_t* q, void* p)
 	void* old;
 
 	if (q == NULL)
-		return(NULL);
+		return NULL;
 
 	old = q->private_data;
 	q->private_data = p;
-	return(old);
+	return old;
 }
 
 void* msgQueueGetPrivateData(msg_queue_t* q)
 {
 	if (q == NULL)
-		return(NULL);
-	return(q->private_data);
+		return NULL;
+	return q->private_data;
 }
 
 static link_list_t* msgQueueReadList(msg_queue_t* q)
 {
 	if (q == NULL)
-		return(NULL);
+		return NULL;
 
 	if ((q->flags & MSG_QUEUE_BIDIR)
 	    && q->owner_thread_id == pthread_self())
-		return(&q->in);
-	return(&q->out);
+		return &q->in;
+	return &q->out;
 }
 
 static link_list_t* msgQueueWriteList(msg_queue_t* q)
 {
 	if (q == NULL)
-		return(NULL);
+		return NULL;
 
 	if (!(q->flags & MSG_QUEUE_BIDIR)
 	    || q->owner_thread_id == pthread_self())
-		return(&q->out);
-	return(&q->in);
+		return &q->out;
+	return &q->in;
 }
 
 long msgQueueReadLevel(msg_queue_t* q)
@@ -162,7 +162,7 @@ static bool list_wait(link_list_t* list, long timeout)
 			break;
 		YIELD();
 	}
-	return(INT_TO_BOOL(count));
+	return INT_TO_BOOL(count);
 #endif
 }
 
@@ -177,7 +177,7 @@ bool msgQueueWait(msg_queue_t* q, long timeout)
 #endif
 		;
 
-	return(result);
+	return result;
 }
 
 void* msgQueueRead(msg_queue_t* q, long timeout)
@@ -208,7 +208,7 @@ void* msgQueueFind(msg_queue_t* q, const void* data, size_t length)
 	list_node_t* node;
 
 	if ((node = listFindNode(list, data, length)) == NULL)
-		return(NULL);
+		return NULL;
 	return listRemoveNode(list, node, /* Free Data? */ false);
 }
 

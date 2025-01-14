@@ -64,7 +64,7 @@ static struct request_log *match_request(JSContext *cx)
 
 	for (ent = first_request; ent != NULL; ent = ent->next) {
 		if (ent->cx == cx)
-			return(ent);
+			return ent;
 	}
 
 	ent = malloc(sizeof(struct request_log));
@@ -78,9 +78,9 @@ static struct request_log *match_request(JSContext *cx)
 			first_request->prev = ent;
 		}
 		first_request = ent;
-		return(ent);
+		return ent;
 	}
-	return(NULL);
+	return NULL;
 }
 
 static void initialize_request(void)
@@ -251,7 +251,7 @@ jsrefcount js_debug_suspendrequest(JSContext *cx, const char *file, unsigned lon
 	req->line = line;
 	ret = JS_SuspendRequest(cx);
 	pthread_mutex_unlock(&req_mutex);
-	return(ret);
+	return ret;
 }
 
 void js_debug_resumerequest(JSContext *cx, jsrefcount rc, const char *file, unsigned long line)

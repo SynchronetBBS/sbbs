@@ -78,7 +78,7 @@ js_poll(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((q = (msg_queue_t*)js_GetClassPrivate(cx, obj, &js_queue_class)) == NULL) {
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	if (argc && JSVAL_IS_NUMBER(argv[0])) {  /* timeout specified */
@@ -96,7 +96,7 @@ js_poll(JSContext *cx, uintN argc, jsval *arglist)
 	else
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -113,7 +113,7 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((q = (msg_queue_t*)js_GetClassPrivate(cx, obj, &js_queue_class)) == NULL) {
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	if (argc && JSVAL_IS_STRING(argv[0])) {  /* value named specified */
@@ -141,7 +141,7 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 		JS_SET_RVAL(cx, arglist, rval);
 	}
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -157,7 +157,7 @@ js_peek(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((q = (msg_queue_t*)js_GetClassPrivate(cx, obj, &js_queue_class)) == NULL) {
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	if (argc && JSVAL_IS_NUMBER(argv[0])) {  /* timeout specified */
@@ -174,7 +174,7 @@ js_peek(JSContext *cx, uintN argc, jsval *arglist)
 		JS_SET_RVAL(cx, arglist, rval);
 	}
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static queued_value_t* js_encode_value(JSContext *cx, jsval val, char* name)
@@ -183,7 +183,7 @@ static queued_value_t* js_encode_value(JSContext *cx, jsval val, char* name)
 	uint64 *        serialized;
 
 	if ((v = malloc(sizeof(queued_value_t))) == NULL)
-		return(NULL);
+		return NULL;
 	memset(v, 0, sizeof(queued_value_t));
 
 	if (name != NULL)
@@ -201,7 +201,7 @@ static queued_value_t* js_encode_value(JSContext *cx, jsval val, char* name)
 	memcpy(v->value, serialized, v->size);
 	JS_free(cx, serialized);
 
-	return(v);
+	return v;
 }
 
 bool js_enqueue_value(JSContext *cx, msg_queue_t* q, jsval val, char* name)
@@ -211,13 +211,13 @@ bool js_enqueue_value(JSContext *cx, msg_queue_t* q, jsval val, char* name)
 	jsrefcount      rc;
 
 	if ((v = js_encode_value(cx, val, name)) == NULL)
-		return(false);
+		return false;
 
 	rc = JS_SUSPENDREQUEST(cx);
 	result = msgQueueWrite(q, v, sizeof(queued_value_t));
 	free(v);
 	JS_RESUMEREQUEST(cx, rc);
-	return(result);
+	return result;
 }
 
 static JSBool
@@ -233,7 +233,7 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((q = (msg_queue_t*)js_GetClassPrivate(cx, obj, &js_queue_class)) == NULL) {
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	val = argv[argn++];
@@ -248,7 +248,7 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 	if (name)
 		free(name);
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 /* Queue Object Properites */
@@ -317,7 +317,7 @@ static JSBool js_queue_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			JS_RESUMEREQUEST(cx, rc);
 			break;
 	}
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 #define QUEUE_PROP_FLAGS JSPROP_ENUMERATE | JSPROP_READONLY
@@ -378,7 +378,7 @@ static JSBool js_queue_resolve(JSContext *cx, JSObject *obj, jsid id)
 
 static JSBool js_queue_enumerate(JSContext *cx, JSObject *obj)
 {
-	return(js_queue_resolve(cx, obj, JSID_VOID));
+	return js_queue_resolve(cx, obj, JSID_VOID);
 }
 
 JSClass js_queue_class = {
@@ -414,7 +414,7 @@ js_queue_constructor(JSContext *cx, uintN argc, jsval *arglist)
 #if 0   /* This doesn't appear to be doing anything but leaking memory */
 	if ((q = (msg_queue_t*)malloc(sizeof(msg_queue_t))) == NULL) {
 		JS_ReportError(cx, "malloc failed");
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 	memset(q, 0, sizeof(msg_queue_t));
 #endif
@@ -451,7 +451,7 @@ js_queue_constructor(JSContext *cx, uintN argc, jsval *arglist)
 
 	if (!JS_SetPrivate(cx, obj, q)) {
 		JS_ReportError(cx, "JS_SetPrivate failed");
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 #ifdef BUILD_JSDOCS
@@ -462,7 +462,7 @@ js_queue_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", queue_prop_desc, JSPROP_READONLY);
 #endif
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 JSObject* js_CreateQueueClass(JSContext* cx, JSObject* parent)
@@ -478,7 +478,7 @@ JSObject* js_CreateQueueClass(JSContext* cx, JSObject* parent)
 	                   , NULL
 	                   , NULL);
 
-	return(obj);
+	return obj;
 }
 
 JSObject* js_CreateQueueObject(JSContext* cx, JSObject* parent, char *name, msg_queue_t* q)
@@ -492,12 +492,12 @@ JSObject* js_CreateQueueObject(JSContext* cx, JSObject* parent, char *name, msg_
 		                      , JSPROP_ENUMERATE | JSPROP_READONLY);
 
 	if (obj == NULL)
-		return(NULL);
+		return NULL;
 
 	if (!JS_SetPrivate(cx, obj, q))
-		return(NULL);
+		return NULL;
 
-	return(obj);
+	return obj;
 }
 
 

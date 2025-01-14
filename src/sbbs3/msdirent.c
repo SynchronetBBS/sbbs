@@ -45,7 +45,7 @@ DIR* opendir(const char* dirname)
 
 	if ((dir = (DIR*)calloc(1, sizeof(DIR))) == NULL) {
 		errno = ENOMEM;
-		return(NULL);
+		return NULL;
 	}
 	sprintf(dir->filespec, "%.*s", sizeof(dir->filespec) - 5, dirname);
 	if (*dir->filespec && dir->filespec[strlen(dir->filespec) - 1] != '\\')
@@ -55,30 +55,30 @@ DIR* opendir(const char* dirname)
 	if (dir->handle == -1) {
 		errno = ENOENT;
 		free(dir);
-		return(NULL);
+		return NULL;
 	}
-	return(dir);
+	return dir;
 }
 struct dirent* readdir(DIR* dir)
 {
 	if (dir == NULL)
-		return(NULL);
+		return NULL;
 	if (dir->end == TRUE)
-		return(NULL);
+		return NULL;
 	if (dir->handle == -1)
-		return(NULL);
+		return NULL;
 	sprintf(dir->dirent.d_name, "%.*s", sizeof(struct dirent) - 1, dir->finddata.name);
 	if (_findnext(dir->handle, &dir->finddata) != 0)
 		dir->end = TRUE;
-	return(&dir->dirent);
+	return &dir->dirent;
 }
 int closedir (DIR* dir)
 {
 	if (dir == NULL)
-		return(-1);
+		return -1;
 	_findclose(dir->handle);
 	free(dir);
-	return(0);
+	return 0;
 }
 void rewinddir(DIR* dir)
 {

@@ -225,11 +225,11 @@ static WORD event_type(int level)
 {
 	switch (level) {
 		case LOG_WARNING:
-			return(EVENTLOG_WARNING_TYPE);
+			return EVENTLOG_WARNING_TYPE;
 		case LOG_NOTICE:
 		case LOG_INFO:
 		case LOG_DEBUG:
-			return(EVENTLOG_INFORMATION_TYPE);  /* same as EVENT_LOG_SUCCESS */
+			return EVENTLOG_INFORMATION_TYPE;  /* same as EVENT_LOG_SUCCESS */
 	}
 /*
 	LOG_EMERG
@@ -237,7 +237,7 @@ static WORD event_type(int level)
 	LOG_CRIT
 	LOG_ERR
 */
-	return(EVENTLOG_ERROR_TYPE);
+	return EVENTLOG_ERROR_TYPE;
 }
 
 /**************************************/
@@ -258,7 +258,7 @@ static int svc_lputs(void* p, int level, const char* str)
 		OutputDebugString(debug);
 	}
 	if (svc == NULL)
-		return(0);
+		return 0;
 
 	len = strlen(str);
 	SAFECOPY(msg.buf, str);
@@ -318,7 +318,7 @@ static int svc_lputs(void* p, int level, const char* str)
 			            NULL);          /* pointer to data */
 	}
 
-	return(0);
+	return 0;
 }
 
 /************************************/
@@ -534,7 +534,7 @@ static bool register_event_source(char* name, char* path)
 	if (retval != ERROR_SUCCESS) {
 		fprintf(stderr, "!Error %d creating/opening registry key (HKLM\\%s)\n"
 		        , retval, keyname);
-		return(FALSE);
+		return FALSE;
 	}
 
 	value = "EventMessageFile";
@@ -551,7 +551,7 @@ static bool register_event_source(char* name, char* path)
 		RegCloseKey(hKey);
 		fprintf(stderr, "!Error %d setting registry key value (%s)\n"
 		        , retval, value);
-		return(FALSE);
+		return FALSE;
 	}
 
 	value = "TypesSupported";
@@ -570,10 +570,10 @@ static bool register_event_source(char* name, char* path)
 	if (retval != ERROR_SUCCESS) {
 		fprintf(stderr, "!Error %d setting registry key value (%s)\n"
 		        , retval, value);
-		return(FALSE);
+		return FALSE;
 	}
 
-	return(TRUE);
+	return TRUE;
 }
 
 static const char* start_type_desc(DWORD start_type)
@@ -581,14 +581,14 @@ static const char* start_type_desc(DWORD start_type)
 	static char str[128];
 
 	switch (start_type) {
-		case SERVICE_AUTO_START:            return("Startup: Automatic");
-		case SERVICE_DEMAND_START:          return("Startup: Manual");
-		case SERVICE_DISABLED:              return("Disabled");
-		case SERVICE_NOT_INSTALLED:         return("Not installed");
+		case SERVICE_AUTO_START:            return "Startup: Automatic";
+		case SERVICE_DEMAND_START:          return "Startup: Manual";
+		case SERVICE_DISABLED:              return "Disabled";
+		case SERVICE_NOT_INSTALLED:         return "Not installed";
 	}
 
 	SAFEPRINTF(str, "Start_type: %d", start_type);
-	return(str);
+	return str;
 }
 
 static const char* state_desc(DWORD state)
@@ -596,17 +596,17 @@ static const char* state_desc(DWORD state)
 	static char str[128];
 
 	switch (state) {
-		case SERVICE_STOPPED:               return("Stopped");
-		case SERVICE_START_PENDING:         return("Start Pending");
-		case SERVICE_STOP_PENDING:          return("Stop Pending");
-		case SERVICE_RUNNING:               return("Running");
-		case SERVICE_CONTINUE_PENDING:      return("Continue Pending");
-		case SERVICE_PAUSE_PENDING:         return("Pause Pending");
-		case SERVICE_PAUSED:                return("Paused");
+		case SERVICE_STOPPED:               return "Stopped";
+		case SERVICE_START_PENDING:         return "Start Pending";
+		case SERVICE_STOP_PENDING:          return "Stop Pending";
+		case SERVICE_RUNNING:               return "Running";
+		case SERVICE_CONTINUE_PENDING:      return "Continue Pending";
+		case SERVICE_PAUSE_PENDING:         return "Pause Pending";
+		case SERVICE_PAUSED:                return "Paused";
 	}
 
 	SAFEPRINTF(str, "State: %d", state);
-	return(str);
+	return str;
 }
 
 static const char* control_desc(DWORD ctrl)
@@ -615,22 +615,22 @@ static const char* control_desc(DWORD ctrl)
 
 	switch (ctrl) {
 		case SERVICE_CONTROL_STOP:
-			return("Stopping");
+			return "Stopping";
 		case SERVICE_CONTROL_PAUSE:
-			return("Pausing");
+			return "Pausing";
 		case SERVICE_CONTROL_CONTINUE:
-			return("Continuing");
+			return "Continuing";
 		case SERVICE_CONTROL_INTERROGATE:
-			return("Interrogating");
+			return "Interrogating";
 		case SERVICE_CONTROL_SHUTDOWN:
-			return("Shutting-down");
+			return "Shutting-down";
 
 		/* Synchronet-specific */
 		case SERVICE_CONTROL_RECYCLE:
-			return("Recycling");
+			return "Recycling";
 	}
 	SAFEPRINTF(str, "Control: %d", ctrl);
-	return(str);
+	return str;
 }
 
 /****************************************************************************/
@@ -650,9 +650,9 @@ static DWORD get_service_info(SC_HANDLE hSCManager, char* name, DWORD* state)
 
 	if ((hService = OpenService(hSCManager, name, SERVICE_ALL_ACCESS)) == NULL) {
 		if ((err = GetLastError()) == ERROR_SERVICE_DOES_NOT_EXIST)
-			return(SERVICE_NOT_INSTALLED);
+			return SERVICE_NOT_INSTALLED;
 		printf("\n!ERROR %d opening service: %s\n", err, name);
-		return(-1);
+		return -1;
 	}
 
 	if (QueryServiceConfig(
@@ -663,7 +663,7 @@ static DWORD get_service_info(SC_HANDLE hSCManager, char* name, DWORD* state)
 			) || GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
 		printf("\n!Unexpected QueryServiceConfig ERROR %u\n", err = GetLastError());
 		CloseServiceHandle(hService);
-		return(-1);
+		return -1;
 	}
 
 	if (state != NULL && QueryServiceStatus(hService, &status))
@@ -672,7 +672,7 @@ static DWORD get_service_info(SC_HANDLE hSCManager, char* name, DWORD* state)
 	if ((service_config = malloc(size)) == NULL) {
 		printf("\n!ERROR allocating %u bytes of memory\n", size);
 		CloseServiceHandle(hService);
-		return(-1);
+		return -1;
 	}
 
 	if (!QueryServiceConfig(
@@ -684,7 +684,7 @@ static DWORD get_service_info(SC_HANDLE hSCManager, char* name, DWORD* state)
 		printf("\n!QueryServiceConfig ERROR %u\n", GetLastError());
 		CloseServiceHandle(hService);
 		free(service_config);
-		return(-1);
+		return -1;
 	}
 	CloseServiceHandle(hService);
 	ret = service_config->dwStartType;
@@ -752,7 +752,7 @@ static int install(const char* svc_name)
 	if (GetModuleFileName(NULL, path, sizeof(path)) == 0)
 	{
 		fprintf(stderr, "!ERROR %d getting module file name\n", GetLastError());
-		return(-1);
+		return -1;
 	}
 
 	hSCManager = OpenSCManager(
@@ -762,7 +762,7 @@ static int install(const char* svc_name)
 		);
 	if (hSCManager == NULL) {
 		fprintf(stderr, "!ERROR %d opening SC manager\n", GetLastError());
-		return(-1);
+		return -1;
 	}
 
 	hSCMlib = LoadLibrary("ADVAPI32.DLL");
@@ -784,7 +784,7 @@ static int install(const char* svc_name)
 
 	CloseServiceHandle(hSCManager);
 
-	return(0);
+	return 0;
 }
 
 static SC_HANDLE open_service(SC_HANDLE hSCManager, char* name)
@@ -797,10 +797,10 @@ static SC_HANDLE open_service(SC_HANDLE hSCManager, char* name)
 			printf("Not installed\n");
 		else
 			printf("\n!ERROR %d opening service: %s\n", err, name);
-		return(NULL);
+		return NULL;
 	}
 
-	return(hService);
+	return hService;
 }
 
 /****************************************************************************/
@@ -908,7 +908,7 @@ static int control(const char* svc_name, DWORD ctrl)
 		);
 	if (hSCManager == NULL) {
 		fprintf(stderr, "!ERROR %d opening SC manager\n", GetLastError());
-		return(-1);
+		return -1;
 	}
 
 	for (i = 0; ntsvc_list[i] != NULL; i++) {
@@ -937,7 +937,7 @@ static int control(const char* svc_name, DWORD ctrl)
 
 	CloseServiceHandle(hSCManager);
 
-	return(0);
+	return 0;
 }
 
 /****************************************************************************/
@@ -988,7 +988,7 @@ static int uninstall(const char* svc_name)
 		);
 	if (hSCManager == NULL) {
 		fprintf(stderr, "!ERROR %d opening SC manager\n", GetLastError());
-		return(-1);
+		return -1;
 	}
 
 	for (i = 0; ntsvc_list[i] != NULL; i++)
@@ -1001,7 +1001,7 @@ static int uninstall(const char* svc_name)
 
 	CloseServiceHandle(hSCManager);
 
-	return(0);
+	return 0;
 }
 
 /****************************************************************************/
@@ -1054,7 +1054,7 @@ static int enable(const char* svc_name, bool enabled)
 		);
 	if (hSCManager == NULL) {
 		fprintf(stderr, "!ERROR %d opening SC manager\n", GetLastError());
-		return(-1);
+		return -1;
 	}
 
 	for (i = 0; ntsvc_list[i] != NULL; i++)
@@ -1069,7 +1069,7 @@ static int enable(const char* svc_name, bool enabled)
 
 	CloseServiceHandle(hSCManager);
 
-	return(0);
+	return 0;
 }
 
 /****************************************************************************/
@@ -1089,7 +1089,7 @@ static int list(const char* svc_name)
 		);
 	if (hSCManager == NULL) {
 		fprintf(stderr, "!ERROR %d opening SC manager\n", GetLastError());
-		return(-1);
+		return -1;
 	}
 
 	for (i = 0; ntsvc_list[i] != NULL; i++) {
@@ -1106,7 +1106,7 @@ static int list(const char* svc_name)
 
 	CloseServiceHandle(hSCManager);
 
-	return(0);
+	return 0;
 }
 
 /****************************************************************************/
@@ -1124,7 +1124,7 @@ static int start(const char* svc_name, int argc, char** argv)
 		);
 	if (hSCManager == NULL) {
 		fprintf(stderr, "!ERROR %d opening SC manager\n", GetLastError());
-		return(-1);
+		return -1;
 	}
 
 	for (i = 0; ntsvc_list[i] != NULL; i++) {
@@ -1140,7 +1140,7 @@ static int start(const char* svc_name, int argc, char** argv)
 
 	CloseServiceHandle(hSCManager);
 
-	return(0);
+	return 0;
 }
 
 /****************************************************************************/
@@ -1304,7 +1304,7 @@ int main(int argc, char** argv)
 		printf("This may take several seconds.  Please wait.\n" );
 
 		if (StartServiceCtrlDispatcher(ServiceDispatchTable))
-			return(0);
+			return 0;
 
 		safe_snprintf(str, sizeof(str), "!ERROR %u starting service control dispatcher", GetLastError());
 		printf("%s\n\n", str);
@@ -1335,5 +1335,5 @@ int main(int argc, char** argv)
 	for (i = 0; ntsvc_list[i] != NULL; i++)
 		printf("%-20s %s\n", ntsvc_list[i]->name + STRLEN_SYNCHRONET, ntsvc_list[i]->display_name);
 
-	return(0);
+	return 0;
 }

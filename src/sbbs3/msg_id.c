@@ -28,8 +28,8 @@
 static ulong msg_number(smbmsg_t* msg)
 {
 	if (msg->idx.number)
-		return(msg->idx.number);
-	return(msg->hdr.number);
+		return msg->idx.number;
+	return msg->hdr.number;
 }
 
 uint32_t get_new_msg_number(smb_t* smb)
@@ -49,8 +49,8 @@ uint32_t get_new_msg_number(smb_t* smb)
 static ulong msg_time(smbmsg_t* msg)
 {
 	if (msg->idx.time)
-		return(msg->idx.time);
-	return(msg->hdr.when_imported.time);
+		return msg->idx.time;
+	return msg->hdr.when_imported.time;
 }
 
 static ulong msgid_serialno(smbmsg_t* msg)
@@ -98,7 +98,7 @@ char* get_msgid(scfg_t* cfg, int subnum, smbmsg_t* msg, char* msgid, size_t maxl
 
 	if (msg->id != NULL && *msg->id != 0) {
 		strncpy(msgid, msg->id, maxlen);
-		return(msg->id);
+		return msg->id;
 	}
 
 	/* Try *really* hard to get a hostname from the configuration data */
@@ -127,7 +127,7 @@ char* get_msgid(scfg_t* cfg, int subnum, smbmsg_t* msg, char* msgid, size_t maxl
 		              , cfg->sub[subnum]->code
 		              , host);
 
-	return(msgid);
+	return msgid;
 }
 
 /****************************************************************************/

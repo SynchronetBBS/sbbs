@@ -44,7 +44,7 @@ static int lprintf(xmodem_t* xm, int level, const char *fmt, ...)
 	char    sbuf[1024];
 
 	if (xm->lputs == NULL)
-		return(-1);
+		return -1;
 	if (xm->log_level != NULL)
 		if (level > *xm->log_level)
 			return 0;
@@ -53,21 +53,21 @@ static int lprintf(xmodem_t* xm, int level, const char *fmt, ...)
 	vsnprintf(sbuf, sizeof(sbuf), fmt, argptr);
 	sbuf[sizeof(sbuf) - 1] = 0;
 	va_end(argptr);
-	return(xm->lputs(xm->cbdata, level, sbuf));
+	return xm->lputs(xm->cbdata, level, sbuf);
 }
 
 static BOOL is_connected(xmodem_t* xm)
 {
 	if (xm->is_connected != NULL)
-		return(xm->is_connected(xm->cbdata));
-	return(TRUE);
+		return xm->is_connected(xm->cbdata);
+	return TRUE;
 }
 
 static BOOL is_cancelled(xmodem_t* xm)
 {
 	if (xm->is_cancelled != NULL)
-		return(xm->cancelled = xm->is_cancelled(xm->cbdata));
-	return(xm->cancelled);
+		return xm->cancelled = xm->is_cancelled(xm->cbdata);
+	return xm->cancelled;
 }
 
 static void xmodem_flush(xmodem_t* xm)
@@ -81,19 +81,19 @@ static char *chr(uchar ch)
 	static char str[25];
 
 	switch (ch) {
-		case SOH:   return("SOH");
-		case STX:   return("STX");
-		case ETX:   return("ETX");
-		case EOT:   return("EOT");
-		case ACK:   return("ACK");
-		case NAK:   return("NAK");
-		case CAN:   return("CAN");
+		case SOH:   return "SOH";
+		case STX:   return "STX";
+		case ETX:   return "ETX";
+		case EOT:   return "EOT";
+		case ACK:   return "ACK";
+		case NAK:   return "NAK";
+		case CAN:   return "CAN";
 	}
 	if (ch >= ' ' && ch <= '~')
 		sprintf(str, "'%c' (%02Xh)", ch, ch);
 	else
 		sprintf(str, "%u (%02Xh)", ch, ch);
-	return(str);
+	return str;
 }
 
 
@@ -207,7 +207,7 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, unsigned expected_block_num)
 					xmodem_put_nak(xm, expected_block_num); /* chuck's double EOT trick */
 					continue;
 				}
-				return(EOT);
+				return EOT;
 			case CAN:
 				if (!can) {          /* must get two CANs in a row */
 					can = 1;
@@ -216,15 +216,15 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, unsigned expected_block_num)
 					continue;
 				}
 				lprintf(xm, LOG_WARNING, "Block %u: Canceled remotely", expected_block_num);
-				return(CAN);
+				return CAN;
 			default:
 				lprintf(xm, LOG_WARNING, "Block %u: Received %s  Expected SOH, STX, or EOT"
 				        , expected_block_num, chr((uchar)i));
 			/* Fall-through */
 			case NOINP:     /* Nothing came in */
 				if (eot)
-					return(EOT);
-				return(NOINP);
+					return EOT;
+				return NOINP;
 		}
 		if ((i = getcom(xm->byte_timeout)) == NOINP)
 			break;
@@ -277,9 +277,9 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, unsigned expected_block_num)
 			lprintf(xm, LOG_WARNING, "Block number error (%u received, expected %u)"
 			        , block_num, expected_block_num & 0xff);
 			if ((*xm->mode) & XMODEM && expected_block_num == 1 && block_num == 0)
-				return(NOT_XMODEM);
+				return NOT_XMODEM;
 			if (expected_block_num == 0 && block_num == 1)
-				return(NOT_YMODEM);
+				return NOT_YMODEM;
 			if (expected_block_num && block_num == (uchar)((expected_block_num - 1) & 0xff))
 				continue;   /* silently discard repeated packets (ymodem.doc 7.3.2) */
 			break;
@@ -306,7 +306,7 @@ int xmodem_put_block(xmodem_t* xm, uchar* block, unsigned block_size, unsigned b
 	else            /* 1024 */
 		result = putcom(STX);
 	if (result != 0)
-		return(result);
+		return result;
 	ch = (uchar)(block_num & 0xff);
 	if ((result = putcom(ch)) != 0)
 		return result;
@@ -351,9 +351,9 @@ int xmodem_get_ack(xmodem_t* xm, unsigned tries, unsigned block_num)
 			if (getcom(0) == CAN) {
 				lprintf(xm, LOG_WARNING, "Block %u: !Canceled remotely", block_num);
 				xmodem_cancel(xm);
-				return(CAN);
+				return CAN;
 			}
-			return(ACK);
+			return ACK;
 		}
 
 		i = getcom(xm->ack_timeout);
@@ -365,7 +365,7 @@ int xmodem_get_ack(xmodem_t* xm, unsigned tries, unsigned block_num)
 			if (can) {   /* 2 CANs in a row */
 				lprintf(xm, LOG_WARNING, "Block %u: !Canceled remotely", block_num);
 				xmodem_cancel(xm);
-				return(CAN);
+				return CAN;
 			}
 			can = 1;
 		}
@@ -373,13 +373,13 @@ int xmodem_get_ack(xmodem_t* xm, unsigned tries, unsigned block_num)
 			lprintf(xm, LOG_WARNING, "Block %u: !Received %s  Expected ACK"
 			        , block_num, chr((uchar)i));
 			if (i != CAN)
-				return(i);
+				return i;
 		}
 		if (i != CAN)
 			errors++;
 	}
 
-	return(i);
+	return i;
 }
 
 BOOL xmodem_get_mode(xmodem_t* xm)
@@ -398,23 +398,23 @@ BOOL xmodem_get_mode(xmodem_t* xm)
 		switch (i) {
 			case NAK:       /* checksum */
 				lprintf(xm, LOG_INFO, "Receiver requested mode: 8-bit Checksum");
-				return(TRUE);
+				return TRUE;
 			case 'C':
 				lprintf(xm, LOG_INFO, "Receiver requested mode: 16-bit CRC");
 				if (!xm->crc_mode_supported)
 					continue;
 				*(xm->mode) |= CRC;
-				return(TRUE);
+				return TRUE;
 			case 'G':
 				lprintf(xm, LOG_INFO, "Receiver requested mode: Streaming, 16-bit CRC");
 				if (!xm->crc_mode_supported || !xm->g_mode_supported)
 					continue;
 				*(xm->mode) |= (GMODE | CRC);
-				return(TRUE);
+				return TRUE;
 			case CAN:
 				if (can) {
 					lprintf(xm, LOG_WARNING, "Canceled remotely");
-					return(FALSE);
+					return FALSE;
 				}
 				can = 1;
 				break;
@@ -428,7 +428,7 @@ BOOL xmodem_get_mode(xmodem_t* xm)
 	}
 
 	lprintf(xm, LOG_ERR, "Failed to get transfer mode request from receiver");
-	return(FALSE);
+	return FALSE;
 }
 
 BOOL xmodem_put_eot(xmodem_t* xm)
@@ -450,7 +450,7 @@ BOOL xmodem_put_eot(xmodem_t* xm)
 			continue;
 		lprintf(xm, LOG_INFO, "Received %s", chr((uchar)ch));
 		if (ch == ACK)
-			return(TRUE);
+			return TRUE;
 		if (ch == CAN && ++cans > 1)
 			break;
 		if (ch == NAK && errors == 0 && (*(xm->mode) & (YMODEM | GMODE)) == YMODEM) {
@@ -458,7 +458,7 @@ BOOL xmodem_put_eot(xmodem_t* xm)
 		}
 		lprintf(xm, LOG_WARNING, "Expected ACK");
 	}
-	return(FALSE);
+	return FALSE;
 }
 
 BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, uint64_t* sent)
@@ -597,13 +597,13 @@ BOOL xmodem_send_file(xmodem_t* xm, const char* fname, FILE* fp, time_t* start, 
 	if (sent != NULL)
 		*sent = sent_bytes;
 
-	return(success);
+	return success;
 }
 
 
 const char* xmodem_source(void)
 {
-	return(__FILE__);
+	return __FILE__;
 }
 
 char* xmodem_ver(char *buf)

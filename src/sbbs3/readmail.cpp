@@ -889,5 +889,5 @@ int sbbs_t::searchmail(mail_t *mail, int start, int msgs, int which, const char 
 		smb_freemsgmem(&msg);
 	}
 
-	return(found);
+	return found;
 }

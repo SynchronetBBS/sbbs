@@ -104,7 +104,7 @@ faddr_t atofaddr(char *str)
 	}
 	if ((p = strchr(str, '.')) != NULL)
 		addr.point = atoi(p + 1);
-	return(addr);
+	return addr;
 }
 
 uint getgrp(char* title)
@@ -128,7 +128,7 @@ uint getsub(void)
 	while (1) {
 		i = getgrp("Select Message Group");
 		if (i == -1)
-			return(-1);
+			return -1;
 		for (j = k = 0; j < cfg.total_subs && k < MAX_OPTS; j++)
 			if (cfg.sub[j]->grp == i) {
 				snprintf(opt[k], MAX_OPLN, "%-25s", cfg.sub[j]->lname);
@@ -141,7 +141,7 @@ uint getsub(void)
 			continue;
 		sub_dflt++;
 		sub_bar++;
-		return(subnum[j]);
+		return subnum[j];
 	}
 }
 
@@ -1666,9 +1666,9 @@ char *daystr(char days)
 
 	days &= 0x7f;
 
-	if (days == 0)     return("None");
+	if (days == 0)     return "None";
 
-	if (days == 0x7f)  return("All");
+	if (days == 0x7f)  return "All";
 
 	str[0] = 0;
 	for (i = 0; i < 7; i++) {
@@ -1677,5 +1677,5 @@ char *daystr(char days)
 			SAFECAT(str, " ");
 		}
 	}
-	return(str);
+	return str;
 }

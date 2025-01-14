@@ -68,7 +68,7 @@ char* socklib_version(char* str, size_t size, char* winsock_ver)
 
 #endif
 
-	return(str);
+	return str;
 }
 
 #if defined(SBBS) && !defined(JSDOOR)

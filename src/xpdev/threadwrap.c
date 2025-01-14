@@ -72,11 +72,11 @@ ulong _beginthread(void (*start_address)( void * )
 	                   , (void * (*)(void *)) start_address
 	                   , arglist) == 0) {
 		pthread_attr_destroy(&attr);
-		return((ulong) thread /* thread handle */);
+		return (ulong) thread /* thread handle */;
 	}
 
 	pthread_attr_destroy(&attr);
-	return(-1); /* error */
+	return -1; /* error */
 }
 #else
 
@@ -113,7 +113,7 @@ bool pthread_mutex_init_np(pthread_mutex_t *mutex, bool recursive)
 	(void)recursive;
 	pthread_mutex_init(mutex, NULL);
 #endif
-	return(true);
+	return true;
 }
 
 /****************************************************************************/
@@ -136,7 +136,7 @@ pthread_mutex_t pthread_mutex_initializer_np(bool recursive)
 	(void)recursive;
 	pthread_mutex_init(&mutex, NULL);
 #endif
-	return(mutex);
+	return mutex;
 }
 
 #if !defined(_POSIX_THREADS)
@@ -168,7 +168,7 @@ int pthread_mutex_init(pthread_mutex_t* mutex, void* attr)
 {
 	(void)attr;
 #if defined(PTHREAD_MUTEX_AS_WIN32_MUTEX)
-	return ((((*mutex) = CreateMutex(/* security */ NULL, /* owned */ FALSE, /* name */ NULL)) == NULL) ? -1 : 0);
+	return (((*mutex) = CreateMutex(/* security */ NULL, /* owned */ FALSE, /* name */ NULL)) == NULL) ? -1 : 0;
 #elif defined(_WIN32)   /* Win32 Critical Section */
 	InitializeCriticalSection(mutex);
 	return 0;   /* No error */
@@ -180,7 +180,7 @@ int pthread_mutex_init(pthread_mutex_t* mutex, void* attr)
 int pthread_mutex_lock(pthread_mutex_t* mutex)
 {
 #if defined(PTHREAD_MUTEX_AS_WIN32_MUTEX)
-	return (WaitForSingleObject(*mutex, INFINITE) == WAIT_OBJECT_0 ? 0 : EBUSY);
+	return WaitForSingleObject(*mutex, INFINITE) == WAIT_OBJECT_0 ? 0 : EBUSY;
 #elif defined(_WIN32)   /* Win32 Critical Section */
 	EnterCriticalSection(mutex);
 	return 0;   /* No error */
@@ -192,10 +192,10 @@ int pthread_mutex_lock(pthread_mutex_t* mutex)
 int pthread_mutex_trylock(pthread_mutex_t* mutex)
 {
 #if defined(PTHREAD_MUTEX_AS_WIN32_MUTEX)
-	return (WaitForSingleObject(*mutex, 0) == WAIT_OBJECT_0 ? 0 : EBUSY);
+	return WaitForSingleObject(*mutex, 0) == WAIT_OBJECT_0 ? 0 : EBUSY;
 #elif defined(_WIN32)   /* Win32 Critical Section */
 	/* TryEnterCriticalSection only available on NT4+ :-( */
-	return (TryEnterCriticalSection(mutex) ? 0 : EBUSY);
+	return TryEnterCriticalSection(mutex) ? 0 : EBUSY;
 #elif defined(__OS2__)
 	return DosRequestMutexSem(*mutex, 0 /* SEM_IMMEDIATE_RETURN */);
 #endif
@@ -204,7 +204,7 @@ int pthread_mutex_trylock(pthread_mutex_t* mutex)
 int pthread_mutex_unlock(pthread_mutex_t* mutex)
 {
 #if defined(PTHREAD_MUTEX_AS_WIN32_MUTEX)
-	return (ReleaseMutex(*mutex) ? 0 : GetLastError());
+	return ReleaseMutex(*mutex) ? 0 : GetLastError();
 #elif defined(_WIN32)   /* Win32 Critical Section */
 	LeaveCriticalSection(mutex);
 	return 0;   /* No error */
@@ -216,7 +216,7 @@ int pthread_mutex_unlock(pthread_mutex_t* mutex)
 int pthread_mutex_destroy(pthread_mutex_t* mutex)
 {
 #if defined(PTHREAD_MUTEX_AS_WIN32_MUTEX)
-	return (CloseHandle(*mutex) ? 0 : GetLastError());
+	return CloseHandle(*mutex) ? 0 : GetLastError();
 #elif defined(_WIN32)   /* Win32 Critical Section */
 	DeleteCriticalSection(mutex);
 	return 0;   /* No error */

@@ -70,7 +70,7 @@ SOCKET open_socket(int domain, int type, const char* protocol)
 	if (sock != INVALID_SOCKET && set_socket_options(&scfg, sock, protocol, error, sizeof(error)))
 		lprintf(LOG_ERR, "%04d !ERROR %s", sock, error);
 
-	return(sock);
+	return sock;
 }
 
 SOCKET accept_socket(SOCKET s, union xp_sockaddr* addr, socklen_t* addrlen)
@@ -79,7 +79,7 @@ SOCKET accept_socket(SOCKET s, union xp_sockaddr* addr, socklen_t* addrlen)
 
 	sock = accept(s, &addr->addr, addrlen);
 
-	return(sock);
+	return sock;
 }
 
 int close_socket(SOCKET sock)
@@ -87,13 +87,13 @@ int close_socket(SOCKET sock)
 	int result;
 
 	if (sock == INVALID_SOCKET || sock == 0)
-		return(0);
+		return 0;
 
 	shutdown(sock, SHUT_RDWR);   /* required on Unix */
 	result = closesocket(sock);
 	if (result != 0 && ERROR_VALUE != ENOTSOCK)
 		lprintf(LOG_WARNING, "!ERROR %d closing socket %d", ERROR_VALUE, sock);
-	return(result);
+	return result;
 }
 
 DLLEXPORT void DLLCALL sbbs_srand()
@@ -118,7 +118,7 @@ DLLEXPORT void DLLCALL sbbs_srand()
 
 int DLLCALL sbbs_random(int n)
 {
-	return(xp_random(n));
+	return xp_random(n);
 }
 
 JSBool
@@ -130,16 +130,16 @@ DLLCALL js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec
 		if (props[i].tinyid < 256 && props[i].tinyid > -129) {
 			if (!JS_DefinePropertyWithTinyId(cx, obj,
 			                                 props[i].name, props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags | JSPROP_SHARED))
-				return(JS_FALSE);
+				return JS_FALSE;
 		}
 		else {
 			if (!JS_DefineProperty(cx, obj, props[i].name, JSVAL_VOID, NULL, NULL, props[i].flags | JSPROP_SHARED))
-				return(JS_FALSE);
+				return JS_FALSE;
 		}
 
 	}
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 
@@ -150,8 +150,8 @@ DLLCALL js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec *fun
 
 	for (i = 0; funcs[i].name; i++)
 		if (!JS_DefineFunction(cx, obj, funcs[i].name, funcs[i].call, funcs[i].nargs, 0))
-			return(JS_FALSE);
-	return(JS_TRUE);
+			return JS_FALSE;
+	return JS_TRUE;
 }
 
 JSBool
@@ -166,14 +166,14 @@ DLLCALL js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertyS
 				if (props[i].tinyid < 256 && props[i].tinyid > -129) {
 					if (!JS_DefinePropertyWithTinyId(cx, obj,
 					                                 props[i].name, props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags | JSPROP_SHARED))
-						return(JS_FALSE);
+						return JS_FALSE;
 				}
 				else {
 					if (!JS_DefineProperty(cx, obj, props[i].name, JSVAL_VOID, NULL, NULL, props[i].flags | JSPROP_SHARED))
-						return(JS_FALSE);
+						return JS_FALSE;
 				}
 				if (name)
-					return(JS_TRUE);
+					return JS_TRUE;
 			}
 		}
 	}
@@ -181,9 +181,9 @@ DLLCALL js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertyS
 		for (i = 0; funcs[i].name; i++) {
 			if (name == NULL || strcmp(name, funcs[i].name) == 0) {
 				if (!JS_DefineFunction(cx, obj, funcs[i].name, funcs[i].call, funcs[i].nargs, 0))
-					return(JS_FALSE);
+					return JS_FALSE;
 				if (name)
-					return(JS_TRUE);
+					return JS_TRUE;
 			}
 		}
 	}
@@ -193,15 +193,15 @@ DLLCALL js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertyS
 				val = INT_TO_JSVAL(consts[i].val);
 
 				if (!JS_DefineProperty(cx, obj, consts[i].name, val, NULL, NULL, flags))
-					return(JS_FALSE);
+					return JS_FALSE;
 
 				if (name)
-					return(JS_TRUE);
+					return JS_TRUE;
 			}
 		}
 	}
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 // Needed for load()
@@ -235,7 +235,7 @@ bool DLLCALL js_CreateCommonObjects(JSContext* js_cx
 
 	/* Global Object */
 	if (!js_CreateGlobalObject(js_cx, &scfg, methods, js_startup, glob))
-		return(FALSE);
+		return FALSE;
 #ifdef JS_HAS_CTYPES
 	JS_InitCTypesClass(js_cx, *glob);
 #endif
@@ -298,7 +298,7 @@ bool DLLCALL js_CreateCommonObjects(JSContext* js_cx
 	if (!success)
 		JS_RemoveObjectRoot(js_cx, glob);
 
-	return(success);
+	return success;
 }
 
 #define PROG_NAME   "JSDoor"

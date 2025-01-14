@@ -75,7 +75,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						putmsg(cmdstr(*pp, path, csi->str, buf)
 						       , P_SAVEATR | P_NOABORT | P_NOATCODES);
 					csi->ip += 4;
-					return(0);
+					return 0;
 				case VAR_PRINTF:
 				case VAR_PRINTF_LOCAL:
 					op = *(csi->ip - 1);
@@ -86,7 +86,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						lputs(LOG_INFO, cmdstr(p, path, csi->str, buf));
 					}
 					free(p);
-					return(0);
+					return 0;
 				case SHOW_VARS:
 					bprintf("shell     str=(%p) %s\r\n"
 					        , csi->str, csi->str);
@@ -110,11 +110,11 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						        , i, global_int_var_name[i]
 						        , global_int_var[i]
 						        , global_int_var[i]);
-					return(0);
+					return 0;
 				case DEFINE_STR_VAR:
 					if (getstrvar(csi, *(int32_t *)csi->ip)) {
 						csi->ip += 4;
-						return(0);
+						return 0;
 					}
 					csi->str_vars++;
 					csi->str_var = (char **)realloc_or_free(csi->str_var
@@ -140,11 +140,11 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						csi->str_var[csi->str_vars - 1] = 0;
 					}
 					csi->ip += 4; /* Skip variable name */
-					return(0);
+					return 0;
 				case DEFINE_INT_VAR:
 					if (getintvar(csi, *(int32_t *)csi->ip)) {
 						csi->ip += 4;
-						return(0);
+						return 0;
 					}
 					csi->int_vars++;
 					csi->int_var = (int32_t *)realloc_or_free(csi->int_var
@@ -170,11 +170,11 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						csi->int_var[csi->int_vars - 1] = 0;
 					}
 					csi->ip += 4; /* Skip variable name */
-					return(0);
+					return 0;
 				case DEFINE_GLOBAL_STR_VAR:
 					if (getstrvar(csi, *(int32_t *)csi->ip)) {
 						csi->ip += 4;
-						return(0);
+						return 0;
 					}
 					global_str_vars++;
 					global_str_var = (char **)realloc_or_free(global_str_var
@@ -201,11 +201,11 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						global_str_var[global_str_vars - 1] = 0;
 					}
 					csi->ip += 4; /* Skip variable name */
-					return(0);
+					return 0;
 				case DEFINE_GLOBAL_INT_VAR:
 					if (getintvar(csi, *(int32_t *)csi->ip)) {
 						csi->ip += 4;
-						return(0);
+						return 0;
 					}
 					global_int_vars++;
 					global_int_var = (int32_t *)realloc_or_free(global_int_var
@@ -232,7 +232,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						global_int_var[global_int_vars - 1] = 0;
 					}
 					csi->ip += 4; /* Skip variable name */
-					return(0);
+					return 0;
 
 				case SET_STR_VAR:
 					pp = getstrvar(csi, *(int32_t *)csi->ip);
@@ -241,14 +241,14 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						*pp = copystrvar(csi, *pp
 						                 , cmdstr((char *)csi->ip, path, csi->str, buf));
 					while (*(csi->ip++));    /* Find NULL */
-					return(0);
+					return 0;
 				case SET_INT_VAR:
 					lp = getintvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4; /* Skip variable name */
 					if (lp)
 						*lp = *(int32_t *)csi->ip;
 					csi->ip += 4; /* Skip value */
-					return(0);
+					return 0;
 				case COMPARE_STR_VAR:
 					pp = getstrvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4; /* Skip variable name */
@@ -262,7 +262,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 							csi->logic = LOGIC_FALSE;
 					}
 					while (*(csi->ip++));    /* Find NULL */
-					return(0);
+					return 0;
 				case STRSTR_VAR:
 					pp = getstrvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4; /* Skip variable name */
@@ -272,7 +272,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					else
 						csi->logic = LOGIC_FALSE;
 					while (*(csi->ip++));    /* Find NULL */
-					return(0);
+					return 0;
 				case STRNCMP_VAR:
 					i = *csi->ip++;
 					pp = getstrvar(csi, *(int32_t *)csi->ip);
@@ -283,7 +283,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					else
 						csi->logic = LOGIC_FALSE;
 					while (*(csi->ip++));    /* Find NULL */
-					return(0);
+					return 0;
 				case STRNCMP_VARS:
 					i = *csi->ip++;
 					pp1 = getstrvar(csi, *(int32_t *)csi->ip);
@@ -294,7 +294,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						csi->logic = strnicmp(*pp1, *pp2, i);
 					else
 						csi->logic = LOGIC_FALSE;
-					return(0);
+					return 0;
 				case STRSTR_VARS:
 					pp1 = getstrvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4; /* Skip variable name */
@@ -304,7 +304,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						csi->logic = LOGIC_TRUE;
 					else
 						csi->logic = LOGIC_FALSE;
-					return(0);
+					return 0;
 				case COMPARE_INT_VAR:
 					lp = getintvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4; /* Skip variable name */
@@ -312,7 +312,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					csi->ip += 4; /* Skip static value */
 					if (!lp) {   /* Unknown variable */
 						csi->logic = LOGIC_FALSE;
-						return(0);
+						return 0;
 					}
 					if (*lp > l)
 						csi->logic = LOGIC_GREATER;
@@ -320,7 +320,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						csi->logic = LOGIC_LESS;
 					else
 						csi->logic = LOGIC_EQUAL;
-					return(0);
+					return 0;
 				case COMPARE_VARS:
 					lp1 = lp2 = 0;
 					pp1 = getstrvar(csi, *(int32_t *)csi->ip);
@@ -338,7 +338,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 							csi->logic = LOGIC_TRUE;
 						else
 							csi->logic = LOGIC_FALSE;
-						return(0);
+						return 0;
 					}
 
 					if (pp1) { /* ASCII */
@@ -348,7 +348,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						}
 						else
 							csi->logic = stricmp(*pp1, *pp2);
-						return(0);
+						return 0;
 					}
 
 					/* Binary */
@@ -360,7 +360,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 							csi->logic = LOGIC_LESS;
 						else
 							csi->logic = LOGIC_EQUAL;
-						return(0);
+						return 0;
 					}
 					if (*lp1 > *lp2)
 						csi->logic = LOGIC_GREATER;
@@ -368,7 +368,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						csi->logic = LOGIC_LESS;
 					else
 						csi->logic = LOGIC_EQUAL;
-					return(0);
+					return 0;
 				case COPY_VAR:
 					lp1 = lp2 = 0;
 					pp1 = getstrvar(csi, *(int32_t *)csi->ip);
@@ -383,7 +383,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					if ((!pp1 && !lp1)
 					    || ((!pp2 || !*pp2) && !lp2)) {
 						csi->logic = LOGIC_FALSE;
-						return(0);
+						return 0;
 					}
 					csi->logic = LOGIC_TRUE;
 
@@ -393,13 +393,13 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						else
 							strcpy(tmp, *pp2);
 						*pp1 = copystrvar(csi, *pp1, tmp);
-						return(0);
+						return 0;
 					}
 					if (!lp2)
 						*lp1 = strtol(*pp2, 0, 0);
 					else
 						*lp1 = *lp2;
-					return(0);
+					return 0;
 				case SWAP_VARS:
 					lp1 = lp2 = 0;
 					pp1 = getstrvar(csi, *(int32_t *)csi->ip);
@@ -414,7 +414,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					if (((!pp1 || !*pp1) && !lp1)
 					    || ((!pp2 || !*pp2) && !lp2)) {
 						csi->logic = LOGIC_FALSE;
-						return(0);
+						return 0;
 					}
 
 					csi->logic = LOGIC_TRUE;
@@ -437,7 +437,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 							*pp1 = *pp2;
 							*pp2 = p;
 						}
-						return(0);
+						return 0;
 					}
 
 					/* Binary */
@@ -458,7 +458,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						*lp1 = *lp2;
 						*lp2 = l;
 					}
-					return(0);
+					return 0;
 				case CAT_STR_VAR:
 					pp = getstrvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4; /* Skip variable name */
@@ -476,7 +476,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					}
 					if (pp && *pp)
 						strcat(*pp, tmp);
-					return(0);
+					return 0;
 				case CAT_STR_VARS:
 					pp1 = getstrvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4; /* Skip dest variable name */
@@ -488,7 +488,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						lp = getintvar(csi, *(int32_t *)(csi->ip - 4));
 						if (lp == NULL) {
 							csi->logic = LOGIC_FALSE;
-							return(0);
+							return 0;
 						}
 						pp = pp1;
 						tmp[0] = (uchar) * lp;
@@ -505,12 +505,12 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						}
 						if (pp && *pp)
 							strcat(*pp, tmp);
-						return(0);
+						return 0;
 					}
 
 					if (!pp1 || !pp2 || !*pp2) {
 						csi->logic = LOGIC_FALSE;
-						return(0);
+						return 0;
 					}
 					csi->logic = LOGIC_TRUE;
 					if (*pp1)
@@ -525,7 +525,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					}
 					if (*pp1 != NULL)
 						strcat(*pp1, *pp2);
-					return(0);
+					return 0;
 				case FORMAT_STR_VAR:
 					pp = getstrvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4; /* Skip variable name */
@@ -534,7 +534,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					if (pp)
 						*pp = copystrvar(csi, *pp, str);
 					free(p);
-					return(0);
+					return 0;
 				case FORMAT_TIME_STR:
 					pp = getstrvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4; /* Skip variable name */
@@ -550,7 +550,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 							*pp = copystrvar(csi, *pp, buf);
 						}
 					}
-					return(0);
+					return 0;
 				case TIME_STR:
 					pp = getstrvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4; /* Skip str variable name */
@@ -560,7 +560,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						strcpy(str, timestr(*lp));
 						*pp = copystrvar(csi, *pp, str);
 					}
-					return(0);
+					return 0;
 				case DATE_STR:
 					pp = getstrvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4; /* Skip str variable name */
@@ -569,7 +569,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					if (pp && lp) {
 						*pp = copystrvar(csi, *pp, datestr(*lp, str));
 					}
-					return(0);
+					return 0;
 				case SECOND_STR:
 					pp = getstrvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4; /* Skip str variable name */
@@ -579,31 +579,31 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						sectostr(*lp, str);
 						*pp = copystrvar(csi, *pp, str);
 					}
-					return(0);
+					return 0;
 				case STRUPR_VAR:
 					pp = getstrvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4;
 					if (pp && *pp)
 						strupr(*pp);
-					return(0);
+					return 0;
 				case STRLWR_VAR:
 					pp = getstrvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4;
 					if (pp && *pp)
 						strlwr(*pp);
-					return(0);
+					return 0;
 				case TRUNCSP_STR_VAR:
 					pp = getstrvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4;
 					if (pp && *pp)
 						truncsp(*pp);
-					return(0);
+					return 0;
 				case STRIP_CTRL_STR_VAR:
 					pp = getstrvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4;
 					if (pp && *pp)
 						strip_ctrl(*pp, *pp);
-					return(0);
+					return 0;
 
 				case ADD_INT_VAR:
 				case SUB_INT_VAR:
@@ -620,7 +620,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					l = *(int32_t *)csi->ip;
 					csi->ip += 4;
 					if (!lp)
-						return(0);
+						return 0;
 					switch (i) {
 						case ADD_INT_VAR:
 							*lp += l;
@@ -650,7 +650,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 							*lp ^= l;
 							break;
 					}
-					return(0);
+					return 0;
 				case COMPARE_ANY_BITS:
 				case COMPARE_ALL_BITS:
 					i = *(csi->ip - 1);
@@ -660,7 +660,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					csi->ip += 4;
 					csi->logic = LOGIC_FALSE;
 					if (!lp)
-						return(0);
+						return 0;
 
 					if (i == COMPARE_ANY_BITS) {
 						if (((*lp) & l) != 0)
@@ -669,7 +669,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						if (((*lp) & l) == l)
 							csi->logic = LOGIC_TRUE;
 					}
-					return(0);
+					return 0;
 				case ADD_INT_VARS:
 				case SUB_INT_VARS:
 				case MUL_INT_VARS:
@@ -686,14 +686,14 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					if (!lp2) {
 						pp = getstrvar(csi, *(int32_t *)csi->ip);
 						if (!pp || !*pp)
-							return(0);
+							return 0;
 						l = strtol(*pp, 0, 0);
 					}
 					else
 						l = *lp2;
 					csi->ip += 4;
 					if (!lp1)
-						return(0);
+						return 0;
 					switch (i) {
 						case ADD_INT_VARS:
 							*lp1 += l;
@@ -723,7 +723,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 							*lp1 ^= l;
 							break;
 					}
-					return(0);
+					return 0;
 				case RANDOM_INT_VAR:
 					lp = getintvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4;
@@ -731,13 +731,13 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					csi->ip += 4;
 					if (lp)
 						*lp = sbbs_random(l);
-					return(0);
+					return 0;
 				case TIME_INT_VAR:
 					lp = getintvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4;
 					if (lp)
 						*lp = time32(NULL);
-					return(0);
+					return 0;
 				case DATE_STR_TO_INT:
 					lp = getintvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4;
@@ -745,7 +745,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					csi->ip += 4;
 					if (lp && pp && *pp)
 						*lp = (int32_t)dstrtounix(cfg.sys_date_fmt, *pp);
-					return(0);
+					return 0;
 				case STRLEN_INT_VAR:
 					lp = getintvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4;
@@ -757,7 +757,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						else
 							*lp = 0;
 					}
-					return(0);
+					return 0;
 				case CRC16_TO_INT:
 					lp = getintvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4;
@@ -769,7 +769,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						else
 							*lp = 0;
 					}
-					return(0);
+					return 0;
 				case CRC32_TO_INT:
 					lp = getintvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4;
@@ -781,7 +781,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						else
 							*lp = 0;
 					}
-					return(0);
+					return 0;
 				case CHKSUM_TO_INT:
 					lp = getintvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4;
@@ -795,7 +795,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 								*lp += (uchar) * ((*pp) + (i++));
 						}
 					}
-					return(0);
+					return 0;
 				case FLENGTH_TO_INT:
 					lp = getintvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4;
@@ -807,7 +807,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						else
 							*lp = 0;
 					}
-					return(0);
+					return 0;
 				case FTIME_TO_INT:
 					lp = getintvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4;
@@ -819,7 +819,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						else
 							*lp = 0;
 					}
-					return(0);
+					return 0;
 				case CHARVAL_TO_INT:
 				case COPY_FIRST_CHAR:   // duplicate functionality - doh!
 					lp = getintvar(csi, *(int32_t *)csi->ip);
@@ -832,7 +832,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						else
 							*lp = 0;
 					}
-					return(0);
+					return 0;
 				case GETSTR_VAR:
 				case GETLINE_VAR:
 				case GETNAME_VAR:
@@ -867,12 +867,12 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 							getstr(buf, i, 0);
 					}
 					if (sys_status & SS_ABORT)
-						return(0);
+						return 0;
 					if (pp) {
 						*pp = copystrvar(csi, *pp, buf);
 						csi->logic = LOGIC_TRUE;
 					}
-					return(0);
+					return 0;
 				case GETNUM_VAR:
 					pp = getstrvar(csi, *(int32_t *)csi->ip);
 					if (!pp)
@@ -883,7 +883,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					csi->logic = LOGIC_FALSE;
 					l = getnum(i);
 					if (!pp && !lp)
-						return(0);
+						return 0;
 					if (pp) {
 						if (l <= 0)
 							str[0] = 0;
@@ -891,23 +891,23 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 							ultoa(l, str, 10);
 						*pp = copystrvar(csi, *pp, str);
 						csi->logic = LOGIC_TRUE;
-						return(0);
+						return 0;
 					}
 					if (lp) {
 						*lp = l;
 						csi->logic = LOGIC_TRUE;
 					}
-					return(0);
+					return 0;
 
 				case SHIFT_STR_VAR:
 					pp = getstrvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4;
 					i = *(csi->ip++);
 					if (!pp || !*pp)
-						return(0);
+						return 0;
 					if ((int)strlen(*pp) >= i)
 						memmove(*pp, *pp + i, strlen(*pp) + 1);
-					return(0);
+					return 0;
 
 				case SHIFT_TO_FIRST_CHAR:
 				case SHIFT_TO_LAST_CHAR:
@@ -917,18 +917,18 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					ch = *(csi->ip++);
 					csi->logic = LOGIC_FALSE;
 					if (!pp || !*pp)
-						return(0);
+						return 0;
 					if (i == SHIFT_TO_FIRST_CHAR)
 						p = strchr(*pp, ch);
 					else    /* _TO_LAST_CHAR */
 						p = strrchr(*pp, ch);
 					if (p == NULL)
-						return(0);
+						return 0;
 					csi->logic = LOGIC_TRUE;
 					i = p - *pp;
 					if (i > 0)
 						memmove(*pp, *pp + i, strlen(p) + 1);
-					return(0);
+					return 0;
 
 				case CHKFILE_VAR:
 					pp = getstrvar(csi, *(int32_t *)csi->ip);
@@ -937,7 +937,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						csi->logic = LOGIC_TRUE;
 					else
 						csi->logic = LOGIC_FALSE;
-					return(0);
+					return 0;
 				case PRINTFILE_VAR_MODE:
 					pp = getstrvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4;
@@ -945,7 +945,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					csi->ip += 2;
 					if (pp && *pp)
 						printfile(*pp, i);
-					return(0);
+					return 0;
 				case PRINTTAIL_VAR_MODE:
 					pp = getstrvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4;
@@ -955,7 +955,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					csi->ip++;
 					if (pp && *pp)
 						printtail(*pp, j, i);
-					return(0);
+					return 0;
 				case TELNET_GATE_VAR:
 					l = *(uint32_t *)(csi->ip);   // Mode
 					csi->ip += 4;
@@ -963,14 +963,14 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					csi->ip += 4;
 					if (pp && *pp)
 						telnet_gate(*pp, l);
-					return(0);
+					return 0;
 				case TELNET_GATE_STR:
 					l = *(uint32_t *)(csi->ip);   // Mode
 					csi->ip += 4;
 					strcpy(str, (char *)csi->ip);
 					while (*(csi->ip++));   /* Find NULL */
 					telnet_gate(str, l);
-					return(0);
+					return 0;
 				case COPY_CHAR:
 					pp = getstrvar(csi, *(int32_t *)csi->ip);
 					if (pp == NULL)
@@ -983,7 +983,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						snprintf(tmp, sizeof tmp, "%c", csi->cmd);
 						*pp = copystrvar(csi, *pp, tmp);
 					}
-					return(0);
+					return 0;
 				case COMPARE_FIRST_CHAR:
 					pp = getstrvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4;
@@ -998,7 +998,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						else
 							csi->logic = LOGIC_LESS;
 					}
-					return(0);
+					return 0;
 
 				case SEND_FILE_VIA:
 				case RECEIVE_FILE_VIA:
@@ -1012,7 +1012,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						if (protocol(cfg.prot[i], j == SEND_FILE_VIA ? XFER_DOWNLOAD : XFER_UPLOAD
 						             , str, str, true) == 0)
 							csi->logic = LOGIC_TRUE;
-					return(0);
+					return 0;
 				case SEND_FILE_VIA_VAR:
 				case RECEIVE_FILE_VIA_VAR:
 					j = *(csi->ip - 1);
@@ -1022,13 +1022,13 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					i = protnum(ch, j == SEND_FILE_VIA_VAR ? XFER_DOWNLOAD : XFER_UPLOAD);
 					csi->logic = LOGIC_FALSE;
 					if (!pp || !(*pp))
-						return(0);
+						return 0;
 					if (i < cfg.total_prots)
 						if (protocol(cfg.prot[i]
 						             , j == SEND_FILE_VIA_VAR ? XFER_DOWNLOAD : XFER_UPLOAD
 						             , *pp, *pp, true) == 0)
 							csi->logic = LOGIC_TRUE;
-					return(0);
+					return 0;
 
 				case MATCHUSER:
 					lp = getintvar(csi, *(int32_t *)csi->ip);
@@ -1041,11 +1041,11 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						else
 							*lp = 0;
 					}
-					return(0);
+					return 0;
 
 				default:
 					errormsg(WHERE, ERR_CHK, "var sub-instruction", *(csi->ip - 1));
-					return(0);
+					return 0;
 			}
 
 		case CS_FIO_FUNCTION:
@@ -1065,11 +1065,11 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						pp = getstrvar(csi, *(int32_t *)csi->ip);
 						csi->ip += 4;
 						if (!pp || !*pp)
-							return(0);
+							return 0;
 						strcpy(str, *pp);
 					}
 					if (csi->files >= MAX_FOPENS)
-						return(0);
+						return 0;
 					if (lp) {
 						/* Access flags are not cross-platform, so convert */
 						i = 0;
@@ -1093,7 +1093,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 							csi->logic = LOGIC_TRUE;
 						}
 					}
-					return(0);
+					return 0;
 				case FIO_CLOSE:
 					lp = getintvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4;
@@ -1105,7 +1105,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					}
 					else
 						csi->logic = LOGIC_FALSE;
-					return(0);
+					return 0;
 				case FIO_FLUSH:
 					lp = getintvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4;
@@ -1113,7 +1113,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						csi->logic = fflush(csi->file[*lp]);
 					else
 						csi->logic = LOGIC_FALSE;
-					return(0);
+					return 0;
 				case FIO_READ:
 				case FIO_READ_VAR:
 					lp1 = getintvar(csi, *(int32_t *)csi->ip);     /* Handle */
@@ -1131,13 +1131,13 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						vp = getintvar(csi, *(int32_t *)csi->ip);
 						csi->ip += 4;
 						if (!vp)
-							return(0);
+							return 0;
 						i = *(short *)vp;
 					}
 					if (i > (int)sizeof(buf) - 1)
 						i = sizeof(buf) - 1;
 					if (!lp1 || *lp1 >= csi->files || (!pp && !lp2))
-						return(0);
+						return 0;
 					if (pp) {
 						if (i < 1) {
 							if (*pp && **pp)
@@ -1160,7 +1160,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						if (fread(lp2, 1, i, csi->file[*lp1]) == (size_t)i)
 							csi->logic = LOGIC_TRUE;
 					}
-					return(0);
+					return 0;
 				case FIO_READ_LINE:
 					lp1 = getintvar(csi, *(int32_t *)csi->ip);     /* Handle */
 					csi->ip += 4;
@@ -1170,7 +1170,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					csi->ip += 4;
 					csi->logic = LOGIC_FALSE;
 					if (!lp1 || *lp1 >= csi->files || feof(csi->file[*lp1]) || (!pp && !lp2))
-						return(0);
+						return 0;
 					csi->logic = LOGIC_TRUE;
 					for (i = 0; i < (int)sizeof(buf) - 1; i++) {
 						if (!fread(buf + i, 1, 1, csi->file[*lp1]))
@@ -1189,7 +1189,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						*pp = copystrvar(csi, *pp, buf);
 					else
 						*lp2 = strtol(buf, 0, 0);
-					return(0);
+					return 0;
 				case FIO_WRITE:
 				case FIO_WRITE_VAR:
 					lp1 = getintvar(csi, *(int32_t *)csi->ip);
@@ -1207,13 +1207,13 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						vp = getintvar(csi, *(int32_t *)csi->ip);
 						csi->ip += 4;
 						if (!vp)
-							return(0);
+							return 0;
 						i = *(short *)vp;
 					}
 					if (i > (int)sizeof(buf) - 1)
 						i = sizeof(buf) - 1;
 					if (!lp1 || *lp1 >= csi->files || (!pp && !lp2) || (pp && !*pp))
-						return(0);
+						return 0;
 					if (pp) {
 						j = strlen(*pp);
 						if (i < 1) i = j;
@@ -1232,7 +1232,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						if (fwrite(lp2, 1, i, csi->file[*lp1]) == (size_t)i)
 							csi->logic = LOGIC_TRUE;
 					}
-					return(0);
+					return 0;
 				case FIO_GET_LENGTH:
 					lp1 = getintvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4;
@@ -1240,7 +1240,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					csi->ip += 4;
 					if (lp1 && *lp1 < csi->files && lp2)
 						*lp2 = (uint32_t)filelength(fileno(csi->file[*lp1]));
-					return(0);
+					return 0;
 				case FIO_GET_TIME:
 					lp1 = getintvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4;
@@ -1248,7 +1248,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					csi->ip += 4;
 					if (lp1 && *lp1 < csi->files && lp2)
 						*lp2 = (int32_t)filetime(fileno(csi->file[*lp1]));
-					return(0);
+					return 0;
 				case FIO_SET_TIME:
 					lp1 = getintvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4;
@@ -1260,7 +1260,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						setftime(fileno(csi->file[*lp1]), &ft);
 					}
 	#endif
-					return(0);
+					return 0;
 				case FIO_EOF:
 					lp = getintvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4;
@@ -1268,7 +1268,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					if (lp && *lp < csi->files)
 						if (ftell(csi->file[*lp]) >= filelength(fileno(csi->file[*lp])))
 							csi->logic = LOGIC_TRUE;
-					return(0);
+					return 0;
 				case FIO_GET_POS:
 					lp1 = getintvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4;
@@ -1276,7 +1276,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					csi->ip += 4;
 					if (lp1 && *lp1 < csi->files && lp2)
 						*lp2 = (uint32_t)ftell(csi->file[*lp1]);
-					return(0);
+					return 0;
 				case FIO_SEEK:
 				case FIO_SEEK_VAR:
 					lp1 = getintvar(csi, *(int32_t *)csi->ip);
@@ -1291,7 +1291,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						csi->ip += 4;
 						if (!lp2) {
 							csi->ip += 2;
-							return(0);
+							return 0;
 						}
 						l = *lp2;
 					}
@@ -1300,7 +1300,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					if (lp1 && *lp1 < csi->files)
 						if (fseek(csi->file[*lp1], l, i) != -1)
 							csi->logic = LOGIC_TRUE;
-					return(0);
+					return 0;
 				case FIO_LOCK:
 				case FIO_LOCK_VAR:
 					lp1 = getintvar(csi, *(int32_t *)csi->ip);
@@ -1313,14 +1313,14 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						lp2 = getintvar(csi, *(int32_t *)csi->ip);
 						csi->ip += 4;
 						if (!lp2)
-							return(0);
+							return 0;
 						l = *lp2;
 					}
 					if (lp1 && *lp1 < csi->files) {
 						fflush(csi->file[*lp1]);
 						csi->logic = !lock(fileno(csi->file[*lp1]), ftell(csi->file[*lp1]), l);
 					}
-					return(0);
+					return 0;
 				case FIO_UNLOCK:
 				case FIO_UNLOCK_VAR:
 					lp1 = getintvar(csi, *(int32_t *)csi->ip);
@@ -1333,14 +1333,14 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						lp2 = getintvar(csi, *(int32_t *)csi->ip);
 						csi->ip += 4;
 						if (!lp2)
-							return(0);
+							return 0;
 						l = *lp2;
 					}
 					if (lp1 && *lp1 < csi->files) {
 						fflush(csi->file[*lp1]);
 						csi->logic = !unlock(fileno(csi->file[*lp1]), ftell(csi->file[*lp1]), l);
 					}
-					return(0);
+					return 0;
 				case FIO_SET_LENGTH:
 				case FIO_SET_LENGTH_VAR:
 					lp1 = getintvar(csi, *(int32_t *)csi->ip);
@@ -1353,12 +1353,12 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						lp2 = getintvar(csi, *(int32_t *)csi->ip);
 						csi->ip += 4;
 						if (!lp2)
-							return(0);
+							return 0;
 						l = *lp2;
 					}
 					if (lp1 && *lp1 < csi->files)
 						csi->logic = chsize(fileno(csi->file[*lp1]), l);
-					return(0);
+					return 0;
 				case FIO_PRINTF:
 					lp1 = getintvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4;
@@ -1368,10 +1368,10 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						fwrite(str, 1, strlen(str), csi->file[*lp1]);
 					}
 					free(p);
-					return(0);
+					return 0;
 				case FIO_SET_ETX:
 					csi->etx = *(csi->ip++);
-					return(0);
+					return 0;
 				case REMOVE_FILE:
 					pp = getstrvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4;
@@ -1379,7 +1379,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						csi->logic = LOGIC_TRUE;
 					else
 						csi->logic = LOGIC_FALSE;
-					return(0);
+					return 0;
 				case RENAME_FILE:
 				case COPY_FILE:
 				case MOVE_FILE:
@@ -1401,7 +1401,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						}
 					else
 						csi->logic = LOGIC_FALSE;
-					return(0);
+					return 0;
 				case GET_FILE_ATTRIB:
 				case SET_FILE_ATTRIB:
 					lp = getintvar(csi, *(int32_t *)csi->ip);
@@ -1414,7 +1414,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						else
 							*lp = CHMOD(*pp, (int)*lp);
 					}
-					return(0);
+					return 0;
 				case MAKE_DIR:
 				case REMOVE_DIR:
 				case CHANGE_DIR:
@@ -1434,7 +1434,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						}
 					else
 						csi->logic = LOGIC_FALSE;
-					return(0);
+					return 0;
 
 				case OPEN_DIR:
 					lp = getintvar(csi, *(int32_t *)csi->ip);
@@ -1443,7 +1443,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					csi->ip += 4;
 					csi->logic = LOGIC_FALSE;
 					if (csi->dirs >= MAX_OPENDIRS)
-						return(0);
+						return 0;
 					if (pp && *pp && lp) {
 						dp = opendir((char *)*pp);
 						if (dp != NULL) {
@@ -1457,7 +1457,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 							csi->logic = LOGIC_TRUE;
 						}
 					}
-					return(0);
+					return 0;
 				case READ_DIR:
 					lp = getintvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4;
@@ -1471,7 +1471,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 							*pp = copystrvar(csi, *pp, de->d_name);
 						}
 					}
-					return(0);
+					return 0;
 				case REWIND_DIR:
 					lp = getintvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4;
@@ -1480,7 +1480,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 						csi->logic = LOGIC_TRUE;
 					} else
 						csi->logic = LOGIC_FALSE;
-					return(0);
+					return 0;
 				case CLOSE_DIR:
 					lp = getintvar(csi, *(int32_t *)csi->ip);
 					csi->ip += 4;
@@ -1491,15 +1491,15 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 							csi->dirs--;
 					} else
 						csi->logic = LOGIC_FALSE;
-					return(0);
+					return 0;
 
 				default:
 					errormsg(WHERE, ERR_CHK, "fio sub-instruction", *(csi->ip - 1));
-					return(0);
+					return 0;
 			}
 
 		case CS_NET_FUNCTION:
-			return(exec_net(csi));
+			return exec_net(csi);
 
 		case CS_SWITCH:
 			lp = getintvar(csi, *(int32_t *)csi->ip);
@@ -1512,7 +1512,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 				csi->misc |= CS_IN_SWITCH;
 				csi->switch_val = *lp;
 			}
-			return(0);
+			return 0;
 		case CS_CASE:
 			l = *(int32_t *)csi->ip;
 			csi->ip += 4;
@@ -1520,48 +1520,48 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 				skipto(csi, CS_NEXTCASE);
 			else
 				csi->misc &= ~CS_IN_SWITCH;
-			return(0);
+			return 0;
 		case CS_COMPARE_ARS:
 			i = *(csi->ip++);  /* Length of ARS stored as byte before ARS */
 			csi->logic = !chk_ar(csi->ip, &useron, &client);
 			csi->ip += i;
-			return(0);
+			return 0;
 		case CS_TOGGLE_USER_MISC:
 			useron.misc ^= *(uint32_t *)csi->ip;
 			putusermisc(useron.number, useron.misc);
 			csi->ip += 4;
-			return(0);
+			return 0;
 		case CS_COMPARE_USER_MISC:
 			if ((useron.misc & *(uint32_t *)csi->ip) == *(uint32_t *)csi->ip)
 				csi->logic = LOGIC_TRUE;
 			else
 				csi->logic = LOGIC_FALSE;
 			csi->ip += 4;
-			return(0);
+			return 0;
 		case CS_TOGGLE_USER_CHAT:
 			useron.chat ^= *(uint32_t *)csi->ip;
 			putuserchat(useron.number, useron.chat);
 			csi->ip += 4;
-			return(0);
+			return 0;
 		case CS_COMPARE_USER_CHAT:
 			if ((useron.chat & *(uint32_t *)csi->ip) == *(uint32_t *)csi->ip)
 				csi->logic = LOGIC_TRUE;
 			else
 				csi->logic = LOGIC_FALSE;
 			csi->ip += 4;
-			return(0);
+			return 0;
 		case CS_TOGGLE_USER_QWK:
 			useron.qwk ^= *(uint32_t *)csi->ip;
 			putuserqwk(useron.number, useron.qwk);
 			csi->ip += 4;
-			return(0);
+			return 0;
 		case CS_COMPARE_USER_QWK:
 			if ((useron.qwk & *(uint32_t *)csi->ip) == *(uint32_t *)csi->ip)
 				csi->logic = LOGIC_TRUE;
 			else
 				csi->logic = LOGIC_FALSE;
 			csi->ip += 4;
-			return(0);
+			return 0;
 		case CS_REPLACE_TEXT:
 			i = *(ushort *)csi->ip;
 			csi->ip += 2;
@@ -1569,7 +1569,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 			if (i >= TOTAL_TEXT) {
 				errormsg(WHERE, ERR_CHK, "replace text #", i);
 				while (*(csi->ip++));    /* Find NULL */
-				return(0);
+				return 0;
 			}
 			if (text[i] != text_sav[i] && text[i] != nulstr)
 				free(text[i]);
@@ -1582,12 +1582,12 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 				errormsg(WHERE, ERR_ALLOC, "replacement text", j);
 				while (*(csi->ip++));    /* Find NULL */
 				text[i] = text_sav[i];
-				return(0);
+				return 0;
 			}
 			if (j)
 				strcpy(text[i], buf);
 			while (*(csi->ip++));    /* Find NULL */
-			return(0);
+			return 0;
 		case CS_USE_INT_VAR:    // Self-modifying code!
 			pp = getstrvar(csi, *(int32_t *)csi->ip);
 			if (pp && *pp)
@@ -1604,7 +1604,7 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 			if (i < 1 || csi->ip + 1 + i >= csi->cs + csi->length) {
 				errormsg(WHERE, ERR_CHK, "offset", i);
 				csi->ip++;
-				return(0);
+				return 0;
 			}
 			switch (*(csi->ip++)) {  // Length
 				case sizeof(char):
@@ -1620,10 +1620,10 @@ int sbbs_t::exec_misc(csi_t* csi, const char *path)
 					errormsg(WHERE, ERR_CHK, "length", *(csi->ip - 1));
 					break;
 			}
-			return(0);
+			return 0;
 		default:
 			errormsg(WHERE, ERR_CHK, "shell instruction", *(csi->ip - 1));
-			return(0);
+			return 0;
 	}
 }
 

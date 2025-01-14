@@ -49,7 +49,7 @@ char* smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, uint mode)
 		safe_snprintf(smb->last_error, sizeof(smb->last_error)
 		              , "%s malloc failure of %" XP_PRIsize_t "u bytes for buffer"
 		              , __FUNCTION__, sizeof(char));
-		return(NULL);
+		return NULL;
 	}
 	*buf = 0;
 
@@ -64,7 +64,7 @@ char* smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, uint mode)
 				              , "%s realloc failure of %d bytes for comment buffer"
 				              , __FUNCTION__, l + length + 1);
 				free(buf);
-				return(NULL);
+				return NULL;
 			}
 			buf = p;
 			l += sprintf(buf + l, "%s\r\n", str);
@@ -75,7 +75,7 @@ char* smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, uint mode)
 				              , "%s realloc failure of %d bytes for comment buffer"
 				              , __FUNCTION__, l + 3);
 				free(buf);
-				return(NULL);
+				return NULL;
 			}
 			buf = p;
 			l += sprintf(buf + l, "\r\n");
@@ -91,7 +91,7 @@ char* smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, uint mode)
 				              , "%s realloc failure of %d bytes for comment buffer"
 				              , __FUNCTION__, l + length + 1);
 				free(buf);
-				return(NULL);
+				return NULL;
 			}
 			buf = p;
 			memcpy(buf + l, tmp, length);
@@ -140,7 +140,7 @@ char* smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, uint mode)
 				              , __FUNCTION__, length);
 				free(buf);
 				free(preamble);
-				return(NULL);
+				return NULL;
 			}
 			if (smb_fread(smb, lzhbuf, length, smb->sdt_fp) != length) {
 				safe_snprintf(smb->last_error, sizeof(smb->last_error)
@@ -149,7 +149,7 @@ char* smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, uint mode)
 				free(lzhbuf);
 				free(buf);
 				free(preamble);
-				return(NULL);
+				return NULL;
 			}
 			memcpy(&lzhlen, lzhbuf, sizeof(lzhlen));
 			lzhlen = LE_INT32(lzhlen);
@@ -160,7 +160,7 @@ char* smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, uint mode)
 				free(lzhbuf);
 				free(buf);
 				free(preamble);
-				return(NULL);
+				return NULL;
 			}
 			buf = p;
 			lzh_decoded = lzh_decode((uint8_t *)lzhbuf, length, (uint8_t *)buf + l, l + lzhlen + 3);
@@ -171,7 +171,7 @@ char* smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, uint mode)
 				free(lzhbuf);
 				free(buf);
 				free(preamble);
-				return(NULL);
+				return NULL;
 			}
 			free(lzhbuf);
 			l += lzhlen;
@@ -183,7 +183,7 @@ char* smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, uint mode)
 				              , __FUNCTION__, l + length + 3);
 				free(buf);
 				free(preamble);
-				return(NULL);
+				return NULL;
 			}
 			buf = p;
 			p = buf + l;
@@ -215,7 +215,7 @@ char* smb_getmsgtxt(smb_t* smb, smbmsg_t* msg, uint mode)
 		}
 	}
 	free(preamble);
-	return(buf);
+	return buf;
 }
 
 void smb_freemsgtxt(char* buf)

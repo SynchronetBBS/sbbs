@@ -117,8 +117,8 @@ int sbbs_t::inkey(int mode, unsigned int timeout)
 	/* Is this a control key */
 	if (!(mode & K_CTRLKEYS) && ch < ' ') {
 		if (cfg.ctrlkey_passthru & (1 << ch))    /*  flagged as passthru? */
-			return(ch);                     /* do not handle here */
-		return(handle_ctrlkey(ch, mode));
+			return ch;                    /* do not handle here */
+		return handle_ctrlkey(ch, mode);
 	}
 
 	/* Translate (not control character) input into CP437 */
@@ -149,7 +149,7 @@ int sbbs_t::inkey(int mode, unsigned int timeout)
 	if (mode & K_UPPER)
 		ch = toupper(ch);
 
-	return(ch);
+	return ch;
 }
 
 char sbbs_t::handle_ctrlkey(char ch, int mode)
@@ -162,12 +162,12 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 		sys_status |= SS_ABORT;
 		if (mode & K_SPIN) /* back space once if on spinning cursor */
 			backspace();
-		return(0);
+		return 0;
 	}
 	if (ch == CTRL_Z && !(mode & (K_MSG | K_GETSTR))
 	    && action != NODE_PCHT) {  /* Ctrl-Z toggle raw input mode */
 		if (hotkey_inside & (1 << ch))
-			return(0);
+			return 0;
 		hotkey_inside |= (1 << ch);
 		if (mode & K_SPIN)
 			bputs("\b ");
@@ -186,16 +186,16 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 		lncntr = 0;
 		hotkey_inside &= ~(1 << ch);
 		if (action != NODE_MAIN && action != NODE_XFER)
-			return(CTRL_Z);
-		return(0);
+			return CTRL_Z;
+		return 0;
 	}
 
 	if (console & CON_RAW_IN)   /* ignore ctrl-key commands if in raw mode */
-		return(ch);
+		return ch;
 
 #if 0   /* experimental removal to fix Tracker1's pause module problem with down-arrow */
 	if (ch == LF)              /* ignore LF's if not in raw mode */
-		return(0);
+		return 0;
 #endif
 
 	/* Global hot key event */
@@ -205,7 +205,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 				break;
 		if (i < cfg.total_hotkeys) {
 			if (hotkey_inside & (1 << ch))
-				return(0);
+				return 0;
 			hotkey_inside |= (1 << ch);
 			if (mode & K_SPIN)
 				bputs("\b ");
@@ -228,19 +228,19 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			}
 			lncntr = 0;
 			hotkey_inside &= ~(1 << ch);
-			return(0);
+			return 0;
 		}
 	}
 
 	switch (ch) {
 		case CTRL_O:    /* Ctrl-O toggles pause temporarily */
 			console ^= CON_PAUSEOFF;
-			return(0);
+			return 0;
 		case CTRL_P:    /* Ctrl-P Private node-node comm */
 			if (!(sys_status & SS_USERON))
 				break; ;
 			if (hotkey_inside & (1 << ch))
-				return(0);
+				return 0;
 			hotkey_inside |= (1 << ch);
 			if (mode & K_SPIN)
 				bputs("\b ");
@@ -258,13 +258,13 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			}
 			lncntr = 0;
 			hotkey_inside &= ~(1 << ch);
-			return(0);
+			return 0;
 
 		case CTRL_U:    /* Ctrl-U Users online */
 			if (!(sys_status & SS_USERON))
 				break;
 			if (hotkey_inside & (1 << ch))
-				return(0);
+				return 0;
 			hotkey_inside |= (1 << ch);
 			if (mode & K_SPIN)
 				bputs("\b ");
@@ -281,14 +281,14 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			}
 			lncntr = 0;
 			hotkey_inside &= ~(1 << ch);
-			return(0);
+			return 0;
 		case CTRL_T: /* Ctrl-T Time information */
 			if (sys_status & SS_SPLITP)
-				return(ch);
+				return ch;
 			if (!(sys_status & SS_USERON))
 				break;
 			if (hotkey_inside & (1 << ch))
-				return(0);
+				return 0;
 			hotkey_inside |= (1 << ch);
 			if (mode & K_SPIN)
 				bputs("\b ");
@@ -307,14 +307,14 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			restoreline();
 			lncntr = 0;
 			hotkey_inside &= ~(1 << ch);
-			return(0);
+			return 0;
 		case CTRL_K:  /*  Ctrl-K Control key menu */
 			if (sys_status & SS_SPLITP)
-				return(ch);
+				return ch;
 			if (!(sys_status & SS_USERON))
 				break;
 			if (hotkey_inside & (1 << ch))
-				return(0);
+				return 0;
 			hotkey_inside |= (1 << ch);
 			if (mode & K_SPIN)
 				bputs("\b ");
@@ -329,15 +329,15 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			restoreline();
 			lncntr = 0;
 			hotkey_inside &= ~(1 << ch);
-			return(0);
+			return 0;
 		case ESC:
 			i = kbincom((mode & K_GETSTR) ? 3000:1000);
 			if (i == NOINP)        // timed-out waiting for '['
-				return(ESC);
+				return ESC;
 			ch = i;
 			if (ch != '[') {
 				ungetkey(ch, /* insert: */ true);
-				return(ESC);
+				return ESC;
 			}
 			i = j = 0;
 			autoterm |= ANSI;             /* <ESC>[x means they have ANSI */
@@ -426,7 +426,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 						for (j = i; j > 0; j--)
 							ungetkey(str[j - 1], /* insert: */ true);
 						ungetkey('[', /* insert: */ true);
-						return(ESC);
+						return ESC;
 					}
 					if (button == 0x22)  // Right-click
 						return handle_ctrlkey(TERM_KEY_ABORT, mode);
@@ -503,7 +503,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 							ungetkey(str[j - 1], /* insert: */ true);
 						ungetkey('<', /* insert: */ true);
 						ungetkey('[', /* insert: */ true);
-						return(ESC);
+						return ESC;
 					}
 					if (ch == 'M' && button == 2)  // Right-click
 						return handle_ctrlkey(TERM_KEY_ABORT, mode);
@@ -516,34 +516,34 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 					str[i] = 0;
 					switch (ch) {
 						case 'A':
-							return(TERM_KEY_UP);
+							return TERM_KEY_UP;
 						case 'B':
-							return(TERM_KEY_DOWN);
+							return TERM_KEY_DOWN;
 						case 'C':
-							return(TERM_KEY_RIGHT);
+							return TERM_KEY_RIGHT;
 						case 'D':
-							return(TERM_KEY_LEFT);
+							return TERM_KEY_LEFT;
 						case 'H':   /* ANSI:  home cursor */
-							return(TERM_KEY_HOME);
+							return TERM_KEY_HOME;
 						case 'V':
 							return TERM_KEY_PAGEUP;
 						case 'U':
 							return TERM_KEY_PAGEDN;
 						case 'F':   /* Xterm: cursor preceding line */
 						case 'K':   /* ANSI:  clear-to-end-of-line */
-							return(TERM_KEY_END);
+							return TERM_KEY_END;
 						case '@':   /* ANSI/ECMA-048 INSERT */
-							return(TERM_KEY_INSERT);
+							return TERM_KEY_INSERT;
 						case '~':   /* VT-220 (XP telnet.exe) */
 							switch (atoi(str)) {
 								case 1:
-									return(TERM_KEY_HOME);
+									return TERM_KEY_HOME;
 								case 2:
-									return(TERM_KEY_INSERT);
+									return TERM_KEY_INSERT;
 								case 3:
-									return(TERM_KEY_DELETE);
+									return TERM_KEY_DELETE;
 								case 4:
-									return(TERM_KEY_END);
+									return TERM_KEY_END;
 								case 5:
 									return TERM_KEY_PAGEUP;
 								case 6:
@@ -555,7 +555,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 					for (j = i; j > 0; j--)
 						ungetkey(str[j - 1], /* insert: */ true);
 					ungetkey('[', /* insert: */ true);
-					return(ESC);
+					return ESC;
 				}
 				if (ch == 'R') {       /* cursor position report */
 					if (mode & K_ANSI_CPR && i) {  /* auto-detect rows */
@@ -571,7 +571,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 								update_nodeterm();
 						}
 					}
-					return(0);
+					return 0;
 				}
 				str[i++] = ch;
 			}
@@ -579,9 +579,9 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			for (j = i; j > 0; j--)
 				ungetkey(str[j - 1], /* insert: */ true);
 			ungetkey('[', /* insert: */ true);
-			return(ESC);
+			return ESC;
 	}
-	return(ch);
+	return ch;
 }
 
 void sbbs_t::set_mouse(int flags)

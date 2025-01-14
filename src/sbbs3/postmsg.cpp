@@ -129,7 +129,7 @@ bool sbbs_t::postmsg(int subnum, int wm_mode, smb_t* resmb, smbmsg_t* remsg)
 
 	if (sys_status & SS_ABORT) {
 		strListFree(&names);
-		return(false);
+		return false;
 	}
 
 	if (
@@ -154,20 +154,20 @@ bool sbbs_t::postmsg(int subnum, int wm_mode, smb_t* resmb, smbmsg_t* remsg)
 				if (!finduserstr(useron.number, USER_NAME, touser)) {
 					bputs(text[UnknownUser]);
 					strListFree(&names);
-					return(false);
+					return false;
 				}
 			}
 			else {
 				if ((i = finduser(touser)) == 0) {
 					strListFree(&names);
-					return(false);
+					return false;
 				}
 				username(&cfg, i, touser);
 			}
 		}
 		if (sys_status & SS_ABORT) {
 			strListFree(&names);
-			return(false);
+			return false;
 		}
 	}
 	strListFree(&names);
@@ -180,7 +180,7 @@ bool sbbs_t::postmsg(int subnum, int wm_mode, smb_t* resmb, smbmsg_t* remsg)
 
 	if (msgattr & MSG_PRIVATE && !stricmp(touser, "ALL")) {
 		bputs(text[NoToUser]);
-		return(false);
+		return false;
 	}
 	if (msgattr & MSG_PRIVATE)
 		wm_mode |= WM_PRIVATE;
@@ -210,13 +210,13 @@ bool sbbs_t::postmsg(int subnum, int wm_mode, smb_t* resmb, smbmsg_t* remsg)
 
 	if ((i = smb_stack(&smb, SMB_STACK_PUSH)) != SMB_SUCCESS) {
 		errormsg(WHERE, ERR_OPEN, cfg.sub[subnum]->code, i, smb.last_error);
-		return(false);
+		return false;
 	}
 
 	if ((i = msgbase_open(&cfg, &smb, subnum, &storage, &dupechk_hashes, &xlat)) != SMB_SUCCESS) {
 		errormsg(WHERE, ERR_OPEN, smb.file, i, smb.last_error);
 		smb_stack(&smb, SMB_STACK_POP);
-		return(false);
+		return false;
 	}
 
 	if (remsg != NULL && resmb != NULL && !(wm_mode & WM_QUOTE)) {
@@ -231,7 +231,7 @@ bool sbbs_t::postmsg(int subnum, int wm_mode, smb_t* resmb, smbmsg_t* remsg)
 		bputs(text[Aborted]);
 		smb_close(&smb);
 		smb_stack(&smb, SMB_STACK_POP);
-		return(false);
+		return false;
 	}
 	if ((cfg.sub[subnum]->misc & SUB_MSGTAGS)
 	    && (tags[0] || text[TagMessageQ][0] == 0 || !noyes(text[TagMessageQ]))) {
@@ -245,21 +245,21 @@ bool sbbs_t::postmsg(int subnum, int wm_mode, smb_t* resmb, smbmsg_t* remsg)
 		smb_close(&smb);
 		errormsg(WHERE, ERR_LOCK, smb.file, i, smb.last_error);
 		smb_stack(&smb, SMB_STACK_POP);
-		return(false);
+		return false;
 	}
 
 	if ((i = smb_getstatus(&smb)) != SMB_SUCCESS) {
 		smb_close(&smb);
 		errormsg(WHERE, ERR_READ, smb.file, i, smb.last_error);
 		smb_stack(&smb, SMB_STACK_POP);
-		return(false);
+		return false;
 	}
 
 	if ((msgbuf = (char*)calloc(length + 1, sizeof(char))) == NULL) {
 		smb_close(&smb);
 		errormsg(WHERE, ERR_ALLOC, "msgbuf", length + 1);
 		smb_stack(&smb, SMB_STACK_POP);
-		return(false);
+		return false;
 	}
 
 	if ((fp = fopen(str, "rb")) == NULL) {
@@ -267,7 +267,7 @@ bool sbbs_t::postmsg(int subnum, int wm_mode, smb_t* resmb, smbmsg_t* remsg)
 		smb_close(&smb);
 		errormsg(WHERE, ERR_OPEN, str, O_RDONLY | O_BINARY);
 		smb_stack(&smb, SMB_STACK_POP);
-		return(false);
+		return false;
 	}
 
 	i = fread(msgbuf, 1, length, fp);
@@ -277,7 +277,7 @@ bool sbbs_t::postmsg(int subnum, int wm_mode, smb_t* resmb, smbmsg_t* remsg)
 		smb_close(&smb);
 		errormsg(WHERE, ERR_READ, str, length);
 		smb_stack(&smb, SMB_STACK_POP);
-		return(false);
+		return false;
 	}
 	truncsp(msgbuf);
 
@@ -368,7 +368,7 @@ bool sbbs_t::postmsg(int subnum, int wm_mode, smb_t* resmb, smbmsg_t* remsg)
 
 	user_event(EVENT_POST);
 
-	return(true);
+	return true;
 }
 
 // When message body is UTF-8 encoded, insure header files are UTF-8 (not CP437) encoded too
@@ -404,23 +404,23 @@ extern "C" int msg_client_hfields(smbmsg_t* msg, client_t* client)
 	char date[64];
 
 	if (client == NULL)
-		return(-1);
+		return -1;
 
 	if (client->usernum && (i = smb_hfield_str(msg, SENDERUSERID, client->user)) != SMB_SUCCESS)
-		return(i);
+		return i;
 	if (client->time
 	    && (i = smb_hfield_str(msg, SENDERTIME, xpDateTime_to_isoDateTimeStr(gmtime_to_xpDateTime(client->time)
 	                                                                         , /* separators: */ "", "", "", /* precision: */ 0
 	                                                                         , date, sizeof(date)))) != SMB_SUCCESS)
-		return(i);
+		return i;
 	if (*client->addr
 	    && (i = smb_hfield_str(msg, SENDERIPADDR, client->addr)) != SMB_SUCCESS)
-		return(i);
+		return i;
 	if (*client->host
 	    && (i = smb_hfield_str(msg, SENDERHOSTNAME, client->host)) != SMB_SUCCESS)
-		return(i);
+		return i;
 	if ((i = smb_hfield_str(msg, SENDERPROTOCOL, client->protocol)) != SMB_SUCCESS)
-		return(i);
+		return i;
 	if (client->port) {
 		SAFEPRINTF(port, "%u", client->port);
 		return smb_hfield_str(msg, SENDERPORT, port);
@@ -439,7 +439,7 @@ extern "C" int savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t* client,
 	int    dupechk_hashes = SMB_HASH_SOURCE_DUPE;
 
 	if (msg == NULL)
-		return(SMB_FAILURE);
+		return SMB_FAILURE;
 
 	if (!SMB_IS_OPEN(smb)) {
 		if (smb->subnum == INVALID_SUB)
@@ -448,17 +448,17 @@ extern "C" int savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t* client,
 			SAFEPRINTF2(smb->file, "%s%s", cfg->sub[smb->subnum]->data_dir, cfg->sub[smb->subnum]->code);
 		smb->retry_time = cfg->smb_retry_time;
 		if ((i = smb_open(smb)) != SMB_SUCCESS)
-			return(i);
+			return i;
 	}
 
 	/* Lock the msgbase early to preserve our message number (used in MSG-IDs) */
 	if (!smb->locked && smb_locksmbhdr(smb) != SMB_SUCCESS)
-		return(SMB_ERR_LOCK);
+		return SMB_ERR_LOCK;
 
 	if (filelength(fileno(smb->shd_fp)) > 0 && (i = smb_getstatus(smb)) != SMB_SUCCESS) {
 		if (smb->locked)
 			smb_unlocksmbhdr(smb);
-		return(i);
+		return i;
 	}
 
 	if (smb->subnum == INVALID_SUB) {  /* e-mail */
@@ -556,7 +556,7 @@ extern "C" int savemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, client_t* client,
 		}
 	}
 	free(msgbuf);
-	return(i);
+	return i;
 }
 
 extern "C" int votemsg(scfg_t* cfg, smb_t* smb, smbmsg_t* msg, const char* smsgfmt, const char* votefmt)

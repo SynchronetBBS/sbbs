@@ -574,5 +574,5 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 	fwrite(str, QWK_BLOCK_LEN, 1, qwk_fp);
 	(void)fseek(qwk_fp, size, SEEK_CUR);
 
-	return(size);
+	return size;
 }

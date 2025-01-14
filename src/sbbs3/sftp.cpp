@@ -713,7 +713,7 @@ sftp_resolve_path(char *target, const char *path, size_t size)
 	if (target == NULL) {
 		size = MAX_PATH + 1;
 		if ((target = (char*)malloc(size)) == NULL) {
-			return(NULL);
+			return NULL;
 		}
 	}
 	strncpy(target, path, size);
@@ -743,7 +743,7 @@ sftp_resolve_path(char *target, const char *path, size_t size)
 		target[0] = '/';
 		target[1] = 0;
 	}
-	return(target);
+	return target;
 }
 
 static char *

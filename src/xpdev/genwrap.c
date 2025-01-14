@@ -67,7 +67,7 @@ int safe_snprintf(char *dst, size_t size, const char *fmt, ...)
 		else
 			numchars = size - 1;
 	}
-	return(numchars);
+	return numchars;
 }
 
 #ifdef NEEDS_STRLCPY
@@ -92,7 +92,7 @@ size_t strlcpy(char *dst, const char *src, size_t dsize)
 			;
 	}
 
-	return(src - osrc - 1); /* count does not include NUL */
+	return src - osrc - 1; /* count does not include NUL */
 }
 
 size_t
@@ -110,7 +110,7 @@ strlcat(char *dst, const char *src, size_t dsize)
 	n = dsize - dlen;
 
 	if (n-- == 0)
-		return(dlen + strlen(src));
+		return dlen + strlen(src);
 	while (*src != '\0') {
 		if (n != 0) {
 			*dst++ = *src;
@@ -120,7 +120,7 @@ strlcat(char *dst, const char *src, size_t dsize)
 	}
 	*dst = '\0';
 
-	return(dlen + (src - osrc));    /* count does not include NUL */
+	return dlen + (src - osrc);    /* count does not include NUL */
 }
 #endif
 
@@ -151,9 +151,9 @@ char* lastchar(const char* str)
 	len = strlen(str);
 
 	if (len)
-		return((char*)&str[len - 1]);
+		return (char*)&str[len - 1];
 
-	return((char*)str);
+	return (char*)str;
 }
 
 /****************************************************************************/
@@ -162,16 +162,16 @@ char* lastchar(const char* str)
 char c_unescape_char(char ch)
 {
 	switch (ch) {
-		case 'e':   return(ESC);    /* non-standard */
-		case 'a':   return('\a');
-		case 'b':   return('\b');
-		case 'f':   return('\f');
-		case 'n':   return('\n');
-		case 'r':   return('\r');
-		case 't':   return('\t');
-		case 'v':   return('\v');
+		case 'e':   return ESC;    /* non-standard */
+		case 'a':   return '\a';
+		case 'b':   return '\b';
+		case 'f':   return '\f';
+		case 'n':   return '\n';
+		case 'r':   return '\r';
+		case 't':   return '\t';
+		case 'v':   return '\v';
 	}
-	return(ch);
+	return ch;
 }
 
 /****************************************************************************/
@@ -233,7 +233,7 @@ char* c_unescape_str(char* str)
 	char* dst;
 
 	if (str == NULL || (buf = strdup(str)) == NULL)
-		return(NULL);
+		return NULL;
 
 	src = buf;
 	dst = str;
@@ -244,27 +244,27 @@ char* c_unescape_str(char* str)
 	}
 	*dst = 0;
 	free(buf);
-	return(str);
+	return str;
 }
 
 char* c_escape_char(char ch)
 {
 	switch (ch) {
-		case 0:     return("\\x00");
-		case 1:     return("\\x01");
-		case ESC:   return("\\e");      /* non-standard */
-		case '\a':  return("\\a");
-		case '\b':  return("\\b");
-		case '\f':  return("\\f");
-		case '\n':  return("\\n");
-		case '\r':  return("\\r");
-		case '\t':  return("\\t");
-		case '\v':  return("\\v");
-		case '\\':  return("\\\\");
-		case '\"':  return("\\\"");
-		case '\'':  return("\\'");
+		case 0:     return "\\x00";
+		case 1:     return "\\x01";
+		case ESC:   return "\\e";      /* non-standard */
+		case '\a':  return "\\a";
+		case '\b':  return "\\b";
+		case '\f':  return "\\f";
+		case '\n':  return "\\n";
+		case '\r':  return "\\r";
+		case '\t':  return "\\t";
+		case '\v':  return "\\v";
+		case '\\':  return "\\\\";
+		case '\"':  return "\\\"";
+		case '\'':  return "\\'";
 	}
-	return(NULL);
+	return NULL;
 }
 
 char* c_escape_str(const char* src, char* dst, size_t maxlen, bool ctrl_only)
@@ -283,7 +283,7 @@ char* c_escape_str(const char* src, char* dst, size_t maxlen, bool ctrl_only)
 	}
 	*d = 0;
 
-	return(dst);
+	return dst;
 }
 
 /* Returns a byte count parsed from the 'str' argument, supporting power-of-2
@@ -557,7 +557,7 @@ char* strupr(char* str)
 		*p = toupper(*p);
 		p++;
 	}
-	return(str);
+	return str;
 }
 /****************************************************************************/
 /* Convert ASCIIZ string to lower case										*/
@@ -570,7 +570,7 @@ char* strlwr(char* str)
 		*p = tolower(*p);
 		p++;
 	}
-	return(str);
+	return str;
 }
 /****************************************************************************/
 /* Reverse characters of a string (provided by amcleod)						*/
@@ -683,7 +683,7 @@ long xp_random(int n)
 	unsigned long limit;
 
 	if (n < 2)
-		return(0);
+		return 0;
 
 	limit = ((1UL << ((sizeof(long) * CHAR_BIT) - 1)) / n) * n - 1;
 
@@ -691,20 +691,20 @@ long xp_random(int n)
 		/* coverity[dont_call] */
 		curr = random();
 		if (curr <= limit)
-			return(curr % n);
+			return curr % n;
 	}
 #else
 	double f = 0;
 	int    ret;
 
 	if (n < 2)
-		return(0);
+		return 0;
 	do {
 		f = (double)rand() / (double)(RAND_MAX + 1);
 		ret = (int)(n * f);
 	} while (ret == n);
 
-	return(ret);
+	return ret;
 #endif
 }
 
@@ -729,7 +729,7 @@ char* ultoa(ulong val, char* str, int radix)
 			sprintf(str, "bad radix: %d", radix);
 			break;
 	}
-	return(str);
+	return str;
 }
 
 #if (defined(__GNUC__) && (__GNUC__ < 5)) || !defined(__MINGW32__)
@@ -861,7 +861,7 @@ char* os_version(char *str, size_t size)
 
 #endif
 
-	return(str);
+	return str;
 }
 
 /****************************************************************************/
@@ -927,7 +927,7 @@ char* os_cmdshell(void)
 #endif
 #endif
 
-	return(shell);
+	return shell;
 }
 
 /********************************************************/
@@ -946,7 +946,7 @@ clock_t msclock(void)
 char* skipsp(char* str)
 {
 	SKIP_WHITESPACE(str);
-	return(str);
+	return str;
 }
 
 /****************************************************************************/
@@ -963,7 +963,7 @@ char* truncsp(char* str)
 		if (i != len)
 			str[i] = 0; /* truncate */
 	}
-	return(str);
+	return str;
 }
 
 /****************************************************************************/
@@ -977,7 +977,7 @@ char* truncsp_lines(char* dst)
 	char* src;
 
 	if ((src = strdup(dst)) == NULL)
-		return(dst);
+		return dst;
 
 	for (sp = src, dp = dst; *sp != 0; sp++) {
 		if (*sp == '\n') {
@@ -992,7 +992,7 @@ char* truncsp_lines(char* dst)
 	*dp = 0;
 
 	free(src);
-	return(dst);
+	return dst;
 }
 
 /****************************************************************************/
@@ -1009,7 +1009,7 @@ char* truncnl(char* str)
 		if (i != len)
 			str[i] = 0; /* truncate */
 	}
-	return(str);
+	return str;
 }
 
 /****************************************************************************/
@@ -1018,7 +1018,7 @@ char* truncnl(char* str)
 /****************************************************************************/
 int get_errno(void)
 {
-	return(errno);
+	return errno;
 }
 
 /****************************************************************************/
@@ -1057,7 +1057,7 @@ long double xp_timer(void)
 #else
 #error no high-resolution time for this platform
 #endif
-	return(ret);
+	return ret;
 }
 
 /****************************************************************************/
@@ -1114,7 +1114,7 @@ uint64_t xp_timer64(void)
 #else
 #error no high-resolution time for this platform
 #endif
-	return(ret);
+	return ret;
 }
 
 /****************************************************************************/
@@ -1167,7 +1167,7 @@ int64_t xp_fast_timer64(void)
 #else
 #error no high-resolution time for this platform
 #endif
-	return(ret);
+	return ret;
 }
 
 /* Returns true if specified process is running */
@@ -1178,7 +1178,7 @@ bool check_pid(pid_t pid)
 	return false;
 #else
 #if defined(__unix__)
-	return(kill(pid, 0) == 0);
+	return kill(pid, 0) == 0;
 #elif defined(_WIN32)
 	HANDLE h;
 	bool   result = false;
@@ -1204,7 +1204,7 @@ bool terminate_pid(pid_t pid)
 	return false;
 #else
 #if defined(__unix__)
-	return(kill(pid, SIGKILL) == 0);
+	return kill(pid, SIGKILL) == 0;
 #elif defined(_WIN32)
 	HANDLE h;
 	bool   result = false;

@@ -163,7 +163,7 @@ ulong lf_expand(uchar* inbuf, uchar* outbuf)
 		outbuf[j++] = inbuf[i];
 	}
 	outbuf[j] = 0;
-	return(j);
+	return j;
 }
 
 char* gen_msgid(smb_t* smb, smbmsg_t* msg, char* msgid, size_t maxlen)
@@ -510,7 +510,7 @@ char *my_timestr(time_t intime)
 	gm = localtime(&intime);
 	if (gm == NULL) {
 		strcpy(str, "Invalid Time");
-		return(str);
+		return str;
 	}
 	if (gm->tm_hour >= 12) {
 		if (gm->tm_hour == 12)
@@ -529,7 +529,7 @@ char *my_timestr(time_t intime)
 	sprintf(str, "%s %02d %4d %02d:%02d %s"
 	        , mon[gm->tm_mon], gm->tm_mday, 1900 + gm->tm_year
 	        , hour, gm->tm_min, mer);
-	return(str);
+	return str;
 }
 
 /****************************************************************************/
@@ -1948,7 +1948,7 @@ int main(int argc, char **argv)
 							if (i) {
 								fprintf(errfp, "\n%s!smb_locksmbhdr returned %d: %s\n"
 								        , beep, i, smb.last_error);
-								return(1);
+								return 1;
 							}
 							postmsg((char)toupper(cmd[y]), to, to_number, to_address, from, from_number, subj, fp);
 							fclose(fp);
@@ -1974,7 +1974,7 @@ int main(int argc, char **argv)
 							if ((i = smb_lock(&smb)) != 0) {
 								fprintf(errfp, "\n%s!smb_lock returned %d: %s\n"
 								        , beep, i, smb.last_error);
-								return(i);
+								return i;
 							}
 							printf("%s locked successfully\n", smb.file);
 							if (cmd[y] == 'L')   // Lock base
@@ -2069,5 +2069,5 @@ int main(int argc, char **argv)
 
 	bail(0);
 
-	return(-1); /* never gets here */
+	return -1; /* never gets here */
 }

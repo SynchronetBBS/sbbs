@@ -103,95 +103,95 @@ bool js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg, JSObject* subobj, in
 	sub_t*    sub;
 
 	if (!subnum_is_valid(cfg, subnum))
-		return(false);
+		return false;
 
 	sub = cfg->sub[subnum];
 
 	if (!JS_DefineProperty(cx, subobj, "number", INT_TO_JSVAL(subnum)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(false);
+		return false;
 
 	if (!JS_DefineProperty(cx, subobj, "grp_number", INT_TO_JSVAL(sub->grp)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(false);
+		return false;
 
 	if ((js_str = JS_NewStringCopyZ(cx, cfg->grp[sub->grp]->sname)) == NULL)
-		return(false);
+		return false;
 	if (!JS_DefineProperty(cx, subobj, "grp_name", STRING_TO_JSVAL(js_str)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(false);
+		return false;
 
 	if ((js_str = JS_NewStringCopyZ(cx, sub->code)) == NULL)
-		return(false);
+		return false;
 	if (!JS_DefineProperty(cx, subobj, "code", STRING_TO_JSVAL(js_str)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(false);
+		return false;
 
 	if ((js_str = JS_NewStringCopyZ(cx, sub->sname)) == NULL)
-		return(false);
+		return false;
 	if (!JS_DefineProperty(cx, subobj, "name", STRING_TO_JSVAL(js_str)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(false);
+		return false;
 
 	if ((js_str = JS_NewStringCopyZ(cx, sub->lname)) == NULL)
-		return(false);
+		return false;
 	if (!JS_DefineProperty(cx, subobj, "description", STRING_TO_JSVAL(js_str)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(false);
+		return false;
 
 	if ((js_str = JS_NewStringCopyZ(cx, sub->qwkname)) == NULL)
-		return(false);
+		return false;
 	if (!JS_DefineProperty(cx, subobj, "qwk_name", STRING_TO_JSVAL(js_str)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(false);
+		return false;
 
 	if ((js_str = JS_NewStringCopyZ(cx, sub_area_tag(cfg, sub, str, sizeof(str)))) == NULL)
-		return(false);
+		return false;
 	if (!JS_DefineProperty(cx, subobj, "area_tag", STRING_TO_JSVAL(js_str)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(false);
+		return false;
 
 	if ((js_str = JS_NewStringCopyZ(cx, sub_newsgroup_name(cfg, sub, str, sizeof(str)))) == NULL)
-		return(false);
+		return false;
 	if (!JS_DefineProperty(cx, subobj, "newsgroup", STRING_TO_JSVAL(js_str)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(false);
+		return false;
 
 	if ((js_str = JS_NewStringCopyZ(cx, sub->arstr)) == NULL)
-		return(false);
+		return false;
 	if (!JS_DefineProperty(cx, subobj, "ars", STRING_TO_JSVAL(js_str)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(false);
+		return false;
 
 	if ((js_str = JS_NewStringCopyZ(cx, sub->read_arstr)) == NULL)
-		return(false);
+		return false;
 	if (!JS_DefineProperty(cx, subobj, "read_ars", STRING_TO_JSVAL(js_str)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(false);
+		return false;
 
 	if ((js_str = JS_NewStringCopyZ(cx, sub->post_arstr)) == NULL)
-		return(false);
+		return false;
 	if (!JS_DefineProperty(cx, subobj, "post_ars", STRING_TO_JSVAL(js_str)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(false);
+		return false;
 
 	if ((js_str = JS_NewStringCopyZ(cx, sub->op_arstr)) == NULL)
-		return(false);
+		return false;
 	if (!JS_DefineProperty(cx, subobj, "operator_ars", STRING_TO_JSVAL(js_str)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(false);
+		return false;
 
 	if ((js_str = JS_NewStringCopyZ(cx, sub->mod_arstr)) == NULL)
-		return(false);
+		return false;
 	if (!JS_DefineProperty(cx, subobj, "moderated_ars", STRING_TO_JSVAL(js_str)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(false);
+		return false;
 
 	if ((js_str = JS_NewStringCopyZ(cx, sub->data_dir)) == NULL)
-		return(false);
+		return false;
 	if (!JS_DefineProperty(cx, subobj, "data_dir", STRING_TO_JSVAL(js_str)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(false);
+		return false;
 
 	if ((js_str = JS_NewStringCopyZ(cx, smb_faddrtoa(&sub->faddr, str))) == NULL)
 		return false;
@@ -200,56 +200,56 @@ bool js_CreateMsgAreaProperties(JSContext* cx, scfg_t* cfg, JSObject* subobj, in
 		return false;
 
 	if ((js_str = JS_NewStringCopyZ(cx, sub->origline)) == NULL)
-		return(false);
+		return false;
 	if (!JS_DefineProperty(cx, subobj, "fidonet_origin", STRING_TO_JSVAL(js_str)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(false);
+		return false;
 
 	if ((js_str = JS_NewStringCopyZ(cx, sub->tagline)) == NULL)
-		return(false);
+		return false;
 	if (!JS_DefineProperty(cx, subobj, "qwknet_tagline", STRING_TO_JSVAL(js_str)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(false);
+		return false;
 
 	val = UINT_TO_JSVAL(sub->misc);
 	if (!JS_DefineProperty(cx, subobj, "settings", val
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(false);
+		return false;
 
 	if (!JS_DefineProperty(cx, subobj, "ptridx", INT_TO_JSVAL(sub->ptridx)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(false);
+		return false;
 
 	if (!JS_DefineProperty(cx, subobj, "qwk_conf", INT_TO_JSVAL(sub->qwkconf)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(false);
+		return false;
 
 	if (!JS_DefineProperty(cx, subobj, "max_crcs", INT_TO_JSVAL(sub->maxcrcs)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(false);
+		return false;
 
 	if (!JS_DefineProperty(cx, subobj, "max_msgs", INT_TO_JSVAL(sub->maxmsgs)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(false);
+		return false;
 
 	if (!JS_DefineProperty(cx, subobj, "max_age", INT_TO_JSVAL(sub->maxage)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(false);
+		return false;
 
 	if (!JS_DefineProperty(cx, subobj, "print_mode", INT_TO_JSVAL(sub->pmode)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(false);
+		return false;
 
 	if (!JS_DefineProperty(cx, subobj, "print_mode_neg", INT_TO_JSVAL(sub->n_pmode)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(false);
+		return false;
 
 
 #ifdef BUILD_JSDOCS
 	js_CreateArrayOfStrings(cx, subobj, "_property_desc_list", msg_sub_prop_desc, JSPROP_READONLY);
 #endif
 
-	return(true);
+	return true;
 }
 
 /***************************************/
@@ -315,7 +315,7 @@ static JSBool js_sub_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 	}
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool js_sub_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
@@ -351,7 +351,7 @@ static JSBool js_sub_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, j
 			break;
 	}
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static struct JSPropertySpec js_sub_properties[] = {
@@ -637,7 +637,7 @@ JSBool js_msg_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 
 static JSBool js_msg_area_enumerate(JSContext *cx, JSObject *obj)
 {
-	return(js_msg_area_resolve(cx, obj, JSID_VOID));
+	return js_msg_area_resolve(cx, obj, JSID_VOID);
 }
 
 static JSClass js_msg_area_class = {
@@ -663,7 +663,7 @@ JSObject* js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
 	                      , JSPROP_ENUMERATE | JSPROP_READONLY);
 
 	if (obj == NULL)
-		return(NULL);
+		return NULL;
 
 	p = (struct js_msg_area_priv *)malloc(sizeof(struct js_msg_area_priv));
 	if (p == NULL)
@@ -677,7 +677,7 @@ JSObject* js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
 
 	if (!JS_SetPrivate(cx, obj, p)) {
 		free(p);
-		return(NULL);
+		return NULL;
 	}
 
 #ifdef BUILD_JSDOCS
@@ -685,7 +685,7 @@ JSObject* js_CreateMsgAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
 	js_msg_area_enumerate(cx, obj);
 #endif
 
-	return(obj);
+	return obj;
 }
 
 #endif  /* JAVSCRIPT */

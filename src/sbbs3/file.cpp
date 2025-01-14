@@ -125,7 +125,7 @@ char* sbbs_t::getfilespec(char *str)
 		strcpy(str, ALLFILES);
 	if (msgabort(true))
 		return NULL;
-	return(str);
+	return str;
 }
 
 /****************************************************************************/
@@ -169,7 +169,7 @@ bool sbbs_t::removefcdt(file_t* f)
 
 	if ((u = matchuser(&cfg, f->from, TRUE /*sysop_alias*/)) == 0) {
 		bprintf(text[UnknownUploader], f->from, f->name);
-		return(false);
+		return false;
 	}
 	cdt = 0L;
 	if (cfg.dir[f->dir]->misc & DIR_CDTMIN && cur_cps) {
@@ -208,7 +208,7 @@ bool sbbs_t::removefcdt(file_t* f)
 
 	adjustuserval(&cfg, u, USER_ULB, -f->size);
 	adjustuserval(&cfg, u, USER_ULS, -1);
-	return(true);
+	return true;
 }
 
 /****************************************************************************/

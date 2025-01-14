@@ -204,7 +204,7 @@ BYTE* wwiv_expand(BYTE* buf, uint buflen, BYTE* outbuf, size_t& newlen
 		}
 	}
 	newlen = j;
-	return(outbuf);
+	return outbuf;
 }
 
 static void petscii_convert(BYTE* buf, uint len)
@@ -275,18 +275,18 @@ bool native_executable(scfg_t* cfg, const char* cmdline, int mode)
 		if (stricmp(name, cfg->natvpgm[i]->name) == 0
 		    || stricmp(base, cfg->natvpgm[i]->name) == 0)
 			break;
-	return(i < cfg->total_natvpgms);
+	return i < cfg->total_natvpgms;
 }
 
 #define XTRN_LOADABLE_MODULE(cmdline, startup_dir)           \
 		if (cmdline[0] == '*') /* Baja module or JavaScript */ \
-		return(exec_bin(cmdline + 1, &main_csi, startup_dir));
+		return exec_bin(cmdline + 1, &main_csi, startup_dir);
 #ifdef JAVASCRIPT
 	#define XTRN_LOADABLE_JS_MODULE(cmdline, mode, startup_dir)   \
 			if (cmdline[0] == '?' && (mode & EX_SH))                     \
-			return(js_execxtrn(cmdline + 1, startup_dir));        \
+			return js_execxtrn(cmdline + 1, startup_dir);        \
 			if (cmdline[0] == '?')                                     \
-			return(js_execfile(cmdline + 1, startup_dir));
+			return js_execfile(cmdline + 1, startup_dir);
 #else
 	#define XTRN_LOADABLE_JS_MODULE
 #endif
@@ -310,7 +310,7 @@ BYTE* cr_expand(BYTE* inbuf, size_t inlen, BYTE* outbuf, size_t& newlen)
 			outbuf[j++] = '\n';
 	}
 	newlen = j;
-	return(outbuf);
+	return outbuf;
 }
 
 static void add_env_var(str_list_t* list, const char* var, const char* val)
@@ -427,7 +427,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 		if ((env_list = strListInit()) == NULL) {
 			XTRN_CLEANUP;
 			errormsg(WHERE, ERR_CREATE, "env_list", 0);
-			return(errno);
+			return errno;
 		}
 
 		// Current environment passed to child process
@@ -458,7 +458,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 		if (env_block == NULL) {
 			XTRN_CLEANUP;
 			errormsg(WHERE, ERR_CREATE, "env_block", 0);
-			return(errno);
+			return errno;
 		}
 
 	} else { // DOS external
@@ -491,7 +491,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 		if (fp == NULL) {
 			XTRN_CLEANUP;
 			errormsg(WHERE, ERR_CREATE, path, 0);
-			return(errno);
+			return errno;
 		}
 		fprintf(fp, "%s\n", fullcmdline);
 		fprintf(fp, "DSZLOG=%sPROTOCOL.LOG\n", node_dir);
@@ -538,7 +538,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 					 )) == NULL) {
 				XTRN_CLEANUP;
 				errormsg(WHERE, ERR_CREATE, str, 0);
-				return(GetLastError());
+				return GetLastError();
 			}
 
 			sprintf(str, "sbbsexec_hangup%d", cfg.node_num);
@@ -550,7 +550,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 					 )) == NULL) {
 				XTRN_CLEANUP;
 				errormsg(WHERE, ERR_CREATE, str, 0);
-				return(GetLastError());
+				return GetLastError();
 			}
 
 			sprintf(str, "\\\\.\\mailslot\\sbbsexec\\rd%d"
@@ -562,7 +562,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 			if (rdslot == INVALID_HANDLE_VALUE) {
 				XTRN_CLEANUP;
 				errormsg(WHERE, ERR_CREATE, str, 0);
-				return(GetLastError());
+				return GetLastError();
 			}
 		}
 	}
@@ -598,7 +598,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 		if (!CreatePipe(&rdoutpipe, &startup_info.hStdOutput, &sa, sizeof(buf))) {
 			errormsg(WHERE, ERR_CREATE, "stdout pipe", 0);
 			strListFreeBlock(env_block);
-			return(GetLastError());
+			return GetLastError();
 		}
 		startup_info.hStdError = startup_info.hStdOutput;
 
@@ -607,7 +607,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 			errormsg(WHERE, ERR_CREATE, "stdin pipe", 0);
 			CloseHandle(rdoutpipe);
 			strListFreeBlock(env_block);
-			return(GetLastError());
+			return GetLastError();
 		}
 
 		DuplicateHandle(
@@ -658,7 +658,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 		SetLastError(last_error);   /* Restore LastError */
 		errormsg(WHERE, ERR_EXEC, realcmdline, mode);
 		SetLastError(last_error);   /* Restore LastError */
-		return(GetLastError());
+		return GetLastError();
 	}
 
 #if 0
@@ -931,7 +931,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 
 	errorlevel = retval; // Baja or JS retrievable error value
 
-	return(retval);
+	return retval;
 }
 
 #else   /* !WIN32 */
@@ -949,7 +949,7 @@ BYTE* lf_expand(BYTE* inbuf, uint inlen, BYTE* outbuf, size_t& newlen)
 		outbuf[j++] = inbuf[i];
 	}
 	newlen = j;
-	return(outbuf);
+	return outbuf;
 }
 
 #define MAX_ARGS 1000
@@ -963,13 +963,13 @@ static int setenv(const char *name, const char *value, int overwrite)
 		envstr = (char *)malloc(strlen(name) + strlen(value) + 2);
 		if (envstr == NULL) {
 			errno = ENOMEM;
-			return(-1);
+			return -1;
 		}
 		/* Note, on some platforms, this can be free()d... */
 		sprintf(envstr, "%s=%s", name, value);
 		putenv(envstr);
 	}
-	return(0);
+	return 0;
 }
 #endif
 
@@ -990,13 +990,13 @@ static int login_tty(int fd)
 {
 	(void) setsid();
 	if (!isatty(fd))
-		return (-1);
+		return -1;
 	(void) dup2(fd, 0);
 	(void) dup2(fd, 1);
 	(void) dup2(fd, 2);
 	if (fd > 2)
 		(void) close(fd);
-	return (0);
+	return 0;
 }
 
 #ifdef NEEDS_DAEMON
@@ -1010,7 +1010,7 @@ daemon(int nochdir, int noclose)
 
 	switch (fork()) {
 		case -1:
-			return (-1);
+			return -1;
 		case 0:
 			break;
 		default:
@@ -1018,7 +1018,7 @@ daemon(int nochdir, int noclose)
 	}
 
 	if (setsid() == -1)
-		return (-1);
+		return -1;
 
 	if (!nochdir)
 		(void)chdir("/");
@@ -1030,7 +1030,7 @@ daemon(int nochdir, int noclose)
 		if (fd > 2)
 			(void)close(fd);
 	}
-	return (0);
+	return 0;
 }
 #endif
 
@@ -1071,14 +1071,14 @@ static int openpty(int *amaster, int *aslave, char *name, struct termios *termp,
 					if (winp)
 						(void) ioctl(slave, TIOCSWINSZ,
 						             (char *)winp);
-					return (0);
+					return 0;
 				}
 				(void) close(master);
 			}
 		}
 	}
 	errno = ENOENT; /* out of ptys */
-	return (-1);
+	return -1;
 }
 
 static int forkpty(int *amaster, char *name, termios *termp, winsize *winp)
@@ -1086,24 +1086,24 @@ static int forkpty(int *amaster, char *name, termios *termp, winsize *winp)
 	int master, slave, pid;
 
 	if (openpty(&master, &slave, name, termp, winp) == -1)
-		return (-1);
+		return -1;
 	switch (pid = FORK()) {
 		case -1:
-			return (-1);
+			return -1;
 		case 0:
 			/*
 			 * child
 			 */
 			(void) close(master);
 			login_tty(slave);
-			return (0);
+			return 0;
 	}
 	/*
 	 * parent
 	 */
 	*amaster = master;
 	(void) close(slave);
-	return (pid);
+	return pid;
 }
 #endif /* NEED_FORKPTY */
 
@@ -1216,7 +1216,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 		snprintf(str, sizeof str, "%s.doscmdrc", cfg.node_dir);
 		if ((doscmdrc = fopen(str, "w+")) == NULL)  {
 			errormsg(WHERE, ERR_CREATE, str, 0);
-			return(-1);
+			return -1;
 		}
 		if (startup_dir[0])
 			fprintf(doscmdrc, "assign C: %s\n", startup_dir);
@@ -1368,7 +1368,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 					SAFEPRINTF(str, "/etc/%s", dosemu_cnf_fn);
 					if (!fexist(str)) {
 						errormsg(WHERE, ERR_READ, str, 0);
-						return(-1);
+						return -1;
 					}
 					else SAFECOPY(dosemuconf, str); /* using system conf */
 				}
@@ -1382,7 +1382,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 		SAFEPRINTF2(str, "%s%s", cfg.node_dir, external_bat_fn);
 		if (!(dosemubatfp = fopen(str, "w+"))) {
 			errormsg(WHERE, ERR_CREATE, str, 0);
-			return(-1);
+			return -1;
 		}
 
 		fprintf(dosemubatfp, "@ECHO OFF\r\n");
@@ -1438,7 +1438,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 			if (!fexist(str)) {
 				errormsg(WHERE, ERR_READ, str, 0);
 				fclose(dosemubatfp);
-				return(-1);
+				return -1;
 			}
 		}
 
@@ -1447,7 +1447,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 		if (!(externalbatfp = fopen(externalbatsrc, "r"))) {
 			errormsg(WHERE, ERR_OPEN, externalbatsrc, 0);
 			fclose(dosemubatfp);
-			return(-1);
+			return -1;
 		}
 
 		/* append the command line to the batch file */
@@ -1539,7 +1539,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 			if (!fexist(str)) {
 				errormsg(WHERE, ERR_OPEN, "dosemu.ini", 0);
 				fclose(dosemubatfp);
-				return(-1);
+				return -1;
 			}
 		}
 
@@ -1547,7 +1547,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 		if ((de_launch_inifp = iniOpenFile(str, false)) == NULL) {
 			errormsg(WHERE, ERR_OPEN, str, 0);
 			fclose(dosemubatfp);
-			return(-1);
+			return -1;
 		}
 		de_launch_ini = iniReadFile(de_launch_inifp);
 		iniCloseFile(de_launch_inifp);
@@ -1588,7 +1588,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 		lprintf((mode & EX_OFFLINE) ? LOG_ERR : LOG_WARNING, "DOS programs not supported: %s", cmdline);
 		bprintf("Sorry, DOS programs are not supported on this node.\r\n");
 
-		return(-1);
+		return -1;
 #endif
 	}
 
@@ -1601,7 +1601,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 
 	if (!(mode & EX_NOLOG) && pipe(err_pipe) != 0) {
 		errormsg(WHERE, ERR_CREATE, "err_pipe", 0);
-		return(-1);
+		return -1;
 	}
 
 	if ((mode & EX_STDIO) == EX_STDIO)  {
@@ -1714,7 +1714,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 					pthread_mutex_unlock(&input_thread_mutex);
 			}
 			errormsg(WHERE, ERR_EXEC, fullcmdline, 0);
-			return(-1);
+			return -1;
 		}
 		out_pipe[0] = in_pipe[1];
 	}
@@ -1722,12 +1722,12 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 		if (mode & EX_STDIN)
 			if (pipe(in_pipe) != 0) {
 				errormsg(WHERE, ERR_CREATE, "in_pipe", 0);
-				return(-1);
+				return -1;
 			}
 		if (mode & EX_STDOUT)
 			if (pipe(out_pipe) != 0) {
 				errormsg(WHERE, ERR_CREATE, "out_pipe", 0);
-				return(-1);
+				return -1;
 			}
 
 
@@ -1739,7 +1739,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 					pthread_mutex_unlock(&input_thread_mutex);
 			}
 			errormsg(WHERE, ERR_EXEC, fullcmdline, 0);
-			return(-1);
+			return -1;
 		}
 	}
 	if (pid == 0) {    /* child process */
@@ -1765,7 +1765,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 		if (startup_dir[0])
 			if (chdir(startup_dir) != 0) {
 				errormsg(WHERE, ERR_CHDIR, startup_dir, 0);
-				return(-1);
+				return -1;
 			}
 
 		if (mode & EX_SH || strcspn(fullcmdline, "<>|;\"") != strlen(fullcmdline)) {
@@ -2053,7 +2053,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 	if (!(mode & EX_NOLOG))
 		close(err_pipe[0]);
 
-	return(errorlevel = WEXITSTATUS(i));
+	return errorlevel = WEXITSTATUS(i);
 }
 
 #endif  /* !WIN32 */
@@ -2061,9 +2061,9 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 static const char* quoted_string(const char* str, char* buf, size_t maxlen)
 {
 	if (strchr(str, ' ') == NULL)
-		return(str);
+		return str;
 	safe_snprintf(buf, maxlen, "\"%s\"", str);
-	return(buf);
+	return buf;
 }
 
 #define QUOTED_STRING(ch, str, buf, maxlen) \
@@ -2283,5 +2283,5 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
 	}
 	cmd[j] = 0;
 
-	return(cmd);
+	return cmd;
 }

@@ -120,9 +120,9 @@ static const char *ftp_mon[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun"
 BOOL direxist(char *dir)
 {
 	if (access(dir, 0) == 0)
-		return(TRUE);
+		return TRUE;
 	else
-		return(FALSE);
+		return FALSE;
 }
 
 BOOL dir_op(scfg_t* cfg, user_t* user, client_t* client, uint dirnum)
@@ -182,11 +182,11 @@ static BOOL winsock_startup(void)
 	if ((status = WSAStartup(MAKEWORD(1, 1), &WSAData)) == 0) {
 		lprintf(LOG_DEBUG, "%s %s", WSAData.szDescription, WSAData.szSystemStatus);
 		WSAInitialized = TRUE;
-		return (TRUE);
+		return TRUE;
 	}
 
 	lprintf(LOG_CRIT, "!WinSock startup ERROR %d", status);
-	return (FALSE);
+	return FALSE;
 }
 
 #else /* No WINSOCK */
@@ -283,7 +283,7 @@ static SOCKET ftp_open_socket(int domain, int type)
 	sock = socket(domain, type, IPPROTO_IP);
 	if (sock != INVALID_SOCKET)
 		ftp_open_socket_cb(sock, NULL);
-	return(sock);
+	return sock;
 }
 
 #ifdef __BORLANDC__
@@ -300,7 +300,7 @@ static int ftp_close_socket(SOCKET* sock, CRYPT_SESSION *sess, int line)
 
 	if ((*sock) == INVALID_SOCKET) {
 		lprintf(LOG_WARNING, "0000 !INVALID_SOCKET in close_socket from line %u", line);
-		return(-1);
+		return -1;
 	}
 
 	shutdown(*sock, SHUT_RDWR);  /* required on Unix */
@@ -315,7 +315,7 @@ static int ftp_close_socket(SOCKET* sock, CRYPT_SESSION *sess, int line)
 	}
 	*sock = INVALID_SOCKET;
 
-	return(result);
+	return result;
 }
 
 #define GCES(status, sock, session, estr, action) do {                  \
@@ -354,13 +354,13 @@ static int sockprintf(SOCKET sock, CRYPT_SESSION sess, char *fmt, ...)
 
 	if (sock == INVALID_SOCKET) {
 		lprintf(LOG_WARNING, "!INVALID SOCKET in call to sockprintf");
-		return(0);
+		return 0;
 	}
 
 	/* Check socket for writability */
 	if (!socket_writable(sock, 300000)) {
 		lprintf(LOG_WARNING, "%04d !WARNING socket not ready for write", sock);
-		return(0);
+		return 0;
 	}
 
 	if (sess != -1) {
@@ -395,12 +395,12 @@ static int sockprintf(SOCKET sock, CRYPT_SESSION sess, char *fmt, ...)
 					lprintf(LOG_WARNING, "%04d Connection aborted by peer on send", sock);
 				else
 					lprintf(LOG_WARNING, "%04d !ERROR %d sending", sock, SOCKET_ERRNO);
-				return(0);
+				return 0;
 			}
 			lprintf(LOG_WARNING, "%04d !ERROR: short send: %u instead of %u", sock, result, len);
 		}
 	}
-	return(len);
+	return len;
 }
 
 void recverror(SOCKET socket, int rd, int line)
@@ -434,7 +434,7 @@ static int sock_recvbyte(SOCKET sock, CRYPT_SESSION sess, char *buf, time_t *las
 	if (ftp_set == NULL || terminate_server) {
 		sockprintf(sock, sess, "421 Server downed, aborting.");
 		lprintf(LOG_WARNING, "%04d Server downed, aborting", sock);
-		return(0);
+		return 0;
 	}
 	if (sess > -1) {
 		/* Try a read with no timeout first. */
@@ -469,7 +469,7 @@ static int sock_recvbyte(SOCKET sock, CRYPT_SESSION sess, char *buf, time_t *las
 				lprintf(LOG_WARNING, "%04d Disconnecting due to to inactivity", sock);
 				sockprintf(sock, sess, "421 Disconnecting due to inactivity (%u seconds)."
 				           , startup->max_inactivity);
-				return(0);
+				return 0;
 			}
 
 			if (!socket_readable(sock, startup->max_inactivity * 1000)) {
@@ -477,7 +477,7 @@ static int sock_recvbyte(SOCKET sock, CRYPT_SESSION sess, char *buf, time_t *las
 					lprintf(LOG_WARNING, "%04d Disconnecting due to to inactivity", sock);
 					sockprintf(sock, sess, "421 Disconnecting due to inactivity (%u seconds)."
 					           , startup->max_inactivity);
-					return(0);
+					return 0;
 				}
 			}
 		}
@@ -489,7 +489,7 @@ static int sock_recvbyte(SOCKET sock, CRYPT_SESSION sess, char *buf, time_t *las
 					lprintf(LOG_WARNING, "%04d Disconnecting due to to inactivity", sock);
 					sockprintf(sock, sess, "421 Disconnecting due to inactivity (%u seconds)."
 					           , startup->max_inactivity);
-					return(0);
+					return 0;
 				}
 				continue;
 			}
@@ -514,7 +514,7 @@ int sockreadline(SOCKET socket, CRYPT_SESSION sess, char* buf, int len, time_t* 
 
 	if (socket == INVALID_SOCKET) {
 		lprintf(LOG_WARNING, "INVALID SOCKET in call to sockreadline");
-		return(0);
+		return 0;
 	}
 
 	while (rd < len - 1) {
@@ -523,7 +523,7 @@ int sockreadline(SOCKET socket, CRYPT_SESSION sess, char* buf, int len, time_t* 
 		if (i < 1) {
 			if (sess != -1)
 				recverror(socket, i, __LINE__);
-			return(i);
+			return i;
 		}
 		if (ch == '\n' /* && rd>=1 */) { /* Mar-9-2003: terminate on sole LF */
 			break;
@@ -535,7 +535,7 @@ int sockreadline(SOCKET socket, CRYPT_SESSION sess, char* buf, int len, time_t* 
 	else
 		buf[rd] = 0;
 
-	return(rd);
+	return rd;
 }
 
 void ftp_terminate(void)
@@ -1450,7 +1450,7 @@ char* dotname(char* in, char* out)
 		else
 			out[i] = in[i];
 	out[i] = 0;
-	return(out);
+	return out;
 }
 
 static BOOL can_list(lib_t *lib, dir_t *dir, user_t *user, client_t *client)
@@ -1579,7 +1579,7 @@ static BOOL ftpalias(char* fullalias, char* filename, user_t* user, client_t* cl
 	fclose(fp);
 	if (curdir != NULL)
 		*curdir = dir;
-	return(result);
+	return result;
 }
 
 /*
@@ -1733,21 +1733,21 @@ char* root_dir(char* path)
 	else if (*root == '/' || *root == '\\')
 		root[1] = 0;
 
-	return(root);
+	return root;
 }
 
 char* genvpath(int lib, int dir, char* str)
 {
 	strcpy(str, "/");
 	if (lib < 0)
-		return(str);
+		return str;
 	strcat(str, scfg.lib[lib]->vdir);
 	strcat(str, "/");
 	if (dir < 0)
-		return(str);
+		return str;
 	strcat(str, scfg.dir[dir]->vdir);
 	strcat(str, "/");
-	return(str);
+	return str;
 }
 
 void ftp_printfile(SOCKET sock, CRYPT_SESSION sess, const char* name, unsigned code)
@@ -1818,18 +1818,18 @@ static BOOL badlogin(SOCKET sock, CRYPT_SESSION sess, ulong* login_attempts
 
 	if ((*login_attempts) >= 3) {
 		sockprintf(sock, sess, "421 Too many failed login attempts.");
-		return(TRUE);
+		return TRUE;
 	}
 	ftp_printfile(sock, sess, "badlogin", 530);
 	sockprintf(sock, sess, "530 Invalid login.");
-	return(FALSE);
+	return FALSE;
 }
 
 static char* ftp_tmpfname(char* fname, char* ext, SOCKET sock)
 {
 	safe_snprintf(fname, MAX_PATH, "%sSBBS_FTP.%x%x%x%lx.%s"
 	              , scfg.temp_dir, getpid(), sock, rand(), (ulong)clock(), ext);
-	return(fname);
+	return fname;
 }
 
 #if defined(__GNUC__)   // Catch printf-format errors
@@ -5111,7 +5111,7 @@ const char* ftp_ver(void)
 	              , GIT_BRANCH, GIT_HASH
 	              , GIT_DATE, compiler);
 
-	return(ver);
+	return ver;
 }
 
 void ftp_server(void* arg)

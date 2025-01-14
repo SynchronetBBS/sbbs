@@ -50,7 +50,7 @@ uint sbbs_t::create_filelist(const char *name, int mode)
 	SAFEPRINTF2(str, "%s%s", cfg.temp_dir, name);
 	if ((fp = fopen(str, "ab")) == NULL) {
 		errormsg(WHERE, ERR_OPEN, str, O_CREAT | O_WRONLY | O_APPEND);
-		return(0);
+		return 0;
 	}
 	k = 0;
 	if (mode & FL_ULTIME) {
@@ -87,7 +87,7 @@ uint sbbs_t::create_filelist(const char *name, int mode)
 		SAFEPRINTF2(str, "%s%s", cfg.temp_dir, name);
 		remove(str);
 	}
-	return(k);
+	return k;
 }
 
 /****************************************************************************/
@@ -100,14 +100,14 @@ const char* sbbs_t::temp_cmd(int& ex_mode)
 
 	if (!cfg.total_fcomps) {
 		errormsg(WHERE, ERR_CHK, "compressible file types", 0);
-		return(nulstr);
+		return nulstr;
 	}
 	for (i = 0; i < cfg.total_fcomps; i++)
 		if (!stricmp(useron.tmpext, cfg.fcomp[i]->ext)
 		    && chk_ar(cfg.fcomp[i]->ar, &useron, &client)) {
 			ex_mode |= cfg.fcomp[i]->ex_mode;
-			return(cfg.fcomp[i]->cmd);
+			return cfg.fcomp[i]->cmd;
 		}
 	ex_mode |= cfg.fcomp[0]->ex_mode;
-	return(cfg.fcomp[0]->cmd);
+	return cfg.fcomp[0]->cmd;
 }

@@ -152,7 +152,7 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
 	if ((p = (private_t*)JS_GetPrivate(cx, obj)) == NULL)
-		return(JS_TRUE);
+		return JS_TRUE;
 
 	rc = JS_SUSPENDREQUEST(cx);
 	js_getuserdat(scfg, p);
@@ -421,12 +421,12 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case USER_PROP_CACHED:
 			*vp = BOOLEAN_TO_JSVAL(p->cached);
 			JS_RESUMEREQUEST(cx, rc);
-			return(JS_TRUE);    /* intentional early return */
+			return JS_TRUE;    /* intentional early return */
 
 		case USER_PROP_IS_SYSOP:
 			*vp = BOOLEAN_TO_JSVAL(user_is_sysop(p->user));
 			JS_RESUMEREQUEST(cx, rc);
-			return(JS_TRUE);    /* intentional early return */
+			return JS_TRUE;    /* intentional early return */
 
 		case USER_PROP_BATUPLST:
 			s = batch_list_name(scfg, p->user->number, XFER_BATCH_UPLOAD, tmp, sizeof tmp);
@@ -438,17 +438,17 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		default:
 			/* This must not set vp in order for child objects to work (stats and security) */
 			JS_RESUMEREQUEST(cx, rc);
-			return(JS_TRUE);
+			return JS_TRUE;
 	}
 	JS_RESUMEREQUEST(cx, rc);
 	if (s != NULL) {
 		if ((js_str = JS_NewStringCopyZ(cx, s)) == NULL)
-			return(JS_FALSE);
+			return JS_FALSE;
 		*vp = STRING_TO_JSVAL(js_str);
 	} else
 		*vp = DOUBLE_TO_JSVAL((double)val);
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
@@ -466,12 +466,12 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
 	if ((p = (private_t*)JS_GetPrivate(cx, obj)) == NULL)
-		return(JS_TRUE);
+		return JS_TRUE;
 
 	JSVALUE_TO_MSTRING(cx, *vp, str, NULL);
 	HANDLE_PENDING(cx, str);
 	if (str == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	JS_IdToValue(cx, id, &idval);
 	tiny = JSVAL_TO_INT(idval);
@@ -795,7 +795,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 			JS_ValueToBoolean(cx, *vp, &p->cached);
 			JS_RESUMEREQUEST(cx, rc);
 			free(str);
-			return(JS_TRUE);    /* intentional early return */
+			return JS_TRUE;    /* intentional early return */
 
 	}
 	free(str);
@@ -803,7 +803,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 		p->cached = FALSE;
 
 	JS_RESUMEREQUEST(cx, rc);
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 #define USER_PROP_FLAGS JSPROP_ENUMERATE
@@ -1432,7 +1432,7 @@ static JSBool js_user_stats_resolve(JSContext *cx, JSObject *obj, jsid id)
 
 static JSBool js_user_stats_enumerate(JSContext *cx, JSObject *obj)
 {
-	return(js_user_stats_resolve(cx, obj, JSID_VOID));
+	return js_user_stats_resolve(cx, obj, JSID_VOID);
 }
 
 static JSBool js_user_security_resolve(JSContext *cx, JSObject *obj, jsid id)
@@ -1458,7 +1458,7 @@ static JSBool js_user_security_resolve(JSContext *cx, JSObject *obj, jsid id)
 
 static JSBool js_user_security_enumerate(JSContext *cx, JSObject *obj)
 {
-	return(js_user_security_resolve(cx, obj, JSID_VOID));
+	return js_user_security_resolve(cx, obj, JSID_VOID);
 }
 
 static JSBool js_user_limits_resolve(JSContext *cx, JSObject *obj, jsid id)
@@ -1484,7 +1484,7 @@ static JSBool js_user_limits_resolve(JSContext *cx, JSObject *obj, jsid id)
 
 static JSBool js_user_limits_enumerate(JSContext *cx, JSObject *obj)
 {
-	return(js_user_limits_resolve(cx, obj, JSID_VOID));
+	return js_user_limits_resolve(cx, obj, JSID_VOID);
 }
 
 static JSClass js_user_stats_class = {
@@ -1534,7 +1534,7 @@ static JSBool js_user_resolve(JSContext *cx, JSObject *obj, jsid id)
 	JSBool     ret;
 
 	if ((p = (private_t*)JS_GetPrivate(cx, obj)) == NULL)
-		return(JS_TRUE);
+		return JS_TRUE;
 
 	if (id != JSID_VOID && id != JSID_EMPTY) {
 		jsval idval;
@@ -1552,14 +1552,14 @@ static JSBool js_user_resolve(JSContext *cx, JSObject *obj, jsid id)
 		/* user.stats */
 		if ((newobj = JS_DefineObject(cx, obj, "stats"
 		                              , &js_user_stats_class, NULL, JSPROP_ENUMERATE | JSPROP_READONLY)) == NULL)
-			return(JS_FALSE);
+			return JS_FALSE;
 		JS_SetPrivate(cx, newobj, p);
 #ifdef BUILD_JSDOCS
 		js_DescribeSyncObject(cx, newobj, "User statistics (all <small>READ ONLY</small>)", 310);
 		js_CreateArrayOfStrings(cx, newobj, "_property_desc_list", user_stats_prop_desc, JSPROP_READONLY);
 #endif
 		if (name)
-			return(JS_TRUE);
+			return JS_TRUE;
 
 	}
 
@@ -1569,14 +1569,14 @@ static JSBool js_user_resolve(JSContext *cx, JSObject *obj, jsid id)
 		/* user.security */
 		if ((newobj = JS_DefineObject(cx, obj, "security"
 		                              , &js_user_security_class, NULL, JSPROP_ENUMERATE | JSPROP_READONLY)) == NULL)
-			return(JS_FALSE);
+			return JS_FALSE;
 		JS_SetPrivate(cx, newobj, p);
 #ifdef BUILD_JSDOCS
 		js_DescribeSyncObject(cx, newobj, "User security settings", 310);
 		js_CreateArrayOfStrings(cx, newobj, "_property_desc_list", user_security_prop_desc, JSPROP_READONLY);
 #endif
 		if (name)
-			return(JS_TRUE);
+			return JS_TRUE;
 	}
 
 	if (name == NULL || strcmp(name, "limits") == 0) {
@@ -1585,14 +1585,14 @@ static JSBool js_user_resolve(JSContext *cx, JSObject *obj, jsid id)
 		/* user.limits */
 		if ((newobj = JS_DefineObject(cx, obj, "limits"
 		                              , &js_user_limits_class, NULL, JSPROP_ENUMERATE | JSPROP_READONLY)) == NULL)
-			return(JS_FALSE);
+			return JS_FALSE;
 		JS_SetPrivate(cx, newobj, p);
 #ifdef BUILD_JSDOCS
 		js_DescribeSyncObject(cx, newobj, "User limitations based on security level (all <small>READ ONLY</small>)", 311);
 		js_CreateArrayOfStrings(cx, newobj, "_property_desc_list", user_limits_prop_desc, JSPROP_READONLY);
 #endif
 		if (name)
-			return(JS_TRUE);
+			return JS_TRUE;
 	}
 
 	ret = js_SyncResolve(cx, obj, name, js_user_properties, js_user_functions, NULL, 0);
@@ -1603,7 +1603,7 @@ static JSBool js_user_resolve(JSContext *cx, JSObject *obj, jsid id)
 
 static JSBool js_user_enumerate(JSContext *cx, JSObject *obj)
 {
-	return(js_user_resolve(cx, obj, JSID_VOID));
+	return js_user_resolve(cx, obj, JSID_VOID);
 }
 
 JSClass js_user_class = {
@@ -1643,11 +1643,11 @@ js_user_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	user.number = (ushort)val;
 	if (user.number != 0 && (i = getuserdat(scfg, &user)) != 0) {
 		JS_ReportError(cx, "Error %d reading user number %d", i, val);
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	if ((p = (private_t*)malloc(sizeof(private_t))) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	memset(p, 0, sizeof(private_t));
 
@@ -1657,7 +1657,7 @@ js_user_constructor(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SetPrivate(cx, obj, p);
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 JSObject* js_CreateUserClass(JSContext* cx, JSObject* parent)
@@ -1672,7 +1672,7 @@ JSObject* js_CreateUserClass(JSContext* cx, JSObject* parent)
 	                         , NULL /* funcs, defined in constructor */
 	                         , NULL, NULL);
 
-	return(userclass);
+	return userclass;
 }
 
 JSObject* js_CreateUserObject(JSContext* cx, JSObject* parent, char* name
@@ -1690,11 +1690,11 @@ JSObject* js_CreateUserObject(JSContext* cx, JSObject* parent, char* name
 		userobj = JS_DefineObject(cx, parent, name, &js_user_class
 		                          , NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
 	if (userobj == NULL)
-		return(NULL);
+		return NULL;
 
 	if ((p = JS_GetPrivate(cx, userobj)) == NULL) {    /* Uses existing private pointer: Fix memory leak? */
 		if ((p = (private_t*)malloc(sizeof(private_t))) == NULL)
-			return(NULL);
+			return NULL;
 		memset(p, 0, sizeof(private_t));
 	}
 
@@ -1721,7 +1721,7 @@ JSObject* js_CreateUserObject(JSContext* cx, JSObject* parent, char* name
 	                        , "_property_desc_list", user_prop_desc, JSPROP_READONLY);
 #endif
 
-	return(userobj);
+	return userobj;
 }
 
 /****************************************************************************/
@@ -1732,15 +1732,15 @@ js_CreateUserObjects(JSContext* cx, JSObject* parent, scfg_t* cfg, user_t* user,
                      , const char* web_file_vpath_prefix, subscan_t* subscan, struct mqtt* mqtt)
 {
 	if (js_CreateUserObject(cx, parent, "user", user, client, /* global_user */ TRUE, mqtt) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 	if (js_CreateFileAreaObject(cx, parent, cfg, user, client, web_file_vpath_prefix) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 	if (js_CreateMsgAreaObject(cx, parent, cfg, user, client, subscan) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 	if (js_CreateXtrnAreaObject(cx, parent, cfg, user, client) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 #endif  /* JAVSCRIPT */

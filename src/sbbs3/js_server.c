@@ -40,7 +40,7 @@ static JSBool js_server_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	char *             colon;
 
 	if ((p = (js_server_props_t*)JS_GetPrivate(cx, obj)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	JS_IdToValue(cx, id, &idval);
 	tiny = JSVAL_TO_INT(idval);
@@ -76,7 +76,7 @@ static JSBool js_server_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 	}
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool js_server_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
@@ -86,7 +86,7 @@ static JSBool js_server_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 	js_server_props_t* p;
 
 	if ((p = (js_server_props_t*)JS_GetPrivate(cx, obj)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	JS_IdToValue(cx, id, &idval);
 	tiny = JSVAL_TO_INT(idval);
@@ -100,7 +100,7 @@ static JSBool js_server_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 			break;
 	}
 
-	return(TRUE);
+	return TRUE;
 }
 
 
@@ -186,17 +186,17 @@ static JSBool js_server_resolve(JSContext *cx, JSObject *obj, jsid id)
 		if (name) free(name);
 
 		if ((props = (js_server_props_t*)JS_GetPrivate(cx, obj)) == NULL)
-			return(JS_FALSE);
+			return JS_FALSE;
 
 		if ((newobj = JS_NewArrayObject(cx, 0, NULL)) == NULL)
-			return(JS_FALSE);
+			return JS_FALSE;
 
 		if (!JS_SetParent(cx, newobj, obj))
-			return(JS_FALSE);
+			return JS_FALSE;
 
 		if (!JS_DefineProperty(cx, obj, "interface_ip_addr_list", OBJECT_TO_JSVAL(newobj)
 		                       , NULL, NULL, JSPROP_ENUMERATE))
-			return(JS_FALSE);
+			return JS_FALSE;
 
 		for (i = 0; (*props->interfaces)[i]; i++) {
 			str = strdup((*props->interfaces)[i]);
@@ -208,7 +208,7 @@ static JSBool js_server_resolve(JSContext *cx, JSObject *obj, jsid id)
 			JS_SetElement(cx, newobj, i, &val);
 		}
 		JS_DeepFreezeObject(cx, newobj);
-		if (name) return(JS_TRUE);
+		if (name) return JS_TRUE;
 	}
 
 	ret = js_SyncResolve(cx, obj, name, js_server_properties, NULL, NULL, 0);
@@ -219,7 +219,7 @@ static JSBool js_server_resolve(JSContext *cx, JSObject *obj, jsid id)
 
 static JSBool js_server_enumerate(JSContext *cx, JSObject *obj)
 {
-	return(js_server_resolve(cx, obj, JSID_VOID));
+	return js_server_resolve(cx, obj, JSID_VOID);
 }
 
 static JSClass js_server_class = {
@@ -242,16 +242,16 @@ JSObject* js_CreateServerObject(JSContext* cx, JSObject* parent
 
 	if ((obj = JS_DefineObject(cx, parent, "server", &js_server_class, NULL
 	                           , JSPROP_ENUMERATE | JSPROP_READONLY)) == NULL)
-		return(NULL);
+		return NULL;
 
 	if (!JS_SetPrivate(cx, obj, props))
-		return(NULL);
+		return NULL;
 
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx, obj, "Server-specific properties", 310);
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", server_prop_desc, JSPROP_READONLY);
 #endif
 
-	return(obj);
+	return obj;
 }
 

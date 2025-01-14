@@ -42,7 +42,7 @@ int smb_findhash(smb_t* smb, hash_t** compare, hash_t* found_hash,
 		memset(found_hash, 0, sizeof(hash_t));
 
 	if ((retval = smb_open_hash(smb)) != SMB_SUCCESS)
-		return(retval);
+		return retval;
 
 	COUNT_LIST_ITEMS(compare, count);
 
@@ -104,12 +104,12 @@ int smb_findhash(smb_t* smb, hash_t** compare, hash_t* found_hash,
 		}
 		if (found) {
 			smb_close_hash(smb);
-			return(SMB_SUCCESS);
+			return SMB_SUCCESS;
 		}
 	}
 
 	/* hash file left open */
-	return(SMB_ERR_NOT_FOUND);
+	return SMB_ERR_NOT_FOUND;
 }
 
 int smb_addhashes(smb_t* smb, hash_t** hashes, bool skip_marked)
@@ -120,11 +120,11 @@ int smb_addhashes(smb_t* smb, hash_t** hashes, bool skip_marked)
 	COUNT_LIST_ITEMS(hashes, h);
 	if (!h) { /* nothing to add */
 		smb_close_hash(smb);
-		return(SMB_SUCCESS);
+		return SMB_SUCCESS;
 	}
 
 	if ((retval = smb_open_hash(smb)) != SMB_SUCCESS)
-		return(retval);
+		return retval;
 
 	fseek(smb->hash_fp, 0, SEEK_END);
 
@@ -143,7 +143,7 @@ int smb_addhashes(smb_t* smb, hash_t** hashes, bool skip_marked)
 
 	smb_close_hash(smb);
 
-	return(retval);
+	return retval;
 }
 
 static char* strip_chars(uchar* dst, const uchar* src, uchar* set)
@@ -155,7 +155,7 @@ static char* strip_chars(uchar* dst, const uchar* src, uchar* set)
 	}
 	*dst = 0;
 
-	return((char *)dst);
+	return (char *)dst;
 }
 
 static char* strip_ctrla(uchar* dst, const uchar* src)
@@ -171,7 +171,7 @@ static char* strip_ctrla(uchar* dst, const uchar* src)
 	}
 	*dst = 0;
 
-	return((char *)dst);
+	return (char *)dst;
 }
 
 /* Allocates and calculates hashes of data (based on flags)					*/
@@ -182,10 +182,10 @@ hash_t* smb_hash(uint msgnum, uint32_t t, unsigned source, unsigned flags
 	hash_t* hash;
 
 	if (length == 0)       /* Don't hash 0-length sources (e.g. empty/blank message bodies) */
-		return(NULL);
+		return NULL;
 
 	if ((hash = (hash_t*)malloc(sizeof(hash_t))) == NULL)
-		return(NULL);
+		return NULL;
 
 	memset(hash, 0, sizeof(hash_t));
 	hash->number = msgnum;
@@ -202,7 +202,7 @@ hash_t* smb_hash(uint msgnum, uint32_t t, unsigned source, unsigned flags
 	if (flags & SMB_HASH_SHA1)
 		SHA1_calc(hash->data.sha1, data, length);
 
-	return(hash);
+	return hash;
 }
 
 /* Allocates and calculates hashes of data (based on flags)					*/
@@ -216,7 +216,7 @@ hash_t* smb_hashstr(uint msgnum, uint32_t t, unsigned source, unsigned flags
 
 	if (flags & SMB_HASH_PROC_MASK) {  /* string pre-processing */
 		if ((p = strdup(str)) == NULL)
-			return(NULL);
+			return NULL;
 		if (flags & SMB_HASH_STRIP_CTRL_A)
 			strip_ctrla((uchar *)p, (uchar *)p);
 		if (flags & SMB_HASH_STRIP_WSP)
@@ -231,7 +231,7 @@ hash_t* smb_hashstr(uint msgnum, uint32_t t, unsigned source, unsigned flags
 	} else
 		hash = smb_hash(msgnum, t, source, flags, str, strlen(str));
 
-	return(hash);
+	return hash;
 }
 
 /* Allocates and calculates all hashes for a single message					*/
@@ -245,7 +245,7 @@ hash_t** smb_msghashes(smbmsg_t* msg, const uchar* body, int source_mask)
 	time_t   t = time(NULL);
 
 	if ((hashes = (hash_t**)malloc(sizeof(hash_t*) * (SMB_HASH_SOURCE_TYPES + 1))) == NULL)
-		return(NULL);
+		return NULL;
 
 	memset(hashes, 0, sizeof(hash_t*) * (SMB_HASH_SOURCE_TYPES + 1));
 
@@ -277,7 +277,7 @@ hash_t** smb_msghashes(smbmsg_t* msg, const uchar* body, int source_mask)
 			hashes[h++] = hash;
 	}
 
-	return(hashes);
+	return hashes;
 }
 
 void smb_freehashes(hash_t** hashes)
@@ -296,7 +296,7 @@ int smb_hashmsg(smb_t* smb, smbmsg_t* msg, const uchar* text, bool update)
 	hash_t** hashes;    /* This is a NULL-terminated list of hashes */
 
 	if (smb->status.attr & (SMB_EMAIL | SMB_NOHASH | SMB_FILE_DIRECTORY))
-		return(SMB_SUCCESS);
+		return SMB_SUCCESS;
 
 	hashes = smb_msghashes(msg, text, SMB_HASH_SOURCE_DUPE);
 
@@ -313,7 +313,7 @@ int smb_hashmsg(smb_t* smb, smbmsg_t* msg, const uchar* text, bool update)
 
 	FREE_LIST(hashes, n);
 
-	return(retval);
+	return retval;
 }
 
 /* length=0 specifies ASCIIZ data											*/
@@ -326,7 +326,7 @@ int smb_getmsgidx_by_hash(smb_t* smb, smbmsg_t* msg, unsigned source
 	hash_t   found;
 
 	if ((hashes = (hash_t**)calloc(n, sizeof(hash_t*))) == NULL)
-		return(SMB_ERR_MEM);
+		return SMB_ERR_MEM;
 
 	if (length == 0)
 		hashes[0] = smb_hashstr(0, 0, source, flags, data);
@@ -334,7 +334,7 @@ int smb_getmsgidx_by_hash(smb_t* smb, smbmsg_t* msg, unsigned source
 		hashes[0] = smb_hash(0, 0, source, flags, data, length);
 	if (hashes[0] == NULL) {
 		FREE_LIST(hashes, n);
-		return(SMB_ERR_MEM);
+		return SMB_ERR_MEM;
 	}
 
 	if ((retval = smb_findhash(smb, hashes, &found, 1 << source, false)) == SMB_SUCCESS) {
@@ -348,7 +348,7 @@ int smb_getmsgidx_by_hash(smb_t* smb, smbmsg_t* msg, unsigned source
 
 	FREE_LIST(hashes, n);
 
-	return(retval);
+	return retval;
 }
 
 int smb_getmsghdr_by_hash(smb_t* smb, smbmsg_t* msg, unsigned source
@@ -357,16 +357,16 @@ int smb_getmsghdr_by_hash(smb_t* smb, smbmsg_t* msg, unsigned source
 	int retval;
 
 	if ((retval = smb_getmsgidx_by_hash(smb, msg, source, flags, data, length)) != SMB_SUCCESS)
-		return(retval);
+		return retval;
 
 	if ((retval = smb_lockmsghdr(smb, msg)) != SMB_SUCCESS)
-		return(retval);
+		return retval;
 
 	retval = smb_getmsghdr(smb, msg);
 
 	smb_unlockmsghdr(smb, msg);
 
-	return(retval);
+	return retval;
 }
 
 uint16_t smb_subject_crc(const char* subj)
@@ -375,7 +375,7 @@ uint16_t smb_subject_crc(const char* subj)
 	uint16_t crc;
 
 	if (subj == NULL)
-		return(0);
+		return 0;
 
 	while (!strnicmp(subj, "RE:", 3)) {
 		subj += 3;
@@ -384,14 +384,14 @@ uint16_t smb_subject_crc(const char* subj)
 	}
 
 	if ((str = strdup(subj)) == NULL)
-		return(0xffff);
+		return 0xffff;
 
 	strlwr(str);
 	truncsp(str);
 	crc = crc16(str, 0 /* auto-length */);
 	free(str);
 
-	return(crc);
+	return crc;
 }
 
 uint16_t smb_name_crc(const char* name)
@@ -400,17 +400,17 @@ uint16_t smb_name_crc(const char* name)
 	uint16_t crc;
 
 	if (name == NULL)
-		return(0);
+		return 0;
 
 	if ((str = strdup(name)) == NULL)
-		return(0xffff);
+		return 0xffff;
 
 	strlwr(str);
 	truncsp(str);
 	crc = crc16(str, 0 /* auto-length */);
 	free(str);
 
-	return(crc);
+	return crc;
 }
 
 // Returns hashflags_t on success

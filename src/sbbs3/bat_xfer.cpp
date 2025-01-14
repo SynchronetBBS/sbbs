@@ -242,7 +242,7 @@ bool sbbs_t::start_batch_download()
 
 	if (useron.rest & FLAG('D')) {     /* Download restriction */
 		bputs(text[R_Download]);
-		return(false);
+		return false;
 	}
 
 	str_list_t ini = batch_list_read(&cfg, useron.number, XFER_BATCH_DOWNLOAD);
@@ -251,7 +251,7 @@ bool sbbs_t::start_batch_download()
 	if (file_count < 1) {
 		bputs(text[DownloadQueueIsEmpty]);
 		iniFreeStringList(ini);
-		return(false);
+		return false;
 	}
 	str_list_t filenames = iniGetSectionList(ini, NULL);
 
@@ -311,7 +311,7 @@ bool sbbs_t::start_batch_download()
 		        , u64toac(user_available_credits(&useron), tmp));
 		iniFreeStringList(ini);
 		iniFreeStringList(filenames);
-		return(false);
+		return false;
 	}
 
 	int64_t totalsize = 0;
@@ -332,7 +332,7 @@ bool sbbs_t::start_batch_download()
 
 	if (!(useron.exempt & FLAG('T')) && !SYSOP && totaltime > (int64_t)timeleft) {
 		bputs(text[NotEnoughTimeToDl]);
-		return(false);
+		return false;
 	}
 	i = protnum(useron.prot, XFER_BATCH_DOWNLOAD);
 	if (i >= cfg.total_prots) {
@@ -343,11 +343,11 @@ bool sbbs_t::start_batch_download()
 		mnemonics(text[ProtocolOrQuit]);
 		ch = (char)getkeys(keys, 0);
 		if (ch == quit_key() || sys_status & SS_ABORT)
-			return(false);
+			return false;
 		i = protnum(ch, XFER_BATCH_DOWNLOAD);
 	}
 	if (i >= cfg.total_prots || !create_batchdn_lst((cfg.prot[i]->misc & PROT_NATIVE) ? true:false)) {
-		return(false);
+		return false;
 	}
 	xfrprot = i;
 #if 0 // NFB-TODO: Download events
@@ -386,7 +386,7 @@ bool sbbs_t::start_batch_download()
 		if ((np = (char*)realloc(list, list_len + strlen(path) + 1 /* add one for '\0'*/)) == NULL) {
 			free(list);
 			errormsg(WHERE, ERR_ALLOC, "list", list_len + strlen(path));
-			return(false);
+			return false;
 		}
 		list = np;
 		if (!list_len)

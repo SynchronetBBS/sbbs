@@ -1148,10 +1148,10 @@ int save_changes(int mode)
 	int i = 0;
 
 	if (!uifc.changes)
-		return(2);
+		return 2;
 	if (auto_save == true) { /* -y switch used, return "Yes" */
 		uifc.changes = 0;
-		return(0);
+		return 0;
 	}
 	uifc.helpbuf =
 		"`Save Changes:`\n"
@@ -1167,7 +1167,7 @@ int save_changes(int mode)
 	}
 	else
 		uifc.changes = 0;
-	return(i);
+	return i;
 }
 
 void txt_cfg()
@@ -1597,7 +1597,7 @@ int whichlogic(void)
 		"menu and level `50`, the user must have a level `below 50`.\n"
 	;
 	i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, 0, "Select Logic", opt);
-	return(i);
+	return i;
 }
 
 int whichcond(void)
@@ -1620,7 +1620,7 @@ int whichcond(void)
 		"or `any` of the parameter requirements must be met.\n"
 	;
 	i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, 0, "Multiple Requirement Logic", opt);
-	return(i);
+	return i;
 }
 
 
@@ -2579,7 +2579,7 @@ int lprintf(int level, char *fmt, ...)
 		puts(sbuf);
 	else
 		uifc.msg(sbuf);
-	return(0);
+	return 0;
 }
 
 void* new_item(void* lp, size_t size, int index, int* total)

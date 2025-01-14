@@ -268,22 +268,22 @@ BOOL create_raw_dir_list(char* list_file)
 	}
 	if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Parent Directory", path, sizeof(path) - 1
 	               , K_EDIT) < 1)
-		return(FALSE);
+		return FALSE;
 	k = 1;
 	k = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &k, 0, "Include Empty Directories", uifcYesNoOpts);
 	if (k < 0)
-		return(FALSE);
+		return FALSE;
 	include_empty_dirs = (k == 0);
 	k = 0;
 	k = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &k, 0, "Recursive Directory Search", uifcYesNoOpts);
 	if (k < 0)
-		return(FALSE);
+		return FALSE;
 	if ((fp = fopen(list_file, "w")) == NULL) {
 		strcpy(list_file, fname);
 		if ((fp = fopen(list_file, "w")) == NULL) {
 			SAFEPRINTF2(path, "Create Failure (%u): %s", errno, list_file);
 			uifc.msg(path);
-			return(FALSE);
+			return FALSE;
 		}
 	}
 	backslash(path);
@@ -291,7 +291,7 @@ BOOL create_raw_dir_list(char* list_file)
 	append_dir_list(path, path, fp, /* depth: */ 0, /* max_depth: */ k, include_empty_dirs);
 	uifc.pop(NULL);
 	fclose(fp);
-	return(TRUE);
+	return TRUE;
 }
 
 int dirs_in_lib(int libnum)

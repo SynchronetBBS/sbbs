@@ -281,7 +281,7 @@ char* u32toac(uint32_t l, char *string, char sep)
 		if (j > 0 && !(k % 3))
 			string[j--] = sep;
 	}
-	return(string);
+	return string;
 }
 
 char* u64toac(uint64_t l, char *string, char sep)
@@ -314,7 +314,7 @@ char* truncstr(char* str, const char* set)
 	if (p != NULL && *p != 0)
 		*p = 0;
 
-	return(p);
+	return p;
 }
 
 /****************************************************************************/
@@ -343,7 +343,7 @@ char* rot13(char* str)
 		*(p++) = ch;
 	}
 
-	return(str);
+	return str;
 }
 
 /****************************************************************************/
@@ -367,7 +367,7 @@ char* backslashcolon(char *str)
 /****************************************************************************/
 int pstrcmp(const char **str1, const char **str2)
 {
-	return(strcmp(*str1, *str2));
+	return strcmp(*str1, *str2);
 }
 
 /****************************************************************************/
@@ -379,7 +379,7 @@ int strsame(const char *str1, const char *str2)
 
 	for (i = 0; str1[i]; i++)
 		if (str1[i] == str2[i]) j++;
-	return(j);
+	return j;
 }
 
 
@@ -392,7 +392,7 @@ char *hexplus(uint num, char *str)
 	str[0] = num / 0x100 ? 'f' + (num / 0x10) - 0xf : str[1];
 	str[1] = str[2];
 	str[2] = 0;
-	return(str);
+	return str;
 }
 
 /****************************************************************************/
@@ -405,7 +405,7 @@ ulong ahtoul(const char *str)
 
 	while ((l = (*str++) | 0x20) != 0x20)
 		val = (l & 0xf) + (l >> 6 & 1) * 9 + val * 16;
-	return(val);
+	return val;
 }
 
 /****************************************************************************/
@@ -418,7 +418,7 @@ uint32_t ahtou32(const char *str)
 
 	while ((l = (*str++) | 0x20) != 0x20)
 		val = (l & 0xf) + (l >> 6 & 1) * 9 + val * 16;
-	return(val);
+	return val;
 }
 
 /****************************************************************************/
@@ -430,11 +430,11 @@ uint hptoi(const char *str)
 	uint i;
 
 	if (!str[1] || toupper(str[0]) <= 'F')
-		return(ahtoul(str));
+		return ahtoul(str);
 	SAFECOPY(tmp, str);
 	tmp[0] = 'F';
 	i = ahtoul(tmp) + ((toupper(str[0]) - 'F') * 0x10);
-	return(i);
+	return i;
 }
 
 /****************************************************************************/
@@ -457,9 +457,9 @@ bool valid_ctrl_a_attr(char a)
 		case 'N':   /* normal       */
 		case 'R':   /* red      fg  */
 		case 'W':   /* white    fg  */
-        /* "Rainbow" attribute is not valid for messages (no ANSI equivalent)
-        		case 'X':	// rainbow
-        */
+		/* "Rainbow" attribute is not valid for messages (no ANSI equivalent)
+				case 'X':	// rainbow
+		*/
 		case 'Y':   /* yellow   fg  */
 		case '0':   /* black    bg  */
 		case '1':   /* red      bg  */
@@ -469,9 +469,9 @@ bool valid_ctrl_a_attr(char a)
 		case '5':   /* magenta  bg  */
 		case '6':   /* cyan     bg  */
 		case '7':   /* white    bg  */
-			return(true);
+			return true;
 	}
-	return(false);
+	return false;
 }
 
 /****************************************************************************/
@@ -531,7 +531,7 @@ size_t strip_invalid_attr(char *str)
 		dest[d++] = str[c];
 	}
 	dest[d] = 0;
-	return(a);
+	return a;
 }
 
 /****************************************************************************/
@@ -595,7 +595,7 @@ char* ascii_str(uchar* str)
 			*p = exascii_to_ascii_char(*p);
 		p++;
 	}
-	return((char*)str);
+	return (char*)str;
 }
 
 char* replace_named_values(const char* src
@@ -668,7 +668,7 @@ char* replace_named_values(const char* src
 	}
 	*p = 0;  /* terminate string in destination buffer */
 
-	return(buf);
+	return buf;
 }
 
 /****************************************************************************/

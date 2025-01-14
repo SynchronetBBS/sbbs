@@ -265,7 +265,7 @@ static int lputs(int level, const char *str)
 			notify_systemd(str);
 #endif
 		}
-		return(0);
+		return 0;
 	}
 #endif
 	if (!mutex_initialized) {
@@ -290,7 +290,7 @@ static int lputs(int level, const char *str)
 	fflush(stdout);
 	pthread_mutex_unlock(&mutex);
 
-	return(prompt_len);
+	return prompt_len;
 }
 
 static void errormsg(void *cbdata, int level, const char *msg)
@@ -307,7 +307,7 @@ static int lprintf(int level, const char *fmt, ...)
 	vsnprintf(sbuf, sizeof(sbuf), fmt, argptr);
 	sbuf[sizeof(sbuf) - 1] = 0;
 	va_end(argptr);
-	return(lputs(level, sbuf));
+	return lputs(level, sbuf);
 }
 
 static void recycle_all()
@@ -337,13 +337,13 @@ static bool do_seteuid(bool to_new)
 	bool result = FALSE;
 
 	if (capabilities_set)
-		return(TRUE);       /* do nothing */
+		return TRUE;      /* do nothing */
 
 	if (new_uid_name[0] == 0)  /* not set? */
-		return(TRUE);       /* do nothing */
+		return TRUE;      /* do nothing */
 
 	if (old_uid == new_uid && old_gid == new_gid)
-		return(TRUE);       /* do nothing */
+		return TRUE;      /* do nothing */
 
 	pthread_once(&setid_mutex_once, init_setuid_mutex);
 	pthread_mutex_lock(&setid_mutex);
@@ -379,16 +379,16 @@ bool do_setuid(bool force)
 	bool result = TRUE;
 #if defined(DONT_BLAME_SYNCHRONET)
 	if (!force)
-		return(do_seteuid(TRUE));
+		return do_seteuid(TRUE);
 #endif
 
 #if defined(_THREAD_SUID_BROKEN)
 	if (thread_suid_broken && (!force))
-		return(do_seteuid(TRUE));
+		return do_seteuid(TRUE);
 #endif
 
 	if (old_uid == new_uid && old_gid == new_gid)
-		return(TRUE);       /* do nothing */
+		return TRUE;      /* do nothing */
 
 	pthread_once(&setid_mutex_once, init_setuid_mutex);
 	pthread_mutex_lock(&setid_mutex);
@@ -424,7 +424,7 @@ bool do_setuid(bool force)
 	if (force && (!result))
 		exit(1);
 
-	return(result);
+	return result;
 }
 
 bool change_user(void)
@@ -491,9 +491,9 @@ static int linux_keepcaps(void)
 		if (errno != EINVAL) {
 			lprintf(LOG_ERR, "linux_keepcaps FAILED with error %d (%s)", errno, strerror(errno));
 		}
-		return(-1);
+		return -1;
 	}
-	return(0);
+	return 0;
 }
 
 static bool linux_setcaps(unsigned int caps)
@@ -557,19 +557,19 @@ static bool winsock_startup(void)
 	int status;                 /* Status Code */
 
 	if ((status = WSAStartup(MAKEWORD(1, 1), &WSAData)) == 0)
-		return(TRUE);
+		return TRUE;
 
 	lprintf(LOG_CRIT, "!WinSock startup ERROR %d", status);
-	return(FALSE);
+	return FALSE;
 }
 
 static bool winsock_cleanup(void)
 {
 	if (WSACleanup() == 0)
-		return(TRUE);
+		return TRUE;
 
 	lprintf(LOG_ERR, "!WinSock cleanup ERROR %d", SOCKET_ERRNO);
-	return(FALSE);
+	return FALSE;
 }
 
 #else /* No WINSOCK */
@@ -675,18 +675,18 @@ static int bbs_lputs(void* p, int level, const char *str)
 	struct tm tm;
 
 	if (level > bbs_startup.log_level)
-		return(0);
+		return 0;
 
 #ifdef __unix__
 	if (is_daemon || syslog_always)  {
 		if (str == NULL)
-			return(0);
+			return 0;
 		if (std_facilities)
 			syslog(level | LOG_AUTH, "%s", str);
 		else
 			syslog(level, "term %s", str);
 		if (is_daemon)
-			return(strlen(str));
+			return strlen(str);
 	}
 #endif
 
@@ -702,7 +702,7 @@ static int bbs_lputs(void* p, int level, const char *str)
 	truncsp(logline);
 	lputs(level, logline);
 
-	return(strlen(logline) + 1);
+	return strlen(logline) + 1;
 }
 
 
@@ -717,12 +717,12 @@ static int ftp_lputs(void* p, int level, const char *str)
 	struct tm tm;
 
 	if (level > ftp_startup.log_level)
-		return(0);
+		return 0;
 
 #ifdef __unix__
 	if (is_daemon || syslog_always)  {
 		if (str == NULL)
-			return(0);
+			return 0;
 		if (std_facilities)
 #ifdef __solaris__
 			syslog(level | LOG_DAEMON, "%s", str);
@@ -732,7 +732,7 @@ static int ftp_lputs(void* p, int level, const char *str)
 		else
 			syslog(level, "ftp  %s", str);
 		if (is_daemon)
-			return(strlen(str));
+			return strlen(str);
 	}
 #endif
 
@@ -748,7 +748,7 @@ static int ftp_lputs(void* p, int level, const char *str)
 	truncsp(logline);
 	lputs(level, logline);
 
-	return(strlen(logline) + 1);
+	return strlen(logline) + 1;
 }
 
 /****************************************************************************/
@@ -762,18 +762,18 @@ static int mail_lputs(void* p, int level, const char *str)
 	struct tm tm;
 
 	if (level > mail_startup.log_level)
-		return(0);
+		return 0;
 
 #ifdef __unix__
 	if (is_daemon || syslog_always)  {
 		if (str == NULL)
-			return(0);
+			return 0;
 		if (std_facilities)
 			syslog(level | LOG_MAIL, "%s", str);
 		else
 			syslog(level, "mail %s", str);
 		if (is_daemon)
-			return(strlen(str));
+			return strlen(str);
 	}
 #endif
 
@@ -789,7 +789,7 @@ static int mail_lputs(void* p, int level, const char *str)
 	truncsp(logline);
 	lputs(level, logline);
 
-	return(strlen(logline) + 1);
+	return strlen(logline) + 1;
 }
 
 /****************************************************************************/
@@ -803,18 +803,18 @@ static int services_lputs(void* p, int level, const char *str)
 	struct tm tm;
 
 	if (level > services_startup.log_level)
-		return(0);
+		return 0;
 
 #ifdef __unix__
 	if (is_daemon || syslog_always)  {
 		if (str == NULL)
-			return(0);
+			return 0;
 		if (std_facilities)
 			syslog(level | LOG_DAEMON, "%s", str);
 		else
 			syslog(level, "srvc %s", str);
 		if (is_daemon)
-			return(strlen(str));
+			return strlen(str);
 	}
 #endif
 
@@ -830,7 +830,7 @@ static int services_lputs(void* p, int level, const char *str)
 	truncsp(logline);
 	lputs(level, logline);
 
-	return(strlen(logline) + 1);
+	return strlen(logline) + 1;
 }
 
 /****************************************************************************/
@@ -844,18 +844,18 @@ static int event_lputs(void* p, int level, const char *str)
 	struct tm tm;
 
 	if (level > bbs_startup.log_level)
-		return(0);
+		return 0;
 
 #ifdef __unix__
 	if (is_daemon || syslog_always)  {
 		if (str == NULL)
-			return(0);
+			return 0;
 		if (std_facilities)
 			syslog(level | LOG_CRON, "%s", str);
 		else
 			syslog(level, "evnt %s", str);
 		if (is_daemon)
-			return(strlen(str));
+			return strlen(str);
 	}
 #endif
 
@@ -871,7 +871,7 @@ static int event_lputs(void* p, int level, const char *str)
 	truncsp(logline);
 	lputs(level, logline);
 
-	return(strlen(logline) + 1);
+	return strlen(logline) + 1;
 }
 
 /****************************************************************************/
@@ -885,18 +885,18 @@ static int web_lputs(void* p, int level, const char *str)
 	struct tm tm;
 
 	if (level > web_startup.log_level)
-		return(0);
+		return 0;
 
 #ifdef __unix__
 	if (is_daemon || syslog_always)  {
 		if (str == NULL)
-			return(0);
+			return 0;
 		if (std_facilities)
 			syslog(level | LOG_DAEMON, "%s", str);
 		else
 			syslog(level, "web  %s", str);
 		if (is_daemon)
-			return(strlen(str));
+			return strlen(str);
 	}
 #endif
 
@@ -912,7 +912,7 @@ static int web_lputs(void* p, int level, const char *str)
 	truncsp(logline);
 	lputs(level, logline);
 
-	return(strlen(logline) + 1);
+	return strlen(logline) + 1;
 }
 
 static void terminate(void)
@@ -1217,12 +1217,12 @@ int main(int argc, char** argv)
 	ctrl_dir = get_ctrl_dir(/* warn: */ true);
 
 	if (!winsock_startup())
-		return(-1);
+		return -1;
 
 	gethostname(host_name, sizeof(host_name) - 1);
 
 	if (!winsock_cleanup())
-		return(-1);
+		return -1;
 
 	sbbs_get_ini_fname(ini_file, ctrl_dir);
 	/* Initialize BBS startup structure */
@@ -1377,7 +1377,7 @@ int main(int argc, char** argv)
 			printf("Services options:\t0x%08" PRIX32 "\n", services_startup.options);
 			printf("Web server port:\t%u\n", web_startup.port);
 			printf("Web server options:\t0x%08" PRIX32 "\n", web_startup.options);
-			return(0);
+			return 0;
 		}
 #ifdef __unix__
 		if (!stricmp(arg, "syslog")) {
@@ -1430,7 +1430,7 @@ int main(int argc, char** argv)
 						break;
 					default:
 						show_usage(argv[0]);
-						return(1);
+						return 1;
 				}
 				break;
 			case 'R':   /* RLogin */
@@ -1441,7 +1441,7 @@ int main(int argc, char** argv)
 						break;
 					default:
 						show_usage(argv[0]);
-						return(1);
+						return 1;
 				}
 				break;
 			case 'F':   /* FTP */
@@ -1466,7 +1466,7 @@ int main(int argc, char** argv)
 						break;
 					default:
 						show_usage(argv[0]);
-						return(1);
+						return 1;
 				}
 				break;
 			case 'M':   /* Mail */
@@ -1497,7 +1497,7 @@ int main(int argc, char** argv)
 								break;
 							default:
 								show_usage(argv[0]);
-								return(1);
+								return 1;
 						}
 						break;
 					case 'P':   /* POP3 */
@@ -1511,7 +1511,7 @@ int main(int argc, char** argv)
 								break;
 							default:
 								show_usage(argv[0]);
-								return(1);
+								return 1;
 						}
 						break;
 					case 'R':   /* Relay */
@@ -1531,7 +1531,7 @@ int main(int argc, char** argv)
 						break;
 					default:
 						show_usage(argv[0]);
-						return(1);
+						return 1;
 				}
 				break;
 			case 'S':   /* Services */
@@ -1553,7 +1553,7 @@ int main(int argc, char** argv)
 						break;
 					default:
 						show_usage(argv[0]);
-						return(1);
+						return 1;
 				}
 				break;
 			case 'W':   /* Web server */
@@ -1578,7 +1578,7 @@ int main(int argc, char** argv)
 						break;
 					default:
 						show_usage(argv[0]);
-						return(1);
+						return 1;
 				}
 				break;
 			case 'G':   /* GET */
@@ -1592,7 +1592,7 @@ int main(int argc, char** argv)
 						break;
 					default:
 						show_usage(argv[0]);
-						return(1);
+						return 1;
 				}
 				break;
 			case 'H':   /* Host */
@@ -1615,7 +1615,7 @@ int main(int argc, char** argv)
 						break;
 					default:
 						show_usage(argv[0]);
-						return(1);
+						return 1;
 				}
 				break;
 			case 'U':   /* runtime UID */
@@ -1638,7 +1638,7 @@ int main(int argc, char** argv)
 						break;
 					default:
 						show_usage(argv[0]);
-						return(1);
+						return 1;
 				}
 				break;
 			case 'N':   /* No */
@@ -1685,13 +1685,13 @@ int main(int argc, char** argv)
 						break;
 					default:
 						show_usage(argv[0]);
-						return(1);
+						return 1;
 				}
 				break;
 
 			default:
 				show_usage(argv[0]);
-				return(1);
+				return 1;
 		}
 	}
 
@@ -1707,7 +1707,7 @@ int main(int argc, char** argv)
 	lprintf(LOG_INFO, "Loading configuration files from %s", scfg.ctrl_dir);
 	if (!load_cfg(&scfg, /* text: */ NULL, /* prep: */ TRUE, /* node: */ FALSE, error, sizeof(error))) {
 		lprintf(LOG_ERR, "!ERROR Loading Configuration Files: %s", error);
-		return(-1);
+		return -1;
 	}
 
 /* Daemonize / Set uid/gid */
@@ -2206,5 +2206,5 @@ int main(int argc, char** argv)
 
 	free_cfg(&scfg);
 	sbbs_free_ini(/* global_startup: */ NULL, &bbs_startup, &ftp_startup, &web_startup, &mail_startup, &services_startup);
-	return(0);
+	return 0;
 }

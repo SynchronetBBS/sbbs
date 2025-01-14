@@ -36,7 +36,7 @@ int set_socket_options(scfg_t* cfg, SOCKET sock, const char* protocol, char* err
 	if (result) {
 		safe_snprintf(error, errlen, "%d getting socket option type (%d)"
 		              , SOCKET_ERRNO, SO_TYPE);
-		return(result);
+		return result;
 	}
 
 	/* Set user defined socket options */
@@ -47,7 +47,7 @@ int set_socket_options(scfg_t* cfg, SOCKET sock, const char* protocol, char* err
 		// Set the only sane choice...
 		setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (void *)&optval, sizeof(optval));
 #endif
-		return(0);
+		return 0;
 	}
 	list = iniReadFile(fp);
 	fclose(fp);
@@ -67,5 +67,5 @@ int set_socket_options(scfg_t* cfg, SOCKET sock, const char* protocol, char* err
 
 	iniFreeStringList(list);
 
-	return(result);
+	return result;
 }

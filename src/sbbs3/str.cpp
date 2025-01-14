@@ -687,7 +687,7 @@ size_t sbbs_t::gettmplt(char *strout, const char *templt, int mode)
 	CRLF;
 	if (!(sys_status & SS_ABORT))
 		strcpy(strout, str); // Not SAFECOPY()able
-	return(c);
+	return c;
 }
 
 /*****************************************************************************/
@@ -701,7 +701,7 @@ bool sbbs_t::inputnstime32(time32_t *dt)
 
 	retval = inputnstime(&tmptime);
 	*dt = (time32_t)tmptime;
-	return(retval);
+	return retval;
 }
 
 bool sbbs_t::inputnstime(time_t *dt)
@@ -716,19 +716,19 @@ bool sbbs_t::inputnstime(time_t *dt)
 	CRLF;
 	if (localtime_r(dt, &tm) == NULL) {
 		errormsg(WHERE, ERR_CHK, "time ptr", 0);
-		return(FALSE);
+		return FALSE;
 	}
 
 	bputs(text[NScanYear]);
 	ultoa(tm.tm_year + 1900, str, 10);
 	if (!getstr(str, 4, K_EDIT | K_AUTODEL | K_NUMBER | K_NOCRLF) || sys_status & SS_ABORT) {
 		CRLF;
-		return(false);
+		return false;
 	}
 	tm.tm_year = atoi(str);
 	if (tm.tm_year < 1970) {       /* unix time is seconds since 1/1/1970 */
 		CRLF;
-		return(false);
+		return false;
 	}
 	tm.tm_year -= 1900;   /* tm_year is years since 1900 */
 
@@ -736,12 +736,12 @@ bool sbbs_t::inputnstime(time_t *dt)
 	ultoa(tm.tm_mon + 1, str, 10);
 	if (!getstr(str, 2, K_EDIT | K_AUTODEL | K_NUMBER | K_NOCRLF) || sys_status & SS_ABORT) {
 		CRLF;
-		return(false);
+		return false;
 	}
 	tm.tm_mon = atoi(str);
 	if (tm.tm_mon < 1 || tm.tm_mon > 12) {
 		CRLF;
-		return(false);
+		return false;
 	}
 	tm.tm_mon--;        /* tm_mon is zero-based */
 
@@ -749,12 +749,12 @@ bool sbbs_t::inputnstime(time_t *dt)
 	ultoa(tm.tm_mday, str, 10);
 	if (!getstr(str, 2, K_EDIT | K_AUTODEL | K_NUMBER | K_NOCRLF) || sys_status & SS_ABORT) {
 		CRLF;
-		return(false);
+		return false;
 	}
 	tm.tm_mday = atoi(str);
 	if (tm.tm_mday < 1 || tm.tm_mday > 31) {
 		CRLF;
-		return(false);
+		return false;
 	}
 	bputs(text[NScanHour]);
 	if (cfg.sys_misc & SM_MILITARY)
@@ -776,25 +776,25 @@ bool sbbs_t::inputnstime(time_t *dt)
 	ultoa(hour, str, 10);
 	if (!getstr(str, 2, K_EDIT | K_AUTODEL | K_NUMBER | K_NOCRLF) || sys_status & SS_ABORT) {
 		CRLF;
-		return(false);
+		return false;
 	}
 	tm.tm_hour = atoi(str);
 	if (tm.tm_hour > 24) {
 		CRLF;
-		return(false);
+		return false;
 	}
 
 	bputs(text[NScanMinute]);
 	ultoa(tm.tm_min, str, 10);
 	if (!getstr(str, 2, K_EDIT | K_AUTODEL | K_NUMBER | K_NOCRLF) || sys_status & SS_ABORT) {
 		CRLF;
-		return(false);
+		return false;
 	}
 
 	tm.tm_min = atoi(str);
 	if (tm.tm_min > 59) {
 		CRLF;
-		return(false);
+		return false;
 	}
 	tm.tm_sec = 0;
 	if (!(cfg.sys_misc & SM_MILITARY) && tm.tm_hour && tm.tm_hour < 13) {
@@ -814,7 +814,7 @@ bool sbbs_t::inputnstime(time_t *dt)
 	}
 	tm.tm_isdst = -1; /* Do not adjust for DST */
 	*dt = mktime(&tm);
-	return(true);
+	return true;
 }
 
 /*****************************************************************************/
@@ -832,11 +832,11 @@ bool sbbs_t::chkpass(char *passwd, user_t* user, bool unique)
 
 	if (strlen(pass) < cfg.min_pwlen) {
 		bputs(text[PasswordTooShort]);
-		return(false);
+		return false;
 	}
 	if (unique && strcmp(pass, user->pass) == 0) {
 		bputs(text[PasswordNotChanged]);
-		return(false);
+		return false;
 	}
 	d = strlen(pass);
 	for (c = 1; c < d; c++)
@@ -844,21 +844,21 @@ bool sbbs_t::chkpass(char *passwd, user_t* user, bool unique)
 			break;
 	if (c == d) {
 		bputs(text[PasswordInvalid]);
-		return(false);
+		return false;
 	}
 	for (c = 0; c < 3; c++)    /* check for 1234 and ABCD */
 		if (pass[c] != pass[c + 1] + 1)
 			break;
 	if (c == 3) {
 		bputs(text[PasswordObvious]);
-		return(false);
+		return false;
 	}
 	for (c = 0; c < 3; c++)    /* check for 4321 and ZYXW */
 		if (pass[c] != pass[c + 1] - 1)
 			break;
 	if (c == 3) {
 		bputs(text[PasswordObvious]);
-		return(false);
+		return false;
 	}
 	SAFECOPY(name, user->name);
 	strupr(name);
@@ -903,9 +903,9 @@ bool sbbs_t::chkpass(char *passwd, user_t* user, bool unique)
 	    )
 	{
 		bputs(text[PasswordObvious]);
-		return(false);
+		return false;
 	}
-	return(!trashcan(pass, "password"));
+	return !trashcan(pass, "password");
 }
 
 /****************************************************************************/
@@ -969,12 +969,12 @@ bool sbbs_t::trashcan(const char *insearchof, const char *name, struct trash* tr
 			flush_output(500); // give time for tx buffer to clear before disconnect
 		}
 	}
-	return(result);
+	return result;
 }
 
 char* sbbs_t::timestr(time_t intime)
 {
-	return(::timestr(&cfg, (time32_t)intime, timestr_output));
+	return ::timestr(&cfg, (time32_t)intime, timestr_output);
 }
 
 char* sbbs_t::datestr(time_t t, char* str)
@@ -1208,15 +1208,15 @@ bool sbbs_t::spy(uint i /* node_num */)
 
 	if (!i || i > MAX_NODES) {
 		bprintf("Invalid node number: %d\r\n", i);
-		return(false);
+		return false;
 	}
 	if (i == cfg.node_num) {
 		bprintf("Can't spy on yourself.\r\n");
-		return(false);
+		return false;
 	}
 	if (spy_socket[i - 1] != INVALID_SOCKET) {
 		bprintf("Node %d already being spied (%x)\r\n", i, spy_socket[i - 1]);
-		return(false);
+		return false;
 	}
 	bprintf("*** Synchronet Remote Spy on Node %d: Ctrl-C to Abort ***"
 	        "\r\n\r\n", i);
@@ -1291,7 +1291,7 @@ bool sbbs_t::spy(uint i /* node_num */)
 	}
 	spy_socket[i - 1] = INVALID_SOCKET;
 
-	return(true);
+	return true;
 }
 
 void sbbs_t::time_bank(void)

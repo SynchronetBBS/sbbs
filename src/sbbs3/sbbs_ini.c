@@ -189,7 +189,7 @@ bool sbbs_set_js_settings(
 	else
 		failure |= iniSetString(lp, section, strJavaScriptLoadPath, js->load_path, style) == NULL;
 
-	return(!failure);
+	return !failure;
 }
 
 void sbbs_get_sound_settings(str_list_t list, const char* section, struct startup_sound_settings* sound
@@ -855,7 +855,7 @@ bool sbbs_write_ini(
 	style.bit_separator = " | ";
 
 	if ((list = iniReadFile(fp)) == NULL)
-		return(false);
+		return false;
 
 	if (global == NULL) {
 		memset(&global_buf, 0, sizeof(global_buf));
@@ -1435,5 +1435,5 @@ bool sbbs_write_ini(
 
 	iniFreeStringList(list);
 
-	return(result);
+	return result;
 }

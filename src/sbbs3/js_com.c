@@ -91,11 +91,11 @@ js_close(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_com_class)) == NULL) {
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	if (p->com == COM_HANDLE_INVALID)
-		return(JS_TRUE);
+		return JS_TRUE;
 
 	rc = JS_SUSPENDREQUEST(cx);
 	comClose(p->com);
@@ -108,7 +108,7 @@ js_close(JSContext *cx, uintN argc, jsval *arglist)
 	p->is_open = FALSE;
 	JS_RESUMEREQUEST(cx, rc);
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -121,7 +121,7 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_com_class)) == NULL) {
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
@@ -134,7 +134,7 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 		dbprintf(TRUE, p, "connect failed with error %d", p->last_error);
 		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 		JS_RESUMEREQUEST(cx, rc);
-		return(JS_TRUE);
+		return JS_TRUE;
 	}
 
 	comSetBaudRate(p->com, p->baud_rate);
@@ -144,7 +144,7 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 	dbprintf(FALSE, p, "connected to port %s", p->dev);
 	JS_RESUMEREQUEST(cx, rc);
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -160,7 +160,7 @@ js_send(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_com_class)) == NULL) {
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	if (!js_argc(cx, argc, 1))
@@ -183,7 +183,7 @@ js_send(JSContext *cx, uintN argc, jsval *arglist)
 		free(cp);
 	JS_RESUMEREQUEST(cx, rc);
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -201,7 +201,7 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_com_class)) == NULL) {
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	if (!js_argc(cx, argc, 1))
@@ -213,30 +213,30 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 	HANDLE_PENDING(cx, fname);
 	if (fname == NULL) {
 		JS_ReportError(cx, "Failure reading filename");
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
 	if ((file = nopen(fname, O_RDONLY | O_BINARY)) == -1) {
 		JS_RESUMEREQUEST(cx, rc);
 		free(fname);
-		return(JS_TRUE);
+		return JS_TRUE;
 	}
 
 	free(fname);
 	len = filelength(file);
 	if (len < 1) {
 		close(file);
-		return(JS_TRUE);
+		return JS_TRUE;
 	}
 	if ((buf = malloc((size_t)len)) == NULL) {
 		close(file);
-		return(JS_TRUE);
+		return JS_TRUE;
 	}
 	if (read(file, buf, (uint)len) != len) {
 		free(buf);
 		close(file);
-		return(JS_TRUE);
+		return JS_TRUE;
 	}
 	close(file);
 
@@ -250,7 +250,7 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 	free(buf);
 
 	JS_RESUMEREQUEST(cx, rc);
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -270,7 +270,7 @@ js_sendbin(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
 	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_com_class)) == NULL) {
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	if (!js_argc(cx, argc, 1))
@@ -314,7 +314,7 @@ js_sendbin(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	JS_RESUMEREQUEST(cx, rc);
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 
@@ -333,7 +333,7 @@ js_recv(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_com_class)) == NULL) {
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	if (argc) {
@@ -348,7 +348,7 @@ js_recv(JSContext *cx, uintN argc, jsval *arglist)
 
 	if ((buf = (char*)malloc(len + 1)) == NULL) {
 		JS_ReportError(cx, "Error allocating %u bytes", len + 1);
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
@@ -358,21 +358,21 @@ js_recv(JSContext *cx, uintN argc, jsval *arglist)
 		p->last_error = COM_ERROR_VALUE;
 		free(buf);
 		JS_SET_RVAL(cx, arglist, JSVAL_NULL);
-		return(JS_TRUE);
+		return JS_TRUE;
 	}
 	buf[len] = 0;
 
 	str = JS_NewStringCopyN(cx, buf, len);
 	free(buf);
 	if (str == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(str));
 	rc = JS_SUSPENDREQUEST(cx);
 	dbprintf(FALSE, p, "received %u bytes", len);
 	JS_RESUMEREQUEST(cx, rc);
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -391,7 +391,7 @@ js_recvline(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_com_class)) == NULL) {
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	if (argc) {
@@ -401,7 +401,7 @@ js_recvline(JSContext *cx, uintN argc, jsval *arglist)
 
 	if ((buf = (char*)malloc(len + 1)) == NULL) {
 		JS_ReportError(cx, "Error allocating %u bytes", len + 1);
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	if (argc > 1) {
@@ -424,7 +424,7 @@ js_recvline(JSContext *cx, uintN argc, jsval *arglist)
 	str = JS_NewStringCopyZ(cx, buf);
 	free(buf);
 	if (str == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(str));
 	rc = JS_SUSPENDREQUEST(cx);
@@ -432,7 +432,7 @@ js_recvline(JSContext *cx, uintN argc, jsval *arglist)
 	         , i, COM_ERROR_VALUE);
 	JS_RESUMEREQUEST(cx, rc);
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -452,7 +452,7 @@ js_recvbin(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(-1));
 
 	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_com_class)) == NULL) {
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	if (argc) {
@@ -491,7 +491,7 @@ js_recvbin(JSContext *cx, uintN argc, jsval *arglist)
 		p->last_error = COM_ERROR_VALUE;
 
 	JS_RESUMEREQUEST(cx, rc);
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 /* COM Object Properites */
@@ -540,7 +540,7 @@ static JSBool js_com_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, j
 
 	if ((p = (private_t*)JS_GetPrivate(cx, obj)) == NULL) {
 		// Prototype access
-		return(JS_TRUE);
+		return JS_TRUE;
 	}
 
 	JS_IdToValue(cx, id, &idval);
@@ -591,7 +591,7 @@ static JSBool js_com_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, j
 
 	}
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool js_com_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
@@ -606,7 +606,7 @@ static JSBool js_com_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 
 	if ((p = (private_t*)JS_GetPrivate(cx, obj)) == NULL) {
 		// Protoype access
-		return(JS_TRUE);
+		return JS_TRUE;
 	}
 
 	JS_IdToValue(cx, id, &idval);
@@ -643,7 +643,7 @@ static JSBool js_com_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case COM_PROP_DEVICE:
 			JS_RESUMEREQUEST(cx, rc);
 			if ((js_str = JS_NewStringCopyZ(cx, p->dev)) == NULL)
-				return(JS_FALSE);
+				return JS_FALSE;
 			*vp = STRING_TO_JSVAL(js_str);
 			rc = JS_SUSPENDREQUEST(cx);
 			break;
@@ -670,7 +670,7 @@ static JSBool js_com_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	}
 
 	JS_RESUMEREQUEST(cx, rc);
-	return(TRUE);
+	return TRUE;
 }
 
 #define COM_PROP_FLAGS JSPROP_ENUMERATE | JSPROP_READONLY
@@ -751,7 +751,7 @@ static JSBool js_com_resolve(JSContext *cx, JSObject *obj, jsid id)
 
 static JSBool js_com_enumerate(JSContext *cx, JSObject *obj)
 {
-	return(js_com_resolve(cx, obj, JSID_VOID));
+	return js_com_resolve(cx, obj, JSID_VOID);
 }
 
 JSClass js_com_class = {
@@ -785,13 +785,13 @@ js_com_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	if (argc == 0 || fname == NULL) {
 		JS_ReportError(cx, "Failure reading port name");
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	if ((p = (private_t*)malloc(sizeof(private_t))) == NULL) {
 		JS_ReportError(cx, "malloc failed");
 		free(fname);
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 	memset(p, 0, sizeof(private_t));
 
@@ -802,7 +802,7 @@ js_com_constructor(JSContext *cx, uintN argc, jsval *arglist)
 
 	if (!JS_SetPrivate(cx, obj, p)) {
 		JS_ReportError(cx, "JS_SetPrivate failed");
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 #ifdef BUILD_JSDOCS
@@ -815,7 +815,7 @@ js_com_constructor(JSContext *cx, uintN argc, jsval *arglist)
 #endif
 
 	dbprintf(FALSE, p, "object constructed");
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 JSObject* js_CreateCOMClass(JSContext* cx, JSObject* parent)
@@ -830,7 +830,7 @@ JSObject* js_CreateCOMClass(JSContext* cx, JSObject* parent)
 	                      , NULL /* funcs, specified in constructor */
 	                      , NULL, NULL);
 
-	return(comobj);
+	return comobj;
 }
 
 JSObject* js_CreateCOMObject(JSContext* cx, JSObject* parent, const char *name, COM_HANDLE com)
@@ -842,10 +842,10 @@ JSObject* js_CreateCOMObject(JSContext* cx, JSObject* parent, const char *name, 
 	                      , JSPROP_ENUMERATE | JSPROP_READONLY);
 
 	if (obj == NULL)
-		return(NULL);
+		return NULL;
 
 	if ((p = (private_t*)malloc(sizeof(private_t))) == NULL)
-		return(NULL);
+		return NULL;
 	memset(p, 0, sizeof(private_t));
 
 	p->com = com;
@@ -854,12 +854,12 @@ JSObject* js_CreateCOMObject(JSContext* cx, JSObject* parent, const char *name, 
 
 	if (!JS_SetPrivate(cx, obj, p)) {
 		dbprintf(TRUE, p, "JS_SetPrivate failed");
-		return(NULL);
+		return NULL;
 	}
 
 	dbprintf(FALSE, p, "object created");
 
-	return(obj);
+	return obj;
 }
 
 #endif  /* JAVSCRIPT */

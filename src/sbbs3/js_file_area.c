@@ -221,7 +221,7 @@ JSBool js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 		val = DOUBLE_TO_JSVAL((jsdouble)p->cfg->min_dspace);
 		JS_DefineProperty(cx, areaobj, "min_diskspace", val, NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
 		if (name)
-			return(JS_TRUE);
+			return JS_TRUE;
 	}
 
 	if (name == NULL || strcmp(name, "max_filename_length") == 0) {
@@ -230,7 +230,7 @@ JSBool js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 		val = UINT_TO_JSVAL(p->cfg->filename_maxlen);
 		JS_DefineProperty(cx, areaobj, "max_filename_length", val, NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
 		if (name)
-			return(JS_TRUE);
+			return JS_TRUE;
 	}
 
 	if (name == NULL || strcmp(name, "settings") == 0) {
@@ -239,7 +239,7 @@ JSBool js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 		val = UINT_TO_JSVAL(p->cfg->file_misc);
 		JS_DefineProperty(cx, areaobj, "settings", val, NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
 		if (name)
-			return(JS_TRUE);
+			return JS_TRUE;
 	}
 
 	if (name == NULL || strcmp(name, "web_vpath_prefix") == 0) {
@@ -254,7 +254,7 @@ JSBool js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 		}
 		JS_DefineProperty(cx, areaobj, "web_vpath_prefix", val, NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY);
 		if (name)
-			return(JS_TRUE);
+			return JS_TRUE;
 	}
 
 #ifdef BUILD_JSDOCS
@@ -603,7 +603,7 @@ JSBool js_file_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 
 static JSBool js_file_area_enumerate(JSContext *cx, JSObject *obj)
 {
-	return(js_file_area_resolve(cx, obj, JSID_VOID));
+	return js_file_area_resolve(cx, obj, JSID_VOID);
 }
 
 static JSClass js_file_area_class = {
@@ -628,7 +628,7 @@ DLLEXPORT JSObject* js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scf
 	                      , JSPROP_ENUMERATE | JSPROP_READONLY);
 
 	if (obj == NULL)
-		return(NULL);
+		return NULL;
 
 	p = (struct js_file_area_priv *)malloc(sizeof(struct js_file_area_priv));
 	if (p == NULL)
@@ -642,7 +642,7 @@ DLLEXPORT JSObject* js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scf
 
 	if (!JS_SetPrivate(cx, obj, p)) {
 		free(p);
-		return(NULL);
+		return NULL;
 	}
 
 #ifdef BUILD_JSDOCS
@@ -650,7 +650,7 @@ DLLEXPORT JSObject* js_CreateFileAreaObject(JSContext* cx, JSObject* parent, scf
 	js_file_area_enumerate(cx, obj);
 #endif
 
-	return(obj);
+	return obj;
 }
 
 #endif  /* JAVSCRIPT */

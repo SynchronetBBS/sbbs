@@ -54,7 +54,7 @@ char *ultoac(ulong l, char *string)
 		if (j > 0 && !(k % 3))
 			string[j--] = ',';
 	}
-	return(string);
+	return string;
 }
 
 /****************************************************************************/
@@ -70,7 +70,7 @@ char *faddrtoa(fidoaddr_t addr)
 		sprintf(point, ".%u", addr.point);
 		strcat(str, point);
 	}
-	return(str);
+	return str;
 }
 
 char* strip_ctrl(char *str)
@@ -88,7 +88,7 @@ char* strip_ctrl(char *str)
 		tmp[j] = 0;
 		strcpy(str, tmp);
 	}
-	return(str);
+	return str;
 }
 
 BOOL contains_ctrl_chars(char* str)
@@ -321,7 +321,7 @@ int main(int argc, char **argv)
 			    == NULL) {
 				printf("Error allocating %lu bytes of memory\n"
 				       , (ulong)((shd_hdrs / SHD_BLOCK_LEN) * sizeof(*number)));
-				return(++errors);
+				return ++errors;
 			}
 		}
 		else
@@ -335,7 +335,7 @@ int main(int argc, char **argv)
 		if (chkalloc && !(smb.status.attr & SMB_HYPERALLOC)) {
 			if ((i = smb_open_ha(&smb)) != 0) {
 				printf("smb_open_ha returned %d: %s\n", i, smb.last_error);
-				return(++errors);
+				return ++errors;
 			}
 			if (filelength(fileno(smb.shd_fp)) != smb.status.header_offset
 			    + (filelength(fileno(smb.sha_fp)) * SHD_BLOCK_LEN))
@@ -345,7 +345,7 @@ int main(int argc, char **argv)
 
 			if ((i = smb_open_da(&smb)) != 0) {
 				printf("smb_open_da returned %d: %s\n", i, smb.last_error);
-				return(++errors);
+				return ++errors;
 			}
 			if ((filelength(fileno(smb.sda_fp))) / sizeof(uint16_t) != filelength(fileno(smb.sdt_fp)) / SDT_BLOCK_LEN)
 				printf("!Size of SDA file (%lu) does not match SDT file (%lu)\n"
@@ -839,11 +839,11 @@ int main(int argc, char **argv)
 
 			if ((offset = malloc(total * sizeof(*offset))) == NULL) {
 				printf("Error allocating %lu bytes of memory\n", total * sizeof(*offset));
-				return(++errors);
+				return ++errors;
 			}
 			if ((number = malloc(total * sizeof(*number))) == NULL) {
 				printf("Error allocating %lu bytes of memory\n", total * sizeof(*number));
-				return(++errors);
+				return ++errors;
 			}
 
 			for (l = 0; l < total; l++) {
@@ -1191,5 +1191,5 @@ int main(int argc, char **argv)
 	if (errors)
 		printf("\n'fixsmb' can be used to repair many message/file base problems.\n");
 
-	return(errors);
+	return errors;
 }

@@ -86,7 +86,7 @@ uint sbbs_t::finduserstr(uint usernumber, enum user_field fnum, const char* str
 	uint i = ::finduserstr(&cfg, usernumber, fnum, str, del, next, online == ON_REMOTE ? ProgressSearchingUsers : NULL, this);
 	if (online == ON_REMOTE)
 		bputs(text[SearchedForDupes]);
-	return(i);
+	return i;
 }
 
 /****************************************************************************/

@@ -105,10 +105,10 @@ int xp_printf_get_next(char *format)
 	long   l;
 
 	if (!*(size_t *)format)
-		return (-1);
+		return -1;
 	char * p = format + *(size_t *)format;
 	if (*p != '%')
-		return(-1);
+		return -1;
 	p++;
 
 	while (j) {
@@ -159,10 +159,10 @@ int xp_printf_get_type(const char *format)
 	int         correct_type = 0;
 
 	if (!*(size_t *)format)
-		return(0);
+		return 0;
 	p = format + *(size_t *)format;
 	if (*p != '%')
-		return(0);
+		return 0;
 	p++;
 
 	/*
@@ -230,13 +230,13 @@ int xp_printf_get_type(const char *format)
 		}
 	}
 	if (*p == '*')
-		return(XP_PRINTF_TYPE_INT);
+		return XP_PRINTF_TYPE_INT;
 	while (*p >= '0' && *p <= '9')
 		p++;
 	if (*p == '.') {
 		p++;
 		if (*p == '*')
-			return(XP_PRINTF_TYPE_INT);
+			return XP_PRINTF_TYPE_INT;
 	}
 	while (*p >= '0' && *p <= '9')
 		p++;
@@ -394,7 +394,7 @@ int xp_printf_get_type(const char *format)
 			correct_type = XP_PRINTF_TYPE_VOIDP;
 			break;
 	}
-	return(correct_type);
+	return correct_type;
 }
 
 /*
@@ -421,7 +421,7 @@ find_next_replacement(char *format)
 		*(size_t *)format = 0;
 	else
 		*(size_t *)format = p - format;
-	return (format);
+	return format;
 }
 
 /*
@@ -467,7 +467,7 @@ char* xp_asprintf_next(char *format, int type, ...)
 	 * Check if we're already done...
 	 */
 	if (!*(size_t *) format)
-		return(format);
+		return format;
 
 	p = format + *(size_t *)format;
 	offset = p - format;
@@ -560,7 +560,7 @@ char* xp_asprintf_next(char *format, int type, ...)
 			newbuf = (char *)realloc(format, format_len + i - 1 /* -1 for the '*' that's already there */);
 			if (newbuf == NULL) {
 				free(format);
-				return(NULL);
+				return NULL;
 			}
 			format = newbuf;
 			p = format + offset2;
@@ -576,7 +576,7 @@ char* xp_asprintf_next(char *format, int type, ...)
 			*p = int_buf[0];
 		p = format + offset;
 		*(size_t *)format = p - format;
-		return(format);
+		return format;
 	}
 	/* Skip width */
 	while (*p >= '0' && *p <= '9')
@@ -601,7 +601,7 @@ char* xp_asprintf_next(char *format, int type, ...)
 				newbuf = (char *)realloc(format, format_len + i - 1 /* -1 for the '*' that's already there */);
 				if (newbuf == NULL) {
 					free(format);
-					return(NULL);
+					return NULL;
 				}
 				format = newbuf;
 				p = format + offset2;
@@ -617,7 +617,7 @@ char* xp_asprintf_next(char *format, int type, ...)
 				*p = int_buf[0];
 			p = format + offset;
 			*(size_t *)format = p - format;
-			return(format);
+			return format;
 		}
 		/* Skip precision */
 		while (*p >= '0' && *p <= '9')
@@ -1378,7 +1378,7 @@ char* xp_asprintf_next(char *format, int type, ...)
 			if (newbuf == NULL) {
 				FREE_AND_NULL(entry);
 				free(format);
-				return(NULL);
+				return NULL;
 			}
 			format = newbuf;
 		}
@@ -1410,7 +1410,7 @@ char* xp_asprintf_next(char *format, int type, ...)
 		*(size_t *)format = 0;
 	else
 		*(size_t *)format = p - format;
-	return(format);
+	return format;
 }
 
 char* xp_asprintf_start(const char *format)
@@ -1420,7 +1420,7 @@ char* xp_asprintf_start(const char *format)
 
 	ret = (char *)malloc(strlen(format) + 1 + ((sizeof(size_t) * 2)));
 	if (ret == NULL)
-		return(NULL);
+		return NULL;
 	/* Place current offset at the start of the buffer */
 	strcpy(ret + sizeof(size_t) * 2, format);
 	/* Place the current length after the offset */
@@ -1441,7 +1441,7 @@ char* xp_asprintf_start(const char *format)
 		*(size_t *)ret = 0;
 	else
 		*(size_t *)ret = p - ret;
-	return(ret);
+	return ret;
 }
 
 char* xp_asprintf_end(char *format, size_t *lenret)
@@ -1461,7 +1461,7 @@ char* xp_asprintf_end(char *format, size_t *lenret)
 	memmove(format, format + sizeof(size_t) * 2, end_len + 1);
 	if (lenret)
 		*lenret = end_len;
-	return(format);
+	return format;
 }
 
 static struct arg_table_entry *
@@ -1475,13 +1475,13 @@ build_arg_table(const char *format, va_list va)
 	// First, count arguments...
 	next = xp_asprintf_start(format);
 	if (next == NULL)
-		return(NULL);
+		return NULL;
 	unsigned curpos = 0;
 	while (*(size_t *)next) {
 		int newpos = xp_printf_get_next(next);
 		if (newpos == -1) {
 			free(next);
-			return(NULL);
+			return NULL;
 		}
 		if (newpos > 0 && newpos != (curpos + 1))
 			curpos = newpos;
@@ -1502,7 +1502,7 @@ build_arg_table(const char *format, va_list va)
 	next = xp_asprintf_start(format);
 	if (next == NULL) {
 		free(ret);
-		return(NULL);
+		return NULL;
 	}
 	curpos = 0;
 	while (*(size_t *)next) {
@@ -1510,7 +1510,7 @@ build_arg_table(const char *format, va_list va)
 		if (newpos == -1) {
 			free(next);
 			free(ret);
-			return(NULL);
+			return NULL;
 		}
 		if (newpos > 0 && newpos != (curpos + 1))
 			curpos = newpos;
@@ -1587,7 +1587,7 @@ char* xp_vasprintf(const char *format, va_list va)
 
 	next = xp_asprintf_start(format);
 	if (next == NULL)
-		return(NULL);
+		return NULL;
 	working = next;
 	va_copy(wva, va);
 	curpos = 1;
@@ -1597,7 +1597,7 @@ char* xp_vasprintf(const char *format, va_list va)
 			if (newpos == -1) {
 				va_end(wva);
 				free(working);
-				return(NULL);
+				return NULL;
 			}
 			if (newpos > 0 && newpos != curpos) {
 				va_end(wva);
@@ -1616,7 +1616,7 @@ char* xp_vasprintf(const char *format, va_list va)
 				case 0:
 					va_end(wva);
 					free(working);
-					return(NULL);
+					return NULL;
 				case XP_PRINTF_TYPE_CHAR:
 				case XP_PRINTF_TYPE_INT:    /* Also includes char and short */
 					next = xp_asprintf_next(working, type, va_arg(wva, int));
@@ -1657,7 +1657,7 @@ char* xp_vasprintf(const char *format, va_list va)
 			if (newpos == -1) {
 				free(atable);
 				free(working);
-				return(NULL);
+				return NULL;
 			}
 			if (newpos > 0 && newpos != curpos)
 				curpos = newpos;
@@ -1669,7 +1669,7 @@ char* xp_vasprintf(const char *format, va_list va)
 				case 0:
 					free(atable);
 					free(working);
-					return(NULL);
+					return NULL;
 				case XP_PRINTF_TYPE_CHAR:
 				case XP_PRINTF_TYPE_INT:    /* Also includes char and short */
 					next = xp_asprintf_next(working, type, atable[curpos - 1].int_type);
@@ -1710,7 +1710,7 @@ char* xp_vasprintf(const char *format, va_list va)
 			if (atable == NULL)
 				va_end(wva);
 			free(atable);
-			return(NULL);
+			return NULL;
 		}
 		working = next;
 	}
@@ -1720,9 +1720,9 @@ char* xp_vasprintf(const char *format, va_list va)
 	next = xp_asprintf_end(working, NULL);
 	if (next == NULL) {
 		free(working);
-		return(NULL);
+		return NULL;
 	}
-	return(next);
+	return next;
 }
 
 char* xp_asprintf(const char *format, ...)
@@ -1733,7 +1733,7 @@ char* xp_asprintf(const char *format, ...)
 	va_start(va, format);
 	ret = xp_vasprintf(format, va);
 	va_end(va);
-	return(ret);
+	return ret;
 }
 
 #if defined(XP_PRINTF_TEST)
@@ -1759,7 +1759,7 @@ int main(int argc, char *argv[])
 	free(p);
 
 	if (argc < 2)
-		return(1);
+		return 1;
 
 	format = argv[1];
 	format = xp_asprintf_start(format);
@@ -1797,7 +1797,7 @@ int main(int argc, char *argv[])
 		}
 		if (p == NULL) {
 			printf("Failed converting on item after %s\n", format);
-			return(1);
+			return 1;
 		}
 		format = p;
 	}

@@ -40,7 +40,7 @@ char sbbs_t::getkey(int mode)
 		online = FALSE;
 	if (!online) {
 		YIELD();    // just in case someone is looping on getkey() when they shouldn't
-		return(0);
+		return 0;
 	}
 	sys_status &= ~SS_ABORT;
 	if ((sys_status & SS_USERON || action == NODE_DFLT) && !(mode & (K_GETSTR | K_NOSPIN)))
@@ -60,7 +60,7 @@ char sbbs_t::getkey(int mode)
 				backspace();
 #endif
 			}
-			return(0);
+			return 0;
 		}
 
 		if (mode & K_SPIN) {
@@ -74,7 +74,7 @@ char sbbs_t::getkey(int mode)
 		}
 		ch = inkey(mode, mode & K_SPIN ? 200:1000);
 		if (sys_status & SS_ABORT)
-			return(0);
+			return 0;
 		now = time(NULL);
 		if (ch) {
 			if (mode & K_NUMBER && IS_PRINTABLE(ch) && !IS_DIGIT(ch))
@@ -104,8 +104,8 @@ char sbbs_t::getkey(int mode)
 					ungetkey(coldkey);
 			}
 			if (mode & K_UPPER)
-				return(toupper(ch));
-			return(ch);
+				return toupper(ch);
+			return ch;
 		}
 		if (sys_status & SS_USERON && !(sys_status & SS_LCHAT)) gettimeleft();
 		else if (online && now - answertime > SEC_LOGON && !(sys_status & SS_LCHAT)) {
@@ -153,7 +153,7 @@ char sbbs_t::getkey(int mode)
 				bputs(text[CallBackWhenYoureThere]);
 				logline(LOG_NOTICE, nulstr, "Maximum user input inactivity exceeded");
 				hangup();
-				return(0);
+				return 0;
 			}
 			if ((sys_status & SS_USERON) && *text[AreYouThere] != '\0') {
 				attr(LIGHTGRAY);
@@ -166,7 +166,7 @@ char sbbs_t::getkey(int mode)
 
 	} while (online);
 
-	return(0);
+	return 0;
 }
 
 
@@ -275,7 +275,7 @@ bool sbbs_t::yesno(const char *str, int mode)
 			if (!(mode & P_SAVEATR))
 				attr(LIGHTGRAY);
 			lncntr = 0;
-			return(true);
+			return true;
 		}
 		if (ch == no_key()) {
 			if (bputs(text[No], mode) && !(mode & P_NOCRLF))
@@ -283,10 +283,10 @@ bool sbbs_t::yesno(const char *str, int mode)
 			if (!(mode & P_SAVEATR))
 				attr(LIGHTGRAY);
 			lncntr = 0;
-			return(false);
+			return false;
 		}
 	}
-	return(true);
+	return true;
 }
 
 /****************************************************************************/
@@ -313,7 +313,7 @@ bool sbbs_t::noyes(const char *str, int mode)
 			if (!(mode & P_SAVEATR))
 				attr(LIGHTGRAY);
 			lncntr = 0;
-			return(true);
+			return true;
 		}
 		if (ch == yes_key()) {
 			if (bputs(text[Yes], mode) && !(mode & P_NOCRLF))
@@ -321,10 +321,10 @@ bool sbbs_t::noyes(const char *str, int mode)
 			if (!(mode & P_SAVEATR))
 				attr(LIGHTGRAY);
 			lncntr = 0;
-			return(false);
+			return false;
 		}
 	}
-	return(true);
+	return true;
 }
 
 /****************************************************************************/
@@ -353,7 +353,7 @@ int sbbs_t::getkeys(const char *keys, uint max, int mode)
 				CRLF;
 			}
 			lncntr = 0;
-			return(-1);
+			return -1;
 		}
 		if (ch && !n && ((keys == NULL && !IS_DIGIT(ch)) || (strchr(str, ch)))) {  /* return character if in string */
 			if (ch > ' ') {
@@ -369,7 +369,7 @@ int sbbs_t::getkeys(const char *keys, uint max, int mode)
 						if (!(mode & (K_NOECHO | K_NOCRLF))) {
 							CRLF;
 						}
-						return(-1);
+						return -1;
 					}
 					if (c == BS || c == DEL) {
 						if (!(mode & K_NOECHO))
@@ -383,7 +383,7 @@ int sbbs_t::getkeys(const char *keys, uint max, int mode)
 				}
 				lncntr = 0;
 			}
-			return(ch);
+			return ch;
 		}
 		if (ch == CR && max) {             /* return 0 if no number */
 			if (!(mode & (K_NOECHO | K_NOCRLF))) {
@@ -392,8 +392,8 @@ int sbbs_t::getkeys(const char *keys, uint max, int mode)
 			}
 			lncntr = 0;
 			if (n)
-				return(i | 0x80000000L);     /* return number plus high bit */
-			return(0);
+				return i | 0x80000000L;    /* return number plus high bit */
+			return 0;
 		}
 		if ((ch == BS || ch == DEL) && n) {
 			if (!(mode & K_NOECHO))
@@ -413,11 +413,11 @@ int sbbs_t::getkeys(const char *keys, uint max, int mode)
 					CRLF;
 				}
 				lncntr = 0;
-				return(i | 0x80000000L);
+				return i | 0x80000000L;
 			}
 		}
 	}
-	return(-1);
+	return -1;
 }
 
 /****************************************************************************/

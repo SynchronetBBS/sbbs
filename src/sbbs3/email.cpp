@@ -55,29 +55,29 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 
 	if (useron.etoday >= cfg.level_emailperday[useron.level] && !SYSOP && !(useron.exempt & FLAG('M'))) {
 		bputs(text[TooManyEmailsToday]);
-		return(false);
+		return false;
 	}
 	user.number = usernumber;
 	if (getuserdat(&cfg, &user) != 0 || (user.misc & (DELETED | INACTIVE))) {
 		bputs(text[UnknownUser]);
-		return(false);
+		return false;
 	}
 	bool to_sysop = user_is_sysop(&user);
 	if (to_sysop && useron.rest & FLAG('S')
 	    && (cfg.valuser != usernumber || useron.fbacks || useron.emails)) { /* ! val fback */
 		bprintf(text[R_Feedback], cfg.sys_op);
-		return(false);
+		return false;
 	}
 	if (!to_sysop && useron.rest & FLAG('E')
 	    && (cfg.valuser != usernumber || useron.fbacks || useron.emails)) {
 		bputs(text[R_Email]);
-		return(false);
+		return false;
 	}
 	if ((user.misc & NETMAIL) && (cfg.sys_misc & SM_FWDTONET) && !(mode & WM_NOFWD) && !(useron.rest & FLAG('M'))) {
 		if (is_supported_netmail_addr(&cfg, user.netmail)) {
 			bprintf(text[UserNetMail], user.netmail);
 			if ((mode & WM_FORCEFWD) || yesno(text[ForwardMailQ])) /* Forward to netmail address */
-				return(netmail(user.netmail, subj, mode, resmb, remsg));
+				return netmail(user.netmail, subj, mode, resmb, remsg);
 		} else {
 			bprintf(text[InvalidNetMailAddr], user.netmail);
 		}
@@ -94,7 +94,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 	    && (useron.fbacks || usernumber != cfg.valuser)) {
 		main_csi.logic = LOGIC_TRUE;
 		if (exec_bin(cfg.feedback_mod, &main_csi) != 0 || main_csi.logic != LOGIC_TRUE)
-			return(false);
+			return false;
 	}
 
 	if (cfg.sys_misc & SM_ANON_EM && useron.exempt & FLAG('A')
@@ -115,7 +115,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 	username(&cfg, usernumber, str2);
 	if (!writemsg(msgpath, top, /* subj: */ title, WM_EMAIL | mode, INVALID_SUB, /* to: */ str2, /* from: */ useron.alias, &editor, &charset)) {
 		bputs(text[Aborted]);
-		return(false);
+		return false;
 	}
 
 	if (mode & WM_FILE && !SYSOP && !(cfg.sys_misc & SM_FILE_EM)) {
@@ -127,7 +127,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 		if (!checkfname(title)) {
 			bprintf(text[BadFilename], title);
 			(void)remove(msgpath);
-			return(false);
+			return false;
 		}
 		SAFEPRINTF2(str2, "%sfile/%04u.in", cfg.data_dir, usernumber);
 		(void)MKDIR(str2);
@@ -135,7 +135,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 		if (fexistcase(str2)) {
 			bprintf(text[FileAlreadyThere], str2);
 			(void)remove(msgpath);
-			return(false);
+			return false;
 		}
 		xfer_prot_menu(XFER_UPLOAD, &useron, keys, sizeof keys);
 		SAFECAT(keys, quit_key(str));
@@ -144,7 +144,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 		if (ch == quit_key() || sys_status & SS_ABORT) {
 			bputs(text[Aborted]);
 			(void)remove(msgpath);
-			return(false);
+			return false;
 		}
 		x = protnum(ch, XFER_UPLOAD);
 		if (x < cfg.total_prots)   /* This should be always */
@@ -158,7 +158,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 		else {
 			bprintf(text[FileNotReceived], title);
 			(void)remove(msgpath);
-			return(false);
+			return false;
 		}
 	}
 
@@ -166,20 +166,20 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 
 	if ((i = smb_stack(&smb, SMB_STACK_PUSH)) != 0) {
 		errormsg(WHERE, ERR_OPEN, "MAIL", i);
-		return(false);
+		return false;
 	}
 
 	if ((i = smb_open_sub(&cfg, &smb, INVALID_SUB)) != 0) {
 		smb_stack(&smb, SMB_STACK_POP);
 		errormsg(WHERE, ERR_OPEN, smb.file, i, smb.last_error);
-		return(false);
+		return false;
 	}
 
 	if ((i = smb_locksmbhdr(&smb)) != 0) {
 		smb_close(&smb);
 		smb_stack(&smb, SMB_STACK_POP);
 		errormsg(WHERE, ERR_LOCK, smb.file, i, smb.last_error);
-		return(false);
+		return false;
 	}
 
 	length = (int)flength(msgpath) + 2;  /* +2 for translation string */
@@ -189,7 +189,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 		smb_close(&smb);
 		smb_stack(&smb, SMB_STACK_POP);
 		errormsg(WHERE, ERR_LEN, msgpath, length);
-		return(false);
+		return false;
 	}
 
 	if ((i = smb_open_da(&smb)) != 0) {
@@ -197,7 +197,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 		smb_close(&smb);
 		smb_stack(&smb, SMB_STACK_POP);
 		errormsg(WHERE, ERR_OPEN, smb.file, i, smb.last_error);
-		return(false);
+		return false;
 	}
 	if (cfg.sys_misc & SM_FASTMAIL)
 		offset = smb_fallocdat(&smb, length, 1);
@@ -211,7 +211,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 		smb_close(&smb);
 		smb_stack(&smb, SMB_STACK_POP);
 		errormsg(WHERE, ERR_OPEN, msgpath, O_RDONLY | O_BINARY);
-		return(false);
+		return false;
 	}
 
 	smb_fseek(smb.sdt_fp, offset, SEEK_SET);
@@ -253,7 +253,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 			smb_close(&smb);
 			smb_stack(&smb, SMB_STACK_POP);
 			bprintf(text[CantPostMsg], i == SMB_DUPE_MSG ? "duplicate" : "other");
-			return(false);
+			return false;
 		}
 	}
 
@@ -301,7 +301,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 	if (i != SMB_SUCCESS) {
 		smb_freemsgdat(&smb, offset, length, 1);
 		errormsg(WHERE, ERR_WRITE, smb.file, i, smb.last_error);
-		return(false);
+		return false;
 	}
 
 	if (usernumber == 1)
@@ -316,7 +316,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 	if (mode & WM_FILE && online == ON_REMOTE)
 		autohangup();
 	if (msgattr & MSG_ANONYMOUS)               /* Don't tell user if anonymous */
-		return(true);
+		return true;
 	for (i = 1; i <= cfg.sys_nodes; i++) { /* Tell user, if online */
 		getnodedat(i, &node);
 		if (node.useron == usernumber && !(node.misc & NODE_POFF)
@@ -330,5 +330,5 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 		safe_snprintf(str, sizeof(str), text[UserSentYouMail], useron.alias);
 		putsmsg(usernumber, str);
 	}
-	return(true);
+	return true;
 }

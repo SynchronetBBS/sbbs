@@ -243,14 +243,14 @@ int lputs(int level, const char* str)
 	}
 
 	if (startup == NULL || startup->lputs == NULL || str == NULL || level > startup->log_level)
-		return(0);
+		return 0;
 
 #if defined(_WIN32)
 	if (IsBadCodePtr((FARPROC)startup->lputs))
-		return(0);
+		return 0;
 #endif
 
-	return(startup->lputs(startup->cbdata, level, str));
+	return startup->lputs(startup->cbdata, level, str);
 }
 
 int eputs(int level, const char *str)
@@ -269,9 +269,9 @@ int eputs(int level, const char *str)
 	}
 
 	if (startup == NULL || startup->event_lputs == NULL || level > startup->event_log_level)
-		return(0);
+		return 0;
 
-	return(startup->event_lputs(startup->event_cbdata, level, str));
+	return startup->event_lputs(startup->event_cbdata, level, str);
 }
 
 int lprintf(int level, const char *fmt, ...)
@@ -283,7 +283,7 @@ int lprintf(int level, const char *fmt, ...)
 	vsnprintf(sbuf, sizeof(sbuf), fmt, argptr);
 	sbuf[sizeof(sbuf) - 1] = 0;
 	va_end(argptr);
-	return(lputs(level, sbuf));
+	return lputs(level, sbuf);
 }
 
 DLLEXPORT uint repeated_error(int line, const char* function)
@@ -365,7 +365,7 @@ int sbbs_t::lprintf(int level, const char *fmt, ...)
 	vsnprintf(sbuf, sizeof(sbuf), fmt, argptr);
 	sbuf[sizeof(sbuf) - 1] = 0;
 	va_end(argptr);
-	return(lputs(level, sbuf));
+	return lputs(level, sbuf);
 }
 
 int sbbs_t::errprintf(int level, int line, const char* function, const char* file, const char* fmt, ...)
@@ -425,7 +425,7 @@ SOCKET open_socket(int domain, int type, const char* protocol)
 	if (sock != INVALID_SOCKET && set_socket_options(&scfg, sock, protocol, error, sizeof(error)))
 		lprintf(LOG_ERR, "%04d !ERROR %s", sock, error);
 
-	return(sock);
+	return sock;
 }
 
 // Used by sbbs_t::ftp_put() and js_accept()
@@ -437,7 +437,7 @@ SOCKET accept_socket(SOCKET s, union xp_sockaddr* addr, socklen_t* addrlen)
 	if (sock != INVALID_SOCKET)
 		call_socket_open_callback(true);
 
-	return(sock);
+	return sock;
 }
 
 int close_socket(SOCKET sock)
@@ -445,14 +445,14 @@ int close_socket(SOCKET sock)
 	int result;
 
 	if (sock == INVALID_SOCKET || sock == 0)
-		return(0);
+		return 0;
 
 	shutdown(sock, SHUT_RDWR);   /* required on Unix */
 	result = closesocket(sock);
 	call_socket_open_callback(false);
 	if (result != 0 && SOCKET_ERRNO != ENOTSOCK)
 		lprintf(LOG_WARNING, "!ERROR %d closing socket %d", SOCKET_ERRNO, sock);
-	return(result);
+	return result;
 }
 
 /* TODO: IPv6 */
@@ -468,7 +468,7 @@ in_addr_t resolve_ip(char *addr)
 		if (*p != '.' && !IS_DIGIT(*p))
 			break;
 	if (!(*p))
-		return(inet_addr(addr));
+		return inet_addr(addr);
 	if ((host = gethostbyname(addr)) == NULL)
 		return INADDR_NONE;
 	if (host->h_addr_list[0] == NULL)
@@ -491,11 +491,11 @@ static BOOL winsock_startup(void)
 	if ((status = WSAStartup(MAKEWORD(1, 1), &WSAData)) == 0) {
 		lprintf(LOG_DEBUG, "%s %s", WSAData.szDescription, WSAData.szSystemStatus);
 		WSAInitialized = true;
-		return(true);
+		return true;
 	}
 
 	lprintf(LOG_CRIT, "!WinSock startup ERROR %d", status);
-	return(false);
+	return false;
 }
 
 #else /* No WINSOCK */
@@ -527,7 +527,7 @@ DLLEXPORT void sbbs_srand()
 
 int sbbs_random(int n)
 {
-	return(xp_random(n));
+	return xp_random(n);
 }
 
 #ifdef JAVASCRIPT
@@ -556,15 +556,15 @@ js_DescribeSyncObject(JSContext* cx, JSObject* obj, const char* str, int ver)
 	JSString* js_str = JS_NewStringCopyZ(cx, str);
 
 	if (js_str == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	if (ver < 10000)     /* auto convert 313 to 31300 */
 		ver *= 100;
 
-	return(JS_DefineProperty(cx, obj, "_description"
+	return JS_DefineProperty(cx, obj, "_description"
 	                         , STRING_TO_JSVAL(js_str), NULL, NULL, JSPROP_READONLY) != JS_FALSE
 	       && JS_DefineProperty(cx, obj, "_ver"
-	                            , INT_TO_JSVAL(ver), NULL, NULL, JSPROP_READONLY) != JS_FALSE);
+	                            , INT_TO_JSVAL(ver), NULL, NULL, JSPROP_READONLY) != JS_FALSE;
 }
 
 JSBool
@@ -573,10 +573,10 @@ js_DescribeSyncConstructor(JSContext* cx, JSObject* obj, const char* str)
 	JSString* js_str = JS_NewStringCopyZ(cx, str);
 
 	if (js_str == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
-	return(JS_DefineProperty(cx, obj, "_constructor"
-	                         , STRING_TO_JSVAL(js_str), NULL, NULL, JSPROP_READONLY));
+	return JS_DefineProperty(cx, obj, "_constructor"
+	                         , STRING_TO_JSVAL(js_str), NULL, NULL, JSPROP_READONLY);
 }
 
 #ifdef BUILD_JSDOCS
@@ -614,17 +614,17 @@ js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec* props)
 	JSObject* prop;
 
 	if ((array = JS_NewObject(cx, NULL, NULL, obj)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	for (i = 0; props[i].name != NULL; ++i) {
 		if (props[i].tinyid < 256 && props[i].tinyid > -129) {
 			if (!JS_DefinePropertyWithTinyId(cx, obj, /* Never reserve any "slots" for properties */
 			                                 props[i].name, props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags | JSPROP_SHARED))
-				return(JS_FALSE);
+				return JS_FALSE;
 		}
 		else {
 			if (!JS_DefineProperty(cx, obj, props[i].name, JSVAL_VOID, NULL, NULL, props[i].flags | JSPROP_SHARED))
-				return(JS_FALSE);
+				return JS_FALSE;
 		}
 		if (!(props[i].flags & JSPROP_ENUMERATE))   /* No need to document invisible props */
 			continue;
@@ -669,7 +669,7 @@ js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec *funcs)
 		method_array = JSVAL_TO_OBJECT(val);
 		// If the first item is already in the list, don't do anything.
 		if (method_array == NULL || !JS_GetArrayLength(cx, method_array, &len))
-			return(JS_FALSE);
+			return JS_FALSE;
 		for (i = 0; i < (int)len; i++) {
 			if (JS_GetElement(cx, method_array, i, &val) != JS_TRUE || val == JSVAL_VOID)
 				continue;
@@ -678,55 +678,55 @@ js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec *funcs)
 			if (str == NULL)
 				continue;
 			if (strcmp(str, funcs[0].name) == 0)
-				return(JS_TRUE);
+				return JS_TRUE;
 		}
 	}
 	else {
 		if ((method_array = JS_NewArrayObject(cx, 0, NULL)) == NULL)
-			return(JS_FALSE);
+			return JS_FALSE;
 		if (!JS_DefineProperty(cx, obj, method_array_name, OBJECT_TO_JSVAL(method_array)
 		                       , NULL, NULL, 0))
-			return(JS_FALSE);
+			return JS_FALSE;
 	}
 
 	for (i = 0; funcs[i].name != NULL; ++i) {
 
 		if (!JS_DefineFunction(cx, obj, funcs[i].name, funcs[i].call, funcs[i].nargs, 0))
-			return(JS_FALSE);
+			return JS_FALSE;
 
 		if (funcs[i].type == JSTYPE_ALIAS)
 			continue;
 
 		method = JS_NewObject(cx, NULL, NULL, method_array);
 		if (method == NULL)
-			return(JS_FALSE);
+			return JS_FALSE;
 
 		if (funcs[i].name != NULL) {
 			if ((js_str = JS_NewStringCopyZ(cx, funcs[i].name)) == NULL)
-				return(JS_FALSE);
+				return JS_FALSE;
 			val = STRING_TO_JSVAL(js_str);
 			JS_SetProperty(cx, method, "name", &val);
 		}
 
 		val = INT_TO_JSVAL(funcs[i].nargs);
 		if (!JS_SetProperty(cx, method, "nargs", &val))
-			return(JS_FALSE);
+			return JS_FALSE;
 
 		if ((js_str = JS_NewStringCopyZ(cx, js_type_str[funcs[i].type])) == NULL)
-			return(JS_FALSE);
+			return JS_FALSE;
 		val = STRING_TO_JSVAL(js_str);
 		JS_SetProperty(cx, method, "type", &val);
 
 		if (funcs[i].args != NULL) {
 			if ((js_str = JS_NewStringCopyZ(cx, funcs[i].args)) == NULL)
-				return(JS_FALSE);
+				return JS_FALSE;
 			val = STRING_TO_JSVAL(js_str);
 			JS_SetProperty(cx, method, "args", &val);
 		}
 
 		if (funcs[i].desc != NULL) {
 			if ((js_str = JS_NewStringCopyZ(cx, funcs[i].desc)) == NULL)
-				return(JS_FALSE);
+				return JS_FALSE;
 			val = STRING_TO_JSVAL(js_str);
 			JS_SetProperty(cx, method, "desc", &val);
 		}
@@ -740,10 +740,10 @@ js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec *funcs)
 
 		val = OBJECT_TO_JSVAL(method);
 		if (!JS_SetElement(cx, method_array, len + i, &val))
-			return(JS_FALSE);
+			return JS_FALSE;
 	}
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 /*
@@ -771,7 +771,7 @@ js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertySpec* pro
 			ret = JS_FALSE;
 	}
 
-	return(ret);
+	return ret;
 }
 
 #else // NON-JSDOCS
@@ -789,15 +789,15 @@ js_DefineSyncProperties(JSContext *cx, JSObject *obj, jsSyncPropertySpec* props)
 		if (props[i].tinyid < 256 && props[i].tinyid > -129) {
 			if (!JS_DefinePropertyWithTinyId(cx, obj,
 			                                 props[i].name, props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags | JSPROP_SHARED))
-				return(JS_FALSE);
+				return JS_FALSE;
 		}
 		else {
 			if (!JS_DefineProperty(cx, obj, props[i].name, JSVAL_VOID, NULL, NULL, props[i].flags | JSPROP_SHARED))
-				return(JS_FALSE);
+				return JS_FALSE;
 		}
 	}
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 
@@ -812,8 +812,8 @@ js_DefineSyncMethods(JSContext* cx, JSObject* obj, jsSyncMethodSpec *funcs)
 	 */
 	for (i = 0; funcs[i].name; i++)
 		if (!JS_DefineFunction(cx, obj, funcs[i].name, funcs[i].call, funcs[i].nargs, 0))
-			return(JS_FALSE);
-	return(JS_TRUE);
+			return JS_FALSE;
+	return JS_TRUE;
 }
 
 JSBool
@@ -832,14 +832,14 @@ js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertySpec* pro
 				if (props[i].tinyid < 256 && props[i].tinyid > -129) {
 					if (!JS_DefinePropertyWithTinyId(cx, obj,
 					                                 props[i].name, props[i].tinyid, JSVAL_VOID, NULL, NULL, props[i].flags | JSPROP_SHARED))
-						return(JS_FALSE);
+						return JS_FALSE;
 				}
 				else {
 					if (!JS_DefineProperty(cx, obj, props[i].name, JSVAL_VOID, NULL, NULL, props[i].flags | JSPROP_SHARED))
-						return(JS_FALSE);
+						return JS_FALSE;
 				}
 				if (name)
-					return(JS_TRUE);
+					return JS_TRUE;
 			}
 		}
 	}
@@ -847,9 +847,9 @@ js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertySpec* pro
 		for (i = 0; funcs[i].name; i++) {
 			if (name == NULL || strcmp(name, funcs[i].name) == 0) {
 				if (!JS_DefineFunction(cx, obj, funcs[i].name, funcs[i].call, funcs[i].nargs, 0))
-					return(JS_FALSE);
+					return JS_FALSE;
 				if (name)
-					return(JS_TRUE);
+					return JS_TRUE;
 			}
 		}
 	}
@@ -859,15 +859,15 @@ js_SyncResolve(JSContext* cx, JSObject* obj, char *name, jsSyncPropertySpec* pro
 				val = INT_TO_JSVAL(consts[i].val);
 
 				if (!JS_DefineProperty(cx, obj, consts[i].name, val, NULL, NULL, flags))
-					return(JS_FALSE);
+					return JS_FALSE;
 
 				if (name)
-					return(JS_TRUE);
+					return JS_TRUE;
 			}
 		}
 	}
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 #endif
@@ -883,10 +883,10 @@ js_DefineConstIntegers(JSContext* cx, JSObject* obj, jsConstIntSpec* ints, int f
 		val = INT_TO_JSVAL(ints[i].val);
 
 		if (!JS_DefineProperty(cx, obj, ints[i].name, val, NULL, NULL, flags))
-			return(JS_FALSE);
+			return JS_FALSE;
 	}
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -904,7 +904,7 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((sbbs = (sbbs_t*)JS_GetContextPrivate(cx)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	if (argc > 1 && JSVAL_IS_NUMBER(argv[i])) {
 		if (!JS_ValueToInt32(cx, argv[i++], &level))
@@ -914,11 +914,11 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 	for (; i < argc; i++) {
 		if ((str = JS_ValueToString(cx, argv[i])) == NULL) {
 			FREE_AND_NULL(line);
-			return(JS_FALSE);
+			return JS_FALSE;
 		}
 		JSSTRING_TO_RASTRING(cx, str, line, &line_sz, NULL);
 		if (line == NULL)
-			return(JS_FALSE);
+			return JS_FALSE;
 		rc = JS_SUSPENDREQUEST(cx);
 		sbbs->lputs(level, line);
 		JS_RESUMEREQUEST(cx, rc);
@@ -930,7 +930,7 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 		JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 	else
 		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(str));
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -945,7 +945,7 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((sbbs = (sbbs_t*)JS_GetContextPrivate(cx)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	if (argc) {
 		if (!JS_ValueToInt32(cx, argv[0], &len))
@@ -953,7 +953,7 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	if ((buf = (uchar*)malloc(len)) == NULL)
-		return(JS_TRUE);
+		return JS_TRUE;
 
 	rc = JS_SUSPENDREQUEST(cx);
 	len = RingBufRead(&sbbs->inbuf, buf, len);
@@ -963,7 +963,7 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(JS_NewStringCopyN(cx, (char*)buf, len)));
 
 	free(buf);
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -978,7 +978,7 @@ js_readln(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((sbbs = (sbbs_t*)JS_GetContextPrivate(cx)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	if (argc) {
 		if (!JS_ValueToInt32(cx, argv[0], &len))
@@ -986,7 +986,7 @@ js_readln(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	if ((buf = (char*)malloc(len)) == NULL)
-		return(JS_TRUE);
+		return JS_TRUE;
 
 	rc = JS_SUSPENDREQUEST(cx);
 	len = sbbs->getstr(buf, len, K_NONE);
@@ -996,7 +996,7 @@ js_readln(JSContext *cx, uintN argc, jsval *arglist)
 		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(JS_NewStringCopyZ(cx, buf)));
 
 	free(buf);
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -1013,16 +1013,16 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((sbbs = (sbbs_t*)JS_GetContextPrivate(cx)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	for (i = 0; i < argc; i++) {
 		if ((str = JS_ValueToString(cx, argv[i])) == NULL) {
 			FREE_AND_NULL(cstr);
-			return(JS_FALSE);
+			return JS_FALSE;
 		}
 		JSSTRING_TO_RASTRING(cx, str, cstr, &cstr_sz, NULL);
 		if (cstr == NULL)
-			return(JS_FALSE);
+			return JS_FALSE;
 		rc = JS_SUSPENDREQUEST(cx);
 		if (sbbs->online != ON_REMOTE)
 			sbbs->lputs(LOG_INFO, cstr);
@@ -1036,7 +1036,7 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 		JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 	else
 		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(str));
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -1053,12 +1053,12 @@ js_write_raw(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((sbbs = (sbbs_t*)JS_GetContextPrivate(cx)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	for (i = 0; i < argc; i++) {
 		JSVALUE_TO_RASTRING(cx, argv[i], str, &str_sz, &len);
 		if (str == NULL)
-			return(JS_FALSE);
+			return JS_FALSE;
 		if (len < 1)
 			continue;
 		rc = JS_SUSPENDREQUEST(cx);
@@ -1068,7 +1068,7 @@ js_write_raw(JSContext *cx, uintN argc, jsval *arglist)
 	if (str != NULL)
 		free(str);
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -1080,7 +1080,7 @@ js_writeln(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((sbbs = (sbbs_t*)JS_GetContextPrivate(cx)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	js_write(cx, argc, arglist);
 	rc = JS_SUSPENDREQUEST(cx);
@@ -1088,7 +1088,7 @@ js_writeln(JSContext *cx, uintN argc, jsval *arglist)
 		sbbs->bputs(crlf);
 	JS_RESUMEREQUEST(cx, rc);
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -1102,11 +1102,11 @@ js_printf(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((sbbs = (sbbs_t*)JS_GetContextPrivate(cx)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	if ((p = js_sprintf(cx, 0, argc, argv)) == NULL) {
 		JS_ReportError(cx, "js_sprintf failed");
-		return(JS_FALSE);
+		return JS_FALSE;
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
@@ -1120,7 +1120,7 @@ js_printf(JSContext *cx, uintN argc, jsval *arglist)
 
 	js_sprintf_free(p);
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -1134,11 +1134,11 @@ js_alert(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((sbbs = (sbbs_t*)JS_GetContextPrivate(cx)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], cstr, NULL);
 	if (cstr == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	rc = JS_SUSPENDREQUEST(cx);
 	if (sbbs->online != ON_REMOTE)
@@ -1154,7 +1154,7 @@ js_alert(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, argv[0]);
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -1168,17 +1168,17 @@ js_confirm(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((sbbs = (sbbs_t*)JS_GetContextPrivate(cx)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], cstr, NULL);
 	if (cstr == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	rc = JS_SUSPENDREQUEST(cx);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->yesno(cstr)));
 	free(cstr);
 	JS_RESUMEREQUEST(cx, rc);
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static JSBool
@@ -1192,17 +1192,17 @@ js_deny(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((sbbs = (sbbs_t*)JS_GetContextPrivate(cx)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], cstr, NULL);
 	if (cstr == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	rc = JS_SUSPENDREQUEST(cx);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->noyes(cstr)));
 	free(cstr);
 	JS_RESUMEREQUEST(cx, rc);
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 
@@ -1221,13 +1221,13 @@ js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((sbbs = (sbbs_t*)JS_GetContextPrivate(cx)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	uintN argn = 0;
 	if (argc > argn && JSVAL_IS_STRING(argv[argn])) {
 		JSVALUE_TO_MSTRING(cx, argv[argn], prompt, NULL);
 		if (prompt == NULL)
-			return(JS_FALSE);
+			return JS_FALSE;
 		argn++;
 	}
 	if (argc > argn && JSVAL_IS_STRING(argv[argn])) {
@@ -1253,15 +1253,15 @@ js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 	if (!result) {
 		JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 		JS_RESUMEREQUEST(cx, rc);
-		return(JS_TRUE);
+		return JS_TRUE;
 	}
 	JS_RESUMEREQUEST(cx, rc);
 
 	if ((str = JS_NewStringCopyZ(cx, instr)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(str));
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 static jsSyncMethodSpec js_global_functions[] = {
@@ -1523,7 +1523,7 @@ extern "C" bool js_CreateCommonObjects(JSContext* js_cx
 
 	/* Global Object */
 	if (!js_CreateGlobalObject(js_cx, node_cfg, methods, js_startup, glob))
-		return(false);
+		return false;
 
 	do {
 		/*
@@ -1609,7 +1609,7 @@ extern "C" bool js_CreateCommonObjects(JSContext* js_cx
 	if (!success)
 		JS_RemoveObjectRoot(js_cx, glob);
 
-	return(success);
+	return success;
 }
 
 #endif  /* JAVASCRIPT */
@@ -1624,7 +1624,7 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 	outlen = 0;
 
 	if (inlen < 1) {
-		return(inbuf);  // no length? No interpretation
+		return inbuf;  // no length? No interpretation
 	}
 
 	first_iac = (BYTE*)memchr(inbuf, TELNET_IAC, inlen);
@@ -1641,7 +1641,7 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 	if (!sbbs->telnet_cmdlen) {
 		if (first_iac == NULL && first_cr == NULL) {
 			outlen = inlen;
-			return(inbuf);  // no interpretation needed
+			return inbuf;  // no interpretation needed
 		}
 
 		if (first_iac != NULL || first_cr != NULL) {
@@ -1897,7 +1897,7 @@ static BYTE* telnet_interpret(sbbs_t* sbbs, BYTE* inbuf, int inlen,
 		} else
 			outbuf[outlen++] = inbuf[i];
 	}
-	return(outbuf);
+	return outbuf;
 }
 
 void sbbs_t::send_telnet_cmd(uchar cmd, uchar opt)
@@ -3568,7 +3568,7 @@ bool sbbs_t::init()
 		if ((result = getsockname(client_socket, &addr.addr, &addr_len)) != 0) {
 			errprintf(LOG_CRIT, WHERE, "%04d %s !ERROR %d (%d) getting local address/port of socket"
 			          , client_socket, client.protocol, result, SOCKET_ERRNO);
-			return(false);
+			return false;
 		}
 		inet_addrtop(&addr, local_addr, sizeof(local_addr));
 		inet_addrtop(&client_addr, client_ipaddr, sizeof(client_ipaddr));
@@ -3590,7 +3590,7 @@ bool sbbs_t::init()
 
 	if ((comspec = os_cmdshell()) == NULL) {
 		errormsg(WHERE, ERR_CHK, OS_CMD_SHELL_ENV_VAR " environment variable", 0);
-		return(false);
+		return false;
 	}
 
 	if ((i = md(cfg.temp_dir)) != 0) {
@@ -3603,7 +3603,7 @@ bool sbbs_t::init()
 	if ((nodefile = opennodedat(&cfg)) == -1) {
 		pthread_mutex_unlock(&nodefile_mutex);
 		errormsg(WHERE, ERR_OPEN, "nodefile", cfg.node_num);
-		return(false);
+		return false;
 	}
 	memset(&node, 0, sizeof(node_t));  /* write NULL to node struct */
 	node.status = NODE_OFFLINE;
@@ -3634,7 +3634,7 @@ bool sbbs_t::init()
 
 	if (i >= LOOP_NODEDAB) {
 		errormsg(WHERE, ERR_LOCK, "nodefile", cfg.node_num);
-		return(false);
+		return false;
 	}
 
 	if (cfg.node_num) {
@@ -3642,7 +3642,7 @@ bool sbbs_t::init()
 		if ((logfile_fp = fopen(str, "a+b")) == NULL) {
 			errormsg(WHERE, ERR_OPEN, str, 0);
 			lprintf(LOG_NOTICE, "Perhaps this node is already running");
-			return(false);
+			return false;
 		}
 
 		if (filelength(fileno(logfile_fp))) {
@@ -3682,7 +3682,7 @@ bool sbbs_t::init()
 	main_csi.str = (char *)malloc(1024);
 	if (main_csi.str == NULL) {
 		errormsg(WHERE, ERR_ALLOC, "main_csi.str", 1024);
-		return(false);
+		return false;
 	}
 	memset(main_csi.str, 0, 1024);
 /***/
@@ -3693,28 +3693,28 @@ bool sbbs_t::init()
 
 		if ((cursub = (int *)malloc(sizeof(int) * usrgrp_total)) == NULL) {
 			errormsg(WHERE, ERR_ALLOC, "cursub", sizeof(int) * usrgrp_total);
-			return(false);
+			return false;
 		}
 
 		if ((usrgrp = (int *)malloc(sizeof(int) * usrgrp_total)) == NULL) {
 			errormsg(WHERE, ERR_ALLOC, "usrgrp", sizeof(int) * usrgrp_total);
-			return(false);
+			return false;
 		}
 
 		if ((usrsubs = (int *)malloc(sizeof(int) * usrgrp_total)) == NULL) {
 			errormsg(WHERE, ERR_ALLOC, "usrsubs", sizeof(int) * usrgrp_total);
-			return(false);
+			return false;
 		}
 
 		if ((usrsub = (int **)calloc(usrgrp_total, sizeof(int *))) == NULL) {
 			errormsg(WHERE, ERR_ALLOC, "usrsub", sizeof(int) * usrgrp_total);
-			return(false);
+			return false;
 		}
 	}
 	if (cfg.total_subs) {
 		if ((subscan = (subscan_t *)calloc(cfg.total_subs, sizeof(subscan_t))) == NULL) {
 			errormsg(WHERE, ERR_ALLOC, "subscan", sizeof(subscan_t) * cfg.total_subs);
-			return(false);
+			return false;
 		}
 	}
 
@@ -3728,7 +3728,7 @@ bool sbbs_t::init()
 		for (i = 0; i < cfg.total_grps; i++)
 			if ((usrsub[i] = (int *)malloc(sizeof(int) * l)) == NULL) {
 				errormsg(WHERE, ERR_ALLOC, "usrsub[x]", sizeof(int) * l);
-				return(false);
+				return false;
 			}
 
 	if (cfg.total_libs) {
@@ -3737,22 +3737,22 @@ bool sbbs_t::init()
 
 		if ((curdir = (int *)malloc(sizeof(int) * usrlib_total)) == NULL) {
 			errormsg(WHERE, ERR_ALLOC, "curdir", sizeof(int) * usrlib_total);
-			return(false);
+			return false;
 		}
 
 		if ((usrlib = (int *)malloc(sizeof(int) * usrlib_total)) == NULL) {
 			errormsg(WHERE, ERR_ALLOC, "usrlib", sizeof(int) * usrlib_total);
-			return(false);
+			return false;
 		}
 
 		if ((usrdirs = (int *)malloc(sizeof(uint) * usrlib_total)) == NULL) {
 			errormsg(WHERE, ERR_ALLOC, "usrdirs", sizeof(int) * usrlib_total);
-			return(false);
+			return false;
 		}
 
 		if ((usrdir = (int **)calloc(usrlib_total, sizeof(int *))) == NULL) {
 			errormsg(WHERE, ERR_ALLOC, "usrdir", sizeof(int) * usrlib_total);
-			return(false);
+			return false;
 		}
 	}
 
@@ -3767,7 +3767,7 @@ bool sbbs_t::init()
 		for (i = 0; i < cfg.total_libs; i++)
 			if ((usrdir[i] = (int *)malloc(sizeof(int) * l)) == NULL) {
 				errormsg(WHERE, ERR_ALLOC, "usrdir[x]", sizeof(int) * l);
-				return(false);
+				return false;
 			}
 	}
 
@@ -3783,7 +3783,7 @@ bool sbbs_t::init()
 
 	online = ON_REMOTE;
 
-	return(true);
+	return true;
 }
 
 //****************************************************************************
@@ -3965,7 +3965,7 @@ int sbbs_t::nopen(char *str, int access)
 		logline(LOG_WARNING, "!!", logstr);
 		bputs("\7\r\nNOPEN: ACCESS DENIED\r\n\7");
 	}
-	return(file);
+	return file;
 }
 
 void sbbs_t::spymsg(const char* msg)
@@ -4002,18 +4002,18 @@ int sbbs_t::mv(const char* path, const char* dest, bool copy)
 	char src[MAX_PATH + 1];
 
 	if (!stricmp(path, dest))     /* source and destination are the same! */
-		return(0);
+		return 0;
 
 	SAFECOPY(src, path);
 	if (!fexistcase(src)) {
 		bprintf("\r\n\7MV ERROR: Source doesn't exist\r\n'%s'\r\n"
 		        , src);
-		return(-1);
+		return -1;
 	}
 	if (!copy && fexist(dest)) {
 		bprintf("\r\n\7MV ERROR: Destination already exists\r\n'%s'\r\n"
 		        , dest);
-		return(-1);
+		return -1;
 	}
 	if (!copy && rename(src, dest) == 0)
 		return 0;
@@ -4023,9 +4023,9 @@ int sbbs_t::mv(const char* path, const char* dest, bool copy)
 	}
 	if (!copy && remove(src) != 0) {
 		errormsg(WHERE, ERR_REMOVE, src, 0);
-		return(-1);
+		return -1;
 	}
-	return(0);
+	return 0;
 }
 
 void sbbs_t::hangup(void)
@@ -4070,16 +4070,16 @@ int sbbs_t::incom(unsigned int timeout)
 #if 0   /* looping version */
 	while (!RingBufRead(&inbuf, &ch, 1))
 		if (WaitForEvent(inbuf.data_event, timeout) != WAIT_OBJECT_0 || sys_status & SS_ABORT)
-			return(NOINP);
+			return NOINP;
 #else
 	if (!RingBufRead(&inbuf, &ch, 1)) {
 		if (WaitForEvent(inbuf.data_event, timeout) != WAIT_OBJECT_0)
-			return(NOINP);
+			return NOINP;
 		if (!RingBufRead(&inbuf, &ch, 1))
-			return(NOINP);
+			return NOINP;
 	}
 #endif
-	return(ch);
+	return ch;
 }
 
 // Steve's original implementation (in RCIOL) did not incorporate a retry
@@ -4087,10 +4087,10 @@ int sbbs_t::incom(unsigned int timeout)
 int sbbs_t::_outcom(uchar ch)
 {
 	if (!RingBufFree(&outbuf))
-		return(TXBOF);
+		return TXBOF;
 	if (!RingBufWrite(&outbuf, &ch, 1))
-		return(TXBOF);
-	return(0);
+		return TXBOF;
+	return 0;
 }
 
 // This outcom version retries - copied loop from sbbs_t::outchar()
@@ -4139,35 +4139,35 @@ int sbbs_t::rioctl(ushort action)
 
 	switch (action) {
 		case GVERS:     /* Get version */
-			return(0x200);
+			return 0x200;
 		case GUART:     /* Get UART I/O address, not available */
-			return(0xffff);
+			return 0xffff;
 		case GIRQN:     /* Get IRQ number, not available */
-			return((int)client_socket);
+			return (int)client_socket;
 		case GBAUD:     /* Get current bit rate */
-			return(0xffff);
+			return 0xffff;
 		case RXBC:      /* Get receive buffer count */
 			// ulong	cnt;
 			// ioctlsocket (client_socket,FIONREAD,&cnt);
-			return(/* cnt+ */ RingBufFull(&inbuf));
+			return /* cnt+ */ RingBufFull(&inbuf);
 		case RXBS:      /* Get receive buffer size */
-			return(inbuf.size);
+			return inbuf.size;
 		case TXBC:      /* Get transmit buffer count */
-			return(RingBufFull(&outbuf));
+			return RingBufFull(&outbuf);
 		case TXBS:      /* Get transmit buffer size */
-			return(outbuf.size);
+			return outbuf.size;
 		case TXBF:      /* Get transmit buffer free space */
-			return(RingBufFree(&outbuf));
+			return RingBufFree(&outbuf);
 		case IOMODE:
 			mode = 0;
 			if (rio_abortable)
 				mode |= ABORT;
-			return(mode);
+			return mode;
 		case IOSTATE:
 			state = 0;
 			if (sys_status & SS_ABORT)
 				state |= ABORT;
-			return(state);
+			return state;
 		case IOFI:      /* Flush input buffer */
 			RingBufReInit(&inbuf);
 			break;
@@ -4181,34 +4181,34 @@ int sbbs_t::rioctl(ushort action)
 		case LFN81:
 		case LFE71:
 		case FIFOCTL:
-			return(0);
+			return 0;
 	}
 
 	if ((action & 0xff) == IOSM) {   /* Get/Set/Clear mode */
 		if (action & ABORT)
 			rio_abortable = true;
-		return(0);
+		return 0;
 	}
 
 	if ((action & 0xff) == IOCM) {   /* Get/Set/Clear mode */
 		if (action & ABORT)
 			rio_abortable = false;
-		return(0);
+		return 0;
 	}
 
 	if ((action & 0xff) == IOSS) {   /* Set state */
 		if (action & ABORT)
 			sys_status |= SS_ABORT;
-		return(0);
+		return 0;
 	}
 
 	if ((action & 0xff) == IOCS) {   /* Clear state */
 		if (action & ABORT)
 			sys_status &= ~SS_ABORT;
-		return(0);
+		return 0;
 	}
 
-	return(0);
+	return 0;
 }
 
 void sbbs_t::reset_logon_vars(void)
@@ -4820,9 +4820,9 @@ void sbbs_t::daily_maint(void)
 const char* js_ver(void)
 {
 #ifdef JAVASCRIPT
-	return(JS_GetImplementationVersion());
+	return JS_GetImplementationVersion();
 #else
-	return("");
+	return "";
 #endif
 }
 
@@ -4847,13 +4847,13 @@ const char* bbs_ver(void)
 		              , git_date, compiler
 		              );
 	}
-	return(ver);
+	return ver;
 }
 
 /* Returns binary-coded version and revision (e.g. 0x31000 == 3.10a) */
 int bbs_ver_num(void)
 {
-	return(VERSION_HEX);
+	return VERSION_HEX;
 }
 
 void bbs_terminate(void)

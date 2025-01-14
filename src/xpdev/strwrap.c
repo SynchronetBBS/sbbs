@@ -19,7 +19,7 @@ char* itoa(int val, char* str, int radix)
 			sprintf(str, "bad radix: %d", radix);
 			break;
 	}
-	return(str);
+	return str;
 }
 
 char* ltoa(long val, char* str, int radix)
@@ -38,7 +38,7 @@ char* ltoa(long val, char* str, int radix)
 			sprintf(str, "bad radix: %d", radix);
 			break;
 	}
-	return(str);
+	return str;
 }
 #endif
 
@@ -53,7 +53,7 @@ strnlen(const char *s, size_t maxlen)
 		if (!*s)
 			break;
 	}
-	return (len);
+	return len;
 }
 #endif
 

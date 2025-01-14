@@ -524,7 +524,7 @@ int sbbs_t::getmsgnum(int subnum, time_t t)
 	idxrec_t idx;
 
 	if (!t)
-		return(0);
+		return 0;
 
 	ZERO_VAR(smb);
 	SAFEPRINTF2(smb.file, "%s%s", cfg.sub[subnum]->data_dir, cfg.sub[subnum]->code);
@@ -557,37 +557,37 @@ time_t sbbs_t::getmsgtime(int subnum, uint ptr)
 	smb.subnum = subnum;
 	if ((i = smb_open(&smb)) != 0) {
 		errormsg(WHERE, ERR_OPEN, smb.file, i, smb.last_error);
-		return(0);
+		return 0;
 	}
 	if (!filelength(fileno(smb.sid_fp))) {           /* Empty base */
 		smb_close(&smb);
-		return(0);
+		return 0;
 	}
 	msg.idx_offset = 0;
 	msg.hdr.number = 0;
 	if (smb_getmsgidx(&smb, &msg)) {              /* Get first message index */
 		smb_close(&smb);
-		return(0);
+		return 0;
 	}
 	if (!ptr || msg.idx.number >= ptr) {           /* ptr is before first message */
 		smb_close(&smb);
-		return(msg.idx.time);                   /* so return time of first msg */
+		return msg.idx.time;                   /* so return time of first msg */
 	}
 
 	if (smb_getlastidx(&smb, &lastidx)) {              /* Get last message index */
 		smb_close(&smb);
-		return(0);
+		return 0;
 	}
 	if (lastidx.number < ptr) {                    /* ptr is after last message */
 		smb_close(&smb);
-		return(lastidx.time);                   /* so return time of last msg */
+		return lastidx.time;                   /* so return time of last msg */
 	}
 
 	msg.idx.time = 0;
 	msg.hdr.number = ptr;
 	if (!smb_getmsgidx(&smb, &msg)) {
 		smb_close(&smb);
-		return(msg.idx.time);
+		return msg.idx.time;
 	}
 
 	if (ptr - msg.idx.number < lastidx.number - ptr) {
@@ -600,7 +600,7 @@ time_t sbbs_t::getmsgtime(int subnum, uint ptr)
 			msg.idx_offset++;
 		}
 		smb_close(&smb);
-		return(msg.idx.time);
+		return msg.idx.time;
 	}
 
 	ptr--;
@@ -611,7 +611,7 @@ time_t sbbs_t::getmsgtime(int subnum, uint ptr)
 		ptr--;
 	}
 	smb_close(&smb);
-	return(msg.idx.time);
+	return msg.idx.time;
 }
 
 
@@ -631,7 +631,7 @@ uint sbbs_t::getlastmsg(int subnum, uint32_t *ptr, time_t *t)
 	if (t)
 		(*t) = 0;
 	if (!subnum_is_valid(subnum))
-		return(0);
+		return 0;
 
 	ZERO_VAR(smb);
 	SAFEPRINTF2(smb.file, "%s%s", cfg.sub[subnum]->data_dir, cfg.sub[subnum]->code);
@@ -639,22 +639,22 @@ uint sbbs_t::getlastmsg(int subnum, uint32_t *ptr, time_t *t)
 	smb.subnum = subnum;
 	if ((i = smb_open(&smb)) != 0) {
 		errormsg(WHERE, ERR_OPEN, smb.file, i, smb.last_error);
-		return(0);
+		return 0;
 	}
 
 	if (!filelength(fileno(smb.sid_fp))) {           /* Empty base */
 		smb_close(&smb);
-		return(0);
+		return 0;
 	}
 	if ((i = smb_locksmbhdr(&smb)) != 0) {
 		smb_close(&smb);
 		errormsg(WHERE, ERR_LOCK, smb.file, i, smb.last_error);
-		return(0);
+		return 0;
 	}
 	if ((i = smb_getlastidx(&smb, &idx)) != 0) {
 		smb_close(&smb);
 		errormsg(WHERE, ERR_READ, smb.file, i, smb.last_error);
-		return(0);
+		return 0;
 	}
 	if (cfg.sub[subnum]->misc & SUB_NOVOTING)
 		total = (int)filelength(fileno(smb.sid_fp)) / sizeof(idxrec_t);
@@ -666,6 +666,6 @@ uint sbbs_t::getlastmsg(int subnum, uint32_t *ptr, time_t *t)
 		(*ptr) = idx.number;
 	if (t)
 		(*t) = idx.time;
-	return(total);
+	return total;
 }
 

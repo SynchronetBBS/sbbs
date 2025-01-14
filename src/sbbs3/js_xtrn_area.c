@@ -130,76 +130,76 @@ BOOL js_CreateXtrnProgProperties(JSContext* cx, JSObject* obj, xtrn_t* xtrn)
 	JSString* js_str;
 
 	if ((js_str = JS_NewStringCopyZ(cx, xtrn->code)) == NULL)
-		return(FALSE);
+		return FALSE;
 	if (!JS_DefineProperty(cx, obj, "code", STRING_TO_JSVAL(js_str)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(FALSE);
+		return FALSE;
 
 	if ((js_str = JS_NewStringCopyZ(cx, xtrn->name)) == NULL)
-		return(FALSE);
+		return FALSE;
 	if (!JS_DefineProperty(cx, obj, "name", STRING_TO_JSVAL(js_str)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(FALSE);
+		return FALSE;
 
 	if ((js_str = JS_NewStringCopyZ(cx, xtrn->cmd)) == NULL)
-		return(FALSE);
+		return FALSE;
 	if (!JS_DefineProperty(cx, obj, "cmd", STRING_TO_JSVAL(js_str)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(FALSE);
+		return FALSE;
 
 	if ((js_str = JS_NewStringCopyZ(cx, xtrn->clean)) == NULL)
-		return(FALSE);
+		return FALSE;
 	if (!JS_DefineProperty(cx, obj, "clean_cmd", STRING_TO_JSVAL(js_str)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(FALSE);
+		return FALSE;
 
 	if ((js_str = JS_NewStringCopyZ(cx, xtrn->path)) == NULL)
-		return(FALSE);
+		return FALSE;
 	if (!JS_DefineProperty(cx, obj, "startup_dir", STRING_TO_JSVAL(js_str)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(FALSE);
+		return FALSE;
 
 	if ((js_str = JS_NewStringCopyZ(cx, xtrn->arstr)) == NULL)
-		return(FALSE);
+		return FALSE;
 	if (!JS_DefineProperty(cx, obj, "ars", STRING_TO_JSVAL(js_str)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(FALSE);
+		return FALSE;
 
 	if ((js_str = JS_NewStringCopyZ(cx, xtrn->run_arstr)) == NULL)
-		return(FALSE);
+		return FALSE;
 	if (!JS_DefineProperty(cx, obj, "execution_ars", STRING_TO_JSVAL(js_str)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(FALSE);
+		return FALSE;
 
 	if (!JS_DefineProperty(cx, obj, "settings", INT_TO_JSVAL(xtrn->misc)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(FALSE);
+		return FALSE;
 
 	if (!JS_DefineProperty(cx, obj, "type", INT_TO_JSVAL(xtrn->type)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(FALSE);
+		return FALSE;
 
 	if (!JS_DefineProperty(cx, obj, "event", INT_TO_JSVAL(xtrn->event)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(FALSE);
+		return FALSE;
 
 	if (!JS_DefineProperty(cx, obj, "textra", INT_TO_JSVAL(xtrn->textra)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(FALSE);
+		return FALSE;
 
 	if (!JS_DefineProperty(cx, obj, "max_time", INT_TO_JSVAL(xtrn->maxtime)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(FALSE);
+		return FALSE;
 
 	if (!JS_DefineProperty(cx, obj, "cost", INT_TO_JSVAL(xtrn->cost)
 	                       , NULL, NULL, JSPROP_ENUMERATE | JSPROP_READONLY))
-		return(FALSE);
+		return FALSE;
 
 #ifdef BUILD_JSDOCS
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", xtrn_prog_prop_desc, JSPROP_READONLY);
 #endif
 
-	return(TRUE);
+	return TRUE;
 }
 
 static JSBool js_event_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
@@ -586,7 +586,7 @@ JSBool js_xtrn_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 
 static JSBool js_xtrn_area_enumerate(JSContext *cx, JSObject *obj)
 {
-	return(js_xtrn_area_resolve(cx, obj, JSID_VOID));
+	return js_xtrn_area_resolve(cx, obj, JSID_VOID);
 }
 
 static void
@@ -625,7 +625,7 @@ JSObject* js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
 	                      , JSPROP_ENUMERATE | JSPROP_READONLY);
 
 	if (obj == NULL)
-		return(NULL);
+		return NULL;
 
 	p = (struct js_xtrn_area_priv *)malloc(sizeof(struct js_xtrn_area_priv));
 	if (p == NULL)
@@ -638,7 +638,7 @@ JSObject* js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
 
 	if (!JS_SetPrivate(cx, obj, p)) {
 		free(p);
-		return(NULL);
+		return NULL;
 	}
 
 #ifdef BUILD_JSDOCS
@@ -646,7 +646,7 @@ JSObject* js_CreateXtrnAreaObject(JSContext* cx, JSObject* parent, scfg_t* cfg
 	js_xtrn_area_enumerate(cx, obj);
 #endif
 
-	return(obj);
+	return obj;
 }
 
 #endif  /* JAVSCRIPT */

@@ -58,17 +58,17 @@ int sbbs_t::uselect(bool add, uint n, const char *title, const char *item, const
 
 	if (add) {
 		if (ar && !chk_ar(ar, &useron, &client))
-			return(0);
+			return 0;
 		if (!uselect_total)
 			bprintf(text[SelectItemHdr], title);
 		uselect_num[uselect_total++] = n;
 		add_hotspot(uselect_total);
 		bprintf(text[SelectItemFmt], uselect_total, item);
-		return(0);
+		return 0;
 	}
 
 	if (!uselect_total)
-		return(-1);
+		return -1;
 
 	for (u = 0; u < uselect_total; u++)
 		if (uselect_num[u] == n)
@@ -82,16 +82,16 @@ int sbbs_t::uselect(bool add, uint n, const char *title, const char *item, const
 	uselect_total = 0;
 	clear_hotspots();
 	if (i < 0)
-		return(-1);
+		return -1;
 	if (!i) {                    /* User hit ENTER, use default */
 		for (u = 0; u < t; u++)
 			if (uselect_num[u] == n)
-				return(uselect_num[u]);
+				return uselect_num[u];
 		if (n < t)
-			return(uselect_num[n]);
-		return(-1);
+			return uselect_num[n];
+		return -1;
 	}
-	return(uselect_num[i - 1]);
+	return uselect_num[i - 1];
 }
 
 unsigned count_set_bits(long val)
@@ -149,7 +149,7 @@ bool sbbs_t::chksyspass(const char* sys_pw)
 
 	if (online == ON_REMOTE && !(cfg.sys_misc & SM_R_SYSOP)) {
 		logline(LOG_NOTICE, "S!", "Remote sysop access disabled");
-		return(false);
+		return false;
 	}
 	if (time(NULL) - last_sysop_auth < cfg.sys_pass_timeout * 60)
 		return true;
@@ -168,8 +168,8 @@ bool sbbs_t::chksyspass(const char* sys_pw)
 		else
 			SAFECOPY(str2, "System password verification failure");
 		logline(LOG_NOTICE, "S!", str2);
-		return(false);
+		return false;
 	}
 	last_sysop_auth = time(NULL);
-	return(true);
+	return true;
 }

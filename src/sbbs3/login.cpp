@@ -76,12 +76,12 @@ int sbbs_t::login(const char *username, const char *pw_prompt, const char* user_
 			logline(LOG_NOTICE, "+!", tmp);
 		}
 		useron.misc = useron_misc;
-		return(LOGIC_FALSE);
+		return LOGIC_FALSE;
 	}
 
 	if (!online) {
 		useron.number = 0;
-		return(LOGIC_FALSE);
+		return LOGIC_FALSE;
 	}
 
 	if (useron.pass[0] || REALSYSOP) {
@@ -96,7 +96,7 @@ int sbbs_t::login(const char *username, const char *pw_prompt, const char* user_
 		}
 		if (!online) {
 			useron.number = 0;
-			return(LOGIC_FALSE);
+			return LOGIC_FALSE;
 		}
 		if (stricmp(useron.pass, str)) {
 			badlogin(useron.alias, str);
@@ -110,13 +110,13 @@ int sbbs_t::login(const char *username, const char *pw_prompt, const char* user_
 			logline(LOG_NOTICE, "+!", tmp);
 			useron.number = 0;
 			useron.misc = useron_misc;
-			return(LOGIC_FALSE);
+			return LOGIC_FALSE;
 		}
 		if (REALSYSOP && (cfg.sys_misc & SM_SYSPASSLOGIN) && (cfg.sys_misc & SM_R_SYSOP) && !chksyspass(sys_pw)) {
 			bputs(text[InvalidLogon]);
 			useron.number = 0;
 			useron.misc = useron_misc;
-			return(LOGIC_FALSE);
+			return LOGIC_FALSE;
 		}
 	}
 
@@ -125,7 +125,7 @@ int sbbs_t::login(const char *username, const char *pw_prompt, const char* user_
 		PlaySound(startup->sound.login, NULL, SND_ASYNC | SND_FILENAME);
 #endif
 
-	return(LOGIC_TRUE);
+	return LOGIC_TRUE;
 }
 
 void sbbs_t::badlogin(const char* user, const char* passwd, const char* protocol, xp_sockaddr* addr, bool delay)

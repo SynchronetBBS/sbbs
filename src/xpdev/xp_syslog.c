@@ -31,7 +31,7 @@ static in_addr_t resolve_ip(char *addr)
 		if (*p != '.' && !isdigit(*p))
 			break;
 	if (!(*p))
-		return(inet_addr(addr));
+		return inet_addr(addr);
 	if ((host = gethostbyname(addr)) == NULL)
 		return INADDR_NONE;
 	if (host->h_addr_list == NULL)

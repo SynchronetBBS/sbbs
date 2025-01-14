@@ -49,9 +49,9 @@ time_t filetime(int fd)
 	struct stat st;
 
 	if (fstat(fd, &st) != 0)
-		return(-1);
+		return -1;
 
-	return(st.st_mtime);
+	return st.st_mtime;
 }
 
 #if defined(__unix__) && !defined(__BORLANDC__)
@@ -65,9 +65,9 @@ off_t filelength(int fd)
 	struct stat st;
 
 	if (fstat(fd, &st) != 0)
-		return(-1L);
+		return -1L;
 
-	return(st.st_size);
+	return st.st_size;
 }
 
 /*************************************/
@@ -117,9 +117,9 @@ int xp_lockfile(int fd, off_t pos, off_t len, bool block)
 		op |= LOCK_NB;
 	/* use flock (doesn't work over NFS) */
 	if (flock(fd, op) != 0  && errno != EOPNOTSUPP)
-		return(-1);
+		return -1;
 #endif
-	return(0);
+	return 0;
 }
 
 /* Removes a lock from a file record */
@@ -139,10 +139,10 @@ int unlock(int fd, off_t pos, off_t len)
 #elif !defined(__QNX__) && !defined(__solaris__)
 	/* use flock (doesn't work over NFS) */
 	if (flock(fd, LOCK_UN | LOCK_NB) != 0 && errno != EOPNOTSUPP)
-		return(-1);
+		return -1;
 #endif
 
-	return(0);
+	return 0;
 }
 
 /* Opens a file in specified sharing (file-locking) mode */
@@ -231,7 +231,7 @@ int sopen(const char *fn, int sh_access, int share, ...)
 		if (errno == EWOULDBLOCK)
 			errno = EAGAIN;
 		close(fd);
-		return(-1);
+		return -1;
 	}
 #endif
 	return fd;
@@ -260,7 +260,7 @@ int unlock(int file, off_t offset, off_t size)
 	i = _locking(file, LK_UNLCK, (long)size);
 	if (offset != pos)
 		(void)lseek(file, pos, SEEK_SET);
-	return(i);
+	return i;
 }
 
 #endif  /* !__unix__ && (_MSC_VER || __MINGW32__ || __DMC__) */
@@ -286,7 +286,7 @@ p2roundup(size_t n)
 #endif
 		n++;
 	}
-	return (n);
+	return n;
 }
 
 static int expandtofit(char **linep, size_t len, size_t *linecapp)
@@ -374,7 +374,7 @@ FILE *_fsopen(const char *pszFilename, const char *pszMode, int shmode)
 				break;
 			default:
 				errno = EINVAL;
-				return(NULL);
+				return NULL;
 		}
 	}
 	switch (Mode)  {
@@ -398,15 +398,15 @@ FILE *_fsopen(const char *pszFilename, const char *pszMode, int shmode)
 			break;
 		default:
 			errno = EINVAL;
-			return(NULL);
+			return NULL;
 	}
 	if (Mode & O_CREAT)
 		file = sopen(pszFilename, Mode, shmode, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 	else
 		file = sopen(pszFilename, Mode, shmode);
 	if (file == -1)
-		return(NULL);
-	return(fdopen(file, pszMode));
+		return NULL;
+	return fdopen(file, pszMode);
 #endif
 }
 #endif
@@ -429,7 +429,7 @@ int xp_lockfile(int file, off_t offset, off_t size, bool block)
 	} while (block && i != 0 && errno == EDEADLOCK);
 	if (offset != pos)
 		(void)lseek(file, pos, SEEK_SET);
-	return(i);
+	return i;
 }
 #endif // _WIN32
 

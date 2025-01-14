@@ -385,7 +385,7 @@ int sbbs_t::whos_online(bool listself)
 	}
 	if (!j)
 		bputs(text[NoOtherActiveNodes]);
-	return(j);
+	return j;
 }
 
 void sbbs_t::nodelist(void)

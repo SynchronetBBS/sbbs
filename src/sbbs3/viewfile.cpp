@@ -52,12 +52,12 @@ int sbbs_t::viewfile(file_t* f, bool ext)
 			SAFECAT(str, "D");
 		ch = (char)getkeys(str, 0);
 		if (ch == 'Q' || sys_status & SS_ABORT)
-			return(0);
+			return 0;
 		switch (ch) {
 			case 'B':
 				addtobatdl(f);
 				CRLF;
-				return(-1);
+				return -1;
 			case 'D':
 				editfiledesc(f);
 				continue;
@@ -78,10 +78,10 @@ int sbbs_t::viewfile(file_t* f, bool ext)
 				return -2;
 			case 'N':
 			case CR:
-				return(1);
+				return 1;
 		}
 	}
-	return(0);
+	return 0;
 }
 
 /*****************************************************************************/

@@ -223,10 +223,10 @@ int check_bruted(long name, unsigned char *val)
 	for (i = 0; i < bruted_len; i++) {
 		if (*(int32_t *)bruted[i] == name) {
 			if (!strcmp((char*)val, bruted[i] + 5))
-				return(*(bruted[i] + 4));
+				return *(bruted[i] + 4);
 		}
 	}
-	return(2);
+	return 2;
 }
 
 char *find_bruted(long name)
@@ -235,9 +235,9 @@ char *find_bruted(long name)
 
 	for (i = 0; i < bruted_len; i++) {
 		if (*(int32_t *)bruted[i] == name && *(bruted[i] + 4))
-			return(bruted[i] + 5);
+			return bruted[i] + 5;
 	}
-	return(NULL);
+	return NULL;
 }
 
 char* bruteforce(unsigned long name)
@@ -250,11 +250,11 @@ char* bruteforce(unsigned long name)
 	size_t         i;
 
 	if (!brute_len)
-		return(NULL);
+		return NULL;
 	if ((ret = find_bruted(name)) != NULL) {
 		if (!(*ret))
-			return(NULL);
-		return(ret);
+			return NULL;
+		return ret;
 	}
 	memset(brute_buf, 0, brute_len + 1);
 	memset(brute_crc_buf, 0, brute_len * sizeof(int32_t));
@@ -284,7 +284,7 @@ char* bruteforce(unsigned long name)
 			if (l == brute_len) {
 				printf("\r%s Not found.\n", brute_buf);
 				add_bruted(name, 1, "", 0);
-				return(NULL);
+				return NULL;
 			}
 			/* Set string to '_' with one extra at end */
 			memset(brute_buf, '_', ++l);
@@ -320,7 +320,7 @@ LOOP_END:
 
 BRUTE_DONE:
 	printf("\r%s Found!\n", brute_buf);
-	return((char*)brute_buf);
+	return (char*)brute_buf;
 }
 
 /* comparison function for var_table */
@@ -349,7 +349,7 @@ char *getvar(long name)
 			sprintf(varname, "var_%08lx", name);
 	}
 
-	return(varname);
+	return varname;
 }
 
 size_t my_fread(void* buf, size_t size, size_t n, FILE* fp)
@@ -442,7 +442,7 @@ int write_key(FILE *bin, char *src, int keyset)
 	uchar uch;
 	my_fread(&uch, 1, 1, bin);
 	if (uch == 0 && keyset)
-		return(uch);
+		return uch;
 	if (uch == CS_DIGIT)
 		strcat(src, "DIGIT");
 	else if (uch == CS_EDIGIT)
@@ -477,7 +477,7 @@ int write_key(FILE *bin, char *src, int keyset)
 		sprintf(strchr(src, 0), "%c", uch);
 	if (!keyset)
 		strcat(src, " ");
-	return(uch);;
+	return uch;;
 }
 
 void write_keys(FILE *bin, char *src)
@@ -1223,7 +1223,7 @@ char *decompile_ars(uchar *ars, int len)
 				break;
 			default:
 				printf("Error decoding AR: %02Xh, offset: %ld\n", *in, (long)(in - ars));
-				return("Unknown ARS String");
+				return "Unknown ARS String";
 		}
 		switch (*in) {
 			case AR_TIME:
@@ -1322,7 +1322,7 @@ char *decompile_ars(uchar *ars, int len)
 		}
 	}
 	*out = 0;
-	return(buf);
+	return buf;
 }
 
 void decompile(FILE *bin, FILE *srcfile)
@@ -2398,6 +2398,6 @@ int main(int argc, char **argv)
 		}
 	}
 
-	return(0);
+	return 0;
 }
 

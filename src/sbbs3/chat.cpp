@@ -544,12 +544,12 @@ bool sbbs_t::guru_page(void)
 
 	if (useron.rest & FLAG('C')) {
 		bputs(text[R_Chat]);
-		return(false);
+		return false;
 	}
 
 	if (!cfg.total_gurus) {
 		bprintf(text[SysopIsNotAvailable], "The Guru");
-		return(false);
+		return false;
 	}
 	if (cfg.total_gurus == 1 && chk_ar(cfg.guru[0]->ar, &useron, &client))
 		i = 0;
@@ -558,12 +558,12 @@ bool sbbs_t::guru_page(void)
 			uselect(1, i, nulstr, cfg.guru[i]->name, cfg.guru[i]->ar);
 		i = uselect(0, 0, 0, 0, 0);
 		if (i < 0)
-			return(false);
+			return false;
 	}
 	snprintf(path, sizeof path, "%s%s.dat", cfg.ctrl_dir, cfg.guru[i]->code);
 	if ((file = nopen(path, O_RDONLY)) == -1) {
 		errormsg(WHERE, ERR_OPEN, path, O_RDONLY);
-		return(false);
+		return false;
 	}
 	long length = (long)filelength(file);
 	if (length < 0) {
@@ -574,7 +574,7 @@ bool sbbs_t::guru_page(void)
 	if ((gurubuf = (char *)malloc(length + 1)) == NULL) {
 		errormsg(WHERE, ERR_ALLOC, path, length + 1);
 		close(file);
-		return(false);
+		return false;
 	}
 	if (read(file, gurubuf, length) != length)
 		errormsg(WHERE, ERR_READ, path, length);
@@ -582,7 +582,7 @@ bool sbbs_t::guru_page(void)
 	close(file);
 	localguru(gurubuf, i);
 	free(gurubuf);
-	return(true);
+	return true;
 }
 
 /****************************************************************************/
@@ -602,7 +602,7 @@ bool sbbs_t::sysop_page(void)
 
 	if (useron.rest & FLAG('C')) {
 		bputs(text[R_Chat]);
-		return(false);
+		return false;
 	}
 
 	if (sysop_available(&cfg)
@@ -650,12 +650,12 @@ bool sbbs_t::sysop_page(void)
 		if (!(sys_status & SS_SYSPAGE))
 			remove(syspage_semfile);
 
-		return(true);
+		return true;
 	}
 
 	bprintf(text[SysopIsNotAvailable], cfg.sys_op);
 
-	return(false);
+	return false;
 }
 
 /****************************************************************************/
@@ -666,13 +666,13 @@ bool sbbs_t::chan_access(int cnum)
 
 	if (!cfg.total_chans || cnum >= cfg.total_chans || !chk_ar(cfg.chan[cnum]->ar, &useron, &client)) {
 		bputs(text[CantAccessThatChannel]);
-		return(false);
+		return false;
 	}
 	if (!(useron.exempt & FLAG('J')) && cfg.chan[cnum]->cost > user_available_credits(&useron)) {
 		bputs(text[NotEnoughCredits]);
-		return(false);
+		return false;
 	}
-	return(true);
+	return true;
 }
 
 /****************************************************************************/
@@ -1194,7 +1194,7 @@ int sbbs_t::getnodetopage(int all, int telegram)
 
 	if (!j && !telegram) {
 		bputs(text[NoOtherActiveNodes]);
-		return(0);
+		return 0;
 	}
 
 	if (all)
@@ -1207,36 +1207,36 @@ int sbbs_t::getnodetopage(int all, int telegram)
 	getstr(str, LEN_ALIAS, K_LINE | K_EDIT | K_AUTODEL);
 	if (sys_status & SS_ABORT) {
 		sys_status &= ~SS_ABORT;
-		return(0);
+		return 0;
 	}
 	if (!str[0])
-		return(0);
+		return 0;
 
 	j = atoi(str);
 	if (j && j <= cfg.sys_lastnode && j <= cfg.sys_nodes) {
 		getnodedat(j, &node);
 		if (node.useron == 0 || (node.status != NODE_INUSE && !SYSOP)) {
 			bprintf(text[NodeNIsNotInUse], j);
-			return(0);
+			return 0;
 		}
 		if (telegram && node.misc & (NODE_POFF | NODE_ANON) && !SYSOP) {
 			bprintf(text[CantPageNode], node.misc & NODE_ANON
 			    ? text[UNKNOWN_USER] : username(&cfg, node.useron, tmp));
-			return(0);
+			return 0;
 		}
 		SAFECOPY(lastnodemsguser, str);
 		if (telegram)
-			return(node.useron);
-		return(j);
+			return node.useron;
+		return j;
 	}
 	if (all && !stricmp(str, "ALL"))
-		return(-1);
+		return -1;
 
 	if (str[0] == '\'') {
 		j = finduserstr(0, USER_HANDLE, str + 1);
 		if (!j) {
 			bputs(text[UnknownUser]);
-			return(0);
+			return 0;
 		}
 	}
 	else if (str[0] == '#')
@@ -1244,12 +1244,12 @@ int sbbs_t::getnodetopage(int all, int telegram)
 	else
 		j = finduser(str);
 	if (!j)
-		return(0);
+		return 0;
 	if (j > lastuser(&cfg))
-		return(0);
+		return 0;
 	if (getusermisc(&cfg, j) & (DELETED | INACTIVE)) {              /* Deleted or Inactive User */
 		bputs(text[UnknownUser]);
-		return(0);
+		return 0;
 	}
 
 	for (i = 1; i <= cfg.sys_nodes && i <= cfg.sys_lastnode; i++) {
@@ -1259,20 +1259,20 @@ int sbbs_t::getnodetopage(int all, int telegram)
 			if (telegram && node.misc & NODE_POFF && !SYSOP) {
 				bprintf(text[CantPageNode], node.misc & NODE_ANON
 				    ? text[UNKNOWN_USER] : username(&cfg, node.useron, tmp));
-				return(0);
+				return 0;
 			}
 			if (telegram)
-				return(j);
+				return j;
 			SAFECOPY(lastnodemsguser, str);
-			return(i);
+			return i;
 		}
 	}
 	if (telegram) {
 		SAFECOPY(lastnodemsguser, str);
-		return(j);
+		return j;
 	}
 	bputs(text[UserNotFound]);
-	return(0);
+	return 0;
 }
 
 
@@ -1787,7 +1787,7 @@ bool sbbs_t::guruexp(char **ptrptr, char *line)
 
 	if ((**ptrptr) == ')') {   /* expressions of () are always result */
 		(*ptrptr)++;
-		return(true);
+		return true;
 	}
 	while ((**ptrptr) != ')' && (**ptrptr)) {
 		if ((**ptrptr) == '[') {
@@ -1904,7 +1904,7 @@ bool sbbs_t::guruexp(char **ptrptr, char *line)
 		}
 	}
 	(*ptrptr)++;    /* skip over ')' */
-	return(result);
+	return result;
 }
 
 /****************************************************************************/

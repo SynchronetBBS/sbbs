@@ -60,7 +60,7 @@ int lputs(char* str)
 		else
 			tmp[k++] = str[i];
 	tmp[k] = 0;
-	return(fputs(tmp, stdout));
+	return fputs(tmp, stdout);
 }
 /****************************************************************************/
 /* Performs printf() through local assembly routines                        */
@@ -77,7 +77,7 @@ int lprintf(const char *fmat, ...)
 	sbuf[sizeof(sbuf) - 1] = 0;
 	va_end(argptr);
 	lputs(sbuf);
-	return(chcount);
+	return chcount;
 }
 void bail(int code)
 {
@@ -102,11 +102,11 @@ char *loadmsgtail(smbmsg_t* msg)
 			continue;
 		length = msg->dfield[i].length - 2;
 		if ((buf = realloc_or_free(buf, l + msg->dfield[i].length + 1)) == NULL)
-			return(buf);
+			return buf;
 		l += fread(buf + l, 1, length, smb.sdt_fp);
 		buf[l] = 0;
 	}
-	return(buf);
+	return buf;
 }
 
 
@@ -194,7 +194,7 @@ int main(int argc, char **argv)
 								break;
 							default:
 								puts(usage);
-								return(1);
+								return 1;
 						}
 					j--;
 					break;
@@ -209,12 +209,12 @@ int main(int argc, char **argv)
 					break;
 				default:
 					puts(usage);
-					return(1);
+					return 1;
 			}
 
 	if (!cmd) {
 		puts(usage);
-		return(1);
+		return 1;
 	}
 
 	if (mode & APPEND)
@@ -225,19 +225,19 @@ int main(int argc, char **argv)
 	if (cmd & NODES)
 		if ((nodes = fnopen(&i, "nodes.dat", o_mode)) == NULL) {
 			printf("\7\nError opening nodes.dat\n");
-			return(1);
+			return 1;
 		}
 
 	if (cmd & USERS)
 		if ((users = fnopen(&i, "users.dat", o_mode)) == NULL) {
 			printf("\7\nError opening users.dat\n");
-			return(1);
+			return 1;
 		}
 
 	if (cmd & ROUTE)
 		if ((route = fnopen(&i, "route.dat", o_mode)) == NULL) {
 			printf("\7\nError opening route.dat\n");
-			return(1);
+			return 1;
 		}
 
 	cfg.size = sizeof(cfg);
@@ -405,5 +405,5 @@ int main(int argc, char **argv)
 	}
 	fprintf(stdout, "Done.\n");
 
-	return(0);
+	return 0;
 }

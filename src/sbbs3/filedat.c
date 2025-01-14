@@ -1188,9 +1188,9 @@ char* prep_file_desc(const char* ext, char* dest)
 static const char* quoted_string(const char* str, char* buf, size_t maxlen)
 {
 	if (strchr(str, ' ') == NULL)
-		return(str);
+		return str;
 	safe_snprintf(buf, maxlen, "\"%s\"", str);
-	return(buf);
+	return buf;
 }
 
 #define QUOTED_STRING(ch, str, buf, maxlen) \
@@ -1371,7 +1371,7 @@ char* cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* fpath
 	}
 	cmd[j] = 0;
 
-	return(cmd);
+	return cmd;
 }
 
 /****************************************************************************/

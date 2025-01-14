@@ -48,7 +48,7 @@ int lprintf(int level, const char *fmt, ...)
 	vsnprintf(sbuf, sizeof(sbuf), fmt, argptr);
 	sbuf[sizeof(sbuf) - 1] = 0;
 	va_end(argptr);
-	return(puts(sbuf));
+	return puts(sbuf);
 }
 
 /* String lengths								*/
@@ -166,12 +166,12 @@ static uint v31x_lastuser(scfg_t* cfg)
 	long length;
 
 	if (!VALID_CFG(cfg))
-		return(0);
+		return 0;
 
 	SAFEPRINTF(str, "%suser/user.dat", cfg->data_dir);
 	if ((length = (long)flength(str)) > 0)
-		return((uint)(length / U_LEN));
-	return(0);
+		return (uint)(length / U_LEN);
+	return 0;
 }
 
 /****************************************************************************/
@@ -182,7 +182,7 @@ static int v31x_openuserdat(scfg_t* cfg, BOOL for_modify)
 	char path[MAX_PATH + 1];
 
 	if (!VALID_CFG(cfg))
-		return(-1);
+		return -1;
 
 	SAFEPRINTF(path, "%suser/user.dat", cfg->data_dir);
 	return nopen(path, for_modify ? (O_RDWR | O_CREAT | O_DENYNONE) : (O_RDONLY | O_DENYNONE));
@@ -205,7 +205,7 @@ static int v31x_readuserdat(scfg_t* cfg, unsigned user_number, char* userdat, in
 	int i, file;
 
 	if (!VALID_CFG(cfg) || user_number < 1)
-		return(-1);
+		return -1;
 
 	if (infile >= 0)
 		file = infile;
@@ -217,7 +217,7 @@ static int v31x_readuserdat(scfg_t* cfg, unsigned user_number, char* userdat, in
 	if (user_number > (unsigned)(filelength(file) / U_LEN)) {
 		if (file != infile)
 			close(file);
-		return(-1); /* no such user record */
+		return -1; /* no such user record */
 	}
 
 	(void)lseek(file, (long)((long)(user_number - 1) * U_LEN), SEEK_SET);
@@ -231,14 +231,14 @@ static int v31x_readuserdat(scfg_t* cfg, unsigned user_number, char* userdat, in
 	if (i >= LOOP_NODEDAB) {
 		if (file != infile)
 			close(file);
-		return(-2);
+		return -2;
 	}
 
 	if (read(file, userdat, U_LEN) != U_LEN) {
 		unlock(file, (long)((long)(user_number - 1) * U_LEN), U_LEN);
 		if (file != infile)
 			close(file);
-		return(-3);
+		return -3;
 	}
 	unlock(file, (long)((long)(user_number - 1) * U_LEN), U_LEN);
 	if (file != infile)
@@ -257,13 +257,13 @@ static int v31x_parseuserdat(scfg_t* cfg, char *userdat, user_t *user)
 	unsigned user_number;
 
 	if (user == NULL)
-		return(-1);
+		return -1;
 
 	user_number = user->number;
 	memset(user, 0, sizeof(user_t));
 
 	if (!VALID_CFG(cfg) || user_number < 1)
-		return(-1);
+		return -1;
 
 	/* The user number needs to be set here
 	   before calling chk_ar() below for user-number comparisons in AR strings to function correctly */
@@ -401,7 +401,7 @@ static int v31x_parseuserdat(scfg_t* cfg, char *userdat, user_t *user)
 				resetdailyuserdat(cfg, user, /* write: */ FALSE);
 		}
 	}
-	return(0);
+	return 0;
 }
 
 /* Fast getuserdat() (leaves user.dat file open) */
@@ -411,7 +411,7 @@ static int v31x_fgetuserdat(scfg_t* cfg, user_t *user, int file)
 	char userdat[U_LEN + 1];
 
 	if (!VALID_CFG(cfg) || user == NULL || user->number < 1)
-		return(-1);
+		return -1;
 
 	memset(userdat, 0, sizeof(userdat));
 	if ((retval = v31x_readuserdat(cfg, user->number, userdat, file)) != 0) {

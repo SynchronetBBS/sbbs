@@ -102,7 +102,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 			bputs(text[QWKExtractionFailed]);
 			logline(LOG_NOTICE, "U!", AttemptedToUploadREPpacket);
 			logline(LOG_NOTICE, nulstr, "Extraction failed");
-			return(false);
+			return false;
 		}
 	}
 	SAFEPRINTF2(msg_fname, "%s%s.msg", cfg.temp_dir, cfg.sys_id);
@@ -110,7 +110,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 		bputs(text[QWKReplyNotReceived]);
 		logline(LOG_NOTICE, "U!", AttemptedToUploadREPpacket);
 		logline(LOG_NOTICE, nulstr, "MSG file not received");
-		return(false);
+		return false;
 	}
 	size = (long)flength(msg_fname);
 	if (size < QWK_BLOCK_LEN || (size % QWK_BLOCK_LEN) != 0) {
@@ -119,7 +119,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 	}
 	if ((rep = fnopen(&file, msg_fname, O_RDONLY)) == NULL) {
 		errormsg(WHERE, ERR_OPEN, msg_fname, O_RDONLY);
-		return(false);
+		return false;
 	}
 	size = (long)filelength(file);
 
@@ -168,7 +168,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 		bputs(text[QWKReplyNotReceived]);
 		logline(LOG_NOTICE, "U!", AttemptedToUploadREPpacket);
 		logline(LOG_NOTICE, nulstr, "Incorrect QWK BBS ID");
-		return(false);
+		return false;
 	}
 	/********************/
 	/* Process messages */

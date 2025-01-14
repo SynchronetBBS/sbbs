@@ -51,13 +51,13 @@ int unixtojulian(time_t unix_time)
 	struct tm tm;
 
 	if (localtime_r(&unix_time, &tm) == NULL)
-		return(0);
+		return 0;
 	j = 36525L * (1900 + tm.tm_year);
 	if (!(j % 100) && TM_MONTH(tm.tm_mon) < 3)
 		j--;
 	j = (j - (1900 * 36525)) / 100;
 	j += tm.tm_mday + days[tm.tm_mon];
-	return(j);
+	return j;
 }
 
 /****************************************************************************/
@@ -75,7 +75,7 @@ time_t juliantounix(uint j)
 	int       leap, counter;
 	struct tm tm;
 
-	if (!j) return(0L);
+	if (!j) return 0L;
 
 	tm.tm_year = ((100L * j) / 36525L) - 1900;
 	temp = (long)date.da_year * 36525L;
@@ -96,9 +96,9 @@ time_t juliantounix(uint j)
 	date.da_mon++;  /* go from 0 to 1 based */
 
 	curtime.ti_hour = curtime.ti_min = curtime.ti_sec = 0;
-	return(dostounix(&date, &curtime));
+	return dostounix(&date, &curtime);
 #else
-	return((time_t)-1);
+	return (time_t)-1;
 #endif
 }
 
@@ -1265,14 +1265,14 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 	if (!chk_ar(cfg.xtrn[xtrnnum]->run_ar, &useron, &client)
 	    || !chk_ar(cfg.xtrnsec[cfg.xtrn[xtrnnum]->sec]->ar, &useron, &client)) {
 		bputs(text[CantRunThatProgram]);
-		return(false);
+		return false;
 	}
 
 	if (cfg.xtrn[xtrnnum]->cost && !(useron.exempt & FLAG('X'))) {    /* costs */
 		if (cfg.xtrn[xtrnnum]->cost > user_available_credits(&useron)) {
 			bputs(text[NotEnoughCredits]);
 			pause();
-			return(false);
+			return false;
 		}
 		subtract_cdt(&cfg, &useron, cfg.xtrn[xtrnnum]->cost);
 	}
@@ -1280,7 +1280,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 	if (cfg.prextrn_mod[0] != '\0') {
 		SAFEPRINTF2(str, "%s %s", cfg.prextrn_mod, cfg.xtrn[xtrnnum]->code);
 		if (exec_bin(str, &main_csi) != 0) {
-			return(false);
+			return false;
 		}
 	}
 
@@ -1305,7 +1305,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 			}
 		}
 		if (i <= cfg.sys_nodes)
-			return(false);
+			return false;
 	}
 
 	if (cfg.xtrn[xtrnnum]->misc & XTRN_TEMP_DIR)
@@ -1368,7 +1368,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 		tleft = (cfg.xtrn[xtrnnum]->maxtime * 60);
 	xtrndat(name, dropdir, cfg.xtrn[xtrnnum]->type, tleft, cfg.xtrn[xtrnnum]->misc);
 	if (!online)
-		return(false);
+		return false;
 	snprintf(str, sizeof(str), "running external %s: %s"
 	         , user_event ? "user event" : "program"
 	         , cfg.xtrn[xtrnnum]->name);
@@ -1478,7 +1478,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 		exec_bin(str, &main_csi);
 	}
 
-	return(true);
+	return true;
 }
 
 /****************************************************************************/
@@ -1500,7 +1500,7 @@ bool sbbs_t::user_event(user_event_t event)
 		success = exec_xtrn(i, /* user_event: */ true);
 	}
 
-	return(success);
+	return success;
 }
 
 

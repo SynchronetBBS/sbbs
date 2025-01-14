@@ -52,7 +52,7 @@ static const char* client_prop_desc[] = {
 
 static JSBool js_client_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
 {
-	return(JS_FALSE);
+	return JS_FALSE;
 }
 
 static JSBool js_client_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
@@ -65,7 +65,7 @@ static JSBool js_client_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	client_t*   client;
 
 	if ((client = (client_t*)JS_GetPrivate(cx, obj)) == NULL)
-		return(JS_FALSE);
+		return JS_FALSE;
 
 	JS_IdToValue(cx, id, &idval);
 	tiny = JSVAL_TO_INT(idval);
@@ -93,16 +93,16 @@ static JSBool js_client_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			val = client->usernum;
 			break;
 		default:
-			return(JS_TRUE);
+			return JS_TRUE;
 	}
 	if (p != NULL) {
 		if ((js_str = JS_NewStringCopyZ(cx, p)) == NULL)
-			return(JS_FALSE);
+			return JS_FALSE;
 		*vp = STRING_TO_JSVAL(js_str);
 	} else
 		*vp = INT_TO_JSVAL(val);
 
-	return(JS_TRUE);
+	return JS_TRUE;
 }
 
 #define CLIENT_PROP_FLAGS JSPROP_ENUMERATE | JSPROP_READONLY
@@ -144,7 +144,7 @@ static JSBool js_client_resolve(JSContext *cx, JSObject *obj, jsid id)
 
 static JSBool js_client_enumerate(JSContext *cx, JSObject *obj)
 {
-	return(js_client_resolve(cx, obj, JSID_VOID));
+	return js_client_resolve(cx, obj, JSID_VOID);
 }
 
 static JSClass js_client_class = {
@@ -169,7 +169,7 @@ JSObject* js_CreateClientObject(JSContext* cx, JSObject* parent
 	                      , JSPROP_ENUMERATE | JSPROP_READONLY);
 
 	if (obj == NULL)
-		return(NULL);
+		return NULL;
 
 	JS_SetPrivate(cx, obj, client); /* Store a pointer to client_t */
 
@@ -180,7 +180,7 @@ JSObject* js_CreateClientObject(JSContext* cx, JSObject* parent
 
 	js_CreateSocketObject(cx, obj, "socket", sock, session);
 
-	return(obj);
+	return obj;
 }
 
 #endif  /* JAVSCRIPT */

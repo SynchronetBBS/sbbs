@@ -46,7 +46,7 @@ long lputs(char *str)
 		else
 			tmp[k++] = str[i];
 	tmp[k] = 0;
-	return(fputs(tmp, stderr));
+	return fputs(tmp, stderr);
 }
 
 /****************************************************************************/
@@ -63,7 +63,7 @@ int lprintf(const char *fmat, ...)
 	chcount = vsprintf(sbuf, fmat, argptr);
 	va_end(argptr);
 	lputs(sbuf);
-	return(chcount);
+	return chcount;
 }
 
 char *display_filename(scfg_t *cfg, uint dirnum, uint32_t fil_off)
@@ -107,7 +107,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "usage: %s [start] [end]\n", argv[0]);
 		fprintf(stderr, "where: [start] is the starting library number to check\n");
 		fprintf(stderr, "       [end]   is the final library number to check\n");
-		return(0);
+		return 0;
 	}
 
 	memset(&cfg, 0, sizeof(cfg));
@@ -116,7 +116,7 @@ int main(int argc, char **argv)
 
 	if (!load_cfg(&cfg, /* text: */ NULL, /* prep: */ TRUE, /* node: */ FALSE, str, sizeof(str))) {
 		fprintf(stderr, "!ERROR loading configuration files: %s\n", str);
-		return(1);
+		return 1;
 	}
 	if (chdir(cfg.ctrl_dir) != 0) {
 		fprintf(stderr, "ERROR %d (%s) changing directory to: %s"
@@ -135,7 +135,7 @@ int main(int argc, char **argv)
 
 	if ((fcrc = malloc(cfg.total_dirs * sizeof(uint32_t *))) == NULL) {
 		printf("Not enough memory for CRCs.\r\n");
-		return(1);
+		return 1;
 	}
 	memset(fcrc, 0, cfg.total_dirs * sizeof(uint32_t *));
 
@@ -156,7 +156,7 @@ int main(int argc, char **argv)
 		}
 		if ((fcrc[i] = malloc((smb.status.total_files + 1) * sizeof(uint32_t))) == NULL) {
 			printf("Not enough memory for CRCs.\r\n");
-			return(1);
+			return 1;
 		}
 		j = 0;
 		fcrc[i][j++] = smb.status.total_files;
@@ -199,7 +199,7 @@ int main(int argc, char **argv)
 								if ((foundcrc = realloc_or_free(foundcrc
 								                                , total_found * sizeof(uint32_t))) == NULL) {
 									printf("Out of memory reallocating\r\n");
-									return(1);
+									return 1;
 								}
 							}
 							else
@@ -228,6 +228,6 @@ int main(int argc, char **argv)
 			}
 		}
 	}
-	return(0);
+	return 0;
 }
 

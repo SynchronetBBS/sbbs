@@ -28,92 +28,92 @@ char* smb_hfieldtype(uint16_t type)
 	static char str[8];
 
 	switch (type) {
-		case SENDER:            return("Sender");               /* RFC-compliant */
-		case SENDERAGENT:       return("SenderAgent");
-		case SENDERNETTYPE:     return("SenderNetType");
-		case SENDERNETADDR:     return("SenderNetAddr");
-		case SENDEREXT:         return("SenderExt");
-		case SENDERORG:         return("Organization");         /* RFC-compliant */
-		case SENDERIPADDR:      return("SenderIpAddr");
-		case SENDERHOSTNAME:    return("SenderHostName");
-		case SENDERPROTOCOL:    return("SenderProtocol");
-		case SENDERPORT_BIN:    return("SenderPortBin");
-		case SENDERPORT:        return("SenderPort");
-		case SENDERUSERID:      return("SenderUserID");
-		case SENDERTIME:        return("SenderTime");
-		case SENDERSERVER:      return("SenderServer");
+		case SENDER:            return "Sender";               /* RFC-compliant */
+		case SENDERAGENT:       return "SenderAgent";
+		case SENDERNETTYPE:     return "SenderNetType";
+		case SENDERNETADDR:     return "SenderNetAddr";
+		case SENDEREXT:         return "SenderExt";
+		case SENDERORG:         return "Organization";         /* RFC-compliant */
+		case SENDERIPADDR:      return "SenderIpAddr";
+		case SENDERHOSTNAME:    return "SenderHostName";
+		case SENDERPROTOCOL:    return "SenderProtocol";
+		case SENDERPORT_BIN:    return "SenderPortBin";
+		case SENDERPORT:        return "SenderPort";
+		case SENDERUSERID:      return "SenderUserID";
+		case SENDERTIME:        return "SenderTime";
+		case SENDERSERVER:      return "SenderServer";
 
-		case SMB_AUTHOR:        return("Author");
-		case SMB_AUTHOR_ORG:        return("AuthorOrg");
+		case SMB_AUTHOR:        return "Author";
+		case SMB_AUTHOR_ORG:        return "AuthorOrg";
 
-		case REPLYTO:           return("Reply-To");             /* RFC-compliant */
-		case REPLYTOAGENT:      return("Reply-ToAgent");
-		case REPLYTONETTYPE:    return("Reply-ToNetType");
-		case REPLYTONETADDR:    return("Reply-ToNetAddr");
-		case REPLYTOEXT:        return("Reply-ToExt");
-		case REPLYTOLIST:       return("Reply-ToList");
+		case REPLYTO:           return "Reply-To";             /* RFC-compliant */
+		case REPLYTOAGENT:      return "Reply-ToAgent";
+		case REPLYTONETTYPE:    return "Reply-ToNetType";
+		case REPLYTONETADDR:    return "Reply-ToNetAddr";
+		case REPLYTOEXT:        return "Reply-ToExt";
+		case REPLYTOLIST:       return "Reply-ToList";
 
-		case RECIPIENT:         return("To");                   /* RFC-compliant */
-		case RECIPIENTAGENT:    return("ToAgent");
-		case RECIPIENTNETTYPE:  return("ToNetType");
-		case RECIPIENTNETADDR:  return("ToNetAddr");
-		case RECIPIENTEXT:      return("ToExt");
-		case RECIPIENTLIST:     return("ToList");
+		case RECIPIENT:         return "To";                   /* RFC-compliant */
+		case RECIPIENTAGENT:    return "ToAgent";
+		case RECIPIENTNETTYPE:  return "ToNetType";
+		case RECIPIENTNETADDR:  return "ToNetAddr";
+		case RECIPIENTEXT:      return "ToExt";
+		case RECIPIENTLIST:     return "ToList";
 
-		case SUBJECT:           return("Subject");              /* RFC-compliant */
-		case SMB_SUMMARY:       return("Summary");
-		case SMB_COMMENT:       return("Comment");              /* RFC-compliant */
-		case SMB_CARBONCOPY:    return("CC");                   /* RFC-compliant */
-		case SMB_GROUP:         return("Group");
-		case SMB_EXPIRATION:    return("Expiration");
-		case SMB_PRIORITY:      return("Priority");
-		case SMB_COST:          return("Cost");
-		case SMB_EDITOR:        return("Editor");
-		case SMB_TAGS:          return("Tags");
-		case SMB_COLUMNS:       return("Columns");
-		case FORWARDED:         return("Forwarded");
+		case SUBJECT:           return "Subject";              /* RFC-compliant */
+		case SMB_SUMMARY:       return "Summary";
+		case SMB_COMMENT:       return "Comment";              /* RFC-compliant */
+		case SMB_CARBONCOPY:    return "CC";                   /* RFC-compliant */
+		case SMB_GROUP:         return "Group";
+		case SMB_EXPIRATION:    return "Expiration";
+		case SMB_PRIORITY:      return "Priority";
+		case SMB_COST:          return "Cost";
+		case SMB_EDITOR:        return "Editor";
+		case SMB_TAGS:          return "Tags";
+		case SMB_COLUMNS:       return "Columns";
+		case FORWARDED:         return "Forwarded";
 
 		/* All X-FTN-* are RFC-compliant */
-		case FIDOCTRL:          return("X-FTN-Kludge");
-		case FIDOAREA:          return("X-FTN-AREA");
-		case FIDOSEENBY:        return("X-FTN-SEEN-BY");
-		case FIDOPATH:          return("X-FTN-PATH");
-		case FIDOMSGID:         return("X-FTN-MSGID");
-		case FIDOREPLYID:       return("X-FTN-REPLY");
-		case FIDOPID:           return("X-FTN-PID");
-		case FIDOFLAGS:         return("X-FTN-Flags");
-		case FIDOTID:           return("X-FTN-TID");
-		case FIDOCHARSET:       return("X-FTN-CHRS");
-		case FIDOBBSID:         return("X-FTN-BBSID");
+		case FIDOCTRL:          return "X-FTN-Kludge";
+		case FIDOAREA:          return "X-FTN-AREA";
+		case FIDOSEENBY:        return "X-FTN-SEEN-BY";
+		case FIDOPATH:          return "X-FTN-PATH";
+		case FIDOMSGID:         return "X-FTN-MSGID";
+		case FIDOREPLYID:       return "X-FTN-REPLY";
+		case FIDOPID:           return "X-FTN-PID";
+		case FIDOFLAGS:         return "X-FTN-Flags";
+		case FIDOTID:           return "X-FTN-TID";
+		case FIDOCHARSET:       return "X-FTN-CHRS";
+		case FIDOBBSID:         return "X-FTN-BBSID";
 
-		case RFC822HEADER:      return("OtherHeader");
-		case RFC822MSGID:       return("Message-ID");           /* RFC-compliant */
-		case RFC822REPLYID:     return("In-Reply-To");          /* RFC-compliant */
-		case RFC822TO:          return("RFC822To");
-		case RFC822FROM:        return("RFC822From");
-		case RFC822REPLYTO:     return("RFC822ReplyTo");
-		case RFC822CC:          return("RFC822Cc");
-		case RFC822ORG:         return("RFC822Org");
-		case RFC822SUBJECT:     return("RFC822Subject");
+		case RFC822HEADER:      return "OtherHeader";
+		case RFC822MSGID:       return "Message-ID";           /* RFC-compliant */
+		case RFC822REPLYID:     return "In-Reply-To";          /* RFC-compliant */
+		case RFC822TO:          return "RFC822To";
+		case RFC822FROM:        return "RFC822From";
+		case RFC822REPLYTO:     return "RFC822ReplyTo";
+		case RFC822CC:          return "RFC822Cc";
+		case RFC822ORG:         return "RFC822Org";
+		case RFC822SUBJECT:     return "RFC822Subject";
 
-		case USENETPATH:        return("Path");                 /* RFC-compliant */
-		case USENETNEWSGROUPS:  return("Newsgroups");           /* RFC-compliant */
+		case USENETPATH:        return "Path";                 /* RFC-compliant */
+		case USENETNEWSGROUPS:  return "Newsgroups";           /* RFC-compliant */
 
-		case SMTPCOMMAND:       return("SMTPCommand");
-		case SMTPREVERSEPATH:   return("Return-Path");          /* RFC-compliant */
-		case SMTPFORWARDPATH:   return("SMTPForwardPath");
-		case SMTPRECEIVED:      return("Received");             /* RFC-compliant */
+		case SMTPCOMMAND:       return "SMTPCommand";
+		case SMTPREVERSEPATH:   return "Return-Path";          /* RFC-compliant */
+		case SMTPFORWARDPATH:   return "SMTPForwardPath";
+		case SMTPRECEIVED:      return "Received";             /* RFC-compliant */
 
-		case SMTPSYSMSG:        return("SMTPSysMsg");
+		case SMTPSYSMSG:        return "SMTPSysMsg";
 
-		case SMB_POLL_ANSWER:   return("PollAnswer");
+		case SMB_POLL_ANSWER:   return "PollAnswer";
 
-		case UNKNOWN:           return("UNKNOWN");
-		case UNKNOWNASCII:      return("UNKNOWNASCII");
-		case UNUSED:            return("UNUSED");
+		case UNKNOWN:           return "UNKNOWN";
+		case UNKNOWNASCII:      return "UNKNOWNASCII";
+		case UNUSED:            return "UNUSED";
 	}
 	sprintf(str, "%02Xh", type);
-	return(str);
+	return str;
 }
 
 uint16_t smb_hfieldtypelookup(const char* str)
@@ -121,13 +121,13 @@ uint16_t smb_hfieldtypelookup(const char* str)
 	uint16_t type;
 
 	if (IS_DIGIT(*str))
-		return((uint16_t)strtol(str, NULL, 0));
+		return (uint16_t)strtol(str, NULL, 0);
 
 	for (type = 0; type <= UNUSED; type++)
 		if (stricmp(str, smb_hfieldtype(type)) == 0)
-			return(type);
+			return type;
 
-	return(UNKNOWN);
+	return UNKNOWN;
 }
 
 char* smb_dfieldtype(uint16_t type)
@@ -135,12 +135,12 @@ char* smb_dfieldtype(uint16_t type)
 	static char str[8];
 
 	switch (type) {
-		case TEXT_BODY: return("TEXT_BODY");
-		case TEXT_TAIL: return("TEXT_TAIL");
-		case UNUSED:    return("UNUSED");
+		case TEXT_BODY: return "TEXT_BODY";
+		case TEXT_TAIL: return "TEXT_TAIL";
+		case UNUSED:    return "UNUSED";
 	}
 	sprintf(str, "%02Xh", type);
-	return(str);
+	return str;
 }
 
 char* smb_hashsourcetype(uchar type)
@@ -148,26 +148,26 @@ char* smb_hashsourcetype(uchar type)
 	static char str[8];
 
 	switch (type) {
-		case SMB_HASH_SOURCE_BODY:      return(smb_dfieldtype(TEXT_BODY));
-		case SMB_HASH_SOURCE_MSG_ID:    return(smb_hfieldtype(RFC822MSGID));
-		case SMB_HASH_SOURCE_FTN_ID:    return(smb_hfieldtype(FIDOMSGID));
-		case SMB_HASH_SOURCE_SUBJECT:   return(smb_hfieldtype(SUBJECT));
+		case SMB_HASH_SOURCE_BODY:      return smb_dfieldtype(TEXT_BODY);
+		case SMB_HASH_SOURCE_MSG_ID:    return smb_hfieldtype(RFC822MSGID);
+		case SMB_HASH_SOURCE_FTN_ID:    return smb_hfieldtype(FIDOMSGID);
+		case SMB_HASH_SOURCE_SUBJECT:   return smb_hfieldtype(SUBJECT);
 	}
 	sprintf(str, "%02Xh", type);
-	return(str);
+	return str;
 }
 
 char* smb_hashsource(smbmsg_t* msg, int source)
 {
 	switch (source) {
 		case SMB_HASH_SOURCE_MSG_ID:
-			return(msg->id);
+			return msg->id;
 		case SMB_HASH_SOURCE_FTN_ID:
-			return(msg->ftn_msgid);
+			return msg->ftn_msgid;
 		case SMB_HASH_SOURCE_SUBJECT:
-			return(msg->subj);
+			return msg->subj;
 	}
-	return("hash");
+	return "hash";
 }
 
 /****************************************************************************/
@@ -181,55 +181,55 @@ char* smb_zonestr(int16_t zone, char* str)
 	if (str == NULL)
 		str = buf;
 	switch ((uint16_t)zone) {
-		case 0:     return("UTC");
-		case AST:   return("AST");
-		case EST:   return("EST");
-		case CST:   return("CST");
-		case MST:   return("MST");
-		case PST:   return("PST");
-		case YST:   return("YST");
-		case HST:   return("HST");
-		case BST:   return("BST");
-		case ADT:   return("ADT");
-		case EDT:   return("EDT");
-		case CDT:   return("CDT");
-		case MDT:   return("MDT");
-		case PDT:   return("PDT");
-		case YDT:   return("YDT");
-		case HDT:   return("HDT");
-		case BDT:   return("BDT");
-		case MID:   return("MID");
-		case VAN:   return("VAN");
-		case EDM:   return("EDM");
-		case WIN:   return("WIN");
-		case BOG:   return("BOG");
-		case CAR:   return("CAR");
-		case RIO:   return("RIO");
-		case FER:   return("FER");
-		case AZO:   return("AZO");
-		case WET:   return("WET");
-		case WEST:  return("WEST");
-		case CET:   return("CET");
-		case CEST:  return("CEST");
-		case EET:   return("EET");
-		case EEST:  return("EEST");
-		case MOS:   return("MOS");
-		case DUB:   return("DUB");
-		case KAB:   return("KAB");
-		case KAR:   return("KAR");
-		case BOM:   return("BOM");
-		case KAT:   return("KAT");
-		case DHA:   return("DHA");
-		case BAN:   return("BAN");
-		case HON:   return("HON");
-		case TOK:   return("TOK");
-		case ACST:  return("ACST");
-		case ACDT:  return("ACDT");
-		case AEST:  return("AEST");
-		case AEDT:  return("AEDT");
-		case NOU:   return("NOU");
-		case NZST:  return("NZST");
-		case NZDT:  return("NZDT");
+		case 0:     return "UTC";
+		case AST:   return "AST";
+		case EST:   return "EST";
+		case CST:   return "CST";
+		case MST:   return "MST";
+		case PST:   return "PST";
+		case YST:   return "YST";
+		case HST:   return "HST";
+		case BST:   return "BST";
+		case ADT:   return "ADT";
+		case EDT:   return "EDT";
+		case CDT:   return "CDT";
+		case MDT:   return "MDT";
+		case PDT:   return "PDT";
+		case YDT:   return "YDT";
+		case HDT:   return "HDT";
+		case BDT:   return "BDT";
+		case MID:   return "MID";
+		case VAN:   return "VAN";
+		case EDM:   return "EDM";
+		case WIN:   return "WIN";
+		case BOG:   return "BOG";
+		case CAR:   return "CAR";
+		case RIO:   return "RIO";
+		case FER:   return "FER";
+		case AZO:   return "AZO";
+		case WET:   return "WET";
+		case WEST:  return "WEST";
+		case CET:   return "CET";
+		case CEST:  return "CEST";
+		case EET:   return "EET";
+		case EEST:  return "EEST";
+		case MOS:   return "MOS";
+		case DUB:   return "DUB";
+		case KAB:   return "KAB";
+		case KAR:   return "KAR";
+		case BOM:   return "BOM";
+		case KAT:   return "KAT";
+		case DHA:   return "DHA";
+		case BAN:   return "BAN";
+		case HON:   return "HON";
+		case TOK:   return "TOK";
+		case ACST:  return "ACST";
+		case ACDT:  return "ACDT";
+		case AEST:  return "AEST";
+		case AEDT:  return "AEDT";
+		case NOU:   return "NOU";
+		case NZST:  return "NZST";
+		case NZDT:  return "NZDT";
 	}
 
 	if (!OTHER_ZONE(zone)) {
@@ -247,7 +247,7 @@ char* smb_zonestr(int16_t zone, char* str)
 		plus = "";
 	sprintf(str, "UTC%s%d:%02u", plus, zone / 60, zone < 0 ? (-zone) % 60 : zone % 60);
 
-	return(str);
+	return str;
 }
 
 /****************************************************************************/
@@ -259,7 +259,7 @@ char* smb_faddrtoa(const fidoaddr_t* addr, char* str)
 	char        point[25];
 
 	if (addr == NULL)
-		return("0:0/0");
+		return "0:0/0";
 	if (str == NULL)
 		str = buf;
 	sprintf(str, "%hu:%hu/%hu", addr->zone, addr->net, addr->node);
@@ -267,7 +267,7 @@ char* smb_faddrtoa(const fidoaddr_t* addr, char* str)
 		sprintf(point, ".%hu", addr->point);
 		strcat(str, point);
 	}
-	return(str);
+	return str;
 }
 
 /****************************************************************************/
@@ -304,7 +304,7 @@ fidoaddr_t smb_atofaddr(const fidoaddr_t* sys_addr, const char *str)
 	}
 	if ((p = strchr(str, '.')) != NULL && p < terminator)
 		addr.point = atoi(p + 1);
-	return(addr);
+	return addr;
 }
 
 /****************************************************************************/
@@ -313,7 +313,7 @@ fidoaddr_t smb_atofaddr(const fidoaddr_t* sys_addr, const char *str)
 /****************************************************************************/
 char* smb_netaddr(const net_t* net)
 {
-	return(smb_netaddrstr(net, NULL));
+	return smb_netaddrstr(net, NULL);
 }
 
 /****************************************************************************/
@@ -322,8 +322,8 @@ char* smb_netaddr(const net_t* net)
 char* smb_netaddrstr(const net_t* net, char* fidoaddr_buf)
 {
 	if (net->type == NET_FIDO)
-		return(smb_faddrtoa((fidoaddr_t*)net->addr, fidoaddr_buf));
-	return(net->addr);
+		return smb_faddrtoa((fidoaddr_t*)net->addr, fidoaddr_buf);
+	return net->addr;
 }
 
 /****************************************************************************/
@@ -352,7 +352,7 @@ enum smb_net_type smb_netaddr_type(const char* str)
 	p++;
 	SKIP_WHITESPACE(p);
 	if (*p == 0)
-		return(NET_UNKNOWN);
+		return NET_UNKNOWN;
 
 	type = smb_get_net_type_by_addr(p);
 	if (type == NET_INTERNET && strchr(str, ' ') != NULL)

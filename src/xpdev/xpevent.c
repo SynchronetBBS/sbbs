@@ -32,7 +32,7 @@ CreateEvent(void *sec, BOOL bManualReset, BOOL bInitialState, const char *name)
 	event = (xpevent_t)malloc(sizeof(struct xpevent));
 	if (event == NULL) {
 		errno = ENOSPC;
-		return(NULL);
+		return NULL;
 	}
 	memset(event, 0, sizeof(struct xpevent));
 
@@ -42,7 +42,7 @@ CreateEvent(void *sec, BOOL bManualReset, BOOL bInitialState, const char *name)
 	if (pthread_mutex_init(&event->lock, NULL) != 0) {
 		free(event);
 		errno = ENOSPC;
-		return(NULL);
+		return NULL;
 	}
 
 	if (pthread_cond_init(&event->gtzero, NULL) != 0) {
@@ -50,7 +50,7 @@ CreateEvent(void *sec, BOOL bManualReset, BOOL bInitialState, const char *name)
 			SLEEP(1);
 		free(event);
 		errno = ENOSPC;
-		return(NULL);
+		return NULL;
 	}
 
 	event->mreset = bManualReset;
@@ -58,7 +58,7 @@ CreateEvent(void *sec, BOOL bManualReset, BOOL bInitialState, const char *name)
 	event->nwaiters = 0;
 	event->magic = EVENT_MAGIC;
 
-	return(event);
+	return event;
 }
 
 BOOL
@@ -66,7 +66,7 @@ SetEvent(xpevent_t event)
 {
 	if (event == NULL || (event->magic != EVENT_MAGIC)) {
 		errno = EINVAL;
-		return(FALSE);
+		return FALSE;
 	}
 
 	pthread_mutex_lock(&event->lock);
@@ -84,7 +84,7 @@ SetEvent(xpevent_t event)
 
 	pthread_mutex_unlock(&event->lock);
 
-	return(TRUE);
+	return TRUE;
 }
 
 BOOL
@@ -92,7 +92,7 @@ ResetEvent(xpevent_t event)
 {
 	if (event == NULL || (event->magic != EVENT_MAGIC)) {
 		errno = EINVAL;
-		return(FALSE);
+		return FALSE;
 	}
 
 	pthread_mutex_lock(&event->lock);
@@ -101,7 +101,7 @@ ResetEvent(xpevent_t event)
 
 	pthread_mutex_unlock(&event->lock);
 
-	return(TRUE);
+	return TRUE;
 }
 
 BOOL
@@ -109,7 +109,7 @@ CloseEvent(xpevent_t event)
 {
 	if (event == NULL || (event->magic != EVENT_MAGIC)) {
 		errno = EINVAL;
-		return(FALSE);
+		return FALSE;
 	}
 
 	/* Make sure there are no waiters. */
@@ -117,7 +117,7 @@ CloseEvent(xpevent_t event)
 	if (event->nwaiters > 0) {
 		pthread_mutex_unlock(&event->lock);
 		errno = EBUSY;
-		return(FALSE);
+		return FALSE;
 	}
 
 	pthread_mutex_unlock(&event->lock);
@@ -130,7 +130,7 @@ CloseEvent(xpevent_t event)
 
 	free(event);
 
-	return(TRUE);
+	return TRUE;
 }
 
 DWORD
@@ -142,7 +142,7 @@ WaitForEvent(xpevent_t event, DWORD ms)
 
 	if (event == NULL || (event->magic != EVENT_MAGIC)) {
 		errno = EINVAL;
-		return(WAIT_FAILED);
+		return WAIT_FAILED;
 	}
 
 	if (ms && ms != INFINITE) {

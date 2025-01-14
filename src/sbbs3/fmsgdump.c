@@ -23,7 +23,7 @@ char* freadstr(FILE* fp, char* str, size_t maxlen)
 
 	str[maxlen - 1] = 0;
 
-	return(str);
+	return str;
 }
 
 const char* fmsgattr_str(uint16_t attr)
@@ -64,7 +64,7 @@ int msgdump(FILE* fp, const char* fname)
 	if (fread(&hdr, sizeof(hdr), 1, fp) != 1) {
 		fprintf(stderr, "%s !Error reading msg hdr (%" XP_PRIsize_t "u bytes)\n"
 		        , fname, sizeof(hdr));
-		return(__COUNTER__);
+		return __COUNTER__;
 	}
 
 	fseek(fp, -1L, SEEK_END);
@@ -99,7 +99,7 @@ int msgdump(FILE* fp, const char* fname)
 
 	if (end <= sizeof(hdr) + 1) {
 		fprintf(stderr, "!No body text\n");
-		return(__COUNTER__);
+		return __COUNTER__;
 	}
 
 	long  len = end - sizeof(hdr);
@@ -143,7 +143,7 @@ int msgdump(FILE* fp, const char* fname)
 
 	free(body);
 	printf("\n");
-	return(0);
+	return 0;
 }
 
 char* usage = "usage: fmsgdump [-body | -ctrl] <file1.msg> [file2.msg] [...]\n";
@@ -169,7 +169,7 @@ int main(int argc, char** argv)
 
 	if (sizeof(fmsghdr_t) != FIDO_STORED_MSG_HDR_LEN) {
 		printf("sizeof(fmsghdr_t)=%" XP_PRIsize_t "u, expected: %d\n", sizeof(fmsghdr_t), FIDO_STORED_MSG_HDR_LEN);
-		return(-1);
+		return -1;
 	}
 
 	for (i = 1; i < argc; i++) {
@@ -183,7 +183,7 @@ int main(int argc, char** argv)
 					break;
 				default:
 					printf("%s", usage);
-					return(0);
+					return 0;
 			}
 			continue;
 		}
@@ -196,5 +196,5 @@ int main(int argc, char** argv)
 		fclose(fp);
 	}
 
-	return(0);
+	return 0;
 }

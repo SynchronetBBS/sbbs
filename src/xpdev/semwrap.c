@@ -95,7 +95,7 @@ int sem_getvalue(sem_t* psem, int* vp)
 		else
 			retval = -1;
 	}
-	return(retval);
+	return retval;
 #endif
 }
 
