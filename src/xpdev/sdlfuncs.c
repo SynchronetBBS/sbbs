@@ -15,14 +15,20 @@ struct sdlfuncs xpbeep_sdl;
 #include "xp_dl.h"
 
 static int sdl_funcs_loaded = 0;
+static bool sdl_funcs_failed = false;
 static int sdl_initialized = 0;
 static int sdl_audio_initialized = 0;
+static dll_handle  sdl_dll;
 
 int xpbeep_load_sdl_funcs(struct sdlfuncs *sdlf)
 {
-	dll_handle  sdl_dll;
 	const char *libnames[] = {"SDL", "SDL-1.2", "SDL-1.1", NULL};
 
+	if (sdl_funcs_failed)
+		return -1;
+	sdl_funcs_failed = true;
+	if (sdl_funcs_loaded)
+		return 0;
 	putenv("SDL_VIDEO_ALLOW_SCREENSAVER=1");
 	sdlf->gotfuncs = 0;
 	if ((sdl_dll = xp_dlopen(libnames, RTLD_LAZY | RTLD_GLOBAL, SDL_PATCHLEVEL)) == NULL)
@@ -86,6 +92,7 @@ int xpbeep_load_sdl_funcs(struct sdlfuncs *sdlf)
 	}
 	sdlf->gotfuncs = 1;
 	sdl_funcs_loaded = 1;
+	sdl_funcs_failed = false;
 	return 0;
 }
 
