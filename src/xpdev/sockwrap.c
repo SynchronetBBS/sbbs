@@ -440,7 +440,7 @@ bool socket_recvdone(SOCKET sock, int timeout)
 
 int retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
                , uint retries, uint wait_secs
-               , const char* prot
+               , const char* prot, bool* terminated
                , int (*lprintf)(int level, const char *fmt, ...))
 {
 	char port_str[128];
@@ -453,6 +453,8 @@ int retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
 	else
 		port_str[0] = 0;
 	for (i = 0; i <= retries; i++) {
+		if (terminated != NULL && *terminated == true)
+			break;
 		if ((result = bind(s, addr, addrlen)) == 0)
 			break;
 		if (lprintf != NULL)

@@ -59,7 +59,7 @@ static const char*         server_abbrev = "srvc";
 static services_startup_t* startup = NULL;
 static scfg_t              scfg;
 static char*               text[TOTAL_TEXT];
-static volatile bool       terminated = false;
+static bool                terminated = false;
 static time_t              uptime = 0;
 static ulong               served = 0;
 static volatile uint32_t   client_highwater = 0;
@@ -2086,7 +2086,7 @@ void services_thread(void* arg)
 				return;
 			}
 			xpms_add_list(service[i].set, PF_UNSPEC, (service[i].options & SERVICE_OPT_UDP) ? SOCK_DGRAM : SOCK_STREAM
-			              , IPPROTO_IP, service[i].interfaces, service[i].port, service[i].protocol
+			              , IPPROTO_IP, service[i].interfaces, service[i].port, service[i].protocol, &terminated
 			              , (service[i].options & SERVICE_OPT_UDP) ? service_udp_sock_cb : open_socket_cb, startup->seteuid, &service[i]);
 			total_sockets += service[i].set->sock_count;
 		}

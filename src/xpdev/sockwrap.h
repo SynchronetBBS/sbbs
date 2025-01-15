@@ -241,7 +241,7 @@ DLLEXPORT socket_option_t* getSocketOptionList(void);
 DLLEXPORT int getSocketOptionByName(const char* name, int* level);
 DLLEXPORT bool socket_check(SOCKET sock, bool* rd_p, bool* wr_p, DWORD timeout);
 DLLEXPORT int retry_bind(SOCKET s, const struct sockaddr *addr, socklen_t addrlen
-				   ,uint retries, uint wait_secs, const char* prot
+				   ,uint retries, uint wait_secs, const char* prot, bool* terminated
 				   ,int (*lprintf)(int level, const char *fmt, ...));
 DLLEXPORT int nonblocking_connect(SOCKET, struct sockaddr*, size_t, unsigned timeout /* seconds */);
 DLLEXPORT union xp_sockaddr* inet_ptoaddr(const char *addr_str, union xp_sockaddr *addr, size_t size);

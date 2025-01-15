@@ -3326,7 +3326,7 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		JSVALUE_TO_MSTRING(cx, argv[0], interface, NULL);
 		HANDLE_PENDING(cx, interface);
 		rc = JS_SUSPENDREQUEST(cx);
-		if (!xpms_add(set, domain, type, proto, interface, port, protocol, ls_cb, NULL, &cb)) {
+		if (!xpms_add(set, domain, type, proto, interface, port, protocol, NULL, ls_cb, NULL, &cb)) {
 			JS_RESUMEREQUEST(cx, rc);
 			JS_ReportError(cx, "Unable to add host to socket set");
 			goto fail;
@@ -3346,7 +3346,7 @@ js_listening_socket_constructor(JSContext *cx, uintN argc, jsval *arglist)
 			JSVALUE_TO_MSTRING(cx, v, interface, NULL);
 			HANDLE_PENDING(cx, interface);
 			rc = JS_SUSPENDREQUEST(cx);
-			if (!xpms_add(set, domain, type, proto, interface, port, protocol, ls_cb, NULL, &cb)) {
+			if (!xpms_add(set, domain, type, proto, interface, port, protocol, NULL, ls_cb, NULL, &cb)) {
 				free(interface);
 				JS_RESUMEREQUEST(cx, rc);
 				JS_ReportError(cx, "Unable to add host to socket set");

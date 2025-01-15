@@ -49,7 +49,7 @@ void xpms_destroy(struct xpms_set *xpms_set, void (*sock_destroy)(SOCKET, void *
 }
 
 bool xpms_add(struct xpms_set *xpms_set, int domain, int type,
-              int protocol, const char *addr, uint16_t port, const char *prot,
+              int protocol, const char *addr, uint16_t port, const char *prot, bool* terminated,
               void (*sock_init)(SOCKET, void *), bool (*bind_init)(bool), void *cbdata)
 {
 	struct xpms_sockdef *new_socks;
@@ -136,7 +136,7 @@ bool xpms_add(struct xpms_set *xpms_set, int domain, int type,
 			if (port < IPPORT_RESERVED && port > 0)
 				bind_init(false);
 		}
-		if (retry_bind(xpms_set->socks[xpms_set->sock_count].sock, cur->ai_addr, cur->ai_addrlen, xpms_set->retries, xpms_set->wait_secs, prot, xpms_set->lprintf) == -1) {
+		if (retry_bind(xpms_set->socks[xpms_set->sock_count].sock, cur->ai_addr, cur->ai_addrlen, xpms_set->retries, xpms_set->wait_secs, prot, terminated, xpms_set->lprintf) == -1) {
 			closesocket(xpms_set->socks[xpms_set->sock_count].sock);
 			FREE_AND_NULL(xpms_set->socks[xpms_set->sock_count].address);
 			FREE_AND_NULL(xpms_set->socks[xpms_set->sock_count].prot);
@@ -178,7 +178,7 @@ bool xpms_add(struct xpms_set *xpms_set, int domain, int type,
 }
 
 bool xpms_add_list(struct xpms_set *xpms_set, int domain, int type,
-                   int protocol, str_list_t list, uint16_t default_port, const char *prot,
+                   int protocol, str_list_t list, uint16_t default_port, const char *prot, bool* terminated,
                    void (*sock_init)(SOCKET, void *), bool (*bind_init)(bool), void *cbdata)
 {
 	char **iface;
@@ -214,7 +214,7 @@ bool xpms_add_list(struct xpms_set *xpms_set, int domain, int type,
 		}
 		if (xpms_set->lprintf)
 			xpms_set->lprintf(LOG_INFO, "%s listening on socket %s port %hu", prot, host_str, port);
-		if (xpms_add(xpms_set, domain, type, protocol, host_str, port, prot, sock_init, bind_init, cbdata))
+		if (xpms_add(xpms_set, domain, type, protocol, host_str, port, prot, terminated, sock_init, bind_init, cbdata))
 			one_good = true;
 		free(host);
 	}
@@ -222,7 +222,7 @@ bool xpms_add_list(struct xpms_set *xpms_set, int domain, int type,
 }
 
 bool xpms_add_chararray_list(struct xpms_set *xpms_set, int domain, int type,
-                             int protocol, const char *list, uint16_t default_port, const char *prot,
+                             int protocol, const char *list, uint16_t default_port, const char *prot, bool* terminated,
                              void (*sock_init)(SOCKET, void *), bool (*bind_init)(bool), void *cbdata)
 {
 	str_list_t slist;
@@ -231,7 +231,7 @@ bool xpms_add_chararray_list(struct xpms_set *xpms_set, int domain, int type,
 	slist = strListSplitCopy(NULL, list, ", \t\r\n");
 	if (slist == NULL)
 		return false;
-	ret = xpms_add_list(xpms_set, domain, type, protocol, slist, default_port, prot,
+	ret = xpms_add_list(xpms_set, domain, type, protocol, slist, default_port, prot, terminated,
 	                    sock_init, bind_init, cbdata);
 	strListFree(&slist);
 	return ret;

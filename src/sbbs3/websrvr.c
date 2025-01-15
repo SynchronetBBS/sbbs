@@ -109,7 +109,7 @@ static protected_uint32_t active_clients;
 static protected_uint32_t thread_count;
 static volatile uint32_t  client_highwater = 0;
 static volatile uint32_t  con_conn_highwater = 0;
-static volatile bool      terminate_server = false;
+static bool               terminate_server = false;
 static volatile bool      terminate_js = false;
 static volatile bool      terminate_http_logging_thread = false;
 static struct xpms_set *  ws_set = NULL;
@@ -7436,12 +7436,12 @@ void web_server(void* arg)
 		 */
 
 		if (!(startup->options & WEB_OPT_NO_HTTP))
-			xpms_add_list(ws_set, PF_UNSPEC, SOCK_STREAM, 0, startup->interfaces, startup->port, "Web Server", open_socket, startup->seteuid, NULL);
+			xpms_add_list(ws_set, PF_UNSPEC, SOCK_STREAM, 0, startup->interfaces, startup->port, "Web Server", &terminate_server, open_socket, startup->seteuid, NULL);
 		if (startup->options & WEB_OPT_ALLOW_TLS) {
 			if (!ssl_sync(&scfg, lprintf))
 				lprintf(LOG_CRIT, "!ssl_sync() failure trying to enable TLS support");
 			else
-				xpms_add_list(ws_set, PF_UNSPEC, SOCK_STREAM, 0, startup->tls_interfaces, startup->tls_port, "Secure Web Server", open_socket, startup->seteuid, "TLS");
+				xpms_add_list(ws_set, PF_UNSPEC, SOCK_STREAM, 0, startup->tls_interfaces, startup->tls_port, "Secure Web Server", &terminate_server, open_socket, startup->seteuid, "TLS");
 		}
 
 		listInit(&log_list, /* flags */ LINK_LIST_MUTEX | LINK_LIST_SEMAPHORE);

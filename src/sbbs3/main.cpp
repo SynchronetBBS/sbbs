@@ -5230,14 +5230,14 @@ void bbs_thread(void* arg)
 			/*
 			 * Add interfaces
 			 */
-			xpms_add_list(ts_set, PF_UNSPEC, SOCK_STREAM, 0, startup->telnet_interfaces, startup->telnet_port, "Telnet Server", sock_cb, startup->seteuid, &telnet_cb);
+			xpms_add_list(ts_set, PF_UNSPEC, SOCK_STREAM, 0, startup->telnet_interfaces, startup->telnet_port, "Telnet Server", &terminate_server, sock_cb, startup->seteuid, &telnet_cb);
 		}
 
 		if (startup->options & BBS_OPT_ALLOW_RLOGIN) {
 			/* open a socket and wait for a client */
 			rlogin_cb.protocol = "rlogin";
 			rlogin_cb.startup = startup;
-			xpms_add_list(ts_set, PF_UNSPEC, SOCK_STREAM, 0, startup->rlogin_interfaces, startup->rlogin_port, "RLogin Server", sock_cb, startup->seteuid, &rlogin_cb);
+			xpms_add_list(ts_set, PF_UNSPEC, SOCK_STREAM, 0, startup->rlogin_interfaces, startup->rlogin_port, "RLogin Server", &terminate_server, sock_cb, startup->seteuid, &rlogin_cb);
 		}
 
 #ifdef USE_CRYPTLIB
@@ -5290,7 +5290,7 @@ void bbs_thread(void* arg)
 			/* open a socket and wait for a client */
 			ssh_cb.protocol = "ssh";
 			ssh_cb.startup = startup;
-			xpms_add_list(ts_set, PF_UNSPEC, SOCK_STREAM, 0, startup->ssh_interfaces, startup->ssh_port, "SSH Server", sock_cb, startup->seteuid, &ssh_cb);
+			xpms_add_list(ts_set, PF_UNSPEC, SOCK_STREAM, 0, startup->ssh_interfaces, startup->ssh_port, "SSH Server", &terminate_server, sock_cb, startup->seteuid, &ssh_cb);
 		}
 NO_SSH:
 #endif
@@ -5357,7 +5357,7 @@ NO_SSH:
 				continue;
 			}
 			else  {
-				if (xpms_add(ts_set, PF_UNIX, SOCK_STREAM, 0, str, 0, "Spy Socket", sock_cb, NULL, &uspy_cb[i - 1]))
+				if (xpms_add(ts_set, PF_UNIX, SOCK_STREAM, 0, str, 0, "Spy Socket", NULL, sock_cb, NULL, &uspy_cb[i - 1]))
 					lprintf(LOG_INFO, "Node %d local spy using socket %s", i, str);
 				else
 					lprintf(LOG_ERR, "Node %d !ERROR %d (%s) creating local spy socket %s"

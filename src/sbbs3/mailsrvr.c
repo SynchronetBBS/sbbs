@@ -86,7 +86,7 @@ static protected_uint32_t thread_count;
 static volatile uint32_t  client_highwater = 0;
 static volatile int       active_sendmail = 0;
 static volatile BOOL      sendmail_running = FALSE;
-static volatile BOOL      terminate_server = FALSE;
+static bool               terminate_server = FALSE;
 static volatile BOOL      terminate_sendmail = FALSE;
 static sem_t              sendmail_wakeup_sem;
 static volatile time_t    uptime;
@@ -6290,30 +6290,30 @@ void mail_server(void* arg)
 		}
 		terminated = FALSE;
 		if (!xpms_add_list(mail_set, PF_UNSPEC, SOCK_STREAM, 0, startup->interfaces
-		                   , startup->smtp_port, "SMTP Transfer Agent", mail_open_socket, startup->seteuid, (void*)servprot_smtp))
+		                   , startup->smtp_port, "SMTP Transfer Agent", &terminate_server, mail_open_socket, startup->seteuid, (void*)servprot_smtp))
 			lprintf(LOG_INFO, "SMTP No extra interfaces listening");
 
 		if (startup->options & MAIL_OPT_USE_SUBMISSION_PORT) {
 			xpms_add_list(mail_set, PF_UNSPEC, SOCK_STREAM, 0, startup->interfaces
-			              , startup->submission_port, "SMTP Submission Agent", mail_open_socket, startup->seteuid, (void*)servprot_submission);
+			              , startup->submission_port, "SMTP Submission Agent", &terminate_server, mail_open_socket, startup->seteuid, (void*)servprot_submission);
 		}
 
 		if (startup->options & MAIL_OPT_TLS_SUBMISSION) {
 			xpms_add_list(mail_set, PF_UNSPEC, SOCK_STREAM, 0, startup->interfaces, startup->submissions_port
-			              , "SMTPS Submission Agent", mail_open_socket, startup->seteuid, (void*)servprot_submissions);
+			              , "SMTPS Submission Agent", &terminate_server, mail_open_socket, startup->seteuid, (void*)servprot_submissions);
 		}
 
 		if (startup->options & MAIL_OPT_ALLOW_POP3) {
 			/* open a socket and wait for a client */
 			if (!xpms_add_list(mail_set, PF_UNSPEC, SOCK_STREAM, 0, startup->pop3_interfaces, startup->pop3_port
-			                   , "POP3 Server", mail_open_socket, startup->seteuid, (void*)servprot_pop3))
+			                   , "POP3 Server", &terminate_server, mail_open_socket, startup->seteuid, (void*)servprot_pop3))
 				lprintf(LOG_INFO, "POP3 No extra interfaces listening");
 		}
 
 		if (startup->options & MAIL_OPT_TLS_POP3) {
 			/* open a socket and wait for a client */
 			if (!xpms_add_list(mail_set, PF_UNSPEC, SOCK_STREAM, 0, startup->pop3_interfaces
-			                   , startup->pop3s_port, "POP3S Server", mail_open_socket, startup->seteuid, (void*)servprot_pop3s))
+			                   , startup->pop3s_port, "POP3S Server", &terminate_server, mail_open_socket, startup->seteuid, (void*)servprot_pop3s))
 				lprintf(LOG_INFO, "POP3S No extra interfaces listening");
 		}
 

@@ -39,15 +39,15 @@ DLLEXPORT struct xpms_set* xpms_create(unsigned int retries, unsigned int wait_s
 	int (*lprintf)(int level, const char *fmt, ...));
 DLLEXPORT void xpms_destroy(struct xpms_set *xpms_set, void (*sock_destroy)(SOCKET, void *), void *cbdata);
 DLLEXPORT bool xpms_add(struct xpms_set *xpms_set, int domain, int type,
-	int protocol, const char *addr, uint16_t port, const char *prot, 
+	int protocol, const char *addr, uint16_t port, const char *prot, bool* terminated,
 	void (*sock_init)(SOCKET, void *), bool(*bind_init)(bool), void *cbdata);
 DLLEXPORT bool xpms_add_list(struct xpms_set *xpms_set, int domain, int type,
-	int protocol, str_list_t list, uint16_t default_port, const char *prot, 
+	int protocol, str_list_t list, uint16_t default_port, const char *prot, bool* terminated,
 	void (*sock_init)(SOCKET, void *), bool(*bind_init)(bool), void *cbdata);
 DLLEXPORT bool xpms_add_chararray_list(struct xpms_set *xpms_set, int domain, int type,
-	int protocol, const char *list, uint16_t default_port, const char *prot,
+	int protocol, const char *list, uint16_t default_port, const char *prot, bool* terminated,
 	void (*sock_init)(SOCKET, void *), bool(*bind_init)(bool), void *cbdata);
-DLLEXPORT SOCKET xpms_accept(struct xpms_set *, union xp_sockaddr * addr, 
+DLLEXPORT SOCKET xpms_accept(struct xpms_set *, union xp_sockaddr * addr,
 	socklen_t * addrlen, unsigned int timeout, uint32_t flags, void **cb_data);
 
 #ifdef __cplusplus
