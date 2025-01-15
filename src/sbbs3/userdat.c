@@ -906,19 +906,22 @@ int getbirthyear(scfg_t* cfg, const char* birth)
 		       + DECVAL(birth[1], 100)
 		       + DECVAL(birth[2], 10)
 		       + DECVAL(birth[3], 1);
-	// DD/MM/YY or MM/DD/YY format
+	// DD/MM/[CC]YY or [CC]MM/DD/YY format
 	time_t     now = time(NULL);
 	struct  tm tm;
 	if (localtime_r(&now, &tm) == NULL)
 		return 0;
 	tm.tm_year += 1900;
-	int        year = 1900;
+	int        year;
 	if (cfg->sys_date_fmt == YYMMDD)
-		year += DECVAL(birth[0], 10) + DECVAL(birth[1], 1);
+		year = strtoul(birth, NULL, 10);
 	else // MMDDYY or DDMMYY
-		year += DECVAL(birth[6], 10) + DECVAL(birth[7], 1);
-	if (tm.tm_year - year > 105)
-		year += 100;
+		year = strtoul(birth + 6, NULL, 10);
+	if (year < 100) {
+		year += 1900;
+		if (tm.tm_year - year > 105)
+			year += 100;
+	}
 	return year;
 }
 
