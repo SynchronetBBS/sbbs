@@ -126,7 +126,6 @@ bool load_cfg(scfg_t* cfg, char* text[], bool prep, bool req_cfg, char* error, s
 
 		SAFEPRINTF(str, "%stext.ini", cfg->ctrl_dir);
 		if ((fp = fnopen(NULL, str, O_RDONLY)) != NULL) {
-			bool             success = true;
 			str_list_t       ini = iniReadFile(fp);
 			fclose(fp);
 			named_string_t** list = iniGetNamedStringList(ini, ROOT_SECTION);
@@ -143,8 +142,6 @@ bool load_cfg(scfg_t* cfg, char* text[], bool prep, bool req_cfg, char* error, s
 			}
 			iniFreeNamedStringList(list);
 			iniFreeStringList(ini);
-			if (!success)
-				return false;
 		}
 
 		cfg->text = text;
