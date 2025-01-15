@@ -248,8 +248,10 @@ static void sdl_user_func(int func, ...)
 				return;
 		}
 		va_end(argptr);
-		while((rv = sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT))!=1)
+		while((rv = sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT))!=1) {
+			// coverity[sleep]
 			YIELD();
+		}
 		break;
 	}
 	pthread_mutex_unlock(&sdl_ufunc_mtx);
@@ -274,8 +276,10 @@ static int sdl_user_func_ret(int func, ...)
 			case SDL_USEREVENT_SETVIDMODE:
 				ev.user.data1 = (void *)(intptr_t)va_arg(argptr, int);
 				ev.user.data2 = (void *)(intptr_t)va_arg(argptr, int);
-				while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT)!=1)
+				while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT)!=1) {
+					// coverity[sleep]
 					YIELD();
+				}
 				break;
 			case SDL_USEREVENT_GETWINPOS:
 				ev.user.data1 = va_arg(argptr, void *);
@@ -284,6 +288,7 @@ static int sdl_user_func_ret(int func, ...)
 			case SDL_USEREVENT_INIT:
 			case SDL_USEREVENT_QUIT:
 				while(sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT)!=1)
+					// coverity[sleep]
 					YIELD();
 				break;
 			default:

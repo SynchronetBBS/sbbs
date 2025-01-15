@@ -738,6 +738,7 @@ xptone_complete(void)
 #ifdef XPDEV_THREAD_SAFE
 	pthread_mutex_lock(&handle_mutex);
 #endif
+	// coverity[sleep]
 	xptone_complete_locked();
 #ifdef XPDEV_THREAD_SAFE
 	pthread_mutex_unlock(&handle_mutex);
@@ -818,6 +819,7 @@ xptone_close(void)
 #ifdef XPDEV_THREAD_SAFE
 	pthread_mutex_lock(&handle_mutex);
 #endif
+	// coverity[sleep]
 	ret = xptone_close_locked();
 #ifdef XPDEV_THREAD_SAFE
 	pthread_mutex_unlock(&handle_mutex);
@@ -1050,6 +1052,7 @@ void xp_play_sample_thread(void *data)
 				waited = true;
 			}
 			else {
+				// coverity[sleep]
 				xptone_close_locked();
 			}
 		}
