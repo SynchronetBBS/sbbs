@@ -7370,11 +7370,12 @@ void web_server(void* arg)
 		scfg.size = sizeof(scfg);
 		SAFECOPY(logstr, UNKNOWN_LOAD_ERROR);
 		if (!load_cfg(&scfg, text, /* prep: */ true, /* node: */ false, logstr, sizeof(logstr))) {
-			lprintf(LOG_CRIT, "!ERROR %s", logstr);
-			lprintf(LOG_CRIT, "!FAILED to load configuration files");
+			lprintf(LOG_CRIT, "!ERROR loading configuration files: %s", logstr);
 			cleanup(1);
 			return;
 		}
+		if (logstr[0] != '\0')
+			lprintf(LOG_WARNING, "!WARNING loading configuration files: %s", logstr);
 
 		mqtt_startup(&mqtt, &scfg, (struct startup*)startup, web_ver(), lputs);
 

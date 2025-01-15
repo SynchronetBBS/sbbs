@@ -5073,11 +5073,12 @@ void bbs_thread(void* arg)
 		scfg.node_num = startup->first_node;
 		SAFECOPY(logstr, UNKNOWN_LOAD_ERROR);
 		if (!load_cfg(&scfg, text, /* prep: */ true, /* node_req: */ true, logstr, sizeof(logstr))) {
-			lprintf(LOG_CRIT, "!ERROR %s", logstr);
-			lprintf(LOG_CRIT, "!FAILED to load configuration files");
+			lprintf(LOG_CRIT, "!ERROR loading configuration files: %s", logstr);
 			cleanup(1);
 			return;
 		}
+		if (logstr[0] != '\0')
+			lprintf(LOG_WARNING, "!WARNING loading configuration files: %s", logstr);
 
 		mqtt_startup(&mqtt, &scfg, (struct startup*)startup, bbs_ver(), lputs);
 
@@ -5763,8 +5764,7 @@ NO_SSH:
 					lprintf(LOG_WARNING, "Node %d LOAD ERROR: %s, falling back to Node %d", cfg->node_num, logstr, first_node);
 					cfg->node_num = first_node;
 					if (!load_cfg(cfg, node_text[node_num - 1], /* prep: */ true, /* node: */ true, logstr, sizeof(logstr))) {
-						lprintf(LOG_CRIT, "!ERROR %s", logstr);
-						lprintf(LOG_CRIT, "!FAILED to load configuration files");
+						lprintf(LOG_CRIT, "!ERROR loading configuration files: %s", logstr);
 						sbbs->bprintf("\r\nFAILED: %s", logstr);
 						client_off(client_socket);
 						SSH_END(client_socket);

@@ -2019,11 +2019,12 @@ void services_thread(void* arg)
 		scfg.size = sizeof(scfg);
 		SAFECOPY(error, UNKNOWN_LOAD_ERROR);
 		if (!load_cfg(&scfg, text, /* prep: */ true, /* node: */ false, error, sizeof(error))) {
-			lprintf(LOG_CRIT, "!ERROR %s", error);
-			lprintf(LOG_CRIT, "!Failed to load configuration files");
+			lprintf(LOG_CRIT, "!ERROR loading configuration files: %s", error);
 			cleanup(1);
 			return;
 		}
+		if (error[0] != '\0')
+			lprintf(LOG_WARNING, "!WARNING loading configuration files: %s", error);
 
 		mqtt_startup(&mqtt, &scfg, (struct startup*)startup, services_ver(), lputs);
 

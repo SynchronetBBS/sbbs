@@ -1470,7 +1470,9 @@ int main(int argc, char **argv)
 		if (require_cfg)
 			return do_bail(1);
 		prep_dir(scfg.ctrl_dir, scfg.exec_dir, sizeof(scfg.exec_dir));
-	}
+	} else if (error[0] != '\0')
+		lprintf(LOG_WARNING, "!WARNING loading configuration files: %s", error);
+
 	SAFECOPY(scfg.temp_dir, "../temp");
 #endif
 	prep_dir(scfg.ctrl_dir, scfg.temp_dir, sizeof(scfg.temp_dir));

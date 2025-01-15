@@ -69,6 +69,8 @@ bool load_cfg(scfg_t* cfg, char* text[], bool prep, bool req_cfg, char* error, s
 		              , cfg->size, sizeof(scfg_t));
 		return false;
 	}
+	if (error != NULL)
+		*error = '\0';
 
 	free_cfg(cfg);  /* free allocated config parameters */
 
@@ -134,8 +136,7 @@ bool load_cfg(scfg_t* cfg, char* text[], bool prep, bool req_cfg, char* error, s
 					safe_snprintf(error, maxerrlen, "%s text ID (%s) not recognized"
 					              , str
 					              , list[i]->name);
-					success = false;
-					break;
+					continue;
 				}
 				free(text[n]);
 				text[n] = strdup(list[i]->value);

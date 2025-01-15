@@ -6655,11 +6655,12 @@ int main(int argc, char **argv)
 	scfg.size = sizeof(scfg);
 	SAFECOPY(str, UNKNOWN_LOAD_ERROR);
 	if (!load_cfg(&scfg, text, /* prep: */ true, /* node: */ false, str, sizeof(str))) {
-		fprintf(stderr, "!ERROR %s\n", str);
-		fprintf(stderr, "!Failed to load configuration files\n");
+		fprintf(stderr, "!ERROR loading configuration files: %s\n", str);
 		bail(1);
 		return -1;
 	}
+	if (str[0] != '\0')
+		fprintf(stderr, "!WARNING loading configuration files: %s\n", str);
 
 	twit_list = list_of_twits(&scfg);
 

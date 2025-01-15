@@ -1706,9 +1706,11 @@ int main(int argc, char** argv)
 	SAFECOPY(error, UNKNOWN_LOAD_ERROR);
 	lprintf(LOG_INFO, "Loading configuration files from %s", scfg.ctrl_dir);
 	if (!load_cfg(&scfg, /* text: */ NULL, /* prep: */ TRUE, /* node: */ FALSE, error, sizeof(error))) {
-		lprintf(LOG_ERR, "!ERROR Loading Configuration Files: %s", error);
+		lprintf(LOG_CRIT, "!ERROR loading configuration files: %s", error);
 		return -1;
 	}
+	if (error[0] != '\0')
+		lprintf(LOG_WARNING, "!WARNING loading configuration files: %s", error);
 
 /* Daemonize / Set uid/gid */
 #ifdef __unix__
