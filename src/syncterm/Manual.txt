@@ -772,6 +772,11 @@ The method of displaying SyncTERM output.  The options
 will vary by OS, compile-time options, and installed libraries.  See
 the -I option to SyncTERM for details on the various modes.
 
+Audio Output Mode::
+Allows disabling different output methods.  SyncTERM attempts to
+use them in the order listed in the menu, and the first one to
+succeed is used going forward.
+
 Scrollback Buffer Lines::
 The maximum number of lines to keep in the
 scrollback.  Once this number is reached, the oldest lines are
