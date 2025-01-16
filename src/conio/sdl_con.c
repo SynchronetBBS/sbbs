@@ -411,6 +411,15 @@ static int sdl_init_mode(int mode, bool init)
 /* Called from main thread only (Passes Event) */
 int sdl_init(int mode)
 {
+	load_vmode(&vstat, ciolib_initial_mode);
+	if (vstat.scaling < 1.0)
+		vstat.scaling = ciolib_initial_scaling;
+	if (vstat.scaling < 1.0)
+		vstat.scaling = 1.0;
+	// TODO: This is gross, why do we need it?
+	vstat.winwidth = vstat.scrnwidth * vstat.scaling;
+	vstat.winheight = vstat.scrnheight * vstat.scaling;
+	internal_scaling = ciolib_initial_scaling_type == CIOLIB_SCALING_INTERNAL;
 	bitmap_drv_init(sdl_drawrect, sdl_flush);
 
 	if(mode==CIOLIB_MODE_SDL_FULLSCREEN) {
