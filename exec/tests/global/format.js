@@ -1,4 +1,4 @@
-const args = [ 1, 1.1, true, "one", -1, 1e9, null ];
+const args = [ 1, 1.1, true, "one", -1, 1e9, null, undefined ];
 
 const test = {
 	"%s":		"1",
@@ -20,8 +20,9 @@ const test = {
 	"%6$u":		"1000000000",
 	"%7$u":		"0",
 	"%7$s":		"null",
-	"%7$s %s":	"null %s",
-	"%8$s":		"%8$s",
+	"%7$s %s":	"null undefined",
+	"%8$s %s":	"undefined %s",
+	"%9$s":		"%9$s",
 };
 
 for (var i in test) {
