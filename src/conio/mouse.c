@@ -329,12 +329,16 @@ void ciolib_mouse_thread(void *data)
 						switch(state.button_state[but-1]) {
 							case MOUSE_NOSTATE:
 								if(state.buttonstate & CIOLIB_BUTTON(but)) {
+									if(!(mouse_events & UINT64_C(1)<<CIOLIB_BUTTON_DRAG_START(but)))
+										break;
 									add_outevent(CIOLIB_BUTTON_DRAG_START(but),state.button_x[but-1],state.button_y[but-1],state.button_x_res[but-1],state.button_y_res[but-1]);
 									add_outevent(CIOLIB_BUTTON_DRAG_MOVE(but),in->x,in->y, in->x_res, in->y_res);
 									state.button_state[but-1]=MOUSE_DRAGSTARTED;
 								}
 								break;
 							case MOUSE_SINGLEPRESSED:
+								if(!(mouse_events & UINT64_C(1)<<CIOLIB_BUTTON_DRAG_START(but)))
+									break;
 								add_outevent(CIOLIB_BUTTON_DRAG_START(but),state.button_x[but-1],state.button_y[but-1],state.button_x_res[but-1],state.button_y_res[but-1]);
 								add_outevent(CIOLIB_BUTTON_DRAG_MOVE(but),in->x,in->y, in->x_res, in->y_res);
 								state.button_state[but-1]=MOUSE_DRAGSTARTED;
@@ -344,6 +348,8 @@ void ciolib_mouse_thread(void *data)
 								state.button_state[but-1]=MOUSE_NOSTATE;
 								break;
 							case MOUSE_DOUBLEPRESSED:
+								if(!(mouse_events & UINT64_C(1)<<CIOLIB_BUTTON_DRAG_START(but)))
+									break;
 								add_outevent(CIOLIB_BUTTON_CLICK(but),state.button_x[but-1],state.button_y[but-1],state.button_x_res[but-1],state.button_y_res[but-1]);
 								add_outevent(CIOLIB_BUTTON_DRAG_START(but),state.button_x[but-1],state.button_y[but-1],state.button_x_res[but-1],state.button_y_res[but-1]);
 								add_outevent(CIOLIB_BUTTON_DRAG_MOVE(but),in->x,in->y, in->x_res, in->y_res);
@@ -354,6 +360,8 @@ void ciolib_mouse_thread(void *data)
 								state.button_state[but-1]=MOUSE_NOSTATE;
 								break;
 							case MOUSE_TRIPLEPRESSED:
+								if(!(mouse_events & UINT64_C(1)<<CIOLIB_BUTTON_DRAG_START(but)))
+									break;
 								add_outevent(CIOLIB_BUTTON_DBL_CLICK(but),state.button_x[but-1],state.button_y[but-1],state.button_x_res[but-1],state.button_y_res[but-1]);
 								add_outevent(CIOLIB_BUTTON_DRAG_START(but),state.button_x[but-1],state.button_y[but-1],state.button_x_res[but-1],state.button_y_res[but-1]);
 								add_outevent(CIOLIB_BUTTON_DRAG_MOVE(but),in->x,in->y, in->x_res, in->y_res);
@@ -364,6 +372,8 @@ void ciolib_mouse_thread(void *data)
 								state.button_state[but-1]=MOUSE_NOSTATE;
 								break;
 							case MOUSE_QUADPRESSED:
+								if(!(mouse_events & UINT64_C(1)<<CIOLIB_BUTTON_DRAG_START(but)))
+									break;
 								add_outevent(CIOLIB_BUTTON_TRPL_CLICK(but),state.button_x[but-1],state.button_y[but-1],state.button_x_res[but-1],state.button_y_res[but-1]);
 								add_outevent(CIOLIB_BUTTON_DRAG_START(but),state.button_x[but-1],state.button_y[but-1],state.button_x_res[but-1],state.button_y_res[but-1]);
 								add_outevent(CIOLIB_BUTTON_DRAG_MOVE(but),in->x,in->y, in->x_res, in->y_res);
