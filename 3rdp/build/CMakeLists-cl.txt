@@ -105,6 +105,7 @@ set(PATCHES
 	cl-fix-void-ptrs.patch
 	cl-intptr-t.patch
 	cl-wrong-string-length.patch
+	cl-remove-silly-pragmas.patch
 )
 
 set(SOURCE

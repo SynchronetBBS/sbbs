@@ -1,0 +1,79 @@
+From f4831eaef25babddb0712418c391f317f65681e9 Mon Sep 17 00:00:00 2001
+From: Stephen Hurd <deuce@synchro.net>
+Date: Wed, 15 Jan 2025 18:34:22 -0500
+Subject: [PATCH 1/1] Remove pragmas telling us what we did.
+
+---
+ keyset/pkcs12.h |  8 --------
+ session/ssh.h   | 13 -------------
+ session/tls.h   |  4 ----
+ 4 files changed, 1 insertion(+), 25 deletions(-)
+
+diff --git keyset/pkcs12.h keyset/pkcs12.h
+index b2319ba..801b096 100644
+--- keyset/pkcs12.h
++++ keyset/pkcs12.h
+@@ -9,14 +9,6 @@
+ 
+ #define _PKCS12_DEFINED
+ 
+-#if defined( _MSC_VER ) || defined( __GNUC__ ) || defined( __clang__ )
+-  #if defined( USE_PKCS12_WRITE )
+-	#pragma message( "  Building with PKCS #12 read and write enabled." )
+-  #elif defined( USE_PKCS12 )
+-	#pragma message( "  Building with PKCS #12 enabled." )
+-  #endif /* PKCS #12 options */
+-#endif /* Notify PKCS #12 use */
+-
+ /****************************************************************************
+ *																			*
+ *								PKCS #12 Constants							*
+diff --git session/ssh.h session/ssh.h
+index 0f4fd69..6732b1d 100644
+--- session/ssh.h
++++ session/ssh.h
+@@ -9,15 +9,6 @@
+ 
+ #define _SSH_DEFINED
+ 
+-#if defined( _MSC_VER ) || defined( __GNUC__ ) || defined( __clang__ ) 
+-  #ifdef USE_SSH_EXTENDED
+-	#pragma message( "  Building with extended SSH facilities enabled." )
+-  #endif /* USE_SSH_EXTENDED */
+-  #ifdef USE_SSH_OPENSSH
+-	#pragma message( "  Building with nonstandard OpenSSH extensions enabled." )
+-  #endif /* USE_SSH_OPENSSH */
+-#endif /* Notify extended SSH facilities */
+-
+ #ifdef USE_SSH
+ 
+ /****************************************************************************
+@@ -67,10 +58,6 @@
+    in preference to DH, uncomment the following */
+ 
+ /* #define PREFER_ECC */
+-#if ( defined( _MSC_VER ) || defined( __GNUC__ ) || defined( __clang__ ) ) && \
+-	defined( PREFER_ECC ) 
+-  #pragma message( "  Building with ECC preferred for SSH." )
+-#endif /* Notify ECC preferred use */
+ #if defined( PREFER_ECC ) && \
+ 	!( defined( USE_ECDH ) && defined( USE_ECDSA ) )
+   #error PREFER_ECC can only be used with ECDH and ECDSA enabled
+diff --git session/tls.h session/tls.h
+index a9cbc03..2b4656d 100644
+--- session/tls.h
++++ session/tls.h
+@@ -88,10 +88,6 @@
+    following */
+ 
+ /* #define PREFER_ECC //*/
+-#if ( defined( _MSC_VER ) || defined( __GNUC__ ) || defined( __clang__ ) ) && \
+-	defined( PREFER_ECC ) 
+-  #pragma message( "  Building with ECC preferred for TLS." )
+-#endif /* Notify preferred ECC use */
+ #if defined( PREFER_ECC ) && \
+ 	!( defined( USE_ECDH ) && defined( USE_ECDSA ) )
+   #error PREFER_ECC can only be used with ECDH and ECDSA enabled
+-- 
+2.47.0
+
