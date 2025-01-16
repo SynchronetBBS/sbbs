@@ -240,7 +240,7 @@ while(bbs.online && !js.terminated) {
 		console.print("\r\n\x01c\x01h" + gettext("Unrecognized command."));
 		if(user.settings & USER_EXPERT)
 			console.print("  " + gettext("Hit") + " '\x01i" + help_key + "\x01n\x01c\x01h' " + gettext("for a menu."));
-		console.print("  " + gettext("Or type \x01y;help\x01c for more commands."));
+		console.print("  " + gettext("Type \x01y;help\x01c for more commands."));
 		console.newline();
 		continue;
 	}
