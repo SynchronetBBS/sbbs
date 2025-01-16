@@ -88,6 +88,20 @@ enum {
 #include "window.h"
 #include "xpbeep.h"
 
+#if defined(__unix__) && defined(SOUNDCARD_H_IN) && (SOUNDCARD_H_IN > 0) && !defined(_WIN32)
+	#if SOUNDCARD_H_IN==1
+		#include <sys/soundcard.h>
+	#elif SOUNDCARD_H_IN==2
+		#include <soundcard.h>
+	#elif SOUNDCARD_H_IN==3
+		#include <linux/soundcard.h>
+	#else
+		#ifndef USE_ALSA_SOUND
+			#warning Cannot find soundcard.h
+		#endif
+	#endif
+#endif
+
 const char *syncterm_version = "SyncTERM 1.4b"
 
 #define ALPHA
