@@ -8,6 +8,7 @@ Better socket disconnect detection in SSH and telnets sessions
 Fix X11 mode scaling and fullscreen with minimal X servers
 Massively improve output performance
 Add option to configure audio output
+Lower audio output volume by 12dB
 
 Version 1.4a
 ------------

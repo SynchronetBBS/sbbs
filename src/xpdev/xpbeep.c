@@ -277,6 +277,12 @@ void xptone_makewave(double freq, unsigned char *wave, int samples, enum WAVE_SH
 					wave[i] += (sin ((inc * 3) * (double)i)) * 16;
 					break;
 			}
+			/*
+			 * TODO: It's silly to do this here, but the excessive wrapping above
+			 * makes it the only sane way to do it and keep the noises as is.
+			 */
+			// Reduce by 12dB
+			wave[i] = ((((double)wave[i]) - 128) * 0.251) + 128;
 		}
 
 		/* Now we have a "perfect" wave...
