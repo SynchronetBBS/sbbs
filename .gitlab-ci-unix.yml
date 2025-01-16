@@ -691,7 +691,7 @@ spec:
     - .$[[ inputs.os ]]-test
   script:
     - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build.tgz"
-    - "src/sbbs3/*.exe.release/jsexec -c./ctrl exec/tests/test.js"
+    - "SBBSEXEC=./ctrl src/sbbs3/*.exe.release/jsexec exec/tests/test.js"
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs-build]"
       artifacts: false
