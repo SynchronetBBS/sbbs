@@ -48,7 +48,7 @@ js_sprintf(JSContext *cx, uint argn, uintN argc, jsval *argv)
 			cur = next;
 		else
 			cur++;
-		if (cur > argc)
+		if (cur >= argc)
 			break;
 		if (JSVAL_IS_DOUBLE(argv[cur]))
 			p = xp_asprintf_next(p, XP_PRINTF_CONVERT | XP_PRINTF_TYPE_DOUBLE, JSVAL_TO_DOUBLE(argv[cur]));
