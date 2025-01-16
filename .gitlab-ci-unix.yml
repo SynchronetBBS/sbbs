@@ -690,10 +690,10 @@ spec:
   extends:
     - .$[[ inputs.os ]]-test
   script:
-    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/jsdoor.tgz"
-    - "src/sbbs3/*.exe.release/jsdoor exec/tests/test.js"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build.tgz"
+    - "src/sbbs3/*.exe.release/jsexec exec/tests/test.js"
   needs:
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [jsdoor]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs-build]"
       artifacts: false
   rules:
     - if: '"$[[ inputs.cross_platform ]]" == "yes"'
