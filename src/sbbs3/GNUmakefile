@@ -125,28 +125,8 @@ endif
 include sbbsdefs.mk
 MT_CFLAGS	+=	$(SBBSDEFS) $(SFTP-MT_CFLAGS)
 
-ifndef NO_LD_RUN_PATH
- # Set up LD_RUN_PATH for run-time locating of the .so files
- ifdef SBBSDIR
-  ifeq ($(os),sunos)
-   LD_RUN_PATH	:=	$(SBBSDIR)/exec:$(LIBODIR):$(JSLIBDIR):$(NSPRDIR):$(CRYPTLIBDIR):/opt/sfw/gcc-3/lib
-  else
-   LD_RUN_PATH	:=	$(SBBSDIR)/exec:$(LIBODIR):$(JSLIBDIR):$(NSPRDIR):$(CRYPTLIBDIR)
-  endif
- else
-  ifeq ($(os),sunos)
-   LD_RUN_PATH	:=	$(PWD)/$(LIBODIR):$(JSLIBDIR):$(NSPRDIR):$(CRYPTLIBDIR):/opt/sfw/gcc-3/lib
-  else
-   LD_RUN_PATH	:=	$(PWD)/$(LIBODIR):$(JSLIBDIR):$(NSPRDIR):$(CRYPTLIBDIR)
-  endif
- endif
- export LD_RUN_PATH
- ifeq ($(CCPRE),clang)
-  # TODO Darwin needs to post-process with install_name_tool
-  ifneq ($(os),darwin)
-   LDFLAGS += -rpath $(LD_RUN_PATH)
-  endif
- endif
+ifneq ($(os),darwin)
+ LIB_RPATH := '-Wl,-rpath,$$ORIGIN,-rpath,$$ORIGIN/../$(LIBODIR),-z,origin'
 endif
 
 CON_LIBS	+= -lsbbs -lftpsrvr -lwebsrvr -lmailsrvr -lservices
@@ -165,9 +145,6 @@ else
 endif
 ifeq ($(os),darwin)
  LIB_RPATH := -Wl,$(RPATH),@executable_path,$(RPATH),@executable_path/../$(LIBODIR)
-endif
-ifeq ($(os), netbsd)
- LIB_RPATH := '-Wl,-rpath,$$ORIGIN,-rpath,$$ORIGIN/../$(LIBODIR),-z,origin'
 endif
 
 CFLAGS	+=	$(JS_CFLAGS) $(CRYPT_CFLAGS) $(UIFC-MT_CFLAGS) $(XPDEV-MT_CFLAGS) $(SMBLIB_CFLAGS) $(CIOLIB-MT_CFLAGS) $(ENCODE_CFLAGS) $(HASH_CFLAGS)
