@@ -268,6 +268,8 @@ function import_from_msgbase(msgbase, import_ptr, limit, all)
         if(idx.to != users_crc && idx.to != shared_crc)
             continue;
         var hdr = msgbase.get_msg_header(/* by_offset: */true, i);
+		if(!hdr)
+			continue;
 		if(all != true && !hdr.from_net_type)	// Skip locally posted messages
 			continue;
 		if(system.findstr(system.ctrl_dir + "twitlist.cfg", hdr.from)) {
