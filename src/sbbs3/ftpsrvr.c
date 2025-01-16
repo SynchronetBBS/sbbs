@@ -85,7 +85,7 @@ static protected_uint32_t thread_count;
 static volatile uint32_t  client_highwater = 0;
 static volatile time_t    uptime = 0;
 static volatile ulong     served = 0;
-static volatile BOOL      terminate_server = FALSE;
+static bool               terminate_server = FALSE;
 static char *             text[TOTAL_TEXT];
 static str_list_t         pause_semfiles;
 static str_list_t         recycle_semfiles;
