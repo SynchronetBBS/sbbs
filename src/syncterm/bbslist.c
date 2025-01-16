@@ -22,6 +22,7 @@
 #include "uifcinit.h"
 #include "vidmodes.h"
 #include "window.h"
+#include "xpbeep.h"
 
 #if defined(__unix__) && defined(SOUNDCARD_H_IN) && (SOUNDCARD_H_IN > 0) && !defined(_WIN32)
 	#if SOUNDCARD_H_IN==1
@@ -2138,15 +2139,47 @@ scale_to_settings(int i)
 	settings.extern_scale = (i & 2) ? true : false;
 }
 
+static void
+edit_audio_mode(str_list_t *inicontents)
+{
+	char opts[10][80];
+	char *opt[11];
+	int i = 0;
+	int j = 0;
+
+	uifc.helpbuf = "`Audio Output Mode`\n\n"
+		       "        Options are tried in the order listed in the menu\n";
+
+	while (i != -1) {
+		for (i = 0; audio_output_types[i].name != NULL; i++) {
+			SAFEPRINTF2(opts[i], "%-10.10s %s", audio_output_types[i].name, (xpbeep_sound_devices_enabled & audio_output_types[i].bit) ? "Yes" : "No");
+			opt[i] = opts[i];
+		}
+		opt[i] = NULL;
+
+		switch (i = uifc.list(WIN_SAV, 0, 0, 0, &j, NULL, "Audio Output Mode", opt)) {
+			case -1:
+				check_exit(false);
+				continue;
+			default:
+				xpbeep_sound_devices_enabled ^= audio_output_types[j].bit;
+				iniSetBitField(inicontents, "SyncTERM", "AudioModes", audio_output_bits, 
+					   xpbeep_sound_devices_enabled, &ini_style);
+				break;
+		}
+	}
+}
+
 void
 change_settings(int connected)
 {
 	char inipath[MAX_PATH + 1];
 	FILE *inifile;
 	str_list_t inicontents;
-	char opts[13][1049];
-	char *opt[14];
+	char opts[14][1049];
+	char *opt[15];
 	char *subopts[10];
+	char audio_opts[1024];
 	int i, j, k, l;
 	char str[64];
 	int cur = 0;
@@ -2173,6 +2206,8 @@ change_settings(int connected)
 		               "        Set the initial screen screen mode/size.\n\n"
 		               "~ Video Output Mode ~\n"
 		               "        Set video output mode (used during startup).\n\n"
+		               "~ Audio Output Mode ~\n"
+		               "        Set audio output modes attempted.\n\n"
 		               "~ Scrollback Buffer Lines ~\n"
 		               "        The number of lines in the scrollback buffer.\n\n"
 		               "~ Modem/Comm Device ~\n"
@@ -2195,22 +2230,33 @@ change_settings(int connected)
 		SAFEPRINTF(opts[1], "Prompt to Save          %s", settings.prompt_save ? "Yes" : "No");
 		SAFEPRINTF(opts[2], "Startup Screen Mode     %s", screen_modes[settings.startup_mode]);
 		SAFEPRINTF(opts[3], "Video Output Mode       %s", output_descrs[settings.output_mode]);
-		SAFEPRINTF(opts[4], "Scrollback Buffer Lines %d", settings.backlines);
-		SAFEPRINTF(opts[5], "Modem/Comm Device       %s", settings.mdm.device_name);
+		audio_opts[0] = 0;
+		for (j = 0; audio_output_types[j].name != NULL; j++) {
+			if (xpbeep_sound_devices_enabled & audio_output_types[j].bit) {
+				if (audio_opts[0])
+					strcat(audio_opts, ", ");
+				strcat(audio_opts, audio_output_types[j].name);
+			}
+		}
+		if (!audio_opts[0])
+			strcpy(audio_opts, "<None>");
+		SAFEPRINTF(opts[4], "Audio Output Mode       %s", audio_opts);
+		SAFEPRINTF(opts[5], "Scrollback Buffer Lines %d", settings.backlines);
+		SAFEPRINTF(opts[6], "Modem/Comm Device       %s", settings.mdm.device_name);
 		if (settings.mdm.com_rate)
 			sprintf(str, "%lubps", settings.mdm.com_rate);
 		else
 			strcpy(str, "Current");
-		SAFEPRINTF(opts[6], "Modem/Comm Rate         %s", str);
-		SAFEPRINTF(opts[7], "Modem Init String       %s", settings.mdm.init_string);
-		SAFEPRINTF(opts[8], "Modem Dial String       %s", settings.mdm.dial_string);
-		SAFEPRINTF(opts[9], "List Path               %s", settings.stored_list_path);
-		SAFEPRINTF(opts[10], "TERM For Shell          %s", settings.TERM);
-		sprintf(opts[11], "Scaling                 %s", scaling_names[settings_to_scale()]);
+		SAFEPRINTF(opts[7], "Modem/Comm Rate         %s", str);
+		SAFEPRINTF(opts[8], "Modem Init String       %s", settings.mdm.init_string);
+		SAFEPRINTF(opts[9], "Modem Dial String       %s", settings.mdm.dial_string);
+		SAFEPRINTF(opts[10], "List Path               %s", settings.stored_list_path);
+		SAFEPRINTF(opts[11], "TERM For Shell          %s", settings.TERM);
+		sprintf(opts[12], "Scaling                 %s", scaling_names[settings_to_scale()]);
 		if (connected)
-			opt[12] = NULL;
+			opt[13] = NULL;
 		else
-			sprintf(opts[12], "Custom Screen Mode");
+			sprintf(opts[13], "Custom Screen Mode");
 		switch (uifc.list(WIN_MID | WIN_SAV | WIN_ACT, 0, 0, 0, &cur, NULL, "Program Settings", opt)) {
 			case -1:
 				check_exit(false);
@@ -2323,6 +2369,9 @@ change_settings(int connected)
 				}
 				break;
 			case 4:
+				edit_audio_mode(&inicontents);
+				break;
+			case 5:
 				uifc.helpbuf = "`Scrollback Buffer Lines`\n\n"
 				               "        The number of lines in the scrollback buffer.\n"
 				               "        This value MUST be greater than zero\n";
@@ -2362,7 +2411,7 @@ change_settings(int connected)
 				else
 					check_exit(false);
 				break;
-			case 5:
+			case 6:
 				uifc.helpbuf = "`Modem/Comm Device`\n\n"
 				               "Enter the name of the device used to communicate with the modem.\n\n"
 				               "Example: \"`"
@@ -2379,7 +2428,7 @@ change_settings(int connected)
 				else
 					check_exit(false);
 				break;
-			case 6:
+			case 7:
 				uifc.helpbuf = "`Modem/Comm Rate`\n\n"
 				               "Enter the rate (in `bits-per-second`) used to communicate with the modem.\n"
 				               "Use the highest `DTE Rate` supported by your communication port and modem.\n\n"
@@ -2399,7 +2448,7 @@ change_settings(int connected)
 					check_exit(false);
 				break;
 
-			case 7:
+			case 8:
 				uifc.helpbuf = "`Modem Init String`\n\n"
 				               "Your modem initialization string goes here.\n\n"
 				               "Example:\n"
@@ -2430,7 +2479,7 @@ change_settings(int connected)
 				else
 					check_exit(false);
 				break;
-			case 8:
+			case 9:
 				uifc.helpbuf = "`Modem Dial String`\n\n"
 				               "The command string to dial the modem goes here.\n\n"
 				               "Example: \"`ATDT`\" will dial a Hayes-compatible modem in touch-tone mode.";
@@ -2445,7 +2494,7 @@ change_settings(int connected)
 				else
 					check_exit(false);
 				break;
-			case 9:
+			case 10:
 				uifc.helpbuf = "`List Path`\n\n"
 				               "The complete path to the BBS list goes here.\n";
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "List Path", settings.stored_list_path, MAX_PATH,
@@ -2461,7 +2510,7 @@ change_settings(int connected)
 				else
 					check_exit(false);
 				break;
-			case 10:
+			case 11:
 				uifc.helpbuf = "`TERM For Shell`\n\n"
 				               "The value to set the TERM envirnonment variable to goes here.\n\n"
 				               "Example: \"`ansi`\" will select a dumb ANSI mode.";
@@ -2471,7 +2520,7 @@ change_settings(int connected)
 				else
 					check_exit(false);
 				break;
-			case 11:
+			case 12:
 				i = settings_to_scale();
 				i++;
 				if (i == 3)
@@ -2486,7 +2535,7 @@ change_settings(int connected)
 					cio_api.options &= ~CONIO_OPT_BLOCKY_SCALING;
 				setscaling_type(settings.extern_scale ? CIOLIB_SCALING_EXTERNAL : CIOLIB_SCALING_INTERNAL);
 				break;
-			case 12:
+			case 13:
 				uifc.helpbuf = "`Custom Screen Mode`\n\n"
 				               "~ Rows ~\n"
 				               "        Sets the number of rows in the custom screen mode\n"

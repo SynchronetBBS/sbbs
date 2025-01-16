@@ -86,6 +86,7 @@ enum {
 #include "term.h"
 #include "uifcinit.h"
 #include "window.h"
+#include "xpbeep.h"
 
 const char *syncterm_version = "SyncTERM 1.4b"
 
@@ -868,6 +869,80 @@ char *output_enum[] = {
 	NULL
 };
 
+ini_bitdesc_t audio_output_bits[] = {
+	{
+		.name = "PulseAudio",
+		.bit = XPBEEP_DEVICE_PULSEAUDIO
+	},
+	{
+		.name = "PortAudio",
+		.bit = XPBEEP_DEVICE_PORTAUDIO
+	},
+	{
+		.name = "SDL",
+		.bit = XPBEEP_DEVICE_SDL
+	},
+	{
+		.name = "WaveOut",
+		.bit = XPBEEP_DEVICE_WIN32
+	},
+	{
+		.name = "ALSA",
+		.bit = XPBEEP_DEVICE_ALSA
+	},
+	{
+		.name = "OSS",
+		.bit = XPBEEP_DEVICE_OSS
+	},
+	{
+		.name = NULL,
+		.bit = 0
+	},
+};
+
+ini_bitdesc_t audio_output_types[] = {
+#ifdef WITH_PULSEAUDIO
+	{
+		.name = "PulseAudio",
+		.bit = XPBEEP_DEVICE_PULSEAUDIO
+	},
+#endif
+#ifdef WITH_PORTAUDIO
+	{
+		.name = "PortAudio",
+		.bit = XPBEEP_DEVICE_PORTAUDIO
+	},
+#endif
+#ifdef WITH_SDL_AUDIO
+	{
+		.name = "SDL",
+		.bit = XPBEEP_DEVICE_SDL
+	},
+#endif
+#ifdef _WIN32
+	{
+		.name = "WaveOut",
+		.bit = XPBEEP_DEVICE_WIN32
+	},
+#endif
+#ifdef USE_ALSA_SOUND
+	{
+		.name = "ALSA",
+		.bit = XPBEEP_DEVICE_ALSA
+	},
+#endif
+#if (defined SOUNDCARD_H_IN) && (SOUNDCARD_H_IN > 0) && (defined AFMT_U8)
+	{
+		.name = "OSS",
+		.bit = XPBEEP_DEVICE_OSS
+	},
+#endif
+	{
+		.name = NULL,
+		.bit = 0
+	},
+};
+
 bool
 check_exit(bool force)
 {
@@ -1418,6 +1493,7 @@ load_settings(struct syncterm_settings *set)
 	set->startup_mode = iniReadEnum(inifile, "SyncTERM", "VideoMode", screen_modes_enum, SCREEN_MODE_CURRENT);
 	set->startup_mode = iniReadEnum(inifile, "SyncTERM", "ScreenMode", screen_modes_enum, set->startup_mode);
 	set->output_mode = iniReadEnum(inifile, "SyncTERM", "OutputMode", output_enum, CIOLIB_MODE_AUTO);
+	set->audio_output_modes = iniReadBitField(inifile, "SyncTERM", "AudioModes", audio_output_bits, XPBEEP_DEVICE_DEFAULT);
 	set->backlines = iniReadInteger(inifile, "SyncTERM", "ScrollBackLines", 2000);
 	set->xfer_success_keypress_timeout = iniReadInteger(inifile,
 	        "SyncTERM",
@@ -1716,6 +1792,7 @@ main(int argc, char **argv)
 	ciolib_initial_program_name = "syncterm";
 	ciolib_initial_program_class = "SyncTERM";
 	ciolib_mode = settings.output_mode;
+	xpbeep_sound_devices_enabled = settings.audio_output_modes;
 	if (settings.startup_mode != SCREEN_MODE_CURRENT)
 		text_mode = screen_to_ciolib(settings.startup_mode);
 	else

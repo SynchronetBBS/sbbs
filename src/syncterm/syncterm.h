@@ -80,8 +80,12 @@ struct syncterm_settings {
 	int                   left_just;
 	int                   blocky;
 	int                   extern_scale;
+	uint                  audio_output_modes;
 };
 
+extern ini_bitdesc_t audio_output_bits[];
+extern ini_bitdesc_t audio_output_types[];
+	
 extern char                    *inpath;
 extern char                    *list_override;
 extern const char              *syncterm_version;
