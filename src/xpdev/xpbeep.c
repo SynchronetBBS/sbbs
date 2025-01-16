@@ -111,6 +111,7 @@ enum {
 
 static int handle_type = SOUND_DEVICE_CLOSED;
 static int handle_rc;
+uint32_t xpbeep_sound_devices_enabled =  XPBEEP_DEVICE_DEFAULT;
 
 #ifdef WITH_PULSEAUDIO
 struct pulseaudio_api_struct {
@@ -402,107 +403,142 @@ xptone_open_locked(void)
 	}
 
 #ifdef WITH_PULSEAUDIO
-	if (!pulseaudio_device_open_failed) {
-		if (pu_api == NULL) {
-			const char *libnames[] = {"pulse-simple", NULL};
-			if (((pu_api = (struct pulseaudio_api_struct *)malloc(sizeof(struct pulseaudio_api_struct))) == NULL)
-			    || ((pu_api->dl = xp_dlopen(libnames, RTLD_LAZY, 0)) == NULL)
-			    || ((pu_api->simple_new = xp_dlsym(pu_api->dl, pa_simple_new)) == NULL)
-			    || ((pu_api->simple_write = xp_dlsym(pu_api->dl, pa_simple_write)) == NULL)
-			    || ((pu_api->simple_drain = xp_dlsym(pu_api->dl, pa_simple_drain)) == NULL)
-			    || ((pu_api->simple_free = xp_dlsym(pu_api->dl, pa_simple_free)) == NULL)
-			    ) {
-				if (pu_api->dl)
-					xp_dlclose(pu_api->dl);
-				free(pu_api);
-				pu_api = NULL;
-			}
+	if (xpbeep_sound_devices_enabled & XPBEEP_DEVICE_PULSEAUDIO) {
+		if (!pulseaudio_device_open_failed) {
 			if (pu_api == NULL) {
-				pulseaudio_device_open_failed = true;
+				const char *libnames[] = {"pulse-simple", NULL};
+				if (((pu_api = (struct pulseaudio_api_struct *)malloc(sizeof(struct pulseaudio_api_struct))) == NULL)
+				    || ((pu_api->dl = xp_dlopen(libnames, RTLD_LAZY, 0)) == NULL)
+				    || ((pu_api->simple_new = xp_dlsym(pu_api->dl, pa_simple_new)) == NULL)
+				    || ((pu_api->simple_write = xp_dlsym(pu_api->dl, pa_simple_write)) == NULL)
+				    || ((pu_api->simple_drain = xp_dlsym(pu_api->dl, pa_simple_drain)) == NULL)
+				    || ((pu_api->simple_free = xp_dlsym(pu_api->dl, pa_simple_free)) == NULL)
+				    ) {
+					if (pu_api->dl)
+						xp_dlclose(pu_api->dl);
+					free(pu_api);
+					pu_api = NULL;
+				}
+				if (pu_api == NULL) {
+					pulseaudio_device_open_failed = true;
+				}
 			}
-		}
-		if (pu_api != NULL) {
-			handle_type = SOUND_DEVICE_PULSEAUDIO;
-			handle_rc++;
-#ifdef XPDEV_THREAD_SAFE
-			pthread_mutex_unlock(&handle_mutex);
-			pthread_mutex_lock(&sample_mutex);
-			if (samples_posted == 0)
-				xp_play_sample_locked((unsigned char *)"\x80", 1, false);
-			pthread_mutex_unlock(&sample_mutex);
-#else
-			xptone(0, 1, WAVE_SHAPE_SQUARE);
-#endif
-			if (pulseaudio_device_open_failed) {
-				handle_type = SOUND_DEVICE_CLOSED;
-			}
-			else {
-				return true;
+			if (pu_api != NULL) {
+				handle_type = SOUND_DEVICE_PULSEAUDIO;
+				handle_rc++;
+	#ifdef XPDEV_THREAD_SAFE
+				pthread_mutex_unlock(&handle_mutex);
+				pthread_mutex_lock(&sample_mutex);
+				if (samples_posted == 0)
+					xp_play_sample_locked((unsigned char *)"\x80", 1, false);
+				pthread_mutex_unlock(&sample_mutex);
+	#else
+				xptone(0, 1, WAVE_SHAPE_SQUARE);
+	#endif
+				if (pulseaudio_device_open_failed) {
+					handle_type = SOUND_DEVICE_CLOSED;
+				}
+				else {
+					return true;
+				}
 			}
 		}
 	}
 #endif
 
 #ifdef WITH_PORTAUDIO
-	if (!portaudio_device_open_failed) {
-		if (pa_api == NULL) {
-			const char *libnames[] = {"portaudio", NULL};
-			if (((pa_api = (struct portaudio_api_struct *)malloc(sizeof(struct portaudio_api_struct))) == NULL)
-			    || ((pa_api->dl = xp_dlopen(libnames, RTLD_LAZY, 0)) == NULL)
-			    || ((pa_api->init = xp_dlsym(pa_api->dl, Pa_Initialize)) == NULL)
-			    || ((pa_api->open = xp_dlsym(pa_api->dl, Pa_OpenDefaultStream)) == NULL)
-			    || ((pa_api->close = xp_dlsym(pa_api->dl, Pa_CloseStream)) == NULL)
-			    || ((pa_api->start = xp_dlsym(pa_api->dl, Pa_StartStream)) == NULL)
-			    ||
-				(
-					((pa_api->active = xp_dlsym(pa_api->dl, Pa_StreamActive)) == NULL)
-					&& ((pa_api->active = xp_dlsym(pa_api->dl, Pa_IsStreamActive)) == NULL)
-			    )
-			    || ((pa_api->stop = xp_dlsym(pa_api->dl, Pa_StopStream)) == NULL)
-			    ) {
-				if (pa_api->dl)
-					xp_dlclose(pa_api->dl);
-				free(pa_api);
-				pa_api = NULL;
-			}
-			else {
-				/* Get version and other optional pointers */
-				pa_api->ver = 1800;
-				if ((pa_api->version = xp_dlsym(pa_api->dl, Pa_GetVersion)) != NULL) {
-					pa_api->ver = pa_api->version();
-					if (pa_api->ver >= 1899) {
-						if ((pa_api->write = xp_dlsym(pa_api->dl, Pa_WriteStream)) == NULL) {
-							xp_dlclose(pa_api->dl);
-							free(pa_api);
-							pa_api = NULL;
+	if (xpbeep_sound_devices_enabled & XPBEEP_DEVICE_PORTAUDIO) {
+		if (!portaudio_device_open_failed) {
+			if (pa_api == NULL) {
+				const char *libnames[] = {"portaudio", NULL};
+				if (((pa_api = (struct portaudio_api_struct *)malloc(sizeof(struct portaudio_api_struct))) == NULL)
+				    || ((pa_api->dl = xp_dlopen(libnames, RTLD_LAZY, 0)) == NULL)
+				    || ((pa_api->init = xp_dlsym(pa_api->dl, Pa_Initialize)) == NULL)
+				    || ((pa_api->open = xp_dlsym(pa_api->dl, Pa_OpenDefaultStream)) == NULL)
+				    || ((pa_api->close = xp_dlsym(pa_api->dl, Pa_CloseStream)) == NULL)
+				    || ((pa_api->start = xp_dlsym(pa_api->dl, Pa_StartStream)) == NULL)
+				    ||
+					(
+						((pa_api->active = xp_dlsym(pa_api->dl, Pa_StreamActive)) == NULL)
+						&& ((pa_api->active = xp_dlsym(pa_api->dl, Pa_IsStreamActive)) == NULL)
+				    )
+				    || ((pa_api->stop = xp_dlsym(pa_api->dl, Pa_StopStream)) == NULL)
+				    ) {
+					if (pa_api->dl)
+						xp_dlclose(pa_api->dl);
+					free(pa_api);
+					pa_api = NULL;
+				}
+				else {
+					/* Get version and other optional pointers */
+					pa_api->ver = 1800;
+					if ((pa_api->version = xp_dlsym(pa_api->dl, Pa_GetVersion)) != NULL) {
+						pa_api->ver = pa_api->version();
+						if (pa_api->ver >= 1899) {
+							if ((pa_api->write = xp_dlsym(pa_api->dl, Pa_WriteStream)) == NULL) {
+								xp_dlclose(pa_api->dl);
+								free(pa_api);
+								pa_api = NULL;
+							}
 						}
 					}
 				}
+				if (pa_api == NULL) {
+					portaudio_device_open_failed = true;
+				}
 			}
-			if (pa_api == NULL) {
-				portaudio_device_open_failed = true;
+			if (pa_api != NULL) {
+				if (!portaudio_initialized) {
+					if (pa_api->init() != paNoError)
+						portaudio_device_open_failed = true;
+					else
+						portaudio_initialized = true;
+				}
+				if (portaudio_initialized) {
+					if (pa_api->open(&portaudio_stream
+							 , 0 /* No input */
+							 , 1 /* Mono output */
+							 , paUInt8
+							 , S_RATE
+							 , 256
+							 , 0
+							 , pa_api->ver >= 1899 ? NULL : portaudio_callback
+							 , &pawave) != paNoError)
+						portaudio_device_open_failed = true;
+					else {
+						handle_type = SOUND_DEVICE_PORTAUDIO;
+						handle_rc++;
+						return true;
+					}
+				}
 			}
 		}
-		if (pa_api != NULL) {
-			if (!portaudio_initialized) {
-				if (pa_api->init() != paNoError)
-					portaudio_device_open_failed = true;
-				else
-					portaudio_initialized = true;
+	}
+#endif
+
+#ifdef WITH_SDL_AUDIO
+	if (xpbeep_sound_devices_enabled & XPBEEP_DEVICE_SDL) {
+		if (!sdl_device_open_failed) {
+			if (init_sdl_audio() == -1) {
+				sdl_device_open_failed = true;
 			}
-			if (portaudio_initialized) {
-				if (pa_api->open(&portaudio_stream
-				                 , 0 /* No input */
-				                 , 1 /* Mono output */
-				                 , paUInt8
-				                 , S_RATE
-				                 , 256
-				                 , 0
-				                 , pa_api->ver >= 1899 ? NULL : portaudio_callback
-				                 , &pawave) != paNoError)
-					portaudio_device_open_failed = true;
+			else {
+				spec.freq = 22050;
+				spec.format = AUDIO_U8;
+				spec.channels = 1;
+				spec.samples = 256;       /* Size of audio buffer */
+				spec.size = 256;
+				spec.callback = sdl_fillbuf;
+				spec.userdata = NULL;
+				if (xpbeep_sdl.OpenAudio(&spec, NULL) == -1) {
+					sdl_device_open_failed = true;
+				}
 				else {
-					handle_type = SOUND_DEVICE_PORTAUDIO;
+					sdlToneDone = xpbeep_sdl.SDL_CreateSemaphore(0);
+					sdl_audio_buf_len = 0;
+					sdl_audio_buf_pos = 0;
+					xpbeep_sdl.PauseAudio(false);
+					handle_type = SOUND_DEVICE_SDL;
 					handle_rc++;
 					return true;
 				}
@@ -511,145 +547,122 @@ xptone_open_locked(void)
 	}
 #endif
 
-#ifdef WITH_SDL_AUDIO
-	if (!sdl_device_open_failed) {
-		if (init_sdl_audio() == -1) {
-			sdl_device_open_failed = true;
-		}
-		else {
-			spec.freq = 22050;
-			spec.format = AUDIO_U8;
-			spec.channels = 1;
-			spec.samples = 256;       /* Size of audio buffer */
-			spec.size = 256;
-			spec.callback = sdl_fillbuf;
-			spec.userdata = NULL;
-			if (xpbeep_sdl.OpenAudio(&spec, NULL) == -1) {
-				sdl_device_open_failed = true;
-			}
-			else {
-				sdlToneDone = xpbeep_sdl.SDL_CreateSemaphore(0);
-				sdl_audio_buf_len = 0;
-				sdl_audio_buf_pos = 0;
-				xpbeep_sdl.PauseAudio(false);
-				handle_type = SOUND_DEVICE_SDL;
+#ifdef _WIN32
+	if (xpbeep_sound_devices_enabled & XPBEEP_DEVICE_WIN32) {
+		if (!sound_device_open_failed) {
+			w.wFormatTag = WAVE_FORMAT_PCM;
+			w.nChannels = 1;
+			w.nSamplesPerSec = S_RATE;
+			w.wBitsPerSample = 8;
+			w.nBlockAlign = (w.wBitsPerSample * w.nChannels) / 8;
+			w.nAvgBytesPerSec = w.nSamplesPerSec * w.nBlockAlign;
+
+			if (!sound_device_open_failed && waveOutOpen(&waveOut, WAVE_MAPPER, &w, 0, 0, 0) != MMSYSERR_NOERROR)
+				sound_device_open_failed = true;
+			if (sound_device_open_failed)
+				return false;
+			memset(&wh, 0, sizeof(wh));
+			wh[0].dwBufferLength = S_RATE * 15 / 2 + 1;
+			wh[1].dwBufferLength = S_RATE * 15 / 2 + 1;
+			handle_type = SOUND_DEVICE_WIN32;
+			if (!sound_device_open_failed) {
 				handle_rc++;
 				return true;
 			}
-		}
-	}
-#endif
-
-#ifdef _WIN32
-	if (!sound_device_open_failed) {
-		w.wFormatTag = WAVE_FORMAT_PCM;
-		w.nChannels = 1;
-		w.nSamplesPerSec = S_RATE;
-		w.wBitsPerSample = 8;
-		w.nBlockAlign = (w.wBitsPerSample * w.nChannels) / 8;
-		w.nAvgBytesPerSec = w.nSamplesPerSec * w.nBlockAlign;
-
-		if (!sound_device_open_failed && waveOutOpen(&waveOut, WAVE_MAPPER, &w, 0, 0, 0) != MMSYSERR_NOERROR)
-			sound_device_open_failed = true;
-		if (sound_device_open_failed)
-			return false;
-		memset(&wh, 0, sizeof(wh));
-		wh[0].dwBufferLength = S_RATE * 15 / 2 + 1;
-		wh[1].dwBufferLength = S_RATE * 15 / 2 + 1;
-		handle_type = SOUND_DEVICE_WIN32;
-		if (!sound_device_open_failed) {
-			handle_rc++;
-			return true;
 		}
 	}
 #endif
 
 #ifdef USE_ALSA_SOUND
-	if (!alsa_device_open_failed) {
-		if (alsa_api == NULL) {
-			const char *libnames[] = {"asound", NULL};
-			if (((alsa_api = (struct alsa_api_struct *)malloc(sizeof(struct alsa_api_struct))) == NULL)
-			    || ((alsa_api->dl = xp_dlopen(libnames, RTLD_LAZY, 2)) == NULL)
-			    || ((alsa_api->snd_pcm_open = xp_dlsym(alsa_api->dl, snd_pcm_open)) == NULL)
-			    || ((alsa_api->snd_pcm_hw_params_malloc = xp_dlsym(alsa_api->dl, snd_pcm_hw_params_malloc)) == NULL)
-			    || ((alsa_api->snd_pcm_hw_params_any = xp_dlsym(alsa_api->dl, snd_pcm_hw_params_any)) == NULL)
-			    || ((alsa_api->snd_pcm_hw_params_set_access = xp_dlsym(alsa_api->dl, snd_pcm_hw_params_set_access)) == NULL)
-			    || ((alsa_api->snd_pcm_hw_params_set_format = xp_dlsym(alsa_api->dl, snd_pcm_hw_params_set_format)) == NULL)
-			    || ((alsa_api->snd_pcm_hw_params_set_rate_near = xp_dlsym(alsa_api->dl, snd_pcm_hw_params_set_rate_near)) == NULL)
-			    || ((alsa_api->snd_pcm_hw_params_set_channels = xp_dlsym(alsa_api->dl, snd_pcm_hw_params_set_channels)) == NULL)
-			    || ((alsa_api->snd_pcm_hw_params = xp_dlsym(alsa_api->dl, snd_pcm_hw_params)) == NULL)
-			    || ((alsa_api->snd_pcm_prepare = xp_dlsym(alsa_api->dl, snd_pcm_prepare)) == NULL)
-			    || ((alsa_api->snd_pcm_hw_params_free = xp_dlsym(alsa_api->dl, snd_pcm_hw_params_free)) == NULL)
-			    || ((alsa_api->snd_pcm_close = xp_dlsym(alsa_api->dl, snd_pcm_close)) == NULL)
-			    || ((alsa_api->snd_pcm_writei = xp_dlsym(alsa_api->dl, snd_pcm_writei)) == NULL)
-			    || ((alsa_api->snd_pcm_drain = xp_dlsym(alsa_api->dl, snd_pcm_drain)) == NULL)
-			    ) {
-				if (alsa_api->dl)
-					xp_dlclose(alsa_api->dl);
-				free(alsa_api);
-				alsa_api = NULL;
-				alsa_device_open_failed = true;
-			}
-			if (alsa_api == NULL)
-				alsa_device_open_failed = true;
-		}
-		if (alsa_api != NULL) {
-			unsigned int rate = S_RATE;
-			if ((alsa_api->snd_pcm_open(&playback_handle, "default", SND_PCM_STREAM_PLAYBACK, 0) < 0)
-			    || (alsa_api->snd_pcm_hw_params_malloc(&hw_params) < 0)
-			    || (alsa_api->snd_pcm_hw_params_any(playback_handle, hw_params) < 0)
-			    || (alsa_api->snd_pcm_hw_params_set_access(playback_handle, hw_params, SND_PCM_ACCESS_RW_INTERLEAVED) < 0)
-			    || (alsa_api->snd_pcm_hw_params_set_format(playback_handle, hw_params, SND_PCM_FORMAT_U8) < 0)
-			    || (alsa_api->snd_pcm_hw_params_set_rate_near(playback_handle, hw_params, &rate, 0) < 0)
-			    || (alsa_api->snd_pcm_hw_params_set_channels(playback_handle, hw_params, 1) < 0)
-			    || (alsa_api->snd_pcm_hw_params(playback_handle, hw_params) < 0)
-			    || (alsa_api->snd_pcm_prepare(playback_handle) < 0)) {
-				alsa_device_open_failed = true;
-				if (hw_params != NULL)
-					alsa_api->snd_pcm_hw_params_free(hw_params);
-				if (playback_handle != NULL) {
-					alsa_api->snd_pcm_close(playback_handle);
-					playback_handle = NULL;
+	if (xpbeep_sound_devices_enabled & XPBEEP_DEVICE_ALSA) {
+		if (!alsa_device_open_failed) {
+			if (alsa_api == NULL) {
+				const char *libnames[] = {"asound", NULL};
+				if (((alsa_api = (struct alsa_api_struct *)malloc(sizeof(struct alsa_api_struct))) == NULL)
+				    || ((alsa_api->dl = xp_dlopen(libnames, RTLD_LAZY, 2)) == NULL)
+				    || ((alsa_api->snd_pcm_open = xp_dlsym(alsa_api->dl, snd_pcm_open)) == NULL)
+				    || ((alsa_api->snd_pcm_hw_params_malloc = xp_dlsym(alsa_api->dl, snd_pcm_hw_params_malloc)) == NULL)
+				    || ((alsa_api->snd_pcm_hw_params_any = xp_dlsym(alsa_api->dl, snd_pcm_hw_params_any)) == NULL)
+				    || ((alsa_api->snd_pcm_hw_params_set_access = xp_dlsym(alsa_api->dl, snd_pcm_hw_params_set_access)) == NULL)
+				    || ((alsa_api->snd_pcm_hw_params_set_format = xp_dlsym(alsa_api->dl, snd_pcm_hw_params_set_format)) == NULL)
+				    || ((alsa_api->snd_pcm_hw_params_set_rate_near = xp_dlsym(alsa_api->dl, snd_pcm_hw_params_set_rate_near)) == NULL)
+				    || ((alsa_api->snd_pcm_hw_params_set_channels = xp_dlsym(alsa_api->dl, snd_pcm_hw_params_set_channels)) == NULL)
+				    || ((alsa_api->snd_pcm_hw_params = xp_dlsym(alsa_api->dl, snd_pcm_hw_params)) == NULL)
+				    || ((alsa_api->snd_pcm_prepare = xp_dlsym(alsa_api->dl, snd_pcm_prepare)) == NULL)
+				    || ((alsa_api->snd_pcm_hw_params_free = xp_dlsym(alsa_api->dl, snd_pcm_hw_params_free)) == NULL)
+				    || ((alsa_api->snd_pcm_close = xp_dlsym(alsa_api->dl, snd_pcm_close)) == NULL)
+				    || ((alsa_api->snd_pcm_writei = xp_dlsym(alsa_api->dl, snd_pcm_writei)) == NULL)
+				    || ((alsa_api->snd_pcm_drain = xp_dlsym(alsa_api->dl, snd_pcm_drain)) == NULL)
+				    ) {
+					if (alsa_api->dl)
+						xp_dlclose(alsa_api->dl);
+					free(alsa_api);
+					alsa_api = NULL;
+					alsa_device_open_failed = true;
 				}
+				if (alsa_api == NULL)
+					alsa_device_open_failed = true;
 			}
-			else {
-				alsa_api->snd_pcm_hw_params_free(hw_params);
-				handle_type = SOUND_DEVICE_ALSA;
-				handle_rc++;
-				return true;
+			if (alsa_api != NULL) {
+				unsigned int rate = S_RATE;
+				if ((alsa_api->snd_pcm_open(&playback_handle, "default", SND_PCM_STREAM_PLAYBACK, 0) < 0)
+				    || (alsa_api->snd_pcm_hw_params_malloc(&hw_params) < 0)
+				    || (alsa_api->snd_pcm_hw_params_any(playback_handle, hw_params) < 0)
+				    || (alsa_api->snd_pcm_hw_params_set_access(playback_handle, hw_params, SND_PCM_ACCESS_RW_INTERLEAVED) < 0)
+				    || (alsa_api->snd_pcm_hw_params_set_format(playback_handle, hw_params, SND_PCM_FORMAT_U8) < 0)
+				    || (alsa_api->snd_pcm_hw_params_set_rate_near(playback_handle, hw_params, &rate, 0) < 0)
+				    || (alsa_api->snd_pcm_hw_params_set_channels(playback_handle, hw_params, 1) < 0)
+				    || (alsa_api->snd_pcm_hw_params(playback_handle, hw_params) < 0)
+				    || (alsa_api->snd_pcm_prepare(playback_handle) < 0)) {
+					alsa_device_open_failed = true;
+					if (hw_params != NULL)
+						alsa_api->snd_pcm_hw_params_free(hw_params);
+					if (playback_handle != NULL) {
+						alsa_api->snd_pcm_close(playback_handle);
+						playback_handle = NULL;
+					}
+				}
+				else {
+					alsa_api->snd_pcm_hw_params_free(hw_params);
+					handle_type = SOUND_DEVICE_ALSA;
+					handle_rc++;
+					return true;
+				}
 			}
 		}
 	}
 #endif
 
 #ifdef AFMT_U8
-	if (!sound_device_open_failed) {
-		if ((dsp = open("/dev/dsp", O_WRONLY, 0)) < 0) {
-			sound_device_open_failed = true;
+	if (xpbeep_sound_devices_enabled & XPBEEP_DEVICE_OSS) {
+		if (!sound_device_open_failed) {
+			if ((dsp = open("/dev/dsp", O_WRONLY, 0)) < 0) {
+				sound_device_open_failed = true;
+			}
+			else  {
+				ioctl(dsp, SNDCTL_DSP_SETFRAGMENT, &fragsize);
+				if ((ioctl(dsp, SNDCTL_DSP_SETFMT, &format) == -1) || format != AFMT_U8) {
+					sound_device_open_failed = true;
+					close(dsp);
+				}
+				else if ((ioctl(dsp, SNDCTL_DSP_CHANNELS, &channels) == -1) || channels != 1) {
+					sound_device_open_failed = true;
+					close(dsp);
+				}
+				else if ((ioctl(dsp, SNDCTL_DSP_SPEED, &rate) == -1) || rate != S_RATE) {
+					sound_device_open_failed = true;
+					close(dsp);
+				}
+			}
 		}
-		else  {
-			ioctl(dsp, SNDCTL_DSP_SETFRAGMENT, &fragsize);
-			if ((ioctl(dsp, SNDCTL_DSP_SETFMT, &format) == -1) || format != AFMT_U8) {
-				sound_device_open_failed = true;
-				close(dsp);
-			}
-			else if ((ioctl(dsp, SNDCTL_DSP_CHANNELS, &channels) == -1) || channels != 1) {
-				sound_device_open_failed = true;
-				close(dsp);
-			}
-			else if ((ioctl(dsp, SNDCTL_DSP_SPEED, &rate) == -1) || rate != S_RATE) {
-				sound_device_open_failed = true;
-				close(dsp);
-			}
+		if (sound_device_open_failed) {
+			return false;
 		}
-	}
-	if (sound_device_open_failed) {
-		return false;
-	}
-	handle_type = SOUND_DEVICE_OSS;
-	if (!sound_device_open_failed) {
-		handle_rc++;
-		return true;
+		handle_type = SOUND_DEVICE_OSS;
+		if (!sound_device_open_failed) {
+			handle_rc++;
+			return true;
+		}
 	}
 #endif
 

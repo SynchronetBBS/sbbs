@@ -30,6 +30,14 @@ enum WAVE_SHAPE {
 	,WAVE_SHAPE_SINE_SAW_HARM
 };
 
+#define XPBEEP_DEVICE_WIN32      (1U<<0)
+#define XPBEEP_DEVICE_ALSA       (1U<<1)
+#define XPBEEP_DEVICE_OSS        (1U<<2)
+#define XPBEEP_DEVICE_SDL        (1U<<3)
+#define XPBEEP_DEVICE_PORTAUDIO  (1U<<4)
+#define XPBEEP_DEVICE_PULSEAUDIO (1U<<5)
+#define XPBEEP_DEVICE_DEFAULT (XPBEEP_DEVICE_WIN32 | XPBEEP_DEVICE_ALSA | XPBEEP_DEVICE_OSS | XPBEEP_DEVICE_PORTAUDIO | XPBEEP_DEVICE_PULSEAUDIO)
+extern uint32_t xpbeep_sound_devices_enabled;
 
 #ifdef __cplusplus
 extern "C" {
