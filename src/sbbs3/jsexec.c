@@ -1203,14 +1203,12 @@ int main(int argc, char **argv)
 	struct sigaction sa = {0};
 #endif
 
-	printf("%s %d\n", __FILE__, __LINE__);
 	confp = stdout;
 	errfp = stderr;
 	if ((nulfp = fopen(_PATH_DEVNULL, "w+")) == NULL) {
 		perror(_PATH_DEVNULL);
 		return do_bail(-1);
 	}
-	printf("%s %d\n", __FILE__, __LINE__);
 	if (isatty(fileno(stdin))) {
 #ifdef __unix__
 		tcgetattr(fileno(stdin), &orig_term);
@@ -1221,25 +1219,21 @@ int main(int argc, char **argv)
 	else    /* if redirected, don't send status messages to stderr */
 		statfp = nulfp;
 
-	printf("%s %d\n", __FILE__, __LINE__);
 	cb.limit = JAVASCRIPT_TIME_LIMIT;
 	cb.yield_interval = JAVASCRIPT_YIELD_INTERVAL;
 	cb.gc_interval = JAVASCRIPT_GC_INTERVAL;
 	cb.auto_terminate = true;
 	cb.events = NULL;
 
-	printf("%s %d\n", __FILE__, __LINE__);
 	DESCRIBE_COMPILER(compiler);
 
 	memset(&scfg, 0, sizeof(scfg));
 	scfg.size = sizeof(scfg);
 
-	printf("%s %d\n", __FILE__, __LINE__);
 	if (!winsock_startup())
 		return do_bail(2);
 
 #ifndef JSDOOR
-	printf("%s %d\n", __FILE__, __LINE__);
 	SAFECOPY(scfg.ctrl_dir, get_ctrl_dir(/* warn: */ false));
 	iniFileName(ini_fname, sizeof(ini_fname), scfg.ctrl_dir, "jsexec.ini");
 	if ((fp = iniOpenFile(ini_fname, /* for_modify: */ false)) != NULL) {
@@ -1251,7 +1245,6 @@ int main(int argc, char **argv)
 	get_ini_values(ini, /* section (global): */ NULL, &cb);
 #endif
 
-	printf("%s %d\n", __FILE__, __LINE__);
 	if (getcwd(orig_cwd, sizeof(orig_cwd)) == NULL) {
 		fprintf(stderr, "Error %d (%s) getting cwd\n", errno, strerror(errno));
 		return do_bail(1);
@@ -1276,7 +1269,6 @@ int main(int argc, char **argv)
 	errfp = fopen("error.log", "a");
 #endif
 
-	printf("%s %d\n", __FILE__, __LINE__);
 	for (argn = 1; argn < argc && module == NULL && js_buf == NULL; argn++) {
 		if (argv[argn][0] == '-') {
 			p = argv[argn] + 2;
@@ -1446,12 +1438,10 @@ int main(int argc, char **argv)
 		get_ini_values(ini, ini_section, &cb);
 #endif
 	}
-	printf("%s %d\n", __FILE__, __LINE__);
 
 	if (umask_val >= 0)
 		umask(umask_val);
 
-	printf("%s %d\n", __FILE__, __LINE__);
 	if (module == NULL && js_buf == NULL && isatty(fileno(stdin))) {
 		fprintf(stderr, "\n!No JavaScript module-name or expression specified\n");
 		usage();
@@ -1459,9 +1449,7 @@ int main(int argc, char **argv)
 		return do_bail(1);
 	}
 
-	printf("%s %d\n", __FILE__, __LINE__);
 	banner(statfp);
-	printf("%s %d\n", __FILE__, __LINE__);
 
 #ifdef JSDOOR
 	SAFECOPY(scfg.temp_dir, "./temp");
