@@ -897,27 +897,113 @@ int putusername(scfg_t* cfg, int number, const char *name)
 	return USER_SUCCESS;
 }
 
-#define DECVAL(ch, mul) (DEC_CHAR_TO_INT(ch) * (mul))
+static int birthdate_year_field(enum date_fmt fmt, int first, int third)
+{
+	switch (fmt) {
+		case YYMMDD:
+			return first;
+		case DDMMYY:
+		case MMDDYY:
+			return third;
+	}
+	return 0;
+}
+
+static int birthdate_month_field(enum date_fmt fmt, int first, int second)
+{
+	switch (fmt) {
+		case YYMMDD:
+		case DDMMYY:
+			return second;
+		case MMDDYY:
+			return first;
+	}
+	return 0;
+}
+
+static int birthdate_day_field(enum date_fmt fmt, int first, int second, int third)
+{
+	switch (fmt) {
+		case YYMMDD:
+			return third;
+		case DDMMYY:
+			return first;
+		case MMDDYY:
+			return second;
+	}
+	return 0;
+}
+
+enum birth_field { BIRTH_YEAR, BIRTH_MONTH, BIRTH_DAY };
+
+static int split_birthdate(int value, enum birth_field field)
+{
+	switch (field) {
+		case BIRTH_YEAR:
+			if (value < 10000)
+				return value;
+			return value / 10000;
+		case BIRTH_MONTH:
+			if (value < 10000)
+				return 1;
+			return (value / 100) % 100;
+		case BIRTH_DAY:
+			if (value < 10000)
+				return 1;
+			return value % 100;
+	}
+	return 0;
+}
+
+// Handles field-separated and non-separated bithdate strings
+static int parse_birthdate_field(scfg_t* cfg, const char* birth, enum birth_field field)
+{
+	char* next = NULL;
+	int first;
+	int second;
+	int third;
+
+	first = strtoul(birth, &next, 10);
+	if (next == NULL || *next == '\0') // No separators, assume CCYYMMDD or CCYY
+		return split_birthdate(first, field);
+	++next;
+	second = strtoul(next, &next, 10);
+	if (next == NULL || *next == '\0') { // No 'Day' field provided
+		if (field == BIRTH_DAY)
+			return 1;
+		if (first > 12 || (cfg->sys_date_fmt == YYMMDD && second <= 12))
+			return field == BIRTH_YEAR ? first : second; // year first
+		return field == BIRTH_YEAR ? second : first; // month first
+	}
+	++next;
+	third = strtoul(next, NULL, 10);
+	enum date_fmt fmt = cfg->sys_date_fmt;
+	if (first > 31)
+		fmt = YYMMDD;
+	else if (first > 12)
+		fmt = DDMMYY;
+	else if (second > 12)
+		fmt = MMDDYY;
+	switch (field) {
+		case BIRTH_YEAR:
+			return birthdate_year_field(fmt, first, third);
+		case BIRTH_MONTH:
+			return birthdate_month_field(fmt, first, second);
+		case BIRTH_DAY:
+			return birthdate_day_field(fmt, first, second, third);
+	}
+	return 0;
+}
 
 int getbirthyear(scfg_t* cfg, const char* birth)
 {
-	if (IS_DIGIT(birth[2]))              // CCYYMMDD format
-		return DECVAL(birth[0], 1000)
-		       + DECVAL(birth[1], 100)
-		       + DECVAL(birth[2], 10)
-		       + DECVAL(birth[3], 1);
-	// DD/MM/[CC]YY or [CC]MM/DD/YY format
-	time_t     now = time(NULL);
-	struct  tm tm;
-	if (localtime_r(&now, &tm) == NULL)
-		return 0;
-	tm.tm_year += 1900;
-	int        year;
-	if (cfg->sys_date_fmt == YYMMDD)
-		year = strtoul(birth, NULL, 10);
-	else // MMDDYY or DDMMYY
-		year = strtoul(birth + 6, NULL, 10);
+	int year = parse_birthdate_field(cfg, birth, BIRTH_YEAR);
 	if (year < 100) {
+		time_t     now = time(NULL);
+		struct  tm tm;
+		if (localtime_r(&now, &tm) == NULL)
+			return 0;
+		tm.tm_year += 1900;
 		year += 1900;
 		if (tm.tm_year - year > 105)
 			year += 100;
@@ -925,30 +1011,23 @@ int getbirthyear(scfg_t* cfg, const char* birth)
 	return year;
 }
 
+static int int_range(int val, int min, int max)
+{
+	if (val < min)
+		return min;
+	if (val > max)
+		return max;
+	return val;
+}
+
 int getbirthmonth(scfg_t* cfg, const char* birth)
 {
-	if (IS_DIGIT(birth[5]))              // CCYYMMDD format
-		return DECVAL(birth[4], 10) + DECVAL(birth[5], 1);
-	if (cfg->sys_date_fmt != MMDDYY) {   // DD/MM/YY or YY/MM/DD format
-		return DECVAL(birth[3], 10) + DECVAL(birth[4], 1);
-	} else {                            // MM/DD/YY format
-		return DECVAL(birth[0], 10) + DECVAL(birth[1], 1);
-	}
+	return int_range(parse_birthdate_field(cfg, birth, BIRTH_MONTH), 1, 12);
 }
 
 int getbirthday(scfg_t* cfg, const char* birth)
 {
-	if (IS_DIGIT(birth[5]))              // CCYYMMDD format
-		return DECVAL(birth[6], 10) + DECVAL(birth[7], 1);
-	switch (cfg->sys_date_fmt) {
-		case DDMMYY:
-			return DECVAL(birth[0], 10) + DECVAL(birth[1], 1);
-		case MMDDYY:
-			return DECVAL(birth[3], 10) + DECVAL(birth[4], 1);
-		case YYMMDD:
-			return DECVAL(birth[6], 10) + DECVAL(birth[7], 1);
-	}
-	return 0;
+	return int_range(parse_birthdate_field(cfg, birth, BIRTH_DAY), 1, 31);
 }
 
 // Always returns string in MM/DD/YY format
@@ -1031,7 +1110,7 @@ int getage(scfg_t* cfg, const char *birth)
 }
 
 /****************************************************************************/
-/* Converts from MM/DD/YYYYY, DD/MM/YYYY, or YYYY/MM/DD to YYYYMMDD			*/
+/* Converts from MM/DD/[CC]YY, DD/MM/[CC]YY, or [CC]YY/MM/DD to CCYYMMDD	*/
 /****************************************************************************/
 char* parse_birthdate(scfg_t* cfg, const char* birthdate, char* out, size_t maxlen)
 {
@@ -1041,7 +1120,7 @@ char* parse_birthdate(scfg_t* cfg, const char* birthdate, char* out, size_t maxl
 }
 
 /****************************************************************************/
-/* Converts from user birth date to MM/DD/YYYYY, DD/MM/YYYY, or YYYY/MM/DD	*/
+/* Converts from user birth date to MM/DD/YYYY, DD/MM/YYYY, or YYYY/MM/DD	*/
 /****************************************************************************/
 char* format_birthdate(scfg_t* cfg, const char* birthdate, char* out, size_t maxlen)
 {
