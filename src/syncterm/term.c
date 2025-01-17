@@ -319,175 +319,136 @@ cleanup:
 	return;
 }
 
+static struct vmem_cell *status_bar;
+size_t status_bar_sz;
+bool force_status_update = false;
+
 void
 update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 {
-	char nbuf[LIST_NAME_MAX + 10 + 11 + 7 + 10 + 6 + 1]; /*
-                                                 * Room for "Name (Logging) (115300) (DrWy) (OOTerm2) (INV)" and terminator
-                                                 * SAFE and Logging should me be possible.
-                                                 */
-	int               oldscroll;
-	int               olddmc = hold_update;
-	struct  text_info txtinfo;
-	int64_t           now;
-	static int64_t    lastupd = 0;
-	static int        oldspeed = 0;
-	static int        lastmouse = 0;
-	int               newmouse;
-	int               timeon;
-	char              sep;
-	int               oldfont_norm;
-	int               oldfont_bright;
+	size_t i;
+	int avail = 30;
+	int timeon;
+	int rc;
+	char nbuf[31]; /*
+                        * Room for "Name (Logging) (115300) (DrWy) (OOTerm2) (INV)" and terminator
+                        * SAFE and Logging should be possible.
+                        */
+	char sbuf[10];
+	char tobuf[9];
+	char fullbuf[81];
+	int64_t now = xp_fast_timer64();
 	struct mouse_state *ms = cterm->mouse_state_change_cbdata;
+	static int64_t lastupd = 0;
+	static int oldspeed = 0;
+	static uint32_t oldbits = UINT32_MAX;
+	uint32_t newbits;
 
 	if (term.nostatus)
 		return;
 
-	now = xp_fast_timer64();
-	newmouse = ((ms->mode == MM_OFF) ? 1 : 0) | (ms->flags & MS_FLAGS_DISABLED);
-	if (rip_did_reinit) {
-		rip_did_reinit = false;
-	}
-	else {
-		if ((now == lastupd) && (speed == oldspeed) && (newmouse == lastmouse)) {
+	if (status_bar == NULL || status_bar_sz != term.width) {
+		free(status_bar);
+		status_bar_sz = term.width;
+		status_bar = calloc(status_bar_sz, sizeof(status_bar[0]));
+		if (status_bar == NULL) {
+			status_bar_sz = 0;
 			return;
+		}
+		for (i = 0; i < status_bar_sz; i++) {
+			status_bar[i].fg = 0x80ffff54;
+			status_bar[i].bg = 0x800000a8;
+			status_bar[i].ch = ' ';
+			status_bar[i].font = 0;
+			status_bar[i].legacy_attr = 0x4b;
 		}
 	}
 
-	oldfont_norm = getfont(1);
-	oldfont_bright = getfont(2);
-	setfont(0, false, 1);
-	setfont(0, false, 2);
-	switch (getfont(1)) {
-		case 0:
-		case 17:
-		case 18:
-		case 19:
-		case 25:
-		case 26:
-		case 27:
-		case 28:
-		case 29:
-		case 31:
-			sep = 0xb3;
-			break;
-		default:
-			sep = '|';
+	if (term.width < 80)
+		lastupd = now;
+	if (ata_inv)
+		newbits = 1;
+	else
+		newbits = 0;
+	if (safe_mode)
+		newbits |= 0x02;
+	if (cterm->log)
+		newbits |= 0x04;
+	if (cterm->doorway_mode)
+		newbits |= 0x08;
+	if (ooii_mode >= 1 && ooii_mode <= 3)
+		newbits |= (ooii_mode << 4);
+	if (force_status_update) {
+		newbits |= 0x40;
+		force_status_update = false;
+	}
+	if (rip_did_reinit)
+		rip_did_reinit = false;
+	else {
+		if ((now == lastupd) && (speed == oldspeed) && (oldbits == newbits))
+			return;
 	}
 	lastupd = now;
-	lastmouse = newmouse;
 	oldspeed = speed;
-	timeon = now - bbs->fast_connected;
-	if (timeon > 360000)
-		timeon = 360000;
-	else if (timeon < 0)
-		timeon = 0;
-	gettextinfo(&txtinfo);
-	oldscroll = _wscroll;
-	hold_update = true;
-	textattr(YELLOW | (BLUE << 4));
+	oldbits = newbits;
 
-        /* Move to status line thinger */
-	window(term.x - 1, term.y + term.height - 1, term.x + term.width - 2, term.y + term.height - 1);
-	gotoxy(1, 1);
-	_wscroll = 0;
-	strcpy(nbuf, bbs->name);
-	if (safe_mode)
-		strcat(nbuf, " (SAFE)");
-	if (cterm->log)
-		strcat(nbuf, " (Logging)");
-	if (speed)
-		sprintf(strchr(nbuf, 0), " (%d)", speed);
-	if (cterm->doorway_mode)
-		strcat(nbuf, " (DrWy)");
-	switch (ooii_mode) {
-		case 1:
-			strcat(nbuf, " (OOTerm)");
-			break;
-		case 2:
-			strcat(nbuf, " (OOTerm1)");
-			break;
-		case 3:
-			strcat(nbuf, " (OOTerm2)");
-			break;
-	}
-	if (ata_inv)
-		strcat(nbuf, " (INV)");
-	ciolib_setcolour(11, 4);
-	switch (cio_api.mode) {
+	switch(cio_api.mode) {
 		case CIOLIB_MODE_CURSES:
 		case CIOLIB_MODE_CURSES_IBM:
 		case CIOLIB_MODE_ANSI:
-			if (term.width < 80) {
-				cprintf(" %-30.30s %c %-6.6s ",
-				    nbuf,
-				    sep,
-				    conn_types[bbs->conn_type]);
-			}
-			else if (timeon > 359999) {
-				cprintf(" %-29.29s %c %-6.6s %c Connected: Too Long %c CTRL-S for menu ",
-				    nbuf,
-				    sep,
-				    conn_types[bbs->conn_type],
-				    sep,
-				    sep);
-			}
-			else {
-				cprintf(" %-29.29s %c %-6.6s %c Connected: %02d:%02d:%02d %c CTRL-S for menu ",
-				    nbuf,
-				    sep,
-				    conn_types[bbs->conn_type],
-				    sep,
-				    timeon / 3600,
-				    (timeon / 60) % 60,
-				    timeon % 60,
-				    sep);
-			}
-			break;
-		default:
-			if (term.width < 80) {
-				cprintf(" %-30.30s %c %-6.6s %*s",
-				    nbuf,
-				    sep,
-				    conn_types[bbs->conn_type],
-				    term.width - 40, "");
-			}
-			else if (timeon > 359999) {
-				cprintf(" %-30.30s %c %-6.6s %c Connected: Too Long %c "ALT_KEY_NAME3CH "-Z for menu ",
-				    nbuf,
-				    sep,
-				    conn_types[bbs->conn_type],
-				    sep,
-				    sep);
-			}
-			else {
-				cprintf(
-					" %-30.30s %c %-6.6s %c Connected: %02d:%02d:%02d %c "ALT_KEY_NAME3CH "-Z for menu ",
-					nbuf,
-					sep,
-					conn_types[bbs->conn_type],
-					sep,
-					timeon / 3600,
-					(timeon / 60) % 60,
-					timeon % 60,
-					sep);
-			}
-			break; /*    1+29     +3    +6    +3    +11        +3+3+2        +3    +6    +4  +5 */
+			if (term.width >= 80)
+				avail = 29;
 	}
-	if (wherex() - term.y + 1 >= term.width)
-		clreol();
+
+	if (speed)
+		snprintf(sbuf, sizeof(sbuf), " (%d)", speed);
+	else
+		sbuf[0] = 0;
+	rc = snprintf(nbuf, avail + 1, "%s%s%s%s%s%s%s", bbs->name, safe_mode ? " (SAFE)" : ""
+	    , cterm->log ? " (Logging)" : "", sbuf, cterm->doorway_mode ? " (DrWy)" : ""
+	    , ooii_mode == 1 ? " (OOTerm)" : ooii_mode == 2 ? " (OOTerm1)" : ooii_mode == 3 ? " (OOTerm2)" : ""
+	    , ata_inv ? " (INV)" : "");
+	if (rc > avail) {
+		nbuf[avail - 1] = '.';
+		nbuf[avail - 2] = '.';
+		nbuf[avail - 3] = '.';
+	}
+	if (term.width >= 80) {
+		timeon = now - bbs->fast_connected;
+		if (timeon > 360000)
+			timeon = 360000;
+		else if (timeon < 0)
+			timeon = 0;
+		if (timeon > 359999)
+			strlcpy(tobuf, "Too Long", sizeof(tobuf));
+		else
+			snprintf(tobuf, sizeof(tobuf), "%02d:%02d:%02d", timeon / 3600, (timeon / 60) % 60
+			    , timeon % 60);
+		snprintf(fullbuf, sizeof(fullbuf), " %-*.*s %c %-6.6s %c Connected: %s %c %s", avail, avail, nbuf, 0xb3
+		    , conn_types[bbs->conn_type], 0xb3, tobuf, 0xb3
+		    , avail == 29 ? "CTRL-S for menu" : ALT_KEY_NAME3CH "-Z for menu ");
+	}
+	else {
+		snprintf(fullbuf, sizeof(fullbuf), " %-*.*s %c %-6.6s ", avail, avail, nbuf, 0xb3
+		    , conn_types[bbs->conn_type]);
+	}
+	if (ms->mode == 0) {
+		status_bar[30].ch = ' ';
+	}
+	for (i = 1; fullbuf[i]; i++) {
+		status_bar[i].ch = fullbuf[i];
+	}
 	if (ms->mode != 0) {
-		gotoxy(31, 1);
-		ciolib_setcolour((ms->flags & MS_FLAGS_DISABLED) ? 8 : 11, 4);
-		putch('M');
+		// TODO: Clear before M?
+		//status_bar[29].ch = ' ';
+		status_bar[30].ch = 'M';
+		if (ms->flags & MS_FLAGS_DISABLED)
+			status_bar[30].fg = 0x80545454;
+		else
+			status_bar[30].fg = 0x80ffff54;
 	}
-	_wscroll = oldscroll;
-	setfont(oldfont_norm, 0, 1);
-	setfont(oldfont_bright, 0, 2);
-	textattr(txtinfo.attribute);
-	window(txtinfo.winleft, txtinfo.wintop, txtinfo.winright, txtinfo.winbottom);
-	gotoxy(txtinfo.curx, txtinfo.cury);
-	hold_update = olddmc;
+	vmem_puttext(term.x - 1, term.y + term.height - 1, term.x + term.width - 2, term.y + term.height - 1
+	    , status_bar);
 }
 
 #if defined(_WIN32) && defined(_DEBUG) && defined(DUMP)
@@ -4218,6 +4179,7 @@ doterm(struct bbslist *bbs)
 	if (bbs->rip)
 		ms.mode = MM_RIP;
 	setup_mouse_events(&ms);
+	force_status_update = true;
 	for (; !quitting;) {
 		hold_update = true;
 		sleep = true;

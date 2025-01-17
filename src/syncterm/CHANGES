@@ -9,6 +9,7 @@ Fix X11 mode scaling and fullscreen with minimal X servers
 Massively improve output performance
 Add option to configure audio output
 Lower audio output volume by 12dB
+Reimplement status bar code
 
 Version 1.4a
 ------------
