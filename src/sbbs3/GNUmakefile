@@ -126,7 +126,12 @@ include sbbsdefs.mk
 MT_CFLAGS	+=	$(SBBSDEFS) $(SFTP-MT_CFLAGS)
 
 ifneq ($(os),darwin)
- LIB_RPATH := '-Wl,-rpath,$$ORIGIN,-rpath,$$ORIGIN/../$(LIBODIR),-z,origin'
+ ifdef SBBSDIR
+  LIB_RPATH += -Wl,-rpath,$(LIBODIR)
+ else
+  LIB_RPATH += -Wl,-rpath,$(PWD)/$(LIBODIR)
+ endif
+ LIB_RPATH := '-Wl,-rpath,$$ORIGIN,-rpath,$$ORIGIN/../$(LIBODIR),-z,origin,--enable-new-dtags'
 endif
 
 CON_LIBS	+= -lsbbs -lftpsrvr -lwebsrvr -lmailsrvr -lservices
