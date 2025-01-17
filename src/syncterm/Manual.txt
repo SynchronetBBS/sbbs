@@ -544,6 +544,11 @@ System Password::
 An additional password that can be sent after the
 first kbd:[Alt+L] using successive kbd:[Alt+L]s.
 
+Binmode Broken::
+Telnet binary mode is broken on the remote system, do not enable it when
+connecting.  This option is to work around a bug in CTRL-C checking in
+older Synchronet versions.
+
 Screen Mode::
 Selects the format of the window when connected.
 A mode specifies the number of columns, the number of rows,

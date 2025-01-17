@@ -820,6 +820,7 @@ read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id, int
 	if (entry->stop_bits < 1 || entry->stop_bits > 2)
 		entry->stop_bits = 1;
 	entry->parity = iniGetEnum(section, NULL, "Parity", parity_enum, SYNCTERM_PARITY_NONE);
+	entry->telnet_no_binary = iniGetBool(section, NULL, "TelnetBrokenTextmode", false);
 
 	/* Log Stuff */
 	iniGetSString(section, NULL, "LogFile", "", entry->logfile, sizeof(entry->logfile));
@@ -1160,6 +1161,7 @@ enum {
 	BBSLIST_FIELD_STOP_BITS,
 	BBSLIST_FIELD_DATA_BITS,
 	BBSLIST_FIELD_PARITY,
+	BBSLIST_FIELD_TELNET_NO_BINARY,
 };
 
 void
@@ -1247,6 +1249,10 @@ build_edit_list(struct bbslist *item, char opt[][69], int *optmap, char **opts, 
 	if (item->conn_type == CONN_TYPE_SSH || item->conn_type == CONN_TYPE_SSHNA) {
 		optmap[i] = BBSLIST_FIELD_SFTP_PUBLIC_KEY;
 		sprintf(opt[i++], "SFTP Public Key   %s", item->sftp_public_key ? "Yes" : "No");
+	}
+	if (item->conn_type == CONN_TYPE_TELNET || item->conn_type == CONN_TYPE_TELNETS) {
+		optmap[i] = BBSLIST_FIELD_TELNET_NO_BINARY;
+		sprintf(opt[i++], "Binmode Broken    %s", item->telnet_no_binary ? "Yes" : "No");
 	}
 	optmap[i] = BBSLIST_FIELD_SCREEN_MODE;
 	sprintf(opt[i++], "Screen Mode       %s", screen_modes[item->screen_mode]);
@@ -1382,6 +1388,11 @@ build_edit_help(struct bbslist *item, int isdefault, char *helpbuf, size_t hbsz)
 		hblen += strlcat(helpbuf + hblen, "~ SFTP Public Key ~\n"
 		                                  "        Open an SFTP channel and transfer the public key to\n"
 		                                  "        .ssh/authorized_keys\n\n", hbsz - hblen);
+	}
+	if (item->conn_type == CONN_TYPE_TELNET || item->conn_type == CONN_TYPE_TELNETS) {
+		hblen += strlcat(helpbuf + hblen, "~ Binmode Broken ~\n"
+		                                  "        Telnet binary mode is broken on the remote system, do not\n"
+		                                  "        enable it when connecting\n\n", hbsz - hblen);
 	}
 	hblen += strlcat(helpbuf + hblen, "~ Screen Mode ~\n"
 	                                  "        Display mode to use\n\n", hbsz - hblen);
@@ -1945,6 +1956,12 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 				changed = 1;
 				iniSetBool(&inifile, itemname, "SFTPPublicKey", item->sftp_public_key, &ini_style);
 				break;
+			case BBSLIST_FIELD_TELNET_NO_BINARY:
+				item->telnet_no_binary = !item->telnet_no_binary;
+				changed = 1;
+				iniSetBool(&inifile, itemname, "TelnetBrokenTextmode", item->telnet_no_binary, &ini_style);
+				break;
+
 		}
 		if (uifc.changes)
 			changed = 1;
@@ -2003,6 +2020,7 @@ add_bbs(char *listpath, struct bbslist *bbs, bool new_entry)
 	iniSetString(&inifile, bbs->name, "Comment", bbs->comment, &ini_style);
 	iniSetBool(&inifile, bbs->name, "ForceLCF", bbs->force_lcf, &ini_style);
 	iniSetBool(&inifile, bbs->name, "YellowIsYellow", bbs->yellow_is_yellow, &ini_style);
+	iniSetBool(&inifile, bbs->name, "TelnetBrokenTextmode", bbs->telnet_no_binary, &ini_style);
 	if (bbs->has_fingerprint) {
 		char fp[41];
 		fp[0] = 0;

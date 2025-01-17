@@ -152,6 +152,7 @@ struct bbslist {
 	bool               has_fingerprint;
 	uint8_t            ssh_fingerprint[20];
 	bool               sftp_public_key;
+	bool               telnet_no_binary;
 	// No way to get a uint8_t from an ini file.
 	short unsigned int stop_bits;
 	short unsigned int data_bits;

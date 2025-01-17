@@ -154,9 +154,11 @@ telnet_connect(struct bbslist *bbs)
 	// Suppress Go Aheads (both directions)
 	request_telnet_opt(TELNET_WILL, TELNET_SUP_GA);
 	request_telnet_opt(TELNET_DO, TELNET_SUP_GA);
-	// Enable binary mode (both directions)
-	request_telnet_opt(TELNET_WILL, TELNET_BINARY_TX);
-	request_telnet_opt(TELNET_DO, TELNET_BINARY_TX);
+	if (!bbs->telnet_no_binary) {
+		// Enable binary mode (both directions)
+		request_telnet_opt(TELNET_WILL, TELNET_BINARY_TX);
+		request_telnet_opt(TELNET_DO, TELNET_BINARY_TX);
+	}
 	// Request that the server echos
 	request_telnet_opt(TELNET_DO, TELNET_ECHO);
 
