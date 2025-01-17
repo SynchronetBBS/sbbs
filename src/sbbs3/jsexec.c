@@ -221,7 +221,7 @@ raw_tty(void)
 int mfprintf(FILE* fp, char *fmt, ...)
 {
 	va_list argptr;
-	char    sbuf[1024];
+	char    sbuf[8192];
 	int     ret = 0;
 
 	va_start(argptr, fmt);
@@ -242,7 +242,7 @@ int mfprintf(FILE* fp, char *fmt, ...)
 int lprintf(int level, const char *fmt, ...)
 {
 	va_list argptr;
-	char    sbuf[1024];
+	char    sbuf[8192];
 	int     ret = 0;
 
 	if (level > log_level)
