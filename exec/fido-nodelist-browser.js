@@ -1,11 +1,12 @@
 "use strict";
-js.on_exit("console.ctrlkey_passthru = ".concat(console.ctrlkey_passthru, ";"));
+// TS4S terminal prep / cleanup fixesjs.on_exit("console.ctrlkey_passthru = ".concat(console.ctrlkey_passthru, ";"));
 js.on_exit("console.attributes = ".concat(console.attributes, ";"));
 js.on_exit("bbs.sys_status = ".concat(bbs.sys_status, ";"));
 js.on_exit("console.home();");
-js.on_exit('console.write("\x1B[0;37;40m");');
-js.on_exit('console.write("\x1B[2J");');
-js.on_exit('console.write("\x1B[?25h");');
+js.on_exit('console.write("[0;37;40m");');
+js.on_exit('console.write("[2J");');
+js.on_exit('console.write("[?25h");');
+// End of TS4S terminal prep / cleanup fixes
 (function() {
   var __getOwnPropNames = Object.getOwnPropertyNames;
   var __commonJS = function(cb, mod) {
@@ -8519,7 +8520,7 @@ js.on_exit('console.write("\x1B[?25h");');
         };
         options.title.text = "Help";
         this.window = new ControlledWindow(options);
-        this.window.write("\r\nhwUse your cUPw/cDOWN wkeys to navigate the cNodelistw, cZonew, cNetw, and cNodew menus.\r\n\r\nOn most screens, hit cQw, cCw, cbackspacew, or cESCw to go back.\r\n\r\nUse cCTRL-S wto bring up the cSearch wscreen.\r\nHit cENTER win an empty input box to cancel a search.\r\nwUse your cUPw/cDOWN wkeys, or type to navigate the csearch results wmenu.\r\nHit cQw, cCw, cbackspacew, or cESCw to return to the search input.\r\n\r\nUse cCTRL-Q wat any time to cquitw.");
+        this.window.write("\r\nhwUse your cUPw/cDOWN wkeys to navigate the cNodelistw, cZonew, cNetw, and cNodew menus.\r\n\r\nOn most screens, hit cQw, cCw, cbackspacew, or cESCw to go back.\r\n\r\nUse c/ wto bring up the cSearch wscreen.\r\nHit cENTER win an empty input box to cancel a search.\r\nwUse your cUPw/cDOWN wkeys, or type to navigate the csearch results wmenu.\r\nHit cQw, cCw, cbackspacew, or cESCw to return to the search input.\r\n\r\nUse cESC wat the main screen to cquitw.");
       }
       return _createClass(Help2, [{
         key: "getCmd",
@@ -8944,8 +8945,10 @@ js.on_exit('console.write("\x1B[?25h");');
         value: function getCmd(str) {
           if (str === "s") {
             console5.clear(512 | 7);
+            console5.write("\x1B[?25h");
             bbs.netmail("".concat(this.node.sysop, "@").concat(this.node.addr), sbbsdefs.WM_NETMAIL);
             console5.clear(512 | 7);
+            console5.write("\x1B[?25l");
             this.windowManager.draw();
           }
         }
@@ -9143,7 +9146,7 @@ js.on_exit('console.write("\x1B[?25h");');
         this.helpWindow = new Help(windowManager, menuPosition, this.menuSize);
         this.domainMenu = new DomainMenu(windowManager, menuPosition, this.menuSize, this.selectDomain.bind(this), this.settings);
         this.activeComponent = this.domainMenu;
-        var status = "hwCTRL-Qcuit b\xB3 hwCTRL-Scearch b\xB3 wCTRL-Gcet help";
+        var status = "hwESC cquit b\xB3 hw/ csearch b\xB3 w?c Help";
         var statusBar = new Window({
           windowManager: windowManager,
           position: {
@@ -9211,14 +9214,12 @@ js.on_exit('console.write("\x1B[?25h");');
         key: "getCmd",
         value: function getCmd(cmd) {
           var lc = cmd.toLowerCase();
-          if (cmd === keydefs4.CTRL_Q)
-            return false;
-          if (cmd === keydefs4.CTRL_G && !(this.activeComponent instanceof Help)) {
+          if (cmd === "?" && !(this.activeComponent instanceof Search) && !(this.activeComponent instanceof Help)) {
             this.stash();
             this.helpWindow.window.open();
             this.helpWindow.window.raise(true);
             this.activeComponent = this.helpWindow;
-          } else if (cmd === keydefs4.CTRL_S && !(this.activeComponent instanceof Search)) {
+          } else if (cmd === "/" && !(this.activeComponent instanceof Search)) {
             this.stash();
             this.searchWindow = new Search(this.windowManager, this.selectNode.bind(this));
             this.activeComponent = this.searchWindow;
@@ -9227,6 +9228,10 @@ js.on_exit('console.write("\x1B[?25h");');
               this.activeComponent.close();
               this.unstash();
             }
+          } else if (cmd === keydefs4.CTRL_Q) {
+            return false;
+          } else if (cmd === keydefs4.KEY_ESC && !(this.activeComponent instanceof Search) && !(this.activeComponent instanceof Help)) {
+            return false;
           } else {
             if (isBack(lc) && this.backStack.length > 0) {
               this.activeComponent.close();
@@ -9252,7 +9257,7 @@ js.on_exit('console.write("\x1B[?25h");');
       js.on_exit('console.write("\x1B[?25h");');
       js.time_limit = 0;
       bbs2.sys_status |= sbbsdefs2.SS_MOFF;
-      console6.ctrlkey_passthru = "+GQS";
+      console6.ctrlkey_passthru = "+Q";
       console6.clear(cgadefs9.BG_BLACK | cgadefs9.LIGHTGRAY);
       migrate();
     }
