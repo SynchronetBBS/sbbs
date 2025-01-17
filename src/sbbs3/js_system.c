@@ -48,6 +48,10 @@ enum {
 	, SYS_PROP_LOCATION
 	, SYS_PROP_TIMEZONE
 	, SYS_PROP_TZ_OFFSET
+	, SYS_PROP_DATE_FMT
+	, SYS_PROP_DATE_SEP
+	, SYS_PROP_DATE_VERBAL
+	, SYS_PROP_BIRTHDATE_FMT
 	, SYS_PROP_PWDAYS
 	, SYS_PROP_MINPWLEN
 	, SYS_PROP_MAXPWLEN
@@ -171,6 +175,20 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case SYS_PROP_TZ_OFFSET:
 			*vp = INT_TO_JSVAL(smb_tzutc(sys_timezone(cfg)));
+			break;
+		case SYS_PROP_DATE_FMT:
+			*vp = INT_TO_JSVAL(cfg->sys_date_fmt);
+			break;
+		case SYS_PROP_DATE_SEP:
+			snprintf(str, sizeof str, "%c", cfg->sys_date_sep);
+			p = str;
+			break;
+		case SYS_PROP_DATE_VERBAL:
+			*vp = BOOLEAN_TO_JSVAL(cfg->sys_date_verbal);
+			break;
+		case SYS_PROP_BIRTHDATE_FMT:
+			birthdate_format(cfg, str, sizeof str);
+			p = str;
 			break;
 		case SYS_PROP_NODES:
 			*vp = INT_TO_JSVAL(cfg->sys_nodes);
@@ -434,6 +452,14 @@ static jsSyncPropertySpec js_system_properties[] = {
 		, JSDOCSTR("Local timezone in SMB format (use <i>system.zonestr()</i> to get string representation)")},
 	{   "tz_offset",                SYS_PROP_TZ_OFFSET, SYSOBJ_FLAGS,       320
 		, JSDOCSTR("Local timezone offset, in minutes, from UTC (negative values represent zones <i>west</i> of UTC, positive values represent zones <i>east</i> of UTC)")},
+	{   "date_format",              SYS_PROP_DATE_FMT,  SYSOBJ_FLAGS,       32002
+		, JSDOCSTR("Date representation (0=Month first, 1=Day first, 2=Year first")},
+	{   "date_separator",           SYS_PROP_DATE_SEP,  SYSOBJ_FLAGS,       32002
+		, JSDOCSTR("Short (8 character) date field-separator")},
+	{   "date_verbal",              SYS_PROP_DATE_VERBAL, SYSOBJ_FLAGS,     32002
+		, JSDOCSTR("Short date month-name displayed verbally instead of numerically")},
+	{   "birthdate_format",         SYS_PROP_BIRTHDATE_FMT, SYSOBJ_FLAGS,   32002
+		, JSDOCSTR("User birth date input and display format (MM=Month number, DD=Day of month, YYYY=Year)")},
 	{   "pwdays",                   SYS_PROP_PWDAYS,    SYSOBJ_FLAGS,       310
 		, JSDOCSTR("Days between forced user password changes (<tt>0</tt>=<i>never</i>)")},
 	{   "min_password_length",      SYS_PROP_MINPWLEN,  SYSOBJ_FLAGS,       31702
