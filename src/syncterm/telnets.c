@@ -12,6 +12,7 @@
 #include "sockwrap.h"
 #include "ssh.h"
 #include "syncterm.h"
+#include "telnet_io.h"
 #include "threadwrap.h"
 #include "uifcinit.h"
 #include "window.h"
@@ -244,6 +245,17 @@ telnets_connect(struct bbslist *bbs)
 
 	if (!bbs->hidepopups)
 		uifc.pop(NULL); // TODO: Why is this called twice?
+
+	// Suppress Go Aheads (both directions)
+	request_telnet_opt(TELNET_WILL, TELNET_SUP_GA);
+	request_telnet_opt(TELNET_DO, TELNET_SUP_GA);
+	if (!bbs->telnet_no_binary) {
+		// Enable binary mode (both directions)
+		request_telnet_opt(TELNET_WILL, TELNET_BINARY_TX);
+		request_telnet_opt(TELNET_DO, TELNET_BINARY_TX);
+	}
+	// Request that the server echos
+	request_telnet_opt(TELNET_DO, TELNET_ECHO);
 
 	return 0;
 }
