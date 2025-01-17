@@ -132,8 +132,6 @@ The location of this file varies by OS and can be viewed in SyncTERM in the
 .SH AUTHOR
 Stephen Hurd <shurd@sasktel.net>
 .SH BUGS
-Under specific circumstances, when SSH is used and SFTP is enabled to send the
-public key, if the session is disconnected while the key is being transferred,
-SyncTERM may lock up.
+None known at present.
 .PP
 Additional bugs should be reported at https://sf.net/p/syncterm/tickets/
