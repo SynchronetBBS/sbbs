@@ -8,8 +8,7 @@ echicken -at- bbs.electronicchicken.com
 3) Customization
 4) Configure a local art or text file archive
 	4.1) ZIP files
-5) Connect your BBS to some online ANSI & ASCII art archives
-6) Develop your own browser module (or, "Nobody will ever do this")
+5) Develop your own browser module (or, "Nobody will ever do this")
 
 0) Introduction
 
@@ -177,41 +176,9 @@ echicken -at- bbs.electronicchicken.com
 		If you would prefer that ANSIView not attempt to extract .zip files,
 		then add '*.zip' to the 'hide' list as described above.
 
-5) Connect your BBS to some online ANSI & ASCII art archives
-
-	The following section of 'xtrn/ansiview/settings.ini' is commented
-	out by default:
-
-		;[electronic chicken bbs]
-		;description = An online archive of ANSI and ASCII artwork
-		;module = ecbbs.js
-		;cache = true
-		;cachettl = 86400
-
-	You can enable access to this online archive by removing the semicolons
-	from the beginning of each line of the section.
-
-	Please consider leaving the 'cache' value set to 'true' (without quotes),
-	as this will reduce the amount of traffic between your system and the
-	online archive.
-
-	If caching is enabled, each file that your user opens on the online
-	archive will be downloaded and saved to your local system, and it will
-	not be deleted unless you take steps to do so manually.  The caches are
-	stored in 'xtrn/ansiview/.cache/'.  If they start to consume too much
-	space, you can delete them without causing any problems.
-
-	The 'cachettl' value determines the time-to-live, in seconds, for cached
-	web API responses.  Data will be refreshed after this amount of time
-	passes.  (Note that this applies to things like file lists, and not to
-	files themselves.)  86400 seconds is 24 hours.
-
-	Some caching is done either way, but if 'cache' is set to false, the
-	cache will be cleared after your user logs off.
-
-6) Develop your own browser module
+5) Develop your own browser module
 	-or-
-6) Nobody will ever do this
+5) Nobody will ever do this
 
 	Each non-root section of settings.ini describes a 'browser module'.  When
 	a user selects that module from ANSIView's main menu, the script pointed
