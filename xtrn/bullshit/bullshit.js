@@ -1,4 +1,12 @@
 "use strict";
+// TS4S terminal prep / cleanup fixesjs.on_exit("console.ctrlkey_passthru = ".concat(console.ctrlkey_passthru, ";"));
+js.on_exit("console.attributes = ".concat(console.attributes, ";"));
+js.on_exit("bbs.sys_status = ".concat(bbs.sys_status, ";"));
+js.on_exit("console.home();");
+js.on_exit('console.write("[0;37;40m");');
+js.on_exit('console.write("[2J");');
+js.on_exit('console.write("[?25h");');
+// End of TS4S terminal prep / cleanup fixes
 (function() {
   var __getOwnPropNames = Object.getOwnPropertyNames;
   var __commonJS = function(cb, mod) {
@@ -8255,8 +8263,9 @@
         name: ""
       };
     }
+    var nodedefs = load("nodedefs.js");
     var smbdefs = load("smbdefs.js");
-    var _js$global4 = js.global, file_exists2 = _js$global4.file_exists, file_date = _js$global4.file_date, format = _js$global4.format, strftime = _js$global4.strftime, time = _js$global4.time, system2 = _js$global4.system, user = _js$global4.user, MsgBase = _js$global4.MsgBase, File2 = _js$global4.File;
+    var _js$global4 = js.global, file_exists2 = _js$global4.file_exists, file_date = _js$global4.file_date, format = _js$global4.format, strftime = _js$global4.strftime, time = _js$global4.time, bbs = _js$global4.bbs, system2 = _js$global4.system, user = _js$global4.user, MsgBase = _js$global4.MsgBase, File2 = _js$global4.File;
     var historyFile = format("".concat(system2.data_dir, "user/%04d.bullshit"), user.number);
     function formatDate(date) {
       return strftime("%b %d %Y %H:%M", date);
@@ -8292,7 +8301,7 @@
       var _loop = function _loop3(file2) {
         if (!file_exists2(options.files[file2]))
           return 0;
-        if (options.bullshit.newOnly && history.files[file2] !== void 0 && file_date(options.files[file2]) <= history.files[file2])
+        if (bbs.node_action & nodedefs.NODE_LOGN && options.bullshit.newOnly && history.files[file2] !== void 0 && file_date(options.files[file2]) <= history.files[file2])
           return 0;
         var title = file2;
         var date = file_date(options.files[file2]);
@@ -8327,7 +8336,7 @@
           var h = msgBase.get_msg_header(false, n2);
           if (h === null || (h.attr & smbdefs.MSG_DELETE) > 0)
             return 0;
-          if (options.bullshit.newOnly && history.messages.includes(n2))
+          if (bbs.node_action & nodedefs.NODE_LOGN && options.bullshit.newOnly && history.messages.includes(n2))
             return 0;
           var sortable = {
             item: {
@@ -8466,18 +8475,18 @@
       }]);
     }();
     var cgadefs6 = load("cga_defs.js");
-    var nodedefs = load("nodedefs.js");
+    var nodedefs2 = load("nodedefs.js");
     var sbbsdefs = load("sbbsdefs.js");
-    var _js$global5 = js.global, bbs = _js$global5.bbs, console4 = _js$global5.console;
+    var _js$global5 = js.global, bbs2 = _js$global5.bbs, console4 = _js$global5.console;
     function init() {
       js.on_exit("console.attributes = ".concat(console4.attributes));
-      js.on_exit("bbs.sys_status = ".concat(bbs.sys_status));
+      js.on_exit("bbs.sys_status = ".concat(bbs2.sys_status));
       js.on_exit("console.home();");
       js.on_exit('console.write("\x1B[0;37;40m")');
       js.on_exit('console.write("\x1B[2J")');
       js.on_exit('console.write("\x1B[?25h");');
       js.time_limit = 0;
-      bbs.sys_status |= sbbsdefs.SS_MOFF;
+      bbs2.sys_status |= sbbsdefs.SS_MOFF;
       console4.clear(cgadefs6.BG_BLACK | cgadefs6.LIGHTGRAY);
     }
     function main() {
@@ -8485,7 +8494,7 @@
       var windowManager = new WindowManager();
       var options = getOptions();
       var ui = new UI(windowManager, options);
-      if ((bbs.node_action & nodedefs.NODE_LOGN) === nodedefs.NODE_LOGN && ui.noNewItems)
+      if ((bbs2.node_action & nodedefs2.NODE_LOGN) === nodedefs2.NODE_LOGN && ui.noNewItems)
         return;
       windowManager.hideCursor();
       while (!js.terminated) {
