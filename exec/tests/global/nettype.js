@@ -1,3 +1,6 @@
+if (jsdoor_revision !== undefined)
+	exit(0);
+
 load('sbbsdefs.js');
 
 function nettype(t)
