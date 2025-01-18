@@ -126,8 +126,8 @@ void usage()
 #else
 	        "    -c<ctrl_dir>   specify path to Synchronet CTRL directory\n"
 	        "    -R             require successful load of configuration files\n"
-#endif
 	        "    -C             do not change the current working directory (to CTRL dir)\n"
+#endif
 #if defined(__unix__)
 	        "    -d             run in background (daemonize)\n"
 #endif
@@ -1208,9 +1208,11 @@ int main(int argc, char **argv)
 	ulong            exec_count = 0;
 	bool             loop = false;
 	bool             nonbuffered_con = false;
+#ifndef JSDOOR
 	bool             change_cwd = true;
 	FILE*            fp;
 	char             ini_fname[MAX_PATH + 1];
+#endif
 	str_list_t       ini = NULL;
 #ifdef __unix__
 	struct sigaction sa = {0};
@@ -1377,9 +1379,11 @@ int main(int argc, char **argv)
 						confp = errfp;
 					}
 					break;
+#ifndef JSDOOR
 				case 'C':
 					change_cwd = false;
 					break;
+#endif
 #if defined(__unix__)
 				case 'd':
 					daemonize = true;

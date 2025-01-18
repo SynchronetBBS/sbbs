@@ -397,17 +397,17 @@ static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 
 static JSBool js_system_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
 {
-	jsval                idval;
-	jsint                tiny;
-
 	js_system_private_t* sys;
 	if ((sys = (js_system_private_t*)js_GetClassPrivate(cx, obj, &js_system_class)) == NULL)
 		return JS_FALSE;
 
+#ifndef JSDOOR
+	jsval                idval;
+	jsint                tiny;
+
 	JS_IdToValue(cx, id, &idval);
 	tiny = JSVAL_TO_INT(idval);
 
-#ifndef JSDOOR
 	switch (tiny) {
 		case SYS_PROP_MISC:
 			JS_ValueToECMAUint32(cx, *vp, (uint32_t*)&sys->cfg->sys_misc);
