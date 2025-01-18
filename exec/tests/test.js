@@ -16,13 +16,22 @@ function depth_first(root, parent)
 {
 	var entries;
 
+	if (file_exists(root+'skipif')) {
+		try {
+			if (load(root+'skipif')) {
+				stdout.writeln("Skipping "+root);
+				return;
+			}
+		}
+		catch(e) {}
+	}
 	parent[root] = {tests:[]};
 	entries = directory(root+'*');
 
 	entries.forEach(function(entry) {
 		var last_ch;
 
-		if (entry === './' || entry === '../')
+		if (entry === './' || entry === '../' || entry === 'skipif')
 			return;
 		if (entry.length < 1)
 			return;
