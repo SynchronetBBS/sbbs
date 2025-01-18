@@ -702,6 +702,22 @@ spec:
       when: never
     - !reference [.rules, rules]
 
+"$[[ inputs.os ]]-$[[ inputs.platform ]] js-testsuite":
+  extends:
+    - .$[[ inputs.os ]]-test
+  script:
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/jsdoor.tgz"
+    - "SBBSCTRL=./ctrl src/sbbs3/*.exe.release/jsdoor -f exec/tests/test.js"
+  needs:
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [jsdoor]"
+      artifacts: false
+  rules:
+    - if: '"$[[ inputs.cross_platform ]]" == "yes"'
+      when: never
+    - if: '"$[[ inputs.no_javascript ]]" == "yes"'
+      when: never
+    - !reference [.rules, rules]
+
 ###########
 # Cleanup #
 ###########
