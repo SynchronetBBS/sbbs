@@ -1,4 +1,4 @@
-if (jsdoor_revision !== undefined)
+if (js.global.jsdoor_revision !== undefined)
 	exit(0);
 
 load('sbbsdefs.js');
