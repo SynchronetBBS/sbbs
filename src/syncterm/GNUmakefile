@@ -56,16 +56,13 @@ ifndef WITHOUT_JPEG_XL
  else
   ifeq ($(shell pkg-config libjxl --exists && echo YES), YES)
    CFLAGS += $(shell pkg-config libjxl --cflags)
-   EXTRA_LIBS += $(shell pkg-config libjxl --libs)
    CFLAGS += -DWITH_JPEG_XL
    OBJS += $(MTOBJODIR)$(DIRSEP)libjxl$(OFILE)
    ifeq ($(shell pkg-config libjxl_threads --exists && echo YES), YES)
     CFLAGS += $(shell pkg-config libjxl_threads --cflags)
-    EXTRA_LIBS += $(shell pkg-config libjxl_threads --libs)
     CFLAGS += -DWITH_JPEG_XL_THREADS
    endif
   else
-   # TODO: Add x86 libs too!
    ifeq ($(os),darwin)
     CFLAGS += -I$(3RDP_ROOT)/$(os).release/libjxl/include -DJXL_THREADS_STATIC_DEFINE -DJXL_STATIC_DEFINE
     LDFLAGS += -L$(3RDP_ROOT)/$(os).release/libjxl/lib
