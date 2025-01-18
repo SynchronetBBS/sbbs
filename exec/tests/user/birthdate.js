@@ -1,6 +1,6 @@
 // This test requires Synchronet v3.20c or later to pass
 
-const test = {
+var test = {
 	"50 ":		"19500101",
 	"60.1":		"19600101",
 	"69e1":		"19690101",

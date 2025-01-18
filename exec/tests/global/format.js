@@ -1,6 +1,6 @@
-const args = [ 1, 1.1, true, "one", -1, 1e9, null, undefined ];
+var args = [ 1, 1.1, true, "one", -1, 1e9, null, undefined ];
 
-const test = {
+var test = {
 	"%s":		"1",
 	"%d":		"1",
 	"%i":		"1",
