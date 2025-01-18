@@ -1072,9 +1072,12 @@ js_chk_ar(JSContext *cx, uintN argc, jsval *arglist)
 	char *     ars = NULL;
 	scfg_t*    scfg;
 
-	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
 	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == NULL)
 		return JS_FALSE;
@@ -1111,12 +1114,12 @@ js_posted_msg(JSContext *cx, uintN argc, jsval *arglist)
 
 	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
 	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == NULL)
 		return JS_FALSE;
 
 	if (argc) {
+		if (js_argvIsNullOrVoid(cx, argv, 0))
+			return JS_FALSE;
 		if (!JS_ValueToECMAUint32(cx, argv[0], &count))
 			return JS_FALSE;
 	}
@@ -1143,12 +1146,12 @@ js_sent_email(JSContext *cx, uintN argc, jsval *arglist)
 
 	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
 	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == NULL)
 		return JS_FALSE;
 
 	if (argc) {
+		if (js_argvIsNullOrVoid(cx, argv, 0))
+			return JS_FALSE;
 		if (!JS_ValueToECMAUint32(cx, argv[0], &count))
 			return JS_FALSE;
 	}
@@ -1179,9 +1182,10 @@ js_downloaded_file(JSContext *cx, uintN argc, jsval *arglist)
 
 	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
 	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == NULL)
+		return JS_FALSE;
+
+	if (argc > 0 && js_argvIsNullOrVoid(cx, argv, 0))
 		return JS_FALSE;
 
 	uintN argn = 0;
@@ -1234,16 +1238,18 @@ js_uploaded_file(JSContext *cx, uintN argc, jsval *arglist)
 
 	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
 	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == NULL)
 		return JS_FALSE;
 
 	if (argc) {
+		if (js_argvIsNullOrVoid(cx, argv, 0))
+			return JS_FALSE;
 		if (!JS_ValueToECMAUint32(cx, argv[0], &bytes))
 			return JS_FALSE;
 	}
 	if (argc > 1) {
+		if (js_argvIsNullOrVoid(cx, argv, 1))
+			return JS_FALSE;
 		if (!JS_ValueToECMAUint32(cx, argv[1], &files))
 			return JS_FALSE;
 	}
@@ -1267,17 +1273,18 @@ js_adjust_credits(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 	scfg_t*    scfg;
 
-	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
 	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == NULL)
 		return JS_FALSE;
 
-	if (argc) {
-		if (!JS_ValueToECMAInt32(cx, argv[0], &count))
-			return JS_FALSE;
-	}
+	if (!JS_ValueToECMAInt32(cx, argv[0], &count))
+		return JS_FALSE;
 
 	rc = JS_SUSPENDREQUEST(cx);
 	js_getuserdat(scfg, p);
@@ -1298,17 +1305,18 @@ js_adjust_minutes(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 	scfg_t*    scfg;
 
-	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
 	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == NULL)
 		return JS_FALSE;
 
-	if (argc) {
-		if (!JS_ValueToECMAInt32(cx, argv[0], &count))
-			return JS_FALSE;
-	}
+	if (!JS_ValueToECMAInt32(cx, argv[0], &count))
+		return JS_FALSE;
 
 	rc = JS_SUSPENDREQUEST(cx);
 	js_getuserdat(scfg, p);
@@ -1330,17 +1338,18 @@ js_get_time_left(JSContext *cx, uintN argc, jsval *arglist)
 	scfg_t*    scfg;
 	time_t     tl;
 
-	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
 	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == NULL)
 		return JS_FALSE;
 
-	if (argc) {
-		if (!JS_ValueToECMAUint32(cx, argv[0], &start_time))
-			return JS_FALSE;
-	}
+	if (!JS_ValueToECMAUint32(cx, argv[0], &start_time))
+		return JS_FALSE;
 
 	rc = JS_SUSPENDREQUEST(cx);
 	js_getuserdat(scfg, p);
