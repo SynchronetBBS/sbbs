@@ -35,6 +35,20 @@
 #include "term.h"
 #include "window.h"
 
+#ifdef NDEBUG
+#define do_rwlock_rdlock(lk) rwlock_rdlock(lk)
+#define do_rwlock_wrlock(lk) rwlock_wrlock(lk)
+#define do_rwlock_unlock(lk) rwlock_unlock(lk)
+#define do_rwlock_init(lk)   rwlock_init(lk)
+#else
+#define do_rwlock_rdlock(lk) assert(rwlock_rdlock(lk))
+#define do_rwlock_wrlock(lk) assert(rwlock_wrlock(lk))
+#define do_rwlock_unlock(lk) assert(rwlock_unlock(lk))
+#define do_rwlock_init(lk)   assert(rwlock_init(lk))
+#define pthread_mutex_lock(a)		assert(pthread_mutex_lock(a) == 0)
+#define pthread_mutex_unlock(a)		assert(pthread_mutex_unlock(a) == 0)
+#endif
+
 // TODO: Output parsing... (yech)
 // TODO: Actually make the graphics viewport work properly
 
@@ -7833,10 +7847,10 @@ rv_reset(const char * const var, const void * const data)
 
         // TODO: Figure out what all gets reset here...
 	rip.color = 0;
-	rwlock_rdlock(&vstatlock);
+	do_rwlock_rdlock(&vstatlock);
 	rip.x_max = vstat.scrnwidth;
 	rip.y_max = vstat.scrnheight;
-	rwlock_unlock(&vstatlock);
+	do_rwlock_unlock(&vstatlock);
 	rip.x_dim = 640;
 	rip.y_dim = 350;
 	if (rip.x_max > rip.x_dim)
@@ -8095,10 +8109,10 @@ rv_termset(const char * const var, const void * const data)
 						case 'M':
 							rip.x_dim = 640;
 							rip.y_dim = 350;
-							rwlock_rdlock(&vstatlock);
+							do_rwlock_rdlock(&vstatlock);
 							rip.x_max = vstat.scrnwidth;
 							rip.y_max = vstat.scrnheight;
-							rwlock_unlock(&vstatlock);
+							do_rwlock_unlock(&vstatlock);
 							if (rip.x_max > rip.x_dim)
 								rip.x_max = rip.x_dim;
 							if (rip.y_max > rip.y_dim)
@@ -8154,11 +8168,11 @@ rv_termset(const char * const var, const void * const data)
 			int   width;
 			int   height;
 
-			rwlock_rdlock(&vstatlock);
+			do_rwlock_rdlock(&vstatlock);
 			font = vstat.forced_font;
 			width = vstat.charwidth;
 			height = vstat.charheight;
-			rwlock_unlock(&vstatlock);
+			do_rwlock_unlock(&vstatlock);
 			switch (var[5]) {
 				case 'F':
 					gettextinfo(&ti);
@@ -10130,7 +10144,7 @@ reinit_screen(uint8_t *font, int fx, int fy)
 		cols = 91;
 	if (font == ripfnt16x14)
 		cols = 40;
-	rwlock_wrlock(&vstatlock);
+	do_rwlock_wrlock(&vstatlock);
 	fh_change = fy != vstat.charheight;
 	rows = vstat.scrnheight / fy;
 	if ((font != vstat.forced_font) || (fx != vstat.charwidth) || (fy != vstat.charheight)) {
@@ -10165,7 +10179,7 @@ reinit_screen(uint8_t *font, int fx, int fy)
                 // And use it.
 		vstat.vmem->vmem = nvmem;
 	}
-	rwlock_unlock(&vstatlock);
+	do_rwlock_unlock(&vstatlock);
 
         // Initialize it...
 	clrscr();
@@ -10856,7 +10870,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								break;
 							GET_XY2();
 							arg1 = parse_mega(&args[8], 2);
-							rwlock_rdlock(&vstatlock);
+							do_rwlock_rdlock(&vstatlock);
 							if ((vstat.scrnwidth == 640) && (vstat.scrnheight == 350)) {
                                                                 // Detect EGA mode and use the same value as RIPterm
                                                                 // did.
@@ -10868,7 +10882,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								    / ((double)vstat.aspect_width
 								    / vstat.aspect_height);
 							}
-							rwlock_unlock(&vstatlock);
+							do_rwlock_unlock(&vstatlock);
 							full_ellipse(x1, y1, x2, y2, arg1, arg3, false,
 							    map_rip_color(rip.color));
 							break;
@@ -10917,7 +10931,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								break;
 							GET_XY();
 							arg1 = parse_mega(&args[4], 2);
-							rwlock_rdlock(&vstatlock);
+							do_rwlock_rdlock(&vstatlock);
 							if ((vstat.scrnwidth == 640) && (vstat.scrnheight == 350)) {
                                                                 // Detect EGA mode and use the same value as RIPterm
                                                                 // did.
@@ -10929,7 +10943,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								    / ((double)vstat.aspect_width
 								    / vstat.aspect_height);
 							}
-							rwlock_unlock(&vstatlock);
+							do_rwlock_unlock(&vstatlock);
 							if (arg1 == 1)
 								arg3 = 1;
 							full_ellipse(x1, y1, 0, 360, arg1, arg3, false,
@@ -10982,10 +10996,10 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							if ((arg1 < 0) || (arg1 > 255))
 								break;
 							arg2 = rip.viewport.ey;
-							rwlock_rdlock(&vstatlock);
+							do_rwlock_rdlock(&vstatlock);
 							if (rip.viewport.ey >= vstat.scrnheight)
 								arg2 = vstat.scrnheight - 1;
-							rwlock_unlock(&vstatlock);
+							do_rwlock_unlock(&vstatlock);
 
 							struct ciolib_pixels *pix = getpixels(rip.viewport.sx,
 							        rip.viewport.sy,
@@ -11071,7 +11085,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								break;
 							GET_XY2();
 							arg1 = parse_mega(&args[8], 2);
-							rwlock_rdlock(&vstatlock);
+							do_rwlock_rdlock(&vstatlock);
 							if ((vstat.scrnwidth == 640) && (vstat.scrnheight == 350)) {
                                                                 // Detect EGA mode and use the same value as RIPterm
                                                                 // did.
@@ -11083,7 +11097,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								    / ((double)vstat.aspect_width
 								    / vstat.aspect_height);
 							}
-							rwlock_unlock(&vstatlock);
+							do_rwlock_unlock(&vstatlock);
 							fg = map_rip_color(rip.color) | 0x40000000;
 							full_ellipse(x1, y1, x2, y2, arg1, arg3, false, fg);
 
@@ -11758,10 +11772,10 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							GET_XY();
 							rip.x_dim = x1;
 							rip.y_dim = y1;
-							rwlock_rdlock(&vstatlock);
+							do_rwlock_rdlock(&vstatlock);
 							rip.x_max = vstat.scrnwidth;
 							rip.y_max = vstat.scrnheight;
-							rwlock_unlock(&vstatlock);
+							do_rwlock_unlock(&vstatlock);
 							if (rip.x_max > rip.x_dim)
 								rip.x_max = rip.x_dim;
 							if (rip.y_max > rip.y_dim)
@@ -12340,16 +12354,16 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								cterm->extattr |= CTERM_EXTATTR_AUTOWRAP;
 							else
 								cterm->extattr &= ~CTERM_EXTATTR_AUTOWRAP;
-							rwlock_rdlock(&vstatlock);
+							do_rwlock_rdlock(&vstatlock);
 							if ((x1 == cterm->left_margin - 1)
 							    && (x2 == cterm->right_margin - 1)
 							    && (y1 == cterm->top_margin - 1)
 							    && (y2 == cterm->bottom_margin - 1)
 							    && (arg2 == vstat.charwidth)) {
-								rwlock_unlock(&vstatlock);
+								do_rwlock_unlock(&vstatlock);
 								break;
 							}
-							rwlock_unlock(&vstatlock);
+							do_rwlock_unlock(&vstatlock);
 							switch (arg2) {
 								case 0:
 									reinit_screen(
@@ -14104,10 +14118,10 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 
 								int              bline = y1 + rip.viewport.sy
 								    + rip.clipboard->height - 1;
-								rwlock_rdlock(&vstatlock);
+								do_rwlock_rdlock(&vstatlock);
 								if (bline >= vstat.scrnheight)
 									bline = vstat.scrnheight - 1;
-								rwlock_unlock(&vstatlock);
+								do_rwlock_unlock(&vstatlock);
 								if (x1 + rip.viewport.sx + rip.clipboard->width - 1
 								    > rip.viewport.ex)
 									break;
@@ -16223,10 +16237,10 @@ init_rip(struct bbslist *bbs)
 		rip.line_width = 1;
 		rip.x_dim = 640;
 		if (cio_api.options & CONIO_OPT_SET_PIXEL) {
-			rwlock_rdlock(&vstatlock);
+			do_rwlock_rdlock(&vstatlock);
 			rip.x_max = vstat.scrnwidth;
 			rip.y_max = vstat.scrnheight;
-			rwlock_unlock(&vstatlock);
+			do_rwlock_unlock(&vstatlock);
 			if (rip.x_max > rip.x_dim)
 				rip.x_max = rip.x_dim;
 			rip.y_dim = 350;
@@ -16248,11 +16262,11 @@ init_rip(struct bbslist *bbs)
 			 * members being set inside the lock as
 			 * an indication that they must be.
 			 */
-			rwlock_rdlock(&vstatlock);
+			do_rwlock_rdlock(&vstatlock);
 			void *tmp_font = vstat.forced_font;
 			int tmp_width = vstat.charwidth;
 			int tmp_height = vstat.charheight;
-			rwlock_unlock(&vstatlock);
+			do_rwlock_unlock(&vstatlock);
 			rip.default_font = tmp_font;
 			rip.default_font_width = tmp_width;
 			rip.default_font_height = tmp_height;
