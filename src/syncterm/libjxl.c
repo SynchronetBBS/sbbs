@@ -91,12 +91,6 @@ bool load_jxl_funcs(void)
 		xp_dlclose(jxl_dll);
 		return false;
 	}
-#ifdef WITH_JPEG_XL_THREADS
-	if ((Jxl.DecoderSetParallelRunner = xp_dlsym(jxl_dll, JxlDecoderSetParallelRunner)) == NULL) {
-		xp_dlclose(jxl_dll);
-		return false;
-	}
-#endif
 	if ((Jxl.DecoderSetPreferredColorProfile = xp_dlsym(jxl_dll, JxlDecoderSetPreferredColorProfile)) == NULL) {
 		xp_dlclose(jxl_dll);
 		return false;
@@ -107,6 +101,11 @@ bool load_jxl_funcs(void)
 	}
 
 	Jxl.status = JXL_STATUS_NOTHREADS;
+#ifdef WITH_JPEG_XL_THREADS
+	if ((Jxl.DecoderSetParallelRunner = xp_dlsym(jxl_dll, JxlDecoderSetParallelRunner)) == NULL) {
+		return true;
+	}
+#endif
 #ifdef WITH_JPEG_XL_THREADS
 	const char *tlibnames[] = {"jxl_threads", NULL};
 
