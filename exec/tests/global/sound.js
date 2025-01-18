@@ -1,1 +1,1 @@
-sound("sound.wav");
+sound(js.exec_dir + "sound.wav");
