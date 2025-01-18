@@ -422,7 +422,7 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 	rd = fread(buf, sizeof(char), len, stdin);
 	JS_RESUMEREQUEST(cx, rc);
 
-	if (rd >= 0)
+	if (rd > 0)
 		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(JS_NewStringCopyN(cx, buf, rd)));
 	free(buf);
 
@@ -446,19 +446,21 @@ js_readln(JSContext *cx, uintN argc, jsval *arglist)
 		if (!JS_ValueToInt32(cx, argv[0], &len))
 			return JS_FALSE;
 	}
-	if ((buf = malloc(len + 1)) == NULL)
-		return JS_TRUE;
 
-	rc = JS_SUSPENDREQUEST(cx);
-	cooked_tty();
-	p = fgets(buf, len + 1, stdin);
-	raw_tty();
-	JS_RESUMEREQUEST(cx, rc);
+	if (len > 0) {
+		if ((buf = malloc(len + 1)) == NULL)
+			return JS_TRUE;
 
-	if (p != NULL)
-		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(JS_NewStringCopyZ(cx, truncnl(p))));
-	free(buf);
+		rc = JS_SUSPENDREQUEST(cx);
+		cooked_tty();
+		p = fgets(buf, len + 1, stdin);
+		raw_tty();
+		JS_RESUMEREQUEST(cx, rc);
 
+		if (p != NULL)
+			JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(JS_NewStringCopyZ(cx, truncnl(p))));
+		free(buf);
+	}
 	return JS_TRUE;
 }
 

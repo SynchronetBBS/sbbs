@@ -962,7 +962,7 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 	len = RingBufRead(&sbbs->inbuf, buf, len);
 	JS_RESUMEREQUEST(cx, rc);
 
-	if (len >= 0)
+	if (len > 0)
 		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(JS_NewStringCopyN(cx, (char*)buf, len)));
 
 	free(buf);
@@ -990,19 +990,19 @@ js_readln(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_FALSE;
 	}
 
-	if ((buf = (char*)malloc(len)) == NULL)
-		return JS_TRUE;
-
 	if (len > 0) {
+		if ((buf = (char*)malloc(len)) == NULL)
+			return JS_TRUE;
+
 		rc = JS_SUSPENDREQUEST(cx);
 		len = sbbs->getstr(buf, len, K_NONE);
 		JS_RESUMEREQUEST(cx, rc);
+
+		if (len > 0)
+			JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(JS_NewStringCopyZ(cx, buf)));
+
+		free(buf);
 	}
-
-	if (len > 0)
-		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(JS_NewStringCopyZ(cx, buf)));
-
-	free(buf);
 	return JS_TRUE;
 }
 

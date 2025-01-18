@@ -40,7 +40,7 @@ var type = {
 	'mswait()'				: 'number',
 	'netaddr_type("")'		: 'number',
 	'printf()'				: 'string',
-	'read(0)'				: 'string',
+	'read(0)'				: 'undefined',
 	'readln(0)'				: 'undefined',
 	'random()'				: 'number',
 	'rmdir("")'				: 'boolean',
