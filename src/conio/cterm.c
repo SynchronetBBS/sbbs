@@ -1059,9 +1059,7 @@ static void playnote_thread(void *args)
 	int	device_open=FALSE;
 	struct cterminal *cterm=(struct cterminal *)args;
 
-
 	SetThreadName("PlayNote");
-	cterm->playnote_thread_running=TRUE;
 	while(1) {
 		if(device_open) {
 			if(!listSemTryWaitBlock(&cterm->notes,5000)) {
@@ -4967,6 +4965,7 @@ struct cterminal* cterm_init(int height, int width, int xpos, int ypos, int back
 	strcat(cterm->DA,"c");
 	/* Fire up note playing thread */
 	if(!cterm->playnote_thread_running) {
+		cterm->playnote_thread_running=TRUE;
 		listInit(&cterm->notes, LINK_LIST_SEMAPHORE|LINK_LIST_MUTEX);
 		sem_init(&cterm->note_completed_sem,0,0);
 		sem_init(&cterm->playnote_thread_terminated,0,0);
