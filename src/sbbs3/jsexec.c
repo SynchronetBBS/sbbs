@@ -370,7 +370,8 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 	char *     logstr = NULL;
 	size_t     logstr_sz = 0;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
 
 	if (argc > 1 && JSVAL_IS_NUMBER(argv[i])) {
 		if (!JS_ValueToInt32(cx, argv[i++], &level))
@@ -409,6 +410,8 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if (argc) {
+		if (js_argvIsNullOrVoid(cx, argv, 0))
+			return JS_FALSE;
 		if (!JS_ValueToInt32(cx, argv[0], &len))
 			return JS_FALSE;
 	}
@@ -438,6 +441,8 @@ js_readln(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if (argc) {
+		if (js_argvIsNullOrVoid(cx, argv, 0))
+			return JS_FALSE;
 		if (!JS_ValueToInt32(cx, argv[0], &len))
 			return JS_FALSE;
 	}
@@ -482,10 +487,6 @@ js_write(JSContext *cx, uintN argc, jsval *arglist)
 		JS_RESUMEREQUEST(cx, rc);
 	}
 
-	if (str == NULL)
-		JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-	else
-		JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(str));
 	return JS_TRUE;
 }
 
@@ -512,7 +513,10 @@ jse_printf(JSContext *cx, uintN argc, jsval *arglist)
 	char*      p;
 	jsrefcount rc;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+	if (argc < 1) {
+		JS_SET_RVAL(cx, arglist, JS_GetEmptyStringValue(cx));
+		return JS_TRUE;
+	}
 
 	if ((p = js_sprintf(cx, 0, argc, argv)) == NULL) {
 		JS_ReportError(cx, "js_sprintf failed");
@@ -537,6 +541,8 @@ js_alert(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 	char *     line;
 
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	JSVALUE_TO_MSTRING(cx, argv[0], line, NULL);
@@ -547,8 +553,6 @@ js_alert(JSContext *cx, uintN argc, jsval *arglist)
 	fprintf(confp, "!%s\n", line);
 	free(line);
 	JS_RESUMEREQUEST(cx, rc);
-
-	JS_SET_RVAL(cx, arglist, argv[0]);
 
 	return JS_TRUE;
 }
@@ -563,7 +567,10 @@ js_confirm(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 	char       instr[81] = "y";
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	if ((str = JS_ValueToString(cx, argv[0])) == NULL)
 		return JS_FALSE;
@@ -597,7 +604,10 @@ js_deny(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 	char       instr[81];
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	if ((str = JS_ValueToString(cx, argv[0])) == NULL)
 		return JS_FALSE;
@@ -630,7 +640,7 @@ js_prompt(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 	char *     prstr = NULL;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
 	if (argc > 0 && !JSVAL_IS_VOID(argv[0])) {
 		JSVALUE_TO_MSTRING(cx, argv[0], prstr, NULL);
@@ -743,6 +753,7 @@ static jsSyncMethodSpec js_global_functions[] = {
 	 , JSDOCSTR("Read a single line, up to count characters, from input stream")
 	 , 311},
 	{"write",           js_write,           0},
+	{"write_raw",       js_write,           0}, // alias for compatibility with sbbs
 	{"writeln",         js_writeln,         0},
 	{"print",           js_writeln,         0},
 	{"printf",          jse_printf,         1},

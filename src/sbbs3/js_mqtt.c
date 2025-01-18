@@ -181,7 +181,7 @@ static JSBool js_publish(JSContext* cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 
 	int qos = p->cfg.publish_qos;
-	if (!js_argc(cx, argc, 2))
+	if (js_argcIsInsufficient(cx, argc, 2))
 		return JS_FALSE;
 
 	if (p->handle == NULL)
@@ -236,7 +236,7 @@ static JSBool js_subscribe(JSContext* cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 
 	int qos = p->cfg.subscribe_qos;
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	if (p->handle == NULL)

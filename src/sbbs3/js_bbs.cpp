@@ -1189,7 +1189,7 @@ js_menu(JSContext *cx, uintN argc, jsval *arglist)
 	int32      mode = P_NONE;
 	JSObject*  obj = JS_GetScopeChain(cx);
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
@@ -1233,7 +1233,7 @@ js_menu_exists(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 	char *     menu;
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
@@ -1315,7 +1315,7 @@ js_exec(JSContext *cx, uintN argc, jsval *arglist)
 	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
 		return JS_FALSE;
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	if ((cmd = JS_ValueToString(cx, argv[0])) == NULL)
@@ -1363,7 +1363,7 @@ js_exec_xtrn(JSContext *cx, uintN argc, jsval *arglist)
 	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
 		return JS_FALSE;
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	if (JSVAL_IS_STRING(argv[0])) {
@@ -1473,7 +1473,7 @@ js_chkpass(JSContext *cx, uintN argc, jsval *arglist)
 	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
 		return JS_FALSE;
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	if (argc > 1 && JSVAL_IS_BOOLEAN(argv[1]))
@@ -1543,7 +1543,7 @@ js_replace_text(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
-	if (!js_argc(cx, argc, 2))
+	if (js_argcIsInsufficient(cx, argc, 2))
 		return JS_FALSE;
 
 	if (JSVAL_IS_NUMBER(argv[0])) {
@@ -1592,7 +1592,7 @@ js_revert_text(JSContext *cx, uintN argc, jsval *arglist)
 	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
 		return JS_FALSE;
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	if (JSVAL_IS_NUMBER(argv[0])) {
@@ -1643,7 +1643,7 @@ js_load_text(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	if ((js_str = JS_ValueToString(cx, argv[0])) == NULL) {
@@ -1727,7 +1727,7 @@ js_atcode(JSContext *cx, uintN argc, jsval *arglist)
 	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
 		return JS_FALSE;
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], instr, NULL);
@@ -1764,7 +1764,7 @@ js_expand_atcodes(JSContext* cx, uintN argc, jsval* arglist)
 
 	smbmsg_t* msg = (smbmsg_t*)sbbs->current_msg;
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], instr, NULL);
@@ -1846,7 +1846,7 @@ js_logstr(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	if ((js_str = JS_ValueToString(cx, argv[0])) == NULL) {
@@ -1881,7 +1881,7 @@ js_finduser(JSContext *cx, uintN argc, jsval *arglist)
 	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
 		return JS_FALSE;
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	if ((js_str = JS_ValueToString(cx, argv[0])) == NULL) {
@@ -1916,7 +1916,7 @@ js_trashcan(JSContext *cx, uintN argc, jsval *arglist)
 	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
 		return JS_FALSE;
 
-	if (!js_argc(cx, argc, 2))
+	if (js_argcIsInsufficient(cx, argc, 2))
 		return JS_FALSE;
 
 	if ((js_can = JS_ValueToString(cx, argv[0])) == NULL) {
@@ -1998,7 +1998,7 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
 		return JS_FALSE;
 
-	if (!js_argc(cx, argc, 2))
+	if (js_argcIsInsufficient(cx, argc, 2))
 		return JS_FALSE;
 
 	if ((js_name = JS_ValueToString(cx, argv[0])) == NULL)
@@ -2254,7 +2254,7 @@ js_batchaddlist(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], cstr, NULL);
@@ -2386,7 +2386,7 @@ js_viewfile(JSContext *cx, uintN argc, jsval *arglist)
 	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
 		return JS_FALSE;
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], cstr, NULL);
@@ -2416,7 +2416,7 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
 		return JS_FALSE;
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	if (argc > 1) {
@@ -2463,7 +2463,7 @@ js_recvfile(JSContext *cx, uintN argc, jsval *arglist)
 	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
 		return JS_FALSE;
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	if (argc > 1) {
@@ -2821,7 +2821,7 @@ js_spy(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	if (JSVAL_IS_NUMBER(argv[0])) {
@@ -2894,7 +2894,7 @@ js_email(JSContext *cx, uintN argc, jsval *arglist)
 
 	ZERO_VAR(msg);
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	if (JSVAL_IS_NUMBER(argv[0])) {
@@ -2969,7 +2969,7 @@ js_netmail(JSContext *cx, uintN argc, jsval *arglist)
 	ZERO_VAR(msg);
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	for (uintN i = 0; i < argc && !error; i++) {
@@ -3155,7 +3155,7 @@ js_telnet_gate(JSContext *cx, uintN argc, jsval *arglist)
 	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
 		return JS_FALSE;
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	if ((js_addr = JS_ValueToString(cx, argv[0])) == NULL)
@@ -3229,7 +3229,7 @@ js_rlogin_gate(JSContext *cx, uintN argc, jsval *arglist)
 	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
 		return JS_FALSE;
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	if ((js_str = JS_ValueToString(cx, argv[0])) == NULL)
@@ -3675,7 +3675,7 @@ js_cmdstr(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	js_str = JS_ValueToString(cx, argv[0]);

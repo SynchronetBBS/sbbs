@@ -1533,7 +1533,8 @@ extern "C" {
 		str_list_t			exit_func;
 		struct js_onexit_scope	*onexit;
 	} global_private_t;
-	DLLEXPORT bool js_argc(JSContext *cx, unsigned argc, unsigned min);
+	DLLEXPORT bool js_argcIsInsufficient(JSContext *cx, unsigned argc, unsigned min);
+	DLLEXPORT bool js_argvIsNullOrVoid(JSContext *cx, jsval* argv, unsigned index);
 	DLLEXPORT bool js_CreateGlobalObject(JSContext* cx, scfg_t* cfg, jsSyncMethodSpec* methods, js_startup_t*, JSObject**);
 
 	/* js_internal.c */

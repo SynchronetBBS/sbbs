@@ -53,7 +53,7 @@ js_add_private_key(JSContext *cx, uintN argc, jsval *arglist)
 	JSString *                       jspw;
 	JSObject *                       obj = JS_THIS_OBJECT(cx, arglist);
 
-	if (!js_argc(cx, argc, 2))
+	if (js_argcIsInsufficient(cx, argc, 2))
 		return JS_FALSE;
 	if (argc > 2) {
 		JS_ReportError(cx, "Too many arguments");
@@ -105,7 +105,7 @@ js_add_public_key(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *                        cert;
 	JSObject *                        obj = JS_THIS_OBJECT(cx, arglist);
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 	if (argc > 1) {
 		JS_ReportError(cx, "Too many arguments");
@@ -180,7 +180,7 @@ js_delete_key(JSContext *cx, uintN argc, jsval *arglist)
 	JSString *           jslabel;
 	JSObject *           obj = JS_THIS_OBJECT(cx, arglist);
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 	if (argc > 1) {
 		JS_ReportError(cx, "Too many arguments");
@@ -224,7 +224,7 @@ js_get_private_key(JSContext *cx, uintN argc, jsval *arglist)
 	CRYPT_CONTEXT        ctx;
 	JSObject *           obj = JS_THIS_OBJECT(cx, arglist);
 
-	if (!js_argc(cx, argc, 2))
+	if (js_argcIsInsufficient(cx, argc, 2))
 		return JS_FALSE;
 	if (argc > 2) {
 		JS_ReportError(cx, "Too many arguments");
@@ -282,7 +282,7 @@ js_get_public_key(JSContext *cx, uintN argc, jsval *arglist)
 	CRYPT_CERTIFICATE    ncert;
 	JSObject *           obj = JS_THIS_OBJECT(cx, arglist);
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 	if (argc > 1) {
 		JS_ReportError(cx, "Too many arguments");

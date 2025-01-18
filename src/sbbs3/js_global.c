@@ -48,13 +48,22 @@ enum {
 	, GLOB_PROP_SOCKET_ERRNO_STR
 };
 
-bool js_argc(JSContext *cx, uintN argc, uintN min)
+bool js_argcIsInsufficient(JSContext *cx, uintN argc, uintN min)
 {
 	if (argc < min) {
-		JS_ReportError(cx, "Insufficient Arguments");
-		return false;
+		JS_ReportError(cx, "Insufficient Arguments (%u provided, a minimum of %u expected)", argc, min);
+		return true;
 	}
-	return true;
+	return false;
+}
+
+bool js_argvIsNullOrVoid(JSContext* cx, jsval* args, uintN index)
+{
+	if (JSVAL_NULL_OR_VOID(args[index])) {
+		JS_ReportError(cx, "Argument #%u is an unexpected 'null' or 'undefined' value", index + 1);
+		return true;
+	}
+	return false;
 }
 
 static JSBool js_system_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
@@ -188,6 +197,7 @@ js_OperationCallback(JSContext *cx)
 	return ret;
 }
 
+// Background log()
 static JSBool
 js_log(JSContext *cx, uintN argc, jsval *arglist)
 {
@@ -195,9 +205,6 @@ js_log(JSContext *cx, uintN argc, jsval *arglist)
 	JSBool             retval;
 	background_data_t* bg;
 	jsval              rval;
-
-	rval = JSVAL_VOID;
-	JS_SET_RVAL(cx, arglist, rval);
 
 	if ((bg = (background_data_t*)JS_GetContextPrivate(cx)) == NULL)
 		return JS_FALSE;
@@ -263,7 +270,8 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 	size_t             len;
 	JSObject*          scope = JS_GetScopeChain(cx);
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
 
 	if ((p = (global_private_t*)js_GetClassPrivate(cx, obj, &js_global_class)) == NULL)
 		return JS_FALSE;
@@ -697,6 +705,11 @@ js_require(JSContext *cx, uintN argc, jsval *arglist)
 	JSBool    ret;
 	jsval *   argv = JS_ARGV(cx, arglist);
 
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
+
 	exec_obj = JS_GetScopeChain(cx);
 	if (JSVAL_IS_BOOLEAN(argv[argn])) {
 		JS_ReportError(cx, "cannot require() background processes");
@@ -753,7 +766,10 @@ js_format(JSContext *cx, uintN argc, jsval *arglist)
 	char*     p;
 	JSString* str;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	if ((p = js_sprintf(cx, 0, argc, argv)) == NULL) {
 		JS_ReportError(cx, "js_sprintf failed");
@@ -779,8 +795,11 @@ js_yield(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if (argc)
+	if (argc) {
+		if (js_argvIsNullOrVoid(cx, argv, 0))
+			return JS_FALSE;
 		JS_ValueToBoolean(cx, argv[0], &forced);
+	}
 	rc = JS_SUSPENDREQUEST(cx);
 	if (forced) {
 		YIELD();
@@ -801,6 +820,8 @@ js_mswait(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 
 	if (argc) {
+		if (js_argvIsNullOrVoid(cx, argv, 0))
+			return JS_FALSE;
 		if (!JS_ValueToInt32(cx, argv[0], &val))
 			return JS_FALSE;
 	}
@@ -847,10 +868,14 @@ js_beep(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if (argc) {
+		if (js_argvIsNullOrVoid(cx, argv, 0))
+			return JS_FALSE;
 		if (!JS_ValueToInt32(cx, argv[0], &freq))
 			return JS_FALSE;
 	}
 	if (argc > 1) {
+		if (js_argvIsNullOrVoid(cx, argv, 1))
+			return JS_FALSE;
 		if (!JS_ValueToInt32(cx, argv[1], &dur))
 			return JS_FALSE;
 	}
@@ -897,10 +922,10 @@ js_crc16(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 	uint16_t   cs;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], p, &len);
 	HANDLE_PENDING(cx, p);
@@ -924,10 +949,10 @@ js_crc32(JSContext *cx, uintN argc, jsval *arglist)
 	uint32_t   cs;
 	jsrefcount rc;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], p, &len);
 	HANDLE_PENDING(cx, p);
@@ -952,10 +977,10 @@ js_chksum(JSContext *cx, uintN argc, jsval *arglist)
 	size_t     len;
 	jsrefcount rc;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], p, &len);
 	HANDLE_PENDING(cx, p);
@@ -981,10 +1006,10 @@ js_ascii(JSContext *cx, uintN argc, jsval *arglist)
 	JSString*     js_str;
 	const jschar *p;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	if (JSVAL_IS_STRING(argv[0])) {  /* string to ascii-int */
 		p = JS_GetStringCharsZ(cx, JSVAL_TO_STRING(argv[0]));
@@ -1018,10 +1043,10 @@ js_ctrl(JSContext *cx, uintN argc, jsval *arglist)
 	JSString*     js_str;
 	const jschar *p;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	if (JSVAL_IS_STRING(argv[0])) {
 		p = JS_GetStringCharsZ(cx, JSVAL_TO_STRING(argv[0]));
@@ -1054,10 +1079,10 @@ js_ascii_str(JSContext *cx, uintN argc, jsval *arglist)
 	JSString*  str;
 	jsrefcount rc;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], buf, NULL)
 	HANDLE_PENDING(cx, buf);
@@ -1086,10 +1111,10 @@ js_strip_ctrl(JSContext *cx, uintN argc, jsval *arglist)
 	JSString*  js_str;
 	jsrefcount rc;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], buf, NULL);
 	HANDLE_PENDING(cx, buf);
@@ -1117,13 +1142,10 @@ js_strip_ctrl_a(JSContext *cx, uintN argc, jsval *arglist)
 	JSString*  js_str;
 	jsrefcount rc;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
-
-	if (JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], buf, NULL);
 	HANDLE_PENDING(cx, buf);
@@ -1151,10 +1173,10 @@ js_strip_ansi(JSContext *cx, uintN argc, jsval *arglist)
 	JSString*  js_str;
 	jsrefcount rc;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], buf, NULL)
 	HANDLE_PENDING(cx, buf);
@@ -1182,10 +1204,10 @@ js_strip_exascii(JSContext *cx, uintN argc, jsval *arglist)
 	JSString*  js_str;
 	jsrefcount rc;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], buf, NULL)
 	HANDLE_PENDING(cx, buf);
@@ -1215,10 +1237,10 @@ js_lfexpand(JSContext *cx, uintN argc, jsval *arglist)
 	JSString*  str;
 	jsrefcount rc;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], inbuf, NULL);
 	HANDLE_PENDING(cx, inbuf);
@@ -1263,10 +1285,10 @@ js_word_wrap(JSContext *cx, uintN argc, jsval *arglist)
 	JSString*  js_str;
 	jsrefcount rc;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], inbuf, NULL);
 	HANDLE_PENDING(cx, inbuf);
@@ -1327,10 +1349,10 @@ js_quote_msg(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount  rc;
 	size_t      linebuf_sz = 0;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], inbuf, NULL);
 	HANDLE_PENDING(cx, inbuf);
@@ -1441,9 +1463,10 @@ js_netaddr_type(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *argv = JS_ARGV(cx, arglist);
 	char*  str = NULL;
 
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(NET_NONE));
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
+	if (JSVAL_NULL_OR_VOID(argv[0]))
 		return JS_TRUE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], str, NULL);
@@ -1682,10 +1705,10 @@ js_html_encode(JSContext *cx, uintN argc, jsval *arglist)
 	jsval             val;
 	jsrefcount        rc;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	if ((p = (global_private_t*)js_GetClassPrivate(cx, obj, &js_global_class)) == NULL)
 		return JS_FALSE;
@@ -2419,10 +2442,10 @@ js_html_decode(JSContext *cx, uintN argc, jsval *arglist)
 	JSString*  js_str;
 	jsrefcount rc;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], inbuf, NULL);
 	HANDLE_PENDING(cx, inbuf);
@@ -2561,11 +2584,12 @@ js_b64_encode(JSContext *cx, uintN argc, jsval *arglist)
 	JSString*  js_str;
 	jsrefcount rc;
 
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
+
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
-
 	JSVALUE_TO_MSTRING(cx, argv[0], inbuf, &inbuf_len);
 	HANDLE_PENDING(cx, inbuf);
 	if (inbuf == NULL)
@@ -2609,11 +2633,12 @@ js_b64_decode(JSContext *cx, uintN argc, jsval *arglist)
 	JSString*  js_str;
 	jsrefcount rc;
 
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
+
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
-
 	JSVALUE_TO_MSTRING(cx, argv[0], inbuf, NULL);
 	HANDLE_PENDING(cx, inbuf);
 	if (inbuf == NULL)
@@ -2658,10 +2683,10 @@ js_md5_calc(JSContext* cx, uintN argc, jsval* arglist)
 	JSString*  js_str;
 	jsrefcount rc;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], inbuf, &inbuf_len);
 	HANDLE_PENDING(cx, inbuf);
@@ -2701,10 +2726,10 @@ js_sha1_calc(JSContext* cx, uintN argc, jsval* arglist)
 	JSString*  js_str;
 	jsrefcount rc;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], inbuf, &inbuf_len);
 	HANDLE_PENDING(cx, inbuf);
@@ -2740,11 +2765,12 @@ js_internal_charfunc(JSContext *cx, uintN argc, jsval *arglist, char *(*func)(ch
 	JSString* js_str;
 	size_t    strlen;
 
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
+
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
-
 	JSVALUE_TO_MSTRING(cx, argv[0], str, &strlen);
 	HANDLE_PENDING(cx, str);
 	if (str == NULL)
@@ -2826,10 +2852,10 @@ js_truncstr(JSContext *cx, uintN argc, jsval *arglist)
 	char*     set;
 	JSString* js_str;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 2))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0) || js_argvIsNullOrVoid(cx, argv, 1))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], str, NULL);
 	HANDLE_PENDING(cx, str);
@@ -2868,10 +2894,10 @@ js_fullpath(JSContext *cx, uintN argc, jsval *arglist)
 	JSString*  js_str;
 	jsrefcount rc;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], str, NULL);
 	HANDLE_PENDING(cx, str);
@@ -2899,11 +2925,12 @@ js_getfcase(JSContext *cx, uintN argc, jsval *arglist)
 	JSString*  js_str;
 	jsrefcount rc;
 
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
+
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
-
 	JSVALUE_TO_STRBUF(cx, argv[0], path, sizeof(path), NULL);
 
 	rc = JS_SUSPENDREQUEST(cx);
@@ -2931,10 +2958,10 @@ js_dosfname(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 #endif
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 #if defined(_WIN32)
 
@@ -2977,10 +3004,10 @@ js_cfgfname(JSContext *cx, uintN argc, jsval *arglist)
 	char*      cstr;
 	jsrefcount rc;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc < 2 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 2))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0) || js_argvIsNullOrVoid(cx, argv, 1))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], path, NULL);
 	HANDLE_PENDING(cx, path);
@@ -3011,9 +3038,10 @@ js_fexist(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 	BOOL       fe;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+	if (JSVAL_NULL_OR_VOID(argv[0]))
 		return JS_TRUE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], p, NULL)
@@ -3037,10 +3065,10 @@ js_removecase(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 	BOOL       ret;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], p, NULL)
 	HANDLE_PENDING(cx, p);
@@ -3063,10 +3091,10 @@ js_remove(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 	BOOL       ret;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], p, NULL)
 	HANDLE_PENDING(cx, p);
@@ -3090,10 +3118,10 @@ js_rename(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 	BOOL       ret;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 2))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0) || js_argvIsNullOrVoid(cx, argv, 1))
+		return JS_FALSE;
 
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(JS_FALSE));
 	JSVALUE_TO_MSTRING(cx, argv[0], oldname, NULL);
@@ -3130,10 +3158,10 @@ js_fcopy(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 	BOOL       ret;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 2))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0) || js_argvIsNullOrVoid(cx, argv, 1))
+		return JS_FALSE;
 
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(JS_FALSE));
 	JSVALUE_TO_MSTRING(cx, argv[0], src, NULL);
@@ -3169,10 +3197,10 @@ js_fcompare(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 	BOOL       ret;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 2))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0) || js_argvIsNullOrVoid(cx, argv, 1))
+		return JS_FALSE;
 
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(JS_FALSE));
 	JSVALUE_TO_MSTRING(cx, argv[0], fn1, NULL);
@@ -3210,10 +3238,10 @@ js_backup(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 	BOOL       ret;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(JS_FALSE));
 	JSVALUE_TO_MSTRING(cx, argv[0], fname, NULL);
@@ -3250,9 +3278,10 @@ js_isdir(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 	BOOL       ret;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+	if (JSVAL_NULL_OR_VOID(argv[0]))
 		return JS_TRUE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], p, NULL)
@@ -3276,10 +3305,10 @@ js_fattr(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 	int        attr;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], p, NULL)
 	HANDLE_PENDING(cx, p);
@@ -3302,10 +3331,10 @@ js_fmode(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 	int        mode = -1;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], fname, NULL)
 	HANDLE_PENDING(cx, fname);
@@ -3330,10 +3359,10 @@ js_chmod(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 	int32      mode;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc < 2 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 2))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], fname, NULL)
 	HANDLE_PENDING(cx, fname);
@@ -3361,10 +3390,10 @@ js_fdate(JSContext *cx, uintN argc, jsval *arglist)
 	time_t     fd;
 	jsrefcount rc;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], p, NULL)
 	HANDLE_PENDING(cx, p);
@@ -3387,10 +3416,10 @@ js_fcdate(JSContext *cx, uintN argc, jsval *arglist)
 	time_t     fd;
 	jsrefcount rc;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], p, NULL)
 	HANDLE_PENDING(cx, p);
@@ -3417,12 +3446,10 @@ js_utime(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount      rc;
 	BOOL            ret;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
-
-	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], fname, NULL);
 	HANDLE_PENDING(cx, fname);
@@ -3464,9 +3491,10 @@ js_flength(JSContext *cx, uintN argc, jsval *arglist)
 	off_t      fl;
 	jsrefcount rc;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(-1));
+	if (JSVAL_NULL_OR_VOID(argv[0]))
 		return JS_TRUE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], p, NULL)
@@ -3491,10 +3519,10 @@ js_ftouch(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 	BOOL       ret;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], fname, NULL);
 	HANDLE_PENDING(cx, fname);
@@ -3520,10 +3548,10 @@ js_fmutex(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 	BOOL       ret;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[argn], fname, NULL);
 	argn++;
@@ -3573,8 +3601,8 @@ js_sound(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_TRUE;
 	}
 
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], p, NULL)
 	HANDLE_PENDING(cx, p);
@@ -3606,12 +3634,10 @@ js_directory(JSContext *cx, uintN argc, jsval *arglist)
 	jsval      val;
 	jsrefcount rc;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
-
-	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], p, NULL)
 	HANDLE_PENDING(cx, p);
@@ -3662,7 +3688,9 @@ js_wildmatch(JSContext *cx, uintN argc, jsval *arglist)
 	uintN       argn = 0;
 	jsrefcount  rc;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
 	if (JSVAL_IS_BOOLEAN(argv[argn]))
 		JS_ValueToBoolean(cx, argv[argn++], &case_sensitive);
@@ -3711,10 +3739,10 @@ js_freediskspace(JSContext *cx, uintN argc, jsval *arglist)
 	uint64_t   fd;
 	jsrefcount rc;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], p, NULL)
 	HANDLE_PENDING(cx, p);
@@ -3746,10 +3774,10 @@ js_disksize(JSContext *cx, uintN argc, jsval *arglist)
 	uint64_t   ds;
 	jsrefcount rc;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], p, NULL)
 	HANDLE_PENDING(cx, p);
@@ -4111,11 +4139,13 @@ js_socket_select(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_socket_strerror(JSContext *cx, uintN argc, jsval *arglist)
 {
-	if (!js_argc(cx, argc, 1))
-		return JS_FALSE;
-
 	jsval *   argv = JS_ARGV(cx, arglist);
 	int32     err = 0;
+
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 	if (!JS_ValueToInt32(cx, argv[0], &err))
 		return JS_FALSE;
 
@@ -4131,11 +4161,13 @@ js_socket_strerror(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_strerror(JSContext *cx, uintN argc, jsval *arglist)
 {
-	if (!js_argc(cx, argc, 1))
-		return JS_FALSE;
-
 	jsval *   argv = JS_ARGV(cx, arglist);
 	int32     err = 0;
+
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 	if (!JS_ValueToInt32(cx, argv[0], &err))
 		return JS_FALSE;
 
@@ -4156,10 +4188,10 @@ js_mkdir(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 	BOOL       ret;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], p, NULL)
 	HANDLE_PENDING(cx, p);
@@ -4182,10 +4214,10 @@ js_mkpath(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 	BOOL       ret;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], p, NULL)
 	HANDLE_PENDING(cx, p);
@@ -4208,10 +4240,10 @@ js_rmdir(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 	BOOL       ret;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], p, NULL)
 	HANDLE_PENDING(cx, p);
@@ -4235,10 +4267,12 @@ js_rmfiles(JSContext *cx, uintN argc, jsval *arglist)
 	int32      keep = 0;
 	jsrefcount rc;
 
-	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(-1));
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(-1));
 
 	JSVALUE_TO_MSTRING(cx, argv[0], dir, NULL)
 	HANDLE_PENDING(cx, dir);
@@ -4285,10 +4319,10 @@ js_strftime(JSContext *cx, uintN argc, jsval *arglist)
 	JSString*  js_str;
 	jsrefcount rc;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], fmt, NULL);
 	HANDLE_PENDING(cx, fmt);
@@ -4334,11 +4368,12 @@ js_resolve_ip(JSContext *cx, uintN argc, jsval *arglist)
 	jsval           val;
 	int             result;
 
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
+
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
-
 	for (argn = 0; argn < argc; argn++) {
 		if (JSVAL_IS_BOOLEAN(argv[argn]))
 			want_array = JSVAL_TO_BOOLEAN(argv[argn]);
@@ -4405,11 +4440,12 @@ js_resolve_host(JSContext *cx, uintN argc, jsval *arglist)
 	struct addrinfo hints, *res;
 	char            host_name[256];
 
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
+
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
-
 	JSVALUE_TO_MSTRING(cx, argv[0], p, NULL)
 	HANDLE_PENDING(cx, p);
 	if (p == NULL)
@@ -4488,10 +4524,10 @@ js_flags_str(JSContext *cx, uintN argc, jsval *arglist)
 	jsdouble  d;
 	JSString* js_str;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	if (JSVAL_IS_STRING(argv[0])) {  /* string to long */
 		JSSTRING_TO_MSTRING(cx, JSVAL_TO_STRING(argv[0]), p, NULL);
@@ -4547,10 +4583,10 @@ js_utf8_encode(JSContext *cx, uintN argc, jsval *arglist)
 	JSString*  js_str;
 	jsrefcount rc;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	if (JSVAL_IS_STRING(argv[0])) {
 		if (str_is_utf16(cx, argv[0])) {
@@ -4647,10 +4683,10 @@ js_utf8_decode(JSContext *cx, uintN argc, jsval *arglist)
 	JSString*  js_str;
 	jsrefcount rc;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], buf, NULL);
 	HANDLE_PENDING(cx, buf);
@@ -4678,10 +4714,10 @@ js_utf8_get_width(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 	int        zerowidth = 1;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
-		return JS_TRUE;
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], str, NULL);
 	HANDLE_PENDING(cx, str);
@@ -4704,9 +4740,10 @@ js_str_is_utf8(JSContext *cx, uintN argc, jsval *arglist)
 	char*      str = NULL;
 	jsrefcount rc;
 
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
+	if (JSVAL_NULL_OR_VOID(argv[0]))
 		return JS_TRUE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], str, NULL);
@@ -4728,9 +4765,10 @@ js_str_is_utf16(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *argv = JS_ARGV(cx, arglist);
 
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
+	if (JSVAL_NULL_OR_VOID(argv[0]))
 		return JS_TRUE;
 
 	bool result = str_is_utf16(cx, argv[0]);
@@ -4745,9 +4783,10 @@ js_str_is_ascii(JSContext *cx, uintN argc, jsval *arglist)
 	char*      str = NULL;
 	jsrefcount rc;
 
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
+	if (JSVAL_NULL_OR_VOID(argv[0]))
 		return JS_TRUE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], str, NULL);
@@ -4771,9 +4810,10 @@ js_str_has_ctrl(JSContext *cx, uintN argc, jsval *arglist)
 	char*      str = NULL;
 	jsrefcount rc;
 
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
-
-	if (argc == 0 || JSVAL_NULL_OR_VOID(argv[0]))
+	if (JSVAL_NULL_OR_VOID(argv[0]))
 		return JS_TRUE;
 
 	JSVALUE_TO_MSTRING(cx, argv[0], str, NULL);
@@ -4986,7 +5026,7 @@ static jsSyncMethodSpec js_global_functions[] = {
 		        "The return value corresponds with <tt>struct stat.st_mode</tt>. "
 		        "Returns <tt>-1</tt> if the <i>path/filename</i> does not exist.")
 	 , 31702},
-	{"file_chmod",      js_chmod,           1,  JSTYPE_NUMBER,  JSDOCSTR("path/filename, number mode")
+	{"file_chmod",      js_chmod,           1,  JSTYPE_BOOLEAN, JSDOCSTR("path/filename, number mode")
 	 , JSDOCSTR("Set a file's permissions flags. "
 		        "The supported <i>mode</i> bit values are system-dependent "
 		        "(e.g. Windows only supports setting or clearing the user-write/0x80 mode flag). "
@@ -5124,7 +5164,7 @@ static jsSyncMethodSpec js_global_functions[] = {
 	{"list_named_queues", js_list_named_queues, 0, JSTYPE_ARRAY,   JSDOCSTR("")
 	 , JSDOCSTR("Return an array of <i>named queues</i> (created with the <i>Queue</i> constructor)")
 	 , 312},
-	{"flags_str",       js_flags_str,       1,  JSTYPE_UNDEF,   JSDOCSTR("[<i>string</i>] or [<i>number</i>]")
+	{"flags_str",       js_flags_str,       1,  JSTYPE_UNDEF,   JSDOCSTR("<i>string</i> or <i>number</i>")
 	 , JSDOCSTR("Convert a string of security flags (letters) into their numeric value or vice-versa, "
 		        "returns number OR string")
 	 , 313},

@@ -2302,8 +2302,6 @@ js_alert(JSContext *cx, uintN argc, jsval *arglist)
 	free(line);
 	JS_RESUMEREQUEST(cx, rc);
 
-	JS_SET_RVAL(cx, arglist, argv[0]);
-
 	return JS_TRUE;
 }
 

@@ -948,7 +948,7 @@ js_get_file_name(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	uintN     argn = 0;
@@ -970,7 +970,7 @@ js_format_file_name(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	uintN argn = 0;

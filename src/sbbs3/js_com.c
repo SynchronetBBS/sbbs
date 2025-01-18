@@ -163,7 +163,7 @@ js_send(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
@@ -204,7 +204,7 @@ js_sendfile(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
@@ -273,7 +273,7 @@ js_sendbin(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	if (!JS_ValueToInt32(cx, argv[0], &val))

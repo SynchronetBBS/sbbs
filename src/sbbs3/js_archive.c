@@ -46,7 +46,7 @@ js_create(JSContext *cx, uintN argc, jsval *arglist)
 	if ((filename = js_GetClassPrivate(cx, obj, &js_archive_class)) == NULL)
 		return JS_FALSE;
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	uintN argn = 0;
@@ -118,7 +118,7 @@ js_extract(JSContext *cx, uintN argc, jsval *arglist)
 	if ((filename = js_GetClassPrivate(cx, obj, &js_archive_class)) == NULL)
 		return JS_FALSE;
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	if (JSVAL_NULL_OR_VOID(argv[0]))
@@ -464,7 +464,7 @@ js_read(JSContext *cx, uintN argc, jsval *arglist)
 	if ((filename = js_GetClassPrivate(cx, obj, &js_archive_class)) == NULL)
 		return JS_FALSE;
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);

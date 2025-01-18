@@ -1280,7 +1280,7 @@ js_secondstr(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	if (JSVAL_NULL_OR_VOID(argv[0])) {
@@ -1771,7 +1771,7 @@ js_new_user(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	scfg_t*              cfg = sys->cfg;
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	if (JSVAL_NULL_OR_VOID(argv[0])) {
@@ -1896,7 +1896,7 @@ js_popen(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	if (JSVAL_NULL_OR_VOID(argv[0])) {
@@ -2104,7 +2104,7 @@ js_chkpid(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	if (JSVAL_NULL_OR_VOID(argv[0])) {
@@ -2129,7 +2129,7 @@ js_killpid(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	if (JSVAL_NULL_OR_VOID(argv[0])) {
@@ -2153,7 +2153,7 @@ js_text(JSContext *cx, uintN argc, jsval *arglist)
 	uint32    i = 0;
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	if (JSVAL_NULL_OR_VOID(argv[0])) {

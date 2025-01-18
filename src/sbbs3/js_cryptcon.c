@@ -432,7 +432,7 @@ js_set_key(JSContext *cx, uintN argc, jsval *arglist)
 	int                              status;
 	jsrefcount                       rc;
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	argv = JS_ARGV(cx, arglist);
@@ -474,7 +474,7 @@ js_derive_key(JSContext *cx, uintN argc, jsval *arglist)
 	int                              status;
 	jsrefcount                       rc;
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	argv = JS_ARGV(cx, arglist);
@@ -523,7 +523,7 @@ js_do_encrption(JSContext *cx, uintN argc, jsval *arglist, int encrypt)
 	jsrefcount                       rc;
 	JSString*                        str;
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	argv = JS_ARGV(cx, arglist);
@@ -585,7 +585,7 @@ js_create_signature(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount                       rc;
 	JSString*                        str;
 
-	if (!js_argc(cx, argc, 1))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
 
 	argv = JS_ARGV(cx, arglist);
