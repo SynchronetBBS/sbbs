@@ -12,6 +12,10 @@
 #include <jxl/resizable_parallel_runner.h>
 #endif
 
+#ifndef JPEGXL_MAJOR_VERSION
+#define JPEGXL_MAJOR_VERSION 0
+#endif
+
 enum JxlStatus {
 	JXL_STATUS_UNINITIALIZED,
 	JXL_STATUS_FAILED,
