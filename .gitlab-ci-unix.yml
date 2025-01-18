@@ -686,7 +686,7 @@ spec:
 #########
 # Tests #
 #########
-"$[[ inputs.os ]]-$[[ inputs.platform ]] js-testsuite":
+"$[[ inputs.os ]]-$[[ inputs.platform ]] jsexec-testsuite":
   extends:
     - .$[[ inputs.os ]]-test
   script:
@@ -702,7 +702,7 @@ spec:
       when: never
     - !reference [.rules, rules]
 
-"$[[ inputs.os ]]-$[[ inputs.platform ]] js-testsuite":
+"$[[ inputs.os ]]-$[[ inputs.platform ]] jsdoor-testsuite":
   extends:
     - .$[[ inputs.os ]]-test
   script:
