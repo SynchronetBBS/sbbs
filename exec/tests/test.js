@@ -7,23 +7,9 @@
  * js.exec()
  * writeln()
  * write()
- * chdir()
  */
 
-var testroot;
-if (argc < 1) {
-	try {
-		throw barfitty.barf(barf);
-	}
-	catch(e) {
-		testroot = e.fileName;
-	}
-	testroot = testroot.replace(/[\/\\][^\/\\]*$/,'');
-	testroot = backslash(testroot);
-}
-else
-	testroot = backslash(argv[0]);
-
+var testroot = js.exec_dir;
 var testdirs = {};
 
 function depth_first(root, parent)
@@ -59,6 +45,9 @@ testdirs[testroot].tests = [];
 var passed = 0;
 var failed = 0;
 
+if (this.stdout === undefined)
+	stdout = console;
+
 function run_tests(location, obj)
 {
 	if (testroot.length > location.substr)
@@ -74,13 +63,11 @@ function run_tests(location, obj)
 			try {
 				var dir = testscript;
 				stdout.write(format("%-70.70s ", testscript.substr(location.length)+'......................................................................'));
-				chdir(location);
 				var result = js.exec(testscript, location, new function(){});
-				chdir(js.exec_dir);
 				if (result instanceof Error) {
 					tfailed = true;
 					fail_msg = result.toString();
-					log("Caught: "+result);
+					log(file_getname(result.fileName) + " line " + result.lineNumber + " " + result);
 				}
 			}
 			catch(e) {

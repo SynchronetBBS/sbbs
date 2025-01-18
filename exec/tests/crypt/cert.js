@@ -1,4 +1,4 @@
-var f = new File('test.crt');
+var f = new File(js.exec_dir + 'test.crt');
 f.open('r');
 f.readln(65535);
 var b64 = f.readln(65535);
