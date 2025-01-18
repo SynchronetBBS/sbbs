@@ -1453,9 +1453,12 @@ int main(int argc, char **argv)
 		module = argv[argn];
 #ifndef JSDOOR
 		char ini_section[MAX_PATH + 1];
-		SAFECOPY(ini_section, getfname(module));
-		if ((p = getfext(ini_section)) != NULL)
-			*p = 0;
+		SAFECOPY(ini_section, module);
+		if (!iniSectionExists(ini, ini_section)) {
+			SAFECOPY(ini_section, getfname(module));
+			if ((p = getfext(ini_section)) != NULL)
+				*p = 0;
+		}
 		get_ini_values(ini, ini_section, &cb);
 #endif
 	}
