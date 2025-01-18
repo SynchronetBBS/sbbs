@@ -1,21 +1,18 @@
-Version 1.4b
+Version 1.4
 ------------
-Fix crashes in text modes due to rip code being called
+Add support for JPEG XL graphics in addition to PPM
+Massively improve output performance
+Lower audio output volume by 12dB
+Add option to configure audio output
 Add support for ALT+XXX and ALT+0XXXXX key entry
+Re-order BBS list entry fields
 Support Shell connections on Windows 10+
 Windows builds now include a .com (console) and a .exe (GUI) binary
-Better socket disconnect detection in SSH and telnets sessions
 Fix X11 mode scaling and fullscreen with minimal X servers
-Massively improve output performance
-Add option to configure audio output
-Lower audio output volume by 12dB
+Fix crashes in text modes due to rip code being called
+Better socket disconnect detection in SSH and telnets sessions
 Reimplement status bar code
-
-Version 1.4a
-------------
-Re-order BBS list entry fields
 Fix various Prestel mode bugs
-Add support for JPEG XL graphics in addition to PPM
 Fix error handling with telnets
 
 Version 1.3
