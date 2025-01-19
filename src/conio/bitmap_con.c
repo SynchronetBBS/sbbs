@@ -691,7 +691,7 @@ draw_char_row(struct blockstate *bs, struct charstate *cs, uint32_t y)
 		else
 			fbb = fb & (0x80 >> bitnum);
 
-		if (bitnum == 7) {
+		if (bitnum == (bs->font_data_width - 1)) {
 			cs->fontoffset++;
 			fb = cs->font[cs->fontoffset];
 		}
