@@ -1081,9 +1081,10 @@ js_ascii_str(JSContext *cx, uintN argc, jsval *arglist)
 
 	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
-	if (js_argvIsNullOrVoid(cx, argv, 0))
-		return JS_FALSE;
-
+	if (JSVAL_NULL_OR_VOID(argv[0])) {
+		JS_SET_RVAL(cx, arglist, argv[0]);
+		return JS_TRUE;
+	}
 	JSVALUE_TO_MSTRING(cx, argv[0], buf, NULL)
 	HANDLE_PENDING(cx, buf);
 	if (buf == NULL)
@@ -1113,9 +1114,10 @@ js_strip_ctrl(JSContext *cx, uintN argc, jsval *arglist)
 
 	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
-	if (js_argvIsNullOrVoid(cx, argv, 0))
-		return JS_FALSE;
-
+	if (JSVAL_NULL_OR_VOID(argv[0])) {
+		JS_SET_RVAL(cx, arglist, argv[0]);
+		return JS_TRUE;
+	}
 	JSVALUE_TO_MSTRING(cx, argv[0], buf, NULL);
 	HANDLE_PENDING(cx, buf);
 	if (buf == NULL)
@@ -1144,9 +1146,10 @@ js_strip_ctrl_a(JSContext *cx, uintN argc, jsval *arglist)
 
 	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
-	if (js_argvIsNullOrVoid(cx, argv, 0))
-		return JS_FALSE;
-
+	if (JSVAL_NULL_OR_VOID(argv[0])) {
+		JS_SET_RVAL(cx, arglist, argv[0]);
+		return JS_TRUE;
+	}
 	JSVALUE_TO_MSTRING(cx, argv[0], buf, NULL);
 	HANDLE_PENDING(cx, buf);
 	if (buf == NULL)
@@ -1175,9 +1178,10 @@ js_strip_ansi(JSContext *cx, uintN argc, jsval *arglist)
 
 	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
-	if (js_argvIsNullOrVoid(cx, argv, 0))
-		return JS_FALSE;
-
+	if (JSVAL_NULL_OR_VOID(argv[0])) {
+		JS_SET_RVAL(cx, arglist, argv[0]);
+		return JS_TRUE;
+	}
 	JSVALUE_TO_MSTRING(cx, argv[0], buf, NULL)
 	HANDLE_PENDING(cx, buf);
 	if (buf == NULL)
@@ -1206,9 +1210,10 @@ js_strip_exascii(JSContext *cx, uintN argc, jsval *arglist)
 
 	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
-	if (js_argvIsNullOrVoid(cx, argv, 0))
-		return JS_FALSE;
-
+	if (JSVAL_NULL_OR_VOID(argv[0])) {
+		JS_SET_RVAL(cx, arglist, argv[0]);
+		return JS_TRUE;
+	}
 	JSVALUE_TO_MSTRING(cx, argv[0], buf, NULL)
 	HANDLE_PENDING(cx, buf);
 	if (buf == NULL)
@@ -1239,9 +1244,10 @@ js_lfexpand(JSContext *cx, uintN argc, jsval *arglist)
 
 	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
-	if (js_argvIsNullOrVoid(cx, argv, 0))
-		return JS_FALSE;
-
+	if (JSVAL_NULL_OR_VOID(argv[0])) {
+		JS_SET_RVAL(cx, arglist, argv[0]);
+		return JS_TRUE;
+	}
 	JSVALUE_TO_MSTRING(cx, argv[0], inbuf, NULL);
 	HANDLE_PENDING(cx, inbuf);
 	if (inbuf == NULL)
@@ -1287,9 +1293,10 @@ js_word_wrap(JSContext *cx, uintN argc, jsval *arglist)
 
 	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
-	if (js_argvIsNullOrVoid(cx, argv, 0))
-		return JS_FALSE;
-
+	if (JSVAL_NULL_OR_VOID(argv[0])) {
+		JS_SET_RVAL(cx, arglist, argv[0]);
+		return JS_TRUE;
+	}
 	JSVALUE_TO_MSTRING(cx, argv[0], inbuf, NULL);
 	HANDLE_PENDING(cx, inbuf);
 	if (inbuf == NULL)
@@ -2767,9 +2774,10 @@ js_internal_charfunc(JSContext *cx, uintN argc, jsval *arglist, char *(*func)(ch
 
 	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
-	if (js_argvIsNullOrVoid(cx, argv, 0))
-		return JS_FALSE;
-
+	if (JSVAL_NULL_OR_VOID(argv[0])) {
+		JS_SET_RVAL(cx, arglist, argv[0]);
+		return JS_TRUE;
+	}
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 	JSVALUE_TO_MSTRING(cx, argv[0], str, &strlen);
 	HANDLE_PENDING(cx, str);
@@ -2854,9 +2862,12 @@ js_truncstr(JSContext *cx, uintN argc, jsval *arglist)
 
 	if (js_argcIsInsufficient(cx, argc, 2))
 		return JS_FALSE;
-	if (js_argvIsNullOrVoid(cx, argv, 0) || js_argvIsNullOrVoid(cx, argv, 1))
+	if (js_argvIsNullOrVoid(cx, argv, 1))
 		return JS_FALSE;
-
+	if (JSVAL_NULL_OR_VOID(argv[0])) {
+		JS_SET_RVAL(cx, arglist, argv[0]);
+		return JS_TRUE;
+	}
 	JSVALUE_TO_MSTRING(cx, argv[0], str, NULL);
 	HANDLE_PENDING(cx, str);
 	if (str == NULL)
@@ -4585,9 +4596,10 @@ js_utf8_encode(JSContext *cx, uintN argc, jsval *arglist)
 
 	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
-	if (js_argvIsNullOrVoid(cx, argv, 0))
-		return JS_FALSE;
-
+	if (JSVAL_NULL_OR_VOID(argv[0])) {
+		JS_SET_RVAL(cx, arglist, argv[0]);
+		return JS_TRUE;
+	}
 	if (JSVAL_IS_STRING(argv[0])) {
 		if (str_is_utf16(cx, argv[0])) {
 			js_str = JS_ValueToString(cx, argv[0]);
@@ -4685,9 +4697,10 @@ js_utf8_decode(JSContext *cx, uintN argc, jsval *arglist)
 
 	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
-	if (js_argvIsNullOrVoid(cx, argv, 0))
-		return JS_FALSE;
-
+	if (JSVAL_NULL_OR_VOID(argv[0])) {
+		JS_SET_RVAL(cx, arglist, argv[0]);
+		return JS_TRUE;
+	}
 	JSVALUE_TO_MSTRING(cx, argv[0], buf, NULL);
 	HANDLE_PENDING(cx, buf);
 	if (buf == NULL)
@@ -4932,31 +4945,31 @@ static jsSyncMethodSpec js_global_functions[] = {
 	 , JSDOCSTR("Convert single character to numeric ASCII value or vice-versa (returns number OR string)")
 	 , 310},
 	{"ascii_str",       js_ascii_str,       1,  JSTYPE_STRING,  JSDOCSTR("text")
-	 , JSDOCSTR("Convert extended-ASCII (CP437) characters in text string to plain US-ASCII equivalent, returns modified string")
+	 , JSDOCSTR("Convert extended-ASCII (CP437) characters in text string to plain US-ASCII equivalent, returns modified string or <tt>null</tt> or <tt>undefined</tt> if passed those values")
 	 , 310},
 	{"strip_ctrl",      js_strip_ctrl,      1,  JSTYPE_STRING,  JSDOCSTR("text")
-	 , JSDOCSTR("Strip all control characters and Ctrl-A (attribute) sequences from string, returns modified string")
+	 , JSDOCSTR("Strip all control characters and Ctrl-A (attribute) sequences from string, returns modified string or <tt>null</tt> or <tt>undefined</tt> if passed those values")
 	 , 310},
 	{"strip_ctrl_a",    js_strip_ctrl_a,    1,  JSTYPE_STRING,  JSDOCSTR("text")
-	 , JSDOCSTR("Strip all Ctrl-A (attribute) sequences from string, returns modified string")
+	 , JSDOCSTR("Strip all Ctrl-A (attribute) sequences from string, returns modified string or <tt>null</tt> or <tt>undefined</tt> if passed those values")
 	 , 320},
 	{"strip_ansi",      js_strip_ansi,      1,  JSTYPE_STRING,  JSDOCSTR("text")
-	 , JSDOCSTR("Strip all ANSI terminal control sequences from string, returns modified string")
+	 , JSDOCSTR("Strip all ANSI terminal control sequences from string, returns modified string or <tt>null</tt> or <tt>undefined</tt> if passed those values")
 	 , 31802},
 	{"strip_exascii",   js_strip_exascii,   1,  JSTYPE_STRING,  JSDOCSTR("text")
-	 , JSDOCSTR("Strip all extended-ASCII characters from string, returns modified string")
+	 , JSDOCSTR("Strip all extended-ASCII characters from string, returns modified string or <tt>null</tt> or <tt>undefined</tt> if passed those values")
 	 , 310},
 	{"skipsp",          js_skipsp,          1,  JSTYPE_STRING,  JSDOCSTR("text")
-	 , JSDOCSTR("Skip (trim) white-space characters off <b>beginning</b> of string, returns modified string")
+	 , JSDOCSTR("Skip (trim) white-space characters off <b>beginning</b> of string, returns modified string or <tt>null</tt> or <tt>undefined</tt> if passed those values")
 	 , 315},
 	{"truncsp",         js_truncsp,         1,  JSTYPE_STRING,  JSDOCSTR("text")
-	 , JSDOCSTR("Truncate (trim) white-space characters off <b>end</b> of string, returns modified string")
+	 , JSDOCSTR("Truncate (trim) white-space characters off <b>end</b> of string, returns modified string or <tt>null</tt> or <tt>undefined</tt> if passed those values")
 	 , 310},
 	{"truncstr",        js_truncstr,        2,  JSTYPE_STRING,  JSDOCSTR("text, charset")
-	 , JSDOCSTR("Truncate (trim) string at first char in <i>charset</i>, returns modified string")
+	 , JSDOCSTR("Truncate (trim) string at first char in <i>charset</i>, returns modified string or <tt>null</tt> or <tt>undefined</tt> if passed those values")
 	 , 310},
 	{"lfexpand",        js_lfexpand,        1,  JSTYPE_STRING,  JSDOCSTR("text")
-	 , JSDOCSTR("Expand sole line-feeds (LF) to carriage-return/line-feed sequences (CRLF), returns modified string")
+	 , JSDOCSTR("Expand sole line-feeds (LF) to carriage-return/line-feed sequences (CRLF), returns modified string or <tt>null</tt> or <tt>undefined</tt> if passed those values")
 	 , 310},
 	{"wildmatch",       js_wildmatch,       2,  JSTYPE_BOOLEAN, JSDOCSTR("[<i>bool</i> case_sensitive=false,] filename [,pattern='*'] [,path=false]")
 	 , JSDOCSTR("Return <tt>true</tt> if the <i>filename</i> matches the wildcard <i>pattern</i> (wildcard characters supported are '*' and '?'), "

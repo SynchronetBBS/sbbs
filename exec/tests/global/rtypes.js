@@ -1,4 +1,5 @@
 // Test global function return types
+// @format.tab-size 4, @format.use-tabs true
 
 var type = {
 	'alert(0)'				: 'undefined',
@@ -6,7 +7,11 @@ var type = {
 	'ascii("A")'		    : 'number',
 	'ascii_str("A")'	    : 'string',
 	'ascii_str(1)'		    : 'string',
+	'ascii_str(null)'		: 'object', // null
+	'ascii_str(undefined)'	: 'undefined',
 	'backslash("")'		    : 'string',
+	'backslash(null)'		: 'object', // null
+	'backslaash(undefined)'	: 'undefined',
 	'base64_encode("")'		: 'object', // null
 	'base64_encode("1")'	: 'string',
 	'base64_decode("")'		: 'object', // null
@@ -35,6 +40,8 @@ var type = {
 	'flags_str(0)'			: 'string',
 	'fullpath("")'			: 'string',
 	'lfexpand("")'			: 'string',
+	'lfexpand(null)'		: 'object', // null
+	'lfexpand(undefined)'	: 'undefined',
 	'log("")'				: 'string',
 	'md5_calc("")'			: 'string',
 	'mswait()'				: 'number',
@@ -53,6 +60,8 @@ var type = {
 	'str_is_utf16("")'		: 'boolean',
 	'str_is_utf8("")'		: 'boolean',
 	'strftime("")'			: 'string',
+	'strip_ctrl(null)'		: 'null',
+	'strip_ctrl(undefined)'	: 'undefined',
 	'strip_ctrl("")'		: 'string',
 	'strip_ctrl_a("")'		: 'string',
 	'strip_ansi("")'		: 'string',
