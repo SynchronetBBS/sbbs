@@ -10174,13 +10174,19 @@ reinit_screen(uint8_t *font, int fx, int fy)
                 // Now, make the vmem array large enough for the new bits...
                 // TODO: Handle failures!
 		nvmem = realloc(vstat.vmem->vmem, vstat.cols * vstat.rows * sizeof(vstat.vmem->vmem[0]));
-		memset(nvmem, 0, vstat.cols * vstat.rows * sizeof(vstat.vmem->vmem[0]));
 
                 // And use it.
 		vstat.vmem->top_row = 0;
 		vstat.vmem->width = cols;
 		vstat.vmem->height = rows;
 		vstat.vmem->count = cols * rows;
+		for (size_t off = 0; off < vstat.vmem->count; off++) {
+			vstat.vmem->vmem[off].bg = 0x04000000;
+			vstat.vmem->vmem[off].fg = 0x04000000;
+			vstat.vmem->vmem[off].ch = ' ';
+			vstat.vmem->vmem[off].font = 0;
+			vstat.vmem->vmem[off].legacy_attr = 7;
+		}
 		vstat.vmem->vmem = nvmem;
 	}
 	do_rwlock_unlock(&vstatlock);
