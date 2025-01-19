@@ -10180,6 +10180,7 @@ reinit_screen(uint8_t *font, int fx, int fy)
 		vstat.vmem->width = cols;
 		vstat.vmem->height = rows;
 		vstat.vmem->count = cols * rows;
+		vstat.vmem->vmem = nvmem;
 		for (size_t off = 0; off < vstat.vmem->count; off++) {
 			vstat.vmem->vmem[off].bg = 0x04000000;
 			vstat.vmem->vmem[off].fg = 0x04000000;
@@ -10187,7 +10188,6 @@ reinit_screen(uint8_t *font, int fx, int fy)
 			vstat.vmem->vmem[off].font = 0;
 			vstat.vmem->vmem[off].legacy_attr = 7;
 		}
-		vstat.vmem->vmem = nvmem;
 	}
 	do_rwlock_unlock(&vstatlock);
 
