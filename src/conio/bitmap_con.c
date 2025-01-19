@@ -1473,6 +1473,11 @@ bitmap_movetext_screen(int x, int y, int tox, int toy, int direction, int height
 	int step;
 	int32_t screeny;
 
+	int pheight = height * vstat.charheight;
+	int ptoy = (toy - 1) * vstat.charheight;
+	int py = (y - 1) * vstat.charheight;
+	int ptox = (tox - 1) * vstat.charwidth;
+	int px = (x - 1) * vstat.charwidth;
 	pthread_mutex_lock(&screenlock);
 	if (width == vstat.cols && (height > vstat.rows / 2) && toy == 1) {
 		screena.toprow += (y - toy) * vstat.charheight;
@@ -1486,6 +1491,7 @@ bitmap_movetext_screen(int x, int y, int tox, int toy, int direction, int height
 		if (screena.toprow < 0)
 			screena.toprow += screena.screenheight;
 
+		int yoff = toy - y;
 		height = vstat.rows - height;
 		toy = vstat.rows - (height - 1);
 		// Fill the bits with impossible data so they're redrawn
@@ -1494,22 +1500,34 @@ bitmap_movetext_screen(int x, int y, int tox, int toy, int direction, int height
 			memset(&bitmap_drawn[bdoff], 0x04, sizeof(*bitmap_drawn) * vstat.cols);
 			bdoff = vmem_next_row_offset(vstat.vmem, bdoff);
 		}
-		pthread_mutex_unlock(&screenlock);
-		return;
+		if (vstat.charheight * vstat.rows == screena.screenheight) {
+			pthread_mutex_unlock(&screenlock);
+			return;
+		}
+		// Move stuff below the bottom row of text back
+		pheight = screena.screenheight - (vstat.charheight * vstat.rows);
+		ptoy = screena.screenheight - pheight;
+		py = ptoy + (yoff * vstat.charheight);
+		if (py < 0)
+			py += screena.screenheight;
+		if (py >= screena.screenheight)
+			py -= screena.screenheight;
 	}
 
 	int maxpos = screena.screenwidth * screena.screenheight;
 	if (direction == -1) {
-		ssourcepos = ((y + height - 1)      * vstat.charheight - 1) * vstat.scrnwidth + (x -   1) * vstat.charwidth;
-		sdestoffset = ((((toy + height - 1) * vstat.charheight - 1) * vstat.scrnwidth + (tox - 1) * vstat.charwidth) - ssourcepos);
+		ssourcepos =   (py   + pheight - 1) * vstat.scrnwidth + px;
+		sdestoffset = ((ptoy + pheight - 1) * vstat.scrnwidth + ptox) - ssourcepos;
 	}
 	else {
-		ssourcepos=(y - 1)     * vstat.scrnwidth * vstat.charheight + (x - 1)  * vstat.charwidth;
-		sdestoffset=(((toy - 1) * vstat.scrnwidth * vstat.charheight + (tox - 1) * vstat.charwidth) - ssourcepos);
+		ssourcepos =   py   * vstat.scrnwidth + px;
+		sdestoffset = (ptoy * vstat.scrnwidth + ptox) - ssourcepos;
 	}
 	ssourcepos += screena.toprow * screena.screenwidth;
+	if (ssourcepos >= maxpos)
+		ssourcepos -= maxpos;
 	step = direction * vstat.scrnwidth;
-	for(screeny=0; screeny < height*vstat.charheight; screeny++) {
+	for(screeny=0; screeny < pheight; screeny++) {
 		if (ssourcepos >= maxpos)
 			ssourcepos -= maxpos;
 		if (ssourcepos < 0)
@@ -1830,11 +1848,11 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 	bool yupdated = false;
 	int off;
 	for (y = sy; y <= ey; y++) {
+		charx = charsx;
 		pos = pixels->width*(y-sy+y_off)+x_off;
 		if (!yupdated) {
 			off = vmem_cell_offset(vstat.vmem, charx, chary);
 		}
-		charx = charsx;
 		if (mask == NULL) {
 			for (x = sx; x <= ex; x++) {
 				if (!yupdated) {
@@ -1930,6 +1948,7 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 		}
 		cpy++;
 		if (cpy >= vstat.charheight) {
+			chary++;
 			cpy = 0;
 			yupdated = false;
 			xupdated = false;
