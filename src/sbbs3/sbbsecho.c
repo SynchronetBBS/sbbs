@@ -3459,7 +3459,7 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint usernumber, uint subnum)
 	if (usernumber) {
 		user_t user = { .number = usernumber };
 		i = getuserdat(&scfg, &user);
-		if (i != 0) {
+		if (i != USER_SUCCESS) {
 			lprintf(LOG_ERR, "Error %d reading user #%u", i, usernumber);
 			return SMB_FAILURE;
 		}
@@ -4713,7 +4713,9 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 							hdr.time[0] = 0;    /* Generate a new timestamp */
 							if (fmsgtosmsg(p, &hdr, notify, INVALID_SUB) == IMPORT_SUCCESS) {
 								SAFECOPY(str, "\7\1n\1hSBBSecho \1n\1msent you mail\r\n");
-								putsmsg(&scfg, notify, str);
+								int result = putsmsg(&scfg, notify, str);
+								if (result != USER_SUCCESS)
+									lprintf(LOG_ERR, "ERROR %d notifying area manager (user #%u)", result, notify);
 							}
 						} else
 							lprintf(LOG_ERR, "Configured Area Manager, user not found: %s", cfg.areamgr);
@@ -4782,7 +4784,9 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 		              , hdr.from
 		              , hdr.attr & FIDO_FILE ? text[WithAttachment] : ""
 		              , smb_faddrtoa(&addr, NULL));
-		putsmsg(&scfg, usernumber, str);
+		int result = putsmsg(&scfg, usernumber, str);
+		if (result != USER_SUCCESS)
+			lprintf(LOG_ERR, "ERROR %d notifying recipient (user #%u)", result, usernumber);
 	}
 	if (hdr.attr & FIDO_FILE) {    /* File attachment */
 		char  filelist[FIDO_SUBJ_LEN];
@@ -6274,7 +6278,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 			if (result == SMB_SUCCESS) {       /* Successful import */
 				user_t user;
 				if (i != cfg.badecho && cfg.echomail_notify && (user.number = lookup_user(&scfg, &user_list, hdr.to)) != 0
-				    && getuserdat(&scfg, &user) == 0
+				    && getuserdat(&scfg, &user) == USER_SUCCESS
 				    && user_can_read_sub(&scfg, cfg.area[i].sub, &user, NULL)) {
 					char tmp[128];
 					safe_snprintf(str, sizeof(str)
@@ -6283,7 +6287,10 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 					              , hdr.from
 					              , scfg.grp[scfg.sub[cfg.area[i].sub]->grp]->sname
 					              , scfg.sub[cfg.area[i].sub]->sname);
-					putsmsg(&scfg, user.number, str);
+					if ((result = putsmsg(&scfg, user.number, str)) != USER_SUCCESS)
+						lprintf(LOG_ERR, "ERROR %d notifying recipient (user #%u)", result, user.number);
+					else
+						lprintf(LOG_DEBUG, "Successfully notified recipient (user #%u)", user.number);
 				}
 				echomail++;
 				cfg.area[i].imported++;
