@@ -569,7 +569,6 @@ can_cheat(struct blockstate *bs, struct vmem_cell *vc)
 	return vc->bg == bs->cheat_colour && (vc->ch == ' ') && (vc->font < CONIO_FIRST_FREE_FONT) && !(vc->bg & 0x02000000);
 }
 
-// Returns false if we can't chate, true otherwise
 static void
 calc_charstate(struct blockstate *bs, struct vmem_cell *vc, struct charstate *cs, int xpos, int ypos)
 {
