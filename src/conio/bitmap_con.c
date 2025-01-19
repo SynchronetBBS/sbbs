@@ -624,33 +624,47 @@ calc_charstate(struct blockstate *bs, struct vmem_cell *vc, struct charstate *cs
 	cs->extra_rows = 0;
 
 	if (vstat.mode == PRESTEL_40X24 && (vc->bg & 0x02000000)) {
-		unsigned char lattr = vc->legacy_attr;
-		int x, y;
+		unsigned char lattr;
 		bool top = false;
 		bool bottom = false;
 
+		// Start at the first cell...
 		struct vmem_cell *pvc = vmem_cell_ptr(vstat.vmem, 0, 0);
-		for (y = 0; y < ypos; y++) {
+		// And check all the rows including this one.
+		for (int y = 0; y < ypos; y++) {
+			// If the previous line was a top line, this one is a bottom.
 			if (top) {
 				bottom = true;
 				top = false;
 			}
 			else {
+				// If the previous line was a bottom, this is not a bottom
 				if (bottom)
 					bottom = false;
-				for (x = 0; x < vstat.cols; x++) {
+				// Check for any of these being tops...
+				pvc = vmem_cell_ptr(vstat.vmem, 0, y);
+				for (int x = 0; x < vstat.cols; x++) {
+					// If there's at least one top, this is a top row
 					if (pvc->bg & 0x01000000) {
 						top = true;
-						pvc = vmem_cell_ptr(vstat.vmem, 0, y + 1);
 						break;
 					}
 					pvc = vmem_next_ptr(vstat.vmem, pvc);
 				}
 			}
 		}
+
+		// If this is the last row, it can't be a top...
+		if (ypos == vstat.rows)
+			top = false;
+
+		// If this is a bottom row...
 		if (bottom) {
-			pvc = vmem_cell_ptr(vstat.vmem, xpos - 1, ypos - 2);
+			assert(!top);
+			// Find the cell above this one...
+			pvc = vmem_prev_row_ptr(vstat.vmem, vc);
 			if (pvc->bg & 0x01000000) {
+				// If it's double-height, draw the cell above
 				cs->double_height = true;
 				cs->extra_rows = -(vstat.charheight);
 				cs->fontoffset = (pvc->ch) * (vstat.charheight * ((bs->font_data_width + 7) / 8));
@@ -664,14 +678,18 @@ calc_charstate(struct blockstate *bs, struct vmem_cell *vc, struct charstate *cs
 			cs->bg = pvc->bg;
 			lattr = pvc->legacy_attr;
 		}
+		// If not a bottom (either a top or no doubles)
 		else {
-			pvc = vmem_cell_ptr(vstat.vmem, xpos - 1, ypos - 1);
-			if (ypos != vstat.rows) {
-				if (pvc->bg & 0x01000000) {
-					top = true;
+			// And it's a top row...
+			if (top) {
+				// And it's double-height
+				if (vc->bg & 0x01000000) {
+					//assert(top);
+					// Draw it as is where is
 					cs->double_height = true;
 				}
 			}
+			lattr = vc->legacy_attr;
 		}
 		if (lattr & 0x08) {
 			if (!(cio_api.options & CONIO_OPT_PRESTEL_REVEAL)) {
@@ -737,7 +755,7 @@ draw_char_row_double(struct blockstate *bs, struct charstate *cs, uint32_t y)
 {
 	bool fbb;
 
-	ssize_t pixeloffset = bs->pixeloffset + (cs->extra_rows * screena.screenwidth);
+	ssize_t pixeloffset = bs->pixeloffset + cs->extra_rows * screena.screenwidth;
 	if (pixeloffset >= bs->maxpix)
 		pixeloffset -= bs->maxpix;
 	if (pixeloffset < 0)
@@ -828,16 +846,21 @@ bitmap_draw_vmem_locked(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 	size_t rsz = screena.screenwidth - vstat.charwidth * vwidth;
 
 	// Fill in charstate for this pass
-	bool cheat = true; // If the whole thing is spaces in compiled in fonts, we can just fill.
-	for (size_t vy = 0; vy < vheight; vy++) {
-		for (size_t vx = 0; vx < vwidth; vx++) {
-			if (!can_cheat(&bs, &fill[vy * vwidth + vx])) {
-				cheat = false;
-				break;
+	bool cheat = true;
+	if (vstat.mode == PRESTEL_40X24) {
+		cheat = false;
+	}
+	else {
+		for (size_t vy = 0; vy < vheight; vy++) {
+			for (size_t vx = 0; vx < vwidth; vx++) {
+				if (!can_cheat(&bs, &fill[vy * vwidth + vx])) {
+					cheat = false;
+					break;
+				}
 			}
+			if (!cheat)
+				break;
 		}
-		if (!cheat)
-			break;
 	}
 	if (cheat) {
 		size_t ylim = vheight * vstat.charheight;
@@ -1057,11 +1080,13 @@ same_cell(struct vmem_cell *bitmap_cell, struct vmem_cell *c2)
 		return false;
 	if (bitmap_cell->bg != c2->bg)
 		return false;
-	if (vstat.mode == PRESTEL_40X24 && (c2->bg & 0x02000000) && (c2->legacy_attr & 0x08)) {
-		if (cio_api.options & CONIO_OPT_PRESTEL_REVEAL)
-			c2->fg |= 0x01000000;
-		else
-			c2->fg &= ~0x01000000;
+	if (vstat.mode == PRESTEL_40X24 && (c2->bg & 0x02000000)) {
+		if (c2->legacy_attr & 0x08) {
+			if (cio_api.options & CONIO_OPT_PRESTEL_REVEAL)
+				c2->fg |= 0x01000000;
+			else
+				c2->fg &= ~0x01000000;
+		}
 	}
 	if (bitmap_cell->fg != c2->fg)
 		return false;
