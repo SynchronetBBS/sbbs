@@ -577,6 +577,7 @@ static void memset_u32(void *buf, uint32_t u, size_t len)
 static int
 pixel_offset(struct bitmap_screen *screen, int x, int y)
 {
+	assert(screen->toprow < screen->screenheight);
 	y += screen->toprow;
 	if (y >= screen->screenheight)
 		y -= screen->screenheight;
@@ -2198,6 +2199,7 @@ static int init_screens(int *width, int *height)
 		pthread_mutex_unlock(&screenlock);
 		return(-1);
 	}
+	screena.toprow = 0;
 	screenb.rect = alloc_full_rect(&screenb, false);
 	if (screenb.rect == NULL) {
 		bitmap_drv_free_rect(screena.rect);
@@ -2205,6 +2207,7 @@ static int init_screens(int *width, int *height)
 		pthread_mutex_unlock(&screenlock);
 		return(-1);
 	}
+	screena.toprow = 0;
 	memset_u32(screena.rect->data, color_value(vstat.palette[0]), screena.rect->rect.width * screena.rect->rect.height);
 	memset_u32(screenb.rect->data, color_value(vstat.palette[0]), screenb.rect->rect.width * screenb.rect->rect.height);
 	pthread_mutex_unlock(&screenlock);
