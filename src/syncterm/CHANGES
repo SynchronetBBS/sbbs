@@ -1,3 +1,9 @@
+Version 1.5a
+------------
+Fix RIP rendering regressions
+Fix 80x43 scrolling bottom line corruption
+Fix overlinking with GNUmakefile
+
 Version 1.4
 ------------
 Add support for JPEG XL graphics in addition to PPM
