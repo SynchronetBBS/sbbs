@@ -298,6 +298,12 @@ bitmap_vmem_puttext_locked(int sx, int sy, int ex, int ey, struct vmem_cell *fil
 		vc = vmem_cell_ptr(vstat.vmem, sx - 1, y);
 		for(x=sx-1;x<ex;x++) {
 			*vc = *(fi++);
+			if (vstat.mode == PRESTEL_40X24 && (vc->bg & 0x02000000) && (vc->legacy_attr & 0x08)) {
+				if (cio_api.options & CONIO_OPT_PRESTEL_REVEAL)
+					vc->fg |= 0x01000000;
+				else
+					vc->fg &= ~0x01000000;
+			}
 			vc = vmem_next_ptr(vstat.vmem, vc);
 		}
 	}
@@ -328,6 +334,12 @@ set_vmem_cell(size_t x, size_t y, uint16_t cell, uint32_t fg, uint32_t bg)
 	vc->legacy_attr = cell >> 8;
 	vc->ch = cell & 0xff;
 	vc->fg = fg;
+	if (vstat.mode == PRESTEL_40X24 && (vc->bg & 0x02000000) && (vc->legacy_attr & 0x08)) {
+		if (cio_api.options & CONIO_OPT_PRESTEL_REVEAL)
+			vc->fg |= 0x01000000;
+		else
+			vc->fg &= ~0x01000000;
+	}
 	vc->bg = bg;
 	vc->font = font;
 	return vc;
@@ -1045,6 +1057,12 @@ same_cell(struct vmem_cell *bitmap_cell, struct vmem_cell *c2)
 		return false;
 	if (bitmap_cell->bg != c2->bg)
 		return false;
+	if (vstat.mode == PRESTEL_40X24 && (c2->bg & 0x02000000) && (c2->legacy_attr & 0x08)) {
+		if (cio_api.options & CONIO_OPT_PRESTEL_REVEAL)
+			c2->fg |= 0x01000000;
+		else
+			c2->fg &= ~0x01000000;
+	}
 	if (bitmap_cell->fg != c2->fg)
 		return false;
 	if (bitmap_cell->fg & 0x04000000)	// Dirty.

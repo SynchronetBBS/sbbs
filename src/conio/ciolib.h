@@ -278,6 +278,7 @@ struct vmem_cell {
 	uint8_t ch;
 	uint8_t font;
 	uint32_t fg;	/* RGB 80RRGGBB High bit clear indicates palette colour
+			 * bit 24 indicates reveal is/was enabled
 			 * bit 26 indicates it is dirty and must be redrawn
 			 */
 	uint32_t bg;	/* RGB 80RRGGBB High bit clear indicates palette colour
