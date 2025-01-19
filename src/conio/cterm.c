@@ -1103,8 +1103,8 @@ static void playnote_thread(void *args)
 	}
 	if (device_open)
 		xptone_close();
-	sem_post(&cterm->playnote_thread_terminated);
 	cterm->playnote_thread_running=FALSE;
+	sem_post(&cterm->playnote_thread_terminated);
 }
 
 static void play_music(struct cterminal *cterm)
