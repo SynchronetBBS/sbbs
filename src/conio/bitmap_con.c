@@ -2207,7 +2207,7 @@ static int init_screens(int *width, int *height)
 		pthread_mutex_unlock(&screenlock);
 		return(-1);
 	}
-	screena.toprow = 0;
+	screenb.toprow = 0;
 	memset_u32(screena.rect->data, color_value(vstat.palette[0]), screena.rect->rect.width * screena.rect->rect.height);
 	memset_u32(screenb.rect->data, color_value(vstat.palette[0]), screenb.rect->rect.width * screenb.rect->rect.height);
 	pthread_mutex_unlock(&screenlock);
