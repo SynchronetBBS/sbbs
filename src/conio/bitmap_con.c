@@ -1773,14 +1773,16 @@ int bitmap_setpixel(uint32_t x, uint32_t y, uint32_t colour)
 		do_rwlock_unlock(&vstatlock);
 		return 0;
 	}
-	int off = vmem_cell_offset(vstat.vmem, xchar, ychar);
-	if (!same_cell(&bitmap_drawn[off], &vstat.vmem->vmem[off])) {
-		pthread_mutex_unlock(&screenlock);
-		bitmap_draw_from_vmem(xchar + 1, ychar + 1, xchar + 1, ychar + 1);
-		pthread_mutex_lock(&screenlock);
+	if (xchar < vstat.cols && ychar < vstat.rows) {
+		int off = vmem_cell_offset(vstat.vmem, xchar, ychar);
+		if (!same_cell(&bitmap_drawn[off], &vstat.vmem->vmem[off])) {
+			pthread_mutex_unlock(&screenlock);
+			bitmap_draw_from_vmem(xchar + 1, ychar + 1, xchar + 1, ychar + 1);
+			pthread_mutex_lock(&screenlock);
+		}
+		vstat.vmem->vmem[off].bg |= 0x04000000;
+		bitmap_drawn[off].bg |= 0x04000000;
 	}
-	vstat.vmem->vmem[off].bg |= 0x04000000;
-	bitmap_drawn[off].bg |= 0x04000000;
 	if (x < screena.screenwidth && y < screena.screenheight) {
 		if (screena.rect->data[pixel_offset(&screena, x, y)] != colour) {
 			screena.update_pixels = 1;
@@ -1847,35 +1849,42 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 	bool xupdated = false;
 	bool yupdated = false;
 	int off;
+	int crows = vstat.rows * vstat.charheight;
+	int ccols = vstat.cols * vstat.charwidth;
 	for (y = sy; y <= ey; y++) {
-		charx = charsx;
 		pos = pixels->width*(y-sy+y_off)+x_off;
-		if (!yupdated) {
+		bool in_text_area = y < crows;
+		if (in_text_area && !yupdated) {
+			charx = charsx;
 			off = vmem_cell_offset(vstat.vmem, charx, chary);
 		}
 		if (mask == NULL) {
 			for (x = sx; x <= ex; x++) {
-				if (!yupdated) {
-					if (!xupdated) {
-						if (!same_cell(&bitmap_drawn[off], &vstat.vmem->vmem[off])) {
-							pthread_mutex_unlock(&screenlock);
-							bitmap_draw_from_vmem(charx + 1, chary + 1, charx + 1, chary + 1);
-							pthread_mutex_lock(&screenlock);
+				if (x >= ccols)
+					in_text_area = false;
+				if (in_text_area) {
+					if (!yupdated) {
+						if (!xupdated) {
+							if (!same_cell(&bitmap_drawn[off], &vstat.vmem->vmem[off])) {
+								pthread_mutex_unlock(&screenlock);
+								bitmap_draw_from_vmem(charx + 1, chary + 1, charx + 1, chary + 1);
+								pthread_mutex_lock(&screenlock);
+							}
+							if (vstat.vmem && vstat.vmem->vmem) {
+								vstat.vmem->vmem[off].bg |= 0x04000000;
+							}
+							if (bitmap_drawn) {
+								bitmap_drawn[off].bg |= 0x04000000;
+							}
+							xupdated = true;
 						}
-						if (vstat.vmem && vstat.vmem->vmem) {
-							vstat.vmem->vmem[off].bg |= 0x04000000;
-						}
-						if (bitmap_drawn) {
-							bitmap_drawn[off].bg |= 0x04000000;
-						}
-						xupdated = true;
 					}
-				}
-				if (++cpx >= vstat.charwidth) {
-					cpx = 0;
-					charx++;
-					xupdated = false;
-					off = vmem_next_offset(vstat.vmem, off);
+					if (++cpx >= vstat.charwidth) {
+						cpx = 0;
+						charx++;
+						xupdated = false;
+						off = vmem_next_offset(vstat.vmem, off);
+					}
 				}
 				if (screena.rect->data[pixel_offset(&screena, x, y)] != pixels->pixels[pos]) {
 					screena.rect->data[pixel_offset(&screena, x, y)] = pixels->pixels[pos];
@@ -1899,27 +1908,31 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 		else {
 			mpos = mask->width * (y - sy + my_off) + mx_off;
 			for (x = sx; x <= ex; x++) {
-				if (!yupdated) {
-					if (!xupdated) {
-						if (!same_cell(&bitmap_drawn[off], &vstat.vmem->vmem[off])) {
-							pthread_mutex_unlock(&screenlock);
-							bitmap_draw_from_vmem(charx + 1, chary + 1, charx + 1, chary + 1);
-							pthread_mutex_lock(&screenlock);
+				if (x >= ccols)
+					in_text_area = false;
+				if (in_text_area) {
+					if (!yupdated) {
+						if (!xupdated) {
+							if (!same_cell(&bitmap_drawn[off], &vstat.vmem->vmem[off])) {
+								pthread_mutex_unlock(&screenlock);
+								bitmap_draw_from_vmem(charx + 1, chary + 1, charx + 1, chary + 1);
+								pthread_mutex_lock(&screenlock);
+							}
+							if (vstat.vmem && vstat.vmem->vmem) {
+								vstat.vmem->vmem[off].bg |= 0x04000000;
+							}
+							if (bitmap_drawn) {
+								bitmap_drawn[off].bg |= 0x04000000;
+							}
+							xupdated = true;
 						}
-						if (vstat.vmem && vstat.vmem->vmem) {
-							vstat.vmem->vmem[off].bg |= 0x04000000;
-						}
-						if (bitmap_drawn) {
-							bitmap_drawn[off].bg |= 0x04000000;
-						}
-						xupdated = true;
 					}
-				}
-				if (++cpx >= vstat.charwidth) {
-					cpx = 0;
-					charx++;
-					xupdated = false;
-					off = vmem_next_offset(vstat.vmem, off);
+					if (++cpx >= vstat.charwidth) {
+						cpx = 0;
+						charx++;
+						xupdated = false;
+						off = vmem_next_offset(vstat.vmem, off);
+					}
 				}
 				mask_byte = mpos / 8;
 				mask_bit = mpos % 8;
@@ -1946,15 +1959,17 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 				mpos++;
 			}
 		}
-		cpy++;
-		if (cpy >= vstat.charheight) {
-			chary++;
-			cpy = 0;
-			yupdated = false;
-			xupdated = false;
+		if (y < crows) {
+			cpy++;
+			if (cpy >= vstat.charheight) {
+				chary++;
+				cpy = 0;
+				yupdated = false;
+				xupdated = false;
+			}
+			else
+				yupdated = true;
 		}
-		else
-			yupdated = true;
 	}
 	pthread_mutex_unlock(&screenlock);
 	do_rwlock_unlock(&vstatlock);
