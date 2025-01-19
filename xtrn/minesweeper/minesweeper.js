@@ -6,10 +6,11 @@
 
 const title = "Synchronet Minesweeper";
 const ini_section = "minesweeper";
-const REVISION = "3.00";
+const REVISION = "3.10";
 const author = "Digital Man";
 const header_height = 4;
 const winners_list = js.exec_dir + "winners.jsonl";
+const netwins_list = js.exec_dir + "netwins.jsonl";
 const losers_list = js.exec_dir + "losers.jsonl";
 const help_file = js.exec_dir + "minesweeper.hlp";
 const welcome_image = js.exec_dir + "welcome.bin";
@@ -322,67 +323,89 @@ function get_winners(level)
 		list = [];
 
 	if(options.sub) {
+		var net_list = json_lines.get(netwins_list);
+		if(typeof net_list != 'object')
+			net_list = [];
 		var msgbase = new MsgBase(options.sub);
 		if(msgbase.get_index !== undefined && msgbase.open()) {
-			var to_crc = crc16_calc(title.toLowerCase());
-			var winner_crc = crc16_calc(winner_subject.toLowerCase());
-			var highscores_crc = crc16_calc(highscores_subject.toLowerCase());
-			var index = msgbase.get_index();
-			for(var i = 0; index && i < index.length; i++) {
-				var idx = index[i];
-				if((idx.attr&MSG_DELETE) || idx.to != to_crc)
-					continue;
-				if(idx.subject != winner_crc && idx.subject != highscores_crc)
-					continue;
-				var hdr = msgbase.get_msg_header(true, idx.offset);
-				if(!hdr)
-					continue;
-				if(!hdr.from_net_type || hdr.to != title)
-					continue;
-				if(hdr.subject != winner_subject && hdr.subject != highscores_subject)
-					continue;
-				var body = msgbase.get_msg_body(hdr, false, false, false);
-				if(!body)
-					continue;
-				body = body.split("\n===", 1)[0];
-				body = body.split("\n---", 1)[0];
-				var obj;
-				try {
-					obj = JSON.parse(strip_ctrl(body));
-				} catch(e) {
-					log(LOG_INFO, title + " " + e + ": "  + options.sub + " msg " + hdr.number);
-					continue;
-				}
-				if(!obj.md5)	// Ignore old test messages
-					continue;
-				if(idx.subject == highscores_crc && !obj.game)
-					continue;
-				obj.name = hdr.from;
-				var md5 = obj.md5;
-				obj.md5 = undefined;
-				var calced = md5_calc(JSON.stringify(idx.subject == winner_crc ? obj : obj.game));
-				if(calced == md5) {
-					if(idx.subject == winner_crc) {
-						obj.net_addr = hdr.from_net_addr;	// Not included in MD5 sum
-						if(!list_contains(list, obj))
-							list.push(obj);
-					} else {
-						for(var j = 0; j < obj.game.length; j++) {
-							var game = obj.game[j];
-							game.net_addr = hdr.from_net_addr;
-							if(!list_contains(list, game))
-								list.push(game);
-						}
+			var file = new File(msgbase.cfg.data_dir + msgbase.cfg.code + ".ini");
+			var ptr = 0;
+			if(file.open("r")) {
+				ptr = file.iniGetValue(ini_section, "import_ptr", 0);
+				file.close();
+			}
+			if(msgbase.last_msg > ptr) {
+				var to_crc = crc16_calc(title.toLowerCase());
+				var winner_crc = crc16_calc(winner_subject.toLowerCase());
+				var highscores_crc = crc16_calc(highscores_subject.toLowerCase());
+				var index = msgbase.get_index();
+				for(var i = 0; index && i < index.length; i++) {
+					var idx = index[i];
+					if(idx.number <= ptr)
+						continue;
+					if((idx.attr&MSG_DELETE) || idx.to != to_crc)
+						continue;
+					if(idx.subject != winner_crc && idx.subject != highscores_crc)
+						continue;
+					var hdr = msgbase.get_msg_header(true, idx.offset);
+					if(!hdr)
+						continue;
+					if(!hdr.from_net_type || hdr.to != title)
+						continue;
+					if(hdr.subject != winner_subject && hdr.subject != highscores_subject)
+						continue;
+					var body = msgbase.get_msg_body(hdr, false, false, false);
+					if(!body)
+						continue;
+					body = body.split("\n===", 1)[0];
+					body = body.split("\n---", 1)[0];
+					var obj;
+					try {
+						obj = JSON.parse(strip_ctrl(body));
+					} catch(e) {
+						log(LOG_INFO, title + " " + e + ": "  + options.sub + " msg " + hdr.number);
+						continue;
 					}
-				} else {
-					log(LOG_INFO, title +
-						" MD5 not " + calced +
-						" in: "  + options.sub +
-						" msg " + hdr.number);
+					if(!obj.md5)	// Ignore old test messages
+						continue;
+					if(idx.subject == highscores_crc && !obj.game)
+						continue;
+					obj.name = hdr.from;
+					var md5 = obj.md5;
+					obj.md5 = undefined;
+					var calced = md5_calc(JSON.stringify(idx.subject == winner_crc ? obj : obj.game));
+					if(calced == md5) {
+						if(idx.subject == winner_crc) {
+							obj.net_addr = hdr.from_net_addr;	// Not included in MD5 sum
+							if(!list_contains(net_list, obj)) {
+								net_list.push(obj);
+								json_lines.add(netwins_list, obj);
+							}
+						} else {
+							for(var j = 0; j < obj.game.length; j++) {
+								var game = obj.game[j];
+								game.net_addr = hdr.from_net_addr;
+								if(!list_contains(net_list, game)) {
+									net_list.push(game);
+									json_lines.add(netwins_list, game);
+								}
+							}
+						}
+					} else {
+						log(LOG_INFO, title +
+							" MD5 not " + calced +
+							" in: "  + options.sub +
+							" msg " + hdr.number);
+					}
+				}
+				if(file.open(file.exists ? "r+" : "w+")) {
+					file.iniSetValue(ini_section, "import_ptr", msgbase.last_msg);
+					file.close();
 				}
 			}
 			msgbase.close();
 		}
+		list = list.concat(net_list);
 	}
 
 	if(level)
