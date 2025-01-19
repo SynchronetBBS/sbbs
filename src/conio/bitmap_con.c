@@ -792,7 +792,7 @@ draw_char_row_double(struct blockstate *bs, struct charstate *cs, uint32_t y)
 }
 
 static void
-bitmap_draw_vmem(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
+bitmap_draw_vmem_locked(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 {
 	assert(sx <= ex);
 	assert(sy <= ey);
@@ -806,7 +806,6 @@ bitmap_draw_vmem(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 	bs.expand = vstat.flags & VIDMODES_FLAG_EXPAND;
 	bs.font_data_width = vstat.charwidth - (bs.expand ? 1 : 0);
 
-	pthread_mutex_lock(&screenlock);
 	assert(xoffset + vstat.charwidth <= screena.screenwidth);
 	assert(xoffset + vstat.charwidth <= screenb.screenwidth);
 	assert(yoffset + vstat.charheight <= screena.screenheight);
@@ -888,6 +887,13 @@ bitmap_draw_vmem(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 			}
 		}
 	}
+}
+
+static void
+bitmap_draw_vmem(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
+{
+	pthread_mutex_lock(&screenlock);
+	bitmap_draw_vmem_locked(sx, sy, ex, ey, fill);
 	pthread_mutex_unlock(&screenlock);
 }
 
@@ -1052,7 +1058,7 @@ same_cell(struct vmem_cell *bitmap_cell, struct vmem_cell *c2)
 }
 
 static void
-bitmap_draw_from_vmem(int sx, int sy, int ex, int ey)
+bitmap_draw_from_vmem(int sx, int sy, int ex, int ey, bool locked)
 {
 	int so = vmem_cell_offset(vstat.vmem, sx - 1, sy - 1);
 	int eo = vmem_cell_offset(vstat.vmem, ex - 1, ey - 1);
@@ -1060,13 +1066,19 @@ bitmap_draw_from_vmem(int sx, int sy, int ex, int ey)
 	if (eo < so) {
 		int rows = sy - vstat.vmem->top_row;
 		int ney = vstat.vmem->height - rows + 1;
-		bitmap_draw_vmem(sx, sy, ex, ney, &vstat.vmem->vmem[so]);
+		if (locked)
+			bitmap_draw_vmem_locked(sx, sy, ex, ney, &vstat.vmem->vmem[so]);
+		else
+			bitmap_draw_vmem(sx, sy, ex, ney, &vstat.vmem->vmem[so]);
 		so = 0;
 		sy += rows;
 	}
 
 	// Draw last chunk
-	bitmap_draw_vmem(sx, sy, ex, ey, &vstat.vmem->vmem[so]);
+	if (locked)
+		bitmap_draw_vmem_locked(sx, sy, ex, ey, &vstat.vmem->vmem[so]);
+	else
+		bitmap_draw_vmem(sx, sy, ex, ey, &vstat.vmem->vmem[so]);
 }
 
 /*
@@ -1162,14 +1174,14 @@ static int update_from_vmem(int force)
 			}
 			else {
 				if (sx) {
-					bitmap_draw_from_vmem(sx, y + 1, ex, y + 1);
+					bitmap_draw_from_vmem(sx, y + 1, ex, y + 1, false);
 					sx = ex = 0;
 				}
 			}
 			pos = vmem_next_offset(vstat.vmem, pos);
 		}
 		if (sx) {
-			bitmap_draw_from_vmem(sx, y + 1, ex, y + 1);
+			bitmap_draw_from_vmem(sx, y + 1, ex, y + 1, false);
 			sx = ex = 0;
 		}
 	}
@@ -1776,9 +1788,7 @@ int bitmap_setpixel(uint32_t x, uint32_t y, uint32_t colour)
 	if (xchar < vstat.cols && ychar < vstat.rows) {
 		int off = vmem_cell_offset(vstat.vmem, xchar, ychar);
 		if (!same_cell(&bitmap_drawn[off], &vstat.vmem->vmem[off])) {
-			pthread_mutex_unlock(&screenlock);
-			bitmap_draw_from_vmem(xchar + 1, ychar + 1, xchar + 1, ychar + 1);
-			pthread_mutex_lock(&screenlock);
+			bitmap_draw_from_vmem(xchar + 1, ychar + 1, xchar + 1, ychar + 1, true);
 		}
 		vstat.vmem->vmem[off].bg |= 0x04000000;
 		bitmap_drawn[off].bg |= 0x04000000;
@@ -1866,9 +1876,7 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 					if (!yupdated) {
 						if (!xupdated) {
 							if (!same_cell(&bitmap_drawn[off], &vstat.vmem->vmem[off])) {
-								pthread_mutex_unlock(&screenlock);
-								bitmap_draw_from_vmem(charx + 1, chary + 1, charx + 1, chary + 1);
-								pthread_mutex_lock(&screenlock);
+								bitmap_draw_from_vmem(charx + 1, chary + 1, charx + 1, chary + 1, true);
 							}
 							if (vstat.vmem && vstat.vmem->vmem) {
 								vstat.vmem->vmem[off].bg |= 0x04000000;
@@ -1914,9 +1922,7 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 					if (!yupdated) {
 						if (!xupdated) {
 							if (!same_cell(&bitmap_drawn[off], &vstat.vmem->vmem[off])) {
-								pthread_mutex_unlock(&screenlock);
-								bitmap_draw_from_vmem(charx + 1, chary + 1, charx + 1, chary + 1);
-								pthread_mutex_lock(&screenlock);
+								bitmap_draw_from_vmem(charx + 1, chary + 1, charx + 1, chary + 1, true);
 							}
 							if (vstat.vmem && vstat.vmem->vmem) {
 								vstat.vmem->vmem[off].bg |= 0x04000000;
