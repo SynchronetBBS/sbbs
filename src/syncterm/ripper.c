@@ -8654,7 +8654,7 @@ write_char(char ch)
                 // yh = font_metrics[rip.font.num][3].base * mult / div;
 
                 // This way seems insane... but seems to work.
-		yh = (((char)rip_fonts[rip.font.num - 1][0x88]) - ((char)rip_fonts[rip.font.num - 1][0x8a])) * mult
+		yh = (((signed char)rip_fonts[rip.font.num - 1][0x88]) - ((signed char)rip_fonts[rip.font.num - 1][0x8a])) * mult
 		    / div;
 
 // printf("Font: %d @ %d\n", rip.font.num, rip.font.size);
@@ -8680,8 +8680,8 @@ write_char(char ch)
 				cx |= 0x80;
 			if (cy & 0x40)
 				cy |= 0x80;
-			bcx = (cx * mult) / div;
-			bcy = (cy * mult) / div;
+			bcx = ((signed char)cx * mult) / div;
+			bcy = ((signed char)cy * mult) / div;
 			if (rip.font.vertical) {
 				dx = yh - bcy;
 				dy = -bcx;
