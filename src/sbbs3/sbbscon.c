@@ -1170,11 +1170,7 @@ static const char* sbbscon_ver()
 /****************************************************************************/
 /* Main Entry Point															*/
 /****************************************************************************/
-#if defined(BUILD_JSDOCS) && defined(WITH_SDL)
-int CIOLIB_main(int argc, char** argv)
-#else
 int main(int argc, char** argv)
-#endif
 {
 	int            i;
 	int            n;
