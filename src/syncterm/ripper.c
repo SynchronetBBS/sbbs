@@ -10177,6 +10177,10 @@ reinit_screen(uint8_t *font, int fx, int fy)
 		memset(nvmem, 0, vstat.cols * vstat.rows * sizeof(vstat.vmem->vmem[0]));
 
                 // And use it.
+		vstat.vmem->top_row = 0;
+		vstat.vmem->width = cols;
+		vstat.vmem->height = rows;
+		vstat.vmem->count = cols * rows;
 		vstat.vmem->vmem = nvmem;
 	}
 	do_rwlock_unlock(&vstatlock);
