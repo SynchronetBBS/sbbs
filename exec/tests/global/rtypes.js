@@ -11,7 +11,7 @@ var type = {
 	'ascii_str(undefined)'	: 'undefined',
 	'backslash("")'		    : 'string',
 	'backslash(null)'		: 'object', // null
-	'backslaash(undefined)'	: 'undefined',
+	'backslash(undefined)'	: 'undefined',
 	'base64_encode("")'		: 'object', // null
 	'base64_encode("1")'	: 'string',
 	'base64_decode("")'		: 'object', // null
@@ -45,7 +45,6 @@ var type = {
 	'log("")'				: 'string',
 	'md5_calc("")'			: 'string',
 	'mswait()'				: 'number',
-	'netaddr_type("")'		: 'number',
 	'printf()'				: 'string',
 	'read(0)'				: 'undefined',
 	'readln(0)'				: 'undefined',
@@ -83,6 +82,9 @@ var type = {
 	'writeln()'				: 'undefined',
 	'yield()'				: 'undefined',
 };
+
+if (js.global.jsdoor_revision === undefined)
+	type['netaddr_type("")'] = 'number';
 
 for (var i in type) {
 	var result;
