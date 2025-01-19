@@ -59,7 +59,7 @@ var type = {
 	'str_is_utf16("")'		: 'boolean',
 	'str_is_utf8("")'		: 'boolean',
 	'strftime("")'			: 'string',
-	'strip_ctrl(null)'		: 'null',
+	'strip_ctrl(null)'		: 'object', // null
 	'strip_ctrl(undefined)'	: 'undefined',
 	'strip_ctrl("")'		: 'string',
 	'strip_ctrl_a("")'		: 'string',
