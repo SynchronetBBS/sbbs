@@ -4,7 +4,7 @@
 var func_list = {
 	'adjust_credits': 1,
 	'adjust_minutes': 1,
-	'compare_ars': 1,
+	'compare_ars': 0,
 	'downloaded_file': 1,
 	'get_time_left': 1,
 	'posted_message': 1,

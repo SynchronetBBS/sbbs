@@ -4,6 +4,7 @@ var type = {
 	'adjust_credits(0)'		: 'boolean',
 	'adjust_minutes(0)'		: 'boolean',
 	'compare_ars("")'		: 'boolean',
+	'compare_ars(undefined)'	: 'boolean',
 	'downloaded_file()'		: 'boolean',
 	'get_time_left(0)'		: 'number',
 	'posted_message(0)'		: 'boolean',

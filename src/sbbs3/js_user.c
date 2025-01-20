@@ -1074,8 +1074,10 @@ js_chk_ar(JSContext *cx, uintN argc, jsval *arglist)
 
 	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
-	if (js_argvIsNullOrVoid(cx, argv, 0))
-		return JS_FALSE;
+	if (JSVAL_NULL_OR_VOID(argv[0])) {
+		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
+		return JS_TRUE;
+	}
 
 	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
