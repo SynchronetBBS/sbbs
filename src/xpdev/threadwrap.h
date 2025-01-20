@@ -40,6 +40,10 @@
 #endif
 #endif
 
+#ifndef NDEBUG
+#include <assert.h>
+#endif
+
 #if defined(__cplusplus)
 extern "C" {
 #endif

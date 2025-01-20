@@ -1,6 +1,10 @@
 #ifndef RWLOCKWRAP_H
 #define RWLOCKWRAP_H
 
+#ifndef NDEBUG
+#include <assert.h>
+#endif
+
 #if defined(__unix__)
 
 #include <pthread.h>
