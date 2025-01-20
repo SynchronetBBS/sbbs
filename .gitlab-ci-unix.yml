@@ -709,7 +709,7 @@ spec:
     - .$[[ inputs.os ]]-test
   script:
     - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build.tgz"
-    - "SBBSCTRL=./ctrl valgrind -v --num-callers=20 --track-origins=yes --read-var-info=yes --read-inline-info=yes --suppressions=src/sbbs3/suppressions.vg src/sbbs3/*.exe.release/jsexec -f exec/tests/test.js"
+    - "SBBSCTRL=./ctrl valgrind --error-exitcode=1 --num-callers=20 --track-origins=yes --read-var-info=yes --read-inline-info=yes --suppressions=src/sbbs3/suppressions.vg src/sbbs3/*.exe.release/jsexec -f exec/tests/test.js"
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs-build]"
       artifacts: false
