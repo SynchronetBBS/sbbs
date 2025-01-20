@@ -127,10 +127,9 @@ MT_CFLAGS	+=	$(SBBSDEFS) $(SFTP-MT_CFLAGS)
 
 ifneq ($(os),darwin)
  ifdef SBBSDIR
-  LIB_RPATH += -Wl,-rpath,$(LIBODIR)
- else
-  LIB_RPATH += -Wl,-rpath,$(PWD)/$(LIBODIR)
+  LIB_RPATH += -Wl,-rpath,$(SBBSDIR)/exec
  endif
+ LIB_RPATH += -Wl,-rpath,$(PWD)/$(LIBODIR)
  LIB_RPATH += '-Wl,-rpath,$$ORIGIN,-rpath,$$ORIGIN/../$(LIBODIR),-z,origin,--enable-new-dtags'
 endif
 
