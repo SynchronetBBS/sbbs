@@ -32,8 +32,7 @@ for (var i in type) {
 	var result;
 	var exp = prefix + i;
 	try {
-		if(this.stdout)
-			stdout.writeln(exp);
+		stdout.writeln(exp);
 		result = eval(exp);
 	} catch(e) {
 		log("Error evaluating: " + exp);
