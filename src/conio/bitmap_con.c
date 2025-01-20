@@ -1929,7 +1929,7 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 	int cpy = sy % vstat.charheight;
 	bool xupdated = false;
 	bool yupdated = false;
-	int off;
+	int off = INT_MIN;
 	int crows = vstat.rows * vstat.charheight;
 	int ccols = vstat.cols * vstat.charwidth;
 	for (y = sy; y <= ey; y++) {
@@ -1962,6 +1962,7 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 						cpx = 0;
 						charx++;
 						xupdated = false;
+						assert(off >= 0);
 						off = vmem_next_offset(vstat.vmem, off);
 					}
 				}
