@@ -60,7 +60,6 @@
    Memcheck:Leak
    match-leak-kinds: all
    fun:calloc
-   fun:calloc
    fun:allocate_drv
 }
 {
