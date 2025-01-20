@@ -1385,24 +1385,25 @@ js_user_close(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static jsSyncMethodSpec js_user_functions[] = {
-	{"compare_ars",     js_chk_ar,          1,  JSTYPE_BOOLEAN, JSDOCSTR("string ars")
-	 , JSDOCSTR("Verify user meets access requirements string<br>"
+	{"compare_ars",     js_chk_ar,          1,  JSTYPE_BOOLEAN, JSDOCSTR("requirements")
+	 , JSDOCSTR("Verify and return <tt>true</tt> if user meets the specified access requirements string.<br"
+				"Always returns <tt>true</tt> when passed <tt>null</tt>, <tt>undefined</tt>, or an empty string.<br>"
 		        "Note: For the current user of the terminal server, use <tt>bbs.compare_ars()</tt> instead.")
 	 , 310},
 	{"adjust_credits",  js_adjust_credits,  1,  JSTYPE_BOOLEAN, JSDOCSTR("count")
-	 , JSDOCSTR("Adjust user's credits by <i>count</i> (negative to subtract)")
+	 , JSDOCSTR("Adjust user's credits by <i>count</i> (negative to subtract).")
 	 , 314},
 	{"adjust_minutes",  js_adjust_minutes,  1,  JSTYPE_BOOLEAN, JSDOCSTR("count")
-	 , JSDOCSTR("Adjust user's extra minutes <i>count</i> (negative to subtract)")
+	 , JSDOCSTR("Adjust user's extra minutes <i>count</i> (negative to subtract).")
 	 , 314},
 	{"posted_message",  js_posted_msg,      1,  JSTYPE_BOOLEAN, JSDOCSTR("[count]")
-	 , JSDOCSTR("Adjust user's posted-messages statistics by <i>count</i> (default: 1) (negative to subtract)")
+	 , JSDOCSTR("Adjust user's posted-messages statistics by <i>count</i> (default: 1) (negative to subtract).")
 	 , 314},
 	{"sent_email",      js_sent_email,      1,  JSTYPE_BOOLEAN, JSDOCSTR("[count] [,bool feedback]")
-	 , JSDOCSTR("Adjust user's email/feedback-sent statistics by <i>count</i> (default: 1) (negative to subtract)")
+	 , JSDOCSTR("Adjust user's email/feedback-sent statistics by <i>count</i> (default: 1) (negative to subtract).")
 	 , 314},
 	{"uploaded_file",   js_uploaded_file,   1,  JSTYPE_BOOLEAN, JSDOCSTR("[bytes] [,files]")
-	 , JSDOCSTR("Adjust user's files/bytes-uploaded statistics")
+	 , JSDOCSTR("Adjust user's files/bytes-uploaded statistics.")
 	 , 314},
 	{"downloaded_file", js_downloaded_file, 1,  JSTYPE_BOOLEAN, JSDOCSTR("[dir-code] [file path | name] [bytes] [,file-count]")
 	 , JSDOCSTR("Handle the full or partial successful download of a file.<br>"
@@ -1410,8 +1411,8 @@ static jsSyncMethodSpec js_user_functions[] = {
 	 , 31800},
 	{"get_time_left",   js_get_time_left,   1,  JSTYPE_NUMBER,  JSDOCSTR("start_time")
 	 , JSDOCSTR("Return the user's available remaining time online, in seconds, "
-		        "based on the passed <i>start_time</i> value (in time_t format)<br>"
-		        "Note: this method does not account for pending forced timed events<br>"
+		        "based on the passed <i>start_time</i> value (in time_t format).<br>"
+		        "Note: this method does not account for pending forced timed events.<br>"
 		        "Note: for the pre-defined user object on the BBS, you almost certainly want bbs.get_time_left() instead.")
 	 , 31401},
 	{"close",           js_user_close,      0,  JSTYPE_VOID,    JSDOCSTR("")
