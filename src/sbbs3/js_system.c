@@ -1551,7 +1551,7 @@ js_get_node(JSContext *cx, uintN argc, jsval *arglist)
 	sys->nodegets++;
 	JS_RESUMEREQUEST(cx, rc);
 	if (retval != 0) {
-		JS_ReportError(cx, "getnodat(%d) returned %d", node_num, retval);
+		JS_ReportError(cx, "getnodedat(%d) returned %d", node_num, retval);
 		return JS_FALSE;
 	}
 	if ((nodeobj = JS_NewObject(cx, NULL, NULL, obj)) == NULL) {
