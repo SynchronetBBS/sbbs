@@ -970,8 +970,14 @@ js_matchuserdata(JSContext *cx, uintN argc, jsval *arglist)
 	BOOL                 match_next = FALSE;
 	int                  argnum = 2;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-
+	if (js_argcIsInsufficient(cx, argc, 2))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
+	if (JSVAL_NULL_OR_VOID(argv[1])) {
+		JS_SET_RVAL(cx, arglist, JSVAL_ZERO);
+		return JS_TRUE;
+	}
 	js_system_private_t* sys;
 	if ((sys = (js_system_private_t*)js_GetClassPrivate(cx, obj, &js_system_class)) == NULL)
 		return JS_FALSE;
@@ -1000,7 +1006,8 @@ js_matchuserdata(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 
 	rc = JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(finduserstr(sys->cfg, usernumber, field, p, match_del, match_next, NULL, NULL)));
+	int result = finduserstr(sys->cfg, usernumber, field, p, match_del, match_next, NULL, NULL);
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(result));
 	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
@@ -1113,8 +1120,12 @@ js_findstr(JSContext *cx, uintN argc, jsval *arglist)
 
 	if (js_argcIsInsufficient(cx, argc, 2))
 		return JS_FALSE;
-	if(js_argvIsNullOrVoid(cx, argv, 0) || js_argvIsNullOrVoid(cx, argv, 1))
+	if (js_argvIsNullOrVoid(cx, argv, 0))
 		return JS_FALSE;
+	if (JSVAL_NULL_OR_VOID(argv[1])) {
+		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+		return JS_TRUE;
+	}
 	if (JSVAL_IS_OBJECT(argv[0])) {
 		JSObject* array = JSVAL_TO_OBJECT(argv[0]);
 		if (array == NULL || !JS_IsArrayObject(cx, array))
@@ -1137,21 +1148,16 @@ js_findstr(JSContext *cx, uintN argc, jsval *arglist)
 		free(tmp);
 	}
 	else {
-		if ((js_fname = JS_ValueToString(cx, argv[0])) == NULL) {
-			JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
-			return JS_TRUE;
-		}
+		if ((js_fname = JS_ValueToString(cx, argv[0])) == NULL)
+			return JS_FALSE;
 		JSSTRING_TO_MSTRING(cx, js_fname, fname, NULL);
 		HANDLE_PENDING(cx, fname);
-		if (fname == NULL) {
-			JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
-			return JS_TRUE;
-		}
+		if (fname == NULL)
+			return JS_FALSE;
 	}
 	if ((js_str = JS_ValueToString(cx, argv[1])) == NULL) {
-		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 		free(fname);
-		return JS_TRUE;
+		return JS_FALSE;
 	}
 	JSSTRING_TO_MSTRING(cx, js_str, str, NULL);
 	if (JS_IsExceptionPending(cx)) {
@@ -1161,8 +1167,7 @@ js_findstr(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	if (str == NULL) {
 		free(fname);
-		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
-		return JS_TRUE;
+		return JS_FALSE;
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
