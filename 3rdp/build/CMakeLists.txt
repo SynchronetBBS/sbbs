@@ -79,6 +79,7 @@ set(PATCHES
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-intptr-t.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-wrong-string-length.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-remove-silly-pragmas.patch
+	${CMAKE_CURRENT_SOURCE_DIR}/cl-size-doesnt-mean-copied.patch
 )
 
 FetchContent_Declare(CryptLib

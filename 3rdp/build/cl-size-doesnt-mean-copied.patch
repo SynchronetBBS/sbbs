@@ -1,0 +1,13 @@
+diff --git random/unix.c random/unix.c
+index 0cf67d2..160279b 100644
+--- random/unix.c
++++ random/unix.c
+@@ -625,8 +625,6 @@ static int getSysctlData( void )
+ 			DEBUG_DIAG(( "Overflow in sysctl %d:%d, using %d bytes", 
+ 						 sysctlInfo[ i ].mib[ 0 ], sysctlInfo[ i ].mib[ 1 ], 
+ 						 size ));
+-			if( size >= SYSCTL_BUFFER_SIZE / 2 )
+-				status = 0;
+ 			}
+ 		if( status )
+ 			continue;

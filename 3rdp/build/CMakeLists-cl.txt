@@ -106,6 +106,7 @@ set(PATCHES
 	cl-intptr-t.patch
 	cl-wrong-string-length.patch
 	cl-remove-silly-pragmas.patch
+	cl-size-doesnt-mean-copied.patch
 )
 
 set(SOURCE
