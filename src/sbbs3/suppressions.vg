@@ -60,7 +60,8 @@
    Memcheck:Leak
    match-leak-kinds: all
    fun:calloc
-   fun:allocate_drv
+   fun:calloc
+   fun:allocate_dtv
 }
 {
    FreeBSDPthreadMutexInitNP
