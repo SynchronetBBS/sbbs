@@ -16,3 +16,21 @@
    ...
    fun:*GCUntilDone*
 }
+{
+   JSGCStackCond
+   Memcheck:Cond
+   ...
+   fun:*js_GC*
+}
+{
+   JSGCStackPtr64
+   Memcheck:Value8
+   ...
+   fun:*js_GC*
+}
+{
+   JSGCStackPtr32
+   Memcheck:Value4
+   ...
+   fun:*js_GC*
+}
