@@ -124,7 +124,7 @@ get_rect(void)
 {
 	struct rectlist *ret;
 
-	pthread_mutex_lock(&rect_lock);
+	assert_pthread_mutex_lock(&rect_lock);
 	if (next != NULL) {
 		if (last != NULL)
 			bitmap_drv_free_rect(last);
@@ -134,18 +134,18 @@ get_rect(void)
 	}
 	else
 		ret = last;
-	pthread_mutex_unlock(&rect_lock);
+	assert_pthread_mutex_unlock(&rect_lock);
 	return ret;
 }
 
 static void
 next_rect(struct rectlist *rect)
 {
-	pthread_mutex_lock(&rect_lock);
+	assert_pthread_mutex_lock(&rect_lock);
 	if (next != NULL)
 		bitmap_drv_free_rect(next);
 	next = rect;
-	pthread_mutex_unlock(&rect_lock);
+	assert_pthread_mutex_unlock(&rect_lock);
 }
 
 static void
@@ -263,7 +263,7 @@ gdi_handle_wm_size(WPARAM wParam, LPARAM lParam)
 	}
 	w = lParam & 0xffff;
 	h = (lParam >> 16) & 0xffff;
-	rwlock_wrlock(&vstatlock);
+	assert_rwlock_wrlock(&vstatlock);
 	vstat.winwidth = w;
 	vstat.winheight = h;
 	vstat.scaling = bitmap_double_mult_inside(w, h);
@@ -272,7 +272,7 @@ gdi_handle_wm_size(WPARAM wParam, LPARAM lParam)
 		if (!(fullscreen || maximized))
 			gdi_setwinsize(w, h);
 	}
-	rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 
 	return 0;
 }
@@ -288,10 +288,10 @@ gdi_handle_wm_sizing(WPARAM wParam, RECT *r)
 	UnadjustWindowSize(&ow, &oh);
 	nw = ow;
 	nh = oh;
-	rwlock_rdlock(&vstatlock);
+	assert_rwlock_rdlock(&vstatlock);
 	s = bitmap_double_mult_inside(ow, oh);
 	bitmap_get_scaled_win_size(s, &nw, &nh, 0, 0);
-	rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 
 	if (nw != ow) {
 		switch (wParam) {
@@ -338,13 +338,13 @@ gdi_handle_wm_paint(HWND hwnd)
 	void *data;
 	enum ciolib_scaling st;
 
-	rwlock_rdlock(&vstatlock);
+	assert_rwlock_rdlock(&vstatlock);
 	w = vstat.winwidth;
 	h = vstat.winheight;
 	vsw = vstat.scrnwidth;
 	vsh = vstat.scrnheight;
 	bitmap_get_scaled_win_size(vstat.scaling, &sw, &sh, vstat.winwidth, vstat.winheight);
-	rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 	while(true) {
 		list = get_rect();
 		if (list == NULL)
@@ -352,13 +352,13 @@ gdi_handle_wm_paint(HWND hwnd)
 		if (vsw == list->rect.width && vsh == list->rect.height)
 			break;
 	}
-	pthread_mutex_lock(&off_lock);
+	assert_pthread_mutex_lock(&off_lock);
 	dwidth = sw;
 	dheight = sh;
-	pthread_mutex_unlock(&off_lock);
-	pthread_mutex_lock(&stypelock);
+	assert_pthread_mutex_unlock(&off_lock);
+	assert_pthread_mutex_lock(&stypelock);
 	st = stype;
-	pthread_mutex_unlock(&stypelock);
+	assert_pthread_mutex_unlock(&stypelock);
 	if (st == CIOLIB_SCALING_INTERNAL) {
 		gb = do_scale(list, sw, sh);
 		if (di == NULL || diw != gb->w || dih != gb->h) {
@@ -390,7 +390,7 @@ gdi_handle_wm_paint(HWND hwnd)
 		sh = vsh;
 		data = list->data;
 	}
-	pthread_mutex_lock(&off_lock);
+	assert_pthread_mutex_lock(&off_lock);
 	if (maximized || fullscreen) {
 		xoff = (w - dwidth) / 2;
 		yoff = (h - dheight) / 2;
@@ -398,7 +398,7 @@ gdi_handle_wm_paint(HWND hwnd)
 	else {
 		xoff = yoff = 0;
 	}
-	pthread_mutex_unlock(&off_lock);
+	assert_pthread_mutex_unlock(&off_lock);
 	winDC = BeginPaint(hwnd, &ps);
 	if (memDC == NULL) {
 		memDC = CreateCompatibleDC(winDC);
@@ -408,7 +408,7 @@ gdi_handle_wm_paint(HWND hwnd)
 	else
 		SetDIBits(winDC, di, 0, dih, data, (BITMAPINFO *)&b5hdr, DIB_RGB_COLORS);
 	di = SelectObject(memDC, di);
-	pthread_mutex_lock(&off_lock);
+	assert_pthread_mutex_lock(&off_lock);
 	if (st == CIOLIB_SCALING_INTERNAL)
 		BitBlt(winDC, xoff, yoff, dwidth, dheight, memDC, 0, 0, SRCCOPY);
 	else {
@@ -433,7 +433,7 @@ gdi_handle_wm_paint(HWND hwnd)
 		if (dheight != h)
 			BitBlt(winDC, 0, dheight, w, h, memDC, 0, 0, BLACKNESS);
 	}
-	pthread_mutex_unlock(&off_lock);
+	assert_pthread_mutex_unlock(&off_lock);
 	EndPaint(hwnd, &ps);
 	di = SelectObject(memDC, di);
 	if (st == CIOLIB_SCALING_INTERNAL)
@@ -506,15 +506,15 @@ win_to_pos(LPARAM lParam, struct gdi_mouse_pos *p)
 	cx = lParam & 0xffff;
 	cy = (lParam >> 16) & 0xffff;
 
-	rwlock_rdlock(&vstatlock);
+	assert_rwlock_rdlock(&vstatlock);
 	cols = vstat.cols;
 	rows = vstat.rows;
 	scrnheight = vstat.scrnheight;
 	scrnwidth = vstat.scrnwidth;
-	rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 
 	cx = lParam & 0xffff;
-	pthread_mutex_lock(&off_lock);
+	assert_pthread_mutex_lock(&off_lock);
 	if (cx < xoff)
 		cx = xoff;
 	if (cy < yoff)
@@ -533,7 +533,7 @@ win_to_pos(LPARAM lParam, struct gdi_mouse_pos *p)
 		p->ty = rows;
 
 	p->py = cy * (scrnheight) / dheight;
-	pthread_mutex_unlock(&off_lock);
+	assert_pthread_mutex_unlock(&off_lock);
 	cx = lParam & 0xffff;
 	return ret;
 }
@@ -624,11 +624,11 @@ handle_wm_getminmaxinfo(MINMAXINFO *inf)
 	maxw = monw;
 	maxh = monh;
 	UnadjustWindowSize(&maxw, &maxh);
-	rwlock_rdlock(&vstatlock);
+	assert_rwlock_rdlock(&vstatlock);
 	mult = bitmap_double_mult_inside(maxw, maxh);
 	bitmap_get_scaled_win_size(mult, &maxw, &maxh, 0, 0);
 	bitmap_get_scaled_win_size(1, &minw, &minh, 0, 0);
-	rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 
 	r.top = 0;
 	r.left = 0;
@@ -658,7 +658,7 @@ gdi_get_windowsize_at_dpi(bool screen, LONG *w, LONG *h, WORD dpi)
 {
 	RECT r;
 	r.left = r.top = 0;
-	rwlock_rdlock(&vstatlock);
+	assert_rwlock_rdlock(&vstatlock);
 	// Now make the inside of the window the size we want (sigh)
 	if (screen) {
 		r.right = vstat.scrnwidth - 1;
@@ -667,7 +667,7 @@ gdi_get_windowsize_at_dpi(bool screen, LONG *w, LONG *h, WORD dpi)
 		r.right = vstat.winwidth - 1;
 		r.bottom = vstat.winheight - 1;
 	}
-	rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 	gdiAdjustWindowRect(&r, STYLE, FALSE, dpi);
 	if (w)
 		*w = r.right - r.left + 1;
@@ -727,10 +727,10 @@ gdi_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		case WM_UNICHAR:
 			return gdi_handle_wm_unichar(wParam, lParam);
 		case WM_MOVE:
-			pthread_mutex_lock(&winpos_lock);
+			assert_pthread_mutex_lock(&winpos_lock);
 			winxpos = (WORD)(lParam & 0xffff);
 			winypos = (WORD)((lParam >> 16) & 0xffff);
-			pthread_mutex_unlock(&winpos_lock);
+			assert_pthread_mutex_unlock(&winpos_lock);
 			return 0;
 		case WM_SIZE:
 			return gdi_handle_wm_size(wParam, lParam);
@@ -811,10 +811,10 @@ gdi_snap(bool grow)
 		return;
 	get_monitor_size_pos(&mw, &mh, NULL, NULL);
 	UnadjustWindowSize(&mw, &mh);
-	rwlock_wrlock(&vstatlock);
+	assert_rwlock_wrlock(&vstatlock);
 	bitmap_snap(grow, mw, mh);
 	gdi_setwinsize(vstat.winwidth, vstat.winheight);
-	rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 }
 
 #define WMOD_CTRL     1
@@ -903,9 +903,9 @@ magic_message(MSG msg)
 											window_left = wi.rcWindow.left;
 											window_top = wi.rcWindow.top;
 										}
-										rwlock_rdlock(&vstatlock);
+										assert_rwlock_rdlock(&vstatlock);
 										window_scaling = (float)vstat.scaling;
-										rwlock_unlock(&vstatlock);
+										assert_rwlock_unlock(&vstatlock);
 										SetWindowLongPtr(win, GWL_STYLE, STYLE);
 										PostMessageW(win, WM_USER_SETPOS, mi.rcMonitor.left, mi.rcMonitor.top);
 										PostMessageW(win, WM_USER_SETSIZE, mi.rcMonitor.right - mi.rcMonitor.left + 1, mi.rcMonitor.bottom - mi.rcMonitor.top + 1);
@@ -991,7 +991,7 @@ gdi_thread(void *arg)
 	cl = RegisterClassW(&wc);
 	if (cl == 0)
 		goto fail;
-	rwlock_wrlock(&vstatlock);
+	assert_rwlock_wrlock(&vstatlock);
 	if (ciolib_initial_scaling != 0) {
 		if (ciolib_initial_scaling < 1.0) {
 			if (get_monitor_size_pos(&vstat.winwidth, &vstat.winheight, &wx, &wy)) {
@@ -1013,7 +1013,7 @@ gdi_thread(void *arg)
 			fullscreen = false;
 	}
 	stype = ciolib_initial_scaling_type;
-	rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 	gdi_get_windowsize_at_dpi(false, &w, &h, 0);
 	win = CreateWindowW(wc.lpszClassName, L"SyncConsole", STYLE, wx, wy, w, h, NULL, NULL, NULL, NULL);
 	if (win == NULL)
@@ -1082,15 +1082,15 @@ gdi_textmode(int mode)
 	int mw, mh;
 
 	if (mode != CIOLIB_MODE_CUSTOM) {
-		rwlock_rdlock(&vstatlock);
+		assert_rwlock_rdlock(&vstatlock);
 		if (mode == vstat.mode) {
-			rwlock_unlock(&vstatlock);
+			assert_rwlock_unlock(&vstatlock);
 			return;
 		}
-		rwlock_unlock(&vstatlock);
+		assert_rwlock_unlock(&vstatlock);
 	}
 
-	rwlock_wrlock(&vstatlock);
+	assert_rwlock_wrlock(&vstatlock);
 	get_monitor_size_pos(&mw, &mh, NULL, NULL);
 	UnadjustWindowSize(&mw, &mh);
 	bitmap_drv_init_mode(mode, NULL, NULL, mw, mh);
@@ -1100,7 +1100,7 @@ gdi_textmode(int mode)
 		vstat.scaling = bitmap_double_mult_inside(mw, mh);
 	}
 	gdi_setwinsize(vstat.winwidth, vstat.winheight);
-	rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 	bitmap_drv_request_pixels();
 
 	return;
@@ -1230,18 +1230,18 @@ gdi_getcliptext(void)
 int
 gdi_get_window_info(int *width, int *height, int *xpos, int *ypos)
 {
-	rwlock_rdlock(&vstatlock);
+	assert_rwlock_rdlock(&vstatlock);
 	if(width)
 		*width=vstat.winwidth;
 	if(height)
 		*height=vstat.winheight;
-	rwlock_unlock(&vstatlock);
-	pthread_mutex_lock(&winpos_lock);
+	assert_rwlock_unlock(&vstatlock);
+	assert_pthread_mutex_lock(&winpos_lock);
 	if(xpos)
 		*xpos=winxpos;
 	if(ypos)
 		*ypos=winypos;
-	pthread_mutex_unlock(&winpos_lock);
+	assert_pthread_mutex_unlock(&winpos_lock);
 	
 	return(1);
 }
@@ -1325,11 +1325,11 @@ gdi_init(int mode)
 int
 gdi_initciolib(int mode)
 {
-	pthread_mutex_init(&gdi_headlock, NULL);
-	pthread_mutex_init(&winpos_lock, NULL);
-	pthread_mutex_init(&rect_lock, NULL);
-	pthread_mutex_init(&off_lock, NULL);
-	pthread_mutex_init(&stypelock, NULL);
+	assert_pthread_mutex_init(&gdi_headlock, NULL);
+	assert_pthread_mutex_init(&winpos_lock, NULL);
+	assert_pthread_mutex_init(&rect_lock, NULL);
+	assert_pthread_mutex_init(&off_lock, NULL);
+	assert_pthread_mutex_init(&stypelock, NULL);
 	init_sem = CreateSemaphore(NULL, 0, INT_MAX, NULL);
 
 	return(gdi_init(mode));
@@ -1339,14 +1339,14 @@ void
 gdi_drawrect(struct rectlist *data)
 {
 	data->next = NULL;
-	pthread_mutex_lock(&gdi_headlock);
+	assert_pthread_mutex_lock(&gdi_headlock);
 	if (update_list == NULL)
 		update_list = update_list_tail = data;
 	else {
 		update_list_tail->next = data;
 		update_list_tail = data;
 	}
-	pthread_mutex_unlock(&gdi_headlock);
+	assert_pthread_mutex_unlock(&gdi_headlock);
 }
 
 void
@@ -1355,10 +1355,10 @@ gdi_flush(void)
 	struct rectlist *list;
 	struct rectlist *old_next;
 
-	pthread_mutex_lock(&gdi_headlock);
+	assert_pthread_mutex_lock(&gdi_headlock);
 	list = update_list;
 	update_list = update_list_tail = NULL;
-	pthread_mutex_unlock(&gdi_headlock);
+	assert_pthread_mutex_unlock(&gdi_headlock);
 	for (; list; list = old_next) {
 		old_next = list->next;
 		if (list->next == NULL) {
@@ -1405,9 +1405,9 @@ gdi_getscaling(void)
 {
 	double ret;
 
-	rwlock_rdlock(&vstatlock);
+	assert_rwlock_rdlock(&vstatlock);
 	ret = bitmap_double_mult_inside(vstat.winwidth, vstat.winheight);
-	rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 	return ret;
 }
 
@@ -1420,9 +1420,9 @@ gdi_setscaling(double newval)
 		window_scaling = (float)newval;
 	}
 	else {
-		rwlock_rdlock(&vstatlock);
+		assert_rwlock_rdlock(&vstatlock);
 		bitmap_get_scaled_win_size(newval, &w, &h, 0, 0);
-		rwlock_unlock(&vstatlock);
+		assert_rwlock_unlock(&vstatlock);
 		gdi_setwinsize(w, h);
 	}
 }
@@ -1432,17 +1432,17 @@ gdi_getscaling_type(void)
 {
 	enum ciolib_scaling ret;
 
-	pthread_mutex_lock(&stypelock);
+	assert_pthread_mutex_lock(&stypelock);
 	ret = stype;
-	pthread_mutex_unlock(&stypelock);
+	assert_pthread_mutex_unlock(&stypelock);
 	return ret;
 }
 
 void
 gdi_setscaling_type(enum ciolib_scaling newtype)
 {
-	pthread_mutex_lock(&stypelock);
+	assert_pthread_mutex_lock(&stypelock);
 	stype = newtype;
-	pthread_mutex_unlock(&stypelock);
+	assert_pthread_mutex_unlock(&stypelock);
 
 }

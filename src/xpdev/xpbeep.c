@@ -70,16 +70,6 @@
 #ifdef XPDEV_THREAD_SAFE
 #include "threadwrap.h"
 
-#ifndef NDEBUG
-#define chk_pthread_mutex_init(a, b)		assert(pthread_mutex_init(a, b) == 0)
-#define chk_pthread_mutex_lock(a)		assert(pthread_mutex_lock(a) == 0)
-#define chk_pthread_mutex_unlock(a)		assert(pthread_mutex_unlock(a) == 0)
-#else
-#define chk_pthread_mutex_init(a, b)		pthread_mutex_init(a, b)
-#define chk_pthread_mutex_lock(a)		pthread_mutex_lock(a)
-#define chk_pthread_mutex_unlock(a)		pthread_mutex_unlock(a)
-#endif
-
 static bool                 sample_thread_running = false;
 static sem_t                sample_pending_sem;
 static sem_t                sample_complete_sem;
@@ -443,12 +433,12 @@ xptone_open_locked(void)
 				handle_type = SOUND_DEVICE_PULSEAUDIO;
 				handle_rc++;
 	#ifdef XPDEV_THREAD_SAFE
-				chk_pthread_mutex_unlock(&handle_mutex);
-				chk_pthread_mutex_lock(&sample_mutex);
+				assert_pthread_mutex_unlock(&handle_mutex);
+				assert_pthread_mutex_lock(&sample_mutex);
 				if (samples_posted == 0)
 					xp_play_sample_locked((unsigned char *)"\x80", 1, false);
-				chk_pthread_mutex_unlock(&sample_mutex);
-				chk_pthread_mutex_lock(&handle_mutex);
+				assert_pthread_mutex_unlock(&sample_mutex);
+				assert_pthread_mutex_lock(&handle_mutex);
 	#else
 				xptone(0, 1, WAVE_SHAPE_SQUARE);
 	#endif
@@ -692,11 +682,11 @@ xptone_open(void)
 	bool ret;
 #ifdef XPDEV_THREAD_SAFE
 	pthread_once(&sample_initialized_pto, init_sample);
-	chk_pthread_mutex_lock(&handle_mutex);
+	assert_pthread_mutex_lock(&handle_mutex);
 #endif
 	ret = xptone_open_locked();
 #ifdef XPDEV_THREAD_SAFE
-	chk_pthread_mutex_unlock(&handle_mutex);
+	assert_pthread_mutex_unlock(&handle_mutex);
 #endif
 	return ret;
 }
@@ -766,12 +756,12 @@ void
 xptone_complete(void)
 {
 #ifdef XPDEV_THREAD_SAFE
-	chk_pthread_mutex_lock(&handle_mutex);
+	assert_pthread_mutex_lock(&handle_mutex);
 #endif
 	// coverity[sleep]
 	xptone_complete_locked();
 #ifdef XPDEV_THREAD_SAFE
-	chk_pthread_mutex_unlock(&handle_mutex);
+	assert_pthread_mutex_unlock(&handle_mutex);
 #endif
 }
 
@@ -847,12 +837,12 @@ xptone_close(void)
 	bool ret;
 
 #ifdef XPDEV_THREAD_SAFE
-	chk_pthread_mutex_lock(&handle_mutex);
+	assert_pthread_mutex_lock(&handle_mutex);
 #endif
 	// coverity[sleep]
 	ret = xptone_close_locked();
 #ifdef XPDEV_THREAD_SAFE
-	chk_pthread_mutex_unlock(&handle_mutex);
+	assert_pthread_mutex_unlock(&handle_mutex);
 #endif
 	return ret;
 }
@@ -1044,19 +1034,19 @@ void xp_play_sample_thread(void *data)
 		else
 			waited = false;
 		posted_last = false;
-		chk_pthread_mutex_lock(&handle_mutex);
+		assert_pthread_mutex_lock(&handle_mutex);
 
 		if (handle_type == SOUND_DEVICE_CLOSED) {
 			must_close = true;
 			if (!xptone_open_locked()) {
 				sem_post(&sample_complete_sem);
-				chk_pthread_mutex_unlock(&handle_mutex);
+				assert_pthread_mutex_unlock(&handle_mutex);
 				continue;
 			}
 		}
 
 		if (pthread_mutex_lock(&sample_mutex) != 0) {
-			chk_pthread_mutex_unlock(&handle_mutex);
+			assert_pthread_mutex_unlock(&handle_mutex);
 			goto error_return;
 		}
 		this_sample_size = sample_size;
@@ -1065,12 +1055,12 @@ void xp_play_sample_thread(void *data)
 		sample = (unsigned char *)malloc(sample_size);
 		if (sample == NULL) {
 			sem_post(&sample_complete_sem);
-			chk_pthread_mutex_unlock(&sample_mutex);
-			chk_pthread_mutex_unlock(&handle_mutex);
+			assert_pthread_mutex_unlock(&sample_mutex);
+			assert_pthread_mutex_unlock(&handle_mutex);
 			continue;
 		}
 		memcpy(sample, sample_buffer, this_sample_size);
-		chk_pthread_mutex_unlock(&sample_mutex);
+		assert_pthread_mutex_unlock(&sample_mutex);
 
 		do_xp_play_sample(sample, this_sample_size, &freed);
 		if (freed)
@@ -1086,12 +1076,12 @@ void xp_play_sample_thread(void *data)
 				xptone_close_locked();
 			}
 		}
-		chk_pthread_mutex_unlock(&handle_mutex);
+		assert_pthread_mutex_unlock(&handle_mutex);
 	}
 
 error_return:
 #ifdef _WIN32
-	chk_pthread_mutex_lock(&handle_mutex);
+	assert_pthread_mutex_lock(&handle_mutex);
 	if (handle_type == SOUND_DEVICE_WIN32) {
 		if (wh[curr_wh].dwFlags & WHDR_PREPARED) {
 			while (waveOutUnprepareHeader(waveOut, &wh[curr_wh], sizeof(wh[curr_wh])) == WAVERR_STILLPLAYING)
@@ -1099,7 +1089,7 @@ error_return:
 		}
 		FREE_AND_NULL(wh[curr_wh].lpData);
 	}
-	chk_pthread_mutex_unlock(&handle_mutex);
+	assert_pthread_mutex_unlock(&handle_mutex);
 #endif
 
 	FREE_AND_NULL(sample);
@@ -1113,8 +1103,8 @@ error_return:
 static void
 init_sample(void)
 {
-	chk_pthread_mutex_init(&sample_mutex, NULL);
-	chk_pthread_mutex_init(&handle_mutex, NULL);
+	assert_pthread_mutex_init(&sample_mutex, NULL);
+	assert_pthread_mutex_init(&handle_mutex, NULL);
 	sem_init(&sample_pending_sem, 0, 0);
 	sem_init(&sample_complete_sem, 0, 0);
 }
@@ -1127,9 +1117,9 @@ static bool xp_play_sample_locked(unsigned char *sample, size_t size, bool backg
 	}
 
 	while (samples_posted > 0) {
-		chk_pthread_mutex_unlock(&sample_mutex);
+		assert_pthread_mutex_unlock(&sample_mutex);
 		sem_wait(&sample_complete_sem);
-		chk_pthread_mutex_lock(&sample_mutex);
+		assert_pthread_mutex_lock(&sample_mutex);
 		samples_posted--;
 	}
 	sample_buffer = sample;
@@ -1138,9 +1128,9 @@ static bool xp_play_sample_locked(unsigned char *sample, size_t size, bool backg
 	sem_post(&sample_pending_sem);
 	if (!background) {
 		while (samples_posted > 0) {
-			chk_pthread_mutex_unlock(&sample_mutex);
+			assert_pthread_mutex_unlock(&sample_mutex);
 			sem_wait(&sample_complete_sem);
-			chk_pthread_mutex_lock(&sample_mutex);
+			assert_pthread_mutex_lock(&sample_mutex);
 			samples_posted--;
 		}
 	}
@@ -1156,9 +1146,9 @@ bool xp_play_sample(unsigned char *sample, size_t size, bool background)
 	bool ret;
 	pthread_once(&sample_initialized_pto, init_sample);
 
-	chk_pthread_mutex_lock(&sample_mutex);
+	assert_pthread_mutex_lock(&sample_mutex);
 	ret = xp_play_sample_locked(sample, size, background);
-	chk_pthread_mutex_unlock(&sample_mutex);
+	assert_pthread_mutex_unlock(&sample_mutex);
 	return ret;
 }
 #else

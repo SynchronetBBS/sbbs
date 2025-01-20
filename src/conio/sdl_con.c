@@ -214,14 +214,14 @@ static void sdl_user_func(int func, ...)
 	ev.user.data1=NULL;
 	ev.user.data2=NULL;
 	ev.user.code=func;
-	pthread_mutex_lock(&sdl_ufunc_mtx);
+	assert_pthread_mutex_lock(&sdl_ufunc_mtx);
 	while (1) {
 		va_start(argptr, func);
 		switch(func) {
 			case SDL_USEREVENT_SETICON:
 				ev.user.data1=va_arg(argptr, void *);
 				if((ev.user.data2=(unsigned long *)malloc(sizeof(unsigned long)))==NULL) {
-					pthread_mutex_unlock(&sdl_ufunc_mtx);
+					assert_pthread_mutex_unlock(&sdl_ufunc_mtx);
 					va_end(argptr);
 					return;
 				}
@@ -230,7 +230,7 @@ static void sdl_user_func(int func, ...)
 			case SDL_USEREVENT_SETNAME:
 			case SDL_USEREVENT_SETTITLE:
 				if((ev.user.data1=strdup(va_arg(argptr, char *)))==NULL) {
-					pthread_mutex_unlock(&sdl_ufunc_mtx);
+					assert_pthread_mutex_unlock(&sdl_ufunc_mtx);
 					va_end(argptr);
 					return;
 				}
@@ -243,7 +243,7 @@ static void sdl_user_func(int func, ...)
 			case SDL_USEREVENT_FLUSH:
 				break;
 			default:
-				pthread_mutex_unlock(&sdl_ufunc_mtx);
+				assert_pthread_mutex_unlock(&sdl_ufunc_mtx);
 				va_end(argptr);
 				return;
 		}
@@ -254,7 +254,7 @@ static void sdl_user_func(int func, ...)
 		}
 		break;
 	}
-	pthread_mutex_unlock(&sdl_ufunc_mtx);
+	assert_pthread_mutex_unlock(&sdl_ufunc_mtx);
 }
 
 /* Called from main thread only */
@@ -269,7 +269,7 @@ static int sdl_user_func_ret(int func, ...)
 	ev.user.data2=NULL;
 	ev.user.code=func;
 	va_start(argptr, func);
-	pthread_mutex_lock(&sdl_ufunc_mtx);
+	assert_pthread_mutex_lock(&sdl_ufunc_mtx);
 	/* Drain the swamp */
 	while(1) {
 		switch(func) {
@@ -292,7 +292,7 @@ static int sdl_user_func_ret(int func, ...)
 					YIELD();
 				break;
 			default:
-				pthread_mutex_unlock(&sdl_ufunc_mtx);
+				assert_pthread_mutex_unlock(&sdl_ufunc_mtx);
 				va_end(argptr);
 				return -1;
 		}
@@ -300,7 +300,7 @@ static int sdl_user_func_ret(int func, ...)
 		if(rv==0)
 			break;
 	}
-	pthread_mutex_unlock(&sdl_ufunc_mtx);
+	assert_pthread_mutex_unlock(&sdl_ufunc_mtx);
 	va_end(argptr);
 	return(sdl_ufunc_retval);
 }
@@ -331,14 +331,14 @@ void sdl_drawrect(struct rectlist *data)
 {
 	if(sdl_init_good) {
 		data->next = NULL;
-		pthread_mutex_lock(&sdl_headlock);
+		assert_pthread_mutex_lock(&sdl_headlock);
 		if (update_list == NULL)
 			update_list = update_list_tail = data;
 		else {
 			update_list_tail->next = data;
 			update_list_tail = data;
 		}
-		pthread_mutex_unlock(&sdl_headlock);
+		assert_pthread_mutex_unlock(&sdl_headlock);
 	}
 	else
 		bitmap_drv_free_rect(data);
@@ -375,18 +375,18 @@ static int sdl_init_mode(int mode, bool init)
 	int w, h;
 
 	if (mode != CIOLIB_MODE_CUSTOM) {
-		rwlock_rdlock(&vstatlock);
+		assert_rwlock_rdlock(&vstatlock);
 		if (mode == vstat.mode && !init) {
-			rwlock_unlock(&vstatlock);
+			assert_rwlock_unlock(&vstatlock);
 			return 0;
 		}
-		rwlock_unlock(&vstatlock);
+		assert_rwlock_unlock(&vstatlock);
 	}
 
 	sdl_user_func(SDL_USEREVENT_FLUSH);
 
-	pthread_mutex_lock(&win_mutex);
-	rwlock_wrlock(&vstatlock);
+	assert_pthread_mutex_lock(&win_mutex);
+	assert_rwlock_wrlock(&vstatlock);
 	if (!sdl_get_bounds(&w, &h)) {
 		w = 0;
 		h = 0;
@@ -397,11 +397,11 @@ static int sdl_init_mode(int mode, bool init)
 		if (ciolib_initial_scaling < 1.0)
 			ciolib_initial_scaling = 1.0;
 	}
-	pthread_mutex_lock(&sdl_mode_mutex);
+	assert_pthread_mutex_lock(&sdl_mode_mutex);
 	sdl_mode = true;
-	pthread_mutex_unlock(&sdl_mode_mutex);
-	rwlock_unlock(&vstatlock);
-	pthread_mutex_unlock(&win_mutex);
+	assert_pthread_mutex_unlock(&sdl_mode_mutex);
+	assert_rwlock_unlock(&vstatlock);
+	assert_pthread_mutex_unlock(&win_mutex);
 
 	sdl_user_func_ret(SDL_USEREVENT_SETVIDMODE, vstat.winwidth, vstat.winheight);
 
@@ -423,9 +423,9 @@ int sdl_init(int mode)
 	bitmap_drv_init(sdl_drawrect, sdl_flush);
 
 	if(mode==CIOLIB_MODE_SDL_FULLSCREEN) {
-		pthread_mutex_lock(&win_mutex);
+		assert_pthread_mutex_lock(&win_mutex);
 		fullscreen = 1;
-		pthread_mutex_unlock(&win_mutex);
+		assert_pthread_mutex_unlock(&win_mutex);
 	}
 	// Needs to be *after* bitmap_drv_init()
 #if defined(__DARWIN__)
@@ -454,9 +454,9 @@ update_cvstat(struct video_stats *vs)
 {
 	if (vs != NULL && vs != &vstat) {
 		vstat.scaling = sdl_getscaling();
-		rwlock_rdlock(&vstatlock);
+		assert_rwlock_rdlock(&vstatlock);
 		*vs = vstat;
-		rwlock_unlock(&vstatlock);
+		assert_rwlock_unlock(&vstatlock);
 	}
 }
 
@@ -476,8 +476,8 @@ static void internal_setwinsize(struct video_stats *vs, bool force)
 		w = vs->scrnwidth;
 	if (h < vs->scrnheight)
 		h = vs->scrnheight;
-	pthread_mutex_lock(&win_mutex);
-	rwlock_wrlock(&vstatlock);
+	assert_pthread_mutex_lock(&win_mutex);
+	assert_rwlock_wrlock(&vstatlock);
 	if (w == vstat.winwidth && h == vstat.winheight)
 		changed = force;
 	else {
@@ -485,8 +485,8 @@ static void internal_setwinsize(struct video_stats *vs, bool force)
 		vs->winheight = vstat.winheight = h;
 	}
 	if (changed) {
-		rwlock_unlock(&vstatlock);
-		pthread_mutex_unlock(&win_mutex);
+		assert_rwlock_unlock(&vstatlock);
+		assert_pthread_mutex_unlock(&win_mutex);
 	}
 	else {
 		sdl.GetWindowSizeInPixels(win, &w, &h);
@@ -496,8 +496,8 @@ static void internal_setwinsize(struct video_stats *vs, bool force)
 			vs->winheight = h;
 			changed = true;
 		}
-		rwlock_unlock(&vstatlock);
-		pthread_mutex_unlock(&win_mutex);
+		assert_rwlock_unlock(&vstatlock);
+		assert_pthread_mutex_unlock(&win_mutex);
 		vstat.scaling = sdl_getscaling();
 	}
 	if (changed)
@@ -511,9 +511,9 @@ void sdl_setwinsize(int w, int h)
 
 void sdl_setwinposition(int x, int y)
 {
-	pthread_mutex_lock(&win_mutex);
+	assert_pthread_mutex_lock(&win_mutex);
 	sdl.SetWindowPosition(win, x, y);
-	pthread_mutex_unlock(&win_mutex);
+	assert_pthread_mutex_unlock(&win_mutex);
 }
 
 void sdl_getwinsize_locked(int *w, int *h)
@@ -526,9 +526,9 @@ void sdl_getwinsize_locked(int *w, int *h)
 
 void sdl_getwinsize(int *w, int *h)
 {
-	rwlock_rdlock(&vstatlock);
+	assert_rwlock_rdlock(&vstatlock);
 	sdl_getwinsize_locked(w, h);
-	rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 }
 
 /* Called from main thread only */
@@ -536,9 +536,9 @@ int sdl_kbhit(void)
 {
 	int ret;
 
-	pthread_mutex_lock(&sdl_keylock);
+	assert_pthread_mutex_lock(&sdl_keylock);
 	ret=(sdl_key!=sdl_keynext);
-	pthread_mutex_unlock(&sdl_keylock);
+	assert_pthread_mutex_unlock(&sdl_keylock);
 	return(ret);
 }
 
@@ -548,7 +548,7 @@ int sdl_getch(void)
 	int ch;
 
 	sem_wait(&sdl_key_pending);
-	pthread_mutex_lock(&sdl_keylock);
+	assert_pthread_mutex_lock(&sdl_keylock);
 
 	/* This always frees up space in keybuf for one more char */
 	ch=sdl_keybuf[sdl_key++];
@@ -561,7 +561,7 @@ int sdl_getch(void)
         sem_post(&sdl_key_pending);
 		sdl_pending_mousekeys--;
 	}
-	pthread_mutex_unlock(&sdl_keylock);
+	assert_pthread_mutex_unlock(&sdl_keylock);
 	return(ch);
 }
 
@@ -614,12 +614,12 @@ int sdl_get_window_info(int *width, int *height, int *xpos, int *ypos)
 	}
 
 	if (width || height) {
-		rwlock_rdlock(&vstatlock);
+		assert_rwlock_rdlock(&vstatlock);
 		if(width)
 			*width=vstat.winwidth;
 		if(height)
 			*height=vstat.winheight;
-		rwlock_unlock(&vstatlock);
+		assert_rwlock_unlock(&vstatlock);
 	}
 
 	return(1);
@@ -649,19 +649,19 @@ static void setup_surfaces(struct video_stats *vs)
 	int idealmh;
 	int new_win = false;
 
-	pthread_mutex_lock(&win_mutex);
+	assert_pthread_mutex_lock(&win_mutex);
 	if(fullscreen)
 		flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 	else
 		flags |= SDL_WINDOW_RESIZABLE;
-	pthread_mutex_unlock(&win_mutex);
+	assert_pthread_mutex_unlock(&win_mutex);
 #if (SDL_MINOR_VERSION > 0) || (SDL_PATCHLEVEL >= 1)
         flags |= SDL_WINDOW_ALLOW_HIGHDPI;
 #endif
-	rwlock_rdlock(&vstatlock);
+	assert_rwlock_rdlock(&vstatlock);
 	bitmap_get_scaled_win_size(1.0, &idealmw, &idealmh, 0, 0);
-	rwlock_unlock(&vstatlock);
-	pthread_mutex_lock(&win_mutex);
+	assert_rwlock_unlock(&vstatlock);
+	assert_pthread_mutex_lock(&win_mutex);
 	idealw = vs->winwidth;
 	idealh = vs->winheight;
 	sdl.SetHint(SDL_HINT_RENDER_SCALE_QUALITY, internal_scaling ? "0" : "2");
@@ -724,10 +724,10 @@ static void setup_surfaces(struct video_stats *vs)
 		texture = newtexture;
 	}
 	if (vs != &vstat) {
-		rwlock_wrlock(&vstatlock);
+		assert_rwlock_wrlock(&vstatlock);
 		vstat.winwidth = vs->winwidth;
 		vstat.winheight = vs->winheight;
-		rwlock_unlock(&vstatlock);
+		assert_rwlock_unlock(&vstatlock);
 	}
 	sdl_bughack_minsize(idealmw, idealmh, new_win);
 
@@ -739,7 +739,7 @@ static void setup_surfaces(struct video_stats *vs)
 		sdl_exitcode=1;
 		sdl.PeepEvents(&ev, 1, SDL_ADDEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT);
 	}
-	pthread_mutex_unlock(&win_mutex);
+	assert_pthread_mutex_unlock(&win_mutex);
 	vstat.scaling = sdl_getscaling();
 	update_cvstat(vs);
 }
@@ -752,7 +752,7 @@ static void sdl_add_key(unsigned int keyval, struct video_stats *vs)
 	if (keyval == 0xe0)
 		keyval = CIO_KEY_LITERAL_E0;
 	if(keyval==0xa600 && vs != NULL) {
-		pthread_mutex_lock(&win_mutex);
+		assert_pthread_mutex_lock(&win_mutex);
 		fullscreen = !(sdl.GetWindowFlags(win) & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP));
 		cio_api.mode=fullscreen?CIOLIB_MODE_SDL_FULLSCREEN:CIOLIB_MODE_SDL;
 		update_cvstat(vs);
@@ -765,7 +765,7 @@ static void sdl_add_key(unsigned int keyval, struct video_stats *vs)
 		// Limit to max window size if available
 		if (!fullscreen)
 			sdl_get_bounds(&w, &h);
-		pthread_mutex_unlock(&win_mutex);
+		assert_pthread_mutex_unlock(&win_mutex);
 		// Set size based on current max
 		vs->scaling = bitmap_double_mult_inside(w, h);
 		bitmap_get_scaled_win_size(vs->scaling, &vs->winwidth, &vs->winheight, w, h);
@@ -773,19 +773,19 @@ static void sdl_add_key(unsigned int keyval, struct video_stats *vs)
 		return;
 	}
 	if(keyval <= 0xffff) {
-		pthread_mutex_lock(&sdl_keylock);
+		assert_pthread_mutex_lock(&sdl_keylock);
 		if(sdl_keynext+1==sdl_key) {
-			pthread_mutex_unlock(&sdl_keylock);
+			assert_pthread_mutex_unlock(&sdl_keylock);
 			beep();
 			return;
 		}
 		if((sdl_keynext+2==sdl_key) && keyval > 0xff) {
 			if(keyval==CIO_KEY_MOUSE) {
 				sdl_pending_mousekeys+=2;
-				pthread_mutex_unlock(&sdl_keylock);
+				assert_pthread_mutex_unlock(&sdl_keylock);
 			}
 			else {
-				pthread_mutex_unlock(&sdl_keylock);
+				assert_pthread_mutex_unlock(&sdl_keylock);
 				beep();
 			}
 			return;
@@ -796,7 +796,7 @@ static void sdl_add_key(unsigned int keyval, struct video_stats *vs)
 			sdl_keybuf[sdl_keynext++]=keyval >> 8;
 			sem_post(&sdl_key_pending);
 		}
-		pthread_mutex_unlock(&sdl_keylock);
+		assert_pthread_mutex_unlock(&sdl_keylock);
 	}
 }
 
@@ -1044,7 +1044,7 @@ void sdl_video_event_thread(void *data)
 					if ((ev.key.keysym.mod & KMOD_ALT) &&
 					    (ev.key.keysym.sym == SDLK_LEFT ||
 					     ev.key.keysym.sym == SDLK_RIGHT)) {
-						pthread_mutex_lock(&win_mutex);
+						assert_pthread_mutex_lock(&win_mutex);
 						if (sdl.GetWindowFlags(win) & SDL_WINDOW_MAXIMIZED)
 							sdl.RestoreWindow(win);
 						int w, h;
@@ -1052,10 +1052,10 @@ void sdl_video_event_thread(void *data)
 							w = 0;
 							h = 0;
 						}
-						pthread_mutex_unlock(&win_mutex);
-						rwlock_wrlock(&vstatlock);
+						assert_pthread_mutex_unlock(&win_mutex);
+						assert_rwlock_wrlock(&vstatlock);
 						bitmap_snap(ev.key.keysym.sym == SDLK_RIGHT, w, h);
-						rwlock_unlock(&vstatlock);
+						assert_rwlock_unlock(&vstatlock);
 						update_cvstat(&cvstat);
 						setup_surfaces(&cvstat);
 						break;
@@ -1165,17 +1165,17 @@ void sdl_video_event_thread(void *data)
 					case SDL_WINDOWEVENT_SIZE_CHANGED:
 						// SDL2: User resized window
 					case SDL_WINDOWEVENT_RESIZED:
-						pthread_mutex_lock(&win_mutex);
+						assert_pthread_mutex_lock(&win_mutex);
 						fullscreen = !!(sdl.GetWindowFlags(win) & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP));
 						sdl.SetWindowResizable(win, fullscreen ? SDL_FALSE : SDL_TRUE);
 						cio_api.mode=fullscreen?CIOLIB_MODE_SDL_FULLSCREEN:CIOLIB_MODE_SDL;
-						pthread_mutex_unlock(&win_mutex);
-						pthread_mutex_lock(&sdl_mode_mutex);
+						assert_pthread_mutex_unlock(&win_mutex);
+						assert_pthread_mutex_lock(&sdl_mode_mutex);
 						if (sdl_mode) {
-							pthread_mutex_unlock(&sdl_mode_mutex);
+							assert_pthread_mutex_unlock(&sdl_mode_mutex);
 							break;
 						}
-						pthread_mutex_unlock(&sdl_mode_mutex);
+						assert_pthread_mutex_unlock(&sdl_mode_mutex);
 						internal_setwinsize(&cvstat, false);
 						break;
 					case SDL_WINDOWEVENT_EXPOSED:
@@ -1196,22 +1196,22 @@ void sdl_video_event_thread(void *data)
 						return;
 					case SDL_USEREVENT_FLUSH:
 						update_cvstat(&cvstat);
-						rwlock_rdlock(&vstatlock);
+						assert_rwlock_rdlock(&vstatlock);
 						// Get correct aspect ratio for dst...
 						int sw = cvstat.scrnwidth;
 						int sh = cvstat.scrnheight;
 						bitmap_get_scaled_win_size(cvstat.scaling, &dst.w, &dst.h, cvstat.winwidth, cvstat.winheight);
-						rwlock_unlock(&vstatlock);
-						pthread_mutex_lock(&win_mutex);
+						assert_rwlock_unlock(&vstatlock);
+						assert_pthread_mutex_lock(&win_mutex);
 						if (win != NULL) {
-							pthread_mutex_unlock(&win_mutex);
-							pthread_mutex_lock(&sdl_headlock);
-							pthread_mutex_lock(&sdl_mode_mutex);
+							assert_pthread_mutex_unlock(&win_mutex);
+							assert_pthread_mutex_lock(&sdl_headlock);
+							assert_pthread_mutex_lock(&sdl_mode_mutex);
 							list = update_list;
 							update_list = update_list_tail = NULL;
 							bool skipit = sdl_mode;
-							pthread_mutex_unlock(&sdl_mode_mutex);
-							pthread_mutex_unlock(&sdl_headlock);
+							assert_pthread_mutex_unlock(&sdl_mode_mutex);
+							assert_pthread_mutex_unlock(&sdl_headlock);
 							for (; list; list = old_next) {
 								SDL_Rect src;
 
@@ -1294,13 +1294,13 @@ void sdl_video_event_thread(void *data)
 							}
 						}
 						else
-							pthread_mutex_unlock(&win_mutex);
+							assert_pthread_mutex_unlock(&win_mutex);
 
 						break;
 					case SDL_USEREVENT_SETNAME:
-						pthread_mutex_lock(&win_mutex);
+						assert_pthread_mutex_lock(&win_mutex);
 						sdl.SetWindowTitle(win, (char *)ev.user.data1);
-						pthread_mutex_unlock(&win_mutex);
+						assert_pthread_mutex_unlock(&win_mutex);
 						free(ev.user.data1);
 						break;
 					case SDL_USEREVENT_SETICON:
@@ -1316,21 +1316,21 @@ void sdl_video_event_thread(void *data)
 								, *(DWORD *)"\0\0\377\0"
 								, *(DWORD *)"\0\0\0\377"
 						);
-						pthread_mutex_lock(&win_mutex);
+						assert_pthread_mutex_lock(&win_mutex);
 						sdl.SetWindowIcon(win, sdl_icon);
-						pthread_mutex_unlock(&win_mutex);
+						assert_pthread_mutex_unlock(&win_mutex);
 						free(ev.user.data2);
 						break;
 					case SDL_USEREVENT_SETTITLE:
-						pthread_mutex_lock(&win_mutex);
+						assert_pthread_mutex_lock(&win_mutex);
 						sdl.SetWindowTitle(win, (char *)ev.user.data1);
-						pthread_mutex_unlock(&win_mutex);
+						assert_pthread_mutex_unlock(&win_mutex);
 						free(ev.user.data1);
 						break;
 					case SDL_USEREVENT_SETVIDMODE:
-						pthread_mutex_lock(&sdl_mode_mutex);
+						assert_pthread_mutex_lock(&sdl_mode_mutex);
 						sdl_mode = false;
-						pthread_mutex_unlock(&sdl_mode_mutex);
+						assert_pthread_mutex_unlock(&sdl_mode_mutex);
 
 						cvstat.winwidth = (intptr_t)ev.user.data1;
 						cvstat.winheight = (intptr_t)ev.user.data2;
@@ -1355,9 +1355,9 @@ void sdl_video_event_thread(void *data)
 						sem_post(&sdl_ufunc_ret);
 						break;
 					case SDL_USEREVENT_GETWINPOS:
-						pthread_mutex_lock(&win_mutex);
+						assert_pthread_mutex_lock(&win_mutex);
 						sdl.GetWindowPosition(win, ev.user.data1, ev.user.data2);
-						pthread_mutex_unlock(&win_mutex);
+						assert_pthread_mutex_unlock(&win_mutex);
 						sem_post(&sdl_ufunc_ret);
 						break;
 					case SDL_USEREVENT_MOUSEPOINTER:
@@ -1416,11 +1416,11 @@ sdl_initsync(void)
 	sem_init(&sdl_key_pending, 0, 0);
 	sem_init(&sdl_ufunc_ret, 0, 0);
 	sem_init(&sdl_ufunc_rec, 0, 0);
-	pthread_mutex_init(&sdl_ufunc_mtx, NULL);
-	pthread_mutex_init(&sdl_headlock, NULL);
-	pthread_mutex_init(&win_mutex, NULL);
-	pthread_mutex_init(&sdl_keylock, NULL);
-	pthread_mutex_init(&sdl_mode_mutex, NULL);
+	assert_pthread_mutex_init(&sdl_ufunc_mtx, NULL);
+	assert_pthread_mutex_init(&sdl_headlock, NULL);
+	assert_pthread_mutex_init(&win_mutex, NULL);
+	assert_pthread_mutex_init(&sdl_keylock, NULL);
+	assert_pthread_mutex_init(&sdl_mode_mutex, NULL);
 	sdl_sync_initialized = true;
 	return 0;
 }
@@ -1457,9 +1457,9 @@ sdl_getscaling(void)
 	double ret;
 
 	// TODO: I hate having nested locks like this. :(
-	rwlock_rdlock(&vstatlock);
+	assert_rwlock_rdlock(&vstatlock);
 	ret = bitmap_double_mult_inside(vstat.winwidth, vstat.winheight);
-	rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 	return ret;
 }
 
@@ -1468,9 +1468,9 @@ sdl_setscaling(double newval)
 {
 	int w, h;
 
-	rwlock_rdlock(&vstatlock);
+	assert_rwlock_rdlock(&vstatlock);
 	bitmap_get_scaled_win_size(newval, &w, &h, 0, 0);
-	rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 	sdl_setwinsize(w, h);
 }
 
@@ -1479,9 +1479,9 @@ sdl_getscaling_type(void)
 {
 	enum ciolib_scaling ret;
 
-	rwlock_rdlock(&vstatlock);
+	assert_rwlock_rdlock(&vstatlock);
 	ret = (internal_scaling ? CIOLIB_SCALING_INTERNAL : CIOLIB_SCALING_EXTERNAL);
-	rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 	return ret;
 }
 
@@ -1492,15 +1492,15 @@ sdl_setscaling_type(enum ciolib_scaling newval)
 	int w, h;
 
 	update_cvstat(&cvstat);
-	rwlock_rdlock(&vstatlock);
+	assert_rwlock_rdlock(&vstatlock);
 	if ((newval == CIOLIB_SCALING_INTERNAL) != internal_scaling) {
 		internal_scaling = (newval == CIOLIB_SCALING_INTERNAL);
 		w = vstat.winwidth;
 		h = vstat.winheight;
-		rwlock_unlock(&vstatlock);
+		assert_rwlock_unlock(&vstatlock);
 		sdl_user_func_ret(SDL_USEREVENT_SETVIDMODE, w, h);
 	}
 	else {
-		rwlock_unlock(&vstatlock);
+		assert_rwlock_unlock(&vstatlock);
 	}
 }

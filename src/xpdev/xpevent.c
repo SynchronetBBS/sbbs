@@ -23,6 +23,7 @@
 #include <stdlib.h>     /* malloc() */
 #include "eventwrap.h"
 #include "genwrap.h"
+#include "threadwrap.h"
 
 xpevent_t
 CreateEvent(void *sec, BOOL bManualReset, BOOL bInitialState, const char *name)
@@ -69,7 +70,7 @@ SetEvent(xpevent_t event)
 		return FALSE;
 	}
 
-	pthread_mutex_lock(&event->lock);
+	assert_pthread_mutex_lock(&event->lock);
 
 	event->value = TRUE;
 	if (event->nwaiters > 0) {
@@ -82,7 +83,7 @@ SetEvent(xpevent_t event)
 		pthread_cond_broadcast(&event->gtzero);
 	}
 
-	pthread_mutex_unlock(&event->lock);
+	assert_pthread_mutex_unlock(&event->lock);
 
 	return TRUE;
 }
@@ -95,11 +96,11 @@ ResetEvent(xpevent_t event)
 		return FALSE;
 	}
 
-	pthread_mutex_lock(&event->lock);
+	assert_pthread_mutex_lock(&event->lock);
 
 	event->value = FALSE;
 
-	pthread_mutex_unlock(&event->lock);
+	assert_pthread_mutex_unlock(&event->lock);
 
 	return TRUE;
 }
@@ -113,14 +114,14 @@ CloseEvent(xpevent_t event)
 	}
 
 	/* Make sure there are no waiters. */
-	pthread_mutex_lock(&event->lock);
+	assert_pthread_mutex_lock(&event->lock);
 	if (event->nwaiters > 0) {
-		pthread_mutex_unlock(&event->lock);
+		assert_pthread_mutex_unlock(&event->lock);
 		errno = EBUSY;
 		return FALSE;
 	}
 
-	pthread_mutex_unlock(&event->lock);
+	assert_pthread_mutex_unlock(&event->lock);
 
 	while (pthread_mutex_destroy(&event->lock) == EBUSY)
 		SLEEP(1);
@@ -151,7 +152,7 @@ WaitForEvent(xpevent_t event, DWORD ms)
 		abstime.tv_nsec = (currtime.tv_usec * 1000 + ms * 1000000) % 1000000000;
 	}
 
-	pthread_mutex_lock(&event->lock);
+	assert_pthread_mutex_lock(&event->lock);
 
 	if (event->value)
 		retval = WAIT_OBJECT_0;
@@ -199,7 +200,7 @@ DONE:
 			event->value = FALSE;
 	}
 
-	pthread_mutex_unlock(&event->lock);
+	assert_pthread_mutex_unlock(&event->lock);
 
 	return retval;
 }

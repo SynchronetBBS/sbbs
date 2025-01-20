@@ -86,5 +86,16 @@ bool rwlock_destroy(rwlock_t *lock);
 #endif
 
 #define rwlock_destroy_ign(lock) ((void)rwlock_destroy(lock))
+#ifdef NDEBUG
+#define assert_rwlock_rdlock(lk) rwlock_rdlock(lk)
+#define assert_rwlock_wrlock(lk) rwlock_wrlock(lk)
+#define assert_rwlock_unlock(lk) rwlock_unlock(lk)
+#define assert_rwlock_init(lk)   rwlock_init(lk)
+#else
+#define assert_rwlock_rdlock(lk) assert(rwlock_rdlock(lk))
+#define assert_rwlock_wrlock(lk) assert(rwlock_wrlock(lk))
+#define assert_rwlock_unlock(lk) assert(rwlock_unlock(lk))
+#define assert_rwlock_init(lk)   assert(rwlock_init(lk))
+#endif
 
 #endif

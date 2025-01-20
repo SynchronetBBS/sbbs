@@ -619,12 +619,12 @@ x11_get_maxsize(int *w, int *h)
 	if (dpy == NULL)
 		return false;
 	if (fullscreen) {
-		rwlock_rdlock(&vstatlock);
+		assert_rwlock_rdlock(&vstatlock);
 		if (w)
 			*w = vstat.winwidth;
 		if (h)
 			*h = vstat.winheight;
-		rwlock_unlock(&vstatlock);
+		assert_rwlock_unlock(&vstatlock);
 		return true;
 	}
 	else {
@@ -715,9 +715,9 @@ resize_pictures(void)
 		xrender_src_pict = x11.XRenderCreatePicture(dpy, xrender_pm, xrender_pf, 0, &pa);
 		xrender_dst_pict = x11.XRenderCreatePicture(dpy, win, xrender_pf, 0, &pa);
 		x11.XRenderSetPictureFilter(dpy, xrender_src_pict, "best", NULL, 0);
-		rwlock_rdlock(&vstatlock);
+		assert_rwlock_rdlock(&vstatlock);
 		bitmap_get_scaled_win_size(vstat.scaling, &iw, &ih, 0, 0);
-		rwlock_unlock(&vstatlock);
+		assert_rwlock_unlock(&vstatlock);
 		XTransform transform_matrix = {{
 		  {XDoubleToFixed((double)vstat.scrnwidth / iw), XDoubleToFixed(0), XDoubleToFixed(0)},
 		  {XDoubleToFixed(0), XDoubleToFixed((double)vstat.scrnheight / ih), XDoubleToFixed(0)},
@@ -743,9 +743,9 @@ static void resize_xim(void)
 
 	resize_pictures();
 	if (x_internal_scaling) {
-		rwlock_rdlock(&vstatlock);
+		assert_rwlock_rdlock(&vstatlock);
 		bitmap_get_scaled_win_size(x_cvstat.scaling, &width, &height, 0, 0);
-		rwlock_unlock(&vstatlock);
+		assert_rwlock_unlock(&vstatlock);
 	}
 	else {
 		width = x_cvstat.scrnwidth;
@@ -806,11 +806,11 @@ map_window(bool mp)
 
 	if (!fullscreen && !fullscreen_pending) {
 		if (x11_get_maxsize(&sh->max_width,&sh->max_height)) {
-			rwlock_rdlock(&vstatlock);
+			assert_rwlock_rdlock(&vstatlock);
 			bitmap_get_scaled_win_size(bitmap_double_mult_inside(sh->max_width, sh->max_height), &sh->max_width, &sh->max_height, sh->max_width, sh->max_height);
 		}
 		else {
-			rwlock_rdlock(&vstatlock);
+			assert_rwlock_rdlock(&vstatlock);
 			bitmap_get_scaled_win_size(7.0, &sh->max_width, &sh->max_height, 0, 0);
 		}
 		if (sh->max_width != last_maxw)
@@ -829,7 +829,7 @@ map_window(bool mp)
 		sh->flags |= PSize;
 	}
 	else
-		rwlock_rdlock(&vstatlock);
+		assert_rwlock_rdlock(&vstatlock);
 
 	bitmap_get_scaled_win_size(1.0, &sh->min_width, &sh->min_height, 0, 0);
 	if (sh->min_width != last_minw)
@@ -840,7 +840,7 @@ map_window(bool mp)
 	last_minh = sh->min_height;
 	sh->flags |= PMinSize;
 
-	rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 
 	if (x_cvstat.aspect_width != 0 && x_cvstat.aspect_height != 0) {
 		sh->min_aspect.x = sh->max_aspect.x = x_cvstat.aspect_width;
@@ -869,9 +869,9 @@ map_window(bool mp)
 	 */
 	if (extents_changed || mp)
 		x11.XSetWMNormalHints(dpy, win, sh);
-	rwlock_wrlock(&vstatlock);
+	assert_rwlock_wrlock(&vstatlock);
 	vstat.scaling = x_cvstat.scaling;
-	rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 	if (mp)
 		x11.XMapWindow(dpy, win);
 
@@ -1052,12 +1052,12 @@ static int init_window()
 	wa.background_pixel = black;
 	wa.border_pixel = black;
 	x11_get_maxsize(&mw, &mh);
-	rwlock_wrlock(&vstatlock);
+	assert_rwlock_wrlock(&vstatlock);
 	bitmap_get_scaled_win_size(x_cvstat.scaling, &w, &h, mw, mh);
 	vstat.winwidth = x_cvstat.winwidth = w;
 	vstat.winheight = x_cvstat.winheight = h;
 	vstat.scaling = x_cvstat.scaling = bitmap_double_mult_inside(w, h);
-	rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 	win = x11.XCreateWindow(dpy, parent, 0, 0,
 	    w, h, 2, depth, InputOutput, visual, CWColormap | CWBorderPixel | CWBackPixel, &wa);
 
@@ -1166,11 +1166,11 @@ send_fullscreen(bool set, int x, int y)
 					saved_xpos -= l;
 					saved_ypos -= t;
 				}
-				rwlock_rdlock(&vstatlock);
+				assert_rwlock_rdlock(&vstatlock);
 				saved_width = vstat.winwidth;
 				saved_height = vstat.winheight;
 				saved_scaling = vstat.scaling;
-				rwlock_unlock(&vstatlock);
+				assert_rwlock_unlock(&vstatlock);
 			}
 			ret = x11.XSendEvent(dpy, root, False, SubstructureNotifyMask | SubstructureRedirectMask, &ev) != 0;
 			if (ret) {
@@ -1205,7 +1205,7 @@ static void resize_window()
 		return;
 	}
 	// We can lokely use a rdlock() here, but there's no reason to risk it.
-	rwlock_wrlock(&vstatlock);
+	assert_rwlock_wrlock(&vstatlock);
 	cio_api.mode = CIOLIB_MODE_X;
 	new_scaling = x_cvstat.scaling;
 	bitmap_get_scaled_win_size(new_scaling, &width, &height, 0, 0);
@@ -1219,26 +1219,26 @@ static void resize_window()
 	if (width == vstat.winwidth && height == vstat.winheight) {
 		if (new_scaling != vstat.scaling) {
 			vstat.scaling = x_cvstat.scaling = new_scaling;
-			rwlock_unlock(&vstatlock);
+			assert_rwlock_unlock(&vstatlock);
 			resize_xim();
 		}
 		else
-			rwlock_unlock(&vstatlock);
+			assert_rwlock_unlock(&vstatlock);
 		return;
 	}
 	bitmap_get_scaled_win_size(new_scaling, &width, &height, 0, 0);
 	resize = new_scaling != vstat.scaling || width != vstat.winwidth || height != vstat.winheight;
 	x_cvstat.scaling = vstat.scaling;
 	if (resize) {
-		rwlock_unlock(&vstatlock);
+		assert_rwlock_unlock(&vstatlock);
 		map_window(map_pending);
-		rwlock_wrlock(&vstatlock);
+		assert_rwlock_wrlock(&vstatlock);
 		x11.XResizeWindow(dpy, win, width, height);
 		x_cvstat.winwidth = vstat.winwidth = width;
 		x_cvstat.winheight = vstat.winheight = height;
 		vstat.scaling = x_cvstat.scaling = bitmap_double_mult_inside(width, height);
 	}
-	rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 	resize_xim();
 
 	return;
@@ -1251,7 +1251,7 @@ static void init_mode_internal(int mode)
 
 	x11_get_maxsize(&mw, &mh);
 	free_last();
-	rwlock_wrlock(&vstatlock);
+	assert_rwlock_wrlock(&vstatlock);
 	double os = vstat.scaling;
 	int ow = vstat.winwidth;
 	int oh = vstat.winheight;
@@ -1261,29 +1261,29 @@ static void init_mode_internal(int mode)
 	vstat.scaling = os;
 	vstat.winwidth = ow;
 	vstat.winheight = oh;
-	rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 	resize_window();
-	rwlock_rdlock(&vstatlock);
+	assert_rwlock_rdlock(&vstatlock);
 	x_cvstat = vstat;
-	rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 	resize_xim();
 	map_window(map_pending);
 }
 
 static void check_scaling(void)
 {
-	rwlock_rdlock(&vstatlock);
-	pthread_mutex_lock(&scalinglock);
+	assert_rwlock_rdlock(&vstatlock);
+	assert_pthread_mutex_lock(&scalinglock);
 	if (newscaling != 0) {
 		x_cvstat.scaling = newscaling;
 		newscaling = 0.0;
-		pthread_mutex_unlock(&scalinglock);
-		rwlock_unlock(&vstatlock);
+		assert_pthread_mutex_unlock(&scalinglock);
+		assert_rwlock_unlock(&vstatlock);
 		resize_window();
 	}
 	else {
-		pthread_mutex_unlock(&scalinglock);
-		rwlock_unlock(&vstatlock);
+		assert_pthread_mutex_unlock(&scalinglock);
+		assert_rwlock_unlock(&vstatlock);
 	}
 }
 
@@ -1300,7 +1300,7 @@ static int video_init()
 {
 	int w, h;
 
-	rwlock_wrlock(&vstatlock);
+	assert_rwlock_wrlock(&vstatlock);
 	x_internal_scaling = (ciolib_initial_scaling_type == CIOLIB_SCALING_INTERNAL);
 	if (ciolib_initial_scaling != 0.0) {
 		if (ciolib_initial_scaling < 1.0) {
@@ -1316,11 +1316,11 @@ static int video_init()
 	if (x_cvstat.scaling < 1.0 || vstat.scaling < 1.0)
 		x_cvstat.scaling = vstat.scaling = 1.0;
 	if(load_vmode(&vstat, ciolib_initial_mode)) {
-		rwlock_unlock(&vstatlock);
+		assert_rwlock_unlock(&vstatlock);
 		return(-1);
 	}
 	x_cvstat = vstat;
-	rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 	if(init_window())
 		return(-1);
 	bitmap_drv_init(x11_drawrect, x11_flush);
@@ -1353,14 +1353,14 @@ local_draw_rect(struct rectlist *rect)
 	}
 
 	// Scale...
-	rwlock_rdlock(&vstatlock);
+	assert_rwlock_rdlock(&vstatlock);
 	if (x_cvstat.winwidth != vstat.winwidth || x_cvstat.winheight != vstat.winheight) {
-		rwlock_unlock(&vstatlock);
+		assert_rwlock_unlock(&vstatlock);
 		bitmap_drv_free_rect(rect);
 		return;
 	}
 	bitmap_get_scaled_win_size(vstat.scaling, &w, &h, vstat.winwidth, vstat.winheight);
-	rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 	if (w < rect->rect.width || h < rect->rect.height) {
 		bitmap_drv_free_rect(rect);
 		return;
@@ -1385,10 +1385,10 @@ local_draw_rect(struct rectlist *rect)
 		dh = rect->rect.height;
 	}
 
-	rwlock_rdlock(&vstatlock);
+	assert_rwlock_rdlock(&vstatlock);
 	w = vstat.winwidth;
 	h = vstat.winheight;
-	rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 	xoff = (w - cleft) / 2;
 	if (xoff < 0)
 		xoff = 0;
@@ -1511,21 +1511,21 @@ local_draw_rect(struct rectlist *rect)
 
 static void handle_resize_event(int width, int height, bool map)
 {
-	rwlock_wrlock(&vstatlock);
+	assert_rwlock_wrlock(&vstatlock);
 	x_cvstat.winwidth = vstat.winwidth = width;
 	x_cvstat.winheight = vstat.winheight = height;
 	vstat.scaling = x_cvstat.scaling = bitmap_double_mult_inside(width, height);
 	if (vstat.scaling > 16)
 		vstat.scaling = 16;
 	x_cvstat.scaling = vstat.scaling;
-	rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 	resize_xim();
 	bitmap_drv_request_pixels();
 	if (!got_first_resize) {
 		if (!fullscreen) {
-			rwlock_wrlock(&vstatlock);
+			assert_rwlock_wrlock(&vstatlock);
 			vstat.scaling = bitmap_double_mult_inside(width, height);
-			rwlock_unlock(&vstatlock);
+			assert_rwlock_unlock(&vstatlock);
 			resize_window();
 		}
 	}
@@ -1542,12 +1542,12 @@ static void expose_rect(int x, int y, int width, int height)
 		fprintf(stderr, "Exposing NULL xim!\n");
 		return;
 	}
-	rwlock_rdlock(&vstatlock);
+	assert_rwlock_rdlock(&vstatlock);
 	w = vstat.winwidth;
 	h = vstat.winheight;
 	s = vstat.scaling;
 	bitmap_get_scaled_win_size(s, &sw, &sh, 0, 0);
-	rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 	xoff = (w - sw) / 2;
 	if (xoff < 0)
 		xoff = 0;
@@ -1571,7 +1571,7 @@ xlat_mouse_xy(int *x, int *y)
 	int xoff, yoff;
 	int xw, xh;
 
-	rwlock_rdlock(&vstatlock);
+	assert_rwlock_rdlock(&vstatlock);
 	bitmap_get_scaled_win_size(vstat.scaling, &xw, &xh, 0, 0);
 	xoff = (vstat.winwidth - xw) / 2;
 	if (xoff < 0)
@@ -1579,7 +1579,7 @@ xlat_mouse_xy(int *x, int *y)
 	yoff = (vstat.winheight - xh) / 2;
 	if (yoff < 0)
 		yoff = 0;
-	rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 
 	if (*x < xoff)
 		*x = xoff;
@@ -1662,10 +1662,10 @@ handle_configuration(int w, int h, bool map, bool se)
 {
 	bool resize = false;
 
-	rwlock_rdlock(&vstatlock);
+	assert_rwlock_rdlock(&vstatlock);
 	if (w != vstat.winwidth || h != vstat.winheight)
 		resize = true;
-	rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 	if (resize)
 		handle_resize_event(w, h, map);
 	if (w && h && !se)
@@ -1755,7 +1755,7 @@ x11_event(XEvent *ev)
 						resize = false;
 						if (fullscreen) {
 							fullscreen = false;
-							rwlock_rdlock(&vstatlock);
+							assert_rwlock_rdlock(&vstatlock);
 							x_cvstat.scaling = saved_scaling;
 							/*
 							 * Mode may have changed while in fullscreen... recalculate scaling to
@@ -1764,7 +1764,7 @@ x11_event(XEvent *ev)
 							bitmap_get_scaled_win_size(saved_scaling, &w, &h, saved_width, saved_height);
 							if (w != vstat.winwidth || h != vstat.winheight)
 								resize = true;
-							rwlock_unlock(&vstatlock);
+							assert_rwlock_unlock(&vstatlock);
 							x_cvstat.winwidth = w;
 							x_cvstat.winheight = h;
 							x_cvstat.scaling = bitmap_double_mult_inside(w, h);
@@ -1847,10 +1847,10 @@ x11_event(XEvent *ev)
 				XSelectionClearEvent *req;
 
 				req=&(ev->xselectionclear);
-				pthread_mutex_lock(&copybuf_mutex);
+				assert_pthread_mutex_lock(&copybuf_mutex);
 				if(req->selection==copy_paste_selection)
 					FREE_AND_NULL(copybuf);
-				pthread_mutex_unlock(&copybuf_mutex);
+				assert_pthread_mutex_unlock(&copybuf_mutex);
 			}
 			break;
 		case SelectionNotify:
@@ -1899,7 +1899,7 @@ x11_event(XEvent *ev)
 				int count = 0;
 
 				req=&(ev->xselectionrequest);
-				pthread_mutex_lock(&copybuf_mutex);
+				assert_pthread_mutex_lock(&copybuf_mutex);
 				respond.xselection.property=None;
 				if(copybuf!=NULL) {
 					if(req->target==XA_STRING) {
@@ -1931,7 +1931,7 @@ x11_event(XEvent *ev)
 				respond.xselection.display=req->display;
 				x11.XSendEvent(dpy,req->requestor,0,0,&respond);
 				x11.XFlush(dpy);
-				pthread_mutex_unlock(&copybuf_mutex);
+				assert_pthread_mutex_unlock(&copybuf_mutex);
 			}
 			break;
 
@@ -2206,9 +2206,9 @@ x11_event(XEvent *ev)
 									if (ival < 7.0) {
 										int mw, mh, ms;
 										x11_get_maxsize(&mw,&mh);
-										rwlock_rdlock(&vstatlock);
+										assert_rwlock_rdlock(&vstatlock);
 										ms = bitmap_largest_mult_inside(mw, mh);
-										rwlock_unlock(&vstatlock);
+										assert_rwlock_unlock(&vstatlock);
 										if (ival + 1 <= ms)
 											x_setscaling(ival + 1);
 									}

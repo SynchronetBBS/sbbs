@@ -273,6 +273,16 @@ DLLEXPORT uint64_t protected_uint64_set(protected_uint64_t*, uint64_t adjustment
 }
 #endif
 
+#ifndef NDEBUG
+#define assert_pthread_mutex_init(a, b)		assert(pthread_mutex_init(a, b) == 0)
+#define assert_pthread_mutex_lock(a)		assert(pthread_mutex_lock(a) == 0)
+#define assert_pthread_mutex_unlock(a)		assert(pthread_mutex_unlock(a) == 0)
+#else
+#define assert_pthread_mutex_init(a, b)		pthread_mutex_init(a, b)
+#define assert_pthread_mutex_lock(a)		pthread_mutex_lock(a)
+#define assert_pthread_mutex_unlock(a)		pthread_mutex_unlock(a)
+#endif
+
 #include "semwrap.h"
 
 #endif	/* Don't add anything after this line */

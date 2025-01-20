@@ -108,7 +108,7 @@ void init_mouse(void)
 	state.multi_timeout=300;
 	listInit(&state.input,LINK_LIST_SEMAPHORE|LINK_LIST_MUTEX);
 	listInit(&state.output,LINK_LIST_SEMAPHORE|LINK_LIST_MUTEX);
-	pthread_mutex_init(&unget_mutex, NULL);
+	assert_pthread_mutex_init(&unget_mutex, NULL);
 }
 
 void mousestate(int *x, int *y, uint8_t *buttons)
@@ -510,13 +510,13 @@ int mouse_trywait(void)
 	pthread_once(&ciolib_mouse_initialized, init_mouse);
 	while(1) {
 		result=listSemTryWait(&state.output);
-		pthread_mutex_lock(&unget_mutex);
+		assert_pthread_mutex_lock(&unget_mutex);
 		if(ungot==0) {
-			pthread_mutex_unlock(&unget_mutex);
+			assert_pthread_mutex_unlock(&unget_mutex);
 			return(result);
 		}
 		ungot--;
-		pthread_mutex_unlock(&unget_mutex);
+		assert_pthread_mutex_unlock(&unget_mutex);
 	}
 }
 
@@ -527,13 +527,13 @@ int mouse_wait(void)
 	pthread_once(&ciolib_mouse_initialized, init_mouse);
 	while(1) {
 		result=listSemWait(&state.output);
-		pthread_mutex_lock(&unget_mutex);
+		assert_pthread_mutex_lock(&unget_mutex);
 		if(ungot==0) {
-			pthread_mutex_unlock(&unget_mutex);
+			assert_pthread_mutex_unlock(&unget_mutex);
 			return(result);
 		}
 		ungot--;
-		pthread_mutex_unlock(&unget_mutex);
+		assert_pthread_mutex_unlock(&unget_mutex);
 	}
 }
 
@@ -584,12 +584,12 @@ int ciolib_ungetmouse(struct mouse_event *mevent)
 	if((me=(struct mouse_event *)malloc(sizeof(struct mouse_event)))==NULL)
 		return(-1);
 	memcpy(me,mevent,sizeof(struct mouse_event));
-	pthread_mutex_lock(&unget_mutex);
+	assert_pthread_mutex_lock(&unget_mutex);
 	if(listInsertNode(&state.output,me)==NULL) {
-		pthread_mutex_unlock(&unget_mutex);
+		assert_pthread_mutex_unlock(&unget_mutex);
 		return(FALSE);
 	}
 	ungot++;
-	pthread_mutex_unlock(&unget_mutex);
+	assert_pthread_mutex_unlock(&unget_mutex);
 	return(TRUE);
 }

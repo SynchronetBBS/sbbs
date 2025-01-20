@@ -142,7 +142,7 @@ void x_copytext(const char *text, size_t buflen)
 {
 	struct x11_local_event ev = {0};
 
-	pthread_mutex_lock(&copybuf_mutex);
+	assert_pthread_mutex_lock(&copybuf_mutex);
 	FREE_AND_NULL(copybuf);
 
 	copybuf=strdup(text);
@@ -151,7 +151,7 @@ void x_copytext(const char *text, size_t buflen)
 		write_event(&ev);
 		copybuf_format = XA_STRING;
 	}
-	pthread_mutex_unlock(&copybuf_mutex);
+	assert_pthread_mutex_unlock(&copybuf_mutex);
 	return;
 }
 
@@ -211,7 +211,7 @@ int x_initciolib(int mode)
 	if(x11_initialized)
 		return(0);
 
-	pthread_mutex_init(&scalinglock, NULL);
+	assert_pthread_mutex_init(&scalinglock, NULL);
 
 	/* Set up the pipe for local events */
 	if(pipe(local_pipe))
@@ -767,18 +767,18 @@ void x_setscaling(double newval)
 {
 	if (newval < 1)
 		newval = 1;
-	pthread_mutex_lock(&scalinglock);
+	assert_pthread_mutex_lock(&scalinglock);
 	newscaling = newval;
-	pthread_mutex_unlock(&scalinglock);
+	assert_pthread_mutex_unlock(&scalinglock);
 }
 
 double x_getscaling(void)
 {
 	double ret;
 
-	rwlock_rdlock(&vstatlock);
+	assert_rwlock_rdlock(&vstatlock);
 	ret = vstat.scaling;
-	rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 	return ret;
 }
 

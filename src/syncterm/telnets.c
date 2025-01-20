@@ -69,10 +69,10 @@ telnets_input_thread(void *args)
 		if (!socket_check(telnets_sock, &data_avail, NULL, bufsz ? 0 : 100))
 			break;
 		if (data_avail && bufsz < BUFFER_SIZE) {
-			pthread_mutex_lock(&telnets_mutex);
+			assert_pthread_mutex_lock(&telnets_mutex);
 			FlushData(telnets_session);
 			status = PopData(telnets_session, conn_api.rd_buf + bufsz, conn_api.rd_buf_size - bufsz, &rd);
-			pthread_mutex_unlock(&telnets_mutex);
+			assert_pthread_mutex_unlock(&telnets_mutex);
 			bufsz += rd;
 			// Handle case where there was socket activity without readable data (ie: rekey)
 			if (status == CRYPT_ERROR_TIMEOUT)
@@ -89,12 +89,12 @@ telnets_input_thread(void *args)
 		if (bufsz) {
 			buffered = 0;
 			while (buffered < rd) {
-				pthread_mutex_lock(&(conn_inbuf.mutex));
+				assert_pthread_mutex_lock(&(conn_inbuf.mutex));
 				conn_buf_wait_free(&conn_inbuf, 1, 1000);
 				buffered = conn_buf_put(&conn_inbuf, conn_api.rd_buf, bufsz);
 				memmove(conn_api.rd_buf, &conn_api.rd_buf[buffered], bufsz - buffered);
 				bufsz -= buffered;
-				pthread_mutex_unlock(&(conn_inbuf.mutex));
+				assert_pthread_mutex_unlock(&(conn_inbuf.mutex));
 			}
 		}
 	}
@@ -111,16 +111,16 @@ telnets_output_thread(void *args)
 	SetThreadName("TelnetS Output");
 	conn_api.output_thread_running = 1;
 	while (!conn_api.terminate) {
-		pthread_mutex_lock(&(conn_outbuf.mutex));
+		assert_pthread_mutex_lock(&(conn_outbuf.mutex));
 		wr = conn_buf_wait_bytes(&conn_outbuf, 1, 100);
 		if (wr) {
 			wr = conn_buf_get(&conn_outbuf, conn_api.wr_buf, conn_api.wr_buf_size);
-			pthread_mutex_unlock(&(conn_outbuf.mutex));
+			assert_pthread_mutex_unlock(&(conn_outbuf.mutex));
 			sent = 0;
 			while ((!conn_api.terminate) && sent < wr) {
-				pthread_mutex_lock(&telnets_mutex);
+				assert_pthread_mutex_lock(&telnets_mutex);
 				status = PushData(telnets_session, conn_api.wr_buf + sent, wr - sent, &ret);
-				pthread_mutex_unlock(&telnets_mutex);
+				assert_pthread_mutex_unlock(&telnets_mutex);
 				if (cryptStatusError(status)) {
 					if (!conn_api.terminate) {
 						if (status != CRYPT_ERROR_COMPLETE && status != CRYPT_ERROR_READ) { /* connection closed */
@@ -133,13 +133,13 @@ telnets_output_thread(void *args)
 				sent += ret;
 			}
 			if (sent) {
-				pthread_mutex_lock(&telnets_mutex);
+				assert_pthread_mutex_lock(&telnets_mutex);
 				FlushData(telnets_session);
-				pthread_mutex_unlock(&telnets_mutex);
+				assert_pthread_mutex_unlock(&telnets_mutex);
 			}
 		}
 		else {
-			pthread_mutex_unlock(&(conn_outbuf.mutex));
+			assert_pthread_mutex_unlock(&(conn_outbuf.mutex));
 		}
 	}
 	shutdown(telnets_sock, SHUT_RDWR);
@@ -154,7 +154,7 @@ telnets_connect(struct bbslist *bbs)
 
 	if (!bbs->hidepopups)
 		init_uifc(true, true);
-	pthread_mutex_init(&telnets_mutex, NULL);
+	assert_pthread_mutex_init(&telnets_mutex, NULL);
 
 	telnets_sock = conn_socket_connect(bbs);
 	if (telnets_sock == INVALID_SOCKET)

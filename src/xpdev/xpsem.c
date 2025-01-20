@@ -38,6 +38,7 @@
 #include <stdlib.h>
 #include "gen_defs.h"
 #include "genwrap.h"
+#include "threadwrap.h"
 
 int
 xp_sem_init(xp_sem_t *sem, int pshared, unsigned int value)
@@ -109,14 +110,14 @@ xp_sem_destroy(xp_sem_t *sem)
 	_SEM_CHECK_VALIDITY(sem);
 
 	/* Make sure there are no waiters. */
-	pthread_mutex_lock(&(*sem)->lock);
+	assert_pthread_mutex_lock(&(*sem)->lock);
 	if ((*sem)->nwaiters > 0) {
-		pthread_mutex_unlock(&(*sem)->lock);
+		assert_pthread_mutex_unlock(&(*sem)->lock);
 		errno = EBUSY;
 		retval = -1;
 		goto RETURN;
 	}
-	pthread_mutex_unlock(&(*sem)->lock);
+	assert_pthread_mutex_unlock(&(*sem)->lock);
 
 	while (pthread_mutex_destroy(&(*sem)->lock) == EBUSY)
 		SLEEP(1);
@@ -159,7 +160,7 @@ xp_sem_wait(xp_sem_t *sem)
 
 	_SEM_CHECK_VALIDITY(sem);
 
-	pthread_mutex_lock(&(*sem)->lock);
+	assert_pthread_mutex_lock(&(*sem)->lock);
 
 	while ((*sem)->count == 0) {
 		(*sem)->nwaiters++;
@@ -168,7 +169,7 @@ xp_sem_wait(xp_sem_t *sem)
 	}
 	(*sem)->count--;
 
-	pthread_mutex_unlock(&(*sem)->lock);
+	assert_pthread_mutex_unlock(&(*sem)->lock);
 
 	retval = 0;
 RETURN:
@@ -183,7 +184,7 @@ xp_sem_trywait(xp_sem_t *sem)
 
 	_SEM_CHECK_VALIDITY(sem);
 
-	pthread_mutex_lock(&(*sem)->lock);
+	assert_pthread_mutex_lock(&(*sem)->lock);
 
 	if ((*sem)->count > 0) {
 		(*sem)->count--;
@@ -193,7 +194,7 @@ xp_sem_trywait(xp_sem_t *sem)
 		retval = -1;
 	}
 
-	pthread_mutex_unlock(&(*sem)->lock);
+	assert_pthread_mutex_unlock(&(*sem)->lock);
 
 RETURN:
 	return retval;
@@ -206,7 +207,7 @@ xp_sem_post(xp_sem_t *sem)
 
 	_SEM_CHECK_VALIDITY(sem);
 
-	pthread_mutex_lock(&(*sem)->lock);
+	assert_pthread_mutex_lock(&(*sem)->lock);
 
 	(*sem)->count++;
 	if ((*sem)->nwaiters > 0) {
@@ -219,7 +220,7 @@ xp_sem_post(xp_sem_t *sem)
 		pthread_cond_broadcast(&(*sem)->gtzero);
 	}
 
-	pthread_mutex_unlock(&(*sem)->lock);
+	assert_pthread_mutex_unlock(&(*sem)->lock);
 
 	retval = 0;
 RETURN:
@@ -233,9 +234,9 @@ xp_sem_getvalue(xp_sem_t *sem, int *sval)
 
 	_SEM_CHECK_VALIDITY(sem);
 
-	pthread_mutex_lock(&(*sem)->lock);
+	assert_pthread_mutex_lock(&(*sem)->lock);
 	*sval = (int)(*sem)->count;
-	pthread_mutex_unlock(&(*sem)->lock);
+	assert_pthread_mutex_unlock(&(*sem)->lock);
 
 	retval = 0;
 RETURN:
@@ -249,7 +250,7 @@ xp_sem_setvalue(xp_sem_t *sem, int sval)
 
 	_SEM_CHECK_VALIDITY(sem);
 
-	pthread_mutex_lock(&(*sem)->lock);
+	assert_pthread_mutex_lock(&(*sem)->lock);
 	(*sem)->count = (uint32_t)sval;
 	if (((*sem)->nwaiters > 0) && sval) {
 		/*
@@ -260,7 +261,7 @@ xp_sem_setvalue(xp_sem_t *sem, int sval)
 		 */
 		pthread_cond_broadcast(&(*sem)->gtzero);
 	}
-	pthread_mutex_unlock(&(*sem)->lock);
+	assert_pthread_mutex_unlock(&(*sem)->lock);
 
 	retval = 0;
 RETURN:
@@ -274,7 +275,7 @@ xp_sem_timedwait(xp_sem_t *sem, const struct timespec *abs_timeout)
 
 	_SEM_CHECK_VALIDITY(sem);
 
-	pthread_mutex_lock(&(*sem)->lock);
+	assert_pthread_mutex_lock(&(*sem)->lock);
 
 	while ((*sem)->count == 0) {
 		(*sem)->nwaiters++;
@@ -289,7 +290,7 @@ xp_sem_timedwait(xp_sem_t *sem, const struct timespec *abs_timeout)
 	if (retval == 0)
 		(*sem)->count--;
 
-	pthread_mutex_unlock(&(*sem)->lock);
+	assert_pthread_mutex_unlock(&(*sem)->lock);
 
 RETURN:
 

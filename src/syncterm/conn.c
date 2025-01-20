@@ -247,7 +247,7 @@ conn_buf_wait_cond(struct conn_buffer *buf, size_t bcount, unsigned long timeout
 	if ((found == bcount) || (timeout == 0))
 		return found;
 
-	pthread_mutex_unlock(&(buf->mutex));
+	assert_pthread_mutex_unlock(&(buf->mutex));
 
 	end = timeout;
 	end /= 1000;
@@ -266,7 +266,7 @@ conn_buf_wait_cond(struct conn_buffer *buf, size_t bcount, unsigned long timeout
 		}
 		if (sem_trywait_block(sem, timeleft))
 			retnow = 1;
-		pthread_mutex_lock(&(buf->mutex)); /* term.c data_waiting() blocks here, seemingly forever */
+		assert_pthread_mutex_lock(&(buf->mutex)); /* term.c data_waiting() blocks here, seemingly forever */
 		found = cond(buf);
 		if (found > bcount)
 			found = bcount;
@@ -274,7 +274,7 @@ conn_buf_wait_cond(struct conn_buffer *buf, size_t bcount, unsigned long timeout
 		if ((found == bcount) || retnow)
 			return found;
 
-		pthread_mutex_unlock(&(buf->mutex));
+		assert_pthread_mutex_unlock(&(buf->mutex));
 	}
 }
 
@@ -302,10 +302,10 @@ conn_recv_upto(void *vbuffer, size_t buflen, unsigned timeout)
 		if (max_rx > 1)
 			max_rx /= 2;
 	}
-	pthread_mutex_lock(&(conn_inbuf.mutex));
+	assert_pthread_mutex_lock(&(conn_inbuf.mutex));
 	if (conn_buf_wait_bytes(&conn_inbuf, 1, timeout))
 		found = conn_buf_get(&conn_inbuf, buffer, max_rx);
-	pthread_mutex_unlock(&(conn_inbuf.mutex));
+	assert_pthread_mutex_unlock(&(conn_inbuf.mutex));
 
 	if (found) {
 		if (conn_api.rx_parse_cb != NULL) {
@@ -329,11 +329,11 @@ conn_send_raw(const void *vbuffer, size_t buflen, unsigned int timeout)
 	const char *buffer = vbuffer;
 	size_t      found;
 
-	pthread_mutex_lock(&(conn_outbuf.mutex));
+	assert_pthread_mutex_lock(&(conn_outbuf.mutex));
 	found = conn_buf_wait_free(&conn_outbuf, buflen, timeout);
 	if (found)
 		found = conn_buf_put(&conn_outbuf, buffer, found);
-	pthread_mutex_unlock(&(conn_outbuf.mutex));
+	assert_pthread_mutex_unlock(&(conn_outbuf.mutex));
 	return found;
 }
 
@@ -353,11 +353,11 @@ conn_send(const void *vbuffer, size_t buflen, unsigned int timeout)
 		obuflen = buflen;
 	}
 
-	pthread_mutex_lock(&(conn_outbuf.mutex));
+	assert_pthread_mutex_lock(&(conn_outbuf.mutex));
 	found = conn_buf_wait_free(&conn_outbuf, obuflen, timeout);
 	if (found)
 		found = conn_buf_put(&conn_outbuf, expanded, found);
-	pthread_mutex_unlock(&(conn_outbuf.mutex));
+	assert_pthread_mutex_unlock(&(conn_outbuf.mutex));
 
 	if (conn_api.tx_parse_cb != NULL)
 		free(expanded);
@@ -455,9 +455,9 @@ conn_data_waiting(void)
 {
 	size_t found;
 
-	pthread_mutex_lock(&(conn_inbuf.mutex));
+	assert_pthread_mutex_lock(&(conn_inbuf.mutex));
 	found = conn_buf_bytes(&conn_inbuf);
-	pthread_mutex_unlock(&(conn_inbuf.mutex));
+	assert_pthread_mutex_unlock(&(conn_inbuf.mutex));
 	return found;
 }
 

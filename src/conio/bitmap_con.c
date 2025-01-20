@@ -34,48 +34,6 @@
 
 static uint32_t palette[65536];
 
-#if 0
-
-static int dbg_pthread_mutex_lock(pthread_mutex_t *lptr, unsigned line)
-{
-	int ret = pthread_mutex_lock(lptr);
-
-	if (ret)
-		fprintf(stderr, "pthread_mutex_lock() returned %d at %u\n", ret, line);
-	return ret;
-}
-
-static int dbg_pthread_mutex_unlock(pthread_mutex_t *lptr, unsigned line)
-{
-	int ret = pthread_mutex_unlock(lptr);
-
-	if (ret)
-		fprintf(stderr, "pthread_mutex_lock() returned %d at %u\n", ret, line);
-	return ret;
-}
-
-#define pthread_mutex_lock(a)		dbg_pthread_mutex_lock(a, __LINE__)
-#define pthread_mutex_unlock(a)		dbg_pthread_mutex_unlock(a, __LINE__)
-
-#else
-#ifndef NDEBUG
-#define pthread_mutex_lock(a)		assert(pthread_mutex_lock(a) == 0)
-#define pthread_mutex_unlock(a)		assert(pthread_mutex_unlock(a) == 0)
-#endif
-#endif
-
-#ifdef NDEBUG
-#define do_rwlock_rdlock(lk) rwlock_rdlock(lk)
-#define do_rwlock_wrlock(lk) rwlock_wrlock(lk)
-#define do_rwlock_unlock(lk) rwlock_unlock(lk)
-#define do_rwlock_init(lk)   rwlock_init(lk)
-#else
-#define do_rwlock_rdlock(lk) assert(rwlock_rdlock(lk))
-#define do_rwlock_wrlock(lk) assert(rwlock_wrlock(lk))
-#define do_rwlock_unlock(lk) assert(rwlock_unlock(lk))
-#define do_rwlock_init(lk)   assert(rwlock_init(lk))
-#endif
-
 /* Structs */
 
 pthread_mutex_t screenlock;
@@ -433,7 +391,7 @@ static void	cb_drawrect(struct rectlist *data)
 	 * 4) If vstat.curs_blinks is false, the cursor does not blink.
 	 * 5) When blinking, the cursor is shown when vstat.blink is true.
 	 */
-	do_rwlock_rdlock(&vstatlock);
+	assert_rwlock_rdlock(&vstatlock);
 	curs_start = vstat.curs_start;
 	curs_end = vstat.curs_end;
 	curs_row = vstat.curs_row;
@@ -441,7 +399,7 @@ static void	cb_drawrect(struct rectlist *data)
 	charheight = vstat.charheight;
 	charwidth = vstat.charwidth;
 	if (cursor_visible_locked()) {
-		do_rwlock_unlock(&vstatlock);
+		assert_rwlock_unlock(&vstatlock);
 		cv = color_value(ciolib_fg);
 		for (y = curs_start; y <= curs_end; y++) {
 			pixel = &data->data[((curs_row - 1) * charheight + y) * data->rect.width + (curs_col - 1) * charwidth];
@@ -451,11 +409,11 @@ static void	cb_drawrect(struct rectlist *data)
 		}
 	}
 	else
-		do_rwlock_unlock(&vstatlock);
-	pthread_mutex_lock(&callbacks.lock);
+		assert_rwlock_unlock(&vstatlock);
+	assert_pthread_mutex_lock(&callbacks.lock);
 	callbacks.drawrect(data);
 	callbacks.rects++;
-	pthread_mutex_unlock(&callbacks.lock);
+	assert_pthread_mutex_unlock(&callbacks.lock);
 }
 
 static void request_redraw_locked(void)
@@ -465,9 +423,9 @@ static void request_redraw_locked(void)
 
 static void request_redraw(void)
 {
-	do_rwlock_wrlock(&vstatlock);
+	assert_rwlock_wrlock(&vstatlock);
 	request_redraw_locked();
-	do_rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 }
 
 /*
@@ -477,15 +435,15 @@ static struct rectlist *alloc_full_rect(struct bitmap_screen *screen, bool allow
 {
 	struct rectlist * ret;
 
-	pthread_mutex_lock(&free_rect_lock);
+	assert_pthread_mutex_lock(&free_rect_lock);
 	if (allow_throttle) {
 		if (throttled) {
-			pthread_mutex_unlock(&free_rect_lock);
+			assert_pthread_mutex_unlock(&free_rect_lock);
 			return NULL;
 		}
 		if (outstanding_rects >= MAX_OUTSTANDING) {
 			throttled = true;
-			pthread_mutex_unlock(&free_rect_lock);
+			assert_pthread_mutex_unlock(&free_rect_lock);
 			return NULL;
 		}
 	}
@@ -498,7 +456,7 @@ static struct rectlist *alloc_full_rect(struct bitmap_screen *screen, bool allow
 			ret->throttle = allow_throttle;
 			if (allow_throttle)
 				outstanding_rects++;
-			pthread_mutex_unlock(&free_rect_lock);
+			assert_pthread_mutex_unlock(&free_rect_lock);
 			return ret;
 		}
 		else {
@@ -508,7 +466,7 @@ static struct rectlist *alloc_full_rect(struct bitmap_screen *screen, bool allow
 			free_rects = ret;
 		}
 	}
-	pthread_mutex_unlock(&free_rect_lock);
+	assert_pthread_mutex_unlock(&free_rect_lock);
 
 	ret = malloc(sizeof(struct rectlist));
 	if (ret) {
@@ -522,12 +480,12 @@ static struct rectlist *alloc_full_rect(struct bitmap_screen *screen, bool allow
 		if (ret->data == NULL)
 			FREE_AND_NULL(ret);
 	}
-	pthread_mutex_lock(&free_rect_lock);
+	assert_pthread_mutex_lock(&free_rect_lock);
 	if (allow_throttle) {
 		if (ret)
 			outstanding_rects++;
 	}
-	pthread_mutex_unlock(&free_rect_lock);
+	assert_pthread_mutex_unlock(&free_rect_lock);
 	return ret;
 }
 
@@ -954,9 +912,9 @@ bitmap_draw_vmem_locked(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 static void
 bitmap_draw_vmem(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 {
-	pthread_mutex_lock(&screenlock);
+	assert_pthread_mutex_lock(&screenlock);
 	bitmap_draw_vmem_locked(sx, sy, ex, ey, fill);
-	pthread_mutex_unlock(&screenlock);
+	assert_pthread_mutex_unlock(&screenlock);
 }
 
 /***********************************************************/
@@ -965,22 +923,22 @@ bitmap_draw_vmem(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 
 static void cb_flush(void)
 {
-	pthread_mutex_lock(&callbacks.lock);
+	assert_pthread_mutex_lock(&callbacks.lock);
 	if (callbacks.rects) {
 		callbacks.flush();
 		callbacks.rects = 0;
 	}
-	pthread_mutex_unlock(&callbacks.lock);
+	assert_pthread_mutex_unlock(&callbacks.lock);
 }
 
 static int check_redraw(void)
 {
 	int ret;
 
-	do_rwlock_wrlock(&vstatlock);
+	assert_rwlock_wrlock(&vstatlock);
 	ret = force_redraws;
 	force_redraws = 0;
-	do_rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 	return ret;
 }
 
@@ -1003,7 +961,7 @@ static void blinker_thread(void *data)
 		SLEEP(10);
 		count++;
 
-		do_rwlock_wrlock(&vstatlock);
+		assert_rwlock_wrlock(&vstatlock);
 		if (count==25) {
 			curs_changed = cursor_visible_locked();
 			if(vstat.curs_blink)
@@ -1029,14 +987,14 @@ static void blinker_thread(void *data)
 		lfc = force_cursor;
 		force_cursor = 0;
 		blink = vstat.blink;
-		pthread_mutex_lock(&screenlock);
+		assert_pthread_mutex_lock(&screenlock);
 		if (screena.rect == NULL) {
-			pthread_mutex_unlock(&screenlock);
-			do_rwlock_unlock(&vstatlock);
+			assert_pthread_mutex_unlock(&screenlock);
+			assert_rwlock_unlock(&vstatlock);
 			continue;
 		}
-		pthread_mutex_unlock(&screenlock);
-		do_rwlock_unlock(&vstatlock);
+		assert_pthread_mutex_unlock(&screenlock);
+		assert_rwlock_unlock(&vstatlock);
 
 		if (check_redraw()) {
 			if (update_from_vmem(TRUE))
@@ -1046,10 +1004,10 @@ static void blinker_thread(void *data)
 			if (update_from_vmem(FALSE))
 				request_redraw();
 		}
-		pthread_mutex_lock(&screenlock);
+		assert_pthread_mutex_lock(&screenlock);
 		both_screens(blink, &screen, &ncscreen);
 		if (screen->rect == NULL) {
-			pthread_mutex_unlock(&screenlock);
+			assert_pthread_mutex_unlock(&screenlock);
 			continue;
 		}
 		// TODO: Maybe we can optimize the blink_changed forced update?
@@ -1068,15 +1026,15 @@ static void blinker_thread(void *data)
 				if (ncscreen->update_pixels == 2)
 					ncscreen->update_pixels = 0;
 				screen->update_pixels = 0;
-				pthread_mutex_unlock(&screenlock);
+				assert_pthread_mutex_unlock(&screenlock);
 				cb_drawrect(rect);
 				cb_flush();
 			}
 			else
-				pthread_mutex_unlock(&screenlock);
+				assert_pthread_mutex_unlock(&screenlock);
 		}
 		else {
-			pthread_mutex_unlock(&screenlock);
+			assert_pthread_mutex_unlock(&screenlock);
 		}
 	}
 }
@@ -1177,15 +1135,15 @@ static int update_from_vmem(int force)
 	if(!bitmap_initialized)
 		return(-1);
 
-	do_rwlock_rdlock(&vstatlock);
+	assert_rwlock_rdlock(&vstatlock);
 
 	if (vstat.vmem == NULL) {
-		do_rwlock_unlock(&vstatlock);
+		assert_rwlock_unlock(&vstatlock);
 		return -1;
 	}
 
 	if(vstat.vmem->vmem == NULL) {
-		do_rwlock_unlock(&vstatlock);
+		assert_rwlock_unlock(&vstatlock);
 		return -1;
 	}
 
@@ -1196,7 +1154,7 @@ static int update_from_vmem(int force)
 			vs.cols = 0;
 			vs.rows = 0;
 			free(bitmap_drawn);
-			do_rwlock_unlock(&vstatlock);
+			assert_rwlock_unlock(&vstatlock);
 			return -1;
 		}
 		bitmap_drawn = newl;
@@ -1263,7 +1221,7 @@ static int update_from_vmem(int force)
 	vs.blink_altcharset = vstat.blink_altcharset;
 	vs.no_bright = vstat.no_bright;
 	vs.bright_altcharset = vstat.bright_altcharset;
-	do_rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 
 	return(0);
 }
@@ -1294,13 +1252,13 @@ int bitmap_puttext(int sx, int sy, int ex, int ey, void *fill)
 		return(0);
 	}
 
-	do_rwlock_wrlock(&vstatlock);
+	assert_rwlock_wrlock(&vstatlock);
 	for (y = sy - 1; y < ey; y++) {
 		for (x = sx - 1; x < ex; x++) {
 			set_vmem_cell(x, y, *(buf++), 0x00ffffff, 0x00ffffff);
 		}
 	}
-	do_rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 	return ret;
 }
 
@@ -1309,9 +1267,9 @@ bitmap_vmem_puttext(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 {
 	int ret;
 
-	do_rwlock_wrlock(&vstatlock);
+	assert_rwlock_wrlock(&vstatlock);
 	ret = bitmap_vmem_puttext_locked(sx, sy, ex, ey, fill);
-	do_rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 	return ret;
 }
 
@@ -1334,7 +1292,7 @@ int bitmap_vmem_gettext(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 		return(0);
 	}
 
-	do_rwlock_rdlock(&vstatlock);
+	assert_rwlock_rdlock(&vstatlock);
 	for(y=sy-1;y<ey;y++) {
 		struct vmem_cell *vc = vmem_cell_ptr(vstat.vmem, sx - 1, y);
 		for(x=sx-1;x<ex;x++) {
@@ -1342,7 +1300,7 @@ int bitmap_vmem_gettext(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 			vc = vmem_next_ptr(vstat.vmem, vc);
 		}
 	}
-	do_rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 	return(1);
 }
 
@@ -1351,7 +1309,7 @@ void bitmap_gotoxy(int x, int y)
 	if(!bitmap_initialized)
 		return;
 	/* Move cursor location */
-	do_rwlock_wrlock(&vstatlock);
+	assert_rwlock_wrlock(&vstatlock);
 	if (vstat.curs_col != x + cio_textinfo.winleft - 1 || vstat.curs_row != y + cio_textinfo.wintop - 1) {
 		cio_textinfo.curx=x;
 		cio_textinfo.cury=y;
@@ -1360,14 +1318,14 @@ void bitmap_gotoxy(int x, int y)
 		if (cursor_visible_locked())
 			force_cursor = 1;
 	}
-	do_rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 }
 
 void bitmap_setcursortype(int type)
 {
 	if(!bitmap_initialized)
 		return;
-	do_rwlock_wrlock(&vstatlock);
+	assert_rwlock_wrlock(&vstatlock);
 	switch(type) {
 		case _NOCURSOR:
 			vstat.curs_start=0xff;
@@ -1384,7 +1342,7 @@ void bitmap_setcursortype(int type)
 			force_cursor = 1;
 			break;
 	}
-	do_rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 }
 
 int bitmap_setfont(int font, int force, int font_num)
@@ -1412,7 +1370,7 @@ int bitmap_setfont(int font, int force, int font_num)
 	else if(conio_fontdata[font].eight_by_eight!=NULL)
 		newmode=C80X50;
 
-	do_rwlock_wrlock(&vstatlock);
+	assert_rwlock_wrlock(&vstatlock);
 	switch(vstat.charheight) {
 		case 8:
 			if(conio_fontdata[font].eight_by_eight==NULL) {
@@ -1470,7 +1428,7 @@ int bitmap_setfont(int font, int force, int font_num)
 			new=malloc(ti.screenwidth*ti.screenheight*sizeof(*new));
 			if(!new) {
 				free(old);
-				do_rwlock_unlock(&vstatlock);
+				assert_rwlock_unlock(&vstatlock);
 				return 0;
 			}
 			pold=old;
@@ -1516,11 +1474,11 @@ int bitmap_setfont(int font, int force, int font_num)
 		}
 	}
 	bitmap_loadfont_locked(NULL);
-	do_rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 	return(1);
 
 error_return:
-	do_rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 	return(0);
 }
 
@@ -1542,9 +1500,9 @@ int bitmap_loadfont(const char *filename)
 {
 	int ret;
 
-	do_rwlock_wrlock(&vstatlock);
+	assert_rwlock_wrlock(&vstatlock);
 	ret = bitmap_loadfont_locked(filename);
-	do_rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 	return ret;
 }
 
@@ -1561,7 +1519,7 @@ bitmap_movetext_screen(int x, int y, int tox, int toy, int direction, int height
 	int py = (y - 1) * vstat.charheight;
 	int ptox = (tox - 1) * vstat.charwidth;
 	int px = (x - 1) * vstat.charwidth;
-	pthread_mutex_lock(&screenlock);
+	assert_pthread_mutex_lock(&screenlock);
 	if (width == vstat.cols && (height > vstat.rows / 2) && toy == 1) {
 		screena.toprow += (y - toy) * vstat.charheight;
 		if (screena.toprow >= screena.screenheight)
@@ -1584,7 +1542,7 @@ bitmap_movetext_screen(int x, int y, int tox, int toy, int direction, int height
 			bdoff = vmem_next_row_offset(vstat.vmem, bdoff);
 		}
 		if (vstat.charheight * vstat.rows == screena.screenheight) {
-			pthread_mutex_unlock(&screenlock);
+			assert_pthread_mutex_unlock(&screenlock);
 			return;
 		}
 		// Move stuff below the bottom row of text back
@@ -1626,7 +1584,7 @@ bitmap_movetext_screen(int x, int y, int tox, int toy, int direction, int height
 	}
 	screena.update_pixels = 1;
 	screenb.update_pixels = 1;
-	pthread_mutex_unlock(&screenlock);
+	assert_pthread_mutex_unlock(&screenlock);
 }
 
 int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
@@ -1665,7 +1623,7 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 	int oheight = height;
 	bool oscrolldown = scrolldown;
 
-	do_rwlock_wrlock(&vstatlock);
+	assert_rwlock_wrlock(&vstatlock);
 	if (width == vstat.cols && height > vstat.rows / 2 && toy == 1) {
 		vstat.vmem->top_row += (y - toy);
 		if (vstat.vmem->top_row >= vstat.vmem->height)
@@ -1701,7 +1659,7 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 	}
 
 	bitmap_movetext_screen(x, oy, tox, otoy, oscrolldown ? -1 : 1, oheight, width);
-	do_rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 
 	return(1);
 }
@@ -1716,11 +1674,11 @@ void bitmap_clreol(void)
 		return;
 
 	row = cio_textinfo.cury + cio_textinfo.wintop - 1;
-	do_rwlock_wrlock(&vstatlock);
+	assert_rwlock_wrlock(&vstatlock);
 	for(x=cio_textinfo.curx+cio_textinfo.winleft-2; x<cio_textinfo.winright; x++) {
 		set_vmem_cell(x, row - 1, fill, ciolib_fg, ciolib_bg);
 	}
-	do_rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 }
 
 void bitmap_clrscr(void)
@@ -1731,7 +1689,7 @@ void bitmap_clrscr(void)
 
 	if(!bitmap_initialized)
 		return;
-	do_rwlock_wrlock(&vstatlock);
+	assert_rwlock_wrlock(&vstatlock);
 	rows = vstat.rows;
 	cols = vstat.cols;
 	for (y = cio_textinfo.wintop - 1; y < cio_textinfo.winbottom && y < rows; y++) {
@@ -1739,12 +1697,12 @@ void bitmap_clrscr(void)
 			set_vmem_cell(x, y, fill, ciolib_fg, ciolib_bg);
 		}
 	}
-	do_rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 }
 
 void bitmap_getcustomcursor(int *s, int *e, int *r, int *b, int *v)
 {
-	do_rwlock_rdlock(&vstatlock);
+	assert_rwlock_rdlock(&vstatlock);
 	if(s)
 		*s=vstat.curs_start;
 	if(e)
@@ -1755,14 +1713,14 @@ void bitmap_getcustomcursor(int *s, int *e, int *r, int *b, int *v)
 		*b=vstat.curs_blinks;
 	if(v)
 		*v=vstat.curs_visible;
-	do_rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 }
 
 void bitmap_setcustomcursor(int s, int e, int r, int b, int v)
 {
 	double ratio;
 
-	do_rwlock_wrlock(&vstatlock);
+	assert_rwlock_wrlock(&vstatlock);
 	if(r==0)
 		ratio=0;
 	else
@@ -1776,7 +1734,7 @@ void bitmap_setcustomcursor(int s, int e, int r, int b, int v)
 	if(v>=0)
 		vstat.curs_visible=v;
 	force_cursor = 1;
-	do_rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 }
 
 static void
@@ -1804,7 +1762,7 @@ int bitmap_getvideoflags(void)
 
 void bitmap_setvideoflags(int flags)
 {
-	do_rwlock_wrlock(&vstatlock);
+	assert_rwlock_wrlock(&vstatlock);
 	protected_int32_set(&videoflags, flags);
 	if(flags & CIOLIB_VIDEO_BGBRIGHT)
 		vstat.bright_background=1;
@@ -1830,16 +1788,16 @@ void bitmap_setvideoflags(int flags)
 		vstat.blink_altcharset=1;
 	else
 		vstat.blink_altcharset=0;
-	do_rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 }
 
 int bitmap_attr2palette(uint8_t attr, uint32_t *fgp, uint32_t *bgp)
 {
 	int ret;
 
-	do_rwlock_rdlock(&vstatlock);
+	assert_rwlock_rdlock(&vstatlock);
 	ret = bitmap_attr2palette_locked(attr, fgp, bgp);
-	do_rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 
 	return ret;
 }
@@ -1849,11 +1807,11 @@ int bitmap_setpixel(uint32_t x, uint32_t y, uint32_t colour)
 	int xchar = x / vstat.charwidth;
 	int ychar = y / vstat.charheight;
 
-	do_rwlock_wrlock(&vstatlock);
-	pthread_mutex_lock(&screenlock);
+	assert_rwlock_wrlock(&vstatlock);
+	assert_pthread_mutex_lock(&screenlock);
 	if (screena.rect == NULL || screenb.rect == NULL || x >= screena.screenwidth || y >= screena.screenheight) {
-		pthread_mutex_unlock(&screenlock);
-		do_rwlock_unlock(&vstatlock);
+		assert_pthread_mutex_unlock(&screenlock);
+		assert_rwlock_unlock(&vstatlock);
 		return 0;
 	}
 	if (xchar < vstat.cols && ychar < vstat.rows) {
@@ -1877,8 +1835,8 @@ int bitmap_setpixel(uint32_t x, uint32_t y, uint32_t colour)
 			screenb.rect->data[pixel_offset(&screenb, x, y)] = colour;
 		}
 	}
-	pthread_mutex_unlock(&screenlock);
-	do_rwlock_unlock(&vstatlock);
+	assert_pthread_mutex_unlock(&screenlock);
+	assert_rwlock_unlock(&vstatlock);
 
 	return 1;
 }
@@ -1914,11 +1872,11 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 			return 0;
 	}
 
-	do_rwlock_wrlock(&vstatlock);
-	pthread_mutex_lock(&screenlock);
+	assert_rwlock_wrlock(&vstatlock);
+	assert_pthread_mutex_lock(&screenlock);
 	if (ex > screena.screenwidth || ey > screena.screenheight) {
-		pthread_mutex_unlock(&screenlock);
-		do_rwlock_unlock(&vstatlock);
+		assert_pthread_mutex_unlock(&screenlock);
+		assert_rwlock_unlock(&vstatlock);
 		return 0;
 	}
 
@@ -2049,8 +2007,8 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 				yupdated = true;
 		}
 	}
-	pthread_mutex_unlock(&screenlock);
-	do_rwlock_unlock(&vstatlock);
+	assert_pthread_mutex_unlock(&screenlock);
+	assert_rwlock_unlock(&vstatlock);
 
 	return 1;
 }
@@ -2089,10 +2047,10 @@ struct ciolib_pixels *bitmap_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, ui
 	}
 
 	update_from_vmem(force);
-	pthread_mutex_lock(&screenlock);
+	assert_pthread_mutex_lock(&screenlock);
 	if (ex >= screena.screenwidth || ey >= screena.screenheight ||
 	    ex >= screenb.screenwidth || ey >= screenb.screenheight) {
-		pthread_mutex_unlock(&screenlock);
+		assert_pthread_mutex_unlock(&screenlock);
 		free(pixels->pixelsb);
 		free(pixels->pixels);
 		free(pixels);
@@ -2104,24 +2062,24 @@ struct ciolib_pixels *bitmap_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, ui
 		memcpy(&pixels->pixels[width*(y-sy)], &screena.rect->data[pixel_offset(&screena, sx, y)], width * sizeof(pixels->pixels[0]));
 		memcpy(&pixels->pixelsb[width*(y-sy)], &screenb.rect->data[pixel_offset(&screenb, sx, y)], width * sizeof(pixels->pixelsb[0]));
 	}
-	pthread_mutex_unlock(&screenlock);
+	assert_pthread_mutex_unlock(&screenlock);
 
 	return pixels;
 }
 
 int bitmap_get_modepalette(uint32_t p[16])
 {
-	do_rwlock_rdlock(&vstatlock);
+	assert_rwlock_rdlock(&vstatlock);
 	memcpy(p, vstat.palette, sizeof(vstat.palette));
-	do_rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 	return 1;
 }
 
 int bitmap_set_modepalette(uint32_t p[16])
 {
-	do_rwlock_wrlock(&vstatlock);
+	assert_rwlock_wrlock(&vstatlock);
 	memcpy(vstat.palette, p, sizeof(vstat.palette));
-	do_rwlock_unlock(&vstatlock);
+	assert_rwlock_unlock(&vstatlock);
 	return 1;
 }
 
@@ -2138,7 +2096,7 @@ void bitmap_replace_font(uint8_t id, char *name, void *data, size_t size)
 		return;
 	}
 
-	pthread_mutex_lock(&screenlock);
+	assert_pthread_mutex_lock(&screenlock);
 	switch (size) {
 		case 4096:
 			FREE_AND_NULL(conio_fontdata[id].eight_by_sixteen);
@@ -2162,7 +2120,7 @@ void bitmap_replace_font(uint8_t id, char *name, void *data, size_t size)
 			free(name);
 			free(data);
 	}
-	pthread_mutex_unlock(&screenlock);
+	assert_pthread_mutex_unlock(&screenlock);
 	request_redraw();
 }
 
@@ -2171,18 +2129,18 @@ int bitmap_setpalette(uint32_t index, uint16_t r, uint16_t g, uint16_t b)
 	if (index > 65535)
 		return 0;
 
-	pthread_mutex_lock(&screenlock);
+	assert_pthread_mutex_lock(&screenlock);
 	palette[index] = (0xff << 24) | ((r>>8) << 16) | ((g>>8) << 8) | (b>>8);
 	screena.update_pixels = 1;
 	screenb.update_pixels = 1;
-	pthread_mutex_unlock(&screenlock);
+	assert_pthread_mutex_unlock(&screenlock);
 	return 1;
 }
 
 // Called with vstatlock
 static int init_screens(int *width, int *height)
 {
-	pthread_mutex_lock(&screenlock);
+	assert_pthread_mutex_lock(&screenlock);
 	screena.screenwidth = vstat.scrnwidth;
 	screenb.screenwidth = vstat.scrnwidth;
 	if (width)
@@ -2197,7 +2155,7 @@ static int init_screens(int *width, int *height)
 	bitmap_drv_free_rect(screenb.rect);
 	screena.rect = alloc_full_rect(&screena, false);
 	if (screena.rect == NULL) {
-		pthread_mutex_unlock(&screenlock);
+		assert_pthread_mutex_unlock(&screenlock);
 		return(-1);
 	}
 	screena.toprow = 0;
@@ -2205,13 +2163,13 @@ static int init_screens(int *width, int *height)
 	if (screenb.rect == NULL) {
 		bitmap_drv_free_rect(screena.rect);
 		screena.rect = NULL;
-		pthread_mutex_unlock(&screenlock);
+		assert_pthread_mutex_unlock(&screenlock);
 		return(-1);
 	}
 	screenb.toprow = 0;
 	memset_u32(screena.rect->data, color_value(vstat.palette[0]), screena.rect->rect.width * screena.rect->rect.height);
 	memset_u32(screenb.rect->data, color_value(vstat.palette[0]), screenb.rect->rect.width * screenb.rect->rect.height);
-	pthread_mutex_unlock(&screenlock);
+	assert_pthread_mutex_unlock(&screenlock);
 	return(0);
 }
 
@@ -2493,24 +2451,24 @@ int bitmap_drv_init(void (*drawrect_cb) (struct rectlist *data)
 			| CONIO_OPT_FONT_SELECT | CONIO_OPT_EXTENDED_PALETTE | CONIO_OPT_PALETTE_SETTING
 			| CONIO_OPT_BLOCKY_SCALING;
 	protected_int32_init(&videoflags, 0);
-	pthread_mutex_init(&callbacks.lock, NULL);
-	do_rwlock_init(&vstatlock);
-	pthread_mutex_init(&screenlock, NULL);
-	pthread_mutex_init(&free_rect_lock, NULL);
-	do_rwlock_wrlock(&vstatlock);
+	assert_pthread_mutex_init(&callbacks.lock, NULL);
+	assert_rwlock_init(&vstatlock);
+	assert_pthread_mutex_init(&screenlock, NULL);
+	assert_pthread_mutex_init(&free_rect_lock, NULL);
+	assert_rwlock_wrlock(&vstatlock);
 	vstat.flags = VIDMODES_FLAG_PALETTE_VMEM;
-	pthread_mutex_lock(&screenlock);
+	assert_pthread_mutex_lock(&screenlock);
 	for (i = 0; i < sizeof(dac_default)/sizeof(struct dac_colors); i++) {
 		palette[i] = (0xffU << 24) | (dac_default[i].red << 16) | (dac_default[i].green << 8) | dac_default[i].blue;
 	}
-	pthread_mutex_unlock(&screenlock);
-	do_rwlock_unlock(&vstatlock);
+	assert_pthread_mutex_unlock(&screenlock);
+	assert_rwlock_unlock(&vstatlock);
 
 	callbacks.drawrect=drawrect_cb;
 	callbacks.flush=flush_cb;
-	pthread_mutex_lock(&callbacks.lock);
+	assert_pthread_mutex_lock(&callbacks.lock);
 	callbacks.rects = 0;
-	pthread_mutex_unlock(&callbacks.lock);
+	assert_pthread_mutex_unlock(&callbacks.lock);
 	bitmap_initialized=1;
 	_beginthread(blinker_thread,0,NULL);
 
@@ -2519,12 +2477,12 @@ int bitmap_drv_init(void (*drawrect_cb) (struct rectlist *data)
 
 void bitmap_drv_request_pixels(void)
 {
-	pthread_mutex_lock(&screenlock);
+	assert_pthread_mutex_lock(&screenlock);
 	if (screena.update_pixels == 0)
 		screena.update_pixels = 2;
 	if (screenb.update_pixels == 0)
 		screenb.update_pixels = 2;
-	pthread_mutex_unlock(&screenlock);
+	assert_pthread_mutex_unlock(&screenlock);
 }
 
 void bitmap_drv_request_some_pixels(int x, int y, int width, int height)
@@ -2537,7 +2495,7 @@ void bitmap_drv_free_rect(struct rectlist *rect)
 {
 	if (rect == NULL)
 		return;
-	pthread_mutex_lock(&free_rect_lock);
+	assert_pthread_mutex_lock(&free_rect_lock);
 	if (rect->throttle) {
 		outstanding_rects--;
 		if (outstanding_rects < MAX_OUTSTANDING && throttled) {
@@ -2546,5 +2504,5 @@ void bitmap_drv_free_rect(struct rectlist *rect)
 	}
 	rect->next = free_rects;
 	free_rects = rect;
-	pthread_mutex_unlock(&free_rect_lock);
+	assert_pthread_mutex_unlock(&free_rect_lock);
 }

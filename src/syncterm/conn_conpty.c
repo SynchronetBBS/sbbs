@@ -82,10 +82,10 @@ conpty_input_thread(void *args)
 			break;
 		buffered = 0;
 		while (!conn_api.terminate && buffered < sz) {
-			pthread_mutex_lock(&(conn_inbuf.mutex));
+			assert_pthread_mutex_lock(&(conn_inbuf.mutex));
 			buffer = conn_buf_wait_free(&conn_inbuf, sz - buffered, 100);
 			buffered += conn_buf_put(&conn_inbuf, cps + buffered, buffer);
-			pthread_mutex_unlock(&(conn_inbuf.mutex));
+			assert_pthread_mutex_unlock(&(conn_inbuf.mutex));
 		}
 		fill -= utf8_span;
 		if (fill)
@@ -113,12 +113,12 @@ conpty_output_thread(void *args)
 		else {
 			break;
 		}
-		pthread_mutex_lock(&(conn_outbuf.mutex));
+		assert_pthread_mutex_lock(&(conn_outbuf.mutex));
 		ret = 0;
 		wr = conn_buf_wait_bytes(&conn_outbuf, 1, 100);
 		if (wr) {
 			wr = conn_buf_get(&conn_outbuf, conn_api.wr_buf, conn_api.wr_buf_size);
-			pthread_mutex_unlock(&(conn_outbuf.mutex));
+			assert_pthread_mutex_unlock(&(conn_outbuf.mutex));
 			size_t sz;
 			uint8_t *utf = cp_to_utf8(codepage, conn_api.wr_buf, wr, &sz);
 			if (utf == NULL)
@@ -134,7 +134,7 @@ conpty_output_thread(void *args)
 			free(utf);
 		}
 		else {
-			pthread_mutex_unlock(&(conn_outbuf.mutex));
+			assert_pthread_mutex_unlock(&(conn_outbuf.mutex));
 		}
 	}
 	conn_api.terminate = true;

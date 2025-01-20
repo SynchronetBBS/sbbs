@@ -340,12 +340,12 @@ pty_input_thread(void *args)
 			}
 		}
 		if (bufsz > 0) {
-			pthread_mutex_lock(&(conn_inbuf.mutex));
+			assert_pthread_mutex_lock(&(conn_inbuf.mutex));
 			conn_buf_wait_free(&conn_inbuf, 1, 100);
 			buffered = conn_buf_put(&conn_inbuf, conn_api.rd_buf, bufsz);
 			memmove(conn_api.rd_buf, &conn_api.rd_buf[buffered], bufsz - buffered);
 			bufsz -= buffered;
-			pthread_mutex_unlock(&(conn_inbuf.mutex));
+			assert_pthread_mutex_unlock(&(conn_inbuf.mutex));
 		}
 	}
 	conn_api.terminate = true;
@@ -370,12 +370,12 @@ pty_output_thread(void *args)
 	while (master != -1 && !conn_api.terminate) {
 		if (waitpid(child_pid, &status, WNOHANG))
 			break;
-		pthread_mutex_lock(&(conn_outbuf.mutex));
+		assert_pthread_mutex_lock(&(conn_outbuf.mutex));
 		ret = 0;
 		wr = conn_buf_wait_bytes(&conn_outbuf, 1, 100);
 		if (wr) {
 			wr = conn_buf_get(&conn_outbuf, conn_api.wr_buf, conn_api.wr_buf_size);
-			pthread_mutex_unlock(&(conn_outbuf.mutex));
+			assert_pthread_mutex_unlock(&(conn_outbuf.mutex));
 			sent = 0;
 			while (master != -1 && sent < wr && !conn_api.terminate) {
 				FD_ZERO(&wds);
@@ -399,7 +399,7 @@ pty_output_thread(void *args)
 			}
 		}
 		else {
-			pthread_mutex_unlock(&(conn_outbuf.mutex));
+			assert_pthread_mutex_unlock(&(conn_outbuf.mutex));
 		}
 		if (ret == -1)
 			break;
