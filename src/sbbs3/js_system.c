@@ -985,23 +985,19 @@ js_matchuserdata(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
-	if ((js_str = JS_ValueToString(cx, argv[1])) == NULL) {
-		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(0));
-		return JS_TRUE;
-	}
+	if ((js_str = JS_ValueToString(cx, argv[1])) == NULL)
+		return JS_FALSE;
 
-	if (JSVAL_IS_BOOLEAN(argv[argnum]))
-		JS_ValueToBoolean(cx, argv[argnum], &match_del);
-	if (JSVAL_IS_NUMBER(argv[argnum]))
+	if (argnum < argc && JSVAL_IS_BOOLEAN(argv[argnum]))
+		JS_ValueToBoolean(cx, argv[argnum++], &match_del);
+	if (argnum < argc && JSVAL_IS_NUMBER(argv[argnum]))
 		JS_ValueToInt32(cx, argv[argnum++], &usernumber);
-	if (JSVAL_IS_BOOLEAN(argv[argnum]))
-		JS_ValueToBoolean(cx, argv[argnum], &match_next);
+	if (argnum < argc && JSVAL_IS_BOOLEAN(argv[argnum]))
+		JS_ValueToBoolean(cx, argv[argnum++], &match_next);
 
 	JSSTRING_TO_ASTRING(cx, js_str, p, 128, NULL);
-	if (p == NULL) {
-		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(0));
-		return JS_TRUE;
-	}
+	if (p == NULL)
+		return JS_FALSE;
 
 	rc = JS_SUSPENDREQUEST(cx);
 	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(finduserstr(sys->cfg, usernumber, field, p, match_del, match_next, NULL, NULL)));
