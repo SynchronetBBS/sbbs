@@ -2414,6 +2414,8 @@ ciolib_to_screen(int ciolib)
 			return SCREEN_MODE_CUSTOM;
 		case EGA80X25:
 			return SCREEN_MODE_EGA_80X25;
+		case VGA80X25:
+			return SCREEN_MODE_VGA_80X25;
 		case PRESTEL_40X24:
 			return SCREEN_MODE_PRESTEL;
 	}
