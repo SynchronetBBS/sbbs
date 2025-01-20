@@ -1957,7 +1957,7 @@ x11_event(XEvent *ev)
 				if(me->y>x_cvstat.rows+1)
 					me->y=x_cvstat.rows+1;
 				ciomouse_gotevent(CIOLIB_MOUSE_MOVE,me->x,me->y, x_res, y_res);
-	    	}
+			}
 			break;
 		case ButtonRelease:
 			{
@@ -1982,7 +1982,7 @@ x11_event(XEvent *ev)
 				if (be->button <= 3) {
 					ciomouse_gotevent(CIOLIB_BUTTON_RELEASE(be->button),be->x,be->y, x_res, y_res);
 				}
-	    	}
+			}
 			break;
 		case ButtonPress:
 			{
@@ -2007,7 +2007,7 @@ x11_event(XEvent *ev)
 				if (be->button <= 5) {
 					ciomouse_gotevent(CIOLIB_BUTTON_PRESS(be->button),be->x,be->y, x_res, y_res);
 				}
-	    	}
+			}
 			break;
 
 		/* Keyboard Events */
