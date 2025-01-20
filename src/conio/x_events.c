@@ -1183,6 +1183,9 @@ send_fullscreen(bool set, int x, int y)
 	return ret;
 }
 
+#ifndef NDEBUG
+static bool shownext = false;
+#endif
 /* Resize the window. This function is called after a mode change. */
 // It's also called after scaling is changed!
 static void resize_window()
@@ -1234,6 +1237,10 @@ static void resize_window()
 		map_window(map_pending);
 		rwlock_wrlock(&vstatlock);
 		x11.XResizeWindow(dpy, win, width, height);
+#ifndef NDEBUG
+fprintf(stderr, "Attempting to resize window to %dx%d\n", width, height);
+shownext = true;
+#endif
 		x_cvstat.winwidth = vstat.winwidth = width;
 		x_cvstat.winheight = vstat.winheight = height;
 		vstat.scaling = x_cvstat.scaling = bitmap_double_mult_inside(width, height);
@@ -1791,6 +1798,11 @@ x11_event(XEvent *ev)
 			 * value.
 			 */
 			if (ev->xconfigure.window == win) {
+#ifndef NDEBUG
+if (shownext || ev->xconfigure.width != x_cvstat.winwidth || ev->xconfigure.height != x_cvstat.winheight)
+fprintf(stderr, "ConfigureNotify of %dx%d\n", ev->xconfigure.width, ev->xconfigure.height);
+shownext = false;
+#endif
 				if (map_pending) {
 					pending_width = ev->xconfigure.width;
 					pending_height = ev->xconfigure.height;
