@@ -6276,21 +6276,36 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 			}
 
 			if (result == SMB_SUCCESS) {       /* Successful import */
-				user_t user;
-				if (i != cfg.badecho && cfg.echomail_notify && (user.number = lookup_user(&scfg, &user_list, hdr.to)) != 0
-				    && getuserdat(&scfg, &user) == USER_SUCCESS
-				    && user_can_read_sub(&scfg, cfg.area[i].sub, &user, NULL)) {
-					char tmp[128];
-					safe_snprintf(str, sizeof(str)
+				lprintf(LOG_DEBUG, "%s: Imported message from %s (%s) to %s, subject: %s"
+				        , areatag, hdr.from, fmsghdr_srcaddr_str(&hdr), hdr.to, hdr.subj);
+				uint usernum;
+				if (i != cfg.badecho && cfg.echomail_notify && (usernum = lookup_user(&scfg, &user_list, hdr.to)) != 0) {
+					user_t user = { .number = usernum };
+					lprintf(LOG_DEBUG, "%s: Local message recipient (%s): user #%u"
+						, areatag, hdr.to, user.number);
+				    if((result = getuserdat(&scfg, &user)) != USER_SUCCESS)
+						lprintf(LOG_ERR, "%s: ERROR %d reading user #%u, local recipient of echomail from %s"
+							, areatag, result, usernum, hdr.from);
+					else {
+						if(!user_can_read_sub(&scfg, cfg.area[i].sub, &user, NULL))
+							lprintf(LOG_NOTICE, "%s: User (%s #%u) doesn't have read access to sub-board"
+								, areatag, user.alias, user.number);
+						else {
+							char tmp[128];
+							safe_snprintf(str, sizeof(str)
 					              , text[FidoEchoMailReceived]
 					              , timestr(&scfg, time32(NULL), tmp)
 					              , hdr.from
 					              , scfg.grp[scfg.sub[cfg.area[i].sub]->grp]->sname
 					              , scfg.sub[cfg.area[i].sub]->sname);
-					if ((result = putsmsg(&scfg, user.number, str)) != USER_SUCCESS)
-						lprintf(LOG_ERR, "ERROR %d notifying recipient (user #%u)", result, user.number);
-					else
-						lprintf(LOG_DEBUG, "Successfully notified recipient (user #%u)", user.number);
+							if ((result = putsmsg(&scfg, user.number, str)) != USER_SUCCESS)
+								lprintf(LOG_ERR, "%s: ERROR %d notifying recipient (%s #%u)"
+									, areatag, result, user.alias, user.number);
+							else
+								lprintf(LOG_DEBUG, "%s: Successfully notified recipient (%s #%u) of echomail from %s"
+									, areatag, user.alias, user.number, hdr.from);
+						}
+					}
 				}
 				echomail++;
 				cfg.area[i].imported++;
