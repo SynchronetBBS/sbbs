@@ -56,6 +56,14 @@
    fun:*HashChildren*
 }
 {
+   LinuxPthreadCreate
+   Memcheck:Leak
+   match-leak-kinds: all
+   fun:calloc
+   fun:calloc
+   fun:allocate_drv
+}
+{
    FreeBSDPthreadMutexInitNP
    Memcheck:Leak
    match-leak-kinds: definite
@@ -67,7 +75,7 @@
    Memcheck:Leak
    match-leak-kinds: definite
    ...
-   obj:*/libpulse.so*
+   obj:*/libpulse*.so*
 }
 {
    NSPR
