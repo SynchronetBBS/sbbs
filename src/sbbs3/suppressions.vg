@@ -34,3 +34,45 @@
    ...
    fun:*js_GC*
 }
+{
+   JSNewFlatClosure
+   Memcheck:Leak
+   match-leak-kinds: definite
+   ...
+   fun:*js_NewFlatClosure*
+}
+{
+   JSHashTable
+   Memcheck:Leak
+   match-leak-kinds: all
+   ...
+   fun:*js*detail*HashTable*
+}
+{
+   JSHashChildren
+   Memcheck:Leak
+   match-leak-kinds: all
+   ...
+   fun:*HashChildren*
+}
+{
+   FreeBSDPthreadMutexInitNP
+   Memcheck:Leak
+   match-leak-kinds: definite
+   ...
+   fun:pthread_mutex_initializer_np
+}
+{
+   PulseAudio
+   Memcheck:Leak
+   match-leak-kinds: definite
+   ...
+   obj:*/libpulse.so*
+}
+{
+   NSPR
+   Memcheck:Leak
+   match-leak-kinds: definite
+   ...
+   obj:*/libnspr4.so*
+}
