@@ -52,7 +52,7 @@ int sbbs_t::exec_function(csi_t *csi)
 			chatsection();
 			return 0;
 		case CS_USER_DEFAULTS:
-			maindflts(&useron);
+			user_config(&useron);
 			if (!(useron.rest & FLAG('G')))    /* not guest */
 				getuseron(WHERE);
 			return 0;

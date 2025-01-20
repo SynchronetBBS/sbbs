@@ -335,7 +335,7 @@ void sbbs_t::useredit(int usernumber)
 				break;
 			case 'I':
 				lncntr = 0;
-				maindflts(&user);
+				user_config(&user);
 				break;
 			case 'J':   /* Edit Minutes */
 				bputs(text[UeditMinutes]);
@@ -725,7 +725,7 @@ int sbbs_t::searchdn(char *search, int usernum)
 /****************************************************************************/
 /* This function view/edits the users main default settings.				*/
 /****************************************************************************/
-void sbbs_t::maindflts(user_t* user)
+void sbbs_t::user_config(user_t* user)
 {
 	char keys[32];
 	char str[256], ch;

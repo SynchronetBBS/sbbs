@@ -447,7 +447,7 @@ bool sbbs_t::newuser()
 	sys_status |= SS_NEWUSER;
 
 	if (!(cfg.uq & UQ_NODEF))
-		maindflts(&useron);
+		user_config(&useron);
 
 	delallmail(useron.number, MAIL_ANY);
 

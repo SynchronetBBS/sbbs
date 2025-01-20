@@ -2515,7 +2515,7 @@ js_user_config(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	rc = JS_SUSPENDREQUEST(cx);
-	sbbs->maindflts(&sbbs->useron);
+	sbbs->user_config(&sbbs->useron);
 	if (!(sbbs->useron.rest & FLAG('G')))    /* not guest */
 		sbbs->getuseron(WHERE);
 	JS_RESUMEREQUEST(cx, rc);

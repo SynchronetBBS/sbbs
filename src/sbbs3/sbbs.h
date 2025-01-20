@@ -1329,7 +1329,7 @@ public:
 	void	useredit(int usernumber);
 	int		searchup(char *search,int usernum);
 	int		searchdn(char *search,int usernum);
-	void	maindflts(user_t* user);
+	void	user_config(user_t* user);
 	void	purgeuser(int usernumber);
 
 	/* ver.cpp */
