@@ -1197,8 +1197,13 @@ static void resize_window()
 	 * Don't allow resizing the window when we're in fullscreen mode
 	 * or we're transitioning to/from fullscreen modes
 	 */
-	if (fullscreen || fullscreen_pending)
+	if (fullscreen || fullscreen_pending) {
+		if (x11_get_maxsize(&max_width, &max_height)) {
+			new_scaling = bitmap_double_mult_inside(max_width, max_height);
+			x_cvstat.scaling = vstat.scaling = new_scaling;
+		}
 		return;
+	}
 	// We can lokely use a rdlock() here, but there's no reason to risk it.
 	rwlock_wrlock(&vstatlock);
 	cio_api.mode = CIOLIB_MODE_X;
