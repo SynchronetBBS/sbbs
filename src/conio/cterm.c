@@ -2815,7 +2815,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									vmode = find_vmode(ti.currmode);
 									if (vmode != -1)
 										sprintf(tmp, "\x1b[?2;0;%u;%uS", vparams[vmode].charwidth*cterm->width, vparams[vmode].charheight*cterm->height);
-									if(*tmp && strlen(retbuf) + strlen(tmp) < retsize)
+									if(retbuf && *tmp && strlen(retbuf) + strlen(tmp) < retsize)
 										strcat(retbuf, tmp);
 								}
 							}
@@ -2846,7 +2846,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 											strcat(tmp, "c");
 									}
 								}
-								if(*tmp && strlen(retbuf) + strlen(tmp) < retsize)
+								if(retbuf && *tmp && strlen(retbuf) + strlen(tmp) < retsize)
 									strcat(retbuf, tmp);
 							}
 							break;
@@ -3704,7 +3704,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								p2 += sprintf(p2, "%d", cterm->tabs[i]);
 							}
 							strcat(p2, "\x1b\\");
-							if(*tmp && strlen(retbuf) + strlen(tmp) < retsize)
+							if(retbuf && *tmp && strlen(retbuf) + strlen(tmp) < retsize)
 								strcat(retbuf, tmp);
 						}
 					}
@@ -3816,7 +3816,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								if (good) {
 									*tmp = 0;
 									snprintf(tmp, sizeof(tmp), "\x1bP%u!~%04X\x1b\\", (unsigned)seq->param_int[0], crc);
-									if(*tmp && strlen(retbuf) + strlen(tmp) < retsize)
+									if(retbuf && *tmp && strlen(retbuf) + strlen(tmp) < retsize)
 										strcat(retbuf, tmp);
 								}
 							}
@@ -3829,7 +3829,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 									cterm->escbuf[0]=0;
 									cterm->sequence=0;
 									cterm->in_macro |= (UINT64_C(1)<<seq->param_int[0]);
-									cterm_write(cterm, cterm->macros[seq->param_int[0]], cterm->macro_lens[seq->param_int[0]], retbuf + strlen(retbuf), retsize - strlen(retbuf), speed);
+									cterm_write(cterm, cterm->macros[seq->param_int[0]], cterm->macro_lens[seq->param_int[0]], retbuf ? retbuf + strlen(retbuf) : retbuf, retsize - (retbuf ? strlen(retbuf) : 0), speed);
 									cterm->in_macro &= ~(UINT64_C(1)<<seq->param_int[0]);
 								}
 							}
@@ -4602,42 +4602,42 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 													strcat(tmp, cterm->bg_tc_str);
 												}
 												strcat(tmp, "m\x1b\\");
-												if(strlen(retbuf)+strlen(tmp) < retsize)
+												if(retbuf && strlen(retbuf)+strlen(tmp) < retsize)
 													strcat(retbuf, tmp);
 											}
 											break;
 										case 'r':
 											if (cterm->strbuf[3] == 0) {
 												sprintf(tmp, "\x1bP1$r%d;%dr\x1b\\", cterm->top_margin, cterm->bottom_margin);
-												if(strlen(retbuf)+strlen(tmp) < retsize)
+												if(retbuf && strlen(retbuf)+strlen(tmp) < retsize)
 													strcat(retbuf, tmp);
 											}
 											break;
 										case 's':
 											if (cterm->strbuf[3] == 0) {
 												sprintf(tmp, "\x1bP1$r%d;%dr\x1b\\", cterm->left_margin, cterm->right_margin);
-												if(strlen(retbuf)+strlen(tmp) < retsize)
+												if(retbuf && strlen(retbuf)+strlen(tmp) < retsize)
 													strcat(retbuf, tmp);
 											}
 											break;
 										case 't':
 											if (cterm->strbuf[3] == 0) {
 												sprintf(tmp, "\x1bP1$r%dt\x1b\\", cterm->height);
-												if(strlen(retbuf)+strlen(tmp) < retsize)
+												if(retbuf && strlen(retbuf)+strlen(tmp) < retsize)
 													strcat(retbuf, tmp);
 											}
 											break;
 										case '$':
 											if (cterm->strbuf[3] == '|' && cterm->strbuf[4] == 0) {
 												sprintf(tmp, "\x1bP1$r%d$|\x1b\\", cterm->width);
-												if(strlen(retbuf)+strlen(tmp) < retsize)
+												if(retbuf && strlen(retbuf)+strlen(tmp) < retsize)
 													strcat(retbuf, tmp);
 											}
 											break;
 										case '*':
 											if (cterm->strbuf[3] == '|' && cterm->strbuf[4] == 0) {
 												sprintf(tmp, "\x1bP1$r%d$|\x1b\\", cterm->height);
-												if(strlen(retbuf)+strlen(tmp) < retsize)
+												if(retbuf && strlen(retbuf)+strlen(tmp) < retsize)
 													strcat(retbuf, tmp);
 											}
 											break;
@@ -5519,7 +5519,7 @@ prestel_send_memory(struct cterminal *cterm, uint8_t mem, char *retbuf, size_t r
 	for (int x = 0; x < PRESTEL_MEM_SLOT_SIZE; x++) {
 		if (cterm->prestel_data[mem][x] != '?') {
 			app[0] = cterm->prestel_data[mem][x];
-			if(strlen(retbuf) + 1 < retsize)
+			if(retbuf && strlen(retbuf) + 1 < retsize)
 				strcat(retbuf, app);
 		}
 	}
@@ -5603,7 +5603,7 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 	*cterm->puttext_can_move=1;
 	olddmc=*cterm->hold_update;
 	*cterm->hold_update=1;
-	if(retbuf!=NULL)
+	if (retbuf)
 		retbuf[0]=0;
 	GETTEXTINFO(&ti);
 	setwindow(cterm);
@@ -6560,7 +6560,7 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 	setfont(orig_fonts[2], FALSE, 3);
 	setfont(orig_fonts[3], FALSE, 4);
 
-	if (retbuf[0])
+	if (retbuf && retbuf[0])
 		return strlen(retbuf);
 	return 0;
 }
