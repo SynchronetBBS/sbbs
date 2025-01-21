@@ -133,6 +133,15 @@ smoketest-jsexec-linux:
       - "src/sbbs3/*/*.exe"
       - "xtrn/*/*.exe"
 
+smoketest-jsexec-win32:
+  tags: [Windows]
+  stage: test
+  extends: .rules
+  script:
+    - cd src/sbbs3/msvc.win32.dll.release
+    - ..\msvc.win32.exe.release\jsexec -C exit(0)"
+  dependencies: ["windows-x86 [sbbs]"]
+
 "windows-x86 [sexpots]":
   tags: [Windows]
   stage: build
