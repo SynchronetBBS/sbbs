@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "SyncTERM"
-#define MyAppVersion "1.3"
+#define MyAppVersion "1.4"
 #define MyAppPublisher "SyncTERM"
 #define MyAppURL "http://www.syncterm.net/"
 #define MyAppExeName "syncterm.exe"
@@ -35,10 +35,14 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Name: "systemlist"; Description: "Use the Official Synchronet BBS List as your System BBS List"; GroupDescription: "Options:";
 
 [Files]
+Source: "c:\bin\syncterm.com"; DestDir: "{app}"; Flags: ignoreversion; Check: not Is64BitInstallMode
 Source: "c:\bin\syncterm.exe"; DestDir: "{app}"; Flags: ignoreversion; Check: not Is64BitInstallMode
-Source: "C:\bin\SDL2.dll"; DestDir: "{app}"; Flags: ignoreversion; Check: not Is64BitInstallMode
+Source: "c:\bin\syncterm.dll"; DestDir: "{app}"; Flags: ignoreversion; Check: not Is64BitInstallMode
+Source: "C:\bin\SDL2.dll";     DestDir: "{app}"; Flags: ignoreversion; Check: not Is64BitInstallMode
+Source: "c:\bin\x64\syncterm.com"; DestDir: "{app}"; Flags: ignoreversion; Check: Is64BitInstallMode
 Source: "c:\bin\x64\syncterm.exe"; DestDir: "{app}"; Flags: ignoreversion; Check: Is64BitInstallMode
-Source: "C:\bin\x64\SDL2.dll"; DestDir: "{app}"; Flags: ignoreversion; Check: Is64BitInstallMode
+Source: "c:\bin\x64\syncterm.dll"; DestDir: "{app}"; Flags: ignoreversion; Check: Is64BitInstallMode
+Source: "C:\bin\x64\SDL2.dll";     DestDir: "{app}"; Flags: ignoreversion; Check: Is64BitInstallMode
 Source: "c:\sbbs\src\syncterm\fonts\*"; DestDir: "{app}\fonts"; Flags: ignoreversion
 Source: "c:\sbbs\src\syncterm\syncterm.ini"; DestDir: "{userappdata}\{#MyAppName}"; Flags: ignoreversion confirmoverwrite
 Source: "s:\xfer\sbbs\syncterm.lst"; DestDir: "{commonappdata}\{#MyAppName}"; Tasks: systemlist; Flags: ignoreversion confirmoverwrite
