@@ -508,7 +508,7 @@
 "UNUSED416"                                                 416 Unused416
 "UNUSED417"                                                 417 Unused417
 "\7\r\nNo user data defined.\r\n"                       418 NoUserData
-"\1r\1h\xAE\xAE\xAE \1iDELETED\1n\1r\1h \xAF\xAF\xAF\r\n"    419 DeletedUser
+"\1r\1h\xAE\xAE\xAE \1iDELETED\1n\1r\1h since %s \xAF\xAF\xAF\r\n"    419 DeletedUser
 "\1b\1h\xAE\xAE\xAE \1iINACTIVE\1n\1b\1h \xAF\xAF\xAF\r\n"   420 InactiveUser
 "\1n\1cAlias     : \1h%-30.30s  \1n\1cPass \1h%s\1n\1c: "\   421 UeditAliasPassword
 	"\1h%s\r\n"
