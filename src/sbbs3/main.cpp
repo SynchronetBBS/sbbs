@@ -1137,8 +1137,9 @@ js_alert(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 	char *     cstr;
 
-	if (js_argvIsNullOrVoid(cx, argv, 0))
+	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
+
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	if ((sbbs = (sbbs_t*)JS_GetContextPrivate(cx)) == NULL)
@@ -1198,7 +1199,10 @@ js_deny(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount rc;
 	char *     cstr;
 
-	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
 
 	if ((sbbs = (sbbs_t*)JS_GetContextPrivate(cx)) == NULL)
 		return JS_FALSE;
