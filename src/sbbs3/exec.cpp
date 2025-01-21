@@ -531,7 +531,7 @@ js_OperationCallback(JSContext *cx)
 	return ret;
 }
 
-extern "C" JSClass js_global_class; // Hurr derr
+extern JSClass js_global_class; // Hurr derr
 int sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scope, JSContext* js_cx, JSObject* js_glob)
 {
 	char*                     p;
