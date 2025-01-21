@@ -486,7 +486,8 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 	if (client->client != NULL) {
 		SAFECOPY(client->user.ipaddr, client->client->addr);
 		SAFECOPY(client->user.comp, client->client->host);
-		SAFECOPY(client->user.modem, client->service->protocol);
+		if (!(client->service->options & SERVICE_OPT_NO_USER_PROT))
+			SAFECOPY(client->user.modem, client->service->protocol);
 	}
 
 	if (inc_logons) {

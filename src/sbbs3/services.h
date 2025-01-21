@@ -52,6 +52,7 @@ static struct init_field services_init_fields[] = {
 #define SERVICE_OPT_NATIVE      (1 << 3)  /* non-JavaScript service */
 #define SERVICE_OPT_FULL_ACCEPT (1 << 4)  /* Accept/close connections when server is full */
 #define SERVICE_OPT_TLS         (1 << 5)  /* Use TLS */
+#define SERVICE_OPT_NO_USER_PROT (1 << 6) /* Don't change the user's protcool field */
 
 /* services_startup_t.options bits that require re-init/recycle when changed */
 #define SERVICE_INIT_OPTS   (0)
@@ -59,18 +60,19 @@ static struct init_field services_init_fields[] = {
 #if defined(STARTUP_INI_BITDESC_TABLES) || defined(SERVICES_INI_BITDESC_TABLE)
 static ini_bitdesc_t service_options[] = {
 
-	{ BBS_OPT_NO_HOST_LOOKUP, "NO_HOST_LOOKUP"       },
-	{ BBS_OPT_GET_IDENT, "GET_IDENT"            },
+	{ BBS_OPT_NO_HOST_LOOKUP, "NO_HOST_LOOKUP"   },
+	{ BBS_OPT_GET_IDENT, "GET_IDENT"             },
 	{ BBS_OPT_NO_RECYCLE, "NO_RECYCLE"           },
-	{ BBS_OPT_MUTE, "MUTE"                 },
-	{ SERVICE_OPT_UDP, "UDP"                  },
+	{ BBS_OPT_MUTE, "MUTE"                       },
+	{ SERVICE_OPT_UDP, "UDP"                     },
 	{ SERVICE_OPT_STATIC, "STATIC"               },
-	{ SERVICE_OPT_STATIC_LOOP, "LOOP"                 },
+	{ SERVICE_OPT_STATIC_LOOP, "LOOP"            },
 	{ SERVICE_OPT_NATIVE, "NATIVE"               },
-	{ SERVICE_OPT_FULL_ACCEPT, "FULL_ACCEPT"          },
-	{ SERVICE_OPT_TLS, "TLS"                  },
+	{ SERVICE_OPT_FULL_ACCEPT, "FULL_ACCEPT"     },
+	{ SERVICE_OPT_TLS, "TLS"                     },
+	{ SERVICE_OPT_NO_USER_PROT, "NO_USER_PROT"   },
 	/* terminator */
-	{ 0, NULL                   }
+	{ 0, NULL }
 };
 #endif
 
