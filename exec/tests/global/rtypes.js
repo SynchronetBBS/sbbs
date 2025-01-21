@@ -51,7 +51,9 @@ var type = {
 	'random()'				: 'number',
 	'rmdir("")'				: 'boolean',
 	'resolve_host(0)'		: 'object', // null
+	'resolve_host('')'		: 'object', // null
 	'resolve_ip(0)'			: 'object', // null
+	'resolve_ip('')'		: 'object', // null
 	'rot13_translate("")'	: 'string',
 	'sha1_calc("")'			: 'string',
 	'str_has_ctrl("")'		: 'boolean',

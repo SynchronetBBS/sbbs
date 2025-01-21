@@ -4397,7 +4397,13 @@ js_resolve_ip(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	if (p == NULL)
 		return JS_TRUE;
-
+	truncsp(p);
+	if (*p == '\0') {
+		// Defeat Windows feature:
+		// If the pNodeName parameter contains an empty string, all registered addresses on the local computer are returned.
+		free(p);
+		return JS_TRUE;
+	}
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_flags = AI_ADDRCONFIG;
 	hints.ai_socktype = SOCK_STREAM;
@@ -4461,7 +4467,13 @@ js_resolve_host(JSContext *cx, uintN argc, jsval *arglist)
 	HANDLE_PENDING(cx, p);
 	if (p == NULL)
 		return JS_TRUE;
-
+	truncsp(p);
+	if (*p == '\0') {
+		// Defeat Windows feature:
+		// If the pNodeName parameter contains an empty string, all registered addresses on the local computer are returned.
+		free(p);
+		return JS_TRUE;
+	}
 	rc = JS_SUSPENDREQUEST(cx);
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_flags = AI_NUMERICHOST;
