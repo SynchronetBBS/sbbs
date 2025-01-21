@@ -968,7 +968,7 @@ js_matchuserdata(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount           rc;
 	BOOL                 match_del = FALSE;
 	BOOL                 match_next = FALSE;
-	int                  argnum = 2;
+	uintN                argnum = 2;
 
 	if (js_argcIsInsufficient(cx, argc, 2))
 		return JS_FALSE;

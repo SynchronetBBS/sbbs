@@ -246,7 +246,7 @@ int del_user(scfg_t* cfg, user_t* user)
 		return result;
 
 	user->misc |= DELETED;
-	user->deldate = time(NULL);
+	user->deldate = time32(NULL);
 	return putuserdatetime(cfg, user->number, USER_DELDATE, user->deldate);
 }
 
