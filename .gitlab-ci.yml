@@ -139,7 +139,16 @@ smoketest-jsexec-win32:
   extends: .rules
   script:
     - cd src/sbbs3/msvc.win32.dll.release
-    - ..\msvc.win32.exe.release\jsexec -C exit(0)"
+    - ..\msvc.win32.exe.release\jsexec -c../../../ctrl -C exit(0)"
+  dependencies: ["windows-x86 [sbbs]"]
+
+"win32 jsexec-testsuite":
+  tags: [Windows]
+  stage: test
+  extends: .rules
+  script:
+    - cd src/sbbs3/msvc.win32.dll.release
+    - ..\msvc.win32.exe.release\jsexec -c../../../ctrl -C ../../../exec/tests/test.js
   dependencies: ["windows-x86 [sbbs]"]
 
 "windows-x86 [sexpots]":
