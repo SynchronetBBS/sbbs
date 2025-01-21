@@ -1194,7 +1194,7 @@ js_zonestr(JSContext *cx, uintN argc, jsval *arglist)
 	jsrefcount           rc;
 	char*                cstr;
 
-	if (js_argvIsNullOrVoid(cx, argv, 0))
+	if (argc > 0 && js_argvIsNullOrVoid(cx, argv, 0))
 		return JS_FALSE;
 
 	js_system_private_t* sys;
@@ -1229,7 +1229,7 @@ js_timestr(JSContext *cx, uintN argc, jsval *arglist)
 	JSString*            js_str;
 	jsrefcount           rc;
 
-	if (js_argvIsNullOrVoid(cx, argv, 0))
+	if (argc > 0 && js_argvIsNullOrVoid(cx, argv, 0))
 		return JS_FALSE;
 
 	js_system_private_t* sys;
@@ -1263,7 +1263,7 @@ js_datestr(JSContext *cx, uintN argc, jsval *arglist)
 	char *               p;
 	enum date_fmt        fmt;
 
-	if (js_argvIsNullOrVoid(cx, argv, 0))
+	if (argc > 0 && js_argvIsNullOrVoid(cx, argv, 0))
 		return JS_FALSE;
 
 	js_system_private_t* sys;
