@@ -3537,13 +3537,21 @@ JSObject* js_CreateSocketClass(JSContext* cx, JSObject* parent)
 		return sockobj;
 	if (JS_GetProperty(cx, parent, js_socket_class.name, &val) && !JSVAL_NULL_OR_VOID(val)) {
 		JS_ValueToObject(cx, val, &constructor);
+		JS_DefineProperty(cx, constructor, "AF_INET", INT_TO_JSVAL(AF_INET), NULL, NULL
+		                  , JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
+		JS_DefineProperty(cx, constructor, "AF_INET6", INT_TO_JSVAL(AF_INET6), NULL, NULL
+		                  , JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
+		JS_DefineProperty(cx, constructor, "IPPROTO_IP", INT_TO_JSVAL(IPPROTO_IP), NULL, NULL
+		                  , JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
 		JS_DefineProperty(cx, constructor, "PF_INET", INT_TO_JSVAL(PF_INET), NULL, NULL
 		                  , JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
 		JS_DefineProperty(cx, constructor, "PF_INET6", INT_TO_JSVAL(PF_INET6), NULL, NULL
 		                  , JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
-		JS_DefineProperty(cx, constructor, "AF_INET", INT_TO_JSVAL(AF_INET), NULL, NULL
+		JS_DefineProperty(cx, constructor, "PF_UNSPEC", INT_TO_JSVAL(PF_UNSPEC), NULL, NULL
 		                  , JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
-		JS_DefineProperty(cx, constructor, "AF_INET6", INT_TO_JSVAL(AF_INET6), NULL, NULL
+		JS_DefineProperty(cx, constructor, "SOCK_DGRAM", INT_TO_JSVAL(SOCK_STREAM), NULL, NULL
+		                  , JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
+		JS_DefineProperty(cx, constructor, "SOCK_STREAM", INT_TO_JSVAL(SOCK_STREAM), NULL, NULL
 		                  , JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
 	}
 	sockproto = JS_GetPrototype(cx, sockobj);
