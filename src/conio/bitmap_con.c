@@ -267,9 +267,9 @@ bitmap_vmem_puttext_locked(int sx, int sy, int ex, int ey, struct vmem_cell *fil
 			if (vstat.mode == PRESTEL_40X24 && (vc->bg & 0x02000000)) {
 				if (vc->legacy_attr & 0x08) {
 					if (cio_api.options & CONIO_OPT_PRESTEL_REVEAL)
-						vc->fg |= 0x01000000;
+						vc->bg |= 0x08000000;
 					else
-						vc->fg &= ~0x01000000;
+						vc->bg &= ~0x08000000;
 				}
 			}
 			vc = vmem_next_ptr(vstat.vmem, vc);
@@ -307,9 +307,9 @@ set_vmem_cell(size_t x, size_t y, uint16_t cell, uint32_t fg, uint32_t bg)
 	if (vstat.mode == PRESTEL_40X24 && ((vc->bg & 0x02000000) || (bg & 0x02000000))) {
 		if (vc->legacy_attr & 0x08) {
 			if (cio_api.options & CONIO_OPT_PRESTEL_REVEAL)
-				vc->fg |= 0x01000000;
+				vc->bg |= 0x08000000;
 			else
-				vc->fg &= ~0x01000000;
+				vc->bg &= ~0x08000000;
 		}
 		if ((vc->bg & 0x01000000) != (bg & 0x01000000)) {
 			// *ANY* change to double-height potentially changes
@@ -320,9 +320,9 @@ set_vmem_cell(size_t x, size_t y, uint16_t cell, uint32_t fg, uint32_t bg)
 	if (vstat.mode == PRESTEL_40X24 && (vc->bg & 0x02000000)) {
 		if (vc->legacy_attr & 0x08) {
 			if (cio_api.options & CONIO_OPT_PRESTEL_REVEAL)
-				vc->fg |= 0x01000000;
+				vc->bg |= 0x08000000;
 			else
-				vc->fg &= ~0x01000000;
+				vc->bg &= ~0x08000000;
 		}
 	}
 	vc->bg = bg;
@@ -1064,20 +1064,20 @@ same_cell(struct vmem_cell *bitmap_cell, struct vmem_cell *c2)
 {
 	if (bitmap_cell->ch != c2->ch)
 		return false;
-	if (bitmap_cell->bg != c2->bg)
-		return false;
 	// Handles reveal/unreveal updates, modifies vmem
 	if (vstat.mode == PRESTEL_40X24 && (c2->bg & 0x02000000)) {
 		if (c2->legacy_attr & 0x08) {
 			if (cio_api.options & CONIO_OPT_PRESTEL_REVEAL)
-				c2->fg |= 0x01000000;
+				c2->bg |= 0x08000000;
 			else
-				c2->fg &= ~0x01000000;
+				c2->bg &= ~0x08000000;
 		}
 	}
-	if (bitmap_cell->fg != c2->fg)
+	if (bitmap_cell->bg & 0x10000000)	// Dirty.
 		return false;
-	if (bitmap_cell->fg & 0x04000000)	// Dirty.
+	if (bitmap_cell->bg != c2->bg)
+		return false;
+	if (bitmap_cell->fg != c2->fg)
 		return false;
 	if (bitmap_cell->font != c2->font)
 		return false;
