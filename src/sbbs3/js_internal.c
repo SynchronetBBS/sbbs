@@ -300,6 +300,7 @@ js_CommonOperationCallback(JSContext *cx, js_callback_t* cb)
 }
 
 // This is kind of halfway between js_execfile() in exec.cpp and js_load
+extern JSClass js_global_class; // Hurr derr
 static int
 js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 {
@@ -321,6 +322,10 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject *      js_obj;
 	JSObject *      pjs_obj;
 	js_callback_t * js_callback;
+	global_private_t *gptp;
+
+	if ((gptp = (global_private_t*)js_GetClassPrivate(cx, JS_GetGlobalObject(cx), &js_global_class)) == NULL)
+		return -1;
 
 	if (argc < 1) {
 		JS_ReportError(cx, "No filename passed");
@@ -484,6 +489,7 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_TRUE;
 	}
 
+	unsigned orig_bgcount = gptp->bg_count;
 	JS_ExecuteScript(cx, js_scope, js_script, &rval);
 	if (JS_IsExceptionPending(cx)) {
 		JS_GetPendingException(cx, &rval);
@@ -499,6 +505,11 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 	js_EvalOnExit(cx, js_scope, js_callback);
 	JS_ReportPendingException(cx);
 	JS_DestroyScript(cx, js_script);
+	while (gptp->bg_count > orig_bgcount) {
+		if (sem_wait(&gptp->bg_sem) == 0)
+			gptp->bg_count--;
+	}
+
 	JS_GC(cx);
 
 	return JS_TRUE;
