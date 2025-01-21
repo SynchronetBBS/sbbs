@@ -64,6 +64,7 @@ enum {
 	, USER_PROP_FIRSTON
 	, USER_PROP_EXPIRE
 	, USER_PROP_PWMOD
+	, USER_PROP_DELDATE
 	, USER_PROP_LOGONS
 	, USER_PROP_LTODAY
 	, USER_PROP_TIMEON
@@ -239,6 +240,9 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case USER_PROP_PWMOD:
 			val = p->user->pwmod;
+			break;
+		case USER_PROP_DELDATE:
+			val = p->user->deldate;
 			break;
 		case USER_PROP_LOGONS:
 			val = p->user->logons;
@@ -925,6 +929,7 @@ static jsSyncPropertySpec js_user_security_properties[] = {
 	{   "minutes", USER_PROP_MIN, USER_PROP_FLAGS,   310 },
 	{   "extra_time", USER_PROP_TEXTRA, USER_PROP_FLAGS,   310 },
 	{   "expiration_date", USER_PROP_EXPIRE, USER_PROP_FLAGS,   310 },
+	{   "deletion_date", USER_PROP_DELDATE, JSPROP_ENUMERATE | JSPROP_READONLY, 32002 },
 	{0}
 };
 
@@ -945,6 +950,7 @@ static const char*        user_security_prop_desc[] = {
 	, "Extra minutes (time bank)"
 	, "Extra minutes (for today only)"
 	, "Expiration date/time (time_t format)"
+	, "Deletion date/time (time_t format) - <small>READ ONLY</small>"
 	, NULL
 };
 #endif
