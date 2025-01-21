@@ -474,7 +474,7 @@ void __fastcall TMainForm::FormShow(TObject *Sender)
     AddressEdit->MaxLength = LEN_ADDRESS;
     LocationEdit->MaxLength = LEN_LOCATION;
     ZipCodeEdit->MaxLength = LEN_ZIPCODE;
-    ModemEdit->MaxLength = LEN_MODEM;
+    ModemEdit->MaxLength = LEN_CONNECTION;
     CommentEdit->MaxLength = LEN_COMMENT;
     PasswordEdit->MaxLength = LEN_PASS;
     SexEdit->MaxLength = 1;
