@@ -1675,7 +1675,7 @@ void http_logon(http_session_t * session, user_t *usr)
 	else {
 		SAFECOPY(session->username, session->user.alias);
 		/* Adjust Connect and host */
-		SAFECOPY(session->user.modem, session->client.protocol);
+		SAFECOPY(session->user.connection, session->client.protocol);
 		SAFECOPY(session->user.comp, session->host_name);
 		SAFECOPY(session->user.ipaddr, session->host_ip);
 		session->user.logontime = (time32_t)session->logon_time;

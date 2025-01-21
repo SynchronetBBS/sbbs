@@ -67,7 +67,7 @@ char ** sbbs_t::getstrvar(csi_t *bin, uint32_t name)
 			sysvar_p[sysvar_pi] = (char*)useron.phone;
 			break;
 		case 0x08f65a2a:
-			sysvar_p[sysvar_pi] = (char*)useron.modem;
+			sysvar_p[sysvar_pi] = (char*)useron.connection;
 			break;
 		case 0xc7e0e8ce:
 			sysvar_p[sysvar_pi] = (char*)useron.netmail;
@@ -1739,7 +1739,7 @@ int sbbs_t::exec(csi_t *csi)
 						csi->logic = LOGIC_TRUE;
 						break;
 					case USER_STRING_MODEM:
-						snprintf(useron.modem, sizeof useron.modem, "%.*s", LEN_MODEM, csi->str);
+						snprintf(useron.connection, sizeof useron.connection, "%s", csi->str);
 						putuserstr(useron.number, USER_CONNECTION
 						           , useron.phone);
 						csi->logic = LOGIC_TRUE;

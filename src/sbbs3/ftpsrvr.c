@@ -2670,7 +2670,7 @@ static void ctrl_thread(void* arg)
 			/* Adjust User Total Logons/Logons Today */
 			user.logons++;
 			user.ltoday++;
-			SAFECOPY(user.modem, "FTP");
+			SAFECOPY(user.connection, "FTP");
 			SAFECOPY(user.comp, host_name);
 			SAFECOPY(user.ipaddr, host_ip);
 			user.logontime = (time32_t)logintime;

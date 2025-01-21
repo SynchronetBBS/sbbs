@@ -650,7 +650,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 				if (client != NULL)
 					p = client->protocol;
 				else
-					p = user->modem;
+					p = user->connection;
 				if (!findstr_in_string(p, (char*)*ptrptr))
 					result = _not;
 				else

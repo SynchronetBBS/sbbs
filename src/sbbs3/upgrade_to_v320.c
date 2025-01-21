@@ -285,7 +285,7 @@ static int v31x_parseuserdat(scfg_t* cfg, char *userdat, user_t *user)
 		getrec(userdat, U_OLDPASS, LEN31x_OLDPASS, user->pass);
 	getrec(userdat, U_PHONE, LEN31x_PHONE, user->phone);
 	getrec(userdat, U_BIRTH, LEN31x_BIRTH, user->birth);
-	getrec(userdat, U_MODEM, LEN31x_MODEM, user->modem);
+	getrec(userdat, U_MODEM, LEN31x_MODEM, user->connection);
 	getrec(userdat, U_IPADDR, LEN31x_IPADDR, user->ipaddr);
 	getrec(userdat, U_LASTON, 8, str); user->laston = ahtoul(str);
 	getrec(userdat, U_FIRSTON, 8, str); user->firston = ahtoul(str);

@@ -100,7 +100,7 @@ void sbbs_t::useredit(int usernumber)
 		        , format_birthdate(&cfg, user.birth, tmp, sizeof(tmp)));
 		bprintf(text[UeditLocationZipcode], user.location, user.zipcode);
 		bprintf(text[UeditNoteHandle], user.note, user.handle);
-		bprintf(text[UeditComputerModem], user.comp, user.modem);
+		bprintf(text[UeditComputerModem], user.comp, user.connection);
 		bprintf(text[UserIpAddr], user.ipaddr);
 		if (user.netmail[0])
 			bprintf(text[UserNetMail], user.netmail);

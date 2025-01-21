@@ -227,7 +227,7 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			val = getage(scfg, p->user->birth);
 			break;
 		case USER_PROP_MODEM:
-			s = p->user->modem;
+			s = p->user->connection;
 			break;
 		case USER_PROP_LASTON:
 			val = p->user->laston;
@@ -569,7 +569,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 				putuserdec32(scfg, p->user->number, USER_BIRTH, isoDate_create(getbirthyear(scfg, p->user->birth), getbirthmonth(scfg, p->user->birth), val));
 			break;
 		case USER_PROP_MODEM:
-			SAFECOPY(p->user->modem, str);
+			SAFECOPY(p->user->connection, str);
 			putuserstr(scfg, p->user->number, USER_CONNECTION, str);
 			break;
 		case USER_PROP_ROWS:

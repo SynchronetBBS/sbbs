@@ -102,7 +102,7 @@ G_MODULE_EXPORT void update_userlist_item(GtkListStore *lstore, GtkTreeIter *cur
 		,4,getage(&cfg, user.birth)
 		,5,sex
 		,6,user.location
-		,7,user.modem
+		,7,user.connection
 		,8,user.note
 		,9,user.comp
 		,10,user.phone

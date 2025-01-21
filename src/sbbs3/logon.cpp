@@ -447,7 +447,7 @@ bool sbbs_t::logon()
 		logline(LOG_NOTICE, "+!", str);
 		return false;
 	}
-	SAFECOPY(useron.modem, connection);
+	SAFECOPY(useron.connection, connection);
 	SAFECOPY(useron.ipaddr, client_ipaddr);
 	SAFECOPY(useron.comp, client_name);
 	useron.logons++;

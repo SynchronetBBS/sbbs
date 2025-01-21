@@ -464,7 +464,7 @@ int parseuserdat(scfg_t* cfg, char *userdat, user_t *user, char* field[])
 	SAFECOPY(user->birth, field[USER_BIRTH]);
 	user->sex = *field[USER_GENDER];
 	SAFECOPY(user->comment, field[USER_COMMENT]);
-	SAFECOPY(user->modem, field[USER_CONNECTION]);
+	SAFECOPY(user->connection, field[USER_CONNECTION]);
 
 	user->misc = (uint32_t)strtoul(field[USER_MISC], NULL, 16);
 	user->qwk = (uint32_t)strtoul(field[USER_QWK], NULL, 16);
@@ -753,7 +753,7 @@ bool format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 	                   , user->birth
 	                   , user->sex ? user->sex : '?'
 	                   , user->comment
-	                   , user->modem
+	                   , user->connection
 	                   , user->misc
 	                   , user->qwk
 	                   , user->chat
@@ -2598,7 +2598,7 @@ static bool ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user, client_t* client)
 				if (client != NULL)
 					p = client->protocol;
 				else if (user != NULL)
-					p = user->modem;
+					p = user->connection;
 				else
 					p = NULL;
 				if (!findstr_in_string(p, (char*)*ptrptr))
@@ -3518,7 +3518,7 @@ size_t user_field_len(enum user_field fnum)
 		case USER_BIRTH:    return sizeof(user.birth) - 1;
 		case USER_GENDER:   return sizeof(user.sex);
 		case USER_COMMENT:  return sizeof(user.comment) - 1;
-		case USER_CONNECTION: return sizeof(user.modem) - 1;
+		case USER_CONNECTION: return sizeof(user.connection) - 1;
 
 		// Bit-fields:
 		case USER_MISC:     return sizeof(user.misc);

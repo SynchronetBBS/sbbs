@@ -85,7 +85,7 @@ bool sbbs_t::newuser()
 		logline(LOG_NOTICE, "N!", useron.comment);
 	}
 
-	SAFECOPY(useron.modem, connection);
+	SAFECOPY(useron.connection, connection);
 	if (!lastuser(&cfg)) {   /* Automatic sysop access for first user */
 		bprintf("Creating sysop account... System password required.\r\n");
 		if (!chksyspass())
@@ -455,7 +455,7 @@ bool sbbs_t::newuser()
 		menu("../feedback", P_NOABORT | P_NOERROR);
 		safe_snprintf(str, sizeof(str), text[NewUserFeedbackHdr]
 		              , nulstr, getage(&cfg, useron.birth), useron.sex, useron.birth
-		              , useron.name, useron.phone, useron.comp, useron.modem);
+		              , useron.name, useron.phone, useron.comp, useron.connection);
 		email(cfg.valuser, str, text[NewUserValEmailSubj], WM_SUBJ_RO | WM_FORCEFWD);
 		if (!useron.fbacks && !useron.emails) {
 			if (online) {                        /* didn't hang up */

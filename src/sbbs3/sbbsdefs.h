@@ -530,7 +530,7 @@ typedef enum {                      /* Values for xtrn_t.event				*/
 #define LEN_ADDRESS     30  /* User address 								*/
 #define LEN_LOCATION    30  /* Location (City, State)						*/
 #define LEN_ZIPCODE     10  /* Zip/Postal code								*/
-#define LEN_MODEM        8  /* User modem type description					*/
+#define LEN_CONNECTION  8   /* Connection description                       */
 #define LEN_FDESC       58  /* File description (summary) 					*/
 #define LEN_EXTDESC     5000    /* Extended file description				*/
 #define LEN_TITLE       70  /* Message title								*/
@@ -937,7 +937,7 @@ typedef struct {                        /* Users information */
 	     pass[LEN_PASS + 1],            /* Password - not case sensitive */
 	     birth[LEN_BIRTH + 1],          /* Birthday in MM/DD/YY format */
 	     phone[LEN_PHONE + 1],          /* Phone number xxx-xxx-xxxx format */
-	     modem[LEN_MODEM + 1],          /* Modem type - 8 chars max */
+	     connection[LEN_CONNECTION + 1],/* Connection type - 8 chars max */
 	     netmail[LEN_NETMAIL + 1],      /* NetMail forwarding address */
 	     tmpext[MAX_FILEEXT_LEN + 1],   /* QWK Packet / Temp file type */
 	     comment[LEN_COMMENT + 1],      /* Private comment about user */

@@ -450,7 +450,7 @@ bool sbbs_t::answer()
 									thisnode.useron = useron.number;
 									putnodedat(cfg.node_num, &thisnode);
 								}
-								SAFECOPY(useron.modem, connection);
+								SAFECOPY(useron.connection, connection);
 								SAFECOPY(useron.ipaddr, client_ipaddr);
 								SAFECOPY(useron.comp, client_name);
 								useron.logons++;

@@ -218,14 +218,14 @@ void sbbs_t::userlist(int mode)
 			snprintf(line[j], 128, text[UserListFmt], name
 			         , cfg.sys_misc & SM_LISTLOC ? user.location : user.note
 			         , datestr(user.laston, tmp)
-			         , user.modem);
+			         , user.connection);
 		}
 		else {
 			snprintf(name, sizeof name, "%s #%u", user.alias, i);
 			bprintf(text[UserListFmt], name
 			        , cfg.sys_misc & SM_LISTLOC ? user.location : user.note
 			        , datestr(user.laston, tmp)
-			        , user.modem);
+			        , user.connection);
 		}
 		j++;
 	}

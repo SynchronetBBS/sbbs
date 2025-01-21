@@ -1224,7 +1224,7 @@ char* cmdstr(scfg_t* cfg, user_t* user, const char* instr, const char* fpath
 					break;
 				case 'C':   /* Connect Description */
 					if (user != NULL)
-						strncat(cmd, user->modem, avail);
+						strncat(cmd, user->connection, avail);
 					break;
 				case 'D':   /* Connect (DCE) Rate */
 					break;

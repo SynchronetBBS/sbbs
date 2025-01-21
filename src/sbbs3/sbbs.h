@@ -613,7 +613,7 @@ public:
 	size_t	keybuf_level(void);
 
 	ushort	node_connection = NODE_CONNECTION_TELNET;
-	char	connection[LEN_MODEM+1];	/* Connection Description */
+	char	connection[LEN_CONNECTION+1];	/* Connection Description */
 	uint	cur_rate=0;		/* Current Connection (DCE) Rate */
 	uint	cur_cps=10000;	/* Current Average Download CPS */
 	uint	dte_rate=0;		/* Current COM Port (DTE) Rate */

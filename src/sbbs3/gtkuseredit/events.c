@@ -179,7 +179,7 @@ G_MODULE_EXPORT void load_user(GtkWidget *wiggy, gpointer data)
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the connection widget\n");
 		else
-			gtk_entry_set_text(GTK_ENTRY(w),user.modem);
+			gtk_entry_set_text(GTK_ENTRY(w),user.connection);
 
 		/* Chat Handle */
 		w=GTK_WIDGET(gtk_builder_get_object(builder, "eHandle"));
@@ -899,7 +899,7 @@ G_MODULE_EXPORT void save_user(GtkWidget *wiggy, gpointer data)
 		if(w==NULL)
 			fprintf(stderr,"Cannot get the connection widget\n");
 		else
-			strcpy(user.modem, gtk_entry_get_text(GTK_ENTRY(w)));
+			strcpy(user.connection, gtk_entry_get_text(GTK_ENTRY(w)));
 
 		/* Chat Handle */
 		w=GTK_WIDGET(gtk_builder_get_object(builder, "eHandle"));

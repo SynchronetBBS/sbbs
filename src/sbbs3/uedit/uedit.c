@@ -1441,7 +1441,7 @@ int edit_personal(scfg_t *cfg, user_t *user)
 		sprintf(opt[i++],"Postal/Zip  %s",user->zipcode);
 		sprintf(opt[i++],"Phone       %s",user->phone);
 		sprintf(opt[i++],"Computer    %s",user->comp);
-		sprintf(opt[i++],"Connection  %s",user->modem);
+		sprintf(opt[i++],"Connection  %s",user->connection);
 		sprintf(opt[i++],"IP Address  %s",user->ipaddr);
 		sprintf(opt[i++],"Password    %s",user->pass);
 		sprintf(opt[i++],"Note        %s",user->note);
@@ -1537,9 +1537,9 @@ int edit_personal(scfg_t *cfg, user_t *user)
             case 11:
 				/* Connection */
 				GETUSERDAT(cfg,user);
-				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Connection",user->modem,LEN_MODEM,K_EDIT);
+				uifc.input(WIN_MID|WIN_ACT|WIN_SAV,0,0,"Connection",user->connection, sizeof user->connection, K_EDIT);
 				if(uifc.changes)
-					putuserstr(cfg, user->number, USER_CONNECTION, user->modem);
+					putuserstr(cfg, user->number, USER_CONNECTION, user->connection);
 				break;
 			case 12:
 				/* IP Address */

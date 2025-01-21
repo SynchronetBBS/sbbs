@@ -153,7 +153,7 @@ void __fastcall TMainForm::GetUserData(int number)
     GetUserText(LocationEdit, user.location);
     GetUserText(ZipCodeEdit, user.zipcode);
     GetUserText(PhoneEdit, user.phone);
-    GetUserText(ModemEdit, user.modem);
+    GetUserText(ModemEdit, user.connection);
     GetUserText(CommentEdit, user.comment);
     GetUserText(PasswordEdit, user.pass);
     GetUserText(NoteEdit, user.note);
