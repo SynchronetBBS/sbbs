@@ -38,7 +38,6 @@ var func_list = {
 
 var noargs_required = [
 	'datestr',
-	'secondstr',
 	'timestr',
 	'zonestr',
 ];
