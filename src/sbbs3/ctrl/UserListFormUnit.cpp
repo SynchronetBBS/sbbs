@@ -76,7 +76,7 @@ void __fastcall TUserListForm::FormShow(TObject *Sender)
             sprintf(str,"%c",user.sex);
         Item->SubItems->Add(str);
         Item->SubItems->Add(user.location);
-        Item->SubItems->Add(user.modem);
+        Item->SubItems->Add(user.connection);
         Item->SubItems->Add(user.note);
         Item->SubItems->Add(user.comp);
         Item->SubItems->Add(user.phone);
@@ -86,7 +86,7 @@ void __fastcall TUserListForm::FormShow(TObject *Sender)
         Item->SubItems->Add(unixtodstr(&MainForm->cfg,user.laston,str));
     }
     ListView->Items->EndUpdate();
-    
+
 	close(file);
     Screen->Cursor=crDefault;
 }
