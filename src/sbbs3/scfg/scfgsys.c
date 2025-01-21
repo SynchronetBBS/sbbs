@@ -849,14 +849,14 @@ void security_cfg(void)
 			case __COUNTER__:
 				sprintf(str, "%u", cfg.sys_deldays);
 				uifc.helpbuf =
-					"`Days Since Last Logon to Preserve Deleted Users:`\n"
+					"`Days to Preserve Deleted Users:`\n"
 					"\n"
-					"Deleted user slots can be `undeleted` until the slot is written over\n"
-					"by a new user. If you want deleted user slots to be preserved for period\n"
-					"of time since their last logon, set this value to the number of days to\n"
+					"Deleted user records can be `undeleted` until the slot is over-written\n"
+					"by a new user.  If you want deleted user records to be preserved for a\n"
+					"period of time after deletion, set this value to the number of days to\n"
 					"keep new users from taking over a deleted user's slot.\n"
 				;
-				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Days Since Last Logon to Preserve Deleted Users"
+				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Days to Preserve Deleted Users"
 				           , str, 5, K_EDIT | K_NUMBER);
 				cfg.sys_deldays = atoi(str);
 				break;
