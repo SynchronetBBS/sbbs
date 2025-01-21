@@ -1330,7 +1330,7 @@ public:
 	int		searchup(char *search,int usernum);
 	int		searchdn(char *search,int usernum);
 	void	user_config(user_t* user);
-	void	purgeuser(int usernumber);
+	bool	purgeuser(int usernumber);
 
 	/* ver.cpp */
 	void	ver(void);

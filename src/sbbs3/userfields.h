@@ -103,6 +103,7 @@ enum user_field {
 	// Misc:
 	USER_MAIL,
 	USER_LANG,
+	USER_DELDATE,
 
 	// Last:
 	USER_FIELD_COUNT

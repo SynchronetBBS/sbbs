@@ -467,8 +467,7 @@ bool sbbs_t::newuser()
 				logline(LOG_NOTICE, "N!", "Aborted feedback");
 				hangup();
 				putuserstr(useron.number, USER_COMMENT, "Didn't leave feedback");
-				putusermisc(useron.number, useron.misc | DELETED);
-				putusername(&cfg, useron.number, nulstr);
+				del_user(&cfg, &useron);
 				return false;
 			}
 		}

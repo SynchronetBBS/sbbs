@@ -1621,12 +1621,10 @@ int edit_user(scfg_t *cfg, int usernum)
 				return(0);
 
 			case 0:
-				user.misc ^= DELETED;
-				putusermisc(cfg, user.number, user.misc);
-				if(user.misc & DELETED)
-					putusername(cfg,user.number,"");
+				if (user.misc & DELETED)
+					undel_user(cfg, &user);
 				else
-					putusername(cfg,user.number,user.alias);
+					del_user(cfg, &user);
 				break;
 
 			case 1:

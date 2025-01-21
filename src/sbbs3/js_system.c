@@ -1888,9 +1888,8 @@ js_del_user(JSContext *cx, uintN argc, jsval *arglist)
 	user.number = n;
 	rc = JS_SUSPENDREQUEST(cx);
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);  /* fail, by default */
-	if (getuserdat(sys->cfg, &user) == 0
-	    && putusermisc(sys->cfg, n, user.misc | DELETED) == 0
-	    && putusername(sys->cfg, n, nulstr) == 0)
+	if (getuserdat(sys->cfg, &user) == USER_SUCCESS
+	    && del_user(sys->cfg, &user) == USER_SUCCESS)
 		JS_SET_RVAL(cx, arglist, JSVAL_TRUE);   /* success */
 	JS_RESUMEREQUEST(cx, rc);
 

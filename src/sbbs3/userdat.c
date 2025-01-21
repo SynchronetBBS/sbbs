@@ -224,6 +224,59 @@ int lastuser(scfg_t* cfg)
 }
 
 /****************************************************************************/
+/* Mark a user record as deleted											*/
+/****************************************************************************/
+int del_user(scfg_t* cfg, user_t* user)
+{
+	int result;
+
+	if (!VALID_CFG(cfg) || user == NULL)
+		return USER_INVALID_ARG;
+
+	if (!VALID_USER_NUMBER(user->number))
+		return USER_INVALID_ARG;
+
+	if (user->misc & DELETED)
+		return USER_SUCCESS;
+
+	if ((result = putusername(cfg, user->number, "")) != USER_SUCCESS)
+		return result;
+
+	if ((result = putusermisc(cfg, user->number, user->misc | DELETED)) != USER_SUCCESS)
+		return result;
+
+	user->misc |= DELETED;
+	user->deldate = time(NULL);
+	return putuserdatetime(cfg, user->number, USER_DELDATE, user->deldate);
+}
+
+/****************************************************************************/
+/* Un-mark a user record as deleted											*/
+/****************************************************************************/
+int undel_user(scfg_t* cfg, user_t* user)
+{
+	int result;
+
+	if (!VALID_CFG(cfg) || user == NULL)
+		return USER_INVALID_ARG;
+
+	if (!VALID_USER_NUMBER(user->number))
+		return USER_INVALID_ARG;
+
+	if ((user->misc & DELETED) == 0)
+		return USER_SUCCESS;
+
+	if ((result = putusername(cfg, user->number, user->alias)) != USER_SUCCESS)
+		return result;
+
+	if ((result = putusermisc(cfg, user->number, user->misc & ~DELETED)) != USER_SUCCESS)
+		return result;
+
+	user->misc &= ~DELETED;
+	return USER_SUCCESS;
+}
+
+/****************************************************************************/
 /* Deletes (completely removes) last user record in userbase				*/
 /****************************************************************************/
 bool del_lastuser(scfg_t* cfg)
@@ -433,6 +486,7 @@ int parseuserdat(scfg_t* cfg, char *userdat, user_t *user, char* field[])
 	user->ns_time = parse_usertime(field[USER_NS_TIME]);
 	user->laston = parse_usertime(field[USER_LASTON]);
 	user->firston = parse_usertime(field[USER_FIRSTON]);
+	user->deldate = parse_usertime(field[USER_DELDATE]);
 
 	user->logons = (ushort)strtoul(field[USER_LOGONS], NULL, 0);
 	user->ltoday = (ushort)strtoul(field[USER_LTODAY], NULL, 0);
@@ -602,6 +656,7 @@ bool format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 	char laston[64];
 	char pwmod[64];
 	char expire[64];
+	char deldate[64];
 	u32toaf(user->flags1, flags1);
 	u32toaf(user->flags2, flags2);
 	u32toaf(user->flags3, flags3);
@@ -614,6 +669,7 @@ bool format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 	format_datetime(user->laston, laston, sizeof(laston));
 	format_datetime(user->pwmod, pwmod, sizeof(pwmod));
 	format_datetime(user->expire, expire, sizeof(expire));
+	format_datetime(user->deldate, deldate, sizeof(deldate));
 
 	// NOTE: order must match enum user_field definition (in userfields.h)
 	int len = snprintf(userdat, USER_RECORD_LEN,
@@ -681,6 +737,7 @@ bool format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 	                   "%u\t" // USER_LEECH
 	                   "%x\t" // USER_MAIL
 	                   "%s\t" // USER_LANG
+	                   "%s\t" // USER_DELDATE
 	                   , user->number
 	                   , user->alias
 	                   , user->name
@@ -745,6 +802,7 @@ bool format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 	                   , (uint)user->leech
 	                   , user->mail
 	                   , user->lang
+	                   , deldate
 	                   );
 	if (len > USER_RECORD_LEN || len < 0) // truncated?
 		return false;
@@ -3370,7 +3428,10 @@ int newuserdat(scfg_t* cfg, user_t* user)
 				deluser.number = unum;
 				if (getuserdat(cfg, &deluser) == 0) {
 					if (deluser.misc & DELETED) {   /* deleted bit set too */
-						if ((time(NULL) - deluser.laston) / 86400 >= cfg->sys_deldays)
+						time_t deldate = deluser.deldate;
+						if (deldate == 0)
+							deldate = deluser.laston;
+						if (difftime(time(NULL), deldate) / 86400 >= cfg->sys_deldays)
 							break; /* deleted long enough ? */
 					}
 				}
@@ -3480,6 +3541,7 @@ size_t user_field_len(enum user_field fnum)
 		case USER_NS_TIME:      return sizeof(user.ns_time);
 		case USER_LASTON:       return sizeof(user.laston);
 		case USER_FIRSTON:      return sizeof(user.firston);
+		case USER_DELDATE:      return sizeof(user.deldate);
 
 		// Counting stats:
 		case USER_LOGONS:       return sizeof(user.logons);

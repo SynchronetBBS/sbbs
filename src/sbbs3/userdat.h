@@ -74,6 +74,8 @@ DLLEXPORT int   putusername(scfg_t*, int number, const char* name);
 DLLEXPORT int   total_users(scfg_t*);
 DLLEXPORT int   lastuser(scfg_t*);
 DLLEXPORT bool  del_lastuser(scfg_t*);
+DLLEXPORT int	del_user(scfg_t*, user_t*);
+DLLEXPORT int	undel_user(scfg_t*, user_t*);
 DLLEXPORT int   getage(scfg_t*, const char* birthdate);
 DLLEXPORT int   getbirthmonth(scfg_t*, const char* birthdate);
 DLLEXPORT int   getbirthday(scfg_t*, const char* birthdate);

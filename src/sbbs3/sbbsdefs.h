@@ -975,8 +975,8 @@ typedef struct {                        /* Users information */
 	         expire,                    /* Expiration date */
 	         pwmod,                     /* Password last modified */
 	         ns_time,                   /* Date/Time of last new file scan */
-	         logontime;                 /* Time of current logon */
-
+	         logontime,                 /* Time of current logon */
+	         deldate;                   /* Date/TIme account deleted */
 } user_t;
 
 typedef struct {

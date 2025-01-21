@@ -148,8 +148,14 @@ void sbbs_t::useredit(int usernumber)
 		bprintf(text[UeditExempts], u32toaf(user.exempt, tmp), u32toaf(user.rest, tmp2));
 		if (lncntr >= rows - 2)
 			lncntr = 0;
-		if (user.misc & DELETED)
-			center(text[DeletedUser]);
+		if (user.misc & DELETED) {
+			if(user.deldate)
+				datestr(user.deldate, tmp);
+			else
+				datestr(user.laston, tmp);
+			snprintf(str, sizeof str, text[DeletedUser], tmp);
+			center(str);
+		}
 		else if (user.misc & INACTIVE)
 			center(text[InactiveUser]);
 		else
@@ -200,8 +206,8 @@ void sbbs_t::useredit(int usernumber)
 			case 'D':
 				if (user.misc & DELETED) {
 					if (!noyes(text[UeditRestoreQ])) {
-						putusermisc(user.number, user.misc & ~DELETED);
-						putusername(&cfg, user.number, user.alias);
+						if (undel_user(&cfg, &user) != USER_SUCCESS)
+							errormsg(WHERE, "restoring", "user", user.number);
 					}
 					break;
 				}
@@ -220,8 +226,8 @@ void sbbs_t::useredit(int usernumber)
 						if (yesno(text[UeditReadUserMailSQ]))
 							readmail(user.number, MAIL_SENT);
 					}
-					putusermisc(user.number, user.misc | DELETED);
-					putusername(&cfg, user.number, nulstr);
+					if (del_user(&cfg, &user) != USER_SUCCESS)
+						errormsg(WHERE, "deleting", "user", user.number);
 					break;
 				}
 				if (!noyes(text[UeditDeactivateUserQ])) {
@@ -1167,16 +1173,22 @@ void sbbs_t::user_config(user_t* user)
 	}
 }
 
-void sbbs_t::purgeuser(int usernumber)
+bool sbbs_t::purgeuser(int usernumber)
 {
 	char   str[128];
 	user_t user;
 
 	user.number = usernumber;
-	getuserdat(&cfg, &user);
+	if (getuserdat(&cfg, &user) != USER_SUCCESS) {
+		errormsg(WHERE, "reading", "user", usernumber);
+		return false;
+	}
+	if (del_user(&cfg, &user) != USER_SUCCESS) {
+		errormsg(WHERE, "deleting", "user", usernumber);
+		return false;
+	}
 	SAFEPRINTF2(str, "Purged %s #%u", user.alias, usernumber);
 	logentry("!*", str);
 	bprintf(P_ATCODES, text[DeletedNumberItems], delallmail(usernumber, MAIL_ANY), text[E_Mails]);
-	putusername(&cfg, usernumber, nulstr);
-	putusermisc(usernumber, user.misc | DELETED);
+	return true;
 }

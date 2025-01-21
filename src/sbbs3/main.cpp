@@ -4788,8 +4788,7 @@ void sbbs_t::daily_maint(void)
 		        > cfg.sys_autodel)) {       /* Inactive too long */
 			lprintf(LOG_NOTICE, "DAILY: Auto-Deleting user: %s (%s) #%u due to inactivity > %u days (pending e-mail: %d)"
 			        , user.alias, user.name, user.number, cfg.sys_autodel, delallmail(user.number, MAIL_ANY));
-			putusername(&cfg, user.number, nulstr);
-			putusermisc(user.number, user.misc | DELETED);
+			del_user(&cfg, &user);
 		}
 	}
 	closeuserdat(userfile);
