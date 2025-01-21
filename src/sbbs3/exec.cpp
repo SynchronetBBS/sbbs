@@ -531,6 +531,7 @@ js_OperationCallback(JSContext *cx)
 	return ret;
 }
 
+extern JSClass js_global_class; // Hurr derr
 int sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scope, JSContext* js_cx, JSObject* js_glob)
 {
 	char*                     p;
@@ -554,7 +555,10 @@ int sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scop
 	struct js_runq_entry *    rq_head;
 	struct js_runq_entry *    rq_tail;
 	struct js_listener_entry *listeners;
+	global_private_t *gptp;
 
+	if ((gptp = (global_private_t*)js_GetClassPrivate(js_cx, js_glob, &js_global_class)) == NULL)
+		return -1;
 
 	if (js_cx == NULL)
 		js_cx = this->js_cx;
@@ -694,6 +698,8 @@ int sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scop
 	js_callback.rq_tail = NULL;
 	listeners = js_callback.listeners;
 	js_callback.listeners = NULL;
+
+	unsigned orig_bgcount = gptp->bg_count;
 	if (!JS_ExecuteScript(js_cx, js_scope, js_script, &rval))
 		result = -1;
 	js_handle_events(js_cx, &js_callback, &terminated);
@@ -741,6 +747,10 @@ int sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scop
 		JS_RemoveValueRoot(js_cx, &old_js_exec_file);
 		JS_RemoveValueRoot(js_cx, &old_js_exec_path);
 		JS_RemoveValueRoot(js_cx, &old_js_scope);
+	}
+	while (gptp->bg_count > orig_bgcount) {
+		if (sem_wait(&gptp->bg_sem) == 0)
+			gptp->bg_count--;
 	}
 
 	JS_GC(js_cx);
