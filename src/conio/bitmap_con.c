@@ -402,6 +402,10 @@ static void	cb_drawrect(struct rectlist *data)
 	 * 5) When blinking, the cursor is shown when vstat.blink is true.
 	 */
 	assert_rwlock_rdlock(&vstatlock);
+	if (vstat.mode == PRESTEL_40X24)
+		cv = 0x80FFFFFF;
+	else
+		cv = color_value(ciolib_fg);
 	curs_start = vstat.curs_start;
 	curs_end = vstat.curs_end;
 	curs_row = vstat.curs_row;
@@ -410,7 +414,6 @@ static void	cb_drawrect(struct rectlist *data)
 	charwidth = vstat.charwidth;
 	if (cursor_visible_locked()) {
 		assert_rwlock_unlock(&vstatlock);
-		cv = color_value(ciolib_fg);
 		for (y = curs_start; y <= curs_end; y++) {
 			pixel = &data->data[((curs_row - 1) * charheight + y) * data->rect.width + (curs_col - 1) * charwidth];
 			for (x = 0; x < charwidth; x++) {
@@ -970,43 +973,71 @@ static int check_redraw(void)
 static void blinker_thread(void *data)
 {
 	void *rect;
-	int count=0;
+	uint64_t next_blink = 0;
+	uint64_t next_cursor = 0;
 	int curs_changed;
 	int blink_changed;
 	struct bitmap_screen *screen;
 	struct bitmap_screen *ncscreen;
 	int lfc;
 	int blink;
+	bool prestel;
 
 	SetThreadName("Blinker");
 	while(1) {
 		curs_changed = 0;
 		blink_changed = 0;
 		SLEEP(10);
-		count++;
+		uint64_t now = xp_timer64();
 
 		assert_rwlock_wrlock(&vstatlock);
-		if (count==25) {
-			curs_changed = cursor_visible_locked();
-			if(vstat.curs_blink)
-				vstat.curs_blink=FALSE;
-			else
-				vstat.curs_blink=TRUE;
-			curs_changed = (curs_changed != cursor_visible_locked());
+		prestel = vstat.mode == PRESTEL_40X24;
+		if (prestel) {
+			if (next_blink < now) {
+				if (vstat.blink) {
+					vstat.blink=FALSE;
+					next_blink = now + 1000;
+				}
+				else {
+					vstat.blink=TRUE;
+					next_blink = now + 333;
+				}
+				blink_changed = 1;
+			}
+			if (next_cursor < now) {
+				curs_changed = cursor_visible_locked();
+				if (vstat.curs_blink) {
+					vstat.curs_blink=FALSE;
+				}
+				else {
+					vstat.curs_blink=TRUE;
+				}
+				curs_changed = (curs_changed != cursor_visible_locked());
+				next_cursor = now + 320;
+			}
 		}
-		if(count==50) {
-			if(vstat.blink)
-				vstat.blink=FALSE;
-			else
-				vstat.blink=TRUE;
-			blink_changed = 1;
-			curs_changed = cursor_visible_locked();
-			if(vstat.curs_blink)
-				vstat.curs_blink=FALSE;
-			else
-				vstat.curs_blink=TRUE;
-			curs_changed = (curs_changed != cursor_visible_locked());
-			count=0;
+		else {
+			if (next_blink < now) {
+				if (vstat.blink) {
+					vstat.blink=FALSE;
+				}
+				else {
+					vstat.blink=TRUE;
+				}
+				next_blink = now + 266;
+				blink_changed = 1;
+			}
+			if (next_cursor < now) {
+				curs_changed = cursor_visible_locked();
+				if (vstat.curs_blink) {
+					vstat.curs_blink=FALSE;
+				}
+				else {
+					vstat.curs_blink=TRUE;
+				}
+				curs_changed = (curs_changed != cursor_visible_locked());
+				next_cursor = now + 133;
+			}
 		}
 		lfc = force_cursor;
 		force_cursor = 0;
