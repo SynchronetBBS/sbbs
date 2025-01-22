@@ -26,7 +26,7 @@
 #include "threadwrap.h" /* pthread_self */
 #include "msg_queue.h"
 
-msg_queue_t* msgQueueInit(msg_queue_t* q, long flags)
+msg_queue_t* msgQueueInit(msg_queue_t* q, int flags)
 {
 	if (q == NULL) {
 		if ((q = (msg_queue_t*)malloc(sizeof(msg_queue_t))) == NULL)
@@ -69,7 +69,7 @@ bool msgQueueFree(msg_queue_t* q)
 	return true;
 }
 
-long msgQueueAttach(msg_queue_t* q)
+int msgQueueAttach(msg_queue_t* q)
 {
 	if (q == NULL)
 		return -1;
@@ -79,7 +79,7 @@ long msgQueueAttach(msg_queue_t* q)
 	return q->refs;
 }
 
-long msgQueueDetach(msg_queue_t* q)
+int msgQueueDetach(msg_queue_t* q)
 {
 	int refs;
 
@@ -136,12 +136,12 @@ static link_list_t* msgQueueWriteList(msg_queue_t* q)
 	return &q->in;
 }
 
-long msgQueueReadLevel(msg_queue_t* q)
+int msgQueueReadLevel(msg_queue_t* q)
 {
 	return listCountNodes(msgQueueReadList(q));
 }
 
-static bool list_wait(link_list_t* list, long timeout)
+static bool list_wait(link_list_t* list, int timeout)
 {
 #if defined(LINK_LIST_THREADSAFE)
 	if (timeout < 0)   /* infinite */
@@ -152,7 +152,7 @@ static bool list_wait(link_list_t* list, long timeout)
 	return listSemTryWaitBlock(list, timeout);
 #else
 	clock_t start;
-	long    count;
+	int     count;
 
 	start = msclock();
 	while ((count = listCountNodes(list)) == 0) {
@@ -166,7 +166,7 @@ static bool list_wait(link_list_t* list, long timeout)
 #endif
 }
 
-bool msgQueueWait(msg_queue_t* q, long timeout)
+bool msgQueueWait(msg_queue_t* q, int timeout)
 {
 	bool         result;
 	link_list_t* list = msgQueueReadList(q);
@@ -180,7 +180,7 @@ bool msgQueueWait(msg_queue_t* q, long timeout)
 	return result;
 }
 
-void* msgQueueRead(msg_queue_t* q, long timeout)
+void* msgQueueRead(msg_queue_t* q, int timeout)
 {
 	link_list_t* list = msgQueueReadList(q);
 
@@ -189,7 +189,7 @@ void* msgQueueRead(msg_queue_t* q, long timeout)
 	return listShiftNode(list);
 }
 
-void* msgQueuePeek(msg_queue_t* q, long timeout)
+void* msgQueuePeek(msg_queue_t* q, int timeout)
 {
 	link_list_t* list = msgQueueReadList(q);
 
@@ -222,7 +222,7 @@ list_node_t* msgQueueLastNode(msg_queue_t* q)
 	return listLastNode(msgQueueReadList(q));
 }
 
-long msgQueueWriteLevel(msg_queue_t* q)
+int msgQueueWriteLevel(msg_queue_t* q)
 {
 	return listCountNodes(msgQueueWriteList(q));
 }

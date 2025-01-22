@@ -35,8 +35,8 @@ typedef struct {
 	link_list_t in;
 	link_list_t out;
 	pthread_t owner_thread_id;          /* reads from in, writes to out */
-	long refs;
-	unsigned long flags;                /* private use flags */
+	int refs;
+	unsigned int flags;                /* private use flags */
 	void* private_data;
 } msg_queue_t;
 
@@ -44,21 +44,21 @@ typedef struct {
 #define MSG_QUEUE_BIDIR         (1 << 1)  /* Bi-directional message queue */
 #define MSG_QUEUE_ORPHAN        (1 << 2)  /* Owner has detached */
 
-DLLEXPORT msg_queue_t*  msgQueueInit(msg_queue_t*, long flags);
+DLLEXPORT msg_queue_t*  msgQueueInit(msg_queue_t*, int flags);
 DLLEXPORT bool          msgQueueFree(msg_queue_t*);
 
-DLLEXPORT long          msgQueueAttach(msg_queue_t*);
-DLLEXPORT long          msgQueueDetach(msg_queue_t*);
+DLLEXPORT int           msgQueueAttach(msg_queue_t*);
+DLLEXPORT int           msgQueueDetach(msg_queue_t*);
 DLLEXPORT bool          msgQueueOwner(msg_queue_t*);
 
 /* Get/Set queue private data */
 DLLEXPORT void*         msgQueueSetPrivateData(msg_queue_t*, void*);
 DLLEXPORT void*         msgQueueGetPrivateData(msg_queue_t*);
 
-DLLEXPORT bool          msgQueueWait(msg_queue_t* q, long timeout);
-DLLEXPORT long          msgQueueReadLevel(msg_queue_t*);
-DLLEXPORT void*         msgQueueRead(msg_queue_t*, long timeout);
-DLLEXPORT void*         msgQueuePeek(msg_queue_t*, long timeout);
+DLLEXPORT bool          msgQueueWait(msg_queue_t* q, int timeout);
+DLLEXPORT int           msgQueueReadLevel(msg_queue_t*);
+DLLEXPORT void*         msgQueueRead(msg_queue_t*, int timeout);
+DLLEXPORT void*         msgQueuePeek(msg_queue_t*, int timeout);
 DLLEXPORT void*         msgQueueFind(msg_queue_t*, const void*, size_t length);
 DLLEXPORT list_node_t*  msgQueueFirstNode(msg_queue_t*);
 DLLEXPORT list_node_t*  msgQueueLastNode(msg_queue_t*);
@@ -66,7 +66,7 @@ DLLEXPORT list_node_t*  msgQueueLastNode(msg_queue_t*);
 #define         msgQueuePrevNode(node)          listPrevNode(node)
 #define         msgQueueNodeData(node)          listNodeData(node)
 
-DLLEXPORT long          msgQueueWriteLevel(msg_queue_t*);
+DLLEXPORT int           msgQueueWriteLevel(msg_queue_t*);
 DLLEXPORT bool          msgQueueWrite(msg_queue_t*, const void*, size_t length);
 
 #if defined(__cplusplus)
