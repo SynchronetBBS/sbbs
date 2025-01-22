@@ -1036,18 +1036,10 @@ static void blinker_thread(void *data)
 			case ATARI_40X24:
 			case ATARI_80X25:
 				// No blinking!
+				vstat.curs_blink=TRUE;
+				vstat.blink=FALSE;
 				break;
 			default:
-				if (next_blink < now) {
-					if (vstat.blink) {
-						vstat.blink=FALSE;
-					}
-					else {
-						vstat.blink=TRUE;
-					}
-					next_blink = now + 266;
-					blink_changed = 1;
-				}
 				if (next_cursor < now) {
 					curs_changed = cursor_visible_locked();
 					if (vstat.curs_blink) {
@@ -1058,6 +1050,16 @@ static void blinker_thread(void *data)
 					}
 					curs_changed = (curs_changed != cursor_visible_locked());
 					next_cursor = now + 133;
+					if (next_blink < now) {
+						if (vstat.blink) {
+							vstat.blink=FALSE;
+						}
+						else {
+							vstat.blink=TRUE;
+						}
+						next_blink = now + 266;
+						blink_changed = 1;
+					}
 				}
 				break;
 		}
