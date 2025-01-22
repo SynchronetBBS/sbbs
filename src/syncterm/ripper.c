@@ -11238,6 +11238,9 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								break;
 							fg = map_rip_color(rip.color);
 							arg1 = parse_mega(&args[0], 2);
+							// TODO: Does this draw a point if there's a single point?
+							if (arg1 < 1)
+								break;
 							for (i = 0; i < arg1; i++) {
 								if (i == 0) {
 									x1 = parse_mega(&args[2], 2);
@@ -11261,10 +11264,10 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							}
 							if (i > 0) {
 								x2 = parse_mega(&args[2], 2);
-								if (x1 == -1)
+								if (x2 == -1)
 									break;
 								y2 = parse_mega(&args[4], 2);
-								if (y1 == -1)
+								if (y2 == -1)
 									break;
 								draw_line(x1, y1, x2, y2, true);
 							}
