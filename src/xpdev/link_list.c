@@ -569,7 +569,7 @@ static list_node_t* list_add_node(link_list_t* list, list_node_t* node, list_nod
 	return node;
 }
 
-list_node_t* listAddNode(link_list_t* list, void* data, list_node_tag_t tag, list_node_t* after)
+list_node_t* listAddNodeWithFlags(link_list_t* list, void* data, list_node_tag_t tag, long flags, list_node_t* after)
 {
 	list_node_t* node;
 
@@ -582,8 +582,14 @@ list_node_t* listAddNode(link_list_t* list, void* data, list_node_tag_t tag, lis
 	memset(node, 0, sizeof(list_node_t));
 	node->data = data;
 	node->tag = tag;
+	node->flags = flags;
 
 	return list_add_node(list, node, after);
+}
+
+list_node_t* listAddNode(link_list_t* list, void* data, list_node_tag_t tag, list_node_t* after)
+{
+	return listAddNodeWithFlags(list, data, tag, 0, after);
 }
 
 long listAddNodes(link_list_t* list, void** data, list_node_tag_t* tag, list_node_t* after)
@@ -610,11 +616,10 @@ list_node_t* listAddNodeData(link_list_t* list, const void* data, size_t length,
 		return NULL;
 	memcpy(buf, data, length);
 
-	if ((node = listAddNode(list, buf, tag, after)) == NULL) {
+	if ((node = listAddNodeWithFlags(list, buf, tag, LINK_LIST_MALLOC, after)) == NULL) {
 		free(buf);
 		return NULL;
 	}
-	node->flags |= LINK_LIST_MALLOC;
 
 	return node;
 }
@@ -630,11 +635,10 @@ list_node_t* listAddNodeString(link_list_t* list, const char* str, list_node_tag
 	if ((buf = strdup(str)) == NULL)
 		return NULL;
 
-	if ((node = listAddNode(list, buf, tag, after)) == NULL) {
+	if ((node = listAddNodeWithFlags(list, buf, tag, LINK_LIST_MALLOC, after)) == NULL) {
 		free(buf);
 		return NULL;
 	}
-	node->flags |= LINK_LIST_MALLOC;
 
 	return node;
 }
@@ -668,9 +672,8 @@ long listAddNodeList(link_list_t* list, const link_list_t* src, list_node_t* aft
 		return -1;
 
 	for (src_node = src->first; src_node != NULL; src_node = src_node->next, count++) {
-		if ((node = listAddNode(list, src_node->data, src_node->tag, node == NULL ? after:node)) == NULL)
+		if ((node = listAddNodeWithFlags(list, src_node->data, src_node->tag, src_node->flags, node == NULL ? after:node)) == NULL)
 			return count;
-		node->flags = src_node->flags;
 	}
 
 	return count;

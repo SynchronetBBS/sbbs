@@ -148,6 +148,9 @@ DLLEXPORT bool listNodeIsLocked(const list_node_t*);
 /* Add node to list, returns pointer to new node or NULL on error */
 DLLEXPORT list_node_t* listAddNode(link_list_t*, void* data, list_node_tag_t, list_node_t * after /* NULL=insert */);
 
+/* Add node to list with flags, returns pointer to new node or NULL on error */
+DLLEXPORT list_node_t* listAddNodeWithFlags(link_list_t*, void* data, list_node_tag_t, long flags, list_node_t * after /* NULL=insert */);
+
 /* Add array of node data to list, returns number of nodes added (or negative on error) */
 /* tag array may be NULL */
 DLLEXPORT long      listAddNodes(link_list_t*, void** data, list_node_tag_t*, list_node_t* after /* NULL=insert */);
