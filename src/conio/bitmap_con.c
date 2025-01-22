@@ -981,7 +981,6 @@ static void blinker_thread(void *data)
 	struct bitmap_screen *ncscreen;
 	int lfc;
 	int blink;
-	bool prestel;
 
 	SetThreadName("Blinker");
 	while(1) {
@@ -992,52 +991,72 @@ static void blinker_thread(void *data)
 
 		assert_rwlock_wrlock(&vstatlock);
 		prestel = vstat.mode == PRESTEL_40X24;
-		if (prestel) {
-			if (next_blink < now) {
-				if (vstat.blink) {
-					vstat.blink=FALSE;
-					next_blink = now + 1000;
+		switch (vstat.mode) {
+			case PRESTEL_40X24:
+				if (next_blink < now) {
+					if (vstat.blink) {
+						vstat.blink=FALSE;
+						next_blink = now + 1000;
+					}
+					else {
+						vstat.blink=TRUE;
+						next_blink = now + 333;
+					}
+					blink_changed = 1;
 				}
-				else {
-					vstat.blink=TRUE;
-					next_blink = now + 333;
+				if (next_cursor < now) {
+					curs_changed = cursor_visible_locked();
+					if (vstat.curs_blink) {
+						vstat.curs_blink=FALSE;
+					}
+					else {
+						vstat.curs_blink=TRUE;
+					}
+					curs_changed = (curs_changed != cursor_visible_locked());
+					next_cursor = now + 320;
 				}
-				blink_changed = 1;
-			}
-			if (next_cursor < now) {
-				curs_changed = cursor_visible_locked();
-				if (vstat.curs_blink) {
-					vstat.curs_blink=FALSE;
+				break;
+			case C64_40X25:
+			case C128_40X25:
+			case C128_80X25:
+				if (next_cursor < now) {
+					curs_changed = cursor_visible_locked();
+					if (vstat.curs_blink) {
+						vstat.curs_blink=FALSE;
+						vstat.blink=TRUE;
+					}
+					else {
+						vstat.curs_blink=TRUE;
+						vstat.blink=FALSE;
+					}
+					blink_changed = 1;
+					curs_changed = (curs_changed != cursor_visible_locked());
+					next_cursor = now + 333;
 				}
-				else {
-					vstat.curs_blink=TRUE;
+				break;
+			default:
+				if (next_blink < now) {
+					if (vstat.blink) {
+						vstat.blink=FALSE;
+					}
+					else {
+						vstat.blink=TRUE;
+					}
+					next_blink = now + 266;
+					blink_changed = 1;
 				}
-				curs_changed = (curs_changed != cursor_visible_locked());
-				next_cursor = now + 320;
-			}
-		}
-		else {
-			if (next_blink < now) {
-				if (vstat.blink) {
-					vstat.blink=FALSE;
+				if (next_cursor < now) {
+					curs_changed = cursor_visible_locked();
+					if (vstat.curs_blink) {
+						vstat.curs_blink=FALSE;
+					}
+					else {
+						vstat.curs_blink=TRUE;
+					}
+					curs_changed = (curs_changed != cursor_visible_locked());
+					next_cursor = now + 133;
 				}
-				else {
-					vstat.blink=TRUE;
-				}
-				next_blink = now + 266;
-				blink_changed = 1;
-			}
-			if (next_cursor < now) {
-				curs_changed = cursor_visible_locked();
-				if (vstat.curs_blink) {
-					vstat.curs_blink=FALSE;
-				}
-				else {
-					vstat.curs_blink=TRUE;
-				}
-				curs_changed = (curs_changed != cursor_visible_locked());
-				next_cursor = now + 133;
-			}
+				break;
 		}
 		lfc = force_cursor;
 		force_cursor = 0;
