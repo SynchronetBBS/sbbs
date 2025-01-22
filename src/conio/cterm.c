@@ -5540,7 +5540,7 @@ prestel_handle_escaped(struct cterminal *cterm, uint8_t ctrl)
 		tmpvc[0].ch = cterm->prestel_last_mosaic;
 	}
 	else {
-		tmpvc[0].ch = ctrl - 64;
+		tmpvc[0].ch = ' ';
 	}
 	tmpvc[0].legacy_attr=cterm->attr;
 	tmpvc[0].fg = cterm->fg_color | (ctrl << 24);
@@ -6446,6 +6446,7 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 								prestel_new_line(cterm);
 								break;
 							default:
+								// "Normal" ASCII... including CR and LF in here.
 								if (buf[j] == 13 || buf[j] == 10 || (buf[j] >= 32 && buf[j] <= 127)) {
 									if (cterm->extattr & CTERM_EXTATTR_PRESTEL_MOSAIC) {
 										if (buf[j] < 64 && buf[j] >= 32)
@@ -6472,9 +6473,18 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 									prnpos = prn;
 									prestel_handle_escaped(cterm, ch[0] - 64);
 								}
+								else if (buf[j] < 32) {
+									// Unhandled C0 control
+									uctputs(cterm, prn);
+									prn[0]=0;
+									prnpos = prn;
+									// We use 0 here to ensure it's not interpreted
+									// but does get the held mosaic.
+									prestel_handle_escaped(cterm, 0);
+								}
 								else {
-									// G1 or unhandled C0... treat as space.
-									*prnpos++ = 32;
+									// G1... unicode replacement
+									*prnpos++ = 27;
 									*prnpos = 0;
 								}
 								break;
