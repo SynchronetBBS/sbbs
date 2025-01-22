@@ -5531,6 +5531,8 @@ prestel_handle_escaped(struct cterminal *cterm, uint8_t ctrl)
 	struct vmem_cell tmpvc[1];
 	int sx, sy, x, y;
 
+	if (ctrl < 0x40 || ctrl > 0x5f)
+		return;
 	prestel_apply_ctrl_before(cterm, ctrl);
 	TEXTATTR(cterm->attr);
 	setcolour(cterm->fg_color, cterm->bg_color);
@@ -6475,12 +6477,22 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 								}
 								else if (buf[j] < 32) {
 									// Unhandled C0 control
+									// Section 2.2:
+									// "The C0 CHARACTER SET... contain... characters which are not stored or displayed"
+									// Section 2.3.2, HOLD MOSAIC
+									// "Generally all control characters are displayed as spaces"
+#if 1
+									// Section 2.3.2 holds...
 									uctputs(cterm, prn);
 									prn[0]=0;
 									prnpos = prn;
 									// We use 0 here to ensure it's not interpreted
 									// but does get the held mosaic.
 									prestel_handle_escaped(cterm, 0);
+#else
+									// Section 2.2 holds...
+									/* Do Nothing */
+#endif
 								}
 								else {
 									// G1... unicode replacement
