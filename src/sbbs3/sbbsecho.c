@@ -5918,7 +5918,7 @@ void find_stray_packets(void)
 		listAddNode(&outpkt_list, pkt, 0, LAST_NODE);
 	}
 	if (g.gl_pathc)
-		lprintf(LOG_DEBUG, "%lu stray outbound packets (%lu total pkts) found in %s"
+		lprintf(LOG_DEBUG, "%u stray outbound packets (%lu total pkts) found in %s"
 		        , listCountNodes(&outpkt_list), (ulong)g.gl_pathc, cfg.temp_dir);
 	globfree(&g);
 }

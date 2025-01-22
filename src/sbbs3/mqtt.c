@@ -694,7 +694,7 @@ int mqtt_server_state(struct mqtt* mqtt, enum server_state state)
 			snprintf(max_clients, sizeof(max_clients), "/%lu", mqtt->max_clients);
 		char clients[64] = "";
 		if (mqtt->client_list.count)
-			snprintf(clients, sizeof(clients), "%lu%s clients", mqtt->client_list.count, max_clients);
+			snprintf(clients, sizeof(clients), "%d%s clients", mqtt->client_list.count, max_clients);
 		snprintf(str, sizeof(str), "%s\t%s\t%s\t%s"
 		         , server_state_desc(state)
 		         , clients
@@ -893,9 +893,9 @@ int mqtt_client_count(struct mqtt* mqtt)
 	if (mqtt->cfg->mqtt.verbose)
 		mqtt_server_state(mqtt, mqtt->server_state);
 	if (mqtt->max_clients)
-		snprintf(str, sizeof(str), "%ld total\t%ld max", mqtt->client_list.count, mqtt->max_clients);
+		snprintf(str, sizeof(str), "%d total\t%ld max", mqtt->client_list.count, mqtt->max_clients);
 	else
-		snprintf(str, sizeof(str), "%ld total", mqtt->client_list.count);
+		snprintf(str, sizeof(str), "%d total", mqtt->client_list.count);
 	return mqtt_pub_strval(mqtt, TOPIC_SERVER, "client", str);
 }
 

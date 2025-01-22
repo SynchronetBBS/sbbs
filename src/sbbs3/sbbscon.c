@@ -2156,7 +2156,7 @@ int main(int argc, char** argv)
 						for (node = client_list.first; node != NULL; node = node->next) {
 							client = node->data;
 							localtime32(&client->time, &tm);
-							printf("%04ld %s %s [%s] %s port %u since %u/%u %02u:%02u:%02u\n"
+							printf("%04d %s %s [%s] %s port %u since %u/%u %02u:%02u:%02u\n"
 							       , node->tag
 							       , client->protocol
 							       , client->user
