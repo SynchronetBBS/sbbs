@@ -1033,6 +1033,10 @@ static void blinker_thread(void *data)
 					next_cursor = now + 333;
 				}
 				break;
+			case ATARI_40X24:
+			case ATARI_80X25:
+				// No blinking!
+				break;
 			default:
 				if (next_blink < now) {
 					if (vstat.blink) {
