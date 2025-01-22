@@ -203,6 +203,16 @@ static int bitmap_loadfont_locked(const char *filename)
 						else
 							memcpy(font[i], conio_fontdata[current_font[i]].eight_by_sixteen, fontsize);
 						break;
+					case 20:
+						if(conio_fontdata[current_font[i]].twelve_by_twenty==NULL) {
+							if (i==0)
+								goto error_return;
+							else
+								FREE_AND_NULL(font[i]);
+						}
+						else
+							memcpy(font[i], conio_fontdata[current_font[i]].twelve_by_twenty, fontsize);
+						break;
 					default:
 						goto error_return;
 				}
@@ -576,8 +586,9 @@ calc_charstate(struct blockstate *bs, struct vmem_cell *vc, struct charstate *cs
 		cs->font = vstat.forced_font;
 	}
 	else {
-		if (current_font[0] == -1)
+		if (current_font[0] == -1) {
 			cs->font = font[0];
+		}
 		else {
 			switch (vstat.charheight) {
 				case 8:
@@ -588,6 +599,9 @@ calc_charstate(struct blockstate *bs, struct vmem_cell *vc, struct charstate *cs
 					break;
 				case 16:
 					cs->font = (unsigned char *)conio_fontdata[vc->font].eight_by_sixteen;
+					break;
+				case 20:
+					cs->font = (unsigned char *)conio_fontdata[vc->font].twelve_by_twenty;
 					break;
 				default:
 					assert(0);
@@ -703,10 +717,15 @@ draw_char_row(struct blockstate *bs, struct charstate *cs, uint32_t y)
 			else
 				fbb = 0;
 		}
-		else
+		else {
+			if (bitnum == 0 && x != 0) {
+				cs->fontoffset++;
+				fb = cs->font[cs->fontoffset];
+			}
 			fbb = fb & (0x80 >> bitnum);
+		}
 
-		if (bitnum == (bs->font_data_width - 1)) {
+		if (x == (bs->font_data_width - 1)) {
 			cs->fontoffset++;
 			fb = cs->font[cs->fontoffset];
 		}
@@ -761,10 +780,15 @@ draw_char_row_double(struct blockstate *bs, struct charstate *cs, uint32_t y)
 			else
 				fbb = 0;
 		}
-		else
+		else {
+			if (bitnum == 0 && x != 0) {
+				cs->fontoffset++;
+				fb = cs->font[cs->fontoffset];
+			}
 			fbb = fb & (0x80 >> bitnum);
+		}
 
-		if (bitnum == 7) {
+		if (x == (bs->font_data_width - 1)) {
 			cs->fontoffset++;
 			fb = cs->font[cs->fontoffset];
 		}
@@ -1363,8 +1387,11 @@ int bitmap_setfont(int font, int force, int font_num)
 	if(font < 0 || font>(sizeof(conio_fontdata)/sizeof(struct conio_font_data_struct)-2))
 		return(0);
 
-	if(conio_fontdata[font].eight_by_sixteen!=NULL)
+	if(conio_fontdata[font].eight_by_sixteen!=NULL) {
 		newmode=C80;
+		if (conio_fontdata[font].cp == CIOLIB_PRESTEL)
+			newmode=PRESTEL_40X24;
+	}
 	else if(conio_fontdata[font].eight_by_fourteen!=NULL)
 		newmode=C80X28;
 	else if(conio_fontdata[font].eight_by_eight!=NULL)
@@ -1390,6 +1417,14 @@ int bitmap_setfont(int font, int force, int font_num)
 			break;
 		case 16:
 			if(conio_fontdata[font].eight_by_sixteen==NULL) {
+				if(!force)
+					goto error_return;
+				else
+					changemode=1;
+			}
+			break;
+		case 20:
+			if(conio_fontdata[font].twelve_by_twenty==NULL) {
 				if(!force)
 					goto error_return;
 				else
@@ -2098,6 +2133,12 @@ void bitmap_replace_font(uint8_t id, char *name, void *data, size_t size)
 
 	assert_pthread_mutex_lock(&screenlock);
 	switch (size) {
+		case 10240:
+			FREE_AND_NULL(conio_fontdata[id].twelve_by_twenty);
+			conio_fontdata[id].twelve_by_twenty=data;
+			FREE_AND_NULL(conio_fontdata[id].desc);
+			conio_fontdata[id].desc=name;
+			break;
 		case 4096:
 			FREE_AND_NULL(conio_fontdata[id].eight_by_sixteen);
 			conio_fontdata[id].eight_by_sixteen=data;

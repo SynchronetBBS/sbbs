@@ -3747,6 +3747,12 @@ apc_handler(char *strbuf, size_t slen, char *retbuf, size_t retsize, void *apcd)
 				return;
 			}
 			switch (off) {
+				case 10240:
+					FREE_AND_NULL(conio_fontdata[cterm->font_slot].twelve_by_twenty);
+					conio_fontdata[cterm->font_slot].twelve_by_twenty = buf;
+					FREE_AND_NULL(conio_fontdata[cterm->font_slot].desc);
+					conio_fontdata[cterm->font_slot].desc = strdup("Cached Font");
+					break;
 				case 4096:
 					FREE_AND_NULL(conio_fontdata[cterm->font_slot].eight_by_sixteen);
 					conio_fontdata[cterm->font_slot].eight_by_sixteen = buf;

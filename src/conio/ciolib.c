@@ -1935,6 +1935,10 @@ CIOLIBEXPORT int ciolib_checkfont(int fontnum)
 				if (conio_fontdata[fontnum].eight_by_sixteen)
 					return 1;
 				return 0;
+			case 20:
+				if (conio_fontdata[fontnum].twelve_by_twenty)
+					return 1;
+				return 0;
 			default:
 				return 0;
 		}

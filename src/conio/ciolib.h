@@ -256,6 +256,7 @@ struct conio_font_data_struct {
         char 	*eight_by_sixteen;
         char 	*eight_by_fourteen;
         char 	*eight_by_eight;
+        char 	*twelve_by_twenty;
         char 	*desc;
         enum ciolib_codepage cp;
 };

@@ -8,6 +8,7 @@ struct font_files {
 	char *path8x8;
 	char *path8x14;
 	char *path8x16;
+	char *path12x20;
 };
 
 void free_font_files(struct font_files *ff);

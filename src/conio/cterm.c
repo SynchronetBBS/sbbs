@@ -6604,6 +6604,7 @@ void cterm_end(struct cterminal *cterm, int free_fonts)
 				FREE_AND_NULL(conio_fontdata[i].eight_by_sixteen);
 				FREE_AND_NULL(conio_fontdata[i].eight_by_fourteen);
 				FREE_AND_NULL(conio_fontdata[i].eight_by_eight);
+				FREE_AND_NULL(conio_fontdata[i].twelve_by_twenty);
 				FREE_AND_NULL(conio_fontdata[i].desc);
 			}
 		}

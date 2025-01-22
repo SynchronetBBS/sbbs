@@ -25,6 +25,7 @@ free_font_files(struct font_files *ff)
 		FREE_AND_NULL(ff[i].path8x8);
 		FREE_AND_NULL(ff[i].path8x14);
 		FREE_AND_NULL(ff[i].path8x16);
+		FREE_AND_NULL(ff[i].path12x20);
 	}
 	free(ff);
 }
@@ -68,6 +69,8 @@ save_font_files(struct font_files *fonts)
 				iniSetString(&ini_file, newfont, "Path8x14", fonts[i].path8x14, &ini_style);
 			if (fonts[i].path8x16)
 				iniSetString(&ini_file, newfont, "Path8x16", fonts[i].path8x16, &ini_style);
+			if (fonts[i].path12x20)
+				iniSetString(&ini_file, newfont, "Path12x20", fonts[i].path12x20, &ini_style);
 		}
 	}
 	if ((inifile = fopen(inipath, "w")) != NULL) {
@@ -122,6 +125,8 @@ read_font_files(int *count)
 			ret[*count - 1].path8x14 = strdup(fontpath);
 		if ((ret[*count - 1].path8x16 = iniReadSString(inifile, fontid, "Path8x16", NULL, fontpath, sizeof(fontpath))) != NULL)
 			ret[*count - 1].path8x16 = strdup(fontpath);
+		if ((ret[*count - 1].path12x20 = iniReadSString(inifile, fontid, "Path12x20", NULL, fontpath, sizeof(fontpath))) != NULL)
+			ret[*count - 1].path12x20 = strdup(fontpath);
 		free(fontid);
 	}
 	fclose(inifile);
@@ -147,6 +152,8 @@ load_font_files(void)
 			FREE_AND_NULL(conio_fontdata[nextfont].eight_by_fourteen);
 		if (conio_fontdata[nextfont].eight_by_eight)
 			FREE_AND_NULL(conio_fontdata[nextfont].eight_by_eight);
+		if (conio_fontdata[nextfont].twelve_by_twenty)
+			FREE_AND_NULL(conio_fontdata[nextfont].twelve_by_twenty);
 		if (conio_fontdata[nextfont].desc)
 			FREE_AND_NULL(conio_fontdata[nextfont].desc);
 		if (ff[i].name)
@@ -180,6 +187,17 @@ load_font_files(void)
 				if ((fontdata = (char *)malloc(4096)) != NULL) {
 					if (fread(fontdata, 1, 4096, fontfile) == 4096)
 						conio_fontdata[nextfont].eight_by_sixteen = fontdata;
+					else
+						free(fontdata);
+				}
+				fclose(fontfile);
+			}
+		}
+		if (ff[i].path12x20 && ff[i].path12x20[0]) {
+			if ((fontfile = fopen(ff[i].path12x20, "rb")) != NULL) {
+				if ((fontdata = (char *)malloc(10240)) != NULL) {
+					if (fread(fontdata, 1, 10240, fontfile) == 10240)
+						conio_fontdata[nextfont].twelve_by_twenty = fontdata;
 					else
 						free(fontdata);
 				}
@@ -229,7 +247,7 @@ font_management(void)
 	int                count = 0;
 	struct font_files *fonts;
 	char              *opt[256];
-	char               opts[5][80];
+	char               opts[6][80];
 	struct font_files *tmp;
 	char               str[128];
 
@@ -279,6 +297,7 @@ font_management(void)
 					FREE_AND_NULL(fonts[cur].path8x8);
 					FREE_AND_NULL(fonts[cur].path8x14);
 					FREE_AND_NULL(fonts[cur].path8x16);
+					FREE_AND_NULL(fonts[cur].path12x20);
 					memmove(&(fonts[cur]), &(fonts[cur + 1]),
 					    sizeof(struct font_files) * (count - cur));
 					count--;
@@ -307,18 +326,21 @@ font_management(void)
 				fonts[cur].path8x8 = NULL;
 				fonts[cur].path8x14 = NULL;
 				fonts[cur].path8x16 = NULL;
+				fonts[cur].path12x20 = NULL;
 			}
 			for (i = 0; i < 5; i++)
 				opt[i] = opts[i];
 			uifc.helpbuf = "`Font Details`\n\n"
 			    "`8x8`  Used for screen modes with 35 or more lines and all C64/C128 modes\n"
 			    "`8x14` Used for screen modes with 28 and 34 lines\n"
-			    "`8x16` Used for screen modes with 30 lines or fewer than 28 lines.";
+			    "`8x16` Used for screen modes with 30 lines or fewer than 28 lines.\n"
+			    "`12x20` Used for Prestel mode.";
 			sprintf(opts[0], "Name: %.50s", fonts[cur].name ? fonts[cur].name : "<undefined>");
 			sprintf(opts[1], "8x8   %.50s", fonts[cur].path8x8 ? fonts[cur].path8x8 : "<undefined>");
 			sprintf(opts[2], "8x14  %.50s", fonts[cur].path8x14 ? fonts[cur].path8x14 : "<undefined>");
 			sprintf(opts[3], "8x16  %.50s", fonts[cur].path8x16 ? fonts[cur].path8x16 : "<undefined>");
-			opts[4][0] = 0;
+			sprintf(opts[4], "12x20 %.50s", fonts[cur].path12x20 ? fonts[cur].path12x20 : "<undefined>");
+			opts[5][0] = 0;
 			i = uifc.list(WIN_SAV | WIN_ACT | WIN_INS | WIN_INSACT | WIN_DEL | WIN_RHT | WIN_BOT,
 			        0,
 			        0,
@@ -360,6 +382,12 @@ font_management(void)
 					sprintf(str, "8x16 %.50s", fonts[cur].name);
 					path = &(fonts[cur].path8x16);
 					fontmask = "*.f16";
+					show_filepick = 1;
+					break;
+				case 4:
+					sprintf(str, "12x20 %.50s", fonts[cur].name);
+					path = &(fonts[cur].path12x20);
+					fontmask = "*.f20";
 					show_filepick = 1;
 					break;
 			}
