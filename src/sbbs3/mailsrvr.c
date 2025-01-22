@@ -3750,8 +3750,10 @@ static bool smtp_client_thread(smtp_t* smtp)
 						continue;
 					}
 
-					if (rcpt_name[0] == 0)
-						strcpy(rcpt_name, "All");
+					if (startup->post_to[0] != '\0')
+						SAFECOPY(rcpt_name, startup->post_to);
+					else if (rcpt_name[0] == 0)
+						SAFECOPY(rcpt_name, "All");
 					smb_hfield_str(&msg, RECIPIENT, rcpt_name);
 
 					smb.subnum = subnum;
@@ -5358,7 +5360,7 @@ static SOCKET sendmail_negotiate(CRYPT_SESSION *session, smb_t *smb, smbmsg_t *m
 			inet_addrtop(&server_addr, server_ip, sizeof(server_ip));
 
 			if ((node = listFindNode(failed_server_list, &server_addr, sizeof(server_addr))) != NULL) {
-				SAFEPRINTF4(err, "Error %ld connecting to port %u on %s [%s]", node->tag, inet_addrport(&server_addr), server, server_ip);
+				SAFEPRINTF4(err, "Error %d connecting to port %u on %s [%s]", node->tag, inet_addrport(&server_addr), server, server_ip);
 				lprintf(LOG_INFO, "%04d SEND skipping failed SMTP server: %s", sock, err);
 				continue;
 			}

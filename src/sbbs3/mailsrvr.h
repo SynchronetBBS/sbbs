@@ -62,6 +62,7 @@ typedef struct {
 	char default_user[128];
 	char dnsbl_tag[32];         // Tag to add to blacklisted subject
 	char dnsbl_hdr[32];         // Header field to add to msg header
+	char post_to[64];           // Recipient of messages imported into sub-boards (e.g. "All")
 	char inbound_sound[INI_MAX_VALUE_LEN];
 	char outbound_sound[INI_MAX_VALUE_LEN];
 	char pop3_sound[INI_MAX_VALUE_LEN];
