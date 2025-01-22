@@ -6484,7 +6484,7 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 									// "The C0 CHARACTER SET... contain... characters which are not stored or displayed"
 									// Section 2.3.2, HOLD MOSAIC
 									// "Generally all control characters are displayed as spaces"
-#if 1
+#if 0
 									// Section 2.3.2 holds...
 									uctputs(cterm, prn);
 									prn[0]=0;
