@@ -671,6 +671,8 @@ void sbbs_read_ini(
 
 		SAFECOPY(mail->default_user
 		         , iniGetString(list, section, "DefaultUser", nulstr, value));
+		SAFECOPY(mail->post_to
+		         , iniGetString(list, section, "PostTo", nulstr, value));
 
 		SAFECOPY(mail->dnsbl_hdr
 		         , iniGetString(list, section, "DNSBlacklistHeader", "X-DNSBL", value));
@@ -1220,6 +1222,8 @@ bool sbbs_write_ini(
 				break;
 
 			if (!iniSetString(lp, section, "DefaultUser", mail->default_user, &style))
+				break;
+			if (!iniSetString(lp, section, "PostTo", mail->post_to, &style))
 				break;
 
 			if (!iniSetString(lp, section, "DNSBlacklistHeader", mail->dnsbl_hdr, &style))
