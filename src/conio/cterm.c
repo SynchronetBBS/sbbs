@@ -6480,22 +6480,10 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 								}
 								else if (buf[j] < 32) {
 									// Unhandled C0 control
-									// Section 2.2:
+									// Section 2.3.1:
 									// "The C0 CHARACTER SET... contain... characters which are not stored or displayed"
-									// Section 2.3.2, HOLD MOSAIC
-									// "Generally all control characters are displayed as spaces"
-#if 0
-									// Section 2.3.2 holds...
-									uctputs(cterm, prn);
-									prn[0]=0;
-									prnpos = prn;
-									// We use 0 here to ensure it's not interpreted
-									// but does get the held mosaic.
-									prestel_handle_escaped(cterm, 0);
-#else
-									// Section 2.2 holds...
+									// Section 2.3.2 appears to be specific to the C1 set
 									/* Do Nothing */
-#endif
 								}
 								else {
 									// G1... unicode replacement
