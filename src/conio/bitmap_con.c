@@ -992,17 +992,6 @@ static void blinker_thread(void *data)
 		assert_rwlock_wrlock(&vstatlock);
 		switch (vstat.mode) {
 			case PRESTEL_40X24:
-				if (next_blink < now) {
-					if (vstat.blink) {
-						vstat.blink=FALSE;
-						next_blink = now + 1000;
-					}
-					else {
-						vstat.blink=TRUE;
-						next_blink = now + 333;
-					}
-					blink_changed = 1;
-				}
 				if (next_cursor < now) {
 					curs_changed = cursor_visible_locked();
 					if (vstat.curs_blink) {
@@ -1011,8 +1000,21 @@ static void blinker_thread(void *data)
 					else {
 						vstat.curs_blink=TRUE;
 					}
+					next_cursor = now + 333;
 					curs_changed = (curs_changed != cursor_visible_locked());
-					next_cursor = now + 320;
+					if (next_blink < now) {
+						if (vstat.blink) {
+							vstat.blink=FALSE;
+							vstat.curs_blink = TRUE;
+							next_blink = now + 1000;
+						}
+						else {
+							vstat.blink=TRUE;
+							vstat.curs_blink = FALSE;
+							next_blink = now + 333;
+						}
+						blink_changed = 1;
+					}
 				}
 				break;
 			case C64_40X25:
