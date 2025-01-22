@@ -990,7 +990,6 @@ static void blinker_thread(void *data)
 		uint64_t now = xp_timer64();
 
 		assert_rwlock_wrlock(&vstatlock);
-		prestel = vstat.mode == PRESTEL_40X24;
 		switch (vstat.mode) {
 			case PRESTEL_40X24:
 				if (next_blink < now) {
