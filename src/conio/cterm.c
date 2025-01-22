@@ -5549,7 +5549,6 @@ prestel_handle_escaped(struct cterminal *cterm, uint8_t ctrl)
 	SCR_XY(&sx, &sy);
 	CURR_XY(&x, &y);
 	vmem_puttext(sx, sy, sx, sy, tmpvc);
-	ctrl=0;
 	prestel_apply_ctrl_after(cterm, ctrl);
 	TEXTATTR(cterm->attr);
 	setcolour(cterm->fg_color, cterm->bg_color);
@@ -5775,6 +5774,9 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 							if (ch[0] == '1')
 								cterm->prestel_prog_state = PRESTEL_PROG_1;
 							else {
+								uctputs(cterm, prn);
+								prn[0]=0;
+								prnpos = prn;
 								prestel_handle_escaped(cterm, ch[0]);
 							}
 						}
@@ -6465,7 +6467,15 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 								}
 								else if ((buf[j] >= 0x80) && (buf[j] <= 0x9f)) {
 									// "Raw" C1 control
-									prestel_handle_escaped(cterm, buf[j] - 64);
+									uctputs(cterm, prn);
+									prn[0]=0;
+									prnpos = prn;
+									prestel_handle_escaped(cterm, ch[0] - 64);
+								}
+								else {
+									// G1 or unhandled C0... treat as space.
+									*prnpos++ = 32;
+									*prnpos = 0;
 								}
 								break;
 						}
