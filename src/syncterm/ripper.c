@@ -10281,7 +10281,7 @@ full_ellipse(int xc, int yc, int sa, int ea, int a, int b, bool fill, uint32_t c
 				if (rip.borders) {
                                         // Top-right quadrant.
 					if (((sa <= angle) && (ea >= angle))
-					    || (inv && (ea <= qangle) && (sa >= qangle)))
+					    || (inv && (ea <= angle) && (sa >= angle)))
 						set_pixel(xc + x, yc - y, colour);
 
                                         // Bottom-left quadrant.
