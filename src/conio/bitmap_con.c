@@ -402,17 +402,17 @@ static void	cb_drawrect(struct rectlist *data)
 	 * 5) When blinking, the cursor is shown when vstat.blink is true.
 	 */
 	assert_rwlock_rdlock(&vstatlock);
-	if (vstat.mode == PRESTEL_40X24)
-		cv = 0x80FFFFFF;
-	else
-		cv = color_value(ciolib_fg);
-	curs_start = vstat.curs_start;
-	curs_end = vstat.curs_end;
-	curs_row = vstat.curs_row;
-	curs_col = vstat.curs_col;
-	charheight = vstat.charheight;
-	charwidth = vstat.charwidth;
 	if (cursor_visible_locked()) {
+		if (vstat.mode == PRESTEL_40X24)
+			cv = 0x80FFFFFF;
+		else
+			cv = color_value(ciolib_fg);
+		curs_start = vstat.curs_start;
+		curs_end = vstat.curs_end;
+		curs_row = vstat.curs_row;
+		curs_col = vstat.curs_col;
+		charheight = vstat.charheight;
+		charwidth = vstat.charwidth;
 		assert_rwlock_unlock(&vstatlock);
 		for (y = curs_start; y <= curs_end; y++) {
 			pixel = &data->data[((curs_row - 1) * charheight + y) * data->rect.width + (curs_col - 1) * charwidth];
