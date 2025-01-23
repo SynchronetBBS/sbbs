@@ -57,6 +57,7 @@ typedef enum {
 	,CTERM_EMULATION_PETASCII
 	,CTERM_EMULATION_ATASCII
 	,CTERM_EMULATION_PRESTEL
+	,CTERM_EMULATION_BEEB
 } cterm_emulation_t;
 
 typedef enum {

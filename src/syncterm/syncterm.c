@@ -2367,6 +2367,7 @@ screen_to_ciolib(int screen)
 		case SCREEN_MODE_VGA_80X25:
 			return VGA80X25;
 		case SCREEN_MODE_PRESTEL:
+		case SCREEN_MODE_BEEB:
 			return PRESTEL_40X25;
 	}
 	gettextinfo(&ti);

@@ -564,6 +564,7 @@ struct charstate {
 	int8_t extra_rows;
 	bool double_height;
 	bool gexpand;
+	bool sep;
 };
 
 struct blockstate {
@@ -625,12 +626,15 @@ calc_charstate(struct blockstate *bs, struct vmem_cell *vc, struct charstate *cs
 	uint32_t fg = vc->fg;
 	cs->bg = vc->bg;
 	cs->extra_rows = 0;
+	cs->sep = false;
 
 	if (vstat.mode == PRESTEL_40X25 && (vc->bg & 0x02000000)) {
 		unsigned char lattr;
 		bool top = false;
 		bool bottom = false;
 
+		if (vc->bg & 0x20000000 && vc->ch >= 160)
+			cs->sep = true;
 		// Start at the first cell...
 		struct vmem_cell *pvc = vmem_cell_ptr(vstat.vmem, 0, 0);
 		// And check all the rows including this one.
@@ -732,6 +736,11 @@ draw_char_row(struct blockstate *bs, struct charstate *cs, uint32_t y)
 			cs->fontoffset++;
 			fb = cs->font[cs->fontoffset];
 		}
+		
+		if (cs->sep) {
+			if (x == 0 || x == 1 || x == 6 || x == 7 || y == 4 || y == 5 || y == 12 || y == 13 || y == 18 || y == 19)
+				fbb = false;
+		}
 
 		uint32_t ac, bc;
 
@@ -794,6 +803,11 @@ draw_char_row_double(struct blockstate *bs, struct charstate *cs, uint32_t y)
 		if (x == (bs->font_data_width - 1)) {
 			cs->fontoffset++;
 			fb = cs->font[cs->fontoffset];
+		}
+
+		if (cs->sep) {
+			if (x == 0 || x == 1 || x == 6 || x == 7 || y == 4 || y == 5 || y == 12 || y == 13 || y == 18 || y == 19)
+				fbb = false;
 		}
 
 		uint32_t ac, bc;

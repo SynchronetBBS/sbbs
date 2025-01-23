@@ -287,6 +287,7 @@ struct vmem_cell {
 			 * bit 26 indicates pixel graphics present
 			 * bit 27 indicates reveal is/was enabled
 			 * bit 28 indicates it is dirty and must be redrawn
+			 * bit 29 indicates prestel separated
 			 */
 };
 

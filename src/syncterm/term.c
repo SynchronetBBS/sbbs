@@ -4809,7 +4809,7 @@ doterm(struct bbslist *bbs)
 						break;
 				}
 			}
-			else if (key && (cterm->emulation == CTERM_EMULATION_PRESTEL)) {
+			else if (key && (cterm->emulation == CTERM_EMULATION_PRESTEL || cterm->emulation == CTERM_EMULATION_BEEB)) {
 				switch (key) {
 					case '_':
 						ch[0] = '#';
@@ -4820,11 +4820,17 @@ doterm(struct bbslist *bbs)
 						conn_send(ch, 1, 0);
 						break;
 					case 10:
-						ch[0] = '\r';
+						if (cterm->emulation == CTERM_EMULATION_PRESTEL)
+							ch[0] = '\r';
+						else
+							ch[0] = 10;
 						conn_send(ch, 1, 0);
 						break;
 					case 13:
-						ch[0] = '_';
+						if (cterm->emulation == CTERM_EMULATION_PRESTEL)
+							ch[0] = '_';
+						else
+							ch[0] = 13;
 						conn_send(ch, 1, 0);
 						break;
 					case 8:

@@ -796,7 +796,7 @@ set_attr(struct cterminal *cterm, unsigned char colour, bool bg)
 		cterm->attr |= (colour & 0x07);
 	}
 	attr2palette(cterm->attr, bg ? NULL : &cterm->fg_color, bg ? &cterm->bg_color : NULL);
-	if (cterm->emulation == CTERM_EMULATION_PRESTEL) {
+	if (cterm->emulation == CTERM_EMULATION_PRESTEL || cterm->emulation == CTERM_EMULATION_BEEB) {
 		if (cterm->extattr & CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT)
 			cterm->bg_color |= 0x01000000;
 		cterm->bg_color |= 0x02000000;
@@ -826,6 +826,7 @@ prestel_new_line(struct cterminal *cterm)
 	cterm->attr = 7;
 	attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
 	cterm->bg_color |= 0x02000000;
+	cterm->bg_color &= ~0x20000000;
 	cterm->prestel_last_mosaic = 0;
 	TEXTATTR(cterm->attr);
 	setcolour(cterm->fg_color, cterm->bg_color);
@@ -856,10 +857,12 @@ prestel_apply_ctrl_before(struct cterminal *cterm, uint8_t ch)
 		case 89: // Contiguous Mosaics
 			// TODO: Can be either way. :(
 			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_SEPARATED);
+			cterm->bg_color &= ~0x20000000;
 			break;
 		case 90: // Separated Mosaics
 			// TODO: Can be either way. :(
 			cterm->extattr |= CTERM_EXTATTR_PRESTEL_SEPARATED;
+			cterm->bg_color |= 0x20000000;
 			break;
 		case 92: // Black Background
 			set_bgattr(cterm, BLACK);
@@ -987,8 +990,11 @@ prestel_get_state(struct cterminal *cterm)
 				prestel_apply_ctrl(cterm, ch);
 			}
 			else {
-				if (ch >= 128)
+				if (ch >= 160) {
 					cterm->prestel_last_mosaic = ch;
+					if (cterm->extattr & CTERM_EXTATTR_PRESTEL_SEPARATED)
+						cterm->prestel_last_mosaic &= 0x7f;
+				}
 			}
 		}
 	}
@@ -1003,7 +1009,7 @@ cterm_gotoxy(struct cterminal *cterm, int x, int y)
 	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_CURR, &x, &y);
 	GOTOXY(x, y);
 	ABS_XY(&cterm->xpos, &cterm->ypos);
-	if (cterm->emulation == CTERM_EMULATION_PRESTEL)
+	if (cterm->emulation == CTERM_EMULATION_PRESTEL || cterm->emulation == CTERM_EMULATION_BEEB)
 		prestel_get_state(cterm);
 }
 
@@ -2606,7 +2612,7 @@ adjust_currpos(struct cterminal *cterm, int xadj, int yadj, int scroll)
 			ty = TERM_MINX;
 		else
 			ty += yadj;
-		if (cterm->emulation == CTERM_EMULATION_PRESTEL) {
+		if (cterm->emulation == CTERM_EMULATION_PRESTEL || cterm->emulation == CTERM_EMULATION_BEEB) {
 			while (ty > TERM_MAXY) {
 				ty -= TERM_MAXY;
 			}
@@ -2661,7 +2667,7 @@ adjust_currpos(struct cterminal *cterm, int xadj, int yadj, int scroll)
 	if (ty < cterm->top_margin && y >= cterm->top_margin)
 		ty = cterm->top_margin;
 	GOTOXY(tx, ty);
-	if (cterm->emulation == CTERM_EMULATION_PRESTEL)
+	if (cterm->emulation == CTERM_EMULATION_PRESTEL || cterm->emulation == CTERM_EMULATION_BEEB)
 		prestel_get_state(cterm);
 }
 
@@ -4971,7 +4977,7 @@ struct cterminal* cterm_init(int height, int width, int xpos, int ypos, int back
 		sem_init(&cterm->playnote_thread_terminated,0,0);
 		_beginthread(playnote_thread, 0, cterm);
 	}
-	if (cterm->emulation == CTERM_EMULATION_PRESTEL) {
+	if (cterm->emulation == CTERM_EMULATION_PRESTEL || cterm->emulation == CTERM_EMULATION_BEEB) {
 		cterm->cursor = _NOCURSOR;
 		SETCURSORTYPE(cterm->cursor);
 		memcpy(cterm->prestel_data[0], "????????????????", PRESTEL_MEM_SLOT_SIZE);
@@ -5083,7 +5089,11 @@ static void prestel_fix_line(struct cterminal *cterm, int x, int y, bool restore
 			if (line[i].ch < 128 && (cterm->extattr & CTERM_EXTATTR_PRESTEL_HOLD)) {
 				// Should be held mosaic, but is not mosaic char...
 				if (cterm->prestel_last_mosaic != 0) {
-					line[i].ch = cterm->prestel_last_mosaic;
+					line[i].ch = cterm->prestel_last_mosaic | 0x80;
+					if (cterm->prestel_last_mosaic & 0x80)
+						line[i].bg &= ~0x20000000;
+					else
+						line[i].bg |= 0x20000000;
 					fixed = true;
 				}
 				else {
@@ -5093,9 +5103,18 @@ static void prestel_fix_line(struct cterminal *cterm, int x, int y, bool restore
 					}
 				}
 			}
-			if (line[i].ch >= 128 && ((cterm->extattr & CTERM_EXTATTR_PRESTEL_HOLD) == 0)) {
+			if (line[i].ch >= 160 && ((cterm->extattr & CTERM_EXTATTR_PRESTEL_HOLD) == 0)) {
 				line[i].ch = ch;
 				fixed = true;
+			}
+			if (line[i].ch >= 160 && (cterm->extattr & CTERM_EXTATTR_PRESTEL_HOLD)) {
+				// Should separated attribute is incorrect for held mosaic
+				if ((!!(cterm->prestel_last_mosaic & 0x80)) == (!!(line[i].bg & 0x20000000))) {
+					if (cterm->prestel_last_mosaic & 0x80)
+						line[i].bg &= ~0x20000000;
+					else
+						line[i].bg |= 0x20000000;
+				}
 			}
 			prestel_apply_ctrl_after(cterm, ch);
 			if (cterm->extattr & CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT)
@@ -5131,40 +5150,38 @@ static void prestel_fix_line(struct cterminal *cterm, int x, int y, bool restore
 				line[i].legacy_attr = cterm->attr;
 				fixed = true;
 			}
-			if (line[i].ch >= 128 && ((cterm->extattr & CTERM_EXTATTR_PRESTEL_MOSAIC) == 0)) {
+			if (line[i].ch >= 160 && ((cterm->extattr & CTERM_EXTATTR_PRESTEL_MOSAIC) == 0)) {
 				// Mosaic character, but should be alphanum
-				if (line[i].ch >= 192)
-					line[i].ch -= 64;
-				if (line[i].ch < 160)
-					line[i].ch -= 96;
-				else
-					line[i].ch -= 64;
+				line[i].ch &= 0x7f;
 				fixed = true;
 			}
 			else if ((cterm->extattr & CTERM_EXTATTR_PRESTEL_MOSAIC)
 			    && ((line[i].ch >= 32 && line[i].ch < 64)
 			     || (line[i].ch >= 96 && line[i].ch < 128))) {
 				// Alphanum but should be mosaic
-				if (line[i].ch >= 32 && line[i].ch < 64)
-					line[i].ch += 96;
-				else
-					line[i].ch += 64;
+				line[i].ch |= 0x80;
+				if (line[i].ch == 0xff)
+					line[i].ch = 0xdf;
 				if (cterm->extattr & CTERM_EXTATTR_PRESTEL_SEPARATED)
-					line[i].ch += 64;
+					line[i].bg |= 0x20000000;
+				else
+					line[i].bg &= ~0x20000000;
 				fixed = true;
 			}
-			else if((line[i].ch >= 192) && ((cterm->extattr & CTERM_EXTATTR_PRESTEL_SEPARATED) == 0)) {
+			else if((line[i].bg & 0x20000000) && ((cterm->extattr & CTERM_EXTATTR_PRESTEL_SEPARATED) == 0)) {
 				// Should not be separated...
-				line[i].ch -= 64;
+				line[i].bg &= ~0x20000000;
 				fixed = true;
 			}
-			else if(((line[i].ch >= 128) && (line[i].ch < 192)) && (cterm->extattr & CTERM_EXTATTR_PRESTEL_SEPARATED)) {
+			else if(((line[i].bg & 0x20000000) == 0) && (cterm->extattr & CTERM_EXTATTR_PRESTEL_SEPARATED)) {
 				// Should be separated...
-				line[i].ch += 64;
+				line[i].bg |= 0x20000000;
 				fixed = true;
 			}
-			if (line[i].ch >= 128) {
+			if (line[i].ch >= 160) {
 				cterm->prestel_last_mosaic = line[i].ch;
+				if (cterm->extattr & CTERM_EXTATTR_PRESTEL_SEPARATED)
+					cterm->prestel_last_mosaic &= 0x7f;
 			}
 		}
 	}
@@ -5190,7 +5207,7 @@ advance_char(struct cterminal *cterm, int *x, int *y, int move)
 	int rm = cterm->right_margin;
 	int bm = cterm->bottom_margin;
 
-	if (cterm->emulation == CTERM_EMULATION_PRESTEL) {
+	if (cterm->emulation == CTERM_EMULATION_PRESTEL || cterm->emulation == CTERM_EMULATION_BEEB) {
 		prestel_fix_line(cterm, *x, *y, true, false);
 		TEXTATTR(cterm->attr);
 		setcolour(cterm->fg_color, cterm->bg_color);
@@ -5209,19 +5226,19 @@ advance_char(struct cterminal *cterm, int *x, int *y, int move)
 				*y = cterm->top_margin;
 				move = 1;
 				*x = lm;
-				if (cterm->emulation == CTERM_EMULATION_PRESTEL) {
-					prestel_new_line(cterm);
-				}
+				prestel_new_line(cterm);
 			}
 			else {
 				cond_scrollup(cterm);
 				move = 1;
 				*x = lm;
+				if (cterm->emulation == CTERM_EMULATION_BEEB)
+					prestel_new_line(cterm);
 			}
 		}
 		else {
 			if(*x == rm || *x == CURR_MAXX) {
-				if (cterm->emulation == CTERM_EMULATION_PRESTEL) {
+				if (cterm->emulation == CTERM_EMULATION_PRESTEL || cterm->emulation == CTERM_EMULATION_BEEB) {
 					prestel_new_line(cterm);
 				}
 				*x=lm;
@@ -5320,7 +5337,7 @@ ctputs(struct cterminal *cterm, char *buf)
 		}
 	}
 	CPUTS(outp);
-	if (cterm->emulation == CTERM_EMULATION_PRESTEL)
+	if (cterm->emulation == CTERM_EMULATION_PRESTEL || cterm->emulation == CTERM_EMULATION_BEEB)
 		prestel_fix_line(cterm, cx, cy, true, false);
 	*cterm->_wscroll=oldscroll;
 }
@@ -5505,7 +5522,13 @@ prestel_move(struct cterminal *cterm, int xadj, int yadj)
 		ty += TERM_MAXY;
 	}
 	while (ty > cterm->bottom_margin) {
-		ty -= TERM_MAXY;
+		if (cterm->emulation == CTERM_EMULATION_BEEB) {
+			cterm_scrollup(cterm);
+			ty--;
+		}
+		else {
+			ty -= TERM_MAXY;
+		}
 	}
 	GOTOXY(tx, ty);
 	prestel_get_state(cterm);
@@ -5541,15 +5564,20 @@ prestel_handle_escaped(struct cterminal *cterm, uint8_t ctrl)
 	setcolour(cterm->fg_color, cterm->bg_color);
 	cterm->escbuf[0]=0;
 	cterm->sequence=0;
+	tmpvc[0].fg = cterm->fg_color | (ctrl << 24);
+	tmpvc[0].bg = cterm->bg_color;
 	if ((cterm->extattr & CTERM_EXTATTR_PRESTEL_HOLD) && (cterm->prestel_last_mosaic != 0)) {
 		tmpvc[0].ch = cterm->prestel_last_mosaic;
+		if (tmpvc[0].ch & 0x80)
+			tmpvc[0].bg &= ~0x20000000;
+		else
+			tmpvc[0].bg |= 0x20000000;
+		tmpvc[0].ch |= 0x80;
 	}
 	else {
 		tmpvc[0].ch = ' ';
 	}
 	tmpvc[0].legacy_attr=cterm->attr;
-	tmpvc[0].fg = cterm->fg_color | (ctrl << 24);
-	tmpvc[0].bg = cterm->bg_color;
 	tmpvc[0].font = ciolib_attrfont(cterm->attr);
 	SCR_XY(&sx, &sy);
 	CURR_XY(&x, &y);
@@ -5629,7 +5657,7 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 				fwrite(buf, buflen, 1, cterm->logfile);
 			prn[0]=0;
 			prnpos = prn;
-			if (cterm->emulation == CTERM_EMULATION_PRESTEL)
+			if (cterm->emulation == CTERM_EMULATION_PRESTEL || cterm->emulation == CTERM_EMULATION_BEEB)
 				prestel_get_state(cterm);
 			for(j=0;j<buflen;j++) {
 				if(prnpos >= prnlast) {
@@ -5774,7 +5802,7 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 					}
 				}
 				else if(cterm->sequence) {
-					if (cterm->emulation == CTERM_EMULATION_PRESTEL) {
+					if (cterm->emulation == CTERM_EMULATION_PRESTEL || cterm->emulation == CTERM_EMULATION_BEEB) {
 						if (cterm->prestel_prog_state == PRESTEL_PROG_NONE) {
 							if (ch[0] == '1')
 								cterm->prestel_prog_state = PRESTEL_PROG_1;
@@ -6386,7 +6414,7 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 								break;
 						}
 					}
-					else if(cterm->emulation == CTERM_EMULATION_PRESTEL) {
+					else if(cterm->emulation == CTERM_EMULATION_PRESTEL || cterm->emulation == CTERM_EMULATION_BEEB) {
 						switch(buf[j]) {
 							case 0: // NUL
 								uctputs(cterm, prn);
@@ -6396,7 +6424,7 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 							case 5: // ENQ
 								prestel_send_memory(cterm, 0, retbuf, retsize);
 								break;
-							case 8: // APB (Active Position Packward)
+							case 8: // APB (Active Position Backward)
 								uctputs(cterm, prn);
 								prn[0]=0;
 								prnpos = prn;
@@ -6454,18 +6482,17 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 								// "Normal" ASCII... including CR and LF in here.
 								if (buf[j] == 13 || buf[j] == 10 || (buf[j] >= 32 && buf[j] <= 127)) {
 									if (cterm->extattr & CTERM_EXTATTR_PRESTEL_MOSAIC) {
-										if (buf[j] < 64 && buf[j] >= 32)
-											ch[0] = buf[j] + 96;
-										else if (buf[j] >= 96 && buf[j] < 128)
-											ch[0] = buf[j] + 64;
+										if ((buf[j] < 64 && buf[j] >= 32) || (buf[j] >= 96 && buf[j] < 128)) {
+											ch[0] = buf[j] | 0x80;
+											if (ch[0] == 0xff)
+												ch[0] = 0xdf;
+										}
 										else
 											ch[0] = buf[j];
-										if (cterm->extattr & CTERM_EXTATTR_PRESTEL_SEPARATED) {
-											if (ch[0] >= 128)
-												ch[0] += 64;
-										}
-										if (ch[0] >= 128) {
+										if (ch[0] >= 160) {
 											cterm->prestel_last_mosaic = ch[0];
+											if (cterm->extattr & CTERM_EXTATTR_PRESTEL_SEPARATED)
+												cterm->prestel_last_mosaic &= 0x7f;
 										}
 									}
 									*prnpos++ = ch[0];
@@ -6487,7 +6514,7 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 								}
 								else {
 									// G1... unicode replacement
-									*prnpos++ = 27;
+									*prnpos++ = ch[0];
 									*prnpos = 0;
 								}
 								break;
