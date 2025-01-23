@@ -422,12 +422,22 @@ prestel_apply_ctrl_before(struct cterminal *cterm, uint8_t ch)
 			cterm->extattr |= CTERM_EXTATTR_PRESTEL_CONCEAL;
 			break;
 		case 89: // Contiguous Mosaics
-			// TODO: Can be either way. :(
+			/*
+			 * It makes no difference if this is before or after since 
+			 * if there's a held mosaic, it's displayed the same way it
+			 * was originally, and if there's no held mosaic, this will
+			 * just be a space.
+			 */
 			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_SEPARATED);
 			cterm->bg_color &= ~0x20000000;
 			break;
 		case 90: // Separated Mosaics
-			// TODO: Can be either way. :(
+			/*
+			 * It makes no difference if this is before or after since 
+			 * if there's a held mosaic, it's displayed the same way it
+			 * was originally, and if there's no held mosaic, this will
+			 * just be a space.
+			 */
 			cterm->extattr |= CTERM_EXTATTR_PRESTEL_SEPARATED;
 			cterm->bg_color |= 0x20000000;
 			break;
