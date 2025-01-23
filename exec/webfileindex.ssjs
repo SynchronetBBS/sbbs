@@ -40,6 +40,12 @@ function root_link()
 	return "root".link(file_area.web_vpath_prefix);
 }
 
+function lib_link(dir)
+{
+	var lib = file_area.lib[dir.lib_name];
+	return lib.description.link(file_area.web_vpath_prefix + lib.vdir + "/");
+}
+
 var sorting_description = {
 	"NAME_AI": "Name ascending",
 	"NAME_DI": "Name descending",
@@ -52,11 +58,12 @@ var sorting_description = {
 // Listing files in a directory
 function dir_index(dir)
 {
+	const eyeball = "&#x1F441;";
 	dir = file_area.dir[dir];
 	header(dir.description);
 	writeln("[" + root_link() + "] / ");
-	var lib = file_area.lib[dir.lib_name];
-	writeln(lib.description.link(file_area.web_vpath_prefix + lib.vdir + "/") + "<br />");
+	writeln(lib_link(dir));
+	writeln("<br />");
 	writeln("<p>");
 
 	var fb = new FileBase(dir.code);
@@ -91,6 +98,7 @@ function dir_index(dir)
 	writeln("<table>");
 	write("<thead>");
 	write("<tr align=left>");
+	write("<th />");
 	write("<th>Name</th>");
 	write("<th align=right>Size</th>");
 	write("<th align=center>Date</th>");
@@ -103,6 +111,10 @@ function dir_index(dir)
 		if(f.size <= 0)
 			continue;
 		write("<tr>");
+		write("<td>");
+		if(viewable_file(f.name))
+			write("<a href=?view=" + encodeURIComponent(f.name) + " title='View'>" + eyeball + "</a>");
+		write("</td>");
 		write("<td>" + f.name.link(f.name) + "</td>");
 		write("<td align=right>" + file_size_float(f.size, 1, 0) + "</td>");
 		write("<td align=right>" + strftime("%b %d, %Y", f.added) + "</td>");
@@ -176,6 +188,126 @@ function shortcuts()
 	writeln("<p>");
 }
 
+function file_type(filename)
+{
+	var ext = file_getext(filename);
+	if(ext)
+		ext = ext.toLowerCase().slice(1);
+	return ext;
+}
+
+function archive_file(filename)
+{
+	var ext = file_type(filename);
+	return (Archive.supported_formats || ['zip', '7z', 'tgz']).indexOf(ext) >= 0;
+}
+
+function image_file(filename)
+{
+	var ext = file_type(filename);
+	return ['jpg', 'jpeg', 'png', 'gif'].indexOf(ext) >= 0;
+}
+
+function viewable_file(filename)
+{
+	return archive_file(filename) || image_file(filename);
+}
+
+function nav_file(filename)
+{
+	var ret = {};
+	var fb = FileBase(http_request.dir);
+	if(!fb.open())
+		return null;
+	var list = fb.get_names();
+	fb.close();
+	for(var i = 0; i < list.length; ++i) {
+		if(list[i] == filename) {
+			if(i)
+				ret.prev = list[i - 1];
+			if(i + 1 < list.length)
+				ret.next = list[i + 1];
+			return ret;
+		}
+	}
+	return null;
+}
+
+function nav_links(nav)
+{
+	const left =
+		'<svg xmlns="http://www.w3.org/2000/svg" width="15px" height="15px" viewBox="0 0 16 16" fill="none">' +
+		'<title>Previous file</title>' +
+		'<path d="M8 10L8 14L6 14L-2.62268e-07 8L6 2L8 2L8 6L16 6L16 10L8 10Z" fill="#000000"/>' +
+		'</svg>';
+	const right =
+		'<svg xmlns="http://www.w3.org/2000/svg" width="15px" height="15px" viewBox="0 0 16 16" fill="none">' +
+		'<title>Next file</title>' +
+		'<path d="M8 6L8 2L10 2L16 8L10 14L8 14L8 10L-1.74845e-07 10L-3.01991e-07 6L8 6Z" fill="#000000"/>' +
+		'</svg>';
+	var result = '';
+	if(nav && nav.prev)
+		result += left.link("?view=" + nav.prev) + " ";
+	if(nav && nav.next)
+		result += right.link("?view=" + nav.next);
+	return result;
+}
+
+function view_file(filename)
+{
+	header(" - " + filename);
+	dir = file_area.dir[http_request.dir];
+	writeln("[" + root_link() + "] / ");
+	writeln(lib_link(dir) + " / ");
+	writeln(dir.description.link("./"));
+	writeln("<br />");
+	writeln("<p>");
+	var nav  = nav_file(filename);
+	writeln(nav_links(nav));
+	writeln("<p>");
+	if(!viewable_file(filename)) {
+		writeln("Non-viewable file type: " + filename);
+		return;
+	}
+	var filename = file_area.dir[http_request.dir].path + filename;
+
+	if(archive_file(filename))
+		view_archive(filename);
+	else if(image_file(filename))
+		view_image(filename);
+	writeln(nav_links(nav));
+	writeln("<br />");
+}
+
+function view_archive(filename)
+{
+	var list;
+	try {
+		list = Archive(filename).list(false);
+	} catch(e) {
+		log(LOG_DEBUG, filename + " " + e);
+		writeln(file_getname(filename) + e); //": Unsupported archive");
+		return;
+        }
+
+	writeln('<table>');
+	for(var i in list) {
+		var file = list[i];
+		if(file.type != 'file')
+			continue;
+		writeln('<tr>');
+		writeln('<td>' + file.name.fixed());
+		writeln('<td align=right>' + file.size);
+		writeln('<td>' + system.timestr(file.time).slice(4));
+	}
+	writeln('</table>');
+}
+
+function view_image(filename)
+{
+	writeln("<img src=" + file_getname(filename) + " />");
+}
+
 // Listing all libraries
 function root_index()
 {
@@ -195,7 +327,11 @@ if(http_request.virtual_path[http_request.virtual_path.length - 1] != '/') {
 }
 
 if(http_request.dir !== undefined) {
-	dir_index(http_request.dir);
+	var view = http_request.query["view"];
+	if(view === undefined)
+		dir_index(http_request.dir);
+	else
+		view_file(view[0]);
 } else if (http_request.lib !== undefined) {
 	lib_index(http_request.lib);
 } else {
