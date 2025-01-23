@@ -2264,6 +2264,8 @@ main(int argc, char **argv)
 USAGE:
 	if (bbs_alloc)
 		free(bbs);
+	if (cio_api.mode == CIOLIB_MODE_AUTO && isatty(STDOUT_FILENO))
+		initciolib(CIOLIB_MODE_ANSI);
 	uifcbail();
 	clrscr();
 	gettextinfo(&txtinfo);
@@ -2292,11 +2294,13 @@ USAGE:
 		}
 	}
 	textattr(WHITE);
-	cputs("<Press A Key to Exit>");
-	switch (getch()) {
-		case 0:
-		case 0xe0:
-			getch();
+	if (cio_api.mode != CIOLIB_MODE_ANSI) {
+		cputs("<Press A Key to Exit>");
+		switch (getch()) {
+			case 0:
+			case 0xe0:
+				getch();
+		}
 	}
 	textattr(LIGHTGRAY);
 	return 0;
