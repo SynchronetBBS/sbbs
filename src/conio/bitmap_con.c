@@ -561,9 +561,10 @@ struct charstate {
 	uint32_t bfc;
 	uint32_t bg;
 	uint32_t fontoffset;
+	bool slow;
+	bool gexpand;
 	int8_t extra_rows;
 	bool double_height;
-	bool gexpand;
 	bool sep;
 };
 
@@ -576,15 +577,20 @@ struct blockstate {
 };
 
 static bool
-can_cheat(struct blockstate *bs, struct vmem_cell *vc)
+can_cheat(struct blockstate *restrict bs, struct vmem_cell *restrict vc)
 {
 	return vc->bg == bs->cheat_colour && (vc->ch == ' ') && (vc->font < CONIO_FIRST_FREE_FONT) && !(vc->bg & 0x02000000);
 }
 
 static void
-calc_charstate(struct blockstate *bs, struct vmem_cell *vc, struct charstate *cs, int xpos, int ypos)
+calc_charstate(struct blockstate *restrict bs, struct vmem_cell *restrict vc, struct charstate *restrict cs, int xpos, int ypos)
 {
 	bool not_hidden = true;
+	cs->slow = bs->font_data_width != 8;
+	cs->bg = vc->bg;
+	cs->extra_rows = 0;
+	cs->sep = false;
+	cs->double_height = false;
 
 	if (vstat.forced_font) {
 		cs->font = vstat.forced_font;
@@ -618,21 +624,21 @@ calc_charstate(struct blockstate *bs, struct vmem_cell *vc, struct charstate *cs
 	assert(cs->font);
 	bool draw_fg = ((!(vc->legacy_attr & 0x80)) || vstat.no_blink);
 	cs->fontoffset = (vc->ch) * (vstat.charheight * ((bs->font_data_width + 7) / 8));
-	cs->double_height = false;
-	if ((vstat.flags & VIDMODES_FLAG_LINE_GRAPHICS_EXPAND) && (vc->ch) >= 0xC0 && (vc->ch) <= 0xDF)
-		cs->gexpand = true;
-	else
-		cs->gexpand = false;
+	if (bs->expand) {
+		cs->slow = true;
+		if (vc->ch >= 0xC0 && vc->ch <= 0xDF)
+			cs->gexpand = true;
+		else
+			cs->gexpand = false;
+	}
 	uint32_t fg = vc->fg;
-	cs->bg = vc->bg;
-	cs->extra_rows = 0;
-	cs->sep = false;
 
 	if (vstat.mode == PRESTEL_40X25 && (vc->bg & 0x02000000)) {
 		unsigned char lattr;
 		bool top = false;
 		bool bottom = false;
 
+		cs->slow = true;
 		if (vc->bg & 0x20000000 && vc->ch >= 160)
 			cs->sep = true;
 		// Start at the first cell...
@@ -709,79 +715,57 @@ calc_charstate(struct blockstate *bs, struct vmem_cell *vc, struct charstate *cs
 	cs->bfc = not_hidden ? fg : cs->bg;
 }
 
+/*
+ * This only draws 8-bit-wide characters, doesn't mark screens as damaged,
+ * doesn't support expanded or double-height, etc.
+ * Basically, this is the happy path
+ */
 static void
-draw_char_row(struct blockstate *bs, struct charstate *cs, uint32_t y)
+draw_char_row_fast(struct blockstate *bs, struct charstate *cs)
 {
-	bool fbb;
+	const uint8_t mask[8] = {0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01};
+	const uint8_t fb = cs->font[cs->fontoffset];
+	int pixeloffset = bs->pixeloffset;
 
-	uint8_t fb = cs->font[cs->fontoffset];
-	for(unsigned x = 0; x < vstat.charwidth; x++) {
-		unsigned bitnum = x & 0x07;
-		if (bs->expand && x == bs->font_data_width) {
-			// The comparison with x is to silence Coverity false-positive.
-			if (cs->gexpand && x)
-				fbb = cs->font[cs->fontoffset - 1] & (0x80 >> ((x - 1) & 7));
-			else
-				fbb = 0;
-		}
-		else {
-			if (bitnum == 0 && x != 0) {
-				cs->fontoffset++;
-				fb = cs->font[cs->fontoffset];
-			}
-			fbb = fb & (0x80 >> bitnum);
-		}
-
-		if (x == (bs->font_data_width - 1)) {
-			cs->fontoffset++;
-			fb = cs->font[cs->fontoffset];
-		}
-		
-		if (cs->sep) {
-			if (x == 0 || x == 1 || x == 6 || x == 7 || y == 4 || y == 5 || y == 12 || y == 13 || y == 18 || y == 19)
-				fbb = false;
-		}
-
-		uint32_t ac, bc;
+	for(unsigned x = 0; x < 8; x++) {
+		const bool fbb = fb & mask[x];
 
 		if (fbb) {
-			ac = cs->afc;
-			bc = cs->bfc;
+			screena.rect->data[pixeloffset] = cs->afc;
+			screenb.rect->data[pixeloffset] = cs->bfc;
 		}
 		else {
-			ac = cs->bg;
-			bc = cs->bg;
+			screena.rect->data[pixeloffset] = screenb.rect->data[pixeloffset] = cs->bg;
 		}
 
-		if (screena.rect->data[bs->pixeloffset] != ac) {
-			screena.rect->data[bs->pixeloffset] = ac;
-			screena.update_pixels = 1;
-		}
-		if (screenb.rect->data[bs->pixeloffset] != bc) {
-			screenb.rect->data[bs->pixeloffset] = bc;
-			screenb.update_pixels = 1;
-		}
-
-		bs->pixeloffset++;
-		assert(bs->pixeloffset < bs->maxpix || x == (vstat.charwidth - 1));
+		pixeloffset++;
+		assert(pixeloffset < bs->maxpix || x == (vstat.charwidth - 1));
 	}
+	bs->pixeloffset = pixeloffset;
+	cs->fontoffset++;
 }
 
 static void
-draw_char_row_double(struct blockstate *bs, struct charstate *cs, uint32_t y)
+draw_char_row_slow(struct blockstate *bs, struct charstate *cs, uint32_t y)
 {
 	bool fbb;
+	int pixeloffset;
+	int pixeloffset2;
 
-	ssize_t pixeloffset = bs->pixeloffset + cs->extra_rows * screena.screenwidth;
-	if (pixeloffset >= bs->maxpix)
-		pixeloffset -= bs->maxpix;
-	if (pixeloffset < 0)
-		pixeloffset += bs->maxpix;
-	ssize_t pixeloffset2 = bs->pixeloffset + (cs->extra_rows + 1) * screena.screenwidth;
-	if (pixeloffset2 < 0)
-		pixeloffset2 += bs->maxpix;
-	if (pixeloffset2 >= bs->maxpix)
-		pixeloffset2 -= bs->maxpix;
+	if (cs->double_height) {
+		pixeloffset = bs->pixeloffset + cs->extra_rows * screena.screenwidth;
+		if (pixeloffset >= bs->maxpix)
+			pixeloffset -= bs->maxpix;
+		if (pixeloffset < 0)
+			pixeloffset += bs->maxpix;
+		pixeloffset2 = bs->pixeloffset + (cs->extra_rows + 1) * screena.screenwidth;
+		if (pixeloffset2 < 0)
+			pixeloffset2 += bs->maxpix;
+		if (pixeloffset2 >= bs->maxpix)
+			pixeloffset2 -= bs->maxpix;
+	}
+	else
+		pixeloffset = bs->pixeloffset;
 
 	uint8_t fb = cs->font[cs->fontoffset];
 	for(unsigned x = 0; x < vstat.charwidth; x++) {
@@ -831,20 +815,27 @@ draw_char_row_double(struct blockstate *bs, struct charstate *cs, uint32_t y)
 		}
 		pixeloffset++;
 		assert(pixeloffset < bs->maxpix || x == (vstat.charwidth - 1));
-		if (screena.rect->data[pixeloffset2] != ac) {
-			screena.rect->data[pixeloffset2] = ac;
-			screena.update_pixels = 1;
+		if (cs->double_height) {
+			if (screena.rect->data[pixeloffset2] != ac) {
+				screena.rect->data[pixeloffset2] = ac;
+				screena.update_pixels = 1;
+			}
+			if (screenb.rect->data[pixeloffset2] != bc) {
+				screenb.rect->data[pixeloffset2] = bc;
+				screenb.update_pixels = 1;
+			}
+			pixeloffset2++;
+			assert(pixeloffset2 < bs->maxpix || x == (vstat.charwidth - 1));
 		}
-		if (screenb.rect->data[pixeloffset2] != bc) {
-			screenb.rect->data[pixeloffset2] = bc;
-			screenb.update_pixels = 1;
-		}
-		pixeloffset2++;
-		assert(pixeloffset2 < bs->maxpix || x == (vstat.charwidth - 1));
 	}
-	cs->extra_rows++;
-	bs->pixeloffset += vstat.charwidth;
-	assert(bs->pixeloffset <= bs->maxpix);
+	if (cs->double_height) {
+		cs->extra_rows++;
+		bs->pixeloffset += vstat.charwidth;
+		assert(bs->pixeloffset <= bs->maxpix);
+	}
+	else {
+		bs->pixeloffset = pixeloffset;
+	}
 }
 
 static void
@@ -854,11 +845,11 @@ bitmap_draw_vmem_locked(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 	assert(sy <= ey);
 	struct charstate charstate[255]; // ciolib only supports 255 columns
 	struct blockstate bs;
-	size_t vwidth = ex - sx + 1;
-	size_t vheight  = ey - sy + 1;
+	unsigned vwidth = ex - sx + 1;
+	unsigned vheight  = ey - sy + 1;
 
-	size_t xoffset = (sx-1) * vstat.charwidth;
-	size_t yoffset = (sy-1) * vstat.charheight;
+	unsigned xoffset = (sx-1) * vstat.charwidth;
+	unsigned yoffset = (sy-1) * vstat.charheight;
 	bs.expand = vstat.flags & VIDMODES_FLAG_EXPAND;
 	bs.font_data_width = vstat.charwidth - (bs.expand ? 1 : 0);
 
@@ -870,7 +861,7 @@ bitmap_draw_vmem_locked(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 
 	bs.pixeloffset = pixel_offset(&screena, xoffset, yoffset);
 	bs.cheat_colour = fill[0].bg;
-	size_t rsz = screena.screenwidth - vstat.charwidth * vwidth;
+	unsigned rsz = screena.screenwidth - vstat.charwidth * vwidth;
 
 	// Fill in charstate for this pass
 	bool cheat = true;
@@ -878,8 +869,8 @@ bitmap_draw_vmem_locked(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 		cheat = false;
 	}
 	else {
-		for (size_t vy = 0; vy < vheight; vy++) {
-			for (size_t vx = 0; vx < vwidth; vx++) {
+		for (unsigned vy = 0; vy < vheight; vy++) {
+			for (unsigned vx = 0; vx < vwidth; vx++) {
 				if (!can_cheat(&bs, &fill[vy * vwidth + vx])) {
 					cheat = false;
 					break;
@@ -890,10 +881,11 @@ bitmap_draw_vmem_locked(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 		}
 	}
 	if (cheat) {
-		size_t ylim = vheight * vstat.charheight;
-		size_t xlim = vwidth * vstat.charwidth;
-		for (uint32_t y = 0; y < ylim; y++) {
-			for (size_t vx = 0; vx < xlim; vx++) {
+		const unsigned ylim = vheight * vstat.charheight;
+		const unsigned xlim = vwidth * vstat.charwidth;
+		const int opo = bs.pixeloffset;
+		for (unsigned y = 0; y < ylim; y++) {
+			for (unsigned vx = 0; vx < xlim; vx++) {
 				screena.rect->data[bs.pixeloffset] = bs.cheat_colour;
 				bs.pixeloffset++;
 				assert(bs.pixeloffset < bs.maxpix || vx == (xlim - 1));
@@ -903,9 +895,9 @@ bitmap_draw_vmem_locked(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 				bs.pixeloffset -= bs.maxpix;
 		}
 		screena.update_pixels = 1;
-		bs.pixeloffset = pixel_offset(&screena, xoffset, yoffset);
-		for (uint32_t y = 0; y < ylim; y++) {
-			for (size_t vx = 0; vx < xlim; vx++) {
+		bs.pixeloffset = opo;
+		for (unsigned y = 0; y < ylim; y++) {
+			for (unsigned vx = 0; vx < xlim; vx++) {
 				screenb.rect->data[bs.pixeloffset] = bs.cheat_colour;
 				bs.pixeloffset++;
 				assert(bs.pixeloffset < bs.maxpix || vx == (xlim - 1));
@@ -916,9 +908,9 @@ bitmap_draw_vmem_locked(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 		}
 		screenb.update_pixels = 1;
 		int foff = 0;
-		for (size_t vy = 0; vy < vheight; vy++) {
+		for (unsigned vy = 0; vy < vheight; vy++) {
 			int coff = vmem_cell_offset(vstat.vmem, sx - 1, sy - 1 + vy);
-			for (size_t vx = 0; vx < vwidth; vx++) {
+			for (unsigned vx = 0; vx < vwidth; vx++) {
 				bitmap_drawn[coff] = fill[foff++];
 				coff = vmem_next_offset(vstat.vmem, coff);
 			}
@@ -926,26 +918,34 @@ bitmap_draw_vmem_locked(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 	}
 	else {
 		int foff = 0;
-		for (size_t vy = 0; vy < vheight; vy++) {
+		bool didfast = false;
+		for (unsigned vy = 0; vy < vheight; vy++) {
 			// Fill in charstate for this pass
 			int coff = vmem_cell_offset(vstat.vmem, sx - 1, sy - 1 + vy);
-			for (size_t vx = 0; vx < vwidth; vx++) {
+			for (unsigned vx = 0; vx < vwidth; vx++) {
 				bitmap_drawn[coff] = fill[foff++];
 				coff = vmem_next_offset(vstat.vmem, coff);
 				calc_charstate(&bs, &fill[vy * vwidth + vx], &charstate[vx], sx + vx, sy + vy);
+				if (charstate[vx].slow == false)
+					didfast = true;
 			}
 			// Draw the characters...
-			for (uint32_t y = 0; y < vstat.charheight; y++) {
-				for (size_t vx = 0; vx < vwidth; vx++) {
-					if (charstate[vx].double_height)
-						draw_char_row_double(&bs, &charstate[vx], y);
-					else
-						draw_char_row(&bs, &charstate[vx], y);
+			for (unsigned y = 0; y < vstat.charheight; y++) {
+				for (unsigned vx = 0; vx < vwidth; vx++) {
+					if (charstate[vx].slow)
+						draw_char_row_slow(&bs, &charstate[vx], y);
+					else {
+						draw_char_row_fast(&bs, &charstate[vx]);
+					}
 				}
 				bs.pixeloffset += rsz;
 				if (bs.pixeloffset >= bs.maxpix)
 					bs.pixeloffset -= bs.maxpix;
 			}
+		}
+		if (didfast) {
+			screena.update_pixels = true;
+			screenb.update_pixels = true;
 		}
 	}
 }
