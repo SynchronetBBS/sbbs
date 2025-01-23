@@ -144,7 +144,8 @@ function dir_index(dir)
 	writeln("</tbody>");
 	writeln("</table>");
 	writeln("</div>");
-	writeln("<p>" + list.length + " files");
+	writeln("<p>" + list.length + " files listed");
+	writeln("<br />");
 }
 
 // Listing the directories of a library
@@ -154,7 +155,7 @@ function lib_index(lib)
 	writeln("[" + root_link() + "] / ");
 	writeln(file_area.lib[lib].description + "<br />");
 	writeln("<p>");
-
+	writeln("<ul>");
 	for(var d in file_area.dir) {
 		var dir = file_area.dir[d];
 		if(dir.lib_name != lib)
@@ -163,6 +164,7 @@ function lib_index(lib)
 			continue;
 		write(dir.name.link(dir.vdir + "/") + "<br />");
 	}
+	writeln("</ul>");
 }
 
 function get_dir_desc(vpath)
@@ -290,6 +292,7 @@ function view_file(filename)
 		view_archive(filename);
 	else if(image_file(filename))
 		view_image(filename);
+	writeln("<p>");
 	writeln(nav_links(nav));
 	writeln("<br />");
 }
@@ -329,10 +332,12 @@ function root_index()
 	header("File Areas");
 	shortcuts();
 	writeln("<h3>Libraries</h3>");
+	writeln("<ul>");
 	for(var l in file_area.lib_list) {
 		var lib = file_area.lib_list[l];
 		write(lib.description.link(lib.vdir + "/")+ "<br />");
 	}
+	writeln("</ul>");
 }
 
 if(http_request.virtual_path[http_request.virtual_path.length - 1] != '/') {
