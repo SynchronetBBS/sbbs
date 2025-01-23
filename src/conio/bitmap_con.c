@@ -266,7 +266,7 @@ bitmap_vmem_puttext_locked(int sx, int sy, int ex, int ey, struct vmem_cell *fil
 	for(y=sy-1;y<ey;y++) {
 		vc = vmem_cell_ptr(vstat.vmem, sx - 1, y);
 		for(x=sx-1;x<ex;x++) {
-			if (vstat.mode == PRESTEL_40X24 && ((vc->bg & 0x02000000) || (fi->bg & 0x02000000))) {
+			if (vstat.mode == PRESTEL_40X25 && ((vc->bg & 0x02000000) || (fi->bg & 0x02000000))) {
 				if ((vc->bg & 0x01000000) != (fi->bg & 0x01000000)) {
 					// *ANY* change to double-height potentially changes
 					// *EVERY* character on the screen
@@ -274,7 +274,7 @@ bitmap_vmem_puttext_locked(int sx, int sy, int ex, int ey, struct vmem_cell *fil
 				}
 			}
 			*vc = *(fi++);
-			if (vstat.mode == PRESTEL_40X24 && (vc->bg & 0x02000000)) {
+			if (vstat.mode == PRESTEL_40X25 && (vc->bg & 0x02000000)) {
 				if (vc->legacy_attr & 0x08) {
 					if (cio_api.options & CONIO_OPT_PRESTEL_REVEAL)
 						vc->bg |= 0x08000000;
@@ -314,7 +314,7 @@ set_vmem_cell(size_t x, size_t y, uint16_t cell, uint32_t fg, uint32_t bg)
 	vc->legacy_attr = cell >> 8;
 	vc->ch = cell & 0xff;
 	vc->fg = fg;
-	if (vstat.mode == PRESTEL_40X24 && ((vc->bg & 0x02000000) || (bg & 0x02000000))) {
+	if (vstat.mode == PRESTEL_40X25 && ((vc->bg & 0x02000000) || (bg & 0x02000000))) {
 		if (vc->legacy_attr & 0x08) {
 			if (cio_api.options & CONIO_OPT_PRESTEL_REVEAL)
 				vc->bg |= 0x08000000;
@@ -327,7 +327,7 @@ set_vmem_cell(size_t x, size_t y, uint16_t cell, uint32_t fg, uint32_t bg)
 			request_redraw_locked();
 		}
 	}
-	if (vstat.mode == PRESTEL_40X24 && (vc->bg & 0x02000000)) {
+	if (vstat.mode == PRESTEL_40X25 && (vc->bg & 0x02000000)) {
 		if (vc->legacy_attr & 0x08) {
 			if (cio_api.options & CONIO_OPT_PRESTEL_REVEAL)
 				vc->bg |= 0x08000000;
@@ -403,7 +403,7 @@ static void	cb_drawrect(struct rectlist *data)
 	 */
 	assert_rwlock_rdlock(&vstatlock);
 	if (cursor_visible_locked()) {
-		if (vstat.mode == PRESTEL_40X24)
+		if (vstat.mode == PRESTEL_40X25)
 			cv = 0x80FFFFFF;
 		else
 			cv = color_value(ciolib_fg);
@@ -626,7 +626,7 @@ calc_charstate(struct blockstate *bs, struct vmem_cell *vc, struct charstate *cs
 	cs->bg = vc->bg;
 	cs->extra_rows = 0;
 
-	if (vstat.mode == PRESTEL_40X24 && (vc->bg & 0x02000000)) {
+	if (vstat.mode == PRESTEL_40X25 && (vc->bg & 0x02000000)) {
 		unsigned char lattr;
 		bool top = false;
 		bool bottom = false;
@@ -860,7 +860,7 @@ bitmap_draw_vmem_locked(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 
 	// Fill in charstate for this pass
 	bool cheat = true;
-	if (vstat.mode == PRESTEL_40X24) {
+	if (vstat.mode == PRESTEL_40X25) {
 		cheat = false;
 	}
 	else {
@@ -991,7 +991,7 @@ static void blinker_thread(void *data)
 
 		assert_rwlock_wrlock(&vstatlock);
 		switch (vstat.mode) {
-			case PRESTEL_40X24:
+			case PRESTEL_40X25:
 				if (next_cursor < now) {
 					curs_changed = cursor_visible_locked();
 					if (vstat.curs_blink) {
@@ -1147,7 +1147,7 @@ same_cell(struct vmem_cell *bitmap_cell, struct vmem_cell *c2)
 	if (bitmap_cell->ch != c2->ch)
 		return false;
 	// Handles reveal/unreveal updates, modifies vmem
-	if (vstat.mode == PRESTEL_40X24 && (c2->bg & 0x02000000)) {
+	if (vstat.mode == PRESTEL_40X25 && (c2->bg & 0x02000000)) {
 		if (c2->legacy_attr & 0x08) {
 			if (cio_api.options & CONIO_OPT_PRESTEL_REVEAL)
 				c2->bg |= 0x08000000;
@@ -1448,7 +1448,7 @@ int bitmap_setfont(int font, int force, int font_num)
 	if(conio_fontdata[font].eight_by_sixteen!=NULL) {
 		newmode=C80;
 		if (conio_fontdata[font].cp == CIOLIB_PRESTEL)
-			newmode=PRESTEL_40X24;
+			newmode=PRESTEL_40X25;
 	}
 	else if(conio_fontdata[font].eight_by_fourteen!=NULL)
 		newmode=C80X28;

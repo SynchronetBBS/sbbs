@@ -125,7 +125,7 @@ struct video_params vparams[] = {
 	/* DigitalMon */
 	{LCD80X25, COLOUR_PALETTE,            80, 25, 14, 15, 16, 8, 7, 0,  8, 5, 640,  400},
 	/* Prestel */
-	{PRESTEL_40X24, PRESTEL_PALETTE,      40,  24, 14, 15, 20, 12, 7, 0,  4, 3, 480, 480},
+	{PRESTEL_40X25, PRESTEL_PALETTE,      40,  25, 14, 15, 20, 12, 7, 0,  4, 3, 480, 500},
 	/* Custom mode */
 	{CIOLIB_MODE_CUSTOM, COLOUR_PALETTE,  80,  25, 14, 15, 16, 8, 7, 0,  0, 0,   -1,  -1},
 };

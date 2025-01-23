@@ -203,7 +203,7 @@ enum text_modes
 	VESA_132X50	= 206,
 	VESA_132X60	= 196,
 
-	PRESTEL_40X24   = 254,
+	PRESTEL_40X25   = 254,
 
 	/* Custom Mode */
 	CIOLIB_MODE_CUSTOM = 255,	// Last mode... if it's over 255, text_info can't hold it.
