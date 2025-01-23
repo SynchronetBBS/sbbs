@@ -577,13 +577,13 @@ struct blockstate {
 };
 
 static bool
-can_cheat(struct blockstate *restrict bs, struct vmem_cell *restrict vc)
+can_cheat(struct blockstate *bs, struct vmem_cell *vc)
 {
 	return vc->bg == bs->cheat_colour && (vc->ch == ' ') && (vc->font < CONIO_FIRST_FREE_FONT) && !(vc->bg & 0x02000000);
 }
 
 static void
-calc_charstate(struct blockstate *restrict bs, struct vmem_cell *restrict vc, struct charstate *restrict cs, int xpos, int ypos)
+calc_charstate(struct blockstate *bs, struct vmem_cell *vc, struct charstate *cs, int xpos, int ypos)
 {
 	bool not_hidden = true;
 	cs->slow = bs->font_data_width != 8;
