@@ -55,6 +55,21 @@ var sorting_description = {
 	"SIZE_D": "Size decreasing"
 };
 
+function file_size(file)
+{
+	var size = file_size_float(file.size, 1, 1);
+
+	if(file.sha1 === undefined)
+		return size;
+	return "<div title='SHA1: " + file.sha1 + "'>" + size + "</div>";
+}
+
+function file_date(file)
+{
+	return "<div title='" + system.timestr(file.added) + "'>"
+		+ strftime("%b %d, %Y", file.added) + "</div>";
+}
+
 // Listing files in a directory
 function dir_index(dir)
 {
@@ -115,9 +130,9 @@ function dir_index(dir)
 		if(viewable_file(f.name))
 			write("<a href=?view=" + encodeURIComponent(f.name) + " title='View'>" + eyeball + "</a>");
 		write("</td>");
-		write("<td>" + f.name.link(f.name) + "</td>");
-		write("<td align=right>" + file_size_float(f.size, 1, 0) + "</td>");
-		write("<td align=right>" + strftime("%b %d, %Y", f.added) + "</td>");
+		write("<td><a title='Download' href='" + f.name + "'>" + f.name + "</a></td>");
+		write("<td align=right>" + file_size(f) + "</td>");
+		write("<td align=right>" + file_date(f) + "</td>");
 		write('<td class="desc" onclick="showExtDesc(event)">');
 		write(utf8_encode(f.desc || ''));
 		if (f.extdesc !== undefined) {
