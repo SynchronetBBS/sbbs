@@ -219,7 +219,7 @@ function nav_file(filename)
 	var fb = FileBase(http_request.dir);
 	if(!fb.open())
 		return null;
-	var list = fb.get_names();
+	var list = fb.get_names().filter(viewable_file);
 	fb.close();
 	for(var i = 0; i < list.length; ++i) {
 		if(list[i] == filename) {
