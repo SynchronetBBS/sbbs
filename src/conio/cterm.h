@@ -254,55 +254,6 @@ struct cterminal {
 	char prestel_data[PRESTEL_MEM_SLOTS][PRESTEL_MEM_SLOT_SIZE];
 	enum prestel_prog_states prestel_prog_state;
 	uint8_t prestel_mem;
-
-	/* conio function pointers */
-#ifdef CTERM_WITHOUT_CONIO
-	void	(*ciolib_gotoxy)		(struct cterminal *,int,int);
-	int		(*ciolib_wherex)		(struct cterminal *);
-	int		(*ciolib_wherey)		(struct cterminal *);
-	int		(*ciolib_gettext)		(struct cterminal *,int,int,int,int,void *);
-	void	(*ciolib_gettextinfo)	(struct cterminal *,struct text_info *);
-	void	(*ciolib_textattr)		(struct cterminal *,int);
-	void	(*ciolib_setcursortype)	(struct cterminal *,int);
-	int		(*ciolib_movetext)		(struct cterminal *,int,int,int,int,int,int);
-	void	(*ciolib_clreol)		(struct cterminal *);
-	void	(*ciolib_clrscr)		(struct cterminal *);
-	void	(*ciolib_setvideoflags)	(struct cterminal *,int flags);
-	int		(*ciolib_getvideoflags)	(struct cterminal *);
-	void	(*ciolib_setscaling)	(struct cterminal *,double new_value);
-	double		(*ciolib_getscaling)	(struct cterminal *);
-	int		(*ciolib_putch)			(struct cterminal *,int);
-	int		(*ciolib_puttext)		(struct cterminal *,int,int,int,int,void *);
-	void	(*ciolib_window)		(struct cterminal *,int,int,int,int);
-	int		(*ciolib_cputs)			(struct cterminal *,const char *);
-	int		(*ciolib_setfont)		(struct cterminal *,int font, int force, int font_num);
-#else
-	void	(*ciolib_gotoxy)		(int,int);
-	int		(*ciolib_wherex)		(void);
-	int		(*ciolib_wherey)		(void);
-	int		(*ciolib_gettext)		(int,int,int,int,void *);
-	int		(*ciolib_vmem_gettext)	(int,int,int,int,struct vmem_cell *);
-	void	(*ciolib_gettextinfo)	(struct text_info *);
-	void	(*ciolib_textattr)		(int);
-	void	(*ciolib_setcursortype)	(int);
-	int		(*ciolib_movetext)		(int,int,int,int,int,int);
-	void	(*ciolib_clreol)		(void);
-	void	(*ciolib_clrscr)		(void);
-	void	(*ciolib_setvideoflags)	(int flags);
-	int		(*ciolib_getvideoflags)	(void);
-	void	(*ciolib_setscaling)		(double new_value);
-	double		(*ciolib_getscaling)		(void);
-	int		(*ciolib_putch)			(int);
-	int		(*ciolib_puttext)		(int,int,int,int,void *);
-	int		(*ciolib_vmem_puttext)	(int,int,int,int,struct vmem_cell *);
-	void	(*ciolib_window)		(int,int,int,int);
-	int		(*ciolib_cputs)			(const char *);
-	int		(*ciolib_setfont)		(int font, int force, int font_num);
-#endif
-	int 	*_wscroll;
-	int		*puttext_can_move;
-	int		*hold_update;
-	void	*extra;
 };
 
 #ifdef __cplusplus
