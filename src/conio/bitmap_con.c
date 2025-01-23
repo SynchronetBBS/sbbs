@@ -1000,18 +1000,19 @@ static void blinker_thread(void *data)
 					else {
 						vstat.curs_blink=TRUE;
 					}
-					next_cursor = now + 333;
+					// Timings derived from Keyops Model B
+					next_cursor = now + 314;
 					curs_changed = (curs_changed != cursor_visible_locked());
 					if (next_blink < now) {
 						if (vstat.blink) {
 							vstat.blink=FALSE;
 							vstat.curs_blink = TRUE;
-							next_blink = now + 1000;
+							next_blink = now + 942;
 						}
 						else {
 							vstat.blink=TRUE;
 							vstat.curs_blink = FALSE;
-							next_blink = now + 333;
+							next_blink = now + 314;
 						}
 						blink_changed = 1;
 					}
