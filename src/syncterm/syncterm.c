@@ -2294,7 +2294,8 @@ USAGE:
 		}
 	}
 	textattr(WHITE);
-	if (cio_api.mode != CIOLIB_MODE_ANSI) {
+	cprintf("\n");
+	else {
 		cputs("<Press A Key to Exit>");
 		switch (getch()) {
 			case 0:
