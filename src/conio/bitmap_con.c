@@ -779,7 +779,7 @@ draw_char_row_slow(struct blockstate *bs, struct charstate *cs, uint32_t y)
 	for(unsigned x = 0; x < vstat.charwidth; x++) {
 		unsigned bitnum = x & 0x07;
 		if (bs->expand && x == bs->font_data_width) {
-			if (cs->gexpand)
+			if (cs->gexpand && x > 0)
 				fbb = cs->font[cs->fontoffset - 1] & (0x80 >> ((x - 1) & 7));
 			else
 				fbb = 0;
