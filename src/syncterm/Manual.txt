@@ -92,7 +92,7 @@ use SyncTERM's other connection options. Cryptlib must be statically
 linked if it is used.
 
 Other optional dependencies (such as Portaudio) can not be statically
-linked, and are only supported with static linking.
+linked, and are only supported with run-time dynamic linking.
 
 Once you have the desired dependencies installed, change to the syncterm
 directory in the source tree (ie: syncterm-YYYYMMDD/src/syncterm) and
