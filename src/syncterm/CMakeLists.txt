@@ -47,9 +47,9 @@ set(SOURCE
 	telnet_io.c
 	term.c
 	uifcinit.c
+	webget.c
 	window.c
 	../sbbs3/telnet.c
-	../sbbs3/webget.c
 	../sbbs3/xmodem.c
 	../sbbs3/zmodem.c
 )
