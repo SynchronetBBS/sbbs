@@ -4,6 +4,7 @@
 #include "bbslist.h"
 #include "conn.h"
 #include "sockwrap.h"
+#include "stdio.h"
 #include "syncterm.h"
 #include "uifcinit.h"
 #include "webget.h"
@@ -122,7 +123,7 @@ recv_line(struct http_session *sess, int timeout, size_t *len)
 			set_msg(sess->req, "Socket not readable.");
 			goto error_return;
 		}
-		ssize_t rc = recv(sess->sock, &ret[retpos], 1, MSG_DONTWAIT);
+		ssize_t rc = recv(sess->sock, &ret[retpos], 1, 0);
 		if (rc == -1) {
 			if (SOCKET_ERRNO == EINTR)
 				continue;
