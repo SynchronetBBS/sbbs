@@ -3,11 +3,13 @@
 
 #include "bbslist.h"
 #include "conn.h"
+#include "datewrap.h"
 #include "sockwrap.h"
 #include "stdio.h"
 #include "syncterm.h"
 #include "uifcinit.h"
 #include "webget.h"
+#include "xpprintf.h"
 
 struct http_session {
 	struct webget_request *req;
