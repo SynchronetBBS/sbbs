@@ -1647,6 +1647,7 @@ static void mailsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Recipients Per Message", maximum(startup.max_recipients));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Messages Waiting", maximum(startup.max_msgs_waiting));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s bytes", "Max Receive Message Size", byte_count_to_str(startup.max_msg_size, tmp, sizeof(tmp)));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Post Recipient", startup.post_to);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Default Recipient", startup.default_user);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Receive By User Number", startup.options & MAIL_OPT_ALLOW_RX_BY_NUMBER ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Receive By Sysop Aliases", startup.options & MAIL_OPT_ALLOW_SYSOP_ALIASES ? "Yes" : "No");
@@ -1762,31 +1763,35 @@ static void mailsrvr_cfg(void)
 					startup.max_msg_size = (uint32_t)parse_byte_count(str, 1);
 				break;
 			case 15:
+				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Override Recipient of SMTP Posts"
+						   , startup.post_to, sizeof startup.post_to -1, K_EDIT);
+				break;
+			case 16:
 				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Default Recipient (user alias)"
 				           , startup.default_user, sizeof(startup.default_user) - 1, K_EDIT);
 				break;
-			case 16:
+			case 17:
 				startup.options ^= MAIL_OPT_ALLOW_RX_BY_NUMBER;
 				break;
-			case 17:
+			case 18:
 				startup.options ^= MAIL_OPT_ALLOW_SYSOP_ALIASES;
 				break;
-			case 18:
+			case 19:
 				startup.options ^= MAIL_OPT_NO_NOTIFY;
 				break;
-			case 19:
+			case 20:
 				startup.notify_offline_users = !startup.notify_offline_users;
 				break;
-			case 20:
+			case 21:
 				startup.options ^= MAIL_OPT_ALLOW_RELAY;
 				break;
-			case 21:
+			case 22:
 				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
 				break;
-			case 22:
+			case 23:
 				startup.options ^= MAIL_OPT_DNSBL_CHKRECVHDRS;
 				break;
-			case 23:
+			case 24:
 				i = 0;
 				strcpy(opt[i++], "Refuse Session");
 				strcpy(opt[i++], "Silently Ignore");
@@ -1822,13 +1827,13 @@ static void mailsrvr_cfg(void)
 				else
 					startup.options &= ~MAIL_OPT_DNSBL_THROTTLE;
 				break;
-			case 24:
+			case 25:
 				startup.options ^= MAIL_OPT_DNSBL_SPAMHASH;
 				break;
-			case 25:
+			case 26:
 				startup.options ^= MAIL_OPT_KILL_READ_SPAM;
 				break;
-			case 26:
+			case 27:
 				if (startup.spam_block_duration == 0)
 					SAFECOPY(str, "Infinite");
 				else
@@ -1836,16 +1841,16 @@ static void mailsrvr_cfg(void)
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Lifetime of ban of SPAM-bait taker IP", str, 8, K_EDIT) > 0)
 					startup.spam_block_duration = (uint)parse_duration(str);
 				break;
-			case 27:
+			case 28:
 				sendmail_cfg(&startup);
 				break;
-			case 28:
+			case 29:
 				getar("Mail Server Login", startup.login_ars);
 				break;
-			case 29:
+			case 30:
 				js_startup_cfg(&startup.js);
 				break;
-			case 30:
+			case 31:
 				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:
