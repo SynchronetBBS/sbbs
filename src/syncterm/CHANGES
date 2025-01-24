@@ -2,6 +2,7 @@ Version 1.5b
 ------------
 Fix Prestel regressions
 Use the SAA5050 font for Prestel mode
+Prestel mode is 25 rows, not 24
 
 Version 1.5a
 ------------

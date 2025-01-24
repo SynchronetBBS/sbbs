@@ -410,10 +410,8 @@ prestel_apply_ctrl_before(struct cterminal *cterm, uint8_t ch)
 				cterm->bg_color |= 0x01000000;
 			break;
 		case 76: // Normal Height
-			if (cterm->extattr & CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT) {
-				cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_HOLD);
-				cterm->prestel_last_mosaic = 0;
-			}
+			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_HOLD);
+			cterm->prestel_last_mosaic = 0;
 			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT);
 			cterm->bg_color &= ~0x01000000;
 			break;
@@ -428,6 +426,8 @@ prestel_apply_ctrl_before(struct cterminal *cterm, uint8_t ch)
 			 * was originally, and if there's no held mosaic, this will
 			 * just be a space.
 			 */
+			if (!(cterm->extattr & CTERM_EXTATTR_PRESTEL_HOLD))
+				cterm->prestel_last_mosaic = 0;
 			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_SEPARATED);
 			cterm->bg_color &= ~0x20000000;
 			break;
@@ -438,6 +438,8 @@ prestel_apply_ctrl_before(struct cterminal *cterm, uint8_t ch)
 			 * was originally, and if there's no held mosaic, this will
 			 * just be a space.
 			 */
+			if (!(cterm->extattr & CTERM_EXTATTR_PRESTEL_HOLD))
+				cterm->prestel_last_mosaic = 0;
 			cterm->extattr |= CTERM_EXTATTR_PRESTEL_SEPARATED;
 			cterm->bg_color |= 0x20000000;
 			break;
@@ -462,11 +464,12 @@ prestel_colour(struct cterminal *cterm, bool alpha, int colour)
 	cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_CONCEAL);
 	if (alpha) {
 		cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_HOLD | CTERM_EXTATTR_PRESTEL_MOSAIC);
-		cterm->prestel_last_mosaic = 0;
 	}
 	else {
 		cterm->extattr |= CTERM_EXTATTR_PRESTEL_MOSAIC;
 	}
+	if (!(cterm->extattr & CTERM_EXTATTR_PRESTEL_HOLD))
+		cterm->prestel_last_mosaic = 0;
 }
 
 static void
@@ -501,10 +504,8 @@ prestel_apply_ctrl_after(struct cterminal *cterm, uint8_t ch)
 				cterm->bg_color |= 0x01000000;
 			break;
 		case 77: // Double Height
-			if ((cterm->extattr & CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT) == 0) {
-				cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_HOLD);
-				cterm->prestel_last_mosaic = 0;
-			}
+			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_HOLD);
+			cterm->prestel_last_mosaic = 0;
 			cterm->extattr |= CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT;
 			cterm->bg_color |= 0x01000000;
 			break;
@@ -530,6 +531,7 @@ prestel_apply_ctrl_after(struct cterminal *cterm, uint8_t ch)
 			prestel_colour(cterm, false, WHITE);
 			break;
 		case 95: // Release Mosaics
+			cterm->prestel_last_mosaic = 0;
 			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_HOLD);
 			break;
 	}
@@ -4711,8 +4713,6 @@ static void prestel_fix_line(struct cterminal *cterm, int x, int y, bool restore
 			     || (line[i].ch >= 96 && line[i].ch < 128))) {
 				// Alphanum but should be mosaic
 				line[i].ch |= 0x80;
-				if (line[i].ch == 0xff)
-					line[i].ch = 0xdf;
 				if (cterm->extattr & CTERM_EXTATTR_PRESTEL_SEPARATED)
 					line[i].bg |= 0x20000000;
 				else
@@ -6033,8 +6033,6 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 									if (cterm->extattr & CTERM_EXTATTR_PRESTEL_MOSAIC) {
 										if ((buf[j] < 64 && buf[j] >= 32) || (buf[j] >= 96 && buf[j] < 128)) {
 											ch[0] = buf[j] | 0x80;
-											if (ch[0] == 0xff)
-												ch[0] = 0xdf;
 										}
 										else
 											ch[0] = buf[j];
