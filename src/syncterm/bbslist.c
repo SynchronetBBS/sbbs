@@ -839,6 +839,14 @@ read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id, int
 	strListFree(&section);
 }
 
+bool
+is_reserved_bbs_name(const char *name)
+{
+	if (stricmp(name, "syncterm-system-cache") == 0)
+		return true;
+	return false;
+}
+
 /*
  * Checks if bbsname already is listed in list
  * setting *pos to the position if not NULL.
@@ -894,7 +902,7 @@ read_list(char *listpath, struct bbslist **list, struct bbslist *defaults, int *
 			read_item(inilines, defaults, NULL, -1, type);
 		bbses = iniGetSectionList(inilines, NULL);
 		while ((bbsname = strListRemove(&bbses, 0)) != NULL) {
-			if (!list_name_check(list, bbsname, NULL, false)) {
+			if ((!list_name_check(list, bbsname, NULL, false)) && (!is_reserved_bbs_name(bbsname))) {
 				if ((list[*i] = (struct bbslist *)malloc(sizeof(struct bbslist))) == NULL) {
 					free(bbsname);
 					break;
@@ -1100,6 +1108,12 @@ edit_name(char *itemname, struct bbslist **list, str_list_t inifile, bool edit_t
 			               "An entry with that name already exists in the directory.\n"
 			               "Please choose a unique name.\n";
 			uifc.msg("Entry Name Already Exists!");
+			check_exit(false);
+		}
+		else if(is_reserved_bbs_name(tmp)) {
+			uifc.helpbuf = "`Reserved Name`\n\n"
+			               "The name you entered is reserved for internal use\n";
+			uifc.msg("Reserved Name!");
 			check_exit(false);
 		}
 		else {
@@ -3263,6 +3277,13 @@ show_bbslist(char *current, int connected)
 								               "An entry with that name already exists in the directory.\n"
 								               "Please choose a unique name.\n";
 								uifc.msg("Entry Name Already Exists!");
+								check_exit(false);
+								break;
+							}
+							if(is_reserved_bbs_name(tmp)) {
+								uifc.helpbuf = "`Reserved Name`\n\n"
+									       "The name you entered is reserved for internal use\n";
+								uifc.msg("Reserved Name!");
 								check_exit(false);
 								break;
 							}
