@@ -245,7 +245,7 @@ while(bbs.online && !js.terminated) {
 	switch(console.getkeys(keys, K_UPPER)) {
 		case 'A':
 			var defaultext = 0;
-			var archivetypes = [ "zip", "7z", "tgz" ];
+			var archivetypes = Archive.supported_formats || [ "zip", "7z", "tgz" ];
 			for (var code in file_cfg.compressor) {
 				if (thisuser.compare_ars(file_cfg.compressor[code].ars)
 					&& archivetypes.indexOf(file_cfg.compressor[code].extension) === -1)
@@ -261,8 +261,6 @@ while(bbs.online && !js.terminated) {
 			}
 			if ((i=console.uselect(defaultext))>=0)
 				thisuser.temp_file_ext = archivetypes[i];
-			if (console.aborted)
-				console.aborted = false;
 			break;
 		case 'B':
 			thisuser.settings ^= USER_BATCHFLAG;
