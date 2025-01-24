@@ -5064,7 +5064,7 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	 , JSDOCSTR("Return a file specification input by the user (optionally with wildcards).")
 	 , 310
 	},
-	{"get_newscantime", js_getnstime,       1,  JSTYPE_NUMBER,  JSDOCSTR("[<i>number</i> time=<i>current</i>]".)
+	{"get_newscantime", js_getnstime,       1,  JSTYPE_NUMBER,  JSDOCSTR("[<i>number</i> time=<i>current</i>].")
 	 , JSDOCSTR("Confirm or change a new-scan time, returns the new new-scan time value (<i>time_t</i> format).")
 	 , 310
 	},
