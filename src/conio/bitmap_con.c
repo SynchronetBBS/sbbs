@@ -681,6 +681,14 @@ calc_charstate(struct blockstate *bs, struct vmem_cell *vc, struct charstate *cs
 				cs->double_height = true;
 				cs->extra_rows = -(vstat.charheight);
 				cs->fontoffset = (pvc->ch) * (vstat.charheight * ((bs->font_data_width + 7) / 8));
+				if (pvc->ch >= 160) {
+					if (pvc->bg & 0x20000000)
+						cs->sep = true;
+					else
+						cs->sep = false;
+				}
+				else
+					cs->sep = false;
 				// TODO: Update FS etc.
 			}
 			else {
