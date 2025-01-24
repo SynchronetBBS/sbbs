@@ -1,6 +1,16 @@
 var start = new Date();
 
 require("file_size.js", "file_size_float");
+var vs15 = "&#xFE0E;";
+var folder = "&#x1F5C0;";
+var file_folder = "&#x1F4C1;";
+var dir_icon = file_folder;
+var file_cab = "&#x1F5C4;";
+var lib_icon = file_cab;
+var image_icon = "&#x1F5BC;";
+var eyeball = "&#x1F441;";
+var mag_glass = "&#x1F50E;";
+var archive_icon = mag_glass + vs15;
 
 function header(title) {
 	writeln("<html lang=\"en\">");
@@ -73,7 +83,6 @@ function file_date(file)
 // Listing files in a directory
 function dir_index(dir)
 {
-	const eyeball = "&#x1F441;";
 	dir = file_area.dir[dir];
 	header(dir.description);
 	writeln("[" + root_link() + "] / ");
@@ -127,10 +136,11 @@ function dir_index(dir)
 			continue;
 		write("<tr>");
 		write("<td>");
-		if(viewable_file(f.name))
-			write("<a href=?view=" + encodeURIComponent(f.name) + " title='View'>" + eyeball + "</a>");
+		var view_icon = viewable_file(f.name);
+		if(view_icon)
+			write("<a href=?view=" + encodeURIComponent(f.name) + " title='View'>" + view_icon + "</a>");
 		write("</td>");
-		write("<td><a title='Download' href='" + f.name + "'>" + f.name + "</a></td>");
+		write("<td><a title='Download' href='" + f.name + "'>" + f.name.bold() + "</a></td>");
 		write("<td align=right>" + file_size(f) + "</td>");
 		write("<td align=right>" + file_date(f) + "</td>");
 		write('<td class="desc" onclick="showExtDesc(event)">');
@@ -153,7 +163,7 @@ function lib_index(lib)
 {
 	header(file_area.lib[lib].description);
 	writeln("[" + root_link() + "] / ");
-	writeln(file_area.lib[lib].description + "<br />");
+//	writeln(file_area.lib[lib].description + "<br />");
 	writeln("<p>");
 	writeln("<ul>");
 	for(var d in file_area.dir) {
@@ -162,7 +172,7 @@ function lib_index(lib)
 			continue;
 		if(!dir.can_access)
 			continue;
-		write(dir.name.link(dir.vdir + "/") + "<br />");
+		write(dir_icon + " " + dir.name.bold().link(dir.vdir + "/") + "<br />");
 	}
 	writeln("</ul>");
 }
@@ -200,7 +210,7 @@ function shortcuts()
 	writeln("<h3>Directories</h3>");
 	writeln("<ul>");
 	for(var i in dir)
-		writeln("<a href=" + i + ">" + dir[i] + "</a><br />");
+		writeln(dir_icon + " <a href=" + i + ">" + dir[i].bold() + "</a><br />");
 	writeln("</ul>");
 	writeln("<p>");
 }
@@ -216,7 +226,9 @@ function file_type(filename)
 function archive_file(filename)
 {
 	var ext = file_type(filename);
-	return (Archive.supported_formats || ['zip', '7z', 'tgz']).indexOf(ext) >= 0;
+	if(!ext)
+		return false;
+	return ['zip', '7z', 'tgz', 'rar', 'lha', 'lzh', 'iso', 'cab'].indexOf(ext.toLowerCase()) >= 0;
 }
 
 function image_file(filename)
@@ -227,7 +239,11 @@ function image_file(filename)
 
 function viewable_file(filename)
 {
-	return archive_file(filename) || image_file(filename);
+	if(archive_file(filename))
+		return archive_icon;
+	if(image_file(filename))
+		return image_icon;
+	return false;
 }
 
 function nav_file(filename)
@@ -314,7 +330,7 @@ function view_archive(filename)
 		if(file.type != 'file')
 			continue;
 		writeln('<tr>');
-		writeln('<td>' + file.name.fixed());
+		writeln('<td>' + file.name.bold());
 		writeln('<td align=right>' + file.size);
 		writeln('<td>' + system.timestr(file.time).slice(4));
 	}
@@ -335,7 +351,7 @@ function root_index()
 	writeln("<ul>");
 	for(var l in file_area.lib_list) {
 		var lib = file_area.lib_list[l];
-		write(lib.description.link(lib.vdir + "/")+ "<br />");
+		write(lib_icon + " " + lib.description.bold().link(lib.vdir + "/")+ "<br />");
 	}
 	writeln("</ul>");
 }
