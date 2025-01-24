@@ -72,11 +72,17 @@ build system is used. There are a number of optional dependencies, and
 a large number of supported compile flags (many of which are shared with
 Synchronet).
 
-The biggest optional dependency is http://libsdl.org[SDL 2].
+One dependency that, while technically optional really should be included
+is https://github.com/libjxl/libjxl[libjxl]. This allows graphics to be
+supported with good compression rather than the uncompressed PPM that is
+the only format otherwise.
+
+The biggest (usually) optional dependency is http://libsdl.org[SDL 2].
 SyncTERM can use SDL for both graphics and sound. X11 can also be used
 for graphics, and OSS, ALSA, or Portaudio can also provide sound. These
 use run-time linking, so at compile time, only the headers are needed.
-Static linking with SDL is also supported.
+Static linking with SDL is also supported.  SDL2 is required for macOS
+and Haiku at the present time.
 
 For SSH, a copy of Peter Gutmann's
 https://cryptlib.com/security-software/about-cryptlib[Cryptlib] is
