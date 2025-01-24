@@ -142,6 +142,7 @@
     <ClCompile Include="term.c" />
     <ClCompile Include="uifcinit.c" />
     <ClCompile Include="window.c" />
+    <ClCompile Include="webget.c" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\comio\comio.vcxproj">

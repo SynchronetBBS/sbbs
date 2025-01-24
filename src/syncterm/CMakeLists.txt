@@ -49,8 +49,9 @@ set(SOURCE
 	uifcinit.c
 	window.c
 	../sbbs3/telnet.c
-	../sbbs3/zmodem.c
+	../sbbs3/webget.c
 	../sbbs3/xmodem.c
+	../sbbs3/zmodem.c
 )
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../3rdp/build ${CMAKE_CURRENT_SOURCE_DIR}/cryptlib EXCLUDE_FROM_ALL)
