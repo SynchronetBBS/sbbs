@@ -8,6 +8,8 @@ named_string_t *
 namedStrListInsert(named_string_t ***list, const char *name, const char *value, size_t index)
 {
 	size_t count;
+	named_string_t **newlist;
+
 	COUNT_LIST_ITEMS((*list), count);
 	if (count == NAMED_STR_LIST_LAST_INDEX)
 		return NULL;
@@ -15,7 +17,7 @@ namedStrListInsert(named_string_t ***list, const char *name, const char *value, 
 		index = count;
 	if (index > count)
 		index = count;
-	named_string_t **newlist = (named_string_t **)realloc(*list, (count + 2) * sizeof(named_string_t*));
+	newlist = (named_string_t **)realloc(*list, (count + 2) * sizeof(named_string_t*));
 	if (newlist == NULL)
 		return NULL;
 	*list = newlist;
@@ -33,15 +35,18 @@ bool
 namedStrListDelete(named_string_t ***list, size_t index)
 {
 	size_t count;
+	named_string_t *old;
+	named_string_t **newlist;
+
 	COUNT_LIST_ITEMS(*list, count);
 	if (index == NAMED_STR_LIST_LAST_INDEX)
 		index = count - 1;
 	if (index >= count)
 		return false;
-	named_string_t **newlist = (named_string_t **)realloc(*list, (count + 1) * sizeof(named_string_t*));
+	newlist = (named_string_t **)realloc(*list, (count + 1) * sizeof(named_string_t*));
 	if (newlist != NULL)
 		*list = newlist;
-	named_string_t *old = (*list)[index];
+	*old = (*list)[index];
 	memmove(&(*list)[index], &(*list)[index + 1], (count - index) * sizeof(named_string_t*));
 	free(old->name);
 	free(old->value);
