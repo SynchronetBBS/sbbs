@@ -46,7 +46,7 @@ namedStrListDelete(named_string_t ***list, size_t index)
 	newlist = (named_string_t **)realloc(*list, (count + 1) * sizeof(named_string_t*));
 	if (newlist != NULL)
 		*list = newlist;
-	*old = (*list)[index];
+	old = (*list)[index];
 	memmove(&(*list)[index], &(*list)[index + 1], (count - index) * sizeof(named_string_t*));
 	free(old->name);
 	free(old->value);
