@@ -2773,6 +2773,27 @@ load_bbslist(struct bbslist **list,
 	/* System BBS List */
 	if (stricmp(shared_list, listpath)) /* don't read the same list twice */
 		read_list(shared_list, list, defaults, listcount, SYSTEM_BBSLIST);
+	/* Web lists */
+	if (settings.webgets) {
+		char cache_path[MAX_PATH + 1];
+		if (get_syncterm_filename(cache_path, sizeof(cache_path), SYNCTERM_PATH_CACHE, false)) {
+			backslash(cache_path);
+			strlcat(cache_path, "syncterm-system-cache", sizeof(cache_path));
+			mkpath(cache_path);
+			backslash(cache_path);
+			for (size_t i = 0; settings.webgets[i]; i++) {
+				char *lpath;
+				int len = asprintf(&lpath, "%s%s.lst", cache_path, settings.webgets[i]->name);
+				if (len < 1) {
+					free(lpath);
+				}
+				else {
+					read_list(lpath, list, defaults, listcount, SYSTEM_BBSLIST);
+					free(lpath);
+				}
+			}
+		}
+	}
 	sort_list(list, listcount, cur, bar, current);
 	if (current)
 		free(current);

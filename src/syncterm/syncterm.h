@@ -7,6 +7,7 @@
 #include <stdbool.h>
 
 #include "bbslist.h"
+#include "webget.h"
 
 #if defined(_WIN32)
  #include <malloc.h> /* alloca() on Win32 */
@@ -56,6 +57,7 @@ struct modem_settings {
 };
 
 struct syncterm_settings {
+	named_string_t      **webgets;
 	int                   confirm_close;
 	int                   startup_mode;
 	int                   output_mode;
@@ -85,7 +87,7 @@ struct syncterm_settings {
 
 extern ini_bitdesc_t audio_output_bits[];
 extern ini_bitdesc_t audio_output_types[];
-	
+
 extern char                    *inpath;
 extern char                    *list_override;
 extern const char              *syncterm_version;

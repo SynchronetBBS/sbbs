@@ -1556,8 +1556,92 @@ load_settings(struct syncterm_settings *set)
         /* Shell TERM settings */
 	iniReadSString(inifile, "SyncTERM", "TERM", "syncterm", set->TERM, sizeof(set->TERM));
 
+	/* Web lists */
+	if (inifile) {
+		iniFreeNamedStringList(set->webgets);
+		set->webgets = iniReadNamedStringList(inifile, "WebLists");
+	}
+
 	if (inifile)
 		fclose(inifile);
+}
+
+sem_t download_complete_sem;
+void
+download_thread(void *args)
+{
+	struct webget_request *req = args;
+
+	iniReadHttp(req);
+	sem_post(&download_complete_sem);
+}
+
+void
+update_webget_progress(struct webget_request *reqs, size_t items, bool leaveup)
+{
+	size_t sz = items * 120;
+	char *helpbuf = malloc(sz);
+	if (helpbuf == NULL)
+		return;
+	size_t pos = 0;
+	static int cur = 0;
+	static int bar = 0;
+	bool errors = false;
+
+	for (size_t i = 0; i < items; i++) {
+		if (sz < pos)
+			break;
+		assert_pthread_mutex_lock(&reqs[i].mtx);
+		if (reqs[i].msg) {
+			helpbuf[pos++] = '`';
+			helpbuf[pos] = 0;
+			errors = true;
+		}
+		if (reqs[i].cb_data & UINT64_C(0x8000000000000000)) {
+			helpbuf[pos++] = '`';
+			helpbuf[pos] = 0;
+			errors = true;
+		}
+		int added = snprintf(&helpbuf[pos], sz - pos, "%-20s: %-20s ",
+		    reqs[i].name, reqs[i].state ? reqs[i].state : "");
+		pos += added;
+		if (sz > pos) {
+			if (reqs[i].msg) {
+				int added = snprintf(&helpbuf[pos], sz - pos, "%s`\r\n", reqs[i].msg);
+				pos += added;
+			}
+			else if (reqs[i].cb_data & UINT64_C(0x8000000000000000)) {
+				int added = snprintf(&helpbuf[pos], sz - pos, "Thread Failed to Start`\r\n");
+				pos += added;
+			}
+			else {
+				char received[10];
+				char total[10];
+				byte_estimate_to_str(reqs[i].received_size, received, sizeof(received), 0, 3);
+				byte_estimate_to_str(reqs[i].remote_size, total, sizeof(total), 0, 3);
+				if (reqs[i].remote_size) {
+					int added = snprintf(&helpbuf[pos], sz - pos, "%9s/%-9s ", received, total);
+					pos += added;
+					if (sz > pos) {
+						int pct = reqs[i].received_size * 100 / reqs[i].remote_size;
+						int added = snprintf(&helpbuf[pos], sz - pos, "~%.*s~%.*s\r\n", pct, "", 10 - pct, "");
+						pos += added;
+					}
+				}
+				else {
+					int added = snprintf(&helpbuf[pos], sz - pos, "%9s\r\n", received);
+					pos += added;
+				}
+			}
+		}
+		assert_pthread_mutex_unlock(&reqs[i].mtx);
+	}
+	uifc.showbuf(((leaveup && errors) ? 0 : WIN_DYN | WIN_ACT) | WIN_HLP | WIN_SAV | WIN_MID | WIN_IMM,
+	    0, 0, 74, items + 4, "Web Cache Update", helpbuf, &cur, &bar);
+	if (leaveup) {
+		cur = 0;
+		bar = 0;
+	}
 }
 
 int
@@ -2073,6 +2157,42 @@ main(int argc, char **argv)
 	if (!winsock_startup())
 		return 1;
 
+	if (settings.webgets && !quitting) {
+		// Update the web list caches...
+
+		init_uifc(true, true);
+		char cache_path[MAX_PATH + 1];
+		if (get_syncterm_filename(cache_path, sizeof(cache_path), SYNCTERM_PATH_CACHE, false)) {
+			backslash(cache_path);
+			strlcat(cache_path, "syncterm-system-cache", sizeof(cache_path));
+			mkpath(cache_path);
+
+			size_t items;
+			size_t started = 0;
+			COUNT_LIST_ITEMS(settings.webgets, items);
+			struct webget_request *reqs = calloc(items, sizeof(struct webget_request));
+			sem_init(&download_complete_sem, 0, 0);
+			for (size_t i = 0; i < items; i++) {
+				if (init_webget_req(&reqs[i], cache_path, settings.webgets[i]->name, settings.webgets[i]->value)) {
+					reqs[i].cb_data = i;
+					_beginthread(download_thread, 0, &reqs[i]);
+					started++;
+				}
+				else {
+					reqs[i].cb_data = UINT64_C(0x8000000000000000) | i;
+				}
+			}
+			while (started > 0) {
+				if (sem_trywait_block(&download_complete_sem, 200) == 0) {
+					started--;
+				}
+				update_webget_progress(reqs, items, false);
+			}
+			sem_destroy(&download_complete_sem);
+			update_webget_progress(reqs, items, true);
+		}
+		uifcbail();
+	}
 	load_font_files();
 	while ((!quitting) && (bbs != NULL || (bbs = show_bbslist(last_bbs, false)) != NULL)) {
 		if (default_hidepopups >= 0)
