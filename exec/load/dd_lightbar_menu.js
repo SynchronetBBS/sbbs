@@ -258,9 +258,6 @@ If you want to set the currently selected item before calling GetVal() to allow 
 you should call the SetSelectedItemIdx() function and pass the index to that.
 lbMenu.SetSelectedItemIdx(5);
 
-The property inputTimeoutMS sets the input timeout in milliseconds (defaults to 300000).
-lbMenu.inputTimeoutMS = 300000; // 300,000 milliseconds (5 minutes)
-
 The property mouseEnabled can be used to enable mouse support.  By default it is false.
 When mouse support is enabled, there can be problems inputting the ESC key from the user.
 lbMenu.mouseEnabled = true;
@@ -523,7 +520,6 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	// (i.e. with ENTER; not for toggling with multi-select)
 	this.exitOnItemSelect = true;
 
-	this.inputTimeoutMS = 300000; // Input timeout in ms
 	this.mouseEnabled = false;
 
 	// Whether or not to call OnItemNav() when the menu is first displayed
@@ -1927,7 +1923,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 			var mouseNoAction = false;
 			if (this.mouseEnabled)
 			{
-				mk = mouse_getkey(inputMode, this.inputTimeoutMS > 1 ? this.inputTimeoutMS : undefined, this.mouseEnabled);
+				mk = mouse_getkey(inputMode, !Boolean(user.security.exemptions&UFLAG_H) ? console.inactivity_hangup * 1000 : undefined, this.mouseEnabled);
 				if (mk.mouse !== null)
 				{
 					// See if the user clicked anywhere in the region where items are
@@ -2023,7 +2019,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 				}
 			}
 			else // this.mouseEnabled is false
-				this.lastUserInput = getKeyWithESCChars(inputMode, this.inputTimeoutMS);
+				this.lastUserInput = getKeyWithESCChars(inputMode);
 				
 			
 			// If the user is no longer online (disconnected) or the JS engine has
@@ -4022,23 +4018,18 @@ function printedToRealIdxInStr(pStr, pIdx)
 // Parameters:
 //  pGetKeyMode: Optional - The mode bits for console.getkey().
 //               If not specified, K_NONE will be used.
-//  pInputTimeoutMS: The input timeout in milliseconds (defaults to 300000).
-//                   If the user is a sysop, this will use a timeout of 0 for no timeout.
 //
 // Return value: The user's keypress
-function getKeyWithESCChars(pGetKeyMode, pInputTimeoutMS)
+function getKeyWithESCChars(pGetKeyMode)
 {
 	var getKeyMode = (typeof(pGetKeyMode) === "number" ? pGetKeyMode : K_NONE);
-	var inputTimeoutMS = (typeof(pInputTimeoutMS) === "number" ? pInputTimeoutMS : 300000);
-	if (inputTimeoutMS == 0)
-		inputTimeoutMS = 300000;
 	// Input a key from the user and take action based on the user's input.  If
 	// the user is a sysop, don't use an input timeout.
 	var userInput = "";
-	if (user.is_sysop)
+	if (user.security.exemptions&UFLAG_H) // Inactivity exemption
 		userInput = console.getkey(getKeyMode);
 	else
-		userInput = console.inkey(getKeyMode, inputTimeoutMS);
+		userInput = console.inkey(getKeyMode, console.inactivity_hangup * 1000);
 	if (userInput == KEY_ESC)
 	{
 		switch (console.inkey(K_NOECHO|K_NOSPIN, 2))
