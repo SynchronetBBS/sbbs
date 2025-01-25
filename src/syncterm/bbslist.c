@@ -1125,6 +1125,7 @@ edit_name(char *itemname, struct bbslist **list, str_list_t inifile, bool edit_t
 			}
 			else {
 				if (itemname) {
+					// TODO: Rename cache
 					if (!edit_to_add)
 						iniRenameSection(&inifile, itemname, tmp);
 					strcpy(itemname, tmp);
