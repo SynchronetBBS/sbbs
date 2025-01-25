@@ -1615,22 +1615,24 @@ update_webget_progress(struct webget_request *reqs, size_t items, bool leaveup)
 				pos += added;
 			}
 			else {
-				char received[10];
-				char total[10];
-				byte_estimate_to_str(reqs[i].received_size, received, sizeof(received), 0, 3);
-				byte_estimate_to_str(reqs[i].remote_size, total, sizeof(total), 0, 3);
-				if (reqs[i].remote_size) {
-					int added = snprintf(&helpbuf[pos], sz - pos, "%9s/%-9s ", received, total);
-					pos += added;
-					if (sz > pos) {
-						int pct = reqs[i].received_size * 100 / reqs[i].remote_size;
-						int added = snprintf(&helpbuf[pos], sz - pos, "~%.*s~%.*s\r\n", pct, "", 10 - pct, "");
+				if (reqs[i].received_size > 0 || reqs[i].remote_size > 0) {
+					char received[10];
+					char total[10];
+					byte_estimate_to_str(reqs[i].received_size, received, sizeof(received), 0, 3);
+					byte_estimate_to_str(reqs[i].remote_size, total, sizeof(total), 0, 3);
+					if (reqs[i].remote_size) {
+						int added = snprintf(&helpbuf[pos], sz - pos, "%9s/%-9s ", received, total);
+						pos += added;
+						if (sz > pos) {
+							int pct = reqs[i].received_size * 100 / reqs[i].remote_size;
+							int added = snprintf(&helpbuf[pos], sz - pos, "~%.*s~%.*s\r\n", pct, "", 10 - pct, "");
+							pos += added;
+						}
+					}
+					else {
+						int added = snprintf(&helpbuf[pos], sz - pos, "%9s\r\n", received);
 						pos += added;
 					}
-				}
-				else {
-					int added = snprintf(&helpbuf[pos], sz - pos, "%9s\r\n", received);
-					pos += added;
 				}
 			}
 		}
