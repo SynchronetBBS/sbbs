@@ -2913,6 +2913,59 @@ kbwait(void)
 	}
 }
 
+static void
+edit_web_lists(void)
+{
+	static int cur = 0;
+	static int bar = 0;
+	size_t alloced_size = 0;
+	char **list = NULL;
+
+	while (!quitting) {
+		size_t count;
+		COUNT_LIST_ITEMS(settings.webgets, count);
+		if (count > alloced_size) {
+			char **newlist = realloc(list, (count + 1) * sizeof(char *));
+			if (newlist == NULL) {
+				free(list);
+				return;
+			}
+			list = newlist;
+			alloced_size = count;
+		}
+		for (size_t i = 0; i < count; i++) {
+			list[i] = settings.webgets[i]->name;
+			list[i + 1] = NULL;
+		}
+
+		// TODO: Help
+		int i = uifc.list(WIN_SAV | WIN_INS | WIN_INSACT | WIN_DEL | WIN_XTR | WIN_ACT,
+		        0, 0, 0, &cur, &bar, "Web Lists", list);
+		if (i == -1) {
+			check_exit(false);
+			break;
+		}
+		if (i & MSK_DEL) {
+			// TODO: Functions to amipulate these...
+		}
+		else if (i & MSK_INS) {
+			// TODO: Functions to amipulate these...
+		}
+		else if (i >= 0 && i <= count) {
+			char tmp[INI_MAX_VALUE_LEN + 1];
+			strlcpy(tmp, settings.webgets[i]->value, sizeof(tmp));
+			// TODO: Help
+			if (uifc.input(WIN_SAV | WIN_MID, 0, 0, "Web List URI", tmp, sizeof(tmp) - 1, K_EDIT) == -1) {
+				check_exit(false);
+			}
+			else {
+				free(settings.webgets[i]->value);
+				settings.webgets[i]->value = strdup(tmp);
+			}
+		}
+	}
+}
+
 /*
  * Displays the BBS list and allows edits to user BBS list
  * Mode is one of BBSLIST_SELECT or BBSLIST_EDIT
@@ -2934,6 +2987,7 @@ show_bbslist(char *current, int connected)
 	char *p;
 	char addy[LIST_ADDR_MAX + 1];
 	char *settings_menu[] = {
+		"Web Lists",
 		"Default Connection Settings",
 		"Current Screen Mode",
 		"Font Management",
@@ -2943,6 +2997,7 @@ show_bbslist(char *current, int connected)
 		NULL
 	};
 	char *connected_settings_menu[] = {
+		"Web Lists",
 		"Default Connection Settings",
 		"Font Management",
 		"Program Settings",
@@ -3571,6 +3626,8 @@ show_bbslist(char *current, int connected)
 					last_mode = cio_api.mode;
 				}
 				uifc.helpbuf = "`SyncTERM Settings Menu`\n\n"
+				               "~ Web Lists ~\n"
+				               "        Modify the list of dialing directoies fetch from the web\n\n"
 				               "~ Default Connection Settings ~\n"
 				               "        Modify the settings that are used by default for new entries\n\n"
 				               "~ Current Screen Mode ~\n"
@@ -3601,7 +3658,7 @@ show_bbslist(char *current, int connected)
 				                &sbar,
 				                "SyncTERM Settings",
 				                connected ? connected_settings_menu : settings_menu);
-				if (connected && (val >= 1))
+				if (connected && (val >= 2))
 					val++;
 				switch (val) {
 					case -2 - 0x3000: /* ALT-B - Scrollback */
@@ -3668,10 +3725,13 @@ show_bbslist(char *current, int connected)
 						free(list);
 						free(copied);
 						return NULL;
-					case 0: /* Edit default connection settings */
+					case 0: /* Edit Web Lists */
+						edit_web_lists();
+						break;
+					case 1: /* Edit default connection settings */
 						edit_list(NULL, &defaults, settings.list_path, true);
 						break;
-					case 1: { /* Screen Mode */
+					case 2: { /* Screen Mode */
 						struct text_info ti;
 						gettextinfo(&ti);
 
@@ -3712,13 +3772,13 @@ show_bbslist(char *current, int connected)
 						}
 					}
 					break;
-					case 2: /* Font management */
+					case 3: /* Font management */
 						if (!safe_mode) {
 							font_management();
 							load_font_files();
 						}
 						break;
-					case 3: /* Program settings */
+					case 4: /* Program settings */
 						change_settings(connected);
 						load_bbslist(list,
 						             BBSLIST_SIZE,
@@ -3733,7 +3793,7 @@ show_bbslist(char *current, int connected)
 						             list[opt] ? strdup(list[opt]->name) : NULL);
 						oldopt = -1;
 						break;
-					case 4: /* File Locations */
+					case 5: /* File Locations */
 						strcpy(personal_list, settings.list_path);
 						get_syncterm_filename(setting_file,
 						                      sizeof(setting_file),
@@ -3781,7 +3841,7 @@ show_bbslist(char *current, int connected)
 						             NULL,
 						             NULL);
 						break;
-					case 5: // Build Options
+					case 6: // Build Options
 						asprintf(&p,
 						         "`SyncTERM Build Options`\n\n"
 						         "%s Cryptlib (ie: SSH and TLS)\n"
