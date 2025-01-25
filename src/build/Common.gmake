@@ -400,7 +400,7 @@ ifeq ($(os),darwin)
  endif
  CFLAGS +=  -D__unix__ -fno-common -D__DARWIN__
  CFLAGS +=  -mmacosx-version-min=$(MIN_MAC_OSX_VERSION)
- LDFLAGS += -mmacosx-version-min=$(MIN_MAC_OSX_VERSION) -Xlinker -no_warn_duplicate_libraries
+ LDFLAGS += -mmacosx-version-min=$(MIN_MAC_OSX_VERSION)
  ifneq (,$(shell which brew))
   CFLAGS += -I$(shell brew --prefix)/include
   LDFLAGS += -L$(shell brew --prefix)/lib
