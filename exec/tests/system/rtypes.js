@@ -12,8 +12,8 @@ var type = {
 	'zonestr()'				: 'string',
 	'datestr()'				: 'string',
 	'secondstr(0)'			: 'string',
-	'get_node_message(0)'	: 'string',
-	'get_telegram(0)'		: 'string',
+	'get_node_message(0)'	: 'object', // null
+	'get_telegram(0)'		: 'object', // null
 	'exec(" ")'				: 'number',
 	'check_syspass(null)'	: 'boolean',
 	'check_name(null)'		: 'boolean',

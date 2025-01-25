@@ -1603,7 +1603,7 @@ js_get_node_message(JSContext *cx, uintN argc, jsval *arglist)
 	buf = getnmsg(sys->cfg, node_num);
 	JS_RESUMEREQUEST(cx, rc);
 	if (buf == NULL) {
-		JS_SET_RVAL(cx, arglist, JS_GetEmptyStringValue(cx));
+		JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 		return JS_TRUE;
 	}
 	js_str = JS_NewStringCopyZ(cx, buf);
@@ -1683,7 +1683,7 @@ js_get_telegram(JSContext *cx, uintN argc, jsval *arglist)
 	buf = getsmsg(sys->cfg, usernumber);
 	JS_RESUMEREQUEST(cx, rc);
 	if (buf == NULL) {
-		JS_SET_RVAL(cx, arglist, JS_GetEmptyStringValue(cx));
+		JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 		return JS_TRUE;
 	}
 	js_str = JS_NewStringCopyZ(cx, buf);
@@ -2301,13 +2301,13 @@ static jsSyncMethodSpec js_system_functions[] = {
 		        "returning an object matching the elements of <tt>system.node_list</tt>")
 	 , 31702},
 	{"get_node_message", js_get_node_message, 0,  JSTYPE_STRING,  JSDOCSTR("node_number")
-	 , JSDOCSTR("Read any messages waiting for the specified node and return in a single string")
+	 , JSDOCSTR("Read any messages waiting for the specified node and return in a single string or <i>null</i> if none are waiting")
 	 , 311},
 	{"put_node_message", js_put_node_message, 2,  JSTYPE_BOOLEAN, JSDOCSTR("node_number, message_text")
 	 , JSDOCSTR("Send a node a short text message, delivered immediately")
 	 , 310},
 	{"get_telegram",    js_get_telegram,    1,  JSTYPE_STRING,  JSDOCSTR("user_number")
-	 , JSDOCSTR("Return any short text messages waiting for the specified user")
+	 , JSDOCSTR("Return any short text messages waiting for the specified user or <i>null</i> if none are waiting")
 	 , 311},
 	{"put_telegram",    js_put_telegram,    2,  JSTYPE_BOOLEAN, JSDOCSTR("user_number, message_text")
 	 , JSDOCSTR("Send a user a short text message, delivered immediately or during next logon")
