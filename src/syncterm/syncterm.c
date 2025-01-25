@@ -1634,6 +1634,10 @@ update_webget_progress(struct webget_request *reqs, size_t items, bool leaveup)
 						pos += added;
 					}
 				}
+				else {
+					int added = snprintf(&helpbuf[pos], sz - pos, "\r\n");
+					pos += added;
+				}
 			}
 		}
 		assert_pthread_mutex_unlock(&reqs[i].mtx);

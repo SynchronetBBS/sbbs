@@ -534,7 +534,7 @@ typedef struct {
 /********************************/
 /* Other Pointer-List Macros    */
 /********************************/
-#define COUNT_LIST_ITEMS(list,i)        { i=0; if(list!=NULL) while(list[i]!=NULL) i++; }
+#define COUNT_LIST_ITEMS(list,i)        { i=0; if((list)!=NULL) while((list)[i]!=NULL) i++; }
 
 #if defined(__unix__)
         #include <syslog.h>

@@ -17,6 +17,7 @@
 #include "filepick.h"
 #include "fonts.h"
 #include "menu.h"
+#include "named_str_list.h"
 #include "syncterm.h"
 #include "term.h"
 #include "uifcinit.h"
@@ -2914,12 +2915,19 @@ kbwait(void)
 }
 
 static void
+write_webgets(void)
+{
+	// TODO: Save changes
+}
+
+static void
 edit_web_lists(void)
 {
 	static int cur = 0;
 	static int bar = 0;
 	size_t alloced_size = 0;
 	char **list = NULL;
+	bool changed = false;
 
 	while (!quitting) {
 		size_t count;
@@ -2928,7 +2936,7 @@ edit_web_lists(void)
 			char **newlist = realloc(list, (count + 1) * sizeof(char *));
 			if (newlist == NULL) {
 				free(list);
-				return;
+				break;
 			}
 			list = newlist;
 			alloced_size = count;
@@ -2946,23 +2954,52 @@ edit_web_lists(void)
 			break;
 		}
 		if (i & MSK_DEL) {
-			// TODO: Functions to amipulate these...
+			namedStrListDelete(&settings.webgets, i & MSK_OFF);
+			changed = true;
 		}
 		else if (i & MSK_INS) {
-			// TODO: Functions to amipulate these...
+			char tmpn[INI_MAX_VALUE_LEN + 1];
+			char tmpv[INI_MAX_VALUE_LEN + 1];
+			tmpn[0] = 0;
+			// TODO: Help
+			while (uifc.input(WIN_SAV | WIN_MID, 0, 0, "Web List Name", tmpn, sizeof(tmpn) - 1, K_EDIT) != -1
+			    && tmpn[0]) {
+				if (namedStrListFindName(settings.webgets, tmpn)) {
+					// TODO: Help
+					uifc.msg("Duplicate Name");
+					continue;
+				}
+				else {
+					tmpv[0] = 0;
+					// TODO: Help
+					if (uifc.input(WIN_SAV | WIN_MID, 0, 0, "Web List URI", tmpv, sizeof(tmpv) - 1, K_EDIT) != -1
+					    && tmpv[0]) {
+						namedStrListInsert(&settings.webgets, tmpn, tmpv, i & MSK_OFF);
+						changed = true;
+					}
+					break;
+				}
+			}
 		}
 		else if (i >= 0 && i <= count) {
 			char tmp[INI_MAX_VALUE_LEN + 1];
 			strlcpy(tmp, settings.webgets[i]->value, sizeof(tmp));
+			uifc.changes = false;
 			// TODO: Help
 			if (uifc.input(WIN_SAV | WIN_MID, 0, 0, "Web List URI", tmp, sizeof(tmp) - 1, K_EDIT) == -1) {
 				check_exit(false);
 			}
 			else {
-				free(settings.webgets[i]->value);
-				settings.webgets[i]->value = strdup(tmp);
+				if (uifc.changes) {
+					free(settings.webgets[i]->value);
+					settings.webgets[i]->value = strdup(tmp);
+					changed = true;
+				}
 			}
 		}
+	}
+	if (changed) {
+		write_webgets();
 	}
 }
 
