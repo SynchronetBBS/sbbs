@@ -759,7 +759,16 @@ write_cacheinfo(struct http_session *sess)
 		if (!iniSetBool(&info, NULL, "Immutable", sess->cache.immutable, NULL))
 			goto error_return;
 	}
-	bool ret = iniWriteFile(sess->cache_info, info);
+	fflush(sess->cache_info);
+	bool ret;
+	if (chsize(fileno(sess->cache_info), 0) != 0) {
+		fseek(sess->cache_info, 0, SEEK_SET);
+		ret = false;
+	}
+	else {
+		fseek(sess->cache_info, 0, SEEK_SET);
+		ret = iniWriteFile(sess->cache_info, info);
+	}
 	fclose(sess->cache_info);
 	sess->cache_info = NULL;
 	strListFree(&info);
