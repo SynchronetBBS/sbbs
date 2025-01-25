@@ -1,7 +1,7 @@
 #ifndef NAMED_STR_LIST_H
 #define NAMED_STR_LIST_H
 
-#define NAMED_STR_LIST_LAST_INDEX     (-((size_t)(1)))
+#define NAMED_STR_LIST_LAST_INDEX     (~((size_t)(0)))
 
 #ifdef __cplusplus
 extern "C" {

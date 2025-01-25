@@ -53,7 +53,8 @@ namedStrListDelete(named_string_t ***list, size_t index)
 named_string_t *
 namedStrListFindName(named_string_t **list, const char *tmpn)
 {
-	for (size_t i = 0; list[i]; i++) {
+	size_t i;
+	for (i = 0; list[i]; i++) {
 		if (stricmp(tmpn, list[i]->name) == 0)
 			return list[i];
 	}
