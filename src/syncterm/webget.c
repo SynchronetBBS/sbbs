@@ -4,6 +4,7 @@
 #include "bbslist.h"
 #include "conn.h"
 #include "datewrap.h"
+#include "filewrap.h"
 #include "sockwrap.h"
 #include "stdio.h"
 #include "syncterm.h"
@@ -11,11 +12,9 @@
 #include "webget.h"
 #include "xpprintf.h"
 
-struct http_session {
-	struct webget_request *req;
-	struct bbslist hacky_list_entry;
-	const char *hostname;
-	const char *path;
+#define MAX_LIST_SIZE (16 * 1024 * 1024)
+
+struct http_cache_info {
 	char *etag;
 	time_t last_modified;
 	time_t date;
@@ -24,31 +23,24 @@ struct http_session {
 	time_t expires;
 	double age;
 	double max_age;
-	SOCKET sock;
 	bool must_revalidate;
 	bool no_cache;
 	bool immutable;
-	bool is_tls;
 };
 
-static void
-close_socket(struct http_session *sess)
-{
-	if (sess->sock != INVALID_SOCKET) {
-		close(sess->sock);
-		sess->sock = INVALID_SOCKET;
-	}
-}
-
-static void
-free_session(struct http_session *sess)
-{
-	close_socket(sess);
-	free((void *)sess->hostname);
-	sess->hostname = NULL;
-	free((void *)sess->etag);
-	sess->etag = NULL;
-}
+struct http_session {
+	struct webget_request *req;
+	const char *hostname;
+	const char *path;
+	FILE *cache_info;
+	struct bbslist hacky_list_entry;
+	struct http_cache_info cache;
+	SOCKET sock;
+	bool is_tls;
+	bool is_chunked;
+	bool not_modified;
+	bool got_size;
+};
 
 static void
 set_state_locked(struct webget_request *req, const char *newstate)
@@ -80,24 +72,123 @@ set_msg(struct webget_request *req, const char *newmsg)
 	assert_pthread_mutex_unlock(&req->mtx);
 }
 
+static ssize_t
+recv_nbytes(struct http_session *sess, uint8_t *buf, size_t chunk_size, bool *eof)
+{
+	ssize_t received = 0;
+
+	while (received < chunk_size) {
+		if (!socket_readable(sess->sock, 5000)) {
+			set_msg(sess->req, "Socket Unreadable");
+			goto error_return;
+		}
+		ssize_t rc = recv(sess->sock, &buf[received], chunk_size - received, 0);
+		if (rc < 0) {
+			set_msg(sess->req, "recv() error");
+			goto error_return;
+		}
+		if (rc == 0) {
+			if (eof) {
+				*eof = true;
+				break;
+			}
+			set_msg(sess->req, "Unexpected End of Data");
+			goto error_return;
+		}
+		received += rc;
+		assert_pthread_mutex_lock(&sess->req->mtx);
+		sess->req->received_size += rc;
+		assert_pthread_mutex_unlock(&sess->req->mtx);
+	}
+
+	return received;
+error_return:
+	if (eof)
+		*eof = false;
+	return -1;
+}
+
+static void
+close_socket(struct http_session *sess)
+{
+	if (sess->sock != INVALID_SOCKET) {
+		close(sess->sock);
+		sess->sock = INVALID_SOCKET;
+	}
+}
+
+static void
+free_session(struct http_session *sess)
+{
+	close_socket(sess);
+	if (sess->cache_info) {
+		fclose(sess->cache_info);
+		sess->cache_info = NULL;
+	}
+	free((void *)sess->hostname);
+	sess->hostname = NULL;
+	free((void *)sess->cache.etag);
+	sess->cache.etag = NULL;
+}
+
+static char *
+gen_inm_header(struct http_session *sess)
+{
+	if (!sess->cache.etag)
+		return NULL;
+	char *ret;
+	int len = asprintf(&ret, "If-None-Match: \"%s\"\r\n", sess->cache.etag);
+	if (len < 1) {
+		free(ret);
+		return NULL;
+	}
+	return ret;
+}
+
+static const char * const days[] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+static const char * const months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+
+static char *
+gen_ims_header(struct http_session *sess)
+{
+
+	if (sess->cache.last_modified <= 0)
+		return NULL;
+	struct tm tm;
+	if (gmtime_r(&sess->cache.last_modified, &tm) == NULL)
+		return NULL;
+	char *ret;
+	int len = asprintf(&ret, "If-Modified-Since: %s, %02d %s %04d %02d:%02d:%02d GMT\r\n",
+	    days[tm.tm_wday], tm.tm_mday, months[tm.tm_mon], tm.tm_year + 1900, tm.tm_hour, tm.tm_min, tm.tm_sec);
+	if (len < 1) {
+		free(ret);
+		return NULL;
+	}
+	return ret;
+}
+
 static bool
 send_request(struct http_session *sess)
 {
 	char *reqstr = NULL;
 	int len;
+	char *inm = gen_inm_header(sess);
+	char *ims = gen_ims_header(sess);
 
 	len = asprintf(&reqstr, "GET /%s HTTP/1.1\r\n"
-	    "Host: %s\r\n"
+	    "Host: %s\r\n%s%s"
 	    "Accept-Encoding: \r\n"
 	    "User-Agent: %s\r\n"
 	    "Connection: close\r\n"
-	    "\r\n", sess->path, sess->hostname, syncterm_version);
+	    "\r\n", sess->path, sess->hostname, inm ? inm : "", ims ? ims : "", syncterm_version);
+	free(inm);
+	free(ims);
 	if (len == -1) {
 		set_msg(sess->req, "asprintf() failure");
 		free(reqstr);
 		return false;
 	}
-	sess->request_time = time(NULL);
+	sess->cache.request_time = time(NULL);
 	ssize_t sent = send(sess->sock, reqstr, len, 0);
 	free(reqstr);
 	if (sent != len) {
@@ -105,6 +196,12 @@ send_request(struct http_session *sess)
 		return false;
 	}
 	shutdown(sess->sock, SHUT_WR);
+#ifdef _WIN32
+	unsigned long nb = 1;
+#else
+	int nb = 1;
+#endif
+	ioctlsocket(sess->sock, FIONBIO, &nb);
 	return true;
 }
 
@@ -192,7 +289,7 @@ skipws(const char *val)
 	return val;
 }
 
-time_t
+static time_t
 parse_http_date(const char *dstr)
 {
 	struct tm t = {0};
@@ -273,7 +370,7 @@ parse_http_date(const char *dstr)
 		return 0;
 	t.tm_min = l;
 	errno = 0;
-	l = strtol(&p[20], &end, 10);
+	l = strtol(&p[23], &end, 10);
 	if (l == 0 && errno)
 		return 0;
 	if (l < 0 || l > 60)
@@ -297,19 +394,19 @@ parse_etag(struct http_session *sess, const char *val)
 	size_t vlen = strlen(val);
 	for (size_t i = 0; i < vlen; i++) {
 		if (val[i] == '"') {
-			sess->etag = malloc(i + 1);
-			if (sess->etag == NULL)
+			sess->cache.etag = malloc(i + 1);
+			if (sess->cache.etag == NULL)
 				return;
 			if (i > 0)
-				memcpy(sess->etag, val, i);
-			sess->etag[i] = 0;
+				memcpy(sess->cache.etag, val, i);
+			sess->cache.etag[i] = 0;
 			return;
 		}
 	}
 	return;
 }
 
-const char *
+static const char *
 find_end(const char *val, const char ** sep)
 {
 	bool in_quotes = false;
@@ -370,11 +467,11 @@ parse_cache_control(struct http_session *sess, const char *val)
 			errno = 0;
 			long long ll = strtoll(&sep[0], NULL, 10);
 			if (ll != 0 || errno == 0) {
-				sess->max_age = ll;
+				sess->cache.max_age = ll;
 			}
 		}
 		if (sz == 8 && sep == NULL && strnicmp(val, "no-cache", 8) == 0) {
-			sess->no_cache = true;
+			sess->cache.no_cache = true;
 		}
 		if (sz == 8 && sep == NULL && strnicmp(val, "no-store", 8) == 0) {
 			// We can only load from the cache!
@@ -382,7 +479,7 @@ parse_cache_control(struct http_session *sess, const char *val)
 			return false;
 		}
 		if (sz == 15 && sep == NULL && strnicmp(val, "must-revalidate", 15) == 0) {
-			sess->must_revalidate = true;
+			sess->cache.must_revalidate = true;
 		}
 	}
 
@@ -414,16 +511,22 @@ parse_headers(struct http_session *sess)
 		goto error_return;
 	}
 	l = strtol(&line[9], &end, 10);
-	if (l != 200) {
-		set_msg(sess->req, "Status is not 200");
-		goto error_return;
+	switch (l) {
+		case 200: // New copy...
+			break;
+		case 304: //
+			sess->not_modified = true;
+			break;
+		default:
+			set_msg(sess->req, "Unhandled Status");
+			goto error_return;
 	}
 	if (*end != ' ') {
 		set_msg(sess->req, "Missing space after status");
 		goto error_return;
 	}
 	free(line);
-	sess->response_time = time(NULL);
+	sess->cache.response_time = time(NULL);
 
 	// Now "parse" headers until we're done...
 	for (;;) {
@@ -444,25 +547,57 @@ parse_headers(struct http_session *sess)
 			parse_etag(sess, &line[5]);
 		}
 		else if(strnicmp(line, "last-modified:", 14) == 0) {
-			sess->last_modified = parse_http_date(&line[14]);
+			sess->cache.last_modified = parse_http_date(&line[14]);
 		}
 		else if(strnicmp(line, "date:", 5) == 0) {
-			sess->date = parse_http_date(&line[5]);
+			sess->cache.date = parse_http_date(&line[5]);
 		}
 		else if(strnicmp(line, "expires:", 8) == 0) {
-			sess->expires = parse_http_date(&line[8]);
+			sess->cache.expires = parse_http_date(&line[8]);
 		}
 		else if(strnicmp(line, "age:", 4) == 0) {
-			if (sess->age == 0) {
+			if (sess->cache.age == 0) {
 				errno = 0;
 				long long ll = strtoll(&line[4], NULL, 10);
 				if (ll > 0 || errno == 0)
-					sess->age = ll;
+					sess->cache.age = ll;
 			}
 		}
 		else if(strnicmp(line, "cache-control:", 14) == 0) {
 			if (!parse_cache_control(sess, &line[14]))
 				goto error_return;
+		}
+		else if(strnicmp(line, "content-length:", 15) == 0) {
+			errno = 0;
+			long long ll = strtoll(&line[4], NULL, 10);
+			if (ll > 0 || errno == 0) {
+				if (ll > MAX_LIST_SIZE) {
+					set_msg(sess->req, "Content Too Large");
+					goto error_return;
+				}
+				sess->got_size = true;
+				assert_pthread_mutex_lock(&sess->req->mtx);
+				sess->req->remote_size = ll;
+				assert_pthread_mutex_unlock(&sess->req->mtx);
+			}
+		}
+		else if(strnicmp(line, "content-transfer-encoding:", 40) == 0) {
+			const char *val = skipws(&line[40]);
+			const char *sep;
+			const char *end = find_end(val, &sep);
+			if (sep != NULL) {
+				set_msg(sess->req, "Unknown Content-Transfer-Encoding");
+				goto error_return;
+			}
+			if ((end - val) != 7) {
+				set_msg(sess->req, "Unknown Content-Transfer-Encoding");
+				goto error_return;
+			}
+			if (strnicmp(val, "chunked", 7)) {
+				set_msg(sess->req, "Unknown Content-Transfer-Encoding");
+				goto error_return;
+			}
+			sess->is_chunked = true;
 		}
 		free(line);
 	}
@@ -477,8 +612,6 @@ error_return:
 static bool
 parse_uri(struct http_session *sess)
 {
-	char *hostname = NULL;
-	char *request;
 	const char *p;
 
 	assert_pthread_mutex_lock(&sess->req->mtx);
@@ -522,17 +655,350 @@ error_return:
 	return false;
 }
 
+static bool
+open_cacheinfo(struct http_session *sess)
+{
+	char *path = NULL;
+
+	int len = asprintf(&path, "%s/%s.cacheinfo", sess->req->cache_root, sess->req->name);
+	if (len < 0)
+		goto error_return;
+	uint64_t end = xp_timer64() + 5000;
+	while (sess->cache_info == NULL) {
+		sess->cache_info = _fsopen(path, "ab+", SH_DENYRW);
+		if (sess->cache_info == NULL) {
+			if (xp_timer64() > end)
+				return false;
+			SLEEP(25+xp_random(50));
+		}
+	}
+	free(path);
+	return true;
+
+error_return:
+	free(path);
+	return false;
+}
+
+static bool
+parse_cacheinfo(struct http_session *sess)
+{
+	str_list_t info = iniReadFile(sess->cache_info);
+	if (info == NULL) {
+		fclose(sess->cache_info);
+		sess->cache_info = NULL;
+		return false;
+	}
+
+	char *dstr;
+	dstr = iniGetExistingString(info, NULL, "ETag", NULL, NULL);
+	if (dstr)
+		sess->cache.etag = strdup(dstr);
+	sess->cache.last_modified = iniGetDateTime(info, NULL, "LastModified", 0);
+	sess->cache.date = iniGetDateTime(info, NULL, "Date", 0);
+	sess->cache.request_time = iniGetDateTime(info, NULL, "RequestTime", 0);
+	sess->cache.response_time = iniGetDateTime(info, NULL, "ResponseTime", 0);
+	sess->cache.expires = iniGetDateTime(info, NULL, "Expires", 0);
+	sess->cache.age = iniGetDuration(info, NULL, "Age", 0.0);
+	sess->cache.max_age = iniGetDuration(info, NULL, "MaxAge", 0.0);
+	sess->cache.must_revalidate = iniGetBool(info, NULL, "MustRevalidate", false);
+	sess->cache.no_cache = iniGetBool(info, NULL, "NoCache", false);
+	sess->cache.immutable = iniGetBool(info, NULL, "Immutable", false);
+	strListFree(&info);
+	return true;
+}
+
+static bool
+write_cacheinfo(struct http_session *sess)
+{
+	str_list_t info = strListInit();
+
+	if (info == NULL)
+		return false;
+	if (sess->cache.etag) {
+		if (!iniSetString(&info, NULL, "ETag", sess->cache.etag, NULL))
+			goto error_return;
+	}
+	if (sess->cache.last_modified) {
+		if (!iniSetDateTime(&info, NULL, "LastModified", true, sess->cache.last_modified, NULL))
+			goto error_return;
+	}
+	if (sess->cache.date) {
+		if (!iniSetDateTime(&info, NULL, "Date", true, sess->cache.date, NULL))
+			goto error_return;
+	}
+	if (sess->cache.request_time) {
+		if (!iniSetDateTime(&info, NULL, "RequestTime", true, sess->cache.request_time, NULL))
+			goto error_return;
+	}
+	if (sess->cache.response_time) {
+		if (!iniSetDateTime(&info, NULL, "ResponseTime", true, sess->cache.response_time, NULL))
+			goto error_return;
+	}
+	if (sess->cache.expires) {
+		if (!iniSetDateTime(&info, NULL, "Expires", true, sess->cache.expires, NULL))
+			goto error_return;
+	}
+	if (sess->cache.age) {
+		if (!iniSetDuration(&info, NULL, "Age", sess->cache.age, NULL))
+			goto error_return;
+	}
+	if (sess->cache.max_age) {
+		if (!iniSetDuration(&info, NULL, "MaxAge", sess->cache.max_age, NULL))
+			goto error_return;
+	}
+	if (sess->cache.must_revalidate) {
+		if (!iniSetBool(&info, NULL, "MustRevalidate", sess->cache.must_revalidate, NULL))
+			goto error_return;
+	}
+	if (sess->cache.no_cache) {
+		if (!iniSetBool(&info, NULL, "NoCache", sess->cache.no_cache, NULL))
+			goto error_return;
+	}
+	if (sess->cache.immutable) {
+		if (!iniSetBool(&info, NULL, "Immutable", sess->cache.immutable, NULL))
+			goto error_return;
+	}
+	bool ret = iniWriteFile(sess->cache_info, info);
+	fclose(sess->cache_info);
+	sess->cache_info = NULL;
+	strListFree(&info);
+	return ret;
+
+error_return:
+	fclose(sess->cache_info);
+	sess->cache_info = NULL;
+	strListFree(&info);
+	return false;
+}
+
+static bool
+read_chunked(struct http_session *sess, FILE *out)
+{
+	char *line;
+	size_t bufsz = 0;
+	size_t total = 0;
+	void *buf = NULL;
+
+	for (;;) {
+		line = recv_line(sess, 5000, NULL);
+		if (line == NULL)
+			goto error_return;
+		errno = 0;
+		unsigned long chunk_size = strtoul(line, NULL, 16);
+		if (chunk_size == 0) {
+			if (errno == 0)
+				break;
+			set_msg(sess->req, "strtoul() failure");
+			goto error_return;
+		}
+		total += chunk_size;
+		if (total > MAX_LIST_SIZE)  {
+			set_msg(sess->req, "Total Size Too Large");
+			goto error_return;
+		}
+		if (chunk_size > bufsz) {
+			void *newbuf = realloc(buf, chunk_size);
+			if (newbuf == NULL) {
+				set_msg(sess->req, "realloc() failure");
+				goto error_return;
+			}
+			buf = newbuf;
+			bufsz = chunk_size;
+		}
+		if (recv_nbytes(sess, buf, chunk_size, NULL) != chunk_size)
+			goto error_return;
+		if (fwrite(buf, 1, chunk_size, out) != chunk_size) {
+			set_msg(sess->req, "Short fwrite()");
+			goto error_return;
+		}
+	}
+	free(buf);
+	free(line);
+	return true;
+
+error_return:
+	free(buf);
+	free(line);
+	return false;
+}
+
+static bool
+read_body(struct http_session *sess, FILE *out)
+{
+	size_t bufsz = 4 * 1024 * 1024;
+	uint8_t *buf = malloc(bufsz);
+	if (buf == NULL)
+		return false;
+	size_t received = 0;
+	size_t total_size = 0;
+	if (sess->got_size) {
+		assert_pthread_mutex_lock(&sess->req->mtx);
+		total_size = sess->req->remote_size;
+		assert_pthread_mutex_unlock(&sess->req->mtx);
+	}
+
+	for (;;) {
+		if (sess->got_size) {
+			size_t remain = total_size - received;
+			if (remain < bufsz)
+				bufsz = remain;
+			ssize_t rb = recv_nbytes(sess, buf, bufsz, NULL);
+			if (rb < 0)
+				goto error_return;
+			if (rb > 0)
+				fwrite(buf, 1, rb, out);
+			received += rb;
+			if (total_size == received)
+				break;
+		}
+		else {
+			bool eof = false;
+			ssize_t rb = recv_nbytes(sess, buf, bufsz, &eof);
+			if (rb < 0)
+				goto error_return;
+			if (rb > 0)
+				fwrite(buf, 1, rb, out);
+			if (eof)
+				break;
+			received += rb;
+			if (received >= MAX_LIST_SIZE) {
+				set_msg(sess->req, "Total Size Too Large");
+				goto error_return;
+			}
+		}
+	}
+
+	free(buf);
+	return true;
+
+error_return:
+	free(buf);
+	return false;
+}
+
+static bool
+do_request(struct http_session *sess)
+{
+	char *npath = NULL;
+	char *path = NULL;
+	FILE *newfile = NULL;
+	bool ret;
+
+	set_state(sess->req, "Parsing");
+	if (!parse_uri(sess))
+		goto error_return;
+	set_state(sess->req, "Connecting");
+	sess->sock = conn_socket_connect(&sess->hacky_list_entry);
+	if (sess->sock == INVALID_SOCKET) {
+		set_msg(sess->req, "Connection Failed");
+		goto error_return;
+	}
+	set_state(sess->req, "Requesting");
+	if (!send_request(sess))
+		goto error_return;
+	set_state(sess->req, "Parsing headers");
+	if (!parse_headers(sess))
+		goto error_return;
+	if (sess->not_modified)
+		goto success_return;
+
+	int len = asprintf(&npath, "%s/%s.new", sess->req->cache_root, sess->req->name);
+	if (len < 1) {
+		set_msg(sess->req, "asprintf(&npath, ...) error");
+		goto error_return;
+	}
+	newfile = fopen(npath, "wb");
+	if (newfile == NULL) {
+		set_msg(sess->req, "fopen() error");
+		goto error_return;
+	}
+	if (!sess->not_modified) {
+		len = asprintf(&path, "%s/%s.lst", sess->req->cache_root, sess->req->name);
+		if (len < 1) {
+			set_msg(sess->req, "asprintf(&path, ...) error");
+			goto error_return;
+		}
+		set_state(sess->req, "Reading list");
+		if (sess->is_chunked)
+			ret = read_chunked(sess, newfile);
+		else
+			ret = read_body(sess, newfile);
+		if (!ret)
+			goto error_return;
+		if (rename(npath, path) != 0) {
+			set_msg(sess->req, "rename(npath, path) error");
+			goto error_return;
+		}
+	}
+
+success_return:
+	ret = true;
+	goto ret_return;
+
+error_return:
+	ret = false;
+	goto ret_return;
+
+ret_return:
+	free(npath);
+	free(path);
+	if (newfile)
+		fclose(newfile);
+	return ret;
+}
+
+double dmax(double d1, double d2)
+{
+	if (d1 > d2)
+		return d1;
+	return d2;
+}
+
+// RFC 9111 Section 4.2
+static bool
+is_fresh(struct http_session *sess)
+{
+	if (sess->cache.no_cache)
+		return false;
+	if (sess->cache.immutable)
+		return true;
+	double freshness_lifetime;
+	time_t date_value = sess->cache.date;
+	if (date_value == 0)
+		date_value = sess->cache.response_time;
+	if (sess->cache.max_age)
+		freshness_lifetime = sess->cache.max_age;
+	else if (sess->cache.expires != 0)
+		freshness_lifetime = difftime(sess->cache.expires, date_value);
+	else
+		freshness_lifetime = 60 * 60 * 24; // One day
+
+	double apparent_age = dmax(0, sess->cache.response_time - date_value);
+	double response_delay = difftime(sess->cache.response_time, sess->cache.request_time);
+	double corrected_age_value = sess->cache.age + response_delay;
+	double corrected_initial_age = dmax(apparent_age, corrected_age_value);
+	double resident_time = difftime(time(NULL), sess->cache.response_time);
+	double current_age = corrected_initial_age + resident_time;
+
+	if (current_age < freshness_lifetime)
+		return true;
+	if (sess->cache.must_revalidate) {
+		// Delete stale file
+		char *path;
+		int len = asprintf(&path, "%s/%s.lst", sess->req->cache_root, sess->req->name);
+		if (len > 0)
+			remove(path);
+	}
+	return false;
+}
+
 // TODO: Cache
 bool
 iniReadHttp(struct webget_request *req)
 {
-	bool is_tls = false;
-	str_list_t ret = NULL;
-	size_t index = 0;
 	struct http_session sess = {
 		.req = req,
-		.hostname = NULL,
-		.etag = NULL,
 		.hacky_list_entry = {
 			.hidepopups = true,
 			.address_family = PF_UNSPEC,
@@ -542,36 +1008,17 @@ iniReadHttp(struct webget_request *req)
 
 	if (req == NULL)
 		goto error_return;
-	set_state(req, "Parsing");
-	if (!parse_uri(&sess))
+	set_state(req, "Opening Cache Info");
+	if (!open_cacheinfo(&sess))
 		goto error_return;
-	set_state(req, "Connecting");
-	sess.sock = conn_socket_connect(&sess.hacky_list_entry);
-	if (sess.sock == INVALID_SOCKET)
+	set_state(req, "Reading Cache Info");
+	if (!parse_cacheinfo(&sess))
 		goto error_return;
-	set_state(req, "Requesting");
-	if (!send_request(&sess))
-		goto error_return;
-	set_state(req, "Parsing headers");
-	if (!parse_headers(&sess))
-		goto error_return;
-
-	set_state(req, "Reading list");
-	ret = strListInit();
-	if (ret == NULL)
-		goto error_return;
-
-	for (;;) {
-		size_t len;
-		char *line = recv_line(&sess, 5000, &len);
-		if (line == NULL)
-			break;
-		if (line[len] == '\r')
-			line[len] = 0;
-		if (strListAnnex(&ret, line, index) == NULL)
+	if (!is_fresh(&sess)) {
+		if (!do_request(&sess))
 			goto error_return;
-		index++;
 	}
+	write_cacheinfo(&sess);
 	free_session(&sess);
 	return true;
 
