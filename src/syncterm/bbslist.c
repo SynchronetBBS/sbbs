@@ -759,33 +759,22 @@ read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id, int
 {
 	char home[MAX_PATH + 1];
 	str_list_t section;
+	bool sys = (type == SYSTEM_BBSLIST);
 
 	get_syncterm_filename(home, sizeof(home), SYNCTERM_DEFAULT_TRANSFER_PATH, false);
-	if (bbsname != NULL) {
-#if 0
-		switch (type) {
-			case USER_BBSLIST:
-				SAFECOPY(entry->name, bbsname);
-				break;
-			case SYSTEM_BBSLIST:
-				sprintf(entry->name, "[%.*s]", sizeof(entry->name) - 3, bbsname);
-				break;
-		}
-#else
+	if (bbsname != NULL)
 		SAFECOPY(entry->name, bbsname);
-#endif
-	}
 	section = iniGetSection(listfile, bbsname);
 	iniGetSString(section, NULL, "Address", "", entry->addr, sizeof(entry->addr));
 	entry->conn_type = iniGetEnum(section, NULL, "ConnectionType", conn_types_enum, CONN_TYPE_SSH);
 	entry->flow_control = fc_from_enum(iniGetEnum(section, NULL, "FlowControl", fc_enum, 0));
 	entry->port = iniGetUShortInt(section, NULL, "Port", conn_ports[entry->conn_type]);
-	entry->added = iniGetDateTime(section, NULL, "Added", 0);
-	entry->connected = iniGetDateTime(section, NULL, "LastConnected", 0);
-	entry->calls = iniGetUInteger(section, NULL, "TotalCalls", 0);
-	iniGetSString(section, NULL, "UserName", "", entry->user, sizeof(entry->user));
-	iniGetSString(section, NULL, "Password", "", entry->password, sizeof(entry->password));
-	iniGetSString(section, NULL, "SystemPassword", "", entry->syspass, sizeof(entry->syspass));
+	entry->added = iniGetDateTime(sys ? NULL : section, NULL, "Added", 0);
+	entry->connected = iniGetDateTime(sys ? NULL : section, NULL, "LastConnected", 0);
+	entry->calls = iniGetUInteger(sys ? NULL : section, NULL, "TotalCalls", 0);
+	iniGetSString(sys ? NULL : section, NULL, "UserName", "", entry->user, sizeof(entry->user));
+	iniGetSString(sys ? NULL : section, NULL, "Password", "", entry->password, sizeof(entry->password));
+	iniGetSString(sys ? NULL : section, NULL, "SystemPassword", "", entry->syspass, sizeof(entry->syspass));
 	if (iniGetBool(section, NULL, "BeDumb", false)) /* Legacy */
 		entry->conn_type = CONN_TYPE_RAW;
 	entry->screen_mode = iniGetEnum(section, NULL, "ScreenMode", screen_modes_enum, SCREEN_MODE_CURRENT);
@@ -811,8 +800,8 @@ read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id, int
 	else
 		entry->has_fingerprint = false;
 	entry->sftp_public_key = iniGetBool(section, NULL, "SFTPPublicKey", false);
-	iniGetSString(section, NULL, "DownloadPath", home, entry->dldir, sizeof(entry->dldir));
-	iniGetSString(section, NULL, "UploadPath", home, entry->uldir, sizeof(entry->uldir));
+	iniGetSString(sys ? NULL : section, NULL, "DownloadPath", home, entry->dldir, sizeof(entry->dldir));
+	iniGetSString(sys ? NULL : section, NULL, "UploadPath", home, entry->uldir, sizeof(entry->uldir));
 	entry->data_bits = iniGetUShortInt(section, NULL, "DataBits", 8);
 	if (entry->data_bits < 7 || entry->data_bits > 8)
 		entry->data_bits = 8;
@@ -823,10 +812,10 @@ read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id, int
 	entry->telnet_no_binary = iniGetBool(section, NULL, "TelnetBrokenTextmode", false);
 
 	/* Log Stuff */
-	iniGetSString(section, NULL, "LogFile", "", entry->logfile, sizeof(entry->logfile));
-	entry->append_logfile = iniGetBool(section, NULL, "AppendLogFile", true);
-	entry->xfer_loglevel = iniGetEnum(section, NULL, "TransferLogLevel", log_levels, LOG_INFO);
-	entry->telnet_loglevel = iniGetEnum(section, NULL, "TelnetLogLevel", log_levels, LOG_INFO);
+	iniGetSString(sys ? NULL : section, NULL, "LogFile", "", entry->logfile, sizeof(entry->logfile));
+	entry->append_logfile = iniGetBool(sys ? NULL : section, NULL, "AppendLogFile", true);
+	entry->xfer_loglevel = iniGetEnum(sys ? NULL : section, NULL, "TransferLogLevel", log_levels, LOG_INFO);
+	entry->telnet_loglevel = iniGetEnum(sys ? NULL : section, NULL, "TelnetLogLevel", log_levels, LOG_INFO);
 
 	entry->bpsrate = iniGetInteger(section, NULL, "BPSRate", 0);
 	entry->music = iniGetInteger(section, NULL, "ANSIMusic", CTERM_MUSIC_BANSI);
