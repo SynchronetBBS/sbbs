@@ -45,6 +45,7 @@ set(SOURCE
     link_list.c
     msg_queue.c
     multisock.c
+    named_str_list.c
     netwrap.c
     semfile.c
     semwrap.c
@@ -75,6 +76,7 @@ set(HEADER
 	link_list.h
 	msg_queue.h
 	multisock.h
+	named_str_list.h
 	netwrap.h
 	petdefs.h
 	semfile.h
