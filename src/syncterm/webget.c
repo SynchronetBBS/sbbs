@@ -1,6 +1,8 @@
 #include <assert.h>
 #include <stdbool.h>
 
+#include <cryptlib.h>
+
 #include "bbslist.h"
 #include "conn.h"
 #include "datewrap.h"
@@ -36,6 +38,7 @@ struct http_session {
 	struct bbslist hacky_list_entry;
 	struct http_cache_info cache;
 	SOCKET sock;
+	CRYPT_SESSION tls;
 	bool is_tls;
 	bool is_chunked;
 	bool not_modified;
@@ -78,14 +81,26 @@ recv_nbytes(struct http_session *sess, uint8_t *buf, size_t chunk_size, bool *eo
 	ssize_t received = 0;
 
 	while (received < chunk_size) {
-		if (!socket_readable(sess->sock, 5000)) {
-			set_msg(sess->req, "Socket Unreadable");
-			goto error_return;
+		ssize_t rc;
+		if (sess->is_tls) {
+			int copied = 0;
+			int status = cryptPopData(sess->tls, &buf[received], chunk_size - received, &copied);
+			if (cryptStatusError(status)) {
+				set_msg(sess->req, "Error Popping Data");
+				goto error_return;
+			}
+			rc = copied;
 		}
-		ssize_t rc = recv(sess->sock, &buf[received], chunk_size - received, 0);
-		if (rc < 0) {
-			set_msg(sess->req, "recv() error");
-			goto error_return;
+		else {
+			if (!socket_readable(sess->sock, 5000)) {
+				set_msg(sess->req, "Socket Unreadable");
+				goto error_return;
+			}
+			rc = recv(sess->sock, &buf[received], chunk_size - received, 0);
+			if (rc < 0) {
+				set_msg(sess->req, "recv() error");
+				goto error_return;
+			}
 		}
 		if (rc == 0) {
 			if (eof) {
@@ -112,7 +127,7 @@ static void
 close_socket(struct http_session *sess)
 {
 	if (sess->sock != INVALID_SOCKET) {
-		close(sess->sock);
+		closesocket(sess->sock);
 		sess->sock = INVALID_SOCKET;
 	}
 }
@@ -120,6 +135,11 @@ close_socket(struct http_session *sess)
 static void
 free_session(struct http_session *sess)
 {
+	if (sess->is_tls && sess->tls != -1) {
+		cryptSetAttribute(sess->tls, CRYPT_SESSINFO_ACTIVE, 0);
+		cryptDestroySession(sess->tls);
+		sess->tls = -1;
+	}
 	close_socket(sess);
 	if (sess->cache_info) {
 		fclose(sess->cache_info);
@@ -189,13 +209,31 @@ send_request(struct http_session *sess)
 		return false;
 	}
 	sess->cache.request_time = time(NULL);
-	ssize_t sent = send(sess->sock, reqstr, len, 0);
+	ssize_t sent;
+	if (sess->is_tls) {
+		int copied;
+		int ret = cryptPushData(sess->tls, reqstr, len, &copied);
+		if (cryptStatusError(ret)) {
+fprintf(stderr, "Ret: %d\n", ret);
+			sent = -1;
+		}
+		else
+			sent = copied;
+		ret = cryptFlushData(sess->tls);
+		if (cryptStatusError(ret)) {
+fprintf(stderr, "ret: %d\n", ret);
+			sent = -1;
+		}
+	}
+	else {
+		sent = send(sess->sock, reqstr, len, 0);
+		shutdown(sess->sock, SHUT_WR);
+	}
 	free(reqstr);
 	if (sent != len) {
 		set_msg(sess->req, "send() failure");
 		return false;
 	}
-	shutdown(sess->sock, SHUT_WR);
 #ifdef _WIN32
 	unsigned long nb = 1;
 #else
@@ -222,14 +260,14 @@ recv_line(struct http_session *sess, int timeout, size_t *len)
 			set_msg(sess->req, "Socket not readable.");
 			goto error_return;
 		}
-		ssize_t rc = recv(sess->sock, &ret[retpos], 1, 0);
+		bool eof = false;
+		ssize_t rc = recv_nbytes(sess, (uint8_t *)&ret[retpos], 1, &eof);
 		if (rc == -1) {
 			if (SOCKET_ERRNO == EINTR)
 				continue;
-			set_msg(sess->req, "recv() failure.");
 			goto error_return;
 		}
-		if (rc == 0) {
+		if (rc == 0 || eof) {
 			if (retpos == 0) {
 				*len = 1;
 				goto special_return;
@@ -413,7 +451,7 @@ find_end(const char *val, const char ** sep)
 	bool had_quotes = false;
 	bool in_value = false;
 	*sep = NULL;
-	for (; *val; val++) {
+	for (; *val && *val != '\r'; val++) {
 		if (!in_value) {
 			if (*val == '=') {
 				*sep = val;
@@ -454,7 +492,7 @@ find_end(const char *val, const char ** sep)
 static bool
 parse_cache_control(struct http_session *sess, const char *val)
 {
-	while (*val) {
+	while (*val && *val != '\r') {
 		val = skipws(val);
 		const char *sep;
 		const char *end = find_end(val, &sep);
@@ -481,6 +519,7 @@ parse_cache_control(struct http_session *sess, const char *val)
 		if (sz == 15 && sep == NULL && strnicmp(val, "must-revalidate", 15) == 0) {
 			sess->cache.must_revalidate = true;
 		}
+		val = end;
 	}
 
 	return true;
@@ -887,6 +926,40 @@ error_return:
 }
 
 static bool
+tls_setup(struct http_session *sess)
+{
+	int status;
+	status = cryptCreateSession(&sess->tls, CRYPT_UNUSED, CRYPT_SESSION_SSL);
+	if (cryptStatusError(status)) {
+		set_msg(sess->req, "Unable To Create Session");
+		goto error_return;
+	}
+	int off = 1;
+	setsockopt(sess->sock, IPPROTO_TCP, TCP_NODELAY, (char *)&off, sizeof(off));
+	status = cryptSetAttribute(sess->tls, CRYPT_SESSINFO_NETWORKSOCKET, sess->sock);
+	if (cryptStatusError(status)) {
+		set_msg(sess->req, "Unable To Set Socket");
+		goto error_return;
+	}
+	cryptSetAttribute(sess->tls, CRYPT_OPTION_NET_READTIMEOUT, 5);
+	cryptSetAttributeString(sess->tls, CRYPT_SESSINFO_SERVER_NAME, sess->hostname, strlen(sess->hostname));
+	status = cryptSetAttribute(sess->tls, CRYPT_SESSINFO_ACTIVE, 1);
+	if (cryptStatusError(status)) {
+		set_msg(sess->req, "Unable To Activate Session");
+		goto error_return;
+	}
+	status = cryptSetAttribute(sess->tls, CRYPT_PROPERTY_OWNER, CRYPT_UNUSED);
+	if (cryptStatusError(status)) {
+		set_msg(sess->req, "Unable Clear Ownership");
+		goto error_return;
+	}
+	return true;
+
+error_return:
+	return false;
+}
+
+static bool
 do_request(struct http_session *sess)
 {
 	char *npath = NULL;
@@ -902,6 +975,11 @@ do_request(struct http_session *sess)
 	if (sess->sock == INVALID_SOCKET) {
 		set_msg(sess->req, "Connection Failed");
 		goto error_return;
+	}
+	if (sess->is_tls) {
+		set_state(sess->req, "TLS Setup");
+		if (!tls_setup(sess))
+			goto error_return;
 	}
 	set_state(sess->req, "Requesting");
 	if (!send_request(sess))
@@ -1008,6 +1086,7 @@ iniReadHttp(struct webget_request *req)
 {
 	struct http_session sess = {
 		.req = req,
+		.tls = -1,
 		.hacky_list_entry = {
 			.hidepopups = true,
 			.address_family = PF_UNSPEC,
@@ -1027,8 +1106,10 @@ iniReadHttp(struct webget_request *req)
 		if (!do_request(&sess))
 			goto error_return;
 	}
+	set_state(req, "Writing Cache Info");
 	write_cacheinfo(&sess);
 	free_session(&sess);
+	set_state(req, "Done");
 	return true;
 
 error_return:

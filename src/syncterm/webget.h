@@ -10,6 +10,7 @@ struct webget_request {
 	pthread_mutex_t mtx;
 	size_t remote_size;
 	size_t received_size;
+	uint64_t cb_data;
 };
 
 bool iniReadHttp(struct webget_request *req);
