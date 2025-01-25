@@ -2909,8 +2909,11 @@ bool iniWriteFile(FILE* fp, const str_list_t list)
 	pos = ftell(fp);
 	if (pos == -1)
 		return false;
-	if (chsize(fileno(fp), pos) != 0)  /* truncate */
+	if (chsize(fileno(fp), pos) != 0) {  /* truncate */
+		fseek(fp, 0, SEEK_END);
 		return false;
+	}
+	fseek(fp, 0, SEEK_END);
 
 	return count == strListCount(list);
 }
