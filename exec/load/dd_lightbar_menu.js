@@ -110,6 +110,8 @@ lbMenu.AddAdditionalSelectItemKeys("Ee");
 Also, after showing the menu & getting a value from the user (using the GetVal()
 function), the lastUserInput property will have the user's last keypress.
 
+If lastUserInput is an empty string, then it's likely that the inactivity timeout was reached.
+
 This menu class also supports an optional "numbered mode", where each option is
 displayed with a number to the left (starting at 1), and the user is allowed to
 choose an option by typing the number of the item.  Numbered mode is disabled
@@ -2019,7 +2021,7 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 				}
 			}
 			else // this.mouseEnabled is false
-				this.lastUserInput = getKeyWithESCChars(inputMode);
+				this.lastUserInput = console.getkey(inputMode);
 				
 			
 			// If the user is no longer online (disconnected) or the JS engine has
@@ -4006,6 +4008,8 @@ function printedToRealIdxInStr(pStr, pIdx)
 	return realIdx;
 }
 
+// TODO: getKeyWithESCCHars() is deprecated, as it's no longer needed.
+// It's still here because some scripts are still using it.
 // Inputs a keypress from the user and handles some ESC-based
 // characters such as PageUp, PageDown, and ESC.  If PageUp
 // or PageDown are pressed, this function will return the
@@ -4024,7 +4028,7 @@ function getKeyWithESCChars(pGetKeyMode)
 {
 	var getKeyMode = (typeof(pGetKeyMode) === "number" ? pGetKeyMode : K_NONE);
 	// Input a key from the user and take action based on the user's input.  If
-	// the user is a sysop, don't use an input timeout.
+	// the user has the H (inactivity) exemption, don't use an input timeout.
 	var userInput = "";
 	if (user.security.exemptions&UFLAG_H) // Inactivity exemption
 		userInput = console.getkey(getKeyMode);
