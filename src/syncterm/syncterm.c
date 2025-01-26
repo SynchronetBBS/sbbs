@@ -1446,6 +1446,16 @@ get_syncterm_filename(char *fn, int fnlen, int type, bool shared)
 		sprintf(fn, "%.*s", fnlen - 1, list_override);
 		return fn;
 	}
+
+	// Get recursive for the system cache...
+	if (type == SYNCTERM_PATH_SYSTEM_CACHE) {
+		if (!get_syncterm_filename(fn, fnlen, SYNCTERM_PATH_CACHE, false))
+			return NULL;
+		backslash(fn);
+		strlcat(fn, "syncterm-system-cache", fnlen);
+		mkpath(fn);
+		return fn;
+	}
 	memset(fn, 0, fnlen);
 #if defined(__APPLE__) && defined(__MACH__)
 	return get_OSX_filename(fn, fnlen, type, shared);
@@ -2168,11 +2178,7 @@ main(int argc, char **argv)
 
 		init_uifc(true, true);
 		char cache_path[MAX_PATH + 1];
-		if (get_syncterm_filename(cache_path, sizeof(cache_path), SYNCTERM_PATH_CACHE, false)) {
-			backslash(cache_path);
-			strlcat(cache_path, "syncterm-system-cache", sizeof(cache_path));
-			mkpath(cache_path);
-
+		if (get_syncterm_filename(cache_path, sizeof(cache_path), SYNCTERM_PATH_SYSTEM_CACHE, false)) {
 			size_t items;
 			size_t started = 0;
 			COUNT_LIST_ITEMS(settings.webgets, items);

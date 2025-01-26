@@ -2974,8 +2974,23 @@ edit_web_lists(void)
 					// TODO: Help
 					if (uifc.input(WIN_SAV | WIN_MID, 0, 0, "Web List URI", tmpv, sizeof(tmpv) - 1, K_EDIT) != -1
 					    && tmpv[0]) {
-						namedStrListInsert(&settings.webgets, tmpn, tmpv, i & MSK_OFF);
-						changed = true;
+						char cache_path[MAX_PATH + 1];
+						if (get_syncterm_filename(cache_path, sizeof(cache_path), SYNCTERM_PATH_SYSTEM_CACHE, false)) {
+							struct webget_request req;
+							if (!init_webget_req(&req, cache_path, tmpn, tmpv) || !iniReadHttp(&req)) {
+								char temp[1024];
+								snprintf(temp, sizeof(temp), "Can't fetch URI: %s", req.msg);
+								uifc.msg(temp);
+							}
+							else {
+								namedStrListInsert(&settings.webgets, tmpn, tmpv, i & MSK_OFF);
+								changed = true;
+							}
+						}
+						else {
+							namedStrListInsert(&settings.webgets, tmpn, tmpv, i & MSK_OFF);
+							changed = true;
+						}
 					}
 					break;
 				}
