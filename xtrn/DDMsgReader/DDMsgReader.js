@@ -650,10 +650,8 @@ if (gDoDDMR)
 	// value on exit.
 	if (console.term_supports(USER_ANSI) && (msgReader.scrollingReaderInterface || msgReader.msgListUseLightbarListInterface))
 	{
-		var originalAreYouThereStr = bbs.text(bbs.text.AreYouThere);
 		bbs.replace_text(AreYouThere, "");
-		js.on_exit("bbs.replace_text(AreYouThere, \"" + originalAreYouThereStr + "\")");
-		//js.on_exit("bbs.revert_text(AreYouThere)");
+		js.on_exit("bbs.revert_text(AreYouThere);");
 	}
 
 	// -indexedMode command-line arg specified and not doing a search (including
