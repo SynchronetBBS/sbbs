@@ -1588,27 +1588,26 @@ static JSBool
 js_revert_text(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval * argv = JS_ARGV(cx, arglist);
-	uint32  i = 0;
+	uint32  i = TOTAL_TEXT;
 	sbbs_t* sbbs;
 
 	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
 		return JS_FALSE;
 
-	if (js_argcIsInsufficient(cx, argc, 1))
-		return JS_FALSE;
-
-	if (JSVAL_IS_NUMBER(argv[0])) {
-		if (!JS_ValueToECMAUint32(cx, argv[0], &i))
-			return JS_FALSE;
-		i--;
-	} else {
-		JSString* js_str = JS_ValueToString(cx, argv[0]);
-		if (js_str == NULL)
-			return JS_FALSE;
-		char*     id = nullptr;
-		JSSTRING_TO_MSTRING(cx, js_str, id, NULL);
-		i = sbbs->get_text_num(id);
-		free(id);
+	if (argc > 0) {
+		if (JSVAL_IS_NUMBER(argv[0])) {
+			if (!JS_ValueToECMAUint32(cx, argv[0], &i))
+				return JS_FALSE;
+			i--;
+		} else {
+			JSString* js_str = JS_ValueToString(cx, argv[0]);
+			if (js_str == NULL)
+				return JS_FALSE;
+			char*     id = nullptr;
+			JSSTRING_TO_MSTRING(cx, js_str, id, NULL);
+			i = sbbs->get_text_num(id);
+			free(id);
+		}
 	}
 
 	if (i >= TOTAL_TEXT) {
