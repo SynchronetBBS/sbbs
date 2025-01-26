@@ -50,6 +50,8 @@ spec:
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../..
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/spidermonkey.tgz" 3rdp/*.release/mozjs
+  variables:
+    GIT_STRATEGY: fetch
   rules:
     - if: '"$[[ inputs.no_javascript ]]" == "yes"'
       when: never
@@ -69,7 +71,8 @@ spec:
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../..
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz" 3rdp/*.release/cl
-  needs: []
+  variables:
+    GIT_STRATEGY: fetch
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]":
   extends:
@@ -81,7 +84,8 @@ spec:
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../..
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz" src/xpdev/*.lib.release* src/xpdev/*.obj.release*/*.o*
-  needs: []
+  variables:
+    GIT_STRATEGY: fetch
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [encode]":
   extends:
@@ -93,7 +97,8 @@ spec:
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../..
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/encode.tgz" src/encode/*.lib.release* src/encode/*.obj.release*/*.o*
-  needs: []
+  variables:
+    GIT_STRATEGY: fetch
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [hash]":
   extends:
@@ -105,7 +110,8 @@ spec:
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../..
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/hash.tgz" src/hash/*.lib.release* src/hash/*.obj.release*/*.o*
-  needs: []
+  variables:
+    GIT_STRATEGY: fetch
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]":
   extends:
@@ -117,7 +123,8 @@ spec:
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../..
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz" src/conio/*.lib.release* src/conio/*.obj.release*/*.o*
-  needs: []
+  variables:
+    GIT_STRATEGY: fetch
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [sftp]":
   extends:
@@ -129,7 +136,8 @@ spec:
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../..
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sftp.tgz" src/sftp/*.lib.release* src/sftp/*.obj.release*/*.o*
-  needs: []
+  variables:
+    GIT_STRATEGY: fetch
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]":
   extends:
@@ -141,7 +149,8 @@ spec:
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../..
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz" src/smblib/*.lib.release* src/smblib/*.obj.release*/*.o*
-  needs: []
+  variables:
+    GIT_STRATEGY: fetch
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [uifc]":
   extends:
@@ -153,7 +162,8 @@ spec:
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../..
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/uifc.tgz" src/uifc/*.lib.release* src/uifc/*.obj.release*/*.o*
-  needs: []
+  variables:
+    GIT_STRATEGY: fetch
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [gitinfo]":
   extends:
@@ -165,7 +175,8 @@ spec:
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../..
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/gitinfo.tgz" src/sbbs3/git_*.h
-  needs: []
+  variables:
+    GIT_STRATEGY: fetch
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [scfg]":
   extends:
@@ -194,6 +205,8 @@ spec:
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../../..
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/scfg.tgz" src/sbbs3/scfg/*.exe.release* src/sbbs3/scfg/*.obj.release*/*.o*
+  variables:
+    GIT_STRATEGY: fetch
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
@@ -229,6 +242,8 @@ spec:
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../../..
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/uedit.tgz" src/sbbs3/uedit/*.exe.release* src/sbbs3/uedit/*.obj.release*/*.o*
+  variables:
+    GIT_STRATEGY: fetch
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [encode]"
@@ -266,6 +281,8 @@ spec:
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../../..
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/umonitor.tgz" src/sbbs3/umonitor/*.exe.release* src/sbbs3/umonitor/*.obj.release*/*.o*
+  variables:
+    GIT_STRATEGY: fetch
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [encode]"
@@ -301,6 +318,8 @@ spec:
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../..
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/utils.tgz" src/sbbs3/*.exe.release* src/sbbs3/*.obj.release*/*.o*
+  variables:
+    GIT_STRATEGY: fetch
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
@@ -358,6 +377,8 @@ spec:
     - cd ../..
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build${EXTRA_FILENAME}.tgz" src/sbbs3/*.exe.release* src/sbbs3/*.obj.release*/*.o* src/sbbs3/*.lib.release/* src/sbbs3/*/*.exe.release/*
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ctrl_exec${EXTRA_FILENAME}.tgz" ctrl exec
+  variables:
+    GIT_STRATEGY: fetch
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [spidermonkey]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
@@ -421,6 +442,8 @@ spec:
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../..
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/jsdoor.tgz" src/sbbs3/*.exe.release/jsdoor
+  variables:
+    GIT_STRATEGY: fetch
   artifacts:
     expire_in: 30 mins
     name: "jsdoor-$[[ inputs.os ]]-$[[ inputs.platform ]]"
@@ -453,6 +476,8 @@ spec:
     - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/uedit.tgz"
     - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/umonitor.tgz"
     - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/utils.tgz"
+  variables:
+    GIT_STRATEGY: fetch
   artifacts:
     name: "sbbs-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
@@ -495,6 +520,8 @@ spec:
     - touch sftp-mt
     - touch cl
     - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
+  variables:
+    GIT_STRATEGY: fetch
   artifacts:
     name: "syncterm-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
@@ -517,6 +544,8 @@ spec:
     - cd build
     - cmake -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DFIXED_FIXED_SEED=ON ..
     - cmake --build .
+  variables:
+    GIT_STRATEGY: fetch
   artifacts:
     name: "syncterm-cmake-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
@@ -525,6 +554,7 @@ spec:
     - if: '"$[[ inputs.cross_platform ]]" == "yes"'
       when: never
     - !reference [.rules, rules]
+  needs:
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [syncdraw]":
   extends:
@@ -538,6 +568,8 @@ spec:
     - touch xpdev-mt
     - touch ciolib-mt
     - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
+  variables:
+    GIT_STRATEGY: fetch
   artifacts:
     name: "syncdraw-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
@@ -556,6 +588,8 @@ spec:
     - touch xpdev
     - touch xpdev-mt
     - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
+  variables:
+    GIT_STRATEGY: fetch
   artifacts:
     name: "sexpots-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
@@ -579,6 +613,8 @@ spec:
     - touch hash
     - touch smblib
     - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
+  variables:
+    GIT_STRATEGY: fetch
   artifacts:
     name: "gtkchat-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
@@ -610,6 +646,8 @@ spec:
     - touch cl
     - touch js
     - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
+  variables:
+    GIT_STRATEGY: fetch
   artifacts:
     name: "gtkmonitor-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
@@ -642,6 +680,8 @@ spec:
     - touch cl
     - touch js
     - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
+  variables:
+    GIT_STRATEGY: fetch
   artifacts:
     name: "gtkuseredit-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
@@ -672,6 +712,8 @@ spec:
     - touch smblib
     - touch cl
     - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
+  variables:
+    GIT_STRATEGY: fetch
   artifacts:
     name: "gtkuserlist-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
