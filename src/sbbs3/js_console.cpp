@@ -49,6 +49,7 @@ enum {
 	, CON_PROP_WORDWRAP
 	, CON_PROP_QUESTION
 	, CON_PROP_MAX_GETKEY_INACTIVITY
+	, CON_PROP_GETKEY_INACTIVITY_WARN
 	, CON_PROP_LAST_GETKEY_ACTIVITY          /* User inactivity timeout reference */
 	, CON_PROP_MAX_SOCKET_INACTIVITY
 	, CON_PROP_TIMELEFT_WARN     /* low timeleft warning counter */
@@ -150,6 +151,9 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case CON_PROP_MAX_GETKEY_INACTIVITY:
 			val = sbbs->cfg.max_getkey_inactivity;
+			break;
+		case CON_PROP_GETKEY_INACTIVITY_WARN:
+			val = sbbs->cfg.max_getkey_inactivity * (sbbs->cfg.inactivity_warn / 100.0);
 			break;
 		case CON_PROP_LAST_GETKEY_ACTIVITY:
 			val = (int32)sbbs->getkey_last_activity;
@@ -416,6 +420,8 @@ static jsSyncPropertySpec js_console_properties[] = {
 	{   "cterm_version", CON_PROP_CTERM_VERSION, CON_PROP_FLAGS, 317},
 	{   "max_getkey_inactivity", CON_PROP_MAX_GETKEY_INACTIVITY, CON_PROP_FLAGS, 320},
 	{   "inactivity_hangup", CON_PROP_MAX_GETKEY_INACTIVITY, 0, 31401},                  // alias
+	{   "getkey_inactivity_warning", CON_PROP_GETKEY_INACTIVITY_WARN, JSPROP_ENUMERATE | JSPROP_READONLY, 32002},
+	{   "inactivity_warning", CON_PROP_GETKEY_INACTIVITY_WARN, 0, 32002},
 	{   "last_getkey_activity", CON_PROP_LAST_GETKEY_ACTIVITY, CON_PROP_FLAGS, 320},
 	{   "timeout", CON_PROP_LAST_GETKEY_ACTIVITY, 0, 310},                              // alias
 	{   "max_socket_inactivity", CON_PROP_MAX_SOCKET_INACTIVITY, CON_PROP_FLAGS, 320},
@@ -467,6 +473,7 @@ static const char*        con_prop_desc[] = {
 	, "Detected width of 'ZERO-WIDTH' UNICODE characters, in columns (either 0 or 1)"
 	, "Detected CTerm (SyncTERM) version as an integer > 1000 where major version is cterm_version / 1000 and minor version is cterm_version % 1000"
 	, "Number of seconds before disconnection due to user/keyboard inactivity (in getkey/getstr)"
+	, "Number of seconds before warning the user of pending disconnection due to user/keybard inactivity (or 0 if disabled)"
 	, "User/keyboard inactivity timeout reference value (time_t format)"
 	, "Number of seconds before disconnection due to socket inactivity (in input_thread)"
 	, "Number of low time-left (5 or fewer minutes remaining) warnings displayed to user"
