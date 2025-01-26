@@ -54,7 +54,7 @@ function chk_qwk_id(str)
 	if(userfound && userfound!=user.number)
 		return(false);
 
-	if(system.trashcan(str))
+	if(system.trashcan("name", str))
 		return(false);
 
 	if(str.toLowerCase() == user.security.password.toLowerCase())
