@@ -211,6 +211,16 @@
  * 2024-12-22 Eric Oulashin     Version 1.96i
  *                              When doing an indexed newscan, display the progress percentage
  *                              when doing the newscan
+ * 2025-01-25 Eric Oulashin     Version 1.96j
+ *                              User timeout 'AreYouThere' message and disconnection are
+ *                              more consistent with Synchronet's behavior. However, if the
+ *                              scrollable reader or lightbar list interface is being used,
+ *                              the 'AreYouThere' text will be set to a blank string for the
+ *                              duration of this script's run due to how the text can interfere
+ *                              with the screen and scrolling. The 'AreYouThere' sound will
+ *                              still occur though, and the user will be disconnected if
+ *                              they don't respond. getKeyWithESCChars() is no longer used
+ *                              in favor of console.getkey().
  */
 
 "use strict";
@@ -318,8 +328,8 @@ var hexdump = load('hexdump_lib.js');
 
 
 // Reader version information
-var READER_VERSION = "1.96i";
-var READER_DATE = "2024-12-22";
+var READER_VERSION = "1.96j";
+var READER_DATE = "2025-01-25";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -362,31 +372,7 @@ var CTRL_Z = "\x1a";
 //var KEY_ESC = "\x1b";
 var KEY_ESC = ascii(27);
 var KEY_ENTER = CTRL_M;
-// PageUp & PageDown keys - Synchronet 3.17 as of about December 18, 2017
-// use CTRL-P and CTRL-N for PageUp and PageDown, respectively.  sbbsdefs.js
-// defines them as KEY_PAGEUP and KEY_PAGEDN; I've used slightly different names
-// in this script so that this script will work with Synchronet systems before
-// and after the update containing those key definitions.
-var KEY_PAGE_UP = CTRL_P;
-var KEY_PAGE_DOWN = CTRL_N;
-// Ensure KEY_PAGE_UP and KEY_PAGE_DOWN are set to what's defined in sbbs.js
-// for KEY_PAGEUP and KEY_PAGEDN in case they change
-if (typeof(KEY_PAGEUP) === "string")
-	KEY_PAGE_UP = KEY_PAGEUP;
-if (typeof(KEY_PAGEDN) === "string")
-	KEY_PAGE_DOWN = KEY_PAGEDN;
-	
-// These are defined in sbbsdefs.js:
-//var	  KEY_UP		='\x1e';	// ctrl-^ (up arrow)
-//var	  KEY_DOWN		='\x0a';	// ctrl-j (dn arrow)
-//var   KEY_RIGHT		='\x06';	// ctrl-f (rt arrow)
-//var	  KEY_LEFT		='\x1d';	// ctrl-] (lf arrow)
-//var	  KEY_HOME		='\x02';	// ctrl-b (home)
-//var   KEY_END       ='\x05';	// ctrl-e (end)
-//var   KEY_DEL       ='\x7f';    // (del)
-// These were added to sbbsdef.js around December 17, 2017:
-//var		KEY_PAGEUP	='\x10';	/* ctrl-p (Page Up)							*/
-//var		KEY_PAGEDN	='\x0e';	/* ctrl-n (Page Down)						*/
+
 
 // Characters for display
 // Box-drawing/border characters: Single-line
@@ -657,6 +643,17 @@ if (gDoDDMR)
 			readerSubCode = gCmdLineArgVals["subboard"];
 	}
 	var msgReader = new DigDistMsgReader(readerSubCode, gCmdLineArgVals);
+	// If the user's terminal supports ANSI and we will be using any of the lightbar/scrollable
+	// user interfaces, then blank out the AreYouThere timeout warning string (used by
+	// console.getkey()), which would interfere with full-screen display and scrolling display
+	// functionality. Also, have the script set it back to its previous (possibly sysop-customized)
+	// value on exit.
+	if (console.term_supports(USER_ANSI) && (msgReader.scrollingReaderInterface || msgReader.msgListUseLightbarListInterface))
+	{
+		bbs.replace_text(AreYouThere, "");
+		js.on_exit("bbs.revert_text(AreYouThere);");
+	}
+
 	// -indexedMode command-line arg specified and not doing a search (including
 	// newscan): Do indexed read mode (show all sub-boards rather than only
 	// sub-boards enabled in the user's newscan configuration)
@@ -2435,6 +2432,10 @@ function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
 			default:
 				break;
 		}
+		// Check whether the user aborted (i.e., pressed Ctrl-C during the last operation); if so,
+		// then we'll want to quit.
+		if (console.aborted)
+			break;
 	}
 
 	console.clear("\x01n");
@@ -4049,6 +4050,8 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 		// End Temporary
 		*/
 		var userChoice = msgListMenu.GetVal(drawMenu);
+		if (console.aborted)
+			break;
 		drawMenu = true;
 		var lastUserInputUpper = (typeof(msgListMenu.lastUserInput) == "string" ? msgListMenu.lastUserInput.toUpperCase() : msgListMenu.lastUserInput);
 		// If the user's last input is null, then something bad/weird must have
@@ -7328,8 +7331,10 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 		writeMessage = true;
 		writePromptText = true;
 		// Input a key from the user and take action based on the keypress.
-		//retObj.lastKeypress = getKeyWithESCChars(K_UPPER|K_NOCRLF|K_NOECHO|K_NOSPIN);
-		retObj.lastKeypress = getKeyWithESCChars(K_UPPER);
+		//retObj.lastKeypress = console.getkey(K_UPPER|K_NOCRLF|K_NOECHO|K_NOSPIN);
+		retObj.lastKeypress = console.getkey(K_UPPER);
+		if (console.aborted)
+			break;
 		switch (retObj.lastKeypress)
 		{
 			case this.enhReaderKeys.deleteMessage: // Delete message
@@ -8373,6 +8378,14 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 					retObj.nextAction = ACTION_QUIT;
 				continueOn = false;
 				break;
+			case "": // User input timeout
+				console.attributes = "N";
+				console.print(bbs.text(bbs.text.CallBackWhenYoureThere));
+				bbs.hangup();
+				writeMessage = false;
+				writePromptText = false;
+				continueOn = false;
+				break;
 			default:
 				// No need to do anything
 				writeMessage = false;
@@ -8419,6 +8432,8 @@ function DigDistMsgReader_ShowReadModeOpMenuAndGetSelection()
 
 	//GetVal(pDraw, pSelectedItemIndexes)
 	retObj.chosenOption = opMenu.GetVal();
+	if (console.aborted)
+			return retObj;
 	if (typeof(opMenu.lastUserInput) === "string")
 		retObj.lastUserInput = opMenu.lastUserInput;
 	// If the user pressed one of the additional quit keys set up for the
@@ -11971,11 +11986,8 @@ function DigDistMsgReader_DisplayEnhancedReaderHelp(pDisplayChgAreaOpt, pDisplay
 	// Pause and let the user press a key to continue.  Note: For some reason,
 	// with console.pause(), not all of the message on the screen would get
 	// refreshed.  So instead, we display the system's pause text and input a
-	// key from the user.  Calling getKeyWithESCChars() to input a key from the
-	// user to allow for multi-key sequence inputs like PageUp, PageDown, F1,
-	// etc. without printing extra characters on the screen.
+	// key from the user.
 	//console.print("\x01n" + this.pausePromptText);
-	//getKeyWithESCChars(K_NOSPIN|K_NOCRLF|K_NOECHO);
 	// I'm not sure the above is needed anymore.  Should be able to use
 	// console.pause(), which easily supports custom pause scripts being loaded.
 	console.pause();
@@ -13050,6 +13062,8 @@ function DigDistMsgReader_SelectMsgArea_Lightbar(pMsgGrp, pGrpIdx)
 	{
 		chosenIdx = -1;
 		var msgGrpIdx = msgAreaMenu.GetVal(drawMenu);
+		if (console.aborted)
+			break;
 		drawMenu = true;
 		var lastUserInputUpper = (typeof(msgAreaMenu.lastUserInput) == "string" ? msgAreaMenu.lastUserInput.toUpperCase() : msgAreaMenu.lastUserInput);
 		if (typeof(msgGrpIdx) == "number")
@@ -16965,6 +16979,8 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 	while (continueOn)
 	{
 		var menuRetval = this.indexedModeMenu.GetVal(drawMenu);
+		if (console.aborted)
+			break;
 		// Show the menu and get the user's choice
 		retObj.lastUserInput = this.indexedModeMenu.lastUserInput;
 		var lastUserInputUpper = "";
@@ -19706,65 +19722,6 @@ function getGreatestNumMsgs(pGrpIndex)
   return greatestNumMsgs;
 }
 
-// Inputs a keypress from the user and handles some ESC-based
-// characters such as PageUp, PageDown, and ESC.  If PageUp
-// or PageDown are pressed, this function will return the
-// string defined by KEY_PAGE_UP or KEY_PAGE_DOWN,
-// respectively.  Also, F1-F5 will be returned as "\x01F1"
-// through "\x01F5", respectively.
-// Thanks goes to Psi-Jack for the original impementation
-// of this function.
-//
-// Parameters:
-//  pGetKeyMode: Optional - The mode bits for console.getkey().
-//               If not specified, K_NONE will be used.
-//
-// Return value: The user's keypress
-function getKeyWithESCChars(pGetKeyMode)
-{
-	var getKeyMode = K_NONE;
-	if (typeof(pGetKeyMode) == "number")
-		getKeyMode = pGetKeyMode;
-
-	var userInput = console.getkey(getKeyMode);
-	if (userInput == KEY_ESC) {
-		switch (console.inkey(K_NOECHO|K_NOSPIN, 2)) {
-			case '[':
-				switch (console.inkey(K_NOECHO|K_NOSPIN, 2)) {
-					case 'V':
-						userInput = KEY_PAGE_UP;
-						break;
-					case 'U':
-						userInput = KEY_PAGE_DOWN;
-						break;
-				}
-				break;
-			case 'O':
-				switch (console.inkey(K_NOECHO|K_NOSPIN, 2)) {
-					case 'P':
-						userInput = "\x01F1";
-						break;
-					case 'Q':
-						userInput = "\x01F2";
-						break;
-					case 'R':
-						userInput = "\x01F3";
-						break;
-					case 'S':
-						userInput = "\x01F4";
-						break;
-					case 't':
-						userInput = "\x01F5";
-						break;
-				}
-			default:
-				break;
-		}
-	}
-
-	return userInput;
-}
-
 // Finds the next or previous non-empty message sub-board.  Returns an
 // object containing the message group & sub-board indexes.  If all of
 // the next/previous sub-boards are empty, then the given current indexes
@@ -20178,8 +20135,8 @@ function scrollTextLines(pTxtLines, pTopLineIdx, pTxtAttrib, pWriteTxtLines, pTo
 
 		// Get a keypress from the user and take action based on it
 		console.gotoxy(pPostWriteCurX, pPostWriteCurY);
-		retObj.lastKeypress = getKeyWithESCChars(K_UPPER|K_NOCRLF|K_NOECHO|K_NOSPIN);
-		if (!continueOn)
+		retObj.lastKeypress = console.getkey(K_UPPER|K_NOCRLF|K_NOECHO|K_NOSPIN);
+		if (console.aborted)
 			break;
 
 		switch (retObj.lastKeypress)
@@ -20198,7 +20155,7 @@ function scrollTextLines(pTxtLines, pTopLineIdx, pTxtAttrib, pWriteTxtLines, pTo
 					writeTxtLines = true;
 				}
 				break;
-			case KEY_PAGE_UP: // Previous page
+			case KEY_PAGEUP: // Previous page
 				if (retObj.topLineIdx > 0)
 				{
 					retObj.topLineIdx -= pHeight;
@@ -20207,7 +20164,7 @@ function scrollTextLines(pTxtLines, pTopLineIdx, pTxtAttrib, pWriteTxtLines, pTo
 					writeTxtLines = true;
 				}
 				break;
-			case KEY_PAGE_DOWN: // Next page
+			case KEY_PAGEDN: // Next page
 				if (retObj.topLineIdx < topLineIdxForLastPage)
 				{
 					retObj.topLineIdx += pHeight;
@@ -20231,6 +20188,11 @@ function scrollTextLines(pTxtLines, pTopLineIdx, pTxtAttrib, pWriteTxtLines, pTo
 				}
 				break;
 			case "": // User input timeout
+				console.attributes = "N";
+				console.print(bbs.text(bbs.text.CallBackWhenYoureThere));
+				bbs.hangup();
+				continueOn = false;
+				break;
 			default:
 				continueOn = false;
 				break;
@@ -24257,11 +24219,13 @@ function ChoiceScrollbox_DoInputLoop(pDrawBorder)
 		}
 
 		// Get a key from the user (upper-case) and take action based upon it.
-		retObj.lastKeypress = getKeyWithESCChars(K_UPPER|K_NOCRLF|K_NOSPIN, this.programCfgObj);
+		retObj.lastKeypress = console.getkey(K_UPPER|K_NOCRLF|K_NOSPIN);
+		if (console.aborted)
+			break;
 		switch (retObj.lastKeypress)
 		{
 			case 'N': // Next page
-			case KEY_PAGE_DOWN:
+			case KEY_PAGEDN:
 				//if (user.is_sysop) console.print("\x01n\r\nMenu page down pressed\r\n\x01p"); // Temproary;
 				refreshList = (this.pageNum < this.numPages-1);
 				if (refreshList)
@@ -24288,7 +24252,7 @@ function ChoiceScrollbox_DoInputLoop(pDrawBorder)
 				}
 				break;
 			case 'P': // Previous page
-			case KEY_PAGE_UP:
+			case KEY_PAGEUP:
 				refreshList = (this.pageNum > 0);
 				if (refreshList)
 				{
@@ -24443,6 +24407,13 @@ function ChoiceScrollbox_DoInputLoop(pDrawBorder)
 			case CTRL_A:  // Quit
 			case 'Q':     // Quit
 				this.chosenTextItemIndex = retObj.selectedIndex = -1;
+				refreshList = false;
+				continueOn = false;
+				break;
+			case "": // User input timeout
+				console.attributes = "N";
+				console.print(bbs.text(bbs.text.CallBackWhenYoureThere));
+				bbs.hangup();
 				refreshList = false;
 				continueOn = false;
 				break;
@@ -25582,8 +25553,9 @@ function doFrameInputLoop(pFrame, pScrollbar, pFrameContentStr, pAdditionalQuitK
 		pScrollbar.cycle();
 		pFrame.cycle();
 		pFrame.draw();
-		// Note: getKeyWithESCChars() is defined in dd_lightbar_menu.js.
-		userInput = getKeyWithESCChars(K_NOECHO|K_NOSPIN|K_NOCRLF, 30000).toUpperCase();
+		userInput = console.getkey(K_NOECHO|K_NOSPIN|K_NOCRLF).toUpperCase();
+		if (console.aborted)
+			break;
 		if (userInput == KEY_UP)
 		{
 			if (frameContentTopYOffset > 0)
@@ -25610,9 +25582,18 @@ function doFrameInputLoop(pFrame, pScrollbar, pFrameContentStr, pAdditionalQuitK
 			frameContentTopYOffset = 0;
 		else if (userInput == KEY_END)
 			frameContentTopYOffset = maxFrameYOffset;
+		else if (userInput == "") // User input timeout
+		{
+			console.attributes = "N";
+			console.print(bbs.text(bbs.text.CallBackWhenYoureThere));
+			bbs.hangup();
+			continueOn = false;
+			break;
+		}
 
 		// Check for whether to continue the input loop
-		continueOn = (userInput != "Q" && userInput != KEY_ENTER && userInput != KEY_ESC);
+		if (continueOn)
+			continueOn = (userInput != "Q" && userInput != KEY_ENTER && userInput != KEY_ESC);
 		// If the additional quit keys does not contain the user's keypress, then continue
 		// the input loop.
 		// In other words, if the additional quit keys includes the user's keypress, then
