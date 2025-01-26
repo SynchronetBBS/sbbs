@@ -26,7 +26,7 @@
 #include "git_hash.h"
 #include "git_branch.h"
 #include "ver.h"
-#include "archive.h"
+#include <archive.h>
 
 #ifdef __cplusplus
 extern "C" {
