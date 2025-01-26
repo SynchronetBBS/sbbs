@@ -708,7 +708,7 @@ JSObject* js_CreateArchiveClass(JSContext* cx, JSObject* parent, const str_list_
 	                             , NULL /* props, set in constructor */
 	                             , NULL /* funcs, set in constructor */
 	                             , NULL, NULL);
-	if (obj != NULL) {
+	if (obj != NULL && supported_formats != NULL) {
 		jsval val;
 		if (JS_GetProperty(cx, parent, js_archive_class.name, &val) && !JSVAL_NULL_OR_VOID(val)) {
 			JSObject* constructor;
