@@ -655,6 +655,24 @@ static char* ini_set_string(str_list_t* list, const char* section, const char* k
 
 	return strListReplace(*list, i, str);
 }
+
+size_t iniAppendSectionWithNamedStrings(str_list_t* list, const char* section, const named_string_t** key
+                                , ini_style_t* style)
+{
+	size_t     i;
+
+	if (section == ROOT_SECTION)
+		return 0;
+
+	ini_add_section(list, section, style, strListCount(*list));
+
+	for (i = 0; key[i] != NULL; ++i)
+		if (ini_set_string(list, section, key[i]->name, key[i]->value, /* literal */false, style) == NULL)
+			break;
+
+	return i;
+}
+
 char* iniSetString(str_list_t* list, const char* section, const char* key, const char* value
                    , ini_style_t* style)
 {

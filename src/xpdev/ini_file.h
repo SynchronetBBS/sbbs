@@ -292,6 +292,8 @@ DLLEXPORT size_t 		iniAppendSection(str_list_t*, const char* section
 
 DLLEXPORT size_t 		iniAppendSectionWithKeys(str_list_t*, const char* section, const str_list_t keys
 							,ini_style_t*);
+DLLEXPORT size_t 		iniAppendSectionWithNamedStrings(str_list_t*, const char* section, const named_string_t** keys
+							,ini_style_t*);
 
 DLLEXPORT bool 			iniSectionExists(str_list_t, const char* section);
 DLLEXPORT bool 			iniKeyExists(str_list_t, const char* section, const char* key);
