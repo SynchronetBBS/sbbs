@@ -81,6 +81,9 @@
  *                              if a unicode "right arrow" code exists in the message, which
  *                              would get truncated to ASCII Ctrl-Z (ASCII 26), which is
  *                              interpreted as EOF on Windows.
+ * 2024-10-19 Eric Oulashin     Version 1.89d
+ *                              User inactivity timeout improvement (via use of console.getkey()
+ *                              instead of the custom function that was being used)
  */
 
 "use strict";
@@ -115,12 +118,14 @@ if (requireFnExists)
 {
 	require("sbbsdefs.js", "K_NOCRLF");
 	require("attr_conv.js", "syncAttrCodesToANSI");
+	require("text.js", "AreYouThere");
 	require(js.exec_dir + "SlyEdit_Misc.js", "gUserSettingsFilename");
 }
 else
 {
 	load("sbbsdefs.js");
 	load("attr_conv.js");
+	load("text.js");
 	load(js.exec_dir + "SlyEdit_Misc.js");
 }
 
@@ -169,8 +174,8 @@ if (console.screen_columns < 80)
 }
 
 // Version information
-var EDITOR_VERSION = "1.89c";
-var EDITOR_VER_DATE = "2024-10-19";
+var EDITOR_VERSION = "1.89d";
+var EDITOR_VER_DATE = "2025-01-26";
 
 
 // Program variables
@@ -471,6 +476,12 @@ else
 // back to what they were originally
 js.on_exit("bbs.sys_status = " + bbs.sys_status);
 js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
+
+// Blank out the AreYouThere timeout warning string (used by console.getkey()), which would
+// interfere with full-screen display and scrolling functionality. Also, upon exit, set it
+// back to its previous value.
+bbs.replace_text(AreYouThere, "");
+js.on_exit("bbs.revert_text(AreYouThere);");
 
 // Update the user's status on the BBS
 bbs.sys_status &=~SS_PAUSEON;
@@ -1188,16 +1199,7 @@ function doEditLoop()
 	var continueOn = true;
 	while (continueOn)
 	{
-		/*
-		// Temporary
-		userInput = getUserKey(P_NONE);
-		//console.print(userInput, gUserConsoleSupportsUTF8 ? P_UTF8 : P_NONE);
-		console.print(userInput, P_UTF8);
-		console.crlf();
-		console.pause();
-		// End Temporary
-		*/
-		userInput = getKeyWithESCChars(K_NOCRLF|K_NOSPIN|K_NUL, gConfigSettings.inputTimeoutMS);
+		userInput = console.getkey(K_NOCRLF|K_NOSPIN|K_NUL);
 
 		// If the cursor is at the end of the last line and the user
 		// pressed the DEL key, then treat it as a backspace.  Some
@@ -1720,7 +1722,7 @@ function doEditLoop()
 				gTextAttrs = chooseEditColor();
 				console.print(gTextAttrs);
 				break;
-			case KEY_PAGE_UP: // Move 1 page up in the message
+			case KEY_PAGEUP: // Move 1 page up in the message
 				// Calculate the index of the message line shown at the top
 				// of the edit area.
 				var topEditIndex = gEditLinesIndex-(curpos.y-gEditTop);
@@ -1770,7 +1772,7 @@ function doEditLoop()
 				gTextAttrs = chooseEditColor();
 				console.print(gTextAttrs);
 				break;
-			case KEY_PAGE_DOWN: // Move 1 page down in the message
+			case KEY_PAGEDN: // Move 1 page down in the message
 				// Calculate the index of the message line shown at the top
 				// of the edit area, and the index of the line that would be
 				// shown at the bottom of the edit area.
@@ -3838,7 +3840,7 @@ function displayProgramInfoBox()
 
 	console.attributes = "N";
 	// Wait for a keypress
-	getKeyWithESCChars(K_NOCRLF|K_NOSPIN, gConfigSettings.inputTimeoutMS);
+	console.getkey(K_NOCRLF|K_NOSPIN);
 	// Erase the info box
 	var editLineIndexAtSelBoxTopRow = gEditLinesIndex-(boxTopLeftY-gEditTop);
 	if (editLineIndexAtSelBoxTopRow < 0)
@@ -4743,8 +4745,7 @@ function inputWordCorrection(pMisspelledWord, pCurpos, pEditLineIdx)
 	var continueOn = true;
 	while(continueOn)
 	{
-		// Note: If K_UTF8 is available, getKeyWithESCChars() uses K_UTF8 to input UTF-8 text
-		var userInputChar = getKeyWithESCChars(K_NOCRLF|K_NOSPIN, gConfigSettings.inputTimeoutMS);
+		var userInputChar = console.getkey(K_NOCRLF|K_NOSPIN);
 		switch (userInputChar)
 		{
 			case CTRL_C:
@@ -5795,7 +5796,7 @@ function listTextReplacements()
 		}
 
 		// Get a key from the user (upper-case) and take action based upon it.
-		var userInput = getUserKey(K_UPPER|K_NOCRLF|K_NOSPIN, gConfigSettings);
+		var userInput = getUserKey(K_UPPER|K_NOCRLF|K_NOSPIN);
 		switch (userInput)
 		{
 			case KEY_UP:
@@ -6502,7 +6503,7 @@ function promptForGraphicsChar(pCurPos)
 	var continueOn = true;
 	while (continueOn)
 	{
-		var ch = getUserKey(K_UPPER|K_NOCRLF|K_NOSPIN, gConfigSettings);
+		var ch = getUserKey(K_UPPER|K_NOCRLF|K_NOSPIN);
 		switch(ch)
 		{
 			case '':

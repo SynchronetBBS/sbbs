@@ -41,14 +41,14 @@ if (typeof(require) === "function")
 	require("text.js", "Pause");
 	require("key_defs.js", "CTRL_A");
 	require("userdefs.js", "USER_ANSI");
-	require("dd_lightbar_menu.js", "DDLightbarMenu"); // Also defines getKeyWithESCChars() and some KEY_F* keys
+	require("dd_lightbar_menu.js", "DDLightbarMenu");
 }
 else
 {
 	load("text.js");
 	load("key_defs.js");
 	load("userdefs.js");
-	load("dd_lightbar_menu.js"); // Defines getKeyWithESCChars() and some KEY_F* keys
+	load("dd_lightbar_menu.js");
 }
  
 // Note: These variables are declared with "var" instead of "const" to avoid
@@ -111,21 +111,6 @@ var KEY_ENTER = CTRL_M;
 var XOFF = CTRL_Q;
 var XON = CTRL_S;
 var KEY_INSERT = CTRL_V;
-// PageUp & PageDown keys - Synchronet 3.17 as of about December 18, 2017
-// use CTRL-P and CTRL-N for PageUp and PageDown, respectively.  sbbsdefs.js
-// defines them as KEY_PAGEUP and KEY_PAGEDN; I've used slightly different names
-// in this script so that this script will work with Synchronet systems before
-// and after the update containing those key definitions.
-var KEY_PAGE_UP = CTRL_P;
-var KEY_PAGE_DOWN = CTRL_N;
-// Ensure KEY_PAGE_UP and KEY_PAGE_DOWN are set to what's defined in sbbs.js
-// for KEY_PAGEUP and KEY_PAGEDN in case they change.  Note that this relies
-// on sbbsdefs.js being loaded; SlyEdit.js loads sbbsdefs.js before this file,
-// so this should work.
-if (typeof(KEY_PAGEUP) === "string")
-	KEY_PAGE_UP = KEY_PAGEUP;
-if (typeof(KEY_PAGEDN) === "string")
-	KEY_PAGE_DOWN = KEY_PAGEDN;
 
 // ESC menu action codes to be returned
 var ESC_MENU_SAVE = 0;
@@ -144,7 +129,7 @@ var ESC_MENU_USER_SETTINGS = 12;
 var ESC_MENU_SPELL_CHECK = 13;
 
 
-var COPYRIGHT_YEAR = 2024;
+var COPYRIGHT_YEAR = 2025;
 
 // Store the full path & filename of the Digital Distortion Message
 // Lister, since it will be used more than once.
@@ -1505,11 +1490,11 @@ function ChoiceScrollbox_DoInputLoop(pDrawBorder)
 		}
 
 		// Get a key from the user (upper-case) and take action based upon it.
-		retObj.lastKeypress = getKeyWithESCChars(K_UPPER|K_NOCRLF|K_NOSPIN, this.SlyEdCfgObj.inputTimeoutMS);
+		retObj.lastKeypress = console.getkey(K_UPPER|K_NOCRLF|K_NOSPIN);
 		switch (retObj.lastKeypress)
 		{
 			case 'N': // Next page
-			case KEY_PAGE_DOWN:
+			case KEY_PAGEDN:
 				refreshList = (this.pageNum < this.numPages-1);
 				if (refreshList)
 				{
@@ -1520,7 +1505,7 @@ function ChoiceScrollbox_DoInputLoop(pDrawBorder)
 				}
 				break;
 			case 'P': // Previous page
-			case KEY_PAGE_UP:
+			case KEY_PAGEUP:
 				refreshList = (this.pageNum > 0);
 				if (refreshList)
 				{
@@ -2162,7 +2147,6 @@ function ReadSlyEditConfigFile()
 		runJSOnExit: [],
 		displayEndInfoScreen: true,
 		userInputTimeout: true,
-		inputTimeoutMS: 300000,
 		reWrapQuoteLines: true,
 		allowColorSelection: true,
 		saveColorsAsANSI: false,
@@ -2312,7 +2296,6 @@ function ReadSlyEditConfigFile()
 			cfgObj[propName] = behaviorSettings[propName];
 		}
 		// Other settings:
-		cfgObj.inputTimeoutMS = +(behaviorSettings.inputTimeoutMS);
 		if (behaviorSettings.hasOwnProperty("add3rdPartyStartupScript") && typeof(behaviorSettings.add3rdPartyStartupScript) === "string")
 			cfgObj.thirdPartyLoadOnStart.push(behaviorSettings.add3rdPartyStartupScript);
 		if (behaviorSettings.hasOwnProperty("addJSOnStart") && typeof(behaviorSettings.addJSOnStart) === "string")
@@ -2354,10 +2337,6 @@ function ReadSlyEditConfigFile()
 			cfgObj.DCTColors.ThemeFilename = genFullPathCfgFilename(DCTColorSettings.ThemeFilename, js.exec_dir);
 
 		cfgFile.close();
-
-		// Validate the settings
-		if (cfgObj.inputTimeoutMS < 1000)
-			cfgObj.inputTimeoutMS = 300000;
 
 		// If no dictionaries were specified in the configuration file, then
 		// set all available dictionary files in the configuration.
@@ -3893,20 +3872,18 @@ function firstLetterIsUppercase(pString)
 //
 // Parameters:
 //  pMode: The input mode flag(s)
-//  pCfgObj: The configuration object (stores the input timeout setting)
 //
 // Return value: The user's keypress (the return value of console.getkey()
 //               or console.inkey()).
-function getUserKey(pMode, pCfgObj)
+function getUserKey(pMode)
 {
 	var userKey = "";
-	var inputTimeoutMS = 300000;
 
-	// If the user is a sysop, then use a much higher timeout.
-	if (user.is_sysop)
-		inputTimeoutMS = 999999;
-	else if (typeof(pCfgObj) == "object" && typeof(pCfgObj.userInputTimeout) === "number")
-		inputTimeoutMS = pCfgObj.inputTimeoutMS;
+	// Inactivity timeout in milliseconds, for use with console.inkey().
+	// If the user has the inactivity exemption (UFLAG_H), then use -1
+	// for no timeout with console.inkey(). Otherwise, use the configured
+	// timeout.
+	var inputTimeoutMS = (user.security.exemptions&UFLAG_H) ? -1 : console.inactivity_hangup * 1000;
 
 	// If K_UTF8 is defined, then add it to getKeymode.  K_UTF8 specifies not to
 	// translate UTF-8 to CP437.
@@ -3989,7 +3966,7 @@ function getUserInputWithSetOfInputStrs(pMode, pValidKeyStrs, pCfgObj, pCurPos)
 	var continueOn = true;
 	while (continueOn)
 	{
-		inputKey = getUserKey(pMode|K_NOECHO, pCfgObj);
+		inputKey = getUserKey(pMode|K_NOECHO);
 		// If userInput is blank, then the timeout was probably reached, so don't
 		// continue inputting characters.
 		if (inputKey.length == 0)
@@ -4396,23 +4373,6 @@ function shuffleArray(pArray)
     }
 
     return pArray;
-}
-
-// Performs the same function as console.pause(), but also allows input of multi-key
-// sequences such as PageUp, PageDown, F1, etc. without writing extra characters on
-// the screen.
-//
-// Parameters:
-//  pCfgObj: Optional - The configuration object, which specifies the input timeout.
-function consolePauseWithESCChars(pCfgObj)
-{
-	// Get the pause prompt text from text.dat.  In case that text contains
-	// "@EXEC:" (to execute a script), default to a "press a key" message.
-	var pausePromptText = bbs.text(Pause); // 563: The "Press a key" text in text.dat
-	if (pausePromptText.toUpperCase().indexOf("@EXEC:") > -1)
-		pausePromptText = "\x01n\x01c[ Press a key ] ";
-	console.print("\x01n" + pausePromptText);
-	getKeyWithESCChars(K_NOSPIN|K_NOCRLF|K_NOECHO, pCfgObj.inputTimeoutMS);
 }
 
 // Sets the "pause" text to an empty string, does a console.pause(), then restores the pause text.
