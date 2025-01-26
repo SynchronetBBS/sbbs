@@ -2917,7 +2917,38 @@ kbwait(void)
 static void
 write_webgets(void)
 {
-	// TODO: Save changes
+	FILE      *inifile;
+	char       inipath[MAX_PATH + 1];
+	str_list_t ini_file;
+
+	if (safe_mode)
+		return;
+	get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, false);
+	if ((inifile = fopen(inipath, "r")) != NULL) {
+		ini_file = iniReadFile(inifile);
+		fclose(inifile);
+	}
+	else {
+		ini_file = strListInit();
+	}
+
+	iniRemoveSection(&ini_file, "WebLists");
+
+	if (settings.webgets != NULL) {
+		for (size_t i = 0; settings.webgets[i]; i++)
+			iniSetString(&ini_file, "WebLists", settings.webgets[i]->name, settings.webgets[i]->value, &ini_style);
+	}
+	if ((inifile = fopen(inipath, "w")) != NULL) {
+		iniWriteFile(inifile, ini_file);
+		fclose(inifile);
+	}
+	else {
+		uifc.helpbuf = "There was an error writing the INI file.\nCheck permissions and try again.\n";
+		uifc.msg("Cannot write to the .ini file!");
+		check_exit(false);
+	}
+
+	strListFree(&ini_file);
 }
 
 static void
