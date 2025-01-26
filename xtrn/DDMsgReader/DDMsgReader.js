@@ -372,31 +372,7 @@ var CTRL_Z = "\x1a";
 //var KEY_ESC = "\x1b";
 var KEY_ESC = ascii(27);
 var KEY_ENTER = CTRL_M;
-// PageUp & PageDown keys - Synchronet 3.17 as of about December 18, 2017
-// use CTRL-P and CTRL-N for PageUp and PageDown, respectively.  sbbsdefs.js
-// defines them as KEY_PAGEUP and KEY_PAGEDN; I've used slightly different names
-// in this script so that this script will work with Synchronet systems before
-// and after the update containing those key definitions.
-var KEY_PAGEUP = CTRL_P;
-var KEY_PAGEDN = CTRL_N;
-// Ensure KEY_PAGEUP and KEY_PAGEDN are set to what's defined in sbbs.js
-// for KEY_PAGEUP and KEY_PAGEDN in case they change
-if (typeof(KEY_PAGEUP) === "string")
-	KEY_PAGEUP = KEY_PAGEUP;
-if (typeof(KEY_PAGEDN) === "string")
-	KEY_PAGEDN = KEY_PAGEDN;
-	
-// These are defined in sbbsdefs.js:
-//var	  KEY_UP		='\x1e';	// ctrl-^ (up arrow)
-//var	  KEY_DOWN		='\x0a';	// ctrl-j (dn arrow)
-//var   KEY_RIGHT		='\x06';	// ctrl-f (rt arrow)
-//var	  KEY_LEFT		='\x1d';	// ctrl-] (lf arrow)
-//var	  KEY_HOME		='\x02';	// ctrl-b (home)
-//var   KEY_END       ='\x05';	// ctrl-e (end)
-//var   KEY_DEL       ='\x7f';    // (del)
-// These were added to sbbsdef.js around December 17, 2017:
-//var		KEY_PAGEUP	='\x10';	/* ctrl-p (Page Up)							*/
-//var		KEY_PAGEDN	='\x0e';	/* ctrl-n (Page Down)						*/
+
 
 // Characters for display
 // Box-drawing/border characters: Single-line
