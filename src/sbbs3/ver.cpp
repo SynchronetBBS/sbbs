@@ -26,6 +26,7 @@
 #include "git_hash.h"
 #include "git_branch.h"
 #include "ver.h"
+#include "archive.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -123,6 +124,10 @@ void sbbs_t::ver()
 		CRLF;
 	}
 #endif
+
+	safe_snprintf(str, sizeof str, "%s (%u)", archive_version_string(), ARCHIVE_VERSION_NUMBER);
+	center(str);
+	CRLF;
 
 	safe_snprintf(str, sizeof(str), "%s %s", os_version(os, sizeof(os)), os_cpuarch(cpu, sizeof(cpu)));
 	center(str);
