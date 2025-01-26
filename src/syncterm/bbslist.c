@@ -2974,7 +2974,11 @@ edit_web_lists(void)
 			list[i + 1] = NULL;
 		}
 
-		// TODO: Help
+		uifc.helpbuf = "`Web Lists`\n\n"
+		    "Add and remove dialing directories available on the web (ie: via HTTP\n"
+		    "or HTTPS).  Each entry must have a unique name (which is used as a\n"
+		    "filename in the cache) and a URI that indicates where to download the\n"
+		    "directory list from.";
 		int i = uifc.list(WIN_SAV | WIN_INS | WIN_INSACT | WIN_DEL | WIN_XTR | WIN_ACT,
 		        0, 0, 0, &cur, &bar, "Web Lists", list);
 		if (i == -1) {
@@ -2989,17 +2993,14 @@ edit_web_lists(void)
 			char tmpn[INI_MAX_VALUE_LEN + 1];
 			char tmpv[INI_MAX_VALUE_LEN + 1];
 			tmpn[0] = 0;
-			// TODO: Help
 			while (uifc.input(WIN_SAV | WIN_MID, 0, 0, "Web List Name", tmpn, sizeof(tmpn) - 1, K_EDIT) != -1
 			    && tmpn[0]) {
 				if (namedStrListFindName(settings.webgets, tmpn)) {
-					// TODO: Help
 					uifc.msg("Duplicate Name");
 					continue;
 				}
 				else {
 					tmpv[0] = 0;
-					// TODO: Help
 					if (uifc.input(WIN_SAV | WIN_MID, 0, 0, "Web List URI", tmpv, sizeof(tmpv) - 1, K_EDIT) != -1
 					    && tmpv[0]) {
 						char cache_path[MAX_PATH + 1];
@@ -3028,7 +3029,6 @@ edit_web_lists(void)
 			char tmp[INI_MAX_VALUE_LEN + 1];
 			strlcpy(tmp, settings.webgets[i]->value, sizeof(tmp));
 			uifc.changes = false;
-			// TODO: Help
 			if (uifc.input(WIN_SAV | WIN_MID, 0, 0, "Web List URI", tmp, sizeof(tmp) - 1, K_EDIT) == -1) {
 				check_exit(false);
 			}

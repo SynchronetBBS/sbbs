@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdarg.h>
 #include <stdbool.h>
 
 #include <cryptlib.h>
@@ -75,6 +76,23 @@ set_msg(struct webget_request *req, const char *newmsg)
 	assert_pthread_mutex_unlock(&req->mtx);
 }
 
+static void
+set_msgf(struct webget_request *req, const char *newmsgf, ...)
+{
+	char *newmsg = NULL;
+	va_list ap;
+	va_start(ap, newmsgf);
+	if (vasprintf(&newmsg, newmsgf, ap) >= 0) {
+		va_end(ap);
+		assert_pthread_mutex_lock(&req->mtx);
+		set_msg_locked(req, newmsg);
+		assert_pthread_mutex_unlock(&req->mtx);
+	}
+	else
+		va_end(ap);
+	free(newmsg);
+}
+
 static ssize_t
 recv_nbytes(struct http_session *sess, uint8_t *buf, size_t chunk_size, bool *eof)
 {
@@ -86,7 +104,7 @@ recv_nbytes(struct http_session *sess, uint8_t *buf, size_t chunk_size, bool *eo
 			int copied = 0;
 			int status = cryptPopData(sess->tls, &buf[received], chunk_size - received, &copied);
 			if (cryptStatusError(status)) {
-				set_msg(sess->req, "Error Popping Data");
+				set_msgf(sess->req, "Error %d Popping Data", status);
 				goto error_return;
 			}
 			rc = copied;
@@ -98,7 +116,7 @@ recv_nbytes(struct http_session *sess, uint8_t *buf, size_t chunk_size, bool *eo
 			}
 			rc = recv(sess->sock, &buf[received], chunk_size - received, 0);
 			if (rc < 0) {
-				set_msg(sess->req, "recv() error");
+				set_msgf(sess->req, "recv() error %d", SOCKET_ERRNO);
 				goto error_return;
 			}
 		}
@@ -204,7 +222,7 @@ send_request(struct http_session *sess)
 	free(inm);
 	free(ims);
 	if (len == -1) {
-		set_msg(sess->req, "asprintf() failure");
+		set_msgf(sess->req, "asprintf() failure %d", len);
 		free(reqstr);
 		return false;
 	}
@@ -214,14 +232,12 @@ send_request(struct http_session *sess)
 		int copied;
 		int ret = cryptPushData(sess->tls, reqstr, len, &copied);
 		if (cryptStatusError(ret)) {
-fprintf(stderr, "Ret: %d\n", ret);
 			sent = -1;
 		}
 		else
 			sent = copied;
 		ret = cryptFlushData(sess->tls);
 		if (cryptStatusError(ret)) {
-fprintf(stderr, "ret: %d\n", ret);
 			sent = -1;
 		}
 	}
@@ -557,7 +573,7 @@ parse_headers(struct http_session *sess)
 			sess->not_modified = true;
 			break;
 		default:
-			set_msg(sess->req, "Unhandled Status");
+			set_msgf(sess->req, "Unhandled %ld Status", l);
 			goto error_return;
 	}
 	if (*end != ' ') {
@@ -611,7 +627,7 @@ parse_headers(struct http_session *sess)
 			long long ll = strtoll(&line[4], NULL, 10);
 			if (ll > 0 || errno == 0) {
 				if (ll > MAX_LIST_SIZE) {
-					set_msg(sess->req, "Content Too Large");
+					set_msgf(sess->req, "Content Too Large (%lld)", ll);
 					goto error_return;
 				}
 				sess->got_size = true;
@@ -625,15 +641,15 @@ parse_headers(struct http_session *sess)
 			const char *sep;
 			const char *end = find_end(val, &sep);
 			if (sep != NULL) {
-				set_msg(sess->req, "Unknown Content-Transfer-Encoding");
+				set_msgf(sess->req, "Unknown Content-Transfer-Encoding \"%.*s\"", end - val, val);
 				goto error_return;
 			}
 			if ((end - val) != 7) {
-				set_msg(sess->req, "Unknown Content-Transfer-Encoding");
+				set_msgf(sess->req, "Unknown Content-Transfer-Encoding \"%.*s\"", end - val, val);
 				goto error_return;
 			}
 			if (strnicmp(val, "chunked", 7)) {
-				set_msg(sess->req, "Unknown Content-Transfer-Encoding");
+				set_msgf(sess->req, "Unknown Content-Transfer-Encoding \"%.*s\"", end - val, val);
 				goto error_return;
 			}
 			sess->is_chunked = true;
@@ -655,10 +671,12 @@ parse_uri(struct http_session *sess)
 
 	assert_pthread_mutex_lock(&sess->req->mtx);
 	if (sess->req->uri == NULL) {
+		set_msg_locked(sess->req, "URI is NULL");
 		assert_pthread_mutex_unlock(&sess->req->mtx);
 		goto error_return;
 	}
 	if (memcmp(sess->req->uri, "http", 4)) {
+		set_msg_locked(sess->req, "URI is not http[s]://");
 		assert_pthread_mutex_unlock(&sess->req->mtx);
 		goto error_return;
 	}
@@ -671,6 +689,7 @@ parse_uri(struct http_session *sess)
 		p = &sess->req->uri[4];
 	}
 	if (memcmp(p, "://", 3)) {
+		set_msg_locked(sess->req, "URI is not http[s]://");
 		assert_pthread_mutex_unlock(&sess->req->mtx);
 		goto error_return;
 	}
@@ -680,12 +699,16 @@ parse_uri(struct http_session *sess)
 	assert(copied <= LIST_NAME_MAX);
 	assert_pthread_mutex_unlock(&sess->req->mtx);
 	char *slash = strchr(sess->hostname, '/');
-	if (slash == NULL)
+	if (slash == NULL) {
+		set_msg_locked(sess->req, "No slash after hostname");
 		goto error_return;
+	}
 	*slash = 0;
 	sess->path = &slash[1];
-	if (strlen(sess->hostname) > LIST_ADDR_MAX)
+	if (strlen(sess->hostname) > LIST_ADDR_MAX) {
+		set_msg_locked(sess->req, "Hostname Too Long");
 		goto error_return;
+	}
 	copied = strlcpy(sess->hacky_list_entry.addr, sess->hostname, sizeof(sess->hacky_list_entry.addr));
 	assert(copied <= LIST_ADDR_MAX);
 	return true;
@@ -700,14 +723,18 @@ open_cacheinfo(struct http_session *sess)
 	char *path = NULL;
 
 	int len = asprintf(&path, "%s/%s.cacheinfo", sess->req->cache_root, sess->req->name);
-	if (len < 0)
+	if (len < 0) {
+		set_msg(sess->req, "asprintf() failure");
 		goto error_return;
+	}
 	uint64_t end = xp_timer64() + 5000;
 	while (sess->cache_info == NULL) {
 		sess->cache_info = _fsopen(path, "ab+", SH_DENYRW);
 		if (sess->cache_info == NULL) {
-			if (xp_timer64() > end)
-				return false;
+			if (xp_timer64() > end) {
+				set_msg(sess->req, "Share Timeout");
+				goto error_return;
+			}
 			SLEEP(25+xp_random(50));
 		}
 	}
@@ -724,6 +751,7 @@ parse_cacheinfo(struct http_session *sess)
 {
 	str_list_t info = iniReadFile(sess->cache_info);
 	if (info == NULL) {
+		set_msg(sess->req, "Unable to read file");
 		fclose(sess->cache_info);
 		sess->cache_info = NULL;
 		return false;
@@ -837,7 +865,7 @@ read_chunked(struct http_session *sess, FILE *out)
 		if (chunk_size == 0) {
 			if (errno == 0)
 				break;
-			set_msg(sess->req, "strtoul() failure");
+			set_msgf(sess->req, "strtoul() failure %d", errno);
 			goto error_return;
 		}
 		total += chunk_size;
@@ -931,26 +959,26 @@ tls_setup(struct http_session *sess)
 	int status;
 	status = cryptCreateSession(&sess->tls, CRYPT_UNUSED, CRYPT_SESSION_SSL);
 	if (cryptStatusError(status)) {
-		set_msg(sess->req, "Unable To Create Session");
+		set_msgf(sess->req, "Unable To Create Session (%d)", status);
 		goto error_return;
 	}
 	int off = 1;
 	setsockopt(sess->sock, IPPROTO_TCP, TCP_NODELAY, (char *)&off, sizeof(off));
 	status = cryptSetAttribute(sess->tls, CRYPT_SESSINFO_NETWORKSOCKET, sess->sock);
 	if (cryptStatusError(status)) {
-		set_msg(sess->req, "Unable To Set Socket");
+		set_msgf(sess->req, "Unable To Set Socket (%d)", status);
 		goto error_return;
 	}
 	cryptSetAttribute(sess->tls, CRYPT_OPTION_NET_READTIMEOUT, 5);
 	cryptSetAttributeString(sess->tls, CRYPT_SESSINFO_SERVER_NAME, sess->hostname, strlen(sess->hostname));
 	status = cryptSetAttribute(sess->tls, CRYPT_SESSINFO_ACTIVE, 1);
 	if (cryptStatusError(status)) {
-		set_msg(sess->req, "Unable To Activate Session");
+		set_msgf(sess->req, "Unable To Activate Session (%d)", status);
 		goto error_return;
 	}
 	status = cryptSetAttribute(sess->tls, CRYPT_PROPERTY_OWNER, CRYPT_UNUSED);
 	if (cryptStatusError(status)) {
-		set_msg(sess->req, "Unable Clear Ownership");
+		set_msgf(sess->req, "Unable Clear Ownership (%d)", status);
 		goto error_return;
 	}
 	return true;

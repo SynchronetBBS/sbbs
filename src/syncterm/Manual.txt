@@ -715,6 +715,15 @@ Exit scrollback mode
 
 The SyncTERM Settings menu has the following options:
 
+Web Lists::
+Add web lists which SyncTERM will synchronize with an http:// or https://
+URI at each program startup. Web lists are added as system lists, which
+means credentials and paths will come from the Default Connection
+Settings, and they will be copied into your personal list if you use or
+modify them. Note that the web client will only do GET requests, and only
+supports status codes of 200 (OK) and 304 (Not Modified). Specifically,
+it does not support any redirection.
+
 Default Connection Settings::
 Set the default values for a new directory
 entry.  See Edit Directory Entry for details on these options.
