@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.96i
-                           Release date: 2024-12-22
+                                 Version 1.96j
+                           Release date: 2025-01-25
 
                                      by
 
@@ -1432,3 +1432,5 @@ This message reader uses the following lines from Synchronet's text.dat file
 781 (R_Voting)
 783 (VoteMsgUpDownOrQuit)
 787 (PollVoteNotice)
+558 (CallBackWhenYoureThere)
+

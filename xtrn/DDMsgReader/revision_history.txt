@@ -5,6 +5,14 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.96j    2025-01-25   User timeout 'AreYouThere' message and disconnection are
+                      more consistent with Synchronet's behavior. However, if
+                      the scrollable reader or lightbar list interface is being
+                      used, the 'AreYouThere' text will be set to a blank string
+                      for the duration of this script's run due to how the text
+                      can interfere with the screen and scrolling. The
+                      'AreYouThere' sound will still occur though, and the user
+                      will be disconnected if they don't respond.
 1.96i    2024-12-22   When doing an indexed newscan, display the progress
                       percentage when doing the newscan
 1.96h    2024-12-18   Bug fix: When reading messages with the scrolling
