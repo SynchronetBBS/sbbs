@@ -1585,7 +1585,7 @@ extern "C" bool js_CreateCommonObjects(JSContext* js_cx
 			break;
 
 		/* Archive Class */
-		if (js_CreateArchiveClass(js_cx, *glob) == NULL)
+		if (js_CreateArchiveClass(js_cx, *glob, cfg->supported_archive_formats) == NULL)
 			break;
 
 		/* User class */

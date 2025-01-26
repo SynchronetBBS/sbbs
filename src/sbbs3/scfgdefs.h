@@ -500,6 +500,7 @@ typedef struct
 	int32_t 		file_misc;			/* File Misc Settings */
 	int32_t			xtrn_misc;			/* External Programs Misc Settings */
 	uint16_t		filename_maxlen;	/* Maximum filename length */
+	str_list_t      supported_archive_formats;    /* Full support in libachive */
 
 	fevent_t		node_daily;			/* Node's daily event */
 	uint32_t		node_misc;			/* Misc bits for node setup */

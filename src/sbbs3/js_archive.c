@@ -699,7 +699,7 @@ JSClass js_archive_class = {
 	, js_finalize_archive    /* finalize		*/
 };
 
-JSObject* js_CreateArchiveClass(JSContext* cx, JSObject* parent)
+JSObject* js_CreateArchiveClass(JSContext* cx, JSObject* parent, const str_list_t supported_formats)
 {
 	JSObject* obj = JS_InitClass(cx, parent, NULL
 	                             , &js_archive_class
@@ -713,7 +713,7 @@ JSObject* js_CreateArchiveClass(JSContext* cx, JSObject* parent)
 		if (JS_GetProperty(cx, parent, js_archive_class.name, &val) && !JSVAL_NULL_OR_VOID(val)) {
 			JSObject* constructor;
 			JS_ValueToObject(cx, val, &constructor);
-			js_CreateArrayOfStrings(cx, constructor, "supported_formats", supported_archive_formats
+			js_CreateArrayOfStrings(cx, constructor, "supported_formats", (const char **)supported_formats
 			                        , JSPROP_PERMANENT | JSPROP_ENUMERATE | JSPROP_READONLY);
 		}
 	}

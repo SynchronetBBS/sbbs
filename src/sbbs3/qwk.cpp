@@ -509,7 +509,7 @@ void sbbs_t::qwk_sec()
 						break;
 					case 'T':
 					{
-						str_list_t ext_list = strListDup((str_list_t)supported_archive_formats);
+						str_list_t ext_list = strListDup(cfg.supported_archive_formats);
 						for (i = 0; i < cfg.total_fcomps; i++) {
 							if (strListFind(ext_list, cfg.fcomp[i]->ext, /* case-sensitive */ FALSE) < 0
 							    && chk_ar(cfg.fcomp[i]->ar, &useron, &client))

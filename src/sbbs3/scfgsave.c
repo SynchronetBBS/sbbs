@@ -624,6 +624,7 @@ static void write_dir_defaults_cfg(str_list_t* ini, const char* section, dir_t* 
 bool write_file_cfg(scfg_t* cfg)
 {
 	bool result = false;
+	char str[128];
 	char path[MAX_PATH + 1];
 	char inipath[MAX_PATH + 1];
 	char name[INI_MAX_VALUE_LEN];
@@ -645,6 +646,7 @@ bool write_file_cfg(scfg_t* cfg)
 	iniSetUInteger(&ini, ROOT_SECTION, "leech_sec", cfg->leech_sec, NULL);
 	iniSetHexInt(&ini, ROOT_SECTION, "settings", cfg->file_misc, NULL);
 	iniSetUInteger(&ini, ROOT_SECTION, "filename_maxlen", cfg->filename_maxlen, NULL);
+	iniSetString(&ini, ROOT_SECTION, "supported_archive_formats", strListCombine(cfg->supported_archive_formats, str, sizeof str, ", "), NULL);
 
 	/* Extractable File Types */
 

@@ -48,6 +48,7 @@ static void read_dir_defaults_cfg(scfg_t* cfg, str_list_t ini, dir_t* dir)
 bool read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 {
 	char        errstr[256];
+	char        str[128];
 	FILE*       fp;
 	str_list_t  ini;
 	char        value[INI_MAX_VALUE_LEN];
@@ -71,6 +72,9 @@ bool read_file_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->leech_sec = iniGetUInt16(ini, ROOT_SECTION, "leech_sec", 0);
 	cfg->file_misc = iniGetInt32(ini, ROOT_SECTION, "settings", 0);
 	cfg->filename_maxlen = iniGetIntInRange(ini, ROOT_SECTION, "filename_maxlen", 8, SMB_FILEIDX_NAMELEN, UINT16_MAX);
+	SAFECOPY(str, iniGetString(ini, ROOT_SECTION, "supported_archive_formats", "zip,z7,tgz", value));
+	strListFree(&cfg->supported_archive_formats);
+	cfg->supported_archive_formats = strListSplit(NULL, str, " ,");
 
 	named_str_list_t** sections = iniParseSections(ini);
 

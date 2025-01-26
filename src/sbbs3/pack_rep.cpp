@@ -288,7 +288,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 	/*******************/
 	SAFEPRINTF2(str, "%s%s.REP", cfg.data_dir, hubid_upper);
 	SAFEPRINTF2(tmp2, "%s%s", cfg.temp_dir, ALLFILES);
-	if (strListFind((str_list_t)supported_archive_formats, cfg.qhub[hubnum]->fmt, /* case_sensitive */ FALSE) >= 0) {
+	if (strListFind(cfg.supported_archive_formats, cfg.qhub[hubnum]->fmt, /* case_sensitive */ FALSE) >= 0) {
 		str_list_t file_list = directory(tmp2);
 		long       file_count = create_archive(str, cfg.qhub[hubnum]->fmt, /* with_path: */ false, file_list, error, sizeof(error));
 		strListFree(&file_list);

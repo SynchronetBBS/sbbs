@@ -737,7 +737,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 	/*******************/
 	remove(packet);
 	SAFEPRINTF2(path, "%s%s", cfg.temp_dir, ALLFILES);
-	if (strListFind((str_list_t)supported_archive_formats, useron.tmpext, /* case_sensitive */ FALSE) >= 0) {
+	if (strListFind(cfg.supported_archive_formats, useron.tmpext, /* case_sensitive */ FALSE) >= 0) {
 		str_list_t file_list = directory(path);
 		int        file_count = create_archive(packet, useron.tmpext, /* with_path: */ false, file_list, error, sizeof(error));
 		strListFree(&file_list);

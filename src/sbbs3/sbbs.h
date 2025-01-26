@@ -1622,7 +1622,7 @@ extern "C" {
 	DLLEXPORT JSObject* js_CreateFileObject(JSContext* cx, JSObject* parent, char *name, int fd, const char* mode);
 
 	/* js_archive.c */
-	DLLEXPORT JSObject* js_CreateArchiveClass(JSContext* cx, JSObject* parent);
+	DLLEXPORT JSObject* js_CreateArchiveClass(JSContext* cx, JSObject* parent, const str_list_t supported_formats);
 
 	/* js_sprintf.c */
 	DLLEXPORT char*		js_sprintf(JSContext* cx, uint argn, unsigned argc, jsval *argv);

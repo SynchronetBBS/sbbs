@@ -831,7 +831,6 @@ str_list_t directory(const char* path)
 	return list;
 }
 
-const char* supported_archive_formats[] = { "zip", "7z", "tgz", NULL };
 // Returns total number of successfully archived files
 // Returns negative on error
 long create_archive(const char* archive, const char* format

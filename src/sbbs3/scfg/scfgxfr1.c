@@ -110,6 +110,8 @@ void xfer_opts()
 			            , cfg.file_misc & FM_SPACES ? "In" : "Ex");
 		snprintf(opt[i++], MAX_OPLN, "%-33.33s%u characters", "Allowed Filename Length", cfg.filename_maxlen);
 		snprintf(opt[i++], MAX_OPLN, "%-33.33s%s", "Allowed Filename Characters", str);
+		snprintf(opt[i++], MAX_OPLN, "%-33.33s%s", "Supported Archive Formats"
+		                , strListCombine(cfg.supported_archive_formats, str, sizeof str, ", "));
 		snprintf(opt[i++], MAX_OPLN, "Viewable Files...");
 		snprintf(opt[i++], MAX_OPLN, "Testable Files...");
 		snprintf(opt[i++], MAX_OPLN, "Download Events...");
@@ -329,6 +331,31 @@ void xfer_opts()
 						}
 						break;
 				}
+				break;
+			case __COUNTER__:   /* Supported Arhive types */
+				uifc.helpbuf =
+					"`Supported Archive Formats:`\n"
+					"\n"
+					"This is a list of archive file types (extensions/suffixes, without the\n"
+					"'.') that are supported by libarchive for the creation of QWK/REP\n"
+					"packets and temporary archives of files for users to download.\n"
+					"\n"
+					"By default, this list is: `zip, 7z, tgz`.\n"
+					"\n"
+					"Synchronet uses `libarchive` for internal archive file support\n"
+					"(see `http://libarchive.org/` for details).  Depending on the version of\n"
+					"libarchive, build options, and OS/system configuration, more archive\n"
+					"formats may be supported.\n"
+					"\n"
+					"If you want additional formats to be available for your users and you've\n"
+					"confirmed system compatibility (e.g. created and extracted archives\n"
+					"of the desired types using `archive.js`), you can add the standard file\n"
+					"extensions for those additional archive formats to this list."
+					;
+		        strListCombine(cfg.supported_archive_formats, str, sizeof str, ", ");
+				uifc.input(WIN_MID | WIN_SAV, 0 , 0, "Supported Archive Formats", str, sizeof str - 1, K_EDIT);
+				strListFree(&cfg.supported_archive_formats);
+				cfg.supported_archive_formats = strListSplit(NULL, str, ", ");
 				break;
 			case __COUNTER__:   /* Viewable file types */
 				while (1) {
