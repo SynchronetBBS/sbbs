@@ -1,0 +1,43 @@
+--- js-1.8.5/js/src/jsgcchunk.cpp.orig	2025-01-26 17:00:34.835529000 -0500
++++ js-1.8.5/js/src/jsgcchunk.cpp	2025-01-26 17:04:41.172785000 -0500
+@@ -290,6 +290,19 @@
+ 
+ #elif defined(XP_UNIX) || defined(XP_BEOS)
+ 
++# if defined(MAP_ALIGNED)
++#  define JS_GC_HAS_MAP_SHIFT_ALIGN
++static void *
++MapShiftAlignedPages(size_t size, uint8_t shift)
++{
++    void *p = mmap(NULL, size, PROT_READ | PROT_WRITE,
++                     MAP_PRIVATE | MAP_NOSYNC | MAP_ALIGNED(shift) | MAP_ANON, -1, 0);
++    if (p == MAP_FAILED)
++        return NULL;
++    return p;
++}
++# else
++
+ /* Required on Solaris 10. Might improve performance elsewhere. */
+ # if defined(SOLARIS) && defined(MAP_ALIGN)
+ #  define JS_GC_HAS_MAP_ALIGN
+@@ -335,6 +348,7 @@
+ }
+ 
+ # endif /* !JS_GC_HAS_MAP_ALIGN */
++# endif
+ 
+ static void
+ UnmapPages(void *addr, size_t size)
+@@ -365,7 +379,11 @@
+ {
+     void *p;
+ 
+-#ifdef JS_GC_HAS_MAP_ALIGN
++#ifdef JS_GC_HAS_MAP_SHIFT_ALIGN
++    p = MapShiftAlignedPages(GC_CHUNK_SIZE, GC_CHUNK_SHIFT);
++    if (!p)
++        return NULL;
++#elif defined(JS_GC_HAS_MAP_ALIGN)
+     p = MapAlignedPages(GC_CHUNK_SIZE, GC_CHUNK_SIZE);
+     if (!p)
+         return NULL;
