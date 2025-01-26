@@ -2933,11 +2933,8 @@ write_webgets(void)
 	}
 
 	iniRemoveSection(&ini_file, "WebLists");
+	iniAppendSectionWithNamedStrings(&ini_file, "WebLists", settings.webgets, &ini_style);
 
-	if (settings.webgets != NULL) {
-		for (size_t i = 0; settings.webgets[i]; i++)
-			iniSetString(&ini_file, "WebLists", settings.webgets[i]->name, settings.webgets[i]->value, &ini_style);
-	}
 	if ((inifile = fopen(inipath, "w")) != NULL) {
 		iniWriteFile(inifile, ini_file);
 		fclose(inifile);
