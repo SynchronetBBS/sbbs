@@ -618,7 +618,7 @@ function promptYesNo_DCTStyle(pQuestion, pBoxTitle, pDefaultYes, pParamObj, pAlw
 		// or "No"
 		console.gotoxy(boxX+20, boxY+2);
 		// Get a key and take appropriate action.
-		userInput = getUserKey(K_UPPER|K_NOECHO|K_NOCRLF|K_NOSPIN, gConfigSettings);
+		userInput = getUserKey(K_UPPER|K_NOECHO|K_NOCRLF|K_NOSPIN);
 		if (userInput == KEY_ENTER)
 			continueOn = false;
 		else if (userInput == "Y")
@@ -917,7 +917,7 @@ function doDCTESCMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
 			userInput = menuRetObj.userInput;
 		// If nothing from the menu was matched, then get a key from the user.
 		else
-			userInput = getUserKey(K_UPPER|K_NOECHO|K_NOCRLF|K_NOSPIN, gConfigSettings);
+			userInput = getUserKey(K_UPPER|K_NOECHO|K_NOCRLF|K_NOSPIN);
 		menuRetObj.userInput = "";
 
 		// If a menu return code was matched or userInput is blank (the
@@ -1462,7 +1462,7 @@ function DCTMenu_DoInputLoop()
 	while (continueOn)
 	{
 		// Get a key, (time out after the selected time), and take appropriate action.
-		returnObj.userInput = getUserKey(K_UPPER|K_NOECHO|K_NOCRLF|K_NOSPIN, gConfigSettings);
+		returnObj.userInput = getUserKey(K_UPPER|K_NOECHO|K_NOCRLF|K_NOSPIN);
 		// If the user input is blank, then the input timed out, and we should quit.
 		if (returnObj.userInput == "")
 		{

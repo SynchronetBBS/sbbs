@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.89b
-                        Release date: 2024-05-11
+                              Version 1.89d
+                        Release date: 2025-01-26
 
                                   by
 
@@ -274,11 +274,6 @@ userInputTimeout                  Whether or not to use an input timeout
                                   used for sysops.  If this option is not
                                   specified, this feature will be enabled
                                   by default.
-
-inputTimeoutMS                    The amount of time (in milliseconds) to
-                                  use for the input timeout.  If this option
-                                  is not specified, this option will default
-                                  to 300000.
 
 reWrapQuoteLines                  Whether or not to re-wrap quote lines. Valid
                                   values are true and false.  This feature is

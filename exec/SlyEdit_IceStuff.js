@@ -533,53 +533,53 @@ function DrawQuoteWindowBottomBorder_IceStyle(pEditLeft, pEditRight)
 //               will default to "no".
 function promptYesNo_IceStyle(pQuestion, pDefaultYes)
 {
-   var userResponse = pDefaultYes;
+	var userResponse = pDefaultYes;
 
-   // Print the question, and highlight "yes" or "no", depending on
-   // the value of pDefaultYes.
-   console.print(iceText(pQuestion + "? ", "\x01w"));
-   displayIceYesNoText(pDefaultYes);
+	// Print the question, and highlight "yes" or "no", depending on
+	// the value of pDefaultYes.
+	console.print(iceText(pQuestion + "? ", "\x01w"));
+	displayIceYesNoText(pDefaultYes);
 
-   // yesNoX contains the horizontal position for the "Yes" & "No" text.
-   const yesNoX = console.strlen(pQuestion) + 3;
+	// yesNoX contains the horizontal position for the "Yes" & "No" text.
+	const yesNoX = console.strlen(pQuestion) + 3;
 
-   // Input loop
-   var userInput = "";
-   var continueOn = true;
-   while (continueOn)
-   {
-      // Move the cursor to the start of the "Yes" or "No" text (whichever
-      // one is currently selected).
-      console.gotoxy(userResponse ? yesNoX : yesNoX+7, console.screen_rows);
-      // Get a keypress from the user and take appropriate action.
-		userInput = getUserKey(K_UPPER|K_NOECHO|K_NOCRLF|K_NOSPIN, gConfigSettings);
+	// Input loop
+	var userInput = "";
+	var continueOn = true;
+	while (continueOn)
+	{
+		// Move the cursor to the start of the "Yes" or "No" text (whichever
+		// one is currently selected).
+		console.gotoxy(userResponse ? yesNoX : yesNoX+7, console.screen_rows);
+		// Get a keypress from the user and take appropriate action.
+		userInput = getUserKey(K_UPPER|K_NOECHO|K_NOCRLF|K_NOSPIN);
 		// If userInput is blank, then the timeout was hit, so exit the loop.
 		// Also exit the loop of the user pressed enter.
-		if ((userInput == "") || (userInput == KEY_ENTER))
-         continueOn = false;
-      else if (userInput == "Y")
-      {
-         userResponse = true;
-         continueOn = false;
-      }
-      else if (userInput == "N")
-      {
-         userResponse = false;
-         continueOn = false;
-      }
-      // Left or right arrow key: Toggle userResponse and update the
-      // yes/no text with the appropriate colors
-      else if ((userInput == KEY_LEFT) || (userInput == KEY_RIGHT))
-      {
-         // Move the cursor to the start of the "Yes" and "No" text, and
-         // update the text depending on the value of userResponse.
-         console.gotoxy(yesNoX, console.screen_rows);
-         userResponse = !userResponse;
-         displayIceYesNoText(userResponse);
-      }
-   }
+		if (userInput == "" || userInput == KEY_ENTER)
+			continueOn = false;
+		else if (userInput == "Y")
+		{
+			userResponse = true;
+			continueOn = false;
+		}
+		else if (userInput == "N")
+		{
+			userResponse = false;
+			continueOn = false;
+		}
+		// Left or right arrow key: Toggle userResponse and update the
+		// yes/no text with the appropriate colors
+		else if (userInput == KEY_LEFT || userInput == KEY_RIGHT)
+		{
+			// Move the cursor to the start of the "Yes" and "No" text, and
+			// update the text depending on the value of userResponse.
+			console.gotoxy(yesNoX, console.screen_rows);
+			userResponse = !userResponse;
+			displayIceYesNoText(userResponse);
+		}
+	}
 
-   return userResponse;
+	return userResponse;
 }
 
 // Displays the time on the screen.
@@ -803,7 +803,7 @@ function doIceESCMenu(pY, pCanCrossPost)
 		}
 
 		// Get the user's choice
-		userInput = getUserKey(K_UPPER|K_NOECHO|K_NOCRLF|K_NOSPIN, gConfigSettings);
+		userInput = getUserKey(K_UPPER|K_NOECHO|K_NOCRLF|K_NOSPIN);
 		switch (userInput)
 		{
 			case KEY_UP:
