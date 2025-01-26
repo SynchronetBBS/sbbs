@@ -208,6 +208,37 @@ void add_outevent(int event, int x, int y, int xres, int yres)
 		ome->endy_res=yres;
 
 		ome->nextevent=(struct out_mouse_event *)NULL;
+		if (ciolib_swap_mouse_butt45) {
+			int orig_bstate = ome->bstate;
+			int orig_kbsm = ome->kbsm;
+			int orig_event = ome->event;
+
+			switch (CIOLIB_BUTTON_NUMBER(orig_event)) {
+				case 4:
+					ome->event += 9;
+					break;
+				case 5:
+					ome->event -= 9;
+					break;
+			}
+			if (orig_bstate & CIOLIB_BUTTON(4))
+				ome->bstate &= ~(CIOLIB_BUTTON(4));
+			if (orig_bstate & CIOLIB_BUTTON(5))
+				ome->bstate &= ~(CIOLIB_BUTTON(5));
+			if (orig_bstate & CIOLIB_BUTTON(4))
+				ome->bstate |= CIOLIB_BUTTON(5);
+			if (orig_bstate & CIOLIB_BUTTON(5))
+				ome->bstate |= CIOLIB_BUTTON(4);
+
+			if (orig_kbsm & CIOLIB_BUTTON(4))
+				ome->kbsm &= ~(CIOLIB_BUTTON(4));
+			if (orig_kbsm & CIOLIB_BUTTON(5))
+				ome->kbsm &= ~(CIOLIB_BUTTON(5));
+			if (orig_kbsm & CIOLIB_BUTTON(4))
+				ome->kbsm |= CIOLIB_BUTTON(5);
+			if (orig_kbsm & CIOLIB_BUTTON(5))
+				ome->kbsm |= CIOLIB_BUTTON(4);
+		}
 
 		listPushNode(&state.output,ome);
 	}

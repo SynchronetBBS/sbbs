@@ -82,6 +82,7 @@ CIOLIBEXPORT const void * ciolib_initial_icon = syncicon64;
 CIOLIBEXPORT size_t ciolib_initial_icon_width = SYNCICON64_WIDTH;
 CIOLIBEXPORT const char *ciolib_initial_program_name = "CIOLIB";
 CIOLIBEXPORT const char *ciolib_initial_program_class = "CIOLIB";
+CIOLIBEXPORT bool ciolib_swap_mouse_butt45 = false;
 
 static int initialized=0;
 

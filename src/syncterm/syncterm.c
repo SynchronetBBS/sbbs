@@ -1545,6 +1545,7 @@ load_settings(struct syncterm_settings *set)
 	set->scaling_factor = iniReadFloat(inifile, "SyncTERM", "ScalingFactor", 0);
 	set->blocky = iniReadBool(inifile, "SyncTERM", "BlockyScaling", true);
 	set->extern_scale = iniReadBool(inifile, "SyncTERM", "ExternalScaling", false);
+	set->invert_wheel = iniReadBool(inifile, "SyncTERM", "InvertMouseWheel", false);
 
         // TODO: Add this to the UI somewhere.
 	set->left_just = iniReadBool(inifile, "SyncTERM", "LeftJustify", false);
@@ -1894,6 +1895,7 @@ main(int argc, char **argv)
 	}
 
 	load_settings(&settings);
+	ciolib_swap_mouse_butt45 = settings.invert_wheel;
 	cvmode = find_vmode(CIOLIB_MODE_CUSTOM);
 	vparams[cvmode].cols = settings.custom_cols;
 	vparams[cvmode].rows = settings.custom_rows;

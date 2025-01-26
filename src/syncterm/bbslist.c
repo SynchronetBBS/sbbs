@@ -2193,8 +2193,8 @@ change_settings(int connected)
 	char inipath[MAX_PATH + 1];
 	FILE *inifile;
 	str_list_t inicontents;
-	char opts[14][1049];
-	char *opt[15];
+	char opts[15][1049];
+	char *opt[16];
 	char *subopts[10];
 	char audio_opts[1024];
 	int i, j, k, l;
@@ -2209,7 +2209,7 @@ change_settings(int connected)
 	else
 		inicontents = strListInit();
 
-	for (i = 0; i < 13; i++)
+	for (i = 0; i < 14; i++)
 		opt[i] = opts[i];
 	opt[i] = NULL;
 
@@ -2270,10 +2270,11 @@ change_settings(int connected)
 		SAFEPRINTF(opts[10], "List Path               %s", settings.stored_list_path);
 		SAFEPRINTF(opts[11], "TERM For Shell          %s", settings.TERM);
 		sprintf(opts[12], "Scaling                 %s", scaling_names[settings_to_scale()]);
+		sprintf(opts[13], "Invert Mouse Wheel      %s", settings.invert_wheel ? "Yes" : "No");
 		if (connected)
-			opt[13] = NULL;
+			opt[14] = NULL;
 		else
-			sprintf(opts[13], "Custom Screen Mode");
+			sprintf(opts[14], "Custom Screen Mode");
 		switch (uifc.list(WIN_MID | WIN_SAV | WIN_ACT, 0, 0, 0, &cur, NULL, "Program Settings", opt)) {
 			case -1:
 				check_exit(false);
@@ -2553,6 +2554,11 @@ change_settings(int connected)
 				setscaling_type(settings.extern_scale ? CIOLIB_SCALING_EXTERNAL : CIOLIB_SCALING_INTERNAL);
 				break;
 			case 13:
+				settings.invert_wheel = !settings.invert_wheel;
+				ciolib_swap_mouse_butt45 = settings.invert_wheel;
+				iniSetBool(&inicontents, "SyncTERM", "InvertMouseWheel", settings.invert_wheel, &ini_style);
+				break;
+			case 14:
 				uifc.helpbuf = "`Custom Screen Mode`\n\n"
 				               "~ Rows ~\n"
 				               "        Sets the number of rows in the custom screen mode\n"

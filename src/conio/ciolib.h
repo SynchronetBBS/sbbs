@@ -422,6 +422,7 @@ CIOLIBEXPORTVAR const void * ciolib_initial_icon;
 CIOLIBEXPORTVAR size_t ciolib_initial_icon_width;
 CIOLIBEXPORTVAR const char *ciolib_initial_program_name;
 CIOLIBEXPORTVAR const char *ciolib_initial_program_class;
+CIOLIBEXPORTVAR bool ciolib_swap_mouse_butt45;
 
 CIOLIBEXPORT int initciolib(int mode);
 CIOLIBEXPORT void suspendciolib(void);
@@ -679,6 +680,7 @@ enum {
 	,CIOLIB_BUTTON_5_DRAG_END		/* 45 */
 };
 
+// If these macros change, the handling of swapping buttons 4/5 is impacted.
 #define CIOLIB_BUTTON_PRESS(x)		((x-1)*9+1)
 #define CIOLIB_BUTTON_RELEASE(x)	((x-1)*9+2)
 #define CIOLIB_BUTTON_CLICK(x)		((x-1)*9+3)
