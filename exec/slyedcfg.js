@@ -10,7 +10,7 @@ require("sbbsdefs.js", "P_NONE");
 require("uifcdefs.js", "UIFC_INMSG");
 
 
-if (!uifc.init("SlyEdit 1.89b Configurator"))
+if (!uifc.init("SlyEdit 1.89d Configurator"))
 {
 	print("Failed to initialize uifc");
 	exit(1);
@@ -117,7 +117,6 @@ function doBehaviorMenu()
 		"quoteTaglines",
 		"allowSpellCheck",
 
-		"inputTimeoutMS",
 		"enableTextReplacements",
 		"tagLineFilename",
 		"taglinePrefix",
@@ -141,7 +140,6 @@ function doBehaviorMenu()
 		"Double-quotes around tag lines",
 		"Allow/enable spell check",
 		// Other options:
-		"User input timeout (MS)",
 		"Enable text replacements",
 		"Tagline filename",
 		"Tagline prefix",
@@ -153,8 +151,6 @@ function doBehaviorMenu()
 	var optionIdx = 0
 	for (; optionIdx < 14; ++optionIdx)
 		menuItems.push(formatCfgMenuText(itemTextMaxLen, optionStrs[optionIdx], gCfgInfo.cfgSections.BEHAVIOR[cfgOptProps[optionIdx]]));
-	// Text input settings, etc.
-	menuItems.push(formatCfgMenuText(itemTextMaxLen, optionStrs[optionIdx++], gCfgInfo.cfgSections.BEHAVIOR.inputTimeoutMS));
 	// Text replacements can be a boolean true/false or "regex"
 	menuItems.push(formatCfgMenuText(itemTextMaxLen, optionStrs[optionIdx++], getTxtReplacementsVal()));
 	menuItems.push(formatCfgMenuText(itemTextMaxLen, optionStrs[optionIdx++], gCfgInfo.cfgSections.BEHAVIOR.tagLineFilename));
@@ -578,8 +574,6 @@ function getOptionHelpText()
 
 	optionHelpText["allowSpellCheck"] = "Allow/enable spell check: Whether or not to allow spell check";
 
-	optionHelpText["inputTimeoutMS"] = "User input timeout (MS): The user inactivity timeout, in milliseconds";
-
 	optionHelpText["enableTextReplacements"] = "Enable text replacements: Whether or not to enable text replacements (AKA macros). Can be ";
 	optionHelpText["enableTextReplacements"] += "true, false, or 'regex' to use regular expressions.";
 
@@ -698,8 +692,6 @@ function readSlyEditCfgFile()
 		retObj.cfgSections.BEHAVIOR.displayEndInfoScreen = true;
 	if (!retObj.cfgSections.BEHAVIOR.hasOwnProperty("userInputTimeout"))
 		retObj.cfgSections.BEHAVIOR.userInputTimeout = true;
-	if (!retObj.cfgSections.BEHAVIOR.hasOwnProperty("inputTimeoutMS"))
-		retObj.cfgSections.BEHAVIOR.inputTimeoutMS = 30000;
 	if (!retObj.cfgSections.BEHAVIOR.hasOwnProperty("reWrapQuoteLines"))
 		retObj.cfgSections.BEHAVIOR.reWrapQuoteLines = true;
 	if (!retObj.cfgSections.BEHAVIOR.hasOwnProperty("allowColorSelection"))
