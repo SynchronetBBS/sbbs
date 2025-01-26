@@ -153,7 +153,7 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			val = sbbs->cfg.max_getkey_inactivity;
 			break;
 		case CON_PROP_GETKEY_INACTIVITY_WARN:
-			val = sbbs->cfg.max_getkey_inactivity * (sbbs->cfg.inactivity_warn / 100.0);
+			val = (int32)(sbbs->cfg.max_getkey_inactivity * (sbbs->cfg.inactivity_warn / 100.0));
 			break;
 		case CON_PROP_LAST_GETKEY_ACTIVITY:
 			val = (int32)sbbs->getkey_last_activity;
