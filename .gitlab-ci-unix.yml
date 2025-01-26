@@ -357,6 +357,7 @@ spec:
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../..
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build${EXTRA_FILENAME}.tgz" src/sbbs3/*.exe.release* src/sbbs3/*.obj.release*/*.o* src/sbbs3/*.lib.release/* src/sbbs3/*/*.exe.release/*
+    - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ctrl_exec${EXTRA_FILENAME}.tgz" src/ctrl src/exec
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [spidermonkey]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
@@ -384,7 +385,7 @@ spec:
     - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
     - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/encode.tgz"
     - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/hash.tgz"
-    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs${EXTRA_FILENAME}-build.tgz"
     - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz"
     - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
     - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/uifc.tgz"
@@ -447,7 +448,7 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
-    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build${EXTRA_FILENAME}.tgz"
     - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/scfg.tgz"
     - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/uedit.tgz"
     - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/umonitor.tgz"
@@ -599,7 +600,7 @@ spec:
     - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
     - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
     - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz"
-    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build${EXTRA_FILENAME}.tgz"
     - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/spidermonkey.tgz"
     - cd src/sbbs3/gtkmonitor
     - touch depend
@@ -632,7 +633,7 @@ spec:
     - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
     - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
     - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz"
-    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build${EXTRA_FILENAME}.tgz"
     - cd src/sbbs3/gtkuseredit
     - touch depend
     - touch xpdev
@@ -663,7 +664,7 @@ spec:
     - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
     - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
     - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz"
-    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build${EXTRA_FILENAME}.tgz"
     - cd src/sbbs3/gtkuserlist
     - touch depend
     - touch xpdev
@@ -692,9 +693,12 @@ spec:
   extends:
     - .$[[ inputs.os ]]-test
   script:
-    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build${EXTRA_FILENAME}.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ctrl_exec${EXTRA_FILENAME}.tgz"
     - sync
     - "SBBSCTRL=./ctrl src/sbbs3/*.exe.release/jsexec -f exec/tests/test.js"
+  variables:
+    GIT_STRATEGY: none
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs-build]"
       artifacts: false
@@ -709,9 +713,12 @@ spec:
   extends:
     - .$[[ inputs.os ]]-test
   script:
-    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build${EXTRA_FILENAME}.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ctrl_exec${EXTRA_FILENAME}.tgz"
     - sync
     - "SBBSCTRL=./ctrl valgrind --leak-check=full --error-exitcode=1 --num-callers=20 --track-origins=yes --read-var-info=yes --read-inline-info=yes --suppressions=src/sbbs3/suppressions.vg src/sbbs3/*.exe.release/jsexec -f exec/tests/test.js"
+  variables:
+    GIT_STRATEGY: none
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs-build]"
       artifacts: false
@@ -729,9 +736,13 @@ spec:
     - .$[[ inputs.os ]]-test
   script:
     - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/jsdoor.tgz"
+    - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ctrl_exec${EXTRA_FILENAME}.tgz"
     - sync
     - "SBBSCTRL=./ctrl src/sbbs3/*.exe.release/jsdoor -f exec/tests/test.js"
+  variables:
+    GIT_STRATEGY: none
   needs:
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs-build]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [jsdoor]"
       artifacts: false
   rules:
@@ -749,5 +760,7 @@ spec:
     - .$[[ inputs.os ]]-cleanup
   script:
     - rm -rf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
+  variables:
+    GIT_STRATEGY: none
   dependencies: []
   when: always
