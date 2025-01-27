@@ -11,7 +11,6 @@
 #include "sockwrap.h"
 #include "stdio.h"
 #include "syncterm.h"
-#include "uifcinit.h"
 #include "webget.h"
 #include "xpprintf.h"
 
@@ -1113,6 +1112,7 @@ bool
 iniReadHttp(struct webget_request *req)
 {
 	struct http_session sess = {
+		.sock = INVALID_SOCKET,
 		.req = req,
 		.tls = -1,
 		.hacky_list_entry = {
@@ -1193,6 +1193,8 @@ destroy_webget_req(struct webget_request *req)
 }
 
 #if 0
+#include "uifcinit.h"
+
 int
 main(int argc, char **argv)
 {
