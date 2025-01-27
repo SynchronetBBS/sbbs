@@ -156,7 +156,7 @@ telnets_connect(struct bbslist *bbs)
 		init_uifc(true, true);
 	assert_pthread_mutex_init(&telnets_mutex, NULL);
 
-	telnets_sock = conn_socket_connect(bbs);
+	telnets_sock = conn_socket_connect(bbs, true);
 	if (telnets_sock == INVALID_SOCKET)
 		return -1;
 

@@ -11,7 +11,6 @@
 #include "sockwrap.h"
 #include "stdio.h"
 #include "syncterm.h"
-#include "uifcinit.h"
 #include "webget.h"
 #include "xpprintf.h"
 
@@ -999,7 +998,7 @@ do_request(struct http_session *sess)
 	if (!parse_uri(sess))
 		goto error_return;
 	set_state(sess->req, "Connecting");
-	sess->sock = conn_socket_connect(&sess->hacky_list_entry);
+	sess->sock = conn_socket_connect(&sess->hacky_list_entry, false);
 	if (sess->sock == INVALID_SOCKET) {
 		set_msg(sess->req, "Connection Failed");
 		goto error_return;
@@ -1113,6 +1112,7 @@ bool
 iniReadHttp(struct webget_request *req)
 {
 	struct http_session sess = {
+		.sock = INVALID_SOCKET,
 		.req = req,
 		.tls = -1,
 		.hacky_list_entry = {
@@ -1193,6 +1193,8 @@ destroy_webget_req(struct webget_request *req)
 }
 
 #if 0
+#include "uifcinit.h"
+
 int
 main(int argc, char **argv)
 {

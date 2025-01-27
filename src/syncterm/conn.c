@@ -484,7 +484,7 @@ enum failure_reason {
 };
 
 SOCKET
-conn_socket_connect(struct bbslist *bbs)
+conn_socket_connect(struct bbslist *bbs, bool can_cancel)
 {
 	SOCKET           sock = INVALID_SOCKET;
 #ifdef _WIN32
@@ -531,9 +531,11 @@ conn_socket_connect(struct bbslist *bbs)
 		uifc.pop("Connecting...");
 	}
 
-        /* Drain the input buffer to avoid accidental cancel */
-	while (kbhit())
-		getch();
+	if (can_cancel) {
+		/* Drain the input buffer to avoid accidental cancel */
+		while (kbhit())
+			getch();
+	}
 
 	for (cur = res; cur && sock == INVALID_SOCKET && failcode == FAILURE_WHAT_FAILURE; cur = cur->ai_next) {
 		if (sock == INVALID_SOCKET) {
@@ -549,6 +551,7 @@ conn_socket_connect(struct bbslist *bbs)
 		}
 
 		if (connect(sock, cur->ai_addr, cur->ai_addrlen)) {
+			int tries = 0;
 			switch (ERROR_VALUE) {
 				case EINPROGRESS:
 				case EINTR:
@@ -558,7 +561,13 @@ conn_socket_connect(struct bbslist *bbs)
 #endif
 					for (; sock != INVALID_SOCKET;) {
 						if (socket_writable(sock, 1000)) {
-							if (socket_recvdone(sock, 0)) {
+							tries++;
+							if (tries >= 5 && !can_cancel)  {
+								closesocket(sock);
+								sock = INVALID_SOCKET;
+								continue;
+							}
+							else if (socket_recvdone(sock, 0)) {
 								closesocket(sock);
 								sock = INVALID_SOCKET;
 								continue;
@@ -568,10 +577,12 @@ conn_socket_connect(struct bbslist *bbs)
 							}
 						}
 						else {
-							if (kbhit()) {
-								failcode = FAILURE_ABORTED;
-								closesocket(sock);
-								sock = INVALID_SOCKET;
+							if (can_cancel) {
+								if (kbhit()) {
+									failcode = FAILURE_ABORTED;
+									closesocket(sock);
+									sock = INVALID_SOCKET;
+								}
 							}
 						}
 					}
