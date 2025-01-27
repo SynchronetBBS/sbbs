@@ -925,6 +925,15 @@ magic_message(MSG msg)
 								PostMessageW(win, WM_USER_SETPOS, window_left, window_top);
 							}
 						}
+						else if (k->VirtualKeyCode == VK_HOME) {
+							// Centre window
+							// Now make the inside of the window the size we want (sigh)
+							LONG w, h;
+							int mw, mh, xpos, ypos;
+							gdi_get_windowsize_at_dpi(false, &w, &h, 0);
+							if (get_monitor_size_pos(&mw, &mh, &xpos, &ypos))
+								SetWindowPos(win, NULL, xpos + ((mw - w) / 2), ypos + ((mh - h) / 2), 0, 0, SWP_NOOWNERZORDER|SWP_NOZORDER|SWP_NOACTIVATE|SWP_NOSIZE);
+						}
 						if (k->ALT == 0x6b00) { // ALT-F4
 							gdi_add_key(CIO_KEY_QUIT);
 						}

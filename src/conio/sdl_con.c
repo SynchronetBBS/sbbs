@@ -751,6 +751,11 @@ static void sdl_add_key(unsigned int keyval, struct video_stats *vs)
 
 	if (keyval == 0xe0)
 		keyval = CIO_KEY_LITERAL_E0;
+	if (keyval == 0x9700) { // Alt-Home, centre screen
+		assert_pthread_mutex_lock(&win_mutex);
+		sdl.SetWindowPosition(win, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+		assert_pthread_mutex_unlock(&win_mutex);
+	}
 	if(keyval==0xa600 && vs != NULL) {
 		assert_pthread_mutex_lock(&win_mutex);
 		fullscreen = !(sdl.GetWindowFlags(win) & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP));

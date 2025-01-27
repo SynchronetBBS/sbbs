@@ -236,6 +236,12 @@ Keyboard Controls::
 	Snap the window size to the next larger smaller integer zoom
 	level
 
+	kbd:[Alt+Return]:::
+	Toggle fullscreen mode
+
+	kbd:[Alt+Home]:::
+	Centre window on the screen
+
 In addition, you can directly enter characters either by their "codepage"
 value or their unicode value.  A "codepage" value is an 8-bit value that
 indicates a character in the current codepage (such as the default CP437).
