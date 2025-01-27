@@ -229,13 +229,16 @@ void __fastcall TMainForm::GetUserData(int number)
     ChatCheckListBox->Tag = false;
 
     if(user.misc & DELETED) {
-        Status->Text = "Deleted User";
+		if(user.deldate)
+			Status->Text = "Deleted " + AnsiString(unixtodstr(&cfg, user.deldate, tmp));
+		else
+			Status->Text = "Deleted User";
         Status->Color = clRed;
     } else if(user.misc & INACTIVE) {
         Status->Text = "Inactive User";
         Status->Color = clYellow;
     } else {
-        Status->Text = "Active Uesr";
+        Status->Text = "Active User";
         Status->Color = clMenu;
     }
 
@@ -535,11 +538,11 @@ void __fastcall TMainForm::NewUserExecute(TObject *Sender)
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::DeleteUserExecute(TObject *Sender)
 {
-    user.misc ^= DELETED;
-    putusermisc(&cfg, ScrollBar->Position, user.misc);
-    LogonCheckListBox->Tag = true;  // flag as modified
-    AliasEdit->Tag = true;
-    PutUserData(ScrollBar->Position);
+	if(user.misc & DELETED)
+		undel_user(&cfg, &user);
+	else
+		del_user(&cfg, &user);
+	GetUserData(ScrollBar->Position);
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainForm::DeactivateUserExecute(TObject *Sender)
