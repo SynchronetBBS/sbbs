@@ -37,7 +37,7 @@
 {
    JSNewFlatClosure
    Memcheck:Leak
-   match-leak-kinds: definite
+   match-leak-kinds: all
    ...
    fun:*js_NewFlatClosure*
 }
@@ -54,6 +54,27 @@
    match-leak-kinds: all
    ...
    fun:*HashChildren*
+}
+{
+   JSinsertChild
+   Memcheck:Leak
+   match-leak-kinds: all
+   malloc
+   fun:*js*PropertyTree*insertChild*
+}
+{
+   JSVectorToKeyIterator
+   Memcheck:Leak
+   match-leak-kinds: all
+   malloc
+   fun:*VectorToKeyIterator*
+}
+{
+   JSreplenishAndFreeLater
+   Memcheck:Leak
+   match-leak-kinds: all
+   malloc
+   fun:*js*GCHelperThread*replenishAndFreeLater*
 }
 {
    LinuxPthreadCreate
