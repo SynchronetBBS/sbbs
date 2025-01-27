@@ -124,6 +124,6 @@ size_t conn_buf_wait_cond(struct conn_buffer *buf, size_t bcount, unsigned long 
 
 #define conn_buf_wait_bytes(buf, count, timeout) conn_buf_wait_cond(buf, count, timeout, 0)
 #define conn_buf_wait_free(buf, count, timeout) conn_buf_wait_cond(buf, count, timeout, 1)
-SOCKET conn_socket_connect(struct bbslist *bbs);
+SOCKET conn_socket_connect(struct bbslist *bbs, bool can_cancel);
 
 #endif // ifndef _CONN_H_

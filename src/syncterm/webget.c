@@ -998,7 +998,7 @@ do_request(struct http_session *sess)
 	if (!parse_uri(sess))
 		goto error_return;
 	set_state(sess->req, "Connecting");
-	sess->sock = conn_socket_connect(&sess->hacky_list_entry);
+	sess->sock = conn_socket_connect(&sess->hacky_list_entry, false);
 	if (sess->sock == INVALID_SOCKET) {
 		set_msg(sess->req, "Connection Failed");
 		goto error_return;

@@ -109,7 +109,7 @@ rlogin_connect(struct bbslist *bbs)
 		ruser = bbs->password;
 	}
 
-	rlogin_sock = conn_socket_connect(bbs);
+	rlogin_sock = conn_socket_connect(bbs, true);
 	if (rlogin_sock == INVALID_SOCKET)
 		return -1;
 

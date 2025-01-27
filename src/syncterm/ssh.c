@@ -784,7 +784,7 @@ ssh_connect(struct bbslist *bbs)
 		ssh_context = -1;
 	}
 
-	ssh_sock = conn_socket_connect(bbs);
+	ssh_sock = conn_socket_connect(bbs, true);
 	if (ssh_sock == INVALID_SOCKET)
 		return -1;
 
