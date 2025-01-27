@@ -411,7 +411,7 @@ bool write_msgs_cfg(scfg_t* cfg)
 			iniSetString(&section, name, "read_ars", cfg->sub[i]->read_arstr, &ini_style);
 			iniSetString(&section, name, "post_ars", cfg->sub[i]->post_arstr, &ini_style);
 			iniSetString(&section, name, "operator_ars", cfg->sub[i]->op_arstr, &ini_style);
-			iniSetHexInt(&section, name, "settings", cfg->sub[i]->misc & (~SUB_HDRMOD), &ini_style);    /* Don't write mod bit */
+			iniSetHexInt(&section, name, "settings", cfg->sub[i]->misc, &ini_style);    /* Don't write mod bit */
 			iniSetString(&section, name, "qwknet_tagline", cfg->sub[i]->tagline, &ini_style);
 			iniSetString(&section, name, "fidonet_origin", cfg->sub[i]->origline, &ini_style);
 			iniSetString(&section, name, "post_sem", cfg->sub[i]->post_sem, &ini_style);
@@ -429,7 +429,7 @@ bool write_msgs_cfg(scfg_t* cfg)
 			strListMerge(&ini, section);
 			free(section);
 
-			if (all_msghdr || (cfg->sub[i]->misc & SUB_HDRMOD && !no_msghdr)) {
+			if (all_msghdr || (cfg->sub[i]->cfg_modified && !no_msghdr)) {
 				if (!cfg->sub[i]->data_dir[0])
 					SAFEPRINTF(smb.file, "%ssubs", cfg->data_dir);
 				else

@@ -240,7 +240,6 @@
 #define SUB_EDIT        (1 << 28)     /* Users can edit message text after posting */
 #define SUB_EDITLAST    (1 << 29)     /* Users can edit last message only */
 #define SUB_NOUSERSIG   (1 << 30)     /* Suppress user signatures */
-#define SUB_HDRMOD      (1U << 31)    /* Modified sub-board header info (SCFG) */
 
 /* Bit values for lib[x].misc */
 #define LIB_DIRS    (1 << 0)          /* Local directory (sub-directory of lib parent) access */

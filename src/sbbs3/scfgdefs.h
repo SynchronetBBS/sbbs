@@ -57,6 +57,7 @@ typedef struct {							/* Message sub board info */
 	int32_t		pmode;						/* printfile()/putmsg() mode flags */
 	int32_t		n_pmode;					/* set of negated pmode flags */
 	faddr_t		faddr;						/* FidoNet address */
+	bool		cfg_modified;               /* Update SMB header for this sub */
 
 } sub_t;
 
