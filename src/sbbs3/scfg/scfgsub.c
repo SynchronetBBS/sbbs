@@ -50,7 +50,7 @@ bool new_sub(int new_subnum, int group_num, sub_t* pasted_sub, long misc)
 				break;
 		}
 	}
-	new_subboard->misc |= SUB_HDRMOD;
+	new_subboard->cfg_modified = true;
 	if (pasted_sub != NULL) {
 		*new_subboard = *pasted_sub;
 		if (cut_qhub_sub != NULL && (*cut_qhub_sub) == NULL) {
@@ -539,7 +539,7 @@ void sub_cfg(int grpnum)
 					uifc.input(WIN_MID | WIN_SAV, 0, 17, "Maximum Number of Messages (0=Unlimited)"
 					           , str, 9, K_EDIT | K_NUMBER);
 					cfg.sub[i]->maxmsgs = atoi(str);
-					cfg.sub[i]->misc |= SUB_HDRMOD;
+					cfg.sub[i]->cfg_modified = true;
 					break;
 				case 12:
 					sprintf(str, "%u", cfg.sub[i]->maxage);
@@ -561,7 +561,7 @@ void sub_cfg(int grpnum)
 					uifc.input(WIN_MID | WIN_SAV, 0, 17, "Maximum Age of Messages (in days)"
 					           , str, 5, K_EDIT | K_NUMBER);
 					cfg.sub[i]->maxage = atoi(str);
-					cfg.sub[i]->misc |= SUB_HDRMOD;
+					cfg.sub[i]->cfg_modified = true;
 					break;
 				case 13:
 					sprintf(str, "%" PRIu32, cfg.sub[i]->maxcrcs);
@@ -582,7 +582,7 @@ void sub_cfg(int grpnum)
 					uifc.input(WIN_MID | WIN_SAV, 0, 17, "Maximum Number of CRCs"
 					           , str, 9, K_EDIT | K_NUMBER);
 					cfg.sub[i]->maxcrcs = atol(str);
-					cfg.sub[i]->misc |= SUB_HDRMOD;
+					cfg.sub[i]->cfg_modified = true;
 					break;
 				case 14:
 					while (1) {
@@ -1585,7 +1585,7 @@ void sub_cfg(int grpnum)
 									uifc.changes = TRUE;
 									cfg.sub[i]->misc |= SUB_HYPER;
 									cfg.sub[i]->misc &= ~SUB_FAST;
-									cfg.sub[i]->misc |= SUB_HDRMOD;
+									cfg.sub[i]->cfg_modified = true;
 									break;
 								}
 								if (!n)
@@ -1610,7 +1610,7 @@ void sub_cfg(int grpnum)
 								}
 
 								if (cfg.sub[i]->misc & SUB_HYPER)
-									cfg.sub[i]->misc |= SUB_HDRMOD;
+									cfg.sub[i]->cfg_modified = true;
 								if (n == 1 && !(cfg.sub[i]->misc & SUB_FAST)) {
 									uifc.changes = TRUE;
 									cfg.sub[i]->misc |= SUB_FAST;

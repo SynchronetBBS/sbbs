@@ -3105,7 +3105,7 @@ JSClass js_file_class = {
 static JSBool
 js_file_constructor(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
+	JSObject * obj;
 	jsval *    argv = JS_ARGV(cx, arglist);
 	JSString*  str;
 	private_t* p;

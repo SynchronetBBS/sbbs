@@ -360,7 +360,7 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 			status_bar[i].bg = 0x800000a8;
 			status_bar[i].ch = ' ';
 			status_bar[i].font = 0;
-			status_bar[i].legacy_attr = 0x4b;
+			status_bar[i].legacy_attr = 0x1e;
 		}
 	}
 
@@ -442,10 +442,14 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 		// TODO: Clear before M?
 		//status_bar[29].ch = ' ';
 		status_bar[30].ch = 'M';
-		if (ms->flags & MS_FLAGS_DISABLED)
+		if (ms->flags & MS_FLAGS_DISABLED) {
 			status_bar[30].fg = 0x80545454;
-		else
+			status_bar[30].legacy_attr = 0x18;
+		}
+		else {
 			status_bar[30].fg = 0x80ffff54;
+			status_bar[30].legacy_attr = 0x1e;
+		}
 	}
 	vmem_puttext(term.x - 1, term.y + term.height - 1, term.x + term.width - 2, term.y + term.height - 1
 	    , status_bar);

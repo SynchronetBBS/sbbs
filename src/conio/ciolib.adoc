@@ -190,15 +190,17 @@ program to create exactly the desired mode.
 == Fonts
 
 There are a large number of built in fonts that ciolib supports. Most
-are codepage fonts, but there is also Commodore, Atari, and Amiga fonts
-included in the default set.  Not all builtin fonts are available in
-every size.  The following table summarizes the available fonts.
+are codepage fonts, but there is also Commodore, Atari, Amiga, and "Prestel"
+(SAA5050 as used in BBC Micro Model 7 and others) fonts included in the
+default set.  Not all builtin fonts are available in every size.  The
+following table summarizes the available fonts.
 
-[%autowidth,cols="1,^2,^3,^4,5"]
+[%autowidth,cols="1,^2,^3,^4,^5,6"]
 |===
-|Name |8x16 |8x12 |8x8 |Character Set
+|Name |8x16 |8x12 |8x8 |12x20| Character Set
 
 |Codepage 437 English
+|√
 |√
 |√
 |√
@@ -214,16 +216,19 @@ every size.  The following table summarizes the available fonts.
 |√
 |√
 |√
+|
 |KOI8_R
 
 |ISO-8859-2 Central European
 |√
 |√
 |√
+|
 |ISO_8859_2
 
 |ISO-8859-4 Baltic wide (VGA 9bit mapped)
 |√
+|
 |
 |
 |ISO_8859_4
@@ -232,10 +237,12 @@ every size.  The following table summarizes the available fonts.
 |√
 |
 |
+|
 |CP866M
 
 |ISO-8859-9 Turkish
 |√
+|
 |
 |
 |ISO_8859_9
@@ -244,22 +251,26 @@ every size.  The following table summarizes the available fonts.
 |√
 |√
 |√
+|
 |HAIK8
 
 |ISO-8859-8 Hebrew
 |√
 |√
 |√
+|
 |ISO_8859_8
 
 |Ukrainian font koi8-u
 |√
 |√
 |√
+|
 |KOI8_U
 
 |ISO-8859-15 West European, (thin)
 |√
+|
 |
 |
 |ISO_8859_15
@@ -268,10 +279,12 @@ every size.  The following table summarizes the available fonts.
 |√
 |√
 |√
+|
 |ISO_8859_4
 
 |Russian koi8-r (b)
 |√
+|
 |
 |
 |KOI8_R
@@ -280,58 +293,68 @@ every size.  The following table summarizes the available fonts.
 |√
 |
 |
+|
 |ISO_8859_4
 
 |ISO-8859-5 Cyrillic
 |√
 |√
 |√
+|
 |ISO_8859_5
 
 |ARMSCII-8 Character set
 |√
 |√
 |√
+|
 |ARMSCII8
 
 |ISO-8859-15 West European
 |√
 |√
 |√
+|
 |ISO_8859_15
 
 |Codepage 850 Multilingual Latin I, (thin)
 |√
 |
 |√
+|
 |CP850
 
 |Codepage 850 Multilingual Latin I
 |√
 |√
 |√
+|
 |CP850
 
 |Codepage 865 Norwegian, (thin)
 |√
 |
 |√
+|
 |CP865
 
 |Codepage 1251 Cyrillic
 |√
 |√
 |√
+|
 |CP1251
 
 |ISO-8859-7 Greek
 |√
 |√
 |√
+|
 |ISO_8859_7
 
 |Russian koi8-r (c)
 |√
+|
 |
 |
 |KOI8_R
@@ -340,28 +363,33 @@ every size.  The following table summarizes the available fonts.
 |√
 |√
 |√
+|
 |ISO_8859_4
 
 |ISO-8859-1 West European
 |√
 |√
 |√
+|
 |ISO_8859_1
 
 |Codepage 866 Russian
 |√
 |√
 |√
+|
 |CP866M2
 
 |Codepage 437 English, (thin)
 |√
 |
 |√
+|
 |CP437
 
 |Codepage 866 (b) Russian
 |√
+|
 |
 |
 |CP866M2
@@ -370,16 +398,19 @@ every size.  The following table summarizes the available fonts.
 |√
 |√
 |√
+|
 |CP865
 
 |Ukrainian font cp866u
 |√
 |√
 |√
+|
 |CP866U
 
 |ISO-8859-1 West European, (thin)
 |√
+|
 |
 |
 |ISO_8859_1
@@ -388,41 +419,48 @@ every size.  The following table summarizes the available fonts.
 |√
 |
 |
+|
 |CP1131
 
 |Commodore 64 (UPPER)
 |√
 |
 |√
+|
 |PETSCIIU
 
 |Commodore 64 (Lower)
 |√
 |
 |√
+|
 |PETSCIIL
 
 |Commodore 128 (UPPER)
 |√
 |
 |√
+|
 |PETSCIIU
 
 |Commodore 128 (Lower)
 |√
 |
 |√
+|
 |PETSCIIL
 
 |Atari
 |√
 |
 |√
+|
 |ATASCII
 
 |P0T NOoDLE (Amiga)
 |√
 |√
+|
 |
 |ISO_8859_1
 
@@ -430,10 +468,12 @@ every size.  The following table summarizes the available fonts.
 |√
 |
 |√
+|
 |ISO_8859_1
 
 |MicroKnight Plus (Amiga)
 |√
+|
 |
 |
 |ISO_8859_1
@@ -442,17 +482,20 @@ every size.  The following table summarizes the available fonts.
 |√
 |
 |
+|
 |ISO_8859_1
 
 |MicroKnight (Amiga)
 |√
 |
 |√
+|
 |ISO_8859_1
 
 |Topaz (Amiga)
 |√
 |√
+|
 |
 |ISO_8859_1
 
@@ -460,5 +503,6 @@ every size.  The following table summarizes the available fonts.
 |√
 |
 |
+|√
 |ISO_8859_1
 |===

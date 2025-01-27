@@ -810,7 +810,7 @@ void msgs_cfg()
 									template = cfg.sub[j];
 								else if (cfg.sub[j] != template) {
 									uifc.changes = 1;
-									cfg.sub[j]->misc = template->misc | SUB_HDRMOD;
+									cfg.sub[j]->misc = template->misc;
 									cfg.sub[j]->misc &= ~SUB_TEMPLATE;
 									SAFECOPY(cfg.sub[j]->post_arstr, template->post_arstr);
 									SAFECOPY(cfg.sub[j]->read_arstr, template->read_arstr);
@@ -826,6 +826,7 @@ void msgs_cfg()
 									cfg.sub[j]->pmode   = template->pmode;
 									cfg.sub[j]->n_pmode = template->n_pmode;
 									cfg.sub[j]->faddr   = template->faddr;
+									cfg.sub[j]->cfg_modified = true;
 								}
 							}
 					}

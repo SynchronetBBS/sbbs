@@ -154,31 +154,32 @@ viewscroll(void)
 int
 syncmenu(struct bbslist *bbs, int *speed)
 {
-	char                 *opts[] = {
-		"Scrollback ("ALT_KEY_NAMEP "-B)",
-		"Disconnect (Ctrl-Q)",
-		"Send Login ("ALT_KEY_NAMEP "-L)",
-		"Upload ("ALT_KEY_NAMEP "-U)",
-		"Download ("ALT_KEY_NAMEP "-D)",
-		"Change Output Rate (" ALT_KEY_NAMEP "-Up/" ALT_KEY_NAMEP "-Down)",
-		"Change Log Level",
-		"Capture Control ("ALT_KEY_NAMEP "-C)",
-		"ANSI Music Control ("ALT_KEY_NAMEP "-M)",
-		"Font Setup ("ALT_KEY_NAMEP "-F)",
-		"Toggle Doorway Mode",
-		"Toggle Remote Mouse (" ALT_KEY_NAMEP "-O)"
-#ifndef WITHOUT_OOII
-		, "Toggle Operation Overkill ][ Mode"
-#endif
-		, "Exit ("ALT_KEY_NAMEP "-X)",
-		"Edit Dialing Directory ("ALT_KEY_NAMEP "-E)",
-		""
-	};
+	char                 *opts[16];
 	int                   opt = 0;
 	int                   i, j;
 	struct  text_info     txtinfo;
 	struct ciolib_screen *savscrn;
 	int                   ret;
+
+	opts[opt++] = strdup("Scrollback ("ALT_KEY_NAMEP "-B)");
+	opts[opt++] = strdup("Disconnect (Ctrl-Q)");
+	opts[opt++] = strdup("Send Login ("ALT_KEY_NAMEP "-L)");
+	opts[opt++] = strdup("Upload ("ALT_KEY_NAMEP "-U)");
+	opts[opt++] = strdup("Download ("ALT_KEY_NAMEP "-D)");
+	opts[opt++] = strdup("Change Output Rate (" ALT_KEY_NAMEP "-Up/" ALT_KEY_NAMEP "-Down)");
+	opts[opt++] = strdup("Change Log Level");
+	opts[opt++] = strdup("Capture Control ("ALT_KEY_NAMEP "-C)");
+	opts[opt++] = strdup("ANSI Music Control ("ALT_KEY_NAMEP "-M)");
+	opts[opt++] = strdup("Font Setup ("ALT_KEY_NAMEP "-F)");
+	opts[opt++] = strdup("Toggle Doorway Mode");
+	opts[opt++] = strdup("Toggle Remote Mouse (" ALT_KEY_NAMEP "-O)");
+#ifndef WITHOUT_OOII
+	opts[opt++] = strdup("Toggle Operation Overkill ][ Mode");
+#endif
+	opts[opt++] = strdup("Exit ("ALT_KEY_NAMEP "-X)");
+	opts[opt++] = strdup("Edit Dialing Directory ("ALT_KEY_NAMEP "-E)");
+	opts[opt++] = "";
+	opt = 0;
 
 	gettextinfo(&txtinfo);
 	savscrn = savescreen();
@@ -189,8 +190,16 @@ syncmenu(struct bbslist *bbs, int *speed)
 
 	if ((cio_api.mode != CIOLIB_MODE_CURSES)
 	    && (cio_api.mode != CIOLIB_MODE_CURSES_IBM)
-	    && (cio_api.mode != CIOLIB_MODE_ANSI))
+	    && (cio_api.mode != CIOLIB_MODE_ANSI)) {
 		opts[1] = "Disconnect ("ALT_KEY_NAMEP "-H)";
+	}
+	else {
+		for (i = 0; opts[i][0]; i++) {
+			char *p = strstr(opts[i], " (" ALT_KEY_NAMEP "-");
+			if (p)
+				*p = 0;
+		}
+	}
 
 	for (ret = 0; (!ret) && (!quitting);) {
 		init_uifc(false, !(bbs->nostatus));
@@ -270,12 +279,16 @@ syncmenu(struct bbslist *bbs, int *speed)
 				uifcbail();
 				restorescreen(savscrn);
 				freescreen(savscrn);
-				return ret;
+				goto cleanup;
 		}
 	}
 
 	uifcbail();
 	restorescreen(savscrn);
 	freescreen(savscrn);
+
+cleanup:
+	for (i = 0; opts[i][0]; i++)
+		free(opts[i]);
 	return ret;
 }

@@ -302,6 +302,7 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		bg->cb.bg = TRUE;
 
 		// Get the js.internal private data since it's the parents js_callback_t...
+		JS_RESUMEREQUEST(cx, rc);
 		if ((JS_GetProperty(cx, scope, "js", &val) && !JSVAL_NULL_OR_VOID(val))
 		    || (JS_GetProperty(cx, obj, "js", &val) && !JSVAL_NULL_OR_VOID(val))) {
 			js_internal = JSVAL_TO_OBJECT(val);
@@ -315,6 +316,7 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		else {
 			lprintf(LOG_ERR, "!ERROR unable to locate global js object");
 		}
+		rc = JS_SUSPENDREQUEST(cx);
 
 		if ((bg->runtime = jsrt_GetNew(JAVASCRIPT_MAX_BYTES, 1000, __FILE__, __LINE__)) == NULL) {
 			free(bg);
@@ -402,18 +404,53 @@ js_load(JSContext *cx, uintN argc, jsval *arglist)
 		}
 
 		// These js_Create*Object() functions use GetContextPrivate() for the sbbs_t.
+		rc = JS_SUSPENDREQUEST(cx);
+		JS_RESUMEREQUEST(bg->cx, brc);
 		JS_SetContextPrivate(bg->cx, JS_GetContextPrivate(bg->parent_cx));
-		if (JS_HasProperty(cx, obj, "bbs", &success) && success)
+		brc = JS_SUSPENDREQUEST(bg->cx);
+		JS_RESUMEREQUEST(cx, rc);
+		if (JS_HasProperty(cx, obj, "bbs", &success) && success) {
+			rc = JS_SUSPENDREQUEST(cx);
+			JS_RESUMEREQUEST(bg->cx, brc);
 			js_CreateBbsObject(bg->cx, bg->obj);
-		if (JS_HasProperty(cx, obj, "console", &success) && success)
+			brc = JS_SUSPENDREQUEST(bg->cx);
+			JS_RESUMEREQUEST(cx, rc);
+			brc = JS_SUSPENDREQUEST(bg->cx);
+			JS_RESUMEREQUEST(cx, rc);
+		}
+		if (JS_HasProperty(cx, obj, "console", &success) && success) {
+			rc = JS_SUSPENDREQUEST(cx);
+			JS_RESUMEREQUEST(bg->cx, brc);
 			js_CreateConsoleObject(bg->cx, bg->obj);
-		if (JS_HasProperty(cx, obj, "stdin", &success) && success)
+			brc = JS_SUSPENDREQUEST(bg->cx);
+			JS_RESUMEREQUEST(cx, rc);
+		}
+		if (JS_HasProperty(cx, obj, "stdin", &success) && success) {
+			rc = JS_SUSPENDREQUEST(cx);
+			JS_RESUMEREQUEST(bg->cx, brc);
 			js_CreateFileObject(bg->cx, bg->obj, "stdin", STDIN_FILENO, "r");
-		if (JS_HasProperty(cx, obj, "stdout", &success) && success)
+			brc = JS_SUSPENDREQUEST(bg->cx);
+			JS_RESUMEREQUEST(cx, rc);
+		}
+		if (JS_HasProperty(cx, obj, "stdout", &success) && success) {
+			rc = JS_SUSPENDREQUEST(cx);
+			JS_RESUMEREQUEST(bg->cx, brc);
 			js_CreateFileObject(bg->cx, bg->obj, "stdout", STDOUT_FILENO, "w");
-		if (JS_HasProperty(cx, obj, "stderr", &success) && success)
+			brc = JS_SUSPENDREQUEST(bg->cx);
+			JS_RESUMEREQUEST(cx, rc);
+		}
+		if (JS_HasProperty(cx, obj, "stderr", &success) && success) {
+			rc = JS_SUSPENDREQUEST(cx);
+			JS_RESUMEREQUEST(bg->cx, brc);
 			js_CreateFileObject(bg->cx, bg->obj, "stderr", STDERR_FILENO, "w");
+			brc = JS_SUSPENDREQUEST(bg->cx);
+			JS_RESUMEREQUEST(cx, rc);
+		}
+		rc = JS_SUSPENDREQUEST(cx);
+		JS_RESUMEREQUEST(bg->cx, brc);
 		JS_SetContextPrivate(bg->cx, bg);
+		brc = JS_SUSPENDREQUEST(bg->cx);
+		JS_RESUMEREQUEST(cx, rc);
 
 		exec_cx = bg->cx;
 		exec_obj = bg->obj;

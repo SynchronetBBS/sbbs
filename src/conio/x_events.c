@@ -2144,6 +2144,16 @@ x11_event(XEvent *ev)
 								nlock = 1;
 							case XK_Home:
 							case XK_KP_Home:
+								// ALT-Home, centre window
+								if (ev->xkey.state & Mod1Mask) {
+									int x_org, y_org, w, h;
+									if (fullscreen_geometry(&x_org, &y_org, &w, &h)) {
+										int l, r, t, b;
+										if (get_frame_extents(&l, &r, &t, &b)) {
+											x11.XMoveWindow(dpy, win, x_org + ((w - vstat.winwidth + l + r) / 2), y_org + ((h - vstat.winheight + t + b) / 2));
+										}
+									}
+								}
 								scan = 71;
 								goto docode;
 
