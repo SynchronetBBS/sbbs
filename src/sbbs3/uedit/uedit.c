@@ -218,7 +218,8 @@ int do_cmd(char *cmd)
  */
 int edit_terminal(scfg_t *cfg, user_t *user)
 {
-	int 	i,j;
+	int 	i;
+	static int dflt;
 	char 	**opt;
 	char	str[256];
 
@@ -228,7 +229,6 @@ int edit_terminal(scfg_t *cfg, user_t *user)
 		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
-	j=0;
 	while(1) {
 		GETUSERDAT(cfg,user);
 		i=0;
@@ -245,7 +245,7 @@ int edit_terminal(scfg_t *cfg, user_t *user)
 		sprintf(str,"%u",user->rows);
 		sprintf(opt[i++],"Screen Rows      %s",user->rows?str:"Auto");
 		opt[i] = NULL;
-		switch(uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&j,0,"Terminal Settings",opt)) {
+		switch(uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&dflt,0,"Terminal Settings",opt)) {
 			case -1:
 				return(0);
 				break;
@@ -321,7 +321,8 @@ int edit_terminal(scfg_t *cfg, user_t *user)
  */
 int edit_logon(scfg_t *cfg, user_t *user)
 {
-	int 	i,j;
+	int 	i;
+	static int dflt;
 	char 	**opt;
 
 	if((opt=(char **)alloca(sizeof(char *)*(5+1)))==NULL)
@@ -330,7 +331,6 @@ int edit_logon(scfg_t *cfg, user_t *user)
 		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
-	j=0;
 	while(1) {
 		i=0;
 		GETUSERDAT(cfg,user);
@@ -340,7 +340,7 @@ int edit_logon(scfg_t *cfg, user_t *user)
 		sprintf(opt[i++],"Quiet Mode  (Q exempt)       %s",user->misc & QUIET?"Yes":"No");
 		sprintf(opt[i++],"Auto-Login via IP (V exempt) %s",user->misc & AUTOLOGON?"Yes":"No");
 		opt[i][0]=0;
-		switch(uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&j,0,"Logon Settings",opt)) {
+		switch(uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&dflt,0,"Logon Settings",opt)) {
 			case -1:
 				return(0);
 				break;
@@ -383,7 +383,8 @@ int edit_logon(scfg_t *cfg, user_t *user)
  */
 int edit_chat(scfg_t *cfg, user_t *user)
 {
-	int 	i,j;
+	int 	i;
+	static int dflt;
 	char 	**opt;
 
 	if((opt=(char **)alloca(sizeof(char *)*(5+1)))==NULL)
@@ -392,7 +393,6 @@ int edit_chat(scfg_t *cfg, user_t *user)
 		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
-	j=0;
 	while(1) {
 		i=0;
 		GETUSERDAT(cfg,user);
@@ -402,7 +402,7 @@ int edit_chat(scfg_t *cfg, user_t *user)
 		sprintf(opt[i++],"Activity Alerts            %s",user->chat & CHAT_NOACT?"No":"Yes");
 		sprintf(opt[i++],"Split-Screen Private Chat  %s",user->chat & CHAT_SPLITP?"Yes":"No");
 		opt[i][0]=0;
-		switch(uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&j,0,"Chat Settings",opt)) {
+		switch(uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&dflt,0,"Chat Settings",opt)) {
 			case -1:
 				return(0);
 				break;
@@ -545,7 +545,8 @@ int edit_xedit(scfg_t *cfg, user_t *user)
  */
 int edit_msgopts(scfg_t *cfg, user_t *user)
 {
-	int 	i,j;
+	int 	i;
+	static int dflt;
 	char 	**opt;
 
 	if((opt=(char **)alloca(sizeof(char *)*(3+1)))==NULL)
@@ -554,7 +555,6 @@ int edit_msgopts(scfg_t *cfg, user_t *user)
 		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
-	j=0;
 	while(1) {
 		GETUSERDAT(cfg,user);
 		i=0;
@@ -562,7 +562,7 @@ int edit_msgopts(scfg_t *cfg, user_t *user)
 		sprintf(opt[i++],"Clear Screen Between Messages  %s",user->misc & CLRSCRN?"Yes":"No");
 		sprintf(opt[i++],"External Editor                %s",user->xedit?cfg->xedit[user->xedit-1]->name:"None");
 		opt[i][0]=0;
-		switch(uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&j,0,"Message Options",opt)) {
+		switch(uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&dflt,0,"Message Options",opt)) {
 			case -1:
 				return(0);
 				break;
@@ -630,7 +630,8 @@ int edit_tmpqwktype(scfg_t *cfg, user_t *user)
  */
 int edit_qwk(scfg_t *cfg, user_t *user)
 {
-	int 	i,j;
+	int 	i;
+	static int dflt;
 	char 	**opt;
 
 	if((opt=(char **)alloca(sizeof(char *)*(15+1)))==NULL)
@@ -639,7 +640,6 @@ int edit_qwk(scfg_t *cfg, user_t *user)
 		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
-	j=0;
 	while(1) {
 		i=0;
 		GETUSERDAT(cfg,user);
@@ -659,7 +659,7 @@ int edit_qwk(scfg_t *cfg, user_t *user)
 		sprintf(opt[i++],"Include Message IDs (@MSGID)  %s",user->qwk & QWK_MSGID?"Yes":"No");
 		sprintf(opt[i++],"Temp/QWK File Type            %s",user->tmpext);
 		opt[i][0]=0;
-		switch(uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&j,0,"Command Shell",opt)) {
+		switch(uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&dflt,0,"Command Shell",opt)) {
 			case -1:
 				return(0);
 				break;
@@ -791,8 +791,9 @@ int edit_proto(scfg_t *cfg, user_t *user)
  */
 int edit_fileopts(scfg_t *cfg, user_t *user)
 {
-	int 	i,j;
+	int 	i;
 	int		k;
+	static int dflt;
 	char 	**opt;
 	char 	str[256];
 
@@ -802,7 +803,6 @@ int edit_fileopts(scfg_t *cfg, user_t *user)
 		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
-	j=0;
 	while(1) {
 		GETUSERDAT(cfg,user);
 		i=0;
@@ -817,7 +817,7 @@ int edit_fileopts(scfg_t *cfg, user_t *user)
 		sprintf(opt[i++],"Default Download Protocol  %s",str);
 		sprintf(opt[i++],"Temp/QWK File Type         %s",user->tmpext);
 		opt[i][0]=0;
-		switch(uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&j,0,"File Options",opt)) {
+		switch(uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&dflt,0,"File Options",opt)) {
 			case -1:
 				return(0);
 				break;
@@ -878,9 +878,9 @@ int edit_msgfile(scfg_t *cfg, user_t *user)
 		,"QWK Message Packet"
 		,"File Options"
 		,""};
-	int i=0;
+	static int dflt;
 	while(1) {
-		switch(uifc.list(WIN_BOT|WIN_RHT|WIN_ACT,0,0,0,&i,0,"Settings",opt)) {
+		switch(uifc.list(WIN_BOT|WIN_RHT|WIN_ACT,0,0,0,&dflt,0,"Settings",opt)) {
 			case -1:
 				return(0);
 				break;
@@ -915,10 +915,10 @@ int edit_settings(scfg_t *cfg, user_t *user)
 		,"Chat Toggles"
 		,"Command Shell"
 		,""};
-	int i=0;
+	static int dflt;
 
 	while(1) {
-		switch(uifc.list(WIN_BOT|WIN_RHT|WIN_ACT,0,0,0,&i,0,"Settings",opt)) {
+		switch(uifc.list(WIN_BOT|WIN_RHT|WIN_ACT,0,0,0,&dflt,0,"Settings",opt)) {
 			case -1:
 				return(0);
 				break;
@@ -965,7 +965,8 @@ int edit_settings(scfg_t *cfg, user_t *user)
  */
 int edit_stats(scfg_t *cfg, user_t *user)
 {
-	int 	i,j;
+	int 	i;
+	static int dflt;
 	char 	**opt;
 	char	str[256];
 	time_t	temptime,temptime2;
@@ -976,7 +977,6 @@ int edit_stats(scfg_t *cfg, user_t *user)
 		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
-	j=0;
 	while(1) {
 		GETUSERDAT(cfg,user);
 		i=0;
@@ -1001,7 +1001,7 @@ int edit_stats(scfg_t *cfg, user_t *user)
 		sprintf(opt[i++],"Leech Downloads    %u",user->leech);
 		sprintf(opt[i++],"Password Modified  %s",user->pwmod?timestr(cfg, user->pwmod, str):"Never");
 		opt[i][0]=0;
-		switch(uifc.list(WIN_MID|WIN_ACT,0,0,0,&j,0,"Statistics",opt)) {
+		switch(uifc.list(WIN_MID|WIN_ACT,0,0,0,&dflt,0,"Statistics",opt)) {
 			case -1:
 				return(0);
 				break;
@@ -1249,7 +1249,8 @@ int edit_stats(scfg_t *cfg, user_t *user)
  */
 int edit_security(scfg_t *cfg, user_t *user)
 {
-	int 	i,j;
+	int 	i;
+	static int dflt;
 	char 	**opt;
 	char	str[256];
 
@@ -1259,7 +1260,6 @@ int edit_security(scfg_t *cfg, user_t *user)
 		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
-	j=0;
 	GETUSERDAT(cfg,user);
 	while(1) {
 		i=0;
@@ -1275,7 +1275,7 @@ int edit_security(scfg_t *cfg, user_t *user)
 		sprintf(opt[i++],"Free Credits  %" PRIu64,user->freecdt);
 		sprintf(opt[i++],"Minutes       %" PRIu32,user->min);
 		opt[i][0]=0;
-		switch(uifc.list(WIN_MID|WIN_ACT,0,0,0,&j,0,"Security Settings",opt)) {
+		switch(uifc.list(WIN_MID|WIN_ACT,0,0,0,&dflt,0,"Security Settings",opt)) {
 			case -1:
 				return(0);
 				break;
@@ -1416,7 +1416,8 @@ int edit_security(scfg_t *cfg, user_t *user)
  */
 int edit_personal(scfg_t *cfg, user_t *user)
 {
-	int 	i,j;
+	int 	i;
+	static int dflt;
 	char 	**opt;
 	char	onech[2];
 
@@ -1426,7 +1427,6 @@ int edit_personal(scfg_t *cfg, user_t *user)
 		if((opt[i]=(char *)alloca(MAX_OPLN))==NULL)
 			allocfail(MAX_OPLN);
 
-	j=0;
 	while(1) {
 		GETUSERDAT(cfg,user);
 		i=0;
@@ -1448,7 +1448,7 @@ int edit_personal(scfg_t *cfg, user_t *user)
 		sprintf(opt[i++],"Comment     %s",user->comment);
 		opt[i][0]=0;
 		uifc.changes=FALSE;
-		switch(uifc.list(WIN_MID|WIN_ACT,0,0,0,&j,0,"Personal Settings",opt)) {
+		switch(uifc.list(WIN_MID|WIN_ACT,0,0,0,&dflt,0,"Personal Settings",opt)) {
 			case -1:
 				return(0);
 			case 0:
@@ -1583,7 +1583,8 @@ int edit_personal(scfg_t *cfg, user_t *user)
 int edit_user(scfg_t *cfg, int usernum)
 {
 	char**	opt;
-	int 	i,j;
+	int 	i;
+	static int dflt;
 	user_t	user;
 	char	str[256];
 
@@ -1595,7 +1596,6 @@ int edit_user(scfg_t *cfg, int usernum)
 
 	user.number=usernum;
 
-	j=0;
 	while(1) {
 		GETUSERDAT(cfg,&user);
 		i=0;
@@ -1616,7 +1616,7 @@ int edit_user(scfg_t *cfg, int usernum)
 		opt[i][0]=0;
 
 		sprintf(str,"Edit User: %d (%s)",user.number,user.name[0]?user.name:user.alias);
-		switch(uifc.list(WIN_ORG|WIN_ACT,0,0,0,&j,0,str,opt)) {
+		switch(uifc.list(WIN_ORG|WIN_ACT,0,0,0,&dflt,0,str,opt)) {
 			case -1:
 				return(0);
 
