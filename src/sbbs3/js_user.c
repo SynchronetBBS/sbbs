@@ -158,8 +158,10 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	rc = JS_SUSPENDREQUEST(cx);
 	js_getuserdat(scfg, p);
 
+	JS_RESUMEREQUEST(cx, rc);
 	JS_IdToValue(cx, id, &idval);
 	tiny = JSVAL_TO_INT(idval);
+	rc = JS_SUSPENDREQUEST(cx);
 
 	switch (tiny) {
 		case USER_PROP_NUMBER:
