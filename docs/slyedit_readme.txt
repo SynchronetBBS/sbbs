@@ -922,6 +922,15 @@ message to lower-case and comparing them with the words in the dictionary.
 ===================
 Version  Date         Description
 -------  ----         -----------
+1.89d    2025-01-26   User inactivity timeout improvement (via use of
+                      console.getkey() instead of the custom function that was
+                      being used)
+1.89c    2024-10-29   Open the quote file in binary mode to avoid EOF issues on
+                      Windows if a unicode "right arrow" code exists in the
+                      message, which would get truncated to ASCII Ctrl-Z (ASCII
+                      26), which is interpreted as EOF on Windows.
+1.89b    2024-05-11   In SlyEdit_Misc.js, check to see that
+                      xtrn_area.editor[user.editor] is an object before using it.
 1.89a    2024-05-04   Don't line-wrap poll messages for quoting, as that could
                       mess up the formatting of the poll options.  Also, a
                       minor fix for the 'to' name length in DCT mode when using
@@ -935,6 +944,10 @@ Version  Date         Description
                       wrapping logic is also called for prepending quoted text
                       with the quote prefix, so (for now) there needs to be a
                       default quote wrap width.
+1.88d    2024-02-16   Header display update for UTF-8. And printing from/to/subj
+                      after writing the header with empty data so that the
+                      header 'graphic' characters & everything lines up
+                      properly.
 1.88c    2024-02-12   UTF-8 support in the displayed header and when quoting
                       text and when quoting message text
 1.88b    2024-02-11   Previous change reverted; now has "real" UTF-8 support.
