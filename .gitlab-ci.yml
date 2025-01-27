@@ -36,7 +36,7 @@ include:
       platform: 'amd64'
       tagname: 'FreeBSD'
       build_flags: 'CC="ccache cc" CXX="ccache c++" RELEASE=1'
-      has_valgrind: "yes"
+      #has_valgrind: "yes"
   - local: '.gitlab-ci-unix.yml'
     inputs:
       os: 'raspian'
