@@ -60,6 +60,7 @@
    Memcheck:Leak
    match-leak-kinds: all
    fun:malloc
+   ...
    fun:*js*PropertyTree*insertChild*
 }
 {
@@ -67,6 +68,7 @@
    Memcheck:Leak
    match-leak-kinds: all
    fun:malloc
+   ...
    fun:*VectorToKeyIterator*
 }
 {
@@ -74,6 +76,7 @@
    Memcheck:Leak
    match-leak-kinds: all
    fun:malloc
+   ...
    fun:*js*GCHelperThread*replenishAndFreeLater*
 }
 {
