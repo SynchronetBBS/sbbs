@@ -103,6 +103,7 @@ typedef struct {							/* Transfer Directory Info */
 				lib,						/* Which library this dir is in */
 				dirnum;						/* ephemeral index of this dir in cfg.dir[] */
 	uint32_t	misc;						/* Miscellaneous bits */
+	bool		cfg_modified;               /* Update SMB header for this dir */
 
 } dir_t;
 

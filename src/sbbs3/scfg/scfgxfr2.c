@@ -1670,9 +1670,11 @@ void dir_toggle_options(dir_t* dir)
 				              , uifcYesNoOpts);
 				if (n == 0 && dir->misc & DIR_NOHASH) {
 					dir->misc &= ~DIR_NOHASH;
+					dir->cfg_modified = true;
 					uifc.changes = 1;
 				} else if (n == 1 && !(dir->misc & DIR_NOHASH)) {
 					dir->misc |= DIR_NOHASH;
+					dir->cfg_modified = true;
 					uifc.changes = 1;
 				}
 				break;
@@ -2167,6 +2169,7 @@ void dir_cfg(int libnum)
 					uifc.input(WIN_L2R | WIN_SAV, 0, 17, "Maximum Number of Files (0=Unlimited)"
 					           , str, 5, K_EDIT | K_NUMBER);
 					cfg.dir[i]->maxfiles = atoi(str);
+					cfg.dir[i]->cfg_modified = true;
 					break;
 				case 12:
 					sprintf(str, "%u", cfg.dir[i]->maxage);
@@ -2174,6 +2177,7 @@ void dir_cfg(int libnum)
 					uifc.input(WIN_MID | WIN_SAV, 0, 17, "Maximum Age of Files (in days)"
 					           , str, 5, K_EDIT | K_NUMBER);
 					cfg.dir[i]->maxage = atoi(str);
+					cfg.dir[i]->cfg_modified = true;
 					break;
 				case 13:
 					uifc.helpbuf = up_pct_help;

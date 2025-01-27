@@ -628,6 +628,7 @@ bool write_file_cfg(scfg_t* cfg)
 	char path[MAX_PATH + 1];
 	char inipath[MAX_PATH + 1];
 	char name[INI_MAX_VALUE_LEN];
+	smb_t smb;
 
 	if (cfg->prepped)
 		return false;
@@ -770,54 +771,103 @@ bool write_file_cfg(scfg_t* cfg)
 			    || cfg->dir[i]->sname[0] == 0
 			    || cfg->dir[i]->code_suffix[0] == 0)
 				continue;
-			if (cfg->dir[i]->lib == j) {
-				cfg->dir[i]->dirnum = dirnum++;
-				SAFEPRINTF2(name, "dir:%s:%s"
-				            , cfg->lib[j]->sname, cfg->dir[i]->code_suffix);
-				str_list_t section = strListInit();
-				iniSetString(&section, name, "description", cfg->dir[i]->lname, &ini_style);
-				iniSetString(&section, name, "name", cfg->dir[i]->sname, &ini_style);
+			if (cfg->dir[i]->lib != j)
+				continue;
+			cfg->dir[i]->dirnum = dirnum++;
+			SAFEPRINTF2(name, "dir:%s:%s"
+			            , cfg->lib[j]->sname, cfg->dir[i]->code_suffix);
+			str_list_t section = strListInit();
+			iniSetString(&section, name, "description", cfg->dir[i]->lname, &ini_style);
+			iniSetString(&section, name, "name", cfg->dir[i]->sname, &ini_style);
 
-				if (cfg->dir[i]->data_dir[0]) {
-					backslash(cfg->dir[i]->data_dir);
-					md(cfg->dir[i]->data_dir);
+			if (cfg->dir[i]->data_dir[0]) {
+				backslash(cfg->dir[i]->data_dir);
+				md(cfg->dir[i]->data_dir);
+			}
+
+			iniSetString(&section, name, "ars", cfg->dir[i]->arstr, &ini_style);
+			iniSetString(&section, name, "upload_ars", cfg->dir[i]->ul_arstr, &ini_style);
+			iniSetString(&section, name, "download_ars", cfg->dir[i]->dl_arstr, &ini_style);
+			iniSetString(&section, name, "operator_ars", cfg->dir[i]->op_arstr, &ini_style);
+			iniSetString(&section, name, "exempt_ars", cfg->dir[i]->ex_arstr, &ini_style);
+			iniSetString(&section, name, "area_tag", cfg->dir[i]->area_tag, &ini_style);
+			backslash(cfg->dir[i]->path);
+			iniSetString(&section, name, "path", cfg->dir[i]->path, &ini_style);
+			iniSetString(&section, name, "vdir", cfg->dir[i]->vdir_name, &ini_style);
+			iniSetString(&section, name, "vshortcut", cfg->dir[i]->vshortcut, &ini_style);
+
+			if (cfg->dir[i]->misc & DIR_FCHK) {
+				SAFECOPY(path, cfg->dir[i]->path);
+				if (!path[0]) {     /* no file storage path specified */
+					SAFEPRINTF2(path, "%s%s"
+					            , cfg->lib[cfg->dir[i]->lib]->code_prefix
+					            , cfg->dir[i]->code_suffix);
+					strlwr(path);
 				}
-
-				iniSetString(&section, name, "ars", cfg->dir[i]->arstr, &ini_style);
-				iniSetString(&section, name, "upload_ars", cfg->dir[i]->ul_arstr, &ini_style);
-				iniSetString(&section, name, "download_ars", cfg->dir[i]->dl_arstr, &ini_style);
-				iniSetString(&section, name, "operator_ars", cfg->dir[i]->op_arstr, &ini_style);
-				iniSetString(&section, name, "exempt_ars", cfg->dir[i]->ex_arstr, &ini_style);
-				iniSetString(&section, name, "area_tag", cfg->dir[i]->area_tag, &ini_style);
-				backslash(cfg->dir[i]->path);
-				iniSetString(&section, name, "path", cfg->dir[i]->path, &ini_style);
-				iniSetString(&section, name, "vdir", cfg->dir[i]->vdir_name, &ini_style);
-				iniSetString(&section, name, "vshortcut", cfg->dir[i]->vshortcut, &ini_style);
-
-				if (cfg->dir[i]->misc & DIR_FCHK) {
-					SAFECOPY(path, cfg->dir[i]->path);
-					if (!path[0]) {     /* no file storage path specified */
-						SAFEPRINTF2(path, "%s%s"
-						            , cfg->lib[cfg->dir[i]->lib]->code_prefix
-						            , cfg->dir[i]->code_suffix);
-						strlwr(path);
-					}
-					if (cfg->lib[cfg->dir[i]->lib]->parent_path[0])
-						prep_dir(cfg->lib[cfg->dir[i]->lib]->parent_path, path, sizeof(path));
-					else {
-						char str[MAX_PATH + 1];
-						if (cfg->dir[i]->data_dir[0])
-							SAFECOPY(str, cfg->dir[i]->data_dir);
-						else
-							SAFEPRINTF(str, "%sdirs", cfg->data_dir);
-						prep_dir(str, path, sizeof(path));
-					}
-					(void)mkpath(path);
+				if (cfg->lib[cfg->dir[i]->lib]->parent_path[0])
+					prep_dir(cfg->lib[cfg->dir[i]->lib]->parent_path, path, sizeof(path));
+				else {
+					char str[MAX_PATH + 1];
+					if (cfg->dir[i]->data_dir[0])
+						SAFECOPY(str, cfg->dir[i]->data_dir);
+					else
+						SAFEPRINTF(str, "%sdirs", cfg->data_dir);
+					prep_dir(str, path, sizeof(path));
 				}
+				(void)mkpath(path);
+			}
 
-				write_dir_defaults_cfg(&section, name, cfg->dir[i]);
-				strListMerge(&ini, section);
-				free(section);
+			write_dir_defaults_cfg(&section, name, cfg->dir[i]);
+			strListMerge(&ini, section);
+			free(section);
+
+			if (all_msghdr || (cfg->dir[i]->cfg_modified && !no_msghdr)) {
+				if (!cfg->dir[i]->data_dir[0])
+					SAFEPRINTF(smb.file, "%sdirs", cfg->data_dir);
+				else
+					SAFECOPY(smb.file, cfg->dir[i]->data_dir);
+				prep_dir(cfg->ctrl_dir, smb.file, sizeof smb.file);
+				md(smb.file);
+				SAFEPRINTF2(path, "%s%s"
+				            , cfg->lib[j]->code_prefix
+				            , cfg->dir[i]->code_suffix);
+				strlwr(path);
+				SAFECAT(smb.file, path);
+				if (smb_open(&smb) != SMB_SUCCESS)
+					continue;
+				uint16_t attr = SMB_FILE_DIRECTORY;
+				if (cfg->dir[i]->misc & DIR_NOHASH)
+					attr |= SMB_NOHASH;
+				if (!filelength(fileno(smb.shd_fp))) {
+					smb.status.max_files = cfg->dir[i]->maxfiles;
+					smb.status.max_age = cfg->dir[i]->maxage;
+					smb.status.attr = attr;
+					smb_create(&smb);
+					smb_close(&smb);
+					continue;
+				}
+				if (smb_locksmbhdr(&smb) != 0) {
+					smb_close(&smb);
+					continue;
+				}
+				if (smb_getstatus(&smb) != 0) {
+					smb_close(&smb);
+					continue;
+				}
+				if (smb.status.attr == attr
+				    && smb.status.max_files == cfg->dir[i]->maxfiles
+				    && smb.status.max_age == cfg->dir[i]->maxage) {   /* No change */
+					smb_close(&smb);
+					continue;
+				}
+				smb.status.attr = attr;
+				smb.status.max_files = cfg->dir[i]->maxfiles;
+				smb.status.max_age = cfg->dir[i]->maxage;
+				if (smb_putstatus(&smb) != 0) {
+					smb_close(&smb);
+					continue;
+				}
+				smb_close(&smb);
 			}
 		}
 	}
