@@ -2966,19 +2966,19 @@ edit_web_lists(void)
 	while (!quitting) {
 		size_t count;
 		COUNT_LIST_ITEMS(settings.webgets, count);
-		if (count > alloced_size) {
+		if ((count + 1) > alloced_size) {
 			char **newlist = realloc(list, (count + 1) * sizeof(char *));
 			if (newlist == NULL) {
 				free(list);
 				break;
 			}
 			list = newlist;
-			alloced_size = count;
+			alloced_size = count + 1;
 		}
 		for (size_t i = 0; i < count; i++) {
 			list[i] = settings.webgets[i]->name;
-			list[i + 1] = NULL;
 		}
+		list[count] = NULL;
 
 		uifc.helpbuf = "`Web Lists`\n\n"
 		    "Add and remove dialing directories available on the web (ie: via HTTP\n"
@@ -3001,7 +3001,7 @@ edit_web_lists(void)
 			tmpn[0] = 0;
 			while (uifc.input(WIN_SAV | WIN_MID, 0, 0, "Web List Name", tmpn, sizeof(tmpn) - 1, K_EDIT) != -1
 			    && tmpn[0]) {
-				if (namedStrListFindName(settings.webgets, tmpn)) {
+				if (settings.webgets != NULL && namedStrListFindName(settings.webgets, tmpn)) {
 					uifc.msg("Duplicate Name");
 					continue;
 				}

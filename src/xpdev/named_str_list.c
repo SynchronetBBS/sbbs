@@ -9,10 +9,17 @@ namedStrListInsert(named_string_t ***list, const char *name, const char *value, 
 {
 	size_t count;
 	named_string_t **newlist;
+	bool is_new = false;
 
-	COUNT_LIST_ITEMS((*list), count);
-	if (count == NAMED_STR_LIST_LAST_INDEX)
-		return NULL;
+	if (*list == NULL) {
+		count = 0;
+		is_new = true;
+	}
+	else {
+		COUNT_LIST_ITEMS((*list), count);
+		if (count == NAMED_STR_LIST_LAST_INDEX)
+			return NULL;
+	}
 	if (index == NAMED_STR_LIST_LAST_INDEX)
 		index = count;
 	if (index > count)
@@ -21,7 +28,10 @@ namedStrListInsert(named_string_t ***list, const char *name, const char *value, 
 	if (newlist == NULL)
 		return NULL;
 	*list = newlist;
-	memmove(&(*list)[index + 1], &(*list)[index], (count - index + 1) * sizeof(named_string_t*));
+	if (is_new)
+		(*list)[1] = NULL;
+	else
+		memmove(&(*list)[index + 1], &(*list)[index], (count - index + 1) * sizeof(named_string_t*));
 	(*list)[index] = malloc(sizeof(named_string_t));
 	// TODO: If malloc() failed we truncated the list...
 	if ((*list)[index]) {
