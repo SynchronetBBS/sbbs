@@ -738,7 +738,7 @@ spec:
     - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build${EXTRA_FILENAME}.tgz"
     - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ctrl_exec${EXTRA_FILENAME}.tgz"
     - sync
-    - "SBBSCTRL=./ctrl src/sbbs3/*.exe.release/jsexec -f exec/tests/test.js"
+    - "SBBSCTRL=./ctrl src/sbbs3/*.exe.release/jsexec -S -f exec/tests/test.js"
   variables:
     GIT_STRATEGY: none
   needs:
@@ -758,7 +758,7 @@ spec:
     - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build${EXTRA_FILENAME}.tgz"
     - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ctrl_exec${EXTRA_FILENAME}.tgz"
     - sync
-    - "SBBSCTRL=./ctrl valgrind --leak-check=full --error-exitcode=1 --num-callers=20 --track-origins=yes --read-var-info=yes --read-inline-info=yes --suppressions=src/sbbs3/suppressions.vg src/sbbs3/*.exe.release/jsexec -f exec/tests/test.js"
+    - "SBBSCTRL=./ctrl valgrind --leak-check=full --error-exitcode=1 --num-callers=20 --track-origins=yes --read-var-info=yes --read-inline-info=yes --suppressions=src/sbbs3/suppressions.vg src/sbbs3/*.exe.release/jsexec -S -f exec/tests/test.js"
   variables:
     GIT_STRATEGY: none
   needs:
