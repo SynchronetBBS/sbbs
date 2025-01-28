@@ -8,8 +8,8 @@
 
 #include "libretro.h"
 
-#define KEYBUFSIZE 32
-static uint16_t keybuf[KEYBUFSIZE];
+#define KEYBUFSIZE 128
+static uint8_t keybuf[KEYBUFSIZE];
 static size_t keybufremove = 0;
 static size_t keybufadd = 0;
 static size_t keybuffill = 0;
@@ -153,9 +153,13 @@ retro_keyboard(bool down, unsigned keycode, uint32_t character, uint16_t key_mod
 			}
 		}
 	}
-	if (add) {
-		keybuf[keybufadd++] = add;
+	if (add && keybuffill < KEYBUFSIZE - 2) {
+		keybuf[keybufadd++] = add & 0xff;
 		keybuffill++;
+		if (add > 255) {
+			keybuf[keybufadd++] = add >> 8;
+			keybuffill++;
+		}
 	}
 }
 
