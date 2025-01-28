@@ -780,7 +780,7 @@ spec:
     - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/jsdoor.tgz"
     - tar -xzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ctrl_exec${EXTRA_FILENAME}.tgz"
     - sync
-    - "SBBSCTRL=./ctrl src/sbbs3/*.exe.release/jsdoor -f exec/tests/test.js"
+    - "SBBSCTRL=./ctrl src/sbbs3/*.exe.release/jsdoor -S -f exec/tests/test.js"
   variables:
     GIT_STRATEGY: none
   needs:
