@@ -2415,6 +2415,12 @@ function main()
 			case "syncterm":
 				print(list.length + " BBS entries exported to: " + lib.syncterm_list(list, system.data_dir));
 				break;
+			case "syncterm-ssh":
+				print(list.length + " BBS entries exported to: " + lib.syncterm_list(list, system.data_dir, ['ssh', 'telnet'], true));
+				break;
+			case "syncterm-telnet":
+				print(list.length + " BBS entries exported to: " + lib.syncterm_list(list, system.data_dir, ['telnet', 'rlogin', 'raw', 'ssh'], true));
+				break;
 			case "html":
 				file_backup("sbbslist.html", limit ? limit : options.backup_level);
 				var f = new File("sbbslist.html");
