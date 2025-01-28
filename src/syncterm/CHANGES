@@ -6,6 +6,7 @@ Prestel mode is 25 rows, not 24
 Add setting to invert mouse wheel
 Support web-based dialing directories
 Alt+Home now centres the window on the screen
+Option to defer telnet negotiation
 
 Version 1.5a
 ------------
