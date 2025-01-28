@@ -322,7 +322,8 @@ audio_callback(void)
 RETRO_API void
 retro_run(void)
 {
-	video_cb(last_rect->data, last_rect->rect.width, last_rect->rect.height, last_rect->rect.width * sizeof(uint32_t));
+	if (video_cb)
+		video_cb(last_rect->data, last_rect->rect.width, last_rect->rect.height, last_rect->rect.width * sizeof(uint32_t));
 }
 
 RETRO_API size_t
