@@ -3015,7 +3015,10 @@ edit_web_lists(void)
 		else if (i & MSK_INS) {
 			char tmpn[INI_MAX_VALUE_LEN + 1];
 			char tmpv[INI_MAX_VALUE_LEN + 1];
-			tmpn[0] = 0;
+			if (count == 0)
+				strlcpy(tmpn, "SyncTERM BBS List", sizeof(tmpn));
+			else
+				tmpn[0] = 0;
 			while (uifc.input(WIN_SAV | WIN_MID, 0, 0, "Web List Name", tmpn, sizeof(tmpn) - 1, K_EDIT) != -1
 			    && tmpn[0]) {
 				if (settings.webgets != NULL && namedStrListFindName(settings.webgets, tmpn)) {
@@ -3023,7 +3026,10 @@ edit_web_lists(void)
 					continue;
 				}
 				else {
-					tmpv[0] = 0;
+					if (count == 0)
+						strlcpy(tmpv, "http://syncterm.bbsdev.net/syncterm.lst", sizeof(tmpn));
+					else
+						tmpv[0] = 0;
 					if (uifc.input(WIN_SAV | WIN_MID, 0, 0, "Web List URI", tmpv, sizeof(tmpv) - 1, K_EDIT) != -1
 					    && tmpv[0]) {
 						char cache_path[MAX_PATH + 1];
