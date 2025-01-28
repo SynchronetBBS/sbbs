@@ -2,7 +2,9 @@
 #include <stdarg.h>
 #include <stdbool.h>
 
+#ifndef WITHOUT_CRYPTLIB
 #include <cryptlib.h>
+#endif
 
 #include "bbslist.h"
 #include "conn.h"
@@ -38,7 +40,9 @@ struct http_session {
 	struct bbslist hacky_list_entry;
 	struct http_cache_info cache;
 	SOCKET sock;
+#ifndef WITHOUT_CRYPTLIB
 	CRYPT_SESSION tls;
+#endif
 	bool is_tls;
 	bool is_chunked;
 	bool not_modified;
@@ -100,6 +104,7 @@ recv_nbytes(struct http_session *sess, uint8_t *buf, size_t chunk_size, bool *eo
 	while (received < chunk_size) {
 		ssize_t rc;
 		if (sess->is_tls) {
+#ifndef WITHOUT_CRYPTLIB
 			int copied = 0;
 			int status = cryptPopData(sess->tls, &buf[received], chunk_size - received, &copied);
 			if (cryptStatusError(status)) {
@@ -107,6 +112,7 @@ recv_nbytes(struct http_session *sess, uint8_t *buf, size_t chunk_size, bool *eo
 				goto error_return;
 			}
 			rc = copied;
+#endif
 		}
 		else {
 			if (!socket_readable(sess->sock, 5000)) {
@@ -152,11 +158,13 @@ close_socket(struct http_session *sess)
 static void
 free_session(struct http_session *sess)
 {
+#ifndef WITHOUT_CRYPTLIB
 	if (sess->is_tls && sess->tls != -1) {
 		cryptSetAttribute(sess->tls, CRYPT_SESSINFO_ACTIVE, 0);
 		cryptDestroySession(sess->tls);
 		sess->tls = -1;
 	}
+#endif
 	close_socket(sess);
 	if (sess->cache_info) {
 		fclose(sess->cache_info);
@@ -228,6 +236,7 @@ send_request(struct http_session *sess)
 	sess->cache.request_time = time(NULL);
 	ssize_t sent;
 	if (sess->is_tls) {
+#ifndef WITHOUT_CRYPTLIB
 		int copied;
 		int ret = cryptPushData(sess->tls, reqstr, len, &copied);
 		if (cryptStatusError(ret)) {
@@ -239,6 +248,7 @@ send_request(struct http_session *sess)
 		if (cryptStatusError(ret)) {
 			sent = -1;
 		}
+#endif
 	}
 	else {
 		sent = send(sess->sock, reqstr, len, 0);
@@ -955,6 +965,7 @@ error_return:
 static bool
 tls_setup(struct http_session *sess)
 {
+#ifndef WITHOUT_CRYPTLIB
 	int status;
 	status = cryptCreateSession(&sess->tls, CRYPT_UNUSED, CRYPT_SESSION_SSL);
 	if (cryptStatusError(status)) {
@@ -983,6 +994,7 @@ tls_setup(struct http_session *sess)
 	return true;
 
 error_return:
+#endif
 	return false;
 }
 
@@ -1114,7 +1126,9 @@ iniReadHttp(struct webget_request *req)
 	struct http_session sess = {
 		.sock = INVALID_SOCKET,
 		.req = req,
+#ifndef WITHOUT_CRYPTLIB
 		.tls = -1,
+#endif
 		.hacky_list_entry = {
 			.hidepopups = true,
 			.address_family = PF_UNSPEC,
