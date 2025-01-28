@@ -22,7 +22,7 @@ struct keyvals {
 	uint16_t alt;
 };
 
-CIOLIBEXPORT const struct keyvals keyval[] =
+static const struct keyvals keyval[] =
 {
 	{RETROK_BACKSPACE, 0x08, 0x08, 0x7f, 0x0e00},
 	{RETROK_TAB, 0x09, 0x0f00, 0x9400, 0xa500},
