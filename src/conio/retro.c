@@ -135,6 +135,7 @@ RETRO_CALLCONV void
 retro_keyboard(bool down, unsigned keycode, uint32_t character, uint16_t key_modifiers)
 {
 	uint16_t add = 0;
+
 	if (down) {
 		// TODO: Map properly...
 		if (keybuffill < KEYBUFSIZE) {
@@ -147,6 +148,8 @@ retro_keyboard(bool down, unsigned keycode, uint32_t character, uint16_t key_mod
 					add = k->ctrl;
 				else if (key_modifiers & RETROKMOD_SHIFT)
 					add = k->shift;
+				else
+					add = k->key;
 			}
 		}
 	}
