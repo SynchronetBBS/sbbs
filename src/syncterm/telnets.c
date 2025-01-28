@@ -240,22 +240,15 @@ telnets_connect(struct bbslist *bbs)
 	conn_api.rx_parse_cb = telnet_rx_parse_cb;
 	conn_api.tx_parse_cb = telnet_tx_parse_cb;
 
+	telnet_deferred =  bbs->defer_telnet_negotiation;
 	_beginthread(telnets_output_thread, 0, NULL);
 	_beginthread(telnets_input_thread, 0, NULL);
 
 	if (!bbs->hidepopups)
 		uifc.pop(NULL); // TODO: Why is this called twice?
 
-	// Suppress Go Aheads (both directions)
-	request_telnet_opt(TELNET_WILL, TELNET_SUP_GA);
-	request_telnet_opt(TELNET_DO, TELNET_SUP_GA);
-	if (!bbs->telnet_no_binary) {
-		// Enable binary mode (both directions)
-		request_telnet_opt(TELNET_WILL, TELNET_BINARY_TX);
-		request_telnet_opt(TELNET_DO, TELNET_BINARY_TX);
-	}
-	// Request that the server echos
-	request_telnet_opt(TELNET_DO, TELNET_ECHO);
+	if (!telnet_deferred)
+		send_initial_state();
 
 	return 0;
 }

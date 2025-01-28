@@ -811,6 +811,7 @@ read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id, int
 		entry->stop_bits = 1;
 	entry->parity = iniGetEnum(section, NULL, "Parity", parity_enum, SYNCTERM_PARITY_NONE);
 	entry->telnet_no_binary = iniGetBool(section, NULL, "TelnetBrokenTextmode", false);
+	entry->defer_telnet_negotiation = iniGetBool(section, NULL, "TelnetDeferNegotiate", false);
 
 	/* Log Stuff */
 	iniGetSString(sys ? NULL : section, NULL, "LogFile", "", entry->logfile, sizeof(entry->logfile));
@@ -1167,6 +1168,7 @@ enum {
 	BBSLIST_FIELD_DATA_BITS,
 	BBSLIST_FIELD_PARITY,
 	BBSLIST_FIELD_TELNET_NO_BINARY,
+	BBSLIST_FIELD_TELNET_DEFERED_NEGOTIATION,
 };
 
 void
@@ -1258,6 +1260,10 @@ build_edit_list(struct bbslist *item, char opt[][69], int *optmap, char **opts, 
 	if (item->conn_type == CONN_TYPE_TELNET || item->conn_type == CONN_TYPE_TELNETS) {
 		optmap[i] = BBSLIST_FIELD_TELNET_NO_BINARY;
 		sprintf(opt[i++], "Binmode Broken    %s", item->telnet_no_binary ? "Yes" : "No");
+	}
+	if (item->conn_type == CONN_TYPE_TELNET || item->conn_type == CONN_TYPE_TELNETS) {
+		optmap[i] = BBSLIST_FIELD_TELNET_DEFERED_NEGOTIATION;
+		sprintf(opt[i++], "Defered Negotiate %s", item->defer_telnet_negotiation ? "Yes" : "No");
 	}
 	optmap[i] = BBSLIST_FIELD_SCREEN_MODE;
 	sprintf(opt[i++], "Screen Mode       %s", screen_modes[item->screen_mode]);
@@ -1398,6 +1404,12 @@ build_edit_help(struct bbslist *item, int isdefault, char *helpbuf, size_t hbsz)
 		hblen += strlcat(helpbuf + hblen, "~ Binmode Broken ~\n"
 		                                  "        Telnet binary mode is broken on the remote system, do not\n"
 		                                  "        enable it when connecting\n\n", hbsz - hblen);
+		hblen += strlcat(helpbuf + hblen, "~ Defer Negotiate ~\n"
+		                                  "        Some systems have a mailer or other program running on the\n"
+		                                  "        initial connection, and will either disconnect or just ignore\n"
+		                                  "        telnet negotiations at the start of the session.  When this\n"
+		                                  "        option is enabled, SyncTERM will wait until it receives a telnet\n"
+		                                  "        command from the remote before starting telnet negotiation.\n\n", hbsz - hblen);
 	}
 	hblen += strlcat(helpbuf + hblen, "~ Screen Mode ~\n"
 	                                  "        Display mode to use\n\n", hbsz - hblen);
@@ -1960,7 +1972,11 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 				changed = 1;
 				iniSetBool(&inifile, itemname, "TelnetBrokenTextmode", item->telnet_no_binary, &ini_style);
 				break;
-
+			case BBSLIST_FIELD_TELNET_DEFERED_NEGOTIATION:
+				item->defer_telnet_negotiation = !item->defer_telnet_negotiation;
+				changed = 1;
+				iniSetBool(&inifile, itemname, "TelnetDeferNegotiate", item->defer_telnet_negotiation, &ini_style);
+				break;
 		}
 		if (uifc.changes)
 			changed = 1;
@@ -2020,6 +2036,7 @@ add_bbs(char *listpath, struct bbslist *bbs, bool new_entry)
 	iniSetBool(&inifile, bbs->name, "ForceLCF", bbs->force_lcf, &ini_style);
 	iniSetBool(&inifile, bbs->name, "YellowIsYellow", bbs->yellow_is_yellow, &ini_style);
 	iniSetBool(&inifile, bbs->name, "TelnetBrokenTextmode", bbs->telnet_no_binary, &ini_style);
+	iniSetBool(&inifile, bbs->name, "TelnetDeferNegotiate", bbs->defer_telnet_negotiation, &ini_style);
 	if (bbs->has_fingerprint) {
 		char fp[41];
 		fp[0] = 0;

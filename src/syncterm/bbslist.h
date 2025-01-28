@@ -93,6 +93,7 @@ enum {
 	SCREEN_MODE_TERMINATOR
 };
 
+
 enum {
 	ADDRESS_FAMILY_UNSPEC
 	,
@@ -153,6 +154,7 @@ struct bbslist {
 	uint8_t            ssh_fingerprint[20];
 	bool               sftp_public_key;
 	bool               telnet_no_binary;
+	bool               defer_telnet_negotiation;
 	// No way to get a uint8_t from an ini file.
 	short unsigned int stop_bits;
 	short unsigned int data_bits;

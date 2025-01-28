@@ -17,6 +17,8 @@
 #include "uifcinit.h"
 
 extern int telnet_log_level;
+bool telnet_deferred = false;
+bool telnet_no_binary = false;
 
 /*****************************************************************************/
 
@@ -82,6 +84,22 @@ st_telnet_expand(const uchar *inbuf, size_t inlen, uchar *outbuf, size_t outlen,
 	return o;
 }
 
+void
+send_initial_state(void)
+{
+	// Suppress Go Aheads (both directions)
+	request_telnet_opt(TELNET_WILL, TELNET_SUP_GA);
+	request_telnet_opt(TELNET_DO, TELNET_SUP_GA);
+	if (!telnet_no_binary) {
+		// Enable binary mode (both directions)
+		request_telnet_opt(TELNET_WILL, TELNET_BINARY_TX);
+		request_telnet_opt(TELNET_DO, TELNET_BINARY_TX);
+	}
+	// Request that the server echos
+	request_telnet_opt(TELNET_DO, TELNET_ECHO);
+	telnet_deferred = false;
+}
+
 void *
 telnet_rx_parse_cb(const void *buf, size_t inlen, size_t *olen)
 {
@@ -90,8 +108,11 @@ telnet_rx_parse_cb(const void *buf, size_t inlen, size_t *olen)
 
 	if (ret == NULL)
 		return ret;
-	if (telnet_interpret((BYTE *)buf, inlen, ret, olen) != ret)
+	if (telnet_interpret((BYTE *)buf, inlen, ret, olen) != ret) {
 		memcpy(ret, buf, *olen);
+		if (telnet_deferred)
+			send_initial_state();
+	}
 	return ret;
 }
 
@@ -149,18 +170,13 @@ telnet_connect(struct bbslist *bbs)
 	conn_api.rx_parse_cb = telnet_rx_parse_cb;
 	conn_api.tx_parse_cb = telnet_tx_parse_cb;
 
+	telnet_deferred =  bbs->defer_telnet_negotiation;
+	telnet_no_binary =  bbs->telnet_no_binary;
 	_beginthread(rlogin_output_thread, 0, NULL);
 	_beginthread(rlogin_input_thread, 0, bbs);
-	// Suppress Go Aheads (both directions)
-	request_telnet_opt(TELNET_WILL, TELNET_SUP_GA);
-	request_telnet_opt(TELNET_DO, TELNET_SUP_GA);
-	if (!bbs->telnet_no_binary) {
-		// Enable binary mode (both directions)
-		request_telnet_opt(TELNET_WILL, TELNET_BINARY_TX);
-		request_telnet_opt(TELNET_DO, TELNET_BINARY_TX);
-	}
-	// Request that the server echos
-	request_telnet_opt(TELNET_DO, TELNET_ECHO);
+
+	if (!telnet_deferred)
+		send_initial_state();
 
 	if (!bbs->hidepopups)
 		uifc.pop(NULL);
