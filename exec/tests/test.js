@@ -94,6 +94,7 @@ function run_tests(location, obj)
 				stdout.writeln("passed");
 				passed++;
 			}
+			stdout.flush();
 		});
 	}
 	stdout.writeln('');
