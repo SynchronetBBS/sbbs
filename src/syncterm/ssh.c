@@ -47,7 +47,6 @@ init_crypt(void)
 {
 	int status;
 
-#ifndef WITH_RETRO
 	status = cryptInit();
 	if (cryptStatusOK(status)) {
 		atexit(exit_crypt);
@@ -55,7 +54,6 @@ init_crypt(void)
 	}
 	if (cryptStatusError(status))
 		cryptlib_error_message(status, "initializing cryptlib");
-#endif
 }
 
 static int
