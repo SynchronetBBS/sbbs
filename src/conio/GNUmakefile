@@ -28,6 +28,11 @@ ifdef WITH_SDL
  OBJS	+=      $(MTOBJODIR)$(DIRSEP)sdlfuncs$(OFILE)
 endif
 
+ifdef WITH_RETRO
+ NEED_BITMAP := 1
+ OBJS	+=	$(MTOBJODIR)$(DIRSEP)retro$(OFILE)
+endif
+
 ifeq ($(os),netbsd)
  ifndef USE_SYSTEM_CURSES
   CFLAGS	+=	-DN_CURSES_LIB

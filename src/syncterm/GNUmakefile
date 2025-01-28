@@ -152,6 +152,10 @@ ifdef win
  EXTRA_LIBS += -luuid
 endif
 
+ifdef WITH_RETRO
+ LDFLAGS += -shared
+endif
+
 $(MTOBJODIR)$(DIRSEP)ciolib_res$(OFILE): ${CIOLIB-MT}
 	cd ${MTOBJODIR} && $(AR) -x ../${CIOLIB-MT} ciolib_res$(OFILE)
 

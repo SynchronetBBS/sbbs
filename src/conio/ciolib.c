@@ -52,6 +52,9 @@
  #include "curs_cio.h"
  #undef getch
 #endif
+#ifdef WITH_RETRO
+ #include "retro.h"
+#endif
 
 #include "bitmap_con.h"
 #include "ansi_cio.h"
@@ -435,6 +438,44 @@ static int try_conio_init(int mode)
 }
 #endif
 
+#ifdef WITH_RETRO
+static int try_retro_init(int mode)
+{
+	cio_api.mode=CIOLIB_MODE_RETRO;
+	cio_api.mouse=1;
+	cio_api.puttext=bitmap_puttext;
+	cio_api.vmem_puttext=bitmap_vmem_puttext;
+	cio_api.vmem_gettext=bitmap_vmem_gettext;
+	cio_api.gotoxy=bitmap_gotoxy;
+	cio_api.setcursortype=bitmap_setcursortype;
+	cio_api.setfont=bitmap_setfont;
+	cio_api.getfont=bitmap_getfont;
+	cio_api.loadfont=bitmap_loadfont;
+	cio_api.beep=retro_beep;
+	cio_api.movetext=bitmap_movetext;
+	cio_api.clreol=bitmap_clreol;
+	cio_api.clrscr=bitmap_clrscr;
+	cio_api.getcustomcursor=bitmap_getcustomcursor;
+	cio_api.setcustomcursor=bitmap_setcustomcursor;
+	cio_api.getvideoflags=bitmap_getvideoflags;
+	cio_api.setvideoflags=bitmap_setvideoflags;
+
+	cio_api.kbhit=retro_kbhit;
+	cio_api.getch=retro_getch;
+	cio_api.textmode=retro_textmode;
+	cio_api.setpalette=bitmap_setpalette;
+	cio_api.attr2palette=bitmap_attr2palette;
+	cio_api.setpixel=bitmap_setpixel;
+	cio_api.getpixels=bitmap_getpixels;
+	cio_api.setpixels=bitmap_setpixels;
+	cio_api.get_modepalette=bitmap_get_modepalette;
+	cio_api.set_modepalette=bitmap_set_modepalette;
+	cio_api.map_rgb = bitmap_map_rgb;
+	cio_api.replace_font = bitmap_replace_font;
+	return(1);
+}
+#endif
+
 /* Optional */
 CIOLIBEXPORT void suspendciolib(void)
 {
@@ -457,6 +498,13 @@ CIOLIBEXPORT int initciolib(int mode)
 			return(0);
 	}
 
+#ifdef WITH_RETRO
+	if (retro_set) {
+		if (!try_retro_init(mode))
+			return -1;
+	}
+	else {
+#endif
 	switch(mode) {
 		case CIOLIB_MODE_AUTO:
 #ifndef NO_X
@@ -519,6 +567,9 @@ CIOLIBEXPORT int initciolib(int mode)
 		fprintf(stderr,"CIOLIB initialization failed!\n");
 		return(-1);
 	}
+#ifdef WITH_RETRO
+	}
+#endif
 
 	initialized=1;
 	cio_textinfo.winleft=1;
