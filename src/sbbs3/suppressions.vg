@@ -88,6 +88,13 @@
    fun:allocate_dtv
 }
 {
+   FreeBSDPthreadCondInit
+   Memcheck:Leak
+   match-leak-kinds: all
+   fun:calloc
+   fun:pthread_cond_init
+}
+{
    FreeBSDPthreadMutexInitNP
    Memcheck:Leak
    match-leak-kinds: definite
