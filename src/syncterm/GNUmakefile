@@ -153,7 +153,9 @@ ifdef win
 endif
 
 ifdef WITH_RETRO
- LDFLAGS += -shared
+ ifndef win
+  LDFLAGS += -shared
+ endif
 endif
 
 $(MTOBJODIR)$(DIRSEP)ciolib_res$(OFILE): ${CIOLIB-MT}
