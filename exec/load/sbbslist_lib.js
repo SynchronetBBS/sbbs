@@ -715,16 +715,41 @@ function verify_system(bbs, by)
 	bbs.entry.verified = { on: new Date().toISOString(), by: by, count: verify_count + 1 };
 }
 
-function syncterm_list(list, dir)
+function syncterm_list(list, dir, preference, onlyone)
 {
-    var f = new File(dir + "syncterm.lst");
+	var i;
+	var j;
+	var f;
+	if (onlyone)
+		f = new File(dir + "syncterm-"+preference[0]+".lst");
+	else
+		f = new File(dir + "syncterm.lst");
     if(!f.open("w")) {
 		return false;
     }
 	f.writeln(format("; Exported from %s on %s", system.name, new Date().toString()));
 	f.writeln();
 	var sections = [];
+	if (preference == undefined) {
+		preference = ['ssh', 'telnet', 'rlogin'];
+	}
+	if (onlyone === undefined)
+		onlyone = false;
+    for (i in preference)
+		preference[i] = preference[i].toLowerCase();
+
+    function pcmp(a, b) {
+		aidx = preference.indexOf(a.protocol.toLowerCase());
+		bidx = preference.indexOf(b.protocol.toLowerCase());
+		if (aidx < 0)
+			aidx = preference.length;
+		if (bidx < 0)
+			bidx = preference.length;
+		return (aidx - bidx);
+	}
+
     for(i in list) {
+		list[i].service.sort(pcmp);
         for(j in list[i].service) {
             if(!list[i].service[j].protocol)
                 continue;
@@ -760,6 +785,8 @@ function syncterm_list(list, dir)
 			if(j == 0 && list[i].description)
 				f.writeln("\tComment=" + list[i].description.join(' '));
             f.writeln();
+			if (onlyone)
+				break;
         }
     }
     f.close();
