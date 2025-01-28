@@ -5,6 +5,7 @@ project (SyncTERM C)
 set(WITHOUT_CRYPTLIB OFF CACHE BOOL "Disable cryptlib (ssh and telnet over TLS")
 set(WITHOUT_OOII OFF CACHE BOOL "Disable Operation Overkill ][ Terminal")
 set(WITHOUT_JPEG_XL OFF CACHE BOOL "Disable JPEG XL")
+set(WITHOUT_RETRO ON CACHE BOOL "Disable libretro")
 
 # CPack stuff...
 set(CPACK_PACKAGE_NAME SyncTERM)
@@ -98,7 +99,12 @@ else()
 	set(WIN_MAIN_TYPE WIN32)
 endif()
 
-add_executable(syncterm MACOSX_BUNDLE ${WIN_MAIN_TYPE} ${SOURCE})
+if(NOT WITHOUT_RETRO)
+	add_library(syncterm SHARED ${SOURCE})
+	set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+else()
+	add_executable(syncterm MACOSX_BUNDLE ${WIN_MAIN_TYPE} ${SOURCE})
+endif()
 set_target_properties(syncterm PROPERTIES
 	MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist
 )
@@ -149,6 +155,10 @@ if(NOT WITHOUT_JPEG_XL)
 			target_compile_options(syncterm PRIVATE ${JPEG_XL_THREADS_CFLAGS})
 		endif()
 	endif()
+endif()
+
+if(NOT WITHOUT_RETRO)
+	target_compile_definitions(syncterm PUBLIC WITH_RETRO)
 endif()
 
 install(TARGETS syncterm DESTINATION bin)

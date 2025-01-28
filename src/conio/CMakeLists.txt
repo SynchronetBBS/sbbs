@@ -114,6 +114,12 @@ if(NOT WITHOUT_SDL)
 	endif()
 endif()
 
+if(NOT WITHOUT_RETRO)
+	list(APPEND SOURCE retro.c)
+	set(NEED_BITMAP TRUE)
+	set(NEED_SCALE TRUE)
+endif()
+
 if(NEED_BITMAP)
 	list(APPEND SOURCE bitmap_con.c)
 endif()
@@ -198,6 +204,10 @@ if(USE_CURSES_ANYWAY)
 			endif()
 		endif()
 	endif()
+endif()
+
+if(NOT WITHOUT_RETRO)
+	target_compile_definitions(ciolib PUBLIC WITH_RETRO)
 endif()
 
 if(HAVE_VASPRINTF)
