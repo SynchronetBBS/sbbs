@@ -2971,7 +2971,7 @@ write_webgets(void)
 	strListFree(&ini_file);
 }
 
-static void
+static bool
 edit_web_lists(void)
 {
 	static int cur = 0;
@@ -3073,6 +3073,7 @@ edit_web_lists(void)
 	if (changed) {
 		write_webgets();
 	}
+	return changed;
 }
 
 /*
@@ -3835,7 +3836,9 @@ show_bbslist(char *current, int connected)
 						free(copied);
 						return NULL;
 					case 0: /* Edit Web Lists */
-						edit_web_lists();
+						if (edit_web_lists())
+							load_bbslist(list, BBSLIST_SIZE, &defaults, settings.list_path, sizeof(settings.list_path), shared_list,
+							    sizeof(shared_list), &listcount, &opt, &bar, current ? strdup(current) : NULL);
 						break;
 					case 1: /* Edit default connection settings */
 						edit_list(NULL, &defaults, settings.list_path, true);
