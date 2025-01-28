@@ -184,6 +184,8 @@ runmain(void *arg)
 		"syncterm"
 	};
 	main(0, args);
+	if (env_cb)
+		env_cb(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
 }
 
 struct rectlist *last_rect = NULL;
@@ -215,8 +217,18 @@ retro_deinit(void)
 	 * "The core must release all of its allocated resources before this function returns."
 	 * Heh heh heh... sure thing bud.
 	 */
-	for (;;)
-		SLEEP(1000);
+	// Just not returning (unsurprisingly) hangs...
+	//for (;;)
+	//	SLEEP(1000);
+	// This is bad too, but it's a different bad.
+	suspendciolib();
+	env_cb = NULL;
+	video_cb = NULL;
+	audio_cb = NULL;
+	audio_batch_cb = NULL;
+	input_poll_cb = NULL;
+	input_state_cb = NULL;
+	exit(0);
 }
 
 RETRO_API unsigned
