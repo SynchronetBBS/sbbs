@@ -1124,7 +1124,7 @@ is_fresh(struct http_session *sess)
 		int len = asprintf(&path, "%s/%s.lst", sess->req->cache_root, sess->req->name);
 		if (len > 0) {
 			if (remove(path))
-				fprintf(stderr, "Failed to remove %s from cache\n");
+				fprintf(stderr, "Failed to remove %s from cache\n", path);
 		}
 		free(path);
 	}
