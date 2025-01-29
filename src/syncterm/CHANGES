@@ -7,6 +7,7 @@ Add setting to invert mouse wheel
 Support web-based dialing directories
 Alt+Home now centres the window on the screen
 Option to defer telnet negotiation
+Remove delays when sending login data
 
 Version 1.5a
 ------------
