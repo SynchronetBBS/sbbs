@@ -3992,34 +3992,40 @@ do_paste(void)
 
 void
 send_login(struct bbslist *bbs) {
+	const size_t userlen = strlen(bbs->user);
+	const size_t passlen = strlen(bbs->password);
+	const size_t syspasslen = strlen(bbs->syspass);
+	const size_t derbufsz = userlen + passlen + syspasslen + 3 + 1;
+	size_t derbufpos = 0;
+	char *derbuf = malloc(derbufsz);
+
 	if ((bbs->conn_type != CONN_TYPE_RLOGIN)
 	    && (bbs->conn_type != CONN_TYPE_RLOGIN_REVERSED)
 	    && (bbs->conn_type != CONN_TYPE_SSH)) {
 		if (bbs->conn_type != CONN_TYPE_SSHNA) {
 			if (bbs->user[0]) {
-				conn_send(bbs->user, strlen(bbs->user), 0);
-				conn_send(
-					cterm->emulation == CTERM_EMULATION_ATASCII ? "\x9b" : "\r",
-					1,
-					0);
-				SLEEP(10);
+				memcpy(&derbuf[derbufpos], bbs->user, userlen);
+				derbufpos += userlen;
+				derbuf[derbufpos++] = '\r';
+				derbuf[derbufpos] = 0;
 			}
 		}
 		if (bbs->password[0]) {
-			conn_send(bbs->password, strlen(bbs->password), 0);
-			conn_send(
-				cterm->emulation == CTERM_EMULATION_ATASCII ? "\x9b" : "\r",
-				1,
-				0);
-			SLEEP(10);
+			memcpy(&derbuf[derbufpos], bbs->password, passlen);
+			derbufpos += passlen;
+			derbuf[derbufpos++] = '\r';
+			derbuf[derbufpos] = 0;
 		}
 	}
 	if (bbs->syspass[0]) {
-		conn_send(bbs->syspass, strlen(bbs->syspass), 0);
-		conn_send(cterm->emulation == CTERM_EMULATION_ATASCII ? "\x9b" : "\r",
-		    1,
-		    0);
+		memcpy(&derbuf[derbufpos], bbs->syspass, syspasslen);
+		derbufpos += syspasslen;
+		derbuf[derbufpos++] = '\r';
+		derbuf[derbufpos] = 0;
 	}
+	if (derbufpos)
+		conn_send(derbuf, derbufpos, 0);
+	free(derbuf);
 }
 
 static void
