@@ -49,6 +49,8 @@ namedStrListDelete(named_string_t ***list, size_t index)
 	named_string_t **newlist;
 
 	COUNT_LIST_ITEMS(*list, count);
+	if (count == 0)
+		return false;
 	if (index == NAMED_STR_LIST_LAST_INDEX)
 		index = count - 1;
 	if (index >= count)

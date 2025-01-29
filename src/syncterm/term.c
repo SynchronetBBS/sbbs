@@ -3730,6 +3730,7 @@ apc_handler(char *strbuf, size_t slen, char *retbuf, size_t retsize, void *apcd)
 			return;
 		off = flength(fn);
 		switch (off) {
+			case 10240:
 			case 4096:
 			case 3584:
 			case 2048:

@@ -1453,7 +1453,8 @@ get_syncterm_filename(char *fn, int fnlen, int type, bool shared)
 			return NULL;
 		backslash(fn);
 		strlcat(fn, "syncterm-system-cache", fnlen);
-		mkpath(fn);
+		if (mkpath(fn) != 0)
+			return NULL;
 		return fn;
 	}
 	memset(fn, 0, fnlen);
@@ -1600,7 +1601,7 @@ update_webget_progress(struct webget_request *reqs, size_t items, bool leaveup)
 	bool errors = false;
 
 	for (size_t i = 0; i < items; i++) {
-		if (sz < pos)
+		if (sz <= pos)
 			break;
 		assert_pthread_mutex_lock(&reqs[i].mtx);
 		if (reqs[i].msg) {
@@ -1608,7 +1609,7 @@ update_webget_progress(struct webget_request *reqs, size_t items, bool leaveup)
 			helpbuf[pos] = 0;
 			errors = true;
 		}
-		if (reqs[i].cb_data & UINT64_C(0x8000000000000000)) {
+		else if (reqs[i].cb_data & UINT64_C(0x8000000000000000)) {
 			helpbuf[pos++] = '`';
 			helpbuf[pos] = 0;
 			errors = true;

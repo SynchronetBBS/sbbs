@@ -2268,7 +2268,7 @@ change_settings(int connected)
 		for (j = 0; audio_output_types[j].name != NULL; j++) {
 			if (xpbeep_sound_devices_enabled & audio_output_types[j].bit) {
 				if (audio_opts[0])
-					strcat(audio_opts, ", ");
+					strlcat(audio_opts, ", ", sizeof(audio_opts));
 				strcat(audio_opts, audio_output_types[j].name);
 			}
 		}
@@ -2789,10 +2789,7 @@ load_bbslist(struct bbslist **list,
 	/* Web lists */
 	if (settings.webgets) {
 		char cache_path[MAX_PATH + 1];
-		if (get_syncterm_filename(cache_path, sizeof(cache_path), SYNCTERM_PATH_CACHE, false)) {
-			backslash(cache_path);
-			strlcat(cache_path, "syncterm-system-cache", sizeof(cache_path));
-			mkpath(cache_path);
+		if (get_syncterm_filename(cache_path, sizeof(cache_path), SYNCTERM_PATH_SYSTEM_CACHE, false)) {
 			backslash(cache_path);
 			for (size_t i = 0; settings.webgets[i]; i++) {
 				char *lpath;

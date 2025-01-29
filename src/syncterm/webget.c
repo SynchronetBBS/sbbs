@@ -97,7 +97,7 @@ set_msgf(struct webget_request *req, const char *newmsgf, ...)
 }
 
 static ssize_t
-recv_nbytes(struct http_session *sess, uint8_t *buf, size_t chunk_size, bool *eof)
+recv_nbytes(struct http_session *sess, uint8_t *buf, const size_t chunk_size, bool *eof)
 {
 	ssize_t received = 0;
 
@@ -324,11 +324,15 @@ recv_line(struct http_session *sess, int timeout, size_t *len)
 			ret = newret;
 		}
 	}
-	ret[retpos--] = 0;
-	if (crcount) {
-		if (ret[retpos] != '\r') {
-			set_msg(sess->req, "CR not last character in line.");
-			goto error_return;
+	if (retpos == 0)
+		ret[retpos] = 0;
+	else {
+		ret[retpos--] = 0;
+		if (crcount) {
+			if (ret[retpos] != '\r') {
+				set_msg(sess->req, "CR not last character in line.");
+				goto error_return;
+			}
 		}
 	}
 	if (len)
@@ -526,7 +530,8 @@ parse_cache_control(struct http_session *sess, const char *val)
 			sz = end - val;
 		else
 			sz = sep - val;
-		if (sz == 7 && strnicmp(val, "max-age=", 8) == 0) {
+		// The sep check is for Coverity...
+		if (sz == 7 && strnicmp(val, "max-age=", 8) == 0 && sep) {
 			errno = 0;
 			long long ll = strtoll(&sep[0], NULL, 10);
 			if (ll != 0 || errno == 0) {
@@ -973,7 +978,10 @@ tls_setup(struct http_session *sess)
 		goto error_return;
 	}
 	int off = 1;
-	setsockopt(sess->sock, IPPROTO_TCP, TCP_NODELAY, (char *)&off, sizeof(off));
+	if (setsockopt(sess->sock, IPPROTO_TCP, TCP_NODELAY, (char *)&off, sizeof(off)) == -1) {
+		set_msgf(sess->req, "setsockopt() failed (%d)", SOCKET_ERRNO);
+		goto error_return;
+	}
 	status = cryptSetAttribute(sess->tls, CRYPT_SESSINFO_NETWORKSOCKET, sess->sock);
 	if (cryptStatusError(status)) {
 		set_msgf(sess->req, "Unable To Set Socket (%d)", status);
@@ -1115,6 +1123,7 @@ is_fresh(struct http_session *sess)
 		int len = asprintf(&path, "%s/%s.lst", sess->req->cache_root, sess->req->name);
 		if (len > 0)
 			remove(path);
+		free(path);
 	}
 	return false;
 }
