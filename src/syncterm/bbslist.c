@@ -2269,7 +2269,7 @@ change_settings(int connected)
 			if (xpbeep_sound_devices_enabled & audio_output_types[j].bit) {
 				if (audio_opts[0])
 					strlcat(audio_opts, ", ", sizeof(audio_opts));
-				strcat(audio_opts, audio_output_types[j].name);
+				strlcat(audio_opts, audio_output_types[j].name, sizeof(audio_opts));
 			}
 		}
 		if (!audio_opts[0])

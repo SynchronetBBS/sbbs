@@ -119,6 +119,7 @@ recv_nbytes(struct http_session *sess, uint8_t *buf, const size_t chunk_size, bo
 				set_msg(sess->req, "Socket Unreadable");
 				goto error_return;
 			}
+			// coverity[overflow:SUPPRESS]
 			rc = recv(sess->sock, &buf[received], chunk_size - received, 0);
 			if (rc < 0) {
 				set_msgf(sess->req, "recv() error %d", SOCKET_ERRNO);
@@ -1121,8 +1122,10 @@ is_fresh(struct http_session *sess)
 		// Delete stale file
 		char *path;
 		int len = asprintf(&path, "%s/%s.lst", sess->req->cache_root, sess->req->name);
-		if (len > 0)
-			remove(path);
+		if (len > 0) {
+			if (remove(path))
+				fprintf(stderr, "Failed to remove %s from cache\n");
+		}
 		free(path);
 	}
 	return false;
