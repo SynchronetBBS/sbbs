@@ -101,6 +101,7 @@ recv_nbytes(struct http_session *sess, uint8_t *buf, const size_t chunk_size, bo
 {
 	ssize_t received = 0;
 
+	// coverity[tainted_data_argument:SUPPRESS]
 	while (received < chunk_size) {
 		ssize_t rc;
 		if (sess->is_tls) {
