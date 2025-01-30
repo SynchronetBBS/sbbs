@@ -119,7 +119,7 @@ recv_nbytes(struct http_session *sess, uint8_t *buf, const size_t chunk_size, bo
 				set_msg(sess->req, "Socket Unreadable");
 				goto error_return;
 			}
-			// coverity[overflow:SUPPRESS]
+			// coverity[tainted_data_return:SUPPRESS]
 			rc = recv(sess->sock, &buf[received], chunk_size - received, 0);
 			if (rc < 0) {
 				set_msgf(sess->req, "recv() error %d", SOCKET_ERRNO);
