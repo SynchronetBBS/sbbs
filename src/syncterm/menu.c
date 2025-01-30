@@ -191,7 +191,8 @@ syncmenu(struct bbslist *bbs, int *speed)
 	if ((cio_api.mode != CIOLIB_MODE_CURSES)
 	    && (cio_api.mode != CIOLIB_MODE_CURSES_IBM)
 	    && (cio_api.mode != CIOLIB_MODE_ANSI)) {
-		opts[1] = "Disconnect ("ALT_KEY_NAMEP "-H)";
+		free(opts[1]);
+		opts[1] = strdup("Disconnect ("ALT_KEY_NAMEP "-H)");
 	}
 	else {
 		for (i = 0; opts[i][0]; i++) {
