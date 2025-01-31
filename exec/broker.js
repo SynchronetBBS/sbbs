@@ -927,7 +927,6 @@ MQTT.Connection.prototype.tearDown = function() {
 		this.sock.clearOnce('write', this.tx_once);
 		this.tx_once = null;
 	}
-	this.sock = null;
 	sock.close();
 	this.sock = null;
 	if (this.broker.connected[this.client_id] !== undefined)
