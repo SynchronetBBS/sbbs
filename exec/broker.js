@@ -1923,6 +1923,8 @@ MQTT.Packet.newBytes = function() {
 		}
 		if (this.connection.rx_need)
 			this.connection.rx_once = this.once('read', MQTT.Packet.newBytes);
+		else
+			this.connection.rx_once = this.once('read', MQTT.Connection.rxPacket);
 	}
 	catch (e) {
 		this.connection.error(e);
