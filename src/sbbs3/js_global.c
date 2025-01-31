@@ -1045,8 +1045,11 @@ js_ascii(JSContext *cx, uintN argc, jsval *arglist)
 
 	if (js_argcIsInsufficient(cx, argc, 1))
 		return JS_FALSE;
-	if (js_argvIsNullOrVoid(cx, argv, 0))
-		return JS_FALSE;
+
+	if (JSVAL_NULL_OR_VOID(argv[0])) {
+		JS_SET_RVAL(cx, arglist, argv[0]);
+		return JS_TRUE;
+	}
 
 	if (JSVAL_IS_STRING(argv[0])) {  /* string to ascii-int */
 		p = JS_GetStringCharsZ(cx, JSVAL_TO_STRING(argv[0]));
@@ -4991,7 +4994,7 @@ static jsSyncMethodSpec js_global_functions[] = {
 	 , JSDOCSTR("Return ASCII control character representing character value passed - Example: <tt>ctrl('C')</tt> returns string containing the single character string: <tt>'\\3'</tt>")
 	 , 311},
 	{"ascii",           js_ascii,           1,  JSTYPE_UNDEF,   JSDOCSTR("[<i>string</i> text] or [<i>number</i> value]")
-	 , JSDOCSTR("Convert single character to numeric ASCII value or vice-versa (returns number OR string)")
+	 , JSDOCSTR("Convert single character to numeric ASCII value or vice-versa, returns number OR string, or <tt>null</tt> or <tt>undefined</tt> if passed those values")
 	 , 310},
 	{"ascii_str",       js_ascii_str,       1,  JSTYPE_STRING,  JSDOCSTR("text")
 	 , JSDOCSTR("Convert extended-ASCII (CP437) characters in text string to plain US-ASCII equivalent, returns modified string or <tt>null</tt> or <tt>undefined</tt> if passed those values")

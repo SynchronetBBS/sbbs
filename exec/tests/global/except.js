@@ -2,7 +2,7 @@
 
 // Value (e.g. 0, 1) is number of non-null/undefined args required
 var func_list = {
-	'ascii': 1,
+	'ascii': 0,
 	'ascii_str': 0,
 	'alert': 0,
 	'backslash': 0,
