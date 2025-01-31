@@ -275,9 +275,6 @@ int sbbs_t::exec_function(csi_t *csi)
 			}
 			return 0;
 		case CS_ANSI_CAPTURE:           /* Capture ANSI codes */
-			sys_status ^= SS_ANSCAP;
-			bprintf(text[ANSICaptureIsNow]
-			        , sys_status & SS_ANSCAP ? text[On] : text[Off]);
 			return 0;
 		case CS_LIST_TEXT_FILE:              /* View ASCII/ANSI/Ctrl-A file */
 			if (!chksyspass())

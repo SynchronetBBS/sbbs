@@ -615,7 +615,6 @@ typedef enum {                      /* Values for xtrn_t.event				*/
 #define SS_TMPSYSOP     (1 << 2)  /* Temporary Sysop Status						*/
 #define SS_USERON       (1 << 3)  /* A User is logged on to the BBS				*/
 #define SS_LCHAT        (1 << 4)  /* Local chat in progress						*/
-#define SS_ANSCAP       (1 << 6)  /* Capture ANSI codes too						*/
 #define SS_NEW_MONTH    (1 << 8)  // Execute System Monthly Event
 #define SS_NEW_DAY      (1 << 9)  // Execute System Daily Event
 #define SS_INUEDIT      (1 << 10) /* Inside Alt-Useredit section 				*/
