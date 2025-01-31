@@ -24,6 +24,8 @@
 #define CUT_LIBNUM  USHRT_MAX
 #define ADDFILES_HELP "Help adding files to directories, see `http://wiki.synchro.net/faq:files`"
 
+static const char* strDuplicateLibName = "Library already exists with that name!";
+
 void dir_defaults_cfg(int libnum);
 
 char*        file_sort_desc[] = {
@@ -390,9 +392,8 @@ void xfer_cfg()
 		int msk = i & MSK_ON;
 		if (msk == MSK_INS) {
 			char long_name[LEN_GLNAME + 1];
-			strcpy(long_name, "Main");
 			uifc.helpbuf = lib_long_name_help;
-			if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Library Long Name", long_name, LEN_GLNAME, K_EDIT) < 1)
+			if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Library Long Name", long_name, LEN_GLNAME, K_NONE) < 1)
 				continue;
 
 			char short_name[LEN_GSNAME + 1];
@@ -400,7 +401,10 @@ void xfer_cfg()
 			uifc.helpbuf = lib_short_name_help;
 			if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Library Short Name", short_name, LEN_GSNAME, K_EDIT) < 1)
 				continue;
-
+			if (libnum_is_valid(&cfg, getlibnum_from_name(&cfg, short_name))) {
+				uifc.msg(strDuplicateLibName);
+				continue;
+			}
 			char code_prefix[LEN_EXTCODE + 1];    /* purposely extra-long */
 			SAFECOPY(code_prefix, short_name);
 			prep_code(code_prefix, NULL);
@@ -575,8 +579,12 @@ void xfer_cfg()
 					uifc.helpbuf = lib_short_name_help;
 					SAFECOPY(str, cfg.lib[libnum]->sname);
 					if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Name to use for Prompts"
-					               , str, LEN_GSNAME, K_EDIT) > 0)
-						SAFECOPY(cfg.lib[libnum]->sname, str);
+					               , str, LEN_GSNAME, K_EDIT | K_CHANGED) > 0) {
+						if (libnum_is_valid(&cfg, getlibnum_from_name(&cfg, str)))
+							uifc.msg(strDuplicateLibName);
+						else
+							SAFECOPY(cfg.lib[libnum]->sname, str);
+					}
 					break;
 				case __COUNTER__:
 				{
@@ -584,10 +592,8 @@ void xfer_cfg()
 					SAFECOPY(code_prefix, cfg.lib[libnum]->code_prefix);
 					uifc.helpbuf = lib_code_prefix_help;
 					if (uifc.input(WIN_MID | WIN_SAV, 0, 17, "Internal Code Prefix"
-					               , code_prefix, LEN_CODE, K_EDIT | K_UPPER | K_NOSPACE) < 0)
+					               , code_prefix, LEN_CODE, K_EDIT | K_UPPER | K_NOSPACE | K_CHANGED) < 0)
 						continue;
-					if (stricmp(code_prefix, cfg.lib[libnum]->code_prefix) == 0)
-						break;
 					if (code_prefix_exists(code_prefix))
 						uifc.msg(strDuplicateCodePrefix);
 					else if (code_prefix[0] == 0 || code_ok(code_prefix)) {
@@ -657,6 +663,7 @@ void xfer_cfg()
 						uifc.msg("A parent directory must be specified to use this feature");
 						break;
 					}
+					j = (cfg.lib[libnum]->misc & LIB_DIRS) ? 0 : 1;
 					j = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &j, 0
 					              , "Automatically Add Sub-directories of Parent Directory"
 					              , uifcYesNoOpts);
@@ -1853,10 +1860,9 @@ void dir_cfg(int libnum)
 		int msk = i & MSK_ON;
 		i &= MSK_OFF;
 		if (msk == MSK_INS) {
-			strcpy(str, "My Brand-New Files");
 			uifc.helpbuf = dir_long_name_help;
 			if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Directory Long Name", str, LEN_SLNAME
-			               , K_EDIT) < 1)
+			               , K_NONE) < 1)
 				continue;
 			sprintf(str2, "%.*s", LEN_SSNAME, str);
 			uifc.helpbuf = dir_short_name_help;
@@ -1877,7 +1883,7 @@ void dir_cfg(int libnum)
 			if (!code_ok(code)) {
 				uifc.helpbuf = invalid_code;
 				uifc.msg(strInvalidCode);
-				uifc.helpbuf = 0;
+				uifc.helpbuf = NULL;
 				continue;
 			}
 			SAFECOPY(path, code);
@@ -2065,9 +2071,8 @@ void dir_cfg(int libnum)
 				case 2:
 					uifc.helpbuf = dir_code_help;
 					SAFECOPY(str, cfg.dir[i]->code_suffix);
-					uifc.input(WIN_L2R | WIN_SAV, 0, 17, "Internal Code Suffix (unique)"
-					           , str, LEN_CODE, K_EDIT | K_UPPER | K_NOSPACE);
-					if (strcmp(str, cfg.dir[i]->code_suffix) == 0)
+					if (uifc.input(WIN_L2R | WIN_SAV, 0, 17, "Internal Code Suffix (unique)"
+					           , str, LEN_CODE, K_EDIT | K_UPPER | K_NOSPACE | K_CHANGED) < 1)
 						break;
 					SAFEPRINTF2(tmp, "%s%s", cfg.lib[cfg.dir[i]->lib]->code_prefix, str);
 					if (getdirnum(&cfg, tmp) >= 0)
@@ -2077,7 +2082,7 @@ void dir_cfg(int libnum)
 					else {
 						uifc.helpbuf = invalid_code;
 						uifc.msg(strInvalidCode);
-						uifc.helpbuf = 0;
+						uifc.helpbuf = NULL;
 					}
 					break;
 				case 3:

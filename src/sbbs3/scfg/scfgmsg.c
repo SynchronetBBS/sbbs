@@ -27,6 +27,8 @@
 
 #define CUT_GROUPNUM    USHRT_MAX
 
+static const char* strDuplicateGrpName = "Group with that name already exists!";
+
 char *utos(char *str)
 {
 	static char out[128];
@@ -565,8 +567,7 @@ void msgs_cfg()
 		if (msk == MSK_INS) {
 			char long_name[LEN_GLNAME + 1];
 			uifc.helpbuf = grp_long_name_help;
-			SAFECOPY(long_name, "Main");
-			if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Group Long Name", long_name, sizeof(long_name) - 1, K_EDIT) < 1)
+			if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Group Long Name", long_name, sizeof(long_name) - 1, K_NONE) < 1)
 				continue;
 
 			char short_name[LEN_GSNAME + 1];
@@ -574,7 +575,10 @@ void msgs_cfg()
 			SAFECOPY(short_name, long_name);
 			if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Group Short Name", short_name, sizeof(short_name) - 1, K_EDIT) < 1)
 				continue;
-
+			if (grpnum_is_valid(&cfg, getgrpnum_from_name(&cfg, short_name))) {
+				uifc.msg(strDuplicateGrpName);
+				continue;
+			}
 			char code_prefix[LEN_EXTCODE + 1];    /* purposely extra-long */
 			SAFECOPY(code_prefix, short_name);
 			prep_code(code_prefix, NULL);
@@ -729,8 +733,12 @@ void msgs_cfg()
 					uifc.helpbuf = grp_short_name_help;
 					SAFECOPY(str, cfg.grp[grpnum]->sname);
 					if (uifc.input(WIN_MID | WIN_SAV, 0, 17, "Name to use for Prompts"
-					               , str, LEN_GSNAME, K_EDIT) > 0)
-						SAFECOPY(cfg.grp[grpnum]->sname, str);
+					               , str, LEN_GSNAME, K_EDIT | K_CHANGED) > 0) {
+						if (grpnum_is_valid(&cfg, getgrpnum_from_name(&cfg, str)))
+							uifc.msg(strDuplicateGrpName);
+						else
+							SAFECOPY(cfg.grp[grpnum]->sname, str);
+					}
 					break;
 				case __COUNTER__:
 				{

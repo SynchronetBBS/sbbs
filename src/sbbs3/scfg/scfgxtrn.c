@@ -591,7 +591,7 @@ void tevents_cfg()
 					else {
 						uifc.helpbuf = invalid_code;
 						uifc.msg(strInvalidCode);
-						uifc.helpbuf = 0;
+						uifc.helpbuf = NULL;
 					}
 					break;
 				case 1:
@@ -1038,8 +1038,7 @@ void xtrn_cfg(int section)
 				"\n"
 				"This is the name or description of the online program (door).\n"
 			;
-			if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Program Name", str, 40
-			               , 0) < 1)
+			if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Program Name", str, 40, K_NONE) < 1)
 				continue;
 			SAFECOPY(code, str);
 			prep_code(code, /* prefix: */ NULL);
@@ -1053,10 +1052,14 @@ void xtrn_cfg(int section)
 			if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Internal Code"
 			               , code, LEN_CODE, K_EDIT | K_UPPER | K_NOSPACE) < 1)
 				continue;
+			if (xtrnnum_is_valid(&cfg, getxtrnnum(&cfg, code))) {
+				uifc.msg(strDuplicateCode);
+				continue;
+			}
 			if (!code_ok(code)) {
 				uifc.helpbuf = invalid_code;
 				uifc.msg(strInvalidCode);
-				uifc.helpbuf = 0;
+				uifc.helpbuf = NULL;
 				continue;
 			}
 			if (!new_external_program(xtrnnum[i], section))
@@ -1207,14 +1210,19 @@ void xtrn_cfg(int section)
 						"online program name.\n"
 					;
 					SAFECOPY(str, cfg.xtrn[i]->code);
-					uifc.input(WIN_MID | WIN_SAV, 0, 10, "Internal Code"
-					           , str, LEN_CODE, K_UPPER | K_EDIT | K_NOSPACE);
+					if (uifc.input(WIN_MID | WIN_SAV, 0, 10, "Internal Code"
+					           , str, LEN_CODE, K_UPPER | K_EDIT | K_NOSPACE | K_CHANGED) < 1)
+						break;
+					if (xtrnnum_is_valid(&cfg, getxtrnnum(&cfg, str))) {
+						uifc.msg(strDuplicateCode);
+						break;
+					}
 					if (code_ok(str))
 						SAFECOPY(cfg.xtrn[i]->code, str);
 					else {
 						uifc.helpbuf = invalid_code;
 						uifc.msg(strInvalidCode);
-						uifc.helpbuf = 0;
+						uifc.helpbuf = NULL;
 					}
 					break;
 				case __COUNTER__:
@@ -1652,8 +1660,7 @@ void xedit_cfg()
 				"\n"
 				"This is the name or description of the message editor.\n"
 			;
-			if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Message Editor Name", str, 40
-			               , 0) < 1)
+			if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Message Editor Name", str, 40, K_NONE) < 1)
 				continue;
 			SAFECOPY(code, str);
 			prep_code(code, /* prefix: */ NULL);
@@ -1668,7 +1675,7 @@ void xedit_cfg()
 			if (!code_ok(code)) {
 				uifc.helpbuf = invalid_code;
 				uifc.msg(strInvalidCode);
-				uifc.helpbuf = 0;
+				uifc.helpbuf = NULL;
 				continue;
 			}
 			if (!new_external_editor(i))
@@ -1825,7 +1832,7 @@ void xedit_cfg()
 					else {
 						uifc.helpbuf = invalid_code;
 						uifc.msg(strInvalidCode);
-						uifc.helpbuf = 0;
+						uifc.helpbuf = NULL;
 					}
 					break;
 				case 2:
@@ -2135,11 +2142,10 @@ int natvpgm_cfg()
 		i &= MSK_OFF;
 		if (msk == MSK_INS) {
 			uifc.helpbuf = native_program_name_help;
-			if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Native Program Name", str, 12
-			               , 0) < 1)
+			if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Native Program Name", str, 12, K_NONE) < 1)
 				continue;
 			if ((cfg.natvpgm = (natvpgm_t **)realloc_or_free(cfg.natvpgm
-			                                                 , sizeof(natvpgm_t *) * (cfg.total_natvpgms + 1))) == NULL) {
+			        , sizeof(natvpgm_t *) * (cfg.total_natvpgms + 1))) == NULL) {
 				errormsg(WHERE, ERR_ALLOC, nulstr, cfg.total_natvpgms + 1);
 				cfg.total_natvpgms = 0;
 				bail(1);
@@ -2230,8 +2236,7 @@ void xtrnsec_cfg()
 				"\n"
 				"This is the name of this section.\n"
 			;
-			if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Online Program Section Name", str, 40
-			               , 0) < 1)
+			if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Online Program Section Name", str, 40, K_NONE) < 1)
 				continue;
 			SAFECOPY(code, str);
 			prep_code(code, /* prefix: */ NULL);
@@ -2245,10 +2250,14 @@ void xtrnsec_cfg()
 			if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Online Program Section Internal Code"
 			               , code, LEN_CODE, K_EDIT | K_UPPER | K_NOSPACE) < 1)
 				continue;
+			if (xtrnsec_is_valid(&cfg, getxtrnsec(&cfg, code))) {
+				uifc.msg(strDuplicateCode);
+				continue;
+			}
 			if (!code_ok(code)) {
 				uifc.helpbuf = invalid_code;
 				uifc.msg(strInvalidCode);
-				uifc.helpbuf = 0;
+				uifc.helpbuf = NULL;
 				continue;
 			}
 			if (!new_external_program_section(xtrnsec_num))
@@ -2371,14 +2380,19 @@ void xtrnsec_cfg()
 						"for Synchronet to reference it by.  It is helpful if this code is an\n"
 						"abbreviation of the name.\n"
 					;
-					uifc.input(WIN_MID | WIN_SAV, 0, 17, "Internal Code (unique)"
-					           , str, LEN_CODE, K_EDIT | K_UPPER | K_NOSPACE);
+					if (uifc.input(WIN_MID | WIN_SAV, 0, 17, "Internal Code (unique)"
+					           , str, LEN_CODE, K_EDIT | K_UPPER | K_NOSPACE | K_CHANGED) < 1)
+							break;
+					if (xtrnsec_is_valid(&cfg, getxtrnsec(&cfg, str))) {
+						uifc.msg(strDuplicateCode);
+						break;
+					}
 					if (code_ok(str))
 						SAFECOPY(cfg.xtrnsec[i]->code, str);
 					else {
 						uifc.helpbuf = invalid_code;
 						uifc.msg(strInvalidCode);
-						uifc.helpbuf = 0;
+						uifc.helpbuf = NULL;
 					}
 					break;
 				case 2:
@@ -2437,12 +2451,11 @@ void hotkey_cfg(void)
 				"This is the control key used to trigger the hot key event. Example, A\n"
 				"indicates a Ctrl-A hot key event.\n"
 			;
-			if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Control Key", str, 1
-			               , K_UPPER | K_NOSPACE) < 1)
+			if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Control Key", str, 1, K_UPPER | K_NOSPACE) < 1)
 				continue;
 
 			if ((cfg.hotkey = (hotkey_t **)realloc_or_free(cfg.hotkey
-			                                               , sizeof(hotkey_t *) * (cfg.total_hotkeys + 1))) == NULL) {
+				    , sizeof(hotkey_t *) * (cfg.total_hotkeys + 1))) == NULL) {
 				errormsg(WHERE, ERR_ALLOC, nulstr, cfg.total_hotkeys + 1);
 				cfg.total_hotkeys = 0;
 				bail(1);

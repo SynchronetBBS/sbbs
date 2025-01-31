@@ -456,9 +456,8 @@ void sub_cfg(int grpnum)
 				case 3:
 					uifc.helpbuf = sub_code_help;
 					SAFECOPY(str, cfg.sub[i]->code_suffix);
-					uifc.input(WIN_MID | WIN_SAV, 0, 17, "Internal Code Suffix (unique)"
-					           , str, LEN_CODE, K_EDIT | K_UPPER | K_NOSPACE);
-					if (strcmp(str, cfg.sub[i]->code_suffix) == 0)
+					if (uifc.input(WIN_MID | WIN_SAV, 0, 17, "Internal Code Suffix (unique)"
+					           , str, LEN_CODE, K_EDIT | K_UPPER | K_NOSPACE | K_CHANGED) < 1)
 						break;
 					SAFEPRINTF2(tmp, "%s%s", cfg.grp[cfg.sub[i]->grp]->code_prefix, str);
 					if (getsubnum(&cfg, tmp) >= 0)

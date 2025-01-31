@@ -859,7 +859,7 @@ int getxeditnum(scfg_t* cfg, const char* code)
 }
 
 // Returns 0 (first shell) if shell code isn't valid
-int getshellnum(scfg_t* cfg, const char* code)
+int getshellnum(scfg_t* cfg, const char* code, int dflt)
 {
 	int i;
 
@@ -867,7 +867,18 @@ int getshellnum(scfg_t* cfg, const char* code)
 		if (stricmp(cfg->shell[i]->code, code) == 0)
 			return i;
 	}
-	return 0;
+	return dflt;
+}
+
+int gettextsec(scfg_t* cfg, const char* code)
+{
+	int i;
+
+	for (i = 0; i < cfg->total_txtsecs; i++) {
+		if (stricmp(cfg->txtsec[i]->code, code) == 0)
+			break;
+	}
+	return i;
 }
 
 bool dirnum_is_valid(scfg_t* cfg, int dirnum)
@@ -898,6 +909,16 @@ bool xtrnnum_is_valid(scfg_t* cfg, int xtrnnum)
 bool xtrnsec_is_valid(scfg_t* cfg, int secnum)
 {
 	return (secnum >= 0) && (cfg != NULL) && (secnum < cfg->total_xtrnsecs);
+}
+
+bool shellnum_is_valid(scfg_t* cfg, int shellnum)
+{
+	return (shellnum >= 0) && (cfg != NULL) && (shellnum < cfg->total_shells);
+}
+
+bool textsec_is_valid(scfg_t* cfg, int secnum)
+{
+	return (secnum >= 0) && (cfg != NULL) && (secnum < cfg->total_txtsecs);
 }
 
 uint nearest_sysfaddr_index(scfg_t* cfg, faddr_t* addr)

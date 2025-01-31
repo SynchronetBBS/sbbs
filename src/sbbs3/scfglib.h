@@ -65,7 +65,8 @@ int     getxtrnsec(scfg_t*, const char* code);
 int     getgurunum(scfg_t*, const char* code);
 int     getchatactset(scfg_t*, const char* name);
 int     getxeditnum(scfg_t*, const char* code);
-int     getshellnum(scfg_t*, const char* code);
+int     getshellnum(scfg_t*, const char* code, int dflt);
+int     gettextsec(scfg_t*, const char* code);
 char*   lib_name(scfg_t*, int dirnum);
 char*   dir_name(scfg_t*, int dirnum);
 char*   grp_name(scfg_t*, int subnum);
@@ -77,6 +78,8 @@ DLLEXPORT bool  subnum_is_valid(scfg_t*, int);
 DLLEXPORT bool  grpnum_is_valid(scfg_t*, int);
 DLLEXPORT bool  xtrnnum_is_valid(scfg_t*, int);
 DLLEXPORT bool  xtrnsec_is_valid(scfg_t*, int);
+DLLEXPORT bool  shellnum_is_valid(scfg_t*, int);
+DLLEXPORT bool  textsec_is_valid(scfg_t*, int);
 
 DLLEXPORT char *    sub_newsgroup_name(scfg_t*, sub_t*, char*, size_t);
 DLLEXPORT char *    sub_area_tag(scfg_t*, sub_t*, char*, size_t);

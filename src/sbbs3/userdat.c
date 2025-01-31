@@ -475,7 +475,7 @@ int parseuserdat(scfg_t* cfg, char *userdat, user_t *user, char* field[])
 	user->cols = strtoul(field[USER_COLS], NULL, 0);
 
 	user->xedit = getxeditnum(cfg, field[USER_XEDIT]);
-	user->shell = getshellnum(cfg, field[USER_SHELL]);
+	user->shell = getshellnum(cfg, field[USER_SHELL], 0);
 
 	SAFECOPY(user->tmpext, field[USER_TMPEXT]);
 	user->prot = *field[USER_PROT];

@@ -1238,6 +1238,10 @@ void txt_cfg()
 			if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Text Section Internal Code", code, LEN_CODE
 			               , K_EDIT | K_UPPER | K_NOSPACE) < 1)
 				continue;
+			if (textsec_is_valid(&cfg, gettextsec(&cfg, code))) {
+				uifc.msg(strDuplicateCode);
+				continue;
+			}
 			if (!code_ok(code)) {
 				uifc.helpbuf = invalid_code;
 				uifc.msg(strInvalidCode);
@@ -1335,8 +1339,13 @@ void txt_cfg()
 						"Synchronet to reference it by. It is helpful if this code is an\n"
 						"abbreviation of the name.\n"
 					;
-					uifc.input(WIN_MID | WIN_SAV, 0, 17, "Internal Code (unique)"
-					           , str, LEN_CODE, K_EDIT | K_UPPER | K_NOSPACE);
+					if (uifc.input(WIN_MID | WIN_SAV, 0, 17, "Internal Code (unique)"
+					           , str, LEN_CODE, K_EDIT | K_UPPER | K_NOSPACE | K_CHANGED) < 1)
+						break;
+					if (textsec_is_valid(&cfg, gettextsec(&cfg, str))) {
+						uifc.msg(strDuplicateCode);
+						break;
+					}
 					if (code_ok(str))
 						SAFECOPY(cfg.txtsec[i]->code, str);
 					else {
@@ -1427,6 +1436,10 @@ void shell_cfg()
 			if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Command Shell Internal Code", code, LEN_CODE
 			               , K_EDIT | K_UPPER | K_NOSPACE) < 1)
 				continue;
+			if (shellnum_is_valid(&cfg, getshellnum(&cfg, code, -1))) {
+				uifc.msg(strDuplicateCode);
+				continue;
+			}
 			if (!code_ok(code)) {
 				uifc.helpbuf = invalid_code;
 				uifc.msg(strInvalidCode);
@@ -1554,8 +1567,13 @@ void shell_cfg()
 						"Baja shell file named `mybbs.bin` or a JavaScript module named `mybbs.js`\n"
 						"located in your `exec` or `mods` directories.\n"
 					;
-					uifc.input(WIN_MID | WIN_SAV, 0, 17, "Internal Code (unique)"
-					           , str, LEN_CODE, K_EDIT | K_UPPER | K_NOSPACE);
+					if (uifc.input(WIN_MID | WIN_SAV, 0, 17, "Internal Code (unique)"
+					           , str, LEN_CODE, K_EDIT | K_UPPER | K_NOSPACE | K_CHANGED) < 1)
+						break;
+					if (shellnum_is_valid(&cfg, getshellnum(&cfg, str, -1))) {
+						uifc.msg(strDuplicateCode);
+						break;
+					}
 					if (code_ok(str))
 						SAFECOPY(cfg.shell[i]->code, str);
 					else {
