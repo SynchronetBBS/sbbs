@@ -617,7 +617,6 @@ typedef enum {                      /* Values for xtrn_t.event				*/
 #define SS_LCHAT        (1 << 4)  /* Local chat in progress						*/
 #define SS_NEW_MONTH    (1 << 8)  // Execute System Monthly Event
 #define SS_NEW_DAY      (1 << 9)  // Execute System Daily Event
-#define SS_INUEDIT      (1 << 10) /* Inside Alt-Useredit section 				*/
 #define SS_ABORT        (1 << 11) /* Global abort input or output flag			*/
 #define SS_SYSPAGE      (1 << 12) /* Paging sysop								*/
 #define SS_GURUCHAT     (1 << 14) /* Guru chat in progress						*/

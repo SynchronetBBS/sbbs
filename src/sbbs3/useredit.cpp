@@ -56,9 +56,6 @@ void sbbs_t::useredit(int usernumber)
 	else
 		user.number = useron.number;
 	action = NODE_SYSP;
-	if (sys_status & SS_INUEDIT)
-		return;
-	sys_status |= SS_INUEDIT;
 	while (online) {
 		CLS;
 		attr(LIGHTGRAY);
@@ -69,7 +66,6 @@ void sbbs_t::useredit(int usernumber)
 			if (!user.number) {
 				bputs(text[NoUserData]);
 				getkey(0);
-				sys_status &= ~SS_INUEDIT;
 				return;
 			}
 		}
@@ -426,7 +422,6 @@ void sbbs_t::useredit(int usernumber)
 			case 'Q':
 				lncntr = 0;
 				CLS;
-				sys_status &= ~SS_INUEDIT;
 				free(ar);   /* assertion here */
 				return;
 			case 'R':
@@ -665,7 +660,6 @@ void sbbs_t::useredit(int usernumber)
 				break;
 		} /* switch */
 	} /* while */
-	sys_status &= ~SS_INUEDIT;
 }
 
 /****************************************************************************/
