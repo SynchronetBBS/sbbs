@@ -22,7 +22,7 @@ load("irclib.js");
 var irc_server="irc.synchro.net";
 var irc_port=6667;
 var default_channel="#synchronet";
-var connect_timeout=15;	// Seconds
+var connect_timeout=30;	// Seconds
 var connected=0;
 var quit=0;
 var nick=user.handle;
