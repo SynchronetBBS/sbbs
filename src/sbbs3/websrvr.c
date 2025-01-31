@@ -6016,7 +6016,7 @@ js_initcx(http_session_t *session)
 	JSContext* js_cx;
 
 	if ((js_cx = JS_NewContext(session->js_runtime, JAVASCRIPT_CONTEXT_STACK)) == NULL) {
-		lprintf(LOG_CRIT, "%04d JavaScript: Failed to create new context", session->socket);
+		errprintf(LOG_CRIT, WHERE, "%04d JavaScript: Failed to create new context", session->socket);
 		return NULL;
 	}
 	JS_SetOptions(js_cx, startup->js.options);
@@ -6045,7 +6045,7 @@ js_initcx(http_session_t *session)
 	                            , &mqtt
 	                            )
 	    || !JS_DefineFunctions(js_cx, session->js_glob, js_global_functions)) {
-		lprintf(LOG_CRIT, "%04d JavaScript: Failed to create global objects and classes", session->socket);
+		errprintf(LOG_CRIT, WHERE, "%04d JavaScript: Failed to create global objects and classes", session->socket);
 		JS_RemoveObjectRoot(js_cx, &session->js_glob);
 		JS_ENDREQUEST(js_cx);
 		JS_DestroyContext(js_cx);
@@ -7370,7 +7370,7 @@ void web_server(void* arg)
 		scfg.size = sizeof(scfg);
 		SAFECOPY(logstr, UNKNOWN_LOAD_ERROR);
 		if (!load_cfg(&scfg, text, /* prep: */ true, /* node: */ false, logstr, sizeof(logstr))) {
-			lprintf(LOG_CRIT, "!ERROR loading configuration files: %s", logstr);
+			errprintf(LOG_CRIT, WHERE, "!ERROR loading configuration files: %s", logstr);
 			cleanup(1);
 			return;
 		}
@@ -7385,7 +7385,7 @@ void web_server(void* arg)
 			SAFECOPY(scfg.temp_dir, "../temp");
 		prep_dir(startup->ctrl_dir, scfg.temp_dir, sizeof(scfg.temp_dir));
 		if ((i = md(scfg.temp_dir)) != 0) {
-			lprintf(LOG_CRIT, "!ERROR %d (%s) creating directory: %s", i, strerror(i), scfg.temp_dir);
+			errprintf(LOG_CRIT, WHERE, "!ERROR %d (%s) creating directory: %s", i, strerror(i), scfg.temp_dir);
 			cleanup(1);
 			return;
 		}
@@ -7439,7 +7439,7 @@ void web_server(void* arg)
 			xpms_add_list(ws_set, PF_UNSPEC, SOCK_STREAM, 0, startup->interfaces, startup->port, "Web Server", &terminate_server, open_socket, startup->seteuid, NULL);
 		if (startup->options & WEB_OPT_ALLOW_TLS) {
 			if (!ssl_sync(&scfg, lprintf))
-				lprintf(LOG_CRIT, "!ssl_sync() failure trying to enable TLS support");
+				errprintf(LOG_CRIT, WHERE, "!ssl_sync() failure trying to enable TLS support");
 			else
 				xpms_add_list(ws_set, PF_UNSPEC, SOCK_STREAM, 0, startup->tls_interfaces, startup->tls_port, "Secure Web Server", &terminate_server, open_socket, startup->seteuid, "TLS");
 		}
