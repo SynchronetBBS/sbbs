@@ -49,6 +49,57 @@ struct http_session {
 	bool got_size;
 };
 
+static bool
+paranoid_strtol(const char *nptr, char ** endptr, int base, long *result)
+{
+	char *extra_endptr;
+	if (endptr == NULL)
+		endptr = &extra_endptr;
+	errno = 0;
+	*result = strtol(nptr, endptr, base);
+	if (*result == 0) {
+		if (errno)
+			return false;
+		if (*endptr == nptr)
+			return false;
+	}
+	return true;
+}
+
+static bool
+paranoid_strtoll(const char *nptr, char ** endptr, int base, long long *result)
+{
+	char *extra_endptr;
+	if (endptr == NULL)
+		endptr = &extra_endptr;
+	errno = 0;
+	*result = strtoll(nptr, endptr, base);
+	if (*result == 0) {
+		if (errno)
+			return false;
+		if (*endptr == nptr)
+			return false;
+	}
+	return true;
+}
+
+static bool
+paranoid_strtoul(const char *nptr, char ** endptr, int base, unsigned long *result)
+{
+	char *extra_endptr;
+	if (endptr == NULL)
+		endptr = &extra_endptr;
+	errno = 0;
+	*result = strtoul(nptr, endptr, base);
+	if (*result == 0) {
+		if (errno)
+			return false;
+		if (*endptr == nptr)
+			return false;
+	}
+	return true;
+}
+
 static void
 set_state_locked(struct webget_request *req, const char *newstate)
 {
@@ -384,7 +435,8 @@ parse_http_date(const char *dstr)
 		t.tm_wday = 0;
 	else
 		return 0;
-	l = strtol(&p[5], &end, 10);
+	if (!paranoid_strtol(&p[5], &end, 10, &l))
+		return 0;
 	if (l < 1 || l > 31)
 		return 0;
 	if (*end != ' ')
@@ -414,33 +466,28 @@ parse_http_date(const char *dstr)
 		t.tm_mon = 10;
 	else if (memcmp(&p[8], "Dec ", 4) == 0)
 		t.tm_mon = 11;
-	l = strtol(&p[12], &end, 10);
+	if (!paranoid_strtol(&p[12], &end, 10, &l))
+		return 0;
 	if (*end != ' ')
 		return 0;
 	if (l < 1900 || l > 5000)
 		return 0;
 	t.tm_year = l - 1900;
-	errno = 0;
-	l = strtol(&p[17], &end, 10);
-	if (l == 0 && errno)
+	if (!paranoid_strtol(&p[17], &end, 10, &l))
 		return 0;
 	if (l < 0 || l > 23)
 		return 0;
 	if (*end != ':')
 		return 0;
 	t.tm_hour = l;
-	errno = 0;
-	l = strtol(&p[20], &end, 10);
-	if (l == 0 && errno)
+	if (!paranoid_strtol(&p[20], &end, 10, &l))
 		return 0;
 	if (l < 0 || l > 59)
 		return 0;
 	if (*end != ':')
 		return 0;
 	t.tm_min = l;
-	errno = 0;
-	l = strtol(&p[23], &end, 10);
-	if (l == 0 && errno)
+	if (!paranoid_strtol(&p[23], &end, 10, &l))
 		return 0;
 	if (l < 0 || l > 60)
 		return 0;
@@ -535,10 +582,9 @@ parse_cache_control(struct http_session *sess, const char *val)
 		// The sep check is for Coverity...
 		if (sz == 7 && strnicmp(val, "max-age=", 8) == 0 && sep) {
 			errno = 0;
-			long long ll = strtoll(&sep[0], NULL, 10);
-			if (ll != 0 || errno == 0) {
+			long long ll;
+			if (paranoid_strtoll(&sep[0], NULL, 10, &ll))
 				sess->cache.max_age = ll;
-			}
 		}
 		if (sz == 8 && sep == NULL && strnicmp(val, "no-cache", 8) == 0) {
 			sess->cache.no_cache = true;
@@ -628,9 +674,8 @@ parse_headers(struct http_session *sess)
 		}
 		else if(strnicmp(line, "age:", 4) == 0) {
 			if (sess->cache.age == 0) {
-				errno = 0;
-				long long ll = strtoll(&line[4], NULL, 10);
-				if (ll > 0 || errno == 0)
+				long long ll;
+				if (paranoid_strtoll(&line[4], NULL, 10, &ll))
 					sess->cache.age = ll;
 			}
 		}
@@ -639,9 +684,8 @@ parse_headers(struct http_session *sess)
 				goto error_return;
 		}
 		else if(strnicmp(line, "content-length:", 15) == 0) {
-			errno = 0;
-			long long ll = strtoll(&line[15], NULL, 10);
-			if (ll > 0 || errno == 0) {
+			long long ll;
+			if (paranoid_strtoll(&line[15], NULL, 10, &ll)) {
 				if (ll > MAX_LIST_SIZE) {
 					set_msgf(sess->req, "Content Too Large (%lld)", ll);
 					goto error_return;
@@ -876,11 +920,8 @@ read_chunked(struct http_session *sess, FILE *out)
 		line = recv_line(sess, 5000, NULL);
 		if (line == NULL)
 			goto error_return;
-		errno = 0;
-		unsigned long chunk_size = strtoul(line, NULL, 16);
-		if (chunk_size == 0) {
-			if (errno == 0)
-				break;
+		unsigned long chunk_size;
+		if (!paranoid_strtoul(line, NULL, 16, &chunk_size)) {
 			set_msgf(sess->req, "strtoul() failure %d", errno);
 			goto error_return;
 		}
