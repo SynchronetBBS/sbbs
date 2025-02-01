@@ -871,6 +871,12 @@ js_accept(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	new_p->type = p->type;
+	if (new_p->type == 0) {
+		union xp_sockaddr addr;
+		socklen_t len = sizeof(addr);
+		if (getsockname(new_socket, &addr.addr, &len) == 0)
+			new_p->type = addr.addr.sa_family;
+	}
 	new_p->debug = p->debug;
 	new_p->nonblocking = p->nonblocking;
 	new_p->external = false;      /* let destructor close socket */
