@@ -28,6 +28,7 @@ typedef struct
 	uint16_t local_port;
 	js_callback_t *js_cb;
 	int tls_minver;
+	JSObject *tls_psk;
 } js_socket_private_t;
 
 #ifdef __cplusplus

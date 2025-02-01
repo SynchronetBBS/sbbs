@@ -1,4 +1,5 @@
 "use strict";
+require("userdefs.js", "USER_DELETED");
 
 // MQTT class
 
@@ -13,6 +14,8 @@ function MQTT() {
 };
 
 // Static data
+
+MQTT.psk = {};
 
 MQTT.typename = {
 	1:     'CONNECT',
@@ -810,8 +813,8 @@ MQTT.Connection = function(sock, broker) {
 		throw new Error('sock is not connected');
 	if (!sock.type == Socket.SOCK_STREAM)
 		throw new Error('sock is not SOCK_STREAM');
-	if (sock.local_port !== 1883)
-		sock.ssl_server = true;
+	sock.tls_psk = MQTT.psk;
+	sock.ssl_server = true;
 	this.sock = sock;
 	this.sock.connection = this;
 	this.sock.network_byte_order = true;
@@ -1087,29 +1090,12 @@ MQTT.Connection.prototype.handleCONNECT = function() {
 	if (pkt.properties[23] !== undefined)
 		this.request_problem_information = (pkt.properties[23] ? true : false);
 	var syspass = null;
-	if (pkt.properties[21] !== undefined) {
-		if (pkt.properties[21] === 'Synchronet-SysPass') {
-			syspass = pkt.properties[22];
-			if ((!pkt.connect_flags.password_flag) || (!pkt.connect_flags.user_name_flag))
-				throw new Error('0x87 SysPass without username and password');
-		}
-		else
-			throw new Error('0x8C Unhandled Authentication Method: '+pkt.properties[21]);
-	}
 
-	if (pkt.connect_flags.user_name_flag) {
-		var unum = system.matchuser(pkt.user_name, false);
-		if (unum === 0)
+	if (pkt.connect_flags.password_flag) {
+		if (!system.check_syspass(pkt.password))
 			throw new Error('0x87 Not Authenticated');
-		var user = new User(unum);
-		if (pkt.password.toLowerCase() !== user.security.password.toLowerCase())
-			throw new Error('0x87 Not Authenticated');
-//		if (!system.check_syspass(syspass))
-//			throw new Error('0x87 Not Authenticated');
-		this.user_name = pkt.user_name;
 	}
-
-	if (this.user_name === null)
+	else
 		throw new Error('0x87 Not Authenticated');
 
 	// Set up the last will
@@ -2599,8 +2585,17 @@ MQTT.Packet.PUBCOMP.prototype.recv = MQTT.Packet.PUBACK.prototype.recv;
 
 // Set up everything...
 
+// Find sysops...
+for (var i = 1; i <= system.last_user; i++) {
+	var usr = new User(i);
+	if (!usr.is_sysop)
+		continue;
+	if (usr.settings & (USER_DELETED | USER_INACTIVE))
+		continue;
+	log(LOG_INFO, "Adding user: "+usr.alias.toLowerCase());
+	MQTT.psk[usr.alias.toLowerCase()] = usr.security.password.toLowerCase();
+}
 var broker = new MQTT();
-//var s = new ListeningSocket(["0.0.0.0", "::0"], 8883, 'MQTT');
-var s = new ListeningSocket(["0.0.0.0", "::0"], 1883, 'MQTT');
+var s = new ListeningSocket(["0.0.0.0", "::0"], 8883, 'MQTT');
 s.on('read', function(sock) {broker.gotConnection(this.accept())});
 js.do_callbacks = true;

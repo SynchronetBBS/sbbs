@@ -460,6 +460,9 @@ static void js_finalize_socket(JSContext *cx, JSObject *obj)
 	if ((p = (js_socket_private_t*)JS_GetPrivate(cx, obj)) == NULL)
 		return;
 
+	if (p->tls_psk)
+		JS_RemoveObjectRoot(cx, &p->tls_psk);
+
 	do_js_close(cx, p, true);
 
 	if (!p->external)
@@ -2238,6 +2241,7 @@ enum {
 	, SOCK_PROP_SSL_SESSION
 	, SOCK_PROP_SSL_SERVER
 	, SOCK_PROP_TLS_MINVER
+	, SOCK_PROP_TLS_PSK
 
 };
 
@@ -2264,6 +2268,7 @@ static const char* socket_prop_desc[] = {
 	, "Set to <tt>true</tt> to enable SSL as a client on the socket"
 	, "Set to <tt>true</tt> to enable SSL as a server on the socket"
 	, "Set to 100 to support TLS 1.0, 101 to support TLS 1.1 and 102 (default) for TLS 1.2, must be set before enabling TLS"
+	, "Set to an object with id: key pairs for TLS PSK auth, must be set before enabling TLS"
 
 	/* statically-defined properties: */
 	, "Array of socket option names supported by the current platform"
@@ -2281,6 +2286,7 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 	int32                i;
 	scfg_t *             scfg;
 	char*                estr;
+	JSObject*            pskobj;
 
 	if ((p = (js_socket_private_t*)JS_GetPrivate(cx, obj)) == NULL) {
 		// Prototype access
@@ -2352,6 +2358,42 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 								do_cryptAttribute(p->session, CRYPT_SESSINFO_TLS_OPTIONS, minver);
 								// Reduced compliance checking... required for acme-staging-v02.api.letsencrypt.org
 								do_cryptAttribute(p->session, CRYPT_OPTION_CERT_COMPLIANCELEVEL, CRYPT_COMPLIANCELEVEL_REDUCED);
+								// Add TLS PSK pairs
+								// Iterate object...
+								if (p->tls_psk) {
+									JSIdArray *ids = JS_Enumerate(cx, p->tls_psk);
+									if (ids) {
+										for (jsint k = 0; k < ids->length; k++) {
+											jsval js_id;
+											char *id;
+											size_t id_sz;
+											jsval js_key;
+											char *key;
+											size_t key_sz;
+											JS_IdToValue(cx, ids->vector[k], &js_id);
+											id = NULL;
+											JSVALUE_TO_MSTRING(cx, js_id, id, &id_sz);
+											if (id != NULL) {
+												if (!JS_IsExceptionPending(cx)) {
+													JS_GetProperty(cx, p->tls_psk, id, &js_key);
+													JSVALUE_TO_MSTRING(cx, js_key, key, &key_sz);
+													if (key != NULL) {
+														if (!JS_IsExceptionPending(cx)) {
+															if (do_cryptAttributeString(p->session, CRYPT_SESSINFO_USERNAME, id, id_sz) == CRYPT_OK)
+																do_cryptAttributeString(p->session, CRYPT_SESSINFO_PASSWORD, key, key_sz);
+														}
+														free(key);
+													}
+												}
+												free(id);
+											}
+										}
+										JS_DestroyIdArray(cx, ids);
+									}
+								}
+								// Ensure key and value are both strings...
+								// Set the strings.
+								
 								if (tiny == SOCK_PROP_SSL_SESSION) {
 									// TODO: Make this configurable
 									do_cryptAttribute(p->session, CRYPT_SESSINFO_TLS_OPTIONS, CRYPT_TLSOPTION_DISABLE_NAMEVERIFY);
@@ -2410,6 +2452,16 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 						p->tls_minver = i;
 						break;
 				}
+			}
+			break;
+		case SOCK_PROP_TLS_PSK:
+			if (JS_ValueToObject(cx, *vp, &pskobj)) {
+				if (p->tls_psk) {
+					JS_RemoveObjectRoot(cx, &p->tls_psk);
+					p->tls_psk = NULL;
+				}
+				p->tls_psk = pskobj;
+				JS_AddObjectRoot(cx, &p->tls_psk);
 			}
 			break;
 	}
@@ -2577,6 +2629,12 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case SOCK_PROP_TLS_MINVER:
 			*vp = INT_TO_JSVAL(p->tls_minver);
 			break;
+		case SOCK_PROP_TLS_PSK:
+			if (p->tls_psk == NULL)
+				*vp = JSVAL_VOID;
+			else
+				*vp = OBJECT_TO_JSVAL(p->tls_psk);
+			break;
 	}
 
 	JS_RESUMEREQUEST(cx, rc);
@@ -2609,6 +2667,7 @@ static jsSyncPropertySpec js_socket_properties[] = {
 	{   "ssl_session", SOCK_PROP_SSL_SESSION, JSPROP_ENUMERATE,  316 },
 	{   "ssl_server", SOCK_PROP_SSL_SERVER, JSPROP_ENUMERATE,  316 },
 	{   "tls_minver", SOCK_PROP_TLS_MINVER, JSPROP_ENUMERATE,  320 },
+	{   "tls_psk", SOCK_PROP_TLS_PSK, JSPROP_ENUMERATE,  320 },
 	{0}
 };
 
