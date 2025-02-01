@@ -502,14 +502,14 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 
 		if (mode & QM_TAGLINE && !(cfg.sub[subnum]->misc & SUB_NOTAG)) {
 			if (!tear)                                       /* no tear line */
-				SAFEPRINTF(str, "\1n---%c", qwk_newline);      /* so add one */
+				snprintf(str, sizeof str, "%s---%c", text[QWKEndOfMessage], qwk_newline);      /* so add one */
 			else
-				SAFECOPY(str, "\1n");
+				SAFECOPY(str, text[QWKEndOfMessage]);
 			if (cfg.sub[subnum]->misc & SUB_ASCII)
 				ch = '*';
 			else
 				ch = CP437_BLACK_SQUARE;
-			safe_snprintf(tmp, sizeof(tmp), " %c \1g%.10s\1n %c %.127s%c"
+			snprintf(tmp, sizeof tmp, text[QWKTagLineFmt]
 			              , ch, VERSION_NOTICE, ch, cfg.sub[subnum]->tagline, qwk_newline);
 			char* tail = tmp;
 			if (is_utf8) {

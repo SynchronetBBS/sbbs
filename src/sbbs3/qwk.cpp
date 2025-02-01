@@ -719,7 +719,7 @@ void sbbs_t::qwkcfgline(char *buf, int subnum)
 
 	snprintf(str, sizeof str, "%-25.25s", buf);  /* Note: must be space-padded, left justified */
 	strupr(str);
-	bprintf("\1n\r\n\1b\1hQWK Control [\1c%s\1b]: \1g%s\r\n"
+	bprintf(text[QWKControlCommand]
 	        , subnum == INVALID_SUB ? "Mail":cfg.sub[subnum]->qwkname, str);
 
 	if (subnum != INVALID_SUB) {                   /* Only valid in sub-boards */
@@ -905,7 +905,7 @@ void sbbs_t::qwkcfgline(char *buf, int subnum)
 
 	else {
 		attr(cfg.color[clr_err]);
-		bputs("Unrecognized Control Command!\1n\r\n");
+		bputs(text[QWKBadControlCommand]);
 	}
 
 	if (qwk != useron.qwk)

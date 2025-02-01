@@ -949,6 +949,11 @@ enum text {
 	,E_Mail
 	,E_Mails
 	,NoDOS
+	,TelnetGatewayPrompt
+	,QWKEndOfMessage
+	,QWKTagLineFmt
+	,QWKControlCommand
+	,QWKBadControlCommand
 
 	,TOTAL_TEXT
 };

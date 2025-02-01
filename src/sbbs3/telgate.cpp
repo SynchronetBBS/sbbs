@@ -369,9 +369,7 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, str_list_t
 					CRLF;
 					while (online) {
 						sync();
-						mnemonics("\1n\r\n\1h\1bTelnet Gate: \1y~D\1wisconnect, "
-						          "\1y~E\1wcho toggle, \1y~L\1wist Users, \1y~P\1wrivate message, "
-						          "\1y~Q\1wuit: ");
+						mnemonics(text[TelnetGatewayPrompt]);
 						switch (getkeys("DELPQ", 0)) {
 							case 'D':
 								closesocket(remote_socket);

@@ -1117,3 +1117,10 @@
 "E-Mail"                                                   930 E_Mail
 "E-Mails"                                                  931 E_Mails
 "Sorry, DOS programs are not supported on this node.\r\n"  932 NoDOS
+"\1n\r\n\1h\1bTelnet Gate: \1y~D\1wisconnect, "\           933 TelnetGatewayPrompt
+	"\1y~E\1wcho toggle, \1y~L\1wist Users, \1y~P\1wrivate message, "\
+	"\1y~Q\1wuit: "
+"\1n"													   934 QWKEndOfMessage
+" %c \1g%.10s\1n %c %.127s%c"							   935 QWKTagLineFmt
+"\1n\r\n\1b\1hQWK Control [\1c%s\1b]: \1g%s\r\n"		   936 QWKControlCommand
+"Unrecognized Control Command!\1n\r\n"					   936 QWKBadControlCommand

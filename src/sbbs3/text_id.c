@@ -933,4 +933,9 @@ const char* const text_id[]={
 	,"E_Mail"
 	,"E_Mails"
 	,"NoDOS"
+	,"TelnetGatewayPrompt"
+	,"QWKEndOfMessage"
+	,"QWKTagLineFmt"
+	,"QWKControlCommand"
+	,"QWKBadControlCommand"
 };
