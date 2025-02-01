@@ -341,10 +341,10 @@ void fevent_cfg(const char* name, fevent_t* event, const char* help)
 				uifc.changes = TRUE;
 				break;
 			case 1:
-				toggle_flag(native_opt, &event->misc, EX_NATIVE, native_help, false);
+				toggle_flag(native_opt, &event->misc, EX_NATIVE, false, native_help);
 				break;
 			case 2:
-				toggle_flag(use_shell_prompt, &event->misc, EX_SH, use_shell_help, false);
+				toggle_flag(use_shell_prompt, &event->misc, EX_SH, false, use_shell_help);
 				break;
 			case 3:
 				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Command"
