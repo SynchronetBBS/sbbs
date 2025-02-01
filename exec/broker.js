@@ -901,10 +901,8 @@ MQTT.Connection.prototype.send = function(pkt) {
 	if (this.tx_buf === '')
 		this.tx_once = this.sock.once('write', MQTT.Connection.txData);
 	this.tx_buf += pkt.serialize();
-	log(LOG_INFO, "Sending " + MQTT.typename[pkt.type] + ' packet to '+this.client_id);
+	//log(LOG_INFO, "Sending " + MQTT.typename[pkt.type] + ' packet to '+this.client_id);
 	return true;
-//for (var i = 0; i < data.length; i++)
-//log(LOG_INFO, format("Byte %u: %2$02x (%2$d)", i, ascii(data[i])));
 }
 
 MQTT.Connection.probateWill = function() {
@@ -1924,7 +1922,7 @@ MQTT.Packet.gotTypeFlags = function(conn) {
 MQTT.Packet.parseRemaining = function(conn) {
 	conn.rx_callback = null;
 	conn.rx_need = 0;
-	log(LOG_INFO, "Got " + MQTT.typename[conn.rx_packet.type] + " packet from "+conn.client_id);
+	//log(LOG_INFO, "Got " + MQTT.typename[conn.rx_packet.type] + " packet from "+conn.client_id);
 	js.setImmediate(conn.handlePacket, conn);
 };
 
@@ -2592,10 +2590,16 @@ for (var i = 1; i <= system.last_user; i++) {
 		continue;
 	if (usr.settings & (USER_DELETED | USER_INACTIVE))
 		continue;
-	log(LOG_INFO, "Adding user: "+usr.alias.toLowerCase());
 	MQTT.psk[usr.alias.toLowerCase()] = usr.security.password.toLowerCase();
 }
+
 var broker = new MQTT();
-var s = new ListeningSocket(["0.0.0.0", "::0"], 8883, 'MQTT');
+var s;
+try {
+	s = server.socket;
+}
+catch(e) {
+	s = new ListeningSocket(["0.0.0.0", "::0"], 8883, 'MQTT');
+}
 s.on('read', function(sock) {broker.gotConnection(this.accept())});
 js.do_callbacks = true;
