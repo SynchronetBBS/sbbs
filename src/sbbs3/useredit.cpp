@@ -399,6 +399,11 @@ void sbbs_t::useredit(int usernumber)
 					putuserstr(user.number, USER_LEVEL, str);
 				break;
 			case 'N':
+				bputs(text[EnterNetMailAddress]);
+				getstr(user.netmail, sizeof user.netmail - 1, K_LINE | K_EDIT | K_AUTODEL);
+				if (sys_status & SS_ABORT)
+					break;
+				putuserstr(user.number, USER_NETMAIL, user.netmail);
 				bputs(text[UeditNote]);
 				getstr(user.note, LEN_NOTE, K_LINE | K_EDIT | K_AUTODEL);
 				if (sys_status & SS_ABORT)
