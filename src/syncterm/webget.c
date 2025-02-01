@@ -581,7 +581,6 @@ parse_cache_control(struct http_session *sess, const char *val)
 			sz = sep - val;
 		// The sep check is for Coverity...
 		if (sz == 7 && strnicmp(val, "max-age=", 8) == 0 && sep) {
-			errno = 0;
 			long long ll;
 			if (paranoid_strtoll(&sep[0], NULL, 10, &ll))
 				sess->cache.max_age = ll;
