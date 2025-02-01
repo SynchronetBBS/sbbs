@@ -640,7 +640,7 @@ parse_headers(struct http_session *sess)
 		}
 		else if(strnicmp(line, "content-length:", 15) == 0) {
 			errno = 0;
-			long long ll = strtoll(&line[4], NULL, 10);
+			long long ll = strtoll(&line[15], NULL, 10);
 			if (ll > 0 || errno == 0) {
 				if (ll > MAX_LIST_SIZE) {
 					set_msgf(sess->req, "Content Too Large (%lld)", ll);
@@ -652,8 +652,8 @@ parse_headers(struct http_session *sess)
 				assert_pthread_mutex_unlock(&sess->req->mtx);
 			}
 		}
-		else if(strnicmp(line, "content-transfer-encoding:", 40) == 0) {
-			const char *val = skipws(&line[40]);
+		else if(strnicmp(line, "content-transfer-encoding:", 26) == 0) {
+			const char *val = skipws(&line[26]);
 			const char *sep;
 			const char *end = find_end(val, &sep);
 			if (sep != NULL) {
