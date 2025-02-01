@@ -924,6 +924,8 @@ read_chunked(struct http_session *sess, FILE *out)
 			set_msgf(sess->req, "strtoul() failure %d", errno);
 			goto error_return;
 		}
+		if (chunk_size == 0)
+			break;
 		total += chunk_size;
 		if (total > MAX_LIST_SIZE)  {
 			set_msg(sess->req, "Total Size Too Large");
