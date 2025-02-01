@@ -365,7 +365,8 @@ while(bbs.online && !js.terminated) {
 			if (thisuser.netmail.length > 0
 				&& (system.settings & SYS_FWDTONET)
 				&& bbs.text(bbs.text.ForwardMailQ).length > 0
-				&& console.yesno(bbs.text(bbs.text.ForwardMailQ)))
+				&& (((thisuser.settings & USER_NETMAIL) && console.yesno(bbs.text(bbs.text.ForwardMailQ)))
+				|| (!(thisuser.settings & USER_NETMAIL) && !console.noyes(bbs.text(bbs.text.ForwardMailQ)))))
 				thisuser.settings |= USER_NETMAIL;
 			else if (!console.aborted)
 				thisuser.settings &= ~USER_NETMAIL;
