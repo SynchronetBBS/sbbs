@@ -87,45 +87,49 @@ if(!mqtt.subscribe(terminal_topic)) {
 }
 print("*** Synchronet MQTT Spy on Node " + node_num + ": Ctrl-C to Abort ***\r\n");
 
-while(!js.terminated) {
-	var msg = mqtt.read(/* timeout: */10, /* verbose: */true);
-	if(msg) {
-		if(msg.topic == out_topic)
-			output(msg.data);
-		else if(msg.topic == status_topic) {
-			var new_status = parseInt(msg.data, 10);
-			if(new_status != node_status) {
-				node_status = new_status;
-				print("\r\nNew node status: " + NodeStatus[node_status]);
+try {
+	while(!js.terminated) {
+		var msg = mqtt.read(/* timeout: */10, /* verbose: */true);
+		if(msg) {
+			if(msg.topic == out_topic)
+				output(msg.data);
+			else if(msg.topic == status_topic) {
+				var new_status = parseInt(msg.data, 10);
+				if(new_status != node_status) {
+					node_status = new_status;
+					print("\r\nNew node status: " + NodeStatus[node_status]);
+				}
+			}
+			else if(msg.topic == terminal_topic) {
+				node_charset = msg.data.split('\t')[4];
 			}
 		}
-		else if(msg.topic == terminal_topic) {
-			node_charset = msg.data.split('\t')[4];
-		}
-	}
-	if(js.global.console) {
-		if(console.aborted || !bbs.online)
-			break;
-		console.line_counter = 0;
-		while(bbs.online && !console.aborted) {
-			var key = ascii(console.getbyte(10));
-			if(!key)
+		if(js.global.console) {
+			if(console.aborted || !bbs.online)
 				break;
-			if(key == CTRL_C)
-				console.aborted = true;
-			if(key == KEY_ESC) {
-				key = ascii(console.getbyte(500));
+			console.line_counter = 0;
+			while(bbs.online && !console.aborted) {
+				var key = ascii(console.getbyte(10));
 				if(!key)
-					key = KEY_ESC;
-				else if(key != '[')
-					key = KEY_ESC + key;
-				else
-					key = get_ansi_seq();
+					break;
+				if(key == CTRL_C)
+					console.aborted = true;
+				if(key == KEY_ESC) {
+					key = ascii(console.getbyte(500));
+					if(!key)
+						key = KEY_ESC;
+					else if(key != '[')
+						key = KEY_ESC + key;
+					else
+						key = get_ansi_seq();
+				}
+				if(key)
+					mqtt.publish(in_topic, key);
 			}
-			if(key)
-				mqtt.publish(in_topic, key);
 		}
 	}
+} catch(e) {
+	print(e);
 }
 print();
 print("Done spying");
