@@ -1062,6 +1062,8 @@ do_request(struct http_session *sess)
 			ret = read_body(sess, newfile);
 		if (!ret)
 			goto error_return;
+		fclose(newfile);
+		newfile = NULL;
 		if (rename(npath, path) != 0) {
 			set_msg(sess->req, "rename(npath, path) error");
 			goto error_return;
