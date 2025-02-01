@@ -627,7 +627,7 @@ typedef enum {                      /* Values for xtrn_t.event				*/
 #define SS_NEWUSER      (1 << 20) /* New User online 							*/
 #define SS_NEST_PF      (1 << 22) /* Nested in printfile function				*/
 #define SS_SPLITP       (1 << 24) /* Split-screen private chat					*/
-#define SS_NEWDAY       (1 << 25) /* Date changed while online					*/
+#define SS_DATE_CHANGED (1 << 25) /* Date changed while online					*/
 #define SS_RLOGIN       (1 << 26) /* Current login via BSD RLogin				*/
 #define SS_FILEXFER     (1 << 27) /* File transfer in progress, halt spy			*/
 #define SS_SSH          (1 << 28) /* Current login via SSH						*/

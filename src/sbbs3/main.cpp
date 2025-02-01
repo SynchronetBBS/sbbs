@@ -4233,7 +4233,7 @@ void sbbs_t::reset_logon_vars(void)
 	int i;
 
 	sys_status &= ~(SS_USERON | SS_TMPSYSOP | SS_LCHAT | SS_ABORT
-	                | SS_PAUSEON | SS_PAUSEOFF | SS_EVENT | SS_NEWUSER | SS_NEWDAY | SS_QWKLOGON | SS_FASTLOGON);
+	                | SS_PAUSEON | SS_PAUSEOFF | SS_EVENT | SS_NEWUSER | SS_DATE_CHANGED | SS_QWKLOGON | SS_FASTLOGON);
 	cid[0] = 0;
 	wordwrap[0] = 0;
 	question[0] = 0;
