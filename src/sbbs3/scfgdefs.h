@@ -481,6 +481,7 @@ typedef struct
 	char			sys_date_sep;
 	bool			sys_date_verbal;
 	fevent_t		sys_monthly;		/* Monthly event */
+	fevent_t		sys_weekly;			/* Weekly event */
 	fevent_t 		sys_daily;			/* Daily event */
 	fevent_t 		sys_logon;			/* Logon event */
 	fevent_t 		sys_logout;			/* Logout event */

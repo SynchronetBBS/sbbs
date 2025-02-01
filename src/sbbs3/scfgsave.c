@@ -210,6 +210,8 @@ bool write_main_cfg(scfg_t* cfg)
 	iniSetHexInt(&ini, "daily_event", "settings", cfg->sys_daily.misc, &ini_style);
 	iniSetString(&ini, "monthly_event", "cmd", cfg->sys_monthly.cmd, &ini_style);
 	iniSetHexInt(&ini, "monthly_event", "settings", cfg->sys_monthly.misc, &ini_style);
+	iniSetString(&ini, "weekly_event", "cmd", cfg->sys_weekly.cmd, &ini_style);
+	iniSetHexInt(&ini, "weekly_event", "settings", cfg->sys_weekly.misc, &ini_style);
 
 	{
 		const char* name = "expired";

@@ -639,8 +639,12 @@ uint sbbs_t::logonstats()
 			sys_status |= SS_NEW_DAY;
 			if (tm.tm_mon != update_tm.tm_mon)
 				sys_status |= SS_NEW_MONTH;
-			safe_snprintf(msg, sizeof(msg), "New Day%s - Prev: %s "
-			              , (sys_status & SS_NEW_MONTH) ? " and Month" :"", timestr(stats.date));
+			if (tm.tm_wday == 0 || difftime(now, stats.date) > (7 * 24 * 60 * 60))
+				sys_status |= SS_NEW_WEEK;
+			safe_snprintf(msg, sizeof(msg), "New Day%s%s - Prev: %s "
+				          , (sys_status & SS_NEW_WEEK) ? " and Week" :""
+			              , (sys_status & SS_NEW_MONTH) ? " and Month" :""
+				          , timestr(stats.date));
 			logline(LOG_NOTICE, "!=", msg);
 			safe_snprintf(path, sizeof(path), "%slogon.lst", cfg.data_dir);    /* Truncate logon list (LEGACY) */
 			int file;

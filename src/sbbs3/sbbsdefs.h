@@ -617,6 +617,7 @@ typedef enum {                      /* Values for xtrn_t.event				*/
 #define SS_LCHAT        (1 << 4)  /* Local chat in progress						*/
 #define SS_NEW_MONTH    (1 << 8)  // Execute System Monthly Event
 #define SS_NEW_DAY      (1 << 9)  // Execute System Daily Event
+#define SS_NEW_WEEK     (1 << 10) // Execute System Weekly Event
 #define SS_ABORT        (1 << 11) /* Global abort input or output flag			*/
 #define SS_SYSPAGE      (1 << 12) /* Paging sysop								*/
 #define SS_GURUCHAT     (1 << 14) /* Guru chat in progress						*/
@@ -635,7 +636,7 @@ typedef enum {                      /* Values for xtrn_t.event				*/
 #define SS_QWKLOGON     (1 << 30) /* QWK logon									*/
 #define SS_FASTLOGON    (1U << 31)/* Fast logon									*/
 
-#define SS_DAILY        (SS_NEW_DAY | SS_NEW_MONTH)
+#define SS_DAILY        (SS_NEW_DAY | SS_NEW_MONTH | SS_NEW_WEEK)
 
 /* Bits in 'mode' for getkey and getstr     */
 #define K_NONE      0           /* Use as a place holder for no mode flags	*/

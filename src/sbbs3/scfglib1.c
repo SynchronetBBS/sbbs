@@ -145,6 +145,8 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->sys_daily.misc = iniGetUInt32(ini, "daily_event", "settings", 0);
 	SAFECOPY(cfg->sys_monthly.cmd, iniGetString(ini, "monthly_event", "cmd", "", value));
 	cfg->sys_monthly.misc = iniGetUInt32(ini, "monthly_event", "settings", 0);
+	SAFECOPY(cfg->sys_weekly.cmd, iniGetString(ini, "weekly_event", "cmd", "", value));
+	cfg->sys_weekly.misc = iniGetUInt32(ini, "weekly_event", "settings", 0);
 
 	named_str_list_t** sections = iniParseSections(ini);
 

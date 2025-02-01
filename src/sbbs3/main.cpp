@@ -4813,22 +4813,26 @@ void sbbs_t::daily_maint(void)
 		smb_close(&smb);
 	}
 
+	online = ON_LOCAL;
 	if (cfg.sys_daily.cmd[0] && !(cfg.sys_daily.misc & EVENT_DISABLED)) {
 		lputs(LOG_INFO, "DAILY: Running system event");
 		const char* cmd = cmdstr(cfg.sys_daily.cmd, nulstr, nulstr, NULL, cfg.sys_daily.misc);
-		online = ON_LOCAL;
 		int result = external(cmd, EX_OFFLINE | cfg.sys_daily.misc);
-		online = false;
 		lprintf(result ? LOG_ERR : LOG_INFO, "Daily event: '%s' returned %d", cmd, result);
+	}
+	if ((sys_status & SS_NEW_WEEK) && cfg.sys_weekly.cmd[0] && !(cfg.sys_weekly.misc & EVENT_DISABLED)) {
+		lputs(LOG_INFO, "DAILY: Running weekly event");
+		const char* cmd = cmdstr(cfg.sys_weekly.cmd, nulstr, nulstr, NULL, cfg.sys_weekly.misc);
+		int result = external(cmd, EX_OFFLINE | cfg.sys_monthly.misc);
+		lprintf(result ? LOG_ERR : LOG_INFO, "Weekly event: '%s' returned %d", cmd, result);
 	}
 	if ((sys_status & SS_NEW_MONTH) && cfg.sys_monthly.cmd[0] && !(cfg.sys_monthly.misc & EVENT_DISABLED)) {
 		lputs(LOG_INFO, "DAILY: Running monthly event");
 		const char* cmd = cmdstr(cfg.sys_monthly.cmd, nulstr, nulstr, NULL, cfg.sys_monthly.misc);
-		online = ON_LOCAL;
 		int result = external(cmd, EX_OFFLINE | cfg.sys_monthly.misc);
-		online = false;
 		lprintf(result ? LOG_ERR : LOG_INFO, "Monthly event: '%s' returned %d", cmd, result);
 	}
+	online = false;
 	lputs(LOG_INFO, "DAILY: System maintenance ended");
 	sys_status &= ~SS_DAILY;
 }

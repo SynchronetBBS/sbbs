@@ -364,6 +364,7 @@ void fevents_cfg()
 		snprintf(opt[i++], MAX_OPLN, "%-12s%s", "Logon", (cfg.sys_logon.misc & EVENT_DISABLED) ? "<DISABLED>" : cfg.sys_logon.cmd);
 		snprintf(opt[i++], MAX_OPLN, "%-12s%s", "Logout", (cfg.sys_logout.misc & EVENT_DISABLED) ? "<DISABLED>" : cfg.sys_logout.cmd);
 		snprintf(opt[i++], MAX_OPLN, "%-12s%s", "Daily", (cfg.sys_daily.misc & EVENT_DISABLED) ? "<DISABLED>" : cfg.sys_daily.cmd);
+		snprintf(opt[i++], MAX_OPLN, "%-12s%s", "Weekly", (cfg.sys_weekly.misc & EVENT_DISABLED) ? "<DISABLED>" : cfg.sys_weekly.cmd);
 		snprintf(opt[i++], MAX_OPLN, "%-12s%s", "Monthly", (cfg.sys_monthly.misc & EVENT_DISABLED) ? "<DISABLED>" : cfg.sys_monthly.cmd);
 		opt[i][0] = 0;
 		uifc.helpbuf =
@@ -416,10 +417,23 @@ void fevents_cfg()
 				           );
 				break;
 			case 3:
+				fevent_cfg("Weekly Event", &cfg.sys_weekly,
+				           "`Weekly Event:`\n"
+				           "\n"
+				           "Enter a command line for a program that will run once each new week.\n"
+				           "\n"
+				           "The event will normally run on Sunday.\n"
+				           SCFG_CMDLINE_PREFIX_HELP
+				           SCFG_CMDLINE_SPEC_HELP
+				           );
+				break;
+			case 4:
 				fevent_cfg("Monthly Event", &cfg.sys_monthly,
 				           "`Monthly Event:`\n"
 				           "\n"
 				           "Enter a command line for a program that will run once each new month.\n"
+				           "\n"
+				           "The event will normally run on the first day of the month.\n"
 				           SCFG_CMDLINE_PREFIX_HELP
 				           SCFG_CMDLINE_SPEC_HELP
 				           );
