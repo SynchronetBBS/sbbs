@@ -887,8 +887,6 @@ MQTT.Connection = function(sock, broker) {
 	this.my_used_pids = {};
 	this.next_pid = 1;
 
-	this.protocol_version = 0;
-
 	this.got_connect = false;
 };
 

@@ -2407,9 +2407,11 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 										ret = CRYPT_ERROR_NOTAVAIL;
 									}
 									else {
-										ret = add_private_key(scfg, lprintf, p->session);
-										if (ret != CRYPT_OK) {
-											GCES(ret, p, estr, "setting private key");
+										if (!p->tls_psk) {
+											ret = add_private_key(scfg, lprintf, p->session);
+											if (ret != CRYPT_OK) {
+												GCES(ret, p, estr, "setting private key");
+											}
 										}
 									}
 								}
