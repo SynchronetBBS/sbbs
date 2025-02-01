@@ -1519,7 +1519,7 @@ static jsSyncMethodSpec   js_cryptcert_functions[] = {
 	 , JSDOCSTR("Destroys the certificate.")
 	 , 316},
 	{"export_cert", js_export,  0,  JSTYPE_STRING,  "format"
-	 , JSDOCSTR("Exports the certificate in the format chosen from CryptCert.CERTFORMAT.")
+	 , JSDOCSTR("Exports the certificate in the format chosen from CryptCert.FORMAT.")
 	 , 316},
 	{"get_attribute", js_get_attribute, 0,  JSTYPE_VOID,    "attr, value"
 	 , JSDOCSTR("Sets the specified attribute to the specified value")
