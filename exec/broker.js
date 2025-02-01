@@ -2227,7 +2227,7 @@ MQTT.Packet.SUBSCRIBE.prototype.recv = function(conn) {
 		var tfilter = conn.getUTF8String();
 		var sopts = new MQTT.Connection.SubscriptionOptions(conn.getByte());
 		this.payload.push({topic_filter: tfilter, subscription_options: sopts});
-	} while ((start_len - conn.rx_buf.length) > this.pkt_length);
+	} while ((start_len - conn.rx_buf.length) < this.pkt_length);
 };
 
 // MQTT.Packet.SUBACK class
@@ -2280,7 +2280,7 @@ MQTT.Packet.UNSUBSCRIBE.prototype.recv = function(conn) {
 
 	do {
 		this.payload.push(conn.getUTF8String());
-	} while ((start_len - conn.rx_buf.length) > this.pkt_length);
+	} while ((start_len - conn.rx_buf.length) < this.pkt_length);
 };
 
 // MQTT.Packet.UNSUBACK class
