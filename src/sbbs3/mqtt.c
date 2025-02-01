@@ -380,11 +380,18 @@ int mqtt_connect(struct mqtt* mqtt, const char* bind_address)
 	char  topic[128];
 	char* username = mqtt->cfg->mqtt.username;
 	char* password = mqtt->cfg->mqtt.password;
+
 	if (*username == '\0')
 		username = NULL;
 	if (*password == '\0')
 		password = NULL;
-	mosquitto_int_option(mqtt->handle, MOSQ_OPT_PROTOCOL_VERSION, mqtt->cfg->mqtt.protocol_version);
+	if (mqtt->cfg->mqtt.tls.mode == MQTT_TLS_SBBS) {
+		username = NULL;
+		password = mqtt->cfg->sys_pass;
+		mosquitto_int_option(mqtt->handle, MOSQ_OPT_PROTOCOL_VERSION, 5);
+	}
+	else
+		mosquitto_int_option(mqtt->handle, MOSQ_OPT_PROTOCOL_VERSION, mqtt->cfg->mqtt.protocol_version);
 	mosquitto_username_pw_set(mqtt->handle, username, password);
 	char value[128];
 	SAFECOPY(value, "DISCONNECTED");
@@ -413,6 +420,32 @@ int mqtt_connect(struct mqtt* mqtt, const char* bind_address)
 		                                   mqtt->cfg->mqtt.tls.identity,
 		                                   NULL // ciphers (default)
 		                                   );
+		if (result != MOSQ_ERR_SUCCESS)
+			return result;
+	}
+	else if (mqtt->cfg->mqtt.tls.mode == MQTT_TLS_SBBS) {
+		user_t user = {
+			.number = 1
+		};
+		int result = MQTT_FAILURE;
+		if ((getuserdat(mqtt->cfg, &user) == USER_SUCCESS)
+		    && user.number == 1
+		    && user_is_sysop(&user)) {
+			strlwr(user.pass);
+			char hexpass[LEN_PASS * 2 + 1];
+
+			for (size_t i = 0; user.pass[i]; i++) {
+				const char hd[] = "0123456789ABCDEF";
+				hexpass[i*2] = hd[(((uint8_t *)user.pass)[i] & 0xf0) >> 4];
+				hexpass[i*2+1] = hd[user.pass[i] & 0x0f];
+			}
+			strlwr(user.alias);
+			result = mosquitto_tls_psk_set(mqtt->handle,
+			                      hexpass,
+			                      user.alias,
+			                      NULL // ciphers (default)
+			                      );
+		}
 		if (result != MOSQ_ERR_SUCCESS)
 			return result;
 	}

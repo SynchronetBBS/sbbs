@@ -159,22 +159,24 @@ void mqtt_cfg()
 	static char*    mqttVersion[]
 	    = { "3.1.0", "3.1.1", "5.0", NULL };
 	static char*    mqttTlsMode[]
-	    = { "Off", "Certificate", "Pre-Shared-Key", NULL };
+	    = { "Off", "Certificate", "Pre-Shared-Key", "Synchronet Broker", NULL };
 
 	while (1) {
 		int i = 0;
 		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Enabled", cfg.mqtt.enabled ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Broker Address", cfg.mqtt.broker_addr);
 		snprintf(opt[i++], MAX_OPLN, "%-20s%u", "Broker Port", cfg.mqtt.broker_port);
-		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Username", cfg.mqtt.username);
-		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Password", cfg.mqtt.password);
 		snprintf(opt[i++], MAX_OPLN, "%-20s%u seconds", "Keep-alive", cfg.mqtt.keepalive);
-		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Protocol Version", mqttVersion[cfg.mqtt.protocol_version - 3]);
 		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Publish Verbosity", cfg.mqtt.verbose ? "High" : "Low");
 		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Publish QOS", mqttQOS[cfg.mqtt.publish_qos]);
 		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Subscribe QOS", mqttQOS[cfg.mqtt.subscribe_qos]);
 		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Log Level", logLevelStringList[cfg.mqtt.log_level]);
 		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "TLS (encryption)", mqttTlsMode[cfg.mqtt.tls.mode]);
+		if (cfg.mqtt.tls.mode != MQTT_TLS_SBBS) {
+			snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Username", cfg.mqtt.username);
+			snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Password", cfg.mqtt.password);
+			snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Protocol Version", mqttVersion[cfg.mqtt.protocol_version - 3]);
+		}
 		if (cfg.mqtt.tls.mode == MQTT_TLS_CERT) {
 			snprintf(opt[i++], MAX_OPLN, "%-20s%s", "CA Cert", cfg.mqtt.tls.cafile);
 			snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Client Cert", cfg.mqtt.tls.certfile);
@@ -238,48 +240,25 @@ void mqtt_cfg()
 					cfg.mqtt.broker_port = atoi(str);
 				break;
 			case 3:
-				uifc.helpbuf =
-					"~ User name ~\n"
-					"\n"
-					"Enter the user name to use for authenticating with the MQTT Broker.\n"
-				;
-				uifc.input(WIN_MID | WIN_SAV, 0, 0, "User name for authentication"
-				           , cfg.mqtt.username, sizeof(cfg.mqtt.username) - 1, K_EDIT);
-				break;
-			case 4:
-				uifc.helpbuf =
-					"~ Password ~\n"
-					"\n"
-					"Enter the user password to use for authenticating with the MQTT Broker.\n"
-				;
-				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Password for authentication"
-				           , cfg.mqtt.password, sizeof(cfg.mqtt.password) - 1, K_EDIT);
-				break;
-			case 5:
 				SAFEPRINTF(str, "%u", cfg.mqtt.keepalive);
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Seconds to keep inactive connection alive"
 				               , str, 5, K_EDIT | K_NUMBER) > 0 && atoi(str) >= 5)
 					cfg.mqtt.keepalive = atoi(str);
 				break;
-			case 6:
-				i = cfg.mqtt.protocol_version - 3;
-				if ((i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, 0, "Protocol Version", mqttVersion)) >= 0)
-					cfg.mqtt.protocol_version = 3 + i;
-				break;
-			case 7:
+			case 4:
 				cfg.mqtt.verbose = !cfg.mqtt.verbose;
 				break;
-			case 8:
+			case 5:
 				i = cfg.mqtt.publish_qos;
 				if ((i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, 0, "Quality of Service for Publishing", mqttQOS)) >= 0)
 					cfg.mqtt.publish_qos = i;
 				break;
-			case 9:
+			case 6:
 				i = cfg.mqtt.subscribe_qos;
 				if ((i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, 0, "Quality of Service for Subscriptions", mqttQOS)) >= 0)
 					cfg.mqtt.subscribe_qos = i;
 				break;
-			case 10:
+			case 7:
 				uifc.helpbuf =
 					"~ MQTT Log Level ~\n"
 					"\n"
@@ -292,14 +271,15 @@ void mqtt_cfg()
 				if (i >= 0 && i <= LOG_DEBUG)
 					cfg.mqtt.log_level = i;
 				break;
-			case 11:
+			case 8:
 				uifc.helpbuf =
 					"~ Encryption via TLS ~\n"
 					"\n"
-					"MQTT traffic may be encrypted via TLS using either:\n"
+					"MQTT traffic may be encrypted via TLS using one of:\n"
 					"\n"
 					"  - `Certificate-based` authentication (mutual-auth optionally supported)\n"
 					"  - `Pre-Shared-Key` authentication\n"
+					"  - `Synchronet Broker` use internal Synchronet authentication\n"
 					"\n"
 					"When TLS is used, the default MQTT port is `8883`.\n"
 				;
@@ -307,6 +287,29 @@ void mqtt_cfg()
 				i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, 0, "Encryption via TLS", mqttTlsMode);
 				if (i >= 0)
 					cfg.mqtt.tls.mode = i;
+				break;
+			case 9:
+				uifc.helpbuf =
+					"~ User name ~\n"
+					"\n"
+					"Enter the user name to use for authenticating with the MQTT Broker.\n"
+				;
+				uifc.input(WIN_MID | WIN_SAV, 0, 0, "User name for authentication"
+				           , cfg.mqtt.username, sizeof(cfg.mqtt.username) - 1, K_EDIT);
+				break;
+			case 10:
+				uifc.helpbuf =
+					"~ Password ~\n"
+					"\n"
+					"Enter the user password to use for authenticating with the MQTT Broker.\n"
+				;
+				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Password for authentication"
+				           , cfg.mqtt.password, sizeof(cfg.mqtt.password) - 1, K_EDIT);
+				break;
+			case 11:
+				i = cfg.mqtt.protocol_version - 3;
+				if ((i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, 0, "Protocol Version", mqttVersion)) >= 0)
+					cfg.mqtt.protocol_version = 3 + i;
 				break;
 			case 12:
 				if (cfg.mqtt.tls.mode == MQTT_TLS_CERT) {

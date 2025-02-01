@@ -102,6 +102,7 @@ static JSBool js_connect(JSContext* cx, uintN argc, jsval *arglist)
 
 	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_mqtt_class)) == NULL)
 		return JS_FALSE;
+	scfg_t*    scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
 	rc = JS_SUSPENDREQUEST(cx);
 
@@ -126,7 +127,14 @@ static JSBool js_connect(JSContext* cx, uintN argc, jsval *arglist)
 		JSVALUE_TO_STRBUF(cx, argv[argn], password, sizeof password, NULL);
 		++argn;
 	}
-	mosquitto_int_option(p->handle, MOSQ_OPT_PROTOCOL_VERSION, p->cfg.protocol_version);
+
+	if (p->cfg.tls.mode == MQTT_TLS_SBBS) {
+		username[0] = 0;
+		strlcpy(password, scfg->sys_pass, sizeof(password));
+		mosquitto_int_option(p->handle, MOSQ_OPT_PROTOCOL_VERSION, 5);
+	}
+	else
+		mosquitto_int_option(p->handle, MOSQ_OPT_PROTOCOL_VERSION, p->cfg.protocol_version);
 	mosquitto_username_pw_set(p->handle, *username ? username : NULL, *password ? password : NULL);
 	p->retval = MOSQ_ERR_SUCCESS;
 
@@ -150,6 +158,30 @@ static JSBool js_connect(JSContext* cx, uintN argc, jsval *arglist)
 		                                  p->cfg.tls.identity,
 		                                  NULL // ciphers (default)
 		                                  );
+	}
+	else if (p->cfg.tls.mode == MQTT_TLS_SBBS) {
+		user_t user = {
+			.number = 1
+		};
+		if ((getuserdat(scfg, &user) == USER_SUCCESS)
+		    && user.number == 1
+		    && user_is_sysop(&user)) {
+			char hexpass[LEN_PASS * 2 + 1];
+
+			for (size_t i = 0; user.pass[i]; i++) {
+				const char hd[] = "0123456789ABCDEF";
+				hexpass[i*2] = hd[(((uint8_t *)user.pass)[i] & 0xf0) >> 4];
+				hexpass[i*2+1] = hd[user.pass[i] & 0x0f];
+			}
+			strlwr(user.alias);
+			p->retval = mosquitto_tls_psk_set(p->handle,
+							   hexpass,
+							   user.alias,
+							   NULL // ciphers (default)
+							   );
+		}
+		else
+			p->retval = MQTT_FAILURE;
 	}
 	if (p->retval == MOSQ_ERR_SUCCESS)
 		p->retval = mosquitto_connect_bind(p->handle,

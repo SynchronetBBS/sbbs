@@ -387,7 +387,8 @@ struct mqtt_cfg {
 		enum {
 			MQTT_TLS_DISABLED,
 			MQTT_TLS_CERT,
-			MQTT_TLS_PSK
+			MQTT_TLS_PSK,
+			MQTT_TLS_SBBS
 		} mode;
 		char	cafile[256];
 		char	certfile[256];

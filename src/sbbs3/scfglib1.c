@@ -228,7 +228,7 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	cfg->mqtt.subscribe_qos = iniGetIntInRange(section, NULL, "subscribe_qos", 0, 2, 2);
 	cfg->mqtt.protocol_version = iniGetIntInRange(section, NULL, "protocol_version", 3, 4, 5);
 	cfg->mqtt.log_level = iniGetLogLevel(section, NULL, "LogLevel", LOG_INFO);
-	cfg->mqtt.tls.mode = iniGetIntInRange(section, NULL, "tls_mode", MQTT_TLS_DISABLED, MQTT_TLS_DISABLED, MQTT_TLS_PSK);
+	cfg->mqtt.tls.mode = iniGetIntInRange(section, NULL, "tls_mode", MQTT_TLS_DISABLED, MQTT_TLS_DISABLED, MQTT_TLS_SBBS);
 	SAFECOPY(cfg->mqtt.tls.cafile, iniGetString(section, NULL, "tls_cafile", "", value));
 	SAFECOPY(cfg->mqtt.tls.certfile, iniGetString(section, NULL, "tls_certfile", "", value));
 	SAFECOPY(cfg->mqtt.tls.keyfile, iniGetString(section, NULL, "tls_keyfile", "", value));
