@@ -18,7 +18,7 @@ function get_news_subject(hdr)
 
 function get_news_from(hdr)
 {
-	if(!hdr.from_net_type || !hdr.from_net_addr)	/* local message */
+	if(!hdr.from_net_addr)	/* local message */
 		return format("\"%s\" <%s@%s>"
 			,mimehdr.encode(hdr.from)
 			,hdr.from.replace(/ /g,".").toLowerCase()
