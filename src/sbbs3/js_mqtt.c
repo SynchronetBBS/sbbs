@@ -168,6 +168,7 @@ static JSBool js_connect(JSContext* cx, uintN argc, jsval *arglist)
 		    && user_is_sysop(&user)) {
 			char hexpass[LEN_PASS * 2 + 1];
 
+			strlwr(user.pass);
 			for (size_t i = 0; user.pass[i]; i++) {
 				const char hd[] = "0123456789ABCDEF";
 				hexpass[i*2] = hd[(((uint8_t *)user.pass)[i] & 0xf0) >> 4];
