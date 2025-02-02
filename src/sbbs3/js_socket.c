@@ -2244,6 +2244,7 @@ enum {
 	, SOCK_PROP_SSL_SERVER
 	, SOCK_PROP_TLS_MINVER
 	, SOCK_PROP_TLS_PSK
+	, SOCK_PROP_TLS_PSK_ID
 
 };
 
@@ -2639,6 +2640,25 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			else
 				*vp = OBJECT_TO_JSVAL(p->tls_psk);
 			break;
+		case SOCK_PROP_TLS_PSK_ID:
+			if (p->tls_psk == NULL)
+				*vp = JSVAL_VOID;
+			else {
+				int idlen;
+				if ((cryptGetAttributeString(p->session, CRYPT_SESSINFO_USERNAME, NULL, &idlen) == CRYPT_OK) && (idlen > 0)) {
+					char *id = malloc(idlen);
+					if (id) {
+						if (cryptGetAttributeString(p->session, CRYPT_SESSINFO_USERNAME, id, &idlen) == CRYPT_OK) {
+							if ((js_str = JS_NewStringCopyN(cx, id, idlen)) == NULL) {
+								free(id);
+								return JS_FALSE;
+							}
+							*vp = STRING_TO_JSVAL(js_str);
+						}
+						free(id);
+					}
+				}
+			}
 	}
 
 	JS_RESUMEREQUEST(cx, rc);
@@ -2672,6 +2692,7 @@ static jsSyncPropertySpec js_socket_properties[] = {
 	{   "ssl_server", SOCK_PROP_SSL_SERVER, JSPROP_ENUMERATE,  316 },
 	{   "tls_minver", SOCK_PROP_TLS_MINVER, JSPROP_ENUMERATE,  320 },
 	{   "tls_psk", SOCK_PROP_TLS_PSK, JSPROP_ENUMERATE,  320 },
+	{   "tls_psk_id", SOCK_PROP_TLS_PSK_ID, JSPROP_ENUMERATE | JSPROP_READONLY,  320 },
 	{0}
 };
 
