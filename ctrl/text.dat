@@ -1,9 +1,9 @@
 "\1n\1h\1c\xda\xc4\xc4\xc4\xc4\xc4\xc4"\                        001 MsgSubj
-    "\1n\xc4\xc4\xc4\xc4\xc4\xc4"\ 
+    "\1n\xc4\xc4\xc4\xc4\xc4\xc4"\
     "\1h\1k\xc4\xc4\xc4\xc4\xc4\xc4\xc4"\
     "\1n\1c\xc4\xc4\xc4\xc4\xc4"\
     "\xfa\xfa\xfa\xfa"\
-    "\r\n\1h\xb3 \1bSubj\1n\1b: \1h\1c%.70s"       
+    "\r\n\1h\xb3 \1bSubj\1n\1b: \1h\1c%.70s"
 "\r\n\xb3 \1bAttr\1n\1b: \1h\1c%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s" 002 MsgAttr
 "\r\n\xb3 \1bTo  \1n\1b: \1h\1c%.70s"                           003 MsgTo
 " #%s"                                                          004 MsgToExt
@@ -85,7 +85,7 @@
 	"From: \1w%s\r\n"
 "\1n\r\nNo mail on system.\r\n"                          063 NoMailOnSystem
 "\1n\r\n\1c\xfe \1h\1bReading All E-mail \1n\1c\xfe \1h\1b"\		064 ReadingAllMail
-	"(\1w%u \1bof \1w%u\1b): \1n" 
+	"(\1w%u \1bof \1w%u\1b): \1n"
 "\1_\r\n\1g\1h      From                   "\              065 MailOnSystemLstHdr
 	"To                     A Subject\r\n\1n"
 "\1g\1h%5d\1n\1g %-22.22s %-22.22s \1h%c\1n\1g %s\r\n"     066 MailOnSystemLstFmt
@@ -99,7 +99,7 @@
 "\r\nYou didn't post message #%d\r\n"                   072 YouDidntPostMsgN
 "\1?Delete message #%u '%s'"                          073 DeletePostQ
 "\1n\1b[\1h\1wI\1n\1b] \1hAutoLogon via IP address     "\     074 UserDefaultsAutoLogon
-	"\1n\1b: \1c%s\r\n"	 
+	"\1n\1b: \1c%s\r\n"
 "\1n\r\n\1m%s sent to \1h%s #%u\r\n"                    075 MsgSentToUser
 "\1_\r\n\1y\1hText to search for\1\\: "                 076 SearchStringPrompt
 "\1w\1h\xc4\xc4\xc4\xc4\xc4[\1i\1r%c\1n\1h]\xc4\xc4\xc4\xc4\xb4 "\                    077 PrivateChatSeparator
@@ -199,7 +199,7 @@
 "\r\nClear critical error counters on all nodes"        160 ClearErrCounter
 "\r\nInvalid node.\r\n"                                 161 InvalidNode
 "\1n\1?\1mSending telegram to \1h%s #%u\1n\1m\r\n"\    162 SendingTelegramToUser
-	"(Maximum of 5 lines, Blank line ends, Ctrl-C to abort):\r\n\1g\1h"  
+	"(Maximum of 5 lines, Blank line ends, Ctrl-C to abort):\r\n\1g\1h" 
 "Delete Guru file"                                      163 DeleteGuruLogQ
 "\1n\1g\7Telegram from \1n\1h%s\1n\1g on %s:\r\n\1h"    164 TelegramFmt
 "\1?You can't download.\r\n"                              165 R_Download
@@ -1123,4 +1123,4 @@
 "\1n"													   934 QWKEndOfMessage
 " %c \1g%.10s\1n %c %.127s%c"							   935 QWKTagLineFmt
 "\1n\r\n\1b\1hQWK Control [\1c%s\1b]: \1g%s\r\n"		   936 QWKControlCommand
-"Unrecognized Control Command!\1n\r\n"					   936 QWKBadControlCommand
+"Unrecognized Control Command!\1n\r\n"					   937 QWKBadControlCommand
