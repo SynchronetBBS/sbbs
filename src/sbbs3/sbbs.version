@@ -1,6 +1,6 @@
 SBBS {
 	local: BN_*;  # hide cryptlib BigNum functions, prevent collision with OpenSSL
-	local: CAST_*;  # hide cryptlib CAST functions, prevent collision with OpenSSL
-	local: EC_*;  # hide cryptlib EC functions, prevent collision with OpenSSL
-	local: SHA1_*;  # hide cryptlib SHA1 functions, prevent collision with OpenSSL
+		CAST_*;  # hide cryptlib CAST functions, prevent collision with OpenSSL
+		EC_*;  # hide cryptlib EC functions, prevent collision with OpenSSL
+		SHA1_*;  # hide cryptlib SHA1 functions, prevent collision with OpenSSL
 };
