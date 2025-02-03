@@ -148,8 +148,7 @@ smoketest-jsexec-win32:
   extends: .rules
   script:
     - cd src/sbbs3/msvc.win32.dll.release
-    - set PATH="%CI_PROJECT_PATH%\3rdp\win32.release\cryptlib\bin"
-    - echo "%PATH%"
+    - $env:PATH = "%CI_PROJECT_PATH%\3rdp\win32.release\cryptlib\bin"
     - ..\msvc.win32.exe.release\jsexec -c../../../ctrl -C ../../../exec/tests/test.js
   dependencies: ["windows-x86 [sbbs]"]
 
