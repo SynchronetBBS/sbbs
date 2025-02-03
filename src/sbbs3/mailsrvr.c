@@ -4899,8 +4899,8 @@ static bool smtp_client_thread(smtp_t* smtp)
 				continue;
 			}
 			if (cmd == SMTP_CMD_MAIL) {
-				if ((user.rest & FLAG('M')) && relay_user.number == 0) {
-					lprintf(LOG_NOTICE, "%04d %s %s !M-restricted user-recipient #%u (%s) cannot receive unauthenticated SMTP mail"
+				if ((user.rest & FLAG('I')) && relay_user.number == 0) {
+					lprintf(LOG_NOTICE, "%04d %s %s !I-restricted user-recipient #%u (%s) cannot receive unauthenticated SMTP mail"
 					        , socket, client.protocol, client_id, user.number, user.alias);
 					sockprintf(socket, client.protocol, session, "550 Closed mailbox: %s", rcpt_to);
 					stats.msgs_refused++;
