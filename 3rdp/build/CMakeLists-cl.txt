@@ -107,6 +107,7 @@ set(PATCHES
 	cl-wrong-string-length.patch
 	cl-remove-silly-pragmas.patch
 	cl-size-doesnt-mean-copied.patch
+	cl-add-psk-flag.patch
 )
 
 set(SOURCE

@@ -1,0 +1,54 @@
+diff --git cryptlib.h cryptlib.h
+index 98e0685..1245f5a 100644
+--- cryptlib.h
++++ cryptlib.h
+@@ -1767,6 +1767,7 @@ typedef enum {
+ #define CRYPT_TLSOPTION_RESUMED				0x080	/* TLS session is resumed */
+ #define CRYPT_TLSOPTION_SUITEB_128			0x100	/* SuiteB security levels (will */
+ #define CRYPT_TLSOPTION_SUITEB_256			0x200	/*  vanish in future releases) */
++#define CRYPT_TLSOPTION_USED_PSK			0x200	/*  Synchronet extension */
+ #ifdef _CRYPT_DEFINED
+ #define CRYPT_TLSOPTION_MAX					0x07F	/* Defines for range checking */
+ #endif /* _CRYPT_DEFINED */
+diff --git session/tls.c session/tls.c
+index b3d2d0b..8d8468f 100644
+--- session/tls.c
++++ session/tls.c
+@@ -1219,6 +1219,9 @@ static int getAttributeFunction( INOUT_PTR SESSION_INFO *sessionInfoPtr,
+ 		if( TEST_FLAG( sessionInfoPtr->protocolFlags, \
+ 					   TLS_PFLAG_RESUMED_SESSION ) )
+ 			*valuePtr |= CRYPT_TLSOPTION_RESUMED;
++		if( TEST_FLAG( sessionInfoPtr->protocolFlags, \
++					   TLS_PFLAG_USED_PSK) )
++			*valuePtr |= CRYPT_TLSOPTION_USED_PSK;
+ 
+ 		return( CRYPT_OK );
+ 		}
+diff --git session/tls.h session/tls.h
+index 2b4656d..00df8e9 100644
+--- session/tls.h
++++ session/tls.h
+@@ -156,7 +156,8 @@
+ #define TLS_PFLAG_TLS12LTS			0x1000	/* Use TLS 1.2 LTS profile */
+ #define TLS_PFLAG_SERVER_SNI		0x2000	/* Apply server key switching for SNI */
+ #define TLS_PFLAG_RESUMED_SESSION	0x4000	/* Session is resumed */
+-#define TLS_PFLAG_MAX				0x7FFF	/* Maximum possible flag value */
++#define TLS_PFLAG_USED_PSK			0x8000	/* Session is resumed */
++#define TLS_PFLAG_MAX				0xFFFF	/* Maximum possible flag value */
+ 
+ /* Some of the flags above denote extended TLS facilities that need to be
+    preserved across session resumptions.  The following value defines the 
+diff --git session/tls_svr.c session/tls_svr.c
+index a769335..d7f5768 100644
+--- session/tls_svr.c
++++ session/tls_svr.c
+@@ -700,6 +700,9 @@ static int processPSKKeyex( INOUT_PTR SESSION_INFO *sessionInfoPtr,
+ 		}
+ 	ENSURES( LOOP_BOUND_OK );
+ 
++	/* Indicate we used PSK */
++	SET_FLAG(sessionInfoPtr->protocolFlags, TLS_PFLAG_USED_PSK);
++
+ 	/* If it's PSK with DH, perform the keyex with the PSK added */
+ 	if( isKeyex )
+ 		{
