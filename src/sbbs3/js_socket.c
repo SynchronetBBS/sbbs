@@ -3690,7 +3690,6 @@ JSObject* js_CreateSocketObjectFromSet(JSContext* cx, JSObject* parent, char *na
 
 	if (set->sock_count < 1)
 		return NULL;
-		
 
 	len = sizeof(type);
 	getsockopt(set->socks[0].sock, SOL_SOCKET, SO_TYPE, (void*)&type, &len);
