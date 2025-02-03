@@ -78,7 +78,9 @@ char sbbs_t::putmsg(const char *buf, int mode, int org_cols, JSObject* obj)
 // Print a message fragment, doesn't save/restore any console states (e.g. attributes, auto-pause)
 char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
 {
-	char                 tmp2[256], tmp3[128];
+	char                 tmp[256];
+	char                 tmp2[256];
+	char                 path[MAX_PATH + 1];
 	char*                str = (char*)buf;
 	uchar                exatr = 0;
 	char                 mark = '\0';
@@ -207,8 +209,8 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
 				if (i > 0) {
 					tmp2[i] = 0;
 					sys_status |= SS_NEST_PF;     /* keep it only one message deep! */
-					SAFEPRINTF2(tmp3, "%s%s", cfg.text_dir, tmp2);
-					printfile(tmp3, 0);
+					SAFEPRINTF2(path, "%s%s", cfg.text_dir, tmp2);
+					printfile(path, 0);
 					sys_status &= ~SS_NEST_PF;
 				}
 			}
@@ -409,11 +411,11 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
 				if (memcmp(str + l, "@CENTER@", 8) == 0) {
 					l += 8;
 					i = 0;
-					while (i < (int)sizeof(tmp2) - 1 && str[l] != 0 && str[l] != '\r' && str[l] != '\n')
-						tmp2[i++] = str[l++];
-					tmp2[i] = 0;
-					truncsp(tmp2);
-					center(tmp2, /* msg: */ true);
+					while (i < (int)sizeof(tmp) - 1 && str[l] != 0 && str[l] != '\r' && str[l] != '\n')
+						tmp[i++] = str[l++];
+					tmp[i] = 0;
+					truncsp(tmp);
+					center(expand_atcodes(tmp, tmp2, sizeof tmp2));
 					if (str[l] == '\r')
 						l++;
 					if (str[l] == '\n')
