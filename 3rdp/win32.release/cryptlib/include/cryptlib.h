@@ -12,7 +12,7 @@
 /* The current cryptlib version: 3.4.8 */
 
 #define CRYPTLIB_VERSION	348
-#define CRYPTLIB_PATCHES "e75068e75d7f24e8afde1bad813e90b9  -"
+#define CRYPTLIB_PATCHES "9895a871126363926b0e2a47e80578e8  -"
 
 /* Fixup for Windows support.  We need to include windows.h for various types
    and prototypes needed for DLLs, but this pulls in wincrypt.h which defines 
@@ -1768,6 +1768,7 @@ typedef enum {
 #define CRYPT_TLSOPTION_RESUMED				0x080	/* TLS session is resumed */
 #define CRYPT_TLSOPTION_SUITEB_128			0x100	/* SuiteB security levels (will */
 #define CRYPT_TLSOPTION_SUITEB_256			0x200	/*  vanish in future releases) */
+#define CRYPT_TLSOPTION_USED_PSK			0x200	/*  Synchronet extension */
 #ifdef _CRYPT_DEFINED
 #define CRYPT_TLSOPTION_MAX					0x07F	/* Defines for range checking */
 #endif /* _CRYPT_DEFINED */
