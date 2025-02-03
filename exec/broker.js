@@ -1130,12 +1130,33 @@ MQTT.Connection.prototype.handleCONNECT = function() {
 		this.request_problem_information = (pkt.properties[23] ? true : false);
 	var syspass = null;
 
-	if (pkt.connect_flags.password_flag) {
-		if (!system.check_syspass(pkt.password))
+	if (this.sock.tls_psk_id !== undefined) {
+		if (pkt.connect_flags.password_flag) {
+			if (!system.check_syspass(pkt.password))
+				throw new Error('0x87 Not Authenticated');
+		}
+		else
 			throw new Error('0x87 Not Authenticated');
 	}
-	else
-		throw new Error('0x87 Not Authenticated');
+	else {
+		if (!(pkt.connect_flags.user_name_flag && pkt.connect_flags.password_flag))
+			throw new Error('0x87 Not Authenticated');
+		var unum = system.matchuser(pkt.user_name, false);
+		if (unum === 0)
+			throw new Error('0x87 Not Authenticated');
+		var usr = new User(unum);
+		if (typeof usr.number != 'number' || usr.number <= 0)
+			throw new Error('0x87 Not Authenticated');
+		if (!usr.is_sysop)
+			throw new Error('0x87 Not Authenticated');
+		if (usr.settings & (USER_DELETED | USER_INACTIVE))
+			throw new Error('0x87 Not Authenticated');
+		var uplen = usr.security.password.length + 1;
+		if (pkt.password.substr(0, uplen).toLowerCase() !== usr.security.password.toLowerCase() + ':')
+			throw new Error('0x87 Not Authenticated');
+		if (!system.check_syspass(pkt.password.substr(uplen)))
+			throw new Error('0x87 Not Authenticated');
+	}
 
 	// Set up the last will
 	if (pkt.connect_flags.will_flag) {
