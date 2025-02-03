@@ -1267,7 +1267,7 @@ int opennodeext(scfg_t* cfg)
 		return -1;
 
 	SAFEPRINTF(fname, "%snode.exb", cfg->ctrl_dir);
-	return nopen(fname, O_RDWR | O_DENYNONE);
+	return nopen(fname, O_CREAT | O_RDWR | O_DENYNONE);
 }
 
 /****************************************************************************/
