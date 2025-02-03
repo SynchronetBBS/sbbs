@@ -2272,6 +2272,7 @@ static const char* socket_prop_desc[] = {
 	, "Set to <tt>true</tt> to enable SSL as a server on the socket"
 	, "Set to 100 to support TLS 1.0, 101 to support TLS 1.1 and 102 (default) for TLS 1.2, must be set before enabling TLS"
 	, "Set to an object with id: key pairs for TLS PSK auth, must be set before enabling TLS"
+	, "If TLS PSK is used, indicates which entry in <i>tls_psk</i> was used by the remote"
 
 	/* statically-defined properties: */
 	, "Array of socket option names supported by the current platform"
@@ -2694,8 +2695,8 @@ static jsSyncPropertySpec js_socket_properties[] = {
 	{   "ssl_session", SOCK_PROP_SSL_SESSION, JSPROP_ENUMERATE,  316 },
 	{   "ssl_server", SOCK_PROP_SSL_SERVER, JSPROP_ENUMERATE,  316 },
 	{   "tls_minver", SOCK_PROP_TLS_MINVER, JSPROP_ENUMERATE,  320 },
-	{   "tls_psk", SOCK_PROP_TLS_PSK, JSPROP_ENUMERATE,  320 },
-	{   "tls_psk_id", SOCK_PROP_TLS_PSK_ID, JSPROP_ENUMERATE | JSPROP_READONLY,  320 },
+	{   "tls_psk", SOCK_PROP_TLS_PSK, JSPROP_ENUMERATE,  32002 },
+	{   "tls_psk_id", SOCK_PROP_TLS_PSK_ID, JSPROP_ENUMERATE | JSPROP_READONLY,  32002 },
 	{0}
 };
 
