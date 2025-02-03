@@ -2408,11 +2408,9 @@ static JSBool js_socket_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 										ret = CRYPT_ERROR_NOTAVAIL;
 									}
 									else {
-										if (!p->tls_psk) {
-											ret = add_private_key(scfg, lprintf, p->session);
-											if (ret != CRYPT_OK) {
-												GCES(ret, p, estr, "setting private key");
-											}
+										ret = add_private_key(scfg, lprintf, p->session);
+										if (ret != CRYPT_OK) {
+											GCES(ret, p, estr, "setting private key");
 										}
 									}
 								}
@@ -2644,18 +2642,23 @@ static JSBool js_socket_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			if (p->tls_psk == NULL)
 				*vp = JSVAL_VOID;
 			else {
-				int idlen;
-				if ((cryptGetAttributeString(p->session, CRYPT_SESSINFO_USERNAME, NULL, &idlen) == CRYPT_OK) && (idlen > 0)) {
-					char *id = malloc(idlen);
-					if (id) {
-						if (cryptGetAttributeString(p->session, CRYPT_SESSINFO_USERNAME, id, &idlen) == CRYPT_OK) {
-							if ((js_str = JS_NewStringCopyN(cx, id, idlen)) == NULL) {
-								free(id);
-								return JS_FALSE;
+				int attrval;
+				if ((cryptGetAttribute(p->session, CRYPT_SESSINFO_TLS_OPTIONS, &attrval) != CRYPT_OK)
+				    || ((attrval & CRYPT_TLSOPTION_USED_PSK) == 0))
+					*vp = JSVAL_VOID;
+				else {
+					if ((cryptGetAttributeString(p->session, CRYPT_SESSINFO_USERNAME, NULL, &attrval) == CRYPT_OK) && (attrval > 0)) {
+						char *id = malloc(attrval);
+						if (id) {
+							if (cryptGetAttributeString(p->session, CRYPT_SESSINFO_USERNAME, id, &attrval) == CRYPT_OK) {
+								if ((js_str = JS_NewStringCopyN(cx, id, attrval)) == NULL) {
+									free(id);
+									return JS_FALSE;
+								}
+								*vp = STRING_TO_JSVAL(js_str);
 							}
-							*vp = STRING_TO_JSVAL(js_str);
+							free(id);
 						}
-						free(id);
 					}
 				}
 			}
@@ -3686,6 +3689,7 @@ JSObject* js_CreateSocketObjectFromSet(JSContext* cx, JSObject* parent, char *na
 
 	if (set->sock_count < 1)
 		return NULL;
+		
 
 	len = sizeof(type);
 	getsockopt(set->socks[0].sock, SOL_SOCKET, SO_TYPE, (void*)&type, &len);
