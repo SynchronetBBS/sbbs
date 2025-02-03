@@ -961,7 +961,10 @@ js_cryptcon_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	int                              status;
 	int                              algo;
 
-	do_cryptInit(lprintf);
+	if (!do_cryptInit(lprintf)) {
+		JS_ReportError(cx, "do_cryptInit failure");
+		return JS_FALSE;
+	}
 	obj = JS_NewObject(cx, &js_cryptcon_class, NULL, NULL);
 	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(obj));
 	if (argc != 1) {

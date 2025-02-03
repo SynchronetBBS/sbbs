@@ -3076,7 +3076,10 @@ js_cryptcert_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	JSString *                        jscert;
 	size_t                            len;
 
-	do_cryptInit(lprintf);
+	if (!do_cryptInit(lprintf)) {
+		JS_ReportError(cx, "do_cryptInit failure");
+		return JS_FALSE;
+	}
 	obj = JS_NewObject(cx, &js_cryptcert_class, NULL, NULL);
 	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(obj));
 	if (argc != 1) {
