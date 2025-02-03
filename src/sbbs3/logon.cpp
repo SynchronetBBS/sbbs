@@ -196,6 +196,8 @@ bool sbbs_t::logon()
 					break;
 			if (i == cfg.total_shells)
 				useron.shell = 0;
+			else
+				useron.shell = i;
 		}
 	}
 
