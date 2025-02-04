@@ -388,11 +388,15 @@ bool sbbs_t::random_menu(const char *name, int mode, JSObject* obj)
 	strListDedupe(&names, /* case_sensitive: */ true);
 	bool   result = false;
 	size_t count = strListCount(names);
-	if (count > 0) {
+	while (count > 0) {
 		size_t i = sbbs_random(count);
 		if (menu_exists(names[i], NULL, path)) {
 			result = menu(names[i], mode, obj);
+			if (result == true)
+				break;
 		}
+		strListFastDelete(names, i, 1);
+		--count;
 	}
 	strListFree(&names);
 	return result;
