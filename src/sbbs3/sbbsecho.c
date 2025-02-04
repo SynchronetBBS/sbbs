@@ -6097,7 +6097,9 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 
 			if (strncmp(fmsgbuf, "AREA:", 5) != 0) {                 /* Netmail */
 				(void)fseeko(fidomsg, msg_offset, SEEK_SET);
-				import_netmail("", &hdr, fidomsg, inbound);
+				result = import_netmail("", &hdr, fidomsg, inbound);
+				if (result != 0)
+					lprintf(LOG_DEBUG, "import_netmail() returned %d", result);
 				(void)fseeko(fidomsg, next_msg, SEEK_SET);
 				printf("\n");
 				continue;
@@ -7000,8 +7002,11 @@ int main(int argc, char **argv)
 					fclose(fidomsg);
 				}
 			}
-			else if (i != -2)
-				fclose(fidomsg);
+			else {
+				lprintf(LOG_DEBUG, "import_netmail(%s) returned %d", path, i);
+				if (i != -2)
+					fclose(fidomsg);
+			}
 			printf("\n");
 		}
 		globfree(&g);
