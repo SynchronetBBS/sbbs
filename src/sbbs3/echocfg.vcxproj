@@ -12,19 +12,20 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{91A5D0BE-90BC-4795-8833-CE5C4D484B4A}</ProjectGuid>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v141_xp</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v141_xp</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -36,10 +37,10 @@
     <Import Project="..\smblib\smblib.props" />
     <Import Project="..\uifc\uifc.props" />
     <Import Project="..\build\undeprecate.props" />
-    <Import Project="..\build\target_ia32.props" />
     <Import Project="..\hash\hash.props" />
     <Import Project="..\encode\encode.props" />
     <Import Project="..\conio\conio_gdi.props" />
+    <Import Project="..\build\target_winver.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -48,10 +49,10 @@
     <Import Project="..\smblib\smblib.props" />
     <Import Project="..\uifc\uifc.props" />
     <Import Project="..\build\undeprecate.props" />
-    <Import Project="..\build\target_ia32.props" />
     <Import Project="..\hash\hash.props" />
     <Import Project="..\encode\encode.props" />
     <Import Project="..\conio\conio_gdi.props" />
+    <Import Project="..\build\target_winver.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>

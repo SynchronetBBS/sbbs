@@ -12,19 +12,20 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{7C6F645F-BB54-4018-8AE9-6C38626325F6}</ProjectGuid>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v141_xp</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v141_xp</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -37,11 +38,11 @@
     <Import Project="..\..\3rdp\win32.release\mozjs\mozjs.props" />
     <Import Project="..\comio\comio.props" />
     <Import Project="..\build\undeprecate.props" />
-    <Import Project="..\build\target_ia32.props" />
     <Import Project="..\xpdev\xpdev_mt.props" />
     <Import Project="..\..\3rdp\win32.release\cryptlib\cryptlib.props" />
     <Import Project="..\hash\hash.props" />
     <Import Project="..\encode\encode.props" />
+    <Import Project="..\build\target_winver.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -51,11 +52,11 @@
     <Import Project="..\..\3rdp\win32.release\mozjs\mozjs.props" />
     <Import Project="..\comio\comio.props" />
     <Import Project="..\build\undeprecate.props" />
-    <Import Project="..\build\target_ia32.props" />
     <Import Project="..\xpdev\xpdev_mt.props" />
     <Import Project="..\..\3rdp\win32.release\cryptlib\cryptlib.props" />
     <Import Project="..\hash\hash.props" />
     <Import Project="..\encode\encode.props" />
+    <Import Project="..\build\target_winver.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>

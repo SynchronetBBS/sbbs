@@ -12,19 +12,20 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{0AA665EA-C51A-4035-BF50-3D090980903C}</ProjectGuid>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v141_xp</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v141_xp</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -35,9 +36,9 @@
     <Import Project="..\xpdev\xpdev.props" />
     <Import Project="..\smblib\smblib.props" />
     <Import Project="..\build\undeprecate.props" />
-    <Import Project="..\build\target_ia32.props" />
     <Import Project="..\xpdev\xpdev_mt.props" />
     <Import Project="..\hash\hash.props" />
+    <Import Project="..\build\target_winver.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -45,9 +46,9 @@
     <Import Project="..\xpdev\xpdev.props" />
     <Import Project="..\smblib\smblib.props" />
     <Import Project="..\build\undeprecate.props" />
-    <Import Project="..\build\target_ia32.props" />
     <Import Project="..\xpdev\xpdev_mt.props" />
     <Import Project="..\hash\hash.props" />
+    <Import Project="..\build\target_winver.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>

@@ -12,19 +12,20 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{3043A9CD-A963-4BC3-BBE4-1A9D67177EC4}</ProjectGuid>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v141_xp</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v141_xp</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -34,22 +35,22 @@
     <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC60.props" />
     <Import Project="..\xpdev\xpdev.props" />
     <Import Project="..\smblib\smblib.props" />
-    <Import Project="..\build\target_ia32.props" />
     <Import Project="..\build\undeprecate.props" />
     <Import Project="..\hash\hash.props" />
     <Import Project="..\encode\encode.props" />
     <Import Project="..\..\3rdp\win32.release\libarchive\libarchive.props" />
+    <Import Project="..\build\target_winver.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC60.props" />
     <Import Project="..\xpdev\xpdev.props" />
     <Import Project="..\smblib\smblib.props" />
-    <Import Project="..\build\target_ia32.props" />
     <Import Project="..\build\undeprecate.props" />
     <Import Project="..\hash\hash.props" />
     <Import Project="..\encode\encode.props" />
     <Import Project="..\..\3rdp\win32.release\libarchive\libarchive.props" />
+    <Import Project="..\build\target_winver.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>

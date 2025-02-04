@@ -12,19 +12,20 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{0DA3E7B4-8567-495B-B7D1-5E6AB6D6F4B1}</ProjectGuid>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v141_xp</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v141_xp</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -36,12 +37,12 @@
     <Import Project="..\..\smblib\smblib.props" />
     <Import Project="..\..\uifc\uifc.props" />
     <Import Project="..\..\build\undeprecate.props" />
-    <Import Project="..\..\build\target_ia32.props" />
     <Import Project="..\..\hash\hash.props" />
     <Import Project="..\..\encode\encode.props" />
     <Import Project="..\..\..\3rdp\win32.release\cryptlib\cryptlib.props" />
     <Import Project="..\..\..\3rdp\win32.release\libarchive\libarchive.props" />
     <Import Project="..\..\conio\conio_gdi.props" />
+    <Import Project="..\..\build\target_winver.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -50,12 +51,12 @@
     <Import Project="..\..\smblib\smblib.props" />
     <Import Project="..\..\uifc\uifc.props" />
     <Import Project="..\..\build\undeprecate.props" />
-    <Import Project="..\..\build\target_ia32.props" />
     <Import Project="..\..\hash\hash.props" />
     <Import Project="..\..\encode\encode.props" />
     <Import Project="..\..\..\3rdp\win32.release\cryptlib\cryptlib.props" />
     <Import Project="..\..\..\3rdp\win32.release\libarchive\libarchive.props" />
     <Import Project="..\..\conio\conio_gdi.props" />
+    <Import Project="..\..\build\target_winver.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
