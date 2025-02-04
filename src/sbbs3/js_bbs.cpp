@@ -1651,8 +1651,17 @@ js_load_text(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 
 	JSSTRING_TO_MSTRING(cx, js_str, cstr, NULL);
-	if (!cstr)
+	if (cstr == nullptr)
 		return JS_FALSE;
+
+	const char* ext = getfext(cstr);
+	if (ext != nullptr && stricmp(ext, ".ini") == 0) {
+		snprintf(path, sizeof path, "%s%s", sbbs->cfg.ctrl_dir, cstr);
+		bool result = sbbs->replace_text(path);
+		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
+		free(cstr);
+		return JS_TRUE;
+	}
 
 	rc = JS_SUSPENDREQUEST(cx);
 	for (i = 0; i < TOTAL_TEXT; i++) {
@@ -1662,8 +1671,10 @@ js_load_text(JSContext *cx, uintN argc, jsval *arglist)
 			sbbs->text[i] = sbbs->text_sav[i];
 		}
 	}
-	snprintf(path, sizeof path, "%s%s.dat"
-	         , sbbs->cfg.ctrl_dir, cstr);
+	if (ext == nullptr)
+		snprintf(path, sizeof path, "%s%s.dat", sbbs->cfg.ctrl_dir, cstr);
+	else
+		snprintf(path, sizeof path, "%s%s", sbbs->cfg.ctrl_dir, cstr);
 	free(cstr);
 
 	if ((stream = fnopen(NULL, path, O_RDONLY)) == NULL) {
@@ -4637,15 +4648,17 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	},
 	{"revert_text",     js_revert_text,     1,  JSTYPE_BOOLEAN, JSDOCSTR("[<i>number</i> index or <i>string</i> id]")
 	 , JSDOCSTR("Revert specified text string to original <tt>text.dat</tt> or <tt>text.ini</tt> string; "
-		        "if <i>index</i> and <i>id</i> are unspecified, reverts all text lines.")
+		        "if <i>index</i> and <i>id</i> are unspecified, reverts all text strings.")
 	 , 310
 	},
-	{"load_text",       js_load_text,       1,  JSTYPE_BOOLEAN, JSDOCSTR("base_filename")
-	 , JSDOCSTR("Load an alternate text.dat from ctrl directory, automatically appends <tt>.dat</tt> to basefilename.")
+	{"load_text",       js_load_text,       1,  JSTYPE_BOOLEAN, JSDOCSTR("filename")
+	 , JSDOCSTR("Load alternate text strings (in <tt>text.dat</tt> or <tt>text.ini</tt> format) from a file in the ctrl directory."
+		 "A <tt>.dat</tt> extension is automatically added to the filename if no extension was specified.<br>"
+		 "Note: <tt>text.ini</tt> support added to this method in v3.20c.")
 	 , 310
 	},
 	{"load_user_text",  js_load_user_text,  0,  JSTYPE_BOOLEAN, JSDOCSTR("")
-	 , JSDOCSTR("Load text string from the user's selected language (<tt>ctrl/text.*.ini</tt>) file.")
+	 , JSDOCSTR("Load text strings from the user's selected language (<tt>ctrl/text.*.ini</tt>) file.")
 	 , 320
 	},
 	/* procedures */
