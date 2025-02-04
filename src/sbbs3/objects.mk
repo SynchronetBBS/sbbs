@@ -176,18 +176,6 @@ ECHOCFG_OBJS = \
 			$(UIFC_OBJS) \
 			$(MTOBJODIR)/nopen$(OFILE)
 
-ADDFILES_OBJS =		$(OBJODIR)/addfiles$(OFILE)
-
-FILELIST_OBJS = 	$(LOAD_CFG_OBJS) \
-			$(OBJODIR)/filelist$(OFILE) \
-			$(OBJODIR)/date_str$(OFILE) \
-			$(OBJODIR)/dat_rec$(OFILE) \
-			$(OBJODIR)/filedat$(OFILE) \
-			$(OBJODIR)/sauce$(OFILE) \
-			$(OBJODIR)/getstats$(OFILE) \
-			$(OBJODIR)/userdat$(OFILE) \
-			$(OBJODIR)/trash$(OFILE)
-
 MAKEUSER_OBJS = 	$(LOAD_CFG_OBJS) \
 			$(OBJODIR)/makeuser$(OFILE) \
 			$(OBJODIR)/date_str$(OFILE) \
@@ -251,8 +239,6 @@ QWKNODES_OBJS = 	$(LOAD_CFG_OBJS) \
 SLOG_OBJS = \
 			$(OBJODIR)/slog$(OFILE) \
 			$(OBJODIR)/nopen$(OFILE)
-
-DELFILES_OBJS = 	$(OBJODIR)/delfiles$(OFILE)
 
 DUPEFIND_OBJS = 	$(LOAD_CFG_OBJS) \
 			$(OBJODIR)/dupefind$(OFILE)
