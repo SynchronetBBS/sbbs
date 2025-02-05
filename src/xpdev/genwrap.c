@@ -1028,7 +1028,7 @@ int get_errno(void)
 }
 
 /****************************************************************************/
-/* Returns the current value of the systems best timer (in SECONDS)			*/
+/* Returns the current value of the system's best timer (in SECONDS)		*/
 /* Any value < 0 indicates an error											*/
 /****************************************************************************/
 long double xp_timer(void)
@@ -1067,7 +1067,7 @@ long double xp_timer(void)
 }
 
 /****************************************************************************/
-/* Returns the current value of the systems best timer (in MILLISECONDS)	*/
+/* Returns the current value of the system's best timer (in MILLISECONDS)	*/
 /* Any value < 0 indicates an error											*/
 /****************************************************************************/
 uint64_t xp_timer64(void)
@@ -1124,7 +1124,7 @@ uint64_t xp_timer64(void)
 }
 
 /****************************************************************************/
-/* Returns the current value of the systems worst timer (in SECONDS)		*/
+/* Returns the current value of the system's worst timer (in SECONDS)		*/
 /* A value of -1 may indicate an error										*/
 /****************************************************************************/
 int64_t xp_fast_timer64(void)
