@@ -247,10 +247,10 @@ endif
 os      :=	$(shell echo $(os) | tr '[A-Z]' '[a-z]' | tr ' ' '_')
 
 ifdef win
- WINNT ?= 0x0501
- WINVER ?= 0x0501
- WIN32_IE ?= 0x0500
- NTDDI ?= 0x0500
+ WINNT ?= 0x0600
+ WINVER ?= 0x0600
+ WIN32_IE ?= 0x0700
+ NTDDI ?= 0x06000000
 else
  CFLAGS +=	-DPREFER_POLL
  machine_uname	:=	$(shell if uname -m | egrep -v "(i[3456789]*|x)86" > /dev/null; then uname -m | tr "[A-Z]" "[a-z]" | tr " " "_" ; fi)
