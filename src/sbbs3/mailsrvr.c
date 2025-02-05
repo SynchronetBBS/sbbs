@@ -1003,7 +1003,8 @@ static in_addr_t resolve_ip(const char *inaddr)
 	char*    p;
 	char*    addr;
 	char     buf[128];
-	HOSTENT* host;
+	struct addrinfo* res;
+	in_addr_t ipa = INADDR_NONE;
 
 	SAFECOPY(buf, inaddr);
 	addr = buf;
@@ -1019,15 +1020,15 @@ static in_addr_t resolve_ip(const char *inaddr)
 		if (*p != '.' && !IS_DIGIT(*p))
 			break;
 	if (!(*p))
-		return inet_addr(addr);
+		return parseIPv4Address(addr);
 
-	if ((host = gethostbyname(inaddr)) == NULL)
+	if (getaddrinfo(addr, NULL, NULL, &res) != 0)
 		return INADDR_NONE;
 
-	if (host->h_addr_list[0] == NULL)
-		return INADDR_NONE;
-
-	return *((in_addr_t*)host->h_addr_list[0]);
+	if (res->ai_family == AF_INET)
+		ipa = ((struct sockaddr_in*)res->ai_addr)->sin_addr.s_addr;
+	freeaddrinfo(res);
+	return ipa;
 }
 
 /****************************************************************************/
@@ -2788,7 +2789,7 @@ static int chk_received_hdr(SOCKET socket, const char* prot, const char *buf, IN
 			strncpy(ip, p, 16);
 			ip[15] = 0;
 			addr.in.sin_family = AF_INET;
-			addr.in.sin_addr.s_addr = inet_addr(ip);
+			addr.in.sin_addr.s_addr = parseIPv4Address(ip);
 			lprintf(LOG_DEBUG, "%04d %s DNSBL checking received header address %s [%s]", socket, prot, host_name, ip);
 		}
 

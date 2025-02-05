@@ -458,8 +458,9 @@ int close_socket(SOCKET sock)
 /* TODO: IPv6 */
 in_addr_t resolve_ip(char *addr)
 {
-	HOSTENT* host;
 	char*    p;
+	struct addrinfo* res;
+	in_addr_t ipa = INADDR_NONE;
 
 	if (*addr == 0)
 		return INADDR_NONE;
@@ -468,12 +469,15 @@ in_addr_t resolve_ip(char *addr)
 		if (*p != '.' && !IS_DIGIT(*p))
 			break;
 	if (!(*p))
-		return inet_addr(addr);
-	if ((host = gethostbyname(addr)) == NULL)
+		return parseIPv4Address(addr);
+
+	if (getaddrinfo(addr, NULL, NULL, &res) != 0)
 		return INADDR_NONE;
-	if (host->h_addr_list[0] == NULL)
-		return INADDR_NONE;
-	return *((in_addr_t*)host->h_addr_list[0]);
+
+	if (res->ai_family == AF_INET)
+		ipa = ((struct sockaddr_in*)res->ai_addr)->sin_addr.s_addr;
+	freeaddrinfo(res);
+	return ipa;
 }
 
 } /* extern "C" */
@@ -5921,8 +5925,10 @@ NO_SSH:
 				result = connect(new_node->passthru_socket, (struct sockaddr *)&tmp_addr, tmp_addr_len);
 
 				if (result != 0) {
+					char tmp[16];
 					lprintf(LOG_ERR, "Node %d !ERROR %d (%d) connecting to passthru socket: %s port %u"
-					        , new_node->cfg.node_num, result, SOCKET_ERRNO, inet_ntoa(tmp_addr.sin_addr), htons(tmp_addr.sin_port));
+					        , new_node->cfg.node_num, result, SOCKET_ERRNO
+					        , inet_ntop(AF_INET, &tmp_addr.sin_addr.s_addr, tmp, sizeof tmp), htons(tmp_addr.sin_port));
 					close_socket(new_node->passthru_socket);
 					new_node->passthru_socket = INVALID_SOCKET;
 					close_socket(tmp_sock);
