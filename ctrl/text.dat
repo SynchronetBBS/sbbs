@@ -432,8 +432,8 @@
 "Not Available"                                         357 LiSysopNotAvailable
 "\1r\1h\1iYou can't possibly be in two places at the "\    358 UserOnTwoNodes
 	"same time.\1n\r\n"
-"\7\1r\1h\1i%d critical errors have occurred. "\           359 CriticalErrors
-	"Type ;ERR at main menu.\1n\r\n"
+"\7\1r\1h\1i%d critical errors have occurred.\1\\ "\       359 CriticalErrors
+	"Use ERR command to view error log.\1n\r\n"
 "\1_\1w\1hYou have %d User to User File Transfer%s "\      360 UserXferForYou
 	"waiting for you\r\n"
 "\1_\1w\1hYou have sent %d unreceived User to "\           361 UnreceivedUserXfer
