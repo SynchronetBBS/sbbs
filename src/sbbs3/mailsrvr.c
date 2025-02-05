@@ -2770,7 +2770,7 @@ static int chk_received_hdr(SOCKET socket, const char* prot, const char *buf, IN
 		p = strtok_r(NULL, "]", &last);
 		if (p == NULL)
 			break;
-		if (strnicmp("IPv6:", p, 5)) {
+		if (strnicmp("IPv6:", p, 5) == 0) {
 			p += 5;
 			SKIP_WHITESPACE(p);
 			memset(&ai, 0, sizeof(ai));
