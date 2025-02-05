@@ -39,6 +39,11 @@
 #elif defined(_WIN32)
 	#include <windows.h>
 	#include <lm.h>     /* NetWkstaGetInfo() */
+	#if WINVER >= 0x0600 // _WIN32_WINNT_VISTA
+		#define GetTickCount() GetTickCount64()
+	#endif
+#else
+
 #endif
 
 #include "genwrap.h"    /* Verify prototypes */
@@ -1052,7 +1057,7 @@ long double xp_timer(void)
 #endif
 	}
 	else {
-		ret = GetTickCount();
+		ret = (long double)GetTickCount();
 		ret /= 1000;
 	}
 #else
@@ -1160,11 +1165,7 @@ int64_t xp_fast_timer64(void)
 	else
 		ret = -1;
 #elif defined(_WIN32)
-#if WINVER < 0x0600
 	ret = GetTickCount() / 1000;
-#else
-	ret = GetTickCount64() / 1000;
-#endif
 #else
 #error no high-resolution time for this platform
 #endif
