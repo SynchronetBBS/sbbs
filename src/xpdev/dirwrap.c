@@ -921,53 +921,21 @@ typedef BOOL (WINAPI * GetDiskFreeSpaceEx_t)
 static uint64_t getdiskspace(const char* path, uint64_t unit, bool freespace)
 {
 #if defined(_WIN32)
-	char                 root[16];
-	DWORD                TotalNumberOfClusters;
-	DWORD                NumberOfFreeClusters;
-	DWORD                BytesPerSector;
-	DWORD                SectorsPerCluster;
 	uint64_t             total;
 	ULARGE_INTEGER       avail;
 	ULARGE_INTEGER       size;
-	static HINSTANCE     hK32 = NULL;
-	GetDiskFreeSpaceEx_t GDFSE = NULL;
 
-	if (hK32 == NULL)
-		hK32 = LoadLibraryA("KERNEL32");
-	if (hK32 != NULL)
-		GDFSE = (GetDiskFreeSpaceEx_t)GetProcAddress(hK32, "GetDiskFreeSpaceExA");
-
-	if (GDFSE != NULL) {  /* Windows 95-OSR2 or later */
-		if (!GDFSE(
-				path,   /* pointer to the directory name */
-				&avail, /* receives the number of bytes on disk avail to the caller */
-				&size,  /* receives the number of bytes on disk */
-				NULL))  /* receives the free bytes on disk */
-			return 0;
-
-		total = freespace ? avail.QuadPart : size.QuadPart;
-		if (unit > 1)
-			total /= unit;
-		return total;
-	}
-
-	/* Windows 95 (old way), limited to 2GB */
-	sprintf(root, "%.3s", path);
-	if (!GetDiskFreeSpaceA(
-			root,               /* pointer to root path */
-			(PDWORD)&SectorsPerCluster, /* pointer to sectors per cluster */
-			(PDWORD)&BytesPerSector,    /* pointer to bytes per sector */
-			(PDWORD)&NumberOfFreeClusters, /* pointer to number of free clusters */
-			(PDWORD)&TotalNumberOfClusters /* pointer to total number of clusters */
-			))
+	if (!GetDiskFreeSpaceExA(
+			path,   /* pointer to the directory name */
+			&avail, /* receives the number of bytes on disk avail to the caller */
+			&size,  /* receives the number of bytes on disk */
+			NULL))  /* receives the free bytes on disk */
 		return 0;
 
-	if (freespace)
-		TotalNumberOfClusters = NumberOfFreeClusters;
+	total = freespace ? avail.QuadPart : size.QuadPart;
 	if (unit > 1)
-		TotalNumberOfClusters /= (DWORD)unit;
-	return TotalNumberOfClusters * SectorsPerCluster * BytesPerSector;
-
+		total /= unit;
+	return total;
 
 #elif defined(__solaris__) || (defined(__NetBSD_Version__) && (__NetBSD_Version__ >= 300000000 /* NetBSD 3.0 */))
 
