@@ -964,7 +964,7 @@ static ulong sockmsgtxt(SOCKET socket, const char* prot, CRYPT_SESSION sess, smb
 		/* filename(s) in subject */
 		char* p = msg->subj;
 		SKIP_WHITESPACE(p);
-		while (*p != '\0') {
+		while (p != NULL && *p != '\0') {
 			char delim = ' ';
 			if (*p == '"') {
 				delim = '"';
@@ -1228,7 +1228,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 		password[0] = 0;
 
 		srand((unsigned int)(time(NULL) ^ (time_t)GetCurrentThreadId()));   /* seed random number generator */
-		rand(); /* throw-away first result */
+		(void)rand(); /* throw-away first result */
 		safe_snprintf(challenge, sizeof(challenge), "<%x%x%lx%lx@%.128s>"
 		              , rand(), socket, (ulong)time(NULL), (ulong)clock(), server_host_name());
 
@@ -2456,7 +2456,7 @@ js_mailproc(SOCKET sock, client_t* client, user_t* user, struct mailproc* mailpr
 		p = cmdline;
 		FIND_WHITESPACE(p);
 		SKIP_WHITESPACE(p);
-		for (argc = 0; *p; argc++) {
+		for (argc = 0; p != NULL && *p != '\0'; argc++) {
 			SAFECOPY(arg, p);
 			truncstr(arg, " \t");
 			val = STRING_TO_JSVAL(JS_NewStringCopyZ(*js_cx, arg));
@@ -3139,7 +3139,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 	spam.subnum = INVALID_SUB;
 
 	srand((unsigned int)(time(NULL) ^ (time_t)GetCurrentThreadId()));   /* seed random number generator */
-	rand(); /* throw-away first result */
+	(void)rand(); /* throw-away first result */
 	SAFEPRINTF4(session_id, "%x%x%x%lx", getpid(), socket, rand(), (long)clock());
 	lprintf(LOG_DEBUG, "%04d %s [%s] Session ID=%s", socket, client.protocol, host_ip, session_id);
 	SAFEPRINTF3(msgtxt_fname, "%sSBBS_%s.%s.msg", scfg.temp_dir, client.protocol, session_id);
