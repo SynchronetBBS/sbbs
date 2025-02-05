@@ -939,7 +939,12 @@ var DeletedNumberItems=929;
 var E_Mail=930;
 var E_Mails=931;
 var NoDOS=932;
+var TelnetGatewayPrompt=933;
+var QWKEndOfMessage=934;
+var QWKTagLineFmt=935;
+var QWKControlCommand=936;
+var QWKBadControlCommand=937;
 
-var TOTAL_TEXT=933;
+var TOTAL_TEXT=938;
 
 this;
