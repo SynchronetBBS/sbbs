@@ -488,24 +488,16 @@ static void WINAPI services_start(DWORD dwArgc, LPTSTR *lpszArgv)
 }
 
 /******************************************/
-/* NT Serivce Install/Uninstall Functions */
+/* NT Service Install/Uninstall Functions */
 /******************************************/
 
-/* ChangeServiceConfig2 is a Win2K+ API function, must call dynamically */
-typedef WINADVAPI bool (WINAPI *ChangeServiceConfig2_t)(SC_HANDLE, DWORD, LPCVOID);
-
-static void describe_service(HANDLE hSCMlib, SC_HANDLE hService, char* description)
+static void describe_service(SC_HANDLE hService, char* description)
 {
-	ChangeServiceConfig2_t     changeServiceConfig2;
-	static SERVICE_DESCRIPTION service_desc;
-
-	if (hSCMlib == NULL)
-		return;
+	static SERVICE_DESCRIPTION service_desc = {0};
 
 	service_desc.lpDescription = description;
 
-	if ((changeServiceConfig2 = (ChangeServiceConfig2_t)GetProcAddress(hSCMlib, "ChangeServiceConfig2A")) != NULL)
-		changeServiceConfig2(hService, SERVICE_CONFIG_DESCRIPTION, &service_desc);
+	ChangeServiceConfig2(hService, SERVICE_CONFIG_DESCRIPTION, &service_desc);
 }
 
 static bool register_event_source(char* name, char* path)
@@ -696,7 +688,7 @@ static DWORD get_service_info(SC_HANDLE hSCManager, char* name, DWORD* state)
 /****************************************************************************/
 /* Utility function to create a service with description (on Win2K+)		*/
 /****************************************************************************/
-static void create_service(HANDLE hSCMlib, SC_HANDLE hSCManager
+static void create_service(SC_HANDLE hSCManager
                            , char* name, char* display_name, char* description, char* path
                            , bool autostart)
 {
@@ -728,7 +720,7 @@ static void create_service(HANDLE hSCMlib, SC_HANDLE hSCManager
 			printf("!ERROR %d\n", err);
 	}
 	else {
-		describe_service(hSCMlib, hService, description);
+		describe_service(hService, description);
 		CloseServiceHandle(hService);
 		printf("%s\n", start_type_desc(start_type));
 
@@ -743,7 +735,6 @@ static void create_service(HANDLE hSCMlib, SC_HANDLE hSCManager
 static int install(const char* svc_name)
 {
 	int       i;
-	HANDLE    hSCMlib;
 	SC_HANDLE hSCManager;
 	char      path[MAX_PATH + 1];
 
@@ -765,22 +756,16 @@ static int install(const char* svc_name)
 		return -1;
 	}
 
-	hSCMlib = LoadLibrary("ADVAPI32.DLL");
-
 	for (i = 0; ntsvc_list[i] != NULL; i++)
 		if (svc_name == NULL   /* All? */
 		    || !stricmp(ntsvc_list[i]->name, svc_name)
 		    || !stricmp(ntsvc_list[i]->name + STRLEN_SYNCHRONET, svc_name))
-			create_service(hSCMlib
-			               , hSCManager
+			create_service(hSCManager
 			               , ntsvc_list[i]->name
 			               , ntsvc_list[i]->display_name
 			               , ntsvc_list[i]->description
 			               , path
 			               , ntsvc_list[i]->autostart);
-
-	if (hSCMlib != NULL)
-		FreeLibrary(hSCMlib);
 
 	CloseServiceHandle(hSCManager);
 
