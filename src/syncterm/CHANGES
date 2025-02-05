@@ -1,16 +1,13 @@
-Version 1.5b
+Version 1.5
 ------------
-Fix Prestel regressions
-Use the SAA5050 font for Prestel mode
-Prestel mode is 25 rows, not 24
-Add setting to invert mouse wheel
 Support web-based dialing directories
 Alt+Home now centres the window on the screen
+Add setting to invert mouse wheel
 Option to defer telnet negotiation
+Use the SAA5050 font for Prestel mode
+Add BBC Micro Mode 7 mode
 Remove delays when sending login data
-
-Version 1.5a
-------------
+Fix Prestel regressions
 Fix RIP rendering regressions
 Fix 80x43 scrolling bottom line corruption
 Fix overlinking with GNUmakefile
