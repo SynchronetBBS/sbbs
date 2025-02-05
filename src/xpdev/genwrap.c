@@ -280,7 +280,7 @@ char* c_escape_str(const char* src, char* dst, size_t maxlen, bool ctrl_only)
 
 	for (s = src, d = dst; *s && (size_t)(d - dst) < maxlen; s++) {
 		if ((!ctrl_only || (uchar) * s < ' ') && (e = c_escape_char(*s)) != NULL) {
-			strncpy(d, e, maxlen - (d - dst));
+			strlcpy(d, e, maxlen - (d - dst));
 			d += strlen(d);
 		} else if ((uchar) * s < ' ' || (uchar) * s >= '\x7f') {
 			d += safe_snprintf(d, maxlen - (d - dst), "\\x%02X", (uchar) * s);
