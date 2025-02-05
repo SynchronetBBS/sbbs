@@ -66,7 +66,7 @@ str_list_t getNameServerList(void)
 		return NULL;
 	if (GetNetworkParams(FixedInfo, &FixedInfoLen) == ERROR_BUFFER_OVERFLOW) {
 		FixedInfo = (FIXED_INFO*)malloc(FixedInfoLen);
-		if (GetNetworkParams(FixedInfo, &FixedInfoLen) == ERROR_SUCCESS) {
+		if (FixedInfo != NULL && GetNetworkParams(FixedInfo, &FixedInfoLen) == ERROR_SUCCESS) {
 			ip = &FixedInfo->DnsServerList;
 			for (; ip != NULL; ip = ip->Next)
 				strListPush(&list, ip->IpAddress.String);
