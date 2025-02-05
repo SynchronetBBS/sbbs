@@ -59,6 +59,7 @@ ifndef win
   CIOLIB-MT_CFLAGS		+=  -DDISABLE_X11=1 -DNO_X
  endif
 else
+ CIOLIB-MT_LIBS += -lkernel32
  NO_X			 :=  1
  CIOLIB-MT_CFLAGS        +=  -DDISABLE_X11=1 -DNO_X
  ifndef WITHOUT_GDI

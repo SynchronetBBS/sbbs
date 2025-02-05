@@ -522,12 +522,6 @@ static CONSOLE_SCREEN_BUFFER_INFOEX orig_sbiex = {
 };
 static void *	win32_suspendbuf=NULL;
 
-#ifndef CONSOLE_FULLSCREEN_MODE
-/* SetConsoleDisplayMode parameter value */
-#define CONSOLE_FULLSCREEN_MODE	1		// Text is displayed in full-screen mode.
-#define CONSOLE_WINDOWED_MODE	2		// Text is displayed in a console window.
-#endif
-
 static DWORD	orig_display_mode=0;
 
 /*-----------------------------------------------------------------------------
@@ -554,61 +548,16 @@ Remarks:
 -----------------------------------------------------------------------------*/
 BOOL NT_SetConsoleDisplayMode(HANDLE hOutputHandle, DWORD dwNewMode)
 {
-    typedef BOOL (WINAPI *SCDMProc_t) (HANDLE, DWORD, LPDWORD);
-    SCDMProc_t SetConsoleDisplayMode;
-    HMODULE hKernel32;
-    BOOL	ret;
-    const char KERNEL32_NAME[] = "kernel32.dll";
-
-    hKernel32 = LoadLibraryA(KERNEL32_NAME);
-    if (hKernel32 == NULL)
-        return FALSE;
-
-    SetConsoleDisplayMode = 
-        (SCDMProc_t)GetProcAddress(hKernel32, "SetConsoleDisplayMode");
-    if (SetConsoleDisplayMode == NULL)
-    {
-        SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
-        ret = FALSE;
-    }
-    else
-    {
-        DWORD dummy=0;
-        ret = SetConsoleDisplayMode(hOutputHandle, dwNewMode, &dummy);
-		dprintf("SetConsoleDisplayMode(%d) returned %d", dwNewMode, ret);
-    }
-        
-    FreeLibrary(hKernel32);
+	BOOL ret = SetConsoleDisplayMode(hOutputHandle, dwNewMode, NULL);
+	dprintf("SetConsoleDisplayMode(%d) returned %d", dwNewMode, ret);
 
 	return ret;
 }
 
 BOOL NT_GetConsoleDisplayMode(DWORD* mode)
 {
-    typedef BOOL (WINAPI *GCDMProc_t) (LPDWORD);
-    GCDMProc_t GetConsoleDisplayMode;
-    HMODULE hKernel32;
-    BOOL	ret;
-    const char KERNEL32_NAME[] = "kernel32.dll";
-
-    hKernel32 = LoadLibraryA(KERNEL32_NAME);
-    if (hKernel32 == NULL)
-        return FALSE;
-
-    GetConsoleDisplayMode = 
-        (GCDMProc_t)GetProcAddress(hKernel32, "GetConsoleDisplayMode");
-    if (GetConsoleDisplayMode == NULL)
-    {
-        SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
-        ret = FALSE;
-    }
-    else
-    {
-        ret = GetConsoleDisplayMode(mode);
-		dprintf("GetConsoleDisplayMode() returned %d (%d)", ret, *mode);
-    }
-        
-    FreeLibrary(hKernel32);
+	BOOL ret = GetConsoleDisplayMode(mode);
+	dprintf("GetConsoleDisplayMode() returned %d (%d)", ret, *mode);
 
 	return ret;
 }
