@@ -643,7 +643,7 @@ typedef enum {                      /* Values for xtrn_t.event				*/
 #define K_UPPER     (1 << 0)      /* Converts all letters to upper case		*/
 #define K_UPRLWR    (1 << 1)      /* Upper/Lower case automatically			*/
 #define K_NUMBER    (1 << 2)      /* Allow numbers only						*/
-#define K_WRAP      (1 << 3)      /* Allows word wrap 						*/
+#define K_WORDWRAP  (1 << 3)      /* Allows word wrap 						*/
 #define K_MSG       (1 << 4)      /* Allows ANSI, ^N ^A ^G					*/
 #define K_SPIN      (1 << 5)      /* Spinning cursor (same as SPIN)			*/
 #define K_LINE      (1 << 6)      /* Input line (inverse color)				*/
@@ -668,6 +668,7 @@ typedef enum {                      /* Values for xtrn_t.event				*/
 #define K_NUL       (1 << 25)     /* Return NOINP on timeout instead of '\0'	*/
 #define K_UTF8      (1 << 26)     /* Don't translate UTF-8 input into CP437 	*/
 #define K_RIGHTEXIT (1 << 27)     /* Allow exit by arrowing right				*/
+#define K_LINEWRAP  (1 << 29)     /* Allow string input to wrap the terminal    */
 
 /* Bits in 'mode' for putmsg and printfile  */
 #define P_NONE      0           /* No mode flags							*/

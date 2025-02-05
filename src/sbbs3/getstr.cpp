@@ -43,10 +43,10 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 
 	int    term = term_supports();
 	console &= ~(CON_UPARROW | CON_DOWNARROW | CON_LEFTARROW | CON_RIGHTARROW | CON_BACKSPACE | CON_DELETELINE);
-	if (!(mode & K_WRAP))
+	if (!(mode & K_WORDWRAP))
 		console &= ~CON_INSERT;
 	sys_status &= ~SS_ABORT;
-	if (cols >= TERM_COLS_MIN && !(mode & K_NOECHO) && !(console & CON_R_ECHOX)
+	if (!(mode & K_LINEWRAP) && cols >= TERM_COLS_MIN && !(mode & K_NOECHO) && !(console & CON_R_ECHOX)
 	    && column + (int)maxlen >= cols)    /* Don't allow the terminal to auto line-wrap */
 		maxlen = cols - column - 1;
 	if (mode & K_LINE && (term & (ANSI | PETSCII)) && !(mode & K_NOECHO)) {
@@ -130,7 +130,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 			console |= CON_RIGHTARROW;
 			break;
 		}
-		if (ch == TAB && (mode & K_TAB || (!(mode & K_WRAP) && history == NULL)))  /* TAB same as CR */
+		if (ch == TAB && (mode & K_TAB || (!(mode & K_WORDWRAP) && history == NULL)))  /* TAB same as CR */
 			break;
 		if (!i && (mode & (K_UPRLWR | K_TRIM)) && (ch == ' ' || ch == TAB))
 			continue;   /* ignore beginning white space if upper/lower */
@@ -528,7 +528,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 				cursor_left((l - i) + 1);
 				break;
 			default:
-				if (mode & K_WRAP && i == maxlen && ch >= ' ' && !(console & CON_INSERT)) {
+				if (mode & K_WORDWRAP && i == maxlen && ch >= ' ' && !(console & CON_INSERT)) {
 					str1[i] = 0;
 					if (ch == ' ' && !(mode & K_CHAT)) { /* don't wrap a space */
 						strcpy(strout, str1);       /* as last char */

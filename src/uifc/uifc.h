@@ -181,7 +181,7 @@ typedef int64_t uifc_winmode_t;
 #define K_UPPER     (1 << 0)  /* Converts all letters to upper case		*/
 #define K_UPRLWR    (1 << 1)  /* Upper/Lower case automatically			*/
 #define K_NUMBER    (1 << 2)  /* Allow numbers only						*/
-#define K_WRAP      (1 << 3)  /* Allows word wrap 						*/
+#define K_WORDWRAP  (1 << 3)  /* Allows word wrap 						*/
 #define K_MSG       (1 << 4)  /* Allows ANSI, ^N ^A ^G					*/
 #define K_SPIN      (1 << 5)  /* Spinning cursor (same as SPIN)			*/
 #define K_LINE      (1 << 6)  /* Input line (inverse color)				*/

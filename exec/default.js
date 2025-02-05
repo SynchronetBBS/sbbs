@@ -200,7 +200,7 @@ while(bbs.online && !js.terminated) {
 	if(cmd > ' ')
 		console.print(cmd);
 	if(cmd == ';') {
-		cmd = console.getstr();
+		cmd = console.getstr(100, K_LINEWRAP);
 		if(cmd == '!')
 			cmd = last_str_cmd;
 		load({}, "str_cmds.js", cmd);

@@ -3619,7 +3619,7 @@ js_put_telegram(JSContext *cx, uintN argc, jsval *arglist)
 		while (sbbs->online && i < 5) {
 			char line[256];
 			sbbs->bputs("\1n: \1h");
-			if (!sbbs->getstr(line, 70, i < 4 ? (K_WRAP | K_MSG) : (K_MSG)))
+			if (!sbbs->getstr(line, 70, i < 4 ? (K_WORDWRAP | K_MSG) : (K_MSG)))
 				break;
 			SAFEPRINTF2(str, "%4s%s\r\n", nulstr, line);
 			SAFECAT(buf, str);

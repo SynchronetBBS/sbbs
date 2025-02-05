@@ -1008,7 +1008,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 			if (line < 1)
 				carriage_return();
 			ulong prev_con = console;
-			int   kmode = K_WRAP | K_MSG | K_EDIT | K_NOCRLF | K_USEOFFSET;
+			int   kmode = K_WORDWRAP | K_MSG | K_EDIT | K_NOCRLF | K_USEOFFSET;
 			if (line)
 				kmode |= K_LEFTEXIT;
 			if (str[line] != NULL)
@@ -1125,7 +1125,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 				j = K_MSG | K_EDIT; /* use j for the getstr mode */
 				if (i == -1) { /* /E means edit last line */
 					i = lines - 1;
-					j |= K_WRAP;  /* wrap when editing last line */
+					j |= K_WORDWRAP;  /* wrap when editing last line */
 				}
 				if (i >= (int)lines || i < 0)
 					bputs(text[InvalidLineNumber]);
@@ -1556,7 +1556,7 @@ bool sbbs_t::forwardmsg(smb_t* smb, smbmsg_t* orgmsg, const char* to, const char
 	if (comment == NULL) {
 		while (online && !msgabort()) {
 			bputs(text[UeditComment]);
-			if (!getstr(str, 70, K_WRAP))
+			if (!getstr(str, 70, K_WORDWRAP))
 				break;
 			smb_hfield_string(&msg, SMB_COMMENT, str);
 			smb_hfield_string(&msg, SMB_COMMENT, br);

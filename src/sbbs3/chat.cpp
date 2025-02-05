@@ -402,7 +402,7 @@ void sbbs_t::multinodechat(int channel)
 				j = 0;
 				pgraph[0] = 0;
 				while (j < 5) {
-					if (!getstr(line, 66, K_WRAP | K_MSG | K_CHAT))
+					if (!getstr(line, 66, K_WORDWRAP | K_MSG | K_CHAT))
 						break;
 					if (j) {
 						snprintf(str, sizeof str, text[ChatLineFmt]
@@ -1361,7 +1361,7 @@ void sbbs_t::nodemsg()
 				logbuf[0] = 0;
 				while (online && i < 5) {
 					bprintf("%4s", nulstr);
-					if (!getstr(line, 70, K_WRAP | K_MSG))
+					if (!getstr(line, 70, K_WORDWRAP | K_MSG))
 						break;
 					SAFEPRINTF2(str, "%4s%s\r\n", nulstr, line);
 					SAFECAT(buf, str);
@@ -1956,7 +1956,7 @@ void sbbs_t::localguru(char *gurubuf, int gurunum)
 			ungetkey(ch);
 		}
 		attr(cfg.color[clr_chatremote]);
-		getstr(str, 78, K_WRAP | K_CHAT);
+		getstr(str, 78, K_WORDWRAP | K_CHAT);
 	}
 	bputs(text[EndOfChat]);
 	sys_status &= ~SS_GURUCHAT;

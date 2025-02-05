@@ -163,7 +163,7 @@ var   K_NONE		=0;			/* No special behavior						*/
 var   K_UPPER 		=(1<<0);	/* Converts all letters to upper case		*/
 var   K_UPRLWR		=(1<<1);	/* Upper/Lower case automatically			*/
 var   K_NUMBER		=(1<<2);	/* Allow numbers only						*/
-var   K_WRAP		=(1<<3);	/* Allows word wrap 						*/
+var   K_WORDWRAP	=(1<<3);	/* Allows word wrap 						*/
 var   K_MSG			=(1<<4);	/* Allows ANSI, ^N ^A ^G					*/
 var   K_SPIN		=(1<<5);	/* Spinning cursor (same as SPIN)			*/
 var   K_LINE		=(1<<6);	/* Input line (inverse color)				*/
@@ -187,6 +187,8 @@ var   K_TRIM        =(1<<23);   /* Trim white-space from both ends of str   */
 var   K_CTRLKEYS	=(1<<24);	/* No control-key handling/eating in inkey()*/
 var   K_NUL         =(1<<25);   /* Return null instead of "" upon timeout   */
 var   K_UTF8		=(1<<26);	/* Don't translate UTF-8 input to CP437 	*/
+var   K_RIGHTEXIT   =(1<<27);   /* Allow exit by arrowing right				*/
+var   K_LINEWRAP    =(1<<29);   /* Allow string input to wrap the terminal  */
 					    		/********************************************/
 
 						    	/********************************************/
