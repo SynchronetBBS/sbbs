@@ -2959,7 +2959,7 @@ handle_addrs(char *host, struct sockaddr_in *addr4, socklen_t *addr4len, struct 
 	if (p != NULL)
 		*p = 0;
 
-	ia = inet_addr(host);
+	ia = parseIPv4Address(host);
 	if (ia != INADDR_NONE) {
 		if (*addr4len == 0) {
 			addr4->sin_addr.s_addr = ia;
