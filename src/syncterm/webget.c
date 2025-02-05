@@ -1107,8 +1107,7 @@ do_request(struct http_session *sess)
 		fclose(newfile);
 		newfile = NULL;
 		if (remove(path)) {
-			set_msgf(sess->req, "remove(\"%s\") error", path);
-			goto error_return;
+			// Ignore error
 		}
 
 		if (rename(npath, path) != 0) {

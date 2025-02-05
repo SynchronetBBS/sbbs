@@ -2,6 +2,7 @@ Version 1.6b
 ------------
 Fix regression in Atari auto-login
 Disable Prestel ENQ/Memory in BBC Micro Mode 7
+Fix error adding a new Web List
 
 Version 1.5
 ------------
