@@ -1,5 +1,5 @@
 :experimental:
-= SyncTERM v1.6a Manual
+= SyncTERM v1.6b Manual
 Stephen Hurd <shurd@sasktel.net>
 :toc:
 

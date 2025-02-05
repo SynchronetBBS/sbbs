@@ -1,3 +1,7 @@
+Version 1.6b
+------------
+Fix regression in Atari auto-login
+
 Version 1.5
 ------------
 Support web-based dialing directories

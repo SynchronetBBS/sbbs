@@ -3999,6 +3999,7 @@ send_login(struct bbslist *bbs) {
 	const size_t derbufsz = userlen + passlen + syspasslen + 3 + 1;
 	size_t derbufpos = 0;
 	char *derbuf = malloc(derbufsz);
+	const char enter = (cterm->emulation == CTERM_EMULATION_ATASCII ? '\x9b' : '\r');
 
 	if ((bbs->conn_type != CONN_TYPE_RLOGIN)
 	    && (bbs->conn_type != CONN_TYPE_RLOGIN_REVERSED)
@@ -4007,21 +4008,21 @@ send_login(struct bbslist *bbs) {
 			if (bbs->user[0]) {
 				memcpy(&derbuf[derbufpos], bbs->user, userlen);
 				derbufpos += userlen;
-				derbuf[derbufpos++] = '\r';
+				derbuf[derbufpos++] = enter;
 				derbuf[derbufpos] = 0;
 			}
 		}
 		if (bbs->password[0]) {
 			memcpy(&derbuf[derbufpos], bbs->password, passlen);
 			derbufpos += passlen;
-			derbuf[derbufpos++] = '\r';
+			derbuf[derbufpos++] = enter;
 			derbuf[derbufpos] = 0;
 		}
 	}
 	if (bbs->syspass[0]) {
 		memcpy(&derbuf[derbufpos], bbs->syspass, syspasslen);
 		derbufpos += syspasslen;
-		derbuf[derbufpos++] = '\r';
+		derbuf[derbufpos++] = enter;
 		derbuf[derbufpos] = 0;
 	}
 	if (derbufpos)
