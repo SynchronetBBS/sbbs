@@ -353,8 +353,10 @@ function str_cmds(str)
 
 		if(str=="HELP")
 			writeln("RELOAD\tReload the current shell (if JavaScript).");
-		if(str=="RELOAD")
+		if(str=="RELOAD") {
+			bbs.load_user_text();
 			exit(0);
+		}
 
 		if(str=="HELP")
 			writeln("SLOG\tExecutes the slog utility to display system statistics.");
