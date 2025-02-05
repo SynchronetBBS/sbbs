@@ -207,7 +207,7 @@ int dospy(scfg_t *cfg, int nodenum, bbs_startup_t *bbs_startup)  {
 int sendmessage(scfg_t *cfg, int nodenum,node_t *node)  {
 	char str[80],str2[80];
 
-	uifc.input(WIN_MID|WIN_SAV,0,0,"Telegram",str2,58,K_WRAP|K_MSG);
+	uifc.input(WIN_MID|WIN_SAV,0,0,"Telegram",str2,58,K_MSG);
 	SAFEPRINTF(str,"\1n\1y\1hMessage From Sysop:\1w %s\r\n",str2);
 	if(getnodedat(cfg,nodenum,node,FALSE,NULL))
 		return(-1);
