@@ -2864,8 +2864,7 @@ static void ctrl_thread(void* arg)
 			memcpy(&data_addr, &ftp.client_addr, ftp.client_addr_len);
 			p = cmd + 5;
 			SKIP_WHITESPACE(p);
-			if (strnicmp(cmd, "PORT ", 5) == 0) {
-				sscanf(p, "%u,%u,%u,%u,%hd,%hd", &h1, &h2, &h3, &h4, &p1, &p2);
+			if (strnicmp(cmd, "PORT ", 5) == 0 && sscanf(p, "%u,%u,%u,%u,%hd,%hd", &h1, &h2, &h3, &h4, &p1, &p2) == 6) {
 				data_addr.in.sin_family = AF_INET;
 				data_addr.in.sin_addr.s_addr = htonl((h1 << 24) | (h2 << 16) | (h3 << 8) | h4);
 				data_port = (p1 << 8) | p2;
@@ -2887,7 +2886,7 @@ static void ctrl_thread(void* arg)
 						FIND_CHAR(p, delim);
 						old_char = *p;
 						*p = 0;
-						data_addr.in.sin_addr.s_addr = inet_addr(ap);
+						data_addr.in.sin_addr.s_addr = parseIPv4Address(ap);
 						*p = old_char;
 						if (*p)
 							p++;
