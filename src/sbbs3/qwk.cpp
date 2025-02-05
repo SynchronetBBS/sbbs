@@ -387,7 +387,7 @@ void sbbs_t::qwk_sec()
 	int       error;
 	int       s;
 	int       i;
-	uint      msgcnt;
+	uint      msgcnt{};
 	uint32_t* sav_ptr;
 
 	getusrdirs();
@@ -1038,8 +1038,7 @@ bool sbbs_t::qwk_vote(str_list_t ini, const char* section, smb_net_type_t net_ty
 		char         zone[32];
 		xpDateTime_t dt = isoDateTimeStr_parse(p);
 		msg.hdr.when_written = smb_when(xpDateTime_to_localtime(dt), dt.zone);
-		sscanf(p, "%*s %s", zone);
-		if (zone[0])
+		if (sscanf(p, "%*s %s", zone) == 1 && zone[0])
 			msg.hdr.when_written.zone = (ushort)strtoul(zone, NULL, 16);
 	}
 
