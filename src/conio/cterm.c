@@ -4488,7 +4488,7 @@ cterm_reset(struct cterminal *cterm)
 
 struct cterminal* cterm_init(int height, int width, int xpos, int ypos, int backlines, int backcols, struct vmem_cell *scrollback, int emulation)
 {
-	char	*revision="$Revision: 1.318 $";
+	char	*revision="$Revision: 1.319 $";
 	char *in;
 	char	*out;
 	struct cterminal *cterm;
@@ -4530,7 +4530,7 @@ struct cterminal* cterm_init(int height, int width, int xpos, int ypos, int back
 		sem_init(&cterm->playnote_thread_terminated,0,0);
 		_beginthread(playnote_thread, 0, cterm);
 	}
-	if (cterm->emulation == CTERM_EMULATION_PRESTEL || cterm->emulation == CTERM_EMULATION_BEEB) {
+	if (cterm->emulation == CTERM_EMULATION_PRESTEL) {
 		cterm->cursor = _NOCURSOR;
 		ciolib_setcursortype(cterm->cursor);
 		memcpy(cterm->prestel_data[0], "????????????????", PRESTEL_MEM_SLOT_SIZE);
@@ -5351,7 +5351,7 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 					}
 				}
 				else if(cterm->sequence) {
-					if (cterm->emulation == CTERM_EMULATION_PRESTEL || cterm->emulation == CTERM_EMULATION_BEEB) {
+					if (cterm->emulation == CTERM_EMULATION_PRESTEL) {
 						if (cterm->prestel_prog_state == PRESTEL_PROG_NONE) {
 							if (ch[0] == '1')
 								cterm->prestel_prog_state = PRESTEL_PROG_1;
@@ -5970,9 +5970,6 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 								prn[0]=0;
 								prnpos = prn;
 								break;
-							case 5: // ENQ
-								prestel_send_memory(cterm, 0, retbuf, retsize);
-								break;
 							case 8: // APB (Active Position Backward)
 								uctputs(cterm, prn);
 								prn[0]=0;
@@ -6014,12 +6011,6 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 								cterm->cursor=_NOCURSOR;
 								ciolib_setcursortype(cterm->cursor);
 								break;
-							case 27: // ESC
-								uctputs(cterm, prn);
-								prn[0]=0;
-								prnpos = prn;
-								cterm->sequence=1;
-								break;
 							case 30: // APH (Active Position Home)
 								uctputs(cterm, prn);
 								prn[0]=0;
@@ -6027,6 +6018,21 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 								gotoxy(CURR_MINX, CURR_MINY);
 								prestel_new_line(cterm);
 								break;
+							case 27: // ESC
+								if(cterm->emulation == CTERM_EMULATION_PRESTEL) {
+									uctputs(cterm, prn);
+									prn[0]=0;
+									prnpos = prn;
+									cterm->sequence=1;
+									break;
+								}
+								// Fall-through
+							case 5: // ENQ
+								if(cterm->emulation == CTERM_EMULATION_PRESTEL) {
+									prestel_send_memory(cterm, 0, retbuf, retsize);
+									break;
+								}
+								// Fall-through
 							default:
 								// "Normal" ASCII... including CR and LF in here.
 								if (buf[j] == 13 || buf[j] == 10 || (buf[j] >= 32 && buf[j] <= 127)) {
