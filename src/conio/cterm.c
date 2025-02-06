@@ -6195,10 +6195,8 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 								if (buf[j] == 13 || buf[j] == 10 || (buf[j] >= 32 && buf[j] <= 127)) {
 									if (cterm->extattr & CTERM_EXTATTR_PRESTEL_MOSAIC) {
 										if ((buf[j] < 64 && buf[j] >= 32) || (buf[j] >= 96 && buf[j] < 128)) {
-											ch[0] = buf[j] | 0x80;
+											ch[0] = ch[0] | 0x80;
 										}
-										else
-											ch[0] = buf[j];
 										if (ch[0] >= 160) {
 											cterm->prestel_last_mosaic = ch[0];
 											if (cterm->extattr & CTERM_EXTATTR_PRESTEL_SEPARATED)
