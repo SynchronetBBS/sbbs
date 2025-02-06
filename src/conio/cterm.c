@@ -6177,6 +6177,12 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 								prnpos = prn;
 								cterm->escbuf[cterm->sequence++] = ch[0];
 								break;
+							case 127: // Destructive backspace
+								*prnpos++ = '\b';
+								*prnpos++ = ' ';
+								*prnpos++ = '\b';
+								*prnpos = 0;
+								break;
 							default:
 								// "Normal" ASCII... including CR and LF in here.
 								if (buf[j] == 13 || buf[j] == 10 || (buf[j] >= 32 && buf[j] <= 127)) {
