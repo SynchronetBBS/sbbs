@@ -76,6 +76,8 @@ function file_size(file)
 
 function file_date(file)
 {
+	if(!file.added)
+		return "";
 	return "<div title='" + system.timestr(file.added) + "'>"
 		+ strftime("%b %d, %Y", file.added) + "</div>";
 }
