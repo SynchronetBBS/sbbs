@@ -6184,6 +6184,13 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 								*prnpos = 0;
 								break;
 							default:
+								// Mode 7 VDU translates to/from ASCII...
+								if (ch[0] == '#')
+									ch[0] = '_';
+								else if (ch[0] == '_')
+									ch[0] = '`';
+								else if (ch[0] == '`')
+									ch[0] = '#';
 								// "Normal" ASCII... including CR and LF in here.
 								if (buf[j] == 13 || buf[j] == 10 || (buf[j] >= 32 && buf[j] <= 127)) {
 									if (cterm->extattr & CTERM_EXTATTR_PRESTEL_MOSAIC) {

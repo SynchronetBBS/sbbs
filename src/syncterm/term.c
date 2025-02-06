@@ -4824,11 +4824,24 @@ doterm(struct bbslist *bbs)
 			else if (key && (cterm->emulation == CTERM_EMULATION_PRESTEL || cterm->emulation == CTERM_EMULATION_BEEB)) {
 				switch (key) {
 					case '_':
-						ch[0] = '#';
+						if (cterm->emulation == CTERM_EMULATION_PRESTEL)
+							ch[0] = '`';
+						else
+							ch[0] = '_';
 						conn_send(ch, 1, 0);
 						break;
 					case '#':
-						ch[0] = '_';
+						if (cterm->emulation == CTERM_EMULATION_PRESTEL)
+							ch[0] = '_';
+						else
+							ch[0] = '#';
+						conn_send(ch, 1, 0);
+						break;
+					case '`':
+						if (cterm->emulation == CTERM_EMULATION_PRESTEL)
+							ch[0] = '#';
+						else
+							ch[0] = '`';
 						conn_send(ch, 1, 0);
 						break;
 					case 10:
