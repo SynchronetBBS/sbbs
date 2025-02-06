@@ -6003,14 +6003,6 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 								cterm_clearscreen(cterm, (char)cterm->attr);
 								gotoxy(CURR_MINX, CURR_MINY);
 								break;
-							case 17: // Cursor on
-								cterm->cursor=_NORMALCURSOR;
-								ciolib_setcursortype(cterm->cursor);
-								break;
-							case 20: // Cursor off
-								cterm->cursor=_NOCURSOR;
-								ciolib_setcursortype(cterm->cursor);
-								break;
 							case 30: // APH (Active Position Home)
 								uctputs(cterm, prn);
 								prn[0]=0;
@@ -6018,6 +6010,18 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 								gotoxy(CURR_MINX, CURR_MINY);
 								prestel_new_line(cterm);
 								break;
+							case 17: // Cursor on
+								if(cterm->emulation == CTERM_EMULATION_PRESTEL) {
+									cterm->cursor=_NORMALCURSOR;
+									ciolib_setcursortype(cterm->cursor);
+									break;
+								}
+							case 20: // Cursor off
+								if(cterm->emulation == CTERM_EMULATION_PRESTEL) {
+									cterm->cursor=_NOCURSOR;
+									ciolib_setcursortype(cterm->cursor);
+									break;
+								}
 							case 27: // ESC
 								if(cterm->emulation == CTERM_EMULATION_PRESTEL) {
 									uctputs(cterm, prn);
