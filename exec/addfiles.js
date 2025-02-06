@@ -299,6 +299,9 @@ for(var d = 0; d < dir_list.length; d++) {
 			} else {
 				writeln("Added " + file.name);
 				added++;
+				if(dir.max_files > 0 && filebase.files >= dir.max_files)
+					alert("Max files (" + dir.max_files + ") " +
+						(filebase.files > dir.max_files ? "exceeded" : "reached"));
 			}
 		}
 	}
