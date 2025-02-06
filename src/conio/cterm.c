@@ -5461,6 +5461,40 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 							}
 						}
 					}
+					else if (cterm->emulation == CTERM_EMULATION_BEEB) {
+						cterm->escbuf[cterm->sequence++] = ch[0];
+						switch (cterm->escbuf[0]) {
+							case 23:
+								if (cterm->sequence < 10)
+									break;
+								// Out of all these bytes, we only look at two. :D
+								if (cterm->escbuf[1] == 1 && cterm->escbuf[3] == 0 && cterm->escbuf[4] == 0 && cterm->escbuf[5] == 0 && cterm->escbuf[6] == 0 && cterm->escbuf[7] == 0 && cterm->escbuf[8] == 0 && cterm->escbuf[9] == 0) {
+									switch (cterm->escbuf[2]) {
+										case 0:
+											// VDU 23,1,0;0;0;0;
+											cterm->cursor = _NOCURSOR;
+											ciolib_setcursortype(cterm->cursor);
+											break;
+										case 1:
+											// VDU 23,1,1;0;0;0;
+											cterm->cursor = _NORMALCURSOR;
+											ciolib_setcursortype(cterm->cursor);
+											break;
+									}
+								}
+								cterm->sequence = 0;
+								break;
+							case 31:
+								if (cterm->sequence < 3)
+									break;
+								gotoxy(cterm->escbuf[1] + 1, cterm->escbuf[2] + 1);
+								cterm->sequence = 0;
+								break;
+							default:
+								cterm->sequence = 0;
+								break;
+						}
+					}
 					else {
 						ustrcat(cterm->escbuf,ch);
 						switch(legal_sequence(cterm->escbuf, sizeof(cterm->escbuf)-1)) {
@@ -5963,12 +5997,15 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 								break;
 						}
 					}
-					else if(cterm->emulation == CTERM_EMULATION_PRESTEL || cterm->emulation == CTERM_EMULATION_BEEB) {
+					else if(cterm->emulation == CTERM_EMULATION_PRESTEL) {
 						switch(buf[j]) {
 							case 0: // NUL
 								uctputs(cterm, prn);
 								prn[0]=0;
 								prnpos = prn;
+								break;
+							case 5: // ENQ
+								prestel_send_memory(cterm, 0, retbuf, retsize);
 								break;
 							case 8: // APB (Active Position Backward)
 								uctputs(cterm, prn);
@@ -6003,6 +6040,20 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 								cterm_clearscreen(cterm, (char)cterm->attr);
 								gotoxy(CURR_MINX, CURR_MINY);
 								break;
+							case 17: // Cursor on
+								cterm->cursor=_NORMALCURSOR;
+								ciolib_setcursortype(cterm->cursor);
+								break;
+							case 20: // Cursor off
+								cterm->cursor=_NOCURSOR;
+								ciolib_setcursortype(cterm->cursor);
+								break;
+							case 27: // ESC
+								uctputs(cterm, prn);
+								prn[0]=0;
+								prnpos = prn;
+								cterm->sequence=1;
+								break;
 							case 30: // APH (Active Position Home)
 								uctputs(cterm, prn);
 								prn[0]=0;
@@ -6010,33 +6061,122 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 								gotoxy(CURR_MINX, CURR_MINY);
 								prestel_new_line(cterm);
 								break;
-							case 17: // Cursor on
-								if(cterm->emulation == CTERM_EMULATION_PRESTEL) {
-									cterm->cursor=_NORMALCURSOR;
-									ciolib_setcursortype(cterm->cursor);
-									break;
+							default:
+								// "Normal" ASCII... including CR and LF in here.
+								if (buf[j] == 13 || buf[j] == 10 || (buf[j] >= 32 && buf[j] <= 127)) {
+									if (cterm->extattr & CTERM_EXTATTR_PRESTEL_MOSAIC) {
+										if ((buf[j] < 64 && buf[j] >= 32) || (buf[j] >= 96 && buf[j] < 128)) {
+											ch[0] = buf[j] | 0x80;
+										}
+										else
+											ch[0] = buf[j];
+										if (ch[0] >= 160) {
+											cterm->prestel_last_mosaic = ch[0];
+											if (cterm->extattr & CTERM_EXTATTR_PRESTEL_SEPARATED)
+												cterm->prestel_last_mosaic &= 0x7f;
+										}
+									}
+									*prnpos++ = ch[0];
+									*prnpos = 0;
 								}
-							case 20: // Cursor off
-								if(cterm->emulation == CTERM_EMULATION_PRESTEL) {
-									cterm->cursor=_NOCURSOR;
-									ciolib_setcursortype(cterm->cursor);
-									break;
-								}
-							case 27: // ESC
-								if(cterm->emulation == CTERM_EMULATION_PRESTEL) {
+								else if ((buf[j] >= 0x80) && (buf[j] <= 0x9f)) {
+									// "Raw" C1 control
 									uctputs(cterm, prn);
 									prn[0]=0;
 									prnpos = prn;
-									cterm->sequence=1;
-									break;
+									prestel_handle_escaped(cterm, ch[0] - 64);
 								}
-								// Fall-through
-							case 5: // ENQ
-								if(cterm->emulation == CTERM_EMULATION_PRESTEL) {
-									prestel_send_memory(cterm, 0, retbuf, retsize);
-									break;
+								else if (buf[j] < 32) {
+									// Unhandled C0 control
+									// Section 2.3.1:
+									// "The C0 CHARACTER SET... contain... characters which are not stored or displayed"
+									// Section 2.3.2 appears to be specific to the C1 set
+									/* Do Nothing */
 								}
-								// Fall-through
+								else {
+									// G1... unicode replacement
+									*prnpos++ = ch[0];
+									*prnpos = 0;
+								}
+								break;
+						}
+					}
+					else if(cterm->emulation == CTERM_EMULATION_BEEB) {
+						switch(buf[j]) {
+							case 0: // NUL
+								uctputs(cterm, prn);
+								prn[0]=0;
+								prnpos = prn;
+								break;
+							// 6: Enable output (see 21)
+							case 7: // Beep
+								uctputs(cterm, prn);
+								prn[0]=0;
+								prnpos = prn;
+								if(!cterm->quiet) {
+									#ifdef __unix__
+										putch(7);
+									#else
+										MessageBeep(MB_OK);
+									#endif
+								}
+								break;
+							case 8: // APB (Active Position Backward)
+								uctputs(cterm, prn);
+								prn[0]=0;
+								prnpos = prn;
+								prestel_move(cterm, -1, 0);
+								break;
+							case 9: // APF (Active Position Forward)
+								uctputs(cterm, prn);
+								prn[0]=0;
+								prnpos = prn;
+								prestel_move(cterm, 1, 0);
+								break;
+							case 10: // APD (Active Position Down)
+								uctputs(cterm, prn);
+								prn[0]=0;
+								prnpos = prn;
+								prestel_move(cterm, 0, 1);
+								break;
+							case 11: // APU (Active Position Up)
+								uctputs(cterm, prn);
+								prn[0]=0;
+								prnpos = prn;
+								prestel_move(cterm, 0, -1);
+								break;
+							case 12: // CS (Clear Screen)
+								uctputs(cterm, prn);
+								prn[0]=0;
+								prnpos = prn;
+								cio_api.options &= ~(CONIO_OPT_PRESTEL_REVEAL);
+								prestel_new_line(cterm);
+								cterm_clearscreen(cterm, (char)cterm->attr);
+								gotoxy(CURR_MINX, CURR_MINY);
+								break;
+							// 14: Page mode on
+							// 15: Page mode off
+							// 21: Disable output (see 6)
+							// 22: Select screen mode
+							case 23: // Reprogram display character (not mode 7) and disable cursor
+								uctputs(cterm, prn);
+								prn[0]=0;
+								prnpos = prn;
+								cterm->escbuf[cterm->sequence++] = ch[0];
+								break;
+							case 30: // APH (Active Position Home)
+								uctputs(cterm, prn);
+								prn[0]=0;
+								prnpos = prn;
+								gotoxy(CURR_MINX, CURR_MINY);
+								prestel_new_line(cterm);
+								break;
+							case 31: // Move to position X,Y
+								uctputs(cterm, prn);
+								prn[0]=0;
+								prnpos = prn;
+								cterm->escbuf[cterm->sequence++] = ch[0];
+								break;
 							default:
 								// "Normal" ASCII... including CR and LF in here.
 								if (buf[j] == 13 || buf[j] == 10 || (buf[j] >= 32 && buf[j] <= 127)) {
