@@ -172,7 +172,7 @@ while(!quit)  {
 		clean_exit();
 	}
 
-	if(!client.socket.is_connected)  {
+	if(!client.socket.is_connected || !bbs.online)  {
 		send_cmd("QUIT",":Dropped Carrier");
 		quit=1;
 		sock.close();
@@ -641,7 +641,7 @@ function wait_for(commands)  {
 	var message="";
 	var i=0;
 
-	while(sock.poll(connect_timeout))  {
+	while(bbs.online && sock.poll(connect_timeout))  {
 		if(!sock.is_connected)  {
 			alert("Lost connection");
 			sock.close();
@@ -1330,7 +1330,7 @@ function Screen_update_input_line()  {
 }
 
 function Screen_update(wait)  {
-	while(1) {
+	while(bbs.online) {
 		var key=console.inkey(wait);
 		if(key!="")
 			this.handle_key(key);
