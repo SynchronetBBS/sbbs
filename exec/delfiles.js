@@ -61,15 +61,22 @@ for(var i in dir_list) {
 		var list = base.get_names(/* sort: */false);
 		var removed = 0;
 		for(var j = 0; j < list.length; j++) {
-			var file = list[j];
-			if(exclude.indexOf(file.toUpperCase()) >= 0)
+			var fname = list[j];
+			if(exclude.indexOf(fname.toUpperCase()) >= 0)
 				continue;
-			if(base.get_size(file) < 0) {
-				log(LOG_INFO, dir_code + ": Removing offline file: " + base.get_path(file));
+			if(base.get_size(fname) < 0) {
+				var path;
+				try {
+					path = base.get_path(fname);
+				} catch (e) {
+					alert(e);
+					continue;
+				}
+				log(LOG_INFO, dir_code + ": Removing offline file: " + path);
 				if(options.test)
 					removed++;
 				else {
-					if(!base.remove(file, /* delete: */false))
+					if(!base.remove(fname, /* delete: */false))
 						alert(base.error);
 					else
 						removed++;
@@ -97,7 +104,14 @@ for(var i in dir_list) {
 			}
 			var file_age = Math.floor((now - t) / (24 * 60 * 60));
 			if(file_age > max_age) {
-				log(LOG_INFO, dir_code + ": Removing " + base.get_path(file.name) + " " + age_desc + " " + file_age + " days ago");
+				var path;
+				try {
+					path = base.get_path(file.name);
+				} catch(e) {
+					alert(e);
+					continue;
+				}
+				log(LOG_INFO, dir_code + ": Removing " + path + " " + age_desc + " " + file_age + " days ago");
 				if(options.test)
 					removed++;
 				else {
@@ -109,7 +123,7 @@ for(var i in dir_list) {
 			}
 		}
 		if(removed)
-			log(LOG_NOTICE, ": Removed " + removed + " of " + list.length + " files due to age of " + max_age + " days");
+			log(LOG_NOTICE, ": Removed " + removed + " of " + list.length + " files due to age greater than " + max_age + " days");
 	}
 	var max_files = base.max_files || dir.max_files;
 	var tfiles = file_area.dir[dir_code].files;
