@@ -266,12 +266,12 @@ mousedrag(struct vmem_cell *scrollback)
 						for (pos = startpos; pos <= endpos; pos++) {
 							size_t   outlen;
 							uint8_t *utf8str;
+							int cp = conio_fontdata[screen[pos].font].cp;
 
+							if (cp == CIOLIB_PRESTEL && (screen[pos].bg & 0x20000000))
+								cp = CIOLIB_PRESTEL_SEP;
 							utf8str =
-							    cp_to_utf8(conio_fontdata[screen[pos].font].cp,
-							        (char *)&screen[pos].ch,
-							        1,
-							        &outlen);
+							    cp_to_utf8(cp, (char *)&screen[pos].ch, 1, &outlen);
 							if (utf8str == NULL)
 								continue;
 							memcpy(copybuf + outpos, utf8str, outlen);
