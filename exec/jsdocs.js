@@ -292,7 +292,7 @@ else
 	f.writeln("Property and Method version numbers (when available) indicate the Synchronet version when the " +
 		  "item was added or modified.");
 f.writeln("<li style='display:list-item'>Optional method arguments are specified in <tt>[brackets]</tt> in the 'Usage' column.");
-f.writeln("<li style='display:list-item'>method argument <i>types</i> (e.g. bool, string, number, object), " +
+f.writeln("<li style='display:list-item'>Method argument <i>types</i> (e.g. bool, string, number, object), " +
 	"when significant, are specified in <tt><i>italics</i></tt> in the 'Usage' column.");
 f.writeln("<li style='display:list-item'>Methods documented as returning 'void' will always return <tt>undefined</tt>.");
 f.writeln("<li style='display:list-item'>Methods documented as returning 'undefined' may return one of multiple value types.");
