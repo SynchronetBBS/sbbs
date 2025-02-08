@@ -43,6 +43,7 @@
     <Import Project="..\..\..\3rdp\win32.release\libarchive\libarchive.props" />
     <Import Project="..\..\conio\conio_gdi.props" />
     <Import Project="..\..\build\target_winver.props" />
+    <Import Project="..\..\build\target_ia32.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -57,6 +58,7 @@
     <Import Project="..\..\..\3rdp\win32.release\libarchive\libarchive.props" />
     <Import Project="..\..\conio\conio_gdi.props" />
     <Import Project="..\..\build\target_winver.props" />
+    <Import Project="..\..\build\target_ia32.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
