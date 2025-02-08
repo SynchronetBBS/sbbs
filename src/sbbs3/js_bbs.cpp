@@ -3036,7 +3036,7 @@ js_netmail(JSContext *cx, uintN argc, jsval *arglist)
 	FREE_AND_NULL(subj);
 	FREE_AND_NULL(to);
 	JS_RESUMEREQUEST(cx, rc);
-	return JS_TRUE;
+	return error ? JS_FALSE : JS_TRUE;
 }
 
 static JSBool

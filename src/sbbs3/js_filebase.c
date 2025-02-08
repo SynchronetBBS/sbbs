@@ -76,7 +76,7 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 	    && strchr(p->smb.file, '/') == NULL
 	    && strchr(p->smb.file, '\\') == NULL) {
 		JS_ReportError(cx, "Unrecognized filebase code: %s", p->smb.file);
-		return JS_TRUE;
+		return JS_FALSE;
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
@@ -675,7 +675,7 @@ js_hash_file(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	if (filename == NULL) {
 		JS_ReportError(cx, "No filename argument");
-		return JS_TRUE;
+		return JS_FALSE;
 	}
 	rc = JS_SUSPENDREQUEST(cx);
 	if (getfname(filename) != filename)
@@ -685,6 +685,7 @@ js_hash_file(JSContext *cx, uintN argc, jsval *arglist)
 		file.name = filename;
 		getfilepath(scfg, &file, path);
 	}
+	JSBool result = JS_FALSE;
 	off_t size = flength(path);
 	if (size == -1)
 		JS_ReportError(cx, "File does not exist: %s", path);
@@ -699,6 +700,7 @@ js_hash_file(JSContext *cx, uintN argc, jsval *arglist)
 			else {
 				set_file_properties(cx, fobj, &file, detail);
 				JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(fobj));
+				result = JS_TRUE;
 			}
 		}
 	}
@@ -706,7 +708,7 @@ js_hash_file(JSContext *cx, uintN argc, jsval *arglist)
 	free(filename);
 	smb_freefilemem(&file);
 
-	return JS_TRUE;
+	return result;
 }
 
 static JSBool
@@ -758,12 +760,15 @@ js_get_file(JSContext *cx, uintN argc, jsval *arglist)
 		detail = JSVAL_TO_INT(argv[argn]);
 		argn++;
 	}
+	JSBool result = JS_TRUE;
 	rc = JS_SUSPENDREQUEST(cx);
 	if ((p->smb_result = smb_findfile(&p->smb, filename, &file)) == SMB_SUCCESS
 	    && (p->smb_result = smb_getfile(&p->smb, &file, detail)) == SMB_SUCCESS) {
 		JSObject* fobj;
-		if ((fobj = JS_NewObject(cx, NULL, NULL, obj)) == NULL)
+		if ((fobj = JS_NewObject(cx, NULL, NULL, obj)) == NULL) {
 			JS_ReportError(cx, "object allocation failure, line %d", __LINE__);
+			result = JS_FALSE;
+		}
 		else {
 			set_file_properties(cx, fobj, &file, detail);
 			JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(fobj));
@@ -773,7 +778,7 @@ js_get_file(JSContext *cx, uintN argc, jsval *arglist)
 	free(filename);
 	smb_freefilemem(&file);
 
-	return JS_TRUE;
+	return result;
 }
 
 static JSBool
@@ -787,8 +792,6 @@ js_get_file_list(JSContext *cx, uintN argc, jsval *arglist)
 	enum file_detail detail = file_detail_normal;
 	enum file_sort   sort = FILE_SORT_NAME_A;
 	jsrefcount       rc;
-
-	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
 	scfg_t*          scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 	if (scfg == NULL) {
@@ -841,6 +844,7 @@ js_get_file_list(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
+	JSBool result = JS_TRUE;
 	size_t  file_count;
 	file_t* file_list = loadfiles(&p->smb, filespec, t, detail, sort, &file_count);
 	if (file_list != NULL) {
@@ -848,6 +852,7 @@ js_get_file_list(JSContext *cx, uintN argc, jsval *arglist)
 			JSObject* fobj;
 			if ((fobj = JS_NewObject(cx, NULL, NULL, array)) == NULL) {
 				JS_ReportError(cx, "object allocation failure, line %d", __LINE__);
+				result = JS_FALSE;
 				break;
 			}
 			set_file_properties(cx, fobj, &file_list[i], detail);
@@ -859,7 +864,7 @@ js_get_file_list(JSContext *cx, uintN argc, jsval *arglist)
 	JS_RESUMEREQUEST(cx, rc);
 	free(filespec);
 
-	return JS_TRUE;
+	return result;
 }
 
 static JSBool
@@ -872,8 +877,6 @@ js_get_file_names(JSContext *cx, uintN argc, jsval *arglist)
 	char*          filespec = NULL;
 	enum file_sort sort = FILE_SORT_NAME_A;
 	jsrefcount     rc;
-
-	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
 	scfg_t*        scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 	if (scfg == NULL) {
@@ -1039,6 +1042,7 @@ js_get_file_path(JSContext *cx, uintN argc, jsval *arglist)
 	else if (filename == NULL)
 		return JS_TRUE;
 
+	JSBool result = JS_FALSE;
 	rc = JS_SUSPENDREQUEST(cx);
 	if ((p->smb_result = smb_loadfile(&p->smb, filename, &file, file_detail_normal)) == SMB_SUCCESS) {
 		char      path[MAX_PATH + 1];
@@ -1046,13 +1050,14 @@ js_get_file_path(JSContext *cx, uintN argc, jsval *arglist)
 		if ((js_str = JS_NewStringCopyZ(cx, getfilepath(scfg, &file, path))) != NULL)
 			JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
 		smb_freefilemem(&file);
+		result = JS_TRUE;
 	}
 	else
 		JS_ReportError(cx, "%d loading file '%s'", p->smb_result, filename);
 	JS_RESUMEREQUEST(cx, rc);
 	free(filename);
 
-	return JS_TRUE;
+	return result;
 }
 
 static JSBool
@@ -1206,7 +1211,7 @@ js_add_file(JSContext *cx, uintN argc, jsval *arglist)
 	if (argn < argc && JSVAL_IS_OBJECT(argv[argn]) && !JSVAL_IS_NULL(argv[argn])) {
 		p->smb_result = parse_file_properties(cx, JSVAL_TO_OBJECT(argv[argn]), &file, &extdesc, &auxdata);
 		if (p->smb_result != SMB_SUCCESS)
-			return JS_TRUE;
+			return JS_FALSE;
 		argn++;
 	}
 	if (argn < argc && JSVAL_IS_BOOLEAN(argv[argn])) {
@@ -1308,6 +1313,7 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 		    && strcmp(filename, file.name) != 0 && smb_findfile(&p->smb, file.name, NULL) == SMB_SUCCESS) {
 			JS_ReportError(cx, "file (%s) already exists in base", file.name);
 			p->smb_result = SMB_DUPE_MSG;
+			result = JS_FALSE;
 		}
 		if (p->smb_result == SMB_SUCCESS
 		    && (extdesc == NULL || use_diz_always == true)
@@ -1332,16 +1338,20 @@ js_update_file(JSContext *cx, uintN argc, jsval *arglist)
 				if (!readd_always && strcmp(extdesc ? extdesc : "", file.extdesc ? file.extdesc : "") == 0
 				    && strcmp(auxdata ? auxdata : "", file.auxdata ? file.auxdata : "") == 0) {
 					p->smb_result = smb_putfile(&p->smb, &file);
-					if (p->smb_result != SMB_SUCCESS)
+					if (p->smb_result != SMB_SUCCESS) {
 						JS_ReportError(cx, "%d writing '%s'", p->smb_result, file.name);
+						result = JS_FALSE;
+					}
 				} else {
 					if ((p->smb_result = smb_removefile_by_name(&p->smb, filename)) == SMB_SUCCESS) {
 						if (readd_always)
 							file.hdr.when_imported.time = 0; // we want the file to appear as "new"
 						p->smb_result = smb_addfile(&p->smb, &file, SMB_SELFPACK, extdesc, auxdata, newfname);
 					}
-					else
+					else {
 						JS_ReportError(cx, "%d removing '%s'", p->smb_result, filename);
+						result = JS_FALSE;
+					}
 				}
 			}
 		}

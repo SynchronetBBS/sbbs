@@ -137,10 +137,8 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 	SAFECOPY(p->mode, "w+");     /* default mode */
 	for (i = 0; i < argc; i++) {
 		if (JSVAL_IS_STRING(argv[i])) {  /* mode */
-			if ((str = JS_ValueToString(cx, argv[i])) == NULL) {
-				JS_ReportError(cx, "Invalid mode specified: %s", str);
-				return JS_TRUE;
-			}
+			if ((str = JS_ValueToString(cx, argv[i])) == NULL)
+				return JS_FALSE;
 			JSSTRING_TO_STRBUF(cx, str, p->mode, sizeof(p->mode), NULL);
 		}
 		else if (JSVAL_IS_BOOLEAN(argv[i]))  /* shareable */
@@ -218,10 +216,8 @@ js_popen(JSContext *cx, uintN argc, jsval *arglist)
 	SAFECOPY(p->mode, "r+"); /* default mode */
 	for (i = 0; i < argc; i++) {
 		if (JSVAL_IS_STRING(argv[i])) {  /* mode */
-			if ((str = JS_ValueToString(cx, argv[i])) == NULL) {
-				JS_ReportError(cx, "Invalid mode specified: %s", str);
-				return JS_TRUE;
-			}
+			if ((str = JS_ValueToString(cx, argv[i])) == NULL)
+				return JS_FALSE;
 			JSSTRING_TO_STRBUF(cx, str, p->mode, sizeof(p->mode), NULL);
 		}
 		else if (JSVAL_IS_NUMBER(argv[i])) { /* bufsize */

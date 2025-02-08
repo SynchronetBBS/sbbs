@@ -863,7 +863,7 @@ js_accept(JSContext *cx, uintN argc, jsval *arglist)
 		closesocket(new_socket);
 		JS_RESUMEREQUEST(cx, rc);
 		JS_ReportError(cx, "Error creating new socket object");
-		return JS_TRUE;
+		return JS_FALSE;
 	}
 	if ((new_p = (js_socket_private_t*)JS_GetPrivate(cx, sockobj)) == NULL) {
 		JS_RESUMEREQUEST(cx, rc);

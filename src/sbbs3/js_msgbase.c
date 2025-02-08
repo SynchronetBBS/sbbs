@@ -89,7 +89,7 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 	    && strchr(p->smb.file, '/') == NULL
 	    && strchr(p->smb.file, '\\') == NULL) {
 		JS_ReportError(cx, "Unrecognized msgbase code: %s", p->smb.file);
-		return JS_TRUE;
+		return JS_FALSE;
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
@@ -2643,7 +2643,7 @@ js_save_msg(JSContext *cx, uintN argc, jsval *arglist)
 		if (rcpt_list_length < 1) {
 			JS_ReportError(cx, "Empty recipient list");
 			free(body);
-			return JS_TRUE;
+			return JS_FALSE;
 		}
 	}
 
