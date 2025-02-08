@@ -310,7 +310,7 @@ static int expandtofit(char **linep, size_t len, size_t *linecapp)
 	return 0;
 }
 
-long getdelim(char **linep, size_t *linecapp, int delimiter, FILE *stream)
+ssize_t getdelim(char **linep, size_t *linecapp, int delimiter, FILE *stream)
 {
 	size_t linelen;
 	int    ch;
