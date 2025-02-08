@@ -380,7 +380,7 @@ DIR* opendir(const char* dirname)
 		errno = ENOMEM;
 		return NULL;
 	}
-	sprintf(dir->filespec, "%.*s", sizeof(dir->filespec) - 5, dirname);
+	strlcpy(dir->filespec, dirname, sizeof(dir->filespec) - 5);
 	if (*dir->filespec && dir->filespec[strlen(dir->filespec) - 1] != '\\')
 		strcat(dir->filespec, "\\");
 	strcat(dir->filespec, "*.*");
@@ -400,7 +400,7 @@ struct dirent* readdir(DIR* dir)
 		return NULL;
 	if (dir->handle == -1)
 		return NULL;
-	sprintf(dir->dirent.d_name, "%.*s", sizeof(struct dirent) - 1, dir->finddata.name);
+	strlcpy(dir->dirent.d_name, dir->finddata.name, sizeof(dir->dirent.d_name) - 1);
 	if (_findnext(dir->handle, &dir->finddata) != 0)
 		dir->end = true;
 	return &dir->dirent;
