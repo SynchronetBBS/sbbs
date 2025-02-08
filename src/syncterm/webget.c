@@ -927,6 +927,8 @@ read_chunked(struct http_session *sess, FILE *out)
 			set_msgf(sess->req, "strtoul() failure %d", errno);
 			goto error_return;
 		}
+		free(line);
+		line = NULL;
 		if (chunk_size == 0)
 			break;
 		total += chunk_size;
@@ -956,6 +958,8 @@ read_chunked(struct http_session *sess, FILE *out)
 			set_msg(sess->req, "Bad chunk");
 			goto error_return;
 		}
+		free(line);
+		line = NULL;
 	}
 	free(buf);
 	free(line);
