@@ -698,8 +698,8 @@ parse_headers(struct http_session *sess)
 				assert_pthread_mutex_unlock(&sess->req->mtx);
 			}
 		}
-		else if(strnicmp(line, "content-transfer-encoding:", 26) == 0) {
-			const char *val = skipws(&line[26]);
+		else if(strnicmp(line, "transfer-encoding:", 18) == 0) {
+			const char *val = skipws(&line[18]);
 			const char *sep;
 			const char *end = find_end(val, &sep);
 			if (sep != NULL) {
@@ -947,6 +947,13 @@ read_chunked(struct http_session *sess, FILE *out)
 			goto error_return;
 		if (fwrite(buf, 1, chunk_size, out) != chunk_size) {
 			set_msg(sess->req, "Short fwrite()");
+			goto error_return;
+		}
+		line = recv_line(sess, 5000, NULL);
+		if (line == NULL)
+			goto error_return;
+		if (line[0] != '\r' || line[1]) {
+			set_msg(sess->req, "Bad chunk");
 			goto error_return;
 		}
 	}
