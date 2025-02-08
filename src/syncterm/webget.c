@@ -573,7 +573,7 @@ find_end(const char *val, const char ** sep)
 static bool
 parse_cache_control(struct http_session *sess, const char *val)
 {
-	while (*val && *val != '\r') {
+	while (*val && *val != '\r' && *val != '\n') {
 		val = skipws(val);
 		const char *sep;
 		const char *end = find_end(val, &sep);
