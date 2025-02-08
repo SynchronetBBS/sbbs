@@ -159,7 +159,10 @@ recv_nbytes(struct http_session *sess, uint8_t *buf, const size_t chunk_size, bo
 #ifndef WITHOUT_CRYPTLIB
 			int copied = 0;
 			int status = cryptPopData(sess->tls, &buf[received], chunk_size - received, &copied);
-			if (cryptStatusError(status)) {
+			if (status == CRYPT_ERROR_COMPLETE) {
+				// We're done here...
+			}
+			else if (cryptStatusError(status)) {
 				set_msgf(sess->req, "Error %d Popping Data", status);
 				goto error_return;
 			}
@@ -596,7 +599,7 @@ parse_cache_control(struct http_session *sess, const char *val)
 		if (sz == 15 && sep == NULL && strnicmp(val, "must-revalidate", 15) == 0) {
 			sess->cache.must_revalidate = true;
 		}
-		val = end;
+		val = end + 1;
 	}
 
 	return true;
