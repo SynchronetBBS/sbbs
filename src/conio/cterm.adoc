@@ -529,6 +529,17 @@ the cursor.
 
 SOURCE: <<ECMA-48>>
 
+== nF Escape Sequences
+
+nF Escape Sequences are in the following format: +
+`ESC {SPACE to '/}{'0'` to `'~'}` +
+There may be multiple characters from the {SPACE to '/'} before the
+terminating {'@' to '~'} character.
+
+At present, CTerm does not support any nF escape sequences.
+
+SOURCE: <<ECMA-35>>
+
 == Control Sequences:
 
 Control sequences start with the Control Sequence Introducer which is
@@ -2467,3 +2478,4 @@ for people who want to maintain compatibility.
 * [[colors256]]https://jonasjacek.github.io/colors/[[256colors\]] Jonas Jarad Jacek. 256 colors cheat sheet. 2023-12-24.
 * [[VT420]]https://vt100.net/docs/vt420-uu/[[VT420\]] Digital. Installing and Using the VT420 Video Terminal. June 1990.
 * [[ANSISYS]]https://en.wikipedia.org/wiki/ANSI.SYS[[ANSISYS\]] Wikipedia. ANSI.SYS.
+* [[ECMA-35]]https://ecma-international.org/wp-content/uploads/ECMA-35_6th_edition_december_1994.pdf[[ECMA-35\]] ECMA. Character Code Structure and Extension Techniques. December 1994
