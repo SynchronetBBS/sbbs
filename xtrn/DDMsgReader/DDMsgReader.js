@@ -221,6 +221,13 @@
  *                              still occur though, and the user will be disconnected if
  *                              they don't respond. getKeyWithESCChars() is no longer used
  *                              in favor of console.getkey().
+ * 2025-02-08 Eric Oulashin     Version 1.96k
+ *                              Input timeout alert improvement - Rather than just blanking out
+ *                              the AreYouThere text (which still allows the alert sound), now
+ *                              also writes a text string at the bottom row when the input
+ *                              timeout warning occurs. The string is configurable via the new
+ *                              areYouThere string in the theme file.
+ *                              (Started: 2025-01-29)
  */
 
 "use strict";
@@ -328,8 +335,8 @@ var hexdump = load('hexdump_lib.js');
 
 
 // Reader version information
-var READER_VERSION = "1.96j";
-var READER_DATE = "2025-01-25";
+var READER_VERSION = "1.96k";
+var READER_DATE = "2025-02-08";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -467,6 +474,10 @@ const ACTION_GO_NEXT_MSG_AREA = 28;
 const ACTION_QUIT = 29;
 // Actions for indexed Mode
 const INDEXED_MODE_SUBBOARD_MENU = 30;
+// Actions specifically for the current state/action being performed
+const ACTION_READING_MSG = 31;
+const ACTION_LISTING_MSGS = 32;
+const ACTION_CHOOSING_SUB_BOARD = 33;
 
 // Definitions for help line refresh parameters for error functions
 const REFRESH_MSG_AREA_CHG_LIGHTBAR_HELP_LINE = 0;
@@ -644,14 +655,44 @@ if (gDoDDMR)
 	}
 	var msgReader = new DigDistMsgReader(readerSubCode, gCmdLineArgVals);
 	// If the user's terminal supports ANSI and we will be using any of the lightbar/scrollable
-	// user interfaces, then blank out the AreYouThere timeout warning string (used by
-	// console.getkey()), which would interfere with full-screen display and scrolling display
-	// functionality. Also, have the script set it back to its previous (possibly sysop-customized)
-	// value on exit.
+	// user interfaces, then set a global property with a custom getter function to be used for
+	// displaying an "Are you there?" message at a specific location and then refresh the screen
+	// as needed. In functions such as reading and listing messages for the scrollable/ANSI
+	// interface, the AreYouThere system text line will be replaced with a @JS to show this
+	// property, which will run the code in the getter.
 	if (console.term_supports(USER_ANSI) && (msgReader.scrollingReaderInterface || msgReader.msgListUseLightbarListInterface))
 	{
-		bbs.replace_text(AreYouThere, "");
+		// Upon exiting this script, make sure the AreYouThere text is
+		// reverted back to what it was before
 		js.on_exit("bbs.revert_text(AreYouThere);");
+		// Set js.global.ddMsgReader to the current DDMsgReader object, and add
+		// the global DDMsgReader_areYouThereProp property with the custom
+		// getter function if it doesn't already exist (i.e., it could have been
+		// created in the user's current session by a previous run of DDMsgReader)
+		js.global.ddMsgReader = msgReader;
+		// On script exit, delete the global ddMsgReader property we have created
+		js.on_exit("delete js.global.ddMsgReader;");
+		// Define a global property with a custom getter function for use with
+		// the AreYouThere input timeout warning
+		Object.defineProperty(js.global, "DDMsgReader_areYouThereProp", {
+			configurable: true, // Allows this property to be deleted and re-defined as needed
+			get: function()
+			{
+				// blank out the AreYouThere timeout warning string (used by
+				// console.getkey()), which would interfere with full-screen display and scrolling display
+				// functionality.
+				bbs.replace_text(AreYouThere, "");
+				// Call DDMsgReader's scrollable-mode "Are you there?" warning logic
+				js.global.ddMsgReader.ScrollableModeAreYouThereWarning();
+				// Put a key into the input buffer so that Synchronet isn't waiting for
+				// a keypress after the "Are you there" warning
+				console.ungetstr(KEY_ENTER);
+
+				return "";
+			}
+		});
+		// On script exit, delete the global DDMsgReader_areYouThereProp property we have created
+		js.on_exit("delete DDMsgReader_areYouThereProp;");
 	}
 
 	// -indexedMode command-line arg specified and not doing a search (including
@@ -861,6 +902,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.RefreshHdrInSavedArrays = DigDistMsgReader_RefreshHdrInSavedArrays;
 	this.ReadMessages = DigDistMsgReader_ReadMessages;
 	this.DisplayEnhancedMsgReadHelpLine = DigDistMsgReader_DisplayEnhancedMsgReadHelpLine;
+	this.DisplayKeyHelpLine = DigDistMsgReader_DisplayKeyHelpLine; // General function to display a key help line w/ mouse click tracking
 	this.GoToPrevSubBoardForEnhReader = DigDistMsgReader_GoToPrevSubBoardForEnhReader;
 	this.GoToNextSubBoardForEnhReader = DigDistMsgReader_GoToNextSubBoardForEnhReader;
 	this.SetUpTraditionalMsgListVars = DigDistMsgReader_SetUpTraditionalMsgListVars;
@@ -963,8 +1005,8 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.RefreshMsgHdrInArrays = DigDistMsgReader_RefreshMsgHdrInArrays;
 	this.WriteLightbarKeyHelpMsg = DigDistMsgReader_WriteLightbarKeyHelpMsg;
 
-	// Whether or not we're listing messages
-	this.isListingMessages = false;
+	// Current action (listing, reading, etc.)
+	this.currentAction = ACTION_NONE;
 
 	// startMode specifies the mode for the reader to start in - List mode
 	// or reader mode, etc.  This is a setting that is read from the configuration
@@ -1138,7 +1180,8 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		cannotDeleteAllSelectedMsgsText: "\x01n\x01y\x01h* Cannot delete all selected messages",
 		msgEditConfirmText: "\x01n\x01cEdit message #\x01h%d\x01n\x01c: Are you sure",
 		noPersonalEmailText: "\x01n\x01cYou have no messages.",
-		postOnSubBoard: "\x01n\x01gPost on %s %s"
+		postOnSubBoard: "\x01n\x01gPost on %s %s",
+		areYouThere: "\x01n\x01r\x01h\x01i@NAME@! \x01n\x01hAre you really there?\x01n"
 	};
 
 
@@ -1576,6 +1619,8 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.GetIndexedModeSubBoardMenuItemTextAndInfo = DigDistMsgReader_GetIndexedModeSubBoardMenuItemTextAndInfo;
 	this.MakeIndexedModeHelpLine = DigDistMsgReader_MakeIndexedModeHelpLine;
 	this.ShowIndexedListHelp = DigDistMsgReader_ShowIndexedListHelp;
+	// Handler function for showing the "Are you there?" warning to the user for the scrollable/ANSI interface
+	this.ScrollableModeAreYouThereWarning = DigDistMsgReader_ScrollableModeAreYouThereWarning;
 
 	// printf strings for message group/sub-board lists
 	// Message group information (printf strings)
@@ -1712,6 +1757,15 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// For indexed mode, whether to set the indexed mode menu item index to 1 more when showing
 	// the indexed mode menu again (i.e., when the user wants to go to the next sub-board)
 	this.indexedModeSetIdxMnuIdxOneMore = false;
+
+	// scrollableReadingData contains objects & data for refreshing the screen used
+	// in the handler function to display the "Are you there?" warning (ScrollableModeAreYouThereWarning())
+	this.scrollableReadingData = {
+		allowChgMsgArea: false,
+		header: null,
+		msgOffset: 0,
+		msgAreaWidth: this.msgAreaWidth
+	};
 }
 
 // For the DigDistMsgReader class: Sets the subBoardCode property and also
@@ -2279,7 +2333,7 @@ function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
 		stoppedReading: false
 	};
 
-	this.isListingMessages = false;
+	this.currentAction = ACTION_NONE;
 
 	// Set the sub-board code if applicable
 	var previousSubBoardCode = this.subBoardCode;
@@ -2378,10 +2432,10 @@ function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
 	var continueOn = true;
 	while (continueOn)
 	{
+		this.currentAction = ACTION_NONE;
 		switch (readerMode)
 		{
 			case READER_MODE_READ:
-				this.isListingMessages = false;
 				// Call the ReadMessages method - DOn't change the sub-board,
 				// and pass the selected index of the message to read.  If that
 				// index is -1, the ReadMessages method will use the user's
@@ -2414,7 +2468,6 @@ function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
 				// in list mode first.
 				// List messages
 				otherRetObj = this.ListMessages(null, pAllowChgArea);
-				this.isListingMessages = false;
 				// If the user wants to quit, set continueOn to false to get out
 				// of the loop.  Otherwise, set the selected message offset to
 				// what the user chose from the list.
@@ -3031,7 +3084,7 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 		messageListReturn: false
 	};
 
-	this.isListingMessages = false;
+	this.currentAction = ACTION_NONE;
 
 	// If the passed-in sub-board code was different than what was set in the object before,
 	// then open the new message sub-board.
@@ -3113,6 +3166,8 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 		allowChgMsgArea = pAllowChgArea;
 	else
 		allowChgMsgArea = (this.subBoardCode != "mail");
+	// Data for the AreYouThere handler for the scrollable/ANSI interface
+	this.scrollableReadingData.allowChgMsgArea = allowChgMsgArea;
 	// If reading personal email and messages haven't been collected (searched)
 	// yet, then do so now.
 	if (this.readingPersonalEmail && (!this.msgSearchHdrs.hasOwnProperty(this.subBoardCode)))
@@ -3462,7 +3517,7 @@ function DigDistMsgReader_ListMessages(pSubBoardCode, pAllowChgSubBoard)
 		selectedMsgOffset: -1
 	};
 
-	this.isListingMessages = false;
+	this.currentAction = ACTION_NONE;
 
 	// If the passed-in sub-board code was different than what was set in the object before,
 	// then open the new message sub-board.
@@ -3543,7 +3598,7 @@ function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 		selectedMsgOffset: -1
 	};
 
-	this.isListingMessages = false;
+	this.currentAction = ACTION_NONE;
 
 	// If the user doesn't have permission to read the current sub-board, then
 	// don't allow the user to read it.
@@ -3605,7 +3660,7 @@ function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 	// index accordingly.
 	if (this.tradListTopMsgIdx == -1)
 		this.SetUpTraditionalMsgListVars();
-	this.isListingMessages = true;
+	this.currentAction = ACTION_LISTING_MSGS;
 	// Write the message list
 	var continueOn = true;
 	var retvalObj = null;
@@ -3931,7 +3986,7 @@ function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 
 	msgbase.close();
 
-	this.isListingMessages = false;
+	this.currentAction = ACTION_NONE;
 
 	return retObj;
 }
@@ -3955,7 +4010,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 		selectedMsgOffset: -1
 	};
 
-	this.isListingMessages = false;
+	this.currentAction = ACTION_NONE;
 
 	// If the user doesn't have permission to read the current sub-board, then
 	// don't allow the user to read it.
@@ -3988,27 +4043,10 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 
 	var allowChgSubBoard = (typeof(pAllowChgSubBoard) == "boolean" ? pAllowChgSubBoard : true);
 
-	// This function will be used for displaying the help line at
-	// the bottom of the screen.
-	function DisplayHelpLine(pHelpLineText, pHelpLineLen)
-	{
-		console.gotoxy(1, console.screen_rows);
-		// Mouse: console.print replaced with console.putmsg for mouse click hotspots
-		//console.print(pHelpLineText);
-		console.putmsg(pHelpLineText); // console.putmsg() can process @-codes, which we use for mouse click tracking
-		//console.cleartoeol("\x01n"); // In some cases, this seems to output several extra blank lines
-		if (pHelpLineLen < console.screen_columns - 1)
-		{
-			console.attributes = "N";
-			var diff = console.screen_columns - pHelpLineLen - 1;
-			format("%*s", diff, "");
-		}
-	}
-
 	// Clear the screen and write the header at the top
 	console.clear("\x01n");
 	this.WriteMsgListScreenTopHeader();
-	DisplayHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
+	this.DisplayKeyHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
 
 	// If the lightbar message list index & cursor position variables haven't been
 	// set yet, then set them.
@@ -4018,7 +4056,14 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 		this.SetUpLightbarMsgListVars();
 	}
 
-	this.isListingMessages = true;
+	this.currentAction = ACTION_LISTING_MSGS;
+
+	// Replace the system's AreYouThere text line with a @JS to show the
+	// global DDMsgReader_areYouThereProp property that has been set up
+	// with a custom getter function to display "Are you there?" at a
+	// good place on the screen temporarily and then refresh the screen
+	bbs.replace_text(AreYouThere, "@JS:DDMsgReader_areYouThereProp@");
+
 	// Create a DDLightbarMenu for the message list and list messages
 	// and let the user choose one
 	var msgListMenu = this.CreateLightbarMsgListMenu();
@@ -4126,7 +4171,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 				if (continueOn)
 				{
 					this.WriteMsgListScreenTopHeader();
-					DisplayHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
+					this.DisplayKeyHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
 				}
 			}
 		}
@@ -4196,7 +4241,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 			if (continueOn)
 			{
 				this.WriteMsgListScreenTopHeader();
-				DisplayHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
+				this.DisplayKeyHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
 			}
 		}
 		// DEL key: Delete a message
@@ -4222,7 +4267,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 					// There are still some messages to show, so refresh the screen.
 					// Refresh the header & help line.
 					this.WriteMsgListScreenTopHeader();
-					DisplayHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
+					this.DisplayKeyHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
 				}
 			}
 		}
@@ -4247,7 +4292,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 					var returnObj = this.EditExistingMsg(this.lightbarListSelectedMsgIdx);
 					// Refresh the header & help line
 					this.WriteMsgListScreenTopHeader();
-					DisplayHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
+					this.DisplayKeyHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
 				}
 			}
 			else
@@ -4297,7 +4342,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 
 			// Refresh the header & help lines
 			this.WriteMsgListScreenTopHeader();
-			DisplayHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
+			this.DisplayKeyHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
 		}
 		// C: Change to another message area (sub-board)
 		else if (lastUserInputUpper == this.msgListKeys.chgMsgArea)
@@ -4332,7 +4377,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 					// Adjust the menu indexes to ensure they're correct for the current sub-board
 					this.AdjustLightbarMsgListMenuIdxes(msgListMenu);
 					this.WriteMsgListScreenTopHeader();
-					DisplayHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
+					this.DisplayKeyHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
 				}
 			}
 			else
@@ -4345,7 +4390,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 			// Re-draw the message list header & help line before
 			// the menu is re-drawn
 			this.WriteMsgListScreenTopHeader();
-			DisplayHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
+			this.DisplayKeyHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
 		}
 		// Spacebar: Select a message for batch operations (such as batch
 		// delete, etc.)
@@ -4396,7 +4441,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 				drawMenu = false; // No need to re-draw the menu
 
 			// Refresh the help line
-			DisplayHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
+			this.DisplayKeyHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
 		}
 		// Ctrl-D: Batch delete (for selected messages)
 		else if (lastUserInputUpper == this.msgListKeys.batchDelete) // CTRL_D
@@ -4429,7 +4474,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 					{
 						// There are still messages to list, so refresh the header & help lines
 						this.WriteMsgListScreenTopHeader();
-						DisplayHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
+						this.DisplayKeyHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
 					}
 				}
 				else
@@ -4437,7 +4482,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 					// There are no selected messages
 					writeWithPause(1, console.screen_rows, "\x01n\x01h\x01yThere are no selected messages.", ERROR_PAUSE_WAIT_MS, "\x01n", true);
 					// Refresh the help line
-					DisplayHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
+					this.DisplayKeyHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
 				}
 			}
 		}
@@ -4462,12 +4507,12 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 
 				// Refresh the header & help line.
 				this.WriteMsgListScreenTopHeader();
-				DisplayHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
+				this.DisplayKeyHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
 			}
 		}
 		else if (lastUserInputUpper == this.msgListKeys.userSettings)
 		{
-			var userSettingsRetObj = this.DoUserSettings_Scrollable(function(pReader) { DisplayHelpLine(pReader.msgListLightbarModeHelpLine, pReader.msgListLightbarModeHelpLineLen); });
+			var userSettingsRetObj = this.DoUserSettings_Scrollable(function(pReader) { this.DisplayKeyHelpLine(pReader.msgListLightbarModeHelpLine, pReader.msgListLightbarModeHelpLineLen); });
 			lastUserInputUpper = "";
 			drawMenu = userSettingsRetObj.needWholeScreenRefresh;
 			// In case the user changed their twitlist, re-filter the messages for this sub-board
@@ -4492,7 +4537,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 			if (userSettingsRetObj.needWholeScreenRefresh)
 			{
 				this.WriteMsgListScreenTopHeader();
-				DisplayHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
+				this.DisplayKeyHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
 			}
 			else
 				msgListMenu.DrawPartialAbs(userSettingsRetObj.optionBoxTopLeftX, userSettingsRetObj.optionBoxTopLeftY, userSettingsRetObj.optionBoxWidth, userSettingsRetObj.optionBoxHeight);
@@ -4502,13 +4547,16 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 		else if (lastUserInputUpper == "S")
 		{
 			// Refresh the help line
-			DisplayHelpLine(this.msgListLightbarModeHelpLine);
+			this.DisplayKeyHelpLine(this.msgListLightbarModeHelpLine);
 		}
 	}
 	this.lightbarListSelectedMsgIdx = msgListMenu.selectedItemIdx;
 	this.lightbarListTopMsgIdx = msgListMenu.topItemIdx;
 
-	this.isListingMessages = false;
+	this.currentAction = ACTION_NONE;
+
+	// Revert the AreYouThere warning string
+	bbs.revert_text(AreYouThere);
 
 	return retObj;
 }
@@ -4696,6 +4744,21 @@ function DigDistMsgReader_CreateLightbarMsgListMenu()
 
 	// Adjust the menu indexes to ensure they're correct for the current sub-board
 	this.AdjustLightbarMsgListMenuIdxes(msgListMenu);
+	
+	// If we are indeed using ANSI (DDLightbarMenu can work for non-ANSI terminals
+	// too), set the menu's OnItemNav function to replace the system's AreYouThere
+	// text line with a @JS to show the global DDMsgReader_areYouThereProp property
+	// that has been set up with a custom getter function to display "Are you there?"
+	// at a good place on the screen temporarily and then refresh the screen.
+	// The reason for doing this is because the custom get function will replace
+	// AreYouThere with "" to prevent the screen from getting messy due to internal
+	// getkey() logic in Synchronet.
+	if (console.term_supports(USER_ANSI) && msgListMenu.allowANSI)
+	{
+		msgListMenu.OnItemNav = function(pOldItemIdx, pNewItemIdx) {
+			bbs.replace_text(AreYouThere, "@JS:DDMsgReader_areYouThereProp@");
+		};
+	}
 
 	return msgListMenu;
 }
@@ -4772,6 +4835,21 @@ function DigDistMsgReader_CreateLightbarMsgGrpMenu()
 	if (msgGrpMenu.selectedItemIdx >= msgGrpMenu.topItemIdx+msgGrpMenu.GetNumItemsPerPage())
 		msgGrpMenu.topItemIdx = msgGrpMenu.selectedItemIdx - msgGrpMenu.GetNumItemsPerPage() + 1;
 	*/
+
+	// If we are indeed using ANSI (DDLightbarMenu can work for non-ANSI terminals
+	// too), set the menu's OnItemNav function to replace the system's AreYouThere
+	// text line with a @JS to show the global DDMsgReader_areYouThereProp property
+	// that has been set up with a custom getter function to display "Are you there?"
+	// at a good place on the screen temporarily and then refresh the screen.
+	// The reason for doing this is because the custom get function will replace
+	// AreYouThere with "" to prevent the screen from getting messy due to internal
+	// getkey() logic in Synchronet.
+	if (console.term_supports(USER_ANSI) && msgGrpMenu.allowANSI)
+	{
+		msgGrpMenu.OnItemNav = function(pOldItemIdx, pNewItemIdx) {
+			bbs.replace_text(AreYouThere, "@JS:DDMsgReader_areYouThereProp@");
+		};
+	}
 
 	return msgGrpMenu;
 }
@@ -4965,6 +5043,21 @@ function DigDistMsgReader_CreateLightbarSubBoardMenu(pGrpIdx, pSortOption)
 		subBoardMenu.selectedItemIdx = 0;
 		subBoardMenu.topItemIdx = 0;
 		*/
+	}
+
+	// If we are indeed using ANSI (DDLightbarMenu can work for non-ANSI terminals
+	// too), set the menu's OnItemNav function to replace the system's AreYouThere
+	// text line with a @JS to show the global DDMsgReader_areYouThereProp property
+	// that has been set up with a custom getter function to display "Are you there?"
+	// at a good place on the screen temporarily and then refresh the screen.
+	// The reason for doing this is because the custom get function will replace
+	// AreYouThere with "" to prevent the screen from getting messy due to internal
+	// getkey() logic in Synchronet.
+	if (console.term_supports(USER_ANSI) && subBoardMenu.allowANSI)
+	{
+		subBoardMenu.OnItemNav = function(pOldItemIdx, pNewItemIdx) {
+			bbs.replace_text(AreYouThere, "@JS:DDMsgReader_areYouThereProp@");
+		};
 	}
 
 	return subBoardMenu;
@@ -5584,6 +5677,15 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 		refreshEnhancedRdrHelpLine: false
 	};
 
+	// Data for the AreYouThere handler for the scrollable/ANSI interface
+	// (Note: The AreYouThere text line is replaced in the ScrollTextLines()
+	// function)
+	this.scrollableReadingData.header = msgHeader;
+	this.scrollableReadingData.msgOffset = pOffset;
+	this.scrollableReadingData.allowChgMsgArea = allowChgMsgArea;
+
+	this.currentAction = ACTION_READING_MSG;
+
 	// This is a scrollbar update function for use when viewing the message.
 	function msgScrollbarUpdateFn(pFractionToLastPage)
 	{
@@ -5607,6 +5709,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 	}
 
 	var msgAreaWidth = this.userSettings.useEnhReaderScrollbar ? this.msgAreaWidth : this.msgAreaWidth + 1;
+	this.scrollableReadingData.msgAreaWidth = msgAreaWidth; // For the AreYouThere handler for the scrollable/ANSI interface
 
 	// We could word-wrap the message to ensure words aren't split across lines, but
 	// doing so could make some messages look bad (i.e., messages with drawing characters),
@@ -7009,6 +7112,11 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 		}
 	}
 
+	this.currentAction = ACTION_NONE;
+
+	// Revert the AreYouThere warning string
+	bbs.revert_text(AreYouThere);
+
 	return retObj;
 }
 // Helper method for ReadMessageEnhanced_Scrollable(): Shows header or kludge lines for the scrollable interface. For the sysop.
@@ -7262,6 +7370,8 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 		nextAction: ACTION_NONE,
 		refreshEnhancedRdrHelpLine: false
 	};
+
+	this.currentAction = ACTION_READING_MSG;
 
 	// We could word-wrap the message to ensure words aren't split across lines, but
 	// doing so could make some messages look bad (i.e., messages with drawing characters),
@@ -8394,6 +8504,8 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 		}
 	}
 
+	this.currentAction = ACTION_NONE;
+
 	return retObj;
 }
 
@@ -8646,6 +8758,28 @@ function DigDistMsgReader_DisplayEnhancedMsgReadHelpLine(pScreenRow, pDisplayChg
 	//console.print(displayChgAreaOpt ? this.enhReadHelpLine : this.enhReadHelpLineWithoutChgArea);
 	// console.putmsg() handles @-codes, which we use for mouse click tracking
 	console.putmsg(displayChgAreaOpt ? this.enhReadHelpLine : this.enhReadHelpLineWithoutChgArea);
+}
+
+// For the DigDistMsgReader class: A general function for writing a hotkey help line
+// at the bottom of the screen, with mouse click tracking.
+//
+// Parameters:
+//  pHelpLineText: A string containing the help line to display
+//  pHelpLineDisplayLen: The display length of the help line (this is passed in because the text
+//                may contain extra characters to define mouse click regions, etc.)
+function DigDistMsgReader_DisplayKeyHelpLine(pHelpLineText, pHelpLineDisplayLen)
+{
+	console.gotoxy(1, console.screen_rows);
+	// Mouse: console.print replaced with console.putmsg for mouse click hotspots
+	//console.print(pHelpLineText);
+	console.putmsg(pHelpLineText); // console.putmsg() can process @-codes, which we use for mouse click tracking
+	//console.cleartoeol("\x01n"); // In some cases, this seems to output several extra blank lines
+	if (pHelpLineDisplayLen < console.screen_columns - 1)
+	{
+		console.attributes = "N";
+		var diff = console.screen_columns - pHelpLineDisplayLen - 1;
+		format("%*s", diff, "");
+	}
 }
 
 // For the DigDistMsgReader class: Goes back to the prior readable sub-board
@@ -9884,6 +10018,12 @@ function DigDistMsgReader_ReadConfigFile()
 					// attribute control character
 					this.text[prop] = themeSettingsObj[prop].replace(/\\x01/g, "\x01");
 				}
+
+				// Sanity checking
+				// For the 'are you there?' input timeout warning, remove any carriage returns
+				// and other control characters that might disrupt the display
+				this.text.areYouThere = this.text.areYouThere.replace(/\r|\n/g, "");
+				this.text.areYouThere = this.text.areYouThere.replace(/\x01\]|\x01\[|\x01<|\x01>|\x01\/|\x01\\|\x01'|\x01[Ll]|\x01[Pp]/g, "");
 			}
 			// Append the hotkey help line colors with their background color, to ensure that
 			// the background always gets set for all of them (in case a 'normal' attribute
@@ -13002,6 +13142,8 @@ function DigDistMsgReader_SelectMsgArea()
 		this.SelectMsgArea_Lightbar();
 	else
 		this.SelectMsgArea_Traditional();
+
+	this.currentAction = ACTION_NONE;
 }
 
 // For the DigDistMsgReader class: Lets the user choose a message group and
@@ -13014,6 +13156,7 @@ function DigDistMsgReader_SelectMsgArea()
 //           sub-boards can be displayed.
 function DigDistMsgReader_SelectMsgArea_Lightbar(pMsgGrp, pGrpIdx)
 {
+	this.currentAction = ACTION_NONE;
 	// If there are no message groups, then don't let the user
 	// choose one.
 	if (msg_area.grp_list.length == 0)
@@ -13022,6 +13165,14 @@ function DigDistMsgReader_SelectMsgArea_Lightbar(pMsgGrp, pGrpIdx)
 		console.print("\x01y\x01hThere are no message groups.\r\n\x01p");
 		return;
 	}
+
+	this.currentAction = ACTION_CHOOSING_SUB_BOARD;
+
+	// Replace the system's AreYouThere text line with a @JS to show the
+	// global DDMsgReader_areYouThereProp property that has been set up
+	// with a custom getter function to display "Are you there?" at a
+	// good place on the screen temporarily and then refresh the screen
+	bbs.replace_text(AreYouThere, "@JS:DDMsgReader_areYouThereProp@");
 
 	// Make a backup of the current message group & sub-board indexes so
 	// that later we can tell if the user chose something different.
@@ -13365,12 +13516,15 @@ function DigDistMsgReader_SelectMsgArea_Lightbar(pMsgGrp, pGrpIdx)
 		this.lightbarListCurPos = null;
 		this.setSubBoardCode(msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].code);
 	}
+
+	this.currentAction = ACTION_NONE;
 }
 
 // For the DigDistMsgReader class: Lets the user choose a message group and
 // sub-board via numeric input, using a traditional user interface.
 function DigDistMsgReader_SelectMsgArea_Traditional()
 {
+	this.currentAction = ACTION_NONE;
 	// TODO: Allow searching
 	// If there are no message groups, then don't let the user
 	// choose one.
@@ -13380,6 +13534,8 @@ function DigDistMsgReader_SelectMsgArea_Traditional()
 		console.print("\x01y\x01hThere are no message groups.\r\n\x01p");
 		return;
 	}
+
+	this.currentAction = ACTION_CHOOSING_SUB_BOARD;
 
 	// Make a backup of the current message group & sub-board indexes so
 	// that later we can tell if the user chose something different.
@@ -13567,6 +13723,8 @@ function DigDistMsgReader_SelectMsgArea_Traditional()
 		this.lightbarListCurPos = null;
 		this.setSubBoardCode(msg_area.grp_list[bbs.curgrp].sub_list[bbs.cursub].code);
 	}
+
+	this.currentAction = ACTION_NONE;
 }
 
 // For the DigDistMsgReader class: Lists all message groups (for the traditional
@@ -15931,14 +16089,14 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn, pTopR
 		optBoxHeight += 3;
 	if (this.readingPersonalEmail)
 		++optBoxHeight;
-	if (this.isListingMessages)
+	if (this.currentAction == ACTION_LISTING_MSGS)
 		++optBoxHeight;
 	var optBoxTopRow = 1;
 	if (typeof(pTopRowOverride) === "number" && pTopRowOverride >= 1 && pTopRowOverride <= console.screen_rows - optBoxHeight + 1)
 		optBoxTopRow = pTopRowOverride;
 	else
 	{
-		if (this.isListingMessages)
+		if (this.currentAction == ACTION_LISTING_MSGS)
 			optBoxTopRow = 3;
 		else
 			optBoxTopRow = this.msgAreaTop + 1;
@@ -15966,7 +16124,7 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn, pTopR
 
 	// This setting is only for listing messages
 	var MSG_LIST_SELECT_MSG_MOVES_TO_NEXT_MSG_OPT_INDEX = -1;
-	if (this.isListingMessages)
+	if (this.currentAction == ACTION_LISTING_MSGS)
 	{
 		MSG_LIST_SELECT_MSG_MOVES_TO_NEXT_MSG_OPT_INDEX = optionBox.addTextItem(format(optionFormatStr, "Select msg moves to next msg"));
 		if (this.userSettings.selectInMsgListMovesToNext)
@@ -16464,6 +16622,12 @@ function DigDistMsgReader_DoIndexedMode(pScanScope, pNewscanOnly)
 	this.indexedMode = true;
 	this.doingMsgScan = newscanOnly;
 
+	// Replace the system's AreYouThere text line with a @JS to show the
+	// global DDMsgReader_areYouThereProp property that has been set up
+	// with a custom getter function to display "Are you there?" at a
+	// good place on the screen temporarily and then refresh the screen
+	bbs.replace_text(AreYouThere, "@JS:DDMsgReader_areYouThereProp@");
+
 	// msgHdrsCache is used to prevent long loading again when loading a sub-board
 	// a 2nd time or later. Only if this.enableIndexedModeMsgListCache is true.
 	var msgHdrsCache = {};
@@ -16776,6 +16940,15 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 		if (numItems > 0)
 			numberedModeItemNumWidth = numItems.toString().length;
 	}
+	else
+	{
+		// Using the lightbar interface
+		// Replace the system's AreYouThere text line with a @JS to show the
+		// global DDMsgReader_areYouThereProp property that has been set up
+		// with a custom getter function to display "Are you there?" at a
+		// good place on the screen temporarily and then refresh the screen
+		bbs.replace_text(AreYouThere, "@JS:DDMsgReader_areYouThereProp@");
+	}
 
 	// Set text widths for the menu items
 	var newMsgWidthObj = findWidestNumMsgsAndNumNewMsgs(scanScope, newScanOnly, true);
@@ -16797,6 +16970,20 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 	{
 		thisFunctionFirstCall = true;
 		this.indexedModeMenu = this.CreateLightbarIndexedModeMenu(numMsgsWidth, numNewMsgsWidth, lastPostDateWidth, this.indexedModeItemDescWidth, this.indexedModeSubBoardMenuSubBoardFormatStr);
+
+		// If we using the lightbar interface, set the menu's OnItemNav function to
+		// replace the system's AreYouThere text line with a @JS to show the global
+		// DDMsgReader_areYouThereProp property that has been set up with a custom
+		// getter function to display "Are you there?" at a good place on the screen
+		// temporarily and then refresh the screen. The reason for doing this is
+		// because the custom get function will replace AreYouThere with "" to prevent
+		// the screen from getting messy due to internal getkey() logic in Synchronet.
+		if (!usingTradInterface)
+		{
+			this.indexedModeMenu.OnItemNav = function(pOldItemIdx, pNewItemIdx) {
+				bbs.replace_text(AreYouThere, "@JS:DDMsgReader_areYouThereProp@");
+			};
+		}
 	}
 	else
 		DigDistMsgReader_IndexedModeChooseSubBoard.selectedItemIdx = this.indexedModeMenu.selectedItemIdx;
@@ -17312,6 +17499,47 @@ function DigDistMsgReader_ShowIndexedListHelp()
 	}
 	console.pause();
 	console.aborted = false;
+}
+
+// Handler function to show the "Are you there?" warning to the user for the ANSI/scrollable interface
+function DigDistMsgReader_ScrollableModeAreYouThereWarning()
+{
+	var originalCurPos = console.getxy();
+
+	console.beep();
+	//var warningTxt = "Are you there??";
+	var warningTxt = replaceAtCodesInStr(this.text.areYouThere);
+	var numSpaces = Math.floor(this.scrollableReadingData.msgAreaWidth / 2) - Math.floor(warningTxt.length / 2);
+	warningTxt = format("%*s", numSpaces, "") + warningTxt + format("%*s", numSpaces-1, "");
+	this.WriteLightbarKeyHelpMsg(warningTxt, "\x01n\x01h\x01y\x01h", ERROR_WAIT_MS);
+
+	if (this.currentAction == ACTION_READING_MSG && this.scrollingReaderInterface && console.term_supports(USER_ANSI))
+	{
+		this.DisplayEnhancedMsgReadHelpLine(console.screen_rows, this.scrollableReadingData.allowChgMsgArea);
+		/*
+		if (typeof(this.scrollableReadingData.header) === "object" && typeof(this.scrollableReadingData.msgOffset) === "number")
+			this.DisplayEnhancedMsgHdr(this.scrollableReadingData.header, this.scrollableReadingData.msgOffset+1, 1);
+		*/
+		// RefreshMsgAreaRectangle
+	}
+	else if (this.currentAction == ACTION_LISTING_MSGS && this.msgListUseLightbarListInterface && console.term_supports(USER_ANSI))
+	{
+		this.DisplayKeyHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
+	}
+	else if (this.currentAction == ACTION_CHOOSING_SUB_BOARD && this.msgListUseLightbarListInterface && console.term_supports(USER_ANSI))
+	{
+		this.WriteChgMsgAreaKeysHelpLine();
+	}
+	else if (this.indexedMode)
+	{
+		// Display the indexed mode help line at the bottom of the screen
+		console.gotoxy(1, console.screen_rows);
+		console.attributes = "N";
+		console.putmsg(this.indexedModeHelpLine); // console.putmsg() can process @-codes, which we use for mouse click tracking
+		console.attributes = "N";
+	}
+
+	console.gotoxy(originalCurPos);
 }
 
 // Returns an object with the widest text length of the number of new messsages and
@@ -20099,6 +20327,15 @@ function scrollTextLines(pTxtLines, pTopLineIdx, pTxtAttrib, pWriteTxtLines, pTo
 	var mouseInputOnly_continue = false;
 	while (continueOn)
 	{
+		// Replace the system's AreYouThere text line with a @JS to show the
+		// global DDMsgReader_areYouThereProp property that has been set up
+		// with a custom getter function to display "Are you there?" at a
+		// good place on the screen temporarily and then refresh the screen.
+		// This is done here in the loop because the custom get function will
+		// replace AreYouThere with "" to prevent the screen from getting
+		// messy due to internal getkey() logic in Synchronet.
+		bbs.replace_text(AreYouThere, "@JS:DDMsgReader_areYouThereProp@");
+
 		mouseInputOnly_continue = false;
 
 		// If we are to write the text lines, then write each of them and also
@@ -20138,6 +20375,7 @@ function scrollTextLines(pTxtLines, pTopLineIdx, pTxtAttrib, pWriteTxtLines, pTo
 		retObj.lastKeypress = console.getkey(K_UPPER|K_NOCRLF|K_NOECHO|K_NOSPIN);
 		if (console.aborted)
 			break;
+		console.gotoxy(pPostWriteCurX, pPostWriteCurY);
 
 		switch (retObj.lastKeypress)
 		{
