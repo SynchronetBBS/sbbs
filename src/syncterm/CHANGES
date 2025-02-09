@@ -5,6 +5,7 @@ Disable Prestel ENQ/Memory in BBC Micro Mode 7
 Fix error adding a new Web List
 Enable cursor for Mode 7
 Adjust Prestel/Mode 7 mappings
+Add Atari ST VT52 modes
 
 Version 1.5
 ------------

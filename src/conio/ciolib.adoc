@@ -505,5 +505,13 @@ following table summarizes the available fonts.
 |
 |
 |√
-|ISO_8859_1
+|SAA5050
+|===
+
+|Atari ST
+|√
+|
+|√
+|
+|Atari ST
 |===

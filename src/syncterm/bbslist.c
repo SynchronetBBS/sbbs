@@ -235,12 +235,12 @@ int sortorder[sizeof(sort_order) / sizeof(struct sort_order_info)];
 static char *screen_modes[] = {
 	"Current", "80x25", "LCD 80x25", "80x28", "80x30", "80x43", "80x50", "80x60", "132x37 (16:9)", "132x52 (5:4)",
 	"132x25", "132x28", "132x30", "132x34", "132x43", "132x50", "132x60", "C64", "C128 (40col)", "C128 (80col)",
-	"Atari", "Atari XEP80", "Custom", "EGA 80x25", "VGA 80x25", "Prestel", "BBC Micro Mode 7", NULL
+	"Atari", "Atari XEP80", "Custom", "EGA 80x25", "VGA 80x25", "Prestel", "BBC Micro Mode 7", "Atari ST 40x25", "Atari ST 80x25", "Atari ST 80x25 Mono", NULL
 };
 char *screen_modes_enum[] = {
 	"Current", "80x25", "LCD80x25", "80x28", "80x30", "80x43", "80x50", "80x60", "132x37", "132x52", "132x25",
 	"132x28", "132x30", "132x34", "132x43", "132x50", "132x60", "C64", "C128-40col", "C128-80col", "Atari",
-	"Atari-XEP80", "Custom", "EGA80x25", "VGA80x25", "Prestel", "BBCMicro7", NULL
+	"Atari-XEP80", "Custom", "EGA80x25", "VGA80x25", "Prestel", "BBCMicro7", "AtariST40x25", "AtariST80x25", "AtariST80x25Mono", NULL
 };
 
 char *log_levels[] = {
@@ -1825,9 +1825,19 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 							iniSetString(&inifile, itemname, "Font", item->font,
 							             &ini_style);
 						}
+						else if (item->screen_mode == SCREEN_MODE_ATARIST_40X25
+						    || item->screen_mode == SCREEN_MODE_ATARIST_80X25
+						    || item->screen_mode == SCREEN_MODE_ATARIST_80X25_MONO) {
+							SAFECOPY(item->font, font_names[44]);
+							iniSetString(&inifile, itemname, "Font", item->font,
+							             &ini_style);
+						}
 						else if ((i == SCREEN_MODE_C64) || (i == SCREEN_MODE_C128_40)
-						|| (i == SCREEN_MODE_C128_80) || (i == SCREEN_MODE_ATARI)
-						|| (i == SCREEN_MODE_ATARI_XEP80) || (i == SCREEN_MODE_PRESTEL) || (i == SCREEN_MODE_BEEB)) {
+						    || (i == SCREEN_MODE_C128_80) || (i == SCREEN_MODE_ATARI)
+						    || (i == SCREEN_MODE_ATARI_XEP80) || (i == SCREEN_MODE_PRESTEL) || (i == SCREEN_MODE_BEEB)
+						    || item->screen_mode == SCREEN_MODE_ATARIST_40X25
+						    || item->screen_mode == SCREEN_MODE_ATARIST_80X25
+						    || item->screen_mode == SCREEN_MODE_ATARIST_80X25_MONO) {
 							SAFECOPY(item->font, font_names[0]);
 							iniSetString(&inifile, itemname, "Font", item->font,
 							             &ini_style);
@@ -4074,6 +4084,10 @@ get_emulation(struct bbslist *bbs)
 			return CTERM_EMULATION_PRESTEL;
 		case SCREEN_MODE_BEEB:
 			return CTERM_EMULATION_BEEB;
+		case SCREEN_MODE_ATARIST_40X25:
+		case SCREEN_MODE_ATARIST_80X25:
+		case SCREEN_MODE_ATARIST_80X25_MONO:
+			return CTERM_EMULATION_ATARIST_VT52;
 		default:
 			return CTERM_EMULATION_ANSI_BBS;
 	}
@@ -4093,6 +4107,8 @@ get_emulation_str(cterm_emulation_t emu)
 			return "Prestel";
 		case CTERM_EMULATION_BEEB:
 			return "Beeb7";
+		case CTERM_EMULATION_ATARIST_VT52:
+			return "AtariST+VT52";
 	}
 	return "none";
 }

@@ -125,12 +125,19 @@ struct video_params vparams[] = {
 	/* DigitalMon */
 	{LCD80X25, COLOUR_PALETTE,            80, 25, 14, 15, 16, 8, 7, 0,  8, 5, 640,  400},
 	/* Prestel */
-	{PRESTEL_40X25, PRESTEL_PALETTE,      40,  25, 14, 15, 20, 12, 7, 0,  4, 3, 480, 500},
+	{PRESTEL_40X25, PRESTEL_PALETTE,      40, 25, 14, 15, 20, 12, 7, 0,  4, 3, 480, 500},
+	/* Atari ST 40X25 */
+	{ATARIST_40X25, ATARI_PALETTE_16,     40, 25,  7,  7,  8, 8, 16, 0, 4, 3, 320, 200},
+	/* Atari ST 80X25 */
+	{ATARIST_80X25, ATARI_PALETTE_4,      80, 25,  7,  7,  8, 8, 16, 0, 4, 3, 640, 200},
+	/* Atari ST 80X25 Mono */
+	{ATARIST_80X25_MONO, ATARI_PALETTE_2, 80, 25, 14, 15, 16, 8, 16, 0, 4, 3, 640, 400},
+
 	/* Custom mode */
-	{CIOLIB_MODE_CUSTOM, COLOUR_PALETTE,  80,  25, 14, 15, 16, 8, 7, 0,  0, 0,   -1,  -1},
+	{CIOLIB_MODE_CUSTOM, COLOUR_PALETTE,  80, 25, 14, 15, 16, 8, 7, 0,  0, 0,   -1,  -1},
 };
 
-uint32_t palettes[6][16] = {
+uint32_t palettes[9][16] = {
 	/* Mono */
 	{ 0x00, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07,
 	  0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07
@@ -155,6 +162,15 @@ uint32_t palettes[6][16] = {
 	{ 0, 21, 46, 51, 196, 201, 226, 15,
 	  0, 21, 46, 51, 196, 201, 226, 15
 	},
+	/* Atari ST 16-colour */
+	{ 15, 0, 196, 46, 226, 21, 201, 51, 
+	  274, 275, 276, 277, 278, 279, 280, 281},
+	/* Atari ST 4-colour */
+	{ 15, 0, 196, 46, 15, 0, 196, 46, 
+	  15, 0, 196, 46, 15, 0, 196, 46},
+	/* Atari ST 2-colour */
+	{ 15, 0, 15, 0, 15, 0, 15, 0,
+	  15, 0, 15, 0, 15, 0, 15, 0},
 };
 
 struct dac_colors dac_default[TOTAL_DAC_SIZE] = {
@@ -286,6 +302,10 @@ struct dac_colors dac_default[TOTAL_DAC_SIZE] = {
 	/* Atari Colours */
 	/* BG, FG */
 	{0, 81, 129}, {96, 183, 231},
+
+	/* Atari ST Colours (translated from RGB333) */
+	{182, 182, 182}, {109, 109, 109}, {255, 109, 109}, {109, 255, 109},
+	{255, 255, 109}, {109, 109, 255}, {255, 109, 255}, {109, 255, 255},
 };
 
 int find_vmode(int mode)

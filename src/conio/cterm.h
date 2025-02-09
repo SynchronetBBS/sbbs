@@ -58,6 +58,7 @@ typedef enum {
 	,CTERM_EMULATION_ATASCII
 	,CTERM_EMULATION_PRESTEL
 	,CTERM_EMULATION_BEEB
+	,CTERM_EMULATION_ATARIST_VT52
 } cterm_emulation_t;
 
 typedef enum {
@@ -147,6 +148,7 @@ struct cterminal {
 #define CTERM_EXTATTR_PRESTEL_CONCEAL	0x0100
 #define CTERM_EXTATTR_PRESTEL_SEPARATED	0x0200
 #define CTERM_EXTATTR_PRESTEL_HOLD	0x0400
+#define CTERM_EXTATTR_ALTERNATE_KEYPAD	0x0800
 	int					save_xpos;		// Saved position (for later restore)
 	int					save_ypos;
 	int					sequence;		// An escape sequence is being parsed

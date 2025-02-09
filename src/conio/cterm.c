@@ -1360,11 +1360,14 @@ range_span_exclude(char exclude, const char *s, char min, char max)
 	return ret;
 }
 
-static enum {
+enum sequence_state {
 	SEQ_BROKEN,
 	SEQ_INCOMPLETE,
 	SEQ_COMPLETE
-} legal_sequence(const char *seq, size_t max_len)
+};
+
+static enum sequence_state
+legal_sequence(const char *seq, size_t max_len)
 {
 	size_t intermediate_len;
 
@@ -1405,6 +1408,33 @@ static enum {
 incomplete:
 	if (strlen(seq) >= max_len)
 		return SEQ_BROKEN;
+	return SEQ_INCOMPLETE;
+}
+
+static enum sequence_state
+st_vt_52_legal_sequence(const char *seq, size_t max_len)
+{
+	static const char *all_seconds = "ABCDEFGHIJKYZbcdefjklopqvw[\\=>\x1b";
+
+	if (seq[0] == 0)
+		return SEQ_INCOMPLETE;
+	if (strchr(all_seconds, seq[0]) == NULL)
+		return SEQ_BROKEN;
+	switch (seq[0]) {
+		case 'b':
+		case 'c':
+			if (seq[1])
+				return SEQ_COMPLETE;
+			break;
+		case 'Y':
+			if (seq[1] > 31 && seq[2] > 31)
+				return SEQ_COMPLETE;
+			if (seq[1] && seq[2])
+				return SEQ_BROKEN;
+			break;
+		default:
+			return SEQ_COMPLETE;
+	}
 	return SEQ_INCOMPLETE;
 }
 
@@ -2307,15 +2337,26 @@ set_negative(struct cterminal *cterm, bool on)
 
 	// TODO: This one is great...
 	if (on != cterm->negative) {
-		bg = cterm->attr & 0x70;
-		fg = cterm->attr & 0x07;
-		cterm->attr &= 0x88;
-		cterm->attr |= (bg >> 4);
-		cterm->attr |= (fg << 4);
-		tmp_colour = cterm->fg_color;
-		cterm->fg_color = cterm->bg_color;
-		cterm->bg_color = tmp_colour;
-		cterm->negative = on;
+		if (cterm->emulation == CTERM_EMULATION_ATARIST_VT52) {
+			bg = cterm->attr & 0xF0;
+			fg = cterm->attr & 0x0F;
+			cterm->attr = (bg >> 4) | (fg << 4);
+			tmp_colour = cterm->fg_color;
+			cterm->fg_color = cterm->bg_color;
+			cterm->bg_color = tmp_colour;
+			cterm->negative = on;
+		}
+		else {
+			bg = cterm->attr & 0x70;
+			fg = cterm->attr & 0x07;
+			cterm->attr &= 0x88;
+			cterm->attr |= (bg >> 4);
+			cterm->attr |= (fg << 4);
+			tmp_colour = cterm->fg_color;
+			cterm->fg_color = cterm->bg_color;
+			cterm->bg_color = tmp_colour;
+			cterm->negative = on;
+		}
 	}
 }
 
@@ -2341,6 +2382,167 @@ set_bright_bg(struct cterminal *cterm, unsigned char colour, int flags)
 		attr2palette(cterm->attr, cterm->negative ? &cterm->bg_color : NULL, cterm->negative ? NULL : &cterm->bg_color);
 		FREE_AND_NULL(cterm->bg_tc_str);
 	}
+}
+
+static void
+do_st_vt_52_attr(struct cterminal *cterm, char attr, bool bg)
+{
+	if (cterm->negative)
+		bg = !bg;
+	if (bg) {
+		cterm->attr = (attr & 0x0F) << 4 | (cterm->attr & 0x0F);
+		attr2palette(cterm->attr, NULL, &cterm->bg_color);
+	}
+	else {
+		cterm->attr = (attr & 0x0F) | (cterm->attr & 0xF0);
+		attr2palette(cterm->attr, &cterm->fg_color, NULL);
+	}
+	textattr(cterm->attr);
+	setcolour(cterm->fg_color, cterm->bg_color);
+}
+
+static void
+do_st_vt_52(struct cterminal *cterm, char *retbuf, size_t retsize)
+{
+	int x;
+	int y;
+	int i;
+
+	switch(cterm->escbuf[0]) {
+		// Standard VT-52 commands
+		case '\x1b':
+			// ESC ESC does nothing.
+			break;
+		case 'B':
+			adjust_currpos(cterm, 0, 1, 0);
+			break;
+		case 'I':
+			adjust_currpos(cterm, 0, -1, 1);
+			break;
+		case 'A':
+			adjust_currpos(cterm, 0, -1, 0);
+			break;
+		case 'C':
+			adjust_currpos(cterm, 1, 0, 0);
+			break;
+		case 'D':
+			adjust_currpos(cterm, -1, 0, 0);
+			break;
+		case 'H':
+			gotoxy(CURR_MINX, CURR_MINY);
+			break;
+		case 'Y':
+			y = cterm->escbuf[1] - 32;
+			if (y < 0)
+				break;
+			if (y > 23)
+				CURR_XY(NULL, &y);
+			x = cterm->escbuf[2] - 32;
+			if (x < 0)
+				break;
+			if (x > 79)
+				x = 79;
+			gotoxy(CURR_MINX + x, CURR_MINY + y);
+			break;
+		case 'K':
+			clreol();
+			break;
+		case 'J':
+			clreol();
+			CURR_XY(&x, &y);
+			for (i = y + 1; i <= TERM_MAXY; i++) {
+				cterm_gotoxy(cterm, TERM_MINY, i);
+				clreol();
+			}
+			gotoxy(x, y);
+			break;
+		case 'Z':
+			if(retbuf && strlen(retbuf) + 3 < retsize)
+				strcat(retbuf, "\x1b/K");
+			break;
+		case '[':
+		case '\\':
+			// TODO: Hold-screen mode
+			// Maybe not supported by ST?
+			break;
+		case '=':
+			cterm->extattr |= CTERM_EXTATTR_ALTERNATE_KEYPAD;
+			break;
+		case '>':
+			cterm->extattr &= ~CTERM_EXTATTR_ALTERNATE_KEYPAD;
+			break;
+		case 'F':
+		case 'G':
+			// TODO: Graphics mode...
+			// Maybe not supported by ST?
+			break;
+		// GEMDOS/TOS extensions
+		case 'E':
+			cterm_clearscreen(cterm, (char)cterm->attr);
+			gotoxy(CURR_MINX, CURR_MINY);
+			break;
+		case 'b':
+			do_st_vt_52_attr(cterm, cterm->escbuf[1], false);
+			break;
+		case 'c':
+			do_st_vt_52_attr(cterm, cterm->escbuf[1], true);
+			break;
+		case 'd':
+			clear2bol(cterm);
+			CURR_XY(&x, &y);
+			for (i = y - 1; i >= TERM_MINY; i--) {
+				cterm_gotoxy(cterm, TERM_MINX, i);
+				clreol();
+			}
+			gotoxy(x, y);
+			break;
+		case 'e':
+			cterm->cursor=_NORMALCURSOR;
+			ciolib_setcursortype(cterm->cursor);
+			break;
+		case 'f':
+			cterm->cursor=_NOCURSOR;
+			ciolib_setcursortype(cterm->cursor);
+			break;
+		case 'j':
+			CURR_XY(&cterm->save_xpos, &cterm->save_ypos);
+			break;
+		case 'k':
+			if(cterm->save_ypos>0 && cterm->save_ypos<=cterm->height
+					&& cterm->save_xpos>0 && cterm->save_xpos<=cterm->width) {
+				if(cterm->save_ypos < CURR_MINY || cterm->save_ypos > CURR_MAXY || cterm->save_xpos < CURR_MINX || cterm->save_xpos > CURR_MAXX)
+					break;
+				gotoxy(cterm->save_xpos, cterm->save_ypos);
+			}
+			break;
+		case 'l':
+			CURR_XY(&x, &y);
+			gotoxy(CURR_MINX, y);
+			clreol();
+			gotoxy(x, y);
+			break;
+		case 'o':
+			clear2bol(cterm);
+			break;
+		case 'p':
+			set_negative(cterm, true);
+			textattr(cterm->attr);
+			setcolour(cterm->fg_color, cterm->bg_color);
+			break;
+		case 'q':
+			set_negative(cterm, false);
+			textattr(cterm->attr);
+			setcolour(cterm->fg_color, cterm->bg_color);
+			break;
+		case 'v':
+			cterm->extattr |= CTERM_EXTATTR_AUTOWRAP;
+			break;
+		case 'w':
+			cterm->extattr &= ~CTERM_EXTATTR_AUTOWRAP;
+			break;
+	}
+	cterm->escbuf[0]=0;
+	cterm->sequence=0;
 }
 
 static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *speed, char last)
@@ -4400,6 +4602,8 @@ cterm_reset(struct cterminal *cterm)
 	cterm->ypos = TERM_MINY;
 	cterm->cursor=_NORMALCURSOR;
 	cterm->extattr = CTERM_EXTATTR_AUTOWRAP | CTERM_EXTATTR_SXSCROLL | CTERM_EXTATTR_DECBKM;
+	if (cterm->emulation == CTERM_EMULATION_ATARIST_VT52)
+		cterm->extattr &= ~CTERM_EXTATTR_AUTOWRAP;
 	FREE_AND_NULL(cterm->tabs);
 	cterm->tabs = malloc(sizeof(cterm_tabs));
 	if (cterm->tabs) {
@@ -4492,6 +4696,7 @@ struct cterminal* cterm_init(int height, int width, int xpos, int ypos, int back
 	char *in;
 	char	*out;
 	struct cterminal *cterm;
+	int flags;
 
 	if((cterm=calloc(1, sizeof(struct cterminal)))==NULL)
 		return cterm;
@@ -4540,6 +4745,11 @@ struct cterminal* cterm_init(int height, int width, int xpos, int ypos, int back
 		memcpy(cterm->prestel_data[4], ";???????????????", PRESTEL_MEM_SLOT_SIZE);
 		memcpy(cterm->prestel_data[5], ";???????????????", PRESTEL_MEM_SLOT_SIZE);
 		memcpy(cterm->prestel_data[6], ";???????????????", PRESTEL_MEM_SLOT_SIZE);
+	}
+	if (cterm->emulation == CTERM_EMULATION_ATARIST_VT52) {
+		flags = getvideoflags();
+		flags |= CIOLIB_VIDEO_BGBRIGHT;
+		setvideoflags(flags);
 	}
 
 	return cterm;
@@ -5495,6 +5705,25 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 								break;
 						}
 					}
+					else if (cterm->emulation == CTERM_EMULATION_ATARIST_VT52) {
+						ustrcat(cterm->escbuf,ch);
+						switch(st_vt_52_legal_sequence(cterm->escbuf, sizeof(cterm->escbuf)-1)) {
+							case SEQ_BROKEN:
+								/* Broken sequence detected */
+								*prnpos++ = '\033';
+								*prnpos = 0;
+								prntmp = strlen(cterm->escbuf);
+								memcpy(prnpos, cterm->escbuf, prntmp + 1);
+								prnpos += prntmp;
+								cterm->escbuf[0]=0;
+								cterm->sequence=0;
+								break;
+							case SEQ_INCOMPLETE:
+								break;
+							case SEQ_COMPLETE:
+								do_st_vt_52(cterm, retbuf, retsize);
+								break;						}
+					}
 					else {
 						ustrcat(cterm->escbuf,ch);
 						switch(legal_sequence(cterm->escbuf, sizeof(cterm->escbuf)-1)) {
@@ -6226,6 +6455,37 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 									*prnpos = 0;
 								}
 								break;
+						}
+					}
+					else if(cterm->emulation == CTERM_EMULATION_ATARIST_VT52) {
+						switch(buf[j]) {
+							case 0:
+								break;
+							case 7:			/* Beep */
+								lastch = 0;
+								uctputs(cterm, prn);
+								prn[0]=0;
+								prnpos = prn;
+								if(cterm->log==CTERM_LOG_ASCII && cterm->logfile != NULL)
+									fputs("\x07", cterm->logfile);
+								if(!cterm->quiet) {
+									#ifdef __unix__
+										putch(7);
+									#else
+										MessageBeep(MB_OK);
+									#endif
+								}
+								break;
+							case 27:		/* ESC */
+								uctputs(cterm, prn);
+								prn[0]=0;
+								prnpos = prn;
+								cterm->sequence=1;
+								break;
+							default:
+								lastch = ch[0];
+								*prnpos++ = ch[0];
+								*prnpos = 0;
 						}
 					}
 					else {	/* ANSI-BBS */

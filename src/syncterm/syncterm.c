@@ -2504,6 +2504,12 @@ screen_to_ciolib(int screen)
 		case SCREEN_MODE_PRESTEL:
 		case SCREEN_MODE_BEEB:
 			return PRESTEL_40X25;
+		case SCREEN_MODE_ATARIST_40X25:
+			return ATARIST_40X25;
+		case SCREEN_MODE_ATARIST_80X25:
+			return ATARIST_80X25;
+		case SCREEN_MODE_ATARIST_80X25_MONO:
+			return ATARIST_80X25_MONO;
 	}
 	gettextinfo(&ti);
 	return ti.currmode;
@@ -2563,6 +2569,12 @@ ciolib_to_screen(int ciolib)
 			return SCREEN_MODE_VGA_80X25;
 		case PRESTEL_40X25:
 			return SCREEN_MODE_PRESTEL;
+		case ATARIST_40X25:
+			return SCREEN_MODE_ATARIST_40X25;
+		case ATARIST_80X25:
+			return SCREEN_MODE_ATARIST_80X25;
+		case ATARIST_80X25_MONO:
+			return SCREEN_MODE_ATARIST_80X25_MONO;
 	}
 	return SCREEN_MODE_CURRENT;
 }

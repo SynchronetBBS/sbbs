@@ -204,6 +204,10 @@ enum text_modes
 	VESA_132X50	= 206,
 	VESA_132X60	= 196,
 
+	ATARIST_40X25      = 251,
+	ATARIST_80X25      = 252,
+	ATARIST_80X25_MONO = 253,
+
 	PRESTEL_40X25   = 254,
 
 	/* Custom Mode */
@@ -303,7 +307,7 @@ struct ciolib_screen {
 	uint32_t		palette[16];
 };
 
-#define CONIO_FIRST_FREE_FONT	44
+#define CONIO_FIRST_FREE_FONT	45
 
 typedef struct {
 	int		mode;

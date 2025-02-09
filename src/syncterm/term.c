@@ -4896,6 +4896,49 @@ doterm(struct bbslist *bbs)
 						break;
 				}
 			}
+			else if (key && (cterm->emulation == CTERM_EMULATION_ATARIST_VT52)) {
+				switch (key) {
+					case CIO_KEY_F(1):
+						conn_send("\033P", 2, 0);
+						break;
+					case CIO_KEY_F(2):
+						conn_send("\033Q", 2, 0);
+						break;
+					case CIO_KEY_F(3):
+						conn_send("\033R", 2, 0);
+						break;
+					case CIO_KEY_LEFT:
+						conn_send("\033D", 2, 0);
+						break;
+					case CIO_KEY_RIGHT:
+						conn_send("\033C", 2, 0);
+						break;
+					case CIO_KEY_UP:
+						conn_send("\033A", 2, 0);
+						break;
+					case CIO_KEY_DOWN:
+						conn_send("\033B", 2, 0);
+						break;
+					case CIO_KEY_DC:    /* "Delete" key, send ASCII 127 (DEL) */
+						if (cterm->extattr & CTERM_EXTATTR_DECBKM)
+							conn_send("\x7f", 1, 0);
+						else
+							conn_send("\x1b[3~", 1, 0);
+						break;
+					case '\b':
+						if (cterm->extattr & CTERM_EXTATTR_DECBKM)
+							key = '\b';
+						else
+							key = '\x7f';
+
+                                        /* FALLTHROUGH to default */
+					default:
+						if ((key < 256) && (key >= 0)) {
+							ch[0] = key;
+							conn_send(ch, 1, 0);
+						}
+				}
+			}
 			else if (key) {
 				switch (key) {
 					case CIO_KEY_LEFT:
