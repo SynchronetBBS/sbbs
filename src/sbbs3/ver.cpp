@@ -76,6 +76,7 @@ char* socklib_version(char* str, size_t size, char* winsock_ver)
 void sbbs_t::ver()
 {
 	char str[128], compiler[32], os[128], cpu[128];
+	char tmp[128];
 
 	CRLF;
 	strcpy(str, VERSION_NOTICE);
@@ -128,6 +129,14 @@ void sbbs_t::ver()
 	safe_snprintf(str, sizeof str, "%s (%u)", archive_version_string(), ARCHIVE_VERSION_NUMBER);
 	center(str);
 	CRLF;
+
+#ifdef USE_MOSQUITTO
+	SAFECOPY(str, mqtt_libver(tmp, sizeof tmp));
+	safe_snprintf(tmp, sizeof tmp, " (%u)", LIBMOSQUITTO_VERSION_NUMBER);
+	SAFECAT(str, tmp);
+	center(str);
+	CRLF;
+#endif
 
 	safe_snprintf(str, sizeof(str), "%s %s", os_version(os, sizeof(os)), os_cpuarch(cpu, sizeof(cpu)));
 	center(str);
