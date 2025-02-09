@@ -6475,6 +6475,14 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 						switch(buf[j]) {
 							case 0:
 								break;
+							case 1:
+							case 2:
+							case 3:
+							case 4:
+							case 5:
+							case 6:
+								// Ignored
+								break;
 							case 7:			/* Beep */
 								lastch = 0;
 								uctputs(cterm, prn);
@@ -6490,11 +6498,38 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 									#endif
 								}
 								break;
+							case 11:
+							case 12:
+								// VT and FF both move down one row and scroll.
+								uctputs(cterm, prn);
+								prn[0]=0;
+								prnpos = prn;
+								adjust_currpos(cterm, 0, 1, true);
+								break;
+							case 14:
+							case 15:
+							case 16:
+							case 17:
+							case 18:
+							case 19:
+							case 20:
+							case 21:
+							case 22:
+							case 23:
+							case 24:
+							case 25:
+							case 26:
+								break;
 							case 27:		/* ESC */
 								uctputs(cterm, prn);
 								prn[0]=0;
 								prnpos = prn;
 								cterm->sequence=1;
+								break;
+							case 28:
+							case 29:
+							case 30:
+							case 31:
 								break;
 							default:
 								lastch = ch[0];
