@@ -5,6 +5,12 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.96k    2025-02-08   Input timeout alert improvement - Rather than just
+                      blanking out the AreYouThere text (which still allows the
+                      alert sound), now also writes a text string at the bottom
+                      row when the input timeout warning occurs. The string is
+                      configurable via the new areYouThere string in the theme
+                      file.
 1.96j    2025-01-25   User timeout 'AreYouThere' message and disconnection are
                       more consistent with Synchronet's behavior. However, if
                       the scrollable reader or lightbar list interface is being
