@@ -127,11 +127,11 @@ struct video_params vparams[] = {
 	/* Prestel */
 	{PRESTEL_40X25, PRESTEL_PALETTE,      40, 25, 14, 15, 20, 12, 7, 0,  4, 3, 480, 500},
 	/* Atari ST 40X25 */
-	{ATARIST_40X25, ATARI_PALETTE_16,     40, 25,  7,  7,  8, 8, 16, 0, 4, 3, 320, 200},
+	{ATARIST_40X25, ATARI_PALETTE_16,     40, 25,  7,  7,  8, 8, 15, CIOLIB_VIDEO_BGBRIGHT | CIOLIB_VIDEO_NOBLINK, 4, 3, 320, 200},
 	/* Atari ST 80X25 */
-	{ATARIST_80X25, ATARI_PALETTE_4,      80, 25,  7,  7,  8, 8, 16, 0, 4, 3, 640, 200},
+	{ATARIST_80X25, ATARI_PALETTE_4,      80, 25,  7,  7,  8, 8, 15, CIOLIB_VIDEO_BGBRIGHT | CIOLIB_VIDEO_NOBLINK, 4, 3, 640, 200},
 	/* Atari ST 80X25 Mono */
-	{ATARIST_80X25_MONO, ATARI_PALETTE_2, 80, 25, 14, 15, 16, 8, 16, 0, 4, 3, 640, 400},
+	{ATARIST_80X25_MONO, ATARI_PALETTE_2, 80, 25, 14, 15, 16, 8, 15, CIOLIB_VIDEO_BGBRIGHT | CIOLIB_VIDEO_NOBLINK, 4, 3, 640, 400},
 
 	/* Custom mode */
 	{CIOLIB_MODE_CUSTOM, COLOUR_PALETTE,  80, 25, 14, 15, 16, 8, 7, 0,  0, 0,   -1,  -1},
@@ -163,11 +163,11 @@ uint32_t palettes[9][16] = {
 	  0, 21, 46, 51, 196, 201, 226, 15
 	},
 	/* Atari ST 16-colour */
-	{ 15, 0, 196, 46, 226, 21, 201, 51, 
-	  274, 275, 276, 277, 278, 279, 280, 281},
+	{  15, 196,  46, 226,  21, 201,  51, 274,
+	  275, 276, 277, 278, 279, 280, 281,   0},
 	/* Atari ST 4-colour */
-	{ 15, 0, 196, 46, 15, 0, 196, 46, 
-	  15, 0, 196, 46, 15, 0, 196, 46},
+	{ 15, 196, 46, 0, 15, 196, 46, 0,
+	  15, 196, 46, 0, 15, 196, 46, 0},
 	/* Atari ST 2-colour */
 	{ 15, 0, 15, 0, 15, 0, 15, 0,
 	  15, 0, 15, 0, 15, 0, 15, 0},

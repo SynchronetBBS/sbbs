@@ -588,7 +588,7 @@ CIOLIBEXPORT int initciolib(int mode)
 		case ATARIST_40X25:
 		case ATARIST_80X25:
 		case ATARIST_80X25_MONO:
-			cio_textinfo.normattr=0x10;
+			cio_textinfo.normattr=0x0F;
 			break;
 		default:
 			cio_textinfo.normattr=LIGHTGRAY;
@@ -1002,7 +1002,7 @@ CIOLIBEXPORT void ciolib_textmode(int mode)
 		case ATARIST_40X25:
 		case ATARIST_80X25:
 		case ATARIST_80X25_MONO:
-			cio_textinfo.normattr=0x10;
+			cio_textinfo.normattr=0x0F;
 			break;
 		default:
 			cio_textinfo.normattr=LIGHTGRAY;
