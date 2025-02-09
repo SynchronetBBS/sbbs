@@ -97,7 +97,9 @@ try {
 				var new_status = parseInt(msg.data, 10);
 				if(new_status != node_status) {
 					node_status = new_status;
-					print("\r\nNew node status: " + NodeStatus[node_status]);
+					var node_aux = msg.data.split('\t')[5];
+					print("\r\nNew node status: "
+						+ format(NodeStatus[node_status], node_aux));
 				}
 			}
 			else if(msg.topic == terminal_topic) {
