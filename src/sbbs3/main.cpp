@@ -3176,7 +3176,8 @@ void event_thread(void* arg)
 						sbbs->delfiles(sbbs->cfg.temp_dir, ALLFILES);
 						sbbs->console &= ~CON_L_ECHO;
 						sbbs->online = false;
-						sbbs->fremove(WHERE, str, /* log-all-errors: */ true);
+						if (fexist(str))
+							sbbs->fremove(WHERE, str, /* log-all-errors: */ true);
 					}
 				}
 				globfree(&g);
