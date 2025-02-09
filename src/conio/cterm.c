@@ -1414,7 +1414,7 @@ incomplete:
 static enum sequence_state
 st_vt_52_legal_sequence(const char *seq, size_t max_len)
 {
-	static const char *all_seconds = "ABCDEFGHIJKYZbcdefjklopqvw[\\=>\x1b";
+	static const char *all_seconds = "ABCDEFGHIJKLMYZbcdefjklopqvw[\\=>\x1b";
 
 	if (seq[0] == 0)
 		return SEQ_INCOMPLETE;
@@ -2404,8 +2404,8 @@ do_st_vt_52_attr(struct cterminal *cterm, char attr, bool bg)
 static void
 do_st_vt_52(struct cterminal *cterm, char *retbuf, size_t retsize)
 {
-	int x;
-	int y;
+	int x, x2, maxx;
+	int y, y2, maxy;
 	int i;
 
 	switch(cterm->escbuf[0]) {
@@ -2413,14 +2413,17 @@ do_st_vt_52(struct cterminal *cterm, char *retbuf, size_t retsize)
 		case '\x1b':
 			// ESC ESC does nothing.
 			break;
-		case 'B':
-			adjust_currpos(cterm, 0, 1, 0);
+		case '=':
+			cterm->extattr |= CTERM_EXTATTR_ALTERNATE_KEYPAD;
 			break;
-		case 'I':
-			adjust_currpos(cterm, 0, -1, 1);
+		case '>':
+			cterm->extattr &= ~CTERM_EXTATTR_ALTERNATE_KEYPAD;
 			break;
 		case 'A':
 			adjust_currpos(cterm, 0, -1, 0);
+			break;
+		case 'B':
+			adjust_currpos(cterm, 0, 1, 0);
 			break;
 		case 'C':
 			adjust_currpos(cterm, 1, 0, 0);
@@ -2428,8 +2431,28 @@ do_st_vt_52(struct cterminal *cterm, char *retbuf, size_t retsize)
 		case 'D':
 			adjust_currpos(cterm, -1, 0, 0);
 			break;
+		case 'F':
+		case 'G':
+			// TODO: Graphics mode...
+			// Maybe not supported by ST?
+			break;
 		case 'H':
 			gotoxy(CURR_MINX, CURR_MINY);
+			break;
+		case 'I':
+			adjust_currpos(cterm, 0, -1, 1);
+			break;
+		case 'J':
+			clreol();
+			CURR_XY(&x, &y);
+			for (i = y + 1; i <= TERM_MAXY; i++) {
+				cterm_gotoxy(cterm, TERM_MINY, i);
+				clreol();
+			}
+			gotoxy(x, y);
+			break;
+		case 'K':
+			clreol();
 			break;
 		case 'Y':
 			y = cterm->escbuf[1] - 32;
@@ -2444,18 +2467,6 @@ do_st_vt_52(struct cterminal *cterm, char *retbuf, size_t retsize)
 				x = 79;
 			gotoxy(CURR_MINX + x, CURR_MINY + y);
 			break;
-		case 'K':
-			clreol();
-			break;
-		case 'J':
-			clreol();
-			CURR_XY(&x, &y);
-			for (i = y + 1; i <= TERM_MAXY; i++) {
-				cterm_gotoxy(cterm, TERM_MINY, i);
-				clreol();
-			}
-			gotoxy(x, y);
-			break;
 		case 'Z':
 			if(retbuf && strlen(retbuf) + 3 < retsize)
 				strcat(retbuf, "\x1b/K");
@@ -2465,21 +2476,28 @@ do_st_vt_52(struct cterminal *cterm, char *retbuf, size_t retsize)
 			// TODO: Hold-screen mode
 			// Maybe not supported by ST?
 			break;
-		case '=':
-			cterm->extattr |= CTERM_EXTATTR_ALTERNATE_KEYPAD;
-			break;
-		case '>':
-			cterm->extattr &= ~CTERM_EXTATTR_ALTERNATE_KEYPAD;
-			break;
-		case 'F':
-		case 'G':
-			// TODO: Graphics mode...
-			// Maybe not supported by ST?
-			break;
 		// GEMDOS/TOS extensions
 		case 'E':
 			cterm_clearscreen(cterm, (char)cterm->attr);
 			gotoxy(CURR_MINX, CURR_MINY);
+			break;
+		case 'L': // Insert line
+			TERM_XY(&x, &y);
+			if(y < TERM_MINY || y > TERM_MAXY || x < TERM_MINX || x > TERM_MAXX)
+				break;
+			x2 = TERM_MINX;
+			y2 = y;
+			coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &x2, &y2);
+			maxx = TERM_MAXX;
+			maxy = TERM_MAXY;
+			coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_SCREEN, &maxx, &maxy);
+			movetext(x2, y2, maxx, maxy - 1, x2, y2 + 1);
+			cterm_gotoxy(cterm, TERM_MINX, y);
+			cterm_clreol(cterm);
+			cterm_gotoxy(cterm, x, y);
+			break;
+		case 'M': // Delete line
+			dellines(cterm, 1);
 			break;
 		case 'b':
 			do_st_vt_52_attr(cterm, cterm->escbuf[1], false);
@@ -5710,11 +5728,7 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 						switch(st_vt_52_legal_sequence(cterm->escbuf, sizeof(cterm->escbuf)-1)) {
 							case SEQ_BROKEN:
 								/* Broken sequence detected */
-								*prnpos++ = '\033';
-								*prnpos = 0;
-								prntmp = strlen(cterm->escbuf);
-								memcpy(prnpos, cterm->escbuf, prntmp + 1);
-								prnpos += prntmp;
+								// Just throw it out (see COMMANDO.TXT)
 								cterm->escbuf[0]=0;
 								cterm->sequence=0;
 								break;

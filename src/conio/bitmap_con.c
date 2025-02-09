@@ -1064,6 +1064,18 @@ static void blinker_thread(void *data)
 				vstat.curs_blink=TRUE;
 				vstat.blink=FALSE;
 				break;
+			case ATARIST_40X25:
+			case ATARIST_80X25:
+			case ATARIST_80X25_MONO:
+				// Cursor blinks
+				if (next_cursor < now) {
+					vstat.curs_blink = !vstat.curs_blink;
+					curs_changed = true;
+					next_cursor = now + 500;
+				}
+				// No text blinking!
+				vstat.blink=FALSE;
+				break;
 			default:
 				if (next_cursor < now) {
 					curs_changed = cursor_visible_locked();
