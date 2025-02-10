@@ -17513,7 +17513,7 @@ function DigDistMsgReader_ScrollableModeAreYouThereWarning()
 		warningTxt = "\x01n\x01hAre you really there?\x01n";
 	var numSpaces = Math.floor(this.scrollableReadingData.msgAreaWidth / 2) - Math.floor(console.strlen(warningTxt) / 2);
 	if (numSpaces > 0)
-		warningTxt = format("%*s", numSpaces, "") + warningTxt + format("%*s", numSpaces-1, "");
+		warningTxt = format("%*s", numSpaces, "") + warningTxt + format("%*s", numSpaces-2, "");
 	this.WriteLightbarKeyHelpMsg(warningTxt, "\x01n\x01h\x01y\x01h", ERROR_WAIT_MS);
 
 	if (this.currentAction == ACTION_READING_MSG && this.scrollingReaderInterface && console.term_supports(USER_ANSI))
