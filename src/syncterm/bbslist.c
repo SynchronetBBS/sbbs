@@ -2086,82 +2086,6 @@ del_bbs(char *listpath, struct bbslist *bbs)
 	}
 }
 
-#if 0
-static int
-entry_summary(struct bbslist *entry, char *buf, size_t bufsz)
-{
-	if (entry == NULL) {
-		buf[0] = 0;
-		return 0;
-	}
-#define HBCHECK() if (++lc >= 7 || hblen >= bufsz) return lc
-	size_t hblen = 0;
-	int lc = 0;
-	bool is_ansi = true;
-	bool is_serial = ((entry->conn_type == CONN_TYPE_MODEM) || (entry->conn_type == CONN_TYPE_SERIAL)
-	|| (entry->conn_type == CONN_TYPE_SERIAL_NORTS));
-
-	if (get_emulation(entry) != CTERM_EMULATION_ANSI_BBS)
-		is_ansi = false;
-	hblen += snprintf(&buf[hblen], bufsz - hblen, "Name: %.28s\r\n", entry->name);
-	HBCHECK();
-	switch (entry->conn_type) {
-		case CONN_TYPE_MODEM:
-			hblen += snprintf(&buf[hblen], bufsz - hblen, "Phone Number: %.20s\r\n", entry->addr);
-			break;
-		case CONN_TYPE_SERIAL:
-		case CONN_TYPE_SERIAL_NORTS:
-			hblen += snprintf(&buf[hblen], bufsz - hblen, "Device Name: %.21s\r\n", entry->addr);
-			break;
-		case CONN_TYPE_SHELL:
-			hblen += snprintf(&buf[hblen], bufsz - hblen, "Command: %.25s\r\n", entry->addr);
-			break;
-		default:
-			hblen += snprintf(&buf[hblen], bufsz - hblen, "Address: %.25s\r\n", entry->addr);
-			break;
-	}
-	HBCHECK();
-	hblen += snprintf(&buf[hblen], bufsz - hblen, "Connection Type: %.17s\r\n", conn_types[entry->conn_type]);
-	HBCHECK();
-	if (is_serial) {
-		// TODO: Speed/n81/etc.
-	}
-	else if (entry->conn_type != CONN_TYPE_SHELL) {
-		hblen += snprintf(&buf[hblen], bufsz - hblen, "Port: %hu\r\n", entry->port);
-		HBCHECK();
-	}
-	if (entry->conn_type == CONN_TYPE_MBBS_GHOST) {
-	}
-	else if (entry->conn_type == CONN_TYPE_SSHNA) {
-		hblen += snprintf(&buf[hblen], bufsz - hblen, "BBS Username: %.20s\r\n", entry->password);
-		HBCHECK();
-	}
-	else {
-		hblen += snprintf(&buf[hblen], bufsz - hblen, "Username: %.24s\r\n", entry->user);
-		HBCHECK();
-	}
-	hblen += snprintf(&buf[hblen], bufsz - hblen, "Screen Mode: %.21s\r\n", screen_modes[entry->screen_mode]);
-	HBCHECK();
-#undef HBCHECK
-	hblen += snprintf(&buf[hblen], bufsz - hblen, "Font: %.28s\r\n", entry->font);
-	return lc;
-}
-
-static void
-update_summary(struct bbslist *entry)
-{
-	char buf[40*9];
-	int opt = 0;
-	int bar = 0;
-
-	int lc = entry_summary(entry, buf, sizeof(buf));
-	uifc.showbuf(WIN_PACK | WIN_T2B | WIN_RHT | WIN_EXTKEYS | WIN_DYN | WIN_ACT | WIN_INACT, -5, 0, 32, 11, "Summary", buf, &opt, &bar);
-}
-#else
-static void
-update_summary(struct bbslist *entry) {}
-#endif
-
 static int
 settings_list(int *opt, int *bar, char **opts, uifc_winmode_t extra_opts)
 {
@@ -3310,7 +3234,6 @@ show_bbslist(char *current, int connected)
 					else
 						SAFECOPY(title, syncterm_version);
 					settitle(title);
-					update_summary(list[opt]);
 				}
 				oldopt = opt;
 				uifc.list_height = listcount + 5;
@@ -3833,10 +3756,8 @@ show_bbslist(char *current, int connected)
 				               "        Display compile options selected at build time\n\n"
 				               "~ " ALT_KEY_NAMEP "-B ~\n"
 				               "        View scrollback of last session\n";
-				if (oldopt != -2) {
+				if (oldopt != -2)
 					settitle(syncterm_version);
-					update_summary(NULL);
-				}
 				oldopt = -2;
 				if (!nowait) {
 					kbwait();
