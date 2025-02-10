@@ -949,6 +949,11 @@ message to lower-case and comparing them with the words in the dictionary.
 ===================
 Version  Date         Description
 -------  ----         -----------
+1.89e    2025-02-09   User inactivity timeout: Display a warning message
+                      (without messing with the screen). New [STRINGS]
+                      configuration section with stringsFilename to specify the
+                      name of a strings file, which for now just contains an
+                      areYouThere setting
 1.89d    2025-01-26   User inactivity timeout improvement (via use of
                       console.getkey() instead of the custom function that was
                       being used)
