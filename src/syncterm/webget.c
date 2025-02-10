@@ -959,7 +959,6 @@ read_chunked(struct http_session *sess, FILE *out)
 			goto error_return;
 		}
 		free(line);
-		line = NULL;
 	}
 	free(buf);
 	free(line);
