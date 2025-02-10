@@ -1,7 +1,7 @@
 // SlyEdit configurator: This is a menu-driven configuration program/script for SlyEdit.
 // Any changes are saved to SlyEdit.cfg in sbbs/mods, so that custom changes don't get
 // overridden with SlyEdit.cfg in sbbs/ctrl due to an update.
-// Currently for SlyEdit 1.89b.
+// Currently for SlyEdit 1.89e.
 
 "use strict";
 
@@ -10,7 +10,7 @@ require("sbbsdefs.js", "P_NONE");
 require("uifcdefs.js", "UIFC_INMSG");
 
 
-if (!uifc.init("SlyEdit 1.89d Configurator"))
+if (!uifc.init("SlyEdit 1.89e Configurator"))
 {
 	print("Failed to initialize uifc");
 	exit(1);
@@ -61,7 +61,7 @@ function doMainMenu()
 {
 	// Create a CTX to specify the current selected item index
 	var ctx = uifc.list.CTX();
-	var helpText = "Behavior: Behavior settings\r\nIce Colors: Ice-related color settings\r\nDCT Colors: DCT-related color settings";
+	var helpText = "Behavior: Behavior settings\r\nStrings: Text string configuration\r\nIce Colors: Ice-related color settings\r\nDCT Colors: DCT-related color settings";
 	// Selection
 	var winMode = WIN_ORG|WIN_MID|WIN_ACT|WIN_ESC;
 	var menuTitle = "SlyEdit Configuration";
@@ -70,7 +70,7 @@ function doMainMenu()
 	while (continueOn && !js.terminated)
 	{
 		uifc.help_text = word_wrap(helpText, gHelpWrapWidth);
-		var selection = uifc.list(winMode, menuTitle, ["Behavior", "Ice Colors", "DCT Colors"], ctx);
+		var selection = uifc.list(winMode, menuTitle, ["Behavior", "Strings", "Ice Colors", "DCT Colors"], ctx);
 		ctx.cur = selection; // Remember the current selected item
 		switch (selection)
 		{
@@ -80,11 +80,53 @@ function doMainMenu()
 			case 0: // Behavior
 				anyOptionChanged = doBehaviorMenu() || anyOptionChanged;
 				break;
-			case 1: // Ice colors
+			case 1: // Strings
+				anyOptionChanged = doStringsMenu() || anyOptionChanged;
+				break;
+			case 2: // Ice colors
 				anyOptionChanged = doIceColors() || anyOptionChanged;
 				break;
-			case 2: // DCT colors
+			case 3: // DCT colors
 				anyOptionChanged = doDCTColors() || anyOptionChanged;
+				break;
+		}
+	}
+	return anyOptionChanged;
+}
+
+// Configuration menu for the [STRINGS] section
+function doStringsMenu()
+{
+	// For menu item text formatting
+	var itemTextMaxLen = 40;
+
+	// Create a CTX to specify the current selected item index
+	var ctx = uifc.list.CTX();
+	var helpText = "Strings filename: The filename containing the configurable strings";
+	// Selection
+	var winMode = WIN_ORG|WIN_MID|WIN_ACT|WIN_ESC;
+	var menuTitle = "String section configuration";
+	var anyOptionChanged = false;
+	var continueOn = true;
+	while (continueOn && !js.terminated)
+	{
+		uifc.help_text = word_wrap(helpText, gHelpWrapWidth);
+		var menuItems = [];
+		menuItems.push(formatCfgMenuText(itemTextMaxLen, "Strings filename", gCfgInfo.cfgSections.STRINGS.stringsFilename));
+		var selection = uifc.list(winMode, menuTitle, menuItems, ctx);
+		ctx.cur = selection; // Remember the current selected item
+		switch (selection)
+		{
+			case -1: // ESC
+				continueOn = false;
+				break;
+			case 0: // Strings filename
+				var userInput = uifc.input(WIN_MID, "Strings filename", gCfgInfo.cfgSections.STRINGS.stringsFilename, 60, K_EDIT);
+				if (typeof(userInput) === "string" && userInput != gCfgInfo.cfgSections.STRINGS.stringsFilename)
+				{
+					gCfgInfo.cfgSections.STRINGS.stringsFilename = userInput;
+					anyOptionChanged = true;
+				}
 				break;
 		}
 	}
@@ -725,6 +767,13 @@ function readSlyEditCfgFile()
 	if (!retObj.cfgSections.BEHAVIOR.hasOwnProperty("dictionaryFilenames"))
 		retObj.cfgSections.BEHAVIOR.dictionaryFilenames = "en,en-US-supplemental";
 
+	if (!retObj.cfgSections.hasOwnProperty("STRINGS"))
+	{
+		retObj.cfgSections.STRINGS = {
+			stringsFilename: "SlyEditStrings_En.cfg"
+		};
+	}
+
 	if (!retObj.cfgSections.hasOwnProperty("ICE_COLORS"))
 		retObj.cfgSections.ICE_COLORS = {};
 	if (!retObj.cfgSections.ICE_COLORS.hasOwnProperty("menuOptClassicColors"))
@@ -767,11 +816,12 @@ function saveSlyEditCfgFile()
 	if (cfgFile.open(cfgFile.exists ? "r+" : "w+")) // r+: Reading and writing (file must exist)
 	{
 		var behaviorSetSuccessful = cfgFile.iniSetObject("BEHAVIOR", gCfgInfo.cfgSections.BEHAVIOR);
+		var stringsSetSuccessful = cfgFile.iniSetObject("STRINGS", gCfgInfo.cfgSections.STRINGS);
 		var iceColorsSetSuccessful = cfgFile.iniSetObject("ICE_COLORS", gCfgInfo.cfgSections.ICE_COLORS);
 		var dctColorsSetSuccessful = cfgFile.iniSetObject("DCT_COLORS", gCfgInfo.cfgSections.DCT_COLORS);
 
 		cfgFile.close();
-		saveSucceeded = behaviorSetSuccessful && iceColorsSetSuccessful && dctColorsSetSuccessful;
+		saveSucceeded = behaviorSetSuccessful && stringsSetSuccessful && iceColorsSetSuccessful && dctColorsSetSuccessful;
 	}
 
 	return saveSucceeded;

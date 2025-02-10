@@ -1312,7 +1312,7 @@ function ChoiceScrollbox_SetBottomBorderText(pText, pAddTChars, pAutoStripIfTooL
 	this.bottomBorder += pText + "\x01n" + this.SlyEdCfgObj.genColors.listBoxBorder;
 	if (pAddTChars)
 		this.bottomBorder += LEFT_T_SINGLE;
-	var numCharsRemaining = this.dimensions.width - console.strlen(this.bottomBorder) - 3;
+	var numCharsRemaining = this.dimensions.width - console.strlen(this.bottomBorder) - 1;
 	for (var i = 0; i < numCharsRemaining; ++i)
 		this.bottomBorder += HORIZONTAL_SINGLE;
 	this.bottomBorder += LOWER_RIGHT_SINGLE;
@@ -2146,7 +2146,6 @@ function ReadSlyEditConfigFile()
 		thirdPartyLoadOnExit: [],
 		runJSOnExit: [],
 		displayEndInfoScreen: true,
-		userInputTimeout: true,
 		reWrapQuoteLines: true,
 		allowColorSelection: true,
 		saveColorsAsANSI: false,
@@ -2275,8 +2274,15 @@ function ReadSlyEditConfigFile()
 			MenuSelectedItems: "\x01n\x01w",
 			MenuUnselectedItems: "\x01n\x01k\x01" + "7",
 			MenuHotkeys: "\x01n\x01w\x01h\x01" + "7"
+		},
+
+		strings: {
+			areYouThere: "\x01n\x01r\x01h\x01i@NAME@! \x01n\x01hAre you really there?\x01n"
 		}
 	};
+
+	// Default strings configuration filename
+	var stringsCfgFilename = genFullPathCfgFilename("SlyEditStrings_En.cfg", js.exec_dir);
 
 	// Open the SlyEdit configuration file
 	var slyEdCfgFileName = genFullPathCfgFilename("SlyEdit.cfg", js.exec_dir);
@@ -2285,67 +2291,99 @@ function ReadSlyEditConfigFile()
 	{
 		// Behavior settings
 		var behaviorSettings = cfgFile.iniGetObject("BEHAVIOR");
-		// The following are all boolean properties/settings:
-		var propsToCopy = ["displayEndInfoScreen", "userInputTimeout", "reWrapQuoteLines", "allowColorSelection",
-		                   "saveColorsAsANSI", "useQuoteLineInitials", "indentQuoteLinesWithInitials", "allowCrossPosting",
-		                   "enableTaglines", "quoteTaglines", "shuffleTaglines", "allowUserSettings", "allowEditQuoteLines",
-		                   "allowSpellCheck"];
-		for (var i = 0; i < propsToCopy.length; ++i)
-		{
-			var propName = propsToCopy[i];
-			cfgObj[propName] = behaviorSettings[propName];
-		}
-		// Other settings:
-		if (behaviorSettings.hasOwnProperty("add3rdPartyStartupScript") && typeof(behaviorSettings.add3rdPartyStartupScript) === "string")
-			cfgObj.thirdPartyLoadOnStart.push(behaviorSettings.add3rdPartyStartupScript);
-		if (behaviorSettings.hasOwnProperty("addJSOnStart") && typeof(behaviorSettings.addJSOnStart) === "string")
-			cfgObj.runJSOnStart.push(behaviorSettings.addJSOnStart);
-		if (behaviorSettings.hasOwnProperty("addJSOnExit") && typeof(behaviorSettings.addJSOnExit) === "string")
-			cfgObj.runJSOnExit.push(behaviorSettings.addJSOnExit);
-		if (behaviorSettings.hasOwnProperty("enableTextReplacements"))
-		{
-			// The enableTxtReplacements setting in the config file can
-			// be regex, true, or false:
-			//  - regex: Text replacement enabled using regular expressions
-			//  - true: Text replacement enabled using exact match
-			//  - false: Text replacement disabled
-			if (typeof(behaviorSettings.enableTextReplacements) === "string")
-				cfgObj.textReplacementsUseRegex = (behaviorSettings.enableTextReplacements.toUpperCase() == "REGEX");
-			else if (typeof(behaviorSettings.enableTextReplacements) === "boolean")
-				cfgObj.enableTextReplacements = behaviorSettings.enableTextReplacements;
-			if (cfgObj.textReplacementsUseRegex)
-				cfgObj.enableTextReplacements = true;
-		}
-		if (behaviorSettings.hasOwnProperty("tagLineFilename") && typeof(behaviorSettings.tagLineFilename) === "string")
-			cfgObj.tagLineFilename = genFullPathCfgFilename(behaviorSettings.tagLineFilename, js.exec_dir);
-		if (behaviorSettings.hasOwnProperty("taglinePrefix") && typeof(behaviorSettings.taglinePrefix) === "string")
-			cfgObj.taglinePrefix = behaviorSettings.taglinePrefix;
-		if (behaviorSettings.hasOwnProperty("dictionaryFilenames") && typeof(behaviorSettings.dictionaryFilenames) === "string")
-			cfgObj.dictionaryFilenames = parseDictionaryConfig(behaviorSettings.dictionaryFilenames, js.exec_dir);
+		// Text strings
+		var stringsSettings = cfgFile.iniGetObject("STRINGS");
 		// Color settings
 		var iceColorSettings = cfgFile.iniGetObject("ICE_COLORS");
 		var DCTColorSettings = cfgFile.iniGetObject("DCT_COLORS");
-		if (typeof(cfgObj.iceColors) !== "object")
-			cfgObj.iceColors = {};
-		if (typeof(cfgObj.DCTColors) !== "object")
-			cfgObj.DCTColors = {};
-		if (iceColorSettings.hasOwnProperty("ThemeFilename") && typeof(iceColorSettings.ThemeFilename) === "string")
-			cfgObj.iceColors.ThemeFilename = genFullPathCfgFilename(iceColorSettings.ThemeFilename, js.exec_dir);
-		if (iceColorSettings.hasOwnProperty("menuOptClassicColors") && typeof(iceColorSettings.menuOptClassicColors) === "boolean")
-			cfgObj.iceColors.menuOptClassicColors = iceColorSettings.menuOptClassicColors; // This is a boolean
-		if (DCTColorSettings.hasOwnProperty("ThemeFilename") && typeof(DCTColorSettings.ThemeFilename) === "string")
-			cfgObj.DCTColors.ThemeFilename = genFullPathCfgFilename(DCTColorSettings.ThemeFilename, js.exec_dir);
-
 		cfgFile.close();
 
-		// If no dictionaries were specified in the configuration file, then
-		// set all available dictionary files in the configuration.
-		if (cfgObj.dictionaryFilenames.length == 0)
+		// Checking/setting: Behavior
+		if (behaviorSettings != null)
 		{
-			var dictFilenames = getDictionaryFilenames(js.exec_dir);
-			for (var i = 0; i < dictFilenames.length; ++i)
-				cfgObj.dictionaryFilenames.push(dictFilenames[i]);
+			// The following are all boolean properties/settings:
+			var propsToCopy = ["displayEndInfoScreen", "reWrapQuoteLines", "allowColorSelection", "saveColorsAsANSI",
+			                   "useQuoteLineInitials", "indentQuoteLinesWithInitials", "allowCrossPosting", "enableTaglines",
+			                   "quoteTaglines", "shuffleTaglines", "allowUserSettings", "allowEditQuoteLines", "allowSpellCheck"];
+			for (var i = 0; i < propsToCopy.length; ++i)
+			{
+				var propName = propsToCopy[i];
+				cfgObj[propName] = behaviorSettings[propName];
+			}
+			// Other settings:
+			if (behaviorSettings.hasOwnProperty("add3rdPartyStartupScript") && typeof(behaviorSettings.add3rdPartyStartupScript) === "string")
+				cfgObj.thirdPartyLoadOnStart.push(behaviorSettings.add3rdPartyStartupScript);
+			if (behaviorSettings.hasOwnProperty("addJSOnStart") && typeof(behaviorSettings.addJSOnStart) === "string")
+				cfgObj.runJSOnStart.push(behaviorSettings.addJSOnStart);
+			if (behaviorSettings.hasOwnProperty("addJSOnExit") && typeof(behaviorSettings.addJSOnExit) === "string")
+				cfgObj.runJSOnExit.push(behaviorSettings.addJSOnExit);
+			if (behaviorSettings.hasOwnProperty("enableTextReplacements"))
+			{
+				// The enableTxtReplacements setting in the config file can
+				// be regex, true, or false:
+				//  - regex: Text replacement enabled using regular expressions
+				//  - true: Text replacement enabled using exact match
+				//  - false: Text replacement disabled
+				if (typeof(behaviorSettings.enableTextReplacements) === "string")
+					cfgObj.textReplacementsUseRegex = (behaviorSettings.enableTextReplacements.toUpperCase() == "REGEX");
+				else if (typeof(behaviorSettings.enableTextReplacements) === "boolean")
+					cfgObj.enableTextReplacements = behaviorSettings.enableTextReplacements;
+				if (cfgObj.textReplacementsUseRegex)
+					cfgObj.enableTextReplacements = true;
+			}
+			if (behaviorSettings.hasOwnProperty("tagLineFilename") && typeof(behaviorSettings.tagLineFilename) === "string")
+				cfgObj.tagLineFilename = genFullPathCfgFilename(behaviorSettings.tagLineFilename, js.exec_dir);
+			if (behaviorSettings.hasOwnProperty("taglinePrefix") && typeof(behaviorSettings.taglinePrefix) === "string")
+				cfgObj.taglinePrefix = behaviorSettings.taglinePrefix;
+			if (behaviorSettings.hasOwnProperty("dictionaryFilenames") && typeof(behaviorSettings.dictionaryFilenames) === "string")
+				cfgObj.dictionaryFilenames = parseDictionaryConfig(behaviorSettings.dictionaryFilenames, js.exec_dir);
 		}
+
+		// Color settings
+		if (iceColorSettings != null)
+		{
+			if (iceColorSettings.hasOwnProperty("ThemeFilename") && typeof(iceColorSettings.ThemeFilename) === "string")
+				cfgObj.iceColors.ThemeFilename = genFullPathCfgFilename(iceColorSettings.ThemeFilename, js.exec_dir);
+			if (iceColorSettings.hasOwnProperty("menuOptClassicColors") && typeof(iceColorSettings.menuOptClassicColors) === "boolean")
+				cfgObj.iceColors.menuOptClassicColors = iceColorSettings.menuOptClassicColors; // This is a boolean
+		}
+		if (DCTColorSettings != null)
+		{
+			if (DCTColorSettings.hasOwnProperty("ThemeFilename") && typeof(DCTColorSettings.ThemeFilename) === "string")
+				cfgObj.DCTColors.ThemeFilename = genFullPathCfgFilename(DCTColorSettings.ThemeFilename, js.exec_dir);
+		}
+
+		// If there is a strings filename, then set stringsCfgFilename
+		if (stringsSettings != null && stringsSettings.hasOwnProperty("stringsFilename") && typeof(stringsSettings.stringsFilename) === "string")
+			stringsCfgFilename = genFullPathCfgFilename(stringsSettings.stringsFilename, js.exec_dir);
+	}
+
+	// If the strings configuration file exists, then load and read it
+	if (file_exists(stringsCfgFilename))
+	{
+		var stringsFile = new File(stringsCfgFilename);
+		if (stringsFile.open("r"))
+		{
+			var stringsSettingsObj = stringsFile.iniGetObject();
+			stringsFile.close();
+			for (var prop in cfgObj.strings)
+			{
+				if (typeof(stringsSettingsObj[prop]) === "string" && stringsSettingsObj[prop].length > 0)
+				{
+					// Replace "\x01" with control character
+					cfgObj.strings[prop] = stringsSettingsObj[prop].replace(/\\x01/g, "\x01");
+				}
+			}
+		}
+	}
+
+	// If no dictionaries were specified in the configuration file, then
+	// set all available dictionary files in the configuration.
+	if (cfgObj.dictionaryFilenames.length == 0)
+	{
+		var dictFilenames = getDictionaryFilenames(js.exec_dir);
+		for (var i = 0; i < dictFilenames.length; ++i)
+			cfgObj.dictionaryFilenames.push(dictFilenames[i]);
 	}
 
 	return cfgObj;
@@ -5624,6 +5662,26 @@ function getEditorQuoteWrapCfgFromSCFG()
 		retObj = getEditorQuoteWrapCfgFromSCFG.cache[editorCode];
 
 	return retObj;
+}
+
+// Replaces @-codes in a string and returns the new string.
+//
+// Parameters:
+//  pStr: A string in which to replace @-codes
+//
+// Return value: A version of the string with @-codes interpreted
+function replaceAtCodesInStr(pStr)
+{
+	if (typeof(pStr) != "string")
+		return "";
+
+	// This code was originally written by Deuce.  I updated it to check whether
+	// the string returned by bbs.atcode() is null, and if so, just return
+	// the original string.
+	return pStr.replace(/@([^@]+)@/g, function(m, code) {
+		var decoded = bbs.atcode(code);
+		return (decoded != null ? decoded : "@" + code + "@");
+	});
 }
 
 // This function displays debug text at a given location on the screen, then
