@@ -84,6 +84,11 @@
  * 2024-10-19 Eric Oulashin     Version 1.89d
  *                              User inactivity timeout improvement (via use of console.getkey()
  *                              instead of the custom function that was being used)
+ * 2025-02-09 Eric Oulashin     Version 1.89e
+ *                              User inactivity timeout: Display a warning message (without
+ *                              messing with the screen). New [STRINGS] configuration section
+ *                              with stringsFilename to specify the name of a strings file,
+ *                              which for now just contains an areYouThere setting
  */
 
 "use strict";
@@ -174,8 +179,8 @@ if (console.screen_columns < 80)
 }
 
 // Version information
-var EDITOR_VERSION = "1.89d";
-var EDITOR_VER_DATE = "2025-01-26";
+var EDITOR_VERSION = "1.89e";
+var EDITOR_VER_DATE = "2025-02-09";
 
 
 // Program variables
@@ -477,10 +482,57 @@ else
 js.on_exit("bbs.sys_status = " + bbs.sys_status);
 js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
 
-// Blank out the AreYouThere timeout warning string (used by console.getkey()), which would
-// interfere with full-screen display and scrolling functionality. Also, upon exit, set it
-// back to its previous value.
-bbs.replace_text(AreYouThere, "");
+// Data for an "Are you there?" timeout warning handler
+js.global.slyEditData = {
+	bottomHelpLineRow: console.screen_rows,
+	useQuotes: gUseQuotes,
+	displayBottomhelpLine: fpDisplayBottomHelpLine,
+	replaceAtCodesInStr: replaceAtCodesInStr
+};
+Object.defineProperty(js.global, "SlyEdit_areYouThereProp", {
+	configurable: true, // Allows this property to be deleted and re-defined as needed
+	get: function()
+	{
+		// blank out the AreYouThere timeout warning string (used by
+		// console.getkey()), which would interfere with full-screen display and scrolling display
+		// functionality.
+		bbs.replace_text(AreYouThere, "");
+
+		var originalCurPos = console.getxy();
+		var originalAtrs = console.attributes;
+
+		console.beep();
+		var warningTxt = js.global.slyEditData.replaceAtCodesInStr(gConfigSettings.strings.areYouThere);
+		var numSpaces = Math.floor(console.screen_columns / 2) - Math.floor(console.strlen(warningTxt) / 2);
+		if (numSpaces > 0)
+			warningTxt = format("%*s", numSpaces, "") + warningTxt;
+		if (console.strlen(warningTxt) >= console.screen_columns)
+			warningTxt = warningTxt.substr(0, console.screen_columns-1);
+		warningTxt = "\x01n" + warningTxt;
+		console.gotoxy(1, js.global.slyEditData.bottomHelpLineRow);
+		console.print(warningTxt);
+		console.cleartoeol("\x01n");
+		mswait(1500);
+		js.global.slyEditData.displayBottomhelpLine(js.global.bottomHelpLineRow, js.global.useQuotes);
+
+		// Put a key into the input buffer so that Synchronet isn't waiting for
+		// a keypress after the "Are you there" warning
+		console.ungetstr(KEY_ENTER);
+
+		console.gotoxy(originalCurPos);
+		console.attributes = originalAtrs;
+
+		return "";
+	}
+});
+// Replace the system's AreYouThere text line with a @JS to show the
+// global SlyEdit_areYouThereProp property that has been set up
+// with a custom getter function to display "Are you there?" at a
+// good place on the screen temporarily and then refresh the screen.
+bbs.replace_text(AreYouThere, "@JS:SlyEdit_areYouThereProp@");
+// On script exit, delete the global SlyEdit_areYouThereProp property we have created
+js.on_exit("delete SlyEdit_areYouThereProp;");
+js.on_exit("delete js.global.slyEditData;");
 js.on_exit("bbs.revert_text(AreYouThere);");
 
 // Update the user's status on the BBS
@@ -1199,7 +1251,17 @@ function doEditLoop()
 	var continueOn = true;
 	while (continueOn)
 	{
+		// Get a key from the user
 		userInput = console.getkey(K_NOCRLF|K_NOSPIN|K_NUL);
+
+		// Replace the system's AreYouThere text line with a @JS to show the
+		// global SlyEdit_areYouThereProp property that has been set up
+		// with a custom getter function to display "Are you there?" at a
+		// good place on the screen temporarily and then refresh the screen.
+		// This is done here in the loop because the custom get function will
+		// replace AreYouThere with "" to prevent the screen from getting
+		// messy due to internal getkey() logic in Synchronet.
+		bbs.replace_text(AreYouThere, "@JS:SlyEdit_areYouThereProp@");
 
 		// If the cursor is at the end of the last line and the user
 		// pressed the DEL key, then treat it as a backspace.  Some
