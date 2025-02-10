@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.89d
-                        Release date: 2025-01-26
+                              Version 1.89e
+                        Release date: 2025-02-09
 
                                   by
 
@@ -24,14 +24,15 @@ Contents
  3. Installation & Setup
  4. Features
  5. Configuration file
- 6. Ice-style Color Theme Settings
- 7. DCT-style Color Theme Settings
- 8. Common colors (appearing in both Ice and DCT color theme files)
- 9. Text replacements (AKA Macros)
-10. User settings
-11. Taglines
-12. Spell check and dictionaries
-13. Version history
+ 6. Strings configuration file
+ 7. Ice-style Color Theme Settings
+ 8. DCT-style Color Theme Settings
+ 9. Common colors (appearing in both Ice and DCT color theme files)
+10. Text replacements (AKA Macros)
+11. User settings
+12. Taglines
+13. Spell check and dictionaries
+14. Version history
 
 
 1. Disclaimer
@@ -392,6 +393,18 @@ dictionaryFilenames               Dictionary filenames (used for spell check).
                                   are located in either sbbs/mods, sbbs/ctrl,
                                   or the same directory as SlyEdit.
 
+String settings
+-----------------
+Setting                           Description
+-------                           -----------
+stringsFilename                   The name of the file containing text strings
+                                  displayed in SlyEdit. The default is
+                                  SlyEditStrings_En.cfg, which is located in
+                                  sbbs/ctrl - You can copy this to sbbs/mods and
+                                  keep a modified copy there if you want. The
+                                  strings in this file can contain Synchronet
+                                  attribute codes (prefixed with \x01).
+
 Ice colors
 ----------
 Setting                           Description
@@ -432,7 +445,21 @@ High green: gh
 Normal cyan: c
 
 
-6. Ice-style Color Theme Settings
+6. Strings configuration file
+=============================
+The strings configuration file (added in SlyEdit v1.89e, 2025-02-09) is a file
+similar in concept to text.dat, which is intended to contain strings displayed
+by SlyEdit. The format is like the other configuration files, in name=value
+format.
+
+Currently, the only configuratble string in there is areYouThere, which
+specifies a string to display for the input timeout warning (like item 668,
+AreYouThere in text.dat). The reason SlyEdit has its own version of this string
+is in case you decide to change the one in text.dat; for SlyEdit, it should be
+a string that can fit on one line on the screen.
+
+
+7. Ice-style Color Theme Settings
 =================================
 Note that you don't need control (Ctrl-A) characters for the color settings;
 just the attribute characters.
@@ -497,7 +524,7 @@ UnselectedOptionBorderColor       The color to use for the borders around
 UnselectedOptionTextColor         The color to use for the text for unselected
                                   multi-choice options
 
-7. DCT-style Color Theme Settings
+8. DCT-style Color Theme Settings
 =================================
 Note that you don't need control (Ctrl-A) characters for the color settings;
 just the attribute characters.
@@ -631,7 +658,7 @@ MenuUnselectedItems               The color to use for unselected items on the
 MenuHotkeys                       The color to use for the hotkey characters in the
                                   menu items on the drop-down menus
 
-8. Common colors (appearing in both Ice and DCT color theme files)
+9. Common colors (appearing in both Ice and DCT color theme files)
 ==================================================================
 Note that you don't need control (Ctrl-A) characters for the color settings;
 just the attribute characters.
@@ -721,7 +748,7 @@ listBoxItemHighlight              The color to use for the currently selected
                                   item in list boxes (such as the list of text
                                   replacements and the list of tag lines)
 
-9. Text replacements (AKA Macros)
+10. Text replacements (AKA Macros)
 ==================================
 SlyEdit version 1.29 added text replacements (AKA Macros), which lets you (the
 sysop) define words to be replaced with other text as the user types a message.
@@ -814,7 +841,7 @@ store it in buffer 1, and in JavaScript (and with SlyEdit's search and
 replace), you would use $1 to refer to the word "darn".  For example, for
 (darn), the replacement $1it would replace the word "darn" with "darnit".
 
-10. User settings
+11. User settings
 =================
 Since version 1.32, SlyEdit has the ability for each user to configure some
 settings for themselves.  The user settings include the following:
@@ -848,7 +875,7 @@ The user settings files will be stored in the sbbs/data/user directory with the
 filename <user number>.SlyEdit_Settings, and the user number will be 0-padded
 up to 4 digits.
 
-11. Taglines
+12. Taglines
 ============
 SlyEdit version 1.32 added the ability for users to optionally choose a tagline
 to be appended to their message upon saving the message.  Each user can
@@ -878,7 +905,7 @@ user's signature (if they have one).  If the MSGINF file does not include the
 7th line, then the tagline will appear before the user's signature.
 
 
-12. Spell check and dictionaries
+13. Spell check and dictionaries
 ================================
 Since version 1.64, SlyEdit has a spell check feature.  Spell check can be
 started by the user with the Ctrl-R hotkey, or by the Edit > Spell Checker
@@ -918,7 +945,7 @@ case, since SlyEdit does case-insensitive matching by converting words in the
 message to lower-case and comparing them with the words in the dictionary.
 
 
-13. Version history
+14. Version history
 ===================
 Version  Date         Description
 -------  ----         -----------
