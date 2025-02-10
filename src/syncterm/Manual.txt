@@ -565,11 +565,32 @@ Screen Mode::
 Selects the format of the window when connected.
 A mode specifies the number of columns, the number of rows,
 the aspect ratio, and the font size.  Some modes such as the
-Commodore and Atari modes will also change the selected font.
-If the current font is a mode-specific one (such as C64 or Atari),
-Changing from that mode to a standard one will change the font
-to Codepage 437 English.  See
-<<_current_screen_mode,Current Screen Mode>> and
+Commodore, Atari, Prestel, and BBC Micro modes will also change the
+selected font.  If the current font is a mode-specific one (such as C64
+or Atari), Changing from that mode to a standard one will change the font
+to Codepage 437 English.  A few of the modes will result in different
+terminal emulation than the ANSI-BBS described in the CTerm documentation.
+These are:
+
++
+--
+C64, C128 (40col), and C128 (80col):::
+These modes use PETSCII controls and do not support ANSI-BBS.
+
+Atari, Atari XEP80:::
+These modes use ATASCII controls and do not support ANSI-BBS.
+
+Prestel, BBC Micro Mode 7:::
+These modes use Videotex controls.  There are subtle differences between
+them, but the most obvious differnces are the Prestel mode doesn't scroll
+and kbd:[Return] will send # instead of a carriage return.
+
+Atari ST 40x25, Atari ST 80x25, and Atari ST 80x25 Mono:::
+These modes use the Atari ST VT52 emulation and do not support ANSI-BBS.
+--
++
+
+See <<_current_screen_mode,Current Screen Mode>> and
 <<custom_screen_mode,Custom Screen Mode>> for additional information.
 
 Hide Status Line::
