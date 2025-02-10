@@ -396,14 +396,7 @@ void docopy(void)
 	int                   x, y, startx, starty, endx, endy, lines;
 	int                   outpos;
 	char *                copybuf;
-	uint32_t              bg0;
-	uint32_t              bg1;
-	uint32_t              bg6;
-	uint32_t              fg8;
 
-	attr2palette(0x08, &fg8, &bg0);
-	attr2palette(0x10, NULL, &bg1);
-	attr2palette(0x60, NULL, &bg6);
 	screen = ciolib_savescreen();
 	sbuffer = ciolib_savescreen();
 	freepixels(sbuffer->pixels);
@@ -442,18 +435,19 @@ void docopy(void)
 							for (x = startx - 1; x < endx; x++) {
 								int pos = y * api->scrn_width + x;
 
-								if (sbuffer->vmem[pos].bg != bg1)
-									sbuffer->vmem[pos].bg = bg1;
-								else
-									sbuffer->vmem[pos].bg = bg6;
-								if (sbuffer->vmem[pos].bg == sbuffer->vmem[pos].fg)
-									attr2palette(sbuffer->vmem[pos].legacy_attr | 0x08, &sbuffer->vmem[pos].fg, &sbuffer->vmem[pos].bg);
-								if ((sbuffer->vmem[pos].legacy_attr & 0x70) != 0x10)
-									sbuffer->vmem[pos].legacy_attr = (sbuffer->vmem[pos].legacy_attr & 0x8f) | 0x10;
-								else
-									sbuffer->vmem[pos].legacy_attr = (sbuffer->vmem[pos].legacy_attr & 0x8f) | 0x60;
-								if (((sbuffer->vmem[pos].legacy_attr & 0x70) >> 4) == (sbuffer->vmem[pos].legacy_attr & 0x08))
+								if ((sbuffer->vmem[pos].legacy_attr & 0x70) != 0x10) {
+									sbuffer->vmem[pos].legacy_attr &= 0x8F;
+									sbuffer->vmem[pos].legacy_attr |= 0x10;
+								}
+								else {
+									sbuffer->vmem[pos].legacy_attr &= 0x8F;
+									sbuffer->vmem[pos].legacy_attr |= 0x60;
+								}
+								if ((sbuffer->vmem[pos].legacy_attr & 0x70) == ((sbuffer->vmem[pos].legacy_attr & 0x0F) << 4))
 									sbuffer->vmem[pos].legacy_attr |= 0x08;
+								attr2palette(sbuffer->vmem[pos].legacy_attr,
+								    &sbuffer->vmem[pos].fg,
+								    &sbuffer->vmem[pos].bg);
 							}
 						}
 						restorescreen(sbuffer);
