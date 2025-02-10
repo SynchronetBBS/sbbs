@@ -506,7 +506,6 @@ following table summarizes the available fonts.
 |
 |√
 |SAA5050
-|===
 
 |Atari ST
 |√
