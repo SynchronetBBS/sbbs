@@ -67,11 +67,12 @@ for(var c=0; c < options.login_prompts; c++) {
 	if(!str.length) // blank
 		continue;
 
+
 	// New user application?
 	if(str.toUpperCase()=="NEW") {
 	   if(bbs.newuser()) {
-		   bbs.logon();
-		   exit();
+		bbs.logon();
+		exit();
 	   }
 	   continue;
 	}

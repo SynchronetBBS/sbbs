@@ -45,13 +45,6 @@ if(!js.global.bbs) {
 if(!bbs.mods.logonlist_lib)
 	bbs.mods.logonlist_lib = load({}, 'logonlist_lib.js');
 var options = load("modopts.js", "logonlist");
-function dump_objs(obj) {
-        Object.keys(obj).forEach(function (e) {
-                writeln(e + ': ' + JSON.stringify(obj[e]));
-        });
-}
-dump_objs(options);
-writeln("lang: " + user.lang);
 if(!options)
 	options = {};
 if(options.last_few_callers === undefined)
