@@ -743,15 +743,21 @@ parse_uri(struct http_session *sess)
 		goto error_return;
 	}
 	if (sess->req->uri[4] == 's') {
+#ifndef WITHOUT_CRYPTLIB
 		p = &sess->req->uri[5];
 		sess->is_tls = true;
 		sess->hacky_list_entry.port = 443;
+#endif
 	}
 	else {
 		p = &sess->req->uri[4];
 	}
 	if (memcmp(p, "://", 3)) {
+#ifdef WITHOUT_CRYPTLIB
+		set_msg_locked(sess->req, "URI is not http://");
+#else
 		set_msg_locked(sess->req, "URI is not http[s]://");
+#endif
 		assert_pthread_mutex_unlock(&sess->req->mtx);
 		goto error_return;
 	}
