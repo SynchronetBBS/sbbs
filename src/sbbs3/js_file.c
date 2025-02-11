@@ -1202,7 +1202,9 @@ js_iniGetSections(JSContext *cx, uintN argc, jsval *arglist)
 	array = JS_NewArrayObject(cx, 0, NULL);
 
 	rc = JS_SUSPENDREQUEST(cx);
-	list = iniReadSectionList(p->fp, prefix);
+	str_list_t ini = iniReadFile(p->fp);
+	list = iniGetSectionList(ini, prefix);
+	strListFree(&ini);
 	FREE_AND_NULL(prefix);
 	JS_RESUMEREQUEST(cx, rc);
 	for (i = 0; list && list[i]; i++) {
