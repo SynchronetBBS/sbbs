@@ -24,6 +24,7 @@
 #include "telnet.h"
 #include "netwrap.h"
 #include "petdefs.h"
+#include "mode7defs.h"
 #include "filedat.h"
 #include "js_rtpool.h"
 #include "js_request.h"
@@ -5661,6 +5662,12 @@ NO_SSH:
 				sbbs->autoterm = PETSCII;
 				sbbs->cols = inet_addrport(&local_addr) == startup->pet40_port ? 40 : 80;
 				sbbs->outcom(PETSCII_UPPERLOWER);
+			}
+
+			if (inet_addrport(&local_addr) == startup->mode7_port) {
+				sbbs->autoterm = MODE7;
+				sbbs->cols = 40;
+				sbbs->rows = 25;
 			}
 
 			sbbs->bprintf("\r\n%s\r\n", VERSION_NOTICE);

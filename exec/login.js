@@ -27,7 +27,7 @@ if(!bbs.online)
 	exit();
 var inactive_hangup = parseInt(options.inactive_hangup, 10);
 if(inactive_hangup && inactive_hangup < console.max_socket_inactivity
-	&& !(console.autoterm&(USER_ANSI | USER_PETSCII | USER_UTF8))) {
+	&& !(console.autoterm&(USER_ANSI | USER_PETSCII | USER_UTF8 | USER_MODE7))) {
 	console.max_socket_inactivity = inactive_hangup;
 	log(LOG_NOTICE, "terminal not detected, reducing inactivity hang-up timeout to " + console.max_socket_inactivity + " seconds");
 }

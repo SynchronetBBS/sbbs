@@ -22,6 +22,7 @@
 #include "sbbs.h"
 #include "utf8.h"
 #include "petdefs.h"
+#include "mode7defs.h"
 
 #ifndef PRINTFILE_MAX_LINE_LEN
 #define PRINTFILE_MAX_LINE_LEN (8 * 1024)
@@ -54,6 +55,8 @@ bool sbbs_t::printfile(const char* fname, int mode, int org_cols, JSObject* obj)
 			mode |= P_NOPAUSE;
 		} else if (stricmp(p, ".seq") == 0) {
 			mode |= P_PETSCII;
+		} else if (stricmp(p, ".m7") == 0) {
+			mode |= P_MODE7;
 		} else if (stricmp(p, ".utf8") == 0) {
 			mode |= P_UTF8;
 		}
@@ -282,6 +285,8 @@ bool sbbs_t::menu(const char *code, int mode, JSObject* obj)
 			if ((term & ANSI) && menu_exists(code, "ans", path))
 				break;
 			if ((term & PETSCII) && menu_exists(code, "seq", path))
+				break;
+			if ((term & MODE7) && menu_exists(code, "m7", path))
 				break;
 			if (term & NO_EXASCII) {
 				next = "asc";

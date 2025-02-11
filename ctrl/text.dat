@@ -1124,3 +1124,5 @@
 " %c \1g%.10s\1n %c %.127s%c"							   935 QWKTagLineFmt
 "\1n\r\n\1b\1hQWK Control [\1c%s\1b]: \1g%s\r\n"		   936 QWKControlCommand
 "Unrecognized Control Command!\1n\r\n"					   937 QWKBadControlCommand
+"Mode 7 terminal detected"								   938 Mode7TerminalDetected
+"Are you using a Mode 7 terminal"						   939 Mode7TerminalQ

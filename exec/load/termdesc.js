@@ -22,6 +22,8 @@ function charset(term)
 		term = console.term_supports();
 	if(term & USER_PETSCII)
 		return "CBM-ASCII";
+	if(term & USER_MODE7)
+		return "MODE7";
 	if(term & USER_UTF8)
 		return "UTF-8";
 	if(term & USER_NO_EXASCII)
@@ -62,6 +64,8 @@ function type(verbose, usr)
 	var type = "DUMB";
 	if(term & USER_PETSCII)
 		type = "PETSCII";
+	if(term & USER_MODE7)
+		type = "MODE7";
 	if(term & USER_RIP)
 		type = "RIP";
 	if(term & USER_ANSI)
@@ -72,6 +76,8 @@ function type(verbose, usr)
 	// Verbose
 	if(term & USER_PETSCII)
 		return ((usr.settings & USER_AUTOTERM) ? bbs.text(TerminalAutoDetect) : "") + "CBM/PETSCII";
+	if(term & USER_MODE7)
+		return ((usr.settings & USER_AUTOTERM) ? bbs.text(TerminalAutoDetect) : "") + "MODE7";
 	return format("%s%s / %s %s%s%s"
 		,(usr.settings & USER_AUTOTERM) ? bbs.text(TerminalAutoDetect) : ""
 		,this.charset(term)

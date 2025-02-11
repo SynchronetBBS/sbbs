@@ -568,7 +568,7 @@ typedef enum {                      /* Values for xtrn_t.event				*/
 #define COLDKEYS    (1 << 18)     /* No hot-keys							*/
 #define EXTDESC     (1 << 19)     /* Extended file descriptions			*/
 #define AUTOHANG    (1 << 20)     /* Auto-hang-up after transfer			*/
-#define WIP_UNUSED  (1 << 21)     /* Supports WIP terminal emulation		*/
+#define MODE7		(1 << 21)     /* BBC Micro Mode 7 terminal support	*/
 #define AUTOLOGON   (1 << 22)     /* AutoLogon via IP						*/
 #define HTML_UNUSED (1 << 23)     /* Using Zuul/HTML terminal				*/
 #define NOPAUSESPIN (1 << 24)     /* No spinning cursor at pause prompt	*/
@@ -579,9 +579,10 @@ typedef enum {                      /* Values for xtrn_t.event				*/
 #define MOUSE       (1U << 31)    /* Mouse supported terminal				*/
 
 #define TERM_FLAGS      (ANSI | COLOR | RIP | SWAP_DELETE | ICE_COLOR | MOUSE | CHARSET_FLAGS)
-#define CHARSET_FLAGS   (NO_EXASCII | PETSCII | UTF8)
+#define CHARSET_FLAGS   (NO_EXASCII | PETSCII | UTF8 | MODE7)
 #define CHARSET_ASCII   NO_EXASCII  // US-ASCII
 #define CHARSET_PETSCII PETSCII     // CBM-ASCII
+#define CHARSET_MODE7	MODE7		// MODE 7
 #define CHARSET_UTF8    UTF8
 #define CHARSET_CP437   0
 
@@ -694,6 +695,7 @@ typedef enum {                      /* Values for xtrn_t.event				*/
 #define P_REMOTE    (1 << 18)     /* Only print when online == ON_REMOTE		*/
 #define P_INDENT    (1 << 19)     /* Indent lines to current cursor column	*/
 #define P_ATCODES   (1 << 20)     /* Trusted @-codes in formatted string		*/
+#define P_MODE7		(1 << 21)     /* Message is native Mode 7					*/
 
 /* Bits in 'mode' for listfiles             */
 #define FL_ULTIME   (1 << 0)      /* List files by upload time                */

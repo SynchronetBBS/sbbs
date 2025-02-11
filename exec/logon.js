@@ -11,6 +11,12 @@
 
 require("sbbsdefs.js", 'SS_RLOGIN');
 require("nodedefs.js", 'NODE_QUIET');
+
+if(console.term_supports(USER_MODE7)) {
+	log(LOG_DEBUG, "Setting users language to m7");
+	user.lang = "m7";
+}
+
 if(!bbs.mods.avatar_lib)
 	bbs.mods.avatar_lib = load({}, 'avatar_lib.js');
 if(!bbs.mods.logonlist_lib)

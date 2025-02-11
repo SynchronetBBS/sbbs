@@ -182,8 +182,8 @@ bool sbbs_t::logon()
 	}
 
 	if ((useron.misc & AUTOTERM)
-	    // User manually-enabled PETSCII, but they're logging in with an ANSI (auto-detected) terminal
-	    || ((useron.misc & PETSCII) && (autoterm & ANSI))) {
+	    // User manually-enabled PETSCII or MODE7, but they're logging in with an ANSI (auto-detected) terminal
+	    || (((useron.misc & PETSCII) || (useron.misc & MODE7)) && (autoterm & ANSI))) {
 		useron.misc &= ~(ANSI | RIP | CHARSET_FLAGS);
 		useron.misc |= (AUTOTERM | autoterm);
 	}

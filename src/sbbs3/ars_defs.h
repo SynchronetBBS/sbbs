@@ -116,6 +116,7 @@ enum {                              /* Access requirement binaries */
 	, AR_UTF8
 	, AR_CP437
 	, AR_USERNAME
+	, AR_MODE7
 };
 
 enum ar_type {
@@ -148,6 +149,7 @@ static inline enum ar_type ar_type(int artype)
 		case AR_GUEST:
 		case AR_QNODE:
 		case AR_QUIET:
+		case AR_MODE7:
 			return AR_BOOL;
 		case AR_SUBCODE:
 		case AR_DIRCODE:

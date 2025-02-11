@@ -938,4 +938,6 @@ const char* const text_id[]={
 	,"QWKTagLineFmt"
 	,"QWKControlCommand"
 	,"QWKBadControlCommand"
+	,"Mode7TerminalDetected"
+	,"Mode7TerminalQ"
 };

@@ -557,6 +557,8 @@ static void termsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "40 Column PETSCII Support", startup.pet40_port ? str : strDisabled );
 		snprintf(str, sizeof str, "Port %u", startup.pet80_port);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "80 Column PETSCII Support", startup.pet80_port  ? str : strDisabled);
+		snprintf(str, sizeof str, "Port %u", startup.mode7_port);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "BBC Mode 7 Support", startup.mode7_port  ? str : strDisabled);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "DOS Program Support", startup.options & BBS_OPT_NO_DOS ? "No" : "Yes");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Concurrent Connections", maximum(startup.max_concurrent_connections));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Login Inactivity", vduration(startup.max_login_inactivity));
@@ -621,9 +623,14 @@ static void termsrvr_cfg(void)
 					startup.pet80_port = atoi(str);
 				break;
 			case 8:
-				startup.options ^= BBS_OPT_NO_DOS;
+				SAFEPRINTF(str, "%u", startup.mode7_port);
+				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "BBC Mode 7 Port", str, 5, K_NUMBER | K_EDIT) > 0)
+					startup.mode7_port = atoi(str);
 				break;
 			case 9:
+				startup.options ^= BBS_OPT_NO_DOS;
+				break;
+			case 10:
 				SAFECOPY(str, maximum(startup.max_concurrent_connections));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Concurrent (Unauthenticated) Connections", str, 10, K_EDIT) > 0)
 					startup.max_concurrent_connections = atoi(str);
@@ -637,7 +644,7 @@ static void termsrvr_cfg(void)
 		"`Maximum User Inactivity` setting in `System->Advanced Options`.\n" \
 		"Normally, if enabled, this socket inactivity duration should be `longer`\n" \
 		"than the `Maximum User Inactivity` setting in `System->Advanced Options`.\n"
-			case 10:
+			case 11:
 				uifc.helpbuf =
 					"`Maximum Socket Inactivity at Login:`\n"
 					"\n"
@@ -651,7 +658,7 @@ static void termsrvr_cfg(void)
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Socket Inactivity at Login", str, 10, K_EDIT) > 0)
 					startup.max_login_inactivity = (uint16_t)parse_duration(str);
 				break;
-			case 11:
+			case 12:
 				uifc.helpbuf =
 					"`Maximum Socket Inactivity at New User Registration:`\n"
 					"\n"
@@ -665,7 +672,7 @@ static void termsrvr_cfg(void)
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Socket Inactivity at New User Registration", str, 10, K_EDIT) > 0)
 					startup.max_newuser_inactivity = (uint16_t)parse_duration(str);
 				break;
-			case 12:
+			case 13:
 				uifc.helpbuf =
 					"`Maximum Socket Inactivity during User Session:`\n"
 					"\n"
@@ -681,34 +688,34 @@ static void termsrvr_cfg(void)
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Socket Inactivity during User Session", str, 10, K_EDIT) > 0)
 					startup.max_session_inactivity = (uint16_t)parse_duration(str);
 				break;
-			case 13:
+			case 14:
 				SAFEPRINTF(str, "%u", startup.outbuf_drain_timeout);
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Output Buffer Drain Timeout (milliseconds)", str, 5, K_NUMBER | K_EDIT) > 0)
 					startup.outbuf_drain_timeout = atoi(str);
 				break;
-			case 14:
-				startup.options ^= BBS_OPT_NO_EVENTS;
-				break;
 			case 15:
-				if (startup.options & BBS_OPT_NO_EVENTS)
-					break;
-				startup.options ^= BBS_OPT_NO_QWK_EVENTS;
+				startup.options ^= BBS_OPT_NO_EVENTS;
 				break;
 			case 16:
 				if (startup.options & BBS_OPT_NO_EVENTS)
 					break;
-				uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &startup.event_log_level, 0, "Event Log Level", iniLogLevelStringList());
+				startup.options ^= BBS_OPT_NO_QWK_EVENTS;
 				break;
 			case 17:
-				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
+				if (startup.options & BBS_OPT_NO_EVENTS)
+					break;
+				uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &startup.event_log_level, 0, "Event Log Level", iniLogLevelStringList());
 				break;
 			case 18:
-				getar("Terminal Server Login", startup.login_ars);
+				startup.options ^= BBS_OPT_NO_HOST_LOOKUP;
 				break;
 			case 19:
-				js_startup_cfg(&startup.js);
+				getar("Terminal Server Login", startup.login_ars);
 				break;
 			case 20:
+				js_startup_cfg(&startup.js);
+				break;
+			case 21:
 				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:

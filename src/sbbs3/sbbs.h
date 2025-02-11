@@ -981,6 +981,7 @@ public:
 	bool	saveline(void);
 	bool	restoreline(void);
 	int		petscii_to_ansibbs(unsigned char);
+	int		mode7_to_ansibbs(unsigned char);
 	size_t	print_utf8_as_cp437(const char*, size_t);
 	int		attr(int);				/* Change text color/attributes */
 	void	ctrl_a(char);			/* Performs Ctrl-Ax attribute changes */
@@ -1431,6 +1432,7 @@ extern "C" {
 
 	/* con_out.cpp */
 	unsigned char		cp437_to_petscii(unsigned char);
+	unsigned char		cp437_to_mode7(unsigned char);
 
 	/* xtrn.cpp */
 	bool				native_executable(scfg_t*, const char* cmdline, int mode);

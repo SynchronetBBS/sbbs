@@ -880,7 +880,7 @@ void sbbs_t::user_config(user_t* user)
 			case 'T':
 				if (yesno(text[AutoTerminalQ])) {
 					user->misc |= AUTOTERM;
-					user->misc &= ~(ANSI | RIP | PETSCII | UTF8);
+					user->misc &= ~(ANSI | RIP | PETSCII | UTF8 | MODE7);
 					if (user == &useron)
 						user->misc |= autoterm;
 				}

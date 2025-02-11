@@ -553,6 +553,9 @@ bool sbbs_t::answer()
 			SAFECOPY(terminal, "PETSCII");
 			outchar(FF);
 			center(str);
+		} else if (autoterm & MODE7) {
+			SAFECOPY(terminal, "MODE7");
+			center(str);
 		} else {    /* ANSI+ terminal detection */
 			putcom( "\r\n"      /* locate cursor at column 1 */
 			        "\x1b[s"    /* save cursor position (necessary for HyperTerm auto-ANSI) */

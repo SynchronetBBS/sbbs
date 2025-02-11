@@ -2177,6 +2177,12 @@ static bool ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user, client_t* client)
 				else
 					result = !not;
 				break;
+			case AR_MODE7:
+				if (user == NULL || (user->misc & CHARSET_FLAGS) != CHARSET_MODE7)
+					result = not;
+				else
+					result = !not;
+				break;
 			case AR_ASCII:
 				if (user == NULL || (user->misc & CHARSET_FLAGS) != CHARSET_ASCII)
 					result = not;

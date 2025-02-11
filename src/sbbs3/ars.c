@@ -337,6 +337,10 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf)
 				artype = AR_PETSCII;
 				i += 6;
 			}
+			else if (!strnicmp(str + i, "MODE7", 5)) {
+				artype = AR_MODE7;
+				i += 4;
+			}
 			else if (!strnicmp(str + i, "ASCII", 5)) {
 				artype = AR_ASCII;
 				i += 4;

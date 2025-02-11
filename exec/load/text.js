@@ -944,7 +944,9 @@ var QWKEndOfMessage=934;
 var QWKTagLineFmt=935;
 var QWKControlCommand=936;
 var QWKBadControlCommand=937;
+var Mode7TerminalDetected=938;
+var Mode7TerminalQ=939;
 
-var TOTAL_TEXT=938;
+var TOTAL_TEXT=940;
 
 this;

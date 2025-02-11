@@ -245,6 +245,11 @@ unsigned char cp437_to_petscii(unsigned char ch)
 	return ch;
 }
 
+unsigned char cp437_to_mode7(unsigned char ch)
+{
+	return ch;
+}
+
 /* Perform PETSCII conversion to ANSI-BBS/CP437 */
 int sbbs_t::petscii_to_ansibbs(unsigned char ch)
 {
@@ -539,6 +544,9 @@ char* sbbs_t::term_type(user_t* user, int term, char* str, size_t size)
 	if (term & PETSCII)
 		safe_snprintf(str, size, "%sCBM/PETSCII"
 		              , (user->misc & AUTOTERM) ? text[TerminalAutoDetect] : nulstr);
+	else if (term & MODE7)
+		safe_snprintf(str, size, "%s/MODE7"
+		              , (user->misc & AUTOTERM) ? text[TerminalAutoDetect] : nulstr);
 	else
 		safe_snprintf(str, size, "%s%s / %s %s%s%s"
 		              , (user->misc & AUTOTERM) ? text[TerminalAutoDetect] : nulstr
@@ -560,6 +568,8 @@ const char* sbbs_t::term_type(int term)
 		term = term_supports();
 	if (term & PETSCII)
 		return "PETSCII";
+	if (term & MODE7)
+		return "MODE7";
 	if (term & RIP)
 		return "RIP";
 	if (term & ANSI)
@@ -576,6 +586,8 @@ const char* sbbs_t::term_charset(int term)
 		term = term_supports();
 	if (term & PETSCII)
 		return "CBM-ASCII";
+	if (term & MODE7)
+		return "MODE7";
 	if (term & UTF8)
 		return "UTF-8";
 	if (term & NO_EXASCII)

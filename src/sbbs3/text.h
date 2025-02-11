@@ -954,6 +954,8 @@ enum text {
 	,QWKTagLineFmt
 	,QWKControlCommand
 	,QWKBadControlCommand
+	,Mode7TerminalDetected
+	,Mode7TerminalQ
 
 	,TOTAL_TEXT
 };

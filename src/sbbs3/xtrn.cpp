@@ -214,6 +214,13 @@ static void petscii_convert(BYTE* buf, uint len)
 	}
 }
 
+static void mode7_convert(BYTE* buf, uint len)
+{
+	for (uint i = 0; i < len; i++) {
+		buf[i] = cp437_to_mode7(buf[i]);
+	}
+}
+
 static BYTE* cp437_to_utf8(BYTE* input, size_t& len, BYTE* outbuf, size_t maxlen)
 {
 	size_t outlen = 0;
@@ -1961,6 +1968,8 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 				}
 				if (term_supports(PETSCII))
 					petscii_convert(bp, output_len);
+				else if (term_supports(MODE7))
+					mode7_convert(bp, output_len);
 				else if (term_supports(UTF8))
 					bp = cp437_to_utf8(bp, output_len, utf8_buf, sizeof utf8_buf);
 			}
