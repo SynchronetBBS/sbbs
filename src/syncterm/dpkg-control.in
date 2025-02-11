@@ -1,5 +1,5 @@
 Package: syncterm
-Version: 1.6
+Version: 1.7b
 Maintainer: Deuce <shurd@sasktel.net>
 Architecture: %%ARCH%%
 Description: ANSI Terminal for BBSs
