@@ -111,14 +111,21 @@ void sbbs_t::revert_text(void)
 }
 
 /****************************************************************************/
+/* Sysops can have custom text based on terminal character set (charset)	*/
 /* Users can have their own language setting, make that current				*/
 /****************************************************************************/
 bool sbbs_t::load_user_text(void)
 {
+	char path[MAX_PATH + 1];
 	revert_text();
+	safe_snprintf(path, sizeof path, "%s%s/text.ini", cfg.ctrl_dir, term_charset());
+	if(fexistcase(path))
+		replace_text(path);
 	if (*useron.lang == '\0')
 		return true;
-	char path[MAX_PATH + 1];
+	safe_snprintf(path, sizeof path, "%s%s/text.%s.ini", cfg.ctrl_dir, term_charset(), useron.lang);
+	if(fexistcase(path))
+		replace_text(path);
 	safe_snprintf(path, sizeof path, "%stext.%s.ini", cfg.ctrl_dir, useron.lang);
 	return replace_text(path);
 }
