@@ -1,8 +1,8 @@
 #include "windows.h"
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,6,0,1
- PRODUCTVERSION 1,6,0,1
+ FILEVERSION 1,6,1,0
+ PRODUCTVERSION 1,6,1,0
  FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
 #ifdef _DEBUG
  //FILEFLAGS VS_FF_DEBUG | VS_FF_PRERELEASE
@@ -19,12 +19,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Stephen Hurd (Deuce)\0"
             VALUE "FileDescription", "SyncTERM BBS Client\0"
-            VALUE "FileVersion", "1.6b\0"
+            VALUE "FileVersion", "1.6\0"
             VALUE "InternalName", "syncterm.exe\0"
             VALUE "LegalCopyright", "Stephen Hurd (Deuce)\0"
             VALUE "OriginalFilename", "syncterm.exe\0"
             VALUE "ProductName", "SyncTERM\0"
-            VALUE "ProductVersion", "1.6b\0"
+            VALUE "ProductVersion", "1.6\0"
         END
     END
 

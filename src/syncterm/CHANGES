@@ -1,11 +1,11 @@
-Version 1.6b
+Version 1.6
 ------------
-Fix regression in Atari auto-login
-Disable Prestel ENQ/Memory in BBC Micro Mode 7
-Fix error adding a new Web List
+Add Atari ST VT52 modes
 Enable cursor for Mode 7
 Adjust Prestel/Mode 7 mappings
-Add Atari ST VT52 modes
+Disable Prestel ENQ/Memory in BBC Micro Mode 7
+Fix regression in Atari auto-login
+Fix error adding a new Web List
 
 Version 1.5
 ------------
