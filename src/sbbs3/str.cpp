@@ -117,16 +117,24 @@ void sbbs_t::revert_text(void)
 bool sbbs_t::load_user_text(void)
 {
 	char path[MAX_PATH + 1];
+	char charset[16];
+
+	SAFECOPY(charset, term_charset());
+	strlwr(charset);
 	revert_text();
-	safe_snprintf(path, sizeof path, "%s%s/text.ini", cfg.ctrl_dir, term_charset());
-	if(fexistcase(path))
-		replace_text(path);
+	snprintf(path, sizeof path, "%s%s/text.ini", cfg.ctrl_dir, charset);
+	if (fexist(path)) {
+		if (!replace_text(path))
+			return false;
+	}
 	if (*useron.lang == '\0')
 		return true;
-	safe_snprintf(path, sizeof path, "%s%s/text.%s.ini", cfg.ctrl_dir, term_charset(), useron.lang);
-	if(fexistcase(path))
-		replace_text(path);
-	safe_snprintf(path, sizeof path, "%stext.%s.ini", cfg.ctrl_dir, useron.lang);
+	snprintf(path, sizeof path, "%s%s/text.%s.ini", cfg.ctrl_dir, charset, useron.lang);
+	if (fexist(path)) {
+		if (!replace_text(path))
+			return false;
+	}
+	snprintf(path, sizeof path, "%stext.%s.ini", cfg.ctrl_dir, useron.lang);
 	return replace_text(path);
 }
 
