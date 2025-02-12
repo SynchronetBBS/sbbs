@@ -701,6 +701,7 @@ void sbbs_t::insert_indicator(void)
 	if (term_supports(ANSI)) {
 		char str[32];
 		int  col = column;
+		auto row = this->row;
 		ansi_save();
 		ansi_gotoxy(cols, 1);
 		int  tmpatr;
@@ -714,5 +715,6 @@ void sbbs_t::insert_indicator(void)
 		putcom(ansi_attr(curatr, tmpatr, str, term_supports(COLOR)));
 		ansi_restore();
 		column = col;
+		this->row = row;
 	}
 }
