@@ -4,7 +4,11 @@
 
 /* If the section [module:lang=user-lang] exists in the .ini file,
    that section (or key value from it) will be returned instead of the [module] section.
+
+   If the section [module:charset=terminal-charset] exists in the .ini file,
+   that section (or key value from it) will be returned instead of the [module] section.
 */
+
 
 /* To avoid over-writing the parent script's "argc" and "argv" values,
    pass a scope object to load(), like this:
@@ -24,9 +28,19 @@ function get_mod_options(modname, optname, default_optval)
 	if(!ini_file.open("r")) {
 		return undefined;
 	}
-
-	var section = modname + ':lang=' + user.lang;
-	if(!user.lang || ini_file.iniGetSections().indexOf(section) < 0)
+	var section;
+	if(js.global.console || user.lang) {
+		var sections = ini_file.iniGetSections();
+		if(js.global.console)
+			section = modname + ':charset=' + console.charset;
+		if(user.lang) {
+			if(section === undefined || sections.indexOf(section) < 0)
+				section = modname + ':lang=' + user.lang;
+		}
+		if(section && sections.indexOf(section) < 0)
+			section = undefined;
+	}
+	if(!section)
 		section = modname;
 	var val;
 	if(optname)	// Get a specific option value (optionally, with default value)
