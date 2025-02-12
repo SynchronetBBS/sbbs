@@ -22,6 +22,7 @@
 #include "sbbs.h"
 #include "utf8.h"
 #include "unicode.h"
+#include "mode7defs.h"
 #include "petdefs.h"
 #include "cp437defs.h"
 
@@ -247,8 +248,6 @@ unsigned char cp437_to_petscii(unsigned char ch)
 
 unsigned char cp437_to_mode7(unsigned char ch)
 {
-	unsigned char ret;
-
 	switch(ch) {
 		case CP437_VULGAR_FRACTION_ONE_HALF:
 			ch = MODE7_HALF;
@@ -296,7 +295,7 @@ unsigned char cp437_to_mode7(unsigned char ch)
 			ch = ')';
 			break;
 		default:
-			ch = exascii_to_ascii_char(ch)
+			ch = exascii_to_ascii_char(ch);
 			break;
 	}
 	return ch;
