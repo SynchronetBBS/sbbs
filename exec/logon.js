@@ -12,7 +12,6 @@
 require("sbbsdefs.js", 'SS_RLOGIN');
 require("nodedefs.js", 'NODE_QUIET');
 
-
 if(!bbs.mods.avatar_lib)
 	bbs.mods.avatar_lib = load({}, 'avatar_lib.js');
 if(!bbs.mods.logonlist_lib)
