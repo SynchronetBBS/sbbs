@@ -7,12 +7,14 @@
 // @format.tab-size 4, @format.use-tabs true
 
 require("sbbsdefs.js", "P_NOERROR");
-require("gettext.js", 'gettext');
 
 "use strict";
 
-// Load the configuration file
+var options = load("modopts.js", "bullseye");
+if(!options)
+        options = {};
 
+// Load the configuration file
 var i=0;
 var b=0;
 var html=user.settings&USER_HTML;
@@ -49,7 +51,7 @@ if(bull.length < 1) {
 
 while(bbs.online && !js.terminated) {
 	if(bbs.menu("../bullseye", P_NOERROR)) {
-		console.mnemonics(gettext("\r\nEnter number of bulletin or [~Quit]: "));
+		console.mnemonics(options.enter_bulletin_no || "\r\nEnter number of bulletin or [~Quit]: ");
 		b = console.getnum(bull.length);
 	} else {
 		for(i = 0; i < bull.length; ++i)

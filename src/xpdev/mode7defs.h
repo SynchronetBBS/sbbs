@@ -18,7 +18,7 @@
  *																			*
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
-#ifndef _MODE7DFS_H_
+#ifndef _MODE7DEFS_H_
 #define _MODE7DEFS_H_
 
 enum mode7_char {
