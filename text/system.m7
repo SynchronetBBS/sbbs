@@ -1,0 +1,16 @@
+@CLS@@BBS@located in@LOCATION@
+with your sysop,@SYSOP@here to serve you.
+
+@HOSTNAME@is running@OS_VER@
+and has been online continuously for@UPTIME@hours.
+
+System Totals:
+
+Users:    @TUSER|L.......@today:@STATS.NUSERS@
+Logons:   @STATS.LOGONS|L@today:@STATS.LTODAY@
+Timeused: @STATS.TIMEON|L@today:@STATS.TTODAY@
+Messages: @TMSG|L........@today:@STATS.PTODAY@
+E-mail:   @MAILW:0|L.....@today:@STATS.ETODAY@
+Feedback: @MAILW:1|L.....@today:@STATS.FTODAY@
+Files:    @TFILE|L.......@today:@STATS.ULS@
+               Downloaded today: @STATS.DLS@ (@STATS.DLB@ bytes)
