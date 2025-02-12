@@ -60,8 +60,8 @@ enum mode7_char {
 	MODE7_BRITPOUND		= 96,
 	MODE7_QUARTER		= 123,
 	MODE7_HALF			= 92,
-	MODE7_THREE_QUARTER	= 195,
-	MODE7_DIVIDE		= 196
+	MODE7_THREE_QUARTER	= 125,
+	MODE7_DIVIDE		= 126
 	/* Replacement chars (missing ASCII chars) */
 //	PETSCII_BACKSLASH   = '/',  // the 109 graphics char is an 'M' in shifted/text mode :-(
 //	PETSCII_BACKTICK    = 0xAD, // a graphics char actually
