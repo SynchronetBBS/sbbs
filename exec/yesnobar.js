@@ -33,11 +33,8 @@ while(bbs.online && !js.terminated) {
 	console.print(str);
 	var key = console.getkey(0).toUpperCase();
 	console.backspace(console.strlen(str));
-	if(console.term_supports(USER_MODE7))
-		console.print(" ");
-	else
+	if(!console.term_supports(USER_MODE7))
 		console.print("\x01n\x01h\x01>");
-	
 	if(console.aborted)
 		break;
 	if(key == '\r')
