@@ -568,7 +568,7 @@ typedef enum {                      /* Values for xtrn_t.event				*/
 #define COLDKEYS    (1 << 18)     /* No hot-keys							*/
 #define EXTDESC     (1 << 19)     /* Extended file descriptions			*/
 #define AUTOHANG    (1 << 20)     /* Auto-hang-up after transfer			*/
-#define MODE7		(1 << 21)     /* BBC Micro Mode 7 terminal support	*/
+#define MODE7       (1 << 21)     /* BBC Micro Mode 7 terminal support	*/
 #define AUTOLOGON   (1 << 22)     /* AutoLogon via IP						*/
 #define HTML_UNUSED (1 << 23)     /* Using Zuul/HTML terminal				*/
 #define NOPAUSESPIN (1 << 24)     /* No spinning cursor at pause prompt	*/
