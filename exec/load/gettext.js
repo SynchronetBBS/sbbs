@@ -11,9 +11,6 @@ var gettext_cache = {};
 
 function gettext(orig, key) {
 	function get_text_from_ini(ini_fname, orig, key){
-		ini_fname = file_getcase(ini_fname);
-		if(!ini_fname)
-			return undefined;
 		var f = new File(ini_fname);
 		if(!f.open("r"))
 			return undefined;
@@ -26,10 +23,11 @@ function gettext(orig, key) {
 	if (gettext_cache[key || orig] !== undefined)
 		return gettext_cache[key || orig];
 	var text;
+	var charset = console.charset.toLowerCase();
 	if (user.lang)
-		text = get_text_from_ini(console.charset + "/text." + user.lang + ".ini", orig, key);
+		text = get_text_from_ini(charset + "/text." + user.lang + ".ini", orig, key);
 	if (text === undefined)
-		text = get_text_from_ini(console.charset + "/text.ini", orig, key);
+		text = get_text_from_ini(charset + "/text.ini", orig, key);
 	if (text === undefined && user.lang)
 		text = get_text_from_ini("text." + user.lang + ".ini", orig, key);
 	if (text === undefined)
