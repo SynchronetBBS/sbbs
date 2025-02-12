@@ -1,4 +1,4 @@
-/* Commodore/PET definitions */
+/* Mode 7 definitions */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
