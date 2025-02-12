@@ -32,7 +32,7 @@ function get_mod_options(modname, optname, default_optval)
 	if(js.global.console || user.lang) {
 		var sections = ini_file.iniGetSections();
 		if(js.global.console)
-			section = modname + ':charset=' + console.charset;
+			section = modname + ':charset=' + console.charset.toLowerCase();
 		if(user.lang) {
 			if(section === undefined || sections.indexOf(section) < 0)
 				section = modname + ':lang=' + user.lang;
