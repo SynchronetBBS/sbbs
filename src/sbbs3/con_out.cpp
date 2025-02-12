@@ -248,7 +248,8 @@ unsigned char cp437_to_petscii(unsigned char ch)
 
 unsigned char cp437_to_mode7(unsigned char ch)
 {
-	switch(ch) {
+#if 0
+	switch((char)ch) {
 		case CP437_VULGAR_FRACTION_ONE_HALF:
 			ch = MODE7_HALF;
 			break;
@@ -270,7 +271,7 @@ unsigned char cp437_to_mode7(unsigned char ch)
 		case CP437_LEFTWARDS_ARROW:
 			ch = 0x5B;
 			break;
-		case 0xC4:
+		case '\xC4':
 			ch = 0x5E;
 			break;
 		case CP437_BOX_DRAWINGS_DOUBLE_VERTICAL:
@@ -298,6 +299,7 @@ unsigned char cp437_to_mode7(unsigned char ch)
 			ch = exascii_to_ascii_char(ch);
 			break;
 	}
+#endif
 	return ch;
 }
 
