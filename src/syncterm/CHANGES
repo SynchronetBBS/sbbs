@@ -1,3 +1,7 @@
+Version 1.7b
+------------
+Fix APB and APU from top in BBC Micro Mode 7
+
 Version 1.6
 ------------
 Add Atari ST VT52 modes

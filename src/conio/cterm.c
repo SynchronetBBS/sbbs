@@ -5298,7 +5298,13 @@ prestel_move(struct cterminal *cterm, int xadj, int yadj)
 	}
 	// Now fix up y
 	while (ty < cterm->top_margin) {
-		ty += TERM_MAXY;
+		if (cterm->emulation == CTERM_EMULATION_BEEB) {
+			scrolldown(cterm);
+			ty++;
+		}
+		else {
+			ty += TERM_MAXY;
+		}
 	}
 	while (ty > cterm->bottom_margin) {
 		if (cterm->emulation == CTERM_EMULATION_BEEB) {
