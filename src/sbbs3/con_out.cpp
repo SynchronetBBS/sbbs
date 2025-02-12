@@ -22,6 +22,7 @@
 #include "sbbs.h"
 #include "utf8.h"
 #include "unicode.h"
+#include "mode7defs.h"
 #include "petdefs.h"
 #include "cp437defs.h"
 
@@ -247,6 +248,56 @@ unsigned char cp437_to_petscii(unsigned char ch)
 
 unsigned char cp437_to_mode7(unsigned char ch)
 {
+	switch(ch) {
+		case CP437_VULGAR_FRACTION_ONE_HALF:
+			ch = MODE7_HALF;
+			break;
+		case CP437_VULGAR_FRACTION_ONE_QUARTER:
+			ch = MODE7_QUARTER;
+			break;
+		case CP437_POUND_SIGN:
+			ch = MODE7_BRITPOUND;
+			break;
+		case CP437_DIVISION_SIGN:
+			ch = MODE7_DIVIDE;
+			break;
+		case CP437_UPWARDS_ARROW:
+			ch = 0x5E;
+			break;
+		case CP437_RIGHTWARDS_ARROW:
+			ch = 0x5D;
+			break;
+		case CP437_LEFTWARDS_ARROW:
+			ch = 0x5B;
+			break;
+		case 0xC4:
+			ch = 0x5E;
+			break;
+		case CP437_BOX_DRAWINGS_DOUBLE_VERTICAL:
+			ch = 0x7C;
+			break;
+		case '[':
+			ch = '<';
+			break;
+		case ']':
+			ch = '>';
+			break;
+		case '\\':
+			ch = '/';
+			break;
+		case '`':
+			ch = '\'';
+			break;
+		case '{':
+			ch = '(';
+			break;
+		case '}':
+			ch = ')';
+			break;
+		default:
+			ch = exascii_to_ascii_char(ch);
+			break;
+	}
 	return ch;
 }
 
