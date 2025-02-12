@@ -596,7 +596,7 @@ char* sbbs_t::term_type(user_t* user, int term, char* str, size_t size)
 		safe_snprintf(str, size, "%sCBM/PETSCII"
 		              , (user->misc & AUTOTERM) ? text[TerminalAutoDetect] : nulstr);
 	else if (term & MODE7)
-		safe_snprintf(str, size, "%s/MODE7"
+		safe_snprintf(str, size, "%sMODE7"
 		              , (user->misc & AUTOTERM) ? text[TerminalAutoDetect] : nulstr);
 	else
 		safe_snprintf(str, size, "%s%s / %s %s%s%s"
