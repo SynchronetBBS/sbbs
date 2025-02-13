@@ -582,7 +582,7 @@ typedef enum {                      /* Values for xtrn_t.event				*/
 #define CHARSET_FLAGS   (NO_EXASCII | PETSCII | UTF8 | MODE7)
 #define CHARSET_ASCII   NO_EXASCII  // US-ASCII
 #define CHARSET_PETSCII PETSCII     // CBM-ASCII
-#define CHARSET_MODE7	MODE7		// MODE 7
+#define CHARSET_MODE7	MODE7       // MODE 7
 #define CHARSET_UTF8    UTF8
 #define CHARSET_CP437   0
 

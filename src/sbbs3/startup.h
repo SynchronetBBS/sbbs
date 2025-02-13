@@ -129,7 +129,7 @@ typedef struct {
 	uint16_t rlogin_port;
 	uint16_t pet40_port;            // 40-column PETSCII terminal server
 	uint16_t pet80_port;            // 80-column PETSCII terminal server
-	uint16_t mode7_port;			// 40-column MODE7 terminal server
+	uint16_t mode7_port;            // 40-column MODE7 terminal server
 	uint16_t ssh_port;
 	uint16_t ssh_connect_timeout;
 	int ssh_error_level;
