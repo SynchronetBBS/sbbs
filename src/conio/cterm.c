@@ -4947,6 +4947,12 @@ static void prestel_fix_line(struct cterminal *cterm, int x, int y, bool restore
 					line[i].bg &= ~0x20000000;
 				fixed = true;
 			}
+			else if ((cterm->extattr & CTERM_EXTATTR_PRESTEL_MOSAIC)
+			    && ((line[i].ch >= 0xc0 && line[i].ch <= 0xdf))) {
+				// Mosaic but should be blast-through
+				line[i].ch &= 0x7f;
+				fixed = true;
+			}
 			else if((line[i].bg & 0x20000000) && ((cterm->extattr & CTERM_EXTATTR_PRESTEL_SEPARATED) == 0)) {
 				// Should not be separated...
 				line[i].bg &= ~0x20000000;
