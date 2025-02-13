@@ -23,13 +23,16 @@ public:
 		listFree(&mouse_hotspots);
 	}
 
-
+	// Was ansi()
 	virtual const char *attrstr(int atr);
+	// Was ansi() and ansi_attr()
 	virtual char* attrstr(int atr, int curatr, char* str, size_t strsz);
 	virtual bool getdims();
 	virtual bool getxy(int* x, int* y);
 	virtual bool gotoxy(int x, int y);
+	// Was ansi_save
 	virtual bool save_cursor_pos();
+	// Was ansi_restore
 	virtual bool restore_cursor_pos();
 	virtual void clearscreen();
 	virtual void cleartoeos();
@@ -43,6 +46,7 @@ public:
 	// TODO: backfill?
 	virtual int set_mouse(int mode);
 	virtual void parse_outchar(char ch);
+	// Needs to handle C0 and C1
 	virtual bool parse_ctrlkey(char ch, int mode);
 	virtual struct mouse_hotspot* add_hotspot(struct mouse_hotspot* spot);
 
