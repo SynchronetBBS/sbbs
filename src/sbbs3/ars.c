@@ -353,6 +353,10 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf)
 				artype = AR_TERM;
 				i += 3;
 			}
+			else if (!strnicmp(str + i, "LANG", 4)) {
+				artype = AR_LANG;
+				i += 3;
+			}
 			else if (!strnicmp(str + i, "COLS", 4)) {
 				artype = AR_COLS;
 				i += 3;
@@ -611,6 +615,7 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf)
 			case AR_HOST:
 			case AR_IP:
 			case AR_TERM:
+			case AR_LANG:
 			case AR_USERNAME:
 				/* String argument */
 				for (n = 0; n < maxlen
@@ -1128,6 +1133,7 @@ char *decompile_ars(uchar *ars, int len)
 			case AR_HOST:
 			case AR_IP:
 			case AR_TERM:
+			case AR_LANG:
 			case AR_USERNAME:
 				if (not)
 					*(out++) = '!';

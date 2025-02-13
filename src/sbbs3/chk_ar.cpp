@@ -694,6 +694,18 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 					noaccess_val = 0;
 				}
 				break;
+			case AR_LANG:
+				if (!findstr_in_string(user->lang, (char*)*ptrptr))
+					result = _not;
+				else
+					result = !_not;
+				while (*(*ptrptr))
+					(*ptrptr)++;
+				if (!result) {
+					noaccess_str = text[NoAccessUser];
+					noaccess_val = 0;
+				}
+				break;
 			case AR_COLS:
 				if ((equal && cols != (long)n) || (!equal && cols < (long)n))
 					result = _not;

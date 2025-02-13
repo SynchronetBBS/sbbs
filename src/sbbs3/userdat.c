@@ -2641,6 +2641,14 @@ static bool ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user, client_t* client)
 				while (*(*ptrptr))
 					(*ptrptr)++;
 				break;
+			case AR_LANG:
+				if (user != NULL && matchusername(cfg, user->lang, (char *)*ptrptr))
+					result = !not;
+				else
+					result = not;
+				while (*(*ptrptr))
+					(*ptrptr)++;
+				break;
 			case AR_ROWS:
 			case AR_COLS:
 				result = !not;
