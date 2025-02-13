@@ -57,12 +57,12 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IntDir>msvc.win32.obj.debug/</IntDir>
-    <OutDir>msvc.win32.lib.debug/</OutDir>
+    <IntDir>.\msvc.$(Platform).$(Configuration)\$(TargetName)\</IntDir>
+    <OutDir>.\msvc.$(Platform)$(TargetExt).$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IntDir>msvc.win32.obj.release/</IntDir>
-    <OutDir>msvc.win32.lib.release/</OutDir>
+    <IntDir>.\msvc.$(Platform).$(Configuration)\$(TargetName)\</IntDir>
+    <OutDir>.\msvc.$(Platform)$(TargetExt).$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -72,13 +72,14 @@
       <ConformanceMode>false</ConformanceMode>
       <PreprocessorDefinitions>SBBS_EXPORTS;NO_SOCKET_SUPPORT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <ProgramDataBaseFileName>$(IntDir)</ProgramDataBaseFileName>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <OutputFile>.\msvc.win32.lib.debug</OutputFile>
     </Link>
     <Lib>
-      <OutputFile>.\msvc.win32.lib.debug/load_cfg.lib</OutputFile>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -91,6 +92,7 @@
       <ConformanceMode>false</ConformanceMode>
       <PreprocessorDefinitions>SBBS_EXPORTS;NO_SOCKET_SUPPORT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <ProgramDataBaseFileName>$(IntDir)</ProgramDataBaseFileName>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -99,7 +101,7 @@
       <OutputFile>.\msvc.win32.lib.release</OutputFile>
     </Link>
     <Lib>
-      <OutputFile>.\msvc.win32.lib.release/load_cfg.lib</OutputFile>
+      <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
