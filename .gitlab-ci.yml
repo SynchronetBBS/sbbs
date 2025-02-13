@@ -127,9 +127,9 @@ smoketest-jsexec-linux:
   artifacts:
     name: sbbs-win32
     paths:
-      - "src/sbbs3/*.exe.release/*.exe"
-      - "src/sbbs3/*.dll.release/*.dll"
-      - "src/sbbs3/*/*.exe.release/*.exe"
+      - "src/sbbs3/*.exe.Release/*.exe"
+      - "src/sbbs3/*.dll.Release/*.dll"
+      - "src/sbbs3/*/*.exe.Release/*.exe"
       - "src/sbbs3/*/*.exe"
       - "xtrn/*/*.exe"
 
