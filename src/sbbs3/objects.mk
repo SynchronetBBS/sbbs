@@ -95,6 +95,7 @@ OBJS	=		$(LOAD_CFG_OBJS) \
 			$(MTOBJODIR)/str$(OFILE)\
 			$(MTOBJODIR)/telgate$(OFILE)\
 			$(MTOBJODIR)/telnet$(OFILE)\
+			$(MTOBJODIR)/terminal$(OFILE)\
 			$(MTOBJODIR)/text_sec$(OFILE)\
 			$(MTOBJODIR)/tmp_xfer$(OFILE)\
 			$(MTOBJODIR)/trash$(OFILE)\
