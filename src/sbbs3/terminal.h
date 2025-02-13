@@ -31,6 +31,16 @@ public:
 	virtual bool gotoxy(int x, int y);
 	virtual bool save_cursor_pos();
 	virtual bool restore_cursor_pos();
+	virtual void clearscreen();
+	virtual void cleartoeos();
+	virtual void cleartoeol();
+	virtual void cursor_home();
+	virtual void cursor_up();
+	virtual void cursor_down();
+	virtual void cursor_right();
+	virtual void cursor_left();
+	virtual void set_output_rate();
+	// TODO: backfill?
 	virtual int set_mouse(int mode);
 	virtual void parse_outchar(char ch);
 	virtual bool parse_ctrlkey(char ch, int mode);
