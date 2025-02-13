@@ -1,6 +1,7 @@
 Version 1.7b
 ------------
 Fix APB and APU from top in BBC Micro Mode 7
+Fix blast-through in Mode 7 high ASCII mosaics
 
 Version 1.6
 ------------
