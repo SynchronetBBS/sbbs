@@ -4,6 +4,7 @@
 
 OBJS	=		$(LOAD_CFG_OBJS) \
 			$(MTOBJODIR)/ansiterm$(OFILE) \
+			$(MTOBJODIR)/ansi_terminal$(OFILE) \
 			$(MTOBJODIR)/answer$(OFILE)\
 			$(MTOBJODIR)/atcodes$(OFILE)\
 			$(MTOBJODIR)/bat_xfer$(OFILE)\

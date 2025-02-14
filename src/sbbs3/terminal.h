@@ -3,12 +3,29 @@
 
 #include "sbbs.h"
 
+struct mouse_hotspot {          // Mouse hot-spot
+	char     cmd[128];
+	unsigned y;
+	unsigned minx;
+	unsigned maxx;
+	bool     hungry;
+};
+
 class Terminal {
 public:
-	unsigned supports;
+	uint32_t supports;
+	unsigned row;
+	unsigned column;
+	unsigned rows;
+	unsigned cols;
+	unsigned tabstop;
+	unsigned lastlinelen;
+	unsigned cterm_version;
+
+protected:
+	sbbs_t& sbbs;
 
 private:
-	sbbs_t& sbbs;
 	link_list_t mouse_hotspots{};
 
 public:
@@ -24,30 +41,50 @@ public:
 	}
 
 	// Was ansi()
-	virtual const char *attrstr(int atr);
+	virtual const char *attrstr(unsigned atr) {
+		return "";
+	}
+
 	// Was ansi() and ansi_attr()
-	virtual char* attrstr(int atr, int curatr, char* str, size_t strsz);
-	virtual bool getdims();
-	virtual bool getxy(int* x, int* y);
-	virtual bool gotoxy(int x, int y);
+	virtual char* attrstr(unsigned atr, unsigned curatr, char* str, size_t strsz) {
+		if (strsz > 0)
+			str[0] = 0;
+		return str;
+	}
+
+	virtual bool getdims() {
+		return false;
+	}
+
+	virtual bool getxy(unsigned* x, unsigned* y) {
+		return false;
+	}
+
+	virtual bool gotoxy(unsigned x, unsigned y) {
+		return false;
+	}
+
 	// Was ansi_save
-	virtual bool save_cursor_pos();
+	virtual bool save_cursor_pos() {
+		return false;
+	}
+
 	// Was ansi_restore
-	virtual bool restore_cursor_pos();
-	virtual void clearscreen();
-	virtual void cleartoeos();
-	virtual void cleartoeol();
-	virtual void cursor_home();
-	virtual void cursor_up();
-	virtual void cursor_down();
-	virtual void cursor_right();
-	virtual void cursor_left();
+	virtual bool restore_cursor_pos() {
+		return false;
+	}
+
+	virtual void clearscreen() {}
+	virtual void cleartoeos() {}
+	virtual void cleartoeol() {}
+	virtual void cursor_home() {}
+	virtual void cursor_up(unsigned count) {}
+	virtual void cursor_down(unsigned count) {}
+	virtual void cursor_right(unsigned count) {}
+	virtual void cursor_left(unsigned count) {}
 	virtual void set_output_rate();
+
 	// TODO: backfill?
-	// Was term_rows
-	virtual char* rows(user_t *user, char *str, size_t *size);
-	// Was term_cols
-	virtual char* cols(user_t *user, char *str, size_t *size);
 	// Not a complete replacement for term_type
 	virtual char* type(char* str, size_t size);
 	virtual const char* type();
@@ -63,6 +100,7 @@ public:
 	struct mouse_hotspot* add_hotspot(int num, bool hungry, int minx, int maxx, int y);
 	struct mouse_hotspot* add_hotspot(uint num, bool hungry, int minx, int maxx, int y);
 	struct mouse_hotspot* add_hotspot(const char* cmd, bool hungry, int minx, int maxx, int y);
+	void inc_row(int count);
 };
 
 #endif

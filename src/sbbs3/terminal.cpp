@@ -15,12 +15,12 @@ void Terminal::clear_hotspots(void)
 	}
 }
 
-void Terminal::scroll_hotspots(int count)
+void Terminal::scroll_hotspots(unsigned count)
 {
 	if (!(supports & MOUSE))
 		return;
-	int spots = 0;
-	int remain = 0;
+	unsigned spots = 0;
+	unsigned remain = 0;
 	for (list_node_t* node = mouse_hotspots.first; node != NULL; node = node->next) {
 		struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
 		spot->y -= count;
@@ -30,7 +30,7 @@ void Terminal::scroll_hotspots(int count)
 	}
 #ifdef _DEBUG
 	if (spots)
-		lprintf(LOG_DEBUG, "Scrolled %d mouse hot-spots %d rows (%d remain)", spots, count, remain);
+		lprintf(LOG_DEBUG, "Scrolled %u mouse hot-spots %u rows (%u remain)", spots, count, remain);
 #endif
 	if (remain < 1)
 		clear_hotspots();
@@ -42,6 +42,7 @@ struct mouse_hotspot* Terminal::add_hotspot(char cmd, bool hungry, int minx, int
 		return nullptr;
 	struct mouse_hotspot spot = {};
 	spot.cmd[0] = cmd;
+	// TODO: This was the only one that supported negative values
 	spot.minx = minx < 0 ? sbbs.column : minx;
 	spot.maxx = maxx < 0 ? sbbs.column : maxx;
 	spot.y = y;
@@ -55,8 +56,8 @@ struct mouse_hotspot* Terminal::add_hotspot(int num, bool hungry, int minx, int 
 		return nullptr;
 	struct mouse_hotspot spot = {};
 	SAFEPRINTF(spot.cmd, "%d\r", num);
-	spot.minx = minx;
-	spot.maxx = maxx;
+	spot.minx = minx < 0 ? sbbs.column : minx;
+	spot.maxx = maxx < 0 ? sbbs.column : maxx;
 	spot.y = y;
 	spot.hungry = hungry;
 	return add_hotspot(&spot);
@@ -68,8 +69,8 @@ struct mouse_hotspot* Terminal::add_hotspot(uint num, bool hungry, int minx, int
 		return nullptr;
 	struct mouse_hotspot spot = {};
 	SAFEPRINTF(spot.cmd, "%u\r", num);
-	spot.minx = minx;
-	spot.maxx = maxx;
+	spot.minx = minx < 0 ? sbbs.column : minx;
+	spot.maxx = maxx < 0 ? sbbs.column : maxx;
 	spot.y = y;
 	spot.hungry = hungry;
 	return add_hotspot(&spot);
@@ -81,9 +82,18 @@ struct mouse_hotspot* Terminal::add_hotspot(const char* cmd, bool hungry, int mi
 		return nullptr;
 	struct mouse_hotspot spot = {};
 	SAFECOPY(spot.cmd, cmd);
-	spot.minx = minx;
-	spot.maxx = maxx;
+	spot.minx = minx < 0 ? sbbs.column : minx;
+	spot.maxx = maxx < 0 ? sbbs.column : maxx;
 	spot.y = y;
 	spot.hungry = hungry;
 	return add_hotspot(&spot);
+}
+
+void Terminal::inc_row(int count)
+{
+        sbbs.row += sbbs.count;
+        if (sbbs.row >= sbbs.rows) {
+                scroll_hotspots((sbbs.row - sbbs.rows) + 1);
+                sbbs.row = sbbs.rows - 1;
+        }
 }
