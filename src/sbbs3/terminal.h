@@ -82,7 +82,7 @@ public:
 	virtual void cursor_down(unsigned count) {}
 	virtual void cursor_right(unsigned count) {}
 	virtual void cursor_left(unsigned count) {}
-	virtual void set_output_rate();
+	virtual void set_output_rate() {}
 
 	// TODO: backfill?
 	// Not a complete replacement for term_type

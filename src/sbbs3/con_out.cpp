@@ -1275,10 +1275,12 @@ void sbbs_t::ctrl_a(char x)
 			attr(atr);
 			break;
 		case 'I':
+			// TODO: Shouldn't need to make this conditional
 			if ((term_supports() & (ICE_COLOR | PETSCII)) != ICE_COLOR)
 				attr(atr | BLINK);
 			break;
 		case 'E': /* Bright Background */
+			// TODO: Shouldn't need to make this conditional
 			if (term_supports() & (ICE_COLOR | PETSCII))
 				attr(atr | BG_BRIGHT);
 			break;

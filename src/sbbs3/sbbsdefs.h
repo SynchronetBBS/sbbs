@@ -578,7 +578,9 @@ typedef enum {                      /* Values for xtrn_t.event				*/
 #define UTF8        (1 << 29)     /* UTF-8 terminal						*/
 #define MOUSE       (1U << 31)    /* Mouse supported terminal				*/
 
+// TODO: Really, NO_EXASCII  and UTF8 are not terminal flags.
 #define TERM_FLAGS      (ANSI | COLOR | RIP | SWAP_DELETE | ICE_COLOR | MOUSE | CHARSET_FLAGS)
+// TODO: Picking these out gets tricky, PETSCII is both terminal and charset
 #define CHARSET_FLAGS   (NO_EXASCII | PETSCII | UTF8)
 #define CHARSET_ASCII   NO_EXASCII  // US-ASCII
 #define CHARSET_PETSCII PETSCII     // CBM-ASCII
@@ -862,6 +864,9 @@ enum {                          /* Values of mode for userlist function     */
 /**************************************/
 /* Text Attribute (color) Definitions */
 /**************************************/
+// TODO: We overload BLINK for ICE_COLORS here, but this is a 32-bit field...
+//       While looking at that, translating PETSCII colours isn't needed
+//       either.
 #define HIGH  0x08      /* High intensity foreground text */
 #ifndef BLINK
 #define BLINK 0x80      /* Blinking text */
