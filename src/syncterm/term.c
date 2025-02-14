@@ -4844,6 +4844,15 @@ doterm(struct bbslist *bbs)
 							ch[0] = '`';
 						conn_send(ch, 1, 0);
 						break;
+					case 8:
+					case CIO_KEY_DC:
+						ch[0] = 127;
+						conn_send(ch, 1, 0);
+						break;
+					case 9:
+						ch[0] = 9;
+						conn_send(ch, 1, 0);
+						break;
 					case 10:
 						if (cterm->emulation == CTERM_EMULATION_PRESTEL)
 							ch[0] = '\r';
@@ -4858,29 +4867,154 @@ doterm(struct bbslist *bbs)
 							ch[0] = 13;
 						conn_send(ch, 1, 0);
 						break;
-					case 8:
-					case CIO_KEY_DC:
-					case CIO_KEY_LEFT:
-						ch[0] = 8;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_RIGHT:
-						ch[0] = 9;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_UP:
-						ch[0] = 11;
-						conn_send(ch, 1, 0);
-						break;
-					case CIO_KEY_DOWN:
-						ch[0] = 10;
-						conn_send(ch, 1, 0);
-						break;
 					case CIO_KEY_HOME:
 						ch[0] = 0x1f;
 						conn_send(ch, 1, 0);
 						break;
-					case '\t': {
+					// These mappings are from Commstar...
+					case CIO_KEY_F(7):	// Another ESC... ESC returns to Commstar menu
+						ch[0] = 27;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_LEFT:
+						ch[0] = 140;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_RIGHT:
+						ch[0] = 141;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_DOWN:
+						ch[0] = 142;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_UP:
+						ch[0] = 143;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_SHIFT_F(10):	// F0
+						ch[0] = 144;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_SHIFT_F(1):
+						ch[0] = 145;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_SHIFT_F(2):
+						ch[0] = 146;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_SHIFT_F(3):
+						ch[0] = 147;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_SHIFT_F(4):
+						ch[0] = 148;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_SHIFT_F(5):
+						ch[0] = 149;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_SHIFT_F(6):
+						ch[0] = 150;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_SHIFT_F(7):
+						ch[0] = 151;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_SHIFT_F(8):
+						ch[0] = 152;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_SHIFT_F(9):
+						ch[0] = 153;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_SHIFT_END:	// Copy
+						ch[0] = 155;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_SHIFT_LEFT:
+						ch[0] = 156;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_SHIFT_RIGHT:
+						ch[0] = 157;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_SHIFT_DOWN:
+						ch[0] = 158;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_SHIFT_UP:
+						ch[0] = 159;
+						conn_send(ch, 1, 0);
+						break;
+
+					case CIO_KEY_CTRL_F(10):	// F0
+						ch[0] = 160;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_CTRL_F(1):
+						ch[0] = 161;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_CTRL_F(2):
+						ch[0] = 162;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_CTRL_F(3):
+						ch[0] = 163;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_CTRL_F(4):
+						ch[0] = 164;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_CTRL_F(5):
+						ch[0] = 165;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_CTRL_F(6):
+						ch[0] = 166;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_CTRL_F(7):
+						ch[0] = 167;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_CTRL_F(8):
+						ch[0] = 168;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_CTRL_F(9):
+						ch[0] = 169;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_CTRL_END:	// Copy
+						ch[0] = 171;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_CTRL_LEFT:
+						ch[0] = 172;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_CTRL_RIGHT:
+						ch[0] = 173;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_CTRL_DOWN:
+						ch[0] = 174;
+						conn_send(ch, 1, 0);
+						break;
+					case CIO_KEY_CTRL_UP:
+						ch[0] = 175;
+						conn_send(ch, 1, 0);
+						break;
+
+					case CIO_KEY_NPAGE: {
 						cio_api.options ^= CONIO_OPT_PRESTEL_REVEAL;
 						struct ciolib_screen *savscrn = savescreen();
 						ciolib_vmem_puttext(1, 1, savscrn->text_info.screenwidth, savscrn->text_info.screenheight, savscrn->vmem);
