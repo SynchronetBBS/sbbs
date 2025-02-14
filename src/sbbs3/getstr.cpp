@@ -135,7 +135,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 		if (!i && (mode & (K_UPRLWR | K_TRIM)) && (ch == ' ' || ch == TAB))
 			continue;   /* ignore beginning white space if upper/lower */
 		if (mode & K_E71DETECT && (uchar)ch == (CR | 0x80) && l > 1) {
-			if (strstr(str1, "çç")) {
+			if (strstr(str1, "\x8d\x8d")) {
 				bputs("\r\n\r\nYou must set your terminal to NO PARITY, "
 				      "8 DATA BITS, and 1 STOP BIT (N-8-1).\7\r\n");
 				return 0;

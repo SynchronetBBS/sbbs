@@ -774,6 +774,8 @@ char unicode_to_cp437(enum unicode_codepoint codepoint)
 		case UNICODE_SMALL_PERCENT_SIGN:                    return '%';
 		case UNICODE_SMALL_COMMERCIAL_AT:                   return '@';
 
+		case UNICODE_VIEWDATA_SQUARE:                       return '#';
+
 		default:
 		{
 			int i;

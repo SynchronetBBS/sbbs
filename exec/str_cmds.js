@@ -224,8 +224,12 @@ function str_cmds(str)
 			if(bbs.check_syspass()) {
 				str=str.substr(4);
 				str=get_cmdline(str);
-				if(str)
-					bbs.exec(str,EX_STDIO);
+				if(str) {
+					var ex_mode = EX_STDIO;
+					if(bbs.startup_options & BBS_OPT_NO_DOS)
+						ex_mode |= EX_NATIVE;
+					bbs.exec(str, ex_mode);
+				}
 			}
 			return;
 		}

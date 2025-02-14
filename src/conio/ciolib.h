@@ -283,9 +283,18 @@ struct vmem_cell {
 	uint8_t legacy_attr;
 	uint8_t ch;
 	uint8_t font;
+	/*
+	 * At least one byte in these colours must have 0x04 as an invalid value.
+	 * Since Graphics cannot be present in Prestel, the high byte of bg
+	 * cannot be 0x04 in Prestel mode.
+	 * In other modes, the high byte of fg cannot be 0x04.
+	 */
+#define CIOLIB_FG_PRESTEL_CTRL_MASK 0x7F000000
+#define CIOLIB_FG_PRESTEL_CTRL_SHIFT 24
 	uint32_t fg;	/* RGB 80RRGGBB High bit clear indicates palette colour
 	                 * Bits 24..30 are the prestel control character.
 			 */
+#define CIOLIB_COLOR_RGB 0x80000000
 	uint32_t bg;	/* RGB 80RRGGBB High bit clear indicates palette colour
 			 * bit 24 indicates double-height
 			 * bit 25 indicates Prestel
@@ -293,7 +302,15 @@ struct vmem_cell {
 			 * bit 27 indicates reveal is/was enabled
 			 * bit 28 indicates it is dirty and must be redrawn
 			 * bit 29 indicates prestel separated
+			 * but 30 indicates Prestel Terminal mode
 			 */
+#define CIOLIB_BG_DOUBLE_HEIGHT 0x01000000
+#define CIOLIB_BG_PRESTEL 0x02000000
+#define CIOLIB_BG_PIXEL_GRAPHICS 0x04000000
+#define CIOLIB_BG_REVEAL 0x08000000
+#define CIOLIB_BG_DIRTY 0x10000000
+#define CIOLIB_BG_SEPARATED 0x20000000
+#define CIOLIB_BG_PRESTEL_TERMINAL 0x40000000
 };
 
 struct ciolib_screen {
@@ -725,27 +742,37 @@ CIOLIBEXPORT void mousestate_res(int *x_res, int *y_res, uint8_t *buttons);
 }
 #endif
 
-#define CIO_KEY_HOME      (0x47 << 8)
-#define CIO_KEY_UP        (0x48 << 8)
-#define CIO_KEY_END       (0x4f << 8)
-#define CIO_KEY_DOWN      (0x50 << 8)
-#define CIO_KEY_F(x)      ((x<11)?((0x3a+x) << 8):((0x7a+x) << 8))
-#define CIO_KEY_IC        (0x52 << 8)
-#define CIO_KEY_DC        (0x53 << 8)
-#define CIO_KEY_SHIFT_IC  (0x05 << 8)	/* Shift-Insert */
-#define CIO_KEY_SHIFT_DC  (0x07 << 8)	/* Shift-Delete */
-#define CIO_KEY_CTRL_IC   (0x04 << 8)	/* Ctrl-Insert */
-#define CIO_KEY_CTRL_DC   (0x06 << 8)	/* Ctrl-Delete */
-#define CIO_KEY_ALT_IC    (0xA2 << 8)	/* Alt-Insert */
-#define CIO_KEY_ALT_DC    (0xA3 << 8)	/* Alt-Delete */
-#define CIO_KEY_LEFT      (0x4b << 8)
-#define CIO_KEY_RIGHT     (0x4d << 8)
-#define CIO_KEY_PPAGE     (0x49 << 8)
-#define CIO_KEY_NPAGE     (0x51 << 8)
-#define CIO_KEY_SHIFT_F(x)((x<11)?((0x53 + x) << 8):((0x7c + x) << 8))
-#define CIO_KEY_CTRL_F(x) ((x<11)?((0x5d + x) << 8):((0x7e + x) << 8))
-#define CIO_KEY_ALT_F(x)  ((x<11)?((0x67 + x) << 8):((0x80 + x) << 8))
-#define CIO_KEY_BACKTAB   (0x0f << 8)
+#define CIO_KEY_HOME        (0x47 << 8)
+#define CIO_KEY_UP          (0x48 << 8)
+#define CIO_KEY_END         (0x4f << 8)
+#define CIO_KEY_DOWN        (0x50 << 8)
+#define CIO_KEY_F(x)        ((x<11)?((0x3a+x) << 8):((0x7a+x) << 8))
+#define CIO_KEY_IC          (0x52 << 8)
+#define CIO_KEY_DC          (0x53 << 8)
+#define CIO_KEY_SHIFT_IC    (0x05 << 8)	/* Shift-Insert */
+#define CIO_KEY_SHIFT_DC    (0x07 << 8)	/* Shift-Delete */
+#define CIO_KEY_CTRL_IC     (0x04 << 8)	/* Ctrl-Insert */
+#define CIO_KEY_CTRL_DC     (0x06 << 8)	/* Ctrl-Delete */
+#define CIO_KEY_ALT_IC      (0xA2 << 8)	/* Alt-Insert */
+#define CIO_KEY_ALT_DC      (0xA3 << 8)	/* Alt-Delete */
+#define CIO_KEY_LEFT        (0x4b << 8)
+#define CIO_KEY_RIGHT       (0x4d << 8)
+#define CIO_KEY_PPAGE       (0x49 << 8)
+#define CIO_KEY_NPAGE       (0x51 << 8)
+#define CIO_KEY_SHIFT_F(x)  ((x<11)?((0x53 + x) << 8):((0x7c + x) << 8))
+#define CIO_KEY_CTRL_F(x)   ((x<11)?((0x5d + x) << 8):((0x7e + x) << 8))
+#define CIO_KEY_ALT_F(x)    ((x<11)?((0x67 + x) << 8):((0x80 + x) << 8))
+#define CIO_KEY_BACKTAB     (0x0f << 8)
+#define CIO_KEY_SHIFT_UP    (0x38 << 8)
+#define CIO_KEY_CTRL_UP     (0x8d << 8)
+#define CIO_KEY_SHIFT_LEFT  (0x34 << 8)
+#define CIO_KEY_CTRL_LEFT   (0x73 << 8)
+#define CIO_KEY_SHIFT_RIGHT (0x36 << 8)
+#define CIO_KEY_CTRL_RIGHT  (0x74 << 8)
+#define CIO_KEY_SHIFT_DOWN  (0x32 << 8)
+#define CIO_KEY_CTRL_DOWN   (0x91 << 8)
+#define CIO_KEY_SHIFT_END   (0x31 << 8)
+#define CIO_KEY_CTRL_END    (0x75 << 8)
 
 #define CIO_KEY_MOUSE     0x7dE0	// This is the right mouse on Schneider/Amstrad PC1512 PC keyboards "F-14"
 #define CIO_KEY_QUIT	  0x7eE0	// "F-15"

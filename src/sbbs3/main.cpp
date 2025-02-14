@@ -461,6 +461,7 @@ in_addr_t resolve_ip(char *addr)
 {
 	char*    p;
 	struct addrinfo* res;
+	struct addrinfo hints = {0};
 	in_addr_t ipa = INADDR_NONE;
 
 	if (*addr == 0)
@@ -472,7 +473,8 @@ in_addr_t resolve_ip(char *addr)
 	if (!(*p))
 		return parseIPv4Address(addr);
 
-	if (getaddrinfo(addr, NULL, NULL, &res) != 0)
+	hints.ai_family = AF_INET;
+	if (getaddrinfo(addr, NULL, &hints, &res) != 0)
 		return INADDR_NONE;
 
 	if (res->ai_family == AF_INET)

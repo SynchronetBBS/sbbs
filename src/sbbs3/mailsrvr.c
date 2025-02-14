@@ -1004,6 +1004,7 @@ static in_addr_t resolve_ip(const char *inaddr)
 	char*    addr;
 	char     buf[128];
 	struct addrinfo* res;
+	struct addrinfo hints = {0};
 	in_addr_t ipa = INADDR_NONE;
 
 	SAFECOPY(buf, inaddr);
@@ -1022,7 +1023,8 @@ static in_addr_t resolve_ip(const char *inaddr)
 	if (!(*p))
 		return parseIPv4Address(addr);
 
-	if (getaddrinfo(addr, NULL, NULL, &res) != 0)
+	hints.ai_family = AF_INET;
+	if (getaddrinfo(addr, NULL, &hints, &res) != 0)
 		return INADDR_NONE;
 
 	if (res->ai_family == AF_INET)
