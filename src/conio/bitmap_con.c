@@ -266,20 +266,20 @@ bitmap_vmem_puttext_locked(int sx, int sy, int ex, int ey, struct vmem_cell *fil
 	for(y=sy-1;y<ey;y++) {
 		vc = vmem_cell_ptr(vstat.vmem, sx - 1, y);
 		for(x=sx-1;x<ex;x++) {
-			if (vstat.mode == PRESTEL_40X25 && ((vc->bg & 0x02000000) || (fi->bg & 0x02000000))) {
-				if ((vc->bg & 0x01000000) != (fi->bg & 0x01000000)) {
+			if (vstat.mode == PRESTEL_40X25 && ((vc->bg & CIOLIB_BG_PRESTEL) || (fi->bg & CIOLIB_BG_PRESTEL))) {
+				if ((vc->bg & CIOLIB_BG_DOUBLE_HEIGHT) != (fi->bg & CIOLIB_BG_DOUBLE_HEIGHT)) {
 					// *ANY* change to double-height potentially changes
 					// *EVERY* character on the screen
 					fullredraw = true;
 				}
 			}
 			*vc = *(fi++);
-			if (vstat.mode == PRESTEL_40X25 && (vc->bg & 0x02000000)) {
+			if (vstat.mode == PRESTEL_40X25 && (vc->bg & CIOLIB_BG_PRESTEL)) {
 				if (vc->legacy_attr & 0x08) {
 					if (cio_api.options & CONIO_OPT_PRESTEL_REVEAL)
-						vc->bg |= 0x08000000;
+						vc->bg |= CIOLIB_BG_REVEAL;
 					else
-						vc->bg &= ~0x08000000;
+						vc->bg &= ~CIOLIB_BG_REVEAL;
 				}
 			}
 			vc = vmem_next_ptr(vstat.vmem, vc);
@@ -314,25 +314,25 @@ set_vmem_cell(size_t x, size_t y, uint16_t cell, uint32_t fg, uint32_t bg)
 	vc->legacy_attr = cell >> 8;
 	vc->ch = cell & 0xff;
 	vc->fg = fg;
-	if (vstat.mode == PRESTEL_40X25 && ((vc->bg & 0x02000000) || (bg & 0x02000000))) {
+	if (vstat.mode == PRESTEL_40X25 && ((vc->bg & CIOLIB_BG_PRESTEL) || (bg & CIOLIB_BG_PRESTEL))) {
 		if (vc->legacy_attr & 0x08) {
 			if (cio_api.options & CONIO_OPT_PRESTEL_REVEAL)
-				vc->bg |= 0x08000000;
+				vc->bg |= CIOLIB_BG_REVEAL;
 			else
-				vc->bg &= ~0x08000000;
+				vc->bg &= ~CIOLIB_BG_REVEAL;
 		}
-		if ((vc->bg & 0x01000000) != (bg & 0x01000000)) {
+		if ((vc->bg & CIOLIB_BG_DOUBLE_HEIGHT) != (bg & CIOLIB_BG_DOUBLE_HEIGHT)) {
 			// *ANY* change to double-height potentially changes
 			// *EVERY* character on the screen
 			request_redraw_locked();
 		}
 	}
-	if (vstat.mode == PRESTEL_40X25 && (vc->bg & 0x02000000)) {
+	if (vstat.mode == PRESTEL_40X25 && (vc->bg & CIOLIB_BG_PRESTEL)) {
 		if (vc->legacy_attr & 0x08) {
 			if (cio_api.options & CONIO_OPT_PRESTEL_REVEAL)
-				vc->bg |= 0x08000000;
+				vc->bg |= CIOLIB_BG_REVEAL;
 			else
-				vc->bg &= ~0x08000000;
+				vc->bg &= ~CIOLIB_BG_REVEAL;
 		}
 	}
 	vc->bg = bg;
@@ -504,7 +504,7 @@ static struct rectlist *alloc_full_rect(struct bitmap_screen *screen, bool allow
 
 static uint32_t color_value(uint32_t col)
 {
-	if (col & 0x80000000)
+	if (col & CIOLIB_COLOR_RGB)
 		return col & 0xffffff;
 	if ((col & 0xffffff) < sizeof(palette) / sizeof(palette[0]))
 		return palette[col & 0xffffff] & 0xffffff;
@@ -563,9 +563,10 @@ struct charstate {
 	uint32_t fontoffset;
 	bool slow;
 	bool gexpand;
-	int8_t extra_rows;
+	bool did_top;
 	bool double_height;
 	bool sep;
+	bool top_half;
 };
 
 struct blockstate {
@@ -579,7 +580,7 @@ struct blockstate {
 static bool
 can_cheat(struct blockstate *bs, struct vmem_cell *vc)
 {
-	return vc->bg == bs->cheat_colour && (vc->ch == ' ') && (vc->font < CONIO_FIRST_FREE_FONT) && !(vc->bg & 0x02000000);
+	return vc->bg == bs->cheat_colour && (vc->ch == ' ') && (vc->font < CONIO_FIRST_FREE_FONT) && !(vc->bg & CIOLIB_BG_PRESTEL);
 }
 
 static void
@@ -588,9 +589,10 @@ calc_charstate(struct blockstate *bs, struct vmem_cell *vc, struct charstate *cs
 	bool not_hidden = true;
 	cs->slow = bs->font_data_width != 8;
 	cs->bg = vc->bg;
-	cs->extra_rows = 0;
+	cs->did_top = false;
 	cs->sep = false;
 	cs->double_height = false;
+	cs->top_half = true;
 
 	if (vstat.forced_font) {
 		cs->font = vstat.forced_font;
@@ -633,13 +635,13 @@ calc_charstate(struct blockstate *bs, struct vmem_cell *vc, struct charstate *cs
 	}
 	uint32_t fg = vc->fg;
 
-	if (vstat.mode == PRESTEL_40X25 && (vc->bg & 0x02000000)) {
-		unsigned char lattr;
+	if (vstat.mode == PRESTEL_40X25 && (vc->bg & CIOLIB_BG_PRESTEL)) {
 		bool top = false;
 		bool bottom = false;
+		unsigned char lattr;
 
 		cs->slow = true;
-		if (vc->bg & 0x20000000 && vc->ch >= 160)
+		if (vc->bg & CIOLIB_BG_SEPARATED && vc->ch >= 160)
 			cs->sep = true;
 		// Start at the first cell...
 		struct vmem_cell *pvc = vmem_cell_ptr(vstat.vmem, 0, 0);
@@ -658,7 +660,7 @@ calc_charstate(struct blockstate *bs, struct vmem_cell *vc, struct charstate *cs
 				pvc = vmem_cell_ptr(vstat.vmem, 0, y);
 				for (int x = 0; x < vstat.cols; x++) {
 					// If there's at least one top, this is a top row
-					if (pvc->bg & 0x01000000) {
+					if (pvc->bg & CIOLIB_BG_DOUBLE_HEIGHT) {
 						top = true;
 						break;
 					}
@@ -673,30 +675,41 @@ calc_charstate(struct blockstate *bs, struct vmem_cell *vc, struct charstate *cs
 
 		// If this is a bottom row...
 		if (bottom) {
+			/*
+			 * TODO: With Commstar, it copies to the next
+			 * row when it's initially written, so if you
+			 * overwrite the double height on the first row,
+			 * the second row retains the double height and
+			 * becomes tops.
+			 *
+			 * This violates the Prestel Terminal Specification,
+			 * so for now I'm doing this the specified way
+			 * rather than emulating the Commstar bug because
+			 * it would be too hard to implement in this
+			 * implementation.  For v2 however, this should
+			 * likely be fixed to have the Commstar bug since
+			 * I expect that will be how the Prestel terminals
+			 * that use the SAA5050 (ie: most of them) do it.
+			 */
+			if (vc->bg & CIOLIB_BG_PRESTEL_TERMINAL) {
+				pvc = vmem_prev_row_ptr(vstat.vmem, vc);
+				cs->bg = pvc->bg;
+				fg = pvc->fg;
+				if (pvc->bg & CIOLIB_BG_SEPARATED && pvc->ch >= 160)
+					cs->sep = true;
+			}
+			else
+				pvc = vc;
 			assert(!top);
-			// Find the cell above this one...
-			pvc = vmem_prev_row_ptr(vstat.vmem, vc);
-			if (pvc->bg & 0x01000000) {
-				// If it's double-height, draw the cell above
+			if (pvc->bg & CIOLIB_BG_DOUBLE_HEIGHT) {
 				cs->double_height = true;
-				cs->extra_rows = -(vstat.charheight);
-				cs->fontoffset = (pvc->ch) * (vstat.charheight * ((bs->font_data_width + 7) / 8));
-				if (pvc->ch >= 160) {
-					if (pvc->bg & 0x20000000)
-						cs->sep = true;
-					else
-						cs->sep = false;
-				}
-				else
-					cs->sep = false;
-				// TODO: Update FS etc.
+				cs->fontoffset = (pvc->ch) * (vstat.charheight * ((bs->font_data_width + 7) / 8)) + ((vstat.charheight * ((bs->font_data_width + 7) / 8)) / 2);
 			}
 			else {
 				// Draw as space if not double-bottom
 				cs->fontoffset=(32) * (vstat.charheight * ((bs->font_data_width + 7) / 8));
 			}
-			fg = pvc->fg;
-			cs->bg = pvc->bg;
+			cs->top_half = false;
 			lattr = pvc->legacy_attr;
 		}
 		// If not a bottom (either a top or no doubles)
@@ -704,7 +717,7 @@ calc_charstate(struct blockstate *bs, struct vmem_cell *vc, struct charstate *cs
 			// And it's a top row...
 			if (top) {
 				// And it's double-height
-				if (vc->bg & 0x01000000) {
+				if (vc->bg & CIOLIB_BG_DOUBLE_HEIGHT) {
 					//assert(top);
 					// Draw it as is where is
 					cs->double_height = true;
@@ -758,22 +771,13 @@ draw_char_row_slow(struct blockstate *bs, struct charstate *cs, uint32_t y)
 {
 	bool fbb;
 	int pixeloffset;
-	int pixeloffset2;
 
+	pixeloffset = bs->pixeloffset;
 	if (cs->double_height) {
-		pixeloffset = bs->pixeloffset + cs->extra_rows * screena.screenwidth;
-		if (pixeloffset >= bs->maxpix)
-			pixeloffset -= bs->maxpix;
-		if (pixeloffset < 0)
-			pixeloffset += bs->maxpix;
-		pixeloffset2 = bs->pixeloffset + (cs->extra_rows + 1) * screena.screenwidth;
-		if (pixeloffset2 < 0)
-			pixeloffset2 += bs->maxpix;
-		if (pixeloffset2 >= bs->maxpix)
-			pixeloffset2 -= bs->maxpix;
+		y /= 2;
+		if (!cs->top_half)
+			y += vstat.charheight / 2;
 	}
-	else
-		pixeloffset = bs->pixeloffset;
 
 	uint8_t fb = cs->font[cs->fontoffset];
 	for(unsigned x = 0; x < vstat.charwidth; x++) {
@@ -823,27 +827,15 @@ draw_char_row_slow(struct blockstate *bs, struct charstate *cs, uint32_t y)
 		}
 		pixeloffset++;
 		assert(pixeloffset < bs->maxpix || x == (vstat.charwidth - 1));
-		if (cs->double_height) {
-			if (screena.rect->data[pixeloffset2] != ac) {
-				screena.rect->data[pixeloffset2] = ac;
-				screena.update_pixels = 1;
-			}
-			if (screenb.rect->data[pixeloffset2] != bc) {
-				screenb.rect->data[pixeloffset2] = bc;
-				screenb.update_pixels = 1;
-			}
-			pixeloffset2++;
-			assert(pixeloffset2 < bs->maxpix || x == (vstat.charwidth - 1));
-		}
 	}
 	if (cs->double_height) {
-		cs->extra_rows++;
-		bs->pixeloffset += vstat.charwidth;
-		assert(bs->pixeloffset <= bs->maxpix);
+		// Go back for next row
+		if (!cs->did_top) {
+			cs->fontoffset -= ((bs->font_data_width + 7) / 8);
+		}
+		cs->did_top = !cs->did_top;
 	}
-	else {
-		bs->pixeloffset = pixeloffset;
-	}
+	bs->pixeloffset = pixeloffset;
 }
 
 static void
@@ -1181,15 +1173,15 @@ same_cell(struct vmem_cell *bitmap_cell, struct vmem_cell *c2)
 	if (bitmap_cell->ch != c2->ch)
 		return false;
 	// Handles reveal/unreveal updates, modifies vmem
-	if (vstat.mode == PRESTEL_40X25 && (c2->bg & 0x02000000)) {
+	if (vstat.mode == PRESTEL_40X25 && (c2->bg & CIOLIB_BG_PRESTEL)) {
 		if (c2->legacy_attr & 0x08) {
 			if (cio_api.options & CONIO_OPT_PRESTEL_REVEAL)
-				c2->bg |= 0x08000000;
+				c2->bg |= CIOLIB_BG_REVEAL;
 			else
-				c2->bg &= ~0x08000000;
+				c2->bg &= ~CIOLIB_BG_REVEAL;
 		}
 	}
-	if (bitmap_cell->bg & 0x10000000)	// Dirty.
+	if (bitmap_cell->bg & CIOLIB_BG_DIRTY)	// Dirty.
 		return false;
 	if (bitmap_cell->bg != c2->bg)
 		return false;
@@ -1785,7 +1777,11 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 		}
 	}
 
-	bitmap_movetext_screen(x, oy, tox, otoy, oscrolldown ? -1 : 1, oheight, width);
+	// Make the whole thing redraw
+	if (vstat.mode == PRESTEL_40X25)
+		memset(bitmap_drawn, 0x04, sizeof(struct vmem_cell) * vstat.cols * vstat.rows);
+	else
+		bitmap_movetext_screen(x, oy, tox, otoy, oscrolldown ? -1 : 1, oheight, width);
 	assert_rwlock_unlock(&vstatlock);
 
 	return(1);
@@ -1946,8 +1942,8 @@ int bitmap_setpixel(uint32_t x, uint32_t y, uint32_t colour)
 		if (!same_cell(&bitmap_drawn[off], &vstat.vmem->vmem[off])) {
 			bitmap_draw_from_vmem(xchar + 1, ychar + 1, xchar + 1, ychar + 1, true);
 		}
-		vstat.vmem->vmem[off].bg |= 0x04000000;
-		bitmap_drawn[off].bg |= 0x04000000;
+		vstat.vmem->vmem[off].bg |= CIOLIB_BG_PIXEL_GRAPHICS;
+		bitmap_drawn[off].bg |= CIOLIB_BG_PIXEL_GRAPHICS;
 	}
 	if (x < screena.screenwidth && y < screena.screenheight) {
 		if (screena.rect->data[pixel_offset(&screena, x, y)] != colour) {
@@ -2035,10 +2031,10 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 								bitmap_draw_from_vmem(charx + 1, chary + 1, charx + 1, chary + 1, true);
 							}
 							if (vstat.vmem && vstat.vmem->vmem) {
-								vstat.vmem->vmem[off].bg |= 0x04000000;
+								vstat.vmem->vmem[off].bg |= CIOLIB_BG_PIXEL_GRAPHICS;
 							}
 							if (bitmap_drawn) {
-								bitmap_drawn[off].bg |= 0x04000000;
+								bitmap_drawn[off].bg |= CIOLIB_BG_PIXEL_GRAPHICS;
 							}
 							xupdated = true;
 						}
@@ -2082,10 +2078,10 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 								bitmap_draw_from_vmem(charx + 1, chary + 1, charx + 1, chary + 1, true);
 							}
 							if (vstat.vmem && vstat.vmem->vmem) {
-								vstat.vmem->vmem[off].bg |= 0x04000000;
+								vstat.vmem->vmem[off].bg |= CIOLIB_BG_PIXEL_GRAPHICS;
 							}
 							if (bitmap_drawn) {
-								bitmap_drawn[off].bg |= 0x04000000;
+								bitmap_drawn[off].bg |= CIOLIB_BG_PIXEL_GRAPHICS;
 							}
 							xupdated = true;
 						}

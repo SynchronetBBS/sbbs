@@ -365,8 +365,10 @@ set_attr(struct cterminal *cterm, unsigned char colour, bool bg)
 	attr2palette(cterm->attr, bg ? NULL : &cterm->fg_color, bg ? &cterm->bg_color : NULL);
 	if (cterm->emulation == CTERM_EMULATION_PRESTEL || cterm->emulation == CTERM_EMULATION_BEEB) {
 		if (cterm->extattr & CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT)
-			cterm->bg_color |= 0x01000000;
-		cterm->bg_color |= 0x02000000;
+			cterm->bg_color |= CIOLIB_BG_DOUBLE_HEIGHT;
+		cterm->bg_color |= CIOLIB_BG_PRESTEL;
+		if (cterm->emulation == CTERM_EMULATION_PRESTEL)
+			cterm->bg_color |= CIOLIB_BG_PRESTEL_TERMINAL;
 	}
 	if (bg)
 		FREE_AND_NULL(cterm->bg_tc_str);
@@ -392,8 +394,10 @@ prestel_new_line(struct cterminal *cterm)
 	cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_CONCEAL | CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT | CTERM_EXTATTR_PRESTEL_HOLD | CTERM_EXTATTR_PRESTEL_MOSAIC | CTERM_EXTATTR_PRESTEL_SEPARATED);
 	cterm->attr = 7;
 	attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
-	cterm->bg_color |= 0x02000000;
-	cterm->bg_color &= ~0x20000000;
+	cterm->bg_color |= CIOLIB_BG_PRESTEL;
+	if (cterm->emulation == CTERM_EMULATION_PRESTEL)
+		cterm->bg_color |= CIOLIB_BG_PRESTEL_TERMINAL;
+	cterm->bg_color &= ~CIOLIB_BG_SEPARATED;
 	cterm->prestel_last_mosaic = 0;
 	textattr(cterm->attr);
 	setcolour(cterm->fg_color, cterm->bg_color);
@@ -407,13 +411,13 @@ prestel_apply_ctrl_before(struct cterminal *cterm, uint8_t ch)
 			cterm->attr &= 0x7f;
 			attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
 			if (cterm->extattr & CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT)
-				cterm->bg_color |= 0x01000000;
+				cterm->bg_color |= CIOLIB_BG_DOUBLE_HEIGHT;
 			break;
 		case 76: // Normal Height
 			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_HOLD);
 			cterm->prestel_last_mosaic = 0;
 			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT);
-			cterm->bg_color &= ~0x01000000;
+			cterm->bg_color &= ~CIOLIB_BG_DOUBLE_HEIGHT;
 			break;
 		case 88: // Conceal Display
 			cterm->attr |= 0x08;
@@ -429,7 +433,7 @@ prestel_apply_ctrl_before(struct cterminal *cterm, uint8_t ch)
 			if (!(cterm->extattr & CTERM_EXTATTR_PRESTEL_HOLD))
 				cterm->prestel_last_mosaic = 0;
 			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_SEPARATED);
-			cterm->bg_color &= ~0x20000000;
+			cterm->bg_color &= ~CIOLIB_BG_SEPARATED;
 			break;
 		case 90: // Separated Mosaics
 			/*
@@ -441,7 +445,7 @@ prestel_apply_ctrl_before(struct cterminal *cterm, uint8_t ch)
 			if (!(cterm->extattr & CTERM_EXTATTR_PRESTEL_HOLD))
 				cterm->prestel_last_mosaic = 0;
 			cterm->extattr |= CTERM_EXTATTR_PRESTEL_SEPARATED;
-			cterm->bg_color |= 0x20000000;
+			cterm->bg_color |= CIOLIB_BG_SEPARATED;
 			break;
 		case 92: // Black Background
 			set_bgattr(cterm, BLACK);
@@ -453,7 +457,9 @@ prestel_apply_ctrl_before(struct cterminal *cterm, uint8_t ch)
 			cterm->extattr |= CTERM_EXTATTR_PRESTEL_HOLD;
 			break;
 	}
-	cterm->bg_color |= 0x02000000;
+	cterm->bg_color |= CIOLIB_BG_PRESTEL;
+	if (cterm->emulation == CTERM_EMULATION_PRESTEL)
+		cterm->bg_color |= CIOLIB_BG_PRESTEL_TERMINAL;
 }
 
 static void
@@ -501,13 +507,13 @@ prestel_apply_ctrl_after(struct cterminal *cterm, uint8_t ch)
 			cterm->attr |= 0x80;
 			attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
 			if (cterm->extattr & CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT)
-				cterm->bg_color |= 0x01000000;
+				cterm->bg_color |= CIOLIB_BG_DOUBLE_HEIGHT;
 			break;
 		case 77: // Double Height
 			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_HOLD);
 			cterm->prestel_last_mosaic = 0;
 			cterm->extattr |= CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT;
-			cterm->bg_color |= 0x01000000;
+			cterm->bg_color |= CIOLIB_BG_DOUBLE_HEIGHT;
 			break;
 		case 81: // Mosaic Red
 			prestel_colour(cterm, false, RED);
@@ -535,7 +541,9 @@ prestel_apply_ctrl_after(struct cterminal *cterm, uint8_t ch)
 			cterm->extattr &= ~(CTERM_EXTATTR_PRESTEL_HOLD);
 			break;
 	}
-	cterm->bg_color |= 0x02000000;
+	cterm->bg_color |= CIOLIB_BG_PRESTEL;
+	if (cterm->emulation == CTERM_EMULATION_PRESTEL)
+		cterm->bg_color |= CIOLIB_BG_PRESTEL_TERMINAL;
 }
 
 static void
@@ -564,8 +572,8 @@ prestel_get_state(struct cterminal *cterm)
 		vmem_gettext(cterm->x, sy, cterm->x + tx - 2, sy, line);
 		for (int i = 0; i < (tx - 1); i++) {
 			uint8_t ch = line[i].ch;
-			if (line[i].fg & 0x7F000000) {
-				ch = (line[i].fg & 0x7F000000) >> 24;
+			if (line[i].fg & CIOLIB_FG_PRESTEL_CTRL_MASK) {
+				ch = (line[i].fg & CIOLIB_FG_PRESTEL_CTRL_MASK) >> CIOLIB_FG_PRESTEL_CTRL_SHIFT;
 				prestel_apply_ctrl(cterm, ch);
 			}
 			else {
@@ -4833,9 +4841,12 @@ static void prestel_fix_line(struct cterminal *cterm, int x, int y, bool restore
 	vmem_gettext(sx, sy, ex, sy, line);
 	prestel_new_line(cterm);
 	for (int i = 0; i < TERM_MAXX; i++) {
+		// Don't fixup non-Prestel cells
+		if ((line[i].bg & CIOLIB_BG_PRESTEL) == 0)
+			continue;
 		uint8_t ch;
 		// Go through the line applying attributes, held mosaics, etc.
-		if (line[i].fg & 0x7F000000) {
+		if (line[i].fg & CIOLIB_FG_PRESTEL_CTRL_MASK) {
 			// This is a control character
 			if (i == (x - 1)) {
 				extattr = cterm->extattr;
@@ -4844,17 +4855,17 @@ static void prestel_fix_line(struct cterminal *cterm, int x, int y, bool restore
 				attr = cterm->attr;
 				prestel_last_mosaic = cterm->prestel_last_mosaic;
 			}
-			ch = (line[i].fg & 0x7F000000) >> 24;
+			ch = (line[i].fg & CIOLIB_FG_PRESTEL_CTRL_MASK) >> CIOLIB_FG_PRESTEL_CTRL_SHIFT;
 			prestel_apply_ctrl_before(cterm, ch);
-			if ((cterm->extattr & CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT) && ((line[i].bg & 0x01000000) == 0)) {
+			if ((cterm->extattr & CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT) && ((line[i].bg & CIOLIB_BG_DOUBLE_HEIGHT) == 0)) {
 				// Should be double-high
-				line[i].bg |= 0x01000000;
+				line[i].bg |= CIOLIB_BG_DOUBLE_HEIGHT;
 				fixed = true;
 				dblheight = true;
 			}
-			if (((cterm->extattr & CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT) == 0) && (line[i].bg & 0x01000000)) {
+			if (((cterm->extattr & CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT) == 0) && (line[i].bg & CIOLIB_BG_DOUBLE_HEIGHT)) {
 				// Should not be double-high
-				line[i].bg &= ~0x01000000;
+				line[i].bg &= ~CIOLIB_BG_DOUBLE_HEIGHT;
 				fixed = true;
 				dblheight = true;
 			}
@@ -4872,9 +4883,9 @@ static void prestel_fix_line(struct cterminal *cterm, int x, int y, bool restore
 				if (cterm->prestel_last_mosaic != 0) {
 					line[i].ch = cterm->prestel_last_mosaic | 0x80;
 					if (cterm->prestel_last_mosaic & 0x80)
-						line[i].bg &= ~0x20000000;
+						line[i].bg &= ~CIOLIB_BG_SEPARATED;
 					else
-						line[i].bg |= 0x20000000;
+						line[i].bg |= CIOLIB_BG_SEPARATED;
 					fixed = true;
 				}
 				else {
@@ -4890,11 +4901,11 @@ static void prestel_fix_line(struct cterminal *cterm, int x, int y, bool restore
 			}
 			if (line[i].ch >= 160 && (cterm->extattr & CTERM_EXTATTR_PRESTEL_HOLD)) {
 				// Should separated attribute is incorrect for held mosaic
-				if ((!!(cterm->prestel_last_mosaic & 0x80)) == (!!(line[i].bg & 0x20000000))) {
+				if ((!!(cterm->prestel_last_mosaic & 0x80)) == (!!(line[i].bg & CIOLIB_BG_SEPARATED))) {
 					if (cterm->prestel_last_mosaic & 0x80)
-						line[i].bg &= ~0x20000000;
+						line[i].bg &= ~CIOLIB_BG_SEPARATED;
 					else
-						line[i].bg |= 0x20000000;
+						line[i].bg |= CIOLIB_BG_SEPARATED;
 				}
 			}
 			prestel_apply_ctrl_after(cterm, ch);
@@ -4910,15 +4921,15 @@ static void prestel_fix_line(struct cterminal *cterm, int x, int y, bool restore
 				attr = cterm->attr;
 				prestel_last_mosaic = cterm->prestel_last_mosaic;
 			}
-			if ((cterm->extattr & CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT) && ((line[i].bg & 0x01000000) == 0)) {
+			if ((cterm->extattr & CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT) && ((line[i].bg & CIOLIB_BG_DOUBLE_HEIGHT) == 0)) {
 				// Should be double-high
-				line[i].bg |= 0x01000000;
+				line[i].bg |= CIOLIB_BG_DOUBLE_HEIGHT;
 				fixed = true;
 				dblheight = true;
 			}
-			if (((cterm->extattr & CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT) == 0) && (line[i].bg & 0x01000000)) {
+			if (((cterm->extattr & CTERM_EXTATTR_PRESTEL_DOUBLE_HEIGHT) == 0) && (line[i].bg & CIOLIB_BG_DOUBLE_HEIGHT)) {
 				// Should not be double-high
-				line[i].bg &= ~0x01000000;
+				line[i].bg &= ~CIOLIB_BG_DOUBLE_HEIGHT;
 				fixed = true;
 				dblheight = true;
 			}
@@ -4942,9 +4953,9 @@ static void prestel_fix_line(struct cterminal *cterm, int x, int y, bool restore
 				// Alphanum but should be mosaic
 				line[i].ch |= 0x80;
 				if (cterm->extattr & CTERM_EXTATTR_PRESTEL_SEPARATED)
-					line[i].bg |= 0x20000000;
+					line[i].bg |= CIOLIB_BG_SEPARATED;
 				else
-					line[i].bg &= ~0x20000000;
+					line[i].bg &= ~CIOLIB_BG_SEPARATED;
 				fixed = true;
 			}
 			else if ((cterm->extattr & CTERM_EXTATTR_PRESTEL_MOSAIC)
@@ -4953,14 +4964,14 @@ static void prestel_fix_line(struct cterminal *cterm, int x, int y, bool restore
 				line[i].ch &= 0x7f;
 				fixed = true;
 			}
-			else if((line[i].bg & 0x20000000) && ((cterm->extattr & CTERM_EXTATTR_PRESTEL_SEPARATED) == 0)) {
+			else if((line[i].bg & CIOLIB_BG_SEPARATED) && ((cterm->extattr & CTERM_EXTATTR_PRESTEL_SEPARATED) == 0)) {
 				// Should not be separated...
-				line[i].bg &= ~0x20000000;
+				line[i].bg &= ~CIOLIB_BG_SEPARATED;
 				fixed = true;
 			}
-			else if(((line[i].bg & 0x20000000) == 0) && (cterm->extattr & CTERM_EXTATTR_PRESTEL_SEPARATED)) {
+			else if(((line[i].bg & CIOLIB_BG_SEPARATED) == 0) && (cterm->extattr & CTERM_EXTATTR_PRESTEL_SEPARATED)) {
 				// Should be separated...
-				line[i].bg |= 0x20000000;
+				line[i].bg |= CIOLIB_BG_SEPARATED;
 				fixed = true;
 			}
 			if (line[i].ch >= 160) {
@@ -5360,9 +5371,9 @@ prestel_handle_escaped(struct cterminal *cterm, uint8_t ctrl)
 	if ((cterm->extattr & CTERM_EXTATTR_PRESTEL_HOLD) && (cterm->prestel_last_mosaic != 0)) {
 		tmpvc[0].ch = cterm->prestel_last_mosaic;
 		if (tmpvc[0].ch & 0x80)
-			tmpvc[0].bg &= ~0x20000000;
+			tmpvc[0].bg &= ~CIOLIB_BG_SEPARATED;
 		else
-			tmpvc[0].bg |= 0x20000000;
+			tmpvc[0].bg |= CIOLIB_BG_SEPARATED;
 		tmpvc[0].ch |= 0x80;
 	}
 	else {

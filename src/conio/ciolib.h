@@ -283,9 +283,18 @@ struct vmem_cell {
 	uint8_t legacy_attr;
 	uint8_t ch;
 	uint8_t font;
+	/*
+	 * At least one byte in these colours must have 0x04 as an invalid value.
+	 * Since Graphics cannot be present in Prestel, the high byte of bg
+	 * cannot be 0x04 in Prestel mode.
+	 * In other modes, the high byte of fg cannot be 0x04.
+	 */
+#define CIOLIB_FG_PRESTEL_CTRL_MASK 0x7F000000
+#define CIOLIB_FG_PRESTEL_CTRL_SHIFT 24
 	uint32_t fg;	/* RGB 80RRGGBB High bit clear indicates palette colour
 	                 * Bits 24..30 are the prestel control character.
 			 */
+#define CIOLIB_COLOR_RGB 0x80000000
 	uint32_t bg;	/* RGB 80RRGGBB High bit clear indicates palette colour
 			 * bit 24 indicates double-height
 			 * bit 25 indicates Prestel
@@ -293,7 +302,15 @@ struct vmem_cell {
 			 * bit 27 indicates reveal is/was enabled
 			 * bit 28 indicates it is dirty and must be redrawn
 			 * bit 29 indicates prestel separated
+			 * but 30 indicates Prestel Terminal mode
 			 */
+#define CIOLIB_BG_DOUBLE_HEIGHT 0x01000000
+#define CIOLIB_BG_PRESTEL 0x02000000
+#define CIOLIB_BG_PIXEL_GRAPHICS 0x04000000
+#define CIOLIB_BG_REVEAL 0x08000000
+#define CIOLIB_BG_DIRTY 0x10000000
+#define CIOLIB_BG_SEPARATED 0x20000000
+#define CIOLIB_BG_PRESTEL_TERMINAL 0x40000000
 };
 
 struct ciolib_screen {
