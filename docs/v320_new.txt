@@ -1,5 +1,191 @@
 *****************************************
 * What's New in Synchronet Version 3.20 *
+*****************************************
+
+*****************************************
+* (ChangeLog since v3.20b Jan 4, 2025)  *
+*****************************************
+
+General
+~~~~~~~
+o Target Windows Vista+ (not Windows XP) and enable enhanced instruction sets
+  Synchronet v3.20 doesn't actually work on Windows XP due to depenendies in
+  3rd party libraries we link with and more recent ciolib improvements.
+o User aliases can be used as parameters to the "USER" ARS keyword
+  Caveat: the name parameter cannot contain a space, so excludes spaces or
+  replace them with '.' or '_': the user's alias will match.
+o Extend maximum file library parent directory from 47 to 100 chars.
+o Add optional configurable 'vpath' (per-directory) for directories that have
+  web/ftp aliases, so they preferred/short path (alias) will be used in the
+  expanded @-codes.
+o Support "virtual shortcuts" to directory configured in SCFG->File Areas
+  As an alternative to directory aliases configured in ftpalias.cfg and/or
+  web_alias.ini, a sysop can specify a shortcut (virtual directory name) per
+  directory in SCFG->File Areas. These shortcuts will appears as top/root level
+  directories in the FTP and Web servers for quick user access to important
+  directories.
+  The advantages (over ftpalias.cfg / web_alias.ini) are:
+  - one place to configure
+  - FILE_FTP_PATH and FILE_WEB_PATH @-codes will use the shortcut
+    (usually a shorter, preferred virtual path to the directory)
+o Add "native" toggle option to Viewable/Extractable/Testable/Compressible
+  files and download events
+o Fix the auto-keyword detection based on parameter type for USER, DIR, and SUB
+  If you switched between numeric and alpha/string parameters, without
+  restating the ARS keyword, the keyword would could end up wrong in the
+  parsed byte array
+o Make the fully-supported (lib)archive file types/formats configurable
+o Track deletion date of users
+  - del_days setting now uses this date if non-zero
+o Add an optional weekly fixed system event
+o Add LANG ARS keyword e.g. "LANG=ES" or "LANG ES"
+
+Terminal Server
+~~~~~~~~~~~~~~~
+o Support ctrl/<charset>/text.ini file
+o Fix parsing of field-separated birthdate strings with 4-digit year
+... which is the format expected/required when entering or editing birthdates
+in the terminal server. So this is a pretty embarassingly bad bug introduced
+just before the v3.20b release to fix a less-severe bug with ecWeb new user
+registration (still) writing 2-digit years to the user.birthdate field. :-(
+o Add user NetMail address edit option ('N' command) to UEDIT
+o During logon, actually use the (first) shell we found that the user meets the
+  requirements
+o Correctly center lines of text that contain @-codes, after @CENTER@
+o Fix ERROR 2 (...) in putnode.cpp ... opening "node.exb"
+o Fix random menu/display file selection when some files can't be displayed
+
+Fix for issue #863
+o Fix:
+  Forced permanent removal of deleted messages (e.g. when creating a new user
+  that's reusing an existing user number), didn't work unless SCFG->Message
+  Options->Purge Delete E-mail was set to "Immediately" (not the default).
+o Allow @-codes in Read*Mail text.dat strings/prompts
+o Notification email messages contained wrong-formatted Message-ID
+  e.g. Message-ID: <677B3F17.0.notices@vert.synchro.net>
+o If the menu file download.* exists, display it before any download-protocol
+  selection menu. This allows the sysop to display additional download-file
+  specific instructions (e.g. http URL).
+o New @-codes: FILE_FTP_PATH and FILE_WEB_PATH (don't include scheme and host)
+  These @-codes can be used to construct ftp[s] and http[s] URLs to display to
+  users. For use in new/optional display file text/menu/download.*
+o Include CPS rate used to calcaulte file transfer time in FiTransferTime
+  string from text.dat.
+o FILE_ @-code changes/additions
+o Renamed text.dat strings (to better support translation/localization):
+- Deleted -> DeletedUser
+- Inactive -> InactiveUser
+
+New text.dat strings:
+- Deleting
+- DoneDeleting
+- Deleted
+- DeletedNumberItems
+- E_Mail
+- E_Mails
+- TelnetGatewayPrompt
+- QWKEndOfMessage
+- QWKTagLineFmt
+- QWKControlCommand
+- QWKBadControlCommand
+o new text.dat string: Never
+o "NoDOS" text.dat string
+  Displayed instead of hard-coded string in xtrn.cpp when attempting to run
+  16-bit DOS program on system with no DOS/DOSemu support.
+o Add parameter to DeletedUser string (deletion or last activity date)
+o new/optional display file: text/menu/fileinfo.*
+
+New:
+- FILE_COST, file's credit value or "FREE" when applicable
+  (see also FILE_CREDITS - the file's credit value or 0 when free download)
+- FILE_AUTHOR - file's author (e.g. from SAUCE record) or blank if N/A
+- FILE_GROUP - file's author group (e.g. from SAUCE record) or blank if N/A
+- FILE_BYTES - file's size in bytes (previously, would use FILE_SIZE for this)
+- FILE_CRC32 - 8 hex digits or blank if N/A
+- FILE_MD5 - 32 hex digits or blank if N/A
+- FILE_SHA1 - 40 hex digits or blank if N/A
+- FILE_TIME_TO_DL - estimated time ("HH:MM:SS") to download file at current CPS
+
+Changed:
+FILE_SIZE is now the file size estimated in KB, MB, GB, etc., not the exact
+file size in bytes.
+
+o Add K_LINEWRAP getstr() mode flag, rename K_WRAP to K_WORDWRAP
+o Don't attempt to remove inbound QWK packet if doesn't exist (renamed?)
+
+Address error report by Greg Meckel (THEICECA)
+evnt QNET !ERROR 2 (No such file or directory) (EinError 2) in main.cpp line
+3195 (event_thread) removing "C:\sbbs\data\VERT.qwk" access=0
+
+... this could happen after a bad QWK packet was detected and renamed.
+
+
+SCFG
+~~~~
+o Store the configured values in the SMB status header of file bases when
+  changed (in SCFG). This is a fix for issue #861
+o Better duplicate "key value" detection/rejection for configuration settings
+
+JSexec
+~~~~~~
+o Increase formatted log/console output buffers from 1K to 8K
+o Check/read the passed module path/name section in jsexec.ini first
+
+JavaScript
+~~~~~~~~~~
+o A lot more exception throwing in global, system, and bbs methods
+o Fix TLS short Socket.send issue.
+o New JS file_area.dir[].vshortcut property
+o Add Archive.supported_formats (array of strings)
+o New system properties:
+- date_format
+- date_separator
+- date_verbal
+- birthdate_format
+- birthdate_template
+o User.security.deletion_date property
+o Return null from resolve_ip('') and resolve_host('') even on Windows
+o console.getkey_inactivity_warning property
+o Fix bbs.revert_text()
+  when called with no args is supposed to revert all text strings
+o bbs.load_text() can now be used to load text*.ini file
+o File.iniGetSections() now supports !include directive in .ini files
+
+Mail Server
+~~~~~~~~~~~
+o Abort POP3 LIST/UIDL loops upon socket-send failure
+o Add new "PostTo" setting to (optionally) change the recipient of SMTP-posts
+  Messages posted to sub-boards via SMTP normally will have the recipient
+  name/address as the "To" (RECIPIENT) value of the posted message. If the
+  sysop wishes to replace this string (for all SMTP-posted messages) with a
+  different string (e.g. "All") this is the setting to allow that.
+o Fix bug that broken mail received header RBL check
+o Add new I-restriction, to disallow receipt of Internet mail to specific users
+  (mail received from authenticated SMTP clients is still allowed)
+  Previously, the M-restriction also prevent receipt of Internet mail from
+  authenticated SMTP clients, so separate that restriction into the new 'I'
+  restriction.
+  This fixes issue #865
+
+FTP Server
+~~~~~~~~~~
+o Fix issue #748
+
+Web Server
+~~~~~~~~~~
+o webfileindex.ssjs
+  - now supports viewing archive and image files
+  - display file SHA1 and date/time in hover text
+  - cosmetic improvements using Unicode characters as icons
+    (file cabinets, folders)
+
+Services
+~~~~~~~~
+o Add per-service option: NO_USER_PROT
+  If enabled, this option prevents logins to this service from changing the
+  protocol (aka modem) field for a user logging-in.
+
+*****************************************
 * (ChangeLog since v3.19b Jan 2, 2022)  *
 *****************************************
 
