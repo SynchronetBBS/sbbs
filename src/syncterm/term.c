@@ -5014,7 +5014,9 @@ doterm(struct bbslist *bbs)
 						conn_send(ch, 1, 0);
 						break;
 
-					case CIO_KEY_NPAGE: {
+					case CIO_KEY_F(3):
+					case CIO_KEY_NPAGE:
+					{
 						cio_api.options ^= CONIO_OPT_PRESTEL_REVEAL;
 						struct ciolib_screen *savscrn = savescreen();
 						ciolib_vmem_puttext(1, 1, savscrn->text_info.screenwidth, savscrn->text_info.screenheight, savscrn->vmem);
