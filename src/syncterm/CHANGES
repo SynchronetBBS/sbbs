@@ -2,6 +2,7 @@ Version 1.7b
 ------------
 Fix APB and APU from top in BBC Micro Mode 7
 Fix blast-through in Mode 7 high ASCII mosaics
+Update Prestel/Mode 7 keybindings
 
 Version 1.6
 ------------
