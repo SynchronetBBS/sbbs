@@ -44,6 +44,13 @@ public:
 	virtual void cursor_left();
 	virtual void set_output_rate();
 	// TODO: backfill?
+	// Was term_rows
+	virtual char* rows(user_t *user, char *str, size_t *size);
+	// Was term_cols
+	virtual char* cols(user_t *user, char *str, size_t *size);
+	// Not a complete replacement for term_type
+	virtual char* type(char* str, size_t size);
+	virtual const char* type();
 	virtual int set_mouse(int mode);
 	virtual void parse_outchar(char ch);
 	// Needs to handle C0 and C1
