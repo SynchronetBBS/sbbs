@@ -5586,6 +5586,8 @@ NO_SSH:
 				close_socket(client_socket);
 				continue;
 			}
+			// TODO: After this point there needs to be a Terminal object
+			// TODO: Plain text output in SSH socket
 			struct trash trash;
 			if (sbbs->trashcan(host_ip, "ip", &trash)) {
 				char details[128];

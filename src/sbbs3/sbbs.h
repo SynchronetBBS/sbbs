@@ -402,13 +402,7 @@ typedef struct js_callback {
 #include <string>
 #include <unordered_map>
 
-struct mouse_hotspot {		// Mouse hot-spot
-	char	cmd[128];
-	int	y;
-	int	minx;
-	int	maxx;
-	bool	hungry;
-};
+class Terminal;
 
 enum sftp_dir_tree {
 	SFTP_DTREE_FULL,
@@ -632,6 +626,7 @@ public:
 	uint	rainbow[LEN_RAINBOW + 1]{};
 	bool	rainbow_repeat = false;
 	int		rainbow_index = -1;
+	// TODO: row/rows/cols/column/tabstop/lastlinelen to ANSI_Terminal
 	int 	lncntr = 0; 	/* Line Counter - for PAUSE */
 	bool	msghdr_tos = false;	/* Message header was displayed at Top of Screen */
 	// TODO: row/rows/cols/column/tabstop/lastlinelen to ANSI_Terminal
@@ -1069,17 +1064,6 @@ public:
 	int		mouse_mode = MOUSE_MODE_OFF;	// Mouse reporting mode flags
 	uint	hot_attr = 0;		// Auto-Mouse hot-spot attribute (when non-zero)
 	bool	hungry_hotspots = true;
-	// TODO: All of this hotspot stuff to ANSI_Terminal
-	link_list_t mouse_hotspots{};	// Mouse hot-spots
-	struct mouse_hotspot* pause_hotspot = nullptr;
-	struct mouse_hotspot* add_hotspot(struct mouse_hotspot*);
-	struct mouse_hotspot* add_hotspot(char cmd, bool hungry = true, int minx = -1, int maxx = -1, int y = -1);
-	struct mouse_hotspot* add_hotspot(int num, bool hungry = true, int minx = -1, int maxx = -1, int y = -1);
-	struct mouse_hotspot* add_hotspot(uint num, bool hungry = true, int minx = -1, int maxx = -1, int y = -1);
-	struct mouse_hotspot* add_hotspot(const char* cmd, bool hungry = true, int minx = -1, int maxx = -1, int y = -1);
-	void	clear_hotspots(void);
-	void	scroll_hotspots(int count);
-	void	set_mouse(int mode);
 
 	// Thread-safe std/socket errno description getters
 	char	strerror_buf[256]{};
