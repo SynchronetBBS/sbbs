@@ -1,7 +1,25 @@
 #include "ansi_terminal.h"
 
+enum ansiState {
+	 ansiState_none         // No sequence
+	,ansiState_esc          // Escape
+	,ansiState_csi          // CSI
+	,ansiState_final        // Final byte
+	,ansiState_string       // APS, DCS, PM, or OSC
+	,ansiState_sos          // SOS
+	,ansiState_sos_esc      // ESC inside SOS
+} outchar_esc = ansiState_none; // track ANSI escape seq output
+
+enum ansi_mouse_mode {
+	ANSI_MOUSE_X10  = 9,
+	ANSI_MOUSE_NORM = 1000,
+	ANSI_MOUSE_BTN  = 1002,
+	ANSI_MOUSE_ANY  = 1003,
+	ANSI_MOUSE_EXT  = 1006
+};
+
 // Was ansi()
-const char *ANSI_Terminal::attrstr(int atr)
+const char *ANSI_Terminal::attrstr(unsigned atr)
 {
 	switch (atr) {
 
@@ -55,7 +73,7 @@ const char *ANSI_Terminal::attrstr(int atr)
 }
 
 // Was ansi() and ansi_attr()
-char* ANSI_Terminal::attrstr(int atr, int curatr, char* str, size_t strsz)
+char* ANSI_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t strsz)
 {
 	bool color = supports & COLOR;
 	size_t lastret;
@@ -343,14 +361,14 @@ void ANSI_Terminal::cursor_right(unsigned count)
 	sbbs.column += count;
 }
 
-void ANSI_Terminal::cursor_left(unsigned count);
-void ANSI_Terminal::set_output_rate();
+void ANSI_Terminal::cursor_left(unsigned count) {}
+void ANSI_Terminal::set_output_rate() {}
 // TODO: backfill?
 // Not a complete replacement for term_type
-char* ANSI_Terminal::type(char* str, size_t size);
-const char* ANSI_Terminal::type();
-int ANSI_Terminal::set_mouse(int mode);
-void ANSI_Terminal::parse_outchar(char ch);
+char* ANSI_Terminal::type(char* str, size_t size) {return nullptr;}
+const char* ANSI_Terminal::type() {return "ANSI";}
+void ANSI_Terminal::set_mouse(int mode) {}
+bool ANSI_Terminal::parse_outchar(char ch) {return true;}
 // Needs to handle C0 and C1
-bool ANSI_Terminal::parse_ctrlkey(char ch, int mode);
-struct mouse_hotspot* ANSI_Terminal::add_hotspot(struct mouse_hotspot* spot);
+bool ANSI_Terminal::parse_ctrlkey(char& ch, int mode) {return true;}
+struct mouse_hotspot* ANSI_Terminal::add_hotspot(struct mouse_hotspot* spot) {return nullptr;}

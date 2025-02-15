@@ -20,7 +20,7 @@ public:
 	unsigned cols{0};
 	unsigned tabstop{8};
 	unsigned lastlinelen{0};
-	unsigned cterm_version{0};
+	unsigned cterm_version{0};	/* (MajorVer*1000) + MinorVer */
 	unsigned lncntr{0};
 
 protected:
@@ -91,6 +91,27 @@ public:
 		inc_row(count);
 	}
 
+	/*
+	 * Destructive backspace.
+	 * TODO: This seems to be the only one of this family that
+	 *       checks CON_ECHO_OFF itself.  Figure out why and either
+	 *       remove it, or add it to all the rest that call outcom()
+	 */
+	virtual void backspace(unsigned int count = 1) {
+		if (sbbs.console & CON_ECHO_OFF)
+			return;
+		for (unsigned i = 0; i < count; i++) {
+			if (column > 0) {
+				sbbs.outcom('\b');
+				sbbs.outcom(' ');
+				sbbs.outcom('\b');
+				column--;
+			}
+			else
+				break;
+		}
+	}
+
 	virtual void newline(unsigned count = 1) {
 		// TODO: Original version did not increment row or lncntr
 		//       It recursed through outchar()
@@ -128,6 +149,44 @@ public:
 		}
 	}
 	virtual void set_output_rate() {}
+	virtual void center(const char *instr, bool msg, unsigned columns) {
+		char *str = strdup(str);
+		truncsp(str);
+		len = bstrlen(str);
+		
+	}
+
+	/****************************************************************************/
+	/* Returns the printed columns from 'str' accounting for Ctrl-A codes       */
+	/****************************************************************************/
+	virtual size_t bstrlen(const char *str, int mode)
+	{
+		str = auto_utf8(str, mode);
+		size_t      count = 0;
+		const char* end = str + strlen(str);
+		while (str < end) {
+			int len = 1;
+			if (*str == CTRL_A) {
+				str++;
+				if (*str == 0 || *str == 'Z')    // EOF
+					break;
+				if (*str == '[') // CR
+					count = 0;
+				else if (*str == '<' && count) // ND-Backspace
+					count--;
+			} else if (((*str) & 0x80) && (mode & P_UTF8)) {
+				enum unicode_codepoint codepoint = UNICODE_UNDEFINED;
+				len = utf8_getc(str, end - str, &codepoint);
+				if (len < 1)
+					break;
+				count += unicode_width(codepoint, unicode_zerowidth);
+			} else
+				count++;
+			str += len;
+		}
+		return count;
+	}
+
 
 	// TODO: backfill?
 	virtual const char* type() {

@@ -8,12 +8,12 @@ public:
 	ANSI_Terminal() = delete;
 
 	// Was ansi()
-	const char *attrstr(int atr);
+	const char *attrstr(unsigned atr);
 	// Was ansi() and ansi_attr()
-	char* attrstr(int atr, int curatr, char* str, size_t strsz);
+	char* attrstr(unsigned atr, unsigned curatr, char* str, size_t strsz);
 	bool getdims();
-	bool getxy(int* x, int* y);
-	bool gotoxy(int x, int y);
+	bool getxy(unsigned* x, unsigned* y);
+	bool gotoxy(unsigned x, unsigned y);
 	// Was ansi_save
 	bool save_cursor_pos();
 	// Was ansi_restore
@@ -35,10 +35,10 @@ public:
 	// Not a complete replacement for term_type
 	char* type(char* str, size_t size);
 	const char* type();
-	int set_mouse(int mode);
-	void parse_outchar(char ch);
+	void set_mouse(int mode);
+	bool parse_outchar(char ch);
 	// Needs to handle C0 and C1
-	bool parse_ctrlkey(char ch, int mode);
+	bool parse_ctrlkey(char& ch, int mode);
 	struct mouse_hotspot* add_hotspot(struct mouse_hotspot* spot);
 };
 

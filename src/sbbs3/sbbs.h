@@ -479,17 +479,6 @@ public:
 	scfg_t	cfg{};
 	struct mqtt* mqtt = nullptr;
 
-	// TODO: ANSI_Terminal private
-	enum ansiState {
-		 ansiState_none		// No sequence
-		,ansiState_esc		// Escape
-		,ansiState_csi		// CSI
-		,ansiState_final	// Final byte
-		,ansiState_string	// APS, DCS, PM, or OSC
-		,ansiState_sos		// SOS
-		,ansiState_sos_esc	// ESC inside SOS
-	} outchar_esc = ansiState_none;	// track ANSI escape seq output
-
 	int 	rioctl(ushort action); // remote i/o control
 	bool	rio_abortable = false;
 
@@ -626,21 +615,10 @@ public:
 	uint	rainbow[LEN_RAINBOW + 1]{};
 	bool	rainbow_repeat = false;
 	int		rainbow_index = -1;
-	// TODO: row/rows/cols/column/tabstop/lastlinelen to ANSI_Terminal
-	int 	lncntr = 0; 	/* Line Counter - for PAUSE */
 	bool	msghdr_tos = false;	/* Message header was displayed at Top of Screen */
-	// TODO: row/rows/cols/column/tabstop/lastlinelen to ANSI_Terminal
-	int		row=0;			/* Current row */
-	int 	rows=0;			/* Current number of Rows for User */
-	int		cols=0;			/* Current number of Columns for User */
-	int		column = 0;		/* Current column counter (for line counter) */
-	int		tabstop = 8;	/* Current symmetric-tabstop (size) */
-	int		lastlinelen = 0;	/* The previously displayed line length */
 	int 	autoterm=0;		/* Auto-detected terminal type */
 	size_t	unicode_zerowidth=0;
 	char	terminal[TELNET_TERM_MAXLEN+1]{};	// <- answer() writes to this
-	// TODO: Move to ANSI_Terminal
-	int		cterm_version=0;/* (MajorVer*1000) + MinorVer */
 	link_list_t savedlines{};
 	// TODO: Line buffer to terminal?
 	char 	lbuf[LINE_BUFSIZE+1]{};/* Temp storage for each line output */
@@ -721,24 +699,6 @@ public:
 	uint	sysvar_pi = 0;
 	long	sysvar_l[MAX_SYSVARS]{};
 	uint	sysvar_li = 0;
-
-	// TODO: All of this to ANSI_Terminal
-    /* ansi_term.cpp */
-	const char*	ansi(int atr);			/* Returns ansi escape sequence for atr */
-	char*	ansi(int atr, int curatr, char* str);
-    bool	ansi_gotoxy(int x, int y);
-	bool	ansi_getxy(int* x, int* y);
-	bool	ansi_save(void);
-	bool	ansi_restore(void);
-	bool	ansi_getdims(void);
-	enum ansi_mouse_mode {
-		ANSI_MOUSE_X10	= 9,
-		ANSI_MOUSE_NORM	= 1000,
-		ANSI_MOUSE_BTN	= 1002,
-		ANSI_MOUSE_ANY	= 1003,
-		ANSI_MOUSE_EXT	= 1006
-	};
-	int		ansi_mouse(enum ansi_mouse_mode, bool enable);
 
 			/* Command Shell Methods */
 	int		exec(csi_t *csi);
@@ -918,6 +878,7 @@ public:
 	int		bulkmailhdr(smb_t*, smbmsg_t*, uint usernum);
 
 	/* con_out.cpp */
+	// TODO: To ANSI_Terminal
 	size_t	bstrlen(const char *str, int mode = 0);
 	int		bputs(const char *str, int mode = 0);	/* BBS puts function */
 	int		bputs(int mode, const char* str) { return bputs(str, mode); }
@@ -943,15 +904,9 @@ public:
     __attribute__ ((format (printf, 2, 3)));		// 1 is 'this'
 #endif
 	;
-	// TODO: To ANSI_Terminal
-	void	backspace(int count=1);			/* Output destructive backspace(s) via outchar */
 	int		outchar(char ch);				/* Output a char - check echo and emu.  */
 	int		outchar(enum unicode_codepoint, char cp437_fallback);
 	int		outchar(enum unicode_codepoint, const char* cp437_fallback = NULL);
-	// TODO: To ANSI_Terminal
-	void	inc_row(int count);
-	// TODO: To ANSI_Terminal
-	void	inc_column(int count);
 	// TODO: To ANSI_Terminal
 	void	center(const char *str, bool msg = false, unsigned int columns = 0);
 	void	wide(const char*);
