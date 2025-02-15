@@ -2,6 +2,8 @@
 #define TERMINAL_H
 
 #include "sbbs.h"
+#include "utf8.h"
+#include "unicode.h"
 
 struct mouse_hotspot {          // Mouse hot-spot
 	char     cmd[128];
@@ -11,39 +13,72 @@ struct mouse_hotspot {          // Mouse hot-spot
 	bool     hungry;
 };
 
+struct savedline {
+	char buf[LINE_BUFSIZE + 1];     /* Line buffer (i.e. ANSI-encoded) */
+	uint beg_attr;                  /* Starting attribute of each line */
+	uint end_attr;                  /* Ending attribute of each line */
+	int column;                     /* Current column number */
+};
+
 class Terminal {
 public:
-	uint32_t supports{0};
-	unsigned row{0};
-	unsigned column{0};
-	unsigned rows{0};
-	unsigned cols{0};
-	unsigned tabstop{8};
-	unsigned lastlinelen{0};
-	unsigned cterm_version{0};	/* (MajorVer*1000) + MinorVer */
-	unsigned lncntr{0};
+	uint32_t flags{0};                 /* user.misc flags that impact the terminal */
+	unsigned row{0};                   /* Current row */
+	unsigned column{0};                /* Current column counter (for line counter) */
+	unsigned rows{0};                  /* Current number of Rows for User */
+	unsigned cols{0};                  /* Current number of Columns for User */
+	unsigned tabstop{8};               /* Current symmetric-tabstop (size) */
+	unsigned lastlinelen{0};           /* The previously displayed line length */
+	unsigned cterm_version{0};	   /* (MajorVer*1000) + MinorVer */
+	unsigned lncntr{0};                /* Line Counter - for PAUSE */
+	unsigned latr{LIGHTGRAY};          /* Starting attribute of line buffer */
+	unsigned curatr{LIGHTGRAY};        /* Current Text Attributes Always */
+	unsigned lbuflen{0};               /* Number of characters in line buffer */
+	char     lbuf[LINE_BUFSIZE + 1]{}; /* Temp storage for each line output */
 
 protected:
 	sbbs_t& sbbs;
 
 private:
 	link_list_t *mouse_hotspots{nullptr};
+	link_list_t *savedlines{nullptr};
+
+	static uint32_t get_flags(sbbs_t &sbbs_ref) {
+		uint32_t flags;
+
+		if ((sbbs_ref.sys_status & (SS_USERON | SS_NEWUSER)) && (sbbs_ref.useron.misc & AUTOTERM)) {
+			flags = sbbs_ref.autoterm;
+			flags |= sbbs_ref.useron.misc & (NO_EXASCII | SWAP_DELETE | COLOR | ICE_COLOR | MOUSE);
+		}
+		else {
+			flags = sbbs_ref.useron.misc;
+		}
+		flags &= TERM_FLAGS;
+		return flags;
+	}
 
 public:
-	Terminal() = delete;
-	Terminal(sbbs_t &sbbs_ref) : sbbs{sbbs_ref}, mouse_hotspots{listInit(nullptr, 0)} {}
 
-	Terminal(Terminal& t) : supports{t.supports}, row{t.row}, column{t.column},
+	Terminal() = delete;
+	Terminal(sbbs_t &sbbs_ref) : flags{get_flags(sbbs_ref)}, sbbs{sbbs_ref}, mouse_hotspots{listInit(nullptr, 0)},
+	    savedlines{listInit(nullptr, 0)} {}
+
+	Terminal(Terminal& t) : flags{get_flags(t.sbbs)}, row{t.row}, column{t.column},
 	    rows{t.rows}, cols{t.cols}, tabstop{t.tabstop}, lastlinelen{t.lastlinelen}, 
-	    cterm_version{t.cterm_version}, lncntr{t.lncntr}, sbbs{t.sbbs},
-	    mouse_hotspots{t.mouse_hotspots} {
-		// Take ownership of mouse_hotspots so they're not destroyed
+	    cterm_version{t.cterm_version}, lncntr{t.lncntr}, latr{t.latr}, curatr{t.curatr},
+	    lbuflen{t.lbuflen}, sbbs{t.sbbs},
+	    mouse_hotspots{t.mouse_hotspots}, savedlines{t.savedlines} {
+		// Take ownership of lists so they're not destroyed
 		t.mouse_hotspots = nullptr;
+		t.savedlines = nullptr;
+		// Copy line buffer
+		memcpy(lbuf, t.lbuf, sizeof(lbuf));
 	}
 
 	virtual ~Terminal()
 	{
 		listFree(mouse_hotspots);
+		listFree(savedlines);
 	}
 
 	// Was ansi()
@@ -63,11 +98,25 @@ public:
 	}
 
 	virtual bool getxy(unsigned* x, unsigned* y) {
-		return false;
+		if (x)
+			*x = column + 1;
+		if (y)
+			*y = row + 1;
+		return true;
+	}
+
+	// TODO: Pick one.
+	virtual bool cursor_getxy(unsigned *x, unsigned *y) {
+		return getxy(x, y);
 	}
 
 	virtual bool gotoxy(unsigned x, unsigned y) {
 		return false;
+	}
+
+	// TODO: Pick one. :D
+	virtual bool cursor_xy(unsigned x, unsigned y) {
+		return gotoxy(x, y);
 	}
 
 	// Was ansi_save
@@ -131,6 +180,11 @@ public:
 
 	virtual void cleartoeos() {}
 	virtual void cleartoeol() {}
+	virtual void clearline() {
+		carriage_return();
+		cleartoeol();
+	}
+
 	virtual void cursor_home() {}
 	virtual void cursor_up(unsigned count = 1) {}
 	virtual void cursor_down(unsigned count = 1) {
@@ -150,18 +204,28 @@ public:
 	}
 	virtual void set_output_rate() {}
 	virtual void center(const char *instr, bool msg, unsigned columns) {
+		if (columns == 0)
+			columns = cols;
 		char *str = strdup(str);
 		truncsp(str);
-		len = bstrlen(str);
-		
+		size_t len = bstrlen(str);
+		carriage_return();
+		if (len < columns)
+			cursor_right((columns - len) / 2);
+		if (msg)
+			sbbs.putmsg(str, P_NONE);
+		else
+			sbbs.bputs(str);
+		free(str);
+		newline();
 	}
 
 	/****************************************************************************/
 	/* Returns the printed columns from 'str' accounting for Ctrl-A codes       */
 	/****************************************************************************/
-	virtual size_t bstrlen(const char *str, int mode)
+	virtual size_t bstrlen(const char *str, int mode = 0)
 	{
-		str = auto_utf8(str, mode);
+		str = sbbs.auto_utf8(str, mode);
 		size_t      count = 0;
 		const char* end = str + strlen(str);
 		while (str < end) {
@@ -179,7 +243,7 @@ public:
 				len = utf8_getc(str, end - str, &codepoint);
 				if (len < 1)
 					break;
-				count += unicode_width(codepoint, unicode_zerowidth);
+				count += unicode_width(codepoint, sbbs.unicode_zerowidth);
 			} else
 				count++;
 			str += len;
@@ -283,10 +347,42 @@ public:
 		return false;
 	}
 
-	virtual struct mouse_hotspot* add_hotspot(struct mouse_hotspot* spot) {return nullptr;}
+	virtual void insert_indicator() {};
 
-	void clear_hotspots(void) {}
-	void scroll_hotspots(int count) {}
+	virtual bool saveline() {
+		struct savedline line;
+		line.beg_attr = latr;
+		line.end_attr = curatr;
+		line.column = column;
+		snprintf(line.buf, sizeof(line.buf), "%.*s", lbuflen, lbuf);
+		TERMINATE(line.buf);
+		lbuflen = 0;
+		return listPushNodeData(savedlines, &line, sizeof(line)) != NULL;
+	}
+
+	virtual bool restoreline() {
+		struct savedline* line = (struct savedline*)listPopNode(savedlines);
+		if (line == NULL)
+			return false;
+		lbuflen = 0;
+		attrstr(line->beg_attr);
+		sbbs.rputs(line->buf);
+		// TODO: Why would this do anything?
+		//if (supports(PETSCII))
+		//	column = strlen(line->buf);
+		curatr = line->end_attr;
+		carriage_return();
+		cursor_right(line->column);
+		free(line);
+		insert_indicator();
+		return true;
+
+	}
+
+	virtual struct mouse_hotspot* add_hotspot(struct mouse_hotspot* spot) {return nullptr;}
+	virtual void clear_hotspots(void) {}
+	virtual void scroll_hotspots(int count) {}
+
 	struct mouse_hotspot* add_hotspot(char cmd, bool hungry, int minx, int maxx, int y) {return nullptr;}
 	struct mouse_hotspot* add_hotspot(int num, bool hungry, int minx, int maxx, int y) {return nullptr;}
 	struct mouse_hotspot* add_hotspot(uint num, bool hungry, int minx, int maxx, int y) {return nullptr;}
@@ -308,11 +404,31 @@ public:
 			lastlinelen = column;
 		}
 		while (column >= cols) {
-			sbbs.lbuflen = 0;
+			lbuflen = 0;
 			// TODO: This left column at 0 before...
 			column -= cols;
 			inc_row();
 		}
+	}
+
+	void cond_newline() {
+		if (column > 0)
+			newline();
+	}
+
+	void cond_blankline() {
+		cond_newline();
+		if (lastlinelen)
+			newline();
+	}
+
+	void cond_contline() {
+		if (column > 0 && cols < TERM_COLS_DEFAULT)
+			sbbs.bputs(sbbs.text[LongLineContinuationPrefix]);
+	}
+
+	bool supports(unsigned cmp_flags) {
+		return (flags & cmp_flags) == cmp_flags;
 	}
 };
 

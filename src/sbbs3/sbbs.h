@@ -606,7 +606,6 @@ public:
 	uint	socket_inactive=0;			// Socket inactivity counter (watchdog), in seconds, incremented by input_thread()
 	uint	max_socket_inactivity=0;	// Socket inactivity limit (in seconds), enforced by input_thread()
 	bool	socket_inactivity_warning_sent=false;
-	uint	curatr = LIGHTGRAY;	/* Current Text Attributes Always */
 	uint	attr_stack[64]{};	/* Saved attributes (stack) */
 	int 	attr_sp = 0;	/* Attribute stack pointer */
 	uint	mneattr_low = LIGHTGRAY;
@@ -619,11 +618,7 @@ public:
 	int 	autoterm=0;		/* Auto-detected terminal type */
 	size_t	unicode_zerowidth=0;
 	char	terminal[TELNET_TERM_MAXLEN+1]{};	// <- answer() writes to this
-	link_list_t savedlines{};
 	// TODO: Line buffer to terminal?
-	char 	lbuf[LINE_BUFSIZE+1]{};/* Temp storage for each line output */
-	int		lbuflen = 0;	/* Number of characters in line buffer */
-	uint	latr=0;			/* Starting attribute of line buffer */
 	uint	line_delay=0;	/* Delay duration (ms) after each line sent */
 	uint	console = 0;	/* Defines current Console settings */
 	char 	wordwrap[TERM_COLS_MAX + 1]{};	/* Word wrap buffer */
@@ -878,8 +873,6 @@ public:
 	int		bulkmailhdr(smb_t*, smbmsg_t*, uint usernum);
 
 	/* con_out.cpp */
-	// TODO: To ANSI_Terminal
-	size_t	bstrlen(const char *str, int mode = 0);
 	int		bputs(const char *str, int mode = 0);	/* BBS puts function */
 	int		bputs(int mode, const char* str) { return bputs(str, mode); }
 	int		rputs(const char *str, size_t len=0);	/* BBS raw puts function */
@@ -907,45 +900,7 @@ public:
 	int		outchar(char ch);				/* Output a char - check echo and emu.  */
 	int		outchar(enum unicode_codepoint, char cp437_fallback);
 	int		outchar(enum unicode_codepoint, const char* cp437_fallback = NULL);
-	// TODO: To ANSI_Terminal
-	void	center(const char *str, bool msg = false, unsigned int columns = 0);
 	void	wide(const char*);
-	// TODO: To ANSI_Terminal
-	void	clearscreen(int term);
-	// TODO: To ANSI_Terminal
-	void	clearline(void);
-	// TODO: To ANSI_Terminal
-	void	cleartoeol(void);
-	// TODO: To ANSI_Terminal
-	void	cleartoeos(void);
-	// TODO: To ANSI_Terminal
-	void	cursor_home(void);
-	// TODO: To ANSI_Terminal
-	void	cursor_up(int count=1);
-	// TODO: To ANSI_Terminal
-	void	cursor_down(int count=1);
-	// TODO: To ANSI_Terminal
-	void	cursor_left(int count=1);
-	// TODO: To ANSI_Terminal
-	void	cursor_right(int count=1);
-	// TODO: To ANSI_Terminal
-	bool	cursor_xy(int x, int y);
-	// TODO: To ANSI_Terminal
-	bool	cursor_getxy(int* x, int* y);
-	// TODO: To ANSI_Terminal
-	void	carriage_return(int count=1);
-	// TODO: To ANSI_Terminal
-	void	line_feed(int count=1);
-	// TODO: To ANSI_Terminal
-	void	newline(int count=1);
-	// TODO: To ANSI_Terminal
-	void	cond_newline() { if(column > 0) newline(); }
-	// TODO: To ANSI_Terminal
-	void	cond_blankline() { if(column > 0) newline(); if(lastlinelen) newline(); }
-	// TODO: To ANSI_Terminal
-	void	cond_contline() { if(column > 0 && cols < TERM_COLS_DEFAULT) bputs(text[LongLineContinuationPrefix]); }
-	// TODO: To ANSI_Terminal
-	int		term_supports(int cmp_flags=0);
 	// TODO: There appear to describe the USER, not the terminal...
 	char*	term_rows(user_t*, char* str, size_t);
 	char*	term_cols(user_t*, char* str, size_t);
@@ -988,7 +943,6 @@ public:
 	size_t	getstr_offset = 0;
 	size_t	getstr(char *str, size_t length, int mode, const str_list_t history = NULL);
 	int		getnum(uint max, uint dflt=0);
-	void	insert_indicator(void);
 
 	/* getkey.cpp */
 	char	getkey(int mode = K_NONE);
