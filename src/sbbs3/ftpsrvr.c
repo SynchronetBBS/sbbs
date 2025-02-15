@@ -4957,9 +4957,15 @@ static void ctrl_thread(void* arg)
 				           , scfg.dir[curdir]->vdir);
 			continue;
 		}
-
-		if (!strnicmp(cmd, "MKD", 3) ||
-		    !strnicmp(cmd, "XMKD", 4) ||
+		bool mkdir_cmd = (strnicmp(cmd, "MKD ", 4) == 0 || strnicmp(cmd, "XMKD", 4) == 0);
+		if (mkdir_cmd && !(user.rest & (FLAG('G') | FLAG('U')))) {
+			p = cmd + 4;
+			SKIP_WHITESPACE(p);
+			sockprintf(sock, sess, "257 \"%s\" directory created (not really)", p);
+			lprintf(LOG_DEBUG, "%04d <%s> requested to create directory: %s", sock, user.alias, p);
+			continue;
+		}
+		if (mkdir_cmd ||
 		    !strnicmp(cmd, "SITE EXEC", 9)) {
 			lprintf(LOG_WARNING, "%04d <%s> !SUSPECTED HACK ATTEMPT: %s"
 			        , sock, user.alias, cmd);
