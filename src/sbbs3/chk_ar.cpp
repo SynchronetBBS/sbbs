@@ -109,7 +109,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 				}
 				break;
 			case AR_ANSI:
-				if (!term_supports(ANSI))
+				if (!term->supports(ANSI))
 					result = _not;
 				else
 					result = !_not;
@@ -119,7 +119,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 				}
 				break;
 			case AR_PETSCII:
-				if ((term_supports() & CHARSET_FLAGS) != CHARSET_PETSCII)
+				if ((term->flags & CHARSET_FLAGS) != CHARSET_PETSCII)
 					result = _not;
 				else
 					result = !_not;
@@ -129,7 +129,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 				}
 				break;
 			case AR_ASCII:
-				if ((term_supports() & CHARSET_FLAGS) != CHARSET_ASCII)
+				if ((term->flags & CHARSET_FLAGS) != CHARSET_ASCII)
 					result = _not;
 				else
 					result = !_not;
@@ -139,7 +139,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 				}
 				break;
 			case AR_UTF8:
-				if ((term_supports() & CHARSET_FLAGS) != CHARSET_UTF8)
+				if ((term->flags & CHARSET_FLAGS) != CHARSET_UTF8)
 					result = _not;
 				else
 					result = !_not;
@@ -149,7 +149,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 				}
 				break;
 			case AR_CP437:
-				if ((term_supports() & CHARSET_FLAGS) != CHARSET_CP437)
+				if ((term->flags & CHARSET_FLAGS) != CHARSET_CP437)
 					result = _not;
 				else
 					result = !_not;
@@ -159,7 +159,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 				}
 				break;
 			case AR_RIP:
-				if (!term_supports(RIP))
+				if (!term->supports(RIP))
 					result = _not;
 				else
 					result = !_not;
@@ -707,7 +707,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 				}
 				break;
 			case AR_COLS:
-				if ((equal && cols != (long)n) || (!equal && cols < (long)n))
+				if ((equal && term->cols != (long)n) || (!equal && term->cols < (long)n))
 					result = _not;
 				else
 					result = !_not;
@@ -717,7 +717,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 				}
 				break;
 			case AR_ROWS:
-				if ((equal && rows != (long)n) || (!equal && rows < (long)n))
+				if ((equal && term->rows != (long)n) || (!equal && term->rows < (long)n))
 					result = _not;
 				else
 					result = !_not;

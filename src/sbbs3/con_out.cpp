@@ -53,7 +53,7 @@ int sbbs_t::bputs(const char *str, int mode)
 {
 	int    i;
 	size_t l = 0;
-	int    term = term_supports();
+	int    term = term->flags;
 
 	if ((mode & P_REMOTE) && online != ON_REMOTE)
 		return 0;
@@ -374,7 +374,7 @@ int sbbs_t::rputs(const char *str, size_t len)
 		return 0;
 	if (len == 0)
 		len = strlen(str);
-	int  term = term_supports();
+	int  term = term->flags;
 	char utf8[UTF8_MAX_LEN + 1] = "";
 	for (l = 0; l < len && online; l++) {
 		uchar ch = str[l];
@@ -557,7 +557,7 @@ char* sbbs_t::term_type(user_t* user, int term, char* str, size_t size)
 const char* sbbs_t::term_type(int term)
 {
 	if (term == -1)
-		term = term_supports();
+		term = term->flags;
 	if (term & PETSCII)
 		return "PETSCII";
 	if (term & RIP)
@@ -573,7 +573,7 @@ const char* sbbs_t::term_type(int term)
 const char* sbbs_t::term_charset(int term)
 {
 	if (term == -1)
-		term = term_supports();
+		term = term->flags;
 	if (term & PETSCII)
 		return "CBM-ASCII";
 	if (term & UTF8)
@@ -595,7 +595,7 @@ bool sbbs_t::update_nodeterm(void)
 	iniSetString(&ini, ROOT_SECTION, "desc", terminal, NULL);
 	iniSetString(&ini, ROOT_SECTION, "type", term_type(), NULL);
 	iniSetString(&ini, ROOT_SECTION, "chars", term_charset(), NULL);
-	iniSetHexInt(&ini, ROOT_SECTION, "flags", term_supports(), NULL);
+	iniSetHexInt(&ini, ROOT_SECTION, "flags", term->flags, NULL);
 	iniSetHexInt(&ini, ROOT_SECTION, "mouse", mouse_mode, NULL);
 	iniSetHexInt(&ini, ROOT_SECTION, "console", console, NULL);
 
@@ -619,7 +619,7 @@ bool sbbs_t::update_nodeterm(void)
 		         , terminal
 		         , term_type()
 		         , term_charset()
-		         , term_supports()
+		         , term->flags
 		         , mouse_mode
 		         , console
 		         );
@@ -688,7 +688,7 @@ int sbbs_t::outchar(char ch)
 		} else
 			++rainbow_index;
 	}
-	int  term = term_supports();
+	int  term = term->flags;
 	char utf8[UTF8_MAX_LEN + 1] = "";
 	if (!(term & PETSCII)) {
 		if ((term & NO_EXASCII) && (ch & 0x80))
@@ -866,7 +866,7 @@ void sbbs_t::center(const char *instr, bool msg, unsigned int columns)
 
 void sbbs_t::wide(const char* str)
 {
-	int term = term_supports();
+	int term = term->flags;
 	while (*str != '\0') {
 		if ((term & UTF8) && *str >= '!' && *str <= '~')
 			outchar((enum unicode_codepoint)(UNICODE_FULLWIDTH_EXCLAMATION_MARK + (*str - '!')));
@@ -939,7 +939,7 @@ void sbbs_t::clearline(void)
 
 void sbbs_t::cursor_home(void)
 {
-	int term = term_supports();
+	int term = term->flags;
 	if (term & ANSI)
 		putcom("\x1b[H");
 	else if (term & PETSCII)
@@ -954,7 +954,7 @@ void sbbs_t::cursor_up(int count)
 {
 	if (count < 1)
 		return;
-	int term = term_supports();
+	int term = term->flags;
 	if (term & ANSI) {
 		if (count > 1)
 			comprintf("\x1b[%dA", count);
@@ -988,7 +988,7 @@ void sbbs_t::cursor_right(int count)
 {
 	if (count < 1)
 		return;
-	int term = term_supports();
+	int term = term->flags;
 	if (term & ANSI) {
 		if (count > 1)
 			comprintf("\x1b[%dC", count);
@@ -1009,7 +1009,7 @@ void sbbs_t::cursor_left(int count)
 {
 	if (count < 1)
 		return;
-	int term = term_supports();
+	int term = term->flags;
 	if (term & ANSI) {
 		if (count > 1)
 			comprintf("\x1b[%dD", count);
@@ -1031,7 +1031,7 @@ void sbbs_t::cursor_left(int count)
 
 bool sbbs_t::cursor_xy(int x, int y)
 {
-	int term = term_supports();
+	int term = term->flags;
 	if (term & ANSI)
 		return ansi_gotoxy(x, y);
 	if (term & PETSCII) {
@@ -1056,7 +1056,7 @@ void sbbs_t::cleartoeol(void)
 {
 	int i, j;
 
-	int term = term_supports();
+	int term = term->flags;
 	if (term & ANSI)
 		putcom("\x1b[K");
 	else {
@@ -1278,12 +1278,12 @@ void sbbs_t::ctrl_a(char x)
 			break;
 		case 'I':
 			// TODO: Shouldn't need to make this conditional
-			if ((term_supports() & (ICE_COLOR | PETSCII)) != ICE_COLOR)
+			if ((term->flags & (ICE_COLOR | PETSCII)) != ICE_COLOR)
 				attr(atr | BLINK);
 			break;
 		case 'E': /* Bright Background */
 			// TODO: Shouldn't need to make this conditional
-			if (term_supports() & (ICE_COLOR | PETSCII))
+			if (term->flags & (ICE_COLOR | PETSCII))
 				attr(atr | BG_BRIGHT);
 			break;
 		case 'F':   /* Blink, only if alt Blink Font is loaded */
@@ -1367,7 +1367,7 @@ int sbbs_t::attr(int atr)
 	char str[16];
 	int  newatr = atr;
 
-	int  term = term_supports();
+	int  term = term->flags;
 	if (term & PETSCII) {
 		if (atr & (0x70 | BG_BRIGHT)) {  // background color (reverse video for PETSCII)
 			if (atr & BG_BRIGHT)
@@ -1468,7 +1468,7 @@ int sbbs_t::backfill(const char* instr, float pct, int full_attr, int empty_attr
 	char* str = strip_ctrl(instr, NULL);
 
 	len = strlen(str);
-	if (!(term_supports() & (ANSI | PETSCII)))
+	if (!(term->flags & (ANSI | PETSCII)))
 		bputs(str, P_REMOTE);
 	else {
 		for (int i = 0; i < len; i++) {

@@ -43,6 +43,7 @@ public:
 	virtual bool parse_outchar(char ch);
 	// Needs to handle C0 and C1
 	virtual bool parse_ctrlkey(char& ch, int mode);
+	virtual void insert_indicator();
 	virtual struct mouse_hotspot* add_hotspot(struct mouse_hotspot* spot);
 
 private:

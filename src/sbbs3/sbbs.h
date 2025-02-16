@@ -471,13 +471,14 @@ public:
 
 	std::atomic<bool> ssh_mode{false};
 	bool term_output_disabled{};
-	SOCKET	passthru_socket=INVALID_SOCKET;
-	bool	passthru_socket_active = false;
-	void	passthru_socket_activate(bool);
-    bool	passthru_thread_running = false;
+	SOCKET passthru_socket=INVALID_SOCKET;
+	bool   passthru_socket_active = false;
+	void   passthru_socket_activate(bool);
+	bool   passthru_thread_running = false;
 
 	scfg_t	cfg{};
 	struct mqtt* mqtt = nullptr;
+	Terminal *term{nullptr};
 
 	int 	rioctl(ushort action); // remote i/o control
 	bool	rio_abortable = false;
@@ -915,20 +916,6 @@ public:
 	int		attr(int);				/* Change text color/attributes */
 	void	ctrl_a(char);			/* Performs Ctrl-Ax attribute changes */
 	char*	auto_utf8(const char*, int& mode);
-	enum output_rate {
-		output_rate_unlimited,
-		output_rate_300 = 300,
-		output_rate_600 = 600,
-		output_rate_1200 = 1200,
-		output_rate_2400 = 2400,
-		output_rate_4800 = 4800,
-		output_rate_9600 = 9600,
-		output_rate_19200 = 19200,
-		output_rate_38400 = 38400,
-		output_rate_57600 = 57600,
-		output_rate_76800 = 76800,
-		output_rate_115200 = 115200,
-	} cur_output_rate = output_rate_unlimited;
 	// TODO: Not To ANSI_Terminal
 	void	getdimensions();
 
@@ -1280,6 +1267,8 @@ public:
 	bool sftp_end(void);
 
 };
+
+#include "terminal.h"
 
 #endif /* __cplusplus */
 

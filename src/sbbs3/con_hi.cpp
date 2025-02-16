@@ -31,19 +31,19 @@ void sbbs_t::redrwstr(char *strin, int i, int l, int mode)
 	if (i <= 0)
 		i = 0;
 	else
-		cursor_left(i);
+		term->cursor_left(i);
 	if (l < 0)
 		l = 0;
 	if (mode)
 		bprintf(mode, "%-*.*s", l, l, strin);
 	else
-		column += rprintf("%-*.*s", l, l, strin);
-	cleartoeol();
+		term->column += rprintf("%-*.*s", l, l, strin);
+	term->cleartoeol();
 	if (i < l) {
 		auto_utf8(strin, mode);
 		if (mode & P_UTF8)
 			l = utf8_str_total_width(strin, unicode_zerowidth);
-		cursor_left(l - i);
+		term->cursor_left(l - i);
 	}
 }
 
@@ -62,7 +62,7 @@ int sbbs_t::uselect(bool add, uint n, const char *title, const char *item, const
 		if (!uselect_total)
 			bprintf(text[SelectItemHdr], title);
 		uselect_num[uselect_total++] = n;
-		add_hotspot(uselect_total);
+		term->add_hotspot(uselect_total);
 		bprintf(text[SelectItemFmt], uselect_total, item);
 		return 0;
 	}
@@ -80,7 +80,7 @@ int sbbs_t::uselect(bool add, uint n, const char *title, const char *item, const
 	i = getnum(uselect_total);
 	t = uselect_total;
 	uselect_total = 0;
-	clear_hotspots();
+	term->clear_hotspots();
 	if (i < 0)
 		return -1;
 	if (!i) {                    /* User hit ENTER, use default */
@@ -159,7 +159,7 @@ bool sbbs_t::chksyspass(const char* sys_pw)
 		bputs(text[SystemPassword]);
 		getstr(str, sizeof(cfg.sys_pass) - 1, K_UPPER | K_NOECHO);
 		CRLF;
-		lncntr = 0;
+		term->lncntr = 0;
 	}
 	if (stricmp(cfg.sys_pass, str)) {
 		if (cfg.sys_misc & SM_ECHO_PW)

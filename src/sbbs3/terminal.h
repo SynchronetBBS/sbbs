@@ -61,52 +61,53 @@ public:
 	char     lbuf[LINE_BUFSIZE + 1]{}; /* Temp storage for each line output */
 	enum output_rate cur_output_rate{output_rate_unlimited};
 	unsigned mouse_mode{MOUSE_MODE_OFF};            // Mouse reporting mode flags
+	bool pause_hotspot{false};
 
 protected:
-	sbbs_t& sbbs;
+	sbbs_t* sbbs;
 
 private:
 	link_list_t *mouse_hotspots{nullptr};
 	link_list_t *savedlines{nullptr};
 
-	static uint32_t get_flags(sbbs_t &sbbs_ref) {
+public:
+
+	static uint32_t get_flags(sbbs_t *sbbsptr) {
 		uint32_t flags;
 
-		if ((sbbs_ref.sys_status & (SS_USERON | SS_NEWUSER)) && (sbbs_ref.useron.misc & AUTOTERM)) {
-			flags = sbbs_ref.autoterm;
-			flags |= sbbs_ref.useron.misc & (NO_EXASCII | SWAP_DELETE | COLOR | ICE_COLOR | MOUSE);
+		if ((sbbsptr->sys_status & (SS_USERON | SS_NEWUSER)) && (sbbsptr->useron.misc & AUTOTERM)) {
+			flags = sbbsptr->autoterm;
+			flags |= sbbsptr->useron.misc & (NO_EXASCII | SWAP_DELETE | COLOR | ICE_COLOR | MOUSE);
 		}
 		else {
-			flags = sbbs_ref.useron.misc;
+			flags = sbbsptr->useron.misc;
 		}
 		flags &= TERM_FLAGS;
 		// TODO: Get rows and cols
 		return flags;
 	}
 
-public:
-
 	Terminal() = delete;
-	Terminal(sbbs_t &sbbs_ref) : flags{get_flags(sbbs_ref)}, sbbs{sbbs_ref}, mouse_hotspots{listInit(nullptr, 0)},
+	Terminal(sbbs_t *sbbsptr) : flags{get_flags(sbbsptr)}, sbbs{sbbsptr}, mouse_hotspots{listInit(nullptr, 0)},
 	    savedlines{listInit(nullptr, 0)} {}
 
-	Terminal(Terminal& t) : flags{get_flags(t.sbbs)}, row{t.row}, column{t.column},
-	    rows{t.rows}, cols{t.cols}, tabstop{t.tabstop}, lastlinelen{t.lastlinelen}, 
-	    cterm_version{t.cterm_version}, lncntr{t.lncntr}, latr{t.latr}, curatr{t.curatr},
-	    lbuflen{t.lbuflen}, mouse_mode{t.mouse_mode}, sbbs{t.sbbs},
-	    mouse_hotspots{t.mouse_hotspots}, savedlines{t.savedlines} {
+	Terminal(Terminal *t) : flags{get_flags(t->sbbs)}, row{t->row}, column{t->column},
+	    rows{t->rows}, cols{t->cols}, tabstop{t->tabstop}, lastlinelen{t->lastlinelen}, 
+	    cterm_version{t->cterm_version}, lncntr{t->lncntr}, latr{t->latr}, curatr{t->curatr},
+	    lbuflen{t->lbuflen}, mouse_mode{t->mouse_mode}, pause_hotspot{t->pause_hotspot}, sbbs{t->sbbs},
+	    mouse_hotspots{t->mouse_hotspots}, savedlines{t->savedlines} {
 		// Take ownership of lists so they're not destroyed
-		t.mouse_hotspots = nullptr;
-		t.savedlines = nullptr;
+		t->mouse_hotspots = nullptr;
+		t->savedlines = nullptr;
 		// Copy line buffer
-		memcpy(lbuf, t.lbuf, sizeof(lbuf));
+		memcpy(lbuf, t->lbuf, sizeof(lbuf));
 		// TODO: This is pretty hacky...
 		//       Calls the old set_mouse() with the current flags
 		//       and mode.  We can't call the new one because it's
 		//       virtual and we aren't constructed yet.
 		//       Ideally this would disable the mouse if !supports(MOUSE)
-		t.flags = flags;
-		t.set_mouse(mouse_mode);
+		t->flags = flags;
+		t->set_mouse(mouse_mode);
 	}
 
 	virtual ~Terminal()
@@ -164,13 +165,13 @@ public:
 	}
 
 	virtual void carriage_return() {
-		sbbs.outcom('\r');
+		sbbs->outcom('\r');
 		column = 0;
 	}
 
 	virtual void line_feed(unsigned count = 1) {
 		for (unsigned i = 0; i < count; i++)
-			sbbs.outcom('\n');
+			sbbs->outcom('\n');
 		inc_row(count);
 	}
 
@@ -181,13 +182,13 @@ public:
 	 *       remove it, or add it to all the rest that call outcom()
 	 */
 	virtual void backspace(unsigned int count = 1) {
-		if (sbbs.console & CON_ECHO_OFF)
+		if (sbbs->console & CON_ECHO_OFF)
 			return;
 		for (unsigned i = 0; i < count; i++) {
 			if (column > 0) {
-				sbbs.outcom('\b');
-				sbbs.outcom(' ');
-				sbbs.outcom('\b');
+				sbbs->outcom('\b');
+				sbbs->outcom(' ');
+				sbbs->outcom('\b');
 				column--;
 			}
 			else
@@ -205,7 +206,7 @@ public:
 	}
 
 	virtual void clearscreen() {
-		sbbs.outcom(FF);
+		sbbs->outcom(FF);
 		row = 0;
 		column = 0;
 		lncntr = 0;
@@ -229,7 +230,7 @@ public:
 	virtual void cursor_left(unsigned count = 1) {
 		for (unsigned i = 0; i < count; i++) {
 			if (column > 0) {
-				sbbs.outcom('\b');
+				sbbs->outcom('\b');
 				column--;
 			}
 			else
@@ -237,7 +238,7 @@ public:
 		}
 	}
 	virtual void set_output_rate(enum output_rate speed) {}
-	virtual void center(const char *instr, bool msg, unsigned columns) {
+	virtual void center(const char *instr, bool msg = false, unsigned columns = 0) {
 		if (columns == 0)
 			columns = cols;
 		char *str = strdup(str);
@@ -247,9 +248,9 @@ public:
 		if (len < columns)
 			cursor_right((columns - len) / 2);
 		if (msg)
-			sbbs.putmsg(str, P_NONE);
+			sbbs->putmsg(str, P_NONE);
 		else
-			sbbs.bputs(str);
+			sbbs->bputs(str);
 		free(str);
 		newline();
 	}
@@ -259,7 +260,7 @@ public:
 	/****************************************************************************/
 	virtual size_t bstrlen(const char *str, int mode = 0)
 	{
-		str = sbbs.auto_utf8(str, mode);
+		str = sbbs->auto_utf8(str, mode);
 		size_t      count = 0;
 		const char* end = str + strlen(str);
 		while (str < end) {
@@ -277,7 +278,7 @@ public:
 				len = utf8_getc(str, end - str, &codepoint);
 				if (len < 1)
 					break;
-				count += unicode_width(codepoint, sbbs.unicode_zerowidth);
+				count += unicode_width(codepoint, sbbs->unicode_zerowidth);
 			} else
 				count++;
 			str += len;
@@ -340,7 +341,7 @@ public:
 				if (column < (cols - 1)) {
 					column++;
 					while ((column < (cols < 1)) && (column % tabstop)) {
-						sbbs.outcom(' ');
+						sbbs->outcom(' ');
 						inc_column();
 					}
 				}
@@ -399,7 +400,7 @@ public:
 			return false;
 		lbuflen = 0;
 		attrstr(line->beg_attr);
-		sbbs.rputs(line->buf);
+		sbbs->rputs(line->buf);
 		// TODO: Why would this do anything?
 		//if (supports(PETSCII))
 		//	column = strlen(line->buf);
@@ -409,17 +410,17 @@ public:
 		free(line);
 		insert_indicator();
 		return true;
-
 	}
 
-	virtual struct mouse_hotspot* add_hotspot(struct mouse_hotspot* spot) {return nullptr;}
-	virtual void clear_hotspots(void) {}
-	virtual void scroll_hotspots(int count) {}
+	void clear_hotspots(void) {}
+	void scroll_hotspots(int count) {}
 
-	struct mouse_hotspot* add_hotspot(char cmd, bool hungry = true, int minx = -1, int maxx = -1, int y = -1) {return nullptr;}
-	struct mouse_hotspot* add_hotspot(int num, bool hungry = true, int minx = -1, int maxx = -1, int y = -1) {return nullptr;}
-	struct mouse_hotspot* add_hotspot(uint num, bool hungry = true, int minx = -1, int maxx = -1, int y = -1) {return nullptr;}
-	struct mouse_hotspot* add_hotspot(const char* cmd, bool hungry = true, int minx = -1, int maxx = -1, int y = -1) {return nullptr;}
+	struct mouse_hotspot* add_hotspot(struct mouse_hotspot* spot);
+	struct mouse_hotspot* add_hotspot(char cmd, bool hungry = true, int minx = -1, int maxx = -1, int y = -1);
+	struct mouse_hotspot* add_hotspot(int num, bool hungry = true, int minx = -1, int maxx = -1, int y = -1);
+	struct mouse_hotspot* add_hotspot(uint num, bool hungry = true, int minx = -1, int maxx = -1, int y = -1);
+	struct mouse_hotspot* add_hotspot(const char* cmd, bool hungry = true, int minx = -1, int maxx = -1, int y = -1);
+	bool add_only_hotspot(char cmd);
 
 	void inc_row(unsigned count = 1) {
 		row += count;
@@ -459,7 +460,7 @@ public:
 
 	void cond_contline() {
 		if (column > 0 && cols < TERM_COLS_DEFAULT)
-			sbbs.bputs(sbbs.text[LongLineContinuationPrefix]);
+			sbbs->bputs(sbbs->text[LongLineContinuationPrefix]);
 	}
 
 	bool supports(unsigned cmp_flags) {
@@ -492,7 +493,8 @@ public:
 
 		return node;
 	}
-
 };
+
+Terminal *update_terminal(sbbs_t *sbbsptr);
 
 #endif

@@ -851,7 +851,7 @@ enum {                          /* Values of mode for userlist function     */
 /* Macros */
 /**********/
 
-#define CRLF            newline()
+#define CRLF            term->newline()
 #define SYSOP_LEVEL     90
 #define SYSOP           (useron.level >= SYSOP_LEVEL || sys_status & SS_TMPSYSOP)
 #define REALSYSOP       (useron.level >= SYSOP_LEVEL)
