@@ -1,0 +1,33 @@
+#ifndef PETSCII_TERMINAL_H
+#define PETSCII_TERMINAL_H
+
+#include "sbbs.h"
+
+class PETSCII_Terminal : public Terminal {
+public:
+
+	PETSCII_Terminal() = delete;
+
+	virtual const char *attrstr(unsigned atr);
+	virtual char* attrstr(unsigned atr, unsigned curatr, char* str, size_t strsz);
+	virtual bool gotoxy(unsigned x, unsigned y);
+	virtual void carriage_return();
+	virtual void line_feed(unsigned count = 1);
+	virtual void backspace(unsigned int count = 1);
+	virtual void newline(unsigned count = 1);
+	virtual void clearscreen();
+	virtual void cleartoeos();
+	virtual void cleartoeol();
+	virtual void clearline();
+	virtual void cursor_home();
+	virtual void cursor_up(unsigned count = 1);
+	virtual void cursor_down(unsigned count = 1);
+	virtual void cursor_right(unsigned count = 1);
+	virtual void cursor_left(unsigned count = 1);
+	virtual const char* type();
+	virtual bool parse_outchar(char ch);
+	virtual bool parse_ctrlkey(char& ch, int mode);
+	virtual void insert_indicator();
+};
+
+#endif
