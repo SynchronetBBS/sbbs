@@ -3,43 +3,50 @@
 
 #include "terminal.h"
 
+enum ansiState {
+	 ansiState_none         // No sequence
+	,ansiState_esc          // Escape
+	,ansiState_csi          // CSI
+	,ansiState_final        // Final byte
+	,ansiState_string       // APS, DCS, PM, or OSC
+	,ansiState_sos          // SOS
+	,ansiState_sos_esc      // ESC inside SOS
+};
+
 class ANSI_Terminal : public Terminal {
 public:
 	ANSI_Terminal() = delete;
 
 	// Was ansi()
-	const char *attrstr(unsigned atr);
+	virtual const char *attrstr(unsigned atr);
 	// Was ansi() and ansi_attr()
-	char* attrstr(unsigned atr, unsigned curatr, char* str, size_t strsz);
-	bool getdims();
-	bool getxy(unsigned* x, unsigned* y);
-	bool gotoxy(unsigned x, unsigned y);
+	virtual char* attrstr(unsigned atr, unsigned curatr, char* str, size_t strsz);
+	virtual bool getdims();
+	virtual bool getxy(unsigned* x, unsigned* y);
+	virtual bool gotoxy(unsigned x, unsigned y);
 	// Was ansi_save
-	bool save_cursor_pos();
+	virtual bool save_cursor_pos();
 	// Was ansi_restore
-	bool restore_cursor_pos();
-	void clearscreen();
-	void cleartoeos();
-	void cleartoeol();
-	void cursor_home();
-	void cursor_up(unsigned count);
-	void cursor_down(unsigned count);
-	void cursor_right(unsigned count);
-	void cursor_left(unsigned count);
-	void set_output_rate();
+	virtual bool restore_cursor_pos();
+	virtual void clearscreen();
+	virtual void cleartoeos();
+	virtual void cleartoeol();
+	virtual void cursor_home();
+	virtual void cursor_up(unsigned count);
+	virtual void cursor_down(unsigned count);
+	virtual void cursor_right(unsigned count);
+	virtual void cursor_left(unsigned count);
+	virtual void set_output_rate(enum output_rate speed);
 	// TODO: backfill?
-	// Was term_rows
-	char* rows(user_t *user, char *str, size_t *size);
-	// Was term_cols
-	char* cols(user_t *user, char *str, size_t *size);
-	// Not a complete replacement for term_type
-	char* type(char* str, size_t size);
-	const char* type();
-	void set_mouse(int mode);
-	bool parse_outchar(char ch);
+	virtual const char* type();
+	virtual void set_mouse(unsigned mode);
+	virtual bool parse_outchar(char ch);
 	// Needs to handle C0 and C1
-	bool parse_ctrlkey(char& ch, int mode);
-	struct mouse_hotspot* add_hotspot(struct mouse_hotspot* spot);
+	virtual bool parse_ctrlkey(char& ch, int mode);
+	virtual struct mouse_hotspot* add_hotspot(struct mouse_hotspot* spot);
+
+private:
+	enum ansiState outchar_esc{ansiState_none}; // track ANSI escape seq output
 };
 
 #endif

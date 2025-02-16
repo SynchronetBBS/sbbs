@@ -1,15 +1,5 @@
 #include "ansi_terminal.h"
 
-enum ansiState {
-	 ansiState_none         // No sequence
-	,ansiState_esc          // Escape
-	,ansiState_csi          // CSI
-	,ansiState_final        // Final byte
-	,ansiState_string       // APS, DCS, PM, or OSC
-	,ansiState_sos          // SOS
-	,ansiState_sos_esc      // ESC inside SOS
-} outchar_esc = ansiState_none; // track ANSI escape seq output
-
 enum ansi_mouse_mode {
 	ANSI_MOUSE_X10  = 9,
 	ANSI_MOUSE_NORM = 1000,
@@ -75,9 +65,9 @@ const char *ANSI_Terminal::attrstr(unsigned atr)
 // Was ansi() and ansi_attr()
 char* ANSI_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t strsz)
 {
-	bool color = supports & COLOR;
+	bool color = supports(COLOR);
 	size_t lastret;
-	if (supports & ICE_COLOR) {
+	if (supports(ICE_COLOR)) {
 		switch (atr & (BG_BRIGHT | BLINK)) {
 			case BG_BRIGHT:
 			case BLINK:
@@ -107,13 +97,13 @@ char* ANSI_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t st
 		lastret = strlcat(str, "0;", strsz);
 		curatr = LIGHTGRAY;
 	}
-	if (atr & BLINK) {                     /* special attributes */
-		if (!(curatr & BLINK))
-			lastret = strlcat(str, "5;", strsz);
-	}
-	if (atr & HIGH) {
+	if (atr & HIGH) {                     /* special attributes */
 		if (!(curatr & HIGH))
 			lastret = strlcat(str, "1;", strsz);
+	}
+	if (atr & BLINK) {
+		if (!(curatr & BLINK))
+			lastret = strlcat(str, "5;", strsz);
 	}
 	if ((atr & 0x07) != (curatr & 0x07)) {
 		switch (atr & 0x07) {
@@ -277,12 +267,24 @@ bool ANSI_Terminal::getxy(unsigned* x, unsigned* y)
 
 bool ANSI_Terminal::gotoxy(unsigned x, unsigned y)
 {
+	/*
+	 * TODO: Previously, this was an int and sent exactly
+	 *       what was passed, leaving it up to the terminal
+	 *       to decide what to do about invalid sequences with
+	 *       zeros and negative numbers.  Since negatives are
+	 *       invalid sequences, and zeros should be default (1),
+	 *       just force known consistent behaviour.
+	 */
+	if (x == 0)
+		x = 1;
+	if (y == 0)
+		y = 1;
 	sbbs.comprintf("\x1b[%d;%dH", y, x);
 	if (x > 0)
-		sbbs.column = x - 1;
+		column = x - 1;
 	if (y > 0)
-		sbbs.row = y - 1;
-	sbbs.lncntr = 0;
+		row = y - 1;
+	lncntr = 0;
 	return true;
 }
 
@@ -303,9 +305,10 @@ bool ANSI_Terminal::restore_cursor_pos()
 void ANSI_Terminal::clearscreen()
 {
 	sbbs.putcom("\x1b[2J\x1b[H");    /* clear screen, home cursor */
-	sbbs.row = 0;
-	sbbs.column = 0;
-	sbbs.lncntr = 0;
+	row = 0;
+	column = 0;
+	lncntr = 0;
+	lbuflen = 0;
 }
 
 void ANSI_Terminal::cleartoeos()
@@ -321,54 +324,501 @@ void ANSI_Terminal::cleartoeol()
 void ANSI_Terminal::cursor_home()
 {
 	sbbs.putcom("\x1b[H");
-	sbbs.row = 0;
-	sbbs.column = 0;
+	row = 0;
+	column = 0;
+	// TODO: Did not reset lncntr
+	lncntr = 0;
 }
 
-void ANSI_Terminal::cursor_up(unsigned count)
+void ANSI_Terminal::cursor_up(unsigned count = 1)
 {
+	if (count == 0)
+		return;
 	if (count > 1)
 		sbbs.comprintf("\x1b[%dA", count);
 	else
 		sbbs.putcom("\x1b[A");
 	// TODO: Old version didn't update row?
-	if (count > sbbs.row)
-		count = sbbs.row;
-	sbbs.row -= count;
+	if (count > row)
+		count = row;
+	row -= count;
+	// TODO: Did not adjust lncntr
+	if (count > lncntr)
+		count = lncntr;
+	lncntr -= count;
 }
 
-void ANSI_Terminal::cursor_down(unsigned count)
+void ANSI_Terminal::cursor_down(unsigned count = 1)
 {
+	if (count == 0)
+		return;
 	if (count > 1)
 		sbbs.comprintf("\x1b[%dB", count);
 	else
 		sbbs.putcom("\x1b[B");
 	// TODO: Old version assumes this can scroll
-	if (sbbs.row + count > sbbs.rows)
-		count = sbbs.rows - sbbs.row;
+	if (row + count > rows)
+		count = rows - row;
 	inc_row(count);
 }
 
-void ANSI_Terminal::cursor_right(unsigned count)
+void ANSI_Terminal::cursor_right(unsigned count = 1)
 {
+	if (count == 0)
+		return;
 	if (count > 1)
 		sbbs.comprintf("\x1b[%dC", count);
 	else
 		sbbs.putcom("\x1b[C");
 	// TODO: Old version would move past cols
-	if (sbbs.column + count > sbbs.cols)
-		count = sbbs.cols - sbbs.column;
-	sbbs.column += count;
+	if (column + count > cols)
+		count = cols - column;
+	column += count;
 }
 
-void ANSI_Terminal::cursor_left(unsigned count) {}
-void ANSI_Terminal::set_output_rate() {}
+void ANSI_Terminal::cursor_left(unsigned count = 1) {
+	if (count == 0)
+		return;
+	if (count < 4)
+		sbbs.comprintf("%.*s", count, "\b\b\b");
+	else
+		sbbs.comprintf("\x1b[%dD", count);
+	if (column > count)
+		column -= count;
+	else
+		column = 0;
+}
+
+void ANSI_Terminal::set_output_rate(enum output_rate speed) {
+	unsigned int val = speed;
+	switch (val) {
+		case 0:     val = 0; break;
+		case 600:   val = 2; break;
+		case 1200:  val = 3; break;
+		case 2400:  val = 4; break;
+		case 4800:  val = 5; break;
+		case 9600:  val = 6; break;
+		case 19200: val = 7; break;
+		case 38400: val = 8; break;
+		case 57600: val = 9; break;
+		case 76800: val = 10; break;
+		default:
+			if (val <= 300)
+				val = 1;
+			else if (val > 76800)
+				val = 11;
+			break;
+	}
+	sbbs.comprintf("\x1b[;%u*r", val);
+	cur_output_rate = speed;
+}
+
 // TODO: backfill?
-// Not a complete replacement for term_type
-char* ANSI_Terminal::type(char* str, size_t size) {return nullptr;}
 const char* ANSI_Terminal::type() {return "ANSI";}
-void ANSI_Terminal::set_mouse(int mode) {}
-bool ANSI_Terminal::parse_outchar(char ch) {return true;}
-// Needs to handle C0 and C1
-bool ANSI_Terminal::parse_ctrlkey(char& ch, int mode) {return true;}
+
+
+static void ansi_mouse(sbbs_t& sbbs, enum ansi_mouse_mode mode, bool enable)
+{
+	char str[32] = "";
+	SAFEPRINTF2(str, "\x1b[?%u%c", mode, enable ? 'h' : 'l');
+	sbbs.putcom(str);
+}
+
+void ANSI_Terminal::set_mouse(unsigned flags) {
+	// TODO: This is new... disable mouse if not enabled.
+	if (!supports(MOUSE))
+		flags = MOUSE_MODE_OFF;
+	if (supports(MOUSE) || flags == MOUSE_MODE_OFF) {
+		unsigned mode = mouse_mode & ~flags;
+		if (mode & MOUSE_MODE_X10)
+			ansi_mouse(sbbs, ANSI_MOUSE_X10, false);
+		if (mode & MOUSE_MODE_NORM)
+			ansi_mouse(sbbs, ANSI_MOUSE_NORM, false);
+		if (mode & MOUSE_MODE_BTN)
+			ansi_mouse(sbbs, ANSI_MOUSE_BTN, false);
+		if (mode & MOUSE_MODE_ANY)
+			ansi_mouse(sbbs, ANSI_MOUSE_ANY, false);
+		if (mode & MOUSE_MODE_EXT)
+			ansi_mouse(sbbs, ANSI_MOUSE_EXT, false);
+
+		mode = flags & ~mouse_mode;
+		if (mode & MOUSE_MODE_X10)
+			ansi_mouse(sbbs, ANSI_MOUSE_X10, true);
+		if (mode & MOUSE_MODE_NORM)
+			ansi_mouse(sbbs, ANSI_MOUSE_NORM, true);
+		if (mode & MOUSE_MODE_BTN)
+			ansi_mouse(sbbs, ANSI_MOUSE_BTN, true);
+		if (mode & MOUSE_MODE_ANY)
+			ansi_mouse(sbbs, ANSI_MOUSE_ANY, true);
+		if (mode & MOUSE_MODE_EXT)
+			ansi_mouse(sbbs, ANSI_MOUSE_EXT, true);
+
+		if (mouse_mode != flags) {
+			mouse_mode = flags;
+		}
+	}
+}
+
+bool ANSI_Terminal::parse_outchar(char ch) {
+	// TODO: Actually parse these so the various functions don't
+	//       need to update row/column/etc.
+	if (ch == ESC && outchar_esc < ansiState_string)
+		outchar_esc = ansiState_esc;
+	else if (outchar_esc == ansiState_esc) {
+		if (ch == '[')
+			outchar_esc = ansiState_csi;
+		else if (ch == '_' || ch == 'P' || ch == '^' || ch == ']')
+			outchar_esc = ansiState_string;
+		else if (ch == 'X')
+			outchar_esc = ansiState_sos;
+		else if (ch >= '@' && ch <= '_')
+			outchar_esc = ansiState_final;
+		else
+			outchar_esc = ansiState_none;
+	}
+	else if (outchar_esc == ansiState_csi) {
+		if (ch >= '@' && ch <= '~')
+			outchar_esc = ansiState_final;
+	}
+	else if (outchar_esc == ansiState_string) {  // APS, DCS, PM, or OSC
+		if (ch == ESC)
+			outchar_esc = ansiState_esc;
+		if (!((ch >= '\b' && ch <= '\r') || (ch >= ' ' && ch <= '~')))
+			outchar_esc = ansiState_none;
+	}
+	else if (outchar_esc == ansiState_sos) { // SOS
+		if (ch == ESC)
+			outchar_esc = ansiState_sos_esc;
+	}
+	else if (outchar_esc == ansiState_sos_esc) { // ESC inside SOS
+		if (ch == '\\')
+			outchar_esc = ansiState_esc;
+		else if (ch == 'X')
+			outchar_esc = ansiState_none;
+		else
+			outchar_esc = ansiState_sos;
+	}
+	else
+		outchar_esc = ansiState_none;
+
+	if (outchar_esc != ansiState_none) {
+		if (outchar_esc == ansiState_final)
+			outchar_esc = ansiState_none;
+		sbbs.outcom(ch);
+		return false;
+	}
+
+	/* Track cursor position locally */
+	switch (ch) {
+		case '\a':  // 7
+			/* Non-printing */
+			break;
+		case '\b':  // 8
+			if (column > 0)
+				column--;
+			if (lbuflen < LINE_BUFSIZE) {
+				if (lbuflen == 0)
+					latr = curatr;
+				lbuf[lbuflen++] = ch;
+			}
+			break;
+		case '\t':  // 9
+			// TODO: Original would wrap, this one (hopefully) doesn't.
+			if (column < (cols - 1)) {
+				column++;
+				while ((column < (cols < 1)) && (column % tabstop)) {
+					sbbs.outcom(' ');
+					inc_column();
+				}
+			}
+			return false;
+		case '\n':  // 10
+			line_feed();
+			return false;
+		case FF:    // 12
+			clearscreen();
+			return false;
+		case '\r':  // 13
+			carriage_return();
+			return false;
+		default:
+			// TODO: All kinds of CTRL charaters not handled properly
+			if (!lbuflen)
+				latr = curatr;
+			if (lbuflen < LINE_BUFSIZE)
+				lbuf[lbuflen++] = ch;
+			inc_column(1);
+			break;
+	}
+
+	return true;
+}
+
+bool ANSI_Terminal::parse_ctrlkey(char& ch, int mode) {
+	int i;
+	char inch;
+	char str[512];
+
+	if (ch == ESC) {
+		int rc = sbbs.kbincom((mode & K_GETSTR) ? 3000:1000);
+		if (rc == NOINP)        // timed-out waiting for '['
+			return true;
+		inch = rc;
+		if (inch != '[') {
+			sbbs.ungetkey(inch, true);
+			return true;
+		}
+		int sp = 0; // String position
+		int to = 0; // Number of input timeouts
+		// TODO: Presumably this is already set...
+		sbbs.autoterm |= ANSI;
+		while (sp < 10 && to < 30) {       /* up to 3 seconds */
+			rc = sbbs.kbincom(100);
+			if (rc == NOINP) {
+				to++;
+				continue;
+			}
+			inch = rc;
+			// TODO: Previously errors in parsing a button would continue, now it breaks
+			if (sp == 0 && inch == 'M' && mouse_mode != MOUSE_MODE_OFF) {
+				if (sp == 0)
+					str[sp++] = ch;
+				int button = sbbs.kbincom(100);
+				if (button == NOINP) {
+					sbbs.lprintf(LOG_DEBUG, "Timeout waiting for mouse button value");
+					break;
+				}
+				str[sp++] = button;
+				ch = sbbs.kbincom(100);
+				if (ch < '!') {
+					sbbs.lprintf(LOG_DEBUG, "Unexpected mouse-button (0x%02X) tracking char: 0x%02X < '!'"
+						, button, ch);
+					break;
+				}
+				str[sp++] = ch;
+				int x = ch - '!';
+				inch = sbbs.kbincom(100);
+				if (ch < '!') {
+					sbbs.lprintf(LOG_DEBUG, "Unexpected mouse-button (0x%02X) tracking char: 0x%02X < '!'"
+						, button, ch);
+					break;
+				}
+				str[sp++] = ch;
+				int y = ch - '!';
+				sbbs.lprintf(LOG_DEBUG, "X10 Mouse button-click (0x%02X) reported at: %u x %u", button, x, y);
+				if (button == 0x20) { // Left-click
+					list_node_t* node = find_hotspot(x, y);
+					if (node != NULL) {
+						struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
+#ifdef _DEBUG
+						{
+							char dbg[128];
+							c_escape_str(spot->cmd, dbg, sizeof(dbg), /* Ctrl-only? */ true);
+							sbbs.lprintf(LOG_DEBUG, "Stuffing hot spot command into keybuf: '%s'", dbg);
+						}
+#endif
+						if (sbbs.pause_inside && pause_hotspot == nullptr) {
+							ch = TERM_KEY_ABORT;
+							sbbs.ungetkeys(spot->cmd, true);
+						}
+						else {
+							ch = spot->cmd[0];
+							if (spot->cmd[1])
+								sbbs.ungetkeys(&spot->cmd[1]);
+						}
+						return (ch < 32 || ch == 127);
+					}
+					if (sbbs.pause_inside && y == rows - 1)
+						return '\r';
+				} else if (button == '`' && console & CON_MOUSE_SCROLL) {
+					ch = TERM_KEY_UP;
+					return true;
+				} else if (button == 'a' && console & CON_MOUSE_SCROLL) {
+					ch = TERM_KEY_DOWN;
+					return true
+				}
+				if ((button != 0x23 && sbbs.console & CON_MOUSE_CLK_PASSTHRU)
+				    || (button == 0x23 && sbbs.console & CON_MOUSE_REL_PASSTHRU)) {
+					for (size_t j = sp; j > 0; j--)
+						sbbs.ungetkey(str[j - 1], /* insert: */ true);
+					sbbs.ungetkey('[', /* insert: */ true);
+					ch = ESC;
+					return true;
+				}
+				if (button == 0x22) {  // Right-click
+					ch = TERM_KEY_ABORT;
+					return true;
+				}
+				ch = TERM_KEY_IGNORE;
+				return true;
+			}
+
+			if (sp == 0 && inch == '<' && mouse_mode != MOUSE_MODE_OFF) {
+				while (sp < (int)sizeof(str) - 1) {
+					int byte = sbbs.kbincom(100);
+					if (byte == NOINP) {
+						sbbs.lprintf(LOG_DEBUG, "Timeout waiting for mouse report character (%d)", i);
+						break;;
+					}
+					str[sp++] = byte;
+					if (IS_ALPHA(byte))
+						break;
+				}
+				str[sp] = 0;
+				int button = -1, x = 0, y = 0;
+				if (sscanf(str, "%d;%d;%d%c", &button, &x, &y, &inch) != 4
+				    || button < 0 || x < 1 || y < 1 || toupper(inch) != 'M') {
+					sbbs.lprintf(LOG_DEBUG, "Invalid SGR mouse report sequence: '%s'", str);
+					return 0;
+				}
+				--x;
+				--y;
+				sbbs.lprintf(LOG_DEBUG, "SGR Mouse button (0x%02X) %s reported at: %u x %u"
+					, button, inch == 'M' ? "PRESS" : "RELEASE", x, y);
+				if (button == 0 && inch == 'm') { // Left-button release
+					list_node_t* node = find_hotspot(x, y);
+					if (node != NULL) {
+						struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
+#ifdef _DEBUG
+						{
+							char dbg[128];
+							c_escape_str(spot->cmd, dbg, sizeof(dbg), /* Ctrl-only? */ true);
+							sbbs.lprintf(LOG_DEBUG, "Stuffing hot spot command into keybuf: '%s'", dbg);
+						}
+#endif
+						if (sbbs.pause_inside && pause_hotspot == nullptr) {
+							ch = TERM_KEY_ABORT;
+							sbbs.ungetkeys(spot->cmd, true);
+						}
+						else {
+							ch = spot->cmd[0];
+							if (spot->cmd[1])
+								sbbs.ungetkeys(&spot->cmd[1]);
+						}
+						return (ch < 32 || ch == 127);
+					}
+					if (sbbs.pause_inside && y == rows - 1) {
+						ch = '\r';
+						return true;
+					}
+				} else if (button == 0x40 && sbbs.console & CON_MOUSE_SCROLL) {
+					ch = TERM_KEY_UP;
+					return true;
+				} else if (button == 0x41 && sbbs.console & CON_MOUSE_SCROLL) {
+					ch = TERM_KEY_DOWN;
+					return true;
+				}
+				if ((inch == 'M' && sbbs.console & CON_MOUSE_CLK_PASSTHRU)
+				    || (ch == 'm' && sbbs.console & CON_MOUSE_REL_PASSTHRU)) {
+					sbbs.lprintf(LOG_DEBUG, "Passing-through SGR mouse report: 'ESC[<%s'", str);
+					for (size_t j = sp; j > 0; j--)
+						sbbs.ungetkey(str[j - 1], /* insert: */ true);
+					sbbs.ungetkey('<', /* insert: */ true);
+					sbbs.ungetkey('[', /* insert: */ true);
+					ch = ESC;
+					return true;
+				}
+				if (inch == 'M' && button == 2) {  // Right-click
+					ch = TERM_KEY_ABORT;
+					return true;
+				}
+#ifdef _DEBUG
+				sbbs.lprintf(LOG_DEBUG, "Eating SGR mouse report: 'ESC[<%s'", str);
+#endif
+				return 0;
+			}
+			if (inch != ';' && !IS_DIGIT(inch) && inch != 'R') {    /* other ANSI */
+				str[sp] = 0;
+				switch (inch) {
+					case 'A':
+						ch = TERM_KEY_UP;
+						return true;
+					case 'B':
+						ch = TERM_KEY_DOWN;
+						return true;
+					case 'C':
+						ch = TERM_KEY_RIGHT;
+						return true;
+					case 'D':
+						ch = TERM_KEY_LEFT;
+						return true;
+					case 'H':   /* ANSI:  home cursor */
+						ch = TERM_KEY_HOME;
+						return true;
+					case 'V':
+						ch = TERM_KEY_PAGEUP;
+						return true;
+					case 'U':
+						ch = TERM_KEY_PAGEDN;
+						return true;
+					case 'F':   /* Xterm: cursor preceding line */
+					case 'K':   /* ANSI:  clear-to-end-of-line */
+						ch = TERM_KEY_END;
+						return true;
+					case '@':   /* ANSI/ECMA-048 INSERT */
+						ch = TERM_KEY_INSERT;
+						return true;
+					case '~':   /* VT-220 (XP telnet.exe) */
+						switch (atoi(str)) {
+							case 1:
+								ch = TERM_KEY_HOME;
+								return true;
+							case 2:
+								ch = TERM_KEY_INSERT;
+								return true;
+							case 3:
+								ch = TERM_KEY_DELETE;
+								return true;
+							case 4:
+								ch = TERM_KEY_END;
+								return true;
+							case 5:
+								ch = TERM_KEY_PAGEUP;
+								return true;
+							case 6:
+								ch = TERM_KEY_PAGEDN;
+								return true;
+						}
+						break;
+				}
+				sbbs.ungetkey(inch, /* insert: */ true);
+				for (size_t j = sp; j > 0; j--)
+					sbbs.ungetkey(str[j - 1], /* insert: */ true);
+				sbbs.ungetkey('[', /* insert: */ true);
+				ch = ESC;
+				return true;
+			}
+			if (inch == 'R') {       /* cursor position report */
+				if (mode & K_ANSI_CPR && sp) {  /* auto-detect rows */
+					int x, y;
+					str[sp] = 0;
+					if (sscanf(str, "%u;%u", &y, &x) == 2) {
+						sbbs.lprintf(LOG_DEBUG, "received ANSI cursor position report: %ux%u"
+							, x, y);
+						/* Sanity check the coordinates in the response: */
+						if (useron.cols == TERM_COLS_AUTO && x >= TERM_COLS_MIN && x <= TERM_COLS_MAX)
+							cols = x;
+						if (useron.rows == TERM_ROWS_AUTO && y >= TERM_ROWS_MIN && y <= TERM_ROWS_MAX)
+							rows = y;
+						if (useron.cols == TERM_COLS_AUTO || useron.rows == TERM_ROWS_AUTO)
+							sbbs.update_nodeterm();
+					}
+				}
+				ch = TERM_KEY_IGNORE;
+				return true;
+			}
+			str[sp++] = ch;
+		}
+
+		for (size_t j = sp; j > 0; j--)
+			sbbs.sbbs.ungetkey(str[j - 1], /* insert: */ true);
+		sbbs.ungetkey('[', /* insert: */ true);
+		ch = ESC;
+		return true;
+	}
+	if (ch < 32 || ch == 127)
+		return true;
+	return false;
+}
+
 struct mouse_hotspot* ANSI_Terminal::add_hotspot(struct mouse_hotspot* spot) {return nullptr;}

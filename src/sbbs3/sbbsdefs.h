@@ -599,6 +599,8 @@ typedef enum {                      /* Values for xtrn_t.event				*/
 #define TERM_KEY_ABORT  CTRL_C
 #define TERM_KEY_PAGEUP CTRL_P
 #define TERM_KEY_PAGEDN CTRL_N
+// We can't use NUL here because Doorway mode makes NULs significant. :(
+#define TERM_KEY_IGNORE ' '
 
 #define TERM_COLS_AUTO      0
 #define TERM_COLS_MIN       40

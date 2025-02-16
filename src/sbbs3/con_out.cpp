@@ -588,6 +588,7 @@ const char* sbbs_t::term_charset(int term)
 /****************************************************************************/
 bool sbbs_t::update_nodeterm(void)
 {
+	// TODO: Terminal object hackery in here
 	str_list_t ini = strListInit();
 	iniSetInteger(&ini, ROOT_SECTION, "cols", cols, NULL);
 	iniSetInteger(&ini, ROOT_SECTION, "rows", rows, NULL);
@@ -629,7 +630,8 @@ bool sbbs_t::update_nodeterm(void)
 
 /****************************************************************************/
 /* Outputs character														*/
-/* Performs terminal translations (e.g. EXASCII-to-ASCII, FF->ESC[2J)		*/
+/* Performs charset translations (e.g. EXASCII-to-ASCII, CP437-to-PETSCII)	*/
+/* Performs terminal expansions and state parsing (e.g. FF to ESC[2JESC[H)	*/
 /* Performs Telnet IAC escaping												*/
 /* Performs tab expansion													*/
 /* Performs column counting, line counting, and auto-pausing				*/

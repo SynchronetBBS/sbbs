@@ -618,7 +618,6 @@ public:
 	int 	autoterm=0;		/* Auto-detected terminal type */
 	size_t	unicode_zerowidth=0;
 	char	terminal[TELNET_TERM_MAXLEN+1]{};	// <- answer() writes to this
-	// TODO: Line buffer to terminal?
 	uint	line_delay=0;	/* Delay duration (ms) after each line sent */
 	uint	console = 0;	/* Defines current Console settings */
 	char 	wordwrap[TERM_COLS_MAX + 1]{};	/* Word wrap buffer */
@@ -911,10 +910,6 @@ public:
 	int		backfill(const char* str, float pct, int full_attr, int empty_attr);
 	void	progress(const char* str, int count, int total, int interval = 500);
 	double	last_progress = 0;
-	// TODO: To ANSI_Terminal
-	bool	saveline(void);
-	// TODO: To ANSI_Terminal
-	bool	restoreline(void);
 	int		petscii_to_ansibbs(unsigned char);
 	size_t	print_utf8_as_cp437(const char*, size_t);
 	int		attr(int);				/* Change text color/attributes */
@@ -934,9 +929,7 @@ public:
 		output_rate_76800 = 76800,
 		output_rate_115200 = 115200,
 	} cur_output_rate = output_rate_unlimited;
-	// TODO: To ANSI_Terminal
-	void	set_output_rate(enum output_rate);
-	// TODO: To ANSI_Terminal
+	// TODO: Not To ANSI_Terminal
 	void	getdimensions();
 
 	/* getstr.cpp */
@@ -1310,9 +1303,6 @@ public:
 #ifdef __cplusplus
 extern "C" {
 #endif
-	/* ansiterm.cpp */
-	// TODO: To ANSI_Terminal... does this need to be extern "C"?  How to resolve this?
-	DLLEXPORT char*		ansi_attr(int attr, int curattr, char* str, bool color);
 
 	/* main.cpp */
 	extern const char* nulstr;

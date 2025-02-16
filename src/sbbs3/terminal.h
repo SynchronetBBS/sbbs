@@ -20,6 +20,30 @@ struct savedline {
 	int column;                     /* Current column number */
 };
 
+enum output_rate {
+	output_rate_unlimited,
+	output_rate_300 = 300,
+	output_rate_600 = 600,
+	output_rate_1200 = 1200,
+	output_rate_2400 = 2400,
+	output_rate_4800 = 4800,
+	output_rate_9600 = 9600,
+	output_rate_19200 = 19200,
+	output_rate_38400 = 38400,
+	output_rate_57600 = 57600,
+	output_rate_76800 = 76800,
+	output_rate_115200 = 115200,
+};
+
+// Terminal mouse reporting mode (mouse_mode)
+#define MOUSE_MODE_OFF  0       // No terminal mouse reporting enabled/expected
+#define MOUSE_MODE_X10  (1<<0)  // X10 compatible mouse reporting enabled
+#define MOUSE_MODE_NORM (1<<1)  // Normal tracking mode mouse reporting
+#define MOUSE_MODE_BTN  (1<<2)  // Button-event tracking mode mouse reporting
+#define MOUSE_MODE_ANY  (1<<3)  // Any-event tracking mode mouse reporting
+#define MOUSE_MODE_EXT  (1<<4)  // SGR-encoded extended coordinate mouse reporting
+#define MOUSE_MODE_ON   (MOUSE_MODE_NORM | MOUSE_MODE_EXT) // Default mouse "enabled" mode flags
+
 class Terminal {
 public:
 	uint32_t flags{0};                 /* user.misc flags that impact the terminal */
@@ -35,6 +59,8 @@ public:
 	unsigned curatr{LIGHTGRAY};        /* Current Text Attributes Always */
 	unsigned lbuflen{0};               /* Number of characters in line buffer */
 	char     lbuf[LINE_BUFSIZE + 1]{}; /* Temp storage for each line output */
+	enum output_rate cur_output_rate{output_rate_unlimited};
+	unsigned mouse_mode{MOUSE_MODE_OFF};            // Mouse reporting mode flags
 
 protected:
 	sbbs_t& sbbs;
@@ -54,6 +80,7 @@ private:
 			flags = sbbs_ref.useron.misc;
 		}
 		flags &= TERM_FLAGS;
+		// TODO: Get rows and cols
 		return flags;
 	}
 
@@ -66,13 +93,20 @@ public:
 	Terminal(Terminal& t) : flags{get_flags(t.sbbs)}, row{t.row}, column{t.column},
 	    rows{t.rows}, cols{t.cols}, tabstop{t.tabstop}, lastlinelen{t.lastlinelen}, 
 	    cterm_version{t.cterm_version}, lncntr{t.lncntr}, latr{t.latr}, curatr{t.curatr},
-	    lbuflen{t.lbuflen}, sbbs{t.sbbs},
+	    lbuflen{t.lbuflen}, mouse_mode{t.mouse_mode}, sbbs{t.sbbs},
 	    mouse_hotspots{t.mouse_hotspots}, savedlines{t.savedlines} {
 		// Take ownership of lists so they're not destroyed
 		t.mouse_hotspots = nullptr;
 		t.savedlines = nullptr;
 		// Copy line buffer
 		memcpy(lbuf, t.lbuf, sizeof(lbuf));
+		// TODO: This is pretty hacky...
+		//       Calls the old set_mouse() with the current flags
+		//       and mode.  We can't call the new one because it's
+		//       virtual and we aren't constructed yet.
+		//       Ideally this would disable the mouse if !supports(MOUSE)
+		t.flags = flags;
+		t.set_mouse(mouse_mode);
 	}
 
 	virtual ~Terminal()
@@ -202,7 +236,7 @@ public:
 				break;
 		}
 	}
-	virtual void set_output_rate() {}
+	virtual void set_output_rate(enum output_rate speed) {}
 	virtual void center(const char *instr, bool msg, unsigned columns) {
 		if (columns == 0)
 			columns = cols;
@@ -251,13 +285,12 @@ public:
 		return count;
 	}
 
-
 	// TODO: backfill?
 	virtual const char* type() {
 		return "DUMB";
 	}
 
-	virtual void set_mouse(int flags) {}
+	virtual void set_mouse(unsigned flags) {}
 
 	/*
 	 * Returns true if the caller should send the char, false if
@@ -383,10 +416,10 @@ public:
 	virtual void clear_hotspots(void) {}
 	virtual void scroll_hotspots(int count) {}
 
-	struct mouse_hotspot* add_hotspot(char cmd, bool hungry, int minx, int maxx, int y) {return nullptr;}
-	struct mouse_hotspot* add_hotspot(int num, bool hungry, int minx, int maxx, int y) {return nullptr;}
-	struct mouse_hotspot* add_hotspot(uint num, bool hungry, int minx, int maxx, int y) {return nullptr;}
-	struct mouse_hotspot* add_hotspot(const char* cmd, bool hungry, int minx, int maxx, int y) {return nullptr;}
+	struct mouse_hotspot* add_hotspot(char cmd, bool hungry = true, int minx = -1, int maxx = -1, int y = -1) {return nullptr;}
+	struct mouse_hotspot* add_hotspot(int num, bool hungry = true, int minx = -1, int maxx = -1, int y = -1) {return nullptr;}
+	struct mouse_hotspot* add_hotspot(uint num, bool hungry = true, int minx = -1, int maxx = -1, int y = -1) {return nullptr;}
+	struct mouse_hotspot* add_hotspot(const char* cmd, bool hungry = true, int minx = -1, int maxx = -1, int y = -1) {return nullptr;}
 
 	void inc_row(unsigned count = 1) {
 		row += count;
@@ -394,7 +427,9 @@ public:
 			scroll_hotspots((row - rows) + 1);
 			row = rows - 1;
 		}
-		lncntr++;
+		if (lncntr || lastlinelen)
+			lncntr++;
+		lbuflen = 0;
 	}
 
 	void inc_column(unsigned count = 1) {
@@ -430,6 +465,34 @@ public:
 	bool supports(unsigned cmp_flags) {
 		return (flags & cmp_flags) == cmp_flags;
 	}
+
+	list_node_t *find_hotspot(int x, int y)
+	{
+		list_node_t *node;
+
+		for (node = mouse_hotspots->first; node != nullptr; node = node->next) {
+			struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
+			if (spot->y == y && x >= spot->minx && x <= spot->maxx)
+				break;
+		}
+		if (node == nullptr) {
+			for (node = mouse_hotspots->first; node != nullptr; node = node->next) {
+				struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
+				if (spot->hungry && spot->y == y && x >= spot->minx)
+					break;
+			}
+		}
+		if (node == NULL) {
+			for (node = mouse_hotspots->last; node != nullptr; node = node->prev) {
+				struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
+				if (spot->hungry && spot->y == y && x <= spot->minx)
+					break;
+			}
+		}
+
+		return node;
+	}
+
 };
 
 #endif
