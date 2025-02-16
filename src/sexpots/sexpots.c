@@ -1019,7 +1019,7 @@ void ident_server_thread(void* arg)
 	
     memset(&server_addr, 0, sizeof(server_addr));
 
-	server_addr.sin_addr.s_addr = htonl(ident_interface);
+	server_addr.sin_addr.s_addr = ident_interface;
     server_addr.sin_family = AF_INET;
     server_addr.sin_port   = htons(ident_port);
 
