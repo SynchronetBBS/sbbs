@@ -16,6 +16,7 @@ enum ansiState {
 class ANSI_Terminal : public Terminal {
 public:
 	ANSI_Terminal() = delete;
+	using Terminal::Terminal;
 
 	// Was ansi()
 	virtual const char *attrstr(unsigned atr);

@@ -42,10 +42,10 @@ char sbbs_t::putmsg(const char *buf, int mode, int org_cols, JSObject* obj)
 	uint             orgcon = console;
 	uint             sys_status_sav = sys_status;
 	uint             rainbow_sav[LEN_RAINBOW + 1];
-	enum output_rate output_rate = cur_output_rate;
+	enum output_rate output_rate = term->cur_output_rate;
 
 	attr_sp = 0;  /* clear any saved attributes */
-	tmpatr = curatr;  /* was lclatr(-1) */
+	tmpatr = term->curatr;  /* was lclatr(-1) */
 	if (!(mode & P_SAVEATR))
 		attr(LIGHTGRAY);
 	if (mode & P_NOPAUSE)
@@ -58,8 +58,8 @@ char sbbs_t::putmsg(const char *buf, int mode, int org_cols, JSObject* obj)
 		console = orgcon;
 		attr(tmpatr);
 	}
-	if (!(mode & P_NOATCODES) && cur_output_rate != output_rate)
-		set_output_rate(output_rate);
+	if (!(mode & P_NOATCODES) && term->cur_output_rate != output_rate)
+		term->set_output_rate(output_rate);
 
 	if (mode & P_PETSCII)
 		outcom(PETSCII_UPPERLOWER);
@@ -85,7 +85,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
 	uchar                exatr = 0;
 	char                 mark = '\0';
 	int                  i;
-	int                  col = column;
+	int                  col = term->column;
 	uint                 l = 0;
 	uint                 lines_printed = 0;
 	struct mouse_hotspot hot_spot = {};
@@ -95,7 +95,6 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
 	str = auto_utf8(str, mode);
 	size_t len = strlen(str);
 
-	int    term = term_supports();
 	if (!(mode & P_NOATCODES) && memcmp(str, "@WRAPOFF@", 9) == 0) {
 		mode &= ~P_WORDWRAP;
 		l += 9;
@@ -110,7 +109,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
 		char *wrapped;
 		if (org_cols < TERM_COLS_MIN)
 			org_cols = TERM_COLS_DEFAULT;
-		if ((wrapped = ::wordwrap((char*)str + l, cols - 1, org_cols - 1, /* handle_quotes: */ TRUE
+		if ((wrapped = ::wordwrap((char*)str + l, term->cols - 1, org_cols - 1, /* handle_quotes: */ TRUE
 		                          , /* is_utf8: */ INT_TO_BOOL(mode & P_UTF8))) == NULL)
 			errormsg(WHERE, ERR_ALLOC, "wordwrap buffer", 0);
 		else {
@@ -138,18 +137,18 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
 				}
 			// fallthrough
 			default: // printing char
-				if ((mode & P_INDENT) && column < col)
-					cursor_right(col - column);
-				else if ((mode & P_TRUNCATE) && column >= (cols - 1)) {
+				if ((mode & P_INDENT) && term->column < col)
+					term->cursor_right(col - term->column);
+				else if ((mode & P_TRUNCATE) && term->column >= (term->cols - 1)) {
 					l++;
 					continue;
 				} else if (mode & P_WRAP) {
 					if (org_cols) {
-						if (column > (org_cols - 1)) {
+						if (term->column > (org_cols - 1)) {
 							CRLF;
 						}
 					} else {
-						if (column >= (cols - 1)) {
+						if (term->column >= (term->cols - 1)) {
 							CRLF;
 						}
 					}
@@ -181,16 +180,16 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
 					}
 					switch (str[l]) {
 						case '*':
-							attr(curatr ^ HIGH);
+							attr(term->curatr ^ HIGH);
 							break;
 						case '/':
-							attr(curatr ^ BLINK);
+							attr(term->curatr ^ BLINK);
 							break;
 						case '_':
-							attr(curatr ^ (HIGH | BLINK));
+							attr(term->curatr ^ (HIGH | BLINK));
 							break;
 						case '#':
-							attr(((curatr & 0x0f) << 4) | ((curatr & 0xf0) >> 4));
+							attr(((term->curatr & 0x0f) << 4) | ((term->curatr & 0xf0) >> 4));
 							break;
 					}
 					if (mark != 0 && !(mode & P_HIDEMARKS))
@@ -219,18 +218,18 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
 			else if (str[l + 1] == '~') {
 				l += 2;
 				if (str[l] >= ' ')
-					add_hotspot(str[l], /* hungry: */ true);
+					term->add_hotspot(str[l], /* hungry: */ true);
 				else
-					add_hotspot('\r', /* hungry: */ true);
+					term->add_hotspot('\r', /* hungry: */ true);
 			}
 			else if (str[l + 1] == '`' && str[l + 2] >= ' ') {
-				add_hotspot(str[l + 2], /* hungry: */ false);
+				term->add_hotspot(str[l + 2], /* hungry: */ false);
 				l += 2;
 			}
 			else {
-				bool was_tos = (row == 0);
+				bool was_tos = (term->row == 0);
 				ctrl_a(str[l + 1]);
-				if (row == 0 && !was_tos && (sys_status & SS_ABORT) && !lines_printed) /* Aborted at (auto) pause prompt (e.g. due to CLS)? */
+				if (term->row == 0 && !was_tos && (sys_status & SS_ABORT) && !lines_printed) /* Aborted at (auto) pause prompt (e.g. due to CLS)? */
 					sys_status &= ~SS_ABORT;                /* Clear the abort flag (keep displaying the msg/file) */
 				l += 2;
 			}
@@ -244,7 +243,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
 			static uchar save_attr;
 			switch (val) {
 				case 0x00:
-					save_attr = curatr;
+					save_attr = term->curatr;
 					break;
 				case 0xff:
 					attr(save_attr);
@@ -272,10 +271,10 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
 			if (i >= 16) {                 /* setting background */
 				i -= 16;
 				i <<= 4;
-				i |= (curatr & 0x0f);       /* leave foreground alone */
+				i |= (term->curatr & 0x0f);       /* leave foreground alone */
 			}
 			else
-				i |= (curatr & 0xf0);   /* leave background alone */
+				i |= (term->curatr & 0xf0);   /* leave background alone */
 			attr(i);
 			exatr = 1;
 			l += 3;   /* Skip |xx */
@@ -285,55 +284,55 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
 		         && !(useron.misc & RIP)) {
 			switch (str[l + 1]) {
 				case 'k':
-					attr((curatr & 0xf0) | BLACK);
+					attr((term->curatr & 0xf0) | BLACK);
 					break;
 				case 'b':
-					attr((curatr & 0xf0) | BLUE);
+					attr((term->curatr & 0xf0) | BLUE);
 					break;
 				case 'g':
-					attr((curatr & 0xf0) | GREEN);
+					attr((term->curatr & 0xf0) | GREEN);
 					break;
 				case 'c':
-					attr((curatr & 0xf0) | CYAN);
+					attr((term->curatr & 0xf0) | CYAN);
 					break;
 				case 'r':
-					attr((curatr & 0xf0) | RED);
+					attr((term->curatr & 0xf0) | RED);
 					break;
 				case 'm':
-					attr((curatr & 0xf0) | MAGENTA);
+					attr((term->curatr & 0xf0) | MAGENTA);
 					break;
 				case 'y':
-					attr((curatr & 0xf0) | YELLOW);
+					attr((term->curatr & 0xf0) | YELLOW);
 					break;
 				case 'w':
-					attr((curatr & 0xf0) | LIGHTGRAY);
+					attr((term->curatr & 0xf0) | LIGHTGRAY);
 					break;
 				case 'd':
-					attr((curatr & 0xf0) | BLACK | HIGH);
+					attr((term->curatr & 0xf0) | BLACK | HIGH);
 					break;
 				case 'B':
-					attr((curatr & 0xf0) | BLUE | HIGH);
+					attr((term->curatr & 0xf0) | BLUE | HIGH);
 					break;
 				case 'G':
-					attr((curatr & 0xf0) | GREEN | HIGH);
+					attr((term->curatr & 0xf0) | GREEN | HIGH);
 					break;
 				case 'C':
-					attr((curatr & 0xf0) | CYAN | HIGH);
+					attr((term->curatr & 0xf0) | CYAN | HIGH);
 					break;
 				case 'R':
-					attr((curatr & 0xf0) | RED | HIGH);
+					attr((term->curatr & 0xf0) | RED | HIGH);
 					break;
 				case 'M':
-					attr((curatr & 0xf0) | MAGENTA | HIGH);
+					attr((term->curatr & 0xf0) | MAGENTA | HIGH);
 					break;
 				case 'Y':   /* Yellow */
-					attr((curatr & 0xf0) | YELLOW | HIGH);
+					attr((term->curatr & 0xf0) | YELLOW | HIGH);
 					break;
 				case 'W':
-					attr((curatr & 0xf0) | LIGHTGRAY | HIGH);
+					attr((term->curatr & 0xf0) | LIGHTGRAY | HIGH);
 					break;
 				case 'S':   /* swap foreground and background - TODO: This sets foreground to BLACK! */
-					attr((curatr & 0x07) << 4);
+					attr((term->curatr & 0x07) << 4);
 					break;
 			}
 			exatr = 1;
@@ -386,17 +385,21 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
 			}
 
 			/* ansi escape sequence */
+			// TODO: Figure out how to do this in ANSI_Terminal
+			//       It's trickier than it looks...
+#if 0
 			if (outchar_esc >= ansiState_csi) {
 				if (str[l] == 'A' || str[l] == 'B' || str[l] == 'H' || str[l] == 'J'
 				    || str[l] == 'f' || str[l] == 'u')    /* ANSI anim */
-					lncntr = 0;         /* so defeat pause */
+					term->lncntr = 0;         /* so defeat pause */
 				if (str[l] == '"' || str[l] == 'c') {
 					l++;                /* don't pass on keyboard reassignment or Device Attributes (DA) requests */
 					continue;
 				}
 			}
+#endif
 			if (str[l] == '!' && str[l + 1] == '|' && useron.misc & RIP) /* RIP */
-				lncntr = 0;             /* so defeat pause */
+				term->lncntr = 0;             /* so defeat pause */
 			if (str[l] == '@' && !(mode & P_NOATCODES)) {
 				if (memcmp(str + l, "@EOF@", 5) == 0)
 					break;
@@ -415,7 +418,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
 						tmp[i++] = str[l++];
 					tmp[i] = 0;
 					truncsp(tmp);
-					center(expand_atcodes(tmp, tmp2, sizeof tmp2));
+					term->center(expand_atcodes(tmp, tmp2, sizeof tmp2));
 					if (str[l] == '\r')
 						l++;
 					if (str[l] == '\n')
@@ -470,10 +473,10 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
 						continue;
 					}
 				}
-				bool was_tos = (row == 0);
+				bool was_tos = (term->row == 0);
 				i = show_atcode((char *)str + l, obj);  /* returns 0 if not valid @ code */
 				l += i;                   /* i is length of code string */
-				if (row > 0 && !was_tos && (sys_status & SS_ABORT) && !lines_printed)  /* Aborted at (auto) pause prompt (e.g. due to CLS)? */
+				if (term->row > 0 && !was_tos && (sys_status & SS_ABORT) && !lines_printed)  /* Aborted at (auto) pause prompt (e.g. due to CLS)? */
 					sys_status &= ~SS_ABORT;                /* Clear the abort flag (keep displaying the msg/file) */
 				if (i)                   /* if valid string, go to top */
 					continue;
@@ -481,34 +484,34 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
 			if (mode & P_CPM_EOF && str[l] == CTRL_Z)
 				break;
 			if (hot_attr) {
-				if (curatr == hot_attr && str[l] > ' ') {
-					hot_spot.y = row;
+				if (term->curatr == hot_attr && str[l] > ' ') {
+					hot_spot.y = term->row;
 					if (!hot_spot.minx)
-						hot_spot.minx = column;
-					hot_spot.maxx = column;
+						hot_spot.minx = term->column;
+					hot_spot.maxx = term->column;
 					hot_spot.cmd[strlen(hot_spot.cmd)] = str[l];
 				} else if (hot_spot.cmd[0]) {
 					hot_spot.hungry = hungry_hotspots;
-					add_hotspot(&hot_spot);
+					term->add_hotspot(&hot_spot);
 					memset(&hot_spot, 0, sizeof(hot_spot));
 				}
 			}
 			size_t skip = sizeof(char);
 			if (mode & P_PETSCII) {
-				if (term & PETSCII) {
+				if (term->flags & PETSCII) {
 					outcom(str[l]);
 					switch ((uchar)str[l]) {
 						case '\r':  // PETSCII "Return" / new-line
-							column = 0;
+							term->column = 0;
 						/* fall-through */
 						case PETSCII_DOWN:
-							lncntr++;
+							term->lncntr++;
 							break;
 						case PETSCII_CLEAR:
 						case PETSCII_HOME:
-							row = 0;
-							column = 0;
-							lncntr = 0;
+							term->row = 0;
+							term->column = 0;
+							term->lncntr = 0;
 							break;
 						case PETSCII_BLACK:
 						case PETSCII_WHITE:
@@ -535,20 +538,20 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
 							// No cursor movement
 							break;
 						default:
-							inc_column(1);
+							term->inc_column(1);
 							break;
 					}
 				} else
 					petscii_to_ansibbs(str[l]);
 			} else if ((str[l] & 0x80) && (mode & P_UTF8)) {
-				if (term & UTF8)
+				if (term->flags & UTF8)
 					outcom(str[l]);
 				else
 					skip = print_utf8_as_cp437(str + l, len - l);
 			} else {
-				uint atr = curatr;
+				uint atr = term->curatr;
 				outchar(str[l]);
-				if (curatr != atr)   // We assume the attributes are retained between lines
+				if (term->curatr != atr)   // We assume the attributes are retained between lines
 					attr(atr);
 			}
 			l += skip;

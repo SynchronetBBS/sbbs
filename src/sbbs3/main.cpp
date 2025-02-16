@@ -3548,9 +3548,7 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 	SAFECOPY(connection, "Telnet");
 	telnet_ack_event = CreateEvent(NULL, /* Manual Reset: */ false, /* InitialState */ false, NULL);
 
-	listInit(&savedlines, /* flags: */ 0);
 	listInit(&smb_list, /* flags: */ 0);
-	listInit(&mouse_hotspots, /* flags: */ 0);
 	pthread_mutex_init(&nodefile_mutex, NULL);
 
 	for (i = 0; i < TOTAL_TEXT; i++)
@@ -3908,9 +3906,7 @@ sbbs_t::~sbbs_t()
 	FREE_AND_NULL(qwknode);
 	total_qwknodes = 0;
 
-	listFree(&savedlines);
 	listFree(&smb_list);
-	listFree(&mouse_hotspots);
 
 #ifdef USE_CRYPTLIB
 	while (ssh_mutex_created && pthread_mutex_destroy(&ssh_mutex) == EBUSY)
@@ -3929,6 +3925,11 @@ sbbs_t::~sbbs_t()
 	if (!_CrtCheckMemory())
 		lprintf(LOG_ERR, "!MEMORY ERRORS REPORTED IN DATA/DEBUG.LOG!");
 #endif
+
+	if (term) {
+		delete term;
+		term = nullptr;
+	}
 
 #ifdef _DEBUG
 	lprintf(LOG_DEBUG, "destructor end");
@@ -4055,7 +4056,7 @@ int sbbs_t::mv(const char* path, const char* dest, bool copy)
 void sbbs_t::hangup(void)
 {
 	if (online) {
-		clear_hotspots();
+		term->clear_hotspots();
 		lprintf(LOG_DEBUG, "disconnecting client");
 		online = false;   // moved from the bottom of this function on Jan-25-2009
 	}
@@ -4244,13 +4245,13 @@ void sbbs_t::reset_logon_vars(void)
 	cid[0] = 0;
 	wordwrap[0] = 0;
 	question[0] = 0;
-	row = 0;
-	rows = startup->default_term_height;
-	cols = startup->default_term_width;
-	lncntr = 0;
+	term->row = 0;
+	term->rows = startup->default_term_height;
+	term->cols = startup->default_term_width;
+	term->lncntr = 0;
 	autoterm = 0;
-	cterm_version = 0;
-	lbuflen = 0;
+	term->cterm_version = 0;
+	term->lbuflen = 0;
 	timeleft_warn = 0;
 	keybufbot = keybuftop = 0;
 	usrgrps = usrlibs = 0;
@@ -4261,7 +4262,7 @@ void sbbs_t::reset_logon_vars(void)
 		cursub[i] = 0;
 	cur_rate = 30000;
 	dte_rate = 38400;
-	cur_output_rate = output_rate_unlimited;
+	term->cur_output_rate = output_rate_unlimited;
 	main_cmds = xfer_cmds = posts_read = 0;
 	lastnodemsg = 0;
 	lastnodemsguser[0] = 0;
@@ -5660,10 +5661,10 @@ NO_SSH:
 				sbbs->outcom(0); /* acknowledge RLogin per RFC 1282 */
 
 			sbbs->autoterm = 0;
-			sbbs->cols = startup->default_term_width;
+			sbbs->term->cols = startup->default_term_width;
 			if (inet_addrport(&local_addr) == startup->pet40_port || inet_addrport(&local_addr) == startup->pet80_port) {
 				sbbs->autoterm = PETSCII;
-				sbbs->cols = inet_addrport(&local_addr) == startup->pet40_port ? 40 : 80;
+				sbbs->term->cols = inet_addrport(&local_addr) == startup->pet40_port ? 40 : 80;
 				sbbs->outcom(PETSCII_UPPERLOWER);
 			}
 
@@ -5979,7 +5980,7 @@ NO_PASSTHRU:
 			new_node->input_thread = (HANDLE)_beginthread(input_thread, 0, new_node);
 			new_node->output_thread_running = true;
 			new_node->autoterm = sbbs->autoterm;
-			new_node->cols = sbbs->cols;
+			new_node->term->cols = sbbs->term->cols;
 			_beginthread(output_thread, 0, new_node);
 			_beginthread(node_thread, 0, new_node);
 			served++;

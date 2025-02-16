@@ -229,11 +229,11 @@ int32_t * sbbs_t::getintvar(csi_t *bin, uint32_t name)
 		case 0x1c4455ee:
 			return (int32_t *)&dte_rate;
 		case 0x7fbf958e:
-			return (int32_t *)&lncntr;
+			return (int32_t *)&term->lncntr;
 //		case 0x5c1c1500:
 //			return((int32_t *)&tos);
 		case 0x613b690e:
-			return (int32_t *)&rows;
+			return (int32_t *)&term->rows;
 		case 0x205ace36:
 			return (int32_t *)&autoterm;
 		case 0x7d0ed0d1:
@@ -1835,7 +1835,7 @@ int sbbs_t::exec(csi_t *csi)
 			pause();
 			return 0;
 		case CS_PAUSE_RESET:
-			lncntr = 0;
+			term->lncntr = 0;
 			return 0;
 		case CS_GETLINES:
 			getdimensions();
@@ -1908,10 +1908,10 @@ int sbbs_t::exec(csi_t *csi)
 				csi->logic = LOGIC_FALSE;
 			return 0;
 		case CS_SAVELINE:
-			saveline();
+			term->saveline();
 			return 0;
 		case CS_RESTORELINE:
-			restoreline();
+			term->restoreline();
 			return 0;
 		case CS_SELECT_SHELL:
 			csi->logic = select_shell() ? LOGIC_TRUE:LOGIC_FALSE;

@@ -62,12 +62,12 @@ public:
 	enum output_rate cur_output_rate{output_rate_unlimited};
 	unsigned mouse_mode{MOUSE_MODE_OFF};            // Mouse reporting mode flags
 	bool pause_hotspot{false};
+	link_list_t *mouse_hotspots{nullptr};
 
 protected:
 	sbbs_t* sbbs;
 
 private:
-	link_list_t *mouse_hotspots{nullptr};
 	link_list_t *savedlines{nullptr};
 
 public:
@@ -88,14 +88,14 @@ public:
 	}
 
 	Terminal() = delete;
-	Terminal(sbbs_t *sbbsptr) : flags{get_flags(sbbsptr)}, sbbs{sbbsptr}, mouse_hotspots{listInit(nullptr, 0)},
+	Terminal(sbbs_t *sbbsptr) : flags{get_flags(sbbsptr)}, mouse_hotspots{listInit(nullptr, 0)}, sbbs{sbbsptr},
 	    savedlines{listInit(nullptr, 0)} {}
 
 	Terminal(Terminal *t) : flags{get_flags(t->sbbs)}, row{t->row}, column{t->column},
 	    rows{t->rows}, cols{t->cols}, tabstop{t->tabstop}, lastlinelen{t->lastlinelen}, 
 	    cterm_version{t->cterm_version}, lncntr{t->lncntr}, latr{t->latr}, curatr{t->curatr},
-	    lbuflen{t->lbuflen}, mouse_mode{t->mouse_mode}, pause_hotspot{t->pause_hotspot}, sbbs{t->sbbs},
-	    mouse_hotspots{t->mouse_hotspots}, savedlines{t->savedlines} {
+	    lbuflen{t->lbuflen}, mouse_mode{t->mouse_mode}, pause_hotspot{t->pause_hotspot},
+	    mouse_hotspots{t->mouse_hotspots}, sbbs{t->sbbs}, savedlines{t->savedlines} {
 		// Take ownership of lists so they're not destroyed
 		t->mouse_hotspots = nullptr;
 		t->savedlines = nullptr;
@@ -412,89 +412,24 @@ public:
 		return true;
 	}
 
-	void clear_hotspots(void) {}
-	void scroll_hotspots(int count) {}
+	void clear_hotspots(void);
+	void scroll_hotspots(unsigned count);
 
 	struct mouse_hotspot* add_hotspot(struct mouse_hotspot* spot);
 	struct mouse_hotspot* add_hotspot(char cmd, bool hungry = true, int minx = -1, int maxx = -1, int y = -1);
 	struct mouse_hotspot* add_hotspot(int num, bool hungry = true, int minx = -1, int maxx = -1, int y = -1);
 	struct mouse_hotspot* add_hotspot(uint num, bool hungry = true, int minx = -1, int maxx = -1, int y = -1);
 	struct mouse_hotspot* add_hotspot(const char* cmd, bool hungry = true, int minx = -1, int maxx = -1, int y = -1);
-	bool add_only_hotspot(char cmd);
-
-	void inc_row(unsigned count = 1) {
-		row += count;
-		if (row >= rows) {
-			scroll_hotspots((row - rows) + 1);
-			row = rows - 1;
-		}
-		if (lncntr || lastlinelen)
-			lncntr++;
-		lbuflen = 0;
-	}
-
-	void inc_column(unsigned count = 1) {
-		column += count;
-		if (column >= cols) {
-			// TODO: The "line" needs to be able to be wider than the screen?
-			lastlinelen = column;
-		}
-		while (column >= cols) {
-			lbuflen = 0;
-			// TODO: This left column at 0 before...
-			column -= cols;
-			inc_row();
-		}
-	}
-
-	void cond_newline() {
-		if (column > 0)
-			newline();
-	}
-
-	void cond_blankline() {
-		cond_newline();
-		if (lastlinelen)
-			newline();
-	}
-
-	void cond_contline() {
-		if (column > 0 && cols < TERM_COLS_DEFAULT)
-			sbbs->bputs(sbbs->text[LongLineContinuationPrefix]);
-	}
-
-	bool supports(unsigned cmp_flags) {
-		return (flags & cmp_flags) == cmp_flags;
-	}
-
-	list_node_t *find_hotspot(int x, int y)
-	{
-		list_node_t *node;
-
-		for (node = mouse_hotspots->first; node != nullptr; node = node->next) {
-			struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
-			if (spot->y == y && x >= spot->minx && x <= spot->maxx)
-				break;
-		}
-		if (node == nullptr) {
-			for (node = mouse_hotspots->first; node != nullptr; node = node->next) {
-				struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
-				if (spot->hungry && spot->y == y && x >= spot->minx)
-					break;
-			}
-		}
-		if (node == NULL) {
-			for (node = mouse_hotspots->last; node != nullptr; node = node->prev) {
-				struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
-				if (spot->hungry && spot->y == y && x <= spot->minx)
-					break;
-			}
-		}
-
-		return node;
-	}
+	bool add_pause_hotspot(char cmd);
+	void inc_row(unsigned count = 1);
+	void inc_column(unsigned count = 1);
+	void cond_newline();
+	void cond_blankline();
+	void cond_contline();
+	bool supports(unsigned cmp_flags);
+	list_node_t *find_hotspot(int x, int y);
 };
 
-Terminal *update_terminal(sbbs_t *sbbsptr);
+void update_terminal(sbbs_t *sbbsptr);
 
 #endif

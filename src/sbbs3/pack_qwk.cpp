@@ -435,7 +435,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 			        && cfg.sub[usrsub[i][j]]->misc & SUB_FORCED)) {
 				if (!chk_ar(cfg.sub[usrsub[i][j]]->read_ar, &useron, &client))
 					continue;
-				lncntr = 0;                       /* defeat pause */
+				term->lncntr = 0;                       /* defeat pause */
 				if (useron.rest & FLAG('Q') && !(cfg.sub[usrsub[i][j]]->misc & SUB_QNET))
 					continue;   /* QWK Net Node and not QWK networked, so skip */
 
@@ -641,7 +641,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 			if (isdir(str))
 				continue;
 			SAFEPRINTF2(path, "%s%s", cfg.temp_dir, dirent->d_name);
-			lncntr = 0;   /* Defeat pause */
+			term->lncntr = 0;   /* Defeat pause */
 			lprintf(LOG_INFO, "Including %s in packet", str);
 			bprintf(text[RetrievingFile], str);
 			if (!mv(str, path, /* copy: */ TRUE))
@@ -670,7 +670,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 				}
 				totalcdt += f.cost;
 			}
-			lncntr = 0;
+			term->lncntr = 0;
 			SAFEPRINTF2(tmp, "%s%s", cfg.temp_dir, filename);
 			if (!fexistcase(tmp)) {
 				seqwait(cfg.dir[f.dir]->seqdev);

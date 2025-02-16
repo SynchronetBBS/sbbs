@@ -45,7 +45,7 @@ char sbbs_t::getkey(int mode)
 	sys_status &= ~SS_ABORT;
 	if ((sys_status & SS_USERON || action == NODE_DFLT) && !(mode & (K_GETSTR | K_NOSPIN)))
 		mode |= (useron.misc & SPIN);
-	lncntr = 0;
+	term->lncntr = 0;
 	getkey_last_activity = time(NULL);
 #if !defined SPINNING_CURSOR_OVER_HARDWARE_CURSOR
 	if (mode & K_SPIN)
@@ -57,7 +57,7 @@ char sbbs_t::getkey(int mode)
 #if defined SPINNING_CURSOR_OVER_HARDWARE_CURSOR
 				bputs(" \b");
 #else
-				backspace();
+				term->backspace();
 #endif
 			}
 			return 0;
@@ -87,7 +87,7 @@ char sbbs_t::getkey(int mode)
 #if defined SPINNING_CURSOR_OVER_HARDWARE_CURSOR
 				bputs(" \b");
 #else
-				backspace();
+				term->backspace();
 #endif
 			}
 			if (mode & K_COLD && ch > ' ' && useron.misc & COLDKEYS) {
@@ -97,7 +97,7 @@ char sbbs_t::getkey(int mode)
 					outchar(ch);
 				while ((coldkey = inkey(mode, 1000)) == 0 && online && !(sys_status & SS_ABORT))
 					;
-				backspace();
+				term->backspace();
 				if (coldkey == BS || coldkey == DEL)
 					continue;
 				if (coldkey > ' ')
@@ -118,11 +118,11 @@ char sbbs_t::getkey(int mode)
 		if (sys_status & SS_USERON && online && (timeleft / 60) < (5 - timeleft_warn)
 		    && !SYSOP && !(sys_status & SS_LCHAT)) {
 			timeleft_warn = 5 - (timeleft / 60);
-			saveline();
+			term->saveline();
 			attr(LIGHTGRAY);
 			bprintf(text[OnlyXminutesLeft]
 			        , ((ushort)timeleft / 60) + 1, (timeleft / 60) ? "s" : nulstr);
-			restoreline();
+			term->restoreline();
 		}
 
 		if (!(startup->options & BBS_OPT_NO_TELNET_GA)
@@ -138,7 +138,7 @@ char sbbs_t::getkey(int mode)
 		    && ((cfg.inactivity_warn && inactive >= cfg.max_getkey_inactivity * (cfg.inactivity_warn / 100.0))
 		        || inactive >= cfg.max_getkey_inactivity)) {
 			if ((sys_status & SS_USERON) && inactive < cfg.max_getkey_inactivity && *text[AreYouThere] != '\0') {
-				saveline();
+				term->saveline();
 				bputs(text[AreYouThere]);
 			}
 			else
@@ -158,9 +158,9 @@ char sbbs_t::getkey(int mode)
 			}
 			if ((sys_status & SS_USERON) && *text[AreYouThere] != '\0') {
 				attr(LIGHTGRAY);
-				carriage_return();
-				cleartoeol();
-				restoreline();
+				term->carriage_return();
+				term->cleartoeol();
+				term->restoreline();
 			}
 			getkey_last_activity = now;
 		}
@@ -200,38 +200,37 @@ void sbbs_t::mnemonics(const char *instr)
 	char str[256];
 	expand_atcodes(instr, str, sizeof str);
 	l = 0L;
-	int  term = term_supports();
 	attr(mneattr_low);
 
 	while (str[l]) {
 		if (str[l] == '~' && str[l + 1] < ' ') {
-			add_hotspot('\r', /* hungry: */ true);
+			term->add_hotspot('\r', /* hungry: */ true);
 			l += 2;
 		}
 		else if (str[l] == '~') {
-			if (!(term & (ANSI | PETSCII)))
+			if (!(term->flags & (ANSI | PETSCII)))
 				outchar('(');
 			l++;
 			if (!ctrl_a_codes)
 				attr(mneattr_high);
-			add_hotspot(str[l], /* hungry: */ true);
+			term->add_hotspot(str[l], /* hungry: */ true);
 			outchar(str[l]);
 			l++;
-			if (!(term & (ANSI | PETSCII)))
+			if (!(term->flags & (ANSI | PETSCII)))
 				outchar(')');
 			if (!ctrl_a_codes)
 				attr(mneattr_low);
 		}
 		else if (str[l] == '`' && str[l + 1] != 0) {
-			if (!(term & (ANSI | PETSCII)))
+			if (!(term->flags & (ANSI | PETSCII)))
 				outchar('[');
 			l++;
 			if (!ctrl_a_codes)
 				attr(mneattr_high);
-			add_hotspot(str[l], /* hungry: */ false);
+			term->add_hotspot(str[l], /* hungry: */ false);
 			outchar(str[l]);
 			l++;
-			if (!(term & (ANSI | PETSCII)))
+			if (!(term->flags & (ANSI | PETSCII)))
 				outchar(']');
 			if (!ctrl_a_codes)
 				attr(mneattr_low);
@@ -275,7 +274,7 @@ bool sbbs_t::yesno(const char *str, int mode)
 				CRLF;
 			if (!(mode & P_SAVEATR))
 				attr(LIGHTGRAY);
-			lncntr = 0;
+			term->lncntr = 0;
 			return true;
 		}
 		if (ch == no_key()) {
@@ -283,7 +282,7 @@ bool sbbs_t::yesno(const char *str, int mode)
 				CRLF;
 			if (!(mode & P_SAVEATR))
 				attr(LIGHTGRAY);
-			lncntr = 0;
+			term->lncntr = 0;
 			return false;
 		}
 	}
@@ -313,7 +312,7 @@ bool sbbs_t::noyes(const char *str, int mode)
 				CRLF;
 			if (!(mode & P_SAVEATR))
 				attr(LIGHTGRAY);
-			lncntr = 0;
+			term->lncntr = 0;
 			return true;
 		}
 		if (ch == yes_key()) {
@@ -321,7 +320,7 @@ bool sbbs_t::noyes(const char *str, int mode)
 				CRLF;
 			if (!(mode & P_SAVEATR))
 				attr(LIGHTGRAY);
-			lncntr = 0;
+			term->lncntr = 0;
 			return false;
 		}
 	}
@@ -353,7 +352,7 @@ int sbbs_t::getkeys(const char *keys, uint max, int mode)
 				attr(LIGHTGRAY);
 				CRLF;
 			}
-			lncntr = 0;
+			term->lncntr = 0;
 			return -1;
 		}
 		if (ch && !n && ((keys == NULL && !IS_DIGIT(ch)) || (strchr(str, ch)))) {  /* return character if in string */
@@ -374,7 +373,7 @@ int sbbs_t::getkeys(const char *keys, uint max, int mode)
 					}
 					if (c == BS || c == DEL) {
 						if (!(mode & K_NOECHO))
-							backspace();
+							term->backspace();
 						continue;
 					}
 				}
@@ -382,7 +381,7 @@ int sbbs_t::getkeys(const char *keys, uint max, int mode)
 					attr(LIGHTGRAY);
 					CRLF;
 				}
-				lncntr = 0;
+				term->lncntr = 0;
 			}
 			return ch;
 		}
@@ -391,14 +390,14 @@ int sbbs_t::getkeys(const char *keys, uint max, int mode)
 				attr(LIGHTGRAY);
 				CRLF;
 			}
-			lncntr = 0;
+			term->lncntr = 0;
 			if (n)
 				return i | 0x80000000L;    /* return number plus high bit */
 			return 0;
 		}
 		if ((ch == BS || ch == DEL) && n) {
 			if (!(mode & K_NOECHO))
-				backspace();
+				term->backspace();
 			i /= 10;
 			n--;
 		}
@@ -413,7 +412,7 @@ int sbbs_t::getkeys(const char *keys, uint max, int mode)
 					attr(LIGHTGRAY);
 					CRLF;
 				}
-				lncntr = 0;
+				term->lncntr = 0;
 				return i | 0x80000000L;
 			}
 		}
@@ -428,38 +427,37 @@ int sbbs_t::getkeys(const char *keys, uint max, int mode)
 bool sbbs_t::pause(bool set_abort)
 {
 	char   ch;
-	uint   tempattrs = curatr; /* was lclatr(-1) */
+	uint   tempattrs = term->curatr; /* was lclatr(-1) */
 	int    l = K_UPPER;
 	size_t len;
 
 	if ((sys_status & SS_ABORT) || pause_inside)
 		return false;
 	pause_inside = true;
-	lncntr = 0;
+	term->lncntr = 0;
 	if (online == ON_REMOTE)
 		rioctl(IOFI);
-	if (mouse_hotspots.first == NULL)
-		pause_hotspot = add_hotspot('\r');
+	term->pause_hotspot = term->add_pause_hotspot('\r');
 	bputs(text[Pause]);
-	len = bstrlen(text[Pause]);
+	len = term->bstrlen(text[Pause]);
 	if (sys_status & SS_USERON && !(useron.misc & (NOPAUSESPIN))
 	    && cfg.spinning_pause_prompt)
 		l |= K_SPIN;
 	ch = getkey(l);
-	if (pause_hotspot) {
-		clear_hotspots();
-		pause_hotspot = NULL;
+	if (term->pause_hotspot) {
+		term->clear_hotspots();
+		term->pause_hotspot = false;
 	}
 	bool aborted = (ch == no_key() || ch == quit_key() || (sys_status & SS_ABORT));
 	if (set_abort && aborted)
 		sys_status |= SS_ABORT;
 	if (text[Pause][0] != '@')
-		backspace(len);
+		term->backspace(len);
 	getnodedat(cfg.node_num, &thisnode);
 	nodesync();
 	attr(tempattrs);
 	if (ch == TERM_KEY_DOWN) // down arrow == display one more line
-		lncntr = rows - 2;
+		term->lncntr = term->rows - 2;
 	pause_inside = false;
 	return !aborted;
 }

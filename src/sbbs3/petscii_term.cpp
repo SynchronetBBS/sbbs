@@ -1,8 +1,9 @@
 #include "petscii_term.h"
+#include "petdefs.h"
 
 // Initial work is only C64, not C126, C16, or VIC-20, and certainly not a PET
 
-const char *attrstr(unsigned atr)
+const char *PETSCII_Terminal::attrstr(unsigned atr)
 {
 	switch (atr) {
 
@@ -68,7 +69,7 @@ xlat_atr(unsigned atr)
 	return atr;
 }
 
-char* attrstr(unsigned atr, unsigned curatr, char* str, size_t strsz)
+char* PETSCII_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t strsz)
 {
 	unsigned newatr = xlat_atr(atr);
 	unsigned oldatr = xlat_atr(curatr);
@@ -159,22 +160,22 @@ char* attrstr(unsigned atr, unsigned curatr, char* str, size_t strsz)
 	return str;
 }
 
-bool gotoxy(unsigned x, unsigned y)
+bool PETSCII_Terminal::gotoxy(unsigned x, unsigned y)
 {
 	sbbs->outcom(PETSCII_HOME);
-	col = 0;
+	column = 0;
 	row = 0;
 	cursor_down(y - 1);
 	cursor_right(x - 1);
 	return true;
 }
 
-void carriage_return()
+void PETSCII_Terminal::carriage_return()
 {
 	cursor_left(column);
 }
 
-void line_feed(unsigned count = 1)
+void PETSCII_Terminal::line_feed(unsigned count)
 {
 	// Like cursor_down() but scrolls...
 	for (unsigned i = 0; i < count; i++)
@@ -182,19 +183,19 @@ void line_feed(unsigned count = 1)
 	cursor_down(count);
 }
 
-void backspace(unsigned int count = 1)
+void PETSCII_Terminal::backspace(unsigned int count)
 {
 	sbbs->outcom(PETSCII_DELETE);
 }
 
-void newline(unsigned count = 1)
+void PETSCII_Terminal::newline(unsigned count)
 {
 	sbbs->outcom('\r');
 	inc_row();
 	column = 0;
 }
 
-void clearscreen()
+void PETSCII_Terminal::clearscreen()
 {
 	sbbs->outcom(PETSCII_CLEAR);
 	row = 0;
@@ -203,10 +204,10 @@ void clearscreen()
 	clear_hotspots();
 }
 
-void cleartoeos()
+void PETSCII_Terminal::cleartoeos()
 {
 	int x = row + 1;
-	int y = col + 1;
+	int y = column + 1;
 
 	cleartoeol();
 	while (row < rows - 1) {
@@ -216,25 +217,25 @@ void cleartoeos()
 	gotoxy(x, y);
 }
 
-void cleartoeol()
+void PETSCII_Terminal::cleartoeol()
 {
 	unsigned s, b;
 	s = b = column;
 	while (++s <= cols)
 		sbbs->outcom(' ');
-	while (++j <= cols)
+	while (++b <= cols)
 		sbbs->outcom(PETSCII_LEFT);
 }
 
-void clearline()
+void PETSCII_Terminal::clearline()
 {
-	int c = col;
+	int c = column;
 	carriage_return();
 	cleartoeol();
-	cursor_right(col);
+	cursor_right(c);
 }
 
-void cursor_home()
+void PETSCII_Terminal::cursor_home()
 {
 	sbbs->outcom(PETSCII_HOME);
 	row = 0;
@@ -242,9 +243,9 @@ void cursor_home()
 	lncntr = 0;
 }
 
-void cursor_up(unsigned count = 1)
+void PETSCII_Terminal::cursor_up(unsigned count)
 {
-	for (unsigned i; i < count; i++) {
+	for (unsigned i = 0; i < count; i++) {
 		sbbs->outcom(PETSCII_UP);
 		if (row > 0)
 			row--;
@@ -253,7 +254,7 @@ void cursor_up(unsigned count = 1)
 	}
 }
 
-void cursor_down(unsigned count = 1)
+void PETSCII_Terminal::cursor_down(unsigned count)
 {
 	for (unsigned i = 0; i < count; i++) {
 		if (row >= (rows - 1))
@@ -263,31 +264,31 @@ void cursor_down(unsigned count = 1)
 	}
 }
 
-void cursor_right(unsigned count = 1)
+void PETSCII_Terminal::cursor_right(unsigned count)
 {
 	for (unsigned i = 0; i < count; i++) {
-		if (col >= (col - 1))
+		if (column >= (column - 1))
 			break;
 		sbbs->outcom(PETSCII_RIGHT);
 		inc_column();
 	}
 }
 
-void cursor_left(unsigned count = 1)
+void PETSCII_Terminal::cursor_left(unsigned count)
 {
 	for (unsigned i = 0; i < count; i++) {
 		sbbs->outcom(PETSCII_LEFT);
-		if (col > 0)
-			col--;
+		if (column > 0)
+			column--;
 	}
 }
 
-const char* type()
+const char* PETSCII_Terminal::type()
 {
 	return "PETSCII";
 }
 
-bool parse_outchar(char ch)
+bool PETSCII_Terminal::parse_outchar(char ch)
 {
 	switch (ch) {
 		// Zero-width characters we likely shouldn't send
@@ -391,7 +392,7 @@ bool parse_outchar(char ch)
 	}
 }
 
-bool parse_ctrlkey(char& ch, int mode)
+bool PETSCII_Terminal::parse_ctrlkey(char& ch, int mode)
 {
 	switch (ch) {
 		case 17:
@@ -445,9 +446,10 @@ bool parse_ctrlkey(char& ch, int mode)
 	}
 	if (ch < 32)
 		return true;
+	return false;
 }
 
-void insert_indicator()
+void PETSCII_Terminal::insert_indicator()
 {
 	char str[32];
 	gotoxy(cols, 1);
@@ -460,5 +462,5 @@ void insert_indicator()
 		sbbs->outcom(' ');
 	}
 	sbbs->putcom(attrstr(curatr, tmpatr, str, supports(COLOR)));
-	gotoxy(col + 1, row + 1);
+	gotoxy(column + 1, row + 1);
 }

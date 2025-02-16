@@ -114,7 +114,7 @@ static int getpagingnode(scfg_t* cfg)
 void sbbs_t::nodesync(bool clearline)
 {
 	char str[256], today[32];
-	int  atr = curatr;
+	int  atr = term->curatr;
 
 	if (nodesync_inside || !online)
 		return;
@@ -175,19 +175,19 @@ void sbbs_t::nodesync(bool clearline)
 	}
 
 	if (thisnode.misc & NODE_LCHAT) { // pulled into local chat with sysop
-		saveline();
+		term->saveline();
 		privchat(true);
-		restoreline();
+		term->restoreline();
 	}
 
 	if (thisnode.misc & NODE_FCHAT) { // forced into private chat
 		int n = getpagingnode(&cfg);
 		if (n) {
 			uint save_action = action;
-			saveline();
+			term->saveline();
 			privchat(true, n);
 			action = save_action;
-			restoreline();
+			term->restoreline();
 		}
 		if (getnodedat(cfg.node_num, &thisnode, true)) {
 			thisnode.action = action;
@@ -260,8 +260,8 @@ bool sbbs_t::getnmsg(bool clearline)
 	buf[length] = 0;
 
 	if (clearline)
-		this->clearline();
-	else if (column)
+		term->clearline();
+	else if (term->column)
 		CRLF;
 	putmsg(buf, P_NOATCODES);
 	free(buf);
@@ -343,9 +343,9 @@ bool sbbs_t::getsmsg(int usernumber, bool clearline)
 		return false;
 	getnodedat(cfg.node_num, &thisnode);
 	if (clearline)
-		this->clearline();
+		term->clearline();
 	else
-	if (column)
+	if (term->column)
 		CRLF;
 	putmsg(buf, P_NOATCODES);
 	free(buf);

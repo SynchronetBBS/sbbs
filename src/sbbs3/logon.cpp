@@ -215,9 +215,9 @@ bool sbbs_t::logon()
 
 	bputs(text[LoggingOn]);
 	if (useron.rows != TERM_ROWS_AUTO)
-		rows = useron.rows;
+		term->rows = useron.rows;
 	if (useron.cols != TERM_COLS_AUTO)
-		cols = useron.cols;
+		term->cols = useron.cols;
 	update_nodeterm();
 	if (tm.tm_mon + 1 == getbirthmonth(&cfg, useron.birth) && tm.tm_mday == getbirthday(&cfg, useron.birth)
 	    && !(useron.rest & FLAG('Q'))) {
@@ -520,7 +520,7 @@ bool sbbs_t::logon()
 		bprintf(text[LiMailWaiting], mailw, mailw - mailr);
 		bprintf(text[LiSysopIs]
 		        , text[sysop_available(&cfg) ? LiSysopAvailable : LiSysopNotAvailable]);
-		newline();
+		term->newline();
 	}
 
 	if (sys_status & SS_EVENT)

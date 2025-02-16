@@ -7,6 +7,7 @@ class PETSCII_Terminal : public Terminal {
 public:
 
 	PETSCII_Terminal() = delete;
+	using Terminal::Terminal;
 
 	virtual const char *attrstr(unsigned atr);
 	virtual char* attrstr(unsigned atr, unsigned curatr, char* str, size_t strsz);

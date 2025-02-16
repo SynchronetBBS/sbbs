@@ -47,7 +47,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 								outchar(' ');
 							if (i < 99)
 								outchar(' ');
-							add_hotspot(i + 1);
+							term->add_hotspot(i + 1);
 							bprintf(text[CfgGrpLstFmt]
 							        , i + 1, cfg.grp[usrgrp[i]]->lname);
 						}
@@ -55,7 +55,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 					snprintf(str, sizeof str, text[JoinWhichGrp], curgrp + 1);
 					mnemonics(str);
 					j = getnum(usrgrps);
-					clear_hotspots();
+					term->clear_hotspots();
 					if ((int)j == -1)
 						return 0;
 					if (!j)
@@ -79,14 +79,14 @@ int sbbs_t::exec_msg(csi_t *csi)
 							outchar(' ');
 						if (i < 99)
 							outchar(' ');
-						add_hotspot(i + 1);
+						term->add_hotspot(i + 1);
 						bputs(str);
 					}
 				}
 				snprintf(str, sizeof str, text[JoinWhichSub], cursub[j] + 1);
 				mnemonics(str);
 				i = getnum(usrsubs[j]);
-				clear_hotspots();
+				term->clear_hotspots();
 				if ((int)i == -1) {
 					if (usrgrps == 1)
 						return 0;
@@ -218,7 +218,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 					outchar(' ');
 				if (i < 9)
 					outchar(' ');
-				add_hotspot(i + 1);
+				term->add_hotspot(i + 1);
 				bprintf(text[GrpLstFmt], i + 1
 				        , cfg.grp[usrgrp[i]]->lname, nulstr, usrsubs[i]);
 			}
@@ -245,7 +245,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 					outchar(' ');
 				if (i < 99)
 					outchar(' ');
-				add_hotspot(i + 1);
+				term->add_hotspot(i + 1);
 				bputs(str);
 			}
 			return 0;

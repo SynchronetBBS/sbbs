@@ -78,7 +78,7 @@ void sbbs_t::useredit(int usernumber)
 		}
 		char   user_pass[LEN_PASS + 1];
 		SAFECOPY(user_pass, user.pass);
-		size_t max_len = cols < 60 ? 8 : cols - 60;
+		size_t max_len = term->cols < 60 ? 8 : term->cols - 60;
 		if (strlen(user_pass) > max_len - 2)
 			SAFEPRINTF2(user_pass, "%.*s..", (int)(max_len - 2), user.pass);
 		bprintf(text[UeditAliasPassword]
@@ -142,18 +142,18 @@ void sbbs_t::useredit(int usernumber)
 		bprintf(text[UeditFlags], u32toaf(user.flags1, tmp), u32toaf(user.flags3, tmp2)
 		        , u32toaf(user.flags2, tmp3), u32toaf(user.flags4, str));
 		bprintf(text[UeditExempts], u32toaf(user.exempt, tmp), u32toaf(user.rest, tmp2));
-		if (lncntr >= rows - 2)
-			lncntr = 0;
+		if (term->lncntr >= term->rows - 2)
+			term->lncntr = 0;
 		if (user.misc & DELETED) {
 			if(user.deldate)
 				datestr(user.deldate, tmp);
 			else
 				datestr(user.laston, tmp);
 			snprintf(str, sizeof str, text[DeletedUser], tmp);
-			center(str);
+			term->center(str);
 		}
 		else if (user.misc & INACTIVE)
-			center(text[InactiveUser]);
+			term->center(text[InactiveUser]);
 		else
 			CRLF;
 		l = lastuser(&cfg);
@@ -168,7 +168,7 @@ void sbbs_t::useredit(int usernumber)
 			continue;
 		}
 		if (IS_ALPHA(l))
-			newline();
+			term->newline();
 		switch (l) {
 			case 'A':
 				bputs(text[EnterYourAlias]);
@@ -336,7 +336,7 @@ void sbbs_t::useredit(int usernumber)
 				editfile(str);
 				break;
 			case 'I':
-				lncntr = 0;
+				term->lncntr = 0;
 				user_config(&user);
 				break;
 			case 'J':   /* Edit Minutes */
@@ -425,7 +425,7 @@ void sbbs_t::useredit(int usernumber)
 				putuserstr(user.number, USER_PHONE, user.phone);
 				break;
 			case 'Q':
-				lncntr = 0;
+				term->lncntr = 0;
 				CLS;
 				free(ar);   /* assertion here */
 				return;
@@ -754,127 +754,127 @@ void sbbs_t::user_config(user_t* user)
 			load_user_text();
 		}
 		SAFECOPY(keys, "Q\r");
-		long term = (user == &useron) ? term_supports() : user->misc;
+		long termf = (user == &useron) ? term->flags : user->misc;
 		if (*text[UserDefaultsTerminal]) {
-			add_hotspot('T');
+			term->add_hotspot('T');
 			SAFECAT(keys, "T");
-			bprintf(text[UserDefaultsTerminal], term_type(user, term, str, sizeof str));
+			bprintf(text[UserDefaultsTerminal], term_type(user, termf, str, sizeof str));
 		}
 		if (*text[UserDefaultsRows]) {
-			add_hotspot('L');
+			term->add_hotspot('L');
 			SAFECAT(keys, "L");
 			bprintf(text[UserDefaultsRows], term_cols(user, str, sizeof str), term_rows(user, tmp, sizeof tmp));
 		}
 		if (*text[UserDefaultsCommandSet] && cfg.total_shells > 1) {
-			add_hotspot('K');
+			term->add_hotspot('K');
 			SAFECAT(keys, "K");
 			bprintf(text[UserDefaultsCommandSet], cfg.shell[user->shell]->name);
 		}
 		if (*text[UserDefaultsLanguage] && get_lang_count(&cfg) > 1) {
-			add_hotspot('I');
+			term->add_hotspot('I');
 			SAFECAT(keys, "I");
 			bprintf(text[UserDefaultsLanguage], text[Language], text[LANG]);
 		}
 		if (*text[UserDefaultsXeditor] && cfg.total_xedits) {
-			add_hotspot('E');
+			term->add_hotspot('E');
 			SAFECAT(keys, "E");
 			bprintf(text[UserDefaultsXeditor]
 			        , user->xedit ? cfg.xedit[user->xedit - 1]->name : text[None]);
 		}
 		if (*text[UserDefaultsArcType]) {
-			add_hotspot('A');
+			term->add_hotspot('A');
 			SAFECAT(keys, "A");
 			bprintf(text[UserDefaultsArcType]
 			        , user->tmpext);
 		}
 		if (*text[UserDefaultsMenuMode]) {
-			add_hotspot('X');
+			term->add_hotspot('X');
 			SAFECAT(keys, "X");
 			bprintf(text[UserDefaultsMenuMode]
 			        , user->misc & EXPERT ? text[On] : text[Off]);
 		}
 		if (*text[UserDefaultsPause]) {
-			add_hotspot('P');
+			term->add_hotspot('P');
 			SAFECAT(keys, "P");
 			bprintf(text[UserDefaultsPause]
 			        , user->misc & UPAUSE ? text[On] : text[Off]);
 		}
 		if (*text[UserDefaultsHotKey]) {
-			add_hotspot('H');
+			term->add_hotspot('H');
 			SAFECAT(keys, "H");
 			bprintf(text[UserDefaultsHotKey]
 			        , user->misc & COLDKEYS ? text[Off] : text[On]);
 		}
 		if (*text[UserDefaultsCursor]) {
-			add_hotspot('S');
+			term->add_hotspot('S');
 			SAFECAT(keys, "S");
 			bprintf(text[UserDefaultsCursor]
 			        , user->misc & SPIN ? text[On] : user->misc & NOPAUSESPIN ? text[Off] : "Pause Prompt Only");
 		}
 		if (*text[UserDefaultsCLS]) {
-			add_hotspot('C');
+			term->add_hotspot('C');
 			SAFECAT(keys, "C");
 			bprintf(text[UserDefaultsCLS]
 			        , user->misc & CLRSCRN ? text[On] : text[Off]);
 		}
 		if (*text[UserDefaultsAskNScan]) {
-			add_hotspot('N');
+			term->add_hotspot('N');
 			SAFECAT(keys, "N");
 			bprintf(text[UserDefaultsAskNScan]
 			        , user->misc & ASK_NSCAN ? text[On] : text[Off]);
 		}
 		if (*text[UserDefaultsAskSScan]) {
-			add_hotspot('Y');
+			term->add_hotspot('Y');
 			SAFECAT(keys, "Y");
 			bprintf(text[UserDefaultsAskSScan]
 			        , user->misc & ASK_SSCAN ? text[On] : text[Off]);
 		}
 		if (*text[UserDefaultsANFS]) {
-			add_hotspot('F');
+			term->add_hotspot('F');
 			SAFECAT(keys, "F");
 			bprintf(text[UserDefaultsANFS]
 			        , user->misc & ANFSCAN ? text[On] : text[Off]);
 		}
 		if (*text[UserDefaultsRemember]) {
-			add_hotspot('R');
+			term->add_hotspot('R');
 			SAFECAT(keys, "R");
 			bprintf(text[UserDefaultsRemember]
 			        , user->misc & CURSUB ? text[On] : text[Off]);
 		}
 		if (*text[UserDefaultsBatFlag]) {
-			add_hotspot('B');
+			term->add_hotspot('B');
 			SAFECAT(keys, "B");
 			bprintf(text[UserDefaultsBatFlag]
 			        , user->misc & BATCHFLAG ? text[On] : text[Off]);
 		}
 		if (*text[UserDefaultsNetMail] && (cfg.sys_misc & SM_FWDTONET)) {
-			add_hotspot('M');
+			term->add_hotspot('M');
 			SAFECAT(keys, "M");
 			bprintf(text[UserDefaultsNetMail]
 			        , user->misc & NETMAIL ? text[On] : text[Off]
 			        , user->netmail);
 		}
 		if (*text[UserDefaultsQuiet] && (user->exempt & FLAG('Q') || user->misc & QUIET)) {
-			add_hotspot('D');
+			term->add_hotspot('D');
 			SAFECAT(keys, "D");
 			bprintf(text[UserDefaultsQuiet]
 			        , user->misc & QUIET ? text[On] : text[Off]);
 		}
 		if (*text[UserDefaultsProtocol]) {
-			add_hotspot('Z');
+			term->add_hotspot('Z');
 			SAFECAT(keys, "Z");
 			bprintf(text[UserDefaultsProtocol], protname(user->prot, XFER_DOWNLOAD)
 			        , user->misc & AUTOHANG ? "(Auto-Hangup)" : nulstr);
 		}
 		if (*text[UserDefaultsPassword] && (cfg.sys_misc & SM_PWEDIT) && !(user->rest & FLAG('G'))) {
-			add_hotspot('W');
+			term->add_hotspot('W');
 			SAFECAT(keys, "W");
 			bputs(text[UserDefaultsPassword]);
 		}
 
 		sync();
 		bputs(text[UserDefaultsWhich]);
-		add_hotspot('Q');
+		term->add_hotspot('Q');
 		ch = (char)getkeys(keys, 0);
 		switch (ch) {
 			case 'T':
@@ -906,8 +906,8 @@ void sbbs_t::user_config(user_t* user)
 				}
 				if (sys_status & SS_ABORT)
 					break;
-				term = (user == &useron) ? term_supports() : user->misc;
-				if (term & (AUTOTERM | ANSI) && !(term & PETSCII)) {
+				termf = (user == &useron) ? term->flags : user->misc;
+				if (termf & (AUTOTERM | ANSI) && !(termf & PETSCII)) {
 					user->misc |= COLOR;
 					user->misc &= ~ICE_COLOR;
 					if ((user->misc & AUTOTERM) || yesno(text[ColorTerminalQ])) {
@@ -919,7 +919,7 @@ void sbbs_t::user_config(user_t* user)
 				}
 				if (sys_status & SS_ABORT)
 					break;
-				if (term & ANSI) {
+				if (termf & ANSI) {
 					if (text[MouseTerminalQ][0] && yesno(text[MouseTerminalQ]))
 						user->misc |= MOUSE;
 					else
@@ -927,8 +927,8 @@ void sbbs_t::user_config(user_t* user)
 				}
 				if (sys_status & SS_ABORT)
 					break;
-				if (!(term & PETSCII)) {
-					if (!(term & UTF8) && !yesno(text[ExAsciiTerminalQ]))
+				if (!(termf & PETSCII)) {
+					if (!(termf & UTF8) && !yesno(text[ExAsciiTerminalQ]))
 						user->misc |= NO_EXASCII;
 					else
 						user->misc &= ~NO_EXASCII;
@@ -955,7 +955,7 @@ void sbbs_t::user_config(user_t* user)
 				}
 				if (sys_status & SS_ABORT)
 					break;
-				if (!(user->misc & AUTOTERM) && (term & (ANSI | NO_EXASCII)) == ANSI) {
+				if (!(user->misc & AUTOTERM) && (termf & (ANSI | NO_EXASCII)) == ANSI) {
 					if (!noyes(text[RipTerminalQ]))
 						user->misc |= RIP;
 					else
@@ -1166,7 +1166,7 @@ void sbbs_t::user_config(user_t* user)
 				putusermisc(user->number, user->misc);
 				break;
 			default:
-				clear_hotspots();
+				term->clear_hotspots();
 				return;
 		}
 	}

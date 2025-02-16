@@ -189,13 +189,13 @@ void sbbs_t::show_msghdr(smb_t* smb, const smbmsg_t* msg, const char* subject, c
 		current_msg_to = to;
 
 	attr(LIGHTGRAY);
-	if (row != 0) {
+	if (term->row != 0) {
 		if (useron.misc & CLRSCRN)
 			outchar(FF);
 		else
 			CRLF;
 	}
-	msghdr_tos = (row == 0);
+	msghdr_tos = (term->row == 0);
 	if (!menu("msghdr", P_NOERROR)) {
 		bprintf(pmode, msghdr_text(msg, MsgSubj), current_msg_subj);
 		if (msg->tags && *msg->tags)
@@ -288,10 +288,10 @@ bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, int p_mode, post_t* post)
 			float pct = post->total_votes ? ((float)post->votes[answers] / post->total_votes) * 100.0F : 0.0F;
 			char  str[128];
 			int   width = longest_answer;
-			if (width < cols / 3)
-				width = cols / 3;
-			else if (width > cols - 20)
-				width = cols - 20;
+			if (width < term->cols / 3)
+				width = term->cols / 3;
+			else if (width > term->cols - 20)
+				width = term->cols - 20;
 			bprintf(text[PollAnswerNumber], answers + 1);
 			bool results_visible = false;
 			if ((msg->hdr.auxattr & POLL_RESULTS_MASK) == POLL_RESULTS_OPEN)
@@ -337,7 +337,7 @@ bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, int p_mode, post_t* post)
 	truncsp(p);
 	SKIP_CRLF(p);
 	if (smb_msg_is_utf8(msg)) {
-		if (!term_supports(UTF8))
+		if (!term->supports(UTF8))
 			utf8_normalize_str(txt);
 		p_mode |= P_UTF8;
 	}
@@ -349,7 +349,7 @@ bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, int p_mode, post_t* post)
 		p_mode = P_NOATCODES;
 	putmsg(p, p_mode, msg->columns);
 	smb_freemsgtxt(txt);
-	if (column)
+	if (term->column)
 		CRLF;
 	if ((txt = smb_getmsgtxt(smb, msg, GETMSGTXT_TAIL_ONLY)) == NULL)
 		return false;
