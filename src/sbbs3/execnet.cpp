@@ -52,7 +52,7 @@ int sbbs_t::exec_net(csi_t* csi)
 					SOCKADDR_IN addr;
 
 					memset(&addr, 0, sizeof(addr));
-					addr.sin_addr.s_addr = htonl(startup->outgoing4.s_addr);
+					addr.sin_addr.s_addr = startup->outgoing4.s_addr;
 					addr.sin_family = AF_INET;
 
 					if ((i = bind(sock, (struct sockaddr *) &addr, sizeof (addr))) != 0) {
@@ -538,7 +538,7 @@ SOCKET sbbs_t::ftp_data_sock(csi_t* csi, SOCKET ctrl_sock, SOCKADDR_IN* addr)
 	}
 
 	memset(addr, 0, sizeof(SOCKADDR_IN));
-	addr->sin_addr.s_addr = htonl(startup->outgoing4.s_addr);
+	addr->sin_addr.s_addr = startup->outgoing4.s_addr;
 	addr->sin_family = AF_INET;
 
 	if (bind(data_sock, (struct sockaddr *)addr, xp_sockaddr_len(addr)) != 0) {

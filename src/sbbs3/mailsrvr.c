@@ -5308,7 +5308,7 @@ static BOOL sendmail_open_socket(SOCKET *sock, CRYPT_SESSION *session)
 	}
 
 	memset(&addr, 0, sizeof(addr));
-	addr.sin_addr.s_addr = htonl(startup->outgoing4.s_addr);
+	addr.sin_addr.s_addr = startup->outgoing4.s_addr;
 	addr.sin_family = AF_INET;
 
 	i = bind(*sock, (struct sockaddr *)&addr, sizeof(addr));
