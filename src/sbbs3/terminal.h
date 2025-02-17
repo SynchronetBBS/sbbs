@@ -427,7 +427,7 @@ public:
 	void cond_blankline();
 	void cond_contline();
 	bool supports(unsigned cmp_flags);
-	list_node_t *find_hotspot(int x, int y);
+	list_node_t *find_hotspot(unsigned x, unsigned y);
 };
 
 void update_terminal(sbbs_t *sbbsptr);
