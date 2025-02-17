@@ -25,7 +25,7 @@
 #include "git_branch.h"
 #include "git_hash.h"
 
-#define MAX_LINE_LEN    ((cols - 1) + 2)
+#define MAX_LINE_LEN    ((term->cols - 1) + 2)
 
 const char *quote_fmt = " > %.*s\r\n";
 void quotestr(char *str);
@@ -97,7 +97,7 @@ bool sbbs_t::quotemsg(smb_t* smb, smbmsg_t* msg, bool tails)
 		BOOL is_utf8 = FALSE;
 		if (!str_is_ascii(buf)) {
 			if (smb_msg_is_utf8(msg)) {
-				if (term_supports(UTF8)
+				if (term->supports(UTF8)
 				    && (!useron_xedit || (cfg.xedit[useron_xedit - 1]->misc & XTRN_UTF8)))
 					is_utf8 = TRUE;
 				else {
@@ -105,7 +105,7 @@ bool sbbs_t::quotemsg(smb_t* smb, smbmsg_t* msg, bool tails)
 				}
 			} else { // CP437
 				char* orgtxt;
-				if (term_supports(UTF8)
+				if (term->supports(UTF8)
 				    && (!useron_xedit || (cfg.xedit[useron_xedit - 1]->misc & XTRN_UTF8))
 				    && (orgtxt = strdup(buf)) != NULL) {
 					is_utf8 = TRUE;
@@ -124,7 +124,7 @@ bool sbbs_t::quotemsg(smb_t* smb, smbmsg_t* msg, bool tails)
 			if (useron_xedit > 0)
 				wrap_cols = cfg.xedit[useron_xedit - 1]->quotewrap_cols;
 			if (wrap_cols == 0)
-				wrap_cols = cols - 1;
+				wrap_cols = term->cols - 1;
 			wrapped = ::wordwrap(buf, wrap_cols, org_cols - 1, /* handle_quotes: */ TRUE, is_utf8);
 		}
 		if (wrapped != NULL) {
@@ -291,8 +291,8 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 	unsigned lines;
 	ushort   useron_xedit = useron.xedit;
 
-	if (cols < TERM_COLS_MIN) {
-		errormsg(WHERE, ERR_CHK, "columns (too narrow)", cols);
+	if (term->cols < TERM_COLS_MIN) {
+		errormsg(WHERE, ERR_CHK, "columns (too narrow)", term->cols);
 		return false;
 	}
 
@@ -366,7 +366,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 				if (!fgets(str, sizeof(str), stream))
 					break;
 				quotestr(str);
-				SAFEPRINTF2(tmp, quote_fmt, cols - 4, str);
+				SAFEPRINTF2(tmp, quote_fmt, term->cols - 4, str);
 				if (write(file, tmp, strlen(tmp)) > 0)
 					linesquoted++;
 			}
@@ -422,7 +422,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 						if (!fgets(str, sizeof(str), stream))
 							break;
 						quotestr(str);
-						SAFEPRINTF2(tmp, quote_fmt, cols - 4, str);
+						SAFEPRINTF2(tmp, quote_fmt, term->cols - 4, str);
 						if (write(file, tmp, strlen(tmp)) > 0)
 							linesquoted++;
 					}
@@ -437,7 +437,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 						if (!fgets(str, sizeof(str), stream))
 							break;
 						quotestr(str);
-						bprintf(P_AUTO_UTF8, "%4d: %.*s\r\n", i, (int)cols - 7, str);
+						bprintf(P_AUTO_UTF8, "%4d: %.*s\r\n", i, (int)term->cols - 7, str);
 						i++;
 					}
 					continue;
@@ -466,7 +466,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 							if (!fgets(str, sizeof(str), stream))
 								break;
 							quotestr(str);
-							SAFEPRINTF2(tmp, quote_fmt, cols - 4, str);
+							SAFEPRINTF2(tmp, quote_fmt, term->cols - 4, str);
 							if (write(file, tmp, strlen(tmp)) > 0)
 								linesquoted++;
 							j++;
@@ -475,7 +475,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 					else {          /* one line */
 						if (fgets(str, sizeof(str), stream)) {
 							quotestr(str);
-							SAFEPRINTF2(tmp, quote_fmt, cols - 4, str);
+							SAFEPRINTF2(tmp, quote_fmt, term->cols - 4, str);
 							if (write(file, tmp, strlen(tmp)) > 0)
 								linesquoted++;
 						}
@@ -508,7 +508,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 		else {
 			bputs(text[SubjectPrompt]);
 		}
-		max_title_len = cols - column - 1;
+		max_title_len = term->cols - term->column - 1;
 		if (max_title_len > LEN_TITLE)
 			max_title_len = LEN_TITLE;
 		if (draft_restored)
@@ -584,11 +584,11 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 			*editor = cfg.xedit[useron_xedit - 1]->name;
 		if (!str_is_ascii(subj)) {
 			if (utf8_str_is_valid(subj)) {
-				if (!term_supports(UTF8) || !(cfg.xedit[useron_xedit - 1]->misc & XTRN_UTF8)) {
+				if (!term->supports(UTF8) || !(cfg.xedit[useron_xedit - 1]->misc & XTRN_UTF8)) {
 					utf8_to_cp437_inplace(subj);
 				}
 			} else { // CP437
-				if (term_supports(UTF8) && (cfg.xedit[useron_xedit - 1]->misc & XTRN_UTF8)) {
+				if (term->supports(UTF8) && (cfg.xedit[useron_xedit - 1]->misc & XTRN_UTF8)) {
 					cp437_to_utf8_str(subj, str, sizeof(str) - 1, /* minval: */ '\x80');
 					safe_snprintf(subj, LEN_TITLE + 1, "%s", str);
 				}
@@ -807,7 +807,7 @@ void sbbs_t::editor_info_to_msg(smbmsg_t* msg, const char* editor, const char* c
 		useron_xedit = 0;
 
 	if (editor == NULL || useron_xedit == 0 || (cfg.xedit[useron_xedit - 1]->misc & SAVECOLUMNS))
-		smb_hfield_bin(msg, SMB_COLUMNS, cols);
+		smb_hfield_bin(msg, SMB_COLUMNS, term->cols);
 
 	if (!str_is_ascii(msg->subj) && utf8_str_is_valid(msg->subj))
 		msg->hdr.auxattr |= MSG_HFIELDS_UTF8;
@@ -952,8 +952,8 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 	str_list_t str;
 	long       pmode = P_SAVEATR | P_NOATCODES | P_AUTO_UTF8;
 
-	if (cols < TERM_COLS_MIN) {
-		errormsg(WHERE, ERR_CHK, "columns (too narrow)", cols);
+	if (term->cols < TERM_COLS_MIN) {
+		errormsg(WHERE, ERR_CHK, "columns (too narrow)", term->cols);
 		return 0;
 	}
 
@@ -974,7 +974,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 	bprintf(text[EnterMsgNow], maxlines);
 
 	if (!menu("msgtabs", P_NOERROR)) {
-		for (i = 0; i < (cols - 1); i++) {
+		for (i = 0; i < (term->cols - 1); i++) {
 			if (i % EDIT_TABSIZE || !i)
 				outchar('-');
 			else
@@ -985,7 +985,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 	putmsg(top, pmode);
 	for (line = 0; line < lines && !msgabort(); line++) { /* display lines in buf */
 		putmsg(str[line], pmode);
-		cleartoeol();  /* delete to end of line */
+		term->cleartoeol();  /* delete to end of line */
 		CRLF;
 	}
 	sync();
@@ -1006,14 +1006,14 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 			else
 				strin[0] = 0;
 			if (line < 1)
-				carriage_return();
+				term->carriage_return();
 			ulong prev_con = console;
 			int   kmode = K_WORDWRAP | K_MSG | K_EDIT | K_NOCRLF | K_USEOFFSET;
 			if (line)
 				kmode |= K_LEFTEXIT;
 			if (str[line] != NULL)
 				kmode |= K_RIGHTEXIT;
-			getstr(strin, cols - 1, kmode);
+			getstr(strin, term->cols - 1, kmode);
 			if ((prev_con & CON_DELETELINE) /* Ctrl-X/ZDLE */ && strncmp(strin, "B00", 3) == 0) {
 				strin[0] = 0;
 				prot = 'Z';
@@ -1029,13 +1029,13 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 				strListRemove(&str, line);
 				for (i = line; str[i]; i++) {
 					putmsg(str[i], pmode);
-					cleartoeol();
-					newline();
+					term->cleartoeol();
+					term->newline();
 				}
-				clearline();
+				term->clearline();
 				if (line)
 					--line;
-				cursor_up(i - line);
+				term->cursor_up(i - line);
 				continue;
 			} else if (str[line] == NULL) {
 				if (strin[0] != 0)
@@ -1044,9 +1044,9 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 				strListReplace(str, line, strin);
 			if (line < 1)
 				continue;
-			carriage_return();
-			cursor_up();
-			cleartoeol();
+			term->carriage_return();
+			term->cursor_up();
+			term->cleartoeol();
 			line--;
 			continue;
 		}
@@ -1054,7 +1054,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 			strListDelete(&str, line);
 			continue;
 		}
-		newline();
+		term->newline();
 		if (console & (CON_DOWNARROW | CON_RIGHTARROW)) {
 			if (str[line] != NULL) {
 				strListReplace(str, line, strin);
@@ -1064,7 +1064,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 		}
 		if (strin[0] == '/' && strlen(strin) < 16) {
 			if (!stricmp(strin, "/DEBUG") && SYSOP) {
-				bprintf("\r\nline=%d lines=%d (%d), rows=%d\r\n", line, lines, (int)strListCount(str), rows);
+				bprintf("\r\nline=%d lines=%d (%d), rows=%d\r\n", line, lines, (int)strListCount(str), term->rows);
 				continue;
 			}
 			else if (!stricmp(strin, "/ABT")) {
@@ -1131,7 +1131,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 					bputs(text[InvalidLineNumber]);
 				else {
 					SAFECOPY(strin, str[i]);
-					getstr(strin, cols - 1, j);
+					getstr(strin, term->cols - 1, j);
 					strListReplace(str, i, strin);
 				}
 				continue;
@@ -1163,12 +1163,12 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 				int  digits = DEC_DIGITS(lines);
 				while (str[j] != NULL && !msgabort()) {
 					if (linenums) { /* line numbers */
-						snprintf(tmp, sizeof tmp, "%*d: %-.*s", digits, j + 1, (int)(cols - (digits + 3)), str[j]);
+						snprintf(tmp, sizeof tmp, "%*d: %-.*s", digits, j + 1, (int)(term->cols - (digits + 3)), str[j]);
 						putmsg(tmp, pmode);
 					}
 					else
 						putmsg(str[j], pmode);
-					cleartoeol();  /* delete to end of line */
+					term->cleartoeol();  /* delete to end of line */
 					CRLF;
 					j++;
 				}
@@ -1232,11 +1232,11 @@ upload:
 			strListInsert(&str, "", line);
 			for (i = line; str[i]; i++) {
 				putmsg(str[i], pmode);
-				cleartoeol();
-				newline();
+				term->cleartoeol();
+				term->newline();
 			}
-			clearline();
-			cursor_up(i - line);
+			term->clearline();
+			term->cursor_up(i - line);
 			continue;
 		}
 
@@ -1277,8 +1277,8 @@ bool sbbs_t::editfile(char *fname, uint maxlines, const char* to, const char* fr
 	unsigned lines;
 	ushort   useron_xedit = useron.xedit;
 
-	if (cols < TERM_COLS_MIN) {
-		errormsg(WHERE, ERR_CHK, "columns (too narrow)", cols);
+	if (term->cols < TERM_COLS_MIN) {
+		errormsg(WHERE, ERR_CHK, "columns (too narrow)", term->cols);
 		return false;
 	}
 

@@ -385,7 +385,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 		return -1;
 	}
 
-	clear_hotspots();
+	term->clear_hotspots();
 
 	XTRN_LOADABLE_MODULE(cmdline, startup_dir);
 	XTRN_LOADABLE_JS_MODULE(cmdline, mode, startup_dir);
@@ -921,7 +921,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 				pthread_mutex_unlock(&input_thread_mutex);
 		}
 
-		curatr = ~0;          // Can't guarantee current attributes
+		term->curatr = ~0;          // Can't guarantee current attributes
 		attr(LIGHTGRAY);    // Force to "normal"
 
 		rio_abortable = rio_abortable_save;   // Restore abortable state
@@ -1143,7 +1143,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 	xtrn_mode = mode;
 	lprintf(LOG_DEBUG, "Executing external: %s", cmdline);
 
-	clear_hotspots();
+	term->clear_hotspots();
 
 	if (startup_dir == NULL)
 		startup_dir = nulstr;
@@ -1614,17 +1614,17 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 
 	if ((mode & EX_STDIO) == EX_STDIO)  {
 		struct winsize winsize;
-		struct termios term;
-		memset(&term, 0, sizeof(term));
-		cfsetispeed(&term, B19200);
-		cfsetospeed(&term, B19200);
+		struct termios termio;
+		memset(&termio, 0, sizeof(term));
+		cfsetispeed(&termio, B19200);
+		cfsetospeed(&termio, B19200);
 		if (mode & EX_BIN)
-			cfmakeraw(&term);
+			cfmakeraw(&termio);
 		else {
-			term.c_iflag = TTYDEF_IFLAG;
-			term.c_oflag = TTYDEF_OFLAG;
-			term.c_lflag = TTYDEF_LFLAG;
-			term.c_cflag = TTYDEF_CFLAG;
+			termio.c_iflag = TTYDEF_IFLAG;
+			termio.c_oflag = TTYDEF_OFLAG;
+			termio.c_lflag = TTYDEF_LFLAG;
+			termio.c_cflag = TTYDEF_CFLAG;
 			/*
 			 * On Linux, ttydefchars is in the wrong order, so
 			 * it's completely useless for anything.
@@ -1632,89 +1632,89 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 			 * to a value we may have made up.
 			 * TODO: We can set stuff from the user term here...
 			 */
-			for (unsigned noti = 0; noti < (sizeof(term.c_cc) / sizeof(term.c_cc[0])); noti++)
-				term.c_cc[noti] = _POSIX_VDISABLE;
+			for (unsigned noti = 0; noti < (sizeof(termio.c_cc) / sizeof(termio.c_cc[0])); noti++)
+				termio.c_cc[noti] = _POSIX_VDISABLE;
 #ifdef VEOF
-			term.c_cc[VEOF] = CEOF;
+			termio.c_cc[VEOF] = CEOF;
 #endif
 #ifdef VEOL
-			term.c_cc[VEOL] = CEOL;
+			termio.c_cc[VEOL] = CEOL;
 #endif
 #ifdef VEOL2
 #ifdef CEOL2
-			term.c_cc[VEOL2] = CEOL2;
+			termio.c_cc[VEOL2] = CEOL2;
 #else
-			term.c_cc[VEOL2] = CEOL;
+			termio.c_cc[VEOL2] = CEOL;
 #endif
 #endif
 #ifdef VERASE
-			term.c_cc[VERASE] = CERASE;
+			termio.c_cc[VERASE] = CERASE;
 #endif
 #ifdef VKILL
-			term.c_cc[VKILL] = CKILL;
+			termio.c_cc[VKILL] = CKILL;
 #endif
 #ifdef VREPRINT
-			term.c_cc[VREPRINT] = CREPRINT;
+			termio.c_cc[VREPRINT] = CREPRINT;
 #endif
 #ifdef VINTR
-			term.c_cc[VINTR] = CINTR;
+			termio.c_cc[VINTR] = CINTR;
 #endif
 #ifdef VERASE2
 #ifdef CERASE2
-			term.c_cc[VERASE2] = CERASE2;
+			termio.c_cc[VERASE2] = CERASE2;
 #else
-			term.c_cc[VERASE2] = CERASE;
+			termio.c_cc[VERASE2] = CERASE;
 #endif
 #endif
 #ifdef VQUIT
-			term.c_cc[VQUIT] = CQUIT;
+			termio.c_cc[VQUIT] = CQUIT;
 #endif
 #ifdef VSUSP
-			term.c_cc[VSUSP] = CSUSP;
+			termio.c_cc[VSUSP] = CSUSP;
 #endif
 #ifdef VDSUSP
-			term.c_cc[VDSUSP] = CDSUSP;
+			termio.c_cc[VDSUSP] = CDSUSP;
 #endif
 #ifdef VSTART
-			term.c_cc[VSTART] = CSTART;
+			termio.c_cc[VSTART] = CSTART;
 #endif
 #ifdef VSTOP
-			term.c_cc[VSTOP] = CSTOP;
+			termio.c_cc[VSTOP] = CSTOP;
 #endif
 #ifdef VLNEXT
-			term.c_cc[VLNEXT] = CLNEXT;
+			termio.c_cc[VLNEXT] = CLNEXT;
 #endif
 #ifdef VDISCARD
-			term.c_cc[VDISCARD] = CDISCARD;
+			termio.c_cc[VDISCARD] = CDISCARD;
 #endif
 #ifdef VMIN
-			term.c_cc[VMIN] = CMIN;
+			termio.c_cc[VMIN] = CMIN;
 #endif
 #ifdef VTIME
-			term.c_cc[VTIME] = CTIME;
+			termio.c_cc[VTIME] = CTIME;
 #endif
 #ifdef VSTATUS
-			term.c_cc[VSTATUS] = CSTATUS;
+			termio.c_cc[VSTATUS] = CSTATUS;
 #endif
 #ifdef VWERASE
-			term.c_cc[VWERASE] = CWERASE;
+			termio.c_cc[VWERASE] = CWERASE;
 #endif
 #ifdef VEOT
-			term.c_cc[VEOT] = CEOT;
+			termio.c_cc[VEOT] = CEOT;
 #endif
 #ifdef VBRK
-			term.c_cc[VBRK] = CBRK;
+			termio.c_cc[VBRK] = CBRK;
 #endif
 #ifdef VRPRNT
-			term.c_cc[VRPRNT] = CRPRNT;
+			termio.c_cc[VRPRNT] = CRPRNT;
 #endif
 #ifdef VFLUSH
-			term.c_cc[VFLUSH] = CFLUSH
+			termio.c_cc[VFLUSH] = CFLUSH
 #endif
 		}
-		winsize.ws_row = rows;
-		winsize.ws_col = cols;
-		if ((pid = forkpty(&in_pipe[1], NULL, &term, &winsize)) == -1) {
+		winsize.ws_row = term->rows;
+		winsize.ws_col = term->cols;
+		if ((pid = forkpty(&in_pipe[1], NULL, &termio, &winsize)) == -1) {
 			if (!(mode & (EX_STDIN | EX_OFFLINE))) {
 				if (passthru_thread_running)
 					passthru_socket_activate(false);
@@ -1759,7 +1759,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 		sigfillset(&sigs);
 		sigprocmask(SIG_UNBLOCK, &sigs, NULL);
 		if (!(mode & EX_BIN))  {
-			if (term_supports(ANSI))
+			if (term->supports(ANSI))
 				SAFEPRINTF(term_env, "TERM=%s", startup->xtrn_term_ansi);
 			else
 				SAFEPRINTF(term_env, "TERM=%s", startup->xtrn_term_dumb);
@@ -1959,9 +1959,9 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 					bp = buf;
 					output_len = rd;
 				}
-				if (term_supports(PETSCII))
+				if (term->supports(PETSCII))
 					petscii_convert(bp, output_len);
-				else if (term_supports(UTF8))
+				else if (term->supports(UTF8))
 					bp = cp437_to_utf8(bp, output_len, utf8_buf, sizeof utf8_buf);
 			}
 			/* Did expansion overrun the output buffer? */
@@ -2052,7 +2052,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 				pthread_mutex_unlock(&input_thread_mutex);
 		}
 
-		curatr = ~0;          // Can't guarantee current attributes
+		term->curatr = ~0;          // Can't guarantee current attributes
 		attr(LIGHTGRAY);    // Force to "normal"
 
 		rio_abortable = rio_abortable_save;   // Restore abortable state
@@ -2181,7 +2181,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
 					strncat(cmd, cfg.sys_id, avail);
 					break;
 				case 'R':   /* Rows */
-					strncat(cmd, ultoa(rows, str, 10), avail);
+					strncat(cmd, ultoa(term->rows, str, 10), avail);
 					break;
 				case 'S':   /* File Spec (or Baja command str) or startup-directory */
 					strncat(cmd, fspec, avail);
@@ -2198,7 +2198,7 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
 					strncat(cmd, str, avail);
 					break;
 				case 'W':   /* Columns (width) */
-					strncat(cmd, ultoa(cols, str, 10), avail);
+					strncat(cmd, ultoa(term->cols, str, 10), avail);
 					break;
 				case 'X':
 					strncat(cmd, cfg.shell[useron.shell]->code, avail);

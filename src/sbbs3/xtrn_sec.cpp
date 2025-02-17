@@ -142,7 +142,6 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 	struct tm tm;
 	struct tm tl;
 	stats_t   stats;
-	int       term = term_supports();
 
 	char      node_dir[MAX_PATH + 1];
 	char      ctrl_dir[MAX_PATH + 1];
@@ -204,10 +203,10 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		              , cfg.sys_nodes           /* Total system nodes */
 		              , cfg.node_num            /* Current node */
 		              , tleft                   /* User Timeleft in seconds */
-		              , (term & ANSI)           /* User ANSI ? (Yes/Mono/No) */
-		        ? (term & COLOR)
+		              , (term->flags & ANSI)           /* User ANSI ? (Yes/Mono/No) */
+		        ? (term->flags & COLOR)
 		        ? "Yes":"Mono":"No"
-		              , rows                    /* User Screen lines */
+		              , term->rows                    /* User Screen lines */
 		              , user_available_credits(&useron)); /* User Credits */
 		lfexpand(str, misc);
 		fwrite(str, strlen(str), 1, fp);
@@ -321,12 +320,12 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		              , user_available_credits(&useron) /* Gold */
 		              , TM_MONTH(tm.tm_mon)     /* User last on date (MM/DD/YY) */
 		              , tm.tm_mday, TM_YEAR(tm.tm_year)
-		              , cols                    /* User screen width */
-		              , rows                    /* User screen length */
+		              , term->cols                    /* User screen width */
+		              , term->rows                    /* User screen length */
 		              , useron.level            /* User SL */
 		              , 0                       /* Cosysop? */
 		              , SYSOP                   /* Sysop? (1/0) */
-		              , INT_TO_BOOL(term & ANSI) /* ANSI ? (1/0) */
+		              , INT_TO_BOOL(term->flags & ANSI) /* ANSI ? (1/0) */
 		              , online == ON_REMOTE);   /* Remote (1/0) */
 		lfexpand(str, misc);
 		fwrite(str, strlen(str), 1, fp);
@@ -408,15 +407,15 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		              , tm.tm_mday, TM_YEAR(tm.tm_year)
 		              , MIN(tleft, INT16_MAX)   /* 18: User time left in sec */
 		              , MIN((tleft / 60), INT16_MAX) /* 19: User time left in min */
-		              , (term & NO_EXASCII)     /* 20: GR if COLOR ANSI */
-		        ? "7E" : (term & (ANSI | COLOR)) == (ANSI | COLOR) ? "GR" : "NG");
+		              , (term->flags & NO_EXASCII)     /* 20: GR if COLOR ANSI */
+		        ? "7E" : (term->flags & (ANSI | COLOR)) == (ANSI | COLOR) ? "GR" : "NG");
 		lfexpand(str, misc);
 		fwrite(str, strlen(str), 1, fp);
 
 		t = useron.expire;
 		localtime_r(&t, &tm);
 		safe_snprintf(str, sizeof(str), "%u\n%c\n%s\n%u\n%02u/%02u/%02u\n%u\n%c\n%u\n%u\n"
-		              , rows                    /* 21: User screen length */
+		              , term->rows                    /* 21: User screen length */
 		              , (useron.misc & EXPERT) ? 'Y':'N' /* 22: Expert? (Y/N) */
 		              , u32toaf(useron.flags1, tmp2) /* 23: Registered conferences */
 		              , 0                       /* 24: Conference came from */
@@ -454,7 +453,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 
 			localtime_r(&ns_time, &tm);
 			safe_snprintf(str, sizeof(str), "%c\n%c\n%u\n%" PRIu32 "\n%02d/%02d/%02d\n"
-			              , (term & (NO_EXASCII | ANSI | COLOR)) == ANSI
+			              , (term->flags & (NO_EXASCII | ANSI | COLOR)) == ANSI
 			        ? 'Y':'N'                       /* 39: ANSI supported but NG mode */
 			              , 'Y'                     /* 40: Use record locking */
 			              , cfg.color[clr_external] /* 41: BBS default color */
@@ -535,7 +534,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		              , tmp                     /* User's firstname */
 		              , p                       /* User's lastname */
 		              , useron.location         /* User's city */
-		              , INT_TO_BOOL(term & ANSI) /* 1=ANSI 0=ASCII */
+		              , INT_TO_BOOL(term->flags & ANSI) /* 1=ANSI 0=ASCII */
 		              , useron.level            /* Security level */
 		              , MIN((tleft / 60), INT16_MAX)); /* Time left in minutes */
 		strupr(str);
@@ -572,7 +571,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 			exitinfo.UserInfo.Attrib |= QBBS::USER_ATTRIB_CLRSCRN;
 		if (useron.misc & UPAUSE)
 			exitinfo.UserInfo.Attrib |= QBBS::USER_ATTRIB_MORE;
-		if (term & ANSI)
+		if (term->flags & ANSI)
 			exitinfo.UserInfo.Attrib |= QBBS::USER_ATTRIB_ANSI;
 		if (useron.sex == 'F')
 			exitinfo.UserInfo.Attrib |= QBBS::USER_ATTRIB_FEMALE;
@@ -584,7 +583,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		exitinfo.UserInfo.UpK = (uint16_t)(useron.ulb / 1024UL);
 		exitinfo.UserInfo.DownK = (uint16_t)(useron.dlb / 1024UL);
 		exitinfo.UserInfo.TodayK = (uint16_t)(logon_dlb / 1024UL);
-		exitinfo.UserInfo.ScreenLength = (int16_t)rows;
+		exitinfo.UserInfo.ScreenLength = (int16_t)term->rows;
 		localtime_r(&logontime, &tm);
 		SAFEPRINTF2(tmp, "%02d:%02d", tm.tm_hour, tm.tm_min);
 		exitinfo.LoginTime = tmp;
@@ -596,12 +595,12 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		exitinfo.WantChat = (sys_status & SS_SYSPAGE);
 		exitinfo.ScreenClear = (useron.misc & CLRSCRN);
 		exitinfo.MorePrompts = (useron.misc & UPAUSE);
-		exitinfo.GraphicsMode = !(term & NO_EXASCII);
+		exitinfo.GraphicsMode = !(term->flags & NO_EXASCII);
 		exitinfo.ExternEdit = (useron.xedit);
-		exitinfo.ScreenLength = (int16_t)rows;
+		exitinfo.ScreenLength = (int16_t)term->rows;
 		exitinfo.MNP_Connect = true;
-		exitinfo.ANSI_Capable = (term & ANSI);
-		exitinfo.RIP_Active = (term & RIP);
+		exitinfo.ANSI_Capable = (term->flags & ANSI);
+		exitinfo.RIP_Active = (term->flags & RIP);
 
 		fwrite(&exitinfo, sizeof(exitinfo), 1, fp);
 		fclose(fp);
@@ -650,7 +649,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		              , useron.location         /* User location */
 		              , useron.level            /* Security level */
 		              , MIN((tleft / 60), INT16_MAX) /* Time left in min */
-		              , (term & ANSI) ? "COLOR":"MONO" /* ANSI ??? */
+		              , (term->flags & ANSI) ? "COLOR":"MONO" /* ANSI ??? */
 		              , useron.pass             /* Password */
 		              , useron.number);         /* User number */
 		lfexpand(str, misc);
@@ -690,7 +689,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		              , TM_MONTH(tm.tm_mon), tm.tm_mday /* File new-scan date */
 		              , TM_YEAR(tm.tm_year)     /* in MM/DD/YY */
 		              , useron.logons           /* Total logons */
-		              , rows                    /* Screen length */
+		              , term->rows                    /* Screen length */
 		              , 0                       /* Highest message read */
 		              , useron.uls              /* Total files uploaded */
 		              , useron.dls);            /* Total files downloaded */
@@ -736,7 +735,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		sys.PageBell = sys_status & SS_SYSPAGE;
 		sys.Alarm = startup->sound.answer[0] && !sound_muted(&cfg);
 		sys.ErrorCorrected = true;
-		sys.GraphicsMode = (term & NO_EXASCII) ? 'N' : 'Y';
+		sys.GraphicsMode = (term->flags & NO_EXASCII) ? 'N' : 'Y';
 		sys.UserNetStatus = (thisnode.misc & NODE_POFF) ? 'U' : 'A'; /* Node chat status ([A]vailable or [U]navailable) */
 		SAFEPRINTF(tmp, "%u", dte_rate);
 		sys.ModemSpeed = tmp;
@@ -759,7 +758,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		sys.MinutesLeft = (int16_t)(tleft / 60);
 		sys.NodeNum = (uint8_t)cfg.node_num;
 		sys.EventTime = "00:00";
-		sys.UseAnsi = INT_TO_BOOL(term & ANSI);
+		sys.UseAnsi = INT_TO_BOOL(term->flags & ANSI);
 		sys.YesChar = yes_key();
 		sys.NoChar = no_key();
 		sys.Conference2 = cursubnum;
@@ -788,7 +787,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		user.fixed.Protocol = useron.prot;
 		user.fixed.SecurityLevel = useron.level;
 		user.fixed.NumTimesOn = useron.logons;
-		user.fixed.PageLen = (uint8_t)rows;
+		user.fixed.PageLen = (uint8_t)term->rows;
 		user.fixed.NumUploads = useron.uls;
 		user.fixed.NumDownloads = useron.dls;
 		user.fixed.DailyDnldBytes = (uint32_t)logon_dlb;
@@ -853,7 +852,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		              "%s\n%s\n%u\n%s\n%u\n%u\n%u\n%u\n%u\n%lu\n%u\n"
 		              "%" PRIu64 "\n%" PRIu64 "\n%s\n%s\n"
 		              , dropdir
-		              , (term & ANSI) ? "TRUE":"FALSE" /* ANSI ? True or False */
+		              , (term->flags & ANSI) ? "TRUE":"FALSE" /* ANSI ? True or False */
 		              , useron.level            /* Security level */
 		              , useron.uls              /* Total uploads */
 		              , useron.dls              /* Total downloads */
@@ -901,9 +900,9 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		 */
 		safe_snprintf(str, sizeof(str), "%s\n%d \n%d\n%u\n%u\n%u\n%u\n%s\n"
 		              , name                    // Complete name or handle of user
-		              , INT_TO_BOOL(term & ANSI) // ANSI status:  1 = yes, 0 = no, -1 = don't know
-		              , !INT_TO_BOOL(term & NO_EXASCII) // IBM Graphic characters:  1 = yes, 0 = no, -1 = unknown
-		              , rows                    // Page length of screen, in lines.  Assume 25 if unknown
+		              , INT_TO_BOOL(term->flags & ANSI) // ANSI status:  1 = yes, 0 = no, -1 = don't know
+		              , !INT_TO_BOOL(term->flags & NO_EXASCII) // IBM Graphic characters:  1 = yes, 0 = no, -1 = unknown
+		              , term->rows                    // Page length of screen, in lines.  Assume 25 if unknown
 		              , dte_rate                // Baud Rate:  300, 1200, 2400, 9600, 19200, etc.
 		              , online == ON_LOCAL ? 0:cfg.com_port // Com Port:  1, 2, 3, or 4.
 		              , MIN((tleft / 60), INT16_MAX) // Time Limit:  (in minutes); -1 if unknown.
@@ -931,7 +930,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		              , useron.pass             /* User's password */
 		              , useron.level            /* User's level */
 		              , useron.misc & EXPERT ? 'Y':'N' /* Expert? */
-		              , (term & ANSI) ? 'Y':'N' /* ANSI? */
+		              , (term->flags & ANSI) ? 'Y':'N' /* ANSI? */
 		              , MIN((tleft / 60), INT16_MAX) /* Minutes left */
 		              , useron.phone            /* User's phone number */
 		              , useron.location         /* User's city and state */
@@ -978,7 +977,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		, name
 		, useron.level
 		, tleft / 60
-		, INT_TO_BOOL(term & ANSI)
+		, INT_TO_BOOL(term->flags & ANSI)
 		, cfg.node_num);
 		lfexpand(str, misc);
 		fwrite(str, strlen(str), 1, fp);
