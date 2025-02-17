@@ -663,7 +663,6 @@ uint sbbs_t::logonstats()
 					}
 				}
 				dstats_fname(&cfg, i, path, sizeof path);
-				backup(path, 90, /* rename: */ false);
 				if ((dsts = fopen_dstats(&cfg, i, /* for_write: */ TRUE)) == NULL) /* doesn't have stats yet */
 					continue;
 
