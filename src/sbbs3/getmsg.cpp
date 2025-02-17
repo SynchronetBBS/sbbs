@@ -276,7 +276,7 @@ bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, int p_mode, post_t* post)
 			if (msg->hfield[i].type != SMB_POLL_ANSWER)
 				continue;
 			answer = (char*)msg->hfield_dat[i];
-			int len = strlen(answer);
+			size_t len = strlen(answer);
 			if (len > longest_answer)
 				longest_answer = len;
 		}

@@ -915,9 +915,9 @@ void sbbs_t::privchat(bool forced, int node_num)
 					CLS;
 					attr(cfg.color[clr_chatremote]);
 					remotebuf[remoteline][remotechar] = 0;
-					for (i = 0; i <= remoteline; i++) {
-						bputs(remotebuf[i]);
-						if (i != remoteline)
+					for (unsigned u = 0; u <= remoteline; u++) {
+						bputs(remotebuf[u]);
+						if (u != remoteline)
 							bputs(crlf);
 					}
 					remote_y = 1 + remoteline;
@@ -931,9 +931,9 @@ void sbbs_t::privchat(bool forced, int node_num)
 					term->gotoxy(1, 14);
 					attr(cfg.color[clr_chatlocal]);
 					localbuf[localline][localchar] = 0;
-					for (i = 0; i <= localline; i++) {
-						bputs(localbuf[i]);
-						if (i != localline)
+					for (unsigned u = 0; u <= localline; u++) {
+						bputs(localbuf[u]);
+						if (u != localline)
 							bputs(crlf);
 					}
 					local_y = 15 + localline;
@@ -1075,10 +1075,10 @@ void sbbs_t::privchat(bool forced, int node_num)
 							        , sectostr(timeleft, tmp)
 							        , thisnode.misc & NODE_NMSG ? 'M':' ');
 							attr(cfg.color[clr_chatremote]);
-							for (i = 0; i < 12; i++) {
-								bprintf("\x1b[%d;1H\x1b[K", i + 1);
-								if (i <= remoteline)
-									bprintf("%s\r\n", remotebuf[i]);
+							for (unsigned u = 0; u < 12; u++) {
+								bprintf("\x1b[%d;1H\x1b[K", u + 1);
+								if (u <= remoteline)
+									bprintf("%s\r\n", remotebuf[u]);
 							}
 							remoteline = 0;
 							term->gotoxy(1, remote_y = 6);

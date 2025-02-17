@@ -87,7 +87,7 @@ char* PETSCII_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t
 	}
 	else {
 		if (oldatr & (0x70 | BG_BRIGHT))
-			str[sp++] = PETSCII_REVERSE_OFF;
+			str[sp++] = '\x92';
 	}
 	if (sp >= (strsz - 1)) {
 		str[sp] = 0;
@@ -107,52 +107,52 @@ char* PETSCII_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t
 	}
 	switch (atr & 0x0f) {
 		case BLACK:
-			str[sp++] = PETSCII_BLACK;
+			str[sp++] = '\x90';
 			break;
 		case WHITE:
 			str[sp++] = PETSCII_WHITE;
 			break;
 		case DARKGRAY:
-			str[sp++] = PETSCII_DARKGRAY;
+			str[sp++] = '\x97';
 			break;
 		case LIGHTGRAY:
-			str[sp++] = PETSCII_LIGHTGRAY;
+			str[sp++] = '\x9b';
 			break;
 		case BLUE:
 			str[sp++] = PETSCII_BLUE;
 			break;
 		case LIGHTBLUE:
-			str[sp++] = PETSCII_LIGHTBLUE;
+			str[sp++] = '\x9a';
 			break;
 		case CYAN:
-			str[sp++] = PETSCII_MEDIUMGRAY;
+			str[sp++] = '\x98';
 			break;
 		case LIGHTCYAN:
-			str[sp++] = PETSCII_CYAN;
+			str[sp++] = '\x9f';
 			break;
 		case YELLOW:
-			str[sp++] = PETSCII_YELLOW;
+			str[sp++] = '\x9e';
 			break;
 		case BROWN:
-			str[sp++] = PETSCII_BROWN;
+			str[sp++] = '\x95';
 			break;
 		case RED:
 			str[sp++] = PETSCII_RED;
 			break;
 		case LIGHTRED:
-			str[sp++] = PETSCII_LIGHTRED;
+			str[sp++] = '\x96';
 			break;
 		case GREEN:
 			str[sp++] = PETSCII_GREEN;
 			break;
 		case LIGHTGREEN:
-			str[sp++] = PETSCII_LIGHTGREEN;
+			str[sp++] = '\x99';
 			break;
 		case MAGENTA:
-			str[sp++] = PETSCII_ORANGE;
+			str[sp++] = '\x81';
 			break;
 		case LIGHTMAGENTA:
-			str[sp++] = PETSCII_PURPLE;
+			str[sp++] = '\x9c';
 			break;
 	}
 	str[sp] = 0;
@@ -197,7 +197,7 @@ void PETSCII_Terminal::newline(unsigned count)
 
 void PETSCII_Terminal::clearscreen()
 {
-	sbbs->outcom(PETSCII_CLEAR);
+	sbbs->outcom('\x93');
 	row = 0;
 	column = 0;
 	lncntr = 0;
@@ -224,7 +224,7 @@ void PETSCII_Terminal::cleartoeol()
 	while (++s <= cols)
 		sbbs->outcom(' ');
 	while (++b <= cols)
-		sbbs->outcom(PETSCII_LEFT);
+		sbbs->outcom('\x9d');
 }
 
 void PETSCII_Terminal::clearline()
@@ -246,7 +246,7 @@ void PETSCII_Terminal::cursor_home()
 void PETSCII_Terminal::cursor_up(unsigned count)
 {
 	for (unsigned i = 0; i < count; i++) {
-		sbbs->outcom(PETSCII_UP);
+		sbbs->outcom('\x91');
 		if (row > 0)
 			row--;
 		if (lncntr > 0)
@@ -277,7 +277,7 @@ void PETSCII_Terminal::cursor_right(unsigned count)
 void PETSCII_Terminal::cursor_left(unsigned count)
 {
 	for (unsigned i = 0; i < count; i++) {
-		sbbs->outcom(PETSCII_LEFT);
+		sbbs->outcom('\x9d');
 		if (column > 0)
 			column--;
 	}
