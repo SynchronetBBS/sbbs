@@ -269,8 +269,8 @@ bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, int p_mode, post_t* post)
 		CRLF;
 
 	if (msg->hdr.type == SMB_MSG_TYPE_POLL && post != NULL && is_sub) {
-		char* answer;
-		int   longest_answer = 0;
+		char*    answer;
+		unsigned longest_answer = 0;
 
 		for (int i = 0; i < msg->total_hfields; i++) {
 			if (msg->hfield[i].type != SMB_POLL_ANSWER)
@@ -287,7 +287,7 @@ bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, int p_mode, post_t* post)
 			answer = (char*)msg->hfield_dat[i];
 			float pct = post->total_votes ? ((float)post->votes[answers] / post->total_votes) * 100.0F : 0.0F;
 			char  str[128];
-			int   width = longest_answer;
+			unsigned width = longest_answer;
 			if (width < term->cols / 3)
 				width = term->cols / 3;
 			else if (width > term->cols - 20)

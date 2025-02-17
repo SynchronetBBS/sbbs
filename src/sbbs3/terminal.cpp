@@ -177,7 +177,7 @@ bool Terminal::supports(unsigned cmp_flags) {
 	return (flags & cmp_flags) == cmp_flags;
 }
 
-list_node_t *Terminal::find_hotspot(int x, int y)
+list_node_t *Terminal::find_hotspot(unsigned x, unsigned y)
 {
 	list_node_t *node;
 

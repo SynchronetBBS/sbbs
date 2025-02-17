@@ -627,8 +627,10 @@ bool ANSI_Terminal::parse_ctrlkey(char& ch, int mode) {
 						}
 						return (ch < 32 || ch == 127);
 					}
-					if (sbbs->pause_inside && y == rows - 1)
-						return '\r';
+					if (sbbs->pause_inside && y == rows - 1) {
+						ch = '\r';
+						return true;
+					}
 				} else if (button == '`' && sbbs->console & CON_MOUSE_SCROLL) {
 					ch = TERM_KEY_UP;
 					return true;

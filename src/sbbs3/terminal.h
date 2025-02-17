@@ -241,7 +241,7 @@ public:
 	virtual void center(const char *instr, bool msg = false, unsigned columns = 0) {
 		if (columns == 0)
 			columns = cols;
-		char *str = strdup(str);
+		char *str = strdup(instr);
 		truncsp(str);
 		size_t len = bstrlen(str);
 		carriage_return();

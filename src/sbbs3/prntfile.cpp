@@ -346,7 +346,7 @@ bool sbbs_t::menu_exists(const char *code, const char* ext, char* path)
 		size_t skip = safe_snprintf(path, MAX_PATH, "%s.c", prefix);
 		int    max = 0;
 		for (size_t i = 0; i < g.gl_pathc; i++) {
-			int c = strtol(g.gl_pathv[i] + skip, &p, 10);
+			unsigned long c = strtoul(g.gl_pathv[i] + skip, &p, 10);
 			if (stricmp(p, term) != 0) // Some other weird pattern ending in c*.<ext>
 				continue;
 			if (c <= this->term->cols && c > max) {

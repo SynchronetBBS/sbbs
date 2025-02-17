@@ -76,7 +76,7 @@ char sbbs_t::putmsg(const char *buf, int mode, int org_cols, JSObject* obj)
 }
 
 // Print a message fragment, doesn't save/restore any console states (e.g. attributes, auto-pause)
-char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
+char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject* obj)
 {
 	char                 tmp[256];
 	char                 tmp2[256];
@@ -85,7 +85,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
 	uchar                exatr = 0;
 	char                 mark = '\0';
 	int                  i;
-	int                  col = term->column;
+	unsigned             col = term->column;
 	uint                 l = 0;
 	uint                 lines_printed = 0;
 	struct mouse_hotspot hot_spot = {};

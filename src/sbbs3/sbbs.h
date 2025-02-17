@@ -809,7 +809,7 @@ public:
 
 	/* putmsg.cpp */
 	char	putmsg(const char *str, int mode, int org_cols = 0, JSObject* obj = NULL);
-	char	putmsgfrag(const char* str, int& mode, int org_cols = 0, JSObject* obj = NULL);
+	char	putmsgfrag(const char* str, int& mode, unsigned org_cols = 0, JSObject* obj = NULL);
 	bool	putnmsg(int node_num, const char*);
 	bool	putsmsg(int user_num, const char*);
 

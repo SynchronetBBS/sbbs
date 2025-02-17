@@ -707,7 +707,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 				}
 				break;
 			case AR_COLS:
-				if ((equal && term->cols != (long)n) || (!equal && term->cols < (long)n))
+				if ((equal && term->cols != n) || (!equal && term->cols < n))
 					result = _not;
 				else
 					result = !_not;
@@ -717,7 +717,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 				}
 				break;
 			case AR_ROWS:
-				if ((equal && term->rows != (long)n) || (!equal && term->rows < (long)n))
+				if ((equal && term->rows != n) || (!equal && term->rows < n))
 					result = _not;
 				else
 					result = !_not;

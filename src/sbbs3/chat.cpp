@@ -681,10 +681,11 @@ bool sbbs_t::chan_access(int cnum)
 void sbbs_t::privchat(bool forced, int node_num)
 {
 	char str[128], c, *p, localbuf[5][81], remotebuf[5][81]
-	, localline = 0, remoteline = 0, localchar = 0, remotechar = 0
+	, localchar = 0, remotechar = 0
 	, *sep = text[PrivateChatSeparator]
 	, *local_sep = text[SysopChatSeparator]
 	;
+	unsigned localline = 0, remoteline = 0;
 	char   tmp[512];
 	char   outpath[MAX_PATH + 1];
 	char   inpath[MAX_PATH + 1];
@@ -692,7 +693,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 	int    wr;
 	int    in, out, i, n, echo = 1, activity, remote_activity;
 	unsigned x, y;
-	int    local_y = 1, remote_y = 1;
+	unsigned local_y = 1, remote_y = 1;
 	node_t node;
 	time_t last_nodechk = 0;
 

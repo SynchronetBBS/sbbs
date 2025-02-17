@@ -974,8 +974,8 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 	bprintf(text[EnterMsgNow], maxlines);
 
 	if (!menu("msgtabs", P_NOERROR)) {
-		for (i = 0; i < (term->cols - 1); i++) {
-			if (i % EDIT_TABSIZE || !i)
+		for (unsigned u = 0; u < (term->cols - 1); u++) {
+			if (u % EDIT_TABSIZE || !u)
 				outchar('-');
 			else
 				outchar('+');
