@@ -1675,25 +1675,27 @@ static bool pop3_client_thread(pop3_t* pop3)
 					lprintf(LOG_DEBUG, "%04d %s <%s> message transfer complete (%lu lines) from %s"
 					        , socket, client.protocol, user.alias, lines_sent, msg.from);
 
-					if ((i = smb_locksmbhdr(&smb)) != SMB_SUCCESS) {
-						errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d (%s) locking message base"
-						          , socket, client.protocol, user.alias, i, smb.last_error);
-					} else {
-						if ((i = smb_getmsgidx(&smb, &msg)) != SMB_SUCCESS) {
-							errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d (%s) getting message index"
+					if (!(startup->options & MAIL_OPT_NO_READ_POP3)) {
+						if ((i = smb_locksmbhdr(&smb)) != SMB_SUCCESS) {
+							errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d (%s) locking message base"
 							          , socket, client.protocol, user.alias, i, smb.last_error);
 						} else {
-							msg.hdr.attr |= MSG_READ;
+							if ((i = smb_getmsgidx(&smb, &msg)) != SMB_SUCCESS) {
+								errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d (%s) getting message index"
+								          , socket, client.protocol, user.alias, i, smb.last_error);
+							} else {
+								msg.hdr.attr |= MSG_READ;
 
-							if ((i = smb_lockmsghdr(&smb, &msg)) != SMB_SUCCESS)
-								errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d (%s) locking message header #%u"
-								          , socket, client.protocol, user.alias, i, smb.last_error, msg.hdr.number);
-							if ((i = smb_putmsg(&smb, &msg)) != SMB_SUCCESS)
-								errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d (%s) marking message #%u as read"
-								          , socket, client.protocol, user.alias, i, smb.last_error, msg.hdr.number);
-							smb_unlockmsghdr(&smb, &msg);
+								if ((i = smb_lockmsghdr(&smb, &msg)) != SMB_SUCCESS)
+									errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d (%s) locking message header #%u"
+									          , socket, client.protocol, user.alias, i, smb.last_error, msg.hdr.number);
+								if ((i = smb_putmsg(&smb, &msg)) != SMB_SUCCESS)
+									errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d (%s) marking message #%u as read"
+									          , socket, client.protocol, user.alias, i, smb.last_error, msg.hdr.number);
+								smb_unlockmsghdr(&smb, &msg);
+							}
+							smb_unlocksmbhdr(&smb);
 						}
-						smb_unlocksmbhdr(&smb);
 					}
 				}
 				smb_freemsgmem(&msg);
@@ -4838,7 +4840,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 				}
 			}
 
-			if ((p == alias_buf || p == name_alias_buf || startup->options & MAIL_OPT_ALLOW_RX_BY_NUMBER)
+			if ((p == alias_buf || p == name_alias_buf)
 			    && IS_DIGIT(*p)) {
 				usernum = atoi(p);            /* RX by user number */
 				/* verify usernum */

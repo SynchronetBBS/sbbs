@@ -142,10 +142,6 @@ void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
     RelayAuthCramMD5RadioButton->Checked=MainForm->mail_startup.options
         &MAIL_OPT_RELAY_AUTH_CRAM_MD5;
 
-#if 0 /* this is a stupid option */
-    UserNumberCheckBox->Checked=MainForm->mail_startup.options
-    	&MAIL_OPT_ALLOW_RX_BY_NUMBER;
-#endif
     AuthViaIpCheckBox->Checked=MainForm->mail_startup.options
     	&MAIL_OPT_SMTP_AUTH_VIA_IP;
     if(MainForm->mail_startup.options&MAIL_OPT_DNSBL_REFUSE)
@@ -170,8 +166,6 @@ void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
     AdvancedCheckListBox->Checked[i++]
         =(MainForm->mail_startup.options&MAIL_OPT_DEBUG_RX_BODY);
     AdvancedCheckListBox->Checked[i++]
-        =(MainForm->mail_startup.options&MAIL_OPT_ALLOW_RX_BY_NUMBER);
-    AdvancedCheckListBox->Checked[i++]
         =(MainForm->mail_startup.options&MAIL_OPT_ALLOW_SYSOP_ALIASES);
     AdvancedCheckListBox->Checked[i++]
         =(MainForm->mail_startup.options&MAIL_OPT_ALLOW_RELAY);
@@ -182,6 +176,8 @@ void __fastcall TMailCfgDlg::FormShow(TObject *Sender)
         =(MainForm->mail_startup.options&MAIL_OPT_DNSBL_THROTTLE);
     AdvancedCheckListBox->Checked[i++]
         =!(MainForm->mail_startup.options&MAIL_OPT_NO_AUTO_EXEMPT);
+    AdvancedCheckListBox->Checked[i++]
+        =!(MainForm->mail_startup.options&MAIL_OPT_NO_READ_POP3);
     AdvancedCheckListBox->Checked[i++]
         =(MainForm->mail_startup.options&MAIL_OPT_KILL_READ_SPAM);
 
@@ -335,9 +331,6 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
         ,MAIL_OPT_DEBUG_RX_BODY
         ,AdvancedCheckListBox->Checked[i++]);
     setBit(&MainForm->mail_startup.options
-        ,MAIL_OPT_ALLOW_RX_BY_NUMBER
-        ,AdvancedCheckListBox->Checked[i++]);
-    setBit(&MainForm->mail_startup.options
         ,MAIL_OPT_ALLOW_SYSOP_ALIASES
         ,AdvancedCheckListBox->Checked[i++]);
     setBit(&MainForm->mail_startup.options
@@ -351,6 +344,9 @@ void __fastcall TMailCfgDlg::OKBtnClick(TObject *Sender)
         ,AdvancedCheckListBox->Checked[i++]);
     setBit(&MainForm->mail_startup.options
         ,MAIL_OPT_NO_AUTO_EXEMPT
+        ,!AdvancedCheckListBox->Checked[i++]);
+    setBit(&MainForm->mail_startup.options
+        ,MAIL_OPT_NO_READ_POP3
         ,!AdvancedCheckListBox->Checked[i++]);
     setBit(&MainForm->mail_startup.options
         ,MAIL_OPT_KILL_READ_SPAM
