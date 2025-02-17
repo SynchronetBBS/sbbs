@@ -526,7 +526,7 @@ bool ANSI_Terminal::parse_outchar(char ch) {
 			// TODO: Original would wrap, this one (hopefully) doesn't.
 			if (column < (cols - 1)) {
 				column++;
-				while ((column < (cols < 1)) && (column % tabstop)) {
+				while ((column < (cols - 1)) && (column % tabstop)) {
 					sbbs->outcom(' ');
 					inc_column();
 				}
