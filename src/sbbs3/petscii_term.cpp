@@ -9,10 +9,10 @@ const char *PETSCII_Terminal::attrstr(unsigned atr)
 
 		/* Special case */
 		case ANSI_NORMAL:
-			return "\x0E\x92\x84\x9b";	// Upper/Lower, Reverse Off, Flash Off, Light Gray
+			return "\x0E\x92\x8F\x9b";	// Upper/Lower, Reverse Off, Flash Off (C128), Light Gray
 		case BLINK:
 		case BG_BRIGHT:
-			return "\x82";			// Flash
+			return "\x0F";			// Flash (C128 only)
 
 		/* Foreground */
 		case HIGH:
@@ -95,11 +95,11 @@ char* PETSCII_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t
 	}
 	if (newatr & BLINK) {
 		if (!(oldatr & BLINK))
-			str[sp++] = '\x82';
+			str[sp++] = '\x0F';	// C128
 	}
 	else {
 		if (oldatr & BLINK)
-			str[sp++] = '\x82';
+			str[sp++] = '\x8F';	// C128
 	}
 	if (sp >= (strsz - 1)) {
 		str[sp] = 0;
