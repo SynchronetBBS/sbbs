@@ -5,8 +5,8 @@
 
 class PETSCII_Terminal : public Terminal {
 private:
-	saved_x{0};
-	saved_y{0};
+	unsigned saved_x{0};
+	unsigned saved_y{0};
 
 public:
 

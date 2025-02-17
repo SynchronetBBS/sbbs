@@ -1345,7 +1345,7 @@ int sbbs_t::exec(csi_t *csi)
 				printfile(cmdstr((char*)csi->ip, path, csi->str, (char*)buf), P_SAVEATR);
 				break;
 			case CS_PRINTFILE_LOCAL:
-				lprintf("PRINTFILE_LOCAL is no longer functional");
+				lprintf(LOG_WARNING, "PRINTFILE_LOCAL is no longer functional");
 				break;
 			case CS_CHKFILE:
 				csi->logic = !fexistcase(cmdstr((char*)csi->ip, path, csi->str, (char*)buf));

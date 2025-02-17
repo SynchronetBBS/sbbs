@@ -171,14 +171,14 @@ bool PETSCII_Terminal::gotoxy(unsigned x, unsigned y)
 }
 
 // Was ansi_save
-bool save_cursor_pos() {
+bool PETSCII_Terminal::save_cursor_pos() {
 	saved_x = column + 1;
 	saved_y = row + 1;
 	return true;
 }
 
 // Was ansi_restore
-bool restore_cursor_pos() {
+bool PETSCII_Terminal::restore_cursor_pos() {
 	if (saved_x && saved_y) {
 		return gotoxy(saved_x, saved_y);
 	}

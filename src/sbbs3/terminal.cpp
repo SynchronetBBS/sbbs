@@ -7,7 +7,7 @@
  * Returns true if the caller should send the char, false if
  * this function handled it (ie: via outcom(), or stripping it)
  */
-bool required_parse_outchar(char ch) {
+bool Terminal::required_parse_outchar(char ch) {
 	switch (ch) {
 		// Special values
 		case 8:  // BS
