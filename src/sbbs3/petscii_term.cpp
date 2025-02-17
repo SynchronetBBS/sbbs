@@ -315,19 +315,19 @@ bool PETSCII_Terminal::parse_outchar(char ch)
 		case 25:
 		case 26:
 		case 27: // ESC - This one is especially troubling
-		case 0x80:
-		case 0x82:
-		case 0x83: // Run
-		case 0x84:
-		case 0x85: // F1
-		case 0x86: // F3
-		case 0x87: // F5
-		case 0x88: // F7
-		case 0x89: // F2
-		case 0x8A: // F4
-		case 0x8B: // F6
-		case 0x8C: // F8
-		case 0x8F:
+		case '\x80':
+		case '\x82':
+		case '\x83': // Run
+		case '\x84':
+		case '\x85': // F1
+		case '\x86': // F3
+		case '\x87': // F5
+		case '\x88': // F7
+		case '\x89': // F2
+		case '\x8A': // F4
+		case '\x8B': // F6
+		case '\x8C': // F8
+		case '\x8F':
 			return false;
 
 		// Zero-width characters we want to pass through
@@ -340,25 +340,25 @@ bool PETSCII_Terminal::parse_outchar(char ch)
 		case 29: // Cursor right
 		case 30: // Green
 		case 31: // Blue
-		case 0x81: // Orange
-		case 0x8D: // Shift-return
-		case 0x8E: // Upper case
-		case 0x90: // Black
-		case 0x91: // Cursor up
-		case 0x92: // Reverse off
-		case 0x93: // Clear
-		case 0x94: // Insert
-		case 0x95: // Brown
-		case 0x96: // Pink
-		case 0x97: // Dark gray
-		case 0x98: // Gray
-		case 0x99: // Light Green
-		case 0x9A: // Light Blue
-		case 0x9B: // Light Gray
-		case 0x9C: // Purple
-		case 0x9D: // Cursor Left
-		case 0x9E: // Yellow
-		case 0x9F: // Cyan
+		case '\x81': // Orange
+		case '\x8D': // Shift-return
+		case '\x8E': // Upper case
+		case '\x90': // Black
+		case '\x91': // Cursor up
+		case '\x92': // Reverse off
+		case '\x93': // Clear
+		case '\x94': // Insert
+		case '\x95': // Brown
+		case '\x96': // Pink
+		case '\x97': // Dark gray
+		case '\x98': // Gray
+		case '\x99': // Light Green
+		case '\x9A': // Light Blue
+		case '\x9B': // Light Gray
+		case '\x9C': // Purple
+		case '\x9D': // Cursor Left
+		case '\x9E': // Yellow
+		case '\x9F': // Cyan
 			return true;
 
 		// Special values
