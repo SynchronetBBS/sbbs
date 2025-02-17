@@ -676,6 +676,19 @@ void sbbs_t::wide(const char* str)
 	}
 }
 
+/****************************************************************************/
+/* Get the dimensions of the current user console, place into row and cols	*/
+/****************************************************************************/
+void sbbs_t::getdimensions()
+{
+	if (sys_status & SS_USERON) {
+		term->getdims();
+		if (useron.rows >= TERM_ROWS_MIN && useron.rows <= TERM_ROWS_MAX)
+			term->rows = useron.rows;
+		if (useron.cols >= TERM_COLS_MIN && useron.cols <= TERM_COLS_MAX)
+			term->cols = useron.cols;
+	}
+}
 
 /****************************************************************************/
 /* performs the correct attribute modifications for the Ctrl-A code			*/
