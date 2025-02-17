@@ -1926,7 +1926,6 @@ void sbbs_t::localguru(char *gurubuf, int gurunum)
 		return;
 	sys_status |= SS_GURUCHAT;
 	console &= ~(CON_L_ECHOX | CON_R_ECHOX);    /* turn off X's */
-	console |= (CON_L_ECHO | CON_R_ECHO);                   /* make sure echo is on */
 	if (action == NODE_CHAT) { /* only page if from chat section */
 		bprintf(text[PagingGuru], cfg.guru[gurunum]->name);
 		ch = sbbs_random(25) + 25;

@@ -111,7 +111,6 @@ char sbbs_t::getkey(int mode)
 			gettimeleft();
 		else if (online && now - answertime > SEC_LOGON && !(sys_status & SS_LCHAT)) {
 			console &= ~(CON_R_ECHOX | CON_L_ECHOX);
-			console |= (CON_R_ECHO | CON_L_ECHO);
 			bputs(text[TakenTooLongToLogon]);
 			hangup();
 		}
@@ -148,7 +147,6 @@ char sbbs_t::getkey(int mode)
 			}
 			if (now - getkey_last_activity >= cfg.max_getkey_inactivity) {
 				if (online == ON_REMOTE) {
-					console |= CON_R_ECHO;
 					console &= ~CON_R_ECHOX;
 				}
 				bputs(text[CallBackWhenYoureThere]);

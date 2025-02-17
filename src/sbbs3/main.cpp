@@ -2536,8 +2536,6 @@ void output_thread(void* arg)
 	lprintf(LOG_DEBUG, "%s output thread started", node);
 #endif
 
-	sbbs->console |= CON_R_ECHO;
-
 #ifdef TCP_MAXSEG
 	/*
 	 * Auto-tune the highwater mark to be the negotiated MSS for the
@@ -2967,12 +2965,10 @@ void event_thread(void* arg)
 						continue;
 					}
 					sbbs->online = ON_LOCAL;
-					sbbs->console |= CON_L_ECHO;
 					sbbs->getusrsubs();
 					bool success = sbbs->unpack_rep(fname);
 					sbbs->delfiles(sbbs->cfg.temp_dir, ALLFILES);        /* clean-up temp_dir after unpacking */
 					sbbs->online = false;
-					sbbs->console &= ~CON_L_ECHO;
 
 					/* putuserdat? */
 					if (success) {
@@ -3035,7 +3031,6 @@ void event_thread(void* arg)
 				if (!(sbbs->useron.misc & (DELETED | INACTIVE))) {
 					sbbs->lprintf(LOG_INFO, "Packing QWK Message Packet");
 					sbbs->online = ON_LOCAL;
-					sbbs->console |= CON_L_ECHO;
 					sbbs->getmsgptrs();
 					sbbs->getusrsubs();
 
@@ -3051,7 +3046,6 @@ void event_thread(void* arg)
 					} else
 						sbbs->lputs(LOG_INFO, "No packet created (no new messages)");
 					sbbs->delfiles(sbbs->cfg.temp_dir, ALLFILES);
-					sbbs->console &= ~CON_L_ECHO;
 					sbbs->online = false;
 				}
 				sbbs->fremove(WHERE, fname);
@@ -3090,12 +3084,10 @@ void event_thread(void* arg)
 
 						sbbs->lprintf(LOG_INFO, "Running node %d daily event", i);
 						sbbs->online = ON_LOCAL;
-						sbbs->console |= CON_L_ECHO;
 						sbbs->logentry("!:", "Run node daily event");
 						const char* cmd = sbbs->cmdstr(sbbs->cfg.node_daily.cmd, nulstr, nulstr, NULL, sbbs->cfg.node_daily.misc);
 						int result = sbbs->external(cmd, EX_OFFLINE | sbbs->cfg.node_daily.misc);
 						sbbs->lprintf(result ? LOG_ERR : LOG_INFO, "Node daily event: '%s' returned %d", cmd, result);
-						sbbs->console &= ~CON_L_ECHO;
 						sbbs->online = false;
 					}
 					if (sbbs->getnodedat(i, &node, true)) {
@@ -3162,7 +3154,6 @@ void event_thread(void* arg)
 					if (flength(str) > 0) {    /* silently ignore 0-byte QWK packets */
 						sbbs->lprintf(LOG_DEBUG, "Inbound QWK Packet detected: %s", str);
 						sbbs->online = ON_LOCAL;
-						sbbs->console |= CON_L_ECHO;
 						if (sbbs->unpack_qwk(str, i) == false) {
 							char newname[MAX_PATH + 1];
 							SAFEPRINTF2(newname, "%s.%x.bad", str, (int)now);
@@ -3176,7 +3167,6 @@ void event_thread(void* arg)
 							sbbs->delfiles(sbbs->cfg.data_dir, newname, /* keep: */ 10);
 						}
 						sbbs->delfiles(sbbs->cfg.temp_dir, ALLFILES);
-						sbbs->console &= ~CON_L_ECHO;
 						sbbs->online = false;
 						if (fexist(str))
 							sbbs->fremove(WHERE, str, /* log-all-errors: */ true);
@@ -3205,9 +3195,7 @@ void event_thread(void* arg)
 				}
 				if (file != -1)
 					close(file);
-				sbbs->console |= CON_L_ECHO;
 				packed_rep = sbbs->pack_rep(i);
-				sbbs->console &= ~CON_L_ECHO;
 				if (packed_rep) {
 					if ((file = sbbs->nopen(str, O_WRONLY | O_CREAT)) == -1)
 						sbbs->errormsg(WHERE, ERR_OPEN, str, O_WRONLY | O_CREAT);
@@ -3255,14 +3243,12 @@ void event_thread(void* arg)
 					SAFECOPY(sbbs->cfg.node_dir, sbbs->cfg.node_path[sbbs->cfg.node_num - 1]);
 					sbbs->lprintf(LOG_INFO, "Call-out: %s", sbbs->cfg.qhub[i]->id);
 					sbbs->online = ON_LOCAL;
-					sbbs->console |= CON_L_ECHO;
 					int ex_mode = EX_OFFLINE | EX_SH; /* sh for Unix perl scripts */
 					if (sbbs->cfg.qhub[i]->misc & QHUB_NATIVE)
 						ex_mode |= EX_NATIVE;
 					const char* cmd = sbbs->cmdstr(sbbs->cfg.qhub[i]->call, sbbs->cfg.qhub[i]->id, sbbs->cfg.qhub[i]->id, NULL, ex_mode);
 					int result = sbbs->external(cmd, ex_mode);
 					sbbs->lprintf(result ? LOG_ERR : LOG_INFO, "Call-out to: %s (%s) returned %d", sbbs->cfg.qhub[i]->id, cmd, result);
-					sbbs->console &= ~CON_L_ECHO;
 					sbbs->online = false;
 				}
 			}
@@ -3433,7 +3419,6 @@ void event_thread(void* arg)
 						ex_mode |= EX_SH;
 					ex_mode |= (sbbs->cfg.event[i]->misc & EX_NATIVE);
 					sbbs->online = ON_LOCAL;
-					sbbs->console |= CON_L_ECHO;
 					cmd = sbbs->cmdstr(cmd, nulstr, sbbs->cfg.event[i]->dir, NULL, ex_mode);
 					sbbs->lprintf(LOG_INFO, "Running %s%stimed event: %s"
 					              , native_executable(&sbbs->cfg, cmd, ex_mode) ? "native ":"16-bit DOS "
@@ -3446,7 +3431,6 @@ void event_thread(void* arg)
 						else
 							sbbs->lprintf(LOG_DEBUG, "Background timed event spawned: %s", cmd);
 					}
-					sbbs->console &= ~CON_L_ECHO;
 					sbbs->online = false;
 					sbbs->cfg.event[i]->last = time32(NULL);
 					SAFEPRINTF(str, "%stime.ini", sbbs->cfg.ctrl_dir);

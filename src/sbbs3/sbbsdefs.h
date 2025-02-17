@@ -476,11 +476,11 @@ typedef enum {                      /* Values for xtrn_t.event				*/
 #define EDIT_TABSIZE 4      /* Tab size for internal message/line editor	*/
 
 /* Console I/O Bits	(console)				*/
-#define CON_R_ECHO      (1 << 0)  /* Echo remotely							*/
-#define CON_R_ECHOX     (1 << 1)  /* Echo X's to remote user					*/
+#define CON_R_ECHO      0         /* Echo remotely - Unused					*/
+#define CON_R_ECHOX     (1 << 1)  /* Echo X's to remote used				*/
 #define CON_L_ECHOX     0       // Unused
 #define CON_R_INPUT     (1 << 2)  /* Accept input remotely					*/
-#define CON_L_ECHO      (1 << 3)  /* Echo locally              				*/
+#define CON_L_ECHO      0         /* Echo locally              				*/
 #define CON_PAUSEOFF    (1 << 4)  // Temporary pause over-ride (same as UPAUSE)
 #define CON_L_INPUT     (1 << 5)  /* Accept input locally						*/
 #define CON_RAW_IN      (1 << 8)  /* Raw input mode - no editing capabilities	*/

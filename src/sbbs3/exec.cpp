@@ -1340,18 +1340,15 @@ int sbbs_t::exec(csi_t *csi)
 				printfile(cmdstr((char*)csi->ip, path, csi->str, (char*)buf), P_SAVEATR);
 				break;
 			case CS_PRINTFILE_REMOTE:
-				if (online != ON_REMOTE || !(console & CON_R_ECHO))
+				if (online != ON_REMOTE)
 					break;
-				console &= ~CON_L_ECHO;
 				printfile(cmdstr((char*)csi->ip, path, csi->str, (char*)buf), P_SAVEATR);
-				console |= CON_L_ECHO;
 				break;
 			case CS_PRINTFILE_LOCAL:
-				if (!(console & CON_L_ECHO))
-					break;
-				console &= ~CON_R_ECHO;
+				console |= CON_ECHO_OFF;
+				lprintf("PRINTFILE_LOCAL is deprecated");
 				printfile(cmdstr((char*)csi->ip, path, csi->str, (char*)buf), P_SAVEATR);
-				console |= CON_R_ECHO;
+				console &= ~CON_ECHO_OFF;
 				break;
 			case CS_CHKFILE:
 				csi->logic = !fexistcase(cmdstr((char*)csi->ip, path, csi->str, (char*)buf));

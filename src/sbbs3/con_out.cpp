@@ -57,7 +57,7 @@ int sbbs_t::bputs(const char *str, int mode)
 	if ((mode & P_REMOTE) && online != ON_REMOTE)
 		return 0;
 
-	if (online == ON_LOCAL && console & CON_L_ECHO)  /* script running as event */
+	if (online == ON_LOCAL)  /* script running as event */
 		return lputs(LOG_INFO, str);
 
 	str = auto_utf8(str, mode);
@@ -590,9 +590,6 @@ int sbbs_t::outchar(char ch)
 				utf8_putc(utf8, sizeof(utf8) - 1, codepoint);
 		}
 	}
-
-	if (!(console & CON_R_ECHO))
-		return 0;
 
 	if ((console & CON_R_ECHOX) && (uchar)ch >= ' ') {
 		ch = *text[PasswordChar];

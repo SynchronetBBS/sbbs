@@ -60,7 +60,7 @@ bool sbbs_t::printfile(const char* fname, int mode, int org_cols, JSObject* obj)
 	}
 
 	if (mode & P_NOABORT || rip) {
-		if (online == ON_REMOTE && console & CON_R_ECHO) {
+		if (online == ON_REMOTE) {
 			rioctl(IOCM | ABORT);
 			rioctl(IOCS | ABORT);
 		}
