@@ -4,6 +4,10 @@
 #include "sbbs.h"
 
 class PETSCII_Terminal : public Terminal {
+private:
+	saved_x{0};
+	saved_y{0};
+
 public:
 
 	PETSCII_Terminal() = delete;
@@ -12,6 +16,8 @@ public:
 	virtual const char *attrstr(unsigned atr);
 	virtual char* attrstr(unsigned atr, unsigned curatr, char* str, size_t strsz);
 	virtual bool gotoxy(unsigned x, unsigned y);
+	virtual bool save_cursor_pos();
+	virtual bool restore_cursor_pos();
 	virtual void carriage_return();
 	virtual void line_feed(unsigned count = 1);
 	virtual void backspace(unsigned int count = 1);

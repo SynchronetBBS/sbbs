@@ -176,9 +176,7 @@ public:
 			return;
 		for (unsigned i = 0; i < count; i++) {
 			if (column > 0) {
-				sbbs->outcom('\b');
-				sbbs->outcom(' ');
-				sbbs->outcom('\b');
+				sbbs->putcom("\b \b");
 				column--;
 			}
 			else
@@ -391,9 +389,13 @@ public:
 		lbuflen = 0;
 		attrstr(line->beg_attr);
 		sbbs->rputs(line->buf);
-		// TODO: Why would this do anything?
-		//if (supports(PETSCII))
-		//	column = strlen(line->buf);
+		// TODO: This is a hack to work around a broken
+		//       carriage_return().  Because rputs() doesn't
+		//       update column, and on PETSCII, carriage_return()
+		//       assumes column is correct, this needs to adjust
+		//       column so it (hopefully) works.
+		if (supports(PETSCII))
+			column = strlen(line->buf);
 		curatr = line->end_attr;
 		carriage_return();
 		cursor_right(line->column);
