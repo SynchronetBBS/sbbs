@@ -305,17 +305,8 @@ const char* PETSCII_Terminal::type()
 
 bool PETSCII_Terminal::parse_outchar(char ch)
 {
-	// TODO: This needs to be in here so we don't reset lncntr before checking
-	if (ch == FF && lncntr > 0 && row > 0) {
-		lncntr = 0;
-		newline();
-		if (!(sbbs->sys_status & SS_PAUSEOFF)) {
-			sbbs->pause();
-			while (lncntr && sbbs->online && !(sbbs->sys_status & SS_ABORT))
-				pause();
-		}
-	}
-
+	if (!required_parse_outchar(ch))
+		return false;
 	switch (ch) {
 		// Zero-width characters we likely shouldn't send
 		case 0:
@@ -387,39 +378,12 @@ bool PETSCII_Terminal::parse_outchar(char ch)
 		case '\x9F': // Cyan
 			return true;
 
-		// Special values
-		case 8:  // BS
-			cursor_left();
-			return false;
-		case 9:  // TAB - Copy pasta... TODO
-			// TODO: Original would wrap, this one (hopefully) doesn't.
-			if (column < (cols - 1)) {
-				column++;
-				while ((column < (cols - 1)) && (column % tabstop)) {
-					sbbs->outcom(' ');
-					inc_column();
-				}
-			}
-			return false;
-		case 10: // LF
-			if (sbbs->line_delay)
-				SLEEP(sbbs->line_delay);
-			line_feed();
-			return false;
-		case 12: // FF
-			clearscreen();
-			return false;
-		case 13: // CR
-			if (sbbs->console & CON_CR_CLREOL)
-				cleartoeol();
-			carriage_return();
-			return false;
-
 		// Everything else is assumed one byte wide
 		default:
 			inc_column();
 			return true;
 	}
+	return false;
 }
 
 bool PETSCII_Terminal::parse_ctrlkey(char& ch, int mode)

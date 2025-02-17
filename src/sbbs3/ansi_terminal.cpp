@@ -508,54 +508,14 @@ bool ANSI_Terminal::parse_outchar(char ch) {
 		return false;
 	}
 
-	// TODO: This needs to be in here so we don't reset lncntr before checking
-	if (ch == FF && lncntr > 0 && row > 0) {
-		lncntr = 0;
-		newline();
-		if (!(sbbs->sys_status & SS_PAUSEOFF)) {
-			sbbs->pause();
-			while (lncntr && sbbs->online && !(sbbs->sys_status & SS_ABORT))
-				pause();
-		}
-	}
+	if (!required_parse_outchar(ch))
+		return false;
 
 	/* Track cursor position locally */
 	switch (ch) {
 		case '\a':  // 7
 			/* Non-printing */
 			break;
-		case '\b':  // 8
-			if (column > 0)
-				column--;
-			if (lbuflen < LINE_BUFSIZE) {
-				if (lbuflen == 0)
-					latr = curatr;
-				lbuf[lbuflen++] = ch;
-			}
-			break;
-		case '\t':  // 9
-			// TODO: Original would wrap, this one (hopefully) doesn't.
-			if (column < (cols - 1)) {
-				column++;
-				while ((column < (cols - 1)) && (column % tabstop)) {
-					sbbs->outcom(' ');
-					inc_column();
-				}
-			}
-			return false;
-		case '\n':  // 10
-			if (sbbs->line_delay)
-				SLEEP(sbbs->line_delay);
-			line_feed();
-			return false;
-		case FF:    // 12
-			clearscreen();
-			return false;
-		case '\r':  // 13
-			if (sbbs->console & CON_CR_CLREOL)
-				cleartoeol();
-			carriage_return();
-			return false;
 		default:
 			// TODO: All kinds of CTRL charaters not handled properly
 			if (!lbuflen)

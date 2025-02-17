@@ -3,6 +3,53 @@
 #include "petscii_term.h"
 #include "link_list.h"
 
+/*
+ * Returns true if the caller should send the char, false if
+ * this function handled it (ie: via outcom(), or stripping it)
+ */
+bool required_parse_outchar(char ch) {
+	switch (ch) {
+		// Special values
+		case 8:  // BS
+			cursor_left();
+			return false;
+		case 9:  // TAB - Copy pasta... TODO
+			// TODO: Original would wrap, this one (hopefully) doesn't.
+			if (column < (cols - 1)) {
+				column++;
+				while ((column < (cols - 1)) && (column % tabstop)) {
+					sbbs->outcom(' ');
+					inc_column();
+				}
+			}
+			return false;
+		case 10: // LF
+			if (sbbs->line_delay)
+				SLEEP(sbbs->line_delay);
+			line_feed();
+			return false;
+		case 12: // FF
+			if (lncntr > 0 && row > 0) {
+				lncntr = 0;
+				newline();
+				if (!(sbbs->sys_status & SS_PAUSEOFF)) {
+					sbbs->pause();
+					while (lncntr && sbbs->online && !(sbbs->sys_status & SS_ABORT))
+						pause();
+				}
+			}
+			clearscreen();
+			return false;
+		case 13: // CR
+			if (sbbs->console & CON_CR_CLREOL)
+				cleartoeol();
+			carriage_return();
+			return false;
+		// Everything else is assumed one byte wide
+	}
+	return true;
+}
+
 void Terminal::clear_hotspots(void)
 {
 	if (!(flags & MOUSE))
