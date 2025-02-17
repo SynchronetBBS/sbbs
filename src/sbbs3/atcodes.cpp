@@ -1682,7 +1682,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		const char* cp = strchr(sp, ',');
 		if (cp != NULL) {
 			cp++;
-			term->cursor_xy(atoi(sp + 7), atoi(cp));
+			term->gotoxy(atoi(sp + 7), atoi(cp));
 		}
 		return nulstr;
 	}

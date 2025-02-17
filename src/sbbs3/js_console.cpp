@@ -1976,7 +1976,7 @@ js_gotoxy(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->term->cursor_xy(x, y)));
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->term->gotoxy(x, y)));
 	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
@@ -1997,7 +1997,7 @@ js_getxy(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
 	rc = JS_SUSPENDREQUEST(cx);
-	bool result = sbbs->term->cursor_getxy(&x, &y);
+	bool result = sbbs->term->getxy(&x, &y);
 	JS_RESUMEREQUEST(cx, rc);
 
 	if (result == true) {

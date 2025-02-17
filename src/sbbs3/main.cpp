@@ -4245,13 +4245,16 @@ void sbbs_t::reset_logon_vars(void)
 	cid[0] = 0;
 	wordwrap[0] = 0;
 	question[0] = 0;
-	term->row = 0;
-	term->rows = startup->default_term_height;
-	term->cols = startup->default_term_width;
-	term->lncntr = 0;
+	if (term) {
+		term->row = 0;
+		term->rows = startup->default_term_height;
+		term->cols = startup->default_term_width;
+		term->lncntr = 0;
+		term->cterm_version = 0;
+		term->lbuflen = 0;
+		term->cur_output_rate = output_rate_unlimited;
+	}
 	autoterm = 0;
-	term->cterm_version = 0;
-	term->lbuflen = 0;
 	timeleft_warn = 0;
 	keybufbot = keybuftop = 0;
 	usrgrps = usrlibs = 0;
@@ -4262,7 +4265,6 @@ void sbbs_t::reset_logon_vars(void)
 		cursub[i] = 0;
 	cur_rate = 30000;
 	dte_rate = 38400;
-	term->cur_output_rate = output_rate_unlimited;
 	main_cmds = xfer_cmds = posts_read = 0;
 	lastnodemsg = 0;
 	lastnodemsguser[0] = 0;
@@ -5587,7 +5589,12 @@ NO_SSH:
 				close_socket(client_socket);
 				continue;
 			}
-			// TODO: After this point there needs to be a Terminal object
+			if (inet_addrport(&local_addr) == startup->pet40_port || inet_addrport(&local_addr) == startup->pet80_port) {
+				sbbs->autoterm = PETSCII;
+				sbbs->term->cols = inet_addrport(&local_addr) == startup->pet40_port ? 40 : 80;
+				sbbs->outcom(PETSCII_UPPERLOWER);
+			}
+			update_terminal(sbbs);
 			// TODO: Plain text output in SSH socket
 			struct trash trash;
 			if (sbbs->trashcan(host_ip, "ip", &trash)) {
@@ -5662,11 +5669,6 @@ NO_SSH:
 
 			sbbs->autoterm = 0;
 			sbbs->term->cols = startup->default_term_width;
-			if (inet_addrport(&local_addr) == startup->pet40_port || inet_addrport(&local_addr) == startup->pet80_port) {
-				sbbs->autoterm = PETSCII;
-				sbbs->term->cols = inet_addrport(&local_addr) == startup->pet40_port ? 40 : 80;
-				sbbs->outcom(PETSCII_UPPERLOWER);
-			}
 
 			sbbs->bprintf("\r\n%s\r\n", VERSION_NOTICE);
 			sbbs->bprintf("%s connection from: %s\r\n", client.protocol, host_ip);
@@ -5980,6 +5982,7 @@ NO_PASSTHRU:
 			new_node->input_thread = (HANDLE)_beginthread(input_thread, 0, new_node);
 			new_node->output_thread_running = true;
 			new_node->autoterm = sbbs->autoterm;
+			update_terminal(new_node);
 			new_node->term->cols = sbbs->term->cols;
 			_beginthread(output_thread, 0, new_node);
 			_beginthread(node_thread, 0, new_node);

@@ -140,18 +140,8 @@ public:
 		return true;
 	}
 
-	// TODO: Pick one.
-	virtual bool cursor_getxy(unsigned *x, unsigned *y) {
-		return getxy(x, y);
-	}
-
 	virtual bool gotoxy(unsigned x, unsigned y) {
 		return false;
-	}
-
-	// TODO: Pick one. :D
-	virtual bool cursor_xy(unsigned x, unsigned y) {
-		return gotoxy(x, y);
 	}
 
 	// Was ansi_save

@@ -515,7 +515,7 @@ const char* sbbs_t::term_charset(int term)
 /****************************************************************************/
 bool sbbs_t::update_nodeterm(void)
 {
-	// TODO: Terminal object hackery in here
+	update_terminal(this);
 	str_list_t ini = strListInit();
 	iniSetInteger(&ini, ROOT_SECTION, "cols", term->cols, NULL);
 	iniSetInteger(&ini, ROOT_SECTION, "rows", term->rows, NULL);
@@ -849,12 +849,12 @@ void sbbs_t::ctrl_a(char x)
 			break;
 		case 'I':
 			// TODO: Shouldn't need to make this conditional
-			if ((term->flags & (ICE_COLOR | PETSCII)) != ICE_COLOR)
+			//if ((term->flags & (ICE_COLOR | PETSCII)) != ICE_COLOR)
 				attr(atr | BLINK);
 			break;
 		case 'E': /* Bright Background */
 			// TODO: Shouldn't need to make this conditional
-			if (term->flags & (ICE_COLOR | PETSCII))
+			//if (term->flags & (ICE_COLOR | PETSCII))
 				attr(atr | BG_BRIGHT);
 			break;
 		case 'F':   /* Blink, only if alt Blink Font is loaded */
