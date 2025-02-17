@@ -401,7 +401,7 @@ bool PETSCII_Terminal::parse_ctrlkey(char& ch, int mode)
 		case 19:
 			ch = TERM_KEY_HOME;
 			return true;
-		case 147: // Clear (translate to End)
+		case '\x93': // Clear (translate to End)
 			ch = TERM_KEY_END;
 			return true;
 		case 20:
@@ -410,37 +410,37 @@ bool PETSCII_Terminal::parse_ctrlkey(char& ch, int mode)
 		case 29:
 			ch = TERM_KEY_RIGHT;
 			return true;
-		case 133: // F1
+		case '\x85': // F1
 			ch = TERM_KEY_IGNORE;
 			return true;
-		case 134: // F3
+		case '\x86': // F3
 			ch = TERM_KEY_IGNORE;
 			return true;
-		case 135: // F5
+		case '\x87': // F5
 			ch = TERM_KEY_IGNORE;
 			return true;
-		case 136: // F7
+		case '\x88': // F7
 			ch = TERM_KEY_IGNORE;
 			return true;
-		case 137: // F2
+		case '\x89': // F2
 			ch = TERM_KEY_IGNORE;
 			return true;
-		case 138: // F4
+		case '\x8A': // F4
 			ch = TERM_KEY_IGNORE;
 			return true;
-		case 139: // F6
+		case '\x8B': // F6
 			ch = TERM_KEY_IGNORE;
 			return true;
-		case 140: // F8
+		case '\x8C': // F8
 			ch = TERM_KEY_IGNORE;
 			return true;
-		case 145:
+		case '\x91':
 			ch = TERM_KEY_UP;
 			return true;
-		case 148:
+		case '\x94':
 			ch = TERM_KEY_INSERT;
 			return true;
-		case 157:
+		case '\x9d':
 			ch = TERM_KEY_LEFT;
 			return true;
 	}
