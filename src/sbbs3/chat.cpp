@@ -961,7 +961,8 @@ void sbbs_t::privchat(bool forced, int node_num)
 						        , thisnode.misc & NODE_NMSG ? 'M':' ');
 						attr(cfg.color[clr_chatlocal]);
 						for (x = 13, y = 0; x < term->rows; x++, y++) {
-							comprintf("\x1b[%d;1H\x1b[K", x + 1);
+							term->gotoxy(1, x + 1);
+							term->cleartoeol();
 							if (y <= localline)
 								bprintf("%s\r\n", localbuf[y]);
 						}
@@ -1076,7 +1077,8 @@ void sbbs_t::privchat(bool forced, int node_num)
 							        , thisnode.misc & NODE_NMSG ? 'M':' ');
 							attr(cfg.color[clr_chatremote]);
 							for (unsigned u = 0; u < 12; u++) {
-								bprintf("\x1b[%d;1H\x1b[K", u + 1);
+								term->gotoxy(1, u + 1);
+								term->cleartoeol();
 								if (u <= remoteline)
 									bprintf("%s\r\n", remotebuf[u]);
 							}
