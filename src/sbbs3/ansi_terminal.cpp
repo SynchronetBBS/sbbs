@@ -508,6 +508,17 @@ bool ANSI_Terminal::parse_outchar(char ch) {
 		return false;
 	}
 
+	// TODO: This needs to be in here so we don't reset lncntr before checking
+	if (ch == FF && lncntr > 0 && row > 0) {
+		lncntr = 0;
+		newline();
+		if (!(sbbs->sys_status & SS_PAUSEOFF)) {
+			sbbs->pause();
+			while (lncntr && sbbs->online && !(sbbs->sys_status & SS_ABORT))
+				pause();
+		}
+	}
+
 	/* Track cursor position locally */
 	switch (ch) {
 		case '\a':  // 7
@@ -533,12 +544,16 @@ bool ANSI_Terminal::parse_outchar(char ch) {
 			}
 			return false;
 		case '\n':  // 10
+			if (sbbs->line_delay)
+				SLEEP(sbbs->line_delay);
 			line_feed();
 			return false;
 		case FF:    // 12
 			clearscreen();
 			return false;
 		case '\r':  // 13
+			if (sbbs->console & CON_CR_CLREOL)
+				cleartoeol();
 			carriage_return();
 			return false;
 		default:

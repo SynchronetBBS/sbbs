@@ -591,46 +591,28 @@ int sbbs_t::outchar(char ch)
 		}
 	}
 
-	if (ch == FF && term->lncntr > 0 && term->row > 0) {
-		term->lncntr = 0;
-		term->newline();
-		if (!(sys_status & SS_PAUSEOFF)) {
-			pause();
-			while (term->lncntr && online && !(sys_status & SS_ABORT))
-				pause();
-		}
-	}
-
 	if (!(console & CON_R_ECHO))
 		return 0;
 
 	if ((console & CON_R_ECHOX) && (uchar)ch >= ' ') {
 		ch = *text[PasswordChar];
 	}
-	if (ch == FF)
-		term->clearscreen();
-	else {
-		if (ch == (char)TELNET_IAC && !(telnet_mode & TELNET_MODE_OFF))
-			outcom(TELNET_IAC); /* Must escape Telnet IAC char (255) */
-		if (ch == '\r' && (console & CON_CR_CLREOL))
-			term->cleartoeol();
-		if (ch == '\n' && line_delay)
-			SLEEP(line_delay);
-		if (term->flags & PETSCII) {
-			uchar pet = cp437_to_petscii(ch);
-			if (pet == PETSCII_SOLID)
-				outcom(PETSCII_REVERSE_ON);
-			outcom(pet);
-			if (pet == PETSCII_SOLID)
-				outcom(PETSCII_REVERSE_OFF);
-			if (ch == '\r' && (term->curatr & 0xf0) != 0) // reverse video is disabled upon CR
-				term->curatr >>= 4;
-		} else {
-			if (utf8[0] != 0)
-				putcom(utf8);
-			else
-				outcom(ch);
-		}
+	if (ch == (char)TELNET_IAC && !(telnet_mode & TELNET_MODE_OFF))
+		outcom(TELNET_IAC); /* Must escape Telnet IAC char (255) */
+	if (term->flags & PETSCII) {
+		uchar pet = cp437_to_petscii(ch);
+		if (pet == PETSCII_SOLID)
+			outcom(PETSCII_REVERSE_ON);
+		outcom(pet);
+		if (pet == PETSCII_SOLID)
+			outcom(PETSCII_REVERSE_OFF);
+		if (ch == '\r' && (term->curatr & 0xf0) != 0) // reverse video is disabled upon CR
+			term->curatr >>= 4;
+	} else {
+		if (utf8[0] != 0)
+			putcom(utf8);
+		else
+			outcom(ch);
 	}
 
 	if (term->lncntr == term->rows - 1 && ((useron.misc & (UPAUSE ^ (console & CON_PAUSEOFF))) || sys_status & SS_PAUSEON)
