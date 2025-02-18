@@ -331,6 +331,7 @@ void ANSI_Terminal::cursor_home()
 	column = 0;
 	// TODO: Did not reset lncntr
 	lncntr = 0;
+	lastlinelen = 0;
 }
 
 void ANSI_Terminal::cursor_up(unsigned count = 1)
