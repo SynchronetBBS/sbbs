@@ -14,7 +14,7 @@ SyncTERMCache.prototype.read_apc = function (timeout)
 	if (timeout === undefined)
 		timeout = 1000;
 
-	while((ch = console.inkey(timeout)) !== null) {
+	while((ch = console.inkey(timeout)) !== '') {
 		switch(state) {
 			case 0:
 				if (ch == '\x1b') {
