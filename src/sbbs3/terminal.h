@@ -87,9 +87,20 @@ public:
 		return flags;
 	}
 
+	static link_list_t *listPtrInit(int flags) {
+		link_list_t *ret = new link_list_t;
+		listInit(ret, flags);
+		return ret;
+	}
+
+	static void listPtrFree(link_list_t *ll) {
+		listFree(ll);
+		delete ll;
+	}
+
 	Terminal() = delete;
-	Terminal(sbbs_t *sbbsptr) : flags{get_flags(sbbsptr)}, mouse_hotspots{listInit(nullptr, 0)}, sbbs{sbbsptr},
-	    savedlines{listInit(nullptr, 0)} {}
+	Terminal(sbbs_t *sbbsptr) : flags{get_flags(sbbsptr)}, mouse_hotspots{listPtrInit(0)}, sbbs{sbbsptr},
+	    savedlines{listPtrInit(0)} {}
 
 	Terminal(Terminal *t) : flags{get_flags(t->sbbs)}, row{t->row}, column{t->column},
 	    rows{t->rows}, cols{t->cols}, tabstop{t->tabstop}, lastlinelen{t->lastlinelen}, 
@@ -112,8 +123,8 @@ public:
 
 	virtual ~Terminal()
 	{
-		listFree(mouse_hotspots);
-		listFree(savedlines);
+		listPtrFree(mouse_hotspots);
+		listPtrFree(savedlines);
 	}
 
 	// Was ansi()
@@ -163,6 +174,7 @@ public:
 		for (unsigned i = 0; i < count; i++)
 			sbbs->outcom('\n');
 		inc_row(count);
+		lbuflen = 0;
 	}
 
 	/*
@@ -178,6 +190,8 @@ public:
 			if (column > 0) {
 				sbbs->putcom("\b \b");
 				column--;
+				if (lbuflen)
+					lbuflen--;
 			}
 			else
 				break;
@@ -215,7 +229,15 @@ public:
 		line_feed(count);
 	}
 
-	virtual void cursor_right(unsigned count = 1) {}
+	virtual void cursor_right(unsigned count = 1) {
+		for (unsigned i = 0; i < count; i++) {
+			if (column < (cols - 1))
+				sbbs->outcom(' ');
+			else
+				break;
+		}
+	}
+
 	virtual void cursor_left(unsigned count = 1) {
 		for (unsigned i = 0; i < count; i++) {
 			if (column > 0) {
@@ -360,7 +382,6 @@ public:
 		line.end_attr = curatr;
 		line.column = column;
 		snprintf(line.buf, sizeof(line.buf), "%.*s", lbuflen, lbuf);
-		TERMINATE(line.buf);
 		lbuflen = 0;
 		return listPushNodeData(savedlines, &line, sizeof(line)) != NULL;
 	}
@@ -371,17 +392,12 @@ public:
 			return false;
 		lbuflen = 0;
 		attrstr(line->beg_attr);
-		sbbs->rputs(line->buf);
-		// TODO: This is a hack to work around a broken
-		//       carriage_return().  Because rputs() doesn't
-		//       update column, and on PETSCII, carriage_return()
-		//       assumes column is correct, this needs to adjust
-		//       column so it (hopefully) works.
-		if (supports(PETSCII))
-			column = strlen(line->buf);
+		// Switch from rputs to outchar() loop (but not bputs()
+		// This way we don't need to screw with the column or
+		// cursor position.
+		for (unsigned u = 0; line->buf[u]; u++)
+			sbbs->outchar(line->buf[u]);
 		curatr = line->end_attr;
-		carriage_return();
-		cursor_right(line->column);
 		free(line);
 		insert_indicator();
 		return true;
