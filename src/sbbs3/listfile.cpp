@@ -467,7 +467,7 @@ mouse_list(sbbs_t *sbbs, uint *row, const int total, char *str)
 	link_list_t *saved_hotspots = sbbs->term->mouse_hotspots;
 	sbbs->term->mouse_hotspots = &tmp_hotspots;
 	for (int i = 0; i < total; i++)
-		sbbs->term->add_hotspot((char)('A' + i), /* hungry: */ true, -1, -1, row[i]);
+		sbbs->term->add_hotspot((char)('A' + i), /* hungry: */ true, HOTSPOT_CURRENT_X, HOTSPOT_CURRENT_X, row[i]);
 	sbbs->bputs(sbbs->text[BatchDlFlags]);
 	d = sbbs->getstr(str, BF_MAX, K_NOCRLF);
 	sbbs->term->clear_hotspots();

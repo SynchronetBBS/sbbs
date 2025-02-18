@@ -304,6 +304,8 @@ bool ANSI_Terminal::restore_cursor_pos()
 
 void ANSI_Terminal::clearscreen()
 {
+	check_clear_pause();
+	clear_hotspots();
 	sbbs->putcom("\x1b[2J\x1b[H");    /* clear screen, home cursor */
 	row = 0;
 	column = 0;
@@ -564,8 +566,8 @@ bool ANSI_Terminal::parse_ctrlkey(char& ch, int mode) {
 					break;
 				}
 				str[sp++] = button;
-				ch = sbbs->kbincom(100);
-				if (ch < '!') {
+				inch = sbbs->kbincom(100);
+				if (inch < '!') {
 					sbbs->lprintf(LOG_DEBUG, "Unexpected mouse-button (0x%02X) tracking char: 0x%02X < '!'"
 						, button, ch);
 					break;
@@ -597,9 +599,14 @@ bool ANSI_Terminal::parse_ctrlkey(char& ch, int mode) {
 							sbbs->ungetkeys(spot->cmd, true);
 						}
 						else {
-							ch = spot->cmd[0];
-							if (spot->cmd[1])
-								sbbs->ungetkeys(&spot->cmd[1]);
+							if (spot->cmd[0] < 32 || spot->cmd[0] == 127) {
+								ch = spot->cmd[0];
+								if (spot->cmd[1])
+									sbbs->ungetkeys(&spot->cmd[1]);
+							}
+							else {
+								sbbs->ungetkeys(spot->cmd);
+							}
 						}
 						return (ch < 32 || ch == 127);
 					}
@@ -668,9 +675,14 @@ bool ANSI_Terminal::parse_ctrlkey(char& ch, int mode) {
 							sbbs->ungetkeys(spot->cmd, true);
 						}
 						else {
-							ch = spot->cmd[0];
-							if (spot->cmd[1])
-								sbbs->ungetkeys(&spot->cmd[1]);
+							if (spot->cmd[0] < 32 || spot->cmd[0] == 127) {
+								ch = spot->cmd[0];
+								if (spot->cmd[1])
+									sbbs->ungetkeys(&spot->cmd[1]);
+							}
+							else {
+								sbbs->ungetkeys(spot->cmd);
+							}
 						}
 						return (ch < 32 || ch == 127);
 					}

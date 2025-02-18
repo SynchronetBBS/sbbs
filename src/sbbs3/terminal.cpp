@@ -33,15 +33,6 @@ bool Terminal::required_parse_outchar(char ch) {
 			return false;
 		case 12: // FF
 			// Does not go into lbuf
-			if (lncntr > 0 && row > 0) {
-				lncntr = 0;
-				newline();
-				if (!(sbbs->sys_status & SS_PAUSEOFF)) {
-					sbbs->pause();
-					while (lncntr && sbbs->online && !(sbbs->sys_status & SS_ABORT))
-						pause();
-				}
-			}
 			clearscreen();
 			return false;
 		case 13: // CR
@@ -96,11 +87,11 @@ struct mouse_hotspot* Terminal::add_hotspot(struct mouse_hotspot* spot)
 {
 	if (!(sbbs->cfg.sys_misc & SM_MOUSE_HOT) || !supports(MOUSE))
 		return nullptr;
-	if (spot->y < 0)
+	if (spot->y == HOTSPOT_CURRENT_Y)
 		spot->y = row;
-	if (spot->minx < 0)
+	if (spot->minx == HOTSPOT_CURRENT_X)
 		spot->minx = column;
-	if (spot->maxx < 0)
+	if (spot->maxx == HOTSPOT_CURRENT_X)
 		spot->maxx = cols - 1;
 #if 0 //def _DEBUG
 	char         dbg[128];
@@ -114,15 +105,14 @@ struct mouse_hotspot* Terminal::add_hotspot(struct mouse_hotspot* spot)
 	return (struct mouse_hotspot*)node->data;
 }
 
-struct mouse_hotspot* Terminal::add_hotspot(char cmd, bool hungry, int minx, int maxx, int y)
+struct mouse_hotspot* Terminal::add_hotspot(char cmd, bool hungry, unsigned minx, unsigned maxx, unsigned y)
 {
 	if (!(flags & MOUSE))
 		return nullptr;
 	struct mouse_hotspot spot = {};
 	spot.cmd[0] = cmd;
-	// TODO: This was the only one that supported negative values
-	spot.minx = minx < 0 ? column : minx;
-	spot.maxx = maxx < 0 ? column : maxx;
+	spot.minx = minx;
+	spot.maxx = maxx;
 	spot.y = y;
 	spot.hungry = hungry;
 	return add_hotspot(&spot);
@@ -138,53 +128,55 @@ bool Terminal::add_pause_hotspot(char cmd)
 	spot.cmd[0] = cmd;
 	spot.minx = column;
 	spot.maxx = column;
-	spot.y = -1;
+	spot.y = HOTSPOT_CURRENT_Y;
 	spot.hungry = true;
 	if (add_hotspot(&spot) != nullptr)
 		return true;
 	return false;
 }
 
-struct mouse_hotspot* Terminal::add_hotspot(int num, bool hungry, int minx, int maxx, int y)
+struct mouse_hotspot* Terminal::add_hotspot(int num, bool hungry, unsigned minx, unsigned maxx, unsigned y)
 {
 	if (!(flags & MOUSE))
 		return nullptr;
 	struct mouse_hotspot spot = {};
 	SAFEPRINTF(spot.cmd, "%d\r", num);
-	spot.minx = minx < 0 ? column : minx;
-	spot.maxx = maxx < 0 ? column : maxx;
+	spot.minx = minx;
+	spot.maxx = maxx;
 	spot.y = y;
 	spot.hungry = hungry;
 	return add_hotspot(&spot);
 }
 
-struct mouse_hotspot* Terminal::add_hotspot(uint num, bool hungry, int minx, int maxx, int y)
+struct mouse_hotspot* Terminal::add_hotspot(uint num, bool hungry, unsigned minx, unsigned maxx, unsigned y)
 {
 	if (!(flags & MOUSE))
 		return nullptr;
 	struct mouse_hotspot spot = {};
 	SAFEPRINTF(spot.cmd, "%u\r", num);
-	spot.minx = minx < 0 ? column : minx;
-	spot.maxx = maxx < 0 ? column : maxx;
+	spot.minx = minx;
+	spot.maxx = maxx;
 	spot.y = y;
 	spot.hungry = hungry;
 	return add_hotspot(&spot);
 }
 
-struct mouse_hotspot* Terminal::add_hotspot(const char* cmd, bool hungry, int minx, int maxx, int y)
+struct mouse_hotspot* Terminal::add_hotspot(const char* cmd, bool hungry, unsigned minx, unsigned maxx, unsigned y)
 {
 	if (!(flags & MOUSE))
 		return nullptr;
 	struct mouse_hotspot spot = {};
 	SAFECOPY(spot.cmd, cmd);
-	spot.minx = minx < 0 ? column : minx;
-	spot.maxx = maxx < 0 ? column : maxx;
+	spot.minx = minx;
+	spot.maxx = maxx;
 	spot.y = y;
 	spot.hungry = hungry;
 	return add_hotspot(&spot);
 }
 
 void Terminal::inc_row(unsigned count) {
+	if (column)
+		lastlinelen = column;
 	row += count;
 	if (row >= rows) {
 		scroll_hotspots((row - rows) + 1);
@@ -255,6 +247,19 @@ list_node_t *Terminal::find_hotspot(unsigned x, unsigned y)
 	}
 
 	return node;
+}
+
+void Terminal::check_clear_pause()
+{
+	if (lncntr > 0 && row > 0) {
+		lncntr = 0;
+		newline();
+		if (!(sbbs->sys_status & SS_PAUSEOFF)) {
+			sbbs->pause();
+			while (lncntr && sbbs->online && !(sbbs->sys_status & SS_ABORT))
+				pause();
+		}
+	}
 }
 
 void update_terminal(sbbs_t *sbbsptr)

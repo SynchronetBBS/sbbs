@@ -44,6 +44,9 @@ enum output_rate {
 #define MOUSE_MODE_EXT  (1<<4)  // SGR-encoded extended coordinate mouse reporting
 #define MOUSE_MODE_ON   (MOUSE_MODE_NORM | MOUSE_MODE_EXT) // Default mouse "enabled" mode flags
 
+#define HOTSPOT_CURRENT_X UINT_MAX
+#define HOTSPOT_CURRENT_Y UINT_MAX
+
 class Terminal {
 public:
 	uint32_t flags{0};                 /* user.misc flags that impact the terminal */
@@ -166,6 +169,7 @@ public:
 	}
 
 	virtual void carriage_return() {
+		lastlinelen = column;
 		sbbs->outcom('\r');
 		column = 0;
 	}
@@ -208,12 +212,13 @@ public:
 	}
 
 	virtual void clearscreen() {
+		check_clear_pause();
+		clear_hotspots();
 		sbbs->outcom(FF);
 		row = 0;
 		column = 0;
 		lncntr = 0;
 		lbuflen = 0;
-		clear_hotspots();
 	}
 
 	virtual void cleartoeos() {}
@@ -409,10 +414,10 @@ public:
 	void scroll_hotspots(unsigned count);
 
 	struct mouse_hotspot* add_hotspot(struct mouse_hotspot* spot);
-	struct mouse_hotspot* add_hotspot(char cmd, bool hungry = true, int minx = -1, int maxx = -1, int y = -1);
-	struct mouse_hotspot* add_hotspot(int num, bool hungry = true, int minx = -1, int maxx = -1, int y = -1);
-	struct mouse_hotspot* add_hotspot(uint num, bool hungry = true, int minx = -1, int maxx = -1, int y = -1);
-	struct mouse_hotspot* add_hotspot(const char* cmd, bool hungry = true, int minx = -1, int maxx = -1, int y = -1);
+	struct mouse_hotspot* add_hotspot(char cmd, bool hungry = true, unsigned minx = HOTSPOT_CURRENT_X, unsigned maxx = HOTSPOT_CURRENT_X, unsigned y = HOTSPOT_CURRENT_Y);
+	struct mouse_hotspot* add_hotspot(int num, bool hungry = true, unsigned minx = HOTSPOT_CURRENT_X, unsigned maxx = HOTSPOT_CURRENT_X, unsigned y = HOTSPOT_CURRENT_Y);
+	struct mouse_hotspot* add_hotspot(uint num, bool hungry = true, unsigned minx = HOTSPOT_CURRENT_X, unsigned maxx = HOTSPOT_CURRENT_X, unsigned y = HOTSPOT_CURRENT_Y);
+	struct mouse_hotspot* add_hotspot(const char* cmd, bool hungry = true, unsigned minx = HOTSPOT_CURRENT_X, unsigned maxx = HOTSPOT_CURRENT_X, unsigned y = HOTSPOT_CURRENT_Y);
 	bool add_pause_hotspot(char cmd);
 	void inc_row(unsigned count = 1);
 	void inc_column(unsigned count = 1);
@@ -421,6 +426,7 @@ public:
 	void cond_contline();
 	bool supports(unsigned cmp_flags);
 	list_node_t *find_hotspot(unsigned x, unsigned y);
+	void check_clear_pause();
 };
 
 void update_terminal(sbbs_t *sbbsptr);
