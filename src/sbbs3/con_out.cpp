@@ -568,7 +568,7 @@ int sbbs_t::outchar(char ch)
 {
 	if (console & CON_ECHO_OFF)
 		return 0;
-	
+
 	if (!term->parse_outchar(ch))
 		return 0;
 

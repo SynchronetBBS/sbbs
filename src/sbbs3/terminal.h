@@ -198,6 +198,7 @@ public:
 		row = 0;
 		column = 0;
 		lncntr = 0;
+		lbuflen = 0;
 		clear_hotspots();
 	}
 
@@ -321,10 +322,13 @@ public:
 
 			// Zero-width characters we want to pass through
 			case 7:  // BEL
+				// Does not go into lbuf...
 				return true;
 
 			// Everything else is assumed one byte wide
 			default:
+				if (lbuflen < LINE_BUFSIZE)
+					lbuf[lbuflen++] = ch;
 				inc_column();
 				return true;
 		}

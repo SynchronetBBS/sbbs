@@ -11,24 +11,28 @@ bool Terminal::required_parse_outchar(char ch) {
 	switch (ch) {
 		// Special values
 		case 8:  // BS
+			if (lbuflen < LINE_BUFSIZE)
+				lbuf[lbuflen++] = ch;
 			cursor_left();
 			return false;
 		case 9:  // TAB - Copy pasta... TODO
 			// TODO: Original would wrap, this one (hopefully) doesn't.
+			//       Further, use outchar() instead of outcom() to get
+			//       the spaces into the line buffer instead of tabs
 			if (column < (cols - 1)) {
-				column++;
-				while ((column < (cols - 1)) && (column % tabstop)) {
-					sbbs->outcom(' ');
-					inc_column();
-				}
+				sbbs->outchar(' ');
+				while ((column < (cols - 1)) && (column % tabstop))
+					sbbs->outchar(' ');
 			}
 			return false;
 		case 10: // LF
+			// Terminates lbuf
 			if (sbbs->line_delay)
 				SLEEP(sbbs->line_delay);
 			line_feed();
 			return false;
 		case 12: // FF
+			// Does not go into lbuf
 			if (lncntr > 0 && row > 0) {
 				lncntr = 0;
 				newline();
@@ -43,6 +47,8 @@ bool Terminal::required_parse_outchar(char ch) {
 		case 13: // CR
 			if (sbbs->console & CON_CR_CLREOL)
 				cleartoeol();
+			if (lbuflen < LINE_BUFSIZE)
+				lbuf[lbuflen++] = ch;
 			carriage_return();
 			return false;
 		// Everything else is assumed one byte wide

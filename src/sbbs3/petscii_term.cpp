@@ -376,10 +376,14 @@ bool PETSCII_Terminal::parse_outchar(char ch)
 		case '\x9D': // Cursor Left
 		case '\x9E': // Yellow
 		case '\x9F': // Cyan
+			if (lbuflen < LINE_BUFSIZE)
+				lbuf[lbuflen++] = ch;
 			return true;
 
 		// Everything else is assumed one byte wide
 		default:
+			if (lbuflen < LINE_BUFSIZE)
+				lbuf[lbuflen++] = ch;
 			inc_column();
 			return true;
 	}

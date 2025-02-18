@@ -505,6 +505,7 @@ bool ANSI_Terminal::parse_outchar(char ch) {
 		if (outchar_esc == ansiState_final)
 			outchar_esc = ansiState_none;
 		sbbs->outcom(ch);
+		lbuf[lbuflen++] = ch;
 		return false;
 	}
 
@@ -514,7 +515,7 @@ bool ANSI_Terminal::parse_outchar(char ch) {
 	/* Track cursor position locally */
 	switch (ch) {
 		case '\a':  // 7
-			/* Non-printing */
+			/* Non-printing, does not go into lbuf */
 			break;
 		default:
 			// TODO: All kinds of CTRL charaters not handled properly
