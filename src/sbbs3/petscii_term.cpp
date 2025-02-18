@@ -218,6 +218,7 @@ void PETSCII_Terminal::clearscreen()
 	row = 0;
 	column = 0;
 	lncntr = 0;
+	lastlinelen = 0;
 }
 
 void PETSCII_Terminal::cleartoeos()

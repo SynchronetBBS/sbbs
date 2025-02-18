@@ -219,6 +219,7 @@ public:
 		column = 0;
 		lncntr = 0;
 		lbuflen = 0;
+		lastlinelen = 0;
 	}
 
 	virtual void cleartoeos() {}

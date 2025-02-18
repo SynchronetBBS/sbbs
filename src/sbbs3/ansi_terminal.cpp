@@ -311,6 +311,7 @@ void ANSI_Terminal::clearscreen()
 	column = 0;
 	lncntr = 0;
 	lbuflen = 0;
+	lastlinelen = 0;
 }
 
 void ANSI_Terminal::cleartoeos()
