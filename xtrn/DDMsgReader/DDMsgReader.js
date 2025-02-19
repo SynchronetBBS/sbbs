@@ -228,6 +228,9 @@
  *                              timeout warning occurs. The string is configurable via the new
  *                              areYouThere string in the theme file.
  *                              (Started: 2025-01-29)
+ * 2025-02-08 Eric Oulashin     Version 1.96L
+ *                              After replying to a message, when it shows the status & pauses
+ *                              for input, a Q or Ctrl-C will now exit, and not be ignored.
  */
 
 "use strict";
@@ -335,8 +338,8 @@ var hexdump = load('hexdump_lib.js');
 
 
 // Reader version information
-var READER_VERSION = "1.96k";
-var READER_DATE = "2025-02-08";
+var READER_VERSION = "1.96L";
+var READER_DATE = "2025-02-18";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -5999,6 +6002,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				// If the user pressed the private reply key while reading private
 				// mail, then do nothing (allow only the regular reply key to reply).
 				var privateReply = (retObj.lastKeypress == this.enhReaderKeys.privateReply);
+				var userQuitOrAborted = false;
 				if (privateReply && this.readingPersonalEmail)
 					writeMessage = false; // Don't re-write the current message again
 				else
@@ -6013,6 +6017,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 						// Let the user reply to the message.
 						var replyRetObj = this.ReplyToMsg(extdMsgHdr, messageText, privateReply, pOffset);
 						retObj.userReplied = replyRetObj.postSucceeded;
+						userQuitOrAborted = replyRetObj.userQuitOrAborted;
 						//retObj.msgNotReadable = replyRetObj.msgWasDeleted;
 						var msgWasDeleted = replyRetObj.msgWasDeleted;
 						//if (retObj.msgNotReadable)
@@ -6057,6 +6062,28 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 							writeMessage = true; // We want to refresh the message on the screen
 						}
 					}
+					else
+					{
+						// Messagebase failed to open
+						this.DisplayEnhReaderError("Messagebase failed to open", msgInfo.messageLines, topMsgLineIdx, msgLineFormatStr);
+					}
+				}
+				// If the user quit/aborted, then quit out of reader mode now.
+				// Resetting console.aborted and line_counter to avoid pausing and screen display issues.
+				console.aborted = false;
+				console.line_counter = 0;
+				if (userQuitOrAborted)
+				{
+					if (this.userSettings.quitFromReaderGoesToMsgList)
+					{
+						console.attributes = "N";
+						console.crlf();
+						console.print("Loading...");
+						retObj.nextAction = ACTION_DISPLAY_MSG_LIST;
+					}
+					else
+						retObj.nextAction = ACTION_QUIT;
+					continueOn = false;
 				}
 				break;
 			case this.enhReaderKeys.postMsg: // Post a message
@@ -7549,6 +7576,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 				// If not reading personal email, go ahead and let the user reply
 				// with either the reply or private reply keypress.
 				var privateReply = (retObj.lastKeypress == this.enhReaderKeys.privateReply);
+				var userQuitOrAborted = false;
 				if (privateReply && this.readingPersonalEmail)
 				{
 					writeMessage = false; // Don't re-write the current message again
@@ -7567,6 +7595,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 						// Let the user reply to the message
 						var replyRetObj = this.ReplyToMsg(extdMsgHdr, messageText, privateReply, pOffset);
 						retObj.userReplied = replyRetObj.postSucceeded;
+						userQuitOrAborted = replyRetObj.userQuitOrAborted;
 						//retObj.msgNotReadable = replyRetObj.msgWasDeleted;
 						var msgWasDeleted = replyRetObj.msgWasDeleted;
 						if (msgWasDeleted && !canViewDeletedMsgs())
@@ -7595,6 +7624,23 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 						console.print("\x01h\x01yFailed to open the sub-board.  Aborting.\x01n");
 						mswait(ERROR_PAUSE_WAIT_MS);
 					}
+				}
+				// If the user quit/aborted, then quit out of reader mode now.
+				// Resetting console.aborted and line_counter to avoid pausing and screen display issues.
+				console.aborted = false;
+				console.line_counter = 0;
+				if (userQuitOrAborted)
+				{
+					if (this.userSettings.quitFromReaderGoesToMsgList)
+					{
+						console.attributes = "N";
+						console.crlf();
+						console.print("Loading...");
+						retObj.nextAction = ACTION_DISPLAY_MSG_LIST;
+					}
+					else
+						retObj.nextAction = ACTION_QUIT;
+					continueOn = false;
 				}
 				break;
 			case this.enhReaderKeys.postMsg: // Post a message
@@ -11521,11 +11567,13 @@ function DigDistMsgReader_EnhancedReaderChangeSubBoard(pNewSubBoardCode)
 //               postSucceeded: Boolean - Whether or not the message post succeeded
 //               msgWasDeleted: Boolean - Whether or not the message was deleted after
 //                              the user replied to it
+//               userQuitOrAborted: Whether or not the user quit/aborted
 function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 {
 	var retObj = {
 		postSucceeded: false,
-		msgWasDeleted: false
+		msgWasDeleted: false,
+		userQuitOrAborted: false
 	};
 
 	if (pMsgHdr == null || typeof(pMsgHdr) !== "object")
@@ -11615,6 +11663,7 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 		var privReplRetObj = this.DoPrivateReply(pMsgHdr, pMsgIdx, replyMode);
 		retObj.postSucceeded = privReplRetObj.sendSucceeded;
 		retObj.msgWasDeleted = privReplRetObj.msgWasDeleted;
+		retObj.userQuitOrAborted = privReplRetObj.userQuitOrAborted;
 		// If the user successfully saved the message and the message wasn't deleted,
 		// then apply the 'replied' attribute to the message Header
 		if (privReplRetObj.sendSucceeded && !privReplRetObj.msgWasDeleted)
@@ -11710,6 +11759,7 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 			var privReplRetObj = this.DoPrivateReply(pMsgHdr, pMsgIdx, replyMode);
 			retObj.postSucceeded = privReplRetObj.sendSucceeded;
 			retObj.msgWasDeleted = privReplRetObj.msgWasDeleted;
+			retObj.userQuitOrAborted = privReplRetObj.userQuitOrAborted;
 		}
 		else
 		{
@@ -11718,6 +11768,7 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 			// Error: Error -300 adding RFC822MSGID field to message header
 			retObj.postSucceeded = bbs.post_msg(this.subBoardCode, replyMode, pMsgHdr);
 			console.pause();
+			retObj.userQuitOrAborted = console.aborted;
 		}
 		// Remove the messagebase info drop file if it exists
 		if (file_exists(msgbaseInfoDropFileName))
@@ -11800,11 +11851,13 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 //               sendSucceeded: Boolean - Whether or not the message post succeeded
 //               msgWasDeleted: Boolean - Whether or not the message was deleted after
 //                              the user replied to it
+//               userQuitOrAborted: Whether or not the user quit/aborted
 function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 {
 	var retObj = {
 		sendSucceeded: true,
-		msgWasDeleted: false
+		msgWasDeleted: false,
+		userQuitOrAborted: false
 	};
 	
 	if (pMsgHdr == null)
@@ -11874,6 +11927,7 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 			console.crlf();
 			retObj.sendSucceeded = bbs.email(userNumber, replyMode, null, null, pMsgHdr);
 			console.pause();
+			retObj.userQuitOrAborted = console.aborted;
 		}
 		else
 		{
@@ -11925,12 +11979,14 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 					{
 						replyMode |= WM_NETMAIL;
 						retObj.sendSucceeded = bbs.netmail(msgDest, replyMode, null, pMsgHdr);
+						retObj.userQuitOrAborted = console.aborted;
 						console.pause();
 					}
 					else
 					{
 						console.crlf();
 						retObj.sendSucceeded = bbs.email(userNumber, replyMode, null, null, pMsgHdr);
+						retObj.userQuitOrAborted = console.aborted;
 						console.pause();
 					}
 				}
@@ -11969,6 +12025,7 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 		// results.
 		if (!console.noyes(bbs.text(DeleteMailQ).replace("%s", pMsgHdr.from)))
 			retObj.msgWasDeleted = this.PromptAndDeleteOrUndeleteMessage(pMsgIdx, null, true, null, null, false);
+		retObj.userQuitOrAborted = console.aborted;
 	}
 
 	return retObj;
@@ -17509,8 +17566,11 @@ function DigDistMsgReader_ScrollableModeAreYouThereWarning()
 	console.beep();
 	//var warningTxt = "Are you there??";
 	var warningTxt = replaceAtCodesInStr(this.text.areYouThere);
-	var numSpaces = Math.floor(this.scrollableReadingData.msgAreaWidth / 2) - Math.floor(warningTxt.length / 2);
-	warningTxt = format("%*s", numSpaces, "") + warningTxt + format("%*s", numSpaces-1, "");
+	if (console.strlen(warningTxt) > console.screen_columns)
+		warningTxt = "\x01n\x01hAre you really there?\x01n";
+	var numSpaces = Math.floor(this.scrollableReadingData.msgAreaWidth / 2) - Math.floor(console.strlen(warningTxt) / 2);
+	if (numSpaces > 0)
+		warningTxt = format("%*s", numSpaces, "") + warningTxt;
 	this.WriteLightbarKeyHelpMsg(warningTxt, "\x01n\x01h\x01y\x01h", ERROR_WAIT_MS);
 
 	if (this.currentAction == ACTION_READING_MSG && this.scrollingReaderInterface && console.term_supports(USER_ANSI))
