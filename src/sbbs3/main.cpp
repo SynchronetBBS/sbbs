@@ -4102,8 +4102,11 @@ int sbbs_t::_outcom(uchar ch)
 	if (term->lbuflen < LINE_BUFSIZE) {
 		if (term->lbuflen == 0)
 			term->latr = term->curatr;
-		if (ch != 7) // Beeps don't go into lbuf
-			term->lbuf[term->lbuflen++] = ch;
+		// Historically, beeps don't go into lbuf
+		// hopefully nobody notices and cares, because this would mean
+		// that BEL *must* be part of any charset we support... and it's
+		// not part of C64 PETSCII.
+		term->lbuf[term->lbuflen++] = ch;
 	}
 	return 0;
 }
