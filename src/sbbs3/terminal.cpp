@@ -264,7 +264,7 @@ void Terminal::check_clear_pause()
 static void
 flags_fixup(uint32_t& flags)
 {
-	if (flags | UTF8) {
+	if (flags & UTF8) {
 		// These bits are *never* available in UTF8 mode
 		// Note that RIP is not inherently incompatible with UTF8
 		flags &= ~(NO_EXASCII | PETSCII);
@@ -279,7 +279,7 @@ flags_fixup(uint32_t& flags)
 		flags &= ~(PETSCII);
 	}
 
-	if (flags | PETSCII) {
+	if (flags & PETSCII) {
 		// These bits are *never* available in PETSCII mode
 		flags &= ~(COLOR | RIP | ICE_COLOR | MOUSE | NO_EXASCII | UTF8);
 	}
@@ -314,7 +314,6 @@ void update_terminal(sbbs_t *sbbsptr, Terminal *term)
 {
 	uint32_t flags = term->flags;
 	Terminal *newTerm;
-
 	if (flags & PETSCII)
 		newTerm = new PETSCII_Terminal(sbbsptr, term);
 	else if (flags & (RIP | ANSI))
