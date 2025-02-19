@@ -264,6 +264,12 @@ void Terminal::check_clear_pause()
 static void
 flags_fixup(uint32_t& flags)
 {
+	if (flags | UTF8) {
+		// These bits are *never* available in UTF8 mode
+		// Note that RIP is not inherently incompatible with UTF8
+		flags &= ~(NO_EXASCII | PETSCII);
+	}
+
 	if (!(flags & ANSI)) {
 		// These bits are *only* available in ANSI mode
 		flags &= ~(COLOR | RIP | ICE_COLOR | MOUSE);
@@ -276,12 +282,6 @@ flags_fixup(uint32_t& flags)
 	if (flags | PETSCII) {
 		// These bits are *never* available in PETSCII mode
 		flags &= ~(COLOR | RIP | ICE_COLOR | MOUSE | NO_EXASCII | UTF8);
-	}
-
-	if (flags | UTF8) {
-		// These bits are *never* available in UTF8 mode
-		// Note that RIP is not inherently incompatible with UTF8
-		flags &= ~(NO_EXASCII);
 	}
 }
 
