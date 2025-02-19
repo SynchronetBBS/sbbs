@@ -4102,7 +4102,8 @@ int sbbs_t::_outcom(uchar ch)
 	if (term->lbuflen < LINE_BUFSIZE) {
 		if (term->lbuflen == 0)
 			term->latr = term->curatr;
-		term->lbuf[term->lbuflen++] = ch;
+		if (ch != 7) // Beeps don't go into lbuf
+			term->lbuf[term->lbuflen++] = ch;
 	}
 	return 0;
 }
