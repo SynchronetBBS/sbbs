@@ -78,13 +78,16 @@ public:
 	static uint32_t get_flags(sbbs_t *sbbsptr) {
 		uint32_t flags;
 
-		if ((sbbsptr->sys_status & (SS_USERON | SS_NEWUSER)) && (sbbsptr->useron.misc & AUTOTERM)) {
+		if (sbbsptr->sys_status & (SS_USERON | SS_NEWUSER)) {
+			if (sbbsptr->useron.misc & AUTOTERM) {
+				flags = sbbsptr->autoterm;
+				flags |= sbbsptr->useron.misc & (NO_EXASCII | SWAP_DELETE | COLOR | ICE_COLOR | MOUSE);
+			}
+			else
+				flags = sbbsptr->useron.misc;
+		}
+		else
 			flags = sbbsptr->autoterm;
-			flags |= sbbsptr->useron.misc & (NO_EXASCII | SWAP_DELETE | COLOR | ICE_COLOR | MOUSE);
-		}
-		else {
-			flags = sbbsptr->useron.misc;
-		}
 		flags &= TERM_FLAGS;
 		// TODO: Get rows and cols
 		return flags;
