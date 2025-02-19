@@ -196,14 +196,15 @@ void PETSCII_Terminal::carriage_return()
 void PETSCII_Terminal::line_feed(unsigned count)
 {
 	// Like cursor_down() but scrolls...
-	for (unsigned i = 0; i < count; i++)
+	for (unsigned i = 0; i < count; i++) {
 		sbbs->outcom(PETSCII_DOWN);
+		inc_row();
+		lastlinelen = column;
+	}
 }
 
 void PETSCII_Terminal::backspace(unsigned int count)
 {
-	if (lbuflen < LINE_BUFSIZE)
-		lbuf[lbuflen++] = PETSCII_DELETE;
 	sbbs->outcom(PETSCII_DELETE);
 }
 
@@ -309,8 +310,6 @@ void PETSCII_Terminal::cursor_left(unsigned count)
 {
 	for (unsigned i = 0; i < count; i++) {
 		sbbs->outcom('\x9d');
-		if (lbuflen < LINE_BUFSIZE)
-			lbuf[lbuflen++] = '\x9d';
 		if (column > 0)
 			column--;
 	}
@@ -394,14 +393,10 @@ bool PETSCII_Terminal::parse_outchar(char ch)
 		case '\x9D': // Cursor Left
 		case '\x9E': // Yellow
 		case '\x9F': // Cyan
-			if (lbuflen < LINE_BUFSIZE)
-				lbuf[lbuflen++] = ch;
 			return true;
 
 		// Everything else is assumed one byte wide
 		default:
-			if (lbuflen < LINE_BUFSIZE)
-				lbuf[lbuflen++] = ch;
 			inc_column();
 			return true;
 	}
@@ -467,18 +462,20 @@ bool PETSCII_Terminal::parse_ctrlkey(char& ch, int mode)
 
 void PETSCII_Terminal::insert_indicator()
 {
-	char str[32];
+	unsigned x = column + 1;
+	unsigned y = row + 1;
+	unsigned oldatr = curatr;
+
 	gotoxy(cols, 1);
-	int  tmpatr;
 	if (sbbs->console & CON_INSERT) {
-		sbbs->putcom(attrstr(tmpatr = BLINK | BLACK | (LIGHTGRAY << 4), curatr, str, supports(COLOR)));
-		sbbs->outcom('I');
+		sbbs->attr(BLINK | BLACK | (LIGHTGRAY << 4));
+		sbbs->outchar('I');
 	} else {
-		sbbs->putcom(attrstr(tmpatr = ANSI_NORMAL));
-		sbbs->outcom(' ');
+		sbbs->attr(ANSI_NORMAL);
+		sbbs->outchar(' ');
 	}
-	sbbs->putcom(attrstr(curatr, tmpatr, str, supports(COLOR)));
-	gotoxy(column + 1, row + 1);
+	sbbs->attr(oldatr);
+	gotoxy(x, y);
 }
 
 bool PETSCII_Terminal::can_highlight() { return true; }

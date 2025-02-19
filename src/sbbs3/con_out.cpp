@@ -369,11 +369,6 @@ int sbbs_t::rputs(const char *str, size_t len)
 		}
 		if (ch == '\n')
 			term->lbuflen = 0;
-		else if (term->lbuflen < LINE_BUFSIZE) {
-			if (term->lbuflen == 0)
-				term->latr = term->curatr;
-			term->lbuf[term->lbuflen++] = str[l]; // save non-translated char to line buffer
-		}
 	}
 	return l;
 }
@@ -916,12 +911,7 @@ int sbbs_t::attr(int atr)
 
 	term->attrstr(atr, term->curatr, str, sizeof(str));
 	// TODO: This was rputs()
-	// TODO: This means it's not in lbuf[]...
 	// TODO: We may need a raw output that goes in there
-	for (size_t i = 0; str[i]; i++) {
-		if (term->lbuflen < LINE_BUFSIZE)
-			term->lbuf[term->lbuflen++] = str[i];
-	}
 	putcom(str);
 	term->curatr = atr;
 	return 0;

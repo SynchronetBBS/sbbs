@@ -510,7 +510,6 @@ bool ANSI_Terminal::parse_outchar(char ch) {
 		if (outchar_esc == ansiState_final)
 			outchar_esc = ansiState_none;
 		sbbs->outcom(ch);
-		lbuf[lbuflen++] = ch;
 		return false;
 	}
 
@@ -524,10 +523,6 @@ bool ANSI_Terminal::parse_outchar(char ch) {
 			break;
 		default:
 			// TODO: All kinds of CTRL charaters not handled properly
-			if (!lbuflen)
-				latr = curatr;
-			if (lbuflen < LINE_BUFSIZE)
-				lbuf[lbuflen++] = ch;
 			inc_column(1);
 			break;
 	}

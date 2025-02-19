@@ -11,8 +11,6 @@ bool Terminal::required_parse_outchar(char ch) {
 	switch (ch) {
 		// Special values
 		case 8:  // BS
-			if (lbuflen < LINE_BUFSIZE)
-				lbuf[lbuflen++] = ch;
 			cursor_left();
 			return false;
 		case 9:
@@ -38,8 +36,6 @@ bool Terminal::required_parse_outchar(char ch) {
 		case 13: // CR
 			if (sbbs->console & CON_CR_CLREOL)
 				cleartoeol();
-			if (lbuflen < LINE_BUFSIZE)
-				lbuf[lbuflen++] = ch;
 			carriage_return();
 			return false;
 		// Everything else is assumed one byte wide

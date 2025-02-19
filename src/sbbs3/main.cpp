@@ -4099,6 +4099,11 @@ int sbbs_t::_outcom(uchar ch)
 		return TXBOF;
 	if (!RingBufWrite(&outbuf, &ch, 1))
 		return TXBOF;
+	if (term->lbuflen < LINE_BUFSIZE) {
+		if (term->lbuflen == 0)
+			term->latr = term->curatr;
+		term->lbuf[term->lbuflen++] = ch;
+	}
 	return 0;
 }
 

@@ -500,12 +500,16 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 			if (mode & P_PETSCII) {
 				if (term->flags & PETSCII) {
 					outcom(str[l]);
+					// TODO: Do this in outcom()
+					//       Splitting it out here is bad.
+					//       It's very similar to what parse_outchar() does.
 					switch ((uchar)str[l]) {
 						case '\r':  // PETSCII "Return" / new-line
 							term->column = 0;
 						/* fall-through */
 						case PETSCII_DOWN:
 							term->lncntr++;
+							term->inc_row();
 							break;
 						case PETSCII_CLEAR:
 						case PETSCII_HOME:
@@ -538,7 +542,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 							// No cursor movement
 							break;
 						default:
-							term->inc_column(1);
+							term->inc_column();
 							break;
 					}
 				} else

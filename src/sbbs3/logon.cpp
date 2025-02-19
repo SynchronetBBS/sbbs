@@ -456,6 +456,8 @@ bool sbbs_t::logon()
 	putuserdat(&useron);
 	getmsgptrs();
 	sys_status |= SS_USERON;          /* moved from further down */
+	// Needs to be called after SS_USERON is set
+	update_nodeterm();
 
 	mqtt_user_login(mqtt, &client);
 

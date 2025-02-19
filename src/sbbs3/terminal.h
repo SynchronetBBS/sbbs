@@ -327,6 +327,8 @@ public:
 	 * this function handled it (ie: via outcom(), or stripping it)
 	 */
 	virtual bool parse_outchar(char ch) {
+		if (!lbuflen)
+			latr = curatr;
 		if (!required_parse_outchar(ch))
 			return false;
 
@@ -409,13 +411,13 @@ public:
 		if (line == NULL)
 			return false;
 		lbuflen = 0;
-		attrstr(line->beg_attr);
-		// Switch from rputs to outchar() loop (but not bputs()
-		// This way we don't need to screw with the column or
-		// cursor position.
+		sbbs->attr(line->beg_attr);
+		// Switch from rputs to outcom() loop
+		// This way we don't need to re-encode
 		for (unsigned u = 0; line->buf[u]; u++)
-			sbbs->outchar(line->buf[u]);
+			sbbs->outcom(line->buf[u]);
 		curatr = line->end_attr;
+		column = line->column;
 		free(line);
 		insert_indicator();
 		return true;
