@@ -5963,11 +5963,11 @@ NO_PASSTHRU:
 
 			uint32_t client_count = protected_uint32_adjust(&node_threads_running, 1);
 			new_node->input_thread_running = true;
+			new_node->autoterm = sbbs->autoterm;
+			update_terminal(new_node, sbbs->term);
+			new_node->term->cols = sbbs->term->cols;
 			new_node->input_thread = (HANDLE)_beginthread(input_thread, 0, new_node);
 			new_node->output_thread_running = true;
-			new_node->autoterm = sbbs->autoterm;
-			update_terminal(new_node);
-			new_node->term->cols = sbbs->term->cols;
 			_beginthread(output_thread, 0, new_node);
 			_beginthread(node_thread, 0, new_node);
 			served++;

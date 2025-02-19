@@ -102,9 +102,11 @@ public:
 	}
 
 	Terminal() = delete;
+	// Create from sbbs_t*, ie: "Create new"
 	Terminal(sbbs_t *sbbsptr) : flags{get_flags(sbbsptr)}, mouse_hotspots{listPtrInit(0)}, sbbs{sbbsptr},
 	    savedlines{listPtrInit(0)} {}
 
+	// Create from Terminal*, ie: Update
 	Terminal(Terminal *t) : flags{get_flags(t->sbbs)}, row{t->row}, column{t->column},
 	    rows{t->rows}, cols{t->cols}, tabstop{t->tabstop}, lastlinelen{t->lastlinelen}, 
 	    cterm_version{t->cterm_version}, lncntr{t->lncntr}, latr{t->latr}, curatr{t->curatr},
@@ -123,6 +125,13 @@ public:
 		t->flags = flags;
 		t->set_mouse(mouse_mode);
 	}
+
+	// Create from sbbsptr* and Terminal*, ie: Create a copy
+	Terminal(sbbs_t *sbbsptr, Terminal *t) : flags{get_flags(t->sbbs)}, row{t->row}, column{t->column},
+	    rows{t->rows}, cols{t->cols}, tabstop{t->tabstop}, lastlinelen{t->lastlinelen}, 
+	    cterm_version{t->cterm_version}, lncntr{t->lncntr}, latr{t->latr}, curatr{t->curatr},
+	    lbuflen{t->lbuflen}, mouse_mode{t->mouse_mode}, pause_hotspot{t->pause_hotspot},
+	    mouse_hotspots{listPtrInit(0)}, sbbs{sbbsptr}, savedlines{listPtrInit(0)} {}
 
 	virtual ~Terminal()
 	{
@@ -431,5 +440,6 @@ public:
 };
 
 void update_terminal(sbbs_t *sbbsptr);
+void update_terminal(sbbs_t *sbbsptr, Terminal *term);
 
 #endif

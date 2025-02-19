@@ -15,7 +15,7 @@ bool Terminal::required_parse_outchar(char ch) {
 				lbuf[lbuflen++] = ch;
 			cursor_left();
 			return false;
-		case 9:  // TAB - Copy pasta... TODO
+		case 9:
 			// TODO: Original would wrap, this one (hopefully) doesn't.
 			//       Further, use outchar() instead of outcom() to get
 			//       the spaces into the line buffer instead of tabs
@@ -184,8 +184,7 @@ void Terminal::inc_row(unsigned count) {
 	}
 	if (lncntr || lastlinelen)
 		lncntr++;
-	// TODO: lbuflen needs some love...
-	//lbuflen = 0;
+	lbuflen = 0;
 }
 
 void Terminal::inc_column(unsigned count) {
@@ -284,4 +283,20 @@ void update_terminal(sbbs_t *sbbsptr)
 		delete sbbsptr->term;
 		sbbsptr->term = newTerm;
 	}
+}
+
+void update_terminal(sbbs_t *sbbsptr, Terminal *term)
+{
+	uint32_t flags = term->flags;
+	Terminal *newTerm;
+
+	if (flags & PETSCII)
+		newTerm = new PETSCII_Terminal(sbbsptr, term);
+	else if (flags & (RIP | ANSI))
+		newTerm = new ANSI_Terminal(sbbsptr, term);
+	else
+		newTerm = new Terminal(sbbsptr, term);
+	if (sbbsptr->term)
+		delete sbbsptr->term;
+	sbbsptr->term = newTerm;
 }

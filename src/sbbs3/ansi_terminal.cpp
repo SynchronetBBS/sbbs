@@ -169,9 +169,10 @@ char* ANSI_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t st
 		}
 	}
 	else {
-		if (strsz > (lastret + 1)) {
-			str[lastret] = 'm';
-			str[lastret + 1] = 0;
+		// Replace ; with m
+		if (strsz > (lastret)) {
+			str[lastret - 1] = 'm';
+			str[lastret] = 0;
 		}
 		lastret++;
 	}

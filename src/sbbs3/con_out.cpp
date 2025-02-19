@@ -603,8 +603,6 @@ int sbbs_t::outchar(char ch)
 		outcom(pet);
 		if (pet == PETSCII_SOLID)
 			outcom(PETSCII_REVERSE_OFF);
-		if (ch == '\r' && (term->curatr & 0xf0) != 0) // reverse video is disabled upon CR
-			term->curatr >>= 4;
 	} else {
 		if (utf8[0] != 0)
 			putcom(utf8);
@@ -917,7 +915,14 @@ int sbbs_t::attr(int atr)
 	char str[128];
 
 	term->attrstr(atr, term->curatr, str, sizeof(str));
-	rputs(str);
+	// TODO: This was rputs()
+	// TODO: This means it's not in lbuf[]...
+	// TODO: We may need a raw output that goes in there
+	for (size_t i = 0; str[i]; i++) {
+		if (term->lbuflen < LINE_BUFSIZE)
+			term->lbuf[term->lbuflen++] = str[i];
+	}
+	putcom(str);
 	term->curatr = atr;
 	return 0;
 }

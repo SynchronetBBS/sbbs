@@ -1,7 +1,7 @@
 #include "petscii_term.h"
 #include "petdefs.h"
 
-// Initial work is only C64, not C126, C16, or VIC-20, and certainly not a PET
+// Initial work is only C64, not C128, C116, C16, Plus/4, or VIC-20, and certainly not a PET
 
 const char *PETSCII_Terminal::attrstr(unsigned atr)
 {
@@ -105,7 +105,7 @@ char* PETSCII_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t
 		str[sp] = 0;
 		return str;
 	}
-	switch (atr & 0x0f) {
+	switch (newatr & 0x0f) {
 		case BLACK:
 			str[sp++] = '\x90';
 			break;
@@ -156,15 +156,18 @@ char* PETSCII_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t
 			break;
 	}
 	str[sp] = 0;
-	curatr = atr;
+	curatr = newatr;
 	return str;
 }
 
 bool PETSCII_Terminal::gotoxy(unsigned x, unsigned y)
 {
 	sbbs->outcom(PETSCII_HOME);
-	column = 0;
 	row = 0;
+	column = 0;
+	lncntr = 0;
+	lastlinelen = 0;
+	lbuflen = 0;
 	cursor_down(y - 1);
 	cursor_right(x - 1);
 	return true;
@@ -195,17 +198,22 @@ void PETSCII_Terminal::line_feed(unsigned count)
 	// Like cursor_down() but scrolls...
 	for (unsigned i = 0; i < count; i++)
 		sbbs->outcom(PETSCII_DOWN);
-	cursor_down(count);
 }
 
 void PETSCII_Terminal::backspace(unsigned int count)
 {
+	if (lbuflen < LINE_BUFSIZE)
+		lbuf[lbuflen++] = PETSCII_DELETE;
 	sbbs->outcom(PETSCII_DELETE);
 }
 
 void PETSCII_Terminal::newline(unsigned count)
 {
+	char str[128];
+
 	sbbs->outcom('\r');
+	unsigned prevatr = curatr;
+	sbbs->putcom(attrstr(prevatr, (curatr >> 4) & 0x07, str, sizeof(str)));
 	inc_row();
 	column = 0;
 }
@@ -219,6 +227,7 @@ void PETSCII_Terminal::clearscreen()
 	column = 0;
 	lncntr = 0;
 	lastlinelen = 0;
+	lbuflen = 0;
 }
 
 void PETSCII_Terminal::cleartoeos()
@@ -258,6 +267,8 @@ void PETSCII_Terminal::cursor_home()
 	row = 0;
 	column = 0;
 	lncntr = 0;
+	lastlinelen = 0;
+	lbuflen = 0;
 }
 
 void PETSCII_Terminal::cursor_up(unsigned count)
@@ -268,6 +279,8 @@ void PETSCII_Terminal::cursor_up(unsigned count)
 			row--;
 		if (lncntr > 0)
 			lncntr--;
+		lastlinelen = column;
+		lbuflen = 0;
 	}
 }
 
@@ -278,13 +291,14 @@ void PETSCII_Terminal::cursor_down(unsigned count)
 			break;
 		sbbs->outcom(PETSCII_DOWN);
 		inc_row();
+		lastlinelen = column;
 	}
 }
 
 void PETSCII_Terminal::cursor_right(unsigned count)
 {
 	for (unsigned i = 0; i < count; i++) {
-		if (column >= (column - 1))
+		if (column >= (cols - 1))
 			break;
 		sbbs->outcom(PETSCII_RIGHT);
 		inc_column();
@@ -295,6 +309,8 @@ void PETSCII_Terminal::cursor_left(unsigned count)
 {
 	for (unsigned i = 0; i < count; i++) {
 		sbbs->outcom('\x9d');
+		if (lbuflen < LINE_BUFSIZE)
+			lbuf[lbuflen++] = '\x9d';
 		if (column > 0)
 			column--;
 	}
