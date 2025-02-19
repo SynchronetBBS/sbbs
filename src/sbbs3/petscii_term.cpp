@@ -245,12 +245,12 @@ void PETSCII_Terminal::cleartoeos()
 
 void PETSCII_Terminal::cleartoeol()
 {
-	unsigned s, b;
-	s = b = column;
-	while (++s <= cols)
+	unsigned s;
+	s = column;
+	while (++s <= cols) {
 		sbbs->outcom(' ');
-	while (++b <= cols)
-		sbbs->outcom('\x9d');
+		sbbs->outcom('\x14');
+	}
 }
 
 void PETSCII_Terminal::clearline()
