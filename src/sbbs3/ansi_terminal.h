@@ -46,6 +46,10 @@ public:
 	virtual bool parse_ctrlkey(char& ch, int mode);
 	virtual void insert_indicator();
 	virtual struct mouse_hotspot* add_hotspot(struct mouse_hotspot* spot);
+	virtual bool can_highlight();
+	virtual bool can_move();
+	virtual bool can_mouse();
+	virtual bool is_monochrome();
 
 private:
 	enum ansiState outchar_esc{ansiState_none}; // track ANSI escape seq output

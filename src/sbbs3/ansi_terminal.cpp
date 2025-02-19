@@ -834,3 +834,8 @@ void ANSI_Terminal::insert_indicator() {
 }
 
 struct mouse_hotspot* ANSI_Terminal::add_hotspot(struct mouse_hotspot* spot) {return nullptr;}
+
+bool ANSI_Terminal::can_highlight() { return true; }
+bool ANSI_Terminal::can_move() { return true; }
+bool ANSI_Terminal::can_mouse()  { return flags & MOUSE; }
+bool ANSI_Terminal::is_monochrome() { return !(flags & COLOR); }

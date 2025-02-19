@@ -261,6 +261,30 @@ void Terminal::check_clear_pause()
 	}
 }
 
+static void
+flags_fixup(uint32_t& flags)
+{
+	if (!(flags & ANSI)) {
+		// These bits are *only* available in ANSI mode
+		flags &= ~(COLOR | RIP | ICE_COLOR | MOUSE);
+	}
+	else {
+		// These bits are *never* available in ANSI mode
+		flags &= ~(PETSCII);
+	}
+
+	if (flags | PETSCII) {
+		// These bits are *never* available in PETSCII mode
+		flags &= ~(COLOR | RIP | ICE_COLOR | MOUSE | NO_EXASCII | UTF8);
+	}
+
+	if (flags | UTF8) {
+		// These bits are *never* available in UTF8 mode
+		// Note that RIP is not inherently incompatible with UTF8
+		flags &= ~(NO_EXASCII);
+	}
+}
+
 void update_terminal(sbbs_t *sbbsptr)
 {
 	uint32_t flags = Terminal::get_flags(sbbsptr);
@@ -283,6 +307,7 @@ void update_terminal(sbbs_t *sbbsptr)
 		delete sbbsptr->term;
 		sbbsptr->term = newTerm;
 	}
+	flags_fixup(sbbsptr->term->flags);
 }
 
 void update_terminal(sbbs_t *sbbsptr, Terminal *term)
@@ -299,4 +324,5 @@ void update_terminal(sbbs_t *sbbsptr, Terminal *term)
 	if (sbbsptr->term)
 		delete sbbsptr->term;
 	sbbsptr->term = newTerm;
+	flags_fixup(sbbsptr->term->flags);
 }

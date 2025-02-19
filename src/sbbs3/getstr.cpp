@@ -48,7 +48,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 	if (!(mode & K_LINEWRAP) && term->cols >= TERM_COLS_MIN && !(mode & K_NOECHO) && !(console & CON_R_ECHOX)
 	    && term->column + (int)maxlen >= term->cols)    /* Don't allow the terminal to auto line-wrap */
 		maxlen = term->cols - term->column - 1;
-	if (mode & K_LINE && (term->flags & (ANSI | PETSCII)) && !(mode & K_NOECHO)) {
+	if (mode & K_LINE && (term->can_highlight()) && !(mode & K_NOECHO)) {
 		attr(cfg.color[clr_inputline]);
 		for (i = 0; i < maxlen; i++)
 			outcom(' ');
@@ -191,13 +191,13 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 				}
 				break;
 			case TERM_KEY_END: /* Ctrl-E End of line */
-				if (term->flags & (ANSI | PETSCII) && i < l) {
+				if (term->can_move() && i < l) {
 					term->cursor_right(l - i);  /* move cursor to eol */
 					i = l;
 				}
 				break;
 			case TERM_KEY_RIGHT: /* Ctrl-F move cursor forward */
-				if (i < l && term->flags & (ANSI | PETSCII)) {
+				if (i < l && term->can_move()) {
 					term->cursor_right();   /* move cursor right one */
 					i++;
 				}
@@ -347,7 +347,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 				return l;
 
 			case CTRL_N:    /* Ctrl-N Next word */
-				if (i < l && term->flags & (ANSI | PETSCII)) {
+				if (i < l && term->can_move()) {
 					x = i;
 					while (str1[i] != ' ' && i < l)
 						i++;

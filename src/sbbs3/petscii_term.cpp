@@ -480,3 +480,7 @@ void PETSCII_Terminal::insert_indicator()
 	sbbs->putcom(attrstr(curatr, tmpatr, str, supports(COLOR)));
 	gotoxy(column + 1, row + 1);
 }
+
+bool PETSCII_Terminal::can_highlight() { return true; }
+bool PETSCII_Terminal::can_move() { return true; }
+bool PETSCII_Terminal::is_monochrome() { return false; }

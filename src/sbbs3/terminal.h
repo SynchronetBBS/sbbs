@@ -421,6 +421,22 @@ public:
 		return true;
 	}
 
+	virtual bool can_highlight() {
+		return false;
+	}
+
+	virtual bool can_move() {
+		return false;
+	}
+
+	virtual bool can_mouse() {
+		return false;
+	}
+
+	virtual bool is_monochrome() {
+		return true;
+	}
+
 	bool required_parse_outchar(char ch);
 
 	void clear_hotspots(void);

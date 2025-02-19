@@ -206,7 +206,7 @@ void sbbs_t::mnemonics(const char *instr)
 			l += 2;
 		}
 		else if (str[l] == '~') {
-			if (!(term->flags & (ANSI | PETSCII)))
+			if (!(term->can_highlight()))
 				outchar('(');
 			l++;
 			if (!ctrl_a_codes)
@@ -214,13 +214,13 @@ void sbbs_t::mnemonics(const char *instr)
 			term->add_hotspot(str[l], /* hungry: */ true);
 			outchar(str[l]);
 			l++;
-			if (!(term->flags & (ANSI | PETSCII)))
+			if (!(term->can_highlight()))
 				outchar(')');
 			if (!ctrl_a_codes)
 				attr(mneattr_low);
 		}
 		else if (str[l] == '`' && str[l + 1] != 0) {
-			if (!(term->flags & (ANSI | PETSCII)))
+			if (!(term->can_highlight()))
 				outchar('[');
 			l++;
 			if (!ctrl_a_codes)
@@ -228,7 +228,7 @@ void sbbs_t::mnemonics(const char *instr)
 			term->add_hotspot(str[l], /* hungry: */ false);
 			outchar(str[l]);
 			l++;
-			if (!(term->flags & (ANSI | PETSCII)))
+			if (!(term->can_highlight()))
 				outchar(']');
 			if (!ctrl_a_codes)
 				attr(mneattr_low);
