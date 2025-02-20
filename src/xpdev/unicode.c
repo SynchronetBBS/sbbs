@@ -411,6 +411,7 @@ char unicode_to_cp437(enum unicode_codepoint codepoint)
 	switch (codepoint) {
 		case UNICODE_ACUTE_ACCENT:                              return '\'';
 
+		case '|':                                               return '|';
 		case UNICODE_BROKEN_BAR:                                return '|';
 		case UNICODE_MACRON:                                    return '~';
 
