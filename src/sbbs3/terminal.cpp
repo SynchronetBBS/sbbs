@@ -252,7 +252,7 @@ void Terminal::check_clear_pause()
 		if (!(sbbs->sys_status & SS_PAUSEOFF)) {
 			sbbs->pause();
 			while (lncntr && sbbs->online && !(sbbs->sys_status & SS_ABORT))
-				pause();
+				sbbs->pause();
 		}
 	}
 }
