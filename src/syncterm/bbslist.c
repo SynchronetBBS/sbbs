@@ -1832,12 +1832,17 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 							iniSetString(&inifile, itemname, "Font", item->font,
 							             &ini_style);
 						}
+						else if (i == SCREEN_MODE_ATARIST_40X25
+						    || i == SCREEN_MODE_ATARIST_80X25
+						    || i == SCREEN_MODE_ATARIST_80X25_MONO) {
+							SAFECOPY(item->font, font_names[0]);
+							iniSetString(&inifile, itemname, "Font", item->font,
+							             &ini_style);
+						}
 						else if ((i == SCREEN_MODE_C64) || (i == SCREEN_MODE_C128_40)
 						    || (i == SCREEN_MODE_C128_80) || (i == SCREEN_MODE_ATARI)
-						    || (i == SCREEN_MODE_ATARI_XEP80) || (i == SCREEN_MODE_PRESTEL) || (i == SCREEN_MODE_BEEB)
-						    || item->screen_mode == SCREEN_MODE_ATARIST_40X25
-						    || item->screen_mode == SCREEN_MODE_ATARIST_80X25
-						    || item->screen_mode == SCREEN_MODE_ATARIST_80X25_MONO) {
+						    || (i == SCREEN_MODE_ATARI_XEP80) || (i == SCREEN_MODE_PRESTEL)
+						    || (i == SCREEN_MODE_BEEB)) {
 							SAFECOPY(item->font, font_names[0]);
 							iniSetString(&inifile, itemname, "Font", item->font,
 							             &ini_style);
