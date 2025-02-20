@@ -51,9 +51,8 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 	if (mode & K_LINE && (term->can_highlight()) && !(mode & K_NOECHO)) {
 		attr(cfg.color[clr_inputline]);
 		for (i = 0; i < maxlen; i++)
-			outcom(' ');
+			term_out(' ');
 		term->cursor_left(maxlen);
-		term->column = org_column;
 	}
 	if (wordwrap[0]) {
 		SAFECOPY(str1, wordwrap);
@@ -92,7 +91,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 		else {
 			for (i = 0; i < l; i++)
 				outchar(BS);
-			term->column += bputs(str1, P_AUTO_UTF8);
+			bputs(str1, P_AUTO_UTF8);
 			i = l;
 		}
 		if (ch != ' ' && ch != TAB)
@@ -150,7 +149,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 						l++;
 					for (x = l; x > i; x--)
 						str1[x] = str1[x - 1];
-					term->column += rprintf("%.*s", (int)(l - i), str1 + i);
+					rprintf("%.*s", (int)(l - i), str1 + i);
 					term->cursor_left(l - i);
 #if 0
 					if (i == maxlen - 1)
@@ -581,7 +580,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 							l++;
 						for (x = l; x > i; x--)
 							str1[x] = str1[x - 1];
-						term->column += rprintf("%.*s", (int)(l - i), str1 + i);
+						rprintf("%.*s", (int)(l - i), str1 + i);
 						term->cursor_left(l - i);
 #if 0
 						if (i == maxlen - 1) {
@@ -596,6 +595,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 							if (i > l)
 								l = i;
 							str1[l] = 0;
+							// TODO: Test this...
 							if (utf8_str_is_valid(str1))
 								redrwstr(str1, term->column - org_column, l, P_UTF8);
 						} else {

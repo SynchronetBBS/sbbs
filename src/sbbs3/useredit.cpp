@@ -946,7 +946,7 @@ void sbbs_t::user_config(user_t* user)
 						else if (key == PETSCII_DELETE) {
 							autoterm |= PETSCII;
 							user->misc |= PETSCII;
-							outcom(PETSCII_UPPERLOWER);
+							term_out(PETSCII_UPPERLOWER);
 							bputs(text[PetTerminalDetected]);
 						}
 						else

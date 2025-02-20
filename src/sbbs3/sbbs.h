@@ -592,7 +592,7 @@ public:
 	char	prev_key(void) { return toupper(*text[Previous]); }
 
 	char 	dszlog[127]{};	/* DSZLOG environment variable */
-    int     keybuftop=0, keybufbot=0;    /* Keyboard input buffer pointers (for ungetkey) */
+	int     keybuftop=0, keybufbot=0;    /* Keyboard input buffer pointers (for ungetkey) */
 	char    keybuf[KEY_BUFSIZE]{};    /* Keyboard input buffer */
 	size_t	keybuf_space(void);
 	size_t	keybuf_level(void);
@@ -875,7 +875,7 @@ public:
 	/* con_out.cpp */
 	int		bputs(const char *str, int mode = 0);	/* BBS puts function */
 	int		bputs(int mode, const char* str) { return bputs(str, mode); }
-	int		rputs(const char *str, size_t len=0);	/* BBS raw puts function */
+	size_t	rputs(const char *str, size_t len=0);	/* BBS raw puts function */
 	int		rputs(int mode, const char* str) { return rputs(str, mode); }
 	int		bprintf(const char *fmt, ...)			/* BBS printf function */
 #if defined(__GNUC__)   // Catch printf-format errors
@@ -892,14 +892,14 @@ public:
     __attribute__ ((format (printf, 2, 3)));		// 1 is 'this'
 #endif
 	;
-	int		comprintf(const char *fmt, ...)			/* BBS direct-comm printf function */
+	int		term_printf(const char *fmt, ...)			/* BBS direct-comm printf function */
 #if defined(__GNUC__)   // Catch printf-format errors
     __attribute__ ((format (printf, 2, 3)));		// 1 is 'this'
 #endif
 	;
 	int		outchar(char ch);				/* Output a char - check echo and emu.  */
-	int		outchar(enum unicode_codepoint, char cp437_fallback);
-	int		outchar(enum unicode_codepoint, const char* cp437_fallback = NULL);
+	int		outcp(enum unicode_codepoint, char cp437_fallback);
+	int		outcp(enum unicode_codepoint, const char* cp437_fallback = NULL);
 	void	wide(const char*);
 	// TODO: There appear to describe the USER, not the terminal...
 	char*	term_rows(user_t*, char* str, size_t);
@@ -918,6 +918,10 @@ public:
 	char*	auto_utf8(const char*, int& mode);
 	// TODO: Not To ANSI_Terminal
 	void	getdimensions();
+	size_t term_out(const char *str, size_t len = SIZE_MAX);
+	size_t term_out(int ch);
+	size_t cp437_out(const char *str, size_t len = SIZE_MAX);
+	size_t cp437_out(int ch);
 
 	/* getstr.cpp */
 	size_t	getstr_offset = 0;

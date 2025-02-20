@@ -554,7 +554,7 @@ bool sbbs_t::answer()
 			outchar(FF);
 			term->center(str);
 		} else {    /* ANSI+ terminal detection */
-			putcom( "\r\n"      /* locate cursor at column 1 */
+			term_out( "\r\n"      /* locate cursor at column 1 */
 			        "\x1b[s"    /* save cursor position (necessary for HyperTerm auto-ANSI) */
 			        "\x1b[0c"   /* Request CTerm version */
 			        "\x1b[255B" /* locate cursor as far down as possible */

@@ -162,14 +162,11 @@ char* PETSCII_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t
 
 bool PETSCII_Terminal::gotoxy(unsigned x, unsigned y)
 {
-	sbbs->outcom(PETSCII_HOME);
-	row = 0;
-	column = 0;
-	lncntr = 0;
-	lastlinelen = 0;
-	lbuflen = 0;
-	cursor_down(y - 1);
-	cursor_right(x - 1);
+	sbbs->term_out(PETSCII_HOME);
+	while (row < (y - 1))
+		sbbs->term_out(PETSCII_DOWN);
+	while (column < (x - 1))
+		sbbs->term_out(PETSCII_RIGHT);
 	return true;
 }
 
@@ -196,38 +193,24 @@ void PETSCII_Terminal::carriage_return()
 void PETSCII_Terminal::line_feed(unsigned count)
 {
 	// Like cursor_down() but scrolls...
-	for (unsigned i = 0; i < count; i++) {
-		sbbs->outcom(PETSCII_DOWN);
-		inc_row();
-		lastlinelen = column;
-	}
+	for (unsigned i = 0; i < count; i++)
+		sbbs->term_out(PETSCII_DOWN);
 }
 
 void PETSCII_Terminal::backspace(unsigned int count)
 {
-	sbbs->outcom(PETSCII_DELETE);
+	sbbs->term_out(PETSCII_DELETE);
 }
 
 void PETSCII_Terminal::newline(unsigned count)
 {
-	char str[128];
-
-	sbbs->outcom('\r');
-	unsigned prevatr = curatr;
-	sbbs->putcom(attrstr(prevatr, (curatr >> 4) & 0x07, str, sizeof(str)));
-	inc_row();
-	column = 0;
+	sbbs->term_out('\r');
 }
 
 void PETSCII_Terminal::clearscreen()
 {
 	clear_hotspots();
-	sbbs->outcom('\x93');
-	row = 0;
-	column = 0;
-	lncntr = 0;
-	lastlinelen = 0;
-	lbuflen = 0;
+	sbbs->term_out('\x93');
 }
 
 void PETSCII_Terminal::cleartoeos()
@@ -247,10 +230,8 @@ void PETSCII_Terminal::cleartoeol()
 {
 	unsigned s;
 	s = column;
-	while (++s <= cols) {
-		sbbs->outcom(' ');
-		sbbs->outcom('\x14');
-	}
+	while (++s <= cols)
+		sbbs->term_out(" \x14");
 }
 
 void PETSCII_Terminal::clearline()
@@ -263,25 +244,13 @@ void PETSCII_Terminal::clearline()
 
 void PETSCII_Terminal::cursor_home()
 {
-	sbbs->outcom(PETSCII_HOME);
-	row = 0;
-	column = 0;
-	lncntr = 0;
-	lastlinelen = 0;
-	lbuflen = 0;
+	sbbs->term_out(PETSCII_HOME);
 }
 
 void PETSCII_Terminal::cursor_up(unsigned count)
 {
-	for (unsigned i = 0; i < count; i++) {
-		sbbs->outcom('\x91');
-		if (row > 0)
-			row--;
-		if (lncntr > 0)
-			lncntr--;
-		lastlinelen = column;
-		lbuflen = 0;
-	}
+	for (unsigned i = 0; i < count; i++)
+		sbbs->term_out('\x91');
 }
 
 void PETSCII_Terminal::cursor_down(unsigned count)
@@ -289,9 +258,7 @@ void PETSCII_Terminal::cursor_down(unsigned count)
 	for (unsigned i = 0; i < count; i++) {
 		if (row >= (rows - 1))
 			break;
-		sbbs->outcom(PETSCII_DOWN);
-		inc_row();
-		lastlinelen = column;
+		sbbs->term_out(PETSCII_DOWN);
 	}
 }
 
@@ -300,17 +267,16 @@ void PETSCII_Terminal::cursor_right(unsigned count)
 	for (unsigned i = 0; i < count; i++) {
 		if (column >= (cols - 1))
 			break;
-		sbbs->outcom(PETSCII_RIGHT);
-		inc_column();
+		sbbs->term_out(PETSCII_RIGHT);
 	}
 }
 
 void PETSCII_Terminal::cursor_left(unsigned count)
 {
 	for (unsigned i = 0; i < count; i++) {
-		sbbs->outcom('\x9d');
-		if (column > 0)
-			column--;
+		sbbs->term_out('\x9d');
+		if (column == 0)
+			break;
 	}
 }
 
@@ -321,8 +287,6 @@ const char* PETSCII_Terminal::type()
 
 bool PETSCII_Terminal::parse_outchar(char ch)
 {
-	if (!required_parse_outchar(ch))
-		return false;
 	switch (ch) {
 		// Zero-width characters we likely shouldn't send
 		case 0:
@@ -332,12 +296,7 @@ bool PETSCII_Terminal::parse_outchar(char ch)
 		case 4:
 		case 6:
 		case 7:
-		//case 8:  // Translated as Backspace
-		//case 9:  // Transpated as Tab
-		//case 10: // Translated as Linefeed
 		case 11:
-		//case 12: // Translated as Form Feed
-		//case 13: // Translated as Carriage Return
 		case 14:
 		case 15:
 		case 16:
@@ -363,35 +322,216 @@ bool PETSCII_Terminal::parse_outchar(char ch)
 		case '\x8F':
 			return false;
 
-		// Zero-width characters we want to pass through
-		case 5:  // White
-		case 17: // Cursor down
-		case 18: // Reverse on
-		case 19: // Home
-		case 20: // Delete
-		case 28: // Red
-		case 29: // Cursor right
-		case 30: // Green
-		case 31: // Blue
-		case '\x81': // Orange
+		// Specials that affect cursor position
+		//case 9:  // TODO: Tab or unlock case...
+		//case 10: // TODO: Linefeed or nothing
 		case '\x8D': // Shift-return
-		case '\x8E': // Upper case
-		case '\x90': // Black
+		case 13: // Translated as Carriage Return
+			inc_row();
+			set_column(0);
+			if (curatr & 0xf0)
+				curatr = (curatr & ~0xff) | ((curatr & 0xf0) >> 4);
+			return true;
+		case 17: // Cursor down
+			inc_row();
+			return true;
+		case 19: // Home
+			set_row();
+			set_column();
+			return true;
+		case 20: // Delete
+			if (column == 0) {
+				dec_row();
+				set_column(cols - 1);
+			}
+			else
+				dec_column();
+			return true;
+		case 29: // Cursor right
+			inc_column();
+			return true;
 		case '\x91': // Cursor up
+			dec_row();
+			return true;
+		case '\x9D': // Cursor Left
+			dec_column();
+			return true;
+
+		// TODO: Parse attributes
+		// Zero-width characters we want to pass through
+		case 18: // Reverse on
+			if (!reverse_on) {
+				reverse_on = true;
+				curatr = ((curatr & 0xf0) >> 4) | ((curatr & 0x0f) << 4);
+			}
+			return true;
 		case '\x92': // Reverse off
+			if (reverse_on) {
+				reverse_on = false;
+				curatr = ((curatr & 0xf0) >> 4) | ((curatr & 0x0f) << 4);
+			}
+			return true;
+		case 5:  // White
+			if (reverse_on) {
+				curatr &= ~0xF0;
+				curatr |= (WHITE << 4);
+			}
+			else {
+				curatr &= ~0x0F;
+				curatr |= WHITE;
+			}
+			return true;
+		case 28: // Red
+			if (reverse_on) {
+				curatr &= ~0xF0;
+				curatr |= (RED << 4);
+			}
+			else {
+				curatr &= ~0x0F;
+				curatr |= RED;
+			}
+			return true;
+		case 30: // Green
+			if (reverse_on) {
+				curatr &= ~0xF0;
+				curatr |= (GREEN << 4);
+			}
+			else {
+				curatr &= ~0x0F;
+				curatr |= GREEN;
+			}
+			return true;
+		case 31: // Blue
+			if (reverse_on) {
+				curatr &= ~0xF0;
+				curatr |= (BLUE << 4);
+			}
+			else {
+				curatr &= ~0x0F;
+				curatr |= BLUE;
+			}
+			return true;
+		case '\x81': // Orange
+			if (reverse_on) {
+				curatr &= ~0xF0;
+				curatr |= (MAGENTA << 4);
+			}
+			else {
+				curatr &= ~0x0F;
+				curatr |= MAGENTA;
+			}
+			return true;
+		case '\x90': // Black
+			if (reverse_on) {
+				curatr &= ~0xF0;
+			}
+			else {
+				curatr &= ~0x0F;
+			}
+			return true;
+		case '\x95': // Brown
+			if (reverse_on) {
+				curatr &= ~0xF0;
+				curatr |= (BROWN << 4);
+			}
+			else {
+				curatr &= ~0x0F;
+				curatr |= BROWN;
+			}
+			return true;
+		case '\x96': // Pink
+			if (reverse_on) {
+				curatr &= ~0xF0;
+				curatr |= (LIGHTRED << 4);
+			}
+			else {
+				curatr &= ~0x0F;
+				curatr |= LIGHTRED;
+			}
+			return true;
+		case '\x97': // Dark gray
+			if (reverse_on) {
+				curatr &= ~0xF0;
+				curatr |= (DARKGRAY << 4);
+			}
+			else {
+				curatr &= ~0x0F;
+				curatr |= DARKGRAY;
+			}
+			return true;
+		case '\x98': // Gray
+			if (reverse_on) {
+				curatr &= ~0xF0;
+				curatr |= (CYAN << 4);
+			}
+			else {
+				curatr &= ~0x0F;
+				curatr |= CYAN;
+			}
+			return true;
+		case '\x99': // Light Green
+			if (reverse_on) {
+				curatr &= ~0xF0;
+				curatr |= (LIGHTGREEN << 4);
+			}
+			else {
+				curatr &= ~0x0F;
+				curatr |= LIGHTGREEN;
+			}
+			return true;
+		case '\x9A': // Light Blue
+			if (reverse_on) {
+				curatr &= ~0xF0;
+				curatr |= (LIGHTBLUE << 4);
+			}
+			else {
+				curatr &= ~0x0F;
+				curatr |= LIGHTBLUE;
+			}
+			return true;
+		case '\x9B': // Light Gray
+			if (reverse_on) {
+				curatr &= ~0xF0;
+				curatr |= (LIGHTGRAY << 4);
+			}
+			else {
+				curatr &= ~0x0F;
+				curatr |= LIGHTGRAY;
+			}
+			return true;
+		case '\x9C': // Purple
+			if (reverse_on) {
+				curatr &= ~0xF0;
+				curatr |= (LIGHTMAGENTA << 4);
+			}
+			else {
+				curatr &= ~0x0F;
+				curatr |= LIGHTMAGENTA;
+			}
+			return true;
+		case '\x9E': // Yellow
+			if (reverse_on) {
+				curatr &= ~0xF0;
+				curatr |= (YELLOW << 4);
+			}
+			else {
+				curatr &= ~0x0F;
+				curatr |= YELLOW;
+			}
+			return true;
+		case '\x9F': // Cyan
+			if (reverse_on) {
+				curatr &= ~0xF0;
+				curatr |= (LIGHTCYAN << 4);
+			}
+			else {
+				curatr &= ~0x0F;
+				curatr |= LIGHTCYAN;
+			}
+			return true;
+		case '\x8E': // Upper case
 		case '\x93': // Clear
 		case '\x94': // Insert
-		case '\x95': // Brown
-		case '\x96': // Pink
-		case '\x97': // Dark gray
-		case '\x98': // Gray
-		case '\x99': // Light Green
-		case '\x9A': // Light Blue
-		case '\x9B': // Light Gray
-		case '\x9C': // Purple
-		case '\x9D': // Cursor Left
-		case '\x9E': // Yellow
-		case '\x9F': // Cyan
 			return true;
 
 		// Everything else is assumed one byte wide
@@ -468,10 +608,10 @@ void PETSCII_Terminal::insert_indicator()
 	gotoxy(cols, 1);
 	if (sbbs->console & CON_INSERT) {
 		sbbs->attr(BLINK | BLACK | (LIGHTGRAY << 4));
-		sbbs->outchar('I');
+		sbbs->term_out('I');
 	} else {
 		sbbs->attr(ANSI_NORMAL);
-		sbbs->outchar(' ');
+		sbbs->term_out(' ');
 	}
 	sbbs->attr(oldatr);
 	gotoxy(x, y);

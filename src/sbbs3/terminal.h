@@ -181,34 +181,28 @@ public:
 	}
 
 	virtual void carriage_return() {
-		lastlinelen = column;
-		sbbs->outcom('\r');
-		column = 0;
+		sbbs->term_out('\r');
+		set_column();
 	}
 
 	virtual void line_feed(unsigned count = 1) {
 		for (unsigned i = 0; i < count; i++)
-			sbbs->outcom('\n');
+			sbbs->term_out('\n');
 		inc_row(count);
-		lbuflen = 0;
 	}
 
 	/*
 	 * Destructive backspace.
 	 * TODO: This seems to be the only one of this family that
 	 *       checks CON_ECHO_OFF itself.  Figure out why and either
-	 *       remove it, or add it to all the rest that call outcom()
+	 *       remove it, or add it to all the rest that call term_out()
 	 */
 	virtual void backspace(unsigned int count = 1) {
 		if (sbbs->console & CON_ECHO_OFF)
 			return;
 		for (unsigned i = 0; i < count; i++) {
-			if (column > 0) {
+			if (column > 0)
 				sbbs->putcom("\b \b");
-				column--;
-				if (lbuflen)
-					lbuflen--;
-			}
 			else
 				break;
 		}
@@ -224,14 +218,10 @@ public:
 	}
 
 	virtual void clearscreen() {
-		check_clear_pause();
 		clear_hotspots();
-		sbbs->outcom(FF);
-		row = 0;
-		column = 0;
-		lncntr = 0;
-		lbuflen = 0;
-		lastlinelen = 0;
+		sbbs->term_out(FF);
+		set_row();
+		set_column();
 	}
 
 	virtual void cleartoeos() {}
@@ -250,7 +240,7 @@ public:
 	virtual void cursor_right(unsigned count = 1) {
 		for (unsigned i = 0; i < count; i++) {
 			if (column < (cols - 1))
-				sbbs->outcom(' ');
+				sbbs->term_out(' ');
 			else
 				break;
 		}
@@ -258,10 +248,8 @@ public:
 
 	virtual void cursor_left(unsigned count = 1) {
 		for (unsigned i = 0; i < count; i++) {
-			if (column > 0) {
-				sbbs->outcom('\b');
-				column--;
-			}
+			if (column > 0)
+				sbbs->term_out('\b');
 			else
 				break;
 		}
@@ -324,14 +312,9 @@ public:
 
 	/*
 	 * Returns true if the caller should send the char, false if
-	 * this function handled it (ie: via outcom(), or stripping it)
+	 * this function handled it (ie: via term_out(), or stripping it)
 	 */
 	virtual bool parse_outchar(char ch) {
-		if (!lbuflen)
-			latr = curatr;
-		if (!required_parse_outchar(ch))
-			return false;
-
 		switch (ch) {
 			// Zero-width characters we likely shouldn't send
 			case 0:  // NUL
@@ -355,7 +338,6 @@ public:
 			case 24: // CAN
 			case 25: // EM
 			case 26: // SUB
-			case 27: // ESC - This one is especially troubling
 			case 28: // FS
 			case 29: // GS
 			case 30: // RS
@@ -363,14 +345,40 @@ public:
 				return false;
 
 			// Zero-width characters we want to pass through
+			case 27: // ESC - This one is especially troubling, but we need to pass it for ANSI detection
 			case 7:  // BEL
 				// Does not go into lbuf...
 				return true;
 
+			// Specials
+			case 8:  // BS
+				if (column)
+					dec_column();
+				return true;
+			case 9:	// TAB
+				// TODO: This makes the position unknown
+				if (column < (cols - 1)) {
+					inc_column();
+					while ((column < (cols - 1)) && (column % 8))
+						inc_column();
+				}
+				return true;
+			case 10: // LF
+				inc_row();
+				return true;
+			case 12: // FF
+				// TODO: This makes the position unknown
+				set_row();
+				set_column();
+				return true;
+			case 13: // CR
+				if (sbbs->console & CON_CR_CLREOL)
+					cleartoeol();
+				set_column();
+				return true;
+
 			// Everything else is assumed one byte wide
 			default:
-				if (lbuflen < LINE_BUFSIZE)
-					lbuf[lbuflen++] = ch;
 				inc_column();
 				return true;
 		}
@@ -411,15 +419,17 @@ public:
 		if (line == NULL)
 			return false;
 		lbuflen = 0;
-		sbbs->attr(line->beg_attr);
-		// Switch from rputs to outcom() loop
-		// This way we don't need to re-encode
-		for (unsigned u = 0; line->buf[u]; u++)
-			sbbs->outcom(line->buf[u]);
-		curatr = line->end_attr;
-		column = line->column;
-		free(line);
+		// Moved insert_indicator() to first to avoid messing
+		// up the line buffer with it.
+		// Now behaves differently on line 1 (where we should
+		// never actually see it)
 		insert_indicator();
+		sbbs->attr(line->beg_attr);
+		// Switch from rputs to term_out()
+		// This way we don't need to re-encode
+		sbbs->term_out(line->buf);
+		curatr = line->end_attr;
+		free(line);
 		return true;
 	}
 
@@ -439,8 +449,6 @@ public:
 		return true;
 	}
 
-	bool required_parse_outchar(char ch);
-
 	void clear_hotspots(void);
 	void scroll_hotspots(unsigned count);
 
@@ -452,12 +460,15 @@ public:
 	bool add_pause_hotspot(char cmd);
 	void inc_row(unsigned count = 1);
 	void inc_column(unsigned count = 1);
+	void dec_row(unsigned count = 1);
+	void dec_column(unsigned count = 1);
+	void set_row(unsigned val = 0);
+	void set_column(unsigned val = 0);
 	void cond_newline();
 	void cond_blankline();
 	void cond_contline();
 	bool supports(unsigned cmp_flags);
 	list_node_t *find_hotspot(unsigned x, unsigned y);
-	void check_clear_pause();
 };
 
 void update_terminal(sbbs_t *sbbsptr);

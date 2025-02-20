@@ -151,7 +151,7 @@ bool sbbs_t::newuser()
 
 		if (useron.misc & PETSCII) {
 			autoterm |= PETSCII;
-			outcom(PETSCII_UPPERLOWER);
+			term_out(PETSCII_UPPERLOWER);
 			bputs(text[PetTerminalDetected]);
 		} else {
 			if (!yesno(text[ExAsciiTerminalQ]))

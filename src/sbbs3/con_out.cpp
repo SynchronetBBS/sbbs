@@ -118,12 +118,12 @@ int sbbs_t::bputs(const char *str, int mode)
 		}
 		if (mode & P_PETSCII) {
 			if (term->flags & PETSCII)
-				outcom(str[l++]);
+				term_out(str[l++]);
 			else
 				petscii_to_ansibbs(str[l++]);
 		} else if ((str[l] & 0x80) && (mode & P_UTF8)) {
 			if (term->flags & UTF8)
-				outcom(str[l++]);
+				term_out(str[l++]);
 			else
 				l += print_utf8_as_cp437(str + l, len - l);
 		} else
@@ -333,44 +333,160 @@ size_t sbbs_t::print_utf8_as_cp437(const char* str, size_t len)
 /* Performs saveline buffering (for restoreline)							*/
 /* DOES NOT expand ctrl-A codes, track columns, lines, auto-pause, etc.     */
 /****************************************************************************/
-int sbbs_t::rputs(const char *str, size_t len)
+size_t sbbs_t::rputs(const char *str, size_t len)
 {
-	size_t l;
+	unsigned oldlc = term->lncntr;
+	size_t ret = cp437_out(str, len ? len : SIZE_MAX);
+	term->lncntr = oldlc;
+	return ret;
+}
 
+/*
+ * Translates from CP437 to the current encoding and passes the result
+ * to term_out()
+ * Returns the number of bytes successfully consumed
+ */
+size_t sbbs_t::cp437_out(const char *str, size_t len)
+{
+	if (len == SIZE_MAX)
+		len = strlen(str);
+	for (size_t l = 0; l < len && online; l++) {
+		if (cp437_out(str[l]) == 0)
+			return l;
+	}
+	return len;
+}
+
+size_t sbbs_t::cp437_out(int ich)
+{
+	unsigned char ch {static_cast<unsigned char>(ich)};
 	if (console & CON_ECHO_OFF)
 		return 0;
-	if (len == 0)
-		len = strlen(str);
-	char utf8[UTF8_MAX_LEN + 1] = "";
-	for (l = 0; l < len && online; l++) {
-		uchar ch = str[l];
-		utf8[0] = 0;
-		if (term->flags & PETSCII) {
-			ch = cp437_to_petscii(ch);
-			if (ch == PETSCII_SOLID)
-				outcom(PETSCII_REVERSE_ON);
-		}
-		else if ((term->flags & NO_EXASCII) && (ch & 0x80))
-			ch = exascii_to_ascii_char(ch);  /* seven bit table */
-		else if (term->flags & UTF8) {
-			enum unicode_codepoint codepoint = cp437_unicode_tbl[(uchar)ch];
-			if (codepoint != 0)
-				utf8_putc(utf8, sizeof(utf8) - 1, codepoint);
-		}
-		if (utf8[0])
-			putcom(utf8);
-		else {
-			if (outcom(ch) != 0)
-				break;
-			if ((char)ch == (char)TELNET_IAC && !(telnet_mode & TELNET_MODE_OFF))
-				outcom(TELNET_IAC); /* Must escape Telnet IAC char (255) */
-			if ((term->flags & PETSCII) && ch == PETSCII_SOLID)
-				outcom(PETSCII_REVERSE_OFF);
-		}
-		if (ch == '\n')
-			term->lbuflen = 0;
+	if (!online)
+		return 0;
+
+	// Many of the low CP437 characters will print on many terminals,
+	// so we may want to translate some of them.
+	// Synchronet specifically has definitions for the following:
+	//
+	// BEL (0x07) Make a beeping noise
+	// BS  (0x08) Move left one character, but do not wrap to
+	//            previous line
+	// LF  (0x0A) Move down one line, scrolling if on bottom row
+	// CR  (0x0D) Move to the first position in the current line
+	//
+	// Further, the following are expected to be translated
+	// earlier and should only arrive here via rputs()
+	// TAB (0x09) Expanded to spaces to the next tabstop (defined by
+	//            sbbs::tabstop)
+	// FF  (0x0C) Clear the screen
+	//
+	// It is unclear what "should" happen when these arrive here,
+	// but it should be consistent, likely they should be expanded.
+	switch (ch) {
+		case 0x08:	// BS
+			term->cursor_left();
+			return 1;
+		case 0x09:	// TAB
+			if (term->column < (term->cols - 1)) {
+                                outchar(' ');
+                                while ((term->column < (term->cols - 1)) && (term->column % term->tabstop))
+                                        outchar(' ');
+                        }
+                        return 1;
+
+		case 0x0A:	// LF
+			term->line_feed();
+			return 1;
+		case 0x0D:	// CR
+			term->carriage_return();
+			return 1;
+		case 0x0C:	// FF
+			term->clearscreen();
+			return 1;
 	}
-	return l;
+
+	// UTF-8 Note that CP437 0x7C maps to U+00A6 so we can't just do
+	//       everything below 0x80 this way.
+	if (term->flags & UTF8) {
+		if (ch != 0x07 && ch != 0x08 && ch != 0x09 && ch != 0x0A && ch != 0x0C && ch != 0x13) {
+			char utf8[UTF8_MAX_LEN + 1];
+			enum unicode_codepoint codepoint = cp437_unicode_tbl[ch];
+			if (codepoint == 0)
+				codepoint = static_cast<enum unicode_codepoint>(ch);
+			int len = utf8_putc(utf8, sizeof(utf8), codepoint);
+
+			if (len < 1)
+				return 0;
+			if (term_out(utf8, len) != len)
+				return 0;
+			return 1;
+		}
+	}
+	// PETSCII
+	else if (term->flags & PETSCII) {
+		ch = cp437_to_petscii(ch);
+		if (ch == PETSCII_SOLID) {
+			if (term_out(PETSCII_REVERSE_ON) != 1)
+				return 0;
+		}
+		if (term_out(ch) != 1)
+			return 0;
+		if (ch == PETSCII_SOLID) {
+			if (term_out(PETSCII_REVERSE_OFF) != 1)
+				return 0;
+		}
+		return 1;
+	}
+	// CP437 or US-ASCII
+	if ((term->flags & NO_EXASCII) && (ch & 0x80))
+		ch = exascii_to_ascii_char(ch);  /* seven bit table */
+	if (term_out(ch) != 1)
+		return 0;
+	return 1;
+}
+
+/*
+ * Update column, row, line buffer, and line counter
+ * Returns the number of bytes consumed
+ */
+size_t sbbs_t::term_out(const char *str, size_t len)
+{
+	if (len == SIZE_MAX)
+		len = strlen(str);
+	for (size_t l = 0; l < len && online; l++) {
+		uchar ch = str[l];
+		if (!term_out(ch))
+			return l;
+	}
+	return len;
+}
+
+size_t sbbs_t::term_out(int ich)
+{
+	unsigned char ch{static_cast<unsigned char>(ich)};
+	if (console & CON_ECHO_OFF)
+		return 0;
+	if (!online)
+		return 0;
+	if (!term->parse_outchar(ch))
+		return 1;
+	if (term->lbuflen < LINE_BUFSIZE) {
+		if (term->lbuflen == 0)
+			term->latr = term->curatr;
+		// Historically, beeps don't go into lbuf
+		// hopefully nobody notices and cares, because this would mean
+		// that BEL *must* be part of any charset we support... and it's
+		// not part of C64 PETSCII.
+		term->lbuf[term->lbuflen++] = ch;
+	}
+	if (ch == TELNET_IAC && !(telnet_mode & TELNET_MODE_OFF)) {
+		if (outcom(TELNET_IAC))
+			return 0;
+	}
+	if (outcom(ch))
+		return 0;
+	return 1;
 }
 
 /****************************************************************************/
@@ -423,9 +539,9 @@ int sbbs_t::rprintf(const char *fmt, ...)
 }
 
 /****************************************************************************/
-/* Performs printf() using bbs putcom/outcom functions						*/
+/* Performs printf() using bbs term_out functions						*/
 /****************************************************************************/
-int sbbs_t::comprintf(const char *fmt, ...)
+int sbbs_t::term_printf(const char *fmt, ...)
 {
 	va_list argptr;
 	char    sbuf[4096];
@@ -434,7 +550,7 @@ int sbbs_t::comprintf(const char *fmt, ...)
 	vsnprintf(sbuf, sizeof(sbuf), fmt, argptr);
 	sbuf[sizeof(sbuf) - 1] = 0; /* force termination */
 	va_end(argptr);
-	return putcom(sbuf);
+	return term_out(sbuf);
 }
 
 char* sbbs_t::term_rows(user_t* user, char* str, size_t size)
@@ -599,14 +715,18 @@ bool sbbs_t::update_nodeterm(void)
  * rputs() and unify the conversion code.  outchar() and rputs() appear
  * to be equivilent, but they're implemented differently.
  *
+ * putcom() is used not only for text, but also to send telnet commands.
+ * The use for text could be replaced, but the use for IAC needs to be
+ * unchanged.
+ * 
  * bputs  putmsg
  *   \      /
  *   outchar    rputs
  *      +---------|
- * putcom     cp437_out     outcp
- *    +-----------+-----------+
- *             term_out
- *                |
+ *            cp437_out     outcp
+ *                +-----------+
+ * putcom      term_out
+ *    +-----------+
  *              outcom
  *                |
  *           RingBufWrite
@@ -619,13 +739,13 @@ bool sbbs_t::update_nodeterm(void)
  * 
  * rputs() would effectively do nothing except call cp437_out()
  * 
- * putcom() would effectively do nothing except call term_out()
- * 
  * cp437_out() would translate from cp437 to the terminal charset
  *             this would specifically include the control characters
  *             BEL, BS, TAB, LF, FF, CR, and DEL
  * 
  * outcp() would call term_out() if UTF-8 is supported, or bputs() if not
+ * 
+ * putcom() would remain a string wrapper around outcom()
  * 
  * term_out() would update column and row, and maintain the line buffer,
  *            it would be available for a char, a uchar, a char*, and
@@ -633,6 +753,8 @@ bool sbbs_t::update_nodeterm(void)
  * 
  * outcom() and RingBufWrite() would be unchanged
  * 
+ * Open questions:
+ * - Should term_out() strip/convert ANSI sequences?  Ugh, I hope not.
  */
 
 /****************************************************************************/
@@ -649,9 +771,6 @@ int sbbs_t::outchar(char ch)
 	if (console & CON_ECHO_OFF)
 		return 0;
 
-	if (!term->parse_outchar(ch))
-		return 0;
-
 	if (rainbow_index >= 0) {
 		attr(rainbow[rainbow_index]);
 		if (rainbow[rainbow_index + 1] == 0) {
@@ -660,35 +779,25 @@ int sbbs_t::outchar(char ch)
 		} else
 			++rainbow_index;
 	}
-	char utf8[UTF8_MAX_LEN + 1] = "";
-	if (!(term->flags & PETSCII)) {
-		if ((term->flags & NO_EXASCII) && (ch & 0x80))
-			ch = exascii_to_ascii_char(ch);  /* seven bit table */
-		else if (term->flags & UTF8) {
-			enum unicode_codepoint codepoint = cp437_unicode_tbl[(uchar)ch];
-			if (codepoint != 0)
-				utf8_putc(utf8, sizeof(utf8) - 1, codepoint);
+	if ((console & CON_R_ECHOX) && (uchar)ch >= ' ')
+		ch = *text[PasswordChar];
+
+	// TODO: We may want to move these into term_out()
+	//       Otherwise they won't work with UTF-8
+	if (ch == '\n' && line_delay)
+		SLEEP(line_delay);
+
+	if (ch == FF && term->lncntr > 0 && term->row > 0) {
+		term->lncntr = 0;
+		term->newline();
+		if (!(sys_status & SS_PAUSEOFF)) {
+			pause();
+			while (term->lncntr && online && !(sys_status & SS_ABORT))
+				pause();
 		}
 	}
 
-	if ((console & CON_R_ECHOX) && (uchar)ch >= ' ') {
-		ch = *text[PasswordChar];
-	}
-	if (ch == (char)TELNET_IAC && !(telnet_mode & TELNET_MODE_OFF))
-		outcom(TELNET_IAC); /* Must escape Telnet IAC char (255) */
-	if (term->flags & PETSCII) {
-		uchar pet = cp437_to_petscii(ch);
-		if (pet == PETSCII_SOLID)
-			outcom(PETSCII_REVERSE_ON);
-		outcom(pet);
-		if (pet == PETSCII_SOLID)
-			outcom(PETSCII_REVERSE_OFF);
-	} else {
-		if (utf8[0] != 0)
-			putcom(utf8);
-		else
-			outcom(ch);
-	}
+	cp437_out(ch);
 
 	if (term->lncntr == term->rows - 1 && ((useron.misc & (UPAUSE ^ (console & CON_PAUSEOFF))) || sys_status & SS_PAUSEON)
 	    && !(sys_status & (SS_PAUSEOFF | SS_ABORT))) {
@@ -698,14 +807,14 @@ int sbbs_t::outchar(char ch)
 	return 0;
 }
 
-int sbbs_t::outchar(enum unicode_codepoint codepoint, const char* cp437_fallback)
+int sbbs_t::outcp(enum unicode_codepoint codepoint, const char* cp437_fallback)
 {
 	if (term->supports(UTF8)) {
 		char str[UTF8_MAX_LEN];
 		int  len = utf8_putc(str, sizeof(str), codepoint);
 		if (len < 1)
 			return len;
-		putcom(str, len);
+		term_out(str, len);
 		term->inc_column(unicode_width(codepoint, unicode_zerowidth));
 		return 0;
 	}
@@ -714,10 +823,10 @@ int sbbs_t::outchar(enum unicode_codepoint codepoint, const char* cp437_fallback
 	return bputs(cp437_fallback);
 }
 
-int sbbs_t::outchar(enum unicode_codepoint codepoint, char cp437_fallback)
+int sbbs_t::outcp(enum unicode_codepoint codepoint, char cp437_fallback)
 {
 	char str[2] = { cp437_fallback, '\0' };
-	return outchar(codepoint, str);
+	return outcp(codepoint, str);
 }
 
 void sbbs_t::wide(const char* str)
@@ -997,8 +1106,7 @@ int sbbs_t::attr(int atr)
 	term->attrstr(atr, term->curatr, str, sizeof(str));
 	// TODO: This was rputs()
 	// TODO: We may need a raw output that goes in there
-	putcom(str);
-	term->curatr = atr;
+	term_out(str);
 	return 0;
 }
 

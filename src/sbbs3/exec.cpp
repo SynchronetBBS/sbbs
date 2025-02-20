@@ -1334,7 +1334,7 @@ int sbbs_t::exec(csi_t *csi)
 				lputs(LOG_INFO, cmdstr((char*)csi->ip, path, csi->str, (char*)buf));
 				break;
 			case CS_PRINT_REMOTE:
-				putcom(cmdstr((char*)csi->ip, path, csi->str, (char*)buf));
+				term_out(cmdstr((char*)csi->ip, path, csi->str, (char*)buf));
 				break;
 			case CS_PRINTFILE:
 				printfile(cmdstr((char*)csi->ip, path, csi->str, (char*)buf), P_SAVEATR);

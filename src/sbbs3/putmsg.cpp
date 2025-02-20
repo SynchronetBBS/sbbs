@@ -62,7 +62,7 @@ char sbbs_t::putmsg(const char *buf, int mode, int org_cols, JSObject* obj)
 		term->set_output_rate(output_rate);
 
 	if (mode & P_PETSCII)
-		outcom(PETSCII_UPPERLOWER);
+		term_out(PETSCII_UPPERLOWER);
 
 	attr_sp = 0;  /* clear any saved attributes */
 
@@ -499,57 +499,12 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 			size_t skip = sizeof(char);
 			if (mode & P_PETSCII) {
 				if (term->flags & PETSCII) {
-					outcom(str[l]);
-					// TODO: Do this in outcom()
-					//       Splitting it out here is bad.
-					//       It's very similar to what parse_outchar() does.
-					switch ((uchar)str[l]) {
-						case '\r':  // PETSCII "Return" / new-line
-							term->column = 0;
-						/* fall-through */
-						case PETSCII_DOWN:
-							term->lncntr++;
-							term->inc_row();
-							break;
-						case PETSCII_CLEAR:
-						case PETSCII_HOME:
-							term->row = 0;
-							term->column = 0;
-							term->lncntr = 0;
-							break;
-						case PETSCII_BLACK:
-						case PETSCII_WHITE:
-						case PETSCII_RED:
-						case PETSCII_GREEN:
-						case PETSCII_BLUE:
-						case PETSCII_ORANGE:
-						case PETSCII_BROWN:
-						case PETSCII_YELLOW:
-						case PETSCII_CYAN:
-						case PETSCII_LIGHTRED:
-						case PETSCII_DARKGRAY:
-						case PETSCII_MEDIUMGRAY:
-						case PETSCII_LIGHTGREEN:
-						case PETSCII_LIGHTBLUE:
-						case PETSCII_LIGHTGRAY:
-						case PETSCII_PURPLE:
-						case PETSCII_UPPERLOWER:
-						case PETSCII_UPPERGRFX:
-						case PETSCII_FLASH_ON:
-						case PETSCII_FLASH_OFF:
-						case PETSCII_REVERSE_ON:
-						case PETSCII_REVERSE_OFF:
-							// No cursor movement
-							break;
-						default:
-							term->inc_column();
-							break;
-					}
+					term_out(str[l]);
 				} else
 					petscii_to_ansibbs(str[l]);
 			} else if ((str[l] & 0x80) && (mode & P_UTF8)) {
 				if (term->flags & UTF8)
-					outcom(str[l]);
+					term_out(str[l]);
 				else
 					skip = print_utf8_as_cp437(str + l, len - l);
 			} else {

@@ -3,47 +3,6 @@
 #include "petscii_term.h"
 #include "link_list.h"
 
-/*
- * Returns true if the caller should send the char, false if
- * this function handled it (ie: via outcom(), or stripping it)
- */
-bool Terminal::required_parse_outchar(char ch) {
-	switch (ch) {
-		// Special values
-		case 8:  // BS
-			cursor_left();
-			return false;
-		case 9:
-			// TODO: Original would wrap, this one (hopefully) doesn't.
-			//       Further, use outchar() instead of outcom() to get
-			//       the spaces into the line buffer instead of tabs
-			if (column < (cols - 1)) {
-				sbbs->outchar(' ');
-				while ((column < (cols - 1)) && (column % tabstop))
-					sbbs->outchar(' ');
-			}
-			return false;
-		case 10: // LF
-			// Terminates lbuf
-			if (sbbs->line_delay)
-				SLEEP(sbbs->line_delay);
-			line_feed();
-			return false;
-		case 12: // FF
-			// Does not go into lbuf
-			check_clear_pause();
-			clearscreen();
-			return false;
-		case 13: // CR
-			if (sbbs->console & CON_CR_CLREOL)
-				cleartoeol();
-			carriage_return();
-			return false;
-		// Everything else is assumed one byte wide
-	}
-	return true;
-}
-
 void Terminal::clear_hotspots(void)
 {
 	if (!(flags & MOUSE))
@@ -51,7 +10,7 @@ void Terminal::clear_hotspots(void)
 	int spots = listCountNodes(mouse_hotspots);
 	if (spots) {
 #if 0 //def _DEBUG
-		lprintf(LOG_DEBUG, "Clearing %ld mouse hot spots", spots);
+		sbbs->lprintf(LOG_DEBUG, "Clearing %ld mouse hot spots", spots);
 #endif
 		listFreeNodes(mouse_hotspots);
 		if (!(sbbs->console & CON_MOUSE_SCROLL))
@@ -74,7 +33,7 @@ void Terminal::scroll_hotspots(unsigned count)
 	}
 #ifdef _DEBUG
 	if (spots)
-		lprintf(LOG_DEBUG, "Scrolled %u mouse hot-spots %u rows (%u remain)", spots, count, remain);
+		sbbs->lprintf(LOG_DEBUG, "Scrolled %u mouse hot-spots %u rows (%u remain)", spots, count, remain);
 #endif
 	if (remain < 1)
 		clear_hotspots();
@@ -198,6 +157,50 @@ void Terminal::inc_column(unsigned count) {
 	}
 }
 
+void Terminal::dec_row(unsigned count) {
+	if (column)
+		lastlinelen = column;
+	// TODO: Never allow dec_row to scroll up
+	if (count > row)
+		count = row;
+#if 0
+	// TODO: If we do allow scrolling up, scroll_hotspots needs to get signed
+	if (count > row) {
+		scroll_hotspots(row - count);
+	}
+#endif
+	row -= count;
+	if (count > lncntr)
+		count = lncntr;
+	lncntr -= count;
+	lbuflen = 0;
+}
+
+void Terminal::dec_column(unsigned count) {
+	// TODO: Never allow dec_column() to wrap
+	if (count > column)
+		count = column;
+	column -= count;
+	if (column == 0)
+		lbuflen = 0;
+}
+
+void Terminal::set_row(unsigned val) {
+	if (val >= rows)
+		val = rows - 1;
+	if (column)
+		lastlinelen = column;
+	row = val;
+	lncntr = 0;
+	lbuflen = 0;
+}
+
+void Terminal::set_column(unsigned val) {
+	if (val >= cols)
+		val = cols - 1;
+	column = val;
+}
+
 void Terminal::cond_newline() {
 	if (column > 0)
 		newline();
@@ -243,19 +246,6 @@ list_node_t *Terminal::find_hotspot(unsigned x, unsigned y)
 	}
 
 	return node;
-}
-
-void Terminal::check_clear_pause()
-{
-	if (lncntr > 0 && row > 0) {
-		lncntr = 0;
-		newline();
-		if (!(sbbs->sys_status & SS_PAUSEOFF)) {
-			sbbs->pause();
-			while (lncntr && sbbs->online && !(sbbs->sys_status & SS_ABORT))
-				sbbs->pause();
-		}
-	}
 }
 
 static void

@@ -1071,7 +1071,7 @@ js_write_raw(JSContext *cx, uintN argc, jsval *arglist)
 		if (len < 1)
 			continue;
 		rc = JS_SUSPENDREQUEST(cx);
-		sbbs->putcom(str, len);
+		sbbs->term_out(str, len);
 		JS_RESUMEREQUEST(cx, rc);
 	}
 	if (str != NULL)
@@ -4099,15 +4099,6 @@ int sbbs_t::_outcom(uchar ch)
 		return TXBOF;
 	if (!RingBufWrite(&outbuf, &ch, 1))
 		return TXBOF;
-	if (term->lbuflen < LINE_BUFSIZE) {
-		if (term->lbuflen == 0)
-			term->latr = term->curatr;
-		// Historically, beeps don't go into lbuf
-		// hopefully nobody notices and cares, because this would mean
-		// that BEL *must* be part of any charset we support... and it's
-		// not part of C64 PETSCII.
-		term->lbuf[term->lbuflen++] = ch;
-	}
 	return 0;
 }
 
@@ -5585,7 +5576,7 @@ NO_SSH:
 			if (inet_addrport(&local_addr) == startup->pet40_port || inet_addrport(&local_addr) == startup->pet80_port) {
 				sbbs->autoterm = PETSCII;
 				sbbs->term->cols = inet_addrport(&local_addr) == startup->pet40_port ? 40 : 80;
-				sbbs->outcom(PETSCII_UPPERLOWER);
+				sbbs->term_out(PETSCII_UPPERLOWER);
 			}
 			update_terminal(sbbs);
 			// TODO: Plain text output in SSH socket
@@ -5670,7 +5661,7 @@ NO_SSH:
 			if (!(startup->options & BBS_OPT_NO_HOST_LOOKUP)) {
 				sbbs->bprintf("Resolving hostname...");
 				getnameinfo(&client_addr.addr, client_addr_len, host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD);
-				sbbs->putcom(crlf);
+				sbbs->cp437_out(crlf);
 				lprintf(LOG_INFO, "%04d %s [%s] Hostname: %s", client_socket, client.protocol, host_ip, host_name);
 			}
 
@@ -5697,7 +5688,7 @@ NO_SSH:
 							lprintf(LOG_INFO, "%04d %s [%s] Identity: %s", client_socket, client.protocol, host_ip, identity);
 					}
 				}
-				sbbs->putcom(crlf);
+				sbbs->cp437_out(crlf);
 			}
 			/* Initialize client display */
 			client.size = sizeof(client);
@@ -5759,8 +5750,8 @@ NO_SSH:
 				if (fexist(str))
 					sbbs->printfile(str, P_NOABORT);
 				else {
-					sbbs->putcom("\r\nSorry, all terminal nodes are in use or otherwise unavailable.\r\n");
-					sbbs->putcom("Please try again later.\r\n");
+					sbbs->cp437_out("\r\nSorry, all terminal nodes are in use or otherwise unavailable.\r\n");
+					sbbs->cp437_out("Please try again later.\r\n");
 				}
 				sbbs->flush_output(3000);
 				client_off(client_socket);
@@ -5835,7 +5826,7 @@ NO_SSH:
 				if (fexist(str))
 					sbbs->printfile(str, P_NOABORT);
 				else
-					sbbs->putcom("\r\nSorry, initialization failed. Try again later.\r\n");
+					sbbs->cp437_out("\r\nSorry, initialization failed. Try again later.\r\n");
 				sbbs->flush_output(3000);
 				if (sbbs->getnodedat(new_node->cfg.node_num, &node, true)) {
 					node.status = NODE_WFC;

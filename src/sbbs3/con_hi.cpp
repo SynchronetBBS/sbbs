@@ -37,7 +37,7 @@ void sbbs_t::redrwstr(char *strin, int i, int l, int mode)
 	if (mode)
 		bprintf(mode, "%-*.*s", l, l, strin);
 	else
-		term->column += rprintf("%-*.*s", l, l, strin);
+		rprintf("%-*.*s", l, l, strin);
 	term->cleartoeol();
 	if (i < l) {
 		auto_utf8(strin, mode);

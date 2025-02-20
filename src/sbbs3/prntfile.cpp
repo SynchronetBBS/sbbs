@@ -150,7 +150,7 @@ bool sbbs_t::printfile(const char* fname, int mode, int org_cols, JSObject* obj)
 		if (!(mode & P_NOATCODES) && term->cur_output_rate != output_rate)
 			term->set_output_rate(output_rate);
 		if (mode & P_PETSCII)
-			outcom(PETSCII_UPPERLOWER);
+			term_out(PETSCII_UPPERLOWER);
 		attr_sp = 0;  /* clear any saved attributes */
 
 		/* Restore original settings of Forced Pause On/Off */

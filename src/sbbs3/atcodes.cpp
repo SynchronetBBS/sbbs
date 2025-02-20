@@ -368,18 +368,18 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	if (strncmp(sp, "U+", 2) == 0) { // UNICODE
 		enum unicode_codepoint codepoint = (enum unicode_codepoint)strtoul(sp + 2, &tp, 16);
 		if (tp == NULL || *tp == 0)
-			outchar(codepoint, unicode_to_cp437(codepoint));
+			outcp(codepoint, unicode_to_cp437(codepoint));
 		else if (*tp == ':')
-			outchar(codepoint, tp + 1);
+			outcp(codepoint, tp + 1);
 		else {
 			char fallback = (char)strtoul(tp + 1, NULL, 16);
 			if (*tp == ',')
-				outchar(codepoint, fallback);
+				outcp(codepoint, fallback);
 			else if (*tp == '!') {
 				char ch = unicode_to_cp437(codepoint);
 				if (ch != 0)
 					fallback = ch;
-				outchar(codepoint, fallback);
+				outcp(codepoint, fallback);
 			}
 			else
 				return NULL;  // Invalid @-code
@@ -388,36 +388,36 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 
 	if (strcmp(sp, "CHECKMARK") == 0) {
-		outchar(UNICODE_CHECK_MARK, CP437_CHECK_MARK);
+		outcp(UNICODE_CHECK_MARK, CP437_CHECK_MARK);
 		return nulstr;
 	}
 
 	if (strcmp(sp, "ELLIPSIS") == 0) {
-		outchar(UNICODE_HORIZONTAL_ELLIPSIS, "...");
+		outcp(UNICODE_HORIZONTAL_ELLIPSIS, "...");
 		return nulstr;
 	}
 	if (strcmp(sp, "COPY") == 0) {
-		outchar(UNICODE_COPYRIGHT_SIGN, "(C)");
+		outcp(UNICODE_COPYRIGHT_SIGN, "(C)");
 		return nulstr;
 	}
 	if (strcmp(sp, "SOUNDCOPY") == 0) {
-		outchar(UNICODE_SOUND_RECORDING_COPYRIGHT, "(P)");
+		outcp(UNICODE_SOUND_RECORDING_COPYRIGHT, "(P)");
 		return nulstr;
 	}
 	if (strcmp(sp, "REGISTERED") == 0) {
-		outchar(UNICODE_REGISTERED_SIGN, "(R)");
+		outcp(UNICODE_REGISTERED_SIGN, "(R)");
 		return nulstr;
 	}
 	if (strcmp(sp, "TRADEMARK") == 0) {
-		outchar(UNICODE_TRADE_MARK_SIGN, "(TM)");
+		outcp(UNICODE_TRADE_MARK_SIGN, "(TM)");
 		return nulstr;
 	}
 	if (strcmp(sp, "DEGREE_C") == 0) {
-		outchar(UNICODE_DEGREE_CELSIUS, "\xF8""C");
+		outcp(UNICODE_DEGREE_CELSIUS, "\xF8""C");
 		return nulstr;
 	}
 	if (strcmp(sp, "DEGREE_F") == 0) {
-		outchar(UNICODE_DEGREE_FAHRENHEIT, "\xF8""F");
+		outcp(UNICODE_DEGREE_FAHRENHEIT, "\xF8""F");
 		return nulstr;
 	}
 
@@ -653,7 +653,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 
 	if (strcmp(sp, "PETGRFX") == 0) {
 		if (term->supports(PETSCII))
-			outcom(PETSCII_UPPERGRFX);
+			term_out(PETSCII_UPPERGRFX);
 		return nulstr;
 	}
 
