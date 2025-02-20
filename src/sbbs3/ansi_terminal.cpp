@@ -305,7 +305,6 @@ bool ANSI_Terminal::restore_cursor_pos()
 
 void ANSI_Terminal::clearscreen()
 {
-	check_clear_pause();
 	clear_hotspots();
 	sbbs->putcom("\x1b[2J\x1b[H");    /* clear screen, home cursor */
 	row = 0;

@@ -31,6 +31,7 @@ bool Terminal::required_parse_outchar(char ch) {
 			return false;
 		case 12: // FF
 			// Does not go into lbuf
+			check_clear_pause();
 			clearscreen();
 			return false;
 		case 13: // CR

@@ -221,7 +221,6 @@ void PETSCII_Terminal::newline(unsigned count)
 
 void PETSCII_Terminal::clearscreen()
 {
-	check_clear_pause();
 	clear_hotspots();
 	sbbs->outcom('\x93');
 	row = 0;
