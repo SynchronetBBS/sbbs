@@ -264,6 +264,7 @@ struct conio_font_data_struct {
         char 	*twelve_by_twenty;
         char 	*desc;
         enum ciolib_codepage cp;
+	bool    broken_bar;
 };
 
 struct ciolib_pixels {
