@@ -3783,6 +3783,7 @@ bool sbbs_t::init()
 	pthread_mutex_init(&input_thread_mutex, NULL);
 	input_thread_mutex_created = true;
 
+	update_terminal(this);
 	reset_logon_vars();
 
 	online = ON_REMOTE;

@@ -51,8 +51,8 @@ class Terminal {
 public:
 	uint32_t flags{0};                 /* user.misc flags that impact the terminal */
 	unsigned row{0};                   /* Current row */
-	unsigned column{0};                /* Current column counter (for line counter) */
-	unsigned rows{0};                  /* Current number of Rows for User */
+	unsigned column{80};               /* Current column counter (for line counter) */
+	unsigned rows{24};                 /* Current number of Rows for User */
 	unsigned cols{0};                  /* Current number of Columns for User */
 	unsigned tabstop{8};               /* Current symmetric-tabstop (size) */
 	unsigned lastlinelen{0};           /* The previously displayed line length */
@@ -182,13 +182,11 @@ public:
 
 	virtual void carriage_return() {
 		sbbs->term_out('\r');
-		set_column();
 	}
 
 	virtual void line_feed(unsigned count = 1) {
 		for (unsigned i = 0; i < count; i++)
 			sbbs->term_out('\n');
-		inc_row(count);
 	}
 
 	/*
@@ -220,8 +218,6 @@ public:
 	virtual void clearscreen() {
 		clear_hotspots();
 		sbbs->term_out(FF);
-		set_row();
-		set_column();
 	}
 
 	virtual void cleartoeos() {}

@@ -409,6 +409,7 @@ size_t sbbs_t::cp437_out(int ich)
 	// UTF-8 Note that CP437 0x7C maps to U+00A6 so we can't just do
 	//       everything below 0x80 this way.
 	if (term->flags & UTF8) {
+		// TODO: Delete the appropriate values if this code stays here.
 		if (ch != 0x07 && ch != 0x08 && ch != 0x09 && ch != 0x0A && ch != 0x0C && ch != 0x13) {
 			char utf8[UTF8_MAX_LEN + 1];
 			enum unicode_codepoint codepoint = cp437_unicode_tbl[ch];

@@ -526,8 +526,13 @@ bool ANSI_Terminal::parse_outchar(char ich) {
 			else {
 				first_continuation = false;
 				utf8_remain--;
+				codepoint <<= 6;
+				codepoint |= (ch & 0x3f);
 				if (utf8_remain)
 					return true;
+				inc_column(unicode_width(static_cast<enum unicode_codepoint>(codepoint), 0));
+				codepoint = 0;
+				return true;
 			}
 		}
 		else if ((ch & 0x80) != 0) {
@@ -538,18 +543,21 @@ bool ANSI_Terminal::parse_outchar(char ich) {
 				utf8_remain = 1;
 				if (ch == 0xE0)
 					first_continuation = true;
+				codepoint = ch & 0x1F;
 				return true;
 			}
 			else if ((ch & 0xf0) == 0xe0) {
 				utf8_remain = 2;
 				if (ch == 0xF0)
 					first_continuation = true;
+				codepoint = ch & 0x0F;
 				return true;
 			}
 			else if ((ch & 0xf8) == 0xf0) {
 				utf8_remain = 3;
 				if (ch == 0xF4)
 					first_continuation = true;
+				codepoint = ch & 0x07;
 				return true;
 			}
 			else
@@ -1245,8 +1253,6 @@ bool ANSI_Terminal::parse_ctrlkey(char& ch, int mode) {
 
 void ANSI_Terminal::insert_indicator() {
 	char str[32];
-	int  col = column;
-	auto row = this->row;
 	save_cursor_pos();
 	gotoxy(cols, 1);
 	int  tmpatr;
@@ -1259,8 +1265,6 @@ void ANSI_Terminal::insert_indicator() {
 	}
 	sbbs->term_out(attrstr(curatr, tmpatr, str, supports(COLOR)));
 	restore_cursor_pos();
-	set_column(col);
-	set_row(row);
 }
 
 struct mouse_hotspot* ANSI_Terminal::add_hotspot(struct mouse_hotspot* spot) {return nullptr;}

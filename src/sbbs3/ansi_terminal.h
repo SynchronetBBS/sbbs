@@ -67,6 +67,7 @@ private:
 	bool is_negative{0};
 	uint8_t utf8_remain{0};
 	bool first_continuation{false};
+	uint32_t codepoint{0};
 };
 
 #endif
