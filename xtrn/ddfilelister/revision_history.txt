@@ -5,6 +5,10 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.27     2025-02-20   Now optionally displays the number of files in the
+                      directory in the header at the top of the list,
+                      configurable with the displayNumFilesInHeader option in
+                      the config file
 2.26     2024-12-27   New configuration setting: useFilenameIfNoDescription -
                       If a file's description is empty, show its filename in the
                       list instead

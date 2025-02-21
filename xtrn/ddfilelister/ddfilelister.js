@@ -152,6 +152,10 @@
  * 2024-12-27 Eric Oulashin     Version 2.26
  *                              New configuration setting: useFilenameIfNoDescription - If a
  *                              file's description is empty, show its filename in the list instead
+ * 2025-02-20 Eric Oulashin     Version 2.27
+ *                              Now optionally displays the number of files in the directory in the
+ *                              header at the top of the list, configurable with the
+ *                              displayNumFilesInHeader option in the config file
  */
 
 "use strict";
@@ -193,8 +197,8 @@ var gAvatar = load({}, "avatar_lib.js");
 
 
 // Version information
-var LISTER_VERSION = "2.26";
-var LISTER_DATE = "2024-12-27";
+var LISTER_VERSION = "2.27";
+var LISTER_DATE = "2025-02-20";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -363,6 +367,10 @@ var gScanAllDirs = false;
 // or not to blank out the "# Files Listed" string (from text.dat) so that
 // Synchronet won't display it after the lister exits
 var gBlankNFilesListedStrIfLoadableModule = true;
+
+// Whether or not to display the number of files in the directory in
+// the header at the top of the screen
+var gDisplayNumFilesInHeader = true;
 
 // Read the configuration file and set the settings
 readConfigFile();
@@ -3196,6 +3204,7 @@ function displayFileLibAndDirHeader(pTextOnly, pDirCodeOverride, pNumberedMode)
 	}
 	else if (typeof(pDirCodeOverride) === "string" && file_area.dir.hasOwnProperty(pDirCodeOverride))
 	{
+		dirCode = pDirCodeOverride;
 		libIdx = file_area.dir[pDirCodeOverride].lib_index;
 		dirIdx = file_area.dir[pDirCodeOverride].index;
 		libDesc = file_area.lib_list[libIdx].description;
@@ -3229,15 +3238,42 @@ function displayFileLibAndDirHeader(pTextOnly, pDirCodeOverride, pNumberedMode)
 	{
 		console.print("\x01n\x01w" + BLOCK1 + BLOCK2 + BLOCK3 + BLOCK4 + THIN_RECTANGLE_LEFT);
 		console.print(libText);
-		console.print("\x01w" + THIN_RECTANGLE_RIGHT + "\x01k\x01h" + BLOCK4 + "\x01n\x01w" + THIN_RECTANGLE_LEFT +
-					  "\x01g\x01hDD File\x01n\x01w");
+		// Rightmost area: Display either the number of files if enabled, or "DD File"
+		console.print("\x01w" + THIN_RECTANGLE_RIGHT + "\x01k\x01h" + BLOCK4 + "\x01n\x01w" + THIN_RECTANGLE_LEFT);
+		console.attributes = "GH";
+		var wasAbleToDisplayNumFiles = false;
+		if (gDisplayNumFilesInHeader && dirCode.length > 0)
+		{
+			// Hopefully there are no more than 9999999 files in this directory
+			// (the field width is 7 here)
+			var fieldWidth = 7;
+			var numFilesAsStr = file_area.dir[dirCode].files.toString();
+			if (numFilesAsStr.length <= fieldWidth)
+			{
+				var numSpaces = Math.floor(fieldWidth/2) - Math.floor(numFilesAsStr.length/2);
+				var numFilesStr = format("%*s", numSpaces, "") + numFilesAsStr;
+				var numSpacesRemaining = fieldWidth - numFilesStr.length;
+				if (numSpacesRemaining > 0)
+					numFilesStr += format("%*s", numSpacesRemaining, "");
+				console.print(numFilesStr);
+				var wasAbleToDisplayNumFiles = true;
+			}
+			else
+				console.print("DD File");
+		}
+		else
+			console.print("DD File");
+		console.attributes = "NW";
 		console.print(THIN_RECTANGLE_RIGHT + BLOCK4 + BLOCK3 + BLOCK2 + BLOCK1);
 		console.crlf();
 		// Directory line
 		console.print("\x01n\x01w" + BLOCK1 + BLOCK2 + BLOCK3 + BLOCK4 + THIN_RECTANGLE_LEFT);
 		console.print(dirText);
-		console.print("\x01w" + THIN_RECTANGLE_RIGHT + "\x01k\x01h" + BLOCK4 + "\x01n\x01w" + THIN_RECTANGLE_LEFT +
-					  "\x01g\x01hLister \x01n\x01w");
+		// Rightmost area: Display "Files" if the number of files was able to be displayed, or "Lister"
+		console.print("\x01w" + THIN_RECTANGLE_RIGHT + "\x01k\x01h" + BLOCK4 + "\x01n\x01w" + THIN_RECTANGLE_LEFT);
+		console.attributes = "GH";
+		console.print(wasAbleToDisplayNumFiles ? " Files " : "Lister ");
+		console.attributes = "NW";
 		console.print(THIN_RECTANGLE_RIGHT + BLOCK4 + BLOCK3 + BLOCK2 + BLOCK1);
 		console.attributes = "N";
 
@@ -4168,6 +4204,11 @@ function readConfigFile()
 			{
 				if (typeof(settingsObj[prop]) === "boolean")
 					gUseFilenameIfNoDescription = settingsObj[prop];
+			}
+			else if (propUpper == "DISPLAYNUMFILESINHEADER")
+			{
+				if (typeof(settingsObj[prop]) === "boolean")
+					gDisplayNumFilesInHeader = settingsObj[prop];
 			}
 		}
 	}

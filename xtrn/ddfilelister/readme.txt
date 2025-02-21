@@ -1,6 +1,6 @@
                         Digital Distortion File Lister
-                                 Version 2.25c
-                           Release date: 2024-12-08
+                                 Version 2.27
+                           Release date: 2025-02-20
 
                                      by
 
@@ -254,6 +254,10 @@ useFilenameIfNoDescription            If a file's description is unavailable,
                                       whether or not to use the filename in the
                                       list instead. Valid values are true and
                                       false.
+
+displayNumFilesInHeader               Whether or not to display the number of
+                                      files in the directory in the header at
+                                      the top of the list
 
 themeFilename                         The name of the configuration file to
                                       use for colors & string settings
