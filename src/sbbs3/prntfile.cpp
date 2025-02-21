@@ -106,7 +106,7 @@ bool sbbs_t::printfile(const char* fname, int mode, int org_cols, JSObject* obj)
 			errormsg(WHERE, ERR_READ, fpath, length);
 		else {
 			buf[l] = 0;
-			if ((mode & P_UTF8) && !term->supports(UTF8))
+			if ((mode & P_UTF8) && (term->charset() != CHARSET_UTF8))
 				utf8_normalize_str(buf);
 			putmsg(buf, mode, org_cols, obj);
 		}
@@ -135,7 +135,7 @@ bool sbbs_t::printfile(const char* fname, int mode, int org_cols, JSObject* obj)
 		while (!feof(stream) && !msgabort()) {
 			if (fgets(buf, length + 1, stream) == NULL)
 				break;
-			if ((mode & P_UTF8) && !term->supports(UTF8))
+			if ((mode & P_UTF8) && (term->charset() != CHARSET_UTF8))
 				utf8_normalize_str(buf);
 			if (putmsgfrag(buf, mode, org_cols, obj) != '\0') // early-EOF?
 				break;
@@ -274,15 +274,15 @@ bool sbbs_t::menu(const char *code, int mode, JSObject* obj)
 		SAFECOPY(path, menu_file);
 	else {
 		do {
-			if ((term->flags & RIP) && menu_exists(code, "rip", path))
+			if ((term->supports(RIP)) && menu_exists(code, "rip", path))
 				break;
-			if ((term->flags & (ANSI | COLOR)) == ANSI && menu_exists(code, "mon", path))
+			if ((term->supports(ANSI) && (!term->supports(COLOR))) && menu_exists(code, "mon", path))
 				break;
-			if ((term->flags & ANSI) && menu_exists(code, "ans", path))
+			if ((term->supports(ANSI)) && menu_exists(code, "ans", path))
 				break;
-			if ((term->flags & PETSCII) && menu_exists(code, "seq", path))
+			if ((term->charset() == CHARSET_PETSCII) && menu_exists(code, "seq", path))
 				break;
-			if (term->flags & NO_EXASCII) {
+			if (term->charset() == CHARSET_ASCII) {
 				next = "asc";
 				last = "msg";
 			}

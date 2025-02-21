@@ -140,7 +140,7 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 				return JS_FALSE;
 			break;
 		case CON_PROP_CHARSET:
-			if ((js_str = JS_NewStringCopyZ(cx, sbbs->term_charset())) == NULL)
+			if ((js_str = JS_NewStringCopyZ(cx, sbbs->term->charset_str())) == NULL)
 				return JS_FALSE;
 			break;
 		case CON_PROP_UNICODE_ZEROWIDTH:
@@ -2332,7 +2332,7 @@ js_term_supports(JSContext *cx, uintN argc, jsval *arglist)
 		JS_RESUMEREQUEST(cx, rc);
 	} else {
 		rc = JS_SUSPENDREQUEST(cx);
-		flags = sbbs->term->flags;
+		flags = sbbs->term->flags();
 		JS_RESUMEREQUEST(cx, rc);
 		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(flags));
 	}

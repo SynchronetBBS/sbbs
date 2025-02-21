@@ -506,7 +506,7 @@ count_params(std::string params)
 // TODO: Split this up into easily understandable chunks...
 bool ANSI_Terminal::parse_outchar(char ich) {
 	unsigned char ch = static_cast<unsigned char>(ich);
-	if (flags & UTF8) {
+	if (flags_ & UTF8) {
 		// TODO: How many errors should be logged?
 		if (utf8_remain > 0) {
 			// First, check if this is overlong...
@@ -807,7 +807,7 @@ bool ANSI_Terminal::parse_outchar(char ich) {
 										case 5:
 										case 6:
 											curatr &= ~0x100;
-											if (flags & ICE_COLOR)
+											if (flags_ & ICE_COLOR)
 												curatr |= BG_BRIGHT;
 											else
 												curatr |= BLINK;
@@ -828,7 +828,7 @@ bool ANSI_Terminal::parse_outchar(char ich) {
 											break;
 										case 25:
 											curatr &= ~0x100;
-											if (flags & ICE_COLOR)
+											if (flags_ & ICE_COLOR)
 												curatr &= ~BG_BRIGHT;
 											else
 												curatr &= ~BLINK;
@@ -1271,5 +1271,5 @@ struct mouse_hotspot* ANSI_Terminal::add_hotspot(struct mouse_hotspot* spot) {re
 
 bool ANSI_Terminal::can_highlight() { return true; }
 bool ANSI_Terminal::can_move() { return true; }
-bool ANSI_Terminal::can_mouse()  { return flags & MOUSE; }
-bool ANSI_Terminal::is_monochrome() { return !(flags & COLOR); }
+bool ANSI_Terminal::can_mouse()  { return flags_ & MOUSE; }
+bool ANSI_Terminal::is_monochrome() { return !(flags_ & COLOR); }

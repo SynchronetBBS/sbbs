@@ -253,7 +253,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 				do {
 					i--;
 					l--;
-				} while ((term->flags & UTF8) && (i > 0) && (str1[i] & 0x80) && (str1[i - 1] & 0x80));
+				} while ((term->charset() == CHARSET_UTF8) && (i > 0) && (str1[i] & 0x80) && (str1[i - 1] & 0x80));
 				if (i != l) {              /* Deleting char in middle of line */
 					outchar(BS);
 					z = i;
@@ -512,7 +512,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 							l--;
 							if (!(mode & K_NOECHO))
 								term->backspace();
-						} while ((term->flags & UTF8) && (i > 0) && (str1[i] & 0x80) && (str1[i - 1] & 0x80));
+						} while ((term->charset() == CHARSET_UTF8) && (i > 0) && (str1[i] & 0x80) && (str1[i - 1] & 0x80));
 					}
 					break;
 				}
@@ -591,7 +591,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 					}
 					str1[i++] = ch;
 					if (!(mode & K_NOECHO)) {
-						if ((term->flags & UTF8) && (ch & 0x80)) {
+						if ((term->charset() == CHARSET_UTF8) && (ch & 0x80)) {
 							if (i > l)
 								l = i;
 							str1[l] = 0;

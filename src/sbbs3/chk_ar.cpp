@@ -119,37 +119,37 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 				}
 				break;
 			case AR_PETSCII:
-				if ((term->flags & CHARSET_FLAGS) != CHARSET_PETSCII)
+				if (term->charset() != CHARSET_PETSCII)
 					result = _not;
 				else
 					result = !_not;
 				if (!result) {
 					noaccess_str = text[NoAccessTerminal];
-					noaccess_val = PETSCII;
+					noaccess_val = CHARSET_PETSCII;
 				}
 				break;
 			case AR_ASCII:
-				if ((term->flags & CHARSET_FLAGS) != CHARSET_ASCII)
+				if (term->charset() != CHARSET_ASCII)
 					result = _not;
 				else
 					result = !_not;
 				if (!result) {
 					noaccess_str = text[NoAccessTerminal];
-					noaccess_val = NO_EXASCII;
+					noaccess_val = CHARSET_ASCII;
 				}
 				break;
 			case AR_UTF8:
-				if ((term->flags & CHARSET_FLAGS) != CHARSET_UTF8)
+				if (term->charset() != CHARSET_UTF8)
 					result = _not;
 				else
 					result = !_not;
 				if (!result) {
 					noaccess_str = text[NoAccessTerminal];
-					noaccess_val = UTF8;
+					noaccess_val = CHARSET_UTF8;
 				}
 				break;
 			case AR_CP437:
-				if ((term->flags & CHARSET_FLAGS) != CHARSET_CP437)
+				if (term->charset() != CHARSET_CP437)
 					result = _not;
 				else
 					result = !_not;

@@ -754,7 +754,7 @@ void sbbs_t::user_config(user_t* user)
 			load_user_text();
 		}
 		SAFECOPY(keys, "Q\r");
-		long termf = (user == &useron) ? term->flags : user->misc;
+		long termf = (user == &useron) ? term->flags() : user->misc;
 		if (*text[UserDefaultsTerminal]) {
 			term->add_hotspot('T');
 			SAFECAT(keys, "T");
@@ -906,7 +906,7 @@ void sbbs_t::user_config(user_t* user)
 				}
 				if (sys_status & SS_ABORT)
 					break;
-				termf = (user == &useron) ? term->flags : user->misc;
+				termf = (user == &useron) ? term->flags() : user->misc;
 				if (termf & (AUTOTERM | ANSI) && !(termf & PETSCII)) {
 					user->misc |= COLOR;
 					user->misc &= ~ICE_COLOR;

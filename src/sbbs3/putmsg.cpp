@@ -498,12 +498,12 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 			}
 			size_t skip = sizeof(char);
 			if (mode & P_PETSCII) {
-				if (term->flags & PETSCII) {
+				if (term->charset() == CHARSET_PETSCII) {
 					term_out(str[l]);
 				} else
 					petscii_to_ansibbs(str[l]);
 			} else if ((str[l] & 0x80) && (mode & P_UTF8)) {
-				if (term->flags & UTF8)
+				if (term->charset() == CHARSET_UTF8)
 					term_out(str[l]);
 				else
 					skip = print_utf8_as_cp437(str + l, len - l);

@@ -119,7 +119,7 @@ bool sbbs_t::load_user_text(void)
 	char path[MAX_PATH + 1];
 	char charset[16];
 
-	SAFECOPY(charset, term_charset());
+	SAFECOPY(charset, term->charset_str());
 	strlwr(charset);
 	revert_text();
 	snprintf(path, sizeof path, "%s%s/text.ini", cfg.ctrl_dir, charset);

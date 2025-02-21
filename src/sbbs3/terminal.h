@@ -49,7 +49,6 @@ enum output_rate {
 
 class Terminal {
 public:
-	uint32_t flags{0};                 /* user.misc flags that impact the terminal */
 	unsigned row{0};                   /* Current row */
 	unsigned column{80};               /* Current column counter (for line counter) */
 	unsigned rows{24};                 /* Current number of Rows for User */
@@ -69,11 +68,36 @@ public:
 
 protected:
 	sbbs_t* sbbs;
+	uint32_t flags_{0};                 /* user.misc flags that impact the terminal */
 
 private:
 	link_list_t *savedlines{nullptr};
 
 public:
+
+	static uint32_t flags_fixup(uint32_t flags)
+	{
+		if (flags & UTF8) {
+			// These bits are *never* available in UTF8 mode
+			// Note that RIP is not inherently incompatible with UTF8
+			flags &= ~(NO_EXASCII | PETSCII);
+		}
+
+		if (!(flags & ANSI)) {
+			// These bits are *only* available in ANSI mode
+			flags &= ~(COLOR | RIP | ICE_COLOR | MOUSE);
+		}
+		else {
+			// These bits are *never* available in ANSI mode
+			flags &= ~(PETSCII);
+		}
+
+		if (flags & PETSCII) {
+			// These bits are *never* available in PETSCII mode
+			flags &= ~(COLOR | RIP | ICE_COLOR | MOUSE | NO_EXASCII | UTF8);
+		}
+		return flags;
+	}
 
 	static uint32_t get_flags(sbbs_t *sbbsptr) {
 		uint32_t flags;
@@ -90,7 +114,7 @@ public:
 			flags = sbbsptr->autoterm;
 		flags &= TERM_FLAGS;
 		// TODO: Get rows and cols
-		return flags;
+		return flags_fixup(flags);
 	}
 
 	static link_list_t *listPtrInit(int flags) {
@@ -106,15 +130,16 @@ public:
 
 	Terminal() = delete;
 	// Create from sbbs_t*, ie: "Create new"
-	Terminal(sbbs_t *sbbsptr) : flags{get_flags(sbbsptr)}, mouse_hotspots{listPtrInit(0)}, sbbs{sbbsptr},
-	    savedlines{listPtrInit(0)} {}
+	Terminal(sbbs_t *sbbsptr) : mouse_hotspots{listPtrInit(0)}, sbbs{sbbsptr},
+	    flags_{get_flags(sbbsptr)}, savedlines{listPtrInit(0)} {}
 
 	// Create from Terminal*, ie: Update
-	Terminal(Terminal *t) : flags{get_flags(t->sbbs)}, row{t->row}, column{t->column},
+	Terminal(Terminal *t) : row{t->row}, column{t->column},
 	    rows{t->rows}, cols{t->cols}, tabstop{t->tabstop}, lastlinelen{t->lastlinelen}, 
 	    cterm_version{t->cterm_version}, lncntr{t->lncntr}, latr{t->latr}, curatr{t->curatr},
 	    lbuflen{t->lbuflen}, mouse_mode{t->mouse_mode}, pause_hotspot{t->pause_hotspot},
-	    mouse_hotspots{t->mouse_hotspots}, sbbs{t->sbbs}, savedlines{t->savedlines} {
+	    mouse_hotspots{t->mouse_hotspots}, sbbs{t->sbbs}, flags_{get_flags(t->sbbs)},
+	    savedlines{t->savedlines} {
 		// Take ownership of lists so they're not destroyed
 		t->mouse_hotspots = nullptr;
 		t->savedlines = nullptr;
@@ -125,16 +150,17 @@ public:
 		//       and mode.  We can't call the new one because it's
 		//       virtual and we aren't constructed yet.
 		//       Ideally this would disable the mouse if !supports(MOUSE)
-		t->flags = flags;
+		t->flags_ = flags_;
 		t->set_mouse(mouse_mode);
 	}
 
 	// Create from sbbsptr* and Terminal*, ie: Create a copy
-	Terminal(sbbs_t *sbbsptr, Terminal *t) : flags{get_flags(t->sbbs)}, row{t->row}, column{t->column},
+	Terminal(sbbs_t *sbbsptr, Terminal *t) : row{t->row}, column{t->column},
 	    rows{t->rows}, cols{t->cols}, tabstop{t->tabstop}, lastlinelen{t->lastlinelen}, 
 	    cterm_version{t->cterm_version}, lncntr{t->lncntr}, latr{t->latr}, curatr{t->curatr},
 	    lbuflen{t->lbuflen}, mouse_mode{t->mouse_mode}, pause_hotspot{t->pause_hotspot},
-	    mouse_hotspots{listPtrInit(0)}, sbbs{sbbsptr}, savedlines{listPtrInit(0)} {}
+	    mouse_hotspots{listPtrInit(0)}, sbbs{sbbsptr}, flags_{get_flags(t->sbbs)},
+	    savedlines{listPtrInit(0)} {}
 
 	virtual ~Terminal()
 	{
@@ -464,7 +490,11 @@ public:
 	void cond_blankline();
 	void cond_contline();
 	bool supports(unsigned cmp_flags);
+	bool supports_any(unsigned cmp_flags);
+	uint32_t charset();
+	const char *charset_str();
 	list_node_t *find_hotspot(unsigned x, unsigned y);
+	uint32_t flags(bool raw = false);
 };
 
 void update_terminal(sbbs_t *sbbsptr);

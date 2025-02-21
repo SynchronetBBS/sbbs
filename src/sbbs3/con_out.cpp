@@ -117,12 +117,12 @@ int sbbs_t::bputs(const char *str, int mode)
 			}
 		}
 		if (mode & P_PETSCII) {
-			if (term->flags & PETSCII)
+			if (term->charset() == CHARSET_PETSCII)
 				term_out(str[l++]);
 			else
 				petscii_to_ansibbs(str[l++]);
 		} else if ((str[l] & 0x80) && (mode & P_UTF8)) {
-			if (term->flags & UTF8)
+			if (term->charset() == CHARSET_UTF8)
 				term_out(str[l++]);
 			else
 				l += print_utf8_as_cp437(str + l, len - l);
@@ -408,7 +408,7 @@ size_t sbbs_t::cp437_out(int ich)
 
 	// UTF-8 Note that CP437 0x7C maps to U+00A6 so we can't just do
 	//       everything below 0x80 this way.
-	if (term->flags & UTF8) {
+	if (term->charset() == CHARSET_UTF8) {
 		// TODO: Delete the appropriate values if this code stays here.
 		if (ch != 0x07 && ch != 0x08 && ch != 0x09 && ch != 0x0A && ch != 0x0C && ch != 0x13) {
 			char utf8[UTF8_MAX_LEN + 1];
@@ -425,7 +425,7 @@ size_t sbbs_t::cp437_out(int ich)
 		}
 	}
 	// PETSCII
-	else if (term->flags & PETSCII) {
+	else if (term->charset() == CHARSET_PETSCII) {
 		ch = cp437_to_petscii(ch);
 		if (ch == PETSCII_SOLID) {
 			if (term_out(PETSCII_REVERSE_ON) != 1)
@@ -440,7 +440,7 @@ size_t sbbs_t::cp437_out(int ich)
 		return 1;
 	}
 	// CP437 or US-ASCII
-	if ((term->flags & NO_EXASCII) && (ch & 0x80))
+	if ((term->charset() == CHARSET_ASCII) && (ch & 0x80))
 		ch = exascii_to_ascii_char(ch);  /* seven bit table */
 	if (term_out(ch) != 1)
 		return 0;
@@ -596,7 +596,7 @@ char* sbbs_t::term_type(user_t* user, int term, char* str, size_t size)
 const char* sbbs_t::term_type(int term)
 {
 	if (term == -1)
-		term = this->term->flags;
+		term = this->term->flags();
 	if (term & PETSCII)
 		return "PETSCII";
 	if (term & RIP)
@@ -612,7 +612,7 @@ const char* sbbs_t::term_type(int term)
 const char* sbbs_t::term_charset(int term)
 {
 	if (term == -1)
-		term = this->term->flags;
+		return this->term->charset_str();
 	if (term & PETSCII)
 		return "CBM-ASCII";
 	if (term & UTF8)
@@ -633,8 +633,8 @@ bool sbbs_t::update_nodeterm(void)
 	iniSetInteger(&ini, ROOT_SECTION, "rows", term->rows, NULL);
 	iniSetString(&ini, ROOT_SECTION, "desc", terminal, NULL);
 	iniSetString(&ini, ROOT_SECTION, "type", term_type(), NULL);
-	iniSetString(&ini, ROOT_SECTION, "chars", term_charset(), NULL);
-	iniSetHexInt(&ini, ROOT_SECTION, "flags", term->flags, NULL);
+	iniSetString(&ini, ROOT_SECTION, "chars", term->charset_str(), NULL);
+	iniSetHexInt(&ini, ROOT_SECTION, "flags", term->flags(), NULL);
 	iniSetHexInt(&ini, ROOT_SECTION, "mouse", mouse_mode, NULL);
 	iniSetHexInt(&ini, ROOT_SECTION, "console", console, NULL);
 
@@ -657,8 +657,8 @@ bool sbbs_t::update_nodeterm(void)
 		         , term->rows
 		         , terminal
 		         , term_type()
-		         , term_charset()
-		         , term->flags
+		         , term->charset_str()
+		         , term->flags()
 		         , mouse_mode
 		         , console
 		         );
@@ -810,7 +810,7 @@ int sbbs_t::outchar(char ch)
 
 int sbbs_t::outcp(enum unicode_codepoint codepoint, const char* cp437_fallback)
 {
-	if (term->supports(UTF8)) {
+	if (term->charset() == CHARSET_UTF8) {
 		char str[UTF8_MAX_LEN];
 		int  len = utf8_putc(str, sizeof(str), codepoint);
 		if (len < 1)
@@ -833,7 +833,7 @@ int sbbs_t::outcp(enum unicode_codepoint codepoint, char cp437_fallback)
 void sbbs_t::wide(const char* str)
 {
 	while (*str != '\0') {
-		if ((term->flags & UTF8) && *str >= '!' && *str <= '~')
+		if ((term->charset() == CHARSET_UTF8) && *str >= '!' && *str <= '~')
 			outchar((enum unicode_codepoint)(UNICODE_FULLWIDTH_EXCLAMATION_MARK + (*str - '!')));
 		else {
 			outchar(*str);
@@ -1140,7 +1140,7 @@ int sbbs_t::backfill(const char* instr, float pct, int full_attr, int empty_attr
 	char* str = strip_ctrl(instr, NULL);
 
 	len = strlen(str);
-	if (!(term->flags & (ANSI | PETSCII)))
+	if (!(term->supports_any(ANSI | PETSCII)))
 		bputs(str, P_REMOTE);
 	else {
 		for (int i = 0; i < len; i++) {

@@ -202,7 +202,7 @@ int sbbs_t::show_atcode(const char *instr, JSObject* obj)
 		}
 	}
 	if (pmode & P_UTF8) {
-		if (term->supports(UTF8))
+		if (term->charset() == CHARSET_UTF8)
 			fmt.disp_len += strlen(cp) - utf8_str_total_width(cp, unicode_zerowidth);
 		else
 			fmt.disp_len += strlen(cp) - utf8_str_count_width(cp, /* min: */ 1, /* max: */ 2, unicode_zerowidth);
@@ -543,7 +543,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return term_type();
 
 	if (strcmp(sp, "CHARSET") == 0)
-		return term_charset();
+		return term->charset_str();
 
 	if (!strcmp(sp, "CONN"))
 		return connection;
@@ -622,7 +622,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return useron.netmail;
 
 	if (strcmp(sp, "TERMTYPE") == 0)
-		return term_type(&useron, term->flags, str, maxlen);
+		return term_type(&useron, term->flags(), str, maxlen);
 
 	if (strcmp(sp, "TERMROWS") == 0)
 		return term_rows(&useron, str, maxlen);
@@ -652,7 +652,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return (useron.misc & PETSCII) ? text[On] : text[Off];
 
 	if (strcmp(sp, "PETGRFX") == 0) {
-		if (term->supports(PETSCII))
+		if (term->charset() == CHARSET_PETSCII)
 			term_out(PETSCII_UPPERGRFX);
 		return nulstr;
 	}

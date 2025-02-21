@@ -203,8 +203,8 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		              , cfg.sys_nodes           /* Total system nodes */
 		              , cfg.node_num            /* Current node */
 		              , tleft                   /* User Timeleft in seconds */
-		              , (term->flags & ANSI)           /* User ANSI ? (Yes/Mono/No) */
-		        ? (term->flags & COLOR)
+		              , (term->supports(ANSI))           /* User ANSI ? (Yes/Mono/No) */
+		        ? (term->supports(COLOR))
 		        ? "Yes":"Mono":"No"
 		              , term->rows                    /* User Screen lines */
 		              , user_available_credits(&useron)); /* User Credits */
@@ -325,7 +325,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		              , useron.level            /* User SL */
 		              , 0                       /* Cosysop? */
 		              , SYSOP                   /* Sysop? (1/0) */
-		              , INT_TO_BOOL(term->flags & ANSI) /* ANSI ? (1/0) */
+		              , term->supports(ANSI) /* ANSI ? (1/0) */
 		              , online == ON_REMOTE);   /* Remote (1/0) */
 		lfexpand(str, misc);
 		fwrite(str, strlen(str), 1, fp);
@@ -407,8 +407,8 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		              , tm.tm_mday, TM_YEAR(tm.tm_year)
 		              , MIN(tleft, INT16_MAX)   /* 18: User time left in sec */
 		              , MIN((tleft / 60), INT16_MAX) /* 19: User time left in min */
-		              , (term->flags & NO_EXASCII)     /* 20: GR if COLOR ANSI */
-		        ? "7E" : (term->flags & (ANSI | COLOR)) == (ANSI | COLOR) ? "GR" : "NG");
+		              , term->charset() == CHARSET_ASCII     /* 20: GR if COLOR ANSI */
+		        ? "7E" : (term->supports(ANSI | COLOR) ? "GR" : "NG"));
 		lfexpand(str, misc);
 		fwrite(str, strlen(str), 1, fp);
 
@@ -453,7 +453,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 
 			localtime_r(&ns_time, &tm);
 			safe_snprintf(str, sizeof(str), "%c\n%c\n%u\n%" PRIu32 "\n%02d/%02d/%02d\n"
-			              , (term->flags & (NO_EXASCII | ANSI | COLOR)) == ANSI
+			              , (term->flags() & (NO_EXASCII | ANSI | COLOR)) == ANSI
 			        ? 'Y':'N'                       /* 39: ANSI supported but NG mode */
 			              , 'Y'                     /* 40: Use record locking */
 			              , cfg.color[clr_external] /* 41: BBS default color */
@@ -534,7 +534,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		              , tmp                     /* User's firstname */
 		              , p                       /* User's lastname */
 		              , useron.location         /* User's city */
-		              , INT_TO_BOOL(term->flags & ANSI) /* 1=ANSI 0=ASCII */
+		              , term->supports(ANSI)    /* 1=ANSI 0=ASCII */
 		              , useron.level            /* Security level */
 		              , MIN((tleft / 60), INT16_MAX)); /* Time left in minutes */
 		strupr(str);
@@ -571,7 +571,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 			exitinfo.UserInfo.Attrib |= QBBS::USER_ATTRIB_CLRSCRN;
 		if (useron.misc & UPAUSE)
 			exitinfo.UserInfo.Attrib |= QBBS::USER_ATTRIB_MORE;
-		if (term->flags & ANSI)
+		if (term->supports(ANSI))
 			exitinfo.UserInfo.Attrib |= QBBS::USER_ATTRIB_ANSI;
 		if (useron.sex == 'F')
 			exitinfo.UserInfo.Attrib |= QBBS::USER_ATTRIB_FEMALE;
@@ -595,12 +595,12 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		exitinfo.WantChat = (sys_status & SS_SYSPAGE);
 		exitinfo.ScreenClear = (useron.misc & CLRSCRN);
 		exitinfo.MorePrompts = (useron.misc & UPAUSE);
-		exitinfo.GraphicsMode = !(term->flags & NO_EXASCII);
+		exitinfo.GraphicsMode = !(term->charset() == CHARSET_ASCII);
 		exitinfo.ExternEdit = (useron.xedit);
 		exitinfo.ScreenLength = (int16_t)term->rows;
 		exitinfo.MNP_Connect = true;
-		exitinfo.ANSI_Capable = (term->flags & ANSI);
-		exitinfo.RIP_Active = (term->flags & RIP);
+		exitinfo.ANSI_Capable = term->supports(ANSI);
+		exitinfo.RIP_Active = term->supports(RIP);
 
 		fwrite(&exitinfo, sizeof(exitinfo), 1, fp);
 		fclose(fp);
@@ -649,7 +649,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		              , useron.location         /* User location */
 		              , useron.level            /* Security level */
 		              , MIN((tleft / 60), INT16_MAX) /* Time left in min */
-		              , (term->flags & ANSI) ? "COLOR":"MONO" /* ANSI ??? */
+		              , term->supports(ANSI) ? "COLOR":"MONO" /* ANSI ??? */
 		              , useron.pass             /* Password */
 		              , useron.number);         /* User number */
 		lfexpand(str, misc);
@@ -735,7 +735,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		sys.PageBell = sys_status & SS_SYSPAGE;
 		sys.Alarm = startup->sound.answer[0] && !sound_muted(&cfg);
 		sys.ErrorCorrected = true;
-		sys.GraphicsMode = (term->flags & NO_EXASCII) ? 'N' : 'Y';
+		sys.GraphicsMode = term->charset() == CHARSET_ASCII ? 'N' : 'Y';
 		sys.UserNetStatus = (thisnode.misc & NODE_POFF) ? 'U' : 'A'; /* Node chat status ([A]vailable or [U]navailable) */
 		SAFEPRINTF(tmp, "%u", dte_rate);
 		sys.ModemSpeed = tmp;
@@ -758,7 +758,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		sys.MinutesLeft = (int16_t)(tleft / 60);
 		sys.NodeNum = (uint8_t)cfg.node_num;
 		sys.EventTime = "00:00";
-		sys.UseAnsi = INT_TO_BOOL(term->flags & ANSI);
+		sys.UseAnsi = term->supports(ANSI);
 		sys.YesChar = yes_key();
 		sys.NoChar = no_key();
 		sys.Conference2 = cursubnum;
@@ -852,7 +852,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		              "%s\n%s\n%u\n%s\n%u\n%u\n%u\n%u\n%u\n%lu\n%u\n"
 		              "%" PRIu64 "\n%" PRIu64 "\n%s\n%s\n"
 		              , dropdir
-		              , (term->flags & ANSI) ? "TRUE":"FALSE" /* ANSI ? True or False */
+		              , term->supports(ANSI) ? "TRUE":"FALSE" /* ANSI ? True or False */
 		              , useron.level            /* Security level */
 		              , useron.uls              /* Total uploads */
 		              , useron.dls              /* Total downloads */
@@ -900,8 +900,8 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		 */
 		safe_snprintf(str, sizeof(str), "%s\n%d \n%d\n%u\n%u\n%u\n%u\n%s\n"
 		              , name                    // Complete name or handle of user
-		              , INT_TO_BOOL(term->flags & ANSI) // ANSI status:  1 = yes, 0 = no, -1 = don't know
-		              , !INT_TO_BOOL(term->flags & NO_EXASCII) // IBM Graphic characters:  1 = yes, 0 = no, -1 = unknown
+		              , term->supports(ANSI) // ANSI status:  1 = yes, 0 = no, -1 = don't know
+		              , !(term->charset() == CHARSET_ASCII) // IBM Graphic characters:  1 = yes, 0 = no, -1 = unknown
 		              , term->rows                    // Page length of screen, in lines.  Assume 25 if unknown
 		              , dte_rate                // Baud Rate:  300, 1200, 2400, 9600, 19200, etc.
 		              , online == ON_LOCAL ? 0:cfg.com_port // Com Port:  1, 2, 3, or 4.
@@ -930,7 +930,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		              , useron.pass             /* User's password */
 		              , useron.level            /* User's level */
 		              , useron.misc & EXPERT ? 'Y':'N' /* Expert? */
-		              , (term->flags & ANSI) ? 'Y':'N' /* ANSI? */
+		              , term->supports(ANSI) ? 'Y':'N' /* ANSI? */
 		              , MIN((tleft / 60), INT16_MAX) /* Minutes left */
 		              , useron.phone            /* User's phone number */
 		              , useron.location         /* User's city and state */
@@ -977,7 +977,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		, name
 		, useron.level
 		, tleft / 60
-		, INT_TO_BOOL(term->flags & ANSI)
+		, term->supports(ANSI)
 		, cfg.node_num);
 		lfexpand(str, misc);
 		fwrite(str, strlen(str), 1, fp);

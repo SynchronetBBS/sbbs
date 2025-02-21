@@ -337,7 +337,7 @@ bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, int p_mode, post_t* post)
 	truncsp(p);
 	SKIP_CRLF(p);
 	if (smb_msg_is_utf8(msg)) {
-		if (!term->supports(UTF8))
+		if (!(term->charset() == CHARSET_UTF8))
 			utf8_normalize_str(txt);
 		p_mode |= P_UTF8;
 	}

@@ -5,7 +5,7 @@
 
 void Terminal::clear_hotspots(void)
 {
-	if (!(flags & MOUSE))
+	if (!(flags_ & MOUSE))
 		return;
 	int spots = listCountNodes(mouse_hotspots);
 	if (spots) {
@@ -20,7 +20,7 @@ void Terminal::clear_hotspots(void)
 
 void Terminal::scroll_hotspots(unsigned count)
 {
-	if (!(flags & MOUSE))
+	if (!(flags_ & MOUSE))
 		return;
 	unsigned spots = 0;
 	unsigned remain = 0;
@@ -63,7 +63,7 @@ struct mouse_hotspot* Terminal::add_hotspot(struct mouse_hotspot* spot)
 
 struct mouse_hotspot* Terminal::add_hotspot(char cmd, bool hungry, unsigned minx, unsigned maxx, unsigned y)
 {
-	if (!(flags & MOUSE))
+	if (!(flags_ & MOUSE))
 		return nullptr;
 	struct mouse_hotspot spot = {};
 	spot.cmd[0] = cmd;
@@ -76,7 +76,7 @@ struct mouse_hotspot* Terminal::add_hotspot(char cmd, bool hungry, unsigned minx
 
 bool Terminal::add_pause_hotspot(char cmd)
 {
-	if (!(flags & MOUSE))
+	if (!(flags_ & MOUSE))
 		return false;
 	if (mouse_hotspots->first != nullptr)
 		return false;
@@ -93,7 +93,7 @@ bool Terminal::add_pause_hotspot(char cmd)
 
 struct mouse_hotspot* Terminal::add_hotspot(int num, bool hungry, unsigned minx, unsigned maxx, unsigned y)
 {
-	if (!(flags & MOUSE))
+	if (!(flags_ & MOUSE))
 		return nullptr;
 	struct mouse_hotspot spot = {};
 	SAFEPRINTF(spot.cmd, "%d\r", num);
@@ -106,7 +106,7 @@ struct mouse_hotspot* Terminal::add_hotspot(int num, bool hungry, unsigned minx,
 
 struct mouse_hotspot* Terminal::add_hotspot(uint num, bool hungry, unsigned minx, unsigned maxx, unsigned y)
 {
-	if (!(flags & MOUSE))
+	if (!(flags_ & MOUSE))
 		return nullptr;
 	struct mouse_hotspot spot = {};
 	SAFEPRINTF(spot.cmd, "%u\r", num);
@@ -119,7 +119,7 @@ struct mouse_hotspot* Terminal::add_hotspot(uint num, bool hungry, unsigned minx
 
 struct mouse_hotspot* Terminal::add_hotspot(const char* cmd, bool hungry, unsigned minx, unsigned maxx, unsigned y)
 {
-	if (!(flags & MOUSE))
+	if (!(flags_ & MOUSE))
 		return nullptr;
 	struct mouse_hotspot spot = {};
 	SAFECOPY(spot.cmd, cmd);
@@ -143,6 +143,52 @@ void Terminal::inc_row(unsigned count) {
 	lbuflen = 0;
 }
 
+// TODO: ANSI does *not* specify what happens at the end of a line, and
+//       there are at least three common behaviours (in decresing order
+//       of popularity):
+//       1) Do the DEC Last Column Flag thing where it hangs out in the
+//          last column until a printing character is received, then
+//          decides if it should wrap or not
+//       2) Wrap immediately when printed to the last column
+//       3) Stay in the last column and replace the character
+//
+//       We assume that #2 happens here, but most terminals do #1... which
+//       usually looks like #2, but is slightly different.  Generally, any
+//       terminal that does #1 can be switched to do #3, and most terminals
+//       that do #2 can also do #3.
+//
+//       It's fairly simple in ANSI to detect which happens, but is not
+//       possible for dumb terminals (though I don't think I've ever seen
+//       anything but #2 there).  For things like VT52, PETSCII, and Mode7,
+//       the behaviour is well established.
+//
+//       We can easily emulate #2 if we know if #1 or #3 is currently
+//       occuring.  It's possible to emulate #1 with #2 as long as
+//       insert character is available, though it's trickier.
+//
+//       The problem with emulating #2 is that it scrolls the screen when
+//       the bottom-right cell is written to, which can have undesired
+//       consequences.  It also requires the suppression of CRLF after
+//       column 80 is written, which breaks the "a line is a line"
+//       abstraction.
+//
+//       The best would be to switch to #3 when possible, and emulate #1
+//       The behaviour would then match the most common implementations
+//       and be well controlled.  If only #1 is available, we can still
+//       always work as expected (modulo some variations between exact
+//       flag clearing conditions), and be able to avoid the scroll.
+//       Only terminals that implement #2 (rare) and don't allow switching
+//       to #3 (I'm not aware of any) would have problems.
+//
+//       This would resolve the long-standing issue of printing to column
+//       80 which almost every sysop that customizes their BBS has ran
+//       across in the past.
+//
+//       The sticky wicket here is what to do about doors.  The vast
+//       majority of them assume #2, but are tested with #1 they also
+//       generally assume 80x24.  It would be interesting to have a mode
+//       that (optionally) centres the door output in the current
+//       terminal.
 void Terminal::inc_column(unsigned count) {
 	column += count;
 	if (column >= cols) {
@@ -218,7 +264,29 @@ void Terminal::cond_contline() {
 }
 
 bool Terminal::supports(unsigned cmp_flags) {
-	return (flags & cmp_flags) == cmp_flags;
+	return (flags_ & cmp_flags) == cmp_flags;
+}
+
+bool Terminal::supports_any(unsigned cmp_flags) {
+	return (flags_ & cmp_flags);
+}
+
+uint32_t Terminal::charset() {
+	return (flags_ & CHARSET_FLAGS);
+}
+
+const char * Terminal::charset_str()
+{
+	switch(charset()) {
+		case CHARSET_PETSCII:
+			return "CBM-ASCII";
+		case CHARSET_UTF8:
+			return "UTF-8";
+		case CHARSET_ASCII:
+			return "US-ASCII";
+		default:
+			return "CP437";
+	}
 }
 
 list_node_t *Terminal::find_hotspot(unsigned x, unsigned y)
@@ -248,28 +316,15 @@ list_node_t *Terminal::find_hotspot(unsigned x, unsigned y)
 	return node;
 }
 
-static void
-flags_fixup(uint32_t& flags)
+uint32_t Terminal::flags(bool raw)
 {
-	if (flags & UTF8) {
-		// These bits are *never* available in UTF8 mode
-		// Note that RIP is not inherently incompatible with UTF8
-		flags &= ~(NO_EXASCII | PETSCII);
+	if (!raw) {
+		uint32_t newflags = get_flags(sbbs);
+		if (newflags != flags_)
+			update_terminal(sbbs);
 	}
-
-	if (!(flags & ANSI)) {
-		// These bits are *only* available in ANSI mode
-		flags &= ~(COLOR | RIP | ICE_COLOR | MOUSE);
-	}
-	else {
-		// These bits are *never* available in ANSI mode
-		flags &= ~(PETSCII);
-	}
-
-	if (flags & PETSCII) {
-		// These bits are *never* available in PETSCII mode
-		flags &= ~(COLOR | RIP | ICE_COLOR | MOUSE | NO_EXASCII | UTF8);
-	}
+	// TODO: We have potentially destructed ourselves now...
+	return sbbs->term->flags_;
 }
 
 void update_terminal(sbbs_t *sbbsptr)
@@ -294,12 +349,11 @@ void update_terminal(sbbs_t *sbbsptr)
 		delete sbbsptr->term;
 		sbbsptr->term = newTerm;
 	}
-	flags_fixup(sbbsptr->term->flags);
 }
 
 void update_terminal(sbbs_t *sbbsptr, Terminal *term)
 {
-	uint32_t flags = term->flags;
+	uint32_t flags = term->flags(true);
 	Terminal *newTerm;
 	if (flags & PETSCII)
 		newTerm = new PETSCII_Terminal(sbbsptr, term);
@@ -310,5 +364,4 @@ void update_terminal(sbbs_t *sbbsptr, Terminal *term)
 	if (sbbsptr->term)
 		delete sbbsptr->term;
 	sbbsptr->term = newTerm;
-	flags_fixup(sbbsptr->term->flags);
 }

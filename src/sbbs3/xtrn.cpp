@@ -1959,9 +1959,9 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 					bp = buf;
 					output_len = rd;
 				}
-				if (term->supports(PETSCII))
+				if (term->charset() == CHARSET_PETSCII)
 					petscii_convert(bp, output_len);
-				else if (term->supports(UTF8))
+				else if (term->charset() == CHARSET_UTF8)
 					bp = cp437_to_utf8(bp, output_len, utf8_buf, sizeof utf8_buf);
 			}
 			/* Did expansion overrun the output buffer? */

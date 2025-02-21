@@ -47,7 +47,7 @@ int sbbs_t::kbincom(unsigned int timeout)
 
 int sbbs_t::translate_input(int ch)
 {
-	if (term->flags & PETSCII) {
+	if (term->charset() == CHARSET_PETSCII) {
 		switch (ch) {
 			case PETSCII_HOME:
 				return TERM_KEY_HOME;
@@ -71,7 +71,7 @@ int sbbs_t::translate_input(int ch)
 		if (IS_ALPHA(ch))
 			ch ^= 0x20; /* Swap upper/lower case */
 	}
-	else if (term->flags & SWAP_DELETE) {
+	else if (term->supports(SWAP_DELETE)) {
 		switch (ch) {
 			case TERM_KEY_DELETE:
 				ch = '\b';
@@ -108,7 +108,7 @@ int sbbs_t::inkey(int mode, unsigned int timeout)
 	if (ch == NOINP)
 		return no_input;
 
-	if (term->supports(NO_EXASCII))
+	if (term->charset() == CHARSET_ASCII)
 		ch &= 0x7f; // e.g. strip parity bit
 
 	getkey_last_activity = time(NULL);
@@ -122,7 +122,7 @@ int sbbs_t::inkey(int mode, unsigned int timeout)
 
 	/* Translate (not control character) input into CP437 */
 	if (!(mode & K_UTF8)) {
-		if ((ch & 0x80) && term->supports(UTF8)) {
+		if ((ch & 0x80) && (term->charset() == CHARSET_UTF8)) {
 			char   utf8[UTF8_MAX_LEN] = { (char)ch };
 			size_t len = utf8_decode_firstbyte(ch);
 			if (len < 2 || len > sizeof(utf8))

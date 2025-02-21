@@ -97,7 +97,7 @@ bool sbbs_t::quotemsg(smb_t* smb, smbmsg_t* msg, bool tails)
 		BOOL is_utf8 = FALSE;
 		if (!str_is_ascii(buf)) {
 			if (smb_msg_is_utf8(msg)) {
-				if (term->supports(UTF8)
+				if ((term->charset() == CHARSET_UTF8)
 				    && (!useron_xedit || (cfg.xedit[useron_xedit - 1]->misc & XTRN_UTF8)))
 					is_utf8 = TRUE;
 				else {
@@ -105,7 +105,7 @@ bool sbbs_t::quotemsg(smb_t* smb, smbmsg_t* msg, bool tails)
 				}
 			} else { // CP437
 				char* orgtxt;
-				if (term->supports(UTF8)
+				if ((term->charset() == CHARSET_UTF8)
 				    && (!useron_xedit || (cfg.xedit[useron_xedit - 1]->misc & XTRN_UTF8))
 				    && (orgtxt = strdup(buf)) != NULL) {
 					is_utf8 = TRUE;
@@ -584,11 +584,11 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 			*editor = cfg.xedit[useron_xedit - 1]->name;
 		if (!str_is_ascii(subj)) {
 			if (utf8_str_is_valid(subj)) {
-				if (!term->supports(UTF8) || !(cfg.xedit[useron_xedit - 1]->misc & XTRN_UTF8)) {
+				if ((term->charset() != CHARSET_UTF8) || !(cfg.xedit[useron_xedit - 1]->misc & XTRN_UTF8)) {
 					utf8_to_cp437_inplace(subj);
 				}
 			} else { // CP437
-				if (term->supports(UTF8) && (cfg.xedit[useron_xedit - 1]->misc & XTRN_UTF8)) {
+				if ((term->charset() == CHARSET_UTF8) && (cfg.xedit[useron_xedit - 1]->misc & XTRN_UTF8)) {
 					cp437_to_utf8_str(subj, str, sizeof(str) - 1, /* minval: */ '\x80');
 					safe_snprintf(subj, LEN_TITLE + 1, "%s", str);
 				}
