@@ -5,6 +5,8 @@
 #include "utf8.h"
 #include "unicode.h"
 
+#ifdef __cplusplus
+
 struct mouse_hotspot {          // Mouse hot-spot
 	char     cmd[128];
 	unsigned y;
@@ -497,7 +499,16 @@ public:
 	uint32_t flags(bool raw = false);
 };
 
-void update_terminal(sbbs_t *sbbsptr);
 void update_terminal(sbbs_t *sbbsptr, Terminal *term);
+void update_terminal(sbbs_t *sbbsptr);
+
+extern "C" {
+#endif
+
+void update_terminal(void *sbbsptr, user_t *userptr);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

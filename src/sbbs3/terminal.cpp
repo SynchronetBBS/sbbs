@@ -365,3 +365,12 @@ void update_terminal(sbbs_t *sbbsptr, Terminal *term)
 		delete sbbsptr->term;
 	sbbsptr->term = newTerm;
 }
+
+extern "C" void update_terminal(void *sbbsptr, user_t *userptr)
+{
+	if (sbbsptr == nullptr || userptr == nullptr)
+		return;
+	sbbs_t *sbbs = static_cast<sbbs_t *>(sbbsptr);
+	if (&sbbs->useron == userptr)
+		update_terminal(sbbs);
+}
