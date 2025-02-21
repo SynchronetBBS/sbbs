@@ -885,7 +885,7 @@ void sbbs_t::qwkcfgline(char *buf, int subnum)
 		SKIP_WHITESPACE(fname);
 		for (x = y = 0; x < usrlibs; x++) {
 			for (y = 0; y < usrdirs[x]; y++)
-				if (loadfile(&cfg, usrdir[x][y], fname, &f, file_detail_normal))
+				if (loadfile(&cfg, usrdir[x][y], fname, &f, file_detail_normal, /* result: */NULL))
 					break;
 			if (y < usrdirs[x])
 				break;

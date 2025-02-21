@@ -3022,7 +3022,7 @@ bool user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
 	bool   removed = false;
 
 	filename = getfname(filename);
-	if (!loadfile(cfg, dirnum, filename, &f, file_detail_normal))
+	if (!loadfile(cfg, dirnum, filename, &f, file_detail_normal, NULL))
 		return false;
 
 	if (!bytes)
@@ -3042,14 +3042,14 @@ bool user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
 		if (strListCount(dest_user_list) < 1) {
 			char path[MAX_PATH + 1];
 			if (remove(getfilepath(cfg, &f, path)) == 0)
-				removed = removefile(cfg, dirnum, f.name);
+				removed = removefile(cfg, dirnum, f.name, NULL);
 		}
 		strListFree(&dest_user_list);
 	}
 
 	f.hdr.times_downloaded++;
 	f.hdr.last_downloaded = time32(NULL);
-	if (!removed && !updatefile(cfg, &f)) {
+	if (!removed && !updatefile(cfg, &f, NULL)) {
 		smb_freefilemem(&f);
 		return false;
 	}

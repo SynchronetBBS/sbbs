@@ -242,10 +242,11 @@ bool sbbs_t::movefile(smb_t* smb, file_t* f, int newdir)
 
 	newfile.dir = newdir;
 	newfile.dfield = NULL; // addfile() ends up realloc'ing dfield (in smb_addmsg)
-	bool result = addfile(&cfg, &newfile, newfile.extdesc, newfile.auxdata, /* client: */ NULL);
+	int errval;
+	bool result = addfile(&cfg, &newfile, newfile.extdesc, newfile.auxdata, /* client: */ NULL, &errval);
 	free(newfile.dfield);
 	if (!result) {
-		errormsg(WHERE, "adding file", f->name, newfile.dir);
+		errormsg(WHERE, "adding file", f->name, errval);
 		return false;
 	}
 	if (!removefile(smb, f)) // Use ::removefile() here instead?
@@ -297,7 +298,7 @@ bool sbbs_t::editfilename(file_t* f)
 	}
 	bprintf(text[FileRenamed], path, tmp);
 	smb_new_hfield_str(f, SMB_FILENAME, str);
-	return updatefile(&cfg, f);
+	return updatefile(&cfg, f, NULL);
 }
 
 bool sbbs_t::editfiledesc(file_t* f)
@@ -313,7 +314,7 @@ bool sbbs_t::editfiledesc(file_t* f)
 	if (f->desc != NULL && strcmp(fdesc, f->desc) == 0)
 		return true;
 	smb_new_hfield_str(f, SMB_FILEDESC, fdesc);
-	return updatefile(&cfg, f);
+	return updatefile(&cfg, f, NULL);
 }
 
 bool sbbs_t::editfileinfo(file_t* f)
@@ -365,5 +366,5 @@ bool sbbs_t::editfileinfo(file_t* f)
 			return false;
 		inputnstime32((time32_t*)&f->hdr.when_imported.time);
 	}
-	return updatefile(&cfg, f);
+	return updatefile(&cfg, f, NULL);
 }

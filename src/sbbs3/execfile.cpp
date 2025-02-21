@@ -392,7 +392,7 @@ int sbbs_t::exec_file(csi_t *csi)
 				for (y = 0; y < usrdirs[x]; y++) {
 					if (msgabort())
 						return 0;
-					if (loadfile(&cfg, usrdir[x][y], csi->str, &f, file_detail_normal)) {
+					if (loadfile(&cfg, usrdir[x][y], csi->str, &f, file_detail_normal, NULL)) {
 						addtobatdl(&f);
 						smb_freefilemem(&f);
 						csi->logic = LOGIC_TRUE;

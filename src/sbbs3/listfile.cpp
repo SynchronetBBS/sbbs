@@ -923,7 +923,7 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 							         , f->name, cfg.lib[cfg.dir[i]->lib]->sname, cfg.dir[i]->sname);
 							if (yesno(str)) {
 								f->dir = i;
-								addfile(&cfg, f, f->extdesc, f->auxdata, /* client: */ NULL);
+								addfile(&cfg, f, f->extdesc, f->auxdata, /* client: */ NULL, /* result: */NULL);
 							}
 						}
 					}

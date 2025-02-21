@@ -228,6 +228,16 @@ bool sbbs_t::batch_upload()
 }
 
 /****************************************************************************/
+/****************************************************************************/
+static const char* quoted_string(const char* str, char* buf, size_t maxlen)
+{
+	if (strchr(str, ' ') == NULL)
+		return str;
+	safe_snprintf(buf, maxlen, "\"%s\"", str);
+	return buf;
+}
+
+/****************************************************************************/
 /* Download files from batch queue                                          */
 /****************************************************************************/
 bool sbbs_t::start_batch_download()
@@ -323,12 +333,14 @@ bool sbbs_t::start_batch_download()
 		totalsize += getfilesize(&cfg, &f);
 		if (!(cfg.dir[f.dir]->misc & DIR_TFREE))
 			totaltime += gettimetodl(&cfg, &f, cur_cps);
-		SAFECAT(list, getfilepath(&cfg, &f, path));
+		char qpath[MAX_PATH + 1];
+		SAFECAT(list, quoted_string(getfilepath(&cfg, &f, path), qpath, sizeof qpath));
 		SAFECAT(list, " ");
 		smb_freefilemem(&f);
 	}
 	iniFreeStringList(ini);
 	iniFreeStringList(filenames);
+	truncsp(list);
 
 	if (!(useron.exempt & FLAG('T')) && !SYSOP && totaltime > (int64_t)timeleft) {
 		bputs(text[NotEnoughTimeToDl]);
@@ -429,6 +441,7 @@ bool sbbs_t::start_batch_download()
 bool sbbs_t::create_batchdn_lst(bool native)
 {
 	char  path[MAX_PATH + 1];
+	int   errval;
 
 	SAFEPRINTF(path, "%sBATCHDN.LST", cfg.node_dir);
 	FILE* fp = fopen(path, "wb");
@@ -452,8 +465,8 @@ bool sbbs_t::create_batchdn_lst(bool native)
 			batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
 			continue;
 		}
-		if (!loadfile(&cfg, f.dir, filename, &f, file_detail_index)) {
-			errormsg(WHERE, "loading file", filename, i);
+		if (!loadfile(&cfg, f.dir, filename, &f, file_detail_index, &errval)) {
+			errormsg(WHERE, "loading file", filename, errval);
 			batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
 			continue;
 		}
@@ -673,7 +686,7 @@ void sbbs_t::batch_add_list(char *list)
 					outchar('.');
 					if (k && !(k % 5))
 						bputs("\b\b\b\b\b     \b\b\b\b\b");
-					if (loadfile(&cfg, usrdir[i][j], str, &f, file_detail_normal)) {
+					if (loadfile(&cfg, usrdir[i][j], str, &f, file_detail_normal, NULL)) {
 						if (fexist(getfilepath(&cfg, &f, path)))
 							addtobatdl(&f);
 						else
