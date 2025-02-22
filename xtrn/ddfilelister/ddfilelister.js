@@ -156,6 +156,13 @@
  *                              Now optionally displays the number of files in the directory in the
  *                              header at the top of the list, configurable with the
  *                              displayNumFilesInHeader option in the config file
+ * 2025-02-22 Eric Oulashin     Version 2.28
+ *                              If extended descriptions are enabled and a filename is too long to
+ *                              fully fit in the menu, prepend the full filename (wrapped) to the
+ *                              description.
+ *                              New bottom line menu option to toggle extended descriptions on/off
+ *                              Fix: useFilenameIfNoDescription option now used in traditional
+ *                              (non-lightbar) mode.
  */
 
 "use strict";
@@ -197,8 +204,8 @@ var gAvatar = load({}, "avatar_lib.js");
 
 
 // Version information
-var LISTER_VERSION = "2.27";
-var LISTER_DATE = "2025-02-20";
+var LISTER_VERSION = "2.28";
+var LISTER_DATE = "2025-02-22";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -285,8 +292,9 @@ var FILE_DOWNLOAD_SINGLE = 4;
 var FILE_EDIT = 5;
 var HELP = 6;
 var QUIT = 7;
-var FILE_MOVE = 8;   // Sysop action
-var FILE_DELETE = 9; // Sysop action
+var TOGGLE_EXTD_DESCS = 8; // Toggle extended descriptions
+var FILE_MOVE = 9;   // Sysop action
+var FILE_DELETE = 10; // Sysop action
 
 var NEXT_PAGE = 10;
 var PREV_PAGE = 11;
@@ -495,6 +503,26 @@ if (gUseLightbarInterface && console.term_supports(USER_ANSI))
 				currentActionVal = FILE_DELETE;
 			}
 		}
+		else if (lastUserInputUpper == "X")
+		{
+			// Toggle extended descriptions
+			var userCanToggle = (Boolean(user.settings & USER_EXTDESC) ? true : userCanEnableExtendedDescriptions());
+			if (userCanToggle)
+			{
+				var currentSelectedItemIdx = gFileListMenu.selectedItemIdx;
+				user.settings ^= USER_EXTDESC;
+				var listPopRetObj = populateFileList(gScriptMode);
+				if (listPopRetObj.exitNow)
+					exit(0); // listPopRetObj.exitCode
+				gFileListMenu = createFileListMenu(fileMenuBar.getAllActionKeysStr(true, true) + KEY_LEFT + KEY_RIGHT + KEY_DEL /*+ CTRL_C*/);
+				gFileListMenu.SetSelectedItemIdx(currentSelectedItemIdx);
+				drawFileListMenu = true; // Ensure the menu re-draws itself (properly)
+				// If the user has enabled extended descriptions, then write the
+				// current selected file's extended description on the screen
+				if (Boolean(user.settings & USER_EXTDESC))
+					displayFileExtDescOnMainScreen(gFileListMenu.selectedItemIdx);
+			}
+		}
 		else
 		{
 			currentActionVal = fileMenuBar.getActionFromChar(lastUserInputUpper, false);
@@ -643,7 +671,7 @@ else
 	var topItemIndexForLastPage = allFileInfoLines.length - numLinesPerPage;
 
 	// Allowed keys for user input
-	var validOptionKeys = "IVBDEMNPFLQ?" + KEY_PAGEDN + KEY_PAGEUP + KEY_HOME + KEY_END;
+	var validOptionKeys = "IVBDEMNPFLXQ?" + KEY_PAGEDN + KEY_PAGEUP + KEY_HOME + KEY_END;
 	if (user.is_sysop)
 		validOptionKeys += KEY_DEL + KEY_BACKSPACE;
 	// If the user's terminal supports ANSI, then also allow left, right, and enter (option navigation & selection)
@@ -871,6 +899,21 @@ else
 			currentActionVal = LAST_PAGE;
 			//fileMenuBar.setCurrentActionCode(LAST_PAGE, !refreshWholePromptLine);
 			fileMenuBar.setCurrentActionCode(LAST_PAGE, true);
+		}
+		else if (userInput == "X")
+		{
+			// Toggle extended descriptions
+			var userCanToggle = (Boolean(user.settings & USER_EXTDESC) ? true : userCanEnableExtendedDescriptions());
+			if (userCanToggle)
+			{
+				user.settings ^= USER_EXTDESC;
+				allFileInfoLines = [];
+				for (var i = 0; i < gFileList.length; ++i)
+					allFileInfoLines = allFileInfoLines.concat(getFileInfoLineArrayForTraditionalUI(gFileList, i, formatInfo));
+				topItemIndexForLastPage = allFileInfoLines.length - numLinesPerPage;
+				drawMenu = true;
+				drawDirHeaderLines = true;
+			}
 		}
 		else
 		{
@@ -1949,6 +1992,8 @@ function displayHelpScreen()
 		printf(printfStr, "M", "Move the file(s) to another directory");
 		printf(printfStr, "DEL", "Delete the file(s)");
 	}
+	if (userCanEnableExtendedDescriptions())
+		printf(printfStr, "X", "Toggle extended descriptions (currently " + (Boolean(user.settings & USER_EXTDESC) ? "on" : "off") + ")");
 	printf(printfStr, "?", "Show this help screen");
 	// Ctrl-C for aborting (wanted to use isDoingFileSearch() but it seems even for searching/scanning,
 	// the mode is LIST_DIR rather than a search/scan
@@ -2627,13 +2672,22 @@ function DDFileMenuBar(pPos)
 		// The user is not a sysop; there is room for the Edit comand
 		this.cmdArray.push(new DDFileMenuBarItem("Edit", 0, FILE_EDIT));
 	}
-	//DDFileMenuBarItem(pItemText, pPos, pRetCode, pHotkeyOverride)
 	if (!gUseLightbarInterface || !console.term_supports(USER_ANSI))
 	{
 		this.cmdArray.push(new DDFileMenuBarItem("Next", 0, NEXT_PAGE, KEY_PAGEDN));
 		this.cmdArray.push(new DDFileMenuBarItem("Prev", 0, PREV_PAGE, KEY_PAGEUP));
 		this.cmdArray.push(new DDFileMenuBarItem("First", 0, FIRST_PAGE));
 		this.cmdArray.push(new DDFileMenuBarItem("Last", 0, LAST_PAGE));
+	}
+	// If the user can enable extended descriptions (terminal size is big enough and the
+	// user's terminal supports ANSI), add a command ("Xtd") to toggle extended descriptions.
+	// And if the user's terminal is less than 87 characters wide and using the traditional
+	// (non-lightbar) user interface and the user is a sysop, don't make it visible because
+	// there wouldn't be enough room to display it.
+	if (userCanEnableExtendedDescriptions())
+	{
+		var displayXtdCmdText = !(console.screen_columns < 87 && !gUseLightbarInterface && user.is_sysop);
+		this.cmdArray.push(new DDFileMenuBarItem("Xtd", 0, TOGGLE_EXTD_DESCS, null, displayXtdCmdText));
 	}
 	this.cmdArray.push(new DDFileMenuBarItem("?", 0, HELP));
 	this.cmdArray.push(new DDFileMenuBarItem("Quit", 0, QUIT));
@@ -2648,12 +2702,19 @@ function DDFileMenuBar(pPos)
 // Return value: The number of additional solid blocks used to fill the whole screen row
 function DDFileMenuBar_constructPromptText()
 {
+	var numDisplayableItems = 0;
 	var totalItemTextLen = 0;
 	for (var i = 0; i < this.cmdArray.length; ++i)
-		totalItemTextLen += this.cmdArray[i].itemText.length;
+	{
+		if (this.cmdArray[i].displayItem)
+		{
+			++numDisplayableItems;
+			totalItemTextLen += this.cmdArray[i].itemText.length;
+		}
+	}
 	// The number of inner characters (without the outer solid blocks) is the total text
 	// length of all the items + 2 characters for each item except the last one
-	var numInnerChars = totalItemTextLen + (2 * (this.cmdArray.length-1));
+	var numInnerChars = totalItemTextLen + (2 * (numDisplayableItems-1));
 	// The number of solid blocks: Subtracting 11 because there will be 5 block characters on each side,
 	// and subtract 1 extra so it doesn't fill the last character on the screen
 	var numSolidBlocks = console.screen_columns - numInnerChars - 11;
@@ -2665,8 +2726,13 @@ function DDFileMenuBar_constructPromptText()
 	this.promptText += THIN_RECTANGLE_LEFT;
 	// Add the menu item text & block characters
 	var menuItemXPos = 6 + numSolidBlocksPerSide; // The X position of the start of item text for each item
+	var maxPromptLineLen = console.screen_columns - 1; // Maximum length of the prompt line
 	for (var i = 0; i < this.cmdArray.length; ++i)
 	{
+		// If the current item's displayItem property is false, then skip it.
+		if (!this.cmdArray[i].displayItem)
+			continue;
+
 		this.cmdArray[i].pos = menuItemXPos;
 		var numTrailingBlockChars = 0;
 		var selected = (i == this.currentCommandIdx);
@@ -2676,8 +2742,17 @@ function DDFileMenuBar_constructPromptText()
 			withTrailingBlock = true;
 			numTrailingBlockChars = 2;
 		}
-		menuItemXPos += this.cmdArray[i].itemText.length + numTrailingBlockChars;
-		this.promptText += this.getDDFileMenuBarItemText(this.cmdArray[i].itemText, selected, withTrailingBlock);
+		//menuItemXPos += this.cmdArray[i].itemText.length + numTrailingBlockChars;
+		//this.promptText += this.getDDFileMenuBarItemText(this.cmdArray[i].itemText, selected, withTrailingBlock);
+
+		// If the line with this item text would be short enough to fit on the screen,
+		// then add this item's text
+		var numCharsNeeded = this.cmdArray[i].itemText.length + numTrailingBlockChars;
+		if (console.strlen(this.promptText) + numCharsNeeded + numSolidBlocksPerSide <= maxPromptLineLen)
+		{
+			menuItemXPos += this.cmdArray[i].itemText.length + numTrailingBlockChars;
+			this.promptText += this.getDDFileMenuBarItemText(this.cmdArray[i].itemText, selected, withTrailingBlock);
+		}
 	}
 	// Add the right-side blocks
 	this.promptText += "\x01w" + THIN_RECTANGLE_RIGHT;
@@ -2708,7 +2783,9 @@ function DDFileMenuBar_refreshWithNewAction(pCmdIdx)
 {
 	if (typeof(pCmdIdx) !== "number")
 		return;
-	if (pCmdIdx == this.currentCommandIdx)
+	if (pCmdIdx == this.currentCommandIdx || pCmdIdx < 0 || pCmdIdx >= this.cmdArray.length)
+		return;
+	if (!this.cmdArray[pCmdIdx].displayItem)
 		return;
 
 	// Refresh the prompt area for the previous index with regular colors
@@ -2767,8 +2844,14 @@ function DDFileMenuBar_getDDFileMenuBarItemText(pText, pSelected, pWithTrailingB
 function DDFileMenuBar_incrementMenuItemAndRefresh()
 {
 	var newCmdIdx = this.currentCommandIdx + 1;
+	while (newCmdIdx < this.cmdArray.length && !this.cmdArray[newCmdIdx].displayItem)
+		++newCmdIdx;
 	if (newCmdIdx >= this.cmdArray.length)
+	{
 		newCmdIdx = 0;
+		while (newCmdIdx < this.currentCommandIdx && !this.cmdArray[newCmdIdx].displayItem)
+			++newCmdIdx;
+	}
 	// Will set this.currentCommandIdx
 	this.refreshWithNewAction(newCmdIdx);
 }
@@ -2777,8 +2860,14 @@ function DDFileMenuBar_incrementMenuItemAndRefresh()
 function DDFileMenuBar_decrementMenuItemAndRefresh()
 {
 	var newCmdIdx = this.currentCommandIdx - 1;
+	while (newCmdIdx > 0 && !this.cmdArray[newCmdIdx].displayItem)
+		--newCmdIdx;
 	if (newCmdIdx < 0)
+	{
 		newCmdIdx = this.cmdArray.length - 1;
+		while (newCmdIdx > this.currentCommandIdx && !this.cmdArray[newCmdIdx].displayItem)
+			--newCmdIdx;
+	}
 	// Will set this.currentCommandIdx
 	this.refreshWithNewAction(newCmdIdx);
 }
@@ -2850,7 +2939,7 @@ function DDFileMenuBar_setCurrentActionCode(pActionCode, pRefreshOnScreen)
 	{
 		if (this.cmdArray[i].retCode == pActionCode)
 		{
-			if (refreshOnScreen)
+			if (refreshOnScreen && this.cmdArray[i].displayItem)
 				this.refreshWithNewAction(i);
 			else
 			{
@@ -2890,8 +2979,9 @@ function DDFileMenuBar_getAllActionKeysStr(pLowercase, pUppercase)
 //  pItemText: The text of the item
 //  pPos: Horizontal (or vertical) starting location in the bar
 //  pRetCode: The item's return code
-//  pHotkeyOverride: Optional: A key to use for the action instead of the first character in pItemText
-function DDFileMenuBarItem(pItemText, pPos, pRetCode, pHotkeyOverride)
+//  pHotkeyOverride: Optional - A key to use for the action instead of the first character in pItemText
+//  pDisplayItem: Optional - Whether or not this item should be displayed on the menu bar. Defaults to true.
+function DDFileMenuBarItem(pItemText, pPos, pRetCode, pHotkeyOverride, pDisplayItem)
 {
 	this.itemText = pItemText;
 	this.pos = pPos;
@@ -2899,6 +2989,7 @@ function DDFileMenuBarItem(pItemText, pPos, pRetCode, pHotkeyOverride)
 	this.hotkeyOverride = null;
 	if (pHotkeyOverride != null && typeof(pHotkeyOverride) !== "undefined")
 		this.hotkeyOverride = pHotkeyOverride;
+	this.displayItem = (typeof(pDisplayItem) === "boolean" ? pDisplayItem : true);
 }
 
 
@@ -3326,7 +3417,6 @@ function displayListHdrLine(pMoveToLocationFirst, pNumberedMode)
 // Return value: The DDLightbarMenu object for the file list in the file directory
 function createFileListMenu(pQuitKeys)
 {
-	//DDLightbarMenu(pX, pY, pWidth, pHeight)
 	// Create the menu object.  Place it below the header lines (which should have been written
 	// before this), and also leave 1 row at the bottom for the prompt line
 	var startRow = gNumHeaderLinesDisplayed > 0 ? gNumHeaderLinesDisplayed + 1 : 1;
@@ -4577,7 +4667,7 @@ function populateFileList(pSearchMode)
 		exitNow: false,
 		exitCode: 0
 	};
-	
+
 	var dirErrors = [];
 	var allSameDir = true;
 
@@ -5160,6 +5250,13 @@ function extendedDescEnabled()
 	return userExtDescEnabled && console.screen_columns >= 80 && gUseLightbarInterface && console.term_supports(USER_ANSI);
 }
 
+// Returns whether the user can enable extended descriptions (depends on their terminal size and whether
+// their terminal can use ANSI)
+function userCanEnableExtendedDescriptions()
+{
+	return console.screen_columns >= 80 && console.term_supports(USER_ANSI);
+}
+
 // Displays a file's extended description on the main screen, next to the
 // file list menu.  This is to be used when the user's extended file description
 // option is enabled (where the menu would take up about the left half of
@@ -5230,10 +5327,15 @@ function displayFileExtDescOnMainScreen(pFileIdx, pStartScreenRow, pEndScreenRow
 	fileDesc = removeOrReplaceSyncCursorMovementChars(fileDesc);
 	// If there is no description and the option to use the filename is enabled, then use the
 	// filename.
-	if (gUseFilenameIfNoDescription && (fileDesc == "" || /^\s+$/.test(fileDesc)))
+	var fileDescIsEmptyOrWhitespace = (fileDesc == "" || /^\s+$/.test(fileDesc));
+	if (gUseFilenameIfNoDescription && fileDescIsEmptyOrWhitespace)
 		fileDesc = lfexpand(word_wrap(fileMetadata.name + "\r\n(No description)", maxDescLen, null, false));
+	// If there is a description and the filename is too long to fit on the menu, then prepend the
+	// full filename (wrapped) to the the description
+	else if (!fileDescIsEmptyOrWhitespace && fileMetadata.name.length > gFileListMenu.filenameLen)
+		fileDesc = lfexpand(word_wrap(fileMetadata.name, maxDescLen, null, false)) + "\r\n" + fileDesc;
+	// Display the description on the screen
 	var fileDescArray = fileDesc.split("\r\n");
-	//if (user.is_sysop) console.print("\x01nfileDescArray is array: " + Array.isArray(fileDescArray) + "  \x01p"); // Temporary
 	console.attributes = "N";
 	// screenRowNum is to keep track of the row on the screen where the
 	// description line would be placed, in case the start row is after that
@@ -5498,9 +5600,8 @@ function getFileInfoLineArrayForTraditionalUI(pFileList, pIdx, pFormatInfo)
 	if (pFileList[pIdx] == undefined)
 		return [];
 
-	var userExtDescEnabled = ((user.settings & USER_EXTDESC) == USER_EXTDESC);
 	var descLines;
-	if (userExtDescEnabled)
+	if (Boolean(user.settings & USER_EXTDESC)) // If extended descriptions
 		descLines = getExtdFileDescArray(pFileList, pIdx);
 	else
 	{
@@ -5510,14 +5611,38 @@ function getFileInfoLineArrayForTraditionalUI(pFileList, pIdx, pFormatInfo)
 	if (!Array.isArray(descLines))
 		descLines = [];
 	if (descLines.length == 0)
-		descLines.push("");
+	{
+		// There is no description. If the option to use the filename is enabled, then use the filename.
+		if (gUseFilenameIfNoDescription)
+		{
+			var fileDesc = lfexpand(word_wrap(pFileList[pIdx].name + "\r\n(No description)", pFormatInfo.descLen, null, false));
+			var fileDescArray = fileDesc.split("\r\n");
+			for (var i = 0; i < fileDescArray.length; ++i)
+				descLines.push(fileDescArray[i]);
+		}
+		else
+			descLines.push("");
+	}
+	else
+	{
+		// If the filename is too long to fit on the menu, then prepend the full filename (wrapped) to
+		// the the description.
+		if (pFileList[pIdx].name.length > gFileListMenu.filenameLen)
+		{
+			var filenameLines = [];
+			var fileDescArray = lfexpand(word_wrap(pFileList[pIdx].name, pFormatInfo.descLen, null, false)).split("\r\n");
+			for (var i = 0; i < fileDescArray.length; ++i)
+				filenameLines.push(fileDescArray[i]);
+			descLines = filenameLines.concat(descLines);
+		}
+	}
 
 	var filename = shortenFilename(pFileList[pIdx].name, pFormatInfo.filenameLen, true);
 	// Note: substrWithAttrCodes() is defined in dd_lightbar_menu.js
 	var fileInfoLines = [];
 	var fileSizeStr = file_size_str(pFileList[pIdx].size, null, FILE_SIZE_PRECISION);
 	fileInfoLines.push(format(pFormatInfo.formatStr, pIdx+1, filename, fileSizeStr.substr(0, pFormatInfo.fileSizeLen), substrWithAttrCodes(descLines[0], 0, pFormatInfo.descLen)));
-	if (userExtDescEnabled)
+	if (Boolean(user.settings & USER_EXTDESC)) // If extended descriptions
 	{
 		for (var i = 1; i < descLines.length; ++i)
 			fileInfoLines.push(format(pFormatInfo.formatStrExtdDescLines, substrWithAttrCodes(descLines[i], 0, pFormatInfo.descLen)));
