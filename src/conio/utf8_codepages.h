@@ -1,9 +1,12 @@
 #ifndef UTF8_CODEPAGES_H
 #define UTF8_CODEPAGES_H
 
+#include <stdbool.h>
+
 enum ciolib_codepage {
 	CIOLIB_CP437,
 	CIOLIB_CP1251,
+	CIOLIB_CP1251_B,
 	CIOLIB_KOI8_R,
 	CIOLIB_ISO_8859_2,
 	CIOLIB_ISO_8859_4,
@@ -14,7 +17,9 @@ enum ciolib_codepage {
 	CIOLIB_ISO_8859_15,
 	CIOLIB_ISO_8859_5,
 	CIOLIB_CP850,
+	CIOLIB_CP850_B,
 	CIOLIB_CP865,
+	CIOLIB_CP865_B,
 	CIOLIB_ISO_8859_7,
 	CIOLIB_ISO_8859_1,
 	CIOLIB_CP866M2,
@@ -43,6 +48,7 @@ struct codepage_def {
 	const size_t cp_table_sz;
 	const uint32_t *cp_unicode_table;
 	const uint32_t *cp_ext_unicode_table;
+	const bool broken_vertical;
 };
 
 #ifdef __cplusplus
