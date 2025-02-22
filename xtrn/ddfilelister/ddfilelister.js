@@ -452,16 +452,16 @@ if (gFileList.length == 0)
 }
 
 // Construct and display the menu/command bar at the bottom of the screen
-var fileMenuBar = new DDFileMenuBar({ x: 1, y: console.screen_rows });
+var gFileMenuBar = new DDFileMenuBar({ x: 1, y: console.screen_rows });
 // Clear the screen and display the header lines
 console.clear("\x01n");
 if ((gListBehavior & FL_NO_HDR) != FL_NO_HDR)
 	displayFileLibAndDirHeader(false, null, !gUseLightbarInterface || !console.term_supports(USER_ANSI));
 // Create the file list menu (must be done after displayFileLibAndDirHeader() when using ANSI and lightbar)
-var gFileListMenu = createFileListMenu(fileMenuBar.getAllActionKeysStr(true, true) + KEY_LEFT + KEY_RIGHT + KEY_DEL /*+ CTRL_C*/);
+var gFileListMenu = createFileListMenu(gFileMenuBar.getAllActionKeysStr(true, true) + KEY_LEFT + KEY_RIGHT + KEY_DEL /*+ CTRL_C*/);
 if (gUseLightbarInterface && console.term_supports(USER_ANSI))
 {
-	fileMenuBar.writePromptLine();
+	gFileMenuBar.writePromptLine();
 	// In a loop, show the file list menu, allowing the user to scroll the file list,
 	// and respond to user input until the user decides to quit.
 	gFileListMenu.Draw({});
@@ -483,14 +483,25 @@ if (gUseLightbarInterface && console.term_supports(USER_ANSI))
 		if (lastUserInputUpper == null || lastUserInputUpper == "Q" || console.aborted)
 			continueDoingFileList = false;
 		else if (lastUserInputUpper == KEY_LEFT)
-			fileMenuBar.decrementMenuItemAndRefresh();
+			gFileMenuBar.decrementMenuItemAndRefresh();
 		else if (lastUserInputUpper == KEY_RIGHT)
-			fileMenuBar.incrementMenuItemAndRefresh();
+			gFileMenuBar.incrementMenuItemAndRefresh();
 		else if (lastUserInputUpper == KEY_ENTER)
 		{
-			currentActionVal = fileMenuBar.getCurrentSelectedAction();
-			fileMenuBar.setCurrentActionCode(currentActionVal);
-			actionRetObj = doAction(currentActionVal, gFileList, gFileListMenu);
+			currentActionVal = gFileMenuBar.getCurrentSelectedAction();
+			gFileMenuBar.setCurrentActionCode(currentActionVal);
+			if (currentActionVal == TOGGLE_EXTD_DESCS)
+			{
+				// Toggle extended descriptions
+				toggleExtdDescriptionsForUser_Lightbar();
+				drawFileListMenu = true; // Ensure the menu re-draws itself (properly)
+				actionRetObj = null;
+			}
+			else
+			{
+				// Handle actions (other than extended description toggle)
+				actionRetObj = doAction(currentActionVal, gFileList, gFileListMenu);
+			}
 		}
 		// Allow the delete key as a special key for sysops to delete the selected file(s). Also allow backspace
 		// due to some terminals returning backspace for delete.
@@ -498,36 +509,27 @@ if (gUseLightbarInterface && console.term_supports(USER_ANSI))
 		{
 			if (user.is_sysop)
 			{
-				fileMenuBar.setCurrentActionCode(FILE_DELETE, true);
+				gFileMenuBar.setCurrentActionCode(FILE_DELETE, true);
 				actionRetObj = doAction(FILE_DELETE, gFileList, gFileListMenu);
 				currentActionVal = FILE_DELETE;
 			}
 		}
-		else if (lastUserInputUpper == "X")
-		{
-			// Toggle extended descriptions
-			var userCanToggle = (Boolean(user.settings & USER_EXTDESC) ? true : userCanEnableExtendedDescriptions());
-			if (userCanToggle)
-			{
-				var currentSelectedItemIdx = gFileListMenu.selectedItemIdx;
-				user.settings ^= USER_EXTDESC;
-				var listPopRetObj = populateFileList(gScriptMode);
-				if (listPopRetObj.exitNow)
-					exit(0); // listPopRetObj.exitCode
-				gFileListMenu = createFileListMenu(fileMenuBar.getAllActionKeysStr(true, true) + KEY_LEFT + KEY_RIGHT + KEY_DEL /*+ CTRL_C*/);
-				gFileListMenu.SetSelectedItemIdx(currentSelectedItemIdx);
-				drawFileListMenu = true; // Ensure the menu re-draws itself (properly)
-				// If the user has enabled extended descriptions, then write the
-				// current selected file's extended description on the screen
-				if (Boolean(user.settings & USER_EXTDESC))
-					displayFileExtDescOnMainScreen(gFileListMenu.selectedItemIdx);
-			}
-		}
 		else
 		{
-			currentActionVal = fileMenuBar.getActionFromChar(lastUserInputUpper, false);
-			fileMenuBar.setCurrentActionCode(currentActionVal, true);
-			actionRetObj = doAction(currentActionVal, gFileList, gFileListMenu);
+			currentActionVal = gFileMenuBar.getActionFromChar(lastUserInputUpper, false);
+			gFileMenuBar.setCurrentActionCode(currentActionVal, true);
+			if (currentActionVal == TOGGLE_EXTD_DESCS)
+			{
+				// Toggle extended descriptions
+				toggleExtdDescriptionsForUser_Lightbar();
+				drawFileListMenu = true; // Ensure the menu re-draws itself (properly)
+				actionRetObj = null;
+			}
+			else
+			{
+				// Handle actions (other than extended description toggle)
+				actionRetObj = doAction(currentActionVal, gFileList, gFileListMenu);
+			}
 		}
 		// If an action was done (actionRetObj is not null), then look at actionRetObj and
 		// do what's needed.  Note that quit (for the Q key) is already handled.
@@ -551,8 +553,8 @@ if (gUseLightbarInterface && console.term_supports(USER_ANSI))
 						displayFileLibAndDirHeader(false, null, gFileListMenu.numberedMode);
 					}
 				}
-				if (actionRetObj.reDrawCmdBar) // Could call fileMenuBar.constructPromptText(); if needed
-					fileMenuBar.writePromptLine();
+				if (actionRetObj.reDrawCmdBar) // Could call gFileMenuBar.constructPromptText(); if needed
+					gFileMenuBar.writePromptLine();
 				var redrewPartOfFileListMenu = false;
 				// If we are to re-draw the main screen content, then
 				// enable the flag to draw the file list menu on the next
@@ -708,16 +710,16 @@ else
 		}
 
 		if (refreshWholePromptLine || drawMenu)
-			fileMenuBar.pos = console.getxy();
+			gFileMenuBar.pos = console.getxy();
 		if (refreshWholePromptLine)
-			fileMenuBar.writePromptLine();
+			gFileMenuBar.writePromptLine();
 		var userInput = console.getkeys(validOptionKeys, -1, K_UPPER|K_NOECHO|K_NOSPIN|K_NOCRLF).toString();
 		// If the user pressed the enter key, change userInput to the key
 		// corresponding to what we'd expect for that option
 		if (userInput == KEY_ENTER)
 		{
-			//currentActionVal = fileMenuBar.getCurrentSelectedAction();
-			switch (fileMenuBar.getCurrentSelectedAction())
+			//currentActionVal = gFileMenuBar.getCurrentSelectedAction();
+			switch (gFileMenuBar.getCurrentSelectedAction())
 			{
 				case NEXT_PAGE:
 					userInput = KEY_PAGEDN;
@@ -739,14 +741,14 @@ else
 		// Check action based on the user's last input
 		if (userInput == KEY_LEFT)
 		{
-			fileMenuBar.decrementMenuItemAndRefresh();
+			gFileMenuBar.decrementMenuItemAndRefresh();
 			drawDirHeaderLines = false;
 			drawMenu = false;
 			refreshWholePromptLine = false;
 		}
 		else if (userInput == KEY_RIGHT)
 		{
-			fileMenuBar.incrementMenuItemAndRefresh();
+			gFileMenuBar.incrementMenuItemAndRefresh();
 			drawDirHeaderLines = false;
 			drawMenu = false;
 			refreshWholePromptLine = false;
@@ -756,8 +758,8 @@ else
 			drawDirHeaderLines = true;
 			drawMenu = true;
 			refreshWholePromptLine = true;
-			currentActionVal = fileMenuBar.getCurrentSelectedAction();
-			fileMenuBar.setCurrentActionCode(currentActionVal);
+			currentActionVal = gFileMenuBar.getCurrentSelectedAction();
+			gFileMenuBar.setCurrentActionCode(currentActionVal);
 			actionRetObj = doAction(currentActionVal, gFileList, gFileListMenu);
 		}
 		// Allow the delete key as a special key for sysops to delete the selected file(s). Also allow backspace
@@ -769,7 +771,7 @@ else
 				drawDirHeaderLines = true;
 				drawMenu = true;
 				refreshWholePromptLine = true;
-				fileMenuBar.setCurrentActionCode(FILE_DELETE, true);
+				gFileMenuBar.setCurrentActionCode(FILE_DELETE, true);
 				actionRetObj = doAction(FILE_DELETE, gFileList, gFileListMenu);
 				currentActionVal = FILE_DELETE;
 			}
@@ -835,8 +837,8 @@ else
 				refreshWholePromptLine = false;
 			}
 			currentActionVal = NEXT_PAGE;
-			//fileMenuBar.setCurrentActionCode(NEXT_PAGE, !refreshWholePromptLine);
-			fileMenuBar.setCurrentActionCode(NEXT_PAGE, true);
+			//gFileMenuBar.setCurrentActionCode(NEXT_PAGE, !refreshWholePromptLine);
+			gFileMenuBar.setCurrentActionCode(NEXT_PAGE, true);
 		}
 		else if (userInput == "P" || userInput == KEY_PAGEUP)
 		{
@@ -857,8 +859,8 @@ else
 				refreshWholePromptLine = false;
 			}
 			currentActionVal = PREV_PAGE;
-			//fileMenuBar.setCurrentActionCode(PREV_PAGE, !refreshWholePromptLine);
-			fileMenuBar.setCurrentActionCode(PREV_PAGE, true);
+			//gFileMenuBar.setCurrentActionCode(PREV_PAGE, !refreshWholePromptLine);
+			gFileMenuBar.setCurrentActionCode(PREV_PAGE, true);
 		}
 		else if (userInput == "F" || userInput == KEY_HOME)
 		{
@@ -877,8 +879,8 @@ else
 				refreshWholePromptLine = false;
 			}
 			currentActionVal = FIRST_PAGE;
-			//fileMenuBar.setCurrentActionCode(FIRST_PAGE, !refreshWholePromptLine);
-			fileMenuBar.setCurrentActionCode(FIRST_PAGE, true);
+			//gFileMenuBar.setCurrentActionCode(FIRST_PAGE, !refreshWholePromptLine);
+			gFileMenuBar.setCurrentActionCode(FIRST_PAGE, true);
 		}
 		else if (userInput == "L" || userInput == KEY_END)
 		{
@@ -897,8 +899,8 @@ else
 				refreshWholePromptLine = false;
 			}
 			currentActionVal = LAST_PAGE;
-			//fileMenuBar.setCurrentActionCode(LAST_PAGE, !refreshWholePromptLine);
-			fileMenuBar.setCurrentActionCode(LAST_PAGE, true);
+			//gFileMenuBar.setCurrentActionCode(LAST_PAGE, !refreshWholePromptLine);
+			gFileMenuBar.setCurrentActionCode(LAST_PAGE, true);
 		}
 		else if (userInput == "X")
 		{
@@ -920,8 +922,8 @@ else
 			drawDirHeaderLines = true;
 			drawMenu = true;
 			refreshWholePromptLine = true;
-			currentActionVal = fileMenuBar.getActionFromChar(userInput, false);
-			fileMenuBar.setCurrentActionCode(currentActionVal, true);
+			currentActionVal = gFileMenuBar.getActionFromChar(userInput, false);
+			gFileMenuBar.setCurrentActionCode(currentActionVal, true);
 			actionRetObj = doAction(currentActionVal, gFileList, gFileListMenu);
 		}
 	}
@@ -1033,6 +1035,29 @@ function doAction(pActionCode, pFileList, pFileListMenu)
 	}
 
 	return retObj;
+}
+
+// Toggles the user's extended descriptions. This is a special action case for the
+// lightbar interface which re-creates the lightbar menu, which will behave differently
+// depending on whether the user's extended descriptions are enabled or not.
+function toggleExtdDescriptionsForUser_Lightbar()
+{
+	// Toggle extended descriptions
+	var userCanToggle = (Boolean(user.settings & USER_EXTDESC) ? true : userCanEnableExtendedDescriptions());
+	if (userCanToggle)
+	{
+		var currentSelectedItemIdx = gFileListMenu.selectedItemIdx;
+		user.settings ^= USER_EXTDESC;
+		var listPopRetObj = populateFileList(gScriptMode);
+		if (listPopRetObj.exitNow) // Shouldn't happen here, but just in case
+			exit(0);
+		gFileListMenu = createFileListMenu(gFileMenuBar.getAllActionKeysStr(true, true) + KEY_LEFT + KEY_RIGHT + KEY_DEL /*+ CTRL_C*/);
+		gFileListMenu.SetSelectedItemIdx(currentSelectedItemIdx);
+		// If the user has enabled extended descriptions, then write the
+		// current selected file's extended description on the screen
+		if (Boolean(user.settings & USER_EXTDESC))
+			displayFileExtDescOnMainScreen(gFileListMenu.selectedItemIdx);
+	}
 }
 
 // Returns a string representing an action code, for relevant actions (not necessarily all actions)
