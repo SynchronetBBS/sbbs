@@ -470,8 +470,8 @@ size_t sbbs_t::term_out(int ich)
 		return 0;
 	if (!online)
 		return 0;
-	if (!term->parse_outchar(ch))
-		return 1;
+	// We do this before parse_outchar() so parse_outchar() can
+	// prevent \n from ending up at the start of the line buffer.
 	if (term->lbuflen < LINE_BUFSIZE) {
 		if (term->lbuflen == 0)
 			term->latr = term->curatr;
@@ -481,6 +481,8 @@ size_t sbbs_t::term_out(int ich)
 		// not part of C64 PETSCII.
 		term->lbuf[term->lbuflen++] = ch;
 	}
+	if (!term->parse_outchar(ch))
+		return 1;
 	if (ch == TELNET_IAC && !(telnet_mode & TELNET_MODE_OFF)) {
 		if (outcom(TELNET_IAC))
 			return 0;
