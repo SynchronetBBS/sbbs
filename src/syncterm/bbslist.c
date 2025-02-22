@@ -1179,6 +1179,7 @@ build_edit_list(struct bbslist *item, char opt[][69], int *optmap, char **opts, 
 	bool is_ansi = true;
 	bool is_serial = ((item->conn_type == CONN_TYPE_MODEM) || (item->conn_type == CONN_TYPE_SERIAL)
 	|| (item->conn_type == CONN_TYPE_SERIAL_NORTS));
+	bool is_c128_80 = item->screen_mode == SCREEN_MODE_C128_80;
 
 	if (!isdefault) {
 		optmap[i] = BBSLIST_FIELD_NAME;
@@ -1278,6 +1279,8 @@ build_edit_list(struct bbslist *item, char opt[][69], int *optmap, char **opts, 
 		sprintf(opt[i++], "RIP               %s", rip_versions[item->rip]);
 		optmap[i] = BBSLIST_FIELD_FORCE_LCF;
 		sprintf(opt[i++], "Force LCF Mode    %s", item->force_lcf ? "Yes" : "No");
+	}
+	if (is_ansi || is_c128_80) {
 		optmap[i] = BBSLIST_FIELD_YELLOW_IS_YELLOW;
 		sprintf(opt[i++], "Yellow is Yellow  %s", item->yellow_is_yellow ? "Yes" : "No");
 	}
