@@ -1900,7 +1900,7 @@ cpoint_from_cptable(uint8_t ch, const struct codepage_def *cpdef)
 {
 	if (ch < 128) {
 		if (ch == 0x7C && cpdef->broken_vertical)
-			return 0x86;
+			return 0xA6;
 		return ch;
 	}
 	return cpdef->cp_unicode_table[ch - 128];
@@ -2031,8 +2031,12 @@ cpstr_to_utf8(const char *cpstr, size_t buflen, size_t *outlen, const struct cod
 		ch = cpstr[idx];
 		if (ch == 0)
 			cplen = 4;
-		else if (ch < 128)
-			cplen = 1;
+		else if (ch < 128) {
+			if (ch == 0x7C && cpdef->broken_vertical)
+				cplen = 2;
+			else
+				cplen = 1;
+		}
 		else
 			cplen = utf8_bytes(cpdef->cp_unicode_table[ch - 128]);
 		if (cplen == -1)
@@ -2054,8 +2058,15 @@ cpstr_to_utf8(const char *cpstr, size_t buflen, size_t *outlen, const struct cod
 			cplen = 0;
 		}
 		else if (ch < 128) {
-			*rp = ch;
-			cplen = 1;
+			if (ch == 0x7C && cpdef->broken_vertical) {
+				cplen = write_cp(rp, 0xA6);
+				if (cplen != 2)
+					goto error;
+			}
+			else {
+				*rp = ch;
+				cplen = 1;
+			}
 		}
 		else {
 			cplen = write_cp(rp, cpdef->cp_unicode_table[ch - 128]);
