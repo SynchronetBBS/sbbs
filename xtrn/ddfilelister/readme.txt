@@ -1,6 +1,6 @@
                         Digital Distortion File Lister
-                                 Version 2.27
-                           Release date: 2025-02-20
+                                 Version 2.28
+                           Release date: 2025-02-22
 
                                      by
 
@@ -35,10 +35,10 @@ that there are no serious issues with it (at least, none that I have seen).
 
 2. Introduction
 ===============
-This release is version 2.00 because I had previously released a message lister
-mod for Synchronet which was just a list header and a command bar to display
-under the list, and it still used Synchronet's stock file list.  Now that
-Synchronet provides a JavaScript interface to its filebases (as of version
+This release is version 2.## because I had previously released a message lister
+mod (version 1.##) for Synchronet which was just a list header and a command bar
+to display under the list, and it still used Synchronet's stock file list.  Now
+that Synchronet provides a JavaScript interface to its filebases (as of version
 3.19), more customization is possible with JavaScript.
 
 Digital Distortion File Lister is a script for Synchronet that provides an
@@ -58,6 +58,21 @@ the extended file description for the highlighted file displayed on the right
 side.  If the user's extended file description setting is disabled, the
 lightbar file menu will use the entire width of the screen, with the short
 file descriptions being displayed in a single row with each file.
+
+In order to display extended descriptions, however, this file lister currently
+requires ANSI support (for cursor movements & such) and a terminal width of at
+least 80 characters in order to display everything, since the extended
+descriptions will be displayed to the right of the menu. If the user's terminal
+doesn't meet these requirements, short descriptions will be displayed.
+
+The user can toggle extended descriptions on/off from within this file lister
+using the X key. However, if the user's terminal doesn't meet the above
+requiremtnts for extended description mode, the user won't be able to toggle
+extended descriptions from within this file lister.
+
+If a filename is too long to be fully displayed in the menu item, the full file
+description will be displayed above the description (wrapped to the description
+area width) if extended descriptions are enabled.
 
 When adding files to the user's batch download queue or (for the sysop)
 selecting files to move or delete, multi-select mode can be used, allowing
