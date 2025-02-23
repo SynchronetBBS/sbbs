@@ -683,7 +683,6 @@ void ANSI_Terminal::handle_control_sequence() {
 	}
 }
 
-// TODO: Split this up into easily understandable chunks...
 bool ANSI_Terminal::parse_outchar(char ich) {
 	unsigned char ch = static_cast<unsigned char>(ich);
 	if (flags_ & UTF8) {
