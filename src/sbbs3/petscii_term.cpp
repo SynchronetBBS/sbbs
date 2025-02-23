@@ -598,24 +598,6 @@ bool PETSCII_Terminal::parse_ctrlkey(char& ch, int mode)
 	return false;
 }
 
-void PETSCII_Terminal::insert_indicator()
-{
-	unsigned x = column + 1;
-	unsigned y = row + 1;
-	unsigned oldatr = curatr;
-
-	gotoxy(cols, 1);
-	if (sbbs->console & CON_INSERT) {
-		sbbs->attr(BLINK | BLACK | (LIGHTGRAY << 4));
-		sbbs->term_out('I');
-	} else {
-		sbbs->attr(ANSI_NORMAL);
-		sbbs->term_out(' ');
-	}
-	sbbs->attr(oldatr);
-	gotoxy(x, y);
-}
-
 bool PETSCII_Terminal::can_highlight() { return true; }
 bool PETSCII_Terminal::can_move() { return true; }
 bool PETSCII_Terminal::is_monochrome() { return false; }

@@ -35,7 +35,6 @@ public:
 	virtual const char* type();
 	virtual bool parse_outchar(char ch);
 	virtual bool parse_ctrlkey(char& ch, int mode);
-	virtual void insert_indicator();
 	virtual bool can_highlight();
 	virtual bool can_move();
 	virtual bool is_monochrome();

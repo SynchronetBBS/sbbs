@@ -1081,22 +1081,6 @@ bool ANSI_Terminal::parse_ctrlkey(char& ch, int mode) {
 	return false;
 }
 
-void ANSI_Terminal::insert_indicator() {
-	char str[32];
-	save_cursor_pos();
-	gotoxy(cols, 1);
-	int  tmpatr;
-	if (sbbs->console & CON_INSERT) {
-		sbbs->term_out(attrstr(tmpatr = BLINK | BLACK | (LIGHTGRAY << 4), curatr, str, supports(COLOR)));
-		sbbs->cp437_out('I');
-	} else {
-		sbbs->term_out(attrstr(tmpatr = ANSI_NORMAL));
-		sbbs->cp437_out(' ');
-	}
-	sbbs->term_out(attrstr(curatr, tmpatr, str, supports(COLOR)));
-	restore_cursor_pos();
-}
-
 struct mouse_hotspot* ANSI_Terminal::add_hotspot(struct mouse_hotspot* spot) {return nullptr;}
 
 bool ANSI_Terminal::can_highlight() { return true; }

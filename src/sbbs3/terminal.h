@@ -438,8 +438,6 @@ public:
 		return false;
 	}
 
-	virtual void insert_indicator() {};
-
 	virtual bool saveline() {
 		struct savedline line;
 		line.beg_attr = latr;
@@ -509,6 +507,7 @@ public:
 	const char *charset_str();
 	list_node_t *find_hotspot(unsigned x, unsigned y);
 	uint32_t flags(bool raw = false);
+	void insert_indicator();
 };
 
 void update_terminal(sbbs_t *sbbsptr, Terminal *term);

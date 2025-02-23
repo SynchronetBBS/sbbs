@@ -324,6 +324,22 @@ uint32_t Terminal::flags(bool raw)
 	return sbbs->term->flags_;
 }
 
+void Terminal::insert_indicator() {
+	if (save_cursor_pos() && gotoxy(cols, 1)) {
+		char str[32];
+		unsigned orig_atr{curatr};
+		if (sbbs->console & CON_INSERT) {
+			sbbs->term_out(attrstr(BLINK | BLACK | (LIGHTGRAY << 4), curatr, str, supports(COLOR)));
+			sbbs->cp437_out('I');
+		} else {
+			sbbs->term_out(attrstr(ANSI_NORMAL, curatr, str, supports(COLOR)));
+			sbbs->cp437_out(' ');
+		}
+		sbbs->term_out(attrstr(orig_atr, curatr, str, supports(COLOR)));
+		restore_cursor_pos();
+	}
+}
+
 void update_terminal(sbbs_t *sbbsptr)
 {
 	uint32_t flags = Terminal::get_flags(sbbsptr);
@@ -371,3 +387,4 @@ extern "C" void update_terminal(void *sbbsptr, user_t *userptr)
 	if (&sbbs->useron == userptr)
 		update_terminal(sbbs);
 }
+
