@@ -56,20 +56,42 @@ const char *PETSCII_Terminal::attrstr(unsigned atr)
 	return "-Invalid use of ansi()-";
 }
 
+static unsigned
+unreverse_attr(unsigned atr)
+{
+	// This drops all background bits
+	return (atr & BLINK)			// Blink unchanged
+	    | ((atr & BG_BRIGHT) ? HIGH : 0)	// Put BG_BRIGHT bit into HIGH
+	    | ((atr & 0x70) >> 4);		// Background colour to Foreground
+}
+
+static unsigned
+reverse_attr(unsigned atr)
+{
+	// This drops all foreground bits
+	return ((atr & HIGH) ? BG_BRIGHT : 0)	// Put HIGH bit into BG_BRIGHT
+	    | (atr & BLINK)			// Blink unchanged
+	    | ((atr & 0x07) << 4);		// Foreground colour to Background
+}
+
 /*
  * This deals with the reverse "stuff"
  * Basically, if the background is not black, the background colour is
- * set as the foreground colour, and BG_BRIGHT is set
+ * set as the foreground colour, and BG_BLACK is set
+ * 
+ * TODO: This hackery around BG_BLACK is terrible.
  */
 static unsigned
 xlat_atr(unsigned atr)
 {
+	// BG_BLACK bit trumps all
+	if (atr & BG_BLACK) {
+		// But convert to "normal" atr
+		atr &= ~(BG_BLACK | 0x70 | BG_BRIGHT);
+	}
+	// If there is a background colour...
 	if (atr & (0x70 | BG_BRIGHT)) {
-		if (atr & BG_BRIGHT)
-			atr |= HIGH;
-		else
-			atr &= ~HIGH;
-		atr = BG_BRIGHT | (atr & BLINK) | ((atr & 0x70) >> 4);
+		atr = BG_BLACK | unreverse_attr(atr);
 	}
 	return atr;
 }
@@ -78,6 +100,7 @@ char* PETSCII_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t
 {
 	unsigned newatr = xlat_atr(atr);
 	unsigned oldatr = xlat_atr(curatr);
+
 	size_t sp = 0;
 
 	if (strsz < 2) {
@@ -86,13 +109,17 @@ char* PETSCII_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t
 		return str;
 	}
 
-	if (newatr & BG_BRIGHT) {	// Reversed
-		if (!(oldatr & BG_BRIGHT))
+	if (newatr & BG_BLACK) {	// Reversed
+		if (!(oldatr & BG_BLACK)) {
 			str[sp++] = PETSCII_REVERSE_ON;
+			oldatr = reverse_attr(oldatr);
+		}
 	}
 	else {
-		if (oldatr & BG_BRIGHT)
+		if (oldatr & BG_BLACK) {
 			str[sp++] = '\x92';
+			oldatr = unreverse_attr(oldatr);
+		}
 	}
 	if (sp >= (strsz - 1)) {
 		str[sp] = 0;
@@ -110,55 +137,57 @@ char* PETSCII_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t
 		str[sp] = 0;
 		return str;
 	}
-	switch (newatr & 0x0f) {
-		case BLACK:
-			str[sp++] = '\x90';
-			break;
-		case WHITE:
-			str[sp++] = PETSCII_WHITE;
-			break;
-		case DARKGRAY:
-			str[sp++] = '\x97';
-			break;
-		case LIGHTGRAY:
-			str[sp++] = '\x9b';
-			break;
-		case BLUE:
-			str[sp++] = PETSCII_BLUE;
-			break;
-		case LIGHTBLUE:
-			str[sp++] = '\x9a';
-			break;
-		case CYAN:
-			str[sp++] = '\x98';
-			break;
-		case LIGHTCYAN:
-			str[sp++] = '\x9f';
-			break;
-		case YELLOW:
-			str[sp++] = '\x9e';
-			break;
-		case BROWN:
-			str[sp++] = '\x95';
-			break;
-		case RED:
-			str[sp++] = PETSCII_RED;
-			break;
-		case LIGHTRED:
-			str[sp++] = '\x96';
-			break;
-		case GREEN:
-			str[sp++] = PETSCII_GREEN;
-			break;
-		case LIGHTGREEN:
-			str[sp++] = '\x99';
-			break;
-		case MAGENTA:
-			str[sp++] = '\x81';
-			break;
-		case LIGHTMAGENTA:
-			str[sp++] = '\x9c';
-			break;
+	if ((newatr & 0x0f) != (oldatr & 0x0f)) {
+		switch (newatr & 0x0f) {
+			case BLACK:
+				str[sp++] = '\x90';
+				break;
+			case WHITE:
+				str[sp++] = PETSCII_WHITE;
+				break;
+			case DARKGRAY:
+				str[sp++] = '\x97';
+				break;
+			case LIGHTGRAY:
+				str[sp++] = '\x9b';
+				break;
+			case BLUE:
+				str[sp++] = PETSCII_BLUE;
+				break;
+			case LIGHTBLUE:
+				str[sp++] = '\x9a';
+				break;
+			case CYAN:
+				str[sp++] = '\x98';
+				break;
+			case LIGHTCYAN:
+				str[sp++] = '\x9f';
+				break;
+			case YELLOW:
+				str[sp++] = '\x9e';
+				break;
+			case BROWN:
+				str[sp++] = '\x95';
+				break;
+			case RED:
+				str[sp++] = PETSCII_RED;
+				break;
+			case LIGHTRED:
+				str[sp++] = '\x96';
+				break;
+			case GREEN:
+				str[sp++] = PETSCII_GREEN;
+				break;
+			case LIGHTGREEN:
+				str[sp++] = '\x99';
+				break;
+			case MAGENTA:
+				str[sp++] = '\x81';
+				break;
+			case LIGHTMAGENTA:
+				str[sp++] = '\x9c';
+				break;
+		}
 	}
 	str[sp] = 0;
 	return str;
@@ -290,6 +319,20 @@ const char* PETSCII_Terminal::type()
 	return "PETSCII";
 }
 
+void PETSCII_Terminal::set_color(int c)
+{
+	if (reverse_on) {
+		curatr &= ~(BG_BRIGHT | 0x70);
+		curatr |= ((c & 0x07) << 4);
+		if (c & HIGH)
+			curatr |= BG_BRIGHT;
+	}
+	else {
+		curatr &= ~0x0F;
+		curatr |= c;
+	}
+}
+
 bool PETSCII_Terminal::parse_output(char ch)
 {
 	switch (ch) {
@@ -366,172 +409,62 @@ bool PETSCII_Terminal::parse_output(char ch)
 		case 18: // Reverse on
 			if (!reverse_on) {
 				reverse_on = true;
-				curatr = ((curatr & 0xf0) >> 4) | ((curatr & 0x0f) << 4);
+				curatr = reverse_attr(curatr);
 			}
 			return true;
 		case '\x92': // Reverse off
 			if (reverse_on) {
 				reverse_on = false;
-				curatr = ((curatr & 0xf0) >> 4) | ((curatr & 0x0f) << 4);
+				curatr = unreverse_attr(curatr);
 			}
 			return true;
 		case 5:  // White
-			if (reverse_on) {
-				curatr &= ~0xF0;
-				curatr |= (WHITE << 4);
-			}
-			else {
-				curatr &= ~0x0F;
-				curatr |= WHITE;
-			}
+			set_color(WHITE);
 			return true;
 		case 28: // Red
-			if (reverse_on) {
-				curatr &= ~0xF0;
-				curatr |= (RED << 4);
-			}
-			else {
-				curatr &= ~0x0F;
-				curatr |= RED;
-			}
+			set_color(RED);
 			return true;
 		case 30: // Green
-			if (reverse_on) {
-				curatr &= ~0xF0;
-				curatr |= (GREEN << 4);
-			}
-			else {
-				curatr &= ~0x0F;
-				curatr |= GREEN;
-			}
+			set_color(GREEN);
 			return true;
 		case 31: // Blue
-			if (reverse_on) {
-				curatr &= ~0xF0;
-				curatr |= (BLUE << 4);
-			}
-			else {
-				curatr &= ~0x0F;
-				curatr |= BLUE;
-			}
+			set_color(BLUE);
 			return true;
 		case '\x81': // Orange
-			if (reverse_on) {
-				curatr &= ~0xF0;
-				curatr |= (MAGENTA << 4);
-			}
-			else {
-				curatr &= ~0x0F;
-				curatr |= MAGENTA;
-			}
+			set_color(MAGENTA);
 			return true;
 		case '\x90': // Black
-			if (reverse_on) {
-				curatr &= ~0xF0;
-			}
-			else {
-				curatr &= ~0x0F;
-			}
+			set_color(BLACK);
 			return true;
 		case '\x95': // Brown
-			if (reverse_on) {
-				curatr &= ~0xF0;
-				curatr |= (BROWN << 4);
-			}
-			else {
-				curatr &= ~0x0F;
-				curatr |= BROWN;
-			}
+			set_color(BROWN);
 			return true;
 		case '\x96': // Pink
-			if (reverse_on) {
-				curatr &= ~0xF0;
-				curatr |= (LIGHTRED << 4);
-			}
-			else {
-				curatr &= ~0x0F;
-				curatr |= LIGHTRED;
-			}
+			set_color(LIGHTRED);
 			return true;
 		case '\x97': // Dark gray
-			if (reverse_on) {
-				curatr &= ~0xF0;
-				curatr |= (DARKGRAY << 4);
-			}
-			else {
-				curatr &= ~0x0F;
-				curatr |= DARKGRAY;
-			}
+			set_color(DARKGRAY);
 			return true;
 		case '\x98': // Gray
-			if (reverse_on) {
-				curatr &= ~0xF0;
-				curatr |= (CYAN << 4);
-			}
-			else {
-				curatr &= ~0x0F;
-				curatr |= CYAN;
-			}
+			set_color(CYAN);
 			return true;
 		case '\x99': // Light Green
-			if (reverse_on) {
-				curatr &= ~0xF0;
-				curatr |= (LIGHTGREEN << 4);
-			}
-			else {
-				curatr &= ~0x0F;
-				curatr |= LIGHTGREEN;
-			}
+			set_color(LIGHTGREEN);
 			return true;
 		case '\x9A': // Light Blue
-			if (reverse_on) {
-				curatr &= ~0xF0;
-				curatr |= (LIGHTBLUE << 4);
-			}
-			else {
-				curatr &= ~0x0F;
-				curatr |= LIGHTBLUE;
-			}
+			set_color(LIGHTBLUE);
 			return true;
 		case '\x9B': // Light Gray
-			if (reverse_on) {
-				curatr &= ~0xF0;
-				curatr |= (LIGHTGRAY << 4);
-			}
-			else {
-				curatr &= ~0x0F;
-				curatr |= LIGHTGRAY;
-			}
+			set_color(LIGHTGRAY);
 			return true;
 		case '\x9C': // Purple
-			if (reverse_on) {
-				curatr &= ~0xF0;
-				curatr |= (LIGHTMAGENTA << 4);
-			}
-			else {
-				curatr &= ~0x0F;
-				curatr |= LIGHTMAGENTA;
-			}
+			set_color(LIGHTMAGENTA);
 			return true;
 		case '\x9E': // Yellow
-			if (reverse_on) {
-				curatr &= ~0xF0;
-				curatr |= (YELLOW << 4);
-			}
-			else {
-				curatr &= ~0x0F;
-				curatr |= YELLOW;
-			}
+			set_color(YELLOW);
 			return true;
 		case '\x9F': // Cyan
-			if (reverse_on) {
-				curatr &= ~0xF0;
-				curatr |= (LIGHTCYAN << 4);
-			}
-			else {
-				curatr &= ~0x0F;
-				curatr |= LIGHTCYAN;
-			}
+			set_color(LIGHTCYAN);
 			return true;
 		case '\x8E': // Upper case
 		case '\x93': // Clear

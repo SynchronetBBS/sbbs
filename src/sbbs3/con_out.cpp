@@ -427,6 +427,8 @@ size_t sbbs_t::cp437_out(int ich)
 	// PETSCII
 	else if (term->charset() == CHARSET_PETSCII) {
 		ch = cp437_to_petscii(ch);
+		// TODO: This needs to be aware of the current state of reverse...
+		//       It could cast sbbs->term to PETSCII_Terminal (ugh)
 		if (ch == PETSCII_SOLID) {
 			if (term_out(PETSCII_REVERSE_ON) != 1)
 				return 0;

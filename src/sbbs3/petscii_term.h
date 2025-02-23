@@ -5,6 +5,8 @@
 
 class PETSCII_Terminal : public Terminal {
 private:
+	void set_color(int c);
+
 	unsigned saved_x{0};
 	unsigned saved_y{0};
 	bool reverse_on{false};
