@@ -156,7 +156,7 @@
  *                              Now optionally displays the number of files in the directory in the
  *                              header at the top of the list, configurable with the
  *                              displayNumFilesInHeader option in the config file
- * 2025-02-22 Eric Oulashin     Version 2.28
+ * 2025-02-23 Eric Oulashin     Version 2.28
  *                              If extended descriptions are enabled and a filename is too long to
  *                              fully fit in the menu, prepend the full filename (wrapped) to the
  *                              description.
@@ -205,7 +205,7 @@ var gAvatar = load({}, "avatar_lib.js");
 
 // Version information
 var LISTER_VERSION = "2.28";
-var LISTER_DATE = "2025-02-22";
+var LISTER_DATE = "2025-02-23";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -492,18 +492,7 @@ if (gUseLightbarInterface && console.term_supports(USER_ANSI))
 		{
 			currentActionVal = gFileMenuBar.getCurrentSelectedAction();
 			gFileMenuBar.setCurrentActionCode(currentActionVal);
-			if (currentActionVal == TOGGLE_EXTD_DESCS)
-			{
-				// Toggle extended descriptions
-				toggleExtdDescriptionsForUser_Lightbar();
-				drawFileListMenu = true; // Ensure the menu re-draws itself (properly)
-				actionRetObj = null;
-			}
-			else
-			{
-				// Handle actions (other than extended description toggle)
-				actionRetObj = doAction(currentActionVal, gFileList, gFileListMenu);
-			}
+			actionRetObj = doAction(currentActionVal, gFileList, gFileListMenu);
 		}
 		// Allow the delete key as a special key for sysops to delete the selected file(s). Also allow backspace
 		// due to some terminals returning backspace for delete.
@@ -520,18 +509,7 @@ if (gUseLightbarInterface && console.term_supports(USER_ANSI))
 		{
 			currentActionVal = gFileMenuBar.getActionFromChar(lastUserInputUpper, false);
 			gFileMenuBar.setCurrentActionCode(currentActionVal, true);
-			if (currentActionVal == TOGGLE_EXTD_DESCS)
-			{
-				// Toggle extended descriptions
-				toggleExtdDescriptionsForUser_Lightbar();
-				drawFileListMenu = true; // Ensure the menu re-draws itself (properly)
-				actionRetObj = null;
-			}
-			else
-			{
-				// Handle actions (other than extended description toggle)
-				actionRetObj = doAction(currentActionVal, gFileList, gFileListMenu);
-			}
+			actionRetObj = doAction(currentActionVal, gFileList, gFileListMenu);
 		}
 		// If an action was done (actionRetObj is not null), then look at actionRetObj and
 		// do what's needed.  Note that quit (for the Q key) is already handled.
@@ -904,29 +882,24 @@ else
 			//gFileMenuBar.setCurrentActionCode(LAST_PAGE, !refreshWholePromptLine);
 			gFileMenuBar.setCurrentActionCode(LAST_PAGE, true);
 		}
-		else if (userInput == "X")
-		{
-			// Toggle extended descriptions
-			var userCanToggle = (Boolean(user.settings & USER_EXTDESC) ? true : userCanEnableExtendedDescriptions());
-			if (userCanToggle)
-			{
-				user.settings ^= USER_EXTDESC;
-				allFileInfoLines = [];
-				for (var i = 0; i < gFileList.length; ++i)
-					allFileInfoLines = allFileInfoLines.concat(getFileInfoLineArrayForTraditionalUI(gFileList, i, formatInfo));
-				topItemIndexForLastPage = allFileInfoLines.length - numLinesPerPage;
-				drawMenu = true;
-				drawDirHeaderLines = true;
-			}
-		}
 		else
 		{
 			drawDirHeaderLines = true;
 			drawMenu = true;
 			refreshWholePromptLine = true;
 			currentActionVal = gFileMenuBar.getActionFromChar(userInput, false);
+			//if (user.is_sysop) console.print("\x01n\r\nHere - Char:" + userInput + ":, action val: " + currentActionVal + "  \x01p"); // Temporary
 			gFileMenuBar.setCurrentActionCode(currentActionVal, true);
 			actionRetObj = doAction(currentActionVal, gFileList, gFileListMenu);
+			// If the user toggled extended descriptions, then re-generate the array of
+			// filenames & descriptions
+			if (currentActionVal == TOGGLE_EXTD_DESCS)
+			{
+				allFileInfoLines = [];
+				for (var i = 0; i < gFileList.length; ++i)
+					allFileInfoLines = allFileInfoLines.concat(getFileInfoLineArrayForTraditionalUI(gFileList, i, formatInfo));
+				topItemIndexForLastPage = allFileInfoLines.length - numLinesPerPage;
+			}
 		}
 	}
 }
@@ -961,7 +934,7 @@ function doAction(pActionCode, pFileList, pFileListMenu)
 	// (for options that need one)
 	var useANSIInterface = gUseLightbarInterface && console.term_supports(USER_ANSI);
 	var fileIdx = pFileListMenu.selectedItemIdx;
-	if (!useANSIInterface && pActionCode != QUIT && pActionCode != HELP && pActionCode != NEXT_PAGE && pActionCode != PREV_PAGE)
+	if (!useANSIInterface && pActionCode != QUIT && pActionCode != HELP && pActionCode != NEXT_PAGE && pActionCode != PREV_PAGE && pActionCode != TOGGLE_EXTD_DESCS)
 	{
 		console.crlf();
 		console.print(getActionStr(pActionCode) + "\x01n");
@@ -1034,32 +1007,12 @@ function doAction(pActionCode, pFileList, pFileListMenu)
 			if (user.is_sysop)
 				retObj = confirmAndRemoveFilesFromFilebase(pFileList, pFileListMenu);
 			break;
+		case TOGGLE_EXTD_DESCS: // Toggle extended descriptions
+			retObj = toggleExtdDescriptionsForUser(useANSIInterface);
+			break;
 	}
 
 	return retObj;
-}
-
-// Toggles the user's extended descriptions. This is a special action case for the
-// lightbar interface which re-creates the lightbar menu, which will behave differently
-// depending on whether the user's extended descriptions are enabled or not.
-function toggleExtdDescriptionsForUser_Lightbar()
-{
-	// Toggle extended descriptions
-	var userCanToggle = (Boolean(user.settings & USER_EXTDESC) ? true : userCanEnableExtendedDescriptions());
-	if (userCanToggle)
-	{
-		var currentSelectedItemIdx = gFileListMenu.selectedItemIdx;
-		user.settings ^= USER_EXTDESC;
-		var listPopRetObj = populateFileList(gScriptMode);
-		if (listPopRetObj.exitNow) // Shouldn't happen here, but just in case
-			exit(0);
-		gFileListMenu = createFileListMenu(gFileMenuBar.getAllActionKeysStr(true, true) + KEY_LEFT + KEY_RIGHT + KEY_DEL /*+ CTRL_C*/);
-		gFileListMenu.SetSelectedItemIdx(currentSelectedItemIdx);
-		// If the user has enabled extended descriptions, then write the
-		// current selected file's extended description on the screen
-		if (Boolean(user.settings & USER_EXTDESC))
-			displayFileExtDescOnMainScreen(gFileListMenu.selectedItemIdx);
-	}
 }
 
 // Returns a string representing an action code, for relevant actions (not necessarily all actions)
@@ -2629,6 +2582,34 @@ function confirmAndRemoveFilesFromFilebase(pFileList, pFileListMenu)
 			else
 				displayMsg("There are no more files to show.", false, true);
 			retObj.exitNow = true;
+		}
+	}
+
+	return retObj;
+}
+
+// Toggles the user's extended descriptions. This is a special action case for the
+// lightbar interface which re-creates the lightbar menu, which will behave differently
+// depending on whether the user's extended descriptions are enabled or not.
+function toggleExtdDescriptionsForUser(pUsingLightbarInterface)
+{
+	var retObj = getDefaultActionRetObj();
+
+	// Toggle extended descriptions
+	var userCanToggle = (Boolean(user.settings & USER_EXTDESC) ? true : userCanEnableExtendedDescriptions());
+	if (userCanToggle)
+	{
+		user.settings ^= USER_EXTDESC; // Toggle the user's extended descriptions setting
+		// If using the lightbar interface, then re-create the lightbar file list menu
+		if (pUsingLightbarInterface)
+		{
+			var currentSelectedItemIdx = gFileListMenu.selectedItemIdx;
+			var listPopRetObj = populateFileList(gScriptMode);
+			if (listPopRetObj.exitNow) // Shouldn't happen here, but just in case
+				exit(0);
+			gFileListMenu = createFileListMenu(gFileMenuBar.getAllActionKeysStr(true, true) + KEY_LEFT + KEY_RIGHT + KEY_DEL /*+ CTRL_C*/);
+			gFileListMenu.SetSelectedItemIdx(currentSelectedItemIdx);
+			retObj.reDrawMainScreenContent = true;
 		}
 	}
 
