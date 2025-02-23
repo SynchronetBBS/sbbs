@@ -1845,8 +1845,7 @@ static in_addr_t rblchk(SOCKET sock, const char* prot, union xp_sockaddr *addr, 
 {
 	char           name[256];
 	in_addr_t      mail_addr;
-	HOSTENT*       host;
-	struct in_addr dnsbl_result;
+	in_addr_t      result = 0;
 	unsigned char *addr6;
 
 	switch (addr->addr.sa_family) {
@@ -1906,17 +1905,20 @@ static in_addr_t rblchk(SOCKET sock, const char* prot, union xp_sockaddr *addr, 
 	}
 	lprintf(LOG_DEBUG, "%04d %s DNSBL Query: %s", sock, prot, name);
 
-	if ((host = gethostbyname(name)) == NULL)
+	struct addrinfo* res;
+	struct addrinfo hints = {0};
+	hints.ai_family = AF_INET;
+	if (getaddrinfo(name, NULL, &hints, &res) != 0)
 		return 0;
 
-	if (host->h_addr_list[0] == NULL)
-		return 0;
-
-	dnsbl_result.s_addr = *((in_addr_t*)host->h_addr_list[0]);
-	lprintf(LOG_INFO, "%04d %s DNSBL Query: %s resolved to: %s"
-	        , sock, prot, name, inet_ntoa(dnsbl_result));
-
-	return dnsbl_result.s_addr;
+	if (res->ai_family == AF_INET) {
+		char tmp[128];
+		result = ((struct sockaddr_in*)res->ai_addr)->sin_addr.s_addr;
+		lprintf(LOG_INFO, "%04d %s DNSBL Query: %s resolved to: %s"
+		    , sock, prot, name, inet_ntop(AF_INET, res->ai_addr, tmp, sizeof tmp));
+	}
+	freeaddrinfo(res);
+	return result;
 }
 
 static ulong dns_blacklisted(SOCKET sock, const char* prot, union xp_sockaddr *addr, char* host_name, char* list, char* dnsbl_ip)
