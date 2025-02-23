@@ -438,10 +438,12 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 							term_out(ansiParser.ansi_sequence.c_str(), ansiParser.ansi_sequence.length());
 						}
 						ansiParser.reset();
+						l++;
 						continue;
 					case ansiState_none:
 						break;
 					default:
+						l++;
 						continue;
 				}
 			}
