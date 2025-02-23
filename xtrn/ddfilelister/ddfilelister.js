@@ -280,7 +280,9 @@ var gColors = {
 	fileNormalBkgTrad: "\x01n\x01w",
 	listNumTrad: "\x01g\x01h",
 	fileAreaDescTrad: "\x01c",
-	fileAreaNumItemsTrad: "\x01b\x01h"
+	fileAreaNumItemsTrad: "\x01b\x01h",
+
+	filenameInDesc: "\x01g" // Filename when used in the description
 };
 
 
@@ -5354,11 +5356,11 @@ function displayFileExtDescOnMainScreen(pFileIdx, pStartScreenRow, pEndScreenRow
 	// filename.
 	var fileDescIsEmptyOrWhitespace = (fileDesc == "" || /^\s+$/.test(fileDesc));
 	if (gUseFilenameIfNoDescription && fileDescIsEmptyOrWhitespace)
-		fileDesc = lfexpand(word_wrap(fileMetadata.name + "\r\n(No description)", maxDescLen, null, false));
+		fileDesc = "\x01n" + gColors.filenameInDesc + lfexpand(word_wrap(fileMetadata.name + "\r\n\x01n(No description)", maxDescLen, null, false));
 	// If there is a description and the filename is too long to fit on the menu, then prepend the
 	// full filename (wrapped) to the the description
 	else if (!fileDescIsEmptyOrWhitespace && fileMetadata.name.length > gFileListMenu.filenameLen)
-		fileDesc = lfexpand(word_wrap(fileMetadata.name, maxDescLen, null, false)) + "\r\n" + fileDesc;
+		fileDesc = "\x01n" + gColors.filenameInDesc + lfexpand(word_wrap(fileMetadata.name, maxDescLen, null, false)) + "\r\n\x01n" + fileDesc;
 	// Display the description on the screen
 	var fileDescArray = fileDesc.split("\r\n");
 	console.attributes = "N";
@@ -5640,7 +5642,7 @@ function getFileInfoLineArrayForTraditionalUI(pFileList, pIdx, pFormatInfo)
 		// There is no description. If the option to use the filename is enabled, then use the filename.
 		if (gUseFilenameIfNoDescription)
 		{
-			var fileDesc = lfexpand(word_wrap(pFileList[pIdx].name + "\r\n(No description)", pFormatInfo.descLen, null, false));
+			var fileDesc = "\x01n" + gColors.filenameInDesc + lfexpand(word_wrap(pFileList[pIdx].name + "\r\n\x01n(No description)", pFormatInfo.descLen, null, false));
 			var fileDescArray = fileDesc.split("\r\n");
 			for (var i = 0; i < fileDescArray.length; ++i)
 				descLines.push(fileDescArray[i]);
@@ -5654,11 +5656,10 @@ function getFileInfoLineArrayForTraditionalUI(pFileList, pIdx, pFormatInfo)
 		// the the description.
 		if (pFileList[pIdx].name.length > gFileListMenu.filenameLen)
 		{
-			var filenameLines = [];
 			var fileDescArray = lfexpand(word_wrap(pFileList[pIdx].name, pFormatInfo.descLen, null, false)).split("\r\n");
 			for (var i = 0; i < fileDescArray.length; ++i)
-				filenameLines.push(fileDescArray[i]);
-			descLines = filenameLines.concat(descLines);
+				fileDescArray[i] = "\x01n" + gColors.filenameInDesc + fileDescArray[i] + "\x01n";
+			descLines = fileDescArray.concat(descLines);
 		}
 	}
 
