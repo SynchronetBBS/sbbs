@@ -410,6 +410,12 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 							lprintf(LOG_WARNING, "Stripping DSR sequence");
 						else if (ansiParser.ansi_final_byte == 'c')
 							lprintf(LOG_WARNING, "Stripping DA sequence");
+						else if (ansiParser.ansi_ibs == "," && ansiParser.ansi_final_byte == 'q')
+							lprintf(LOG_WARNING, "Stripping DECRQUPSS sequence");
+						else if (ansiParser.ansi_ibs == "&" && ansiParser.ansi_final_byte == 'u')
+							lprintf(LOG_WARNING, "Stripping DECRQUPSS sequence");
+						else if (ansiParser.ansi_ibs == "+" && ansiParser.ansi_final_byte == 'x')
+							lprintf(LOG_WARNING, "Stripping DECRQPKFM sequence");
 						else if (ansiParser.ansi_ibs == "$" && ansiParser.ansi_final_byte == 'p')
 							lprintf(LOG_WARNING, "Stripping DECRQM sequence");
 						else if (ansiParser.ansi_ibs == "$" && ansiParser.ansi_final_byte == 'u')
