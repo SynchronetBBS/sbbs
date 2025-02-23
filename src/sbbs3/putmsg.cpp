@@ -437,19 +437,6 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 						continue;
 				}
 			}
-			// TODO: Figure out how to do this in ANSI_Terminal
-			//       It's trickier than it looks...
-#if 0
-			if (outchar_esc >= ansiState_csi) {
-				if (str[l] == 'A' || str[l] == 'B' || str[l] == 'H' || str[l] == 'J'
-				    || str[l] == 'f' || str[l] == 'u')    /* ANSI anim */
-					term->lncntr = 0;         /* so defeat pause */
-				if (str[l] == '"' || str[l] == 'c') {
-					l++;                /* don't pass on keyboard reassignment or Device Attributes (DA) requests */
-					continue;
-				}
-			}
-#endif
 			if (str[l] == '!' && str[l + 1] == '|' && useron.misc & RIP) /* RIP */
 				term->lncntr = 0;             /* so defeat pause */
 			if (str[l] == '@' && !(mode & P_NOATCODES)) {
