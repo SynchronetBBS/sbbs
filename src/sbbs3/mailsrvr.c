@@ -5716,11 +5716,7 @@ static void sendmail_thread(void* arg)
 				if (startup->outgoing4.s_addr == 0)
 					server = "127.0.0.1";
 				else {
-					SAFEPRINTF4(numeric_ip, "%u.%u.%u.%u"
-					            , startup->outgoing4.s_addr >> 24
-					            , (startup->outgoing4.s_addr >> 16) & 0xff
-					            , (startup->outgoing4.s_addr >> 8) & 0xff
-					            , startup->outgoing4.s_addr & 0xff);
+					inet_addrtop(&startup->outgoing4, numeric_ip, sizeof numeric_ip);
 					server = numeric_ip;
 				}
 				sending_locally = TRUE;
