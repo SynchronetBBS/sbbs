@@ -56,6 +56,11 @@ const char *PETSCII_Terminal::attrstr(unsigned atr)
 	return "-Invalid use of ansi()-";
 }
 
+/*
+ * This deals with the reverse "stuff"
+ * Basically, if the background is not black, the background colour is
+ * set as the foreground colour, and BG_BRIGHT is set
+ */
 static unsigned
 xlat_atr(unsigned atr)
 {
@@ -64,7 +69,7 @@ xlat_atr(unsigned atr)
 			atr |= HIGH;
 		else
 			atr &= ~HIGH;
-		atr = (atr & (BLINK | HIGH)) | ((atr & 0x70) >> 4);
+		atr = BG_BRIGHT | (atr & BLINK) | ((atr & 0x70) >> 4);
 	}
 	return atr;
 }
@@ -81,12 +86,12 @@ char* PETSCII_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t
 		return str;
 	}
 
-	if (atr & (0x70 | BG_BRIGHT)) {	// Reversed
-		if (!(oldatr & (0x70 | BG_BRIGHT)))
+	if (newatr & BG_BRIGHT) {	// Reversed
+		if (!(oldatr & BG_BRIGHT))
 			str[sp++] = PETSCII_REVERSE_ON;
 	}
 	else {
-		if (oldatr & (0x70 | BG_BRIGHT))
+		if (oldatr & BG_BRIGHT)
 			str[sp++] = '\x92';
 	}
 	if (sp >= (strsz - 1)) {
@@ -198,7 +203,8 @@ void PETSCII_Terminal::line_feed(unsigned count)
 
 void PETSCII_Terminal::backspace(unsigned int count)
 {
-	sbbs->term_out(PETSCII_DELETE);
+	for (unsigned i = 0; i < count; i++)
+		sbbs->term_out(PETSCII_DELETE);
 }
 
 void PETSCII_Terminal::newline(unsigned count)
