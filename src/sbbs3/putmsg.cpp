@@ -416,6 +416,8 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 							lprintf(LOG_WARNING, "Stripping DECRQTSR sequence");
 						else if (ansiParser.ansi_ibs == "$" && ansiParser.ansi_final_byte == 'w')
 							lprintf(LOG_WARNING, "Stripping DECRQPSR sequence");
+						else if (ansiParser.ansi_ibs == "*" && ansiParser.ansi_final_byte == 'y')
+							lprintf(LOG_WARNING, "Stripping DECRQCRA sequence");
 						else if (ansiParser.ansi_sequence.substr(0, 4) == "\x1bP$q")
 							lprintf(LOG_WARNING, "Stripping DECRQSS sequence");
 						else if (ansiParser.ansi_sequence.substr(0, 14) == "\x1b_SyncTERM:C;L")
