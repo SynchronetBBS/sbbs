@@ -91,7 +91,7 @@ ANSI_Parser::parse(unsigned char ch)
 			if (ch == '\\')
 				outchar_esc = ansiState_esc;
 			else if (ch == 'X')
-				outchar_esc = ansiState_none;
+				outchar_esc = ansiState_broken;
 			else
 				outchar_esc = ansiState_sos;
 			break;
