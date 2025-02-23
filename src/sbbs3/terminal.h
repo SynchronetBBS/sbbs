@@ -340,7 +340,6 @@ public:
 	 * this function handled it (ie: via term_out(), or stripping it)
 	 */
 	virtual bool parse_outchar(char ch) {
-		bool lwe = last_was_esc;
 		last_was_esc = false;
 		switch (ch) {
 			// Zero-width characters we likely shouldn't send
@@ -406,13 +405,6 @@ public:
 				set_column();
 				return true;
 
-			case '[': // Could be a CSI...
-				if (lwe)
-					sbbs->autoterm |= ANSI;
-				else
-					inc_column();
-				return true;
-
 			// Everything else is assumed one byte wide
 			default:
 				inc_column();
@@ -433,8 +425,15 @@ public:
 	 * Note that DEL is considered a control key by this function.
 	 */
 	virtual bool parse_ctrlkey(char& ch, int mode) {
+		bool lwe = last_was_esc;
+		if (ch == '\x1b')
+			last_was_esc = true;
 		if (ch < 32 || ch == 127)
 			return true;
+		if (lwe) {
+			if (ch == '[')
+				sbbs->autoterm |= ANSI;
+		}
 		return false;
 	}
 
