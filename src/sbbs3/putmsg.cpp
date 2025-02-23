@@ -52,6 +52,7 @@ char sbbs_t::putmsg(const char *buf, int mode, int org_cols, JSObject* obj)
 		sys_status |= SS_PAUSEOFF;
 
 	memcpy(rainbow_sav, rainbow, sizeof rainbow_sav);
+	ansiParser.reset();
 	char ret = putmsgfrag(buf, mode, org_cols, obj);
 	memcpy(rainbow, rainbow_sav, sizeof rainbow);
 	if (!(mode & P_SAVEATR)) {
@@ -123,7 +124,6 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 		}
 	}
 
-	ansiParser.reset();
 	while (l < len && (mode & P_NOABORT || !msgabort()) && online) {
 		switch (str[l]) {
 			case '\r':

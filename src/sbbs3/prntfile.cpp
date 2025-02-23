@@ -132,6 +132,7 @@ bool sbbs_t::printfile(const char* fname, int mode, int org_cols, JSObject* obj)
 		uint rainbow_sav[LEN_RAINBOW + 1];
 		memcpy(rainbow_sav, rainbow, sizeof rainbow_sav);
 
+		ansiParser.reset();
 		while (!feof(stream) && !msgabort()) {
 			if (fgets(buf, length + 1, stream) == NULL)
 				break;
