@@ -74,6 +74,7 @@ protected:
 
 private:
 	link_list_t *savedlines{nullptr};
+	bool last_was_esc{false};
 
 public:
 
@@ -339,6 +340,8 @@ public:
 	 * this function handled it (ie: via term_out(), or stripping it)
 	 */
 	virtual bool parse_outchar(char ch) {
+		bool lwe = last_was_esc;
+		last_was_esc = false;
 		switch (ch) {
 			// Zero-width characters we likely shouldn't send
 			case 0:  // NUL
@@ -370,6 +373,8 @@ public:
 
 			// Zero-width characters we want to pass through
 			case 27: // ESC - This one is especially troubling, but we need to pass it for ANSI detection
+				last_was_esc = true;
+				return true;
 			case 7:  // BEL
 				// Does not go into lbuf...
 				return true;
@@ -399,6 +404,13 @@ public:
 				if (sbbs->console & CON_CR_CLREOL)
 					cleartoeol();
 				set_column();
+				return true;
+
+			case '[': // Could be a CSI...
+				if (lwe)
+					sbbs->autoterm |= ANSI;
+				else
+					inc_column();
 				return true;
 
 			// Everything else is assumed one byte wide

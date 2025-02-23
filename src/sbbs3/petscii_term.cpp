@@ -296,6 +296,8 @@ bool PETSCII_Terminal::parse_outchar(char ch)
 		case 4:
 		case 6:
 		case 7:
+		case 9:
+		case 10:
 		case 11:
 		case 14:
 		case 15:
@@ -323,8 +325,6 @@ bool PETSCII_Terminal::parse_outchar(char ch)
 			return false;
 
 		// Specials that affect cursor position
-		//case 9:  // TODO: Tab or unlock case...
-		//case 10: // TODO: Linefeed or nothing
 		case '\x8D': // Shift-return
 		case 13: // Translated as Carriage Return
 			inc_row();
@@ -357,7 +357,6 @@ bool PETSCII_Terminal::parse_outchar(char ch)
 			dec_column();
 			return true;
 
-		// TODO: Parse attributes
 		// Zero-width characters we want to pass through
 		case 18: // Reverse on
 			if (!reverse_on) {

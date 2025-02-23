@@ -646,7 +646,8 @@ size_t sbbs_t::gettmplt(char *strout, const char *templt, int mode)
 	sys_status &= ~SS_ABORT;
 	SAFECOPY(tmplt, templt);
 	strupr(tmplt);
-	// TODO: This was ANSI-only?
+	// MODE7: This was ANSI-only, added support for PETSCII, 
+	//        but we may not want it for Mode7.
 	if (mode & K_LINE) {
 		if (term->supports(COLOR))
 			attr(cfg.color[clr_inputline]);

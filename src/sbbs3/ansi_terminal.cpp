@@ -183,9 +183,9 @@ char* ANSI_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t st
 	}
 
 	if (lastret >= strsz) {
-		// TODO: Log an error somehow?
-		// TODO: This assumes strsz is at least one...
-		str[0] = 0;
+		sbbs->lprintf(LOG_ERROR, "ANSI sequence attr %02X to %02X, strsz %zu too small", curatr, atr, strsz);
+		if (strsz)
+			str[0] = 0;
 	}
 
 	return str;
@@ -273,14 +273,6 @@ bool ANSI_Terminal::getxy(unsigned* x, unsigned* y)
 
 bool ANSI_Terminal::gotoxy(unsigned x, unsigned y)
 {
-	/*
-	 * TODO: Previously, this was an int and sent exactly
-	 *       what was passed, leaving it up to the terminal
-	 *       to decide what to do about invalid sequences with
-	 *       zeros and negative numbers.  Since negatives are
-	 *       invalid sequences, and zeros should be default (1),
-	 *       just force known consistent behaviour.
-	 */
 	if (x == 0)
 		x = 1;
 	if (y == 0)
@@ -601,7 +593,6 @@ bool ANSI_Terminal::parse_outchar(char ich) {
 			ansi_final_byte = ch;
 		}
 		else {
-			// TODO: Broken sequence, position unknown
 			sbbs->lprintf(LOG_WARNING, "Sent broken ANSI sequence '%s' at %d", ansi_sequence.c_str(), __LINE__);
 			outchar_esc = ansiState_none;
 		}
@@ -622,7 +613,6 @@ bool ANSI_Terminal::parse_outchar(char ich) {
 			ansi_final_byte = ch;
 		}
 		else {
-			// TODO: Broken sequence, position unknown
 			sbbs->lprintf(LOG_WARNING, "Sent broken ANSI sequence '%s' at %d", ansi_sequence.c_str(), __LINE__);
 			outchar_esc = ansiState_none;
 		}
@@ -635,7 +625,6 @@ bool ANSI_Terminal::parse_outchar(char ich) {
 		}
 		else if (ch >= '0' && ch <= '~') {
 			if (!ansi_was_cc) {
-				// TODO: Broken sequence, position unknown
 				sbbs->lprintf(LOG_WARNING, "Sent broken ANSI sequence '%s' at %d", ansi_sequence.c_str(), __LINE__);
 				outchar_esc = ansiState_none;
 			}
@@ -645,7 +634,6 @@ bool ANSI_Terminal::parse_outchar(char ich) {
 			}
 		}
 		else {
-			// TODO: Broken sequence, position unknown
 			sbbs->lprintf(LOG_WARNING, "Sent broken ANSI sequence '%s' at %d", ansi_sequence.c_str(), __LINE__);
 			outchar_esc = ansiState_none;
 		}
@@ -684,14 +672,11 @@ bool ANSI_Terminal::parse_outchar(char ich) {
 							inc_row();
 							break;
 						case 'M':	// RI - Reverse Line Feed
-							// TODO: line counter etc.
-							if (row)
-								row--;
+							dec_row();
 							break;
 						case 'c':	// RIS - Reset to Initial State.. homes
 							set_column();
 							set_row();
-							// TODO: line counter etc.
 							break;
 					}
 				}
@@ -942,7 +927,6 @@ bool ANSI_Terminal::parse_outchar(char ich) {
 				dec_column();
 				break;
 			case 9:	// TAB
-				// TODO: This makes the position unknown
 				if (column < (cols - 1)) {
 					inc_column();
 					while ((column < (cols - 1)) && (column % 8))
@@ -953,7 +937,6 @@ bool ANSI_Terminal::parse_outchar(char ich) {
 				inc_row();
 				break;
 			case 12: // FF
-				// TODO: Technically, this makes the position unknown
 				set_row();
 				set_column();
 				break;
@@ -963,8 +946,13 @@ bool ANSI_Terminal::parse_outchar(char ich) {
 				set_column();
 				break;
 			default:
-				// TODO: We'll need to handle UTF-8 here now...
-				// TODO: All kinds of CTRL charaters not handled properly
+				if ((charset() == CHARSET_UTF8) && (ch < 32)) {
+					// Assume all other UTF-8 control characters do nothing.
+					// TODO: Some might (ie: VT) but we can't really know
+					//       what they'll do.
+					break;
+				}
+				// Assume other CP427 control characters print a glyph.
 				inc_column();
 				break;
 		}
@@ -988,8 +976,6 @@ bool ANSI_Terminal::parse_ctrlkey(char& ch, int mode) {
 		}
 		int sp = 0; // String position
 		int to = 0; // Number of input timeouts
-		// TODO: Presumably this is already set...
-		sbbs->autoterm |= ANSI;
 		while (sp < 10 && to < 30) {       /* up to 3 seconds */
 			rc = sbbs->kbincom(100);
 			if (rc == NOINP) {
@@ -997,7 +983,6 @@ bool ANSI_Terminal::parse_ctrlkey(char& ch, int mode) {
 				continue;
 			}
 			inch = rc;
-			// TODO: Previously errors in parsing a button would continue, now it breaks
 			if (sp == 0 && inch == 'M' && mouse_mode != MOUSE_MODE_OFF) {
 				if (sp == 0)
 					str[sp++] = ch;

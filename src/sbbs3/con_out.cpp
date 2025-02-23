@@ -785,8 +785,6 @@ int sbbs_t::outchar(char ch)
 	if ((console & CON_R_ECHOX) && (uchar)ch >= ' ')
 		ch = *text[PasswordChar];
 
-	// TODO: We may want to move these into term_out()
-	//       Otherwise they won't work with UTF-8
 	if (ch == '\n' && line_delay)
 		SLEEP(line_delay);
 
@@ -1107,8 +1105,6 @@ int sbbs_t::attr(int atr)
 	char str[128];
 
 	term->attrstr(atr, term->curatr, str, sizeof(str));
-	// TODO: This was rputs()
-	// TODO: We may need a raw output that goes in there
 	term_out(str);
 	return 0;
 }

@@ -191,13 +191,10 @@ void Terminal::inc_row(unsigned count) {
 //       terminal.
 void Terminal::inc_column(unsigned count) {
 	column += count;
-	if (column >= cols) {
-		// TODO: The "line" needs to be able to be wider than the screen?
+	if (column >= cols)
 		lastlinelen = column;
-	}
 	while (column >= cols) {
 		lbuflen = 0;
-		// TODO: This left column at 0 before...
 		column -= cols;
 		inc_row();
 	}
@@ -206,7 +203,7 @@ void Terminal::inc_column(unsigned count) {
 void Terminal::dec_row(unsigned count) {
 	if (column)
 		lastlinelen = column;
-	// TODO: Never allow dec_row to scroll up
+	// Never allow dec_row to scroll up
 	if (count > row)
 		count = row;
 #if 0
@@ -223,7 +220,7 @@ void Terminal::dec_row(unsigned count) {
 }
 
 void Terminal::dec_column(unsigned count) {
-	// TODO: Never allow dec_column() to wrap
+	// Never allow dec_column() to wrap
 	if (count > column)
 		count = column;
 	column -= count;
@@ -323,7 +320,7 @@ uint32_t Terminal::flags(bool raw)
 		if (newflags != flags_)
 			update_terminal(sbbs);
 	}
-	// TODO: We have potentially destructed ourselves now...
+	// We have potentially destructed ourselves now...
 	return sbbs->term->flags_;
 }
 
