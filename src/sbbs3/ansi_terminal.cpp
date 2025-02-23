@@ -183,7 +183,7 @@ char* ANSI_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t st
 	}
 
 	if (lastret >= strsz) {
-		sbbs->lprintf(LOG_ERROR, "ANSI sequence attr %02X to %02X, strsz %zu too small", curatr, atr, strsz);
+		sbbs->lprintf(LOG_ERR, "ANSI sequence attr %02X to %02X, strsz %zu too small", curatr, atr, strsz);
 		if (strsz)
 			str[0] = 0;
 	}
@@ -425,73 +425,261 @@ void ANSI_Terminal::set_mouse(unsigned flags) {
 	}
 }
 
-static unsigned
-get_pval(std::string params, unsigned pnum, unsigned dflt)
-{
-	try {
-		if (params == "")
-			return dflt;
-		unsigned p = 0;
-		std::string tp = params;
-		switch (tp.at(0)) {
-			case '<':
-			case '=':
-			case '>':
-			case '?':
-				tp.erase(0, 1);
+void ANSI_Terminal::handle_control_code() {
+	if (ansiParser.ansi_ibs == "") {
+		switch (ansiParser.ansi_final_byte) {
+			case 'E':	// NEL - Next Line
+				set_column();
+				inc_row();
+				break;
+			case 'M':	// RI - Reverse Line Feed
+				dec_row();
+				break;
+			case 'c':	// RIS - Reset to Initial State.. homes
+				set_column();
+				set_row();
 				break;
 		}
-		while (p < pnum) {
-			size_t sc = tp.find(";");
-			if (sc == std::string::npos)
-				return dflt;
-			tp.erase(0, sc + 1);
-			p++;
-		}
-		size_t sc = tp.find(";");
-		if (sc != std::string::npos)
-			tp.erase(sc);
-		sc = tp.find(":");
-		if (sc != std::string::npos)
-			tp.erase(sc);
-		sc = tp.find("<");
-		if (sc != std::string::npos)
-			tp.erase(sc);
-		sc = tp.find("=");
-		if (sc != std::string::npos)
-			tp.erase(sc);
-		sc = tp.find(">");
-		if (sc != std::string::npos)
-			tp.erase(sc);
-		sc = tp.find("?");
-		if (sc != std::string::npos)
-			tp.erase(sc);
-		if (tp == "")
-			return dflt;
-		return std::stoul(tp);
-	}
-	catch (...) {
-		return dflt;
 	}
 }
 
-static unsigned
-count_params(std::string params)
-{
-	std::string tp = params;
-	unsigned ret = 1;
+void ANSI_Terminal::handle_SGR_sequence() {
+	unsigned cnt = ansiParser.count_params();
+	unsigned pval;
 
-	try {
-		for (;;) {
-			size_t sc = tp.find(";");
-			if (sc == std::string::npos)
-				return ret;
-			ret++;
-			tp.erase(0, sc + 1);
+	for (unsigned i = 0; i < cnt; i++) {
+		pval = ansiParser.get_pval(i, 0);
+		switch (pval) {
+			case 0:
+				// Don't use ANSI_NORMAL, it's only for the const thing
+				curatr = 0x07;
+				break;
+			case 1:
+				curatr &= ~0x100;
+				curatr |= 0x08;
+				break;
+			case 2:
+				curatr &= ~0x108;
+				break;
+			case 5:
+			case 6:
+				curatr &= ~0x100;
+				if (flags_ & ICE_COLOR)
+					curatr |= BG_BRIGHT;
+				else
+					curatr |= BLINK;
+				break;
+			case 7:
+				curatr &= ~0x100;
+				if (!is_negative) {
+					curatr = (curatr & ~0x77) | ((curatr & 0x70) >> 4) | ((curatr & 0x07) << 4);
+					is_negative = true;
+				}
+				break;
+			case 8:
+				curatr &= ~0x100;
+				curatr = (curatr & ~0x07) | ((curatr & 0x70) >> 4);
+				break;
+			case 22:
+				curatr &= ~0x108;
+				break;
+			case 25:
+				curatr &= ~0x100;
+				if (flags_ & ICE_COLOR)
+					curatr &= ~BG_BRIGHT;
+				else
+					curatr &= ~BLINK;
+				break;
+			case 27:
+				if (is_negative) {
+					curatr = (curatr & ~0x77) | ((curatr & 0x70) >> 4) | ((curatr & 0x07) << 4);
+					is_negative = false;
+				}
+				break;
+			case 30:
+				curatr &= ~0x107;
+				curatr |= BLACK;
+				break;
+			case 31:
+				curatr &= ~0x107;
+				curatr |= RED;
+				break;
+			case 32:
+				curatr &= ~0x107;
+				curatr |= GREEN;
+				break;
+			case 33:
+				curatr &= ~0x107;
+				curatr |= BROWN;
+				break;
+			case 34:
+				curatr &= ~0x107;
+				curatr |= BLUE;
+				break;
+			case 35:
+				curatr &= ~0x107;
+				curatr |= MAGENTA;
+				break;
+			case 36:
+				curatr &= ~0x107;
+				curatr |= CYAN;
+				break;
+			case 37:
+				curatr &= ~0x107;
+				curatr |= LIGHTGRAY;
+				break;
+			case 40:
+				curatr &= ~0x370;
+				// Don't use BG_BLACK, it's only for the const thing.
+				//curatr |= BG_BLACK;
+				break;
+			case 41:
+				curatr &= ~0x370;
+				curatr |= BG_RED;
+				break;
+			case 42:
+				curatr &= ~0x370;
+				curatr |= BG_GREEN;
+				break;
+			case 43:
+				curatr &= ~0x370;
+				curatr |= BG_BROWN;
+				break;
+			case 44:
+				curatr &= ~0x370;
+				curatr |= BG_BLUE;
+				break;
+			case 45:
+				curatr &= ~0x370;
+				curatr |= BG_MAGENTA;
+				break;
+			case 46:
+				curatr &= ~0x370;
+				curatr |= BG_CYAN;
+				break;
+			case 47:
+				curatr &= ~0x370;
+				curatr |= BG_LIGHTGRAY;
+				break;
 		}
 	}
-	catch (...) {
-		return 0;
+}
+
+void ANSI_Terminal::handle_control_sequence() {
+	unsigned pval;
+
+	if (ansiParser.ansi_was_private) {
+		// TODO: Track things like origin mode, auto wrap, etc.
+	}
+	else {
+		if (ansiParser.ansi_ibs == "") {
+			switch (ansiParser.ansi_final_byte) {
+				case 'A':	// Cursor up
+				case 'F':	// Cursor Preceding Line
+				case 'k':	// Line Position Backward
+					// Single parameter, default 1
+					pval = ansiParser.get_pval(0, 1);
+					if (pval > row)
+						pval = row;
+					dec_row(pval);
+					break;
+				case 'B':	// Cursor Down
+				case 'E':	// Cursor Next Line
+				case 'e':	// Line position Forward
+					// Single parameter, default 1
+					pval = ansiParser.get_pval(0, 1);
+					if (pval >= (rows - row))
+						pval = rows - row - 1;
+					inc_row(pval);
+					break;
+				case 'C':	// Cursor Right
+				case 'a':	// Cursor Position Forward
+					// Single parameter, default 1
+					pval = ansiParser.get_pval(0, 1);
+					if (pval >= (cols - column))
+						pval = cols - column - 1;
+					inc_column(pval);
+					break;
+				case 'D':	// Cursor Left
+				case 'j':	// Character Position Backward
+					// Single parameter, default 1
+					pval = ansiParser.get_pval(0, 1);
+					if (pval > column)
+						pval = column;
+					dec_column(pval);
+					break;
+				case 'G':	// Cursor Character Absolute
+				case '`':	// Character Position Absolute
+					pval = ansiParser.get_pval(0, 1);
+					if (pval > cols)
+						pval = cols;
+					if (pval == 0)
+						pval = 1;
+					set_column(pval - 1);
+					break;
+				case 'H':	// Cursor Position
+				case 'f':	// Character and Line Position
+					pval = ansiParser.get_pval(0, 1);
+					if (pval > rows)
+						pval = rows;
+					if (pval == 0)
+						pval = 1;
+					set_row(pval - 1);
+					pval = ansiParser.get_pval(1, 1);
+					if (pval > cols)
+						pval = cols;
+					if (pval == 0)
+						pval = 1;
+					set_column(pval - 1);
+					break;
+				case 'I':	// Cursor Forward Tabulation
+					// TODO
+					break;
+				case 'J':	// Clear screen
+					// TODO: ANSI does not move cursor, ANSI-BBS does.
+					set_row();
+					set_column();
+					break;
+				case 'Y':	// Line tab
+					// TODO: Track tabs
+					break;
+				case 'Z':	// Back tab
+					// TODO: Track tabs
+					break;
+				case 'b':	// Repeat
+					// TODO: Can't repeat ESC
+					break;
+				case 'd':	// Line Position Abolute
+					pval = ansiParser.get_pval(0, 1);
+					if (pval > rows)
+						pval = rows;
+					if (pval == 0)
+						pval = 1;
+					set_row(pval - 1);
+					break;
+				case 'm':	// Set Graphic Rendidtion
+					handle_SGR_sequence();
+					break;
+				case 'r':	// Set Top and Bottom Margins
+					// TODO
+					break;
+				case 's':	// Save Current Position (also set left/right margins)
+					saved_row = row;
+					saved_column = column;
+					break;
+				case 'u':	// Restore Cursor Position
+					set_row(saved_row);
+					set_column(saved_column);
+					break;
+				case 'z':	// Invoke Macro
+					// TODO
+					break;
+				case 'N':	// "ANSI" Music
+				case '|':	// SyncTERM Music
+					// TODO
+					break;
+			}
+		}
 	}
 }
 
@@ -559,403 +747,60 @@ bool ANSI_Terminal::parse_outchar(char ich) {
 			return true;
 	}
 
-	if (ch == ESC && outchar_esc < ansiState_string) {
-		outchar_esc = ansiState_esc;
-		ansi_was_cc = false;
-		ansi_was_string = false;
-		ansi_params = "";
-		ansi_ibs = "";
-		ansi_sequence = "";
-		ansi_final_byte = 0;
-		ansi_was_private = false;
+	switch (ansiParser.parse(ch)) {
+		case ansiState_final:
+			if (ansiParser.ansi_was_cc)
+				handle_control_code();
+			else if (!ansiParser.ansi_was_string)
+				handle_control_sequence();
+			ansiParser.reset();
+			return true;
+		case ansiState_broken:
+			sbbs->lprintf(LOG_WARNING, "Sent broken ANSI sequence '%s' at %d", ansiParser.ansi_sequence.c_str(), __LINE__);
+			return true;
+		case ansiState_none:
+			break;
+		default:
+			return true;
 	}
-	else if (outchar_esc == ansiState_esc) {
-		ansi_sequence += ch;
-		if (ch == '[') {
-			outchar_esc = ansiState_csi;
-			ansi_params = "";
-		}
-		else if (ch == '_' || ch == 'P' || ch == '^' || ch == ']') {
-			outchar_esc = ansiState_string;
-			ansi_was_string = true;
-		}
-		else if (ch == 'X') {
-			outchar_esc = ansiState_sos;
-			ansi_was_string = true;
-		}
-		else if (ch >= ' ' && ch <= '/') {
-			ansi_ibs += ch;
-			outchar_esc = ansiState_intermediate;
-		}
-		else if (ch >= '0' && ch <= '~') {
-			outchar_esc = ansiState_final;
-			ansi_was_cc = true;
-			ansi_final_byte = ch;
-		}
-		else {
-			sbbs->lprintf(LOG_WARNING, "Sent broken ANSI sequence '%s' at %d", ansi_sequence.c_str(), __LINE__);
-			outchar_esc = ansiState_none;
-		}
-	}
-	else if (outchar_esc == ansiState_csi) {
-		ansi_sequence += ch;
-		if (ch >= '0' && ch <= '?') {
-			if (ansi_params == "" && ch >= '<' && ch <= '?')
-				ansi_was_private = true;
-			ansi_params += ch;
-		}
-		else if (ch >= ' ' && ch <= '/') {
-			ansi_ibs += ch;
-			outchar_esc = ansiState_intermediate;
-		}
-		else if (ch >= '@' && ch <= '~') {
-			outchar_esc = ansiState_final;
-			ansi_final_byte = ch;
-		}
-		else {
-			sbbs->lprintf(LOG_WARNING, "Sent broken ANSI sequence '%s' at %d", ansi_sequence.c_str(), __LINE__);
-			outchar_esc = ansiState_none;
-		}
-	}
-	else if (outchar_esc == ansiState_intermediate) {
-		ansi_sequence += ch;
-		if (ch >= ' ' && ch <= '/') {
-			ansi_ibs += ch;
-			outchar_esc = ansiState_intermediate;
-		}
-		else if (ch >= '0' && ch <= '~') {
-			if (!ansi_was_cc) {
-				sbbs->lprintf(LOG_WARNING, "Sent broken ANSI sequence '%s' at %d", ansi_sequence.c_str(), __LINE__);
-				outchar_esc = ansiState_none;
-			}
-			else {
-				outchar_esc = ansiState_final;
-				ansi_final_byte = ch;
-			}
-		}
-		else {
-			sbbs->lprintf(LOG_WARNING, "Sent broken ANSI sequence '%s' at %d", ansi_sequence.c_str(), __LINE__);
-			outchar_esc = ansiState_none;
-		}
-	}
-	else if (outchar_esc == ansiState_string) {  // APS, DCS, PM, or OSC
-		ansi_sequence += ch;
-		if (ch == ESC)
-			outchar_esc = ansiState_esc;
-		if (!((ch >= '\b' && ch <= '\r') || (ch >= ' ' && ch <= '~')))
-			outchar_esc = ansiState_none;
-	}
-	else if (outchar_esc == ansiState_sos) { // SOS
-		ansi_sequence += ch;
-		if (ch == ESC)
-			outchar_esc = ansiState_sos_esc;
-	}
-	else if (outchar_esc == ansiState_sos_esc) { // ESC inside SOS
-		ansi_sequence += ch;
-		if (ch == '\\')
-			outchar_esc = ansiState_esc;
-		else if (ch == 'X')
-			outchar_esc = ansiState_none;
-		else
-			outchar_esc = ansiState_sos;
-	}
-	else
-		outchar_esc = ansiState_none;
 
-	if (outchar_esc != ansiState_none) {
-		if (outchar_esc == ansiState_final) {
-			if (ansi_was_cc) {
-				if (ansi_ibs == "") {
-					switch (ansi_final_byte) {
-						case 'E':	// NEL - Next Line
-							set_column();
-							inc_row();
-							break;
-						case 'M':	// RI - Reverse Line Feed
-							dec_row();
-							break;
-						case 'c':	// RIS - Reset to Initial State.. homes
-							set_column();
-							set_row();
-							break;
-					}
-				}
-			}
-			else if (!ansi_was_string) {
-				unsigned cnt;
-				unsigned pval;
-				if (ansi_ibs == "") {
-					if (ansi_was_private) {
-						// TODO: Track things like origin mode, auto wrap, etc.
-					}
-					else {
-						switch (ansi_final_byte) {
-							case 'A':	// Cursor up
-							case 'F':	// Cursor Preceding Line
-							case 'k':	// Line Position Backward
-								// Single parameter, default 1
-								pval = get_pval(ansi_params, 0, 1);
-								if (pval > row)
-									pval = row;
-								dec_row(pval);
-								break;
-							case 'B':	// Cursor Down
-							case 'E':	// Cursor Next Line
-							case 'e':	// Line position Forward
-								// Single parameter, default 1
-								pval = get_pval(ansi_params, 0, 1);
-								if (pval >= (rows - row))
-									pval = rows - row - 1;
-								inc_row(pval);
-								break;
-							case 'C':	// Cursor Right
-							case 'a':	// Cursor Position Forward
-								// Single parameter, default 1
-								pval = get_pval(ansi_params, 0, 1);
-								if (pval >= (cols - column))
-									pval = cols - column - 1;
-								inc_column(pval);
-								break;
-							case 'D':	// Cursor Left
-							case 'j':	// Character Position Backward
-								// Single parameter, default 1
-								pval = get_pval(ansi_params, 0, 1);
-								if (pval > column)
-									pval = column;
-								dec_column(pval);
-								break;
-							case 'G':	// Cursor Character Absolute
-							case '`':	// Character Position Absolute
-								pval = get_pval(ansi_params, 0, 1);
-								if (pval > cols)
-									pval = cols;
-								if (pval == 0)
-									pval = 1;
-								set_column(pval - 1);
-								break;
-							case 'H':	// Cursor Position
-							case 'f':	// Character and Line Position
-								pval = get_pval(ansi_params, 0, 1);
-								if (pval > rows)
-									pval = rows;
-								if (pval == 0)
-									pval = 1;
-								set_row(pval - 1);
-								pval = get_pval(ansi_params, 1, 1);
-								if (pval > cols)
-									pval = cols;
-								if (pval == 0)
-									pval = 1;
-								set_column(pval - 1);
-								break;
-							case 'I':	// Cursor Forward Tabulation
-								// TODO
-								break;
-							case 'J':	// Clear screen
-								// TODO: ANSI does not move cursor, ANSI-BBS does.
-								set_row();
-								set_column();
-								break;
-							case 'Y':	// Line tab
-								// TODO: Track tabs
-								break;
-							case 'Z':	// Back tab
-								// TODO: Track tabs
-								break;
-							case 'b':	// Repeat
-								// TODO: Can't repeat ESC
-								break;
-							case 'd':	// Line Position Abolute
-								pval = get_pval(ansi_params, 0, 1);
-								if (pval > rows)
-									pval = rows;
-								if (pval == 0)
-									pval = 1;
-								set_row(pval - 1);
-								break;
-							case 'm':	// Set Graphic Rendidtion
-								cnt = count_params(ansi_params);
-								for (unsigned i = 0; i < cnt; i++) {
-									pval = get_pval(ansi_params, i, 0);
-									switch (pval) {
-										case 0:
-											// Don't use ANSI_NORMAL, it's only for the const thing
-											curatr = 0x07;
-											break;
-										case 1:
-											curatr &= ~0x100;
-											curatr |= 0x08;
-											break;
-										case 2:
-											curatr &= ~0x108;
-											break;
-										case 5:
-										case 6:
-											curatr &= ~0x100;
-											if (flags_ & ICE_COLOR)
-												curatr |= BG_BRIGHT;
-											else
-												curatr |= BLINK;
-											break;
-										case 7:
-											curatr &= ~0x100;
-											if (!is_negative) {
-												curatr = (curatr & ~0x77) | ((curatr & 0x70) >> 4) | ((curatr & 0x07) << 4);
-												is_negative = true;
-											}
-											break;
-										case 8:
-											curatr &= ~0x100;
-											curatr = (curatr & ~0x07) | ((curatr & 0x70) >> 4);
-											break;
-										case 22:
-											curatr &= ~0x108;
-											break;
-										case 25:
-											curatr &= ~0x100;
-											if (flags_ & ICE_COLOR)
-												curatr &= ~BG_BRIGHT;
-											else
-												curatr &= ~BLINK;
-											break;
-										case 27:
-											if (is_negative) {
-												curatr = (curatr & ~0x77) | ((curatr & 0x70) >> 4) | ((curatr & 0x07) << 4);
-												is_negative = false;
-											}
-											break;
-										case 30:
-											curatr &= ~0x107;
-											curatr |= BLACK;
-											break;
-										case 31:
-											curatr &= ~0x107;
-											curatr |= RED;
-											break;
-										case 32:
-											curatr &= ~0x107;
-											curatr |= GREEN;
-											break;
-										case 33:
-											curatr &= ~0x107;
-											curatr |= BROWN;
-											break;
-										case 34:
-											curatr &= ~0x107;
-											curatr |= BLUE;
-											break;
-										case 35:
-											curatr &= ~0x107;
-											curatr |= MAGENTA;
-											break;
-										case 36:
-											curatr &= ~0x107;
-											curatr |= CYAN;
-											break;
-										case 37:
-											curatr &= ~0x107;
-											curatr |= LIGHTGRAY;
-											break;
-										case 40:
-											curatr &= ~0x370;
-											// Don't use BG_BLACK, it's only for the const thing.
-											//curatr |= BG_BLACK;
-											break;
-										case 41:
-											curatr &= ~0x370;
-											curatr |= BG_RED;
-											break;
-										case 42:
-											curatr &= ~0x370;
-											curatr |= BG_GREEN;
-											break;
-										case 43:
-											curatr &= ~0x370;
-											curatr |= BG_BROWN;
-											break;
-										case 44:
-											curatr &= ~0x370;
-											curatr |= BG_BLUE;
-											break;
-										case 45:
-											curatr &= ~0x370;
-											curatr |= BG_MAGENTA;
-											break;
-										case 46:
-											curatr &= ~0x370;
-											curatr |= BG_CYAN;
-											break;
-										case 47:
-											curatr &= ~0x370;
-											curatr |= BG_LIGHTGRAY;
-											break;
-									}
-								}
-								break;
-							case 'r':	// Set Top and Bottom Margins
-								// TODO
-								break;
-							case 's':	// Save Current Position (also set left/right margins)
-								saved_row = row;
-								saved_column = column;
-								break;
-							case 'u':	// Restore Cursor Position
-								set_row(saved_row);
-								set_column(saved_column);
-								break;
-							case 'z':	// Invoke Macro
-								// TODO
-								break;
-							case 'N':	// "ANSI" Music
-							case '|':	// SyncTERM Music
-								// TODO
-								break;
-						}
-					}
-				}
-			}
-			outchar_esc = ansiState_none;
-		}
-	}
-	else {
-		/* Track cursor position locally */
-		switch (ch) {
-			case '\a':  // 7
-				/* Non-printing */
-				break;
-			case 8:  // BS
-				dec_column();
-				break;
-			case 9:	// TAB
-				if (column < (cols - 1)) {
-					inc_column();
-					while ((column < (cols - 1)) && (column % 8))
-						inc_column();
-				}
-				break;
-			case 10: // LF
-				inc_row();
-				break;
-			case 12: // FF
-				set_row();
-				set_column();
-				break;
-			case 13: // CR
-				if (sbbs->console & CON_CR_CLREOL)
-					cleartoeol();
-				set_column();
-				break;
-			default:
-				if ((charset() == CHARSET_UTF8) && (ch < 32)) {
-					// Assume all other UTF-8 control characters do nothing.
-					// TODO: Some might (ie: VT) but we can't really know
-					//       what they'll do.
-					break;
-				}
-				// Assume other CP427 control characters print a glyph.
+	/* Track cursor position locally */
+	switch (ch) {
+		case '\a':  // 7
+			/* Non-printing */
+			break;
+		case 8:  // BS
+			dec_column();
+			break;
+		case 9:	// TAB
+			if (column < (cols - 1)) {
 				inc_column();
+				while ((column < (cols - 1)) && (column % 8))
+					inc_column();
+			}
+			break;
+		case 10: // LF
+			inc_row();
+			break;
+		case 12: // FF
+			set_row();
+			set_column();
+			break;
+		case 13: // CR
+			if (sbbs->console & CON_CR_CLREOL)
+				cleartoeol();
+			set_column();
+			break;
+		default:
+			if ((charset() == CHARSET_UTF8) && (ch < 32)) {
+				// Assume all other UTF-8 control characters do nothing.
+				// TODO: Some might (ie: VT) but we can't really know
+				//       what they'll do.
 				break;
-		}
+			}
+			// Assume other CP427 control characters print a glyph.
+			inc_column();
+			break;
 	}
 
 	return true;

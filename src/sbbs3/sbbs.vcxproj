@@ -185,6 +185,7 @@
     <ClCompile Include="..\encode\utf8.c" />
     <ClCompile Include="..\encode\uucode.c" />
     <ClCompile Include="..\encode\yenc.c" />
+    <ClCompile Include="ansi_parser.cpp" />
     <ClCompile Include="ansi_terminal.cpp" />
     <ClCompile Include="ansiterm.cpp">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

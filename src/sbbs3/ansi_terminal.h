@@ -2,18 +2,8 @@
 #define ANSI_TERMINAL_H
 
 #include <string>
+#include "ansi_parser.h"
 #include "terminal.h"
-
-enum ansiState {
-	 ansiState_none         // No sequence
-	,ansiState_esc          // Escape
-	,ansiState_csi          // CSI
-	,ansiState_intermediate // Intermediate byte
-	,ansiState_final        // Final byte
-	,ansiState_string       // APS, DCS, PM, or OSC
-	,ansiState_sos          // SOS
-	,ansiState_sos_esc      // ESC inside SOS
-};
 
 class ANSI_Terminal : public Terminal {
 public:
@@ -54,20 +44,17 @@ public:
 	virtual bool is_monochrome();
 
 private:
-	enum ansiState outchar_esc{ansiState_none}; // track ANSI escape seq output
-	std::string ansi_params{""};
-	std::string ansi_ibs{""};
-	std::string ansi_sequence{""};
-	bool ansi_was_cc{false};
-	bool ansi_was_string{false};
-	char ansi_final_byte{0};
-	bool ansi_was_private{false};
+	void handle_control_code();
+	void handle_control_sequence();
+	void handle_SGR_sequence();
+
 	unsigned saved_row{0};
 	unsigned saved_column{0};
 	bool is_negative{0};
 	uint8_t utf8_remain{0};
 	bool first_continuation{false};
 	uint32_t codepoint{0};
+	ANSI_Parser ansiParser{};
 };
 
 #endif

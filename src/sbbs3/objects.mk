@@ -3,8 +3,9 @@
 # [MT]OBJODIR and OFILE must be pre-defined
 
 OBJS	=		$(LOAD_CFG_OBJS) \
-			$(MTOBJODIR)/ansiterm$(OFILE) \
+			$(MTOBJODIR)/ansi_parser$(OFILE) \
 			$(MTOBJODIR)/ansi_terminal$(OFILE) \
+			$(MTOBJODIR)/ansiterm$(OFILE) \
 			$(MTOBJODIR)/answer$(OFILE)\
 			$(MTOBJODIR)/atcodes$(OFILE)\
 			$(MTOBJODIR)/bat_xfer$(OFILE)\
