@@ -16,8 +16,8 @@ enum ansiState {
 };
 
 class ANSI_Parser {
-public:
 #ifndef __BORLANDC__
+public:
 	enum ansiState parse(unsigned char ch);
 	enum ansiState current_state();
 	void reset();
@@ -31,10 +31,10 @@ public:
 	bool ansi_was_cc{false};
 	bool ansi_was_string{false};
 	bool ansi_was_private{false};
-#endif
 
 private:
 	enum ansiState outchar_esc{ansiState_none}; // track ANSI escape seq output
+#endif
 };
 
 #endif
