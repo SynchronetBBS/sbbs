@@ -81,7 +81,7 @@ char* PETSCII_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t
 		return str;
 	}
 
-	if (newatr & (0x70 | BG_BRIGHT)) {	// Reversed
+	if (atr & (0x70 | BG_BRIGHT)) {	// Reversed
 		if (!(oldatr & (0x70 | BG_BRIGHT)))
 			str[sp++] = PETSCII_REVERSE_ON;
 	}
@@ -156,7 +156,6 @@ char* PETSCII_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t
 			break;
 	}
 	str[sp] = 0;
-	curatr = newatr;
 	return str;
 }
 
@@ -285,7 +284,7 @@ const char* PETSCII_Terminal::type()
 	return "PETSCII";
 }
 
-bool PETSCII_Terminal::parse_outchar(char ch)
+bool PETSCII_Terminal::parse_output(char ch)
 {
 	switch (ch) {
 		// Zero-width characters we likely shouldn't send
@@ -541,7 +540,7 @@ bool PETSCII_Terminal::parse_outchar(char ch)
 	return false;
 }
 
-bool PETSCII_Terminal::parse_ctrlkey(char& ch, int mode)
+bool PETSCII_Terminal::parse_input(char& ch, int mode)
 {
 	switch (ch) {
 		case 17:

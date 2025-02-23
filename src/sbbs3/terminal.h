@@ -339,7 +339,7 @@ public:
 	 * Returns true if the caller should send the char, false if
 	 * this function handled it (ie: via term_out(), or stripping it)
 	 */
-	virtual bool parse_outchar(char ch) {
+	virtual bool parse_output(char ch) {
 		last_was_esc = false;
 		switch (ch) {
 			// Zero-width characters we likely shouldn't send
@@ -424,7 +424,7 @@ public:
 	 * 
 	 * Note that DEL is considered a control key by this function.
 	 */
-	virtual bool parse_ctrlkey(char& ch, int mode) {
+	virtual bool parse_input(char& ch, int mode) {
 		bool lwe = last_was_esc;
 		if (ch == '\x1b')
 			last_was_esc = true;

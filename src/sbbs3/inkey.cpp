@@ -156,7 +156,8 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 	char tmp[512];
 	int  i;
 
-	if (!term->parse_ctrlkey(ch, mode))
+	// TODO: We should insert at kbincom(), not here... this is too late.
+	if (!term->parse_input(ch, mode))
 		return 0;
 	if (ch == TERM_KEY_IGNORE)
 		return 0;

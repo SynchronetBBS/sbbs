@@ -33,8 +33,8 @@ public:
 	virtual void cursor_right(unsigned count = 1);
 	virtual void cursor_left(unsigned count = 1);
 	virtual const char* type();
-	virtual bool parse_outchar(char ch);
-	virtual bool parse_ctrlkey(char& ch, int mode);
+	virtual bool parse_output(char ch);
+	virtual bool parse_input(char& ch, int mode);
 	virtual bool can_highlight();
 	virtual bool can_move();
 	virtual bool is_monochrome();

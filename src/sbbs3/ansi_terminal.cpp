@@ -683,7 +683,7 @@ void ANSI_Terminal::handle_control_sequence() {
 	}
 }
 
-bool ANSI_Terminal::parse_outchar(char ich) {
+bool ANSI_Terminal::parse_output(char ich) {
 	unsigned char ch = static_cast<unsigned char>(ich);
 	if (flags_ & UTF8) {
 		// TODO: How many errors should be logged?
@@ -806,7 +806,7 @@ bool ANSI_Terminal::parse_outchar(char ich) {
 	return true;
 }
 
-bool ANSI_Terminal::parse_ctrlkey(char& ch, int mode) {
+bool ANSI_Terminal::parse_input(char& ch, int mode) {
 	char inch;
 	char str[512];
 
