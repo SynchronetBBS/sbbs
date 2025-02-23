@@ -276,6 +276,7 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 #include "startup.h"
 #ifdef __cplusplus
 	#include "threadwrap.h"	/* pthread_mutex_t */
+	#include "ansi_parser.h"
 #endif
 
 #include "smblib.h"
@@ -812,6 +813,7 @@ public:
 	char	putmsgfrag(const char* str, int& mode, unsigned org_cols = 0, JSObject* obj = NULL);
 	bool	putnmsg(int node_num, const char*);
 	bool	putsmsg(int user_num, const char*);
+	ANSI_Parser ansiParser{};
 
 	/* writemsg.cpp */
 	void	automsg(void);

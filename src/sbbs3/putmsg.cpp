@@ -123,6 +123,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 		}
 	}
 
+	ansiParser.reset();
 	while (l < len && (mode & P_NOABORT || !msgabort()) && online) {
 		switch (str[l]) {
 			case '\r':
@@ -384,7 +385,58 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 				lines_printed++;
 			}
 
-			/* ansi escape sequence */
+			/*
+			 * ansi escape sequence:
+			 * Strip broken sequences
+			 * Strip "dangerous" sequences
+			 * Reset line counter on sequences that may change the row
+			 * (The last is done that way for backward compatibility)
+			 */
+			// TODO: Test this...
+			if (term->supports(ANSI)) {
+				switch (ansiParser.parse(str[l])) {
+					case ansiState_broken:
+						// TODO: Maybe just strip the CSI or something?
+						lprintf(LOG_WARNING, "Stripping broken ANSI sequence \"%s\"", ansiParser.ansi_sequence.c_str());
+						ansiParser.reset();
+						// break here prints the first non-valid character
+						break;
+					case ansiState_final:
+						if ((!ansiParser.ansi_was_private) && ansiParser.ansi_final_byte == 'p')
+							lprintf(LOG_WARNING, "Stripping SKR sequence");
+						else if (ansiParser.ansi_was_private && ansiParser.ansi_params[0] == '?' && ansiParser.ansi_final_byte == 'S')
+							lprintf(LOG_WARNING, "Stripping XTSRGA sequence");
+						else if (ansiParser.ansi_final_byte == 'n')
+							lprintf(LOG_WARNING, "Stripping DSR sequence");
+						else if (ansiParser.ansi_final_byte == 'c')
+							lprintf(LOG_WARNING, "Stripping DA sequence");
+						else if (ansiParser.ansi_ibs == "$" && ansiParser.ansi_final_byte == 'p')
+							lprintf(LOG_WARNING, "Stripping DECRQM sequence");
+						else if (ansiParser.ansi_ibs == "$" && ansiParser.ansi_final_byte == 'u')
+							lprintf(LOG_WARNING, "Stripping DECRQTSR sequence");
+						else if (ansiParser.ansi_ibs == "$" && ansiParser.ansi_final_byte == 'w')
+							lprintf(LOG_WARNING, "Stripping DECRQPSR sequence");
+						else if (ansiParser.ansi_sequence.substr(0, 4) == "\x1bP$q")
+							lprintf(LOG_WARNING, "Stripping DECRQSS sequence");
+						else if (ansiParser.ansi_sequence.substr(0, 14) == "\x1b_SyncTERM:C;L")
+							lprintf(LOG_WARNING, "Stripping CTSFI sequence");
+						else if (ansiParser.ansi_sequence.substr(0, 16) == "\x1b_SyncTERM:Q;JXL")
+							lprintf(LOG_WARNING, "Stripping CTQJS sequence");
+						else {
+							if ((!ansiParser.ansi_was_private) && ansiParser.ansi_ibs == "") {
+								if (strchr("AFkBEeHfJdu", ansiParser.ansi_final_byte) != nullptr)    /* ANSI anim */
+									term->lncntr = 0; /* so defeat pause */
+							}
+							term_out(ansiParser.ansi_sequence.c_str(), ansiParser.ansi_sequence.length());
+						}
+						ansiParser.reset();
+						continue;
+					case ansiState_none:
+						break;
+					default:
+						continue;
+				}
+			}
 			// TODO: Figure out how to do this in ANSI_Terminal
 			//       It's trickier than it looks...
 #if 0
