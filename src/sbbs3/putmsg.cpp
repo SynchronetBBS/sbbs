@@ -401,6 +401,8 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 						ansiParser.reset();
 						// break here prints the first non-valid character
 						break;
+					case ansiState_none:
+						break;
 					case ansiState_final:
 						if ((!ansiParser.ansi_was_private) && ansiParser.ansi_final_byte == 'p')
 							lprintf(LOG_WARNING, "Stripping SKR sequence");
@@ -440,8 +442,6 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 						ansiParser.reset();
 						l++;
 						continue;
-					case ansiState_none:
-						break;
 					default:
 						l++;
 						continue;
