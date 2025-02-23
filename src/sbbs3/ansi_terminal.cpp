@@ -756,7 +756,8 @@ bool ANSI_Terminal::parse_outchar(char ich) {
 			ansiParser.reset();
 			return true;
 		case ansiState_broken:
-			sbbs->lprintf(LOG_WARNING, "Sent broken ANSI sequence '%s' at %d", ansiParser.ansi_sequence.c_str(), __LINE__);
+			sbbs->lprintf(LOG_WARNING, "Sent broken ANSI sequence '%s'", ansiParser.ansi_sequence.c_str());
+			ansiParser.reset();
 			return true;
 		case ansiState_none:
 			break;

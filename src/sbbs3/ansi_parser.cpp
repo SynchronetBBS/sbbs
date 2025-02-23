@@ -3,103 +3,105 @@
 enum ansiState
 ANSI_Parser::parse(unsigned char ch)
 {
-	if (ch == '\x1b' && outchar_esc == ansiState_none) {
-		outchar_esc = ansiState_esc;
-		ansi_was_cc = false;
-		ansi_was_string = false;
-		ansi_params = "";
-		ansi_ibs = "";
-		ansi_sequence = ch;
-		ansi_final_byte = 0;
-		ansi_was_private = false;
-	}
-	else if (outchar_esc == ansiState_esc) {
-		ansi_sequence += ch;
-		if (ch == '[') {
-			outchar_esc = ansiState_csi;
-			ansi_params = "";
-		}
-		else if (ch == '_' || ch == 'P' || ch == '^' || ch == ']') {
-			outchar_esc = ansiState_string;
-			ansi_was_string = true;
-		}
-		else if (ch == 'X') {
-			outchar_esc = ansiState_sos;
-			ansi_was_string = true;
-		}
-		else if (ch >= ' ' && ch <= '/') {
-			ansi_ibs += ch;
-			outchar_esc = ansiState_intermediate;
-		}
-		else if (ch >= '0' && ch <= '~') {
-			outchar_esc = ansiState_final;
-			ansi_was_cc = true;
-			ansi_final_byte = ch;
-		}
-		else {
-			outchar_esc = ansiState_broken;
-		}
-	}
-	else if (outchar_esc == ansiState_csi) {
-		ansi_sequence += ch;
-		if (ch >= '0' && ch <= '?') {
-			if (ansi_params == "" && ch >= '<' && ch <= '?')
-				ansi_was_private = true;
-			ansi_params += ch;
-		}
-		else if (ch >= ' ' && ch <= '/') {
-			ansi_ibs += ch;
-			outchar_esc = ansiState_intermediate;
-		}
-		else if (ch >= '@' && ch <= '~') {
-			outchar_esc = ansiState_final;
-			ansi_final_byte = ch;
-		}
-		else {
-			outchar_esc = ansiState_broken;
-		}
-	}
-	else if (outchar_esc == ansiState_intermediate) {
-		ansi_sequence += ch;
-		if (ch >= ' ' && ch <= '/') {
-			ansi_ibs += ch;
-			outchar_esc = ansiState_intermediate;
-		}
-		else if (ch >= '0' && ch <= '~') {
-			if (!ansi_was_cc) {
-				outchar_esc = ansiState_broken;
+	switch (outchar_esc) {
+		case ansiState_none:
+			if (ch == '\x1b') {
+				outchar_esc = ansiState_esc;
+				ansi_sequence += ch;
+			}
+			break;
+		case ansiState_esc:
+			ansi_sequence += ch;
+			if (ch == '[') {
+				outchar_esc = ansiState_csi;
+				ansi_params = "";
+			}
+			else if (ch == '_' || ch == 'P' || ch == '^' || ch == ']') {
+				outchar_esc = ansiState_string;
+				ansi_was_string = true;
+			}
+			else if (ch == 'X') {
+				outchar_esc = ansiState_sos;
+				ansi_was_string = true;
+			}
+			else if (ch >= ' ' && ch <= '/') {
+				ansi_ibs += ch;
+				outchar_esc = ansiState_intermediate;
+			}
+			else if (ch >= '0' && ch <= '~') {
+				outchar_esc = ansiState_final;
+				ansi_was_cc = true;
+				ansi_final_byte = ch;
 			}
 			else {
 				outchar_esc = ansiState_broken;
 			}
-		}
-		else {
-			outchar_esc = ansiState_broken;
-		}
+			break;
+		case ansiState_csi:
+			ansi_sequence += ch;
+			if (ch >= '0' && ch <= '?') {
+				if (ansi_params == "" && ch >= '<' && ch <= '?')
+					ansi_was_private = true;
+				ansi_params += ch;
+			}
+			else if (ch >= ' ' && ch <= '/') {
+				ansi_ibs += ch;
+				outchar_esc = ansiState_intermediate;
+			}
+			else if (ch >= '@' && ch <= '~') {
+				outchar_esc = ansiState_final;
+				ansi_final_byte = ch;
+			}
+			else {
+				outchar_esc = ansiState_broken;
+			}
+			break;
+		case ansiState_intermediate:
+			ansi_sequence += ch;
+			if (ch >= ' ' && ch <= '/') {
+				ansi_ibs += ch;
+				outchar_esc = ansiState_intermediate;
+			}
+			else if (ch >= '0' && ch <= '~') {
+				if (!ansi_was_cc) {
+					outchar_esc = ansiState_broken;
+				}
+				else {
+					outchar_esc = ansiState_broken;
+				}
+			}
+			else {
+				outchar_esc = ansiState_broken;
+			}
+			break;
+		case ansiState_string: // APS, DCS, PM, or OSC
+			ansi_sequence += ch;
+			if (ch == '\x1b')
+				outchar_esc = ansiState_esc;
+			else if (!((ch >= '\b' && ch <= '\r') || (ch >= ' ' && ch <= '~')))
+				outchar_esc = ansiState_broken;
+			break;
+		case ansiState_sos: // SOS
+			ansi_sequence += ch;
+			if (ch == '\x1b')
+				outchar_esc = ansiState_sos_esc;
+			break;
+		case ansiState_sos_esc: // ESC inside SOS
+			ansi_sequence += ch;
+			if (ch == '\\')
+				outchar_esc = ansiState_esc;
+			else if (ch == 'X')
+				outchar_esc = ansiState_none;
+			else
+				outchar_esc = ansiState_sos;
+			break;
+		case ansiState_broken:
+			// Stay in broken state.
+			break;
+		case ansiState_final:
+			// Stay in final state.
+			break;
 	}
-	else if (outchar_esc == ansiState_string) {  // APS, DCS, PM, or OSC
-		ansi_sequence += ch;
-		if (ch == '\x1b')
-			outchar_esc = ansiState_esc;
-		if (!((ch >= '\b' && ch <= '\r') || (ch >= ' ' && ch <= '~')))
-			outchar_esc = ansiState_broken;
-	}
-	else if (outchar_esc == ansiState_sos) { // SOS
-		ansi_sequence += ch;
-		if (ch == '\x1b')
-			outchar_esc = ansiState_sos_esc;
-	}
-	else if (outchar_esc == ansiState_sos_esc) { // ESC inside SOS
-		ansi_sequence += ch;
-		if (ch == '\\')
-			outchar_esc = ansiState_esc;
-		else if (ch == 'X')
-			outchar_esc = ansiState_none;
-		else
-			outchar_esc = ansiState_sos;
-	}
-	else
-		outchar_esc = ansiState_none;
 	return outchar_esc;
 }
 
