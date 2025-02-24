@@ -102,7 +102,9 @@ public:
 
 		if (flags & PETSCII) {
 			// These bits are *never* available in PETSCII mode
-			flags &= ~(COLOR | RIP | ICE_COLOR | MOUSE | NO_EXASCII | UTF8);
+			flags &= ~(RIP | ICE_COLOR | MOUSE | NO_EXASCII | UTF8);
+			// These bits are *always* availabe in PETSCII mode
+			flags |= COLOR;
 		}
 		return flags;
 	}
