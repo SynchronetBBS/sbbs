@@ -806,219 +806,253 @@ bool ANSI_Terminal::parse_output(char ich) {
 	return true;
 }
 
-bool ANSI_Terminal::parse_input_sequence(char& ch, int mode) {
-	char inch;
-	char str[512];
+bool ANSI_Terminal::stuff_unhandled(char &ch, ANSI_Parser& ansi)
+{
+	if (ansi.ansi_sequence == "")
+		return false;
+	ch = ESC;
+	std::string remain = ansi.ansi_sequence.substr(1);
+	for (auto uch = remain.crbegin(); uch != remain.crend(); uch++) {
+		sbbs->ungetkey(*uch, true);
+	}
+	return true;
+}
 
-	if (ch == ESC) {
-		int rc = sbbs->kbincom((mode & K_GETSTR) ? 3000:1000);
-		if (rc == NOINP)        // timed-out waiting for '['
-			return true;
-		inch = rc;
-		if (inch != '[') {
-			sbbs->ungetkey(inch, true);
-			return true;
+bool ANSI_Terminal::handle_left_press(unsigned x, unsigned y, char& ch, bool& retval)
+{
+	list_node_t* node = find_hotspot(x, y);
+	if (node != NULL) {
+		struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
+#ifdef _DEBUG
+		{
+			char dbg[128];
+			c_escape_str(spot->cmd, dbg, sizeof(dbg), /* Ctrl-only? */ true);
+			sbbs->lprintf(LOG_DEBUG, "Stuffing hot spot command into keybuf: '%s'", dbg);
 		}
-		int sp = 0; // String position
-		int to = 0; // Number of input timeouts
-		while (sp < 10 && to < 30) {       /* up to 3 seconds */
-			rc = sbbs->kbincom(100);
-			if (rc == NOINP) {
-				to++;
-				continue;
-			}
-			inch = rc;
-			if (sp == 0 && inch == 'M' && mouse_mode != MOUSE_MODE_OFF) {
-				if (sp == 0)
-					str[sp++] = ch;
-				int button = sbbs->kbincom(100);
-				if (button == NOINP) {
-					sbbs->lprintf(LOG_DEBUG, "Timeout waiting for mouse button value");
-					break;
-				}
-				str[sp++] = button;
-				inch = sbbs->kbincom(100);
-				if (inch < '!') {
-					sbbs->lprintf(LOG_DEBUG, "Unexpected mouse-button (0x%02X) tracking char: 0x%02X < '!'"
-						, button, ch);
-					break;
-				}
-				str[sp++] = ch;
-				int x = ch - '!';
-				inch = sbbs->kbincom(100);
-				if (ch < '!') {
-					sbbs->lprintf(LOG_DEBUG, "Unexpected mouse-button (0x%02X) tracking char: 0x%02X < '!'"
-						, button, ch);
-					break;
-				}
-				str[sp++] = ch;
-				int y = ch - '!';
-				sbbs->lprintf(LOG_DEBUG, "X10 Mouse button-click (0x%02X) reported at: %u x %u", button, x, y);
-				if (button == 0x20) { // Left-click
-					list_node_t* node = find_hotspot(x, y);
-					if (node != NULL) {
-						struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
-#ifdef _DEBUG
-						{
-							char dbg[128];
-							c_escape_str(spot->cmd, dbg, sizeof(dbg), /* Ctrl-only? */ true);
-							sbbs->lprintf(LOG_DEBUG, "Stuffing hot spot command into keybuf: '%s'", dbg);
-						}
 #endif
-						if (sbbs->pause_inside && !pause_hotspot) {
-							ch = TERM_KEY_ABORT;
-							sbbs->ungetkeys(spot->cmd, true);
-						}
-						else {
-							if (spot->cmd[0] < 32 || spot->cmd[0] == 127) {
-								ch = spot->cmd[0];
-								if (spot->cmd[1])
-									sbbs->ungetkeys(&spot->cmd[1]);
-							}
-							else {
-								sbbs->ungetkeys(spot->cmd);
-							}
-						}
-						return (ch < 32);
-					}
-					if (sbbs->pause_inside && y == rows - 1) {
-						ch = '\r';
-						return true;
-					}
-				} else if (button == '`' && sbbs->console & CON_MOUSE_SCROLL) {
-					ch = TERM_KEY_UP;
-					return true;
-				} else if (button == 'a' && sbbs->console & CON_MOUSE_SCROLL) {
-					ch = TERM_KEY_DOWN;
-					return true;
-				}
-				if ((button != 0x23 && sbbs->console & CON_MOUSE_CLK_PASSTHRU)
-				    || (button == 0x23 && sbbs->console & CON_MOUSE_REL_PASSTHRU)) {
-					for (size_t j = sp; j > 0; j--)
-						sbbs->ungetkey(str[j - 1], /* insert: */ true);
-					sbbs->ungetkey('[', /* insert: */ true);
-					ch = ESC;
-					return true;
-				}
-				if (button == 0x22) {  // Right-click
-					ch = TERM_KEY_ABORT;
-					return true;
-				}
-				return false;
+		if (sbbs->pause_inside && !pause_hotspot) {
+			ch = TERM_KEY_ABORT;
+			sbbs->ungetkeys(spot->cmd, true);
+		}
+		else {
+			if (spot->cmd[0] < 32) {
+				ch = spot->cmd[0];
+				retval = true;
+				if (spot->cmd[1])
+					sbbs->ungetkeys(&spot->cmd[1]);
 			}
+			else {
+				retval = false;
+				sbbs->ungetkeys(spot->cmd);
+			}
+		}
+		return true;
+	}
+	if (sbbs->pause_inside && y == rows - 1) {
+		ch = '\r';
+		retval = true;
+		return true;
+	}
+	return false;
+}
 
-			if (sp == 0 && inch == '<' && mouse_mode != MOUSE_MODE_OFF) {
-				while (sp < (int)sizeof(str) - 1) {
-					int byte = sbbs->kbincom(100);
-					if (byte == NOINP) {
-						sbbs->lprintf(LOG_DEBUG, "Timeout waiting for mouse report character (%d)", sp);
-						break;;
-					}
-					str[sp++] = byte;
-					if (IS_ALPHA(byte))
-						break;
-				}
-				str[sp] = 0;
-				int button = -1, x = 0, y = 0;
-				if (sscanf(str, "%d;%d;%d%c", &button, &x, &y, &inch) != 4
-				    || button < 0 || x < 1 || y < 1 || toupper(inch) != 'M') {
-					sbbs->lprintf(LOG_DEBUG, "Invalid SGR mouse report sequence: '%s'", str);
-					return false;
-				}
-				--x;
-				--y;
-				sbbs->lprintf(LOG_DEBUG, "SGR Mouse button (0x%02X) %s reported at: %u x %u"
-					, button, inch == 'M' ? "PRESS" : "RELEASE", x, y);
-				if (button == 0 && inch == 'm') { // Left-button release
-					list_node_t* node = find_hotspot(x, y);
-					if (node != NULL) {
-						struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
-#ifdef _DEBUG
-						{
-							char dbg[128];
-							c_escape_str(spot->cmd, dbg, sizeof(dbg), /* Ctrl-only? */ true);
-							sbbs->lprintf(LOG_DEBUG, "Stuffing hot spot command into keybuf: '%s'", dbg);
-						}
-#endif
-						if (sbbs->pause_inside && !pause_hotspot) {
-							ch = TERM_KEY_ABORT;
-							sbbs->ungetkeys(spot->cmd, true);
-						}
-						else {
-							if (spot->cmd[0] < 32 || spot->cmd[0] == 127) {
-								ch = spot->cmd[0];
-								if (spot->cmd[1])
-									sbbs->ungetkeys(&spot->cmd[1]);
-							}
-							else {
-								sbbs->ungetkeys(spot->cmd);
-							}
-						}
-						return (ch < 32);
-					}
-					if (sbbs->pause_inside && y == rows - 1) {
-						ch = '\r';
-						return true;
-					}
-				} else if (button == 0x40 && sbbs->console & CON_MOUSE_SCROLL) {
-					ch = TERM_KEY_UP;
-					return true;
-				} else if (button == 0x41 && sbbs->console & CON_MOUSE_SCROLL) {
-					ch = TERM_KEY_DOWN;
-					return true;
-				}
-				if ((inch == 'M' && sbbs->console & CON_MOUSE_CLK_PASSTHRU)
-				    || (ch == 'm' && sbbs->console & CON_MOUSE_REL_PASSTHRU)) {
-					sbbs->lprintf(LOG_DEBUG, "Passing-through SGR mouse report: 'ESC[<%s'", str);
-					for (size_t j = sp; j > 0; j--)
-						sbbs->ungetkey(str[j - 1], /* insert: */ true);
-					sbbs->ungetkey('<', /* insert: */ true);
-					sbbs->ungetkey('[', /* insert: */ true);
-					ch = ESC;
-					return true;
-				}
-				if (inch == 'M' && button == 2) {  // Right-click
-					ch = TERM_KEY_ABORT;
-					return true;
-				}
-#ifdef _DEBUG
-				sbbs->lprintf(LOG_DEBUG, "Eating SGR mouse report: 'ESC[<%s'", str);
-#endif
-				return false;
+bool ANSI_Terminal::handle_non_SGR_mouse_sequence(char& ch, ANSI_Parser& ansi)
+{
+	int button = sbbs->kbincom(100);
+	if (button == NOINP) {
+		sbbs->lprintf(LOG_DEBUG, "Timeout waiting for mouse button value");
+		return false;
+	}
+	if (button < ' ') {
+		sbbs->lprintf(LOG_DEBUG, "Unexpected mouse-button (0x%02X) tracking char: 0x%02X < ' '"
+			, button, ch);
+		return false;
+	}
+	button -= ' ';
+	bool move{false};
+	bool release{false};
+	if (button == 3) {
+		release = true;
+		button &= ~0x20;
+	}
+	if (button & 0x20) {
+		move = true;
+		button &= ~0x20;
+	}
+	if (button >= 128)
+		button -= 121;
+	else if (button >= 64)
+		button -= 61;
+	if (button >= 11) {
+		sbbs->lprintf(LOG_DEBUG, "Unexpected mouse-button (0x%02X) decoded", button);
+		return false;
+	}
+	int inch = sbbs->kbincom(100);
+	if (inch == NOINP) {
+		sbbs->lprintf(LOG_DEBUG, "Timeout waiting for mouse X value");
+		return false;
+	}
+	if (inch < '!') {
+		sbbs->lprintf(LOG_DEBUG, "Unexpected mouse-button (0x%02X) tracking char: 0x%02X < '!'"
+			, button, ch);
+		return false;
+	}
+	int x = ch - '!';
+	inch = sbbs->kbincom(100);
+	if (inch == NOINP) {
+		sbbs->lprintf(LOG_DEBUG, "Timeout waiting for mouse Y value");
+		return false;
+	}
+	if (ch < '!') {
+		sbbs->lprintf(LOG_DEBUG, "Unexpected mouse-button (0x%02X) tracking char: 0x%02X < '!'"
+			, button, ch);
+		return false;
+	}
+	int y = ch - '!';
+	sbbs->lprintf(LOG_DEBUG, "X10 Mouse button-%s (0x%02X) reported at: %u x %u", release ? "release" : (move ? "move" : "press"), button, x, y);
+	if (button == 0 && release == false && move == false) {
+		bool retval{false};
+		if (handle_left_press(x, y, ch, retval))
+			return retval;
+	}
+	else if (button == 3 && release == false && move == false) {
+		ch = TERM_KEY_UP;
+		return true;
+	}
+	else if (button == 4 && release == false && move == false) {
+		ch = TERM_KEY_DOWN;
+		return true;
+	}
+	if ((sbbs->console & CON_MOUSE_CLK_PASSTHRU) && (!release))
+		return stuff_unhandled(ch, ansi);
+	if ((sbbs->console & CON_MOUSE_REL_PASSTHRU) && release)
+		return stuff_unhandled(ch, ansi);
+	if (button == 2) {
+		ch = TERM_KEY_ABORT;
+		return true;
+	}
+	return false;
+}
+
+bool ANSI_Terminal::handle_SGR_mouse_sequence(char& ch, ANSI_Parser& ansi, bool release)
+{
+	if (ansi.count_params() != 3) {
+		sbbs->lprintf(LOG_DEBUG, "Invalid SGR mouse report sequence: '%s'", ansi.ansi_params.c_str());
+		return false;
+	}
+	unsigned button = ansi.get_pval(0, 256);
+	bool move{false};
+	if (button & 0x20) {
+		move = true;
+		button &= ~0x20;
+	}
+	if (button >= 128)
+		button -= 121;
+	else if (button >= 64)
+		button -= 61;
+	if (button >= 11) {
+		sbbs->lprintf(LOG_DEBUG, "Unexpected SGR mouse-button (0x%02X) decoded", button);
+		return false;
+	}
+	unsigned x = ansi.get_pval(1, 0);
+	unsigned y = ansi.get_pval(2, 0);
+	if (x < 1 || y < 1) {
+		sbbs->lprintf(LOG_DEBUG, "Invalid SGR mouse report position: '%s'", ansi.ansi_params.c_str());
+		return false;
+	}
+	x--;
+	y--;
+	if (button == 0 && release == true && move == false) {
+		bool retval{false};
+		if (handle_left_press(x, y, ch, retval))
+			return retval;
+	}
+	else if (button == 3 && release == false && move == false) {
+		ch = TERM_KEY_UP;
+		return true;
+	}
+	else if (button == 4 && release == false && move == false) {
+		ch = TERM_KEY_DOWN;
+		return true;
+	}
+	if ((sbbs->console & CON_MOUSE_CLK_PASSTHRU) && (!release))
+		return stuff_unhandled(ch, ansi);
+	if ((sbbs->console & CON_MOUSE_REL_PASSTHRU) && release)
+		return stuff_unhandled(ch, ansi);
+	if (button == 2) {
+		ch = TERM_KEY_ABORT;
+		return true;
+	}
+	return false;
+}
+
+bool ANSI_Terminal::parse_input_sequence(char& ch, int mode) {
+	if (ch == ESC) {
+		ANSI_Parser ansi{};
+		ansi.parse(ESC);
+		bool done = false;
+		unsigned timeouts = 0;
+		while (!done) {
+			int rc = sbbs->kbincom(100);
+			if (rc == NOINP) {	// Timed out
+				if (++timeouts >= 30)
+					break;
 			}
-			if (inch != ';' && !IS_DIGIT(inch) && inch != 'R') {    /* other ANSI */
-				str[sp] = 0;
-				switch (inch) {
-					case 'A':
-						ch = TERM_KEY_UP;
-						return true;
-					case 'B':
-						ch = TERM_KEY_DOWN;
-						return true;
-					case 'C':
-						ch = TERM_KEY_RIGHT;
-						return true;
-					case 'D':
-						ch = TERM_KEY_LEFT;
-						return true;
-					case 'H':   /* ANSI:  home cursor */
-						ch = TERM_KEY_HOME;
-						return true;
-					case 'V':
-						ch = TERM_KEY_PAGEUP;
-						return true;
-					case 'U':
-						ch = TERM_KEY_PAGEDN;
-						return true;
-					case 'F':   /* Xterm: cursor preceding line */
-					case 'K':   /* ANSI:  clear-to-end-of-line */
-						ch = TERM_KEY_END;
-						return true;
-					case '@':   /* ANSI/ECMA-048 INSERT */
-						ch = TERM_KEY_INSERT;
-						return true;
-					case '~':   /* VT-220 (XP telnet.exe) */
-						switch (atoi(str)) {
+			switch(ansi.parse(rc)) {
+				case ansiState_final:
+					done = 1;
+					break;
+				case ansiState_broken:
+					sbbs->lprintf(LOG_DEBUG, "Invalid ANSI sequence: '\\e%s'", &(ansi.ansi_sequence.c_str()[1]));
+					done = 1;
+					break;
+				default:
+					break;
+			}
+		}
+		switch (ansi.current_state()) {
+			case ansiState_final:
+				if ((!ansi.ansi_was_private)
+				    && ansi.ansi_ibs == ""
+				    && (!ansi.ansi_was_cc)) {
+					if (ansi.ansi_params == "") {
+						switch (ansi.ansi_final_byte) {
+							case 'A':
+								ch = TERM_KEY_UP;
+								return true;
+							case 'B':
+								ch = TERM_KEY_DOWN;
+								return true;
+							case 'C':
+								ch = TERM_KEY_RIGHT;
+								return true;
+							case 'D':
+								ch = TERM_KEY_LEFT;
+								return true;
+							case 'H':
+								ch = TERM_KEY_HOME;
+								return true;
+							case 'V':
+								ch = TERM_KEY_PAGEUP;
+								return true;
+							case 'U':
+								ch = TERM_KEY_PAGEDN;
+								return true;
+							case 'F':
+								ch = TERM_KEY_END;
+								return true;
+							case 'K':
+								ch = TERM_KEY_END;
+								return true;
+							case 'M':
+								return handle_non_SGR_mouse_sequence(ch, ansi);
+							case '@':
+								ch = TERM_KEY_INSERT;
+								return true;
+						}
+					}
+					else if (ansi.ansi_final_byte == '~' && ansi.count_params() == 1) {
+						switch (ansi.get_pval(0, 0)) {
 							case 1:
 								ch = TERM_KEY_HOME;
 								return true;
@@ -1038,45 +1072,49 @@ bool ANSI_Terminal::parse_input_sequence(char& ch, int mode) {
 								ch = TERM_KEY_PAGEDN;
 								return true;
 						}
-						break;
-				}
-				sbbs->ungetkey(inch, /* insert: */ true);
-				for (size_t j = sp; j > 0; j--)
-					sbbs->ungetkey(str[j - 1], /* insert: */ true);
-				sbbs->ungetkey('[', /* insert: */ true);
-				ch = ESC;
-				return true;
-			}
-			if (inch == 'R') {       /* cursor position report */
-				if (mode & K_ANSI_CPR && sp) {  /* auto-detect rows */
-					int x, y;
-					str[sp] = 0;
-					if (sscanf(str, "%u;%u", &y, &x) == 2) {
-						sbbs->lprintf(LOG_DEBUG, "received ANSI cursor position report: %ux%u"
-							, x, y);
-						/* Sanity check the coordinates in the response: */
-						if (sbbs->useron.cols == TERM_COLS_AUTO && x >= TERM_COLS_MIN && x <= TERM_COLS_MAX)
-							cols = x;
-						if (sbbs->useron.rows == TERM_ROWS_AUTO && y >= TERM_ROWS_MIN && y <= TERM_ROWS_MAX)
-							rows = y;
-						if (sbbs->useron.cols == TERM_COLS_AUTO || sbbs->useron.rows == TERM_ROWS_AUTO)
-							sbbs->update_nodeterm();
+					}
+					else if (ansi.ansi_final_byte == 'R') {
+						if (mode & K_ANSI_CPR) {  /* auto-detect rows */
+							unsigned x = ansi.get_pval(1, 1);
+							unsigned y = ansi.get_pval(0, 1);
+							sbbs->lprintf(LOG_DEBUG, "received ANSI cursor position report: %ux%u"
+								, x, y);
+							/* Sanity check the coordinates in the response: */
+							bool update{false};
+							if (sbbs->useron.cols == TERM_COLS_AUTO && x >= TERM_COLS_MIN && x <= TERM_COLS_MAX) {
+								cols = x;
+								update = true;
+							}
+							if (sbbs->useron.rows == TERM_ROWS_AUTO && y >= TERM_ROWS_MIN && y <= TERM_ROWS_MAX) {
+								rows = y;
+								update = true;
+							}
+							if (update)
+								sbbs->update_nodeterm();
+						}
+						// TODO: Did the old code really eat these?
+						//       Did it eat anything else?
+						return false;
 					}
 				}
-				return false;
-			}
-			str[sp++] = ch;
+				else if (ansi.ansi_was_private
+				    && ansi.ansi_ibs == ""
+				    && (!ansi.ansi_was_cc)) {
+					if (ansi.ansi_sequence[2] == '<') {
+						switch (ansi.ansi_final_byte) {
+							case 'm':
+								return handle_SGR_mouse_sequence(ch, ansi, true);
+							case 'M':
+								return handle_SGR_mouse_sequence(ch, ansi, false);
+						}
+					}
+				}
+				// Fall through
+			default:
+				return stuff_unhandled(ch, ansi);
 		}
-
-		for (size_t j = sp; j > 0; j--)
-			sbbs->ungetkey(str[j - 1], /* insert: */ true);
-		sbbs->ungetkey('[', /* insert: */ true);
-		ch = ESC;
-		return true;
 	}
-	if (ch < 32)
-		return true;
-	return false;
+	return true;
 }
 
 struct mouse_hotspot* ANSI_Terminal::add_hotspot(struct mouse_hotspot* spot) {return nullptr;}

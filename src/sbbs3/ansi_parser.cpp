@@ -1,5 +1,6 @@
 #include "ansi_parser.h"
 
+#include <stdio.h>
 enum ansiState
 ANSI_Parser::parse(unsigned char ch)
 {

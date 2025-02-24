@@ -46,6 +46,10 @@ private:
 	void handle_control_code();
 	void handle_control_sequence();
 	void handle_SGR_sequence();
+	bool stuff_unhandled(char &ch, ANSI_Parser& ansi);
+	bool handle_non_SGR_mouse_sequence(char& ch, ANSI_Parser& ansi);
+	bool handle_SGR_mouse_sequence(char& ch, ANSI_Parser& ansi, bool release);
+	bool handle_left_press(unsigned x, unsigned y, char& ch, bool& retval);
 
 	unsigned saved_row{0};
 	unsigned saved_column{0};
