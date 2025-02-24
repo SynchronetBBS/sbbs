@@ -163,7 +163,6 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 	char tmp[512];
 	int  i;
 
-	// TODO: We should insert at kbincom(), not here... this is too late.
 	if (!term->parse_input_sequence(ch, mode))
 		return 0;
 

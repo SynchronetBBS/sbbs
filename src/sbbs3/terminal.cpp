@@ -207,7 +207,7 @@ void Terminal::dec_row(unsigned count) {
 	if (count > row)
 		count = row;
 #if 0
-	// TODO: If we do allow scrolling up, scroll_hotspots needs to get signed
+	// NOTE: If we do allow scrolling up, scroll_hotspots needs to get signed
 	if (count > row) {
 		scroll_hotspots(row - count);
 	}
