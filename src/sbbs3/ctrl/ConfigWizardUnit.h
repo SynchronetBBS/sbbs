@@ -10,7 +10,6 @@
 #include <ComCtrls.hpp>
 #include <ExtCtrls.hpp>
 #include <jpeg.hpp>
-#include "sbbs.h"
 //---------------------------------------------------------------------------
 class TConfigWizard : public TForm
 {

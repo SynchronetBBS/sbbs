@@ -20,7 +20,6 @@
  ****************************************************************************/
 //---------------------------------------------------------------------------
 
-#include "sbbs.h"
 #include <vcl.h>
 #pragma hdrstop
 
@@ -28,6 +27,8 @@
 #include "ConfigWizardUnit.h"
 #include <stdio.h>      // sprintf
 #include <winsock.h>    // addresses and such
+#include "load_cfg.h"
+#include "scfgsave.h"
 
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
