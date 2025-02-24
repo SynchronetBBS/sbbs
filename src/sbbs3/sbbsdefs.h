@@ -477,7 +477,7 @@ typedef enum {                      /* Values for xtrn_t.event				*/
 
 /* Console I/O Bits	(console)				*/
 #define CON_R_ECHO      0         /* Echo remotely - Unused					*/
-#define CON_R_ECHOX     (1 << 1)  /* Echo X's to remote used				*/
+#define CON_R_ECHOX     (1 << 1)  /* Echo X's to remote user				*/
 #define CON_L_ECHOX     0       // Unused
 #define CON_R_INPUT     (1 << 2)  /* Accept input remotely					*/
 #define CON_L_ECHO      0         /* Echo locally              				*/
@@ -864,9 +864,6 @@ enum {                          /* Values of mode for userlist function     */
 /**************************************/
 /* Text Attribute (color) Definitions */
 /**************************************/
-// TODO: We overload BLINK for ICE_COLORS here, but this is a 32-bit field...
-//       While looking at that, translating PETSCII colours isn't needed
-//       either.
 #define HIGH  0x08      /* High intensity foreground text */
 #ifndef BLINK
 #define BLINK 0x80      /* Blinking text */

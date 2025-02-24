@@ -142,7 +142,7 @@ bool sbbs_t::printfile(const char* fname, int mode, int org_cols, JSObject* obj)
 				break;
 		}
 		if (ansiParser.current_state() != ansiState_none)
-			lprintf(LOG_WARNING, "Incomplete ANSI stripped from end");
+			lprintf(LOG_DEBUG, "Incomplete ANSI stripped from end");
 		memcpy(rainbow, rainbow_sav, sizeof rainbow);
 		free(buf);
 		fclose(stream);

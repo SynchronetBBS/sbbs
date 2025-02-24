@@ -55,7 +55,7 @@ char sbbs_t::putmsg(const char *buf, int mode, int org_cols, JSObject* obj)
 	ansiParser.reset();
 	char ret = putmsgfrag(buf, mode, org_cols, obj);
 	if (ansiParser.current_state() != ansiState_none)
-		lprintf(LOG_WARNING, "Incomplete ANSI stripped from end");
+		lprintf(LOG_DEBUG, "Incomplete ANSI stripped from end");
 	memcpy(rainbow, rainbow_sav, sizeof rainbow);
 	if (!(mode & P_SAVEATR)) {
 		console = orgcon;
@@ -398,7 +398,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 				switch (ansiParser.parse(str[l])) {
 					case ansiState_broken:
 						// TODO: Maybe just strip the CSI or something?
-						lprintf(LOG_WARNING, "Stripping broken ANSI sequence \"%s\"", ansiParser.ansi_sequence.c_str());
+						lprintf(LOG_DEBUG, "Stripping broken ANSI sequence \"%s\"", ansiParser.ansi_sequence.c_str());
 						ansiParser.reset();
 						// break here prints the first non-valid character
 						break;
@@ -406,33 +406,33 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 						break;
 					case ansiState_final:
 						if ((!ansiParser.ansi_was_private) && ansiParser.ansi_final_byte == 'p')
-							lprintf(LOG_WARNING, "Stripping SKR sequence");
+							lprintf(LOG_DEBUG, "Stripping SKR sequence");
 						else if (ansiParser.ansi_was_private && ansiParser.ansi_params[0] == '?' && ansiParser.ansi_final_byte == 'S')
-							lprintf(LOG_WARNING, "Stripping XTSRGA sequence");
+							lprintf(LOG_DEBUG, "Stripping XTSRGA sequence");
 						else if (ansiParser.ansi_final_byte == 'n')
-							lprintf(LOG_WARNING, "Stripping DSR sequence");
+							lprintf(LOG_DEBUG, "Stripping DSR sequence");
 						else if (ansiParser.ansi_final_byte == 'c')
-							lprintf(LOG_WARNING, "Stripping DA sequence");
+							lprintf(LOG_DEBUG, "Stripping DA sequence");
 						else if (ansiParser.ansi_ibs == "," && ansiParser.ansi_final_byte == 'q')
-							lprintf(LOG_WARNING, "Stripping DECTID sequence");
+							lprintf(LOG_DEBUG, "Stripping DECTID sequence");
 						else if (ansiParser.ansi_ibs == "&" && ansiParser.ansi_final_byte == 'u')
-							lprintf(LOG_WARNING, "Stripping DECRQUPSS sequence");
+							lprintf(LOG_DEBUG, "Stripping DECRQUPSS sequence");
 						else if (ansiParser.ansi_ibs == "+" && ansiParser.ansi_final_byte == 'x')
-							lprintf(LOG_WARNING, "Stripping DECRQPKFM sequence");
+							lprintf(LOG_DEBUG, "Stripping DECRQPKFM sequence");
 						else if (ansiParser.ansi_ibs == "$" && ansiParser.ansi_final_byte == 'p')
-							lprintf(LOG_WARNING, "Stripping DECRQM sequence");
+							lprintf(LOG_DEBUG, "Stripping DECRQM sequence");
 						else if (ansiParser.ansi_ibs == "$" && ansiParser.ansi_final_byte == 'u')
-							lprintf(LOG_WARNING, "Stripping DECRQTSR sequence");
+							lprintf(LOG_DEBUG, "Stripping DECRQTSR sequence");
 						else if (ansiParser.ansi_ibs == "$" && ansiParser.ansi_final_byte == 'w')
-							lprintf(LOG_WARNING, "Stripping DECRQPSR sequence");
+							lprintf(LOG_DEBUG, "Stripping DECRQPSR sequence");
 						else if (ansiParser.ansi_ibs == "*" && ansiParser.ansi_final_byte == 'y')
-							lprintf(LOG_WARNING, "Stripping DECRQCRA sequence");
+							lprintf(LOG_DEBUG, "Stripping DECRQCRA sequence");
 						else if (ansiParser.ansi_sequence.substr(0, 4) == "\x1bP$q")
-							lprintf(LOG_WARNING, "Stripping DECRQSS sequence");
+							lprintf(LOG_DEBUG, "Stripping DECRQSS sequence");
 						else if (ansiParser.ansi_sequence.substr(0, 14) == "\x1b_SyncTERM:C;L")
-							lprintf(LOG_WARNING, "Stripping CTSFI sequence");
+							lprintf(LOG_DEBUG, "Stripping CTSFI sequence");
 						else if (ansiParser.ansi_sequence.substr(0, 16) == "\x1b_SyncTERM:Q;JXL")
-							lprintf(LOG_WARNING, "Stripping CTQJS sequence");
+							lprintf(LOG_DEBUG, "Stripping CTQJS sequence");
 						else {
 							if ((!ansiParser.ansi_was_private) && ansiParser.ansi_ibs == "") {
 								if (strchr("AFkBEeHfJdu", ansiParser.ansi_final_byte) != nullptr)    /* ANSI anim */

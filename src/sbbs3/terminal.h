@@ -86,6 +86,11 @@ public:
 			flags &= ~(NO_EXASCII | PETSCII);
 		}
 
+		if (flags & RIP) {
+			// ANSI is always available when RIP is
+			flags |= ANSI;
+		}
+
 		if (!(flags & ANSI)) {
 			// These bits are *only* available in ANSI mode
 			flags &= ~(COLOR | RIP | ICE_COLOR | MOUSE);

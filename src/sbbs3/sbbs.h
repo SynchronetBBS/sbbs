@@ -905,7 +905,7 @@ public:
 	int		outcp(enum unicode_codepoint, char cp437_fallback);
 	int		outcp(enum unicode_codepoint, const char* cp437_fallback = NULL);
 	void	wide(const char*);
-	// TODO: There appear to describe the USER, not the terminal...
+	// These are user settings, not terminal properties.
 	char*	term_rows(user_t*, char* str, size_t);
 	char*	term_cols(user_t*, char* str, size_t);
 	char*	term_type(user_t*, int term, char* str, size_t);

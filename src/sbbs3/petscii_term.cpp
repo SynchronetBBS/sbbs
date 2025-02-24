@@ -244,7 +244,7 @@ void PETSCII_Terminal::newline(unsigned count)
 void PETSCII_Terminal::clearscreen()
 {
 	clear_hotspots();
-	sbbs->term_out('\x93');
+	sbbs->term_out(PETSCII_CLEAR);
 }
 
 void PETSCII_Terminal::cleartoeos()
@@ -284,7 +284,7 @@ void PETSCII_Terminal::cursor_home()
 void PETSCII_Terminal::cursor_up(unsigned count)
 {
 	for (unsigned i = 0; i < count; i++)
-		sbbs->term_out('\x91');
+		sbbs->term_out(PETSCII_UP);
 }
 
 void PETSCII_Terminal::cursor_down(unsigned count)
@@ -308,7 +308,7 @@ void PETSCII_Terminal::cursor_right(unsigned count)
 void PETSCII_Terminal::cursor_left(unsigned count)
 {
 	for (unsigned i = 0; i < count; i++) {
-		sbbs->term_out('\x9d');
+		sbbs->term_out(PETSCII_LEFT);
 		if (column == 0)
 			break;
 	}

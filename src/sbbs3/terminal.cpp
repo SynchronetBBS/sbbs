@@ -351,7 +351,7 @@ void update_terminal(sbbs_t *sbbsptr)
 	if (sbbsptr->term == nullptr) {
 		if (flags & PETSCII)
 			sbbsptr->term = new PETSCII_Terminal(sbbsptr);
-		else if (flags & (RIP | ANSI))
+		else if (flags & (ANSI))
 			sbbsptr->term = new ANSI_Terminal(sbbsptr);
 		else
 			sbbsptr->term = new Terminal(sbbsptr);
@@ -360,7 +360,7 @@ void update_terminal(sbbs_t *sbbsptr)
 		Terminal *newTerm;
 		if (flags & PETSCII)
 			newTerm = new PETSCII_Terminal(sbbsptr->term);
-		else if (flags & (RIP | ANSI))
+		else if (flags & (ANSI))
 			newTerm = new ANSI_Terminal(sbbsptr->term);
 		else
 			newTerm = new Terminal(sbbsptr->term);
@@ -375,7 +375,7 @@ void update_terminal(sbbs_t *sbbsptr, Terminal *term)
 	Terminal *newTerm;
 	if (flags & PETSCII)
 		newTerm = new PETSCII_Terminal(sbbsptr, term);
-	else if (flags & (RIP | ANSI))
+	else if (flags & (ANSI))
 		newTerm = new ANSI_Terminal(sbbsptr, term);
 	else
 		newTerm = new Terminal(sbbsptr, term);
