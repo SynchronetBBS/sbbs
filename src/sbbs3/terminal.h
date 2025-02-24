@@ -93,6 +93,7 @@ public:
 
 		if (!(flags & ANSI)) {
 			// These bits are *only* available in ANSI mode
+			// NOTE: COLOR is forced in PETSCII mode later
 			flags &= ~(COLOR | RIP | ICE_COLOR | MOUSE);
 		}
 		else {
