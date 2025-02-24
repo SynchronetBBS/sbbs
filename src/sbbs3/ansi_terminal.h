@@ -47,6 +47,7 @@ private:
 	void handle_control_sequence();
 	void handle_SGR_sequence();
 	bool stuff_unhandled(char &ch, ANSI_Parser& ansi);
+	bool stuff_str(char& ch, const char *str, bool skipctlcheck = false);
 	bool handle_non_SGR_mouse_sequence(char& ch, ANSI_Parser& ansi);
 	bool handle_SGR_mouse_sequence(char& ch, ANSI_Parser& ansi, bool release);
 	bool handle_left_press(unsigned x, unsigned y, char& ch, bool& retval);

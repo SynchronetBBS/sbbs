@@ -818,6 +818,22 @@ bool ANSI_Terminal::stuff_unhandled(char &ch, ANSI_Parser& ansi)
 	return true;
 }
 
+bool ANSI_Terminal::stuff_str(char& ch, const char *str, bool skipctlcheck)
+{
+	const char *end = str;
+	bool ret = false;
+	if (!skipctlcheck) {
+		if (str[0] < 32) {
+			ret = true;
+			end = &str[1];
+		}
+	}
+	for (const char *p = strchr(str, 0) - 1; p >= end; p--) {
+		sbbs->ungetkey(*p, true);
+	}
+	return ret;
+}
+
 bool ANSI_Terminal::handle_left_press(unsigned x, unsigned y, char& ch, bool& retval)
 {
 	list_node_t* node = find_hotspot(x, y);
@@ -831,22 +847,16 @@ bool ANSI_Terminal::handle_left_press(unsigned x, unsigned y, char& ch, bool& re
 		}
 #endif
 		if (sbbs->pause_inside && !pause_hotspot) {
+			// Abort the pause then send command
 			ch = TERM_KEY_ABORT;
-			sbbs->ungetkeys(spot->cmd, true);
+			stuff_str(ch, spot->cmd);
+			retval = true;
+			return true;
 		}
 		else {
-			if (spot->cmd[0] < 32) {
-				ch = spot->cmd[0];
-				retval = true;
-				if (spot->cmd[1])
-					sbbs->ungetkeys(&spot->cmd[1]);
-			}
-			else {
-				retval = false;
-				sbbs->ungetkeys(spot->cmd);
-			}
+			retval = stuff_str(ch, spot->cmd);
+			return retval;
 		}
-		return true;
 	}
 	if (sbbs->pause_inside && y == rows - 1) {
 		ch = '\r';
