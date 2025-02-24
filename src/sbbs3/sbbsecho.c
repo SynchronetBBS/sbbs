@@ -6845,6 +6845,9 @@ int main(int argc, char **argv)
 					break;
 			if (hub < cfg.nodecfgs)
 				add_sub_to_arealist(scfg.sub[subnum], cfg.nodecfg[hub].addr);
+			else
+				lprintf(LOG_WARNING, "Cannot auto-add sub (%s): No uplink configured for message group (%s)"
+					, scfg.sub[subnum]->code, scfg.grp[scfg.sub[subnum]->grp]->sname);
 		}
 	}
 
