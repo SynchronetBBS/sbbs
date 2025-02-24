@@ -16,7 +16,6 @@ enum ansiState {
 };
 
 class ANSI_Parser {
-#ifndef __BORLANDC__
 public:
 	enum ansiState parse(unsigned char ch);
 	enum ansiState current_state();
@@ -34,7 +33,6 @@ public:
 
 private:
 	enum ansiState outchar_esc{ansiState_none}; // track ANSI escape seq output
-#endif
 };
 
 #endif
