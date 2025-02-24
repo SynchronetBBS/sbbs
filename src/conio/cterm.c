@@ -2636,9 +2636,9 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 						case 'c':
 							/* SyncTERM Device Attributes */
 							if (seq->param_str[0] == '<' && parse_parameters(seq)) {
-								seq_default(seq, 0, 0);
 								tmp[0] = 0;
 								for (i=0; i<seq->param_count; i++) {
+									seq_default(seq, i, 0);
 									switch (seq->param_int[i]) {
 										case 0:		/* Advanced features */
 											strcpy(tmp, "\x1b[<0");
@@ -2669,6 +2669,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								updfg = (oldfg == cterm->fg_color);
 								updbg = (oldbg == cterm->bg_color);
 								for (i=0; i<seq->param_count; i++) {
+									seq_default(seq, i, 0);
 									switch(seq->param_int[i]) {
 										case 6:
 											clear_lcf(cterm);
@@ -2752,6 +2753,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							}
 							else if(seq->param_str[0] == '=' && parse_parameters(seq)) {
 								for (i=0; i<seq->param_count; i++) {
+									seq_default(seq, i, 0);
 									switch(seq->param_int[i]) {
 										case 4:
 											cterm->last_column_flag |= CTERM_LCF_ENABLED;
@@ -2773,6 +2775,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								updfg = (oldfg == cterm->fg_color);
 								updbg = (oldbg == cterm->bg_color);
 								for (i=0; i<seq->param_count; i++) {
+									seq_default(seq, i, 0);
 									switch(seq->param_int[i]) {
 										case 6:
 											clear_lcf(cterm);
@@ -2857,6 +2860,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 							}
 							else if(seq->param_str[0] == '=' && parse_parameters(seq)) {
 								for (i=0; i<seq->param_count; i++) {
+									seq_default(seq, i, 0);
 									switch(seq->param_int[i]) {
 										case 4:
 											if ((cterm->last_column_flag & CTERM_LCF_FORCED) == 0)
@@ -3028,6 +3032,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								}
 								else {
 									for (i=0; i<seq->param_count; i++) {
+										seq_default(seq, i, 0);
 										switch(seq->param_int[i]) {
 											case 6:
 												cterm->saved_mode_mask |= CTERM_SAVEMODE_ORIGIN;
@@ -3239,6 +3244,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								}
 								else {
 									for (i=0; i<seq->param_count; i++) {
+										seq_default(seq, i, 0);
 										switch(seq->param_int[i]) {
 											case 6:
 												if(cterm->saved_mode_mask & CTERM_SAVEMODE_ORIGIN) {
@@ -3982,10 +3988,10 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 						case 'l':	/* TODO? Reset Mode */
 							break;
 						case 'm':	/* Select Graphic Rendition */
-							seq_default(seq, 0, 0);
 							gettextinfo(&ti);
 							flags = getvideoflags();
 							for (i=0; i < seq->param_count; i++) {
+								seq_default(seq, i, 0);
 								switch(seq->param_int[i]) {
 									case 0:
 										set_negative(cterm, false);
