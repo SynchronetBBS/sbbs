@@ -788,7 +788,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 
 	// TODO: This should work with PETSCII too... can_move()
 	if (((sys_status & SS_USERON && useron.chat & CHAT_SPLITP) || !(sys_status & SS_USERON))
-	    && term->supports(ANSI) && term->rows >= 24 && term->cols >= 80)
+	    && term->can_move() && term->rows >= 24 && term->cols >= 80)
 		sys_status |= SS_SPLITP;
 	else
 		sys_status &= ~SS_SPLITP;

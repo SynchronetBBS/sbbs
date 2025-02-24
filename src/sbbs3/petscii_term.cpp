@@ -196,9 +196,9 @@ char* PETSCII_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t
 bool PETSCII_Terminal::gotoxy(unsigned x, unsigned y)
 {
 	sbbs->term_out(PETSCII_HOME);
-	while (row < (y - 1))
+	while (row < (y - 1) && sbbs->online)
 		sbbs->term_out(PETSCII_DOWN);
-	while (column < (x - 1))
+	while (column < (x - 1) && sbbs->online)
 		sbbs->term_out(PETSCII_RIGHT);
 	return true;
 }
@@ -253,7 +253,7 @@ void PETSCII_Terminal::cleartoeos()
 	int y = column + 1;
 
 	cleartoeol();
-	while (row < rows - 1) {
+	while (row < rows - 1 && sbbs->online) {
 		cursor_down();
 		clearline();
 	}
@@ -264,7 +264,7 @@ void PETSCII_Terminal::cleartoeol()
 {
 	unsigned s;
 	s = column;
-	while (++s <= cols)
+	while (++s <= cols && sbbs->online)
 		sbbs->term_out(" \x14");
 }
 
@@ -384,6 +384,7 @@ bool PETSCII_Terminal::parse_output(char ch)
 			inc_row();
 			return true;
 		case 19: // Home
+		case '\x93': // Clear
 			set_row();
 			set_column();
 			return true;
@@ -467,7 +468,6 @@ bool PETSCII_Terminal::parse_output(char ch)
 			set_color(LIGHTCYAN);
 			return true;
 		case '\x8E': // Upper case
-		case '\x93': // Clear
 		case '\x94': // Insert
 			return true;
 
