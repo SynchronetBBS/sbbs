@@ -71,14 +71,21 @@ int sbbs_t::translate_input(int ch)
 		if (IS_ALPHA(ch))
 			ch ^= 0x20; /* Swap upper/lower case */
 	}
-	else if (term->supports(SWAP_DELETE)) {
-		switch (ch) {
-			case TERM_KEY_DELETE:
-				ch = '\b';
-				break;
-			case '\b':
-				ch = TERM_KEY_DELETE;
-				break;
+	else {
+		bool lwe = last_inkey_was_esc;
+		if (ch == ESC)
+			last_inkey_was_esc = true;
+		if (lwe && ch == '[')
+			autoterm |= ANSI;	// A CSI means ANSI.
+		if (term->supports(SWAP_DELETE)) {
+			switch (ch) {
+				case TERM_KEY_DELETE:
+					ch = '\b';
+					break;
+				case '\b':
+					ch = TERM_KEY_DELETE;
+					break;
+			}
 		}
 	}
 

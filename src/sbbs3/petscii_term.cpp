@@ -482,6 +482,9 @@ bool PETSCII_Terminal::parse_output(char ch)
 bool PETSCII_Terminal::parse_input(char& ch, int mode)
 {
 	switch (ch) {
+		case 3:
+			ch = TERM_KEY_ABORT;
+			return true;
 		case 17:
 			ch = TERM_KEY_DOWN;
 			return true;

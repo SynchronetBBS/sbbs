@@ -425,15 +425,8 @@ public:
 	 * Note that DEL is considered a control key by this function.
 	 */
 	virtual bool parse_input(char& ch, int mode) {
-		bool lwe = last_was_esc;
-		if (ch == '\x1b')
-			last_was_esc = true;
 		if (ch < 32 || ch == 127)
 			return true;
-		if (lwe) {
-			if (ch == '[')
-				sbbs->autoterm |= ANSI;
-		}
 		return false;
 	}
 

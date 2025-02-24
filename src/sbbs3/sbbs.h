@@ -945,6 +945,7 @@ public:
 	void	mnemonics(const char *str);
 
 	/* inkey.cpp */
+	bool last_inkey_was_esc{false}; // Used by auto-ANSI detection
 	int		inkey(int mode = K_NONE, unsigned int timeout=0);
 	char	handle_ctrlkey(char ch, int mode=0);
 
