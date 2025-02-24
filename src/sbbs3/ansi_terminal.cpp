@@ -924,7 +924,7 @@ bool ANSI_Terminal::parse_input(char& ch, int mode) {
 				if (sscanf(str, "%d;%d;%d%c", &button, &x, &y, &inch) != 4
 				    || button < 0 || x < 1 || y < 1 || toupper(inch) != 'M') {
 					sbbs->lprintf(LOG_DEBUG, "Invalid SGR mouse report sequence: '%s'", str);
-					return 0;
+					return false;
 				}
 				--x;
 				--y;
@@ -985,7 +985,7 @@ bool ANSI_Terminal::parse_input(char& ch, int mode) {
 #ifdef _DEBUG
 				sbbs->lprintf(LOG_DEBUG, "Eating SGR mouse report: 'ESC[<%s'", str);
 #endif
-				return 0;
+				return false;
 			}
 			if (inch != ';' && !IS_DIGIT(inch) && inch != 'R') {    /* other ANSI */
 				str[sp] = 0;
