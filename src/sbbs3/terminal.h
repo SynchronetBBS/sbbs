@@ -75,6 +75,9 @@ protected:
 private:
 	link_list_t *savedlines{nullptr};
 	bool last_was_esc{false};
+	uint8_t utf8_remain{0};
+	bool first_continuation{false};
+	uint32_t codepoint{0};
 
 public:
 
@@ -349,6 +352,10 @@ public:
 	 */
 	virtual bool parse_output(char ch) {
 		last_was_esc = false;
+
+		if (utf8_increment(ch))
+			return true;
+
 		switch (ch) {
 			// Zero-width characters we likely shouldn't send
 			case 0:  // NUL
@@ -513,6 +520,7 @@ public:
 	uint32_t flags(bool raw = false);
 	void insert_indicator();
 	char *attrstr(unsigned newattr, char *str, size_t strsz);
+	bool utf8_increment(unsigned char ch);
 };
 
 void update_terminal(sbbs_t *sbbsptr, Terminal *term);

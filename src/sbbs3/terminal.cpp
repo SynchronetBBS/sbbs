@@ -345,6 +345,75 @@ char *Terminal::attrstr(unsigned newattr, char *str, size_t strsz)
 	return attrstr(newattr, curatr, str, strsz);
 }
 
+/*
+ * Increments columns appropriately for UTF-8 codepoint
+ * Parses the codepoint from successive uchars
+ */
+bool Terminal::utf8_increment(unsigned char ch)
+{
+	if (flags_ & UTF8) {
+		// TODO: How many errors should be logged?
+		if (utf8_remain > 0) {
+			// First, check if this is overlong...
+			if (first_continuation
+			    && ((utf8_remain == 1 && ch < 0xA0)
+			    || (utf8_remain == 2 && ch < 0x90)
+			    || (utf8_remain == 3 && ch >= 0x90))) {
+				sbbs->lprintf(LOG_WARNING, "Sending invalid UTF-8 codepoint");
+				first_continuation = false;
+				utf8_remain = 0;
+			}
+			else if ((ch & 0xc0) != 0x80) {
+				first_continuation = false;
+				utf8_remain = 0;
+				sbbs->lprintf(LOG_WARNING, "Sending invalid UTF-8 codepoint");
+			}
+			else {
+				first_continuation = false;
+				utf8_remain--;
+				codepoint <<= 6;
+				codepoint |= (ch & 0x3f);
+				if (utf8_remain)
+					return true;
+				inc_column(unicode_width(static_cast<enum unicode_codepoint>(codepoint), 0));
+				codepoint = 0;
+				return true;
+			}
+		}
+		else if ((ch & 0x80) != 0) {
+			if ((ch == 0xc0) || (ch == 0xc1) || (ch > 0xF5)) {
+				sbbs->lprintf(LOG_WARNING, "Sending invalid UTF-8 codepoint");
+			}
+			if ((ch & 0xe0) == 0xc0) {
+				utf8_remain = 1;
+				if (ch == 0xE0)
+					first_continuation = true;
+				codepoint = ch & 0x1F;
+				return true;
+			}
+			else if ((ch & 0xf0) == 0xe0) {
+				utf8_remain = 2;
+				if (ch == 0xF0)
+					first_continuation = true;
+				codepoint = ch & 0x0F;
+				return true;
+			}
+			else if ((ch & 0xf8) == 0xf0) {
+				utf8_remain = 3;
+				if (ch == 0xF4)
+					first_continuation = true;
+				codepoint = ch & 0x07;
+				return true;
+			}
+			else
+				sbbs->lprintf(LOG_WARNING, "Sending invalid UTF-8 codepoint");
+		}
+		if (utf8_remain)
+			return true;
+	}
+	return false;
+}
+
 void update_terminal(sbbs_t *sbbsptr)
 {
 	uint32_t flags = Terminal::get_flags(sbbsptr);
