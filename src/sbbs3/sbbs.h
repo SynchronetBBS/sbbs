@@ -292,6 +292,7 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 #include "crc32.h"
 #include "telnet.h"
 #include "nopen.h"
+#include "logfile.h"
 #include "trash.h"
 #include "text.h"
 #include "str_util.h"
@@ -1317,17 +1318,6 @@ extern "C" {
 	DLLEXPORT int		msg_client_hfields(smbmsg_t*, client_t*);
 	DLLEXPORT int		notify(scfg_t*, uint usernumber, const char* subject, const char* msg);
 	DLLEXPORT void		normalize_msg_hfield_encoding(const char* charset, char* str, size_t size);
-
-	/* logfile.cpp */
-	DLLEXPORT int		errorlog(scfg_t* cfg, struct mqtt*, int level, const char* host, const char* text);
-
-	DLLEXPORT bool		hacklog(scfg_t* cfg, struct mqtt*, const char* prot, const char* user, const char* text
-										,const char* host, union xp_sockaddr* addr);
-	DLLEXPORT bool		spamlog(scfg_t* cfg, struct mqtt*, char* prot, char* action, char* reason
-										,char* host, char* ip_addr, char* to, char* from);
-	DLLEXPORT FILE*		fopenlog(scfg_t*, const char* path);
-	DLLEXPORT size_t	fwritelog(scfg_t*, void* buf, size_t size, FILE**);
-	DLLEXPORT void		fcloselog(FILE*);
 
 	/* data.cpp */
 	DLLEXPORT time_t	getnextevent(scfg_t* cfg, event_t**);
