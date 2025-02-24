@@ -595,7 +595,6 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 							if (i > l)
 								l = i;
 							str1[l] = 0;
-							// TODO: Test this...
 							if (utf8_str_is_valid(str1))
 								redrwstr(str1, term->column - org_column, l, P_UTF8);
 						} else {

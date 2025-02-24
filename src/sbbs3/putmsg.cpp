@@ -394,7 +394,6 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 			 * Reset line counter on sequences that may change the row
 			 * (The last is done that way for backward compatibility)
 			 */
-			// TODO: Test this...
 			if (term->supports(ANSI)) {
 				switch (ansiParser.parse(str[l])) {
 					case ansiState_broken:
