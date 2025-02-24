@@ -3687,11 +3687,9 @@ show_bbslist(char *current, int connected)
 							if (copied->type != SYSTEM_BBSLIST) {
 								if (!edit_name(copied->name, list, NULL, true))
 									break;
-								listcount++;
-								list[listcount - 1] = copied;
 							}
 							add_bbs(settings.list_path, copied, true);
-							edit_list(list, list[listcount - 1], settings.list_path, false);
+							edit_list(list, copied, settings.list_path, false);
 							load_bbslist(list,
 							             BBSLIST_SIZE,
 							             &defaults,
@@ -3702,8 +3700,10 @@ show_bbslist(char *current, int connected)
 							             &listcount,
 							             &opt,
 							             &bar,
-							             strdup(list[listcount - 1]->name));
+							             strdup(copied->name));
 							oldopt = -1;
+							free(copied);
+							copied = NULL;
 							break;
 					}
 				}
