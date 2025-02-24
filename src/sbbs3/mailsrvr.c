@@ -2745,6 +2745,7 @@ static int parse_header_field(char* buf, smbmsg_t* msg, ushort* type)
 static int chk_received_hdr(SOCKET socket, const char* prot, const char *buf, IN_ADDR *dnsbl_result, char *dnsbl, char *dnsbl_ip)
 {
 	char              host_name[128];
+	char              tmp[128];
 	char *            fromstr;
 	char              ip[16] = "ipv6-addr";
 	char *            p;
@@ -2801,7 +2802,7 @@ static int chk_received_hdr(SOCKET socket, const char* prot, const char *buf, IN
 
 		if ((dnsbl_result->s_addr = dns_blacklisted(socket, prot, &addr, host_name, dnsbl, dnsbl_ip)) != 0)
 			lprintf(LOG_NOTICE, "%04d %s [%s] BLACKLISTED SERVER on %s: %s = %s"
-			        , socket, prot, ip, dnsbl, host_name, inet_ntoa(*dnsbl_result));
+			        , socket, prot, ip, dnsbl, host_name, inet_ntop(AF_INET, dnsbl_result, tmp, sizeof tmp));
 	} while (0);
 	free(fromstr);
 	return dnsbl_result->s_addr;
@@ -3119,9 +3120,9 @@ static bool smtp_client_thread(smtp_t* smtp)
 		dnsbl_result.s_addr = dns_blacklisted(socket, client.protocol, &smtp->client_addr, host_name, dnsbl, dnsbl_ip);
 		if (dnsbl_result.s_addr) {
 			lprintf(LOG_NOTICE, "%04d %s [%s] BLACKLISTED SERVER on %s: %s = %s"
-			        , socket, client.protocol, dnsbl_ip, dnsbl, host_name, inet_ntoa(dnsbl_result));
+			        , socket, client.protocol, dnsbl_ip, dnsbl, host_name, inet_ntop(AF_INET, &dnsbl_result, tmp, sizeof tmp));
 			if (startup->options & MAIL_OPT_DNSBL_REFUSE) {
-				SAFEPRINTF2(str, "Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
+				SAFEPRINTF2(str, "Listed on %s as %s", dnsbl, inet_ntop(AF_INET, &dnsbl_result, tmp, sizeof tmp));
 				spamlog(&scfg, &mqtt, (char*)client.protocol, "SESSION REFUSED", str, host_name, dnsbl_ip, NULL, NULL);
 				sockprintf(socket, client.protocol, session
 				           , "550 Mail from %s refused due to listing at %s"
@@ -3610,13 +3611,13 @@ static bool smtp_client_thread(smtp_t* smtp)
 					if (startup->dnsbl_hdr[0]) {
 						safe_snprintf(str, sizeof(str), "%s: %s is listed on %s as %s"
 						              , startup->dnsbl_hdr, dnsbl_ip
-						              , dnsbl, inet_ntoa(dnsbl_result));
+						              , dnsbl, inet_ntop(AF_INET, &dnsbl_result, tmp, sizeof tmp));
 						smb_hfield_str(&msg, RFC822HEADER, str);
 						lprintf(LOG_NOTICE, "%04d %s %s TAGGED MAIL HEADER from blacklisted server with: %s"
 						        , socket, client.protocol, client_id, startup->dnsbl_hdr);
 					}
 					if (startup->dnsbl_hdr[0] || startup->dnsbl_tag[0]) {
-						SAFEPRINTF2(str, "Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
+						SAFEPRINTF2(str, "Listed on %s as %s", dnsbl, inet_ntop(AF_INET, &dnsbl_result, tmp, sizeof tmp));
 						spamlog(&scfg, &mqtt, (char*)client.protocol, "TAGGED", str, host_name, dnsbl_ip, rcpt_addr, reverse_path);
 					}
 				}
@@ -3853,7 +3854,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 							lprintf(LOG_NOTICE, "%04d %s %s !IGNORED SPAM MESSAGE from %s to <%s> (%lu total)"
 							        , socket, client.protocol, client_id, sender_info, rcpt_addr, ++stats.msgs_ignored);
 						else {
-							SAFEPRINTF2(str, "Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
+							SAFEPRINTF2(str, "Listed on %s as %s", dnsbl, inet_ntop(AF_INET, &dnsbl_result, tmp, sizeof tmp));
 							lprintf(LOG_NOTICE, "%04d %s %s !IGNORED MAIL from %s to <%s> from server: %s (%lu total)"
 							        , socket, client.protocol, client_id, sender_info, rcpt_addr, str, ++stats.msgs_ignored);
 							spamlog(&scfg, &mqtt, (char*)client.protocol, "IGNORED"
@@ -4618,7 +4619,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 			if (relay_user.number == 0 && dnsbl_result.s_addr && startup->options & MAIL_OPT_DNSBL_BADUSER) {
 				lprintf(LOG_NOTICE, "%04d %s %s !REFUSED MAIL from blacklisted server (%lu total)"
 				        , socket, client.protocol, client_id, ++stats.sessions_refused);
-				SAFEPRINTF2(str, "Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
+				SAFEPRINTF2(str, "Listed on %s as %s", dnsbl, inet_ntop(AF_INET, &dnsbl_result, tmp, sizeof tmp));
 				spamlog(&scfg, &mqtt, (char*)client.protocol, "REFUSED", str, host_name, host_ip, rcpt_addr, reverse_path);
 				sockprintf(socket, client.protocol, session
 				           , "550 Mail from %s refused due to listing at %s"
