@@ -111,7 +111,7 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			val = sbbs->line_delay;
 			break;
 		case CON_PROP_ATTR:
-			val = sbbs->term->curatr;
+			val = sbbs->curatr;
 			break;
 		case CON_PROP_TOS:
 			val = sbbs->term->row == 0;
@@ -1902,6 +1902,7 @@ js_ansi(JSContext *cx, uintN argc, jsval *arglist)
 
 		if (!JS_ValueToInt32(cx, argv[1], &curattr))
 			return JS_FALSE;
+		// TODO: A way to use term->curattr here...
 		if ((js_str = JS_NewStringCopyZ(cx, sbbs->term->attrstr(attr, curattr, buf, sizeof(buf)))) == NULL)
 			return JS_FALSE;
 	} else {

@@ -115,7 +115,7 @@ bool sbbs_t::printfile(const char* fname, int mode, int org_cols, JSObject* obj)
 		uint             sys_status_sav = sys_status;
 		enum output_rate output_rate = term->cur_output_rate;
 		uint             org_line_delay = line_delay;
-		uint             tmpatr = term->curatr;
+		uint             tmpatr = curatr;
 		uint             orgcon = console;
 		attr_sp = 0;    /* clear any saved attributes */
 		if (!(mode & P_SAVEATR))

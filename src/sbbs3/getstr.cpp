@@ -66,7 +66,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 		strout[0] = 0;
 	if (strlen(str1) > maxlen)
 		str1[maxlen] = 0;
-	atr = term->curatr;
+	atr = curatr;
 	if (!(mode & K_NOECHO)) {
 		if (mode & K_AUTODEL && str1[0]) {
 			i = (cfg.color[clr_inputline] & 0x77) << 4;

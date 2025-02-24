@@ -114,7 +114,7 @@ static int getpagingnode(scfg_t* cfg)
 void sbbs_t::nodesync(bool clearline)
 {
 	char str[256], today[32];
-	int  atr = term->curatr;
+	int  atr = curatr;
 
 	if (nodesync_inside || !online)
 		return;

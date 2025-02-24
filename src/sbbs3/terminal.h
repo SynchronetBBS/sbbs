@@ -60,18 +60,6 @@ public:
 	unsigned cterm_version{0};	   /* (MajorVer*1000) + MinorVer */
 	unsigned lncntr{0};                /* Line Counter - for PAUSE */
 	unsigned latr{LIGHTGRAY};          /* Starting attribute of line buffer */
-	/*
-	 * TODO: Previously, curatr had two roles, but it's back to just one now.
-	 *       Before the terminal-abstraction branch, it was used as both the
-	 *       current attribute on the remote side and the last requested attribute.
-	 *       For ANSI mode, these were the same, but for PETSCII mode they were not.
-	 *       Since PETSCII only has "reverse" and no background colour thing,
-	 *       they end up being different.
-	 * 
-	 *       This variable has the first meaning (ie: current remote attribute),
-	 *       so some ^A codes behave differently now.  Picking these two meanings
-	 *       apart will be tricky.
-	 */
 	unsigned curatr{LIGHTGRAY};        /* Current Text Attributes Always */
 	unsigned lbuflen{0};               /* Number of characters in line buffer */
 	char     lbuf[LINE_BUFSIZE + 1]{}; /* Temp storage for each line output */
@@ -519,6 +507,7 @@ public:
 	list_node_t *find_hotspot(unsigned x, unsigned y);
 	uint32_t flags(bool raw = false);
 	void insert_indicator();
+	char *attrstr(unsigned newattr, char *str, size_t strsz);
 };
 
 void update_terminal(sbbs_t *sbbsptr, Terminal *term);

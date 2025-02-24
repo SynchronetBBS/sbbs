@@ -340,6 +340,11 @@ void Terminal::insert_indicator() {
 	}
 }
 
+char *Terminal::attrstr(unsigned newattr, char *str, size_t strsz)
+{
+	return attrstr(newattr, curatr, str, strsz);
+}
+
 void update_terminal(sbbs_t *sbbsptr)
 {
 	uint32_t flags = Terminal::get_flags(sbbsptr);

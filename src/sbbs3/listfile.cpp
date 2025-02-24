@@ -386,7 +386,7 @@ bool sbbs_t::listfile(file_t* f, const int dirnum, const char *search, const cha
 	else
 		outchar(' ');
 	if (useron.misc & BATCHFLAG) {
-		attr(term->curatr ^ HIGH);
+		attr(curatr ^ HIGH);
 		bprintf("%c", letter);
 	}
 	cdt = f->cost;
@@ -405,7 +405,7 @@ bool sbbs_t::listfile(file_t* f, const int dirnum, const char *search, const cha
 	attr(cfg.color[size_attr]);
 	if (useron.misc & BATCHFLAG) {
 		if (!cdt && !(cfg.dir[dirnum]->misc & DIR_FREE)) {
-			attr(term->curatr ^ (HIGH | BLINK));
+			attr(curatr ^ (HIGH | BLINK));
 			bprintf("%6s", text[FREE]);
 		}
 		else
@@ -413,7 +413,7 @@ bool sbbs_t::listfile(file_t* f, const int dirnum, const char *search, const cha
 	}
 	else {
 		if (!cdt && !(cfg.dir[dirnum]->misc & DIR_FREE)) {  /* FREE file */
-			attr(term->curatr ^ (HIGH | BLINK));
+			attr(curatr ^ (HIGH | BLINK));
 			bprintf("%7s", text[FREE]);
 		}
 		else

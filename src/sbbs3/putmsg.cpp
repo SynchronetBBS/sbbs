@@ -45,7 +45,7 @@ char sbbs_t::putmsg(const char *buf, int mode, int org_cols, JSObject* obj)
 	enum output_rate output_rate = term->cur_output_rate;
 
 	attr_sp = 0;  /* clear any saved attributes */
-	tmpatr = term->curatr;  /* was lclatr(-1) */
+	tmpatr = curatr;  /* was lclatr(-1) */
 	if (!(mode & P_SAVEATR))
 		attr(LIGHTGRAY);
 	if (mode & P_NOPAUSE)
@@ -183,16 +183,16 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 					}
 					switch (str[l]) {
 						case '*':
-							attr(term->curatr ^ HIGH);
+							attr(curatr ^ HIGH);
 							break;
 						case '/':
-							attr(term->curatr ^ BLINK);
+							attr(curatr ^ BLINK);
 							break;
 						case '_':
-							attr(term->curatr ^ (HIGH | BLINK));
+							attr(curatr ^ (HIGH | BLINK));
 							break;
 						case '#':
-							attr(((term->curatr & 0x0f) << 4) | ((term->curatr & 0xf0) >> 4));
+							attr(((curatr & 0x0f) << 4) | ((curatr & 0xf0) >> 4));
 							break;
 					}
 					if (mark != 0 && !(mode & P_HIDEMARKS))
@@ -246,7 +246,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 			static uchar save_attr;
 			switch (val) {
 				case 0x00:
-					save_attr = term->curatr;
+					save_attr = curatr;
 					break;
 				case 0xff:
 					attr(save_attr);
@@ -274,10 +274,10 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 			if (i >= 16) {                 /* setting background */
 				i -= 16;
 				i <<= 4;
-				i |= (term->curatr & 0x0f);       /* leave foreground alone */
+				i |= (curatr & 0x0f);       /* leave foreground alone */
 			}
 			else
-				i |= (term->curatr & 0xf0);   /* leave background alone */
+				i |= (curatr & 0xf0);   /* leave background alone */
 			attr(i);
 			exatr = 1;
 			l += 3;   /* Skip |xx */
@@ -287,55 +287,55 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 		         && !(useron.misc & RIP)) {
 			switch (str[l + 1]) {
 				case 'k':
-					attr((term->curatr & 0xf0) | BLACK);
+					attr((curatr & 0xf0) | BLACK);
 					break;
 				case 'b':
-					attr((term->curatr & 0xf0) | BLUE);
+					attr((curatr & 0xf0) | BLUE);
 					break;
 				case 'g':
-					attr((term->curatr & 0xf0) | GREEN);
+					attr((curatr & 0xf0) | GREEN);
 					break;
 				case 'c':
-					attr((term->curatr & 0xf0) | CYAN);
+					attr((curatr & 0xf0) | CYAN);
 					break;
 				case 'r':
-					attr((term->curatr & 0xf0) | RED);
+					attr((curatr & 0xf0) | RED);
 					break;
 				case 'm':
-					attr((term->curatr & 0xf0) | MAGENTA);
+					attr((curatr & 0xf0) | MAGENTA);
 					break;
 				case 'y':
-					attr((term->curatr & 0xf0) | YELLOW);
+					attr((curatr & 0xf0) | YELLOW);
 					break;
 				case 'w':
-					attr((term->curatr & 0xf0) | LIGHTGRAY);
+					attr((curatr & 0xf0) | LIGHTGRAY);
 					break;
 				case 'd':
-					attr((term->curatr & 0xf0) | BLACK | HIGH);
+					attr((curatr & 0xf0) | BLACK | HIGH);
 					break;
 				case 'B':
-					attr((term->curatr & 0xf0) | BLUE | HIGH);
+					attr((curatr & 0xf0) | BLUE | HIGH);
 					break;
 				case 'G':
-					attr((term->curatr & 0xf0) | GREEN | HIGH);
+					attr((curatr & 0xf0) | GREEN | HIGH);
 					break;
 				case 'C':
-					attr((term->curatr & 0xf0) | CYAN | HIGH);
+					attr((curatr & 0xf0) | CYAN | HIGH);
 					break;
 				case 'R':
-					attr((term->curatr & 0xf0) | RED | HIGH);
+					attr((curatr & 0xf0) | RED | HIGH);
 					break;
 				case 'M':
-					attr((term->curatr & 0xf0) | MAGENTA | HIGH);
+					attr((curatr & 0xf0) | MAGENTA | HIGH);
 					break;
 				case 'Y':   /* Yellow */
-					attr((term->curatr & 0xf0) | YELLOW | HIGH);
+					attr((curatr & 0xf0) | YELLOW | HIGH);
 					break;
 				case 'W':
-					attr((term->curatr & 0xf0) | LIGHTGRAY | HIGH);
+					attr((curatr & 0xf0) | LIGHTGRAY | HIGH);
 					break;
 				case 'S':   /* swap foreground and background - TODO: This sets foreground to BLACK! */
-					attr((term->curatr & 0x07) << 4);
+					attr((curatr & 0x07) << 4);
 					break;
 			}
 			exatr = 1;
@@ -535,7 +535,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 			if (mode & P_CPM_EOF && str[l] == CTRL_Z)
 				break;
 			if (hot_attr) {
-				if (term->curatr == hot_attr && str[l] > ' ') {
+				if (curatr == hot_attr && str[l] > ' ') {
 					hot_spot.y = term->row;
 					if (!hot_spot.minx)
 						hot_spot.minx = term->column;
@@ -559,9 +559,9 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 				else
 					skip = print_utf8_as_cp437(str + l, len - l);
 			} else {
-				uint atr = term->curatr;
+				uint atr = curatr;
 				outchar(str[l]);
-				if (term->curatr != atr)   // We assume the attributes are retained between lines
+				if (curatr != atr)   // We assume the attributes are retained between lines
 					attr(atr);
 			}
 			l += skip;

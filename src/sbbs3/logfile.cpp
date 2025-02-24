@@ -314,7 +314,7 @@ void sbbs_t::errormsg(int line, const char* function, const char *src, const cha
 	        , extinfo == NULL ? "":extinfo);
 
 	if (online == ON_REMOTE) {
-		int savatr = term->curatr;
+		int savatr = curatr;
 		attr(cfg.color[clr_err]);
 		bprintf("\7\r\n!ERROR%s %s %s\r\n", repeat, action, object);   /* tell user about error */
 		bputs("\r\nThe sysop has been notified.\r\n");

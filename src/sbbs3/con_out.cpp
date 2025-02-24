@@ -276,10 +276,10 @@ int sbbs_t::petscii_to_ansibbs(unsigned char ch)
 		case PETSCII_LIGHTBLUE:     return attr(LIGHTBLUE);
 		case PETSCII_LIGHTGRAY:     return attr(LIGHTGRAY);
 		case PETSCII_PURPLE:        return attr(LIGHTMAGENTA);
-		case PETSCII_REVERSE_ON:    return attr((term->curatr & 0x07) << 4);
-		case PETSCII_REVERSE_OFF:   return attr(term->curatr >> 4);
-		case PETSCII_FLASH_ON:      return attr(term->curatr | BLINK);
-		case PETSCII_FLASH_OFF:     return attr(term->curatr & ~BLINK);
+		case PETSCII_REVERSE_ON:    return attr((curatr & 0x07) << 4);
+		case PETSCII_REVERSE_OFF:   return attr(curatr >> 4);
+		case PETSCII_FLASH_ON:      return attr(curatr | BLINK);
+		case PETSCII_FLASH_OFF:     return attr(curatr & ~BLINK);
 		default:
 			if (ch & 0x80)
 				return bprintf("#%3d", ch);
@@ -476,7 +476,7 @@ size_t sbbs_t::term_out(int ich)
 	// prevent \n from ending up at the start of the line buffer.
 	if (term->lbuflen < LINE_BUFSIZE) {
 		if (term->lbuflen == 0)
-			term->latr = term->curatr;
+			term->latr = curatr;
 		// Historically, beeps don't go into lbuf
 		// hopefully nobody notices and cares, because this would mean
 		// that BEL *must* be part of any charset we support... and it's
@@ -864,7 +864,7 @@ void sbbs_t::getdimensions()
 /****************************************************************************/
 void sbbs_t::ctrl_a(char x)
 {
-	uint       atr = term->curatr;
+	uint       atr = curatr;
 	struct  tm tm;
 
 	if (x && (uchar)x <= CTRL_Z) {    /* Ctrl-A through Ctrl-Z for users with MF only */
@@ -928,7 +928,7 @@ void sbbs_t::ctrl_a(char x)
 	switch (toupper(x)) {
 		case '+':   /* push current attribute */
 			if (attr_sp < (int)(sizeof(attr_stack) / sizeof(attr_stack[0])))
-				attr_stack[attr_sp++] = term->curatr;
+				attr_stack[attr_sp++] = curatr;
 			break;
 		case '-':   /* pop current attribute OR optimized "normal" */
 			if (attr_sp > 0)
@@ -1106,8 +1106,9 @@ int sbbs_t::attr(int atr)
 {
 	char str[128];
 
-	term->attrstr(atr, term->curatr, str, sizeof(str));
+	term->attrstr(atr, str, sizeof(str));
 	term_out(str);
+	curatr = atr;
 	return 0;
 }
 
@@ -1135,7 +1136,7 @@ bool sbbs_t::msgabort(bool clear)
 int sbbs_t::backfill(const char* instr, float pct, int full_attr, int empty_attr)
 {
 	uint  atr;
-	uint  save_atr = term->curatr;
+	uint  save_atr = curatr;
 	int   len;
 	char* str = strip_ctrl(instr, NULL);
 
@@ -1148,7 +1149,7 @@ int sbbs_t::backfill(const char* instr, float pct, int full_attr, int empty_attr
 				atr = full_attr;
 			else
 				atr = empty_attr;
-			if (term->curatr != atr)
+			if (curatr != atr)
 				attr(atr);
 			outchar(str[i]);
 		}

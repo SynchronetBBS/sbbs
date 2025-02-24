@@ -324,18 +324,18 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 
 	if (strcmp(sp, "HOT") == 0) { // Auto-mouse hot-spot attribute
-		hot_attr = term->curatr;
+		hot_attr = curatr;
 		return nulstr;
 	}
 	if (strncmp(sp, "HOT:", 4) == 0) {   // Auto-mouse hot-spot attribute
 		sp += 4;
 		if (stricmp(sp, "hungry") == 0) {
 			hungry_hotspots = true;
-			hot_attr = term->curatr;
+			hot_attr = curatr;
 		}
 		else if (stricmp(sp, "strict") == 0) {
 			hungry_hotspots = false;
-			hot_attr = term->curatr;
+			hot_attr = curatr;
 		}
 		else if (stricmp(sp, "off") == 0)
 			hot_attr = 0;
