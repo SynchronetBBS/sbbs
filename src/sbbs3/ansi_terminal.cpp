@@ -806,7 +806,7 @@ bool ANSI_Terminal::parse_output(char ich) {
 	return true;
 }
 
-bool ANSI_Terminal::parse_input(char& ch, int mode) {
+bool ANSI_Terminal::parse_input_sequence(char& ch, int mode) {
 	char inch;
 	char str[512];
 
@@ -879,7 +879,7 @@ bool ANSI_Terminal::parse_input(char& ch, int mode) {
 								sbbs->ungetkeys(spot->cmd);
 							}
 						}
-						return (ch < 32 || ch == 127);
+						return (ch < 32);
 					}
 					if (sbbs->pause_inside && y == rows - 1) {
 						ch = '\r';
@@ -904,8 +904,7 @@ bool ANSI_Terminal::parse_input(char& ch, int mode) {
 					ch = TERM_KEY_ABORT;
 					return true;
 				}
-				ch = TERM_KEY_IGNORE;
-				return true;
+				return false;
 			}
 
 			if (sp == 0 && inch == '<' && mouse_mode != MOUSE_MODE_OFF) {
@@ -955,7 +954,7 @@ bool ANSI_Terminal::parse_input(char& ch, int mode) {
 								sbbs->ungetkeys(spot->cmd);
 							}
 						}
-						return (ch < 32 || ch == 127);
+						return (ch < 32);
 					}
 					if (sbbs->pause_inside && y == rows - 1) {
 						ch = '\r';
@@ -1064,8 +1063,7 @@ bool ANSI_Terminal::parse_input(char& ch, int mode) {
 							sbbs->update_nodeterm();
 					}
 				}
-				ch = TERM_KEY_IGNORE;
-				return true;
+				return false;
 			}
 			str[sp++] = ch;
 		}
@@ -1076,7 +1074,7 @@ bool ANSI_Terminal::parse_input(char& ch, int mode) {
 		ch = ESC;
 		return true;
 	}
-	if (ch < 32 || ch == 127)
+	if (ch < 32)
 		return true;
 	return false;
 }

@@ -414,21 +414,25 @@ public:
 	}
 
 	/*
-	 * Returns true if ch was a control key.  For terminals like
-	 * ANSI where characters like ESC are potentially just the start
-	 * of a sequence, reads the extra characters via kbincom()
-	 * and ungetkey(x, true) if it needs to back out.
+	 * If ch is not a sequence introducer, this should return true.
+	 * 
+	 * If ch is a sequence introducer, this should parse the whole
+	 * sequence.  If the whole sequence can be replaced with a single
+	 * control character, ch should be updated to that character, and
+	 * the function should return true.
+	 * 
+	 * This can add additional characters by using ungetkeys? with
+	 * insert as true.  However, to avoid infinite loops, when the
+	 * first key this translates to is itself a control character,
+	 * ch should be update to that one, and this should return true.
 	 * 
 	 * Will replace ch with a TERM_KEY_* or CTRL_*, value if it
 	 * returns true.
 	 * 
-	 * Note that DEL is considered a control key by this function.
+	 * ch is the control character that was received.
+	 * mode is the mode passed to the inkey() call that received ch
 	 */
-	virtual bool parse_input(char& ch, int mode) {
-		if (ch < 32 || ch == 127)
-			return true;
-		return false;
-	}
+	virtual bool parse_input_sequence(char& ch, int mode) { return true; }
 
 	virtual bool saveline() {
 		struct savedline line;

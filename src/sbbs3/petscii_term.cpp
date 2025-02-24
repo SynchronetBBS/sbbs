@@ -479,66 +479,6 @@ bool PETSCII_Terminal::parse_output(char ch)
 	return false;
 }
 
-bool PETSCII_Terminal::parse_input(char& ch, int mode)
-{
-	switch (ch) {
-		case 3:
-			ch = TERM_KEY_ABORT;
-			return true;
-		case 17:
-			ch = TERM_KEY_DOWN;
-			return true;
-		case 19:
-			ch = TERM_KEY_HOME;
-			return true;
-		case '\x93': // Clear (translate to End)
-			ch = TERM_KEY_END;
-			return true;
-		case 20:
-			ch = TERM_KEY_DELETE;
-			return true;
-		case 29:
-			ch = TERM_KEY_RIGHT;
-			return true;
-		case '\x85': // F1
-			ch = TERM_KEY_IGNORE;
-			return true;
-		case '\x86': // F3
-			ch = TERM_KEY_IGNORE;
-			return true;
-		case '\x87': // F5
-			ch = TERM_KEY_IGNORE;
-			return true;
-		case '\x88': // F7
-			ch = TERM_KEY_IGNORE;
-			return true;
-		case '\x89': // F2
-			ch = TERM_KEY_IGNORE;
-			return true;
-		case '\x8A': // F4
-			ch = TERM_KEY_IGNORE;
-			return true;
-		case '\x8B': // F6
-			ch = TERM_KEY_IGNORE;
-			return true;
-		case '\x8C': // F8
-			ch = TERM_KEY_IGNORE;
-			return true;
-		case '\x91':
-			ch = TERM_KEY_UP;
-			return true;
-		case '\x94':
-			ch = TERM_KEY_INSERT;
-			return true;
-		case '\x9d':
-			ch = TERM_KEY_LEFT;
-			return true;
-	}
-	if (ch < 32)
-		return true;
-	return false;
-}
-
 bool PETSCII_Terminal::can_highlight() { return true; }
 bool PETSCII_Terminal::can_move() { return true; }
 bool PETSCII_Terminal::is_monochrome() { return false; }

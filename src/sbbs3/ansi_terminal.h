@@ -35,7 +35,7 @@ public:
 	virtual void set_mouse(unsigned mode);
 	virtual bool parse_output(char ch);
 	// Needs to handle C0 and C1
-	virtual bool parse_input(char& ch, int mode);
+	virtual bool parse_input_sequence(char& ch, int mode);
 	virtual struct mouse_hotspot* add_hotspot(struct mouse_hotspot* spot);
 	virtual bool can_highlight();
 	virtual bool can_move();
