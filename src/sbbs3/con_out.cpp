@@ -384,10 +384,10 @@ size_t sbbs_t::cp437_out(int ich)
 	// It is unclear what "should" happen when these arrive here,
 	// but it should be consistent, likely they should be expanded.
 	switch (ch) {
-		case 0x08:	// BS
+		case '\b':	// BS
 			term->cursor_left();
 			return 1;
-		case 0x09:	// TAB
+		case '\t':	// TAB
 			if (term->column < (term->cols - 1)) {
                                 outchar(' ');
                                 while ((term->column < (term->cols - 1)) && (term->column % term->tabstop))
@@ -395,13 +395,13 @@ size_t sbbs_t::cp437_out(int ich)
                         }
                         return 1;
 
-		case 0x0A:	// LF
+		case '\n':	// LF
 			term->line_feed();
 			return 1;
-		case 0x0D:	// CR
+		case '\r':	// CR
 			term->carriage_return();
 			return 1;
-		case 0x0C:	// FF
+		case FF:	// FF
 			term->clearscreen();
 			return 1;
 	}
@@ -409,7 +409,7 @@ size_t sbbs_t::cp437_out(int ich)
 	// UTF-8 Note that CP437 0x7C maps to U+00A6 so we can't just do
 	//       everything below 0x80 this way.
 	if (term->charset() == CHARSET_UTF8) {
-		if (ch != 0x07) {
+		if (ch != '\a') {
 			char utf8[UTF8_MAX_LEN + 1];
 			enum unicode_codepoint codepoint = cp437_unicode_tbl[ch];
 			if (codepoint == 0)

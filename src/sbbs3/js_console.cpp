@@ -2807,7 +2807,7 @@ static jsSyncMethodSpec js_console_functions[] = {
 	 , JSDOCSTR("Send a destructive backspace sequence")
 	 , 315
 	},
-	{"creturn",         js_creturn,         0, JSTYPE_VOID,     JSDOCSTR("[count=1]")
+	{"creturn",         js_creturn,         0, JSTYPE_VOID,     JSDOCSTR("")
 	 , JSDOCSTR("Send carriage-return (or equivalent) character(s) - moving the cursor to the left-most screen column")
 	 , 31700
 	},
