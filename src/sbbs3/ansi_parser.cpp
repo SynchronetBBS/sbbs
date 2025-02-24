@@ -4,38 +4,38 @@
 enum ansiState
 ANSI_Parser::parse(unsigned char ch)
 {
-	switch (outchar_esc) {
+	switch (state) {
 		case ansiState_none:
 			if (ch == '\x1b') {
-				outchar_esc = ansiState_esc;
+				state = ansiState_esc;
 				ansi_sequence += ch;
 			}
 			break;
 		case ansiState_esc:
 			ansi_sequence += ch;
 			if (ch == '[') {
-				outchar_esc = ansiState_csi;
+				state = ansiState_csi;
 				ansi_params = "";
 			}
 			else if (ch == '_' || ch == 'P' || ch == '^' || ch == ']') {
-				outchar_esc = ansiState_string;
+				state = ansiState_string;
 				ansi_was_string = true;
 			}
 			else if (ch == 'X') {
-				outchar_esc = ansiState_sos;
+				state = ansiState_sos;
 				ansi_was_string = true;
 			}
 			else if (ch >= ' ' && ch <= '/') {
 				ansi_ibs += ch;
-				outchar_esc = ansiState_intermediate;
+				state = ansiState_intermediate;
 			}
 			else if (ch >= '0' && ch <= '~') {
-				outchar_esc = ansiState_final;
+				state = ansiState_final;
 				ansi_was_cc = true;
 				ansi_final_byte = ch;
 			}
 			else {
-				outchar_esc = ansiState_broken;
+				state = ansiState_broken;
 			}
 			break;
 		case ansiState_csi:
@@ -47,54 +47,54 @@ ANSI_Parser::parse(unsigned char ch)
 			}
 			else if (ch >= ' ' && ch <= '/') {
 				ansi_ibs += ch;
-				outchar_esc = ansiState_intermediate;
+				state = ansiState_intermediate;
 			}
 			else if (ch >= '@' && ch <= '~') {
-				outchar_esc = ansiState_final;
+				state = ansiState_final;
 				ansi_final_byte = ch;
 			}
 			else {
-				outchar_esc = ansiState_broken;
+				state = ansiState_broken;
 			}
 			break;
 		case ansiState_intermediate:
 			ansi_sequence += ch;
 			if (ch >= ' ' && ch <= '/') {
 				ansi_ibs += ch;
-				outchar_esc = ansiState_intermediate;
+				state = ansiState_intermediate;
 			}
 			else if (ch >= '0' && ch <= '~') {
 				if (!ansi_was_cc) {
-					outchar_esc = ansiState_broken;
+					state = ansiState_broken;
 				}
 				else {
-					outchar_esc = ansiState_broken;
+					state = ansiState_broken;
 				}
 			}
 			else {
-				outchar_esc = ansiState_broken;
+				state = ansiState_broken;
 			}
 			break;
 		case ansiState_string: // APS, DCS, PM, or OSC
 			ansi_sequence += ch;
 			if (ch == '\x1b')
-				outchar_esc = ansiState_esc;
+				state = ansiState_esc;
 			else if (!((ch >= '\b' && ch <= '\r') || (ch >= ' ' && ch <= '~')))
-				outchar_esc = ansiState_broken;
+				state = ansiState_broken;
 			break;
 		case ansiState_sos: // SOS
 			ansi_sequence += ch;
 			if (ch == '\x1b')
-				outchar_esc = ansiState_sos_esc;
+				state = ansiState_sos_esc;
 			break;
 		case ansiState_sos_esc: // ESC inside SOS
 			ansi_sequence += ch;
 			if (ch == '\\')
-				outchar_esc = ansiState_esc;
+				state = ansiState_esc;
 			else if (ch == 'X')
-				outchar_esc = ansiState_broken;
+				state = ansiState_broken;
 			else
-				outchar_esc = ansiState_sos;
+				state = ansiState_sos;
 			break;
 		case ansiState_broken:
 			// Stay in broken state.
@@ -103,13 +103,13 @@ ANSI_Parser::parse(unsigned char ch)
 			// Stay in final state.
 			break;
 	}
-	return outchar_esc;
+	return state;
 }
 
 enum ansiState
 ANSI_Parser::current_state()
 {
-	return outchar_esc;
+	return state;
 }
 
 void
@@ -118,7 +118,7 @@ ANSI_Parser::reset()
 	ansi_params.clear();
 	ansi_ibs.clear();
 	ansi_sequence.clear();
-	outchar_esc = ansiState_none;
+	state = ansiState_none;
 	ansi_final_byte = 0;
 	ansi_was_cc = false;
 	ansi_was_string = false;

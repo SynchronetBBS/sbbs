@@ -32,7 +32,7 @@ public:
 	bool ansi_was_private{false};
 
 private:
-	enum ansiState outchar_esc{ansiState_none}; // track ANSI escape seq output
+	enum ansiState state{ansiState_none}; // track ANSI escape seq output
 };
 
 #endif
