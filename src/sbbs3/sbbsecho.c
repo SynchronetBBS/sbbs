@@ -3203,7 +3203,7 @@ void bail(int error_level)
 	}
 	if ((error_level && pause_on_abend) || pause_on_exit) {
 		fprintf(stderr, "\nHit any key...");
-		getch();
+		(void)getch();
 		fprintf(stderr, "\n");
 	}
 	exit(error_level);
@@ -4412,6 +4412,7 @@ bool write_to_pkts(const char *fbuf, area_t area, const fidoaddr_t* faddr, const
 		if (pkt == NULL) {
 			lprintf(LOG_ERR, "ERROR Creating/opening outbound packet for %s", smb_faddrtoa(&area.link[u], NULL));
 			bail(1);
+			return false;
 		}
 		hdr->destnode   = area.link[u].node;
 		hdr->destnet    = area.link[u].net;
@@ -4469,8 +4470,8 @@ bool pkt_to_msg(FILE* fidomsg, fmsghdr_t* hdr, const char* info, const char* inb
 			free(fmsgbuf);
 			return false;
 		}
-		for (i = 1; i; i++) {
-			SAFEPRINTF2(path, "%s%u.msg", scfg.netmail_dir, i);
+		for (i = 1; i < INT_MAX; i++) {
+			SAFEPRINTF2(path, "%s%d.msg", scfg.netmail_dir, i);
 			if (!fexistcase(path))
 				break;
 			if (terminated) {
@@ -4478,7 +4479,7 @@ bool pkt_to_msg(FILE* fidomsg, fmsghdr_t* hdr, const char* info, const char* inb
 				return false;
 			}
 		}
-		if (!i) {
+		if (i == INT_MAX) {
 			lprintf(LOG_WARNING, "Too many netmail messages");
 			free(fmsgbuf);
 			return false;
@@ -4638,6 +4639,8 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 		    || stricmp(hdr.to, "SBBSecho") == 0
 		    || stricmp(hdr.to, FIDO_PING_NAME) == 0) {
 			fmsgbuf = getfmsg(fp, NULL);
+			if (fmsgbuf == NULL)
+				return -1;
 			if (path[0]) {
 				if (cfg.delete_netmail && opt_delete_netmail) {
 					fclose(fp);
@@ -6080,6 +6083,11 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 			}
 			msg_offset = ftello(fidomsg);   // Save offset to msg body
 			fmsgbuf = getfmsg(fidomsg, NULL);
+			if (fmsgbuf == NULL) {
+				printf("Failed to parse message!\n");
+				bad_packet = "msg-parse";
+				break;
+			}
 			off_t next_msg = ftello(fidomsg);
 			if (msg_offset < 0 || next_msg < 0) {
 				lprintf(LOG_NOTICE, "Invalid message body offset (%ld, next hdr: %ld) from %s in packet: %s"
