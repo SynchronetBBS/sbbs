@@ -8,6 +8,7 @@ Version  Date         Description
 2.28     2025-02-22   If extended descriptions are enabled and a filename is
                       too long to fully fit in the menu, prepend the full
                       filename (wrapped) to the description.
+                      New color theme option: filenameInDesc
                       New bottom line menu option to toggle extended
                       descriptions on/off
                       Fix: useFilenameIfNoDescription option now used in

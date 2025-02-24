@@ -372,6 +372,11 @@ fileAreaDescTrad                     The file library/directory description for
 fileAreaNumItemsTrad                 The number of directories/files for
                                      'normal' colors (for moving a file)
 
+filenameInDesc                       The filename when used in the description
+                                     (for instance, if the filename is too long
+                                     to fully fit in the lightbar menu or if
+                                     the file has no description)
+
 
 5. Strings used from text.dat
 =============================
