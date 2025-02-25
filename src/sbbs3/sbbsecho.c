@@ -6835,6 +6835,7 @@ int main(int argc, char **argv)
 		        , cfg.area[cfg.badecho].sub == INVALID_SUB ? "INVALID_SUB" : scfg.sub[cfg.area[cfg.badecho].sub]->code);
 
 	if (cfg.auto_add_subs) {
+		bool warned = false;
 		for (int subnum = 0; subnum < scfg.total_subs; subnum++) {
 			if (cfg.badecho >= 0 && cfg.area[cfg.badecho].sub == subnum)
 				continue;   /* No need to auto-add the badecho sub */
@@ -6853,9 +6854,11 @@ int main(int argc, char **argv)
 					break;
 			if (hub < cfg.nodecfgs)
 				add_sub_to_arealist(scfg.sub[subnum], cfg.nodecfg[hub].addr);
-			else
+			else if (!warned) {
 				lprintf(LOG_WARNING, "Cannot auto-add sub (%s): No uplink configured for message group (%s)"
 					, scfg.sub[subnum]->code, scfg.grp[scfg.sub[subnum]->grp]->sname);
+				warned = true;
+			}
 		}
 	}
 
