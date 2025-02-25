@@ -4284,12 +4284,22 @@ doterm(struct bbslist *bbs)
                                                                 /* Have full sequence (Assumes
                                                                  * zrinit and zrqinit are same
                                                                  * length */
+								struct ciolib_screen *savscrn;
 								WRITE_OUTBUF();
 								suspend_rip(true);
+								savscrn = savescreen();
+								set_modepalette(palettes[COLOUR_PALETTE]);
+								setfont(0, false, 1);
+								setfont(0, false, 2);
+								setfont(0, false, 3);
+								setfont(0, false, 4);
+								setvideoflags(getvideoflags() & (CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT));
 								if (!strcmp((char *)zrqbuf, (char *)zrqinit))
 									zmodem_download(bbs);
 								else
 									begin_upload(bbs, true, inch);
+								restorescreen(savscrn);
+								freescreen(savscrn);
 								setup_mouse_events(&ms);
 								suspend_rip(false);
 								zrqbuf[0] = 0;
