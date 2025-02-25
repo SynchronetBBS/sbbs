@@ -52,10 +52,10 @@ private:
 	bool handle_SGR_mouse_sequence(char& ch, ANSI_Parser& ansi, bool release);
 	bool handle_left_press(unsigned x, unsigned y, char& ch, bool& retval);
 
+	ANSI_Parser ansiParser{};
 	unsigned saved_row{0};
 	unsigned saved_column{0};
-	bool is_negative{0};
-	ANSI_Parser ansiParser{};
+	bool is_negative{false};
 };
 
 #endif

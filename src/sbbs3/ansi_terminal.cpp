@@ -391,8 +391,7 @@ static void ansi_mouse(sbbs_t *sbbs, enum ansi_mouse_mode mode, bool enable)
 }
 
 void ANSI_Terminal::set_mouse(unsigned flags) {
-	// TODO: This is new... disable mouse if not enabled.
-	if (!supports(MOUSE))
+	if ((!supports(MOUSE)) && (mouse_mode != MOUSE_MODE_OFF))
 		flags = MOUSE_MODE_OFF;
 	if (supports(MOUSE) || flags == MOUSE_MODE_OFF) {
 		unsigned mode = mouse_mode & ~flags;
