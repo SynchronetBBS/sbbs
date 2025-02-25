@@ -78,9 +78,7 @@ reverse_attr(unsigned atr)
 /*
  * This deals with the reverse "stuff"
  * Basically, if the background is not black, the background colour is
- * set as the foreground colour, and BG_BLACK is set
- * 
- * TODO: This hackery around BG_BLACK is terrible.
+ * set as the foreground colour, and REVERSED is set
  */
 static unsigned
 xlat_atr(unsigned atr)
