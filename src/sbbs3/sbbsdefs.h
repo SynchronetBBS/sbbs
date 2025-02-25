@@ -898,6 +898,7 @@ enum COLORS {
 #define BG_BRIGHT       0x400       // Not an IBM-CGA/ANSI.SYS compatible attribute
 #define REVERSED        0x800
 #define UNDERLINE	0x1000
+#define CONCEALED	0x2000
 #define BG_BLUE         (BLUE << 4)
 #define BG_GREEN        (GREEN << 4)
 #define BG_CYAN         (CYAN << 4)

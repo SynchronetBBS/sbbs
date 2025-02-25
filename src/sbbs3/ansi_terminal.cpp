@@ -126,6 +126,17 @@ char* ANSI_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t st
 		if (curatr & UNDERLINE)
 			lastret = strlcat(str, "24;", strsz);
 	}
+	if (atr & CONCEALED) {
+		// TODO: We could emulate concealed as well, but it's
+		//       tricky since we've pitentially reset things
+		//       with a 0.
+		if (!(curatr & CONCEALED))
+			lastret = strlcat(str, "8;", strsz);
+	}
+	else {
+		if (curatr & CONCEALED)
+			lastret = strlcat(str, "28;", strsz);
+	}
 	if ((atr & 0x07) != (curatr & 0x07)) {
 		switch (atr & 0x07) {
 			case BLACK:
@@ -466,7 +477,9 @@ void ANSI_Terminal::handle_SGR_sequence() {
 		pval = ansiParser.get_pval(i, 0);
 		switch (pval) {
 			case 0:
-				// Don't use ANSI_NORMAL, it's only for the const thing
+				// TODO: We don't use ANSI_NORMAL, it's only for the const thing
+				//       However, the default colours do *not* need to be grey on
+				//       black for ANSI... see also 39 and 49
 				curatr = LIGHTGRAY;
 				break;
 			case 1:
@@ -495,13 +508,13 @@ void ANSI_Terminal::handle_SGR_sequence() {
 				break;
 			case 8:
 				curatr &= ~ANSI_NORMAL;
-				curatr = (curatr & ~0x07) | ((curatr & 0x70) >> 4);
+				curatr |= CONCEALED;
 				break;
 			case 22:
-				curatr &= ~(ANSI_NORMAL | HIGH);
+				curatr &= ~HIGH;
 				break;
 			case 24:
-				curatr &= ~(ANSI_NORMAL | UNDERLINE);
+				curatr &= ~UNDERLINE;
 				break;
 			case 25:
 				curatr &= ~ANSI_NORMAL;
@@ -515,7 +528,7 @@ void ANSI_Terminal::handle_SGR_sequence() {
 					curatr = (curatr & ~(REVERSED | 0x77)) | ((curatr & 0x70) >> 4) | ((curatr & 0x07) << 4);
 				break;
 			case 28:
-				// TODO: Undoes concealed... we currently hack concealed up
+				curatr &= ~CONCEALED;
 				break;
 			case 30:
 				curatr &= ~(ANSI_NORMAL | 0x07);
