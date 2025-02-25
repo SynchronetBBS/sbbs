@@ -79,16 +79,14 @@ popcnt(const uint32_t val)
 char* ANSI_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t strsz)
 {
 	if (!supports(COLOR)) {  /* eliminate colors if terminal doesn't support them */
-		// Bits that matter:
-		// If any background is set, use reversed
-		if (atr & (BG_LIGHTGRAY | BG_BRIGHT)) {
-			atr |= ANSI_NORMAL | REVERSED;
-		}
-		else {
-			atr |= ANSI_NORMAL;
-			atr &= ~REVERSED;
-		}
-		atr &= ~0x77;
+		if (atr & LIGHTGRAY)       /* if any foreground bits set, set all */
+			atr |= LIGHTGRAY;
+		if (atr & BG_LIGHTGRAY)  /* if any background bits set, set all */
+			atr |= BG_LIGHTGRAY;
+		if ((atr & LIGHTGRAY) && (atr & BG_LIGHTGRAY))
+			atr &= ~LIGHTGRAY;  /* if background is solid, foreground is black */
+		if (!atr)
+			atr |= LIGHTGRAY;   /* don't allow black on black */
 	}
 
 	if (atr & FG_UNKNOWN)
