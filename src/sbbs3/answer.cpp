@@ -548,11 +548,11 @@ bool sbbs_t::answer()
 	if (!term_output_disabled) {
 		mswait(200);    // Allow some time for Telnet negotiation
 		rioctl(IOFI);       /* flush input buffer */
-		if (strcmp(terminal, "PETSCII")) {
+		safe_snprintf(str, sizeof(str), "%s  %s", VERSION_NOTICE, COPYRIGHT_NOTICE);
+		if (strcmp(terminal, "PETSCII") == 0) {
 			autoterm |= PETSCII;
 			update_terminal(this);
 		}
-		safe_snprintf(str, sizeof(str), "%s  %s", VERSION_NOTICE, COPYRIGHT_NOTICE);
 		if (autoterm & PETSCII) {
 			SAFECOPY(terminal, "PETSCII");
 			outchar(FF);
