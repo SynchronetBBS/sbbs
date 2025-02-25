@@ -62,6 +62,19 @@ const char *ANSI_Terminal::attrstr(unsigned atr)
 	return "-Invalid use of ansi()-";
 }
 
+static uint32_t
+popcnt(const uint32_t val)
+{
+	uint32_t i = val;
+
+	// Clang optimizes this to popcnt on my system.
+	i = i - ((i >> 1) & 0x55555555);
+	i = (i & 0x33333333) + ((i >> 2) & 0x33333333);
+	i = (i + (i >> 4)) & 0x0F0F0F0F;
+	i *= 0x01010101;
+	return  i >> 24;
+}
+
 // Was ansi() and ansi_attr()
 char* ANSI_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t strsz)
 {
@@ -97,19 +110,43 @@ char* ANSI_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t st
 	}
 
 	lastret = strlcpy(str, "\033[", strsz);
-	// TODO: Actually optimize use of zero vs. individual on/off things.
-	if ((!(atr & HIGH) && curatr & HIGH) || (!(atr & BLINK) && curatr & BLINK)
-	    || atr == LIGHTGRAY) {
-		lastret = strlcat(str, "0;", strsz);
-		curatr = LIGHTGRAY;
+	uint32_t changed_mask = (curatr ^ atr) & (HIGH | BLINK | REVERSED | UNDERLINE | CONCEALED);
+	if (changed_mask) {
+		uint32_t set = popcnt(changed_mask & atr);
+		uint32_t clear = popcnt(changed_mask & ~atr);
+		uint32_t set_only_weight = set * 2 + 2;
+		uint32_t set_clear_weight = set * 2 + clear * 3;
+
+		if (atr & 0x70)
+			set_only_weight += 3;
+		if ((atr & 0x07) != LIGHTGRAY)
+			set_only_weight += 3;
+
+		if ((atr & 0x70) != (curatr & 0x70))
+			set_clear_weight += 3;
+		if ((atr & 0x07) != (curatr & 0x07))
+			set_clear_weight += 3;
+
+		if (set_only_weight < set_clear_weight) {
+			lastret = strlcat(str, "0;", strsz);
+			curatr = LIGHTGRAY;
+		}
 	}
 	if (atr & HIGH) {                     /* special attributes */
 		if (!(curatr & HIGH))
 			lastret = strlcat(str, "1;", strsz);
 	}
+	else {
+		if (curatr & HIGH)
+			lastret = strlcat(str, "22;", strsz);
+	}
 	if (atr & BLINK) {
 		if (!(curatr & BLINK))
 			lastret = strlcat(str, "5;", strsz);
+	}
+	else {
+		if (curatr & BLINK)
+			lastret = strlcat(str, "25;", strsz);
 	}
 	if (atr & REVERSED) {
 		if (!(curatr & REVERSED))
