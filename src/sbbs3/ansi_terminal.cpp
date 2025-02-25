@@ -78,11 +78,15 @@ popcnt(const uint32_t val)
 // Was ansi() and ansi_attr()
 char* ANSI_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t strsz)
 {
-	if (curatr & ANSI_NORMAL) {
-		if (curatr != ANSI_NORMAL)
-			sbbs->lprintf(LOG_WARNING, "Invalid current attribute %04x", curatr);
-		curatr = 0x07;
-	}
+	if (atr & FG_UNKNOWN)
+		atr &= ~0x07;
+	if (atr & BG_UNKNOWN)
+		atr &= ~0x70;
+	if (curatr & FG_UNKNOWN)
+		curatr &= ~0x07;
+	if (curatr & BG_UNKNOWN)
+		curatr &= ~0x70;
+
 	bool color = supports(COLOR);
 	size_t lastret;
 	if (supports(ICE_COLOR)) {
@@ -95,14 +99,14 @@ char* ANSI_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t st
 	}
 
 	if (!color) {  /* eliminate colors if terminal doesn't support them */
-		if (atr & LIGHTGRAY)       /* if any foreground bits set, set all */
-			atr |= LIGHTGRAY;
-		if (atr & BG_LIGHTGRAY)  /* if any background bits set, set all */
-			atr |= BG_LIGHTGRAY;
-		if ((atr & LIGHTGRAY) && (atr & BG_LIGHTGRAY))
-			atr &= ~LIGHTGRAY;  /* if background is solid, foreground is black */
-		if (!atr)
-			atr |= LIGHTGRAY;   /* don't allow black on black */
+		// If any background is set, use reversed
+		if (atr & BG_LIGHTGRAY)
+			atr |= ANSI_NORMAL | REVERSED;
+		else {
+			atr |= ANSI_NORMAL;
+			atr &= ~REVERSED;
+		}
+		atr &= ~0x77;
 	}
 	if (curatr == atr) { /* text hasn't changed. no sequence needed */
 		*str = 0;
@@ -111,25 +115,29 @@ char* ANSI_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t st
 
 	lastret = strlcpy(str, "\033[", strsz);
 	uint32_t changed_mask = (curatr ^ atr) & (HIGH | BLINK | REVERSED | UNDERLINE | CONCEALED);
+	// TODO: CSI 0 m does *NOT* set 
 	if (changed_mask) {
 		uint32_t set = popcnt(changed_mask & atr);
 		uint32_t clear = popcnt(changed_mask & ~atr);
-		uint32_t set_only_weight = set * 2 + 2;
+		uint32_t set_only_weight = set * 2 + 8;
 		uint32_t set_clear_weight = set * 2 + clear * 3;
 
 		if (atr & 0x70)
 			set_only_weight += 3;
-		if ((atr & 0x07) != LIGHTGRAY)
+		if (!(atr & FG_UNKNOWN))
+			set_only_weight += 3;
+		if (!(atr & BG_UNKNOWN))
 			set_only_weight += 3;
 
-		if ((atr & 0x70) != (curatr & 0x70))
+		if ((atr & (BG_UNKNOWN | 0x70)) != (curatr & (BG_UNKNOWN |0x70)))
 			set_clear_weight += 3;
-		if ((atr & 0x07) != (curatr & 0x07))
+		if ((atr & (FG_UNKNOWN | 0x07)) != (curatr & (FG_UNKNOWN | 0x07)))
 			set_clear_weight += 3;
 
 		if (set_only_weight < set_clear_weight) {
 			lastret = strlcat(str, "0;", strsz);
-			curatr = LIGHTGRAY;
+			curatr &= ~0x77;
+			curatr |= ANSI_NORMAL;
 		}
 	}
 	if (atr & HIGH) {                     /* special attributes */
@@ -172,7 +180,12 @@ char* ANSI_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t st
 		if (curatr & CONCEALED)
 			lastret = strlcat(str, "28;", strsz);
 	}
-	if ((atr & 0x07) != (curatr & 0x07)) {
+	if ((atr & FG_UNKNOWN) && !(curatr & FG_UNKNOWN)) {
+		lastret = strlcat(str, "39;", strsz);
+		curatr &= ~0x07;
+		curatr |= FG_UNKNOWN;
+	}
+	if ((atr & (FG_UNKNOWN | 0x07)) != (curatr & (FG_UNKNOWN | 0x07))) {
 		switch (atr & 0x07) {
 			case BLACK:
 				lastret = strlcat(str, "30;", strsz);
@@ -200,7 +213,12 @@ char* ANSI_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t st
 				break;
 		}
 	}
-	if ((atr & 0x70) != (curatr & 0x70)) {
+	if ((atr & BG_UNKNOWN) && !(curatr & BG_UNKNOWN)) {
+		lastret = strlcat(str, "39;", strsz);
+		curatr &= ~0x70;
+		curatr |= BG_UNKNOWN;
+	}
+	if ((atr & (BG_UNKNOWN | 0x70)) != (curatr & (BG_UNKNOWN | 0x70))) {
 		switch (atr & 0x70) {
 			/* The BG_BLACK macro is 0x200, so isn't in the mask */
 			case 0 /* BG_BLACK */:
@@ -512,37 +530,29 @@ void ANSI_Terminal::handle_SGR_sequence() {
 		pval = ansiParser.get_pval(i, 0);
 		switch (pval) {
 			case 0:
-				// TODO: We don't use ANSI_NORMAL, it's only for the const thing
-				//       However, the default colours do *not* need to be grey on
-				//       black for ANSI... see also 39 and 49
-				curatr = LIGHTGRAY;
+				curatr = ANSI_NORMAL;
 				break;
 			case 1:
-				curatr &= ~ANSI_NORMAL;
 				curatr |= HIGH;
 				break;
 			case 2:
-				curatr &= ~(ANSI_NORMAL | HIGH);
+				curatr &= ~HIGH;
 				break;
 			case 4:
-				curatr &= ~ANSI_NORMAL;
 				curatr |= UNDERLINE;
 				break;
 			case 5:
 			case 6:
-				curatr &= ~ANSI_NORMAL;
 				if (flags_ & ICE_COLOR)
 					curatr |= BG_BRIGHT;
 				else
 					curatr |= BLINK;
 				break;
 			case 7:
-				curatr &= ~ANSI_NORMAL;
 				if (!(curatr & REVERSED))
 					curatr = REVERSED | (curatr & ~0x77) | ((curatr & 0x70) >> 4) | ((curatr & 0x07) << 4);
 				break;
 			case 8:
-				curatr &= ~ANSI_NORMAL;
 				curatr |= CONCEALED;
 				break;
 			case 22:
@@ -552,7 +562,6 @@ void ANSI_Terminal::handle_SGR_sequence() {
 				curatr &= ~UNDERLINE;
 				break;
 			case 25:
-				curatr &= ~ANSI_NORMAL;
 				if (flags_ & ICE_COLOR)
 					curatr &= ~BG_BRIGHT;
 				else
@@ -566,75 +575,75 @@ void ANSI_Terminal::handle_SGR_sequence() {
 				curatr &= ~CONCEALED;
 				break;
 			case 30:
-				curatr &= ~(ANSI_NORMAL | 0x07);
+				curatr &= ~(FG_UNKNOWN | 0x07);
 				curatr |= BLACK;
 				break;
 			case 31:
-				curatr &= ~(ANSI_NORMAL | 0x07);
+				curatr &= ~(FG_UNKNOWN | 0x07);
 				curatr |= RED;
 				break;
 			case 32:
-				curatr &= ~(ANSI_NORMAL | 0x07);
+				curatr &= ~(FG_UNKNOWN | 0x07);
 				curatr |= GREEN;
 				break;
 			case 33:
-				curatr &= ~(ANSI_NORMAL | 0x07);
+				curatr &= ~(FG_UNKNOWN | 0x07);
 				curatr |= BROWN;
 				break;
 			case 34:
-				curatr &= ~(ANSI_NORMAL | 0x07);
+				curatr &= ~(FG_UNKNOWN | 0x07);
 				curatr |= BLUE;
 				break;
 			case 35:
-				curatr &= ~(ANSI_NORMAL | 0x07);
+				curatr &= ~(FG_UNKNOWN | 0x07);
 				curatr |= MAGENTA;
 				break;
 			case 36:
-				curatr &= ~(ANSI_NORMAL | 0x07);
+				curatr &= ~(FG_UNKNOWN | 0x07);
 				curatr |= CYAN;
 				break;
 			case 37:
-				curatr &= ~(ANSI_NORMAL | 0x07);
+				curatr &= ~(FG_UNKNOWN | 0x07);
 				curatr |= LIGHTGRAY;
 				break;
 			case 39:
-				// TODO: This is actually the ANSI_NORMAL foreground.
+				curatr &= ~0x07;
+				curatr |= FG_UNKNOWN;
 				break;
 			case 40:
-				curatr &= ~(BG_BLACK | ANSI_NORMAL | 0x70);
-				// Don't use BG_BLACK, it's only for the const thing.
-				//curatr |= BG_BLACK;
+				curatr &= ~(BG_BLACK | BG_UNKNOWN | 0x70);
 				break;
 			case 41:
-				curatr &= ~(BG_BLACK | ANSI_NORMAL | 0x70);
+				curatr &= ~(BG_BLACK | BG_UNKNOWN | 0x70);
 				curatr |= BG_RED;
 				break;
 			case 42:
-				curatr &= ~(BG_BLACK | ANSI_NORMAL | 0x70);
+				curatr &= ~(BG_BLACK | BG_UNKNOWN | 0x70);
 				curatr |= BG_GREEN;
 				break;
 			case 43:
-				curatr &= ~(BG_BLACK | ANSI_NORMAL | 0x70);
+				curatr &= ~(BG_BLACK | BG_UNKNOWN | 0x70);
 				curatr |= BG_BROWN;
 				break;
 			case 44:
-				curatr &= ~(BG_BLACK | ANSI_NORMAL | 0x70);
+				curatr &= ~(BG_BLACK | BG_UNKNOWN | 0x70);
 				curatr |= BG_BLUE;
 				break;
 			case 45:
-				curatr &= ~(BG_BLACK | ANSI_NORMAL | 0x70);
+				curatr &= ~(BG_BLACK | BG_UNKNOWN | 0x70);
 				curatr |= BG_MAGENTA;
 				break;
 			case 46:
-				curatr &= ~(BG_BLACK | ANSI_NORMAL | 0x70);
+				curatr &= ~(BG_BLACK | BG_UNKNOWN | 0x70);
 				curatr |= BG_CYAN;
 				break;
 			case 47:
-				curatr &= ~(BG_BLACK | ANSI_NORMAL | 0x70);
+				curatr &= ~(BG_BLACK | BG_UNKNOWN | 0x70);
 				curatr |= BG_LIGHTGRAY;
 				break;
 			case 49:
-				// TODO: This is actually the ANSI_NORMAL background.
+				curatr &= ~0x70;
+				curatr |= BG_UNKNOWN;
 				break;
 		}
 	}

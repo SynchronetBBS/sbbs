@@ -893,12 +893,15 @@ enum COLORS {
 
 #endif  /* __COLORS */
 
-#define ANSI_NORMAL     0x100
+#define FG_UNKNOWN	0x100
 #define BG_BLACK        0x200
 #define BG_BRIGHT       0x400       // Not an IBM-CGA/ANSI.SYS compatible attribute
 #define REVERSED        0x800
 #define UNDERLINE	0x1000
 #define CONCEALED	0x2000
+#define BG_UNKNOWN	0x4000
+// TODO: Do we need to keep this value compatible?
+#define ANSI_NORMAL     (FG_UNKNOWN | BG_UNKNOWN)
 #define BG_BLUE         (BLUE << 4)
 #define BG_GREEN        (GREEN << 4)
 #define BG_CYAN         (CYAN << 4)
