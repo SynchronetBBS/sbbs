@@ -127,9 +127,6 @@ char* ANSI_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t st
 			lastret = strlcat(str, "24;", strsz);
 	}
 	if (atr & CONCEALED) {
-		// TODO: We could emulate concealed as well, but it's
-		//       tricky since we've pitentially reset things
-		//       with a 0.
 		if (!(curatr & CONCEALED))
 			lastret = strlcat(str, "8;", strsz);
 	}
