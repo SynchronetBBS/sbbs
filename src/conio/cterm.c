@@ -3988,6 +3988,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 						case 'm':	/* Select Graphic Rendition */
 							gettextinfo(&ti);
 							flags = getvideoflags();
+							seq_default(seq, 0, 0);
 							for (i=0; i < seq->param_count; i++) {
 								seq_default(seq, i, 0);
 								switch(seq->param_int[i]) {
