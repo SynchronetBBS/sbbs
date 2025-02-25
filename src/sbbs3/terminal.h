@@ -59,8 +59,8 @@ public:
 	unsigned lastlinelen{0};           /* The previously displayed line length */
 	unsigned cterm_version{0};	   /* (MajorVer*1000) + MinorVer */
 	unsigned lncntr{0};                /* Line Counter - for PAUSE */
-	unsigned latr{LIGHTGRAY};          /* Starting attribute of line buffer */
-	uint32_t curatr{LIGHTGRAY};        /* Current Text Attributes Always */
+	unsigned latr{ANSI_NORMAL};        /* Starting attribute of line buffer */
+	uint32_t curatr{ANSI_NORMAL};      /* Current Text Attributes Always */
 	unsigned lbuflen{0};               /* Number of characters in line buffer */
 	char     lbuf[LINE_BUFSIZE + 1]{}; /* Temp storage for each line output */
 	enum output_rate cur_output_rate{output_rate_unlimited};
