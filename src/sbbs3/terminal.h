@@ -231,16 +231,11 @@ public:
 
 	/*
 	 * Destructive backspace.
-	 * TODO: This seems to be the only one of this family that
-	 *       checks CON_ECHO_OFF itself.  Figure out why and either
-	 *       remove it, or add it to all the rest that call term_out()
 	 */
 	virtual void backspace(unsigned int count = 1) {
-		if (sbbs->console & CON_ECHO_OFF)
-			return;
 		for (unsigned i = 0; i < count; i++) {
 			if (column > 0)
-				sbbs->putcom("\b \b");
+				sbbs->term_out("\b \b");
 			else
 				break;
 		}
