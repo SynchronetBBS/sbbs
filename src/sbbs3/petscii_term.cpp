@@ -1,7 +1,7 @@
 #include "petscii_term.h"
 #include "petdefs.h"
 
-// Initial work is only C64, not C128, C116, C16, Plus/4, or VIC-20, and certainly not a PET
+// Initial work is only C64 and C128 only, not C65, X16, C116, C16, Plus/4, or VIC-20, and certainly not a PET
 
 const char *PETSCII_Terminal::attrstr(unsigned atr)
 {
@@ -9,10 +9,14 @@ const char *PETSCII_Terminal::attrstr(unsigned atr)
 
 		/* Special case */
 		case ANSI_NORMAL:
-			return "\x0E\x92\x8F\x9b";	// Upper/Lower, Reverse Off, Flash Off (C128), Light Gray
+			if (subset == PETSCII_C128_80)
+				return "\x0E\x92\x8F\x9b";	// Upper/Lower, Reverse Off, Flash Off (C128), Light Gray
+			return "\x0E\x92\x9b";	// Upper/Lower, Reverse Off, Light Gray
 		case BLINK:
 		case BG_BRIGHT:
-			return "\x0F";			// Flash (C128 only)
+			if (subset == PETSCII_C128_80)
+				return "\x0F";			// Flash (C128 only)
+			return "";
 
 		/* Foreground */
 		case HIGH:
@@ -80,8 +84,8 @@ reverse_attr(unsigned atr)
  * Basically, if the background is not black, the background colour is
  * set as the foreground colour, and REVERSED is set
  */
-static unsigned
-xlat_atr(unsigned atr)
+unsigned
+PETSCII_Terminal::xlat_atr(unsigned atr)
 {
 	// BG_BLACK bit trumps all
 	if (atr & BG_BLACK) {
@@ -96,6 +100,8 @@ xlat_atr(unsigned atr)
 	if (atr & (0x70 | BG_BRIGHT)) {
 		atr = REVERSED | unreverse_attr(atr);
 	}
+	if (subset == PETSCII_C64)
+		atr &= ~(BLINK | UNDERLINE);
 	return atr;
 }
 
@@ -149,7 +155,10 @@ char* PETSCII_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t
 				str[sp++] = PETSCII_WHITE;
 				break;
 			case DARKGRAY:
-				str[sp++] = '\x97';
+				if (subset == PETSCII_C128_80)
+					str[sp++] = '\x98';
+				else
+					str[sp++] = '\x97';
 				break;
 			case LIGHTGRAY:
 				str[sp++] = '\x9b';
@@ -161,7 +170,10 @@ char* PETSCII_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t
 				str[sp++] = '\x9a';
 				break;
 			case CYAN:
-				str[sp++] = '\x98';
+				if (subset == PETSCII_C128_80)
+					str[sp++] = '\x97';
+				else
+					str[sp++] = '\x98';
 				break;
 			case LIGHTCYAN:
 				str[sp++] = '\x9f';
@@ -343,7 +355,6 @@ bool PETSCII_Terminal::parse_output(char ch)
 		// Zero-width characters we likely shouldn't send
 		case 0:
 		case 1:
-		case 2:
 		case 3:  // Stop
 		case 4:
 		case 6:
@@ -352,7 +363,6 @@ bool PETSCII_Terminal::parse_output(char ch)
 		case 10:
 		case 11:
 		case 14:
-		case 15:
 		case 16:
 		case 21:
 		case 22:
@@ -362,7 +372,6 @@ bool PETSCII_Terminal::parse_output(char ch)
 		case 26:
 		case 27: // ESC - This one is especially troubling
 		case '\x80':
-		case '\x82':
 		case '\x83': // Run
 		case '\x84':
 		case '\x85': // F1
@@ -373,7 +382,6 @@ bool PETSCII_Terminal::parse_output(char ch)
 		case '\x8A': // F4
 		case '\x8B': // F6
 		case '\x8C': // F8
-		case '\x8F':
 			return false;
 
 		// Specials that affect cursor position
@@ -384,6 +392,12 @@ bool PETSCII_Terminal::parse_output(char ch)
 			if (curatr & 0xf0)
 				curatr = (curatr & ~0xff) | ((curatr & 0xf0) >> 4);
 			return true;
+		case 15: // Flash on (C128 only)
+			if (subset == PETSCII_C128_80) {
+				curatr |= BLINK;
+				return true;
+			}
+			return false;
 		case 17: // Cursor down
 			inc_row();
 			return true;
@@ -411,6 +425,12 @@ bool PETSCII_Terminal::parse_output(char ch)
 			return true;
 
 		// Zero-width characters we want to pass through
+		case 2:
+			if (subset == PETSCII_C128_80) {
+				curatr |= UNDERLINE;
+				return true;
+			}
+			return false;
 		case 18: // Reverse on
 			if (!(curatr & REVERSED))
 				curatr = reverse_attr(curatr);
@@ -434,6 +454,18 @@ bool PETSCII_Terminal::parse_output(char ch)
 		case '\x81': // Orange
 			set_color(MAGENTA);
 			return true;
+		case '\x82': // Underline off
+			if (subset == PETSCII_C128_80) {
+				curatr &= ~UNDERLINE;
+				return true;
+			}
+			return false;
+		case '\x8F': // Flash off (C128 only)
+			if (subset == PETSCII_C128_80) {
+				curatr &= ~BLINK;
+				return true;
+			}
+			return false;
 		case '\x90': // Black
 			set_color(BLACK);
 			return true;
@@ -443,11 +475,17 @@ bool PETSCII_Terminal::parse_output(char ch)
 		case '\x96': // Pink
 			set_color(LIGHTRED);
 			return true;
-		case '\x97': // Dark gray
-			set_color(DARKGRAY);
+		case '\x97': // Dark gray or Cyan
+			if (subset == PETSCII_C128_80)
+				set_color(CYAN);
+			else
+				set_color(DARKGRAY);
 			return true;
-		case '\x98': // Gray
-			set_color(CYAN);
+		case '\x98': // Cyan or Gray
+			if (subset == PETSCII_C128_80)
+				set_color(DARKGRAY);
+			else
+				set_color(CYAN);
 			return true;
 		case '\x99': // Light Green
 			set_color(LIGHTGREEN);
@@ -482,3 +520,10 @@ bool PETSCII_Terminal::parse_output(char ch)
 bool PETSCII_Terminal::can_highlight() { return true; }
 bool PETSCII_Terminal::can_move() { return true; }
 bool PETSCII_Terminal::is_monochrome() { return false; }
+
+void PETSCII_Terminal::updated() {
+	if (cols == 80)
+		subset = PETSCII_C128_80;
+	else
+		subset = PETSCII_C64;
+}

@@ -436,6 +436,7 @@ void update_terminal(sbbs_t *sbbsptr)
 		delete sbbsptr->term;
 		sbbsptr->term = newTerm;
 	}
+	sbbsptr->term->updated();
 }
 
 void update_terminal(sbbs_t *sbbsptr, Terminal *term)
@@ -451,6 +452,7 @@ void update_terminal(sbbs_t *sbbsptr, Terminal *term)
 	if (sbbsptr->term)
 		delete sbbsptr->term;
 	sbbsptr->term = newTerm;
+	sbbsptr->term->updated();
 }
 
 extern "C" void update_terminal(void *sbbsptr, user_t *userptr)

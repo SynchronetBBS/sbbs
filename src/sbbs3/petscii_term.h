@@ -6,9 +6,15 @@
 class PETSCII_Terminal : public Terminal {
 private:
 	void set_color(int c);
+	unsigned xlat_atr(unsigned atr);
 
 	unsigned saved_x{0};
 	unsigned saved_y{0};
+	// https://www.pagetable.com/c64ref/charset/
+	enum {
+		PETSCII_C64,
+		PETSCII_C128_80
+	} subset{PETSCII_C64};
 
 public:
 
@@ -38,6 +44,7 @@ public:
 	virtual bool can_highlight();
 	virtual bool can_move();
 	virtual bool is_monochrome();
+	virtual void updated();
 };
 
 #endif

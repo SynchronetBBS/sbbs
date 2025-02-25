@@ -489,6 +489,8 @@ public:
 		return true;
 	}
 
+	virtual void updated() {}
+
 	void clear_hotspots(void);
 	void scroll_hotspots(unsigned count);
 
