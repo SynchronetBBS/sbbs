@@ -9,7 +9,6 @@ private:
 
 	unsigned saved_x{0};
 	unsigned saved_y{0};
-	bool reverse_on{false};
 
 public:
 

@@ -65,7 +65,7 @@ const char *ANSI_Terminal::attrstr(unsigned atr)
 // Was ansi() and ansi_attr()
 char* ANSI_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t strsz)
 {
-	if (curatr & 0x100) {
+	if (curatr & ANSI_NORMAL) {
 		if (curatr != ANSI_NORMAL)
 			sbbs->lprintf(LOG_WARNING, "Invalid current attribute %04x", curatr);
 		curatr = 0x07;
@@ -451,113 +451,109 @@ void ANSI_Terminal::handle_SGR_sequence() {
 		switch (pval) {
 			case 0:
 				// Don't use ANSI_NORMAL, it's only for the const thing
-				curatr = 0x07;
+				curatr = LIGHTGRAY;
 				break;
 			case 1:
-				curatr &= ~0x100;
-				curatr |= 0x08;
+				curatr &= ~ANSI_NORMAL;
+				curatr |= HIGH;
 				break;
 			case 2:
-				curatr &= ~0x108;
+				curatr &= ~(ANSI_NORMAL | HIGH);
 				break;
 			case 5:
 			case 6:
-				curatr &= ~0x100;
+				curatr &= ~ANSI_NORMAL;
 				if (flags_ & ICE_COLOR)
 					curatr |= BG_BRIGHT;
 				else
 					curatr |= BLINK;
 				break;
 			case 7:
-				curatr &= ~0x100;
-				if (!is_negative) {
-					curatr = (curatr & ~0x77) | ((curatr & 0x70) >> 4) | ((curatr & 0x07) << 4);
-					is_negative = true;
-				}
+				curatr &= ~ANSI_NORMAL;
+				if (!(curatr & REVERSED))
+					curatr = REVERSED | (curatr & ~0x77) | ((curatr & 0x70) >> 4) | ((curatr & 0x07) << 4);
 				break;
 			case 8:
-				curatr &= ~0x100;
+				curatr &= ~ANSI_NORMAL;
 				curatr = (curatr & ~0x07) | ((curatr & 0x70) >> 4);
 				break;
 			case 22:
-				curatr &= ~0x108;
+				curatr &= ~(ANSI_NORMAL | HIGH);
 				break;
 			case 25:
-				curatr &= ~0x100;
+				curatr &= ~ANSI_NORMAL;
 				if (flags_ & ICE_COLOR)
 					curatr &= ~BG_BRIGHT;
 				else
 					curatr &= ~BLINK;
 				break;
 			case 27:
-				if (is_negative) {
-					curatr = (curatr & ~0x77) | ((curatr & 0x70) >> 4) | ((curatr & 0x07) << 4);
-					is_negative = false;
-				}
+				if (curatr & REVERSED)
+					curatr = (curatr & ~(REVERSED | 0x77)) | ((curatr & 0x70) >> 4) | ((curatr & 0x07) << 4);
 				break;
 			case 30:
-				curatr &= ~0x107;
+				curatr &= ~(ANSI_NORMAL | 0x07);
 				curatr |= BLACK;
 				break;
 			case 31:
-				curatr &= ~0x107;
+				curatr &= ~(ANSI_NORMAL | 0x07);
 				curatr |= RED;
 				break;
 			case 32:
-				curatr &= ~0x107;
+				curatr &= ~(ANSI_NORMAL | 0x07);
 				curatr |= GREEN;
 				break;
 			case 33:
-				curatr &= ~0x107;
+				curatr &= ~(ANSI_NORMAL | 0x07);
 				curatr |= BROWN;
 				break;
 			case 34:
-				curatr &= ~0x107;
+				curatr &= ~(ANSI_NORMAL | 0x07);
 				curatr |= BLUE;
 				break;
 			case 35:
-				curatr &= ~0x107;
+				curatr &= ~(ANSI_NORMAL | 0x07);
 				curatr |= MAGENTA;
 				break;
 			case 36:
-				curatr &= ~0x107;
+				curatr &= ~(ANSI_NORMAL | 0x07);
 				curatr |= CYAN;
 				break;
 			case 37:
-				curatr &= ~0x107;
+				curatr &= ~(ANSI_NORMAL | 0x07);
 				curatr |= LIGHTGRAY;
 				break;
 			case 40:
-				curatr &= ~0x370;
+				curatr &= ~(BG_BLACK | ANSI_NORMAL | 0x70);
 				// Don't use BG_BLACK, it's only for the const thing.
 				//curatr |= BG_BLACK;
 				break;
 			case 41:
-				curatr &= ~0x370;
+				curatr &= ~(BG_BLACK | ANSI_NORMAL | 0x70);
 				curatr |= BG_RED;
 				break;
 			case 42:
-				curatr &= ~0x370;
+				curatr &= ~(BG_BLACK | ANSI_NORMAL | 0x70);
 				curatr |= BG_GREEN;
 				break;
 			case 43:
-				curatr &= ~0x370;
+				curatr &= ~(BG_BLACK | ANSI_NORMAL | 0x70);
 				curatr |= BG_BROWN;
 				break;
 			case 44:
-				curatr &= ~0x370;
+				curatr &= ~(BG_BLACK | ANSI_NORMAL | 0x70);
 				curatr |= BG_BLUE;
 				break;
 			case 45:
-				curatr &= ~0x370;
+				curatr &= ~(BG_BLACK | ANSI_NORMAL | 0x70);
 				curatr |= BG_MAGENTA;
 				break;
 			case 46:
-				curatr &= ~0x370;
+				curatr &= ~(BG_BLACK | ANSI_NORMAL | 0x70);
 				curatr |= BG_CYAN;
 				break;
 			case 47:
-				curatr &= ~0x370;
+				curatr &= ~(BG_BLACK | ANSI_NORMAL | 0x70);
 				curatr |= BG_LIGHTGRAY;
 				break;
 		}

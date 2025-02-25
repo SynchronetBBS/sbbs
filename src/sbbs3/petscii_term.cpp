@@ -69,7 +69,8 @@ static unsigned
 reverse_attr(unsigned atr)
 {
 	// This drops all foreground bits
-	return ((atr & HIGH) ? BG_BRIGHT : 0)	// Put HIGH bit into BG_BRIGHT
+	return REVERSED
+	    | ((atr & HIGH) ? BG_BRIGHT : 0)	// Put HIGH bit into BG_BRIGHT
 	    | (atr & BLINK)			// Blink unchanged
 	    | ((atr & 0x07) << 4);		// Foreground colour to Background
 }
@@ -89,9 +90,13 @@ xlat_atr(unsigned atr)
 		// But convert to "normal" atr
 		atr &= ~(BG_BLACK | 0x70 | BG_BRIGHT);
 	}
-	// If there is a background colour...
+	// If this is reversed, force foreground to black
+	if (atr & REVERSED) {
+		atr &= ~0x07;
+	}
+	// If there is a background colour, translate to reversed with black
 	if (atr & (0x70 | BG_BRIGHT)) {
-		atr = BG_BLACK | unreverse_attr(atr);
+		atr = REVERSED | unreverse_attr(atr);
 	}
 	return atr;
 }
@@ -109,14 +114,14 @@ char* PETSCII_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t
 		return str;
 	}
 
-	if (newatr & BG_BLACK) {	// Reversed
-		if (!(oldatr & BG_BLACK)) {
+	if (newatr & REVERSED) {
+		if (!(oldatr & REVERSED)) {
 			str[sp++] = PETSCII_REVERSE_ON;
 			oldatr = reverse_attr(oldatr);
 		}
 	}
 	else {
-		if (oldatr & BG_BLACK) {
+		if (oldatr & REVERSED) {
 			str[sp++] = '\x92';
 			oldatr = unreverse_attr(oldatr);
 		}
@@ -321,7 +326,8 @@ const char* PETSCII_Terminal::type()
 
 void PETSCII_Terminal::set_color(int c)
 {
-	if (reverse_on) {
+	if (curatr & REVERSED) {
+		curatr &= ~REVERSED;
 		curatr &= ~(BG_BRIGHT | 0x70);
 		curatr |= ((c & 0x07) << 4);
 		if (c & HIGH)
@@ -408,16 +414,12 @@ bool PETSCII_Terminal::parse_output(char ch)
 
 		// Zero-width characters we want to pass through
 		case 18: // Reverse on
-			if (!reverse_on) {
-				reverse_on = true;
+			if (!(curatr & REVERSED))
 				curatr = reverse_attr(curatr);
-			}
 			return true;
 		case '\x92': // Reverse off
-			if (reverse_on) {
-				reverse_on = false;
+			if (curatr & REVERSED)
 				curatr = unreverse_attr(curatr);
-			}
 			return true;
 		case 5:  // White
 			set_color(WHITE);

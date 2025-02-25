@@ -55,7 +55,6 @@ private:
 	ANSI_Parser ansiParser{};
 	unsigned saved_row{0};
 	unsigned saved_column{0};
-	bool is_negative{false};
 };
 
 #endif
