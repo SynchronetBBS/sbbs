@@ -147,6 +147,14 @@ char* PETSCII_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t
 		if (oldatr & BLINK)
 			str[sp++] = '\x8F';	// C128
 	}
+	if (newatr & UNDERLINE) {
+		if (!(oldatr & UNDERLINE))
+			str[sp++] = '\x02';	// C128
+	}
+	else {
+		if (oldatr & UNDERLINE)
+			str[sp++] = '\x82';	// C128
+	}
 	if (sp >= (strsz - 1)) {
 		str[sp] = 0;
 		return str;
@@ -342,7 +350,6 @@ const char* PETSCII_Terminal::type()
 void PETSCII_Terminal::set_color(int c)
 {
 	if (curatr & REVERSED) {
-		curatr &= ~REVERSED;
 		curatr &= ~(BG_BRIGHT | 0x70);
 		curatr |= ((c & 0x07) << 4);
 		if (c & HIGH)

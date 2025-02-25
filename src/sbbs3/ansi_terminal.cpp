@@ -110,6 +110,22 @@ char* ANSI_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t st
 		if (!(curatr & BLINK))
 			lastret = strlcat(str, "5;", strsz);
 	}
+	if (atr & REVERSED) {
+		if (!(curatr & REVERSED))
+			lastret = strlcat(str, "7;", strsz);
+	}
+	else {
+		if (curatr & REVERSED)
+			lastret = strlcat(str, "27;", strsz);
+	}
+	if (atr & UNDERLINE) {
+		if (!(curatr & UNDERLINE))
+			lastret = strlcat(str, "4;", strsz);
+	}
+	else {
+		if (curatr & UNDERLINE)
+			lastret = strlcat(str, "24;", strsz);
+	}
 	if ((atr & 0x07) != (curatr & 0x07)) {
 		switch (atr & 0x07) {
 			case BLACK:
@@ -460,6 +476,10 @@ void ANSI_Terminal::handle_SGR_sequence() {
 			case 2:
 				curatr &= ~(ANSI_NORMAL | HIGH);
 				break;
+			case 4:
+				curatr &= ~ANSI_NORMAL;
+				curatr |= UNDERLINE;
+				break;
 			case 5:
 			case 6:
 				curatr &= ~ANSI_NORMAL;
@@ -480,6 +500,9 @@ void ANSI_Terminal::handle_SGR_sequence() {
 			case 22:
 				curatr &= ~(ANSI_NORMAL | HIGH);
 				break;
+			case 24:
+				curatr &= ~(ANSI_NORMAL | UNDERLINE);
+				break;
 			case 25:
 				curatr &= ~ANSI_NORMAL;
 				if (flags_ & ICE_COLOR)
@@ -490,6 +513,9 @@ void ANSI_Terminal::handle_SGR_sequence() {
 			case 27:
 				if (curatr & REVERSED)
 					curatr = (curatr & ~(REVERSED | 0x77)) | ((curatr & 0x70) >> 4) | ((curatr & 0x07) << 4);
+				break;
+			case 28:
+				// TODO: Undoes concealed... we currently hack concealed up
 				break;
 			case 30:
 				curatr &= ~(ANSI_NORMAL | 0x07);
@@ -523,6 +549,9 @@ void ANSI_Terminal::handle_SGR_sequence() {
 				curatr &= ~(ANSI_NORMAL | 0x07);
 				curatr |= LIGHTGRAY;
 				break;
+			case 39:
+				// TODO: This is actually the ANSI_NORMAL foreground.
+				break;
 			case 40:
 				curatr &= ~(BG_BLACK | ANSI_NORMAL | 0x70);
 				// Don't use BG_BLACK, it's only for the const thing.
@@ -555,6 +584,9 @@ void ANSI_Terminal::handle_SGR_sequence() {
 			case 47:
 				curatr &= ~(BG_BLACK | ANSI_NORMAL | 0x70);
 				curatr |= BG_LIGHTGRAY;
+				break;
+			case 49:
+				// TODO: This is actually the ANSI_NORMAL background.
 				break;
 		}
 	}
