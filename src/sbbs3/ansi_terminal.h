@@ -51,6 +51,7 @@ private:
 	bool handle_non_SGR_mouse_sequence(char& ch, ANSI_Parser& ansi);
 	bool handle_SGR_mouse_sequence(char& ch, ANSI_Parser& ansi, bool release);
 	bool handle_left_press(unsigned x, unsigned y, char& ch, bool& retval);
+	void set_color(int c, bool bg);
 
 	ANSI_Parser ansiParser{};
 	unsigned saved_row{0};

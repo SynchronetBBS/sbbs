@@ -78,6 +78,17 @@ popcnt(const uint32_t val)
 // Was ansi() and ansi_attr()
 char* ANSI_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t strsz)
 {
+	if (!supports(COLOR)) {  /* eliminate colors if terminal doesn't support them */
+		if (atr & LIGHTGRAY)       /* if any foreground bits set, set all */
+			atr |= LIGHTGRAY;
+		if (atr & BG_LIGHTGRAY)  /* if any background bits set, set all */
+			atr |= BG_LIGHTGRAY;
+		if ((atr & LIGHTGRAY) && (atr & BG_LIGHTGRAY))
+			atr &= ~LIGHTGRAY;  /* if background is solid, foreground is black */
+		if (!atr)
+			atr |= LIGHTGRAY;   /* don't allow black on black */
+	}
+
 	if (atr & FG_UNKNOWN)
 		atr &= ~0x07;
 	if (atr & BG_UNKNOWN)
@@ -87,7 +98,6 @@ char* ANSI_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t st
 	if (curatr & BG_UNKNOWN)
 		curatr &= ~0x70;
 
-	bool color = supports(COLOR);
 	size_t lastret;
 	if (supports(ICE_COLOR)) {
 		switch (atr & (BG_BRIGHT | BLINK)) {
@@ -98,16 +108,6 @@ char* ANSI_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t st
 		}
 	}
 
-	if (!color) {  /* eliminate colors if terminal doesn't support them */
-		// If any background is set, use reversed
-		if (atr & BG_LIGHTGRAY)
-			atr |= ANSI_NORMAL | REVERSED;
-		else {
-			atr |= ANSI_NORMAL;
-			atr &= ~REVERSED;
-		}
-		atr &= ~0x77;
-	}
 	if (curatr == atr) { /* text hasn't changed. no sequence needed */
 		*str = 0;
 		return str;
@@ -522,6 +522,23 @@ void ANSI_Terminal::handle_control_code() {
 	}
 }
 
+void ANSI_Terminal::set_color(int c, bool bg)
+{
+	if (curatr & REVERSED)
+		bg = !bg;
+	if (bg) {
+		curatr &= ~(BG_BLACK | BG_UNKNOWN | 0x70);
+		if (c == FG_UNKNOWN)
+			curatr |= BG_UNKNOWN;
+		else
+			curatr |= c << 4;
+	}
+	else {
+		curatr &= ~(FG_UNKNOWN | 0x07);
+		curatr |= c;
+	}
+}
+
 void ANSI_Terminal::handle_SGR_sequence() {
 	unsigned cnt = ansiParser.count_params();
 	unsigned pval;
@@ -575,75 +592,58 @@ void ANSI_Terminal::handle_SGR_sequence() {
 				curatr &= ~CONCEALED;
 				break;
 			case 30:
-				curatr &= ~(FG_UNKNOWN | 0x07);
-				curatr |= BLACK;
+				set_color(BLACK, false);
 				break;
 			case 31:
-				curatr &= ~(FG_UNKNOWN | 0x07);
-				curatr |= RED;
+				set_color(RED, false);
 				break;
 			case 32:
-				curatr &= ~(FG_UNKNOWN | 0x07);
-				curatr |= GREEN;
+				set_color(GREEN, false);
 				break;
 			case 33:
-				curatr &= ~(FG_UNKNOWN | 0x07);
-				curatr |= BROWN;
+				set_color(BROWN, false);
 				break;
 			case 34:
-				curatr &= ~(FG_UNKNOWN | 0x07);
-				curatr |= BLUE;
+				set_color(BLUE, false);
 				break;
 			case 35:
-				curatr &= ~(FG_UNKNOWN | 0x07);
-				curatr |= MAGENTA;
+				set_color(MAGENTA, false);
 				break;
 			case 36:
-				curatr &= ~(FG_UNKNOWN | 0x07);
-				curatr |= CYAN;
+				set_color(CYAN, false);
 				break;
 			case 37:
-				curatr &= ~(FG_UNKNOWN | 0x07);
-				curatr |= LIGHTGRAY;
+				set_color(LIGHTGRAY, false);
 				break;
 			case 39:
-				curatr &= ~0x07;
-				curatr |= FG_UNKNOWN;
+				set_color(FG_UNKNOWN, false);
 				break;
 			case 40:
-				curatr &= ~(BG_BLACK | BG_UNKNOWN | 0x70);
+				set_color(BLACK, true);
 				break;
 			case 41:
-				curatr &= ~(BG_BLACK | BG_UNKNOWN | 0x70);
-				curatr |= BG_RED;
+				set_color(RED, true);
 				break;
 			case 42:
-				curatr &= ~(BG_BLACK | BG_UNKNOWN | 0x70);
-				curatr |= BG_GREEN;
+				set_color(GREEN, true);
 				break;
 			case 43:
-				curatr &= ~(BG_BLACK | BG_UNKNOWN | 0x70);
-				curatr |= BG_BROWN;
+				set_color(BROWN, true);
 				break;
 			case 44:
-				curatr &= ~(BG_BLACK | BG_UNKNOWN | 0x70);
-				curatr |= BG_BLUE;
+				set_color(BLUE, true);
 				break;
 			case 45:
-				curatr &= ~(BG_BLACK | BG_UNKNOWN | 0x70);
-				curatr |= BG_MAGENTA;
+				set_color(MAGENTA, true);
 				break;
 			case 46:
-				curatr &= ~(BG_BLACK | BG_UNKNOWN | 0x70);
-				curatr |= BG_CYAN;
+				set_color(CYAN, true);
 				break;
 			case 47:
-				curatr &= ~(BG_BLACK | BG_UNKNOWN | 0x70);
-				curatr |= BG_LIGHTGRAY;
+				set_color(LIGHTGRAY, true);
 				break;
 			case 49:
-				curatr &= ~0x70;
-				curatr |= BG_UNKNOWN;
+				set_color(FG_UNKNOWN, true);
 				break;
 		}
 	}
