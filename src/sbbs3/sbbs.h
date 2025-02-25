@@ -920,7 +920,6 @@ public:
 	int		attr(int);				/* Change text color/attributes */
 	void	ctrl_a(char);			/* Performs Ctrl-Ax attribute changes */
 	char*	auto_utf8(const char*, int& mode);
-	// TODO: Not To ANSI_Terminal
 	void	getdimensions();
 	size_t term_out(const char *str, size_t len = SIZE_MAX);
 	size_t term_out(int ch);
