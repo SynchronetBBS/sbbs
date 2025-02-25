@@ -1129,8 +1129,9 @@ bool ANSI_Terminal::parse_input_sequence(char& ch, int mode) {
 							if (update)
 								sbbs->update_nodeterm();
 						}
-						// TODO: Did the old code really eat these?
-						//       Did it eat anything else?
+						// TODO: This was suppressed before the terminal-abstration
+						//       branch.  I can't think of a good reason to keep doing
+						//       that though, and feel it should be more like the rest.
 						return false;
 					}
 				}
