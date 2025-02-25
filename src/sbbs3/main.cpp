@@ -5658,8 +5658,8 @@ NO_SSH:
 
 			if (inet_addrport(&local_addr) == startup->mode7_port) {
 				sbbs->autoterm = MODE7;
-				sbbs->cols = 40;
-				sbbs->rows = 25;
+				sbbs->term->cols = 40;
+				sbbs->term->rows = 25;
 			}
 
 			sbbs->bprintf("\r\n%s\r\n", VERSION_NOTICE);

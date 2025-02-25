@@ -1,5 +1,6 @@
 #include "terminal.h"
 #include "ansi_terminal.h"
+#include "mode7_terminal.h"
 #include "petscii_term.h"
 #include "link_list.h"
 
@@ -418,7 +419,9 @@ void update_terminal(sbbs_t *sbbsptr)
 {
 	uint32_t flags = Terminal::get_flags(sbbsptr);
 	if (sbbsptr->term == nullptr) {
-		if (flags & PETSCII)
+		if (flags & MODE7)
+			sbbsptr->term = new MODE7_Terminal(sbbsptr);
+		else if (flags & PETSCII)
 			sbbsptr->term = new PETSCII_Terminal(sbbsptr);
 		else if (flags & (ANSI))
 			sbbsptr->term = new ANSI_Terminal(sbbsptr);
@@ -427,7 +430,9 @@ void update_terminal(sbbs_t *sbbsptr)
 	}
 	else {
 		Terminal *newTerm;
-		if (flags & PETSCII)
+		if (flags & MODE7)
+			newTerm = new MODE7_Terminal(sbbsptr->term);
+		else if (flags & PETSCII)
 			newTerm = new PETSCII_Terminal(sbbsptr->term);
 		else if (flags & (ANSI))
 			newTerm = new ANSI_Terminal(sbbsptr->term);
@@ -443,7 +448,9 @@ void update_terminal(sbbs_t *sbbsptr, Terminal *term)
 {
 	uint32_t flags = term->flags(true);
 	Terminal *newTerm;
-	if (flags & PETSCII)
+	if (flags & MODE7)
+		newTerm = new MODE7_Terminal(sbbsptr, term);
+	else if (flags & PETSCII)
 		newTerm = new PETSCII_Terminal(sbbsptr, term);
 	else if (flags & (ANSI))
 		newTerm = new ANSI_Terminal(sbbsptr, term);

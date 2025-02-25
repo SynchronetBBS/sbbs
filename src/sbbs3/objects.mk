@@ -71,6 +71,7 @@ OBJS	=		$(LOAD_CFG_OBJS) \
 			$(MTOBJODIR)/logout$(OFILE)\
 			$(MTOBJODIR)/mail$(OFILE)\
 			$(MTOBJODIR)/main$(OFILE)\
+			$(MTOBJODIR)/mode7_terminal$(OFILE)\
 			$(MTOBJODIR)/msg_id$(OFILE)\
 			$(MTOBJODIR)/msgdate$(OFILE)\
 			$(MTOBJODIR)/msgtoqwk$(OFILE)\

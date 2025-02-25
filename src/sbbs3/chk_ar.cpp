@@ -129,17 +129,13 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 				}
 				break;
 			case AR_MODE7:
-				{
-					int val = term_supports();
-					val &= CHARSET_FLAGS;
-					if (val != CHARSET_MODE7)
-						result = _not;
-					else
-						result = !_not;
-					if (!result) {
-						noaccess_str = text[NoAccessTerminal];
-						noaccess_val = MODE7;
-					}
+				if (term->charset() != CHARSET_MODE7)
+					result = _not;
+				else
+					result = !_not;
+				if (!result) {
+					noaccess_str = text[NoAccessTerminal];
+					noaccess_val = CHARSET_MODE7;
 				}
 				break;
 			case AR_ASCII:

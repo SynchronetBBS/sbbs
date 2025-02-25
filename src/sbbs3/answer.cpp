@@ -563,7 +563,6 @@ bool sbbs_t::answer()
 			term->center(str);
 		} else if (autoterm & MODE7) {
 			SAFECOPY(terminal, "MODE7");
-			center(str);
 			term->center(str);
 		} else {    /* ANSI+ terminal detection */
 			term_out( "\r\n"      /* locate cursor at column 1 */
