@@ -97,6 +97,7 @@ char* ANSI_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t st
 	}
 
 	lastret = strlcpy(str, "\033[", strsz);
+	// TODO: Actually optimize use of zero vs. individual on/off things.
 	if ((!(atr & HIGH) && curatr & HIGH) || (!(atr & BLINK) && curatr & BLINK)
 	    || atr == LIGHTGRAY) {
 		lastret = strlcat(str, "0;", strsz);
