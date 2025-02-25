@@ -1898,8 +1898,11 @@ fb_cptable_from_unicode_cpoint(uint32_t cpoint, char unmapped, const struct code
 static uint32_t
 cpoint_from_cptable(uint8_t ch, const struct codepage_def *cpdef)
 {
-	if (ch < 128)
+	if (ch < 128) {
+		if (ch == 0x7C && cpdef->broken_vertical)
+			return 0xA6;
 		return ch;
+	}
 	return cpdef->cp_unicode_table[ch - 128];
 }
 
@@ -2028,8 +2031,12 @@ cpstr_to_utf8(const char *cpstr, size_t buflen, size_t *outlen, const struct cod
 		ch = cpstr[idx];
 		if (ch == 0)
 			cplen = 4;
-		else if (ch < 128)
-			cplen = 1;
+		else if (ch < 128) {
+			if (ch == 0x7C && cpdef->broken_vertical)
+				cplen = 2;
+			else
+				cplen = 1;
+		}
 		else
 			cplen = utf8_bytes(cpdef->cp_unicode_table[ch - 128]);
 		if (cplen == -1)
@@ -2051,8 +2058,15 @@ cpstr_to_utf8(const char *cpstr, size_t buflen, size_t *outlen, const struct cod
 			cplen = 0;
 		}
 		else if (ch < 128) {
-			*rp = ch;
-			cplen = 1;
+			if (ch == 0x7C && cpdef->broken_vertical) {
+				cplen = write_cp(rp, 0xA6);
+				if (cplen != 2)
+					goto error;
+			}
+			else {
+				*rp = ch;
+				cplen = 1;
+			}
 		}
 		else {
 			cplen = write_cp(rp, cpdef->cp_unicode_table[ch - 128]);
@@ -2201,87 +2215,96 @@ const struct codepage_def ciolib_cp[CIOLIB_CP_COUNT] = {
 	// 0
 	{"CP437", CIOLIB_CP437, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		cp437_table, sizeof(cp437_table) / sizeof(cp437_table[0]),
-		cp437_unicode_table, cp437_ext_table},
+		cp437_unicode_table, cp437_ext_table, true},
 	{"CP1251", CIOLIB_CP1251, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		cp1251_table, sizeof(cp1251_table) / sizeof(cp1251_table[0]),
-		cp1251_unicode_table, cp437_ext_table},
+		cp1251_unicode_table, cp437_ext_table, false},
+	{"CP1251B", CIOLIB_CP1251_B, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
+		cp1251_table, sizeof(cp1251_table) / sizeof(cp1251_table[0]),
+		cp1251_unicode_table, cp437_ext_table, true},
 	{"KOI8-R", CIOLIB_KOI8_R, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		koi8_r_table, sizeof(koi8_r_table) / sizeof(koi8_r_table[0]),
-		koi8_r_unicode_table, empty_ext_table},
+		koi8_r_unicode_table, empty_ext_table, true},
 	{"ISO-8859-2", CIOLIB_ISO_8859_2, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		iso8859_2_table, sizeof(iso8859_2_table) / sizeof(iso8859_2_table[0]),
-		iso8859_2_unicode_table, empty_ext_table},
+		iso8859_2_unicode_table, empty_ext_table, true},
 	{"ISO-8859-4", CIOLIB_ISO_8859_4, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		iso8859_4_table, sizeof(iso8859_4_table) / sizeof(iso8859_4_table[0]),
-		iso8859_4_unicode_table, empty_ext_table},
+		iso8859_4_unicode_table, empty_ext_table, false},
 	// 5
 	{"CP866M", CIOLIB_CP866M, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		cp866m_table, sizeof(cp866m_table) / sizeof(cp866m_table[0]),
-		cp866m_unicode_table, cp437_ext_table},
+		cp866m_unicode_table, cp437_ext_table, true},
 	{"ISO-8859-9", CIOLIB_ISO_8859_9, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		iso8859_9_table, sizeof(iso8859_9_table) / sizeof(iso8859_9_table[0]),
-		iso8859_9_unicode_table, empty_ext_table},
+		iso8859_9_unicode_table, empty_ext_table, false},
 	{"ISO-8859-8", CIOLIB_ISO_8859_8, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		iso8859_8_table, sizeof(iso8859_8_table) / sizeof(iso8859_8_table[0]),
-		iso8859_8_unicode_table, empty_ext_table},
+		iso8859_8_unicode_table, empty_ext_table, false},
 	{"KOI8-U", CIOLIB_KOI8_U, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		koi8_u_table, sizeof(koi8_u_table) / sizeof(koi8_u_table[0]),
-		koi8_u_unicode_table, empty_ext_table},
+		koi8_u_unicode_table, empty_ext_table, true},
 	{"ISO-8859-15", CIOLIB_ISO_8859_15, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		iso8859_15_table, sizeof(iso8859_15_table) / sizeof(iso8859_15_table[0]),
-		iso8859_15_unicode_table, empty_ext_table},
+		iso8859_15_unicode_table, empty_ext_table, false},
 	// 10
 	{"ISO-8859-5", CIOLIB_ISO_8859_5, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		iso8859_5_table, sizeof(iso8859_5_table) / sizeof(iso8859_5_table[0]),
-		iso8859_5_unicode_table, empty_ext_table},
+		iso8859_5_unicode_table, empty_ext_table, true},
 	{"CP850", CIOLIB_CP850, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		cp850_table, sizeof(cp850_table) / sizeof(cp850_table[0]),
-		cp850_unicode_table, cp437_ext_table},
+		cp850_unicode_table, cp437_ext_table, false},
+	{"CP850B", CIOLIB_CP850_B, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
+		cp850_table, sizeof(cp850_table) / sizeof(cp850_table[0]),
+		cp850_unicode_table, cp437_ext_table, true},
 	{"CP865", CIOLIB_CP865, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		cp865_table, sizeof(cp865_table) / sizeof(cp865_table[0]),
-		cp865_unicode_table, cp437_ext_table},
+		cp865_unicode_table, cp437_ext_table, false},
+	{"CP865B", CIOLIB_CP865_B, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
+		cp865_table, sizeof(cp865_table) / sizeof(cp865_table[0]),
+		cp865_unicode_table, cp437_ext_table, true},
 	{"ISO-8859-7", CIOLIB_ISO_8859_7, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		iso8859_7_table, sizeof(iso8859_7_table) / sizeof(iso8859_7_table[0]),
-		iso8859_7_unicode_table, empty_ext_table},
+		iso8859_7_unicode_table, empty_ext_table, false},
 	{"ISO-8859-1", CIOLIB_ISO_8859_1, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		iso8859_1_table, sizeof(iso8859_1_table) / sizeof(iso8859_1_table[0]),
-		iso8859_1_unicode_table, empty_ext_table},
+		iso8859_1_unicode_table, empty_ext_table, false},
 	// 15
 	{"CP866M2", CIOLIB_CP866M2, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		cp866m2_table, sizeof(cp866m2_table) / sizeof(cp866m2_table[0]),
-		cp866m2_unicode_table, cp437_ext_table},
+		cp866m2_unicode_table, cp437_ext_table, true},
 	{"CP866U", CIOLIB_CP866U, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		cp866u_table, sizeof(cp866u_table) / sizeof(cp866u_table[0]),
-		cp866u_unicode_table, cp437_ext_table},
+		cp866u_unicode_table, cp437_ext_table, true},
 	{"CP1131", CIOLIB_CP1131, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		cp1131_table, sizeof(cp1131_table) / sizeof(cp1131_table[0]),
-		cp1131_unicode_table, cp437_ext_table},
+		cp1131_unicode_table, cp437_ext_table, false},
 	{"ARMSCII-8", CIOLIB_ARMSCII8, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		armscii8_table, sizeof(armscii8_table) / sizeof(armscii8_table[0]),
-		armscii8_unicode_table, cp437_ext_table},
+		armscii8_unicode_table, cp437_ext_table, true},
 	{"HAIK8", CIOLIB_HAIK8, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		haik8_table, sizeof(haik8_table) / sizeof(haik8_table[0]),
-		haik8_unicode_table, cp437_ext_table},
+		haik8_unicode_table, cp437_ext_table, true},
 	// 20
 	{"ATASCII", CIOLIB_ATASCII, ftstr_to_utf8, utf8_to_cpstr, fb_cptable_from_unicode_cpoint, ft_cpoint_from_cptable,  ft_cpoint_from_cptable_ext,
 		atascii_table, sizeof(atascii_table) / sizeof(atascii_table[0]),
-		atascii_unicode_table, atascii_ext_table},
+		atascii_unicode_table, atascii_ext_table, false},
 	{"PETSCIIU", CIOLIB_PETSCIIU, ftstr_to_utf8, utf8_to_cpstr, ft_from_unicode_cpoint, ft_cpoint_from_cptable,  cpoint_from_cptable_ext,
 		petsciiu_table, sizeof(petsciiu_table) / sizeof(petsciiu_table[0]),
-		petsciiu_unicode_table, empty_ext_table},
+		petsciiu_unicode_table, empty_ext_table, false},
 	{"PETSCIIL", CIOLIB_PETSCIIL, ftstr_to_utf8, utf8_to_cpstr, ft_from_unicode_cpoint, ft_cpoint_from_cptable,  cpoint_from_cptable_ext,
 		petsciil_table, sizeof(petsciil_table) / sizeof(petsciil_table[0]),
-		petsciil_unicode_table, empty_ext_table},
+		petsciil_unicode_table, empty_ext_table, false},
 
 	{"PRESTEL", CIOLIB_PRESTEL, ftstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, ft_cpoint_from_cptable,  cpoint_from_cptable_ext,
 		prestel_table, sizeof(prestel_table) / sizeof(prestel_table[0]),
-		prestel_unicode_table, empty_ext_table},
+		prestel_unicode_table, empty_ext_table, false},
 	{"PRESTEL-SEP", CIOLIB_PRESTEL_SEP, ftstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, ft_cpoint_from_cptable,  cpoint_from_cptable_ext,
 		prestel_table_sep, sizeof(prestel_table_sep) / sizeof(prestel_table_sep[0]),
-		prestel_unicode_table_sep, empty_ext_table},
+		prestel_unicode_table_sep, empty_ext_table, false},
 	{"ATARI-ST", CIOLIB_ATARIST, cpstr_to_utf8, utf8_to_cpstr, cptable_from_unicode_cpoint, cpoint_from_cptable,  cpoint_from_cptable_ext,
 		atarist_table, sizeof(atarist_table) / sizeof(atarist_table[0]),
-		atarist_unicode_table, atarist_ext_table},
+		atarist_unicode_table, atarist_ext_table, false},
 };
 
 uint8_t *cp_to_utf8(enum ciolib_codepage cp, const char *cpstr, size_t buflen, size_t *outlen)

@@ -20,7 +20,14 @@
  ****************************************************************************/
 
 //---------------------------------------------------------------------------
-#include "sbbs.h"           // unixtodstr()
+#include "date_str.h"
+#include "getmail.h"
+#include "getstats.h"
+#include "load_cfg.h"
+#include "logfile.h"
+#include "semfile.h"
+#include "sockwrap.h"
+#include <mmsystem.h> // PlaySound()
 #include <vcl.h>
 #include <vcl/Registry.hpp>	/* TRegistry */
 #pragma hdrstop

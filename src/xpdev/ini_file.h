@@ -212,6 +212,7 @@ DLLEXPORT str_list_t 	iniGetSection(str_list_t, const char *section);
 DLLEXPORT str_list_t 	iniCutSection(str_list_t, const char *section);
 
 #if !defined(NO_SOCKET_SUPPORT)
+// These functions return/accept IP addresses in *network* byte order
 DLLEXPORT uint32_t 		iniReadIpAddress(FILE*, const char* section, const char* key
 							,uint32_t deflt);
 DLLEXPORT uint32_t 		iniGetIpAddress(str_list_t, const char* section, const char* key

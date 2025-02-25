@@ -97,7 +97,7 @@ int sbbs_t::listmsgs(int subnum, int mode, post_t *post, int start, int posts, b
 
 void sbbs_t::dump_msghdr(smbmsg_t* msg)
 {
-	newline();
+	term->newline();
 	str_list_t list = smb_msghdr_str_list(msg);
 	if (list != NULL) {
 		for (int i = 0; list[i] != NULL && !msgabort(); i++) {
@@ -379,8 +379,8 @@ void sbbs_t::show_thread(uint32_t msgnum, post_t* post, unsigned curmsg, int thr
 //		,msg.hdr.number
 	        , (unsigned)i == curmsg ? '>' : ':');
 	bprintf("\1w%-*.*s\1g%c\1g%c \1w%s\r\n"
-	        , (int)(cols - column - 12)
-	        , (int)(cols - column - 12)
+	        , (int)(term->cols - term->column - 12)
+	        , (int)(term->cols - term->column - 12)
 	        , msg.hdr.attr & MSG_ANONYMOUS && !sub_op(smb.subnum)
 	        ? text[Anonymous] : msghdr_field(&msg, msg.from)
 	        , (unsigned)i == curmsg ? '<' : ' '
@@ -446,7 +446,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 	}
 	ZERO_VAR(msg);              /* init to NULL, specify not-allocated */
 	if (!(mode & SCAN_CONT))
-		lncntr = 0;
+		term->lncntr = 0;
 	if ((msgs = getlastmsg(subnum, &last, 0)) == 0) {
 		if (mode & (SCAN_NEW | SCAN_TOYOU))
 			bprintf(text[NScanStatusFmt]
@@ -495,7 +495,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 		for (smb.curmsg = 0; smb.curmsg < smb.msgs; smb.curmsg++)
 			if (subscan[subnum].ptr < post[smb.curmsg].idx.number)
 				break;
-		lncntr = 0;
+		term->lncntr = 0;
 		bprintf(text[NScanStatusFmt]
 		        , cfg.grp[cfg.sub[subnum]->grp]->sname, cfg.sub[subnum]->lname, smb.msgs - smb.curmsg, msgs);
 		if (!smb.msgs) {       /* no messages at all */
@@ -515,8 +515,8 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 		}
 	}
 	else {
-		cleartoeol();
-		lncntr = 0;
+		term->cleartoeol();
+		term->lncntr = 0;
 		if (mode & SCAN_TOYOU)
 			bprintf(text[NScanStatusFmt]
 			        , cfg.grp[cfg.sub[subnum]->grp]->sname, cfg.sub[subnum]->lname, smb.msgs, msgs);
@@ -648,7 +648,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 				break;
 			}
 			bprintf("\1n\1l\1h\1bThread\1n\1b: \1h\1c");
-			bprintf("%-.*s\r\n", (int)(cols - (column + 1)), msghdr_field(&msg, msg.subj));
+			bprintf("%-.*s\r\n", (int)(term->cols - (term->column + 1)), msghdr_field(&msg, msg.subj));
 			show_thread(first, post, smb.curmsg);
 			subscan[subnum].last = post[smb.curmsg].idx.number;
 		}
@@ -782,8 +782,8 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 		sync();
 		if (unvalidated < smb.curmsg)
 			bprintf(text[UnvalidatedWarning], unvalidated + 1);
-		if (lncntr >= rows - 2)
-			lncntr--;
+		if (term->lncntr >= term->rows - 2)
+			term->lncntr--;
 		bprintf(text[ReadingSub], ugrp, cfg.grp[cfg.sub[subnum]->grp]->sname
 		        , usub, cfg.sub[subnum]->sname, smb.curmsg + 1, smb.msgs);
 		snprintf(str, sizeof str, "ABCDEFHILMNPQRTUVY?*<>[]{}-+()\b%c%c%c%c"
@@ -923,7 +923,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 							SAFEPRINTF2(str, "removed post from %s %s"
 							            , cfg.grp[cfg.sub[subnum]->grp]->sname, cfg.sub[subnum]->lname);
 							logline("P-", str);
-							center(text[Deleted]);
+							term->center(text[Deleted]);
 							if (!stricmp(cfg.sub[subnum]->misc & SUB_NAME
 							    ? useron.name : useron.alias, msg.from))
 								useron.posts = (ushort)adjustuserval(&cfg, useron.number, USER_POSTS, -1);
@@ -1382,7 +1382,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 			{
 				if (!thread_mode) {
 					smb.curmsg = 0;
-					newline();
+					term->newline();
 					break;
 				}
 				uint32_t first = smb_first_in_thread(&smb, &msg, NULL);
@@ -1400,7 +1400,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 			{
 				if (!thread_mode) {
 					smb.curmsg = smb.msgs - 1;
-					newline();
+					term->newline();
 					break;
 				}
 				uint32_t last = smb_last_in_thread(&smb, &msg);
@@ -1444,7 +1444,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 						smb.curmsg++;
 					else
 						done = 1;
-					newline();
+					term->newline();
 					break;
 				}
 				l = msg.hdr.thread_first;
@@ -1470,7 +1470,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 				if (!thread_mode) {
 					if (smb.curmsg > 0)
 						smb.curmsg--;
-					newline();
+					term->newline();
 					break;
 				}
 			case '(':   /* Thread backwards */

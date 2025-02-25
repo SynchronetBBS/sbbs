@@ -125,7 +125,10 @@ struct video_params vparams[] = {
 	/* DigitalMon */
 	{LCD80X25, COLOUR_PALETTE,            80, 25, 14, 15, 16, 8, 7, 0,  8, 5, 640,  400},
 	/* Prestel */
-	{PRESTEL_40X25, PRESTEL_PALETTE,      40, 25, 14, 15, 20, 12, 7, 0,  4, 3, 480, 500},
+	// Video data is transmitted for 40us of the 52us available to PAL.
+	// There's 500 lines of the 625 available to PAL
+	// This gives a 3077:2400 aspect ratio
+	{PRESTEL_40X25, PRESTEL_PALETTE,      40, 25, 14, 15, 20, 12, 7, 0,  3077, 2400, 480, 500},
 	/* Atari ST 40X25 */
 	{ATARIST_40X25, ATARI_PALETTE_16,     40, 25, 0,  7,  8, 8, 15, CIOLIB_VIDEO_BGBRIGHT | CIOLIB_VIDEO_NOBLINK, 4, 3, 320, 200},
 	/* Atari ST 80X25 */

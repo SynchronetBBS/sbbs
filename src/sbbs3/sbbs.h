@@ -276,6 +276,7 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 #include "startup.h"
 #ifdef __cplusplus
 	#include "threadwrap.h"	/* pthread_mutex_t */
+	#include "ansi_parser.h"
 #endif
 
 #include "smblib.h"
@@ -291,6 +292,7 @@ extern int	thread_suid_broken;			/* NPTL is no longer broken */
 #include "crc32.h"
 #include "telnet.h"
 #include "nopen.h"
+#include "logfile.h"
 #include "trash.h"
 #include "text.h"
 #include "str_util.h"
@@ -402,13 +404,7 @@ typedef struct js_callback {
 #include <string>
 #include <unordered_map>
 
-struct mouse_hotspot {		// Mouse hot-spot
-	char	cmd[128];
-	int	y;
-	int	minx;
-	int	maxx;
-	bool	hungry;
-};
+class Terminal;
 
 enum sftp_dir_tree {
 	SFTP_DTREE_FULL,
@@ -477,23 +473,14 @@ public:
 
 	std::atomic<bool> ssh_mode{false};
 	bool term_output_disabled{};
-	SOCKET	passthru_socket=INVALID_SOCKET;
-	bool	passthru_socket_active = false;
-	void	passthru_socket_activate(bool);
-    bool	passthru_thread_running = false;
+	SOCKET passthru_socket=INVALID_SOCKET;
+	bool   passthru_socket_active = false;
+	void   passthru_socket_activate(bool);
+	bool   passthru_thread_running = false;
 
 	scfg_t	cfg{};
 	struct mqtt* mqtt = nullptr;
-
-	enum ansiState {
-		 ansiState_none		// No sequence
-		,ansiState_esc		// Escape
-		,ansiState_csi		// CSI
-		,ansiState_final	// Final byte
-		,ansiState_string	// APS, DCS, PM, or OSC
-		,ansiState_sos		// SOS
-		,ansiState_sos_esc	// ESC inside SOS
-	} outchar_esc = ansiState_none;	// track ANSI escape seq output
+	Terminal *term{nullptr};
 
 	int 	rioctl(ushort action); // remote i/o control
 	bool	rio_abortable = false;
@@ -607,7 +594,7 @@ public:
 	char	prev_key(void) { return toupper(*text[Previous]); }
 
 	char 	dszlog[127]{};	/* DSZLOG environment variable */
-    int     keybuftop=0, keybufbot=0;    /* Keyboard input buffer pointers (for ungetkey) */
+	int     keybuftop=0, keybufbot=0;    /* Keyboard input buffer pointers (for ungetkey) */
 	char    keybuf[KEY_BUFSIZE]{};    /* Keyboard input buffer */
 	size_t	keybuf_space(void);
 	size_t	keybuf_level(void);
@@ -622,7 +609,7 @@ public:
 	uint	socket_inactive=0;			// Socket inactivity counter (watchdog), in seconds, incremented by input_thread()
 	uint	max_socket_inactivity=0;	// Socket inactivity limit (in seconds), enforced by input_thread()
 	bool	socket_inactivity_warning_sent=false;
-	uint	curatr = LIGHTGRAY;	/* Current Text Attributes Always */
+	uint	curatr = LIGHTGRAY;     /* Last Attributes requested by attr() */
 	uint	attr_stack[64]{};	/* Saved attributes (stack) */
 	int 	attr_sp = 0;	/* Attribute stack pointer */
 	uint	mneattr_low = LIGHTGRAY;
@@ -631,22 +618,10 @@ public:
 	uint	rainbow[LEN_RAINBOW + 1]{};
 	bool	rainbow_repeat = false;
 	int		rainbow_index = -1;
-	int 	lncntr = 0; 	/* Line Counter - for PAUSE */
 	bool	msghdr_tos = false;	/* Message header was displayed at Top of Screen */
-	int		row=0;			/* Current row */
-	int 	rows=0;			/* Current number of Rows for User */
-	int		cols=0;			/* Current number of Columns for User */
-	int		column = 0;		/* Current column counter (for line counter) */
-	int		tabstop = 8;	/* Current symmetric-tabstop (size) */
-	int		lastlinelen = 0;	/* The previously displayed line length */
 	int 	autoterm=0;		/* Auto-detected terminal type */
 	size_t	unicode_zerowidth=0;
 	char	terminal[TELNET_TERM_MAXLEN+1]{};	// <- answer() writes to this
-	int		cterm_version=0;/* (MajorVer*1000) + MinorVer */
-	link_list_t savedlines{};
-	char 	lbuf[LINE_BUFSIZE+1]{};/* Temp storage for each line output */
-	int		lbuflen = 0;	/* Number of characters in line buffer */
-	uint	latr=0;			/* Starting attribute of line buffer */
 	uint	line_delay=0;	/* Delay duration (ms) after each line sent */
 	uint	console = 0;	/* Defines current Console settings */
 	char 	wordwrap[TERM_COLS_MAX + 1]{};	/* Word wrap buffer */
@@ -722,23 +697,6 @@ public:
 	uint	sysvar_pi = 0;
 	long	sysvar_l[MAX_SYSVARS]{};
 	uint	sysvar_li = 0;
-
-    /* ansi_term.cpp */
-	const char*	ansi(int atr);			/* Returns ansi escape sequence for atr */
-	char*	ansi(int atr, int curatr, char* str);
-    bool	ansi_gotoxy(int x, int y);
-	bool	ansi_getxy(int* x, int* y);
-	bool	ansi_save(void);
-	bool	ansi_restore(void);
-	bool	ansi_getdims(void);
-	enum ansi_mouse_mode {
-		ANSI_MOUSE_X10	= 9,
-		ANSI_MOUSE_NORM	= 1000,
-		ANSI_MOUSE_BTN	= 1002,
-		ANSI_MOUSE_ANY	= 1003,
-		ANSI_MOUSE_EXT	= 1006
-	};
-	int		ansi_mouse(enum ansi_mouse_mode, bool enable);
 
 			/* Command Shell Methods */
 	int		exec(csi_t *csi);
@@ -854,9 +812,10 @@ public:
 
 	/* putmsg.cpp */
 	char	putmsg(const char *str, int mode, int org_cols = 0, JSObject* obj = NULL);
-	char	putmsgfrag(const char* str, int& mode, int org_cols = 0, JSObject* obj = NULL);
+	char	putmsgfrag(const char* str, int& mode, unsigned org_cols = 0, JSObject* obj = NULL);
 	bool	putnmsg(int node_num, const char*);
 	bool	putsmsg(int user_num, const char*);
+	ANSI_Parser ansiParser{};
 
 	/* writemsg.cpp */
 	void	automsg(void);
@@ -918,10 +877,9 @@ public:
 	int		bulkmailhdr(smb_t*, smbmsg_t*, uint usernum);
 
 	/* con_out.cpp */
-	size_t	bstrlen(const char *str, int mode = 0);
 	int		bputs(const char *str, int mode = 0);	/* BBS puts function */
 	int		bputs(int mode, const char* str) { return bputs(str, mode); }
-	int		rputs(const char *str, size_t len=0);	/* BBS raw puts function */
+	size_t	rputs(const char *str, size_t len=0);	/* BBS raw puts function */
 	int		rputs(int mode, const char* str) { return rputs(str, mode); }
 	int		bprintf(const char *fmt, ...)			/* BBS printf function */
 #if defined(__GNUC__)   // Catch printf-format errors
@@ -938,37 +896,16 @@ public:
     __attribute__ ((format (printf, 2, 3)));		// 1 is 'this'
 #endif
 	;
-	int		comprintf(const char *fmt, ...)			/* BBS direct-comm printf function */
+	int		term_printf(const char *fmt, ...)			/* BBS direct-comm printf function */
 #if defined(__GNUC__)   // Catch printf-format errors
     __attribute__ ((format (printf, 2, 3)));		// 1 is 'this'
 #endif
 	;
-	void	backspace(int count=1);			/* Output destructive backspace(s) via outchar */
 	int		outchar(char ch);				/* Output a char - check echo and emu.  */
-	int		outchar(enum unicode_codepoint, char cp437_fallback);
-	int		outchar(enum unicode_codepoint, const char* cp437_fallback = NULL);
-	void	inc_row(int count);
-	void	inc_column(int count);
-	void	center(const char *str, bool msg = false, unsigned int columns = 0);
+	int		outcp(enum unicode_codepoint, char cp437_fallback);
+	int		outcp(enum unicode_codepoint, const char* cp437_fallback = NULL);
 	void	wide(const char*);
-	void	clearscreen(int term);
-	void	clearline(void);
-	void	cleartoeol(void);
-	void	cleartoeos(void);
-	void	cursor_home(void);
-	void	cursor_up(int count=1);
-	void	cursor_down(int count=1);
-	void	cursor_left(int count=1);
-	void	cursor_right(int count=1);
-	bool	cursor_xy(int x, int y);
-	bool	cursor_getxy(int* x, int* y);
-	void	carriage_return(int count=1);
-	void	line_feed(int count=1);
-	void	newline(int count=1);
-	void	cond_newline() { if(column > 0) newline(); }
-	void	cond_blankline() { if(column > 0) newline(); if(lastlinelen) newline(); }
-	void	cond_contline() { if(column > 0 && cols < TERM_COLS_DEFAULT) bputs(text[LongLineContinuationPrefix]); }
-	int		term_supports(int cmp_flags=0);
+	// These are user settings, not terminal properties.
 	char*	term_rows(user_t*, char* str, size_t);
 	char*	term_cols(user_t*, char* str, size_t);
 	char*	term_type(user_t*, int term, char* str, size_t);
@@ -978,36 +915,22 @@ public:
 	int		backfill(const char* str, float pct, int full_attr, int empty_attr);
 	void	progress(const char* str, int count, int total, int interval = 500);
 	double	last_progress = 0;
-	bool	saveline(void);
-	bool	restoreline(void);
 	int		petscii_to_ansibbs(unsigned char);
 	int		mode7_to_ansibbs(unsigned char);
 	size_t	print_utf8_as_cp437(const char*, size_t);
 	int		attr(int);				/* Change text color/attributes */
 	void	ctrl_a(char);			/* Performs Ctrl-Ax attribute changes */
 	char*	auto_utf8(const char*, int& mode);
-	enum output_rate {
-		output_rate_unlimited,
-		output_rate_300 = 300,
-		output_rate_600 = 600,
-		output_rate_1200 = 1200,
-		output_rate_2400 = 2400,
-		output_rate_4800 = 4800,
-		output_rate_9600 = 9600,
-		output_rate_19200 = 19200,
-		output_rate_38400 = 38400,
-		output_rate_57600 = 57600,
-		output_rate_76800 = 76800,
-		output_rate_115200 = 115200,
-	} cur_output_rate = output_rate_unlimited;
-	void	set_output_rate(enum output_rate);
 	void	getdimensions();
+	size_t term_out(const char *str, size_t len = SIZE_MAX);
+	size_t term_out(int ch);
+	size_t cp437_out(const char *str, size_t len = SIZE_MAX);
+	size_t cp437_out(int ch);
 
 	/* getstr.cpp */
 	size_t	getstr_offset = 0;
 	size_t	getstr(char *str, size_t length, int mode, const str_list_t history = NULL);
 	int		getnum(uint max, uint dflt=0);
-	void	insert_indicator(void);
 
 	/* getkey.cpp */
 	char	getkey(int mode = K_NONE);
@@ -1023,6 +946,7 @@ public:
 	void	mnemonics(const char *str);
 
 	/* inkey.cpp */
+	bool last_inkey_was_esc{false}; // Used by auto-ANSI detection
 	int		inkey(int mode = K_NONE, unsigned int timeout=0);
 	char	handle_ctrlkey(char ch, int mode=0);
 
@@ -1038,16 +962,6 @@ public:
 	int		mouse_mode = MOUSE_MODE_OFF;	// Mouse reporting mode flags
 	uint	hot_attr = 0;		// Auto-Mouse hot-spot attribute (when non-zero)
 	bool	hungry_hotspots = true;
-	link_list_t mouse_hotspots{};	// Mouse hot-spots
-	struct mouse_hotspot* pause_hotspot = nullptr;
-	struct mouse_hotspot* add_hotspot(struct mouse_hotspot*);
-	struct mouse_hotspot* add_hotspot(char cmd, bool hungry = true, int minx = -1, int maxx = -1, int y = -1);
-	struct mouse_hotspot* add_hotspot(int num, bool hungry = true, int minx = -1, int maxx = -1, int y = -1);
-	struct mouse_hotspot* add_hotspot(uint num, bool hungry = true, int minx = -1, int maxx = -1, int y = -1);
-	struct mouse_hotspot* add_hotspot(const char* cmd, bool hungry = true, int minx = -1, int maxx = -1, int y = -1);
-	void	clear_hotspots(void);
-	void	scroll_hotspots(int count);
-	void	set_mouse(int mode);
 
 	// Thread-safe std/socket errno description getters
 	char	strerror_buf[256]{};
@@ -1363,6 +1277,8 @@ public:
 
 };
 
+#include "terminal.h"
+
 #endif /* __cplusplus */
 
 #ifdef DLLEXPORT
@@ -1385,8 +1301,6 @@ public:
 #ifdef __cplusplus
 extern "C" {
 #endif
-	/* ansiterm.cpp */
-	DLLEXPORT char*		ansi_attr(int attr, int curattr, char* str, bool color);
 
 	/* main.cpp */
 	extern const char* nulstr;
@@ -1404,17 +1318,6 @@ extern "C" {
 	DLLEXPORT int		msg_client_hfields(smbmsg_t*, client_t*);
 	DLLEXPORT int		notify(scfg_t*, uint usernumber, const char* subject, const char* msg);
 	DLLEXPORT void		normalize_msg_hfield_encoding(const char* charset, char* str, size_t size);
-
-	/* logfile.cpp */
-	DLLEXPORT int		errorlog(scfg_t* cfg, struct mqtt*, int level, const char* host, const char* text);
-
-	DLLEXPORT bool		hacklog(scfg_t* cfg, struct mqtt*, const char* prot, const char* user, const char* text
-										,const char* host, union xp_sockaddr* addr);
-	DLLEXPORT bool		spamlog(scfg_t* cfg, struct mqtt*, char* prot, char* action, char* reason
-										,char* host, char* ip_addr, char* to, char* from);
-	DLLEXPORT FILE*		fopenlog(scfg_t*, const char* path);
-	DLLEXPORT size_t	fwritelog(scfg_t*, void* buf, size_t size, FILE**);
-	DLLEXPORT void		fcloselog(FILE*);
 
 	/* data.cpp */
 	DLLEXPORT time_t	getnextevent(scfg_t* cfg, event_t**);

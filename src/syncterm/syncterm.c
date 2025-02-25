@@ -1660,6 +1660,7 @@ update_webget_progress(struct webget_request *reqs, size_t items, bool leaveup)
 		cur = 0;
 		bar = 0;
 	}
+	free(helpbuf);
 }
 
 int

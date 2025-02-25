@@ -110,6 +110,7 @@ void freeNameServerList(str_list_t list)
 }
 
 // If the input is invalid, INADDR_NONE (usually -1) is returned
+// The return value is in *network* (not host) byte order
 uint32_t parseIPv4Address(const char* value)
 {
 	uint32_t result = 0;
@@ -123,7 +124,7 @@ uint32_t parseIPv4Address(const char* value)
 	if (inet_pton(AF_INET, value, &result) != 1)
 		result = INADDR_NONE;
 #endif
-	return ntohl(result);
+	return result;
 }
 
 struct in6_addr parseIPv6Address(const char* value)
@@ -149,6 +150,7 @@ struct in6_addr parseIPv6Address(const char* value)
 	return ret;
 }
 
+// 'addr' must be in network byte order
 const char* IPv4AddressToStr(uint32_t addr, char* dest, size_t size)
 {
 #if defined _WIN32
@@ -156,7 +158,7 @@ const char* IPv4AddressToStr(uint32_t addr, char* dest, size_t size)
 	WSADATA     wsaData;
 	SOCKADDR_IN sockaddr = {0};
 	sockaddr.sin_family = AF_INET;
-	sockaddr.sin_addr.s_addr = htonl(addr);
+	sockaddr.sin_addr.s_addr = addr;
 
 	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
 		return NULL;
@@ -167,7 +169,7 @@ const char* IPv4AddressToStr(uint32_t addr, char* dest, size_t size)
 	return dest;
 #else
 	struct in_addr in_addr;
-	in_addr.s_addr = htonl(addr);
+	in_addr.s_addr = addr;
 	return inet_ntop(AF_INET, &in_addr, dest, size);
 #endif
 }

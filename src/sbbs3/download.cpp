@@ -211,7 +211,7 @@ void sbbs_t::autohangup()
 	rioctl(IOFI);
 	if (!autohang)
 		return;
-	lncntr = 0;
+	term->lncntr = 0;
 	bputs(text[Disconnecting]);
 	attr(GREEN);
 	outchar('[');

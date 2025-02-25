@@ -20,7 +20,6 @@
  ****************************************************************************/
 //---------------------------------------------------------------------------
 
-#include "sbbs.h"
 #include <vcl.h>
 #include <vcl/Clipbrd.hpp>
 #pragma hdrstop
@@ -29,6 +28,8 @@
 #include "MainFormUnit.h"
 #include "CodeInputFormUnit.h"
 #include "userdat.h"
+#include "datewrap.h"
+#include "trash.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma resource "*.dfm"

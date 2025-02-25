@@ -3283,7 +3283,7 @@ static enum parsed_vpath resolve_vpath(http_session_t* session, char* vpath)
 	safe_snprintf(path, sizeof(path), "%s%s", scfg.dir[session->file.dir]->path, filename);
 	if (!fexistcase(path))
 		return PARSED_VPATH_NONE;
-	if (!loadfile(&scfg, session->file.dir, filename, &session->file, file_detail_index))
+	if (!loadfile(&scfg, session->file.dir, filename, &session->file, file_detail_index, NULL))
 		return PARSED_VPATH_NONE;
 	strlcpy(vpath, path, MAX_PATH);
 	return PARSED_VPATH_FULL;

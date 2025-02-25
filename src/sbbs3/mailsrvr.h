@@ -106,7 +106,7 @@ static struct init_field mail_init_fields[] = {
 #define MAIL_OPT_DEBUG_RX_RSP           (1 << 4)
 #define MAIL_OPT_RELAY_TX               (1 << 5)  /* Use SMTP relay server */
 #define MAIL_OPT_DEBUG_POP3             (1 << 6)
-#define MAIL_OPT_ALLOW_RX_BY_NUMBER     (1 << 7)  /* Receive mail sent to user # */
+#define MAIL_OPT_NO_READ_POP3           (1 << 7)  /* Don't set READ msg attribute when RETR'd via POP3 */
 #define MAIL_OPT_NO_NOTIFY              (1 << 8)  /* Don't notify local recipients */
 #define MAIL_OPT_ALLOW_SYSOP_ALIASES    (1 << 9)  /* Receive mail sent to built-in sysop aliases (i.e. "sysop" and "postmaster") */
 #define MAIL_OPT_USE_SUBMISSION_PORT    (1 << 10) /* Listen on the "MSA" service port for mail submissions */
@@ -147,7 +147,7 @@ static ini_bitdesc_t mail_options[] = {
 	{ MAIL_OPT_DEBUG_RX_RSP, "DEBUG_RX_RSP"         },
 	{ MAIL_OPT_RELAY_TX, "RELAY_TX"             },
 	{ MAIL_OPT_DEBUG_POP3, "DEBUG_POP3"           },
-	{ MAIL_OPT_ALLOW_RX_BY_NUMBER, "ALLOW_RX_BY_NUMBER"   },
+	{ MAIL_OPT_NO_READ_POP3, "NO_READ_POP3"   },
 	{ MAIL_OPT_ALLOW_SYSOP_ALIASES, "ALLOW_SYSOP_ALIASES"  },
 	{ MAIL_OPT_USE_SUBMISSION_PORT, "USE_SUBMISSION_PORT"  },
 	{ MAIL_OPT_NO_NOTIFY, "NO_NOTIFY"            },

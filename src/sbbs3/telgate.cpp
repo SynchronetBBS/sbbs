@@ -173,14 +173,14 @@ struct TelnetProxy
 							buf[0] = TELNET_IAC;
 							buf[1] = TELNET_SB;
 							buf[2] = TELNET_NEGOTIATE_WINDOW_SIZE;
-							buf[3] = (sbbs->cols >> 8) & 0xff;
-							buf[4] = sbbs->cols & 0xff;
-							buf[5] = (sbbs->rows >> 8) & 0xff;
-							buf[6] = sbbs->rows & 0xff;
+							buf[3] = (sbbs->term->cols >> 8) & 0xff;
+							buf[4] = sbbs->term->cols & 0xff;
+							buf[5] = (sbbs->term->rows >> 8) & 0xff;
+							buf[6] = sbbs->term->rows & 0xff;
 							buf[7] = TELNET_IAC;
 							buf[8] = TELNET_SE;
 							if (sbbs->startup->options & BBS_OPT_DEBUG_TELNET)
-								sbbs->lprintf(LOG_DEBUG, "%s: Window Size is %u x %u", __FUNCTION__, sbbs->cols, sbbs->rows);
+								sbbs->lprintf(LOG_DEBUG, "%s: Window Size is %u x %u", __FUNCTION__, sbbs->term->cols, sbbs->term->rows);
 							if (::sendsocket(sock, (char *)buf, 9) != 9)
 								lprintf(LOG_WARNING, "%s: Failed to send Window Size command", __FUNCTION__);
 						}
@@ -273,7 +273,7 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, str_list_t
 	}
 
 	memset(&addr, 0, sizeof(addr));
-	addr.sin_addr.s_addr = htonl(startup->outgoing4.s_addr);
+	addr.sin_addr.s_addr = startup->outgoing4.s_addr;
 	addr.sin_family = AF_INET;
 
 	if ((i = bind(remote_socket, (struct sockaddr *) &addr, sizeof (addr))) != 0) {

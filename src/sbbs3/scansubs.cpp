@@ -122,7 +122,7 @@ void sbbs_t::scansubs(int mode)
 		}
 		if (mode & SCAN_POLLS) {
 			progress(text[Done], subs_scanned, usrsubs[curgrp]);
-			cleartoeol();
+			term->cleartoeol();
 		}
 		bputs(text[MessageScan]);
 		if (i == usrsubs[curgrp])
@@ -229,7 +229,7 @@ void sbbs_t::scanallsubs(int mode)
 	free(sub);
 	if (mode & SCAN_POLLS) {
 		progress(text[Done], subs_scanned, total_subs);
-		cleartoeol();
+		term->cleartoeol();
 	}
 	bputs(text[MessageScan]);
 	if (subs_scanned < total_subs) {
@@ -336,7 +336,7 @@ void sbbs_t::new_scan_ptr_cfg()
 			snprintf(keys, sizeof keys, "%c%c", all_key(), quit_key());
 			s = getkeys(keys, usrsubs[i]);
 			if (sys_status & SS_ABORT) {
-				lncntr = 0;
+				term->lncntr = 0;
 				return;
 			}
 			if (s == -1 || !s || s == quit_key())
@@ -460,7 +460,7 @@ void sbbs_t::new_scan_cfg(uint misc)
 			snprintf(keys, sizeof keys, "%c%c", all_key(), quit_key());
 			s = getkeys(keys, usrsubs[i]);
 			if (sys_status & SS_ABORT) {
-				lncntr = 0;
+				term->lncntr = 0;
 				return;
 			}
 			if (!s || s == -1 || s == quit_key())

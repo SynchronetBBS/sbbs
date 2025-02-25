@@ -193,7 +193,7 @@ int sbbs_t::bulkmailhdr(smb_t* smb, smbmsg_t* msg, uint usernum)
 	if (j != SMB_SUCCESS)
 		return j;
 
-	lncntr = 0;
+	term->lncntr = 0;
 	bprintf(text[Emailing], user.alias, usernum);
 	SAFEPRINTF2(str, "bulk-mailed %s #%d"
 	            , user.alias, usernum);

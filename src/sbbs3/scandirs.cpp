@@ -47,7 +47,7 @@ void sbbs_t::scandirs(int mode)
 	SAFEPRINTF2(keys, "%s%c\r", text[DirLibKeys], all_key());
 	ch = (char)getkeys(keys, 0);
 	if (sys_status & SS_ABORT || ch == CR) {
-		lncntr = 0;
+		term->lncntr = 0;
 		return;
 	}
 	if (ch != all_key()) {
@@ -62,12 +62,12 @@ void sbbs_t::scandirs(int mode)
 			if (text[DisplayExtendedFileInfoQ][0] && !noyes(text[DisplayExtendedFileInfoQ]))
 				mode |= FL_EXT;
 			if (sys_status & SS_ABORT) {
-				lncntr = 0;
+				term->lncntr = 0;
 				return;
 			}
 			bputs(text[SearchStringPrompt]);
 			if (!getstr(str, 40, K_LINE | K_UPPER)) {
-				lncntr = 0;
+				term->lncntr = 0;
 				return;
 			}
 		}
@@ -140,12 +140,12 @@ void sbbs_t::scanalldirs(int mode)
 		if (text[DisplayExtendedFileInfoQ][0] && !noyes(text[DisplayExtendedFileInfoQ]))
 			mode |= FL_EXT;
 		if (sys_status & SS_ABORT) {
-			lncntr = 0;
+			term->lncntr = 0;
 			return;
 		}
 		bputs(text[SearchStringPrompt]);
 		if (!getstr(str, 40, K_LINE | K_UPPER)) {
-			lncntr = 0;
+			term->lncntr = 0;
 			return;
 		}
 	}

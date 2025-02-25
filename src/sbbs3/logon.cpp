@@ -215,9 +215,9 @@ bool sbbs_t::logon()
 
 	bputs(text[LoggingOn]);
 	if (useron.rows != TERM_ROWS_AUTO)
-		rows = useron.rows;
+		term->rows = useron.rows;
 	if (useron.cols != TERM_COLS_AUTO)
-		cols = useron.cols;
+		term->cols = useron.cols;
 	update_nodeterm();
 	if (tm.tm_mon + 1 == getbirthmonth(&cfg, useron.birth) && tm.tm_mday == getbirthday(&cfg, useron.birth)
 	    && !(useron.rest & FLAG('Q'))) {
@@ -456,6 +456,8 @@ bool sbbs_t::logon()
 	putuserdat(&useron);
 	getmsgptrs();
 	sys_status |= SS_USERON;          /* moved from further down */
+	// Needs to be called after SS_USERON is set
+	update_nodeterm();
 
 	mqtt_user_login(mqtt, &client);
 
@@ -520,7 +522,7 @@ bool sbbs_t::logon()
 		bprintf(text[LiMailWaiting], mailw, mailw - mailr);
 		bprintf(text[LiSysopIs]
 		        , text[sysop_available(&cfg) ? LiSysopAvailable : LiSysopNotAvailable]);
-		newline();
+		term->newline();
 	}
 
 	if (sys_status & SS_EVENT)
@@ -663,7 +665,6 @@ uint sbbs_t::logonstats()
 					}
 				}
 				dstats_fname(&cfg, i, path, sizeof path);
-				backup(path, 90, /* rename: */ false);
 				if ((dsts = fopen_dstats(&cfg, i, /* for_write: */ TRUE)) == NULL) /* doesn't have stats yet */
 					continue;
 

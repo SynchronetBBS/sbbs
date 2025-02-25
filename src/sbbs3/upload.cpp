@@ -73,7 +73,7 @@ bool sbbs_t::uploadfile(file_t* f)
 			}
 			// Note: str (%s) is path/to/sbbsfile.des (used to be the description itself)
 			int result = external(cmdstr(cfg.ftest[i]->cmd, path, str, NULL, cfg.ftest[i]->ex_mode), cfg.ftest[i]->ex_mode | EX_OFFLINE);
-			clearline();
+			term->clearline();
 			if (result != 0) {
 				safe_snprintf(str, sizeof(str), "attempted to upload %s to %s %s (%s error code %d)"
 				              , f->name
@@ -172,7 +172,7 @@ bool sbbs_t::uploadfile(file_t* f)
 	smb_hfield_bin(f, SMB_COST, length);
 	smb_hfield_str(f, SENDER, useron.alias);
 	bprintf(text[FileNBytesReceived], f->name, u64toac(length, tmp));
-	if (!addfile(&cfg, f, ext, /* metadata: */ NULL, &client))
+	if (!addfile(&cfg, f, ext, /* metadata: */ NULL, &client, NULL))
 		return false;
 
 	snprintf(str, sizeof(str), "uploaded %s (%" PRId64 " bytes) to %s %s"

@@ -1072,7 +1072,7 @@ js_write_raw(JSContext *cx, uintN argc, jsval *arglist)
 		if (len < 1)
 			continue;
 		rc = JS_SUSPENDREQUEST(cx);
-		sbbs->putcom(str, len);
+		sbbs->term_out(str, len);
 		JS_RESUMEREQUEST(cx, rc);
 	}
 	if (str != NULL)
@@ -2537,8 +2537,6 @@ void output_thread(void* arg)
 	lprintf(LOG_DEBUG, "%s output thread started", node);
 #endif
 
-	sbbs->console |= CON_R_ECHO;
-
 #ifdef TCP_MAXSEG
 	/*
 	 * Auto-tune the highwater mark to be the negotiated MSS for the
@@ -2968,12 +2966,10 @@ void event_thread(void* arg)
 						continue;
 					}
 					sbbs->online = ON_LOCAL;
-					sbbs->console |= CON_L_ECHO;
 					sbbs->getusrsubs();
 					bool success = sbbs->unpack_rep(fname);
 					sbbs->delfiles(sbbs->cfg.temp_dir, ALLFILES);        /* clean-up temp_dir after unpacking */
 					sbbs->online = false;
-					sbbs->console &= ~CON_L_ECHO;
 
 					/* putuserdat? */
 					if (success) {
@@ -3036,7 +3032,6 @@ void event_thread(void* arg)
 				if (!(sbbs->useron.misc & (DELETED | INACTIVE))) {
 					sbbs->lprintf(LOG_INFO, "Packing QWK Message Packet");
 					sbbs->online = ON_LOCAL;
-					sbbs->console |= CON_L_ECHO;
 					sbbs->getmsgptrs();
 					sbbs->getusrsubs();
 
@@ -3052,7 +3047,6 @@ void event_thread(void* arg)
 					} else
 						sbbs->lputs(LOG_INFO, "No packet created (no new messages)");
 					sbbs->delfiles(sbbs->cfg.temp_dir, ALLFILES);
-					sbbs->console &= ~CON_L_ECHO;
 					sbbs->online = false;
 				}
 				sbbs->fremove(WHERE, fname);
@@ -3091,12 +3085,10 @@ void event_thread(void* arg)
 
 						sbbs->lprintf(LOG_INFO, "Running node %d daily event", i);
 						sbbs->online = ON_LOCAL;
-						sbbs->console |= CON_L_ECHO;
 						sbbs->logentry("!:", "Run node daily event");
 						const char* cmd = sbbs->cmdstr(sbbs->cfg.node_daily.cmd, nulstr, nulstr, NULL, sbbs->cfg.node_daily.misc);
 						int result = sbbs->external(cmd, EX_OFFLINE | sbbs->cfg.node_daily.misc);
 						sbbs->lprintf(result ? LOG_ERR : LOG_INFO, "Node daily event: '%s' returned %d", cmd, result);
-						sbbs->console &= ~CON_L_ECHO;
 						sbbs->online = false;
 					}
 					if (sbbs->getnodedat(i, &node, true)) {
@@ -3163,7 +3155,6 @@ void event_thread(void* arg)
 					if (flength(str) > 0) {    /* silently ignore 0-byte QWK packets */
 						sbbs->lprintf(LOG_DEBUG, "Inbound QWK Packet detected: %s", str);
 						sbbs->online = ON_LOCAL;
-						sbbs->console |= CON_L_ECHO;
 						if (sbbs->unpack_qwk(str, i) == false) {
 							char newname[MAX_PATH + 1];
 							SAFEPRINTF2(newname, "%s.%x.bad", str, (int)now);
@@ -3177,7 +3168,6 @@ void event_thread(void* arg)
 							sbbs->delfiles(sbbs->cfg.data_dir, newname, /* keep: */ 10);
 						}
 						sbbs->delfiles(sbbs->cfg.temp_dir, ALLFILES);
-						sbbs->console &= ~CON_L_ECHO;
 						sbbs->online = false;
 						if (fexist(str))
 							sbbs->fremove(WHERE, str, /* log-all-errors: */ true);
@@ -3206,9 +3196,7 @@ void event_thread(void* arg)
 				}
 				if (file != -1)
 					close(file);
-				sbbs->console |= CON_L_ECHO;
 				packed_rep = sbbs->pack_rep(i);
-				sbbs->console &= ~CON_L_ECHO;
 				if (packed_rep) {
 					if ((file = sbbs->nopen(str, O_WRONLY | O_CREAT)) == -1)
 						sbbs->errormsg(WHERE, ERR_OPEN, str, O_WRONLY | O_CREAT);
@@ -3256,14 +3244,12 @@ void event_thread(void* arg)
 					SAFECOPY(sbbs->cfg.node_dir, sbbs->cfg.node_path[sbbs->cfg.node_num - 1]);
 					sbbs->lprintf(LOG_INFO, "Call-out: %s", sbbs->cfg.qhub[i]->id);
 					sbbs->online = ON_LOCAL;
-					sbbs->console |= CON_L_ECHO;
 					int ex_mode = EX_OFFLINE | EX_SH; /* sh for Unix perl scripts */
 					if (sbbs->cfg.qhub[i]->misc & QHUB_NATIVE)
 						ex_mode |= EX_NATIVE;
 					const char* cmd = sbbs->cmdstr(sbbs->cfg.qhub[i]->call, sbbs->cfg.qhub[i]->id, sbbs->cfg.qhub[i]->id, NULL, ex_mode);
 					int result = sbbs->external(cmd, ex_mode);
 					sbbs->lprintf(result ? LOG_ERR : LOG_INFO, "Call-out to: %s (%s) returned %d", sbbs->cfg.qhub[i]->id, cmd, result);
-					sbbs->console &= ~CON_L_ECHO;
 					sbbs->online = false;
 				}
 			}
@@ -3434,7 +3420,6 @@ void event_thread(void* arg)
 						ex_mode |= EX_SH;
 					ex_mode |= (sbbs->cfg.event[i]->misc & EX_NATIVE);
 					sbbs->online = ON_LOCAL;
-					sbbs->console |= CON_L_ECHO;
 					cmd = sbbs->cmdstr(cmd, nulstr, sbbs->cfg.event[i]->dir, NULL, ex_mode);
 					sbbs->lprintf(LOG_INFO, "Running %s%stimed event: %s"
 					              , native_executable(&sbbs->cfg, cmd, ex_mode) ? "native ":"16-bit DOS "
@@ -3447,7 +3432,6 @@ void event_thread(void* arg)
 						else
 							sbbs->lprintf(LOG_DEBUG, "Background timed event spawned: %s", cmd);
 					}
-					sbbs->console &= ~CON_L_ECHO;
 					sbbs->online = false;
 					sbbs->cfg.event[i]->last = time32(NULL);
 					SAFEPRINTF(str, "%stime.ini", sbbs->cfg.ctrl_dir);
@@ -3549,9 +3533,7 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 	SAFECOPY(connection, "Telnet");
 	telnet_ack_event = CreateEvent(NULL, /* Manual Reset: */ false, /* InitialState */ false, NULL);
 
-	listInit(&savedlines, /* flags: */ 0);
 	listInit(&smb_list, /* flags: */ 0);
-	listInit(&mouse_hotspots, /* flags: */ 0);
 	pthread_mutex_init(&nodefile_mutex, NULL);
 
 	for (i = 0; i < TOTAL_TEXT; i++)
@@ -3802,6 +3784,7 @@ bool sbbs_t::init()
 	pthread_mutex_init(&input_thread_mutex, NULL);
 	input_thread_mutex_created = true;
 
+	update_terminal(this);
 	reset_logon_vars();
 
 	online = ON_REMOTE;
@@ -3909,9 +3892,7 @@ sbbs_t::~sbbs_t()
 	FREE_AND_NULL(qwknode);
 	total_qwknodes = 0;
 
-	listFree(&savedlines);
 	listFree(&smb_list);
-	listFree(&mouse_hotspots);
 
 #ifdef USE_CRYPTLIB
 	while (ssh_mutex_created && pthread_mutex_destroy(&ssh_mutex) == EBUSY)
@@ -3930,6 +3911,11 @@ sbbs_t::~sbbs_t()
 	if (!_CrtCheckMemory())
 		lprintf(LOG_ERR, "!MEMORY ERRORS REPORTED IN DATA/DEBUG.LOG!");
 #endif
+
+	if (term) {
+		delete term;
+		term = nullptr;
+	}
 
 #ifdef _DEBUG
 	lprintf(LOG_DEBUG, "destructor end");
@@ -4056,7 +4042,7 @@ int sbbs_t::mv(const char* path, const char* dest, bool copy)
 void sbbs_t::hangup(void)
 {
 	if (online) {
-		clear_hotspots();
+		term->clear_hotspots();
 		lprintf(LOG_DEBUG, "disconnecting client");
 		online = false;   // moved from the bottom of this function on Jan-25-2009
 	}
@@ -4245,13 +4231,16 @@ void sbbs_t::reset_logon_vars(void)
 	cid[0] = 0;
 	wordwrap[0] = 0;
 	question[0] = 0;
-	row = 0;
-	rows = startup->default_term_height;
-	cols = startup->default_term_width;
-	lncntr = 0;
+	if (term) {
+		term->row = 0;
+		term->rows = startup->default_term_height;
+		term->cols = startup->default_term_width;
+		term->lncntr = 0;
+		term->cterm_version = 0;
+		term->lbuflen = 0;
+		term->cur_output_rate = output_rate_unlimited;
+	}
 	autoterm = 0;
-	cterm_version = 0;
-	lbuflen = 0;
 	timeleft_warn = 0;
 	keybufbot = keybuftop = 0;
 	usrgrps = usrlibs = 0;
@@ -4262,7 +4251,6 @@ void sbbs_t::reset_logon_vars(void)
 		cursub[i] = 0;
 	cur_rate = 30000;
 	dte_rate = 38400;
-	cur_output_rate = output_rate_unlimited;
 	main_cmds = xfer_cmds = posts_read = 0;
 	lastnodemsg = 0;
 	lastnodemsguser[0] = 0;
@@ -5587,6 +5575,13 @@ NO_SSH:
 				close_socket(client_socket);
 				continue;
 			}
+			if (inet_addrport(&local_addr) == startup->pet40_port || inet_addrport(&local_addr) == startup->pet80_port) {
+				sbbs->autoterm = PETSCII;
+				sbbs->term->cols = inet_addrport(&local_addr) == startup->pet40_port ? 40 : 80;
+				sbbs->term_out(PETSCII_UPPERLOWER);
+			}
+			update_terminal(sbbs);
+			// TODO: Plain text output in SSH socket
 			struct trash trash;
 			if (sbbs->trashcan(host_ip, "ip", &trash)) {
 				char details[128];
@@ -5659,12 +5654,7 @@ NO_SSH:
 				sbbs->outcom(0); /* acknowledge RLogin per RFC 1282 */
 
 			sbbs->autoterm = 0;
-			sbbs->cols = startup->default_term_width;
-			if (inet_addrport(&local_addr) == startup->pet40_port || inet_addrport(&local_addr) == startup->pet80_port) {
-				sbbs->autoterm = PETSCII;
-				sbbs->cols = inet_addrport(&local_addr) == startup->pet40_port ? 40 : 80;
-				sbbs->outcom(PETSCII_UPPERLOWER);
-			}
+			sbbs->term->cols = startup->default_term_width;
 
 			if (inet_addrport(&local_addr) == startup->mode7_port) {
 				sbbs->autoterm = MODE7;
@@ -5679,7 +5669,7 @@ NO_SSH:
 			if (!(startup->options & BBS_OPT_NO_HOST_LOOKUP)) {
 				sbbs->bprintf("Resolving hostname...");
 				getnameinfo(&client_addr.addr, client_addr_len, host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD);
-				sbbs->putcom(crlf);
+				sbbs->cp437_out(crlf);
 				lprintf(LOG_INFO, "%04d %s [%s] Hostname: %s", client_socket, client.protocol, host_ip, host_name);
 			}
 
@@ -5706,7 +5696,7 @@ NO_SSH:
 							lprintf(LOG_INFO, "%04d %s [%s] Identity: %s", client_socket, client.protocol, host_ip, identity);
 					}
 				}
-				sbbs->putcom(crlf);
+				sbbs->cp437_out(crlf);
 			}
 			/* Initialize client display */
 			client.size = sizeof(client);
@@ -5768,8 +5758,8 @@ NO_SSH:
 				if (fexist(str))
 					sbbs->printfile(str, P_NOABORT);
 				else {
-					sbbs->putcom("\r\nSorry, all terminal nodes are in use or otherwise unavailable.\r\n");
-					sbbs->putcom("Please try again later.\r\n");
+					sbbs->cp437_out("\r\nSorry, all terminal nodes are in use or otherwise unavailable.\r\n");
+					sbbs->cp437_out("Please try again later.\r\n");
 				}
 				sbbs->flush_output(3000);
 				client_off(client_socket);
@@ -5844,7 +5834,7 @@ NO_SSH:
 				if (fexist(str))
 					sbbs->printfile(str, P_NOABORT);
 				else
-					sbbs->putcom("\r\nSorry, initialization failed. Try again later.\r\n");
+					sbbs->cp437_out("\r\nSorry, initialization failed. Try again later.\r\n");
 				sbbs->flush_output(3000);
 				if (sbbs->getnodedat(new_node->cfg.node_num, &node, true)) {
 					node.status = NODE_WFC;
@@ -5981,10 +5971,11 @@ NO_PASSTHRU:
 
 			uint32_t client_count = protected_uint32_adjust(&node_threads_running, 1);
 			new_node->input_thread_running = true;
+			new_node->autoterm = sbbs->autoterm;
+			update_terminal(new_node, sbbs->term);
+			new_node->term->cols = sbbs->term->cols;
 			new_node->input_thread = (HANDLE)_beginthread(input_thread, 0, new_node);
 			new_node->output_thread_running = true;
-			new_node->autoterm = sbbs->autoterm;
-			new_node->cols = sbbs->cols;
 			_beginthread(output_thread, 0, new_node);
 			_beginthread(node_thread, 0, new_node);
 			served++;

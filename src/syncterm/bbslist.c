@@ -1179,6 +1179,7 @@ build_edit_list(struct bbslist *item, char opt[][69], int *optmap, char **opts, 
 	bool is_ansi = true;
 	bool is_serial = ((item->conn_type == CONN_TYPE_MODEM) || (item->conn_type == CONN_TYPE_SERIAL)
 	|| (item->conn_type == CONN_TYPE_SERIAL_NORTS));
+	bool is_c128_80 = item->screen_mode == SCREEN_MODE_C128_80;
 
 	if (!isdefault) {
 		optmap[i] = BBSLIST_FIELD_NAME;
@@ -1278,6 +1279,8 @@ build_edit_list(struct bbslist *item, char opt[][69], int *optmap, char **opts, 
 		sprintf(opt[i++], "RIP               %s", rip_versions[item->rip]);
 		optmap[i] = BBSLIST_FIELD_FORCE_LCF;
 		sprintf(opt[i++], "Force LCF Mode    %s", item->force_lcf ? "Yes" : "No");
+	}
+	if (is_ansi || is_c128_80) {
 		optmap[i] = BBSLIST_FIELD_YELLOW_IS_YELLOW;
 		sprintf(opt[i++], "Yellow is Yellow  %s", item->yellow_is_yellow ? "Yes" : "No");
 	}
@@ -1832,12 +1835,17 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 							iniSetString(&inifile, itemname, "Font", item->font,
 							             &ini_style);
 						}
+						else if (i == SCREEN_MODE_ATARIST_40X25
+						    || i == SCREEN_MODE_ATARIST_80X25
+						    || i == SCREEN_MODE_ATARIST_80X25_MONO) {
+							SAFECOPY(item->font, font_names[0]);
+							iniSetString(&inifile, itemname, "Font", item->font,
+							             &ini_style);
+						}
 						else if ((i == SCREEN_MODE_C64) || (i == SCREEN_MODE_C128_40)
 						    || (i == SCREEN_MODE_C128_80) || (i == SCREEN_MODE_ATARI)
-						    || (i == SCREEN_MODE_ATARI_XEP80) || (i == SCREEN_MODE_PRESTEL) || (i == SCREEN_MODE_BEEB)
-						    || item->screen_mode == SCREEN_MODE_ATARIST_40X25
-						    || item->screen_mode == SCREEN_MODE_ATARIST_80X25
-						    || item->screen_mode == SCREEN_MODE_ATARIST_80X25_MONO) {
+						    || (i == SCREEN_MODE_ATARI_XEP80) || (i == SCREEN_MODE_PRESTEL)
+						    || (i == SCREEN_MODE_BEEB)) {
 							SAFECOPY(item->font, font_names[0]);
 							iniSetString(&inifile, itemname, "Font", item->font,
 							             &ini_style);
@@ -3679,11 +3687,9 @@ show_bbslist(char *current, int connected)
 							if (copied->type != SYSTEM_BBSLIST) {
 								if (!edit_name(copied->name, list, NULL, true))
 									break;
-								listcount++;
-								list[listcount - 1] = copied;
 							}
 							add_bbs(settings.list_path, copied, true);
-							edit_list(list, list[listcount - 1], settings.list_path, false);
+							edit_list(list, copied, settings.list_path, false);
 							load_bbslist(list,
 							             BBSLIST_SIZE,
 							             &defaults,
@@ -3694,8 +3700,10 @@ show_bbslist(char *current, int connected)
 							             &listcount,
 							             &opt,
 							             &bar,
-							             strdup(list[listcount - 1]->name));
+							             strdup(copied->name));
 							oldopt = -1;
+							free(copied);
+							copied = NULL;
 							break;
 					}
 				}

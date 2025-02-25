@@ -5,6 +5,18 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.28     2025-02-22   If extended descriptions are enabled and a filename is
+                      too long to fully fit in the menu, prepend the full
+                      filename (wrapped) to the description.
+                      New color theme option: filenameInDesc
+                      New bottom line menu option to toggle extended
+                      descriptions on/off
+                      Fix: useFilenameIfNoDescription option now used in
+                      traditional (non-lightbar) mode.
+2.27     2025-02-20   Now optionally displays the number of files in the
+                      directory in the header at the top of the list,
+                      configurable with the displayNumFilesInHeader option in
+                      the config file
 2.26     2024-12-27   New configuration setting: useFilenameIfNoDescription -
                       If a file's description is empty, show its filename in the
                       list instead

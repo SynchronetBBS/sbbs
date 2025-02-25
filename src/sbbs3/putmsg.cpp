@@ -42,7 +42,7 @@ char sbbs_t::putmsg(const char *buf, int mode, int org_cols, JSObject* obj)
 	uint             orgcon = console;
 	uint             sys_status_sav = sys_status;
 	uint             rainbow_sav[LEN_RAINBOW + 1];
-	enum output_rate output_rate = cur_output_rate;
+	enum output_rate output_rate = term->cur_output_rate;
 
 	attr_sp = 0;  /* clear any saved attributes */
 	tmpatr = curatr;  /* was lclatr(-1) */
@@ -52,17 +52,20 @@ char sbbs_t::putmsg(const char *buf, int mode, int org_cols, JSObject* obj)
 		sys_status |= SS_PAUSEOFF;
 
 	memcpy(rainbow_sav, rainbow, sizeof rainbow_sav);
+	ansiParser.reset();
 	char ret = putmsgfrag(buf, mode, org_cols, obj);
+	if (ansiParser.current_state() != ansiState_none)
+		lprintf(LOG_DEBUG, "Incomplete ANSI stripped from end");
 	memcpy(rainbow, rainbow_sav, sizeof rainbow);
 	if (!(mode & P_SAVEATR)) {
 		console = orgcon;
 		attr(tmpatr);
 	}
-	if (!(mode & P_NOATCODES) && cur_output_rate != output_rate)
-		set_output_rate(output_rate);
+	if (!(mode & P_NOATCODES) && term->cur_output_rate != output_rate)
+		term->set_output_rate(output_rate);
 
 	if (mode & P_PETSCII)
-		outcom(PETSCII_UPPERLOWER);
+		term_out(PETSCII_UPPERLOWER);
 
 	attr_sp = 0;  /* clear any saved attributes */
 
@@ -76,7 +79,7 @@ char sbbs_t::putmsg(const char *buf, int mode, int org_cols, JSObject* obj)
 }
 
 // Print a message fragment, doesn't save/restore any console states (e.g. attributes, auto-pause)
-char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
+char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject* obj)
 {
 	char                 tmp[256];
 	char                 tmp2[256];
@@ -85,7 +88,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
 	uchar                exatr = 0;
 	char                 mark = '\0';
 	int                  i;
-	int                  col = column;
+	unsigned             col = term->column;
 	uint                 l = 0;
 	uint                 lines_printed = 0;
 	struct mouse_hotspot hot_spot = {};
@@ -95,7 +98,6 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
 	str = auto_utf8(str, mode);
 	size_t len = strlen(str);
 
-	int    term = term_supports();
 	if (!(mode & P_NOATCODES) && memcmp(str, "@WRAPOFF@", 9) == 0) {
 		mode &= ~P_WORDWRAP;
 		l += 9;
@@ -110,7 +112,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
 		char *wrapped;
 		if (org_cols < TERM_COLS_MIN)
 			org_cols = TERM_COLS_DEFAULT;
-		if ((wrapped = ::wordwrap((char*)str + l, cols - 1, org_cols - 1, /* handle_quotes: */ TRUE
+		if ((wrapped = ::wordwrap((char*)str + l, term->cols - 1, org_cols - 1, /* handle_quotes: */ TRUE
 		                          , /* is_utf8: */ INT_TO_BOOL(mode & P_UTF8))) == NULL)
 			errormsg(WHERE, ERR_ALLOC, "wordwrap buffer", 0);
 		else {
@@ -138,18 +140,18 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
 				}
 			// fallthrough
 			default: // printing char
-				if ((mode & P_INDENT) && column < col)
-					cursor_right(col - column);
-				else if ((mode & P_TRUNCATE) && column >= (cols - 1)) {
+				if ((mode & P_INDENT) && term->column < col)
+					term->cursor_right(col - term->column);
+				else if ((mode & P_TRUNCATE) && term->column >= (term->cols - 1)) {
 					l++;
 					continue;
 				} else if (mode & P_WRAP) {
 					if (org_cols) {
-						if (column > (org_cols - 1)) {
+						if (term->column > (org_cols - 1)) {
 							CRLF;
 						}
 					} else {
-						if (column >= (cols - 1)) {
+						if (term->column >= (term->cols - 1)) {
 							CRLF;
 						}
 					}
@@ -219,18 +221,18 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
 			else if (str[l + 1] == '~') {
 				l += 2;
 				if (str[l] >= ' ')
-					add_hotspot(str[l], /* hungry: */ true);
+					term->add_hotspot(str[l], /* hungry: */ true);
 				else
-					add_hotspot('\r', /* hungry: */ true);
+					term->add_hotspot('\r', /* hungry: */ true);
 			}
 			else if (str[l + 1] == '`' && str[l + 2] >= ' ') {
-				add_hotspot(str[l + 2], /* hungry: */ false);
+				term->add_hotspot(str[l + 2], /* hungry: */ false);
 				l += 2;
 			}
 			else {
-				bool was_tos = (row == 0);
+				bool was_tos = (term->row == 0);
 				ctrl_a(str[l + 1]);
-				if (row == 0 && !was_tos && (sys_status & SS_ABORT) && !lines_printed) /* Aborted at (auto) pause prompt (e.g. due to CLS)? */
+				if (term->row == 0 && !was_tos && (sys_status & SS_ABORT) && !lines_printed) /* Aborted at (auto) pause prompt (e.g. due to CLS)? */
 					sys_status &= ~SS_ABORT;                /* Clear the abort flag (keep displaying the msg/file) */
 				l += 2;
 			}
@@ -385,18 +387,69 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
 				lines_printed++;
 			}
 
-			/* ansi escape sequence */
-			if (outchar_esc >= ansiState_csi) {
-				if (str[l] == 'A' || str[l] == 'B' || str[l] == 'H' || str[l] == 'J'
-				    || str[l] == 'f' || str[l] == 'u')    /* ANSI anim */
-					lncntr = 0;         /* so defeat pause */
-				if (str[l] == '"' || str[l] == 'c') {
-					l++;                /* don't pass on keyboard reassignment or Device Attributes (DA) requests */
-					continue;
+			/*
+			 * ansi escape sequence:
+			 * Strip broken sequences
+			 * Strip "dangerous" sequences
+			 * Reset line counter on sequences that may change the row
+			 * (The last is done that way for backward compatibility)
+			 */
+			if (term->supports(ANSI)) {
+				switch (ansiParser.parse(str[l])) {
+					case ansiState_broken:
+						// TODO: Maybe just strip the CSI or something?
+						lprintf(LOG_DEBUG, "Stripping broken ANSI sequence \"%s\"", ansiParser.ansi_sequence.c_str());
+						ansiParser.reset();
+						// break here prints the first non-valid character
+						break;
+					case ansiState_none:
+						break;
+					case ansiState_final:
+						if ((!ansiParser.ansi_was_private) && ansiParser.ansi_final_byte == 'p')
+							lprintf(LOG_DEBUG, "Stripping SKR sequence");
+						else if (ansiParser.ansi_was_private && ansiParser.ansi_params[0] == '?' && ansiParser.ansi_final_byte == 'S')
+							lprintf(LOG_DEBUG, "Stripping XTSRGA sequence");
+						else if (ansiParser.ansi_final_byte == 'n')
+							lprintf(LOG_DEBUG, "Stripping DSR sequence");
+						else if (ansiParser.ansi_final_byte == 'c')
+							lprintf(LOG_DEBUG, "Stripping DA sequence");
+						else if (ansiParser.ansi_ibs == "," && ansiParser.ansi_final_byte == 'q')
+							lprintf(LOG_DEBUG, "Stripping DECTID sequence");
+						else if (ansiParser.ansi_ibs == "&" && ansiParser.ansi_final_byte == 'u')
+							lprintf(LOG_DEBUG, "Stripping DECRQUPSS sequence");
+						else if (ansiParser.ansi_ibs == "+" && ansiParser.ansi_final_byte == 'x')
+							lprintf(LOG_DEBUG, "Stripping DECRQPKFM sequence");
+						else if (ansiParser.ansi_ibs == "$" && ansiParser.ansi_final_byte == 'p')
+							lprintf(LOG_DEBUG, "Stripping DECRQM sequence");
+						else if (ansiParser.ansi_ibs == "$" && ansiParser.ansi_final_byte == 'u')
+							lprintf(LOG_DEBUG, "Stripping DECRQTSR sequence");
+						else if (ansiParser.ansi_ibs == "$" && ansiParser.ansi_final_byte == 'w')
+							lprintf(LOG_DEBUG, "Stripping DECRQPSR sequence");
+						else if (ansiParser.ansi_ibs == "*" && ansiParser.ansi_final_byte == 'y')
+							lprintf(LOG_DEBUG, "Stripping DECRQCRA sequence");
+						else if (ansiParser.ansi_sequence.substr(0, 4) == "\x1bP$q")
+							lprintf(LOG_DEBUG, "Stripping DECRQSS sequence");
+						else if (ansiParser.ansi_sequence.substr(0, 14) == "\x1b_SyncTERM:C;L")
+							lprintf(LOG_DEBUG, "Stripping CTSFI sequence");
+						else if (ansiParser.ansi_sequence.substr(0, 16) == "\x1b_SyncTERM:Q;JXL")
+							lprintf(LOG_DEBUG, "Stripping CTQJS sequence");
+						else {
+							if ((!ansiParser.ansi_was_private) && ansiParser.ansi_ibs == "") {
+								if (strchr("AFkBEeHfJdu", ansiParser.ansi_final_byte) != nullptr)    /* ANSI anim */
+									term->lncntr = 0; /* so defeat pause */
+							}
+							term_out(ansiParser.ansi_sequence.c_str(), ansiParser.ansi_sequence.length());
+						}
+						ansiParser.reset();
+						l++;
+						continue;
+					default:
+						l++;
+						continue;
 				}
 			}
 			if (str[l] == '!' && str[l + 1] == '|' && useron.misc & RIP) /* RIP */
-				lncntr = 0;             /* so defeat pause */
+				term->lncntr = 0;             /* so defeat pause */
 			if (str[l] == '@' && !(mode & P_NOATCODES)) {
 				if (memcmp(str + l, "@EOF@", 5) == 0)
 					break;
@@ -415,7 +468,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
 						tmp[i++] = str[l++];
 					tmp[i] = 0;
 					truncsp(tmp);
-					center(expand_atcodes(tmp, tmp2, sizeof tmp2));
+					term->center(expand_atcodes(tmp, tmp2, sizeof tmp2));
 					if (str[l] == '\r')
 						l++;
 					if (str[l] == '\n')
@@ -470,10 +523,10 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
 						continue;
 					}
 				}
-				bool was_tos = (row == 0);
+				bool was_tos = (term->row == 0);
 				i = show_atcode((char *)str + l, obj);  /* returns 0 if not valid @ code */
 				l += i;                   /* i is length of code string */
-				if (row > 0 && !was_tos && (sys_status & SS_ABORT) && !lines_printed)  /* Aborted at (auto) pause prompt (e.g. due to CLS)? */
+				if (term->row > 0 && !was_tos && (sys_status & SS_ABORT) && !lines_printed)  /* Aborted at (auto) pause prompt (e.g. due to CLS)? */
 					sys_status &= ~SS_ABORT;                /* Clear the abort flag (keep displaying the msg/file) */
 				if (i)                   /* if valid string, go to top */
 					continue;
@@ -482,67 +535,26 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
 				break;
 			if (hot_attr) {
 				if (curatr == hot_attr && str[l] > ' ') {
-					hot_spot.y = row;
+					hot_spot.y = term->row;
 					if (!hot_spot.minx)
-						hot_spot.minx = column;
-					hot_spot.maxx = column;
+						hot_spot.minx = term->column;
+					hot_spot.maxx = term->column;
 					hot_spot.cmd[strlen(hot_spot.cmd)] = str[l];
 				} else if (hot_spot.cmd[0]) {
 					hot_spot.hungry = hungry_hotspots;
-					add_hotspot(&hot_spot);
+					term->add_hotspot(&hot_spot);
 					memset(&hot_spot, 0, sizeof(hot_spot));
 				}
 			}
 			size_t skip = sizeof(char);
 			if (mode & P_PETSCII) {
-				if (term & PETSCII) {
-					outcom(str[l]);
-					switch ((uchar)str[l]) {
-						case '\r':  // PETSCII "Return" / new-line
-							column = 0;
-						/* fall-through */
-						case PETSCII_DOWN:
-							lncntr++;
-							break;
-						case PETSCII_CLEAR:
-						case PETSCII_HOME:
-							row = 0;
-							column = 0;
-							lncntr = 0;
-							break;
-						case PETSCII_BLACK:
-						case PETSCII_WHITE:
-						case PETSCII_RED:
-						case PETSCII_GREEN:
-						case PETSCII_BLUE:
-						case PETSCII_ORANGE:
-						case PETSCII_BROWN:
-						case PETSCII_YELLOW:
-						case PETSCII_CYAN:
-						case PETSCII_LIGHTRED:
-						case PETSCII_DARKGRAY:
-						case PETSCII_MEDIUMGRAY:
-						case PETSCII_LIGHTGREEN:
-						case PETSCII_LIGHTBLUE:
-						case PETSCII_LIGHTGRAY:
-						case PETSCII_PURPLE:
-						case PETSCII_UPPERLOWER:
-						case PETSCII_UPPERGRFX:
-						case PETSCII_FLASH_ON:
-						case PETSCII_FLASH_OFF:
-						case PETSCII_REVERSE_ON:
-						case PETSCII_REVERSE_OFF:
-							// No cursor movement
-							break;
-						default:
-							inc_column(1);
-							break;
-					}
+				if (term->charset() == CHARSET_PETSCII) {
+					term_out(str[l]);
 				} else
 					petscii_to_ansibbs(str[l]);
 			} else if ((str[l] & 0x80) && (mode & P_UTF8)) {
-				if (term & UTF8)
-					outcom(str[l]);
+				if (term->charset() == CHARSET_UTF8)
+					term_out(str[l]);
 				else
 					skip = print_utf8_as_cp437(str + l, len - l);
 			} else {

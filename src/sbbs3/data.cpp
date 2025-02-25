@@ -222,7 +222,7 @@ uint sbbs_t::gettimeleft(bool handle_out_of_time)
 
 		if (!timeleft && !SYSOP && !(sys_status & SS_LCHAT)) {
 			logline(LOG_NOTICE, nulstr, "Ran out of time");
-			saveline();
+			term->saveline();
 			if (sys_status & SS_EVENT)
 				bprintf(text[ReducedTime], timestr(event_time));
 			bputs(text[TimesUp]);
@@ -237,7 +237,7 @@ uint sbbs_t::gettimeleft(bool handle_out_of_time)
 					logline("$-", str);
 					SAFEPRINTF(str, "Minute Adjustment: %u", cfg.cdt_min_value);
 					logline("*+", str);
-					restoreline();
+					term->restoreline();
 					gettimeleft();
 					gettimeleft_inside = 0;
 					return timeleft;
@@ -287,7 +287,7 @@ uint sbbs_t::gettimeleft(bool handle_out_of_time)
 				putuserflags(useron.number, USER_REST, useron.rest);
 				if (cfg.expire_mod[0])
 					exec_bin(cfg.expire_mod, &main_csi);
-				restoreline();
+				term->restoreline();
 				gettimeleft();
 				gettimeleft_inside = 0;
 				return timeleft;

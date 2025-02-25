@@ -953,12 +953,12 @@ object MailCfgDlg: TMailCfgDlg
         Items.Strings = (
           'SendMail: Ignore '#39'in transit'#39' attribute'
           'Retain received mail files (in temp directory)'
-          'Allow receipt of mail by user number'
           'Allow receipt of mail to '#39'sysop'#39' and '#39'postmaster'#39
           'Allow authenticated users to relay mail'
           'Check '#39'Received'#39' header fields against DNSBL'
           'Throttle DNS blacklisted server sessions'
           'Auto-exempt sent-mail recipients from DNSBL'
+          'Set Read attribute on POP3-retrieved messages'
           'Set Kill-Read attribute on received SPAM')
         TabOrder = 0
       end

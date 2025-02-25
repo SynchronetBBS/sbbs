@@ -3,6 +3,8 @@
 # [MT]OBJODIR and OFILE must be pre-defined
 
 OBJS	=		$(LOAD_CFG_OBJS) \
+			$(MTOBJODIR)/ansi_parser$(OFILE) \
+			$(MTOBJODIR)/ansi_terminal$(OFILE) \
 			$(MTOBJODIR)/ansiterm$(OFILE) \
 			$(MTOBJODIR)/answer$(OFILE)\
 			$(MTOBJODIR)/atcodes$(OFILE)\
@@ -77,6 +79,7 @@ OBJS	=		$(LOAD_CFG_OBJS) \
 			$(MTOBJODIR)/newuser$(OFILE)\
 			$(MTOBJODIR)/pack_qwk$(OFILE)\
 			$(MTOBJODIR)/pack_rep$(OFILE)\
+			$(MTOBJODIR)/petscii_term$(OFILE)\
 			$(MTOBJODIR)/postmsg$(OFILE)\
 			$(MTOBJODIR)/prntfile$(OFILE)\
 			$(MTOBJODIR)/putmsg$(OFILE)\
@@ -95,6 +98,7 @@ OBJS	=		$(LOAD_CFG_OBJS) \
 			$(MTOBJODIR)/str$(OFILE)\
 			$(MTOBJODIR)/telgate$(OFILE)\
 			$(MTOBJODIR)/telnet$(OFILE)\
+			$(MTOBJODIR)/terminal$(OFILE)\
 			$(MTOBJODIR)/text_sec$(OFILE)\
 			$(MTOBJODIR)/tmp_xfer$(OFILE)\
 			$(MTOBJODIR)/trash$(OFILE)\

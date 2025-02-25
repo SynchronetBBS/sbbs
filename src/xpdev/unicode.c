@@ -23,7 +23,7 @@
 #include "cp437defs.h"
 #include "unicode_defs.h"
 
-// Want UNICDE encodings of terminal control characters?
+// Want UNICODE encodings of terminal control characters?
 #if defined USE_UNICODE_FOR_TERM_CTRL_CHARS
 #   define UNICODE_TERM_CTRL_CHAR_CODE(x) x
 #else
@@ -67,7 +67,7 @@ enum unicode_codepoint cp437_unicode_tbl[] =
 	/* 0x1D */ UNICODE_LEFT_RIGHT_ARROW,
 	/* 0x1E */ UNICODE_BLACK_UP_POINTING_TRIANGLE,
 	/* 0x1F */ UNICODE_BLACK_DOWN_POINTING_TRIANGLE,
-	/* 0x20-0x7E	(1:1 with US-ASCII and CP437) */
+	/* 0x20-0x7C	(1:1 with US-ASCII and CP437) */
 	0,
 	0,
 	0,
@@ -160,7 +160,8 @@ enum unicode_codepoint cp437_unicode_tbl[] =
 	0,
 	0,
 	0,
-	0,
+	/* 0x7C */ UNICODE_BROKEN_BAR,
+	/* 0x7D-0x7E	(1:1 with US-ASCII and CP437) */
 	0,
 	0,
 	/* 0x7F (DEL) */ UNICODE_TERM_CTRL_CHAR_CODE(UNICODE_HOUSE),
@@ -410,6 +411,7 @@ char unicode_to_cp437(enum unicode_codepoint codepoint)
 	switch (codepoint) {
 		case UNICODE_ACUTE_ACCENT:                              return '\'';
 
+		case UNICODE_VERTICAL_LINE:                             return '|';
 		case UNICODE_BROKEN_BAR:                                return '|';
 		case UNICODE_MACRON:                                    return '~';
 

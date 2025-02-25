@@ -49,14 +49,14 @@ void sbbs_t::batchmenu()
 	}
 	if (useron.misc & (RIP) && !(useron.misc & EXPERT))
 		menu("batchxfr");
-	lncntr = 0;
+	term->lncntr = 0;
 	while (online && (cfg.upload_dir != INVALID_DIR || batdn_total() || batup_total())) {
 		if (!(useron.misc & (EXPERT | RIP))) {
 			sys_status &= ~SS_ABORT;
-			if (lncntr) {
+			if (term->lncntr) {
 				sync();
 				CRLF;
-				if (lncntr)          /* CRLF or SYNC can cause pause */
+				if (term->lncntr)          /* CRLF or SYNC can cause pause */
 					pause();
 			}
 			menu("batchxfr");
@@ -68,7 +68,7 @@ void sbbs_t::batchmenu()
 		if (ch > ' ')
 			logch(ch, 0);
 		if (ch == quit_key() || ch == '\r') {    /* Quit */
-			lncntr = 0;
+			term->lncntr = 0;
 			break;
 		}
 		switch (ch) {
@@ -228,6 +228,16 @@ bool sbbs_t::batch_upload()
 }
 
 /****************************************************************************/
+/****************************************************************************/
+static const char* quoted_string(const char* str, char* buf, size_t maxlen)
+{
+	if (strchr(str, ' ') == NULL)
+		return str;
+	safe_snprintf(buf, maxlen, "\"%s\"", str);
+	return buf;
+}
+
+/****************************************************************************/
 /* Download files from batch queue                                          */
 /****************************************************************************/
 bool sbbs_t::start_batch_download()
@@ -323,12 +333,14 @@ bool sbbs_t::start_batch_download()
 		totalsize += getfilesize(&cfg, &f);
 		if (!(cfg.dir[f.dir]->misc & DIR_TFREE))
 			totaltime += gettimetodl(&cfg, &f, cur_cps);
-		SAFECAT(list, getfilepath(&cfg, &f, path));
+		char qpath[MAX_PATH + 1];
+		SAFECAT(list, quoted_string(getfilepath(&cfg, &f, path), qpath, sizeof qpath));
 		SAFECAT(list, " ");
 		smb_freefilemem(&f);
 	}
 	iniFreeStringList(ini);
 	iniFreeStringList(filenames);
+	truncsp(list);
 
 	if (!(useron.exempt & FLAG('T')) && !SYSOP && totaltime > (int64_t)timeleft) {
 		bputs(text[NotEnoughTimeToDl]);
@@ -356,7 +368,7 @@ bool sbbs_t::start_batch_download()
 		curdirnum = batdn_dir[i];         /* for ARS */
 		unpadfname(batdn_name[i], fname);
 		if (cfg.dir[batdn_dir[i]]->seqdev) {
-			lncntr = 0;
+			term->lncntr = 0;
 			SAFEPRINTF2(path, "%s%s", cfg.temp_dir, fname);
 			if (!fexistcase(path)) {
 				seqwait(cfg.dir[batdn_dir[i]]->seqdev);
@@ -429,6 +441,7 @@ bool sbbs_t::start_batch_download()
 bool sbbs_t::create_batchdn_lst(bool native)
 {
 	char  path[MAX_PATH + 1];
+	int   errval;
 
 	SAFEPRINTF(path, "%sBATCHDN.LST", cfg.node_dir);
 	FILE* fp = fopen(path, "wb");
@@ -452,8 +465,8 @@ bool sbbs_t::create_batchdn_lst(bool native)
 			batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
 			continue;
 		}
-		if (!loadfile(&cfg, f.dir, filename, &f, file_detail_index)) {
-			errormsg(WHERE, "loading file", filename, i);
+		if (!loadfile(&cfg, f.dir, filename, &f, file_detail_index, &errval)) {
+			errormsg(WHERE, "loading file", filename, errval);
 			batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
 			continue;
 		}
@@ -535,7 +548,7 @@ bool sbbs_t::process_batch_upload_queue()
 		const char* filename = filenames[i];
 		int         dir = batch_file_dir(&cfg, ini, filename);
 		curdirnum = dir; /* for ARS */
-		lncntr = 0; /* defeat pause */
+		term->lncntr = 0; /* defeat pause */
 
 		SAFEPRINTF2(src, "%s%s", cfg.temp_dir, filename);
 		SAFEPRINTF2(dest, "%s%s", cfg.dir[dir]->path, filename);
@@ -626,7 +639,7 @@ void sbbs_t::batch_download(int xfrprot)
 
 	for (size_t i = 0; filenames[i] != NULL; ++i) {
 		char* filename = filenames[i];
-		lncntr = 0;                               /* defeat pause */
+		term->lncntr = 0;                               /* defeat pause */
 		if (xfrprot == -1 || checkprotresult(cfg.prot[xfrprot], 0, filename)) {
 			file_t f = {{}};
 			if (!batch_file_load(&cfg, ini, filename, &f)) {
@@ -667,13 +680,13 @@ void sbbs_t::batch_add_list(char *list)
 			if (!fgets(str, sizeof(str) - 1, stream))
 				break;
 			truncnl(str);
-			lncntr = 0;
+			term->lncntr = 0;
 			for (i = j = k = 0; i < usrlibs; i++) {
 				for (j = 0; j < usrdirs[i]; j++, k++) {
 					outchar('.');
 					if (k && !(k % 5))
 						bputs("\b\b\b\b\b     \b\b\b\b\b");
-					if (loadfile(&cfg, usrdir[i][j], str, &f, file_detail_normal)) {
+					if (loadfile(&cfg, usrdir[i][j], str, &f, file_detail_normal, NULL)) {
 						if (fexist(getfilepath(&cfg, &f, path)))
 							addtobatdl(&f);
 						else
