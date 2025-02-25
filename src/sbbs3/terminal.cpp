@@ -461,4 +461,3 @@ extern "C" void update_terminal(void *sbbsptr, user_t *userptr)
 	if (&sbbs->useron == userptr)
 		update_terminal(sbbs);
 }
-

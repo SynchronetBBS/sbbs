@@ -671,58 +671,6 @@ bool sbbs_t::update_nodeterm(void)
 }
 
 /*
- * The layering here for text is basically:
- * bputs  putmsg.................
- *   \      /              :    :
- *   outchar    rputs   putcom  :
- *      +---------+--------+    :
- *              outcom..........:
- *                |
- *           RingBufWrite
- * 
- * Both bputs and putmsg will occasionally bypass outchar for PETSCII
- * and UTF-8 output, going via putcom() or outcom() only to avoid
- * charset translation.  It is likely not intended to avoid saveline
- * buffering.
- * 
- * While the avoidance of line counting in rputs() does not appear to
- * be strictly required in the C++ code, the use via console.write()
- * in scripts would almost certainly break things if rputs() started
- * doing it.
- * 
- * Open questions:
- * - Does rputs() *need* to avoid column and row updates?
- * 
- * outchar and rputs both do:
- * charset translations
- * telnet IAC expansion
- * saveline buffering (now performed by outcom)
- * 
- * outchar additionally does:
- * tab expansion
- * FF to terminal clear expansion
- * auto pause
- * rainbow text
- * line counting
- * column and row updates
- * 
- * There is also an outchar() flavour that does either putcom() for a
- * single utf-8 codepoint *or* a bputs() for a string with the same
- * meaning (ie: "©" or "(C)").  This should be renamed.
- * 
- * Adding a layer above outcom that does IAC expansion and saveline
- * buffering would allow avoiding changing outcom() by having most current
- * callers call that instead, and restrict outcom back to being a thin
- * wrapper around RingBufWrite().
- * 
- * Adding another layer that does charset conversion could eliminate
- * rputs() and unify the conversion code.  outchar() and rputs() appear
- * to be equivilent, but they're implemented differently.
- *
- * putcom() is used not only for text, but also to send telnet commands.
- * The use for text could be replaced, but the use for IAC needs to be
- * unchanged.
- * 
  * bputs  putmsg
  *   \      /
  *   outchar    rputs
@@ -736,29 +684,28 @@ bool sbbs_t::update_nodeterm(void)
  *           RingBufWrite
  * 
  * In this model:
- * bputs() and putmsg() would call term_out instead of putcom/outcom to
- * bypass charset translations (ie: PETSCII and UTF-8 output)
+ * bputs() and putmsg() call term_out to bypass charset translations
+ * (ie: PETSCII and UTF-8 output)
  * 
- * outchar() would do tab, FF, rainbow, and auto-pause
+ * outchar() does tab, FF, rainbow, and auto-pause
  * 
- * rputs() would effectively do nothing except call cp437_out()
+ * rputs() effectively just calls cp437_out() and keeps the line counter
+ *         unchanged.  It's used by console.print(), so keeping the
+ *         behaviour unchanged may be important.
  * 
- * cp437_out() would translate from cp437 to the terminal charset
- *             this would specifically include the control characters
+ * cp437_out() translates from cp437 to the terminal charset this
+ *             specifically includes the control characters
  *             BEL, BS, TAB, LF, FF, CR, and DEL
  * 
- * outcp() would call term_out() if UTF-8 is supported, or bputs() if not
+ * outcp() calls term_out() if UTF-8 is supported, or bputs() if not
  * 
- * putcom() would remain a string wrapper around outcom()
+ * putcom() is used not only for text, but also to send telnet commands.
+ *          The use for text could be replaced, but the use for IAC
+ *          needs to be unchanged.
  * 
- * term_out() would update column and row, and maintain the line buffer,
- *            it would be available for a char, a uchar, a char*, and
- *            a char* + size_t
+ * term_out() updates column and row, and maintains the line buffer
  * 
- * outcom() and RingBufWrite() would be unchanged
- * 
- * Open questions:
- * - Should term_out() strip/convert ANSI sequences?  Ugh, I hope not.
+ * outcom() and RingBufWrite() are post-IAC expansion
  */
 
 /****************************************************************************/
