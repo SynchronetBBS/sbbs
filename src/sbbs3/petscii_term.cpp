@@ -63,7 +63,7 @@ const char *PETSCII_Terminal::attrstr(unsigned atr)
 static unsigned
 unreverse_attr(unsigned atr)
 {
-	// This drops all background bits
+	// This drops all background bits and REVERSED
 	return (atr & BLINK)			// Blink unchanged
 	    | ((atr & BG_BRIGHT) ? HIGH : 0)	// Put BG_BRIGHT bit into HIGH
 	    | ((atr & 0x70) >> 4);		// Background colour to Foreground
@@ -72,7 +72,7 @@ unreverse_attr(unsigned atr)
 static unsigned
 reverse_attr(unsigned atr)
 {
-	// This drops all foreground bits
+	// This drops all foreground bits and sets REVERSED
 	return REVERSED
 	    | ((atr & HIGH) ? BG_BRIGHT : 0)	// Put HIGH bit into BG_BRIGHT
 	    | (atr & BLINK)			// Blink unchanged
@@ -87,18 +87,23 @@ reverse_attr(unsigned atr)
 unsigned
 PETSCII_Terminal::xlat_atr(unsigned atr)
 {
-	// BG_BLACK bit trumps all
-	if (atr & BG_BLACK) {
+	if (atr == ANSI_NORMAL) {
+		// But convert to "normal" atr
+		atr = LIGHTGRAY;
+	}
+	if (atr == BG_BLACK) {
 		// But convert to "normal" atr
 		atr &= ~(BG_BLACK | 0x70 | BG_BRIGHT);
 	}
-	// If this is reversed, force foreground to black
+	// If this is already reversed, clear background
 	if (atr & REVERSED) {
-		atr &= ~0x07;
+		atr &= ~0x70;
 	}
-	// If there is a background colour, translate to reversed with black
-	if (atr & (0x70 | BG_BRIGHT)) {
-		atr = REVERSED | unreverse_attr(atr);
+	else {
+		// If there is a background colour, translate to reversed with black
+		if (atr & (0x70 | BG_BRIGHT)) {
+			atr = REVERSED | unreverse_attr(atr);
+		}
 	}
 	if (subset == PETSCII_C64)
 		atr &= ~(BLINK | UNDERLINE);
