@@ -215,7 +215,6 @@ unsigned char cp437_to_petscii(unsigned char ch)
 
 unsigned char cp437_to_mode7(unsigned char ch)
 {
-#if 0
 	switch((char)ch) {
 		case CP437_VULGAR_FRACTION_ONE_HALF:
 			ch = MODE7_HALF;
@@ -266,7 +265,6 @@ unsigned char cp437_to_mode7(unsigned char ch)
 			ch = exascii_to_ascii_char(ch);
 			break;
 	}
-#endif
 	return ch;
 }
 
@@ -496,7 +494,11 @@ size_t sbbs_t::cp437_out(int ich)
 			if (term_out(PETSCII_REVERSE_OFF) != 1)
 				return 0;
 		}
-		return 1;
+		return term_out(ch);
+	}
+	// Mode 7
+	else if (term->charset() == CHARSET_MODE7) {
+		ch = cp437_to_mode7(ch);
 	}
 	// CP437 or US-ASCII
 	if ((term->charset() == CHARSET_ASCII) && (ch & 0x80))
