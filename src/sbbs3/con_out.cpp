@@ -494,7 +494,7 @@ size_t sbbs_t::cp437_out(int ich)
 			if (term_out(PETSCII_REVERSE_OFF) != 1)
 				return 0;
 		}
-		return term_out(ch);
+		return 1;
 	}
 	// Mode 7
 	else if (term->charset() == CHARSET_MODE7) {
