@@ -38,7 +38,6 @@ $(MTOBJODIR)/ssl$(OFILE): $(JS_LIB) $(CRYPT_LIB)
 $(MTOBJODIR)/websrvr$(OFILE): $(JS_LIB) $(CRYPT_LIB)
 
 # C++
-$(MTOBJODIR)/ansiterm$(OFILE): $(JS_LIB) $(CRYPT_LIB)
 $(MTOBJODIR)/answer$(OFILE): $(JS_LIB) $(CRYPT_LIB)
 $(MTOBJODIR)/atcodes$(OFILE): $(JS_LIB) $(CRYPT_LIB)
 $(MTOBJODIR)/bat_xfer$(OFILE): $(JS_LIB) $(CRYPT_LIB)

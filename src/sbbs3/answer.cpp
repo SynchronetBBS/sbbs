@@ -546,7 +546,28 @@ bool sbbs_t::answer()
 
 	/* Detect terminal type */
 	if (!term_output_disabled) {
-		mswait(200);    // Allow some time for Telnet negotiation
+		// Grab telnet terminal if negotiated already
+		if (!(telnet_mode & TELNET_MODE_OFF)) {
+			unsigned loops = 0;
+			// Wait up to 2s more for telnet term type
+			// TODO: Any way to detect if the remote send a zero-length type?
+			while (telnet_remote_option[TELNET_TERM_TYPE] == TELNET_WILL) {
+				/* Stop the input thread from writing to the telnet_* vars */
+				pthread_mutex_lock(&input_thread_mutex);
+				if (telnet_cols >= TERM_COLS_MIN && telnet_cols <= TERM_COLS_MAX)
+					term->cols = telnet_cols;
+				if (telnet_rows >= TERM_ROWS_MIN && telnet_rows <= TERM_ROWS_MAX)
+					term->rows = telnet_rows;
+				if (telnet_terminal[0]) {
+					SAFECOPY(terminal, telnet_terminal);
+					break;
+				}
+				pthread_mutex_unlock(&input_thread_mutex);
+				if (++loops >= 20)
+					break;
+				mswait(100);    // Allow some time for Telnet negotiation
+			}
+		}
 		rioctl(IOFI);       /* flush input buffer */
 		safe_snprintf(str, sizeof(str), "%s  %s", VERSION_NOTICE, COPYRIGHT_NOTICE);
 		if (strcmp(terminal, "PETSCII") == 0) {
