@@ -43,6 +43,7 @@ char* sbbs_t::auto_utf8(const char* str, int& mode)
 /* Outputs a NULL terminated string locally and remotely (if applicable)    */
 /* Handles ctrl-a codes, Telnet-escaping, column & line count, auto-pausing */
 /* Supported P_* mode flags:
+   P_MODE7
    P_PETSCII
    P_UTF8
    P_AUTO_UTF8
@@ -117,7 +118,10 @@ int sbbs_t::bputs(const char *str, int mode)
 					continue;
 			}
 		}
-		if (mode & P_PETSCII) {
+		if (mode & P_MODE7 && term->charset() == CHARSET_MODE7) {
+			term_out(str[l++]);
+		}
+		else if (mode & P_PETSCII) {
 			if (term->charset() == CHARSET_PETSCII)
 				term_out(str[l++]);
 			else

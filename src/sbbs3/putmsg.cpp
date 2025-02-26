@@ -547,7 +547,9 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 				}
 			}
 			size_t skip = sizeof(char);
-			if (mode & P_PETSCII) {
+			if (mode & P_MODE7 && term->charset() == CHARSET_MODE7)
+				term_out(str[l]);
+			else if (mode & P_PETSCII) {
 				if (term->charset() == CHARSET_PETSCII) {
 					term_out(str[l]);
 				} else
