@@ -551,13 +551,17 @@ bool sbbs_t::answer()
 			unsigned loops = 0;
 			// Wait up to 2s more for telnet term type
 			// TODO: Any way to detect if the remote send a zero-length type?
-			while (telnet_remote_option[TELNET_TERM_TYPE] == TELNET_WILL) {
+			lprintf(LOG_DEBUG, "Waiting for telnet terminal negotiation");
+			while (telnet_remote_option[TELNET_TERM_TYPE] == TELNET_WILL
+			    || telnet_remote_option[TELNET_TERM_TYPE] == 0) {
 				/* Stop the input thread from writing to the telnet_* vars */
 				pthread_mutex_lock(&input_thread_mutex);
-				if (telnet_cols >= TERM_COLS_MIN && telnet_cols <= TERM_COLS_MAX)
-					term->cols = telnet_cols;
-				if (telnet_rows >= TERM_ROWS_MIN && telnet_rows <= TERM_ROWS_MAX)
-					term->rows = telnet_rows;
+				if (telnet_remote_option[TELNET_NEGOTIATE_WINDOW_SIZE] == TELNET_WILL) {
+					if (telnet_cols >= TERM_COLS_MIN && telnet_cols <= TERM_COLS_MAX)
+						term->cols = telnet_cols;
+					if (telnet_rows >= TERM_ROWS_MIN && telnet_rows <= TERM_ROWS_MAX)
+						term->rows = telnet_rows;
+				}
 				if (telnet_terminal[0]) {
 					SAFECOPY(terminal, telnet_terminal);
 					break;
@@ -565,8 +569,11 @@ bool sbbs_t::answer()
 				pthread_mutex_unlock(&input_thread_mutex);
 				if (++loops >= 20)
 					break;
+				if (telnet_remote_option[TELNET_TERM_TYPE] == 0 && loops >= 10)
+					break;
 				mswait(100);    // Allow some time for Telnet negotiation
 			}
+			lprintf(LOG_DEBUG, "Telnet terminal negotiation wait complete (%u loops)", loops);
 		}
 		rioctl(IOFI);       /* flush input buffer */
 		safe_snprintf(str, sizeof(str), "%s  %s", VERSION_NOTICE, COPYRIGHT_NOTICE);
