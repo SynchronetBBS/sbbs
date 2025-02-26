@@ -86,7 +86,7 @@ public:
 		if (flags & UTF8) {
 			// These bits are *never* available in UTF8 mode
 			// Note that RIP is not inherently incompatible with UTF8
-			flags &= ~(NO_EXASCII | PETSCII);
+			flags &= ~(MODE7 | NO_EXASCII | PETSCII);
 		}
 
 		if (flags & RIP) {
@@ -101,13 +101,20 @@ public:
 		}
 		else {
 			// These bits are *never* available in ANSI mode
-			flags &= ~(PETSCII);
+			flags &= ~(PETSCII | MODE7);
 		}
 
 		if (flags & PETSCII) {
 			// These bits are *never* available in PETSCII mode
-			flags &= ~(RIP | ICE_COLOR | MOUSE | NO_EXASCII | UTF8);
+			flags &= ~(RIP | ICE_COLOR | MOUSE | NO_EXASCII | UTF8 | MODE7);
 			// These bits are *always* availabe in PETSCII mode
+			flags |= COLOR;
+		}
+
+		if (flags & MODE7) {
+			// These bits are *never* available in MODE7
+			flags &= ~(RIP | ICE_COLOR | MOUSE | NO_EXASCII | UTF8 | PETSCII);
+			// These bits are *always* availabe in MODE7
 			flags |= COLOR;
 		}
 		return flags;
