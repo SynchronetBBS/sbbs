@@ -552,11 +552,13 @@ bool sbbs_t::answer()
 		if (strcmp(terminal, "PETSCII") == 0) {
 			autoterm |= PETSCII;
 			update_terminal(this);
+			term_out("\r\n");
 		}
-		if (autoterm & PETSCII) {
+		else if (autoterm & PETSCII) {
 			SAFECOPY(terminal, "PETSCII");
 			outchar(FF);
 			term->center(str);
+			term_out("\r\n");
 		} else {    /* ANSI+ terminal detection */
 			term_out( "\r\n"      /* locate cursor at column 1 */
 			        "\x1b[s"    /* save cursor position (necessary for HyperTerm auto-ANSI) */
