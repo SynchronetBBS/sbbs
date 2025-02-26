@@ -4,51 +4,51 @@
 
 #ifdef NO_FONTS
 CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
-	{NULL, NULL, NULL, NULL, "Codepage 437 English", CIOLIB_CP437},
-	{NULL, NULL, NULL, NULL, "Codepage 1251 Cyrillic, (swiss)", CIOLIB_CP1251},
-	{NULL, NULL, NULL, NULL, "Russian koi8-r", CIOLIB_KOI8_R},
-	{NULL, NULL, NULL, NULL, "ISO-8859-2 Central European", CIOLIB_ISO_8859_2},
-	{NULL, NULL, NULL, NULL, "ISO-8859-4 Baltic wide (VGA 9bit mapped)", CIOLIB_ISO_8859_4},
-	{NULL, NULL, NULL, NULL, "Codepage 866 (c) Russian", CIOLIB_CP866M},
-	{NULL, NULL, NULL, NULL, "ISO-8859-9 Turkish", CIOLIB_ISO_8859_9},
-	{NULL, NULL, NULL, NULL, "haik8 codepage (use only with armscii8 screenmap)", CIOLIB_HAIK8},
-	{NULL, NULL, NULL, NULL, "ISO-8859-8 Hebrew", CIOLIB_ISO_8859_8},
-	{NULL, NULL, NULL, NULL, "Ukrainian font koi8-u", CIOLIB_KOI8_U},
-	{NULL, NULL, NULL, NULL, "ISO-8859-15 West European, (thin)", CIOLIB_ISO_8859_15},
-	{NULL, NULL, NULL, NULL, "ISO-8859-4 Baltic (VGA 9bit mapped)", CIOLIB_ISO_8859_4},
-	{NULL, NULL, NULL, NULL, "Russian koi8-r (b)", CIOLIB_KOI8_R},
-	{NULL, NULL, NULL, NULL, "ISO-8859-4 Baltic wide", CIOLIB_ISO_8859_4},
-	{NULL, NULL, NULL, NULL, "ISO-8859-5 Cyrillic", CIOLIB_ISO_8859_5},
-	{NULL, NULL, NULL, NULL, "ARMSCII-8 Character set", CIOLIB_ARMSCII8},
-	{NULL, NULL, NULL, NULL, "ISO-8859-15 West European", CIOLIB_ISO_8859_15},
-	{NULL, NULL, NULL, NULL, "Codepage 850 Multilingual Latin I, (thin)", CIOLIB_CP850},
-	{NULL, NULL, NULL, NULL, "Codepage 850 Multilingual Latin I", CIOLIB_CP850},
-	{NULL, NULL, NULL, NULL, "Codepage 865 Norwegian, (thin)", CIOLIB_CP865},
-	{NULL, NULL, NULL, NULL, "Codepage 1251 Cyrillic", CIOLIB_CP1251},
-	{NULL, NULL, NULL, NULL, "ISO-8859-7 Greek", CIOLIB_ISO_8859_7},
-	{NULL, NULL, NULL, NULL, "Russian koi8-r (c)", CIOLIB_KOI8_R},
-	{NULL, NULL, NULL, NULL, "ISO-8859-4 Baltic", CIOLIB_ISO_8859_4},
-	{NULL, NULL, NULL, NULL, "ISO-8859-1 West European", CIOLIB_ISO_8859_1},
-	{NULL, NULL, NULL, NULL, "Codepage 866 Russian", CIOLIB_CP866M2},
-	{NULL, NULL, NULL, NULL, "Codepage 437 English, (thin)", CIOLIB_CP437},
-	{NULL, NULL, NULL, NULL, "Codepage 866 (b) Russian", CIOLIB_CP866M2},
-	{NULL, NULL, NULL, NULL, "Codepage 865 Norwegian", CIOLIB_CP865},
-	{NULL, NULL, NULL, NULL, "Ukrainian font cp866u", CIOLIB_CP866U},
-	{NULL, NULL, NULL, NULL, "ISO-8859-1 West European, (thin)", CIOLIB_ISO_8859_1},
-	{NULL, NULL, NULL, NULL, "Codepage 1131 Belarusian, (swiss)", CIOLIB_CP1131},
-	{NULL, NULL, NULL, NULL, "Commodore 64 (UPPER)", CIOLIB_PETSCIIU},
-	{NULL, NULL, NULL, NULL, "Commodore 64 (Lower)", CIOLIB_PETSCIIL},
-	{NULL, NULL, NULL, NULL, "Commodore 128 (UPPER)", CIOLIB_PETSCIIU},
-	{NULL, NULL, NULL, NULL, "Commodore 128 (Lower)", CIOLIB_PETSCIIL},
-	{NULL, NULL, NULL, NULL, "Atari", CIOLIB_ATASCII},
-	{NULL, NULL, NULL, NULL, "P0T NOoDLE (Amiga)", CIOLIB_ISO_8859_1},
-	{NULL, NULL, NULL, NULL, "mO'sOul (Amiga)", CIOLIB_ISO_8859_1},
-	{NULL, NULL, NULL, NULL, "MicroKnight Plus (Amiga)", CIOLIB_ISO_8859_1},
-	{NULL, NULL, NULL, NULL, "Topaz Plus (Amiga)", CIOLIB_ISO_8859_1},
-	{NULL, NULL, NULL, NULL, "MicroKnight (Amiga)", CIOLIB_ISO_8859_1},
-	{NULL, NULL, NULL, NULL, "Topaz (Amiga)", CIOLIB_ISO_8859_1},
-	{NULL, NULL, NULL, NULL, "Prestel (8x16)", CIOLIB_PRESTEL},
-	{NULL, NULL, NULL, NULL, "Atari ST (System)", CIOLIB_ATARIST},
+	{NULL, NULL, NULL, NULL, "Codepage 437 English", CIOLIB_CP437, true},
+	{NULL, NULL, NULL, NULL, "Codepage 1251 Cyrillic, (swiss)", CIOLIB_CP1251, false},
+	{NULL, NULL, NULL, NULL, "Russian koi8-r", CIOLIB_KOI8_R, true},
+	{NULL, NULL, NULL, NULL, "ISO-8859-2 Central European", CIOLIB_ISO_8859_2, true},
+	{NULL, NULL, NULL, NULL, "ISO-8859-4 Baltic wide (VGA 9bit mapped)", CIOLIB_ISO_8859_4, false},
+	{NULL, NULL, NULL, NULL, "Codepage 866 (c) Russian", CIOLIB_CP866M, true},
+	{NULL, NULL, NULL, NULL, "ISO-8859-9 Turkish", CIOLIB_ISO_8859_9, false},
+	{NULL, NULL, NULL, NULL, "haik8 codepage (use only with armscii8 screenmap)", CIOLIB_HAIK8, true},
+	{NULL, NULL, NULL, NULL, "ISO-8859-8 Hebrew", CIOLIB_ISO_8859_8, false},
+	{NULL, NULL, NULL, NULL, "Ukrainian font koi8-u", CIOLIB_KOI8_U, true},
+	{NULL, NULL, NULL, NULL, "ISO-8859-15 West European, (thin)", CIOLIB_ISO_8859_15, false},
+	{NULL, NULL, NULL, NULL, "ISO-8859-4 Baltic (VGA 9bit mapped)", CIOLIB_ISO_8859_4, false},
+	{NULL, NULL, NULL, NULL, "Russian koi8-r (b)", CIOLIB_KOI8_R, true},
+	{NULL, NULL, NULL, NULL, "ISO-8859-4 Baltic wide", CIOLIB_ISO_8859_4, false},
+	{NULL, NULL, NULL, NULL, "ISO-8859-5 Cyrillic", CIOLIB_ISO_8859_5, true},
+	{NULL, NULL, NULL, NULL, "ARMSCII-8 Character set", CIOLIB_ARMSCII8, true},
+	{NULL, NULL, NULL, NULL, "ISO-8859-15 West European", CIOLIB_ISO_8859_15, false},
+	{NULL, NULL, NULL, NULL, "Codepage 850 Multilingual Latin I, (thin)", CIOLIB_CP850, true},
+	{NULL, NULL, NULL, NULL, "Codepage 850 Multilingual Latin I", CIOLIB_CP850, false},
+	{NULL, NULL, NULL, NULL, "Codepage 865 Norwegian, (thin)", CIOLIB_CP865, true},
+	{NULL, NULL, NULL, NULL, "Codepage 1251 Cyrillic", CIOLIB_CP1251, true},
+	{NULL, NULL, NULL, NULL, "ISO-8859-7 Greek", CIOLIB_ISO_8859_7, false},
+	{NULL, NULL, NULL, NULL, "Russian koi8-r (c)", CIOLIB_KOI8_R, true},
+	{NULL, NULL, NULL, NULL, "ISO-8859-4 Baltic", CIOLIB_ISO_8859_4, false},
+	{NULL, NULL, NULL, NULL, "ISO-8859-1 West European", CIOLIB_ISO_8859_1, false},
+	{NULL, NULL, NULL, NULL, "Codepage 866 Russian", CIOLIB_CP866M2, true},
+	{NULL, NULL, NULL, NULL, "Codepage 437 English, (thin)", CIOLIB_CP437, true},
+	{NULL, NULL, NULL, NULL, "Codepage 866 (b) Russian", CIOLIB_CP866M2, true},
+	{NULL, NULL, NULL, NULL, "Codepage 865 Norwegian", CIOLIB_CP865, false},
+	{NULL, NULL, NULL, NULL, "Ukrainian font cp866u", CIOLIB_CP866U, true},
+	{NULL, NULL, NULL, NULL, "ISO-8859-1 West European, (thin)", CIOLIB_ISO_8859_1, false},
+	{NULL, NULL, NULL, NULL, "Codepage 1131 Belarusian, (swiss)", CIOLIB_CP1131, false},
+	{NULL, NULL, NULL, NULL, "Commodore 64 (UPPER)", CIOLIB_PETSCIIU, false},
+	{NULL, NULL, NULL, NULL, "Commodore 64 (Lower)", CIOLIB_PETSCIIL, false},
+	{NULL, NULL, NULL, NULL, "Commodore 128 (UPPER)", CIOLIB_PETSCIIU, false},
+	{NULL, NULL, NULL, NULL, "Commodore 128 (Lower)", CIOLIB_PETSCIIL, false},
+	{NULL, NULL, NULL, NULL, "Atari", CIOLIB_ATASCII, false},
+	{NULL, NULL, NULL, NULL, "P0T NOoDLE (Amiga)", CIOLIB_ISO_8859_1, false},
+	{NULL, NULL, NULL, NULL, "mO'sOul (Amiga)", CIOLIB_ISO_8859_1, false},
+	{NULL, NULL, NULL, NULL, "MicroKnight Plus (Amiga)", CIOLIB_ISO_8859_1, false},
+	{NULL, NULL, NULL, NULL, "Topaz Plus (Amiga)", CIOLIB_ISO_8859_1, false},
+	{NULL, NULL, NULL, NULL, "MicroKnight (Amiga)", CIOLIB_ISO_8859_1, false},
+	{NULL, NULL, NULL, NULL, "Topaz (Amiga)", CIOLIB_ISO_8859_1, false},
+	{NULL, NULL, NULL, NULL, "Prestel (8x16)", CIOLIB_PRESTEL, false},
+	{NULL, NULL, NULL, NULL, "Atari ST (System)", CIOLIB_ATARIST, false},
 };
 #else
 CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
@@ -1078,7 +1078,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x3c\x00\x3c\x00\x3c\x00\x3c\x00\x00\x00\x00\x00\x3c\xf0\x3c\xf0\x3c\xf0\x3c\xf0\x3c\xf0\x3c\xf0\x00\x00\x00\x00\x3c\xf0\x3c\xf0\x3c\xf0\x3c\xf0\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x3f\xc0\x3f\xc0\x3f\xc0\x3f\xc0\x3f\xc0\x3f\xc0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x3c\xf0\x3c\xf0\x3c\xf0\x3c\xf0\x00\x00\x00\x00\x3c\xf0\x3c\xf0\x3c\xf0\x3c\xf0\x3c\xf0\x3c\xf0\x00\x00\x00\x00\x3c\xf0\x3c\xf0\x3c\xf0\x3c\xf0\x00\x00\x00\x00"
-	, "Codepage 437 English", CIOLIB_CP437}
+	, "Codepage 437 English", CIOLIB_CP437, true}
 	,{"\x00\x00\x00\x00\x00\x00\x00\x10\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x3c\x42\x81\xe7\xa5\x99\x81\x99\x42\x3c\x00\x00\x00\x00"
 		"\x00\x00\x3c\x7e\xff\x99\xdb\xe7\xff\xe7\x7e\x3c\x00\x00\x00\x00"
@@ -1335,7 +1335,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x00\x00\x00\x00\x00\x00\x7c\xc6\x06\x3e\x06\xc6\x7c\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\xcc\xd6\xd6\xf6\xd6\xd6\xcc\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x7e\xc6\xc6\x7e\x36\x66\xc6\x00\x00\x00"
-	, NULL, NULL, NULL, "Codepage 1251 Cyrillic, (swiss)", CIOLIB_CP1251}
+	, NULL, NULL, NULL, "Codepage 1251 Cyrillic, (swiss)", CIOLIB_CP1251, false}
 	,{"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -2104,7 +2104,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\xdb\xdb\xdb\xdb\xdb\xdb\xff\x03"
 		"\x66\x66\x66\x3e\x06\x06\x06\x00"
 		"\xe0\x60\x60\x7c\x66\x66\x7c\x00"
-	, NULL, "Russian koi8-r", CIOLIB_KOI8_R}
+	, NULL, "Russian koi8-r", CIOLIB_KOI8_R, true}
 	,{"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -2873,7 +2873,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x0c\x18\x66\x66\x66\x3e\x06\x7c"
 		"\x10\x30\x7c\x30\x30\x34\x18\x0e"
 		"\x18\x00\x00\x00\x00\x00\x00\x00"
-	, NULL, "ISO-8859-2 Central European", CIOLIB_ISO_8859_2}
+	, NULL, "ISO-8859-2 Central European", CIOLIB_ISO_8859_2, true}
 	,{"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -3130,7 +3130,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x00\x00\x00\x76\xdc\x00\xc6\xc6\xc6\xc6\xc6\xc6\xc6\x7b\x00\x00"
 		"\x00\x00\x00\x00\x7c\x00\xc6\xc6\xc6\xc6\xc6\xc6\xc6\x7b\x00\x00"
 		"\x00\x18\x18\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-	, NULL, NULL, NULL, "ISO-8859-4 Baltic wide (VGA 9bit mapped)", CIOLIB_ISO_8859_4}
+	, NULL, NULL, NULL, "ISO-8859-4 Baltic wide (VGA 9bit mapped)", CIOLIB_ISO_8859_4, false}
 	,{"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x7e\x81\xa5\x81\x81\xa5\x99\x81\x81\x7e\x00\x00\x00\x00"
 		"\x00\x00\x7e\xff\xdb\xff\xff\xdb\xe7\xff\xff\x7e\x00\x00\x00\x00"
@@ -3387,7 +3387,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x00\x70\xd8\x30\x60\xc8\xf8\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x7c\x7c\x7c\x7c\x7c\x7c\x7c\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-	, NULL, NULL, NULL, "Codepage 866 (c) Russian", CIOLIB_CP866M}
+	, NULL, NULL, NULL, "Codepage 866 (c) Russian", CIOLIB_CP866M, true}
 	,{"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -3644,7 +3644,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x00\x00\x00\x00\x00\x38\x18\x18\x18\x18\x18\x3c\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x7c\xc6\x60\x38\x0c\xc6\x7c\x18\x30\x00\x00"
 		"\x00\x00\x66\x66\x00\xee\x66\x66\x66\x66\x66\x3e\x06\x0c\x38\x00"
-	, NULL, NULL, NULL, "ISO-8859-9 Turkish", CIOLIB_ISO_8859_9}
+	, NULL, NULL, NULL, "ISO-8859-9 Turkish", CIOLIB_ISO_8859_9, false}
 	,{"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -4413,7 +4413,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x38\x58\x3e\x1b\x1b\xdb\x7e\x18"
 		"\x30\x30\x60\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00"
-	, NULL, "haik8 codepage (use only with armscii8 screenmap)", CIOLIB_HAIK8}
+	, NULL, "haik8 codepage (use only with armscii8 screenmap)", CIOLIB_HAIK8, true}
 	,{"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -5182,7 +5182,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00"
-	, NULL, "ISO-8859-8 Hebrew", CIOLIB_ISO_8859_8}
+	, NULL, "ISO-8859-8 Hebrew", CIOLIB_ISO_8859_8, false}
 	,{"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -5951,7 +5951,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\xdb\xdb\xdb\xdb\xdb\xdb\xff\x03"
 		"\x66\x66\x66\x3e\x06\x06\x06\x00"
 		"\xe0\x60\x60\x7c\x66\x66\x7c\x00"
-	, NULL, "Ukrainian font koi8-u", CIOLIB_KOI8_U}
+	, NULL, "Ukrainian font koi8-u", CIOLIB_KOI8_U, true}
 	,{"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -6208,7 +6208,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x00\x00\x04\x08\x10\x00\x42\x42\x42\x42\x42\x3e\x02\x02\x3c\x00"
 		"\x00\x20\x20\x20\x3e\x21\x21\x21\x21\x31\x2e\x20\x20\x20\x00\x00"
 		"\x00\x00\x24\x24\x00\x00\x42\x42\x42\x42\x42\x3e\x02\x02\x3c\x00"
-	, NULL, NULL, NULL, "ISO-8859-15 West European, (thin)", CIOLIB_ISO_8859_15}
+	, NULL, NULL, NULL, "ISO-8859-15 West European, (thin)", CIOLIB_ISO_8859_15, false}
 	,{"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -6977,7 +6977,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x76\xdc\x00\xcc\xcc\xcc\xcc\x76"
 		"\x00\x78\x00\xcc\xcc\xcc\xcc\x76"
 		"\x18\x00\x00\x00\x00\x00\x00\x00"
-	, NULL, "ISO-8859-4 Baltic (VGA 9bit mapped)", CIOLIB_ISO_8859_4}
+	, NULL, "ISO-8859-4 Baltic (VGA 9bit mapped)", CIOLIB_ISO_8859_4, false}
 	,{"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -7234,7 +7234,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x00\x00\x00\xdb\xdb\xdb\xdb\xdb\xdb\xdb\xdb\xdb\xff\x03\x03\x00"
 		"\x00\x00\x00\xc6\xc6\xc6\xc6\xc6\x7e\x06\x06\x06\x06\x00\x00\x00"
 		"\x00\x00\x00\xf8\xb0\x30\x30\x3c\x36\x36\x36\x36\x7c\x00\x00\x00"
-	, NULL, NULL, NULL, "Russian koi8-r (b)", CIOLIB_KOI8_R}
+	, NULL, NULL, NULL, "Russian koi8-r (b)", CIOLIB_KOI8_R, true}
 	,{"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -7491,7 +7491,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x00\x00\x00\x76\xdc\x00\xc6\xc6\xc6\xc6\xc6\xc6\xc6\x7b\x00\x00"
 		"\x00\x00\x00\x00\x7c\x00\xc6\xc6\xc6\xc6\xc6\xc6\xc6\x7b\x00\x00"
 		"\x00\x18\x18\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-	, NULL, NULL, NULL, "ISO-8859-4 Baltic wide", CIOLIB_ISO_8859_4}
+	, NULL, NULL, NULL, "ISO-8859-4 Baltic wide", CIOLIB_ISO_8859_4, false}
 	,{"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -8260,7 +8260,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x7e\xc0\x7c\xc6\x7c\x06\xfc\x00"
 		"\x18\x00\x66\x66\x3e\x06\x3c\x00"
 		"\x00\x00\xc6\xc6\xfe\x38\x38\x00"
-	, NULL, "ISO-8859-5 Cyrillic", CIOLIB_ISO_8859_5}
+	, NULL, "ISO-8859-5 Cyrillic", CIOLIB_ISO_8859_5, true}
 	,{"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -9029,7 +9029,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x38\x58\x3e\x1b\x1b\xdb\x7e\x18"
 		"\x30\x30\x60\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00"
-	, NULL, "ARMSCII-8 Character set", CIOLIB_ARMSCII8}
+	, NULL, "ARMSCII-8 Character set", CIOLIB_ARMSCII8, true}
 	,{"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -9798,7 +9798,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x18\x30\xcc\xcc\xcc\x7c\x0c\xf8"
 		"\xe0\x78\x6c\x66\x6c\x78\xe0\x00"
 		"\xcc\x00\xcc\xcc\xcc\x7c\x0c\xf8"
-	, NULL, "ISO-8859-15 West European", CIOLIB_ISO_8859_15}
+	, NULL, "ISO-8859-15 West European", CIOLIB_ISO_8859_15, false}
 	,{"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x7e\x81\xa5\x81\x81\xbd\x99\x81\x81\x7e\x00\x00\x00\x00"
 		"\x00\x00\x7e\xff\xdb\xff\xff\xc3\xe7\xff\xff\x7e\x00\x00\x00\x00"
@@ -10311,7 +10311,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x30\x48\x10\x20\x78\x00\x00\x00"
 		"\x00\x00\x3c\x3c\x3c\x3c\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00"
-	, NULL, "Codepage 850 Multilingual Latin I, (thin)", CIOLIB_CP850}
+	, NULL, "Codepage 850 Multilingual Latin I, (thin)", CIOLIB_CP850, true}
 	,{"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x7e\x81\xa5\x81\x81\xbd\x99\x81\x81\x7e\x00\x00\x00\x00"
 		"\x00\x00\x7e\xff\xdb\xff\xff\xc3\xe7\xff\xff\x7e\x00\x00\x00\x00"
@@ -11080,7 +11080,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x78\x0c\x18\x30\x7c\x00\x00\x00"
 		"\x00\x00\x3c\x3c\x3c\x3c\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00"
-	, NULL, "Codepage 850 Multilingual Latin I", CIOLIB_CP850}
+	, NULL, "Codepage 850 Multilingual Latin I", CIOLIB_CP850, false}
 	,{"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x7e\x81\xa5\x81\x81\xbd\x99\x81\x81\x7e\x00\x00\x00\x00"
 		"\x00\x00\x7e\xff\xdb\xff\xff\xc3\xe7\xff\xff\x7e\x00\x00\x00\x00"
@@ -11593,7 +11593,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x30\x48\x10\x20\x78\x00\x00\x00"
 		"\x00\x00\x3c\x3c\x3c\x3c\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00"
-	, NULL, "Codepage 865 Norwegian, (thin)", CIOLIB_CP865}
+	, NULL, "Codepage 865 Norwegian, (thin)", CIOLIB_CP865, true}
 	,{"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -12362,7 +12362,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x00\x00\x7c\x06\x3e\x06\x7c\x00"
 		"\x00\x00\xce\xdb\xfb\xdb\xce\x00"
 		"\x00\x00\x3e\x66\x3e\x36\x66\x00"
-	, NULL, "Codepage 1251 Cyrillic", CIOLIB_CP1251}
+	, NULL, "Codepage 1251 Cyrillic", CIOLIB_CP1251, true}
 	,{"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -13131,7 +13131,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x08\x10\xe6\x66\x66\x66\x3c\x00"
 		"\x08\x10\x44\xd6\xd6\xd6\x6c\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00"
-	, NULL, "ISO-8859-7 Greek", CIOLIB_ISO_8859_7}
+	, NULL, "ISO-8859-7 Greek", CIOLIB_ISO_8859_7, false}
 	,{"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -13388,7 +13388,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x00\x00\xd6\xd6\xd6\xd6\xd6\xd6\xd6\xd6\xd6\xfe\x02\x06\x04\x00"
 		"\x00\x00\xc6\xc6\xc6\xc6\xc6\x7e\x06\x06\x06\x06\x00\x00\x00\x00"
 		"\x00\x00\xe0\xe0\x60\x60\x7c\x66\x66\x66\x66\x7c\x00\x00\x00\x00"
-	, NULL, NULL, NULL, "Russian koi8-r (c)", CIOLIB_KOI8_R}
+	, NULL, NULL, NULL, "Russian koi8-r (c)", CIOLIB_KOI8_R, true}
 	,{"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -14157,7 +14157,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x76\xdc\x00\xcc\xcc\xcc\xcc\x76"
 		"\x00\x78\x00\xcc\xcc\xcc\xcc\x76"
 		"\x18\x00\x00\x00\x00\x00\x00\x00"
-	, NULL, "ISO-8859-4 Baltic", CIOLIB_ISO_8859_4}
+	, NULL, "ISO-8859-4 Baltic", CIOLIB_ISO_8859_4, false}
 	,{"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -14926,7 +14926,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x18\x30\xcc\xcc\xcc\x7c\x0c\xf8"
 		"\xe0\x78\x6c\x66\x6c\x78\xe0\x00"
 		"\xcc\x00\xcc\xcc\xcc\x7c\x0c\xf8"
-	, NULL, "ISO-8859-1 West European", CIOLIB_ISO_8859_1}
+	, NULL, "ISO-8859-1 West European", CIOLIB_ISO_8859_1, false}
 	,{"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x7e\x81\xa5\x81\x81\xa5\x99\x81\x81\x7e\x00\x00\x00\x00"
 		"\x00\x00\x7e\xff\xdb\xff\xff\xdb\xe7\xff\xff\x7e\x00\x00\x00\x00"
@@ -15695,7 +15695,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x30\x48\x10\x20\x78\x00\x00\x00"
 		"\x00\x00\x7c\x7c\x7c\x7c\x00\x00"
 		"\x00\x00\x00\x00\x00\x42\x7e\x00"
-	, NULL, "Codepage 866 Russian", CIOLIB_CP866M2}
+	, NULL, "Codepage 866 Russian", CIOLIB_CP866M2, true}
 	,{"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x7e\x81\xa5\x81\x81\xbd\x99\x81\x81\x7e\x00\x00\x00\x00"
 		"\x00\x00\x7e\xff\xdb\xff\xff\xc3\xe7\xff\xff\x7e\x00\x00\x00\x00"
@@ -16208,7 +16208,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x30\x48\x10\x20\x78\x00\x00\x00"
 		"\x00\x00\x3c\x3c\x3c\x3c\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00"
-	, NULL, "Codepage 437 English, (thin)", CIOLIB_CP437}
+	, NULL, "Codepage 437 English, (thin)", CIOLIB_CP437, true}
 	,{"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x44\x00\x00\x00\x00"
 		"\x00\x00\x00\x7e\x81\xa5\x81\x81\xbd\x99\x81\x81\x7e\x00\x00\x00"
 		"\x00\x00\x00\x7e\xff\xdb\xff\xff\xc3\xe7\xff\xff\x7e\x00\x00\x00"
@@ -16465,7 +16465,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x00\x70\x88\x10\x60\x88\xf8\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x7c\x7c\x7c\x7c\x7c\x7c\x7c\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x42\x42\x7e\x00\x00\x00"
-	, NULL, NULL, NULL, "Codepage 866 (b) Russian", CIOLIB_CP866M2}
+	, NULL, NULL, NULL, "Codepage 866 (b) Russian", CIOLIB_CP866M2, true}
 	,{"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x7e\x81\xa5\x81\x81\xbd\x99\x81\x81\x7e\x00\x00\x00\x00"
 		"\x00\x00\x7e\xff\xdb\xff\xff\xc3\xe7\xff\xff\x7e\x00\x00\x00\x00"
@@ -17234,7 +17234,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x78\x0c\x18\x30\x7c\x00\x00\x00"
 		"\x00\x00\x3c\x3c\x3c\x3c\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00"
-	, NULL, "Codepage 865 Norwegian", CIOLIB_CP865}
+	, NULL, "Codepage 865 Norwegian", CIOLIB_CP865, false}
 	,{"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x7e\x81\xa5\x81\x81\xa5\x99\x81\x81\x7e\x00\x00\x00\x00"
 		"\x00\x00\x7e\xff\xdb\xff\xff\xdb\xe7\xff\xff\x7e\x00\x00\x00\x00"
@@ -18003,7 +18003,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x30\x48\x10\x20\x78\x00\x00\x00"
 		"\x00\x00\x7c\x7c\x7c\x7c\x00\x00"
 		"\x00\x00\x00\x00\x00\x42\x7e\x00"
-	, NULL, "Ukrainian font cp866u", CIOLIB_CP866U}
+	, NULL, "Ukrainian font cp866u", CIOLIB_CP866U, true}
 	,{"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -18260,7 +18260,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x00\x00\x04\x08\x00\x00\x42\x42\x42\x42\x42\x3e\x02\x02\x3c\x00"
 		"\x00\x00\x20\x20\x38\x24\x24\x24\x28\x30\x20\x20\x20\x00\x00\x00"
 		"\x00\x00\x24\x24\x00\x00\x42\x42\x42\x42\x42\x3e\x02\x02\x3c\x00"
-	, NULL, NULL, NULL, "ISO-8859-1 West European, (thin)", CIOLIB_ISO_8859_1}
+	, NULL, NULL, NULL, "ISO-8859-1 West European, (thin)", CIOLIB_ISO_8859_1, false}
 	,{"\x00\x00\x00\x00\x00\x00\x00\x10\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x3c\x42\x81\xe7\xa5\x99\x81\x99\x42\x3c\x00\x00\x00\x00"
 		"\x00\x00\x3c\x7e\xff\x99\xdb\xe7\xff\xe7\x7e\x3c\x00\x00\x00\x00"
@@ -18517,7 +18517,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x00\x00\x00\x00\x0c\x0c\xfc\xc0\xc0\xc0\xc0\xc0\xc0\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x18\x3c\x3c\x18\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-	, NULL, NULL, NULL, "Codepage 1131 Belarusian, (swiss)", CIOLIB_CP1131}
+	, NULL, NULL, NULL, "Codepage 1131 Belarusian, (swiss)", CIOLIB_CP1131, false}
 	,{
 	// 0x00 - 0x1F - Not printable
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -19075,7 +19075,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\xf0\xf0\xf0\xf0\x00\x00\x00\x00"
 	// And finally, 0xFF which is mapped to 0x5E in the original font (!)
 		"\x00\x00\x03\x3e\x76\x36\x36\x00"
-	, NULL, "Commodore 64 (UPPER)", CIOLIB_PETSCIIU}
+	, NULL, "Commodore 64 (UPPER)", CIOLIB_PETSCIIU, false}
 	,{
 	// 0x00 - 0x1F - Not printable
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -19633,7 +19633,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\xf0\xf0\xf0\xf0\x00\x00\x00\x00"
 	// And finally, 0xFF which is mapped to 0x5E in the original font (!)
 		"\x33\x33\xcc\xcc\x33\x33\xcc\xcc"
-	, NULL, "Commodore 64 (Lower)", CIOLIB_PETSCIIL}
+	, NULL, "Commodore 64 (Lower)", CIOLIB_PETSCIIL, false}
 	,{
 	// 0x00 - 0x1F - Not printable
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -20191,7 +20191,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\xf0\xf0\xf0\xf0\x00\x00\x00\x00"
 	// And finally, 0xFF which is mapped to 0x5E in the original font (!)
 		"\x00\x00\x03\x3e\x76\x36\x36\x00"
-	, NULL, "Commodore 128 (UPPER)", CIOLIB_PETSCIIU}
+	, NULL, "Commodore 128 (UPPER)", CIOLIB_PETSCIIU, false}
 	,{
 	// 0x00 - 0x1F - Not printable
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -20749,7 +20749,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\xf0\xf0\xf0\xf0\x00\x00\x00\x00"
 	// And finally, 0xFF which is mapped to 0x5E in the original font (!)
 		"\x33\x33\xcc\xcc\x33\x33\xcc\xcc"
-	, NULL, "Commodore 128 (Lower)", CIOLIB_PETSCIIL}
+	, NULL, "Commodore 128 (Lower)", CIOLIB_PETSCIIL, false}
 	,{
 		// 0x40
 		"\x00\x00\x36\x36\x7f\x7f\x7f\x7f\x3e\x3e\x1c\x1c\x08\x08\x00\x00"
@@ -21299,7 +21299,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\xff\x81\x87\x83\x91\x99\xf9\xff"
 		"\xf7\xe7\xc7\x87\xc7\xe7\xf7\xff"
 		"\xef\xe7\xe3\xe1\xe3\xe7\xef\xff"
-	, NULL, "Atari", CIOLIB_ATASCII}
+	, NULL, "Atari", CIOLIB_ATASCII, false}
 	,{"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\xff\xff\x83\x83\x39\x39\x29\x29\x23\x23\x3f\x3f\x81\x81\xff\xff"
 		"\xff\xff\x83\x83\x39\x39\x21\x21\x39\x39\x39\x39\x39\x39\x7f\x7f"
@@ -21812,7 +21812,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x18\xb0\xc6\xc6\xc6\xc6\xc6\x5e\x06\x06\xfc\x00\x00\x00"
 		"\x00\x00\xf0\x60\x7c\x66\x66\x7c\x60\xf0\x00\x00\x00\x00"
 		"\x28\x80\xc6\xc6\xc6\xc6\xc6\x5e\x06\x06\xfc\x00\x00\x00"
-	, NULL, NULL, "P0T NOoDLE (Amiga)", CIOLIB_ISO_8859_1}
+	, NULL, NULL, "P0T NOoDLE (Amiga)", CIOLIB_ISO_8859_1, false}
 	,{"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -22326,7 +22326,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x0c\x18\x00\x66\x66\x3c\x18\x30"
 		"\xc0\xc0\xf8\xcc\xcc\xf8\xc0\xc0"
 		"\x00\x66\x00\x66\x66\x3c\x18\x30"
-	, NULL, "mO'sOul (Amiga)", CIOLIB_ISO_8859_1}
+	, NULL, "mO'sOul (Amiga)", CIOLIB_ISO_8859_1, false}
 	,{"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -22583,7 +22583,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x18\x18\x20\x20\xc6\xc6\xc6\xc6\xc6\xc6\x7e\x7e\x06\x06\x7c\x7c"
 		"\xc0\xc0\xc0\xc0\xf8\xf8\xcc\xcc\xc6\xc6\xfc\xfc\xc0\xc0\xc0\xc0"
 		"\x6c\x6c\x00\x00\xc6\xc6\xc6\xc6\xc6\xc6\x7e\x7e\x06\x06\x7c\x7c"
-	, NULL, NULL, NULL, "MicroKnight Plus (Amiga)", CIOLIB_ISO_8859_1}
+	, NULL, NULL, NULL, "MicroKnight Plus (Amiga)", CIOLIB_ISO_8859_1, false}
 	,{"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x83\x83\x39\x39\x21\x21\x29\x29\x21\x21\x3f\x3f\x87\x87\xff\xff"
 		"\xc3\xc3\x99\x99\x99\x99\x81\x81\x99\x99\x99\x99\x99\x99\xff\xff"
@@ -22840,7 +22840,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x0c\x0c\x18\x18\x00\x00\x66\x66\x66\x66\x3c\x3c\x18\x18\x30\x30"
 		"\x60\x60\x60\x60\x7c\x7c\x66\x66\x66\x66\x7c\x7c\x60\x60\x60\x60"
 		"\x00\x00\x66\x66\x00\x00\x66\x66\x66\x66\x3c\x3c\x18\x18\x30\x30"
-	, NULL, NULL, NULL, "Topaz Plus (Amiga)", CIOLIB_ISO_8859_1}
+	, NULL, NULL, NULL, "Topaz Plus (Amiga)", CIOLIB_ISO_8859_1, false}
 	,{ "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -23353,7 +23353,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x18\x20\xc6\xc6\xc6\x7e\x06\x7c"
 		"\xc0\xc0\xf8\xcc\xc6\xfc\xc0\xc0"
 		"\x6c\x00\xc6\xc6\xc6\x7e\x06\x7c"
-	, NULL, "MicroKnight (Amiga)", CIOLIB_ISO_8859_1}
+	, NULL, "MicroKnight (Amiga)", CIOLIB_ISO_8859_1, false}
 	,{  "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x83\x83\x39\x39\x21\x21\x29\x29\x21\x21\x3f\x3f\x87\x87\xff\xff"
 		"\xc3\xc3\x99\x99\x99\x99\x81\x81\x99\x99\x99\x99\x99\x99\xff\xff"
@@ -23866,7 +23866,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x06\x0c\x10\x66\x66\x66\x66\x3c\x18\x18\x70\x00\x00\x00"
 		"\xf0\x60\x60\x7c\x66\x66\x66\x7c\x60\x60\xf0\x00\x00\x00"
 		"\x66\x66\x00\x66\x66\x66\x66\x3c\x18\x18\x70\x00\x00\x00"
-	, NULL, NULL, "Topaz (Amiga)", CIOLIB_ISO_8859_1}
+	, NULL, NULL, "Topaz (Amiga)", CIOLIB_ISO_8859_1, false}
 	,{"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
@@ -24381,7 +24381,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x03\xf0\x03\xf0\x03\xf0\x03\xf0\x03\xf0\x03\xf0\xff\xf0\xff\xf0\xff\xf0\xff\xf0\xff\xf0\xff\xf0\xff\xf0\xff\xf0\xff\xf0\xff\xf0\xff\xf0\xff\xf0\xff\xf0\xff\xf0"
 		// NOTE: This is an interesting one...
 		"\xff\xf0\xff\xf0\xff\xf0\xff\xf0\xff\xf0\xff\xf0\xff\xf0\xff\xf0\xff\xf0\xff\xf0\xff\xf0\xff\xf0\xff\xf0\xff\xf0\xff\xf0\xff\xf0\xff\xf0\xff\xf0\xff\xf0\xff\xf0"
-	, "Prestel", CIOLIB_PRESTEL}
+	, "Prestel", CIOLIB_PRESTEL, false}
 	,{
 		"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 		"\x00\x00\x00\x18\x3c\x66\xc3\x81\xe7\x24\x24\x24\x3c\x00\x00\x00"
@@ -24896,218 +24896,218 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 		"\x38\x6c\x18\x30\x7c\x00\x00\x00"
 		"\x78\x0c\x38\x0c\x78\x00\x00\x00"
 		"\x00\xfe\x00\x00\x00\x00\x00\x00"
-		, NULL, "Atari ST", CIOLIB_ATARIST}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
-	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437}
+		, NULL, "Atari ST", CIOLIB_ATARIST, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
+	,{NULL, NULL, NULL, NULL, NULL, CIOLIB_CP437, false}
 };
 #endif

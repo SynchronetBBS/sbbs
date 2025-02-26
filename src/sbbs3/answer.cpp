@@ -429,8 +429,8 @@ bool sbbs_t::answer()
 						if (((startup->options & (BBS_OPT_ALLOW_SFTP | BBS_OPT_SSH_ANYAUTH)) == BBS_OPT_ALLOW_SFTP) && tnamelen == 4 && strncmp(tname, "sftp", 4) == 0) {
 							if (useron.number) {
 								activate_ssh = init_sftp(cid);
-								cols = 0;
-								rows = 0;
+								term->cols = 0;
+								term->rows = 0;
 								SAFECOPY(terminal, "sftp");
 								mouse_mode = MOUSE_MODE_OFF;
 								autoterm = 0;
@@ -509,12 +509,12 @@ bool sbbs_t::answer()
 		}
 
 		if (cryptStatusOK(cryptGetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_WIDTH, &l)) && l > 0) {
-			cols = l;
-			lprintf(LOG_DEBUG, "%04d SSH [%s] height %d", client_socket, client.addr, cols);
+			term->cols = l;
+			lprintf(LOG_DEBUG, "%04d SSH [%s] height %d", client_socket, client.addr, term->cols);
 		}
 		if (cryptStatusOK(cryptGetAttribute(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_HEIGHT, &l)) && l > 0) {
-			rows = l;
-			lprintf(LOG_DEBUG, "%04d SSH [%s] height %d", client_socket, client.addr, rows);
+			term->rows = l;
+			lprintf(LOG_DEBUG, "%04d SSH [%s] height %d", client_socket, client.addr, term->rows);
 		}
 		l = 0;
 		if (cryptStatusOK(cryptGetAttributeString(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_TERMINAL, terminal, &l)) && l > 0) {
@@ -549,15 +549,23 @@ bool sbbs_t::answer()
 		mswait(200);    // Allow some time for Telnet negotiation
 		rioctl(IOFI);       /* flush input buffer */
 		safe_snprintf(str, sizeof(str), "%s  %s", VERSION_NOTICE, COPYRIGHT_NOTICE);
+		if (strcmp(terminal, "PETSCII") == 0) {
+			autoterm |= PETSCII;
+			update_terminal(this);
+		}
+		if (strcmp(terminal, "Beeb7") == 0) {
+			autoterm |= MODE7;
+			update_terminal(this);
+		}
 		if (autoterm & PETSCII) {
 			SAFECOPY(terminal, "PETSCII");
-			outchar(FF);
-			center(str);
+			term->clearscreen();
+			term->center(str);
 		} else if (autoterm & MODE7) {
 			SAFECOPY(terminal, "MODE7");
-			center(str);
+			term->center(str);
 		} else {    /* ANSI+ terminal detection */
-			putcom( "\r\n"      /* locate cursor at column 1 */
+			term_out( "\r\n"      /* locate cursor at column 1 */
 			        "\x1b[s"    /* save cursor position (necessary for HyperTerm auto-ANSI) */
 			        "\x1b[0c"   /* Request CTerm version */
 			        "\x1b[255B" /* locate cursor as far down as possible */
@@ -579,9 +587,9 @@ bool sbbs_t::answer()
 			        "\r"        /* Move cursor left (in case previous char printed) */
 			        );
 			i = l = 0;
-			row = 0;
-			lncntr = 0;
-			center(str);
+			term->row = 0;
+			term->lncntr = 0;
+			term->center(str);
 
 			while (i++ < 50 && l < (int)sizeof(str) - 1) {     /* wait up to 5 seconds for response */
 				c = incom(100) & 0x7f;
@@ -637,9 +645,9 @@ bool sbbs_t::answer()
 						if (cursor_pos_report == 1) {
 							/* Sanity check the coordinates in the response: */
 							if (x >= TERM_COLS_MIN && x <= TERM_COLS_MAX)
-								cols = x;
+								term->cols = x;
 							if (y >= TERM_ROWS_MIN && y <= TERM_ROWS_MAX)
-								rows = y;
+								term->rows = y;
 						} else {    // second report
 							if (x < 3) { // ZWNBSP didn't move cursor (more than one column)
 								autoterm |= UTF8;
@@ -648,7 +656,7 @@ bool sbbs_t::answer()
 						}
 					} else if (sscanf(p, "[=67;84;101;114;109;%u;%u", &x, &y) == 2 && *lastchar(p) == 'c') {
 						lprintf(LOG_INFO, "received CTerm version report: %u.%u", x, y);
-						cterm_version = (x * 1000) + y;
+						term->cterm_version = (x * 1000) + y;
 					}
 					p = strtok_r(NULL, "\x1b", &tokenizer);
 				}
@@ -664,7 +672,7 @@ bool sbbs_t::answer()
 				}
 			}
 			if (terminal[0])
-				lprintf(LOG_DEBUG, "auto-detected terminal type: %ux%u %s", cols, rows, terminal);
+				lprintf(LOG_DEBUG, "auto-detected terminal type: %ux%u %s", term->cols, term->rows, terminal);
 			else
 				SAFECOPY(terminal, "DUMB");
 		}
@@ -736,9 +744,9 @@ bool sbbs_t::answer()
 				if (telnet_terminal[0])
 					SAFECOPY(terminal, telnet_terminal);
 				if (telnet_cols >= TERM_COLS_MIN && telnet_cols <= TERM_COLS_MAX)
-					cols = telnet_cols;
+					term->cols = telnet_cols;
 				if (telnet_rows >= TERM_ROWS_MIN && telnet_rows <= TERM_ROWS_MAX)
-					rows = telnet_rows;
+					term->rows = telnet_rows;
 			} else {
 				lprintf(LOG_NOTICE, "no Telnet commands received, reverting to Raw TCP mode");
 				telnet_mode |= TELNET_MODE_OFF;
@@ -749,7 +757,7 @@ bool sbbs_t::answer()
 			}
 			pthread_mutex_unlock(&input_thread_mutex);
 		}
-		lprintf(LOG_INFO, "terminal type: %ux%u %s %s", cols, rows, term_charset(autoterm), terminal);
+		lprintf(LOG_INFO, "terminal type: %ux%u %s %s", term->cols, term->rows, term_charset(autoterm), terminal);
 		SAFECOPY(client_ipaddr, cid);   /* Over-ride IP address with Caller-ID info */
 		SAFECOPY(useron.comp, client_name);
 	}

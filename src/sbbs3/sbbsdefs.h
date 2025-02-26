@@ -476,11 +476,11 @@ typedef enum {                      /* Values for xtrn_t.event				*/
 #define EDIT_TABSIZE 4      /* Tab size for internal message/line editor	*/
 
 /* Console I/O Bits	(console)				*/
-#define CON_R_ECHO      (1 << 0)  /* Echo remotely							*/
-#define CON_R_ECHOX     (1 << 1)  /* Echo X's to remote user					*/
+#define CON_R_ECHO      0         /* Echo remotely - Unused					*/
+#define CON_R_ECHOX     (1 << 1)  /* Echo X's to remote user				*/
 #define CON_L_ECHOX     0       // Unused
 #define CON_R_INPUT     (1 << 2)  /* Accept input remotely					*/
-#define CON_L_ECHO      (1 << 3)  /* Echo locally              				*/
+#define CON_L_ECHO      0         /* Echo locally              				*/
 #define CON_PAUSEOFF    (1 << 4)  // Temporary pause over-ride (same as UPAUSE)
 #define CON_L_INPUT     (1 << 5)  /* Accept input locally						*/
 #define CON_RAW_IN      (1 << 8)  /* Raw input mode - no editing capabilities	*/
@@ -578,7 +578,9 @@ typedef enum {                      /* Values for xtrn_t.event				*/
 #define UTF8        (1 << 29)     /* UTF-8 terminal						*/
 #define MOUSE       (1U << 31)    /* Mouse supported terminal				*/
 
+// TODO: Really, NO_EXASCII  and UTF8 are not terminal flags.
 #define TERM_FLAGS      (ANSI | COLOR | RIP | SWAP_DELETE | ICE_COLOR | MOUSE | CHARSET_FLAGS)
+// TODO: Picking these out gets tricky, PETSCII and MODE7 are both terminal and charset
 #define CHARSET_FLAGS   (NO_EXASCII | PETSCII | UTF8 | MODE7)
 #define CHARSET_ASCII   NO_EXASCII  // US-ASCII
 #define CHARSET_PETSCII PETSCII     // CBM-ASCII
@@ -696,6 +698,7 @@ typedef enum {                      /* Values for xtrn_t.event				*/
 #define P_INDENT    (1 << 19)     /* Indent lines to current cursor column	*/
 #define P_ATCODES   (1 << 20)     /* Trusted @-codes in formatted string		*/
 #define P_MODE7		(1 << 21)     /* Message is native Mode 7					*/
+#define P_NATIVE    (1 << 22)     /* Do not perform character set translation   */
 
 /* Bits in 'mode' for listfiles             */
 #define FL_ULTIME   (1 << 0)      /* List files by upload time                */
@@ -849,7 +852,7 @@ enum {                          /* Values of mode for userlist function     */
 /* Macros */
 /**********/
 
-#define CRLF            newline()
+#define CRLF            term->newline()
 #define SYSOP_LEVEL     90
 #define SYSOP           (useron.level >= SYSOP_LEVEL || sys_status & SS_TMPSYSOP)
 #define REALSYSOP       (useron.level >= SYSOP_LEVEL)
@@ -893,9 +896,18 @@ enum COLORS {
 
 #endif  /* __COLORS */
 
-#define ANSI_NORMAL     0x100
-#define BG_BLACK        0x200
-#define BG_BRIGHT       0x400       // Not an IBM-CGA/ANSI.SYS compatible attribute
+#define FG_UNKNOWN	0x100
+#define BG_BLACK	0x200
+#define BG_BRIGHT	0x400       // Not an IBM-CGA/ANSI.SYS compatible attribute
+#define REVERSED	0x800
+#define UNDERLINE	0x1000
+#define CONCEALED	0x2000
+#define BG_UNKNOWN	0x4000
+#define DBL_HEIGHT	0x8000
+#define TT_SPECIAL	0x10000     // Meaning changes by terminal type... HOLD MOSAIC for Mode7
+#define ALT_CHARSET1	0x20000     // Alternate character set #1
+// TODO: Do we need to keep this value compatible?
+#define ANSI_NORMAL     (FG_UNKNOWN | BG_UNKNOWN)
 #define BG_BLUE         (BLUE << 4)
 #define BG_GREEN        (GREEN << 4)
 #define BG_CYAN         (CYAN << 4)

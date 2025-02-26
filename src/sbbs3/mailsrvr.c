@@ -1675,25 +1675,27 @@ static bool pop3_client_thread(pop3_t* pop3)
 					lprintf(LOG_DEBUG, "%04d %s <%s> message transfer complete (%lu lines) from %s"
 					        , socket, client.protocol, user.alias, lines_sent, msg.from);
 
-					if ((i = smb_locksmbhdr(&smb)) != SMB_SUCCESS) {
-						errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d (%s) locking message base"
-						          , socket, client.protocol, user.alias, i, smb.last_error);
-					} else {
-						if ((i = smb_getmsgidx(&smb, &msg)) != SMB_SUCCESS) {
-							errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d (%s) getting message index"
+					if (!(startup->options & MAIL_OPT_NO_READ_POP3)) {
+						if ((i = smb_locksmbhdr(&smb)) != SMB_SUCCESS) {
+							errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d (%s) locking message base"
 							          , socket, client.protocol, user.alias, i, smb.last_error);
 						} else {
-							msg.hdr.attr |= MSG_READ;
+							if ((i = smb_getmsgidx(&smb, &msg)) != SMB_SUCCESS) {
+								errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d (%s) getting message index"
+								          , socket, client.protocol, user.alias, i, smb.last_error);
+							} else {
+								msg.hdr.attr |= MSG_READ;
 
-							if ((i = smb_lockmsghdr(&smb, &msg)) != SMB_SUCCESS)
-								errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d (%s) locking message header #%u"
-								          , socket, client.protocol, user.alias, i, smb.last_error, msg.hdr.number);
-							if ((i = smb_putmsg(&smb, &msg)) != SMB_SUCCESS)
-								errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d (%s) marking message #%u as read"
-								          , socket, client.protocol, user.alias, i, smb.last_error, msg.hdr.number);
-							smb_unlockmsghdr(&smb, &msg);
+								if ((i = smb_lockmsghdr(&smb, &msg)) != SMB_SUCCESS)
+									errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d (%s) locking message header #%u"
+									          , socket, client.protocol, user.alias, i, smb.last_error, msg.hdr.number);
+								if ((i = smb_putmsg(&smb, &msg)) != SMB_SUCCESS)
+									errprintf(LOG_ERR, WHERE, "%04d %s <%s> !ERROR %d (%s) marking message #%u as read"
+									          , socket, client.protocol, user.alias, i, smb.last_error, msg.hdr.number);
+								smb_unlockmsghdr(&smb, &msg);
+							}
+							smb_unlocksmbhdr(&smb);
 						}
-						smb_unlocksmbhdr(&smb);
 					}
 				}
 				smb_freemsgmem(&msg);
@@ -1843,8 +1845,7 @@ static in_addr_t rblchk(SOCKET sock, const char* prot, union xp_sockaddr *addr, 
 {
 	char           name[256];
 	in_addr_t      mail_addr;
-	HOSTENT*       host;
-	struct in_addr dnsbl_result;
+	in_addr_t      result = 0;
 	unsigned char *addr6;
 
 	switch (addr->addr.sa_family) {
@@ -1904,17 +1905,20 @@ static in_addr_t rblchk(SOCKET sock, const char* prot, union xp_sockaddr *addr, 
 	}
 	lprintf(LOG_DEBUG, "%04d %s DNSBL Query: %s", sock, prot, name);
 
-	if ((host = gethostbyname(name)) == NULL)
+	struct addrinfo* res;
+	struct addrinfo hints = {0};
+	hints.ai_family = AF_INET;
+	if (getaddrinfo(name, NULL, &hints, &res) != 0)
 		return 0;
 
-	if (host->h_addr_list[0] == NULL)
-		return 0;
-
-	dnsbl_result.s_addr = *((in_addr_t*)host->h_addr_list[0]);
-	lprintf(LOG_INFO, "%04d %s DNSBL Query: %s resolved to: %s"
-	        , sock, prot, name, inet_ntoa(dnsbl_result));
-
-	return dnsbl_result.s_addr;
+	if (res->ai_family == AF_INET) {
+		char tmp[128];
+		result = ((struct sockaddr_in*)res->ai_addr)->sin_addr.s_addr;
+		lprintf(LOG_INFO, "%04d %s DNSBL Query: %s resolved to: %s"
+		    , sock, prot, name, inet_ntop(AF_INET, &((struct sockaddr_in*)res->ai_addr)->sin_addr, tmp, sizeof tmp));
+	}
+	freeaddrinfo(res);
+	return result;
 }
 
 static ulong dns_blacklisted(SOCKET sock, const char* prot, union xp_sockaddr *addr, char* host_name, char* list, char* dnsbl_ip)
@@ -2741,6 +2745,7 @@ static int parse_header_field(char* buf, smbmsg_t* msg, ushort* type)
 static int chk_received_hdr(SOCKET socket, const char* prot, const char *buf, IN_ADDR *dnsbl_result, char *dnsbl, char *dnsbl_ip)
 {
 	char              host_name[128];
+	char              tmp[128];
 	char *            fromstr;
 	char              ip[16] = "ipv6-addr";
 	char *            p;
@@ -2797,7 +2802,7 @@ static int chk_received_hdr(SOCKET socket, const char* prot, const char *buf, IN
 
 		if ((dnsbl_result->s_addr = dns_blacklisted(socket, prot, &addr, host_name, dnsbl, dnsbl_ip)) != 0)
 			lprintf(LOG_NOTICE, "%04d %s [%s] BLACKLISTED SERVER on %s: %s = %s"
-			        , socket, prot, ip, dnsbl, host_name, inet_ntoa(*dnsbl_result));
+			        , socket, prot, ip, dnsbl, host_name, inet_ntop(AF_INET, dnsbl_result, tmp, sizeof tmp));
 	} while (0);
 	free(fromstr);
 	return dnsbl_result->s_addr;
@@ -3115,9 +3120,9 @@ static bool smtp_client_thread(smtp_t* smtp)
 		dnsbl_result.s_addr = dns_blacklisted(socket, client.protocol, &smtp->client_addr, host_name, dnsbl, dnsbl_ip);
 		if (dnsbl_result.s_addr) {
 			lprintf(LOG_NOTICE, "%04d %s [%s] BLACKLISTED SERVER on %s: %s = %s"
-			        , socket, client.protocol, dnsbl_ip, dnsbl, host_name, inet_ntoa(dnsbl_result));
+			        , socket, client.protocol, dnsbl_ip, dnsbl, host_name, inet_ntop(AF_INET, &dnsbl_result, tmp, sizeof tmp));
 			if (startup->options & MAIL_OPT_DNSBL_REFUSE) {
-				SAFEPRINTF2(str, "Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
+				SAFEPRINTF2(str, "Listed on %s as %s", dnsbl, inet_ntop(AF_INET, &dnsbl_result, tmp, sizeof tmp));
 				spamlog(&scfg, &mqtt, (char*)client.protocol, "SESSION REFUSED", str, host_name, dnsbl_ip, NULL, NULL);
 				sockprintf(socket, client.protocol, session
 				           , "550 Mail from %s refused due to listing at %s"
@@ -3606,13 +3611,13 @@ static bool smtp_client_thread(smtp_t* smtp)
 					if (startup->dnsbl_hdr[0]) {
 						safe_snprintf(str, sizeof(str), "%s: %s is listed on %s as %s"
 						              , startup->dnsbl_hdr, dnsbl_ip
-						              , dnsbl, inet_ntoa(dnsbl_result));
+						              , dnsbl, inet_ntop(AF_INET, &dnsbl_result, tmp, sizeof tmp));
 						smb_hfield_str(&msg, RFC822HEADER, str);
 						lprintf(LOG_NOTICE, "%04d %s %s TAGGED MAIL HEADER from blacklisted server with: %s"
 						        , socket, client.protocol, client_id, startup->dnsbl_hdr);
 					}
 					if (startup->dnsbl_hdr[0] || startup->dnsbl_tag[0]) {
-						SAFEPRINTF2(str, "Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
+						SAFEPRINTF2(str, "Listed on %s as %s", dnsbl, inet_ntop(AF_INET, &dnsbl_result, tmp, sizeof tmp));
 						spamlog(&scfg, &mqtt, (char*)client.protocol, "TAGGED", str, host_name, dnsbl_ip, rcpt_addr, reverse_path);
 					}
 				}
@@ -3849,7 +3854,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 							lprintf(LOG_NOTICE, "%04d %s %s !IGNORED SPAM MESSAGE from %s to <%s> (%lu total)"
 							        , socket, client.protocol, client_id, sender_info, rcpt_addr, ++stats.msgs_ignored);
 						else {
-							SAFEPRINTF2(str, "Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
+							SAFEPRINTF2(str, "Listed on %s as %s", dnsbl, inet_ntop(AF_INET, &dnsbl_result, tmp, sizeof tmp));
 							lprintf(LOG_NOTICE, "%04d %s %s !IGNORED MAIL from %s to <%s> from server: %s (%lu total)"
 							        , socket, client.protocol, client_id, sender_info, rcpt_addr, str, ++stats.msgs_ignored);
 							spamlog(&scfg, &mqtt, (char*)client.protocol, "IGNORED"
@@ -4614,7 +4619,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 			if (relay_user.number == 0 && dnsbl_result.s_addr && startup->options & MAIL_OPT_DNSBL_BADUSER) {
 				lprintf(LOG_NOTICE, "%04d %s %s !REFUSED MAIL from blacklisted server (%lu total)"
 				        , socket, client.protocol, client_id, ++stats.sessions_refused);
-				SAFEPRINTF2(str, "Listed on %s as %s", dnsbl, inet_ntoa(dnsbl_result));
+				SAFEPRINTF2(str, "Listed on %s as %s", dnsbl, inet_ntop(AF_INET, &dnsbl_result, tmp, sizeof tmp));
 				spamlog(&scfg, &mqtt, (char*)client.protocol, "REFUSED", str, host_name, host_ip, rcpt_addr, reverse_path);
 				sockprintf(socket, client.protocol, session
 				           , "550 Mail from %s refused due to listing at %s"
@@ -4838,7 +4843,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 				}
 			}
 
-			if ((p == alias_buf || p == name_alias_buf || startup->options & MAIL_OPT_ALLOW_RX_BY_NUMBER)
+			if ((p == alias_buf || p == name_alias_buf)
 			    && IS_DIGIT(*p)) {
 				usernum = atoi(p);            /* RX by user number */
 				/* verify usernum */
@@ -5308,7 +5313,7 @@ static BOOL sendmail_open_socket(SOCKET *sock, CRYPT_SESSION *session)
 	}
 
 	memset(&addr, 0, sizeof(addr));
-	addr.sin_addr.s_addr = htonl(startup->outgoing4.s_addr);
+	addr.sin_addr.s_addr = startup->outgoing4.s_addr;
 	addr.sin_family = AF_INET;
 
 	i = bind(*sock, (struct sockaddr *)&addr, sizeof(addr));
@@ -5714,11 +5719,7 @@ static void sendmail_thread(void* arg)
 				if (startup->outgoing4.s_addr == 0)
 					server = "127.0.0.1";
 				else {
-					SAFEPRINTF4(numeric_ip, "%u.%u.%u.%u"
-					            , startup->outgoing4.s_addr >> 24
-					            , (startup->outgoing4.s_addr >> 16) & 0xff
-					            , (startup->outgoing4.s_addr >> 8) & 0xff
-					            , startup->outgoing4.s_addr & 0xff);
+					inet_ntop(AF_INET, &startup->outgoing4, numeric_ip, sizeof numeric_ip);
 					server = numeric_ip;
 				}
 				sending_locally = TRUE;

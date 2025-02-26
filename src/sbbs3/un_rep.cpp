@@ -193,7 +193,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 			break;
 		}
 
-		lncntr = 0;                   /* defeat pause */
+		term->lncntr = 0;                   /* defeat pause */
 		if (fseek(rep, l, SEEK_SET) != 0) {
 			errormsg(WHERE, ERR_SEEK, msg_fname, l);
 			errors++;

@@ -135,7 +135,9 @@ function pixel_capability()
 	var optval = 0;
 
 	for(;;) {
-		ch = console.getbyte();
+		ch = console.getbyte(1000);
+		if (ch == null)
+			break;
 		switch(state) {
 			case 0:
 				if (ch == 0x1b) { // ESC

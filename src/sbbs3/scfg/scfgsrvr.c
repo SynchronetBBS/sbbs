@@ -1648,6 +1648,7 @@ static void mailsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "POP3 Support", startup.options & MAIL_OPT_ALLOW_POP3 ? str : strDisabled);
 		snprintf(str, sizeof str, "Port %u", startup.pop3s_port);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "POP3/TLS Support", startup.options & MAIL_OPT_TLS_POP3 ? str : strDisabled);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Mark Retrieved Mail as Read", startup.options & MAIL_OPT_NO_READ_POP3 ? "No" : "Yes");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Clients", maximum(startup.max_clients));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Inactivity", vduration(startup.max_inactivity));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Concurrent Connections", maximum(startup.max_concurrent_connections));
@@ -1656,7 +1657,6 @@ static void mailsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s bytes", "Max Receive Message Size", byte_count_to_str(startup.max_msg_size, tmp, sizeof(tmp)));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Post Recipient", startup.post_to);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Default Recipient", startup.default_user);
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Receive By User Number", startup.options & MAIL_OPT_ALLOW_RX_BY_NUMBER ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Receive By Sysop Aliases", startup.options & MAIL_OPT_ALLOW_SYSOP_ALIASES ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Notify Local Recipients", startup.options & MAIL_OPT_NO_NOTIFY ? "No" : "Yes");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Notify Offline Recipients", startup.options & MAIL_OPT_NO_NOTIFY ? "N/A" : (startup.notify_offline_users ? "Yes" : "No"));
@@ -1740,45 +1740,45 @@ static void mailsrvr_cfg(void)
 				pop3s_srvr_cfg(&startup);
 				break;
 			case 9:
+				startup.options ^= MAIL_OPT_NO_READ_POP3;
+				break;
+			case 10:
 				SAFECOPY(str, maximum(startup.max_clients));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Client Count (0=Unlimited)", str, 10, K_EDIT) > 0)
 					startup.max_clients = atoi(str);
 				break;
-			case 10:
+			case 11:
 				SAFECOPY(str, duration(startup.max_inactivity, false));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Client Inactivity", str, 10, K_EDIT) > 0)
 					startup.max_inactivity = (uint16_t)parse_duration(str);
 				break;
-			case 11:
+			case 12:
 				SAFECOPY(str, maximum(startup.max_concurrent_connections));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Concurrent (Unauthenticated) Connections", str, 10, K_EDIT) > 0)
 					startup.max_concurrent_connections = atoi(str);
 				break;
-			case 12:
+			case 13:
 				SAFECOPY(str, maximum(startup.max_recipients));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Recipients per Message", str, 10, K_EDIT) > 0)
 					startup.max_recipients = atoi(str);
 				break;
-			case 13:
+			case 14:
 				SAFECOPY(str, maximum(startup.max_msgs_waiting));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Messages Waiting per User", str, 10, K_EDIT) > 0)
 					startup.max_msgs_waiting = atoi(str);
 				break;
-			case 14:
+			case 15:
 				byte_count_to_str(startup.max_msg_size, str, sizeof(str));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Received Message Size (in bytes)", str, 10, K_EDIT) > 0)
 					startup.max_msg_size = (uint32_t)parse_byte_count(str, 1);
 				break;
-			case 15:
+			case 16:
 				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Override Recipient of SMTP Posts"
 						   , startup.post_to, sizeof startup.post_to -1, K_EDIT);
 				break;
-			case 16:
+			case 17:
 				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Default Recipient (user alias)"
 				           , startup.default_user, sizeof(startup.default_user) - 1, K_EDIT);
-				break;
-			case 17:
-				startup.options ^= MAIL_OPT_ALLOW_RX_BY_NUMBER;
 				break;
 			case 18:
 				startup.options ^= MAIL_OPT_ALLOW_SYSOP_ALIASES;

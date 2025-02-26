@@ -373,18 +373,22 @@ void freefiles(file_t* filelist, size_t count)
 	free(filelist);
 }
 
-bool loadfile(scfg_t* cfg, int dirnum, const char* filename, file_t* file, enum file_detail detail)
+bool loadfile(scfg_t* cfg, int dirnum, const char* filename, file_t* file, enum file_detail detail, int* result)
 {
+	int   retval;
 	smb_t smb;
 
-	if (smb_open_dir(cfg, &smb, dirnum) != SMB_SUCCESS)
+	if (result == NULL)
+		result = &retval;
+
+	if (((*result) = smb_open_dir(cfg, &smb, dirnum)) != SMB_SUCCESS)
 		return false;
 
-	int result = smb_loadfile(&smb, filename, file, detail);
+	*result = smb_loadfile(&smb, filename, file, detail);
 	smb_close(&smb);
 	if (cfg->dir[dirnum]->misc & DIR_FREE)
 		file->cost = 0;
-	return result == SMB_SUCCESS;
+	return (*result) == SMB_SUCCESS;
 }
 
 char* batch_list_name(scfg_t* cfg, uint usernumber, enum XFER_TYPE type, char* fname, size_t size)
@@ -550,31 +554,39 @@ bool batch_file_load(scfg_t* cfg, str_list_t ini, const char* filename, file_t* 
 	f->dir = batch_file_dir(cfg, ini, filename);
 	if (f->dir < 0)
 		return false;
-	return loadfile(cfg, f->dir, filename, f, file_detail_normal);
+	return loadfile(cfg, f->dir, filename, f, file_detail_normal, NULL);
 }
 
-bool updatefile(scfg_t* cfg, file_t* file)
+bool updatefile(scfg_t* cfg, file_t* file, int* result)
 {
+	int   retval;
 	smb_t smb;
 
-	if (smb_open_dir(cfg, &smb, file->dir) != SMB_SUCCESS)
+	if (result == NULL)
+		result = &retval;
+
+	if (((*result) = smb_open_dir(cfg, &smb, file->dir)) != SMB_SUCCESS)
 		return false;
 
-	int result = smb_updatemsg(&smb, file);
+	*result = smb_updatemsg(&smb, file);
 	smb_close(&smb);
-	return result == SMB_SUCCESS;
+	return (*result) == SMB_SUCCESS;
 }
 
-bool removefile(scfg_t* cfg, int dirnum, const char* filename)
+bool removefile(scfg_t* cfg, int dirnum, const char* filename, int* result)
 {
+	int retval;
 	smb_t smb;
 
-	if (smb_open_dir(cfg, &smb, dirnum) != SMB_SUCCESS)
+	if (result == NULL)
+		result = &retval;
+
+	if (((*result) = smb_open_dir(cfg, &smb, dirnum)) != SMB_SUCCESS)
 		return false;
 
-	int result = smb_removefile_by_name(&smb, filename);
+	*result = smb_removefile_by_name(&smb, filename);
 	smb_close(&smb);
-	return result == SMB_SUCCESS;
+	return (*result) == SMB_SUCCESS;
 }
 
 ulong getuserxfers(scfg_t* cfg, const char* from, uint to)
@@ -736,20 +748,24 @@ int file_sauce_hfields(file_t* f, struct sauce_charinfo* info)
 	return SMB_SUCCESS;
 }
 
-bool addfile(scfg_t* cfg, file_t* f, const char* extdesc, const char* metadata, client_t* client)
+bool addfile(scfg_t* cfg, file_t* f, const char* extdesc, const char* metadata, client_t* client, int* result)
 {
 	char  fpath[MAX_PATH + 1];
+	int   retval;
 	smb_t smb;
 
-	if (smb_open_dir(cfg, &smb, f->dir) != SMB_SUCCESS)
+	if (result == NULL)
+		result = &retval;
+
+	if (((*result) = smb_open_dir(cfg, &smb, f->dir)) != SMB_SUCCESS)
 		return false;
 
 	getfilepath(cfg, f, fpath);
 	if (f->from_ip == NULL)
 		file_client_hfields(f, client);
-	int result = smb_addfile(&smb, f, SMB_SELFPACK, extdesc, metadata, fpath);
+	*result = smb_addfile(&smb, f, SMB_SELFPACK, extdesc, metadata, fpath);
 	smb_close(&smb);
-	return result == SMB_SUCCESS;
+	return (*result) == SMB_SUCCESS;
 }
 
 /* 'size' does not include the NUL-terminator */

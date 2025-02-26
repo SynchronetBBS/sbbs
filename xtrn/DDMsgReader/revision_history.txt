@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.96L    2025-02-18   After replying to a message, when it shows the status &
+                      pauses for input, a Q or Ctrl-C will now exit, and not be
+                      ignored.
 1.96k    2025-02-08   Input timeout alert improvement - Rather than just
                       blanking out the AreYouThere text (which still allows the
                       alert sound), now also writes a text string at the bottom

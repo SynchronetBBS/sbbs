@@ -1,6 +1,6 @@
                         Digital Distortion File Lister
-                                 Version 2.25c
-                           Release date: 2024-12-08
+                                 Version 2.28a
+                           Release date: 2025-02-25
 
                                      by
 
@@ -35,10 +35,10 @@ that there are no serious issues with it (at least, none that I have seen).
 
 2. Introduction
 ===============
-This release is version 2.00 because I had previously released a message lister
-mod for Synchronet which was just a list header and a command bar to display
-under the list, and it still used Synchronet's stock file list.  Now that
-Synchronet provides a JavaScript interface to its filebases (as of version
+This release is version 2.## because I had previously released a message lister
+mod (version 1.##) for Synchronet which was just a list header and a command bar
+to display under the list, and it still used Synchronet's stock file list.  Now
+that Synchronet provides a JavaScript interface to its filebases (as of version
 3.19), more customization is possible with JavaScript.
 
 Digital Distortion File Lister is a script for Synchronet that provides an
@@ -58,6 +58,21 @@ the extended file description for the highlighted file displayed on the right
 side.  If the user's extended file description setting is disabled, the
 lightbar file menu will use the entire width of the screen, with the short
 file descriptions being displayed in a single row with each file.
+
+In order to display extended descriptions, however, this file lister currently
+requires ANSI support (for cursor movements & such) and a terminal width of at
+least 80 characters in order to display everything, since the extended
+descriptions will be displayed to the right of the menu. If the user's terminal
+doesn't meet these requirements, short descriptions will be displayed.
+
+The user can toggle extended descriptions on/off from within this file lister
+using the X key. However, if the user's terminal doesn't meet the above
+requiremtnts for extended description mode, the user won't be able to toggle
+extended descriptions from within this file lister.
+
+If a filename is too long to be fully displayed in the menu item, the full file
+description will be displayed above the description (wrapped to the description
+area width) if extended descriptions are enabled.
 
 When adding files to the user's batch download queue or (for the sysop)
 selecting files to move or delete, multi-select mode can be used, allowing
@@ -250,10 +265,29 @@ displayUserAvatars                    Whether or not to display uploader avatars
                                       in extended information for files. Valid
                                       values are true and false.
 
-useFilenameIfNoDescription            If a file's description is unavailable,
-                                      whether or not to use the filename in the
-                                      list instead. Valid values are true and
-                                      false.
+useFilenameIfShortDescriptionEmpty    For short descriptions (extended
+                                      descriptions disabled), if a file's
+                                      description is unavailable, use the
+                                      filename for the description instead.
+                                      Valid values are true and false.
+
+filenameInExtendedDescription         For extended descriptions: How to use the
+                                      filename in the extended description.
+                                      This can be one of the following (and
+                                      defaults to ifDescEmpty):
+                                      always: Always use the filename in the
+                                      description
+									  ifDescEmpty: Only if the description is
+                                                   empty (also though, if the
+                                                   filename is too short to
+                                                   fully be shown in the menu,
+                                                   the full filename will appear
+									               in the description)
+									  never: Never use the filename in the description
+
+displayNumFilesInHeader               Whether or not to display the number of
+                                      files in the directory in the header at
+                                      the top of the list
 
 themeFilename                         The name of the configuration file to
                                       use for colors & string settings
@@ -352,6 +386,11 @@ fileAreaDescTrad                     The file library/directory description for
 
 fileAreaNumItemsTrad                 The number of directories/files for
                                      'normal' colors (for moving a file)
+
+filenameInDesc                       The filename when used in the description
+                                     (for instance, if the filename is too long
+                                     to fully fit in the lightbar menu or if
+                                     the file has no description)
 
 
 5. Strings used from text.dat

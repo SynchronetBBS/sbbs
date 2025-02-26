@@ -229,11 +229,11 @@ int32_t * sbbs_t::getintvar(csi_t *bin, uint32_t name)
 		case 0x1c4455ee:
 			return (int32_t *)&dte_rate;
 		case 0x7fbf958e:
-			return (int32_t *)&lncntr;
+			return (int32_t *)&term->lncntr;
 //		case 0x5c1c1500:
 //			return((int32_t *)&tos);
 		case 0x613b690e:
-			return (int32_t *)&rows;
+			return (int32_t *)&term->rows;
 		case 0x205ace36:
 			return (int32_t *)&autoterm;
 		case 0x7d0ed0d1:
@@ -1334,24 +1334,18 @@ int sbbs_t::exec(csi_t *csi)
 				lputs(LOG_INFO, cmdstr((char*)csi->ip, path, csi->str, (char*)buf));
 				break;
 			case CS_PRINT_REMOTE:
-				putcom(cmdstr((char*)csi->ip, path, csi->str, (char*)buf));
+				term_out(cmdstr((char*)csi->ip, path, csi->str, (char*)buf));
 				break;
 			case CS_PRINTFILE:
 				printfile(cmdstr((char*)csi->ip, path, csi->str, (char*)buf), P_SAVEATR);
 				break;
 			case CS_PRINTFILE_REMOTE:
-				if (online != ON_REMOTE || !(console & CON_R_ECHO))
+				if (online != ON_REMOTE)
 					break;
-				console &= ~CON_L_ECHO;
 				printfile(cmdstr((char*)csi->ip, path, csi->str, (char*)buf), P_SAVEATR);
-				console |= CON_L_ECHO;
 				break;
 			case CS_PRINTFILE_LOCAL:
-				if (!(console & CON_L_ECHO))
-					break;
-				console &= ~CON_R_ECHO;
-				printfile(cmdstr((char*)csi->ip, path, csi->str, (char*)buf), P_SAVEATR);
-				console |= CON_R_ECHO;
+				lprintf(LOG_WARNING, "PRINTFILE_LOCAL is no longer functional");
 				break;
 			case CS_CHKFILE:
 				csi->logic = !fexistcase(cmdstr((char*)csi->ip, path, csi->str, (char*)buf));
@@ -1835,7 +1829,7 @@ int sbbs_t::exec(csi_t *csi)
 			pause();
 			return 0;
 		case CS_PAUSE_RESET:
-			lncntr = 0;
+			term->lncntr = 0;
 			return 0;
 		case CS_GETLINES:
 			getdimensions();
@@ -1908,10 +1902,10 @@ int sbbs_t::exec(csi_t *csi)
 				csi->logic = LOGIC_FALSE;
 			return 0;
 		case CS_SAVELINE:
-			saveline();
+			term->saveline();
 			return 0;
 		case CS_RESTORELINE:
-			restoreline();
+			term->restoreline();
 			return 0;
 		case CS_SELECT_SHELL:
 			csi->logic = select_shell() ? LOGIC_TRUE:LOGIC_FALSE;

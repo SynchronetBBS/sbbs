@@ -62,7 +62,7 @@ const char* sbbs_t::get_text(const char* id)
 /****************************************************************************/
 /* Somewhat copied from load_cfg()											*/
 /****************************************************************************/
-bool sbbs_t::replace_text(const char* path)
+bool sbbs_t::replace_text(const char* path, bool native_charset)
 {
 	FILE* fp;
 
@@ -84,8 +84,19 @@ bool sbbs_t::replace_text(const char* path)
 				free(text[n]);
 			if (*list[i]->value == '\0')
 				text[n] = (char *)nulstr;
-			else
-				text[n] = strdup(list[i]->value);
+			else {
+				if (native_charset) {
+					size_t len = strlen(list[i]->value);
+					char *nt = (char *)malloc(len + 3);
+					nt[0] = 1;
+					nt[1] = 0x1b;
+					memcpy(&nt[2], list[i]->value, len + 1);
+					text[n] = nt;
+				}
+				else {
+					text[n] = strdup(list[i]->value);
+				}
+			}
 			text_replaced[n] = true;
 		}
 		iniFreeNamedStringList(list);
@@ -119,12 +130,12 @@ bool sbbs_t::load_user_text(void)
 	char path[MAX_PATH + 1];
 	char charset[16];
 
-	SAFECOPY(charset, term_charset());
+	SAFECOPY(charset, term->charset_str());
 	strlwr(charset);
 	revert_text();
 	snprintf(path, sizeof path, "%s%s/text.ini", cfg.ctrl_dir, charset);
 	if (fexist(path)) {
-		if (!replace_text(path))
+		if (!replace_text(path, true))
 			return false;
 	}
 	if (*useron.lang == '\0')
@@ -340,7 +351,7 @@ void sbbs_t::sif(char *fname, char *answers, int len)
 				m++;
 			}
 			if ((buf[m + 1] & 0xdf) == 'L') {      /* Draw line */
-				if (term_supports(COLOR))
+				if (term->supports(COLOR))
 					attr(cfg.color[clr_inputline]);
 				else
 					attr(BLACK | BG_LIGHTGRAY);
@@ -508,7 +519,7 @@ void sbbs_t::sof(char *fname, char *answers, int len)
 			else if ((buf[m + 1] & 0xdf) == 'N')   /* Numbers only */
 				m++;
 			if ((buf[m + 1] & 0xdf) == 'L') {      /* Draw line */
-				if (term_supports(COLOR))
+				if (term->supports(COLOR))
 					attr(cfg.color[clr_inputline]);
 				else
 					attr(BLACK | BG_LIGHTGRAY);
@@ -533,7 +544,7 @@ void sbbs_t::sof(char *fname, char *answers, int len)
 			else if ((buf[m + 1] & 0xdf) == 'N')   /* Numbers only */
 				m++;
 			if ((buf[m + 1] & 0xdf) == 'L') {
-				if (term_supports(COLOR))
+				if (term->supports(COLOR))
 					attr(cfg.color[clr_inputline]);
 				else
 					attr(BLACK | BG_LIGHTGRAY);
@@ -646,22 +657,22 @@ size_t sbbs_t::gettmplt(char *strout, const char *templt, int mode)
 	sys_status &= ~SS_ABORT;
 	SAFECOPY(tmplt, templt);
 	strupr(tmplt);
-	if (term_supports(ANSI)) {
-		if (mode & K_LINE) {
-			if (term_supports(COLOR))
-				attr(cfg.color[clr_inputline]);
-			else
-				attr(BLACK | BG_LIGHTGRAY);
-		}
-		while (c < t) {
-			if (tmplt[c] == 'N' || tmplt[c] == 'A' || tmplt[c] == '!')
-				outchar(' ');
-			else
-				outchar(tmplt[c]);
-			c++;
-		}
-		cursor_left(t);
+	// MODE7: This was ANSI-only, added support for PETSCII, 
+	//        but we may not want it for Mode7.
+	if (mode & K_LINE) {
+		if (term->supports(COLOR))
+			attr(cfg.color[clr_inputline]);
+		else
+			attr(BLACK | BG_LIGHTGRAY);
 	}
+	while (c < t) {
+		if (tmplt[c] == 'N' || tmplt[c] == 'A' || tmplt[c] == '!')
+			outchar(' ');
+		else
+			outchar(tmplt[c]);
+		c++;
+	}
+	term->cursor_left(t);
 	c = 0;
 	if (mode & K_EDIT) {
 		SAFECOPY(str, strout);
@@ -675,7 +686,7 @@ size_t sbbs_t::gettmplt(char *strout, const char *templt, int mode)
 			for (ch = 1, c--; c; c--, ch++)
 				if (tmplt[c] == 'N' || tmplt[c] == 'A' || tmplt[c] == '!')
 					break;
-			cursor_left(ch);
+			term->cursor_left(ch);
 			bputs(" \b");
 			continue;
 		}
@@ -1120,7 +1131,7 @@ char* sbbs_t::xfer_prot_menu(enum XFER_TYPE type, user_t* user, char* keys, size
 	bool   menu_used = menu(prot_menu_file[type], P_NOERROR);
 	if (user == nullptr)
 		user = &useron;
-	cond_blankline();
+	term->cond_blankline();
 	int    printed = 0;
 	for (int i = 0; i < cfg.total_prots; i++) {
 		if (!chk_ar(cfg.prot[i]->ar, user, &client))
@@ -1137,7 +1148,7 @@ char* sbbs_t::xfer_prot_menu(enum XFER_TYPE type, user_t* user, char* keys, size
 			keys[count++] = cfg.prot[i]->mnemonic;
 		if (menu_used)
 			continue;
-		if (printed && (cols < 80 || (printed % 2) == 0))
+		if (printed && (term->cols < 80 || (printed % 2) == 0))
 			CRLF;
 		bprintf(text[TransferProtLstFmt], cfg.prot[i]->mnemonic, cfg.prot[i]->name);
 		printed++;
@@ -1145,7 +1156,7 @@ char* sbbs_t::xfer_prot_menu(enum XFER_TYPE type, user_t* user, char* keys, size
 	if (keys != nullptr)
 		keys[count] = '\0';
 	if (!menu_used)
-		newline();
+		term->newline();
 	return keys;
 }
 
@@ -1298,7 +1309,7 @@ bool sbbs_t::spy(uint i /* node_num */)
 			continue;
 		}
 		if (ch < ' ') {
-			lncntr = 0;                       /* defeat pause */
+			term->lncntr = 0;                       /* defeat pause */
 			spy_socket[i - 1] = INVALID_SOCKET; /* disable spy output */
 			ch = handle_ctrlkey(ch, K_NONE);
 			spy_socket[i - 1] = passthru_thread_running ? client_socket_dup : client_socket;  /* enable spy output */

@@ -48,20 +48,20 @@ enum mode7_char {
 	MODE7_NEW_BG			= 157,
 	MODE7_HOLD_GFX			= 158,
 	MODE7_RELEASE_GFX		= 159,
-	
+
 	/* Cursor movement */
-	MODE7_LEFT        = 8,
-	MODE7_RIGHT       = 9,
-	MODE7_DOWN        = 10,
-	MODE7_UP          = 11,
-	MODE7_HOME        = 30,
-	MODE7_CLEAR       = 12,
+	MODE7_LEFT          = 8,
+	MODE7_RIGHT         = 9,
+	MODE7_DOWN          = 10,
+	MODE7_UP            = 11,
+	MODE7_HOME          = 30,
+	MODE7_CLEAR         = 12,
 	/* Symbols (which don't align with ASCII) */
-	MODE7_BRITPOUND		= 96,
-	MODE7_QUARTER		= 123,
-	MODE7_HALF			= 92,
-	MODE7_THREE_QUARTER	= 125,
-	MODE7_DIVIDE		= 126
+	MODE7_BRITPOUND     = 96,
+	MODE7_QUARTER       = 123,
+	MODE7_HALF          = 92,
+	MODE7_THREE_QUARTER = 125,
+	MODE7_DIVIDE        = 126
 	/* Replacement chars (missing ASCII chars) */
 //	PETSCII_BACKSLASH   = '/',  // the 109 graphics char is an 'M' in shifted/text mode :-(
 //	PETSCII_BACKTICK    = 0xAD, // a graphics char actually

@@ -972,7 +972,7 @@ static int send_files(char** fname, uint fnames)
 			        , mode & XMODEM ? 'X' : mode & YMODEM ? 'Y' : 'Z');
 
 			if (mode & ZMODEM)
-				success = zmodem_send_file(&zm, path, fp, /* ZRQINIT? */ fnum == 0, &startfile, &sent_bytes);
+				success = zmodem_send_file(&zm, path, fp, /* ZRQINIT? */ xm.sent_files == 0, &startfile, &sent_bytes);
 			else    /* X/YMODEM */
 				success = xmodem_send_file(&xm, path, fp, &startfile, &sent_bytes);
 

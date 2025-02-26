@@ -50,7 +50,7 @@ int sbbs_t::exec_file(csi_t *csi)
 								outchar(' ');
 							if (i < 99)
 								outchar(' ');
-							add_hotspot(i + 1);
+							term->add_hotspot(i + 1);
 							bprintf(text[CfgLibLstFmt]
 							        , i + 1, cfg.lib[usrlib[i]]->lname);
 						}
@@ -58,7 +58,7 @@ int sbbs_t::exec_file(csi_t *csi)
 					snprintf(str, sizeof str, text[JoinWhichLib], curlib + 1);
 					mnemonics(str);
 					j = getnum(usrlibs);
-					clear_hotspots();
+					term->clear_hotspots();
 					if ((int)j == -1)
 						return 0;
 					if (!j)
@@ -82,14 +82,14 @@ int sbbs_t::exec_file(csi_t *csi)
 							outchar(' ');
 						if (i < 99)
 							outchar(' ');
-						add_hotspot(i + 1);
+						term->add_hotspot(i + 1);
 						bputs(str);
 					}
 				}
 				snprintf(str, sizeof str, text[JoinWhichDir], curdir[j] + 1);
 				mnemonics(str);
 				i = getnum(usrdirs[j]);
-				clear_hotspots();
+				term->clear_hotspots();
 				if ((int)i == -1) {
 					if (usrlibs == 1)
 						return 0;
@@ -210,7 +210,7 @@ int sbbs_t::exec_file(csi_t *csi)
 					outchar(' ');
 				if (i < 9)
 					outchar(' ');
-				add_hotspot(i + 1);
+				term->add_hotspot(i + 1);
 				bprintf(text[LibLstFmt], i + 1
 				        , cfg.lib[usrlib[i]]->lname, nulstr, usrdirs[i]);
 			}
@@ -237,7 +237,7 @@ int sbbs_t::exec_file(csi_t *csi)
 					outchar(' ');
 				if (i < 99)
 					outchar(' ');
-				add_hotspot(i + 1);
+				term->add_hotspot(i + 1);
 				bputs(str);
 			}
 			return 0;
@@ -392,7 +392,7 @@ int sbbs_t::exec_file(csi_t *csi)
 				for (y = 0; y < usrdirs[x]; y++) {
 					if (msgabort())
 						return 0;
-					if (loadfile(&cfg, usrdir[x][y], csi->str, &f, file_detail_normal)) {
+					if (loadfile(&cfg, usrdir[x][y], csi->str, &f, file_detail_normal, NULL)) {
 						addtobatdl(&f);
 						smb_freefilemem(&f);
 						csi->logic = LOGIC_TRUE;

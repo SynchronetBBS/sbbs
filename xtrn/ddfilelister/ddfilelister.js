@@ -152,6 +152,22 @@
  * 2024-12-27 Eric Oulashin     Version 2.26
  *                              New configuration setting: useFilenameIfNoDescription - If a
  *                              file's description is empty, show its filename in the list instead
+ * 2025-02-20 Eric Oulashin     Version 2.27
+ *                              Now optionally displays the number of files in the directory in the
+ *                              header at the top of the list, configurable with the
+ *                              displayNumFilesInHeader option in the config file
+ * 2025-02-23 Eric Oulashin     Version 2.28
+ *                              If extended descriptions are enabled and a filename is too long to
+ *                              fully fit in the menu, prepend the full filename (wrapped) to the
+ *                              description.
+ *                              New bottom line menu option to toggle extended descriptions on/off
+ *                              Fix: useFilenameIfNoDescription option now used in traditional
+ *                              (non-lightbar) mode.
+ * 2025-02-25 Eric Oulashin     Version 2.28a
+ *                              Long filename color fix for some edge cases.
+ *                              The setting useFilenameIfNoDescription changed to
+ *                              useFilenameIfShortDescriptionEmpty.
+ *                              New setting: filenameInExtendedDescription
  */
 
 "use strict";
@@ -193,8 +209,8 @@ var gAvatar = load({}, "avatar_lib.js");
 
 
 // Version information
-var LISTER_VERSION = "2.26";
-var LISTER_DATE = "2024-12-27";
+var LISTER_VERSION = "2.28a";
+var LISTER_DATE = "2025-02-25";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -269,7 +285,9 @@ var gColors = {
 	fileNormalBkgTrad: "\x01n\x01w",
 	listNumTrad: "\x01g\x01h",
 	fileAreaDescTrad: "\x01c",
-	fileAreaNumItemsTrad: "\x01b\x01h"
+	fileAreaNumItemsTrad: "\x01b\x01h",
+
+	filenameInDesc: "\x01g" // Filename when used in the description
 };
 
 
@@ -281,8 +299,9 @@ var FILE_DOWNLOAD_SINGLE = 4;
 var FILE_EDIT = 5;
 var HELP = 6;
 var QUIT = 7;
-var FILE_MOVE = 8;   // Sysop action
-var FILE_DELETE = 9; // Sysop action
+var TOGGLE_EXTD_DESCS = 8; // Toggle extended descriptions
+var FILE_MOVE = 9;   // Sysop action
+var FILE_DELETE = 10; // Sysop action
 
 var NEXT_PAGE = 10;
 var PREV_PAGE = 11;
@@ -338,9 +357,14 @@ var gTraditionalUseSyncStock = false;
 // file information
 var gDispayUserAvatars = true;
 
-// If a file's description is unavailable, whether or not to use the
-// filename instead
-var gUseFilenameIfNoDescription = true;
+// How to use the filename in the (extended) description
+var FILENAME_IN_DESC_IF_DESC_EMPTY = 0;
+var FILENAME_IN_DESC_ALWAYS = 1;
+var FILENAME_IN_DESC_NEVER = 2;
+var gFilenameInExtendedDesc = FILENAME_IN_DESC_IF_DESC_EMPTY;
+// For short descriptions (extended descriptions disabled): If a file's description is
+// unavailable, whether or not to use the filename instead
+var gUseFilenameIfNoDescription_ShortDescs = true;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Script execution code
@@ -363,6 +387,10 @@ var gScanAllDirs = false;
 // or not to blank out the "# Files Listed" string (from text.dat) so that
 // Synchronet won't display it after the lister exits
 var gBlankNFilesListedStrIfLoadableModule = true;
+
+// Whether or not to display the number of files in the directory in
+// the header at the top of the screen
+var gDisplayNumFilesInHeader = true;
 
 // Read the configuration file and set the settings
 readConfigFile();
@@ -436,16 +464,16 @@ if (gFileList.length == 0)
 }
 
 // Construct and display the menu/command bar at the bottom of the screen
-var fileMenuBar = new DDFileMenuBar({ x: 1, y: console.screen_rows });
+var gFileMenuBar = new DDFileMenuBar({ x: 1, y: console.screen_rows });
 // Clear the screen and display the header lines
 console.clear("\x01n");
 if ((gListBehavior & FL_NO_HDR) != FL_NO_HDR)
 	displayFileLibAndDirHeader(false, null, !gUseLightbarInterface || !console.term_supports(USER_ANSI));
 // Create the file list menu (must be done after displayFileLibAndDirHeader() when using ANSI and lightbar)
-var gFileListMenu = createFileListMenu(fileMenuBar.getAllActionKeysStr(true, true) + KEY_LEFT + KEY_RIGHT + KEY_DEL /*+ CTRL_C*/);
+var gFileListMenu = createFileListMenu(gFileMenuBar.getAllActionKeysStr(true, true) + KEY_LEFT + KEY_RIGHT + KEY_DEL /*+ CTRL_C*/);
 if (gUseLightbarInterface && console.term_supports(USER_ANSI))
 {
-	fileMenuBar.writePromptLine();
+	gFileMenuBar.writePromptLine();
 	// In a loop, show the file list menu, allowing the user to scroll the file list,
 	// and respond to user input until the user decides to quit.
 	gFileListMenu.Draw({});
@@ -467,13 +495,13 @@ if (gUseLightbarInterface && console.term_supports(USER_ANSI))
 		if (lastUserInputUpper == null || lastUserInputUpper == "Q" || console.aborted)
 			continueDoingFileList = false;
 		else if (lastUserInputUpper == KEY_LEFT)
-			fileMenuBar.decrementMenuItemAndRefresh();
+			gFileMenuBar.decrementMenuItemAndRefresh();
 		else if (lastUserInputUpper == KEY_RIGHT)
-			fileMenuBar.incrementMenuItemAndRefresh();
+			gFileMenuBar.incrementMenuItemAndRefresh();
 		else if (lastUserInputUpper == KEY_ENTER)
 		{
-			currentActionVal = fileMenuBar.getCurrentSelectedAction();
-			fileMenuBar.setCurrentActionCode(currentActionVal);
+			currentActionVal = gFileMenuBar.getCurrentSelectedAction();
+			gFileMenuBar.setCurrentActionCode(currentActionVal);
 			actionRetObj = doAction(currentActionVal, gFileList, gFileListMenu);
 		}
 		// Allow the delete key as a special key for sysops to delete the selected file(s). Also allow backspace
@@ -482,15 +510,15 @@ if (gUseLightbarInterface && console.term_supports(USER_ANSI))
 		{
 			if (user.is_sysop)
 			{
-				fileMenuBar.setCurrentActionCode(FILE_DELETE, true);
+				gFileMenuBar.setCurrentActionCode(FILE_DELETE, true);
 				actionRetObj = doAction(FILE_DELETE, gFileList, gFileListMenu);
 				currentActionVal = FILE_DELETE;
 			}
 		}
 		else
 		{
-			currentActionVal = fileMenuBar.getActionFromChar(lastUserInputUpper, false);
-			fileMenuBar.setCurrentActionCode(currentActionVal, true);
+			currentActionVal = gFileMenuBar.getActionFromChar(lastUserInputUpper, false);
+			gFileMenuBar.setCurrentActionCode(currentActionVal, true);
 			actionRetObj = doAction(currentActionVal, gFileList, gFileListMenu);
 		}
 		// If an action was done (actionRetObj is not null), then look at actionRetObj and
@@ -515,8 +543,8 @@ if (gUseLightbarInterface && console.term_supports(USER_ANSI))
 						displayFileLibAndDirHeader(false, null, gFileListMenu.numberedMode);
 					}
 				}
-				if (actionRetObj.reDrawCmdBar) // Could call fileMenuBar.constructPromptText(); if needed
-					fileMenuBar.writePromptLine();
+				if (actionRetObj.reDrawCmdBar) // Could call gFileMenuBar.constructPromptText(); if needed
+					gFileMenuBar.writePromptLine();
 				var redrewPartOfFileListMenu = false;
 				// If we are to re-draw the main screen content, then
 				// enable the flag to draw the file list menu on the next
@@ -635,7 +663,7 @@ else
 	var topItemIndexForLastPage = allFileInfoLines.length - numLinesPerPage;
 
 	// Allowed keys for user input
-	var validOptionKeys = "IVBDEMNPFLQ?" + KEY_PAGEDN + KEY_PAGEUP + KEY_HOME + KEY_END;
+	var validOptionKeys = "IVBDEMNPFLXQ?" + KEY_PAGEDN + KEY_PAGEUP + KEY_HOME + KEY_END;
 	if (user.is_sysop)
 		validOptionKeys += KEY_DEL + KEY_BACKSPACE;
 	// If the user's terminal supports ANSI, then also allow left, right, and enter (option navigation & selection)
@@ -672,16 +700,16 @@ else
 		}
 
 		if (refreshWholePromptLine || drawMenu)
-			fileMenuBar.pos = console.getxy();
+			gFileMenuBar.pos = console.getxy();
 		if (refreshWholePromptLine)
-			fileMenuBar.writePromptLine();
+			gFileMenuBar.writePromptLine();
 		var userInput = console.getkeys(validOptionKeys, -1, K_UPPER|K_NOECHO|K_NOSPIN|K_NOCRLF).toString();
 		// If the user pressed the enter key, change userInput to the key
 		// corresponding to what we'd expect for that option
 		if (userInput == KEY_ENTER)
 		{
-			//currentActionVal = fileMenuBar.getCurrentSelectedAction();
-			switch (fileMenuBar.getCurrentSelectedAction())
+			//currentActionVal = gFileMenuBar.getCurrentSelectedAction();
+			switch (gFileMenuBar.getCurrentSelectedAction())
 			{
 				case NEXT_PAGE:
 					userInput = KEY_PAGEDN;
@@ -703,14 +731,14 @@ else
 		// Check action based on the user's last input
 		if (userInput == KEY_LEFT)
 		{
-			fileMenuBar.decrementMenuItemAndRefresh();
+			gFileMenuBar.decrementMenuItemAndRefresh();
 			drawDirHeaderLines = false;
 			drawMenu = false;
 			refreshWholePromptLine = false;
 		}
 		else if (userInput == KEY_RIGHT)
 		{
-			fileMenuBar.incrementMenuItemAndRefresh();
+			gFileMenuBar.incrementMenuItemAndRefresh();
 			drawDirHeaderLines = false;
 			drawMenu = false;
 			refreshWholePromptLine = false;
@@ -720,8 +748,8 @@ else
 			drawDirHeaderLines = true;
 			drawMenu = true;
 			refreshWholePromptLine = true;
-			currentActionVal = fileMenuBar.getCurrentSelectedAction();
-			fileMenuBar.setCurrentActionCode(currentActionVal);
+			currentActionVal = gFileMenuBar.getCurrentSelectedAction();
+			gFileMenuBar.setCurrentActionCode(currentActionVal);
 			actionRetObj = doAction(currentActionVal, gFileList, gFileListMenu);
 		}
 		// Allow the delete key as a special key for sysops to delete the selected file(s). Also allow backspace
@@ -733,7 +761,8 @@ else
 				drawDirHeaderLines = true;
 				drawMenu = true;
 				refreshWholePromptLine = true;
-				fileMenuBar.setCurrentActionCode(FILE_DELETE, true);
+				gFileMenuBar.setCurrentActionCode(FILE_DELETE, true);
+				console.crlf();
 				actionRetObj = doAction(FILE_DELETE, gFileList, gFileListMenu);
 				currentActionVal = FILE_DELETE;
 			}
@@ -799,8 +828,8 @@ else
 				refreshWholePromptLine = false;
 			}
 			currentActionVal = NEXT_PAGE;
-			//fileMenuBar.setCurrentActionCode(NEXT_PAGE, !refreshWholePromptLine);
-			fileMenuBar.setCurrentActionCode(NEXT_PAGE, true);
+			//gFileMenuBar.setCurrentActionCode(NEXT_PAGE, !refreshWholePromptLine);
+			gFileMenuBar.setCurrentActionCode(NEXT_PAGE, true);
 		}
 		else if (userInput == "P" || userInput == KEY_PAGEUP)
 		{
@@ -821,8 +850,8 @@ else
 				refreshWholePromptLine = false;
 			}
 			currentActionVal = PREV_PAGE;
-			//fileMenuBar.setCurrentActionCode(PREV_PAGE, !refreshWholePromptLine);
-			fileMenuBar.setCurrentActionCode(PREV_PAGE, true);
+			//gFileMenuBar.setCurrentActionCode(PREV_PAGE, !refreshWholePromptLine);
+			gFileMenuBar.setCurrentActionCode(PREV_PAGE, true);
 		}
 		else if (userInput == "F" || userInput == KEY_HOME)
 		{
@@ -841,8 +870,8 @@ else
 				refreshWholePromptLine = false;
 			}
 			currentActionVal = FIRST_PAGE;
-			//fileMenuBar.setCurrentActionCode(FIRST_PAGE, !refreshWholePromptLine);
-			fileMenuBar.setCurrentActionCode(FIRST_PAGE, true);
+			//gFileMenuBar.setCurrentActionCode(FIRST_PAGE, !refreshWholePromptLine);
+			gFileMenuBar.setCurrentActionCode(FIRST_PAGE, true);
 		}
 		else if (userInput == "L" || userInput == KEY_END)
 		{
@@ -861,17 +890,27 @@ else
 				refreshWholePromptLine = false;
 			}
 			currentActionVal = LAST_PAGE;
-			//fileMenuBar.setCurrentActionCode(LAST_PAGE, !refreshWholePromptLine);
-			fileMenuBar.setCurrentActionCode(LAST_PAGE, true);
+			//gFileMenuBar.setCurrentActionCode(LAST_PAGE, !refreshWholePromptLine);
+			gFileMenuBar.setCurrentActionCode(LAST_PAGE, true);
 		}
 		else
 		{
 			drawDirHeaderLines = true;
 			drawMenu = true;
 			refreshWholePromptLine = true;
-			currentActionVal = fileMenuBar.getActionFromChar(userInput, false);
-			fileMenuBar.setCurrentActionCode(currentActionVal, true);
+			currentActionVal = gFileMenuBar.getActionFromChar(userInput, false);
+			//if (user.is_sysop) console.print("\x01n\r\nHere - Char:" + userInput + ":, action val: " + currentActionVal + "  \x01p"); // Temporary
+			gFileMenuBar.setCurrentActionCode(currentActionVal, true);
 			actionRetObj = doAction(currentActionVal, gFileList, gFileListMenu);
+			// If the user toggled extended descriptions, then re-generate the array of
+			// filenames & descriptions
+			if (currentActionVal == TOGGLE_EXTD_DESCS)
+			{
+				allFileInfoLines = [];
+				for (var i = 0; i < gFileList.length; ++i)
+					allFileInfoLines = allFileInfoLines.concat(getFileInfoLineArrayForTraditionalUI(gFileList, i, formatInfo));
+				topItemIndexForLastPage = allFileInfoLines.length - numLinesPerPage;
+			}
 		}
 	}
 }
@@ -906,7 +945,7 @@ function doAction(pActionCode, pFileList, pFileListMenu)
 	// (for options that need one)
 	var useANSIInterface = gUseLightbarInterface && console.term_supports(USER_ANSI);
 	var fileIdx = pFileListMenu.selectedItemIdx;
-	if (!useANSIInterface && pActionCode != QUIT && pActionCode != HELP && pActionCode != NEXT_PAGE && pActionCode != PREV_PAGE)
+	if (!useANSIInterface && pActionCode != QUIT && pActionCode != HELP && pActionCode != NEXT_PAGE && pActionCode != PREV_PAGE && pActionCode != TOGGLE_EXTD_DESCS)
 	{
 		console.crlf();
 		console.print(getActionStr(pActionCode) + "\x01n");
@@ -978,6 +1017,9 @@ function doAction(pActionCode, pFileList, pFileListMenu)
 		case FILE_DELETE: // Sysop action
 			if (user.is_sysop)
 				retObj = confirmAndRemoveFilesFromFilebase(pFileList, pFileListMenu);
+			break;
+		case TOGGLE_EXTD_DESCS: // Toggle extended descriptions
+			retObj = toggleExtdDescriptionsForUser(useANSIInterface);
 			break;
 	}
 
@@ -1941,6 +1983,8 @@ function displayHelpScreen()
 		printf(printfStr, "M", "Move the file(s) to another directory");
 		printf(printfStr, "DEL", "Delete the file(s)");
 	}
+	if (userCanEnableExtendedDescriptions())
+		printf(printfStr, "X", "Toggle extended descriptions (currently " + (Boolean(user.settings & USER_EXTDESC) ? "on" : "off") + ")");
 	printf(printfStr, "?", "Show this help screen");
 	// Ctrl-C for aborting (wanted to use isDoingFileSearch() but it seems even for searching/scanning,
 	// the mode is LIST_DIR rather than a search/scan
@@ -2555,6 +2599,34 @@ function confirmAndRemoveFilesFromFilebase(pFileList, pFileListMenu)
 	return retObj;
 }
 
+// Toggles the user's extended descriptions. This is a special action case for the
+// lightbar interface which re-creates the lightbar menu, which will behave differently
+// depending on whether the user's extended descriptions are enabled or not.
+function toggleExtdDescriptionsForUser(pUsingLightbarInterface)
+{
+	var retObj = getDefaultActionRetObj();
+
+	// Toggle extended descriptions
+	var userCanToggle = (Boolean(user.settings & USER_EXTDESC) ? true : userCanEnableExtendedDescriptions());
+	if (userCanToggle)
+	{
+		user.settings ^= USER_EXTDESC; // Toggle the user's extended descriptions setting
+		// If using the lightbar interface, then re-create the lightbar file list menu
+		if (pUsingLightbarInterface)
+		{
+			var currentSelectedItemIdx = gFileListMenu.selectedItemIdx;
+			var listPopRetObj = populateFileList(gScriptMode);
+			if (listPopRetObj.exitNow) // Shouldn't happen here, but just in case
+				exit(0);
+			gFileListMenu = createFileListMenu(gFileMenuBar.getAllActionKeysStr(true, true) + KEY_LEFT + KEY_RIGHT + KEY_DEL /*+ CTRL_C*/);
+			gFileListMenu.SetSelectedItemIdx(currentSelectedItemIdx);
+			retObj.reDrawMainScreenContent = true;
+		}
+	}
+
+	return retObj;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // DDFileMenuBar stuff
 
@@ -2619,13 +2691,22 @@ function DDFileMenuBar(pPos)
 		// The user is not a sysop; there is room for the Edit comand
 		this.cmdArray.push(new DDFileMenuBarItem("Edit", 0, FILE_EDIT));
 	}
-	//DDFileMenuBarItem(pItemText, pPos, pRetCode, pHotkeyOverride)
 	if (!gUseLightbarInterface || !console.term_supports(USER_ANSI))
 	{
 		this.cmdArray.push(new DDFileMenuBarItem("Next", 0, NEXT_PAGE, KEY_PAGEDN));
 		this.cmdArray.push(new DDFileMenuBarItem("Prev", 0, PREV_PAGE, KEY_PAGEUP));
 		this.cmdArray.push(new DDFileMenuBarItem("First", 0, FIRST_PAGE));
 		this.cmdArray.push(new DDFileMenuBarItem("Last", 0, LAST_PAGE));
+	}
+	// If the user can enable extended descriptions (terminal size is big enough and the
+	// user's terminal supports ANSI), add a command ("Xtd") to toggle extended descriptions.
+	// And if the user's terminal is less than 87 characters wide and using the traditional
+	// (non-lightbar) user interface and the user is a sysop, don't make it visible because
+	// there wouldn't be enough room to display it.
+	if (userCanEnableExtendedDescriptions())
+	{
+		var displayXtdCmdText = !(console.screen_columns < 87 && !gUseLightbarInterface && user.is_sysop);
+		this.cmdArray.push(new DDFileMenuBarItem("Xtd", 0, TOGGLE_EXTD_DESCS, null, displayXtdCmdText));
 	}
 	this.cmdArray.push(new DDFileMenuBarItem("?", 0, HELP));
 	this.cmdArray.push(new DDFileMenuBarItem("Quit", 0, QUIT));
@@ -2640,12 +2721,19 @@ function DDFileMenuBar(pPos)
 // Return value: The number of additional solid blocks used to fill the whole screen row
 function DDFileMenuBar_constructPromptText()
 {
+	var numDisplayableItems = 0;
 	var totalItemTextLen = 0;
 	for (var i = 0; i < this.cmdArray.length; ++i)
-		totalItemTextLen += this.cmdArray[i].itemText.length;
+	{
+		if (this.cmdArray[i].displayItem)
+		{
+			++numDisplayableItems;
+			totalItemTextLen += this.cmdArray[i].itemText.length;
+		}
+	}
 	// The number of inner characters (without the outer solid blocks) is the total text
 	// length of all the items + 2 characters for each item except the last one
-	var numInnerChars = totalItemTextLen + (2 * (this.cmdArray.length-1));
+	var numInnerChars = totalItemTextLen + (2 * (numDisplayableItems-1));
 	// The number of solid blocks: Subtracting 11 because there will be 5 block characters on each side,
 	// and subtract 1 extra so it doesn't fill the last character on the screen
 	var numSolidBlocks = console.screen_columns - numInnerChars - 11;
@@ -2657,8 +2745,13 @@ function DDFileMenuBar_constructPromptText()
 	this.promptText += THIN_RECTANGLE_LEFT;
 	// Add the menu item text & block characters
 	var menuItemXPos = 6 + numSolidBlocksPerSide; // The X position of the start of item text for each item
+	var maxPromptLineLen = console.screen_columns - 1; // Maximum length of the prompt line
 	for (var i = 0; i < this.cmdArray.length; ++i)
 	{
+		// If the current item's displayItem property is false, then skip it.
+		if (!this.cmdArray[i].displayItem)
+			continue;
+
 		this.cmdArray[i].pos = menuItemXPos;
 		var numTrailingBlockChars = 0;
 		var selected = (i == this.currentCommandIdx);
@@ -2668,8 +2761,17 @@ function DDFileMenuBar_constructPromptText()
 			withTrailingBlock = true;
 			numTrailingBlockChars = 2;
 		}
-		menuItemXPos += this.cmdArray[i].itemText.length + numTrailingBlockChars;
-		this.promptText += this.getDDFileMenuBarItemText(this.cmdArray[i].itemText, selected, withTrailingBlock);
+		//menuItemXPos += this.cmdArray[i].itemText.length + numTrailingBlockChars;
+		//this.promptText += this.getDDFileMenuBarItemText(this.cmdArray[i].itemText, selected, withTrailingBlock);
+
+		// If the line with this item text would be short enough to fit on the screen,
+		// then add this item's text
+		var numCharsNeeded = this.cmdArray[i].itemText.length + numTrailingBlockChars;
+		if (console.strlen(this.promptText) + numCharsNeeded + numSolidBlocksPerSide <= maxPromptLineLen)
+		{
+			menuItemXPos += this.cmdArray[i].itemText.length + numTrailingBlockChars;
+			this.promptText += this.getDDFileMenuBarItemText(this.cmdArray[i].itemText, selected, withTrailingBlock);
+		}
 	}
 	// Add the right-side blocks
 	this.promptText += "\x01w" + THIN_RECTANGLE_RIGHT;
@@ -2700,7 +2802,9 @@ function DDFileMenuBar_refreshWithNewAction(pCmdIdx)
 {
 	if (typeof(pCmdIdx) !== "number")
 		return;
-	if (pCmdIdx == this.currentCommandIdx)
+	if (pCmdIdx == this.currentCommandIdx || pCmdIdx < 0 || pCmdIdx >= this.cmdArray.length)
+		return;
+	if (!this.cmdArray[pCmdIdx].displayItem)
 		return;
 
 	// Refresh the prompt area for the previous index with regular colors
@@ -2759,8 +2863,14 @@ function DDFileMenuBar_getDDFileMenuBarItemText(pText, pSelected, pWithTrailingB
 function DDFileMenuBar_incrementMenuItemAndRefresh()
 {
 	var newCmdIdx = this.currentCommandIdx + 1;
+	while (newCmdIdx < this.cmdArray.length && !this.cmdArray[newCmdIdx].displayItem)
+		++newCmdIdx;
 	if (newCmdIdx >= this.cmdArray.length)
+	{
 		newCmdIdx = 0;
+		while (newCmdIdx < this.currentCommandIdx && !this.cmdArray[newCmdIdx].displayItem)
+			++newCmdIdx;
+	}
 	// Will set this.currentCommandIdx
 	this.refreshWithNewAction(newCmdIdx);
 }
@@ -2769,8 +2879,14 @@ function DDFileMenuBar_incrementMenuItemAndRefresh()
 function DDFileMenuBar_decrementMenuItemAndRefresh()
 {
 	var newCmdIdx = this.currentCommandIdx - 1;
+	while (newCmdIdx > 0 && !this.cmdArray[newCmdIdx].displayItem)
+		--newCmdIdx;
 	if (newCmdIdx < 0)
+	{
 		newCmdIdx = this.cmdArray.length - 1;
+		while (newCmdIdx > this.currentCommandIdx && !this.cmdArray[newCmdIdx].displayItem)
+			--newCmdIdx;
+	}
 	// Will set this.currentCommandIdx
 	this.refreshWithNewAction(newCmdIdx);
 }
@@ -2842,7 +2958,7 @@ function DDFileMenuBar_setCurrentActionCode(pActionCode, pRefreshOnScreen)
 	{
 		if (this.cmdArray[i].retCode == pActionCode)
 		{
-			if (refreshOnScreen)
+			if (refreshOnScreen && this.cmdArray[i].displayItem)
 				this.refreshWithNewAction(i);
 			else
 			{
@@ -2882,8 +2998,9 @@ function DDFileMenuBar_getAllActionKeysStr(pLowercase, pUppercase)
 //  pItemText: The text of the item
 //  pPos: Horizontal (or vertical) starting location in the bar
 //  pRetCode: The item's return code
-//  pHotkeyOverride: Optional: A key to use for the action instead of the first character in pItemText
-function DDFileMenuBarItem(pItemText, pPos, pRetCode, pHotkeyOverride)
+//  pHotkeyOverride: Optional - A key to use for the action instead of the first character in pItemText
+//  pDisplayItem: Optional - Whether or not this item should be displayed on the menu bar. Defaults to true.
+function DDFileMenuBarItem(pItemText, pPos, pRetCode, pHotkeyOverride, pDisplayItem)
 {
 	this.itemText = pItemText;
 	this.pos = pPos;
@@ -2891,6 +3008,7 @@ function DDFileMenuBarItem(pItemText, pPos, pRetCode, pHotkeyOverride)
 	this.hotkeyOverride = null;
 	if (pHotkeyOverride != null && typeof(pHotkeyOverride) !== "undefined")
 		this.hotkeyOverride = pHotkeyOverride;
+	this.displayItem = (typeof(pDisplayItem) === "boolean" ? pDisplayItem : true);
 }
 
 
@@ -3196,6 +3314,7 @@ function displayFileLibAndDirHeader(pTextOnly, pDirCodeOverride, pNumberedMode)
 	}
 	else if (typeof(pDirCodeOverride) === "string" && file_area.dir.hasOwnProperty(pDirCodeOverride))
 	{
+		dirCode = pDirCodeOverride;
 		libIdx = file_area.dir[pDirCodeOverride].lib_index;
 		dirIdx = file_area.dir[pDirCodeOverride].index;
 		libDesc = file_area.lib_list[libIdx].description;
@@ -3229,15 +3348,42 @@ function displayFileLibAndDirHeader(pTextOnly, pDirCodeOverride, pNumberedMode)
 	{
 		console.print("\x01n\x01w" + BLOCK1 + BLOCK2 + BLOCK3 + BLOCK4 + THIN_RECTANGLE_LEFT);
 		console.print(libText);
-		console.print("\x01w" + THIN_RECTANGLE_RIGHT + "\x01k\x01h" + BLOCK4 + "\x01n\x01w" + THIN_RECTANGLE_LEFT +
-					  "\x01g\x01hDD File\x01n\x01w");
+		// Rightmost area: Display either the number of files if enabled, or "DD File"
+		console.print("\x01w" + THIN_RECTANGLE_RIGHT + "\x01k\x01h" + BLOCK4 + "\x01n\x01w" + THIN_RECTANGLE_LEFT);
+		console.attributes = "GH";
+		var wasAbleToDisplayNumFiles = false;
+		if (gDisplayNumFilesInHeader && dirCode.length > 0)
+		{
+			// Hopefully there are no more than 9999999 files in this directory
+			// (the field width is 7 here)
+			var fieldWidth = 7;
+			var numFilesAsStr = file_area.dir[dirCode].files.toString();
+			if (numFilesAsStr.length <= fieldWidth)
+			{
+				var numSpaces = Math.floor(fieldWidth/2) - Math.floor(numFilesAsStr.length/2);
+				var numFilesStr = format("%*s", numSpaces, "") + numFilesAsStr;
+				var numSpacesRemaining = fieldWidth - numFilesStr.length;
+				if (numSpacesRemaining > 0)
+					numFilesStr += format("%*s", numSpacesRemaining, "");
+				console.print(numFilesStr);
+				var wasAbleToDisplayNumFiles = true;
+			}
+			else
+				console.print("DD File");
+		}
+		else
+			console.print("DD File");
+		console.attributes = "NW";
 		console.print(THIN_RECTANGLE_RIGHT + BLOCK4 + BLOCK3 + BLOCK2 + BLOCK1);
 		console.crlf();
 		// Directory line
 		console.print("\x01n\x01w" + BLOCK1 + BLOCK2 + BLOCK3 + BLOCK4 + THIN_RECTANGLE_LEFT);
 		console.print(dirText);
-		console.print("\x01w" + THIN_RECTANGLE_RIGHT + "\x01k\x01h" + BLOCK4 + "\x01n\x01w" + THIN_RECTANGLE_LEFT +
-					  "\x01g\x01hLister \x01n\x01w");
+		// Rightmost area: Display "Files" if the number of files was able to be displayed, or "Lister"
+		console.print("\x01w" + THIN_RECTANGLE_RIGHT + "\x01k\x01h" + BLOCK4 + "\x01n\x01w" + THIN_RECTANGLE_LEFT);
+		console.attributes = "GH";
+		console.print(wasAbleToDisplayNumFiles ? " Files " : "Lister ");
+		console.attributes = "NW";
 		console.print(THIN_RECTANGLE_RIGHT + BLOCK4 + BLOCK3 + BLOCK2 + BLOCK1);
 		console.attributes = "N";
 
@@ -3290,7 +3436,6 @@ function displayListHdrLine(pMoveToLocationFirst, pNumberedMode)
 // Return value: The DDLightbarMenu object for the file list in the file directory
 function createFileListMenu(pQuitKeys)
 {
-	//DDLightbarMenu(pX, pY, pWidth, pHeight)
 	// Create the menu object.  Place it below the header lines (which should have been written
 	// before this), and also leave 1 row at the bottom for the prompt line
 	var startRow = gNumHeaderLinesDisplayed > 0 ? gNumHeaderLinesDisplayed + 1 : 1;
@@ -3403,11 +3548,12 @@ function createFileListMenu(pQuitKeys)
 		}
 		*/
 		var desc = (typeof(gFileList[pIdx].desc) === "string" ? gFileList[pIdx].desc : "");
+		var descIsEmpty = (desc == "" || /^\s+$/.test(desc));
 		// Remove/replace any cursor movement codes in the description, which can corrupt the display
 		desc = removeOrReplaceSyncCursorMovementChars(desc, false);
 		// If there is no description and the option to use the filename is enabled, then use the
 		// filename.
-		if (gUseFilenameIfNoDescription && (desc == "" || /^\s+$/.test(desc)))
+		if (gUseFilenameIfNoDescription_ShortDescs && (desc == "" || /^\s+$/.test(desc)))
 			desc = gFileList[pIdx].name;
 		var fileSizeStr = file_size_str(gFileList[pIdx].size, null, FILE_SIZE_PRECISION);
 		menuItemObj.text = format(this.fileFormatStr,
@@ -4164,10 +4310,28 @@ function readConfigFile()
 						themeFilename = js.exec_dir + settingsObj[prop];
 				}
 			}
-			else if (propUpper == "USEFILENAMEIFNODESCRIPTION")
+			else if (propUpper == "USEFILENAMEIFSHORTDESCRIPTIONEMPTY")
 			{
 				if (typeof(settingsObj[prop]) === "boolean")
-					gUseFilenameIfNoDescription = settingsObj[prop];
+					gUseFilenameIfNoDescription_ShortDescs = settingsObj[prop];
+			}
+			else if (propUpper == "FILENAMEINEXTENDEDDESCRIPTION")
+			{
+				if (typeof(settingsObj[prop]) === "string")
+				{
+					var valueUpper = settingsObj[prop].toUpperCase();
+					if (valueUpper == "IFDESCEMPTY")
+						gFilenameInExtendedDesc = FILENAME_IN_DESC_IF_DESC_EMPTY;
+					else if (valueUpper == "ALWAYS")
+						gFilenameInExtendedDesc = FILENAME_IN_DESC_ALWAYS;
+					else if (valueUpper == "NEVER")
+						gFilenameInExtendedDesc = FILENAME_IN_DESC_NEVER;
+				}
+			}
+			else if (propUpper == "DISPLAYNUMFILESINHEADER")
+			{
+				if (typeof(settingsObj[prop]) === "boolean")
+					gDisplayNumFilesInHeader = settingsObj[prop];
 			}
 		}
 	}
@@ -4536,7 +4700,7 @@ function populateFileList(pSearchMode)
 		exitNow: false,
 		exitCode: 0
 	};
-	
+
 	var dirErrors = [];
 	var allSameDir = true;
 
@@ -5119,6 +5283,13 @@ function extendedDescEnabled()
 	return userExtDescEnabled && console.screen_columns >= 80 && gUseLightbarInterface && console.term_supports(USER_ANSI);
 }
 
+// Returns whether the user can enable extended descriptions (depends on their terminal size and whether
+// their terminal can use ANSI)
+function userCanEnableExtendedDescriptions()
+{
+	return console.screen_columns >= 80 && console.term_supports(USER_ANSI);
+}
+
 // Displays a file's extended description on the main screen, next to the
 // file list menu.  This is to be used when the user's extended file description
 // option is enabled (where the menu would take up about the left half of
@@ -5189,10 +5360,35 @@ function displayFileExtDescOnMainScreen(pFileIdx, pStartScreenRow, pEndScreenRow
 	fileDesc = removeOrReplaceSyncCursorMovementChars(fileDesc);
 	// If there is no description and the option to use the filename is enabled, then use the
 	// filename.
-	if (gUseFilenameIfNoDescription && (fileDesc == "" || /^\s+$/.test(fileDesc)))
-		fileDesc = lfexpand(word_wrap(fileMetadata.name + "\r\n(No description)", maxDescLen, null, false));
+	var descriptionLineAttrs = {}; // Attributes which we might want to set for certain description lines
 	var fileDescArray = fileDesc.split("\r\n");
-	//if (user.is_sysop) console.print("\x01nfileDescArray is array: " + Array.isArray(fileDescArray) + "  \x01p"); // Temporary
+	// If any lines at the top of the description are empty, then remove them
+	while (fileDescArray.length > 0 && console.strlen(fileDescArray[0], P_AUTO_UTF8) == 0)
+		fileDescArray.shift();
+	// If there is no description, then use the filename as the description
+	if (gFilenameInExtendedDesc == FILENAME_IN_DESC_IF_DESC_EMPTY || gFilenameInExtendedDesc == FILENAME_IN_DESC_ALWAYS)
+	{
+		if (fileDescArray.length == 0)
+		{
+			fileDesc = "\x01n" + gColors.filenameInDesc + lfexpand(word_wrap(fileMetadata.name + "\r\n\x01n(No description)", maxDescLen, null, false));
+			fileDescArray = fileDesc.split("\r\n");
+		}
+		else if ((gFilenameInExtendedDesc == FILENAME_IN_DESC_IF_DESC_EMPTY && fileMetadata.name.length > gFileListMenu.filenameLen) || gFilenameInExtendedDesc == FILENAME_IN_DESC_ALWAYS)
+		{
+			// See how many lines the filename takes, and use the filename color on those lines, and
+			// the normal attribute for the start of the description
+			var filenameWrapped = lfexpand(word_wrap(fileMetadata.name, maxDescLen, null, false));
+			var filenameLines = filenameWrapped.split("\r\n");
+			// Splitting as above can result in an extra empty last line
+			if (filenameLines[filenameLines.length-1].length == 0)
+				filenameLines.pop();
+			descriptionLineAttrs[0] = "\x01n" + gColors.filenameInDesc;
+			descriptionLineAttrs[filenameLines.length] = "\x01n";
+			fileDescArray = filenameLines.concat(fileDescArray);
+		}
+	}
+	// We can ignore FILENAME_IN_DESC_NEVER
+	// Display the description on the screen
 	console.attributes = "N";
 	// screenRowNum is to keep track of the row on the screen where the
 	// description line would be placed, in case the start row is after that
@@ -5208,7 +5404,8 @@ function displayFileExtDescOnMainScreen(pFileIdx, pStartScreenRow, pEndScreenRow
 		// However, printf() doesn't account for attribute codes and thus may not
 		// fill the rest of the width.  So, we do that manually.
 		var descLine = substrWithAttrCodes(fileDescArray[i], 0, maxDescLen); 
-		//descLine = "Has ANSI: " + textHasANSICodes(fileDescArray[i]);
+		if (descriptionLineAttrs.hasOwnProperty(i))
+			console.print(descriptionLineAttrs[i]);
 		var lineTextLength = console.strlen(descLine, P_AUTO_UTF8);
 		if (lineTextLength > 0)
 		{
@@ -5457,29 +5654,93 @@ function getFileInfoLineArrayForTraditionalUI(pFileList, pIdx, pFormatInfo)
 	if (pFileList[pIdx] == undefined)
 		return [];
 
-	var userExtDescEnabled = ((user.settings & USER_EXTDESC) == USER_EXTDESC);
 	var descLines;
-	if (userExtDescEnabled)
+	if (Boolean(user.settings & USER_EXTDESC)) // If extended descriptions
+	{
 		descLines = getExtdFileDescArray(pFileList, pIdx);
+		// If there is no description, then use the filename as the description
+		if (gFilenameInExtendedDesc == FILENAME_IN_DESC_IF_DESC_EMPTY || gFilenameInExtendedDesc == FILENAME_IN_DESC_ALWAYS)
+		{
+			if (descLines.length == 0)
+			{
+				var fileDesc = "\x01n" + gColors.filenameInDesc + lfexpand(word_wrap(pFileList[pIdx].name, pFormatInfo.descLen, null, false));
+				descLines = fileDesc.split("\r\n");
+				// Splitting as above can result in an extra empty last line
+				if (descLines[descLines.length-1].length == 0)
+					descLines.pop();
+				// Ensure the filename color is applied to all lines of the filename array
+				for (var i = 0; i < descLines.length; ++i)
+					descLines[i] = "\x01n" + gColors.filenameInDesc + descLines[i] + "\x01n";
+				descLines.push("(No description)");
+			}
+			else if ((gFilenameInExtendedDesc == FILENAME_IN_DESC_IF_DESC_EMPTY && pFileList[pIdx].name.length > gFileListMenu.filenameLen) || gFilenameInExtendedDesc == FILENAME_IN_DESC_ALWAYS)
+			{
+				// See how many lines the filename takes, and use the filename color on those lines, and
+				// the normal attribute for the start of the description
+				var filenameWrapped = lfexpand(word_wrap(pFileList[pIdx].name + "\x01n", pFormatInfo.descLen, null, false));
+				var filenameLines = filenameWrapped.split("\r\n");
+				// Splitting as above can result in an extra empty last line
+				if (filenameLines[filenameLines.length-1].length == 0)
+					filenameLines.pop();
+				// Ensure the filename color is applied to all lines of the filename array
+				for (var i = 0; i < filenameLines.length; ++i)
+					filenameLines[i] = "\x01n" + gColors.filenameInDesc + filenameLines[i] + "\x01n";
+				// Prepend the filename to the extended description
+				descLines = filenameLines.concat(descLines);
+			}
+		}
+		// We can ignore FILENAME_IN_DESC_NEVER
+	}
 	else
 	{
+		// gUseFilenameIfNoDescription_ShortDescs
 		if (pFileList[pIdx].hasOwnProperty("desc") && typeof(pFileList[pIdx].desc) === "string")
 			descLines = [ pFileList[pIdx].desc.replace(/\r$/, "").replace(/\n$/, "").replace(/\r\n$/, "") ];
+		else
+			descLines = [];
+		// If there is no description andthe option to use the filename is enabled, then
+		// use the filename for the description.
+		if (descLines.length == 0 && gUseFilenameIfNoDescription_ShortDescs)
+		{
+			var fileDesc = "\x01n" + gColors.filenameInDesc + lfexpand(word_wrap(pFileList[pIdx].name + "\r\n\x01n(No description)", pFormatInfo.descLen, null, false));
+			var fileDescArray = fileDesc.split("\r\n");
+			for (var i = 0; i < fileDescArray.length; ++i)
+				descLines.push(fileDescArray[i]);
+		}
 	}
-	if (!Array.isArray(descLines))
-		descLines = [];
-	if (descLines.length == 0)
-		descLines.push("");
 
 	var filename = shortenFilename(pFileList[pIdx].name, pFormatInfo.filenameLen, true);
 	// Note: substrWithAttrCodes() is defined in dd_lightbar_menu.js
 	var fileInfoLines = [];
 	var fileSizeStr = file_size_str(pFileList[pIdx].size, null, FILE_SIZE_PRECISION);
 	fileInfoLines.push(format(pFormatInfo.formatStr, pIdx+1, filename, fileSizeStr.substr(0, pFormatInfo.fileSizeLen), substrWithAttrCodes(descLines[0], 0, pFormatInfo.descLen)));
-	if (userExtDescEnabled)
+	if (Boolean(user.settings & USER_EXTDESC)) // If extended descriptions
 	{
+		// TODO: Some extended descriptions that use block characters
+		// aren't being displayed properly here
 		for (var i = 1; i < descLines.length; ++i)
-			fileInfoLines.push(format(pFormatInfo.formatStrExtdDescLines, substrWithAttrCodes(descLines[i], 0, pFormatInfo.descLen)));
+		{
+			if (console.strlen(descLines[i]) > 0)
+			{
+				//fileInfoLines.push(format(pFormatInfo.formatStrExtdDescLines, substrWithAttrCodes(descLines[i], 0, pFormatInfo.descLen)));
+				/*
+				var fileInfoFormatInfo = {
+					filenameLen: gListIdxes.filenameEnd - gListIdxes.filenameStart,
+					fileSizeLen: gListIdxes.fileSizeEnd - gListIdxes.fileSizeStart -1,
+					numItemsLen: gFileList.length.toString().length
+				};
+				fileInfoFormatInfo.descLen = gListIdxes.descriptionEnd - gListIdxes.descriptionStart - (fileInfoFormatInfo.numItemsLen+2);
+				*/
+				//printf("%-*s", remainingLen, "");
+				var descLine = format("%-*s", pFormatInfo.numItemsLen, "") + " ";
+				descLine += format("%-*s", pFormatInfo.filenameLen, "") + " ";
+				descLine += format("%-*s", pFormatInfo.fileSizeLen, "") + " ";
+				//descLine += substrWithAttrCodes(descLines[i], 0, pFormatInfo.descLen);
+				//extdDesc = removeOrReplaceSyncCursorMovementChars(extdDesc, false);
+				descLine += substrWithAttrCodes(removeOrReplaceSyncCursorMovementChars(descLines[i], false), 0, pFormatInfo.descLen);
+				fileInfoLines.push(descLine);
+			}
+		}
 	}
 	return fileInfoLines;
 }
@@ -5531,6 +5792,7 @@ function getExtdFileDescArray(pFileList, pIdx)
 		if (pFileList[pIdx].hasOwnProperty("desc") && typeof(pFileList[pIdx].desc) === "string")
 			extdDesc = pFileList[pIdx].desc;
 	}
+	//extdDesc = removeOrReplaceSyncCursorMovementChars(extdDesc, false);
 	var descLines = lfexpand(extdDesc).split("\r\n");
 	// Splitting as above can result in an extra empty last line
 	if (descLines[descLines.length-1].length == 0)

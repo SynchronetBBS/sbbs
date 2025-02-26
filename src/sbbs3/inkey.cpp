@@ -47,8 +47,7 @@ int sbbs_t::kbincom(unsigned int timeout)
 
 int sbbs_t::translate_input(int ch)
 {
-	int term = term_supports();
-	if (term & PETSCII) {
+	if (term->charset() == CHARSET_PETSCII) {
 		switch (ch) {
 			case PETSCII_HOME:
 				return TERM_KEY_HOME;
@@ -72,14 +71,21 @@ int sbbs_t::translate_input(int ch)
 		if (IS_ALPHA(ch))
 			ch ^= 0x20; /* Swap upper/lower case */
 	}
-	else if (term & SWAP_DELETE) {
-		switch (ch) {
-			case TERM_KEY_DELETE:
-				ch = '\b';
-				break;
-			case '\b':
-				ch = TERM_KEY_DELETE;
-				break;
+	else {
+		bool lwe = last_inkey_was_esc;
+		if (ch == ESC)
+			last_inkey_was_esc = true;
+		if (lwe && ch == '[')
+			autoterm |= ANSI;	// A CSI means ANSI.
+		if (term->supports(SWAP_DELETE)) {
+			switch (ch) {
+				case TERM_KEY_DELETE:
+					ch = '\b';
+					break;
+				case '\b':
+					ch = TERM_KEY_DELETE;
+					break;
+			}
 		}
 	}
 
@@ -109,7 +115,7 @@ int sbbs_t::inkey(int mode, unsigned int timeout)
 	if (ch == NOINP)
 		return no_input;
 
-	if (term_supports(NO_EXASCII))
+	if (term->charset() == CHARSET_ASCII)
 		ch &= 0x7f; // e.g. strip parity bit
 
 	getkey_last_activity = time(NULL);
@@ -123,7 +129,7 @@ int sbbs_t::inkey(int mode, unsigned int timeout)
 
 	/* Translate (not control character) input into CP437 */
 	if (!(mode & K_UTF8)) {
-		if ((ch & 0x80) && term_supports(UTF8)) {
+		if ((ch & 0x80) && (term->charset() == CHARSET_UTF8)) {
 			char   utf8[UTF8_MAX_LEN] = { (char)ch };
 			size_t len = utf8_decode_firstbyte(ch);
 			if (len < 2 || len > sizeof(utf8))
@@ -154,14 +160,16 @@ int sbbs_t::inkey(int mode, unsigned int timeout)
 
 char sbbs_t::handle_ctrlkey(char ch, int mode)
 {
-	char str[512];
 	char tmp[512];
-	int  i, j;
+	int  i;
+
+	if (!term->parse_input_sequence(ch, mode))
+		return 0;
 
 	if (ch == TERM_KEY_ABORT) {  /* Ctrl-C Abort */
 		sys_status |= SS_ABORT;
 		if (mode & K_SPIN) /* back space once if on spinning cursor */
-			backspace();
+			term->backspace();
 		return 0;
 	}
 	if (ch == CTRL_Z && !(mode & (K_MSG | K_GETSTR))
@@ -171,7 +179,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 		hotkey_inside |= (1 << ch);
 		if (mode & K_SPIN)
 			bputs("\b ");
-		saveline();
+		term->saveline();
 		attr(LIGHTGRAY);
 		CRLF;
 		bputs(text[RawMsgInputModeIsNow]);
@@ -182,8 +190,8 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 		console ^= CON_RAW_IN;
 		CRLF;
 		CRLF;
-		restoreline();
-		lncntr = 0;
+		term->restoreline();
+		term->lncntr = 0;
 		hotkey_inside &= ~(1 << ch);
 		if (action != NODE_MAIN && action != NODE_XFER)
 			return CTRL_Z;
@@ -192,11 +200,6 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 
 	if (console & CON_RAW_IN)   /* ignore ctrl-key commands if in raw mode */
 		return ch;
-
-#if 0   /* experimental removal to fix Tracker1's pause module problem with down-arrow */
-	if (ch == LF)              /* ignore LF's if not in raw mode */
-		return 0;
-#endif
 
 	/* Global hot key event */
 	if (sys_status & SS_USERON) {
@@ -210,7 +213,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			if (mode & K_SPIN)
 				bputs("\b ");
 			if (!(sys_status & SS_SPLITP)) {
-				saveline();
+				term->saveline();
 				attr(LIGHTGRAY);
 				CRLF;
 			}
@@ -224,9 +227,9 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 				external(cmdstr(cfg.hotkey[i]->cmd, nulstr, nulstr, tmp), 0);
 			if (!(sys_status & SS_SPLITP)) {
 				CRLF;
-				restoreline();
+				term->restoreline();
 			}
-			lncntr = 0;
+			term->lncntr = 0;
 			hotkey_inside &= ~(1 << ch);
 			return 0;
 		}
@@ -245,7 +248,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			if (mode & K_SPIN)
 				bputs("\b ");
 			if (!(sys_status & SS_SPLITP)) {
-				saveline();
+				term->saveline();
 				attr(LIGHTGRAY);
 				CRLF;
 			}
@@ -254,9 +257,9 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			sync();
 			if (!(sys_status & SS_SPLITP)) {
 				CRLF;
-				restoreline();
+				term->restoreline();
 			}
-			lncntr = 0;
+			term->lncntr = 0;
 			hotkey_inside &= ~(1 << ch);
 			return 0;
 
@@ -269,7 +272,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			if (mode & K_SPIN)
 				bputs("\b ");
 			if (!(sys_status & SS_SPLITP)) {
-				saveline();
+				term->saveline();
 				attr(LIGHTGRAY);
 				CRLF;
 			}
@@ -277,9 +280,9 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			sync();
 			if (!(sys_status & SS_SPLITP)) {
 				CRLF;
-				restoreline();
+				term->restoreline();
 			}
-			lncntr = 0;
+			term->lncntr = 0;
 			hotkey_inside &= ~(1 << ch);
 			return 0;
 		case CTRL_T: /* Ctrl-T Time information */
@@ -292,7 +295,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			hotkey_inside |= (1 << ch);
 			if (mode & K_SPIN)
 				bputs("\b ");
-			saveline();
+			term->saveline();
 			attr(LIGHTGRAY);
 			now = time(NULL);
 			bprintf(text[TiLogon], timestr(logontime));
@@ -304,8 +307,8 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			if (sys_status & SS_EVENT)
 				bprintf(text[ReducedTime], timestr(event_time));
 			sync();
-			restoreline();
-			lncntr = 0;
+			term->restoreline();
+			term->lncntr = 0;
 			hotkey_inside &= ~(1 << ch);
 			return 0;
 		case CTRL_K:  /*  Ctrl-K Control key menu */
@@ -318,405 +321,18 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			hotkey_inside |= (1 << ch);
 			if (mode & K_SPIN)
 				bputs("\b ");
-			saveline();
+			term->saveline();
 			attr(LIGHTGRAY);
-			lncntr = 0;
+			term->lncntr = 0;
 			if (mode & K_GETSTR)
 				bputs(text[GetStrMenu]);
 			else
 				bputs(text[ControlKeyMenu]);
 			sync();
-			restoreline();
-			lncntr = 0;
+			term->restoreline();
+			term->lncntr = 0;
 			hotkey_inside &= ~(1 << ch);
 			return 0;
-		case ESC:
-			i = kbincom((mode & K_GETSTR) ? 3000:1000);
-			if (i == NOINP)        // timed-out waiting for '['
-				return ESC;
-			ch = i;
-			if (ch != '[') {
-				ungetkey(ch, /* insert: */ true);
-				return ESC;
-			}
-			i = j = 0;
-			autoterm |= ANSI;             /* <ESC>[x means they have ANSI */
-#if 0 // this seems like a "bad idea" {tm}
-			if (sys_status & SS_USERON && useron.misc & AUTOTERM && !(useron.misc & ANSI)
-			    && useron.number) {
-				useron.misc |= ANSI;
-				putuserrec(&cfg, useron.number, U_MISC, 8, ultoa(useron.misc, str, 16));
-			}
-#endif
-			while (i < 10 && j < 30) {       /* up to 3 seconds */
-				ch = kbincom(100);
-				if (ch == (NOINP & 0xff)) {
-					j++;
-					continue;
-				}
-				if (i == 0 && ch == 'M' && mouse_mode != MOUSE_MODE_OFF) {
-					str[i++] = ch;
-					int button = kbincom(100);
-					if (button == NOINP) {
-						lprintf(LOG_DEBUG, "Timeout waiting for mouse button value");
-						continue;
-					}
-					str[i++] = button;
-					ch = kbincom(100);
-					if (ch < '!') {
-						lprintf(LOG_DEBUG, "Unexpected mouse-button (0x%02X) tracking char: 0x%02X < '!'"
-						        , button, ch);
-						continue;
-					}
-					str[i++] = ch;
-					int x = ch - '!';
-					ch = kbincom(100);
-					if (ch < '!') {
-						lprintf(LOG_DEBUG, "Unexpected mouse-button (0x%02X) tracking char: 0x%02X < '!'"
-						        , button, ch);
-						continue;
-					}
-					str[i++] = ch;
-					int y = ch - '!';
-					lprintf(LOG_DEBUG, "X10 Mouse button-click (0x%02X) reported at: %u x %u", button, x, y);
-					if (button == 0x20) { // Left-click
-						list_node_t* node;
-						for (node = mouse_hotspots.first; node != NULL; node = node->next) {
-							struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
-							if (spot->y == y && x >= spot->minx && x <= spot->maxx)
-								break;
-						}
-						if (node == NULL) {
-							for (node = mouse_hotspots.first; node != NULL; node = node->next) {
-								struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
-								if (spot->hungry && spot->y == y && x >= spot->minx)
-									break;
-							}
-						}
-						if (node == NULL) {
-							for (node = mouse_hotspots.last; node != NULL; node = node->prev) {
-								struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
-								if (spot->hungry && spot->y == y && x <= spot->minx)
-									break;
-							}
-						}
-						if (node != NULL) {
-							struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
-	#ifdef _DEBUG
-							{
-								char dbg[128];
-								c_escape_str(spot->cmd, dbg, sizeof(dbg), /* Ctrl-only? */ true);
-								lprintf(LOG_DEBUG, "Stuffing hot spot command into keybuf: '%s'", dbg);
-							}
-	#endif
-							ungetkeys(spot->cmd);
-							if (pause_inside && pause_hotspot == NULL)
-								return handle_ctrlkey(TERM_KEY_ABORT, mode);
-							return 0;
-						}
-						if (pause_inside && y == rows - 1)
-							return '\r';
-					} else if (button == '`' && console & CON_MOUSE_SCROLL) {
-						return TERM_KEY_UP;
-					} else if (button == 'a' && console & CON_MOUSE_SCROLL) {
-						return TERM_KEY_DOWN;
-					}
-					if ((button != 0x23 && console & CON_MOUSE_CLK_PASSTHRU)
-					    || (button == 0x23 && console & CON_MOUSE_REL_PASSTHRU)) {
-						for (j = i; j > 0; j--)
-							ungetkey(str[j - 1], /* insert: */ true);
-						ungetkey('[', /* insert: */ true);
-						return ESC;
-					}
-					if (button == 0x22)  // Right-click
-						return handle_ctrlkey(TERM_KEY_ABORT, mode);
-					return 0;
-				}
-				if (i == 0 && ch == '<' && mouse_mode != MOUSE_MODE_OFF) {
-					while (i < (int)sizeof(str) - 1) {
-						int byte = kbincom(100);
-						if (byte == NOINP) {
-							lprintf(LOG_DEBUG, "Timeout waiting for mouse report character (%d)", i);
-							return 0;
-						}
-						str[i++] = byte;
-						if (IS_ALPHA(byte))
-							break;
-					}
-					str[i] = 0;
-					int button = -1, x = 0, y = 0;
-					if (sscanf(str, "%d;%d;%d%c", &button, &x, &y, &ch) != 4
-					    || button < 0 || x < 1 || y < 1 || toupper(ch) != 'M') {
-						lprintf(LOG_DEBUG, "Invalid SGR mouse report sequence: '%s'", str);
-						return 0;
-					}
-					--x;
-					--y;
-					lprintf(LOG_DEBUG, "SGR Mouse button (0x%02X) %s reported at: %u x %u"
-					        , button, ch == 'M' ? "PRESS" : "RELEASE", x, y);
-					if (button == 0 && ch == 'm') { // Left-button release
-						list_node_t* node;
-						for (node = mouse_hotspots.first; node != NULL; node = node->next) {
-							struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
-							if (spot->y == y && x >= spot->minx && x <= spot->maxx)
-								break;
-						}
-						if (node == NULL) {
-							for (node = mouse_hotspots.first; node != NULL; node = node->next) {
-								struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
-								if (spot->hungry && spot->y == y && x >= spot->minx)
-									break;
-							}
-						}
-						if (node == NULL) {
-							for (node = mouse_hotspots.last; node != NULL; node = node->prev) {
-								struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
-								if (spot->hungry && spot->y == y && x <= spot->minx)
-									break;
-							}
-						}
-						if (node != NULL) {
-							struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
-	#ifdef _DEBUG
-							{
-								char dbg[128];
-								c_escape_str(spot->cmd, dbg, sizeof(dbg), /* Ctrl-only? */ true);
-								lprintf(LOG_DEBUG, "Stuffing hot spot command into keybuf: '%s'", dbg);
-							}
-	#endif
-							ungetkeys(spot->cmd);
-							if (pause_inside && pause_hotspot == NULL)
-								return handle_ctrlkey(TERM_KEY_ABORT, mode);
-							return 0;
-						}
-						if (pause_inside && y == rows - 1)
-							return '\r';
-					} else if (button == 0x40 && console & CON_MOUSE_SCROLL) {
-						return TERM_KEY_UP;
-					} else if (button == 0x41 && console & CON_MOUSE_SCROLL) {
-						return TERM_KEY_DOWN;
-					}
-					if ((ch == 'M' && console & CON_MOUSE_CLK_PASSTHRU)
-					    || (ch == 'm' && console & CON_MOUSE_REL_PASSTHRU)) {
-						lprintf(LOG_DEBUG, "Passing-through SGR mouse report: 'ESC[<%s'", str);
-						for (j = i; j > 0; j--)
-							ungetkey(str[j - 1], /* insert: */ true);
-						ungetkey('<', /* insert: */ true);
-						ungetkey('[', /* insert: */ true);
-						return ESC;
-					}
-					if (ch == 'M' && button == 2)  // Right-click
-						return handle_ctrlkey(TERM_KEY_ABORT, mode);
-	#ifdef _DEBUG
-					lprintf(LOG_DEBUG, "Eating SGR mouse report: 'ESC[<%s'", str);
-	#endif
-					return 0;
-				}
-				if (ch != ';' && !IS_DIGIT(ch) && ch != 'R') {    /* other ANSI */
-					str[i] = 0;
-					switch (ch) {
-						case 'A':
-							return TERM_KEY_UP;
-						case 'B':
-							return TERM_KEY_DOWN;
-						case 'C':
-							return TERM_KEY_RIGHT;
-						case 'D':
-							return TERM_KEY_LEFT;
-						case 'H':   /* ANSI:  home cursor */
-							return TERM_KEY_HOME;
-						case 'V':
-							return TERM_KEY_PAGEUP;
-						case 'U':
-							return TERM_KEY_PAGEDN;
-						case 'F':   /* Xterm: cursor preceding line */
-						case 'K':   /* ANSI:  clear-to-end-of-line */
-							return TERM_KEY_END;
-						case '@':   /* ANSI/ECMA-048 INSERT */
-							return TERM_KEY_INSERT;
-						case '~':   /* VT-220 (XP telnet.exe) */
-							switch (atoi(str)) {
-								case 1:
-									return TERM_KEY_HOME;
-								case 2:
-									return TERM_KEY_INSERT;
-								case 3:
-									return TERM_KEY_DELETE;
-								case 4:
-									return TERM_KEY_END;
-								case 5:
-									return TERM_KEY_PAGEUP;
-								case 6:
-									return TERM_KEY_PAGEDN;
-							}
-							break;
-					}
-					ungetkey(ch, /* insert: */ true);
-					for (j = i; j > 0; j--)
-						ungetkey(str[j - 1], /* insert: */ true);
-					ungetkey('[', /* insert: */ true);
-					return ESC;
-				}
-				if (ch == 'R') {       /* cursor position report */
-					if (mode & K_ANSI_CPR && i) {  /* auto-detect rows */
-						int x, y;
-						str[i] = 0;
-						if (sscanf(str, "%u;%u", &y, &x) == 2) {
-							lprintf(LOG_DEBUG, "received ANSI cursor position report: %ux%u"
-							        , x, y);
-							/* Sanity check the coordinates in the response: */
-							if (useron.cols == TERM_COLS_AUTO && x >= TERM_COLS_MIN && x <= TERM_COLS_MAX)
-								cols = x;
-							if (useron.rows == TERM_ROWS_AUTO && y >= TERM_ROWS_MIN && y <= TERM_ROWS_MAX)
-								rows = y;
-							if (useron.cols == TERM_COLS_AUTO || useron.rows == TERM_ROWS_AUTO)
-								update_nodeterm();
-						}
-					}
-					return 0;
-				}
-				str[i++] = ch;
-			}
-
-			for (j = i; j > 0; j--)
-				ungetkey(str[j - 1], /* insert: */ true);
-			ungetkey('[', /* insert: */ true);
-			return ESC;
 	}
 	return ch;
-}
-
-void sbbs_t::set_mouse(int flags)
-{
-	int term = term_supports();
-	if ((term & ANSI) && ((term & MOUSE) || flags == MOUSE_MODE_OFF)) {
-		int mode = mouse_mode & ~flags;
-		if (mode & MOUSE_MODE_X10)
-			ansi_mouse(ANSI_MOUSE_X10, false);
-		if (mode & MOUSE_MODE_NORM)
-			ansi_mouse(ANSI_MOUSE_NORM, false);
-		if (mode & MOUSE_MODE_BTN)
-			ansi_mouse(ANSI_MOUSE_BTN, false);
-		if (mode & MOUSE_MODE_ANY)
-			ansi_mouse(ANSI_MOUSE_ANY, false);
-		if (mode & MOUSE_MODE_EXT)
-			ansi_mouse(ANSI_MOUSE_EXT, false);
-
-		mode = flags & ~mouse_mode;
-		if (mode & MOUSE_MODE_X10)
-			ansi_mouse(ANSI_MOUSE_X10, true);
-		if (mode & MOUSE_MODE_NORM)
-			ansi_mouse(ANSI_MOUSE_NORM, true);
-		if (mode & MOUSE_MODE_BTN)
-			ansi_mouse(ANSI_MOUSE_BTN, true);
-		if (mode & MOUSE_MODE_ANY)
-			ansi_mouse(ANSI_MOUSE_ANY, true);
-		if (mode & MOUSE_MODE_EXT)
-			ansi_mouse(ANSI_MOUSE_EXT, true);
-
-		if (mouse_mode != flags) {
-#if 0
-			lprintf(LOG_DEBUG, "New mouse mode: %X (was: %X)", flags, mouse_mode);
-#endif
-			mouse_mode = flags;
-		}
-	}
-}
-
-struct mouse_hotspot* sbbs_t::add_hotspot(struct mouse_hotspot* spot)
-{
-	if (!(cfg.sys_misc & SM_MOUSE_HOT) || !term_supports(MOUSE))
-		return NULL;
-	if (spot->y < 0)
-		spot->y = row;
-	if (spot->minx < 0)
-		spot->minx = column;
-	if (spot->maxx < 0)
-		spot->maxx = cols - 1;
-#if 0 //def _DEBUG
-	char         dbg[128];
-	lprintf(LOG_DEBUG, "Adding mouse hot spot %ld-%ld x %ld = '%s'"
-	        , spot->minx, spot->maxx, spot->y, c_escape_str(spot->cmd, dbg, sizeof(dbg), /* Ctrl-only? */ true));
-#endif
-	list_node_t* node = listInsertNodeData(&mouse_hotspots, spot, sizeof(*spot));
-	if (node == NULL)
-		return NULL;
-	set_mouse(MOUSE_MODE_ON);
-	return (struct mouse_hotspot*)node->data;
-}
-
-void sbbs_t::clear_hotspots(void)
-{
-	int spots = listCountNodes(&mouse_hotspots);
-	if (spots) {
-#if 0 //def _DEBUG
-		lprintf(LOG_DEBUG, "Clearing %ld mouse hot spots", spots);
-#endif
-		listFreeNodes(&mouse_hotspots);
-		if (!(console & CON_MOUSE_SCROLL))
-			set_mouse(MOUSE_MODE_OFF);
-	}
-}
-
-void sbbs_t::scroll_hotspots(int count)
-{
-	int spots = 0;
-	int remain = 0;
-	for (list_node_t* node = mouse_hotspots.first; node != NULL; node = node->next) {
-		struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
-		spot->y -= count;
-		spots++;
-		if (spot->y >= 0)
-			remain++;
-	}
-#ifdef _DEBUG
-	if (spots)
-		lprintf(LOG_DEBUG, "Scrolled %d mouse hot-spots %d rows (%d remain)", spots, count, remain);
-#endif
-	if (remain < 1)
-		clear_hotspots();
-}
-
-struct mouse_hotspot* sbbs_t::add_hotspot(char cmd, bool hungry, int minx, int maxx, int y)
-{
-	struct mouse_hotspot spot = {};
-	spot.cmd[0] = cmd;
-	spot.minx = minx < 0 ? column : minx;
-	spot.maxx = maxx < 0 ? column : maxx;
-	spot.y = y;
-	spot.hungry = hungry;
-	return add_hotspot(&spot);
-}
-
-struct mouse_hotspot* sbbs_t::add_hotspot(int num, bool hungry, int minx, int maxx, int y)
-{
-	struct mouse_hotspot spot = {};
-	SAFEPRINTF(spot.cmd, "%d\r", num);
-	spot.minx = minx;
-	spot.maxx = maxx;
-	spot.y = y;
-	spot.hungry = hungry;
-	return add_hotspot(&spot);
-}
-
-struct mouse_hotspot* sbbs_t::add_hotspot(uint num, bool hungry, int minx, int maxx, int y)
-{
-	struct mouse_hotspot spot = {};
-	SAFEPRINTF(spot.cmd, "%u\r", num);
-	spot.minx = minx;
-	spot.maxx = maxx;
-	spot.y = y;
-	spot.hungry = hungry;
-	return add_hotspot(&spot);
-}
-
-struct mouse_hotspot* sbbs_t::add_hotspot(const char* cmd, bool hungry, int minx, int maxx, int y)
-{
-	struct mouse_hotspot spot = {};
-	SAFECOPY(spot.cmd, cmd);
-	spot.minx = minx;
-	spot.maxx = maxx;
-	spot.y = y;
-	spot.hungry = hungry;
-	return add_hotspot(&spot);
 }

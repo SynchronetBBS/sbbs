@@ -778,7 +778,7 @@ static void send_thread(void* arg)
 
 		if (xfer.dir >= 0 && !xfer.tmpfile) {
 			memset(&f, 0, sizeof(f));
-			if (!loadfile(&scfg, xfer.dir, getfname(xfer.filename), &f, file_detail_normal)) {
+			if (!loadfile(&scfg, xfer.dir, getfname(xfer.filename), &f, file_detail_normal, NULL)) {
 				lprintf(LOG_ERR, "%04d <%s> DATA downloaded: %s (not found in filebase!)"
 				        , xfer.ctrl_sock
 				        , xfer.user->alias
@@ -786,7 +786,7 @@ static void send_thread(void* arg)
 			} else {
 				f.hdr.times_downloaded++;
 				f.hdr.last_downloaded = time32(NULL);
-				updatefile(&scfg, &f);
+				updatefile(&scfg, &f, NULL);
 
 				lprintf(LOG_INFO, "%04d <%s> DATA downloaded: %s (%u times total)"
 				        , xfer.ctrl_sock
@@ -1108,20 +1108,22 @@ static void receive_thread(void* arg)
 			if (f.desc == NULL)
 				smb_new_hfield_str(&f, SMB_FILEDESC, fdesc);
 			if (filedat) {
-				if (updatefile(&scfg, &f))
+				int result;
+				if (updatefile(&scfg, &f, &result))
 					lprintf(LOG_INFO, "%04d <%s> DATA updated file: %s"
 					        , xfer.ctrl_sock, xfer.user->alias, f.name);
 				else
-					lprintf(LOG_ERR, "%04d <%s> !DATA ERROR updating file (%s) in database"
-					        , xfer.ctrl_sock, xfer.user->alias, f.name);
+					lprintf(LOG_ERR, "%04d <%s> !DATA ERROR %d updating file (%s) in database"
+					        , xfer.ctrl_sock, xfer.user->alias, result, f.name);
 				/* need to update the index here */
 			} else {
-				if (addfile(&scfg, &f, extdesc, /* metatdata: */ NULL, xfer.client))
+				int result;
+				if (addfile(&scfg, &f, extdesc, /* metatdata: */ NULL, xfer.client, &result))
 					lprintf(LOG_INFO, "%04d <%s> DATA uploaded file: %s"
 					        , xfer.ctrl_sock, xfer.user->alias, f.name);
 				else
-					lprintf(LOG_ERR, "%04d <%s> !DATA ERROR adding file (%s) to database"
-					        , xfer.ctrl_sock, xfer.user->alias, f.name);
+					lprintf(LOG_ERR, "%04d <%s> !DATA ERROR %d adding file (%s) to database"
+					        , xfer.ctrl_sock, xfer.user->alias, result, f.name);
 			}
 
 			if (scfg.dir[f.dir]->upload_sem[0])
@@ -4560,7 +4562,7 @@ static void ctrl_thread(void* arg)
 				    && !download_is_free(&scfg, dir, &user, &client)) {
 					file_t f;
 					if (filedat)
-						loadfile(&scfg, dir, p, &f, file_detail_normal);
+						loadfile(&scfg, dir, p, &f, file_detail_normal, NULL);
 					else
 						f.cost = (uint32_t)flength(fname);
 					if (f.cost > user_available_credits(&user)) {
@@ -4615,7 +4617,7 @@ static void ctrl_thread(void* arg)
 				} else {
 					lprintf(LOG_NOTICE, "%04d <%s> deleted %s", sock, user.alias, fname);
 					if (filedat)
-						removefile(&scfg, dir, getfname(fname));
+						removefile(&scfg, dir, getfname(fname), NULL);
 					sockprintf(sock, sess, "250 %s deleted.", fname);
 				}
 			} else if (success) {
@@ -4779,7 +4781,7 @@ static void ctrl_thread(void* arg)
 				}
 				if (append || filepos) { /* RESUME */
 					file_t f;
-					if (!loadfile(&scfg, dir, p, &f, file_detail_normal)) {
+					if (!loadfile(&scfg, dir, p, &f, file_detail_normal, NULL)) {
 						if (filepos) {
 							lprintf(LOG_WARNING, "%04d <%s> file (%s) not in database for %.4s command"
 							        , sock, user.alias, fname, cmd);
@@ -4957,9 +4959,15 @@ static void ctrl_thread(void* arg)
 				           , scfg.dir[curdir]->vdir);
 			continue;
 		}
-
-		if (!strnicmp(cmd, "MKD", 3) ||
-		    !strnicmp(cmd, "XMKD", 4) ||
+		bool mkdir_cmd = (strnicmp(cmd, "MKD ", 4) == 0 || strnicmp(cmd, "XMKD", 4) == 0);
+		if (mkdir_cmd && !(user.rest & (FLAG('G') | FLAG('U')))) {
+			p = cmd + 4;
+			SKIP_WHITESPACE(p);
+			sockprintf(sock, sess, "257 \"%s\" directory created (not really)", p);
+			lprintf(LOG_DEBUG, "%04d <%s> requested to create directory: %s", sock, user.alias, p);
+			continue;
+		}
+		if (mkdir_cmd ||
 		    !strnicmp(cmd, "SITE EXEC", 9)) {
 			lprintf(LOG_WARNING, "%04d <%s> !SUSPECTED HACK ATTEMPT: %s"
 			        , sock, user.alias, cmd);
