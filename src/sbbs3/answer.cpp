@@ -552,9 +552,8 @@ bool sbbs_t::answer()
 		if (strcmp(terminal, "PETSCII") == 0) {
 			autoterm |= PETSCII;
 			update_terminal(this);
-			term_out("\r\n");
 		}
-		else if (autoterm & PETSCII) {
+		if (autoterm & PETSCII) {
 			SAFECOPY(terminal, "PETSCII");
 			outchar(FF);
 			term->center(str);
