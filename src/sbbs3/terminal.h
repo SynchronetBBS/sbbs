@@ -83,27 +83,6 @@ public:
 
 	static uint32_t flags_fixup(uint32_t flags)
 	{
-		if (flags & UTF8) {
-			// These bits are *never* available in UTF8 mode
-			// Note that RIP is not inherently incompatible with UTF8
-			flags &= ~(MODE7 | NO_EXASCII | PETSCII);
-		}
-
-		if (flags & RIP) {
-			// ANSI is always available when RIP is
-			flags |= ANSI;
-		}
-
-		if (!(flags & ANSI)) {
-			// These bits are *only* available in ANSI mode
-			// NOTE: COLOR is forced in PETSCII mode later
-			flags &= ~(COLOR | RIP | ICE_COLOR | MOUSE);
-		}
-		else {
-			// These bits are *never* available in ANSI mode
-			flags &= ~(PETSCII | MODE7);
-		}
-
 		if (flags & PETSCII) {
 			// These bits are *never* available in PETSCII mode
 			flags &= ~(RIP | ICE_COLOR | MOUSE | NO_EXASCII | UTF8 | MODE7);
@@ -117,6 +96,32 @@ public:
 			// These bits are *always* availabe in MODE7
 			flags |= COLOR;
 		}
+
+		if (flags & UTF8) {
+			// These bits are *never* available in UTF8 mode
+			// Note that RIP is not inherently incompatible with UTF8
+			flags &= ~(MODE7 | NO_EXASCII | PETSCII);
+		}
+
+		if (flags & RIP) {
+			// ANSI is always available when RIP is
+			flags |= ANSI;
+		}
+
+		if (!(flags & ANSI)) {
+			// These bits are *only* available in ANSI mode
+			flags &= ~(RIP | ICE_COLOR | MOUSE);
+		}
+		else {
+			// These bits are *never* available in ANSI mode
+			flags &= ~(PETSCII | MODE7);
+		}
+
+		if (!(flags & (ANSI | MODE7 | PETSCII))) {
+			// These bits are *only* available in ANSI, PETSCII, or MODE7
+			flags &= ~(COLOR);
+		}
+
 		return flags;
 	}
 

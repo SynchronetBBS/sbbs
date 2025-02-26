@@ -481,7 +481,7 @@ size_t sbbs_t::cp437_out(int ich)
 
 			if (len < 1)
 				return 0;
-			if (term_out(utf8, len) != len)
+			if (term_out(utf8, len) != (size_t)len)
 				return 0;
 			return 1;
 		}
