@@ -94,7 +94,7 @@ public:
 			// These bits are *never* available in MODE7
 			flags &= ~(RIP | ICE_COLOR | MOUSE | NO_EXASCII | UTF8 | PETSCII);
 			// These bits are *always* availabe in MODE7
-			flags |= COLOR;
+			flags |= (COLOR | SWAP_DELETE);
 		}
 
 		if (flags & UTF8) {
