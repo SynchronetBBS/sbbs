@@ -164,7 +164,10 @@
  *                              Fix: useFilenameIfNoDescription option now used in traditional
  *                              (non-lightbar) mode.
  * 2025-02-25 Eric Oulashin     Version 2.28a
- *                              Long filename color fix for some edge cases
+ *                              Long filename color fix for some edge cases.
+ *                              The setting useFilenameIfNoDescription changed to
+ *                              useFilenameIfShortDescriptionEmpty.
+ *                              New setting: filenameInExtendedDescription
  */
 
 "use strict";
@@ -354,9 +357,14 @@ var gTraditionalUseSyncStock = false;
 // file information
 var gDispayUserAvatars = true;
 
-// If a file's description is unavailable, whether or not to use the
-// filename instead
-var gUseFilenameIfNoDescription = true;
+// How to use the filename in the (extended) description
+var FILENAME_IN_DESC_IF_DESC_EMPTY = 0;
+var FILENAME_IN_DESC_ALWAYS = 1;
+var FILENAME_IN_DESC_NEVER = 2;
+var gFilenameInExtendedDesc = FILENAME_IN_DESC_IF_DESC_EMPTY;
+// For short descriptions (extended descriptions disabled): If a file's description is
+// unavailable, whether or not to use the filename instead
+var gUseFilenameIfNoDescription_ShortDescs = true;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Script execution code
@@ -3540,11 +3548,12 @@ function createFileListMenu(pQuitKeys)
 		}
 		*/
 		var desc = (typeof(gFileList[pIdx].desc) === "string" ? gFileList[pIdx].desc : "");
+		var descIsEmpty = (desc == "" || /^\s+$/.test(desc));
 		// Remove/replace any cursor movement codes in the description, which can corrupt the display
 		desc = removeOrReplaceSyncCursorMovementChars(desc, false);
 		// If there is no description and the option to use the filename is enabled, then use the
 		// filename.
-		if (gUseFilenameIfNoDescription && (desc == "" || /^\s+$/.test(desc)))
+		if (gUseFilenameIfNoDescription_ShortDescs && (desc == "" || /^\s+$/.test(desc)))
 			desc = gFileList[pIdx].name;
 		var fileSizeStr = file_size_str(gFileList[pIdx].size, null, FILE_SIZE_PRECISION);
 		menuItemObj.text = format(this.fileFormatStr,
@@ -4301,10 +4310,23 @@ function readConfigFile()
 						themeFilename = js.exec_dir + settingsObj[prop];
 				}
 			}
-			else if (propUpper == "USEFILENAMEIFNODESCRIPTION")
+			else if (propUpper == "USEFILENAMEIFSHORTDESCRIPTIONEMPTY")
 			{
 				if (typeof(settingsObj[prop]) === "boolean")
-					gUseFilenameIfNoDescription = settingsObj[prop];
+					gUseFilenameIfNoDescription_ShortDescs = settingsObj[prop];
+			}
+			else if (propUpper == "FILENAMEINEXTENDEDDESCRIPTION")
+			{
+				if (typeof(settingsObj[prop]) === "string")
+				{
+					var valueUpper = settingsObj[prop].toUpperCase();
+					if (valueUpper == "IFDESCEMPTY")
+						gFilenameInExtendedDesc = FILENAME_IN_DESC_IF_DESC_EMPTY;
+					else if (valueUpper == "ALWAYS")
+						gFilenameInExtendedDesc = FILENAME_IN_DESC_ALWAYS;
+					else if (valueUpper == "NEVER")
+						gFilenameInExtendedDesc = FILENAME_IN_DESC_NEVER;
+				}
 			}
 			else if (propUpper == "DISPLAYNUMFILESINHEADER")
 			{
@@ -5344,26 +5366,28 @@ function displayFileExtDescOnMainScreen(pFileIdx, pStartScreenRow, pEndScreenRow
 	while (fileDescArray.length > 0 && console.strlen(fileDescArray[0], P_AUTO_UTF8) == 0)
 		fileDescArray.shift();
 	// If there is no description, then use the filename as the description
-	if (fileDescArray.length == 0 && gUseFilenameIfNoDescription)
+	if (gFilenameInExtendedDesc == FILENAME_IN_DESC_IF_DESC_EMPTY || gFilenameInExtendedDesc == FILENAME_IN_DESC_ALWAYS)
 	{
-		fileDesc = "\x01n" + gColors.filenameInDesc + lfexpand(word_wrap(fileMetadata.name + "\r\n\x01n(No description)", maxDescLen, null, false));
-		fileDescArray = fileDesc.split("\r\n");
+		if (fileDescArray.length == 0)
+		{
+			fileDesc = "\x01n" + gColors.filenameInDesc + lfexpand(word_wrap(fileMetadata.name + "\r\n\x01n(No description)", maxDescLen, null, false));
+			fileDescArray = fileDesc.split("\r\n");
+		}
+		else if ((gFilenameInExtendedDesc == FILENAME_IN_DESC_IF_DESC_EMPTY && fileMetadata.name.length > gFileListMenu.filenameLen) || gFilenameInExtendedDesc == FILENAME_IN_DESC_ALWAYS)
+		{
+			// See how many lines the filename takes, and use the filename color on those lines, and
+			// the normal attribute for the start of the description
+			var filenameWrapped = lfexpand(word_wrap(fileMetadata.name, maxDescLen, null, false));
+			var filenameLines = filenameWrapped.split("\r\n");
+			// Splitting as above can result in an extra empty last line
+			if (filenameLines[filenameLines.length-1].length == 0)
+				filenameLines.pop();
+			descriptionLineAttrs[0] = "\x01n" + gColors.filenameInDesc;
+			descriptionLineAttrs[filenameLines.length] = "\x01n";
+			fileDescArray = filenameLines.concat(fileDescArray);
+		}
 	}
-	// If there is a description and the filename is too long to fit on the menu, then prepend the
-	// full filename (wrapped) to the the description
-	else if (fileDescArray.length > 0 && fileMetadata.name.length > gFileListMenu.filenameLen)
-	{
-		// See how many lines the filename takes, and use the filename color on those lines, and
-		// the normal attribute for the start of the description
-		var filenameWrapped = lfexpand(word_wrap(fileMetadata.name, maxDescLen, null, false));
-		var filenameLines = filenameWrapped.split("\r\n");
-		// Splitting as above can result in an extra empty last line
-		if (filenameLines[filenameLines.length-1].length == 0)
-			filenameLines.pop();
-		descriptionLineAttrs[0] = "\x01n" + gColors.filenameInDesc;
-		descriptionLineAttrs[filenameLines.length] = "\x01n";
-		fileDescArray = filenameLines.concat(fileDescArray);
-	}
+	// We can ignore FILENAME_IN_DESC_NEVER
 	// Display the description on the screen
 	console.attributes = "N";
 	// screenRowNum is to keep track of the row on the screen where the
@@ -5632,37 +5656,56 @@ function getFileInfoLineArrayForTraditionalUI(pFileList, pIdx, pFormatInfo)
 
 	var descLines;
 	if (Boolean(user.settings & USER_EXTDESC)) // If extended descriptions
+	{
 		descLines = getExtdFileDescArray(pFileList, pIdx);
+		// If there is no description, then use the filename as the description
+		if (gFilenameInExtendedDesc == FILENAME_IN_DESC_IF_DESC_EMPTY || gFilenameInExtendedDesc == FILENAME_IN_DESC_ALWAYS)
+		{
+			if (descLines.length == 0)
+			{
+				var fileDesc = "\x01n" + gColors.filenameInDesc + lfexpand(word_wrap(pFileList[pIdx].name, pFormatInfo.descLen, null, false));
+				descLines = fileDesc.split("\r\n");
+				// Splitting as above can result in an extra empty last line
+				if (descLines[descLines.length-1].length == 0)
+					descLines.pop();
+				// Ensure the filename color is applied to all lines of the filename array
+				for (var i = 0; i < descLines.length; ++i)
+					descLines[i] = "\x01n" + gColors.filenameInDesc + descLines[i] + "\x01n";
+				descLines.push("(No description)");
+			}
+			else if ((gFilenameInExtendedDesc == FILENAME_IN_DESC_IF_DESC_EMPTY && pFileList[pIdx].name.length > gFileListMenu.filenameLen) || gFilenameInExtendedDesc == FILENAME_IN_DESC_ALWAYS)
+			{
+				// See how many lines the filename takes, and use the filename color on those lines, and
+				// the normal attribute for the start of the description
+				var filenameWrapped = lfexpand(word_wrap(pFileList[pIdx].name + "\x01n", pFormatInfo.descLen, null, false));
+				var filenameLines = filenameWrapped.split("\r\n");
+				// Splitting as above can result in an extra empty last line
+				if (filenameLines[filenameLines.length-1].length == 0)
+					filenameLines.pop();
+				// Ensure the filename color is applied to all lines of the filename array
+				for (var i = 0; i < filenameLines.length; ++i)
+					filenameLines[i] = "\x01n" + gColors.filenameInDesc + filenameLines[i] + "\x01n";
+				// Prepend the filename to the extended description
+				descLines = filenameLines.concat(descLines);
+			}
+		}
+		// We can ignore FILENAME_IN_DESC_NEVER
+	}
 	else
 	{
+		// gUseFilenameIfNoDescription_ShortDescs
 		if (pFileList[pIdx].hasOwnProperty("desc") && typeof(pFileList[pIdx].desc) === "string")
 			descLines = [ pFileList[pIdx].desc.replace(/\r$/, "").replace(/\n$/, "").replace(/\r\n$/, "") ];
-	}
-	if (!Array.isArray(descLines))
-		descLines = [];
-	if (descLines.length == 0)
-	{
-		// There is no description. If the option to use the filename is enabled, then use the filename.
-		if (gUseFilenameIfNoDescription)
+		else
+			descLines = [];
+		// If there is no description andthe option to use the filename is enabled, then
+		// use the filename for the description.
+		if (descLines.length == 0 && gUseFilenameIfNoDescription_ShortDescs)
 		{
 			var fileDesc = "\x01n" + gColors.filenameInDesc + lfexpand(word_wrap(pFileList[pIdx].name + "\r\n\x01n(No description)", pFormatInfo.descLen, null, false));
 			var fileDescArray = fileDesc.split("\r\n");
 			for (var i = 0; i < fileDescArray.length; ++i)
 				descLines.push(fileDescArray[i]);
-		}
-		else
-			descLines.push("");
-	}
-	else
-	{
-		// If the filename is too long to fit on the menu, then prepend the full filename (wrapped) to
-		// the the description.
-		if (pFileList[pIdx].name.length > gFileListMenu.filenameLen)
-		{
-			var fileDescArray = lfexpand(word_wrap(pFileList[pIdx].name, pFormatInfo.descLen, null, false)).split("\r\n");
-			for (var i = 0; i < fileDescArray.length; ++i)
-				fileDescArray[i] = "\x01n" + gColors.filenameInDesc + fileDescArray[i] + "\x01n";
-			descLines = fileDescArray.concat(descLines);
 		}
 	}
 
@@ -5673,6 +5716,8 @@ function getFileInfoLineArrayForTraditionalUI(pFileList, pIdx, pFormatInfo)
 	fileInfoLines.push(format(pFormatInfo.formatStr, pIdx+1, filename, fileSizeStr.substr(0, pFormatInfo.fileSizeLen), substrWithAttrCodes(descLines[0], 0, pFormatInfo.descLen)));
 	if (Boolean(user.settings & USER_EXTDESC)) // If extended descriptions
 	{
+		// TODO: Some extended descriptions that use block characters
+		// aren't being displayed properly here
 		for (var i = 1; i < descLines.length; ++i)
 		{
 			if (console.strlen(descLines[i]) > 0)

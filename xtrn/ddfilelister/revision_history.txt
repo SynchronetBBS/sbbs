@@ -6,7 +6,10 @@ Revision History (change log)
 Version  Date         Description
 -------  ----         -----------
 2.28a    2025-02-25   Fix for long filename color support when used in the
-					  description for some edge cases
+                      description for some edge cases.
+                      The setting useFilenameIfNoDescription changed to
+                      useFilenameIfShortDescriptionEmpty.
+                      New setting: filenameInExtendedDescription
 2.28     2025-02-22   If extended descriptions are enabled and a filename is
                       too long to fully fit in the menu, prepend the full
                       filename (wrapped) to the description.
