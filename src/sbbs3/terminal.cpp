@@ -276,6 +276,8 @@ uint32_t Terminal::charset() {
 const char * Terminal::charset_str()
 {
 	switch(charset()) {
+		case CHARSET_MODE7:
+			return "MODE7";
 		case CHARSET_PETSCII:
 			return "CBM-ASCII";
 		case CHARSET_UTF8:
