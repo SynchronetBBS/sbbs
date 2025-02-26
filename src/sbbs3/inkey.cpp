@@ -20,6 +20,7 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "mode7defs.h"
 #include "petdefs.h"
 #include "unicode.h"
 #include "utf8.h"
@@ -70,6 +71,20 @@ int sbbs_t::translate_input(int ch)
 			ch = 0x60 | (ch & 0x1f);
 		if (IS_ALPHA(ch))
 			ch ^= 0x20; /* Swap upper/lower case */
+	}
+	else if (term->charset() == CHARSET_MODE7) {
+		switch (ch) {
+			case MODE7_LEFT:
+				return TERM_KEY_LEFT;
+			case MODE7_RIGHT:
+				return TERM_KEY_RIGHT;
+			case MODE7_DOWN:
+				return TERM_KEY_DOWN;
+			case MODE7_UP:
+				return TERM_KEY_UP;
+			case 0x7f:
+				return '\b';
+		}
 	}
 	else {
 		bool lwe = last_inkey_was_esc;
