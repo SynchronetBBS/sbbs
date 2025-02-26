@@ -548,6 +548,18 @@ bool sbbs_t::answer()
 	if (!term_output_disabled) {
 		mswait(200);    // Allow some time for Telnet negotiation
 		rioctl(IOFI);       /* flush input buffer */
+		// Grab telnet terminal if negotaited already
+		if (!(telnet_mode & TELNET_MODE_OFF)) {
+			/* Stop the input thread from writing to the telnet_* vars */
+			pthread_mutex_lock(&input_thread_mutex);
+			if (telnet_terminal[0])
+				SAFECOPY(terminal, telnet_terminal);
+			if (telnet_cols >= TERM_COLS_MIN && telnet_cols <= TERM_COLS_MAX)
+				cols = telnet_cols;
+			if (telnet_rows >= TERM_ROWS_MIN && telnet_rows <= TERM_ROWS_MAX)
+				rows = telnet_rows;
+			pthread_mutex_unlock(&input_thread_mutex);
+		}
 		safe_snprintf(str, sizeof(str), "%s  %s", VERSION_NOTICE, COPYRIGHT_NOTICE);
 		if (strcmp(terminal, "PETSCII") == 0) {
 			autoterm |= PETSCII;
