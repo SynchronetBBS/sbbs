@@ -564,6 +564,7 @@ bool sbbs_t::answer()
 		} else if (autoterm & MODE7) {
 			SAFECOPY(terminal, "MODE7");
 			term->center(str);
+			term_out("\r\n");
 		} else {    /* ANSI+ terminal detection */
 			term_out( "\r\n"      /* locate cursor at column 1 */
 			        "\x1b[s"    /* save cursor position (necessary for HyperTerm auto-ANSI) */
