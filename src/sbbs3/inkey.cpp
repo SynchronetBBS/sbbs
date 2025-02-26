@@ -74,13 +74,13 @@ int sbbs_t::translate_input(int ch)
 	}
 	else if (term->charset() == CHARSET_MODE7) {
 		switch (ch) {
-			case MODE7_LEFT:
+			case 140:
 				return TERM_KEY_LEFT;
-			case MODE7_RIGHT:
+			case 141:
 				return TERM_KEY_RIGHT;
-			case MODE7_DOWN:
+			case 142:
 				return TERM_KEY_DOWN;
-			case MODE7_UP:
+			case 143:
 				return TERM_KEY_UP;
 			case 0x7f:
 				return '\b';
