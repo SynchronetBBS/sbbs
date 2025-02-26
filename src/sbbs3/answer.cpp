@@ -567,7 +567,7 @@ bool sbbs_t::answer()
 					break;
 				}
 				pthread_mutex_unlock(&input_thread_mutex);
-				if (++loops >= 20)
+				if (++loops >= 30)
 					break;
 				if (telnet_remote_option[TELNET_TERM_TYPE] == 0 && loops >= 10)
 					break;
