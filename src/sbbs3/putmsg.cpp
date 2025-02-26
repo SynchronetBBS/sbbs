@@ -231,7 +231,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 			}
 			else {
 				bool was_tos = (term->row == 0);
-				ctrl_a(str[l + 1]);
+				ctrl_a(str[l + 1], mode);
 				if (term->row == 0 && !was_tos && (sys_status & SS_ABORT) && !lines_printed) /* Aborted at (auto) pause prompt (e.g. due to CLS)? */
 					sys_status &= ~SS_ABORT;                /* Clear the abort flag (keep displaying the msg/file) */
 				l += 2;
@@ -547,7 +547,10 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 				}
 			}
 			size_t skip = sizeof(char);
-			if (mode & P_MODE7 && term->charset() == CHARSET_MODE7)
+			if (mode & P_NATIVE) {
+				term_out(str[l]);
+			}
+			else if (mode & P_MODE7 && term->charset() == CHARSET_MODE7)
 				term_out(str[l]);
 			else if (mode & P_PETSCII) {
 				if (term->charset() == CHARSET_PETSCII) {

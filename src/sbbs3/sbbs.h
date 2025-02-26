@@ -778,7 +778,7 @@ public:
 	int		get_text_num(const char* id);
 	const char* get_text(const char* id);
 	bool	load_user_text(void);
-	bool	replace_text(const char* path);
+	bool	replace_text(const char* path, bool native_charset=false);
 	void	revert_text(void);
 	char*	server_host_name(void);
 	char*	timestr(time_t);
@@ -901,6 +901,7 @@ public:
     __attribute__ ((format (printf, 2, 3)));		// 1 is 'this'
 #endif
 	;
+	int		mout(char ch, int mode);		/* Output a char - check P_NATIVE in mode */
 	int		outchar(char ch);				/* Output a char - check echo and emu.  */
 	int		outcp(enum unicode_codepoint, char cp437_fallback);
 	int		outcp(enum unicode_codepoint, const char* cp437_fallback = NULL);
@@ -919,7 +920,7 @@ public:
 	int		mode7_to_ansibbs(unsigned char);
 	size_t	print_utf8_as_cp437(const char*, size_t);
 	int		attr(int);				/* Change text color/attributes */
-	void	ctrl_a(char);			/* Performs Ctrl-Ax attribute changes */
+	void	ctrl_a(char, int& mode);			/* Performs Ctrl-Ax attribute changes */
 	char*	auto_utf8(const char*, int& mode);
 	void	getdimensions();
 	size_t term_out(const char *str, size_t len = SIZE_MAX);

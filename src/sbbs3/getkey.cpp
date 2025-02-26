@@ -175,10 +175,11 @@ char sbbs_t::getkey(int mode)
 void sbbs_t::mnemonics(const char *instr)
 {
 	size_t l;
+	int mode{0};
 
 	if (!strchr(instr, '~')) {
 		mnestr = instr;
-		bputs(instr);
+		bputs(instr, mode);
 		return;
 	}
 	bool ctrl_a_codes = contains_ctrl_a_attr(instr);
@@ -186,7 +187,7 @@ void sbbs_t::mnemonics(const char *instr)
 		const char* last = lastchar(instr);
 		if (instr[0] == '@' && *last == '@' && strchr(instr + 1, '@') == last && strchr(instr, ' ') == NULL) {
 			mnestr = instr;
-			bputs(instr);
+			bputs(instr, mode);
 			return;
 		}
 	}
@@ -206,30 +207,31 @@ void sbbs_t::mnemonics(const char *instr)
 			l += 2;
 		}
 		else if (str[l] == '~') {
-			if (!(term->can_highlight()))
-				outchar('(');
+			if (!(term->can_highlight())) {
+				mout('(', mode);
+			}
 			l++;
 			if (!ctrl_a_codes)
 				attr(mneattr_high);
 			term->add_hotspot(str[l], /* hungry: */ true);
-			outchar(str[l]);
+			mout(str[l], mode);
 			l++;
 			if (!(term->can_highlight()))
-				outchar(')');
+				mout(')', mode);
 			if (!ctrl_a_codes)
 				attr(mneattr_low);
 		}
 		else if (str[l] == '`' && str[l + 1] != 0) {
 			if (!(term->can_highlight()))
-				outchar('[');
+				mout('[', mode);
 			l++;
 			if (!ctrl_a_codes)
 				attr(mneattr_high);
 			term->add_hotspot(str[l], /* hungry: */ false);
-			outchar(str[l]);
+			mout(str[l], mode);
 			l++;
 			if (!(term->can_highlight()))
-				outchar(']');
+				mout(']', mode);
 			if (!ctrl_a_codes)
 				attr(mneattr_low);
 		}
@@ -238,9 +240,9 @@ void sbbs_t::mnemonics(const char *instr)
 				l++;
 				if (str[l] == 'Z')   /* EOF (uppercase 'Z') */
 					break;
-				ctrl_a(str[l++]);
+				ctrl_a(str[l++], mode);
 			} else {
-				outchar(str[l++]);
+				mout(str[l++], mode);
 			}
 		}
 	}

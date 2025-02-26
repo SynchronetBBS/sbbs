@@ -698,6 +698,7 @@ typedef enum {                      /* Values for xtrn_t.event				*/
 #define P_INDENT    (1 << 19)     /* Indent lines to current cursor column	*/
 #define P_ATCODES   (1 << 20)     /* Trusted @-codes in formatted string		*/
 #define P_MODE7		(1 << 21)     /* Message is native Mode 7					*/
+#define P_NATIVE    (1 << 22)     /* Do not perform character set translation   */
 
 /* Bits in 'mode' for listfiles             */
 #define FL_ULTIME   (1 << 0)      /* List files by upload time                */

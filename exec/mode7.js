@@ -23,7 +23,7 @@ const main_menu = {
 	file: "mode7/mode7_main",
 	eval: 'bbs.main_cmds++',
 	node_action: NODE_MAIN,
-	prompt: time_code
+	prompt: '\x01\x1b' + time_code
 		+ gettext("\x87->\x83Main\x87-> "),
 	command: {
 	 'C': { exec: 'mode7/mode7_chat.js' },

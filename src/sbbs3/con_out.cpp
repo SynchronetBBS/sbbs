@@ -95,7 +95,7 @@ int sbbs_t::bputs(const char *str, int mode)
 				term->add_hotspot(str[l], /* hungry */ false);
 				continue;
 			}
-			ctrl_a(str[l++]);
+			ctrl_a(str[l++], mode);
 			continue;
 		}
 		if (!(mode & P_NOATCODES) && str[l] == '@') {
@@ -118,7 +118,10 @@ int sbbs_t::bputs(const char *str, int mode)
 					continue;
 			}
 		}
-		if (mode & P_MODE7 && term->charset() == CHARSET_MODE7) {
+		if (mode & P_NATIVE) {
+			term_out(str[l++]);
+		}
+		else if (mode & P_MODE7 && term->charset() == CHARSET_MODE7) {
 			term_out(str[l++]);
 		}
 		else if (mode & P_PETSCII) {
@@ -779,6 +782,13 @@ bool sbbs_t::update_nodeterm(void)
  * outcom() and RingBufWrite() are post-IAC expansion
  */
 
+int sbbs_t::mout(char ch, int mode)
+{
+	if (mode & P_NATIVE)
+		return term_out(ch);
+	return outchar(ch);
+}
+
 /****************************************************************************/
 /* Outputs character														*/
 /* Performs charset translations (e.g. EXASCII-to-ASCII, CP437-to-PETSCII)	*/
@@ -879,7 +889,7 @@ void sbbs_t::getdimensions()
 /****************************************************************************/
 /* performs the correct attribute modifications for the Ctrl-A code			*/
 /****************************************************************************/
-void sbbs_t::ctrl_a(char x)
+void sbbs_t::ctrl_a(char x, int& mode)
 {
 	uint       atr = curatr;
 	struct  tm tm;
@@ -887,6 +897,10 @@ void sbbs_t::ctrl_a(char x)
 	if (x && (uchar)x <= CTRL_Z) {    /* Ctrl-A through Ctrl-Z for users with MF only */
 		if (!(useron.flags1 & FLAG(x + 64)))
 			console ^= (CON_ECHO_OFF);
+		return;
+	}
+	if (x == '\x1b') {
+		mode |= P_NATIVE;
 		return;
 	}
 	switch (toupper(x)) {

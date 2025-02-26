@@ -166,7 +166,7 @@ int sbbs_t::show_atcode(const char *instr, JSObject* obj)
 	// @!x@ for Ctrl-A x equivalent(s) */
 	if (*sp == '!') {
 		for (p = sp + 1; *p != '\0' && *p != '@'; p++)
-			ctrl_a(*p);
+			ctrl_a(*p, pmode);
 		return len;
 	}
 

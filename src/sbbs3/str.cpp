@@ -62,7 +62,7 @@ const char* sbbs_t::get_text(const char* id)
 /****************************************************************************/
 /* Somewhat copied from load_cfg()											*/
 /****************************************************************************/
-bool sbbs_t::replace_text(const char* path)
+bool sbbs_t::replace_text(const char* path, bool native_charset)
 {
 	FILE* fp;
 
@@ -84,8 +84,19 @@ bool sbbs_t::replace_text(const char* path)
 				free(text[n]);
 			if (*list[i]->value == '\0')
 				text[n] = (char *)nulstr;
-			else
-				text[n] = strdup(list[i]->value);
+			else {
+				if (native_charset) {
+					size_t len = strlen(list[i]->value);
+					char *nt = (char *)malloc(len + 3);
+					nt[0] = 1;
+					nt[1] = 0x1b;
+					memcpy(&nt[2], list[i]->value, len + 1);
+					text[n] = nt;
+				}
+				else {
+					text[n] = strdup(list[i]->value);
+				}
+			}
 			text_replaced[n] = true;
 		}
 		iniFreeNamedStringList(list);
@@ -124,7 +135,7 @@ bool sbbs_t::load_user_text(void)
 	revert_text();
 	snprintf(path, sizeof path, "%s%s/text.ini", cfg.ctrl_dir, charset);
 	if (fexist(path)) {
-		if (!replace_text(path))
+		if (!replace_text(path, true))
 			return false;
 	}
 	if (*useron.lang == '\0')
