@@ -74,7 +74,6 @@ protected:
 
 private:
 	link_list_t *savedlines{nullptr};
-	bool last_was_esc{false};
 	uint8_t utf8_remain{0};
 	bool first_continuation{false};
 	uint32_t codepoint{0};
@@ -346,8 +345,6 @@ public:
 	 * this function handled it (ie: via term_out(), or stripping it)
 	 */
 	virtual bool parse_output(char ch) {
-		last_was_esc = false;
-
 		if (utf8_increment(ch))
 			return true;
 
@@ -382,7 +379,6 @@ public:
 
 			// Zero-width characters we want to pass through
 			case 27: // ESC - This one is especially troubling, but we need to pass it for ANSI detection
-				last_was_esc = true;
 				return true;
 			case 7:  // BEL
 				// Does not go into lbuf...
