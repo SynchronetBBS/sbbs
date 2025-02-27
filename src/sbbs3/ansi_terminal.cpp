@@ -459,9 +459,7 @@ void ANSI_Terminal::set_output_rate(enum output_rate speed) {
 	cur_output_rate = speed;
 }
 
-// TODO: backfill?
 const char* ANSI_Terminal::type() {return "ANSI";}
-
 
 static void ansi_mouse(sbbs_t *sbbs, enum ansi_mouse_mode mode, bool enable)
 {

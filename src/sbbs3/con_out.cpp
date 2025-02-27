@@ -1168,7 +1168,7 @@ int sbbs_t::backfill(const char* instr, float pct, int full_attr, int empty_attr
 	char* str = strip_ctrl(instr, NULL);
 
 	len = strlen(str);
-	if (!(term->supports_any(ANSI | PETSCII)))
+	if (!(term->can_highlight()))
 		bputs(str, P_REMOTE);
 	else {
 		for (int i = 0; i < len; i++) {
