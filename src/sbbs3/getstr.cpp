@@ -68,9 +68,9 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 		str1[maxlen] = 0;
 	atr = curatr;
 	if (!(mode & K_NOECHO)) {
-		if (mode & K_AUTODEL && str1[0]) {
-			i = (cfg.color[clr_inputline] & 0x77) << 4;
-			i |= (cfg.color[clr_inputline] & 0x77) >> 4;
+		if ((mode & K_AUTODEL) && str1[0] && term->can_highlight()) {
+			i = (cfg.color[clr_inputline] & 0x07) << 4;
+			i |= (cfg.color[clr_inputline] & 0x70) >> 4;
 			attr(i);
 		}
 		bputs(str1, P_AUTO_UTF8);
