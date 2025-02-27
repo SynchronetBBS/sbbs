@@ -92,9 +92,9 @@ public:
 
 		if (flags & MODE7) {
 			// These bits are *never* available in MODE7
-			flags &= ~(RIP | ICE_COLOR | MOUSE | NO_EXASCII | UTF8 | PETSCII);
+			flags &= ~(RIP | ICE_COLOR | MOUSE | NO_EXASCII | UTF8 | PETSCII | SWAP_DELETE);
 			// These bits are *always* availabe in MODE7
-			flags |= (COLOR | SWAP_DELETE);
+			flags |= (COLOR);
 		}
 
 		if (flags & UTF8) {

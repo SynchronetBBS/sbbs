@@ -444,6 +444,7 @@ void MODE7_Terminal::scrolldown()
 void MODE7_Terminal::add_ch(char ch)
 {
 	cell[row][column] = ch;
+	inc_column();
 	update_cur();
 }
 
