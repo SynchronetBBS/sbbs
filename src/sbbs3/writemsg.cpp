@@ -750,7 +750,13 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 		/* Signature file */
 		if ((subnum == INVALID_SUB && cfg.msg_misc & MM_EMAILSIG)
 		    || (subnum != INVALID_SUB && !(cfg.sub[subnum]->misc & SUB_NOUSERSIG))) {
-			SAFEPRINTF2(str, "%suser/%04u.sig", cfg.data_dir, useron.number);
+			bool got_sig = false;
+			if (subnum_is_valid(subnum)) {
+				snprintf(str, sizeof str, "%suser/%04u.%s.sig", cfg.data_dir, useron.number, cfg.sub[subnum]->code);
+				got_sig = fexistcase(str);
+			}
+			if (!got_sig)
+				SAFEPRINTF2(str, "%suser/%04u.sig", cfg.data_dir, useron.number);
 			FILE* sig;
 			if (fexistcase(str) && (sig = fopen(str, "r")) != NULL) {
 				while (!feof(sig)) {
