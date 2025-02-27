@@ -68,7 +68,7 @@ MODE7_Terminal::xlat_atr(unsigned atr)
 		ret |= 7;
 	if (atr & BG_UNKNOWN)
 		ret &= ~0x70;
-	ret &= ~(UNDERLINE | REVERSED | BG_BRIGHT | HIGH);
+	ret &= ~(FG_UNKNOWN | BG_UNKNOWN | UNDERLINE | REVERSED | BG_BRIGHT | HIGH);
 	// Black foreground not possible... choose the darkest different (blue or red)
 	if (!(ret & 7)) {
 		if (((ret & 0x70) >> 4) != BLUE)
@@ -139,8 +139,6 @@ char* MODE7_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t s
 	}
 	str[0] = 0;
 
-	// TODO: Support eating spaces, combining mosaic, etc.
-
 	// Blink first because we don't support hold mosaic...
 	if (newatr & BLINK) {
 		if (!(oldatr & BLINK))
@@ -151,30 +149,35 @@ char* MODE7_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t s
 			lastret = strlcat(str, "\x89", strsz);
 	}
 
-	// Then FG colour
-	if ((newatr & 7) != (oldatr & 7)) {
-		src[0] = color_char(newatr, false);
-		lastret = strlcat(str, src, strsz);
-	}
-
 	// Then concealed
 	if (newatr & CONCEALED) {
-		if (!(oldatr & CONCEALED))
+		if (!(oldatr & CONCEALED)) {
 			lastret = strlcat(str, "\x98", strsz);
-	}
-	else {
-		if (oldatr & CONCEALED)
-			lastret = strlcat(str, "\x89", strsz);
+			// Set concealed so we can include in FG check
+			// concealed is cleared by setting foreground
+			oldatr |= CONCEALED;
+		}
 	}
 
-	// Background last so the old background is used for the spaces
+	// Background before FG so text is visible
 	if ((newatr & 0x70) != (oldatr & 0x70)) {
 		if (newatr & 0x70) {
-			src[0] = color_char(newatr, true);
+			if ((newatr & 0x70) != ((oldatr & 0x07) << 4)) {
+				src[0] = color_char(newatr, true);
+				lastret = strlcat(str, src, strsz);
+				oldatr = (oldatr & ~0x77) | (newatr & 0x70) | ((newatr & 0x70) >> 7);
+			}
+			src[0] = '\x9d';
 			lastret = strlcat(str, src, strsz);
 		}
 		else
 			lastret = strlcat(str, "\x9C", strsz);
+	}
+
+	// Then FG colour last
+	if ((newatr & (CONCEALED | 7)) != (oldatr & (CONCEALED | 7))) {
+		src[0] = color_char(newatr, false);
+		lastret = strlcat(str, src, strsz);
 	}
 
 	if (lastret >= (strsz - 1))
@@ -265,14 +268,10 @@ void MODE7_Terminal::cleartoeos()
 
 void MODE7_Terminal::cleartoeol()
 {
-	unsigned s;
-	s = column;
-	// TODO: No way to clear bottom right without scrolling...
-	if (row == (rows - 1))
-		s++;
-	while (++s <= cols && sbbs->online)
-		sbbs->term_out(" ");
-	while (++s <= cols && sbbs->online)
+	unsigned sc = column;
+	while ((column < (cols - 1)) && sbbs->online)
+		sbbs->term_out(' ');
+	while (sc < column && sbbs->online)
 		sbbs->term_out(MODE7_LEFT);
 }
 
@@ -338,7 +337,9 @@ void MODE7_Terminal::set_fg(int c)
 
 void MODE7_Terminal::update_cur()
 {
-	curatr = 0x0F;
+	curatr = 0x07;
+	if (column < 1)
+		return;
 	for (size_t x = 0; x < column; x++) {
 		switch (cell[row][x]) {
 			case '\x81':	// ANR
@@ -415,7 +416,7 @@ void MODE7_Terminal::update_cur()
 				curatr &= ~0x70;
 				break;
 			case '\x9D':	// NBD
-				curatr |= ((curatr & 7) << 4);
+				curatr = (curatr & ~0x70) | ((curatr & 7) << 4);
 				break;
 			case '\x9E':	// HMS
 				curatr |= TT_SPECIAL;
@@ -465,6 +466,8 @@ bool MODE7_Terminal::parse_output(char ch)
 	if (last_was_esc) {
 		if (ch < '@' || ch > 0x5F) {
 			sbbs->lprintf(LOG_DEBUG, "Invalid code extension: ESC + \\x%02X", (uchar)ch);
+			if (ch != '\x1b')
+				last_was_esc = false;
 			return false;
 		}
 		ch += 64;
@@ -505,7 +508,13 @@ bool MODE7_Terminal::parse_output(char ch)
 
 		// Specials that affect cursor position
 		case '\x08':	// APB
-			// TODO: Wraps?
+			// TODO: Wraps?  Scrolls up?
+			if (column == 0) {
+				if (row > 0) {
+					dec_row();
+					set_column(cols - 1);
+				}
+			}
 			dec_column();
 			return true;
 		case '\x09':	// APF
