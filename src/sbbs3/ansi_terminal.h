@@ -30,7 +30,6 @@ public:
 	virtual void cursor_right(unsigned count);
 	virtual void cursor_left(unsigned count);
 	virtual void set_output_rate(enum output_rate speed);
-	// TODO: backfill?
 	virtual const char* type();
 	virtual void set_mouse(unsigned mode);
 	virtual bool parse_output(char ch);
