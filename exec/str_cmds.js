@@ -820,6 +820,29 @@ function str_cmds(str)
 					console.printfile(plan);
 			}
 		}
+
+		if(str=="HELP") {
+			writeln("SIG\tEdit or delete your default message signature.");
+			writeln("SUBSIG\tEdit or delete your signature for this sub-board (over-rides default).");
+		}
+		if(str=="SIG" || str=="SUBSIG") {
+			var userSigFilename = system.data_dir + "user/" + format("%04u", user.number);
+			if(str == "SUBSIG")
+				userSigFilename += "." + bbs.cursub_code;
+			userSigFilename += ".sig";
+			if (file_exists(userSigFilename)) {
+				if (console.yesno(bbs.text(bbs.text.ViewSignatureQ)))
+					console.printfile(userSigFilename);
+			}
+			if (console.yesno(bbs.text(bbs.text.CreateEditSignatureQ)))
+				console.editfile(userSigFilename);
+			else if (!console.aborted) {
+				if (file_exists(userSigFilename)) {
+					if (console.yesno(bbs.text(bbs.text.DeleteSignatureQ)))
+						file_remove(userSigFilename);
+				}
+			}
+		}
 	}
 
 	if(str=="HELP") {
