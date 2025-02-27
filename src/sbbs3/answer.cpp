@@ -548,7 +548,7 @@ bool sbbs_t::answer()
 	if (!term_output_disabled) {
 		// Grab telnet terminal if negotiated already
 		if (!(telnet_mode & TELNET_MODE_OFF)) {
-			if (!(autoterm & (PETSCII | MODE7 | ANSI)) {
+			if (!(autoterm & (PETSCII | MODE7 | ANSI))) {
 				unsigned loops = 0;
 				// Wait up to 2s more for telnet term type
 				// TODO: Any way to detect if the remote send a zero-length type?
