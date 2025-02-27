@@ -115,12 +115,25 @@ MODE7_Terminal::yummy_spaces()
 	unsigned x;
 	size_t ret = 0;
 
-
 	if (column == 0)
 		return 0;
 	for (x = column; x > 0; x--) {
-		if (cell[row][x - 1] != ' ' && cell[row][x - 1] != '\xa0')
-			return ret;
+		char ch = cell[row][x - 1];
+		switch (ch) {
+			// Characters we can clobber for an attribute...
+			case ' ':	// Space
+			case '\xa0':	// Empty mosaic/G1 space
+			/* TODO: We could clobber attribute characters as well
+			 *       the issue is that if we do, the starting attr
+			 *       will be different and so the sequence needs
+			 *       to be recalculated.  The attributes of spaces
+			 *       will also potentially change, which would be
+			 *       highly confusing.
+			 */
+				break;
+			default:
+				return ret;
+		}
 		ret++;
 	}
 	return ret;
@@ -271,6 +284,8 @@ void MODE7_Terminal::cleartoeol()
 	unsigned sc = column;
 	while ((column < (cols - 1)) && sbbs->online)
 		sbbs->term_out(' ');
+	if (row < (rows - 1))
+		sbbs->term_out(" \b");
 	while (sc < column && sbbs->online)
 		sbbs->term_out(MODE7_LEFT);
 }
@@ -557,6 +572,6 @@ bool MODE7_Terminal::parse_output(char ch)
 	return false;
 }
 
-bool MODE7_Terminal::can_highlight() { return true; }
+bool MODE7_Terminal::can_highlight() { return false; }
 bool MODE7_Terminal::can_move() { return true; }
 bool MODE7_Terminal::is_monochrome() { return false; }
