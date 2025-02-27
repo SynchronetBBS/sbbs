@@ -564,6 +564,7 @@ bool sbbs_t::answer()
 							term->rows = telnet_rows;
 					}
 					if (telnet_terminal[0]) {
+						pthread_mutex_unlock(&input_thread_mutex);
 						SAFECOPY(terminal, telnet_terminal);
 						break;
 					}
