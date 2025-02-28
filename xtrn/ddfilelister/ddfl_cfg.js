@@ -417,38 +417,41 @@ function getOptionHelpText()
 	var optionHelpText = {};
 	optionHelpText["interfaceStyle"] = "Interface Style: Either Lightbar or Traditional";
 
-	optionHelpText["traditionalUseSyncStock"] = "When using the traditional interface, use the Synchronet  stock (don't use ddfilelister at "
-	optionHelpText["traditionalUseSyncStock"] += "all). If this is false, ddfilelister's traditional interface will be used if ";
-	optionHelpText["traditionalUseSyncStock"] += "interfaceStyle is traditional.";
+	optionHelpText["traditionalUseSyncStock"] = "Traditional interface use stock implementation: When using the traditional ";
+	optionHelpText["traditionalUseSyncStock"] += "interface, use the Synchronet stock file lister (don't use ddfilelister at all). If this ";
+	optionHelpText["traditionalUseSyncStock"] += "is false, ddfilelister's traditional interface will be used if interfaceStyle ";
+	optionHelpText["traditionalUseSyncStock"] += "is traditional.";
 
-	optionHelpText["sortOrder"] = "The sort order of the file list. Valid options are PER_DIR_CFG (according to the directory ";
-	optionHelpText["sortOrder"] += "configuration in SCFG > File Areas > library > File Directories > dir > Advanced Options > ";
-	optionHelpText["sortOrder"] += "Sort Value and Direction); NATURAL (natural sort order - same as DATE_A); NAME_AI (filename ";
-	optionHelpText["sortOrder"] += "ascending, case insensitive); FILENAME_DI (filename descending, case insensitive); NAME__AS ";
-	optionHelpText["sortOrder"] += "(filename ascending, case sensitive); NAME_DS (filename descending, case sensitive); DATE_A ";
-	optionHelpText["sortOrder"] += "(import date/time ascending); DATE_D (import date/time descending); ULTIME (upload time); ";
-	optionHelpText["sortOrder"] += "(DLTIME (download time)";
+	optionHelpText["sortOrder"] = "Sort order of file list: The sort order of the file list. Valid options are PER_DIR_CFG ";
+	optionHelpText["sortOrder"] += "(according to the directory configuration in SCFG > File Areas > library > File Directories > ";
+	optionHelpText["sortOrder"] += "dir > Advanced Options > Sort Value and Direction); NATURAL (natural sort order - same as ";
+	optionHelpText["sortOrder"] += "DATE_A); NAME_AI (filename ascending, case insensitive); FILENAME_DI (filename descending, ";
+	optionHelpText["sortOrder"] += "case insensitive); NAME__AS (filename ascending, case sensitive); NAME_DS (filename descending, ";
+	optionHelpText["sortOrder"] += "case sensitive); DATE_A (import date/time ascending); DATE_D (import date/time descending); ULTIME ";
+	optionHelpText["sortOrder"] += "(upload time); (DLTIME (download time)";
 
-	optionHelpText["displayUserAvatars"] = "Whether or not to display user avatars for the uploader in extended file descriptions";
+	optionHelpText["displayUserAvatars"] = "Display user avatars: Whether or not to display user avatars for the uploader in extended ";
+	optionHelpText["displayUserAvatars"] += "file descriptions";
 
-	optionHelpText["displayNumFilesInHeader"] = "Whether or not to display the number of files in the header at the top of ";
-	optionHelpText["displayNumFilesInHeader"] += "the screen";
+	optionHelpText["displayNumFilesInHeader"] = "Display number of files in header: Whether or not to display the number of files in ";
+	optionHelpText["displayNumFilesInHeader"] += "the header at the top of the screen";
 
-	optionHelpText["useFilenameIfShortDescriptionEmpty"] = "For short descriptions, if the description is empty, whether to use the filename instead";
+	optionHelpText["useFilenameIfShortDescriptionEmpty"] = "Short descs - Use filename if empty: For short descriptions, if the ";
+	optionHelpText["useFilenameIfShortDescriptionEmpty"] += "description is empty, whether to use the filename instead";
 
-	optionHelpText["filenameInExtendedDescription"] = "How to use the filename in the extended description. Valid options are always ";
-	optionHelpText["filenameInExtendedDescription"] += "(always use the filename in the description); ifDescEmpty (only if the ";
-	optionHelpText["filenameInExtendedDescription"] += "description is empty - also if the filename is too short to fully be shown ";
-	optionHelpText["filenameInExtendedDescription"] += " in the menu, the full filename will appear in the description); never (never ";
-	optionHelpText["filenameInExtendedDescription"] += "use the filename in the description)";
+	optionHelpText["filenameInExtendedDescription"] = "Use filename in extended description: How to use the filename in the extended ";
+	optionHelpText["filenameInExtendedDescription"] += "description. Valid options are always (always use the filename in the description); ";
+	optionHelpText["filenameInExtendedDescription"] += "ifDescEmpty (only if the description is empty - also if the filename is too short to ";
+	optionHelpText["filenameInExtendedDescription"] += "fully be shown in the menu, the full filename will appear in the description); ";
+	optionHelpText["filenameInExtendedDescription"] += "never (never use the filename in the description)";
 
-	optionHelpText["pauseAfterViewingFile"] = "Whether nor not to pause after viewing a file";
+	optionHelpText["pauseAfterViewingFile"] = "Pause after viewing a file: Whether nor not to pause & wait for user input after viewing a file";
 
-	optionHelpText["blankNFilesListedStrIfLoadableModule"] = "When used as a loadable module, whether or not to blank out the ";
-	optionHelpText["blankNFilesListedStrIfLoadableModule"] += "\"# Files Listed\" string (from text.dat) so that Synchronet won't ";
-	optionHelpText["blankNFilesListedStrIfLoadableModule"] += "display it after the lister exits";
+	optionHelpText["blankNFilesListedStrIfLoadableModule"] = "Blank \"# Files Listed\" as loadable module: When used as a loadable module, ";
+	optionHelpText["blankNFilesListedStrIfLoadableModule"] += "whether or not to blank out the \"# Files Listed\" string (from text.dat) so ";
+	optionHelpText["blankNFilesListedStrIfLoadableModule"] += "that Synchronet won't display it after the lister exits";
 
-	optionHelpText["themeFilename"] = "The name of the color theme file";
+	optionHelpText["themeFilename"] = "Theme Filename: The name of the color theme file";
 
 	// Word-wrap the help text items
 	for (var prop in optionHelpText)
@@ -466,7 +469,7 @@ function getOptionHelpText()
 // Return value: Help text for the main configuration screen (behavior settings)
 function getMainHelp(pOptionHelpText, pCfgOptProps)
 {
-	var helpText = "This screen allows you to configure behavior options for Digital Distortion Message Reader.\r\n\r\n";
+	var helpText = "This screen allows you to configure behavior options for Digital Distortion File Lister.\r\n\r\n";
 	for (var i = 0; i < pCfgOptProps.length; ++i)
 	{
 		var optName = pCfgOptProps[i];
