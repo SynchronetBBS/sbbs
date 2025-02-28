@@ -169,6 +169,9 @@
  *                              useFilenameIfShortDescriptionEmpty.
  *                              New setting: filenameInExtendedDescription
  * 2025-02-27 Eric Oulashin     Version 2.28b
+ *                              Formatting improvement for the traditional (non-lightbar) user interface
+ *                              for some long descriptions using ANSI - Removal of cursor movement codes
+ *                              and expanding newlines
  *                              Refactored the way the settings and colors are structured in the
  *                              code. No functional change.
  */
@@ -5713,25 +5716,7 @@ function getFileInfoLineArrayForTraditionalUI(pFileList, pIdx, pFormatInfo)
 		for (var i = 1; i < descLines.length; ++i)
 		{
 			if (console.strlen(descLines[i]) > 0)
-			{
-				//fileInfoLines.push(format(pFormatInfo.formatStrExtdDescLines, substrWithAttrCodes(descLines[i], 0, pFormatInfo.descLen)));
-				/*
-				var fileInfoFormatInfo = {
-					filenameLen: gListIdxes.filenameEnd - gListIdxes.filenameStart,
-					fileSizeLen: gListIdxes.fileSizeEnd - gListIdxes.fileSizeStart -1,
-					numItemsLen: gFileList.length.toString().length
-				};
-				fileInfoFormatInfo.descLen = gListIdxes.descriptionEnd - gListIdxes.descriptionStart - (fileInfoFormatInfo.numItemsLen+2);
-				*/
-				//printf("%-*s", remainingLen, "");
-				var descLine = format("%-*s", pFormatInfo.numItemsLen, "") + " ";
-				descLine += format("%-*s", pFormatInfo.filenameLen, "") + " ";
-				descLine += format("%-*s", pFormatInfo.fileSizeLen, "") + " ";
-				//descLine += substrWithAttrCodes(descLines[i], 0, pFormatInfo.descLen);
-				//extdDesc = removeOrReplaceSyncCursorMovementChars(extdDesc, false);
-				descLine += substrWithAttrCodes(removeOrReplaceSyncCursorMovementChars(descLines[i], false), 0, pFormatInfo.descLen);
-				fileInfoLines.push(descLine);
-			}
+				fileInfoLines.push(format(pFormatInfo.formatStrExtdDescLines, substrWithAttrCodes(descLines[i], 0, pFormatInfo.descLen)));
 		}
 	}
 	return fileInfoLines;
@@ -5784,7 +5769,7 @@ function getExtdFileDescArray(pFileList, pIdx)
 		if (pFileList[pIdx].hasOwnProperty("desc") && typeof(pFileList[pIdx].desc) === "string")
 			extdDesc = pFileList[pIdx].desc;
 	}
-	//extdDesc = removeOrReplaceSyncCursorMovementChars(extdDesc, false);
+	extdDesc = removeOrReplaceSyncCursorMovementChars(extdDesc, true);
 	var descLines = lfexpand(extdDesc).split("\r\n");
 	// Splitting as above can result in an extra empty last line
 	if (descLines[descLines.length-1].length == 0)
