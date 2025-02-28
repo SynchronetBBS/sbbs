@@ -5,8 +5,12 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
-2.28b    2025-02-27   Refactored the way the settings and colors are structured
-                      in the code. No functional change.
+2.28b    2025-02-27   Formatting improvement for the traditional (non-lightbar)
+                      user interface for some long descriptions using ANSI to
+                      make them look better (removal of cursor movement codes
+                      and expanding newlines).
+                      Internal change: Refactored the way the settings and
+                      colors are structured in the code. No functional change.
 2.28a    2025-02-25   Fix for long filename color support when used in the
                       description for some edge cases.
                       The setting useFilenameIfNoDescription changed to
