@@ -590,6 +590,12 @@ bool sbbs_t::answer()
 			term->center(str);
 			term_out("\r\n");
 		} else {    /* ANSI+ terminal detection */
+			/*
+			 * TODO: Once this merges, it would be good to split the "ANSI detection"
+			 *       out from feature detection (rows/cols/UTF8/CTerm/RIP/etc) so the
+			 *       ANSI_Terminal class can be responsible for collecting the
+			 *       details of the ANSI implementation.
+			 */
 			term_out( "\r\n"      /* locate cursor at column 1 */
 			        "\x1b[s"    /* save cursor position (necessary for HyperTerm auto-ANSI) */
 			        "\x1b[0c"   /* Request CTerm version */
