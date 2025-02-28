@@ -111,6 +111,14 @@ comprised of the following files:
 3. defaultTheme.cfg       The default theme file containing colors used in the
                           file lister
 
+4. ddfl_cfg.js            A menu-driven configurator for Digital Distortion File
+                          lister - This can be run at the command prompt using
+                          jsexec. For example:
+                          jsexec ddfl_cfg.js
+                          The .js can also be omitted from the filename when
+                          running it this way.
+						  
+
 The configuration files are plain text files, so they can be edited using any
 editor.
 
