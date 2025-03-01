@@ -1,11 +1,11 @@
 # GNU makefile for Synchronet installation
 #
 # Usage:
-# ------
+# -----
 # [g]make -f path/to/this/file [variable=value]... [target]
 #
-# variables:
-# ----------
+# variables (set to any other value to enable, e.g. DEBUG=1):
+# ---------
 # DEBUG = Set to force a debug build
 # RELEASE = Set to force a release build
 # SYMLINK = Don't copy binaries, rather create symlinks in $(SBBSDIR)/exec
@@ -29,7 +29,7 @@
 # X_PATH = /path/to/X (if not /usr/X11R6)
 
 # targets:
-# --------
+# -------
 # install (the default)
 # build
 
