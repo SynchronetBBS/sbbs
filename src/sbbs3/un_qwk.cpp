@@ -23,13 +23,13 @@
 #include "qwk.h"
 #include "filedat.h"
 
-static void log_qwk_import_stats(sbbs_t* sbbs, ulong msgs, time_t start)
+static void log_qwk_import_stats(sbbs_t* sbbs, ulong msgs, time_t start, const char* source)
 {
 	if (msgs) {
 		time_t t = time(NULL) - start;
 		if (t < 1)
 			t = 1;
-		sbbs->lprintf(LOG_INFO, "Imported %lu QWK messages in %lu seconds (%lu msgs/sec)", msgs, (ulong)t, (ulong)(msgs / t));
+		sbbs->lprintf(LOG_INFO, "Imported %lu QWK messages in %lu seconds (%lu msgs/sec) from %s", msgs, (ulong)t, (ulong)(msgs / t), source);
 	}
 }
 
@@ -292,7 +292,7 @@ bool sbbs_t::unpack_qwk(char *packet, uint hubnum)
 		if (j != lastsub) {
 
 			if (lastsub != INVALID_SUB)
-				log_qwk_import_stats(this, msgs, startsub);
+				log_qwk_import_stats(this, msgs, startsub, cfg.qhub[hubnum]->id);
 			msgs = 0;
 			startsub = time(NULL);
 
@@ -359,7 +359,7 @@ bool sbbs_t::unpack_qwk(char *packet, uint hubnum)
 		}
 	}
 	if (lastsub != INVALID_SUB) {
-		log_qwk_import_stats(this, msgs, startsub);
+		log_qwk_import_stats(this, msgs, startsub, cfg.qhub[hubnum]->id);
 		smb_close(&smb);
 	}
 
