@@ -104,6 +104,15 @@ smoketest-jsexec-linux:
     - "*.exe.release/jsexec -C -c../../ctrl -r 'exit(0)'"
   dependencies: ["linux-x64 [sbbs]"]
 
+install-linux:
+  tags: [Linux]
+  image: gcc
+  stage: test
+  extends: .rules
+  script:
+    - make -f install/install-sbbs.mk NOCAP=1
+  dependencies: ["linux-x64 [sbbs]"]
+
 "windows-x86 [sbbs]":
   tags: [Windows]
   stage: build
