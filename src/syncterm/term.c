@@ -5035,9 +5035,17 @@ doterm(struct bbslist *bbs)
 					}
 					// TODO: Add clear screen key?
 					default:
-						if (key == 13 || (key < 129 && key > 31)) {
-							ch[0] = key;
-							conn_send(ch, 1, 0);
+						if (cterm->emulation == CTERM_EMULATION_PRESTEL) {
+							if (key == 13 || (key < 128 && key > 31)) {
+								ch[0] = key;
+								conn_send(ch, 1, 0);
+							}
+						}
+						else {
+							if (key < 128) {
+								ch[0] = key;
+								conn_send(ch, 1, 0);
+							}
 						}
 						break;
 				}
