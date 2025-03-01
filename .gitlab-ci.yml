@@ -16,6 +16,7 @@ stages:
       - xtrn/**/{GNUm,M}akefile
       - xtrn/**/*.{c,h,cpp,hpp,mk}
       - exec/tests/**/*
+      - "**/*.mk"
 
 include:
   - local: '.gitlab-ci-unix.yml'
