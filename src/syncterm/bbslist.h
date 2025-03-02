@@ -163,6 +163,8 @@ struct bbslist {
 	short unsigned int data_bits;
 	// Enums are ints (actually, they're unsigned, but ints are what they are
 	int                parity;
+	uint32_t           palette[16];
+	unsigned           palette_size;
 };
 
 extern char *music_names[];
