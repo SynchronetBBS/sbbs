@@ -414,6 +414,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 	, done = 0, domsg = 1, *buf;
 	char     find_buf[128];
 	char     tmp[128];
+	char     savepath[MAX_PATH + 1]{};
 	int      i;
 	int64_t  i64;
 	int      quit = 0;
@@ -1287,13 +1288,17 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 						case 'Q':
 							break;
 						case 'S':   /* Save/Append message to another file */
-							/*	05/26/95
-							                        if(!yesno(text[SaveMsgToFile]))
-							                        	break;
-							*/
 							bputs(text[FileToWriteTo]);
-							if (getstr(str, 50, K_LINE))
-								msgtotxt(&smb, &msg, str, /* header: */ true, /* mode: */ GETMSGTXT_ALL);
+							{
+								char section[128];
+								const char* key = "savepath";
+								SAFEPRINTF(section, "%s.sub", cfg.sub[subnum]->code);
+								user_get_property(&cfg, useron.number, section, key, savepath, sizeof(savepath) - 1);
+								if (getstr(savepath, sizeof(savepath) - 1, K_EDIT | K_LINE | K_AUTODEL) > 0) {
+									if (msgtotxt(&smb, &msg, savepath, /* header: */ true, /* mode: */ GETMSGTXT_ALL))
+										user_set_property(&cfg, useron.number, section, key, savepath);
+								}
+							}
 							break;
 						case 'T':   /* Twit-list the sender */
 							domsg = false;
