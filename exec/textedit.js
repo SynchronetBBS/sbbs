@@ -1,4 +1,3 @@
-require("sbbsdefs.js", "P_NOATCODES");
 require("key_defs.js", "KEY_UP");
 
 const a = "\x01";
@@ -273,7 +272,7 @@ function runmsg()
 		console.cleartoeol();
 	}
 	console.gotoxy(0, 0);
-	console.print("Example text\r\nbefore message.\r\n", P_NOATCODES);
+	console.print("Example text\r\nbefore message.\r\n");
 	console.question = "Example question";
 	var fmtd = formatted(a + 'Q' + msgstr, msg);
 	switch (displaywith) {
@@ -286,11 +285,11 @@ function runmsg()
 			df = 'mnemonics()';
 			break;
 		case 2:
-			console.print(fmtd, P_NOATCODES);
+			console.print(fmtd);
 			df = 'print()    ';
 			break;
 	}
-	console.print("Example text after message.\r\n", P_NOATCODES);
+	console.print("Example text after message.\r\n");
 }
 
 // TODO: Message 765 is too big
@@ -300,7 +299,7 @@ function redraw(str, num)
 	console.clear();
 	console.gotoxy(0,0);
 	console.attributes = 7;
-	console.print("Example text\r\nbefore message.\r\n", P_NOATCODES);
+	console.print("Example text\r\nbefore message.\r\n");
 	console.question = "Example question";
 	// Stuff in a CTRL-C for things like @EXEC:yesnobar@
 	console.ungetkeys(ctrl('C'), true);
@@ -315,27 +314,27 @@ function redraw(str, num)
 			df = 'mnemonics()';
 			break;
 		case 2:
-			console.print(fmtd, P_NOATCODES);
+			console.print(fmtd);
 			df = 'print()    ';
 			break;
 	}
 	// Pull out the CTRL-C
 	console.inkey();
-	console.print("Example text after message.\r\n", P_NOATCODES);
+	console.print("Example text after message.\r\n");
 	if (console.screen_columns < 80) {
 		console.gotoxy(0, inprow - 2);
-		console.print(a + "h" + a + "w" + a + "4" + " " + df + " ^^ As seen on BBS ^^" + a + ">", P_NOATCODES);
+		console.print(a + "h" + a + "w" + a + "4" + " " + df + " ^^ As seen on BBS ^^" + a + ">");
 		console.gotoxy(0, inprow - 1);
-		console.print(a + "h" + a + "w" + a + "4" + " vv " + tnames[num] + " (" + num + ") vv" + a + ">", P_NOATCODES);
+		console.print(a + "h" + a + "w" + a + "4" + " vv " + tnames[num] + " (" + num + ") vv" + a + ">");
 		console.gotoxy(0, inprow);
 	}
 	else {
 		console.gotoxy(0, inprow - 1);
-		console.print(a + "h" + a + "w" + a + "4" + " " + df + " ^^ As seen on BBS ^^" + "     vv " + tnames[num] + " (" + num + ") vv" + a + ">", P_NOATCODES);
+		console.print(a + "h" + a + "w" + a + "4" + " " + df + " ^^ As seen on BBS ^^" + "     vv " + tnames[num] + " (" + num + ") vv" + a + ">");
 		console.gotoxy(0, inprow);
 	}
 	console.cleartoeos(7);
-	console.print(format_entry(msgstr), P_NOATCODES);
+	console.print(format_entry(msgstr));
 	place_cursor();
 }
 
