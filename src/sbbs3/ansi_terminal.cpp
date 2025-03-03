@@ -1151,7 +1151,7 @@ bool ANSI_Terminal::parse_input_sequence(char& ch, int mode) {
 				return stuff_unhandled(ch, ansi);
 		}
 	}
-	return true;
+	return false;
 }
 
 struct mouse_hotspot* ANSI_Terminal::add_hotspot(struct mouse_hotspot* spot) {return nullptr;}
