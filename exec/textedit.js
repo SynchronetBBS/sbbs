@@ -11,6 +11,7 @@ var msglens = [];
 var displaywith = 0;
 var inprow = (console.screen_columns < 80) ? 18 : 17;
 var ch;
+var modified = {};
 
 // TODO: This should be in a separate (JSON) file...
 var details = {
@@ -139,8 +140,6 @@ console.cleartoeos = function(attr)
 
 function format_entry(str)
 {
-	// bbs.command_str = '@';
-	// .replace(/@/g, "@U+40:@@")
 	return str.replace(/[\x00-\x1F\x80-\x9F\\]/g, function(match) {
 		switch(match) {
 			case '\n':
@@ -407,12 +406,27 @@ function get_msgnum()
 	console.attributes = 7;
 }
 
+function track_mod()
+{
+	if (modified[msg] === undefined) {
+		modified[msg] = {original: bbs.text(msg), modified: true};
+	}
+}
+
+function check_undone()
+{
+	if (modified[msg] !== undefined && msgstr === modified[msg].original) {
+		delete modified[msg];
+	}
+}
+
 get_tvals();
 newmsg();
 var done = false;
 var skip_redraw = false;
 var forcectrl = false;
 var tmp;
+var sfile;
 while (!done) {
 	if (!skip_redraw)
 		redraw(msgstr, msg);
@@ -464,15 +478,28 @@ while (!done) {
 			break;
 		case ctrl('Z'):
 			bbs.revert_text(msg);
+			if (modified[msg] !== undefined)
+				delete modified[msg];
 			newmsg();
 			break;
 		case ctrl('Q'):
 			done = true;
 			break;
+		case ctrl('S'):
+			sfile = new File("textedit.ini");
+			if (!sfile.open(sfile.exists ? 'r+':'w+'))
+				break;
+			for (tmp in modified) {
+				sfile.iniSetValue(null, tnames[tmp], bbs.text(tmp));
+			}
+			sfile.close();
+			break;
 		case '\b':
 			if (pos) {
+				track_mod();
 				msgstr = msgstr.slice(0, pos - 1) + msgstr.slice(pos);
 				bbs.replace_text(msg, msgstr);
+				check_undone();
 				pos--;
 				newmsg(false);
 			}
@@ -543,8 +570,10 @@ while (!done) {
 		default:
 			if (ch < ' ' && !forcectrl)
 				break;
+			track_mod();
 			msgstr = msgstr.slice(0, pos) + ch + msgstr.slice(pos);
 			bbs.replace_text(msg, msgstr);
+			check_undone();
 			pos++;
 			newmsg(false);
 			break;
