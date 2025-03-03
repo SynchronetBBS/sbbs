@@ -1254,7 +1254,7 @@ js_cleartoeos(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
-	sbbs->cleartoeos();
+	sbbs->term->cleartoeos();
 	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
