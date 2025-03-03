@@ -2,6 +2,7 @@ require("key_defs.js", "KEY_UP");
 
 const a = "\x01";
 var msg = 1;
+var msgstr = '';
 var tnames = ["None"];
 var last_entry = 0;
 var pos = 0;
@@ -9,6 +10,7 @@ var len = 0;
 var msglens = [];
 var displaywith = 0;
 var inprow = (console.screen_columns < 80) ? 18 : 17;
+var ch;
 
 // TODO: This should be in a separate (JSON) file...
 var details = {
@@ -57,6 +59,9 @@ var details = {
 	'NScanCfgWhichSub': {
 		'displaywith': 1,
 	},
+	'PrivateChatSeparator': {
+		'args': [88, '01:02:03', 88],
+	},
 	'PrivateMsgPrompt': {
 		'displaywith': 1,
 	},
@@ -92,6 +97,9 @@ var details = {
 	},
 	'SubGroupOrAll': {
 		'displaywith': 1,
+	},
+	'SysopChatSeparator': {
+		'args': [88, '01:02:03', 88],
 	},
 	'SysopRemoveFilePrompt': {
 		'displaywith': 1,
@@ -133,7 +141,7 @@ function format_entry(str)
 {
 	// bbs.command_str = '@';
 	// .replace(/@/g, "@U+40:@@")
-	return str.replace(/[\x00-\x1F\x80-\x9F]/g, function(match) {
+	return str.replace(/[\x00-\x1F\x80-\x9F\\]/g, function(match) {
 		switch(match) {
 			case '\n':
 				return "\\n";
@@ -147,10 +155,12 @@ function format_entry(str)
 				return "\\b";
 			case '\f':
 				return "\\f";
+			case '\\':
+				return "\\\\";
 			default:
 				if (match < ' ')
 					return '\x01'+'7\x01'+'B^' + String.fromCharCode(match.charCodeAt(0)+64) + "\x01"+'0\x01'+'w';
-				return '\x01'+'7\x01'+'B^' + format("%02X", match.charCodeAt(0)) + "\x01"+'0\x01'+'w';
+				return '\x01'+'7\x01'+'B' + format("%02X", match.charCodeAt(0)) + "\x01"+'0\x01'+'w';
 		}
 	});
 }
@@ -250,8 +260,39 @@ function formatted(str, num)
 	return format.apply(js.global, args).replace(/\x07/g, '');
 }
 
+function runmsg()
+{
+	var bot = inprow - 1;
+	if (console.screen_columns < 80)
+		bot--;
+	// Would be nice to have a cleartobos() here...
+	console.attributes = 7;
+	for (i = 0; i < bot; i++) {
+		console.gotoxy(0, i);
+		console.cleartoeol();
+	}
+	console.gotoxy(0, 0);
+	console.print("Example text\r\nbefore message.\r\n");
+	console.question = "Example question";
+	var fmtd = formatted(a + 'Q' + msgstr, msg);
+	switch (displaywith) {
+		case 0:
+			console.putmsg(fmtd);
+			df = 'putmsg()   ';
+			break;
+		case 1:
+			console.mnemonics(fmtd);
+			df = 'mnemonics()';
+			break;
+		case 2:
+			console.print(fmtd);
+			df = 'print()    ';
+			break;
+	}
+	console.print("Example text after message.\r\n");
+}
+
 // TODO: Message 765 is too big
-// TODO: Some way to "run" things like 559 (YesNoQuestion)
 function redraw(str, num)
 {
 	var df = 'unknown';
@@ -261,20 +302,19 @@ function redraw(str, num)
 	console.print("Example text\r\nbefore message.\r\n");
 	console.question = "Example question";
 	// Stuff in a CTRL-C for things like @EXEC:yesnobar@
-	// TODO: This doesn't work for some reason after the input fix
-	//       in terminal-abstraction branch.
 	console.ungetkeys(ctrl('C'), true);
+	var fmtd = formatted(a + 'Q' + msgstr, msg);
 	switch (displaywith) {
 		case 0:
-			console.putmsg(formatted(a + 'Q' + str, num));
+			console.putmsg(fmtd);
 			df = 'putmsg()   ';
 			break;
 		case 1:
-			console.mnemonics(formatted(a + 'Q' + str, num));
+			console.mnemonics(fmtd);
 			df = 'mnemonics()';
 			break;
 		case 2:
-			console.print(formatted(a + 'Q' + str, num));
+			console.print(fmtd);
 			df = 'print()    ';
 			break;
 	}
@@ -294,7 +334,7 @@ function redraw(str, num)
 		console.gotoxy(0, inprow);
 	}
 	console.cleartoeos(7);
-	console.print(format_entry(bbs.text(msg)));
+	console.print(format_entry(msgstr));
 	place_cursor();
 }
 
@@ -309,26 +349,30 @@ function get_tvals() {
 	last_entry = tvals.TOTAL_TEXT - 1;
 }
 
-function newmsg()
+function newmsg(updpos)
 {
-	var rmsg = bbs.text(msg);
+	if (updpos === undefined)
+		updpos = true;
+	msgstr = bbs.text(msg);
 	var tpos = 0;
 	var spos = 0;
 	var i;
 	msglens = [];
-	for (i = 0; i < rmsg.length; i++) {
+	for (i = 0; i < msgstr.length; i++) {
 		msglens.push({'tpos': tpos, 'spos': spos});
-		// TODO: 0x80-0x9f should be escaped as well.
-		if (rmsg[i] < ' ')
+		if (msgstr[i] < ' ')
 			tpos++;
-		else if (rmsg[i] >= '\x80' && rmsg[i] <= '\x9F')
+		else if (msgstr[i] >= '\x80' && msgstr[i] <= '\x9F')
+			tpos++;
+		else if (msgstr[i] == '\\')
 			tpos++;
 		tpos++;
 		spos++;
 	}
 	msglens.push({'tpos': tpos, 'spos': spos});
 	len = msglens.length;
-	pos = len - 1;
+	if (updpos)
+		pos = len - 1;
 	displaywith = 0;
 	if (details[tnames[msg]] !== undefined) {
 		if (details[tnames[msg]].displaywith !== undefined)
@@ -367,9 +411,15 @@ function get_msgnum()
 get_tvals();
 newmsg();
 var done = false;
+var skip_redraw = false;
+var forcectrl = false;
+var tmp;
 while (!done) {
-	redraw(bbs.text(msg), msg);
-	switch (console.getkey()) {
+	if (!skip_redraw)
+		redraw(msgstr, msg);
+	skip_redraw = false;
+	forcectrl = false;
+	switch ((ch = console.getkey())) {
 		case KEY_UP:
 			if (msg > 1) {
 				msg--;
@@ -400,12 +450,104 @@ while (!done) {
 			if (displaywith > 2)
 				displaywith = 0;
 			break;
+		case KEY_HOME:
+			pos = 0;
+			break;
+		case KEY_END:
+			pos = msglens.length - 1;
+			break;
 		case ctrl('G'):
 			get_msgnum();
 			break;
-		case 'q':
-		case 'Q':
+		case ctrl('R'):
+			runmsg();
+			skip_redraw = true;
+			break;
+		case ctrl('Z'):
+			bbs.revert_text(msg);
+			newmsg();
+			break;
+		case ctrl('Q'):
 			done = true;
+			break;
+		case '\b':
+			if (pos) {
+				msgstr = msgstr.slice(0, pos - 1) + msgstr.slice(pos);
+				bbs.replace_text(msg, msgstr);
+				pos--;
+				newmsg(false);
+			}
+			break;
+		case null:
+			break;
+		case undefined:
+			break;
+		case '^':
+			tmp = console.getkey().charCodeAt(0);
+			tmp &= 0x1F;
+			ch = String.fromCharCode(tmp);
+			forcectrl = true;
+			// Fallthrough
+		case ctrl('V'):
+			if (!forcectrl) {
+				tmp = '';
+				try {
+					tmp += console.getkey();
+					tmp += console.getkey();
+					tmp = parseInt(tmp, 16);
+					if (isNaN(tmp))
+						break;
+					ch = String.fromCharCode(tmp);
+				}
+				catch(e) {
+					break;
+				}
+				forcectrl = true;
+			}
+			// Fallthrough
+		case '\\':
+			if (!forcectrl) {
+				switch (console.getkey().toLowerCase()) {
+					case 'r':
+						ch = '\r';
+						forcectrl = true;
+						break;
+					case 'n':
+						ch = '\n';
+						forcectrl = true;
+						break;
+					case 'v':
+						ch = '\v';
+						forcectrl = true;
+						break;
+					case 't':
+						ch = '\t';
+						forcectrl = true;
+						break;
+					case 'b':
+						ch = '\b';
+						forcectrl = true;
+						break;
+					case '\\':
+						ch = '\\';
+						forcectrl = true;
+						break;
+					default:
+						ch = undefined;
+						forcectrl = true;
+						break;
+				}
+				if (ch === undefined)
+					break;
+			}
+			// Fall-through
+		default:
+			if (ch < ' ' && !forcectrl)
+				break;
+			msgstr = msgstr.slice(0, pos) + ch + msgstr.slice(pos);
+			bbs.replace_text(msg, msgstr);
+			pos++;
+			newmsg(false);
 			break;
 	}
 }
