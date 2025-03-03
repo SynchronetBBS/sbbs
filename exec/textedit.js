@@ -420,8 +420,24 @@ function check_undone()
 	}
 }
 
+function load_saved()
+{
+	var sfile = new File("textedit.ini");
+	if (!sfile.open('r'))
+		return;
+	var keys = sfile.iniGetKeys();
+	var key;
+	var str;
+	for (key in keys) {
+		str = sfile.iniGetValue(null, keys[key]);
+		bbs.replace_text(keys[key], str);
+	}
+	sfile.close();
+}
+
 get_tvals();
 newmsg();
+load_saved();
 var done = false;
 var skip_redraw = false;
 var forcectrl = false;
@@ -489,9 +505,8 @@ while (!done) {
 			sfile = new File("textedit.ini");
 			if (!sfile.open(sfile.exists ? 'r+':'w+'))
 				break;
-			for (tmp in modified) {
+			for (tmp in modified)
 				sfile.iniSetValue(null, tnames[tmp], bbs.text(tmp));
-			}
 			sfile.close();
 			break;
 		case '\b':
