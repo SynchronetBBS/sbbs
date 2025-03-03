@@ -9,11 +9,15 @@ var len = 0;
 var msglens = [];
 var displaywith = 0;
 
+// TODO: This should be in a separate (JSON) file...
 var details = {
 	'AutoMsg': {
 		'displaywith': 1,
 	},
 	'DirLibOrAll': {
+		'displaywith': 1,
+	},
+	'FileInfoEditPrompt': {
 		'displaywith': 1,
 	},
 	'JoinWhichDir': {
