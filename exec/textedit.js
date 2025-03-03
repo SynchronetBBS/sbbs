@@ -345,8 +345,7 @@ function get_tvals() {
 	for (i in tvals) {
 		tnames[tvals[i]] = i;
 	}
-	// TODO: Why is this one higher than the last?
-	last_entry = tvals.TOTAL_TEXT - 1;
+	last_entry = tvals.TOTAL_TEXT;
 }
 
 function newmsg(updpos)
