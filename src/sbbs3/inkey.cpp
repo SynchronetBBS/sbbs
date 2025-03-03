@@ -163,15 +163,13 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 	char tmp[512];
 	int  i;
 
-	if (term->parse_input_sequence(ch, mode))
-		return ch;
-
 	if (ch == TERM_KEY_ABORT) {  /* Ctrl-C Abort */
 		sys_status |= SS_ABORT;
 		if (mode & K_SPIN) /* back space once if on spinning cursor */
 			term->backspace();
 		return 0;
 	}
+
 	if (ch == CTRL_Z && !(mode & (K_MSG | K_GETSTR))
 	    && action != NODE_PCHT) {  /* Ctrl-Z toggle raw input mode */
 		if (hotkey_inside & (1 << ch))
@@ -234,6 +232,9 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			return 0;
 		}
 	}
+
+	if (term->parse_input_sequence(ch, mode))
+		return ch;
 
 	switch (ch) {
 		case CTRL_O:    /* Ctrl-O toggles pause temporarily */
