@@ -2290,57 +2290,6 @@ main(int argc, char **argv)
 				dac_default[3].green = dac_default[2].green;
 				dac_default[3].blue = dac_default[0].blue;
 			}
-			if (bbs->palette_size > 0) {
-				uint32_t np[16];
-				int vm = find_vmode(screen_to_ciolib(bbs->screen_mode));
-				if (vm != -1) {
-					switch (vparams[vm].palette) {
-						case MONO_PALETTE:
-						case ATARI_PALETTE:
-							np[0] = bbs->palette[0];
-							for (i = 1; i < 16; i++)
-								np[i] = bbs->palette[1];
-							break;
-						case GREYSCALE_PALETTE:
-							np[0] = bbs->palette[0];
-							for (i = 1; i < 8; i++)
-								np[i] = bbs->palette[1];
-							np[8] = bbs->palette[2];
-							for (i = 9; i < 16; i++)
-								np[i] = bbs->palette[3];
-							break;
-						case PRESTEL_PALETTE:
-							for (i = 0; i < 8; i++) {
-								np[i] = bbs->palette[i];
-								np[i+8] = bbs->palette[i];
-							}
-							break;
-						case ATARI_PALETTE_4:
-							for (i = 0; i < 4; i++) {
-								np[i] = bbs->palette[i];
-								np[i+4] = bbs->palette[i];
-								np[i+8] = bbs->palette[i];
-								np[i+12] = bbs->palette[i];
-							}
-							break;
-						case ATARI_PALETTE_2:
-							for (i = 0; i < 2; i++) {
-								np[i] = bbs->palette[i];
-								np[i+2] = bbs->palette[i];
-								np[i+4] = bbs->palette[i];
-								np[i+6] = bbs->palette[i];
-								np[i+8] = bbs->palette[i];
-								np[i+10] = bbs->palette[i];
-								np[i+12] = bbs->palette[i];
-								np[i+14] = bbs->palette[i];
-							}
-							break;
-					}
-					for (i = 0; i < 16; i++)
-						np[i] |= 0x80000000;
-					set_modepalette(np);
-				}
-			}
 			if (doterm(bbs))
 				quitting = true;
 			dac_default[3].red = saved_red;
