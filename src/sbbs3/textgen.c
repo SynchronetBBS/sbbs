@@ -269,7 +269,7 @@ int main(int argc, char **argv)
 	fputs("#endif\n", text_h);
 	fclose(text_h);
 	fputs("\n", text_js);
-	fprintf(text_js, "var TOTAL_TEXT=%d;\n", i);
+	fprintf(text_js, "var TOTAL_TEXT=%d;\n", i - 1);
 	fprintf(text_js, "\nthis;\n");
 	fclose(text_js);
 	fputs("};\n", text_defaults_c);
