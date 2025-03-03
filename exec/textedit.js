@@ -28,6 +28,9 @@ var details = {
 	'JoinWhichSub': {
 		'displaywith': 1,
 	},
+	'MsgAttr': {
+		'args': ['Private  ', 'SPAM  ', 'Read  ', 'Deleted  ', 'Kill  ', 'Anonymous  ', 'Locked  ', 'Permanent  ', 'Moderated  ', 'Validated  ', 'Replied  ', 'NoReply  ', 'Poll  ', '(Closed)  ', '', '', ''],
+	},
 	'MsgSubj': {
 		'args': ['Example message subject (up to 70 characters).........................'],
 	},
@@ -235,9 +238,8 @@ function redraw(str, num)
 	console.attributes = 7;
 	console.print("Example text\r\nbefore message.\r\n");
 	console.question = "Example question";
-	// TODO: mnemonics() vs. putmsg() vs. print()
-	//       different messages have different requirements.
-	console.ungetkeys("\x03", true);
+	// Stuff in a CTRL-C for things like @EXEC:yesnobar@
+	console.ungetkeys(ctrl('C'), true);
 	switch (displaywith) {
 		case 0:
 			console.putmsg(formatted(a + 'Q' + str, num));
@@ -252,6 +254,7 @@ function redraw(str, num)
 			df = 'print()    ';
 			break;
 	}
+	// Pull out the CTRL-C
 	console.inkey();
 	console.print("Example text after message.\r\n");
 	console.gotoxy(0,16);
