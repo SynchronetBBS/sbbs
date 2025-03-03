@@ -8,6 +8,7 @@ var pos = 0;
 var len = 0;
 var msglens = [];
 var displaywith = 0;
+var inprow = (console.screen_columns < 80) ? 18 : 17;
 
 // TODO: This should be in a separate (JSON) file...
 var details = {
@@ -17,7 +18,16 @@ var details = {
 	'DirLibOrAll': {
 		'displaywith': 1,
 	},
+	'DoYouMeanThisUserQ': {
+		'displaywith': 1,
+	},
+	'ExtractFilesPrompt': {
+		'displaywith': 1,
+	},
 	'FileInfoEditPrompt': {
+		'displaywith': 1,
+	},
+	'FileInfoPrompt': {
 		'displaywith': 1,
 	},
 	'JoinWhichDir': {
@@ -60,6 +70,12 @@ var details = {
 		'displaywith': 1,
 	},
 	'QuitOrNext': {
+		'displaywith': 1,
+	},
+	'QuoteLinesPrompt': {
+		'displaywith': 1,
+	},
+	'QWKCtrlACodes': {
 		'displaywith': 1,
 	},
 	'RExemptRemoveFilePrompt': {
@@ -117,7 +133,7 @@ function format_entry(str)
 {
 	// bbs.command_str = '@';
 	// .replace(/@/g, "@U+40:@@")
-	return str.replace(/[\x00-\x1F]/g, function(match) {
+	return str.replace(/[\x00-\x1F\x80-\x9F]/g, function(match) {
 		switch(match) {
 			case '\n':
 				return "\\n";
@@ -132,7 +148,9 @@ function format_entry(str)
 			case '\f':
 				return "\\f";
 			default:
-				return '\x01'+'7\x01'+'B^' + String.fromCharCode(match.charCodeAt(0)+64) + "\x01"+'0\x01'+'w';
+				if (match < ' ')
+					return '\x01'+'7\x01'+'B^' + String.fromCharCode(match.charCodeAt(0)+64) + "\x01"+'0\x01'+'w';
+				return '\x01'+'7\x01'+'B^' + format("%02X", match.charCodeAt(0)) + "\x01"+'0\x01'+'w';
 		}
 	});
 }
@@ -243,6 +261,8 @@ function redraw(str, num)
 	console.print("Example text\r\nbefore message.\r\n");
 	console.question = "Example question";
 	// Stuff in a CTRL-C for things like @EXEC:yesnobar@
+	// TODO: This doesn't work for some reason after the input fix
+	//       in terminal-abstraction branch.
 	console.ungetkeys(ctrl('C'), true);
 	switch (displaywith) {
 		case 0:
@@ -261,9 +281,18 @@ function redraw(str, num)
 	// Pull out the CTRL-C
 	console.inkey();
 	console.print("Example text after message.\r\n");
-	console.gotoxy(0,16);
-	console.print(a + "h" + a + "w" + a + "4" + " " + df + " ^^ As seen on BBS ^^" + "     vv " + tnames[num] + " (" + num + ") vv" + a + ">");
-	console.gotoxy(0,17);
+	if (console.screen_columns < 80) {
+		console.gotoxy(0, inprow - 2);
+		console.print(a + "h" + a + "w" + a + "4" + " " + df + " ^^ As seen on BBS ^^" + a + ">");
+		console.gotoxy(0, inprow - 1);
+		console.print(a + "h" + a + "w" + a + "4" + " vv " + tnames[num] + " (" + num + ") vv" + a + ">");
+		console.gotoxy(0, inprow);
+	}
+	else {
+		console.gotoxy(0, inprow - 1);
+		console.print(a + "h" + a + "w" + a + "4" + " " + df + " ^^ As seen on BBS ^^" + "     vv " + tnames[num] + " (" + num + ") vv" + a + ">");
+		console.gotoxy(0, inprow);
+	}
 	console.cleartoeos(7);
 	console.print(format_entry(bbs.text(msg)));
 	place_cursor();
@@ -289,7 +318,10 @@ function newmsg()
 	msglens = [];
 	for (i = 0; i < rmsg.length; i++) {
 		msglens.push({'tpos': tpos, 'spos': spos});
+		// TODO: 0x80-0x9f should be escaped as well.
 		if (rmsg[i] < ' ')
+			tpos++;
+		else if (rmsg[i] >= '\x80' && rmsg[i] <= '\x9F')
 			tpos++;
 		tpos++;
 		spos++;
@@ -306,7 +338,7 @@ function newmsg()
 
 function place_cursor()
 {
-	console.gotoxy(0, 17);
+	console.gotoxy(0, inprow);
 	var np = msglens[pos].tpos;
 	while (np >= console.screen_columns) {
 		console.linefeed();
@@ -318,7 +350,10 @@ function place_cursor()
 
 function get_msgnum()
 {
-	console.gotoxy(42, 16);
+	if (console.screen_columns < 80)
+		console.gotoxy(1, inprow - 1);
+	else
+		console.gotoxy(42, inprow - 1);
 	console.attributes = 0x1F;
 	console.cleartoeol();
 	var ret = console.getnum(last_entry, msg);
