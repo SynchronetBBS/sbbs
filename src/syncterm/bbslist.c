@@ -1,5 +1,6 @@
 /* Copyright (C), 2007 by Stephen Hurd */
 
+#include <assert.h>
 #include <dirwrap.h>
 #include <ini_file.h>
 #include <netwrap.h>
@@ -812,6 +813,19 @@ read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id, int
 	entry->parity = iniGetEnum(section, NULL, "Parity", parity_enum, SYNCTERM_PARITY_NONE);
 	entry->telnet_no_binary = iniGetBool(section, NULL, "TelnetBrokenTextmode", false);
 	entry->defer_telnet_negotiation = iniGetBool(section, NULL, "TelnetDeferNegotiate", false);
+	// TODO: Make this not suck.
+	int *pal = iniGetIntList(section, NULL, "Palette", &entry->palette_size, ",", NULL);
+	if (pal == NULL)
+		entry->palette_size = 0;
+	if (entry->palette_size > 0) {
+		unsigned lent = 0;
+		for (unsigned pent = 0; pent < 16; pent++) {
+			entry->palette[pent] = pal[lent++];
+			if (lent == entry->palette_size)
+				lent = 0;
+		}
+	}
+	free(pal);
 
 	/* Log Stuff */
 	iniGetSString(sys ? NULL : section, NULL, "LogFile", "", entry->logfile, sizeof(entry->logfile));
@@ -2064,13 +2078,16 @@ add_bbs(char *listpath, struct bbslist *bbs, bool new_entry)
 		iniSetString(&inifile, bbs->name, "SSHFingerprint", fp, &ini_style);
 	}
 	iniSetBool(&inifile, bbs->name, "SFTPPublicKey", bbs->sftp_public_key, &ini_style);
+	iniSetUShortInt(&inifile, bbs->name, "StopBits", bbs->stop_bits, &ini_style);
+	iniSetUShortInt(&inifile, bbs->name, "DataBits", bbs->data_bits, &ini_style);
+	iniSetEnum(&inifile, bbs->name, "Parity", parity_enum, bbs->parity, &ini_style);
+	static_assert(sizeof(int) == sizeof(uint32_t), "int must be four bytes");
+	if (bbs->palette_size > 0)
+		iniSetIntList(&inifile, bbs->name, "Palette", ",", (int*)bbs->palette, bbs->palette_size, &ini_style);
 	if ((listfile = fopen(listpath, "w")) != NULL) {
 		iniWriteFile(listfile, inifile);
 		fclose(listfile);
 	}
-	iniSetUShortInt(&inifile, bbs->name, "StopBits", bbs->stop_bits, &ini_style);
-	iniSetUShortInt(&inifile, bbs->name, "DataBits", bbs->data_bits, &ini_style);
-	iniSetEnum(&inifile, bbs->name, "Parity", parity_enum, bbs->parity, &ini_style);
 	strListFree(&inifile);
 }
 

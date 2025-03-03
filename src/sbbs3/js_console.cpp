@@ -1237,6 +1237,29 @@ js_cleartoeol(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_cleartoeos(JSContext *cx, uintN argc, jsval *arglist)
+{
+	jsval *    argv = JS_ARGV(cx, arglist);
+	sbbs_t*    sbbs;
+	jsrefcount rc;
+
+	if ((sbbs = (sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class)) == NULL)
+		return JS_FALSE;
+
+	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
+
+	if (argc) {
+		if (!js_set_attr(cx, sbbs, argv[0]))
+			return JS_FALSE;
+	}
+
+	rc = JS_SUSPENDREQUEST(cx);
+	sbbs->cleartoeos();
+	JS_RESUMEREQUEST(cx, rc);
+	return JS_TRUE;
+}
+
+static JSBool
 js_newline(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *    argv = JS_ARGV(cx, arglist);
@@ -2626,6 +2649,11 @@ static jsSyncMethodSpec js_console_functions[] = {
 	 , JSDOCSTR("Clear to end-of-line, "
 		        "optionally setting current attribute first")
 	 , 311
+	},
+	{"cleartoeos",      js_cleartoeos,      0, JSTYPE_VOID,     JSDOCSTR("[attribute]")
+	 , JSDOCSTR("Clear to end-of-screen, "
+		        "optionally setting current attribute first")
+	 , 32002
 	},
 	{"crlf",            js_newline,         0, JSTYPE_ALIAS },
 	{"newline",         js_newline,         0, JSTYPE_VOID,     JSDOCSTR("[count=1]")

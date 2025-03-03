@@ -168,6 +168,12 @@
  *                              The setting useFilenameIfNoDescription changed to
  *                              useFilenameIfShortDescriptionEmpty.
  *                              New setting: filenameInExtendedDescription
+ * 2025-02-27 Eric Oulashin     Version 2.28b
+ *                              Formatting improvement for the traditional (non-lightbar) user interface
+ *                              for some long descriptions using ANSI - Removal of cursor movement codes
+ *                              and expanding newlines
+ *                              Refactored the way the settings and colors are structured in the
+ *                              code. No functional change.
  */
 
 "use strict";
@@ -209,8 +215,8 @@ var gAvatar = load({}, "avatar_lib.js");
 
 
 // Version information
-var LISTER_VERSION = "2.28a";
-var LISTER_DATE = "2025-02-25";
+var LISTER_VERSION = "2.28b";
+var LISTER_DATE = "2025-02-27";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -236,60 +242,6 @@ var BYTES_PER_KB = 1024;
 
 // Decimal precision for file_size_str()
 var FILE_SIZE_PRECISION = 2;
-
-// File list column indexes (0-based).  The end indexes are one past the last index.
-// These defaults assume an 80-character wide terminal.
-var gListIdxes = {
-	filenameStart: 0
-};
-// The end index of each column includes the trailing space so that
-// highlight colors will highlight the whole field
-gListIdxes.filenameEnd = gListIdxes.filenameStart + 13;
-gListIdxes.fileSizeStart = gListIdxes.filenameEnd;
-gListIdxes.fileSizeEnd = gListIdxes.fileSizeStart + 7;
-gListIdxes.descriptionStart = gListIdxes.fileSizeEnd;
-gListIdxes.descriptionEnd = console.screen_columns - 1; // Leave 1 character remaining on the screen
-// Colors
-var gColors = {
-	filename: "\x01n\x01b\x01h",
-	fileSize: "\x01n\x01m\x01h",
-	desc: "\x01n\x01w",
-	bkgHighlight: "\x01n\x014",
-	filenameHighlight: "\x01c\x01h",
-	fileSizeHighlight: "\x01c\x01h",
-	descHighlight: "\x01c\x01h",
-	fileTimestamp: "\x01g\x01h",
-	fileInfoWindowBorder: "\x01r",
-	fileInfoWindowTitle: "\x01g",
-	errorBoxBorder: "\x01g\x01h",
-	errorMessage: "\x01y\x01h",
-	successMessage: "\x01c",
-
-	batchDLInfoWindowBorder: "\x01r",
-	batchDLInfoWindowTitle: "\x01g",
-	confirmFileActionWindowBorder: "\x01r",
-	confirmFileActionWindowWindowTitle: "\x01g",
-
-	fileAreaMenuBorder: "\x01b", // File move menu for lightbar interface
-	fileNormalBkg: "\x01" + "4",
-	fileAreaNum: "\x01w",
-	fileAreaDesc: "\x01w",
-	fileAreaNumItems: "\x01w",
-
-	fileAreaMenuHighlightBkg: "\x017",
-	fileAreaNumHighlight: "\x01b",
-	fileAreaDescHighlight: "\x01b",
-	fileAreaNumItemsHighlight: "\x01b",
-
-	fileAreaMenuBorderTrad: "\x01b", // File move menu for traditional interface
-	fileNormalBkgTrad: "\x01n\x01w",
-	listNumTrad: "\x01g\x01h",
-	fileAreaDescTrad: "\x01c",
-	fileAreaNumItemsTrad: "\x01b\x01h",
-
-	filenameInDesc: "\x01g" // Filename when used in the description
-};
-
 
 // Actions
 var FILE_VIEW_INFO = 1;
@@ -341,30 +293,25 @@ var gErrorMsgBoxULY = 4;
 var gErrorMsgBoxWidth = console.screen_columns - 2;
 var gErrorMsgBoxHeight = 3;
 
-// Whether or not to pause after viewing a file
-var gPauseAfterViewingFile = true;
-
-// Whether or not to use the lightbar interface (this could be specified as false
-// in the configuration file, to use the traditional interface even if the user's
-// terminal supports ANSI)
-var gUseLightbarInterface = true;
-
-// If using the traditional interface, whether to use Synchronet's stock
-// file lister instead of ddfilelister
-var gTraditionalUseSyncStock = false;
-
-// Whether or not to display user avatars for the uploader in extended
-// file information
-var gDispayUserAvatars = true;
-
 // How to use the filename in the (extended) description
 var FILENAME_IN_DESC_IF_DESC_EMPTY = 0;
 var FILENAME_IN_DESC_ALWAYS = 1;
 var FILENAME_IN_DESC_NEVER = 2;
-var gFilenameInExtendedDesc = FILENAME_IN_DESC_IF_DESC_EMPTY;
-// For short descriptions (extended descriptions disabled): If a file's description is
-// unavailable, whether or not to use the filename instead
-var gUseFilenameIfNoDescription_ShortDescs = true;
+
+
+// File list column indexes (0-based).  The end indexes are one past the last index.
+// These defaults assume an 80-character wide terminal.
+var gListIdxes = {
+	filenameStart: 0
+};
+// The end index of each column includes the trailing space so that
+// highlight colors will highlight the whole field
+gListIdxes.filenameEnd = gListIdxes.filenameStart + 13;
+gListIdxes.fileSizeStart = gListIdxes.filenameEnd;
+gListIdxes.fileSizeEnd = gListIdxes.fileSizeStart + 7;
+gListIdxes.descriptionStart = gListIdxes.fileSizeEnd;
+gListIdxes.descriptionEnd = console.screen_columns - 1; // Leave 1 character remaining on the screen
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // Script execution code
@@ -375,32 +322,20 @@ var gFilespec = "*";
 // Description keyword to match (empty for no keyword search)
 var gDescKeyword = "";
 
-// The sort order to use for the file list
-var gFileSortOrder = SORT_PER_DIR_CFG; // Use the file directory's configured sort order option
-
 var gSearchVerbose = false;
 
 // When called as a lodable module, one of the options is to scan all dirs
 var gScanAllDirs = false;
 
-// Setting from the configuration file: When used as a loadable module, whether
-// or not to blank out the "# Files Listed" string (from text.dat) so that
-// Synchronet won't display it after the lister exits
-var gBlankNFilesListedStrIfLoadableModule = true;
-
-// Whether or not to display the number of files in the directory in
-// the header at the top of the screen
-var gDisplayNumFilesInHeader = true;
-
-// Read the configuration file and set the settings
-readConfigFile();
+// Read settings from the configuration file
+var gSettings = readConfigFile();
 
 // Parse command-line arguments (which sets program options)
 var gRunningAsLoadableModule = parseArgs(argv);
 
 // If set to use the traditional (non-lightbar) UI and if set to use the Synchronet
 // stock file lister, then do so instead of using ddfilelister's traditional UI
-if ((!gUseLightbarInterface || !console.term_supports(USER_ANSI)) && gTraditionalUseSyncStock)
+if ((!gSettings.useLightbarInterface || !console.term_supports(USER_ANSI)) && gSettings.traditionalUseSyncStock)
 {
 	var exitCode = 0;
 	if (gScriptMode == MODE_SEARCH_FILENAME || gScriptMode == MODE_SEARCH_DESCRIPTION || gScriptMode == MODE_NEW_FILE_SEARCH)
@@ -468,10 +403,10 @@ var gFileMenuBar = new DDFileMenuBar({ x: 1, y: console.screen_rows });
 // Clear the screen and display the header lines
 console.clear("\x01n");
 if ((gListBehavior & FL_NO_HDR) != FL_NO_HDR)
-	displayFileLibAndDirHeader(false, null, !gUseLightbarInterface || !console.term_supports(USER_ANSI));
+	displayFileLibAndDirHeader(false, null, !gSettings.useLightbarInterface || !console.term_supports(USER_ANSI));
 // Create the file list menu (must be done after displayFileLibAndDirHeader() when using ANSI and lightbar)
 var gFileListMenu = createFileListMenu(gFileMenuBar.getAllActionKeysStr(true, true) + KEY_LEFT + KEY_RIGHT + KEY_DEL /*+ CTRL_C*/);
-if (gUseLightbarInterface && console.term_supports(USER_ANSI))
+if (gSettings.useLightbarInterface && console.term_supports(USER_ANSI))
 {
 	gFileMenuBar.writePromptLine();
 	// In a loop, show the file list menu, allowing the user to scroll the file list,
@@ -943,7 +878,7 @@ function doAction(pActionCode, pFileList, pFileListMenu)
 
 	// If not using the ANSI interface, then prompt the user for the file number
 	// (for options that need one)
-	var useANSIInterface = gUseLightbarInterface && console.term_supports(USER_ANSI);
+	var useANSIInterface = gSettings.useLightbarInterface && console.term_supports(USER_ANSI);
 	var fileIdx = pFileListMenu.selectedItemIdx;
 	if (!useANSIInterface && pActionCode != QUIT && pActionCode != HELP && pActionCode != NEXT_PAGE && pActionCode != PREV_PAGE && pActionCode != TOGGLE_EXTD_DESCS)
 	{
@@ -1180,10 +1115,10 @@ function showFileInfo_ANSI(pFileMetadata)
 	if (adjustedFilename.length < fileMetadata.name.length)
 		fileInfoStr += " (shortened)";
 	fileInfoStr += ":\r\n";
-	fileInfoStr += gColors.filename + adjustedFilename +  "\x01n\x01w\r\n";
+	fileInfoStr += gSettings.colors.filename + adjustedFilename +  "\x01n\x01w\r\n";
 	// Note: File size can also be retrieved by calling a FileBase's get_size(fileMetadata.name)
 	var fileSizeStr = format("%s (%s) bytes", numberWithCommas(fileMetadata.size), file_size_str(fileMetadata.size, null, FILE_SIZE_PRECISION));
-	fileInfoStr += "Size: " + gColors.fileSize + fileSizeStr + "\x01n\x01w";
+	fileInfoStr += "Size: " + gSettings.colors.fileSize + fileSizeStr + "\x01n\x01w";
 	// Credit value
 	var fieldFormatStr = "\r\n\x01n\x01c\x01h%s\x01g:\x01n\x01c %s";
 	var dirFilesAreFree = Boolean(file_area.dir[dirCode].settings & DIR_FREE);
@@ -1231,7 +1166,7 @@ function showFileInfo_ANSI(pFileMetadata)
 	var fileDateStr = "Unknown";
 	if (fileMetadata.hasOwnProperty("time"))
 	{
-		//fileDateStr = gColors.fileTimestamp + strftime(gTimeFormatStr, fileMetadata.time) + "\x01n\x01w";
+		//fileDateStr = gSettings.colors.fileTimestamp + strftime(gTimeFormatStr, fileMetadata.time) + "\x01n\x01w";
 		fileDateStr = strftime(gTimeFormatStr, fileMetadata.time);
 	}
 	// Last downloaded date
@@ -1247,7 +1182,7 @@ function showFileInfo_ANSI(pFileMetadata)
 	// alongside the next file information lines. Otherwise, just
 	// display the file information lines without the avatar.
 	var userAvatarArray = []
-	if (gDispayUserAvatars)
+	if (gSettings.dispayUserAvatars)
 		userAvatarArray = getAvatarArray(fileMetadata.from);
 	if (userAvatarArray.length > 0)
 	{
@@ -1320,7 +1255,7 @@ function showFileInfo_ANSI(pFileMetadata)
 		// Convert any non-Synchronet attribute codes to Synchronet attribute codes
 		// in the description.
 		fileDesc = convertAttrsToSyncPerSysCfg(fileDesc);
-		fileInfoStr += "\r\n\r\n" + gColors.desc;
+		fileInfoStr += "\r\n\r\n" + gSettings.colors.desc;
 		fileInfoStr += fileDesc;
 	}
 
@@ -1346,8 +1281,8 @@ function showFileInfo_ANSI(pFileMetadata)
 	}
 	var frameTitle = "File Info";
 	displayBorderedFrameAndDoInputLoop(frameUpperLeftX, frameUpperLeftY, frameWidth, frameHeight,
-	                                   gColors.fileInfoWindowBorder, frameTitle,
-	                                   gColors.fileInfoWindowTitle, fileInfoStr);
+	                                   gSettings.colors.fileInfoWindowBorder, frameTitle,
+	                                   gSettings.colors.fileInfoWindowTitle, fileInfoStr);
 
 	// Construct the file list redraw info.  Note that the X and Y are relative
 	// to the file list menu, not absolute screen coordinates.
@@ -1408,11 +1343,11 @@ function showFileInfo_noANSI(pFileMetadata)
 	console.crlf();
 	printf(generalFormatStr, "Library", libDesc.substr(0, valueLen));
 	printf(generalFormatStr, "Directory", dirDesc.substr(0, valueLen));
-	var formatStr = "\x01n\x01g%-" + labelLen + "s\x01h" + lblSep + "\x01n" + gColors.filename + "%-" + valueLen + "s\x01n\r\n";
+	var formatStr = "\x01n\x01g%-" + labelLen + "s\x01h" + lblSep + "\x01n" + gSettings.colors.filename + "%-" + valueLen + "s\x01n\r\n";
 	printf(formatStr, "Filename", fileMetadata.name.substr(0, valueLen));
 	// File size
-	formatStr = "\x01n\x01g%-" + labelLen + "s\x01h" + lblSep + "\x01n" + gColors.fileSize + "%-" + valueLen + "s\x01n\r\n";
-	var fileSizeStr = format(gColors.fileSize + "%s (%s) bytes", numberWithCommas(fileMetadata.size), file_size_str(fileMetadata.size, null, FILE_SIZE_PRECISION).substr(0, valueLen));
+	formatStr = "\x01n\x01g%-" + labelLen + "s\x01h" + lblSep + "\x01n" + gSettings.colors.fileSize + "%-" + valueLen + "s\x01n\r\n";
+	var fileSizeStr = format(gSettings.colors.fileSize + "%s (%s) bytes", numberWithCommas(fileMetadata.size), file_size_str(fileMetadata.size, null, FILE_SIZE_PRECISION).substr(0, valueLen));
 	printf(formatStr, "File size", fileSizeStr.substr(0, valueLen));
 	// Credit value
 	var dirFilesAreFree = Boolean(file_area.dir[dirCode].settings & DIR_FREE);
@@ -1426,7 +1361,7 @@ function showFileInfo_noANSI(pFileMetadata)
 		printf(generalFormatStr, "File MD5", fileMetadata.md5.substr(0, valueLen));
 	if (fileMetadata.hasOwnProperty("sha1"))
 		printf(generalFormatStr, "File SHA-1", fileMetadata.sha1.substr(0, valueLen));
-	formatStr = "\x01n\x01g%-" + labelLen + "s\x01h" + lblSep + "\x01n" + gColors.desc + "%-" + valueLen + "s\x01n\r\n";
+	formatStr = "\x01n\x01g%-" + labelLen + "s\x01h" + lblSep + "\x01n" + gSettings.colors.desc + "%-" + valueLen + "s\x01n\r\n";
 	printf(formatStr, "Description", shortFileDesc.substr(0, valueLen));
 	var authorStr = fileMetadata.hasOwnProperty("author") ? fileMetadata.author : "";
 	printf(generalFormatStr, "Author", authorStr.substr(0, valueLen));
@@ -1439,7 +1374,7 @@ function showFileInfo_noANSI(pFileMetadata)
 		uploadedByStr += " via " + fileMetadata.from_protocol;
 	printf(generalFormatStr, "Uploaded by", uploadedByStr.substr(0, valueLen));
 	// If enabled, and if possible, show the avatar of the user who uploaded the file
-	if (gDispayUserAvatars && gAvatar != null && fileMetadata.from != "")
+	if (gSettings.dispayUserAvatars && gAvatar != null && fileMetadata.from != "")
 	{
 		var userNum = system.matchuser(fileMetadata.from);
 		if (userNum > 0)
@@ -1449,7 +1384,7 @@ function showFileInfo_noANSI(pFileMetadata)
 		}
 	}
 	// Uploaded on
-	formatStr = "\x01n\x01g%-" + labelLen + "s\x01h" + lblSep + "\x01n" + gColors.fileTimestamp + "%-" + valueLen + "s\x01n\r\n";
+	formatStr = "\x01n\x01g%-" + labelLen + "s\x01h" + lblSep + "\x01n" + gSettings.colors.fileTimestamp + "%-" + valueLen + "s\x01n\r\n";
 	var timeStr = "Unknown";
 	if (fileMetadata.hasOwnProperty("added"))
 		timeStr = strftime(gTimeFormatStr, fileMetadata.added);
@@ -1470,7 +1405,7 @@ function showFileInfo_noANSI(pFileMetadata)
 	printf(generalFormatStr, "Time to download", secondsToTimeStr(calcDownloadTimeInSeconds(fileMetadata.size)));
 	// Extended description (if available)
 	console.attributes = "N";
-	console.print(gColors.desc);
+	console.print(gSettings.colors.desc);
 	if (fileMetadata.hasOwnProperty("extdesc"))
 	{
 		console.crlf();
@@ -1543,10 +1478,10 @@ function viewFile(pFileMetadata)
 	}
 	else
 	{
-		if (gUseLightbarInterface && console.term_supports(USER_ANSI))
+		if (gSettings.useLightbarInterface && console.term_supports(USER_ANSI))
 			displayMsg("Failed to open the filebase!", true, true);
 		else
-			console.print("\x01n" + gColors.errorMessage + "Failed to open the filebase!\x01n\r\n\x01p");
+			console.print("\x01n" + gSettings.colors.errorMessage + "Failed to open the filebase!\x01n\r\n\x01p");
 		return retObj;
 	}
 
@@ -1556,7 +1491,7 @@ function viewFile(pFileMetadata)
 	console.crlf();
 	var successfullyViewed = bbs.view_file(fullyPathedFilename);
 	console.attributes = "N";
-	if (gPauseAfterViewingFile || !successfullyViewed)
+	if (gSettings.pauseAfterViewingFile || !successfullyViewed)
 		console.pause();
 
 	retObj.reDrawListerHeader = true;
@@ -1610,7 +1545,7 @@ function addSelectedFilesToBatchDLQueue(pFileMetadata, pFileList)
 		var batchDLFile = new File(batchDLFilename);
 		if (batchDLFile.open(batchDLFile.exists ? "r+" : "w+"))
 		{
-			if (gUseLightbarInterface && console.term_supports(USER_ANSI))
+			if (gSettings.useLightbarInterface && console.term_supports(USER_ANSI))
 				displayMsg("Adding file(s) to batch DL queue..", false, false);
 			else
 				console.print("\x01n\x01cAdding file(s) to batch DL queue..\x01n\r\n");
@@ -1649,7 +1584,7 @@ function addSelectedFilesToBatchDLQueue(pFileMetadata, pFileList)
 		}
 
 		// For ANSI/lightbar: Show a message box
-		if (gUseLightbarInterface && console.term_supports(USER_ANSI))
+		if (gSettings.useLightbarInterface && console.term_supports(USER_ANSI))
 		{
 			// Frame location & size for batch DL queue stats or filenames that failed
 			var frameUpperLeftX = gFileListMenu.pos.x + 2;
@@ -1709,8 +1644,8 @@ function addSelectedFilesToBatchDLQueue(pFileMetadata, pFileList)
 					}
 					var additionalQuitKeys = "yYnN";
 					var lastUserInput = displayBorderedFrameAndDoInputLoop(frameUpperLeftX, frameUpperLeftY, frameWidth,
-																		   frameHeight, gColors.batchDLInfoWindowBorder,
-																		   frameTitle, gColors.batchDLInfoWindowTitle,
+																		   frameHeight, gSettings.colors.batchDLInfoWindowBorder,
+																		   frameTitle, gSettings.colors.batchDLInfoWindowTitle,
 																		   queueStats, additionalQuitKeys);
 					// The main screen content (file list & extended description if applicable)
 					// will need to be redrawn after this.
@@ -1742,8 +1677,8 @@ function addSelectedFilesToBatchDLQueue(pFileMetadata, pFileList)
 				for (var i = 0; i < filenamesFailed.length; ++i)
 					fileListStr += shortenFilename(filenamesFailed[i], frameInnerWidth, false) + "\r\n";
 				var lastUserInput = displayBorderedFrameAndDoInputLoop(frameUpperLeftX, frameUpperLeftY, frameWidth,
-																	   frameHeight, gColors.batchDLInfoWindowBorder,
-																	   frameTitle, gColors.batchDLInfoWindowTitle,
+																	   frameHeight, gSettings.colors.batchDLInfoWindowBorder,
+																	   frameTitle, gSettings.colors.batchDLInfoWindowTitle,
 																	   fileListStr, "");
 				// Add the file list redraw info.  Note that the X and Y are relative
 				// to the file list menu, not absolute screen coordinates.
@@ -1811,7 +1746,7 @@ function addSelectedFilesToBatchDLQueue(pFileMetadata, pFileList)
 			{
 				// Show the names of the files that failed to be added to the user's batch DL queue
 				console.attributes = "N";
-				console.print(gColors.errorMessage + "Failed to add these files to batch DL queue:\x01n\r\n");
+				console.print(gSettings.colors.errorMessage + "Failed to add these files to batch DL queue:\x01n\r\n");
 				console.attributes = "NW";
 				for (var i = 0; i < filenamesFailed.length; ++i)
 					console.print(filenamesFailed[i] + "\r\n");
@@ -1971,7 +1906,7 @@ function displayHelpScreen()
 	printf(printfStr, "B", "Flag the selected file(s) for batch download");
 	printf(printfStr, "D", "Download the highlighted (selected) file");
 	printf(printfStr, "E", "Edit the file information");
-	if (!gUseLightbarInterface)
+	if (!gSettings.useLightbarInterface)
 	{
 		printf(printfStr, "N/PageDn", "Show the next page of files");
 		printf(printfStr, "P/Pageup", "Show the previous page of files");
@@ -2018,7 +1953,7 @@ function editFileInfo(pFileList, pFileListMenu)
 	// them edit it
 	if (!(user.is_sysop || userNameOrAliasMatchCaseIns(fileMetadata.from)))
 	{
-		if (gUseLightbarInterface && console.term_supports(USER_ANSI))
+		if (gSettings.useLightbarInterface && console.term_supports(USER_ANSI))
 		{
 			var errorMsg = "You don't have permission to edit this file";
 			displayMsg(errorMsg, true, true);
@@ -2255,7 +2190,7 @@ function chooseFilebaseAndMoveFileToOtherFilebase(pFileList, pFileListMenu)
 		height: fileLibMenu.size.height + 1 // + 1 because of the label above the menu
 	};
 	var chooseAreaText = "Choose a destination area";
-	if (gUseLightbarInterface && console.term_supports(USER_ANSI))
+	if (gSettings.useLightbarInterface && console.term_supports(USER_ANSI))
 	{
 		console.gotoxy(fileLibMenu.pos.x, fileLibMenu.pos.y-1);
 		printf("\x01n\x01c\x01h|\x01n\x01c%-" + +(fileLibMenu.size.width-1) + "s\x01n", chooseAreaText);
@@ -2273,8 +2208,8 @@ function chooseFilebaseAndMoveFileToOtherFilebase(pFileList, pFileListMenu)
 			// The file dir menu will be created at the same position & with the same size
 			// as the file library menu
 			var fileDirMenu = createFileDirMenu(chosenLibIdx);
-			if (!gUseLightbarInterface)
-				printf("\x01n%sDirectories of %s:\r\n", gColors.fileAreaDescTrad, file_area.lib_list[chosenLibIdx].description);
+			if (!gSettings.useLightbarInterface)
+				printf("\x01n%sDirectories of %s:\r\n", gSettings.colors.fileAreaDescTrad, file_area.lib_list[chosenLibIdx].description);
 			chosenDirCode = fileDirMenu.GetVal();
 			if (typeof(chosenDirCode) === "string")
 			{
@@ -2675,7 +2610,7 @@ function DDFileMenuBar(pPos)
 		// use the full word "Edit"; otherwise (for the traditional/non-lightbar
 		// interface), use as much of the word "Edit" as possible if the user's
 		// terminal is over 80 columns wide; otherwise, use "E".
-		if (gUseLightbarInterface && console.term_supports(USER_ANSI))
+		if (gSettings.useLightbarInterface && console.term_supports(USER_ANSI))
 			this.cmdArray.push(new DDFileMenuBarItem("Edit", 0, FILE_EDIT));
 		else
 		{
@@ -2691,7 +2626,7 @@ function DDFileMenuBar(pPos)
 		// The user is not a sysop; there is room for the Edit comand
 		this.cmdArray.push(new DDFileMenuBarItem("Edit", 0, FILE_EDIT));
 	}
-	if (!gUseLightbarInterface || !console.term_supports(USER_ANSI))
+	if (!gSettings.useLightbarInterface || !console.term_supports(USER_ANSI))
 	{
 		this.cmdArray.push(new DDFileMenuBarItem("Next", 0, NEXT_PAGE, KEY_PAGEDN));
 		this.cmdArray.push(new DDFileMenuBarItem("Prev", 0, PREV_PAGE, KEY_PAGEUP));
@@ -2705,7 +2640,7 @@ function DDFileMenuBar(pPos)
 	// there wouldn't be enough room to display it.
 	if (userCanEnableExtendedDescriptions())
 	{
-		var displayXtdCmdText = !(console.screen_columns < 87 && !gUseLightbarInterface && user.is_sysop);
+		var displayXtdCmdText = !(console.screen_columns < 87 && !gSettings.useLightbarInterface && user.is_sysop);
 		this.cmdArray.push(new DDFileMenuBarItem("Xtd", 0, TOGGLE_EXTD_DESCS, null, displayXtdCmdText));
 	}
 	this.cmdArray.push(new DDFileMenuBarItem("?", 0, HELP));
@@ -2790,7 +2725,7 @@ function DDFileMenuBar_getItemTextFromIdx(pIdx)
 function DDFileMenuBar_writePromptLine()
 {
 	// Place the cursor at the defined location, then write the prompt text
-	if (gUseLightbarInterface && console.term_supports(USER_ANSI))
+	if (gSettings.useLightbarInterface && console.term_supports(USER_ANSI))
 		console.gotoxy(this.pos.x, this.pos.y);
 	console.print(this.promptText);
 }
@@ -3352,7 +3287,7 @@ function displayFileLibAndDirHeader(pTextOnly, pDirCodeOverride, pNumberedMode)
 		console.print("\x01w" + THIN_RECTANGLE_RIGHT + "\x01k\x01h" + BLOCK4 + "\x01n\x01w" + THIN_RECTANGLE_LEFT);
 		console.attributes = "GH";
 		var wasAbleToDisplayNumFiles = false;
-		if (gDisplayNumFilesInHeader && dirCode.length > 0)
+		if (gSettings.displayNumFilesInHeader && dirCode.length > 0)
 		{
 			// Hopefully there are no more than 9999999 files in this directory
 			// (the field width is 7 here)
@@ -3451,8 +3386,8 @@ function createFileListMenu(pQuitKeys)
 	fileListMenu.borderEnabled = false;
 	fileListMenu.ampersandHotkeysInItems = false;
 	fileListMenu.wrapNavigation = false;
-	fileListMenu.colors.itemNumColor = gColors.listNumTrad; // For numbered mode, if non-lightbar
-	if (gUseLightbarInterface && console.term_supports(USER_ANSI))
+	fileListMenu.colors.itemNumColor = gSettings.colors.listNumTrad; // For numbered mode, if non-lightbar
+	if (gSettings.useLightbarInterface && console.term_supports(USER_ANSI))
 	{
 		fileListMenu.allowANSI = true;
 		fileListMenu.scrollbarEnabled = true;
@@ -3493,12 +3428,12 @@ function createFileListMenu(pQuitKeys)
 			gListIdxes.descriptionEnd -= 1;
 		widthChanged = (gListIdxes.descriptionEnd != oldDescriptionEnd);
 		this.SetColors({
-			itemColor: [{start: gListIdxes.filenameStart, end: gListIdxes.filenameEnd, attrs: gColors.filename},
-			            {start: gListIdxes.fileSizeStart, end: gListIdxes.fileSizeEnd, attrs: gColors.fileSize},
-			            {start: gListIdxes.descriptionStart, end: gListIdxes.descriptionEnd, attrs: gColors.desc}],
-			selectedItemColor: [{start: gListIdxes.filenameStart, end: gListIdxes.filenameEnd, attrs: gColors.bkgHighlight + gColors.filenameHighlight},
-			                    {start: gListIdxes.fileSizeStart, end: gListIdxes.fileSizeEnd, attrs: gColors.bkgHighlight + gColors.fileSizeHighlight},
-			                    {start: gListIdxes.descriptionStart, end: gListIdxes.descriptionEnd, attrs: gColors.bkgHighlight + gColors.descHighlight}]
+			itemColor: [{start: gListIdxes.filenameStart, end: gListIdxes.filenameEnd, attrs: gSettings.colors.filename},
+			            {start: gListIdxes.fileSizeStart, end: gListIdxes.fileSizeEnd, attrs: gSettings.colors.fileSize},
+			            {start: gListIdxes.descriptionStart, end: gListIdxes.descriptionEnd, attrs: gSettings.colors.desc}],
+			selectedItemColor: [{start: gListIdxes.filenameStart, end: gListIdxes.filenameEnd, attrs: gSettings.colors.bkgHighlight + gSettings.colors.filenameHighlight},
+			                    {start: gListIdxes.fileSizeStart, end: gListIdxes.fileSizeEnd, attrs: gSettings.colors.bkgHighlight + gSettings.colors.fileSizeHighlight},
+			                    {start: gListIdxes.descriptionStart, end: gListIdxes.descriptionEnd, attrs: gSettings.colors.bkgHighlight + gSettings.colors.descHighlight}]
 		});
 
 		this.filenameLen = gListIdxes.filenameEnd - gListIdxes.filenameStart;
@@ -3553,7 +3488,7 @@ function createFileListMenu(pQuitKeys)
 		desc = removeOrReplaceSyncCursorMovementChars(desc, false);
 		// If there is no description and the option to use the filename is enabled, then use the
 		// filename.
-		if (gUseFilenameIfNoDescription_ShortDescs && (desc == "" || /^\s+$/.test(desc)))
+		if (gSettings.useFilenameIfNoDescription_ShortDescs && (desc == "" || /^\s+$/.test(desc)))
 			desc = gFileList[pIdx].name;
 		var fileSizeStr = file_size_str(gFileList[pIdx].size, null, FILE_SIZE_PRECISION);
 		menuItemObj.text = format(this.fileFormatStr,
@@ -3601,12 +3536,12 @@ function createFileLibMenu()
 	// Create the menu object
 	var startRow = gNumHeaderLinesDisplayed + 4;
 	var fileLibMenu = new DDLightbarMenu(5, startRow, console.screen_columns - 10, console.screen_rows - startRow - 5);
-	fileLibMenu.scrollbarEnabled = gUseLightbarInterface && console.term_supports(USER_ANSI);
+	fileLibMenu.scrollbarEnabled = gSettings.useLightbarInterface && console.term_supports(USER_ANSI);
 	fileLibMenu.borderEnabled = true;
 	fileLibMenu.multiSelect = false;
 	fileLibMenu.ampersandHotkeysInItems = false;
 	fileLibMenu.wrapNavigation = false;
-	fileLibMenu.allowANSI = gUseLightbarInterface && console.term_supports(USER_ANSI);
+	fileLibMenu.allowANSI = gSettings.useLightbarInterface && console.term_supports(USER_ANSI);
 
 	// Add additional keypresses for quitting the menu's input loop.
 	// Q: Quit
@@ -3629,13 +3564,13 @@ function createFileLibMenu()
 		--menuInnerWidth;
 	// Allow 2 for spaces
 	fileLibMenu.libDescLen = menuInnerWidth - fileLibMenu.libNumLen - fileLibMenu.numDirsLen - 2;
-	if (gUseLightbarInterface && console.term_supports(USER_ANSI))
+	if (gSettings.useLightbarInterface && console.term_supports(USER_ANSI))
 		fileLibMenu.libFormatStr = "%" + fileLibMenu.libNumLen + "d %-" + fileLibMenu.libDescLen + "s %" + fileLibMenu.numDirsLen + "d";
 	else
 		fileLibMenu.libFormatStr = "%-" + fileLibMenu.libDescLen + "s %" + fileLibMenu.numDirsLen + "d";
 
 	// Colors and their indexes
-	fileLibMenu.borderColor = gColors.fileAreaMenuBorder;
+	fileLibMenu.borderColor = gSettings.colors.fileAreaMenuBorder;
 	var libNumStart = 0;
 	var libNumEnd = fileLibMenu.libNumLen;
 	var descStart = libNumEnd;
@@ -3644,28 +3579,28 @@ function createFileLibMenu()
 	//var numDirsEnd = numDirsStart + fileLibMenu.numDirsLen;
 	// Selected colors (for lightbar interface)
 	fileLibMenu.SetColors({
-		selectedItemColor: [{start: libNumStart, end: libNumEnd, attrs: "\x01n" + gColors.fileAreaMenuHighlightBkg + gColors.fileAreaNumHighlight},
-		                    {start: descStart, end:descEnd, attrs: "\x01n" + gColors.fileAreaMenuHighlightBkg + gColors.fileAreaDescHighlight},
-		                    {start: numDirsStart, end: -1, attrs: "\x01n" + gColors.fileAreaMenuHighlightBkg + gColors.fileAreaNumItemsHighlight}]
+		selectedItemColor: [{start: libNumStart, end: libNumEnd, attrs: "\x01n" + gSettings.colors.fileAreaMenuHighlightBkg + gSettings.colors.fileAreaNumHighlight},
+		                    {start: descStart, end:descEnd, attrs: "\x01n" + gSettings.colors.fileAreaMenuHighlightBkg + gSettings.colors.fileAreaDescHighlight},
+		                    {start: numDirsStart, end: -1, attrs: "\x01n" + gSettings.colors.fileAreaMenuHighlightBkg + gSettings.colors.fileAreaNumItemsHighlight}]
 	});
 	// Non-selected item colors
-	if (gUseLightbarInterface && console.term_supports(USER_ANSI))
+	if (gSettings.useLightbarInterface && console.term_supports(USER_ANSI))
 	{
 		fileLibMenu.SetColors({
-			itemColor: [{start: libNumStart, end: libNumEnd, attrs: "\x01n" + gColors.fileNormalBkg + gColors.fileAreaNum},
-						{start: descStart, end:descEnd, attrs: "\x01n" + gColors.fileNormalBkg + gColors.fileAreaDesc},
-						{start: numDirsStart, end: -1, attrs: "\x01n" + gColors.fileNormalBkg + gColors.fileAreaNumItems}]
+			itemColor: [{start: libNumStart, end: libNumEnd, attrs: "\x01n" + gSettings.colors.fileNormalBkg + gSettings.colors.fileAreaNum},
+						{start: descStart, end:descEnd, attrs: "\x01n" + gSettings.colors.fileNormalBkg + gSettings.colors.fileAreaDesc},
+						{start: numDirsStart, end: -1, attrs: "\x01n" + gSettings.colors.fileNormalBkg + gSettings.colors.fileAreaNumItems}]
 		});
 	}
 	else
 	{
-		fileLibMenu.colors.itemNumColor = gColors.listNumTrad;
+		fileLibMenu.colors.itemNumColor = gSettings.colors.listNumTrad;
 		descStart = 0;
 		descEnd = descStart + fileLibMenu.libDescLen;
 		numDirsStart = descEnd;
 		fileLibMenu.SetColors({
-			itemColor: [{start: descStart, end:descEnd, attrs: "\x01n" + gColors.fileNormalBkgTrad + gColors.fileAreaDescTrad},
-						{start: numDirsStart, end: -1, attrs: "\x01n" + gColors.fileNormalBkgTrad + gColors.fileAreaNumItemsTrad}]
+			itemColor: [{start: descStart, end:descEnd, attrs: "\x01n" + gSettings.colors.fileNormalBkgTrad + gSettings.colors.fileAreaDescTrad},
+						{start: numDirsStart, end: -1, attrs: "\x01n" + gSettings.colors.fileNormalBkgTrad + gSettings.colors.fileAreaNumItemsTrad}]
 		});
 	}
 
@@ -3673,7 +3608,7 @@ function createFileLibMenu()
 	// Define the menu function for getting an item
 	fileLibMenu.GetItem = function(pIdx) {
 		var menuItemObj = this.MakeItemWithRetval(pIdx);
-		if (gUseLightbarInterface && console.term_supports(USER_ANSI))
+		if (gSettings.useLightbarInterface && console.term_supports(USER_ANSI))
 		{
 			menuItemObj.text = format(this.libFormatStr,
 			                          pIdx + 1,//file_area.lib_list[pIdx].number + 1,
@@ -3728,12 +3663,12 @@ function createFileDirMenu(pLibIdx)
 	//DDLightbarMenu(pX, pY, pWidth, pHeight)
 	// Create the menu object
 	var fileDirMenu = new DDLightbarMenu(5, startRow, console.screen_columns - 10, console.screen_rows - startRow - 5);
-	fileDirMenu.scrollbarEnabled = gUseLightbarInterface && console.term_supports(USER_ANSI);
+	fileDirMenu.scrollbarEnabled = gSettings.useLightbarInterface && console.term_supports(USER_ANSI);
 	fileDirMenu.borderEnabled = true;
 	fileDirMenu.multiSelect = false;
 	fileDirMenu.ampersandHotkeysInItems = false;
 	fileDirMenu.wrapNavigation = false;
-	fileDirMenu.allowANSI = gUseLightbarInterface && console.term_supports(USER_ANSI);
+	fileDirMenu.allowANSI = gSettings.useLightbarInterface && console.term_supports(USER_ANSI);
 
 	// Add additional keypresses for quitting the menu's input loop.
 	// Q: Quit
@@ -3757,13 +3692,13 @@ function createFileDirMenu(pLibIdx)
 		--menuInnerWidth;
 	// Allow 2 for spaces
 	fileDirMenu.dirDescLen = menuInnerWidth - fileDirMenu.dirNumLen - fileDirMenu.numFilesLen - 2;
-	if (gUseLightbarInterface && console.term_supports(USER_ANSI))
+	if (gSettings.useLightbarInterface && console.term_supports(USER_ANSI))
 		fileDirMenu.dirFormatStr = "%" + fileDirMenu.dirNumLen + "d %-" + fileDirMenu.dirDescLen + "s %" + fileDirMenu.numFilesLen + "d";
 	else
 		fileDirMenu.dirFormatStr = "%-" + fileDirMenu.dirDescLen + "s %" + fileDirMenu.numFilesLen + "d";
 
 	// Colors and their indexes
-	fileDirMenu.borderColor = gColors.fileAreaMenuBorder;
+	fileDirMenu.borderColor = gSettings.colors.fileAreaMenuBorder;
 	var dirNumStart = 0;
 	var dirNumEnd = fileDirMenu.dirNumLen;
 	var descStart = dirNumEnd;
@@ -3772,28 +3707,28 @@ function createFileDirMenu(pLibIdx)
 	//var numDirsEnd = numDirsStart + fileDirMenu.numDirsLen;
 	// Selected colors (for lightbar interface)
 	fileDirMenu.SetColors({
-		selectedItemColor: [{start: dirNumStart, end: dirNumEnd, attrs: "\x01n" + gColors.fileAreaMenuHighlightBkg + gColors.fileAreaNumHighlight},
-		                    {start: descStart, end:descEnd, attrs: "\x01n" + gColors.fileAreaMenuHighlightBkg + gColors.fileAreaDescHighlight},
-		                    {start: numDirsStart, end: -1, attrs: "\x01n" + gColors.fileAreaMenuHighlightBkg + gColors.fileAreaNumItemsHighlight}]
+		selectedItemColor: [{start: dirNumStart, end: dirNumEnd, attrs: "\x01n" + gSettings.colors.fileAreaMenuHighlightBkg + gSettings.colors.fileAreaNumHighlight},
+		                    {start: descStart, end:descEnd, attrs: "\x01n" + gSettings.colors.fileAreaMenuHighlightBkg + gSettings.colors.fileAreaDescHighlight},
+		                    {start: numDirsStart, end: -1, attrs: "\x01n" + gSettings.colors.fileAreaMenuHighlightBkg + gSettings.colors.fileAreaNumItemsHighlight}]
 	});
 	// Non-selected item colors
-	if (gUseLightbarInterface && console.term_supports(USER_ANSI))
+	if (gSettings.useLightbarInterface && console.term_supports(USER_ANSI))
 	{
 		fileDirMenu.SetColors({
-			itemColor: [{start: dirNumStart, end: dirNumEnd, attrs: "\x01n" + gColors.fileNormalBkg + gColors.fileAreaNum},
-						{start: descStart, end:descEnd, attrs: "\x01n" + gColors.fileNormalBkg + gColors.fileAreaDesc},
-						{start: numDirsStart, end: -1, attrs: "\x01n" + gColors.fileNormalBkg + gColors.fileAreaNumItems}]
+			itemColor: [{start: dirNumStart, end: dirNumEnd, attrs: "\x01n" + gSettings.colors.fileNormalBkg + gSettings.colors.fileAreaNum},
+						{start: descStart, end:descEnd, attrs: "\x01n" + gSettings.colors.fileNormalBkg + gSettings.colors.fileAreaDesc},
+						{start: numDirsStart, end: -1, attrs: "\x01n" + gSettings.colors.fileNormalBkg + gSettings.colors.fileAreaNumItems}]
 		});
 	}
 	else
 	{
-		fileDirMenu.colors.itemNumColor = gColors.listNumTrad;
+		fileDirMenu.colors.itemNumColor = gSettings.colors.listNumTrad;
 		descStart = 0;
 		descEnd = descStart + fileDirMenu.dirDescLen;
 		numDirsStart = descEnd;
 		fileDirMenu.SetColors({
-			itemColor: [{start: descStart, end:descEnd, attrs: "\x01n" + gColors.fileNormalBkgTrad + gColors.fileAreaDescTrad},
-						{start: numDirsStart, end: -1, attrs: "\x01n" + gColors.fileNormalBkgTrad + gColors.fileAreaNumItemsTrad}]
+			itemColor: [{start: descStart, end:descEnd, attrs: "\x01n" + gSettings.colors.fileNormalBkgTrad + gSettings.colors.fileAreaDescTrad},
+						{start: numDirsStart, end: -1, attrs: "\x01n" + gSettings.colors.fileNormalBkgTrad + gSettings.colors.fileAreaNumItemsTrad}]
 		});
 	}
 
@@ -3802,7 +3737,7 @@ function createFileDirMenu(pLibIdx)
 	fileDirMenu.GetItem = function(pIdx) {
 		// Return the internal code for the directory for the item
 		var menuItemObj = this.MakeItemWithRetval(file_area.lib_list[this.libIdx].dir_list[pIdx].code);
-		if (gUseLightbarInterface && console.term_supports(USER_ANSI))
+		if (gSettings.useLightbarInterface && console.term_supports(USER_ANSI))
 		{
 			menuItemObj.text = format(this.dirFormatStr,
 			                          pIdx + 1,//file_area.lib_list[this.libIdx].dir_list[pIdx].number + 1,
@@ -3950,14 +3885,14 @@ function displayMsgs(pMsgArray, pIsError, pWaitAndErase)
 
 	var waitAndErase = (typeof(pWaitAndErase) === "boolean" ? pWaitAndErase : true);
 
-	if (gUseLightbarInterface)
+	if (gSettings.useLightbarInterface)
 	{
 		// Draw the box border, then write the messages
 		var title = pIsError ? "Error" : "Message";
-		var titleColor = pIsError ? gColors.errorMessage : gColors.successMessage;
+		var titleColor = pIsError ? gSettings.colors.errorMessage : gSettings.colors.successMessage;
 		drawBorder(gErrorMsgBoxULX, gErrorMsgBoxULY, gErrorMsgBoxWidth, gErrorMsgBoxHeight,
-				   gColors.errorBoxBorder, "single", title, titleColor, "");
-		var msgColor = "\x01n" + (pIsError ? gColors.errorMessage : gColors.successMessage);
+				   gSettings.colors.errorBoxBorder, "single", title, titleColor, "");
+		var msgColor = "\x01n" + (pIsError ? gSettings.colors.errorMessage : gSettings.colors.successMessage);
 		var innerWidth = gErrorMsgBoxWidth - 2;
 		var msgFormatStr = msgColor + "%-" + innerWidth + "s\x01n";
 		for (var i = 0; i < pMsgArray.length; ++i)
@@ -3976,7 +3911,7 @@ function displayMsgs(pMsgArray, pIsError, pWaitAndErase)
 	else
 	{
 		console.attributes = "N";
-		var msgColor = "\x01n" + (pIsError ? gColors.errorMessage : gColors.successMessage);
+		var msgColor = "\x01n" + (pIsError ? gSettings.colors.errorMessage : gSettings.colors.successMessage);
 		for (var i = 0; i < pMsgArray.length; ++i)
 			console.print(msgColor + pMsgArray[i] + "\r\n");
 		if (waitAndErase)
@@ -4158,7 +4093,7 @@ function confirmFileActionWithUser(pFilenames, pActionName, pDefaultYes)
 	else if (numFilenames == 1)
 	{
 		var filename = (typeof(pFilenames) === "string" ? pFilenames : pFilenames[0]);
-		if (gUseLightbarInterface && console.term_supports(USER_ANSI))
+		if (gSettings.useLightbarInterface && console.term_supports(USER_ANSI))
 		{
 			drawSeparatorLine(1, console.screen_rows-2, console.screen_columns-1);
 			console.gotoxy(1, console.screen_rows-1);
@@ -4170,7 +4105,7 @@ function confirmFileActionWithUser(pFilenames, pActionName, pDefaultYes)
 			actionConfirmed = console.yesno(pActionName + " " + shortFilename);
 		else
 			actionConfirmed = !console.noyes(pActionName + " " + shortFilename);
-		if (gUseLightbarInterface && console.term_supports(USER_ANSI))
+		if (gSettings.useLightbarInterface && console.term_supports(USER_ANSI))
 		{
 			// Refresh the main screen content, to erase the confirmation prompt
 			refreshScreenMainContent(1, console.screen_rows-2, console.screen_columns, 2, true);
@@ -4178,7 +4113,7 @@ function confirmFileActionWithUser(pFilenames, pActionName, pDefaultYes)
 	}
 	else
 	{
-		if (gUseLightbarInterface && console.term_supports(USER_ANSI))
+		if (gSettings.useLightbarInterface && console.term_supports(USER_ANSI))
 		{
 			// Construct & draw a frame with the file list & display the frame to confirm with the
 			// user
@@ -4194,8 +4129,8 @@ function confirmFileActionWithUser(pFilenames, pActionName, pDefaultYes)
 			for (var i = 0; i < pFilenames.length; ++i)
 				fileListStr += shortenFilename(pFilenames[i], frameInnerWidth, false) + "\r\n";
 			var lastUserInput = displayBorderedFrameAndDoInputLoop(frameUpperLeftX, frameUpperLeftY, frameWidth,
-																   frameHeight, gColors.confirmFileActionWindowBorder,
-																   frameTitle, gColors.confirmFileActionWindowWindowTitle,
+																   frameHeight, gSettings.colors.confirmFileActionWindowBorder,
+																   frameTitle, gSettings.colors.confirmFileActionWindowWindowTitle,
 																   fileListStr, additionalQuitKeys);
 			actionConfirmed = (lastUserInput.toUpperCase() == "Y");
 			// Refresh the main screen content, to erase the confirmation window
@@ -4223,6 +4158,63 @@ function confirmFileActionWithUser(pFilenames, pActionName, pDefaultYes)
 // Reads the configuration file and sets the settings accordingly
 function readConfigFile()
 {
+	var settingsObj = {
+		useLightbarInterface: true,
+		traditionalUseSyncStock: true,
+		fileSortOrder: SORT_PER_DIR_CFG, /// Use the file directory's configured sort order option
+		pauseAfterViewingFile: true,
+		blankNFilesListedStrIfLoadableModule: true,
+		dispayUserAvatars: true,
+		// For short descriptions (extended descriptions disabled): If a file's description is
+		// unavailable, whether or not to use the filename instead
+		useFilenameIfNoDescription_ShortDescs: true,
+		filenameInExtendedDesc: FILENAME_IN_DESC_IF_DESC_EMPTY,
+		// Whether or not to display the number of files in the directory in
+		// the header at the top of the screen
+		displayNumFilesInHeader: true,
+
+		// Colors
+		colors: {
+			filename: "\x01n\x01b\x01h",
+			fileSize: "\x01n\x01m\x01h",
+			desc: "\x01n\x01w",
+			bkgHighlight: "\x01n\x014",
+			filenameHighlight: "\x01c\x01h",
+			fileSizeHighlight: "\x01c\x01h",
+			descHighlight: "\x01c\x01h",
+			fileTimestamp: "\x01g\x01h",
+			fileInfoWindowBorder: "\x01r",
+			fileInfoWindowTitle: "\x01g",
+			errorBoxBorder: "\x01g\x01h",
+			errorMessage: "\x01y\x01h",
+			successMessage: "\x01c",
+
+			batchDLInfoWindowBorder: "\x01r",
+			batchDLInfoWindowTitle: "\x01g",
+			confirmFileActionWindowBorder: "\x01r",
+			confirmFileActionWindowWindowTitle: "\x01g",
+
+			fileAreaMenuBorder: "\x01b", // File move menu for lightbar interface
+			fileNormalBkg: "\x01" + "4",
+			fileAreaNum: "\x01w",
+			fileAreaDesc: "\x01w",
+			fileAreaNumItems: "\x01w",
+
+			fileAreaMenuHighlightBkg: "\x017",
+			fileAreaNumHighlight: "\x01b",
+			fileAreaDescHighlight: "\x01b",
+			fileAreaNumItemsHighlight: "\x01b",
+
+			fileAreaMenuBorderTrad: "\x01b", // File move menu for traditional interface
+			fileNormalBkgTrad: "\x01n\x01w",
+			listNumTrad: "\x01g\x01h",
+			fileAreaDescTrad: "\x01c",
+			fileAreaNumItemsTrad: "\x01b\x01h",
+
+			filenameInDesc: "\x01g" // Filename when used in the description
+		}
+	};
+
 	var themeFilename = ""; // In case a theme filename is specified
 
 	// Open the main configuration file.  First look for it in the sbbs/mods
@@ -4236,102 +4228,102 @@ function readConfigFile()
 	var cfgFile = new File(cfgFilenameFullPath);
 	if (cfgFile.open("r"))
 	{
-		var settingsObj = cfgFile.iniGetObject();
+		var settingsFromFile = cfgFile.iniGetObject();
 		cfgFile.close();
 
-		for (var prop in settingsObj)
+		for (var prop in settingsFromFile)
 		{
 			var propUpper = prop.toUpperCase();
 			if (propUpper == "INTERFACESTYLE")
 			{
-				if (typeof(settingsObj[prop]) === "string")
-					gUseLightbarInterface = (settingsObj[prop].toUpperCase() == "LIGHTBAR");
+				if (typeof(settingsFromFile[prop]) === "string")
+					settingsObj.useLightbarInterface = (settingsFromFile[prop].toUpperCase() == "LIGHTBAR");
 			}
 			else if (propUpper == "TRADITIONALUSESYNCSTOCK")
 			{
-				typeof(settingsObj[prop]) === "boolean"
-					gTraditionalUseSyncStock = settingsObj[prop];
+				typeof(settingsFromFile[prop]) === "boolean"
+					settingsObj.traditionalUseSyncStock = settingsFromFile[prop];
 			}
 			else if (propUpper == "SORTORDER")
 			{
-				if (typeof(settingsObj[prop]) === "string")
+				if (typeof(settingsFromFile[prop]) === "string")
 				{
-					var valueUpper = settingsObj[prop].toUpperCase();
+					var valueUpper = settingsFromFile[prop].toUpperCase();
 					if (valueUpper == "NATURAL")
-						gFileSortOrder = FileBase.SORT.NATURAL;
+						settingsObj.fileSortOrder = FileBase.SORT.NATURAL;
 					else if (valueUpper == "NAME_AI")
-						gFileSortOrder = FileBase.SORT.NAME_AI;
+						settingsObj.fileSortOrder = FileBase.SORT.NAME_AI;
 					else if (valueUpper == "NAME_DI")
-						gFileSortOrder = FileBase.SORT.NAME_DI;
+						settingsObj.fileSortOrder = FileBase.SORT.NAME_DI;
 					else if (valueUpper == "NAME_AS")
-						gFileSortOrder = FileBase.SORT.NAME_AS;
+						settingsObj.fileSortOrder = FileBase.SORT.NAME_AS;
 					else if (valueUpper == "NAME_DS")
-						gFileSortOrder = FileBase.SORT.NAME_DS;
+						settingsObj.fileSortOrder = FileBase.SORT.NAME_DS;
 					else if (valueUpper == "DATE_A")
-						gFileSortOrder = FileBase.SORT.DATE_A;
+						settingsObj.fileSortOrder = FileBase.SORT.DATE_A;
 					else if (valueUpper == "DATE_D")
-						gFileSortOrder = FileBase.SORT.DATE_D;
+						settingsObj.fileSortOrder = FileBase.SORT.DATE_D;
 					else if (valueUpper == "PER_DIR_CFG")
-						gFileSortOrder = SORT_PER_DIR_CFG;
+						settingsObj.fileSortOrder = SORT_PER_DIR_CFG;
 					else if (valueUpper == "ULTIME")
-						gFileSortOrder = SORT_FL_ULTIME;
+						settingsObj.fileSortOrder = SORT_FL_ULTIME;
 					else if (valueUpper == "DLTIME")
-						gFileSortOrder = SORT_FL_DLTIME;
+						settingsObj.fileSortOrder = SORT_FL_DLTIME;
 					else // Default
-						gFileSortOrder = FileBase.SORT.NATURAL;
+						settingsObj.fileSortOrder = FileBase.SORT.NATURAL;
 				}
 			}
 			else if (propUpper == "PAUSEAFTERVIEWINGFILE")
 			{
-				if (typeof(settingsObj[prop]) === "boolean")
-					gPauseAfterViewingFile = settingsObj[prop];
+				if (typeof(settingsFromFile[prop]) === "boolean")
+					settingsObj.pauseAfterViewingFile = settingsFromFile[prop];
 			}
 			else if (propUpper == "BLANKNFILESLISTEDSTRIFLOADABLEMODULE")
 			{
-				if (typeof(settingsObj[prop]) === "boolean")
-					gBlankNFilesListedStrIfLoadableModule = settingsObj[prop];
+				if (typeof(settingsFromFile[prop]) === "boolean")
+					settingsObj.blankNFilesListedStrIfLoadableModule = settingsFromFile[prop];
 			}
 			else if (propUpper == "DISPLAYUSERAVATARS")
 			{
-				if (typeof(settingsObj[prop]) === "boolean")
-					gDispayUserAvatars = settingsObj[prop];
-			}
-			else if (propUpper == "THEMEFILENAME")
-			{
-				if (typeof(settingsObj[prop]) === "string")
-				{
-					// First look for the theme config file in the sbbs/mods
-					// directory, then sbbs/ctrl, then the same directory as
-					// this script.
-					themeFilename = system.mods_dir + settingsObj[prop];
-					if (!file_exists(themeFilename))
-						themeFilename = system.ctrl_dir + settingsObj[prop];
-					if (!file_exists(themeFilename))
-						themeFilename = js.exec_dir + settingsObj[prop];
-				}
+				if (typeof(settingsFromFile[prop]) === "boolean")
+					settingsObj.dispayUserAvatars = settingsFromFile[prop];
 			}
 			else if (propUpper == "USEFILENAMEIFSHORTDESCRIPTIONEMPTY")
 			{
-				if (typeof(settingsObj[prop]) === "boolean")
-					gUseFilenameIfNoDescription_ShortDescs = settingsObj[prop];
+				if (typeof(settingsFromFile[prop]) === "boolean")
+					settingsObj.useFilenameIfNoDescription_ShortDescs = settingsFromFile[prop];
 			}
 			else if (propUpper == "FILENAMEINEXTENDEDDESCRIPTION")
 			{
-				if (typeof(settingsObj[prop]) === "string")
+				if (typeof(settingsFromFile[prop]) === "string")
 				{
-					var valueUpper = settingsObj[prop].toUpperCase();
+					var valueUpper = settingsFromFile[prop].toUpperCase();
 					if (valueUpper == "IFDESCEMPTY")
-						gFilenameInExtendedDesc = FILENAME_IN_DESC_IF_DESC_EMPTY;
+						settingsObj.filenameInExtendedDesc = FILENAME_IN_DESC_IF_DESC_EMPTY;
 					else if (valueUpper == "ALWAYS")
-						gFilenameInExtendedDesc = FILENAME_IN_DESC_ALWAYS;
+						settingsObj.filenameInExtendedDesc = FILENAME_IN_DESC_ALWAYS;
 					else if (valueUpper == "NEVER")
-						gFilenameInExtendedDesc = FILENAME_IN_DESC_NEVER;
+						settingsObj.filenameInExtendedDesc = FILENAME_IN_DESC_NEVER;
 				}
 			}
 			else if (propUpper == "DISPLAYNUMFILESINHEADER")
 			{
-				if (typeof(settingsObj[prop]) === "boolean")
-					gDisplayNumFilesInHeader = settingsObj[prop];
+				if (typeof(settingsFromFile[prop]) === "boolean")
+					settingsObj.displayNumFilesInHeader = settingsFromFile[prop];
+			}
+			else if (propUpper == "THEMEFILENAME")
+			{
+				if (typeof(settingsFromFile[prop]) === "string")
+				{
+					// First look for the theme config file in the sbbs/mods
+					// directory, then sbbs/ctrl, then the same directory as
+					// this script.
+					themeFilename = system.mods_dir + settingsFromFile[prop];
+					if (!file_exists(themeFilename))
+						themeFilename = system.ctrl_dir + settingsFromFile[prop];
+					if (!file_exists(themeFilename))
+						themeFilename = js.exec_dir + settingsFromFile[prop];
+				}
 			}
 		}
 	}
@@ -4359,7 +4351,7 @@ function readConfigFile()
 			themeFile.close();
 
 			// Set any color values specified
-			for (var prop in gColors)
+			for (var prop in settingsObj.colors)
 			{
 				if (themeSettingsObj.hasOwnProperty(prop))
 				{
@@ -4373,7 +4365,7 @@ function readConfigFile()
 					if (!/\x01/.test(value))
 						value = attrCodeStr(value);
 					if (onlySyncAttrsRegexWholeWord.test(value))
-						gColors[prop] = value;
+						settingsObj.colors[prop] = value;
 				}
 			}
 		}
@@ -4389,6 +4381,8 @@ function readConfigFile()
 			mswait(2000);
 		}
 	}
+
+	return settingsObj;
 }
 
 // Removes multiple, leading, and/or trailing spaces
@@ -4556,9 +4550,9 @@ function parseArgs(argv)
 		// There must be either 2 or 3 arguments
 		if (argv.length < 2)
 			return false;
-		// If gBlankNFilesListedStrIfLoadableModule is true, replace the "# Files Listed" text with an
+		// If gSettings.blankNFilesListedStrIfLoadableModule is true, replace the "# Files Listed" text with an
 		// empty string so that it won't be displayed after exit
-		if (gBlankNFilesListedStrIfLoadableModule)
+		if (gSettings.blankNFilesListedStrIfLoadableModule)
 		{
 			bbs.replace_text(NFilesListed, "");
 			js.on_exit("bbs.revert_text(NFilesListed);");
@@ -4677,9 +4671,9 @@ function parseArgs(argv)
 
 		// Options that apply to both searching and listing
 		if (Boolean(FLBehavior & FL_ULTIME))
-			gFileSortOrder = SORT_FL_ULTIME;
+			gSettings.fileSortOrder = SORT_FL_ULTIME;
 		else if (Boolean(FLBehavior & FL_DLTIME))
-			gFileSortOrder = SORT_FL_DLTIME;
+			gSettings.fileSortOrder = SORT_FL_DLTIME;
 
 	}
 
@@ -4726,18 +4720,18 @@ function populateFileList(pSearchMode)
 
 			// Get a list of file data
 			var fileDetail = (extendedDescEnabled() ? FileBase.DETAIL.EXTENDED : FileBase.DETAIL.NORM);
-			if (gFileSortOrder == SORT_FL_ULTIME || gFileSortOrder == SORT_FL_DLTIME)
+			if (gSettings.fileSortOrder == SORT_FL_ULTIME || gSettings.fileSortOrder == SORT_FL_DLTIME)
 			{
 				gFileList = filebase.get_list(gFilespec, fileDetail, 0, true, FileBase.SORT.NATURAL);
-				if (gFileSortOrder == SORT_FL_ULTIME)
+				if (gSettings.fileSortOrder == SORT_FL_ULTIME)
 					gFileList.sort(fileInfoSortULTime);
-				else if (gFileSortOrder == SORT_FL_DLTIME)
+				else if (gSettings.fileSortOrder == SORT_FL_DLTIME)
 					gFileList.sort(fileInfoSortDLTime);
 			}
-			else if (gFileSortOrder == SORT_PER_DIR_CFG)
+			else if (gSettings.fileSortOrder == SORT_PER_DIR_CFG)
 				gFileList = filebase.get_list(gFilespec, fileDetail, 0, true, file_area.dir[gDirCode].sort);
 			else
-				gFileList = filebase.get_list(gFilespec, fileDetail, 0, true, gFileSortOrder);
+				gFileList = filebase.get_list(gFilespec, fileDetail, 0, true, gSettings.fileSortOrder);
 			filebase.close();
 			// Add a dirCode property to the file metadata objects (for consistency,
 			// as file search results may contain files from multiple directories).
@@ -5006,18 +5000,18 @@ function searchDirWithFilespec(pDirCode, pFilespec)
 	{
 		var fileDetail = (extendedDescEnabled() ? FileBase.DETAIL.EXTENDED : FileBase.DETAIL.NORM);
 		var fileList;
-		if (gFileSortOrder == SORT_FL_ULTIME || gFileSortOrder == SORT_FL_DLTIME)
+		if (gSettings.fileSortOrder == SORT_FL_ULTIME || gSettings.fileSortOrder == SORT_FL_DLTIME)
 		{
 			fileList = filebase.get_list(pFilespec, fileDetail, 0, true, FileBase.SORT.NATURAL);
-			if (gFileSortOrder == SORT_FL_ULTIME)
+			if (gSettings.fileSortOrder == SORT_FL_ULTIME)
 				fileList.sort(fileInfoSortULTime);
-			else if (gFileSortOrder == SORT_FL_DLTIME)
+			else if (gSettings.fileSortOrder == SORT_FL_DLTIME)
 				fileList.sort(fileInfoSortDLTime);
 		}
-		else if (gFileSortOrder == SORT_PER_DIR_CFG)
+		else if (gSettings.fileSortOrder == SORT_PER_DIR_CFG)
 			fileList = filebase.get_list(pFilespec, fileDetail, 0, true, file_area.dir[pDirCode].sort);
 		else
-			fileList = filebase.get_list(pFilespec, fileDetail, 0, true, gFileSortOrder);
+			fileList = filebase.get_list(pFilespec, fileDetail, 0, true, gSettings.fileSortOrder);
 		retObj.foundFiles = (fileList.length > 0);
 		filebase.close();
 		for (var i = 0; i < fileList.length; ++i)
@@ -5060,20 +5054,20 @@ function searchDirWithDescUpper(pDirCode, pDescUpper)
 	var filebase = new FileBase(pDirCode);
 	if (filebase.open())
 	{
-		//var fileList = filebase.get_list(gFilespec, FileBase.DETAIL.EXTENDED, 0, true, gFileSortOrder);
+		//var fileList = filebase.get_list(gFilespec, FileBase.DETAIL.EXTENDED, 0, true, gSettings.fileSortOrder);
 		var fileList;
-		if (gFileSortOrder == SORT_FL_ULTIME || gFileSortOrder == SORT_FL_DLTIME)
+		if (gSettings.fileSortOrder == SORT_FL_ULTIME || gSettings.fileSortOrder == SORT_FL_DLTIME)
 		{
 			fileList = filebase.get_list(gFilespec, FileBase.DETAIL.EXTENDED, 0, true, FileBase.SORT.NATURAL);
-			if (gFileSortOrder == SORT_FL_ULTIME)
+			if (gSettings.fileSortOrder == SORT_FL_ULTIME)
 				fileList.sort(fileInfoSortULTime);
-			else if (gFileSortOrder == SORT_FL_DLTIME)
+			else if (gSettings.fileSortOrder == SORT_FL_DLTIME)
 				fileList.sort(fileInfoSortDLTime);
 		}
-		else if (gFileSortOrder == SORT_PER_DIR_CFG)
+		else if (gSettings.fileSortOrder == SORT_PER_DIR_CFG)
 			fileList = filebase.get_list(gFilespec, FileBase.DETAIL.EXTENDED, 0, true, file_area.dir[pDirCode].sort);
 		else
-			fileList = filebase.get_list(gFilespec, FileBase.DETAIL.EXTENDED, 0, true, gFileSortOrder);
+			fileList = filebase.get_list(gFilespec, FileBase.DETAIL.EXTENDED, 0, true, gSettings.fileSortOrder);
 		filebase.close();
 		for (var i = 0; i < fileList.length; ++i)
 		{
@@ -5133,18 +5127,18 @@ function searchDirNewFiles(pDirCode, pSinceTime)
 	{
 		var fileDetail = (extendedDescEnabled() ? FileBase.DETAIL.EXTENDED : FileBase.DETAIL.NORM);
 		var fileList;
-		if (gFileSortOrder == SORT_FL_ULTIME || gFileSortOrder == SORT_FL_DLTIME)
+		if (gSettings.fileSortOrder == SORT_FL_ULTIME || gSettings.fileSortOrder == SORT_FL_DLTIME)
 		{
 			fileList = filebase.get_list(gFilespec, fileDetail, 0, true, FileBase.SORT.NATURAL);
-			if (gFileSortOrder == SORT_FL_ULTIME)
+			if (gSettings.fileSortOrder == SORT_FL_ULTIME)
 				fileList.sort(fileInfoSortULTime);
-			else if (gFileSortOrder == SORT_FL_DLTIME)
+			else if (gSettings.fileSortOrder == SORT_FL_DLTIME)
 				fileList.sort(fileInfoSortDLTime);
 		}
-		else if (gFileSortOrder == SORT_PER_DIR_CFG)
+		else if (gSettings.fileSortOrder == SORT_PER_DIR_CFG)
 			fileList = filebase.get_list(gFilespec, fileDetail, 0, true, file_area.dir[pDirCode].sort);
 		else
-			fileList = filebase.get_list(gFilespec, fileDetail, 0, true, gFileSortOrder);
+			fileList = filebase.get_list(gFilespec, fileDetail, 0, true, gSettings.fileSortOrder);
 		filebase.close();
 		for (var i = 0; i < fileList.length; ++i)
 		{
@@ -5280,7 +5274,7 @@ function extendedDescEnabled()
 	var userExtDescEnabled = ((user.settings & USER_EXTDESC) == USER_EXTDESC);
 	// TODO: If the traditional (non-lightbar) is enabled and/or the user's terminal doesn't support ANSI, or
 	// the user's terminal width is less than 80, this will cause the lister to not use extended file descriptions
-	return userExtDescEnabled && console.screen_columns >= 80 && gUseLightbarInterface && console.term_supports(USER_ANSI);
+	return userExtDescEnabled && console.screen_columns >= 80 && gSettings.useLightbarInterface && console.term_supports(USER_ANSI);
 }
 
 // Returns whether the user can enable extended descriptions (depends on their terminal size and whether
@@ -5366,14 +5360,14 @@ function displayFileExtDescOnMainScreen(pFileIdx, pStartScreenRow, pEndScreenRow
 	while (fileDescArray.length > 0 && console.strlen(fileDescArray[0], P_AUTO_UTF8) == 0)
 		fileDescArray.shift();
 	// If there is no description, then use the filename as the description
-	if (gFilenameInExtendedDesc == FILENAME_IN_DESC_IF_DESC_EMPTY || gFilenameInExtendedDesc == FILENAME_IN_DESC_ALWAYS)
+	if (gSettings.filenameInExtendedDesc == FILENAME_IN_DESC_IF_DESC_EMPTY || gSettings.filenameInExtendedDesc == FILENAME_IN_DESC_ALWAYS)
 	{
 		if (fileDescArray.length == 0)
 		{
-			fileDesc = "\x01n" + gColors.filenameInDesc + lfexpand(word_wrap(fileMetadata.name + "\r\n\x01n(No description)", maxDescLen, null, false));
+			fileDesc = "\x01n" + gSettings.colors.filenameInDesc + lfexpand(word_wrap(fileMetadata.name + "\r\n\x01n" + gSettings.colors.desc + "(No description)", maxDescLen, null, false));
 			fileDescArray = fileDesc.split("\r\n");
 		}
-		else if ((gFilenameInExtendedDesc == FILENAME_IN_DESC_IF_DESC_EMPTY && fileMetadata.name.length > gFileListMenu.filenameLen) || gFilenameInExtendedDesc == FILENAME_IN_DESC_ALWAYS)
+		else if ((gSettings.filenameInExtendedDesc == FILENAME_IN_DESC_IF_DESC_EMPTY && fileMetadata.name.length > gFileListMenu.filenameLen) || gSettings.filenameInExtendedDesc == FILENAME_IN_DESC_ALWAYS)
 		{
 			// See how many lines the filename takes, and use the filename color on those lines, and
 			// the normal attribute for the start of the description
@@ -5382,14 +5376,15 @@ function displayFileExtDescOnMainScreen(pFileIdx, pStartScreenRow, pEndScreenRow
 			// Splitting as above can result in an extra empty last line
 			if (filenameLines[filenameLines.length-1].length == 0)
 				filenameLines.pop();
-			descriptionLineAttrs[0] = "\x01n" + gColors.filenameInDesc;
-			descriptionLineAttrs[filenameLines.length] = "\x01n";
+			descriptionLineAttrs[0] = "\x01n" + gSettings.colors.filenameInDesc;
+			descriptionLineAttrs[filenameLines.length] = "\x01n" + gSettings.colors.desc;
 			fileDescArray = filenameLines.concat(fileDescArray);
 		}
 	}
 	// We can ignore FILENAME_IN_DESC_NEVER
 	// Display the description on the screen
-	console.attributes = "N";
+	//console.attributes = "N";
+	console.print("\x01n" + gSettings.colors.desc);
 	// screenRowNum is to keep track of the row on the screen where the
 	// description line would be placed, in case the start row is after that
 	var screenRowNum = firstScreenRow;
@@ -5659,21 +5654,21 @@ function getFileInfoLineArrayForTraditionalUI(pFileList, pIdx, pFormatInfo)
 	{
 		descLines = getExtdFileDescArray(pFileList, pIdx);
 		// If there is no description, then use the filename as the description
-		if (gFilenameInExtendedDesc == FILENAME_IN_DESC_IF_DESC_EMPTY || gFilenameInExtendedDesc == FILENAME_IN_DESC_ALWAYS)
+		if (gSettings.filenameInExtendedDesc == FILENAME_IN_DESC_IF_DESC_EMPTY || gSettings.filenameInExtendedDesc == FILENAME_IN_DESC_ALWAYS)
 		{
 			if (descLines.length == 0)
 			{
-				var fileDesc = "\x01n" + gColors.filenameInDesc + lfexpand(word_wrap(pFileList[pIdx].name, pFormatInfo.descLen, null, false));
+				var fileDesc = "\x01n" + gSettings.colors.filenameInDesc + lfexpand(word_wrap(pFileList[pIdx].name, pFormatInfo.descLen, null, false));
 				descLines = fileDesc.split("\r\n");
 				// Splitting as above can result in an extra empty last line
 				if (descLines[descLines.length-1].length == 0)
 					descLines.pop();
 				// Ensure the filename color is applied to all lines of the filename array
 				for (var i = 0; i < descLines.length; ++i)
-					descLines[i] = "\x01n" + gColors.filenameInDesc + descLines[i] + "\x01n";
-				descLines.push("(No description)");
+					descLines[i] = "\x01n" + gSettings.colors.filenameInDesc + descLines[i] + "\x01n";
+				descLines.push("\x01n" + gSettings.colors.desc + "(No description)");
 			}
-			else if ((gFilenameInExtendedDesc == FILENAME_IN_DESC_IF_DESC_EMPTY && pFileList[pIdx].name.length > gFileListMenu.filenameLen) || gFilenameInExtendedDesc == FILENAME_IN_DESC_ALWAYS)
+			else if ((gSettings.filenameInExtendedDesc == FILENAME_IN_DESC_IF_DESC_EMPTY && pFileList[pIdx].name.length > gFileListMenu.filenameLen) || gSettings.filenameInExtendedDesc == FILENAME_IN_DESC_ALWAYS)
 			{
 				// See how many lines the filename takes, and use the filename color on those lines, and
 				// the normal attribute for the start of the description
@@ -5684,7 +5679,7 @@ function getFileInfoLineArrayForTraditionalUI(pFileList, pIdx, pFormatInfo)
 					filenameLines.pop();
 				// Ensure the filename color is applied to all lines of the filename array
 				for (var i = 0; i < filenameLines.length; ++i)
-					filenameLines[i] = "\x01n" + gColors.filenameInDesc + filenameLines[i] + "\x01n";
+					filenameLines[i] = "\x01n" + gSettings.colors.filenameInDesc + filenameLines[i] + "\x01n" + gSettings.colors.desc;
 				// Prepend the filename to the extended description
 				descLines = filenameLines.concat(descLines);
 			}
@@ -5693,16 +5688,16 @@ function getFileInfoLineArrayForTraditionalUI(pFileList, pIdx, pFormatInfo)
 	}
 	else
 	{
-		// gUseFilenameIfNoDescription_ShortDescs
+		// gSettings.useFilenameIfNoDescription_ShortDescs
 		if (pFileList[pIdx].hasOwnProperty("desc") && typeof(pFileList[pIdx].desc) === "string")
 			descLines = [ pFileList[pIdx].desc.replace(/\r$/, "").replace(/\n$/, "").replace(/\r\n$/, "") ];
 		else
 			descLines = [];
 		// If there is no description andthe option to use the filename is enabled, then
 		// use the filename for the description.
-		if (descLines.length == 0 && gUseFilenameIfNoDescription_ShortDescs)
+		if (descLines.length == 0 && gSettings.useFilenameIfNoDescription_ShortDescs)
 		{
-			var fileDesc = "\x01n" + gColors.filenameInDesc + lfexpand(word_wrap(pFileList[pIdx].name + "\r\n\x01n(No description)", pFormatInfo.descLen, null, false));
+			var fileDesc = "\x01n" + gSettings.colors.filenameInDesc + lfexpand(word_wrap(pFileList[pIdx].name + "\r\n\x01n" + gSettings.colors.desc + "(No description)", pFormatInfo.descLen, null, false));
 			var fileDescArray = fileDesc.split("\r\n");
 			for (var i = 0; i < fileDescArray.length; ++i)
 				descLines.push(fileDescArray[i]);
@@ -5721,25 +5716,7 @@ function getFileInfoLineArrayForTraditionalUI(pFileList, pIdx, pFormatInfo)
 		for (var i = 1; i < descLines.length; ++i)
 		{
 			if (console.strlen(descLines[i]) > 0)
-			{
-				//fileInfoLines.push(format(pFormatInfo.formatStrExtdDescLines, substrWithAttrCodes(descLines[i], 0, pFormatInfo.descLen)));
-				/*
-				var fileInfoFormatInfo = {
-					filenameLen: gListIdxes.filenameEnd - gListIdxes.filenameStart,
-					fileSizeLen: gListIdxes.fileSizeEnd - gListIdxes.fileSizeStart -1,
-					numItemsLen: gFileList.length.toString().length
-				};
-				fileInfoFormatInfo.descLen = gListIdxes.descriptionEnd - gListIdxes.descriptionStart - (fileInfoFormatInfo.numItemsLen+2);
-				*/
-				//printf("%-*s", remainingLen, "");
-				var descLine = format("%-*s", pFormatInfo.numItemsLen, "") + " ";
-				descLine += format("%-*s", pFormatInfo.filenameLen, "") + " ";
-				descLine += format("%-*s", pFormatInfo.fileSizeLen, "") + " ";
-				//descLine += substrWithAttrCodes(descLines[i], 0, pFormatInfo.descLen);
-				//extdDesc = removeOrReplaceSyncCursorMovementChars(extdDesc, false);
-				descLine += substrWithAttrCodes(removeOrReplaceSyncCursorMovementChars(descLines[i], false), 0, pFormatInfo.descLen);
-				fileInfoLines.push(descLine);
-			}
+				fileInfoLines.push(format(pFormatInfo.formatStrExtdDescLines, substrWithAttrCodes(descLines[i], 0, pFormatInfo.descLen)));
 		}
 	}
 	return fileInfoLines;
@@ -5754,8 +5731,8 @@ function getTraditionalFileInfoFormatInfo()
 		numItemsLen: gFileList.length.toString().length
 	};
 	fileInfoFormatInfo.descLen = gListIdxes.descriptionEnd - gListIdxes.descriptionStart - (fileInfoFormatInfo.numItemsLen+2);
-	fileInfoFormatInfo.formatStr = "\x01n" + gColors.listNumTrad + "%" + fileInfoFormatInfo.numItemsLen + "d \x01n" + gColors.filename + "%-" + fileInfoFormatInfo.filenameLen + "s \x01n"
-				  + gColors.fileSize + "%" + fileInfoFormatInfo.fileSizeLen + "s \x01n" + gColors.desc + "%-" + fileInfoFormatInfo.descLen + "s\x01n";
+	fileInfoFormatInfo.formatStr = "\x01n" + gSettings.colors.listNumTrad + "%" + fileInfoFormatInfo.numItemsLen + "d \x01n" + gSettings.colors.filename + "%-" + fileInfoFormatInfo.filenameLen + "s \x01n"
+				  + gSettings.colors.fileSize + "%" + fileInfoFormatInfo.fileSizeLen + "s \x01n" + gSettings.colors.desc + "%-" + fileInfoFormatInfo.descLen + "s\x01n";
 	var leadingSpaceLen = fileInfoFormatInfo.numItemsLen + fileInfoFormatInfo.filenameLen + fileInfoFormatInfo.fileSizeLen + 3;
 	fileInfoFormatInfo.formatStrExtdDescLines = "\x01n" + charStr(" ", leadingSpaceLen) + "%-" + fileInfoFormatInfo.descLen + "s\x01n";
 	return fileInfoFormatInfo;
@@ -5792,7 +5769,7 @@ function getExtdFileDescArray(pFileList, pIdx)
 		if (pFileList[pIdx].hasOwnProperty("desc") && typeof(pFileList[pIdx].desc) === "string")
 			extdDesc = pFileList[pIdx].desc;
 	}
-	//extdDesc = removeOrReplaceSyncCursorMovementChars(extdDesc, false);
+	extdDesc = removeOrReplaceSyncCursorMovementChars(extdDesc, true);
 	var descLines = lfexpand(extdDesc).split("\r\n");
 	// Splitting as above can result in an extra empty last line
 	if (descLines[descLines.length-1].length == 0)
@@ -6036,7 +6013,7 @@ function doFileView(pDirCode, pFilespec)
 					fileMetadata.dirCode = pDirCode;
 					// If using ANSI, show the info in a scrolling interface; otherwise,
 					// use a non-scrolling interface.
-					if (gUseLightbarInterface && console.term_supports(USER_ANSI))
+					if (gSettings.useLightbarInterface && console.term_supports(USER_ANSI))
 						showFileInfo_ANSI(fileMetadata);
 					else
 					{

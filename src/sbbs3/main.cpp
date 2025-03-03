@@ -351,8 +351,23 @@ int sbbs_t::lputs(int level, const char* str)
 		SAFEPRINTF(user_str, "<%s> ", useron.alias);
 	SAFEPRINTF3(msg, "%s%s%s", prefix, user_str, str);
 	strip_ctrl(msg, msg);
-	if (is_event_thread)
+	if (is_event_thread) {
+		if (level <= startup->event_log_level) {
+			if (logfile_fp == nullptr) {
+				char str[128];
+				if(startup->first_node > 1)
+					snprintf(str, sizeof str, "%u", startup->first_node);
+				else
+					str[0] = '\0';
+				char path[MAX_PATH + 1];
+				snprintf(path, sizeof path, "%sevents%s.log", cfg.logs_dir, str);
+				logfile_fp = fopenlog(&cfg, path);
+			}
+			if (logfile_fp != nullptr)
+				fprintlog(&cfg, &logfile_fp, msg);
+		}
 		return ::eputs(level, msg);
+	}
 	return ::lputs(level, msg);
 }
 
@@ -3473,6 +3488,7 @@ void event_thread(void* arg)
 
 	thread_down();
 	sbbs->lprintf(LOG_INFO, "BBS Events thread terminated");
+	FCLOSE_OPEN_FILE(sbbs->logfile_fp);
 }
 
 //****************************************************************************
@@ -3487,14 +3503,13 @@ sbbs_t::sbbs_t(ushort node_num, union xp_sockaddr *addr, size_t addr_len, const 
 	cfg.node_num = node_num;
 	SAFECOPY(client_name, name);
 
-	lprintf(LOG_DEBUG, "constructor using socket %d (settings=%x)"
-	        , sd, global_cfg->node_misc);
-
 	startup = ::startup;    // Convert from global to class member
 	mqtt = &::mqtt;
 
 	memcpy(&cfg, global_cfg, sizeof(cfg));
 	cfg.node_num = node_num;    // Restore the node_num passed to the constructor
+	lprintf(LOG_DEBUG, "constructor using socket %d (settings=%x)"
+	        , sd, global_cfg->node_misc);
 
 	if (node_num > 0) {
 		SAFECOPY(cfg.node_dir, cfg.node_path[node_num - 1]);

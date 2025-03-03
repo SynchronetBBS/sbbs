@@ -1822,7 +1822,6 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 
 		if (mode & EX_BG)  /* background execution, detach child */
 		{
-			lprintf(LOG_INFO, "Detaching external process");
 			if (daemon(TRUE, FALSE) != 0)
 				lprintf(LOG_ERR, "!ERROR %d (%s) daemonizing: %s", errno, strerror(errno), argv[0]);
 		}

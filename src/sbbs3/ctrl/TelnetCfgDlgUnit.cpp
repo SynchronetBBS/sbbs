@@ -98,8 +98,6 @@ void __fastcall TTelnetCfgDlg::FormShow(TObject *Sender)
     EventsCheckBox->Checked
         =!(MainForm->bbs_startup.options&BBS_OPT_NO_EVENTS);
 
-    EventsLogFileCheckBox->Checked = MainForm->EventsLogFile;
-
     RLoginEnabledCheckBoxClick(Sender);
     SshEnabledCheckBoxClick(Sender);
     PageControl->ActivePage=GeneralTabSheet;
@@ -177,7 +175,6 @@ void __fastcall TTelnetCfgDlg::OKBtnClick(TObject *Sender)
     else
 	    MainForm->bbs_startup.options&=~BBS_OPT_ALLOW_SFTP;
 
-    MainForm->EventsLogFile = EventsLogFileCheckBox->Checked;
     MainForm->SaveIniSettings(Sender);
 }
 //---------------------------------------------------------------------------

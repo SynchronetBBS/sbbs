@@ -1,11 +1,11 @@
 # GNU makefile for Synchronet installation
 #
 # Usage:
-# ------
+# -----
 # [g]make -f path/to/this/file [variable=value]... [target]
 #
-# variables:
-# ----------
+# variables (set to any other value to enable, e.g. DEBUG=1):
+# ---------
 # DEBUG = Set to force a debug build
 # RELEASE = Set to force a release build
 # SYMLINK = Don't copy binaries, rather create symlinks in $(SBBSDIR)/exec
@@ -29,7 +29,7 @@
 # X_PATH = /path/to/X (if not /usr/X11R6)
 
 # targets:
-# --------
+# -------
 # install (the default)
 # build
 
@@ -199,7 +199,6 @@ install: build
 	@echo Installing to $(SBBSDIR)
 	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/readsauce $(SBBSDIR)/exec/readsauce
 	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/dupefind $(SBBSDIR)/exec/dupefind
-	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/delfiles $(SBBSDIR)/exec/delfiles
 	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/qwknodes $(SBBSDIR)/exec/qwknodes
 	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/asc2ans $(SBBSDIR)/exec/asc2ans
 	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/ans2asc $(SBBSDIR)/exec/ans2asc
@@ -210,7 +209,6 @@ install: build
 	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/node $(SBBSDIR)/exec/node
 	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/chksmb $(SBBSDIR)/exec/chksmb
 	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/fixsmb $(SBBSDIR)/exec/fixsmb
-	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/addfiles $(SBBSDIR)/exec/addfiles
 	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/makeuser $(SBBSDIR)/exec/makeuser
 	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/smbutil $(SBBSDIR)/exec/smbutil
 	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/sbbs $(SBBSDIR)/exec/sbbs
@@ -219,7 +217,6 @@ install: build
 	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/fmsgdump $(SBBSDIR)/exec/fmsgdump
 	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/sexyz $(SBBSDIR)/exec/sexyz
 	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/echocfg $(SBBSDIR)/exec/echocfg
-	$(INSBIN) $(REPODIR)/src/sbbs3/$(CCPRE).$(machine).exe.$(BUILDPATH)/filelist $(SBBSDIR)/exec/filelist
 	$(INSBIN) $(REPODIR)/src/sbbs3/scfg/$(CCPRE).$(machine).exe.$(BUILDPATH)/scfg $(SBBSDIR)/exec/scfg
 	$(INSBIN) $(REPODIR)/src/sbbs3/umonitor/$(CCPRE).$(machine).exe.$(BUILDPATH)/umonitor $(SBBSDIR)/exec/umonitor
 	$(INSBIN) $(REPODIR)/src/sbbs3/uedit/$(CCPRE).$(machine).exe.$(BUILDPATH)/uedit $(SBBSDIR)/exec/uedit

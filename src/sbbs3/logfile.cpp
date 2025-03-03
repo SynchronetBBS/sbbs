@@ -350,7 +350,7 @@ void sbbs_t::errormsg(int line, const char* function, const char *src, const cha
 /****************************************************************************/
 extern "C" FILE* fopenlog(scfg_t* cfg, const char* path)
 {
-	const int mode = O_WRONLY | O_CREAT | O_APPEND;
+	const int mode = O_WRONLY | O_CREAT | O_APPEND | O_DENYNONE;
 	int       file;
 	FILE*     fp;
 
@@ -368,14 +368,24 @@ extern "C" FILE* fopenlog(scfg_t* cfg, const char* path)
 		if ((fp = fnopen(NULL, path, mode)) == NULL)
 			return NULL;
 	}
-
 	return fp;
 }
 
-// Write to a log file and may close it if reached max size
-extern "C" size_t fwritelog(scfg_t* cfg, void* buf, size_t size, FILE** fp)
+/****************************************************************************/
+// Write a line to a log file, with date/timestamp and newline terminator
+// May close the file if reached max size
+// Returns number of characters written
+/****************************************************************************/
+extern "C" size_t fprintlog(scfg_t* cfg, FILE** fp, const char* str)
 {
-	size_t result = fwrite(buf, 1, size, *fp);
+	struct tm tm{};
+	time_t now = time(NULL);
+	localtime_r(&now, &tm);
+	size_t result = fprintf(*fp, "%u-%02u-%02u %02u:%02u:%02u  %s\n"
+		, 1900 + tm.tm_year, tm.tm_mon + 1, tm.tm_mday
+		, tm.tm_hour, tm.tm_min, tm.tm_sec
+		, str);
+	fflush(*fp);
 	if (cfg->max_log_size && ftell(*fp) >= (off_t)cfg->max_log_size) {
 		fclose(*fp);
 		*fp = NULL;

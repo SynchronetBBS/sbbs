@@ -40,7 +40,7 @@ DLLEXPORT bool		hacklog(scfg_t*, struct mqtt*, const char* prot, const char* use
 DLLEXPORT bool		spamlog(scfg_t*, struct mqtt*, char* prot, char* action, char* reason
 									,char* host, char* ip_addr, char* to, char* from);
 DLLEXPORT FILE*		fopenlog(scfg_t*, const char* path);
-DLLEXPORT size_t	fwritelog(scfg_t*, void* buf, size_t size, FILE**);
+DLLEXPORT size_t	fprintlog(scfg_t*, FILE**, const char* str);
 DLLEXPORT void		fcloselog(FILE*);
 
 #ifdef __cplusplus

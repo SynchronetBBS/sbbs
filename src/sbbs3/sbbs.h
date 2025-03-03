@@ -567,9 +567,7 @@ public:
 	char	rlogin_pass[LEN_PASS+1]{};
 	char	rlogin_term[TELNET_TERM_MAXLEN+1]{};	/* RLogin passed terminal type/speed (e.g. "xterm/57600") */
 
-	FILE	*nodefile_fp = nullptr,
-			*node_ext_fp = nullptr,
-			*logfile_fp = nullptr;
+	FILE	*logfile_fp = nullptr;
 
 	int 	nodefile = -1;	/* File handle for node.dab */
 	pthread_mutex_t	nodefile_mutex;

@@ -105,7 +105,7 @@ object TelnetCfgDlg: TTelnetCfgDlg
       end
       object QWKEventsCheckBox: TCheckBox
         Left = 171
-        Top = 132
+        Top = 102
         Width = 135
         Height = 23
         Hint = 'Handle QWK Message Packet Events in This Instance'
@@ -147,17 +147,6 @@ object TelnetCfgDlg: TTelnetCfgDlg
         ParentShowHint = False
         ShowHint = True
         TabOrder = 2
-      end
-      object EventsLogFileCheckBox: TCheckBox
-        Left = 171
-        Top = 102
-        Width = 135
-        Height = 23
-        Hint = 'Save event log messages to disk file in your DATA directory'
-        Caption = 'Log Events to Disk'
-        ParentShowHint = False
-        ShowHint = True
-        TabOrder = 9
       end
     end
     object TelnetTabSheet: TTabSheet

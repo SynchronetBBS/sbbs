@@ -1074,7 +1074,6 @@ void xfer_cfg()
 						if (getdircase(path))
 							SAFECOPY(tmpdir.path, path + strlen(cfg.lib[libnum]->parent_path) + 1);
 
-						int dupes = 0;
 						int attempts = 0;   // attempts to generate a unique internal code
 						if (stricmp(tmpdir.code_suffix, duplicate_code) == 0)
 							attempts = ++duplicate_codes;
@@ -1130,7 +1129,6 @@ void xfer_cfg()
 						} else {
 							SAFEPRINTF(str, "Duplicate dir: %s", cfg.dir[j]->code_suffix);
 							uifc.msg(str);
-							dupes++;
 						}
 						if (k == 2) {
 							SAFECOPY(cfg.dir[j]->code_suffix, tmpdir.code_suffix);

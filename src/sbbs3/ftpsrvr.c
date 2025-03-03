@@ -85,7 +85,8 @@ static protected_uint32_t thread_count;
 static volatile uint32_t  client_highwater = 0;
 static volatile time_t    uptime = 0;
 static volatile ulong     served = 0;
-static bool               terminate_server = FALSE;
+static bool               terminate_server = false;
+static bool               diskspace_error_reported = false;
 static char *             text[TOTAL_TEXT];
 static str_list_t         pause_semfiles;
 static str_list_t         recycle_semfiles;
@@ -4809,11 +4810,13 @@ static void ctrl_thread(void* arg)
 				freespace = getfreediskspace(scfg.dir[dir]->path, 1);
 			}
 			if (freespace < scfg.min_dspace) {
-				lprintf(LOG_ERR, "%04d <%s> !Insufficient free disk space (%s bytes) to allow upload"
+				lprintf(diskspace_error_reported ? LOG_WARNING : LOG_ERR, "%04d <%s> !Insufficient free disk space (%s bytes) to allow upload"
 				        , sock, user.alias, byte_estimate_to_str(freespace, str, sizeof(str), 1, 1));
 				sockprintf(sock, sess, "452 Insufficient free disk space, try again later");
+				diskspace_error_reported = true;
 				continue;
 			}
+			diskspace_error_reported = false;
 			sockprintf(sock, sess, "150 Opening BINARY mode data connection for file transfer.");
 			filexfer(&data_addr, sock, sess, pasv_sock, pasv_sess, &data_sock, &data_sess, fname, filepos
 			         , &transfer_inprogress, &transfer_aborted, FALSE, FALSE

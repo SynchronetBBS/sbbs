@@ -372,12 +372,6 @@ int32_t * sbbs_t::getintvar(csi_t *bin, uint32_t name)
 		case 0xe51c1956:
 			sysvar_l[sysvar_li] = (ulong)logfile_fp;
 			break;
-		case 0x5a22d4bd:
-			sysvar_l[sysvar_li] = (ulong)nodefile_fp;
-			break;
-		case 0x3a37c26b:
-			sysvar_l[sysvar_li] = (ulong)node_ext_fp;
-			break;
 
 		case 0xeb6c9c73:
 			sysvar_l[sysvar_li] = errorlevel;

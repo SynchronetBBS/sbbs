@@ -1090,8 +1090,10 @@ function DDLightbarMenu_Draw(pSelectedItemIndexes, pDrawBorders, pDrawScrollbar,
 			var showMultiSelectMark = (this.multiSelect && (typeof(pSelectedItemIndexes) == "object") && pSelectedItemIndexes.hasOwnProperty(idx));
 			var itemText = this.GetItemText(i, itemLen, false, showMultiSelectMark);
 			// TODO: Once, it seemed the text must be shortened by 3 less than the console width or else
-			// it behaves like there's an extra CRLF, but 2 should be correct.
-			console.print(substrWithAttrCodes(itemText, 0, console.screen_columns-2) + "\x01n");
+			// it behaves like there's an extra CRLF.  2 seemed correct, but that can cut off a character
+			// when not desired.
+			//console.print(substrWithAttrCodes(itemText, 0, console.screen_columns-2) + "\x01n");
+			console.print(substrWithAttrCodes(itemText, 0, console.screen_columns-1) + "\x01n");
 			console.crlf();
 		}
 		this.numberedMode = numberedModeBackup;

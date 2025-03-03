@@ -4169,6 +4169,66 @@ doterm(struct bbslist *bbs)
 	        get_emulation(bbs));
 	if (!cterm)
 		return false;
+	if (bbs->palette_size > 0 && (cio_api.options & CONIO_OPT_EXTENDED_PALETTE)) {
+		uint32_t np[16];
+		int vm = find_vmode(screen_to_ciolib(bbs->screen_mode));
+		if (vm != -1) {
+			switch (vparams[vm].palette) {
+				case MONO_PALETTE:
+				case ATARI_PALETTE:
+					np[0] = bbs->palette[0];
+					for (i = 1; i < 16; i++)
+						np[i] = bbs->palette[1];
+					break;
+				case GREYSCALE_PALETTE:
+					np[0] = bbs->palette[0];
+					for (i = 1; i < 8; i++)
+						np[i] = bbs->palette[1];
+					np[8] = bbs->palette[2];
+					for (i = 9; i < 16; i++)
+						np[i] = bbs->palette[3];
+					break;
+				case PRESTEL_PALETTE:
+					for (i = 0; i < 8; i++) {
+						np[i] = bbs->palette[i];
+						np[i+8] = bbs->palette[i];
+					}
+					break;
+				case ATARI_PALETTE_4:
+					for (i = 0; i < 4; i++) {
+						np[i] = bbs->palette[i];
+						np[i+4] = bbs->palette[i];
+						np[i+8] = bbs->palette[i];
+						np[i+12] = bbs->palette[i];
+					}
+					break;
+				case ATARI_PALETTE_2:
+					for (i = 0; i < 2; i++) {
+						np[i] = bbs->palette[i];
+						np[i+2] = bbs->palette[i];
+						np[i+4] = bbs->palette[i];
+						np[i+6] = bbs->palette[i];
+						np[i+8] = bbs->palette[i];
+						np[i+10] = bbs->palette[i];
+						np[i+12] = bbs->palette[i];
+						np[i+14] = bbs->palette[i];
+					}
+					break;
+			}
+			/*
+			 * TODO: Doing it this way won't last through a cterm_reset(), which
+			 *       can be triggered from ANSI.
+			 */
+			for (i = 0; i < 16; i++) {
+				uint32_t op[16];
+				get_modepalette(op);
+				setpalette(op[i] + 16,
+					((np[i] & 0x00FF0000) >> 8) | ((np[i] & 0x00FF0000) >> 16),
+					((np[i] & 0x0000FF00)) | ((np[i] & 0x0000FF00) >> 8),
+					((np[i] & 0x000000FF) << 8) | ((np[i] & 0x000000FF)));
+			}
+		}
+	}
 	if (bbs->force_lcf)
 		cterm->last_column_flag = (CTERM_LCF_FORCED | CTERM_LCF_ENABLED);
 	cterm->apc_handler = apc_handler;
@@ -5035,9 +5095,17 @@ doterm(struct bbslist *bbs)
 					}
 					// TODO: Add clear screen key?
 					default:
-						if (key == 13 || (key < 129 && key > 31)) {
-							ch[0] = key;
-							conn_send(ch, 1, 0);
+						if (cterm->emulation == CTERM_EMULATION_PRESTEL) {
+							if (key == 13 || (key < 128 && key > 31)) {
+								ch[0] = key;
+								conn_send(ch, 1, 0);
+							}
+						}
+						else {
+							if (key < 128) {
+								ch[0] = key;
+								conn_send(ch, 1, 0);
+							}
 						}
 						break;
 				}

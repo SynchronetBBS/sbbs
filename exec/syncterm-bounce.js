@@ -1,3 +1,5 @@
+require("userdefs.js", "USER_ANSI");
+
 function w(str)
 {
 	console.write(str);
@@ -195,6 +197,9 @@ function pixel_capability()
 	}
 	return ret;
 }
+
+if (!console.term_supports(USER_ANSI))
+	exit(0);
 
 if (console.cterm_version < 1316) {
 	console.pause();
