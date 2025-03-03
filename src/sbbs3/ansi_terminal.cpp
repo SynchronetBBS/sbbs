@@ -1130,7 +1130,8 @@ bool ANSI_Terminal::parse_input_sequence(char& ch, int mode) {
 						// TODO: This was suppressed before the terminal-abstration
 						//       branch.  I can't think of a good reason to keep doing
 						//       that though, and feel it should be more like the rest.
-						return false;
+						ch = 0;
+						return true;
 					}
 				}
 				else if (ansi.ansi_was_private

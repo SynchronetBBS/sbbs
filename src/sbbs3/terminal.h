@@ -420,7 +420,8 @@ public:
 	}
 
 	/*
-	 * If ch is not a sequence introducer, this should return true.
+	 * Returns true if inkey() should return the value of ch
+	 * Returns false if inkey() should parse as a ctrl character.
 	 * 
 	 * If ch is a sequence introducer, this should parse the whole
 	 * sequence.  If the whole sequence can be replaced with a single
@@ -438,7 +439,7 @@ public:
 	 * ch is the control character that was received.
 	 * mode is the mode passed to the inkey() call that received ch
 	 */
-	virtual bool parse_input_sequence(char& ch, int mode) { return true; }
+	virtual bool parse_input_sequence(char& ch, int mode) { return false; }
 
 	virtual bool saveline() {
 		struct savedline line;

@@ -163,8 +163,8 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 	char tmp[512];
 	int  i;
 
-	if (!term->parse_input_sequence(ch, mode))
-		return 0;
+	if (term->parse_input_sequence(ch, mode))
+		return ch;
 
 	if (ch == TERM_KEY_ABORT) {  /* Ctrl-C Abort */
 		sys_status |= SS_ABORT;
