@@ -131,13 +131,6 @@ var details = {
 	},
 }
 
-console.cleartoeos = function(attr)
-{
-	if (attr !== undefined)
-		console.attributes = attr;
-	console.write("\x1b[J");
-}
-
 function format_entry(str)
 {
 	return str.replace(/[\x00-\x1F\x80-\x9F\\]/g, function(match) {
