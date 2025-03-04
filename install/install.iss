@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Synchronet BBS Software"
-#define MyAppVersion "3.20b"
+#define MyAppVersion "3.20d"
 #define MyAppPublisher "Rob Swindell"
 #define MyAppURL "http://www.synchro.net/"
 #define MyAppSupportURL "http://wiki.synchro.net/howto:support"
@@ -25,7 +25,7 @@ AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppSupportURL}
 AppUpdatesURL={#MyAppDownloadURL}
 AppCopyright=Copyright 2025 {#MyAppPublisher}
-VersionInfoVersion=3.20.1
+VersionInfoVersion=3.20.3
 AppMutex=sbbs_running,sbbsctrl_running
 DefaultDirName={sd}\sbbs
 DefaultGroupName={#MyAppName}
@@ -35,7 +35,7 @@ AllowNoIcons=yes
 OutputBaseFilename=install_SBBS_v{#MyAppVersion}
 Compression=lzma
 SolidCompression=yes
-MinVersion = 5.1
+MinVersion = 6.0
 InfoBeforeFile=docs\install.rtf
 ChangesEnvironment=yes
 SourceDir={#source}
