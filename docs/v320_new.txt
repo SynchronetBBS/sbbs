@@ -172,7 +172,7 @@ o Add option to no mark POP3-retrieved mail as READ
 o Remove "Receive by User Number" option (just a SPAM invitation)
   If the sysop still needs to support receive to specific user numbers, they
   can use the ctrl/alias.cfg file to support that
-o Fix bug that broken mail received header RBL check
+o Fix bug that broke mail received header RBL check
 o Add new I-restriction, to disallow receipt of Internet mail to specific users
   (mail received from authenticated SMTP clients is still allowed)
   Previously, the M-restriction also prevent receipt of Internet mail from
