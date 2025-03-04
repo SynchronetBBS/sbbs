@@ -1973,6 +1973,7 @@ void services_thread(void* arg)
 	served = 0;
 	startup->recycle_now = false;
 	startup->shutdown_now = false;
+	terminated = false;
 
 	SetThreadName("sbbs/services");
 
