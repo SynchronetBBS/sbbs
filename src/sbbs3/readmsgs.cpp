@@ -1292,7 +1292,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 							{
 								char section[128];
 								const char* key = "savepath";
-								SAFEPRINTF(section, "%s.sub", cfg.sub[subnum]->code);
+								SAFEPRINTF(section, "sub %s", cfg.sub[subnum]->code);
 								user_get_property(&cfg, useron.number, section, key, savepath, sizeof(savepath) - 1);
 								if (getstr(savepath, sizeof(savepath) - 1, K_EDIT | K_LINE | K_AUTODEL) > 0) {
 									if (msgtotxt(&smb, &msg, savepath, /* header: */ true, /* mode: */ GETMSGTXT_ALL))
