@@ -1,3 +1,5 @@
+require("sbbsdefs.js", "K_NUL");
+
 function SyncTERMCache() {
 	this.supported = this.supports_syncterm_cache();
 };
@@ -14,7 +16,7 @@ SyncTERMCache.prototype.read_apc = function (timeout)
 	if (timeout === undefined)
 		timeout = 1000;
 
-	while((ch = console.inkey(timeout)) !== '') {
+	while((ch = console.inkey(K_NUL, timeout)) !== null) {
 		switch(state) {
 			case 0:
 				if (ch == '\x1b') {

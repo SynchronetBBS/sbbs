@@ -365,6 +365,9 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return nulstr;
 	}
 
+	if (strcmp(sp, "AT") == 0)
+		return "@";
+
 	if (strncmp(sp, "U+", 2) == 0) { // UNICODE
 		enum unicode_codepoint codepoint = (enum unicode_codepoint)strtoul(sp + 2, &tp, 16);
 		if (tp == NULL || *tp == 0)
