@@ -5740,10 +5740,10 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 								}
 								cterm->sequence = 0;
 								break;
-							case 31:
+							case 28:
 								if (cterm->sequence < 3)
 									break;
-								gotoxy(cterm->escbuf[1] + 1, cterm->escbuf[2] + 1);
+								gotoxy((cterm->escbuf[2] - ' ') + 1, (cterm->escbuf[1] - ' ') + 1);
 								cterm->sequence = 0;
 								break;
 							default:
@@ -6435,18 +6435,18 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 								prnpos = prn;
 								cterm->escbuf[cterm->sequence++] = ch[0];
 								break;
+							case 28: // APS (Active Position Set) Move to position X,Y
+								uctputs(cterm, prn);
+								prn[0]=0;
+								prnpos = prn;
+								cterm->escbuf[cterm->sequence++] = ch[0];
+								break;
 							case 30: // APH (Active Position Home)
 								uctputs(cterm, prn);
 								prn[0]=0;
 								prnpos = prn;
 								gotoxy(CURR_MINX, CURR_MINY);
 								prestel_new_line(cterm);
-								break;
-							case 31: // Move to position X,Y
-								uctputs(cterm, prn);
-								prn[0]=0;
-								prnpos = prn;
-								cterm->escbuf[cterm->sequence++] = ch[0];
 								break;
 							case 127: // Destructive backspace
 								*prnpos++ = '\b';
