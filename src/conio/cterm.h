@@ -161,6 +161,7 @@ struct cterminal {
 	char				*strbuf;
 	size_t				strbuflen;
 	size_t				strbufsize;
+	size_t				escbufsz;
 	char				escbuf[1024];
 	cterm_music_t		music_enable;	// The remotely/locally controled music state
 	char				musicbuf[1024];

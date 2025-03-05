@@ -1420,7 +1420,7 @@ incomplete:
 }
 
 static enum sequence_state
-st_vt_52_legal_sequence(const char *seq, size_t max_len)
+st_vt_52_legal_sequence(const char *seq, size_t seqsz, size_t max_len)
 {
 	static const char *all_seconds = "ABCDEFGHIJKLMYZbcdefjklopqvw[\\=>\x1b";
 
@@ -1431,13 +1431,13 @@ st_vt_52_legal_sequence(const char *seq, size_t max_len)
 	switch (seq[0]) {
 		case 'b':
 		case 'c':
-			if (seq[1])
+			if (seqsz == 2)
 				return SEQ_COMPLETE;
 			break;
 		case 'Y':
-			if (seq[1] > 31 && seq[2] > 31)
+			if (seqsz == 3 && seq[1] > 31 && seq[2] > 31)
 				return SEQ_COMPLETE;
-			if (seq[1] && seq[2])
+			if (seqsz == 3)
 				return SEQ_BROKEN;
 			break;
 		default:
@@ -2568,6 +2568,7 @@ do_st_vt_52(struct cterminal *cterm, char *retbuf, size_t retsize)
 			break;
 	}
 	cterm->escbuf[0]=0;
+	cterm->escbufsz = 0;
 	cterm->sequence=0;
 }
 
@@ -5752,12 +5753,13 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 						}
 					}
 					else if (cterm->emulation == CTERM_EMULATION_ATARIST_VT52) {
-						ustrcat(cterm->escbuf,ch);
-						switch(st_vt_52_legal_sequence(cterm->escbuf, sizeof(cterm->escbuf)-1)) {
+						cterm->escbuf[cterm->escbufsz++] = ch[0];
+						switch(st_vt_52_legal_sequence(cterm->escbuf, cterm->escbufsz, sizeof(cterm->escbuf)-1)) {
 							case SEQ_BROKEN:
 								/* Broken sequence detected */
 								// Just throw it out (see COMMANDO.TXT)
 								cterm->escbuf[0]=0;
+								cterm->escbufsz = 0;
 								cterm->sequence=0;
 								break;
 							case SEQ_INCOMPLETE:
@@ -6553,6 +6555,7 @@ CIOLIBEXPORT size_t cterm_write(struct cterminal * cterm, const void *vbuf, int 
 								prn[0]=0;
 								prnpos = prn;
 								cterm->sequence=1;
+								cterm->escbufsz = 0;
 								break;
 							case 28:
 							case 29:
