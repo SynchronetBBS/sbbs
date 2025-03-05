@@ -404,7 +404,7 @@ bool ssl_sync(scfg_t *scfg, int (*lprintf)(int level, const char* fmt, ...))
 				// Paranoia... keep zero as initial value only.
 				if (cert_epoch == 0)
 					cert_epoch = 1;
-				pthread_mutex_lock(&ssl_cert_list_mutex);
+				assert_pthread_mutex_lock(&ssl_cert_list_mutex);
 				while (cert_list) {
 					struct cert_list *old;
 					old = cert_list;
@@ -412,7 +412,7 @@ bool ssl_sync(scfg_t *scfg, int (*lprintf)(int level, const char* fmt, ...))
 					cryptDestroyContext(old->cert);
 					free(old);
 				}
-				pthread_mutex_unlock(&ssl_cert_list_mutex);
+				assert_pthread_mutex_unlock(&ssl_cert_list_mutex);
 				if (!rwlock_unlock(&cert_epoch_lock)) {
 					lprintf(LOG_ERR, "Unable to unlock cert_epoch_lock for write at %d", __LINE__);
 				}
@@ -466,11 +466,11 @@ static struct cert_list * get_ssl_cert(scfg_t *cfg, int (*lprintf)(int level, co
 	}
 	cert_entry->next = NULL;
 
-	pthread_mutex_lock(&get_ssl_cert_mutex);
+	assert_pthread_mutex_lock(&get_ssl_cert_mutex);
 	/* Get the certificate... first try loading it from a file... */
 	if (cryptStatusOK(cryptKeysetOpen(&ssl_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, cert_path, CRYPT_KEYOPT_READONLY))) {
 		if (!DO("getting private key", ssl_keyset, cryptGetPrivateKey(ssl_keyset, &cert_entry->cert, CRYPT_KEYID_NAME, "ssl_cert", cfg->sys_pass))) {
-			pthread_mutex_unlock(&get_ssl_cert_mutex);
+			assert_pthread_mutex_unlock(&get_ssl_cert_mutex);
 			free(cert_entry);
 			return NULL;
 		}
@@ -478,7 +478,7 @@ static struct cert_list * get_ssl_cert(scfg_t *cfg, int (*lprintf)(int level, co
 	else {
 		/* Couldn't do that... create a new context and use the cert from there... */
 		if (!DO("creating TLS context", CRYPT_UNUSED, cryptCreateContext(&cert_entry->cert, CRYPT_UNUSED, CRYPT_ALGO_RSA))) {
-			pthread_mutex_unlock(&get_ssl_cert_mutex);
+			assert_pthread_mutex_unlock(&get_ssl_cert_mutex);
 			free(cert_entry);
 			return NULL;
 		}
@@ -536,7 +536,7 @@ static struct cert_list * get_ssl_cert(scfg_t *cfg, int (*lprintf)(int level, co
 	}
 
 	cryptKeysetClose(ssl_keyset);
-	pthread_mutex_unlock(&get_ssl_cert_mutex);
+	assert_pthread_mutex_unlock(&get_ssl_cert_mutex);
 
 	if (cert_entry->cert == -1) {
 		free(cert_entry);
@@ -554,7 +554,7 @@ failure_return_2:
 	cryptKeysetClose(ssl_keyset);
 failure_return_1:
 	cryptDestroyContext(cert_entry->cert);
-	pthread_mutex_unlock(&get_ssl_cert_mutex);
+	assert_pthread_mutex_unlock(&get_ssl_cert_mutex);
 	cert_path[0] = 0;
 	free(cert_entry);
 	return NULL;
@@ -569,10 +569,10 @@ static struct cert_list *get_sess_list_entry(scfg_t *cfg, int (*lprintf)(int lev
 		lprintf(LOG_ERR, "Failed to lock cert_epoch_lock for read at %d", __LINE__);
 		return NULL;
 	}
-	pthread_mutex_lock(&ssl_cert_list_mutex);
+	assert_pthread_mutex_lock(&ssl_cert_list_mutex);
 	while (1) {
 		if (cert_list == NULL) {
-			pthread_mutex_unlock(&ssl_cert_list_mutex);
+			assert_pthread_mutex_unlock(&ssl_cert_list_mutex);
 			if (!rwlock_rdlock(&cert_epoch_lock)) {
 				lprintf(LOG_ERR, "Failed to unlock cert_epoch_lock for read at %d", __LINE__);
 			}
@@ -585,7 +585,7 @@ static struct cert_list *get_sess_list_entry(scfg_t *cfg, int (*lprintf)(int lev
 		cryptDestroyContext(ret->cert);
 		free(ret);
 	}
-	pthread_mutex_unlock(&ssl_cert_list_mutex);
+	assert_pthread_mutex_unlock(&ssl_cert_list_mutex);
 	if (!rwlock_rdlock(&cert_epoch_lock)) {
 		lprintf(LOG_ERR, "Failed to unlock cert_epoch_lock for read at %d", __LINE__);
 	}
@@ -603,17 +603,17 @@ int add_private_key(scfg_t *cfg, int (*lprintf)(int level, const char* fmt, ...)
 	}
 	ret = cryptSetAttribute(csess, CRYPT_SESSINFO_PRIVATEKEY, sess->cert);
 	if (cryptStatusOK(ret)) {
-		pthread_mutex_lock(&ssl_sess_list_mutex);
+		assert_pthread_mutex_lock(&ssl_sess_list_mutex);
 		sess->next = sess_list;
 		sess_list = sess;
-		pthread_mutex_unlock(&ssl_sess_list_mutex);
+		assert_pthread_mutex_unlock(&ssl_sess_list_mutex);
 		sess->sess = csess;
 	}
 	else {
-		pthread_mutex_lock(&ssl_cert_list_mutex);
+		assert_pthread_mutex_lock(&ssl_cert_list_mutex);
 		sess->next = cert_list;
 		cert_list = sess;
-		pthread_mutex_unlock(&ssl_cert_list_mutex);
+		assert_pthread_mutex_unlock(&ssl_cert_list_mutex);
 	}
 	return ret;
 }
@@ -624,7 +624,7 @@ int destroy_session(int (*lprintf)(int level, const char* fmt, ...), CRYPT_SESSI
 	struct cert_list *psess = NULL;
 	int               ret = CRYPT_ERROR_NOTFOUND;
 
-	pthread_mutex_lock(&ssl_sess_list_mutex);
+	assert_pthread_mutex_lock(&ssl_sess_list_mutex);
 	sess = sess_list;
 	while (sess != NULL) {
 		if (sess->sess == csess) {
@@ -639,7 +639,7 @@ int destroy_session(int (*lprintf)(int level, const char* fmt, ...), CRYPT_SESSI
 		psess = sess;
 		sess = sess->next;
 	}
-	pthread_mutex_unlock(&ssl_sess_list_mutex);
+	assert_pthread_mutex_unlock(&ssl_sess_list_mutex);
 	if (sess != NULL) {
 		if (!rwlock_rdlock(&cert_epoch_lock)) {
 			lprintf(LOG_ERR, "Unable to unlock cert_epoch_lock for write at %d", __LINE__);
@@ -651,10 +651,10 @@ int destroy_session(int (*lprintf)(int level, const char* fmt, ...), CRYPT_SESSI
 				return CRYPT_ERROR_INTERNAL;
 			}
 			sess->sess = -1;
-			pthread_mutex_lock(&ssl_cert_list_mutex);
+			assert_pthread_mutex_lock(&ssl_cert_list_mutex);
 			sess->next = cert_list;
 			cert_list = sess;
-			pthread_mutex_unlock(&ssl_cert_list_mutex);
+			assert_pthread_mutex_unlock(&ssl_cert_list_mutex);
 			ret = cryptDestroySession(csess);
 		}
 		else {
