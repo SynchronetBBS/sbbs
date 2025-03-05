@@ -310,7 +310,6 @@ static void internal_do_cryptInit(void)
 	if ((ret = cryptInit()) == CRYPT_OK) {
 		cryptAddRandom(NULL, CRYPT_RANDOM_SLOWPOLL);
 		atexit(do_cryptEnd);
-		cryptlib_initialized = true;
 		cryptInit_error = CRYPT_OK;
 	}
 	else {
@@ -319,28 +318,24 @@ static void internal_do_cryptInit(void)
 	ret = cryptGetAttribute(CRYPT_UNUSED, CRYPT_OPTION_INFO_MAJORVERSION, &maj);
 	if (cryptStatusError(ret)) {
 		cryptInit_error = ret;
-		cryptlib_initialized = false;
 		cryptEnd();
 		return;
 	}
 	ret = cryptGetAttribute(CRYPT_UNUSED, CRYPT_OPTION_INFO_MINORVERSION, &min);
 	if (cryptStatusError(ret)) {
 		cryptInit_error = ret;
-		cryptlib_initialized = false;
 		cryptEnd();
 		return;
 	}
 	ret = cryptGetAttribute(CRYPT_UNUSED, CRYPT_OPTION_INFO_STEPPING, &stp);
 	if (cryptStatusError(ret)) {
 		cryptInit_error = ret;
-		cryptlib_initialized = false;
 		cryptEnd();
 		return;
 	}
 	tmp = (maj * 100) + (min * 10) + stp;
 	if (tmp != CRYPTLIB_VERSION) {
 		cryptInit_error = CRYPT_ERROR_INVALID;
-		cryptlib_initialized = false;
 		cryptEnd();
 		if (asprintf(&cryptfail, "Incorrect cryptlib version %d (expected %d)", tmp, CRYPTLIB_VERSION) == -1)
 			cryptfail = NULL;
@@ -349,12 +344,12 @@ static void internal_do_cryptInit(void)
 	ret = cryptGetAttributeString(CRYPT_UNUSED, CRYPT_OPTION_INFO_PATCHES, patches, &stp);
 	if (cryptStatusError(ret) || stp != 32 || memcmp(patches, CRYPTLIB_PATCHES, 32) != 0) {
 		cryptInit_error = ret;
-		cryptlib_initialized = false;
 		cryptEnd();
 		if (asprintf(&cryptfail, "Incorrect cryptlib patch set %.32s (expected %s)", patches, CRYPTLIB_PATCHES) == -1)
 			cryptfail = NULL;
 		return;
 	}
+	cryptlib_initialized = true;
 	return;
 }
 
