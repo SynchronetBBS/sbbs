@@ -5,6 +5,8 @@ Fix blast-through in Mode 7 high ASCII mosaics
 Update Prestel/Mode 7 keybindings
 Don't disable status line for Atari ST modes
 Fix broken vertical (U+00A6) vs. vertical line (U+007C)
+Add custom palette support to list file
+Pass control key combinations in BBC Micro mode
 
 Version 1.6
 ------------
