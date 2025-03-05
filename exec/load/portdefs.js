@@ -7,7 +7,7 @@
 // Mainly used for outgoing connections to URIs without a specified port
 
 // Duplicates port numbers for service name aliases are included
-// (e.g. both "nttp" and "news")
+// (e.g. both "nntp" and "news")
 
 var standard_service_port = {
 	"systat":		11,		// Active Users
