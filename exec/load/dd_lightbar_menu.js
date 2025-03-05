@@ -355,6 +355,19 @@ By default, DDLightbarMenu ignores the isSelectable attribute of items and consi
 selectable (for efficiency).  To enable usage of unselectable items, set the allowUnselectableItems
 property to true:
 lbMenu.allowUnselectableItems = true;
+
+
+If the user's terminal doesn't support ANSI, DDLightbarMenu will work in a non-lightbar
+mode. When not using a lightbar interface, DDLightbarMenu will automatically use numbered
+mode, where the menu will output numbers to the left of the menu items and let the user
+type a number to choose an item.
+You can also tell DDLightbarMenu to not work in lightbar mode if you want a more traditional
+user interface (colors will still be supported) by setting the allowANSI property to false:
+lbMenu.allowANSI = false;
+
+For the traditional/non-lightbar mode, you can customize the prompt text that is used, by
+changing the nonANSIPromptText property. For instance:
+lbMenu.nonANSIPromptText = "Type a number to choose an item: ";
 */
 
 "use strict";
