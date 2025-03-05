@@ -535,6 +535,9 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	// Whether or not to allow ANSI behavior. Mainly for testing (this should be true).
 	this.allowANSI = true;
 
+	// Text to use for the user input prompt for the non-ANSI interface
+	this.nonANSIPromptText = "\x01n\x01c\x01hY\x01n\x01cour \x01hC\x01n\x01choice\x01h\x01g: \x01c";
+
 	// Member functions
 	this.Add = DDLightbarMenu_Add;
 	this.Remove = DDLightbarMenu_Remove;
@@ -2291,27 +2294,62 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 	{
 		// The user's terminal doesn't support ANSI
 		var userAnswerIsValid = false;
+		var writePromptText = true;
 		do
 		{
-			console.print("\x01n\x01c\x01hY\x01n\x01cour \x01hC\x01n\x01choice\x01h\x01g: \x01c");
-			console.attributes = "N";
-			var userEnteredItemNum = console.getnum(numItems);
-			this.lastUserInput = userEnteredItemNum.toString();
-			if (!console.aborted && userEnteredItemNum > 0)
+			if (writePromptText)
 			{
-				if (this.ItemIsSelectable(userEnteredItemNum-1))
+				if (typeof(this.nonANSIPromptText) === "string" && console.strlen(this.nonANSIPromptText) > 0)
+					console.print(this.nonANSIPromptText);
+				else
+					console.print("\x01n\x01c\x01hY\x01n\x01cour \x01hC\x01n\x01choice\x01h\x01g: \x01c");
+			}
+			writePromptText = true; // Default value
+			console.attributes = "N";
+			var inputMode = K_NOECHO|K_NOSPIN|K_NOCRLF;
+			var userInput = console.getkey(inputMode);
+			var userInputUpper = userInput.toUpperCase();
+			// Set this.lastUserInput if it's valid
+			if (console.aborted || userInputUpper == "Q" || userInput == CTRL_C || userInput == KEY_ESC)
+			{
+				if (userInputUpper == "Q")
+					this.lastUserInput = "Q";
+				else if (userInput == CTRL_C || userInput == KEY_ESC)
+					this.lastUserInput = userInput;
+				else if (console.aborted)
+					this.lastUserInput = CTRL_C;
+				userAnswerIsValid = true;
+			}
+			else if (this.QuitKeysIncludes(userInput))
+			{
+				this.lastUserInput = userInput;
+				userAnswerIsValid = true;
+			}
+			else if (/[0-9]/.test(userInput))
+			{
+				// Put the user's input back in the input buffer to
+				// be used for getting the rest of the message number.
+				console.ungetstr(userInput);
+				var userEnteredItemNum = console.getnum(numItems);
+				this.lastUserInput = userEnteredItemNum.toString();
+				if (!console.aborted && userEnteredItemNum > 0)
 				{
-					var chosenItem = this.GetItem(userEnteredItemNum-1);
-					if (typeof(chosenItem) === "object" && chosenItem.hasOwnProperty("retval"))
-						retVal = chosenItem.retval;
+					if (this.ItemIsSelectable(userEnteredItemNum-1))
+					{
+						var chosenItem = this.GetItem(userEnteredItemNum-1);
+						if (typeof(chosenItem) === "object" && chosenItem.hasOwnProperty("retval"))
+							retVal = chosenItem.retval;
+						userAnswerIsValid = true;
+					}
+				}
+				else
+				{
+					this.lastUserInput = "Q"; // To signify quitting
 					userAnswerIsValid = true;
 				}
 			}
 			else
-			{
-				this.lastUserInput = "Q"; // To signify quitting
-				userAnswerIsValid = true;
-			}
+				writePromptText = false; // Invalid user input
 		} while (!userAnswerIsValid && bbs.online && !js.terminated);
 	}
 
