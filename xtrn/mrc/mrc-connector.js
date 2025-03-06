@@ -28,8 +28,8 @@ f = undefined;
 if (!settings.ssl)
 	settings.ssl=false;
 
-const PROTOCOL_VERSION = '1.3.1';
-const MAX_LINE = 256;
+const PROTOCOL_VERSION = '1.3.2';
+const MAX_LINE = 512;
 const FROM_SITE = system.name.replace(/ /g, "_");
 const SYSTEM_NAME = system_info.system_name || system.name;
 
@@ -221,8 +221,10 @@ function mrc_receive(sock) {
         line = sock.recvline(MAX_LINE, settings.timeout);
         if (!line || line == '') break;
         latency_tracker.forEach(function(m) {
-            if (m.line===line.trim()) {
+            if (m.line===line.trim() || 
+                (m.line.indexOf("~STATS") >= 0 && line.indexOf("~STATS") >= 0 ) ) {
                 client_send({ from_user: "SERVER", to_user: 'CLIENT', body: 'LATENCY:' + (Date.now() - m.time) }); 
+                log(LOG_DEBUG, 'Latency: ' +  (Date.now() - m.time) );
                 latency_tracker = [];
             }
         });
@@ -239,14 +241,12 @@ function mrc_receive(sock) {
             fMa.write(message.body.substr(message.body.indexOf(':')+1).trim());
             fMa.close();
         }
-        if (['', 'ALL', FROM_SITE].indexOf(message.to_site) > -1) {
-            if (['', 'CLIENT', 'ALL', 'NOTME'].indexOf(message.to_user) > -1) {
-                // Forward to all clients
-                client_send(message);
-            } else {
-                // Send to this user
-                client_send(message, message.to_user);
-            }
+        if (['', 'CLIENT', 'ALL', 'NOTME'].indexOf(message.to_user) > -1) {
+            // Forward to all clients
+            client_send(message);
+        } else {
+            // Send to this user
+            client_send(message, message.to_user);
         }
         yield();
     }
@@ -274,6 +274,7 @@ function main() {
 
         Object.keys(clients).forEach(function (e, i) {
             if (!clients[e].socket.is_connected) {
+                mrc_send(mrc_sock, clients[e].username, "", "NOTME", "", "", "|07- |12" + clients[e].username + " |04has left chat|08.");                
                 mrc_send(mrc_sock, clients[e].username, '', 'SERVER', '', '', 'LOGOFF');
                 client_send({ from_user: clients[e].username, to_user: 'SERVER', body: 'LOGOFF' }); // Notify local clients
                 delete clients[e];

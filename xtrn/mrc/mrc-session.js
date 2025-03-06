@@ -16,7 +16,10 @@ function MRC_Session(host, port, user, pass, alias) {
         alias: alias || user,
         stats: ['-','-','-','0'],
         mention_count: 0,
-        latency: '-'
+        latency: '-',
+        msg_color: 7,
+        twit_list: [],
+        last_private_msg_from: ""
     };
 
     const callbacks = {
@@ -41,10 +44,10 @@ function MRC_Session(host, port, user, pass, alias) {
     function send_message(to_user, to_room, body) {
         if (body.length + state.alias.length + 1 > 250) {
             word_wrap(body, 250 - 1 - state.alias.length).split(/\n/).forEach(function (e) {
-                send(to_user, '', to_room, state.alias + ' ' + e);
+                send(to_user, '', to_room, state.alias + ' ' + format("|%02d", state.msg_color) + e);
             });
         } else {
-            send(to_user, '', to_room, state.alias + ' ' + body);
+            send(to_user, '', to_room, state.alias + ' ' + format("|%02d", state.msg_color) + body);
         }
     }
 
@@ -80,7 +83,7 @@ function MRC_Session(host, port, user, pass, alias) {
                     break;
                 case 'STATS':
                     state.stats = params.split(' ');
-                    emit('stats'); //, state.stats);
+                    emit('stats'); 
                     break;
                 case 'LATENCY':
                     state.latency = params;
@@ -90,6 +93,10 @@ function MRC_Session(host, port, user, pass, alias) {
                     emit('message', msg);
                     break;
             }
+            if (msg.body.search(/just joined room/) > -1 ||
+                msg.body.search(/session has timed-out/) > -1) {
+                send_command('USERLIST', 'ALL');
+            }
         } else if (msg.to_user == 'SERVER') {
             if (msg.body == 'LOGOFF') {
                 uidx = state.nicks.indexOf(msg.from_user);
@@ -97,8 +104,13 @@ function MRC_Session(host, port, user, pass, alias) {
                     state.nicks.splice(uidx, 1);
                     emit('nicks', state.nicks);
                 }
-            }
+            } 
         } else if (msg.to_user == '' || user.toLowerCase() == msg.to_user.toLowerCase()) {
+            
+            if (user.toLowerCase() == msg.to_user.toLowerCase()) {
+                state.last_private_msg_from = msg.from_user;
+            }
+            
             if (msg.to_room == '' || msg.to_room == state.room) {
                 emit('message', msg);
             }
@@ -112,15 +124,19 @@ function MRC_Session(host, port, user, pass, alias) {
                     state.nicks.splice(uidx, 1);
                     emit('nicks', state.nicks);
                 }
-            } else if (msg.body.search(/just joined room/) > -1) {
-                send_command('USERLIST', 'ALL');
-            }
+            } /*else if (msg.body.search(/just joined room/) > -1) {
+                send_command('USERLIST', 'ALL'); // moved above to msg.from_user == 'SERVER'
+            }*/
             emit('message', msg);
         }
     }
 
     this.send_room_message = function (msg) {
         send_message('', state.room, msg);
+    }
+    
+    this.send_notme = function (msg) {
+        send("NOTME", "", "", msg);
     }
 
     this.send_private_messsage = function (user, msg) {
@@ -140,7 +156,11 @@ function MRC_Session(host, port, user, pass, alias) {
             password: pass,
             alias: state.alias
         }) + '\r\n');
+
+        this.send_command('IAMHERE');
+        mswait(20);
         this.send_command('USERLIST', 'ALL');
+        mswait(20);
         this.send_command('STATS', 'ALL');
     }
 
@@ -181,50 +201,53 @@ function MRC_Session(host, port, user, pass, alias) {
     }
 
     const commands = {
-        banners: {
-            help: 'List of banners from server' // Doesn't do anything?
-        },
-        chatters: {
-            help: 'List current users'
-        },
-        bbses: {
-            help: 'List connected BBSs',
-            command: 'CONNECTED'
-        },
+        
+        // This section has been cleaned up significantly.
+        //         
+        // Server commands no longer need to be strictly defined 
+        // here.
+        //
+        // Some commands are still defined if they have specific 
+        // function calls attached to them in mrc-client.js 
+        // (e.g. /motd) and or are local command shortcuts 
+        // (e.g. /t and /r).
+        //
+        // Any command not defined here (or in mrc-client.js) will
+        // be assumed to be a server command. The server will 
+        // inform the user if a command is invalid.
+        //
+        // The "help" properties are no longer needed, since 
+        // help is contained in external .msg file. They have been
+        // left commended out to provide reference.
+        // 
+        
         help: {
-            help: 'Display this help message',
+            //help: 'Display this help message',
             callback: function (str) {
-                emit('help', 'List of available commands:', '');
-                for (var c in commands) {
-                    emit('help', c, commands[c].help, commands[c].ars);
-                }
-                emit('local_help');
+                emit('local_help', str);
             }
         },
         info: {
-            help: 'View information about a BBS (/info #)',
+            //help: 'View information about a BBS (/info #)',
             callback: function (str) {
                 this.send_command('INFO ' + str);
             }
         },
-        join: {
-            help: 'Move to a new room: /join room_name',
+        join: {            
+            //help: 'Move to a new room: /join room_name',
             callback: function (str) { // validate valid room name?
-                str = str.replace(/^#/, '');
+                str = str.replace(/^#/, '');                
                 this.send_command(format('NEWROOM:%s:%s', state.room, str));
                 state.room = str;
                 state.nicks = [];
                 this.send_command('USERLIST', 'ALL');
             }
         },
-        meetups: {
-            help: 'Display information about upcoming meetups'
-        },
         motd: {
-            help: 'Display the Message of the Day'
+            //help: 'Display the Message of the Day'
         },
-        msg: {
-            help: 'Send a private message: /msg nick message goes here',
+        msg: { // This is largely overtaken by /t, but we'll still handle it.
+            //help: 'Send a private message: /msg nick message goes here',
             callback: function (str) {
                 const cmd = str.split(' ');
                 if (cmd.length > 1 && state.nicks.indexOf(cmd[0]) > -1) {
@@ -232,8 +255,8 @@ function MRC_Session(host, port, user, pass, alias) {
                 }
             }
         },
-        t: {                                                                       // added as shorthand for /msg
-            help: 'Shorthand for /msg: /t nick message goes here',
+        t: {
+            //help: 'Send a private message: /t nick message goes here',
             callback: function (str) {
                 const cmd = str.split(' ');
                 if (cmd.length > 1 && state.nicks.indexOf(cmd[0]) > -1) {
@@ -241,70 +264,41 @@ function MRC_Session(host, port, user, pass, alias) {
                 }
             }
         },
+        r: {
+            //help: 'Reply to last private message: /r message goes here',
+            callback: function (str) {
+                if (state.last_private_msg_from) {
+                    this.send_private_messsage(state.last_private_msg_from, str);
+                }
+            }
+        },        
         quote: {
-            help: 'Send a raw command to the server',
+            //help: 'Send a raw command to the server',
             callback: function (str) {
                 this.send_command(str);
             }
         },
         quit: {
-            help: 'Quit the program',
+            //help: 'Quit the program',
             callback: function () {
-                handle.close();
                 emit('disconnect');
+                handle.close();
             }
         },
         rooms: {
-            help: 'List available rooms',
+            //help: 'List available rooms',
             command: 'LIST'
         },
         stats: {
-            help: 'Return anonymous server stats',
+            //help: 'Return anonymous server stats',
             command: 'statistics'
         },
         topic: {
-            help: 'Change the topic of the current room',
+            //help: 'Change the topic of the current room',
             callback: function (str) {
                 this.send_command(format('NEWTOPIC:%s:%s', state.room, str));
             }
-        },
-        users: {
-            help: 'Display list of users'
-        },
-        whoon: {
-            help: 'Display list of users and BBSs'
-        },
-        afk: {
-            help: "Set yourself AFK (Shortcut for STATUS AFK)",
-            callback: function (str) {
-                this.send_command('AFK ' + str);
-            }
-        },
-        register: {
-            help: "Register handle on server (MRC Trust)",
-            callback: function (str) {
-                this.send_command('REGISTER ' + str);
-            }
-        },
-        identify: {
-            help: "Identify as a registered user (MRC Trust)",
-            callback: function (str) {
-                this.send_command('IDENTIFY ' + str);
-            }
-        },
-        update: {
-            help: "Update user registration (MRC Trust)",
-            callback: function (str) {
-                this.send_command('UPDATE ' + str);
-            }
-        },
-        trust: {
-            help: "MRC Trust Info (MRC Trust)",
-            callback: function (str) {
-                this.send_command('TRUST ' + str);
-            }
-        }
-        
+        }          
     };
 
     Object.keys(commands).forEach(function (e) {
@@ -312,11 +306,11 @@ function MRC_Session(host, port, user, pass, alias) {
             this[e] = commands[e].callback;
         } else if (commands[e].command) {
             this[e] = function () {
-                this.send_command(commands[e].command.toUpperCase());
+                this.send_command(commands[e].command);
             }
         } else {
             this[e] = function () {
-                this.send_command(e.toUpperCase());
+                this.send_command(e);
             }
         }
     }, this);
