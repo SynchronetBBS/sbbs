@@ -52,6 +52,7 @@ struct mqtt {
 	link_list_t client_list;
 	struct startup* startup;
 	enum server_state server_state;
+	const char* server_version;
 };
 
 enum topic_depth {
@@ -78,6 +79,7 @@ DLLEXPORT int mqtt_init(struct mqtt*, scfg_t*, struct startup*);
 DLLEXPORT int mqtt_startup(struct mqtt*, scfg_t*, struct startup*, const char* version
                            , int (*lputs)(int level, const char* str));
 DLLEXPORT int mqtt_online(struct mqtt*);
+DLLEXPORT int mqtt_server_startup(struct mqtt*);
 DLLEXPORT int mqtt_server_state(struct mqtt*, enum server_state);
 DLLEXPORT int mqtt_errormsg(struct mqtt*, int level, const char*);
 DLLEXPORT int mqtt_terminating(struct mqtt*);
