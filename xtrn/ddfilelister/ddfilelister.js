@@ -174,6 +174,9 @@
  *                              and expanding newlines
  *                              Refactored the way the settings and colors are structured in the
  *                              code. No functional change.
+ * 2025-03-06 Eric Oulashin     Version 2.29
+ *                              Bug fix for editing ext'd description when a file has no ext'd
+ *                              description initially
  */
 
 "use strict";
@@ -215,8 +218,8 @@ var gAvatar = load({}, "avatar_lib.js");
 
 
 // Version information
-var LISTER_VERSION = "2.28b";
-var LISTER_DATE = "2025-02-27";
+var LISTER_VERSION = "2.29";
+var LISTER_DATE = "2025-03-06";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2007,15 +2010,30 @@ function editFileInfo(pFileList, pFileListMenu)
 		var extdMetadata = getFileInfoFromFilebase(fileMetadata.dirCode, fileMetadata.name, FileBase.DETAIL.EXTENDED);
 		if (extdMetadata != null)
 		{
-			// Let the user edit the extended description with their configured editor
+			// Let the user edit the extended description (if it has one) with their configured editor
 			var descFilename = system.temp_dir + "extdDescTemp.txt";
 			var outFile = new File(descFilename);
 			if (outFile.open("w"))
 			{
-				// An extended file description is usually up to about 45 characters long
-				var descWrapped = word_wrap(extdMetadata.extdesc, 45, null, false).split("\r\n");
-				for (var lineIdx = 0; lineIdx < descWrapped.length; ++lineIdx)
-					outFile.writeln(descWrapped[lineIdx]);
+				if (typeof(extdMetadata.extdesc) === "string")
+				{
+					// An extended file description is usually up to about 45 characters long
+					var descWrapped = word_wrap(extdMetadata.extdesc, 45, null, false).split("\r\n");
+					for (var lineIdx = 0; lineIdx < descWrapped.length; ++lineIdx)
+						outFile.writeln(descWrapped[lineIdx]);
+				}
+				else
+				{
+					if (extdMetadata.hasOwnProperty("desc") && typeof(extdMetadata.desc) === "string" && extdMetadata.desc.length > 0)
+					{
+						if (console.yesno("No extended description. Start with short description"))
+							outFile.writeln(extdMetadata.desc);
+						else
+							outFile.writeln("");
+					}
+					else
+						outFile.writeln("");
+				}
 				outFile.close();
 				if (console.editfile(descFilename, "", "", fileMetadata.name, "", false))
 				{
