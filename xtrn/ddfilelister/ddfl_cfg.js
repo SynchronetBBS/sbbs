@@ -4,7 +4,7 @@
 // If you have ddfilelister in a directory other than xtrn/ddfilelister, then the changes to
 // ddfilelister.cfg will be saved in that directory (assuming you're running ddmr_cfg.js from
 // that same directory).
-// Currently for ddfilelister 2.28b.
+// Currently for ddfilelister 2.29.
 //
 // If you're running ddfilelister from xtrn/ddfilelister (the standard location) and you want
 // to save the configuration file there (rather than sbbs/mods), you can use one of the
@@ -17,7 +17,7 @@ require("sbbsdefs.js", "P_NONE");
 require("uifcdefs.js", "UIFC_INMSG");
 
 
-if (!uifc.init("DigDist. File Lister 2.28b Configurator"))
+if (!uifc.init("DigDist. File Lister 2.29 Configurator"))
 {
 	print("Failed to initialize uifc");
 	exit(1);
