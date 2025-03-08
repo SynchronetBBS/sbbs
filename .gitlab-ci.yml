@@ -103,7 +103,7 @@ include:
     - cd src/sbbs3
     - export LD_LIBRARY_PATH=$(realpath *.lib.release)
     - "*.exe.release/jsexec -C -c../../ctrl -r 'exit(0)'"
-  dependencies: ["linux-x64 [sbbs]"]
+  needs: ["linux-x64 [sbbs]"]
 
 "linux-x64 install":
   tags: [Linux]
@@ -150,7 +150,7 @@ include:
     - cd src/sbbs3/msvc.win32.dll.release
     - $env:PATH = $env:CI_PROJECT_DIR + "\3rdp\win32.release\cryptlib\bin;" + $env:PATH
     - ..\msvc.win32.exe.release\jsexec -c../../../ctrl -C exit(0)"
-  dependencies: ["windows-x86 [sbbs]"]
+  needs: ["windows-x86 [sbbs]"]
 
 "windows-x86 jsexec-testsuite":
   tags: [Windows]
@@ -160,7 +160,7 @@ include:
     - cd src/sbbs3/msvc.win32.dll.release
     - $env:PATH = $env:CI_PROJECT_DIR + "\3rdp\win32.release\cryptlib\bin;" + $env:PATH
     - ..\msvc.win32.exe.release\jsexec -c../../../ctrl -C ../../../exec/tests/test.js
-  dependencies: ["windows-x86 [sbbs]"]
+  needs: ["windows-x86 [sbbs]"]
 
 "windows-x86 [sexpots]":
   tags: [Windows]
