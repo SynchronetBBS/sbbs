@@ -309,7 +309,6 @@ static void internal_do_cryptInit(void)
 
 	if ((ret = cryptInit()) == CRYPT_OK) {
 		cryptAddRandom(NULL, CRYPT_RANDOM_SLOWPOLL);
-		atexit(do_cryptEnd);
 		cryptInit_error = CRYPT_OK;
 	}
 	else {
@@ -349,6 +348,7 @@ static void internal_do_cryptInit(void)
 			cryptfail = NULL;
 		return;
 	}
+	atexit(do_cryptEnd);
 	cryptlib_initialized = true;
 	return;
 }
