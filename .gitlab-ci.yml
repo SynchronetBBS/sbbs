@@ -112,6 +112,7 @@ include:
   extends: .rules
   script:
     - make -f install/install-sbbs.mk NOCAP=1
+  needs: []
 
 "windows-x86 [sbbs]":
   tags: [Windows]
