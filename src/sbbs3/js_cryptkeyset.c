@@ -165,6 +165,7 @@ js_close(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ReportError(cx, "Error %d calling cryptKeysetClose()\n", status);
 		return JS_FALSE;
 	}
+	p->ks = CRYPT_UNUSED;
 
 	return JS_TRUE;
 }
