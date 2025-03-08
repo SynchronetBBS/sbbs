@@ -815,6 +815,12 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	if (strcmp(sp, "GENDERS") == 0)
 		return cfg.new_genders;
 
+	if (strcmp(sp, "MSGS") == 0) {
+		int msgs = usrgrps ? getposts(&cfg, usrsub[curgrp][cursub[curgrp]]) : 0;
+		snprintf(str, maxlen, "%u",  msgs);
+		return str;
+	}
+
 	if (!strcmp(sp, "TMSG")) {
 		l = 0;
 		for (i = 0; i < cfg.total_subs; i++)
