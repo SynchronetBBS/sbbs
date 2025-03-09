@@ -375,6 +375,40 @@ bool is_crypt_initialized(void)
 	return cryptlib_initialized;
 }
 
+static bool
+ssl_new_epoch(scfg_t *scfg, int (*lprintf)(int level, const char* fmt, ...))
+{
+	lprintf(LOG_DEBUG, "New SSL Cert Epoch");
+	if (!rwlock_wrlock(&tls_cert_file_date_lock)) {
+		lprintf(LOG_ERR, "Unable to lock tls_cert_file_date_lock for write at %d", __LINE__);
+		return false;
+	}
+	tls_cert_file_date = fdate(cert_path);
+	if (!rwlock_unlock(&tls_cert_file_date_lock))
+		lprintf(LOG_ERR, "Unable to unlock tls_cert_file_date_lock for write at %d", __LINE__);
+
+	if (!rwlock_wrlock(&cert_epoch_lock)) {
+		lprintf(LOG_ERR, "Unable to lock cert_epoch_lock for write at %d", __LINE__);
+		return false;
+	}
+	cert_epoch++;
+	// Paranoia... keep zero as initial value only.
+	if (cert_epoch == 0)
+		cert_epoch = 1;
+	assert_pthread_mutex_lock(&ssl_cert_list_mutex);
+	while (cert_list) {
+		struct cert_list *old;
+		old = cert_list;
+		cert_list = cert_list->next;
+		cryptDestroyContext(old->cert);
+		free(old);
+	}
+	assert_pthread_mutex_unlock(&ssl_cert_list_mutex);
+	if (!rwlock_unlock(&cert_epoch_lock))
+		lprintf(LOG_ERR, "Unable to unlock cert_epoch_lock for write at %d", __LINE__);
+	return true;
+}
+
 bool ssl_sync(scfg_t *scfg, int (*lprintf)(int level, const char* fmt, ...))
 {
 	time_t epoch_date;
@@ -394,30 +428,8 @@ bool ssl_sync(scfg_t *scfg, int (*lprintf)(int level, const char* fmt, ...))
 		return false;
 	}
 	if (epoch_date != 0) {
-		if (fd != epoch_date) {
-			lprintf(LOG_DEBUG, "Destroying TLS private keys");
-			if (!rwlock_wrlock(&cert_epoch_lock)) {
-				lprintf(LOG_ERR, "Unable to lock cert_epoch_lock for write at %d", __LINE__);
-			}
-			else {
-				cert_epoch++;
-				// Paranoia... keep zero as initial value only.
-				if (cert_epoch == 0)
-					cert_epoch = 1;
-				assert_pthread_mutex_lock(&ssl_cert_list_mutex);
-				while (cert_list) {
-					struct cert_list *old;
-					old = cert_list;
-					cert_list = cert_list->next;
-					cryptDestroyContext(old->cert);
-					free(old);
-				}
-				assert_pthread_mutex_unlock(&ssl_cert_list_mutex);
-				if (!rwlock_unlock(&cert_epoch_lock)) {
-					lprintf(LOG_ERR, "Unable to unlock cert_epoch_lock for write at %d", __LINE__);
-				}
-			}
-		}
+		if (fd != epoch_date)
+			return ssl_new_epoch(scfg, lprintf);
 	}
 	return true;
 }
@@ -436,11 +448,74 @@ log_cryptlib_error(int status, int line, CRYPT_HANDLE handle, const char *action
 
 #define DO(action, handle, x) (cryptStatusOK((DOtmp = x)) ? true : log_cryptlib_error(DOtmp, __LINE__, handle, action, lprintf))
 
+static bool
+create_self_signed_cert(scfg_t *cfg, int (*lprintf)(int level, const char* fmt, ...))
+{
+	CRYPT_CONTEXT     cert;
+	CRYPT_KEYSET      ssl_keyset;
+	CRYPT_CERTIFICATE ssl_cert;
+	int               DOtmp;
+	char              sysop_email[sizeof(cfg->sys_inetaddr) + 6];
+
+	lprintf(LOG_NOTICE, "Creating self-signed TLS certificate");
+	if (!cert_path[0]) {
+		lprintf(LOG_INFO, "cert_path not set");
+		return false;
+	}
+	/* Create a new context and cert... */
+	if (!DO("creating TLS context", CRYPT_UNUSED, cryptCreateContext(&cert, CRYPT_UNUSED, CRYPT_ALGO_RSA)))
+		return false;
+	if (!DO("setting label", cert, cryptSetAttributeString(cert, CRYPT_CTXINFO_LABEL, "ssl_cert", 8)))
+		goto failure_return_1;
+	if (!DO("generating key", cert, cryptGenerateKey(cert)))
+		goto failure_return_1;
+	if (!DO("opening keyset", CRYPT_UNUSED, cryptKeysetOpen(&ssl_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, cert_path, CRYPT_KEYOPT_CREATE)))
+		goto failure_return_1;
+	if (!DO("adding private key", ssl_keyset, cryptAddPrivateKey(ssl_keyset, cert, cfg->sys_pass)))
+		goto failure_return_2;
+	if (!DO("creating certificate", CRYPT_UNUSED, cryptCreateCert(&ssl_cert, CRYPT_UNUSED, CRYPT_CERTTYPE_CERTIFICATE)))
+		goto failure_return_2;
+	if (!DO("setting public key", ssl_cert, cryptSetAttribute(ssl_cert, CRYPT_CERTINFO_SUBJECTPUBLICKEYINFO, cert)))
+		goto failure_return_3;
+	if (!DO("signing certificate", ssl_cert, cryptSetAttribute(ssl_cert, CRYPT_CERTINFO_SELFSIGNED, 1)))
+		goto failure_return_3;
+	if (!DO("verifying certificate", ssl_cert, cryptSetAttribute(ssl_cert, CRYPT_OPTION_CERT_VALIDITY, 3650)))
+		goto failure_return_3;
+	if (!DO("setting country name", ssl_cert, cryptSetAttributeString(ssl_cert, CRYPT_CERTINFO_COUNTRYNAME, "ZZ", 2)))
+		goto failure_return_3;
+	if (!DO("setting organization name", ssl_cert, cryptSetAttributeString(ssl_cert, CRYPT_CERTINFO_ORGANIZATIONNAME, cfg->sys_name, strlen(cfg->sys_name))))
+		goto failure_return_3;
+	if (!DO("setting DNS name", ssl_cert, cryptSetAttributeString(ssl_cert, CRYPT_CERTINFO_DNSNAME, cfg->sys_inetaddr, strlen(cfg->sys_inetaddr))))
+		goto failure_return_3;
+	if (!DO("setting Common Name", ssl_cert, cryptSetAttributeString(ssl_cert, CRYPT_CERTINFO_COMMONNAME, cfg->sys_inetaddr, strlen(cfg->sys_inetaddr))))
+		goto failure_return_3;
+	sprintf(sysop_email, "sysop@%s", cfg->sys_inetaddr);
+	if (!DO("setting email", ssl_cert, cryptSetAttributeString(ssl_cert, CRYPT_CERTINFO_RFC822NAME, sysop_email, strlen(sysop_email))))
+		goto failure_return_3;
+	if (!DO("signing certificate", ssl_cert, cryptSignCert(ssl_cert, cert)))
+		goto failure_return_3;
+	if (!DO("adding public key", ssl_keyset, cryptAddPublicKey(ssl_keyset, ssl_cert)))
+		goto failure_return_3;
+	cryptDestroyCert(ssl_cert);
+	cryptKeysetClose(ssl_keyset);
+	cryptDestroyContext(cert);
+	ssl_new_epoch(cfg, lprintf);
+
+	return true;
+
+failure_return_3:
+	cryptDestroyCert(ssl_cert);
+failure_return_2:
+	cryptKeysetClose(ssl_keyset);
+failure_return_1:
+	cryptDestroyContext(cert);
+	cert_path[0] = 0;
+	return false;
+}
+
 static struct cert_list * get_ssl_cert(scfg_t *cfg, int (*lprintf)(int level, const char* fmt, ...))
 {
 	CRYPT_KEYSET      ssl_keyset;
-	CRYPT_CERTIFICATE ssl_cert;
-	char              sysop_email[sizeof(cfg->sys_inetaddr) + 6];
 	struct cert_list *cert_entry;
 	int               DOtmp;
 
@@ -453,97 +528,43 @@ static struct cert_list * get_ssl_cert(scfg_t *cfg, int (*lprintf)(int level, co
 		return NULL;
 	}
 	cert_entry->sess = -1;
-	if (rwlock_rdlock(&cert_epoch_lock)) {
-		cert_entry->epoch = cert_epoch;
-		if (!rwlock_unlock(&cert_epoch_lock)) {
-			lprintf(LOG_ERR, "Unable to unlock cert_epoc_lock at %d", __LINE__);
-		}
-	}
-	else {
-		lprintf(LOG_ERR, "Unable to lock cert_epoc_lock at %d", __LINE__);
-		free(cert_entry);
-		return NULL;
-	}
 	cert_entry->next = NULL;
+	cert_entry->cert = -1;
 
-	assert_pthread_mutex_lock(&get_ssl_cert_mutex);
-	/* Get the certificate... first try loading it from a file... */
-	if (cryptStatusOK(cryptKeysetOpen(&ssl_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, cert_path, CRYPT_KEYOPT_READONLY))) {
-		if (!DO("getting private key", ssl_keyset, cryptGetPrivateKey(ssl_keyset, &cert_entry->cert, CRYPT_KEYID_NAME, "ssl_cert", cfg->sys_pass))) {
-			assert_pthread_mutex_unlock(&get_ssl_cert_mutex);
-			free(cert_entry);
-			return NULL;
-		}
-	}
-	else {
-		lprintf(LOG_WARNING, "Failed to open/read TLS certificate: %s", cert_path);
-		if (!cfg->create_self_signed_cert) {
-			assert_pthread_mutex_unlock(&get_ssl_cert_mutex);
-			free(cert_entry);
-			return NULL;
-		}
-		lprintf(LOG_NOTICE, "Creating self-signed TLS certificate");
-		/* Couldn't do that... create a new context and use the cert from there... */
-		if (!DO("creating TLS context", CRYPT_UNUSED, cryptCreateContext(&cert_entry->cert, CRYPT_UNUSED, CRYPT_ALGO_RSA))) {
-			assert_pthread_mutex_unlock(&get_ssl_cert_mutex);
-			free(cert_entry);
-			return NULL;
-		}
-		if (!DO("setting label", cert_entry->cert, cryptSetAttributeString(cert_entry->cert, CRYPT_CTXINFO_LABEL, "ssl_cert", 8)))
-			goto failure_return_1;
-		if (!DO("generating key", cert_entry->cert, cryptGenerateKey(cert_entry->cert)))
-			goto failure_return_1;
-		if (!DO("opening keyset", CRYPT_UNUSED, cryptKeysetOpen(&ssl_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, cert_path, CRYPT_KEYOPT_CREATE)))
-			goto failure_return_1;
-		if (!DO("adding private key", ssl_keyset, cryptAddPrivateKey(ssl_keyset, cert_entry->cert, cfg->sys_pass)))
-			goto failure_return_2;
-		if (!DO("creating certificate", CRYPT_UNUSED, cryptCreateCert(&ssl_cert, CRYPT_UNUSED, CRYPT_CERTTYPE_CERTIFICATE)))
-			goto failure_return_2;
-		if (!DO("setting public key", ssl_cert, cryptSetAttribute(ssl_cert, CRYPT_CERTINFO_SUBJECTPUBLICKEYINFO, cert_entry->cert)))
-			goto failure_return_3;
-		if (!DO("signing certificate", ssl_cert, cryptSetAttribute(ssl_cert, CRYPT_CERTINFO_SELFSIGNED, 1)))
-			goto failure_return_3;
-		if (!DO("verifying certificate", ssl_cert, cryptSetAttribute(ssl_cert, CRYPT_OPTION_CERT_VALIDITY, 3650)))
-			goto failure_return_3;
-		if (!DO("setting country name", ssl_cert, cryptSetAttributeString(ssl_cert, CRYPT_CERTINFO_COUNTRYNAME, "ZZ", 2)))
-			goto failure_return_3;
-		if (!DO("setting organization name", ssl_cert, cryptSetAttributeString(ssl_cert, CRYPT_CERTINFO_ORGANIZATIONNAME, cfg->sys_name, strlen(cfg->sys_name))))
-			goto failure_return_3;
-		if (!DO("setting DNS name", ssl_cert, cryptSetAttributeString(ssl_cert, CRYPT_CERTINFO_DNSNAME, cfg->sys_inetaddr, strlen(cfg->sys_inetaddr))))
-			goto failure_return_3;
-		if (!DO("setting Common Name", ssl_cert, cryptSetAttributeString(ssl_cert, CRYPT_CERTINFO_COMMONNAME, cfg->sys_inetaddr, strlen(cfg->sys_inetaddr))))
-			goto failure_return_3;
-		sprintf(sysop_email, "sysop@%s", cfg->sys_inetaddr);
-		if (!DO("setting email", ssl_cert, cryptSetAttributeString(ssl_cert, CRYPT_CERTINFO_RFC822NAME, sysop_email, strlen(sysop_email))))
-			goto failure_return_3;
-		if (!DO("signing certificate", ssl_cert, cryptSignCert(ssl_cert, cert_entry->cert)))
-			goto failure_return_3;
-		if (!DO("adding public key", ssl_keyset, cryptAddPublicKey(ssl_keyset, ssl_cert)))
-			goto failure_return_3;
-		cryptDestroyCert(ssl_cert);
-		cryptKeysetClose(ssl_keyset);
-		cryptDestroyContext(cert_entry->cert);
-		cert_entry->cert = -1;
-		// Finally, load it from the file.
+	size_t backoff_ms = 1;
+	unsigned loops = 0;
+	while (cert_entry->cert == -1) {
+		assert_pthread_mutex_lock(&get_ssl_cert_mutex);
+		/* Get the certificate... first try loading it from a file... */
 		if (cryptStatusOK(cryptKeysetOpen(&ssl_keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, cert_path, CRYPT_KEYOPT_READONLY))) {
-			if (!DO("getting private key", ssl_keyset, cryptGetPrivateKey(ssl_keyset, &cert_entry->cert, CRYPT_KEYID_NAME, "ssl_cert", cfg->sys_pass))) {
-				cert_entry->cert = -1;
-			}
-			else {
-				if (!rwlock_wrlock(&tls_cert_file_date_lock)) {
-					lprintf(LOG_ERR, "Unable to lock tls_cert_file_date_lock for write at %d", __LINE__);
+			DO("getting private key", ssl_keyset, cryptGetPrivateKey(ssl_keyset, &cert_entry->cert, CRYPT_KEYID_NAME, "ssl_cert", cfg->sys_pass));
+			cryptKeysetClose(ssl_keyset);
+		}
+		if (cert_entry->cert == -1) {
+			lprintf(LOG_WARNING, "Failed to open/read TLS certificate: %s", cert_path);
+			if (cfg->create_self_signed_cert) {
+				// Only try to create cert first time through the loop.
+				if (loops == 0) {
+					lprintf(LOG_NOTICE, "Creating self-signed TLS certificate");
+					if (create_self_signed_cert(cfg, lprintf)) {
+						loops++;
+						assert_pthread_mutex_unlock(&get_ssl_cert_mutex);
+						continue;
+					}
 				}
-				tls_cert_file_date = fdate(cert_path);
-				if (!rwlock_unlock(&tls_cert_file_date_lock)) {
-					lprintf(LOG_ERR, "Unable to unlock tls_cert_file_date_lock for write at %d", __LINE__);
-				}
-				ssl_sync(cfg, lprintf);
 			}
 		}
+		assert_pthread_mutex_unlock(&get_ssl_cert_mutex);
+		// Backoff...
+		loops++;
+		// Total wait time is (1 << (total loops)) - 1 ms
+		// ie: 14 loops is 16.383s
+		if (loops > 14)
+			break;
+		SLEEP(backoff_ms);
+		backoff_ms *= 2;
 	}
-
-	cryptKeysetClose(ssl_keyset);
-	assert_pthread_mutex_unlock(&get_ssl_cert_mutex);
+	lprintf(LOG_DEBUG, "Total times through cert loop: %u (%ums)", loops, (1 << loops) - 1);
 
 	if (cert_entry->cert == -1) {
 		free(cert_entry);
@@ -554,17 +575,6 @@ static struct cert_list * get_ssl_cert(scfg_t *cfg, int (*lprintf)(int level, co
 		lprintf(LOG_DEBUG, "Created TLS private key and certificate %d", cert_entry->cert);
 	}
 	return cert_entry;
-
-failure_return_3:
-	cryptDestroyCert(ssl_cert);
-failure_return_2:
-	cryptKeysetClose(ssl_keyset);
-failure_return_1:
-	cryptDestroyContext(cert_entry->cert);
-	assert_pthread_mutex_unlock(&get_ssl_cert_mutex);
-	cert_path[0] = 0;
-	free(cert_entry);
-	return NULL;
 }
 #undef DO
 
