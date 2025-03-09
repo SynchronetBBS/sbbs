@@ -108,6 +108,7 @@ set(PATCHES
 	cl-remove-silly-pragmas.patch
 	cl-size-doesnt-mean-copied.patch
 	cl-add-psk-flag.patch
+	cl-winapi-needed.patch
 )
 
 set(SOURCE

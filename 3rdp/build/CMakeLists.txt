@@ -81,6 +81,7 @@ set(PATCHES
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-remove-silly-pragmas.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-size-doesnt-mean-copied.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-add-psk-flag.patch
+	${CMAKE_CURRENT_SOURCE_DIR}/cl-winapi-needed.patch
 )
 
 FetchContent_Declare(CryptLib
