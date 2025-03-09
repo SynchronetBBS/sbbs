@@ -476,6 +476,12 @@ static struct cert_list * get_ssl_cert(scfg_t *cfg, int (*lprintf)(int level, co
 		}
 	}
 	else {
+		lprintf(LOG_WARNING, "Failed to open/read TLS certificate: %s", cert_path);
+		if (!cfg->create_self_signed_cert) {
+			assert_pthread_mutex_unlock(&get_ssl_cert_mutex);
+			free(cert_entry);
+			return NULL;
+		}
 		lprintf(LOG_NOTICE, "Creating self-signed TLS certificate");
 		/* Couldn't do that... create a new context and use the cert from there... */
 		if (!DO("creating TLS context", CRYPT_UNUSED, cryptCreateContext(&cert_entry->cert, CRYPT_UNUSED, CRYPT_ALGO_RSA))) {

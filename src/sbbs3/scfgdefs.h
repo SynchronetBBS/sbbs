@@ -506,6 +506,8 @@ typedef struct
 	uint16_t		filename_maxlen;	/* Maximum filename length */
 	str_list_t      supported_archive_formats;    /* Full support in libachive */
 
+	bool			create_self_signed_cert;
+
 	fevent_t		node_daily;			/* Node's daily event */
 	uint32_t		node_misc;			/* Misc bits for node setup */
 	bool			spinning_pause_prompt;
