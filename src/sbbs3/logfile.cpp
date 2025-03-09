@@ -36,7 +36,7 @@ extern "C" bool hacklog(scfg_t* cfg, struct mqtt* mqtt, const char* prot, const 
 
 	SAFEPRINTF(fname, "%shack.log", cfg->logs_dir);
 
-	if ((fp = fopenlog(cfg, fname)) == NULL)
+	if ((fp = fopenlog(cfg, fname, /* shareable: */false)) == NULL)
 		return false;
 
 	inet_addrtop(addr, ip, sizeof(ip));
@@ -86,7 +86,7 @@ extern "C" bool spamlog(scfg_t* cfg, struct mqtt* mqtt, char* prot, char* action
 
 	SAFEPRINTF(fname, "%sspam.log", cfg->logs_dir);
 
-	if ((fp = fopenlog(cfg, fname)) == NULL)
+	if ((fp = fopenlog(cfg, fname, /* shareable: */false)) == NULL)
 		return false;
 
 	if (to == NULL)
@@ -139,7 +139,7 @@ extern "C" int errorlog(scfg_t* cfg, struct mqtt* mqtt, int level, const char* h
 		host = "";
 
 	SAFEPRINTF(path, "%serror.log", cfg->logs_dir);
-	if ((fp = fopenlog(cfg, path)) == NULL)
+	if ((fp = fopenlog(cfg, path, /* shareable: */false)) == NULL)
 		return -1;
 	fprintf(fp, "%.24s %s/%s %s%s%s%s%s"
 	        , ctime_r(&now, buf)
@@ -348,12 +348,14 @@ void sbbs_t::errormsg(int line, const char* function, const char *src, const cha
 /****************************************************************************/
 /* Open a log file for append, supporting log rotation based on size		*/
 /****************************************************************************/
-extern "C" FILE* fopenlog(scfg_t* cfg, const char* path)
+extern "C" FILE* fopenlog(scfg_t* cfg, const char* path, bool shareable)
 {
-	const int mode = O_WRONLY | O_CREAT | O_APPEND | O_DENYNONE;
+	int mode = O_WRONLY | O_CREAT | O_APPEND;
 	int       file;
 	FILE*     fp;
 
+	if (shareable)
+		mode |= O_DENYNONE;
 	if ((fp = fnopen(&file, path, mode)) == NULL)
 		return NULL;
 

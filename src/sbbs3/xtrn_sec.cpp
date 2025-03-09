@@ -1461,7 +1461,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 	}
 	else if (!online) {
 		SAFEPRINTF(str, "%shungup.log", cfg.logs_dir);
-		FILE* fp = fopenlog(&cfg, str);
+		FILE* fp = fopenlog(&cfg, str, /* shareable: */false);
 		if (fp == NULL)
 			errormsg(WHERE, ERR_OPEN, str, O_WRONLY | O_CREAT | O_APPEND);
 		else {

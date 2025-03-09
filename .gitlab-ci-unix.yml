@@ -46,7 +46,7 @@ spec:
   script:
     - cd 3rdp/build
     - touch depend
-    - JS_CONFIGURE_ARGS="--cache-file=../../../../../build/smconfig.cache" $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS libmozjs
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS libmozjs
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../..
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/spidermonkey.tgz" 3rdp/*.release/mozjs
@@ -56,10 +56,6 @@ spec:
     - if: '"$[[ inputs.no_javascript ]]" == "yes"'
       when: never
     - !reference [.rules, rules]
-  cache:
-    key: $CI_JOB_NAME
-    paths:
-      - 3rdp/build/smconfig.cache*
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]":
   extends:

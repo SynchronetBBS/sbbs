@@ -534,6 +534,10 @@ static void mqtt_connect_callback(struct mosquitto* mosq, void* cbdata, int rc)
 		mqtt_subscribe(mqtt, TOPIC_HOST, str, sizeof(str), "pause");
 		mqtt_subscribe(mqtt, TOPIC_SERVER, str, sizeof(str), "resume");
 		mqtt_subscribe(mqtt, TOPIC_HOST, str, sizeof(str), "resume");
+		if (mqtt->server_version != NULL) {
+			mqtt_server_startup(mqtt);
+			mqtt->server_version = NULL;
+		}
 	}
 	else
 		mqtt->connect_error = rc;
@@ -648,6 +652,7 @@ static void mqtt_message_received(struct mosquitto* mosq, void* cbdata, const st
 }
 #endif // USE_MOSQUITTO
 
+// 'version' argument should not point to stack memory as it'll be read later (i.e. in connect callback)
 int mqtt_startup(struct mqtt* mqtt, scfg_t* cfg, struct startup* startup, const char* version
                  , int (*lputs)(int level, const char* str))
 {
@@ -674,6 +679,7 @@ int mqtt_startup(struct mqtt* mqtt, scfg_t* cfg, struct startup* startup, const 
 				lprintf(lputs, LOG_ERR, "MQTT error %d starting pub/sub thread", result);
 				mqtt_close(mqtt);
 			} else {
+				mqtt->server_version = version;
 #ifdef USE_MOSQUITTO
 				if (mqtt->handle != NULL) {
 					mosquitto_connect_callback_set(mqtt->handle, mqtt_connect_callback);
@@ -692,19 +698,24 @@ int mqtt_startup(struct mqtt* mqtt, scfg_t* cfg, struct startup* startup, const 
 			}
 		}
 	}
-	mqtt_server_state(mqtt, SERVER_INIT);
-	mqtt_pub_strval(mqtt, TOPIC_BBS_LEVEL, NULL, mqtt->cfg->sys_name);
-	mqtt_pub_strval(mqtt, TOPIC_HOST_LEVEL, NULL, startup->host_name);
-	mqtt_pub_strval(mqtt, TOPIC_SERVER, "version", version);
-	mqtt_pub_uintval(mqtt, TOPIC_SERVER, "served", mqtt->served);
-	mqtt_pub_uintval(mqtt, TOPIC_SERVER, "highwater", 0);
-	mqtt_pub_uintval(mqtt, TOPIC_SERVER, "error_count", mqtt->error_count);
 
 #ifdef USE_MOSQUITTO
 	if (mqtt->handle != NULL)
 		mosquitto_message_callback_set(mqtt->handle, mqtt_message_received);
 #endif
 
+	return result;
+}
+
+int mqtt_server_startup(struct mqtt* mqtt)
+{
+	int result = mqtt_server_state(mqtt, SERVER_INIT);
+	mqtt_pub_strval(mqtt, TOPIC_BBS_LEVEL, NULL, mqtt->cfg->sys_name);
+	mqtt_pub_strval(mqtt, TOPIC_HOST_LEVEL, NULL, mqtt->startup->host_name);
+	mqtt_pub_strval(mqtt, TOPIC_SERVER, "version", mqtt->server_version);
+	mqtt_pub_uintval(mqtt, TOPIC_SERVER, "served", mqtt->served);
+	mqtt_pub_uintval(mqtt, TOPIC_SERVER, "highwater", 0);
+	mqtt_pub_uintval(mqtt, TOPIC_SERVER, "error_count", mqtt->error_count);
 	return result;
 }
 

@@ -361,7 +361,7 @@ int sbbs_t::lputs(int level, const char* str)
 					str[0] = '\0';
 				char path[MAX_PATH + 1];
 				snprintf(path, sizeof path, "%sevents%s.log", cfg.logs_dir, str);
-				logfile_fp = fopenlog(&cfg, path);
+				logfile_fp = fopenlog(&cfg, path, /* shareable: */true);
 			}
 			if (logfile_fp != nullptr)
 				fprintlog(&cfg, &logfile_fp, msg);
@@ -4320,7 +4320,7 @@ void sbbs_t::catsyslog(int crash)
 		if (crash) {
 			for (i = 0; i < 2; i++) {
 				SAFEPRINTF(str, "%scrash.log", i ? cfg.logs_dir : cfg.node_dir);
-				if ((fp = fopenlog(&cfg, str)) == NULL) {
+				if ((fp = fopenlog(&cfg, str, /* shareable: */false)) == NULL) {
 					errormsg(WHERE, ERR_OPEN, str, O_WRONLY | O_APPEND | O_CREAT);
 					free((char *)buf);
 					return;

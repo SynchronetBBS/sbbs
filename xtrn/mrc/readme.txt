@@ -60,7 +60,6 @@ colour codes are permitted:
 
   http://wiki.mysticbbs.com/doku.php?id=displaycodes#color_codes_pipe_colors
 
-I may write a CTRL-A to pipe converter at some later date.
 
 mrc-connector.ini:
 
@@ -77,11 +76,16 @@ mrc-client.ini:
     above instructions while editing '/sbbs/ctrl/services.ini'.
   - The 'ping_interval' setting should be left at the default value unless you
     have a good reason for changing it.
-  - The values in the [startup] section determine which room the client joins
-    on startup, and whether the Message of the Day and banners are displayed.
-  - Change show_nicks in the [client] section to always display the nick list
-    when connecting to the MRC server.
-
+  - The values in the [startup] section control the following:
+      room:     Which room the client joins on startup.
+      motd:     Whether the Message of the Day is displayed.
+      commands: Any additional commands to execute, eg: "chatters" to display
+                the list of active users in the room on startup. Use commas 
+                to separate multiple commands.
+      splash:   Whether the "Multi Relay Chat for Synchronet" splash is shown
+                on startup.
+  - The [aliases], [theme], [msg_color], [show_nicks], and [twit_list] sections
+    are for user settings which get added or updated any time a user uses them.
 
 
 4) MRC Stats
@@ -123,19 +127,35 @@ see "Yes" next to your BBS in the SSL column.
 6) Themes
 
 MRC comes with several customizable theme files. These can be added/edited as
-the system wishes. The client automatically detects any available theme files 
+the sysop wishes. The client automatically detects any available theme files 
 matching the pattern:
 
     mrc-theme-<theme_name>.ini
 
-Available themes are listed in /help. User selects a theme by typing 
+Available themes are listed in /help theme. User selects a theme by typing 
 /theme <name>, and the selected theme gets saved to settings for future
 sessions.
 
 If a theme file is not available, the classic blue theme gets used by default.
 
+To customize the splash that gets shown on startup, edit the mrc-splash.msg
+file. Or just disable it by setting splash = false in mrc-client.ini
 
-7) Support
+
+7) Known issues
+
+- Outgoing messages beginning with a semicolon do not get sent out to the MRC
+  server. For example, a winking face emoticon:  ;)  or  ;-)
+  
+  This is because the ; character is used by the inputline.js library to 
+  indicate the start of a sysop command. In the case of the MRC client, such
+  text is simply ignored and does not get sent over.
+  
+  As a workround, you may simply insert a space in front of the message you 
+  want to send that starts with a semicolon.
+
+
+8) Support
 
 - Post a message to 'echicken' in the Synchronet Sysops area on DOVE-Net
 - Find me on irc.synchro.net in #synchronet

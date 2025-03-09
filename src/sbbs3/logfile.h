@@ -39,7 +39,7 @@ DLLEXPORT bool		hacklog(scfg_t*, struct mqtt*, const char* prot, const char* use
 									,const char* host, union xp_sockaddr* addr);
 DLLEXPORT bool		spamlog(scfg_t*, struct mqtt*, char* prot, char* action, char* reason
 									,char* host, char* ip_addr, char* to, char* from);
-DLLEXPORT FILE*		fopenlog(scfg_t*, const char* path);
+DLLEXPORT FILE*		fopenlog(scfg_t*, const char* path, bool shareable);
 DLLEXPORT size_t	fprintlog(scfg_t*, FILE**, const char* str);
 DLLEXPORT void		fcloselog(FILE*);
 

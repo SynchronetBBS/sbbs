@@ -633,7 +633,8 @@ void security_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-33.33s%s", "Open to New Users", str);
 		snprintf(opt[i++], MAX_OPLN, "%-33.33s%s", "User Expires When Out-of-time"
 		         , cfg.sys_misc & SM_TIME_EXP ? "Yes" : "No");
-
+		snprintf(opt[i++], MAX_OPLN, "%-33.33s%s", "Create Self-signed Certificate"
+		         , cfg.create_self_signed_cert ? "Yes" : "No");
 		strcpy(opt[i++], "Security Level Values...");
 		strcpy(opt[i++], "Expired Account Values...");
 		strcpy(opt[i++], "Quick-Validation Values...");
@@ -894,6 +895,24 @@ void security_cfg(void)
 				}
 				else if (i == 1 && cfg.sys_misc & SM_TIME_EXP) {
 					cfg.sys_misc &= ~SM_TIME_EXP;
+				}
+				break;
+			case __COUNTER__:
+				i = cfg.create_self_signed_cert ? 0 : 1;
+				uifc.helpbuf =
+					"`Create Self-signed TLS Certificate:`\n"
+					"\n"
+					"If you want Synchronet to automatically create a self-signed certificate\n"
+					"(for TLS connections) when the certificate file (`ctrl/ssl.cert`) cannot\n"
+					"be found or read, set this option to `Yes`.\n"
+				;
+				i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, 0
+				              , "Create Self-signed Certificate", uifcYesNoOpts);
+				if (!i && !cfg.create_self_signed_cert) {
+					cfg.create_self_signed_cert = true;
+				}
+				else if (i == 1 && cfg.create_self_signed_cert) {
+					cfg.create_self_signed_cert = false;
 				}
 				break;
 			case __COUNTER__: /* Security Levels */

@@ -121,7 +121,7 @@ void allocfail(uint size)
     bail(1);
 }
 
-int confirm(char *prompt)
+int confirm(char *prompt, bool atexit)
 {
 	int i=0;
 	char *opt[3]={
@@ -130,7 +130,7 @@ int confirm(char *prompt)
 		,""
 	};
 
-	i=uifc.list(WIN_MID|WIN_ACT|WIN_SAV,0,0,0,&i,0,prompt,opt);
+	i=uifc.list(WIN_MID|WIN_ACT|WIN_SAV|(atexit ? WIN_ATEXIT : 0),0,0,0,&i,0,prompt,opt);
 	if(i==0)
 		return(1);
 	if(i==-1)
@@ -2116,16 +2116,15 @@ int main(int argc, char** argv)  {
 							"`---------------------------\n\n"
 							"If you want to exit the Synchronet user editor,\n"
 							"select `Yes`. Otherwise, select `No` or hit ~ ESC ~.";
-			if(confirm("Exit Synchronet User Editor")==1)
+			if(confirm("Exit Synchronet User Editor", true)==1)
 				bail(0);
 			continue;
 		}
 
 		if(j==0) {
-			/* New User */
-			    createdefaults(&cfg);
-			    lprintf("Please edit defaults using next screen.");
-			    getuser(&cfg,&user,"New User");
+			createdefaults(&cfg);
+			lprintf("Please edit defaults using next screen.");
+			getuser(&cfg,&user,"New User");
 		}
 		if(j==1) {
 		    /* Find User */
