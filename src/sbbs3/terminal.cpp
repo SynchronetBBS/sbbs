@@ -459,6 +459,6 @@ extern "C" void update_terminal(void *sbbsptr, user_t *userptr)
 	if (sbbsptr == nullptr || userptr == nullptr)
 		return;
 	sbbs_t *sbbs = static_cast<sbbs_t *>(sbbsptr);
-	if (&sbbs->useron == userptr)
+	if (sbbs->useron.number == userptr->number)
 		update_terminal(sbbs);
 }
