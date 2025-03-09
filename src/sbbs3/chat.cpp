@@ -1748,7 +1748,7 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 			}
 			CRLF;
 			snprintf(str, sizeof str, "%sguru.log", cfg.logs_dir);
-			if ((fp = fopenlog(&cfg, str)) == NULL)
+			if ((fp = fopenlog(&cfg, str, /* shareable: */true)) == NULL)
 				errormsg(WHERE, ERR_OPEN, str, O_WRONLY | O_CREAT | O_APPEND);
 			else {
 				xpDateTime_to_isoDateTimeStr(xpDateTime_now(), "-", " ", ":", 0, str, sizeof(str) - 3);
