@@ -664,7 +664,8 @@ str_list_t strListReadFile(FILE* fp, str_list_t* lp, size_t max_line_len)
 
 			if (fgets(buf, max_line_len + 1, fp) == NULL)
 				break;
-			strListAppend(lp, buf, count++);
+			if (strListAppend(lp, buf, count++) == NULL)
+				break;
 		}
 		if (!feof(fp)) {
 			strListFreeStrings(list);
