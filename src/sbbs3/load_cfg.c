@@ -85,10 +85,14 @@ bool load_cfg(scfg_t* cfg, char* text[], bool prep, bool req_cfg, char* error, s
 		for (i = 0; i < cfg->sys_nodes; i++)
 			prep_dir(cfg->ctrl_dir, cfg->node_path[i], sizeof(cfg->node_path[i]));
 
-	SAFECOPY(cfg->node_dir, cfg->node_path[cfg->node_num - 1]);
-	prep_dir(cfg->ctrl_dir, cfg->node_dir, sizeof(cfg->node_dir));
-	if (read_node_cfg(cfg, error, maxerrlen) == false && req_cfg)
-		return false;
+	if (cfg->sys_nodes < 1)
+		snprintf(error, maxerrlen, "%d nodes configured in %s", cfg->sys_nodes, cfg->filename);
+	else {
+		SAFECOPY(cfg->node_dir, cfg->node_path[cfg->node_num - 1]);
+		prep_dir(cfg->ctrl_dir, cfg->node_dir, sizeof(cfg->node_dir));
+		if (read_node_cfg(cfg, error, maxerrlen) == false && req_cfg)
+			return false;
+	}
 	if (read_msgs_cfg(cfg, error, maxerrlen) == false)
 		return false;
 	if (read_file_cfg(cfg, error, maxerrlen) == false)
