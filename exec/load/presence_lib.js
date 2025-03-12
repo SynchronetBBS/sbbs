@@ -212,14 +212,17 @@ function node_status(node, is_sysop, options, num)
 			output += node_connection_desc(node);
 			break;
 		case NODE_LOGOUT:
-			output += node.vstatus || NodeStatus[node_status];
-
-			if(options.username_prefix)
-				output += options.username_prefix;
-			if(js.global.bbs && (misc&NODE_ANON) && !is_sysop)
-				output += bbs.text(UNKNOWN_USER);
-			else
-				output += system.username(node.useron);
+			if (node.vstatus)
+				output += node.vstatus
+			else {
+				output += NodeStatus[node_status];
+				if(options.username_prefix)
+					output += options.username_prefix;
+				if(js.global.bbs && (misc&NODE_ANON) && !is_sysop)
+					output += bbs.text(UNKNOWN_USER);
+				else
+					output += system.username(node.useron);
+			}
 			break;
 		default:
 			output += node.vstatus || format(NodeStatus[node_status], node.aux);
