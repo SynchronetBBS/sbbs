@@ -317,7 +317,7 @@ writeln(format("List of Synchronet BBSes (%u systems) exported from ", list.leng
 writeln('<p>');
 writeln(format("Download a %s compatible list file %s"
 	,"SyncTERM".link("http://syncterm.net")
-	,"here".link("ftp://ftp.synchro.net/syncterm.lst")));
+	,"here".link("http://synchro.net/syncterm.lst")));
 writeln('<p>');
 writeln('</caption>');
 writeln('<thead>');
