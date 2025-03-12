@@ -53,6 +53,7 @@ function InputFunc(values)
 
 	console.line_counter=0;
 	console.attributes="N";
+	console.aborted=false;
 InputFuncMainLoop:
 	for(;;) {
 		CheckNode();
