@@ -1,21 +1,18 @@
 Linux Software Map (LSM) Entry
 ==============================
-$Id: lsm.txt,v 1.1 2005/07/27 21:36:23 rswindell Exp $
 
-After updating, send it to 'lsm@execpc.com' with the subject 'add'.
+After updating, send it to 'lsm@qqx.org' with the subject 'add'.
 
 Begin4
 Title: Synchronet BBS Software
-Version: 3.12b
-Entered-date: 2005-07-27
+Version: 3.20d
+Entered-date: 2025-03-03
 Description: BBS Software for the Internet Age
-Keywords: BBS Fido FidoNet QWK Zmodem Telnet Rlogin Gopher Finger News
+Keywords: BBS Fido FidoNet QWK Zmodem Telnet Rlogin SSH Gopher Finger News ANSI CP437 UTF-8 PETSCII
 Author: rob@synchro.net (Rob Swindell)
 Maintained-by: rob@synchro.net (Rob Swindell)
-Primary-site:  ftp.synchro.net /docs
-               20kB sbbsunix.txt
-Alternate-site: vert.synchro.net /Synchronet
-Original-site:  
-Platforms: i386    
-Copying-policy: GPL
+Primary-site:  www.synchro.net
+Alternate-site: wiki.synchro.net
+Original-site:
+Copying-policy: GPLv2
 End
