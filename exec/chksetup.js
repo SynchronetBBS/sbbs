@@ -1,7 +1,9 @@
 // Sanity-check a Synchronet BBS installation
+// @format.tab-size 4
 
 "use strict";
-const REVISION = '1.19';
+const REVISION = '1.20';
+require("http.js", 'HTTPRequest');
 require("sbbsdefs.js", 'USER_DELETED');
 
 function check_codes(desc, grp_list, sub_list)
@@ -26,6 +28,31 @@ function check_codes(desc, grp_list, sub_list)
 }
 
 var tests = {
+
+	check_version: function(options)
+	{
+		var url = "https://gitlab.synchro.net/main/sbbs/-/raw/master/install/sbbs.json";
+		var http_request = new HTTPRequest();
+		try {
+			var contents = http_request.Get(url);
+		} catch(e) {
+			return e.message;
+		}
+		try {
+			var obj = JSON.parse(contents);
+		} catch(e) {
+			return format("%s: '%s'", e.message, lfexpand(contents));
+		}
+		if(obj.valid === true) {
+			if(obj.release.version_num > system.version_num)
+				return format("Synchronet %s (latest release by %s) is newer than %s"
+					,obj.release.version, obj.release.by, system.full_version);
+			if(obj.release.version_num < system.version_num)
+				return format("Synchronet %s (latest release by %s) is older than %s"
+					,obj.release.version, obj.release.by, system.full_version);
+		}
+		return true;
+	},
 
 	check_sysop: function(options)
 	{
