@@ -5214,7 +5214,7 @@ ulong export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool resca
 					strcat(fmsgbuf, tear_line('-'));
 				}
 				if (stricmp(charset, FIDO_CHARSET_ASCII) == 0)
-					ascii_str(originline);
+					ascii_str((uchar *)originline);
 				else if (stricmp(charset, FIDO_CHARSET_UTF8) == 0) {
 					char tmp[sizeof originline];
 					if (cp437_to_utf8_str(originline, tmp, sizeof tmp, /* min-char-val: */ '\x80') > 1)
