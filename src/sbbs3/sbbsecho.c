@@ -5142,13 +5142,17 @@ ulong export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool resca
 				if (msg.hfield[l].type == FIDOCTRL)
 					f += sprintf(fmsgbuf + f, "\1%.512s\r", (char*)msg.hfield_dat[l]);
 
+			char originline[sizeof scfg.origline * 4] = {0};
+			if (msg.from_net.type != NET_FIDO && !(scfg.sub[subnum]->misc & SUB_NOTAG))
+				strlcpy(originline, scfg.sub[subnum]->origline[0] ? scfg.sub[subnum]->origline : scfg.origline, sizeof originline);
+
 			const char* charset = msg.ftn_charset;
 			if (scfg.sub[subnum]->misc & SUB_ASCII)
 				charset = FIDO_CHARSET_ASCII;
 			if (charset == NULL) {
 				if (smb_msg_is_utf8(&msg) || (msg.hdr.auxattr & MSG_HFIELDS_UTF8))
 					charset = FIDO_CHARSET_UTF8;
-				else if (str_is_ascii(buf))
+				else if (str_is_ascii(buf) && str_is_ascii(originline))
 					charset = FIDO_CHARSET_ASCII;
 				else
 					charset = FIDO_CHARSET_CP437;
@@ -5205,13 +5209,19 @@ ulong export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool resca
 			FREE_AND_NULL(buf);
 			fmsgbuf[f] = 0;
 
-			if (msg.from_net.type != NET_FIDO && !(scfg.sub[subnum]->misc & SUB_NOTAG)) {
+			if (*originline != '\0') {
 				if (!tear) {  /* No previous tear line */
 					strcat((char *)fmsgbuf, tear_line('-'));
 				}
-
+				if (stricmp(charset, FIDO_CHARSET_ASCII) == 0)
+					ascii_str(originline);
+				else if (stricmp(charset, FIDO_CHARSET_UTF8) == 0) {
+					char tmp[sizeof originline];
+					if (cp437_to_utf8_str(originline, tmp, sizeof tmp, /* min-char-val: */ '\x80') > 1)
+						strlcpy(originline, tmp, sizeof originline);
+				}
 				snprintf(str, sizeof str, " * Origin: %s (%s)\r"
-				         , scfg.sub[subnum]->origline[0] ? scfg.sub[subnum]->origline : scfg.origline
+				         , originline
 				         , smb_faddrtoa(&scfg.sub[subnum]->faddr, NULL));
 				strcat((char *)fmsgbuf, str);
 			}
