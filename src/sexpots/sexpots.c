@@ -1286,7 +1286,7 @@ void debug_log_com_write(BYTE* buf, int len)
 /****************************************************************************/
 BOOL handle_call(void)
 {
-	BYTE		buf[4096];
+	BYTE		buf[10000];
 	BYTE		telnet_buf[sizeof(buf)];
 	BYTE*		p;
 	int			result;
@@ -1361,7 +1361,9 @@ BOOL handle_call(void)
 		else
 			p=buf;
 
-		if((wr=comWriteBuf(com_handle, p, rd)) != COM_ERROR) {
+		if((wr=comWriteBuf(com_handle, p, rd)) == COM_ERROR)
+			lprintf(LOG_WARNING, "%s Error sending %d bytes to COM port", __FUNCTION__, rd);
+		else {
 			if(com_debug)
 				debug_log_com_write(p, wr);
 			bytes_sent += wr;
