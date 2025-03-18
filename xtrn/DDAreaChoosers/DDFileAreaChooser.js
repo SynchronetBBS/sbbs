@@ -68,6 +68,12 @@
  *                            the file library description.
  * 2024-03-13 Eric Oulashin   Version 1.41
  *                            Fix for the directory item counts
+ * 2024-11-08 Eric Oulashin   Version 1.42 Beta
+ *                            Started working on a change to directory collapsing to allow an
+ *                            arbitrary amount of separators in the library/directory names to
+ *                            create multiple levels of categories
+ * 2025-03-17 Eric Oulashin   Version 1.42
+ *                            Releasing this version
  */
 
 // TODO: Failing silently when 1st argument is true
@@ -108,8 +114,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_FILE_AREA_CHOOSER_VERSION = "1.41";
-var DD_FILE_AREA_CHOOSER_VER_DATE = "2024-03-13";
+var DD_FILE_AREA_CHOOSER_VERSION = "1.42";
+var DD_FILE_AREA_CHOOSER_VER_DATE = "2025-03-17";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -118,23 +124,18 @@ var KEY_ENTER = CTRL_M;
 var BACKSPACE = CTRL_H;
 var CTRL_F = "\x06";
 var KEY_ESC = ascii(27);
-// PageUp & PageDown keys - Synchronet 3.17 as of about December 18, 2017
-// use CTRL-P and CTRL-N for PageUp and PageDown, respectively.  sbbsdefs.js
-// defines them as KEY_PAGEUP and KEY_PAGEDN; I've used slightly different names
-// in this script so that this script will work with Synchronet systems before
-// and after the update containing those key definitions.
-var KEY_PAGE_UP = "\x10"; // Ctrl-P
-var KEY_PAGE_DOWN = "\x0e"; // Ctrl-N
-// Ensure KEY_PAGE_UP and KEY_PAGE_DOWN are set to what's defined in sbbs.js
-// for KEY_PAGEUP and KEY_PAGEDN in case they change
-if (typeof(KEY_PAGEUP) === "string")
-	KEY_PAGE_UP = KEY_PAGEUP;
-if (typeof(KEY_PAGEDN) === "string")
-	KEY_PAGE_DOWN = KEY_PAGEDN;
 
-// Key codes for display
+// Characters for display
 var UP_ARROW = ascii(24);
 var DOWN_ARROW = ascii(25);
+var BLOCK1 = "\xB0"; // Dimmest block
+var BLOCK2 = "\xB1";
+var BLOCK3 = "\xB2";
+var BLOCK4 = "\xDB"; // Brightest block
+var MID_BLOCK = ascii(254);
+var TALL_UPPER_MID_BLOCK = "\xFE";
+var UPPER_CENTER_BLOCK = "\xDF";
+var LOWER_CENTER_BLOCK = "\xDC";
 
 // Characters for display
 var HORIZONTAL_SINGLE = "\xC4";
@@ -221,46 +222,37 @@ function DDFileAreaChooser()
 	this.useDirCollapsing = true;
 	// The separator character to use for directory collapsing
 	this.dirCollapseSeparator = ":";
-	// If useDirCollapsing is true, then lib_list will be populated
-	// with some information from Synchronet's file_area.lib_list,
-	// including a sub_list for each library.  The sub_list arrays
-	// could have one that was collapsed from multiple directorys
-	// set up in the BBS - The sub_list within that one would then
-	// contain multiple directories split based on the dir collapse
-	// separator.
-	this.lib_list = [];
 
 	// Set the functions for the object
 	this.ReadConfigFile = DDFileAreaChooser_ReadConfigFile;
 	this.SelectFileArea = DDFileAreaChooser_SelectFileArea;
-	this.SelectFileArea_Traditional = DDFileAreaChooser_SelectFileArea_Traditional;
-	this.SelectDirWithinFileLib_Traditional = DDFileAreaChooser_SelectDirWithinFileLib_Traditional;
-	this.SelectSubdirWithinDir_Traditional = DDFileAreaChooser_SelectSubdirWithinDir_Traditional;
-	this.GetActualLibIdx = DDFileAreaChooser_GetActualLibIdx;
-	this.ListFileLibs_Traditional = DDFileAreaChooser_ListFileLibs_Traditional;
-	this.ListDirsInFileLib_Traditional = DDFileAreaChooser_ListDirsInFileLib_Traditional;
-	this.ListSubdirsInFileDir_Traditional = DDFileAreaChooser_ListSubdirsInFileDir_Traditional;
 	this.WriteLibListHdrLine = DDFileAreaChooser_WriteLibListHdrLine;
 	this.WriteDirListHdr1Line = DDFileAreaChooser_WriteDirListHdr1Line;
 	// Lightbar-specific functions
-	this.SelectFileArea_Lightbar = DDFileAreaChooser_SelectFileArea_Lightbar;
-	this.CreateLightbarFileLibMenu = DDFileAreaChooser_CreateLightbarFileLibMenu;
-	this.CreateLightbarFileDirMenu = DDFileAreaChooser_CreateLightbarFileDirMenu;
+	this.CreateLightbarMenu = DDFileAreaChooser_CreateLightbarMenu;
+	this.GetColorIndexInfoForLightbarMenu = DDFileAreaChooser_GetColorIndexInfoForLightbarMenu;
+	this.DisplayMenuHdrWithNumItems = DDFileAreaChooser_DisplayMenuHdrWithNumItems;
 	this.WriteKeyHelpLine = DDFileAreaChooser_writeKeyHelpLine;
 	// Help screen
-	this.ShowHelpScreen = DDFileAreaChooser_showHelpScreen;
+	this.ShowHelpScreen = DDFileAreaChooser_ShowHelpScreen;
 	// Misc. functions
 	// Function to build the directory printf information for a file lib
 	this.BuildFileDirPrintfInfoForLib = DDFileAreaChooser_buildFileDirPrintfInfoForLib;
+	this.GetPrintfStrForDirWithoutAreaNum = DDFileAreaChooser_GetPrintfStrForDirWithoutAreaNum;
 	// Function to display the header above the area list
 	this.DisplayAreaChgHdr = DDFileAreaChooser_DisplayAreaChgHdr;
 	this.WriteLightbarKeyHelpErrorMsg = DDFileAreaChooser_WriteLightbarKeyHelpErrorMsg;
-	this.SetUpLibListWithCollapsedDirs = DDFileAreaChooser_SetUpLibListWithCollapsedDirs;
-	this.FindFileDirIdxFromText = DDFileAreaChooser_FindFileDirIdxFromText;
+	this.FindFileAreaIdxFromText = DDFileAreaChooser_FindFileAreaIdxFromText;
 	this.GetGreatestNumFiles = DDFileAreaChooser_GetGreatestNumFiles;
 
 	// Read the settings from the config file.
 	this.ReadConfigFile();
+    
+    // lib_list will be set up with a file library/directory structure for
+    // the chooser to use to let the user choose a file lib & directory. It
+    // will be set up with the same basic format regardless of whether
+    // directory collapsing is to be used or not.
+	this.lib_list = getFileDirHeirarchy(this.useDirCollapsing, this.dirCollapseSeparator);
 
 	// printf strings used for outputting the file libraries
 	this.fileLibPrintfStr = " " + this.colors.areaNum + "%" + this.areaNumLen + "d "
@@ -352,6 +344,9 @@ function DDFileAreaChooser()
 	// created on the fly the first time the user lists directories for
 	// a file library.
 	this.fileDirListPrintfInfo = [];
+	// Build printf information for each file library
+	for (var libIdx = 0; libIdx < file_area.lib_list.length; ++libIdx)
+		this.BuildFileDirPrintfInfoForLib(libIdx);
 
 	// areaChangeHdrLines is an array of text lines to use as a header to display
 	// above the message area changer lists.
@@ -366,609 +361,425 @@ function DDFileAreaChooser()
 //              current file library.  This is optional; defaults to true.
 function DDFileAreaChooser_SelectFileArea(pChooseLib)
 {
-	// If file directory collapsing is enabled, then set up
-	// this.lib_list.
-	if (this.useDirCollapsing)
-		this.SetUpLibListWithCollapsedDirs();
+	var chooseLib = (typeof(pChooseLib) === "boolean" ? pChooseLib : true);
 
-	if (this.useLightbarInterface && console.term_supports(USER_ANSI))
-		this.SelectFileArea_Lightbar(pChooseLib ? 1 : 2); // TODO: Fix for levels everywhere?
-	else
-		this.SelectFileArea_Traditional(pChooseLib ? 1 : 2); // TODO: Fix for levels everywhere?
-}
-
-// For the DDFileAreaChooser class: Traditional user interface for
-// letting the user choose a file area
-//
-// Parameters:
-//  pLevel: The file heirarchy level:
-//          1: File libraries
-//          2: File directories within libraries
-//          3: File subdirectories within directories (if directory name collapsing is enabled)
-//          This is optional and defaults to 1.
-//  pLibIdx: Optional - The file library index, if choosing a file directory
-//  pDirIdx: Optional - The file directory index (within a library), for use with
-//           directory name collapsing
-function DDFileAreaChooser_SelectFileArea_Traditional(pLevel, pLibIdx, pDirIdx)
-{
-	// If there are no file libraries, then don't let the user
-	// choose one.
-	if (file_area.lib_list.length == 0)
+	// Start with this.lib_list, which is the topmost file lib/dir structure
+	var fileLibStructure = this.lib_list;
+	if (!chooseLib)
 	{
-		console.clear("\x01n");
-		console.print("\x01y\x01hThere are no file libraries.\r\n\x01p");
-		return;
-	}
-
-	if (pLevel > 1 && typeof(pLibIdx) !== "number")
-		pLibIdx = this.GetActualLibIdx();
-
-	var curLibIdx = 0;
-	var curDirIdx = 0;
-	if (typeof(bbs.curdir_code) == "string")
-	{
-		curLibIdx = file_area.dir[bbs.curdir_code].lib_index;
-		curDirIdx = file_area.dir[bbs.curdir_code].index;
-	}
-
-	var continueChooseFileLib = true;
-	if (pLevel == 1) // Choose library
-	{
-		// Show the file libraries & directories and let the user choose one.
-		var selectedLibNum = 0; // The user's selected file library
-		var selectedDirNum = 0; // The user's selected file directory
-		var libSearchText = "";
-		while (continueChooseFileLib)
+		for (var i = 0; i < this.lib_list.length; ++i)
 		{
-			// Clear the BBS command string to make sure there are no extra
-			// commands in there that could cause weird things to happen.
-			bbs.command_str = "";
-
-			console.clear("\x01n");
-			this.DisplayAreaChgHdr(1);
-			if (this.areaChangeHdrLines.length > 0)
-				console.crlf();
-			this.ListFileLibs_Traditional(libSearchText);
-			console.print("\x01n\x01b\x01hþ \x01n\x01cWhich, \x01hQ\x01n\x01cuit, \x01hCTRL-F\x01n\x01c, \x01h/\x01n\x01c, or [\x01h" + +(curLibIdx+1) + "\x01n\x01c]:\x01h ");
-			// Accept Q (quit) or a file library number
-			selectedLibNum = console.getkeys("QN/" + CTRL_F, file_area.lib_list.length);
-
-			// If the user just pressed enter (selectedLibNum would be blank),
-			// default to the current library.
-			if (selectedLibNum.toString() == "")
-				selectedLibNum = curLibIdx + 1;
-
-			// If the user chose to quit, then set continueChooseFileLib to
-			// false so we'll exit the loop.  Otherwise, let the user chose
-			// a dir within the library.
-			if (selectedLibNum.toString() == "Q")
-				continueChooseFileLib = false;
-			else if ((selectedLibNum.toString() == "/") || (selectedLibNum.toString() == CTRL_F))
+			if (fileDirStructureHasCurrentUserFileDir(this.lib_list[i]))
 			{
-				console.crlf();
-				var searchPromptText = "\x01n\x01c\x01hSearch\x01g: \x01n";
-				console.print(searchPromptText);
-				var searchText = console.getstr("", console.screen_columns-strip_ctrl(searchPromptText).length-1, K_UPPER|K_NOCRLF|K_GETSTR|K_NOSPIN|K_LINE);
-				if (searchText.length > 0)
-					libSearchText = searchText;
-			}
-			else
-			{
-				continueChooseFileLib = this.SelectFileArea_Traditional(2, selectedLibNum-1);
+				if (this.lib_list[i].hasOwnProperty("items"))
+					fileLibStructure = this.lib_list[i].items;
+				break;
 			}
 		}
 	}
-	else if (pLevel == 2) // Choose a directory within a library
-	{
-		// Don't choose a library, just a directory within the user's current library.
-		var selectDirRetObj = this.SelectDirWithinFileLib_Traditional(pLibIdx, curDirIdx);
-		continueChooseFileLib = !selectDirRetObj.areaSelected;
-		if (selectDirRetObj.areaSelected)
-		{
-			var selectedDirIdx = selectDirRetObj.dirIdx;
-			if (this.useDirCollapsing && (this.lib_list[pLibIdx].dir_list[selectedDirIdx].subdir_list.length > 0))
-				continueChooseFileLib = this.SelectFileArea_Traditional(3, pLibIdx, selectedDirIdx);
-			else if (selectDirRetObj.dirCode.length > 0)
-				bbs.curdir_code = selectDirRetObj.dirCode;
-			else
-				continueChooseFileLib = true;
-		}
-	}
-	else if ((pLevel == 3) && this.useDirCollapsing) // Choose a subdirectory within a directory
-	{
-		if (this.lib_list[pLibIdx].dir_list[pDirIdx].subdir_list.length > 0)
-		{
-			var selectSubdirRetObj = this.SelectSubdirWithinDir_Traditional(pLibIdx, pDirIdx);
-			continueChooseFileLib = !selectSubdirRetObj.areaSelected;
-			if (selectSubdirRetObj.areaSelected)
-				bbs.curdir_code = selectSubdirRetObj.dirCode;
-			else
-				continueChooseFileLib = true;
-		}
-	}
-	return continueChooseFileLib; // For recursive calls to this function
-}
-
-// For the DDFileAreaChooser class: Lets the user select a file area (directory)
-// within a specified file library - Traditional user interface.
-//
-// Parameters:
-//  pLibIdx: The file library index
-//  pSelectedDirIdx: The currently-selected file directory index
-//
-// Return value: An object containing the following properties:
-//               areaSelected: Boolean - Whether or not the user chose a file area.
-//               dirIdx: The index of the directory chosen in the file library (or -1 if none chosen)
-//               dirCode: The internal code of the directory chosen, if valid.  If not valid
-//                        (i.e., there are subdirectories), this will be an empty string.
-function DDFileAreaChooser_SelectDirWithinFileLib_Traditional(pLibIdx, pSelectedDirIdx)
-{
-	var retObj = {
-		areaSelected: false,
-		dirIdx: -1,
-		dirCode: ""
-	};
-
-	// If there are no file directories in the given file libraary, then show
-	// an error and return.
-	if (file_area.lib_list[pLibIdx].dir_list.length == 0)
+	var previousFileLibStructures = []; // Will be used like a stack
+	var selectedItemIndexes = [];       // Will be used like a stack
+	var selectedItemIdx = null;
+	var chosenLibOrSubdirName = ""; // Will have the name of the user's chosen library/subdir
+	var previousChosenLibOrSubdirNames = []; // Will be used like a stack
+	var directoriesLabelLen = 15; // The length of the "Directories of " label
+	var nameSep = " - ";          // A string to use to separate lib/subdirectory names for the top header line
+	var numItemsWidth = 0;        // Width of the header column for # of items (not including the space), for creating the menu
+	if (!this.useLightbarInterface || !console.term_supports(USER_ANSI))
+		numItemsWidth = 5;
+	// Main loop
+	var selectionLoopContinueOn = true;
+	while (selectionLoopContinueOn)
 	{
 		console.clear("\x01n");
-		console.print("\x01y\x01hThere are no directories in this library.\r\n\x01p");
-		return retObj;
-	}
 
-	// If pLibIdx is invalid, then just return false.
-	if (pLibIdx < 0)
-		return retObj;
-	else
-	{
-		if (this.useDirCollapsing && (this.lib_list.length > 0))
+		// If we're displaying the file libraries (top level), then we'll output 1
+		// header line; otherwise, we'll output 2 header line; adjut the top line
+		// of the menu accordingly.
+		var menuTopRow = 0;
+		if (fileLibStructure == this.lib_list || chosenLibOrSubdirName.length == 0)
+			menuTopRow = this.areaChangeHdrLines.length + 2;
+		else
 		{
-			if (pLibIdx >= this.lib_list.length)
-				return retObj;
+			menuTopRow = this.areaChangeHdrLines.length + 3;
+			printf("\x01n%sDirectories of \x01h%s\x01n", this.colors.fileAreaHdr, chosenLibOrSubdirName.substr(0, console.screen_columns - directoriesLabelLen - 1));
+			console.crlf();
 		}
-		else if (pLibIdx >= file_area.lib_list[pLibIdx].dir_list.length)
-			return retObj;
-	}
+		var createMenuRet = this.CreateLightbarMenu(fileLibStructure, previousFileLibStructures.length+1, menuTopRow, selectedItemIdx, numItemsWidth);
+		//if (user.is_sysop) printf("\x01n# items: %d\r\n\x01p", createMenuRet.menuObj.NumItems()); // Temporary
+		if (this.useLightbarInterface && console.term_supports(USER_ANSI))
+			numItemsWidth = createMenuRet.itemNumWidth;
+		var menu = createMenuRet.menuObj;
+		// Write the header lines, & write the key help line at the bottom of the screen
+		var numItemsColLabel = createMenuRet.allDirs ? "Files" : "Items";
+		//this.DisplayMenuHdrWithNumItems(createMenuRet.itemNumWidth, createMenuRet.descWidth-3, createMenuRet.numItemsWidth, numItemsColLabel);
+		if (this.useLightbarInterface && console.term_supports(USER_ANSI))
+			this.DisplayMenuHdrWithNumItems(numItemsWidth, createMenuRet.descWidth-3, createMenuRet.numItemsWidth, numItemsColLabel);
+		else
+			this.DisplayMenuHdrWithNumItems(numItemsWidth, createMenuRet.descWidth-2, createMenuRet.numItemsWidth, numItemsColLabel); // TODO
+		if (!this.useLightbarInterface || !console.term_supports(USER_ANSI))
+			console.crlf(); // Not drawing the hotkey help line (this.WriteKeyHelpLine();)
 
-	// Ensure that the file directory printf information is created for
-	// this file library.
-	this.BuildFileDirPrintfInfoForLib(pLibIdx);
-
-	// Set the default directory #: The current directory, or if the
-	// user chose a different file library, then this should be set
-	// to the first directory.
-	function getDefaultDirNum(pDir, pUseDirCollapsing, pLibList)
-	{
-		var defaultDirNum = 0;
-		if (pUseDirCollapsing && (pLibList.length > 0))
+		// Show the menu in a loop and get user input
+		var lastSearchText = "";
+		var lastSearchFoundIdx = -1;
+		var drawMenu = true;
+		var writeHdrLines = false; // Already displayed above
+		var writeKeyHelpLine = true;
+		// Menu input loop
+		var menuContinueOn = true;
+		while (menuContinueOn)
 		{
-			if (typeof(bbs.curdir_code) == "string")
+			// Draw the header lines and key help line if needed
+			if (writeHdrLines)
 			{
-				for (var dirIdx = 0; dirIdx < pLibList[pLibIdx].dir_list.length; ++dirIdx)
+				//this.DisplayMenuHdrWithNumItems(createMenuRet.itemNumWidth, createMenuRet.descWidth-3, createMenuRet.numItemsWidth, numItemsColLabel);
+				if (this.useLightbarInterface && console.term_supports(USER_ANSI))
+					this.DisplayMenuHdrWithNumItems(numItemsWidth, createMenuRet.descWidth-3, createMenuRet.numItemsWidth, numItemsColLabel);
+				else
+					this.DisplayMenuHdrWithNumItems(numItemsWidth, createMenuRet.descWidth-3, createMenuRet.numItemsWidth, numItemsColLabel); // TODO
+				if (!this.useLightbarInterface || !console.term_supports(USER_ANSI))
+					console.crlf(); // Not drawing the hotkey help line (this.WriteKeyHelpLine();)
+				writeHdrLines = false;
+			}
+			if (writeKeyHelpLine && this.useLightbarInterface && console.term_supports(USER_ANSI))
+			{
+				this.WriteKeyHelpLine();
+				writeKeyHelpLine = false;
+			}
+
+			// Show the menu and get user input
+			var selectedMenuIdx = menu.GetVal(drawMenu);
+			drawMenu = true;
+			var lastUserInputUpper = (typeof(menu.lastUserInput) == "string" ? menu.lastUserInput.toUpperCase() : "");
+			// Applicable for ANSI/lightbar mode: If the user typed a number, the menu input loop will
+			// exit with the return value being null and the user's input in lastUserInput.  Test to see
+			// if the user typed a number (it will be a single number), and if it's within the number of
+			// menu items, set selectedMenuIdx to the menu item index.
+			if (this.useLightbarInterface && console.term_supports(USER_ANSI) && lastUserInputUpper.match(/[0-9]/))
+			{
+				var userInputNum = parseInt(lastUserInputUpper);
+				if (!isNaN(userInputNum) && userInputNum >= 1 && userInputNum <= menu.NumItems())
 				{
-					if (pLibList[pLibIdx].dir_list[dirIdx].subdir_list.length > 0)
+					// Put the user's input back in the input buffer to
+					// be used for getting the rest of the message number.
+					console.ungetstr(lastUserInputUpper);
+					// Go to the last row on the screen and prompt for the full item number
+					console.gotoxy(1, console.screen_rows);
+					console.clearline("\x01n");
+					console.gotoxy(1, console.screen_rows);
+					var itemPromptWord = createMenuRet.allDirs ? "item" : "directory";
+					printf("\x01cChoose %s #: \x01h", itemPromptWord);
+					var userInput = console.getnum(menu.NumItems());
+					if (userInput > 0)
 					{
-						for (var subdirIdx = 0; subdirIdx < pLibList[pLibIdx].dir_list[dirIdx].subdir_list.length; ++subdirIdx)
+						selectedMenuIdx = userInput - 1;
+						selectedItemIndexes.push(selectedMenuIdx);
+						previousChosenLibOrSubdirNames.push(chosenLibOrSubdirName);
+						if (previousChosenLibOrSubdirNames.length > 1)
 						{
-							if (bbs.curdir_code == pLibList[pLibIdx].dir_list[dirIdx].subdir_list[subdirIdx].code)
+							chosenLibOrSubdirName = previousChosenLibOrSubdirNames[previousChosenLibOrSubdirNames.length-1];
+							// If chosenLibOrSubdirName is now too long, remove some of the previous labels
+							while (chosenLibOrSubdirName.length > console.screen_columns - 1)
 							{
-								defaultDirNum = dirIdx + 1;
-								break;
+								var sepIdx = chosenLibOrSubdirName.indexOf(nameSep);
+								if (sepIdx > -1)
+									chosenLibOrSubdirName = chosenLibOrSubdirName.substr(sepIdx + nameSep.length);
+							}
+						}
+						else
+							chosenLibOrSubdirName = fileLibStructure[selectedMenuIdx].name;
+					}
+					else
+					{
+						// The user didn't make a selection.  So, we need to refresh the
+						// screen (including the header, due to things being moved down one line).
+						if (this.useLightbarInterface && console.term_supports(USER_ANSI))
+							console.gotoxy(1, 1);
+						this.DisplayMenuHdrWithNumItems(createMenuRet.itemNumWidth, createMenuRet.descWidth-3, createMenuRet.numItemsWidth, numItemsColLabel);
+						if (this.useLightbarInterface && console.term_supports(USER_ANSI))
+							this.WriteKeyHelpLine();
+						continue; // Continue to display the menu again and get the user's choice
+					}
+				}
+			}
+
+			// The code block above will set selectedMenuIdx if the user typed a valid entry
+
+			// Check for aborted & other uesr input and take appropriate action. Note the first check
+			// here is 'if' and not 'else if'; that's intentional.
+			if (console.aborted || lastUserInputUpper == CTRL_C)
+			{
+				// Fully quit out (note: This check/block must be before the test for Q/ESC/null return value)
+				menuContinueOn = false;
+				selectionLoopContinueOn = false;
+			}
+			else if (typeof(selectedMenuIdx) === "number")
+			{
+				// The user chose a valid item (the return value is the menu item index)
+				// The objects in this.lib_list have a 'name' property and either
+                // an 'items' property if it has sub-items or a 'dirObj' property
+				// if it's a file directory
+				selectedItemIndexes.push(selectedMenuIdx);
+				previousChosenLibOrSubdirNames.push(chosenLibOrSubdirName);
+				if (fileLibStructure[selectedMenuIdx].hasOwnProperty("items"))
+				{
+					previousFileLibStructures.push(fileLibStructure);
+					if (previousChosenLibOrSubdirNames.length > 1)
+					{
+						chosenLibOrSubdirName = previousChosenLibOrSubdirNames[previousChosenLibOrSubdirNames.length-1] + nameSep + fileLibStructure[selectedMenuIdx].name;
+						// If chosenLibOrSubdirName is now too long, remove some of the previous labels
+						while (chosenLibOrSubdirName.length > console.screen_columns - 1)
+						{
+							var sepIdx = chosenLibOrSubdirName.indexOf(nameSep);
+							if (sepIdx > -1)
+								chosenLibOrSubdirName = chosenLibOrSubdirName.substr(sepIdx + nameSep.length);
+						}
+					}
+					else
+						chosenLibOrSubdirName = fileLibStructure[selectedMenuIdx].name;
+					fileLibStructure = fileLibStructure[selectedMenuIdx].items;
+					menuContinueOn = false;
+				}
+				else if (fileLibStructure[selectedMenuIdx].hasOwnProperty("dirObj"))
+				{
+					// The user has selected a file directory
+					bbs.curdir_code = fileLibStructure[selectedMenuIdx].dirObj.code;
+					menuContinueOn = false;
+					selectionLoopContinueOn = false;
+				}
+			}
+			else if ((lastUserInputUpper == "/") || (lastUserInputUpper == CTRL_F)) // Start of find
+			{
+				// Lightbar/ANSI mode
+				if (this.useLightbarInterface && console.term_supports(USER_ANSI))
+				{
+					console.gotoxy(1, console.screen_rows);
+					console.cleartoeol("\x01n");
+					console.gotoxy(1, console.screen_rows);
+					var promptText = "Search: ";
+					console.print(promptText);
+					//var searchText = getStrWithTimeout(K_UPPER|K_NOCRLF|K_GETSTR|K_NOSPIN|K_LINE, console.screen_columns - promptText.length - 1, SEARCH_TIMEOUT_MS);
+					var searchText = console.getstr(lastSearchText, console.screen_columns - promptText.length - 1, K_UPPER|K_NOCRLF|K_GETSTR|K_NOSPIN|K_LINE);
+					lastSearchText = searchText;
+					// If the user entered text, then do the search, and if found,
+					// found, go to the page and select the item indicated by the
+					// search.
+					if (searchText.length > 0)
+					{
+						var oldLastSearchFoundIdx = lastSearchFoundIdx;
+						var oldSelectedItemIdx = menu.selectedItemIdx;
+						var idx = this.FindFileAreaIdxFromText(fileLibStructure, searchText, menu.selectedItemIdx);
+						lastSearchFoundIdx = idx;
+						if (idx > -1)
+						{
+							// Set the currently selected item in the menu, and ensure it's
+							// visible on the page
+							menu.selectedItemIdx = idx;
+							if (menu.selectedItemIdx >= menu.topItemIdx+menu.GetNumItemsPerPage())
+								menu.topItemIdx = menu.selectedItemIdx - menu.GetNumItemsPerPage() + 1;
+							else if (menu.selectedItemIdx < menu.topItemIdx)
+								menu.topItemIdx = menu.selectedItemIdx;
+							else
+							{
+								// If the current index and the last index are both on the same page on the
+								// menu, then have the menu only redraw those items.
+								menu.nextDrawOnlyItems = [menu.selectedItemIdx, oldLastSearchFoundIdx, oldSelectedItemIdx];
+							}
+						}
+						else
+						{
+							var idx = this.FindFileAreaIdxFromText(fileLibStructure, searchText, 0);
+							lastSearchFoundIdx = idx;
+							if (idx > -1)
+							{
+								// Set the currently selected item in the menu, and ensure it's
+								// visible on the page
+								menu.selectedItemIdx = idx;
+								if (menu.selectedItemIdx >= menu.topItemIdx+menu.GetNumItemsPerPage())
+									menu.topItemIdx = menu.selectedItemIdx - menu.GetNumItemsPerPage() + 1;
+								else if (menu.selectedItemIdx < menu.topItemIdx)
+									menu.topItemIdx = menu.selectedItemIdx;
+								else
+								{
+									// The current index and the last index are both on the same page on the
+									// menu, so have the menu only redraw those items.
+									menu.nextDrawOnlyItems = [menu.selectedItemIdx, oldLastSearchFoundIdx, oldSelectedItemIdx];
+								}
+							}
+							else
+							{
+								this.WriteLightbarKeyHelpErrorMsg("Not found");
+								drawMenu = false;
 							}
 						}
 					}
 					else
+						drawMenu = false;
+					writeKeyHelpLine = true;
+				}
+				else
+				{
+					// Traditional/non-ANSI interface (menu will be using numbered mode)
+					// TODO: Ensure this is correct for file areas
+					console.attributes = "N";
+					console.crlf();
+					var promptText = "Search: ";
+					console.print(promptText);
+					var searchText = console.getstr(lastSearchText, console.screen_columns - promptText.length - 1, K_UPPER|K_NOCRLF|K_GETSTR|K_NOSPIN|K_LINE);
+					var searchTextIsStr = (typeof(searchText) === "string");
+					console.attributes = "N";
+					console.crlf();
+					// Don't need to set lastSearchFoundIdx
+					//if (searchTextIsStr)
+					//	lastSearchText = searchText;
+					// If the user entered text, then do the search, and if found,
+					// found, go to the page and select the item indicated by the
+					// search.
+					if (searchTextIsStr && searchText.length > 0)
 					{
-						if (bbs.curdir_code == pLibList[pLibIdx].dir_list[dirIdx].code)
+						var oldLastSearchFoundIdx = lastSearchFoundIdx;
+						var oldSelectedItemIdx = menu.selectedItemIdx;
+						var idx = this.FindFileAreaIdxFromText(fileLibStructure, searchText, 0);
+						//lastSearchFoundIdx = idx; // Don't need to set lastSearchFoundIdx
+						var newMsgAreaStructure = [];
+						while (idx > -1)
 						{
-							defaultDirNum = dirIdx + 1;
-							break;
+							newMsgAreaStructure.push(fileLibStructure[idx]);
+
+							// Find the next one
+							idx = this.FindFileAreaIdxFromText(fileLibStructure, searchText, idx+1);
+						}
+						if (newMsgAreaStructure.length > 0)
+						{
+							selectedItemIdx = selectedItemIndexes.push(selectedItemIdx);
+							fileLibStructure = previousFileLibStructures.push(fileLibStructure);
+							previousChosenLibOrSubdirNames.push("");
+							fileLibStructure = newMsgAreaStructure;
+							createMenuRet = this.CreateLightbarMenu(newMsgAreaStructure, previousFileLibStructures.length+1, menuTopRow, 0, numItemsWidth);
+							menu = createMenuRet.menuObj;
+						}
+						else
+							console.print("Not found\r\n\x01p");
+					}
+
+					console.line_counter = 0;
+					console.clear("\x01n");
+					writeHdrLines = true;
+					drawMenu = true;
+					writeKeyHelpLine = false;
+				}
+			}
+			else if (lastUserInputUpper == "N") // Next search result (requires an existing search term)
+			{
+				// This works but seems a little strange sometimes.
+				// - Should this always start from the selected index?
+				// - If it wraps around to one of the items on the first page,
+				//   should it always set the top index to 0?
+				if ((lastSearchText.length > 0) && (lastSearchFoundIdx > -1))
+				{
+					var oldLastSearchFoundIdx = lastSearchFoundIdx;
+					var oldSelectedItemIdx = menu.selectedItemIdx;
+					// Do the search, and if found, go to the page and select the item
+					// indicated by the search.
+					var idx = this.FindFileAreaIdxFromText(fileLibStructure, searchText, lastSearchFoundIdx+1);
+					if (idx > -1)
+					{
+						lastSearchFoundIdx = idx;
+						// Set the currently selected item in the menu, and ensure it's
+						// visible on the page
+						menu.selectedItemIdx = idx;
+						if (menu.selectedItemIdx >= menu.topItemIdx+menu.GetNumItemsPerPage())
+						{
+							menu.topItemIdx = menu.selectedItemIdx - menu.GetNumItemsPerPage() + 1;
+							if (menu.topItemIdx < 0)
+								menu.topItemIdx = 0;
+						}
+						else if (menu.selectedItemIdx < menu.topItemIdx)
+							menu.topItemIdx = menu.selectedItemIdx;
+						else
+						{
+							// The current index and the last index are both on the same page on the
+							// menu, so have the menu only redraw those items.
+							menu.nextDrawOnlyItems = [menu.selectedItemIdx, oldLastSearchFoundIdx, oldSelectedItemIdx];
+						}
+					}
+					else
+					{
+						idx = this.FindFileAreaIdxFromText(fileLibStructure, searchText, 0);
+						lastSearchFoundIdx = idx;
+						if (idx > -1)
+						{
+							// Set the currently selected item in the menu, and ensure it's
+							// visible on the page
+							menu.selectedItemIdx = idx;
+							if (menu.selectedItemIdx >= menu.topItemIdx+menu.GetNumItemsPerPage())
+							{
+								menu.topItemIdx = menu.selectedItemIdx - menu.GetNumItemsPerPage() + 1;
+								if (menu.topItemIdx < 0)
+									menu.topItemIdx = 0;
+							}
+							else if (menu.selectedItemIdx < menu.topItemIdx)
+								menu.topItemIdx = menu.selectedItemIdx;
+							else
+							{
+								// The current index and the last index are both on the same page on the
+								// menu, so have the menu only redraw those items.
+								menu.nextDrawOnlyItems = [menu.selectedItemIdx, oldLastSearchFoundIdx, oldSelectedItemIdx];
+							}
+						}
+						else
+						{
+							this.WriteLightbarKeyHelpErrorMsg("Not found");
+							drawMenu = false;
+							writeKeyHelpLine = true;
 						}
 					}
 				}
-			}
-		}
-		else
-		{
-			if (typeof(pDir) == "number")
-				defaultDirNum = pDir;
-			else if (typeof(bbs.curdir_code) == "string")
-			{
-				if (pLibIdx != file_area.dir[bbs.curdir_code].lib_index)
-					defaultDirNum = 1;
 				else
-					defaultDirNum = file_area.dir[bbs.curdir_code].index + 1;
-			}
-		}
-		return defaultDirNum;
-	}
-
-	var defaultDirNum = getDefaultDirNum(pSelectedDirIdx, this.useDirCollapsing, this.lib_list);
-	var searchText = "";
-	var numDirsListed = 0;
-	var continueOn = false;
-	do
-	{
-		console.clear("\x01n");
-		this.DisplayAreaChgHdr(1);
-		if (this.areaChangeHdrLines.length > 0)
-			console.crlf();
-		numDirsListed = this.ListDirsInFileLib_Traditional(pLibIdx, defaultDirNum - 1, searchText);
-		if ((numDirsListed > 0) && (typeof(pSelectedDirIdx) == "number") && (pSelectedDirIdx >= 0) && (pSelectedDirIdx < numDirsListed))
-			defaultDirNum = getDefaultDirNum(pSelectedDirIdx, this.useDirCollapsing, this.lib_list);
-		if (defaultDirNum >= 1)
-			console.print("\x01n\x01b\x01hþ \x01n\x01cWhich, \x01hQ\x01n\x01cuit, \x01hCTRL-F\x01n\x01c, \x01h/\x01n\x01c, or [\x01h" + defaultDirNum + "\x01n\x01c]: \x01h");
-		else
-			console.print("\x01n\x01b\x01hþ \x01n\x01cWhich, \x01hQ\x01n\x01cuit, \x01hCTRL-F\x01n\x01c, \x01h/\x01n\x01c: \x01h");
-		// Accept Q (quit), / or CTRL_F to search, or a file directory number
-		var selectedDirNum = console.getkeys("Q/" + CTRL_F, file_area.lib_list[pLibIdx].dir_list.length);
-
-		// If the user just pressed enter (selectedDirNum would be blank),
-		// default the selected directory.
-		if (selectedDirNum.toString() == "Q")
-			continueOn = false;
-		else if (selectedDirNum.toString() == "")
-			selectedDirNum = defaultDirNum;
-		else if ((selectedDirNum == "/") || (selectedDirNum == CTRL_F))
-		{
-			// Search
-			console.crlf();
-			var searchPromptText = "\x01n\x01c\x01hSearch\x01g: \x01n";
-			console.print(searchPromptText);
-			searchText = console.getstr("", console.screen_columns-strip_ctrl(searchPromptText).length-1, K_UPPER|K_NOCRLF|K_GETSTR|K_NOSPIN|K_LINE);
-			console.attributes = "N";
-			console.crlf();
-			if (searchText.length > 0)
-				defaultDirNum = -1;
-			else
-				defaultDirNum = getDefaultDirNum(pSelectedDirIdx, this.useDirCollapsing, this.lib_list);
-			continueOn = true;
-			console.line_counter = 0; // To avoid pausing before the clear screen
-		}
-
-		// If the user chose a directory, then set the user's file directory.
-		if (selectedDirNum > 0)
-		{
-			continueOn = false;
-			retObj.areaSelected = true;
-			retObj.dirIdx = selectedDirNum - 1;
-			if (this.useDirCollapsing)
-			{
-				if (this.lib_list[pLibIdx].dir_list[retObj.dirIdx].subdir_list.length == 0)
-					retObj.dirCode = this.lib_list[pLibIdx].dir_list[retObj.dirIdx].code;
-			}
-			else
-				retObj.dirCode = file_area.lib_list[pLibIdx].dir_list[retObj.dirIdx].code;
-		}
-	} while (continueOn);
-
-	return retObj;
-}
-
-// For the DDFileAreaChooser class: Lets the user select a subdirectory within a
-// file directory - Traditional user interface.  This is meant for directory name
-// collapsing, at the 3rd level.
-//
-// Parameters:
-//  pLibIdx: The file library index
-//  pDirIdx: The index of the directory within the file library
-//
-// Return value: An object containing the following properties:
-//               areaSelected: Boolean - Whether or not the user chose a file area.
-//               dirCode: The internal code of the directory chosen, if chose.  If not chosen,
-//                        this will be an empty string.
-function DDFileAreaChooser_SelectSubdirWithinDir_Traditional(pLibIdx, pDirIdx)
-{
-	var retObj = {
-		areaSelected: false,
-		dirCode: ""
-	};
-
-	if (!this.useDirCollapsing || this.lib_list.length == 0)
-		return retObj;
-	if ((pLibIdx < 0) || (pLibIdx >= this.lib_list.length))
-		return retObj;
-	if ((pDirIdx < 0) || (pDirIdx >= this.lib_list[pLibIdx].dir_list.length))
-	{
-		console.clear("\x01n");
-		console.print("\x01y\x01hThere are no directories in this library.\r\n\x01p");
-		return retObj;
-	}
-	if (this.lib_list[pLibIdx].dir_list[pDirIdx].subdir_list.length == 0)
-	{
-		console.clear("\x01n");
-		console.print("\x01y\x01hThere are no subdirectories in this directory.\r\n\x01p");
-		return retObj;
-	}
-
-	// Gets the default directory number (1-based)
-	function getDefaultSubdirNum(pLibList, pLibIdx, pDirIdx)
-	{
-		var subdirNum = 0; // Will be 1-based
-		for (var subdirIdx = 0; subdirIdx < pLibList[pLibIdx].dir_list[pDirIdx].subdir_list.length; ++subdirIdx)
-		{
-			if (bbs.curdir_code == pLibList[pLibIdx].dir_list[pDirIdx].subdir_list[subdirIdx].code)
-			{
-				subdirNum = subdirIdx + 1;
-				break;
-			}
-		}
-		return subdirNum;
-	}
-
-	// defaultSubdirNum is the default subdirectory # (will be 1-based)
-	var defaultSubdirNum = getDefaultSubdirNum(this.lib_list, pLibIdx, pDirIdx);
-	var searchText = "";
-	var numDirsListed = 0;
-	var continueOn = false;
-	do
-	{
-		console.clear("\x01n");
-		this.DisplayAreaChgHdr(1);
-		if (this.areaChangeHdrLines.length > 0)
-			console.crlf();
-		numDirsListed = this.ListSubdirsInFileDir_Traditional(pLibIdx, pDirIdx, searchText);
-		if (defaultSubdirNum >= 1)
-			console.print("\x01n\x01b\x01hþ \x01n\x01cWhich, \x01hQ\x01n\x01cuit, \x01hCTRL-F\x01n\x01c, \x01h/\x01n\x01c, or [\x01h" + defaultSubdirNum + "\x01n\x01c]: \x01h");
-		else
-			console.print("\x01n\x01b\x01hþ \x01n\x01cWhich, \x01hQ\x01n\x01cuit, \x01hCTRL-F\x01n\x01c, \x01h/\x01n\x01c: \x01h");
-		// Accept Q (quit), / or CTRL_F to search, or a file directory number
-		var selectedSubdirNum = console.getkeys("Q/" + CTRL_F, this.lib_list[pLibIdx].dir_list[pDirIdx].subdir_list.length);
-
-		// If the user just pressed enter (selectedSubdirNum would be blank),
-		// default the selected directory.
-		if (selectedSubdirNum.toString() == "Q")
-			continueOn = false;
-		else if (selectedSubdirNum.toString() == "")
-			selectedSubdirNum = defaultSubdirNum;
-		else if ((selectedSubdirNum == "/") || (selectedSubdirNum == CTRL_F))
-		{
-			// Search
-			console.crlf();
-			var searchPromptText = "\x01n\x01c\x01hSearch\x01g: \x01n";
-			console.print(searchPromptText);
-			searchText = console.getstr("", console.screen_columns-strip_ctrl(searchPromptText).length-1, K_UPPER|K_NOCRLF|K_GETSTR|K_NOSPIN|K_LINE);
-			console.attributes = "N";
-			console.crlf();
-			if (searchText.length > 0)
-				defaultSubdirNum = -1;
-			else
-				defaultSubdirNum = getDefaultSubdirNum(this.lib_list, pLibIdx, pDirIdx);
-			continueOn = true;
-			console.line_counter = 0; // To avoid pausing before the clear screen
-		}
-
-		// If the user chose a directory, then set the user's file directory.
-		if (selectedSubdirNum > 0)
-		{
-			continueOn = false;
-			retObj.areaSelected = true;
-			retObj.dirCode = this.lib_list[pLibIdx].dir_list[pDirIdx].subdir_list[selectedSubdirNum-1].code;
-		}
-	} while (continueOn);
-
-	return retObj;
-}
-
-// For the DDFileAreaChooser class: Maps bbs.curlib to the collapsed library array library index
-function DDFileAreaChooser_GetActualLibIdx()
-{
-	var libIdx = bbs.curlib;
-	if (this.useDirCollapsing)
-	{
-		var syncLibName = file_area.lib_list[bbs.curlib].name;
-		var syncLibDesc = file_area.lib_list[bbs.curlib].description;
-		for (var i = 0; i < this.lib_list.length; ++i)
-		{
-			if (this.lib_list[i].name == syncLibName && this.lib_list[i].description == syncLibDesc)
-			{
-				libIdx = i;
-				break;
-			}
-		}
-	}
-	return libIdx;
-}
-
-// For the DDFileAreaChooser class: Traditional user interface for listing
-// the file libraries
-//
-// Parameters:
-//  pSearchText: Text to search for in the file library names/descriptions.
-//               If blank or not a string, all will be displayed.
-//
-// Return value: The number of directories listed
-function DDFileAreaChooser_ListFileLibs_Traditional(pSearchText)
-{
-	// Ensure that the file directory printf information is created for
-	// this file library.
-	for (var libIdx = 0; libIdx < file_area.lib_list.length; ++libIdx)
-	{
-		if (typeof(this.fileDirListPrintfInfo[libIdx]) == "undefined")
-			this.BuildFileDirPrintfInfoForLib(libIdx);
-	}
-
-	var searchText = (typeof(pSearchText) == "string" ? pSearchText.toUpperCase() : "");
-
-	// Print the list header
-	printf(this.fileLibListHdrPrintfStr, "Lib #", "Description", "# Dirs");
-	console.crlf();
-	console.attributes = "N";
-	// Print the information for each file library
-	var numDirsListed = 0;
-	var printIt = true;
-	var currentDir = false;
-	var lib_list = (this.useDirCollapsing ? this.lib_list : file_area.lib_list);
-	for (var i = 0; i < lib_list.length; ++i)
-	{
-		if (searchText.length > 0)
-			printIt = ((lib_list[i].name.toUpperCase().indexOf(searchText) >= 0) || (lib_list[i].description.toUpperCase().indexOf(searchText) >= 0));
-		else
-			printIt = true;
-
-		if (printIt)
-		{
-			++numDirsListed;
-			// Print the library information.
-			var curLibIdx = 0;
-			if (typeof(bbs.curdir_code) == "string")
-				curLibIdx = file_area.dir[bbs.curdir_code].lib_index;
-			console.print(i == curLibIdx ? this.colors.areaMark + "*" : " ");
-			printf(this.fileLibPrintfStr, +(i+1), lib_list[i].description.substr(0, this.descFieldLen),
-			       lib_list[i].dir_list.length);
-			console.crlf();
-		}
-	}
-	return numDirsListed;
-}
-
-// For the DDFileAreaChooser class: Traditional user interface for listing
-// the directories in a file library
-//
-// Parameters:
-//  pLibIndex: The index of the file library (0-based)
-//  pMarkIndex: An index of a file library to display the "current" mark
-//              next to.  This is optional.
-//  pSearchText: Text to search for in the file directories (blank or none to list all)
-//
-// Return value: The number of file directories listed
-function DDFileAreaChooser_ListDirsInFileLib_Traditional(pLibIndex, pMarkIndex, pSearchText)
-{
-	// Set libIndex, the library index
-	var libIndex = 0;
-	if (typeof(pLibIndex) == "number")
-		libIndex = pLibIndex;
-	else if (typeof(bbs.curdir_code) == "string")
-		libIndex = file_area.dir[bbs.curdir_code].lib_index;
-
-	// Set markIndex, the index of the item to highlight
-	var markIndex = -1;
-	if (typeof(pMarkIndex) == "number")
-	{
-		if ((pMarkIndex >= 0) && (pMarkIndex < file_area.lib_list[libIndex].dir_list.length))
-			markIndex = pMarkIndex;
-	}
-
-	var searchText = (typeof(pSearchText) == "string" ? pSearchText.toUpperCase() : "");
-
-	// Ensure that the file directory printf information is created for
-	// this file library.
-	this.BuildFileDirPrintfInfoForLib(libIndex);
-
-	// Print the header lines
-	console.print(this.colors.fileAreaHdr + "Directories of \x01h" +
-	              file_area.lib_list[libIndex].description);
-	console.crlf();
-	printf(this.fileDirHdrPrintfStr, "Dir #", "Description", "# Items");
-	console.crlf();
-	console.attributes = "N";
-	var numDirsListed = 0;
-	var printIt = true;
-	var lib_list = (this.useDirCollapsing ? this.lib_list : file_area.lib_list);
-	for (var i = 0; i < lib_list[libIndex].dir_list.length; ++i)
-	{
-		if (searchText.length > 0)
-			printIt = ((lib_list[libIndex].dir_list[i].name.toUpperCase().indexOf(searchText) >= 0) || (lib_list[libIndex].dir_list[i].description.toUpperCase().indexOf(searchText) >= 0));
-		else
-			printIt = true;
-		if (printIt)
-		{
-			++numDirsListed;
-			// See if this is the currently-selected directory.
-			console.print(markIndex > -1 && i == markIndex ? this.colors.areaMark + "*" : " ");
-			var dirDesc = lib_list[libIndex].dir_list[i].description;
-			var numItems = this.fileDirListPrintfInfo[libIndex].fileCounts[i];
-			// For directory name collapsing, get subdirectory information for this directory, and
-			// append <subdirs> to the description if the directory has subdirectories.
-			if (this.useDirCollapsing)
-			{
-				if (lib_list[libIndex].dir_list[i].subdir_list.length > 0)
 				{
-					numItems = lib_list[libIndex].dir_list[i].subdir_list.length;
-					dirDesc += "  <subdirs>";
+					this.WriteLightbarKeyHelpErrorMsg("There is no previous search", true);
+					drawMenu = false;
+					writeKeyHelpLine = true;
 				}
-				else
-					numItems = this.fileDirListPrintfInfo[libIndex].fileCounts[i];
 			}
-			// Print the directory information
-			printf(this.fileDirListPrintfInfo[libIndex].printfStr, +(i+1),
-				   dirDesc.substr(0, this.descFieldLen), numItems);
-			console.crlf();
+			else if (lastUserInputUpper == "?")
+			{
+				var usingLightbar = this.useLightbarInterface && console.term_supports(USER_ANSI);
+				this.ShowHelpScreen(usingLightbar, true);
+				menuContinueOn = true;
+				selectionLoopContinueOn = true;
+				drawMenu = true;
+				writeHdrLines = true;
+				writeKeyHelpLine = true;
+			}
+			// Quit - Note: This check should be last
+			else if (lastUserInputUpper == "Q" || lastUserInputUpper == KEY_ESC || selectedMenuIdx == null)
+			{
+				// Cancel/Quit
+				// Quit this menu loop and go back to the previous file lib/dir structure
+				menuContinueOn = false;
+				selectedItemIdx = selectedItemIndexes.pop();
+				if (previousFileLibStructures.length == 0)
+				{
+					// The user was at the first level in the lib/dir structure; fully quit out from here
+					selectionLoopContinueOn = false;
+				}
+				else // Go to the previous file lib/dir structure
+				{
+					fileLibStructure = previousFileLibStructures.pop();
+					if (fileLibStructure == this.lib_list)
+					{
+						chosenLibOrSubdirName = "";
+						previousChosenLibOrSubdirNames = [];
+						selectedItemIndexes = [];
+					}
+					else
+						chosenLibOrSubdirName = previousChosenLibOrSubdirNames.pop();
+				}
+			}
 		}
 	}
-	return numDirsListed;
-}
-
-// For the DDFileAreaChooser class: For directory name collapsing, this lists
-// subdirectories in a directory, for the traditional user interface.
-//
-// Parameters:
-//  pLibIndex: The index of the file library (0-based)
-//  pDirIndex: The index of the file directory in the library (0-based)
-//  pSearchText: Text to search for in the file directories (blank or none to list all)
-//
-// Return value: The number of file subdirectories listed
-function DDFileAreaChooser_ListSubdirsInFileDir_Traditional(pLibIndex, pDirIndex, pSearchText)
-{
-	// This is only for directory collapsing, to display subdirectories in a file directory
-	if (!this.useDirCollapsing || (this.lib_list.length == 0))
-		return 0;
-
-	// Set libIndex (the library index)
-	var libIndex = 0;
-	if (typeof(pLibIndex) == "number")
-		libIndex = pLibIndex;
-	else if (typeof(bbs.curdir_code) == "string")
-		libIndex = file_area.dir[bbs.curdir_code].lib_index;
-
-	// Sanity checking
-	if ((libIndex < 0) || (libIndex >= this.lib_list.length))
-		return 0;
-	if ((pDirIndex < 0) || (pDirIndex >= this.lib_list[libIndex].length))
-		return 0;
-	if (this.lib_list[libIndex].dir_list[pDirIndex].subdir_list.length == 0)
-		return 0;
-
-	var searchText = (typeof(pSearchText) == "string" ? pSearchText.toUpperCase() : "");
-
-	// Ensure that the file directory printf information is created for
-	// this file library.
-	this.BuildFileDirPrintfInfoForLib(libIndex);
-
-	// Print the header lines
-	console.print(this.colors.fileAreaHdr + "Directories of \x01h" +
-	              file_area.lib_list[libIndex].description);
-	console.crlf();
-	printf(this.fileDirHdrPrintfStr, "Dir #", "Description", "# Items");
-	console.crlf();
-	console.attributes = "N";
-	var numDirsListed = 0;
-	var printIt = true;
-	for (var i = 0; i < this.lib_list[libIndex].dir_list[pDirIndex].subdir_list.length; ++i)
-	{
-		if (searchText.length > 0)
-			printIt = ((this.lib_list[libIndex].dir_list[pDirIndex].subdir_list[i].name.toUpperCase().indexOf(searchText) >= 0) || (this.lib_list[libIndex].dir_list[i].description.toUpperCase().indexOf(searchText) >= 0));
-		else
-			printIt = true;
-		if (printIt)
-		{
-			++numDirsListed;
-			// See if this is the currently-selected directory.
-			var displayAreaMark = (bbs.curdir_code == this.lib_list[libIndex].dir_list[pDirIndex].subdir_list[i].code);
-			console.print(displayAreaMark ? this.colors.areaMark + "*" : " ");
-			var dirIdx = this.lib_list[libIndex].dir_list[pDirIndex].subdir_list[i].index;
-			var numFiles = this.fileDirListPrintfInfo[libIndex].fileCounts[dirIdx];
-			var subdirDesc = this.lib_list[libIndex].dir_list[pDirIndex].subdir_list[i].description;
-			// Print the directory information
-			printf(this.fileDirListPrintfInfo[libIndex].printfStr, +(i+1),
-				   subdirDesc.substr(0, this.descFieldLen), numFiles);
-			console.crlf();
-		}
-	}
-
-	return numDirsListed;
 }
 
 // For the DDFileAreaChooser class: Outputs the header line to appear above
@@ -1018,768 +829,309 @@ function DDFileAreaChooser_WriteDirListHdr1Line(pLibIdx, pDirIdx, pNumPages, pPa
 	// If using subdirectory collapsing, then build the description as needed.  Otherwise,
 	// just use the subdirectory description.
 	var desc = "";
-	if (this.useDirCollapsing)
-	{
-		// Ensure this.lib_list is set up
-		this.SetUpLibListWithCollapsedDirs();
-		// The description should be the library's description.  Also, if pDirIdx
-		// is a number, then append the directory description to the description.
-		desc = this.lib_list[pLibIdx].description;
-		if ((typeof(pDirIdx) === "number") && (this.lib_list[pLibIdx].dir_list[pDirIdx].subdir_list.length > 0))
-			desc += this.dirCollapseSeparator + " " + this.lib_list[pLibIdx].dir_list[pDirIdx].description;
-	}
-	else
-		desc = file_area.lib_list[pLibIdx].description;
+	// The description should be the library's description.  Also, if pDirIdx
+	// is a number, then append the directory description to the description.
+	desc = this.lib_list[pLibIdx].description;
+	if ((typeof(pDirIdx) === "number") && (this.lib_list[pLibIdx].dir_list[pDirIdx].subdir_list.length > 0))
+		desc += this.dirCollapseSeparator + " " + this.lib_list[pLibIdx].dir_list[pDirIdx].description;
 	printf(descFormatStr, desc.substr(0, descLen));
 	console.cleartoeol("\x01n");
 }
 
-// Lightbar functions
-
-// For the DDFileAreaChooser class: Lightbar interface for letting the user
-// choose a file library and directory
+// For the DDFileAreaChooser class: Creates a lightbar menu to choose a library/directory.
 //
 // Parameters:
-//  pLevel: The file heirarchy level:
-//          1: File libraries
-//          2: File directories within libraries
-//          3: File subdirectories within directories (if directory name collapsing is enabled)
-//          This is optional and defaults to 1.
-//  pLibIdx: Optional - The file library index, if choosing a file directory
-//  pDirIdx: Optional - The file directory index (within a library), for use with
-//           directory name collapsing
-//  pCalledFromSelf: Optional boolean: Whether or not this function was called from itself. Defaults to false.
-function DDFileAreaChooser_SelectFileArea_Lightbar(pLevel, pLibIdx, pDirIdx, pCalledFromSelf)
-{
-	if (pLevel > 1 && (pLibIdx == null || typeof(pLibIdx) !== "number"))
-		pLibIdx = this.GetActualLibIdx();
-	// If there are file libraries, then don't let the user
-	// choose one.
-	if (file_area.lib_list.length == 0)
-	{
-		console.clear("\x01n");
-		console.print("\x01y\x01hThere are no file libraries.\r\n\x01p");
-		return;
-	}
-	var level = (typeof(pLevel) == "number" ? pLevel : 1);
-	if ((level < 1) || (level > 3))
-		return;
-	// 2: Choose a file directory within a library
-	// 3: Choose a subdirectory within a directory, for directory name collapsing
-	else if ((level == 2) || (level == 3))
-	{
-		// If there are no directories in the given library index, then see if there's a next library with
-		// directories (and wrap around)
-		if (file_area.lib_list[pLibIdx].dir_list.length == 0)
-		{
-			console.clear("\x01n");
-			console.print("\x01y\x01hThere are no directories in " + file_area.lib_list[pLibIdx].description + ".\r\n\x01p");
-			return;
-		}
-	}
-
-	var calledFromSelf = (typeof(pCalledFromSelf) === "boolean" ? pCalledFromSelf : false);
-
-	// Ensure that the file directory printf information is created for
-	// this file library.
-	if (pLevel > 1)
-		this.BuildFileDirPrintfInfoForLib(pLibIdx);
-
-	// Displays the header & header lines above the list
-	function displayListHdrLines(pLevel, pAreaChooser, pLibIdx, pDirIdx, pNumPages, pPageNum, pClearScrFirst)
-	{
-		var clearScrFirst = (typeof(pClearScrFirst) === "boolean" ? pClearScrFirst : true);
-		if (clearScrFirst)
-			console.clear("\x01n");
-		pAreaChooser.DisplayAreaChgHdr(1);
-		console.gotoxy(1, pAreaChooser.areaChangeHdrLines.length+1);
-		if (pLevel == 1)
-			pAreaChooser.WriteLibListHdrLine(pNumPages, pPageNum);
-		else
-		{
-			pAreaChooser.WriteDirListHdr1Line(pLibIdx, pDirIdx, pNumPages, pPageNum);
-			console.gotoxy(1, pAreaChooser.areaChangeHdrLines.length+2);
-			var numItemsColHdrTxt = "";
-			if (pAreaChooser.useDirCollapsing)
-			{
-				if (pLevel == 2)
-					numItemsColHdrTxt = "# Items";
-				else if (level == 3)
-					numItemsColHdrTxt = "# Files";
-					
-			}
-			else
-				numItemsColHdrTxt = "# Files";
-			printf(pAreaChooser.fileDirHdrPrintfStr, "Dir #", "Description", numItemsColHdrTxt);
-		}
-	}
-
-	// Clear the screen, & write the key help line at the bottom of the screen
-	console.clear("\x01n");
-	this.WriteKeyHelpLine();
-
-	// Create the menu and do the uesr input loop
-	var fileAreaMenu;
-	switch (level)
-	{
-		case 1:
-			fileAreaMenu = this.CreateLightbarFileLibMenu();
-			break;
-		case 2:
-		case 3:
-			fileAreaMenu = this.CreateLightbarFileDirMenu(pLibIdx, pDirIdx, level);
-			break;
-	}
-	var drawMenu = true;
-	var lastSearchText = "";
-	var lastSearchFoundIdx = -1;
-	var chosenIdx = -1;
-	var continueOn = true;
-	// Let the user choose a group, and also respond to other user choices
-	while (continueOn)
-	{
-		displayListHdrLines(level, this, pLibIdx, pDirIdx, null, null, false);
-		chosenIdx = -1;
-		var returnedMenuIdx = fileAreaMenu.GetVal(drawMenu);
-		drawMenu = true;
-		var lastUserInputUpper = (typeof(fileAreaMenu.lastUserInput) == "string" ? fileAreaMenu.lastUserInput.toUpperCase() : "");
-		if (typeof(returnedMenuIdx) == "number")
-			chosenIdx = returnedMenuIdx;
-		// If userChoice is not a number, then it should be null in this case,
-		// and the user would have pressed one of the additional quit keys set
-		// up for the menu.  So look at the menu's lastUserInput and do the
-		// appropriate thing.
-		else if ((lastUserInputUpper == "Q") || (lastUserInputUpper == KEY_ESC)) // Quit
-			continueOn = false;
-		else if ((lastUserInputUpper == "/") || (lastUserInputUpper == CTRL_F)) // Start of find
-		{
-			console.gotoxy(1, console.screen_rows);
-			console.cleartoeol("\x01n");
-			console.gotoxy(1, console.screen_rows);
-			var promptText = "Search: ";
-			console.print(promptText);
-			var searchText = getStrWithTimeout(K_UPPER|K_NOCRLF|K_GETSTR|K_NOSPIN|K_LINE, console.screen_columns - promptText.length - 1, SEARCH_TIMEOUT_MS);
-			lastSearchText = searchText;
-			// If the user entered text, then do the search, and if found,
-			// found, go to the page and select the item indicated by the
-			// search.
-			if (searchText.length > 0)
-			{
-				var oldLastSearchFoundIdx = lastSearchFoundIdx;
-				var oldSelectedItemIdx = fileAreaMenu.selectedItemIdx;
-				var idx = -1;
-				switch (level)
-				{
-					case 1:
-						idx = findFileLibIdxFromText(searchText, fileAreaMenu.selectedItemIdx, level, pDirIdx);
-						break;
-					case 2:
-						idx = this.FindFileDirIdxFromText(pLibIdx, searchText, fileAreaMenu.selectedItemIdx+1, level, pDirIdx);
-						break;
-					case 3:
-						idx = this.FindFileDirIdxFromText(pLibIdx, searchText, 0, level, pDirIdx);
-						break;
-				}
-				lastSearchFoundIdx = idx;
-				if (idx > -1)
-				{
-					// Set the currently selected item in the menu, and ensure it's
-					// visible on the page
-					fileAreaMenu.selectedItemIdx = idx;
-					if (fileAreaMenu.selectedItemIdx >= fileAreaMenu.topItemIdx+fileAreaMenu.GetNumItemsPerPage())
-						fileAreaMenu.topItemIdx = fileAreaMenu.selectedItemIdx - fileAreaMenu.GetNumItemsPerPage() + 1;
-					else if (fileAreaMenu.selectedItemIdx < fileAreaMenu.topItemIdx)
-						fileAreaMenu.topItemIdx = fileAreaMenu.selectedItemIdx;
-					else
-					{
-						// If the current index and the last index are both on the same page on the
-						// menu, then have the menu only redraw those items.
-						fileAreaMenu.nextDrawOnlyItems = [fileAreaMenu.selectedItemIdx, oldLastSearchFoundIdx, oldSelectedItemIdx];
-					}
-				}
-				else
-				{
-					switch (level)
-					{
-						case 1:
-							idx = findFileLibIdxFromText(searchText, 0);
-							break;
-						case 2:
-							idx = this.FindFileDirIdxFromText(pLibIdx, searchText, 0, level, pDirIdx);
-							break;
-						case 3:
-							idx = this.FindFileDirIdxFromText(pLibIdx, searchText, 0, level, pDirIdx);
-							break;
-					}
-					lastSearchFoundIdx = idx;
-					if (idx > -1)
-					{
-						// Set the currently selected item in the menu, and ensure it's
-						// visible on the page
-						fileAreaMenu.selectedItemIdx = idx;
-						if (fileAreaMenu.selectedItemIdx >= fileAreaMenu.topItemIdx+fileAreaMenu.GetNumItemsPerPage())
-							fileAreaMenu.topItemIdx = fileAreaMenu.selectedItemIdx - fileAreaMenu.GetNumItemsPerPage() + 1;
-						else if (fileAreaMenu.selectedItemIdx < fileAreaMenu.topItemIdx)
-							fileAreaMenu.topItemIdx = fileAreaMenu.selectedItemIdx;
-						else
-						{
-							// The current index and the last index are both on the same page on the
-							// menu, so have the menu only redraw those items.
-							fileAreaMenu.nextDrawOnlyItems = [fileAreaMenu.selectedItemIdx, oldLastSearchFoundIdx, oldSelectedItemIdx];
-						}
-					}
-					else
-					{
-						this.WriteLightbarKeyHelpErrorMsg("Not found");
-						drawMenu = false;
-					}
-				}
-			}
-			else
-				drawMenu = false;
-			this.WriteKeyHelpLine();
-		}
-		else if (lastUserInputUpper == "N") // Next search result (requires an existing search term)
-		{
-			// This works but seems a little strange sometimes.
-			// - Should this always start from the selected index?
-			// - If it wraps around to one of the items on the first page,
-			//   should it always set the top index to 0?
-			if ((lastSearchText.length > 0) && (lastSearchFoundIdx > -1))
-			{
-				var oldLastSearchFoundIdx = lastSearchFoundIdx;
-				var oldSelectedItemIdx = fileAreaMenu.selectedItemIdx;
-				// Do the search, and if found, go to the page and select the item
-				// indicated by the search.
-				var idx = -1;
-				switch (level)
-				{
-					case 1:
-						idx = findFileLibIdxFromText(searchText, lastSearchFoundIdx+1);
-						break;
-					case 2:
-						idx = this.FindFileDirIdxFromText(pLibIdx, searchText, lastSearchFoundIdx+1, level, pDirIdx);
-						break;
-					case 3:
-						// TODO
-						break;
-				}
-				if (idx > -1)
-				{
-					lastSearchFoundIdx = idx;
-					// Set the currently selected item in the menu, and ensure it's
-					// visible on the page
-					fileAreaMenu.selectedItemIdx = idx;
-					if (fileAreaMenu.selectedItemIdx >= fileAreaMenu.topItemIdx+fileAreaMenu.GetNumItemsPerPage())
-					{
-						fileAreaMenu.topItemIdx = fileAreaMenu.selectedItemIdx - fileAreaMenu.GetNumItemsPerPage() + 1;
-						if (fileAreaMenu.topItemIdx < 0)
-							fileAreaMenu.topItemIdx = 0;
-					}
-					else if (fileAreaMenu.selectedItemIdx < fileAreaMenu.topItemIdx)
-						fileAreaMenu.topItemIdx = fileAreaMenu.selectedItemIdx;
-					else
-					{
-						// The current index and the last index are both on the same page on the
-						// menu, so have the menu only redraw those items.
-						fileAreaMenu.nextDrawOnlyItems = [fileAreaMenu.selectedItemIdx, oldLastSearchFoundIdx, oldSelectedItemIdx];
-					}
-				}
-				else
-				{
-					switch (level)
-					{
-						case 1:
-							idx = findFileLibIdxFromText(searchText, 0);
-							break;
-						case 2:
-							idx = this.FindFileDirIdxFromText(pLibIdx, searchText, 0, level, pDirIdx);
-							break;
-						case 3:
-							// TODO
-							break;
-					}
-					lastSearchFoundIdx = idx;
-					if (idx > -1)
-					{
-						// Set the currently selected item in the menu, and ensure it's
-						// visible on the page
-						fileAreaMenu.selectedItemIdx = idx;
-						if (fileAreaMenu.selectedItemIdx >= fileAreaMenu.topItemIdx+fileAreaMenu.GetNumItemsPerPage())
-						{
-							fileAreaMenu.topItemIdx = fileAreaMenu.selectedItemIdx - fileAreaMenu.GetNumItemsPerPage() + 1;
-							if (fileAreaMenu.topItemIdx < 0)
-								fileAreaMenu.topItemIdx = 0;
-						}
-						else if (fileAreaMenu.selectedItemIdx < fileAreaMenu.topItemIdx)
-							fileAreaMenu.topItemIdx = fileAreaMenu.selectedItemIdx;
-						else
-						{
-							// The current index and the last index are both on the same page on the
-							// menu, so have the menu only redraw those items.
-							fileAreaMenu.nextDrawOnlyItems = [fileAreaMenu.selectedItemIdx, oldLastSearchFoundIdx, oldSelectedItemIdx];
-						}
-					}
-					else
-					{
-						this.WriteLightbarKeyHelpErrorMsg("Not found");
-						drawMenu = false;
-						this.WriteKeyHelpLine();
-					}
-				}
-			}
-			else
-			{
-				this.WriteLightbarKeyHelpErrorMsg("There is no previous search", true);
-				drawMenu = false;
-				this.WriteKeyHelpLine();
-			}
-		}
-		else if (lastUserInputUpper == "?") // Show help
-		{
-			this.ShowHelpScreen(true, true);
-			console.pause();
-			// Refresh the screen
-			displayListHdrLines(level, this, pLibIdx, pDirIdx);
-			this.WriteKeyHelpLine();
-		}
-		// If the user entered a numeric digit, then treat it as
-		// the start of the file library number.
-		else if (lastUserInputUpper.match(/[0-9]/))
-		{
-			// Put the user's input back in the input buffer to
-			// be used for getting the rest of the message number.
-			console.ungetstr(lastUserInputUpper);
-			// Move the cursor to the bottom of the screen and
-			// prompt the user for the message number.
-			console.gotoxy(1, console.screen_rows);
-			console.clearline("\x01n");
-			var itemPromptWord = "";
-			if (this.useDirCollapsing)
-			{
-				if (level == 1)
-					itemPromptWord = "library";
-				else if (level == 2)
-					itemPromptWord = "item";
-				else if (level == 3)
-					itemPromptWord = "directory";
-			}
-			else
-				itemPromptWord = (level == 1 ? "library" : "directory");
-			printf("\x01cChoose %s #: \x01h", itemPromptWord);
-			var userInput = console.getnum(fileAreaMenu.NumItems());
-			if (userInput > 0)
-				chosenIdx = userInput - 1;
-			else
-			{
-				// The user didn't make a selection.  So, we need to refresh
-				// the screen due to everything being moved up one line.
-				displayListHdrLines(level, this, pLibIdx, pDirIdx);
-				this.WriteKeyHelpLine();
-			}
-		}
-
-		// If a library/directory was chosen, then deal with it.
-		if (chosenIdx > -1)
-		{
-			// If choosing a file library, then let the user choose a file
-			// directory within the library.  Otherwise, return the user's
-			// chosen file directory.
-			if (level == 1)
-			{
-				// Show a "Loading..." text in case there are many directories in
-				// the chosen file library
-				console.crlf();
-				console.print("\x01nLoading...");
-				console.line_counter = 0; // To prevent a pause before the message list comes up
-				// Ensure that the file dir printf information is created for
-				// the chosen file library.
-				this.BuildFileDirPrintfInfoForLib(chosenIdx);
-				// Make a backup of bbs.curdir_code, in case the directory
-				// changes at the 3rd level (if directory collapsing is
-				// enabled)
-				var dirCodeBackup = bbs.curdir_code;
-				var chosenFileDirIdx = this.SelectFileArea_Lightbar(level+1, chosenIdx, null, true);
-				// chosenFileDirIdx could actually be a boolean and could be false (returned
-				// when pLevel is 3 and the user chose a directory), so check its type and
-				// act accordingly.
-				var retValType = typeof(chosenFileDirIdx);
-				if (retValType === "boolean")
-					continueOn = chosenFileDirIdx;
-				else if (retValType === "number")
-				{
-					if (chosenFileDirIdx > -1)
-					{
-						// Set the current file directory
-						if (this.useDirCollapsing)
-							bbs.curdir_code = this.lib_list[chosenIdx].dir_list[chosenFileDirIdx].code;
-						else
-							bbs.curdir_code = file_area.lib_list[chosenIdx].dir_list[chosenFileDirIdx].code;
-						continueOn = false;
-					}
-					else
-					{
-						// If the dir changed (probably at level 3 because directory
-						// collapsing is enabled), then exit here.
-						if (bbs.curdir_code != dirCodeBackup)
-							continueOn = false;
-						else
-						{
-							// A file directory was not chosen, so we'll have to re-draw
-							// the header and key help line
-							displayListHdrLines(level, this, pLibIdx, pDirIdx);
-							this.WriteKeyHelpLine();
-						}
-					}
-				}
-			}
-			else if (level == 2)
-			{
-				if (this.useDirCollapsing)
-				{
-					// Ensure this.lib_list is set up
-					this.SetUpLibListWithCollapsedDirs();
-
-					// If the current file directory has subdirectories,
-					// let the user choose one
-					// pLibIdx is the library index, and chosenIdx is the file directory index
-					if ((typeof(this.lib_list[pLibIdx].dir_list[chosenIdx]) !== "undefined") && (this.lib_list[pLibIdx].dir_list[chosenIdx].subdir_list.length > 0))
-					{
-						//SelectFileArea_Lightbar(pLevel, pLibIdx, pDirIdx)
-						var chosenSubdirIdx = this.SelectFileArea_Lightbar(level+1, pLibIdx, chosenIdx, true);
-						if (chosenSubdirIdx > -1)
-						{
-							// Set the current file directory
-							bbs.curdir_code = this.lib_list[pLibIdx].dir_list[chosenIdx].subdir_list[chosenSubdirIdx].code;
-							continueOn = false;
-							// Return a false here so that after this function is called by itself when
-							// pLevel is 2, it will know that a sub-board has been chosen and will set
-							// continueOn to false so that the loop won't continue from there.
-							return false;
-						}
-						else
-						{
-							// A file directory was not chosen, so we'll have to re-draw
-							// the header and list of message groups.
-							displayListHdrLines(level, this, pLibIdx, pDirIdx);
-							this.WriteKeyHelpLine();
-						}
-					}
-					else // No subdirectories - Return the chosen index
-					{
-						// If this function wasn't called from itself (i.e., letting the user choose a file directory
-						// directly within their chosen library), then set the user's directory here
-						if (!calledFromSelf)
-							bbs.curdir_code = this.lib_list[pLibIdx].dir_list[chosenIdx].code;
-						return chosenIdx;
-					}
-				}
-				else
-				{
-					// Not using directory name collapsing
-					// If this function wasn't called from itself (i.e., letting the user choose a file directory
-					// directly within their chosen library), then set the user's directory here
-					if (!calledFromSelf)
-						bbs.curdir_code = file_area.lib_list[pLibIdx].dir_list[chosenIdx].code;
-					return chosenIdx; // Return the chosen file directory index
-				}
-			}
-			else if (level == 3)
-				return chosenIdx; // Return the chosen subdirectory index
-		}
-	}
-}
-
-// For the DDFileAreaChooser class: Creates the DDLightbarMenu for use with
-// choosing a file library in lightbar mode.
+//  pDirHeirarchyObj: An object from this.lib_list, which is
+//                    set up with a 'name' property and either
+//                    an 'items' property if it has sub-items
+//                    or a 'dirObj' property if it's a file
+//                    directory
+//  pHeirarchyLevel: The level we're at in the heirarchy (1-based)
+//  pMenuTopRow: The screen row to use for the menu's top row
+//  pSelectedItemIdx: Optional - The index to use for the selected item. If not
+//                    specified, the item with the user's current selected file
+//                    directory will be used, if available.
+//  pNumItemsWidth: The character width of the column label for the number of items; mainly for the traditional (non-lightbar) UI
 //
-// Return value: A DDLightbarMenu object for choosing a file library
-function DDFileAreaChooser_CreateLightbarFileLibMenu()
+// Return value: An object with the following properties:
+//               menuObj: The menu object
+//               allDirs: Whether or not all the items in the menu
+//                        are file directiries. If not, some or all
+//                        are other lists of items
+//               itemNumWidth: The width of the item numbers column
+//               descWidth: The width of the description column
+//               numItemsWidth: The width of the # of items column
+function DDFileAreaChooser_CreateLightbarMenu(pDirHeirarchyObj, pHeirarchyLevel, pMenuTopRow, pSelectedItemIdx, pNumItemsWidth)
 {
-	// Start & end indexes for the various items in each file library list row
-	// Selected mark, lib#, description, # dirs
-	var fileLibListIdxes = {
-		markCharStart: 0,
-		markCharEnd: 1,
-		libNumStart: 1,
-		libNumEnd: 2 + (+this.areaNumLen)
+	var retObj = {
+		menuObj: null,
+		allDirs: true,
+		itemNumWidth: 0,
+		descWidth: 0,
+		numItemsWidth: 0
 	};
-	fileLibListIdxes.descStart = fileLibListIdxes.libNumEnd;
-	fileLibListIdxes.descEnd = fileLibListIdxes.descStart + +this.descFieldLen;
-	fileLibListIdxes.numItemsStart = fileLibListIdxes.descEnd;
-	// Set numItemsEnd to -1 to let the whole rest of the lines be colored
-	fileLibListIdxes.numItemsEnd = -1;
-	var listStartRow = this.areaChangeHdrLines.length + 2;
-	var fileLibMenuHeight = console.screen_rows - listStartRow;
-	var fileLibMenu = new DDLightbarMenu(1, listStartRow, console.screen_columns, fileLibMenuHeight);
-	fileLibMenu.scrollbarEnabled = true;
-	fileLibMenu.borderEnabled = false;
-	fileLibMenu.SetColors({
-		itemColor: [{start: fileLibListIdxes.markCharStart, end: fileLibListIdxes.markCharEnd, attrs: this.colors.areaMark},
-		            {start: fileLibListIdxes.libNumStart, end: fileLibListIdxes.libNumEnd, attrs: this.colors.areaNum},
-		            {start: fileLibListIdxes.descStart, end: fileLibListIdxes.descEnd, attrs: this.colors.desc},
-		            {start: fileLibListIdxes.numItemsStart, end: fileLibListIdxes.numItemsEnd, attrs: this.colors.numItems}],
-		selectedItemColor: [{start: fileLibListIdxes.markCharStart, end: fileLibListIdxes.markCharEnd, attrs: this.colors.areaMark + this.colors.bkgHighlight},
-		                    {start: fileLibListIdxes.libNumStart, end: fileLibListIdxes.libNumEnd, attrs: this.colors.areaNumHighlight + this.colors.bkgHighlight},
-		                    {start: fileLibListIdxes.descStart, end: fileLibListIdxes.descEnd, attrs: this.colors.descHighlight + this.colors.bkgHighlight},
-		                    {start: fileLibListIdxes.numItemsStart, end: fileLibListIdxes.numItemsEnd, attrs: this.colors.numItemsHighlight + this.colors.bkgHighlight}]
-	});
 
-	fileLibMenu.multiSelect = false;
-	fileLibMenu.ampersandHotkeysInItems = false;
-	fileLibMenu.wrapNavigation = false;
-
+	// Get color index information for the menu
+	var colorIdxInfo = this.GetColorIndexInfoForLightbarMenu(pDirHeirarchyObj);
+	// Calculate column widths for the return object
+	retObj.itemNumWidth = colorIdxInfo.fileDirListIdxes.itemNumEnd - 1;
+	//retObj.descWidth = colorIdxInfo.fileDirListIdxes.descEnd - colorIdxInfo.fileDirListIdxes.descStart;
+	retObj.descWidth = this.descFieldLen;
+	retObj.numItemsWidth = console.screen_columns - colorIdxInfo.fileDirListIdxes.numItemsStart;
+	// Create and set up the menu
+	var fileDirMenuHeight = console.screen_rows - pMenuTopRow;
+	var fileDirMenu = new DDLightbarMenu(1, pMenuTopRow, console.screen_columns, fileDirMenuHeight);
 	// Add additional keypresses for quitting the menu's input loop so we can
 	// respond to these keys
-	fileLibMenu.AddAdditionalQuitKeys("nNqQ ?0123456789/" + CTRL_F);
-
-	// Change the menu's NumItems() and GetItem() function to reference
-	// the message list in this object rather than add the menu items
-	// to the menu
-	fileLibMenu.areaChooser = this; // Add this object to the menu object
-	fileLibMenu.NumItems = function() {
-		return file_area.lib_list.length;
-	};
-	fileLibMenu.GetItem = function(pLibIndex) {
-		var menuItemObj = this.MakeItemWithRetval(-1);
-		if ((pLibIndex >= 0) && (pLibIndex < file_area.lib_list.length))
+	fileDirMenu.AddAdditionalQuitKeys("qQ?/" + CTRL_F);
+	if (this.useLightbarInterface && console.term_supports(USER_ANSI))
+	{
+		fileDirMenu.allowANSI = true;
+		// Additional quit keys for ANSI mode which we can respond to
+		// N: Next (search) and numbers for item input
+		fileDirMenu.AddAdditionalQuitKeys(" nN0123456789" + CTRL_C);
+	}
+	// If not using the lightbar interface (and ANSI behavior is not to be allowed), fileDirMenu.numberedMode
+	// will be set to true by default.  Also, in that situation, set the menu's item number color
+	else
+	{
+		fileDirMenu.allowANSI = false;
+		fileDirMenu.colors.itemNumColor = this.colors.areaNum;
+		//retObj.numItemsWidth = maxNumItemsWidthInHeirarchy(pDirHeirarchyObj);
+		if (typeof(pNumItemsWidth) === "number")
+			retObj.itemNumWidth = pNumItemsWidth;
+		else
+			retObj.itemNumWidth = pDirHeirarchyObj.length.toString().length;
+		retObj.descWidth = console.screen_columns - retObj.itemNumWidth - retObj.numItemsWidth - 1;
+		// Temporary
+		if (user.is_sysop)
 		{
-			if ((typeof(bbs.curdir_code) == "string") && (bbs.curdir_code != ""))
-				menuItemObj.text = (pLibIndex == file_area.dir[bbs.curdir_code].lib_index ? "*" : " ");
-			else
-				menuItemObj.text = " ";
-			menuItemObj.text += format(this.areaChooser.fileLibPrintfStr, +(pLibIndex+1),
-			       file_area.lib_list[pLibIndex].description.substr(0, this.areaChooser.descFieldLen),
-			       file_area.lib_list[pLibIndex].dir_list.length);
-			menuItemObj.text = strip_ctrl(menuItemObj.text);
-			menuItemObj.retval = pLibIndex;
+			//printf("\x01npNumItemsWidth: %d, itemNumWidth: %d, # items width: %d, descWidth: %d\r\n", pNumItemsWidth, retObj.itemNumWidth, retObj.numItemsWidth, retObj.descWidth);
+			//printf("\x01nLongest # items in heirarchy: %d\r\n", maxNumItemsWidthInHeirarchy(pDirHeirarchyObj));
 		}
-
-		return menuItemObj;
-	};
-
-	// Set the currently selected item to the current group
-	fileLibMenu.selectedItemIdx = file_area.dir[bbs.curdir_code].lib_index;
-	if (fileLibMenu.selectedItemIdx >= fileLibMenu.topItemIdx+fileLibMenu.GetNumItemsPerPage())
-		fileLibMenu.topItemIdx = fileLibMenu.selectedItemIdx - fileLibMenu.GetNumItemsPerPage() + 1;
-
-	return fileLibMenu;
-}
-
-// For the DDFileAreaChooser class: Creates the DDLightbarMenu for use with
-// choosing a file directory in lightbar mode.
-//
-// Parameters:
-//  pLibIdx: The index of the file library
-//  pDirIdx: The index of a file directory, if name collapsing is being used
-//  pLevel: The level into the heirarchy.  2 would be file directories, and
-//          3 would be subdirectories inside directories if name collapsing
-//          is being used
-//
-// Return value: A DDLightbarMenu object for choosing a file directory within
-// the given file library
-function DDFileAreaChooser_CreateLightbarFileDirMenu(pLibIdx, pDirIdx, pLevel)
-{
-	// Start & end indexes for the various items in each mssage group list row
-	// Selected mark, group#, description, # directorys
-	var fileDirListIdxes = {
-		markCharStart: 0,
-		markCharEnd: 1,
-		dirNumStart: 1,
-		dirNumEnd: 3 + (+this.areaNumLen)
-	};
-	fileDirListIdxes.descStart = fileDirListIdxes.dirNumEnd;
-	fileDirListIdxes.descEnd = fileDirListIdxes.descStart + (+this.descFieldLen) + 1;
-	fileDirListIdxes.numItemsStart = fileDirListIdxes.descEnd;
-	// Set numItemsEnd to -1 to let the whole rest of the lines be colored
-	fileDirListIdxes.numItemsEnd = -1;
-	var listStartRow = this.areaChangeHdrLines.length + 3; // or + 2?
-	var fileDirMenuHeight = console.screen_rows - listStartRow;
-	var fileDirMenu = new DDLightbarMenu(1, listStartRow, console.screen_columns, fileDirMenuHeight);
+		// End Temporary
+	}
+	// If not using the lightbar interface (and ANSI behavior is not to be allowed), fileDirMenu.numberedMode
+	// will be set to true by default.  Also, in that situation, set the menu's item number color
+	if (!fileDirMenu.allowANSI)
+		fileDirMenu.colors.itemNumColor = this.colors.areaNum;
 	fileDirMenu.scrollbarEnabled = true;
 	fileDirMenu.borderEnabled = false;
+	// Set the color arrays in the menu
 	fileDirMenu.SetColors({
-		itemColor: [{start: fileDirListIdxes.markCharStart, end: fileDirListIdxes.markCharEnd, attrs: this.colors.areaMark},
-		            {start: fileDirListIdxes.dirNumStart, end: fileDirListIdxes.dirNumEnd, attrs: this.colors.areaNum},
-		            {start: fileDirListIdxes.descStart, end: fileDirListIdxes.descEnd, attrs: this.colors.desc},
-		            {start: fileDirListIdxes.numItemsStart, end: fileDirListIdxes.numItemsEnd, attrs: this.colors.numItems}],
-		selectedItemColor: [{start: fileDirListIdxes.markCharStart, end: fileDirListIdxes.markCharEnd, attrs: this.colors.areaMark + this.colors.bkgHighlight},
-		                    {start: fileDirListIdxes.dirNumStart, end: fileDirListIdxes.dirNumEnd, attrs: this.colors.areaNumHighlight + this.colors.bkgHighlight},
-		                    {start: fileDirListIdxes.descStart, end: fileDirListIdxes.descEnd, attrs: this.colors.descHighlight + this.colors.bkgHighlight},
-		                    {start: fileDirListIdxes.numItemsStart, end: fileDirListIdxes.numItemsEnd, attrs: this.colors.numItemsHighlight + this.colors.bkgHighlight}]
+		itemColor: colorIdxInfo.itemColor,
+		selectedItemColor: colorIdxInfo.selectedItemColor
 	});
 
 	fileDirMenu.multiSelect = false;
 	fileDirMenu.ampersandHotkeysInItems = false;
 	fileDirMenu.wrapNavigation = false;
-
-	// Add additional keypresses for quitting the menu's input loop so we can
-	// respond to these keys
-	fileDirMenu.AddAdditionalQuitKeys("nNqQ ?0123456789/" + CTRL_F);
+	// Menu prompt text for non-ANSI mode
+	fileDirMenu.nonANSIPromptText = "\x01n\x01b\x01h" + TALL_UPPER_MID_BLOCK + " \x01n\x01cWhich, \x01hQ\x01n\x01cuit, \x01hCTRL-F\x01n\x01c, \x01h/\x01n\x01c: \x01h";
 
 	// Build the file directory info for the given file library
-	this.BuildFileDirPrintfInfoForLib(pLibIdx);
-	// Change the menu's NumItems() and GetItem() function to reference
-	// the message list in this object rather than add the menu items
-	// to the menu
-	fileDirMenu.areaChooser = this; // Add this object to the menu object
-	fileDirMenu.libIdx = pLibIdx;
-	if (this.useDirCollapsing)
+	fileDirMenu.dirHeirarchyObj = pDirHeirarchyObj;
+	fileDirMenu.areaChooser = this;
+	fileDirMenu.allDirs = true; // Whether the menu has only directories (no file libraries)
+	if (Array.isArray(pDirHeirarchyObj))
 	{
-		if (pLevel == 2)
+		// See if any of the items in the array aren't directories, and set retObj.allDirs.
+		// Also, see which one has the user's current chosen directory so we can set the
+		// current menu item index - And save that index in the menu object for its
+		// reference later.
+		fileDirMenu.idxWithUserSelectedDir = -1;
+		for (var i = 0; i < pDirHeirarchyObj.length; ++i)
 		{
-			fileDirMenu.NumItems = function() {
-				return this.areaChooser.lib_list[this.libIdx].dir_list.length;
-			};
-			fileDirMenu.GetItem = function(pDirIdx) {
-				var menuItemObj = this.MakeItemWithRetval(-1);
-				if ((pDirIdx >= 0) && (pDirIdx < this.areaChooser.lib_list[this.libIdx].dir_list.length))
-				{
-					var showDirMark = false;
-					if ((typeof(bbs.curdir_code) == "string") && (bbs.curdir_code != ""))
-					{
-						if (this.areaChooser.lib_list[this.libIdx].dir_list[pDirIdx].hasOwnProperty("subdir_list") && this.areaChooser.lib_list[this.libIdx].dir_list[pDirIdx].subdir_list.length > 0)
-						{
-							for (var subDirIdx = 0; subDirIdx < this.areaChooser.lib_list[this.libIdx].dir_list[pDirIdx].subdir_list.length && !showDirMark; ++subDirIdx)
-								showDirMark = (bbs.curdir_code == this.areaChooser.lib_list[this.libIdx].dir_list[pDirIdx].subdir_list[subDirIdx].code);
-						}
-						else if (this.areaChooser.lib_list[this.libIdx].dir_list[pDirIdx].hasOwnProperty("code"))
-							showDirMark = (bbs.curdir_code == this.areaChooser.lib_list[this.libIdx].dir_list[pDirIdx].code);
-					}
-					// Set the directory description.  And if it has subdirectories,
-					// then append some text indicating so.
-					var dirDesc = this.areaChooser.lib_list[this.libIdx].dir_list[pDirIdx].description;
-					if (this.areaChooser.lib_list[this.libIdx].dir_list[pDirIdx].subdir_list.length > 0)
-						dirDesc += "  <subdirs>";
-					menuItemObj.text = (showDirMark ? "*" : " ");
-					menuItemObj.text += format(this.areaChooser.fileDirListPrintfInfo[this.libIdx].printfStr, +(pDirIdx+1),
-											   dirDesc.substr(0, this.areaChooser.descFieldLen),
-											   this.areaChooser.fileDirListPrintfInfo[this.libIdx].fileCounts[pDirIdx]);
-					menuItemObj.text = strip_ctrl(menuItemObj.text);
-					menuItemObj.retval = pDirIdx;
-				}
-
-				return menuItemObj;
-			};
-			
-			// Set the currently selected item.  If the current directory is in this list,
-			// then set the selected item to that; otherwise, the selected item should be
-			// the first directory.
-			if (file_area.dir[bbs.curdir_code].lib_index == pLibIdx)
+			// Each object will have either an "items" or a "dirObj"
+			if (!pDirHeirarchyObj[i].hasOwnProperty("dirObj"))
 			{
-				var currentIdx = -1;
-				for (var dirI = 0; dirI < this.lib_list[pLibIdx].dir_list.length && currentIdx == -1; ++dirI)
-				{
-					var dirSubdirsValid = this.lib_list[pLibIdx].dir_list[dirI].hasOwnProperty("subdir_list") && this.lib_list[pLibIdx].dir_list[dirI].subdir_list.length > 0;
-					if (dirSubdirsValid)
-					{
-						for (var subDirIdx = 0; subDirIdx < this.lib_list[pLibIdx].dir_list[dirI].subdir_list.length && currentIdx == -1; ++subDirIdx)
-						{
-							if (bbs.curdir_code == this.lib_list[pLibIdx].dir_list[dirI].subdir_list[subDirIdx].code)
-								currentIdx = dirI;
-						}
-					}
-					else
-					{
-						if (bbs.curdir_code == this.lib_list[pLibIdx].dir_list[dirI].code)
-							currentIdx = dirI;
-					}
-				}
-				if (currentIdx > -1)
-				{
-					fileDirMenu.selectedItemIdx = currentIdx
-					if (fileDirMenu.selectedItemIdx >= fileDirMenu.topItemIdx+fileDirMenu.GetNumItemsPerPage())
-						fileDirMenu.topItemIdx = fileDirMenu.selectedItemIdx - fileDirMenu.GetNumItemsPerPage() + 1;
-				}
+				retObj.allDirs = false;
+				fileDirMenu.allDirs = false;
 			}
+			// See if this one has the user's selected file directory
+			if (fileDirStructureHasCurrentUserFileDir(pDirHeirarchyObj[i]))
+				fileDirMenu.idxWithUserSelectedDir = i;
+			// If we've found all we need, then stop going through the array
+			if (!retObj.allDirs && fileDirMenu.idxWithUserSelectedDir > -1)
+				break;
 		}
-		else if (pLevel == 3)
-		{
-			fileDirMenu.dirIdx = pDirIdx;
-			fileDirMenu.NumItems = function() {
-				return this.areaChooser.lib_list[this.libIdx].dir_list[this.dirIdx].subdir_list.length;
-			};
-			fileDirMenu.GetItem = function(pSubdirIdx) {
-				var menuItemObj = this.MakeItemWithRetval(-1);
-				if ((pSubdirIdx >= 0) && (pSubdirIdx < this.areaChooser.lib_list[this.libIdx].dir_list[this.dirIdx].subdir_list.length))
-				{
-					var showDirMark = false;
-					if ((typeof(bbs.curdir_code) == "string") && (bbs.curdir_code != ""))
-						showDirMark = (bbs.curdir_code == this.areaChooser.lib_list[this.libIdx].dir_list[this.dirIdx].subdir_list[pSubdirIdx].code);
-					menuItemObj.text = (showDirMark ? "*" : " ");
-					var subdirDesc = this.areaChooser.lib_list[this.libIdx].dir_list[this.dirIdx].subdir_list[pSubdirIdx].description;
-					var subdirDirIdx = this.areaChooser.lib_list[this.libIdx].dir_list[this.dirIdx].subdir_list[pSubdirIdx].index;
-					var dirCode = this.areaChooser.lib_list[this.libIdx].dir_list[this.dirIdx].subdir_list[pSubdirIdx].code;
-					menuItemObj.text += format(this.areaChooser.fileDirListPrintfInfo[this.libIdx].printfStr, +(pSubdirIdx+1),
-											   subdirDesc.substr(0, this.areaChooser.descFieldLen),
-											   this.areaChooser.fileDirListPrintfInfo[this.libIdx].fileCountsByCode[dirCode]);
-					menuItemObj.text = strip_ctrl(menuItemObj.text);
-					menuItemObj.retval = pSubdirIdx;
-				}
 
-				return menuItemObj;
-			}
-
-			// Set the currently selected item.  If the current directory is in this list,
-			// then set the selected item to that; otherwise, the selected item should be
-			// the first directory.
-			if (file_area.dir[bbs.curdir_code].lib_index == pLibIdx)
-			{
-				for (var i = 0; i < this.lib_list[pLibIdx].dir_list[pDirIdx].subdir_list.length; ++i)
-				{
-					if (bbs.curdir_code == this.lib_list[pLibIdx].dir_list[pDirIdx].subdir_list[i].code)
-					{
-						fileDirMenu.selectedItemIdx = i;
-						if (fileDirMenu.selectedItemIdx >= fileDirMenu.topItemIdx+fileDirMenu.GetNumItemsPerPage())
-							fileDirMenu.topItemIdx = fileDirMenu.selectedItemIdx - fileDirMenu.GetNumItemsPerPage() + 1;
-						break;
-					}
-				}
-			}
-		}
-	}
-	else
-	{
+		// Replace the menu's NumItems() function to return the correct number of items
 		fileDirMenu.NumItems = function() {
-			return file_area.lib_list[this.libIdx].dir_list.length;
+			return this.dirHeirarchyObj.length;
 		};
-		fileDirMenu.GetItem = function(pDirIdx) {
+		fileDirMenu.numItemsLen = fileDirMenu.NumItems().toString().length;
+		// Replace the menu's GetItem() function to create & return an item for the menu
+		fileDirMenu.descFieldLen = this.descFieldLen; // Mainly for lightbar mode
+		if (!fileDirMenu.allowANSI)
+			fileDirMenu.descFieldLen += 3;
+		fileDirMenu.GetItem = function(pItemIdx) {
 			var menuItemObj = this.MakeItemWithRetval(-1);
-			if ((pDirIdx >= 0) && (pDirIdx < file_area.lib_list[this.libIdx].dir_list.length))
+			//var showDirMark = fileDirStructureHasCurrentUserFileDir(this.dirHeirarchyObj[pItemIdx]);
+			var showDirMark = (pItemIdx == this.idxWithUserSelectedDir);
+			var areaDesc = this.dirHeirarchyObj[pItemIdx].name;
+			var numItems = 0;
+			var adjustDescLen = false;
+			if (this.dirHeirarchyObj[pItemIdx].hasOwnProperty("items"))
 			{
-				var showDirMark = false;
-				if ((typeof(bbs.curdir_code) == "string") && (bbs.curdir_code != ""))
-					showDirMark = ((this.libIdx == file_area.dir[bbs.curdir_code].lib_index) && (pDirIdx == file_area.dir[bbs.curdir_code].index));
-				menuItemObj.text = (showDirMark ? "*" : " ");
-				menuItemObj.text += format(this.areaChooser.fileDirListPrintfInfo[this.libIdx].printfStr, +(pDirIdx+1),
-				                           file_area.lib_list[this.libIdx].dir_list[pDirIdx].description.substr(0, this.areaChooser.descFieldLen),
-				                           this.areaChooser.fileDirListPrintfInfo[this.libIdx].fileCounts[pDirIdx]);
-				menuItemObj.text = strip_ctrl(menuItemObj.text);
-				menuItemObj.retval = pDirIdx;
+				numItems = this.dirHeirarchyObj[pItemIdx].items.length;
+				// If this isn't the top level (libraries), then add "<subdirs>" to the description
+				if (this.dirHeirarchyObj != this.areaChooser.lib_list)
+				{
+					areaDesc += "  <subdirs>";
+					//adjustDescLen = true;
+				}
+			}
+			else if (this.dirHeirarchyObj[pItemIdx].hasOwnProperty("dirObj"))
+			{
+				if (numItems = this.dirHeirarchyObj[pItemIdx].dirObj.hasOwnProperty("files"))
+					numItems = this.dirHeirarchyObj[pItemIdx].dirObj.files; // Added in Synchronet 3.18c
+				else
+				{
+					var dirIdx = this.dirHeirarchyObj[pItemIdx].dirObj.index;
+					numItems = this.areaChooser.fileDirListPrintfInfo[this.dirHeirarchyObj[pItemIdx].libIdx].fileCounts[dirIdx];
+				}
 			}
 
+			// Menu item text
+			menuItemObj.text = (showDirMark ? "*" : " ");
+			if (this.allowANSI)
+			{
+				menuItemObj.text += format(this.areaChooser.fileDirListPrintfInfo[this.dirHeirarchyObj[pItemIdx].libIdx].printfStr, pItemIdx+1,
+										   areaDesc.substr(0, this.areaChooser.descFieldLen), numItems);
+			}
+			else
+			{
+				// No ANSI - Numbered mode
+				var numSpaces = retObj.itemNumWidth - this.numItemsLen - console.strlen(menuItemObj.text);
+				if (numSpaces > 0)
+					areaDesc = format("%*s", numSpaces, "") + areaDesc;
+				// TODO: In a library with mixed items that are a subdir or have more items (such
+				// as my BBS files), the ones with the items (subdirs) didn't have the correct length
+				// - The description length for the ones with subdirs is 1 too long, but the ones with
+				// items are good. But it seems fixed now with adjustDesclen not being set to true..?
+				var descWidth = console.screen_columns - this.numItemsLen - retObj.numItemsWidth - 2;
+				if (numSpaces > 0)
+				{
+					//descWidth -= (retObj.itemNumWidth - numSpaces);
+					descWidth -= numSpaces;
+				}
+				if (adjustDescLen || pHeirarchyLevel >= 3 || this.numItemsLen == 1) // Not sure why the heirarchy level matters here
+					++descWidth;
+				var formatStr = this.areaChooser.GetPrintfStrForDirWithoutAreaNum(descWidth, retObj.numItemsWidth);
+				menuItemObj.text += format(formatStr, areaDesc.substr(0, descWidth), numItems);
+
+				// TODO: Adjust/set colors for the menu item?
+				/*
+				//var itemColorInfo = this.areaChooser.GetColorIndexInfoForLightbarMenu(this.dirHeirarchyObj, null, this.descFieldLen+1);
+				var itemColorInfo = this.areaChooser.GetColorIndexInfoForLightbarMenu(this.dirHeirarchyObj, retObj.numItemsWidth, retObj.descWidth+1);
+				menuItemObj.itemColor = itemColorInfo.itemColor;
+				menuItemObj.itemSelectedColor = itemColorInfo.selectedItemColor;
+				*/
+			}
+			menuItemObj.text = strip_ctrl(menuItemObj.text);
+			menuItemObj.retval = pItemIdx;
 			return menuItemObj;
 		};
-
-		// Set the currently selected item.  If the current directory is in this list,
-		// then set the selected item to that; otherwise, the selected item should be
-		// the first directory.
-		if (file_area.dir[bbs.curdir_code].lib_index == pLibIdx)
+		
+		// Set the currently selected item
+		var selectedIdx = fileDirMenu.idxWithUserSelectedDir;
+		if (typeof(pSelectedItemIdx) === "number" && pSelectedItemIdx >= 0 && pSelectedItemIdx < fileDirMenu.NumItems())
+			selectedIdx = pSelectedItemIdx;
+		if (selectedIdx >= 0 && selectedIdx < fileDirMenu.NumItems())
 		{
-			fileDirMenu.selectedItemIdx = file_area.dir[bbs.curdir_code].index;
+			fileDirMenu.selectedItemIdx = selectedIdx;
 			if (fileDirMenu.selectedItemIdx >= fileDirMenu.topItemIdx+fileDirMenu.GetNumItemsPerPage())
 				fileDirMenu.topItemIdx = fileDirMenu.selectedItemIdx - fileDirMenu.GetNumItemsPerPage() + 1;
 		}
-		else
-		{
-			fileDirMenu.selectedItemIdx = 0;
-			fileDirMenu.topItemIdx = 0;
-		}
 	}
 
-	return fileDirMenu;
+	retObj.menuObj = fileDirMenu;
+	return retObj;
+}
+// Helper for DDFileAreaChooser_CreateLightbarMenu(): Returns arrays of objects with start, end, and attrs properties
+// for the lightbar menu to add colors to the menu items.
+//
+// Parameters:
+//  pDirHeirarchyObj: An object from this.lib_list, which is set up with a
+//                    'name' property and either an 'items' property if it
+//                    has sub-items or a 'dirObj' property if it's a file
+//                    directory
+//  pNumItemsWidthOverride: Optional - An override for the width of the # items column. Mainly for the traditional (non-lightbar) UI
+//                          If this is not specified/null, then this.areaNumLen will be used.
+//  pDescWidthOverride: Optional - Description width override
+function DDFileAreaChooser_GetColorIndexInfoForLightbarMenu(pDirHeirarchyObj, pNumItemsWidthOverride, pDescWidthOverride)
+{
+	var retObj = {
+		fileDirListIdxes: {}, // Start & end indexes for the various items in each item list row
+		itemColor: [],        // Normal item color array
+		selectedItemColor: [] // Selected item color array
+	};
+
+	var areaNumLen = this.areaNumLen;
+	if (typeof(pNumItemsWidthOverride) === "number" && pNumItemsWidthOverride >= 0)
+		areaNumLen = pNumItemsWidthOverride;
+	var descLen = this.descFieldLen;
+	if (typeof(pDescWidthOverride) === "number" && pDescWidthOverride >= 0)
+		descLen = pDescWidthOverride;
+
+	if (this.useLightbarInterface && console.term_supports(USER_ANSI))
+	{
+		retObj.fileDirListIdxes = {
+			markCharStart: 0,
+			markCharEnd: 1,
+			itemNumStart: 1,
+			itemNumEnd: 3 + areaNumLen
+		};
+		retObj.fileDirListIdxes.descStart = retObj.fileDirListIdxes.itemNumEnd;
+		retObj.fileDirListIdxes.descEnd = retObj.fileDirListIdxes.descStart + descLen + 1;
+		retObj.fileDirListIdxes.numItemsStart = retObj.fileDirListIdxes.descEnd;
+		// Set numItemsEnd to -1 to let the whole rest of the lines be colored
+		retObj.fileDirListIdxes.numItemsEnd = -1;
+		// Item color arrays
+		retObj.itemColor = [{start: retObj.fileDirListIdxes.markCharStart, end: retObj.fileDirListIdxes.markCharEnd, attrs: this.colors.areaMark},
+		                    {start: retObj.fileDirListIdxes.itemNumStart, end: retObj.fileDirListIdxes.itemNumEnd, attrs: this.colors.areaNum},
+		                    {start: retObj.fileDirListIdxes.descStart, end: retObj.fileDirListIdxes.descEnd, attrs: this.colors.desc},
+		                    {start: retObj.fileDirListIdxes.numItemsStart, end: retObj.fileDirListIdxes.numItemsEnd, attrs: this.colors.numItems}],
+		retObj.selectedItemColor = [{start: retObj.fileDirListIdxes.markCharStart, end: retObj.fileDirListIdxes.markCharEnd, attrs: this.colors.areaMark + this.colors.bkgHighlight},
+		                            {start: retObj.fileDirListIdxes.itemNumStart, end: retObj.fileDirListIdxes.itemNumEnd, attrs: this.colors.areaNumHighlight + this.colors.bkgHighlight},
+		                            {start: retObj.fileDirListIdxes.descStart, end: retObj.fileDirListIdxes.descEnd, attrs: this.colors.descHighlight + this.colors.bkgHighlight},
+		                            {start: retObj.fileDirListIdxes.numItemsStart, end: retObj.fileDirListIdxes.numItemsEnd, attrs: this.colors.numItemsHighlight + this.colors.bkgHighlight}]
+	}
+	else
+	{
+		retObj.fileDirListIdxes = {
+			markCharStart: 0,
+			markCharEnd: 1,
+			descStart: 1,
+		};
+		retObj.fileDirListIdxes.descEnd = 2 + descLen;
+		retObj.fileDirListIdxes.numItemsStart = retObj.fileDirListIdxes.descEnd;
+		// Set numItemsEnd to -1 to let the whole rest of the lines be colored
+		retObj.fileDirListIdxes.numItemsEnd = -1;
+		// Item color arrays
+		retObj.itemColor = [{start: retObj.fileDirListIdxes.markCharStart, end: retObj.fileDirListIdxes.markCharEnd, attrs: this.colors.areaMark},
+		                    {start: retObj.fileDirListIdxes.descStart, end: retObj.fileDirListIdxes.descEnd, attrs: this.colors.desc},
+		                    {start: retObj.fileDirListIdxes.numItemsStart, end: retObj.fileDirListIdxes.numItemsEnd, attrs: this.colors.numItems}],
+		retObj.selectedItemColor = [{start: retObj.fileDirListIdxes.markCharStart, end: retObj.fileDirListIdxes.markCharEnd, attrs: this.colors.areaMark + this.colors.bkgHighlight},
+		                            {start: retObj.fileDirListIdxes.descStart, end: retObj.fileDirListIdxes.descEnd, attrs: this.colors.descHighlight + this.colors.bkgHighlight},
+		                            {start: retObj.fileDirListIdxes.numItemsStart, end: retObj.fileDirListIdxes.numItemsEnd, attrs: this.colors.numItemsHighlight + this.colors.bkgHighlight}]
+	}
+
+	return retObj;
 }
 
+// For the DDFileAreaChooser class: Displays a header line for use above the menu for items that
+// contain a number of items (sub-boards or files)
+function DDFileAreaChooser_DisplayMenuHdrWithNumItems(pItemNumLen, pDescLen, pNumItemsLen, pItemsColumnLabel)
+{
+	console.attributes = 0;
+	var itemNumLabel = (pItemNumLen >= 5 ? "Item#" : "#");
+	var formatStr = "%s%" + pItemNumLen + "s %-" + pDescLen + "s %" + pNumItemsLen + "s";
+	printf(formatStr, this.colors.header, itemNumLabel, "Description", "# " + pItemsColumnLabel);
+}
+
+// For the DDFileAreaChooser class: Displays the key help line at the bottom of the screen
 function DDFileAreaChooser_writeKeyHelpLine()
 {
 	console.gotoxy(1, console.screen_rows);
@@ -1835,7 +1187,7 @@ function DDFileAreaChooser_ReadConfigFile()
 //  pLightbar: Boolean - Whether or not to show lightbar help.  If
 //             false, then this function will show regular help.
 //  pClearScreen: Boolean - Whether or not to clear the screen first
-function DDFileAreaChooser_showHelpScreen(pLightbar, pClearScreen)
+function DDFileAreaChooser_ShowHelpScreen(pLightbar, pClearScreen)
 {
 	if (pClearScreen)
 		console.clear("\x01n");
@@ -1965,8 +1317,6 @@ function DDFileAreaChooser_buildFileDirPrintfInfoForLib(pLibIndex)
 			// so that it's valid.
 			if (this.useDirCollapsing)
 			{
-				// Ensure this.lib_list is set up
-				this.SetUpLibListWithCollapsedDirs();
 				this.fileDirListPrintfInfo[pLibIndex].fileCounts = [];
 				this.fileDirListPrintfInfo[pLibIndex].fileCountsByCode = {};
 				for (var dirIdx = 0; dirIdx < this.lib_list[pLibIndex].dir_list.length; ++dirIdx)
@@ -1992,10 +1342,8 @@ function DDFileAreaChooser_buildFileDirPrintfInfoForLib(pLibIndex)
 
 		// Set the description field length and printf strings for
 		// this file library
-		this.fileDirListPrintfInfo[pLibIndex].descFieldLen =
-		                        console.screen_columns - this.areaNumLen
-		                        - this.fileDirListPrintfInfo[pLibIndex].numFilesLen - 5;
-		                        this.fileDirListPrintfInfo[pLibIndex].printfStr =
+		this.fileDirListPrintfInfo[pLibIndex].descFieldLen = console.screen_columns - this.areaNumLen - this.fileDirListPrintfInfo[pLibIndex].numFilesLen - 5;
+		this.fileDirListPrintfInfo[pLibIndex].printfStr =
 		                        this.colors.areaNum + " %" + this.areaNumLen + "d "
 		                        + this.colors.desc + "%-"
 		                        + this.fileDirListPrintfInfo[pLibIndex].descFieldLen
@@ -2008,7 +1356,34 @@ function DDFileAreaChooser_buildFileDirPrintfInfoForLib(pLibIndex)
 		                        + this.fileDirListPrintfInfo[pLibIndex].descFieldLen
 		                        + "s " + this.colors.numItemsHighlight + "%"
 		                        + this.fileDirListPrintfInfo[pLibIndex].numFilesLen +"d\x01n";
+		this.fileDirListPrintfInfo[pLibIndex].printfStrWithoutAreaNum =
+		                        this.colors.desc + "%-"
+		                        + (this.fileDirListPrintfInfo[pLibIndex].descFieldLen+2)
+		                        + "s " + this.colors.numItems + "%"
+		                        + this.fileDirListPrintfInfo[pLibIndex].numFilesLen + "d";
+		this.fileDirListPrintfInfo[pLibIndex].highlightPrintfStr =
+		                        "\x01n" + this.colors.bkgHighlight
+		                        + this.colors.areaNumHighlight + " %" + this.areaNumLen
+		                        + "d " + this.colors.descHighlight + "%-"
+		                        + this.fileDirListPrintfInfo[pLibIndex].descFieldLen
+		                        + "s " + this.colors.numItemsHighlight + "%"
+		                        + this.fileDirListPrintfInfo[pLibIndex].numFilesLen +"d\x01n";
 	}
+}
+
+ // Returns a printf string for an area item without an area number; mainly for
+ // the traditional/non-lightbar interface, which uses the menu in numbered mode
+ //
+ // Parameters:
+ //  pDescLen: The length to use for the description
+ //  pNumItemsLen: The lenggth of the field for the number of items in the area (right side)
+ //
+ // Return value: The printf string for the item
+function DDFileAreaChooser_GetPrintfStrForDirWithoutAreaNum(pDescLen, pNumItemsLen)
+{
+	var printfStr = "\x01n" + this.colors.desc + "%-" + pDescLen + "s " + this.colors.numItems + "%"
+	              + pNumItemsLen + "d";
+	return printfStr;
 }
 
 // For the DDFileAreaChooser class: Displays the area chooser header
@@ -2082,303 +1457,42 @@ function DDFileAreaChooser_WriteLightbarKeyHelpErrorMsg(pErrorMsg, pRefreshHelpL
 	console.gotoxy(1, console.screen_rows);
 	console.print("\x01y\x01h" + pErrorMsg + "\x01n");
 	mswait(ERROR_WAIT_MS);
-	if (pRefreshHelpLine)
+	if (pRefreshHelpLine && this.useLightbarInterface && console.term_supports(USER_ANSI))
 		this.WriteKeyHelpLine();
 }
 
-// For the DDFileAreaChooser class: Sets up the lib_list array according to
-// the file directory collapse separator
-function DDFileAreaChooser_SetUpLibListWithCollapsedDirs()
-{
-	if (this.lib_list.length == 0)
-	{
-		// Copy some of the information from file_area.lib_list
-		for (var libIdx = 0; libIdx < file_area.lib_list.length; ++libIdx)
-		{
-			// Go through dir_list in the curent file library, and for
-			// any that have the collapse separator, add only one copy
-			// of the name to the dir_list property for this library.
-			// First, we'll have to see if multiple directories with
-			// the collapse separator have the same prefix.
-			// dirDescs is an object indexed by directory description,
-			// and the value will be how many times it was seen.
-			var dirDescs = {};
-			// First, count the number of directories that have the separator.
-			// If all of the group's directories have the separator, then we
-			// won't collapse the directories.
-			var numDirsWithSeparator = 0;
-			for (var dirIdx = 0; dirIdx < file_area.lib_list[libIdx].dir_list.length; ++dirIdx)
-			{
-				// Check to see if the name before the separator is the same as the
-				// file library name, and only count it if it's not.
-				var dirDesc = file_area.lib_list[libIdx].dir_list[dirIdx].description;
-				var sepIdx = dirDesc.indexOf(this.dirCollapseSeparator);
-				if (sepIdx > 1)
-				{
-					var dirDescBeforeSep = file_area.lib_list[libIdx].dir_list[dirIdx].description.substr(0, sepIdx);
-					if (dirDescBeforeSep != file_area.lib_list[libIdx].dir_list[dirIdx].name)
-						++numDirsWithSeparator;
-				}
-			}
-			// Whether or not to use directory collapsing for this file library
-			var collapseThisLib = (numDirsWithSeparator > 0 && numDirsWithSeparator < file_area.lib_list[libIdx].dir_list.length);
-			for (var dirIdx = 0; dirIdx < file_area.lib_list[libIdx].dir_list.length; ++dirIdx)
-			{
-				var dirDesc = file_area.lib_list[libIdx].dir_list[dirIdx].description;
-				if (collapseThisLib)
-				{
-					var sepIdx = dirDesc.indexOf(this.dirCollapseSeparator);
-					if (sepIdx > -1)
-						dirDesc = truncsp(dirDesc.substr(0, sepIdx));  // Remove trailing whitespace
-				}
-				if (dirDescs.hasOwnProperty(dirDesc))
-					dirDescs[dirDesc] += 1;
-				else
-					dirDescs[dirDesc] = 1;
-			}
-
-			// Create an initial file library object for this file library (except
-			// for dir_list, which we will build ourselves for this library)
-			var libObj = defaultFileLibObj();
-			for (var prop in libObj)
-			{
-				if (prop != "dir_list")
-					libObj[prop] = file_area.lib_list[libIdx][prop];
-			}
-
-			// Go through the dirs in this library again.  For each directory:
-			// If its whole description exists in dirDescs, then just add it to
-			// the dir_list array.  Otherwise:
-			// If a collapse seprator exists, then split on that and see if the
-			// prefix was seen more than once.  If so, then add the separate
-			// subdirs as their own items in the dir_list array.  Otherwise,
-			// add the single directory to the dir_list array with the whole
-			// description.
-			var addedPrefixDescriptionDirs = {};
-			for (var dirIdx = 0; dirIdx < file_area.lib_list[libIdx].dir_list.length; ++dirIdx)
-			{
-				var dirDesc = file_area.lib_list[libIdx].dir_list[dirIdx].description;
-				if (dirDescs.hasOwnProperty(dirDesc))
-					libObj.dir_list.push(dirObjFromOfficialDir(libIdx, dirIdx));
-				else
-				{
-					var subdirDesc = "";
-					var sepIdx = dirDesc.indexOf(this.dirCollapseSeparator);
-					if (sepIdx > -1)
-					{
-						// dirDesc here will now be the shortened middle one before the separator character
-						dirDesc = truncsp(dirDesc.substr(0, sepIdx));  // Remove trailing whitespace
-						// If the directory description before the name separator character is different
-						// from the file library name, then add it with sub-subdirectories
-						if (dirDesc != file_area.lib_list[libIdx].name)
-						{
-							// If it has been seen more than once, then the description should
-							// be the prefix description
-							if (dirDescs[dirDesc] > 1)
-							{
-								// Find the file directory with a description matching dirDesc
-								var addedDirIdx = -1; //libObj.dir_list.length - 1;
-								for (var i = 0; i < libObj.dir_list.length && addedDirIdx == -1; ++i)
-								{
-									if (libObj.dir_list[i].description == dirDesc)
-										addedDirIdx = i;
-								}
-								if (!addedPrefixDescriptionDirs.hasOwnProperty(dirDesc))
-								{
-									// Add it to dir_list
-									libObj.dir_list.push(dirObjFromOfficialDir(libIdx, dirIdx));
-									addedDirIdx = libObj.dir_list.length - 1;
-									libObj.dir_list[addedDirIdx].description = dirDesc;
-									addedPrefixDescriptionDirs[dirDesc] = true;
-								}
-								// Add the subdirectory to the directory's subdirectory list
-								// Using skipsp() to strip leading whitespace
-								subdirDesc = skipsp(file_area.lib_list[libIdx].dir_list[dirIdx].description.substr(sepIdx+1));
-								libObj.dir_list[addedDirIdx].subdir_list.push({
-									description: subdirDesc,
-									code: file_area.lib_list[libIdx].dir_list[dirIdx].code,
-									index: file_area.lib_list[libIdx].dir_list[dirIdx].index,
-									lib_index: file_area.lib_list[libIdx].dir_list[dirIdx].lib_index
-								});
-							}
-							else // Add it with the full description
-								libObj.dir_list.push(dirObjFromOfficialDir(libIdx, dirIdx));
-						}
-						else
-						{
-							// The directory name before the name separator character is the same as the file
-							// library name. Add it as its own single subdirectory.
-							libObj.dir_list.push(dirObjFromOfficialDir(libIdx, dirIdx));
-						}
-					}
-					if (dirDescs.hasOwnProperty(dirDesc))
-						dirDescs[dirDescs] += 1;
-					else
-						dirDescs[dirDescs] = 1;
-				}
-			}
-
-			this.lib_list.push(libObj);
-		}
-	}
-}
-// Returns a default object for a file library
-function defaultFileLibObj()
-{
-	return {
-		index: 0,
-		number: 0,
-		name: "",
-		description: "",
-		ars: 0,
-		dir_list: []
-	};
-}
-
-// Returns a default object for a file directory.  It can potentially
-// contain its own list of subdirectories.
-function defaultFileDirObj()
-{
-	return {
-		index: 0,
-		number: 0,
-		lib_index: 0,
-		lib_number: 0,
-		lib_name: 0,
-		code: "",
-		name: "",
-		lib_name: "",
-		description: "",
-		ars: 0,
-		settings: 0,
-		subdir_list: []
-	};
-}
-function dirObjFromOfficialDir(pLibIdx, pDirIdx)
-{
-	var dirObj = defaultFileDirObj();
-	for (var prop in dirObj)
-	{
-		if (prop != "subdir_list") // Doesn't exist in the official dir objects
-			dirObj[prop] = file_area.lib_list[pLibIdx].dir_list[pDirIdx][prop];
-	}
-	return dirObj;
-}
-
-// For the DDFileAreaChooser class: Finds a file directory index with search text, matching either the name or
+// Finds a file area index with search text, matching either the name or
 // description, case-insensitive.
 //
 // Parameters:
-//  pGrpIdx: The index of the file library
+//  pFileAreaStructure: The file area structure from this.msgArea_list to search through
 //  pSearchText: The name/description text to look for
 //  pStartItemIdx: The item index to start at.  Defaults to 0
-//  pLevel: Level (only if using directory collapsing): 2 = directories, and 3 = subdirectories
-//  pDirIdx: If level 3 (subdirs), this specifies the directory index
 //
-// Return value: The index of the file directory, or -1 if not found
-function DDFileAreaChooser_FindFileDirIdxFromText(pLibIdx, pSearchText, pStartItemIdx, pLevel, pDirIdx)
+// Return value: The index of the file area, or -1 if not found
+function DDFileAreaChooser_FindFileAreaIdxFromText(pFileAreaStructure, pSearchText, pStartItemIdx)
 {
-	if (typeof(pLibIdx) != "number")
-		return -1;
 	if (typeof(pSearchText) != "string")
 		return -1;
 
-	var fileDirIdx = -1;
+	var areaIdx = -1;
 
-	var startIdx = (typeof(pStartItemIdx) == "number" ? pStartItemIdx : 0);
+	var startIdx = (typeof(pStartItemIdx) === "number" ? pStartItemIdx : 0);
+	if ((startIdx < 0) || (startIdx > pFileAreaStructure.length))
+		startIdx = 0;
 
-	// Temporary
-	//if (user.is_sysop) console.print("\x01n\r\npDir collapsing: " + this.useDirCollapsing + "; Level, pDirIdx: " + pLevel + ", " + pDirIdx + "\r\n\x01p");
-	// End Temporary
-
-	// Go through the message group list and look for a match
+	// Go through the message area list and look for a match
 	var searchTextUpper = pSearchText.toUpperCase();
-	var continueOn = true;
-	if (this.useDirCollapsing)
+	for (var i = startIdx; i < pFileAreaStructure.length; ++i)
 	{
-		if (typeof(pDirIdx) !== "number")
-			return -1;
-		if (pDirIdx < 0 || pDirIdx >= this.lib_list[pLibIdx].dir_list.length)
-			return -1;
-		if (typeof(pLevel) === "number")
+		if (pFileAreaStructure[i].name.toUpperCase().indexOf(searchTextUpper) > -1 || pFileAreaStructure[i].altName.toUpperCase().indexOf(searchTextUpper) > -1)
 		{
-			if (pLevel == 2)
-			{
-				if ((startIdx < 0) || (startIdx >= this.lib_list[pLibIdx].dir_list.length))
-					startIdx = 0;
-				while (continueOn && fileDirIdx == -1)
-				{
-					for (var i = startIdx; i < this.lib_list[pLibIdx].dir_list.length; ++i)
-					{
-						if ((this.lib_list[pLibIdx].dir_list[i].name.toUpperCase().indexOf(searchTextUpper) > -1) ||
-							(this.lib_list[pLibIdx].dir_list[i].description.toUpperCase().indexOf(searchTextUpper) > -1))
-						{
-							fileDirIdx = i;
-							continueOn = false;
-							break;
-						}
-					}
-					if (fileDirIdx == -1)
-					{
-						if (startIdx > 0)
-							startIdx = 0;
-						else
-							continueOn = false;
-					}
-				}
-			}
-			else if (pLevel == 3)
-			{
-				if ((startIdx < 0) || (startIdx >= this.lib_list[pLibIdx].dir_list[pDirIdx].subdir_list.length))
-					startIdx = 0;
-				while (continueOn && fileDirIdx == -1)
-				{
-					for (var i = startIdx; i < this.lib_list[pLibIdx].dir_list[pDirIdx].subdir_list.length; ++i)
-					{
-						if ((this.lib_list[pLibIdx].dir_list[pDirIdx].subdir_list[i].description.toUpperCase().indexOf(searchTextUpper) > -1))
-						{
-							fileDirIdx = i;
-							continueOn = false;
-							break;
-						}
-					}
-					if (fileDirIdx == -1)
-					{
-						if (startIdx > 0)
-							startIdx = 0;
-						else
-							continueOn = false;
-					}
-				}
-			}
-		}
-	}
-	else
-	{
-		if ((startIdx < 0) || (startIdx >= file_area.lib_list[pLibIdx].dir_list.length))
-			startIdx = 0;
-		while (continueOn && fileDirIdx == -1)
-		{
-			for (var i = startIdx; i < file_area.lib_list[pLibIdx].dir_list.length; ++i)
-			{
-				if ((file_area.lib_list[pLibIdx].dir_list[i].name.toUpperCase().indexOf(searchTextUpper) > -1) ||
-					(file_area.lib_list[pLibIdx].dir_list[i].description.toUpperCase().indexOf(searchTextUpper) > -1))
-				{
-					fileDirIdx = i;
-					break;
-				}
-			}
-			if (fileDirIdx == -1)
-			{
-				if (startIdx > 0)
-					startIdx = 0;
-				else
-					continueOn = false;
-			}
+			areaIdx = i;
+			break;
 		}
 	}
 
-	return fileDirIdx;
+	return areaIdx;
 }
 
 // Removes multiple, leading, and/or trailing spaces
@@ -2461,34 +1575,12 @@ function DDFileAreaChooser_GetGreatestNumFiles(pLibIndex)
 		fileCountsByCode: {}
 	}
 
-	if (this.useDirCollapsing)
+	retObj.fileCounts = new Array(file_area.lib_list[pLibIndex].dir_list.length);
+	for (var dirIndex = 0; dirIndex < file_area.lib_list[pLibIndex].dir_list.length; ++dirIndex)
 	{
-		// Ensure this.lib_list is set up
-		this.SetUpLibListWithCollapsedDirs();
-
-		retObj.fileCounts = new Array(this.lib_list[pLibIndex].dir_list.length);
-		for (var dirIndex = 0; dirIndex < this.lib_list[pLibIndex].dir_list.length; ++dirIndex)
-		{
-			if (this.lib_list[pLibIndex].dir_list[dirIndex].subdir_list.length > 0)
-				retObj.fileCounts[dirIndex] = this.lib_list[pLibIndex].dir_list[dirIndex].subdir_list.length;
-			else
-			{
-				var dirCode = this.lib_list[pLibIndex].dir_list[dirIndex].code;
-				retObj.fileCounts[dirIndex] = numFilesInDir(file_area.dir[dirCode].lib_index, file_area.dir[dirCode].index);
-			}
-			if (retObj.fileCounts[dirIndex] > retObj.greatestNumFiles)
-				retObj.greatestNumFiles = retObj.fileCounts[dirIndex];
-		}
-	}
-	else
-	{
-		retObj.fileCounts = new Array(file_area.lib_list[pLibIndex].dir_list.length);
-		for (var dirIndex = 0; dirIndex < file_area.lib_list[pLibIndex].dir_list.length; ++dirIndex)
-		{
-			retObj.fileCounts[dirIndex] = numFilesInDir(pLibIndex, dirIndex);
-			if (retObj.fileCounts[dirIndex] > retObj.greatestNumFiles)
-				retObj.greatestNumFiles = retObj.fileCounts[dirIndex];
-		}
+		retObj.fileCounts[dirIndex] = numFilesInDir(pLibIndex, dirIndex);
+		if (retObj.fileCounts[dirIndex] > retObj.greatestNumFiles)
+			retObj.greatestNumFiles = retObj.fileCounts[dirIndex];
 	}
 
 	// Populate the fileCountsByCode dictionary for the given file library
@@ -2499,65 +1591,6 @@ function DDFileAreaChooser_GetGreatestNumFiles(pLibIndex)
 	}
 
 	return retObj;
-}
-
-// Inputs a keypress from the user and handles some ESC-based
-// characters such as PageUp, PageDown, and ESC.  If PageUp
-// or PageDown are pressed, this function will return the
-// string "\x01PgUp" (KEY_PAGE_UP) or "\x01Pgdn" (KEY_PAGE_DOWN),
-// respectively.  Also, F1-F5 will be returned as "\x01F1"
-// through "\x01F5", respectively.
-// Thanks goes to Psi-Jack for the original impementation
-// of this function.
-//
-// Parameters:
-//  pGetKeyMode: Optional - The mode bits for console.getkey().
-//               If not specified, K_NONE will be used.
-//
-// Return value: The user's keypress
-function getKeyWithESCChars(pGetKeyMode)
-{
-   var getKeyMode = K_NONE;
-   if (typeof(pGetKeyMode) == "number")
-      getKeyMode = pGetKeyMode;
-
-   var userInput = console.getkey(getKeyMode);
-   if (userInput == KEY_ESC) {
-      switch (console.inkey(K_NOECHO|K_NOSPIN, 2)) {
-         case '[':
-            switch (console.inkey(K_NOECHO|K_NOSPIN, 2)) {
-               case 'V':
-                  userInput = KEY_PAGE_UP;
-                  break;
-               case 'U':
-                  userInput = KEY_PAGE_DOWN;
-                  break;
-           }
-           break;
-         case 'O':
-           switch (console.inkey(K_NOECHO|K_NOSPIN, 2)) {
-              case 'P':
-                 userInput = "\x01F1";
-                 break;
-              case 'Q':
-                 userInput = "\x01F2";
-                 break;
-              case 'R':
-                 userInput = "\x01F3";
-                 break;
-              case 'S':
-                 userInput = "\x01F4";
-                 break;
-              case 't':
-                 userInput = "\x01F5";
-                 break;
-           }
-         default:
-           break;
-      }
-   }
-
-   return userInput;
 }
 
 // Loads a text file (an .ans or .asc) into an array.  This will first look for
@@ -2973,4 +2006,193 @@ function findNextLibIdxWithDirs(pLibIdx)
 		}
 	}
 	return nextLibIdx;
+}
+
+// Creates and returns an array which is a sort of recursive array structure
+// of objects. Each entry in the array will be an object with a 'name' property
+// and either an 'items' property if it has sub-items or a 'dirObj' property
+// if it's a Synchronet file directory. The last item in the array chain
+// will have the 'dirObj' property.
+//
+// Parameters:
+//  pCollapsing: Boolean - Whether or not to use directory collapsing
+//  pCollapsingSeparator: The separator used to split file lib/dir names when using collapsing
+function getFileDirHeirarchy(pCollapsing, pCollapsingSeparator)
+{
+	var fileDirHeirarchy = [];
+	if (pCollapsing)
+	{
+		// For each library, go through each directory
+		for (var libIdx = 0; libIdx < file_area.lib_list.length; ++libIdx)
+		{
+			for (var dirIdx = 0; dirIdx < file_area.lib_list[libIdx].dir_list.length; ++dirIdx)
+			{
+				// 1. Join the library name & directory name separated by a colon
+				// 2. Split on colons into an array (of names)
+				// 3. Go through the array of names and build the appropriate structure in fileDirHeirarchy.
+				// TODO: Initially, I thought of having collapsing restricted to
+				// areas where there are no spaces before or after the :, but that
+				// isn't how I did it before..
+				/*
+				var libAndDirName = file_area.lib_list[libIdx].description + ":" + file_area.lib_list[libIdx].dir_list[dirIdx].description;
+				var nameArray = splitStrNoSpacesBeforeSeparator(libAndDirName, pCollapsingSeparator);
+				*/
+				var libDesc = skipsp(truncsp(file_area.lib_list[libIdx].description));
+				var dirDesc = skipsp(truncsp(file_area.lib_list[libIdx].dir_list[dirIdx].description));
+				var libAndDirName = libDesc + ":" + dirDesc;
+				var nameArray = libAndDirName.split(pCollapsingSeparator);
+				var arrayToSearch = fileDirHeirarchy;
+				for (var i = 0; i < nameArray.length; ++i)
+				{
+					var name = skipsp(truncsp(nameArray[i]));
+					// Look for this one in the heirarchy; if not found, add it.
+					// Look for an entry in the array that matches the name and has its own "items" array
+					var heirarchyIdx = -1;
+					for (var j = 0; j < arrayToSearch.length; ++j)
+					{
+						if (arrayToSearch[j].name == name && arrayToSearch[j].hasOwnProperty("items"))
+						{
+								heirarchyIdx = j;
+								break;
+						}
+					}
+					if (heirarchyIdx > -1)
+						arrayToSearch = arrayToSearch[heirarchyIdx].items;
+					else
+					{
+						// If we're at the last name, add a dirObj item; otherwise, add
+						// an items array.
+						if (i == nameArray.length - 1)
+						{
+							arrayToSearch.push(
+							{
+								name: name,
+								altName: file_area.lib_list[libIdx].dir_list[dirIdx].name,
+								libIdx: libIdx,
+								dirObj: file_area.lib_list[libIdx].dir_list[dirIdx]
+							});
+						}
+						else
+						{
+							arrayToSearch.push(
+							{
+								name: name,
+								altName: name,
+								libIdx: libIdx,
+								items: []
+							});
+							arrayToSearch = arrayToSearch[arrayToSearch.length-1].items;
+						}
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		// No collapsing. Have fileDirHeirarchy match the lib/dir structure
+		// configured on the BBS.
+		for (var libIdx = 0; libIdx < file_area.lib_list.length; ++libIdx)
+		{
+			fileDirHeirarchy.push(
+			{
+					name: file_area.lib_list[libIdx].description,
+					libIdx: libIdx,
+					items: []
+			});
+			var libIdxInHeirarchy = fileDirHeirarchy.length - 1;
+			for (var dirIdx = 0; dirIdx < file_area.lib_list[libIdx].dir_list.length; ++dirIdx)
+			{
+				fileDirHeirarchy[libIdxInHeirarchy].items.push(
+				{
+					name: file_area.lib_list[libIdx].dir_list[dirIdx].description,
+					libIdx: libIdx,
+					dirObj: file_area.lib_list[libIdx].dir_list[dirIdx]
+				});
+			}
+		}
+	}
+	return fileDirHeirarchy;
+}
+
+// Splits a string on a separator, except when there's a space after a
+// separator; if there's a space after a the separator, both parts of the
+// string before & after the separator are included as one item in the
+// resulting array. For instance, "Magic: The Gathering:Information"
+// would be split up such that "Magic: The Gathering" would be one string
+// and "Information" would be another, whereas "Mirror:Simtel:DOS:Games"
+// would all be split up into 4 strings
+function splitStrNoSpacesBeforeSeparator(pStr, pSep)
+{
+	var strArray = [];
+	var splitArray = pStr.split(pSep);
+	for (var i = 0; i < splitArray.length; ++i)
+	{
+		if (i < splitArray.length-1 && splitArray[i+1].indexOf(" ") == 0)
+			strArray.push(splitArray[i] + ":" + splitArray[++i]);
+		else
+			strArray.push(splitArray[i]);
+	}
+	return strArray;
+}
+
+// Given a file lib/directory heirarchy object built by this module, this
+// function returns whether it contains the user's currently selected file
+// directory.
+//
+// Parameters:
+//  pDirHeirarchyObj: An object from this.lib_list, which is
+//                    set up with a 'name' property and either
+//                    an 'items' property if it has sub-items
+//                    or a 'dirObj' property if it's a file
+//                    directory
+//
+// Return value: Whether or not the given structure has the user's currently selected file directory
+function fileDirStructureHasCurrentUserFileDir(pDirHeirarchyObj)
+{
+	var currentUserFileDirFound = false;
+	if (Array.isArray(pDirHeirarchyObj))
+	{
+		// This could be the top-level array or one of the 'items' properties, which is an array.
+		// Go through the array and call this function again recursively; this function will
+		// return when we get to an actual file directory that is the user's current selection.
+		for (var i = 0; i < pDirHeirarchyObj.length && !currentUserFileDirFound; ++i)
+			currentUserFileDirFound = fileDirStructureHasCurrentUserFileDir(pDirHeirarchyObj[i]);
+	}
+	else
+	{
+		// This is one of the objects with 'name' and an 'items' or 'dirObj'
+		if (pDirHeirarchyObj.hasOwnProperty("dirObj"))
+			currentUserFileDirFound = (bbs.curdir_code == pDirHeirarchyObj.dirObj.code);
+		else if (pDirHeirarchyObj.hasOwnProperty("items"))
+			currentUserFileDirFound = fileDirStructureHasCurrentUserFileDir(pDirHeirarchyObj.items);
+	}
+	return currentUserFileDirFound;
+}
+
+// Given an array of file directory heirarchy objects, this returns the length of the
+// longest number of items in the heirarchy - if there are any with an "items" array.
+// If there are no items with their own "items" array, this will return 0.
+//
+// Parameters:
+//  pDirHeirarchyObj: An object from this.lib_list, which is
+//                    set up with a 'name' property and either
+//                    an 'items' property if it has sub-items
+//                    or a 'dirObj' property if it's a file
+//                    directory
+//
+// Return value: The length of the longest number of items in the heirarchy
+function maxNumItemsWidthInHeirarchy(pDirHeirarchyObj)
+{
+	var maxNumItemsWidth = 0;
+	for (var i = 0; i < pDirHeirarchyObj.length; ++i)
+	{
+		if (pDirHeirarchyObj[i].hasOwnProperty("items"))
+		{
+			var numItemsLen = pDirHeirarchyObj[i].items.length.toString().length;
+			if (numItemsLen > maxNumItemsWidth)
+				maxNumItemsWidth = numItemsLen;
+		}
+	}
+	return maxNumItemsWidth;
 }
