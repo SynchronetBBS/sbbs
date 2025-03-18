@@ -74,13 +74,13 @@
  * 2023-10-27 Eric Oulashin   Version 1.41
  *                            Lightbar mode: When using name collapisng, ensure the menu item for
  *                            the appropriate subgroup is selected.
+ * 2024-11-12 Eric Oulashin   Version 1.42 Beta
+ *                            Started working on a change to sub-board collapsing to allow an
+ *                            arbitrary amount of separators in the group/sub names to
+ *                            create multiple levels of categories
+ * 2025-03-17 Eric Oulashin   Version 1.42
+ *                            Releasing this version
  */
-
-// TODO: In the area list, the 10,000ths digit (for # posts) is in a different color)
-
-// TODO: Passing "false" as the first command-line argument no longer works.
-// That should allow choosing a sub-board within the user's current message
-// group.
 
 /* Command-line arguments:
    1 (argv[0]): Boolean - Whether or not to choose a message group first (default).  If
@@ -117,8 +117,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.41";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2023-10-27";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.42";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2025-03-17";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -127,23 +127,18 @@ var KEY_ENTER = CTRL_M;
 var BACKSPACE = CTRL_H;
 var CTRL_F = "\x06";
 var KEY_ESC = ascii(27);
-// PageUp & PageDown keys - Synchronet 3.17 as of about December 18, 2017
-// use CTRL-P and CTRL-N for PageUp and PageDown, respectively.  sbbsdefs.js
-// defines them as KEY_PAGEUP and KEY_PAGEDN; I've used slightly different names
-// in this script so that this script will work with Synchronet systems before
-// and after the update containing those key definitions.
-var KEY_PAGE_UP = "\x10"; // Ctrl-P
-var KEY_PAGE_DOWN = "\x0e"; // Ctrl-N
-// Ensure KEY_PAGE_UP and KEY_PAGE_DOWN are set to what's defined in sbbs.js
-// for KEY_PAGEUP and KEY_PAGEDN in case they change
-if (typeof(KEY_PAGEUP) === "string")
-	KEY_PAGE_UP = KEY_PAGEUP;
-if (typeof(KEY_PAGEDN) === "string")
-	KEY_PAGE_DOWN = KEY_PAGEDN;
 
-// Key codes for display
+// Characters for display
 var UP_ARROW = ascii(24);
 var DOWN_ARROW = ascii(25);
+var BLOCK1 = "\xB0"; // Dimmest block
+var BLOCK2 = "\xB1";
+var BLOCK3 = "\xB2";
+var BLOCK4 = "\xDB"; // Brightest block
+var MID_BLOCK = ascii(254);
+var TALL_UPPER_MID_BLOCK = "\xFE";
+var UPPER_CENTER_BLOCK = "\xDF";
+var LOWER_CENTER_BLOCK = "\xDC";
 
 // Characters for display
 var HORIZONTAL_SINGLE = "\xC4";
@@ -275,7 +270,7 @@ function DDMsgAreaChooser()
 	// set up in the BBS - The dir_list within that one would then
 	// contain multiple sub-board split based on the dir collapse
 	// separator.
-	this.group_list = [];
+	//this.msgArea_list = [];
 
 	// Set the function pointers for the object
 	this.ReadConfigFile = DDMsgAreaChooser_ReadConfigFile;
@@ -283,19 +278,10 @@ function DDMsgAreaChooser()
 	this.WriteGrpListHdrLine = DDMsgAreaChooser_WriteGrpListHdrLine;
 	this.WriteSubBrdListHdr1Line = DMsgAreaChooser_WriteSubBrdListHdr1Line;
 	this.SelectMsgArea = DDMsgAreaChooser_SelectMsgArea;
-	this.SelectMsgArea_Lightbar = DDMsgAreaChooser_SelectMsgArea_Lightbar;
-	this.CreateLightbarMsgGrpMenu = DDMsgAreaChooser_CreateLightbarMsgGrpMenu;
-	this.CreateLightbarSubBoardMenu = DDMsgAreaChooser_CreateLightbarSubBoardMenu;
-	this.SelectMsgArea_Traditional = DDMsgAreaChooser_SelectMsgArea_Traditional;
-	this.SelectSubBoard_Traditional = DDMsgAreaChooser_SelectSubBoard_Traditional;
-	this.SelectSubSubWithinSub_Traditional = DDMsgAreaChooser_SelectSubSubWithinSub_Traditional;
-	this.ListMsgGrps = DDMsgAreaChooser_ListMsgGrps_Traditional;
-	this.ListSubBoardsInMsgGroup = DDMsgAreaChooser_ListSubBoardsInMsgGroup_Traditional;
-	this.CurrentSubBoardIsInSubSubsForSub = DDMsgAreaChooser_CurrentSubBoardIsInSubSubsForSub;
-	this.GetSubBoardInfo = DDMsgAreaChooser_GetSubBoardInfo;
-	// Lightbar-specific functions
-	this.WriteMsgGroupLine = DDMsgAreaChooser_writeMsgGroupLine;
-	this.GetMsgSubBrdLine = DDMsgAreaChooser_GetMsgSubBrdLine;
+	this.CreateLightbarMenu = DDMsgAreaChooser_CreateLightbarMenu;
+	this.GetColorIndexInfoForLightbarMenu = DDMsgAreaChooser_GetColorIndexInfoForLightbarMenu;
+	this.GetSubBoardColorIndexInfoForLightbarMenu = DDMsgAreaChooser_GetSubBoardColorIndexInfoForLightbarMenu;
+	// TODO: Anything we can remove?
 	// Help screen
 	this.ShowHelpScreen = DDMsgAreaChooser_showHelpScreen;
 	// Function to build the sub-board printf information for a message
@@ -305,12 +291,15 @@ function DDMsgAreaChooser()
 	this.DisplayListHdrLines = DDMsgAreaChooser_DisplayListHdrLines;
 	this.WriteLightbarKeyHelpErrorMsg = DDMsgAreaChooser_WriteLightbarKeyHelpErrorMsg;
 	this.SetUpGrpListWithCollapsedSubBoards = DDMsgAreaChooser_SetUpGrpListWithCollapsedSubBoards;
-	this.FindMsgGrpIdxFromText = DDMsgAreaChooser_FindMsgGrpIdxFromText;
-	this.FindSubBoardIdxFromText = DDMsgAreaChooser_FindSubBoardIdxFromText;
+	this.FindMsgAreaIdxFromText = DDMsgAreaChooser_FindMsgAreaIdxFromText;
 	this.GetSubNameLenAndNumMsgsLen = DDMsgAreaChooser_GetSubNameLenAndNumMsgsLen;
 
 	// Read the settings from the config file.
 	this.ReadConfigFile();
+
+	// Populate msgArea_list (should be done after reading the configuration file
+	// so that useSubCollapsing and subCollapseSeparator are set according to settings
+	this.msgArea_list = getMsgSubHeirarchy(this.useSubCollapsing, this.subCollapseSeparator);
 	
 	// These variables store default lengths of the various columns displayed in
 	// the message group/sub-board lists.
@@ -328,8 +317,11 @@ function DDMsgAreaChooser()
 
 	// printf strings for various things
 	// Message group information (printf strings)
-	this.msgGrpListPrintfStr = "\x01n " + this.colors.areaNum + "%" + this.areaNumLen
+	this.msgGrpListPrintfStr = "\x01n" + this.colors.areaNum + "%" + this.areaNumLen
 	                         + "d " + this.colors.desc + "%-"
+	                         + this.msgGrpDescLen + "s " + this.colors.numItems
+	                         + "%" + this.numItemsLen + "d";
+	this.msgGrpListPrintfStrWithoutAreaNum = "\x01n" + this.colors.desc + "%-"
 	                         + this.msgGrpDescLen + "s " + this.colors.numItems
 	                         + "%" + this.numItemsLen + "d";
 	this.msgGrpListHilightPrintfStr = "\x01n" + this.colors.bkgHighlight + " "
@@ -464,6 +456,10 @@ function DDMsgAreaChooser_WriteGrpListHdrLine(pNumPages, pPageNum)
 // above the sub-board list for a message group.
 //
 // Parameters:
+//  pMsgAreaHeirarchyObj: An object from this.msgArea_list, which is
+//                        set up with a 'name' property and either
+//                        an 'items' property if it has sub-items
+//                        or a 'subObj' property if it's a sub-board
 //  pGrpIndex: The index of the message group (assumed to be valid)
 //  pSubIndex: Optional - The index of a sub-board within the message group (if using sub-board
 //             collapsing, we might want to append the sub-board name to the description)
@@ -471,7 +467,7 @@ function DDMsgAreaChooser_WriteGrpListHdrLine(pNumPages, pPageNum)
 //             not passed, then it won't be used.
 //  pPageNum: The page number.  This is optional; if this is not passed,
 //            then it won't be used.
-function DMsgAreaChooser_WriteSubBrdListHdr1Line(pGrpIndex, pSubIndex, pNumPages, pPageNum)
+function DMsgAreaChooser_WriteSubBrdListHdr1Line(pMsgAreaHeirarchyObj, pGrpIndex, pNumPages, pPageNum)
 {
 	var descLen = 25;
 	var descFormatStr = "\x01n" + this.colors.subBoardHeader + "Sub-boards of \x01h%-" + descLen + "s     \x01n"
@@ -482,21 +478,21 @@ function DMsgAreaChooser_WriteSubBrdListHdr1Line(pGrpIndex, pSubIndex, pNumPages
 		descFormatStr += "(Page " + pPageNum + ")";
 	else if ((typeof(pPageNum) !== "number") && (typeof(pNumPages) === "number"))
 		descFormatStr += "(" + pNumPages + (pNumPages == 1 ? " page)" : " pages)");
-	// If using sub-board collapsing, then build the description as needed.  Otherwise,
-	// just use the sub-board description.
+
+	// Ensure this.msgArea_list is set up
+	this.SetUpGrpListWithCollapsedSubBoards();
+
 	var desc = "";
-	if (this.useSubCollapsing)
+	if (Array.isArray(pMsgAreaHeirarchyObj) && pGrpIndex >= 0 && pGrpIndex < pMsgAreaHeirarchyObj.length)
 	{
-		// Ensure this.group_list is set up
-		this.SetUpGrpListWithCollapsedSubBoards();
-		// The description should be the library's description.  Also, if pSubIdx
-		// is a number, then append the directory description to the description.
-		desc = this.group_list[pGrpIndex].description;
-		if ((typeof(pSubIndex) === "number") && (this.group_list[pGrpIndex].sub_list[pSubIndex].sub_subboard_list.length > 0))
-			desc += this.subCollapseSeparator + " " + this.group_list[pGrpIndex].sub_list[pSubIndex].description;
+		if (pMsgAreaHeirarchyObj[pGrpIndex].hasOwnProperty("name"))
+			desc = pMsgAreaHeirarchyObj[pGrpIndex].name;
 	}
-	else
-		desc = msg_area.grp_list[pGrpIndex].description;
+	else if (pMsgAreaHeirarchyObj.hasOwnProperty("items") && pGrpIndex >= 0 && pGrpIndex < pMsgAreaHeirarchyObj.items.length)
+	{
+		if (pMsgAreaHeirarchyObj.items[pGrpIndex].hasOwnProperty("name"))
+			desc = pMsgAreaHeirarchyObj.items[pGrpIndex].name;
+	}
 	printf(descFormatStr, desc.substr(0, descLen));
 	console.cleartoeol("\x01n");
 }
@@ -514,15 +510,476 @@ function DMsgAreaChooser_WriteSubBrdListHdr1Line(pGrpIndex, pSubIndex, pNumPages
 //           for SelectMsgArea().
 function DDMsgAreaChooser_SelectMsgArea(pChooseGroup, pGrpIdx)
 {
-	// If sub-board collapsing is enabled, then set up
-	// this.group_list.
-	if (this.useSubCollapsing)
-		this.SetUpGrpListWithCollapsedSubBoards();
+	var chooseGrp = (typeof(pChooseGroup) === "boolean" ? pChooseGroup : true);
 
-	if (this.useLightbarInterface && console.term_supports(USER_ANSI))
-		return this.SelectMsgArea_Lightbar(pChooseGroup ? 1 : 2, pGrpIdx);
-	else
-		return this.SelectMsgArea_Traditional(pChooseGroup ? 1 : 2, pGrpIdx);
+	// Start with this.lib_list, which is the topmost file lib/dir structure
+	var msgAreaStructure = this.msgArea_list;
+	var selectedGrpIdx = null;
+	var previousMsgAreaStructure = null;
+	if (!chooseGrp)
+	{
+		if (typeof(pGrpIdx) === "number")
+		{
+			if (pGrpIdx >= 0 && pGrpIdx < this.msgArea_list.length)
+			{
+				if (this.msgArea_list[pGrpIdx].hasOwnProperty("items"))
+				{
+					msgAreaStructure = this.msgArea_list[pGrpIdx].items;
+					selectedGrpIdx = pGrpIdx;
+					previousMsgAreaStructure = this.msgArea_list;
+				}
+			}
+		}
+		else
+		{
+			for (var i = 0; i < this.msgArea_list.length; ++i)
+			{
+				if (msgAreaStructureHasCurrentUserSubBoard(this.msgArea_list[i]))
+				{
+					if (this.msgArea_list[i].hasOwnProperty("items"))
+					{
+						msgAreaStructure = this.msgArea_list[i].items;
+						selectedGrpIdx = i;
+						previousMsgAreaStructure = this.msgArea_list;
+					}
+					break;
+				}
+			}
+		}
+	}
+	var selectedItemIndexes = [];       // Will be used like a stack
+	var selectedItemIdx = null;
+	var chosenGroupOrSubBoardName = ""; // Will have the name of the user's chosen library/subdir
+	var previousMsgAreaStructures = []; // Will be used like a stack
+	var previousChosenLibOrSubdirNames = []; // Will be used like a stack
+	var subBoardsLabelLen = 14; // The length of the "Sub-boards of " label
+	var nameSep = " - ";          // A string to use to separate group/sub-board names for the top header line
+	var numItemsWidth = 0;        // Width of the header column for # of items (not including the space), for creating the menu
+	// Main loop
+	var selectionLoopContinueOn = true;
+	while (selectionLoopContinueOn)
+	{
+		console.clear("\x01n");
+
+		// If we're displaying the file libraries (top level), then we'll output 1
+		// header line; otherwise, we'll output 2 header line; adjut the top line
+		// of the menu accordingly.
+		var menuTopRow = 0;
+		var choosingGroup = chooseGrp && (msgAreaStructure == this.msgArea_list || chosenGroupOrSubBoardName.length == 0);
+		//if (msgAreaStructure == this.msgArea_list || chosenGroupOrSubBoardName.length == 0)
+		if (choosingGroup)
+		{
+			menuTopRow = this.areaChangeHdrLines.length + 2;
+			numItemsWidth = 6; // "Group#"
+		}
+		else
+		{
+			menuTopRow = this.areaChangeHdrLines.length + 3;
+			numItemsWidth = 6; // " Sub #"
+			// TODO: Remove?
+			/*
+			printf("\x01n%sSub-boards of \x01h%s\x01n", this.colors.header, chosenGroupOrSubBoardName.substr(0, console.screen_columns - subBoardsLabelLen - 1));
+			console.crlf();
+			*/
+		}
+		//var previousMsgAreaStructure = (previousMsgAreaStructures.length > 0 ? previousMsgAreaStructures[previousMsgAreaStructures.length-1] : null);
+		if (chooseGrp)
+			previousMsgAreaStructure = (previousMsgAreaStructures.length > 0 ? previousMsgAreaStructures[previousMsgAreaStructures.length-1] : null);
+		else if (previousMsgAreaStructures.length > 0)
+			previousMsgAreaStructure = previousMsgAreaStructures[previousMsgAreaStructures.length-1];
+		var createMenuRet = this.CreateLightbarMenu(msgAreaStructure, previousMsgAreaStructures.length+1, menuTopRow, selectedItemIdx, numItemsWidth);
+		// createMenuRet.allSubs
+		// createMenuRet.allOnlyOtherItems
+		var menu = createMenuRet.menuObj;
+		// Write the header lines, & write the key help line at the bottom of the screen
+		var numItemsColLabel = createMenuRet.allSubs ? "Sub-boards" : "Items";
+		//var previousMsgAreaStructure = (previousMsgAreaStructures.length > 0 ? previousMsgAreaStructures[previousMsgAreaStructures.length-1] : null);
+		//this.DisplayListHdrLines(this.areaChangeHdrLines.length+1, choosingGroup, previousMsgAreaStructure, selectedItemIdx); // Old
+		this.DisplayListHdrLines(this.areaChangeHdrLines.length+1, choosingGroup, previousMsgAreaStructure, selectedGrpIdx);
+		if (!this.useLightbarInterface || !console.term_supports(USER_ANSI))
+			console.crlf(); // Not drawing the hotkey help line (this.WriteKeyHelpLine();)
+
+		// Show the menu in a loop and get user input
+		var lastSearchText = "";
+		var lastSearchFoundIdx = -1;
+		var drawMenu = true;
+		var writeHdrLines = false; // Already displayed above
+		var writeKeyHelpLine = true;
+		// Menu input loop
+		var menuContinueOn = true;
+		while (menuContinueOn)
+		{
+			// Draw the header lines and key help line if needed
+			if (writeHdrLines)
+			{
+				this.DisplayListHdrLines(this.areaChangeHdrLines.length+1, choosingGroup, previousMsgAreaStructure, selectedGrpIdx);
+				if (!this.useLightbarInterface || !console.term_supports(USER_ANSI))
+					console.crlf(); // Not drawing the hotkey help line (this.WriteKeyHelpLine();)
+				writeHdrLines = false;
+			}
+			if (writeKeyHelpLine && this.useLightbarInterface && console.term_supports(USER_ANSI))
+			{
+				this.WriteKeyHelpLine();
+				writeKeyHelpLine = false;
+			}
+
+			// Show the menu and get user input
+			var selectedMenuIdx = menu.GetVal(drawMenu);
+			drawMenu = true;
+			var lastUserInputUpper = (typeof(menu.lastUserInput) == "string" ? menu.lastUserInput.toUpperCase() : "");
+			// Applicable for ANSI/lightbar mode: If the user typed a number, the menu input loop will
+			// exit with the return value being null and the user's input in lastUserInput.  Test to see
+			// if the user typed a number (it will be a single number), and if it's within the number of
+			// menu items, set selectedMenuIdx to the menu item index.
+			if (this.useLightbarInterface && console.term_supports(USER_ANSI) && lastUserInputUpper.match(/[0-9]/))
+			{
+				var userInputNum = parseInt(lastUserInputUpper);
+				if (!isNaN(userInputNum) && userInputNum >= 1 && userInputNum <= menu.NumItems())
+				{
+					// Put the user's input back in the input buffer to
+					// be used for getting the rest of the message number.
+					console.ungetstr(lastUserInputUpper);
+					// Go to the last row on the screen and prompt for the full item number
+					console.gotoxy(1, console.screen_rows);
+					console.clearline("\x01n");
+					console.gotoxy(1, console.screen_rows);
+					var itemPromptWord = createMenuRet.allSubs ? "item" : "sub-board";
+					printf("\x01cChoose %s #: \x01h", itemPromptWord);
+					var userInput = console.getnum(menu.NumItems());
+					if (userInput > 0)
+					{
+						selectedMenuIdx = userInput - 1;
+						selectedItemIndexes.push(selectedMenuIdx);
+						previousChosenLibOrSubdirNames.push(chosenGroupOrSubBoardName);
+						if (previousChosenLibOrSubdirNames.length > 1)
+						{
+							chosenGroupOrSubBoardName = previousChosenLibOrSubdirNames[previousChosenLibOrSubdirNames.length-1] + nameSep + menu[selectedMenuIdx].name;
+							// If chosenGroupOrSubBoardName is now too long, remove some of the previous labels
+							while (chosenGroupOrSubBoardName.length > console.screen_columns - 1)
+							{
+								var sepIdx = chosenGroupOrSubBoardName.indexOf(nameSep);
+								if (sepIdx > -1)
+									chosenGroupOrSubBoardName = chosenGroupOrSubBoardName.substr(sepIdx + nameSep.length);
+							}
+						}
+						else
+							chosenGroupOrSubBoardName = msgAreaStructure[selectedMenuIdx].name;
+					}
+					else
+					{
+						// The user didn't make a selection.  So, we need to refresh the
+						// screen (including the header, due to things being moved down one line).
+						if (this.useLightbarInterface && console.term_supports(USER_ANSI))
+							console.gotoxy(1, 1);
+						this.DisplayMenuHdrWithNumItems(createMenuRet.itemNumWidth, createMenuRet.descWidth-3, createMenuRet.numItemsWidth, numItemsColLabel);
+						if (this.useLightbarInterface && console.term_supports(USER_ANSI))
+							this.WriteKeyHelpLine();
+						continue; // Continue to display the menu again and get the user's choice
+					}
+				}
+			}
+
+			// The code block above will set selectedMenuIdx if the user typed a valid entry
+
+			// Check for aborted & other uesr input and take appropriate action. Note the first check
+			// here is 'if' and not 'else if'; that's intentional.
+			if (console.aborted || lastUserInputUpper == CTRL_C)
+			{
+				// Fully quit out (note: This check/block must be before the test for Q/ESC/null return value)
+				menuContinueOn = false;
+				selectionLoopContinueOn = false;
+			}
+			else if (typeof(selectedMenuIdx) === "number")
+			{
+				// The user chose a valid item (the return value is the menu item index)
+				// The objects in this.msgArea_list have a 'name' property and either
+                // an 'items' property if it has sub-items or a 'subObj' property
+				// if it's a file directory
+				selectedItemIdx = null;
+				selectedGrpIdx = selectedMenuIdx;
+				selectedItemIndexes.push(selectedMenuIdx);
+				previousChosenLibOrSubdirNames.push(msgAreaStructure[selectedMenuIdx].name);
+				if (msgAreaStructure[selectedMenuIdx].hasOwnProperty("items"))
+				{
+					previousMsgAreaStructures.push(msgAreaStructure);
+					if (previousChosenLibOrSubdirNames.length > 1)
+					{
+						chosenGroupOrSubBoardName = previousChosenLibOrSubdirNames[previousChosenLibOrSubdirNames.length-1] + nameSep + msgAreaStructure[selectedMenuIdx].name;
+						// If chosenGroupOrSubBoardName is now too long, remove some of the previous labels
+						while (chosenGroupOrSubBoardName.length > console.screen_columns - 1)
+						{
+							var sepIdx = chosenGroupOrSubBoardName.indexOf(nameSep);
+							if (sepIdx > -1)
+								chosenGroupOrSubBoardName = chosenGroupOrSubBoardName.substr(sepIdx + nameSep.length);
+						}
+					}
+					else
+						chosenGroupOrSubBoardName = msgAreaStructure[selectedMenuIdx].name;
+					msgAreaStructure = msgAreaStructure[selectedMenuIdx].items;
+					menuContinueOn = false;
+				}
+				else if (msgAreaStructure[selectedMenuIdx].hasOwnProperty("subObj"))
+				{
+					// The user has selected a file directory
+					bbs.cursub_code = msgAreaStructure[selectedMenuIdx].subObj.code;
+					menuContinueOn = false;
+					selectionLoopContinueOn = false;
+				}
+			}
+			else if (lastUserInputUpper == "?")
+			{
+				var usingLightbar = this.useLightbarInterface && console.term_supports(USER_ANSI);
+				this.ShowHelpScreen(usingLightbar, true);
+				menuContinueOn = true;
+				selectionLoopContinueOn = true;
+				drawMenu = true;
+				writeHdrLines = true;
+				writeKeyHelpLine = true;
+			}
+			else if (lastUserInputUpper == "/" || lastUserInputUpper == CTRL_F) // Start of find
+			{
+				// Lightbar/ANSI mode
+				if (this.useLightbarInterface && console.term_supports(USER_ANSI))
+				{
+					console.gotoxy(1, console.screen_rows);
+					console.cleartoeol("\x01n");
+					console.gotoxy(1, console.screen_rows);
+					var promptText = "Search: ";
+					console.print(promptText);
+					//var searchText = getStrWithTimeout(K_UPPER|K_NOCRLF|K_GETSTR|K_NOSPIN|K_LINE, console.screen_columns - promptText.length - 1, SEARCH_TIMEOUT_MS);
+					var searchText = console.getstr(lastSearchText, console.screen_columns - promptText.length - 1, K_UPPER|K_NOCRLF|K_GETSTR|K_NOSPIN|K_LINE);
+					var searchTextIsStr = (typeof(searchText) === "string");
+					if (searchTextIsStr)
+						lastSearchText = searchText;
+					// If the user entered text, then do the search, and if found,
+					// found, go to the page and select the item indicated by the
+					// search.
+					if (searchTextIsStr && searchText.length > 0)
+					{
+						var oldLastSearchFoundIdx = lastSearchFoundIdx;
+						var oldSelectedItemIdx = menu.selectedItemIdx;
+						var idx = this.FindMsgAreaIdxFromText(msgAreaStructure, searchText, menu.selectedItemIdx);
+						lastSearchFoundIdx = idx;
+						if (idx > -1)
+						{
+							// Set the currently selected item in the menu, and ensure it's
+							// visible on the page
+							menu.selectedItemIdx = idx;
+							if (menu.selectedItemIdx >= menu.topItemIdx+menu.GetNumItemsPerPage())
+								menu.topItemIdx = menu.selectedItemIdx - menu.GetNumItemsPerPage() + 1;
+							else if (menu.selectedItemIdx < menu.topItemIdx)
+								menu.topItemIdx = menu.selectedItemIdx;
+							else
+							{
+								// If the current index and the last index are both on the same page on the
+								// menu, then have the menu only redraw those items.
+								menu.nextDrawOnlyItems = [menu.selectedItemIdx, oldLastSearchFoundIdx, oldSelectedItemIdx];
+							}
+						}
+						else
+						{
+							var idx = this.FindMsgAreaIdxFromText(msgAreaStructure, searchText, 0);
+							lastSearchFoundIdx = idx;
+							if (idx > -1)
+							{
+								// Set the currently selected item in the menu, and ensure it's
+								// visible on the page
+								menu.selectedItemIdx = idx;
+								if (menu.selectedItemIdx >= menu.topItemIdx+menu.GetNumItemsPerPage())
+									menu.topItemIdx = menu.selectedItemIdx - menu.GetNumItemsPerPage() + 1;
+								else if (menu.selectedItemIdx < menu.topItemIdx)
+									menu.topItemIdx = menu.selectedItemIdx;
+								else
+								{
+									// The current index and the last index are both on the same page on the
+									// menu, so have the menu only redraw those items.
+									menu.nextDrawOnlyItems = [menu.selectedItemIdx, oldLastSearchFoundIdx, oldSelectedItemIdx];
+								}
+							}
+							else
+							{
+								this.WriteLightbarKeyHelpErrorMsg("Not found");
+								drawMenu = false;
+							}
+						}
+					}
+					else
+						drawMenu = false;
+					writeKeyHelpLine = true;
+				}
+				else
+				{
+					// Traditional/non-ANSI interface (menu will be using numbered mode)
+					console.attributes = "N";
+					console.crlf();
+					var promptText = "Search: ";
+					console.print(promptText);
+					var searchText = console.getstr(lastSearchText, console.screen_columns - promptText.length - 1, K_UPPER|K_NOCRLF|K_GETSTR|K_NOSPIN|K_LINE);
+					var searchTextIsStr = (typeof(searchText) === "string");
+					console.attributes = "N";
+					console.crlf();
+					// Don't need to set lastSearchFoundIdx
+					//if (searchTextIsStr)
+					//	lastSearchText = searchText;
+					// If the user entered text, then do the search, and if found,
+					// found, go to the page and select the item indicated by the
+					// search.
+					if (searchTextIsStr && searchText.length > 0)
+					{
+						var oldLastSearchFoundIdx = lastSearchFoundIdx;
+						var oldSelectedItemIdx = menu.selectedItemIdx;
+						var idx = this.FindMsgAreaIdxFromText(msgAreaStructure, searchText, 0);
+						//lastSearchFoundIdx = idx; // Don't need to set lastSearchFoundIdx
+						var newMsgAreaStructure = [];
+						while (idx > -1)
+						{
+							newMsgAreaStructure.push(msgAreaStructure[idx]);
+
+							// Find the next one
+							idx = this.FindMsgAreaIdxFromText(msgAreaStructure, searchText, idx+1);
+						}
+						if (newMsgAreaStructure.length > 0)
+						{
+							selectedItemIdx = selectedItemIndexes.push(selectedItemIdx);
+							msgAreaStructure = previousMsgAreaStructures.push(msgAreaStructure);
+							previousChosenLibOrSubdirNames.push("");
+							msgAreaStructure = newMsgAreaStructure;
+							createMenuRet = this.CreateLightbarMenu(newMsgAreaStructure, previousMsgAreaStructures.length+1, menuTopRow, 0, numItemsWidth);
+							menu = createMenuRet.menuObj;
+						}
+						else
+							console.print("Not found\r\n\x01p");
+					}
+
+					console.line_counter = 0;
+					console.clear("\x01n");
+					writeHdrLines = true;
+					drawMenu = true;
+					writeKeyHelpLine = false;
+				}
+			}
+			else if (lastUserInputUpper == "N") // Next search result (requires an existing search term)
+			{
+				// Lightbar/ANSI mode
+				if (this.useLightbarInterface && console.term_supports(USER_ANSI))
+				{
+					// This works but seems a little strange sometimes.
+					// - Should this always start from the selected index?
+					// - If it wraps around to one of the items on the first page,
+					//   should it always set the top index to 0?
+					if ((lastSearchText.length > 0) && (lastSearchFoundIdx > -1))
+					{
+						var oldLastSearchFoundIdx = lastSearchFoundIdx;
+						var oldSelectedItemIdx = menu.selectedItemIdx;
+						// Do the search, and if found, go to the page and select the item
+						// indicated by the search.
+						var idx = this.FindMsgAreaIdxFromText(msgAreaStructure, searchText, lastSearchFoundIdx+1);
+						if (idx > -1)
+						{
+							lastSearchFoundIdx = idx;
+							// Set the currently selected item in the menu, and ensure it's
+							// visible on the page
+							menu.selectedItemIdx = idx;
+							if (menu.selectedItemIdx >= menu.topItemIdx+menu.GetNumItemsPerPage())
+							{
+								menu.topItemIdx = menu.selectedItemIdx - menu.GetNumItemsPerPage() + 1;
+								if (menu.topItemIdx < 0)
+									menu.topItemIdx = 0;
+							}
+							else if (menu.selectedItemIdx < menu.topItemIdx)
+								menu.topItemIdx = menu.selectedItemIdx;
+							else
+							{
+								// The current index and the last index are both on the same page on the
+								// menu, so have the menu only redraw those items.
+								menu.nextDrawOnlyItems = [menu.selectedItemIdx, oldLastSearchFoundIdx, oldSelectedItemIdx];
+							}
+						}
+						else
+						{
+							idx = this.FindMsgAreaIdxFromText(msgAreaStructure, searchText, 0);
+							lastSearchFoundIdx = idx;
+							if (idx > -1)
+							{
+								// Set the currently selected item in the menu, and ensure it's
+								// visible on the page
+								menu.selectedItemIdx = idx;
+								if (menu.selectedItemIdx >= menu.topItemIdx+menu.GetNumItemsPerPage())
+								{
+									menu.topItemIdx = menu.selectedItemIdx - menu.GetNumItemsPerPage() + 1;
+									if (menu.topItemIdx < 0)
+										menu.topItemIdx = 0;
+								}
+								else if (menu.selectedItemIdx < menu.topItemIdx)
+									menu.topItemIdx = menu.selectedItemIdx;
+								else
+								{
+									// The current index and the last index are both on the same page on the
+									// menu, so have the menu only redraw those items.
+									menu.nextDrawOnlyItems = [menu.selectedItemIdx, oldLastSearchFoundIdx, oldSelectedItemIdx];
+								}
+							}
+							else
+							{
+								this.WriteLightbarKeyHelpErrorMsg("Not found");
+								drawMenu = false;
+								writeKeyHelpLine = true;
+							}
+						}
+					}
+					else
+					{
+						this.WriteLightbarKeyHelpErrorMsg("There is no previous search", true);
+						drawMenu = false;
+						writeKeyHelpLine = true;
+					}
+				}
+				else
+				{
+					// Traditional/non-ANSI interface (menu will be using numbered mode)
+					// TODO
+					console.attributes = "N";
+					console.crlf();
+					console.print("TODO\r\n\x01p");
+					console.clear("\x01n");
+					writeHdrLines = true;
+					drawMenu = true;
+					writeKeyHelpLine = false;
+				}
+			}
+			// Quit - Note: This check should be last
+			else if (lastUserInputUpper == "Q" || lastUserInputUpper == KEY_ESC || selectedMenuIdx == null)
+			{
+				// Cancel/Quit
+				// Quit this menu loop and go back to the previous file lib/dir structure
+				menuContinueOn = false;
+				selectedItemIdx = selectedItemIndexes.pop();
+				// TODO: I don't remember why I had the following 2 lines:
+				/*
+				if (selectedItemIndexes.length > 0)
+					selectedItemIdx = selectedItemIndexes.pop();
+				*/
+				selectedGrpIdx = selectedItemIdx;
+				if (previousMsgAreaStructures.length == 0)
+				{
+					// The user was at the first level in the lib/dir structure; fully quit out from here
+					selectionLoopContinueOn = false;
+				}
+				else // Go to the previous file lib/dir structure
+				{
+					msgAreaStructure = previousMsgAreaStructures.pop();
+					if (msgAreaStructure == this.msgArea_list)
+					{
+						chosenGroupOrSubBoardName = "";
+						previousChosenLibOrSubdirNames = [];
+						selectedItemIndexes = [];
+					}
+					else
+						chosenGroupOrSubBoardName = previousChosenLibOrSubdirNames.pop();
+				}
+			}
+		}
+	}
 }
 
 // For the DDMsgAreaChooser class: Displays the header & header lines above the list.
@@ -530,10 +987,15 @@ function DDMsgAreaChooser_SelectMsgArea(pChooseGroup, pGrpIdx)
 // Parameters:
 //  pScreenRow: The row on the screen to write the lines at.  If no cursor movements are desired, this can be null.
 //  pChooseGroup: Boolean - Whether or not the user is choosing a message group
+//  pMsgAreaHeirarchyObj: An object from this.msgArea_list, which is
+//                        set up with a 'name' property and either
+//                        an 'items' property if it has sub-items
+//                        or a 'subObj' property if it's a sub-board
+//  pGrpIndex: The index of the message group (assumed to be valid)
 //  pGrpIdx: The index of the message group being used
 //  pNumPages: Optional - The number of pages of items
 //  pPageNum: Optional - The current page number for the items
-function DDMsgAreaChooser_DisplayListHdrLines(pScreenRow, pChooseGroup, pGrpIdx, pNumPages, pPageNum)
+function DDMsgAreaChooser_DisplayListHdrLines(pScreenRow, pChooseGroup, pMsgAreaHeirarchyObj, pGrpIdx, pNumPages, pPageNum)
 {
 	this.DisplayAreaChgHdr(1);
 	if (typeof(pScreenRow) === "number")
@@ -542,1641 +1004,717 @@ function DDMsgAreaChooser_DisplayListHdrLines(pScreenRow, pChooseGroup, pGrpIdx,
 		this.WriteGrpListHdrLine(pNumPages, pPageNum);
 	else
 	{
-		// For the number of items in the sub-board list, use the text "Posts" or "Items", depending
-		// on whether sub-board collapsing is enabled and there are sub-subboard for the given group
-		// & sub-board index
-		var numItemsText = "Posts";
-		if (this.useSubCollapsing)
+		// See if the items in the directory heirarchy only contain a "subObj" or an "items"
+		var allItemsAreSubBoards = true;
+		var allItemsContainOnlyOtherItems = true;
+		if (typeof(pMsgAreaHeirarchyObj[pGrpIdx]) === "object" && !Array.isArray(pMsgAreaHeirarchyObj[pGrpIdx]) && pMsgAreaHeirarchyObj[pGrpIdx].hasOwnProperty("items"))
 		{
-			for (var subIdx in this.group_list[pGrpIdx].sub_list)
+			for (var i = 0; i < pMsgAreaHeirarchyObj[pGrpIdx].items.length; ++i)
 			{
-				if (typeof(this.group_list[pGrpIdx].sub_list[subIdx].sub_subboard_list) !== "undefined" && this.group_list[pGrpIdx].sub_list[subIdx].sub_subboard_list.length > 0)
-				{
-					numItemsText = "Items";
-					break;
-				}
+				if (!pMsgAreaHeirarchyObj[pGrpIdx].items[i].hasOwnProperty("subObj") || pMsgAreaHeirarchyObj[pGrpIdx].items[i].hasOwnProperty("items"))
+					allItemsAreSubBoards = false;
+				if (pMsgAreaHeirarchyObj[pGrpIdx].items[i].hasOwnProperty("subObj") || !pMsgAreaHeirarchyObj[pGrpIdx].items[i].hasOwnProperty("items"))
+					allItemsContainOnlyOtherItems = false;
 			}
 		}
+
 		// Write the list header lines
-		this.WriteSubBrdListHdr1Line(pGrpIdx);
+		this.WriteSubBrdListHdr1Line(pMsgAreaHeirarchyObj, pGrpIdx);
 		if (typeof(pScreenRow) === "number")
 			console.gotoxy(1, pScreenRow+1);
 		else
 			console.crlf();
-		if (this.showDatesInSubBoardList)
-			printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# " + numItemsText, "Latest date & time");
+		if (allItemsContainOnlyOtherItems)
+			this.WriteGrpListHdrLine(pNumPages, pPageNum);
 		else
-			printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# " + numItemsText);
+		{
+			var numItemsText = "Items";
+			if (allItemsAreSubBoards)
+				numItemsText = "Posts";
+			else if (allItemsContainOnlyOtherItems)
+				numItemsText = "Items";
+			if (this.showDatesInSubBoardList)
+				printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# " + numItemsText, "Latest date & time");
+			else
+				printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# " + numItemsText);
+		}
 	}
 }
 
-// For the DDMsgAreaChooser class: Lets the user choose a message group and
-// sub-board via numeric input, using a lightbar user interface.
+// For the DDMsgAreaChooser class: Creates a lightbar menu to choose a message group/sub-board.
 //
 // Parameters:
-//  pLevel: The file heirarchy level:
-//          1: Message groups
-//          2: Sub-boards within message groups
-//          3: "Sub-subboards" within sub-boards (if sub-board name collapsing is enabled)
-//          This is optional and defaults to 1.
-//  pGrpIdx: Optional - The group index, if choosing a sub-board
-function DDMsgAreaChooser_SelectMsgArea_Lightbar(pLevel, pGrpIdx, pSubIdx)
-{
-	// If there are no message groups or sub-boards, then don't let the user
-	// choose one.
-	if (msg_area.grp_list.length == 0)
-	{
-		console.clear("\x01n");
-		console.print("\x01y\x01hThere are no message groups.\r\n\x01p");
-		return;
-	}
-	var level = (typeof(pLevel) === "number" ? pLevel : 1);
-	if (level < 1 || level > 3)
-		return;
-
-	else if (level == 1)
-	{
-		// If there are no sub-boards in the given group index, then see if there's a next group with
-		// sub-boards (and wrap around)
-		if (msg_area.grp_list[pGrpIdx].sub_list.length == 0)
-		{
-			var nextGrpIdx = findNextGrpIdxWithSubBoards(pGrpIdx);
-			if (nextGrpIdx > -1 && msg_area.grp_list[nextGrpIdx].sub_list.length > 0)
-				pGrpIdx = nextGrpIdx;
-			else
-			{
-				console.clear("\x01n");
-				console.print("\x01y\x01hThere are no sub-boards available.\r\n\x01p");
-				return;
-			}
-		}
-	}
-	// 2: Choose a sub-board within a message group
-	// 3: Choose a sub-subboard within a sub-board, for sub-board name collapsing
-	else if ((level == 2) || (level == 3))
-	{
-		if (typeof(pGrpIdx) !== "number")
-			return;
-		if (msg_area.grp_list[pGrpIdx].sub_list.length == 0)
-		{
-			console.clear("\x01n");
-			console.print("\x01y\x01hThere are no sub-boards in " + msg_area.grp_list[pGrpIdx].description + ".\r\n\x01p");
-			return;
-		}
-	}
-
-	var chooseGroup = (level == 1);
-
-	// Clear the screen, write the header, help line, and list header(s)
-	console.clear("\x01n");
-	this.DisplayListHdrLines(this.areaChangeHdrLines.length+1, chooseGroup, pGrpIdx);
-	this.WriteKeyHelpLine();
-
-	// Create the menu and do the user input loop
-	var msgAreaMenu = (chooseGroup ? this.CreateLightbarMsgGrpMenu() : this.CreateLightbarSubBoardMenu(pLevel, pGrpIdx, pSubIdx));
-	var drawMenu = true;
-	var lastSearchText = "";
-	var lastSearchFoundIdx = -1;
-	var chosenIdx = -1;
-	var continueOn = true;
-	// Let the user choose a group, and also respond to other user choices
-	while (continueOn)
-	{
-		chosenIdx = -1;
-		var returnedMenuIdx = msgAreaMenu.GetVal(drawMenu);
-		drawMenu = true;
-		var lastUserInputUpper = (typeof(msgAreaMenu.lastUserInput) === "string" ? msgAreaMenu.lastUserInput.toUpperCase() : "");
-		if (typeof(returnedMenuIdx) === "number")
-			chosenIdx = returnedMenuIdx;
-		// If userChoice is not a number, then it should be null in this case,
-		// and the user would have pressed one of the additional quit keys set
-		// up for the menu.  So look at the menu's lastUserInput and do the
-		// appropriate thing.
-		else if ((lastUserInputUpper == "Q") || (lastUserInputUpper == KEY_ESC)) // Quit
-			continueOn = false;
-		else if ((lastUserInputUpper == "/") || (lastUserInputUpper == CTRL_F)) // Start of find
-		{
-			console.gotoxy(1, console.screen_rows);
-			console.cleartoeol("\x01n");
-			console.gotoxy(1, console.screen_rows);
-			var promptText = "Search: ";
-			console.print(promptText);
-			var searchText = getStrWithTimeout(K_UPPER|K_NOCRLF|K_GETSTR|K_NOSPIN|K_LINE, console.screen_columns - promptText.length - 1, SEARCH_TIMEOUT_MS);
-			lastSearchText = searchText;
-			// If the user entered text, then do the search, and if found,
-			// found, go to the page and select the item indicated by the
-			// search.
-			if (searchText.length > 0)
-			{
-				var oldLastSearchFoundIdx = lastSearchFoundIdx;
-				var oldSelectedItemIdx = msgAreaMenu.selectedItemIdx;
-				var idx = -1;
-				if (chooseGroup)
-					idx = this.FindMsgGrpIdxFromText(searchText, msgAreaMenu.selectedItemIdx);
-				else
-					idx = this.FindSubBoardIdxFromText(pGrpIdx, (pLevel == 3 ? pSubIdx : null), searchText, msgAreaMenu.selectedItemIdx+1);
-				lastSearchFoundIdx = idx;
-				if (idx > -1)
-				{
-					// Set the currently selected item in the menu, and ensure it's
-					// visible on the page
-					msgAreaMenu.selectedItemIdx = idx;
-					if (msgAreaMenu.selectedItemIdx >= msgAreaMenu.topItemIdx+msgAreaMenu.GetNumItemsPerPage())
-						msgAreaMenu.topItemIdx = msgAreaMenu.selectedItemIdx - msgAreaMenu.GetNumItemsPerPage() + 1;
-					else if (msgAreaMenu.selectedItemIdx < msgAreaMenu.topItemIdx)
-						msgAreaMenu.topItemIdx = msgAreaMenu.selectedItemIdx;
-					else
-					{
-						// If the current index and the last index are both on the same page on the
-						// menu, then have the menu only redraw those items.
-						msgAreaMenu.nextDrawOnlyItems = [msgAreaMenu.selectedItemIdx, oldLastSearchFoundIdx, oldSelectedItemIdx];
-					}
-				}
-				else
-				{
-					if (chooseGroup)
-						idx = this.FindMsgGrpIdxFromText(searchText, 0);
-					else
-						idx = this.FindSubBoardIdxFromText(pGrpIdx, (pLevel == 3 ? pSubIdx : null), searchText, 0);
-					lastSearchFoundIdx = idx;
-					if (idx > -1)
-					{
-						// Set the currently selected item in the menu, and ensure it's
-						// visible on the page
-						msgAreaMenu.selectedItemIdx = idx;
-						if (msgAreaMenu.selectedItemIdx >= msgAreaMenu.topItemIdx+msgAreaMenu.GetNumItemsPerPage())
-							msgAreaMenu.topItemIdx = msgAreaMenu.selectedItemIdx - msgAreaMenu.GetNumItemsPerPage() + 1;
-						else if (msgAreaMenu.selectedItemIdx < msgAreaMenu.topItemIdx)
-							msgAreaMenu.topItemIdx = msgAreaMenu.selectedItemIdx;
-						else
-						{
-							// The current index and the last index are both on the same page on the
-							// menu, so have the menu only redraw those items.
-							msgAreaMenu.nextDrawOnlyItems = [msgAreaMenu.selectedItemIdx, oldLastSearchFoundIdx, oldSelectedItemIdx];
-						}
-					}
-					else
-					{
-						this.WriteLightbarKeyHelpErrorMsg("Not found");
-						drawMenu = false;
-					}
-				}
-			}
-			else
-				drawMenu = false;
-			this.WriteKeyHelpLine();
-		}
-		else if (lastUserInputUpper == "N") // Next search result (requires an existing search term)
-		{
-			// This works but seems a little strange sometimes.
-			// - Should this always start from the selected index?
-			// - If it wraps around to one of the items on the first page,
-			//   should it always set the top index to 0?
-			if ((lastSearchText.length > 0) && (lastSearchFoundIdx > -1))
-			{
-				var oldLastSearchFoundIdx = lastSearchFoundIdx;
-				var oldSelectedItemIdx = msgAreaMenu.selectedItemIdx;
-				// Do the search, and if found, go to the page and select the item
-				// indicated by the search.
-				var idx = 0;
-				if (chooseGroup)
-					idx = this.FindMsgGrpIdxFromText(searchText, lastSearchFoundIdx+1);
-				else
-					idx = this.FindSubBoardIdxFromText(pGrpIdx, (pLevel == 3 ? pSubIdx : null), searchText, lastSearchFoundIdx+1);
-				if (idx > -1)
-				{
-					lastSearchFoundIdx = idx;
-					// Set the currently selected item in the menu, and ensure it's
-					// visible on the page
-					msgAreaMenu.selectedItemIdx = idx;
-					if (msgAreaMenu.selectedItemIdx >= msgAreaMenu.topItemIdx+msgAreaMenu.GetNumItemsPerPage())
-					{
-						msgAreaMenu.topItemIdx = msgAreaMenu.selectedItemIdx - msgAreaMenu.GetNumItemsPerPage() + 1;
-						if (msgAreaMenu.topItemIdx < 0)
-							msgAreaMenu.topItemIdx = 0;
-					}
-					else if (msgAreaMenu.selectedItemIdx < msgAreaMenu.topItemIdx)
-						msgAreaMenu.topItemIdx = msgAreaMenu.selectedItemIdx;
-					else
-					{
-						// The current index and the last index are both on the same page on the
-						// menu, so have the menu only redraw those items.
-						msgAreaMenu.nextDrawOnlyItems = [msgAreaMenu.selectedItemIdx, oldLastSearchFoundIdx, oldSelectedItemIdx];
-					}
-				}
-				else
-				{
-					if (chooseGroup)
-						idx = this.FindMsgGrpIdxFromText(searchText, 0);
-					else
-						idx = this.FindSubBoardIdxFromText(pGrpIdx, (pLevel == 3 ? pSubIdx : null), searchText, 0);
-					lastSearchFoundIdx = idx;
-					if (idx > -1)
-					{
-						// Set the currently selected item in the menu, and ensure it's
-						// visible on the page
-						msgAreaMenu.selectedItemIdx = idx;
-						if (msgAreaMenu.selectedItemIdx >= msgAreaMenu.topItemIdx+msgAreaMenu.GetNumItemsPerPage())
-						{
-							msgAreaMenu.topItemIdx = msgAreaMenu.selectedItemIdx - msgAreaMenu.GetNumItemsPerPage() + 1;
-							if (msgAreaMenu.topItemIdx < 0)
-								msgAreaMenu.topItemIdx = 0;
-						}
-						else if (msgAreaMenu.selectedItemIdx < msgAreaMenu.topItemIdx)
-							msgAreaMenu.topItemIdx = msgAreaMenu.selectedItemIdx;
-						else
-						{
-							// The current index and the last index are both on the same page on the
-							// menu, so have the menu only redraw those items.
-							msgAreaMenu.nextDrawOnlyItems = [msgAreaMenu.selectedItemIdx, oldLastSearchFoundIdx, oldSelectedItemIdx];
-						}
-					}
-					else
-					{
-						this.WriteLightbarKeyHelpErrorMsg("Not found");
-						drawMenu = false;
-						this.WriteKeyHelpLine();
-					}
-				}
-			}
-			else
-			{
-				this.WriteLightbarKeyHelpErrorMsg("There is no previous search", true);
-				drawMenu = false;
-				this.WriteKeyHelpLine();
-			}
-		}
-		else if (lastUserInputUpper == "?") // Show help
-		{
-			this.ShowHelpScreen(true, true);
-			console.pause();
-			// Refresh the screen
-			console.clear("\x01n");
-			this.DisplayAreaChgHdr(1);
-			this.DisplayListHdrLines(this.areaChangeHdrLines.length+1, chooseGroup, pGrpIdx);
-			this.WriteKeyHelpLine();
-		}
-		// If the user entered a numeric digit, then treat it as
-		// the start of the message group number.
-		if (lastUserInputUpper.match(/[0-9]/))
-		{
-			// Put the user's input back in the input buffer to
-			// be used for getting the rest of the message number.
-			console.ungetstr(lastUserInputUpper);
-			// Move the cursor to the bottom of the screen and
-			// prompt the user for the message number.
-			console.gotoxy(1, console.screen_rows);
-			console.clearline("\x01n");
-			var itemPromptWord = "";
-			if (this.useSubCollapsing)
-			{
-				if (level == 1)
-					itemPromptWord = "group";
-				else if (level == 2)
-					itemPromptWord = "item";
-				else if (level == 3)
-					itemPromptWord = "sub-board";
-			}
-			else
-				itemPromptWord = (level == 1 ? "group" : "sub-board");
-			printf("\x01cChoose %s #: \x01h", itemPromptWord);
-			var userInput = console.getnum(msgAreaMenu.NumItems());
-			if (userInput > 0)
-				chosenIdx = userInput - 1;
-			else
-			{
-				// The user didn't make a selection.  So, we need to refresh
-				// the screen due to everything being moved up one line.
-				this.DisplayListHdrLines(this.areaChangeHdrLines.length+1, chooseGroup, pGrpIdx);
-				this.WriteKeyHelpLine();
-			}
-		}
-
-		// If a group/sub-board/sub-subboard was chosen, then deal with it.
-		if (chosenIdx > -1)
-		{
-			// If choosing a message group, then let the user choose a
-			// sub-board within the group.  Otherwise, return the user's
-			// chosen sub-board.
-			if (chooseGroup)
-			{
-				// Show a "Loading..." text in case there are many sub-boards in
-				// the chosen message group
-				console.crlf();
-				console.print("\x01nLoading...");
-				console.line_counter = 0; // To prevent a pause before the message list comes up
-				// Ensure that the sub-board printf information is created for
-				// the chosen message group.
-				this.BuildSubBoardPrintfInfoForGrp(chosenIdx);
-				var defaultSubIdx = chosenIdx == bbs.curgrp ? bbs.cursub : 0;
-				var subCodeBackup = bbs.cursub_code;
-				var chosenSubBoardIdx = this.SelectMsgArea_Lightbar(2, chosenIdx, defaultSubIdx);
-				// chosenSubBoardIdx could actually be a boolean and could be false (returned
-				// when pLevel is 3 and the user chose a sub-board), so check its type and
-				// act accordingly.
-				var retValType = typeof(chosenSubBoardIdx);
-				if (retValType === "boolean")
-					continueOn = chosenSubBoardIdx;
-				else if (typeof(chosenSubBoardIdx) === "number" && chosenSubBoardIdx > -1)
-				{
-					// Set the current sub-board
-					if (this.useSubCollapsing)
-						bbs.cursub_code = this.group_list[chosenIdx].sub_list[chosenSubBoardIdx].code;
-					else
-						bbs.cursub_code = msg_area.grp_list[chosenIdx].sub_list[chosenSubBoardIdx].code;
-					continueOn = false;
-				}
-				else
-				{
-					// If the sub-board changed (probably at level 3 because name
-					// collapsing is enabled), then exit here.
-					if (bbs.cursub_code != subCodeBackup)
-						continueOn = false;
-					else
-					{
-						// A message sub-board was not chosen, so we'll have to re-draw
-						// the header and key help line
-						this.DisplayListHdrLines(this.areaChangeHdrLines.length+1, chooseGroup, pGrpIdx);
-						this.WriteKeyHelpLine();
-					}
-				}
-			}
-			else if (level == 2) // Choosing a sub-board
-			{
-				if (this.useSubCollapsing)
-				{
-					// Ensure this.group_list is set up
-					this.SetUpGrpListWithCollapsedSubBoards();
-
-					// If the current file directory has subdirectories,
-					// let the user choose one
-					// pGrpIdx is the group index, and chosenIdx is the sub-board index
-					if ((typeof(this.group_list[pGrpIdx].sub_list[chosenIdx].sub_subboard_list) !== "undefined") && (this.group_list[pGrpIdx].sub_list[chosenIdx].sub_subboard_list.length > 0))
-					{
-						var chosenSubSubBoardIdx = this.SelectMsgArea_Lightbar(3, pGrpIdx, chosenIdx);
-						if (chosenSubSubBoardIdx > -1)
-						{
-							// Set the current message sub-board
-							//bbs.cursub_code = this.group_list[pGrpIdx].sub_list[chosenIdx].sub_subboard_list[chosenSubSubBoardIdx].code;
-							bbs.cursub_code = this.group_list[pGrpIdx].sub_list[chosenIdx].sub_subboard_list[chosenSubSubBoardIdx].code;
-							continueOn = false;
-							//return chosenSubSubBoardIdx;
-							// Return a false here so that after this function is called by itself when
-							// pLevel is 2, it will know that a sub-board has been chosen and will set
-							// continueOn to false so that the loop won't continue from there.
-							return false;
-						}
-						else
-						{
-							// A file directory was not chosen, so we'll have to re-draw
-							// the header and list of message groups.
-							// TODO:
-							//this.DisplayListHdrLines(level, pLibIdx);
-							//this.WriteKeyHelpLine();
-						}
-					}
-					else // No subdirectories - Return the chosen index
-						return chosenIdx;
-				}
-				else
-					return chosenIdx; // Return the chosen file directory index
-			}
-			else if (level == 3)
-			{
-				return chosenIdx; // Return the chosen subdirectory index
-			}
-		}
-	}
-}
-
-// For the DDMsgAreaChooser class: Creates the DDLightbarMenu for use with
-// choosing a message group in lightbar mode.
+//  pMsgAreaHeirarchyObj: An object from this.msgArea_list, which is
+//                        set up with a 'name' property and either
+//                        an 'items' property if it has sub-items
+//                        or a 'subObj' property if it's a sub-board
+//  pHeirarchyLevel: The level we're at in the heirarchy (1-based)
+//  pMenuTopRow: The screen row to use for the menu's top row
+//  pSelectedItemIdx: The index to use for the selected item. If not
+//                    specified, the item with the user's current selected file
+//                    directory will be used, if available.
+//  pItemNumWidth: The character width of the column label for the item number;
+//                 mainly for the traditional (non-lightbar) UI but is used for lightbar
+//                 mode as well for level > 2 (not sure why needed though)
 //
-// Return value: A DDLightbarMenu object for choosing a message group
-function DDMsgAreaChooser_CreateLightbarMsgGrpMenu()
+// Return value: An object with the following properties:
+//               menuObj: The menu object
+//               allSubs: Whether or not all the items in the menu
+//                        are sub-boards. If not, some or all are
+//                        other lists of items. If this is true,
+//                        allOnlyOtherItems should be false.
+//               allOnlyOtherItems: Whether or not all the items in the menu
+//                                  only have arrays of other items. This is
+//                                  mutually exclusive with allSubs. If this
+//                                  is true, allSubs should be false.
+//               itemNumWidth: The width of the item numbers column
+//               descWidth: The width of the description column
+//               numItemsWidth: The width of the # of items column
+function DDMsgAreaChooser_CreateLightbarMenu(pMsgAreaHeirarchyObj, pHeirarchyLevel, pMenuTopRow, pSelectedItemIdx, pItemNumWidth)
 {
-	// Start & end indexes for the various items in each mssage group list row
-	// Selected mark, group#, description, # sub-boards
-	var msgGrpListIdxes = {
-		markCharStart: 0,
-		markCharEnd: 1,
-		grpNumStart: 1,
-		grpNumEnd: 2 + (+this.areaNumLen)
+	var retObj = {
+		menuObj: null,
+		allSubs: true,
+		allOnlyOtherItems: true,
+		itemNumWidth: 0,
+		descWidth: 0,
+		numItemsWidth: 0
 	};
-	msgGrpListIdxes.descStart = msgGrpListIdxes.grpNumEnd;
-	msgGrpListIdxes.descEnd = msgGrpListIdxes.descStart + +this.msgGrpDescLen;
-	msgGrpListIdxes.numItemsStart = msgGrpListIdxes.descEnd;
-	// Set numItemsEnd to -1 to let the whole rest of the lines be colored
-	msgGrpListIdxes.numItemsEnd = -1;
-	var listStartRow = this.areaChangeHdrLines.length + 2;
-	var msgGrpMenuHeight = console.screen_rows - listStartRow;
-	var msgGrpMenu = new DDLightbarMenu(1, listStartRow, console.screen_columns, msgGrpMenuHeight);
-	msgGrpMenu.scrollbarEnabled = true;
-	msgGrpMenu.borderEnabled = false;
-	msgGrpMenu.SetColors({
-		itemColor: [{start: msgGrpListIdxes.markCharStart, end: msgGrpListIdxes.markCharEnd, attrs: this.colors.areaMark},
-		            {start: msgGrpListIdxes.grpNumStart, end: msgGrpListIdxes.grpNumEnd, attrs: this.colors.areaNum},
-		            {start: msgGrpListIdxes.descStart, end: msgGrpListIdxes.descEnd, attrs: this.colors.desc},
-		            {start: msgGrpListIdxes.numItemsStart, end: msgGrpListIdxes.numItemsEnd, attrs: this.colors.numItems}],
-		selectedItemColor: [{start: msgGrpListIdxes.markCharStart, end: msgGrpListIdxes.markCharEnd, attrs: this.colors.areaMark + this.colors.bkgHighlight},
-		                    {start: msgGrpListIdxes.grpNumStart, end: msgGrpListIdxes.grpNumEnd, attrs: this.colors.areaNumHighlight + this.colors.bkgHighlight},
-		                    {start: msgGrpListIdxes.descStart, end: msgGrpListIdxes.descEnd, attrs: this.colors.descHighlight + this.colors.bkgHighlight},
-		                    {start: msgGrpListIdxes.numItemsStart, end: msgGrpListIdxes.numItemsEnd, attrs: this.colors.numItemsHighlight + this.colors.bkgHighlight}]
-	});
 
-	msgGrpMenu.multiSelect = false;
-	msgGrpMenu.ampersandHotkeysInItems = false;
-	msgGrpMenu.wrapNavigation = false;
+	// Get color index information for the menu
+	var colorIdxInfo = this.GetColorIndexInfoForLightbarMenu(pMsgAreaHeirarchyObj);
 
+	// Calculate column widths for the return object
+	retObj.itemNumWidth = colorIdxInfo.subBoardListIdxes.subNumend - 1;
+	//retObj.descWidth = msgGrpListIdxes.descEnd - msgGrpListIdxes.descStart;
+	retObj.descWidth = this.subBoardNameLen;
+	retObj.numItemsWidth = console.screen_columns - colorIdxInfo.msgGrpListIdxes.numItemsStart;
+
+	// Create the menu object
+	var fileDirMenuHeight = console.screen_rows - pMenuTopRow;
+	var msgAreaMenu = new DDLightbarMenu(1, pMenuTopRow, console.screen_columns, fileDirMenuHeight);
 	// Add additional keypresses for quitting the menu's input loop so we can
 	// respond to these keys
-	msgGrpMenu.AddAdditionalQuitKeys("nNqQ ?0123456789/" + CTRL_F);
+	msgAreaMenu.AddAdditionalQuitKeys("qQ?/" + CTRL_F);
+	if (this.useLightbarInterface && console.term_supports(USER_ANSI))
+	{
+		msgAreaMenu.allowANSI = true;
+		// Additional quit keys for ANSI mode which we can respond to
+		// N: Next (search) and numbers for item input
+		msgAreaMenu.AddAdditionalQuitKeys(" nN0123456789" + CTRL_C);
+	}
+	// If not using the lightbar interface (and ANSI behavior is not to be allowed), msgAreaMenu.numberedMode
+	// will be set to true by default.  Also, in that situation, set the menu's item number color
+	else
+	{
+		msgAreaMenu.allowANSI = false;
+		msgAreaMenu.colors.itemNumColor = this.colors.areaNum;
+		retObj.itemNumWidth = pMsgAreaHeirarchyObj.length.toString().length;
+		//retObj.descWidth -= 3;
+	}
+	msgAreaMenu.scrollbarEnabled = true;
+	msgAreaMenu.borderEnabled = false;
+	// Menu prompt text for non-ANSI mode
+	msgAreaMenu.nonANSIPromptText = "\x01n\x01b\x01h" + TALL_UPPER_MID_BLOCK + " \x01n\x01cWhich, \x01hQ\x01n\x01cuit, \x01hCTRL-F\x01n\x01c, \x01h/\x01n\x01c: \x01h";
 
-	// Change the menu's NumItems() and GetItem() function to reference
-	// the message list in this object rather than add the menu items
-	// to the menu
-	msgGrpMenu.areaChooser = this; // Add this object to the menu object
-	msgGrpMenu.NumItems = function() {
-		return msg_area.grp_list.length;
-	};
-	msgGrpMenu.GetItem = function(pGrpIndex) {
-		var menuItemObj = this.MakeItemWithRetval(-1);
-		if ((pGrpIndex >= 0) && (pGrpIndex < msg_area.grp_list.length))
+	// Menu item colors
+	msgAreaMenu.itemColorForSubBoard = colorIdxInfo.itemColorForSubBoard;
+	msgAreaMenu.selectedItemColorForSubBoard = colorIdxInfo.selectedItemColorForSubBoard;
+	msgAreaMenu.itemColorForItemWithSubItems = colorIdxInfo.itemColorForItemWithSubItems;
+	msgAreaMenu.selectedItemColorForItemWithSubItems = colorIdxInfo.selectedItemColorForItemWithSubItems;
+
+	// See if all the items in pMsgAreaHeirarchyObj are sub-boards.
+	// Also, see which one has the user's current chosen sub-board so we can set the
+	// current menu item index in the menu
+	msgAreaMenu.idxWithUserSelectedSubBoard = -1;
+	if (Array.isArray(pMsgAreaHeirarchyObj))
+	{
+		//msgAreaMenu.idxWithUserSelectedSubBoard = -1;
+		for (var i = 0; i < pMsgAreaHeirarchyObj.length; ++i)
 		{
-			var showAreaMark = false;
-			if (this.areaChooser.useSubCollapsing)
+			// Each object will have either an "items" or a "subObj"
+			if (!pMsgAreaHeirarchyObj[i].hasOwnProperty("subObj"))
+				retObj.allSubs = false;
+			// See if this one has the user's selected file directory
+			if (msgAreaStructureHasCurrentUserSubBoard(pMsgAreaHeirarchyObj[i]))
+				msgAreaMenu.idxWithUserSelectedSubBoard = i;
+			// If we've found all we need, then stop going through the array
+			if (!retObj.allSubs && msgAreaMenu.idxWithUserSelectedSubBoard > -1)
+				break;
+		}
+	}
+
+	msgAreaMenu.multiSelect = false;
+	msgAreaMenu.ampersandHotkeysInItems = false;
+	msgAreaMenu.wrapNavigation = false;
+
+	// Build the file directory info for the given file library
+	msgAreaMenu.msgAreaHeirarchyObj = pMsgAreaHeirarchyObj;
+	msgAreaMenu.areaChooser = this;
+	msgAreaMenu.allSubs = true; // Whether the menu has only sub-boards
+	if (Array.isArray(pMsgAreaHeirarchyObj))
+	{
+		// See if any of the items in the array aren't directories, and set retObj.allSubs.
+		// Also, see which one has the user's current chosen directory so we can set the
+		// current menu item index - And save that index in the menu object for its
+		// reference later.
+		msgAreaMenu.idxWithUserSelectedSubBoard = -1;
+		for (var i = 0; i < pMsgAreaHeirarchyObj.length; ++i)
+		{
+			// Each object will have either an "items" or a "subObj"
+			if (!pMsgAreaHeirarchyObj[i].hasOwnProperty("subObj"))
 			{
-				//this.group_list[pGrpIndex].sub_list[pSubIndex]
-				showAreaMark = ((typeof(bbs.curgrp) === "number") && (pGrpIndex == msg_area.sub[bbs.cursub_code].grp_index));
+				retObj.allSubs = false;
+				msgAreaMenu.allSubs = false;
 			}
-			else
-			{
-				showAreaMark = ((typeof(bbs.curgrp) === "number") && (pGrpIndex == msg_area.sub[bbs.cursub_code].grp_index));
-			}
-			menuItemObj.text = (showAreaMark ? "*" : " ");
-			menuItemObj.text += format(this.areaChooser.msgGrpListPrintfStr, +(pGrpIndex+1),
-			                           msg_area.grp_list[pGrpIndex].description.substr(0, this.areaChooser.msgGrpDescLen),
-			                           msg_area.grp_list[pGrpIndex].sub_list.length);
-			menuItemObj.text = strip_ctrl(menuItemObj.text);
-			menuItemObj.retval = pGrpIndex;
+			if (!pMsgAreaHeirarchyObj[i].hasOwnProperty("items"))
+				retObj.allOnlyOtherItems = false
+			// See if this one has the user's selected file directory
+			if (msgAreaStructureHasCurrentUserSubBoard(pMsgAreaHeirarchyObj[i]))
+				msgAreaMenu.idxWithUserSelectedSubBoard = i;
+			// If we've found all we need, then stop going through the array
+			if (!retObj.allSubs && msgAreaMenu.idxWithUserSelectedSubBoard > -1)
+				break;
 		}
 
-		return menuItemObj;
-	};
+		// Replace the menu's NumItems() function to return the correct number of items
+		msgAreaMenu.NumItems = function() {
+			return this.msgAreaHeirarchyObj.length;
+		};
+		msgAreaMenu.numItemsLen = msgAreaMenu.NumItems().toString().length;
+		// Replace the menu's GetItem() function to create & return an item for the menu
+		msgAreaMenu.GetItem = function(pItemIdx) {
+			var menuItemObj = this.MakeItemWithRetval(-1);
+			//var showDirMark = msgAreaStructureHasCurrentUserSubBoard(this.msgAreaHeirarchyObj[pItemIdx]);
+			var showDirMark = (pItemIdx == this.idxWithUserSelectedSubBoard);
+			var areaDesc = this.msgAreaHeirarchyObj[pItemIdx].name;
+			var numItems = 0;
+			if (this.msgAreaHeirarchyObj[pItemIdx].hasOwnProperty("items"))
+			{
+				numItems = this.msgAreaHeirarchyObj[pItemIdx].items.length;
+				// If this isn't the top level (libraries), then add "<subdirs>" to the description
+				if (this.msgAreaHeirarchyObj != this.areaChooser.lib_list)
+					areaDesc += "  <subsubs>";
 
-	// Set the currently selected item to the current group
-	msgGrpMenu.selectedItemIdx = msg_area.sub[bbs.cursub_code].grp_index;
-	if (msgGrpMenu.selectedItemIdx >= msgGrpMenu.topItemIdx+msgGrpMenu.GetNumItemsPerPage())
-		msgGrpMenu.topItemIdx = msgGrpMenu.selectedItemIdx - msgGrpMenu.GetNumItemsPerPage() + 1;
-
-	return msgGrpMenu;
-}
-
-// For the DDMsgAreaChooser class: Creates the DDLightbarMenu for use with
-// choosing a sub-board in lightbar mode.
-//
-// Parameters:
-//  pLevel: The level of menu (1=Group, 2=Sub-board, 3=Sub board within sub-board if sub-board name collapsing is enabled)
-//  pGrpIdx: The index of the message group
-//  pSubIdx: The sub-board index (for sub-board name collapsing)
-//
-// Return value: A DDLightbarMenu object for choosing a sub-board within
-// the given message group
-function DDMsgAreaChooser_CreateLightbarSubBoardMenu(pLevel, pGrpIdx, pSubIdx)
-{
-	// Start & end indexes for the various items in each mssage group list row
-	// Selected mark, group#, description, # sub-boards
-	var lengthsObj = this.GetSubNameLenAndNumMsgsLen(pGrpIdx);
-	var subBoardListIdxes = {
-		markCharStart: 0,
-		markCharEnd: 1,
-		subNumStart: 1,
-		subNumEnd: 3 + (+this.areaNumLen)
-	};
-	subBoardListIdxes.descStart = subBoardListIdxes.subNumEnd;
-	subBoardListIdxes.descEnd = subBoardListIdxes.descStart + lengthsObj.nameLen + 1;
-	subBoardListIdxes.numItemsStart = subBoardListIdxes.descEnd;
-	subBoardListIdxes.numItemsEnd = subBoardListIdxes.numItemsStart + lengthsObj.numMsgsLen + 1;
-	subBoardListIdxes.dateStart = subBoardListIdxes.numItemsEnd;
-	subBoardListIdxes.dateEnd = subBoardListIdxes.dateStart + +this.dateLen + 1;
-	subBoardListIdxes.timeStart = subBoardListIdxes.dateEnd;
-	// Set timeEnd to -1 to let the whole rest of the lines be colored
-	subBoardListIdxes.timeEnd = -1;
-	var listStartRow = this.areaChangeHdrLines.length + 3; // or + 3?
-	var subBoardMenuHeight = console.screen_rows - listStartRow;
-	var subBoardMenu = new DDLightbarMenu(1, listStartRow, console.screen_columns, subBoardMenuHeight);
-	subBoardMenu.scrollbarEnabled = true;
-	subBoardMenu.borderEnabled = false;
-	subBoardMenu.SetColors({
-		itemColor: [{start: subBoardListIdxes.markCharStart, end: subBoardListIdxes.markCharEnd, attrs: this.colors.areaMark},
-		            {start: subBoardListIdxes.subNumStart, end: subBoardListIdxes.subNumEnd, attrs: this.colors.areaNum},
-		            {start: subBoardListIdxes.descStart, end: subBoardListIdxes.descEnd, attrs: this.colors.desc},
-		            {start: subBoardListIdxes.numItemsStart, end: subBoardListIdxes.numItemsEnd, attrs: this.colors.numItems},
-		            {start: subBoardListIdxes.dateStart, end: subBoardListIdxes.dateEnd, attrs: this.colors.latestDate},
-		            {start: subBoardListIdxes.timeStart, end: subBoardListIdxes.timeEnd, attrs: this.colors.latestTime}],
-		selectedItemColor: [{start: subBoardListIdxes.markCharStart, end: subBoardListIdxes.markCharEnd, attrs: this.colors.areaMark + this.colors.bkgHighlight},
-		                    {start: subBoardListIdxes.subNumStart, end: subBoardListIdxes.subNumEnd, attrs: this.colors.areaNumHighlight + this.colors.bkgHighlight},
-		                    {start: subBoardListIdxes.descStart, end: subBoardListIdxes.descEnd, attrs: this.colors.descHighlight + this.colors.bkgHighlight},
-		                    {start: subBoardListIdxes.numItemsStart, end: subBoardListIdxes.numItemsEnd, attrs: this.colors.numItemsHighlight + this.colors.bkgHighlight},
-		                    {start: subBoardListIdxes.dateStart, end: subBoardListIdxes.dateEnd, attrs: this.colors.dateHighlight + this.colors.bkgHighlight},
-		                    {start: subBoardListIdxes.timeStart, end: subBoardListIdxes.timeEnd, attrs: this.colors.timeHighlight + this.colors.bkgHighlight}]
-	});
-
-	subBoardMenu.multiSelect = false;
-	subBoardMenu.ampersandHotkeysInItems = false;
-	subBoardMenu.wrapNavigation = false;
-
-	// Add additional keypresses for quitting the menu's input loop so we can
-	// respond to these keys
-	subBoardMenu.AddAdditionalQuitKeys("nNqQ ?0123456789/" + CTRL_F);
-
-	// Change the menu's NumItems() and GetItem() function to reference
-	// the message list in this object rather than add the menu items
-	// to the menu
-	subBoardMenu.areaChooser = this; // Add this object to the menu object
-	subBoardMenu.grpIdx = pGrpIdx;
-	if (this.useSubCollapsing)
-	{
-		if (pLevel == 2)
-		{
-			subBoardMenu.NumItems = function() {
-				return this.areaChooser.group_list[this.grpIdx].sub_list.length;
-			};
-			subBoardMenu.GetItem = function(pSubIdx) {
-				var menuItemObj = this.MakeItemWithRetval(-1);
-				var subIdxValid = true;
-				/*
-				if (this.areaChooser.useSubCollapsing)
-							showSubBoardMark = this.areaChooser.CurrentSubBoardIsInSubSubsForSub(this.grpIdx, +pSubIdx);
-				*/
-				if ((pSubIdx >= 0) && (pSubIdx < this.areaChooser.group_list[this.grpIdx].sub_list.length))
+                // Menu item color arrays
+                menuItemObj.itemColor = this.itemColorForItemWithSubItems;
+                menuItemObj.itemSelectedColor = this.selectedItemColorForItemWithSubItems;
+				
+				// Menu item text
+				menuItemObj.text = (showDirMark ? "*" : " ");
+				if (this.allowANSI)
 				{
-					var showSubBoardMark = false;
-					if ((typeof(bbs.cursub_code) == "string") && (bbs.cursub_code != ""))
-					{
-						showSubBoardMark = this.areaChooser.CurrentSubBoardIsInSubSubsForSub(this.grpIdx, +pSubIdx);
-						/*
-						if (this.areaChooser.useSubCollapsing)
-							showSubBoardMark = this.areaChooser.CurrentSubBoardIsInSubSubsForSub(this.grpIdx, +pSubIdx);
-						else
-							showSubBoardMark = ((this.grpIdx == msg_area.sub[bbs.cursub_code].grp_index) && (pSubIdx == msg_area.sub[bbs.cursub_code].index));
-						*/
-					}
-					// Set the sub-board description.  And if it has sub-subboards,
-					// then append some text indicating so.
-					var subDesc = this.areaChooser.group_list[this.grpIdx].sub_list[pSubIdx].description;
-					var numItems = 0;
-					var lastMsgPostTimestamp = 0;
-					if (this.areaChooser.showDatesInSubBoardList)
-						lastMsgPostTimestamp = getLatestMsgTime(this.areaChooser.group_list[this.grpIdx].sub_list[pSubIdx].code);
-					var subSubBoardListExists = false;
-					if (Array.isArray(this.areaChooser.group_list[this.grpIdx].sub_list[pSubIdx].sub_subboard_list) && this.areaChooser.group_list[this.grpIdx].sub_list[pSubIdx].sub_subboard_list.length > 0)
-					{
-						subSubBoardListExists = true;
-						subDesc += "  <subsubs>";
-						numItems = this.areaChooser.group_list[this.grpIdx].sub_list[pSubIdx].sub_subboard_list.length;
-					}
+					menuItemObj.text += " " + format(this.areaChooser.msgGrpListPrintfStr, +(pItemIdx+1),
+					                                 this.msgAreaHeirarchyObj[pItemIdx].name.substr(0, this.areaChooser.msgGrpDescLen),
+					                                 this.msgAreaHeirarchyObj[pItemIdx].items.length);
+					menuItemObj.text = strip_ctrl(menuItemObj.text);
+				}
+				else
+				{
+					// Traditional UI or no ANSI - Numbered mode
+					// Number of spaces before the group name
+					var numSpaces = pItemNumWidth - this.numItemsLen - console.strlen(menuItemObj.text);
+					if (numSpaces > 0)
+						menuItemObj.text += format("%*s", numSpaces, "");
+					menuItemObj.text += format(this.areaChooser.msgGrpListPrintfStrWithoutAreaNum,
+					                           this.msgAreaHeirarchyObj[pItemIdx].name.substr(0, this.areaChooser.msgGrpDescLen),
+					                           this.msgAreaHeirarchyObj[pItemIdx].items.length);
+					menuItemObj.text = strip_ctrl(menuItemObj.text);
+				}
+			}
+			else if (this.msgAreaHeirarchyObj[pItemIdx].hasOwnProperty("subObj"))
+			{
+				if (this.msgAreaHeirarchyObj[pItemIdx].subObj.hasOwnProperty("posts"))
+					numItems = this.msgAreaHeirarchyObj[pItemIdx].subObj.posts; // Added in Synchronet 3.18c
+				else
+				{
 					// Get information from the messagebase
-					var msgBase = new MsgBase(this.areaChooser.group_list[this.grpIdx].sub_list[pSubIdx].code);
+					var msgBase = new MsgBase(this.msgAreaHeirarchyObj[pItemIdx].subObj.code);
 					if (msgBase.open())
 					{
-						if (!subSubBoardListExists)
-						{
-							// There is no sub-subboard list, so this is just a regular sub-board.
-							// Get the number of readable messages in the sub-board.
-							numItems = numReadableMsgs(msgBase, this.areaChooser.group_list[this.grpIdx].sub_list[pSubIdx].code);
-						}
+						numItems = msgBase.total_msgs;
 						msgBase.close();
 					}
+				}
 
-					menuItemObj.text = (showSubBoardMark ? "*" : " ");
+				/*
+				// If this menu contaons only sub-boards, then set the
+				// item color arrays here
+				if (this.allSubs)
+				{
+					// Menu item color arrays
+					menuItemObj.itemColor = msgAreaMenu.itemColorForSubBoard;
+					menuItemObj.itemSelectedColor = msgAreaMenu.selectedItemColorForSubBoard;
+				}
+				*/
+
+				var grpIdx = this.msgAreaHeirarchyObj[pItemIdx].subObj.grp_index;
+				// Ensure the subBoardListPrintfInfo object is built for the given group
+				this.areaChooser.BuildSubBoardPrintfInfoForGrp(grpIdx);
+				// Menu item text
+				menuItemObj.text = (showDirMark ? "*" : " ");
+				if (this.allowANSI)
+				{
+					// Menu item color arrays
+					// Not entirely sure why the heirarchy level matters
+					if (pHeirarchyLevel > 2)
+					{
+						
+						// Weird hacky stuff to get the color alignments right for this situation
+						var itemColorIdxInfo = this.areaChooser.GetSubBoardColorIndexInfoForLightbarMenu(pItemNumWidth, this.msgAreaHeirarchyObj.length.toString().length);
+						menuItemObj.itemColor = itemColorIdxInfo.itemColorForSubBoard;
+						menuItemObj.itemSelectedColor = itemColorIdxInfo.selectedItemColorForSubBoard;
+					}
+					else
+					{
+						menuItemObj.itemColor = this.itemColorForSubBoard;
+						menuItemObj.itemSelectedColor = this.selectedItemColorForSubBoard;
+					}
+
+					// Note: this.areaChooser.subBoardNameLen and this.areaChooser.subBoardListPrintfInfo[grpIdx].nameLen
+					// are probably the same.
+					// Get the timestamp of the last message, if configured to do so
 					if (this.areaChooser.showDatesInSubBoardList)
 					{
-						menuItemObj.text += format(this.areaChooser.subBoardListPrintfInfo[this.grpIdx].printfStr, +(pSubIdx+1),
-						                           subDesc.substr(0, this.areaChooser.descFieldLen), numItems,
+						var lastMsgPostTimestamp = getLatestMsgTime(this.msgAreaHeirarchyObj[pItemIdx].subObj.code);
+						menuItemObj.text += format(this.areaChooser.subBoardListPrintfInfo[grpIdx].printfStr, pItemIdx+1,
+												   this.msgAreaHeirarchyObj[pItemIdx].name.substr(0, this.areaChooser.subBoardNameLen), numItems,
 						                           strftime("%Y-%m-%d", lastMsgPostTimestamp),
 						                           strftime("%H:%M:%S", lastMsgPostTimestamp));
 					}
 					else
 					{
-						menuItemObj.text += format(this.areaChooser.subBoardListPrintfInfo[this.grpIdx].printfStr, +(pSubIdx+1),
-						                           subDesc.substr(0, this.areaChooser.descFieldLen), numItems);
+						menuItemObj.text += format(this.areaChooser.subBoardListPrintfInfo[grpIdx].printfStr, pItemIdx+1,
+												   this.msgAreaHeirarchyObj[pItemIdx].name.substr(0, this.areaChooser.subBoardNameLen), numItems);
 					}
-					menuItemObj.text = strip_ctrl(menuItemObj.text);
-					menuItemObj.retval = pSubIdx;
-				}
-
-				return menuItemObj;
-			};
-
-			// Set the currently selected item.  If the current sub-board is in this list,
-			// then set the selected item to that; otherwise, the selected item should be
-			// the first sub-board.
-			var selectedItemIdxWasSet = false;
-			if (msg_area.sub[bbs.cursub_code].grp_index == pGrpIdx)
-			{
-				//if (user.is_sysop) console.print("\x01n\r\nHere 1\r\n\x01p"); // Temporary
-				if ((pSubIdx >= 0) && (pSubIdx < this.group_list[pGrpIdx].sub_list.length))
-				{
-					var subSubsValid = Array.isArray(this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list) && this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list.length > 0;
-					if (!subSubsValid && bbs.cursub_code == this.group_list[pGrpIdx].sub_list[pSubIdx].code)
-					{
-						//if (user.is_sysop) console.print("\x01n\r\nHere 3\r\n\x01p"); // Temporary
-						subBoardMenu.selectedItemIdx = pSubIdx;
-						if (subBoardMenu.selectedItemIdx >= subBoardMenu.topItemIdx+subBoardMenu.GetNumItemsPerPage())
-							subBoardMenu.topItemIdx = subBoardMenu.selectedItemIdx - subBoardMenu.GetNumItemsPerPage() + 1;
-					}
-				}
-			}
-			// If the selected item wasn't set, then check whether the current sub-board
-			// is within any of the sub-subboards for the subgroups in the group, and set
-			// it if so.
-			if (!selectedItemIdxWasSet)
-			{
-				for (var subIdx = 0; subIdx < this.group_list[pGrpIdx].sub_list.length; ++subIdx)
-				{
-					if (this.CurrentSubBoardIsInSubSubsForSub(pGrpIdx, subIdx))
-					{
-						subBoardMenu.selectedItemIdx = subIdx;
-						if (subBoardMenu.selectedItemIdx >= subBoardMenu.topItemIdx+subBoardMenu.GetNumItemsPerPage())
-							subBoardMenu.topItemIdx = subBoardMenu.selectedItemIdx - subBoardMenu.GetNumItemsPerPage() + 1;
-						break;
-					}
-				}
-			}
-		}
-		else if (pLevel == 3)
-		{
-			subBoardMenu.subIdx = pSubIdx;
-			subBoardMenu.NumItems = function() {
-				return this.areaChooser.group_list[this.grpIdx].sub_list[this.subIdx].sub_subboard_list.length;
-			};
-			subBoardMenu.GetItem = function(pSubSubIdx) {
-				var menuItemObj = this.MakeItemWithRetval(-1);
-				if ((pSubSubIdx >= 0) && (pSubSubIdx < this.areaChooser.group_list[this.grpIdx].sub_list[this.subIdx].sub_subboard_list.length))
-				{
-					var showSubBoardMark = false;
-					if ((typeof(bbs.cursub_code) == "string") && (bbs.cursub_code != ""))
-						showSubBoardMark = this.areaChooser.CurrentSubBoardIsInSubSubsForSub(this.grpIdx, +(this.subIdx));
-					menuItemObj.text = (showSubBoardMark ? "*" : " ");
-					var subdirDesc = this.areaChooser.group_list[this.grpIdx].sub_list[this.subIdx].sub_subboard_list[pSubSubIdx].description;
-					var subdirDirIdx = this.areaChooser.group_list[this.grpIdx].sub_list[this.subIdx].sub_subboard_list[pSubSubIdx].index;
-					var subCode = this.areaChooser.group_list[this.grpIdx].sub_list[this.subIdx].sub_subboard_list[pSubSubIdx].code;
-					menuItemObj.text = strip_ctrl(this.areaChooser.GetMsgSubBrdLine(this.grpIdx, msg_area.sub[subCode].index, false));
-					menuItemObj.retval = pSubSubIdx;
-				}
-
-				return menuItemObj;
-			}
-
-			// Set the currently selected item.  If the current sub-board is in this list,
-			// then set the selected item to that; otherwise, the selected item should be
-			// the first sub-board.
-			if (msg_area.sub[bbs.cursub_code].grp_index == pGrpIdx)
-			{
-				for (var i = 0; i < this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list.length; ++i)
-				{
-					if (bbs.cursub_code == this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list[i].code)
-					{
-						subBoardMenu.selectedItemIdx = i;
-						if (subBoardMenu.selectedItemIdx >= subBoardMenu.topItemIdx+subBoardMenu.GetNumItemsPerPage())
-							subBoardMenu.topItemIdx = subBoardMenu.selectedItemIdx - subBoardMenu.GetNumItemsPerPage() + 1;
-						break;
-					}
-				}
-			}
-		}
-	}
-	else
-	{
-		subBoardMenu.NumItems = function() {
-			return msg_area.grp_list[this.grpIdx].sub_list.length;
-		};
-		subBoardMenu.GetItem = function(pSubIdx) {
-			var menuItemObj = this.MakeItemWithRetval(-1);
-			if ((pSubIdx >= 0) && (pSubIdx < msg_area.grp_list[this.grpIdx].sub_list.length))
-			{
-				var showSubBoardMark = false;
-				if ((typeof(bbs.cursub_code) == "string") && (bbs.cursub_code != ""))
-					showSubBoardMark = ((this.grpIdx == msg_area.sub[bbs.cursub_code].grp_index) && (pSubIdx == msg_area.sub[bbs.cursub_code].index));
-				menuItemObj.text = strip_ctrl(this.areaChooser.GetMsgSubBrdLine(this.grpIdx, pSubIdx, false));
-				menuItemObj.retval = pSubIdx;
-			}
-
-			return menuItemObj;
-		};
-
-		// Set the currently selected item.  If the current sub-board is in this list,
-		// then set the selected item to that; otherwise, the selected item should be
-		// the first sub-board.
-		if (msg_area.sub[bbs.cursub_code].grp_index == pGrpIdx)
-		{
-			subBoardMenu.selectedItemIdx = msg_area.sub[bbs.cursub_code].index;
-			if (subBoardMenu.selectedItemIdx >= subBoardMenu.topItemIdx+subBoardMenu.GetNumItemsPerPage())
-				subBoardMenu.topItemIdx = subBoardMenu.selectedItemIdx - subBoardMenu.GetNumItemsPerPage() + 1;
-		}
-		else
-		{
-			subBoardMenu.selectedItemIdx = 0;
-			subBoardMenu.topItemIdx = 0;
-		}
-	}
-
-	return subBoardMenu;
-}
-
-// For the DDMsgAreaChooser class: Lets the user choose a message group and
-// sub-board via numeric input, using a traditional user interface.
-//
-// Parameters:
-//  pChooseGroup: Boolean - Whether or not to choose the message group.  If false,
-//                then this will allow choosing a sub-board within the user's
-//                current message group.  This is optional; defaults to true.
-function DDMsgAreaChooser_SelectMsgArea_Traditional(pChooseGroup)
-{
-	// If there are no message groups, then don't let the user
-	// choose one.
-	if (msg_area.grp_list.length == 0)
-	{
-		console.clear("\x01n");
-		console.print("\x01y\x01hThere are no message groups.\r\n\x01p");
-		return;
-	}
-
-	var chooseGroup = (typeof(pChooseGroup) == "boolean" ? pChooseGroup : true);
-	if (chooseGroup)
-	{
-		// Show the message groups & sub-boards and let the user choose one.
-		var selectedGrp = 0;      // The user's selected message group
-		var selectedSubBoard = 0; // The user's selected sub-board
-		var usersCurrentIdxVals = getGrpAndSubIdxesFromCode(bbs.cursub_code, true);
-		var grpSearchText = "";
-		var continueChoosingMsgArea = true;
-		while (continueChoosingMsgArea)
-		{
-			// Clear the BBS command string to make sure there are no extra
-			// commands in there that could cause weird things to happen.
-			bbs.command_str = "";
-
-			console.clear("\x01n");
-			this.DisplayAreaChgHdr(1);
-			if (this.areaChangeHdrLines.length > 0)
-				console.crlf();
-			this.ListMsgGrps(grpSearchText);
-			console.crlf();
-			console.print("\x01n\x01b\x01hþ \x01n\x01cWhich, \x01hQ\x01n\x01cuit, \x01hCTRL-F\x01n\x01c, \x01h/\x01n\x01c, or [\x01h" + +(usersCurrentIdxVals.grpIdx+1) + "\x01n\x01c]: \x01h");
-			// Accept Q (quit), / or CTRL_F (Search) or a file library number
-			selectedGrp = console.getkeys("Q/" + CTRL_F, msg_area.grp_list.length);
-
-			// If the user just pressed enter (selectedGrp would be blank),
-			// default to the current group.
-			if (selectedGrp.toString() == "")
-				selectedGrp = usersCurrentIdxVals.grpIdx + 1;
-
-			if (selectedGrp.toString() == "Q")
-				continueChoosingMsgArea = false;
-			else if ((selectedGrp.toString() == "/") || (selectedGrp.toString() == CTRL_F))
-			{
-				console.crlf();
-				var searchPromptText = "\x01n\x01c\x01hSearch\x01g: \x01n";
-				console.print(searchPromptText);
-				var searchText = console.getstr("", console.screen_columns-strip_ctrl(searchPromptText).length-1, K_UPPER|K_NOCRLF|K_GETSTR|K_NOSPIN|K_LINE);
-				if (searchText.length > 0)
-					grpSearchText = searchText;
-			}
-			else
-			{
-				grpSearchText = "";
-
-				// If the user specified a message group number, then
-				// set it and let the user choose a sub-board within
-				// the group.
-				if (selectedGrp > 0)
-				{
-					// Set the default sub-board #: The current sub-board, or if the
-					// user chose a different group, then this should be set
-					// to the first sub-board.
-					var defaultSubBoard = usersCurrentIdxVals.subIdx + 1;
-					if (selectedGrp-1 != usersCurrentIdxVals.grpIdx)
-						defaultSubBoard = 1;
-
-					console.clear("\x01n");
-					var selectSubRetVal = this.SelectSubBoard_Traditional(selectedGrp-1, defaultSubBoard-1);
-					// If the user chose a directory, then set the user's
-					// message sub-board and quit the message group loop.
-					if (selectSubRetVal.subBoardCode != "")
-					{
-						continueChoosingMsgArea = false;
-						bbs.cursub_code = selectSubRetVal.subBoardCode;
-					}
-				}
-			}
-		}
-	}
-	else
-	{
-		// Don't choose a group, just a sub-board within the user's current group.
-		var idxVals = getGrpAndSubIdxesFromCode(bbs.cursub_code, true);
-		var selectSubRetVal = this.SelectSubBoard_Traditional(idxVals.grpIdx, idxVals.subIdx);
-		// If the user chose a directory, then set the user's sub-board.
-		if (selectSubRetVal.subBoardCode != "")
-			bbs.cursub_code = selectSubRetVal.subBoardCode;
-	}
-}
-
-// For the DDMsgAreaChooser class: Allows the user to select a sub-board with the
-// traditional user interface.
-//
-// Parameters:
-//  pGrpIdx: The index of the message group to choose a sub-board for
-//  pDefaultSubBoardIdx: The index of the default sub-board
-//
-// Return value: An object containing the following values:
-//               subBoardChosen: Boolean - Whether or not a sub-board was chosen.
-//               subBoardIndex: Numeric - The sub-board that was chosen (if any).
-//                              Will be -1 if none chosen.
-//               subBoardCode: The internal code of the chosen sub-board (or "" if none chosen)
-function DDMsgAreaChooser_SelectSubBoard_Traditional(pGrpIdx, pDefaultSubBoardIdx)
-{
-	var retObj = {
-		subBoardChosen: false,
-		subBoardIndex: 1,
-		subBoardCode: ""
-	}
-
-	var searchText = "";
-	var defaultSubBoardIdx = pDefaultSubBoardIdx;
-	var continueOn = false;
-	do
-	{
-		this.DisplayAreaChgHdr(1);
-		if (this.areaChangeHdrLines.length > 0)
-			console.crlf();
-		this.ListSubBoardsInMsgGroup(pGrpIdx, null, defaultSubBoardIdx, searchText);
-		console.crlf();
-		if (defaultSubBoardIdx >= 0)
-			console.print("\x01n\x01b\x01hþ \x01n\x01cWhich, \x01hQ\x01n\x01cuit, \x01hCTRL-F\x01n\x01c, \x01h/\x01n\x01c, or [\x01h" + +(defaultSubBoardIdx+1) + "\x01n\x01c]: \x01h");
-		else
-			console.print("\x01n\x01b\x01hþ \x01n\x01cWhich, \x01hQ\x01n\x01cuit, \x01hCTRL-F\x01n\x01c, \x01h/\x01n\x01c: \x01h");
-		// Accept Q (quit) or a sub-board number
-		var selectedSubBoard = console.getkeys("Q/" + CTRL_F, msg_area.grp_list[pGrpIdx].sub_list.length);
-
-		// If the user just pressed enter (selectedSubBoard would be blank),
-		// default the selected directory.
-		var selectedSubBoardStr = selectedSubBoard.toString();
-		if (selectedSubBoardStr == "")
-		{
-			if (defaultSubBoardIdx >= 0)
-			{
-				selectedSubBoard = defaultSubBoardIdx + 1; // Make this 1-based
-				continueOn = false;
-			}
-		}
-		else if ((selectedSubBoardStr == "/") || (selectedSubBoardStr == CTRL_F))
-		{
-			// Search
-			console.crlf();
-			var searchPromptText = "\x01n\x01c\x01hSearch\x01g: \x01n";
-			console.print(searchPromptText);
-			searchText = console.getstr("", console.screen_columns-strip_ctrl(searchPromptText).length-1, K_UPPER|K_NOCRLF|K_GETSTR|K_NOSPIN|K_LINE);
-			console.attributes = "N";
-			console.crlf();
-			if (searchText.length > 0)
-				defaultSubBoardIdx = -1;
-			else
-				defaultSubBoardIdx = pDefaultSubBoardIdx;
-			continueOn = true;
-		}
-		else if (selectedSubBoardStr == "Q")
-			continueOn = false;
-
-		// If a sub-board was chosen, then select it.
-		if (selectedSubBoard > 0)
-		{
-			var selectedSubIdx = selectedSubBoard - 1;
-			// If using sub-board name collapsing and the selected sub-board has sub-subboards, then
-			// let the user choose a sub-subboard within the sub-board.  Otherwise, just select the
-			// current sub-board.
-			if (this.useSubCollapsing && this.group_list[pGrpIdx].sub_list[selectedSubIdx].sub_subboard_list.length > 0)
-			{
-				var subSubRetObj = this.SelectSubSubWithinSub_Traditional(pGrpIdx, selectedSubIdx);
-				if (subSubRetObj.areaSelected)
-				{
-					retObj.subBoardChosen = true;
-					retObj.subBoardIndex = subSubRetObj.subIndex;
-					retObj.subBoardCode = subSubRetObj.subCode;
-					continueOn = false;
-				}
-				else // An area wasn't chosen
-				{
-					continueOn = true;
-					console.clear("\x01n");
-				}
-			}
-			else
-			{
-				retObj.subBoardChosen = true;
-				retObj.subBoardIndex = selectedSubIdx;
-				retObj.subBoardCode = msg_area.grp_list[pGrpIdx].sub_list[selectedSubIdx].code;
-				continueOn = false;
-			}
-		}
-	} while (continueOn);
-
-	return retObj;
-}
-
-// For the DDMsgAreaChooser class: Lets the user select a sub-subbboard within a
-// message sub-board - Traditional user interface.  This is meant for sub-board
-// name collapsing, at the 3rd level.
-//
-// Parameters:
-//  pGrpIdx: The message group index
-//  pSubIdx: The index of the sub-board within the message group
-//
-// Return value: An object containing the following properties:
-//               areaSelected: Boolean - Whether or not the user chose a sub-subboard.
-//               subIndex: The index of the sub-board in Synchronet's sub_list array in the group
-//               subCode: The internal code of the sub-board chosen, if chose.  If not chosen,
-//                        this will be an empty string.
-function DDMsgAreaChooser_SelectSubSubWithinSub_Traditional(pGrpIdx, pSubIdx)
-{
-	var retObj = {
-		areaSelected: false,
-		subIndex: -1,
-		subCode: ""
-	};
-
-	if (!this.useSubCollapsing || this.group_list.length == 0)
-		return retObj;
-	if ((pGrpIdx < 0) || (pGrpIdx >= this.group_list.length))
-		return retObj;
-	if ((pSubIdx < 0) || (pSubIdx >= this.group_list[pGrpIdx].sub_list.length))
-	{
-		console.clear("\x01n");
-		console.print("\x01y\x01hThere are no sub-boards in this message group.\r\n\x01p");
-		return retObj;
-	}
-	if (this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list.length == 0)
-	{
-		console.clear("\x01n");
-		console.print("\x01y\x01hThere are no sub-subboards in this sub-board.\r\n\x01p");
-		return retObj;
-	}
-
-	// Gets the default sub-subdirectory number (1-based)
-	function getDefaultSubSubNum(pGrpList, pGrpIdx, pSubIdx)
-	{
-		var subSubNum = 0; // Will be 1-based
-		for (var subSubIdx = 0; subSubIdx < pGrpList[pGrpIdx].sub_list[pSubIdx].sub_subboard_list.length; ++subSubIdx)
-		{
-			if (bbs.curdir_code == pGrpList[pGrpIdx].sub_list[pSubIdx].sub_subboard_list[subSubIdx].code)
-			{
-				subSubNum = subSubIdx + 1;
-				break;
-			}
-		}
-		return subSubNum;
-	}
-
-	// defaultSubSubNum is the default sub-subboard # (will be 1-based)
-	var defaultSubSubNum = getDefaultSubSubNum(this.group_list, pGrpIdx, pSubIdx);
-	var searchText = "";
-	var continueOn = false;
-	do
-	{
-		console.clear("\x01n");
-		this.DisplayAreaChgHdr(1);
-		if (this.areaChangeHdrLines.length > 0)
-			console.crlf();
-		// Note: This will list sub-subboards within the sub-board with a valid sub-board index
-		// as the 2nd parameter.
-		// TODO: When quitting out of the sub-suboard list, it's going back to the
-		// message group list
-		this.ListSubBoardsInMsgGroup(pGrpIdx, pSubIdx, defaultSubSubNum, searchText);
-		if (defaultSubSubNum >= 1)
-			console.print("\x01n\x01b\x01hþ \x01n\x01cWhich, \x01hQ\x01n\x01cuit, \x01hCTRL-F\x01n\x01c, \x01h/\x01n\x01c, or [\x01h" + defaultSubSubNum + "\x01n\x01c]: \x01h");
-		else
-			console.print("\x01n\x01b\x01hþ \x01n\x01cWhich, \x01hQ\x01n\x01cuit, \x01hCTRL-F\x01n\x01c, \x01h/\x01n\x01c: \x01h");
-		// Accept Q (quit), / or CTRL_F to search, or a file sub-board number
-		var selectedSubSubNum = console.getkeys("Q/" + CTRL_F, this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list.length);
-
-		// If the user just pressed enter (selectedSubSubNum would be blank),
-		// default the selected sub-board.
-		if (selectedSubSubNum.toString() == "Q")
-			continueOn = false;
-		else if (selectedSubSubNum.toString() == "")
-			selectedSubSubNum = defaultSubSubNum;
-		else if ((selectedSubSubNum == "/") || (selectedSubSubNum == CTRL_F))
-		{
-			// Search
-			console.crlf();
-			var searchPromptText = "\x01n\x01c\x01hSearch\x01g: \x01n";
-			console.print(searchPromptText);
-			searchText = console.getstr("", console.screen_columns-strip_ctrl(searchPromptText).length-1, K_UPPER|K_NOCRLF|K_GETSTR|K_NOSPIN|K_LINE);
-			console.attributes = "N";
-			console.crlf();
-			if (searchText.length > 0)
-				defaultSubSubNum = -1;
-			else
-				defaultSubSubNum = getDefaultSubSubNum(this.group_list, pGrpIdx, pSubIdx);
-			continueOn = true;
-			console.line_counter = 0; // To avoid pausing before the clear screen
-		}
-
-		// If the user chose a sub-board, then set the user's message sub-board.
-		if (selectedSubSubNum > 0)
-		{
-			continueOn = false;
-			retObj.areaSelected = true;
-			retObj.subCode = this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list[selectedSubSubNum-1].code;
-			retObj.subIndex = this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list[selectedSubSubNum-1].index;
-		}
-	} while (continueOn);
-
-	return retObj;
-}
-
-// For the DDMsgAreaChooser class: Lists all message groups (for the traditional
-// user interface).
-//
-// Parameters:
-//  pSearchText: Optional - Search text for the message groups
-function DDMsgAreaChooser_ListMsgGrps_Traditional(pSearchText)
-{
-	// Print the header
-	this.WriteGrpListHdrLine();
-	console.attributes = "N";
-
-	var searchText = (typeof(pSearchText) == "string" ? pSearchText.toUpperCase() : "");
-
-	// List the message groups
-	var printIt = true;
-	for (var i = 0; i < msg_area.grp_list.length; ++i)
-	{
-		if (searchText.length > 0)
-			printIt = ((msg_area.grp_list[i].name.toUpperCase().indexOf(searchText) >= 0) || (msg_area.grp_list[i].description.toUpperCase().indexOf(searchText) >= 0));
-		else
-			printIt = true;
-
-		if (printIt)
-		{
-			console.crlf();
-			this.WriteMsgGroupLine(i, false);
-		}
-	}
-}
-
-// For the DDMsgAreaChooser class: Lists the sub-boards in a message group
-// (or sub-subboards in a sub-board, for sub-board name collapsing), for the
-// traditional user interface.
-//
-// Parameters:
-//  pGrpIndex: The index of the message group (0-based)
-//  pSubIdx: Optional - For sub-board name collapsing, this is the (0-based)
-//           index of the sub-board to show sub-subboards for.  To ignore this
-//           and only show sub-boards of the given group, this can be null or -1.
-//  pMarkIndex: An index of a message group to highlight.  This
-//                   is optional; if left off, this will default to
-//                   the current sub-board.
-//  pSearchText: Optional - Search text for the sub-boards
-//  pSortType: Optional - A string describing how to sort the list (if desired):
-//             "none": Default behavior - Sort by sub-board #
-//             "dateAsc": Sort by date, ascending
-//             "dateDesc": Sort by date, descending
-//             "description": Sort by description
-function DDMsgAreaChooser_ListSubBoardsInMsgGroup_Traditional(pGrpIndex, pSubIdx, pMarkIndex, pSearchText, pSortType)
-{
-	// Default to the current message group & sub-board if pGrpIndex
-	// and pMarkIndex aren't specified.
-	var grpIndex = 0;
-	if ((typeof(bbs.cursub_code) == "string") && (bbs.cursub_code != ""))
-		grpIndex = msg_area.sub[bbs.cursub_code].grp_index;
-	if ((pGrpIndex != null) && (typeof(pGrpIndex) === "number"))
-		grpIndex = pGrpIndex;
-	var highlightIndex = 0;
-	if ((typeof(bbs.cursub_code) == "string") && (bbs.cursub_code != ""))
-		highlightIndex = (pGrpIndex == msg_area.sub[bbs.cursub_code].index);
-	if ((pMarkIndex != null) && (typeof(pMarkIndex) === "number"))
-		highlightIndex = pMarkIndex;
-
-	// Make sure grpIndex and highlightIndex are valid (they might not be for
-	// brand-new users).
-	if ((grpIndex == null) || (typeof(grpIndex) == "undefined"))
-		grpIndex = 0;
-	if ((highlightIndex == null) || (typeof(highlightIndex) == "undefined"))
-		highlightIndex = 0;
-
-	// Check whether pSubIdx is valid
-	var subIdxValid = typeof(pSubIdx) === "number" && (pSubIdx > -1);
-
-	// Ensure that the sub-board printf information is created for
-	// this message group.
-	this.BuildSubBoardPrintfInfoForGrp(grpIndex);
-
-	// Print the headers
-	this.WriteSubBrdListHdr1Line(grpIndex);
-	console.crlf();
-	var itemsHdrStr = "Posts";
-	if (this.useSubCollapsing)
-		itemsHdrStr = subIdxValid ? "Posts" : "Items";
-	if (this.showDatesInSubBoardList)
-		printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# " + itemsHdrStr, "Latest date & time");
-	else
-		printf(this.subBoardListHdrPrintfStr, "Sub #", "Name", "# " + itemsHdrStr);
-	console.attributes = "N";
-
-	// Make the search text uppercase for case-insensitive matching
-	var searchTextUpper = (typeof(pSearchText) == "string" ? pSearchText.toUpperCase() : "");
-
-	// List each sub-board in the message group.
-	var subBoardArray = null; // For sorting, if desired
-	var newestDate = {};      // For storing the date of the newest post in a sub-board
-	var msgBase = null;       // For opening the sub-boards with a MsgBase object
-	var msgHeader = null;     // For getting the date & time of the newest post in a sub-board
-	var subBoardNum = 0;      // 0-based sub-board number (because the array index is the number as a str)
-	// If a sort type is specified, then add the sub-board information to
-	// subBoardArray so that it can be sorted.
-	if ((typeof(pSortType) == "string") && (pSortType != "") && (pSortType != "none"))
-	{
-		var addSubBoard = true;
-		subBoardArray = [];
-		var subBoardInfo = null;
-		var subList = msg_area.grp_list[grpIndex].sub_list;
-		if (this.useSubCollapsing)
-		{
-			if (subIdxValid)
-				subList = this.group_list[grpIndex].sub_list[pSubIdx].sub_subboard_list;
-			else
-				subList = this.group_list[grpIndex].sub_list;
-		}
-		for (var subIdx in subList)
-		{
-			// Open the current sub-board with the msgBase object.
-			// If the search text is set, then use it to filter the sub-boards.
-			addSubBoard = true;
-			if (searchTextUpper.length > 0)
-			{
-				if (this.useSubCollapsing && subIdxValid)
-				{
-					// For sub-board name collapsing, sub-subboards only have descriptions, no names
-					addSubBoard = (this.group_list[grpIndex].sub_list[pSubIdx].sub_subboard_list[subIdx].description.indexOf(searchTextUpper) >= 0);
 				}
 				else
 				{
-					addSubBoard = ((msg_area.grp_list[grpIndex].sub_list[subIdx].name.indexOf(searchTextUpper) >= 0) ||
-					               (msg_area.grp_list[grpIndex].sub_list[subIdx].description.indexOf(searchTextUpper) >= 0));
-				}
-			}
-			if (addSubBoard)
-			{
-				var subCode = "";
-				if (this.useSubCollapsing && subIdxValid)
-					subCode = this.group_list[grpIndex].sub_list[pSubIdx].sub_subboard_list[subIdx].code;
-				else
-					subCode = msg_area.grp_list[grpIndex].sub_list[subIdx].code;
-				msgBase = new MsgBase(subCode);
-				if (msgBase.open())
-				{
-					subBoardInfo = new MsgSubBoardInfo();
-					subBoardInfo.subBoardNum = +(subIdx);
-					if (this.useSubCollapsing && subIdxValid)
-					{
-						subBoardInfo.subBoardIdx = this.group_list[grpIndex].sub_list[pSubIdx].sub_subboard_list[subIdx].index;
-						subBoardInfo.description = this.group_list[grpIndex].sub_list[pSubIdx].sub_subboard_list[subIdx].description;
-					}
-					else
-					{
-						subBoardInfo.subBoardIdx = msg_area.grp_list[grpIndex].sub_list[subIdx].index;
-						subBoardInfo.description = msg_area.grp_list[grpIndex].sub_list[subIdx].description;
-					}
+					// No ANSI - Numbered mode
 
-					subBoardInfo.numPosts = numReadableMsgs(msgBase, msg_area.grp_list[grpIndex].sub_list[subIdx].code);
+					// Number of spaces before the group name
+					var numSpaces = pItemNumWidth - this.numItemsLen - console.strlen(menuItemObj.text);
+					if (numSpaces > 0)
+						menuItemObj.text += format("%*s", numSpaces, " ");
 
-					// Get the date & time when the last message was imported.
-					if (this.showDatesInSubBoardList && (subBoardInfo.numPosts > 0))
+					// If this menu only has sub-boards, then use the original attribute arrays
+					// that were set up for the menu
+					if (this.allSubs)
 					{
-						//var msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
-						var msgHeader = getLatestMsgHdr(msg_area.grp_list[grpIndex].sub_list[subIdx].code);
-						if (msgHeader === null)
-							msgHeader = getBogusMsgHdr();
-						if (this.showImportDates)
-							subBoardInfo.newestPostDate = msgHeader.when_imported_time;
+						// Not entirely sure why the heirarchy level matters
+						if (pHeirarchyLevel > 2)
+						{
+							var itemColorIdxInfo = this.areaChooser.GetColorIndexInfoForLightbarMenu(this.msgAreaHeirarchyObj, pItemNumWidth+1);
+							menuItemObj.itemColor = itemColorIdxInfo.itemColorForSubBoard;
+							menuItemObj.itemSelectedColor = itemColorIdxInfo.selectedItemColorForSubBoard;
+						}
 						else
 						{
-							var msgWrittenLocalBBSTime = msgWrittenTimeToLocalBBSTime(msgHeader);
-							if (msgWrittenLocalBBSTime != -1)
-								subBoardInfo.newestPostDate = msgWrittenLocalBBSTime;
-							else
-								subBoardInfo.newestPostDate = msgHeader.when_written_time;
+							menuItemObj.itemColor = msgAreaMenu.itemColorForSubBoard;
+							menuItemObj.itemSelectedColor = msgAreaMenu.selectedItemColorForSubBoard;
 						}
 					}
+					else
+					{
+						// This menu has a mix of sub-boards and other groups of items
+						// Menu item color arrays
+						//var itemColorIdxInfo = this.areaChooser.GetColorIndexInfoForLightbarMenu(this.msgAreaHeirarchyObj[pItemIdx]);
+						var itemColorIdxInfo = this.areaChooser.GetColorIndexInfoForLightbarMenu(this.msgAreaHeirarchyObj);
+						if (numSpaces > 0)
+						{
+							menuItemObj.itemColor = AdjustMenuAttrArrayIndexes(itemColorIdxInfo.itemColorForSubBoard, numSpaces-1);
+							menuItemObj.itemSelectedColor = AdjustMenuAttrArrayIndexes(itemColorIdxInfo.selectedItemColorForSubBoard, numSpaces-1);
+						}
+						else
+						{
+							menuItemObj.itemColor = itemColorIdxInfo.itemColorForSubBoard;
+							menuItemObj.itemSelectedColor = itemColorIdxInfo.selectedItemColorForSubBoard;
+						}
+					}
+
+					// Generate the item text
+					if (this.areaChooser.showDatesInSubBoardList)
+					{
+						var lastMsgPostTimestamp = getLatestMsgTime(this.msgAreaHeirarchyObj[pItemIdx].subObj.code);
+						menuItemObj.text += format(this.areaChooser.subBoardListPrintfInfo[grpIdx].printfStrWithoutAreaNum,
+												  this.msgAreaHeirarchyObj[pItemIdx].name.substr(0, this.areaChooser.subBoardNameLen), numItems,
+						                          strftime("%Y-%m-%d", lastMsgPostTimestamp),
+						                          strftime("%H:%M:%S", lastMsgPostTimestamp));
+						//var itemColorIdxInfo = this.areaChooser.GetColorIndexInfoForLightbarMenu(this.msgAreaHeirarchyObj[pItemIdx]);
+						//var itemColorIdxInfo = this.areaChooser.GetColorIndexInfoForLightbarMenu(this.msgAreaHeirarchyObj);
+					}
+					else
+					{
+						menuItemObj.text += format(this.areaChooser.subBoardListPrintfInfo[grpIdx].printfStrWithoutAreaNum,
+						                          this.msgAreaHeirarchyObj[pItemIdx].name.substr(0, this.areaChooser.subBoardNameLen), numItems);
+					}
 				}
-				msgBase.close();
-				subBoardArray.push(subBoardInfo);
-				delete msgBase; // Free some memory?
 			}
-		}
 
-		// Sort sub-board list.
-		if (pSortType == "dateAsc")
+			menuItemObj.text = strip_ctrl(menuItemObj.text);
+			menuItemObj.retval = pItemIdx;
+			return menuItemObj;
+		};
+		
+		// Set the currently selected item
+		var selectedIdx = msgAreaMenu.idxWithUserSelectedSubBoard;
+		if (typeof(pSelectedItemIdx) === "number" && pSelectedItemIdx >= 0 && pSelectedItemIdx < msgAreaMenu.NumItems())
+			selectedIdx = pSelectedItemIdx;
+		if (selectedIdx >= 0 && selectedIdx < msgAreaMenu.NumItems())
 		{
-			subBoardArray.sort(function(pA, pB)
-			{
-				// Return -1, 0, or 1, depending on whether pA's date comes
-				// before, is equal to, or comes after pB's date.
-				var returnValue = 0;
-				if (pA.newestPostDate < pB.newestPostDate)
-					returnValue = -1;
-				else if (pA.newestPostDate > pB.newestPostDate)
-					returnValue = 1;
-				return returnValue;
-			});
-		}
-		else if (pSortType == "dateDesc")
-		{
-			if (this.showDatesInSubBoardList)
-			{
-				subBoardArray.sort(function(pA, pB)
-				{
-					// Return -1, 0, or 1, depending on whether pA's date comes
-					// after, is equal to, or comes before pB's date.
-					var returnValue = 0;
-					if (pA.newestPostDate > pB.newestPostDate)
-						returnValue = -1;
-					else if (pA.newestPostDate < pB.newestPostDate)
-						returnValue = 1;
-					return returnValue;
-				});
-			}
-		}
-		else if (pSortType == "description")
-		{
-			// Binary safe string comparison  
-			// 
-			// version: 909.322
-			// discuss at: http://phpjs.org/functions/strcmp    // +   original by: Waldo Malqui Silva
-			// +      input by: Steve Hilder
-			// +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
-			// +    revised by: gorthaur
-			// *     example 1: strcmp( 'waldo', 'owald' );    // *     returns 1: 1
-			// *     example 2: strcmp( 'owald', 'waldo' );
-			// *     returns 2: -1
-			subBoardArray.sort(function(pA, pB)
-			{
-				return ((pA.description == pB.description) ? 0 : ((pA.description > pB.description) ? 1 : -1));
-			});
-		}
-
-		// Display the sub-board list.
-		for (var i = 0; i < subBoardArray.length; ++i)
-		{
-			console.crlf();
-			var showSubBoardMark = false;
-			if ((typeof(bbs.cursub_code) == "string") && (bbs.cursub_code != ""))
-			{
-				if (subBoardArray[i].subBoardNum == highlightIndex)
-					showSubBoardMark = ((grpIndex == msg_area.sub[bbs.cursub_code].grp_index) && (highlightIndex == subBoardArray[i].subBoardIdx));
-			}
-			console.print(showSubBoardMark ? "\x01n" + this.colors.areaMark + "*" : " ");
-			if (this.showDatesInSubBoardList)
-			{
-				printf(this.subBoardListPrintfInfo[grpIndex].printfStr, +(subBoardArray[i].subBoardNum+1),
-				       subBoardArray[i].description.substr(0, this.subBoardNameLen),
-				       subBoardArray[i].numPosts, strftime("%Y-%m-%d", subBoardArray[i].newestPostDate),
-				       strftime("%H:%M:%S", subBoardArray[i].newestPostDate));
-			}
-			else
-			{
-				printf(this.subBoardListPrintfInfo[grpIndex].printfStr, +(subBoardArray[i].subBoardNum+1),
-				       subBoardArray[i].description.substr(0, this.subBoardNameLen),
-				       subBoardArray[i].numPosts, strftime("%Y-%m-%d", subBoardArray[i].newestPostDate));
-			}
+			msgAreaMenu.selectedItemIdx = selectedIdx;
+			if (msgAreaMenu.selectedItemIdx >= msgAreaMenu.topItemIdx+msgAreaMenu.GetNumItemsPerPage())
+				msgAreaMenu.topItemIdx = msgAreaMenu.selectedItemIdx - msgAreaMenu.GetNumItemsPerPage() + 1;
 		}
 	}
-	// If no sort type is specified, then output the sub-board information in
-	// order of sub-board number.
-	else
-	{
-		var includeSubBoard = true;
-		//var subList = this.useSubCollapsing ? this.group_list[grpIndex].sub_list : msg_area.grp_list[grpIndex].sub_list;
-		var subList = msg_area.grp_list[grpIndex].sub_list;
-		if (this.useSubCollapsing)
-		{
-			if (subIdxValid)
-				subList = this.group_list[grpIndex].sub_list[pSubIdx].sub_subboard_list;
-			else
-				subList = this.group_list[grpIndex].sub_list;
-		}
-		for (var subIdx in subList)
-		{
-			// If the search text is set, then use it to filter the sub-board list.
-			includeSubBoard = true;
-			if (searchTextUpper.length > 0)
-			{
-				if (this.useSubCollapsing && subIdxValid)
-				{
-					// For sub-board name collapsing, sub-subboards only have descriptions, no names
-					includeSubBoard = (this.group_list[grpIndex].sub_list[pSubIdx].sub_subboard_list[subIdx].description.indexOf(searchTextUpper) >= 0);
-				}
-				else
-				{
-					includeSubBoard = ((msg_area.grp_list[grpIndex].sub_list[subIdx].name.toUpperCase().indexOf(searchTextUpper) >= 0) ||
-					                   (msg_area.grp_list[grpIndex].sub_list[subIdx].description.toUpperCase().indexOf(searchTextUpper) >= 0));
-				}
-			}
-			if (includeSubBoard)
-			{
-				// Call GetSubBoardInfo() to get the information about the sub-board or sub-subboard.
-				// Make sure we pass the correct indexes.
-				var subInfo = null;
-				if (this.useSubCollapsing)
-				{
-					// For some reason subIdx is a string, so ensure it's a number when calling GetSubBoardInfo()
-					if (subIdxValid) // If pSubIdx is valid
-						subInfo = this.GetSubBoardInfo(grpIndex, pSubIdx, +subIdx);
-					else
-						subInfo = this.GetSubBoardInfo(grpIndex, +subIdx);
-				}
-				else
-					subInfo = this.GetSubBoardInfo(grpIndex, subIdx);
-				newestDate.date = strftime("%Y-%m-%d", subInfo.newestTime);
-				newestDate.time = strftime("%H:%M:%S", subInfo.newestTime);
-				// Print the sub-board information
-				subBoardNum = +(subIdx);
-				console.crlf();
-				var showSubBoardMark = false;
-				if (this.useSubCollapsing)
-				{
-					if (subIdxValid) // If using sub-subboards
-						showSubBoardMark = (bbs.cursub_code == subList[subIdx].code);
-					else
-						showSubBoardMark = this.CurrentSubBoardIsInSubSubsForSub(grpIndex, +subIdx);
-				}
-				else
-					showSubBoardMark = (subBoardNum == highlightIndex);
-				console.print(showSubBoardMark ? "\x01n" + this.colors.areaMark + "*" : " ");
-				var lengthsObj = this.GetSubNameLenAndNumMsgsLen(grpIndex);
-				if (this.showDatesInSubBoardList)
-				{
-					printf(this.subBoardListPrintfInfo[grpIndex].printfStr, +(subBoardNum+1),
-					         subInfo.desc.substr(0, lengthsObj.nameLen), subInfo.numItems,
-					         newestDate.date, newestDate.time);
-				}
-				else
-				{
-					printf(this.subBoardListPrintfInfo[grpIndex].printfStr, +(subBoardNum+1),
-					         subInfo.desc.substr(0, lengthsObj.nameLen, subInfo.numItems));
-				}
-			}
-		}
-	}
+
+	retObj.menuObj = msgAreaMenu;
+	return retObj;
 }
-
-// For the DDMsgAreaChooser class: Returns whether the user's current selected sub-board is
-// one of the sub-subboards for a sub-board (if sub-board name collapsing is enabled), or
-// is the given sub-board in the message group.
+// Helper for DDMsgAreaChooser_CreateLightbarMenu(): Returns arrays of objects with start, end, and attrs properties
+// for the lightbar menu to add colors to the menu items.
 //
 // Parameters:
-//  pGrpIdx: The index of the message group (0-based)
-//  pSubIdx: The index of the sub-board within the message group (0-based)
-//
-// Return value: True/false, whether or not the user's current selected sub-board is one of
-//               the sub-subboards for a sub-board (if sub-board name collapsing is enabled)
-//               or is the given sub-board in the message group.
-function DDMsgAreaChooser_CurrentSubBoardIsInSubSubsForSub(pGrpIdx, pSubIdx)
-{
-	// Sanity checking
-	if (typeof(bbs.cursub_code) !== "string") // Rare case, for brand new user accounts
-		return false;
-	if (typeof(pGrpIdx) !== "number")
-		return false;
-	if (typeof(pSubIdx) !== "number")
-		return false;
-
-	var chosenSubMatch = false;
-	if (this.useSubCollapsing)
-	{
-		if (pGrpIdx >= 0 && pGrpIdx < this.group_list.length && pSubIdx >= 0 && pSubIdx < this.group_list[pGrpIdx].sub_list.length)
-		{
-			// If this sub-board has a list of sub-subboards, then go through the sub-subboards and see if the
-			// user's current sub-board is one of the sub-subboards.
-			if (typeof(this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list) !== "undefined" && this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list.length > 0)
-			{
-				for (var subSubIdx = 0; subSubIdx < this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list.length && !chosenSubMatch; ++subSubIdx)
-					chosenSubMatch = (bbs.cursub_code == this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list[subSubIdx].code);
-			}
-			else // There is no sub-subboard list for this sub-board
-				chosenSubMatch = (bbs.cursub_code == this.group_list[pGrpIdx].sub_list[pSubIdx].code);
-		}
-	}
-	else
-	{
-		if (pGrpIdx >= 0 && pGrpIdx < msg_area.grp_list.length && pSubIdx >= 0 && pSubIdx < msg_area.grp_list[pGrpIdx].sub_list.length)
-			chosenSubMatch = (bbs.cursub_code == msg_area.grp_list[pGrpIdx].sub_list[pSubIdx].code);
-	}
-	return chosenSubMatch;
-}
-
-// For the DDMsgAreaChooser class: With a group & sub-board index, this function gets the date
-// & time of the latest posted message from a sub-board (or group of sub-boards, if using
-// sub-board name collapsing).  This function also gets the description of the sub-board (or
-// group of sub-boards if using sub-board name collapsing).
-//
-// Parameters:
-//  pGrpIdx: The index of the message group
-//  pSubIdx: The index of the sub-board in the message group (if using
-//           sub-board name collapsing, this could be the index of a set
-//           of sub-subboards).
-//  pSubSubIdx: Optional - When sub-board name collapsing is being used,
-//              this specifies the index of the sub-subboard within the subboard.
-//
-// Return value: An object containing the following properties:
-//               desc: The description of the sub-board (or group of sub-subboards if using name collapsing)
-//               numItems: The number of messages in the sub-board or number of sub-subboards in the group,
-//                         if using sub-board name collapsing
-//               subCode: The internal code of the sub-board (this will be an empty string if it's a group of sub-subboards)
-//               newestTime: A value containing the date & time of the newest post in the sub-board or group of sub-boards
-function DDMsgAreaChooser_GetSubBoardInfo(pGrpIdx, pSubIdx, pSubSubIdx)
+//  pMsgAreaHeirarchyObj: An object from this.msgArea_list, which is
+//                        set up with a 'name' property and either
+//                        an 'items' property if it has sub-items
+//                        or a 'subObj' property if it's a sub-board
+//  pAreaNumWidthOverride: Optional - An override for the width of the area # column. Mainly for the traditional (non-lightbar) UI
+//                         If this is not specified/null, then this.areaNumLen will be used.
+//  pColorIdxOffset: Optional - An offset to adjust the color indexes by in the color arrays.
+//                   Must be positive.
+function DDMsgAreaChooser_GetColorIndexInfoForLightbarMenu(pMsgAreaHeirarchyObj, pAreaNumWidthOverride, pColorIdxOffset)
 {
 	var retObj = {
-		desc: "",
-		numItems: 0,
-		subCode: "",
-		newestTime: 0
+		msgGrpListIdxes: {},
+		subBoardListIdxes: {},
+		itemColorForSubBoard: [],
+		selectedItemColorForSubBoard: [],
+		itemColorForItemWithSubItems: [],
+		selectedItemColorForItemWithSubItems: []
 	};
 
-	// If using sub-board name collapsing and the given group & sub-board indexes has a
-	// group of sub-subboards, then look through those sub-boards for information.
-	if (this.useSubCollapsing)
+	var usingLightbarInterface = this.useLightbarInterface && console.term_supports(USER_ANSI);
+	//var areaNumLen = usingLightbarInterface ? this.areaNumLen : pMsgAreaHeirarchyObj.length.toString().length;
+	var areaNumLen = this.areaNumLen;
+	if (typeof(pAreaNumWidthOverride) === "number" && pAreaNumWidthOverride >= 0)
+		areaNumLen = pAreaNumWidthOverride;
+
+	// Find the length of the highest number of messages of sub-boards in pMsgAreaHeirarchyObj
+	var highestNumMsgs = 0;
+	for (var i = 0; i < pMsgAreaHeirarchyObj.length; ++i)
 	{
-		if (typeof(pSubSubIdx) === "number" && pSubSubIdx >= 0 && pSubSubIdx < this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list.length)
+		if (pMsgAreaHeirarchyObj[i].hasOwnProperty("subObj"))
 		{
-			retObj.desc = this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list[pSubSubIdx].description;
-			retObj.subCode = this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list[pSubSubIdx].code;
-			retObj.numItems = getNumMsgsInSubBoard(this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list[pSubSubIdx].code);
-			retObj.newestTime = getLatestMsgTime(this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list[pSubSubIdx].code);
-		}
-		else // pSubSubIdx wasn't specified or is invalid
-		{
-			retObj.numItems = this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list.length;
-			retObj.desc = this.group_list[pGrpIdx].sub_list[pSubIdx].description;
-			if (this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list.length > 0)
+			// The 'posts' property was added in Synchronet 3.18c
+			if (msg_area.sub[pMsgAreaHeirarchyObj[i].subObj.code].hasOwnProperty("posts"))
 			{
-				for (var subSubIdx = 0; subSubIdx < this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list; ++subSubIdx)
-				{
-					var latestPostTime = getLatestMsgTime(this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list[subSubIdx].code);
-					if (latestPostTime > retObj.newestTime)
-						retObj.newestTime = latestPostTime;
-				}
+				if (msg_area.sub[pMsgAreaHeirarchyObj[i].subObj.code].posts > highestNumMsgs)
+					highestNumMsgs = msg_area.sub[pMsgAreaHeirarchyObj[i].subObj.code].posts;
 			}
 			else
 			{
-				// No sub-subboards in this sub-board
-				retObj.subCode = this.group_list[pGrpIdx].sub_list[pSubIdx].code;
-				retObj.numItems = getNumMsgsInSubBoard(this.group_list[pGrpIdx].sub_list[pSubIdx].code);
-				retObj.newestTime = getLatestMsgTime(this.group_list[pGrpIdx].sub_list[pSubIdx].code);
+				// Get the total number of messages in the sub-board.  It isn't accurate, but it's fast.
+				var msgBase = new MsgBase(pMsgAreaHeirarchyObj[i].subObj.code);
+				if (msgBase.open())
+				{
+					if (msgBase.total_msgs > highestNumMsgs)
+						highestNumMsgs = msgBase.total_msgs;
+					msgBase.close();
+				}
 			}
 		}
 	}
-	else // No sub-board name collapsing, or there are no sub-subboards in this sub-board
-	{
-		retObj.desc = msg_area.grp_list[pGrpIdx].sub_list[pSubIdx].description;
-		retObj.subCode = msg_area.grp_list[pGrpIdx].sub_list[pSubIdx].code;
+	var numMsgsLen = highestNumMsgs.toString().length;
 
-		// Get the number of messages in the sub-board
-		var numMsgs = numReadableMsgs(null, msg_area.grp_list[pGrpIdx].sub_list[pSubIdx].code);
-		if (numMsgs > 0)
+	// Start & end indexes for the various items in each item list row
+	//var lengthsObj = this.GetSubNameLenAndNumMsgsLen(pGrpIdx); // TODO
+	//var nameLen = console.screen_columns - this.areaNumLen - numMsgsLen - this.dateLen - 14; // Was - 5
+	var nameLen = console.screen_columns - areaNumLen - numMsgsLen - this.dateLen - 14; // Was - 5
+	if (usingLightbarInterface)
+	{
+		retObj.msgGrpListIdxes = {
+			markCharStart: 0,
+			markCharEnd: 1,
+			grpNumStart: 1,
+			//grpNumEnd: 2 + (+this.areaNumLen)
+			grpNumEnd: 2 + areaNumLen
+		};
+		retObj.msgGrpListIdxes.descStart = retObj.msgGrpListIdxes.grpNumEnd;
+		retObj.msgGrpListIdxes.descEnd = retObj.msgGrpListIdxes.descStart + +this.msgGrpDescLen;
+
+		retObj.subBoardListIdxes = {
+			markCharStart: 0,
+			markCharEnd: 1,
+			subNumStart: 1,
+			//subNumEnd: 3 + (+this.areaNumLen)
+			subNumEnd: 3 + areaNumLen
+		};
+		retObj.subBoardListIdxes.descStart = retObj.subBoardListIdxes.subNumEnd;
+	}
+	else
+	{
+		retObj.msgGrpListIdxes = {
+			markCharStart: 0,
+			markCharEnd: 1,
+			descStart: 1
+		};
+		retObj.subBoardListIdxes = {
+			markCharStart: 0,
+			markCharEnd: 1,
+			descStart: 1
+		};
+	}
+	// Remainder of the message group colors
+	retObj.msgGrpListIdxes.descEnd = 2 + (+this.msgGrpDescLen);
+	retObj.msgGrpListIdxes.numItemsStart = retObj.msgGrpListIdxes.descEnd;
+	// Set numItemsEnd to -1 to let the whole rest of the lines be colored
+	retObj.msgGrpListIdxes.numItemsEnd = -1;
+	// Remainder of sub-board colors
+	// Note: this.areaChooser.subBoardNameLen and this.areaChooser.subBoardListPrintfInfo[grpIdx].nameLen
+	// for a message group are probably the same.
+	// Get the timestamp of the last message, if configured to do so
+	//retObj.subBoardListIdxes.descEnd = retObj.subBoardListIdxes.descStart + nameLen;
+	retObj.subBoardListIdxes.descEnd = retObj.subBoardListIdxes.descStart + (+this.subBoardNameLen);
+	// For the sub-board list, if not using the lightbar interface, we still need
+	// to account for the length of the item numbers, which will be displayed by
+	// the menu object rather than by us
+	if (!usingLightbarInterface)
+	{
+		//retObj.subBoardListIdxes.descEnd += this.areaNumLen;
+		retObj.subBoardListIdxes.descEnd += areaNumLen;
+	}
+	retObj.subBoardListIdxes.numItemsStart = retObj.subBoardListIdxes.descEnd;
+	retObj.subBoardListIdxes.numItemsEnd = retObj.subBoardListIdxes.numItemsStart + numMsgsLen + 1;
+	//retObj.subBoardListIdxes.numItemsEnd = retObj.subBoardListIdxes.numItemsStart + numMsgsLen+2 + 1;
+	if (this.showDatesInSubBoardList)
+	{
+		retObj.subBoardListIdxes.dateStart = retObj.subBoardListIdxes.numItemsEnd;
+		retObj.subBoardListIdxes.dateEnd = retObj.subBoardListIdxes.dateStart + +this.dateLen + 1;
+		retObj.subBoardListIdxes.timeStart = retObj.subBoardListIdxes.dateEnd;
+		// Set timeEnd to -1 to let the whole rest of the lines be colored
+		retObj.subBoardListIdxes.timeEnd = -1;
+	}
+
+	// Menu item colors
+	if (usingLightbarInterface)
+	{
+		// Colors for items that are sub-boards
+		if (this.showDatesInSubBoardList)
 		{
-			retObj.numItems = numMsgs;
-			//var msgHeader = msgBase.get_msg_header(true, msgBase.total_msgs-1, true);
-			var msgHeader = getLatestMsgHdr(retObj.subCode);
-			if (msgHeader === null)
-				msgHeader = getBogusMsgHdr();
-			// Set the newest post time
-			if (this.showImportDates)
-				retObj.newestTime = msgHeader.when_imported_time;
-			else
-			{
-				var msgWrittenLocalBBSTime = msgWrittenTimeToLocalBBSTime(msgHeader);
-				if (msgWrittenLocalBBSTime != -1)
-					retObj.newestTime = msgWrittenLocalBBSTime;
-				else
-					retObj.newestTime = msgHeader.when_written_time;
-			}
+			retObj.itemColorForSubBoard = [{start: retObj.subBoardListIdxes.markCharStart, end: retObj.subBoardListIdxes.markCharEnd, attrs: this.colors.areaMark},
+			                               {start: retObj.subBoardListIdxes.subNumStart, end: retObj.subBoardListIdxes.subNumEnd, attrs: this.colors.areaNum},
+			                               {start: retObj.subBoardListIdxes.descStart, end: retObj.subBoardListIdxes.descEnd, attrs: this.colors.desc},
+			                               {start: retObj.subBoardListIdxes.numItemsStart, end: retObj.subBoardListIdxes.numItemsEnd, attrs: this.colors.numItems},
+			                               {start: retObj.subBoardListIdxes.dateStart, end: retObj.subBoardListIdxes.dateEnd, attrs: this.colors.latestDate},
+			                               {start: retObj.subBoardListIdxes.timeStart, end: retObj.subBoardListIdxes.timeEnd, attrs: this.colors.latestTime}];
+			retObj.selectedItemColorForSubBoard = [{start: retObj.subBoardListIdxes.markCharStart, end: retObj.subBoardListIdxes.markCharEnd, attrs: this.colors.areaMark + this.colors.bkgHighlight},
+			                                       {start: retObj.subBoardListIdxes.subNumStart, end: retObj.subBoardListIdxes.subNumEnd, attrs: this.colors.areaNumHighlight + this.colors.bkgHighlight},
+			                                       {start: retObj.subBoardListIdxes.descStart, end: retObj.subBoardListIdxes.descEnd, attrs: this.colors.descHighlight + this.colors.bkgHighlight},
+			                                       {start: retObj.subBoardListIdxes.numItemsStart, end: retObj.subBoardListIdxes.numItemsEnd, attrs: this.colors.numItemsHighlight + this.colors.bkgHighlight},
+			                                       {start: retObj.subBoardListIdxes.dateStart, end: retObj.subBoardListIdxes.dateEnd, attrs: this.colors.dateHighlight + this.colors.bkgHighlight},
+			                                       {start: retObj.subBoardListIdxes.timeStart, end: retObj.subBoardListIdxes.timeEnd, attrs: this.colors.timeHighlight + this.colors.bkgHighlight}];
 		}
+		else
+		{
+			retObj.itemColorForSubBoard = [{start: retObj.subBoardListIdxes.markCharStart, end: retObj.subBoardListIdxes.markCharEnd, attrs: this.colors.areaMark},
+			                               {start: retObj.subBoardListIdxes.subNumStart, end: retObj.subBoardListIdxes.subNumEnd, attrs: this.colors.areaNum},
+			                               {start: retObj.subBoardListIdxes.descStart, end: retObj.subBoardListIdxes.descEnd, attrs: this.colors.desc},
+			                               {start: retObj.subBoardListIdxes.numItemsStart, end: retObj.subBoardListIdxes.numItemsEnd, attrs: this.colors.numItems}];
+			retObj.selectedItemColorForSubBoard = [{start: retObj.subBoardListIdxes.markCharStart, end: retObj.subBoardListIdxes.markCharEnd, attrs: this.colors.areaMark + this.colors.bkgHighlight},
+			                                       {start: retObj.subBoardListIdxes.subNumStart, end: retObj.subBoardListIdxes.subNumEnd, attrs: this.colors.areaNumHighlight + this.colors.bkgHighlight},
+			                                       {start: retObj.subBoardListIdxes.descStart, end: retObj.subBoardListIdxes.descEnd, attrs: this.colors.descHighlight + this.colors.bkgHighlight},
+			                                       {start: retObj.subBoardListIdxes.numItemsStart, end: retObj.subBoardListIdxes.numItemsEnd, attrs: this.colors.numItemsHighlight + this.colors.bkgHighlight}];
+		}
+		// Colors for items that have another list of items
+		retObj.itemColorForItemWithSubItems = [{start: retObj.msgGrpListIdxes.markCharStart, end: retObj.msgGrpListIdxes.markCharEnd, attrs: this.colors.areaMark},
+		                                       {start: retObj.msgGrpListIdxes.grpNumStart, end: retObj.msgGrpListIdxes.grpNumEnd, attrs: this.colors.areaNum},
+		                                       {start: retObj.msgGrpListIdxes.descStart, end: retObj.msgGrpListIdxes.descEnd, attrs: this.colors.desc},
+		                                       {start: retObj.msgGrpListIdxes.numItemsStart, end: retObj.msgGrpListIdxes.numItemsEnd, attrs: this.colors.numItems}];
+		retObj.selectedItemColorForItemWithSubItems = [{start: retObj.msgGrpListIdxes.markCharStart, end: retObj.msgGrpListIdxes.markCharEnd, attrs: this.colors.areaMark + this.colors.bkgHighlight},
+		                                               {start: retObj.msgGrpListIdxes.grpNumStart, end: retObj.msgGrpListIdxes.grpNumEnd, attrs: this.colors.areaNumHighlight + this.colors.bkgHighlight},
+		                                               {start: retObj.msgGrpListIdxes.descStart, end: retObj.msgGrpListIdxes.descEnd, attrs: this.colors.descHighlight + this.colors.bkgHighlight},
+		                                               {start: retObj.msgGrpListIdxes.numItemsStart, end: retObj.msgGrpListIdxes.numItemsEnd, attrs: this.colors.numItemsHighlight + this.colors.bkgHighlight}];
+	}
+	else
+	{
+		// Colors for items that are sub-boards
+		if (this.showDatesInSubBoardList)
+		{
+			retObj.itemColorForSubBoard = [{start: retObj.subBoardListIdxes.markCharStart, end: retObj.subBoardListIdxes.markCharEnd, attrs: this.colors.areaMark},
+			                               {start: retObj.subBoardListIdxes.descStart, end: retObj.subBoardListIdxes.descEnd, attrs: this.colors.desc},
+			                               {start: retObj.subBoardListIdxes.numItemsStart, end: retObj.subBoardListIdxes.numItemsEnd, attrs: this.colors.numItems},
+			                               {start: retObj.subBoardListIdxes.dateStart, end: retObj.subBoardListIdxes.dateEnd, attrs: this.colors.latestDate},
+			                               {start: retObj.subBoardListIdxes.timeStart, end: retObj.subBoardListIdxes.timeEnd, attrs: this.colors.latestTime}];
+			retObj.selectedItemColorForSubBoard = [{start: retObj.subBoardListIdxes.markCharStart, end: retObj.subBoardListIdxes.markCharEnd, attrs: this.colors.areaMark + this.colors.bkgHighlight},
+			                                       {start: retObj.subBoardListIdxes.descStart, end: retObj.subBoardListIdxes.descEnd, attrs: this.colors.descHighlight + this.colors.bkgHighlight},
+			                                       {start: retObj.subBoardListIdxes.numItemsStart, end: retObj.subBoardListIdxes.numItemsEnd, attrs: this.colors.numItemsHighlight + this.colors.bkgHighlight},
+			                                       {start: retObj.subBoardListIdxes.dateStart, end: retObj.subBoardListIdxes.dateEnd, attrs: this.colors.dateHighlight + this.colors.bkgHighlight},
+			                                       {start: retObj.subBoardListIdxes.timeStart, end: retObj.subBoardListIdxes.timeEnd, attrs: this.colors.timeHighlight + this.colors.bkgHighlight}];
+		}
+		else
+		{
+			retObj.itemColorForSubBoard = [{start: retObj.subBoardListIdxes.markCharStart, end: retObj.subBoardListIdxes.markCharEnd, attrs: this.colors.areaMark},
+			                               {start: retObj.subBoardListIdxes.descStart, end: retObj.subBoardListIdxes.descEnd, attrs: this.colors.desc},
+			                               {start: retObj.subBoardListIdxes.numItemsStart, end: retObj.subBoardListIdxes.numItemsEnd, attrs: this.colors.numItems}];
+			retObj.selectedItemColorForSubBoard = [{start: retObj.subBoardListIdxes.markCharStart, end: retObj.subBoardListIdxes.markCharEnd, attrs: this.colors.areaMark + this.colors.bkgHighlight},
+			                                       {start: retObj.subBoardListIdxes.descStart, end: retObj.subBoardListIdxes.descEnd, attrs: this.colors.descHighlight + this.colors.bkgHighlight},
+			                                       {start: retObj.subBoardListIdxes.numItemsStart, end: retObj.subBoardListIdxes.numItemsEnd, attrs: this.colors.numItemsHighlight + this.colors.bkgHighlight}];
+		}
+		// Colors for items that have another list of items
+		retObj.itemColorForItemWithSubItems = [{start: retObj.msgGrpListIdxes.markCharStart, end: retObj.msgGrpListIdxes.markCharEnd, attrs: this.colors.areaMark},
+		                                            {start: retObj.msgGrpListIdxes.descStart, end: retObj.msgGrpListIdxes.descEnd, attrs: this.colors.desc},
+		                                            {start: retObj.msgGrpListIdxes.numItemsStart, end: retObj.msgGrpListIdxes.numItemsEnd, attrs: this.colors.numItems}];
+		retObj.selectedItemColorForItemWithSubItems = [{start: retObj.msgGrpListIdxes.markCharStart, end: retObj.msgGrpListIdxes.markCharEnd, attrs: this.colors.areaMark + this.colors.bkgHighlight},
+		                                                    {start: retObj.msgGrpListIdxes.descStart, end: retObj.msgGrpListIdxes.descEnd, attrs: this.colors.descHighlight + this.colors.bkgHighlight},
+		                                                    {start: retObj.msgGrpListIdxes.numItemsStart, end: retObj.msgGrpListIdxes.numItemsEnd, attrs: this.colors.numItemsHighlight + this.colors.bkgHighlight}];
+	}
+
+	// If a positive color index offset was given, then adjust the indexes in the
+	// arrays
+	if (typeof(pColorIdxOffset) === "number" && pColorIdxOffset > 0)
+	{
+		retObj.itemColorForSubBoard = AdjustMenuAttrArrayIndexes(retObj.itemColorForSubBoard, pColorIdxOffset);
+		retObj.selectedItemColorForSubBoard = AdjustMenuAttrArrayIndexes(retObj.selectedItemColorForSubBoard, pColorIdxOffset);
 	}
 
 	return retObj;
 }
 
-//////////////////////////////////////////////
-// Message group list stuff (lightbar mode) //
-//////////////////////////////////////////////
-
-// For the DDMsgAreaChooser class - Writes a message group information line.
-//
-// Parameters:
-//  pGrpIndex: The index of the message group to write (assumed to be valid)
-//  pHighlight: Boolean - Whether or not to write the line highlighted.
-function DDMsgAreaChooser_writeMsgGroupLine(pGrpIndex, pHighlight)
+// pItemNumHdrWidth: The width of the item # column header (including the mark character)
+// pNumItemsWidth: The width of the # items (not column header)
+function DDMsgAreaChooser_GetSubBoardColorIndexInfoForLightbarMenu(pItemNumHdrWidth, pNumItemsWidth)
 {
-	console.attributes = "N";
-	// Write the highlight background color if pHighlight is true.
-	if (pHighlight)
-		console.print(this.colors.bkgHighlight);
+	var retObj = {
+		itemColorForSubBoard: {},
+		selectedItemColorForSubBoard: {}
+	};
 
-	// Write the message group information line
-	var grpIsSelected = false;
-	if ((typeof(bbs.cursub_code) == "string") && (bbs.cursub_code != ""))
-		grpIsSelected = (pGrpIndex == msg_area.sub[bbs.cursub_code].grp_index);
-	console.print(grpIsSelected ? this.colors.areaMark + "*" : " ");
-	printf((pHighlight ? this.msgGrpListHilightPrintfStr : this.msgGrpListPrintfStr),
-	       +(pGrpIndex+1),
-	       msg_area.grp_list[pGrpIndex].description.substr(0, this.msgGrpDescLen),
-	       msg_area.grp_list[pGrpIndex].sub_list.length);
-	console.cleartoeol("\x01n");
-}
-
-//////////////////////////////////////////////////
-// Message sub-board list stuff (lightbar mode) //
-//////////////////////////////////////////////////
-
-// For the DDMsgAreaChooser class: Gets a message sub-board information line.
-//
-// Parameters:
-//  pGrpIndex: The index of the message group (assumed to be valid)
-//  pSubIndex: The index of the sub-board within the message group to write (assumed to be valid)
-//  pHighlight: Boolean - Whether or not to write the line highlighted.
-
-
-function DDMsgAreaChooser_GetMsgSubBrdLine(pGrpIndex, pSubIndex, pHighlight)
-{
-	var subBoardLine = "\x01n";
-	// Write the highlight background color if pHighlight is true.
-	if (pHighlight)
-		subBoardLine += this.colors.bkgHighlight;
-
-	// Determine if pGrpIndex and pSubIndex specify the user's
-	// currently-selected group and sub-board.
-	var currentSub = false;
-	if ((typeof(bbs.cursub_code) == "string") && (bbs.cursub_code != ""))
-		currentSub = ((pGrpIndex == msg_area.sub[bbs.cursub_code].grp_index) && (pSubIndex == msg_area.sub[bbs.cursub_code].index));
-
-	// Open the current sub-board with the msgBase object (so that we can get
-	// the date & time of the last imported message).
-	var msgBase = new MsgBase(msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].code);
-	if (msgBase.open())
+	var usingLightbarInterface = this.useLightbarInterface && console.term_supports(USER_ANSI);
+	if (usingLightbarInterface)
 	{
-		var numMsgs = numReadableMsgs(msgBase, msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].code);
-		var newestDate = {}; // For storing the date of the newest post
-		// Get the date & time when the last message was imported.
-		var msgHeader = getLatestMsgHdr(msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].code);
-		if (msgHeader != null)
-		{
-			// Construct the date & time strings of the latest post
-			if (this.showImportDates)
-			{
-				newestDate.date = strftime("%Y-%m-%d", msgHeader.when_imported_time);
-				newestDate.time = strftime("%H:%M:%S", msgHeader.when_imported_time);
-			}
-			else
-			{
-				var msgWrittenLocalBBSTime = msgWrittenTimeToLocalBBSTime(msgHeader);
-				if (msgWrittenLocalBBSTime != -1)
-				{
-					newestDate.date = strftime("%Y-%m-%d", msgWrittenLocalBBSTime);
-					newestDate.time = strftime("%H:%M:%S", msgWrittenLocalBBSTime);
-				}
-				else
-				{
-					newestDate.date = strftime("%Y-%m-%d", msgHeader.when_written_time);
-					newestDate.time = strftime("%H:%M:%S", msgHeader.when_written_time);
-				}
-			}
-		}
-		else
-			newestDate.date = newestDate.time = "";
-
-		// Print the sub-board information line.
-		var lengthsObj = this.GetSubNameLenAndNumMsgsLen(pGrpIndex);
-		subBoardLine += (currentSub ? this.colors.areaMark + "*" : " ");
+		// Colors for items that are sub-boards
 		if (this.showDatesInSubBoardList)
 		{
-			subBoardLine += format((pHighlight ? this.subBoardListPrintfInfo[pGrpIndex].highlightPrintfStr : this.subBoardListPrintfInfo[pGrpIndex].printfStr),
-			       +(pSubIndex+1), msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].description.substr(0, lengthsObj.nameLen),
-			       numMsgs, newestDate.date, newestDate.time);
+			var itemNumWidth = pItemNumHdrWidth - 1;
+			// Sub # Name                                         # Posts Latest date & time
+			var markStart = 0;
+			var markEnd = 1;
+			var itemNumStart = markEnd;
+			var itemNumEnd = itemNumStart + itemNumWidth;
+			// "Latest date & time": 18
+			// # spaces: 3
+			// Total: 21
+			var descWidth = console.screen_columns - pItemNumHdrWidth - pNumItemsWidth - 22;
+			var descStart = itemNumEnd;
+			var descEnd = descStart + descWidth;
+			var numItemsStart = descEnd;
+			var numItemsEnd = numItemsStart + pNumItemsWidth + 1;
+			var dateStart = numItemsEnd;
+			// 2025-01-01 
+			var dateEnd = dateStart + 11;
+			var timeStart = dateEnd;
+			var timeEnd = -1;
+			retObj.itemColorForSubBoard = [{start: markStart, end: markEnd, attrs: this.colors.areaMark},
+			                               {start: itemNumStart, end: itemNumEnd, attrs: this.colors.areaNum},
+			                               {start: descStart, end: descEnd, attrs: this.colors.desc},
+			                               {start: numItemsStart, end: numItemsEnd, attrs: this.colors.numItems},
+			                               {start: dateStart, end: dateEnd, attrs: this.colors.latestDate},
+			                               {start: timeStart, end: timeEnd, attrs: this.colors.latestTime}];
+			retObj.selectedItemColorForSubBoard = [{start: markStart, end: markEnd, attrs: this.colors.areaMark + this.colors.bkgHighlight},
+			                                       {start: itemNumStart, end: itemNumEnd, attrs: this.colors.areaNumHighlight + this.colors.bkgHighlight},
+			                                       {start: descStart, end: descEnd, attrs: this.colors.descHighlight + this.colors.bkgHighlight},
+			                                       {start: numItemsStart, end: numItemsEnd, attrs: this.colors.numItemsHighlight + this.colors.bkgHighlight},
+			                                       {start: dateStart, end: dateEnd, attrs: this.colors.dateHighlight + this.colors.bkgHighlight},
+			                                       {start: timeStart, end: timeEnd, attrs: this.colors.timeHighlight + this.colors.bkgHighlight}];
 		}
 		else
 		{
-			subBoardLine += format((pHighlight ? this.subBoardListPrintfInfo[pGrpIndex].highlightPrintfStr : this.subBoardListPrintfInfo[pGrpIndex].printfStr),
-			       +(pSubIndex+1), msg_area.grp_list[pGrpIndex].sub_list[pSubIndex].description.substr(0, lengthsObj.nameLen),
-			       numMsgs);
+			var itemNumWidth = pItemNumHdrWidth - 1;
+			// Sub # Name                                         # Posts Latest date & time
+			var markStart = 0;
+			var markEnd = 1;
+			var itemNumStart = markEnd;
+			var itemNumEnd = itemNumStart + itemNumWidth;
+			var descWidth = console.screen_columns - pItemNumHdrWidth - pNumItemsWidth - 3;
+			var descStart = itemNumEnd;
+			var descEnd = descStart + descWidth;
+			var numItemsStart = descEnd;
+			var numItemsEnd = -1;
+			retObj.itemColorForSubBoard = [{start: markStart, end: markEnd, attrs: this.colors.areaMark},
+			                               {start: itemNumStart, end: itemNumEnd, attrs: this.colors.areaNum},
+			                               {start: descStart, end: descEnd, attrs: this.colors.desc},
+			                               {start: numItemsStart, end: numItemsEnd, attrs: this.colors.numItems}];
+			retObj.selectedItemColorForSubBoard = [{start: markStart, end: markEnd, attrs: this.colors.areaMark + this.colors.bkgHighlight},
+			                                       {start: itemNumStart, end: itemNumEnd, attrs: this.colors.areaNumHighlight + this.colors.bkgHighlight},
+			                                       {start: descStart, end: descEnd, attrs: this.colors.descHighlight + this.colors.bkgHighlight},
+			                                       {start: numItemsStart, end: numItemsEnd, attrs: this.colors.numItemsHighlight + this.colors.bkgHighlight}];
 		}
-		msgBase.close();
+	}
+	else
+	{
+		// TODO: Non-lightbar
+		/*
+		// Colors for items that are sub-boards
+		if (this.showDatesInSubBoardList)
+		{
+			retObj.itemColorForSubBoard = [{start: retObj.subBoardListIdxes.markCharStart, end: retObj.subBoardListIdxes.markCharEnd, attrs: this.colors.areaMark},
+			                               {start: retObj.subBoardListIdxes.descStart, end: retObj.subBoardListIdxes.descEnd, attrs: this.colors.desc},
+			                               {start: retObj.subBoardListIdxes.numItemsStart, end: retObj.subBoardListIdxes.numItemsEnd, attrs: this.colors.numItems},
+			                               {start: retObj.subBoardListIdxes.dateStart, end: retObj.subBoardListIdxes.dateEnd, attrs: this.colors.latestDate},
+			                               {start: retObj.subBoardListIdxes.timeStart, end: retObj.subBoardListIdxes.timeEnd, attrs: this.colors.latestTime}];
+			retObj.selectedItemColorForSubBoard = [{start: retObj.subBoardListIdxes.markCharStart, end: retObj.subBoardListIdxes.markCharEnd, attrs: this.colors.areaMark + this.colors.bkgHighlight},
+			                                       {start: retObj.subBoardListIdxes.descStart, end: retObj.subBoardListIdxes.descEnd, attrs: this.colors.descHighlight + this.colors.bkgHighlight},
+			                                       {start: retObj.subBoardListIdxes.numItemsStart, end: retObj.subBoardListIdxes.numItemsEnd, attrs: this.colors.numItemsHighlight + this.colors.bkgHighlight},
+			                                       {start: retObj.subBoardListIdxes.dateStart, end: retObj.subBoardListIdxes.dateEnd, attrs: this.colors.dateHighlight + this.colors.bkgHighlight},
+			                                       {start: retObj.subBoardListIdxes.timeStart, end: retObj.subBoardListIdxes.timeEnd, attrs: this.colors.timeHighlight + this.colors.bkgHighlight}];
+		}
+		else
+		{
+			retObj.itemColorForSubBoard = [{start: retObj.subBoardListIdxes.markCharStart, end: retObj.subBoardListIdxes.markCharEnd, attrs: this.colors.areaMark},
+			                               {start: retObj.subBoardListIdxes.descStart, end: retObj.subBoardListIdxes.descEnd, attrs: this.colors.desc},
+			                               {start: retObj.subBoardListIdxes.numItemsStart, end: retObj.subBoardListIdxes.numItemsEnd, attrs: this.colors.numItems}];
+			retObj.selectedItemColorForSubBoard = [{start: retObj.subBoardListIdxes.markCharStart, end: retObj.subBoardListIdxes.markCharEnd, attrs: this.colors.areaMark + this.colors.bkgHighlight},
+			                                       {start: retObj.subBoardListIdxes.descStart, end: retObj.subBoardListIdxes.descEnd, attrs: this.colors.descHighlight + this.colors.bkgHighlight},
+			                                       {start: retObj.subBoardListIdxes.numItemsStart, end: retObj.subBoardListIdxes.numItemsEnd, attrs: this.colors.numItemsHighlight + this.colors.bkgHighlight}];
+		}
+		*/
 	}
 
-	return subBoardLine;
+	return retObj;
+}
+
+// Adjusts the attribute indexes in an attribute array to be used with a DDLightbarMenu
+//
+// Parameters:
+//  pMenuAttrIdxArray: The attribute array to be adjusted
+//  pAttrIdxOffset: The offset to adjust the indexes by. Must be positive.
+//
+// Return value: The adjusted array
+function AdjustMenuAttrArrayIndexes(pMenuAttrIdxArray, pAttrIdxOffset)
+{
+	if (pAttrIdxOffset <= 0)
+		return pMenuAttrIdxArray;
+
+	var newArray = pMenuAttrIdxArray;
+	for (var i = 0; i < newArray.length; ++i)
+	{
+		newArray[i].start += pAttrIdxOffset;
+		if (newArray[i].end > -1)
+			newArray[i].end += pAttrIdxOffset;
+	}
+	// To make DDLightbarMenu happy, ensure the first object in the array
+	// goes from index 0 to the next one
+	if (newArray.length > 0)
+	{
+		newArray.splice(0, 0, {
+			start: 0,
+			end: 0,
+			attrs: "\x01n"
+		});
+		newArray[0].end = newArray[1].start;
+	}
+	return newArray;
 }
 
 ///////////////////////////////////////////////
@@ -2329,9 +1867,16 @@ function DDMsgAreaChooser_BuildSubBoardPrintfInfoForGrp(pGrpIndex)
 		                                                 + this.subBoardListPrintfInfo[pGrpIndex].nameLen + "s "
 		                                                 + this.colors.numItems + "%"
 		                                                 + this.subBoardListPrintfInfo[pGrpIndex].numMsgsLen + "d";
+		this.subBoardListPrintfInfo[pGrpIndex].printfStrWithoutAreaNum = this.colors.desc + "%-"
+		                                                 + this.subBoardListPrintfInfo[pGrpIndex].nameLen + "s "
+		                                                 + this.colors.numItems + "%"
+		                                                 + this.subBoardListPrintfInfo[pGrpIndex].numMsgsLen + "d";
 		if (this.showDatesInSubBoardList)
 		{
 			this.subBoardListPrintfInfo[pGrpIndex].printfStr += " "
+			                                                 + this.colors.latestDate + "%" + this.dateLen + "s "
+			                                                 + this.colors.latestTime + "%" + this.timeLen + "s";
+			this.subBoardListPrintfInfo[pGrpIndex].printfStrWithoutAreaNum += " "
 			                                                 + this.colors.latestDate + "%" + this.dateLen + "s "
 			                                                 + this.colors.latestTime + "%" + this.timeLen + "s";
 		}
@@ -2346,9 +1891,20 @@ function DDMsgAreaChooser_BuildSubBoardPrintfInfoForGrp(pGrpIndex)
 		                                                          + this.colors.bkgHighlight
 		                                                          + this.colors.numItemsHighlight + "%"
 		                                                          + this.subBoardListPrintfInfo[pGrpIndex].numMsgsLen + "d";
+		this.subBoardListPrintfInfo[pGrpIndex].highlightPrintfStrWithoutAreaNum = "\x01n" + this.colors.bkgHighlight
+		                                                          + this.colors.descHighlight + "%-"
+		                                                          + this.subBoardListPrintfInfo[pGrpIndex].nameLen + "s \x01n"
+		                                                          + this.colors.bkgHighlight
+		                                                          + this.colors.numItemsHighlight + "%"
+		                                                          + this.subBoardListPrintfInfo[pGrpIndex].numMsgsLen + "d";
 		if (this.showDatesInSubBoardList)
 		{
 			this.subBoardListPrintfInfo[pGrpIndex].highlightPrintfStr += " \x01n"
+			                                                          + this.colors.bkgHighlight
+			                                                          + this.colors.dateHighlight + "%" + this.dateLen + "s \x01n"
+			                                                          + this.colors.bkgHighlight
+			                                                          + this.colors.timeHighlight + "%" + this.timeLen + "s\x01n";
+			this.subBoardListPrintfInfo[pGrpIndex].highlightPrintfStrWithoutAreaNum += " \x01n"
 			                                                          + this.colors.bkgHighlight
 			                                                          + this.colors.dateHighlight + "%" + this.dateLen + "s \x01n"
 			                                                          + this.colors.bkgHighlight
@@ -2436,7 +1992,7 @@ function DDMsgAreaChooser_WriteLightbarKeyHelpErrorMsg(pErrorMsg, pRefreshHelpLi
 // the sub-board collapse separator
 function DDMsgAreaChooser_SetUpGrpListWithCollapsedSubBoards()
 {
-	if (this.group_list.length == 0)
+	if (this.msgArea_list.length == 0)
 	{
 		// Copy some of the information from msg_area.grp_list
 		for (var grpIdx = 0; grpIdx < msg_area.grp_list.length; ++grpIdx)
@@ -2563,7 +2119,7 @@ function DDMsgAreaChooser_SetUpGrpListWithCollapsedSubBoards()
 				}
 			}
 
-			this.group_list.push(msgGrpObj);
+			this.msgArea_list.push(msgGrpObj);
 		}
 	}
 }
@@ -2584,7 +2140,6 @@ function defaultMsgGrpObj()
 // contain its own list of sub-boards within the original subboard.
 function defaultSubBoardObj()
 {
-	/*
 	return {
 		index: 0,
 		number: 0,
@@ -2599,21 +2154,6 @@ function defaultSubBoardObj()
 		settings: 0,
 		sub_subboard_list: []
 	};
-	*/
-	var obj = new Object();
-	obj.index = 0;
-	obj.number = 0;
-	obj.grp_index = 0;
-	obj.grp_number = 0;
-	obj.grp_name = 0;
-	obj.code = "";
-	obj.name = "";
-	obj.grp_name = "";
-	obj.description = "";
-	obj.ars = 0;
-	obj.settings = 0;
-	obj.sub_subboard_list = []
-	return obj;
 }
 function subBoardObjFromOfficialSubBoard(pGrpIdx, pSubIdx)
 {
@@ -2726,69 +2266,6 @@ function getNumMsgsInSubBoard(pSubCode)
 	}
 	delete msgBase; // Free some memory?
 	return numMsgs;
-}
-
-// Inputs a keypress from the user and handles some ESC-based
-// characters such as PageUp, PageDown, and ESC.  If PageUp
-// or PageDown are pressed, this function will return the
-// string "\x01PgUp" (KEY_PAGE_UP) or "\x01Pgdn" (KEY_PAGE_DOWN),
-// respectively.  Also, F1-F5 will be returned as "\x01F1"
-// through "\x01F5", respectively.
-// Thanks goes to Psi-Jack for the original impementation
-// of this function.
-//
-// Parameters:
-//  pGetKeyMode: Optional - The mode bits for console.getkey().
-//               If not specified, K_NONE will be used.
-//
-// Return value: The user's keypress
-function getKeyWithESCChars(pGetKeyMode)
-{
-	var getKeyMode = K_NONE;
-	if (typeof(pGetKeyMode) === "number")
-		getKeyMode = pGetKeyMode;
-
-	var userInput = console.getkey(getKeyMode);
-	if (userInput == KEY_ESC)
-	{
-		switch (console.inkey(K_NOECHO|K_NOSPIN, 2))
-		{
-			case '[':
-				switch (console.inkey(K_NOECHO|K_NOSPIN, 2))
-				{
-					case 'V':
-						userInput = KEY_PAGE_UP;
-						break;
-					case 'U':
-						userInput = KEY_PAGE_DOWN;
-						break;
-				}
-				break;
-			case 'O':
-				switch (console.inkey(K_NOECHO|K_NOSPIN, 2))
-				{
-					case 'P':
-						userInput = "\x01F1";
-						break;
-					case 'Q':
-						userInput = "\x01F2";
-						break;
-					case 'R':
-						userInput = "\x01F3";
-						break;
-					case 'S':
-						userInput = "\x01F4";
-						break;
-					case 't':
-						userInput = "\x01F5";
-						break;
-				}
-			default:
-				break;
-		}
-	}
-
-	return userInput;
 }
 
 // Loads a text file (an .ans or .asc) into an array.  This will first look for
@@ -3463,149 +2940,38 @@ function getLatestMsgTime(pSubCode)
 	return latestPostTime;
 }
 
-// Finds a message group index with search text, matching either the name or
+// Finds a message area index with search text, matching either the name or
 // description, case-insensitive.
 //
 // Parameters:
+//  pMsgAreaStructure: The message area structure from this.msgArea_list to search through
 //  pSearchText: The name/description text to look for
 //  pStartItemIdx: The item index to start at.  Defaults to 0
 //
-// Return value: The index of the message group, or -1 if not found
-function DDMsgAreaChooser_FindMsgGrpIdxFromText(pSearchText, pStartItemIdx)
+// Return value: The index of the message area, or -1 if not found
+function DDMsgAreaChooser_FindMsgAreaIdxFromText(pMsgAreaStructure, pSearchText, pStartItemIdx)
 {
 	if (typeof(pSearchText) != "string")
 		return -1;
 
-	var grpIdx = -1;
+	var areaIdx = -1;
 
 	var startIdx = (typeof(pStartItemIdx) === "number" ? pStartItemIdx : 0);
-	if (this.useSubCollapsing)
-	{
-		if ((startIdx < 0) || (startIdx > this.group_list.length))
-			startIdx = 0;
-	}
-	else
-	{
-		if ((startIdx < 0) || (startIdx > msg_area.grp_list.length))
-			startIdx = 0;
-	}
+	if ((startIdx < 0) || (startIdx > pMsgAreaStructure.length))
+		startIdx = 0;
 
-	// Go through the message group list and look for a match
+	// Go through the message area list and look for a match
 	var searchTextUpper = pSearchText.toUpperCase();
-	if (this.useSubCollapsing)
+	for (var i = startIdx; i < pMsgAreaStructure.length; ++i)
 	{
-		for (var i = startIdx; i < this.group_list.length; ++i)
+		if (pMsgAreaStructure[i].name.toUpperCase().indexOf(searchTextUpper) > -1 || pMsgAreaStructure[i].altName.toUpperCase().indexOf(searchTextUpper) > -1)
 		{
-			if ((this.group_list[i].name.toUpperCase().indexOf(searchTextUpper) > -1) ||
-				(this.group_list[i].description.toUpperCase().indexOf(searchTextUpper) > -1))
-			{
-				grpIdx = i;
-				break;
-			}
-		}
-	}
-	else
-	{
-		for (var i = startIdx; i < msg_area.grp_list.length; ++i)
-		{
-			if ((msg_area.grp_list[i].name.toUpperCase().indexOf(searchTextUpper) > -1) ||
-				(msg_area.grp_list[i].description.toUpperCase().indexOf(searchTextUpper) > -1))
-			{
-				grpIdx = i;
-				break;
-			}
+			areaIdx = i;
+			break;
 		}
 	}
 
-	return grpIdx;
-}
-
-// For the DDMsgAreaChooser class: Finds a message group index with search text, matching either the name or
-// description, case-insensitive.
-//
-// Parameters:
-//  pGrpIdx: The index of the message group
-//  pSubIdx: Optional - The index of the sub-board, for sub-board name collapsing.
-//           If this is null, then sub-board collapsing won't be used.
-//  pSearchText: The name/description text to look for
-//  pStartItemIdx: The item index to start at.  Defaults to 0
-//
-// Return value: The index of the sub-board, or -1 if not found
-function DDMsgAreaChooser_FindSubBoardIdxFromText(pGrpIdx, pSubIdx, pSearchText, pStartItemIdx)
-{
-	if (typeof(pGrpIdx) !== "number")
-		return -1;
-	if (typeof(pSearchText) != "string")
-		return -1;
-
-	var subBoardIdx = -1;
-
-	var startIdx = (typeof(pStartItemIdx) === "number" ? pStartItemIdx : 0);
-	if (this.useSubCollapsing)
-	{
-		if (typeof(pSubIdx) === "number")
-		{
-			if ((startIdx < 0) || (startIdx > this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list.length))
-				startIdx = 0;
-		}
-		else
-		{
-			if ((startIdx < 0) || (startIdx > this.group_list[pGrpIdx].sub_list.length))
-				startIdx = 0;
-		}
-	}
-	else
-	{
-		if ((startIdx < 0) || (startIdx > msg_area.grp_list[pGrpIdx].sub_list.length))
-			startIdx = 0;
-	}
-
-	// Go through the message sub-board list in the group (or sub-subboard list in the sub-board)
-	// and look for a match
-	var searchTextUpper = pSearchText.toUpperCase();
-	if (this.useSubCollapsing)
-	{
-		if (typeof(pSubIdx) === "number")
-		{
-			// Look through the sub-subboards of the sub-board
-			for (var i = startIdx; i < this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list.length; ++i)
-			{
-				// For the sub-subboards, there is only a description, no name
-				if (this.group_list[pGrpIdx].sub_list[pSubIdx].sub_subboard_list[i].description.toUpperCase().indexOf(searchTextUpper) > -1)
-				{
-					subBoardIdx = i;
-					break;
-				}
-			}
-		}
-		else
-		{
-			// Look  through the sub-boards in the group
-			for (var i = startIdx; i < this.group_list[pGrpIdx].sub_list.length; ++i)
-			{
-				if ((this.group_list[pGrpIdx].sub_list[i].name.toUpperCase().indexOf(searchTextUpper) > -1) ||
-				    (this.group_list[pGrpIdx].sub_list[i].description.toUpperCase().indexOf(searchTextUpper) > -1))
-				{
-					subBoardIdx = i;
-					break;
-				}
-			}
-		}
-	}
-	else
-	{
-		for (var i = startIdx; i < msg_area.grp_list[pGrpIdx].sub_list.length; ++i)
-		{
-			if ((msg_area.grp_list[pGrpIdx].sub_list[i].name.toUpperCase().indexOf(searchTextUpper) > -1) ||
-				(msg_area.grp_list[pGrpIdx].sub_list[i].description.toUpperCase().indexOf(searchTextUpper) > -1))
-			{
-				subBoardIdx = i;
-				break;
-			}
-		}
-	}
-
-	return subBoardIdx;
+	return areaIdx;
 }
 
 // For the DDMsgAreaChooser class: Gets the lengths for the sub-board column and # of messages
@@ -3695,4 +3061,215 @@ function findNextGrpIdxWithSubBoards(pGrpIdx)
 		}
 	}
 	return nextGrpIdx;
+}
+
+// Creates and returns an array which is a sort of recursive array structure
+// of objects. Each entry in the array will be an object with a 'name' property
+// and either an 'items' property if it has sub-items or a 'subObj' property
+// if it's a Synchronet message sub-board. The last item in the array chain
+// will have the 'subObj' property.
+//
+// Parameters:
+//  pCollapsing: Boolean - Whether or not to use sub-board collapsing
+//  pCollapsingSeparator: The separator used to split file lib/dir names when using collapsing
+function getMsgSubHeirarchy(pCollapsing, pCollapsingSeparator)
+{
+	var msgSubHeirarchy = [];
+	if (pCollapsing)
+	{
+		// For each message group, go through each sub-board
+		for (var grpIdx = 0; grpIdx < msg_area.grp_list.length; ++grpIdx)
+		{
+			for (var subIdx = 0; subIdx < msg_area.grp_list[grpIdx].sub_list.length; ++subIdx)
+			{
+				// 1. Join the message group name & sub-board name separated by a colon
+				// 2. Split on colons into an array (of names)
+				// 3. Go through the array of names and build the appropriate structure in msgSubHeirarchy.
+				// TODO: Initially, I thought of having collapsing restricted to
+				// areas where there are no spaces before or after the :, but that
+				// isn't how I did it before..
+				/*
+				var libAndDirName = msg_area.grp_list[grpIdx].description + ":" + msg_area.grp_list[grpIdx].sub_list[subIdx].description;
+				var nameArray = splitStrNoSpacesBeforeSeparator(libAndDirName, pCollapsingSeparator);
+				*/
+				var libDesc = skipsp(truncsp(msg_area.grp_list[grpIdx].description));
+				var dirDesc = skipsp(truncsp(msg_area.grp_list[grpIdx].sub_list[subIdx].description));
+				var libAndDirName = libDesc + pCollapsingSeparator + dirDesc;
+				var nameArray = libAndDirName.split(pCollapsingSeparator);
+				var arrayToSearch = msgSubHeirarchy;
+				for (var i = 0; i < nameArray.length; ++i)
+				{
+					var name = skipsp(truncsp(nameArray[i]));
+					// Look for this one in the heirarchy; if not found, add it.
+					// Look for an entry in the array that matches the name and has its own "items" array
+					var heirarchyIdx = -1;
+					for (var j = 0; j < arrayToSearch.length; ++j)
+					{
+						if (arrayToSearch[j].name == name && arrayToSearch[j].hasOwnProperty("items"))
+						{
+							heirarchyIdx = j;
+							break;
+						}
+					}
+					if (heirarchyIdx > -1)
+						arrayToSearch = arrayToSearch[heirarchyIdx].items;
+					else
+					{
+						// If we're at the last name, add a subObj item; otherwise, add
+						// an items array.
+						if (i == nameArray.length - 1)
+						{
+							arrayToSearch.push(
+							{
+								name: name,
+								altName: msg_area.grp_list[grpIdx].sub_list[subIdx].name,
+								grpIdx: grpIdx,
+								subObj: msg_area.grp_list[grpIdx].sub_list[subIdx]
+							});
+						}
+						else
+						{
+							arrayToSearch.push(
+							{
+								name: name,
+								altName: name,
+								grpIdx: grpIdx,
+								items: []
+							});
+							arrayToSearch = arrayToSearch[arrayToSearch.length-1].items;
+						}
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		// No collapsing. Have msgSubHeirarchy match the group/sub structure
+		// configured on the BBS.
+		for (var grpIdx = 0; grpIdx < msg_area.grp_list.length; ++grpIdx)
+		{
+			msgSubHeirarchy.push(
+			{
+				name: msg_area.grp_list[grpIdx].description,
+				grpIdx: grpIdx,
+				items: []
+			});
+			var libIdxInHeirarchy = msgSubHeirarchy.length - 1;
+			for (var subIdx = 0; subIdx < msg_area.grp_list[grpIdx].sub_list.length; ++subIdx)
+			{
+				msgSubHeirarchy[libIdxInHeirarchy].items.push(
+				{
+					name: msg_area.grp_list[grpIdx].sub_list[subIdx].description,
+					grpIdx: grpIdx,
+					subObj: msg_area.grp_list[grpIdx].sub_list[subIdx]
+				});
+			}
+		}
+	}
+
+	// Add 'allSubs' and 'allItems' properties to the items in the heirarchy
+	//addAllSubsAndAllItemsBooleansToMsgHeirarchy(msgSubHeirarchy);
+
+	return msgSubHeirarchy;
+}
+// Hepler for getMsgSubHeirarchy()
+function addAllSubsAndAllItemsBooleansToMsgHeirarchy(pMsgSubHeirarchyObj, pParentObj)
+{
+	var retObj = {
+		allItems: false,
+		allSubs: false
+	};
+
+	if (pMsgSubHeirarchyObj.hasOwnProperty("items"))
+	{
+		var sawItems = false;
+		var sawSubs = true;
+		for (var i = 0; i < pMsgSubHeirarchyObj.items.length; ++i)
+		{
+			pMsgSubHeirarchyObj.items[i].parent = pMsgSubHeirarchyObj;
+			sawItems = pMsgSubHeirarchyObj.items[i].hasOwnProperty("items");
+			sawSubs = pMsgSubHeirarchyObj.items[i].hasOwnProperty("subObj");
+			if (sawSubObj && sawItems)
+			{
+				pMsgSubHeirarchyObj.allSubs = false;
+				pMsgSubHeirarchyObj.allItems = false;
+			}
+			else if (sawSubObj)
+			{
+				pMsgSubHeirarchyObj.allSubs = true;
+				pMsgSubHeirarchyObj.allItems = false;
+			}
+			else if (sawItems)
+			{
+				pMsgSubHeirarchyObj.allSubs = false;
+				pMsgSubHeirarchyObj.allItems = true;
+			}
+
+			addAllSubsAndAllItemsBooleansToMsgHeirarchy(pMsgSubHeirarchyObj.items[i]);
+		}
+	}
+	else
+	{
+		if (pParentObj != null)
+			pMsgSubHeirarchyObj.parent = pParentObj;
+		pMsgSubHeirarchyObj.allSubs = true;
+	}
+
+	return retObj;
+}
+
+// Splits a string on a separator, except when there's a space after a
+// separator; if there's a space after a the separator, both parts of the
+// string before & after the separator are included as one item in the
+// resulting array. For instance, "Magic: The Gathering:Information"
+// would be split up such that "Magic: The Gathering" would be one string
+// and "Information" would be another, whereas "Mirror:Simtel:DOS:Games"
+// would all be split up into 4 strings
+function splitStrNoSpacesBeforeSeparator(pStr, pSep)
+{
+	var strArray = [];
+	var splitArray = pStr.split(pSep);
+	for (var i = 0; i < splitArray.length; ++i)
+	{
+		if (i < splitArray.length-1 && splitArray[i+1].indexOf(" ") == 0)
+			strArray.push(splitArray[i] + ":" + splitArray[++i]);
+		else
+			strArray.push(splitArray[i]);
+	}
+	return strArray;
+}
+
+// Given a message group/sub-board heirarchy object built by this module, this
+// function returns whether it contains the user's currently selected message
+// sub-board.
+//
+// Parameters:
+//  pMsgSubHeirarchyObj: An object from this.msgArea_list, which is
+//                       set up with a 'name' property and either
+//                       an 'items' property if it has sub-items
+//                       or a 'subObj' property if it's a message
+//                       sub-board
+//
+// Return value: Whether or not the given structure has the user's currently selected message sub-board
+function msgAreaStructureHasCurrentUserSubBoard(pMsgSubHeirarchyObj)
+{
+	var currentUserSubBoardFound = false;
+	if (Array.isArray(pMsgSubHeirarchyObj))
+	{
+		// This could be the top-level array or one of the 'items' properties, which is an array.
+		// Go through the array and call this function again recursively; this function will
+		// return when we get to an actual file directory that is the user's current selection.
+		for (var i = 0; i < pMsgSubHeirarchyObj.length && !currentUserSubBoardFound; ++i)
+			currentUserSubBoardFound = msgAreaStructureHasCurrentUserSubBoard(pMsgSubHeirarchyObj[i]);
+	}
+	else
+	{
+		// This is one of the objects with 'name' and an 'items' or 'subObj'
+		if (pMsgSubHeirarchyObj.hasOwnProperty("subObj"))
+			currentUserSubBoardFound = (bbs.cursub_code == pMsgSubHeirarchyObj.subObj.code);
+		else if (pMsgSubHeirarchyObj.hasOwnProperty("items"))
+			currentUserSubBoardFound = msgAreaStructureHasCurrentUserSubBoard(pMsgSubHeirarchyObj.items);
+	}
+	return currentUserSubBoardFound;
 }

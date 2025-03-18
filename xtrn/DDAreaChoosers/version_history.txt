@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.42     2025-03-17   For both: Name collapsing now supports an arbitrary number
+                      of areas (depth) with an arbitrary number of separators
 1.41     2024-03-13   File area chooser: Fix for the directory item counts
 1.41     2023-10-27   Message area chooser only: In lightbar mode, when using
                       name collapisng, ensure the menu item for the appropriate

@@ -1,6 +1,6 @@
                      Digital Distortion Area Choosers
-                              Version 1.41
-                        Release date: 2024-03-13
+                              Version 1.42
+                        Release date: 2025-03-17
 
                                   by
 
@@ -406,17 +406,23 @@ lightbarHelpLineParen                The color to use for the ) characters in
 ========================================
 Sub-board name collapsing (for message areas) and directory name collapsing (for
 file areas) is a way to simplify long lists of sub-boards and file directories
-that share a common theme.  A 3rd tier of options will be created for those with
-a common theme.  For example, within a file library, if you have multiple
-directories relating to Windows, the file area chooser can just include one
-directory entry for Windows, and when the user chooses Windows, another list
-of options will be shown for the Windows directories.  Similarly, for message
-sub-boards, if you have multiple sub-boards in a message group that share a
-common theme, the message area chooser can show just one sub-board entry for
-that, and when the user selects it, the chooser will show a 3rd tier of options
-for the sub-boards in that group.
+that share a common theme.  If you use a separator character (such as :, and it
+can be configured) in your message library/sub-board and file library/directory
+names, the 'collapsing' feature will split the menus up into multiple tiers of
+options. For instance, if you have a file library called "Mirror:Simtelnet" and
+directories in there such as "C-Net:Mac:Business" and "C-Net:Mac:Games:action",
+the menu heirarchy will be arranged as follows:
+Mirror
+  Simetlnet
+    C-Net
+      Mac
+        Business
+        Games
+          Action
+This only affects how the areas will be displayed in the menus; your configured
+areas will be unaffected.
 
-For example, if you have the following file directory structure:
+Another example: If you have the following file directory structure:
 BBS files
   DOS: BBS software
   DOS: BBS doors
@@ -425,7 +431,8 @@ BBS files
   Windows: BBS doors
   Windows: BBS utilities
 
-With directory name collapsing, the selection will be come 3 tiers, as follows:
+With directory name collapsing enabled, the selection will be come 3 tiers, as
+follows:
 BBS files
   DOS
     BBS software
@@ -436,10 +443,11 @@ BBS files
     BBS doors
     BBS utilities
 
-The message area chooser has similar functionality for sub-boards.  You can
-configure what text to split the names on (i.e, by default, it splits on a
-colon, :).  This only happens at the file directory/message sub-board level, not
-at the file library/message group level.
+The message area chooser has the same functionality for sub-boards as the file
+area chooser.
+
+You can configure what text to split the names on (i.e, by default, it splits
+on a colon, :).
 
 Name collapsing for message areas can be configured with the useSubCollapsing
 and subCollapseSeparator options in DDMsgAreaChooser.cfg, and for files, with
