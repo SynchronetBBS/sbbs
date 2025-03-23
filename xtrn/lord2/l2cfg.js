@@ -1351,7 +1351,7 @@ menu('`r0`c                 `r1   `%LORD II: CONFIGURE JS   `r0', true, [
 		lln('  the TRADER.DAT file, daily happenings, etc.');
 		sln('');
 		lw('  Do it? [`!N`2] : ');
-		ch = getkey.toUpperCase();
+		ch = getkey().toUpperCase();
 		if (ch !== 'Y')
 			ch = 'N';
 		lw('`%'+ch);
