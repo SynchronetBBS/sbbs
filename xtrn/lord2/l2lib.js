@@ -1208,7 +1208,7 @@ var vars = {
 	'&time':{type:'fn', get:function() { return state.time }, set:function(x) { throw new Error('attempt to set &time'); } },
 	'&timeleft':{type:'fn', get:function() { return parseInt((dk.user.seconds_remaining + dk.user.seconds_remaining_from - time()) / 60, 10) } },
 	'&sex':{type:'fn', get:function() { return player.sexmale }, set:function(sexmale) { player.sexmale = clamp_integer(sexmale, 's16') } },
-	'&playernum':{type:'fn', get:function() { return player.Record + 1 } },
+	'&playernum':{type:'fn', get:function() { return (player.Record === undefined ? 0 : player.Record + 1) } },
 	'&totalaccounts':{type:'fn', get:function() { return pfile.length } },
 	responce:{type:'int', val:0},
 	response:{type:'fn', get:function() { return vars.responce.val; }, set:function(val) { vars.responce.val = clamp_integer(val, 's32')  } },
