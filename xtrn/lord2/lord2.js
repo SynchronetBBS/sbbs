@@ -4348,26 +4348,30 @@ function load_time()
 	if (!file_exists(f.name)) {
 		file_mutex(f.name, tday+'\n');
 		newday = true;
-		state.time = 0;
+		state.time = -1;
 	}
 	else {
 		if (!f.open('r'))
 			throw new Error('Unable to open '+f.name);
 		sday = parseInt(f.readln(), 10);
+		if (isNaN(sday))
+			throw new Error('Corrupt '+f.name);
 		if (sday !== tday)
 			newday = true;
 		f.close();
 	}
 	f = new File(getfname('time.dat'));
 	if (!file_exists(f.name)) {
-		state.time = 0;
-		file_mutex(f.name, state.time+'\n');
+		state.time = -1;
+		file_mutex(f.name, '0\n');
 		newday = true;
 	}
 	else {
 		if (!f.open('r'))
 			throw new Error('Unable to open '+f.name);
 		state.time = parseInt(f.readln(), 10);
+		if (isNaN(state.time))
+			throw new Error('Corrupt '+f.name);
 		f.close();
 	}
 
