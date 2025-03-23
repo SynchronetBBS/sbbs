@@ -1030,7 +1030,7 @@ function insane_run_ref(sec, fname, refret)
 			var val = replace_vars(getvar(args[2]));
 
 			if (isNaN(rec))
-				throw new Error('@datasave passed invalid rec parameter');
+				throw new Error('@datasave passed invalid rec parameter (' + args[1].toSource() + ' = ' + rec.toSource() + ', all args: ' + args.toSource() + ')');
 			if (!file_exists(f.name)) {
 				if (!f.open('wb'))
 					throw new Error('@datasave unable to create '+f.name);
