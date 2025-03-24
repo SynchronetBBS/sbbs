@@ -71,7 +71,7 @@ function RecordFile(filename, definition)
 	this.RecordLength=getRecordLength(this.fields);
 	// A vbuf of a record length prevents more than one record from being in the buffer.
 	if(!this.file.open(file_exists(this.file.name)?"rb+":"wb+",true,this.RecordLength)) {
-		throw new Error("Failed to open file "+this.file.name);
+		throw new Error(format("%d (%s) opening '%s'", this.file.error, strerror(this.file.error), this.file.name));
 	}
 	Object.defineProperty(this, 'length', {
 		enumerable: true,
