@@ -476,7 +476,16 @@ function main() {
     }
 
     var cmd, line, user_input;
+    var lastnodechk = time();
     while (!js.terminated && !break_loop) {
+	if ((time() - lastnodechk) >= 10) {
+		// Check the node "interrupt flag" once every 10 seconds
+		if (system.node_list[bbs.node_num - 1].misc & NODE_INTR) {
+			bbs.nodesync(); // this will display a message to to the user and disconnect
+			break;
+		}
+		lastnodechk = time();
+	}
         session.cycle();
         if (input_state == 'chat') {
             frames.divider.gotoxy(frames.divider.width - 16, 1);
