@@ -3385,17 +3385,24 @@ void event_thread(void* arg)
 							}
 							if (j > sbbs->cfg.sys_nodes) /* all nodes either offline or in limbo */
 								break;
-							sbbs->lprintf(LOG_DEBUG, "Waiting for node %d (status=%d)"
-							              , j, node.status);
+							char node_status[128];
+							snprintf(node_status, sizeof node_status, "status=%d, misc=0x%X, action=%d, useron=%d, aux=%d"
+								, node.status, node.misc, node.action, node.useron, node.aux);
+							sbbs->lprintf(LOG_DEBUG, "Waiting for node %d (%s)", j, node_status);
+							if (now - start > (30 * 60) && !(node.misc & NODE_INTR)) {
+								sbbs->lprintf(LOG_NOTICE, "!Interrupting node %d (%s)", j, node_status);
+								if (!set_node_interrupt(&sbbs->cfg, j, true))
+									sbbs->lprintf(LOG_ERR, "!ERROR interrupting node %d (%s)", j, node_status);
+							}
 							if (now - start > (60 * 60) && node_socket[j - 1] != INVALID_SOCKET) {
-								sbbs->lprintf(LOG_WARNING, "!TIRED of waiting for node %d to become inactive (status=%d), closing socket %d"
-								              , j, node.status, node_socket[j - 1]);
+								sbbs->lprintf(LOG_WARNING, "!TIRED of waiting for node %d to become inactive (%s), closing socket %d"
+								              , j, node_status, node_socket[j - 1]);
 								close_socket(node_socket[j - 1]);
 								node_socket[j - 1] = INVALID_SOCKET;
 							}
 							if (now - start > (90 * 60)) {
-								sbbs->lprintf(LOG_WARNING, "!TIMEOUT waiting for node %d to become inactive (status=%d), aborting wait"
-								              , j, node.status);
+								sbbs->lprintf(LOG_WARNING, "!TIMEOUT waiting for node %d to become inactive (%s), aborting wait"
+								              , j, node_status);
 								break;
 							}
 						}
