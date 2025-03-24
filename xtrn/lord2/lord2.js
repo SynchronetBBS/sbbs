@@ -4348,7 +4348,7 @@ function load_time()
 	if (!file_exists(f.name)) {
 		file_mutex(f.name, tday+'\n');
 		newday = true;
-		state.time = -1;
+		state.time = 0;
 	}
 	else {
 		if (!f.open('r'))
@@ -4362,7 +4362,7 @@ function load_time()
 	}
 	f = new File(getfname('time.dat'));
 	if (!file_exists(f.name)) {
-		state.time = -1;
+		state.time = 0;
 		file_mutex(f.name, '0\n');
 		newday = true;
 	}
@@ -4382,13 +4382,6 @@ function load_time()
 		f.truncate(0);
 		f.write(tday+'\r\n');
 		f.close;
-		state.time++;
-		f = new File(getfname('time.dat'));
-		if (!f.open('r+b'))
-			throw new Error('Unable to open '+f.name);
-		f.truncate(0);
-		f.write(state.time+'\r\n');
-		f.close;
 		// TODO: Delete inactive players after 15 days.
 		try {
 			run_ref('maint', 'maint.ref');
@@ -4398,6 +4391,13 @@ function load_time()
 				+" "+e.fileName+" line "+e.lineNumber
 				+": REF Error "+e.message+" at maint");
 		}
+		state.time++;
+		f = new File(getfname('time.dat'));
+		if (!f.open('r+b'))
+			throw new Error('Unable to open '+f.name);
+		f.truncate(0);
+		f.write(state.time+'\r\n');
+		f.close;
 	}
 }
 
