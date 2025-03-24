@@ -64,7 +64,10 @@ var theme_2nd_color = "\x01b\x01h";
 var theme_mrc_title = "\x01w\x01hMRC";
 
 var f = new File(js.startup_dir + 'mrc-client.ini');
-f.open('r');
+if (!f.open('r')) {
+	alert("Error " + f.error + " (" + strerror(f.error) + ") opening " + f.name);
+	exit(1);
+}
 const settings = {
     root: f.iniGetObject(),
     startup: f.iniGetObject('startup'),
