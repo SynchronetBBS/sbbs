@@ -3680,7 +3680,7 @@ bool sbbs_t::init()
 			return false;
 		}
 
-		if (filelength(fileno(logfile_fp))) {
+		if (filelength(fileno(logfile_fp)) > 0) {
 			log(crlf);
 			time_t ftime = fdate(str);
 			safe_snprintf(str, sizeof(str),
