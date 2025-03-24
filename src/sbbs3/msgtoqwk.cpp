@@ -259,7 +259,7 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 	if (mode & QM_WORDWRAP) {
 		int   org_cols = msg->columns ? msg->columns : 80;
 		int   new_cols = useron.cols ? useron.cols : cols ? cols : 80;
-		char* wrapped = ::wordwrap(buf, new_cols - 1, org_cols - 1, /* handle_quotes */ true, is_utf8);
+		char* wrapped = ::wordwrap(buf, new_cols - 1, org_cols - 1, /* handle_quotes */ true, is_utf8, /* pipe_codes: */false);
 		if (wrapped != NULL) {
 			free(buf);
 			buf = wrapped;

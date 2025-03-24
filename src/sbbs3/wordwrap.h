@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-char* wordwrap(char* inbuf, int len, int oldlen, bool handle_quotes, bool is_utf8);
+char* wordwrap(char* inbuf, int len, int oldlen, bool handle_quotes, bool is_utf8, bool pipe_codes);
 
 #ifdef __cplusplus
 }

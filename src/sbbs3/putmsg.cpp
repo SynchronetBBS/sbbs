@@ -111,7 +111,8 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, int org_cols, JSObject* obj)
 		if (org_cols < TERM_COLS_MIN)
 			org_cols = TERM_COLS_DEFAULT;
 		if ((wrapped = ::wordwrap((char*)str + l, cols - 1, org_cols - 1, /* handle_quotes: */ TRUE
-		                          , /* is_utf8: */ INT_TO_BOOL(mode & P_UTF8))) == NULL)
+		                          , /* is_utf8: */ INT_TO_BOOL(mode & P_UTF8)
+		                          , /* pipe_codes: */(cfg.sys_misc & SM_RENEGADE) && !INT_TO_BOOL(mode & P_NOXATTRS))) == NULL)
 			errormsg(WHERE, ERR_ALLOC, "wordwrap buffer", 0);
 		else {
 			truncsp_lines(wrapped);

@@ -1326,6 +1326,7 @@ js_word_wrap(JSContext *cx, uintN argc, jsval *arglist)
 	int32      oldlen = 79;
 	JSBool     handle_quotes = JS_TRUE;
 	JSBool     is_utf8 = JS_FALSE;
+	JSBool     pipe_codes = JS_FALSE;
 	char*      inbuf = NULL;
 	char*      outbuf;
 	JSString*  js_str;
@@ -1360,10 +1361,12 @@ js_word_wrap(JSContext *cx, uintN argc, jsval *arglist)
 		handle_quotes = JSVAL_TO_BOOLEAN(argv[3]);
 	if (argc > 4 && JSVAL_IS_BOOLEAN(argv[4]))
 		is_utf8 = JSVAL_TO_BOOLEAN(argv[4]);
+	if (argc > 5 && JSVAL_IS_BOOLEAN(argv[5]))
+		pipe_codes = JSVAL_TO_BOOLEAN(argv[5]);
 
 	rc = JS_SUSPENDREQUEST(cx);
 
-	outbuf = wordwrap(inbuf, len, oldlen, handle_quotes, is_utf8);
+	outbuf = wordwrap(inbuf, len, oldlen, handle_quotes, is_utf8, pipe_codes);
 	free(inbuf);
 
 	JS_RESUMEREQUEST(cx, rc);
@@ -5179,10 +5182,10 @@ static jsSyncMethodSpec js_global_functions[] = {
 	{"html_decode",     js_html_decode,     1,  JSTYPE_STRING,  JSDOCSTR("html")
 	 , JSDOCSTR("Return a decoded HTML-encoded text string, translating HTML character entities into CP437 character equivalents")
 	 , 311},
-	{"word_wrap",       js_word_wrap,       1,  JSTYPE_STRING,  JSDOCSTR("text [,line_length=79 [,orig_line_length=79 [,<i>bool</i> handle_quotes=true [,<i>bool</i> is_utf8=false]]]]")
+	{"word_wrap",       js_word_wrap,       1,  JSTYPE_STRING,  JSDOCSTR("text [,line_length=79 [,orig_line_length=79 [,<i>bool</i> handle_quotes=true [,<i>bool</i> is_utf8=false [,<i>bool</i> pipe_codes=false]]]]]")
 	 , JSDOCSTR("Return a word-wrapped version of the <i>text</i> string argument optionally handing quotes magically, "
 		        "<i>line_length</i> defaults to <i>79</i>, <i>orig_line_length</i> defaults to <tt>79</tt>, "
-		        "<i>handle_quotes</i> defaults to <tt>true</tt>, and <i>is_utf8</i> defaults to <tt>false</tt>"
+		        "<i>handle_quotes</i> defaults to <tt>true</tt>, <i>is_utf8</i> defaults to <tt>false</tt>, and <i>pipe_codes</i> (Renegade color codes) defaults to <tt>false</tt>."
 		        "<p>Note: if the original text does not contain any carriage-return (CR) characters, lines are wrapped with sole line-feed (LF) characters.")
 	 , 311},
 	{"quote_msg",       js_quote_msg,       1,  JSTYPE_STRING,  JSDOCSTR("text [,line_length=79] [,prefix=\" > \"]")
