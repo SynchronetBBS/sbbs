@@ -227,10 +227,8 @@ public:
 	}
 
 	virtual void line_feed(unsigned count = 1) {
-		for (unsigned i = 0; i < count; i++) {
+		for (unsigned i = 0; i < count; i++)
 			sbbs->term_out('\n');
-			sbbs->check_pause();
-		}
 	}
 
 	/*
@@ -251,6 +249,7 @@ public:
 		for (unsigned i = 0; i < count; i++) {
 			carriage_return();
 			line_feed();
+			sbbs->check_pause();
 		}
 	}
 
