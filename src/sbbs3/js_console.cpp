@@ -105,7 +105,7 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			val = sbbs->term->column;
 			break;
 		case CON_PROP_LASTLINELEN:
-			val = sbbs->term->lastlinelen;
+			val = sbbs->term->lastcrcol;
 			break;
 		case CON_PROP_LINE_DELAY:
 			val = sbbs->line_delay;
@@ -287,7 +287,7 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsid id, JSBool stric
 			sbbs->term->column = val;
 			break;
 		case CON_PROP_LASTLINELEN:
-			sbbs->term->lastlinelen = val;
+			sbbs->term->lastcrcol = val;
 			break;
 		case CON_PROP_LINE_DELAY:
 			sbbs->line_delay = val;

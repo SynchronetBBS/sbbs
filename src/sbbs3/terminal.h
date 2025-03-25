@@ -56,7 +56,7 @@ public:
 	unsigned rows{24};                 /* Current number of Rows for User */
 	unsigned cols{0};                  /* Current number of Columns for User */
 	unsigned tabstop{8};               /* Current symmetric-tabstop (size) */
-	unsigned lastlinelen{0};           /* The previously displayed line length */
+	unsigned lastcrcol{0};             /* Column when last CR occured (previously lastlinelen) */
 	unsigned cterm_version{0};	   /* (MajorVer*1000) + MinorVer */
 	unsigned lncntr{0};                /* Line Counter - for PAUSE */
 	unsigned latr{ANSI_NORMAL};        /* Starting attribute of line buffer */
@@ -148,7 +148,7 @@ public:
 
 	// Create from Terminal*, ie: Update
 	Terminal(Terminal *t) : row{t->row}, column{t->column},
-	    rows{t->rows}, cols{t->cols}, tabstop{t->tabstop}, lastlinelen{t->lastlinelen}, 
+	    rows{t->rows}, cols{t->cols}, tabstop{t->tabstop}, lastcrcol{t->lastcrcol}, 
 	    cterm_version{t->cterm_version}, lncntr{t->lncntr}, latr{t->latr}, curatr{t->curatr},
 	    lbuflen{t->lbuflen}, mouse_mode{t->mouse_mode}, pause_hotspot{t->pause_hotspot},
 	    mouse_hotspots{t->mouse_hotspots}, sbbs{t->sbbs}, flags_{get_flags(t->sbbs)},
@@ -169,7 +169,7 @@ public:
 
 	// Create from sbbsptr* and Terminal*, ie: Create a copy
 	Terminal(sbbs_t *sbbsptr, Terminal *t) : row{t->row}, column{t->column},
-	    rows{t->rows}, cols{t->cols}, tabstop{t->tabstop}, lastlinelen{t->lastlinelen}, 
+	    rows{t->rows}, cols{t->cols}, tabstop{t->tabstop}, lastcrcol{t->lastcrcol}, 
 	    cterm_version{t->cterm_version}, lncntr{t->lncntr}, latr{t->latr}, curatr{t->curatr},
 	    lbuflen{t->lbuflen}, mouse_mode{t->mouse_mode}, pause_hotspot{t->pause_hotspot},
 	    mouse_hotspots{listPtrInit(0)}, sbbs{sbbsptr}, flags_{get_flags(t->sbbs)},
@@ -406,6 +406,7 @@ public:
 				set_column();
 				return true;
 			case 13: // CR
+				lastcrcol = column;
 				if (sbbs->console & CON_CR_CLREOL)
 					cleartoeol();
 				set_column();

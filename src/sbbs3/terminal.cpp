@@ -131,14 +131,12 @@ struct mouse_hotspot* Terminal::add_hotspot(const char* cmd, bool hungry, unsign
 }
 
 void Terminal::inc_row(unsigned count) {
-	if (column)
-		lastlinelen = column;
 	row += count;
 	if (row >= rows) {
 		scroll_hotspots((row - rows) + 1);
 		row = rows - 1;
 	}
-	if (lncntr || lastlinelen)
+	if (lncntr || lastcrcol)
 		lncntr++;
 	lbuflen = 0;
 }
@@ -192,7 +190,7 @@ void Terminal::inc_row(unsigned count) {
 void Terminal::inc_column(unsigned count) {
 	column += count;
 	if (column >= cols)
-		lastlinelen = column;
+		lastcrcol = cols;
 	while (column >= cols) {
 		lbuflen = 0;
 		column -= cols;
@@ -201,8 +199,6 @@ void Terminal::inc_column(unsigned count) {
 }
 
 void Terminal::dec_row(unsigned count) {
-	if (column)
-		lastlinelen = column;
 	// Never allow dec_row to scroll up
 	if (count > row)
 		count = row;
@@ -231,8 +227,6 @@ void Terminal::dec_column(unsigned count) {
 void Terminal::set_row(unsigned val) {
 	if (val >= rows)
 		val = rows - 1;
-	if (column)
-		lastlinelen = column;
 	row = val;
 	lncntr = 0;
 	lbuflen = 0;
@@ -251,7 +245,7 @@ void Terminal::cond_newline() {
 
 void Terminal::cond_blankline() {
 	cond_newline();
-	if (lastlinelen)
+	if (lastcrcol)
 		newline();
 }
 

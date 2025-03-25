@@ -812,6 +812,7 @@ bool ANSI_Terminal::parse_output(char ich) {
 			set_column();
 			break;
 		case 13: // CR
+			lastcrcol = column;
 			if (sbbs->console & CON_CR_CLREOL)
 				cleartoeol();
 			set_column();

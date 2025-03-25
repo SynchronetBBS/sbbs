@@ -399,8 +399,9 @@ bool PETSCII_Terminal::parse_output(char ch)
 		// Specials that affect cursor position
 		case '\x8D': // Shift-return
 		case 13: // Translated as Carriage Return
+			lastcrcol = column;
 			inc_row();
-			set_column(0);
+			set_column();
 			if (curatr & 0xf0)
 				curatr = (curatr & ~0xff) | ((curatr & 0xf0) >> 4);
 			return true;
