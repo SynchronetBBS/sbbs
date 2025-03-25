@@ -704,7 +704,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 		if (linesquoted || draft_restored) {
 			if ((file = nopen(msgtmp, O_RDONLY)) != -1) {
 				length = (long)filelength(file);
-				l = length > (cfg.level_linespermsg[useron_level] * MAX_LINE_LEN) - 1
+				l = length > (int)(cfg.level_linespermsg[useron_level] * MAX_LINE_LEN) - 1
 				    ? (cfg.level_linespermsg[useron_level] * MAX_LINE_LEN) - 1 : length;
 				if (read(file, buf, l) != l)
 					l = 0;
