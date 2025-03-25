@@ -406,7 +406,7 @@ static jsSyncPropertySpec js_console_properties[] = {
 	{   "current_row", CON_PROP_ROW, CON_PROP_FLAGS, 31800},
 	{   "current_column", CON_PROP_COLUMN, CON_PROP_FLAGS, 315},
 	{   "last_cr_column", CON_PROP_LASTCRCOL, CON_PROP_FLAGS, 32004},
-	{   "last_line_length", CON_PROP_LASTLINELEN, CON_PROP_FLAGS, 317},
+	{   "last_line_length", CON_PROP_LASTCRCOL, CON_PROP_FLAGS, 317},
 	{   "line_delay", CON_PROP_LINE_DELAY, CON_PROP_FLAGS, 320},
 	{   "attributes", CON_PROP_ATTR, CON_PROP_FLAGS, 310},
 	{   "top_of_screen", CON_PROP_TOS, JSPROP_ENUMERATE | JSPROP_READONLY, 310},
