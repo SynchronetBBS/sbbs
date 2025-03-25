@@ -32,7 +32,7 @@ enum {
 	, CON_PROP_MOUSE_MODE
 	, CON_PROP_LNCNTR
 	, CON_PROP_COLUMN
-	, CON_PROP_LASTLINELEN
+	, CON_PROP_LASTCRCOL
 	, CON_PROP_LINE_DELAY
 	, CON_PROP_ATTR
 	, CON_PROP_TOS
@@ -104,7 +104,7 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case CON_PROP_COLUMN:
 			val = sbbs->term->column;
 			break;
-		case CON_PROP_LASTLINELEN:
+		case CON_PROP_LASTCRCOL:
 			val = sbbs->term->lastcrcol;
 			break;
 		case CON_PROP_LINE_DELAY:
@@ -286,7 +286,7 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsid id, JSBool stric
 		case CON_PROP_COLUMN:
 			sbbs->term->column = val;
 			break;
-		case CON_PROP_LASTLINELEN:
+		case CON_PROP_LASTCRCOL:
 			sbbs->term->lastcrcol = val;
 			break;
 		case CON_PROP_LINE_DELAY:
@@ -405,6 +405,7 @@ static jsSyncPropertySpec js_console_properties[] = {
 	{   "line_counter", CON_PROP_LNCNTR, CON_PROP_FLAGS, 310},
 	{   "current_row", CON_PROP_ROW, CON_PROP_FLAGS, 31800},
 	{   "current_column", CON_PROP_COLUMN, CON_PROP_FLAGS, 315},
+	{   "last_cr_column", CON_PROP_LASTCRCOL, CON_PROP_FLAGS, 32004},
 	{   "last_line_length", CON_PROP_LASTLINELEN, CON_PROP_FLAGS, 317},
 	{   "line_delay", CON_PROP_LINE_DELAY, CON_PROP_FLAGS, 320},
 	{   "attributes", CON_PROP_ATTR, CON_PROP_FLAGS, 310},
@@ -458,7 +459,8 @@ static const char*        con_prop_desc[] = {
 	, "Current 0-based line counter (used for automatic screen pause)"
 	, "Current 0-based row counter"
 	, "Current 0-based column counter (used to auto-increment <i>line_counter</i> when screen wraps)"
-	, "Length of last line sent to terminal (before a carriage-return or line-wrap)"
+	, "Column the cursor was on when last CR was sent to terminal or the line wrapped"
+	, "Obsolete alias for last_cr_column"
 	, "Duration of delay (in milliseconds) before each line-feed character is sent to the terminal"
 	, "Current display attributes (set with number or string value)"
 	, "<tt>true</tt> if the terminal cursor is already at the top of the screen - <small>READ ONLY</small>"
