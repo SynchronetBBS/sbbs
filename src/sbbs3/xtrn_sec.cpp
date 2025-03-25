@@ -1381,7 +1381,7 @@ bool sbbs_t::exec_xtrn(uint xtrnnum, bool user_event)
 	         , user_event ? "user event" : "program"
 	         , cfg.xtrn[xtrnnum]->name);
 	logline("X-", str);
-	if (cfg.xtrn[xtrnnum]->cmd[0] != '*' && logfile_fp != NULL) {
+	if (cfg.xtrn[xtrnnum]->cmd[0] != '?' &&  cfg.xtrn[xtrnnum]->cmd[0] != '*' && logfile_fp != NULL) {
 		fclose(logfile_fp);
 		logfile_fp = NULL;
 	}

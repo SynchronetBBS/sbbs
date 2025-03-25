@@ -1030,7 +1030,7 @@ function insane_run_ref(sec, fname, refret)
 			var val = replace_vars(getvar(args[2]));
 
 			if (isNaN(rec))
-				throw new Error('@datasave passed invalid rec parameter');
+				throw new Error('@datasave passed invalid rec parameter (' + args[1].toSource() + ' = ' + rec.toSource() + ', all args: ' + args.toSource() + ')');
 			if (!file_exists(f.name)) {
 				if (!f.open('wb'))
 					throw new Error('@datasave unable to create '+f.name);
@@ -4354,6 +4354,8 @@ function load_time()
 		if (!f.open('r'))
 			throw new Error('Unable to open '+f.name);
 		sday = parseInt(f.readln(), 10);
+		if (isNaN(sday))
+			throw new Error('Corrupt '+f.name);
 		if (sday !== tday)
 			newday = true;
 		f.close();
@@ -4361,13 +4363,15 @@ function load_time()
 	f = new File(getfname('time.dat'));
 	if (!file_exists(f.name)) {
 		state.time = 0;
-		file_mutex(f.name, state.time+'\n');
+		file_mutex(f.name, '0\n');
 		newday = true;
 	}
 	else {
 		if (!f.open('r'))
 			throw new Error('Unable to open '+f.name);
 		state.time = parseInt(f.readln(), 10);
+		if (isNaN(state.time))
+			throw new Error('Corrupt '+f.name);
 		f.close();
 	}
 
@@ -4378,13 +4382,6 @@ function load_time()
 		f.truncate(0);
 		f.write(tday+'\r\n');
 		f.close;
-		state.time++;
-		f = new File(getfname('time.dat'));
-		if (!f.open('r+b'))
-			throw new Error('Unable to open '+f.name);
-		f.truncate(0);
-		f.write(state.time+'\r\n');
-		f.close;
 		// TODO: Delete inactive players after 15 days.
 		try {
 			run_ref('maint', 'maint.ref');
@@ -4394,6 +4391,13 @@ function load_time()
 				+" "+e.fileName+" line "+e.lineNumber
 				+": REF Error "+e.message+" at maint");
 		}
+		state.time++;
+		f = new File(getfname('time.dat'));
+		if (!f.open('r+b'))
+			throw new Error('Unable to open '+f.name);
+		f.truncate(0);
+		f.write(state.time+'\r\n');
+		f.close;
 	}
 }
 

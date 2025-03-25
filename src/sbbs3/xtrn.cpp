@@ -332,7 +332,7 @@ static void add_env_var(str_list_t* list, const char* var, const char* val)
 		SetLastError(last_error)
 
 /****************************************************************************/
-/* Runs an external program 												*/
+/* Runs an external program (on Windows) 									*/
 /****************************************************************************/
 int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 {
@@ -1107,6 +1107,9 @@ static int forkpty(int *amaster, char *name, termios *termp, winsize *winp)
 }
 #endif /* NEED_FORKPTY */
 
+/****************************************************************************/
+/* Runs an external program (on *nix) 										*/
+/****************************************************************************/
 int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 {
 	char          str[MAX_PATH + 1];
@@ -1855,6 +1858,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 			fds[1].fd = err_pipe[0];
 			fds[1].events = POLLIN;
 		}
+		time_t lastnodechk = 0;
 		while (!terminated) {
 			if (waitpid(pid, &i, WNOHANG) != 0)    /* child exited */
 				break;
@@ -1909,8 +1913,17 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 			}
 
 			data_waiting = fds[0].revents;
-			if (i == 0 && data_waiting == 0)
+			if (i == 0 && data_waiting == 0) {
+				// only check node for interrupt flag every 3 seconds of no I/O
+				if (difftime(time(NULL), lastnodechk) >= 3) {
+					if (getnodedat(cfg.node_num, &thisnode)) {
+						if (thisnode.misc & NODE_INTR)
+							break;
+						lastnodechk = time(NULL);
+					}
+				}
 				continue;
+			}
 
 			avail = (RingBufFree(&outbuf) - i) / 2;   // Leave room for wwiv/telnet expansion
 			if (avail == 0) {

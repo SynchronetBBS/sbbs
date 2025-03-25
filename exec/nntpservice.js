@@ -466,7 +466,7 @@ while(client.socket.is_connected && !quit) {
 					msgbase.close();
 				msgbase=new MsgBase("mail");
 				if(msgbase.open()==true) {
-					selected = { newsgroup: "mail" };
+					selected = { newsgroup: "mail", can_read: true };
 					found=true;
 				} else {
 					log(LOG_ERR, "Error " + msgbase.error + " opening " + msgbase.file);

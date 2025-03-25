@@ -2137,8 +2137,6 @@ void services_thread(void* arg)
 			semfile_list_check(&initialized, shutdown_semfiles);
 		}
 
-		terminated = false;
-
 		lprintf(LOG_INFO, "0000 Services thread started (%lu service sockets bound)", total_sockets);
 
 #ifdef PREFER_POLL

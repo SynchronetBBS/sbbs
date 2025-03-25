@@ -64,7 +64,10 @@ var theme_2nd_color = "\x01b\x01h";
 var theme_mrc_title = "\x01w\x01hMRC";
 
 var f = new File(js.startup_dir + 'mrc-client.ini');
-f.open('r');
+if (!f.open('r')) {
+	alert("Error " + f.error + " (" + strerror(f.error) + ") opening " + f.name);
+	exit(1);
+}
 const settings = {
     root: f.iniGetObject(),
     startup: f.iniGetObject('startup'),
@@ -473,7 +476,16 @@ function main() {
     }
 
     var cmd, line, user_input;
+    var lastnodechk = time();
     while (!js.terminated && !break_loop) {
+	if ((time() - lastnodechk) >= 10) {
+		// Check the node "interrupt flag" once every 10 seconds
+		if (system.node_list[bbs.node_num - 1].misc & NODE_INTR) {
+			bbs.nodesync(); // this will display a message to to the user and disconnect
+			break;
+		}
+		lastnodechk = time();
+	}
         session.cycle();
         if (input_state == 'chat') {
             frames.divider.gotoxy(frames.divider.width - 16, 1);

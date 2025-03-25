@@ -1,0 +1,11 @@
+{
+    "valid": true,
+    "release": {
+        "version": "3.20d",
+        "version_num": 32003,
+        "git_branch": "master",
+        "git_hash": "500ef7050",
+        "git_date": "Mar 03 2025 22:14",
+	"by": "Rob Swindell"
+    }
+}

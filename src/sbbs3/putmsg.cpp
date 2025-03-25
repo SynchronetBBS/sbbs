@@ -113,7 +113,8 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 		if (org_cols < TERM_COLS_MIN)
 			org_cols = TERM_COLS_DEFAULT;
 		if ((wrapped = ::wordwrap((char*)str + l, term->cols - 1, org_cols - 1, /* handle_quotes: */ TRUE
-		                          , /* is_utf8: */ INT_TO_BOOL(mode & P_UTF8))) == NULL)
+		                          , /* is_utf8: */ INT_TO_BOOL(mode & P_UTF8)
+		                          , /* pipe_codes: */(cfg.sys_misc & SM_RENEGADE) && !INT_TO_BOOL(mode & P_NOXATTRS))) == NULL)
 			errormsg(WHERE, ERR_ALLOC, "wordwrap buffer", 0);
 		else {
 			truncsp_lines(wrapped);
@@ -240,8 +241,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 		else if (!(mode & P_NOXATTRS)
 		         && (cfg.sys_misc & SM_PCBOARD) && str[l] == '@' && str[l + 1] == 'X'
 		         && IS_HEXDIGIT(str[l + 2]) && IS_HEXDIGIT(str[l + 3])) {
-			snprintf(tmp2, sizeof tmp2, "%.2s", str + l + 2);
-			uint         val = ahtoul(tmp2);
+			uint val = (HEX_CHAR_TO_INT(str[l + 2]) << 4) + HEX_CHAR_TO_INT(str[l + 3]);
 			// @X00 saves the current color and @XFF restores that saved color
 			static uchar save_attr;
 			switch (val) {
@@ -261,16 +261,14 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 		else if (!(mode & P_NOXATTRS)
 		         && (cfg.sys_misc & SM_WILDCAT) && str[l] == '@' && str[l + 3] == '@'
 		         && IS_HEXDIGIT(str[l + 1]) && IS_HEXDIGIT(str[l + 2])) {
-			snprintf(tmp2, sizeof tmp2, "%.2s", str + l + 1);
-			attr(ahtoul(tmp2));
+			attr((HEX_CHAR_TO_INT(str[l + 1]) << 4) + HEX_CHAR_TO_INT(str[l + 2]));
 			// exatr=1;
 			l += 4;
 		}
 		else if (!(mode & P_NOXATTRS)
 		         && (cfg.sys_misc & SM_RENEGADE) && str[l] == '|' && IS_DIGIT(str[l + 1])
 		         && IS_DIGIT(str[l + 2]) && !(useron.misc & RIP)) {
-			snprintf(tmp2, sizeof tmp2, "%.2s", str + l + 1);
-			i = atoi(tmp2);
+			i = (DEC_CHAR_TO_INT(str[l + 1]) * 10) + DEC_CHAR_TO_INT(str[l + 2]);
 			if (i >= 16) {                 /* setting background */
 				i -= 16;
 				i <<= 4;

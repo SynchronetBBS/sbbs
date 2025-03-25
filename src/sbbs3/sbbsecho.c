@@ -1255,7 +1255,7 @@ int file_to_netmail(FILE* infile, const char* title, fidoaddr_t dest, const char
 	else if (len < 1)
 		return 0;
 	rewind(infile);
-	if ((buf = (char *)malloc(len + 1)) == NULL) {
+	if ((buf = malloc(len + 1)) == NULL) {
 		lprintf(LOG_ERR, "ERROR line %d allocating %lu for file to netmail buf", __LINE__, len);
 		return 0;
 	}
@@ -2381,7 +2381,7 @@ char* process_areamgr(fidoaddr_t addr, char* inbuf, const char* subj, const char
 		}
 	}
 
-	p = (char *)inbuf;
+	p = inbuf;
 
 	while (*p == CTRL_A) {         /* Skip kludge lines 11/05/95 */
 		FIND_CHAR(p, '\r');
@@ -5070,7 +5070,7 @@ ulong export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool resca
 
 			lprintf(LOG_DEBUG, "Exporting %s message #%u from %s to %s in area: %s"
 			        , scfg.sub[subnum]->code, msg.hdr.number, msg.from, msg.to, tag);
-			fmsgbuflen = strlen((char *)buf) + 4096; /* over alloc for kludge lines */
+			fmsgbuflen = strlen(buf) + 4096; /* over alloc for kludge lines */
 			fmsgbuf = malloc(fmsgbuflen);
 			if (!fmsgbuf) {
 				lprintf(LOG_ERR, "ERROR line %d allocating %lu bytes for fmsgbuf"
@@ -5142,13 +5142,17 @@ ulong export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool resca
 				if (msg.hfield[l].type == FIDOCTRL)
 					f += sprintf(fmsgbuf + f, "\1%.512s\r", (char*)msg.hfield_dat[l]);
 
+			char originline[sizeof scfg.origline * 4] = {0};
+			if (msg.from_net.type != NET_FIDO && !(scfg.sub[subnum]->misc & SUB_NOTAG))
+				strlcpy(originline, scfg.sub[subnum]->origline[0] ? scfg.sub[subnum]->origline : scfg.origline, sizeof originline);
+
 			const char* charset = msg.ftn_charset;
 			if (scfg.sub[subnum]->misc & SUB_ASCII)
 				charset = FIDO_CHARSET_ASCII;
 			if (charset == NULL) {
 				if (smb_msg_is_utf8(&msg) || (msg.hdr.auxattr & MSG_HFIELDS_UTF8))
 					charset = FIDO_CHARSET_UTF8;
-				else if (str_is_ascii(buf))
+				else if (str_is_ascii(buf) && str_is_ascii(originline))
 					charset = FIDO_CHARSET_ASCII;
 				else
 					charset = FIDO_CHARSET_CP437;
@@ -5192,7 +5196,7 @@ ulong export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool resca
 					cr = 1;
 				else
 					cr = 0;
-				if ((scfg.sub[subnum]->misc & SUB_ASCII)) {
+				if (scfg.sub[subnum]->misc & SUB_ASCII) {
 					if (buf[l] < ' ' && buf[l] >= 0 && buf[l] != '\r'
 					    && buf[l] != '\n')            /* Ctrl ascii */
 						buf[l] = '.';           /* converted to '.' */
@@ -5205,15 +5209,21 @@ ulong export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool resca
 			FREE_AND_NULL(buf);
 			fmsgbuf[f] = 0;
 
-			if (msg.from_net.type != NET_FIDO && !(scfg.sub[subnum]->misc & SUB_NOTAG)) {
+			if (*originline != '\0') {
 				if (!tear) {  /* No previous tear line */
-					strcat((char *)fmsgbuf, tear_line('-'));
+					strcat(fmsgbuf, tear_line('-'));
 				}
-
+				if (stricmp(charset, FIDO_CHARSET_ASCII) == 0)
+					ascii_str((uchar *)originline);
+				else if (stricmp(charset, FIDO_CHARSET_UTF8) == 0) {
+					char tmp[sizeof originline];
+					if (cp437_to_utf8_str(originline, tmp, sizeof tmp, /* min-char-val: */ '\x80') > 1)
+						strlcpy(originline, tmp, sizeof originline);
+				}
 				snprintf(str, sizeof str, " * Origin: %s (%s)\r"
-				         , scfg.sub[subnum]->origline[0] ? scfg.sub[subnum]->origline : scfg.origline
+				         , originline
 				         , smb_faddrtoa(&scfg.sub[subnum]->faddr, NULL));
-				strcat((char *)fmsgbuf, str);
+				strcat(fmsgbuf, str);
 			}
 
 			for (uint u = 0; u < cfg.areas; u++) {

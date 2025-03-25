@@ -821,6 +821,7 @@ ssh_connect(struct bbslist *bbs)
 	status = cryptSetAttributeString(ssh_session, CRYPT_SESSINFO_USERNAME, username, strlen(username));
 	if (cryptStatusError(status)) {
 		error_popup(bbs, "setting username", status);
+		ssh_close();
 		return -1;
 	}
 
@@ -830,6 +831,7 @@ ssh_connect(struct bbslist *bbs)
 		status = cryptSetAttribute(ssh_session, CRYPT_SESSINFO_SSH_OPTIONS, CRYPT_SSHOPTION_NONE_AUTH);
 		if (cryptStatusError(status)) {
 			error_popup(bbs, "disabling password auth", status);
+			ssh_close();
 			return -1;
 		}
 	}
@@ -848,6 +850,7 @@ ssh_connect(struct bbslist *bbs)
 			status = cryptSetAttributeString(ssh_session, CRYPT_SESSINFO_PASSWORD, password, strlen(password));
 			if (cryptStatusError(status)) {
 				error_popup(bbs, "setting password", status);
+				ssh_close();
 				return -1;
 			}
 		}
@@ -862,6 +865,7 @@ ssh_connect(struct bbslist *bbs)
 			if (cryptStatusError(status)) {
 				free(pubkey);
 				error_popup(bbs, "setting private key", status);
+				ssh_close();
 				return -1;
 			}
 		}
@@ -877,6 +881,7 @@ ssh_connect(struct bbslist *bbs)
 	if (cryptStatusError(status)) {
 		free(pubkey);
 		error_popup(bbs, "passing socket", status);
+		ssh_close();
 		return -1;
 	}
 
@@ -932,6 +937,7 @@ ssh_connect(struct bbslist *bbs)
 	if (cryptStatusError(status)) {
 		free(pubkey);
 		error_popup(bbs, "activating session", status);
+		ssh_close();
 		return -1;
 	}
 	FlushData(ssh_session);
@@ -944,6 +950,7 @@ ssh_connect(struct bbslist *bbs)
 	if (cryptStatusError(status)) {
 		free(pubkey);
 		error_popup(bbs, "clearing session ownership", status);
+		ssh_close();
 		return -1;
 	}
 	if (!bbs->hidepopups) {
@@ -957,6 +964,7 @@ ssh_connect(struct bbslist *bbs)
 	if (cryptStatusError(status) || ssh_channel == -1) {
 		free(pubkey);
 		error_popup(bbs, "getting ssh channel", status);
+		ssh_close();
 		return -1;
 	}
 
@@ -1013,6 +1021,7 @@ ssh_connect(struct bbslist *bbs)
 					free(pubkey);
 					if (!bbs->hidepopups)
 						uifc.pop(NULL);
+					ssh_close();
 					return -1;
 			}
 		}

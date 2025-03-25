@@ -48,7 +48,10 @@ cmdkey U
 	end_cmd
 
 cmdkey N
-	menu logon
+	chkfile "../text/menu/logon.*"
+	if_true
+		menu logon
+		end_if
 	pause
 	end_cmd
 

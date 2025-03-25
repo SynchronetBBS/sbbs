@@ -30,7 +30,7 @@
 
 bool allocerr(char* error, size_t maxerrlen, const char* fname, const char *item, size_t size)
 {
-	safe_snprintf(error, maxerrlen, "%s: allocating %u bytes of memory for %s"
+	snprintf(error, maxerrlen, "%s: allocating %u bytes of memory for %s"
 	              , fname, (uint)size, item);
 	return false;
 }
@@ -44,15 +44,22 @@ bool read_node_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	FILE*       fp;
 	str_list_t  ini;
 	char        value[INI_MAX_VALUE_LEN];
+	bool        result = false;
 
 	const char* fname = "node.ini";
 	SAFEPRINTF2(cfg->filename, "%s%s", cfg->node_dir, fname);
 	if ((fp = fnopen(NULL, cfg->filename, O_RDONLY)) == NULL) {
-		safe_snprintf(error, maxerrlen, "%d (%s) opening %s", errno, safe_strerror(errno, errstr, sizeof(errstr)), cfg->filename);
+		snprintf(error, maxerrlen, "ERROR %d (%s) opening %s", errno, safe_strerror(errno, errstr, sizeof(errstr)), cfg->filename);
 		return false;
 	}
 	ini = iniReadFile(fp);
 	fclose(fp);
+
+	if (ini == NULL) {
+		snprintf(error, maxerrlen, "Read no contents from %s", cfg->filename);
+		result = false;
+	} else
+		result = true;
 
 	SAFECOPY(cfg->node_phone, iniGetString(ini, ROOT_SECTION, "phone", "", value));
 	SAFECOPY(cfg->node_daily.cmd, iniGetString(ini, ROOT_SECTION, "daily", "", value));
@@ -66,7 +73,7 @@ bool read_node_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 
 	iniFreeStringList(ini);
 
-	return true;
+	return result;
 }
 
 /****************************************************************************/
@@ -84,11 +91,15 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	const char* fname = "main.ini";
 	SAFEPRINTF2(cfg->filename, "%s%s", cfg->ctrl_dir, fname);
 	if ((fp = fnopen(NULL, cfg->filename, O_RDONLY)) == NULL) {
-		safe_snprintf(error, maxerrlen, "%d (%s) opening %s", errno, safe_strerror(errno, errstr, sizeof(errstr)), cfg->filename);
+		snprintf(error, maxerrlen, "ERROR %d (%s) opening %s", errno, safe_strerror(errno, errstr, sizeof(errstr)), cfg->filename);
 	} else {
 		ini = iniReadFile(fp);
 		fclose(fp);
-		result = true;
+		if (ini == NULL) {
+			snprintf(error, maxerrlen, "No contents read from %s", cfg->filename);
+			result = false;
+		} else
+			result = true;
 	}
 
 	SAFECOPY(cfg->sys_name, iniGetString(ini, ROOT_SECTION, "name", "", value));
@@ -348,15 +359,22 @@ bool read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	FILE*       fp;
 	str_list_t  ini;
 	char        value[INI_MAX_VALUE_LEN];
+	bool        result = false;
 
 	const char* fname = "msgs.ini";
 	SAFEPRINTF2(cfg->filename, "%s%s", cfg->ctrl_dir, fname);
 	if ((fp = fnopen(NULL, cfg->filename, O_RDONLY)) == NULL) {
-		safe_snprintf(error, maxerrlen, "%d (%s) opening %s", errno, safe_strerror(errno, errstr, sizeof(errstr)), cfg->filename);
+		snprintf(error, maxerrlen, "ERROR %d (%s) opening %s", errno, safe_strerror(errno, errstr, sizeof(errstr)), cfg->filename);
 		return false;
 	}
 	ini = iniReadFile(fp);
 	fclose(fp);
+
+	if (ini == NULL) {
+		snprintf(error, maxerrlen, "Read no contents from %s", cfg->filename);
+		result = false;
+	} else
+		result = true;
 
 	/*************************/
 	/* General Message Stuff */
@@ -471,7 +489,7 @@ bool read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 #ifdef SBBS
 		for (uint j = 0; j < i; j++)
 			if (cfg->sub[i]->ptridx == cfg->sub[j]->ptridx) {
-				safe_snprintf(error, maxerrlen, "%s: Duplicate pointer index for subs %s and %s"
+				snprintf(error, maxerrlen, "%s: Duplicate pointer index for subs %s and %s"
 				              , fname
 				              , cfg->sub[i]->code_suffix, cfg->sub[j]->code_suffix);
 				return false;
@@ -589,7 +607,7 @@ bool read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 	iniFreeStringList(ini);
 	iniFreeParsedSections(sections);
 
-	return true;
+	return result;
 }
 
 void free_node_cfg(scfg_t* cfg)
@@ -1009,7 +1027,7 @@ char* dir_vpath(scfg_t* cfg, dir_t* dir, char* path, size_t size)
 	if (dir->vshortcut[0] != '\0')
 		return dir->vshortcut;
 	else
-		safe_snprintf(path, size, "%s/%s"
+		snprintf(path, size, "%s/%s"
 		              , cfg->lib[dir->lib]->vdir, dir->vdir);
 	return path;
 }

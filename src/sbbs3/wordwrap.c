@@ -223,7 +223,7 @@ static struct section_len get_ws_len(char *buf, int col)
  * maxlen cols (used to find the number of bytes to fill a specific
  * number of columns).
  */
-static struct section_len get_word_len(char *buf, int maxlen, bool is_utf8)
+static struct section_len get_word_len(char *buf, int maxlen, bool is_utf8, bool pipe_codes)
 {
 	struct section_len ret = {0, 0};
 
@@ -240,6 +240,10 @@ static struct section_len get_word_len(char *buf, int maxlen, bool is_utf8)
 			ret.bytes++;
 			if (buf[ret.bytes] == '\\')
 				break;
+			continue;
+		}
+		else if (pipe_codes && buf[ret.bytes] == '|' && IS_DIGIT(buf[ret.bytes + 1]) && IS_DIGIT(buf[ret.bytes + 2])) {
+			ret.bytes += 2;
 			continue;
 		}
 		else if (buf[ret.bytes] == '\b') {
@@ -319,7 +323,7 @@ static bool paragraph_append(struct paragraph *paragraph, const char *bytes, siz
  * The returned malloc()ed array will have the text member of the last
  * paragraph set to NULL.
  */
-static struct paragraph *word_unwrap(char *inbuf, int oldlen, bool handle_quotes, bool *has_crs, bool is_utf8)
+static struct paragraph *word_unwrap(char *inbuf, int oldlen, bool handle_quotes, bool *has_crs, bool is_utf8, bool pipe_codes)
 {
 	unsigned          inpos = 0;
 	struct prefix     new_prefix;
@@ -419,7 +423,7 @@ static struct paragraph *word_unwrap(char *inbuf, int oldlen, bool handle_quotes
 					}
 
 					// If the first word on the next line would have fit here, it's hard
-					next_word_len = get_word_len(inbuf + inpos + 1 + new_prefix_len, -1, is_utf8).len;
+					next_word_len = get_word_len(inbuf + inpos + 1 + new_prefix_len, -1, is_utf8, pipe_codes).len;
 					if ((incol + next_word_len + 1 - 1) < oldlen) {
 						FREE_AND_NULL(new_prefix.bytes);
 						paragraph_done = true;
@@ -439,6 +443,14 @@ static struct paragraph *word_unwrap(char *inbuf, int oldlen, bool handle_quotes
 					while (incol % 8)
 						incol++;
 					break;
+				case '|':       // Pipe color codes (e.g. from Renegade, WWIV, Mystic)
+					if (pipe_codes && IS_DIGIT(inbuf[inpos + 1]) && IS_DIGIT(inbuf[inpos + 2])) {
+						if (!paragraph_append(&ret[paragraph], inbuf + inpos, 3))
+							goto fail_return;
+						inpos += 2;
+						break;
+					}
+					// Fall-through
 				default:
 					if (!paragraph_append(&ret[paragraph], inbuf + inpos, 1))
 						goto fail_return;
@@ -472,7 +484,7 @@ fail_return:
  *
  * Returns a malloc()ed string.
  */
-static char *wrap_paragraphs(struct paragraph *paragraph, size_t outlen, bool handle_quotes, bool has_crs, bool is_utf8)
+static char *wrap_paragraphs(struct paragraph *paragraph, size_t outlen, bool handle_quotes, bool has_crs, bool is_utf8, bool pipe_codes)
 {
 	int                outcol;
 	char *             outbuf = NULL;
@@ -494,7 +506,7 @@ static char *wrap_paragraphs(struct paragraph *paragraph, size_t outlen, bool ha
 				prefix_copy = paragraph->prefix.bytes + strlen(paragraph->prefix.bytes) - (outlen / 2);
 				while (*prefix_copy != ' ')
 					prefix_copy--;
-				word_len = get_word_len(prefix_copy, -1, is_utf8);
+				word_len = get_word_len(prefix_copy, -1, is_utf8, pipe_codes);
 				prefix_cols = word_len.len;
 				prefix_bytes = word_len.bytes;
 			}
@@ -525,10 +537,10 @@ static char *wrap_paragraphs(struct paragraph *paragraph, size_t outlen, bool ha
 				if (*inp == 0)
 					break;
 				ws_len = get_ws_len(inp, outcol);
-				word_len = get_word_len(inp + ws_len.bytes, -1, is_utf8);
+				word_len = get_word_len(inp + ws_len.bytes, -1, is_utf8, pipe_codes);
 				// Do we need to chop a long word?
 				if (word_len.len > (outlen - prefix_cols))
-					word_len = get_word_len(inp + ws_len.bytes, outlen - ws_len.bytes - outcol, is_utf8);
+					word_len = get_word_len(inp + ws_len.bytes, outlen - ws_len.bytes - outcol, is_utf8, pipe_codes);
 				if (outcol + ws_len.len + word_len.len > outlen) {
 					inp += ws_len.bytes;
 					break;
@@ -551,7 +563,7 @@ static char *wrap_paragraphs(struct paragraph *paragraph, size_t outlen, bool ha
 	return outbuf;
 }
 
-char* wordwrap(char* inbuf, int len, int oldlen, bool handle_quotes, bool is_utf8)
+char* wordwrap(char* inbuf, int len, int oldlen, bool handle_quotes, bool is_utf8, bool pipe_codes)
 {
 	char*             outbuf;
 	struct paragraph *paragraphs;
@@ -559,7 +571,7 @@ char* wordwrap(char* inbuf, int len, int oldlen, bool handle_quotes, bool is_utf
 
 	if (oldlen < 1)
 		oldlen = 79;
-	paragraphs = word_unwrap(inbuf, oldlen, handle_quotes, &has_crs, is_utf8);
+	paragraphs = word_unwrap(inbuf, oldlen, handle_quotes, &has_crs, is_utf8, pipe_codes);
 	if (paragraphs == NULL)
 		return NULL;
 #if 0
@@ -567,7 +579,7 @@ char* wordwrap(char* inbuf, int len, int oldlen, bool handle_quotes, bool is_utf
 		fprintf(stderr, "PREFIX: '%s'\nTEXT: '%s'\n\n", paragraphs[i].prefix.bytes, paragraphs[i].text);
 #endif
 
-	outbuf = wrap_paragraphs(paragraphs, len, handle_quotes, has_crs, is_utf8);
+	outbuf = wrap_paragraphs(paragraphs, len, handle_quotes, has_crs, is_utf8, pipe_codes);
 	free_paragraphs(paragraphs, -1);
 	free(paragraphs);
 	return outbuf;

@@ -778,6 +778,7 @@ char *u32toaf(uint32_t l, char *str)
 
 /****************************************************************************/
 /* Returns the actual attribute code from a string of ATTR characters       */
+/* Ignores any Ctrl-A characters in the string (as attrstr() used to)       */
 /****************************************************************************/
 uint strtoattr(const char *str, char** endptr)
 {
@@ -787,6 +788,8 @@ uint strtoattr(const char *str, char** endptr)
 	atr = LIGHTGRAY;
 	while (str[l]) {
 		switch (toupper(str[l])) {
+			case CTRL_A:
+				break;
 			case 'H':   /* High intensity */
 				atr |= HIGH;
 				break;

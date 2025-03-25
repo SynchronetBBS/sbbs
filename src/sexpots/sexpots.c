@@ -675,6 +675,8 @@ BOOL modem_response(COM_HANDLE com_handle, char *str, size_t maxlen)
 	return TRUE;
 }
 
+int modem_status(COM_HANDLE com_handle);
+
 /****************************************************************************/
 /****************************************************************************/
 BOOL modem_command(COM_HANDLE com_handle, const char* cmd)
@@ -686,18 +688,20 @@ BOOL modem_command(COM_HANDLE com_handle, const char* cmd)
 		if(terminated)
 			return FALSE;
 		if(i) {
-			lprintf(LOG_WARNING,"Retry #%u: sending modem command (%s) on %s", i, cmd, com_dev);
+			lprintf(LOG_WARNING,"Retry #%u: sending modem command (%s) on %s (status: %x)"
+				, i, cmd, com_dev, modem_status(com_handle));
 			lprintf(LOG_DEBUG,"Dropping DTR on %s", com_dev);
 			if(!comLowerDTR(com_handle))
 				lprintf(LOG_ERR,"ERROR %u lowering DTR on %s", COM_ERROR_VALUE, com_dev);
 			SLEEP(dtr_delay);
-			lprintf(LOG_DEBUG,"Raising DTR on %s", com_dev);
+			lprintf(LOG_DEBUG,"Raising DTR on %s (status: %x)", com_dev, modem_status(com_handle));
 			if(!comRaiseDTR(com_handle))
 				lprintf(LOG_ERR,"ERROR %u raising DTR on %s", COM_ERROR_VALUE, com_dev);
+			SLEEP(5000);
 		}
 		if(!modem_send(com_handle, cmd)) {
-			lprintf(LOG_ERR,"ERROR %u sending modem command (%s) on %s"
-				,COM_ERROR_VALUE, cmd, com_dev);
+			lprintf(LOG_ERR,"ERROR %u sending modem command (%s) on %s (status: %x)"
+				,COM_ERROR_VALUE, cmd, com_dev, modem_status(com_handle));
 			continue;
 		}
 
@@ -1286,7 +1290,7 @@ void debug_log_com_write(BYTE* buf, int len)
 /****************************************************************************/
 BOOL handle_call(void)
 {
-	BYTE		buf[4096];
+	BYTE		buf[10000];
 	BYTE		telnet_buf[sizeof(buf)];
 	BYTE*		p;
 	int			result;
@@ -1361,7 +1365,9 @@ BOOL handle_call(void)
 		else
 			p=buf;
 
-		if((wr=comWriteBuf(com_handle, p, rd)) != COM_ERROR) {
+		if((wr=comWriteBuf(com_handle, p, rd)) == COM_ERROR)
+			lprintf(LOG_WARNING, "%s Error sending %d bytes to COM port", __FUNCTION__, rd);
+		else {
 			if(com_debug)
 				debug_log_com_write(p, wr);
 			bytes_sent += wr;
@@ -1666,6 +1672,8 @@ service_loop(int argc, char** argv)
 	com_setup();
 
 	lprintf(LOG_INFO,"COM Port DTE rate: %ld bps", comGetBaudRate(com_handle));
+	comSetFlowControl(com_handle, COM_FLOW_CONTROL_RTS_CTS);
+	lprintf(LOG_INFO,"COM Port flow control: %d", comGetFlowControl(com_handle));
 
 	if(ident)
 		_beginthread(ident_server_thread, 0, NULL);

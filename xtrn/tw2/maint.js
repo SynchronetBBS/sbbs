@@ -50,7 +50,7 @@ function DeleteInactive()
 {
 	console.writeln("Deleting inactive players");
 	var oldest_allowed=strftime("%Y:%m:%d",time()-Settings.DaysInactivity*86400);
-	var allplayers=db.read(Settings.DB,'players',LOCK_READ);
+	var allplayers=db.read(Settings.DB,'players');
 	for(i=1; i<allplayers.length; i++) {
 		if(allplayers[i].QWKID==system.qwk_id && allplayers[i].UserNumber > 0) {
 			if((!file_exists(system.data_dir+format("user/%04d.tw2",allplayers[i].UserNumber))) || (allplayers[i].LastOnDay < oldest_allowed && allplayers[i].KilledBy != 0)) {
