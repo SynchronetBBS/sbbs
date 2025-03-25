@@ -138,7 +138,8 @@ void Terminal::inc_row(unsigned count) {
 	}
 	if (lncntr || lastcrcol)
 		lncntr++;
-	lbuflen = 0;
+	if (!suspend_lbuf)
+		lbuflen = 0;
 }
 
 // TODO: ANSI does *not* specify what happens at the end of a line, and
@@ -192,7 +193,8 @@ void Terminal::inc_column(unsigned count) {
 	if (column >= cols)
 		lastcrcol = cols;
 	while (column >= cols) {
-		lbuflen = 0;
+		if (!suspend_lbuf)
+			lbuflen = 0;
 		column -= cols;
 		inc_row();
 	}
@@ -212,7 +214,8 @@ void Terminal::dec_row(unsigned count) {
 	if (count > lncntr)
 		count = lncntr;
 	lncntr -= count;
-	lbuflen = 0;
+	if (!suspend_lbuf)
+		lbuflen = 0;
 }
 
 void Terminal::dec_column(unsigned count) {
@@ -220,8 +223,10 @@ void Terminal::dec_column(unsigned count) {
 	if (count > column)
 		count = column;
 	column -= count;
-	if (column == 0)
-		lbuflen = 0;
+	if (column == 0) {
+		if (!suspend_lbuf)
+			lbuflen = 0;
+	}
 }
 
 void Terminal::set_row(unsigned val) {
@@ -229,7 +234,8 @@ void Terminal::set_row(unsigned val) {
 		val = rows - 1;
 	row = val;
 	lncntr = 0;
-	lbuflen = 0;
+	if (!suspend_lbuf)
+		lbuflen = 0;
 }
 
 void Terminal::set_column(unsigned val) {
@@ -319,8 +325,10 @@ uint32_t Terminal::flags(bool raw)
 }
 
 void Terminal::insert_indicator() {
+	// Defeat line buffer
+	suspend_lbuf = true;
 	if (save_cursor_pos() && gotoxy(cols, 1)) {
-		unsigned orig_atr{sbbs->curatr};
+		const unsigned orig_atr{sbbs->curatr};
 		if (sbbs->console & CON_INSERT) {
 			sbbs->attr(BLINK | BLACK | (LIGHTGRAY << 4));
 			sbbs->cp437_out('I');
@@ -328,9 +336,10 @@ void Terminal::insert_indicator() {
 			sbbs->attr(LIGHTGRAY);
 			sbbs->cp437_out(' ');
 		}
-		sbbs->attr(orig_atr);
 		restore_cursor_pos();
+		sbbs->attr(orig_atr);
 	}
+	suspend_lbuf = false;
 }
 
 char *Terminal::attrstr(unsigned newattr, char *str, size_t strsz)

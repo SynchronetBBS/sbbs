@@ -472,7 +472,7 @@ size_t sbbs_t::term_out(int ich)
 		return 0;
 	// We do this before parse_output() so parse_output() can
 	// prevent \n from ending up at the start of the line buffer.
-	if (term->lbuflen < LINE_BUFSIZE) {
+	if (term->lbuflen < LINE_BUFSIZE && !term->suspend_lbuf) {
 		if (term->lbuflen == 0)
 			term->latr = curatr;
 		// Historically, beeps don't go into lbuf

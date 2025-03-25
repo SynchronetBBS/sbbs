@@ -66,6 +66,7 @@ public:
 	enum output_rate cur_output_rate{output_rate_unlimited};
 	unsigned mouse_mode{MOUSE_MODE_OFF};            // Mouse reporting mode flags
 	bool pause_hotspot{false};
+	bool suspend_lbuf{0};
 	link_list_t *mouse_hotspots{nullptr};
 
 protected:
@@ -151,6 +152,7 @@ public:
 	    rows{t->rows}, cols{t->cols}, tabstop{t->tabstop}, lastcrcol{t->lastcrcol}, 
 	    cterm_version{t->cterm_version}, lncntr{t->lncntr}, latr{t->latr}, curatr{t->curatr},
 	    lbuflen{t->lbuflen}, mouse_mode{t->mouse_mode}, pause_hotspot{t->pause_hotspot},
+	    suspend_lbuf{t->suspend_lbuf},
 	    mouse_hotspots{t->mouse_hotspots}, sbbs{t->sbbs}, flags_{get_flags(t->sbbs)},
 	    savedlines{t->savedlines} {
 		// Take ownership of lists so they're not destroyed
@@ -172,6 +174,7 @@ public:
 	    rows{t->rows}, cols{t->cols}, tabstop{t->tabstop}, lastcrcol{t->lastcrcol}, 
 	    cterm_version{t->cterm_version}, lncntr{t->lncntr}, latr{t->latr}, curatr{t->curatr},
 	    lbuflen{t->lbuflen}, mouse_mode{t->mouse_mode}, pause_hotspot{t->pause_hotspot},
+	    suspend_lbuf{t->suspend_lbuf},
 	    mouse_hotspots{listPtrInit(0)}, sbbs{sbbsptr}, flags_{get_flags(t->sbbs)},
 	    savedlines{listPtrInit(0)} {}
 
@@ -456,7 +459,6 @@ public:
 		struct savedline* line = (struct savedline*)listPopNode(savedlines);
 		if (line == NULL)
 			return false;
-		lbuflen = 0;
 		// Moved insert_indicator() to first to avoid messing
 		// up the line buffer with it.
 		// Now behaves differently on line 1 (where we should
@@ -465,6 +467,7 @@ public:
 		sbbs->attr(line->beg_attr);
 		// Switch from rputs to term_out()
 		// This way we don't need to re-encode
+		lbuflen = 0;
 		sbbs->term_out(line->buf);
 		curatr = line->end_attr;
 		free(line);
