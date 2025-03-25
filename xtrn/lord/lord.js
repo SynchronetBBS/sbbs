@@ -2020,8 +2020,10 @@ function getkeyw()
 					getkey();
 				}
 			}
-			player.on_now = false;
-			player.put();
+			if (player !== undefined) {
+				player.on_now = false;
+				player.put();
+			}
 			exit(0);
 		}
 		if (now >= timeout) {
