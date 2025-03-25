@@ -137,7 +137,7 @@ void Terminal::inc_row(unsigned count) {
 		row = rows - 1;
 	}
 	if (lncntr || lastcrcol)
-		lncntr++;
+		lncntr += count;
 	if (!suspend_lbuf)
 		lbuflen = 0;
 }
