@@ -4831,6 +4831,7 @@ doterm(struct bbslist *bbs)
 						ch[0] = 147; /* Clear / Shift-Home */
 						conn_send(ch, 1, 0);
 						break;
+					case 8:
 					case CIO_KEY_DC: /* "Delete" key */
 						ch[0] = 20;
 						conn_send(ch, 1, 0);
