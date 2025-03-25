@@ -747,7 +747,7 @@ int sbbs_t::outchar(char ch)
 
 	cp437_out(ch);
 
-	if (term->lncntr == term->rows - 1 && ((useron.misc & (UPAUSE ^ (console & CON_PAUSEOFF))) || sys_status & SS_PAUSEON)
+	if (term->lncntr >= term->rows - 1 && ((useron.misc & (UPAUSE ^ (console & CON_PAUSEOFF))) || sys_status & SS_PAUSEON)
 	    && !(sys_status & (SS_PAUSEOFF | SS_ABORT))) {
 		term->lncntr = 0;
 		pause();
