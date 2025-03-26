@@ -256,6 +256,7 @@ public:
 	virtual void clearscreen() {
 		clear_hotspots();
 		sbbs->term_out(FF);
+		lastcrcol = 0;
 	}
 
 	virtual void cleartoeos() {}
