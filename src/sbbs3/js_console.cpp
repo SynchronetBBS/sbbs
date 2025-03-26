@@ -406,7 +406,7 @@ static jsSyncPropertySpec js_console_properties[] = {
 	{   "current_row", CON_PROP_ROW, CON_PROP_FLAGS, 31800},
 	{   "current_column", CON_PROP_COLUMN, CON_PROP_FLAGS, 315},
 	{   "last_cr_column", CON_PROP_LASTCRCOL, CON_PROP_FLAGS, 32004},
-	{   "last_line_length", CON_PROP_LASTCRCOL, CON_PROP_FLAGS, 317},
+	{   "last_line_length", CON_PROP_LASTCRCOL, 0, 317},                                 // alias
 	{   "line_delay", CON_PROP_LINE_DELAY, CON_PROP_FLAGS, 320},
 	{   "attributes", CON_PROP_ATTR, CON_PROP_FLAGS, 310},
 	{   "top_of_screen", CON_PROP_TOS, JSPROP_ENUMERATE | JSPROP_READONLY, 310},
@@ -424,7 +424,7 @@ static jsSyncPropertySpec js_console_properties[] = {
 	{   "getkey_inactivity_warning", CON_PROP_GETKEY_INACTIVITY_WARN, JSPROP_ENUMERATE | JSPROP_READONLY, 32002},
 	{   "inactivity_warning", CON_PROP_GETKEY_INACTIVITY_WARN, 0, 32002},
 	{   "last_getkey_activity", CON_PROP_LAST_GETKEY_ACTIVITY, CON_PROP_FLAGS, 320},
-	{   "timeout", CON_PROP_LAST_GETKEY_ACTIVITY, 0, 310},                              // alias
+	{   "timeout", CON_PROP_LAST_GETKEY_ACTIVITY, 0, 310},                               // alias
 	{   "max_socket_inactivity", CON_PROP_MAX_SOCKET_INACTIVITY, CON_PROP_FLAGS, 320},
 	{   "timeleft_warning", CON_PROP_TIMELEFT_WARN, CON_PROP_FLAGS, 310},
 	{   "aborted", CON_PROP_ABORTED, CON_PROP_FLAGS, 310},
