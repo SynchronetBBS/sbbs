@@ -379,6 +379,7 @@ void ANSI_Terminal::clearscreen()
 {
 	clear_hotspots();
 	sbbs->term_out("\x1b[2J\x1b[H");    /* clear screen, home cursor */
+	lastcrcol = 0;
 }
 
 void ANSI_Terminal::cleartoeos()

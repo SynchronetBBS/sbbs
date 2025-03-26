@@ -274,6 +274,7 @@ void PETSCII_Terminal::clearscreen()
 {
 	clear_hotspots();
 	sbbs->term_out(PETSCII_CLEAR);
+	lastcrcol = 0;
 }
 
 void PETSCII_Terminal::cleartoeos()
