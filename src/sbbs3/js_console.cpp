@@ -2659,7 +2659,7 @@ static jsSyncMethodSpec js_console_functions[] = {
 	},
 	{"crlf",            js_newline,         0, JSTYPE_ALIAS },
 	{"newline",         js_newline,         0, JSTYPE_VOID,     JSDOCSTR("[count=1]")
-	 , JSDOCSTR("Output <i>count</i> number of new-line sequences (e.g. carriage-return/line-feed pairs), AKA <tt>crlf()</tt>")
+	 , JSDOCSTR("Output <i>count</i> number of new-line sequences (e.g. carriage-return/line-feed pairs), AKA <tt>crlf() does perform pause</tt>")
 	 , 310
 	},
 	{"cond_newline",    js_cond_newline,    0,  JSTYPE_VOID,    JSDOCSTR("")
@@ -2842,7 +2842,7 @@ static jsSyncMethodSpec js_console_functions[] = {
 	 , 31700
 	},
 	{"linefeed",        js_linefeed,        0, JSTYPE_VOID,     JSDOCSTR("[count=1]")
-	 , JSDOCSTR("Send line-feed (or equivalent) character(s) - moving the cursor down one or more screen rows")
+	 , JSDOCSTR("Send line-feed (or equivalent) character(s) - moving the cursor down one or more screen rows, does not cause a pause")
 	 , 320
 	},
 	{"clearkeybuffer",  js_clearkeybuf,     0, JSTYPE_VOID,     JSDOCSTR("")
