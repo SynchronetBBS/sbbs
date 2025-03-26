@@ -32,7 +32,7 @@ enum {
 	, CON_PROP_MOUSE_MODE
 	, CON_PROP_LNCNTR
 	, CON_PROP_COLUMN
-	, CON_PROP_LASTCRCOL
+	, CON_PROP_LASTLINELEN
 	, CON_PROP_LINE_DELAY
 	, CON_PROP_ATTR
 	, CON_PROP_TOS
@@ -104,7 +104,7 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case CON_PROP_COLUMN:
 			val = sbbs->term->column;
 			break;
-		case CON_PROP_LASTCRCOL:
+		case CON_PROP_LASTLINELEN:
 			val = sbbs->term->lastcrcol;
 			break;
 		case CON_PROP_LINE_DELAY:
@@ -286,7 +286,7 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsid id, JSBool stric
 		case CON_PROP_COLUMN:
 			sbbs->term->column = val;
 			break;
-		case CON_PROP_LASTCRCOL:
+		case CON_PROP_LASTLINELEN:
 			sbbs->term->lastcrcol = val;
 			break;
 		case CON_PROP_LINE_DELAY:
@@ -405,8 +405,7 @@ static jsSyncPropertySpec js_console_properties[] = {
 	{   "line_counter", CON_PROP_LNCNTR, CON_PROP_FLAGS, 310},
 	{   "current_row", CON_PROP_ROW, CON_PROP_FLAGS, 31800},
 	{   "current_column", CON_PROP_COLUMN, CON_PROP_FLAGS, 315},
-	{   "last_cr_column", CON_PROP_LASTCRCOL, CON_PROP_FLAGS, 32004},
-	{   "last_line_length", CON_PROP_LASTCRCOL, 0, 317},                                 // alias
+	{   "last_line_length", CON_PROP_LASTLINELEN, CON_PROP_FLAGS, 317},
 	{   "line_delay", CON_PROP_LINE_DELAY, CON_PROP_FLAGS, 320},
 	{   "attributes", CON_PROP_ATTR, CON_PROP_FLAGS, 310},
 	{   "top_of_screen", CON_PROP_TOS, JSPROP_ENUMERATE | JSPROP_READONLY, 310},
