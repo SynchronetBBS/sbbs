@@ -735,6 +735,19 @@ int sbbs_t::outchar(char ch)
 	if (ch == '\n' && line_delay)
 		SLEEP(line_delay);
 
+	/*
+	 * When line counter overflows, pause on the next pause-eligable line
+	 * and log a debug message
+	 */
+	if (term->lncntr >= term->rows - 1 && term->column == 0) {
+		unsigned lost = term->lncntr - (term->rows - 1);
+		term->lncntr = term->rows -1;
+		if (check_pause()) {
+			if (lost)
+				lprintf(LOG_DEBUG, "line counter overflowed, %u lines scrolled", lost);
+		}
+	}
+
 	if (ch == FF && term->lncntr > 0 && term->row > 0) {
 		term->lncntr = 0;
 		term->newline();
@@ -751,12 +764,14 @@ int sbbs_t::outchar(char ch)
 	return 0;
 }
 
-void sbbs_t::check_pause() {
+bool sbbs_t::check_pause() {
 	if (term->lncntr == term->rows - 1 && ((useron.misc & (UPAUSE ^ (console & CON_PAUSEOFF))) || sys_status & SS_PAUSEON)
 	    && !(sys_status & (SS_PAUSEOFF | SS_ABORT))) {
 		term->lncntr = 0;
 		pause();
+		return true;
 	}
+	return false;
 }
 
 int sbbs_t::outcp(enum unicode_codepoint codepoint, const char* cp437_fallback)
