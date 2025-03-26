@@ -63,13 +63,9 @@ ANSI_Parser::parse(unsigned char ch)
 				ansi_ibs += ch;
 				state = ansiState_intermediate;
 			}
-			else if (ch >= '0' && ch <= '~') {
-				if (!ansi_was_cc) {
-					state = ansiState_broken;
-				}
-				else {
-					state = ansiState_broken;
-				}
+			else if (ch >= '@' && ch <= '~') {
+				state = ansiState_final;
+				ansi_final_byte = ch;
 			}
 			else {
 				state = ansiState_broken;
