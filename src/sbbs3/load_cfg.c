@@ -85,7 +85,7 @@ bool load_cfg(scfg_t* cfg, char* text[], bool prep, bool req_cfg, char* error, s
 		for (i = 0; i < cfg->sys_nodes; i++)
 			prep_dir(cfg->ctrl_dir, cfg->node_path[i], sizeof(cfg->node_path[i]));
 
-	if (cfg->sys_nodes < 1)
+	if (cfg->sys_nodes < cfg->node_num)
 		snprintf(error, maxerrlen, "%d nodes configured in %s", cfg->sys_nodes, cfg->filename);
 	else {
 		SAFECOPY(cfg->node_dir, cfg->node_path[cfg->node_num - 1]);
