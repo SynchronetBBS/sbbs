@@ -232,6 +232,7 @@ bool PETSCII_Terminal::gotoxy(unsigned x, unsigned y)
 		sbbs->term_out(PETSCII_DOWN);
 	while (column < (x - 1) && sbbs->online)
 		sbbs->term_out(PETSCII_RIGHT);
+	lncntr = 0;
 	return true;
 }
 
