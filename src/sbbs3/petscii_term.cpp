@@ -224,6 +224,10 @@ char* PETSCII_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t
 bool PETSCII_Terminal::gotoxy(unsigned x, unsigned y)
 {
 	sbbs->term_out(PETSCII_HOME);
+	if (y > rows)
+		y = rows;
+	if (x > cols)
+		x = cols;
 	while (row < (y - 1) && sbbs->online)
 		sbbs->term_out(PETSCII_DOWN);
 	while (column < (x - 1) && sbbs->online)
