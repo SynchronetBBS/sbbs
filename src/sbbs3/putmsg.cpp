@@ -92,6 +92,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 	uint                 l = 0;
 	uint                 lines_printed = 0;
 	struct mouse_hotspot hot_spot = {};
+	bool                 lfisnl;
 
 	hot_attr = 0;
 	hungry_hotspots = true;
@@ -377,11 +378,12 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 			l += 2;
 		}
 		else {
+			lfisnl = false;
 			if (!(mode & P_PETSCII) && str[l] == '\n') {
 				if (exatr)   /* clear at newline for extra attr codes */
 					attr(LIGHTGRAY);
 				if (l == 0 || str[l - 1] != '\r')  /* expand sole LF to CR/LF */
-					outchar('\r');
+					lfisnl = true;
 				lines_printed++;
 			}
 
@@ -555,6 +557,11 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 					term_out(str[l]);
 				else
 					skip = print_utf8_as_cp437(str + l, len - l);
+			} else if (str[l] == '\r' && str[l + 1] == '\n') {
+				term->newline();
+				skip++;
+			} else if (str[l] == '\n' && lfisnl) {
+				term->newline();
 			} else {
 				uint atr = curatr;
 				outchar(str[l]);

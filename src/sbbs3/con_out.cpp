@@ -115,7 +115,10 @@ int sbbs_t::bputs(const char *str, int mode)
 					continue;
 			}
 		}
-		if (mode & P_PETSCII) {
+		if (str[l] == '\r' && str[l + 1] == '\n') {
+			term->newline();
+			l += 2;
+		} else if (mode & P_PETSCII) {
 			if (term->charset() == CHARSET_PETSCII)
 				term_out(str[l++]);
 			else

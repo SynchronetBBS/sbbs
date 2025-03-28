@@ -253,12 +253,6 @@ bool PETSCII_Terminal::restore_cursor_pos() {
 
 void PETSCII_Terminal::carriage_return()
 {
-	/*
-	 * TODO: Defer this for next character, and send newline if the
-	 *       next character is LF...?
-	 * 
-	 *       Maybe CRLF->NL needs to be in bputs?
-	 */
 	cursor_left(column);
 }
 
