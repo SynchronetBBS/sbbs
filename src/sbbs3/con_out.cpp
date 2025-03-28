@@ -800,7 +800,7 @@ void sbbs_t::wide(const char* str)
 {
 	while (*str != '\0') {
 		if ((term->charset() == CHARSET_UTF8) && *str >= '!' && *str <= '~')
-			outchar((enum unicode_codepoint)(UNICODE_FULLWIDTH_EXCLAMATION_MARK + (*str - '!')));
+			outcp((enum unicode_codepoint)(UNICODE_FULLWIDTH_EXCLAMATION_MARK + (*str - '!')));
 		else {
 			outchar(*str);
 			outchar(' ');
