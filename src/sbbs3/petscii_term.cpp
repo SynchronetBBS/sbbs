@@ -387,7 +387,6 @@ bool PETSCII_Terminal::parse_output(char ch)
 		case 9:
 		case 10:
 		case 11:
-		case 14:
 		case 16:
 		case 21:
 		case 22:
@@ -417,6 +416,8 @@ bool PETSCII_Terminal::parse_output(char ch)
 			set_column();
 			if (curatr & 0xf0)
 				curatr = (curatr & ~0xff) | ((curatr & 0xf0) >> 4);
+			return true;
+		case 14: // Lower-case
 			return true;
 		case 15: // Flash on (C128 only)
 			if (subset == PETSCII_C128_80) {
