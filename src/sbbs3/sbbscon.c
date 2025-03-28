@@ -129,7 +129,7 @@ bool               syslog_always = FALSE;
 
 static const char* prompt;
 
-static const char* usage  = "\nusage: %s [[cmd | setting] [...]] [path/ini_file]\n"
+static const char* usage  = "\nusage: %s [[cmd | setting] [...]] [ctrl_dir | path/sbbs.ini]\n"
                             "\n"
                             "Commands:\n"
                             "\n"
@@ -154,7 +154,7 @@ static const char* usage  = "\nusage: %s [[cmd | setting] [...]] [path/ini_file]
                             "\tne         disable event thread\n"
                             "\tni         do not read settings from .ini file\n"
 #ifdef __unix__
-                            "\tnd         do not read run as daemon - overrides .ini file\n"
+                            "\tnd         do not run as daemon - overrides .ini file\n"
 #endif
                             "\tdefaults   show default settings and options\n"
                             "\n"
@@ -957,6 +957,8 @@ static void read_startup_ini(bool recycle
 
 	/* Read .ini file here */
 	if (ini_file[0] != 0) {
+		if (isdir(ini_file))
+			sbbs_get_ini_fname(ini_file, ini_file);
 		if ((fp = fopen(ini_file, "r")) == NULL) {
 			lprintf(LOG_ERR, "!ERROR %d (%s) opening %s", errno, strerror(errno), ini_file);
 		} else {

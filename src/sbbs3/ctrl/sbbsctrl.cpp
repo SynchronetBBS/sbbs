@@ -94,6 +94,8 @@ WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR cmd, int)
          if(cmd[0] && isdir(cmd))
             SAFECOPY(MainForm->global.ctrl_dir,cmd);
          sbbs_get_ini_fname(MainForm->ini_file, MainForm->global.ctrl_dir);
+		 if(cmd[0] && fexist(cmd))
+			 SAFECOPY(MainForm->ini_file, cmd);
          CreateMutex(NULL, FALSE, "sbbsctrl_running"); 	/* For use by Inno Setup */
 		Application->Run();
     }
