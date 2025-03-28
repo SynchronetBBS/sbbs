@@ -231,6 +231,10 @@
  * 2025-02-08 Eric Oulashin     Version 1.96L
  *                              After replying to a message, when it shows the status & pauses
  *                              for input, a Q or Ctrl-C will now exit, and not be ignored.
+ * 2025-05-28 Eric Oulashin     Version 1.96M
+ *                              When reading messages, only mark it as read if it's to
+ *                              the current user, including for personal email (i.e., when reading
+ *                              sent mail, don't mark messages to others as read).
  */
 
 "use strict";
@@ -338,8 +342,8 @@ var hexdump = load('hexdump_lib.js');
 
 
 // Reader version information
-var READER_VERSION = "1.96L";
-var READER_DATE = "2025-02-18";
+var READER_VERSION = "1.96M";
+var READER_DATE = "2025-03-28";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -5610,8 +5614,8 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	if (retObj.msgNotReadable)
 		return retObj;
 
-	// Mark the message as read if reading personal email or if it was written to the current user
-	if (this.readingPersonalEmail || ((msgHeader.attr & MSG_READ) == 0) && (userHandleAliasNameMatch(msgHeader.to)))
+	// Mark the message as read if it was written to the current user
+	if (userHandleAliasNameMatch(msgHeader.to))
 	{
 		// Using applyAttrsInMsgHdrInMessagbase(), which loads the header without
 		// expanded fields and saves the attributes with that header.
