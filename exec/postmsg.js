@@ -21,6 +21,8 @@ function usage()
 	print("\t-f<name>      set 'from' user name");
 	print("\t-e<number>    set 'from' user number");
 	print("\t-s<subject>   set 'subject'");
+	print("\t-D<date>      set message date in numeric format");
+	print("\t-T<date/time> set message date and time in string format supported by JS Date()");
 	print("\t-d            use default values (no prompt) for to, from, and subject");
 	print("\t-F            set file request attribute flag");
 	print();
@@ -62,6 +64,18 @@ for(var i in argv) {
 				case 'i':
 					if(val.length)
 						import_fname = val;
+					break;
+				case 'D':
+					if(val.length) {
+						hdrs.when_written_time = system.datestr(val);
+						hdrs.when_written_zone = system.timezone;
+					}
+					break;
+				case 'T':
+					if(val.length) {
+						hdrs.when_written_time = new Date(val).valueOf() / 1000;
+						hdrs.when_written_zone = system.timezone;
+					}
 					break;
 				case 'd':
 					hdrs.to = "All";
