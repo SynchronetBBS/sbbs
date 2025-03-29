@@ -1,9 +1,9 @@
-// $Id: graphic.js,v 1.84 2020/07/27 02:37:17 rswindell Exp $
-
 /*
  * "Graphic" object
  * Allows a graphic to be stored in memory and portions of it redrawn on command
  */
+
+require("userdefs.js", "USER_ICE_COLOR");
 
 /*
  * Class that represents a drawable object.
