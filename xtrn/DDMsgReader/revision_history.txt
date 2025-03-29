@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.96M    2025-03-28   When reading messages, only mark it as read if it's to the
+                      current user, including when reading sent email.
 1.96L    2025-02-18   After replying to a message, when it shows the status &
                       pauses for input, a Q or Ctrl-C will now exit, and not be
                       ignored.
