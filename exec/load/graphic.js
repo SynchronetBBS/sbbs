@@ -61,6 +61,15 @@ function Graphic(w,h,attr,ch, dw)
 	}
 }
 
+Graphic.prototype.getattr = function(a) {
+	// Translates blink to bright BG
+	if (console.term_supports(USER_ICE_COLOR) && (a & 0x80)) {
+		a &= ~0x80;
+		a |= 0x400;
+	}
+	return a;
+}
+
 Graphic.prototype.extend = function() {
 	for(var x = 0; x < this.width; x++)
 		this.data[x][this.height] = new this.Cell(this.ch,this.attribute);
@@ -591,7 +600,7 @@ Graphic.prototype.draw = function(xpos,ypos,width,height,xoff,yoff,delay)
 			if(this.autowrap == false
 				|| xpos+x != console.screen_columns
 				|| ypos+y != console.screen_rows) {
-				console.attributes=this.data[x+xoff][y+yoff].attr & this.attr_mask;
+				console.attributes=this.getattr(this.data[x+xoff][y+yoff].attr & this.attr_mask);
 				var ch=this.data[x+xoff][y+yoff].ch;
 				if (this.illegal_characters.indexOf(ascii(ch)) >= 0) {
 					if (this.doorway_mode)
@@ -671,7 +680,7 @@ Graphic.prototype.drawfx = function(xpos,ypos,width,height,xoff,yoff)
 				continue;
 			}
 			console.gotoxy(xpos+position.x,ypos+position.y);
-			console.attributes=this.data[position.x][position.y].attr & this.attr_mask;
+			console.attributes=this.getattr(this.data[position.x][position.y].attr & this.attr_mask);
 			var ch=this.data[position.x][position.y].ch;
 			if (this.illegal_characters.indexOf(ascii(ch)) >= 0) {
 				if (this.doorway_mode)
