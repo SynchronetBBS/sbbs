@@ -115,14 +115,14 @@ int sbbs_t::bputs(const char *str, int mode)
 					continue;
 			}
 		}
-		if (str[l] == '\r' && str[l + 1] == '\n') {
-			term->newline();
-			l += 2;
-		} else if (mode & P_PETSCII) {
+		if (mode & P_PETSCII) {
 			if (term->charset() == CHARSET_PETSCII)
 				term_out(str[l++]);
 			else
 				petscii_to_ansibbs(str[l++]);
+		} else if (str[l] == '\r' && str[l + 1] == '\n') {
+			term->newline();
+			l += 2;
 		} else if ((str[l] & 0x80) && (mode & P_UTF8)) {
 			if (term->charset() == CHARSET_UTF8)
 				term_out(str[l++]);
