@@ -617,7 +617,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 			ptr = JS_GetContextPrivate(cx);
 			rc = JS_SUSPENDREQUEST(cx);
 			putusermisc(scfg, p->user->number, p->user->misc = val);
-			update_terminal(ptr, p->user);
+			//update_terminal(ptr, p->user);
 			break;
 		case USER_PROP_QWK:
 			JS_RESUMEREQUEST(cx, rc);
