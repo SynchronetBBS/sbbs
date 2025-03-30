@@ -2475,10 +2475,10 @@ do_st_vt_52(struct cterminal *cterm, char *retbuf, size_t retsize)
 				x = 79;
 			gotoxy(CURR_MINX + x, CURR_MINY + y);
 			break;
-		case 'Z':
-			if(retbuf && strlen(retbuf) + 3 < retsize)
-				strcat(retbuf, "\x1b/K");
-			break;
+		//case 'Z': // Ident, not supported by Atari ST
+		//	if(retbuf && strlen(retbuf) + 3 < retsize)
+		//		strcat(retbuf, "\x1b/K");
+		//	break;
 		case '[':
 		case '\\':
 			// TODO: Hold-screen mode
