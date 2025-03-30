@@ -49,14 +49,14 @@ void sbbs_t::batchmenu()
 	}
 	if (useron.misc & (RIP) && !(useron.misc & EXPERT))
 		menu("batchxfr");
-	lncntr = 0;
+	term->lncntr = 0;
 	while (online && (cfg.upload_dir != INVALID_DIR || batdn_total() || batup_total())) {
 		if (!(useron.misc & (EXPERT | RIP))) {
 			sys_status &= ~SS_ABORT;
-			if (lncntr) {
+			if (term->lncntr) {
 				sync();
 				CRLF;
-				if (lncntr)          /* CRLF or SYNC can cause pause */
+				if (term->lncntr)          /* CRLF or SYNC can cause pause */
 					pause();
 			}
 			menu("batchxfr");
@@ -68,7 +68,7 @@ void sbbs_t::batchmenu()
 		if (ch > ' ')
 			logch(ch, 0);
 		if (ch == quit_key() || ch == '\r') {    /* Quit */
-			lncntr = 0;
+			term->lncntr = 0;
 			break;
 		}
 		switch (ch) {
@@ -368,7 +368,7 @@ bool sbbs_t::start_batch_download()
 		curdirnum = batdn_dir[i];         /* for ARS */
 		unpadfname(batdn_name[i], fname);
 		if (cfg.dir[batdn_dir[i]]->seqdev) {
-			lncntr = 0;
+			term->lncntr = 0;
 			SAFEPRINTF2(path, "%s%s", cfg.temp_dir, fname);
 			if (!fexistcase(path)) {
 				seqwait(cfg.dir[batdn_dir[i]]->seqdev);
@@ -548,7 +548,7 @@ bool sbbs_t::process_batch_upload_queue()
 		const char* filename = filenames[i];
 		int         dir = batch_file_dir(&cfg, ini, filename);
 		curdirnum = dir; /* for ARS */
-		lncntr = 0; /* defeat pause */
+		term->lncntr = 0; /* defeat pause */
 
 		SAFEPRINTF2(src, "%s%s", cfg.temp_dir, filename);
 		SAFEPRINTF2(dest, "%s%s", cfg.dir[dir]->path, filename);
@@ -639,7 +639,7 @@ void sbbs_t::batch_download(int xfrprot)
 
 	for (size_t i = 0; filenames[i] != NULL; ++i) {
 		char* filename = filenames[i];
-		lncntr = 0;                               /* defeat pause */
+		term->lncntr = 0;                               /* defeat pause */
 		if (xfrprot == -1 || checkprotresult(cfg.prot[xfrprot], 0, filename)) {
 			file_t f = {{}};
 			if (!batch_file_load(&cfg, ini, filename, &f)) {
@@ -680,7 +680,7 @@ void sbbs_t::batch_add_list(char *list)
 			if (!fgets(str, sizeof(str) - 1, stream))
 				break;
 			truncnl(str);
-			lncntr = 0;
+			term->lncntr = 0;
 			for (i = j = k = 0; i < usrlibs; i++) {
 				for (j = 0; j < usrdirs[i]; j++, k++) {
 					outchar('.');

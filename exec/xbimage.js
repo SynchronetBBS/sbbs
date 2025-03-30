@@ -67,7 +67,7 @@ function convert_from_bmp(filename, charheight, fg_color, bg_color, palette, inv
 
 function show(filename, xpos, ypos, fg_color, bg_color, palette, delay, cleanup)
 {
-	if((console.term_supports()&(USER_ANSI|USER_NO_EXASCII|USER_UTF8|USER_ICE_COLOR))
+	if((console.term_supports()&(USER_ANSI|USER_NO_EXASCII|USER_UTF8))
 		!= USER_ANSI)
 		return false;
 		

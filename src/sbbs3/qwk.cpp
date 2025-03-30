@@ -436,63 +436,63 @@ void sbbs_t::qwk_sec()
 			while (online) {
 				CLS;
 				bprintf(text[QWKSettingsHdr], useron.alias, useron.number);
-				add_hotspot('A');
+				term->add_hotspot('A');
 				bprintf(text[QWKSettingsCtrlA]
 				        , useron.qwk & QWK_EXPCTLA
 				    ? "Expand to ANSI" : useron.qwk & QWK_RETCTLA ? "Leave in"
 				    : "Strip");
-				add_hotspot('T');
+				term->add_hotspot('T');
 				bprintf(text[QWKSettingsArchive], useron.tmpext);
-				add_hotspot('E');
+				term->add_hotspot('E');
 				bprintf(text[QWKSettingsEmail]
 				        , useron.qwk & QWK_EMAIL ? "Un-read Only"
 				    : useron.qwk & QWK_ALLMAIL ? text[Yes] : text[No]);
 				if (useron.qwk & (QWK_ALLMAIL | QWK_EMAIL)) {
-					add_hotspot('I');
+					term->add_hotspot('I');
 					bprintf(text[QWKSettingsAttach]
 					        , useron.qwk & QWK_ATTACH ? text[Yes] : text[No]);
-					add_hotspot('D');
+					term->add_hotspot('D');
 					bprintf(text[QWKSettingsDeleteEmail]
 					        , useron.qwk & QWK_DELMAIL ? text[Yes]:text[No]);
 				}
-				add_hotspot('F');
+				term->add_hotspot('F');
 				bprintf(text[QWKSettingsNewFilesList]
 				        , useron.qwk & QWK_FILES ? text[Yes]:text[No]);
-				add_hotspot('N');
+				term->add_hotspot('N');
 				bprintf(text[QWKSettingsIndex]
 				        , useron.qwk & QWK_NOINDEX ? text[No]:text[Yes]);
-				add_hotspot('C');
+				term->add_hotspot('C');
 				bprintf(text[QWKSettingsControl]
 				        , useron.qwk & QWK_NOCTRL ? text[No]:text[Yes]);
-				add_hotspot('V');
+				term->add_hotspot('V');
 				bprintf(text[QWKSettingsVoting]
 				        , useron.qwk & QWK_VOTING ? text[Yes]:text[No]);
-				add_hotspot('H');
+				term->add_hotspot('H');
 				bprintf(text[QWKSettingsHeaders]
 				        , useron.qwk & QWK_HEADERS ? text[Yes]:text[No]);
-				add_hotspot('Y');
+				term->add_hotspot('Y');
 				bprintf(text[QWKSettingsBySelf]
 				        , useron.qwk & QWK_BYSELF ? text[Yes]:text[No]);
-				add_hotspot('Z');
+				term->add_hotspot('Z');
 				bprintf(text[QWKSettingsTimeZone]
 				        , useron.qwk & QWK_TZ ? text[Yes]:text[No]);
-				add_hotspot('P');
+				term->add_hotspot('P');
 				bprintf(text[QWKSettingsVIA]
 				        , useron.qwk & QWK_VIA ? text[Yes]:text[No]);
-				add_hotspot('M');
+				term->add_hotspot('M');
 				bprintf(text[QWKSettingsMsgID]
 				        , useron.qwk & QWK_MSGID ? text[Yes]:text[No]);
-				add_hotspot('U');
+				term->add_hotspot('U');
 				bprintf(text[QWKSettingsUtf8]
 				        , useron.qwk & QWK_UTF8 ? text[Yes]:text[No]);
-				add_hotspot('W');
+				term->add_hotspot('W');
 				bprintf(text[QWKSettingsWrapText]
 				        , useron.qwk & QWK_WORDWRAP ? text[Yes]:text[No]);
-				add_hotspot('X');
+				term->add_hotspot('X');
 				bprintf(text[QWKSettingsExtended]
 				        , useron.qwk & QWK_EXT ? text[Yes]:text[No]);
 				bputs(text[QWKSettingsWhich]);
-				add_hotspot('Q');
+				term->add_hotspot('Q');
 				ch = (char)getkeys("AEDFHIOPQTUYMNCXZVW", 0);
 				if (sys_status & SS_ABORT || !ch || ch == 'Q' || !online)
 					break;
@@ -581,7 +581,7 @@ void sbbs_t::qwk_sec()
 				putuserqwk(useron.number, useron.qwk);
 			}
 			delfiles(cfg.temp_dir, ALLFILES);
-			clear_hotspots();
+			term->clear_hotspots();
 			continue;
 		}
 

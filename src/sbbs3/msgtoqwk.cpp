@@ -20,6 +20,7 @@
  ****************************************************************************/
 
 #include "sbbs.h"
+#include "ansi_terminal.h"
 #include "qwk.h"
 #include "utf8.h"
 #include "cp437defs.h"
@@ -258,7 +259,7 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 	}
 	if (mode & QM_WORDWRAP) {
 		int   org_cols = msg->columns ? msg->columns : 80;
-		int   new_cols = useron.cols ? useron.cols : cols ? cols : 80;
+		int   new_cols = useron.cols ? useron.cols : term->cols ? term->cols : 80;
 		char* wrapped = ::wordwrap(buf, new_cols - 1, org_cols - 1, /* handle_quotes */ true, is_utf8, /* pipe_codes: */false);
 		if (wrapped != NULL) {
 			free(buf);
@@ -419,65 +420,66 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 					break;
 				if (mode & QM_EXPCTLA) {
 					str[0] = 0;
+					ANSI_Terminal ansi(this);
 					switch (toupper(ch)) {
 						case 'W':
-							SAFECOPY(str, ansi(LIGHTGRAY));
+							SAFECOPY(str, ansi.attrstr(LIGHTGRAY));
 							break;
 						case 'K':
-							SAFECOPY(str, ansi(BLACK));
+							SAFECOPY(str, ansi.attrstr(BLACK));
 							break;
 						case 'H':
-							SAFECOPY(str, ansi(HIGH));
+							SAFECOPY(str, ansi.attrstr(HIGH));
 							break;
 						case 'I':
-							SAFECOPY(str, ansi(BLINK));
+							SAFECOPY(str, ansi.attrstr(BLINK));
 							break;
 						case '-':
 						case '_':
 						case 'N':   /* Normal */
-							SAFECOPY(str, ansi(ANSI_NORMAL));
+							SAFECOPY(str, ansi.attrstr(ANSI_NORMAL));
 							break;
 						case 'R':
-							SAFECOPY(str, ansi(RED));
+							SAFECOPY(str, ansi.attrstr(RED));
 							break;
 						case 'G':
-							SAFECOPY(str, ansi(GREEN));
+							SAFECOPY(str, ansi.attrstr(GREEN));
 							break;
 						case 'B':
-							SAFECOPY(str, ansi(BLUE));
+							SAFECOPY(str, ansi.attrstr(BLUE));
 							break;
 						case 'C':
-							SAFECOPY(str, ansi(CYAN));
+							SAFECOPY(str, ansi.attrstr(CYAN));
 							break;
 						case 'M':
-							SAFECOPY(str, ansi(MAGENTA));
+							SAFECOPY(str, ansi.attrstr(MAGENTA));
 							break;
 						case 'Y':   /* Yellow */
-							SAFECOPY(str, ansi(BROWN));
+							SAFECOPY(str, ansi.attrstr(BROWN));
 							break;
 						case '0':
-							SAFECOPY(str, ansi(BG_BLACK));
+							SAFECOPY(str, ansi.attrstr(BG_BLACK));
 							break;
 						case '1':
-							SAFECOPY(str, ansi(BG_RED));
+							SAFECOPY(str, ansi.attrstr(BG_RED));
 							break;
 						case '2':
-							SAFECOPY(str, ansi(BG_GREEN));
+							SAFECOPY(str, ansi.attrstr(BG_GREEN));
 							break;
 						case '3':
-							SAFECOPY(str, ansi(BG_BROWN));
+							SAFECOPY(str, ansi.attrstr(BG_BROWN));
 							break;
 						case '4':
-							SAFECOPY(str, ansi(BG_BLUE));
+							SAFECOPY(str, ansi.attrstr(BG_BLUE));
 							break;
 						case '5':
-							SAFECOPY(str, ansi(BG_MAGENTA));
+							SAFECOPY(str, ansi.attrstr(BG_MAGENTA));
 							break;
 						case '6':
-							SAFECOPY(str, ansi(BG_CYAN));
+							SAFECOPY(str, ansi.attrstr(BG_CYAN));
 							break;
 						case '7':
-							SAFECOPY(str, ansi(BG_LIGHTGRAY));
+							SAFECOPY(str, ansi.attrstr(BG_LIGHTGRAY));
 							break;
 					}
 					if (str[0])

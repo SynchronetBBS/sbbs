@@ -99,13 +99,13 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			val = sbbs->mouse_mode;
 			break;
 		case CON_PROP_LNCNTR:
-			val = sbbs->lncntr;
+			val = sbbs->term->lncntr;
 			break;
 		case CON_PROP_COLUMN:
-			val = sbbs->column;
+			val = sbbs->term->column;
 			break;
 		case CON_PROP_LASTLINELEN:
-			val = sbbs->lastlinelen;
+			val = sbbs->term->lastcrcol;
 			break;
 		case CON_PROP_LINE_DELAY:
 			val = sbbs->line_delay;
@@ -114,19 +114,19 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			val = sbbs->curatr;
 			break;
 		case CON_PROP_TOS:
-			val = sbbs->row == 0;
+			val = sbbs->term->row == 0;
 			break;
 		case CON_PROP_ROW:
-			val = sbbs->row;
+			val = sbbs->term->row;
 			break;
 		case CON_PROP_ROWS:
-			val = sbbs->rows;
+			val = sbbs->term->rows;
 			break;
 		case CON_PROP_COLUMNS:
-			val = sbbs->cols;
+			val = sbbs->term->cols;
 			break;
 		case CON_PROP_TABSTOP:
-			val = sbbs->tabstop;
+			val = sbbs->term->tabstop;
 			break;
 		case CON_PROP_AUTOTERM:
 			val = sbbs->autoterm;
@@ -140,14 +140,14 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 				return JS_FALSE;
 			break;
 		case CON_PROP_CHARSET:
-			if ((js_str = JS_NewStringCopyZ(cx, sbbs->term_charset())) == NULL)
+			if ((js_str = JS_NewStringCopyZ(cx, sbbs->term->charset_str())) == NULL)
 				return JS_FALSE;
 			break;
 		case CON_PROP_UNICODE_ZEROWIDTH:
 			val = sbbs->unicode_zerowidth;
 			break;
 		case CON_PROP_CTERM_VERSION:
-			val = sbbs->cterm_version;
+			val = sbbs->term->cterm_version;
 			break;
 		case CON_PROP_MAX_GETKEY_INACTIVITY:
 			val = sbbs->cfg.max_getkey_inactivity;
@@ -200,7 +200,7 @@ static JSBool js_console_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			val = RingBufFree(&sbbs->outbuf);
 			break;
 		case CON_PROP_OUTPUT_RATE:
-			val = sbbs->cur_output_rate;
+			val = sbbs->term->cur_output_rate;
 			break;
 		case CON_PROP_KEYBUF_LEVEL:
 			val = sbbs->keybuf_level();
@@ -278,16 +278,16 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsid id, JSBool stric
 		case CON_PROP_MOUSE_MODE:
 			if (*vp == JSVAL_TRUE)
 				val = MOUSE_MODE_ON;
-			sbbs->set_mouse(val);
+			sbbs->term->set_mouse(val);
 			break;
 		case CON_PROP_LNCNTR:
-			sbbs->lncntr = val;
+			sbbs->term->lncntr = val;
 			break;
 		case CON_PROP_COLUMN:
-			sbbs->column = val;
+			sbbs->term->column = val;
 			break;
 		case CON_PROP_LASTLINELEN:
-			sbbs->lastlinelen = val;
+			sbbs->term->lastcrcol = val;
 			break;
 		case CON_PROP_LINE_DELAY:
 			sbbs->line_delay = val;
@@ -306,18 +306,18 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsid id, JSBool stric
 			break;
 		case CON_PROP_ROW:
 			if (val >= 0 && val < TERM_ROWS_MAX)
-				sbbs->row = val;
+				sbbs->term->row = val;
 			break;
 		case CON_PROP_ROWS:
 			if (val >= TERM_ROWS_MIN && val <= TERM_ROWS_MAX)
-				sbbs->rows = val;
+				sbbs->term->rows = val;
 			break;
 		case CON_PROP_COLUMNS:
 			if (val >= TERM_COLS_MIN && val <= TERM_COLS_MAX)
-				sbbs->cols = val;
+				sbbs->term->cols = val;
 			break;
 		case CON_PROP_TABSTOP:
-			sbbs->tabstop = val;
+			sbbs->term->tabstop = val;
 			break;
 		case CON_PROP_AUTOTERM:
 			sbbs->autoterm = val;
@@ -333,7 +333,7 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsid id, JSBool stric
 			free(sval);
 			break;
 		case CON_PROP_CTERM_VERSION:
-			sbbs->cterm_version = val;
+			sbbs->term->cterm_version = val;
 			break;
 		case CON_PROP_MAX_GETKEY_INACTIVITY:
 			sbbs->cfg.max_getkey_inactivity = (uint16_t)val;
@@ -385,7 +385,7 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsid id, JSBool stric
 			sbbs->cfg.ctrlkey_passthru = val;
 			break;
 		case CON_PROP_OUTPUT_RATE:
-			sbbs->set_output_rate((enum sbbs_t::output_rate)val);
+			sbbs->term->set_output_rate((enum output_rate)val);
 			break;
 
 		default:
@@ -423,7 +423,7 @@ static jsSyncPropertySpec js_console_properties[] = {
 	{   "getkey_inactivity_warning", CON_PROP_GETKEY_INACTIVITY_WARN, JSPROP_ENUMERATE | JSPROP_READONLY, 32002},
 	{   "inactivity_warning", CON_PROP_GETKEY_INACTIVITY_WARN, 0, 32002},
 	{   "last_getkey_activity", CON_PROP_LAST_GETKEY_ACTIVITY, CON_PROP_FLAGS, 320},
-	{   "timeout", CON_PROP_LAST_GETKEY_ACTIVITY, 0, 310},                              // alias
+	{   "timeout", CON_PROP_LAST_GETKEY_ACTIVITY, 0, 310},                               // alias
 	{   "max_socket_inactivity", CON_PROP_MAX_SOCKET_INACTIVITY, CON_PROP_FLAGS, 320},
 	{   "timeleft_warning", CON_PROP_TIMELEFT_WARN, CON_PROP_FLAGS, 310},
 	{   "aborted", CON_PROP_ABORTED, CON_PROP_FLAGS, 310},
@@ -458,7 +458,8 @@ static const char*        con_prop_desc[] = {
 	, "Current 0-based line counter (used for automatic screen pause)"
 	, "Current 0-based row counter"
 	, "Current 0-based column counter (used to auto-increment <i>line_counter</i> when screen wraps)"
-	, "Length of last line sent to terminal (before a carriage-return or line-wrap)"
+	, "Column the cursor was on when last CR was sent to terminal or the line wrapped"
+	, "Obsolete alias for last_cr_column"
 	, "Duration of delay (in milliseconds) before each line-feed character is sent to the terminal"
 	, "Current display attributes (set with number or string value)"
 	, "<tt>true</tt> if the terminal cursor is already at the top of the screen - <small>READ ONLY</small>"
@@ -679,7 +680,7 @@ js_add_hotspot(JSContext *cx, uintN argc, jsval *arglist)
 	JSSTRING_TO_MSTRING(cx, js_str, p, NULL);
 	if (p == NULL)
 		return JS_FALSE;
-	sbbs->add_hotspot(p, hungry, min_x, max_x, y);
+	sbbs->term->add_hotspot(p, hungry, min_x, max_x, y);
 	free(p);
 	return JS_TRUE;
 }
@@ -697,7 +698,7 @@ static JSBool js_scroll_hotspots(JSContext *cx, uintN argc, jsval *arglist)
 	int32 rows = 1;
 	if (argc > 0 && !JS_ValueToInt32(cx, argv[0], &rows))
 		return JS_FALSE;
-	sbbs->scroll_hotspots(rows);
+	sbbs->term->scroll_hotspots(rows);
 	return JS_TRUE;
 }
 
@@ -710,7 +711,7 @@ static JSBool js_clear_hotspots(JSContext *cx, uintN argc, jsval *arglist)
 	if ((sbbs = (sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class)) == NULL)
 		return JS_FALSE;
 
-	sbbs->clear_hotspots();
+	sbbs->term->clear_hotspots();
 	return JS_TRUE;
 }
 
@@ -1185,7 +1186,7 @@ js_clear(JSContext *cx, uintN argc, jsval *arglist)
 	if (autopause)
 		sbbs->CLS;
 	else
-		sbbs->clearscreen(sbbs->term_supports());
+		sbbs->term->clearscreen();
 	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
@@ -1208,7 +1209,7 @@ js_clearline(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
-	sbbs->clearline();
+	sbbs->term->clearline();
 	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
@@ -1231,7 +1232,7 @@ js_cleartoeol(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
-	sbbs->cleartoeol();
+	sbbs->term->cleartoeol();
 	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
@@ -1254,7 +1255,7 @@ js_cleartoeos(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
-	sbbs->cleartoeos();
+	sbbs->term->cleartoeos();
 	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
@@ -1278,7 +1279,7 @@ js_newline(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
-	sbbs->newline(count);
+	sbbs->term->newline(count);
 	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
@@ -1295,7 +1296,7 @@ js_cond_newline(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	rc = JS_SUSPENDREQUEST(cx);
-	sbbs->cond_newline();
+	sbbs->term->cond_newline();
 	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
@@ -1312,7 +1313,7 @@ js_cond_blankline(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	rc = JS_SUSPENDREQUEST(cx);
-	sbbs->cond_blankline();
+	sbbs->term->cond_blankline();
 	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
@@ -1329,7 +1330,7 @@ js_cond_contline(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	rc = JS_SUSPENDREQUEST(cx);
-	sbbs->cond_contline();
+	sbbs->term->cond_contline();
 	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
@@ -1451,7 +1452,7 @@ js_strlen(JSContext *cx, uintN argc, jsval *arglist)
 	if (cstr == NULL)
 		return JS_FALSE;
 	rc = JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(sbbs->bstrlen(cstr, pmode)));
+	JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(sbbs->term->bstrlen(cstr, pmode)));
 	free(cstr);
 	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
@@ -1841,7 +1842,7 @@ js_center(JSContext *cx, uintN argc, jsval *arglist)
 	if (cstr == NULL)
 		return JS_FALSE;
 	rc = JS_SUSPENDREQUEST(cx);
-	sbbs->center(cstr, cols);
+	sbbs->term->center(cstr, cols);
 	free(cstr);
 	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
@@ -1883,7 +1884,7 @@ js_saveline(JSContext *cx, uintN argc, jsval *arglist)
 	if ((sbbs = (sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class)) == NULL)
 		return JS_FALSE;
 
-	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->saveline()));
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->term->saveline()));
 	return JS_TRUE;
 }
 
@@ -1897,7 +1898,7 @@ js_restoreline(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 
 	rc = JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->restoreline()));
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->term->restoreline()));
 	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
@@ -1921,14 +1922,15 @@ js_ansi(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	if (argc > 1) {
 		int32 curattr = 0;
-		char  buf[16];
+		char  buf[128];
 
 		if (!JS_ValueToInt32(cx, argv[1], &curattr))
 			return JS_FALSE;
-		if ((js_str = JS_NewStringCopyZ(cx, sbbs->ansi(attr, curattr, buf))) == NULL)
+		// TODO: A way to use term->curattr here...
+		if ((js_str = JS_NewStringCopyZ(cx, sbbs->term->attrstr(attr, curattr, buf, sizeof(buf)))) == NULL)
 			return JS_FALSE;
 	} else {
-		if ((js_str = JS_NewStringCopyZ(cx, sbbs->ansi(attr))) == NULL)
+		if ((js_str = JS_NewStringCopyZ(cx, sbbs->term->attrstr(attr))) == NULL)
 			return JS_FALSE;
 	}
 
@@ -1946,7 +1948,7 @@ js_pushxy(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 
 	rc = JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->ansi_save()));
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->term->save_cursor_pos()));
 	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
@@ -1961,7 +1963,7 @@ js_popxy(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 
 	rc = JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->ansi_restore()));
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->term->restore_cursor_pos()));
 	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
@@ -1999,7 +2001,7 @@ js_gotoxy(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->cursor_xy(x, y)));
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->term->gotoxy(x, y)));
 	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
@@ -2010,7 +2012,7 @@ js_getxy(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
 	sbbs_t*    sbbs;
-	int        x, y;
+	unsigned   x, y;
 	JSObject*  screen;
 	jsrefcount rc;
 
@@ -2020,7 +2022,7 @@ js_getxy(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
 	rc = JS_SUSPENDREQUEST(cx);
-	bool result = sbbs->cursor_getxy(&x, &y);
+	bool result = sbbs->term->getxy(&x, &y);
 	JS_RESUMEREQUEST(cx, rc);
 
 	if (result == true) {
@@ -2049,7 +2051,7 @@ js_cursor_home(JSContext *cx, uintN argc, jsval *arglist)
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
 	rc = JS_SUSPENDREQUEST(cx);
-	sbbs->cursor_home();
+	sbbs->term->cursor_home();
 	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
@@ -2072,7 +2074,7 @@ js_cursor_up(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_FALSE;
 	}
 	rc = JS_SUSPENDREQUEST(cx);
-	sbbs->cursor_up(val);
+	sbbs->term->cursor_up(val);
 	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
@@ -2095,7 +2097,7 @@ js_cursor_down(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_FALSE;
 	}
 	rc = JS_SUSPENDREQUEST(cx);
-	sbbs->cursor_down(val);
+	sbbs->term->cursor_down(val);
 	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
@@ -2118,7 +2120,7 @@ js_cursor_right(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_FALSE;
 	}
 	rc = JS_SUSPENDREQUEST(cx);
-	sbbs->cursor_right(val);
+	sbbs->term->cursor_right(val);
 	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
@@ -2141,7 +2143,7 @@ js_cursor_left(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_FALSE;
 	}
 	rc = JS_SUSPENDREQUEST(cx);
-	sbbs->cursor_left(val);
+	sbbs->term->cursor_left(val);
 	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
@@ -2163,7 +2165,7 @@ js_backspace(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_FALSE;
 	}
 	rc = JS_SUSPENDREQUEST(cx);
-	sbbs->backspace(val);
+	sbbs->term->backspace(val);
 	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
@@ -2171,21 +2173,15 @@ js_backspace(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_creturn(JSContext *cx, uintN argc, jsval *arglist)
 {
-	jsval *    argv = JS_ARGV(cx, arglist);
 	sbbs_t*    sbbs;
 	jsrefcount rc;
-	int32      val = 1;
 
 	if ((sbbs = (sbbs_t*)js_GetClassPrivate(cx, JS_THIS_OBJECT(cx, arglist), &js_console_class)) == NULL)
 		return JS_FALSE;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
-	if (argc) {
-		if (!JS_ValueToInt32(cx, argv[0], &val))
-			return JS_FALSE;
-	}
 	rc = JS_SUSPENDREQUEST(cx);
-	sbbs->carriage_return(val);
+	sbbs->term->carriage_return();
 	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
@@ -2207,7 +2203,7 @@ js_linefeed(JSContext *cx, uintN argc, jsval *arglist)
 			return JS_FALSE;
 	}
 	rc = JS_SUSPENDREQUEST(cx);
-	sbbs->line_feed(val);
+	sbbs->term->line_feed(val);
 	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
@@ -2237,7 +2233,7 @@ js_ansi_getdims(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 
 	rc = JS_SUSPENDREQUEST(cx);
-	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->ansi_getdims()));
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->term->getdims()));
 	JS_RESUMEREQUEST(cx, rc);
 	return JS_TRUE;
 }
@@ -2357,11 +2353,11 @@ js_term_supports(JSContext *cx, uintN argc, jsval *arglist)
 		if (!JS_ValueToInt32(cx, argv[0], &flags))
 			return JS_FALSE;
 		rc = JS_SUSPENDREQUEST(cx);
-		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->term_supports(flags)));
+		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->term->supports(flags)));
 		JS_RESUMEREQUEST(cx, rc);
 	} else {
 		rc = JS_SUSPENDREQUEST(cx);
-		flags = sbbs->term_supports();
+		flags = sbbs->term->flags();
 		JS_RESUMEREQUEST(cx, rc);
 		JS_SET_RVAL(cx, arglist, INT_TO_JSVAL(flags));
 	}
@@ -2662,7 +2658,7 @@ static jsSyncMethodSpec js_console_functions[] = {
 	},
 	{"crlf",            js_newline,         0, JSTYPE_ALIAS },
 	{"newline",         js_newline,         0, JSTYPE_VOID,     JSDOCSTR("[count=1]")
-	 , JSDOCSTR("Output <i>count</i> number of new-line sequences (e.g. carriage-return/line-feed pairs), AKA <tt>crlf()</tt>")
+	 , JSDOCSTR("Output <i>count</i> number of new-line sequences (e.g. carriage-return/line-feed pairs), AKA <tt>crlf() does perform pause</tt>")
 	 , 310
 	},
 	{"cond_newline",    js_cond_newline,    0,  JSTYPE_VOID,    JSDOCSTR("")
@@ -2840,12 +2836,12 @@ static jsSyncMethodSpec js_console_functions[] = {
 	 , JSDOCSTR("Send a destructive backspace sequence")
 	 , 315
 	},
-	{"creturn",         js_creturn,         0, JSTYPE_VOID,     JSDOCSTR("[count=1]")
+	{"creturn",         js_creturn,         0, JSTYPE_VOID,     JSDOCSTR("")
 	 , JSDOCSTR("Send carriage-return (or equivalent) character(s) - moving the cursor to the left-most screen column")
 	 , 31700
 	},
 	{"linefeed",        js_linefeed,        0, JSTYPE_VOID,     JSDOCSTR("[count=1]")
-	 , JSDOCSTR("Send line-feed (or equivalent) character(s) - moving the cursor down one or more screen rows")
+	 , JSDOCSTR("Send line-feed (or equivalent) character(s) - moving the cursor down one or more screen rows, does not cause a pause")
 	 , 320
 	},
 	{"clearkeybuffer",  js_clearkeybuf,     0, JSTYPE_VOID,     JSDOCSTR("")

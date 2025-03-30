@@ -38,23 +38,21 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 	uchar  ch;
 	uint   atr;
 	int    hidx = -1;
-	int    org_column = column;
-	int    org_lbuflen = lbuflen;
+	int    org_column = term->column;
+	int    org_lbuflen = term->lbuflen;
 
-	int    term = term_supports();
 	console &= ~(CON_UPARROW | CON_DOWNARROW | CON_LEFTARROW | CON_RIGHTARROW | CON_BACKSPACE | CON_DELETELINE);
 	if (!(mode & K_WORDWRAP))
 		console &= ~CON_INSERT;
 	sys_status &= ~SS_ABORT;
-	if (!(mode & K_LINEWRAP) && cols >= TERM_COLS_MIN && !(mode & K_NOECHO) && !(console & CON_R_ECHOX)
-	    && column + (int)maxlen >= cols)    /* Don't allow the terminal to auto line-wrap */
-		maxlen = cols - column - 1;
-	if (mode & K_LINE && (term & (ANSI | PETSCII)) && !(mode & K_NOECHO)) {
+	if (!(mode & K_LINEWRAP) && term->cols >= TERM_COLS_MIN && !(mode & K_NOECHO) && !(console & CON_R_ECHOX)
+	    && term->column + (int)maxlen >= term->cols)    /* Don't allow the terminal to auto line-wrap */
+		maxlen = term->cols - term->column - 1;
+	if (mode & K_LINE && (term->can_highlight()) && !(mode & K_NOECHO)) {
 		attr(cfg.color[clr_inputline]);
 		for (i = 0; i < maxlen; i++)
-			outcom(' ');
-		cursor_left(maxlen);
-		column = org_column;
+			term_out(' ');
+		term->cursor_left(maxlen);
 	}
 	if (wordwrap[0]) {
 		SAFECOPY(str1, wordwrap);
@@ -71,29 +69,29 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 	atr = curatr;
 	if (!(mode & K_NOECHO)) {
 		if (mode & K_AUTODEL && str1[0]) {
-			i = (cfg.color[clr_inputline] & 0x77) << 4;
-			i |= (cfg.color[clr_inputline] & 0x77) >> 4;
+			i = (cfg.color[clr_inputline] & 0x07) << 4;
+			i |= (cfg.color[clr_inputline] & 0x70) >> 4;
 			attr(i);
 		}
 		bputs(str1, P_AUTO_UTF8);
 		if (mode & K_EDIT && !(mode & (K_LINE | K_AUTODEL)))
-			cleartoeol();  /* destroy to eol */
+			term->cleartoeol();  /* destroy to eol */
 	}
 
 	SAFECOPY(undo, str1);
-	i = l = bstrlen(str1, P_AUTO_UTF8);
+	i = l = term->bstrlen(str1, P_AUTO_UTF8);
 	if (mode & K_AUTODEL && str1[0] && !(mode & K_NOECHO)) {
 		ch = getkey(mode | K_GETSTR);
 		attr(atr);
 		if (IS_PRINTABLE(ch) || ch == DEL) {
 			for (i = 0; i < l; i++)
-				backspace();
+				term->backspace();
 			i = l = 0;
 		}
 		else {
 			for (i = 0; i < l; i++)
 				outchar(BS);
-			column += bputs(str1, P_AUTO_UTF8);
+			bputs(str1, P_AUTO_UTF8);
 			i = l;
 		}
 		if (ch != ' ' && ch != TAB)
@@ -105,12 +103,12 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 		if (i > l)
 			i = l;
 		if (l - i) {
-			cursor_left(l - i);
+			term->cursor_left(l - i);
 		}
 	}
 
 	if (console & CON_INSERT && !(mode & K_NOECHO))
-		insert_indicator();
+		term->insert_indicator();
 
 	while (!(sys_status & SS_ABORT) && online && input_thread_running) {
 		if (mode & K_LEFTEXIT
@@ -151,8 +149,8 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 						l++;
 					for (x = l; x > i; x--)
 						str1[x] = str1[x - 1];
-					column += rprintf("%.*s", (int)(l - i), str1 + i);
-					cursor_left(l - i);
+					rprintf("%.*s", (int)(l - i), str1 + i);
+					term->cursor_left(l - i);
 #if 0
 					if (i == maxlen - 1)
 						console &= ~CON_INSERT;
@@ -162,7 +160,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 				break;
 			case TERM_KEY_HOME: /* Ctrl-B Beginning of Line */
 				if (i && !(mode & K_NOECHO)) {
-					cursor_left(i);
+					term->cursor_left(i);
 					i = 0;
 				}
 				break;
@@ -177,7 +175,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 						outchar(' ');
 						x++;
 					}
-					cursor_left(x - i);   /* move cursor back */
+					term->cursor_left(x - i);   /* move cursor back */
 					z = i;
 					while (z < l - (x - i))  {             /* move chars in string */
 						outchar(str1[z] = str1[z + (x - i)]);
@@ -187,19 +185,19 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 						outchar(' ');
 						z++;
 					}
-					cursor_left(z - i);
+					term->cursor_left(z - i);
 					l -= x - i;                         /* l=new length */
 				}
 				break;
 			case TERM_KEY_END: /* Ctrl-E End of line */
-				if (term & (ANSI | PETSCII) && i < l) {
-					cursor_right(l - i);  /* move cursor to eol */
+				if (term->can_move() && i < l) {
+					term->cursor_right(l - i);  /* move cursor to eol */
 					i = l;
 				}
 				break;
 			case TERM_KEY_RIGHT: /* Ctrl-F move cursor forward */
-				if (i < l && term & (ANSI | PETSCII)) {
-					cursor_right();   /* move cursor right one */
+				if (i < l && term->can_move()) {
+					term->cursor_right();   /* move cursor right one */
 					i++;
 				}
 				break;
@@ -255,7 +253,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 				do {
 					i--;
 					l--;
-				} while ((term & UTF8) && (i > 0) && (str1[i] & 0x80) && (str1[i - 1] & 0x80));
+				} while ((term->charset() == CHARSET_UTF8) && (i > 0) && (str1[i] & 0x80) && (str1[i - 1] & 0x80));
 				if (i != l) {              /* Deleting char in middle of line */
 					outchar(BS);
 					z = i;
@@ -264,10 +262,10 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 						z++;
 					}
 					outchar(' ');        /* write over the last char */
-					cursor_left((l - i) + 1);
+					term->cursor_left((l - i) + 1);
 				}
 				else if (!(mode & K_NOECHO))
-					backspace();
+					term->backspace();
 				break;
 			case CTRL_I:    /* Ctrl-I/TAB */
 				if (history != NULL) {
@@ -279,10 +277,10 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 							hidx = hi;
 							SAFECOPY(str1, history[hi]);
 							while (i--)
-								backspace();
+								term->backspace();
 							i = l = strlen(str1);
 							rputs(str1);
-							cleartoeol();
+							term->cleartoeol();
 							break;
 						}
 					break;
@@ -323,7 +321,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 
 			case CTRL_L:    /* Ctrl-L   Center line (used to be Ctrl-V) */
 				str1[l] = 0;
-				l = bstrlen(str1);
+				l = term->bstrlen(str1);
 				if (!l)
 					break;
 				for (x = 0; x < (maxlen - l) / 2; x++)
@@ -348,13 +346,13 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 				return l;
 
 			case CTRL_N:    /* Ctrl-N Next word */
-				if (i < l && term & (ANSI | PETSCII)) {
+				if (i < l && term->can_move()) {
 					x = i;
 					while (str1[i] != ' ' && i < l)
 						i++;
 					while (str1[i] == ' ' && i < l)
 						i++;
-					cursor_right(i - x);
+					term->cursor_right(i - x);
 				}
 				break;
 			case CTRL_R:    /* Ctrl-R Redraw Line */
@@ -365,7 +363,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 				if (mode & K_NOECHO)
 					break;
 				console ^= CON_INSERT;
-				insert_indicator();
+				term->insert_indicator();
 				break;
 			case CTRL_W:    /* Ctrl-W   Delete word left */
 				if (i < l) {
@@ -387,27 +385,27 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 						outchar(' ');
 						z++;
 					}
-					cursor_left(z - i);               /* back to new x corridnant */
+					term->cursor_left(z - i);               /* back to new x corridnant */
 					l -= x - i;                         /* l=new length */
 				} else {
 					while (i && str1[i - 1] == ' ') {
 						i--;
 						l--;
 						if (!(mode & K_NOECHO))
-							backspace();
+							term->backspace();
 					}
 					while (i && str1[i - 1] != ' ') {
 						i--;
 						l--;
 						if (!(mode & K_NOECHO))
-							backspace();
+							term->backspace();
 					}
 				}
 				break;
 			case CTRL_Y:    /* Ctrl-Y   Delete to end of line */
 				if (i != l) {  /* if not at EOL */
 					if (!(mode & K_NOECHO))
-						cleartoeol();
+						term->cleartoeol();
 					l = i;
 					break;
 				}
@@ -416,10 +414,10 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 				if (mode & K_NOECHO)
 					l = 0;
 				else {
-					cursor_left(i);
-					cleartoeol();
+					term->cursor_left(i);
+					term->cleartoeol();
 					l = 0;
-					lbuflen = org_lbuflen;
+					term->lbuflen = org_lbuflen;
 				}
 				i = 0;
 				console |= CON_DELETELINE;
@@ -427,12 +425,12 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 			case CTRL_Z:    /* Undo */
 				if (!(mode & K_NOECHO)) {
 					while (i--)
-						backspace();
+						term->backspace();
 				}
 				SAFECOPY(str1, undo);
 				i = l = strlen(str1);
 				rputs(str1);
-				cleartoeol();
+				term->cleartoeol();
 				break;
 			case CTRL_BACKSLASH:    /* Ctrl-\ Previous word */
 				if (i && !(mode & K_NOECHO)) {
@@ -441,7 +439,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 						i--;
 					while (str1[i - 1] != ' ' && i)
 						i--;
-					cursor_left(x - i);
+					term->cursor_left(x - i);
 				}
 				break;
 			case TERM_KEY_LEFT:  /* Ctrl-]/Left Arrow  Reverse Cursor Movement */
@@ -451,7 +449,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 					break;
 				}
 				if (!(mode & K_NOECHO)) {
-					cursor_left();   /* move cursor left one */
+					term->cursor_left();   /* move cursor left one */
 					i--;
 				}
 				break;
@@ -467,10 +465,10 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 					else
 						SAFECOPY(str1, history[hidx]);
 					while (i--)
-						backspace();
+						term->backspace();
 					i = l = strlen(str1);
 					rputs(str1);
-					cleartoeol();
+					term->cleartoeol();
 					break;
 				}
 				break;
@@ -482,11 +480,11 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 					}
 					hidx++;
 					while (i--)
-						backspace();
+						term->backspace();
 					SAFECOPY(str1, history[hidx]);
 					i = l = strlen(str1);
 					rputs(str1);
-					cleartoeol();
+					term->cleartoeol();
 					break;
 				}
 				if (!(mode & K_EDIT))
@@ -513,8 +511,8 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 							i--;
 							l--;
 							if (!(mode & K_NOECHO))
-								backspace();
-						} while ((term & UTF8) && (i > 0) && (str1[i] & 0x80) && (str1[i - 1] & 0x80));
+								term->backspace();
+						} while ((term->charset() == CHARSET_UTF8) && (i > 0) && (str1[i] & 0x80) && (str1[i - 1] & 0x80));
 					}
 					break;
 				}
@@ -525,7 +523,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 					z++;
 				}
 				outchar(' ');        /* write over the last char */
-				cursor_left((l - i) + 1);
+				term->cursor_left((l - i) + 1);
 				break;
 			default:
 				if (mode & K_WORDWRAP && i == maxlen && ch >= ' ' && !(console & CON_INSERT)) {
@@ -555,7 +553,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 					wordwrap[z] = 0;
 					if (!(mode & K_NOECHO))
 						while (z--) {
-							backspace();
+							term->backspace();
 							i--;
 						}
 					strrev(wordwrap);
@@ -582,8 +580,8 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 							l++;
 						for (x = l; x > i; x--)
 							str1[x] = str1[x - 1];
-						column += rprintf("%.*s", (int)(l - i), str1 + i);
-						cursor_left(l - i);
+						rprintf("%.*s", (int)(l - i), str1 + i);
+						term->cursor_left(l - i);
 #if 0
 						if (i == maxlen - 1) {
 							bputs("  \b\b");
@@ -593,12 +591,12 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 					}
 					str1[i++] = ch;
 					if (!(mode & K_NOECHO)) {
-						if ((term & UTF8) && (ch & 0x80)) {
+						if ((term->charset() == CHARSET_UTF8) && (ch & 0x80)) {
 							if (i > l)
 								l = i;
 							str1[l] = 0;
 							if (utf8_str_is_valid(str1))
-								redrwstr(str1, column - org_column, l, P_UTF8);
+								redrwstr(str1, term->column - org_column, l, P_UTF8);
 						} else {
 							outchar(ch);
 						}
@@ -632,8 +630,8 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 		if (!(mode & K_MSG && sys_status & SS_ABORT)) {
 			CRLF;
 		} else
-			carriage_return();
-		lncntr = 0;
+			term->carriage_return();
+		term->lncntr = 0;
 	}
 	return l;
 }
@@ -657,27 +655,27 @@ int sbbs_t::getnum(uint max, uint dflt)
 			if (useron.misc & COLDKEYS)
 				ch = getkey(K_UPPER);
 			if (ch == BS || ch == DEL) {
-				backspace();
+				term->backspace();
 				continue;
 			}
 			CRLF;
-			lncntr = 0;
+			term->lncntr = 0;
 			return -1;
 		}
 		else if (sys_status & SS_ABORT) {
 			CRLF;
-			lncntr = 0;
+			term->lncntr = 0;
 			return -1;
 		}
 		else if (ch == CR) {
 			CRLF;
-			lncntr = 0;
+			term->lncntr = 0;
 			if (!n)
 				return dflt;
 			return i;
 		}
 		else if ((ch == BS || ch == DEL) && n) {
-			backspace();
+			term->backspace();
 			i /= 10;
 			n--;
 		}
@@ -688,33 +686,10 @@ int sbbs_t::getnum(uint max, uint dflt)
 			outchar(ch);
 			if (i * 10UL > max && !(useron.misc & COLDKEYS) && keybuf_level() < 1) {
 				CRLF;
-				lncntr = 0;
+				term->lncntr = 0;
 				return i;
 			}
 		}
 	}
 	return 0;
-}
-
-void sbbs_t::insert_indicator(void)
-{
-	if (term_supports(ANSI)) {
-		char str[32];
-		int  col = column;
-		auto row = this->row;
-		ansi_save();
-		ansi_gotoxy(cols, 1);
-		int  tmpatr;
-		if (console & CON_INSERT) {
-			putcom(ansi_attr(tmpatr = BLINK | BLACK | (LIGHTGRAY << 4), curatr, str, term_supports(COLOR)));
-			outcom('I');
-		} else {
-			putcom(ansi(tmpatr = ANSI_NORMAL));
-			outcom(' ');
-		}
-		putcom(ansi_attr(curatr, tmpatr, str, term_supports(COLOR)));
-		ansi_restore();
-		column = col;
-		this->row = row;
-	}
 }
