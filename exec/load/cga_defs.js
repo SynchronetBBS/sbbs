@@ -44,10 +44,15 @@ var colors = [
 	'YELLOW',
 	'WHITE'
 	];
-							    /* background colors */
-var   ANSI_NORMAL	=0x100;		/* special value for ansi() */
+var   FG_UNKNOWN	=0x100;
 var   BG_BLACK		=0x200;		/* special value for ansi() */
 var   BG_HIGH		=0x400;		/* not an ANSI.SYS compatible attribute */
+var   REVERSED		=0x800;
+var   UNDERLINE		=0x1000;
+var   CONCEALED		=0x2000;
+var   BG_UNKNOWN	=0x4000;
+var   ANSI_NORMAL	=(FG_UNKNOWN | BG_UNKNOWN);
+							    /* background colors */
 var   BG_BLUE		=(BLUE<<4);
 var   BG_GREEN		=(GREEN<<4);
 var   BG_CYAN		=(CYAN<<4);

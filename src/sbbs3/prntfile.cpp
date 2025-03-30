@@ -60,7 +60,7 @@ bool sbbs_t::printfile(const char* fname, int mode, int org_cols, JSObject* obj)
 	}
 
 	if (mode & P_NOABORT || rip) {
-		if (online == ON_REMOTE && console & CON_R_ECHO) {
+		if (online == ON_REMOTE) {
 			rioctl(IOCM | ABORT);
 			rioctl(IOCS | ABORT);
 		}
@@ -90,8 +90,8 @@ bool sbbs_t::printfile(const char* fname, int mode, int org_cols, JSObject* obj)
 	}
 
 	lprintf(LOG_DEBUG, "Printing file: %s", fpath);
-	if (!(mode & P_NOCRLF) && row > 0 && !rip) {
-		newline();
+	if (!(mode & P_NOCRLF) && term->row > 0 && !rip) {
+		term->newline();
 	}
 
 	if ((mode & P_OPENCLOSE) && length <= PRINTFILE_MAX_FILE_LEN) {
@@ -106,14 +106,14 @@ bool sbbs_t::printfile(const char* fname, int mode, int org_cols, JSObject* obj)
 			errormsg(WHERE, ERR_READ, fpath, length);
 		else {
 			buf[l] = 0;
-			if ((mode & P_UTF8) && !term_supports(UTF8))
+			if ((mode & P_UTF8) && (term->charset() != CHARSET_UTF8))
 				utf8_normalize_str(buf);
 			putmsg(buf, mode, org_cols, obj);
 		}
 		free(buf);
 	} else {    // Line-at-a-time mode
 		uint             sys_status_sav = sys_status;
-		enum output_rate output_rate = cur_output_rate;
+		enum output_rate output_rate = term->cur_output_rate;
 		uint             org_line_delay = line_delay;
 		uint             tmpatr = curatr;
 		uint             orgcon = console;
@@ -132,14 +132,17 @@ bool sbbs_t::printfile(const char* fname, int mode, int org_cols, JSObject* obj)
 		uint rainbow_sav[LEN_RAINBOW + 1];
 		memcpy(rainbow_sav, rainbow, sizeof rainbow_sav);
 
+		ansiParser.reset();
 		while (!feof(stream) && !msgabort()) {
 			if (fgets(buf, length + 1, stream) == NULL)
 				break;
-			if ((mode & P_UTF8) && !term_supports(UTF8))
+			if ((mode & P_UTF8) && (term->charset() != CHARSET_UTF8))
 				utf8_normalize_str(buf);
 			if (putmsgfrag(buf, mode, org_cols, obj) != '\0') // early-EOF?
 				break;
 		}
+		if (ansiParser.current_state() != ansiState_none)
+			lprintf(LOG_DEBUG, "Incomplete ANSI stripped from end");
 		memcpy(rainbow, rainbow_sav, sizeof rainbow);
 		free(buf);
 		fclose(stream);
@@ -147,10 +150,10 @@ bool sbbs_t::printfile(const char* fname, int mode, int org_cols, JSObject* obj)
 			console = orgcon;
 			attr(tmpatr);
 		}
-		if (!(mode & P_NOATCODES) && cur_output_rate != output_rate)
-			set_output_rate(output_rate);
+		if (!(mode & P_NOATCODES) && term->cur_output_rate != output_rate)
+			term->set_output_rate(output_rate);
 		if (mode & P_PETSCII)
-			outcom(PETSCII_UPPERLOWER);
+			term_out(PETSCII_UPPERLOWER);
 		attr_sp = 0;  /* clear any saved attributes */
 
 		/* Restore original settings of Forced Pause On/Off */
@@ -165,7 +168,7 @@ bool sbbs_t::printfile(const char* fname, int mode, int org_cols, JSObject* obj)
 		rioctl(IOSM | ABORT);
 	}
 	if (rip)
-		ansi_getdims();
+		term->getdims();
 	console = savcon;
 
 	return true;
@@ -208,8 +211,8 @@ bool sbbs_t::printtail(const char* fname, int lines, int mode, int org_cols, JSO
 	}
 
 	lprintf(LOG_DEBUG, "Printing tail: %s", fpath);
-	if (!(mode & P_NOCRLF) && row > 0) {
-		newline();
+	if (!(mode & P_NOCRLF) && term->row > 0) {
+		term->newline();
 	}
 
 	if (length > lines * PRINTFILE_MAX_LINE_LEN) {
@@ -273,17 +276,16 @@ bool sbbs_t::menu(const char *code, int mode, JSObject* obj)
 	if (menu_file[0])
 		SAFECOPY(path, menu_file);
 	else {
-		int term = term_supports();
 		do {
-			if ((term & RIP) && menu_exists(code, "rip", path))
+			if ((term->supports(RIP)) && menu_exists(code, "rip", path))
 				break;
-			if ((term & (ANSI | COLOR)) == ANSI && menu_exists(code, "mon", path))
+			if ((term->supports(ANSI) && (!term->supports(COLOR))) && menu_exists(code, "mon", path))
 				break;
-			if ((term & ANSI) && menu_exists(code, "ans", path))
+			if ((term->supports(ANSI)) && menu_exists(code, "ans", path))
 				break;
-			if ((term & PETSCII) && menu_exists(code, "seq", path))
+			if ((term->charset() == CHARSET_PETSCII) && menu_exists(code, "seq", path))
 				break;
-			if (term & NO_EXASCII) {
+			if (term->charset() == CHARSET_ASCII) {
 				next = "asc";
 				last = "msg";
 			}
@@ -298,7 +300,7 @@ bool sbbs_t::menu(const char *code, int mode, JSObject* obj)
 	}
 
 	mode |= P_OPENCLOSE | P_CPM_EOF;
-	if (column == 0)
+	if (term->column == 0)
 		mode |= P_NOCRLF;
 	return printfile(path, mode, /* org_cols: */ 0, obj);
 }
@@ -334,7 +336,7 @@ bool sbbs_t::menu_exists(const char *code, const char* ext, char* path)
 		SAFECOPY(prefix, path);
 	}
 	// Display specified EXACT width file
-	safe_snprintf(path, MAX_PATH, "%s.%ucol.%s", prefix, cols, ext);
+	safe_snprintf(path, MAX_PATH, "%s.%ucol.%s", prefix, term->cols, ext);
 	if (fexistcase(path))
 		return true;
 	// Display specified MINIMUM width file
@@ -345,12 +347,12 @@ bool sbbs_t::menu_exists(const char *code, const char* ext, char* path)
 		char   term[MAX_PATH + 1];
 		safe_snprintf(term, sizeof(term), ".%s", ext);
 		size_t skip = safe_snprintf(path, MAX_PATH, "%s.c", prefix);
-		int    max = 0;
+		unsigned max = 0;
 		for (size_t i = 0; i < g.gl_pathc; i++) {
-			int c = strtol(g.gl_pathv[i] + skip, &p, 10);
+			unsigned long c = strtoul(g.gl_pathv[i] + skip, &p, 10);
 			if (stricmp(p, term) != 0) // Some other weird pattern ending in c*.<ext>
 				continue;
-			if (c <= cols && c > max) {
+			if (c <= this->term->cols && c > max) {
 				max = c;
 				safe_snprintf(path, MAX_PATH, "%s", g.gl_pathv[i]);
 			}

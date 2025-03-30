@@ -143,7 +143,7 @@ int sbbs_t::show_atcode(const char *instr, JSObject* obj)
 			tp++;
 		}
 		c_unescape_str(tp);
-		add_hotspot(tp, /* hungry: */ true, column, column + strlen(sp) - 1, row);
+		term->add_hotspot(tp, /* hungry: */ true, term->column, term->column + strlen(sp) - 1, term->row);
 		bputs(sp);
 		return len;
 	}
@@ -158,7 +158,7 @@ int sbbs_t::show_atcode(const char *instr, JSObject* obj)
 			tp++;
 		}
 		c_unescape_str(tp);
-		add_hotspot(tp, /* hungry: */ false, column, column + strlen(sp) - 1, row);
+		term->add_hotspot(tp, /* hungry: */ false, term->column, term->column + strlen(sp) - 1, term->row);
 		bputs(sp);
 		return len;
 	}
@@ -194,15 +194,15 @@ int sbbs_t::show_atcode(const char *instr, JSObject* obj)
 		fmt.align = fmt.left;
 
 	if (fmt.truncated && strchr(cp, '\n') == NULL) {
-		if (column + fmt.disp_len > cols - 1) {
-			if (column >= cols - 1)
+		if (term->column + fmt.disp_len > term->cols - 1) {
+			if (term->column >= term->cols - 1)
 				fmt.disp_len = 0;
 			else
-				fmt.disp_len = (cols - 1) - column;
+				fmt.disp_len = (term->cols - 1) - term->column;
 		}
 	}
 	if (pmode & P_UTF8) {
-		if (term_supports(UTF8))
+		if (term->charset() == CHARSET_UTF8)
 			fmt.disp_len += strlen(cp) - utf8_str_total_width(cp, unicode_zerowidth);
 		else
 			fmt.disp_len += strlen(cp) - utf8_str_count_width(cp, /* min: */ 1, /* max: */ 2, unicode_zerowidth);
@@ -344,7 +344,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return nulstr;
 	}
 	if (strcmp(sp, "CLEAR_HOT") == 0) {
-		clear_hotspots();
+		term->clear_hotspots();
 		return nulstr;
 	}
 
@@ -371,18 +371,18 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	if (strncmp(sp, "U+", 2) == 0) { // UNICODE
 		enum unicode_codepoint codepoint = (enum unicode_codepoint)strtoul(sp + 2, &tp, 16);
 		if (tp == NULL || *tp == 0)
-			outchar(codepoint, unicode_to_cp437(codepoint));
+			outcp(codepoint, unicode_to_cp437(codepoint));
 		else if (*tp == ':')
-			outchar(codepoint, tp + 1);
+			outcp(codepoint, tp + 1);
 		else {
 			char fallback = (char)strtoul(tp + 1, NULL, 16);
 			if (*tp == ',')
-				outchar(codepoint, fallback);
+				outcp(codepoint, fallback);
 			else if (*tp == '!') {
 				char ch = unicode_to_cp437(codepoint);
 				if (ch != 0)
 					fallback = ch;
-				outchar(codepoint, fallback);
+				outcp(codepoint, fallback);
 			}
 			else
 				return NULL;  // Invalid @-code
@@ -391,36 +391,36 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 
 	if (strcmp(sp, "CHECKMARK") == 0) {
-		outchar(UNICODE_CHECK_MARK, CP437_CHECK_MARK);
+		outcp(UNICODE_CHECK_MARK, CP437_CHECK_MARK);
 		return nulstr;
 	}
 
 	if (strcmp(sp, "ELLIPSIS") == 0) {
-		outchar(UNICODE_HORIZONTAL_ELLIPSIS, "...");
+		outcp(UNICODE_HORIZONTAL_ELLIPSIS, "...");
 		return nulstr;
 	}
 	if (strcmp(sp, "COPY") == 0) {
-		outchar(UNICODE_COPYRIGHT_SIGN, "(C)");
+		outcp(UNICODE_COPYRIGHT_SIGN, "(C)");
 		return nulstr;
 	}
 	if (strcmp(sp, "SOUNDCOPY") == 0) {
-		outchar(UNICODE_SOUND_RECORDING_COPYRIGHT, "(P)");
+		outcp(UNICODE_SOUND_RECORDING_COPYRIGHT, "(P)");
 		return nulstr;
 	}
 	if (strcmp(sp, "REGISTERED") == 0) {
-		outchar(UNICODE_REGISTERED_SIGN, "(R)");
+		outcp(UNICODE_REGISTERED_SIGN, "(R)");
 		return nulstr;
 	}
 	if (strcmp(sp, "TRADEMARK") == 0) {
-		outchar(UNICODE_TRADE_MARK_SIGN, "(TM)");
+		outcp(UNICODE_TRADE_MARK_SIGN, "(TM)");
 		return nulstr;
 	}
 	if (strcmp(sp, "DEGREE_C") == 0) {
-		outchar(UNICODE_DEGREE_CELSIUS, "\xF8""C");
+		outcp(UNICODE_DEGREE_CELSIUS, "\xF8""C");
 		return nulstr;
 	}
 	if (strcmp(sp, "DEGREE_F") == 0) {
-		outchar(UNICODE_DEGREE_FAHRENHEIT, "\xF8""F");
+		outcp(UNICODE_DEGREE_FAHRENHEIT, "\xF8""F");
 		return nulstr;
 	}
 
@@ -525,7 +525,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return cfg.sys_name;
 
 	if (!strcmp(sp, "BAUD") || !strcmp(sp, "BPS")) {
-		safe_snprintf(str, maxlen, "%u", cur_output_rate ? cur_output_rate : cur_rate);
+		safe_snprintf(str, maxlen, "%u", term->cur_output_rate ? term->cur_output_rate : cur_rate);
 		return str;
 	}
 
@@ -535,18 +535,18 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 
 	if (!strcmp(sp, "COLS")) {
-		safe_snprintf(str, maxlen, "%u", cols);
+		safe_snprintf(str, maxlen, "%u", term->cols);
 		return str;
 	}
 	if (!strcmp(sp, "ROWS")) {
-		safe_snprintf(str, maxlen, "%u", rows);
+		safe_snprintf(str, maxlen, "%u", term->rows);
 		return str;
 	}
 	if (strcmp(sp, "TERM") == 0)
 		return term_type();
 
 	if (strcmp(sp, "CHARSET") == 0)
-		return term_charset();
+		return term->charset_str();
 
 	if (!strcmp(sp, "CONN"))
 		return connection;
@@ -625,7 +625,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return useron.netmail;
 
 	if (strcmp(sp, "TERMTYPE") == 0)
-		return term_type(&useron, term_supports(), str, maxlen);
+		return term_type(&useron, term->flags(), str, maxlen);
 
 	if (strcmp(sp, "TERMROWS") == 0)
 		return term_rows(&useron, str, maxlen);
@@ -655,8 +655,8 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return (useron.misc & PETSCII) ? text[On] : text[Off];
 
 	if (strcmp(sp, "PETGRFX") == 0) {
-		if (term_supports(PETSCII))
-			outcom(PETSCII_UPPERGRFX);
+		if (term->charset() == CHARSET_PETSCII)
+			term_out(PETSCII_UPPERGRFX);
 		return nulstr;
 	}
 
@@ -956,7 +956,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 
 	if (!strcmp(sp, "RESETPAUSE")) {
-		lncntr = 0;
+		term->lncntr = 0;
 		return nulstr;
 	}
 
@@ -972,11 +972,11 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 
 	if (strncmp(sp, "FILL:", 5) == 0) {
 		SAFECOPY(tmp, sp + 5);
-		int margin = centered ? column : 1;
+		int margin = centered ? term->column : 1;
 		if (margin < 1)
 			margin = 1;
 		c_unescape_str(tmp);
-		while (*tmp && online && column < cols - margin)
+		while (*tmp && online && term->column < term->cols - margin)
 			bputs(tmp, P_TRUNCATE);
 		return nulstr;
 	}
@@ -985,7 +985,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		i = atoi(sp + 4);
 		if (i >= 1)  // Convert to 0-based
 			i--;
-		for (l = i - column; l > 0; l--)
+		for (l = i - term->column; l > 0; l--)
 			outchar(' ');
 		return nulstr;
 	}
@@ -1011,7 +1011,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 
 	if (strncmp(sp, "BPS:", 4) == 0) {
-		set_output_rate((enum output_rate)atoi(sp + 4));
+		term->set_output_rate((enum output_rate)atoi(sp + 4));
 		return nulstr;
 	}
 
@@ -1638,52 +1638,52 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return "\r\n";
 
 	if (!strcmp(sp, "PUSHXY")) {
-		ansi_save();
+		term->save_cursor_pos();
 		return nulstr;
 	}
 
 	if (!strcmp(sp, "POPXY")) {
-		ansi_restore();
+		term->restore_cursor_pos();
 		return nulstr;
 	}
 
 	if (!strcmp(sp, "HOME")) {
-		cursor_home();
+		term->cursor_home();
 		return nulstr;
 	}
 
 	if (!strcmp(sp, "CLRLINE")) {
-		clearline();
+		term->clearline();
 		return nulstr;
 	}
 
 	if (!strcmp(sp, "CLR2EOL") || !strcmp(sp, "CLREOL")) {
-		cleartoeol();
+		term->cleartoeol();
 		return nulstr;
 	}
 
 	if (!strcmp(sp, "CLR2EOS")) {
-		cleartoeos();
+		term->cleartoeos();
 		return nulstr;
 	}
 
 	if (!strncmp(sp, "UP:", 3)) {
-		cursor_up(atoi(sp + 3));
+		term->cursor_up(atoi(sp + 3));
 		return str;
 	}
 
 	if (!strncmp(sp, "DOWN:", 5)) {
-		cursor_down(atoi(sp + 5));
+		term->cursor_down(atoi(sp + 5));
 		return str;
 	}
 
 	if (!strncmp(sp, "LEFT:", 5)) {
-		cursor_left(atoi(sp + 5));
+		term->cursor_left(atoi(sp + 5));
 		return str;
 	}
 
 	if (!strncmp(sp, "RIGHT:", 6)) {
-		cursor_right(atoi(sp + 6));
+		term->cursor_right(atoi(sp + 6));
 		return str;
 	}
 
@@ -1691,7 +1691,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		const char* cp = strchr(sp, ',');
 		if (cp != NULL) {
 			cp++;
-			cursor_xy(atoi(sp + 7), atoi(cp));
+			term->gotoxy(atoi(sp + 7), atoi(cp));
 		}
 		return nulstr;
 	}

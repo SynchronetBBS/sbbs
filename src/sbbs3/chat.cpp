@@ -410,7 +410,7 @@ void sbbs_t::multinodechat(int channel)
 						    ? text[AnonUserChatHandle]
 						    : useron.handle
 						         , cfg.node_num, ':', nulstr);
-						snprintf(tmp, sizeof tmp, "%*s", (int)bstrlen(str), nulstr);
+						snprintf(tmp, sizeof tmp, "%*s", (int)term->bstrlen(str), nulstr);
 						SAFECAT(pgraph, tmp);
 					}
 					SAFECAT(pgraph, line);
@@ -528,7 +528,7 @@ void sbbs_t::multinodechat(int channel)
 		if (sys_status & SS_ABORT)
 			break;
 	}
-	lncntr = 0;
+	term->lncntr = 0;
 	if (gurubuf != NULL)
 		free(gurubuf);
 }
@@ -681,17 +681,19 @@ bool sbbs_t::chan_access(int cnum)
 void sbbs_t::privchat(bool forced, int node_num)
 {
 	char str[128], c, *p, localbuf[5][81], remotebuf[5][81]
-	, localline = 0, remoteline = 0, localchar = 0, remotechar = 0
+	, localchar = 0, remotechar = 0
 	, *sep = text[PrivateChatSeparator]
 	, *local_sep = text[SysopChatSeparator]
 	;
+	unsigned localline = 0, remoteline = 0;
 	char   tmp[512];
 	char   outpath[MAX_PATH + 1];
 	char   inpath[MAX_PATH + 1];
 	uchar  ch;
 	int    wr;
-	int    in, out, i, n, echo = 1, x, y, activity, remote_activity;
-	int    local_y = 1, remote_y = 1;
+	int    in, out, i, n, echo = 1, activity, remote_activity;
+	unsigned x, y;
+	unsigned local_y = 1, remote_y = 1;
 	node_t node;
 	time_t last_nodechk = 0;
 
@@ -785,7 +787,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 	}
 
 	if (((sys_status & SS_USERON && useron.chat & CHAT_SPLITP) || !(sys_status & SS_USERON))
-	    && term_supports(ANSI) && rows >= 24 && cols >= 80)
+	    && term->can_move() && term->rows >= 24 && term->cols >= 80)
 		sys_status |= SS_SPLITP;
 	else
 		sys_status &= ~SS_SPLITP;
@@ -865,23 +867,23 @@ void sbbs_t::privchat(bool forced, int node_num)
 	sync();
 
 	if (sys_status & SS_SPLITP) {
-		lncntr = 0;
+		term->lncntr = 0;
 		CLS;
-		ansi_save();
-		ansi_gotoxy(1, 13);
+		term->save_cursor_pos();
+		term->gotoxy(1, 13);
 		remote_y = 1;
 		bprintf(forced ? local_sep : sep
 		        , thisnode.misc & NODE_MSGW ? 'T':' '
 		        , sectostr(timeleft, tmp)
 		        , thisnode.misc & NODE_NMSG ? 'M':' ');
-		ansi_gotoxy(1, 14);
+		term->gotoxy(1, 14);
 		local_y = 14;
 	}
 
 	while (online && (forced || !(sys_status & SS_ABORT))) {
-		lncntr = 0;
+		term->lncntr = 0;
 		if (sys_status & SS_SPLITP)
-			lbuflen = 0;
+			term->lbuflen = 0;
 		action = NODE_PCHT;
 		activity = 0;
 		remote_activity = 0;
@@ -892,7 +894,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 			if (ch == BS || ch == DEL) {
 				if (localchar) {
 					if (echo)
-						backspace();
+						term->backspace();
 					localchar--;
 					localbuf[localline][localchar] = 0;
 				}
@@ -913,25 +915,25 @@ void sbbs_t::privchat(bool forced, int node_num)
 					CLS;
 					attr(cfg.color[clr_chatremote]);
 					remotebuf[remoteline][remotechar] = 0;
-					for (i = 0; i <= remoteline; i++) {
-						bputs(remotebuf[i]);
-						if (i != remoteline)
+					for (unsigned u = 0; u <= remoteline; u++) {
+						bputs(remotebuf[u]);
+						if (u != remoteline)
 							bputs(crlf);
 					}
 					remote_y = 1 + remoteline;
 					bputs("\1i_\1n");  /* Fake cursor */
-					ansi_save();
-					ansi_gotoxy(1, 13);
+					term->save_cursor_pos();
+					term->gotoxy(1, 13);
 					bprintf(forced ? local_sep : sep
 					        , thisnode.misc & NODE_MSGW ? 'T':' '
 					        , sectostr(timeleft, tmp)
 					        , thisnode.misc & NODE_NMSG ? 'M':' ');
-					ansi_gotoxy(1, 14);
+					term->gotoxy(1, 14);
 					attr(cfg.color[clr_chatlocal]);
 					localbuf[localline][localchar] = 0;
-					for (i = 0; i <= localline; i++) {
-						bputs(localbuf[i]);
-						if (i != localline)
+					for (unsigned u = 0; u <= localline; u++) {
+						bputs(localbuf[u]);
+						if (u != localline)
 							bputs(crlf);
 					}
 					local_y = 15 + localline;
@@ -951,19 +953,20 @@ void sbbs_t::privchat(bool forced, int node_num)
 					localbuf[localline][localchar] = 0;
 					localchar = 0;
 
-					if (sys_status & SS_SPLITP && local_y >= rows) {
-						ansi_gotoxy(1, 13);
+					if (sys_status & SS_SPLITP && local_y >= term->rows) {
+						term->gotoxy(1, 13);
 						bprintf(forced ? local_sep : sep
 						        , thisnode.misc & NODE_MSGW ? 'T':' '
 						        , sectostr(timeleft, tmp)
 						        , thisnode.misc & NODE_NMSG ? 'M':' ');
 						attr(cfg.color[clr_chatlocal]);
-						for (x = 13, y = 0; x < rows; x++, y++) {
-							comprintf("\x1b[%d;1H\x1b[K", x + 1);
+						for (x = 13, y = 0; x < term->rows; x++, y++) {
+							term->gotoxy(1, x + 1);
+							term->cleartoeol();
 							if (y <= localline)
 								bprintf("%s\r\n", localbuf[y]);
 						}
-						ansi_gotoxy(1, local_y = (15 + localline));
+						term->gotoxy(1, local_y = (15 + localline));
 						localline = 0;
 					}
 					else {
@@ -976,7 +979,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 							CRLF;
 							local_y++;
 							if (sys_status & SS_SPLITP)
-								cleartoeol();
+								term->cleartoeol();
 						}
 					}
 					// sync();
@@ -1032,16 +1035,16 @@ void sbbs_t::privchat(bool forced, int node_num)
 					lprintf(LOG_DEBUG, "read character '%c' from %s", ch, inpath);
 				activity = 1;
 				if (sys_status & SS_SPLITP && !remote_activity) {
-					ansi_getxy(&x, &y);
-					ansi_restore();
+					term->getxy(&x, &y);
+					term->restore_cursor_pos();
 				}
 				attr(cfg.color[clr_chatremote]);
 				if (sys_status & SS_SPLITP && !remote_activity)
-					backspace();         /* Delete fake cursor */
+					term->backspace();         /* Delete fake cursor */
 				remote_activity = 1;
 				if (ch == BS || ch == DEL) {
 					if (remotechar) {
-						backspace();
+						term->backspace();
 						remotechar--;
 						remotebuf[remoteline][remotechar] = 0;
 					}
@@ -1073,13 +1076,14 @@ void sbbs_t::privchat(bool forced, int node_num)
 							        , sectostr(timeleft, tmp)
 							        , thisnode.misc & NODE_NMSG ? 'M':' ');
 							attr(cfg.color[clr_chatremote]);
-							for (i = 0; i < 12; i++) {
-								bprintf("\x1b[%d;1H\x1b[K", i + 1);
-								if (i <= remoteline)
-									bprintf("%s\r\n", remotebuf[i]);
+							for (unsigned u = 0; u < 12; u++) {
+								term->gotoxy(1, u + 1);
+								term->cleartoeol();
+								if (u <= remoteline)
+									bprintf("%s\r\n", remotebuf[u]);
 							}
 							remoteline = 0;
-							ansi_gotoxy(1, remote_y = 6);
+							term->gotoxy(1, remote_y = 6);
 						}
 						else {
 							if (remoteline >= 4)
@@ -1091,7 +1095,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 								CRLF;
 								remote_y++;
 								if (sys_status & SS_SPLITP)
-									cleartoeol();
+									term->cleartoeol();
 							}
 						}
 					}
@@ -1106,8 +1110,8 @@ void sbbs_t::privchat(bool forced, int node_num)
 
 		if (sys_status & SS_SPLITP && remote_activity) {
 			bputs("\1i_\1n");  /* Fake cursor */
-			ansi_save();
-			ansi_gotoxy(x, y);
+			term->save_cursor_pos();
+			term->gotoxy(x, y);
 		}
 
 		now = time(NULL);
@@ -1314,15 +1318,15 @@ void sbbs_t::nodemsg()
 				break;
 			if (getnodedat(cfg.node_num, &thisnode, false)) {
 				if (thisnode.misc & (NODE_MSGW | NODE_NMSG)) {
-					lncntr = 0;   /* prevent pause prompt */
-					saveline();
+					term->lncntr = 0;   /* prevent pause prompt */
+					term->saveline();
 					CRLF;
 					if (thisnode.misc & NODE_NMSG)
 						getnmsg();
 					if (thisnode.misc & NODE_MSGW)
 						getsmsg(useron.number);
 					CRLF;
-					restoreline();
+					term->restoreline();
 				}
 				else
 					nodesync();
@@ -1726,7 +1730,7 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 						if (sbbs_random(100)) {
 							mswait(100 + sbbs_random(300));
 							while (c) {
-								backspace();
+								term->backspace();
 								mswait(50 + sbbs_random(50));
 								c--;
 							}
@@ -1922,7 +1926,6 @@ void sbbs_t::localguru(char *gurubuf, int gurunum)
 		return;
 	sys_status |= SS_GURUCHAT;
 	console &= ~(CON_L_ECHOX | CON_R_ECHOX);    /* turn off X's */
-	console |= (CON_L_ECHO | CON_R_ECHO);                   /* make sure echo is on */
 	if (action == NODE_CHAT) { /* only page if from chat section */
 		bprintf(text[PagingGuru], cfg.guru[gurunum]->name);
 		ch = sbbs_random(25) + 25;
