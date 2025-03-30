@@ -106,6 +106,12 @@ char* ANSI_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t st
 				atr ^= BLINK;
 				break;
 		}
+		switch (curatr & (BG_BRIGHT | BLINK)) {
+			case BG_BRIGHT:
+			case BLINK:
+				curatr ^= BLINK;
+				break;
+		}
 	}
 
 	if (curatr == atr) { /* text hasn't changed. no sequence needed */
@@ -578,10 +584,8 @@ void ANSI_Terminal::handle_SGR_sequence() {
 				curatr &= ~UNDERLINE;
 				break;
 			case 25:
-				if (flags_ & ICE_COLOR)
-					curatr &= ~BG_BRIGHT;
-				else
-					curatr &= ~BLINK;
+				// Turn both off...
+				curatr &= ~(BG_BRIGHT|BG_BLINK);
 				break;
 			case 27:
 				if (curatr & REVERSED)
