@@ -3290,7 +3290,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 					}
 					strcpy(telegram_buf, str);   /* can't use SAFECOPY here */
 					if (fread(telegram_buf + strlen(str), 1, (size_t)length, msgtxt) != length) {
-						errprintf(LOG_ERR, WHERE, "%04d %s %s !ERROR reading %" PRIuOFF " bytes from telegram file"
+						errprintf(LOG_ERR, WHERE, "%04d %s %s !ERROR reading %" PRIdOFF " bytes from telegram file"
 						          , socket, client.protocol, client_id, length);
 						sockprintf(socket, client.protocol, session, insuf_stor);
 						free(telegram_buf);
@@ -3710,9 +3710,9 @@ static bool smtp_client_thread(smtp_t* smtp)
 				length = filelength(fileno(msgtxt)) - ftell(msgtxt);
 
 				if (startup->max_msg_size && length > startup->max_msg_size) {
-					lprintf(LOG_NOTICE, "%04d %s %s !Message size (%" PRIuOFF ") from %s to <%s> exceeds maximum: %u bytes"
+					lprintf(LOG_NOTICE, "%04d %s %s !Message size (%" PRIdOFF ") from %s to <%s> exceeds maximum: %u bytes"
 					        , socket, client.protocol, client_id, length, sender_info, rcpt_addr, startup->max_msg_size);
-					sockprintf(socket, client.protocol, session, "552 Message size (%" PRIuOFF ") exceeds maximum: %u bytes"
+					sockprintf(socket, client.protocol, session, "552 Message size (%" PRIdOFF ") exceeds maximum: %u bytes"
 					           , length, startup->max_msg_size);
 					subnum = INVALID_SUB;
 					stats.msgs_refused++;
@@ -3720,7 +3720,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 				}
 
 				if ((msgbuf = (char*)malloc((size_t)(length + 1))) == NULL) {
-					errprintf(LOG_CRIT, WHERE, "%04d %s %s !ERROR allocating %" PRIuOFF " bytes of memory"
+					errprintf(LOG_CRIT, WHERE, "%04d %s %s !ERROR allocating %" PRIdOFF " bytes of memory"
 					          , socket, client.protocol, client_id, length + 1);
 					sockprintf(socket, client.protocol, session, insuf_stor);
 					subnum = INVALID_SUB;

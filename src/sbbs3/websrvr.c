@@ -1520,7 +1520,7 @@ static off_t sock_sendfile(http_session_t *session, char *path, off_t start, off
 
 	if (startup->options & WEB_OPT_DEBUG_TX) {
 		if (start || end)
-			lprintf(LOG_DEBUG, "%04d %s [%s] Sending bytes %" PRIuOFF "-%" PRIuOFF " of %s"
+			lprintf(LOG_DEBUG, "%04d %s [%s] Sending bytes %" PRIdOFF "-%" PRIdOFF " of %s"
 			        , session->socket, session->client.protocol, session->host_ip, start, end, path);
 		else
 			lprintf(LOG_DEBUG, "%04d %s [%s] Sending %s"
@@ -1531,7 +1531,7 @@ static off_t sock_sendfile(http_session_t *session, char *path, off_t start, off
 	else {
 		if (start || end) {
 			if (lseek(file, start, SEEK_SET) == -1) {
-				lprintf(LOG_WARNING, "%04d !ERROR %d seeking to position %" PRIuOFF " in %s", session->socket, SOCKET_ERRNO, start, path);
+				lprintf(LOG_WARNING, "%04d !ERROR %d seeking to position %" PRIdOFF " in %s", session->socket, SOCKET_ERRNO, start, path);
 				close(file);
 				return 0;
 			}

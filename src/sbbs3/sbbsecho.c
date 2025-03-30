@@ -2647,7 +2647,7 @@ int attachment(const char *bundlename, fidoaddr_t dest, enum attachment_mode mod
 				continue;
 			}
 			if (filelength(fmsg) < sizeof(fmsghdr_t)) {
-				lprintf(LOG_ERR, "ERROR line %d %s has invalid length of %" PRIuOFF " bytes"
+				lprintf(LOG_ERR, "ERROR line %d %s has invalid length of %" PRIdOFF " bytes"
 				        , __LINE__
 				        , path
 				        , filelength(fmsg));
@@ -5648,7 +5648,7 @@ void pack_netmail(void)
 			continue;
 		}
 		if (filelength(fmsg) < sizeof(fmsghdr_t)) {
-			lprintf(LOG_WARNING, "%s Invalid length of %" PRIuOFF " bytes", path, filelength(fmsg));
+			lprintf(LOG_WARNING, "%s Invalid length of %" PRIdOFF " bytes", path, filelength(fmsg));
 			fclose(fidomsg);
 			continue;
 		}
@@ -5881,7 +5881,7 @@ void find_stray_packets(void)
 		}
 		flen = filelength(fileno(fp));
 		if (flen < sizeof(pkthdr) + sizeof(terminator)) {
-			lprintf(LOG_ERR, "ERROR invalid length of %" PRIuOFF " bytes for stray packet: %s", flen, packet);
+			lprintf(LOG_ERR, "ERROR invalid length of %" PRIdOFF " bytes for stray packet: %s", flen, packet);
 			fclose(fp);
 			delfile(packet, __LINE__);
 			continue;
@@ -5997,7 +5997,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 			continue;
 		}
 		if (filelength(fmsg) < sizeof(pkthdr) + sizeof(terminator)) {
-			lprintf(LOG_WARNING, "Invalid length of %s: %" PRIuOFF " bytes"
+			lprintf(LOG_WARNING, "Invalid length of %s: %" PRIdOFF " bytes"
 			        , packet, filelength(fmsg));
 			fclose(fidomsg);
 			rename_bad_packet(packet, "pkt-len");
@@ -7000,7 +7000,7 @@ int main(int argc, char **argv)
 				continue;
 			}
 			if (filelength(fmsg) < sizeof(fmsghdr_t)) {
-				lprintf(LOG_ERR, "ERROR line %d invalid length of %" PRIuOFF " bytes for %s", __LINE__
+				lprintf(LOG_ERR, "ERROR line %d invalid length of %" PRIdOFF " bytes for %s", __LINE__
 				        , filelength(fmsg), path);
 				fclose(fidomsg);
 				continue;

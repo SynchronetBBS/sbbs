@@ -3563,7 +3563,7 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 				if (!strnicmp(cmd, "SIZE ", 5)) {
-					sockprintf(sock, sess, "213 %" PRIuOFF, flength(fname));
+					sockprintf(sock, sess, "213 %" PRIdOFF, flength(fname));
 					continue;
 				}
 				if (!strnicmp(cmd, "MDTM ", 5)) {
@@ -3587,7 +3587,7 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 				/* RETR */
-				lprintf(LOG_INFO, "%04d <%s> downloading: %s (%" PRIuOFF " bytes) in %s mode"
+				lprintf(LOG_INFO, "%04d <%s> downloading: %s (%" PRIdOFF " bytes) in %s mode"
 				        , sock, user.alias, fname, flength(fname)
 				        , mode);
 				sockprintf(sock, sess, "150 Opening BINARY mode data connection for file transfer.");
@@ -4383,9 +4383,9 @@ static void ctrl_thread(void* arg)
 				SAFECOPY(fname, qwkfile);
 				file_size = flength(fname);
 				if (file_size < 1) {
-					lprintf(LOG_WARNING, "%04d <%s> Invalid QWK packet file size (%" PRIuOFF " bytes): %s"
+					lprintf(LOG_WARNING, "%04d <%s> Invalid QWK packet file size (%" PRIdOFF " bytes): %s"
 					        , sock, user.alias, file_size, fname);
-					sockprintf(sock, sess, "550 Invalid QWK packet file size: %" PRIuOFF " bytes", file_size);
+					sockprintf(sock, sess, "550 Invalid QWK packet file size: %" PRIdOFF " bytes", file_size);
 					filepos = 0;
 					continue;
 				}
@@ -4393,7 +4393,7 @@ static void ctrl_thread(void* arg)
 				delfile = TRUE;
 				credits = FALSE;
 				if (!getsize && !getdate)
-					lprintf(LOG_INFO, "%04d <%s> downloading QWK packet (%" PRIuOFF " bytes) in %s mode"
+					lprintf(LOG_INFO, "%04d <%s> downloading QWK packet (%" PRIdOFF " bytes) in %s mode"
 					        , sock, user.alias, file_size
 					        , mode);
 				/* ASCII Index File */
@@ -4589,7 +4589,7 @@ static void ctrl_thread(void* arg)
 					if (fexistcase(fname)) {
 						success = TRUE;
 						if (!getsize && !getdate && !delecmd)
-							lprintf(LOG_INFO, "%04d <%s> downloading: %s (%" PRIuOFF " bytes) in %s mode"
+							lprintf(LOG_INFO, "%04d <%s> downloading: %s (%" PRIdOFF " bytes) in %s mode"
 							        , sock, user.alias, fname, flength(fname)
 							        , mode);
 					}
@@ -4600,7 +4600,7 @@ static void ctrl_thread(void* arg)
 #endif
 
 			if (getsize && success)
-				sockprintf(sock, sess, "213 %" PRIuOFF, flength(fname));
+				sockprintf(sock, sess, "213 %" PRIdOFF, flength(fname));
 			else if (getdate && success) {
 				if (file_date == 0)
 					file_date = fdate(fname);
