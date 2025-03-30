@@ -614,10 +614,24 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 				free(str);
 				return JS_FALSE;
 			}
-			ptr = JS_GetContextPrivate(cx);
 			rc = JS_SUSPENDREQUEST(cx);
 			putusermisc(scfg, p->user->number, p->user->misc = val);
-			//update_terminal(ptr, p->user);
+			/*
+			 * Get sbbs_t pointer.
+			 * If the global has a "bbs" property that is a BBS class object, then the context
+			 * private will be an sbbs_t (ie: running in terminal server)
+			 */
+			jsval jsv;
+			JSObject* glob = JS_GetGlobalObject(cx);
+			if (JS_GetProperty(cx, glob, "bbs", &jsv)) {
+				if (JSVAL_IS_OBJECT(jsv)) {
+					extern JSClass js_bbs_class;
+					if (JS_InstanceOf(cx, JSVAL_TO_OBJECT(jsv), &js_bbs_class, NULL)) {
+						ptr = JS_GetContextPrivate(cx);
+						update_terminal(ptr, p->user);
+					}
+				}
+			}
 			break;
 		case USER_PROP_QWK:
 			JS_RESUMEREQUEST(cx, rc);
