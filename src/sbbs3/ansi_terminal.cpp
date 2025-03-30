@@ -585,7 +585,7 @@ void ANSI_Terminal::handle_SGR_sequence() {
 				break;
 			case 25:
 				// Turn both off...
-				curatr &= ~(BG_BRIGHT|BG_BLINK);
+				curatr &= ~(BG_BRIGHT|BLINK);
 				break;
 			case 27:
 				if (curatr & REVERSED)
