@@ -87,10 +87,8 @@ void sbbs_t::useredit(int usernumber)
 		        , (user.level > useron.level || !(cfg.sys_misc & SM_ECHO_PW)) ? "<hidden>" : user_pass
 		        );
 		bprintf(text[UeditRealNamePhone]
-		        , user.level > useron.level && console & CON_R_ECHO
-		    ? "XXXXXXXX" : user.name
-		        , user.level > useron.level && console & CON_R_ECHO
-		    ? "XXX-XXX-XXXX" : user.phone);
+		        , user.level > useron.level ? "XXXXXXXX" : user.name
+		        , user.level > useron.level ? "XXX-XXX-XXXX" : user.phone);
 		bprintf(text[UeditAddressBirthday]
 		        , user.address, getage(&cfg, user.birth), user.sex
 		        , format_birthdate(&cfg, user.birth, tmp, sizeof(tmp)));

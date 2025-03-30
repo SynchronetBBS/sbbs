@@ -1618,7 +1618,7 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 	if ((mode & EX_STDIO) == EX_STDIO)  {
 		struct winsize winsize;
 		struct termios termio;
-		memset(&termio, 0, sizeof(term));
+		memset(&termio, 0, sizeof(termio));
 		cfsetispeed(&termio, B19200);
 		cfsetospeed(&termio, B19200);
 		if (mode & EX_BIN)

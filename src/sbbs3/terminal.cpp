@@ -28,8 +28,6 @@ void Terminal::scroll_hotspots(unsigned count)
 		struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
 		spot->y -= count;
 		spots++;
-		if (spot->y >= 0)
-			remain++;
 	}
 #ifdef _DEBUG
 	if (spots)
