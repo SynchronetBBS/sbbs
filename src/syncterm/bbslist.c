@@ -2267,7 +2267,7 @@ change_settings(int connected)
 	else
 		inicontents = strListInit();
 
-	for (i = 0; i < 14; i++)
+	for (i = 0; i < 15; i++)
 		opt[i] = opts[i];
 	opt[i] = NULL;
 
