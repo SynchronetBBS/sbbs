@@ -10,6 +10,9 @@
  * can be emulated via cusros position query.  There's also the VT100
  * DECSC/DECRC (ESC8/ESC8) that may work when DECLRMM works.
  * 
+ * Note that "Clear to end of screen" and "clear line" are not supported
+ * by ANSI.SYS from MS-DOS 3.3 and are recent additions
+ * 
  * CUU   - ESC[A Cursor Up (With count)
  * CUD   - ESC[B Cursor Down (With count)
  * CUF   - ESC[C Cursor Right (With count)
