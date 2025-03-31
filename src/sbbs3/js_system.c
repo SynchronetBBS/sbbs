@@ -1239,8 +1239,8 @@ js_timestr(JSContext *cx, uintN argc, jsval *arglist)
 	if (argc < 1)
 		ti = (jsdouble)time(NULL);  /* use current time */
 	else
-	if (!JS_ValueToNumber(cx, argv[0], &ti))
-		return JS_TRUE;
+		if (!JS_ValueToNumber(cx, argv[0], &ti))
+			return JS_TRUE;
 	rc = JS_SUSPENDREQUEST(cx);
 	timestr(sys->cfg, (time32_t)ti, str);
 	JS_RESUMEREQUEST(cx, rc);
