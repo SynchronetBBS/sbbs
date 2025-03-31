@@ -97,7 +97,7 @@ At present, CTerm does not support any nF escape sequences.
 
 SOURCE: <<ECMA-35>>
 
-== Private control functions
+== Fp Escape Sequences (Private control functions)
 
 Private control functions are in the following format: +
 `ESC {'0'` to `'?'}` +
@@ -116,7 +116,7 @@ Restores the current cursor position same as `CSI u`
 
 SOURCE: <<VT102>>
 
-== Control functions in the C1 set
+== Fe Escape Sequences (Control functions in the C1 set)
 
 Control codes are in the following format: +
 `ESC {'@'` to `'_'}`
@@ -142,152 +142,9 @@ SOURCE: <<ECMA-48>>
 Begins a string consisting of the characters 0x08 - 0x0d and
 0x20-0x7e, terminated by a String Terminator (`ST`)
 
+Introduces <<Device Control Strings>>
+
 SOURCE: <<ECMA-48>>
-
-==== Supported `DCS` string values
-`CTerm:Font:p1:<b64>` CTerm Loadable Font (`CTLF`)::
-	Indicates the string is a loadable font. (CTerm 1.213)
-	+
-	`p1` is a font slot number, which must be higher than the last
-	default defined font (See `CSI sp D` for list of predefined
-	fonts). `<b64>` is the base64 encoded font data.  Font size is
-	deduced from the size of the data.  This replaces the now
-	deprecated `CSI = Ps1 ; Ps2 {`
-
-`[ p1 [ ; p2 ] ] q` Sixel Sequence::
-Defaults:  `p1` = 0  `p2` = 0
-Indicates the string is a sixel sequence.
-+
-`p1` selects the vertical height of a single pixel.  This
-may be overridden by the raster attributes command, and
-is deprecated.  Supported values
-+
-.Supported Values of `p1`
-[%autowidth]
-|===
-|Value |Vertical Size
-
-|0,1,5,6
-|2 pixels
-
-|2
-|5 pixels
-
-|3,4
-|3 pixels
-
-|7,8,9
-|1 pixel
-|===
-+
-`p2` indicates if unset sixels should be set to the current
-background colour.  If p2 is 1, positions specified as 0
-remain at their current colour.
-+
-Any additional parameters are ignored.
-+
-The rest of the string is made up of sixel data characters and
-sixel control functions.  Sixel data characters are in the
-range of `?` (0x3f) to `~` (0x7e).  Each sixel data character
-represents six vertical pixels.  The data is extracted by
-subtracting 0x3f from the ASCII value of the character.
-The least significant bit is the topmost pixel.
-+
-.Sixel Control Functions
-
-	`! Pn X` Graphics Repeat Introducer:::
-	The character X is repeated Pn times.
-
-	`" p1 ; p2 [ ; p3 [ ; p4 ] ]` Raster Attributes:::
-	p1 indicates the vertical size in pixels of each sixel.
-	p2 indicates the horizontal size in pixels.
-	p3 and p4 define the height and width (in sixels)
-	respectively of a block to fill with the background
-	colour.  This block may not extend past the current
-	bottom of the screen.  If any pixel data characters
-	proceed this command, it is ignored.
-
-	`# p1` Colour Select:::
-	Selects the current foreground colour from the
-	sixel palette.
-	`# p1 ; p2 ; p3 ; p4 ; p5` Palette map:::
-	Defines sixel palette entry p1 and sets it as the
-	current foreground colour.  p2 specifies the colour
-	space to define the colour in, the only supported
-	value is 2.  p3, p4, and p5 specify the red, green,
-	and blue content as a percentage (0-100).
-	`$` Graphics Carriage Return:::
-	Returns the active position to the left border of
-	the same sixel row.  Generally, one pass per colour
-	is used.  In passes after the first one, sixels
-	with a value of zero are not overwritten with the
-	background colour.
-	`-` Graphics New Line:::
-	Moves the active position to the left border of the
-	next sixel row.
-+
-SOURCE: <<VT330340,[VT330/340]>>
-
-`$ q pt` Request Status String (`DECRQSS`)::
-`pt` is the intermediate and/or final characters of a control
-function to query the status of.  The terminal will send a
-response in the format
-+
-`DCS p1 $ r pt ST`
-+
-`p1` is 1 if the terminal supports querying the control
-function and 0 if it does not.
-+
-`pt` is the characters in the control function except the `CSI`
-characters.
-+
-.Currently supported values of pt:
-[%autowidth]
-|===
-|`pt` |Request SGR parameters
-
-|r
-|Request top and bottom margins
-
-|s
-|Request left and right margins
-
-|t
-|Request height in lines
-
-|$\|
-|Request width in columns
-|*\|
-|Request height in lines
-|===
-+
-SOURCE: <<VT420>>
-
-`p1 [ ; p2 [ ; p3 ] ! z` Define Macro (`DECDMAC`)::
-Defaults: `p2` = 0  `p3` = 0
-+
-Sets a macro to be replayed using `CSI Pn * z`
-+
-`p1` is the macro number to set, and must be between 0 and
-63 inclusive.
-+
-If `p2` is zero, the macro numbered `p1` will be deleted before the new
-macro is set. If `p2` is one, all macros are deleted before the new
-macro is set.  If the macro is zero length, only the delete action is
-stored, you can't store a zero-length macro.
-+
-If `p3` is zero, the macro is defined using ASCII characters
-(0x20 - 0x7e and 0xa0 - 0xff only) if `p3` is one, the macro
-is defined using hex pairs.
-+
-When the macro is defined using hex pairs, a repeat
-sequence may be included in the format of `! Pn ; D..D ;`
-`Pn` specifies the number of repeats (default of one instance)+
-`D..D` is the sequence of pairs to send Pn times.  The 
-terminating ; may be left out if the sequence to be
-repeated ends at the end of the string.
-+
-SOURCE: <<VT420>>
 
 === `ESC X` Start Of String (`SOS`)
 As the above strings, but may contain any characters except
@@ -295,6 +152,9 @@ a Start Of String sequence or a String Terminator sequence.
 The string is currently ignored.
 
 SOURCE: <<ECMA-48>>
+
+=== `ESC [` Control Sequence Introducer (`CSI`)
+Introduces <<Control Sequences>>
 
 === `ESC \` String Terminator (`ST`)
 Ends a string.
@@ -304,24 +164,10 @@ SOURCE: <<ECMA-48>>
 === `ESC ]` Operating System Command (`OSC`)
 Begins a string consisting of the characters 0x08 - 0x0d and
 0x20-0x7e, terminated by a String Terminator (ST)
-+
-.Supported OSC values
-	`4;(pX;pY)...`::
-	Specifies one or more palette redefinitions. +
-	`pX` is the palette index, and `pY` is the colour definition +
-	Color format: `rgb:R/G/B`::::
-		Where `R`, `G`, and `B` are a sequence of one to four
-		hex digits representing the value of the
-		red, green, and blue channels respectively.
-+
-SOURCE: <<XTerm>>
 
-	`104 [ ; Ps ... ]`::
-	Resets palette entry to default.  If the entire string
-	is "104" (ie: no `Ps` present), resets all colours.  Otherwise, only each index
-	separated by a semicolon is reset.
-+
-SOURCE: <<XTerm>>
+Introduces <<Operating System Commands>>
+
+SOURCE: <<ECMA-48>>
 
 === `ESC ^` Privacy Message (`PM`)
 Begins a string consisting of the characters 0x08 - 0x0d and
@@ -334,226 +180,11 @@ SOURCE: <<ECMA-48>>
 Begins a string consisting of the characters 0x08 - 0x0d and
 0x20-0x7e, terminated by a String Terminator (ST)
 
+Introduces <<Application Program Commands>>
+
 SOURCE: <<ECMA-48>>
 
-SyncTERM implements the following APC commands:
-
-	`SyncTERM:C;S Ps1 Ps2` Store file (`CTSFI`)::
-	Where `Ps1` is a filename and `Ps2` is the base64 encoded
-	contents of the file.  The named file is stored in the
-	cache directory for the current connection.
-
-	`SyncTERM:C;L [ ; Ps]` List Files (`CTLFI`)::
-	Defaults: `Ps` = * +
-	`Ps` is the glob(3) pattern to use matching files.
-	SyncTERM responds with
-	an `APC` string with lines separated by newlines.  The
-	first line is always `SyncTERM:C;L\n` and for each
-	matching file, a line in the form
-	`<Filename> TAB <MD5 sum> LF` is sent
-	(ie: "coolfont.fnt\t595f44fec1e92a71d3e9e77456ba80d1\n")
-
-	`SyncTERM:C;SetFont; Pn ; Ps` Set Font (`CTSF`)::
-	Where `Pn` is a font slot number (max 255) and `Ps` is a
-	filename in the cache.  This sets font slot `Pn` to use
-	the specified font file.
-
-	`SyncTERM:C;DrawPPM Ps... Ps1` Draw a PPM from Cache (`CTDPFC`)::
-	Draws a PPM from the cache directory on the screen.
-	`Ps1` is the filename and is required.  Arguments for
-	`Ps` are optional.  The following options can be included
-	(separated by semi-colons):
-+
---
-		`SX=#`:::
-		Sets the left X position in the specified image
-		to copy from.  Default = 0.
-
-		`SY=#`:::
-		Sets the top Y position in the specified image
-		to copy from.  Default = 0.
-
-		`SW=#`:::
-		Sets the width of the portion of the image to
-		copy.  Default = Image width - `SX`
-
-		`SH=#`:::
-		Sets the height of the portion of the image to
-		copy.  Default = Image height - `SH`
-
-		`DX=#`:::
-		Sets the X position on the screen to draw the
-		image at.  Default = 0.
-
-		`DY=#`:::
-		Sets the Y position on the screen to draw the
-		image at.  Default = 0.
-
-		`MX=#`:::
-		Sets the X position in the mask to start
-		applying from.  Default = 0.
-
-		`MY=#`:::
-		Sets the Y position in the mask to start
-		applying from.  Default = 0.
-
-		`MW=#`:::
-		Sets the overall width of the mask (not the
-		width to apply).  If `MFILE` is not specified,
-		and a mask is (ie: using `MASK=`), this is
-		required.  If `MFILE` is specified, the width
-		is read from the file.
-
-		`MH=#`:::
-		Sets the overall height of the mask (not the
-		height to apply).  If MFILE is not specified,
-		and a mask is (ie: using MASK=), this is
-		required.  If MFILE is specified, the width
-		is read from the file.
-
-		`MFILE=<filename>`:::
-		Specifies a filename in the cache directory of
-		a PBM file specifying a mask of which pixels
-		to copy.  Any pixel set to black (ie: 1) in the
-		PBM will be drawn from the source image.  Pixels
-		set to white (ie: 0) will be left untouched.
-
-		`MASK=<maskbits>`:::
-		Specifies a base64-encoded bitmap, each set bit
-		will be drawn from the source image, cleared
-		bits will not be drawn.  Requires MW= and MH=
-		to be specified.
-
-		`MBUF`:::
-		Uses the loaded mask buffer.
---
-+
-The PPM file may be raw (preferred) or text.  SyncTERM
-does not support more than 255 values per colour channel
-and assumes it is correctly using the BT.709 gamma
-transfer.
-
-	`SyncTERM:C;DrawJXL Ps... Ps1` Draw a JPEG XL from Cache (`CTDJFC`)::
-	Draws a JPEG XL from the cache directory on the screen.
-	`Ps1` is the filename and is required.  Arguments for
-	`Ps` are optional.  The following options can be included
-	(separated by semi-colons):
-+
---
-		`SX=#`:::
-		Sets the left X position in the specified image
-		to copy from.  Default = 0.
-
-		`SY=#`:::
-		Sets the top Y position in the specified image
-		to copy from.  Default = 0.
-
-		`SW=#`:::
-		Sets the width of the portion of the image to
-		copy.  Default = Image width - `SX`
-
-		`SH=#`:::
-		Sets the height of the portion of the image to
-		copy.  Default = Image height - `SH`
-
-		`DX=#`:::
-		Sets the X position on the screen to draw the
-		image at.  Default = 0.
-
-		`DY=#`:::
-		Sets the Y position on the screen to draw the
-		image at.  Default = 0.
-
-		`MX=#`:::
-		Sets the X position in the mask to start
-		applying from.  Default = 0.
-
-		`MY=#`:::
-		Sets the Y position in the mask to start
-		applying from.  Default = 0.
-
-		`MW=#`:::
-		Sets the overall width of the mask (not the
-		width to apply).  If `MFILE` is not specified,
-		and a mask is (ie: using `MASK=`), this is
-		required.  If `MFILE` is specified, the width
-		is read from the file.
-
-		`MH=#`:::
-		Sets the overall height of the mask (not the
-		height to apply).  If MFILE is not specified,
-		and a mask is (ie: using MASK=), this is
-		required.  If MFILE is specified, the width
-		is read from the file.
-
-		`MFILE=<filename>`:::
-		Specifies a filename in the cache directory of
-		a PBM file specifying a mask of which pixels
-		to copy.  Any pixel set to black (ie: 1) in the
-		PBM will be drawn from the source image.  Pixels
-		set to white (ie: 0) will be left untouched.
-
-		`MASK=<maskbits>`:::
-		Specifies a base64-encoded bitmap, each set bit
-		will be drawn from the source image, cleared
-		bits will not be drawn.  Requires MW= and MH=
-		to be specified.
-
-		`MBUF`:::
-		Uses the loaded mask buffer.
---
-+
-
-	`SyncTERM:C;LoadPPM Ps... Ps0` Load a PPM to Buffer (`CTLPTB`)::
-	Loads a PPM to a buffer.  Ps0 is the filename
-		`B=#`:::
-		Selects the buffer (0 or 1 only) to paste from.
-
-	`SyncTERM:C;LoadJXL Ps... Ps0` Load a JPEG XL to Buffer (`CTLJTB`)::
-	Loads a JPEG XL to a buffer.  Ps0 is the filename
-		`B=#`:::
-		Selects the buffer (0 or 1 only) to paste from.
-
-	`SyncTERM:C;LoadPBM Ps... Ps0` Load a PBM to Buffer (`CTLPBTB`)::
-	Loads a PBM to a buffer.  Ps0 is the filename
-
-	`SyncTERM:P;Copy Ps...` Copy Screen into Buffer (`CTCSIB`)::
-	Copies a portion of the screen into an internal buffer
-	for use with the Paste function.  Defaults to copying
-	the entire screen.
-		`B=#`:::
-		Selects the buffer (0 or 1 only) to copy to.
-
-		`X=#`:::
-		Sets the left X position on the screen to start
-		copying at.  Default = 0.
-
-		`Y=#`:::
-		Sets the top Y position on the screen to start
-		copying at.  Default = 0.
-
-		`W=#`:::
-		Sets the width to copy.
-		Default = Screen width - X.
-
-		`H=#`:::
-		Sets the height to copy.
-		Default = Screen height - X.
-
-	`SyncTERM:P,Paste Ps...` Paste Buffer to Screen (`CTPBTS`)::
-	Pastes from the copied buffer.  Supports the same
-	options as the Cache DrawPPM command except for the
-	filename, and adds the B= option.
-		`B=#`:::
-		Selects the buffer (0 or 1 only) to paste from.
-
-	`SyncTERM:Q;JXL` Query JXL Support (`CTQJS`)::
-	Queries support for the JXL image format.
-	SyncTERM will respond with a CTerm APC State Report of the form
-	`CSI = 1 ; pR - n`
-	pR is 0 if JXL support is not available, and 1 if it is.
-
-== Standardized single control functions
+== Fs Escape Sequences (Standardized single control functions)
 
 Standardized single control functions are in the following format: +
 `ESC {'\`'` to `'~'}` +
@@ -568,7 +199,7 @@ the cursor.
 
 SOURCE: <<ECMA-48>>
 
-== Control Sequences:
+== Control Sequences
 
 Control sequences start with the Control Sequence Introducer which is
 `ESC [`.  `CSI` will be used to express this from now on.
@@ -2163,6 +1794,468 @@ following table:
 |===
 
 The DCS font string should be used instead as of CTerm 1.213
+
+== Device Control Strings
+
+A Device Control String Begins with a `DCS` and ends with a `ST`
+The following commands are supported:
+
+=== `DCS CTerm:Font:p1:<b64> ST` CTerm Loadable Font (`CTLF`)
+Indicates the string is a loadable font. (CTerm 1.213)
+
+`p1` is a font slot number, which must be higher than the last
+default defined font (See `CSI sp D` for list of predefined
+fonts). `<b64>` is the base64 encoded font data.  Font size is
+deduced from the size of the data.  This replaces the now
+deprecated `CSI = Ps1 ; Ps2 {`
+
+=== `DCS [ p1 [ ; p2 ] ] q ST` Sixel Sequence
+Defaults:  `p1` = 0  `p2` = 0
+Indicates the string is a sixel sequence.
+
+`p1` selects the vertical height of a single pixel.  This
+may be overridden by the raster attributes command, and
+is deprecated.  Supported values
+
+.Supported Values of `p1`
+[%autowidth]
+|===
+|Value |Vertical Size
+
+|0,1,5,6
+|2 pixels
+
+|2
+|5 pixels
+
+|3,4
+|3 pixels
+
+|7,8,9
+|1 pixel
+|===
+
+`p2` indicates if unset sixels should be set to the current
+background colour.  If p2 is 1, positions specified as 0
+remain at their current colour.
+
+Any additional parameters are ignored.
+
+The rest of the string is made up of sixel data characters and
+sixel control functions.  Sixel data characters are in the
+range of `?` (0x3f) to `~` (0x7e).  Each sixel data character
+represents six vertical pixels.  The data is extracted by
+subtracting 0x3f from the ASCII value of the character.
+The least significant bit is the topmost pixel.
+
+.Sixel Control Functions
+[%autowidth]
+|===
+|Function |Parameters |Name |Description
+
+|`!`
+|`Pn X`
+|Graphics Repeat Introducer
+|The character X is repeated Pn times.
+
+|`"`
+|`p1 ; p2 [ ; p3 [ ; p4 ] ]`
+|Raster Attributes
+|p1 indicates the vertical size in pixels of each sixel. +
+	p2 indicates the horizontal size in pixels. +
+	p3 and p4 define the height and width (in sixels)
+	respectively of a block to fill with the background
+	colour.  This block may not extend past the current
+	bottom of the screen.  If any pixel data characters
+	proceed this command, it is ignored.
+
+|`#`
+|`p1`
+|Colour Select
+|Selects the current foreground colour from the	sixel palette.
+
+|`#`
+|`p1 ; p2 ; p3 ; p4 ; p5`
+|Palette map
+|Defines sixel palette entry p1 and sets it as the
+	current foreground colour. +
+	p2 specifies the colour	space to define the colour in,
+	the only supported value is 2. +
+	p3, p4, and p5 specify the red, green, and blue content as a
+	percentage (0-100).
+
+|`$`
+|
+|Graphics Carriage Return
+|Returns the active position to the left border of
+	the same sixel row.  Generally, one pass per colour
+	is used.  In passes after the first one, sixels
+	with a value of zero are not overwritten with the
+	background colour.
+
+|`-`
+|
+|Graphics New Line
+|Moves the active position to the left border of the
+	next sixel row.
+|===
+
+SOURCE: <<VT330340,[VT330/340]>>
+
+=== `DCS $ q pt ST` Request Status String (`DECRQSS`)
+`pt` is the intermediate and/or final characters of a control
+function to query the status of.  The terminal will send a
+response in the format
+
+`DCS p1 $ r pt ST` 
+
+`p1` is 1 if the terminal supports querying the control
+function and 0 if it does not.
+
+`pt` is the characters in the control function except the `CSI`
+characters.
+
+.Currently supported values of pt:
+[%autowidth]
+|===
+|`pt` |Request SGR parameters
+
+|r
+|Request top and bottom margins
+
+|s
+|Request left and right margins
+
+|t
+|Request height in lines
+
+|$\|
+|Request width in columns
+|*\|
+|Request height in lines
+|===
+
+SOURCE: <<VT420>>
+
+=== `DCS p1 [ ; p2 [ ; p3 ] ! z ST` Define Macro (`DECDMAC`)
+Defaults: `p2` = 0  `p3` = 0
+
+Sets a macro to be replayed using `CSI Pn * z`
+
+`p1` is the macro number to set, and must be between 0 and
+63 inclusive.
+
+If `p2` is zero, the macro numbered `p1` will be deleted before the new
+macro is set. If `p2` is one, all macros are deleted before the new
+macro is set.  If the macro is zero length, only the delete action is
+stored, you can't store a zero-length macro.
+
+If `p3` is zero, the macro is defined using ASCII characters
+(0x20 - 0x7e and 0xa0 - 0xff only) if `p3` is one, the macro
+is defined using hex pairs.
+
+When the macro is defined using hex pairs, a repeat
+sequence may be included in the format of `! Pn ; D..D ;`
+`Pn` specifies the number of repeats (default of one instance)+
+`D..D` is the sequence of pairs to send Pn times.  The 
+terminating ; may be left out if the sequence to be
+repeated ends at the end of the string.
+
+SOURCE: <<VT420>>
+
+== Operating System Commands
+
+An Operating System Command Begins with an `OSC` and ends with a `ST`
+The following commands are supported:
+
+=== `OSC 4;(pX;pY)... ST` Palette Redefinition (`OSC 4`)
+Specifies one or more palette redefinitions. +
+`pX` is the palette index, and `pY` is the colour definition +
+Color format: `rgb:R/G/B`::
+	Where `R`, `G`, and `B` are a sequence of one to four
+	hex digits representing the value of the
+	red, green, and blue channels respectively.
+
+SOURCE: <<XTerm>>
+
+=== `OSC 104 [ ; Ps ... ] ST` Reset Palette Entry (`OSC 104`)
+Resets palette entry to default.  If the entire string
+is "104" (ie: no `Ps` present), resets all colours.  Otherwise, only each index
+separated by a semicolon is reset.
+SOURCE: <<XTerm>>
+
+== Application Program Commands
+
+An Operating System Command Begins with an `APC` and ends with a `ST`
+SyncTERM implements the following APC commands:
+
+=== `APC SyncTERM:C;S Ps1 Ps2 ST` Store file (`CTSFI`)
+Where `Ps1` is a filename and `Ps2` is the base64 encoded
+contents of the file.  The named file is stored in the
+cache directory for the current connection.
+
+=== `APC SyncTERM:C;L [ ; Ps] ST` List Files (`CTLFI`)
+Defaults: `Ps` = * +
+`Ps` is the glob(3) pattern to use matching files. +
+SyncTERM responds with
+an `APC` string with lines separated by newlines.  The
+first line is always `SyncTERM:C;L\n` and for each
+matching file, a line in the form
+`<Filename> TAB <MD5 sum> LF` is sent
+(ie: "coolfont.fnt\t595f44fec1e92a71d3e9e77456ba80d1\n")
+
+=== `APC SyncTERM:C;SetFont; Pn ; Ps ST` Set Font (`CTSF`)
+Where `Pn` is a font slot number (max 255) and `Ps` is a
+filename in the cache.  This sets font slot `Pn` to use
+the specified font file.
+
+=== `APC SyncTERM:C;DrawPPM Ps... Ps1 ST` Draw a PPM from Cache (`CTDPFC`)
+Draws a PPM from the cache directory on the screen. +
+`Ps1` is the filename and is required.  Arguments for
+`Ps` are optional.  The following options can be included
+(separated by semi-colons):
+
+.Currently Supported Ps Arguments:
+[%autowidth]
+|===
+|Argument |Description
+
+|`SX=#`
+|Sets the left X position in the specified image to copy from.  Default = 0.
+
+|`SY=#`
+|Sets the top Y position in the specified image to copy from.  Default = 0.
+
+|`SW=#`
+|Sets the width of the portion of the image to copy.  Default = Image width - `SX`
+
+|`SH=#`
+|Sets the height of the portion of the image to copy.  Default = Image height - `SH`
+
+|`DX=#`
+|Sets the X position on the screen to draw the image at.  Default = 0.
+
+|`DY=#`
+|Sets the Y position on the screen to draw the image at.  Default = 0.
+
+|`MX=#`
+|Sets the X position in the mask to start applying from.  Default = 0.
+
+|`MY=#`
+|Sets the Y position in the mask to start applying from.  Default = 0.
+
+|`MW=#`
+|Sets the overall width of the mask (not the width to apply).  If `MFILE`
+	is not specified, and a mask is (ie: using `MASK=`), this is
+	required.  If `MFILE` is specified, the width is read from the
+	file.
+
+|`MH=#`
+|Sets the overall height of the mask (not the height to apply).  If
+	MFILE is not specified, and a mask is (ie: using MASK=), this is
+	required.  If MFILE is specified, the width is read from the
+	file.
+
+|`MFILE=<filename>`
+|Specifies a filename in the cache directory of a PBM file specifying a
+	mask of which pixels to copy.  Any pixel set to black (ie: 1) in
+	the PBM will be drawn from the source image.  Pixels set to
+	white (ie: 0) will be left untouched.
+
+|`MASK=<maskbits>`
+|Specifies a base64-encoded bitmap, each set bit will be drawn from the
+	source image, cleared bits will not be drawn.  Requires MW= and
+	MH= to be specified.
+
+|`MBUF`
+|Uses the loaded mask buffer.
+|===
+
+The PPM file may be raw (preferred) or text.  SyncTERM
+does not support more than 255 values per colour channel
+and assumes it is correctly using the BT.709 gamma
+transfer.
+
+=== `APC SyncTERM:C;DrawJXL Ps... Ps1 ST` Draw a JPEG XL from Cache (`CTDJFC`)
+Draws a JPEG XL from the cache directory on the screen. +
+`Ps1` is the filename and is required.  Arguments for
+`Ps` are optional.  The following options can be included
+(separated by semi-colons):
+
+.Currently Supported Ps Arguments:
+[%autowidth]
+|===
+|Argument |Description
+
+|`SX=#`
+|Sets the left X position in the specified image to copy from.  Default = 0.
+
+|`SY=#`
+|Sets the top Y position in the specified image to copy from.  Default = 0.
+
+|`SW=#`
+|Sets the width of the portion of the image to copy.  Default = Image width - `SX`
+
+|`SH=#`
+|Sets the height of the portion of the image to copy.  Default = Image height - `SH`
+
+|`DX=#`
+|Sets the X position on the screen to draw the image at.  Default = 0.
+
+|`DY=#`
+|Sets the Y position on the screen to draw the image at.  Default = 0.
+
+|`MX=#`
+|Sets the X position in the mask to start applying from.  Default = 0.
+
+|`MY=#`
+|Sets the Y position in the mask to start applying from.  Default = 0.
+
+|`MW=#`
+|Sets the overall width of the mask (not the width to apply).  If `MFILE`
+	is not specified, and a mask is (ie: using `MASK=`), this is
+	required.  If `MFILE` is specified, the width is read from the
+	file.
+
+|`MH=#`
+|Sets the overall height of the mask (not the height to apply).  If
+	MFILE is not specified, and a mask is (ie: using MASK=), this is
+	required.  If MFILE is specified, the width is read from the
+	file.
+
+|`MFILE=<filename>`
+|Specifies a filename in the cache directory of a PBM file specifying a
+	mask of which pixels to copy.  Any pixel set to black (ie: 1) in
+	the PBM will be drawn from the source image.  Pixels set to
+	white (ie: 0) will be left untouched.
+
+|`MASK=<maskbits>`
+|Specifies a base64-encoded bitmap, each set bit will be drawn from the
+	source image, cleared bits will not be drawn.  Requires MW= and
+	MH= to be specified.
+
+|`MBUF`
+|Uses the loaded mask buffer.
+|===
+
+=== `APC SyncTERM:C;LoadPPM Ps... Ps0 ST` Load a PPM to Buffer (`CTLPTB`)
+Loads a PPM to a buffer.  Ps0 is the filename +
+
+.Currently Supported Ps Arguments:
+[%autowidth]
+|===
+|Argument |Description
+|`B=#`
+|Selects the buffer (0 or 1 only) to paste from.
+|===
+
+=== `APC SyncTERM:C;LoadJXL Ps... Ps0 ST` Load a JPEG XL to Buffer (`CTLJTB`)
+Loads a JPEG XL to a buffer.  Ps0 is the filename
+
+.Currently Supported Ps Arguments:
+[%autowidth]
+|===
+|Argument |Description
+|`B=#`
+|Selects the buffer (0 or 1 only) to paste from.
+|===
+
+=== `APC SyncTERM:C;LoadPBM Ps... Ps0 ST` Load a PBM to Buffer (`CTLPBTB`)
+Loads a PBM to a buffer.  Ps0 is the filename
+
+=== `APC SyncTERM:P;Copy Ps... ST` Copy Screen into Buffer (`CTCSIB`)
+Copies a portion of the screen into an internal buffer for use with the
+Paste function.  Defaults to copying the entire screen.
+
+.Currently Supported Ps Arguments:
+[%autowidth]
+|===
+|Argument |Description
+|`B=#`
+|Selects the buffer (0 or 1 only) to copy to.
+
+|`X=#`
+|Sets the left X position on the screen to start copying at.  Default = 0.
+
+|`Y=#`
+|Sets the top Y position on the screen to start copying at.  Default = 0.
+
+|`W=#`
+|Sets the width to copy. Default = Screen width - X.
+
+|`H=#`
+|Sets the height to copy. Default = Screen height - X.
+|===
+
+=== `APC SyncTERM:P,Paste Ps... ST` Paste Buffer to Screen (`CTPBTS`)::
+Pastes from the copied buffer.  Supports the same options as the Cache
+DrawPPM command except for the filename, and adds the B= option.
+
+.Currently Supported Ps Arguments:
+[%autowidth]
+|===
+|Argument |Description
+|`SX=#`
+|Sets the left X position in the specified image to copy from.  Default = 0.
+
+|`SY=#`
+|Sets the top Y position in the specified image to copy from.  Default = 0.
+
+|`SW=#`
+|Sets the width of the portion of the image to copy.  Default = Image width - `SX`
+
+|`SH=#`
+|Sets the height of the portion of the image to copy.  Default = Image height - `SH`
+
+|`DX=#`
+|Sets the X position on the screen to draw the image at.  Default = 0.
+
+|`DY=#`
+|Sets the Y position on the screen to draw the image at.  Default = 0.
+
+|`MX=#`
+|Sets the X position in the mask to start applying from.  Default = 0.
+
+|`MY=#`
+|Sets the Y position in the mask to start applying from.  Default = 0.
+
+|`MW=#`
+|Sets the overall width of the mask (not the width to apply).  If `MFILE`
+	is not specified, and a mask is (ie: using `MASK=`), this is
+	required.  If `MFILE` is specified, the width is read from the
+	file.
+
+|`MH=#`
+|Sets the overall height of the mask (not the height to apply).  If
+	MFILE is not specified, and a mask is (ie: using MASK=), this is
+	required.  If MFILE is specified, the width is read from the
+	file.
+
+|`MFILE=<filename>`
+|Specifies a filename in the cache directory of a PBM file specifying a
+	mask of which pixels to copy.  Any pixel set to black (ie: 1) in
+	the PBM will be drawn from the source image.  Pixels set to
+	white (ie: 0) will be left untouched.
+
+|`MASK=<maskbits>`
+|Specifies a base64-encoded bitmap, each set bit will be drawn from the
+	source image, cleared bits will not be drawn.  Requires MW= and
+	MH= to be specified.
+
+|`MBUF`
+|Uses the loaded mask buffer.
+
+|`B=#`
+|Selects the buffer (0 or 1 only) to paste from.
+|===
+
+=== `APC SyncTERM:Q;JXL ST` Query JXL Support (`CTQJS`)
+Queries support for the JXL image format. +
+SyncTERM will respond with a CTerm APC State Report of the form
+
+`CSI = 1 ; pR - n`
+
+pR is 0 if JXL support is not available, and 1 if it is.
 
 == "ANSI" Music
 This is the place where the BBS world completely fell on it's face in ANSI
