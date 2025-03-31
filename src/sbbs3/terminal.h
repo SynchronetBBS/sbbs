@@ -212,6 +212,17 @@ public:
 		return false;
 	}
 
+	/*
+	 * TODO: These start at zero, but gotoxy starts at 1
+	 */
+	virtual bool gotox(unsigned x) {
+		return gotoxy(x + 1, row + 1);
+	}
+
+	virtual bool gotoy(unsigned y) {
+		return gotoxy(column + 1, y + 1);
+	}
+
 	// Was ansi_save
 	virtual bool save_cursor_pos() {
 		return false;

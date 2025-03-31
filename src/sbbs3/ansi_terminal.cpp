@@ -367,6 +367,11 @@ bool ANSI_Terminal::gotoxy(unsigned x, unsigned y)
 	return true;
 }
 
+/*
+ * TODO: gotox()/gotoy() can be done but aren't part of ANSI.SYS
+ *       We need to auto-detect support before we can use them.
+ */
+
 // Was ansi_save
 bool ANSI_Terminal::save_cursor_pos()
 {

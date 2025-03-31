@@ -284,7 +284,7 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsid id, JSBool stric
 			sbbs->term->lncntr = val;
 			break;
 		case CON_PROP_COLUMN:
-			sbbs->term->column = val;
+			sbbs->term->gotox(val);
 			break;
 		case CON_PROP_LASTLINELEN:
 			sbbs->term->lastcrcol = val;
@@ -306,7 +306,7 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsid id, JSBool stric
 			break;
 		case CON_PROP_ROW:
 			if (val >= 0 && val < TERM_ROWS_MAX)
-				sbbs->term->row = val;
+				sbbs->term->gotoy(val);
 			break;
 		case CON_PROP_ROWS:
 			if (val >= TERM_ROWS_MIN && val <= TERM_ROWS_MAX)
@@ -456,8 +456,8 @@ static const char*        con_prop_desc[] = {
 	, "Mouse mode bit-field (see <tt>MOUSE_MODE_*</tt> in <tt>sbbsdefs.js</tt> for bit definitions, "
 	"set to <tt>true</tt> for default enabled mode, <tt>false</tt> to disable)"
 	, "Current 0-based line counter (used for automatic screen pause)"
-	, "Current 0-based row counter"
-	, "Current 0-based column counter (used to auto-increment <i>line_counter</i> when screen wraps)"
+	, "Current 0-based row position, set to move cursor"
+	, "Current 0-based column position, set to move cursor"
 	, "Column the cursor was on when last CR was sent to terminal or the line wrapped"
 	, "Obsolete alias for last_cr_column"
 	, "Duration of delay (in milliseconds) before each line-feed character is sent to the terminal"
