@@ -37,7 +37,7 @@ received:
 Any normal printable character when the cursor is at the right
 margin (of the screen or scrollable area).
 
-== Control characters
+== C0 Control characters
 
 === `0x00` NUL (`NUL`)
 In doorway mode, indicates that the next character is
@@ -86,11 +86,25 @@ not valid, the `ESC` is ignored.
 
 SOURCE: <<ECMA-48>>
 
-== Control Codes
+== nF Escape Sequences
 
-Control codes are in the following format: +
-`ESC {'0'` to `'~'}`
-Legal combinations which are not handled are silently dropped.
+nF Escape Sequences are in the following format: +
+`ESC {SPACE to '/}{'0'` to `'~'}` +
+There may be multiple characters from the {SPACE to '/'} before the
+terminating {'@' to '~'} character.
+
+At present, CTerm does not support any nF escape sequences.
+
+SOURCE: <<ECMA-35>>
+
+== Private control functions
+
+Private control functions are in the following format: +
+`ESC {'0'` to `'?'}` +
+
+SOURCE: <<ECMA-35>>
+
+Legal combinations not handled are silently dropped.
 
 === `ESC 7` Save Cursor (`DECSC`)
 Saves the current cursor position same as `CSI s`
@@ -101,6 +115,12 @@ SOURCE: <<VT102>>
 Restores the current cursor position same as `CSI u`
 
 SOURCE: <<VT102>>
+
+== Control functions in the C1 set
+
+Control codes are in the following format: +
+`ESC {'@'` to `'_'}`
+Legal combinations which are not handled are silently dropped.
 
 === `ESC E` Next Line (`NEL`)
 Moves to the line home position of the next line.
@@ -533,22 +553,20 @@ transfer.
 	`CSI = 1 ; pR - n`
 	pR is 0 if JXL support is not available, and 1 if it is.
 
+== Standardized single control functions
+
+Standardized single control functions are in the following format: +
+`ESC {'\`'` to `'~'}` +
+
+SOURCE: <<ECMA-35>>
+
+Legal combinations not handled are silently dropped.
+
 === `ESC c` Reset to Initial State (`RIS`)
 Resets all the terminal settings, clears the screen, and homes
 the cursor.
 
 SOURCE: <<ECMA-48>>
-
-== nF Escape Sequences
-
-nF Escape Sequences are in the following format: +
-`ESC {SPACE to '/}{'0'` to `'~'}` +
-There may be multiple characters from the {SPACE to '/'} before the
-terminating {'@' to '~'} character.
-
-At present, CTerm does not support any nF escape sequences.
-
-SOURCE: <<ECMA-35>>
 
 == Control Sequences:
 

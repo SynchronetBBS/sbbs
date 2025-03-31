@@ -7,6 +7,7 @@ Don't disable status line for Atari ST modes
 Fix broken vertical (U+00A6) vs. vertical line (U+007C)
 Add custom palette support to list file
 Pass control key combinations in BBC Micro mode
+Add support for DECSC/DECRC control codes
 
 Version 1.6
 ------------
