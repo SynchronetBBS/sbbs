@@ -34,10 +34,11 @@
 /* Constants */
 /*************/
 
-#define VERSION     "3.21"  /* Version: Major.minor  */
+#define VERSION     "3.21"  /* Version: Major.minor as 4-char string  */
+#define VERSION_INT 321		/* Version: Major and minor as every-increasing 3-decimal-digit integer value */
 #define REVISION    'a'     /* Revision: lowercase letter */
-#define VERSION_NUM (32000   + (tolower(REVISION) - 'a'))
-#define VERSION_HEX (0x32000 + (tolower(REVISION) - 'a'))
+#define VERSION_NUM (((VERSION_INT) * 100) + (tolower(REVISION) - 'a'))
+#define VERSION_HEX (((VERSION_INT / 100) * 0x10000)  + (((VERSION_INT % 100) / 10) * 0x1000) + ((VERSION_INT % 10) * 0x100) + (tolower(REVISION) - 'a'))
 
 #define VERSION_NOTICE      "Synchronet BBS for " PLATFORM_DESC \
 		"  Version " VERSION
