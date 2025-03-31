@@ -92,6 +92,16 @@ Control codes are in the following format: +
 `ESC {'0'` to `'~'}`
 Legal combinations which are not handled are silently dropped.
 
+=== `ESC 7` Save Cursor (`DECSC`)
+Saves the current cursor position same as `CSI s`
+
+SOURCE: <<VT102>>
+
+=== `ESC 8` Restore Cursor (`DECRC`)
+Restores the current cursor position same as `CSI u`
+
+SOURCE: <<VT102>>
+
 === `ESC E` Next Line (`NEL`)
 Moves to the line home position of the next line.
 (Same as `CR` `LF`)

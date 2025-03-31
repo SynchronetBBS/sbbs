@@ -7,7 +7,8 @@
  * 
  * Note that SCOSC and SCORC are not standard and conflict with the DEC
  * left/right margin settings (DECLRMM).  If this becomes an issue, they
- * can be emulated via cusros position query.
+ * can be emulated via cusros position query.  There's also the VT100
+ * DECSC/DECRC (ESC8/ESC8) that may work when DECLRMM works.
  * 
  * CUU   - ESC[A Cursor Up (With count)
  * CUD   - ESC[B Cursor Down (With count)

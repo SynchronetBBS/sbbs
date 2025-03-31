@@ -4277,6 +4277,19 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 					}
 				}
 				break;
+			case '7':	// Save cursor position
+				CURR_XY(&cterm->save_xpos, &cterm->save_ypos);
+				break;
+			case '8':	// Restore cursor positi9on
+				if(cterm->save_ypos>0 && cterm->save_ypos<=cterm->height
+						&& cterm->save_xpos>0 && cterm->save_xpos<=cterm->width) {
+					// TODO: What to do about the window when position is restored...
+					//       Absolute position stored?  Relative?
+					if(cterm->save_ypos < CURR_MINY || cterm->save_ypos > CURR_MAXY || cterm->save_xpos < CURR_MINX || cterm->save_xpos > CURR_MAXX)
+						break;
+					gotoxy(cterm->save_xpos, cterm->save_ypos);
+				}
+				break;
 			case 'E':	// Next Line
 				clear_lcf(cterm);
 				adjust_currpos(cterm, INT_MIN, 1, 1);
@@ -4724,7 +4737,7 @@ cterm_reset(struct cterminal *cterm)
 
 struct cterminal* cterm_init(int height, int width, int xpos, int ypos, int backlines, int backcols, struct vmem_cell *scrollback, int emulation)
 {
-	char	*revision="$Revision: 1.320 $";
+	char	*revision="$Revision: 1.321 $";
 	char *in;
 	char	*out;
 	struct cterminal *cterm;

@@ -1073,6 +1073,14 @@ var tests = [
 		console.write("\x1b[u");
 		return check_xy(2,2);
 	}},
+	{'name':'DECSC', 'func':function() {
+		console.gotoxy(2,2);
+		console.write("\x1b7");
+		console.gotoxy(1,1);
+		console.write('     ');
+		console.write("\x1b8");
+		return check_xy(2,2);
+	}},
 	{'name':'CT24BC', 'func':function() {
 		if (!interactive)
 			return null;
@@ -1129,6 +1137,14 @@ var tests = [
 		console.gotoxy(1,1);
 		console.write('     ');
 		console.write("\x1b[u");
+		return check_xy(2,2);
+	}},
+	{'name':'DECRC', 'func':function() {
+		console.gotoxy(2,2);
+		console.write("\x1b7");
+		console.gotoxy(1,1);
+		console.write('     ');
+		console.write("\x1b8");
 		return check_xy(2,2);
 	}},
 	{'name':'DECTABSR', 'func':function() {
