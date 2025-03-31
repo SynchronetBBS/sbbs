@@ -96,6 +96,16 @@ Control codes are in the following format:
 ESC {'0' (ZERO) to '~'}
 	Legal combinations which are not handled are silently dropped.
 
+ESC 7	Save Cursor (DECSC)
+	Same as CSI s
+
+	SOURCE: Digital VT102 User Guide
+
+ESC 8	Restore Cursor (DECRC)
+	Same as CSI u
+
+	SOURCE: Digital VT102 User Guide
+
 ESC E	Next Line (NEL)
 	Moves to the line home position of the next line.
 	(Same as CR LF)
