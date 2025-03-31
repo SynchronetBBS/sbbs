@@ -605,9 +605,6 @@ bool sbbs_t::answer()
 			        "\x1b[6n"   /* Get cursor position */
 			        "\x1b[u"    /* restore cursor position */
 			        "\x1b[!_"   /* RIP? */
-		#ifdef SUPPORT_ZUULTERM
-			        "\x1b[30;40m\xc2\x9f""Zuul.connection.write('\\x1b""Are you the gatekeeper?')\xc2\x9c"  /* ZuulTerm? */
-		#endif
 			        "\r"        /* Move cursor left */
 			        "\xef\xbb\xbf"  // UTF-8 Zero-width non-breaking space
 			        "\x1b[6n"   /* Get cursor position (again) */
@@ -651,14 +648,6 @@ bool sbbs_t::answer()
 					logline("@R", strstr(str, "RIPSCRIP"));
 					autoterm |= (RIP | COLOR | ANSI);
 				}
-		#ifdef SUPPORT_ZUULTERM
-				else if (strstr(str, "Are you the gatekeeper?"))  {
-					if (terminal[0] == 0)
-						SAFECOPY(terminal, "HTML");
-					logline("@H", strstr(str, "Are you the gatekeeper?"));
-					autoterm |= HTML;
-				}
-		#endif
 
 				char*    tokenizer = NULL;
 				char*    p = strtok_r(str, "\x1b", &tokenizer);
