@@ -1344,7 +1344,7 @@ bool sbbs_t::editfile(char *fname, uint maxlines, const char* to, const char* fr
 	}
 	if ((file = nopen(fname, O_RDONLY)) != -1) {
 		length = (long)filelength(file);
-		if (length < 0 || length > (long)maxlines * MAX_LINE_LEN) {
+		if (length < 0 || length > (long)(maxlines * MAX_LINE_LEN)) {
 			close(file);
 			free(buf);
 			attr(cfg.color[clr_err]);
