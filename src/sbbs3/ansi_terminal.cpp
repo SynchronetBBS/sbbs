@@ -1,5 +1,46 @@
 #include "ansi_terminal.h"
 
+/*
+ * This requires the remote to support the following commands.  All of
+ * these commands are supported by ANSI.SYS and are expected to be the
+ * minimal set for correct behaviour.
+ * 
+ * Note that SCOSC and SCORC are not standard and conflict with the DEC
+ * left/right margin settings (DECLRMM).  If this becomes an issue, they
+ * can be emulated via cusros position query.
+ * 
+ * CUU   - ESC[A Cursor Up (With count)
+ * CUD   - ESC[B Cursor Down (With count)
+ * CUF   - ESC[C Cursor Right (With count)
+ * CUB   - ESC[D Cursor Left (With count)
+ * CUP   - ESC[H Cursor Position (With Y and X specified and with no parameter specified)
+ * ED    - ESC[J Erase in Page (With parameter 2 specified, and with no parameter ie: 0)
+ * EL    - ESC[K Erase in Line (No parameter used currently)
+ * DSR   - ESC[n Device Status Report (Parameter 6, request active cursor position)
+ * SCOSC - ESC[s Save Current Position
+ * SCORC - ESC[u Restore Cursor Position
+ * 
+ * The following aren't required, but may be sent, so need to be ignored
+ * properly:
+ * SGR    - ESC[m Set Graphic Rendition
+ * DECSET - ESC[?h Set Mode
+ * DECRST - ESC[?l Reset Mode
+ * DECSCS - ESC[*r Select Communication Speed
+ * 
+ * In general, other commands may be used if one of the following is true:
+ * 1) If they are ignored, there is not an impact on the presentation.
+ *    This is where ESC[m, ESC[*r, and the ESC[?h/l commands we use fall
+ *    into.
+ * 2) They are reliably detected via sequences, terminal type, or a user
+ *    setting.
+ * 
+ * The following may be used if support is detected for them:
+ * (Detection can be via terminal type or via sending commands and
+ *  reading the current position)
+ * CHA - ESC[G Cursor Character Absolute
+ * VPA - ESC[d Line Position Absolute
+ */
+
 enum ansi_mouse_mode {
 	ANSI_MOUSE_X10  = 9,
 	ANSI_MOUSE_NORM = 1000,
