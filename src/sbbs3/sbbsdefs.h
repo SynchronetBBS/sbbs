@@ -34,8 +34,8 @@
 /* Constants */
 /*************/
 
-#define VERSION     "3.20"  /* Version: Major.minor  */
-#define REVISION    'e'     /* Revision: lowercase letter */
+#define VERSION     "3.21"  /* Version: Major.minor  */
+#define REVISION    'a'     /* Revision: lowercase letter */
 #define VERSION_NUM (32000   + (tolower(REVISION) - 'a'))
 #define VERSION_HEX (0x32000 + (tolower(REVISION) - 'a'))
 
