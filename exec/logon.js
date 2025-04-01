@@ -211,7 +211,10 @@ if(options.show_avatar && console.term_supports(USER_ANSI)) {
 // if you want your RLogin server to act as a door game server only
 if(options.rlogin_xtrn_menu
 	&& bbs.sys_status&SS_RLOGIN) {
-	bbs.xtrn_sec();
+	var xtrn_sec;
+	if (console.terminal.indexOf("xtrn_sec=") === 0)
+		xtrn_sec = console.terminal.substring(9);
+	bbs.xtrn_sec(xtrn_sec);
 	bbs.hangup();
 } else if(!(user.security.restrictions&UFLAG_G)
 	&& console.term_supports(USER_ANSI) 
