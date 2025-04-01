@@ -117,11 +117,20 @@ void sbbs_t::revert_text(void)
 bool sbbs_t::load_user_text(void)
 {
 	char path[MAX_PATH + 1];
-	char charset[16];
 
+	revert_text();
+
+	char connection[LEN_CONNECTION + 1];
+	SAFECOPY(connection, this->connection);
+	strlwr(connection);
+	snprintf(path, sizeof path, "%s%s/text.ini", cfg.ctrl_dir, connection);
+	if (fexist(path)) {
+		if (!replace_text(path))
+			return false;
+	}
+	char charset[16];
 	SAFECOPY(charset, term->charset_str());
 	strlwr(charset);
-	revert_text();
 	snprintf(path, sizeof path, "%s%s/text.ini", cfg.ctrl_dir, charset);
 	if (fexist(path)) {
 		if (!replace_text(path))
