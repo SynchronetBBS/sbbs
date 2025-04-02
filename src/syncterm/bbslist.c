@@ -3983,6 +3983,7 @@ show_bbslist(char *current, int connected)
 						         "    %s OSS\n"
 						         "    %s SDL\n"
 						         "    %s ALSA\n"
+						         "    %s WaveOut\n"
 						         "    %s PortAudio\n"
 						         "    %s PulseAudio\n",
 #ifdef WITHOUT_CRYPTLIB
@@ -4041,6 +4042,11 @@ show_bbslist(char *current, int connected)
 						         "[ ]",
 #endif
 #ifdef USE_ALSA_SOUND
+						         "[`\xFB`]",
+#else
+						         "[ ]",
+#endif
+#ifdef _WIN32
 						         "[`\xFB`]",
 #else
 						         "[ ]",
