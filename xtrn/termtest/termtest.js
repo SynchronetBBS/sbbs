@@ -541,8 +541,9 @@ var tests = [
 		if (ret)
 			return false;
 		console.write("\x1b[=2M");
+		console.write("\x1b[MBCDEFG\x0e\x0f\x08 \x08");
 		console.write("\x1b[MFCDEFG\x0e\x0f\x08 \x08");
-		var ret = console.yesno("Did you hear an ascending set of five notes");
+		var ret = console.yesno("Did you hear two ascending sets of five notes");
 		if (!ret)
 			return false;
 		console.write("\x1b[=1M");
