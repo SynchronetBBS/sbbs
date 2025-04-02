@@ -2187,7 +2187,7 @@ Paste function.  Defaults to copying the entire screen.
 |Sets the height to copy. Default = Screen height - X.
 |===
 
-=== `APC SyncTERM:P,Paste Ps... ST` Paste Buffer to Screen (`CTPBTS`)::
+=== `APC SyncTERM:P,Paste Ps... ST` Paste Buffer to Screen (`CTPBTS`)
 Pastes from the copied buffer.  Supports the same options as the Cache
 DrawPPM command except for the filename, and adds the B= option.
 
