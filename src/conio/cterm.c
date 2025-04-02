@@ -902,11 +902,13 @@ static void play_music(struct cterminal *cterm)
 	}
 	cterm->music=0;
 	cterm->musicbuf[0]=0;
-	while(fore_count) {
-		sem_wait(&cterm->note_completed_sem);
-		fore_count--;
+	if (fore_count) {
+		while(fore_count) {
+			sem_wait(&cterm->note_completed_sem);
+			fore_count--;
+		}
+		xptone_complete();
 	}
-	xptone_complete();
 }
 
 void
