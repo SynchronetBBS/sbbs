@@ -1,4 +1,4 @@
-// $Id: fonts.js,v 1.3 2020/06/07 05:12:35 rswindell Exp $
+// Load and/or activate fonts into terminal based ctrl/fonts.ini file contents
 
 var cterm = load({}, 'cterm_lib.js');
 
@@ -28,6 +28,8 @@ function fonts(key)
 	ini.close();
 	var requirements = slotnames.requirements;
 	slotnames.requirements = undefined;
+	var wantblink = slotnames.wantblink;
+	slotnames.wantblink = undefined;
 	if(!obj)
 		return false;
 	for(var p in obj) {
@@ -51,7 +53,7 @@ function fonts(key)
 					filename = obj[p] + '.f' + charheight;
 				load_font(slotnum, filename);
 			}
-			if(cterm.activate_font(cterm.font_styles[p], slotval == undefined ? obj[p] : slotnum, obj.wantblink) == false)
+			if(cterm.activate_font(cterm.font_styles[p], slotval == undefined ? obj[p] : slotnum, wantblink || obj.wantblink) == false)
 				log(LOG_WARNING, "Failed to activate font: " + cterm.font_styles[p]);
 		}
 	}
