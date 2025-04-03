@@ -76,6 +76,14 @@ send_telnet_cmd(uchar cmd, uchar opt)
 	}
 }
 
+// Have conn_api.binary_mode auto-track (to true) when both sides are in binary TX mode
+static inline void
+update_binary_mode()
+{
+	conn_api.binary_mode = (telnet_remote_option[TELNET_BINARY_TX] == TELNET_WILL)
+		&& (telnet_local_option[TELNET_BINARY_TX] == TELNET_DO);
+}
+
 void
 request_telnet_opt(uchar cmd, uchar opt)
 {
@@ -89,15 +97,9 @@ request_telnet_opt(uchar cmd, uchar opt)
 			return;                           /* already set in this mode, do nothing */
 		telnet_local_option[opt] = telnet_opt_ack(cmd);
 	}
+	if (opt == TELNET_BINARY_TX)
+		update_binary_mode();
 	send_telnet_cmd(cmd, opt);
-}
-
-// Have conn_api.binary_mode auto-track (to true) when both sides are in binary TX mode
-static inline void
-update_binary_mode()
-{
-	conn_api.binary_mode = (telnet_remote_option[TELNET_BINARY_TX] == TELNET_WILL)
-		&& (telnet_local_option[TELNET_BINARY_TX] == TELNET_DO);
 }
 
 BYTE *
