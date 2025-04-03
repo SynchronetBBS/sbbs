@@ -138,73 +138,74 @@ if(user.security.exemptions&UFLAG_H)
 /******************************
 * Replaces the 2.1 Logon stuff
 ******************************/
+if (!(bbs.sys_status&SS_RLOGIN) || options.rlogin_xtrn_logon !== false) {
+	if(options.fast_logon !== true || !(bbs.sys_status&SS_FASTLOGON)
+		|| !user.compare_ars(options.fast_logon_requirements)) {
 
-if(options.fast_logon !== true || !(bbs.sys_status&SS_FASTLOGON)
-	|| !user.compare_ars(options.fast_logon_requirements)) {
+		// Logon screens
 
-	// Logon screens
-
-	// Print successively numbered logon screens (logon, logon1, logon2, etc.)
-	var highest_printed_logon_screen=-1;
-	for(var i=0;;i++) {
-		var fname="logon";
-		if(i)
-			fname+=i;
-		if(!bbs.menu_exists(fname)) {
-			if(i>1)
-				break;
-			continue;
+		// Print successively numbered logon screens (logon, logon1, logon2, etc.)
+		var highest_printed_logon_screen=-1;
+		for(var i=0;;i++) {
+			var fname="logon";
+			if(i)
+				fname+=i;
+			if(!bbs.menu_exists(fname)) {
+				if(i>1)
+					break;
+				continue;
+			}
+			bbs.menu(fname);
+			highest_printed_logon_screen = i;
 		}
-		bbs.menu(fname);
-		highest_printed_logon_screen = i;
+
+		// Print logon screens based on security level
+		if(user.security.level > highest_printed_logon_screen
+			&& bbs.menu_exists("logon" + user.security.level))
+			bbs.menu("logon" + user.security.level);
+
+		// Print one of text/menu/random*.*, picked at random
+		// e.g. random1.asc, random2.asc, random3.asc, etc.
+		bbs.menu("random*");
+
+		console.clear(LIGHTGRAY);
+		bbs.user_event(EVENT_LOGON);
 	}
 
-	// Print logon screens based on security level
-	if(user.security.level > highest_printed_logon_screen
-		&& bbs.menu_exists("logon" + user.security.level))
-		bbs.menu("logon" + user.security.level);
+	if(user.security.level==99				/* Sysop logging on */
+		&& !system.matchuser("guest")		/* Guest account does not yet exist */
+		&& bbs.mods.userprops.get("logon", "makeguest", true) /* Sysop has not asked to stop this question */
+		) {
+		if(console.yesno("\x01?Create Guest/Anonymous user account (highly recommended)"))
+			load("makeguest.js");
+		else if(!console.yesno("Ask again later")) {
+			bbs.mods.userprops.set("logon", "makeguest", false);
+			console.crlf();
+		}
+	}
 
-	// Print one of text/menu/random*.*, picked at random
-	// e.g. random1.asc, random2.asc, random3.asc, etc.
-	bbs.menu("random*");
-
+	// Last few callers
+	console.aborted=false;
 	console.clear(LIGHTGRAY);
-	bbs.user_event(EVENT_LOGON);
-}
+	if(options.show_logon_list === true)
+		bbs.exec("?logonlist -l");
+	if(bbs.node_status != NODE_QUIET && ((system.settings&SYS_SYSSTAT) || !user.is_sysop))
+		bbs.mods.logonlist_lib.add();
 
-if(user.security.level==99				/* Sysop logging on */
-	&& !system.matchuser("guest")		/* Guest account does not yet exist */
-	&& bbs.mods.userprops.get("logon", "makeguest", true) /* Sysop has not asked to stop this question */
-	) {
-	if(console.yesno("\x01?Create Guest/Anonymous user account (highly recommended)"))
-		load("makeguest.js");
-	else if(!console.yesno("Ask again later")) {
-		bbs.mods.userprops.set("logon", "makeguest", false);
-		console.crlf();
+	// Auto-message
+	const auto_msg = system.data_dir + "msgs/auto.msg"
+	if(file_size(auto_msg)>0) {
+		console.printfile(auto_msg,P_NOATCODES|P_WORDWRAP);
 	}
-}
+	console.crlf();
 
-// Last few callers
-console.aborted=false;
-console.clear(LIGHTGRAY);
-if(options.show_logon_list === true)
-	bbs.exec("?logonlist -l");
-if(bbs.node_status != NODE_QUIET && ((system.settings&SYS_SYSSTAT) || !user.is_sysop))
-	bbs.mods.logonlist_lib.add();
-
-// Auto-message
-const auto_msg = system.data_dir + "msgs/auto.msg"
-if(file_size(auto_msg)>0) {
-	console.printfile(auto_msg,P_NOATCODES|P_WORDWRAP);
-}
-console.crlf();
-
-if(options.show_avatar && console.term_supports(USER_ANSI)) {
-	if(options.draw_avatar_above || options.draw_avatar_right)
-		bbs.mods.avatar_lib.draw(user.number, /* name: */null, /* netaddr: */null, options.draw_avatar_above, options.draw_avatar_right);
-	else
-		bbs.mods.avatar_lib.show(user.number);
-	console.attributes = 7;	// Clear the background attribute
+	if(options.show_avatar && console.term_supports(USER_ANSI)) {
+		if(options.draw_avatar_above || options.draw_avatar_right)
+			bbs.mods.avatar_lib.draw(user.number, /* name: */null, /* netaddr: */null, options.draw_avatar_above, options.draw_avatar_right);
+		else
+			bbs.mods.avatar_lib.show(user.number);
+		console.attributes = 7;	// Clear the background attribute
+	}
 }
 
 // Set rlogin_xtrn_menu=true in [logon] section of ctrl/modopts.ini
@@ -214,7 +215,17 @@ if(options.rlogin_xtrn_menu
 	var xtrn_sec;
 	if (console.terminal.indexOf("xtrn_sec=") === 0)
 		xtrn_sec = console.terminal.substring(9);
-	bbs.xtrn_sec(xtrn_sec);
+	while(bbs.online && !js.terminated) {
+		bbs.xtrn_sec(xtrn_sec);
+		if (!options.rlogin_xtrn_logoff)
+			break;
+		if (options.rlogin_xtrn_logoff == "full")
+			bbs.logoff(/* prompt: */true);
+		else {
+			if (console.yesno(bbs.text("LogOffQ")))
+				break;
+		}
+	}
 	bbs.hangup();
 } else if(!(user.security.restrictions&UFLAG_G)
 	&& console.term_supports(USER_ANSI) 
