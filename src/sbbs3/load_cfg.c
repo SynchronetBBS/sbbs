@@ -535,11 +535,14 @@ char* prep_code(char *str, const char* prefix)
 
 /****************************************************************************/
 /* Auto-toggle daylight savings time in US time-zones						*/
+/* or return auto-detected local timezone as an offset from UTC.			*/
+/* Does not modify cfg->sys_timezone itself, just the returned copy.		*/
 /****************************************************************************/
 ushort sys_timezone(scfg_t* cfg)
 {
 	time_t    now;
 	struct tm tm;
+	int16_t   sys_timezone = cfg->sys_timezone;
 
 	if (cfg->sys_timezone == SYS_TIMEZONE_AUTO)
 		return xpTimeZone_local();
@@ -548,13 +551,13 @@ ushort sys_timezone(scfg_t* cfg)
 		now = time(NULL);
 		if (localtime_r(&now, &tm) != NULL) {
 			if (tm.tm_isdst > 0)
-				cfg->sys_timezone |= DAYLIGHT;
+				sys_timezone |= DAYLIGHT;
 			else if (tm.tm_isdst == 0)
-				cfg->sys_timezone &= ~DAYLIGHT;
+				sys_timezone &= ~DAYLIGHT;
 		}
 	}
 
-	return cfg->sys_timezone;
+	return sys_timezone;
 }
 
 
