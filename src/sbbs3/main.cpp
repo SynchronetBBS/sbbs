@@ -4423,9 +4423,8 @@ void node_thread(void* arg)
 	}
 
 	bool login_success = false;
-	if (sbbs->answer()) {
+	if (sbbs->answer(&login_success)) {
 
-		login_success = true;
 		if (sbbs->useron.pass[0])
 			listAddNodeData(&current_logins, sbbs->client.addr, strlen(sbbs->client.addr) + 1, sbbs->cfg.node_num, LAST_NODE);
 		if (sbbs->term_output_disabled) { // e.g. SFTP

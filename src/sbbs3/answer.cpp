@@ -95,7 +95,7 @@ check_pubkey(scfg_t *cfg, ushort unum, char *pkey, size_t pksz)
 	return false;
 }
 
-bool sbbs_t::answer()
+bool sbbs_t::answer(bool* login_success)
 {
 	char      str[MAX_PATH + 1], str2[MAX_PATH + 1], c;
 	char      tmp[MAX_PATH];
@@ -804,12 +804,16 @@ bool sbbs_t::answer()
 			sys_status &= ~SS_PAUSEON;
 			exec_bin(cfg.login_mod, &main_csi);
 		} else  /* auto logon here */
-		if (logon() == false)
-			return false;
+			logon();
 	}
 
 	if (!useron.number)
 		hangup();
+	else {
+		if (useron.pass[0])
+			loginSuccess(startup->login_attempt_list, &client_addr);
+		*login_success = true;
+	}
 
 	if (!online)
 		return false;
@@ -819,9 +823,6 @@ bool sbbs_t::answer()
 		hangup();
 		return false;
 	}
-
-	if (useron.pass[0])
-		loginSuccess(startup->login_attempt_list, &client_addr);
 
 	if (!term_output_disabled)
 		max_socket_inactivity = startup->max_session_inactivity;

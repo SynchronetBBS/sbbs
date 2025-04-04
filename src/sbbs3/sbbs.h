@@ -1012,7 +1012,7 @@ public:
 
 	/* answer.cpp */
 	bool    set_authresponse(bool activate_ssh);
-	bool	answer(void);
+	bool	answer(bool* login_success);
 
 	/* logon.ccp */
 	bool	logon(void);
