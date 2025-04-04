@@ -80,6 +80,9 @@
  *                            create multiple levels of categories
  * 2025-03-17 Eric Oulashin   Version 1.42
  *                            Releasing this version
+ * 2025-04-04 Eric Oulashin   Version 1.42a
+ *                            Fix for 'undefined' error (using the wrong object) when typing a sub-board
+ *                            number to choose it. Reported by Keyop.
  */
 
 /* Command-line arguments:
@@ -117,8 +120,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.42";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2025-03-17";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.42a";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2025-04-04";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -653,7 +656,7 @@ function DDMsgAreaChooser_SelectMsgArea(pChooseGroup, pGrpIdx)
 						previousChosenLibOrSubdirNames.push(chosenGroupOrSubBoardName);
 						if (previousChosenLibOrSubdirNames.length > 1)
 						{
-							chosenGroupOrSubBoardName = previousChosenLibOrSubdirNames[previousChosenLibOrSubdirNames.length-1] + nameSep + menu[selectedMenuIdx].name;
+							chosenGroupOrSubBoardName = previousChosenLibOrSubdirNames[previousChosenLibOrSubdirNames.length-1] + nameSep + msgAreaStructure[selectedMenuIdx].name;
 							// If chosenGroupOrSubBoardName is now too long, remove some of the previous labels
 							while (chosenGroupOrSubBoardName.length > console.screen_columns - 1)
 							{
@@ -2123,6 +2126,7 @@ function DDMsgAreaChooser_SetUpGrpListWithCollapsedSubBoards()
 		}
 	}
 }
+
 // Returns a default object for a message group
 function defaultMsgGrpObj()
 {
