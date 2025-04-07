@@ -169,6 +169,8 @@
 #define SM_USRVDELM     (1 << 30) // Users can see deleted msgs
 #define SM_SYSVDELM     (1U << 31)// Sysops can see deleted msgs
 
+#define SM_XATTR_SUPPORT (SM_WWIV | SM_WILDCAT | SM_PCBOARD | SM_CELERITY | SM_RENEGADE)
+
 // Bit flags for scfg_t.login
 #define LOGIN_USERNUM   (1 << 0)  // Allow logins by user number
 #define LOGIN_REALNAME  (1 << 1)  // Allow logins by user's real name
@@ -697,6 +699,13 @@ typedef enum {                       // Values for xtrn_t.event
 #define P_REMOTE    (1 << 18)     // Only print when online == ON_REMOTE
 #define P_INDENT    (1 << 19)     // Indent lines to current cursor column
 #define P_ATCODES   (1 << 20)     // Trusted @-codes in formatted string
+
+#define P_XATTR_SHIFT 20
+#define P_WILDCAT   (SM_WILDCAT  << P_XATTR_SHIFT)
+#define P_PCBOARD   (SM_PCBOARD  << P_XATTR_SHIFT)
+#define P_WWIV      (SM_WWIV     << P_XATTR_SHIFT)
+#define P_CELERITY  (SM_CELERITY << P_XATTR_SHIFT)
+#define P_RENEGADE  (SM_RENEGADE << P_XATTR_SHIFT)
 
 // Bits in 'mode' for listfiles
 #define FL_ULTIME   (1 << 0)      // List files by upload time

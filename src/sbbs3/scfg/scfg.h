@@ -175,6 +175,7 @@ void fevent_cfg(const char* name, fevent_t* event, const char* help);
 const char* io_method(uint32_t mode);
 void choose_io_method(uint32_t* misc);
 void toggle_flag(const char* title, uint* misc, uint flag, bool invert, const char* help);
+void toggle_xattr_support(const char* title, uint32_t* val, int shift);
 bool load_main_cfg(scfg_t*, char*, size_t);
 bool load_node_cfg(scfg_t*, char*, size_t);
 bool load_msgs_cfg(scfg_t*, char*, size_t);

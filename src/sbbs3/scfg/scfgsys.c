@@ -1773,6 +1773,7 @@ void sys_cfg(void)
 		strcpy(opt[i++], "Security Options...");
 		strcpy(opt[i++], "Advanced Options...");
 		strcpy(opt[i++], "Loadable Modules...");
+		strcpy(opt[i++], "Extra Attribute Codes...");
 		opt[i][0] = 0;
 		uifc.helpbuf =
 			"`System Configuration:`\n"
@@ -3175,7 +3176,9 @@ void sys_cfg(void)
 					}
 				}
 				break;
-
+			case 12:
+				toggle_xattr_support("Extra Attribute Codes in Display Files", &cfg.sys_misc, /* shift: */0);
+				break;
 		}
 	}
 }

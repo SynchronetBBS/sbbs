@@ -500,6 +500,10 @@ bool read_msgs_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		cfg->sub[i]->qwkconf = iniGetUInt16(section, NULL, "qwk_conf", 0);
 		cfg->sub[i]->pmode = iniGetUInteger(section, NULL, "print_mode", 0);
 		cfg->sub[i]->n_pmode = iniGetUInteger(section, NULL, "print_mode_neg", 0);
+		if (!(cfg->sub[i]->pmode & P_NOXATTRS)) {
+			cfg->sub[i]->pmode |= (cfg->sys_misc & SM_XATTR_SUPPORT) << P_XATTR_SHIFT;
+			cfg->sub[i]->pmode |= P_NOXATTRS; // mark as "upgraded" to new scheme
+		}
 		++cfg->total_subs;
 	}
 	iniFreeStringList(sub_list);

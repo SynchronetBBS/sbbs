@@ -627,8 +627,6 @@ void sub_cfg(int grpnum)
 						         , cfg.sub[i]->misc & SUB_LZH ? "Yes" : "No");
 						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s", "Apply Markup Codes"
 						         , cfg.sub[i]->pmode & P_MARKUP ? ((cfg.sub[i]->pmode & P_HIDEMARKS)  ? "Hide" : "Yes") : "No");
-						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s", "Extra Attribute Codes"
-						         , cfg.sub[i]->pmode & P_NOXATTRS ? "No" : "Yes");
 						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s", "Word-wrap Messages"
 						         , cfg.sub[i]->n_pmode & P_WORDWRAP ? "No" : "Yes");
 						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s", "Auto-detect UTF-8 Msgs"
@@ -637,6 +635,7 @@ void sub_cfg(int grpnum)
 						         , cfg.sub[i]->pmode & P_NOATCODES ? "No" : "Yes");
 						snprintf(opt[n++], MAX_OPLN, "%-30.30s%s", "Template for New Subs"
 						         , cfg.sub[i]->misc & SUB_TEMPLATE ? "Yes" : "No");
+						snprintf(opt[n++], MAX_OPLN, "%s", "Extra Attribute Codes...");
 
 						opt[n][0] = 0;
 						uifc.helpbuf =
@@ -1144,28 +1143,6 @@ void sub_cfg(int grpnum)
 								}
 								break;
 							case __COUNTER__:
-								n = (cfg.sub[i]->pmode & P_NOXATTRS) ? 1:0;
-								uifc.helpbuf =
-									"`Extra Attribute Codes:`\n"
-									"\n"
-									"Set this option to `No` to disable the interpretation of so-called\n"
-									"Extra Attribute Codes (printable color codes for other BBS software\n"
-									"e.g. pipe codes).\n"
-								;
-								n = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &n, 0
-								              , "Interpret/Display Extra Attribute Codes in Messages", uifcYesNoOpts);
-								if (n == -1)
-									break;
-								if (n == 0 && (cfg.sub[i]->pmode & P_NOXATTRS)) {
-									uifc.changes = TRUE;
-									cfg.sub[i]->pmode ^= P_NOXATTRS;
-								}
-								else if (n == 1 && !(cfg.sub[i]->pmode & P_NOXATTRS)) {
-									uifc.changes = TRUE;
-									cfg.sub[i]->pmode ^= P_NOXATTRS;
-								}
-								break;
-							case __COUNTER__:
 								n = (cfg.sub[i]->n_pmode & P_WORDWRAP) ? 1:0;
 								uifc.helpbuf =
 									"`Word-wrap Message Text:`\n"
@@ -1258,6 +1235,9 @@ void sub_cfg(int grpnum)
 									uifc.changes = TRUE;
 									cfg.sub[i]->misc &= ~SUB_TEMPLATE;
 								}
+								break;
+							case __COUNTER__:
+								toggle_xattr_support("Extra Attribute Codes in Messages", &cfg.sub[i]->pmode, P_XATTR_SHIFT);
 								break;
 						}
 					}

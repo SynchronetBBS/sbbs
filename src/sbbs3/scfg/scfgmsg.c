@@ -1154,7 +1154,7 @@ void msg_opts()
 	char       str[128];
 	static int msg_dflt;
 	static int msg_bar;
-	int        i, j, n;
+	int        i, n;
 
 	while (1) {
 		i = 0;
@@ -1212,7 +1212,6 @@ void msg_opts()
 		         , cfg.sys_misc & SM_USRVDELM ? "Yes" : cfg.sys_misc & SM_SYSVDELM
 		        ? "Sysops Only":"No");
 		snprintf(opt[i++], MAX_OPLN, "%-33.33s%hu", "Days of New Messages for Guest", cfg.guest_msgscan_init);
-		strcpy(opt[i++], "Extra Attribute Codes...");
 		opt[i][0] = 0;
 		uifc.helpbuf =
 			"`Message Options:`\n"
@@ -1508,62 +1507,66 @@ void msg_opts()
 				           , str, 4, K_EDIT | K_NUMBER);
 				cfg.guest_msgscan_init = atoi(str);
 				break;
-			case 17:
-				uifc.helpbuf =
-					"`Extra Attribute Codes...`\n"
-					"\n"
-					"Synchronet can support the native text attribute (e.g. color) codes of\n"
-					"other BBS programs in messages (menus, posts, e-mail, etc.) To enable\n"
-					"extra attribute codes for another BBS program, set the corresponding\n"
-					"option to `Yes`.\n"
-					"\n"
-					"- WWIV color codes are preceded by a Ctrl-C (ASCII 3) character.\n"
-					"- PCBoard color codes are of the form `@Xxx` where `xx` are hex digits.\n"
-					"- Wildcat color codes are of the form `@xx@` where `xx` are hex digits.\n"
-					"- Celerity color codes are of the form `|x` where `x` is an alpha char.\n"
-					"- Renegade color codes are of the form `|xx` where `xx` are decimal digits.\n"
-					"\n"
-					"See `http://wiki.synchro.net/custom:colors` for details.\n"
-				;
+		}
+	}
+}
 
-				j = 0;
-				while (1) {
-					i = 0;
-					snprintf(opt[i++], MAX_OPLN, "%-15.15s %-3.3s", "WWIV"
-					         , cfg.sys_misc & SM_WWIV ? "Yes":"No");
-					snprintf(opt[i++], MAX_OPLN, "%-15.15s %-3.3s", "PCBoard"
-					         , cfg.sys_misc & SM_PCBOARD ? "Yes":"No");
-					snprintf(opt[i++], MAX_OPLN, "%-15.15s %-3.3s", "Wildcat"
-					         , cfg.sys_misc & SM_WILDCAT ? "Yes":"No");
-					snprintf(opt[i++], MAX_OPLN, "%-15.15s %-3.3s", "Celerity"
-					         , cfg.sys_misc & SM_CELERITY ? "Yes":"No");
-					snprintf(opt[i++], MAX_OPLN, "%-15.15s %-3.3s", "Renegade"
-					         , cfg.sys_misc & SM_RENEGADE ? "Yes":"No");
-					opt[i][0] = 0;
-					j = uifc.list(WIN_BOT | WIN_RHT | WIN_SAV, 2, 2, 0, &j, 0
-					              , "Extra Attribute Codes", opt);
-					if (j == -1)
-						break;
+void toggle_xattr_support(const char* title, uint32_t* val, int shift)
+{
+	uifc.helpbuf =
+		"`Extra Attribute Codes...`\n"
+		"\n"
+		"Synchronet can support the native text attribute (e.g. color) codes of\n"
+		"other BBS programs in messages and display files (e.g. menus). To enable\n"
+		"extra attribute codes for another BBS program, set the corresponding\n"
+		"option to `Yes`.\n"
+		"\n"
+		"- `WWIV` color codes are preceded by a Ctrl-C (ASCII 3) character.\n"
+		"- `PCBoard` color codes are of the form `@Xxx` where `xx` are hex digits.\n"
+		"- `Wildcat` color codes are of the form `@xx@` where `xx` are hex digits.\n"
+		"- `Celerity` color codes are of the form `|x` where `x` is an alpha character.\n"
+		"- `Renegade` color codes are of the form `|xx` where `xx` are decimal digits.\n"
+		"  Renegade codes are the most popular/common among non-Synchronet BBSes.\n"
+		"\n"
+		"See `http://wiki.synchro.net/custom:colors` for details.\n"
+	;
 
-					uifc.changes = 1;
-					switch (j) {
-						case 0:
-							cfg.sys_misc ^= SM_WWIV;
-							break;
-						case 1:
-							cfg.sys_misc ^= SM_PCBOARD;
-							break;
-						case 2:
-							cfg.sys_misc ^= SM_WILDCAT;
-							break;
-						case 3:
-							cfg.sys_misc ^= SM_CELERITY;
-							break;
-						case 4:
-							cfg.sys_misc ^= SM_RENEGADE;
-							break;
-					}
-				}
+	int j = 0;
+	while (1) {
+		int i = 0;
+		snprintf(opt[i++], MAX_OPLN, "%-30s %-3.3s", "WWIV (Heart) Codes"
+					, (*val) & (SM_WWIV << shift) ? "Yes":"No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s %-3.3s", "PCBoard (@Xxx) Codes"
+					, (*val) & (SM_PCBOARD << shift) ? "Yes":"No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s %-3.3s", "Wildcat (@xx@) Codes"
+					, (*val) & (SM_WILDCAT << shift) ? "Yes":"No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s %-3.3s", "Celerity (|x) Codes"
+					, (*val) & (SM_CELERITY << shift) ? "Yes":"No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s %-3.3s", "Renegade (|xx) Codes"
+					, (*val) & (SM_RENEGADE << shift) ? "Yes":"No");
+		opt[i][0] = 0;
+		j = uifc.list(WIN_BOT | WIN_RHT | WIN_SAV, 2, 2, 0, &j, 0
+					    , title, opt);
+		if (j == -1)
+			break;
+
+		uifc.changes = TRUE;
+		switch (j) {
+			case 0:
+				(*val) ^= (SM_WWIV << shift);
+				break;
+			case 1:
+				(*val) ^= (SM_PCBOARD << shift);
+				break;
+			case 2:
+				(*val) ^= (SM_WILDCAT << shift);
+				break;
+			case 3:
+				(*val) ^= (SM_CELERITY << shift);
+				break;
+			case 4:
+				(*val) ^= (SM_RENEGADE << shift);
+				break;
 		}
 	}
 }

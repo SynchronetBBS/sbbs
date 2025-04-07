@@ -113,9 +113,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 		char *wrapped;
 		if (org_cols < TERM_COLS_MIN)
 			org_cols = TERM_COLS_DEFAULT;
-		if ((wrapped = ::wordwrap((char*)str + l, term->cols - 1, org_cols - 1, /* handle_quotes: */ TRUE
-		                          , /* is_utf8: */ INT_TO_BOOL(mode & P_UTF8)
-		                          , /* pipe_codes: */(cfg.sys_misc & SM_RENEGADE) && !INT_TO_BOOL(mode & P_NOXATTRS))) == NULL)
+		if ((wrapped = ::wordwrap((char*)str + l, term->cols - 1, org_cols - 1, /* handle_quotes: */ TRUE, mode)) == NULL)
 			errormsg(WHERE, ERR_ALLOC, "wordwrap buffer", 0);
 		else {
 			truncsp_lines(wrapped);
@@ -239,8 +237,8 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 				l += 2;
 			}
 		}
-		else if (!(mode & P_NOXATTRS)
-		         && (cfg.sys_misc & SM_PCBOARD) && str[l] == '@' && str[l + 1] == 'X'
+		else if ((mode & P_PCBOARD)
+		         && str[l] == '@' && str[l + 1] == 'X'
 		         && IS_HEXDIGIT(str[l + 2]) && IS_HEXDIGIT(str[l + 3])) {
 			uint val = (HEX_CHAR_TO_INT(str[l + 2]) << 4) + HEX_CHAR_TO_INT(str[l + 3]);
 			// @X00 saves the current color and @XFF restores that saved color
@@ -259,16 +257,16 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 			exatr = 1;
 			l += 4;
 		}
-		else if (!(mode & P_NOXATTRS)
-		         && (cfg.sys_misc & SM_WILDCAT) && str[l] == '@' && str[l + 3] == '@'
+		else if ((mode & P_WILDCAT)
+		         && str[l] == '@' && str[l + 3] == '@'
 		         && IS_HEXDIGIT(str[l + 1]) && IS_HEXDIGIT(str[l + 2])) {
 			attr((HEX_CHAR_TO_INT(str[l + 1]) << 4) + HEX_CHAR_TO_INT(str[l + 2]));
 			// exatr=1;
 			l += 4;
 		}
-		else if (!(mode & P_NOXATTRS)
-		         && (cfg.sys_misc & SM_RENEGADE) && str[l] == '|' && IS_DIGIT(str[l + 1])
-		         && IS_DIGIT(str[l + 2]) && !(useron.misc & RIP)) {
+		else if ((mode & P_RENEGADE)
+		         && str[l] == '|' && IS_DIGIT(str[l + 1])
+		         && IS_DIGIT(str[l + 2])) {
 			i = (DEC_CHAR_TO_INT(str[l + 1]) * 10) + DEC_CHAR_TO_INT(str[l + 2]);
 			if (i >= 16) {                 /* setting background */
 				i -= 16;
@@ -281,9 +279,8 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 			exatr = 1;
 			l += 3;   /* Skip |xx */
 		}
-		else if (!(mode & P_NOXATTRS)
-		         && (cfg.sys_misc & SM_CELERITY) && str[l] == '|' && IS_ALPHA(str[l + 1])
-		         && !(useron.misc & RIP)) {
+		else if ((mode & P_CELERITY)
+		         && str[l] == '|' && IS_ALPHA(str[l + 1])) {
 			switch (str[l + 1]) {
 				case 'k':
 					attr((curatr & 0xf0) | BLACK);
@@ -340,8 +337,8 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 			exatr = 1;
 			l += 2;   /* Skip |x */
 		}  /* Skip second digit if it exists */
-		else if (!(mode & P_NOXATTRS)
-		         && (cfg.sys_misc & SM_WWIV) && str[l] == CTRL_C && IS_DIGIT(str[l + 1])) {
+		else if ((mode & P_WWIV)
+		         && str[l] == CTRL_C && IS_DIGIT(str[l + 1])) {
 			exatr = 1;
 			switch (str[l + 1]) {
 				default:
