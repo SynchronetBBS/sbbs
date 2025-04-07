@@ -24,10 +24,19 @@ void Terminal::scroll_hotspots(unsigned count)
 		return;
 	unsigned spots = 0;
 	unsigned remain = 0;
-	for (list_node_t* node = mouse_hotspots->first; node != NULL; node = node->next) {
+	list_node_t* node = mouse_hotspots->first;
+	while (node != NULL) {
 		struct mouse_hotspot* spot = (struct mouse_hotspot*)node->data;
-		spot->y -= count;
+		list_node_t* next = node->next;
+		if (spot->y >= count) {
+			spot->y -= count;
+			remain++;
+		}
+		else {
+			listRemoveNode(mouse_hotspots, node, true);
+		}
 		spots++;
+		node = next;
 	}
 #ifdef _DEBUG
 	if (spots)
