@@ -1196,9 +1196,15 @@ bool ANSI_Terminal::parse_input_sequence(char& ch, int mode) {
 					if (ansi.ansi_sequence[2] == '<') {
 						switch (ansi.ansi_final_byte) {
 							case 'm':
-								return handle_SGR_mouse_sequence(ch, ansi, true);
+								if (handle_SGR_mouse_sequence(ch, ansi, true))
+									return true;
+								ch = 0;
+								return false;
 							case 'M':
-								return handle_SGR_mouse_sequence(ch, ansi, false);
+								if (handle_SGR_mouse_sequence(ch, ansi, false))
+									return true;
+								ch = 0;
+								return false;
 						}
 					}
 				}
