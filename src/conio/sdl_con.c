@@ -370,18 +370,9 @@ sdl_get_bounds(int *w, int *h)
 	return true;
 }
 
-static int sdl_init_mode(int mode, bool init)
+static int sdl_init_mode(int mode)
 {
 	int w, h;
-
-	if (mode != CIOLIB_MODE_CUSTOM) {
-		assert_rwlock_rdlock(&vstatlock);
-		if (mode == vstat.mode && !init) {
-			assert_rwlock_unlock(&vstatlock);
-			return 0;
-		}
-		assert_rwlock_unlock(&vstatlock);
-	}
 
 	sdl_user_func(SDL_USEREVENT_FLUSH);
 
@@ -434,7 +425,7 @@ int sdl_init(int mode)
 	_beginthread(sdl_video_event_thread, 0, NULL);
 #endif
 	sdl_user_func_ret(SDL_USEREVENT_INIT);
-	sdl_init_mode(ciolib_initial_mode, true);
+	sdl_init_mode(ciolib_initial_mode);
 
 	if(sdl_init_good) {
 		cio_api.mode=fullscreen?CIOLIB_MODE_SDL_FULLSCREEN:CIOLIB_MODE_SDL;
@@ -568,7 +559,7 @@ int sdl_getch(void)
 /* Called from main thread only */
 void sdl_textmode(int mode)
 {
-	sdl_init_mode(mode, false);
+	sdl_init_mode(mode);
 }
 
 /* Called from main thread only (Passes Event) */

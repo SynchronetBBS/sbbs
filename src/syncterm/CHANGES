@@ -10,6 +10,7 @@ Pass control key combinations in BBC Micro mode
 Add support for DECSC/DECRC control codes
 Fix crash when first ANSI music note played is in background
 Fix binary mode tracking, which could cause issues after transfers
+Fix SDL and GDI issue with textmode() when font is changed
 
 Version 1.6
 ------------

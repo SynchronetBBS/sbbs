@@ -1090,15 +1090,6 @@ gdi_textmode(int mode)
 {
 	int mw, mh;
 
-	if (mode != CIOLIB_MODE_CUSTOM) {
-		assert_rwlock_rdlock(&vstatlock);
-		if (mode == vstat.mode) {
-			assert_rwlock_unlock(&vstatlock);
-			return;
-		}
-		assert_rwlock_unlock(&vstatlock);
-	}
-
 	assert_rwlock_wrlock(&vstatlock);
 	get_monitor_size_pos(&mw, &mh, NULL, NULL);
 	UnadjustWindowSize(&mw, &mh);
