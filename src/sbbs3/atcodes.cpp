@@ -126,12 +126,13 @@ int sbbs_t::show_atcode(const char *instr, JSObject* obj)
 	tp = strchr(str + 1, '@');
 	if (!tp)                 /* no terminating @ */
 		return 0;
-	sp = strchr(str + 1, ' ');
-	if (sp && sp < tp)         /* space before terminating @ */
-		return 0;
 	len = (tp - str) + 1;
 	(*tp) = 0;
 	sp = (str + 1);
+	if (IS_DIGIT(*sp)) // @-codes cannot start with a number
+		return 0;
+	if (strcspn(sp, " \t\r\n") != strlen(sp))  // white-space before terminating @
+		return 0;
 
 	if (*sp == '~' && *(sp + 1)) {   // Mouse hot-spot (hungry)
 		sp++;
