@@ -35,7 +35,7 @@
 /* for pauses, aborts and ANSI. 'str' is the path of the file to print      */
 /* Called from functions menu and text_sec                                  */
 /****************************************************************************/
-bool sbbs_t::printfile(const char* fname, int mode, int org_cols, JSObject* obj)
+bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj)
 {
 	char* buf;
 	char  fpath[MAX_PATH + 1];
@@ -45,7 +45,16 @@ bool sbbs_t::printfile(const char* fname, int mode, int org_cols, JSObject* obj)
 	int   l, length, savcon = console;
 	FILE *stream;
 
-	SAFECOPY(fpath, fname);
+	if (FULLPATH(fpath, inpath, sizeof fpath) == NULL)
+		SAFECOPY(fpath, inpath);
+	if ((mode & P_MODS) && cfg.mods_dir[0] != '\0') {
+		if (strncmp(fpath, cfg.text_dir, strlen(cfg.text_dir)) == 0) {
+			char modpath[MAX_PATH + 1];
+			snprintf(modpath, sizeof modpath, "%stext/%s", cfg.mods_dir, fpath + strlen(cfg.text_dir));
+			if(fexistcase(modpath))
+				SAFECOPY(fpath, modpath);
+		}
+	}
 	(void)fexistcase(fpath);
 	p = getfext(fpath);
 	if (p != NULL) {
@@ -308,6 +317,10 @@ bool sbbs_t::menu(const char *code, int mode, JSObject* obj)
 	return printfile(path, mode, /* org_cols: */ 0, obj);
 }
 
+//****************************************************************************
+// Check (return true) if a menu file exists with specified type/extension
+// 'path' buffer must be at least (MAX_PATH + 1) bytes in size
+//****************************************************************************
 bool sbbs_t::menu_exists(const char *code, const char* ext, char* path)
 {
 	char pathbuf[MAX_PATH + 1];
@@ -337,6 +350,16 @@ bool sbbs_t::menu_exists(const char *code, const char* ext, char* path)
 		SAFEPRINTF3(prefix, "%smenu/%s%s", cfg.text_dir, subdir, code);
 		FULLPATH(path, prefix, MAX_PATH);
 		SAFECOPY(prefix, path);
+		if (cfg.mods_dir[0] != '\0') {
+			char modprefix[MAX_PATH + 1];
+			char modpath[MAX_PATH + 1];
+			snprintf(modprefix, sizeof modprefix, "%stext/menu/%s%s", cfg.mods_dir, subdir, code);
+			snprintf(modpath, sizeof modpath, "%s.%s", modprefix, ext);
+			if (fexist(modpath)) {
+				FULLPATH(path, modprefix, MAX_PATH);
+				SAFECOPY(prefix, path);
+			}
+		}
 	}
 	// Display specified EXACT width file
 	safe_snprintf(path, MAX_PATH, "%s.%ucol.%s", prefix, term->cols, ext);
@@ -379,6 +402,12 @@ bool sbbs_t::random_menu(const char *name, int mode, JSObject* obj)
 	str_list_t names = NULL;
 
 	SAFEPRINTF2(path, "%smenu/%s", cfg.text_dir, name);
+	if (cfg.mods_dir[0] != '\0') {
+		char modpath[MAX_PATH + 1];
+		SAFEPRINTF2(modpath, "%stext/menu/%s", cfg.mods_dir, name);
+		if (fexist(modpath))
+			SAFECOPY(path, modpath);
+	}
 	if (glob(path, GLOB_NOESCAPE | GLOB_MARK, NULL, &g) != 0) {
 		return false;
 	}

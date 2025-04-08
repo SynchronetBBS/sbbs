@@ -212,7 +212,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 					tmp2[i] = 0;
 					sys_status |= SS_NEST_PF;     /* keep it only one message deep! */
 					SAFEPRINTF2(path, "%s%s", cfg.text_dir, tmp2);
-					printfile(path, 0);
+					printfile(path, P_MODS);
 					sys_status &= ~SS_NEST_PF;
 				}
 			}

@@ -1610,12 +1610,12 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 
 	if (!strncmp(sp, "TYPE:", 5)) {
-		printfile(cmdstr(sp + 5, nulstr, nulstr, str), 0);
+		printfile(cmdstr(sp + 5, nulstr, nulstr, str), P_MODS);
 		return nulstr;
 	}
 
 	if (!strncmp(sp, "INCLUDE:", 8)) {
-		printfile(cmdstr(sp + 8, nulstr, nulstr, str), P_NOCRLF | P_SAVEATR);
+		printfile(cmdstr(sp + 8, nulstr, nulstr, str), P_NOCRLF | P_SAVEATR | P_MODS);
 		return nulstr;
 	}
 

@@ -990,6 +990,12 @@ bool sbbs_t::trashcan(const char *insearchof, const char *name, struct trash* tr
 	result = ::trashcan2(&cfg, insearchof, NULL, name, trash);
 	if (result) {
 		snprintf(str, sizeof str, "%sbad%s.msg", cfg.text_dir, name);
+		if (cfg.mods_dir[0] != '\0') {
+			char modpath[MAX_PATH + 1];
+			snprintf(modpath, sizeof modpath, "%stext/bad%s.msg", cfg.mods_dir, name);
+			if (fexistcase(modpath))
+				SAFECOPY(str, modpath);
+	}
 		if (fexistcase(str)) {
 			printfile(str, 0);
 			flush_output(500); // give time for tx buffer to clear before disconnect

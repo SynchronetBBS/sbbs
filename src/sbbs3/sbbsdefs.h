@@ -699,6 +699,7 @@ typedef enum {                       // Values for xtrn_t.event
 #define P_REMOTE    (1 << 18)     // Only print when online == ON_REMOTE
 #define P_INDENT    (1 << 19)     // Indent lines to current cursor column
 #define P_ATCODES   (1 << 20)     // Trusted @-codes in formatted string
+#define P_MODS      (1 << 21)     // Display from mods/text dir, if file is there
 
 #define P_XATTR_SHIFT 20
 #define P_WILDCAT   (SM_WILDCAT  << P_XATTR_SHIFT)

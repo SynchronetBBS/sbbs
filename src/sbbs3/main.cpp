@@ -5770,7 +5770,7 @@ NO_SSH:
 				lprintf(LOG_WARNING, "%04d %s [%s] !No nodes available for login.", client_socket, client.protocol, host_ip);
 				SAFEPRINTF(str, "%snonodes.txt", scfg.text_dir);
 				if (fexist(str))
-					sbbs->printfile(str, P_NOABORT);
+					sbbs->printfile(str, P_NOABORT | P_MODS);
 				else {
 					sbbs->cp437_out("\r\nSorry, all terminal nodes are in use or otherwise unavailable.\r\n");
 					sbbs->cp437_out("Please try again later.\r\n");
@@ -5846,7 +5846,7 @@ NO_SSH:
 				        , client_socket, client.protocol, new_node->cfg.node_num);
 				SAFEPRINTF(str, "%snonodes.txt", scfg.text_dir);
 				if (fexist(str))
-					sbbs->printfile(str, P_NOABORT);
+					sbbs->printfile(str, P_NOABORT | P_MODS);
 				else
 					sbbs->cp437_out("\r\nSorry, initialization failed. Try again later.\r\n");
 				sbbs->flush_output(3000);
