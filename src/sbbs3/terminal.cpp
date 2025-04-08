@@ -322,13 +322,17 @@ list_node_t *Terminal::find_hotspot(unsigned x, unsigned y)
 
 uint32_t Terminal::flags(bool raw)
 {
+	// Tuck away pointer to sbbs...
+	sbbs_t *sbbs_p = sbbs;
+
 	if (!raw) {
 		uint32_t newflags = get_flags(sbbs);
 		if (newflags != flags_)
 			update_terminal(sbbs);
 	}
-	// We have potentially destructed ourselves now...
-	return sbbs->term->flags_;
+
+	// We have potentially destructed ourselves now... use the new object.
+	return sbbs_p->term->flags_;
 }
 
 void Terminal::insert_indicator() {
