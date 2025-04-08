@@ -79,6 +79,9 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 	if (!(mode & P_NOXATTRS))
 		mode |= (cfg.sys_misc & SM_XATTR_SUPPORT) << P_XATTR_SHIFT;
 
+	if (rip) // Let's not eat the pipe codes used in RIP files
+		mode &= ~(P_CELERITY);
+
 	if ((stream = fnopen(&file, fpath, O_RDONLY | O_DENYNONE)) == NULL) {
 		if (!(mode & P_NOERROR)) {
 			lprintf(LOG_NOTICE, "!Error %d (%s) opening: %s"
