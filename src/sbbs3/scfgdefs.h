@@ -54,8 +54,8 @@ typedef struct {							/* Message sub board info */
 	uint32_t	misc,						/* Miscellaneous flags */
 				maxmsgs,					/* Max number of messages allowed */
 				maxcrcs;					/* Max number of CRCs to keep */
-	int32_t		pmode;						/* printfile()/putmsg() mode flags */
-	int32_t		n_pmode;					/* set of negated pmode flags */
+	uint32_t	pmode;						/* printfile()/putmsg() mode flags */
+	uint32_t	n_pmode;					/* set of negated pmode flags */
 	faddr_t		faddr;						/* FidoNet address */
 	bool		cfg_modified;               /* Update SMB header for this sub */
 
