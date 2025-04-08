@@ -500,7 +500,7 @@ JSBool js_msg_area_resolve(JSContext* cx, JSObject* areaobj, jsid id)
 
 			val = OBJECT_TO_JSVAL(grpobj);
 			grp_index = -1;
-			if (p->user == NULL || chk_ar(p->cfg, p->cfg->grp[l]->ar, p->user, p->client)) {
+			if (p->user == NULL || user_can_access_grp(p->cfg, l, p->user, p->client)) {
 
 				if (!JS_GetArrayLength(cx, grp_list, (jsuint*)&grp_index))
 					return JS_FALSE;

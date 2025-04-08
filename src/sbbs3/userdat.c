@@ -3592,6 +3592,22 @@ size_t user_field_len(enum user_field fnum)
 }
 
 /****************************************************************************/
+// Determine if the specified user can access one or more sub-boards of group
+/****************************************************************************/
+bool user_can_access_grp(scfg_t* cfg, int grpnum, user_t* user, client_t* client)
+{
+	uint count = 0;
+
+	for (int subnum = 0; subnum < cfg->total_subs; ++subnum) {
+		if (cfg->sub[subnum]->grp != grpnum)
+			continue;
+		if (user_can_access_sub(cfg, subnum, user, client)) // checks grp's AR already
+			count++;
+	}
+	return count >= 1; // User has access to one or more sub-boards of group
+}
+
+/****************************************************************************/
 /* Determine if the specified user can or cannot access the specified sub	*/
 /****************************************************************************/
 bool user_can_access_sub(scfg_t* cfg, int subnum, user_t* user, client_t* client)

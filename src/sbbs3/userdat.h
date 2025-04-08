@@ -156,6 +156,7 @@ DLLEXPORT bool  user_can_access_all_libs(scfg_t*, user_t*, client_t*);
 DLLEXPORT bool  user_can_access_all_dirs(scfg_t*, int libnum, user_t*, client_t*);
 DLLEXPORT bool  user_can_access_lib(scfg_t*, int libnum, user_t*, client_t*);
 DLLEXPORT bool  user_can_access_dir(scfg_t*, int dirnum, user_t*, client_t* client);
+DLLEXPORT bool  user_can_access_grp(scfg_t*, int subnum, user_t*, client_t* client);
 DLLEXPORT bool  user_can_access_sub(scfg_t*, int subnum, user_t*, client_t* client);
 DLLEXPORT bool  user_can_read_sub(scfg_t*, int subnum, user_t*, client_t* client);
 DLLEXPORT bool  user_can_post(scfg_t*, int subnum, user_t*, client_t* client, uint* reason);
