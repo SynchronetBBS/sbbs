@@ -122,13 +122,13 @@ int sbbs_t::show_atcode(const char *instr, JSObject* obj)
 
 	if (*instr != '@')
 		return 0;
-	SAFECOPY(str, instr);
-	tp = strchr(str + 1, '@');
-	if (!tp)                 /* no terminating @ */
+	SAFECOPY(str, instr + 1);
+	tp = strchr(str, '@');
+	if (tp == nullptr)                 /* no terminating @ */
 		return 0;
-	len = (tp - str) + 1;
-	(*tp) = 0;
-	sp = (str + 1);
+	len = (tp - str) + 2;
+	*tp = '\0';
+	sp = str;
 	if (IS_DIGIT(*sp)) // @-codes cannot start with a number
 		return 0;
 	if (strcspn(sp, " \t\r\n") != strlen(sp))  // white-space before terminating @
