@@ -623,7 +623,7 @@ void dumpindex(ulong start, ulong count)
 				       , idx.from, idx.to, idx.subj);
 				break;
 		}
-		printf("  %04X  %06X  %s", idx.attr, idx.offset
+		printf("  %04X  %07X  %s", idx.attr, idx.offset
 		       , xpDate_to_isoDateStr(time_to_xpDate(idx.time), "-", tmp, sizeof(tmp)));
 		if (smb_msg_type(idx.attr) == SMB_MSG_TYPE_FILE && idxreclen == sizeof(fileidxrec_t)) {
 			fileidxrec_t fidx;
