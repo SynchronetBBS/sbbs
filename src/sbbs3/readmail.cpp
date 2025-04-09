@@ -588,9 +588,22 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 				break;
 			case ')':
 			case '}':   /* Search Author forward */
-				for (u = smb.curmsg + 1; u < smb.msgs; u++)
+				for (u = smb.curmsg + 1; u < smb.msgs; u++) {
+					if (msg.idx.from == 0) {
+						smbmsg_t piece{};
+						piece.idx.offset = mail[u].offset;
+						if (loadmsg(&piece, mail[u].number) < 0)
+							continue;
+						smb_unlockmsghdr(&smb, &piece);
+						bool match = stricmp(piece.from, msg.from) == 0;
+						smb_freemsgmem(&piece);
+						if (match)
+							break;
+						continue;
+					}
 					if (mail[u].from == msg.idx.from)
 						break;
+				}
 				if (u < smb.msgs)
 					smb.curmsg = u;
 				else {
@@ -611,20 +624,32 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 				break;
 			case '(':
 			case '{':   /* Search Author backward */
+			{
+				uint n = smb.curmsg;
 				if (smb.curmsg > 0) {
-					for (u = smb.curmsg - 1;; u--) {
-						if (mail[u].from == msg.idx.from) {
-							smb.curmsg = u;
-							break;
+					for (u = smb.curmsg - 1; n == smb.curmsg && (int)u >= 0; u--) {
+						if (msg.idx.from == 0) {
+							smbmsg_t piece{};
+							piece.idx.offset = mail[u].offset;
+							if (loadmsg(&piece, mail[u].number) < 0)
+								continue;
+							smb_unlockmsghdr(&smb, &piece);
+							bool match = stricmp(piece.from, msg.from) == 0;
+							smb_freemsgmem(&piece);
+							if (match)
+								smb.curmsg = u;
 						}
-						if (u == 0) {
-							domsg = 0;
-							bputs(text[NoMessagesFound]);
-							break;
+						else if (mail[u].from == msg.idx.from) {
+							smb.curmsg = u;
 						}
 					}
 				}
+				if (n == smb.curmsg) {
+					domsg = 0;
+					bputs(text[NoMessagesFound]);
+				}
 				break;
+			}
 			case ']':   /* Search To User forward */
 				for (u = smb.curmsg + 1; u < smb.msgs; u++)
 					if (mail[u].to == msg.idx.to)
