@@ -5581,6 +5581,13 @@ NO_SSH:
 				}
 			}
 
+			// Initialize term state
+			sbbs->autoterm = 0;
+			if (sbbs->term)
+				delete sbbs->term;
+			sbbs->term = new Terminal(sbbs);
+			sbbs->term->cols = startup->default_term_width;
+
 			sbbs->client_socket = client_socket; // required for output to the user
 			if (!ssh)
 				sbbs->online = ON_REMOTE;
@@ -5672,9 +5679,6 @@ NO_SSH:
 
 			if (rlogin)
 				sbbs->outcom(0); /* acknowledge RLogin per RFC 1282 */
-
-			sbbs->autoterm = 0;
-			sbbs->term->cols = startup->default_term_width;
 
 			sbbs->bprintf("\r\n%s\r\n", VERSION_NOTICE);
 			sbbs->bprintf("%s connection from: %s\r\n", client.protocol, host_ip);
