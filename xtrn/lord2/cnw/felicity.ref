@@ -763,6 +763,8 @@ Leave A New Message
 Do Nothing
 @if responce is 1 then do begin
  @begin
+ @do `s04 is nil
+ @do `s05 is nil
 @readfile felnote.txt
 `s04
 `s05

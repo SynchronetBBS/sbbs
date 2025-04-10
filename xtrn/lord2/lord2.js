@@ -1574,13 +1574,9 @@ function insane_run_ref(sec, fname, refret)
 				}
 				f.close();
 			}
-			else
-				throw new Error('@readfile unable to open '+f.name);
-			// Documentation says it won't change variables if file too short...
-			// By felicity.ref ends up displaying junk...
-			//while (vs.length) {
-			//	setvar(vs.shift(), '');
-			//}
+			// Per felicity.ref, it's not an error to read past end, and
+			// variables keep previous value... which did print junk, but
+			// has been fixed.
 		},
 		'restorecursor':function(args) {
 			dk.console.gotoxy(saved_cursor.x, saved_cursor.y);
