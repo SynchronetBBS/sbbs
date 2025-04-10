@@ -8,6 +8,7 @@
 //   -T <connect-timeout-seconds> (default: 10 seconds)
 //   -m <telnet-gateway-mode> (Number or TG_* vars OR'd together, default: 0)
 //   -p send current user alias and password as server and client-name values
+//   -h send current user alias and hashed-password as server and client-name
 //   -q don't display banner or pause prompt (quiet)
 //   -v increase verbosity (display remote host name/address/port in messages)
 //   -P don't pause for user key-press
@@ -37,6 +38,15 @@ var pause = options.pause === undefined ? true : options.pause;
 var clear = options.clear === undefined ? true : options.clear;
 var timeout = options.timeout === undefined ? 10 : options.timeout;
 var verbosity = options.verbosity === undefined ? 0 : options.verbosity;
+
+function hashed_user_password()
+{
+	return sha1_calc(user.security.password
+		+ user.number
+		+ user.stats.firston_date
+		+ (options.salt || system.qwk_id)
+		, /* hex: */true);
+}
 
 for(var i = 0; i < argv.length; i++) {
 	var arg = argv[i];
@@ -69,6 +79,10 @@ for(var i = 0; i < argv.length; i++) {
 			continue;
 		case 'v':
 			++verbosity;
+			continue;
+		case 'h': // send alias and hashed-password
+			client_name = hashed_user_password();
+			server_name = user.alias;
 			continue;
 		case 'p': // send alias and password as expected by Synchronet
 			client_name = user.security.password;
