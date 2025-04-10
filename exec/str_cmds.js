@@ -907,9 +907,10 @@ function get_arg(str, parm, history)
 	str=str.replace(/^\s+/,"");
 	if(str=="") {
 		write(format("%s: ", parm));
-		str=console.getstr(128, K_MSG | K_TRIM, history);
+		str=console.getstr(200, K_MSG | K_TRIM | K_LINEWRAP, history);
 	}
 	if(str) {
+		log(parm + ": " + str);
 		var i = history.indexOf(str);
 		if(i >= 0)
 			history.splice(i, 1);
