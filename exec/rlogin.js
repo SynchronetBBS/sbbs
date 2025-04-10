@@ -22,7 +22,7 @@
 
 require("sbbsdefs.js", 'TG_RLOGINSWAP');
 
-var mode;
+var mode = 0;
 var addr;
 var client_name = '';
 var server_name = '';
@@ -44,7 +44,7 @@ for(var i = 0; i < argv.length; i++) {
 		if(!addr)
 			addr = arg;
 		else if(!mode)
-			mode = arg;
+			mode = eval(arg);
 		else if(!client_name)
 			client_name = arg;
 		else if(!server_name)
@@ -90,7 +90,7 @@ for(var i = 0; i < argv.length; i++) {
 			timeout = Number(value);
 			break;
 		case 'm':
-			mode = value;
+			mode = eval(value);
 			break;
 		default:
 			alert(js.exec_file + ": Unrecognized option: " + arg);
@@ -108,7 +108,6 @@ if(!quiet) {
 		console.pause();
 	write(format(options.connecting_msg || "\x01h\x01yConnecting to \x01w%s \x01n...\r\n", remote_host));
 }
-mode = eval(mode);
 var result = bbs.rlogin_gate(
 	 addr // address[:port]
 	,client_name || (mode & TG_RLOGINSWAP ? user.name : user.alias)
