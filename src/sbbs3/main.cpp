@@ -5456,7 +5456,7 @@ NO_SSH:
 					}
 				} else {
 					if (event_thread_blocked) {
-						lprintf(LOG_NOTICE, "Event thrad unblocked");
+						lprintf(LOG_NOTICE, "Event thread unblocked");
 						event_thread_blocked = false;
 					}
 				}
