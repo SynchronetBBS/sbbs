@@ -27,9 +27,6 @@ if(argc>0)
 else if(bbs.command_str && bbs.command_str != '')
 	str_cmds(bbs.command_str);	// otherwise, use command shell 'str' var, if supported (v3.13b)
 
-// For testing...
-//str_cmds(console.getstr("",60));
-
 function str_cmds(str)
 {
 	var file;	// File
@@ -41,6 +38,7 @@ function str_cmds(str)
 	var m;		// Temp integer
 	var a;		// Temp array
 	var s;		// Temp string
+	var help = []; // Command descriptions
 
 	// Remove any trailing spaces
 
@@ -57,8 +55,6 @@ function str_cmds(str)
 		return;
 	log("Invoked string command: " + str);
 	bbs.log_str(str);
-	if(str=="HELP")
-		write("\r\nAvailable commands\r\n\r\n");
 
 	var node_action = bbs.node_action;
 	if(bbs.compare_ars("SYSOP")) {
@@ -67,9 +63,7 @@ function str_cmds(str)
 		//sync
 
 		// ######################## SYSOP Functions ##############################
-		if(str=="HELP") {
-			writeln("AVAIL\tToggle sysop chat availability");
-		}
+		help["AVAIL"] = "Toggle sysop chat availability";
 		if(str=="AVAIL") {
 			system.operator_available = !system.operator_available;
 			write(format(bbs.text(text.LiSysopIs)
@@ -77,10 +71,7 @@ function str_cmds(str)
 			return;
 		}
 
-		if(str=="HELP") {
-			writeln("ERR\tDisplay current error log and optionally delete it, as well as");
-			writeln("\toptionally clearing all nodes' error counters.");
-		}
+		help["ERR"] = "Display current error log and optionally delete it, as well as optionally clearing all nodes' error counters";
 		if(str=="ERR") {
 			var errlog=system.logs_dir+"error.log";
 			if(file_exists(errlog)) {
@@ -107,8 +98,7 @@ function str_cmds(str)
 			return;
 		}
 
-		if(str=="HELP")
-			writeln("GURU\tDisplay and optionally clear current guru log.");
+		help["GURU"] = "Display and optionally clear current guru log";
 		if(str=="GURU") {
 			if(file_exists(system.logs_dir+"guru.log")) {
 				console.printfile(system.logs_dir+"guru.log");
@@ -118,18 +108,14 @@ function str_cmds(str)
 			}
 		}
 
-		if(str=="HELP")
-			writeln("CHUSER\tBecome a different user.");
+		help["CHUSER"] = "Become a different user";
 		if(str=="CHUSER") {
 			// Prompts for syspass
 			bbs.change_user();
 			return;
 		}
 
-		if(str=="HELP") {
-			writeln("TYPE [filename]");
-			writeln("\tDisplays a file. Aliases: LIST and CAT");
-		}
+		help["TYPE [filename]"] = "Displays a file. Aliases: LIST and CAT";
 		if(word=="LIST" || word=="TYPE" || word=="CAT") {
 			if(bbs.check_syspass()) {
 				str=str.substr(4);
@@ -138,10 +124,7 @@ function str_cmds(str)
 			}
 		}
 		
-		if(str=="HELP") {
-			writeln("ECHO [string]");
-			writeln("\tPrint a text message.");
-		}
+		help["ECHO [string]"] = "Print a text message";
 		if(word=="ECHO") {
 			if(bbs.check_syspass()) {
 				str=str.substr(4);
@@ -151,10 +134,7 @@ function str_cmds(str)
 			}
 		}
 		
-		if(str=="HELP") {
-			writeln("EVAL [string]");
-			writeln("\tEvaluate a JavaScript expression and display result.");
-		}
+		help["EVAL [string]"] = "Evaluate a JavaScript expression and display result";
 		if(word=="EVAL") {
 			if(bbs.check_syspass()) {
 				str=str.substr(4);
@@ -170,8 +150,7 @@ function str_cmds(str)
 			}
 		}
 
-		if(str=="HELP")
-			writeln("EDIT\tEdits a specified file using your message editor.");
+		help["EDIT"] = "Edits a specified file using your message editor";
 		if(word=="EDIT") {
 			if(bbs.check_syspass()) {
 				str=str.substr(4);
@@ -179,8 +158,7 @@ function str_cmds(str)
 			}
 		}
 
-		if(str=="HELP")
-			writeln("LOG\tDisplays todays activity log");
+		help["LOG"] = "Displays todays activity log";
 		if(str=="LOG") {
 			if(bbs.check_syspass()) {
 				str=system.logs_dir+strftime("logs/%m%d%y.log",time());
@@ -189,8 +167,7 @@ function str_cmds(str)
 			return;
 		}
 
-		if(str=="HELP")
-			writeln("YLOG\tDisplays yesterdays activity log.");
+		help["YLOG"] = "Displays yesterdays activity log";
 		if(str=="YLOG") {
 			if(bbs.check_syspass()) {
 				str=system.logs_dir+strftime("logs/%m%d%y.log",time()-24*60*60);
@@ -199,15 +176,13 @@ function str_cmds(str)
 			return;
 		}
 
-		if(str=="HELP")
-			writeln("SS\tDisplays current system stats");
+		help["SS"] = "Displays current system stats";
 		if(str=="SS") {
 			bbs.sys_stats();
 			return;
 		}
 
-		if(str=="HELP")
-			writeln("NS <#>\tDisplays the current node stats for node #.");
+		help["NS <#>"] = "Displays the current node stats for node #";
 		if(word=="NS") {
 			str=str.substr(2);
 			i=parseInt(get_nodenum(str));
@@ -216,10 +191,7 @@ function str_cmds(str)
 			return;
 		}
 
-		if(str=="HELP") {
-			writeln("EXEC [command]");
-			writeln("\texecutes command (or prompts for it) with I/O redirected.");
-		}
+		help["EXEC [command]"] = "Executes command (or prompts for it) with I/O redirected";
 		if(word=="EXEC") {
 			if(bbs.check_syspass()) {
 				str=str.substr(4);
@@ -234,11 +206,7 @@ function str_cmds(str)
 			return;
 		}
 
-		if(str=="HELP") {
-			writeln("NEXEC [command]");
-			writeln("\texecutes command (or prompts for it) with I/O redirected, and assuming");
-			writeln("\tit's a native binary.");
-		}
+		help["NEXEC [command]"] = "Executes command (or prompts for it) with I/O redirected, and assuming it's a native binary";
 		if(word=="NEXEC") {
 			if(bbs.check_syspass()) {
 				str=str.substr(5);
@@ -249,11 +217,7 @@ function str_cmds(str)
 			return;
 		}
 
-		if(str=="HELP") {
-			writeln("FOSSIL [command]");
-			writeln("\texecutes command (or prompts for it) with I/O redirected, and assuming");
-			writeln("\tthe internal FOSSIL driver will be used.");
-		}
+		help["FOSSIL [command]"] = "Executes command (or prompts for it) with I/O redirected, and assuming the internal FOSSIL driver will be used";
 		if(word=="FOSSIL") {
 			if(bbs.check_syspass()) {
 				str=str.substr(6);
@@ -264,10 +228,7 @@ function str_cmds(str)
 			return;
 		}
 
-		if(str=="HELP") {
-			writeln("CALL <HubID>");
-			writeln("\tforces a callout to QWKnet HubID");
-		}
+		help["CALL <HubID>"] = "Forces a callout to QWKnet HubID";
 		if(word=="CALL") {
 			if(bbs.check_syspass()) {
 				str=str.substr(4);
@@ -278,10 +239,7 @@ function str_cmds(str)
 			return;
 		}
 
-		if(str=="HELP") {
-			writeln("EVENT [EventID]");
-			writeln("\tforces a timed-event to execute via semfile");
-		}
+		help["EVENT [EventID]"] = "Forces a timed-event to execute via semfile";
 		if(word=="EVENT") {
 			if(bbs.check_syspass()) {
 				str = str.substr(5);
@@ -307,19 +265,13 @@ function str_cmds(str)
 		}
 
 
-		if(str=="HELP") {
-			writeln("NODE [parameters]");
-			writeln("\texecutes the node utility with the passed parameters.");
-		}
+		help["NODE [parameters]"] = "Executes the node utility with the passed parameters";
 		if(word=="NODE") {
 			bbs.exec(bbs.cmdstr("%!node%. -pause ") + str.substr(4), EX_STDIO|EX_NATIVE);
 			return;
 		}
 
-		if(str=="HELP") {
-			writeln("DOWN [#]");
-			writeln("\tdowns node #.  If # is omitted, downs the current node.");
-		}
+		help["DOWN [#]"] = "Downs node #.  If # is omitted, downs the current node";
 		if(word=="DOWN") {
 			str=str.substr(4);
 			i=parseInt(get_nodenum(str));
@@ -337,10 +289,7 @@ function str_cmds(str)
 			return;
 		}
 
-		if(str=="HELP") {
-			writeln("RERUN [#]");
-			writeln("\tMarks node # for rerun.  If # is omitted, reruns the current node.");
-		}
+		help["RERUN [#]"] = "Marks node # for rerun.  If # is omitted, reruns the current node";
 		if(word=="RERUN") {
 			str=str.substr(5);
 			i=parseInt(get_nodenum(str));
@@ -355,25 +304,19 @@ function str_cmds(str)
 			return;
 		}
 
-		if(str=="HELP")
-			writeln("RELOAD\tReload the current shell (if JavaScript).");
+		help["RELOAD"] = "Reload the current shell (if JavaScript)";
 		if(str=="RELOAD") {
 			bbs.load_user_text();
 			exit(0);
 		}
 
-		if(str=="HELP")
-			writeln("SLOG\tExecutes the slog utility to display system statistics.");
+		help["SLOG"] = "Executes the slog utility to display system statistics";
 		if(str=="SLOG") {
 			bbs.exec(bbs.cmdstr("%!slog%. /p"),EX_STDIO|EX_NATIVE);
 			return;
 		}
 
-		if(str=="HELP") {
-			writeln("NLOG [#]");
-			writeln("\tExecutes the slog utility to display node stats for the specified node.");
-			writeln("\tIf # is omitted, uses the current node.");
-		}
+		help["NLOG [#]"] = "Executes the slog utility to display node stats for the specified node. If # is omitted, uses the current node";
 		if(str=="NLOG") {
 			bbs.exec(bbs.cmdstr("%!slog%. %n /p"),EX_STDIO|EX_NATIVE);
 			return;
@@ -384,10 +327,7 @@ function str_cmds(str)
 			return;
 		}
 
-		if(str=="HELP") {
-			writeln("UEDIT [Number or Name]");
-			writeln("\tEdits specified user or starts at user #1");
-		}
+		help["UEDIT [Number or Name]"] = "Edits specified user or starts at user #1";
 		if(word=="UEDIT") {
 			// Prompts for syspass
 			str=str.substr(5).trim();
@@ -403,17 +343,13 @@ function str_cmds(str)
 			return;
 		}
 
-		if(str=="HELP")
-			writeln("MAIL\tRead all mail currently in the mail base");
+		help["MAIL"] = "Read all mail currently in the mail base";
 		if(str=="MAIL") {
 			bbs.read_mail(MAIL_ALL);
 			return;
 		}
 
-		if(str=="HELP") {
-			writeln("BULKMAIL");
-			writeln("\tSends a mail to all users which match a specified ARS.");
-		}
+		help["BULKMAIL"] = "Sends a mail to all users which match a specified ARS";
 		if(str=="BULKMAIL") {
 			write("\r\nEnter ARS matches to send mail to or [CR] to send ");
 			write("by name/number\r\nARS to match: ");
@@ -423,9 +359,7 @@ function str_cmds(str)
 			return;
 		}
 
-		if(str=="HELP") {
-			writeln("DOS\tExecutes the DOS shell (command.com) with I/O redirected.");
-		}
+		help["DOS"] = "Executes the DOS shell (command.com) with I/O redirected";
 		if(str=="DOS") {	// DOS/Windows shell
 			if(bbs.check_syspass()) {
 				bbs.exec("command.com",EX_STDIO);
@@ -433,8 +367,7 @@ function str_cmds(str)
 			return;
 		}
 
-		if(str=="HELP")
-			writeln("SHELL\tExecutes the native shell (COMSPEC or SHELL env variable).");
+		help["SHELL"] = "Executes the native shell (COMSPEC or SHELL env variable)";
 		if(str=="SHELL") {	// Unix shell (-i for interactive)
 			if(bbs.check_syspass()) {
 				if(system.platform != 'Win32')
@@ -445,10 +378,7 @@ function str_cmds(str)
 			return;
 		}
 
-		if(str=="HELP") {
-			writeln("SPY <#>");
-			writeln("\tSpys on node #.");
-		}
+		help["SPY <#>"] = "Spys on node #";
 		if(word=="SPY") {
 			if(bbs.check_syspass()) {
 				str=str.substr(3);
@@ -465,21 +395,14 @@ function str_cmds(str)
 			return;
 		}
 
-		if(str=="HELP") {
-			writeln("LOAD [filespec]");
-			writeln("\tLoads the text.dat from the specified filespec.");
-		}
+		help["LOAD [filespec]"] = "Loads the text.dat from the specified filespec";
 		if(word=="LOAD") {
 			str=str.substr(4);
 			bbs.load_text(get_filename(str));
 			return;
 		}
 
-		if(str=="HELP") {
-			writeln("DIR [path]");
-			writeln("\tDisplays a full directory of specified path or the current file area if");
-			writeln("\tnot specified");
-		}
+		help["DIR [path]"] = "Displays a full directory of specified path or the current file area if not specified";
 		if(str=="DIR" && node_action == NODE_XFER) {
 			// Dir of current lib:
 			if(bbs.check_syspass()) {
@@ -553,14 +476,10 @@ function str_cmds(str)
 
 
 		if(node_action == NODE_XFER) {
-
-			if(str=="HELP") {
-				writeln("UPLOAD [areaspec]");
-				writeln("\tPerforms a bulk upload in areaspec where area spec is ALL, LIB, or");
-				writeln("\tomitted.");
-				writeln("\tIf areaspec is ALL performs the bulk upload in all file areas.");
-				writeln("\tIf areaspec is LIB, does the same in all areas of the current lib.");
-			}
+			help["UPLOAD [areaspec]"] = 
+				"Performs a bulk upload in areaspec where area spec is ALL, LIB, or omitted. " +
+				"If areaspec is ALL performs the bulk upload in all file areas. " +
+				"If areaspec is LIB, does the same in all areas of the current lib";
 			if(word=="UPLOAD") {
 				str=str.substr(7);
 				if(str.toUpperCase()=="ALL") {
@@ -591,14 +510,9 @@ function str_cmds(str)
 				return;
 			}
 
-			if(str=="HELP") {
-				writeln("OLDUL [ALL|LIB|blank]");
-				writeln("\tLists all files uploaded before your last scan time.");
-				writeln("OLD [ALL|LIB|blank]");
-				writeln("\tLists all files not downloaded since your last scan time.");
-				writeln("OFFLINE [ALL|LIB|blank]");
-				writeln("\tLists all offline files.");
-			}
+			help["OLDUL [ALL|LIB|blank]"] =	"Lists all files uploaded before your last scan time";
+			help["OLD [ALL|LIB|blank]"] = "Lists all files not downloaded since your last scan time";
+			help["OFFLINE [ALL|LIB|blank]"] = "Lists all offline files";
 			if(word=="OLDUL" || word=="OLD" || word=="OFFLINE") {
 				str=str.replace(/^[A-Z]*\s/,"");
 				if(file_area.lib_list.length<1)
@@ -667,10 +581,7 @@ function str_cmds(str)
 			}
 		}
 
-		if(str=="HELP") {
-			writeln("GET [path]");
-			writeln("\tDownload the specified file");
-		}
+		help["GET [path]"] = "Download the specified file";
 		if(word=="GET") {
 			str=str.substr(3);
 			str=str.replace(/^\s+/,"");
@@ -691,10 +602,7 @@ function str_cmds(str)
 			return;
 		}
 
-		if(str=="HELP") {
-			writeln("PUT [path]");
-			writeln("\tUpload the specified file");
-		}
+		help["PUT [path]"] = "Upload the specified file";
 		if(word=="PUT") {
 			str=str.substr(3);
 			str=str.replace(/^\s+/,"");
@@ -717,8 +625,7 @@ function str_cmds(str)
 
 //# Quiet Node
 	if(user.compare_ars("exempt Q")) {
-		if(str=="HELP")
-			writeln("QUIET\tToggles quiet setting (you are not listed as online).");
+		help["QUIET"]="Toggles quiet setting (you are not listed as online)";
 		if(str=="QUIET") {
 			if(system.node_list[bbs.node_num-1].status==NODE_QUIET)
 				system.node_list[bbs.node_num-1].status=NODE_INUSE;
@@ -728,10 +635,7 @@ function str_cmds(str)
 			return;
 		}
 
-		if(str=="HELP") {
-			writeln("ANON\tToggles anonymous setting (the node is listed online, but you are not");
-			writeln("\tmentioned).");
-		}
+		help["ANON"] = "Toggles anonymous setting (the node is listed online, but you are not mentioned)";
 		if(str=="ANON") {
 			system.node_list[bbs.node_num-1].misc ^= NODE_ANON;
 			display_node(bbs.node_num);
@@ -741,10 +645,7 @@ function str_cmds(str)
 
 // Lock Node
 	if(user.compare_ars("exempt N")) {
-		if(str=="HELP") {
-			writeln("LOCK [#]");
-			writeln("\tLocks the specified node, or the current node if none specified.");
-		}
+		help["LOCK [#]"] = "Locks the specified node, or the current node if none specified";
 		if(word=="LOCK") {
 			str=str.substr(4);
 			i=parseInt(get_nodenum(str));
@@ -762,10 +663,7 @@ function str_cmds(str)
 
 // Interrupt Node
 	if(user.compare_ars("exempt I")) {
-		if(str=="HELP") {
-			writeln("INTR [#]");
-			writeln("\tInterrupts the specified node, or the current node if none specified.");
-		}
+		help["INTR [#]"] = "Interrupts the specified node, or the current node if none specified";
 		if(word=="INTR") {
 			str=str.substr(4);
 			i=parseInt(get_nodenum(str));
@@ -783,16 +681,14 @@ function str_cmds(str)
 
 // Chat
 	if(user.compare_ars("exempt C")) {
-		if(str=="HELP")
-			writeln("CHAT\tPages the sysop");
+		help["CHAT"] = "Pages the sysop";
 		if(str=="CHAT") {
 			bbs.page_sysop();
 			return;
 		}
 	}
 
-	if(str=="HELP")
-		writeln("POFF\tToggles if other users can page you for this session.");
+	help["POFF"] = "Toggles if other users can page you for this session";
 	if(str=="POFF") {
 		system.node_list[bbs.node_num-1].misc ^= NODE_POFF;
 		write("Paging is ");
@@ -804,8 +700,7 @@ function str_cmds(str)
 
 // Edit .plan
 	if(user.compare_ars("rest not G")) {
-		if(str=="HELP")
-			writeln("PLAN\tEdits or deletes your .plan file (displayed when somebody fingers you).");
+		help["PLAN"] = "Edits or deletes your .plan file (displayed when somebody fingers you)";
 		if(str=="PLAN") {
 			var plan=format("%suser/%04d.plan",system.data_dir,user.number);
 			if(file_exists(plan)) {
@@ -821,10 +716,8 @@ function str_cmds(str)
 			}
 		}
 
-		if(str=="HELP") {
-			writeln("SIG\tEdit or delete your default message signature.");
-			writeln("SUBSIG\tEdit or delete your signature for this sub-board (over-rides default).");
-		}
+		help["SIG"] = "Edit or delete your default message signature";
+		help["SUBSIG"] = "Edit or delete your signature for this sub-board (over-rides default)";
 		if(str=="SIG" || str=="SUBSIG") {
 			var userSigFilename = system.data_dir + "user/" + format("%04u", user.number);
 			if(str == "SUBSIG")
@@ -845,10 +738,7 @@ function str_cmds(str)
 		}
 	}
 
-	if(str=="HELP") {
-		writeln("FIND [word]");
-		writeln("\tFind a message area or file area.");
-	}
+	help["FIND [word]"] = "Find a message area or file area";
 	if(word == "FIND" && node_action == NODE_MAIN) {
 		str = get_arg(str.substr(4).trim(), "Find").toLowerCase();
 		if(!str)
@@ -885,12 +775,27 @@ function str_cmds(str)
 			}
 		}
 	}
-	if(str=="HELP") {
-		writeln("MSGS\tRedisplay instant messages (notifications and telegrams).");
-	}
+	help["MSGS"] = "Redisplay instant messages (notifications and telegrams)";
 	if(word == "MSGS") {
 		load({}, 'viewimsgs.js');
 	}
+	if(str=="HELP") {
+		write("\r\n\x01y\x01hAvailable commands\x01n\r\n\r\n");
+		for(var i in help)
+			print_help(i, help[i]);
+	} else if(word == "HELP") {
+		var cmd = str.substr(4).trim().toUpperCase();
+		if(!help[cmd])
+			alert("Unrecognized command: " + cmd);
+		else
+			print_help(cmd, help[cmd]);
+	}
+}
+
+function print_help(cmd, desc)
+{
+	console.print(format("\x01h%-18s\x01n  ", cmd));
+	console.putmsg(word_wrap(desc, console.screen_columns - 21), P_INDENT);
 }
 
 //### Generic routine to ask user for parameter if one wasn't specified ###
