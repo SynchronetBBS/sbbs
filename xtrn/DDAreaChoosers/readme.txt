@@ -1,6 +1,6 @@
                      Digital Distortion Area Choosers
-                              Version 1.42
-                        Release date: 2025-03-17
+                              Version 1.42b
+                        Release date: 2025-04-10
 
                                   by
 
@@ -160,26 +160,26 @@ do the following:
 If you would like to set up these scripts as doors, the following is an example
 setup of the message area chooser (assuming it is placed in sbbs/exec or
 sbbs/mods):
-+[¦][?]----------------------------------------------------+
-¦                   Message Area Chooser                   ¦
-¦----------------------------------------------------------¦
-¦ ¦Name                       Message Area Chooser         ¦
-¦ ¦Internal Code              MSGARCHO                     ¦
-¦ ¦Start-up Directory                                      ¦
-¦ ¦Command Line               ?DDMsgAreaChooser.js         ¦
-¦ ¦Clean-up Command Line                                   ¦
-¦ ¦Execution Cost             None                         ¦
-¦ ¦Access Requirements                                     ¦
-¦ ¦Execution Requirements                                  ¦
-¦ ¦Multiple Concurrent Users  Yes                          ¦
-¦ ¦Intercept Standard I/O     No                           ¦
-¦ ¦Native (32-bit) Executable No                           ¦
-¦ ¦Use Shell to Execute       No                           ¦
-¦ ¦Modify User Data           No                           ¦
-¦ ¦Execute on Event           No                           ¦
-¦ ¦Pause After Execution      No                           ¦
-¦ ¦BBS Drop File Type         None                         ¦
-¦ ¦Place Drop File In         Node Directory               ¦
++[Â¦][?]----------------------------------------------------+
+Â¦                   Message Area Chooser                   Â¦
+Â¦----------------------------------------------------------Â¦
+Â¦ Â¦Name                       Message Area Chooser         Â¦
+Â¦ Â¦Internal Code              MSGARCHO                     Â¦
+Â¦ Â¦Start-up Directory                                      Â¦
+Â¦ Â¦Command Line               ?DDMsgAreaChooser.js         Â¦
+Â¦ Â¦Clean-up Command Line                                   Â¦
+Â¦ Â¦Execution Cost             None                         Â¦
+Â¦ Â¦Access Requirements                                     Â¦
+Â¦ Â¦Execution Requirements                                  Â¦
+Â¦ Â¦Multiple Concurrent Users  Yes                          Â¦
+Â¦ Â¦Intercept Standard I/O     No                           Â¦
+Â¦ Â¦Native (32-bit) Executable No                           Â¦
+Â¦ Â¦Use Shell to Execute       No                           Â¦
+Â¦ Â¦Modify User Data           No                           Â¦
+Â¦ Â¦Execute on Event           No                           Â¦
+Â¦ Â¦Pause After Execution      No                           Â¦
+Â¦ Â¦BBS Drop File Type         None                         Â¦
+Â¦ Â¦Place Drop File In         Node Directory               Â¦
 +----------------------------------------------------------+
 To run that from a JavaScript, include this line:
 bbs.exec_xtrn("MSGARCHO");

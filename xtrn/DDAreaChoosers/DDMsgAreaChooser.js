@@ -83,6 +83,9 @@
  * 2025-04-04 Eric Oulashin   Version 1.42a
  *                            Fix for 'undefined' error (using the wrong object) when typing a sub-board
  *                            number to choose it. Reported by Keyop.
+ * 2025-04-10 Eric Oulashin   Version 1.42b
+ *                            Fix: altName wasn't added to items if name collapsing disabled.
+ *                            Also, start of name collapsing enhancement (no empty names).
  */
 
 /* Command-line arguments:
@@ -120,8 +123,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.42a";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2025-04-04";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.42b Beta";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2025-04-07";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -1281,7 +1284,8 @@ function DDMsgAreaChooser_CreateLightbarMenu(pMsgAreaHeirarchyObj, pHeirarchyLev
 					{
 						var lastMsgPostTimestamp = getLatestMsgTime(this.msgAreaHeirarchyObj[pItemIdx].subObj.code);
 						menuItemObj.text += format(this.areaChooser.subBoardListPrintfInfo[grpIdx].printfStr, pItemIdx+1,
-												   this.msgAreaHeirarchyObj[pItemIdx].name.substr(0, this.areaChooser.subBoardNameLen), numItems,
+												   this.msgAreaHeirarchyObj[pItemIdx].name.substr(0, this.areaChooser.subBoardNameLen),
+												   numItems,
 						                           strftime("%Y-%m-%d", lastMsgPostTimestamp),
 						                           strftime("%H:%M:%S", lastMsgPostTimestamp));
 					}
@@ -3081,6 +3085,22 @@ function getMsgSubHeirarchy(pCollapsing, pCollapsingSeparator)
 	var msgSubHeirarchy = [];
 	if (pCollapsing)
 	{
+		// First, check the group descriptions for strings before the separator character
+		var grpsBeforeSeparator = {}; // Will be an object indexed by description with a count as the value
+		for (var grpIdx = 0; grpIdx < msg_area.grp_list.length; ++grpIdx)
+		{
+			var grpDesc = skipsp(truncsp(msg_area.grp_list[grpIdx].description));
+			var sepIdx = msg_area.grp_list[grpIdx].description.indexOf(pCollapsingSeparator);
+			if (sepIdx > -1)
+			{
+				var grpDescBeforeSep = msg_area.grp_list[grpIdx].description.substr(0, sepIdx);
+				if (grpsBeforeSeparator.hasOwnProperty(grpDescBeforeSep))
+					grpsBeforeSeparator[grpDescBeforeSep] += 1;
+				else
+					grpsBeforeSeparator[grpDescBeforeSep] = 1;
+			}
+		}
+
 		// For each message group, go through each sub-board
 		for (var grpIdx = 0; grpIdx < msg_area.grp_list.length; ++grpIdx)
 		{
@@ -3093,17 +3113,28 @@ function getMsgSubHeirarchy(pCollapsing, pCollapsingSeparator)
 				// areas where there are no spaces before or after the :, but that
 				// isn't how I did it before..
 				/*
-				var libAndDirName = msg_area.grp_list[grpIdx].description + ":" + msg_area.grp_list[grpIdx].sub_list[subIdx].description;
-				var nameArray = splitStrNoSpacesBeforeSeparator(libAndDirName, pCollapsingSeparator);
+				var grpAndSubname = msg_area.grp_list[grpIdx].description + ":" + msg_area.grp_list[grpIdx].sub_list[subIdx].description;
+				var nameArray = splitStrNoSpacesBeforeSeparator(grpAndSubname, pCollapsingSeparator);
 				*/
-				var libDesc = skipsp(truncsp(msg_area.grp_list[grpIdx].description));
-				var dirDesc = skipsp(truncsp(msg_area.grp_list[grpIdx].sub_list[subIdx].description));
-				var libAndDirName = libDesc + pCollapsingSeparator + dirDesc;
-				var nameArray = libAndDirName.split(pCollapsingSeparator);
+				var grpDesc = skipsp(truncsp(msg_area.grp_list[grpIdx].description));
+				var subDesc = skipsp(truncsp(msg_area.grp_list[grpIdx].sub_list[subIdx].description));
+				var grpAndSubname = grpDesc + pCollapsingSeparator + subDesc;
+				var nameArray = removeEmptyStrsFromArray(grpAndSubname.split(pCollapsingSeparator));
 				var arrayToSearch = msgSubHeirarchy;
-				for (var i = 0; i < nameArray.length; ++i)
+				// If the group description has the separator character and the first element
+				// only appears once, then use the whole group name as one name
+				var sepCountInGrpDesc = countSubstrInStr(grpDesc, pCollapsingSeparator);
+				var startIdx = 0;
+				if (sepCountInGrpDesc > 0 && grpsBeforeSeparator.hasOwnProperty(nameArray[0]) == 1)
+					startIdx += sepCountInGrpDesc;
+				for (var i = startIdx; i < nameArray.length; ++i)
 				{
-					var name = skipsp(truncsp(nameArray[i]));
+					//var name = skipsp(truncsp(nameArray[i]));
+					var name = "";
+					if (startIdx > 0 && i == startIdx)
+						name = grpDesc;
+					else
+						name = skipsp(truncsp(nameArray[i]));
 					// Look for this one in the heirarchy; if not found, add it.
 					// Look for an entry in the array that matches the name and has its own "items" array
 					var heirarchyIdx = -1;
@@ -3156,6 +3187,7 @@ function getMsgSubHeirarchy(pCollapsing, pCollapsingSeparator)
 			msgSubHeirarchy.push(
 			{
 				name: msg_area.grp_list[grpIdx].description,
+				altName: msg_area.grp_list[grpIdx].name,
 				grpIdx: grpIdx,
 				items: []
 			});
@@ -3165,6 +3197,7 @@ function getMsgSubHeirarchy(pCollapsing, pCollapsingSeparator)
 				msgSubHeirarchy[libIdxInHeirarchy].items.push(
 				{
 					name: msg_area.grp_list[grpIdx].sub_list[subIdx].description,
+					altName: msg_area.grp_list[grpIdx].sub_list[subIdx].name,
 					grpIdx: grpIdx,
 					subObj: msg_area.grp_list[grpIdx].sub_list[subIdx]
 				});
@@ -3244,6 +3277,25 @@ function splitStrNoSpacesBeforeSeparator(pStr, pSep)
 	return strArray;
 }
 
+// Returns the number of times a substring apears in a string
+//
+// Parameters:
+//  pStr: The string to search
+//  pSubstr: The substring inside the string to count
+//
+// Return: The number of times the substring appears in the string
+function countSubstrInStr(pStr, pSubstr)
+{
+	var substrCount = 0;
+	var substrIdx = pStr.indexOf(pSubstr);
+	while (substrIdx > -1)
+	{
+		++substrCount;
+		substrIdx = pStr.indexOf(pSubstr, substrIdx+1);
+	}
+	return substrCount;
+}
+
 // Given a message group/sub-board heirarchy object built by this module, this
 // function returns whether it contains the user's currently selected message
 // sub-board.
@@ -3276,4 +3328,17 @@ function msgAreaStructureHasCurrentUserSubBoard(pMsgSubHeirarchyObj)
 			currentUserSubBoardFound = msgAreaStructureHasCurrentUserSubBoard(pMsgSubHeirarchyObj.items);
 	}
 	return currentUserSubBoardFound;
+}
+
+// Removes empty strings from an array - Given an array,
+// makes a new array with only the non-empty strings and returns it.
+function removeEmptyStrsFromArray(pArray)
+{
+	var newArray = [];
+	for (var i = 0; i < pArray.length; ++i)
+	{
+		if (pArray[i].length > 0 && !/^\s+$/.test(pArray[i]))
+			newArray.push(pArray[i]);
+	}
+	return newArray;
 }
