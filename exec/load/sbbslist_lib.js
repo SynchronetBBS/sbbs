@@ -555,12 +555,15 @@ function remove_dupes(list, verbose)
 			name = name.slice(0, -4);
 		if(name.slice(0, 4) == "the ")
 			name = name.slice(4);
-		if(names.indexOf(name) >= 0)
+		if(names.indexOf(name) >= 0) {
+			if(verbose)
+				print(format("%-25s : Duplicated name: %s", bbs.name, name));
 			continue;
+		}
 		if(bbs.service.length
 			&& address.indexOf(bbs.service[0].address.toLowerCase()) >= 0) {
 			if(verbose)
-				print(format("%-25s : Duplicated name", bbs.name));
+				print(format("%-25s : Duplicated address: %s", bbs.name, bbs.service[0].address));
 			continue;
 		}
 		names.push(name);
