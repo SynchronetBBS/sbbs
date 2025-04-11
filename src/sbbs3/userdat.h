@@ -202,6 +202,7 @@ DLLEXPORT bool  user_adjust_minutes(scfg_t*, user_t*, long amount);
 
 DLLEXPORT time_t gettimeleft(scfg_t*, user_t*, time_t starttime);
 
+DLLEXPORT bool  check_pass(scfg_t*, const char *passwd, user_t* user, bool unique, int* reason);
 DLLEXPORT bool  check_name(scfg_t*, const char* name);
 DLLEXPORT bool  check_realname(scfg_t*, const char* name);
 DLLEXPORT bool  sysop_available(scfg_t*);

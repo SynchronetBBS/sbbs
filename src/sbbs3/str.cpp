@@ -843,86 +843,18 @@ bool sbbs_t::inputnstime(time_t *dt)
 	return true;
 }
 
-/*****************************************************************************/
-/* Checks a password for uniqueness and validity                              */
-/*****************************************************************************/
+/****************************************************************************/
+/* Check a password for validity and print reason upon failure				*/
+/****************************************************************************/
 bool sbbs_t::chkpass(char *passwd, user_t* user, bool unique)
 {
-	char first[128], last[128], sysop[41], sysname[41], *p;
-	char alias[LEN_ALIAS + 1], name[LEN_NAME + 1], handle[LEN_HANDLE + 1];
-	char pass[LEN_PASS + 1];
-
-	SAFECOPY(pass, passwd);
-	strupr(pass);
-
-	int len = strlen(pass);
-	if (len < cfg.min_pwlen || len < MIN_PASS_LEN) {
-		bputs(text[PasswordTooShort]);
+	int reason = -1;
+	if (!check_pass(&cfg, passwd, user, unique, &reason)) {
+		if (reason >= 0)
+			bputs(text[reason]);
 		return false;
 	}
-	if (unique && strcmp(pass, user->pass) == 0) {
-		bputs(text[PasswordNotChanged]);
-		return false;
-	}
-	int i;
-	int run = 0;
-	for (i = 0; i < (len - 1); ++i) {
-		if (abs(toupper(pass[i]) - toupper(pass[i + 1])) > 1) {
-			if (++run >= cfg.min_pwlen / 2)
-				break;
-		} else
-			run = 0;
-	}
-	if (i >= (len - 1)) {
-		bputs(text[PasswordInvalid]);
-		return false;
-	}
-	SAFECOPY(name, user->name);
-	strupr(name);
-	SAFECOPY(alias, user->alias);
-	strupr(alias);
-	SAFECOPY(first, alias);
-	p = strchr(first, ' ');
-	if (p) {
-		*p = 0;
-		SAFECOPY(last, p + 1);
-	}
-	else
-		last[0] = 0;
-	SAFECOPY(handle, user->handle);
-	strupr(handle);
-	SAFECOPY(sysop, cfg.sys_op);
-	strupr(sysop);
-	SAFECOPY(sysname, cfg.sys_name);
-	strupr(sysname);
-	if ((unique && user->pass[0]
-	     && (strstr(pass, user->pass) || strstr(user->pass, pass)))
-	    || (name[0]
-	        && (strstr(pass, name) || strstr(name, pass)))
-	    || strstr(pass, alias) || strstr(alias, pass)
-	    || strstr(pass, first) || strstr(first, pass)
-	    || (last[0]
-	        && (strstr(pass, last) || strstr(last, pass)))
-	    || strstr(pass, handle) || strstr(handle, pass)
-	    || (user->zipcode[0]
-	        && (strstr(pass, user->zipcode) || strstr(user->zipcode, pass)))
-	    || (sysname[0]
-	        && (strstr(pass, sysname) || strstr(sysname, pass)))
-	    || (sysop[0]
-	        && (strstr(pass, sysop) || strstr(sysop, pass)))
-	    || (cfg.sys_id[0]
-	        && (strstr(pass, cfg.sys_id) || strstr(cfg.sys_id, pass)))
-	    || (cfg.node_phone[0] && strstr(pass, cfg.node_phone))
-	    || (user->phone[0] && strstr(user->phone, pass))
-	    || !strncmp(pass, "QWER", 4)
-	    || !strncmp(pass, "ASDF", 4)
-	    || !strncmp(pass, "!@#$", 4)
-	    )
-	{
-		bputs(text[PasswordObvious]);
-		return false;
-	}
-	return !trashcan(pass, "password");
+	return !trashcan(passwd, "password");
 }
 
 /****************************************************************************/
