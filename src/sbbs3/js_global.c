@@ -5222,10 +5222,10 @@ static jsSyncMethodSpec js_global_functions[] = {
 	 , JSDOCSTR("Calculate and return 32-bit checksum of text string")
 	 , 311},
 	{"md5_calc",        js_md5_calc,        1,  JSTYPE_STRING,  JSDOCSTR("text [,<i>bool</i> hex=false]")
-	 , JSDOCSTR("Calculate and return 128-bit MD5 digest of text string, result encoded in base64 (default) or hexadecimal")
+	 , JSDOCSTR("Calculate and return 128-bit MD5 digest of text string, result encoded in base64 (default) or hexadecimal (32 hex digits)")
 	 , 311},
 	{"sha1_calc",       js_sha1_calc,       1,  JSTYPE_STRING,  JSDOCSTR("text [,<i>bool</i> hex=false]")
-	 , JSDOCSTR("Calculate and return 160-bit SHA-1 digest of text string, result encoded in base64 (default) or hexadecimal")
+	 , JSDOCSTR("Calculate and return 160-bit SHA-1 digest of text string, result encoded in base64 (default) or hexadecimal (40 hex digits)")
 	 , 31900},
 	{"gethostbyname",   js_resolve_ip,      1,  JSTYPE_ALIAS },
 	{"resolve_ip",      js_resolve_ip,      1,  JSTYPE_STRING,  JSDOCSTR("<i>string</i> hostname [,<i>bool</i> array=false]")
