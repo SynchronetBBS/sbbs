@@ -1217,7 +1217,12 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 							break;
 						default:
 							if(typeof key == "number") {
-								current = key -1;
+								for(var i = 0; i < list.length; ++i) {
+									if(list[i].num == key) {
+										current = i;
+										break;
+									}
+								}
 								break;
 							}
 							break;
