@@ -3966,6 +3966,91 @@ bool check_realname(scfg_t* cfg, const char* name)
 }
 
 /****************************************************************************/
+/* Check a password for uniqueness and validity								*/
+/* Does *not* check the password.can file!									*/
+/****************************************************************************/
+bool check_pass(scfg_t* cfg, const char *pass, user_t* user, bool unique, int* reason)
+{
+	int reason_;
+
+	if (reason == NULL)
+		reason = &reason_;
+
+	int len = strlen(pass);
+	if (len < cfg->min_pwlen || len < MIN_PASS_LEN) {
+		*reason = PasswordTooShort;
+		return false;
+	}
+	if (unique) {
+		if (user == NULL)
+			return false;
+		if (stricmp(pass, user->pass) == 0) {
+			*reason = PasswordNotChanged;
+			return false;
+		}
+	}
+
+	// Require a minimum sequence of unique (non-repeating/increment/decrementing) characters
+	int i;
+	int run = 0;
+	for (i = 0; i < (len - 1); ++i) {
+		if (abs(toupper(pass[i]) - toupper(pass[i + 1])) > 1) {
+			if (++run >= cfg->min_pwlen / 2)
+				break;
+		} else
+			run = 0;
+	}
+	if (i >= (len - 1)) {
+		*reason = PasswordInvalid;
+		return false;
+	}
+
+	// Compare proposed password against user properties
+	if (user != NULL) {
+		char first[128], last[128], *p;
+
+		SAFECOPY(first, user->alias);
+		p = strchr(first, ' ');
+		if (p) {
+			*p = 0;
+			SAFECOPY(last, p + 1);
+		}
+		else
+			last[0] = 0;
+		if ((unique && user->pass[0]
+			 && (strcasestr(pass, user->pass) || strcasestr(user->pass, pass)))
+			|| (user->name[0]
+				&& (strcasestr(pass, user->name) || strcasestr(user->name, pass)))
+			|| strcasestr(pass, user->alias) || strcasestr(user->alias, pass)
+			|| strcasestr(pass, first) || strcasestr(first, pass)
+			|| (last[0]
+				&& (strcasestr(pass, last) || strcasestr(last, pass)))
+			|| strcasestr(pass, user->handle) || strcasestr(user->handle, pass)
+			|| (user->zipcode[0]
+				&& (strcasestr(pass, user->zipcode) || strcasestr(user->zipcode, pass)))
+			|| (user->phone[0] && strcasestr(user->phone, pass))
+			) {
+			*reason = PasswordObvious;
+			return false;
+		}
+	}
+
+	// Compare proposed password against system properties
+	if ((cfg->sys_name[0]
+	        && (strcasestr(pass, cfg->sys_name) || strcasestr(cfg->sys_name, pass)))
+	    || (cfg->sys_op[0]
+	        && (strcasestr(pass, cfg->sys_op) || strcasestr(cfg->sys_op, pass)))
+	    || (cfg->sys_id[0]
+	        && (strcasestr(pass, cfg->sys_id) || strcasestr(cfg->sys_id, pass)))
+	    || (cfg->node_phone[0] && strcasestr(pass, cfg->node_phone))
+	    ) {
+		*reason = PasswordObvious;
+		return false;
+	}
+	return true;
+}
+
+/****************************************************************************/
 /* Login attempt/hack tracking												*/
 /****************************************************************************/
 
@@ -4587,89 +4672,4 @@ enum parsed_vpath parse_vpath(scfg_t* cfg, const char* vpath, int* lib, int* dir
 		return PARSED_VPATH_NONE;
 
 	return *filename == NULL ? PARSED_VPATH_DIR : PARSED_VPATH_FULL;
-}
-
-/****************************************************************************/
-/* Check a password for uniqueness and validity								*/
-/* Does *not* check the password.can file!									*/
-/****************************************************************************/
-bool check_pass(scfg_t* cfg, const char *pass, user_t* user, bool unique, int* reason)
-{
-	int reason_;
-
-	if (reason == NULL)
-		reason = &reason_;
-
-	int len = strlen(pass);
-	if (len < cfg->min_pwlen || len < MIN_PASS_LEN) {
-		*reason = PasswordTooShort;
-		return false;
-	}
-	if (unique) {
-		if (user == NULL)
-			return false;
-		if (stricmp(pass, user->pass) == 0) {
-			*reason = PasswordNotChanged;
-			return false;
-		}
-	}
-
-	// Require a minimum sequence of unique (non-repeating/increment/decrementing) characters
-	int i;
-	int run = 0;
-	for (i = 0; i < (len - 1); ++i) {
-		if (abs(toupper(pass[i]) - toupper(pass[i + 1])) > 1) {
-			if (++run >= cfg->min_pwlen / 2)
-				break;
-		} else
-			run = 0;
-	}
-	if (i >= (len - 1)) {
-		*reason = PasswordInvalid;
-		return false;
-	}
-
-	// Compare proposed password against user properties
-	if (user != NULL) {
-		char first[128], last[128], *p;
-
-		SAFECOPY(first, user->alias);
-		p = strchr(first, ' ');
-		if (p) {
-			*p = 0;
-			SAFECOPY(last, p + 1);
-		}
-		else
-			last[0] = 0;
-		if ((unique && user->pass[0]
-			 && (strcasestr(pass, user->pass) || strcasestr(user->pass, pass)))
-			|| (user->name[0]
-				&& (strcasestr(pass, user->name) || strcasestr(user->name, pass)))
-			|| strcasestr(pass, user->alias) || strcasestr(user->alias, pass)
-			|| strcasestr(pass, first) || strcasestr(first, pass)
-			|| (last[0]
-				&& (strcasestr(pass, last) || strcasestr(last, pass)))
-			|| strcasestr(pass, user->handle) || strcasestr(user->handle, pass)
-			|| (user->zipcode[0]
-				&& (strcasestr(pass, user->zipcode) || strcasestr(user->zipcode, pass)))
-			|| (user->phone[0] && strcasestr(user->phone, pass))
-			) {
-			*reason = PasswordObvious;
-			return false;
-		}
-	}
-
-	// Compare proposed password against system properties
-	if ((cfg->sys_name[0]
-	        && (strcasestr(pass, cfg->sys_name) || strcasestr(cfg->sys_name, pass)))
-	    || (cfg->sys_op[0]
-	        && (strcasestr(pass, cfg->sys_op) || strcasestr(cfg->sys_op, pass)))
-	    || (cfg->sys_id[0]
-	        && (strcasestr(pass, cfg->sys_id) || strcasestr(cfg->sys_id, pass)))
-	    || (cfg->node_phone[0] && strcasestr(pass, cfg->node_phone))
-	    ) {
-		*reason = PasswordObvious;
-		return false;
-	}
-	return true;
 }
