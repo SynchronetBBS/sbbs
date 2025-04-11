@@ -849,14 +849,14 @@ bool sbbs_t::inputnstime(time_t *dt)
 bool sbbs_t::chkpass(char *passwd, user_t* user, bool unique)
 {
 	char first[128], last[128], sysop[41], sysname[41], *p;
-	int  c, d;
 	char alias[LEN_ALIAS + 1], name[LEN_NAME + 1], handle[LEN_HANDLE + 1];
 	char pass[LEN_PASS + 1];
 
 	SAFECOPY(pass, passwd);
 	strupr(pass);
 
-	if (strlen(pass) < cfg.min_pwlen) {
+	int len = strlen(pass);
+	if (len < cfg.min_pwlen || len < MIN_PASS_LEN) {
 		bputs(text[PasswordTooShort]);
 		return false;
 	}
@@ -864,26 +864,17 @@ bool sbbs_t::chkpass(char *passwd, user_t* user, bool unique)
 		bputs(text[PasswordNotChanged]);
 		return false;
 	}
-	d = strlen(pass);
-	for (c = 1; c < d; c++)
-		if (pass[c] != pass[c - 1])
-			break;
-	if (c == d) {
+	int i;
+	int run = 0;
+	for (i = 0; i < (len - 1); ++i) {
+		if (abs(toupper(pass[i]) - toupper(pass[i + 1])) > 1) {
+			if (++run >= cfg.min_pwlen / 2)
+				break;
+		} else
+			run = 0;
+	}
+	if (i >= (len - 1)) {
 		bputs(text[PasswordInvalid]);
-		return false;
-	}
-	for (c = 0; c < 3; c++)    /* check for 1234 and ABCD */
-		if (pass[c] != pass[c + 1] + 1)
-			break;
-	if (c == 3) {
-		bputs(text[PasswordObvious]);
-		return false;
-	}
-	for (c = 0; c < 3; c++)    /* check for 4321 and ZYXW */
-		if (pass[c] != pass[c + 1] - 1)
-			break;
-	if (c == 3) {
-		bputs(text[PasswordObvious]);
 		return false;
 	}
 	SAFECOPY(name, user->name);
