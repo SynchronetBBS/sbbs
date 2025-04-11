@@ -1,4 +1,4 @@
-/* Synchronet Indentification (RFC1413) functions */
+/* Synchronet Identification (RFC1413) functions */
 
 /****************************************************************************
  * @format.tab-size 4		(Plain Text/Source Code File Header)			*
