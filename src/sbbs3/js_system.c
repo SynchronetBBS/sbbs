@@ -2039,6 +2039,62 @@ js_chkname(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_chkrealname(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
+	jsval *    argv = JS_ARGV(cx, arglist);
+	char*      str;
+	jsrefcount rc;
+
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (JSVAL_NULL_OR_VOID(argv[0])) {
+		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+		return JS_TRUE;
+	}
+	JSVALUE_TO_ASTRING(cx, argv[0], str, (LEN_ALIAS > LEN_NAME)?LEN_ALIAS + 2:LEN_NAME + 2, NULL);
+
+	js_system_private_t* sys;
+	if ((sys = (js_system_private_t*)js_GetClassPrivate(cx, obj, &js_system_class)) == NULL)
+		return JS_FALSE;
+
+	rc = JS_SUSPENDREQUEST(cx);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(check_realname(sys->cfg, str)));
+	JS_RESUMEREQUEST(cx, rc);
+
+	return JS_TRUE;
+}
+
+static JSBool
+js_chkpassword(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
+	jsval *    argv = JS_ARGV(cx, arglist);
+	char*      str;
+	jsrefcount rc;
+
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (JSVAL_NULL_OR_VOID(argv[0])) {
+		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
+		return JS_TRUE;
+	}
+	JSVALUE_TO_ASTRING(cx, argv[0], str, (LEN_ALIAS > LEN_NAME)?LEN_ALIAS + 2:LEN_NAME + 2, NULL);
+
+	js_system_private_t* sys;
+	if ((sys = (js_system_private_t*)js_GetClassPrivate(cx, obj, &js_system_class)) == NULL)
+		return JS_FALSE;
+
+	rc = JS_SUSPENDREQUEST(cx);
+	bool result = check_pass(sys->cfg, str, /* user: */NULL, /* unique: */false, /* reason: */NULL)
+		              && !trashcan(sys->cfg, str, "password");
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
+	JS_RESUMEREQUEST(cx, rc);
+
+	return JS_TRUE;
+}
+
+static JSBool
 js_chkfname(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
@@ -2339,6 +2395,14 @@ static jsSyncMethodSpec js_system_functions[] = {
 	 , JSDOCSTR("Check that the provided name/alias string is suitable for a new user account, "
 		        "returns <tt>true</tt> if it is valid")
 	 , 315},
+	{"check_realname",  js_chkrealname,     1,  JSTYPE_BOOLEAN, JSDOCSTR("name")
+	 , JSDOCSTR("Check that the provided real user name string is suitable for a new user account, "
+		        "returns <tt>true</tt> if it is valid")
+	 , 321},
+	{"check_password",  js_chkpassword,     1,  JSTYPE_BOOLEAN, JSDOCSTR("password")
+	 , JSDOCSTR("Check that the provided string is suitable for a new user password, "
+		        "returns <tt>true</tt> if it meets the system criteria for a user password")
+	 , 321},
 	{"check_filename",  js_chkfname,        1,  JSTYPE_BOOLEAN, JSDOCSTR("filename")
 	 , JSDOCSTR("Verify that the specified <i>filename</i> string is legal and allowed for upload by users "
 		        "(based on system configuration and filter files), returns <tt>true</tt> if the filename is allowed")
