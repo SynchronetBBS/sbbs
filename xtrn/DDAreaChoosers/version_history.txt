@@ -5,6 +5,10 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.42b    2025-04-10   Fix: altName wasn't added to items if name collapsing
+                      disabled.
+                      Also, start of name collapsing enhancement (no empty
+                      names).
 1.42     2025-03-17   For both: Name collapsing now supports an arbitrary number
                       of areas (depth) with an arbitrary number of separators
 1.41     2024-03-13   File area chooser: Fix for the directory item counts

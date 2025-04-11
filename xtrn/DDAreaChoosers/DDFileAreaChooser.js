@@ -74,6 +74,9 @@
  *                            create multiple levels of categories
  * 2025-03-17 Eric Oulashin   Version 1.42
  *                            Releasing this version
+ * 2025-04-10 Eric Oulashin   Version 1.42b
+ *                            Fix: altName wasn't added to items if name collapsing disabled.
+ *                            Also, start of name collapsing enhancement (no empty names).
  */
 
 // TODO: Failing silently when 1st argument is true
@@ -114,8 +117,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_FILE_AREA_CHOOSER_VERSION = "1.42";
-var DD_FILE_AREA_CHOOSER_VER_DATE = "2025-03-17";
+var DD_FILE_AREA_CHOOSER_VERSION = "1.42b Beta";
+var DD_FILE_AREA_CHOOSER_VER_DATE = "2025-04-07";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -2022,6 +2025,23 @@ function getFileDirHeirarchy(pCollapsing, pCollapsingSeparator)
 	var fileDirHeirarchy = [];
 	if (pCollapsing)
 	{
+		// First, check the library descriptions for strings before the separator character
+		var libsBeforeSeparator = {}; // Will be an object indexed by description with a count as the value
+		for (var libIdx = 0; libIdx < file_area.lib_list.length; ++libIdx)
+		{
+			var libDesc = skipsp(truncsp(file_area.lib_list[libIdx].description));
+			var sepIdx = file_area.lib_list[libIdx].description.indexOf(pCollapsingSeparator);
+			if (sepIdx > -1)
+			{
+				var libDescBeforeSep = file_area.lib_list[libIdx].description.substr(0, sepIdx);
+				if (libsBeforeSeparator.hasOwnProperty(libDescBeforeSep))
+					libsBeforeSeparator[libDescBeforeSep] += 1;
+				else
+					libsBeforeSeparator[libDescBeforeSep] = 1;
+			}
+		}
+
+		// Build the heirarchy
 		// For each library, go through each directory
 		for (var libIdx = 0; libIdx < file_area.lib_list.length; ++libIdx)
 		{
@@ -2040,11 +2060,22 @@ function getFileDirHeirarchy(pCollapsing, pCollapsingSeparator)
 				var libDesc = skipsp(truncsp(file_area.lib_list[libIdx].description));
 				var dirDesc = skipsp(truncsp(file_area.lib_list[libIdx].dir_list[dirIdx].description));
 				var libAndDirName = libDesc + ":" + dirDesc;
-				var nameArray = libAndDirName.split(pCollapsingSeparator);
+				var nameArray = removeEmptyStrsFromArray(libAndDirName.split(pCollapsingSeparator));
 				var arrayToSearch = fileDirHeirarchy;
-				for (var i = 0; i < nameArray.length; ++i)
+				// If the library description has the separator character and the first element
+				// only appears once, then use the whole library name as one name
+				var sepCountInLibDesc = countSubstrInStr(libDesc, pCollapsingSeparator);
+				var startIdx = 0;
+				if (sepCountInLibDesc > 0 && libsBeforeSeparator.hasOwnProperty(nameArray[0]) == 1)
+					startIdx += sepCountInLibDesc;
+				for (var i = startIdx; i < nameArray.length; ++i)
 				{
-					var name = skipsp(truncsp(nameArray[i]));
+					//var name = skipsp(truncsp(nameArray[i]));
+					var name = "";
+					if (startIdx > 0 && i == startIdx)
+						name = libDesc;
+					else
+						name = skipsp(truncsp(nameArray[i]));
 					// Look for this one in the heirarchy; if not found, add it.
 					// Look for an entry in the array that matches the name and has its own "items" array
 					var heirarchyIdx = -1;
@@ -2097,6 +2128,7 @@ function getFileDirHeirarchy(pCollapsing, pCollapsingSeparator)
 			fileDirHeirarchy.push(
 			{
 					name: file_area.lib_list[libIdx].description,
+					altName: file_area.lib_list[libIdx].name,
 					libIdx: libIdx,
 					items: []
 			});
@@ -2106,6 +2138,7 @@ function getFileDirHeirarchy(pCollapsing, pCollapsingSeparator)
 				fileDirHeirarchy[libIdxInHeirarchy].items.push(
 				{
 					name: file_area.lib_list[libIdx].dir_list[dirIdx].description,
+					altName: file_area.lib_list[libIdx].dir_list[dirIdx].name,
 					libIdx: libIdx,
 					dirObj: file_area.lib_list[libIdx].dir_list[dirIdx]
 				});
@@ -2134,6 +2167,25 @@ function splitStrNoSpacesBeforeSeparator(pStr, pSep)
 			strArray.push(splitArray[i]);
 	}
 	return strArray;
+}
+
+// Returns the number of times a substring apears in a string
+//
+// Parameters:
+//  pStr: The string to search
+//  pSubstr: The substring inside the string to count
+//
+// Return: The number of times the substring appears in the string
+function countSubstrInStr(pStr, pSubstr)
+{
+	var substrCount = 0;
+	var substrIdx = pStr.indexOf(pSubstr);
+	while (substrIdx > -1)
+	{
+		++substrCount;
+		substrIdx = pStr.indexOf(pSubstr, substrIdx+1);
+	}
+	return substrCount;
 }
 
 // Given a file lib/directory heirarchy object built by this module, this
@@ -2195,4 +2247,17 @@ function maxNumItemsWidthInHeirarchy(pDirHeirarchyObj)
 		}
 	}
 	return maxNumItemsWidth;
+}
+
+// Removes empty strings from an array - Given an array,
+// makes a new array with only the non-empty strings and returns it.
+function removeEmptyStrsFromArray(pArray)
+{
+	var newArray = [];
+	for (var i = 0; i < pArray.length; ++i)
+	{
+		if (pArray[i].length > 0 && !/^\s+$/.test(pArray[i]))
+			newArray.push(pArray[i]);
+	}
+	return newArray;
 }
