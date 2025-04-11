@@ -19,7 +19,11 @@ function request(host, query, protocol, udp)
 		sock.send(query + "\r\n");
 	var output = [];
 	if(udp) {
-		output.push(sock.recvfrom().data);
+		var msg = sock.recvfrom();
+		if(msg) {
+			log(LOG_DEBUG, "UDP response from port " + msg.port);
+			output.push(msg.data);
+		}
 	}
 	else {
 		while(sock.is_connected && !js.terminated) {
