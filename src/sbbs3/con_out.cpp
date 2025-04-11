@@ -1098,7 +1098,7 @@ bool sbbs_t::msgabort(bool clear)
 
 void sbbs_t::clearabort()
 {
-	if (sys_status | SS_ABORT) {
+	if (sys_status & SS_ABORT) {
 		term->lncntr = 0;
 		sys_status &= ~SS_ABORT;
 	}
