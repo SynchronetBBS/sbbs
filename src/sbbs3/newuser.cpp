@@ -352,11 +352,17 @@ bool sbbs_t::newuser()
 	}
 
 	if (rlogin_pass[0] && chkpass(rlogin_pass, &useron)) {
-		CRLF;
+		term->newline();
 		SAFECOPY(useron.pass, rlogin_pass);
 		strupr(useron.pass);    /* passwords are case insensitive, but assumed (in some places) to be uppercase in the user database */
 	}
 	else {
+		if (rlogin_pass[0]) {
+			if (cfg.sys_misc & SM_ECHO_PW)
+				lprintf(LOG_NOTICE, "Rejected RLogin password for new user: '%s'", rlogin_pass);
+			else
+				lprintf(LOG_NOTICE, "Rejected RLogin password for new user");
+		}
 		c = 0;
 		while (c < MAX(RAND_PASS_LEN, cfg.min_pwlen)) {              /* Create random password */
 			useron.pass[c] = sbbs_random(43) + '0';
@@ -374,11 +380,11 @@ bool sbbs_t::newuser()
 				truncsp(str);
 				if (chkpass(str, &useron)) {
 					SAFECOPY(useron.pass, str);
-					CRLF;
+					term->newline();
 					bprintf(text[YourPasswordIs], useron.pass);
 					break;
 				}
-				CRLF;
+				term->newline();
 			}
 
 		c = 0;
