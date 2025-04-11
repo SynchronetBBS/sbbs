@@ -5011,9 +5011,10 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	 , JSDOCSTR("Verify system password, prompting for the password if not passed as an argument.")
 	 , 310
 	},
-	{"good_password",   js_chkpass,         1,  JSTYPE_BOOLEAN, JSDOCSTR("password, [forced_unique=false]")
+	{"good_password",   js_chkpass,         1,  JSTYPE_ALIAS },
+	{"check_password",  js_chkpass,         1,  JSTYPE_BOOLEAN, JSDOCSTR("password, [forced_unique=false]")
 	 , JSDOCSTR("Check if requested user password meets minimum password requirements "
-		        "(length, uniqueness, etc.).<br>"
+		        "(length, uniqueness, etc.) (AKA good_password).<br>"
 		        "When <i>forced_unique</i> is <tt>true</tt>, the password must be substantially different from the user's current password.")
 	 , 310
 	},
