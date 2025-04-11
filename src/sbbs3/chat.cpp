@@ -163,7 +163,7 @@ void sbbs_t::multinodechat(int channel)
 			preusr[i] = usr[i];
 		attr(cfg.color[clr_multichat]);
 		sync();
-		sys_status &= ~SS_ABORT;
+		clearabort();
 		if ((ch = inkey(K_NONE, 250)) != 0 || wordwrap[0]) {
 			if (ch == '/') {
 				bputs(text[MultiChatCommandPrompt]);
@@ -1163,7 +1163,8 @@ void sbbs_t::privchat(bool forced, int node_num)
 	}
 	if (sys_status & SS_SPLITP)
 		CLS;
-	sys_status &= ~(SS_SPLITP | SS_ABORT);
+	clearabort();
+	sys_status &= ~(SS_SPLITP);
 	close(in);
 	close(out);
 }
@@ -1211,7 +1212,7 @@ int sbbs_t::getnodetopage(int all, int telegram)
 	SAFECOPY(str, lastnodemsguser);
 	getstr(str, LEN_ALIAS, K_LINE | K_EDIT | K_AUTODEL);
 	if (sys_status & SS_ABORT) {
-		sys_status &= ~SS_ABORT;
+		clearabort();
 		return 0;
 	}
 	if (!str[0])
@@ -1309,7 +1310,7 @@ void sbbs_t::nodemsg()
 		}
 		sync();
 		mnemonics(text[PrivateMsgPrompt]);
-		sys_status &= ~SS_ABORT;
+		clearabort();
 		while (online) {      /* Watch for incoming messages */
 			ch = toupper(inkey(K_NONE, 1000));
 			if (ch && strchr("TMCQ\r", ch))
@@ -1335,7 +1336,7 @@ void sbbs_t::nodemsg()
 		}
 
 		if (!online || sys_status & SS_ABORT) {
-			sys_status &= ~SS_ABORT;
+			clearabort();
 			CRLF;
 			break;
 		}

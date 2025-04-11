@@ -4236,7 +4236,7 @@ int sbbs_t::rioctl(ushort action)
 
 	if ((action & 0xff) == IOCS) {   /* Clear state */
 		if (action & ABORT)
-			sys_status &= ~SS_ABORT;
+			clearabort();
 		return 0;
 	}
 

@@ -73,7 +73,7 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 			rioctl(IOCM | ABORT);
 			rioctl(IOCS | ABORT);
 		}
-		sys_status &= ~SS_ABORT;
+		clearabort();
 	}
 
 	if (!(mode & P_NOXATTRS))
@@ -205,7 +205,7 @@ bool sbbs_t::printtail(const char* fname, int lines, int mode, int org_cols, JSO
 			rioctl(IOCM | ABORT);
 			rioctl(IOCS | ABORT);
 		}
-		sys_status &= ~SS_ABORT;
+		clearabort();
 	}
 	if ((fp = fnopen(&file, fpath, O_RDONLY | O_DENYNONE)) == NULL) {
 		if (!(mode & P_NOERROR)) {
@@ -287,7 +287,7 @@ bool sbbs_t::menu(const char *code, int mode, JSObject* obj)
 	if (strcspn(code, "*?") != strlen(code))
 		return random_menu(code, mode, obj);
 
-	sys_status &= ~SS_ABORT;
+	clearabort();
 	if (menu_file[0])
 		SAFECOPY(path, menu_file);
 	else {

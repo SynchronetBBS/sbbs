@@ -181,7 +181,7 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 			else
 				smb.curmsg = l;
 		}
-		sys_status &= ~SS_ABORT;
+		clearabort();
 	}
 	else {
 		smb.curmsg = 0;

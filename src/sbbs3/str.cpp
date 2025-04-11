@@ -652,7 +652,7 @@ size_t sbbs_t::gettmplt(char *strout, const char *templt, int mode)
 	char   tmplt[128];
 	size_t t = strlen(templt), c = 0;
 
-	sys_status &= ~SS_ABORT;
+	clearabort();
 	SAFECOPY(tmplt, templt);
 	strupr(tmplt);
 	// MODE7: This was ANSI-only, added support for PETSCII, 

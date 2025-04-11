@@ -691,7 +691,7 @@ int sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scop
 	if (!JS_ExecuteScript(js_cx, js_scope, js_script, &rval))
 		result = -1;
 	js_handle_events(js_cx, &js_callback, &terminated);
-//	sys_status &=~ SS_ABORT;
+//	clearabort();
 
 	JS_GetProperty(js_cx, js_scope, "exit_code", &rval);
 	if (rval != JSVAL_VOID)
@@ -868,7 +868,7 @@ int sbbs_t::exec_bin(const char *cmdline, csi_t *csi, const char* startup_dir)
 	freevars(&bin);
 	free(bin.cs);
 	csi->logic = bin.logic;
-//	sys_status &=~ SS_ABORT;
+//	clearabort();
 	return bin.retval;
 }
 
@@ -1936,7 +1936,7 @@ int sbbs_t::exec(csi_t *csi)
 			return 0;
 
 		case CS_CLEAR_ABORT:
-			sys_status &= ~SS_ABORT;
+			clearabort();
 			return 0;
 		case CS_FINDUSER:
 			i = finduser(csi->str);

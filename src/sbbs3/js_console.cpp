@@ -351,7 +351,7 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsid id, JSBool stric
 			if (val)
 				sbbs->sys_status |= SS_ABORT;
 			else
-				sbbs->sys_status &= ~SS_ABORT;
+				sbbs->clearabort();
 			break;
 		case CON_PROP_ABORTABLE:
 			sbbs->rio_abortable = val

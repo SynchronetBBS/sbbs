@@ -1088,12 +1088,20 @@ bool sbbs_t::msgabort(bool clear)
 
 	if (sys_status & SS_ABORT) {
 		if (clear)
-			sys_status &= ~SS_ABORT;
+			clearabort();
 		return true;
 	}
 	if (!online)
 		return true;
 	return false;
+}
+
+void sbbs_t::clearabort()
+{
+	if (sys_status | SS_ABORT) {
+		term->lncntr = 0;
+		sys_status &= ~SS_ABORT;
+	}
 }
 
 int sbbs_t::backfill(const char* instr, float pct, int full_attr, int empty_attr)

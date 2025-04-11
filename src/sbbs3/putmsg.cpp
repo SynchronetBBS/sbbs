@@ -233,7 +233,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 				bool was_tos = (term->row == 0);
 				ctrl_a(str[l + 1]);
 				if (term->row == 0 && !was_tos && (sys_status & SS_ABORT) && !lines_printed) /* Aborted at (auto) pause prompt (e.g. due to CLS)? */
-					sys_status &= ~SS_ABORT;                /* Clear the abort flag (keep displaying the msg/file) */
+					clearabort();                /* Clear the abort flag (keep displaying the msg/file) */
 				l += 2;
 			}
 		}
@@ -452,7 +452,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 					break;
 				if (memcmp(str + l, "@CLEAR@", 7) == 0) {
 					CLS;
-					sys_status &= ~SS_ABORT;
+					clearabort();
 					l += 7;
 					while (str[l] != 0 && (str[l] == '\r' || str[l] == '\n'))
 						l++;
@@ -524,7 +524,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 				i = show_atcode((char *)str + l, obj);  /* returns 0 if not valid @ code */
 				l += i;                   /* i is length of code string */
 				if (term->row > 0 && !was_tos && (sys_status & SS_ABORT) && !lines_printed)  /* Aborted at (auto) pause prompt (e.g. due to CLS)? */
-					sys_status &= ~SS_ABORT;                /* Clear the abort flag (keep displaying the msg/file) */
+					clearabort();                /* Clear the abort flag (keep displaying the msg/file) */
 				if (i)                   /* if valid string, go to top */
 					continue;
 			}

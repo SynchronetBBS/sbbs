@@ -44,7 +44,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 	console &= ~(CON_UPARROW | CON_DOWNARROW | CON_LEFTARROW | CON_RIGHTARROW | CON_BACKSPACE | CON_DELETELINE);
 	if (!(mode & K_WORDWRAP))
 		console &= ~CON_INSERT;
-	sys_status &= ~SS_ABORT;
+	clearabort();
 	if (!(mode & K_LINEWRAP) && term->cols >= TERM_COLS_MIN && !(mode & K_NOECHO) && !(console & CON_R_ECHOX)
 	    && term->column + (int)maxlen >= term->cols)    /* Don't allow the terminal to auto line-wrap */
 		maxlen = term->cols - term->column - 1;

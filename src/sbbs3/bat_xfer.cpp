@@ -52,7 +52,7 @@ void sbbs_t::batchmenu()
 	term->lncntr = 0;
 	while (online && (cfg.upload_dir != INVALID_DIR || batdn_total() || batup_total())) {
 		if (!(useron.misc & (EXPERT | RIP))) {
-			sys_status &= ~SS_ABORT;
+			clearabort();
 			if (term->lncntr) {
 				sync();
 				CRLF;

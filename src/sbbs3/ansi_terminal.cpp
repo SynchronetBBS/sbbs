@@ -349,7 +349,7 @@ bool ANSI_Terminal::getxy(unsigned* x, unsigned* y)
 	sbbs->term_out("\x1b[6n");  /* Request cursor position */
 
 	time_t start = time(NULL);
-	sbbs->sys_status &= ~SS_ABORT;
+	sbbs->clearabort();
 	while (sbbs->online && !(sbbs->sys_status & SS_ABORT) && rsp < sizeof(str) - 1) {
 		if ((ch = sbbs->incom(1000)) != NOINP) {
 			str[rsp++] = ch;

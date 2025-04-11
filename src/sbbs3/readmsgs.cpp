@@ -1009,13 +1009,13 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 					break;
 				i = (int)i64;
 				listmsgs(subnum, 0, post, i, smb.msgs);
-				sys_status &= ~SS_ABORT;
+				clearabort();
 				break;
 			case 'N':   /* New messages */
 				domsg = 0;
 				if (!listmsgs(subnum, SCAN_NEW, post, 0, smb.msgs))
 					bputs(text[NoMessagesFound]);
-				sys_status &= ~SS_ABORT;
+				clearabort();
 				break;
 			case 'M':   /* Reply to last post in mail */
 				domsg = 0;
