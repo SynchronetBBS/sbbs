@@ -261,8 +261,8 @@ bool sbbs_t::getnmsg(bool clearline)
 
 	if (clearline)
 		term->clearline();
-	else if (term->column)
-		CRLF;
+	else
+		term->cond_newline();
 	putmsg(buf, P_NOATCODES);
 	free(buf);
 
@@ -345,8 +345,7 @@ bool sbbs_t::getsmsg(int usernumber, bool clearline)
 	if (clearline)
 		term->clearline();
 	else
-	if (term->column)
-		CRLF;
+		term->cond_newline();
 	putmsg(buf, P_NOATCODES);
 	free(buf);
 
