@@ -486,6 +486,7 @@ typedef struct
 	fevent_t 		sys_daily;			/* Daily event */
 	fevent_t 		sys_logon;			/* Logon event */
 	fevent_t 		sys_logout;			/* Logout event */
+	bool			hq_password;		/* Require high quality/entropy user passwords */
 	uint8_t			min_pwlen;
 	uint16_t		sys_pwdays; 		/* Max days between password change */
 	uint16_t		sys_deldays;		/* Days to keep deleted users */

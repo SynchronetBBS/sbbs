@@ -140,6 +140,7 @@ bool write_main_cfg(scfg_t* cfg)
 	iniSetUInteger(&ini, ROOT_SECTION, "cdt_per_dollar", cfg->cdt_per_dollar, NULL);
 	iniSetBool(&ini, ROOT_SECTION, "new_install", cfg->new_install, NULL);
 	iniSetUInteger(&ini, ROOT_SECTION, "guest_msgscan_init", cfg->guest_msgscan_init, NULL);
+	iniSetBool(&ini, ROOT_SECTION, "hq_password", cfg->hq_password, NULL);
 	iniSetUInteger(&ini, ROOT_SECTION, "min_password_length", cfg->min_pwlen, NULL);
 	iniSetBytes(&ini, ROOT_SECTION, "max_log_size", 1, cfg->max_log_size, NULL);
 	iniSetUInteger(&ini, ROOT_SECTION, "max_logs_kept", cfg->max_logs_kept, NULL);

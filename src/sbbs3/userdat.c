@@ -3990,19 +3990,19 @@ bool check_pass(scfg_t* cfg, const char *pass, user_t* user, bool unique, int* r
 		}
 	}
 
-	// Require a minimum sequence of unique (non-repeating/increment/decrementing) characters
-	int i;
-	int run = 0;
-	for (i = 0; i < (len - 1); ++i) {
-		if (abs(toupper(pass[i]) - toupper(pass[i + 1])) > 1) {
-			if (++run >= cfg->min_pwlen / 2)
-				break;
-		} else
-			run = 0;
-	}
-	if (i >= (len - 1)) {
-		*reason = PasswordInvalid;
-		return false;
+	// Require a minimum number of unique (non-repeating/incrementing/decrementing) characters
+	if (cfg->hq_password) {
+		int i;
+		char good[LEN_PASS + 1] = {0};
+		int g = 0;
+		for (i = 0; i < len; ++i) {
+			if (abs(toupper(pass[i]) - toupper(pass[i + 1])) > 1 && strchr(good, pass[i]) == NULL)
+				good[g++] = pass[i];
+		}
+		if (g < cfg->min_pwlen) {
+			*reason = PasswordInvalid;
+			return false;
+		}
 	}
 
 	// Compare proposed password against user properties

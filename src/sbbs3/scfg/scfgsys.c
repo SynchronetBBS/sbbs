@@ -600,7 +600,6 @@ void security_cfg(void)
 		         , (!(cfg.uq & UQ_ALIASES) || cfg.sys_login & LOGIN_REALNAME) ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-33.33s%s", "Allow Login by User Number"
 		         , (cfg.sys_login & LOGIN_USERNUM) ? "Yes" : "No");
-
 		SAFEPRINTF(str, "%s Password"
 		           , cfg.sys_misc & SM_PWEDIT && cfg.sys_pwdays ? "Users Must Change"
 		    : cfg.sys_pwdays ? "Users Get New Random" : "Users Can Choose");
@@ -613,6 +612,8 @@ void security_cfg(void)
 		if (cfg.sys_misc & SM_PWEDIT)
 			sprintf(tmp + strlen(tmp), ", %u chars minimum", cfg.min_pwlen);
 		snprintf(opt[i++], MAX_OPLN, "%-33.33s%s", str, tmp);
+		snprintf(opt[i++], MAX_OPLN, "%-33.33s%s", "Demand High Quality Password"
+				, cfg.hq_password ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-33.33s%s", "Always Prompt for Password"
 		         , cfg.sys_login & LOGIN_PWPROMPT ? "Yes":"No");
 		snprintf(opt[i++], MAX_OPLN, "%-33.33s%s", "Display/Log Passwords Locally"
@@ -810,6 +811,21 @@ void security_cfg(void)
 				else if (i == 1 && cfg.sys_pwdays) {
 					cfg.sys_pwdays = 0;
 				}
+				break;
+			case __COUNTER__:
+				i = (cfg.hq_password) ? 0:1;
+				uifc.helpbuf =
+					"`Demand High Quality Password:`\n"
+					"\n"
+					"If you want users to be required to have a \"high quality\" password\n"
+					"based on calculated entropy, set this option to `Yes`.\n"
+					"\n"
+					"For elevated security, set this option to `Yes`.\n"
+				;
+				i = uifc.list(WIN_MID | WIN_SAV, 0, 10, 0, &i, 0
+				              , "Require Users to use High Quality/Entropy Passwords", uifcYesNoOpts);
+				if ((i == 0 && !cfg.hq_password) || (i == 1 && cfg.hq_password))
+					cfg.hq_password = !cfg.hq_password;
 				break;
 			case __COUNTER__:
 				i = cfg.sys_login & LOGIN_PWPROMPT ? 0:1;
