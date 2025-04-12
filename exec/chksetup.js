@@ -154,6 +154,10 @@ var tests = {
 					, usr.number
 					, password.length
 					, system.max_password_length));
+			else if(!system.check_password(password))
+				output.push(format("User #%-4u has a low quality password%s"
+					, usr.number
+					, options.verbose ? (': ' + password) : ''));
 			if(!system.trashcan("password", password))
 				continue;
 			output.push(format("User #%-4u has a disallowed password%s"
