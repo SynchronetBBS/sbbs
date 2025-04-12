@@ -5014,7 +5014,7 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	{"good_password",   js_chkpass,         1,  JSTYPE_ALIAS },
 	{"check_password",  js_chkpass,         1,  JSTYPE_BOOLEAN, JSDOCSTR("password, [forced_unique=false]")
 	 , JSDOCSTR("Check if requested user password meets minimum password requirements "
-		        "(length, uniqueness, etc.) (AKA good_password).<br>"
+		        "(length, uniqueness, etc.) (AKA good_password). Also checks the <tt>password.can</tt> filter file.<br>"
 		        "When <i>forced_unique</i> is <tt>true</tt>, the password must be substantially different from the user's current password.")
 	 , 310
 	},
