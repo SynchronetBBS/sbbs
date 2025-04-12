@@ -363,13 +363,16 @@ bool sbbs_t::newuser()
 			else
 				lprintf(LOG_NOTICE, "Rejected RLogin password for new user");
 		}
-		c = 0;
-		while (c < MAX(RAND_PASS_LEN, cfg.min_pwlen)) {              /* Create random password */
-			useron.pass[c] = sbbs_random(43) + '0';
-			if (IS_ALPHANUMERIC(useron.pass[c]))
-				c++;
-		}
-		useron.pass[c] = 0;
+		lprintf(LOG_INFO, "Generating a random password for new user");
+		do {
+			c = 0;
+			while (c < MAX(RAND_PASS_LEN, cfg.min_pwlen)) {              /* Create random password */
+				useron.pass[c] = sbbs_random(43) + '0';
+				if (IS_ALPHANUMERIC(useron.pass[c]))
+					c++;
+			}
+			useron.pass[c] = 0;
+		} while (!check_pass(&cfg, useron.pass, &useron, /* unique: */false, /* reason: */NULL));
 
 		bprintf(text[YourPasswordIs], useron.pass);
 
