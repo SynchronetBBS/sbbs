@@ -2086,8 +2086,7 @@ js_chkpassword(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 
 	rc = JS_SUSPENDREQUEST(cx);
-	bool result = check_pass(sys->cfg, str, /* user: */NULL, /* unique: */false, /* reason: */NULL)
-		              && !trashcan(sys->cfg, str, "password");
+	bool result = check_pass(sys->cfg, str, /* user: */NULL, /* unique: */false, /* reason: */NULL);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
 	JS_RESUMEREQUEST(cx, rc);
 
@@ -2401,7 +2400,8 @@ static jsSyncMethodSpec js_system_functions[] = {
 	 , 321},
 	{"check_password",  js_chkpassword,     1,  JSTYPE_BOOLEAN, JSDOCSTR("password")
 	 , JSDOCSTR("Check that the provided string is suitable for a new user password, "
-		        "returns <tt>true</tt> if it meets the system criteria for a user password")
+		        "returns <tt>true</tt> if it meets the system criteria for a user password.<br>"
+				"Does <b>not</b> check the <tt>password.can</tt> file.")
 	 , 321},
 	{"check_filename",  js_chkfname,        1,  JSTYPE_BOOLEAN, JSDOCSTR("filename")
 	 , JSDOCSTR("Verify that the specified <i>filename</i> string is legal and allowed for upload by users "
