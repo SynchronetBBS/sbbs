@@ -892,6 +892,7 @@ sbbs->lprintf(LOG_DEBUG, "Handling RIP level %u command %c", ripParser.rip_level
 					 *       silently reset the text window. There doesn't seem to be any
 					 *       way to do this meaningfully. :(
 					 */
+#if 0
 					if (sx == 0 && sy == 0 && ex == 0 && ey == 0) {
 						// Output disabled...
 						cols = UINT_MAX;
@@ -901,6 +902,10 @@ sbbs->lprintf(LOG_DEBUG, "Handling RIP level %u command %c", ripParser.rip_level
 						cols = ex - sx + 1;
 						rows = ey - sy + 1;
 					}
+#else
+					cols = maxx + 1;
+					rows = maxy + 1;
+#endif
 					sbbs->lprintf(LOG_DEBUG, "RIP_TEXT_WINDOW set size to %ux%u", cols, rows);
 					// TODO: If the window is identical except for wrap, the cursor doesn't move.
 					//       There's currently no good way to track the current window limits.
