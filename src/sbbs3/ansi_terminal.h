@@ -3,6 +3,7 @@
 
 #include <string>
 #include "ansi_parser.h"
+#include "rip_parser.h"
 #include "terminal.h"
 
 class ANSI_Terminal : public Terminal {
@@ -45,6 +46,7 @@ private:
 	void handle_control_code();
 	void handle_control_sequence();
 	void handle_SGR_sequence();
+	void handle_rip_sequence();
 	bool stuff_unhandled(char &ch, ANSI_Parser& ansi);
 	bool stuff_str(char& ch, const char *str, bool skipctlcheck = false);
 	bool handle_non_SGR_mouse_sequence(char& ch, ANSI_Parser& ansi);
@@ -53,6 +55,7 @@ private:
 	void set_color(int c, bool bg);
 
 	ANSI_Parser ansiParser{};
+	RIP_Parser ripParser{};
 	unsigned saved_row{0};
 	unsigned saved_column{0};
 };

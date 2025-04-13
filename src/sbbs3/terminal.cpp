@@ -197,8 +197,11 @@ void Terminal::inc_row(unsigned count) {
 //       terminal.
 void Terminal::inc_column(unsigned count) {
 	column += count;
-	if (column >= cols)
+	if (column >= cols) {
 		lastcrcol = cols;
+		if (!wrap)
+			column = cols - 1;
+	}
 	while (column >= cols) {
 		if (!suspend_lbuf)
 			lbuflen = 0;

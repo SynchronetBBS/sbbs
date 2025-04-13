@@ -190,4 +190,3 @@ ANSI_Parser::get_pval(unsigned pnum, unsigned dflt)
 		return dflt;
 	}
 }
-

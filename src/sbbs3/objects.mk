@@ -88,6 +88,7 @@ OBJS	=		$(LOAD_CFG_OBJS) \
 			$(MTOBJODIR)/readmail$(OFILE)\
 			$(MTOBJODIR)/readmsgs$(OFILE)\
 			$(MTOBJODIR)/ringbuf$(OFILE)\
+			$(MTOBJODIR)/rip_parser$(OFILE) \
 			$(MTOBJODIR)/sauce$(OFILE)\
 			$(MTOBJODIR)/scandirs$(OFILE)\
 			$(MTOBJODIR)/scansubs$(OFILE)\

@@ -820,28 +820,178 @@ void ANSI_Terminal::handle_control_sequence() {
 	}
 }
 
+void ANSI_Terminal::handle_rip_sequence()
+{
+sbbs->lprintf(LOG_DEBUG, "Handling RIP level %u command %c", ripParser.rip_level, ripParser.rip_cmd);
+	switch (ripParser.rip_level) {
+		case 0:
+			switch(ripParser.rip_cmd) {
+				case 'w': {	// RIP_TEXT_WINDOW
+					if (ripParser.rip_args[4] > 1) {
+						sbbs->lprintf(LOG_INFO, "Invalid RIP_TEXT_WINDOW wrap arg (%u)\n", ripParser.rip_args[4]);
+						return;
+					}
+					unsigned maxx{};
+					unsigned maxy{};
+					switch (ripParser.rip_args[5]) {
+						case 0:
+							maxx = 79;
+							maxy = 42;
+							break;
+						case 1:
+							maxx = 90;
+							maxy = 42;
+							break;
+						case 2:
+							maxx = 79;
+							maxy = 24;
+							break;
+						case 3:
+							maxx = 90;
+							maxy = 24;
+							break;
+						case 4:
+							maxx = 39;
+							maxy = 24;
+							break;
+						default:
+							sbbs->lprintf(LOG_INFO, "Invalid RIP_TEXT_WINDOW size arg (%u)\n", ripParser.rip_args[5]);
+							return;
+					}
+					unsigned sx = ripParser.rip_args[0];
+					if (sx > maxx) {
+						sbbs->lprintf(LOG_INFO, "Invalid RIP_TEXT_WINDOW start X arg (%u)\n", sx);
+						return;
+					}
+					unsigned sy = ripParser.rip_args[1];
+					if (sy > maxy) {
+						sbbs->lprintf(LOG_INFO, "Invalid RIP_TEXT_WINDOW start Y arg (%u)\n", sy);
+						return;
+					}
+					unsigned ex = ripParser.rip_args[2];
+					if (ex > maxx) {
+						sbbs->lprintf(LOG_INFO, "Invalid RIP_TEXT_WINDOW end X arg (%u)\n", ex);
+						return;
+					}
+					unsigned ey = ripParser.rip_args[3];
+					if (ey > maxy) {
+						sbbs->lprintf(LOG_INFO, "Invalid RIP_TEXT_WINDOW end Y arg (%u)\n", ey);
+						return;
+					}
+					if (ex < sx) {
+						sbbs->lprintf(LOG_INFO, "Invalid RIP_TEXT_WINDOW start/end X arg (%u/%u)\n", sx, ex);
+						return;
+					}
+					if (ey < sy) {
+						sbbs->lprintf(LOG_INFO, "Invalid RIP_TEXT_WINDOW start/end Y arg (%u/%u)\n", sy, ey);
+						return;
+					}
+					wrap = ripParser.rip_args[4];
+					/*
+					 * TODO: We can't track the window because buttons and mouse areas can
+					 *       silently reset the text window. There doesn't seem to be any
+					 *       way to do this meaningfully. :(
+					 */
+					if (sx == 0 && sy == 0 && ex == 0 && ey == 0) {
+						// Output disabled...
+						cols = UINT_MAX;
+						rows = UINT_MAX;
+					}
+					else {
+						cols = ex - sx + 1;
+						rows = ey - sy + 1;
+					}
+					sbbs->lprintf(LOG_DEBUG, "RIP_TEXT_WINDOW set size to %ux%u", cols, rows);
+					// TODO: If the window is identical except for wrap, the cursor doesn't move.
+					//       There's currently no good way to track the current window limits.
+					set_column();
+					set_row();
+					break;
+				}
+				case '*':
+					cols = 80;
+					rows = 43;
+					sbbs->lprintf(LOG_DEBUG, "RIP_RESET_WINDOWS set size to %ux%u", cols, rows);
+					set_column();
+					set_row();
+					break;
+				case 'e':
+				case 'H':
+					set_column();
+					set_row();
+					break;
+				case 'g':
+					set_column(ripParser.rip_args[0]);
+					set_row(ripParser.rip_args[1]);
+					break;
+			}
+			break;
+		case 1:
+			switch (ripParser.rip_cmd) {
+				case 'R':
+					// This can do anything!
+					lncntr = 0;
+					break;
+			}
+			break;
+	}
+}
+
 bool ANSI_Terminal::parse_output(char ich) {
 	unsigned char ch = static_cast<unsigned char>(ich);
 
 	if (utf8_increment(ch))
 		return true;
 
-	switch (ansiParser.parse(ch)) {
-		case ansiState_final:
-			if (ansiParser.ansi_was_cc)
-				handle_control_code();
-			else if (!ansiParser.ansi_was_string)
-				handle_control_sequence();
-			ansiParser.reset();
-			return true;
-		case ansiState_broken:
-			sbbs->lprintf(LOG_WARNING, "Sent broken ANSI sequence '%s'", ansiParser.ansi_sequence.c_str());
-			ansiParser.reset();
-			return true;
-		case ansiState_none:
-			break;
-		default:
-			return true;
+	if (ripParser.current_state() == ripState_none) {
+		switch (ansiParser.parse(ch)) {
+			case ansiState_final:
+				if (ansiParser.ansi_was_cc)
+					handle_control_code();
+				else if (!ansiParser.ansi_was_string)
+					handle_control_sequence();
+				ansiParser.reset();
+				return true;
+			case ansiState_broken:
+				sbbs->lprintf(LOG_WARNING, "Sent broken ANSI sequence '%s'", ansiParser.ansi_sequence.c_str());
+				ansiParser.reset();
+				return true;
+			case ansiState_none:
+				break;
+			default:
+				return true;
+		}
+	}
+
+	if (flags_ & RIP) {
+		switch (ripParser.parse(ch, column)) {
+			case ripState_none:
+				break;
+			case ripState_done:
+				if (ripParser.rip_cmd) {
+					handle_rip_sequence();
+					if (ripParser.lastch) {
+						ripParser.reset(ripState_pipe);
+					}
+					else {
+						ripParser.reset(ripState_pipe);
+						return true;
+					}
+				}
+				else
+					ripParser.reset(ripState_none);
+				break;
+			case ripState_next:
+				handle_rip_sequence();
+				ripParser.reset(ripState_level);
+				return true;
+			case ripState_broken:
+				sbbs->lprintf(LOG_WARNING, "Sent broken RIP sequence level %u, cmd: %c (%02x)", ripParser.rip_level, ripParser.rip_cmd, ripParser.rip_cmd);
+				ripParser.reset(ripState_none);
+				return true;
+			default:
+				return true;
+		}
 	}
 
 	/* Track cursor position locally */
@@ -860,13 +1010,16 @@ bool ANSI_Terminal::parse_output(char ich) {
 			}
 			break;
 		case 10: // LF
-			inc_row();
+			if (ripParser.current_state() == ripState_none)
+				inc_row();
+			ripParser.reset(ripState_none);
 			break;
 		case 12: // FF
 			set_row();
 			set_column();
 			break;
 		case 13: // CR
+			ripParser.reset(ripState_none);
 			lastcrcol = column;
 			if (sbbs->console & CON_CR_CLREOL)
 				cleartoeol();

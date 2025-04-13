@@ -66,7 +66,8 @@ public:
 	enum output_rate cur_output_rate{output_rate_unlimited};
 	unsigned mouse_mode{MOUSE_MODE_OFF};            // Mouse reporting mode flags
 	bool pause_hotspot{false};
-	bool suspend_lbuf{0};
+	bool suspend_lbuf{false};
+	bool wrap{true};
 	link_list_t *mouse_hotspots{nullptr};
 
 protected:
@@ -152,7 +153,7 @@ public:
 	    rows{t->rows}, cols{t->cols}, tabstop{t->tabstop}, lastcrcol{t->lastcrcol}, 
 	    cterm_version{t->cterm_version}, lncntr{t->lncntr}, latr{t->latr}, curatr{t->curatr},
 	    lbuflen{t->lbuflen}, mouse_mode{t->mouse_mode}, pause_hotspot{t->pause_hotspot},
-	    suspend_lbuf{t->suspend_lbuf},
+	    suspend_lbuf{t->suspend_lbuf}, wrap{t->wrap},
 	    mouse_hotspots{t->mouse_hotspots}, sbbs{t->sbbs}, flags_{get_flags(t->sbbs)},
 	    savedlines{t->savedlines} {
 		// Take ownership of lists so they're not destroyed
@@ -174,7 +175,7 @@ public:
 	    rows{t->rows}, cols{t->cols}, tabstop{t->tabstop}, lastcrcol{t->lastcrcol}, 
 	    cterm_version{t->cterm_version}, lncntr{t->lncntr}, latr{t->latr}, curatr{t->curatr},
 	    lbuflen{t->lbuflen}, mouse_mode{t->mouse_mode}, pause_hotspot{t->pause_hotspot},
-	    suspend_lbuf{t->suspend_lbuf},
+	    suspend_lbuf{t->suspend_lbuf}, wrap{t->wrap},
 	    mouse_hotspots{listPtrInit(0)}, sbbs{sbbsptr}, flags_{get_flags(t->sbbs)},
 	    savedlines{listPtrInit(0)} {}
 
