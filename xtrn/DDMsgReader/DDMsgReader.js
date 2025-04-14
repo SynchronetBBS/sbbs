@@ -231,10 +231,15 @@
  * 2025-02-08 Eric Oulashin     Version 1.96L
  *                              After replying to a message, when it shows the status & pauses
  *                              for input, a Q or Ctrl-C will now exit, and not be ignored.
- * 2025-05-28 Eric Oulashin     Version 1.96M
+ * 2025-03-28 Eric Oulashin     Version 1.96M
  *                              When reading messages, only mark it as read if it's to
  *                              the current user, including for personal email (i.e., when reading
  *                              sent mail, don't mark messages to others as read).
+ * 2025-04-13 Eric Oulashin     Version 1.96N
+ *                              Changes (fixes) for the bottom-row key help lines due to
+ *                              Synchronet fix related to @-code parsing (Git commit
+ *                              fccf1a5718fdcb9864bcbccf2eb6de7ee50d3dd3). Hopefully the
+ *                              mouse clicks are still correct.
  */
 
 "use strict";
@@ -342,8 +347,8 @@ var hexdump = load('hexdump_lib.js');
 
 
 // Reader version information
-var READER_VERSION = "1.96M";
-var READER_DATE = "2025-03-28";
+var READER_VERSION = "1.96N";
+var READER_DATE = "2025-04-13";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1654,7 +1659,8 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.lightbarAreaChooserHelpLine = "\x01n"
 	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "@CLEAR_HOT@@`" + UP_ARROW + "`" + KEY_UP + "@"
 	                          + this.colors.lightbarAreaChooserHelpLineGeneralColor + ", "
-	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "@`" + DOWN_ARROW + "`" + KEY_DOWN + "@"
+	                          //+ this.colors.lightbarAreaChooserHelpLineHotkeyColor + "@`" + DOWN_ARROW + "`" + KEY_DOWN + "@"
+							  + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "@`" + DOWN_ARROW + "`\\n@"
 	                          + this.colors.lightbarAreaChooserHelpLineGeneralColor + ", "
 	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "@`HOME`" + KEY_HOME + "@"
 	                          + this.colors.lightbarAreaChooserHelpLineGeneralColor + ", "
@@ -9686,13 +9692,15 @@ function DigDistMsgReader_SetMsgListPauseTextAndLightbarHelpLine()
 	// For PageUp, normally I'd think KEY_PAGEUP should work, but that triggers sending a telegram instead.  \x1b[V seems to work though.
 	this.msgListLightbarModeHelpLine = this.colors.lightbarMsgListHelpLineHotkeyColor + "@CLEAR_HOT@@`" + UP_ARROW + "`" + KEY_UP + "@"
 	                           + this.colors.lightbarMsgListHelpLineGeneralColor + ", "
-							   + this.colors.lightbarMsgListHelpLineHotkeyColor + "@`" + DOWN_ARROW + "`" + KEY_DOWN + "@"
+							   //+ this.colors.lightbarMsgListHelpLineHotkeyColor + "@`" + DOWN_ARROW + "`" + KEY_DOWN + "@"
+							   + this.colors.lightbarMsgListHelpLineHotkeyColor + "@`" + DOWN_ARROW + "`\\n@"
 	                           + this.colors.lightbarMsgListHelpLineGeneralColor + ", "
 							   + this.colors.lightbarMsgListHelpLineHotkeyColor + "@`PgUp`" + "\x1b[V" + "@"
 	                           + this.colors.lightbarMsgListHelpLineGeneralColor + "/"
 							   + this.colors.lightbarMsgListHelpLineHotkeyColor + "@`Dn`" + KEY_PAGEDN + "@"
 	                           + this.colors.lightbarMsgListHelpLineGeneralColor + ", "
-							   + this.colors.lightbarMsgListHelpLineHotkeyColor + "@`ENTER`" + KEY_ENTER + "@"
+							   //+ this.colors.lightbarMsgListHelpLineHotkeyColor + "@`ENTER`" + KEY_ENTER + "@"
+							   + this.colors.lightbarMsgListHelpLineHotkeyColor + "@`ENTER`\\r\\n@"
 	                           + this.colors.lightbarMsgListHelpLineGeneralColor + ", "
 							   + this.colors.lightbarMsgListHelpLineHotkeyColor + "@`HOME`" + KEY_HOME + "@"
 	                           + this.colors.lightbarMsgListHelpLineGeneralColor + ", "
@@ -9761,7 +9769,8 @@ function DigDistMsgReader_SetEnhancedReaderHelpLine()
 	// For PageUp, normally I'd think KEY_PAGEUP should work, but that triggers sending a telegram instead.  \x1b[V seems to work though.
 	this.enhReadHelpLine = this.colors.enhReaderHelpLineHotkeyColor + "@CLEAR_HOT@@`" + UP_ARROW + "`" + KEY_UP + "@"
 						 + this.colors.enhReaderHelpLineGeneralColor + ", "
-						 + this.colors.enhReaderHelpLineHotkeyColor + "@`" + DOWN_ARROW + "`" + KEY_DOWN + "@"
+						 //+ this.colors.enhReaderHelpLineHotkeyColor + "@`" + DOWN_ARROW + "`" + KEY_DOWN + "@"
+						 + this.colors.enhReaderHelpLineHotkeyColor + "@`" + DOWN_ARROW + "`\\n@"
 						 + this.colors.enhReaderHelpLineGeneralColor + ", "
 						 + this.colors.enhReaderHelpLineHotkeyColor + "@`" + LEFT_ARROW + "`" + KEY_LEFT + "@"
 						 + this.colors.enhReaderHelpLineGeneralColor +", "
@@ -9824,7 +9833,8 @@ function DigDistMsgReader_SetEnhancedReaderHelpLine()
 	// For PageUp, normally I'd think KEY_PAGEUP should work, but that triggers sending a telegram instead.  \x1b[V seems to work though.
 	this.enhReadHelpLineWithoutChgArea = this.colors.enhReaderHelpLineHotkeyColor + "@CLEAR_HOT@  @`" + UP_ARROW + "`" + KEY_UP + "@"
 									   + this.colors.enhReaderHelpLineGeneralColor + ", "
-									   + this.colors.enhReaderHelpLineHotkeyColor + "@`" + DOWN_ARROW + "`" + KEY_DOWN + "@"
+									   //+ this.colors.enhReaderHelpLineHotkeyColor + "@`" + DOWN_ARROW + "`" + KEY_DOWN + "@"
+									   + this.colors.enhReaderHelpLineHotkeyColor + "@`" + DOWN_ARROW + "`\\n@"
 									   + this.colors.enhReaderHelpLineGeneralColor + ", "
 									   + this.colors.enhReaderHelpLineHotkeyColor + "@`" + LEFT_ARROW + "`" + KEY_LEFT + "@"
 									   + this.colors.enhReaderHelpLineGeneralColor + ", "
@@ -17486,7 +17496,8 @@ function DigDistMsgReader_MakeIndexedModeHelpLine()
 
 	this.indexedModeHelpLine = this.colors.lightbarIndexedModeHelpLineHotkeyColor + "@CLEAR_HOT@@`" + UP_ARROW + "`" + KEY_UP + "@"
 	                         + this.colors.lightbarIndexedModeHelpLineGeneralColor + ", "
-	                         + this.colors.lightbarIndexedModeHelpLineHotkeyColor + "@`" + DOWN_ARROW + "`" + KEY_DOWN + "@"
+	                         //+ this.colors.lightbarIndexedModeHelpLineHotkeyColor + "@`" + DOWN_ARROW + "`" + KEY_DOWN + "@"
+							 + this.colors.lightbarIndexedModeHelpLineHotkeyColor + "@`" + DOWN_ARROW + "`\\n@"
 	                         + this.colors.lightbarIndexedModeHelpLineGeneralColor + ", "
 	                         + this.colors.lightbarIndexedModeHelpLineHotkeyColor + "@`PgUp`" + "\x1b[V" + "@"
 	                         + this.colors.lightbarIndexedModeHelpLineGeneralColor + "/"
@@ -17496,7 +17507,8 @@ function DigDistMsgReader_MakeIndexedModeHelpLine()
 	                         + this.colors.lightbarIndexedModeHelpLineGeneralColor + "/"
 	                         + this.colors.lightbarIndexedModeHelpLineHotkeyColor + "@`N`" + "\x1b[V" + "@"
 	                         + this.colors.lightbarIndexedModeHelpLineGeneralColor + ", "
-	                         + this.colors.lightbarIndexedModeHelpLineHotkeyColor + "@`ENTER`" + KEY_ENTER + "@"
+	                         //+ this.colors.lightbarIndexedModeHelpLineHotkeyColor + "@`ENTER`" + KEY_ENTER + "@"
+							 + this.colors.lightbarIndexedModeHelpLineHotkeyColor + "@`ENTER`\\r\\n@"
 	                         + this.colors.lightbarIndexedModeHelpLineGeneralColor + ", "
 	                         + this.colors.lightbarIndexedModeHelpLineHotkeyColor + "@`HOME`" + KEY_HOME + "@"
 	                         + this.colors.lightbarIndexedModeHelpLineGeneralColor + "/"

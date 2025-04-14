@@ -5,6 +5,10 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.96N    2025-04-13   Changes (fixes) for the bottom-row key help lines due to
+                      Synchronet fix related to @-code parsing (Git commit
+                      fccf1a5718fdcb9864bcbccf2eb6de7ee50d3dd3). Hopefully the
+                      mouse clicks are still correct.
 1.96M    2025-03-28   When reading messages, only mark it as read if it's to the
                       current user, including when reading sent email.
 1.96L    2025-02-18   After replying to a message, when it shows the status &
