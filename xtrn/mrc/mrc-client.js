@@ -48,6 +48,7 @@ js.on_exit("js.counter = 0");
 js.time_limit=0;
 
 var input_state = 'chat';
+var paused_msg_buffer = []; 
 var show_nicks = false;
 var stat_mode = 0; // 0 = Local Session stats (Chatters, Latency, & Mentions); 1 = Global MRC Stats
 
@@ -68,6 +69,7 @@ if (!f.open('r')) {
 	alert("Error " + f.error + " (" + strerror(f.error) + ") opening " + f.name);
 	exit(1);
 }
+
 const settings = {
     root: f.iniGetObject(),
     startup: f.iniGetObject('startup'),
@@ -140,7 +142,7 @@ function init_display(msg_color) {
     f.nicklist = new Frame(w - 2, 2, 2, h - 3, BG_BLACK|LIGHTGRAY, f.top);
     f.nicks = new Frame(w - 1, 2, 1, h - 3, BG_BLACK|LIGHTGRAY, f.nicklist);
     f.input_color = new Frame(1, h, 1, 1, BG_BLACK|LIGHTGRAY, f.top);
-    f.input = new Frame(2, h, w-2, 1, BG_BLACK|WHITE, f.top); // TODO: Test
+    f.input = new Frame(2, h, w-2, 1, BG_BLACK|WHITE, f.top);
     f.output_scroll = new ScrollBar(f.output, { autohide: true });
     f.nick_scroll = new ScrollBar(f.nicks, { autohide: true });
     f.output.word_wrap = true;
@@ -180,7 +182,15 @@ function refresh_stats(frames, session) {
     }
 }
 
-function append_message(frames, msg, mention) {
+function append_message(frames, msg, mention, when) {
+    
+    if (input_state !== "chat") {                     // pause incoming messages while scrolling.
+        paused_msg_buffer.push({"msg": msg,           // we'll capture any incoming messages in the meantime
+                                "mention": mention,   // and display them when done scrolling.
+                                "when": new Date()});
+        return;                                       
+    }
+    
     const top = frames.output.offset.y;
     if (frames.output.data_height > frames.output.height) {
         while (frames.output.down()) {
@@ -196,7 +206,7 @@ function append_message(frames, msg, mention) {
     }
 
     frames.output.putmsg(
-        (mention ? "\x01k\x017" : "\x01k\x01h") + getShortTime(new Date()) + // timestamp formatting
+        (mention ? "\x01k\x017" : "\x01k\x01h") + getShortTime(when || new Date()) + // timestamp formatting
         (mention ? ( "\x01n\x01r\x01h\x01i" + MENTION_MARKER ) : " ") +      // mention formatting
         "\x01n" + msg + '\r\n'                                               // message itself
     );
@@ -428,7 +438,7 @@ function main() {
                     console.beep();
                     mention = true;
                     session.mention_count = session.mention_count + 1;
-                    refresh_stats (frames, session);
+                    refresh_stats(frames, session);
                 }
                 display_message(frames, msg, mention);
             } /*else {
@@ -456,6 +466,9 @@ function main() {
     session.on('latency', function () {
         refresh_stats(frames, session);
     });
+    session.on('ctcp-msg', function (msg) {
+        display_server_message(frames, pipeToCtrlA( msg ) );
+    });
 
     if (settings.startup.splash) display_external_text(frames, "splash");
     if (settings.startup.motd) session.motd();
@@ -478,14 +491,14 @@ function main() {
     var cmd, line, user_input;
     var lastnodechk = time();
     while (!js.terminated && !break_loop) {
-	if ((time() - lastnodechk) >= 10) {
-		// Check the node "interrupt flag" once every 10 seconds
-		if (system.node_list[bbs.node_num - 1].misc & NODE_INTR) {
-			bbs.nodesync(); // this will display a message to to the user and disconnect
-			break;
-		}
-		lastnodechk = time();
-	}
+        if ((time() - lastnodechk) >= 10) {
+            // Check the node "interrupt flag" once every 10 seconds
+            if (system.node_list[bbs.node_num - 1].misc & NODE_INTR) {
+                bbs.nodesync(); // this will display a message to to the user and disconnect
+                break;
+            }
+            lastnodechk = time();
+        }
         session.cycle();
         if (input_state == 'chat') {
             frames.divider.gotoxy(frames.divider.width - 16, 1);
@@ -611,6 +624,9 @@ function main() {
                                 manage_twits( cmd[1].toLowerCase(), cmd.slice(2).join(' ').toLowerCase(), session.twit_list, frames );
                             }
                             break;
+                        case "?": // shortcut for "help", because why not?
+                            session.send_command("help");
+                            break;
                         default:
                             if (typeof session[cmd[0]] == 'function') {
                                 session[cmd[0]](cmd.slice(1).join(' '));
@@ -673,6 +689,12 @@ function main() {
                     input_state = 'chat';
                     session.mention_count = 0;
                     refresh_stats(frames, session);
+                    if (paused_msg_buffer.length > 0) {
+                        for (var pmb in paused_msg_buffer) {
+                            append_message(frames, paused_msg_buffer[pmb].msg, paused_msg_buffer[pmb].mention, paused_msg_buffer[pmb].when);
+                        }
+                        paused_msg_buffer = [];
+                    }
                 }
             } else if (input_state == 'scroll' || input_state == 'scroll_nicks') {
                 var sframe = input_state == 'scroll' ? frames.output : frames.nicks;
@@ -697,6 +719,12 @@ function main() {
                     frames.output_scroll.cycle();
                     input_state = 'chat';
                     refresh_stats(frames, session);
+                    if (paused_msg_buffer.length > 0) {
+                        for (var pmb in paused_msg_buffer) {
+                            append_message(frames, paused_msg_buffer[pmb].msg, paused_msg_buffer[pmb].mention, paused_msg_buffer[pmb].when);
+                        }
+                        paused_msg_buffer = [];
+                    }
                 }
             }
         }
