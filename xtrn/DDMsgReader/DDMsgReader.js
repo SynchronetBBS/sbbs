@@ -240,6 +240,9 @@
  *                              Synchronet fix related to @-code parsing (Git commit
  *                              fccf1a5718fdcb9864bcbccf2eb6de7ee50d3dd3). Hopefully the
  *                              mouse clicks are still correct.
+ * 2025-04-15 Eric Oulashin     Version 1.96o
+ *                              Fix: For the sysop reading personal email addressed to
+ *                              "sysop", mark the email as read
  */
 
 "use strict";
@@ -347,8 +350,8 @@ var hexdump = load('hexdump_lib.js');
 
 
 // Reader version information
-var READER_VERSION = "1.96N";
-var READER_DATE = "2025-04-13";
+var READER_VERSION = "1.96o";
+var READER_DATE = "2025-04-15";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -5621,7 +5624,8 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 		return retObj;
 
 	// Mark the message as read if it was written to the current user
-	if (userHandleAliasNameMatch(msgHeader.to))
+	var msgIsToLocalSysop = (this.subBoardCode == "mail" && user.number == 1 && msgHeader.to.toLowerCase() == "sysop");
+	if (userHandleAliasNameMatch(msgHeader.to) || msgIsToLocalSysop)
 	{
 		// Using applyAttrsInMsgHdrInMessagbase(), which loads the header without
 		// expanded fields and saves the attributes with that header.
