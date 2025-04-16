@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.96o    2025-04-15   Fix: For the sysop reading personal email addressed to
+                      "sysop", mark the email as read
 1.96N    2025-04-13   Changes (fixes) for the bottom-row key help lines due to
                       Synchronet fix related to @-code parsing (Git commit
                       fccf1a5718fdcb9864bcbccf2eb6de7ee50d3dd3). Hopefully the
