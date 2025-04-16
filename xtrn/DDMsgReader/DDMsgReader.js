@@ -5623,9 +5623,10 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	if (retObj.msgNotReadable)
 		return retObj;
 
-	// Mark the message as read if it was written to the current user
-	var msgIsToLocalSysop = (this.subBoardCode == "mail" && user.number == 1 && msgHeader.to.toLowerCase() == "sysop");
-	if (userHandleAliasNameMatch(msgHeader.to) || msgIsToLocalSysop)
+	// Mark the message as read if it was written to the current user.
+	// For personal email, the message header should have a "to_ext"
+	// that will match the current user number if the email is to them
+	if (userHandleAliasNameMatch(msgHeader.to) || (msgHeader.hasOwnProperty("to_ext") && msgHeader.to_ext == user.number))
 	{
 		// Using applyAttrsInMsgHdrInMessagbase(), which loads the header without
 		// expanded fields and saves the attributes with that header.
@@ -5633,9 +5634,6 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 		if (this.SearchTypePopulatesSearchResults() && saveRetObj.saveSucceeded)
 			this.RefreshHdrInSavedArrays(pOffset, MSG_READ, true);
 	}
-	// For personal email, if we wanted to really check that it was written to the current sysop user:
-	//var personalEmailToCurrentSysopUser = this.readingPersonalEmail && user.is_sysop && msgHeader.to.toUpperCase().indexOf("SYSOP") == 0;
-	//if (((msgHeader.attr & MSG_READ) == 0) && (userHandleAliasNameMatch(msgHeader.to) || personalEmailToCurrentSysopUser))
 
 	// Updating message pointers etc.
 	updateScanPtrAndOrLastRead(this.subBoardCode, msgHeader, this.doingMsgScan);
