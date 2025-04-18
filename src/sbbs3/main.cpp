@@ -6002,7 +6002,7 @@ NO_PASSTHRU:
 				if (client_highwater > 1)
 					lprintf(LOG_NOTICE, "Node %d New active client highwater mark: %u"
 					        , node_num, client_highwater);
-				mqtt_pub_uintval(&mqtt, TOPIC_SERVER, "highwater", client_highwater);
+				mqtt_pub_uintval(&mqtt, TOPIC_SERVER, "highwater", mqtt.highwater = client_highwater);
 			}
 		}
 

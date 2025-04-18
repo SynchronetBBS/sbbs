@@ -714,7 +714,7 @@ int mqtt_server_startup(struct mqtt* mqtt)
 	mqtt_pub_strval(mqtt, TOPIC_HOST_LEVEL, NULL, mqtt->startup->host_name);
 	mqtt_pub_strval(mqtt, TOPIC_SERVER, "version", mqtt->server_version);
 	mqtt_pub_uintval(mqtt, TOPIC_SERVER, "served", mqtt->served);
-	mqtt_pub_uintval(mqtt, TOPIC_SERVER, "highwater", 0);
+	mqtt_pub_uintval(mqtt, TOPIC_SERVER, "highwater", mqtt->highwater);
 	mqtt_pub_uintval(mqtt, TOPIC_SERVER, "error_count", mqtt->error_count);
 	return result;
 }

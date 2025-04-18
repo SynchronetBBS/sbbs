@@ -240,7 +240,7 @@ static void update_clients(void)
 		if (client_highwater > 1)
 			lprintf(LOG_NOTICE, "New active client highwater mark: %u"
 			        , client_highwater);
-		mqtt_pub_uintval(&mqtt, TOPIC_SERVER, "highwater", client_highwater);
+		mqtt_pub_uintval(&mqtt, TOPIC_SERVER, "highwater", mqtt.highwater = client_highwater);
 	}
 }
 

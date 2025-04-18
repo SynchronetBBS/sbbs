@@ -1828,7 +1828,7 @@ static void pop3_thread(void* arg)
 		if (client_highwater > 1)
 			lprintf(LOG_NOTICE, "%04d POP3 New active client highwater mark: %u"
 			        , pop3.socket, client_highwater);
-		mqtt_pub_uintval(&mqtt, TOPIC_SERVER, "highwater", client_highwater);
+		mqtt_pub_uintval(&mqtt, TOPIC_SERVER, "highwater", mqtt.highwater = client_highwater);
 	}
 	update_clients();
 
@@ -5114,7 +5114,7 @@ static void smtp_thread(void* arg)
 		if (client_highwater > 1)
 			lprintf(LOG_NOTICE, "%04d SMTP New active client highwater mark: %u"
 			        , smtp.socket, client_highwater);
-		mqtt_pub_uintval(&mqtt, TOPIC_SERVER, "highwater", client_highwater);
+		mqtt_pub_uintval(&mqtt, TOPIC_SERVER, "highwater", mqtt.highwater = client_highwater);
 	}
 	update_clients();
 

@@ -49,6 +49,7 @@ struct mqtt {
 	ulong max_clients;
 	ulong error_count;
 	ulong served;
+	ulong highwater;
 	link_list_t client_list;
 	struct startup* startup;
 	enum server_state server_state;

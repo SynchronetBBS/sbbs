@@ -2353,7 +2353,7 @@ static void ctrl_thread(void* arg)
 		if (client_highwater > 1)
 			lprintf(LOG_NOTICE, "%04d New active client highwater mark: %u"
 			        , sock, client_highwater);
-		mqtt_pub_uintval(&mqtt, TOPIC_SERVER, "highwater", client_highwater);
+		mqtt_pub_uintval(&mqtt, TOPIC_SERVER, "highwater", mqtt.highwater = client_highwater);
 	}
 	update_clients();
 
