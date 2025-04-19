@@ -184,7 +184,7 @@ function external_program_menu(xsec)
 				if(digits(hotspot) < digits(prog_list.length))
 					hotspot += '\r';
 				console.add_hotspot(hotspot);
-				if(options.indent_list_items)
+				if(options.align_prog_list)
 					printf("%*s", max_digits - digits(i + 1), ""); // Indent to right justify number
 				printf(multicolumn ? options.multicolumn_fmt : options.singlecolumn_fmt
 					,i+1
@@ -199,7 +199,7 @@ function external_program_menu(xsec)
 						if(digits(hotspot) < digits(prog_list.length))
 							hotspot += '\r';
 						console.add_hotspot(hotspot);
-						if(options.indent_list_items)
+						if(options.align_prog_list)
 							printf("%*s", max_digits - digits(j + 1), ""); // Indent to right justify number
 						printf(options.multicolumn_fmt, j+1
 							,prog_list[j].name
@@ -276,8 +276,11 @@ function external_section_menu()
 
 			if(show_header)
 				printf(margin + options.section_header_fmt.replace('\x01l', ''), options.section_header_title);
+			var max_digits = digits(sec_list.length);
 			for (i = 0; i < sec_list.length; i++) {
 				console.add_hotspot(i+1);
+				if(options.align_section_list)
+					printf("%*s", max_digits - digits(i + 1), ""); // Indent to right justify number
 				printf(margin + options.section_fmt, i + 1, sec_list[i].name);
 			}
 
