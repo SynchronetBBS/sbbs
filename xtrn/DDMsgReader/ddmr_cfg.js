@@ -119,7 +119,7 @@ function doMainMenu()
 		"promptDelPersonalEmailAfterReply", // Boolean
 		"subBoardChangeSorting", // String: None, Alphabetical, LatestMsgDateOldestFirst, or LatestMsgDateNewestFirst
 		"indexedModeNewscanOnlyShowSubsWithNewMsgs", // Boolean
-		"showWhoUpvotedAndDownvotedInTallyInfo", // Boolean
+		"showUserResponsesInTallyInfo", // Boolean
 		"themeFilename" // String
 	];
 	// Strings for the options to display on the menu
@@ -156,7 +156,7 @@ function doMainMenu()
 		"Personal email: Prompt to delete after reply",
 		"Sorting for sub-board change",
 		"Index newscan: Only show subs w/ new msgs",
-		"Include specific up/downvotes w/ tally info",
+		"Include user responses in tally info",
 		"Theme Filename"
 	];
 	// Build an array of formatted string to be displayed on the menu
@@ -637,10 +637,11 @@ function getOptionHelpText()
 	optionHelpText["indexedModeNewscanOnlyShowSubsWithNewMsgs"] += "whether to only show sub-boards with new messages. This is a ";
 	optionHelpText["indexedModeNewscanOnlyShowSubsWithNewMsgs"] += "default for a user setting, which users can change for themselves.";
 
-	optionHelpText["showWhoUpvotedAndDownvotedInTallyInfo"] = "Include specific up/downvotes w/ tally info: For messages with upvotes/downvotes, ";
-	optionHelpText["showWhoUpvotedAndDownvotedInTallyInfo"] += "when showing vote tally info (a sysop function), whether or not to show whose votes ";
-	optionHelpText["showWhoUpvotedAndDownvotedInTallyInfo"] += "are upvotes and whose are downvotes. If false, it will just show the names of who ";
-	optionHelpText["showWhoUpvotedAndDownvotedInTallyInfo"] += "voted on the message (and when).";
+	optionHelpText["showUserResponsesInTallyInfo"] = "Include user responses in tally info: For poll messages or messages with ";
+	optionHelpText["showUserResponsesInTallyInfo"] += "upvotes/downvotes, when showing vote tally info (a sysop function), whether or not ";
+	optionHelpText["showUserResponsesInTallyInfo"] += "to show each users' responses. If false, it will just show the names of who voted on ";
+	optionHelpText["showUserResponsesInTallyInfo"] += "the message (and when).";
+
 
 	optionHelpText["themeFilename"] = "Theme filename: The name of a file for a color theme to use";
 
@@ -846,8 +847,8 @@ function readDDMsgReaderCfgFile()
 		retObj.cfgOptions.subBoardChangeSorting = "None";
 	if (!retObj.cfgOptions.hasOwnProperty("indexedModeNewscanOnlyShowSubsWithNewMsgs"))
 		retObj.cfgOptions.indexedModeNewscanOnlyShowSubsWithNewMsgs = false;
-	if (!retObj.cfgOptions.hasOwnProperty("showWhoUpvotedAndDownvotedInTallyInfo"))
-		retObj.cfgOptions.showWhoUpvotedAndDownvotedInTallyInfo = false;
+	if (!retObj.cfgOptions.hasOwnProperty("showUserResponsesInTallyInfo"))
+		retObj.cfgOptions.showUserResponsesInTallyInfo = false;
 	if (!retObj.cfgOptions.hasOwnProperty("themeFilename"))
 		retObj.cfgOptions.themeFilename = "DefaultTheme.cfg";
 

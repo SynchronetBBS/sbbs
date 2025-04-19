@@ -244,11 +244,11 @@
  *                              Fix: For the sysop reading personal email addressed to
  *                              "sysop", mark the email as read
  * 2025-04-19 Eric Oulashin     Version 1.96p
- *                              When viewing tally information for a message (a sysop
- *                              feature), DDMsgReader can now optionally show who
- *                              specifically voted up/down. Defaults to false. The
- *                              option can be toggled (true/false) via the new
- *                              configuration option showWhoUpvotedAndDownvotedInTallyInfo
+ *                              When viewing tally/vote information for a message (a
+ *                              sysop feature), DDMsgReader can now optionally show
+ *                              users' specific answers (in addition to just showing
+ *                              who voted on the message/poll),  via the new
+ *                              configuration option showUserResponsesInTallyInfo
  */
 
 "use strict";
@@ -1021,7 +1021,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.ForwardMessage = DigDistMsgReader_ForwardMessage;
 	this.VoteOnMessage = DigDistMsgReader_VoteOnMessage;
 	this.HasUserVotedOnMsg = DigDistMsgReader_HasUserVotedOnMsg;
-	this.GetUpvoteAndDownvoteInfo = DigDistMsgReader_GetUpvoteAndDownvoteInfo;
+	this.GetVoteResponseInfo = DigDistMsgReader_GetVoteResponseInfo;
 	this.GetMsgBody = DigDistMsgReader_GetMsgBody;
 	this.RefreshMsgHdrInArrays = DigDistMsgReader_RefreshMsgHdrInArrays;
 	this.WriteLightbarKeyHelpMsg = DigDistMsgReader_WriteLightbarKeyHelpMsg;
@@ -1104,10 +1104,10 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// This is like the stock Synchronet behavior.
 	this.readingPostOnSubBoardInsteadOfGoToNext = false;
 	
-	// For messages with upvotes/downvotes, when showing vote tally info (a sysop function),
-	// whether or not to show whose votes are upvotes and whose are downvotes. If false,
+	// For poll messages or messages with upvotes/downvotes, when showing vote tally info
+	// (a sysop function), whether or not to show each users' responses. If false,
 	// it will just show the names of who voted on the message (and when).
-	this.showWhoUpvotedAndDownvotedInTallyInfo = false;
+	this.showUserResponsesInTallyInfo = false;
 
 	// String lengths for the columns to write
 	// Fixed field widths: Message number, date, and time
@@ -7245,7 +7245,7 @@ function DigDistMsgReader_ShowVoteInfo_Scrollable(pMsgHeader, pMsgAreaWidth, pMs
 	var originalCurPos = console.getxy();
 	if (retObj.hasVoteProps)
 	{
-		var voteInfo = this.GetUpvoteAndDownvoteInfo(pMsgHeader);
+		var voteInfo = this.GetVoteResponseInfo(pMsgHeader);
 		// Display the vote info and let the user scroll through them
 		// (the console height should be enough, but do this just in case)
 		// Calculate information for the scrollbar for the vote info lines
@@ -8107,7 +8107,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 				{
 					console.attributes = "N";
 					console.crlf();
-					var voteInfo = this.GetUpvoteAndDownvoteInfo(msgHeader);
+					var voteInfo = this.GetVoteResponseInfo(msgHeader);
 					for (var voteInfoIdx = 0; voteInfoIdx < voteInfo.length; ++voteInfoIdx)
 					{
 						console.print(voteInfo[voteInfoIdx]);
@@ -8415,7 +8415,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Traditional(msgHeader, allowChgMsg
 								{
 									console.attributes = "N";
 									console.crlf();
-									var voteInfo = this.GetUpvoteAndDownvoteInfo(msgHeader);
+									var voteInfo = this.GetVoteResponseInfo(msgHeader);
 									for (var voteInfoIdx = 0; voteInfoIdx < voteInfo.length; ++voteInfoIdx)
 									{
 										console.print(voteInfo[voteInfoIdx]);
@@ -9995,8 +9995,8 @@ function DigDistMsgReader_ReadConfigFile()
 			this.prependFowardMsgSubject = settingsObj.prependFowardMsgSubject;
 		if (typeof(settingsObj.enableIndexedModeMsgListCache) === "boolean")
 			this.enableIndexedModeMsgListCache = settingsObj.enableIndexedModeMsgListCache;
-		if (typeof(settingsObj.showWhoUpvotedAndDownvotedInTallyInfo) === "boolean")
-			this.showWhoUpvotedAndDownvotedInTallyInfo = settingsObj.showWhoUpvotedAndDownvotedInTallyInfo;
+		if (typeof(settingsObj.showUserResponsesInTallyInfo) === "boolean")
+			this.showUserResponsesInTallyInfo = settingsObj.showUserResponsesInTallyInfo;
 		if (typeof(settingsObj.themeFilename) === "string")
 		{
 			// First look for the theme config file in the sbbs/mods
@@ -18982,8 +18982,9 @@ function DigDistMsgReader_HasUserVotedOnMsg(pMsgNum, pUser)
 	return userHasVotedOnMsg;
 }
 
-// Gets information about the upvotes and downvotes for a message.
-// If the user is a sysop, this will also get who voted on the message.
+// Gets tally information about the votes for a message.
+// If the user is a sysop, this will also get who voted on the message
+// and optionally, how they voted.
 //
 // Parameters:
 //  pMsgHdr: A header of a message that has upvotes & downvotes
@@ -18991,7 +18992,7 @@ function DigDistMsgReader_HasUserVotedOnMsg(pMsgNum, pUser)
 // Return value: An array of strings containing information about the upvotes,
 //               downvotes, tally, and (if the user is a sysop) who submitted
 //               votes on the message.
-function DigDistMsgReader_GetUpvoteAndDownvoteInfo(pMsgHdr)
+function DigDistMsgReader_GetVoteResponseInfo(pMsgHdr)
 {
 	// If the message header doesn't have the "total_votes" or "upvotes" properties,
 	// then there's no vote information, so just return an empty array.
@@ -19030,24 +19031,62 @@ function DigDistMsgReader_GetUpvoteAndDownvoteInfo(pMsgHdr)
 					var tmpMessageBody = msgbase.get_msg_body(false, tmpHdrs[tmpProp].number, false, false, true, true);
 					var msgIsUpvote = Boolean(tmpHdrs[tmpProp].attr & MSG_UPVOTE);
 					var msgIsDownvote = Boolean(tmpHdrs[tmpProp].attr & MSG_DOWNVOTE);
-					if (tmpHdrs[tmpProp].field_list.length == 0 && tmpMessageBody.length == 0 && (msgIsUpvote || msgIsDownvote))
+					if (tmpHdrs[tmpProp].field_list.length == 0 && tmpMessageBody.length == 0)
 					{
 						var msgWrittenLocalTime = msgWrittenTimeToLocalBBSTime(tmpHdrs[tmpProp]);
 						var voteDate = strftime("%a %b %d %Y %H:%M:%S", msgWrittenLocalTime);
-						var infoStr = "";
-						// If the option to show the users' specific up/downvotes is enabled, then include that
-						if (this.showWhoUpvotedAndDownvotedInTallyInfo)
+						if (Boolean(pMsgHdr.attr & MSG_POLL))
 						{
-							var voteTypeStr = (msgIsUpvote ? "up" : msgIsDownvote ? "down" : "");
-							infoStr = format("\x01n\x01c\x01h%s\x01n\x01c voted on this message (%s) on %s\x01n",
-							                 tmpHdrs[tmpProp].from, voteTypeStr, voteDate);
+							// This is a poll
+							var infoStr = format("\x01n\x01c\x01h%s\x01n\x01c voted on this message on %s\x01n",
+							                 tmpHdrs[tmpProp].from, voteDate);
+							voteInfo.push(infoStr);
+							// If the option to show the users' specific responses is enabled, then include that
+							if (this.showUserResponsesInTallyInfo)
+							{
+								var answerBitIdx = 0;
+								for (var fieldI = 0; fieldI < pMsgHdr.field_list.length; ++fieldI)
+								{
+									if (pMsgHdr.field_list[fieldI].type == SMB_POLL_ANSWER)
+									{
+										var answerBit = (1 << answerBitIdx);
+										if ((tmpHdrs[tmpProp].votes & answerBit) == answerBit)
+										{
+											var optionStrArray = lfexpand(word_wrap(pMsgHdr.field_list[fieldI].data, console.screen_columns-1, null, false)).split("\r\n");
+											if (optionStrArray.length > 0)
+											{
+												if (optionStrArray[optionStrArray.length-1] == "")
+													optionStrArray.pop();
+												voteInfo.push(format(" - %s", optionStrArray[0].substr(0, console.screen_columns-4)));
+												for (var optStrI = 1; optStrI < optionStrArray.length; ++optStrI)
+												{
+													format(" - %s", optionStrArray[optStrI].substr(0, console.screen_columns-4))
+												}
+											}
+										}
+										++answerBitIdx;
+									}
+								}
+							}
 						}
 						else
 						{
-							infoStr = format("\x01n\x01c\x01h%s\x01n\x01c voted on this message on %s\x01n",
+							// The message is not a poll.
+							// If the option to show the users' specific responses is enabled, then include that
+							var infoStr = "";
+							if (this.showUserResponsesInTallyInfo)
+							{
+								var voteTypeStr = (msgIsUpvote ? "up" : msgIsDownvote ? "down" : "");
+								infoStr = format("\x01n\x01c\x01h%s\x01n\x01c voted on this message (%s) on %s\x01n",
+												 tmpHdrs[tmpProp].from, voteTypeStr, voteDate);
+							}
+							else
+							{
+								infoStr = format("\x01n\x01c\x01h%s\x01n\x01c voted on this message on %s\x01n",
 							                 tmpHdrs[tmpProp].from, voteDate);
+							}
+							voteInfo.push(infoStr);
 						}
-						voteInfo.push(infoStr);
 					}
 				}
 			}
