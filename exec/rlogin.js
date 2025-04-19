@@ -1,4 +1,4 @@
-// Synchronet RLogin Gateway v2.0
+// Synchronet RLogin Gateway v2.1
 
 // usage: ?rlogin address[:port] [options]
 // options:
@@ -8,7 +8,8 @@
 //   -T <connect-timeout-seconds> (default: 10 seconds)
 //   -m <telnet-gateway-mode> (Number or TG_* vars OR'd together, default: 0)
 //   -p send current user alias and password as server and client-name values
-//   -h[pepper] send current user alias and hashed-password as server and client-name
+//   -h[pepper] send current user alias and hashed-user-password as server and client-name
+//   -H <password> send current user alias and specified hashed-password as server and client-name
 //   -q don't display banner or pause prompt (quiet)
 //   -v increase verbosity (display remote host name/address/port in messages)
 //   -P don't pause for user key-press
@@ -39,9 +40,9 @@ var clear = options.clear === undefined ? true : options.clear;
 var timeout = options.timeout === undefined ? 10 : options.timeout;
 var verbosity = options.verbosity === undefined ? 0 : options.verbosity;
 
-function hashed_user_password(pepper)
+function hashed_password(password, pepper)
 {
-	return sha1_calc(user.security.password
+	return sha1_calc(password
 		+ user.number
 		+ user.stats.firston_date
 		+ (options.salt || system.qwk_id)
@@ -81,8 +82,8 @@ for(var i = 0; i < argv.length; i++) {
 		case 'v':
 			++verbosity;
 			continue;
-		case 'h': // send alias and hashed-password
-			client_name = hashed_user_password(arg.substring(2));
+		case 'h': // send alias and hashed-user-password
+			client_name = hashed_password(user.security.password, arg.substring(2));
 			server_name = user.alias;
 			continue;
 		case 'p': // send alias and password as expected by Synchronet
@@ -107,6 +108,10 @@ for(var i = 0; i < argv.length; i++) {
 		case 'm':
 			mode = eval(value);
 			break;
+		case 'H': // send alias and hashed-password
+			client_name = hashed_password(value, "");
+			server_name = user.alias;
+			continue;
 		default:
 			alert(js.exec_file + ": Unrecognized option: " + arg);
 			exit(1);
