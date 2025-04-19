@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.96o
-                           Release date: 2025-04-15
+                                 Version 1.96p
+                           Release date: 2025-04-19
 
                                      by
 
@@ -852,6 +852,15 @@ indexedModeNewscanOnlyShowSubsWithNewMsgs  For indexed-mode newscan, whether to
                                            user setting; users can toggle this
                                            for themselves as they like. Valid
                                            values are true or false.
+
+showWhoUpvotedAndDownvotedInTallyInfo  For messages with upvotes/downvotes, when
+                                       showing vote tally info (a sysop
+                                       function), this specifies whether or not
+                                       to show whose votes are upvotes and whose
+                                       are downvotes. If false, it will just
+                                       show the names of who voted on the
+                                       message (and when). Valid values are true
+                                       or false.
 
 themeFilename                         The name of the configuration file to
                                       use for colors & string settings

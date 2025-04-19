@@ -243,6 +243,12 @@
  * 2025-04-15 Eric Oulashin     Version 1.96o
  *                              Fix: For the sysop reading personal email addressed to
  *                              "sysop", mark the email as read
+ * 2025-04-19 Eric Oulashin     Version 1.96p
+ *                              When viewing tally information for a message (a sysop
+ *                              feature), DDMsgReader can now optionally show who
+ *                              specifically voted up/down. Defaults to false. The
+ *                              option can be toggled (true/false) via the new
+ *                              configuration option showWhoUpvotedAndDownvotedInTallyInfo
  */
 
 "use strict";
@@ -350,8 +356,8 @@ var hexdump = load('hexdump_lib.js');
 
 
 // Reader version information
-var READER_VERSION = "1.96o";
-var READER_DATE = "2025-04-15";
+var READER_VERSION = "1.96p";
+var READER_DATE = "2025-04-19";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1097,6 +1103,11 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// reading the last message instead of prompting to go to the next sub-board.
 	// This is like the stock Synchronet behavior.
 	this.readingPostOnSubBoardInsteadOfGoToNext = false;
+	
+	// For messages with upvotes/downvotes, when showing vote tally info (a sysop function),
+	// whether or not to show whose votes are upvotes and whose are downvotes. If false,
+	// it will just show the names of who voted on the message (and when).
+	this.showWhoUpvotedAndDownvotedInTallyInfo = false;
 
 	// String lengths for the columns to write
 	// Fixed field widths: Message number, date, and time
@@ -9943,19 +9954,19 @@ function DigDistMsgReader_ReadConfigFile()
 			this.quickUserValSetIndex = numberVal;
 		if (settingsObj.hasOwnProperty("listInterfaceStyle") && typeof(settingsObj.listInterfaceStyle) === "string")
 			this.msgListUseLightbarListInterface = (settingsObj.listInterfaceStyle.toUpperCase() == "LIGHTBAR");
-		if (typeof(settingsObj["readerInterfaceStyle"]) === "string")
+		if (typeof(settingsObj.readerInterfaceStyle) === "string")
 			this.scrollingReaderInterface = (settingsObj.readerInterfaceStyle.toUpperCase() == "SCROLLABLE");
-		if (typeof(settingsObj["displayBoardInfoInHeader"]) === "boolean")
+		if (typeof(settingsObj.displayBoardInfoInHeader) === "boolean")
 			this.displayBoardInfoInHeader = settingsObj.displayBoardInfoInHeader;
-		if (typeof(settingsObj["promptToContinueListingMessages"]) === "boolean")
+		if (typeof(settingsObj.promptToContinueListingMessages) === "boolean")
 			this.promptToContinueListingMessages = settingsObj.promptToContinueListingMessages;
-		if (typeof(settingsObj["promptConfirmReadMessage"]) === "boolean")
+		if (typeof(settingsObj.promptConfirmReadMessage) === "boolean")
 			this.promptToReadMessage = settingsObj.promptConfirmReadMessage;
-		if (typeof(settingsObj["msgListDisplayTime"]) === "string")
+		if (typeof(settingsObj.msgListDisplayTime) === "string")
 			this.msgList_displayMessageDateImported = (settingsObj.msgListDisplayTime.toUpperCase() == "IMPORTED");
-		if (typeof(settingsObj["msgAreaList_lastImportedMsg_time"]) === "string")
+		if (typeof(settingsObj.msgAreaList_lastImportedMsg_time) === "string")
 			this.msgAreaList_lastImportedMsg_showImportTime = (settingsObj.msgAreaList_lastImportedMsg_time.toUpperCase() == "IMPORTED");
-		if (typeof(settingsObj["startMode"]) === "string")
+		if (typeof(settingsObj.startMode) === "string")
 		{
 			var valueUpper = settingsObj.startMode.toUpperCase();
 			if ((valueUpper == "READER") || (valueUpper == "READ"))
@@ -9963,28 +9974,30 @@ function DigDistMsgReader_ReadConfigFile()
 			else if ((valueUpper == "LISTER") || (valueUpper == "LIST"))
 				this.startMode = READER_MODE_LIST;
 		}
-		if (typeof(settingsObj["pauseAfterNewMsgScan"]) === "boolean")
+		if (typeof(settingsObj.pauseAfterNewMsgScan) === "boolean")
 			this.pauseAfterNewMsgScan = settingsObj.pauseAfterNewMsgScan;
-		if (typeof(settingsObj["readingPostOnSubBoardInsteadOfGoToNext"]) === "boolean")
+		if (typeof(settingsObj.readingPostOnSubBoardInsteadOfGoToNext) === "boolean")
 			this.readingPostOnSubBoardInsteadOfGoToNext = settingsObj.readingPostOnSubBoardInsteadOfGoToNext;
-		if (typeof(settingsObj["areaChooserHdrFilenameBase"]) === "string")
+		if (typeof(settingsObj.areaChooserHdrFilenameBase) === "string")
 			this.areaChooserHdrFilenameBase = settingsObj.areaChooserHdrFilenameBase;
-		if (typeof(settingsObj["displayAvatars"]) === "boolean")
+		if (typeof(settingsObj.displayAvatars) === "boolean")
 			this.displayAvatars = settingsObj.displayAvatars;
-		if (typeof(settingsObj["rightJustifyAvatars"]) === "boolean")
+		if (typeof(settingsObj.rightJustifyAvatars) === "boolean")
 			this.rightJustifyAvatar = settingsObj.rightJustifyAvatars;
-		if (typeof(settingsObj["msgListSort"]) === "string")
+		if (typeof(settingsObj.msgListSort) === "string")
 		{
 			if (settingsObj.msgListSort.toUpperCase() == "WRITTEN")
 				this.msgListSort = MSG_LIST_SORT_DATETIME_WRITTEN;
 		}
-		if (typeof(settingsObj["convertYStyleMCIAttrsToSync"]) === "boolean")
+		if (typeof(settingsObj.convertYStyleMCIAttrsToSync) === "boolean")
 			this.convertYStyleMCIAttrsToSync = settingsObj.convertYStyleMCIAttrsToSync;
-		if (typeof(settingsObj["prependFowardMsgSubject"]) === "boolean")
+		if (typeof(settingsObj.prependFowardMsgSubject) === "boolean")
 			this.prependFowardMsgSubject = settingsObj.prependFowardMsgSubject;
-		if (typeof(settingsObj["enableIndexedModeMsgListCache"]) === "boolean")
+		if (typeof(settingsObj.enableIndexedModeMsgListCache) === "boolean")
 			this.enableIndexedModeMsgListCache = settingsObj.enableIndexedModeMsgListCache;
-		if (typeof(settingsObj["themeFilename"]) === "string")
+		if (typeof(settingsObj.showWhoUpvotedAndDownvotedInTallyInfo) === "boolean")
+			this.showWhoUpvotedAndDownvotedInTallyInfo = settingsObj.showWhoUpvotedAndDownvotedInTallyInfo;
+		if (typeof(settingsObj.themeFilename) === "string")
 		{
 			// First look for the theme config file in the sbbs/mods
 			// directory, then sbbs/ctrl, then the same directory as
@@ -9995,9 +10008,9 @@ function DigDistMsgReader_ReadConfigFile()
 			if (!file_exists(themeFilename))
 				themeFilename = js.exec_dir + settingsObj.themeFilename;
 		}
-		if (typeof(settingsObj["saveAllHdrsWhenSavingMsgToBBSPC"]) === "boolean")
+		if (typeof(settingsObj.saveAllHdrsWhenSavingMsgToBBSPC) === "boolean")
 			this.saveAllHdrsWhenSavingMsgToBBSPC = settingsObj.saveAllHdrsWhenSavingMsgToBBSPC;
-		if (typeof(settingsObj["msgSaveDir"]) === "string" && settingsObj.msgSaveDir.length > 0 && file_isdir(settingsObj.msgSaveDir))
+		if (typeof(settingsObj.msgSaveDir) === "string" && settingsObj.msgSaveDir.length > 0 && file_isdir(settingsObj.msgSaveDir))
 			this.msgSaveDir = settingsObj.msgSaveDir;
 		// User setting defaults
 		if (typeof(settingsObj.reverseListOrder === "boolean"))
@@ -19009,16 +19022,32 @@ function DigDistMsgReader_GetUpvoteAndDownvoteInfo(pMsgHdr)
 			{
 				if (tmpHdrs[tmpProp] == null)
 					continue;
-				// If this header's thread_back or reply_id matches the poll message
-				// number, then append the 'user voted' string to the message body.
-				if ((tmpHdrs[tmpProp].thread_back == pMsgHdr.number) || (tmpHdrs[tmpProp].reply_id == pMsgHdr.id))
+				// If this header's thread_back or reply_id matches the original message
+				// number and it's an upvote/downvote, then append a 'user voted'
+				// string to the message body.
+				if (tmpHdrs[tmpProp].thread_back == pMsgHdr.number || tmpHdrs[tmpProp].reply_id == pMsgHdr.id)
 				{
 					var tmpMessageBody = msgbase.get_msg_body(false, tmpHdrs[tmpProp].number, false, false, true, true);
-					if ((tmpHdrs[tmpProp].field_list.length == 0) && (tmpMessageBody.length == 0))
+					var msgIsUpvote = Boolean(tmpHdrs[tmpProp].attr & MSG_UPVOTE);
+					var msgIsDownvote = Boolean(tmpHdrs[tmpProp].attr & MSG_DOWNVOTE);
+					if (tmpHdrs[tmpProp].field_list.length == 0 && tmpMessageBody.length == 0 && (msgIsUpvote || msgIsDownvote))
 					{
 						var msgWrittenLocalTime = msgWrittenTimeToLocalBBSTime(tmpHdrs[tmpProp]);
 						var voteDate = strftime("%a %b %d %Y %H:%M:%S", msgWrittenLocalTime);
-						voteInfo.push("\x01n\x01c\x01h" + tmpHdrs[tmpProp].from + "\x01n\x01c voted on this message on " + voteDate + "\x01n");
+						var infoStr = "";
+						// If the option to show the users' specific up/downvotes is enabled, then include that
+						if (this.showWhoUpvotedAndDownvotedInTallyInfo)
+						{
+							var voteTypeStr = (msgIsUpvote ? "up" : msgIsDownvote ? "down" : "");
+							infoStr = format("\x01n\x01c\x01h%s\x01n\x01c voted on this message (%s) on %s\x01n",
+							                 tmpHdrs[tmpProp].from, voteTypeStr, voteDate);
+						}
+						else
+						{
+							infoStr = format("\x01n\x01c\x01h%s\x01n\x01c voted on this message on %s\x01n",
+							                 tmpHdrs[tmpProp].from, voteDate);
+						}
+						voteInfo.push(infoStr);
 					}
 				}
 			}
