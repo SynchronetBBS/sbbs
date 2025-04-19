@@ -853,14 +853,12 @@ indexedModeNewscanOnlyShowSubsWithNewMsgs  For indexed-mode newscan, whether to
                                            for themselves as they like. Valid
                                            values are true or false.
 
-showWhoUpvotedAndDownvotedInTallyInfo  For messages with upvotes/downvotes, when
-                                       showing vote tally info (a sysop
-                                       function), this specifies whether or not
-                                       to show whose votes are upvotes and whose
-                                       are downvotes. If false, it will just
-                                       show the names of who voted on the
-                                       message (and when). Valid values are true
-                                       or false.
+showUserResponsesInTallyInfo          For poll messages or messages with upvotes
+                                      and downvotes, when showing vote tally
+                                      info (a sysop function), whether or not to
+                                      show each users' responses. If false, it
+                                      will just show the names of who voted on
+                                      the message (and when).
 
 themeFilename                         The name of the configuration file to
                                       use for colors & string settings
