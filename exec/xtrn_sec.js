@@ -96,7 +96,7 @@ function digits(n)
 {
     if (n/10 == 0)
         return 1;
-    return 1 + digits(n / 10);
+    return 1 + digits(Math.floor(n / 10));
 }
 
 function external_program_menu(xsec)
@@ -177,12 +177,15 @@ function external_program_menu(xsec)
 			else
 				n=prog_list.length;
 
+			var max_digits = digits(prog_list.length);
 			for(i=0;i<n && !console.aborted;i++) {
 				write(margin);
 				var hotspot = i+1;
 				if(digits(hotspot) < digits(prog_list.length))
 					hotspot += '\r';
 				console.add_hotspot(hotspot);
+				if(options.indent_list_items)
+					printf("%*s", max_digits - digits(i + 1), ""); // Indent to right justify number
 				printf(multicolumn ? options.multicolumn_fmt : options.singlecolumn_fmt
 					,i+1
 					,prog_list[i].name
@@ -196,6 +199,8 @@ function external_program_menu(xsec)
 						if(digits(hotspot) < digits(prog_list.length))
 							hotspot += '\r';
 						console.add_hotspot(hotspot);
+						if(options.indent_list_items)
+							printf("%*s", max_digits - digits(j + 1), ""); // Indent to right justify number
 						printf(options.multicolumn_fmt, j+1
 							,prog_list[j].name
 							,prog_list[j].cost);
