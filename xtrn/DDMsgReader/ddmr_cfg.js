@@ -5,7 +5,7 @@
 // If you have DDMsgReader in a directory other than xtrn/DDMsgReader, then the changes to
 // DDMsgReader.cfg will be saved in that directory (assuming you're running ddmr_cfg.js from
 // that same directory).
-// Currently for DDMsgReader 1.96o.
+// Currently for DDMsgReader 1.96p.
 //
 // If you're running DDMsgReader from xtrn/DDMsgReader (the standard location) and you want
 // to save the configuration file there (rather than sbbs/mods), you can use one of the
@@ -18,7 +18,7 @@ require("sbbsdefs.js", "P_NONE");
 require("uifcdefs.js", "UIFC_INMSG");
 
 
-if (!uifc.init("DigDist. Message Reader 1.96o Configurator"))
+if (!uifc.init("DigDist. Message Reader 1.96p Configurator"))
 {
 	print("Failed to initialize uifc");
 	exit(1);
@@ -119,6 +119,7 @@ function doMainMenu()
 		"promptDelPersonalEmailAfterReply", // Boolean
 		"subBoardChangeSorting", // String: None, Alphabetical, LatestMsgDateOldestFirst, or LatestMsgDateNewestFirst
 		"indexedModeNewscanOnlyShowSubsWithNewMsgs", // Boolean
+		"showWhoUpvotedAndDownvotedInTallyInfo", // Boolean
 		"themeFilename" // String
 	];
 	// Strings for the options to display on the menu
@@ -155,6 +156,7 @@ function doMainMenu()
 		"Personal email: Prompt to delete after reply",
 		"Sorting for sub-board change",
 		"Index newscan: Only show subs w/ new msgs",
+		"Include specific up/downvotes w/ tally info",
 		"Theme Filename"
 	];
 	// Build an array of formatted string to be displayed on the menu
@@ -635,6 +637,11 @@ function getOptionHelpText()
 	optionHelpText["indexedModeNewscanOnlyShowSubsWithNewMsgs"] += "whether to only show sub-boards with new messages. This is a ";
 	optionHelpText["indexedModeNewscanOnlyShowSubsWithNewMsgs"] += "default for a user setting, which users can change for themselves.";
 
+	optionHelpText["showWhoUpvotedAndDownvotedInTallyInfo"] = "Include specific up/downvotes w/ tally info: For messages with upvotes/downvotes, ";
+	optionHelpText["showWhoUpvotedAndDownvotedInTallyInfo"] += "when showing vote tally info (a sysop function), whether or not to show whose votes ";
+	optionHelpText["showWhoUpvotedAndDownvotedInTallyInfo"] += "are upvotes and whose are downvotes. If false, it will just show the names of who ";
+	optionHelpText["showWhoUpvotedAndDownvotedInTallyInfo"] += "voted on the message (and when).";
+
 	optionHelpText["themeFilename"] = "Theme filename: The name of a file for a color theme to use";
 
 	// Word-wrap the help text items
@@ -839,6 +846,8 @@ function readDDMsgReaderCfgFile()
 		retObj.cfgOptions.subBoardChangeSorting = "None";
 	if (!retObj.cfgOptions.hasOwnProperty("indexedModeNewscanOnlyShowSubsWithNewMsgs"))
 		retObj.cfgOptions.indexedModeNewscanOnlyShowSubsWithNewMsgs = false;
+	if (!retObj.cfgOptions.hasOwnProperty("showWhoUpvotedAndDownvotedInTallyInfo"))
+		retObj.cfgOptions.showWhoUpvotedAndDownvotedInTallyInfo = false;
 	if (!retObj.cfgOptions.hasOwnProperty("themeFilename"))
 		retObj.cfgOptions.themeFilename = "DefaultTheme.cfg";
 
