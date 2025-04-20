@@ -5,6 +5,14 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.96q    2025-04-20   If DDMsgReader.cfg doesn't exist, DDMsgReader will read
+                      DDMsgReader.example.cfg (in the same directory as
+                      DDMsgreader.js) if it exists. To make your own
+                      configuration changes, copy DDMsgReader.example.cfg to
+                      DDMsgReader.cfg in the same directory or to sbbs/mods.
+                      ddmr_cfg.js will by default save to DDMsgReader.cfg in the
+                      same directory; you can give the -save_to_mods argument on
+                      the command line to have it save to sbbs/mods instead.
 1.96p    2025-04-19   When viewing tally/vote information for a message (a sysop
                       feature), DDMsgReader can now optionally show users'
                       specific answers (in addition to just showing who voted on

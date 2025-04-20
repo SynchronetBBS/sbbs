@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.96p
-                           Release date: 2025-04-19
+                                 Version 1.96q
+                           Release date: 2025-04-20
 
                                      by
 
@@ -594,6 +594,18 @@ user avatar.
 Digital Distortion Message Reader allows changing some settings, colors, and
 some of the text via configuration files.
 
+DDMsgReader.example.cfg is an example of a configuration file for Digital
+Distortion Message Reader.  If you want to customize your configuration, copy
+DDMsgReader.example.cfg to DDMsgReader.cfg (it can be in the same directory,
+xtrn/DDMsgReader, or in sbbs/mods) and make your customizations.
+
+The configuration files are plain text and can be edited with any text editor.
+These are the configuration files used by Digital Distortion Message Reader:
+- DDMsgReader.cfg (or DDMsgReader.example.cfg): The main configuration file
+- DefaultTheme.cfg: Defines colors & some text strings used in the reader.
+  The name of this file can be specified in DDMsgReader.cfg, so that alternate
+  "theme" configuration files can be used if desired.
+
 Also, ddmr_cfg.js is a menu-driven configuration script to help with changing
 configuration options. You can run it at a command prompt in the DDMsgReader
 directory with the following command:
@@ -601,16 +613,9 @@ jsexec ddmr_cfg
 Alternately (with the filename extension):
 jsexec ddmr_cfg.js
 
-If you have DDMsgReader in the standard location (xtrn/DDMsgReader), ddmr_cfg
-will copy the configuration file to your sbbs/mods directory to help prevent it
-from being accidentally overridden by updating the standard Synchronet files.
-
-The configuration files are plain text and can be edited with any text editor.
-These are the configuration files used by Digital Distortion Message Reader:
-- DDMsgReader.cfg: The main configuration file
-- DefaultTheme.cfg: Defines colors & some text strings used in the reader.
-  The name of this file can be specified in DDMsgReader.cfg, so that alternate
-  "theme" configuration files can be used if desired.
+ddmr_cfg.js will by default save to DDMsgReader.cfg in the same directory;
+you can give the -save_to_mods argument on the command line to have it save
+to sbbs/mods instead.
 
 Each setting in the configuration files has the format setting=value, where
 "setting" is the name of the setting or color, and "value" is the corresponding
