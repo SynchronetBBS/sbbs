@@ -5,7 +5,7 @@
 // If you have DDMsgReader in a directory other than xtrn/DDMsgReader, then the changes to
 // DDMsgReader.cfg will be saved in that directory (assuming you're running ddmr_cfg.js from
 // that same directory).
-// Currently for DDMsgReader 1.96p.
+// Currently for DDMsgReader 1.96q.
 //
 // If you're running DDMsgReader from xtrn/DDMsgReader (the standard location) and you want
 // to save the configuration file there (rather than sbbs/mods), you can use one of the
@@ -18,7 +18,7 @@ require("sbbsdefs.js", "P_NONE");
 require("uifcdefs.js", "UIFC_INMSG");
 
 
-if (!uifc.init("DigDist. Message Reader 1.96p Configurator"))
+if (!uifc.init("DigDist. Message Reader 1.96q Configurator"))
 {
 	print("Failed to initialize uifc");
 	exit(1);
@@ -27,12 +27,12 @@ js.on_exit("uifc.bail()");
 
 
 // DDMsgReader base configuration filename, and help text wrap width
-var gDDMRCfgFileName = "DDMsgReader.cfg";
+const gDDMRCfgFileName = "DDMsgReader.cfg";
 var gHelpWrapWidth = uifc.screen_width - 10;
 
 // When saving the configuration file, always save it in the same directory
 // as DDMsgReader (or this script); don't copy to mods
-var gAlwaysSaveCfgInOriginalDir = false;
+var gAlwaysSaveCfgInOriginalDir = true;
 
 // Parse command-line arguments
 parseCmdLineArgs();
@@ -63,8 +63,10 @@ while (continueOn)
 					uifc.msg("Failed to save settings!");
 				else
 				{
+					var msg = "Changes were successfully saved";
 					if (saveRetObj.savedToModsDir)
-						uifc.msg("Changes were successfully saved (to the mods dir)");
+						msg += " (to the mods dir)";
+					uifc.msg(msg);
 				}
 			}
 			continueOn = false;
@@ -745,8 +747,8 @@ function parseCmdLineArgs()
 	for (var i = 0; i < argv.length; ++i)
 	{
 		var argUpper = argv[i].toUpperCase();
-		if (argUpper == "NOMODS" || argUpper == "NO_MODS" || argUpper == "-NOMODS" || argUpper == "-NO_MODS")
-			gAlwaysSaveCfgInOriginalDir = true;
+		if (argUpper == "-SAVE_TO_MODS")
+			gAlwaysSaveCfgInOriginalDir = false;
 	}
 }
 
@@ -770,10 +772,19 @@ function readDDMsgReaderCfgFile()
 		cfgFilename = file_cfgname(system.ctrl_dir, gDDMRCfgFileName);
 	if (!file_exists(cfgFilename))
 		cfgFilename = file_cfgname(js.exec_dir, gDDMRCfgFileName);
+	// If the configuration file hasn't been found, look to see if there's a DDMsgReader.example.cfg file
+	// available in the same directory 
+	if (!file_exists(cfgFilename))
+	{
+		var exampleFileName = file_cfgname(js.exec_dir, "DDMsgReader.example.cfg");
+		if (file_exists(exampleFileName))
+			cfgFilename = exampleFileName;
+	}
+
 	retObj.cfgFilename = cfgFilename;
 
 	// Open and read the configuration file
-	var cfgFile = new File(retObj.cfgFilename);
+	var cfgFile = new File(cfgFilename);
 	if (cfgFile.open("r"))
 	{
 		retObj.cfgOptions = cfgFile.iniGetObject();
@@ -867,23 +878,36 @@ function saveDDMsgReaderCfgFile()
 		savedToModsDir: false
 	};
 
-	// If the configuration file was loaded from the standard location in
-	// the Git repository (xtrn/DDMsgReader), and the option to always save
-	// in the original directory is not set, then the configuration file
-	// should be copied to sbbs/mods to avoid custom settings being overwritten
-	// with an update.
-	var defaultDirRE = new RegExp("xtrn[\\\\/]DDMsgReader[\\\\/]" + gDDMRCfgFileName + "$");
+	// If the configuration file was in the same directory as this configurator,
+	// then deal with it appropriately.
 	var cfgFilename = gCfgInfo.cfgFilename;
-	if (defaultDirRE.test(cfgFilename) && !gAlwaysSaveCfgInOriginalDir)
+	if (gCfgInfo.cfgFilename.indexOf(js.exec_dir) > -1)
 	{
-		cfgFilename = system.mods_dir + gDDMRCfgFileName;
-		if (!file_copy(gCfgInfo.cfgFilename, cfgFilename))
-			return false;
-		retObj.savedToModsDir = true;
+		if (gAlwaysSaveCfgInOriginalDir) // Always save config in the original dir
+		{
+			// If the read configuration file was DDMsgReader.example.cfg, copy it
+			// to DDMsgReader.cfg.
+			if (cfgFilename.lastIndexOf("DDMsgReader.example.cfg") > -1)
+			{
+				var oldCfgFilename = gCfgInfo.cfgFilename;
+				cfgFilename = gCfgInfo.cfgFilename.replace("DDMsgReader.example.cfg", "DDMsgReader.cfg");
+				if (!file_copy(oldCfgFilename, cfgFilename))
+					return retObj;
+			}
+		}
+		else
+		{
+			// Copy to sbbs/mods
+			cfgFilename = system.mods_dir + gDDMRCfgFileName;
+			if (!file_copy(gCfgInfo.cfgFilename, cfgFilename))
+				return retObj;
+			retObj.savedToModsDir = true;
+		}
 	}
 
 	var cfgFile = new File(cfgFilename);
-	if (cfgFile.open("r+")) // Reading and writing (file must exist)
+	var openMode = (file_exists(cfgFilename) ? "r+" : "w");
+	if (cfgFile.open(openMode))
 	{
 		for (var settingName in gCfgInfo.cfgOptions)
 			cfgFile.iniSetValue(null, settingName, gCfgInfo.cfgOptions[settingName]);
