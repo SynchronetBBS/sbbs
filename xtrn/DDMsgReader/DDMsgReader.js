@@ -249,6 +249,9 @@
  *                              users' specific answers (in addition to just showing
  *                              who voted on the message/poll),  via the new
  *                              configuration option showUserResponsesInTallyInfo
+ * 2025-04-20 Eric Oulashin     Version 1.96q
+ *                              If DDMsgReader.cfg doesn't exist, read DDMsgReader.example.cfg
+ *                              (in the same directory as DDMsgreader.js) if it exists
  */
 
 "use strict";
@@ -356,8 +359,8 @@ var hexdump = load('hexdump_lib.js');
 
 
 // Reader version information
-var READER_VERSION = "1.96p";
-var READER_DATE = "2025-04-19";
+var READER_VERSION = "1.96q";
+var READER_DATE = "2025-04-20";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1327,6 +1330,7 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	this.msgSaveDir = "";
 
 	this.cfgFilename = "DDMsgReader.cfg";
+	this.usingCmdLineSpecifiedFilename = false;
 	// Check the command-line arguments for a custom configuration file name
 	// before reading the configuration file.  Defaults to the current user
 	// number, but can be set by a loadable module command-line argument. Also,
@@ -1336,7 +1340,10 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	if (scriptArgsIsValid)
 	{
 		if (pScriptArgs.hasOwnProperty("configfilename"))
+		{
 			this.cfgFilename = pScriptArgs.configfilename;
+			this.usingCmdLineSpecifiedFilename = true;
+		}
 		if (pScriptArgs.hasOwnProperty("usernum") && user.is_sysop)
 			this.personalMailUserNum = pScriptArgs.usernum;
 	}
@@ -9931,11 +9938,21 @@ function DigDistMsgReader_ReadConfigFile()
 
 	// Open the main configuration file.  First look for it in the sbbs/mods
 	// directory, then sbbs/ctrl, then in the same directory as this script.
+	// this.cfgFilename is DDMsgReader.cfg by default, unless another filename
+	// is specified by the command line (which is probably rare).
 	var cfgFilename = file_cfgname(system.mods_dir, this.cfgFilename);
 	if (!file_exists(cfgFilename))
 		cfgFilename = file_cfgname(system.ctrl_dir, this.cfgFilename);
 	if (!file_exists(cfgFilename))
 		cfgFilename = file_cfgname(js.exec_dir, this.cfgFilename);
+	// If the configuration file hasn't been found, look to see if there's a DDMsgReader.example.cfg file
+	// available in the same directory 
+	if (!file_exists(cfgFilename))
+	{
+		var exampleFileName = file_cfgname(js.exec_dir, "DDMsgReader.example.cfg");
+		if (file_exists(exampleFileName))
+			cfgFilename = exampleFileName;
+	}
 	var cfgFile = new File(cfgFilename);
 	if (cfgFile.open("r"))
 	{
