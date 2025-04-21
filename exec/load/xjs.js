@@ -86,7 +86,7 @@ function xjs_compile(filename) {
 			f.write(script);
 			f.close();
 		} else {
-			log(LOG_ERR, "!ERROR " + file.error + " creating " + file.name);
+			log(LOG_ERR, "!ERROR " + f.error + " creating " + f.name);
 		}
 	}
 	return(ssjs_filename);
