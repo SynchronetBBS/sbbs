@@ -5,6 +5,12 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.42c    2025-04-21   F & L keys working again on the light bar menu (first &
+                      last page).
+                      Message area chooser: Fix for
+                      "this.DisplayMenuHdrWithNumItems is not a function".
+                      File area choser: Fix to ensure the header lines are
+                      written in the proper place after showing help.
 1.42b    2025-04-10   Fix: altName wasn't added to items if name collapsing
                       disabled.
                       Also, start of name collapsing enhancement (no empty

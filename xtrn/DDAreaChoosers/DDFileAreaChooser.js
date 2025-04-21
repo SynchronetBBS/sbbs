@@ -77,6 +77,10 @@
  * 2025-04-10 Eric Oulashin   Version 1.42b
  *                            Fix: altName wasn't added to items if name collapsing disabled.
  *                            Also, start of name collapsing enhancement (no empty names).
+ * 2025-04-21 Eric Oulashin   Version 1.42c
+ *                            F & L keys working again on the light bar menu (first & last page).
+ *                            Fix to ensure the header lines are written in the proper place after
+ *                            showing help.
  */
 
 // TODO: Failing silently when 1st argument is true
@@ -117,8 +121,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_FILE_AREA_CHOOSER_VERSION = "1.42b Beta";
-var DD_FILE_AREA_CHOOSER_VER_DATE = "2025-04-07";
+var DD_FILE_AREA_CHOOSER_VERSION = "1.42c";
+var DD_FILE_AREA_CHOOSER_VER_DATE = "2025-04-21";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -391,6 +395,8 @@ function DDFileAreaChooser_SelectFileArea(pChooseLib)
 	if (!this.useLightbarInterface || !console.term_supports(USER_ANSI))
 		numItemsWidth = 5;
 	// Main loop
+	var writeHdrLines = false;
+	var writeKeyHelpLine = true;
 	var selectionLoopContinueOn = true;
 	while (selectionLoopContinueOn)
 	{
@@ -427,8 +433,6 @@ function DDFileAreaChooser_SelectFileArea(pChooseLib)
 		var lastSearchText = "";
 		var lastSearchFoundIdx = -1;
 		var drawMenu = true;
-		var writeHdrLines = false; // Already displayed above
-		var writeKeyHelpLine = true;
 		// Menu input loop
 		var menuContinueOn = true;
 		while (menuContinueOn)
@@ -755,6 +759,7 @@ function DDFileAreaChooser_SelectFileArea(pChooseLib)
 				drawMenu = true;
 				writeHdrLines = true;
 				writeKeyHelpLine = true;
+				console.clear("\x01n");
 			}
 			// Quit - Note: This check should be last
 			else if (lastUserInputUpper == "Q" || lastUserInputUpper == KEY_ESC || selectedMenuIdx == null)
@@ -887,6 +892,8 @@ function DDFileAreaChooser_CreateLightbarMenu(pDirHeirarchyObj, pHeirarchyLevel,
 	// Add additional keypresses for quitting the menu's input loop so we can
 	// respond to these keys
 	fileDirMenu.AddAdditionalQuitKeys("qQ?/" + CTRL_F);
+	fileDirMenu.AddAdditionalFirstPageKeys("fF");
+	fileDirMenu.AddAdditionalLastPageKeys("lL");
 	if (this.useLightbarInterface && console.term_supports(USER_ANSI))
 	{
 		fileDirMenu.allowANSI = true;
