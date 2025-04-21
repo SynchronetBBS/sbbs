@@ -86,6 +86,9 @@
  * 2025-04-10 Eric Oulashin   Version 1.42b
  *                            Fix: altName wasn't added to items if name collapsing disabled.
  *                            Also, start of name collapsing enhancement (no empty names).
+ * 2025-04-21 Eric Oulashin   Version 1.42c
+ *                            F & L keys working again on the light bar menu (first & last page).
+ *                            Fix for "this.DisplayMenuHdrWithNumItems is not a function".
  */
 
 /* Command-line arguments:
@@ -123,8 +126,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.42b Beta";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2025-04-07";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.42c";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2025-04-21";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -677,9 +680,8 @@ function DDMsgAreaChooser_SelectMsgArea(pChooseGroup, pGrpIdx)
 						// screen (including the header, due to things being moved down one line).
 						if (this.useLightbarInterface && console.term_supports(USER_ANSI))
 							console.gotoxy(1, 1);
-						this.DisplayMenuHdrWithNumItems(createMenuRet.itemNumWidth, createMenuRet.descWidth-3, createMenuRet.numItemsWidth, numItemsColLabel);
-						if (this.useLightbarInterface && console.term_supports(USER_ANSI))
-							this.WriteKeyHelpLine();
+						writeHdrLines = true;
+						writeKeyHelpLine = true;
 						continue; // Continue to display the menu again and get the user's choice
 					}
 				}
@@ -1102,6 +1104,8 @@ function DDMsgAreaChooser_CreateLightbarMenu(pMsgAreaHeirarchyObj, pHeirarchyLev
 	// Add additional keypresses for quitting the menu's input loop so we can
 	// respond to these keys
 	msgAreaMenu.AddAdditionalQuitKeys("qQ?/" + CTRL_F);
+	msgAreaMenu.AddAdditionalFirstPageKeys("fF");
+	msgAreaMenu.AddAdditionalLastPageKeys("lL");
 	if (this.useLightbarInterface && console.term_supports(USER_ANSI))
 	{
 		msgAreaMenu.allowANSI = true;
