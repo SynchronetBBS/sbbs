@@ -1328,6 +1328,8 @@ bool sbbs_t::editfile(char *fname, uint maxlines, const char* to, const char* fr
 		rioctl(IOCM | PAUSE | ABORT);
 		if (external(cmdstr(cfg.xedit[useron_xedit - 1]->rcmd, msgtmp, nulstr, NULL, mode), mode, cfg.node_dir) != 0)
 			return false;
+		if (!fexist(msgtmp))
+			return false;
 		l = process_edited_file(msgtmp, path, /* mode: */ WM_EDIT, &lines, maxlines);
 		if (l > 0) {
 			SAFEPRINTF3(str, "created or edited file: %s (%ld bytes, %u lines)"
