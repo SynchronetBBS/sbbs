@@ -18,8 +18,7 @@ function xjs_compile(filename) {
 		var file = new File(filename);
 		if(!file.open("r",true,8192)) {
 			writeln("!ERROR " + file.error + " opening " + file.name);
-			log(LOG_ERR, "!ERROR " + file.error + " opening " + file.name);
-			exit();
+			throw new Error(format("%d (%s)", file.error, strerror(file.error)) + " opening " + file.name);
 		}
 		var text = file.readAll(8192);
 		file.close();
@@ -86,7 +85,7 @@ function xjs_compile(filename) {
 			f.write(script);
 			f.close();
 		} else {
-			log(LOG_ERR, "!ERROR " + f.error + " creating " + f.name);
+			throw new Error(format("%d (%s)", f.error, strerror(f.error)) + " creating " + f.name);
 		}
 	}
 	return(ssjs_filename);
@@ -96,8 +95,7 @@ function xjs_eval(filename, str) {
 	const ssjs = xjs_compile(filename);
 	const f = new File(filename + '.html');
 	if (!f.open('w+', false)) {
-		log(LOG_ERR, "!ERROR " + f.error + " creating " + f.name);
-		return '';
+		throw new Error(format("%d (%s)", f.error, strerror(f.error)) + " creating " + f.name);
 	}
 	function write(s) {
 		f.write(s);
