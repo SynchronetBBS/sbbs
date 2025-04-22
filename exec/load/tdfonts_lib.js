@@ -1,0 +1,562 @@
+/*
+ * tdfiglet.js - Synchronet JS conversion of tdfiglet.c
+ * Based on the C code by Unknown/Modified by The Draw
+ * Converted to Synchronet JS by Nelgin
+ *
+ * Note: This is a best-effort conversion based on the provided C code.
+ * Synchronet JS environment differences (like file I/O, binary data handling,
+ * and character encoding) may require adjustments.
+ * The C code's mmap and directory listing will be replaced with Synchronet JS equivalents.
+ * The iconv part for IBM437 to UTF-8 conversion will need a JavaScript equivalent,
+ * possibly a lookup table or relying on Synchronet's native encoding handling.
+ */
+
+// Constants (using var as requested)
+var OUTLN_FNT = 0;
+var BLOCK_FNT = 1;
+var COLOR_FNT = 2;
+
+var NUM_CHARS = 94;
+
+var MAX_UTFSTR = 5; // Max bytes for UTF-8 character + null terminator
+
+var LEFT_JUSTIFY = 0;
+var RIGHT_JUSTIFY = 1;
+var CENTER_JUSTIFY = 2;
+
+var DEFAULT_WIDTH = 80;
+
+var COLOR_ANSI = 0;
+var COLOR_MIRC = 1;
+
+var ENC_UNICODE = 0;
+var ENC_ANSI = 1;
+
+// Default font directory and extension - adjust as needed for your Synchronet setup
+var FONT_DIR = system.data_dir + 'tdfonts/'; // Assuming fonts directory is relative to the script
+var FONT_EXT = "tdf";
+var DEFAULT_FONT = "brndamgx";
+
+// Global options object (using var)
+var opt = {
+    justify: LEFT_JUSTIFY,
+    width: DEFAULT_WIDTH,
+    color: COLOR_ANSI, // Default to ANSI
+    encoding: ENC_ANSI, // Default to ANSI
+    random: false,
+    info: false,
+    index: 0
+};
+
+// Character list
+var charlist = "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
+
+// Function declarations (Synchronet JS style)
+function usage() {
+    writeln("usage: jsexec tdfonts [options] input");
+    writeln("");
+    writeln("    -f [font] Specify font file used.");
+    writeln("    -j l|r|c  Justify left, right, or center. Default is left.");
+    writeln("    -w n      Set screen width. Default is 80.");
+    writeln("    -c a|m    Color format ANSI or mirc. Default is ANSI.");
+    writeln("    -e u|a    Encode as unicode or ASCII. Default is ANSI.");
+    writeln("    -x n      Index to font within file. Default is 0.");
+    writeln("    -i        Print font details.");
+    writeln("    -r        Use random font.");
+    writeln("    -h        Print usage.");
+    writeln("");
+    exit(1); // Use Synchronet's exit
+}
+
+// Synchronet JS does not have direct equivalents for gettimeofday and srand for seeding random.
+// We will use Math.random() directly for random font selection if needed.
+
+function loadfont(fn_arg) {
+    var font = {}; // Use object for font_t
+    var map = null; // Represents the font file data
+    var fn = null;
+
+    var magic = "\x13TheDraw FONTS file\x1a"; // TheDraw font file magic number
+
+    // Construct font file path
+    if (fn_arg.indexOf('/') === -1) {
+        if (fn_arg.indexOf('.') !== -1) {
+            fn = file_getcase(FONT_DIR + fn_arg);
+        } else {
+            fn = file_getcase(FONT_DIR + fn_arg + "." + FONT_EXT);
+        }
+    } else {
+        fn = file_getcase(fn_arg); // Assuming full path is provided
+    }
+
+    if (!fn || !file_exists(fn)) {
+        log("Error: Font file not found: " + fn_arg);
+        exit(1);
+    }
+
+    if (opt.info) {
+        writeln("file: " + fn);
+    }
+
+    // Read the font file content
+    var f = new File(fn);
+    if (!f.open("rb")) { // Open in binary read mode
+        log("Error: Unable to open font file: " + f.error);
+        exit(1);
+    }
+    var len = f.length;
+    map = f.read(len); // Read the whole file content
+    f.close();
+
+    if (map.length !== len) {
+         log("Error: Failed to read complete font file.");
+         exit(1);
+    }
+
+    // Parse the font header (offsets based on C code)
+    // Synchronet JS provides byte access to file data strings/buffers.
+    // The provided C code uses a raw byte array (uint8_t *map).
+    // We'll treat the `map` variable (which is a string or Buffer in JS depending on Synchronet version)
+    // as a byte sequence. Accessing bytes can be done via charCodeAt(index) or similar depending on how read() returns data.
+    // For simplicity and assuming read() returns a string of bytes, we'll use charCodeAt.
+    // A more robust solution might involve using ArrayBuffer and DataView if available in Synchronet JS.
+
+    try {
+
+	const sequence = "\x55\xaa\x00\xff";
+	if(opt.random)
+		opt.index = (map.match(new RegExp(sequence, 'g'))-1);
+
+	var index = -1;
+	var n = 0;
+	if(opt.index>0) {
+		while (n < opt.index) {
+	    		index = map.indexOf(sequence, index + 1);
+	    		if (index === -1)
+	       			break;
+	    	n++;
+		}
+		if (index !== -1)
+    			map = map.slice(0, 20) + map.slice(index);
+
+	}
+        font.namelen = map.charCodeAt(24);
+        font.name = map.substring(25, 25 + font.namelen);
+        font.fonttype = map.charCodeAt(41);
+        font.spacing = map.charCodeAt(42);
+        // blocksize is uint16_t, read two bytes
+        font.blocksize = map.charCodeAt(43) | (map.charCodeAt(44) << 8);
+        // charlist is uint16_t array, starting at offset 45
+        // There are NUM_CHARS (94) entries
+        font.charlist = [];
+        for (var i = 0; i < NUM_CHARS; i++) {
+            var offset = 45 + i * 2;
+            font.charlist[i] = map.charCodeAt(offset) | (map.charCodeAt(offset + 1) << 8);
+        }
+        font.data = map.substring(233); // The rest of the data is glyph data
+        font.height = 0;
+
+        // Check magic number and font type
+        if (map.substring(0, magic.length) !== magic || font.fonttype !== COLOR_FNT) {
+             log("Invalid font file or unsupported font type: " + fn);
+             exit(1);
+        }
+
+    } catch (e) {
+        log("Error parsing font file header: " + e);
+        exit(1);
+    }
+
+    if (opt.info) {
+        write("font: " + font.name + "\nchar list: ");
+    }
+
+    // Determine overall font height and validate glyph addresses
+    for (var i = 0; i < NUM_CHARS; i++) {
+        // In JS, we can't easily get the "address" like in C `&map[233]` or `map + st.st_size`.
+        // We'll work with string offsets relative to `font.data`.
+        // charlist[i] is the offset within the original file 'map'.
+        // The glyph data offset within 'font.data' is charlist[i] (since font.data starts at map[233]).
+        var glyph_data_offset = font.charlist[i];
+
+        // Check if the character exists in the font (not 0xffff)
+        if (glyph_data_offset !== 0xffff) {
+
+            if (opt.info)
+                 write(charlist[i]);
+
+            // Read glyph width and height from font.data
+            // The width is at glyph_data_offset, height at glyph_data_offset + 1
+            try {
+                var glyph_width = font.data.charCodeAt(glyph_data_offset);
+                var glyph_height = font.data.charCodeAt(glyph_data_offset + 1); // Height is at offset + 1 in the glyph data
+
+                if (glyph_height > font.height) {
+                    font.height = glyph_height;
+                }
+            } catch (e) {
+                 log("Error reading glyph dimensions for char index " + i + ": " + e);
+                 // Continue or exit depending on desired error handling
+            }
+        }
+    }
+
+    if (opt.info)
+        writeln("");
+
+    // Read and store glyph data
+    font.glyphs = [];
+    for (var i = 0; i < NUM_CHARS; i++) {
+        var glyph_data_offset = font.charlist[i];
+
+        if (glyph_data_offset !== 0xffff)
+            font.glyphs[i] = readchar(i, font); // Pass font to readchar
+        else
+            font.glyphs[i] = null;
+    }
+
+    return font;
+}
+
+function readchar(i, font) { // glyph argument is no longer needed, we return the glyph object
+    var glyph_data_offset = font.charlist[i];
+
+    // No need to check for 0xffff here, loadfont already does it and doesn't call readchar for those.
+
+    var p = glyph_data_offset; // Pointer/offset into font.data
+
+    var glyph = {}; // Use object for glyph_t
+
+    try {
+        glyph.width = font.data.charCodeAt(p);
+        p++;
+        glyph.height = font.data.charCodeAt(p);
+        p++;
+    } catch (e) {
+        log("Error reading glyph dimensions for char index " + i + ": " + e);
+        return null; // Return null or handle error appropriately
+    }
+
+
+    var row = 0;
+    var col = 0;
+    var width = glyph.width;
+    var height = glyph.height;
+
+    // Adjust overall font height if this glyph is taller
+     if (height > font.height) {
+        font.height = height;
+    }
+
+    // Initialize the cell array
+    glyph.cell = [];
+    for (var cell_idx = 0; cell_idx < width * font.height; cell_idx++) {
+        glyph.cell[cell_idx] = { utfchar: ' ', color: 0 };
+    }
+
+    // Parse glyph data
+    while (p < font.data.length && font.data.charCodeAt(p) !== 0x00) { // Loop until null terminator
+        var ch = font.data.charCodeAt(p);
+        p++;
+
+        if (ch === 0x0d) { // Carriage return
+            row++;
+            col = 0;
+        } else {
+            if (p >= font.data.length) {
+                log("Error reading color byte for char index " + i + " at offset " + (p-1));
+                break; // Prevent reading past data end
+            }
+            var color = font.data.charCodeAt(p);
+            p++;
+
+            if (ch < 0x20) { // Replace control characters with space (or '?')
+                 ch = ' ';
+            }
+
+            var cell_idx = row * width + col;
+            if (cell_idx < glyph.cell.length) {
+                if (opt.encoding === ENC_UNICODE) {
+                    // ibmtoutf8 needs to be implemented or replaced with a lookup
+                    // For now, a basic mapping or assume Synchronet handles CP437 bytes in strings
+                    // Let's try a basic lookup for common chars, or assume direct charCodeAt gives the CP437 value.
+                    // A full CP437 to UTF-8 mapping would be complex to implement in pure JS without libraries.
+                    // Synchronet's `iconv` object *might* be available, or `system.text_to_utf8`.
+                    // Assuming `system.text_to_utf8` exists and can convert from CP437 (mode 437).
+                    try {
+                         glyph.cell[cell_idx].utfchar = utf8_encode(String.fromCharCode(ch));
+                    } catch (e) {
+                         log("Error converting CP437 to UTF-8 for char " + ch + ": " + e);
+                         glyph.cell[cell_idx].utfchar = '?'; // Fallback
+                    }
+
+                } else {
+                    glyph.cell[cell_idx].utfchar = String.fromCharCode(ch); // Use ASCII/CP437 character directly
+                }
+
+                glyph.cell[cell_idx].color = color;
+
+                col++;
+            } else {
+                 log("Warning: Exceeded glyph cell bounds for char index " + i + " at row " + row + ", col " + col);
+                 // This might indicate a font file issue or parsing error.
+            }
+        }
+    }
+
+    return glyph;
+}
+
+
+function lookupchar(c, font) {
+    var char_code = c.charCodeAt(0); // Get the ASCII value of the character
+    for (var i = 0; i < NUM_CHARS; i++) {
+        // We need to find the index `i` in `charlist` that corresponds to `c`.
+        // The C code uses `charlist[i] == c`.
+        if (charlist.charCodeAt(i) === char_code) {
+            // Check if this character is present in the font's charlist (not 0xffff)
+            if (font.charlist[i] !== 0xffff) {
+                return i; // Return the index in charlist (and glyphs array)
+            } else {
+                return -1; // Character is in charlist but not defined in font
+            }
+        }
+    }
+    return -1; // Character not found in charlist
+}
+
+// ibmtoutf8 function (using system.text_to_utf8 as a replacement for iconv)
+// This function's logic is now integrated into readchar.
+
+function printcolor(color) {
+    var fg = color & 0x0f;
+    var bg = (color & 0xf0) >> 4;
+
+    // TheDraw colors mapped to ANSI and MIRC
+    var fgacolors = [30, 34, 32, 36, 31, 35, 33, 37, 90, 94, 92, 96, 91, 95, 93, 97]; // Normal/Bright
+    var bgacolors = [40, 44, 42, 46, 41, 45, 43, 47]; // Backgrounds (normal only for 8 colors)
+    var fgmcolors = [1,  2,  3, 10,  5,  6,  7, 15, 14,  12, 9, 11,  4, 13,  8,  0]; // MIRC colors
+    var bgmcolors = [1,  2,  3, 10,  5,  6,  7, 15, 14,  12, 9, 11,  4, 13,  8,  0]; // MIRC backgrounds
+
+    if (opt.color === COLOR_ANSI) {
+        // Use write for printing parts of the ANSI escape code
+        write("\x1b[");
+        write(fgacolors[fg] + ";");
+        write(bgacolors[bg] + "m");
+    } else { // MIRC color
+        write("\x03");
+        write(fgmcolors[fg] + ",");
+        write(bgmcolors[bg]);
+    }
+}
+
+function printrow(glyph, row) {
+    var utfchar;
+    var color;
+    var lastcolor = -1; // Use -1 or similar to ensure color is printed for the first cell
+
+    for (var i = 0; i < glyph.width; i++) {
+        var cell_idx = glyph.width * row + i;
+        if (cell_idx < glyph.cell.length) {
+            utfchar = glyph.cell[cell_idx].utfchar;
+            color = glyph.cell[cell_idx].color;
+
+            if (i === 0 || color !== lastcolor) {
+                printcolor(color);
+                lastcolor = color;
+            }
+
+            write(utfchar); // Use write to print character without newline
+        } else {
+             // Should not happen if glyph.cell is initialized correctly, but for safety
+             write(" ");
+        }
+    }
+
+    // Reset color at the end of the row
+    if (opt.color === COLOR_ANSI) {
+         write("\x1b[0m");
+    } else {
+         write("\x03");
+    }
+}
+
+function printstr(str, font) {
+    var maxheight = font.height; // Use the pre-calculated max height from loadfont
+    var linewidth = 0;
+    var len = str.length;
+    var padding = 0;
+    var n = 0;
+
+    // Calculate the total width of the string using the font
+    for (var i = 0; i < len; i++) {
+        var char_index = lookupchar(str[i], font);
+
+        if (char_index === -1) {
+            continue; // Skip characters not found in the font
+        }
+
+        var g = font.glyphs[char_index];
+
+        linewidth += g.width;
+        if (i < len - 1) { // Add spacing between characters, but not after the last one
+            linewidth += font.spacing;
+        }
+    }
+
+    // Calculate padding for justification
+    if (opt.justify === CENTER_JUSTIFY) {
+        padding = Math.floor((opt.width - linewidth) / 2);
+    } else if (opt.justify === RIGHT_JUSTIFY) {
+        padding = opt.width - linewidth;
+    }
+
+    // Ensure padding is not negative
+    if (padding < 0) {
+        padding = 0;
+    }
+
+    // Print each row of the font text
+    for (var i = 0; i < maxheight; i++) {
+        // Print padding spaces
+        for (var p = 0; p < padding; p++) {
+            write(" ");
+        }
+
+        // Print glyphs for each character in the string
+        for (var c = 0; c < len; c++) {
+            var char_index = lookupchar(str[c], font);
+
+            if (char_index === -1) {
+                 // If character not found, print spaces equivalent to default glyph width or 1?
+                 // Let's print spaces equal to the font's spacing + a minimal width (e.g., 1)
+                 for(var s = 0; s < font.spacing + 1; s++) {
+                     write(" ");
+                 }
+                 continue;
+            }
+
+            var g = font.glyphs[char_index];
+
+            // printrow handles printing the characters and colors for a single row of the glyph
+            printrow(g, i);
+
+            // Print spacing between glyphs (except after the last glyph)
+            if (c < len - 1) {
+                 for (var s = 0; s < font.spacing; s++) {
+                     write(" ");
+                 }
+            }
+        }
+
+        // End the line and reset color
+        if (opt.color === COLOR_ANSI) {
+            writeln("\x1b[0m"); // Reset color and print newline
+        } else {
+            writeln("\x03"); // Reset MIRC color and print newline
+        }
+    }
+}
+
+
+// Main execution block (equivalent to C main function)
+
+// Access command line arguments via argv global
+// argv[0] is typically the script name in Synchronet JS
+// Subsequent elements are the arguments
+
+var fontfile = null;
+var input_args = []; // Collect non-option arguments here
+
+// Corrected argument parsing: Explicitly consume options and their arguments.
+var args = [];
+for (var i = 0; i < argc; i++)
+        args.push(argv[i]);
+var i = 0;
+var input_string = "";
+while (i < args.length) {
+                var arg = args[i];
+
+                if (arg === "-f" && i + 1 < args.length) {
+                        fontfile = args[i + 1];
+                        i += 2;
+                } else if (arg === "-j" && i + 1 < args.length) {
+                        switch (args[i + 1]) {
+                                case "l":
+                                        opt.justify = LEFT_JUSTIFY;
+                                        break;
+                                case "r":
+                                        opt.justify = RIGHT_JUSTIFY;
+                                        break;
+                                case "c":
+                                        opt.justify = CENTER_JUSTIFY;
+                                        break;
+                                default:
+                                        log("Invalid justification option. Use l, r, or c.");
+					exit(1);
+                        }
+                        i += 2;
+                } else if (arg === "-w" && i + 1 < args.length) {
+                        opt.width = parseInt(args[i + 1], 10);
+                        i += 2;
+                } else if (arg === "-x" && i + 1 < args.length) {
+                        opt.index = parseInt(args[i + 1], 10);
+                        i += 2;
+                } else if (arg === "-c" && i + 1 < args.length) {
+                        switch (args[i + 1]) {
+                                case "a":
+                                        opt.color = COLOR_ANSI;
+                                        break;
+                                case "m":
+                                        opt.color = COLOR_MIRC;
+                                        break;
+                                default:
+                                        log("Invalid color option. Use a or m.");
+					exit(1);
+                        }
+                        i += 2;
+                } else if (arg === "-e" && i + 1 < args.length) {
+                        switch (args[i + 1]) {
+                                case "u":
+                                        opt.encoding = ENC_UNICODE;
+                                        break;
+                                case "a":
+                                        opt.encoding = ENC_ANSI;
+                                        break;
+                                default:
+                                        log("Invalid encoding option. Use u or a.");
+					exit(1);
+                        }
+                        i += 2;
+                } else if (arg === "-i") {
+                        opt.info = true;
+                        i += 1;
+                } else if (arg === "-r") {
+                        opt.random = true;
+                        i += 1;
+                } else if (arg === "-h") {
+                        usage();
+                } else {
+                        input_string += (input_string ? " " : "") + arg;
+                        i += 1;
+                }
+        }
+
+
+// Handle random font selection
+if (!fontfile && opt.random) {
+	var fontDir = FONT_DIR;
+	var files = directory(fontDir + "/*.tdf"); // Get all .tdf files
+	if (files.length > 0) {
+		var randomIndex = random((files.length)+1);
+		var filename = file_getname(files[randomIndex]);
+		fontfile = filename.replace(/\.tdf$/i, "");
+	}
+}
+
+
+var font = loadfont(fontfile);
+
+writeln("");
+
+printstr(input_string, font);
