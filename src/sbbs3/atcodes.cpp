@@ -1587,7 +1587,9 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 
 	if (!strncmp(sp, "EXEC:", 5)) {
-		exec_bin(sp + 5, &main_csi);
+		SAFECOPY(tmp, sp + 5);
+		c_unescape_str(tmp);
+		exec_bin(tmp, &main_csi);
 		return nulstr;
 	}
 
