@@ -3187,8 +3187,9 @@ function stringIsEmptyOrOnlyWhitespace(pString)
 //  pMsgAreaName: The name of the message area being posted to
 //
 // Return value: An object containing the following properties:
-//  lastMsg: The last message in the sub-board (i.e., bbs.smb_last_msg)
-//  totalNumMsgs: The total number of messages in the sub-board (i.e., bbs.smb_total_msgs)
+//  lastMsg: The last message in the sub-board (i.e., bbs.smb_last_msg), or -1 if editing a file
+//  totalNumMsgs: The total number of messages in the sub-board (i.e., bbs.smb_total_msgs),
+//                or 0 if editing a file
 //  curMsgNum: The number/index of the current message being read.  Starting
 //             with Synchronet 3.16 on May 12, 2013, this is the absolute
 //             message number (bbs.msg_number).  For Synchronet builds before
@@ -3196,17 +3197,40 @@ function stringIsEmptyOrOnlyWhitespace(pString)
 //             bbs.msg_number is preferred because it works properly in all
 //             situations, whereas in earlier builds, bbs.msg_number was
 //             always given to JavaScript scripts as 0.
+//             If editing a file, this will be -1.
 //  msgNumIsOffset: Boolean - Whether or not the message number is an offset.
 //                  If not, then it is the absolute message number (i.e.,
 //                  bbs.msg_number).
-//  subBoardCode: The current sub-board code (i.e., bbs.smb_sub_code)
-//  grpIndex: The message group index for the sub-board
+//  subBoardCode: The current sub-board code (i.e., bbs.smb_sub_code, "mail", or "" if editing a file)
+//  grpIndex: The message group index for the sub-board (-1 if personal mail or editing a file)
 function getCurMsgInfo(pMsgAreaName)
 {
 	var retObj = {
-		msgNumIsOffset: false
+		lastMsg: -1,
+		totalNumMsgs: 0,
+		curMsgNum: -1,
+		msgNumIsOffset: false,
+		subBoardCode: "",
+		grpIndex: -1
 	};
-	if (bbs.smb_sub_code.length > 0)
+	if (pMsgAreaName.length == 0)
+	{
+		// No message area name. In this case, the user must be editing a file.
+		// We can leave the return values as defaults. SlyEdit can see if the
+		// user is editing a file by checking whether subBoardCode is an empty
+		// string.
+	}
+	else if (pMsgAreaName.toUpperCase() == "ELECTRONIC MAIL")
+	{
+		retObj.subBoardCode = "mail";
+		retObj.grpIndex = -1;
+		var mailInfoForUser = getPersonalMailInfoForUser();
+		retObj.lastMsg = mailInfoForUser.lastMsg;
+		retObj.totalNumMsgs = mailInfoForUser.totalNumMsgs;
+		retObj.curMsgNum = mailInfoForUser.curMsgNum;
+		retObj.msgNumIsOffset = mailInfoForUser.msgNumIsOffset;
+	}
+	else if (bbs.smb_sub_code.length > 0)
 	{
 		retObj.lastMsg = bbs.smb_last_msg;
 		retObj.totalNumMsgs = bbs.smb_total_msgs;
@@ -5682,6 +5706,72 @@ function replaceAtCodesInStr(pStr)
 		var decoded = bbs.atcode(code);
 		return (decoded != null ? decoded : "@" + code + "@");
 	});
+}
+
+// Gets message information for the user's personal email
+//
+// Return value: An object with the following properties:
+//  succeeded: Boolean - Whether or not this function successfully opened the messagebase
+//             and got the information
+//  lastMsg: The last message in the sub-board (i.e., bbs.smb_last_msg)
+//  totalNumMsgs: The total number of messages in the sub-board (i.e., bbs.smb_total_msgs)
+//  curMsgNum: The number/index of the current message being read.  Starting
+//             with Synchronet 3.16 on May 12, 2013, this is the absolute
+//             message number (bbs.msg_number).  For Synchronet builds before
+//             May 12, 2013, this is bbs.smb_curmsg.  Starting on May 12, 2013,
+//             bbs.msg_number is preferred because it works properly in all
+//             situations, whereas in earlier builds, bbs.msg_number was
+//             always given to JavaScript scripts as 0.
+//  msgNumIsOffset: Boolean - Whether or not the message number is an offset.
+//                  If not, then it is the absolute message number (i.e.,
+//                  bbs.msg_number).
+function getPersonalMailInfoForUser()
+{
+	var retObj = {
+		succeeded: false,
+		lastMsg: -1,
+		totalNumMsgs: 0,
+		curMsgNum: -1,
+		msgNumIsOffset: false
+	};
+
+	var msgbase = new MsgBase("mail");
+	if (msgbase.open())
+	{
+		var msgIdxArray = msgbase.get_index();
+		msgbase.close();
+		if (msgIdxArray != null)
+		{
+			for (var i = 0; i < msgIdxArray.length; ++i)
+			{
+				var msgIsToUser = false;
+				if (msgIdxArray[i].hasOwnProperty("to"))
+				{
+					if (msgIdxArray[i].to == user.number)
+						msgIsToUser = true;
+					else
+					{
+						msgIsToUser = (msgIdxArray[i].to == crc16_calc(user.handle.toLowerCase()) ||
+						               msgIdxArray[i].to == crc16_calc(user.alias.toLowerCase()) ||
+						               msgIdxArray[i].to == crc16_calc(user.name.toLowerCase()));
+					}
+				}
+				if (msgIsToUser)
+				{
+					retObj.lastMsg = msgIdxArray[i].number;
+					++retObj.totalNumMsgs;
+					if (retObj.curMsgNum == -1 && !Boolean(msgIdxArray[i].attr & MSG_READ))
+					{
+						retObj.curMsgNum = msgIdxArray[i].number;
+						retObj.msgNumIsOffset = false;
+					}
+				}
+			}
+			retObj.succeeded = true;
+		}
+	}
+
+	return retObj;
 }
 
 // This function displays debug text at a given location on the screen, then

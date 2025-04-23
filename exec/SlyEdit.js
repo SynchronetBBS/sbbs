@@ -89,6 +89,10 @@
  *                              messing with the screen). New [STRINGS] configuration section
  *                              with stringsFilename to specify the name of a strings file,
  *                              which for now just contains an areYouThere setting
+ * 2025-04-23 Eric Oulashin     Version 1.89f Beta
+ *                              Started work on updating the way files are saved when not
+ *                              editing a message (i.e., if the user is editing an SSH key):
+ *                              Not adding a space after each (wrapped) line, etc..
  */
 
 "use strict";
@@ -179,8 +183,8 @@ if (console.screen_columns < 80)
 }
 
 // Version information
-var EDITOR_VERSION = "1.89e";
-var EDITOR_VER_DATE = "2025-02-09";
+var EDITOR_VERSION = "1.89f Beta";
+var EDITOR_VER_DATE = "2025-04-23";
 
 
 // Program variables
@@ -260,10 +264,13 @@ gCrossPostMsgSubs.subCodeExists = function(pSubCode) {
 	if (pSubCode === "")
 		return false;
 
-	var grpIndex = msg_area.sub[pSubCode].grp_index;
 	var foundIt = false;
-	if (this.hasOwnProperty(grpIndex))
-		foundIt = this[grpIndex].hasOwnProperty(pSubCode);
+	if (typeof(msg_area.sub[pSubCode]) === "object")
+	{
+		var grpIndex = msg_area.sub[pSubCode].grp_index;
+		if (this.hasOwnProperty(grpIndex))
+			foundIt = this[grpIndex].hasOwnProperty(pSubCode);
+	}
 	return foundIt;
 };
 // This function adds a sub-board code to gCrossPostMsgSubs.
@@ -583,6 +590,13 @@ if (dropFileName != undefined)
 			// getCurMsgInfo() to set gMsgAreaInfo.
 			gMsgAreaInfo = getCurMsgInfo(gMsgArea);
 			setMsgAreaInfoObj = true;
+			// If there is no sub-board code (or not reading personal mail), then
+			// we'll want to disable quote selection
+			if (gMsgAreaInfo.subBoardCode.length == 0)
+			{
+				gUseQuotes = false;
+				js.global.slyEditData.useQuotes = false;
+			}
 
 			// If the msginf file has at least 7 lines, then the 7th line is the full
 			// path & filename of the tagline file, where we can write the
@@ -645,10 +659,10 @@ if (!setMsgAreaInfoObj)
 }
 
 // Set a variable to store whether or not cross-posting can be done.
-var gCanCrossPost = (gConfigSettings.allowCrossPosting && postingInMsgSubBoard(gMsgArea));
+var gCanCrossPost = (gMsgAreaInfo.subBoardCode.length > 0 && gConfigSettings.allowCrossPosting && postingInMsgSubBoard(gMsgArea));
 // If the user is posting in a message sub-board, then add its information
 // to gCrossPostMsgSubs.
-if (postingInMsgSubBoard(gMsgArea))
+if (gMsgAreaInfo.subBoardCode.length > 0 && postingInMsgSubBoard(gMsgArea))
 	gCrossPostMsgSubs.add(gMsgAreaInfo.subBoardCode);
 
 // Open the quote file / message file
@@ -753,10 +767,17 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 					while (continueOn)
 					{
 						addedSpace = false;
-						if (textLine.length > 0)
+						// New (2025-04-23): If the sub-board code is not empty, then
+						// we're posting in the messagebase, so we should add a space
+						// after the line. Otherwise, the user is editing a file, and
+						// we don't want to do that.
+						if (setMsgAreaInfoObj && gMsgAreaInfo.subBoardCode.length > 0)
 						{
-							textLine += " ";
-							addedSpace = true;
+							if (textLine.length > 0)
+							{
+								textLine += " ";
+								addedSpace = true;
+							}
 						}
 						if (addedSpace)
 							++attrIdxOffset;
@@ -833,9 +854,9 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 				}
 			}
 
-			// If the user has not chosen to auto-sign messages, then also append their
-			// signature to the message now.
-			if (!gUserSettings.autoSignMessages)
+			// If the user has not chosen to auto-sign messages and we're posting a message in a
+			// sub-board or personal email, then also append their signature to the message now.
+			if (!gUserSettings.autoSignMessages && gMsgAreaInfo.subBoardCode.length > 0)
 			{
 				// Append a blank line to separate the message & signature.
 				// Note: msgContents already has a newline at the end, so we don't have
@@ -903,10 +924,12 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 					printf("\x01n  " + gConfigSettings.genColors.msgPostedSubBoardName + "%-73s", msg_area.sub[subCode].description.substr(0, 73));
 					if (msg_area.sub[subCode].can_post)
 					{
-						// If the user's auto-sign setting is enabled, then auto-sign
-						// the message and append their signature afterward.  Otherwise,
-						// don't auto-sign, and their signature has already been appended.
-						if (gUserSettings.autoSignMessages)
+						// If the user's auto-sign setting is enabled and we're posting in a
+						// sub-board/personal email (not editing a file), then auto-sign the
+						// message and append their signature afterward.  Otherwise, don't
+						// auto-sign, and their signature has already been appended (if posting
+						// a message).
+						if (gUserSettings.autoSignMessages && gMsgAreaInfo.subBoardCode.length > 0)
 						{
 							var msgContents2 = msgContents + "\r\n";
 							var userSignName = getSignName(subCode, gUserSettings.autoSignRealNameOnlyFirst, gUserSettings.autoSignEmailsRealName);
@@ -922,7 +945,9 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 							}
 							msgContents2 += userSignName;
 							msgContents2 += "\r\n\r\n";
-							if (msgSigInfo.sigContents.length > 0)
+							// If the user has a signature and we're posting a message (not editing a file), then
+							// append the user's signature
+							if (msgSigInfo.sigContents.length > 0 && gMsgAreaInfo.subBoardCode.length > 0)
 							{
 								if (messageLinesHaveAttrs())
 									msgContents2 += "\x01n";
@@ -1037,8 +1062,9 @@ function saveMessageToFile()
 			else
 				msgFile.writeln(msgTxtLine);
 		}
-		// Auto-sign the message if the user's setting to do so is enabled
-		if (gUserSettings.autoSignMessages)
+		// Auto-sign the message if the user's setting to do so is enabled and
+		// we're posting a message (not editing a file)
+		if (gUserSettings.autoSignMessages && gMsgAreaInfo.subBoardCode.length > 0)
 		{
 			msgFile.writeln("");
 			var subCode = (postingInMsgSubBoard(gMsgArea) ? gMsgAreaInfo.subBoardCode : "mail");
@@ -1053,20 +1079,22 @@ function saveMessageToFile()
 
 
 // Set the end-of-program status message.
+var editObjName = (gMsgAreaInfo.subBoardCode.length > 0 ? "message" : "file");
+var operationName = (gMsgAreaInfo.subBoardCode.length > 0 ? "Message" : "Edit");
 var endStatusMessage = "";
 if (exitCode == 1)
-	endStatusMessage = gConfigSettings.genColors.msgAbortedText + "Message aborted.";
+	endStatusMessage = format("%s%s aborted.", gConfigSettings.genColors.msgAbortedText, operationName);
 else if (exitCode == 0)
 {
 	if (gEditLines.length > 0)
 	{
 		if (savedTheMessage)
-			endStatusMessage = gConfigSettings.genColors.msgHasBeenSavedText + "The message has been saved.";
+			endStatusMessage = format("%sThe %s has been saved.", gConfigSettings.genColors.msgHasBeenSavedText, editObjName);
 		else
-			endStatusMessage = gConfigSettings.genColors.msgAbortedText + "Message aborted.";
+			endStatusMessage = format("%s%s aborted.", gConfigSettings.genColors.msgAbortedText, operationName);
 	}
 	else
-		endStatusMessage = gConfigSettings.genColors.emptyMsgNotSentText + "Empty message not sent.";
+		endStatusMessage = format("%sEmpty %s not saved.", gConfigSettings.genColors.emptyMsgNotSentText, editObjName);
 }
 // We shouldn't hit this else case, but it's here just to be safe.
 else
@@ -1154,10 +1182,57 @@ function readQuoteOrMessageFile()
 		}
 		else
 		{
-			var textLine = null;
 			while (!inputFile.eof)
 			{
-				textLine = new TextLine();
+				//gMsgAreaInfo.subBoardCode
+				// If the line is too long to fit on the screen, then
+				// split it (console.screen_columns-1)
+				var textLineFromFile = inputFile.readln(8192);
+				if (typeof(textLineFromFile) !== "string") // Shouldn't be true, but I've seen it before
+					continue;
+				var maxLineLen = console.screen_columns - 1;
+				if (textLineFromFile.length > maxLineLen)
+				{
+					do
+					{
+						// TODO: Synchronet attribute/color codes might be parsed by simply
+						// doing this (as in the importFile() function)
+						//gEditLines.push(new TextLine(fileLine, true, false));
+						// Note: substrWithAttrCodes() is defined in dd_lightbar_menu.js
+						// function substrWithAttrCodes(pStr, pStartIdx, pLen)
+						var fileLineLen = console.strlen(textLineFromFile);
+						var lineText = substrWithAttrCodes(textLineFromFile, 0, maxLineLen);
+						var hardNewlineEnd = (fileLineLen <= maxLineLen);
+						gEditLines.push(new TextLine(lineText, hardNewlineEnd, false));
+						// Shorten textLineFromFile now that we've added the split line
+						fileLineLen = console.strlen(textLineFromFile);
+						if (fileLineLen > maxLineLen)
+							textLineFromFile = substrWithAttrCodes(textLineFromFile, maxLineLen, fileLineLen-maxLineLen);
+						else
+							textLineFromFile = "";
+
+						/*
+						var textLine = new TextLine();
+						textLine.setText(textLineFromFile.substr(0, maxLineLen));
+						textLine.hardNewlineEnd = (textLineFromFile.length <= maxLineLen);
+						gEditLines.push(textLine);
+						if (textLineFromFile.length > maxLineLen)
+							textLineFromFile = textLineFromFile.substr(maxLineLen);
+						else
+							textLineFromFile = "";
+						*/
+					} while (textLineFromFile.length > 0);
+				}
+				else
+				{
+					var textLine = new TextLine();
+					textLine.setText(textLineFromFile);
+					textLine.hardNewlineEnd = true;
+					gEditLines.push(textLine);
+				}
+				// Old code - Does not split lines depending on terminal width:
+				/*
+				var textLine = new TextLine();
 				var textLineFromFile = inputFile.readln(2048);
 				if (typeof(textLineFromFile) == "string")
 					textLine.setText(strip_ctrl(textLineFromFile));
@@ -1170,6 +1245,7 @@ function readQuoteOrMessageFile()
 				if (textLine.screenLength() < console.screen_columns-1)
 					textLine.text += " ";
 				gEditLines.push(textLine);
+				*/
 			}
 
 			// If the last edit line is undefined (which is possible after reading the end
