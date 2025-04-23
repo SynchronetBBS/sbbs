@@ -280,7 +280,7 @@ function readchar(i, font) { // glyph argument is no longer needed, we return th
 }
 
 
-function lookupchar(c, font) {
+function lookupchar_code(c, font) {
     var char_code = c.charCodeAt(0); // Get the ASCII value of the character
     for (var i = 0; i < NUM_CHARS; i++) {
         // We need to find the index `i` in `charlist` that corresponds to `c`.
@@ -295,6 +295,14 @@ function lookupchar(c, font) {
         }
     }
     return -1; // Character not found in charlist
+}
+
+// Lookup the uppercase char if lowercase char not mapped to font
+function lookupchar(c, font) {
+	var result = lookupchar_code(c, font);
+	if (result == -1)
+		result = lookupchar_code(c.toUpperCase(), font);
+	return result;
 }
 
 // ibmtoutf8 function (using system.text_to_utf8 as a replacement for iconv)
