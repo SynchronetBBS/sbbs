@@ -323,6 +323,20 @@ static struct vmem_cell *status_bar;
 size_t status_bar_sz;
 bool force_status_update = false;
 
+struct ciolib_screen *
+cp437_savescrn(void)
+{
+	struct ciolib_screen *ret = savescreen();
+	set_modepalette(palettes[COLOUR_PALETTE]);
+	setfont(0, false, 1);
+	setfont(0, false, 2);
+	setfont(0, false, 3);
+	setfont(0, false, 4);
+	setvideoflags(getvideoflags() & (CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT));
+
+	return ret;
+}
+
 void
 update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 {
@@ -938,16 +952,15 @@ begin_upload(struct bbslist *bbs, bool autozm, int lastch)
 	};
 	struct  text_info     txtinfo;
 	struct ciolib_screen *savscrn;
+	struct ciolib_screen *savscrn2;
 
 	if (safe_mode)
 		return;
 
 	gettextinfo(&txtinfo);
-	savscrn = savescreen();
-	setfont(0, false, 1);
-	setfont(0, false, 2);
-	setfont(0, false, 3);
-	setfont(0, false, 4);
+	suspend_rip(true);
+	savscrn = cp437_savescrn();
+	savscrn2 = savescreen();
 
 	init_uifc(false, false);
 	if (!isdir(bbs->uldir)) {
@@ -956,6 +969,7 @@ begin_upload(struct bbslist *bbs, bool autozm, int lastch)
 		uifcbail();
 		restorescreen(savscrn);
 		freescreen(savscrn);
+		freescreen(savscrn2);
 		gotoxy(txtinfo.curx, txtinfo.cury);
 		return;
 	}
@@ -967,12 +981,14 @@ begin_upload(struct bbslist *bbs, bool autozm, int lastch)
 		uifcbail();
 		restorescreen(savscrn);
 		freescreen(savscrn);
+		freescreen(savscrn2);
 		gotoxy(txtinfo.curx, txtinfo.cury);
 		return;
 	}
 	SAFECOPY(path, fpick.selected[0]);
 	filepick_free(&fpick);
-	restorescreen(savscrn);
+	restorescreen(savscrn2);
+	freescreen(savscrn2);
 
 	if ((fp = fopen(path, "rb")) == NULL) {
 		SAFEPRINTF2(str, "Error %d opening %s for read", errno, path);
@@ -985,7 +1001,6 @@ begin_upload(struct bbslist *bbs, bool autozm, int lastch)
 	}
 	setvbuf(fp, NULL, _IOFBF, 0x10000);
 
-	suspend_rip(true);
 	if (autozm) {
 		zmodem_upload(bbs, fp, path);
 	}
@@ -1042,11 +1057,7 @@ begin_download(struct bbslist *bbs)
 		return;
 
 	gettextinfo(&txtinfo);
-	savscrn = savescreen();
-	setfont(0, false, 1);
-	setfont(0, false, 2);
-	setfont(0, false, 3);
-	setfont(0, false, 4);
+	savscrn = cp437_savescrn();
 
 	init_uifc(false, false);
 
@@ -1253,11 +1264,7 @@ zmodem_duplicate_callback(void *cbdata, void *zm_void)
 	int                   old_hold = hold_update;
 
 	gettextinfo(&txtinfo);
-	savscrn = savescreen();
-	setfont(0, false, 1);
-	setfont(0, false, 2);
-	setfont(0, false, 3);
-	setfont(0, false, 4);
+	savscrn = cp437_savescrn();
 	window(1, 1, txtinfo.screenwidth, txtinfo.screenheight);
 	init_uifc(false, false);
 	hold_update = false;
@@ -1664,11 +1671,7 @@ xmodem_duplicate(xmodem_t *xm, struct bbslist *bbs, char *path, size_t pathsize,
 	int                   old_hold = hold_update;
 
 	gettextinfo(&txtinfo);
-	savscrn = savescreen();
-	setfont(0, false, 1);
-	setfont(0, false, 2);
-	setfont(0, false, 3);
-	setfont(0, false, 4);
+	savscrn = cp437_savescrn();
 	window(1, 1, txtinfo.screenwidth, txtinfo.screenheight);
 
 	init_uifc(false, false);
@@ -2058,11 +2061,7 @@ music_control(struct bbslist *bbs)
 	int                   i;
 
 	gettextinfo(&txtinfo);
-	savscrn = savescreen();
-	setfont(0, false, 1);
-	setfont(0, false, 2);
-	setfont(0, false, 3);
-	setfont(0, false, 4);
+	savscrn = cp437_savescrn();
 	init_uifc(false, false);
 
 	i = cterm->music_enable;
@@ -2086,11 +2085,7 @@ font_control(struct bbslist *bbs, struct cterminal *cterm)
 	if (safe_mode)
 		return;
 	gettextinfo(&txtinfo);
-	savscrn = savescreen();
-	setfont(0, false, 1);
-	setfont(0, false, 2);
-	setfont(0, false, 3);
-	setfont(0, false, 4);
+	savscrn = cp437_savescrn();
 	init_uifc(false, false);
 
 	switch (cio_api.mode) {
@@ -2148,11 +2143,7 @@ capture_control(struct bbslist *bbs)
 	if (safe_mode)
 		return;
 	gettextinfo(&txtinfo);
-	savscrn = savescreen();
-	setfont(0, false, 1);
-	setfont(0, false, 2);
-	setfont(0, false, 3);
-	setfont(0, false, 4);
+	savscrn = cp437_savescrn();
 	cap = (char *)alloca(cterm->height * cterm->width * 2);
 	gettext(cterm->x, cterm->y, cterm->x + cterm->width - 1, cterm->y + cterm->height - 1, cap);
 
@@ -4344,22 +4335,16 @@ doterm(struct bbslist *bbs)
                                                                 /* Have full sequence (Assumes
                                                                  * zrinit and zrqinit are same
                                                                  * length */
-								struct ciolib_screen *savscrn;
 								WRITE_OUTBUF();
 								suspend_rip(true);
-								savscrn = savescreen();
-								set_modepalette(palettes[COLOUR_PALETTE]);
-								setfont(0, false, 1);
-								setfont(0, false, 2);
-								setfont(0, false, 3);
-								setfont(0, false, 4);
-								setvideoflags(getvideoflags() & (CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT));
-								if (!strcmp((char *)zrqbuf, (char *)zrqinit))
+								if (!strcmp((char *)zrqbuf, (char *)zrqinit)) {
+									struct ciolib_screen *savscrn = cp437_savescrn();
 									zmodem_download(bbs);
+									restorescreen(savscrn);
+									freescreen(savscrn);
+								}
 								else
 									begin_upload(bbs, true, inch);
-								restorescreen(savscrn);
-								freescreen(savscrn);
 								setup_mouse_events(&ms);
 								suspend_rip(false);
 								zrqbuf[0] = 0;
@@ -4553,11 +4538,7 @@ doterm(struct bbslist *bbs)
 				{
 					char                  title[LIST_NAME_MAX + 13];
 					struct ciolib_screen *savscrn;
-					savscrn = savescreen();
-					setfont(0, false, 1);
-					setfont(0, false, 2);
-					setfont(0, false, 3);
-					setfont(0, false, 4);
+					savscrn = cp437_savescrn();
 					show_bbslist(bbs->name, true);
 					sprintf(title, "SyncTERM - %s\n", bbs->name);
 					settitle(title);
@@ -4627,11 +4608,7 @@ doterm(struct bbslist *bbs)
 				case 0x2300: /* Alt-H - Hangup */
 				{
 					struct ciolib_screen *savscrn;
-					savscrn = savescreen();
-					setfont(0, false, 1);
-					setfont(0, false, 2);
-					setfont(0, false, 3);
-					setfont(0, false, 4);
+					savscrn = cp437_savescrn();
 					if (quitting
 					    || confirm("Disconnect... Are you sure?",
 					    "Selecting Yes closes the connection\n")) {
@@ -4728,11 +4705,7 @@ doterm(struct bbslist *bbs)
 							struct ciolib_screen *savscrn;
 							char                  title[LIST_NAME_MAX + 13];
 
-							savscrn = savescreen();
-							setfont(0, false, 1);
-							setfont(0, false, 2);
-							setfont(0, false, 3);
-							setfont(0, false, 4);
+							savscrn = cp437_savescrn();
 							show_bbslist(bbs->name, true);
 							sprintf(title, "SyncTERM - %s\n", bbs->name);
 							settitle(title);
