@@ -2581,6 +2581,9 @@ ciolib_to_screen(int ciolib)
 }
 
 #if defined(_WIN32) && defined(DLLIFY)
+#ifdef WITH_SDL
+extern int sdl_video_initialized;
+#endif
 __declspec(dllexport) int __cdecl stub_main(int argc, char *argv[], char **env)
 {
 	int n;
@@ -2611,6 +2614,10 @@ __declspec(dllexport) int __cdecl stub_main(int argc, char *argv[], char **env)
 	/* Run the application main() code */
 	n=CIOLIB_main(argc, argv);
 
+#ifdef WITH_SDL
+	// Defeat the QuitWrap call to uninitialize SDL.
+	sdl_video_initialized = FALSE;
+#endif
 	/* Exit cleanly, calling atexit() functions */
 	exit(n);
 

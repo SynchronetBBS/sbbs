@@ -82,6 +82,7 @@ struct sdl_keyvals {
 static pthread_mutex_t sdl_headlock;
 static struct rectlist *update_list = NULL;
 static struct rectlist *update_list_tail = NULL;
+extern int sdl_video_initialized;
 
 #ifdef __DARWIN__
 static int mac_width;
@@ -1150,6 +1151,7 @@ void sdl_video_event_thread(void *data)
 					sdl_add_key(CIO_KEY_QUIT, &cvstat);
 				else {
 					sdl.QuitSubSystem(SDL_INIT_VIDEO);
+					sdl_video_initialized = FALSE;
 					return;
 				}
 				break;
@@ -1188,6 +1190,7 @@ void sdl_video_event_thread(void *data)
 					case SDL_USEREVENT_QUIT:
 						sdl_ufunc_retval=0;
 						sdl.QuitSubSystem(SDL_INIT_VIDEO);
+						sdl_video_initialized = FALSE;
 						sem_post(&sdl_ufunc_ret);
 						return;
 					case SDL_USEREVENT_FLUSH:
