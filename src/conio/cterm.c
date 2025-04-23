@@ -5137,7 +5137,7 @@ ctputs(struct cterminal *cterm, char *buf)
 			default:
 				if ((cterm->last_column_flag & (CTERM_LCF_ENABLED | CTERM_LCF_SET)) == (CTERM_LCF_ENABLED | CTERM_LCF_SET)) {
 					if (cx == cterm->right_margin || cx == CURR_MAXX) {
-						advance_char(cterm, &cx, &cy, 0);
+						advance_char(cterm, &cx, &cy, 1);
 						clear_lcf(cterm);
 					}
 				}
