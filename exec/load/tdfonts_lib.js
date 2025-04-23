@@ -311,6 +311,7 @@ function lookupchar(c, font) {
 function printcolor(color) {
     var fg = color & 0x0f;
     var bg = (color & 0xf0) >> 4;
+	var out = "";
 
     // TheDraw colors mapped to ANSI and MIRC
     var fgacolors = [30, 34, 32, 36, 31, 35, 33, 37, 90, 94, 92, 96, 91, 95, 93, 97]; // Normal/Bright
@@ -319,21 +320,22 @@ function printcolor(color) {
     var bgmcolors = [1,  2,  3, 10,  5,  6,  7, 15, 14,  12, 9, 11,  4, 13,  8,  0]; // MIRC backgrounds
 
     if (opt.color === COLOR_ANSI) {
-        // Use write for printing parts of the ANSI escape code
-        write("\x1b[");
-        write(fgacolors[fg] + ";");
-        write(bgacolors[bg] + "m");
+        out += "\x1b[";
+        out += (fgacolors[fg] + ";");
+        out += (bgacolors[bg] + "m");
     } else { // MIRC color
-        write("\x03");
-        write(fgmcolors[fg] + ",");
-        write(bgmcolors[bg]);
+        out += "\x03";
+        out += (fgmcolors[fg] + ",");
+        out += (bgmcolors[bg]);
     }
+	return out;
 }
 
 function printrow(glyph, row) {
     var utfchar;
     var color;
     var lastcolor = -1; // Use -1 or similar to ensure color is printed for the first cell
+	var out = "";
 
     for (var i = 0; i < glyph.width; i++) {
         var cell_idx = glyph.width * row + i;
@@ -342,31 +344,33 @@ function printrow(glyph, row) {
             color = glyph.cell[cell_idx].color;
 
             if (i === 0 || color !== lastcolor) {
-                printcolor(color);
+                out += printcolor(color);
                 lastcolor = color;
             }
 
-            write(utfchar); // Use write to print character without newline
+            out += utfchar;
         } else {
              // Should not happen if glyph.cell is initialized correctly, but for safety
-             write(" ");
+             out += " ";
         }
     }
 
     // Reset color at the end of the row
     if (opt.color === COLOR_ANSI) {
-         write("\x1b[0m");
+         out += "\x1b[0m";
     } else {
-         write("\x03");
+         out += "\x03";
     }
+	return out;
 }
 
-function printstr(str, font) {
+function output(str, font) {
     var maxheight = font.height; // Use the pre-calculated max height from loadfont
     var linewidth = 0;
     var len = str.length;
     var padding = 0;
     var n = 0;
+	var out = "";
 
     // Calculate the total width of the string using the font
     for (var i = 0; i < len; i++) {
@@ -400,7 +404,7 @@ function printstr(str, font) {
     for (var i = 0; i < maxheight; i++) {
         // Print padding spaces
         for (var p = 0; p < padding; p++) {
-            write(" ");
+            out += " ";
         }
 
         // Print glyphs for each character in the string
@@ -411,7 +415,7 @@ function printstr(str, font) {
                  // If character not found, print spaces equivalent to default glyph width or 1?
                  // Let's print spaces equal to the font's spacing + a minimal width (e.g., 1)
                  for(var s = 0; s < font.spacing + 1; s++) {
-                     write(" ");
+                     out += " ";
                  }
                  continue;
             }
@@ -419,23 +423,29 @@ function printstr(str, font) {
             var g = font.glyphs[char_index];
 
             // printrow handles printing the characters and colors for a single row of the glyph
-            printrow(g, i);
+            out += printrow(g, i);
 
             // Print spacing between glyphs (except after the last glyph)
             if (c < len - 1) {
                  for (var s = 0; s < font.spacing; s++) {
-                     write(" ");
+                     out += " ";
                  }
             }
         }
 
         // End the line and reset color
         if (opt.color === COLOR_ANSI) {
-            writeln("\x1b[0m"); // Reset color and print newline
+            out += "\x1b[0m"; // Reset color and print newline
         } else {
-            writeln("\x03"); // Reset MIRC color and print newline
+            out += "\x03"; // Reset MIRC color and print newline
         }
+		out += "\n";
     }
+	return out;
+}
+
+function printstr(str, font) {
+	write(output(str, font));
 }
 
 this;
