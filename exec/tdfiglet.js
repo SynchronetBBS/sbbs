@@ -24,9 +24,6 @@ opt = {
     index: 0
 };
 
-// Character list
-var charlist = "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
-
 // Function declarations (Synchronet JS style)
 function usage() {
     writeln("usage: [options] input");
