@@ -76,6 +76,9 @@ if(options.clear_screen === undefined)
 if (options.section_fmt === undefined)
 	options.section_fmt = bbs.text(SelectItemFmt);
 
+if (options.multicolumn_section_fmt === undefined)
+	options.multicolumn_section_fmt = "\x01g\x01h%3d: \x01n\x01g%-32.32s ";
+
 if (options.section_header_fmt === undefined)
 	options.section_header_fmt = bbs.text(SelectItemHdr);
 
@@ -239,7 +242,6 @@ function external_section_menu()
 	var longest = 0;
 	for(i = 0; i < xtrn_area.sec_list.length; i++)
 		longest = Math.max(xtrn_area.sec_list[i].name.length, longest);
-	var margin = options.center ? format("%*s", ((console.screen_columns - longest)/2) - 5, "") : "";
 
     while(bbs.online) {
 
@@ -274,20 +276,47 @@ function external_section_menu()
 			if(options.sort)
 				sec_list.sort(sort_by_name);
 
+			var multicolumn = options.multicolumn && sec_list.length > options.singlecolumn_height;
+			var center = options.center && !multicolumn;
+			var margin = center ? format("%*s", ((console.screen_columns - longest)/2) - 5, "") : "";
+
 			if(show_header)
 				printf(margin + options.section_header_fmt.replace('\x01l', ''), options.section_header_title);
+
+			var n;
+			if (multicolumn)
+				n = Math.floor(sec_list.length / 2) + (sec_list.length & 1);
+			else
+				n = sec_list.length;
 			var max_digits = digits(sec_list.length);
-			for (i = 0; i < sec_list.length; i++) {
-				console.add_hotspot(i+1);
+			for (i = 0; i < n && !console.aborted; i++) {
+				var hotspot = i+1;
+				if(digits(hotspot) < digits(sec_list.length))
+					hotspot += '\r';
+				console.add_hotspot(hotspot);
 				if(options.align_section_list)
 					printf("%*s", max_digits - digits(i + 1), ""); // Indent to right justify number
-				printf(margin + options.section_fmt, i + 1, sec_list[i].name);
+				printf(margin + (multicolumn ? options.multicolumn_section_fmt : options.section_fmt), i + 1, sec_list[i].name);
+				if (multicolumn) {
+					var j = Math.floor(sec_list.length/2)+i+(sec_list.length&1);
+					if(j < sec_list.length) {
+						write(options.multicolumn_separator);
+						hotspot = j+1;
+						if(digits(hotspot) < digits(sec_list.length))
+							hotspot += '\r';
+						console.add_hotspot(hotspot);
+						if(options.align_section_list)
+							printf("%*s", max_digits - digits(j + 1), ""); // Indent to right justify number
+						printf(options.multicolumn_section_fmt, j+1, sec_list[j].name);
+					}
+					console.crlf();
+				}
 			}
-
+2
 			bbs.menu("xtrn_sec_tail", P_NOERROR);
 			
 			bbs.node_sync();
-			if(options.center) {
+			if(center) {
 				console.crlf();
 				write(margin);
 				console.mnemonics(format(options.section_which, xsec + 1).trimLeft());
