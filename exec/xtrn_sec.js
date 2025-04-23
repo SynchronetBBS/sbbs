@@ -106,6 +106,8 @@ function external_program_menu(xsec)
 {
     var i,j;
 
+	js.global.xtrn_sec = xtrn_area.sec_list[xsec].name;
+
 	while(bbs.online) {
 
 		console.aborted = false;
