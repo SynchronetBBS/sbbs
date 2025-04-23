@@ -439,7 +439,7 @@ function output(str, font) {
         } else {
             out += "\x03"; // Reset MIRC color and print newline
         }
-		out += "\n";
+		out += "\r\n";
     }
 	return out;
 }
