@@ -2,6 +2,7 @@
  * tdfiglet.js - Synchronet JS conversion of tdfiglet.c
  * Based on the C code by Unknown/Modified by The Draw
  * Converted to Synchronet JS by Nelgin
+ * @format.tab-size 4, @format.use-tabs true
  */
 
 load("tdfonts_lib.js");
