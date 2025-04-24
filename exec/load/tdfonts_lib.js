@@ -66,7 +66,7 @@ function loadfont(fn_arg) {
         exit(1);
     }
 
-    if (opt.info) {
+    if (this.opt && opt.info) {
         writeln("file: " + fn);
     }
 
@@ -96,12 +96,12 @@ function loadfont(fn_arg) {
     try {
 
 	const sequence = "\x55\xaa\x00\xff";
-	if(opt.random)
+	if(this.opt && opt.random)
 		opt.index = (map.match(new RegExp(sequence, 'g'))-1);
 
 	var index = -1;
 	var n = 0;
-	if(opt.index>0) {
+	if(this.opt && opt.index>0) {
 		while (n < opt.index) {
 	    		index = map.indexOf(sequence, index + 1);
 	    		if (index === -1)
@@ -139,7 +139,7 @@ function loadfont(fn_arg) {
         exit(1);
     }
 
-    if (opt.info) {
+    if (this.opt && opt.info) {
         write("font: " + font.name + "\nchar list: ");
     }
 
@@ -154,7 +154,7 @@ function loadfont(fn_arg) {
         // Check if the character exists in the font (not 0xffff)
         if (glyph_data_offset !== 0xffff) {
 
-            if (opt.info)
+            if (this.opt && opt.info)
                  write(charlist[i]);
 
             // Read glyph width and height from font.data
@@ -173,7 +173,7 @@ function loadfont(fn_arg) {
         }
     }
 
-    if (opt.info)
+    if (this.opt && opt.info)
         writeln("");
 
     // Read and store glyph data
@@ -248,7 +248,7 @@ function readchar(i, font) { // glyph argument is no longer needed, we return th
 
             var cell_idx = row * width + col;
             if (cell_idx < glyph.cell.length) {
-                if (opt.encoding === ENC_UNICODE) {
+                if (this.opt && opt.encoding === ENC_UNICODE) {
                     // ibmtoutf8 needs to be implemented or replaced with a lookup
                     // For now, a basic mapping or assume Synchronet handles CP437 bytes in strings
                     // Let's try a basic lookup for common chars, or assume direct charCodeAt gives the CP437 value.
@@ -319,7 +319,7 @@ function printcolor(color) {
     var fgmcolors = [1,  2,  3, 10,  5,  6,  7, 15, 14,  12, 9, 11,  4, 13,  8,  0]; // MIRC colors
     var bgmcolors = [1,  2,  3, 10,  5,  6,  7, 15, 14,  12, 9, 11,  4, 13,  8,  0]; // MIRC backgrounds
 
-    if (opt.color === COLOR_ANSI) {
+    if (this.opt == undefined || opt.color === COLOR_ANSI) {
         out += "\x1b[";
         out += (fgacolors[fg] + ";");
         out += (bgacolors[bg] + "m");
@@ -356,7 +356,7 @@ function printrow(glyph, row) {
     }
 
     // Reset color at the end of the row
-    if (opt.color === COLOR_ANSI) {
+    if (this.opt == undefined || opt.color === COLOR_ANSI) {
          out += "\x1b[0m";
     } else {
          out += "\x03";
@@ -392,9 +392,9 @@ function output(str, font) {
     }
 
     // Calculate padding for justification
-    if (opt.justify === CENTER_JUSTIFY) {
+    if (this.top && opt.justify === CENTER_JUSTIFY) {
         padding = Math.floor((opt.width - linewidth) / 2);
-    } else if (opt.justify === RIGHT_JUSTIFY) {
+    } else if (this.opt && opt.justify === RIGHT_JUSTIFY) {
         padding = opt.width - linewidth;
     }
 
@@ -437,7 +437,7 @@ function output(str, font) {
         }
 
         // End the line and reset color
-        if (opt.color === COLOR_ANSI) {
+        if (this.opt == undefined || opt.color === COLOR_ANSI) {
             out += "\x1b[0m"; // Reset color and print newline
         } else {
             out += "\x03"; // Reset MIRC color and print newline
