@@ -18,7 +18,8 @@
 // -mail     expose entire mail database as newsgroup to Sysops
 // -nolimit  unlimited message lengths
 // -notag    do not append tear/tagline to local messages for Q-rest accounts
-// -ascii	 convert ex-ASCII to ASCII
+// -ascii    convert ex-ASCII to ASCII
+// -utf8     convert ex-ASCII to UTF-8
 
 // Tested clients:
 //					Microsoft Outlook Express 6
@@ -51,6 +52,7 @@ var impose_limit = true;
 var sysop_login = false;
 var add_tag = true;
 var ex_ascii = true;
+var utf8 = false;
 var force_newsgroups = false;
 var filter_newsgroups = false;
 
@@ -70,6 +72,8 @@ for(i=0;i<argc;i++) {
 		add_tag = false;
 	else if(argv[i].toLowerCase()=="-ascii")
 		ex_ascii = false;
+	else if(argv[i].toLowerCase()=="-utf8")
+		utf8 = true;
 	else if(argv[i].toLowerCase()=="-force")
 		force_newsgroups = true;
 	else if(argv[i].toLowerCase()=="-filter")
@@ -720,6 +724,10 @@ while(client.socket.is_connected && !quit) {
 					/* Convert Ex-ASCII chars to approximate ASCII equivalents */
 					body = ascii_str(body);
 					hdr.subject = ascii_str(hdr.subject);
+					hdr.text_charset = "US-ASCII";
+				} else if(utf8 && !hdr.is_utf8 && !str_is_ascii(body)) {
+					body = utf8_encode(body);
+					hdr.text_charset = "UTF-8";
 				}
 			}
 
