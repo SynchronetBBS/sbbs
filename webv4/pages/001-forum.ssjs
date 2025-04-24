@@ -461,7 +461,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 
 
 	} catch (err) {
-		log(LOG_WARNING, err);
+		log(LOG_WARNING, format("%s:%u %s", err.fileName, err.lineNumber, err.message));
 	}
 
 } else if (
@@ -600,7 +600,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		threads.order.forEach(function(t){writeThread(threads.thread[t]);});
 		writeln(strings.thread_list.container.close);
 	} catch (err) {
-		log(LOG_WARNING, err);
+		log(LOG_WARNING, format("%s:%u %s", err.fileName, err.lineNumber, err.message));
 	}
 
 	if (settings.vote_functions) {
@@ -666,7 +666,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		writeln(strings.sub_list.container.close);
 		if (user.number > 0 && user.alias !== settings.guest) writeApiCall(subs);
 	} catch (err) {
-		log(LOG_WARNING, err);
+		log(LOG_WARNING, format("%s:%u %s", err.fileName, err.lineNumber, err.message));
 	}
 
 } else {
@@ -709,7 +709,7 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		writeln(strings.group_list.container.close);
 		if (user.number > 0 && user.alias !== settings.guest) writeApiCall(groups);
 	} catch (err) {
-		log(LOG_WARNING, err);
+		log(LOG_WARNING, format("%s:%u %s", err.fileName, err.lineNumber, err.message));
 	}
 
 }
