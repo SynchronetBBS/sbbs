@@ -416,8 +416,18 @@ js_execfile(JSContext *cx, uintN argc, jsval *arglist)
 					path[0] = 0;
 				JS_RESUMEREQUEST(cx, rc);
 			}
-			if (*path == '\0')
-				SAFECOPY(path, cmd);
+			if (*path == '\0') {
+				if (gptp->cfg->mods_dir[0] != '\0') {
+					snprintf(path, sizeof path, "%s%s", gptp->cfg->mods_dir, cmd);
+					if (!fexistcase(path))
+						*path = '\0';
+				}
+				if (*path == '\0') {
+					snprintf(path, sizeof path, "%s%s", gptp->cfg->exec_dir, cmd);
+					if (!fexistcase(path))
+						SAFECOPY(path, cmd);
+				}
+			}
 		}
 	}
 	free(cmd);
