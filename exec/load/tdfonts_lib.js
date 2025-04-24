@@ -88,7 +88,7 @@ function loadfont(fn_arg) {
 			opt.index = random(map.split(sequence).length);
 
 		if(this.opt && opt.index>0) {
-			var index = -1;
+			var index = 20;
 			var n = 0;
 			while (n < opt.index) {
 				index = map.indexOf(sequence, index + 1);
