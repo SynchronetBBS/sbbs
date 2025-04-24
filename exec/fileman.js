@@ -740,7 +740,7 @@ function edit_filename(file)
 
 function edit_desc(file)
 {
-	var desc = uifc.input(WIN_MID|WIN_SAV, "Description", file.desc, LEN_FDESC, K_EDIT);
+	var desc = uifc.input(WIN_MID|WIN_SAV, "Description", file.desc || "", LEN_FDESC, K_EDIT);
 	if(desc !== undefined)
 		file.desc = desc;
 }
