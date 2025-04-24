@@ -85,20 +85,19 @@ function loadfont(fn_arg) {
 
 		const sequence = "\x55\xaa\x00\xff";
 		if(this.opt && opt.random)
-			opt.index = (map.match(new RegExp(sequence, 'g'))-1);
+			opt.index = random(map.split(sequence).length);
 
-		var index = -1;
-		var n = 0;
 		if(this.opt && opt.index>0) {
+			var index = -1;
+			var n = 0;
 			while (n < opt.index) {
-					index = map.indexOf(sequence, index + 1);
-					if (index === -1)
-						break;
+				index = map.indexOf(sequence, index + 1);
+				if (index === -1)
+					break;
 				n++;
 			}
 			if (index !== -1)
-					map = map.slice(0, 20) + map.slice(index);
-
+				map = map.slice(0, 20) + map.slice(index);
 		}
         font.namelen = map.charCodeAt(24);
         font.name = map.substring(25, 25 + font.namelen);
@@ -128,7 +127,9 @@ function loadfont(fn_arg) {
     }
 
     if (this.opt && opt.info) {
-        write("font: " + font.name + "\nchar list: ");
+		writeln("index: " + opt.index);
+		writeln("font: " + font.name);
+		writeln("char list: ");
     }
 
     // Determine overall font height and validate glyph addresses
