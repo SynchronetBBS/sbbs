@@ -16,19 +16,32 @@ const IP	=244 	/* 0xf4 - Interrupt process */
 const BRK	=243 	/* 0xf3 - Break */
 const SYNC	=242 	/* 0xf2 - Data mark */
 const NOP	=241 	/* 0xf1 - No operation */
-
 const SE	=240 	/* 0xf0 - End of subnegotiation parameters. */
 
-const NEW_ENVIRON =39	/* 0x27 - NEW-ENVIRON - Exchange environment vars etc. */
+
 			/* js doesn't like - in variables so must use underscore */
+
+
+const ECHO	=1	/* 0x01 - echo opcode */
+const SGA	=3	/* 0x03 - suppress go ahead */
+const TERMINAL_TYPE =24	/* 0x18 - Request terminal type */
+const EOR 	=25	/* 0x19 - end of record */
 const NAWS	=31	/* 0x1f - NAWS - Negotiate About Window Size */
+const NEW_ENVIRON =39	/* 0x27 - NEW-ENVIRON - Exchange environment vars etc. */
+const LINEMODE	=42	/* 0x2a - set linemode */
+const SLE	=45	/* 0x2d - suppress local echo */
 const MSDP	=69	/* 0x45 - MSDP - MUD Server Data Protocl */
 const MMSP	=70	/* 0x46 - MMSP - MUD Master Server Protocol */
-const COMPRESS	=85	/* 0x55 - Text compression protocol 1 */
-const COMPRESS2	=86	/* 0x56 - Text compression protocol 2 */
+const MCCP	=85	/* 0x55 - Text compression protocol 1 */
+const COMPRESS	=85	/* 	  synonym for MCCP */
+const MCCP2	=86	/* 0x56 - Text compression protocol 2 */
+const COMPRESS2	=86	/* 	  synonym for MCCP2 */
+const MCCP3	=87	/* 0x57 - Text compression protocol 2 */
+const COMPRESS3	=87	/* 	  synonym for MCCP3 */
 const MSP	=90	/* 0x5a - MSP - MUD Sound Protocol */
 const MXP	=91	/* 0x5b - MXP - MUD eXtension Protocol */
 const AARD	=102	/* 0x66 - AARD - Proprietary Aardwolf MUD Protocol */
+const ATCP	=200	/* 0xc8 - Achaea Telnet Client Protocol */
 const GCMP	=201	/* 0xc9 - GCMP - Galois/Counter Mode for Packet */
 
 function cmdstr(cmd)
@@ -40,6 +53,7 @@ function cmdstr(cmd)
         case WILL:	return "WILL";
         case WONT:	return "WONT";
         case SB:	return "SB";
+        case SE:	return "SE";
         case GA:	return "GA";
         case EL:	return "EL";
         case EC:	return "EC";
@@ -54,11 +68,22 @@ function cmdstr(cmd)
         case MMSP:	return "MMSP";
         case COMPRESS:	return "COMPRESS";
         case COMPRESS2:	return "COMPRESS2";
+        case COMPRESS3:	return "COMPRESS3";
         case MSP:	return "MSP";
         case MXP:	return "MXP";
         case AARD:	return "AARD";
         case GCMP:	return "GCMP";
         case NEW_ENVIRON: return "NEW-ENVIRON";
+        case LINEMODE:	 return "LINEMODE";
+        case TERMINAL_TYPE:	 return "TERMINAL-TYPE";
+        case ECHO:	 return "ECHO";
+        case SGA:	 return "SGA";
+        case ATCP:	 return "ATCP";
+        case MCCP:	 return "MCCP";
+        case MCCP2:	 return "MCCP2";
+        case MCCP3:	 return "MCCP3";
+        case EOR:	 return "EOR";
+        case SLE:	 return "SLE";
     }
     return cmd;
 }
