@@ -138,8 +138,6 @@ if (!fontfile && opt.random) {
 if (!fontfile)
 	usage();
 
-var font = loadfont(fontfile);
-
 writeln("");
 
-printstr(input_string, font);
+printstr(input_string, fontfile);

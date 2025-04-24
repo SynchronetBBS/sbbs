@@ -365,6 +365,9 @@ function printrow(glyph, row) {
 }
 
 function output(str, font) {
+	if (typeof font == "string")
+		font = loadfont(font);
+
     var maxheight = font.height; // Use the pre-calculated max height from loadfont
     var linewidth = 0;
     var len = str.length;
