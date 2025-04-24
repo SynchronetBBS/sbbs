@@ -84,7 +84,7 @@ function loadfont(fn_arg) {
     try {
 
 		const sequence = "\x55\xaa\x00\xff";
-		if(this.opt && opt.random)
+		if(this.opt && opt.random && opt.index === undefined)
 			opt.index = random(map.split(sequence).length);
 
 		if(this.opt && opt.index>0) {

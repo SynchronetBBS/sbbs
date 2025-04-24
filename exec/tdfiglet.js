@@ -12,8 +12,7 @@ opt = {
     justify: LEFT_JUSTIFY,
     width: DEFAULT_WIDTH,
     random: false,
-    info: false,
-    index: 0
+    info: false
 };
 
 // Function declarations (Synchronet JS style)
