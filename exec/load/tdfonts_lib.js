@@ -2,13 +2,6 @@
  * Synchronet JS conversion of tdfiglet.c
  * Based on the C code by Unknown/Modified by The Draw
  * Converted to Synchronet JS by Nelgin
- *
- * Note: This is a best-effort conversion based on the provided C code.
- * Synchronet JS environment differences (like file I/O, binary data handling,
- * and character encoding) may require adjustments.
- * The C code's mmap and directory listing will be replaced with Synchronet JS equivalents.
- * The iconv part for IBM437 to UTF-8 conversion will need a JavaScript equivalent,
- * possibly a lookup table or relying on Synchronet's native encoding handling.
  */
 
 // Constants (using var as requested)
@@ -25,12 +18,6 @@ var RIGHT_JUSTIFY = 1;
 var CENTER_JUSTIFY = 2;
 
 var DEFAULT_WIDTH = 80;
-
-var COLOR_ANSI = 0;
-var COLOR_MIRC = 1;
-
-var ENC_UNICODE = 0;
-var ENC_ANSI = 1;
 
 // Default font directory and extension - adjust as needed for your Synchronet setup
 var FONT_DIR = system.ctrl_dir + 'tdfonts/'; // Assuming fonts directory is relative to the script
@@ -248,13 +235,7 @@ function readchar(i, font) { // glyph argument is no longer needed, we return th
 
             var cell_idx = row * width + col;
             if (cell_idx < glyph.cell.length) {
-                if (this.opt && opt.encoding === ENC_UNICODE) {
-                    // ibmtoutf8 needs to be implemented or replaced with a lookup
-                    // For now, a basic mapping or assume Synchronet handles CP437 bytes in strings
-                    // Let's try a basic lookup for common chars, or assume direct charCodeAt gives the CP437 value.
-                    // A full CP437 to UTF-8 mapping would be complex to implement in pure JS without libraries.
-                    // Synchronet's `iconv` object *might* be available, or `system.text_to_utf8`.
-                    // Assuming `system.text_to_utf8` exists and can convert from CP437 (mode 437).
+                if (this.opt && opt.utf8) {
                     try {
                          glyph.cell[cell_idx].utfchar = utf8_encode(String.fromCharCode(ch));
                     } catch (e) {
@@ -305,29 +286,23 @@ function lookupchar(c, font) {
 	return result;
 }
 
-// ibmtoutf8 function (using system.text_to_utf8 as a replacement for iconv)
-// This function's logic is now integrated into readchar.
-
 function printcolor(color) {
     var fg = color & 0x0f;
     var bg = (color & 0xf0) >> 4;
 	var out = "";
 
-    // TheDraw colors mapped to ANSI and MIRC
-    var fgacolors = [30, 34, 32, 36, 31, 35, 33, 37, 90, 94, 92, 96, 91, 95, 93, 97]; // Normal/Bright
-    var bgacolors = [40, 44, 42, 46, 41, 45, 43, 47]; // Backgrounds (normal only for 8 colors)
-    var fgmcolors = [1,  2,  3, 10,  5,  6,  7, 15, 14,  12, 9, 11,  4, 13,  8,  0]; // MIRC colors
-    var bgmcolors = [1,  2,  3, 10,  5,  6,  7, 15, 14,  12, 9, 11,  4, 13,  8,  0]; // MIRC backgrounds
-
-    if (this.opt == undefined || opt.color === COLOR_ANSI) {
+    if (this.opt == undefined || !opt.ansi) {
+		var fgcolors = ["K", "B", "G", "C", "R", "M", "Y", "W", "HK", "HB", "HG", "HC", "HR", "HM", "HY", "HW"]; // Normal/Bright
+		var bgcolors = ["0", "1", "2", "3", "4", "5", "6", "7"]; // Backgrounds (normal only for 8 colors)
+		out += "\x01" + fgcolors[fg].split("").join("\x01");
+		out += "\x01" + bgcolors[bg];
+    } else  {
+		var fgcolors = [30, 34, 32, 36, 31, 35, 33, 37, 90, 94, 92, 96, 91, 95, 93, 97]; // Normal/Bright
+		var bgcolors = [40, 44, 42, 46, 41, 45, 43, 47]; // Backgrounds (normal only for 8 colors)
         out += "\x1b[";
-        out += (fgacolors[fg] + ";");
-        out += (bgacolors[bg] + "m");
-    } else { // MIRC color
-        out += "\x03";
-        out += (fgmcolors[fg] + ",");
-        out += (bgmcolors[bg]);
-    }
+        out += (fgcolors[fg] + ";");
+        out += (bgcolors[bg] + "m");
+	}
 	return out;
 }
 
@@ -354,14 +329,16 @@ function printrow(glyph, row) {
              out += " ";
         }
     }
-
-    // Reset color at the end of the row
-    if (this.opt == undefined || opt.color === COLOR_ANSI) {
-         out += "\x1b[0m";
-    } else {
-         out += "\x03";
-    }
+	out += reset_color();
 	return out;
+}
+
+function reset_color()
+{
+    // Reset color at the end of the row
+	if (this.opt == undefined || !opt.ansi)
+		return "\x01N";
+	return "\x1b[0m";
 }
 
 function output(str, font) {
@@ -437,11 +414,7 @@ function output(str, font) {
         }
 
         // End the line and reset color
-        if (this.opt == undefined || opt.color === COLOR_ANSI) {
-            out += "\x1b[0m"; // Reset color and print newline
-        } else {
-            out += "\x03"; // Reset MIRC color and print newline
-        }
+		out += reset_color();
 		out += "\r\n";
     }
 	return out;

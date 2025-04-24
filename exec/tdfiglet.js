@@ -2,13 +2,6 @@
  * tdfiglet.js - Synchronet JS conversion of tdfiglet.c
  * Based on the C code by Unknown/Modified by The Draw
  * Converted to Synchronet JS by Nelgin
- *
- * Note: This is a best-effort conversion based on the provided C code.
- * Synchronet JS environment differences (like file I/O, binary data handling,
- * and character encoding) may require adjustments.
- * The C code's mmap and directory listing will be replaced with Synchronet JS equivalents.
- * The iconv part for IBM437 to UTF-8 conversion will need a JavaScript equivalent,
- * possibly a lookup table or relying on Synchronet's native encoding handling.
  */
 
 load("tdfonts_lib.js");
@@ -17,8 +10,6 @@ load("tdfonts_lib.js");
 opt = {
     justify: LEFT_JUSTIFY,
     width: DEFAULT_WIDTH,
-    color: COLOR_ANSI, // Default to ANSI
-    encoding: ENC_ANSI, // Default to ANSI
     random: false,
     info: false,
     index: 0
@@ -31,8 +22,8 @@ function usage() {
     writeln("    -f [font] Specify font file used.");
     writeln("    -j l|r|c  Justify left, right, or center. Default is left.");
     writeln("    -w n      Set screen width. Default is 80.");
-    writeln("    -c a|m    Color format ANSI or mirc. Default is ANSI.");
-    writeln("    -e u|a    Encode as unicode or ASCII. Default is ANSI.");
+    writeln("    -a        Color sequences: ANSI. Default is Synchronet Ctrl-A.");
+    writeln("    -u        Encode charaters as UTF-8. Default is CP437.");
     writeln("    -x n      Index to font within file. Default is 0.");
     writeln("    -i        Print font details.");
     writeln("    -r        Use random font.");
@@ -84,32 +75,12 @@ while (i < args.length) {
                 } else if (arg === "-x" && i + 1 < args.length) {
                         opt.index = parseInt(args[i + 1], 10);
                         i += 2;
-                } else if (arg === "-c" && i + 1 < args.length) {
-                        switch (args[i + 1]) {
-                                case "a":
-                                        opt.color = COLOR_ANSI;
-                                        break;
-                                case "m":
-                                        opt.color = COLOR_MIRC;
-                                        break;
-                                default:
-                                        log("Invalid color option. Use a or m.");
-					exit(1);
-                        }
-                        i += 2;
-                } else if (arg === "-e" && i + 1 < args.length) {
-                        switch (args[i + 1]) {
-                                case "u":
-                                        opt.encoding = ENC_UNICODE;
-                                        break;
-                                case "a":
-                                        opt.encoding = ENC_ANSI;
-                                        break;
-                                default:
-                                        log("Invalid encoding option. Use u or a.");
-					exit(1);
-                        }
-                        i += 2;
+                } else if (arg === "-a") {
+					opt.ansi = true;
+					++i;
+				} else if (arg === "-u") {
+					opt.utf8 = true;
+					++i;
                 } else if (arg === "-i") {
                         opt.info = true;
                         i += 1;
