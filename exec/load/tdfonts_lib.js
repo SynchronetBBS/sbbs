@@ -82,23 +82,23 @@ function loadfont(fn_arg) {
 
     try {
 
-	const sequence = "\x55\xaa\x00\xff";
-	if(this.opt && opt.random)
-		opt.index = (map.match(new RegExp(sequence, 'g'))-1);
+		const sequence = "\x55\xaa\x00\xff";
+		if(this.opt && opt.random)
+			opt.index = (map.match(new RegExp(sequence, 'g'))-1);
 
-	var index = -1;
-	var n = 0;
-	if(this.opt && opt.index>0) {
-		while (n < opt.index) {
-	    		index = map.indexOf(sequence, index + 1);
-	    		if (index === -1)
-	       			break;
-	    	n++;
+		var index = -1;
+		var n = 0;
+		if(this.opt && opt.index>0) {
+			while (n < opt.index) {
+					index = map.indexOf(sequence, index + 1);
+					if (index === -1)
+						break;
+				n++;
+			}
+			if (index !== -1)
+					map = map.slice(0, 20) + map.slice(index);
+
 		}
-		if (index !== -1)
-    			map = map.slice(0, 20) + map.slice(index);
-
-	}
         font.namelen = map.charCodeAt(24);
         font.name = map.substring(25, 25 + font.namelen);
         font.fonttype = map.charCodeAt(41);
@@ -342,6 +342,16 @@ function reset_color()
 }
 
 function output(str, font) {
+	if (!font) { // Random font file selection
+		var fontDir = FONT_DIR;
+		var files = directory(fontDir + "/*.tdf"); // Get all .tdf files
+		if (files.length > 0) {
+			var randomIndex = random((files.length)+1);
+			var filename = file_getname(files[randomIndex]);
+			font = filename.replace(/\.tdf$/i, "");
+		}
+	}
+
 	if (typeof font == "string")
 		font = loadfont(font);
 
@@ -369,7 +379,7 @@ function output(str, font) {
     }
 
     // Calculate padding for justification
-    if (this.top && opt.justify === CENTER_JUSTIFY) {
+    if (this.opt && opt.justify === CENTER_JUSTIFY) {
         padding = Math.floor((opt.width - linewidth) / 2);
     } else if (this.opt && opt.justify === RIGHT_JUSTIFY) {
         padding = opt.width - linewidth;
