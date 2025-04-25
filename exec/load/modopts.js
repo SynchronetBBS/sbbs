@@ -40,6 +40,8 @@
 "use strict";
 function get_mod_options(modname, optname, default_optval)
 {
+	if(!modname)
+		throw new Error("No module name specified");
 	var ini_file = new File(system.ctrl_dir + "modopts/" + modname.replace(":", "-") + ".ini");
 	if(ini_file.open("r")) {
 		var obj = ini_file.iniGetObject(/* lowercase */false, /* blanks: */true);
@@ -84,4 +86,5 @@ function get_mod_options(modname, optname, default_optval)
 	return val;
 }
 
-get_mod_options(argv[0], argv[1], argv[2]);
+if(argv.length)
+	get_mod_options.apply(null, argv);
