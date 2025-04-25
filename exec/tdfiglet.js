@@ -7,40 +7,27 @@
 
 var tdf = load("tdfonts_lib.js");
 
-// Global options object (using var)
-tdf.opt = {
-    justify: LEFT_JUSTIFY,
-    random: false,
-    info: false
-};
+tdf.opt = {};
 
-// Function declarations (Synchronet JS style)
 function usage() {
-	writeln("usage: [options] input");
+	writeln("usage: tdfiglet [options] input");
 	writeln("");
-	writeln("    -f [font] Specify font file used.");
-	writeln("    -j l|r|c  Justify left, right, or center. Default is left.");
-	writeln("    -w n      Set screen width. Default is auto-detect or 80.");
-	writeln("    -m n      Set margin/offset (for left or right justification).");
-	writeln("    -a        Color sequences: ANSI. Default is Synchronet Ctrl-A.");
-	writeln("    -u        Encode charaters as UTF-8. Default is CP437.");
-	writeln("    -x n      Index to font within file. Default is 0.");
-	writeln("    -i        Print font details.");
-	writeln("    -r        Use random font.");
-	writeln("    -h        Print usage.");
+	writeln("    -f [font] Specify font file to use");
+	writeln("    -j l|r|c  Justify left, right, or center (default: left)");
+	writeln("    -w n      Set screen width  (default: auto-detect or 80)");
+	writeln("    -m n      Set margin/offset (for left or right justification)");
+	writeln("    -a        Enable ANSI sequences (default: Synchronet Ctrl-A)");
+	writeln("    -u        Encode characters as UTF-8 (default: CP437)");
+	writeln("    -x n      Index to font within file (default: 0)");
+	writeln("    -i        Print font details");
+	writeln("    -r        Use random font and/or index (if not specified with -x)");
+	writeln("    -h        Print usage");
 	writeln("");
-	exit(1); // Use Synchronet's exit
+	exit(1);
 }
-
-// Main execution block (equivalent to C main function)
-
-// Access command line arguments via argv global
-// argv[0] is typically the script name in Synchronet JS
-// Subsequent elements are the arguments
 
 var fontfile = null;
 
-// Corrected argument parsing: Explicitly consume options and their arguments.
 var input_string = "";
 for(i = 0; i < argv.length; ++i) {
 	var arg = argv[i];
