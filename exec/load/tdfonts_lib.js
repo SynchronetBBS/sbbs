@@ -389,7 +389,6 @@ function output(str, font) {
 
     var margin = this.opt && opt.margin ? opt.margin : 0;
 	var padding = margin;
-	writeln("Padding: " + padding);
 	var justify = this.opt ? opt.justify : LEFT_JUSTIFY;
     // Calculate padding for justification
     if (justify === CENTER_JUSTIFY) {
