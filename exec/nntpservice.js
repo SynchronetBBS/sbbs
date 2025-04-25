@@ -15,7 +15,7 @@
 // -d        debug output
 // -f        filter bogus client IP addresses
 // -na       no anonymous logins (requires user authentication)
-// -mail     expose entire mail database as newsgroup to Sysops
+// -mail     expose user's email in "mail" newsgroup to non-Guest users
 // -nolimit  unlimited message lengths
 // -notag    do not append tear/tagline to local messages for Q-rest accounts
 // -ascii    convert ex-ASCII to ASCII
@@ -26,7 +26,7 @@
 //					Netscape Communicator 4.77
 //					Xnews 5.04.25
 
-const REVISION = "1.2";
+const REVISION = "1.3";
 
 var tearline = format("--- Synchronet %s%s-%s NNTP Service %s\r\n"
 					  ,system.version,system.revision,system.platform,REVISION);
@@ -141,6 +141,10 @@ function count_msgs(msgbase)
 			continue;
 		if(idx.attr&MSG_VOTE)
 			continue;
+		if(msgbase.attributes & SMB_EMAIL) {
+			if(idx.to != user.number)
+				continue;
+		}
 		if(first == 0)
 			first = idx.number;
 		last = idx.number;
@@ -153,7 +157,7 @@ function get_newsgroup_list()
 {
 	// list of newsgroup names the logged-in user has access to
 	var newsgroup_list = [];
-	if(include_mail) {
+	if(include_mail && !(user.security.restrictions & UFLAG_G)) {
 		newsgroup_list.push("mail");
 	}
 	for(var g in msg_area.grp_list) {
@@ -295,7 +299,7 @@ while(client.socket.is_connected && !quit) {
 				|| cmd[1].toUpperCase()=="ACTIVE") {	// RFC 2980 2.1.2
 				pattern=cmd[2];
  				writeln("215 list of newsgroups follows");
-				if(include_mail && user.security.level == 99 && wildmatch("mail", pattern)) {
+				if(include_mail && !(user.security.restrictions & UFLAG_G) && wildmatch("mail", pattern)) {
 					var mb=new MsgBase("mail");
 					if(mb.open()==true) {
 						writeln(format("mail %u %u n", mb.last_msg, mb.first_msg));
@@ -326,8 +330,8 @@ while(client.socket.is_connected && !quit) {
 			else if(cmd[1].toUpperCase()=="NEWSGROUPS") {	// RFC 2980 2.1.6
 				pattern=cmd[2];
 				writeln("215 list of newsgroups and descriptions follows");
-				if(include_mail && user.security.level == 99 && wildmatch("mail", pattern))
-					writeln("mail complete mail database");
+				if(include_mail && !(user.security.restrictions & UFLAG_G) && wildmatch("mail", pattern))
+					writeln("mail your email");
 				for(g in msg_area.grp_list) {
 					for(s in msg_area.grp_list[g].sub_list) {
 						if(!wildmatch(msg_area.grp_list[g].sub_list[s].newsgroup, pattern))
@@ -369,8 +373,8 @@ while(client.socket.is_connected && !quit) {
 		case "XGTITLE":
 			pattern=cmd[2];
 			writeln("282 list of newsgroups follows");
-			if(include_mail && user.security.level == 99 && wildmatch("mail", pattern))
-				writeln("mail complete mail database");
+			if(include_mail && !(user.security.restrictions & UFLAG_G) && wildmatch("mail", pattern))
+				writeln("mail your email");
 			for(g in msg_area.grp_list) {
 				for(s in msg_area.grp_list[g].sub_list) {
 					if(!wildmatch(msg_area.grp_list[g].sub_list[s].newsgroup, pattern))
@@ -465,7 +469,7 @@ while(client.socket.is_connected && !quit) {
 				}
 				found=true;
 			}
-			else if(include_mail && user.security.level==99 && cmd[1].toLowerCase()=="mail") {
+			else if(include_mail && !(user.security.restrictions & UFLAG_G) && cmd[1].toLowerCase()=="mail") {
 				if(msgbase && msgbase.is_open)
 					msgbase.close();
 				msgbase=new MsgBase("mail");
@@ -519,6 +523,10 @@ while(client.socket.is_connected && !quit) {
 						continue;
 					if(idx.attr&MSG_VOTE)
 						continue;
+					if(msgbase.attributes & SMB_EMAIL) {
+						if(idx.to != user.number)
+							continue;
+					}
 					writeln(idx.number);
 				}
 				current_article = msgbase.first_msg;
@@ -561,6 +569,10 @@ while(client.socket.is_connected && !quit) {
 					continue;
 				if(hdr.attr&MSG_VOTE)
 					continue;
+				if(msgbase.attributes & SMB_EMAIL) {
+					if(hdr.to_ext != user.number)
+						continue;
+				}
 				writeln(format("%u\t%s\t%s\t%s\t%s\t%s\t%u\t%u\tXref:%s"
 					,i
 					,get_news_subject(hdr)
@@ -611,6 +623,10 @@ while(client.socket.is_connected && !quit) {
 					continue;
 				if(hdr.attr&MSG_VOTE)
 					continue;
+				if(msgbase.attributes & SMB_EMAIL) {
+					if(hdr.to_ext != user.number)
+						continue;
+				}
 				var field="";
 				switch(cmd[1].toLowerCase()) {	/* header */
 					case "to":
@@ -706,6 +722,31 @@ while(client.socket.is_connected && !quit) {
 
 			current_article=hdr.number;
 
+/* Eliminate dupe loops
+			if(user.security.restrictions&UFLAG_Q && hdr!=null)
+*/
+			if(hdr.attr&MSG_DELETE) {
+				writeln("430 deleted message");
+				break;
+			}
+			if(hdr.attr&MSG_MODERATED && !(hdr.attr&MSG_VALIDATED)) {
+				writeln("430 unvalidated message");
+				break;
+			}
+			if(msgbase.attributes & SMB_EMAIL) {
+				if(hdr.to_ext != user.number) {
+					writeln("430 message not for you");
+					break;
+				}
+			} else {
+				if(hdr.attr&MSG_PRIVATE
+					&& hdr.to.toLowerCase()!=user.alias.toLowerCase()
+					&& hdr.to.toLowerCase()!=user.name.toLowerCase()) {
+					writeln("430 private message");
+					break;
+				}
+			}
+
 			if(cmd[0].toUpperCase()!="HEAD") {
 				body=msgbase.get_msg_body(false,current_article
 					,true /* remove ctrl-a codes */
@@ -729,24 +770,6 @@ while(client.socket.is_connected && !quit) {
 					body = utf8_encode(body);
 					hdr.text_charset = "UTF-8";
 				}
-			}
-
-/* Eliminate dupe loops
-			if(user.security.restrictions&UFLAG_Q && hdr!=null)
-*/
-			if(hdr.attr&MSG_DELETE) {
-				writeln("430 deleted message");
-				break;
-			}
-			if(hdr.attr&MSG_MODERATED && !(hdr.attr&MSG_VALIDATED)) {
-				writeln("430 unvalidated message");
-				break;
-			}
-			if(hdr.attr&MSG_PRIVATE
-				&& hdr.to.toLowerCase()!=user.alias.toLowerCase()
-				&& hdr.to.toLowerCase()!=user.name.toLowerCase()) {
-				writeln("430 private message");
-				break;
 			}
 
 			switch(cmd[0].toUpperCase()) {
