@@ -78,6 +78,4 @@ for(i = 0; i < argv.length; ++i) {
 if (!fontfile && !tdf.opt.random)
 	usage();
 
-writeln("");
-
 tdf.printstr(input_string, fontfile);
