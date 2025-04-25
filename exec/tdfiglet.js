@@ -5,12 +5,11 @@
  * @format.tab-size 4, @format.use-tabs true
  */
 
-load("tdfonts_lib.js");
+var tdf = load("tdfonts_lib.js");
 
 // Global options object (using var)
-opt = {
+tdf.opt = {
     justify: LEFT_JUSTIFY,
-    width: DEFAULT_WIDTH,
     random: false,
     info: false
 };
@@ -51,13 +50,13 @@ for(i = 0; i < argv.length; ++i) {
 	} else if (arg === "-j" && i + 1 < argv.length) {
 		switch (argv[i + 1]) {
 			case "l":
-				opt.justify = LEFT_JUSTIFY;
+				tdf.opt.justify = LEFT_JUSTIFY;
 				break;
 			case "r":
-				opt.justify = RIGHT_JUSTIFY;
+				tdf.opt.justify = RIGHT_JUSTIFY;
 				break;
 			case "c":
-				opt.justify = CENTER_JUSTIFY;
+				tdf.opt.justify = CENTER_JUSTIFY;
 				break;
 			default:
 				alert("Invalid justification option. Use l, r, or c.");
@@ -65,19 +64,19 @@ for(i = 0; i < argv.length; ++i) {
 		}
 		++i;
 	} else if (arg === "-w" && i + 1 < argv.length) {
-		opt.width = parseInt(argv[i + 1], 10);
+		tdf.opt.width = parseInt(argv[i + 1], 10);
 		++i;
 	} else if (arg === "-x" && i + 1 < argv.length) {
-		opt.index = parseInt(argv[i + 1], 10);
+		tdf.opt.index = parseInt(argv[i + 1], 10);
 		++i;
 	} else if (arg === "-a") {
-		opt.ansi = true;
+		tdf.opt.ansi = true;
 	} else if (arg === "-u") {
-		opt.utf8 = true;
+		tdf.opt.utf8 = true;
 	} else if (arg === "-i") {
-		opt.info = true;
+		tdf.opt.info = true;
 	} else if (arg === "-r") {
-		opt.random = true;
+		tdf.opt.random = true;
 	} else if (arg === "-h") {
 		usage();
 	} else {
@@ -85,9 +84,9 @@ for(i = 0; i < argv.length; ++i) {
 	}
 }
 
-if (!fontfile && !opt.random)
+if (!fontfile && !tdf.opt.random)
 	usage();
 
 writeln("");
 
-printstr(input_string, fontfile);
+tdf.printstr(input_string, fontfile);
