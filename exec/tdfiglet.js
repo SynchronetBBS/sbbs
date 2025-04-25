@@ -16,20 +16,20 @@ tdf.opt = {
 
 // Function declarations (Synchronet JS style)
 function usage() {
-    writeln("usage: [options] input");
-    writeln("");
-    writeln("    -f [font] Specify font file used.");
-    writeln("    -j l|r|c  Justify left, right, or center. Default is left.");
-    writeln("    -w n      Set screen width. Default is auto-detect or 80.");
-	wrintln("    -m n      Set margin/offset (for left or right justification).");
-    writeln("    -a        Color sequences: ANSI. Default is Synchronet Ctrl-A.");
-    writeln("    -u        Encode charaters as UTF-8. Default is CP437.");
-    writeln("    -x n      Index to font within file. Default is 0.");
-    writeln("    -i        Print font details.");
-    writeln("    -r        Use random font.");
-    writeln("    -h        Print usage.");
-    writeln("");
-    exit(1); // Use Synchronet's exit
+	writeln("usage: [options] input");
+	writeln("");
+	writeln("    -f [font] Specify font file used.");
+	writeln("    -j l|r|c  Justify left, right, or center. Default is left.");
+	writeln("    -w n      Set screen width. Default is auto-detect or 80.");
+	writeln("    -m n      Set margin/offset (for left or right justification).");
+	writeln("    -a        Color sequences: ANSI. Default is Synchronet Ctrl-A.");
+	writeln("    -u        Encode charaters as UTF-8. Default is CP437.");
+	writeln("    -x n      Index to font within file. Default is 0.");
+	writeln("    -i        Print font details.");
+	writeln("    -r        Use random font.");
+	writeln("    -h        Print usage.");
+	writeln("");
+	exit(1); // Use Synchronet's exit
 }
 
 // Main execution block (equivalent to C main function)
