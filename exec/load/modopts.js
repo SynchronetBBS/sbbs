@@ -40,6 +40,8 @@
 "use strict";
 function get_mod_options(modname, optname, default_optval)
 {
+	if(typeof modname !== "string")
+		throw new Error("Module name specified is wrong type: " + typeof modname);
 	if(!modname)
 		throw new Error("No module name specified");
 	var ini_file = new File(system.ctrl_dir + "modopts/" + modname.replace(":", "-") + ".ini");
