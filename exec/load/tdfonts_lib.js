@@ -397,6 +397,10 @@ function output(str, font) {
         padding = Math.floor(width - (linewidth + padding));
     }
 
+	linewidth += padding;
+	if(linewidth > width)
+		throw new Error(format("Rendered line width (%u) > screen width (%u)", linewidth, width));
+
     // Print each row of the font text
     for (var i = 0; i < maxheight; i++) {
         // Print padding spaces
