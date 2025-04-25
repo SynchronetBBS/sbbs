@@ -39,62 +39,51 @@ function usage() {
 // Subsequent elements are the arguments
 
 var fontfile = null;
-var input_args = []; // Collect non-option arguments here
 
 // Corrected argument parsing: Explicitly consume options and their arguments.
-var args = [];
-for (var i = 0; i < argc; i++)
-        args.push(argv[i]);
-var i = 0;
 var input_string = "";
-while (i < args.length) {
-	var arg = args[i];
+for(i = 0; i < argv.length; ++i) {
+	var arg = argv[i];
 
-	if (arg === "-f" && i + 1 < args.length) {
-		fontfile = args[i + 1];
-		i += 2;
-	} else if (arg === "-j" && i + 1 < args.length) {
-		switch (args[i + 1]) {
+	if (arg === "-f" && i + 1 < argv.length) {
+		fontfile = argv[i + 1];
+		++i;
+	} else if (arg === "-j" && i + 1 < argv.length) {
+		switch (argv[i + 1]) {
 			case "l":
-					opt.justify = LEFT_JUSTIFY;
-					break;
+				opt.justify = LEFT_JUSTIFY;
+				break;
 			case "r":
-					opt.justify = RIGHT_JUSTIFY;
-					break;
+				opt.justify = RIGHT_JUSTIFY;
+				break;
 			case "c":
-					opt.justify = CENTER_JUSTIFY;
-					break;
+				opt.justify = CENTER_JUSTIFY;
+				break;
 			default:
-					log("Invalid justification option. Use l, r, or c.");
-			exit(1);
+				alert("Invalid justification option. Use l, r, or c.");
+				exit(1);
 		}
-		i += 2;
-	} else if (arg === "-w" && i + 1 < args.length) {
-		opt.width = parseInt(args[i + 1], 10);
-		i += 2;
-	} else if (arg === "-x" && i + 1 < args.length) {
-		opt.index = parseInt(args[i + 1], 10);
-		i += 2;
+		++i;
+	} else if (arg === "-w" && i + 1 < argv.length) {
+		opt.width = parseInt(argv[i + 1], 10);
+		++i;
+	} else if (arg === "-x" && i + 1 < argv.length) {
+		opt.index = parseInt(argv[i + 1], 10);
+		++i;
 	} else if (arg === "-a") {
 		opt.ansi = true;
-		++i;
 	} else if (arg === "-u") {
 		opt.utf8 = true;
-		++i;
 	} else if (arg === "-i") {
 		opt.info = true;
-		i += 1;
 	} else if (arg === "-r") {
 		opt.random = true;
-		i += 1;
 	} else if (arg === "-h") {
 		usage();
 	} else {
 		input_string += (input_string ? " " : "") + arg;
-		i += 1;
 	}
 }
-
 
 if (!fontfile && !opt.random)
 	usage();
