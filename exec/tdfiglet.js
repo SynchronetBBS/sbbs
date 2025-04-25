@@ -20,7 +20,8 @@ function usage() {
     writeln("");
     writeln("    -f [font] Specify font file used.");
     writeln("    -j l|r|c  Justify left, right, or center. Default is left.");
-    writeln("    -w n      Set screen width. Default is 80.");
+    writeln("    -w n      Set screen width. Default is auto-detect or 80.");
+	wrintln("    -m n      Set margin/offset (for left or right justification).");
     writeln("    -a        Color sequences: ANSI. Default is Synchronet Ctrl-A.");
     writeln("    -u        Encode charaters as UTF-8. Default is CP437.");
     writeln("    -x n      Index to font within file. Default is 0.");
@@ -62,6 +63,9 @@ for(i = 0; i < argv.length; ++i) {
 				alert("Invalid justification option. Use l, r, or c.");
 				exit(1);
 		}
+		++i;
+	} else if (arg === "-m" && i + 1 < argv.length) {
+		tdf.opt.margin = parseInt(argv[i + 1], 10);
 		++i;
 	} else if (arg === "-w" && i + 1 < argv.length) {
 		tdf.opt.width = parseInt(argv[i + 1], 10);
