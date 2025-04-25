@@ -129,7 +129,7 @@ function loadfont(fn_arg) {
     if (this.opt && opt.info) {
 		writeln("index: " + opt.index);
 		writeln("font: " + font.name);
-		writeln("char list: ");
+		write("char list: ");
     }
 
     // Determine overall font height and validate glyph addresses
@@ -380,11 +380,19 @@ function output(str, font) {
         }
     }
 
+	var width = this.opt && opt.width;
+	if (!width) {
+		if (js.global.console) // Auto-detect screen width, when possible
+			width = console.screen_columns;
+		else
+			width = DEFAULT_WIDTH;
+	}
+
     // Calculate padding for justification
     if (this.opt && opt.justify === CENTER_JUSTIFY) {
-        padding = Math.floor((opt.width - linewidth) / 2);
+        padding = Math.floor((width - linewidth) / 2);
     } else if (this.opt && opt.justify === RIGHT_JUSTIFY) {
-        padding = opt.width - linewidth;
+        padding = width - linewidth;
     }
 
     // Ensure padding is not negative
