@@ -40,7 +40,7 @@
 "use strict";
 function get_mod_options(modname, optname, default_optval)
 {
-	var ini_file = new File(system.ctrl_dir + "modopts/" + modname + ".ini");
+	var ini_file = new File(system.ctrl_dir + "modopts/" + modname.replace(":", "-") + ".ini");
 	if(ini_file.open("r")) {
 		var obj = ini_file.iniGetObject(/* lowercase */false, /* blanks: */true);
 		var sections = ini_file.iniGetSections();
@@ -54,7 +54,7 @@ function get_mod_options(modname, optname, default_optval)
 		}
 		ini_file.close();
 		if(optname)
-			return obj[optname];
+			return (obj[optname] === undefined) ? default_optval : obj[optname];
 		return obj;
 	}
 	ini_file = new File(file_cfgname(system.ctrl_dir, "modopts.ini"));
