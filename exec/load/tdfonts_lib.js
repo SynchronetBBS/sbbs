@@ -360,7 +360,6 @@ function output(str, font) {
     var maxheight = font.height; // Use the pre-calculated max height from loadfont
     var linewidth = 0;
     var len = str.length;
-    var padding = 0;
     var n = 0;
 	var out = "";
 
@@ -388,16 +387,15 @@ function output(str, font) {
 			width = DEFAULT_WIDTH;
 	}
 
+    var margin = this.opt && opt.margin ? opt.margin : 0;
+	var padding = margin;
+	writeln("Padding: " + padding);
+	var justify = this.opt ? opt.justify : LEFT_JUSTIFY;
     // Calculate padding for justification
-    if (this.opt && opt.justify === CENTER_JUSTIFY) {
+    if (justify === CENTER_JUSTIFY) {
         padding = Math.floor((width - linewidth) / 2);
-    } else if (this.opt && opt.justify === RIGHT_JUSTIFY) {
-        padding = width - linewidth;
-    }
-
-    // Ensure padding is not negative
-    if (padding < 0) {
-        padding = 0;
+    } else if (justify === RIGHT_JUSTIFY) {
+        padding = Math.floor(width - (linewidth + padding));
     }
 
     // Print each row of the font text
@@ -435,7 +433,8 @@ function output(str, font) {
 
         // End the line and reset color
 		out += reset_color();
-		out += "\r\n";
+		if(!(justify === RIGHT_JUSTIFY && margin == 0))
+			out += "\r\n";
     }
 	return out;
 }
