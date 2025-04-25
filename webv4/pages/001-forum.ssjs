@@ -390,6 +390,10 @@ if (typeof http_request.query.sub !== 'undefined' &&
 		).thread[
 			http_request.query.thread[0]
 		];
+		if(!thread) {
+			writeln("Error: No such message.");
+			exit(0);
+		}
 		var keys = Object.keys(thread.messages);
 		thread.__first = keys[0];
 		thread.__last = keys[keys.length - 1];
