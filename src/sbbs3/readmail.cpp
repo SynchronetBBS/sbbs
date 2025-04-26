@@ -57,6 +57,15 @@ static uint count_msgs(mail_t* mail, uint total)
 	return count;
 }
 
+static const char* msg_to(smbmsg_t* msg)
+{
+	if(msg->to != nullptr && *msg->to != '\0')
+		return msg->to;
+	if(msg->forward_path != nullptr)
+		return msg->forward_path;
+	return "";
+}
+
 /****************************************************************************/
 /* Reads mail waiting for usernumber.                                       */
 /****************************************************************************/
@@ -154,9 +163,7 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 			smb_unlockmsghdr(&smb, &msg);
 			bprintf(P_TRUNCATE | (msg.hdr.auxattr & MSG_HFIELDS_UTF8)
 			        , msghdr_text(&msg, MailWaitingLstFmt), smb.curmsg + 1
-			        , which == MAIL_SENT ? msg.to
-			    : (msg.hdr.attr & MSG_ANONYMOUS) && !SYSOP ? text[Anonymous]
-			    : msg.from
+			        , which == MAIL_SENT ? msg_to(&msg) : (msg.hdr.attr & MSG_ANONYMOUS) && !SYSOP ? text[Anonymous] : msg.from
 			        , mail_listing_flag(&msg)
 			        , msg.subj);
 			smb_freemsgmem(&msg);
@@ -528,15 +535,13 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 					if (which == MAIL_ALL)
 						bprintf(P_TRUNCATE | (msg.hdr.auxattr & MSG_HFIELDS_UTF8)
 						        , msghdr_text(&msg, MailOnSystemLstFmt)
-						        , u + 1, msg.from, msg.to
+						        , u + 1, msg.from, msg_to(&msg)
 						        , mail_listing_flag(&msg)
 						        , msg.subj);
 					else
 						bprintf(P_TRUNCATE | (msg.hdr.auxattr & MSG_HFIELDS_UTF8)
 						        , msghdr_text(&msg, MailWaitingLstFmt), u + 1
-						        , which == MAIL_SENT ? msg.to
-						    : (msg.hdr.attr & MSG_ANONYMOUS) && !SYSOP
-						    ? text[Anonymous] : msg.from
+						        , which == MAIL_SENT ? msg_to(&msg) : (msg.hdr.attr & MSG_ANONYMOUS) && !SYSOP ? text[Anonymous] : msg.from
 						        , mail_listing_flag(&msg)
 						        , msg.subj);
 					smb_freemsgmem(&msg);
@@ -747,15 +752,13 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 					if (which == MAIL_ALL)
 						bprintf(P_TRUNCATE | (msg.hdr.auxattr & MSG_HFIELDS_UTF8)
 						        , msghdr_text(&msg, MailOnSystemLstFmt)
-						        , u + 1, msg.from, msg.to
+						        , u + 1, msg.from, msg_to(&msg)
 						        , mail_listing_flag(&msg)
 						        , msg.subj);
 					else
 						bprintf(P_TRUNCATE | (msg.hdr.auxattr & MSG_HFIELDS_UTF8)
 						        , msghdr_text(&msg, MailWaitingLstFmt), u + 1
-						        , which == MAIL_SENT ? msg.to
-						    : (msg.hdr.attr & MSG_ANONYMOUS) && !SYSOP
-						    ? text[Anonymous] : msg.from
+						        , which == MAIL_SENT ? msg_to(&msg) : (msg.hdr.attr & MSG_ANONYMOUS) && !SYSOP ? text[Anonymous] : msg.from
 						        , mail_listing_flag(&msg)
 						        , msg.subj);
 					smb_freemsgmem(&msg);
@@ -919,15 +922,13 @@ int sbbs_t::searchmail(mail_t *mail, int start, int msgs, int which, const char 
 			if (which == MAIL_ALL)
 				bprintf(P_TRUNCATE | (msg.hdr.auxattr & MSG_HFIELDS_UTF8)
 				        , msghdr_text(&msg, MailOnSystemLstFmt)
-				        , l + 1, msg.from, msg.to
+				        , l + 1, msg.from, msg_to(&msg)
 				        , mail_listing_flag(&msg)
 				        , msg.subj);
 			else
 				bprintf(P_TRUNCATE | (msg.hdr.auxattr & MSG_HFIELDS_UTF8)
 				        , msghdr_text(&msg, MailWaitingLstFmt), l + 1
-				        , which == MAIL_SENT ? msg.to
-				    : (msg.hdr.attr & MSG_ANONYMOUS) && !SYSOP
-				    ? text[Anonymous] : msg.from
+				        , which == MAIL_SENT ? msg_to(&msg) : (msg.hdr.attr & MSG_ANONYMOUS) && !SYSOP ? text[Anonymous] : msg.from
 				        , mail_listing_flag(&msg)
 				        , msg.subj);
 			found++;
