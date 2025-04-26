@@ -1801,6 +1801,20 @@ bool smb_msg_is_utf8(const smbmsg_t* msg)
 	return msg->text_charset != NULL && stricmp(msg->text_charset, "utf-8") == 0;
 }
 
+bool smb_msg_is_ascii(const smbmsg_t* msg)
+{
+	for (int i = 0; i < msg->total_hfields; i++) {
+		switch (msg->hfield[i].type) {
+			case FIDOCTRL:
+				if (strncmp(msg->hfield_dat[i], "CHRS: ASCII", 11) == 0)
+					return true;
+		}
+	}
+	if (msg->ftn_charset != NULL && strncmp(msg->ftn_charset, "ASCII", 5) == 0)
+		return true;
+	return msg->text_charset != NULL && stricmp(msg->text_charset, "us-ascii") == 0;
+}
+
 uint16_t smb_voted_already(smb_t* smb, uint32_t msgnum, const char* name, enum smb_net_type net_type, void* net_addr)
 {
 	uint16_t votes = 0;

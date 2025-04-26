@@ -177,6 +177,7 @@ SMBEXPORT uint32_t  smb_last_in_thread(smb_t*, smbmsg_t*);
 SMBEXPORT size_t    smb_idxreclen(smb_t*);
 SMBEXPORT uint32_t  smb_count_idx_records(smb_t*, uint16_t mask, uint16_t cmp);
 SMBEXPORT bool      smb_msg_is_utf8(const smbmsg_t*);
+SMBEXPORT bool      smb_msg_is_ascii(const smbmsg_t*);
 SMBEXPORT size_t    smb_msg_count(smb_t*, unsigned types);
 SMBEXPORT enum smb_msg_type smb_msg_type(smb_msg_attr_t);
 
