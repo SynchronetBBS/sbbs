@@ -15,7 +15,7 @@
 // -d        debug output
 // -f        filter bogus client IP addresses
 // -na       no anonymous logins (requires user authentication)
-// -mail     expose user's email in "mail" newsgroup to non-Guest users
+// -mail     expose non-Guest user's sent/received email in "mail" newsgroup
 // -nolimit  unlimited message lengths
 // -notag    do not append tear/tagline to local messages for Q-rest accounts
 // -ascii    convert ex-ASCII to ASCII
@@ -142,7 +142,7 @@ function count_msgs(msgbase)
 		if(idx.attr&MSG_VOTE)
 			continue;
 		if(msgbase.attributes & SMB_EMAIL) {
-			if(idx.to != user.number)
+			if(idx.to != user.number && idx.from != user.number)
 				continue;
 		}
 		if(first == 0)
@@ -524,7 +524,7 @@ while(client.socket.is_connected && !quit) {
 					if(idx.attr&MSG_VOTE)
 						continue;
 					if(msgbase.attributes & SMB_EMAIL) {
-						if(idx.to != user.number)
+						if(idx.to != user.number && idx.from != user.number)
 							continue;
 					}
 					writeln(idx.number);
@@ -556,8 +556,8 @@ while(client.socket.is_connected && !quit) {
 				range=cmd[1].split('-');
 				first=Number(range[0]);
 				last=Number(range[1]);
-                                if(last == 0)
-                                   last = msgbase.last_msg;
+				if(last == 0)
+				   last = msgbase.last_msg;
 			} else
 				first=last=Number(cmd[1]);
 			writeln("224 Overview information follows for articles " + first + " through " + last);
@@ -570,7 +570,7 @@ while(client.socket.is_connected && !quit) {
 				if(hdr.attr&MSG_VOTE)
 					continue;
 				if(msgbase.attributes & SMB_EMAIL) {
-					if(hdr.to_ext != user.number)
+					if(hdr.to_ext != user.number && hdr.from_ext != user.number)
 						continue;
 				}
 				writeln(format("%u\t%s\t%s\t%s\t%s\t%s\t%u\t%u\tXref:%s"
@@ -624,7 +624,7 @@ while(client.socket.is_connected && !quit) {
 				if(hdr.attr&MSG_VOTE)
 					continue;
 				if(msgbase.attributes & SMB_EMAIL) {
-					if(hdr.to_ext != user.number)
+					if(hdr.to_ext != user.number && hdr.from_ext != user.number)
 						continue;
 				}
 				var field="";
@@ -734,7 +734,7 @@ while(client.socket.is_connected && !quit) {
 				break;
 			}
 			if(msgbase.attributes & SMB_EMAIL) {
-				if(hdr.to_ext != user.number) {
+				if(hdr.to_ext != user.number && hdr.from_ext != user.number) {
 					writeln("430 message not for you");
 					break;
 				}
