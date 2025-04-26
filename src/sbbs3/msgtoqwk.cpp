@@ -507,7 +507,7 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 				snprintf(str, sizeof str, "%s---%c", text[QWKEndOfMessage], qwk_newline);      /* so add one */
 			else
 				SAFECOPY(str, text[QWKEndOfMessage]);
-			if (cfg.sub[subnum]->misc & SUB_ASCII)
+			if ((cfg.sub[subnum]->misc & SUB_ASCII) || smb_msg_is_ascii(msg))
 				ch = '*';
 			else
 				ch = CP437_BLACK_SQUARE;
