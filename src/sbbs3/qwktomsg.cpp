@@ -484,6 +484,8 @@ bool sbbs_t::qwk_import_msg(FILE *qwk_fp, char *hdrblk, uint blocks
 		const char* charset = FIDO_CHARSET_CP437;
 		if (msg->hdr.auxattr & MSG_HFIELDS_UTF8)
 			charset = FIDO_CHARSET_UTF8;
+		else if (smb_msg_is_ascii(msg) && str_is_ascii(body) && str_is_ascii(tail))
+			charset = FIDO_CHARSET_ASCII;
 		smb_hfield_str(msg, FIDOCHARSET, charset);
 	}
 
