@@ -20,16 +20,12 @@ var CENTER_JUSTIFY = 2;
 
 var DEFAULT_WIDTH = 80;
 
-// Default font directory and extension - adjust as needed for your Synchronet setup
-var FONT_DIR = system.ctrl_dir + 'tdfonts/'; // Assuming fonts directory is relative to the script
+var FONT_DIR = system.ctrl_dir + 'tdfonts/';
 var FONT_EXT = "tdf";
 var DEFAULT_FONT = "brndamgx";
 
 // Character list
 var charlist = "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
-
-// Synchronet JS does not have direct equivalents for gettimeofday and srand for seeding random.
-// We will use Math.random() directly for random font selection if needed.
 
 function loadfont(fn_arg) {
     var font = {}; // Use object for font_t
@@ -344,31 +340,45 @@ function reset_color()
 }
 
 function output(str, font) {
-	if (!font) { // Random font file selection
-		var fontDir = FONT_DIR;
-		var files = directory(fontDir + "/*.tdf"); // Get all .tdf files
-		if (files.length > 0) {
-			var randomIndex = random((files.length)+1);
-			var filename = file_getname(files[randomIndex]);
-			font = filename.replace(/\.tdf$/i, "");
-		}
-	}
-	if (typeof font == "string")
-		font = loadfont(font);
-	var width = getwidth(str, font);
-	if (width > screen_width() || (this.opt && opt.wrap)) { // Word-wrap
-		var array = str.split(/\s+/);
-		if (array.length > 1) {
-			var out = "";
-			while (str = array.shift()) {
-				out += output_line(str, font);
-				if (array.length && (!this.opt || opt.blankline !== false))
-					out += "\r\n";
+	var orgfont = font;
+	while (true) {
+		try {
+			if (!font) { // Random font file selection
+				var fontDir = FONT_DIR;
+				var files = directory(fontDir + "/*.tdf"); // Get all .tdf files
+				if (files.length > 0) {
+					var randomIndex = random((files.length)+1);
+					var filename = file_getname(files[randomIndex]);
+					font = filename.replace(/\.tdf$/i, "");
+				}
 			}
-			return out;
+			if (typeof font == "string")
+				font = loadfont(font);
+			var width = getwidth(str, font);
+			if (width > screen_width() || (this.opt && opt.wrap)) { // Word-wrap
+				var array = str.split(/\s+/);
+				if (array.length > 1) {
+					var out = "";
+					var word;
+					while (word = array.shift()) {
+						out += output_line(word, font);
+						if (array.length && (!this.opt || opt.blankline !== false))
+							out += "\r\n";
+					}
+					return out;
+				}
+			}
+			return output_line(str, font);
+		} catch(e) {
+			if (!orgfont && this.opt && opt.retry === true) {
+				if (opt.info)
+					alert("exception: " + e);
+				font = undefined;
+				continue;
+			}
+			throw e;
 		}
 	}
-	return output_line(str, font);
 }
 
 // Calculate the total width of the string using the font
@@ -420,9 +430,10 @@ function output_line(str, font) {
     if (justify === CENTER_JUSTIFY) {
         padding = Math.floor((width - linewidth) / 2);
     } else if (justify === RIGHT_JUSTIFY) {
-        padding = Math.floor(width - (linewidth + padding));
+        padding = width - (linewidth + padding);
     }
-	linewidth += Math.max(0, padding);
+	padding = Math.max(0, padding);
+	linewidth += padding;
 	if(linewidth > width)
 		throw new Error(format("Rendered line width (%u) > screen width (%u)", linewidth, width));
 

@@ -23,6 +23,7 @@ function usage() {
 	writeln("    -W        Always word-wrap the output");
 	writeln("    -i        Print font details");
 	writeln("    -r        Use random font and/or index (if not specified with -x)");
+	writeln("    -R        Use random font and auto-retry upon exception");
 	writeln("    -h        Print usage");
 	writeln("");
 	exit(1);
@@ -70,6 +71,9 @@ for(i = 0; i < argv.length; ++i) {
 		tdf.opt.info = true;
 	} else if (arg === "-r") {
 		tdf.opt.random = true;
+	} else if (arg === "-R") {
+		tdf.opt.random = true;
+		tdf.opt.retry = true;
 	} else if (arg === "-n") {
 		tdf.opt.blankline = false;
 	} else if (arg === "-W") {
