@@ -36,7 +36,7 @@ function loadfont(fn_arg) {
 
     // Construct font file path
     if (fn_arg.indexOf('/') === -1) {
-        if (fn_arg.indexOf('.') !== -1) {
+        if (file_getext(fn_arg)) {
             fn = file_getcase(FONT_DIR + fn_arg);
         } else {
             fn = file_getcase(FONT_DIR + fn_arg + "." + FONT_EXT);
@@ -339,17 +339,19 @@ function reset_color()
 	return "\x1b[0m";
 }
 
+function getlist() {
+	return directory(FONT_DIR + "*." + FONT_EXT); // Get all .tdf files
+}
+
 function output(str, font) {
 	var orgfont = font;
 	while (true) {
 		try {
 			if (!font) { // Random font file selection
-				var fontDir = FONT_DIR;
-				var files = directory(fontDir + "/*.tdf"); // Get all .tdf files
+				var files = getlist();
 				if (files.length > 0) {
 					var randomIndex = random((files.length)+1);
-					var filename = file_getname(files[randomIndex]);
-					font = filename.replace(/\.tdf$/i, "");
+					font = file_getname(files[randomIndex]);
 				}
 			}
 			if (typeof font == "string")

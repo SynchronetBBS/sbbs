@@ -22,6 +22,8 @@ function usage() {
 	writeln("    -n        No blank line between wrapped output lines");
 	writeln("    -W        Always word-wrap the output");
 	writeln("    -i        Print font details");
+	writeln("    -l        Loop through the available fonts");
+	writeln("    -p        Pause between fonts");
 	writeln("    -r        Use random font and/or index (if not specified with -x)");
 	writeln("    -R        Use random font and auto-retry upon exception");
 	writeln("    -h        Print usage");
@@ -30,7 +32,8 @@ function usage() {
 }
 
 var fontfile = null;
-
+var loopfonts = false;
+var pause = false;
 var input_string = "";
 for(i = 0; i < argv.length; ++i) {
 	var arg = argv[i];
@@ -69,6 +72,10 @@ for(i = 0; i < argv.length; ++i) {
 		tdf.opt.utf8 = true;
 	} else if (arg === "-i") {
 		tdf.opt.info = true;
+	} else if (arg === "-l") {
+		loopfonts = true;
+	} else if (arg === "-p") {
+		pause = true;
 	} else if (arg === "-r") {
 		tdf.opt.random = true;
 	} else if (arg === "-R") {
@@ -85,10 +92,23 @@ for(i = 0; i < argv.length; ++i) {
 	}
 }
 
-if (!fontfile && !tdf.opt.random)
+if (!fontfile && !tdf.opt.random && !loopfonts)
 	usage();
 
 if (!input_string)
 	usage();
 
-tdf.printstr(input_string, fontfile);
+if (loopfonts) {
+	var list = tdf.getlist();
+	for (var i in list) {
+		if (pause && i > 0)
+			prompt("Hit enter");
+		try {
+			tdf.printstr(input_string, list[i]);
+		} catch(e) {
+			if (tdf.opt.info)
+				print("exception: " + e);
+		}
+	}
+} else
+	tdf.printstr(input_string, fontfile);
