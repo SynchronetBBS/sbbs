@@ -422,8 +422,7 @@ function output_line(str, font) {
     } else if (justify === RIGHT_JUSTIFY) {
         padding = Math.floor(width - (linewidth + padding));
     }
-
-	linewidth += padding;
+	linewidth += Math.max(0, padding);
 	if(linewidth > width)
 		throw new Error(format("Rendered line width (%u) > screen width (%u)", linewidth, width));
 
@@ -462,7 +461,7 @@ function output_line(str, font) {
 
         // End the line and reset color
 		out += reset_color();
-		if(!(justify === RIGHT_JUSTIFY && margin == 0))
+		if(!(justify === RIGHT_JUSTIFY && padding == 0))
 			out += "\r\n";
     }
 	return out;
