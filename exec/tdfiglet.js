@@ -19,6 +19,8 @@ function usage() {
 	writeln("    -a        Enable ANSI sequences (default: Synchronet Ctrl-A)");
 	writeln("    -u        Encode characters as UTF-8 (default: CP437)");
 	writeln("    -x n      Index to font within file (default: 0)");
+	writeln("    -n        No blank line between wrapped output lines");
+	writeln("    -W        Always word-wrap the output");
 	writeln("    -i        Print font details");
 	writeln("    -r        Use random font and/or index (if not specified with -x)");
 	writeln("    -h        Print usage");
@@ -68,6 +70,10 @@ for(i = 0; i < argv.length; ++i) {
 		tdf.opt.info = true;
 	} else if (arg === "-r") {
 		tdf.opt.random = true;
+	} else if (arg === "-n") {
+		tdf.opt.blankline = false;
+	} else if (arg === "-W") {
+		tdf.opt.wrap = true;
 	} else if (arg === "-h") {
 		usage();
 	} else {

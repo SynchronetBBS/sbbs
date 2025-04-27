@@ -353,18 +353,30 @@ function output(str, font) {
 			font = filename.replace(/\.tdf$/i, "");
 		}
 	}
-
 	if (typeof font == "string")
 		font = loadfont(font);
+	var width = getwidth(str, font);
+	if (width > screen_width() || (this.opt && opt.wrap)) { // Word-wrap
+		var array = str.split(/\s+/);
+		if (array.length > 1) {
+			var out = "";
+			while (str = array.shift()) {
+				out += output_line(str, font);
+				if (array.length && (!this.opt || opt.blankline !== false))
+					out += "\r\n";
+			}
+			return out;
+		}
+	}
+	return output_line(str, font);
+}
 
-    var maxheight = font.height; // Use the pre-calculated max height from loadfont
-    var linewidth = 0;
-    var len = str.length;
-    var n = 0;
-	var out = "";
+// Calculate the total width of the string using the font
+function getwidth(str, font) {
+	var linewidth = 0;
 
     // Calculate the total width of the string using the font
-    for (var i = 0; i < len; i++) {
+    for (var i = 0; i < str.length; i++) {
         var char_index = lookupchar(str[i], font);
 
         if (char_index === -1) {
@@ -374,11 +386,14 @@ function output(str, font) {
         var g = font.glyphs[char_index];
 
         linewidth += g.width;
-        if (i < len - 1) { // Add spacing between characters, but not after the last one
+        if (i < str.length - 1) { // Add spacing between characters, but not after the last one
             linewidth += font.spacing;
         }
     }
+	return linewidth;
+}
 
+function screen_width() {
 	var width = this.opt && opt.width;
 	if (!width) {
 		if (js.global.console) // Auto-detect screen width, when possible
@@ -386,6 +401,17 @@ function output(str, font) {
 		else
 			width = DEFAULT_WIDTH;
 	}
+	return width;
+}
+
+function output_line(str, font) {
+    var maxheight = font.height; // Use the pre-calculated max height from loadfont
+    var linewidth = getwidth(str, font);
+    var len = str.length;
+    var n = 0;
+	var out = "";
+
+	var width = screen_width();
 
     var margin = this.opt && opt.margin ? opt.margin : 0;
 	var padding = margin;
