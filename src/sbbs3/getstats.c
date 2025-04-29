@@ -336,7 +336,7 @@ void parse_cstats(str_list_t record, stats_t* stats)
 /****************************************************************************/
 /* Returns the number of files in the directory 'dirnum'                    */
 /****************************************************************************/
-int getfiles(scfg_t* cfg, int dirnum)
+uint getfiles(scfg_t* cfg, int dirnum)
 {
 	char  path[MAX_PATH + 1];
 	off_t l;
@@ -347,7 +347,40 @@ int getfiles(scfg_t* cfg, int dirnum)
 	l = flength(path);
 	if (l <= 0)
 		return 0;
-	return (int)(l / sizeof(fileidxrec_t));
+	return (uint)(l / sizeof(fileidxrec_t));
+}
+
+/****************************************************************************/
+/****************************************************************************/
+uint getnewfiles(scfg_t* cfg, int dirnum, time_t ptr)
+{
+	uint      count = 0;
+	fileidxrec_t idx;
+	smb_t    smb = {{0}};
+
+	if (!dirnum_is_valid(cfg, dirnum))
+		return 0;
+	SAFEPRINTF2(smb.file, "%s%s", cfg->dir[dirnum]->data_dir, cfg->dir[dirnum]->code);
+	smb.retry_time = cfg->smb_retry_time;
+	if (smb_open_index(&smb) != SMB_SUCCESS)
+		return 0;
+
+	while (!smb_feof(smb.sid_fp)) {
+		if (smb_fread(&smb, &idx, sizeof idx, smb.sid_fp) != sizeof idx)
+			break;
+		if (idx.idx.time <= ptr)
+			continue;
+		if (idx.idx.attr & MSG_DELETE)
+			continue;
+		switch(smb_msg_type(idx.idx.attr)) {
+			case SMB_MSG_TYPE_FILE:
+				++count;
+			default:
+				continue;
+		}
+	}
+	smb_close(&smb);
+	return count;
 }
 
 /****************************************************************************/
@@ -376,6 +409,40 @@ uint getposts(scfg_t* cfg, int subnum)
 	size_t result = smb_msg_count(&smb, (1 << SMB_MSG_TYPE_NORMAL) | (1 << SMB_MSG_TYPE_POLL));
 	smb_close(&smb);
 	return result;
+}
+
+/****************************************************************************/
+/****************************************************************************/
+uint getnewposts(scfg_t* cfg, int subnum, uint32_t ptr)
+{
+	uint      count = 0;
+	idxrec_t idx;
+	smb_t    smb = {{0}};
+
+	if (!subnum_is_valid(cfg, subnum))
+		return 0;
+	SAFEPRINTF2(smb.file, "%s%s", cfg->sub[subnum]->data_dir, cfg->sub[subnum]->code);
+	smb.retry_time = cfg->smb_retry_time;
+	if (smb_open_index(&smb) != SMB_SUCCESS)
+		return 0;
+
+	while (!smb_feof(smb.sid_fp)) {
+		if (smb_fread(&smb, &idx, sizeof idx, smb.sid_fp) != sizeof idx)
+			break;
+		if (idx.number <= ptr)
+			continue;
+		if (idx.attr & MSG_DELETE)
+			continue;
+		switch(smb_msg_type(idx.attr)) {
+			case SMB_MSG_TYPE_NORMAL:
+			case SMB_MSG_TYPE_POLL:
+				++count;
+			default:
+				continue;
+		}
+	}
+	smb_close(&smb);
+	return count;
 }
 
 static void inc_xfer_stat_keys(str_list_t* ini, const char* section, uint files, uint64_t bytes, const char* files_key, const char* bytes_key)
