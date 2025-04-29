@@ -608,6 +608,8 @@ var WM_SUBJ_RO		=(1<<9);	/* Subject/title is read-only				*/
 var WM_EDIT			=(1<<10);	/* Editing existing message					*/
 var WM_FORCEFWD		=(1<<11);	/* Force "yes" to ForwardMailQ for email	*/
 var WM_NOFWD		=(1<<12);	/* Don't forward email to netmail			*/
+var WM_EXPANDLF     =(1<<13);   /* Insure CRLF-terminated lines             */
+var WM_CR_STRIP     =(1<<14);   /* Insure no carriage-returns in output     */
 								/********************************************/
 
 								/************************************************/
