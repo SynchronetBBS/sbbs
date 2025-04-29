@@ -155,12 +155,17 @@ int sbbs_t::process_edited_text(char* buf, FILE* stream, int mode, unsigned* lin
 		useron_xedit = 0;
 
 	for (l = i = 0; buf[l] && i < maxlines; l++) {
+		if (buf[l] == '\r' && (mode & WM_CR_STRIP))
+			continue;
 		if ((uchar)buf[l] == FIDO_SOFT_CR && useron_xedit
 		    && !(cfg.xedit[useron_xedit - 1]->misc & XTRN_UTF8)) {
 			i++;
 			switch (cfg.xedit[useron_xedit - 1]->soft_cr) {
 				case XEDIT_SOFT_CR_EXPAND:
-					len += fwrite(crlf, 1, 2, stream);
+					if (mode & WM_CR_STRIP)
+						len += fwrite("\n", 1, 1, stream);
+					else
+						len += fwrite(crlf, 1, 2, stream);
 					lastch = '\n';
 					continue;
 				case XEDIT_SOFT_CR_STRIP:
@@ -172,7 +177,7 @@ int sbbs_t::process_edited_text(char* buf, FILE* stream, int mode, unsigned* lin
 		}
 		/* Expand LF to CRLF? */
 		if (buf[l] == LF && (!l || buf[l - 1] != CR) &&
-			((mode & WM_CRLF) || (useron_xedit && cfg.xedit[useron_xedit - 1]->misc & EXPANDLF))) {
+			((mode & WM_EXPANDLF) || (useron_xedit && cfg.xedit[useron_xedit - 1]->misc & EXPANDLF))) {
 			len += fwrite(crlf, 1, 2, stream);
 			lastch = '\n';
 			i++;
@@ -220,7 +225,10 @@ int sbbs_t::process_edited_text(char* buf, FILE* stream, int mode, unsigned* lin
 		buf[l] = 0;
 	}
 	if (lastch != '\n') {
-		len += fwrite(crlf, 1, 2, stream);
+		if (mode & WM_CR_STRIP)
+			len += fwrite("\n", 1, 1, stream);
+		else
+			len += fwrite(crlf, 1, 2, stream);
 		++i;
 	}
 
@@ -737,7 +745,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 		free(buf);
 		return false;
 	}
-	l = process_edited_text(buf, stream, mode | WM_CRLF, &lines, cfg.level_linespermsg[useron_level]);
+	l = process_edited_text(buf, stream, mode | WM_EXPANDLF, &lines, cfg.level_linespermsg[useron_level]);
 	if (editor_details[0] && editor != NULL)
 		*editor = editor_details;
 	bool utf8 = !str_is_ascii(buf) && utf8_str_is_valid(buf);
@@ -1704,7 +1712,7 @@ bool sbbs_t::editmsg(smb_t* smb, smbmsg_t *msg)
 	msg_tmp_fname(useron.xedit, msgtmp, sizeof(msgtmp));
 	(void)removecase(msgtmp);
 	msgtotxt(smb, msg, msgtmp, /* header: */ false, /* mode: */ is_msg ? GETMSGTXT_ALL : GETMSGTXT_BODY_ONLY);
-	if (!editfile(msgtmp, cfg.level_linespermsg[useron.level], WM_CRLF, msg->to, msg->from, msg->subj, subnum_is_valid(smb->subnum) ? cfg.sub[smb->subnum]->sname : nulstr))
+	if (!editfile(msgtmp, cfg.level_linespermsg[useron.level], WM_EXPANDLF, msg->to, msg->from, msg->subj, subnum_is_valid(smb->subnum) ? cfg.sub[smb->subnum]->sname : nulstr))
 		return false;
 	length = (long)flength(msgtmp);
 	if (length < 1L)
