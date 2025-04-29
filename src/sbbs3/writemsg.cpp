@@ -155,14 +155,14 @@ int sbbs_t::process_edited_text(char* buf, FILE* stream, int mode, unsigned* lin
 		useron_xedit = 0;
 
 	for (l = i = 0; buf[l] && i < maxlines; l++) {
-		if (buf[l] == '\r' && (mode & WM_CR_STRIP))
+		if (buf[l] == '\r' && (mode & WM_STRIP_CR))
 			continue;
 		if ((uchar)buf[l] == FIDO_SOFT_CR && useron_xedit
 		    && !(cfg.xedit[useron_xedit - 1]->misc & XTRN_UTF8)) {
 			i++;
 			switch (cfg.xedit[useron_xedit - 1]->soft_cr) {
 				case XEDIT_SOFT_CR_EXPAND:
-					if (mode & WM_CR_STRIP)
+					if (mode & WM_STRIP_CR)
 						len += fwrite("\n", 1, 1, stream);
 					else
 						len += fwrite(crlf, 1, 2, stream);
@@ -225,7 +225,7 @@ int sbbs_t::process_edited_text(char* buf, FILE* stream, int mode, unsigned* lin
 		buf[l] = 0;
 	}
 	if (lastch != '\n') {
-		if (mode & WM_CR_STRIP)
+		if (mode & WM_STRIP_CR)
 			len += fwrite("\n", 1, 1, stream);
 		else
 			len += fwrite(crlf, 1, 2, stream);
