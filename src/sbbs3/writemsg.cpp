@@ -171,8 +171,8 @@ int sbbs_t::process_edited_text(char* buf, FILE* stream, int mode, unsigned* lin
 			}
 		}
 		/* Expand LF to CRLF? */
-		if (buf[l] == LF && (!l || buf[l - 1] != CR) && useron_xedit
-		    && cfg.xedit[useron_xedit - 1]->misc & EXPANDLF) {
+		if (buf[l] == LF && (!l || buf[l - 1] != CR) &&
+			((mode & WM_CRLF) || (useron_xedit && cfg.xedit[useron_xedit - 1]->misc & EXPANDLF))) {
 			len += fwrite(crlf, 1, 2, stream);
 			lastch = '\n';
 			i++;
@@ -737,7 +737,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 		free(buf);
 		return false;
 	}
-	l = process_edited_text(buf, stream, mode, &lines, cfg.level_linespermsg[useron_level]);
+	l = process_edited_text(buf, stream, mode | WM_CRLF, &lines, cfg.level_linespermsg[useron_level]);
 	if (editor_details[0] && editor != NULL)
 		*editor = editor_details;
 	bool utf8 = !str_is_ascii(buf) && utf8_str_is_valid(buf);
@@ -1272,13 +1272,13 @@ upload:
 /****************************************************************************/
 /* Edits an existing file or creates a new one in MSG format                */
 /****************************************************************************/
-bool sbbs_t::editfile(char *fname, uint maxlines, const char* to, const char* from, const char* subj, const char* msgarea, bool clean_quotes)
+bool sbbs_t::editfile(char *fname, uint maxlines, int wmode, const char* to, const char* from, const char* subj, const char* msgarea, bool clean_quotes)
 {
 	char *   buf, path[MAX_PATH + 1];
 	char     msgtmp[MAX_PATH + 1];
 	char     str[MAX_PATH + 1];
 	int      file;
-	long     length, l, mode = 0;
+	long     length, l, ex_mode = 0;
 	FILE*    stream;
 	unsigned lines;
 	ushort   useron_xedit = useron.xedit;
@@ -1316,21 +1316,21 @@ bool sbbs_t::editfile(char *fname, uint maxlines, const char* to, const char* fr
 
 		editor_inf(useron_xedit, to, from, subj, /* mode: */ 0, msgarea);
 		if (cfg.xedit[useron_xedit - 1]->misc & XTRN_NATIVE)
-			mode |= EX_NATIVE;
+			ex_mode |= EX_NATIVE;
 		if (cfg.xedit[useron_xedit - 1]->misc & XTRN_SH)
-			mode |= EX_SH;
+			ex_mode |= EX_SH;
 		if (cfg.xedit[useron_xedit - 1]->misc & XTRN_STDIO) {
-			mode |= EX_STDIO;
+			ex_mode |= EX_STDIO;
 			if (cfg.xedit[useron_xedit - 1]->misc & WWIVCOLOR)
-				mode |= EX_WWIV;
+				ex_mode |= EX_WWIV;
 		}
 		CLS;
 		rioctl(IOCM | PAUSE | ABORT);
-		if (external(cmdstr(cfg.xedit[useron_xedit - 1]->rcmd, msgtmp, nulstr, NULL, mode), mode, cfg.node_dir) != 0)
+		if (external(cmdstr(cfg.xedit[useron_xedit - 1]->rcmd, msgtmp, nulstr, NULL, ex_mode), ex_mode, cfg.node_dir) != 0)
 			return false;
 		if (!fexist(msgtmp))
 			return false;
-		l = process_edited_file(msgtmp, path, /* mode: */ WM_EDIT, &lines, maxlines);
+		l = process_edited_file(msgtmp, path, wmode | WM_EDIT, &lines, maxlines);
 		if (l > 0) {
 			SAFEPRINTF3(str, "created or edited file: %s (%ld bytes, %u lines)"
 			            , path, l, lines);
@@ -1377,7 +1377,7 @@ bool sbbs_t::editfile(char *fname, uint maxlines, const char* to, const char* fr
 		free(buf);
 		return false;
 	}
-	l = process_edited_text(buf, stream, /* mode: */ WM_EDIT, &lines, maxlines);
+	l = process_edited_text(buf, stream, wmode | WM_EDIT, &lines, maxlines);
 	bprintf(text[SavedNBytes], l, lines);
 	fclose(stream);
 	free(buf);
@@ -1704,7 +1704,7 @@ bool sbbs_t::editmsg(smb_t* smb, smbmsg_t *msg)
 	msg_tmp_fname(useron.xedit, msgtmp, sizeof(msgtmp));
 	(void)removecase(msgtmp);
 	msgtotxt(smb, msg, msgtmp, /* header: */ false, /* mode: */ is_msg ? GETMSGTXT_ALL : GETMSGTXT_BODY_ONLY);
-	if (!editfile(msgtmp, cfg.level_linespermsg[useron.level], msg->to, msg->from, msg->subj, subnum_is_valid(smb->subnum) ? cfg.sub[smb->subnum]->sname : nulstr))
+	if (!editfile(msgtmp, cfg.level_linespermsg[useron.level], WM_CRLF, msg->to, msg->from, msg->subj, subnum_is_valid(smb->subnum) ? cfg.sub[smb->subnum]->sname : nulstr))
 		return false;
 	length = (long)flength(msgtmp);
 	if (length < 1L)

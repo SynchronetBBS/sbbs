@@ -731,6 +731,7 @@ typedef enum {                       // Values for xtrn_t.event
 #define WM_EDIT     (1 << 10)     // Editing existing message
 #define WM_FORCEFWD (1 << 11)     // Force "yes" to ForwardMailQ for email
 #define WM_NOFWD    (1 << 12)     // Don't forward email to netmail
+#define WM_CRLF     (1 << 13)     // Insure CRLF-terminated lines
 
 // Bits in the mode of loadposts()
 #define LP_BYSELF   (1 << 0)      // Include messages sent by self

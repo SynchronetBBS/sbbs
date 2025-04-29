@@ -1679,7 +1679,8 @@ js_editfile(JSContext *cx, uintN argc, jsval *arglist)
 	char*      from{nullptr};
 	char*      subj{nullptr};
 	char*      msgarea{nullptr};
-	int32      maxlines = 10000;
+	int32      maxlines = 0;
+	int32      mode = 0;
 	bool       clean_quotes = true;
 	jsrefcount rc;
 	JSBool     result = JS_TRUE;
@@ -1691,9 +1692,16 @@ js_editfile(JSContext *cx, uintN argc, jsval *arglist)
 
 	for (uintN i = 0; i < argc; ++i) {
 		if (JSVAL_IS_NUMBER(argv[i])) {
-			if (!JS_ValueToInt32(cx, argv[i], &maxlines)) {
-				result = JS_FALSE;
-				break;
+			if (maxlines == 0) {
+				if (!JS_ValueToInt32(cx, argv[i], &maxlines)) {
+					result = JS_FALSE;
+					break;
+				}
+			} else {
+				if (!JS_ValueToInt32(cx, argv[i], &mode)) {
+					result = JS_FALSE;
+					break;
+				}
 			}
 			continue;
 		}
@@ -1730,8 +1738,10 @@ js_editfile(JSContext *cx, uintN argc, jsval *arglist)
 		result = JS_FALSE;
 	}
 	if (result == JS_TRUE) {
+		if (maxlines < 1)
+			maxlines = 10000;
 		rc = JS_SUSPENDREQUEST(cx);
-		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->editfile(path, maxlines, to, from, subj, msgarea, clean_quotes)));
+		JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->editfile(path, maxlines, mode, to, from, subj, msgarea, clean_quotes)));
 		JS_RESUMEREQUEST(cx, rc);
 	}
 	free(path);
@@ -2730,8 +2740,9 @@ static jsSyncMethodSpec js_console_functions[] = {
 	 , JSDOCSTR("Print the last <i>n</i> lines of file with optional print mode, original column width, and scope.")
 	 , 310
 	},
-	{"editfile",        js_editfile,        1, JSTYPE_BOOLEAN,      JSDOCSTR("filename [,<i>number</i> maxlines=10000] [,<i>string</i> to] [,<i>string</i> from] [,<i>string</i> subject] [,<i>string</i> msg_area] [,<i>bool</i> clean_quotes=true")
-	 , JSDOCSTR("Edit/create a text file using the user's preferred message editor with optional override values for the drop file created to communicate metadata to an external editor")
+	{"editfile",        js_editfile,        1, JSTYPE_BOOLEAN,      JSDOCSTR("filename [,<i>number</i> maxlines=10000] [,<i>number</i> mode=WM_NONE] [,<i>string</i> to] [,<i>string</i> from] [,<i>string</i> subject] [,<i>string</i> msg_area] [,<i>bool</i> clean_quotes=true")
+	 , JSDOCSTR("Edit/create a text file using the user's preferred message editor with optional override values for the drop file created to communicate metadata to an external editor.<br>"
+		"See <tt>sbbsdefs.js</tt> for possible <tt>WM_*</tt> mode flags.")
 	 , 310
 	},
 	{"uselect",         js_uselect,         0, JSTYPE_NUMBER,   JSDOCSTR("[<i>number</i> index, title, item] [,ars]")

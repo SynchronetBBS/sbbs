@@ -828,7 +828,7 @@ public:
 	bool	forwardmsg(smb_t*, smbmsg_t*, const char* to, const char* subject = NULL, const char* comment = NULL);
 	void	removeline(char *str, char *str2, char num, char skip);
 	uint	msgeditor(char *buf, const char *top, char *title, uint max_lines, uint max_line_len);
-	bool	editfile(char *path, uint max_lines = 10000, const char* to = NULL, const char* from = NULL, const char* subj = NULL, const char* msgarea = NULL, bool clean_quotes = true);
+	bool	editfile(char *path, uint max_lines = 10000, int wmode = WM_NONE, const char* to = NULL, const char* from = NULL, const char* subj = NULL, const char* msgarea = NULL, bool clean_quotes = true);
 	ushort	chmsgattr(const smbmsg_t*);
 	bool	quotemsg(smb_t*, smbmsg_t*, bool tails = false);
 	bool	editmsg(smb_t*, smbmsg_t*);
