@@ -2299,8 +2299,9 @@ void services_thread(void* arg)
 							continue;
 						}
 
-						lprintf(LOG_DEBUG, "%04d %s created client socket: %d"
-						        , service[i].set->socks[j].sock, service[i].protocol, client_socket);
+						inet_addrtop(&client_addr, host_ip, sizeof(host_ip));
+						lprintf(LOG_DEBUG, "%04d %s [%s] created client socket: %d"
+						        , service[i].set->socks[j].sock, service[i].protocol, host_ip, client_socket);
 
 						/* We need to set the REUSE ADDRESS socket option */
 						optval = true;
@@ -2370,8 +2371,8 @@ void services_thread(void* arg)
 						}
 						if (startup->socket_open != NULL)  /* Callback, increments socket counter */
 							startup->socket_open(startup->cbdata, true);
+						inet_addrtop(&client_addr, host_ip, sizeof(host_ip));
 					}
-					inet_addrtop(&client_addr, host_ip, sizeof(host_ip));
 
 					if (trashcan(&scfg, host_ip, "ip-silent")) {
 						FREE_AND_NULL(udp_buf);
