@@ -404,7 +404,7 @@ typedef enum {                       // Values for xtrn_t.event
 #define SWAP            (1 << 8)      // Swap for this door
 #define FREETIME        (1 << 9)      // Free time while in this door
 #define QUICKBBS        (1 << 10)     // QuickBBS style editor
-#define EXPANDLF        (1 << 11)     // Expand LF to CRLF editor
+#define EXPANDLF        (1 << 11)     // Expand LF to CRLF editor (deprecated)
 #define QUOTEALL        (1 << 12)     // Automatically quote all of msg
 #define QUOTENONE       (1 << 13)     // Automatically quote none of msg
 #define XTRN_NATIVE     (1 << 14)     // Native application (EX_NATIVE)

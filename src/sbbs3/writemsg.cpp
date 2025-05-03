@@ -179,8 +179,7 @@ int sbbs_t::process_edited_text(char* buf, FILE* stream, int mode, unsigned* lin
 			}
 		}
 		/* Expand LF to CRLF? */
-		if (buf[l] == LF && (!l || buf[l - 1] != CR) &&
-			((mode & WM_EXPANDLF) || (useron_xedit && cfg.xedit[useron_xedit - 1]->misc & EXPANDLF))) {
+		if (buf[l] == LF && (!l || buf[l - 1] != CR) && (mode & WM_EXPANDLF)) {
 			len += fwrite(crlf, 1, 2, stream);
 			lastch = '\n';
 			i++;

@@ -1755,8 +1755,6 @@ void xedit_cfg()
 				strlwr(str);
 			snprintf(opt[k++], MAX_OPLN, "%-32s%s %s", "Editor Information Files"
 			         , cfg.xedit[i]->misc & QUICKBBS ? "QuickBBS":"WWIV", str);
-			snprintf(opt[k++], MAX_OPLN, "%-32s%s", "Expand Line Feeds to CRLF"
-			         , cfg.xedit[i]->misc & EXPANDLF ? "Yes":"No");
 			const char* p;
 			if (cfg.xedit[i]->misc & XTRN_UTF8) {
 				p = "N/A";
@@ -2010,15 +2008,6 @@ void xedit_cfg()
 					goto lowercase_filename;
 					break;
 				case 12:
-					toggle_flag("Expand LF to CRLF"
-					            , &cfg.xedit[i]->misc, EXPANDLF, false,
-					            "`Expand Line Feeds to Carriage Return/Line Feed Pairs:`\n"
-					            "\n"
-					            "If this message editor saves new lines as a single line feed character\n"
-					            "instead of a carriage return/line feed pair, set this option to `Yes`.\n"
-					            );
-					break;
-				case 13:
 					if (cfg.xedit[i]->misc & XTRN_UTF8)
 						break; // N/A
 					k = cfg.xedit[i]->soft_cr;
@@ -2050,7 +2039,7 @@ void xedit_cfg()
 						uifc.changes = TRUE;
 					}
 					break;
-				case 14:
+				case 13:
 					toggle_flag("Strip FidoNet Kludge Lines"
 					            , &cfg.xedit[i]->misc, STRIPKLUDGE, false,
 					            "`Strip FidoNet Kludge Lines From Messages:`\n"
@@ -2059,7 +2048,7 @@ void xedit_cfg()
 					            "set this option to `Yes` to strip those lines from the message.\n"
 					            );
 					break;
-				case 15:
+				case 14:
 					toggle_flag("Support UTF-8 Encoding"
 					            , &cfg.xedit[i]->misc, XTRN_UTF8, false,
 					            "`Support UTF-8 Encoding:`\n"
@@ -2069,7 +2058,7 @@ void xedit_cfg()
 					            "option to `Yes`."
 					            );
 					break;
-				case 16:
+				case 15:
 					k = 0;
 					strcpy(opt[k++], "None");
 					snprintf(opt[k++], MAX_OPLN, "%-15s %s", "Synchronet", "XTRN.DAT");
