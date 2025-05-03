@@ -1725,16 +1725,16 @@ void xedit_cfg()
 		done = 0;
 		while (!done) {
 			k = 0;
-			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Name", cfg.xedit[i]->name);
-			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Internal Code", cfg.xedit[i]->code);
-			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Command Line", cfg.xedit[i]->rcmd);
-			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Access Requirements", cfg.xedit[i]->arstr);
-			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "I/O Method", io_method(cfg.xedit[i]->misc));
-			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", native_opt
+			snprintf(opt[k++], MAX_OPLN, "%-32s%s", "Name", cfg.xedit[i]->name);
+			snprintf(opt[k++], MAX_OPLN, "%-32s%s", "Internal Code", cfg.xedit[i]->code);
+			snprintf(opt[k++], MAX_OPLN, "%-32s%s", "Command Line", cfg.xedit[i]->rcmd);
+			snprintf(opt[k++], MAX_OPLN, "%-32s%s", "Access Requirements", cfg.xedit[i]->arstr);
+			snprintf(opt[k++], MAX_OPLN, "%-32s%s", "I/O Method", io_method(cfg.xedit[i]->misc));
+			snprintf(opt[k++], MAX_OPLN, "%-32s%s", native_opt
 			         , cfg.xedit[i]->misc & XTRN_NATIVE ? "Yes" : "No");
-			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", use_shell_opt
+			snprintf(opt[k++], MAX_OPLN, "%-32s%s", use_shell_opt
 			         , cfg.xedit[i]->misc & XTRN_SH ? "Yes" : "No");
-			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Record Terminal Width"
+			snprintf(opt[k++], MAX_OPLN, "%-32s%s", "Record Terminal Width"
 			         , cfg.xedit[i]->misc & SAVECOLUMNS ? "Yes" : "No");
 			str[0] = 0;
 			if (cfg.xedit[i]->misc & QUOTEWRAP) {
@@ -1743,17 +1743,19 @@ void xedit_cfg()
 				else
 					SAFEPRINTF(str, ", for %u columns", (uint)cfg.xedit[i]->quotewrap_cols);
 			}
-			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s%s", "Word-wrap Quoted Text"
+			snprintf(opt[k++], MAX_OPLN, "%-32s%s%s", "Word-wrap Quoted Text"
 			         , cfg.xedit[i]->misc & QUOTEWRAP ? "Yes":"No", str);
-			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Automatically Quoted Text"
+			snprintf(opt[k++], MAX_OPLN, "%-32s%s", "Retain Ctrl-A Codes in Quotes"
+			         , cfg.xedit[i]->misc & KEEP_CTRL_A ? "Yes":"No");
+			snprintf(opt[k++], MAX_OPLN, "%-32s%s", "Automatically Quoted Text"
 			         , cfg.xedit[i]->misc & QUOTEALL ? "All":cfg.xedit[i]->misc & QUOTENONE
 			        ? "None" : "Prompt User");
 			SAFECOPY(str, cfg.xedit[i]->misc & QUICKBBS ? "MSGINF/MSGTMP ": "EDITOR.INF/RESULT.ED");
 			if (cfg.xedit[i]->misc & XTRN_LWRCASE)
 				strlwr(str);
-			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s %s", "Editor Information Files"
+			snprintf(opt[k++], MAX_OPLN, "%-32s%s %s", "Editor Information Files"
 			         , cfg.xedit[i]->misc & QUICKBBS ? "QuickBBS":"WWIV", str);
-			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Expand Line Feeds to CRLF"
+			snprintf(opt[k++], MAX_OPLN, "%-32s%s", "Expand Line Feeds to CRLF"
 			         , cfg.xedit[i]->misc & EXPANDLF ? "Yes":"No");
 			const char* p;
 			if (cfg.xedit[i]->misc & XTRN_UTF8) {
@@ -1775,12 +1777,12 @@ void xedit_cfg()
 						break;
 				}
 			}
-			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Handle Soft CRs", p);
-			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Strip FidoNet Kludges"
+			snprintf(opt[k++], MAX_OPLN, "%-32s%s", "Handle Soft CRs", p);
+			snprintf(opt[k++], MAX_OPLN, "%-32s%s", "Strip FidoNet Kludges"
 			         , cfg.xedit[i]->misc & STRIPKLUDGE ? "Yes":"No");
-			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "Support UTF-8 Encoding"
+			snprintf(opt[k++], MAX_OPLN, "%-32s%s", "Support UTF-8 Encoding"
 			         , cfg.xedit[i]->misc & XTRN_UTF8 ? "Yes":"No");
-			snprintf(opt[k++], MAX_OPLN, "%-27.27s%s", "BBS Drop File Type"
+			snprintf(opt[k++], MAX_OPLN, "%-32s%s", "BBS Drop File Type"
 			         , dropfile(cfg.xedit[i]->type, cfg.xedit[i]->misc));
 			opt[k][0] = 0;
 			uifc.helpbuf =
@@ -1930,6 +1932,13 @@ void xedit_cfg()
 					}
 					break;
 				case 9:
+					toggle_flag("Retain Ctrl-A Codes in Quoted Text", &cfg.xedit[i]->misc, KEEP_CTRL_A, false
+						, "`Retain Ctrl-A Codes in Quoted Text:`\n"
+						"\n"
+						"If this editor supports Ctrl-A codes in the generated `QUOTES.TXT` file,\n"
+						"set this option to `Yes`.\n");
+					break;
+				case 10:
 					switch (cfg.xedit[i]->misc & (QUOTEALL | QUOTENONE)) {
 						case 0:     /* prompt user */
 							k = 2;
@@ -1975,7 +1984,7 @@ void xedit_cfg()
 						uifc.changes = TRUE;
 					}
 					break;
-				case 10:
+				case 11:
 					k = cfg.xedit[i]->misc & QUICKBBS ? 0:1;
 					strcpy(opt[0], "QuickBBS MSGINF/MSGTMP");
 					strcpy(opt[1], "WWIV EDITOR.INF/RESULT.ED");
@@ -2000,7 +2009,7 @@ void xedit_cfg()
 					}
 					goto lowercase_filename;
 					break;
-				case 11:
+				case 12:
 					toggle_flag("Expand LF to CRLF"
 					            , &cfg.xedit[i]->misc, EXPANDLF, false,
 					            "`Expand Line Feeds to Carriage Return/Line Feed Pairs:`\n"
@@ -2009,7 +2018,7 @@ void xedit_cfg()
 					            "instead of a carriage return/line feed pair, set this option to `Yes`.\n"
 					            );
 					break;
-				case 12:
+				case 13:
 					if (cfg.xedit[i]->misc & XTRN_UTF8)
 						break; // N/A
 					k = cfg.xedit[i]->soft_cr;
@@ -2041,7 +2050,7 @@ void xedit_cfg()
 						uifc.changes = TRUE;
 					}
 					break;
-				case 13:
+				case 14:
 					toggle_flag("Strip FidoNet Kludge Lines"
 					            , &cfg.xedit[i]->misc, STRIPKLUDGE, false,
 					            "`Strip FidoNet Kludge Lines From Messages:`\n"
@@ -2050,7 +2059,7 @@ void xedit_cfg()
 					            "set this option to `Yes` to strip those lines from the message.\n"
 					            );
 					break;
-				case 14:
+				case 15:
 					toggle_flag("Support UTF-8 Encoding"
 					            , &cfg.xedit[i]->misc, XTRN_UTF8, false,
 					            "`Support UTF-8 Encoding:`\n"
@@ -2060,7 +2069,7 @@ void xedit_cfg()
 					            "option to `Yes`."
 					            );
 					break;
-				case 15:
+				case 16:
 					k = 0;
 					strcpy(opt[k++], "None");
 					snprintf(opt[k++], MAX_OPLN, "%-15s %s", "Synchronet", "XTRN.DAT");

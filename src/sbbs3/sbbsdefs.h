@@ -421,6 +421,7 @@ typedef enum {                       // Values for xtrn_t.event
 #define XTRN_UART       (1 << 25)     // Enable the virtual UART driver
 #define XTRN_FOSSIL     (1 << 26)     // Enable the int14h/FOSSIL driver
 #define XTRN_NODISPLAY  (1 << 27)     // Disable local screen/display
+#define KEEP_CTRL_A     (1 << 28)     // Strip Ctrl-A quotes from quoted text
 #define XTRN_CONIO      (1U << 31)    // Intercept Windows Console I/O (Drwy)
 
 // Bits in user.qwk

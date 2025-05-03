@@ -92,7 +92,10 @@ bool sbbs_t::quotemsg(smb_t* smb, smbmsg_t* msg, bool tails)
 	if (tails)
 		mode |= GETMSGTXT_TAILS;
 	if ((buf = smb_getmsgtxt(smb, msg, mode)) != NULL) {
-		strip_invalid_attr(buf);
+		if (useron_xedit && (cfg.xedit[useron_xedit - 1]->misc & KEEP_CTRL_A))
+			strip_invalid_attr(buf);
+		else
+			remove_ctrl_a(buf, buf);
 		truncsp(buf);
 		BOOL is_utf8 = FALSE;
 		if (!str_is_ascii(buf)) {
@@ -395,14 +398,12 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 				free(buf);
 				return false;
 			}
-
 			if (useron_xedit > 0 && cfg.xedit[useron_xedit - 1]->type == XTRN_WWIV) { // 2 lines of metadata
 				if (fgets(str, sizeof(str), stream) == NULL)
 					errormsg(WHERE, ERR_READ, path, sizeof(str));
 				if (fgets(str, sizeof(str), stream) == NULL)
 					errormsg(WHERE, ERR_READ, path, sizeof(str));
 			}
-
 			if ((file = nopen(msgtmp, O_WRONLY | O_CREAT | O_TRUNC)) == -1) {
 				errormsg(WHERE, ERR_OPEN, msgtmp, O_WRONLY | O_CREAT | O_TRUNC);
 				free(buf);
