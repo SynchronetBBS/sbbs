@@ -67,11 +67,11 @@ console.print(format(bbs.text("Posting"), sub.grp_name, sub.description));
 var hdr = { from_ext: user.number, from:  sub.settings & SUB_NAME ? user.name : user.alias };
 console.print(bbs.text("PostTo"));
 hdr.to = console.getstr("All", LEN_ALIAS, K_EDIT | K_LINE | K_AUTODEL);
-if (!hdr.to)
+if (console.aborted || !hdr.to)
 	exit(0);
 console.print(bbs.text("SubjectPrompt"));
 hdr.subject = console.getstr(text, LEN_TITLE, K_EDIT | K_LINE)
-if (!hdr.subject)
+if (console.aborted || !hdr.subject)
 	exit(0);
 
 console.putmsg(bbs.text("Saving"));
