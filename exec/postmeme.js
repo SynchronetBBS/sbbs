@@ -43,8 +43,8 @@ var attr = [
 	"\x01H\x01W\x016",
 	"\x01N\x01K\x017",
 ];
-var border = Number(options.border);
-var color = Number(options.color);
+var border = options.border || 0;
+var color = options.color || 0;
 if (options.random) {
 	border = random(lib.BORDER_COUNT);
 	color = random(attr.length);
