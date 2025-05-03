@@ -3,7 +3,6 @@
 
 "use strict";
 
-// Note: BORDER_COUNT should *not* equal length of attr array
 var BORDER_NONE = 0;
 var BORDER_SINGLE = 1;
 var BORDER_MIXED1 = 2;
