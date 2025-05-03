@@ -49,6 +49,7 @@ const main_menu = {
 	 'L': { eval: 'bbs.list_msgs()' },
 	'/L': { eval: 'bbs.list_nodes()' },
 	 'M': { eval: 'bbs.time_bank()' },
+	'/M': { exec: 'postmeme.js' },
 	 'N': { eval: 'bbs.scan_subs(SCAN_NEW)'
 			,msg: '\r\n\x01c\x01h' + gettext("New Message Scan") + '\r\n' },
 	'/N': { eval: 'bbs.scan_subs(SCAN_NEW, /* all */true)' },
