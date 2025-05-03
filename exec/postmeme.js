@@ -5,19 +5,22 @@
 require("key_defs.js", "KEY_LEFT");
 require("sbbsdefs.js", "K_LINEWRAP");
 
+var options = load({}, "modopts.js", "postmeme");
+if (!options) options = {};
 var lib = load({}, "meme_lib.js");
 
 var maxMsgLen = 500;
 
-function choose(style)
+function choose(border)
 {
-	console.mnemonics(format("Style: ~@Next@, ~@Previous@, or ~@Quit@ [%u]: ", style));
-	switch(console.getkeys(KEY_LEFT + KEY_RIGHT + "\r" + console.next_key + console.prev_key + console.quit_key)) {
+	console.mnemonics(format("Style: ~Color, ~@Next@, ~@Previous@, or ~@Quit@ [%u]: ", border % lib.BORDER_COUNT));
+	switch(console.getkeys("C" + KEY_LEFT + KEY_RIGHT + "\r" + console.next_key + console.prev_key + console.quit_key)) {
 		case console.quit_key:
-			console.aborted = true;
-			return -1;
+			return false;
 		case '\r':
-			return 0;
+			return true;
+		case 'C':
+			return 'C';
 		case KEY_UP:
 		case KEY_LEFT:
 		case console.prev_key:
@@ -40,21 +43,30 @@ var attr = [
 	"\x01H\x01W\x016",
 	"\x01N\x01K\x017",
 ];
-var style = 0;
+var border = Number(options.border);
+var color = Number(options.color);
+if (options.random) {
+	border = random(lib.BORDER_COUNT);
+	color = random(attr.length);
+}
 var msg;
 while (!js.terminated) {
-	msg = lib.generate(attr[style % attr.length], style % lib.BORDER_COUNT, text);
+	msg = lib.generate(attr[color % attr.length], border  % lib.BORDER_COUNT, text);
 	console.clear();
 	print(msg);
-	var ch = choose(style);
-	if (console.aborted)
+	var ch = choose(border);
+	if (ch === false)
 		exit(1);
-	if (ch == 0)
+	if (ch === true)
 		break;
-	style += ch;
-	if (style < 0) {
-		console.beep();
-		style = 0;
+	if (ch === 'C') {
+		++color;
+	} else {
+		border += ch;
+		if (border < 0) {
+			console.beep();
+			border = 0;
+		}
 	}
 }
 
