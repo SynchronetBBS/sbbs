@@ -13,7 +13,6 @@
 require("key_defs.js", "KEY_LEFT");
 
 var lib = load({}, "meme_lib.js");
-var options = {};
 
 function choose(border)
 {
@@ -50,6 +49,7 @@ function main(text, options)
 		"\x01H\x01W\x016",
 		"\x01N\x01K\x017",
 	];
+	if (!options) options = {};
 	var justify = options.justify || 0;
 	var border = options.border || 0;
 	var color = options.color || 0;
