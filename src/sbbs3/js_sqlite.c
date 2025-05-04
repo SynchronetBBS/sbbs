@@ -49,6 +49,8 @@ typedef struct
 	BOOL	external;	/* externally created, don't close */
 	BOOL	debug; 
     char*   errormsg; /* last error message */
+//	jsval *		argv = JS_ARGV(cx, arglist);
+//	jsval		rval = JSVAL_VOID;
 
 } private_t;
 
@@ -73,15 +75,19 @@ static void dbprintf(BOOL error, private_t* p, char* fmt, ...)
 
 /* Sqlite Object Methods */
 
+//js_open(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
-js_open(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_open(JSContext *cx, uintN argc, jsval *arglist)
 {
 	int         rc;
-	jsint		bufsize=2*1024;
-	JSString*	str;
+//	jsint		bufsize=2*1024;
+//	JSString*	str;
 	private_t*	p;
+//	jsval		*rval;
+	JSObject *	obj = JS_THIS_OBJECT(cx, arglist);
 
-	*rval = JSVAL_FALSE;
+//	*rval = JSVAL_FALSE;
+	JS_SET_RVAL(cx,arglist,JSVAL_FALSE);
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
@@ -90,7 +96,8 @@ js_open(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
 	if(p->db!=NULL)  {
         dbprintf(FALSE,p, "db already open");
-        *rval = JSVAL_TRUE;
+		// *rval = JSVAL_TRUE;
+        JS_SET_RVAL(cx,arglist,JSVAL_TRUE);
 		return(JS_TRUE);
     }
     else {
@@ -99,22 +106,27 @@ js_open(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     
         if( rc ) {
             sqlite3_close(p->db);
-            *rval = JSVAL_FALSE;
+            // *rval = JSVAL_FALSE;
+			JS_SET_RVAL(cx,arglist,JSVAL_FALSE);
             p->errormsg = "can't open the database (path/permissions incorrect?)";
             dbprintf(FALSE, p, "can't open: %s",p->name);
             return (JS_TRUE);
         }
     }
     dbprintf(FALSE,p , "opened!");
-    *rval = JSVAL_TRUE;
+    //*rval = JSVAL_TRUE;
+	JS_SET_RVAL(cx,arglist,JSVAL_TRUE);
 	return(JS_TRUE);
 }
 
 
+//js_close(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 static JSBool
-js_close(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+js_close(JSContext *cx, uintN argc, jsval *arglist)
 {
 	private_t*	p;
+	// jsval		*rval;
+	JSObject *	obj = JS_THIS_OBJECT(cx, arglist);
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
@@ -122,7 +134,8 @@ js_close(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	}
 
 	if(p->db==NULL) {
-        *rval = JSVAL_FALSE;
+        //*rval = JSVAL_FALSE;
+		JS_SET_RVAL(cx,arglist,JSVAL_FALSE);
 		return(JS_TRUE);
     }
     sqlite3_close(p->db);
@@ -130,11 +143,13 @@ js_close(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 	dbprintf(FALSE, p, "closed: %s" , p->name);
     
 	p->db=NULL; 
-    *rval = JSVAL_TRUE;
+    //*rval = JSVAL_TRUE;
+	JS_SET_RVAL(cx,arglist,JSVAL_TRUE);
 	return(JS_TRUE);
 }
+//js_exec(JSContext *cx, JSObject *parent, uintN argc, jsval *argv, jsval *rval)
 static JSBool
-js_exec(JSContext *cx, JSObject *parent, uintN argc, jsval *argv, jsval *rval)
+js_exec(JSContext *cx, uintN argc, jsval *arglist)
 { 
     int rc,i;
 	private_t*	    p;
@@ -144,8 +159,11 @@ js_exec(JSContext *cx, JSObject *parent, uintN argc, jsval *argv, jsval *rval)
     sqlite3_stmt    *ppStmt;
 	jsval           val;
     jsuint          idx;
-    char*           column_name; // column name of Record
+//    char*           column_name; // column name of Record
 	size_t			stmt_sz = 0;
+//	jsval			*rval;
+	jsval *			argv = JS_ARGV(cx, arglist);
+	JSObject *		parent = JS_THIS_OBJECT(cx, arglist);
     
 	if((p=(private_t*)JS_GetPrivate(cx,parent))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
@@ -155,7 +173,7 @@ js_exec(JSContext *cx, JSObject *parent, uintN argc, jsval *argv, jsval *rval)
     if (argc > 0) {
         dbprintf (FALSE, p, "exec has stmt");
         str = JS_ValueToString(cx, argv[0]);
-        if( str != NULL) {
+        if(str != NULL) {
             // p->stmt = JS_GetStringBytes(str);
 			JSSTRING_TO_RASTRING(cx, str, p->stmt, &stmt_sz, NULL);
             dbprintf (FALSE, p, "exec param: %s", p->stmt);
@@ -163,7 +181,8 @@ js_exec(JSContext *cx, JSObject *parent, uintN argc, jsval *argv, jsval *rval)
     }
 	if(p->db==NULL) {
         dbprintf(TRUE, p, "database is not opened");
-        *rval = JSVAL_FALSE;
+        // *rval = JSVAL_FALSE;
+		JS_SET_RVAL(cx,arglist,JSVAL_FALSE);
 		return(JS_TRUE);
     }
 
@@ -174,7 +193,8 @@ js_exec(JSContext *cx, JSObject *parent, uintN argc, jsval *argv, jsval *rval)
     if (p->stmt == NULL) {
         dbprintf(FALSE, p, "empy statement");
         p->errormsg = "empty statement";
-        *rval = JSVAL_FALSE;
+        // *rval = JSVAL_FALSE;
+		JS_SET_RVAL(cx,arglist,JSVAL_FALSE);
         return(JS_TRUE);
     }
         
@@ -195,7 +215,7 @@ js_exec(JSContext *cx, JSObject *parent, uintN argc, jsval *argv, jsval *rval)
                         val = INT_TO_JSVAL(sqlite3_column_int(ppStmt,i)); 
                         break;
                     case SQLITE_TEXT:
-                        val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, sqlite3_column_text(ppStmt,i)));
+                        val = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, (const char *)sqlite3_column_text(ppStmt,i)));
                         break;
                     case SQLITE_BLOB:
                         break;
@@ -215,12 +235,14 @@ js_exec(JSContext *cx, JSObject *parent, uintN argc, jsval *argv, jsval *rval)
                 return(JS_FALSE);
         }
         dbprintf(FALSE, p , "end prepare");
-        *rval = OBJECT_TO_JSVAL(Result);
+        //*rval = OBJECT_TO_JSVAL(Result);
+		JS_SET_RVAL(cx,arglist,OBJECT_TO_JSVAL(Result));
         return(JS_TRUE);
     }
     else {
         p->errormsg = (char* ) sqlite3_errmsg(p->db);
-        *rval = JSVAL_FALSE;
+        //*rval = JSVAL_FALSE;
+		JS_SET_RVAL(cx,arglist,JSVAL_FALSE);
         dbprintf(FALSE, p , "prepare error: %s", sqlite3_errmsg(p->db));
         return(JS_TRUE);
     }
@@ -235,7 +257,7 @@ enum {
 };
 
 
-static JSBool js_sqlite_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+static JSBool js_sqlite_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval *vp)
 {
     jsint       tiny;
 	private_t*	p;
@@ -278,7 +300,7 @@ static JSBool js_sqlite_set(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 	return(JS_TRUE);
 }
 
-static JSBool js_sqlite_get(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+static JSBool js_sqlite_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 {
 	private_t*	p;
     jsint       tiny;
@@ -341,18 +363,14 @@ static char* sqlite_prop_desc[] = {
 
 static jsSyncMethodSpec js_sqlite_functions[] = {
 	{"open",			js_open,			1,	JSTYPE_BOOLEAN,	JSDOCSTR("Open the database")
-	,JSDOCSTR("open the sqlite3 database"
-		)
-	,310
-	},		
+	,JSDOCSTR("open the sqlite3 database")
+	,310},		
 	{"close",			js_close,			0,	JSTYPE_VOID,	JSDOCSTR("")
 	,JSDOCSTR("close database")
-	,310
-	},		
+	,310},		
 	{"exec",			js_exec,			0,	JSTYPE_BOOLEAN, JSDOCSTR("")
 	,JSDOCSTR("exec the sql query on database")
-	,310
-	},
+	,310},
 	{0}
 };
 
@@ -394,21 +412,21 @@ static JSClass js_sqlite_class = {
 
 //js_sqlite_constructor(JSContext *cx, JSObject *obj, uintN argc, jsval *argv)
 static JSBool
-js_sqlite_constructor(JSContext* cx, uintN argc, jsval *arglist, jsval *rval)
+js_sqlite_constructor(JSContext* cx, uintN argc, jsval *arglist)
 {
 	JSString*	str;
 	private_t*	p;
-	jsval*		argv = JS_ARGV(cx, arglist);
+	jsval *		argv = JS_ARGV(cx, arglist);
+	JSObject*  obj;
 	
 
-//	JSVALUE_TO_ASTRING(cx, argv[0], str, sizeof(argv[0]), NULL);
-//	if(str==NULL) {
+	obj = JS_NewObject(cx, &js_sqlite_class, NULL, NULL);
+	JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(obj));
+
 	if((str = JS_ValueToString(cx, argv[0]))==NULL) {
 		JS_ReportError(cx,"No filename specified");
 		return(JS_FALSE);
 	}
-
-	*rval = JSVAL_VOID;
 
 	if((p=(private_t*)calloc(1,sizeof(private_t)))==NULL) {
 		JS_ReportError(cx,"calloc failed");
