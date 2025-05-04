@@ -265,13 +265,15 @@ static JSBool js_sqlite_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
     JSString*	js_str;
     char*		strval=NULL;
 	size_t		js_str_sz = 0;
+	jsval		idval;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
 		return(JS_FALSE);
 	}
  
-    tiny = JSVAL_TO_INT(id);
+	JS_IdToValue(cx, id, &idval);
+    tiny = JSVAL_TO_INT(idval);
 
 	if(JSVAL_IS_NUMBER(*vp))
 		JS_ValueToInt32(cx, *vp, &intval);
@@ -307,13 +309,15 @@ static JSBool js_sqlite_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	private_t*	p;
     jsint       tiny;
 	JSString*	js_str=NULL;
+	jsval		idval;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
 		return(JS_FALSE);
 	}
 
-    tiny = JSVAL_TO_INT(id);
+	JS_IdToValue(cx, id, &idval);
+    tiny = JSVAL_TO_INT(idval);
 
 	dbprintf(FALSE, p, "getting property %d",tiny);
 
