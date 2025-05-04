@@ -358,6 +358,8 @@ bool sbbs_t::menu_exists(const char *code, const char* ext, char* path)
 			char modpath[MAX_PATH + 1];
 			snprintf(modprefix, sizeof modprefix, "%stext/menu/%s%s", cfg.mods_dir, subdir, code);
 			snprintf(modpath, sizeof modpath, "%s.%s", modprefix, ext);
+			FULLPATH(path, modpath, MAX_PATH);
+			SAFECOPY(modpath, path);
 			if (fexist(modpath)) {
 				FULLPATH(path, modprefix, MAX_PATH);
 				SAFECOPY(prefix, path);
@@ -408,6 +410,8 @@ bool sbbs_t::random_menu(const char *name, int mode, JSObject* obj)
 	if (cfg.mods_dir[0] != '\0') {
 		char modpath[MAX_PATH + 1];
 		SAFEPRINTF2(modpath, "%stext/menu/%s", cfg.mods_dir, name);
+		FULLPATH(path, modpath, sizeof path);
+		SAFECOPY(modpath, path);
 		if (fexist(modpath))
 			SAFECOPY(path, modpath);
 	}
