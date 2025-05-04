@@ -10,6 +10,8 @@
 //   line_fmt
 //   max_line_len
 //   backup_level
+//   meme (default: true)
+//   ... plus all the options supported by meme_chooser.js
 
 "use strict";
 
@@ -24,6 +26,10 @@ if(!options.max_line_len)
 	options.max_line_len = 76;
 if(options.backup_level === undefined)
 	options.backup_level = 10;
+if(options.mem !== false) {
+	options.max_line_len = 39;
+	options.line_fmt = "%s ";
+}
 
 function automsg()
 {
@@ -60,6 +66,10 @@ function automsg()
 						buf += format(fmt, str);
 					}
 				}
+				if(options.meme !== false)
+					buf = load("meme_chooser.js", buf, options);
+				if(!buf)
+					break;
 				if(console.yesno(bbs.text(OK))) {
 					var anon = false;
 					if(user.security.exemptions&UFLAG_A) {
