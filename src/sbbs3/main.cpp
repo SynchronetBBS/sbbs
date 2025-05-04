@@ -1633,6 +1633,10 @@ extern "C" bool js_CreateCommonObjects(JSContext* js_cx
 		if (js_CreateMQTTClass(js_cx, *glob) == NULL)
 			break;
 #endif
+		/* Sqlite Class */
+		if(js_CreateSqliteClass(js_cx, *glob)==NULL)
+			break;
+
 		/* Area Objects */
 		if (!js_CreateUserObjects(js_cx, *glob, cfg, /* user: */ NULL, client, startup == NULL ? NULL :startup->web_file_vpath_prefix, /* subscan: */ NULL, mqtt))
 			break;

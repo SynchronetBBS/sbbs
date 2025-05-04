@@ -122,6 +122,8 @@ else
  FILE_LIBS	= -larchive
 endif
 
+JS_LIBS += $(shell pkg-config --libs sqlite3)
+
 include sbbsdefs.mk
 MT_CFLAGS	+=	$(SBBSDEFS) $(SFTP-MT_CFLAGS)
 
