@@ -409,9 +409,10 @@ bool sbbs_t::random_menu(const char *name, int mode, JSObject* obj)
 	SAFEPRINTF2(path, "%smenu/%s", cfg.text_dir, name);
 	if (cfg.mods_dir[0] != '\0') {
 		char modpath[MAX_PATH + 1];
+		char tmppath[MAX_PATH + 1];
 		SAFEPRINTF2(modpath, "%stext/menu/%s", cfg.mods_dir, name);
-		FULLPATH(path, modpath, sizeof path);
-		SAFECOPY(modpath, path);
+		FULLPATH(tmppath, modpath, sizeof tmppath);
+		SAFECOPY(modpath, tmppath);
 		if (fexist(modpath))
 			SAFECOPY(path, modpath);
 	}
