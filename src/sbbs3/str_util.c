@@ -794,3 +794,25 @@ char* make_newsgroup_name(char* str)
 		str[c] = '_';
 	return str;
 }
+
+size_t widest_line(const char* str)
+{
+	size_t widest = 0;
+	size_t width = 0;
+
+	for (size_t i = 0; str[i] != '\0'; ++i) {
+		if (str[i] == '\n') {
+			if (width > widest)
+				widest = width;
+			width = 0;
+		} else if(str[i] == CTRL_A) {
+			++i;
+			if (str[i] == '\0' || str[i] == 'Z')
+				break;
+		} else if(str[i] != '\r')
+			++width;
+	}
+	if (width > widest)
+		return width;
+	return widest;
+}
