@@ -125,6 +125,13 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 				l += 9; // Skip "<NUL>WRAPOFF@"
 		}
 	}
+	if (mode & P_CENTER) {
+		size_t widest = widest_line(str + l);
+		if (widest < term->cols && term->column == 0) {
+			term->cursor_right((term->cols - widest) / 2);
+			mode |= P_INDENT;
+		}
+	}
 
 	while (l < len && (mode & P_NOABORT || !msgabort()) && online) {
 		switch (str[l]) {
