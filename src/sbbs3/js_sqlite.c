@@ -101,7 +101,7 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 		return(JS_TRUE);
     }
     else {
-        dbprintf(FALSE, p , "triying open");
+        dbprintf(FALSE, p , "trying open");
         rc = sqlite3_open(p->name,&p->db);
     
         if( rc ) {
@@ -264,6 +264,7 @@ static JSBool js_sqlite_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
     int32       intval=0;
     JSString*	js_str;
     char*		strval=NULL;
+	size_t		js_str_sz = 0;
 
 	if((p=(private_t*)JS_GetPrivate(cx,obj))==NULL) {
 		JS_ReportError(cx,getprivate_failure,WHERE);
@@ -280,7 +281,8 @@ static JSBool js_sqlite_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 		if((js_str = JS_ValueToString(cx, *vp))==NULL)
 			return(JS_FALSE);
 //		strval=JS_GetStringBytes(js_str);
-		JSSTRING_TO_ASTRING(cx, js_str, strval, 128, NULL);
+//		JSSTRING_TO_ASTRING(cx, js_str, strval, 128, NULL);
+		JSSTRING_TO_RASTRING(cx, js_str, strval, &js_str_sz, NULL);
 	}
 
 	dbprintf(FALSE, p, "setting property %d",tiny);
@@ -433,6 +435,8 @@ js_sqlite_constructor(JSContext* cx, uintN argc, jsval *arglist)
 		return(JS_FALSE);
 	}
 
+	p->errormsg = "";
+
 //	SAFECOPY(p->name,JS_GetStringBytes(str));
 	JSSTRING_TO_STRBUF(cx, str, p->name, sizeof(p->name), NULL);
 
@@ -472,40 +476,6 @@ JSObject* js_CreateSqliteClass(JSContext* cx, JSObject* parent)
 		,NULL	/* props, set in constructor */
 		,NULL	/* funcs, set in constructor */
 		,NULL,NULL);
-}
-
-JSObject* js_CreateSqliteObject(JSContext* cx, JSObject* parent, char *name, sqlite3* db)
-{
-	JSObject* obj;
-	private_t*	p;
-
-	obj = JS_DefineObject(cx, parent, name, &js_sqlite_class, NULL
-		,JSPROP_ENUMERATE|JSPROP_READONLY);
-
-	if(obj==NULL)
-		return(NULL);
-
-	if(!js_DefineSyncProperties(cx, obj, js_sqlite_properties))
-		return(NULL);
-
-	if (!js_DefineSyncMethods(cx, obj, js_sqlite_functions /*, FALSE - only needs 3 */)) 
-		return(NULL);
-
-	if((p=(private_t*)calloc(1,sizeof(private_t)))==NULL)
-		return(NULL);
-
-	p->db=db;
-	p->debug=JS_FALSE;
-	p->external=JS_TRUE;
-    p->errormsg = JS_FALSE;
-	if(!JS_SetPrivate(cx, obj, p)) {
-		dbprintf(TRUE, p, "JS_SetPrivate failed\n");
-		return(NULL);
-	}
-
-	dbprintf(FALSE, p, "object created\n");
-
-	return(obj);
 }
 
 #endif	/* JAVASCRIPT */
