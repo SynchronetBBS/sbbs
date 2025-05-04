@@ -25,6 +25,7 @@ function usage()
 	print("\t-T<date/time> set message date and time in string format supported by JS Date()");
 	print("\t-d            use default values (no prompt) for to, from, and subject");
 	print("\t-F            set file request attribute flag");
+	print("\t-P            set message format to 'Fixed' (pre-formatted text)");
 	print();
 	print("Note: You may need to enclose multi-word options in quotes (e.g. \"-fMy Name\")");
 	print();
@@ -52,6 +53,9 @@ for(var i in argv) {
 					break;
 				case 'F':
 					hdrs.auxattr = MSG_FILEREQUEST;
+					break;
+				case 'P':
+					hdrs.auxattr = MSG_FIXED_FORMAT;
 					break;
 				case 'e':
 					if(val.length)

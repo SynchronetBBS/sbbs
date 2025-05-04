@@ -101,7 +101,7 @@ void sbbs_t::show_msgattr(const smbmsg_t* msg)
 	              );
 
 	char auxattr_str[64];
-	safe_snprintf(auxattr_str, sizeof(auxattr_str), "%s%s%s%s%s%s%s"
+	safe_snprintf(auxattr_str, sizeof(auxattr_str), "%s%s%s%s%s%s%s%s"
 	              , auxattr & MSG_FILEREQUEST? "FileRequest  "   :nulstr
 	              , auxattr & MSG_FILEATTACH ? "FileAttach  "    :nulstr
 	              , auxattr & MSG_MIMEATTACH ? "MimeAttach  "    :nulstr
@@ -109,6 +109,7 @@ void sbbs_t::show_msgattr(const smbmsg_t* msg)
 	              , auxattr & MSG_RECEIPTREQ ? "ReceiptReq  "    :nulstr
 	              , auxattr & MSG_CONFIRMREQ ? "ConfirmReq  "    :nulstr
 	              , auxattr & MSG_NODISP     ? "DontDisplay  "   :nulstr
+	              , auxattr & MSG_FIXED_FORMAT ? "FixedFormat "  :nulstr
 	              );
 
 	char netattr_str[64];
@@ -347,6 +348,8 @@ bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, int p_mode, post_t* post)
 	}
 	if (console & CON_RAW_IN)
 		p_mode = P_NOATCODES;
+	else if (msg->hdr.auxattr & MSG_FIXED_FORMAT)
+		p_mode &= ~(P_WORDWRAP | P_MARKUP);
 	putmsg(p, p_mode, msg->columns);
 	smb_freemsgtxt(txt);
 	if (term->column)

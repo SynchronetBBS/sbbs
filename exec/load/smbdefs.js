@@ -69,6 +69,7 @@ const MSG_KILLFILE			= (1<<3);	// Delete file(s) when sent
 const MSG_RECEIPTREQ		= (1<<4);	// Return receipt requested
 const MSG_CONFIRMREQ		= (1<<5);	// Confirmation receipt requested
 const MSG_NODISP			= (1<<6);	// Msg may not be displayed to user
+const MSG_FIXED_FORMAT		= (1<<7);   // Pre-formatted message body text
 const MSG_HFIELDS_UTF8		= (1<<13);	// Message header fields are UTF-8 encoded
 const POLL_CLOSED			= (1<<24);	// Closed to voting
 const POLL_RESULTS_MASK		= (3<<30);	// 4 possible values:

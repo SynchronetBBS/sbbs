@@ -27,7 +27,7 @@ if (!msg)
 var sub = msg_area.sub[bbs.cursub_code];
 console.print(format(bbs.text("Posting"), sub.grp_name, sub.description));
 
-var hdr = { from_ext: user.number, from:  sub.settings & SUB_NAME ? user.name : user.alias };
+var hdr = { auxattr: MSG_FIXED_FORMAT, from_ext: user.number, from:  sub.settings & SUB_NAME ? user.name : user.alias };
 console.print(bbs.text("PostTo"));
 hdr.to = console.getstr("All", LEN_ALIAS, K_EDIT | K_LINE | K_AUTODEL);
 if (console.aborted || !hdr.to)

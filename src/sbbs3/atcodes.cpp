@@ -2109,7 +2109,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 	if (!strcmp(sp, "MSG_AUXATTR") && current_msg != NULL) {
-		safe_snprintf(str, maxlen, "%s%s%s%s%s%s%s"
+		safe_snprintf(str, maxlen, "%s%s%s%s%s%s%s%s"
 		              , current_msg->hdr.auxattr & MSG_FILEREQUEST   ? "FileRequest  "   :nulstr
 		              , current_msg->hdr.auxattr & MSG_FILEATTACH    ? "FileAttach  "    :nulstr
 		              , current_msg->hdr.auxattr & MSG_MIMEATTACH    ? "MimeAttach  "    :nulstr
@@ -2117,6 +2117,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		              , current_msg->hdr.auxattr & MSG_RECEIPTREQ    ? "ReceiptReq  "    :nulstr
 		              , current_msg->hdr.auxattr & MSG_CONFIRMREQ    ? "ConfirmReq  "    :nulstr
 		              , current_msg->hdr.auxattr & MSG_NODISP        ? "DontDisplay  "   :nulstr
+		              , current_msg->hdr.auxattr & MSG_FIXED_FORMAT  ? "FixedFormat "    :nulstr
 		              );
 		return str;
 	}

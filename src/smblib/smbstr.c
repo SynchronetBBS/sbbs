@@ -483,6 +483,7 @@ char* smb_auxattrstr(int32_t attr, char* outstr, size_t maxlen)
 	MSG_ATTR_CHECK(attr, RECEIPTREQ);
 	MSG_ATTR_CHECK(attr, CONFIRMREQ);
 	MSG_ATTR_CHECK(attr, NODISP);
+	MSG_ATTR_CHECK(attr, FIXED_FORMAT);
 	MSG_ATTR_CHECK(attr, HFIELDS_UTF8);
 	if (attr & POLL_CLOSED)
 		sprintf(str + strlen(str), "%sPOLL-CLOSED", str[0] == 0 ? "" : ", ");

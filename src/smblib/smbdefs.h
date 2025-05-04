@@ -304,6 +304,7 @@ typedef unsigned char uchar;
 #define MSG_RECEIPTREQ      (1 << 4)      /* Return receipt requested */
 #define MSG_CONFIRMREQ      (1 << 5)      /* Confirmation receipt requested */
 #define MSG_NODISP          (1 << 6)      /* Msg may not be displayed to user */
+#define MSG_FIXED_FORMAT    (1 << 7)      /* Preformatted message body text */
 #define MSG_HFIELDS_UTF8    (1 << 13)     /* Message header fields are UTF-8 encoded */
 #define POLL_CLOSED         (1 << 24)     /* Closed to voting */
 #define POLL_RESULTS_MASK   (3U << 30)    /* 4 possible values: */

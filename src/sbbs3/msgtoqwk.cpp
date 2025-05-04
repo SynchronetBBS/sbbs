@@ -123,6 +123,7 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 		fprintf(hdrs, "Utf8 = %s\n"
 		        , ((smb_msg_is_utf8(msg) || (msg->hdr.auxattr & MSG_HFIELDS_UTF8)) && (mode & QM_UTF8))
 		        ? "true" : "false");
+		fprintf(hdrs, "Format = %s\n", (msg->hdr.auxattr & MSG_FIXED_FORMAT) ? "fixed" : "flowed");
 
 		/* Message-IDs */
 		fprintf(hdrs, "%s: %s\n", smb_hfieldtype(RFC822MSGID), msgid);

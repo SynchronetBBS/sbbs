@@ -1215,6 +1215,7 @@ int create_netmail(const char *to, const smbmsg_t* msg, const char *subject, con
 				charset = FIDO_CHARSET_CP437;
 		}
 		fprintf(fp, "\1CHRS: %s\r", charset);
+		fprintf(fp, "\1FORMAT: %s\r", (msg->hdr.auxattr & MSG_FIXED_FORMAT) ? "fixed" : "flowed");
 		if (msg->editor != NULL)
 			fprintf(fp, "\1NOTE: %s\r", msg->editor);
 		if (subject != msg->subj)
@@ -3643,6 +3644,15 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint usernumber, uint subnum)
 					smb_hfield_bin(&msg, SMB_COLUMNS, columns);
 			}
 
+			else if (!strncmp(fbuf + l + 1, "FORMAT:", 7)) {   /* SBBSecho */
+				l += 8;
+				while (l < length && fbuf[l] == ' ') l++;
+				m = l;
+				while (m < length && fbuf[m] != '\r') m++;
+				if (strnicmp(fbuf + l, "fixed", m - l) == 0)
+					msg.hdr.auxattr |= MSG_FIXED_FORMAT;
+			}
+
 			else if (!strncmp(fbuf + l + 1, "BBSID:", 6)) {
 				l += 7;
 				while (l < length && fbuf[l] <= ' ' && fbuf[l] >= 0) l++;
@@ -5158,6 +5168,7 @@ ulong export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool resca
 					charset = FIDO_CHARSET_CP437;
 			}
 			f += sprintf(fmsgbuf + f, "\1CHRS: %s\r", charset);
+			f += sprintf(fmsgbuf + f, "\1FORMAT: %s\r", (msg.hdr.auxattr & MSG_FIXED_FORMAT) ? "fixed" : "flowed");
 			if (msg.editor != NULL)
 				f += sprintf(fmsgbuf + f, "\1NOTE: %s\r", msg.editor);
 

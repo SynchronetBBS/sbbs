@@ -78,6 +78,7 @@ bool sbbs_t::postmsg(int subnum, int wm_mode, smb_t* resmb, smbmsg_t* remsg)
 	char*       msgbuf = NULL;
 	uint16_t    xlat;
 	ushort      msgattr = 0;
+	uint32_t    auxattr = (console & CON_RAW_IN) ? MSG_FIXED_FORMAT : 0;
 	int         i, storage;
 	int         dupechk_hashes;
 	int         length;
@@ -285,6 +286,7 @@ bool sbbs_t::postmsg(int subnum, int wm_mode, smb_t* resmb, smbmsg_t* remsg)
 
 	memset(&msg, 0, sizeof(msg));
 	msg.hdr.attr = msgattr;
+	msg.hdr.auxattr = auxattr;
 	msg.hdr.when_written = smb_when(time(NULL), sys_timezone(&cfg));
 	msg.hdr.when_imported.time = time32(NULL);
 	msg.hdr.when_imported.zone = msg.hdr.when_written.zone;
