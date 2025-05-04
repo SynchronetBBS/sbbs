@@ -81,6 +81,8 @@
  *                            F & L keys working again on the light bar menu (first & last page).
  *                            Fix to ensure the header lines are written in the proper place after
  *                            showing help.
+ * 2025-05-03 Eric Oulashin   Version 1.42d
+ *                            Fix: Displays the configured area change header again
  */
 
 // TODO: Failing silently when 1st argument is true
@@ -121,8 +123,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_FILE_AREA_CHOOSER_VERSION = "1.42c";
-var DD_FILE_AREA_CHOOSER_VER_DATE = "2025-04-21";
+var DD_FILE_AREA_CHOOSER_VERSION = "1.42d";
+var DD_FILE_AREA_CHOOSER_VER_DATE = "2025-05-03";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -401,6 +403,14 @@ function DDFileAreaChooser_SelectFileArea(pChooseLib)
 	while (selectionLoopContinueOn)
 	{
 		console.clear("\x01n");
+
+		// Write the header ANSI/ASC if there is one
+		if (this.areaChangeHdrLines.length > 0)
+		{
+			this.DisplayAreaChgHdr(1, false);
+			console.attributes = "N";
+			console.crlf();
+		}
 
 		// If we're displaying the file libraries (top level), then we'll output 1
 		// header line; otherwise, we'll output 2 header line; adjut the top line
