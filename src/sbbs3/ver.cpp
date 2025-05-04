@@ -27,6 +27,9 @@
 #include "git_branch.h"
 #include "ver.h"
 #include <archive.h>
+#ifdef USE_SQLITE3
+#include <sqlite3.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -139,6 +142,13 @@ void sbbs_t::ver()
 	term->center(str);
 	CRLF;
 #endif
+
+#ifdef USE_SQLITE3
+	safe_snprintf(str, sizeof(str), "libsqlite3 %s (%u)", SQLITE_VERSION, SQLITE_VERSION_NUMBER);
+	term->center(str);
+	CRLF;
+#endif
+	
 
 	safe_snprintf(str, sizeof(str), "%s %s", os_version(os, sizeof(os)), os_cpuarch(cpu, sizeof(cpu)));
 	term->center(str);

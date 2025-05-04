@@ -300,14 +300,15 @@ static JSBool js_sqlite_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	return JS_TRUE;
 }
 
-#define SQLITE_PROP_FLAGS JSPROP_ENUMERATE | JSPROP_READONLY
+#define SQLITE_PROP_FLAGS JSPROP_ENUMERATE
+#define SQLITE_PROP_ROFLAGS JSPROP_ENUMERATE | JSPROP_READONLY
 
 static jsSyncPropertySpec js_sqlite_properties[] = {
 /*		 name				,tinyid					,flags,				ver	*/
-	{   "name", SQLITE_PROP_NAME, JSPROP_ENUMERATE | JSPROP_READONLY,  310},
-	{   "stmt", SQLITE_PROP_STMT, JSPROP_ENUMERATE,  310},
-	{   "debug", SQLITE_PROP_DEBUG, JSPROP_ENUMERATE,  310},
-	{   "errormsg", SQLITE_PROP_ERRORMSG, JSPROP_ENUMERATE | JSPROP_READONLY,  310},
+	{   "name", SQLITE_PROP_NAME, SQLITE_PROP_ROFLAGS,  321},
+	{   "stmt", SQLITE_PROP_STMT, JSPROP_ENUMERATE,  321},
+	{   "debug", SQLITE_PROP_DEBUG, JSPROP_ENUMERATE,  321},
+	{   "errormsg", SQLITE_PROP_ERRORMSG, SQLITE_PROP_ROFLAGS,  321},
 	{0}
 };
 
@@ -325,13 +326,13 @@ static char*            sqlite_prop_desc[] = {
 static jsSyncMethodSpec js_sqlite_functions[] = {
 	{"open",            js_open,            1,  JSTYPE_BOOLEAN, JSDOCSTR("Open the database")
 	 , JSDOCSTR("open the sqlite3 database")
-	 , 310},
+	 , 321},
 	{"close",           js_close,           0,  JSTYPE_VOID,    JSDOCSTR("")
 	 , JSDOCSTR("close database")
-	 , 310},
+	 , 321},
 	{"exec",            js_exec,            0,  JSTYPE_BOOLEAN, JSDOCSTR("")
 	 , JSDOCSTR("exec the sql query on database")
-	 , 310},
+	 , 321},
 	{0}
 };
 
@@ -413,7 +414,7 @@ js_sqlite_constructor(JSContext* cx, uintN argc, jsval *arglist)
 
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx, obj, "Can used to manipulate sqlite database"
-	                      , 310
+	                      , 321
 	                      );
 	js_DescribeSyncConstructor(cx, obj, "To create a new Sqlite object: <tt>var f = new Sqlite(<i>filename</i>)</tt>");
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", sqlite_prop_desc, JSPROP_READONLY);

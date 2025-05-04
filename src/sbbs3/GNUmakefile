@@ -104,6 +104,14 @@ ifndef WITHOUT_MOSQUITTO
   endif
  endif
 endif
+ifndef WITHOUT_SQLITE3
+ ifneq ($(os), win32)
+  ifeq ($(shell pkg-config 'sqlite3' --exists && echo "yes"),yes)
+   CFLAGS += -DUSE_SQLITE3
+   JS_LIBS += $(shell pkg-config sqlite3 --libs)
+  endif
+ endif
+endif
 ifeq ($(shell pkg-config libarchive --exists && echo "yes"),yes)
  CFLAGS += $(shell pkg-config libarchive --cflags)
  FILE_LIBS	= $(shell pkg-config libarchive --libs)
@@ -121,8 +129,6 @@ else
  endif
  FILE_LIBS	= -larchive
 endif
-
-JS_LIBS += $(shell pkg-config --libs sqlite3)
 
 include sbbsdefs.mk
 MT_CFLAGS	+=	$(SBBSDEFS) $(SFTP-MT_CFLAGS)

@@ -1559,6 +1559,7 @@ extern "C" {
 
 	/* js_sqlite.c */
 	DLLEXPORT JSObject* js_CreateSqliteClass(JSContext* cx, JSObject* parent);
+
 	DLLEXPORT JSObject* js_CreateMQTTClass(JSContext*, JSObject* parent);
 #endif
 
