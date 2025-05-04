@@ -195,7 +195,10 @@ if (!(bbs.sys_status&SS_RLOGIN) || options.rlogin_xtrn_logon !== false) {
 	// Auto-message
 	const auto_msg = system.data_dir + "msgs/auto.msg"
 	if(file_size(auto_msg)>0) {
-		console.printfile(auto_msg,P_NOATCODES|P_WORDWRAP);
+		var pmode = P_NOATCODES|P_WORDWRAP;
+		if(options.center_automsg)
+			pmode |= P_CENTER;
+		console.printfile(auto_msg, pmode);
 	}
 	console.crlf();
 
