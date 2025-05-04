@@ -218,6 +218,8 @@ var   P_HIDEMARKS	=(1<<17);	/* Hide the mark-up tags					*/
 var   P_REMOTE		=(1<<18);	/* Only print when online == ON_REMOTE		*/
 var   P_INDENT		=(1<<19);	/* Indent lines to current cursor column	*/
 var   P_ATCODES		=(1<<20);	/* Trusted @-codes in formatted string		*/
+var   P_MODS        =(1<<21);   // Display from mods/text dir, if file is there
+var   P_CENTER      =(1<<22);   // Center the output based on widest line
 							    /********************************************/
 
     							/********************************************/
