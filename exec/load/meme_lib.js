@@ -14,6 +14,11 @@ var BORDER_ORNATE2 = 7;
 var BORDER_ORNATE3 = 8;
 var BORDER_COUNT = 9;
 
+var JUSTIFY_CENTER = 0;
+var JUSTIFY_LEFT = 1;
+var JUSTIFY_RIGHT = 2;
+var JUSTIFY_COUNT = 3;
+
 // We don't have String.repeat() in ES5
 function repeat(ch, length)
 {
@@ -118,16 +123,19 @@ function bottom_border(border, width)
 	return str + "\x01N\r\n";
 }
 
-function generate(attr, border, text)
+function generate(width, attr, border, text, justify)
 {
-	var width = 39;
 	var msg = attr + top_border(border, width);
 	var array = word_wrap(text, width - 4).split("\n");
 	for (var i in array) {
 		var line = truncsp(array[i]);
 		if (!line && i >= array.length - 1)
 			break;
-		var margin = Math.floor((width - line.length) / 2);
+		var margin = 2;
+		if (justify == JUSTIFY_CENTER)
+			margin = Math.floor((width - line.length) / 2);
+		else if (justify == JUSTIFY_RIGHT)
+			margin = width - (line.length + 2);
 		msg += attr + mid_border(border, width, margin, line);
 	}
 	msg += attr + bottom_border(border, width);
