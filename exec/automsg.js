@@ -1,4 +1,5 @@
 // Auto-message (ala WWIV)
+// @format.tab-size 4, @format.use-tabs true
 
 // modopts.ini [automsg] options:
 //   prompt
