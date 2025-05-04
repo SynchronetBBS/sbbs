@@ -1,6 +1,12 @@
 // Post a meme
 // @format.tab-size 4, @format.use-tabs true
 
+// Supported options (e.g. in ctrl/modopts/postmeme.ini):
+//   color (default: 0)
+//   border (default: 0)
+//   random (default: false)
+//   max_length (default: 500)
+
 "use strict";
 require("key_defs.js", "KEY_LEFT");
 require("sbbsdefs.js", "K_LINEWRAP");
@@ -9,12 +15,13 @@ var options = load({}, "modopts.js", "postmeme");
 if (!options) options = {};
 var lib = load({}, "meme_lib.js");
 
-var maxMsgLen = 500;
-
 function choose(border)
 {
-	console.mnemonics(format("Style: ~Color, ~@Next@, ~@Previous@, or ~@Quit@ [%u]: ", border % lib.BORDER_COUNT));
-	switch(console.getkeys("C" + KEY_LEFT + KEY_RIGHT + "\r" + console.next_key + console.prev_key + console.quit_key)) {
+	console.mnemonics(format("Style: ~Color, ~@Next@, ~@Previous@, or ~@Quit@ [%u]: ", (border % lib.BORDER_COUNT) + 1));
+	var ch = console.getkeys("C" + KEY_LEFT + KEY_RIGHT + "\r" + console.next_key + console.prev_key + console.quit_key, lib.BORDER_COUNT);
+	if (typeof ch == "number")
+		return ch - 1;
+	switch (ch) {
 		case console.quit_key:
 			return false;
 		case '\r':
@@ -24,14 +31,14 @@ function choose(border)
 		case KEY_UP:
 		case KEY_LEFT:
 		case console.prev_key:
-			return -1;
+			return console.prev_key;
 		default:
-			return 1;
+			return console.next_key;
 	}
 }
 
 console.print("\x01N\x01Y\x01HWhat do you want to say?\x01N\r\n");
-var text = console.getstr(maxMsgLen, K_LINEWRAP);
+var text = console.getstr(options.max_length || 500, K_LINEWRAP);
 if (!text)
 	exit(0);
 var attr = [
@@ -43,8 +50,8 @@ var attr = [
 	"\x01H\x01W\x016",
 	"\x01N\x01K\x017",
 ];
-var border = Number(options.border);
-var color = Number(options.color);
+var border = options.border || 0;
+var color = options.color || 0;
 if (options.random) {
 	border = random(lib.BORDER_COUNT);
 	color = random(attr.length);
@@ -59,15 +66,16 @@ while (!js.terminated) {
 		exit(1);
 	if (ch === true)
 		break;
-	if (ch === 'C') {
+	if (typeof ch == "number")
+		border = ch;
+	else if (ch === 'C')
 		++color;
-	} else {
-		border += ch;
-		if (border < 0) {
-			console.beep();
-			border = 0;
-		}
-	}
+	else if (ch == console.next_key && border < lib.BORDER_COUNT - 1)
+		++border;
+	else if (ch == console.prev_key && border > 0)
+		--border;
+	else
+		console.beep();
 }
 
 if (!msg)
