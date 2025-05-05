@@ -79,18 +79,18 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_TRUE;
 	}
 	else {
-		dbprintf(FALSE, p, "trying open");
+		dbprintf(FALSE, p, "trying to open");
 		rc = sqlite3_open(p->name, &p->db);
 
 		if (rc) {
 			sqlite3_close(p->db);
 			JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
-			p->errormsg = "can't open the database (path/permissions incorrect?)";
-			dbprintf(FALSE, p, "can't open: %s", p->name);
+			p->errormsg = "Cannot open the database (path/permissions incorrect?)";
+			dbprintf(FALSE, p, "Cannot open: %s", p->name);
 			return JS_TRUE;
 		}
 	}
-	dbprintf(FALSE, p, "opened!");
+	dbprintf(FALSE, p, "db opened!");
 	JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
 	return JS_TRUE;
 }
@@ -113,7 +113,7 @@ js_close(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	sqlite3_close(p->db);
 
-	dbprintf(FALSE, p, "closed: %s", p->name);
+	dbprintf(FALSE, p, "db closed: %s", p->name);
 
 	p->db = NULL;
 	JS_SET_RVAL(cx, arglist, JSVAL_TRUE);
@@ -148,29 +148,29 @@ js_exec(JSContext *cx, uintN argc, jsval *arglist)
 		}
 	}
 	if (p->db == NULL) {
-		dbprintf(TRUE, p, "database is not opened");
+		dbprintf(TRUE, p, "Database is not opened");
 		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 		return JS_TRUE;
 	}
 
-	dbprintf(FALSE, p, "create Result object");
+	dbprintf(FALSE, p, "Create Result object");
 	if ((Result = JS_NewArrayObject(cx, 0, NULL)) == NULL)
 		return JS_FALSE;
 
 	if (p->stmt == NULL) {
-		dbprintf(FALSE, p, "empy statement");
-		p->errormsg = "empty statement";
+		dbprintf(FALSE, p, "Empy statement");
+		p->errormsg = "Empty statement";
 		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 		return JS_TRUE;
 	}
 
 
-	dbprintf (FALSE, p, "prepare: %s", p->stmt);
+	dbprintf (FALSE, p, "Prepare: %s", p->stmt);
 	rc = sqlite3_prepare(p->db, p->stmt, -1, &ppStmt, NULL);
 
 	if (rc == SQLITE_OK) {
 		while (sqlite3_step(ppStmt) == SQLITE_ROW) {
-			dbprintf(FALSE, p, "create record object");
+			dbprintf(FALSE, p, "Create record object");
 			if ((Record = JS_NewObject(cx, NULL, NULL, NULL)) == NULL)
 				return JS_FALSE;
 
@@ -190,7 +190,7 @@ js_exec(JSContext *cx, uintN argc, jsval *arglist)
 				if (!JS_SetProperty(cx, Record, sqlite3_column_name(ppStmt, i), &val))
 					return JS_FALSE;
 			}
-			dbprintf (FALSE, p, "adding element to the Result");
+			dbprintf (FALSE, p, "Adding element to the Result");
 			val = OBJECT_TO_JSVAL(Record);
 			idx = -1;
 
@@ -200,14 +200,14 @@ js_exec(JSContext *cx, uintN argc, jsval *arglist)
 			if (!JS_SetElement(cx, Result, idx, &val))
 				return JS_FALSE;
 		}
-		dbprintf(FALSE, p, "end prepare");
+		dbprintf(FALSE, p, "End prepare");
 		JS_SET_RVAL(cx, arglist, OBJECT_TO_JSVAL(Result));
 		return JS_TRUE;
 	}
 	else {
 		p->errormsg = (char* ) sqlite3_errmsg(p->db);
 		JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
-		dbprintf(FALSE, p, "prepare error: %s", sqlite3_errmsg(p->db));
+		dbprintf(FALSE, p, "Prepare error: %s", sqlite3_errmsg(p->db));
 		return JS_TRUE;
 	}
 }
@@ -243,7 +243,7 @@ static JSBool js_sqlite_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict
 	else if (JSVAL_IS_BOOLEAN(*vp))
 		JS_ValueToBoolean(cx, *vp, &intval);
 
-	dbprintf(FALSE, p, "setting property %d", tiny);
+	dbprintf(FALSE, p, "Setting property %d", tiny);
 
 	switch (tiny) {
 		case SQLITE_PROP_STMT:
@@ -274,7 +274,7 @@ static JSBool js_sqlite_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	JS_IdToValue(cx, id, &idval);
 	tiny = JSVAL_TO_INT(idval);
 
-	dbprintf(FALSE, p, "getting property %d", tiny);
+	dbprintf(FALSE, p, "Getting property %d", tiny);
 
 	switch (tiny) {
 		case SQLITE_PROP_NAME:
@@ -348,7 +348,7 @@ static void js_finalize_sqlite(JSContext *cx, JSObject *obj)
 	if (p->db != NULL)
 		sqlite3_close(p->db);
 
-	dbprintf(FALSE, p, "finalize Sqlite object");
+	dbprintf(FALSE, p, "Finalize Sqlite object");
 
 	free(p->stmt);
 	free(p);
@@ -413,14 +413,14 @@ js_sqlite_constructor(JSContext* cx, uintN argc, jsval *arglist)
 	}
 
 #ifdef BUILD_JSDOCS
-	js_DescribeSyncObject(cx, obj, "Can used to manipulate sqlite database"
+	js_DescribeSyncObject(cx, obj, "Can be used to manipulate sqlite database"
 	                      , 321
 	                      );
 	js_DescribeSyncConstructor(cx, obj, "To create a new Sqlite object: <tt>var f = new Sqlite(<i>filename</i>)</tt>");
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", sqlite_prop_desc, JSPROP_READONLY);
 #endif
 
-	dbprintf(FALSE, p, "object constructed\n");
+	dbprintf(FALSE, p, "Object constructed\n");
 	return JS_TRUE;
 }
 
