@@ -25,9 +25,9 @@
  * help from nelgin.														*
  ****************************************************************************/
 
+#ifdef USE_SQLITE3
 #include "sbbs.h"
 #include "sqlite3.h"
-#ifdef JAVASCRIPT
 
 typedef struct
 {
@@ -435,4 +435,4 @@ JSObject* js_CreateSqliteClass(JSContext* cx, JSObject* parent)
 	                    , NULL, NULL);
 }
 
-#endif  /* JAVASCRIPT */
+#endif  /* SQLITE3 */
