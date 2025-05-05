@@ -134,7 +134,7 @@ function write_news_header(hdr,writeln)
 					break;
 			}
 		}
-		writeln("Content-Type: text/plain; charset=" + charset);
+		writeln("Content-Type: text/plain; charset=" + charset + "; format=" + ((hdr.auxattr & MSG_FIXED_FORMAT) ? "fixed" : "flowed"));
 		writeln("Content-Transfer-Encoding: 8bit");
 	}
 }
