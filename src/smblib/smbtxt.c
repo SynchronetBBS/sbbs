@@ -361,7 +361,7 @@ static bool mime_getattachment(const char* beg, const char* end, char* attachmen
 }
 
 // Parses a MIME text/* content-type header field
-void smb_parse_content_type(const char* content_type, char** subtype, char** charset)
+void smb_parse_content_type(const char* content_type, char** subtype, char** charset, uint32_t* auxattr)
 {
 	if (subtype != NULL) {
 		FREE_AND_NULL(*subtype);
@@ -389,6 +389,31 @@ void smb_parse_content_type(const char* content_type, char** subtype, char** cha
 				*tp = 0;
 			}
 		}
+		char* format;
+		if (auxattr != NULL &&
+		    ((format = strcasestr(p, " format=")) != NULL
+		     || (format = strcasestr(p, ";foramt=")) != NULL
+		     || (format = strcasestr(p, "\tformat=")) != NULL)) {
+			bool quoted = false;
+			format += 8;
+			if (*format == '"') {
+				quoted = true;
+				format++;
+			}
+			char* tp = format;
+			FIND_WHITESPACE(tp);
+			*tp = 0;
+			tp = format;
+			if (quoted) {
+				FIND_CHAR(tp, '"');
+			} else {
+				FIND_CHAR(tp, ';');
+			}
+			*tp = 0;
+			if (stricmp(format, "fixed") == 0)
+				*auxattr |= MSG_FIXED_FORMAT;
+		}
+
 		char* parms = p;
 		if (charset != NULL &&
 		    ((p = strcasestr(parms, " charset=")) != NULL
@@ -491,7 +516,7 @@ static const char* mime_getpart(const char* buf, const char* content_type, const
 		if (encoding != NULL)
 			*encoding = mime_getxferencoding(txt, p);
 		if (charset != NULL)
-			smb_parse_content_type(content_type, NULL, charset);
+			smb_parse_content_type(content_type, NULL, charset, NULL);
 
 		txt = p + 4;    // strlen("\r\n\r\n")
 		SKIP_WHITESPACE(txt);

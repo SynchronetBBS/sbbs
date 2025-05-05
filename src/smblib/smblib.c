@@ -902,7 +902,7 @@ static void set_convenience_ptr(smbmsg_t* msg, uint16_t hfield_type, size_t len,
 				p += 13;
 				SKIP_WHITESPACE(p);
 				msg->content_type = p;
-				smb_parse_content_type(p, &(msg->text_subtype), &(msg->text_charset));
+				smb_parse_content_type(p, &(msg->text_subtype), &(msg->text_charset), &(msg->hdr.auxattr));
 				break;
 			}
 			if (strnicmp(p, "Content-Transfer-Encoding:", 26) == 0) {
