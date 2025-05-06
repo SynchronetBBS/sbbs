@@ -1,15 +1,15 @@
-/* $Id: ftp.js,v 1.23 2020/05/21 01:56:45 rswindell Exp $ */
+// FTP Client library
 
 require('sockdefs.js', 'SOCK_STREAM');
 
-function FTP(host, user, pass, port, dport, bindhost, account)
+function FTP(host, user, pass, port, dport, bindhost, account, timeout)
 {
 	var ret;
 
 	if (host === undefined)
 		throw new Error("No hostname specified");
-	
-	this.revision = "JSFTP v" + "$Revision: 1.23 $".split(' ')[1];
+
+	this.revision = "JSFTP v1.4";
 
 	if (port === undefined)
 		port = 21;
@@ -29,7 +29,7 @@ function FTP(host, user, pass, port, dport, bindhost, account)
 	this.pass = pass;
 	this.dport = dport;
 	this.bindhost = bindhost;
-	this.timeout = 300;
+	this.timeout = timeout || 300;
 	this.maxline = 500;
 	this.account = account;
 	this.socket = new ConnectedSocket(host, port, {protocol:'FTP', timeout:this.timeout, binadaddrs:this.bindhost});
@@ -308,7 +308,7 @@ FTP.prototype.do_sendfile = function(src, data_socket)
 			break;
 		}
 		total += buf.length;
-		
+
 	} while((!f.eof) && data_socket.is_connected && this.socket.is_connected);
 	data_socket.close();
 	f.close();
