@@ -352,6 +352,7 @@ FTP.prototype.cmd = function(cmd, needresp)
 		do {
 			rd = this.socket.recvline(this.maxline, this.timeout - (time() - start));
 			if (rd !== null) {
+				this.received_response = rd;
 				m = rd.match(/^([0-9]{3})([- ])/);
 				if (rsp === undefined) {
 					if (m === null) {
