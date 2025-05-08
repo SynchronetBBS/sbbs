@@ -89,6 +89,33 @@
  *                              messing with the screen). New [STRINGS] configuration section
  *                              with stringsFilename to specify the name of a strings file,
  *                              which for now just contains an areYouThere setting
+ * 2025-04-23 Eric Oulashin     Version 1.90 Beta
+ *                              Started work on updating the way files are saved when not
+ *                              editing a message (i.e., if the user is editing an SSH key):
+ *                              Not adding a space after each (wrapped) line, etc..
+ *                              Also, color/attribute codes are no longer removed from
+ *                              quote lines. Although quote lines still appear in SlyEdit
+ *                              with one (configurable) color, the quoted text will retain
+ *                              color/attribute codes when the message is posted.
+ * 2025-05-03 Eric Oulashin     New feature: A 'meme' can be added to the message by typing
+ *                              /m on an empty line by itself and pressing enter.
+ * 2025-05-04 Eric Oulashin     Bug fix: When closing the User Settings dialog, quote lines
+ *                              are refreshed with the configured quote line color (instead
+ *                              of with any color codes included in those lines)
+ *
+ *                              Bug fix: When closing the User Settings dialog, existing message
+ *                              lines are refreshed better; sometimes, there were small parts of
+ *                              the beginnings of some lines that were blanked out.
+ *
+ * 2025-05-06 Eric Oulashin     Bug fix (sort of): DCT mode File menu wasn't drawing when the user
+ *                              presses the ESC key to bring up the menu. I don't know why that's
+ *                              happening. I found a kludge that seems to fix it.
+ *
+ *                              On startup, SlyEdit now sets the 'normal' attribute on the
+ *                              console to clear away any background color or other attribute(s)
+ *                              that may have been set.
+ * 2025-05-07 Eric Oulashin     Version 1.90
+ *                              Releasing this version
  */
 
 "use strict";
@@ -179,8 +206,8 @@ if (console.screen_columns < 80)
 }
 
 // Version information
-var EDITOR_VERSION = "1.89e";
-var EDITOR_VER_DATE = "2025-02-09";
+var EDITOR_VERSION = "1.90";
+var EDITOR_VER_DATE = "2025-05-07";
 
 
 // Program variables
@@ -213,6 +240,15 @@ if (console.screen_columns < 80)
 // Calculate the edit area width & height
 var gEditWidth = gEditRight - gEditLeft + 1;
 var gEditHeight = gEditBottom - gEditTop + 1;
+
+
+// Even though SlyEdit is always editing a file, this
+// stores returns whether or not we're simply editing
+// a file (as opposed to posting a message).
+var gJustEditingAFile = false;
+
+// Whether the user can change the subject
+var gCanChangeSubject = true;
 
 // Colors
 var gQuoteWinTextColor = "\x01n\x01" + "7\x01k";   // Normal text color for the quote window (DCT default)
@@ -260,10 +296,13 @@ gCrossPostMsgSubs.subCodeExists = function(pSubCode) {
 	if (pSubCode === "")
 		return false;
 
-	var grpIndex = msg_area.sub[pSubCode].grp_index;
 	var foundIt = false;
-	if (this.hasOwnProperty(grpIndex))
-		foundIt = this[grpIndex].hasOwnProperty(pSubCode);
+	if (typeof(msg_area.sub[pSubCode]) === "object")
+	{
+		var grpIndex = msg_area.sub[pSubCode].grp_index;
+		if (this.hasOwnProperty(grpIndex))
+			foundIt = this[grpIndex].hasOwnProperty(pSubCode);
+	}
 	return foundIt;
 };
 // This function adds a sub-board code to gCrossPostMsgSubs.
@@ -428,6 +467,13 @@ var gValidWordChars = "";
 // do the line re-wrapping at the end before saving the message).
 var gUploadedMessageFile = false;
 
+// Definitions for actions to take after the Enter key is pressed
+const ENTER_ACTION_NONE = 0;
+const ENTER_ACTION_DO_QUOTE_SELECTION = 1;
+const ENTER_ACTION_DO_CROSS_POST_SELECTION = 2;
+const ENTER_ACTION_DO_MEME_INPUT = 3;
+const ENTER_ACTION_SHOW_HELP = 4;
+
 // gEditAreaBuffer will be an array of strings for the edit area, which
 // will be checked by displayEditLines() before outputting text lines
 // to optimize the update of message text on the screen. displayEditLines()
@@ -575,7 +621,6 @@ if (dropFileName != undefined)
 			gFromName = info[0];
 			gToName = info[1];
 			gMsgSubj = info[2];
-			gMsgSubj = info[2];
 			gMsgArea = info[4];
 
 			// Now that we know the name of the message area
@@ -583,6 +628,54 @@ if (dropFileName != undefined)
 			// getCurMsgInfo() to set gMsgAreaInfo.
 			gMsgAreaInfo = getCurMsgInfo(gMsgArea);
 			setMsgAreaInfoObj = true;
+			// If there is no sub-board code, that means we're editing a
+			// regular file:
+			// - Disable quote selection
+			// - Make the 'to' name just the filename without the full
+			// path
+			// - Don't allow changing the subject
+			// - Enable color selection regardless of the configuration
+			//   (we could be editing an .asc file for the BBS, for instance)
+			if (gMsgAreaInfo.subBoardCode.length == 0)
+			{
+				gUseQuotes = false;
+				// It's possible that a script could call console.editfile()
+				// with a 'to', 'from', subject, and message area to provide
+				// that metadata when editing a file (i.e., maybe the caller
+				// is a news reader that wants to post a message), but if
+				// not, the 'to' name will be the filename (and the 'from'
+				// name and subject will be blank). The file could be a
+				// new file, so it might not exist yet.
+				// There's also a case where Synchronet will use an editor to
+				// edit things like an extended file description. In that case,
+				// just the filename will be in the subject. The way this is
+				// coded now, it won't set gJustEditingAFile to true, and
+				// that might actually be desirable when editing file descriptions
+				// & such, due to handling of spaces at the ends of lines.
+				if (gToName.length > 0 && gFromName.length == 0 && gMsgSubj.length == 0)
+				{
+					gJustEditingAFile = true;
+					//gToName = file_getname(gToName);
+					//gMsgSubj = "Editing a file";
+					gMsgSubj = file_getname(gToName);
+					gToName = "";
+					gCanChangeSubject = false;
+					gConfigSettings.allowColorSelection = true;
+					js.global.slyEditData.useQuotes = false;
+					// Should we also disable tag lines here?
+				}
+				else if (gToName.length == 0 && gFromName.length == 0 && gMsgSubj.length > 0)
+				{
+					// This is the case where we might be editing a file description
+					// (not sure what other cases might result in just the subject being
+					// populated). In this case, we probably shouldn't allow changing
+					// the subject.
+					gCanChangeSubject = false;
+					gConfigSettings.allowColorSelection = true;
+					js.global.slyEditData.useQuotes = false;
+					// Should we also disable tag lines here?
+				}
+			}
 
 			// If the msginf file has at least 7 lines, then the 7th line is the full
 			// path & filename of the tagline file, where we can write the
@@ -645,10 +738,10 @@ if (!setMsgAreaInfoObj)
 }
 
 // Set a variable to store whether or not cross-posting can be done.
-var gCanCrossPost = (gConfigSettings.allowCrossPosting && postingInMsgSubBoard(gMsgArea));
+var gCanCrossPost = (gMsgAreaInfo.subBoardCode.length > 0 && gConfigSettings.allowCrossPosting && postingInMsgSubBoard(gMsgArea));
 // If the user is posting in a message sub-board, then add its information
 // to gCrossPostMsgSubs.
-if (postingInMsgSubBoard(gMsgArea))
+if (gMsgAreaInfo.subBoardCode.length > 0 && postingInMsgSubBoard(gMsgArea))
 	gCrossPostMsgSubs.add(gMsgAreaInfo.subBoardCode);
 
 // Open the quote file / message file
@@ -657,6 +750,11 @@ readQuoteOrMessageFile();
 // Store a copy of the current subject (possibly allowing the user to
 // change the subject in the future)
 var gOldSubj = gMsgSubj;
+
+// Make sure the console has the normal attribute
+// before starting the editor, in case any background
+// color etc. was set
+console.attributes = "N";
 
 // Now it's edit time.
 var exitCode = doEditLoop();
@@ -753,10 +851,48 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 					while (continueOn)
 					{
 						addedSpace = false;
-						if (textLine.length > 0)
+						// New (2025-04-23): If the sub-board code is not empty, then
+						// we're posting in the messagebase, so we should add a space
+						// after the line. Otherwise, the user is editing a file, and
+						// we don't want to do that.
+						if (gMsgAreaInfo.subBoardCode.length > 0)
 						{
-							textLine += " ";
-							addedSpace = true;
+							if (textLine.length > 0)
+							{
+								textLine += " ";
+								addedSpace = true;
+							}
+						}
+						else
+						{
+							// Editing a file (not posting a message for a sub-board or email)
+							if (i > blockIdxes.allBlocks[blockIdx].start)
+							{
+								var prevLineIdx = i - 1;
+								// TODO: This isn't working properly
+								// Temporary
+								//console.print("\x01n" + prevLineIdx + ", " + typeof(gEditLines[prevLineIdx]) + "\r\n"); // Temporary
+								//console.print(i + ", " + typeof(gEditLines[i]) + "\r\n"); // Temporary
+								// End Temporary
+								// TODO: This doesn't seem to be adding the space as expected
+								/*
+								if (!gEditLines[prevLineIdx].hardNewlineEnd)
+								{
+									var maxLineLenForScreen = console.screen_columns - 1;
+									var prevLineLen = console.strlen(gEditLines[prevLineIdx].text);
+									// Temporary
+									printf("\x01n%d - Max len: %d, prev line len: %d\r\n", i, maxLineLenForScreen, prevLineLen);
+									printf("%s:\r\n\r\n", gEditLines[prevLineIdx].text); // Temporary
+									// End Temporary
+									if (prevLineLen < maxLineLenForScreen)
+									{
+										var numSpaces = maxLineLenForScreen - prevLineLen;
+										//printf("\x01n# spaces: %d\r\n\r\n", numSpaces); // Temporary
+										//textLine += format("%*s", numSpaces, "");
+									}
+								}
+								*/
+							}
 						}
 						if (addedSpace)
 							++attrIdxOffset;
@@ -770,7 +906,14 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 						// When we reach a line with a hard newline end, or the end of the text block or edit lines,
 						// stop accumulating the text into textLine.
 						continueOn = (!gEditLines[i].hardNewlineEnd) && (i < blockIdxes.allBlocks[blockIdx].end) && (i+1 < gEditLines.length);
-						delete gEditLines[i]; // Save some memory
+						// Save some memory
+						if (gMsgAreaInfo.subBoardCode.length > 0) // If editing a message for a sub-board or mail
+							delete gEditLines[i];
+						else // Editing a file
+						{
+							if (typeof(gEditLines[i-1]) === "object")
+								delete gEditLines[i-1];
+						}
 						++i;
 					}
 					var newTextLine = new TextLine(textLine, true, false);
@@ -833,9 +976,9 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 				}
 			}
 
-			// If the user has not chosen to auto-sign messages, then also append their
-			// signature to the message now.
-			if (!gUserSettings.autoSignMessages)
+			// If the user has not chosen to auto-sign messages and we're posting a message in a
+			// sub-board or personal email, then also append their signature to the message now.
+			if (!gUserSettings.autoSignMessages && gMsgAreaInfo.subBoardCode.length > 0)
 			{
 				// Append a blank line to separate the message & signature.
 				// Note: msgContents already has a newline at the end, so we don't have
@@ -903,10 +1046,12 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 					printf("\x01n  " + gConfigSettings.genColors.msgPostedSubBoardName + "%-73s", msg_area.sub[subCode].description.substr(0, 73));
 					if (msg_area.sub[subCode].can_post)
 					{
-						// If the user's auto-sign setting is enabled, then auto-sign
-						// the message and append their signature afterward.  Otherwise,
-						// don't auto-sign, and their signature has already been appended.
-						if (gUserSettings.autoSignMessages)
+						// If the user's auto-sign setting is enabled and we're posting in a
+						// sub-board/personal email (not editing a file), then auto-sign the
+						// message and append their signature afterward.  Otherwise, don't
+						// auto-sign, and their signature has already been appended (if posting
+						// a message).
+						if (gUserSettings.autoSignMessages && gMsgAreaInfo.subBoardCode.length > 0)
 						{
 							var msgContents2 = msgContents + "\r\n";
 							var userSignName = getSignName(subCode, gUserSettings.autoSignRealNameOnlyFirst, gUserSettings.autoSignEmailsRealName);
@@ -922,7 +1067,9 @@ if ((exitCode == 0) && (gEditLines.length > 0))
 							}
 							msgContents2 += userSignName;
 							msgContents2 += "\r\n\r\n";
-							if (msgSigInfo.sigContents.length > 0)
+							// If the user has a signature and we're posting a message (not editing a file), then
+							// append the user's signature
+							if (msgSigInfo.sigContents.length > 0 && gMsgAreaInfo.subBoardCode.length > 0)
 							{
 								if (messageLinesHaveAttrs())
 									msgContents2 += "\x01n";
@@ -1003,7 +1150,8 @@ function saveMessageToFile()
 	// use the first command-line argument.
 	var outputFilename = (argc == 0 ? system.temp_dir + "INPUT.MSG" : argv[0]);
 	var msgFile = new File(outputFilename);
-	if (msgFile.open("w"))
+	//if (msgFile.open("w"))
+	if (msgFile.open("wb")) // Open in binary mode to suppress end-of-line translations
 	{
 		// If the message has any attribute codes in it, then append a normal attribute code
 		// to the end of the last line of the message. This is a workaround to ensure colors
@@ -1011,9 +1159,12 @@ function saveMessageToFile()
 		var msgHasAttrCodes = messageLinesHaveAttrs();
 		if (msgHasAttrCodes)
 			gEditLines[gEditLines.length-1].text += "\x01n";
-		// Write each line of the message to the file.  Note: The
-		// "Expand Line Feeds to CRLF" option should be turned on
-		// in SCFG for this to work properly for all platforms.
+		// Write each line of the message to the file.
+		// 2025-04-28: It used to be that "Expand Line Feeds to CRLF" option should
+		// be turned on in SCFG for this to work properly for all platforms.
+		// However, that probably isn't a problem now, and that option should now be
+		// disabled so that line endings don't change in case we're editing a
+		// file (rather than posting a messge).
 		var lastLineIdx = gEditLines.length - 1;
 		for (var i = 0; i < gEditLines.length; ++i)
 		{
@@ -1021,8 +1172,8 @@ function saveMessageToFile()
 			var msgTxtLine = gEditLines[i].getText(gConfigSettings.allowColorSelection);
 			if (msgHasAttrCodes && gConfigSettings.saveColorsAsANSI)
 				msgTxtLine = syncAttrCodesToANSI(msgTxtLine);
-			// If UTF-8 is enabled, then write each character propertly.  Otherwise, write the entire
-			// line to the file with writeln()
+			// If UTF-8 is enabled, then write each character properly.  Otherwise, write the entire
+			// line to the file as we'd normally do, with write() or writeln()
 			if (gPrintMode & P_UTF8)
 			{
 				for (var txtLineI = 0; txtLineI < msgTxtLine.length; ++txtLineI)
@@ -1032,13 +1183,21 @@ function saveMessageToFile()
 					for (var encodedI = 0; encodedI < encoded.length; ++encodedI)
 						msgFile.writeBin(ascii(encoded[encodedI]), 1);
 				}
-				msgFile.writeln(""); // Write an end-line
+				// Write an end-line
+				// Note: The editor setting "Expand Line Feeds to CRLF" will cause
+				// line endings to be CRLF (they'd normally be just LF in *nix)
+				msgFile.writeln("");
 			}
 			else
+			{
+				// Note: The editor setting "Expand Line Feeds to CRLF" will cause
+				// line endings to be CRLF (they'd normally be just LF in *nix)
 				msgFile.writeln(msgTxtLine);
+			}
 		}
-		// Auto-sign the message if the user's setting to do so is enabled
-		if (gUserSettings.autoSignMessages)
+		// Auto-sign the message if the user's setting to do so is enabled and
+		// we're posting a message (not editing a file)
+		if (gUserSettings.autoSignMessages && gMsgAreaInfo.subBoardCode.length > 0)
 		{
 			msgFile.writeln("");
 			var subCode = (postingInMsgSubBoard(gMsgArea) ? gMsgAreaInfo.subBoardCode : "mail");
@@ -1053,20 +1212,22 @@ function saveMessageToFile()
 
 
 // Set the end-of-program status message.
+var editObjName = (gMsgAreaInfo.subBoardCode.length > 0 ? "message" : "file");
+var operationName = (gMsgAreaInfo.subBoardCode.length > 0 ? "Message" : "Edit");
 var endStatusMessage = "";
 if (exitCode == 1)
-	endStatusMessage = gConfigSettings.genColors.msgAbortedText + "Message aborted.";
+	endStatusMessage = format("%s%s aborted.", gConfigSettings.genColors.msgAbortedText, operationName);
 else if (exitCode == 0)
 {
 	if (gEditLines.length > 0)
 	{
 		if (savedTheMessage)
-			endStatusMessage = gConfigSettings.genColors.msgHasBeenSavedText + "The message has been saved.";
+			endStatusMessage = format("%sThe %s has been saved.", gConfigSettings.genColors.msgHasBeenSavedText, editObjName);
 		else
-			endStatusMessage = gConfigSettings.genColors.msgAbortedText + "Message aborted.";
+			endStatusMessage = format("%s%s aborted.", gConfigSettings.genColors.msgAbortedText, operationName);
 	}
 	else
-		endStatusMessage = gConfigSettings.genColors.emptyMsgNotSentText + "Empty message not sent.";
+		endStatusMessage = format("%sEmpty %s not saved.", gConfigSettings.genColors.emptyMsgNotSentText, editObjName);
 }
 // We shouldn't hit this else case, but it's here just to be safe.
 else
@@ -1122,7 +1283,7 @@ function readQuoteOrMessageFile()
 					// TODO: I'd like to comment this out & leave attribute codes in the quote lines,
 					// but that's currently causing wrapTextLinesForQuoting() to not find prefixes
 					// properly & not wrap properly
-					textLine = strip_ctrl(textLine);
+					//textLine = strip_ctrl(textLine);
 					// If the line has only whitespace and/or > characters,
 					// then make the line blank before putting it into
 					// gQuoteLines.
@@ -1154,10 +1315,41 @@ function readQuoteOrMessageFile()
 		}
 		else
 		{
-			var textLine = null;
 			while (!inputFile.eof)
 			{
-				textLine = new TextLine();
+				//gMsgAreaInfo.subBoardCode
+				// If the line is too long to fit on the screen, then
+				// split it (console.screen_columns-1)
+				var textLineFromFile = inputFile.readln(8192);
+				if (typeof(textLineFromFile) !== "string") // Shouldn't be true, but I've seen it before
+					continue;
+				var maxLineLen = console.screen_columns - 1;
+				if (textLineFromFile.length > maxLineLen)
+				{
+					do
+					{
+						// Note: substrWithAttrCodes() is defined in dd_lightbar_menu.js
+						var textLine = new TextLine();
+						textLine.setText(substrWithAttrCodes(textLineFromFile, 0, maxLineLen));
+						var textLineLen = console.strlen(textLineFromFile);
+						textLine.hardNewlineEnd = (textLineLen <= maxLineLen);
+						gEditLines.push(textLine);
+						if (textLineLen > maxLineLen)
+							textLineFromFile = substrWithAttrCodes(textLineFromFile, maxLineLen);
+						else
+							textLineFromFile = "";
+					} while (console.strlen(textLineFromFile) > 0);
+				}
+				else
+				{
+					var textLine = new TextLine();
+					textLine.setText(textLineFromFile);
+					textLine.hardNewlineEnd = true;
+					gEditLines.push(textLine);
+				}
+				// Old code - Does not split lines depending on terminal width:
+				/*
+				var textLine = new TextLine();
 				var textLineFromFile = inputFile.readln(2048);
 				if (typeof(textLineFromFile) == "string")
 					textLine.setText(strip_ctrl(textLineFromFile));
@@ -1170,6 +1362,7 @@ function readQuoteOrMessageFile()
 				if (textLine.screenLength() < console.screen_columns-1)
 					textLine.text += " ";
 				gEditLines.push(textLine);
+				*/
 			}
 
 			// If the last edit line is undefined (which is possible after reading the end
@@ -1188,6 +1381,7 @@ function readQuoteOrMessageFile()
 	}
 }
 
+console.print("\x01n\r\ngJustEditingAFile: " + gJustEditingAFile + "\r\n\x01p"); // Temporary
 // Edit mode & input loop
 function doEditLoop()
 {
@@ -1224,6 +1418,8 @@ function doEditLoop()
 	const SEARCH_TEXT_KEY           = CTRL_W;
 	const EXPORT_TO_FILE_KEY        = CTRL_X;
 	const SAVE_KEY                  = CTRL_Z;
+	const INSERT_MEME_KEY_COMBO_1    = "/m";
+	const INSERT_MEME_KEY_COMBO_2    = "/M";
 
 	// Draw the screen.
 	// Note: This is purposefully drawing the top of the message.  We
@@ -1305,7 +1501,8 @@ function doEditLoop()
 			case ABORT_KEY:
 				// Before aborting, ask they user if they really want to abort.
 				console.attributes = "N"; // To avoid problems with background colors
-				if (promptYesNo("Abort message", false, "Abort", false, false))
+				var editObjName = (gMsgAreaInfo.subBoardCode.length > 0 ? "message" : "edit");
+				if (promptYesNo("Abort " + editObjName, false, "Abort", false, false))
 				{
 					returnCode = 1; // Aborted
 					continueOn = false;
@@ -1325,7 +1522,7 @@ function doEditLoop()
 			case CMDLIST_HELP_KEY_2:
 				displayCommandList(true, true, true, gCanCrossPost,
 				                   gConfigSettings.enableTextReplacements, gConfigSettings.allowUserSettings,
-				                   gConfigSettings.allowSpellCheck, gConfigSettings.allowColorSelection);
+				                   gConfigSettings.allowSpellCheck, gConfigSettings.allowColorSelection, gCanChangeSubject);
 				clearEditAreaBuffer();
 				fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
 				               gInsertMode, gUseQuotes, gEditLinesIndex-(curpos.y-gEditTop),
@@ -1664,45 +1861,69 @@ function doEditLoop()
 					currentWordLength = enterRetObj.currentWordLength;
 					returnCode = enterRetObj.returnCode;
 					continueOn = enterRetObj.continueOn;
-					// Check for whether we should do quote selection or
-					// show the help screen (if the user entered /Q or /?)
+					// Do what the next action should be after the enter key was pressed
 					if (continueOn)
 					{
-						if (enterRetObj.doQuoteSelection)
+						switch (enterRetObj.nextAction)
 						{
-							if (gUseQuotes)
-							{
-								enterRetObj = doQuoteSelection(curpos, currentWordLength);
-								curpos.x = enterRetObj.x;
-								curpos.y = enterRetObj.y;
-								currentWordLength = enterRetObj.currentWordLength;
-								// If user input timed out, then abort.
-								if (enterRetObj.timedOut)
+							case ENTER_ACTION_DO_QUOTE_SELECTION:
+								if (gUseQuotes)
 								{
-									returnCode = 1; // Aborted
-									continueOn = false;
-									console.crlf();
-									console.print("\x01n\x01h\x01r" + EDITOR_PROGRAM_NAME + ": Input timeout reached.");
-									continue;
+									enterRetObj = doQuoteSelection(curpos, currentWordLength);
+									curpos.x = enterRetObj.x;
+									curpos.y = enterRetObj.y;
+									currentWordLength = enterRetObj.currentWordLength;
+									// If user input timed out, then abort.
+									if (enterRetObj.timedOut)
+									{
+										returnCode = 1; // Aborted
+										continueOn = false;
+										console.crlf();
+										console.print("\x01n\x01h\x01r" + EDITOR_PROGRAM_NAME + ": Input timeout reached.");
+										continue;
+									}
 								}
-							}
-						}
-						else if (enterRetObj.showHelp)
-						{
-							displayProgramInfo(true, false);
-							displayCommandList(false, false, true, gCanCrossPost,
-							                   gConfigSettings.enableTextReplacements, gConfigSettings.allowUserSettings,
-							                   gConfigSettings.allowSpellCheck, gConfigSettings.allowColorSelection);
-							clearEditAreaBuffer();
-							fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
-							               gInsertMode, gUseQuotes, gEditLinesIndex-(curpos.y-gEditTop),
-							               displayEditLines);
-							console.gotoxy(curpos);
-						}
-						else if (enterRetObj.doCrossPostSelection)
-						{
-							if (gCanCrossPost)
-								doCrossPosting();
+								break;
+							case ENTER_ACTION_DO_CROSS_POST_SELECTION:
+								if (gCanCrossPost)
+									doCrossPosting();
+								break;
+							case ENTER_ACTION_DO_MEME_INPUT:
+								// Input a meme from the user
+								var memeInputRetObj = doMemeInput();
+								// If a meme was added and we're able, move the
+								// cursor below the meme that was addded
+								if (memeInputRetObj.numMemeLines > 0)
+								{
+									var newY = curpos.y + memeInputRetObj.numMemeLines;
+									if (newY <= gEditBottom)
+										curpos.y = newY;
+									else
+										curpos.y = gEditBottom;
+								}
+								if (memeInputRetObj.refreshScreen)
+								{
+									// Refresh the screen
+									clearEditAreaBuffer();
+									fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
+									               gInsertMode, gUseQuotes, gEditLinesIndex-(curpos.y-gEditTop),
+									               displayEditLines);
+								}
+								console.gotoxy(curpos);
+								break;
+							case ENTER_ACTION_SHOW_HELP:
+								displayProgramInfo(true, false);
+								displayCommandList(false, false, true, gCanCrossPost,
+								                   gConfigSettings.enableTextReplacements, gConfigSettings.allowUserSettings,
+								                   gConfigSettings.allowSpellCheck, gConfigSettings.allowColorSelection, gCanChangeSubject);
+								clearEditAreaBuffer();
+								fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
+								               gInsertMode, gUseQuotes, gEditLinesIndex-(curpos.y-gEditTop),
+								               displayEditLines);
+								console.gotoxy(curpos);
+								break;
+							default:
+								break;
 						}
 					}
 					// For attribute code right-shifting, start at index+1 if in the middle of the line or index at the beginning
@@ -1911,17 +2132,20 @@ function doEditLoop()
 				doUserSettings(curpos, true);
 				break;
 			case CHANGE_SUBJECT_KEY:
-				console.attributes = "N";
-				console.gotoxy(gSubjPos.x, gSubjPos.y);
-				var subj = console.getstr(gSubjScreenLen, K_LINE|K_NOCRLF|K_NOSPIN|K_TRIM);
-				if (subj.length > 0)
-					gMsgSubj = subj;
-				// Refresh the subject line on the screen with the proper colors etc.
-				fpRefreshSubjectOnScreen(gSubjPos.x, gSubjPos.y, gSubjScreenLen, gMsgSubj);
+				if (gCanChangeSubject)
+				{
+					console.attributes = "N";
+					console.gotoxy(gSubjPos.x, gSubjPos.y);
+					var subj = console.getstr(gSubjScreenLen, K_LINE|K_NOCRLF|K_NOSPIN|K_TRIM);
+					if (subj.length > 0)
+						gMsgSubj = subj;
+					// Refresh the subject line on the screen with the proper colors etc.
+					fpRefreshSubjectOnScreen(gSubjPos.x, gSubjPos.y, gSubjScreenLen, gMsgSubj);
 
-				// Restore the edit color and cursor position
-				console.print(chooseEditColor());
-				console.gotoxy(curpos);
+					// Restore the edit color and cursor position
+					console.print(chooseEditColor());
+					console.gotoxy(curpos);
+				}
 				break;
 			default:
 				// For the tab character, insert 3 spaces.  Otherwise,
@@ -2011,7 +2235,7 @@ function doEditLoop()
 						gEditLines.push(new TextLine());
 						var newLine = new TextLine(taglineRetObj.tagline);
 						gEditLines.push(newLine);
-						reAdjustTextLines(gEditLines, gEditLines.length-1, gEditLines.length, gEditWidth, gConfigSettings.allowColorSelection);
+						reAdjustTextLines(gEditLines, gEditLines.length-1, gEditLines.length, gEditWidth, gConfigSettings.allowColorSelection, gJustEditingAFile); // gMsgAreaInfo.subBoardCode.length == 0
 					}
 				}
 			}
@@ -2203,7 +2427,7 @@ function doBackspace(pCurpos, pCurrentWordLength)
 			prevTextline = gEditLines[gEditLinesIndex-1].text;
 
 		// Re-adjust the text lines
-		reAdjustTextLines(gEditLines, gEditLinesIndex, gEditLines.length, gEditWidth, gConfigSettings.allowColorSelection);
+		reAdjustTextLines(gEditLines, gEditLinesIndex, gEditLines.length, gEditWidth, gConfigSettings.allowColorSelection, gJustEditingAFile); // gMsgAreaInfo.subBoardCode.length == 0
 
 		// If the previous line's length increased, that probably means that the
 		// user backspaced to the beginning of the current line and the word was
@@ -2305,7 +2529,8 @@ function doDeleteKey(pCurpos, pCurrentWordLength)
 		}
 
 		// Re-adjust the line lengths and refresh the edit area.
-		var textChanged = reAdjustTextLines(gEditLines, gEditLinesIndex, gEditLines.length, gEditWidth, gConfigSettings.allowColorSelection);
+		var reAdjustRetObj = reAdjustTextLines(gEditLines, gEditLinesIndex, gEditLines.length, gEditWidth, gConfigSettings.allowColorSelection, gJustEditingAFile); // gMsgAreaInfo.subBoardCode.length == 0
+		var textChanged = reAdjustRetObj.textChanged;
 
 		// If the line text changed, then update the message area from the
 		// current line on down.
@@ -2350,7 +2575,8 @@ function doDeleteKey(pCurpos, pCurrentWordLength)
 		}
 
 		// Re-adjust the text lines, update textChanged & set a few other things
-		textChanged = textChanged || reAdjustTextLines(gEditLines, gEditLinesIndex, gEditLines.length, gEditWidth, gConfigSettings.allowColorSelection);
+		var reAdjustRetObj = reAdjustTextLines(gEditLines, gEditLinesIndex, gEditLines.length, gEditWidth, gConfigSettings.allowColorSelection, gJustEditingAFile); // gMsgAreaInfo.subBoardCode.length == 0
+		textChanged = textChanged || reAdjustRetObj.textChanged;
 		retObj.currentWordLength = getWordLength(gEditLinesIndex, gTextLineIndex);
 		var startRow = retObj.y;
 		var startEditLinesIndex = gEditLinesIndex;
@@ -2401,6 +2627,7 @@ function doPrintableChar(pUserInput, pCurpos, pCurrentWordLength)
 	// Note: gTextLineIndex is where the new character will appear in the line.
 	// If gTextLineIndex is somehow past the end of the current line, then
 	// fill it with spaces up to gTextLineIndex.
+	var idxIsAtEndOfTextLine = false;
 	if (gTextLineIndex > gEditLines[gEditLinesIndex].screenLength())
 	{
 		var numSpaces = gTextLineIndex - gEditLines[gEditLinesIndex].screenLength();
@@ -2410,7 +2637,10 @@ function doPrintableChar(pUserInput, pCurpos, pCurrentWordLength)
 	}
 	// If gTextLineIndex is at the end of the line, then just append the char.
 	else if (gTextLineIndex == gEditLines[gEditLinesIndex].screenLength())
+	{
 		gEditLines[gEditLinesIndex].text += pUserInput;
+		idxIsAtEndOfTextLine = true;
+	}
 	else
 	{
 		// gTextLineIndex is at the beginning or in the middle of the line.
@@ -2448,8 +2678,13 @@ function doPrintableChar(pUserInput, pCurpos, pCurrentWordLength)
 	// If the line is now too long to fit in the edit area, then we will have
 	// to re-adjust the text lines.
 	var reAdjusted = false;
+	var addedSpaceAtSplitPointDuringReAdjust = false;
 	if (gEditLines[gEditLinesIndex].screenLength() >= gEditWidth)
-		reAdjusted = reAdjustTextLines(gEditLines, gEditLinesIndex, gEditLines.length, gEditWidth, gConfigSettings.allowColorSelection);
+	{
+		var reAdjustRetObj = reAdjustTextLines(gEditLines, gEditLinesIndex, gEditLines.length, gEditWidth, gConfigSettings.allowColorSelection, gJustEditingAFile); // gMsgAreaInfo.subBoardCode.length == 0
+		reAdjusted = reAdjustRetObj.textChanged;
+		addedSpaceAtSplitPointDuringReAdjust = reAdjustRetObj.addedSpaceAtSplitPoint;
+	}
 
 	// placeCursorAtEnd specifies whether or not to place the cursor at its
 	// spot using console.gotoxy() at the end.  This is an optimization.
@@ -2480,7 +2715,14 @@ function doPrintableChar(pUserInput, pCurpos, pCurrentWordLength)
 			if (gEditLines[gEditLinesIndex].screenLength() == gEditWidth-1)
 				numChars = ((pUserInput == " ") ? 0 : 1);
 			else
+			{
 				numChars = gTextLineIndex - gEditLines[gEditLinesIndex].screenLength();
+				// New (2025-05-04) - If editing a regular file (not a message)
+				// and a space was added where the line was split, increment
+				// numChars
+				if (gJustEditingAFile && addedSpaceAtSplitPointDuringReAdjust) // gMsgAreaInfo.subBoardCode.length == 0
+					++numChars;
+			}
 			retObj.x = gEditLeft + numChars;
 			var originalEditLinesIndex = gEditLinesIndex++;
 			gTextLineIndex = numChars;
@@ -2583,9 +2825,10 @@ function doPrintableChar(pUserInput, pCurpos, pCurrentWordLength)
 //               returnCode: The return code for the program (in case the
 //                           user saves or aborts)
 //               continueOn: Whether or not the edit loop should continue
-//               doQuoteSelection: Whether or not the user typed the command
-//                                 to do quote selection.
-//               showHelp: Whether or not the user wants to show the help screen
+//               nextAction: Will have one of the ENTER_ACTION_* values to specify
+//                           what action to take based on the user's input on the
+//                           current line. Defaults to ENTER_ACTION_NONE, for no
+//                           special action.
 function doEnterKey(pCurpos, pCurrentWordLength)
 {
 	// Create the return object
@@ -2595,9 +2838,7 @@ function doEnterKey(pCurpos, pCurrentWordLength)
 		currentWordLength: pCurrentWordLength,
 		returnCode: 0,
 		continueOn: true,
-		doQuoteSelection: false,
-		doCrossPostSelection: false,
-		showHelp: false
+		nextAction: ENTER_ACTION_NONE
 	};
 
 	// Store the current screen row position and gEditLines index.
@@ -2627,7 +2868,8 @@ function doEnterKey(pCurpos, pCurrentWordLength)
 		else if (lineUpper == "/A")
 		{
 			// Confirm with the user
-			if (promptYesNo("Abort message", false, "Abort", false, false))
+			var editObjName = (gMsgAreaInfo.subBoardCode.length > 0 ? "message" : "edit");
+			if (promptYesNo("Abort " + editObjName, false, "Abort", false, false))
 			{
 				retObj.returnCode = 1; // 1: Abort
 				retObj.continueOn = false;
@@ -2654,11 +2896,13 @@ function doEnterKey(pCurpos, pCurrentWordLength)
 				return(retObj);
 			}
 		}
-		// /Q: Do quote selection, and /?: Show help
+		// /Q: Do quote selection or /?: Show help
 		else if ((lineUpper == "/Q") || (lineUpper == "/?"))
 		{
-			retObj.doQuoteSelection = (lineUpper == "/Q");
-			retObj.showHelp = (lineUpper == "/?");
+			if (lineUpper == "/Q")
+				retObj.nextAction = ENTER_ACTION_DO_QUOTE_SELECTION;
+			else if (lineUpper == "/?")
+				retObj.nextAction = ENTER_ACTION_SHOW_HELP;
 			retObj.currentWordLength = 0;
 			gTextLineIndex = 0;
 			gEditLines[gEditLinesIndex].text = "";
@@ -2671,10 +2915,26 @@ function doEnterKey(pCurpos, pCurrentWordLength)
 			console.gotoxy(retObj.x, retObj.y);
 			return(retObj);
 		}
+		// /M: Input & insert a meme
+		else if (lineUpper == "/M")
+		{
+			retObj.nextAction = ENTER_ACTION_DO_MEME_INPUT;
+			retObj.currentWordLength = 0;
+			gTextLineIndex = 0;
+			gEditLines[gEditLinesIndex].text = "";
+			// Blank out the /M on the screen
+			console.print(chooseEditColor());
+			retObj.x = gEditLeft;
+			console.gotoxy(retObj.x, retObj.y);
+			console.print("  ");
+			// Put the cursor where it should be
+			console.gotoxy(retObj.x, retObj.y);
+			return(retObj);
+		}
 		// /C: Cross-post
 		else if (lineUpper == "/C")
 		{
-			retObj.doCrossPostSelection = true;
+			retObj.nextAction = ENTER_ACTION_DO_CROSS_POST_SELECTION;
 
 			// Blank out the data in the text line, set the data in
 			// retObj, and return it.
@@ -2692,7 +2952,7 @@ function doEnterKey(pCurpos, pCurrentWordLength)
 			console.gotoxy(retObj.x, retObj.y);
 			return(retObj);
 		}
-		// /T: List text replacements
+		// /T: List text replacements (do that here)
 		else if (lineUpper == "/T")
 		{
 			if (gConfigSettings.enableTextReplacements)
@@ -2713,7 +2973,7 @@ function doEnterKey(pCurpos, pCurrentWordLength)
 			console.gotoxy(retObj.x, retObj.y);
 			return(retObj);
 		}
-		// /U: User settings
+		// /U: User settings (do that here)
 		else if (lineUpper == "/U")
 		{
 			var currentCursorPos = {
@@ -3690,10 +3950,7 @@ function displayMessageRectangle(pX, pY, pWidth, pHeight, pEditLinesIndex, pClea
 			if (pClearExtraWidth)
 			{
 				if (pWidth > actualLenWritten)
-				{
 					printf("%*s", pWidth-actualLenWritten, "");
-					//console.print(editColor);
-				}
 			}
 		}
 		else
@@ -3760,7 +4017,8 @@ function doESCMenu(pCurpos, pCurrentWordLength)
 			break;
 		case ESC_MENU_ABORT:
 			// Before aborting, ask they user if they really want to abort.
-			if (promptYesNo("Abort message", false, "Abort", false, false))
+			var editObjName = (gMsgAreaInfo.subBoardCode.length > 0 ? "message" : "edit");
+			if (promptYesNo("Abort " + editObjName, false, "Abort", false, false))
 			{
 				returnObj.returnCode = 1; // Aborted
 				returnObj.continueOn = false;
@@ -3797,7 +4055,7 @@ function doESCMenu(pCurpos, pCurrentWordLength)
 		case ESC_MENU_HELP_COMMAND_LIST:
 			displayCommandList(true, true, true, gCanCrossPost,
 			                   gConfigSettings.enableTextReplacements, gConfigSettings.allowUserSettings,
-			                   gConfigSettings.allowSpellCheck, gConfigSettings.allowColorSelection);
+			                   gConfigSettings.allowSpellCheck, gConfigSettings.allowColorSelection, gCanChangeSubject);
 			clearEditAreaBuffer();
 			fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs, gInsertMode,
 			               gUseQuotes, gEditLinesIndex-(pCurpos.y-gEditTop), displayEditLines);
@@ -3834,6 +4092,28 @@ function doESCMenu(pCurpos, pCurrentWordLength)
 			returnObj.x = spellCheckRetObj.x;
 			returnObj.y = spellCheckRetObj.y;
 			returnObj.currentWordLength = spellCheckRetObj.currentWordLength;
+			break;
+		case ESC_MENU_INSERT_MEME:
+			// Input a meme from the user
+			var memeInputRetObj = doMemeInput();
+			// If a meme was added and we're able, move the
+			// cursor below the meme that was addded
+			if (memeInputRetObj.numMemeLines > 0)
+			{
+				var newY = returnObj.y + memeInputRetObj.numMemeLines;
+				if (newY <= gEditBottom)
+					returnObj.y = newY;
+				else
+					returnObj.y = gEditBottom;
+			}
+			if (memeInputRetObj.refreshScreen)
+			{
+				// Refresh the screen
+				clearEditAreaBuffer();
+				fpRedrawScreen(gEditLeft, gEditRight, gEditTop, gEditBottom, gTextAttrs,
+				               gInsertMode, gUseQuotes, gEditLinesIndex-(returnObj.y-gEditTop),
+				               displayEditLines);
+			}
 			break;
 	}
 
@@ -5658,12 +5938,22 @@ function printEditLine(pIndex, pUseColors, pStart, pLength)
 	if (useColors)
 	{
 		var lineLengthToGet = (length > -1 ? length : gEditLines[pIndex].screenLength()-start);
-		// Note: substrWithAttrCodes() is defined in dd_lightbar_menu.js
-		//var lineText = substrWithAttrCodes(gEditLines[pIndex].getText(true), start, lineLengthToGet);
-		// The line's substr() will include the necessary attribute codes
-		//var lineText = gEditLines[pIndex].substr(true, start, lineLengthToGet);
-		var lineText = substrWithAttrCodes(gEditLines[pIndex].getText(true), start, lineLengthToGet);
-		lengthWritten = console.strlen(lineText, str_is_ascii(lineText) ? P_NONE : P_UTF8);
+		var lineText = "";
+		if (gEditLines[pIndex].isAQuoteLine())
+		{
+			// The line is a quote line. Print the line with the configured quote color.
+			lineText = "\x01n" + gQuoteLineColor + gEditLines[pIndex].text.substr(start, lineLengthToGet);
+		}
+		else
+		{
+			// The line isn't a quote line
+			// Note: substrWithAttrCodes() is defined in dd_lightbar_menu.js
+			//var lineText = substrWithAttrCodes(gEditLines[pIndex].getText(true), start, lineLengthToGet);
+			// The line's substr() will include the necessary attribute codes
+			//lineText = gEditLines[pIndex].substr(true, start, lineLengthToGet);
+			lineText = substrWithAttrCodes(gEditLines[pIndex].getText(true), start, lineLengthToGet);
+		}
+		lengthWritten = console.strlen(lineText, str_is_utf8(strip_ctrl(lineText)) ? P_UTF8 : P_NONE);
 		printStrConsideringUTF8(lineText, gPrintMode);
 	}
 	else
@@ -6416,7 +6706,7 @@ function letUserUploadMessageFile(pCurpos)
 		originalCurpos = console.getxy();
 
 	var uploadedMessage = false;
-	if (promptYesNo("Upload a mesage", true, "Upload message", true, true))
+	if (promptYesNo("Upload a message", true, "Upload message", true, true))
 	{
 		console.attributes = "N";
 		console.gotoxy(1, console.screen_rows);
@@ -6694,4 +6984,102 @@ function promptForGraphicsChar(pCurPos)
 	}
 
 	console.attributes = "N";
+}
+
+// Inputs a meme from the user and inserts it into the message
+//
+// Return value: An object with the following properties:
+//               refreshScreen: Whether or not the whole screen should be refreshed (boolean)
+//               numMemeLines: The number of lines in the meme
+function doMemeInput()
+{
+	var retObj = {
+		refreshScreen: true,
+		numMemeLines: 0
+	};
+
+
+	console.attributes = "N";
+	console.gotoxy(1, console.screen_rows);
+	console.crlf();
+	console.print("\x01g\x01h- \x01n\x01cMeme input \x01g-\x01n\r\n");
+	// Allow the user to change the meme width if they want to
+	//console.print("\x01cMeme width\x01g\x01h: \x01n");
+	//var editWidth = console.screen_columns - 13;
+	var promptText = format("\x01cMeme width (up to \x01h%d\x01n\x01c)\x01g\x01h: \x01n", console.screen_columns-1);
+	console.print(promptText);
+	//var editWidth = console.screen_columns - console.strlen(promptText) - 1;
+	var editWidth = (console.screen_columns-1).toString().length + 1;
+	var inputtedMemeWidth = console.getstr(gConfigSettings.memeSettings.memeDefaultWidth.toString(), editWidth, K_EDIT|K_LINE|K_NOSPIN|K_NUMBER);
+	var memeWidthNum = parseInt(inputtedMemeWidth, 10);
+	if (!(!isNaN(memeWidthNum) && memeWidthNum > 0 && memeWidthNum < console.screen_columns))
+	{
+		memeWidthNum = gConfigSettings.memeSettings.memeDefaultWidth;
+		var errorMsg = format("\x01y\x01hInvalid width (\x01wmust be between 1 and %d (1 less than terminal width)\x01y). Defaulting to %d.\x01n",
+		                      console.screen_columns-1, gConfigSettings.memeSettings.memeDefaultWidth);
+		console.print(lfexpand(word_wrap(errorMsg, console.screen_columns-1)));
+		console.crlf();
+	}
+	// Input the meme text from the user
+	console.print("\x01cWhat do you want to say? \x01g\x01h(\x01cENTER\x01g=\x01n\x01cAbort\x01g\x01h)\x01n\r\n");
+	var text = console.getstr(gConfigSettings.memeSettings.memeMaxTextLen, K_LINEWRAP);
+	if (typeof(text) !== "string" || text.length == 0)
+		return retObj;
+	var memeOptions = {
+		random: gConfigSettings.memeSettings.random,
+		border: gConfigSettings.memeSettings.memeDefaultBorderIdx,
+		color: gConfigSettings.memeSettings.memeDefaultColorIdx,
+		justify: gConfigSettings.memeSettings.justify,
+		width: memeWidthNum
+	};
+	var msg = load("meme_chooser.js", text, memeOptions);
+	var memeContent = (typeof(msg) === "string" ? msg : "");
+
+	// Split the meme content into lines
+	var memeLines = memeContent.split("\r\n");
+	// The last meme line will probably be an empty line due to
+	// the trailing \r\n, so remove it
+	if (memeLines.length > 0 && memeLines[memeLines.length-1].length == 0)
+		memeLines.pop();
+	retObj.numMemeLines = memeLines.length;
+	// If the user entered a meme, then add it to the message
+	if (memeLines.length > 0)
+	{
+		// The previous edit line should have a hard newline ending
+		if (gEditLinesIndex > 0)
+			gEditLines[gEditLinesIndex-1].hardNewlineEnd = true;
+
+		// Remove the current edit line; the meme will start on this line
+		gEditLines.splice(gEditLinesIndex, 1);
+
+		// Ensure the meme lines are inserted at the correct place
+		// in gEditLines, depending on the edit lines array index
+		if (gEditLinesIndex == gEditLines.length-1)
+		{
+			// Append the meme to the edit lines
+			for (var i = 0; i < memeLines.length; ++i)
+				gEditLines.push(new TextLine(memeLines[i], true, false));
+			gEditLines.push(new TextLine("", true, false));
+			gEditLinesIndex = gEditLines.length - 1;
+			gTextLineIndex = 0;
+			retObj.currentWordLength = 0;
+		}
+		else
+		{
+			// Currently in the middle of the message
+			for (var i = 0; i < memeLines.length; ++i)
+				gEditLines.splice(gEditLinesIndex++, 0, new TextLine(memeLines[i], true, false));
+		}
+		/*
+		retObj.currentWordLength = 0;
+		gTextLineIndex = 0;
+		gEditLines[gEditLinesIndex].text = "";
+		// Blank out the /M on the screen
+		console.print(chooseEditColor());
+		retObj.x = gEditLeft;
+		console.gotoxy(retObj.x, retObj.y);
+		*/
+	}
+
+	return retObj;
 }

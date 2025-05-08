@@ -36,14 +36,15 @@ var DCTMENU_FILE_EDIT = 2;
 var DCTMENU_EDIT_INSERT_TOGGLE = 3;
 var DCTMENU_EDIT_FIND_TEXT = 4;
 var DCTMENU_EDIT_SPELL_CHECKER = 5;
-var DCTMENU_EDIT_SETTINGS = 6;
-var DCTMENU_SYSOP_IMPORT_FILE = 7;
-var DCTMENU_SYSOP_EXPORT_FILE = 11;
-var DCTMENU_HELP_COMMAND_LIST = 8;
-var DCTMENU_GRAPHIC_CHAR = 9;
-var DCTMENU_HELP_PROGRAM_INFO = 10;
-var DCTMENU_CROSS_POST = 12;
-var DCTMENU_LIST_TXT_REPLACEMENTS = 13;
+var DCTMENU_EDIT_INSERT_MEME = 6;
+var DCTMENU_EDIT_SETTINGS = 7;
+var DCTMENU_SYSOP_IMPORT_FILE = 8;
+var DCTMENU_SYSOP_EXPORT_FILE = 9;
+var DCTMENU_HELP_COMMAND_LIST = 10;
+var DCTMENU_GRAPHIC_CHAR = 11;
+var DCTMENU_HELP_PROGRAM_INFO = 12;
+var DCTMENU_CROSS_POST = 13;
+var DCTMENU_LIST_TXT_REPLACEMENTS = 14;
 
 // Read the color configuration file
 readColorConfig(gConfigSettings.DCTColors.ThemeFilename);
@@ -846,6 +847,7 @@ function doDCTESCMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
 		doDCTESCMenu.allMenus[editMenuNum].addItem("&Graphic char   Ctrl-G", DCTMENU_GRAPHIC_CHAR);
 		doDCTESCMenu.allMenus[editMenuNum].addItem("&Find Text      Ctrl-N", DCTMENU_EDIT_FIND_TEXT);
 		doDCTESCMenu.allMenus[editMenuNum].addItem("Spe&ll Checker  Ctrl-W", DCTMENU_EDIT_SPELL_CHECKER);
+		doDCTESCMenu.allMenus[editMenuNum].addItem("Insert &Meme          ", DCTMENU_EDIT_INSERT_MEME);
 		doDCTESCMenu.allMenus[editMenuNum].addItem("Setti&ngs       Ctrl-U", DCTMENU_EDIT_SETTINGS);
 		doDCTESCMenu.allMenus[editMenuNum].addExitLoopKey(CTRL_I, DCTMENU_EDIT_INSERT_TOGGLE);
 		doDCTESCMenu.allMenus[editMenuNum].addExitLoopKey(CTRL_N, DCTMENU_EDIT_FIND_TEXT);
@@ -968,6 +970,7 @@ function doDCTESCMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
 			case CTRL_V:    // Insert/overwrite toggle
 			case "F":       // Find text
 			case CTRL_F:    // Find text
+			case "M":       // Insert meme
 			case "N":       // User settings
 			case CTRL_U:    // User settings
 			case "O":       // Command List
@@ -1063,6 +1066,9 @@ function doDCTESCMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
 	// Spell checker
 	else if ((userInput == CTRL_W) || (userInput == "L") || (userInput == DCTMENU_EDIT_SPELL_CHECKER))
 		chosenAction = ESC_MENU_SPELL_CHECK;
+	// Insert meme
+	else if ((userInput == "M") || (userInput == DCTMENU_EDIT_INSERT_MEME))
+		chosenAction = ESC_MENU_INSERT_MEME;
 
 	return chosenAction;
 }
@@ -1099,7 +1105,7 @@ function inputMatchesMenuSelection(pInput)
    return((pInput == KEY_ESC) || (pInput == KEY_LEFT) ||
            (pInput == KEY_RIGHT) || (pInput == KEY_ENTER) ||
            (pInput == "S") || (pInput == "A") || (pInput == "E") ||
-           (pInput == "I") || (user.is_sysop && (pInput == "X")) ||
+           (pInput == "I") || (pInput == "M") || (user.is_sysop && (pInput == "X")) ||
            (pInput == "F") || (pInput == "C") || (pInput == "G") ||
            (pInput == "P") || (pInput == "T"));
 }
@@ -1358,6 +1364,14 @@ function DCTMenu_DoInputLoop()
 	}
 	else
 		console.gotoxy(this.topLeftX, this.topLeftY);
+	// TODO:
+	// 2025-05-06 - Kludge: For some reason, the menu isn't
+	// being drawn now until a key is pressed. Clearing the
+	// key buffer seems to help let the menu be drawn:
+	console.clearkeybuffer();
+	// This also helped get the menu to draw:
+	//console.ungetstr(KEY_ENTER);
+	//console.getkey(K_NOCRLF|K_NOECHO|K_NOSPIN);
 	// Draw the top border
 	var innerWidth = this.width - 2;
 	if (this.borderStyle == "single")

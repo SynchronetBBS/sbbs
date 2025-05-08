@@ -127,6 +127,7 @@ var ESC_MENU_CROSS_POST_MESSAGE = 10;
 var ESC_MENU_LIST_TEXT_REPLACEMENTS = 11;
 var ESC_MENU_USER_SETTINGS = 12;
 var ESC_MENU_SPELL_CHECK = 13;
+var ESC_MENU_INSERT_MEME = 14;
 
 
 var COPYRIGHT_YEAR = 2025;
@@ -1863,8 +1864,9 @@ function displayHelpHeader()
 //  pUserSettings: Whether or not the user settings feature is enabled
 //  pSpellCheck: Whether or not spell check is allowed
 //  pCanChangeColor: Whether or not changing text color is allowed
+//  pCanChangeSubject: Whether or not changing the subject is allowed
 function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pTxtReplacments,
-                            pUserSettings, pSpellCheck, pCanChangeColor)
+                            pUserSettings, pSpellCheck, pCanChangeColor, pCanChangeSubject)
 {
 	if (pClear)
 		console.clear("\x01n");
@@ -1908,9 +1910,10 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pTxtR
 	//displayCmdKeyFormattedDouble("Ctrl-G", "General help", "/A", "Abort", true);
 	displayCmdKeyFormattedDouble("Ctrl-G", "Input graphic character", "/A", "Abort", true);
 	displayCmdKeyFormattedDouble("Ctrl-L", "Command key list (this list)", "/S", "Save", true);
-	displayCmdKeyFormattedDouble("", "", "/Q", "Quote message", true);
 	if (pTxtReplacments)
 		displayCmdKeyFormattedDouble("Ctrl-T", "List text replacements", "/T", "List text replacements", true);
+	displayCmdKeyFormattedDouble("", "", "/Q", "Quote message", true);
+	displayCmdKeyFormattedDouble("", "", "/M", "Add a meme", true);
 	if (pUserSettings)
 		displayCmdKeyFormattedDouble("", "", "/U", "Your user settings", true);
 	if (pCanCrossPost)
@@ -1925,7 +1928,10 @@ function displayCommandList(pDisplayHeader, pClear, pPause, pCanCrossPost, pTxtR
 	displayCmdKeyFormattedDouble("Ctrl-Q", "Quote message", "Ctrl-W", "Word/text search", true);
 	displayCmdKeyFormattedDouble("Insert/Ctrl-I", "Toggle insert/overwrite mode",
 	                             "Ctrl-D", "Delete line", true);
-	displayCmdKeyFormattedDouble("Ctrl-S", "Change subject", "ESC", "Command menu", true);
+	if (pCanChangeSubject)
+		displayCmdKeyFormattedDouble("Ctrl-S", "Change subject", "ESC", "Command menu", true);
+	else
+		displayCmdKeyFormattedDouble("", "", "ESC", "Command menu", true);
 	// For the remaining hotkeys, build an array of them based on whether they're allowed or not.
 	// Then with the array, output each pair of hotkeys on the same line, and if there's only one
 	// left, display it by itself.
@@ -2032,7 +2038,7 @@ function displayProgramInfo(pClear, pPause)
 	console.center("\x01n\x01h\x01c" + EDITOR_PROGRAM_NAME + "\x01n \x01cVersion \x01g" +
 	               EDITOR_VERSION + " \x01w\x01h(\x01b" + EDITOR_VER_DATE + "\x01w)");
 	console.center("\x01n\x01cby Eric Oulashin");
-	console.crlf();
+	//console.crlf();
 	console.print("\x01n\x01cSlyEdit is a full-screen message editor for Synchronet that mimics the look &\r\n");
 	console.print("feel of IceEdit or DCT Edit.");
 	console.crlf();
@@ -2139,6 +2145,9 @@ function promptYesNo(pQuestion, pDefaultYes, pBoxTitle, pIceRefreshForBothAnswer
 // Return value: An object containing the settings as properties.
 function ReadSlyEditConfigFile()
 {
+	// Meme library for meme definitions
+	var memeLib = load({}, "meme_lib.js");
+	// Configuration settings
 	var cfgObj = {
 		// Default settings
 		thirdPartyLoadOnStart: [],
@@ -2163,6 +2172,14 @@ function ReadSlyEditConfigFile()
 		allowEditQuoteLines: true,
 		allowSpellCheck: true,
 		dictionaryFilenames: [],
+		memeSettings: {
+			memeMaxTextLen: 500,
+			memeDefaultWidth: 39,
+			random: false,
+			memeDefaultBorderIdx: 0,
+			memeDefaultColorIdx: 0,
+			justify: memeLib.JUSTIFY_CENTER
+		},
 
 		// General SlyEdit color settings
 		genColors: {
@@ -2337,6 +2354,77 @@ function ReadSlyEditConfigFile()
 				cfgObj.taglinePrefix = behaviorSettings.taglinePrefix;
 			if (behaviorSettings.hasOwnProperty("dictionaryFilenames") && typeof(behaviorSettings.dictionaryFilenames) === "string")
 				cfgObj.dictionaryFilenames = parseDictionaryConfig(behaviorSettings.dictionaryFilenames, js.exec_dir);
+			if (behaviorSettings.hasOwnProperty("memeMaxTextLen") && typeof(behaviorSettings.memeMaxTextLen) === "number")
+			{
+				if (behaviorSettings.memeMaxTextLen >= 1)
+					cfgObj.memeSettings.memeMaxTextLen = behaviorSettings.memeMaxTextLen;
+			}
+			if (behaviorSettings.hasOwnProperty("memeDefaultWidth") && typeof(behaviorSettings.memeDefaultWidth) === "number")
+				{
+					if (behaviorSettings.memeDefaultWidth >= 1)
+						cfgObj.memeSettings.memeDefaultWidth = behaviorSettings.memeDefaultWidth;
+				}
+			if (behaviorSettings.hasOwnProperty("memeStyleRandom") && typeof(behaviorSettings.memeStyleRandom) === "boolean")
+				cfgObj.memeSettings.random = behaviorSettings.memeStyleRandom;
+			if (behaviorSettings.hasOwnProperty("memeDefaultBorder"))
+			{
+				var borderSettingType = typeof(behaviorSettings.memeDefaultBorder);
+				if (borderSettingType === "string")
+				{
+					var borderUpper = behaviorSettings.memeDefaultBorder.toUpperCase();
+					if (borderUpper == "NONE" || borderUpper == "BORDER_NONE")
+						cfgObj.memeSettings.memeDefaultBorderIdx = memeLib.BORDER_NONE;
+					else if (borderUpper == "SINGLE" || borderUpper == "BORDER_SINGLE")
+						cfgObj.memeSettings.memeDefaultBorderIdx = memeLib.BORDER_SINGLE;
+					else if (borderUpper == "MIXED1" || borderUpper == "BORDER_MIXED1")
+						cfgObj.memeSettings.memeDefaultBorderIdx = memeLib.BORDER_MIXED1;
+					else if (borderUpper == "MIXED2" || borderUpper == "BORDER_MIXED2")
+						cfgObj.memeSettings.memeDefaultBorderIdx = memeLib.BORDER_MIXED2;
+					else if (borderUpper == "MIXED3" || borderUpper == "BORDER_MIXED3")
+						cfgObj.memeSettings.memeDefaultBorderIdx = memeLib.BORDER_MIXED3;
+					else if (borderUpper == "DOUBLE" || borderUpper == "BORDER_DOUBLE")
+						cfgObj.memeSettings.memeDefaultBorderIdx = memeLib.BORDER_DOUBLE;
+					else if (borderUpper == "ORNATE1" || borderUpper == "BORDER_ORNATE1")
+						cfgObj.memeSettings.memeDefaultBorderIdx = memeLib.BORDER_ORNATE1;
+					else if (borderUpper == "ORNATE2" || borderUpper == "BORDER_ORNATE2")
+						cfgObj.memeSettings.memeDefaultBorderIdx = memeLib.BORDER_ORNATE2;
+					else if (borderUpper == "ORNATE3" || borderUpper == "BORDER_ORNATE3")
+						cfgObj.memeSettings.memeDefaultBorderIdx = memeLib.BORDER_ORNATE3;
+				}
+				else if (borderSettingType === "number")
+				{
+					if (behaviorSettings.memeDefaultBorder >= 1 && behaviorSettings.memeDefaultBorder < memeLib.BORDER_COUNT)
+						cfgObj.memeSettings.memeDefaultBorderIdx = behaviorSettings.memeDefaultBorder - 1;
+				}
+			}
+			if (behaviorSettings.hasOwnProperty("memeDefaultColor"))
+			{
+				var memeColorSettingType = typeof(behaviorSettings.memeDefaultColor);
+				if (memeColorSettingType  === "number")
+				{
+					if (behaviorSettings.memeMaxTextLen >= 1)
+						cfgObj.memeSettings.memeDefaultColorIdx = behaviorSettings.memeDefaultColor - 1;
+				}
+			}
+			if (behaviorSettings.hasOwnProperty("memeJustify"))
+			{
+				var justifySettingType = typeof(behaviorSettings.memeJustify);
+				if (justifySettingType === "string")
+				{
+					var justifyUpper = behaviorSettings.memeJustify.toUpperCase();
+					if (justifyUpper == "CENTER" || justifyUpper == "JUSTIFY_CENTER")
+						cfgObj.memeSettings.justify = memeLib.JUSTIFY_CENTER;
+					else if (justifyUpper == "LEFT" || justifyUpper == "JUSTIFY_LEFT")
+						cfgObj.memeSettings.justify = memeLib.JUSTIFY_LEFT;
+					else if (justifyUpper == "RIGHT" || justifyUpper == "JUSTIFY_RIGHT")
+						cfgObj.memeSettings.justify = memeLib.JUSTIFY_RIGHT;
+				}
+				else if (justifySettingType === "number")
+				{
+					if (behaviorSettings.memeJustify >= 0 && behaviorSettings.memeJustify < memeLib.JUSTIFY_COUNT)
+						cfgObj.memeSettings.justify = behaviorSettings.memeJustify;
+				}
+			}
 		}
 
 		// Color settings
@@ -2463,29 +2551,38 @@ function splitStrStable(pStr, pMaxLen)
 //  pEndIndex: One past the last index of the line in the array to end at.
 //  pEditWidth: The width of the edit area (AKA the maximum line length + 1)
 //  pUsingColors: Boolean - Whether or not text color/attribute codes are being used
+//  pEditingAFile: Boolean - Whether or not we're editing a file (rather than posting
+//                 a message in email or a sub-board)
 //
-// Return value: Boolean - Whether or not any text was changed.
-function reAdjustTextLines(pTextLineArray, pStartIndex, pEndIndex, pEditWidth, pUsingColors)
+// Return value: An object with the following parameters:
+//               textChanged: Boolean - Whether or not any text was changed.
+//               addedSpaceAtSplitPoint: Boolean - Whether or not a space was added at the split point
+//                                       (possible when editing a regular text file rather than a message)
+function reAdjustTextLines(pTextLineArray, pStartIndex, pEndIndex, pEditWidth, pUsingColors, pEditingAFile)
 {
+	var retObj = {
+		textChanged: false,
+		addedSpaceAtSplitPoint: false
+	};
+
+
 	// Returns without doing anything if any of the parameters are not
 	// what they should be. (Note: Not checking pTextLineArray for now..)
 	if (typeof(pStartIndex) != "number")
-		return false;
+		return retObj;
 	if (typeof(pEndIndex) != "number")
-		return false;
+		return retObj;
 	if (typeof(pEditWidth) != "number")
-		return false;
+		return retObj;
 	// Range checking
 	if ((pStartIndex < 0) || (pStartIndex >= pTextLineArray.length))
-		return false;
+		return retObj;
 	if ((pEndIndex <= pStartIndex) || (pEndIndex < 0))
-		return false;
+		return retObj;
 	if (pEndIndex > pTextLineArray.length)
 		pEndIndex = pTextLineArray.length;
 	if (pEditWidth <= 5)
-		return false;
-
-	var textChanged = false; // We'll return this upon function exit.
+		return retObj;
 
 	var usingColors = (typeof(pUsingColors) === "boolean" ? pUsingColors : true);
 
@@ -2525,10 +2622,12 @@ function reAdjustTextLines(pTextLineArray, pStartIndex, pEndIndex, pEditWidth, p
 			tempText = pTextLineArray[i].text.substr(spaceFoundAtSplitIdx ? splitIndex+1 : splitIndex);
 			// Remove the attributes from the end of the line that was cut short, to be moved to the beginning of
 			// the next line. Note: This must be done before shortening the text.
+			// New (2025-04-23): Note: It seems using splitIndex+1 wouldn't be a good idea
 			var lastAttrs = pTextLineArray[i].popAttrsFromEnd(splitIndex);
 			// Remove the text from the line up to splitIndex
+			//var charAfter = pTextLineArray[i].text.substr(splitIndex, 1); // Temporary (for debugging)
 			pTextLineArray[i].text = pTextLineArray[i].text.substr(0, splitIndex);
-			textChanged = true;
+			retObj.textChanged = true;
 			// If we're on the last line, or if the current line has a hard
 			// newline or is a quote line, then append a new line below.
 			appendedNewLine = false;
@@ -2552,6 +2651,24 @@ function reAdjustTextLines(pTextLineArray, pStartIndex, pEndIndex, pEditWidth, p
 				// from the split index but we removed the space there.
 				if (spaceFoundAtSplitIdx)
 				{
+					// A space was found at the split index.
+					// If we're editing a file, then add the space back to the end of
+					// that text line. When we're editing a file, spaces aren't added
+					// in between the text lines, so we need to ensure the space is
+					// still there if there was originally a space.
+
+					// 2025-05-04: The following check seems needed when editing a file, but
+					// was causeing an issue where if a line is wrapped, the cursor is placed
+					// directly under the last character rather than at the end of the
+					// text line. I've fixed this issue but left this comment in for future
+					// reference.
+					// This is done below in the 'else' block too.
+					if (pEditingAFile) // New (2025-04-24)
+					{
+						pTextLineArray[i].text += " "; // New (2025-04-24)
+						retObj.addedSpaceAtSplitPoint = true;
+					}
+
 					var lastAttrKeys = Object.keys(lastAttrs);
 					if (lastAttrKeys.length > 0)
 					{
@@ -2575,11 +2692,29 @@ function reAdjustTextLines(pTextLineArray, pStartIndex, pEndIndex, pEditWidth, p
 			else
 			{
 				// Did not append a new line.
+				// New (2025-04-23)
+				// If we're editing a file and a space was found where the line
+				// was split, then add the space back to the end of that text
+				// line. When we're editing a file, spaces aren't added in between
+				// the text lines, so we need to ensure the space is still there if
+				// there was originally a space.
+				if (pEditingAFile)
+				{
+					if (spaceFoundAtSplitIdx)
+					{
+						pTextLineArray[i].text += " ";
+						retObj.addedSpaceAtSplitPoint = true;
+					}
+				}
+				// End new (2025-04-23)
 				// If we're in insert mode, then insert the text at the beginning of
 				// the next line.  Otherwise, overwrite the text in the next line.
 				if (inInsertMode())
 				{
-					pTextLineArray[nextLineIndex].text = tempText + " " + pTextLineArray[nextLineIndex].text;
+					if (pEditingAFile)
+						pTextLineArray[nextLineIndex].text = tempText + pTextLineArray[nextLineIndex].text;
+					else // Editing a message for email/sub-board
+						pTextLineArray[nextLineIndex].text = tempText + " " + pTextLineArray[nextLineIndex].text;
 					// Move the next line's current attributes to the right
 					pTextLineArray[nextLineIndex].moveAttrIdxes(0, tempText.length + 1);
 					// Add the attributes from the last of the line to the next line, adjusting the
@@ -2659,7 +2794,9 @@ function reAdjustTextLines(pTextLineArray, pStartIndex, pEndIndex, pEditWidth, p
 					var prependedTextWithSpace = false;
 					if ((pTextLineArray[i].text.charAt(pTextLineArray[i].text.length-1) != " ") && (pTextLineArray[nextLineIndex].text.substr(0, 1) != " "))
 					{
-						tempText = " ";
+						// TODO: Need to check pEditingAFile here?
+						if (!pEditingAFile) // Editing a message for email or a sub-board
+							tempText = " ";
 						prependedTextWithSpace = true;
 					}
 					tempText += pTextLineArray[nextLineIndex].text.substr(0, splitIndex);
@@ -2673,7 +2810,7 @@ function reAdjustTextLines(pTextLineArray, pStartIndex, pEndIndex, pEditWidth, p
 						// Set the next line's text: Trim off the front up to splitIndex+1.  Also, capture any attribute
 						// codes removed from the front of the next line (to be moved up).
 						var frontAttrs = pTextLineArray[nextLineIndex].trimFront(splitIndex+1);
-						textChanged = true;
+						retObj.textChanged = true;
 						if (prependedTextWithSpace)
 							++currentLineOriginalLen; // To fix off-by-1 issue with color/attribute codes
 						for (var textLineIdx in frontAttrs)
@@ -2699,14 +2836,14 @@ function reAdjustTextLines(pTextLineArray, pStartIndex, pEndIndex, pEditWidth, p
 					if (!pTextLineArray[nextLineIndex].hardNewlineEnd)
 					{
 						pTextLineArray.splice(nextLineIndex, 1);
-						textChanged = true;
+						retObj.textChanged = true;
 					}
 				}
 			}
 		}
 	}
 
-	return textChanged;
+	return retObj;
 }
 
 // Returns indexes of the first unquoted text line and the next
@@ -3187,8 +3324,9 @@ function stringIsEmptyOrOnlyWhitespace(pString)
 //  pMsgAreaName: The name of the message area being posted to
 //
 // Return value: An object containing the following properties:
-//  lastMsg: The last message in the sub-board (i.e., bbs.smb_last_msg)
-//  totalNumMsgs: The total number of messages in the sub-board (i.e., bbs.smb_total_msgs)
+//  lastMsg: The last message in the sub-board (i.e., bbs.smb_last_msg), or -1 if editing a file
+//  totalNumMsgs: The total number of messages in the sub-board (i.e., bbs.smb_total_msgs),
+//                or 0 if editing a file
 //  curMsgNum: The number/index of the current message being read.  Starting
 //             with Synchronet 3.16 on May 12, 2013, this is the absolute
 //             message number (bbs.msg_number).  For Synchronet builds before
@@ -3196,17 +3334,40 @@ function stringIsEmptyOrOnlyWhitespace(pString)
 //             bbs.msg_number is preferred because it works properly in all
 //             situations, whereas in earlier builds, bbs.msg_number was
 //             always given to JavaScript scripts as 0.
+//             If editing a file, this will be -1.
 //  msgNumIsOffset: Boolean - Whether or not the message number is an offset.
 //                  If not, then it is the absolute message number (i.e.,
 //                  bbs.msg_number).
-//  subBoardCode: The current sub-board code (i.e., bbs.smb_sub_code)
-//  grpIndex: The message group index for the sub-board
+//  subBoardCode: The current sub-board code (i.e., bbs.smb_sub_code, "mail", or "" if editing a file)
+//  grpIndex: The message group index for the sub-board (-1 if personal mail or editing a file)
 function getCurMsgInfo(pMsgAreaName)
 {
 	var retObj = {
-		msgNumIsOffset: false
+		lastMsg: -1,
+		totalNumMsgs: 0,
+		curMsgNum: -1,
+		msgNumIsOffset: false,
+		subBoardCode: "",
+		grpIndex: -1
 	};
-	if (bbs.smb_sub_code.length > 0)
+	if (pMsgAreaName.length == 0)
+	{
+		// No message area name. In this case, the user must be editing a file.
+		// We can leave the return values as defaults. SlyEdit can see if the
+		// user is editing a file by checking whether subBoardCode is an empty
+		// string.
+	}
+	else if (pMsgAreaName.toUpperCase() == "ELECTRONIC MAIL")
+	{
+		retObj.subBoardCode = "mail";
+		retObj.grpIndex = -1;
+		var mailInfoForUser = getPersonalMailInfoForUser();
+		retObj.lastMsg = mailInfoForUser.lastMsg;
+		retObj.totalNumMsgs = mailInfoForUser.totalNumMsgs;
+		retObj.curMsgNum = mailInfoForUser.curMsgNum;
+		retObj.msgNumIsOffset = mailInfoForUser.msgNumIsOffset;
+	}
+	else if (bbs.smb_sub_code.length > 0)
 	{
 		retObj.lastMsg = bbs.smb_last_msg;
 		retObj.totalNumMsgs = bbs.smb_total_msgs;
@@ -5682,6 +5843,72 @@ function replaceAtCodesInStr(pStr)
 		var decoded = bbs.atcode(code);
 		return (decoded != null ? decoded : "@" + code + "@");
 	});
+}
+
+// Gets message information for the user's personal email
+//
+// Return value: An object with the following properties:
+//  succeeded: Boolean - Whether or not this function successfully opened the messagebase
+//             and got the information
+//  lastMsg: The last message in the sub-board (i.e., bbs.smb_last_msg)
+//  totalNumMsgs: The total number of messages in the sub-board (i.e., bbs.smb_total_msgs)
+//  curMsgNum: The number/index of the current message being read.  Starting
+//             with Synchronet 3.16 on May 12, 2013, this is the absolute
+//             message number (bbs.msg_number).  For Synchronet builds before
+//             May 12, 2013, this is bbs.smb_curmsg.  Starting on May 12, 2013,
+//             bbs.msg_number is preferred because it works properly in all
+//             situations, whereas in earlier builds, bbs.msg_number was
+//             always given to JavaScript scripts as 0.
+//  msgNumIsOffset: Boolean - Whether or not the message number is an offset.
+//                  If not, then it is the absolute message number (i.e.,
+//                  bbs.msg_number).
+function getPersonalMailInfoForUser()
+{
+	var retObj = {
+		succeeded: false,
+		lastMsg: -1,
+		totalNumMsgs: 0,
+		curMsgNum: -1,
+		msgNumIsOffset: false
+	};
+
+	var msgbase = new MsgBase("mail");
+	if (msgbase.open())
+	{
+		var msgIdxArray = msgbase.get_index();
+		msgbase.close();
+		if (msgIdxArray != null)
+		{
+			for (var i = 0; i < msgIdxArray.length; ++i)
+			{
+				var msgIsToUser = false;
+				if (msgIdxArray[i].hasOwnProperty("to"))
+				{
+					if (msgIdxArray[i].to == user.number)
+						msgIsToUser = true;
+					else
+					{
+						msgIsToUser = (msgIdxArray[i].to == crc16_calc(user.handle.toLowerCase()) ||
+						               msgIdxArray[i].to == crc16_calc(user.alias.toLowerCase()) ||
+						               msgIdxArray[i].to == crc16_calc(user.name.toLowerCase()));
+					}
+				}
+				if (msgIsToUser)
+				{
+					retObj.lastMsg = msgIdxArray[i].number;
+					++retObj.totalNumMsgs;
+					if (retObj.curMsgNum == -1 && !Boolean(msgIdxArray[i].attr & MSG_READ))
+					{
+						retObj.curMsgNum = msgIdxArray[i].number;
+						retObj.msgNumIsOffset = false;
+					}
+				}
+			}
+			retObj.succeeded = true;
+		}
+	}
+
+	return retObj;
 }
 
 // This function displays debug text at a given location on the screen, then
