@@ -705,13 +705,16 @@ function doIceESCMenu(pY, pCanCrossPost)
 	var chosenAction = ESC_MENU_EDIT_MESSAGE;
 
 	// IceEdit ESC menu item return values
+	// Assuming an 80-column terminal, there's only so much room
+	// for the menu items.  For the last item, if cross-posting
+	// is enabled, use cross-posting; otherwise, use "Meme".
 	var ICE_ESC_MENU_SAVE = 0;
 	var ICE_ESC_MENU_ABORT = 1;
 	var ICE_ESC_MENU_EDIT = 2;
 	var ICE_ESC_MENU_SETTINGS = 3;
 	var ICE_ESC_MENU_HELP = 4;
 	var ICE_ESC_MENU_SPELL_CHECK = 5;
-	var ICE_ESC_MENU_CROSS_POST = 6;
+	var ICE_ESC_MENU_CROSS_POST_OR_MEME = 6; // Seems a little janky, but it works
 
 	var promptText = "Select An Option:  ";
 
@@ -719,7 +722,9 @@ function doIceESCMenu(pY, pCanCrossPost)
 	console.print(iceText(promptText, "\x01w"));
 	console.cleartoeol("\x01n");
 	// Input loop
-	var lastMenuItem = (pCanCrossPost ? ICE_ESC_MENU_CROSS_POST : ICE_ESC_MENU_SPELL_CHECK);
+	//var lastMenuItem = (pCanCrossPost ? ICE_ESC_MENU_CROSS_POST : ICE_ESC_MENU_SPELL_CHECK);
+	var lastMenuItem = ICE_ESC_MENU_CROSS_POST_OR_MEME;
+	var lastMenuItemText = (pCanCrossPost ? "Cross-post" : "Meme");
 	var userChoice = ICE_ESC_MENU_SAVE;
 	var userInput;
 	var continueOn = true;
@@ -737,8 +742,9 @@ function doIceESCMenu(pY, pCanCrossPost)
 				console.print(iceStyledPromptText("Settings", false) + "\x01n ");
 				console.print(iceStyledPromptText("Help", false) + "\x01n ");
 				console.print(iceStyledPromptText("sPlchk", false));
-				if (pCanCrossPost)
-				console.print("\x01n " + iceStyledPromptText("Cross-post", false));
+				console.print("\x01n " + iceStyledPromptText(lastMenuItemText, false));
+				//if (pCanCrossPost)
+				//	console.print("\x01n " + iceStyledPromptText("Cross-post", false));
 				break;
 			case ICE_ESC_MENU_ABORT:
 				console.print(iceStyledPromptText("Save", false) + "\x01n ");
@@ -747,8 +753,9 @@ function doIceESCMenu(pY, pCanCrossPost)
 				console.print(iceStyledPromptText("Settings", false) + "\x01n ");
 				console.print(iceStyledPromptText("Help", false) + "\x01n ");
 				console.print(iceStyledPromptText("sPlchk", false));
-				if (pCanCrossPost)
-					console.print("\x01n " + iceStyledPromptText("Cross-post", false));
+				console.print("\x01n " + iceStyledPromptText(lastMenuItemText, false));
+				//if (pCanCrossPost)
+				//	console.print("\x01n " + iceStyledPromptText("Cross-post", false));
 				break;
 			case ICE_ESC_MENU_EDIT:
 				console.print(iceStyledPromptText("Save", false) + "\x01n ");
@@ -757,8 +764,9 @@ function doIceESCMenu(pY, pCanCrossPost)
 				console.print(iceStyledPromptText("Settings", false) + "\x01n ");
 				console.print(iceStyledPromptText("Help", false) + "\x01n ");
 				console.print(iceStyledPromptText("sPlchk", false));
-				if (pCanCrossPost)
-					console.print("\x01n " + iceStyledPromptText("Cross-post", false));
+				console.print("\x01n " + iceStyledPromptText(lastMenuItemText, false));
+				//if (pCanCrossPost)
+				//	console.print("\x01n " + iceStyledPromptText("Cross-post", false));
 				break;
 			case ICE_ESC_MENU_SETTINGS:
 				console.print(iceStyledPromptText("Save", false) + "\x01n ");
@@ -767,8 +775,9 @@ function doIceESCMenu(pY, pCanCrossPost)
 				console.print(iceStyledPromptText("Settings", true) + "\x01n ");
 				console.print(iceStyledPromptText("Help", false) + "\x01n ");
 				console.print(iceStyledPromptText("sPlchk", false));
-				if (pCanCrossPost)
-					console.print("\x01n " + iceStyledPromptText("Cross-post", false));
+				console.print("\x01n " + iceStyledPromptText(lastMenuItemText, false));
+				//if (pCanCrossPost)
+				//	console.print("\x01n " + iceStyledPromptText("Cross-post", false));
 				break;
 			case ICE_ESC_MENU_HELP:
 				console.print(iceStyledPromptText("Save", false) + "\x01n ");
@@ -777,8 +786,9 @@ function doIceESCMenu(pY, pCanCrossPost)
 				console.print(iceStyledPromptText("Settings", false) + "\x01n ");
 				console.print(iceStyledPromptText("Help", true) + "\x01n ");
 				console.print(iceStyledPromptText("sPlchk", false));
-				if (pCanCrossPost)
-					console.print("\x01n " + iceStyledPromptText("Cross-post", false));
+				console.print("\x01n " + iceStyledPromptText(lastMenuItemText, false));
+				//if (pCanCrossPost)
+				//	console.print("\x01n " + iceStyledPromptText("Cross-post", false));
 				break;
 			case ICE_ESC_MENU_SPELL_CHECK:
 				console.print(iceStyledPromptText("Save", false) + "\x01n ");
@@ -787,18 +797,19 @@ function doIceESCMenu(pY, pCanCrossPost)
 				console.print(iceStyledPromptText("Settings", false) + "\x01n ");
 				console.print(iceStyledPromptText("Help", false) + "\x01n ");
 				console.print(iceStyledPromptText("sPlchk", true));
-				if (pCanCrossPost)
-					console.print("\x01n " + iceStyledPromptText("Cross-post", false));
+				console.print("\x01n " + iceStyledPromptText(lastMenuItemText, false));
+				//if (pCanCrossPost)
+				//	console.print("\x01n " + iceStyledPromptText("Cross-post", false));
 				break;
-				break;
-			case ICE_ESC_MENU_CROSS_POST:
+			case ICE_ESC_MENU_CROSS_POST_OR_MEME:
 				console.print(iceStyledPromptText("Save", false) + "\x01n ");
 				console.print(iceStyledPromptText("Abort", false) + "\x01n ");
 				console.print(iceStyledPromptText("Edit", false) + "\x01n ");
 				console.print(iceStyledPromptText("Settings", false) + "\x01n ");
 				console.print(iceStyledPromptText("Help", false) + "\x01n ");
 				console.print(iceStyledPromptText("sPlchk", false) + "\x01n ");
-				console.print(iceStyledPromptText("Cross-post", true));
+				//console.print(iceStyledPromptText("Cross-post", true));
+				console.print(iceStyledPromptText(lastMenuItemText, true));
 				break;
 		}
 
@@ -838,7 +849,14 @@ function doIceESCMenu(pY, pCanCrossPost)
 			case "C": // Cross-post
 				if (pCanCrossPost)
 				{
-					userChoice = ICE_ESC_MENU_CROSS_POST;
+					userChoice = ICE_ESC_MENU_CROSS_POST_OR_MEME;
+					continueOn = false;
+				}
+				break;
+			case "M": // Meme
+				if (!pCanCrossPost)
+				{
+					userChoice = ICE_ESC_MENU_CROSS_POST_OR_MEME;
 					continueOn = false;
 				}
 				break;
@@ -878,8 +896,11 @@ function doIceESCMenu(pY, pCanCrossPost)
 		case ICE_ESC_MENU_SPELL_CHECK:
 			chosenAction = ESC_MENU_SPELL_CHECK;
 			break;
-		case ICE_ESC_MENU_CROSS_POST:
-			chosenAction = ESC_MENU_CROSS_POST_MESSAGE;
+		case ICE_ESC_MENU_CROSS_POST_OR_MEME:
+			if (pCanCrossPost)
+				chosenAction = ESC_MENU_CROSS_POST_MESSAGE;
+			else
+				chosenAction = ESC_MENU_INSERT_MEME;
 			break;
 	}
 

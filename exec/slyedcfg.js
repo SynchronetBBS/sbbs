@@ -1,7 +1,7 @@
 // SlyEdit configurator: This is a menu-driven configuration program/script for SlyEdit.
 // Any changes are saved to SlyEdit.cfg in sbbs/mods, so that custom changes don't get
 // overridden with SlyEdit.cfg in sbbs/ctrl due to an update.
-// Currently for SlyEdit 1.89e.
+// Currently for SlyEdit 1.90.
 
 "use strict";
 
@@ -10,7 +10,7 @@ require("sbbsdefs.js", "P_NONE");
 require("uifcdefs.js", "UIFC_INMSG");
 
 
-if (!uifc.init("SlyEdit 1.89e Configurator"))
+if (!uifc.init("SlyEdit 1.90 Configurator"))
 {
 	print("Failed to initialize uifc");
 	exit(1);
@@ -162,7 +162,14 @@ function doBehaviorMenu()
 		"enableTextReplacements",
 		"tagLineFilename",
 		"taglinePrefix",
-		"dictionaryFilenames"
+		"dictionaryFilenames",
+		// Meme settings
+		"memeMaxTextLen",    // Number
+		"memeDefaultWidth",  // Number
+		"memeStyleRandom",   // Boolean
+		"memeDefaultBorder", // String
+		"memeDefaultColor",  // Number
+		"memeJustify"        // String
 	];
 	// Menu item text for the options:
 	var optionStrs = [
@@ -185,7 +192,13 @@ function doBehaviorMenu()
 		"Enable text replacements",
 		"Tagline filename",
 		"Tagline prefix",
-		"Dictionary filenames"
+		"Dictionary filenames",
+		"Maximum meme text length",
+		"Default meme width",
+		"Random meme style",
+		"Meme default border style",
+		"Meme default color number",
+		"Meme justification"
 	];
 	// Build the array of items to be displayed on the menu
 	var menuItems = [];
@@ -199,6 +212,12 @@ function doBehaviorMenu()
 	menuItems.push(formatCfgMenuText(itemTextMaxLen, optionStrs[optionIdx++], gCfgInfo.cfgSections.BEHAVIOR.taglinePrefix));
 	//menuItems.push(formatCfgMenuText(itemTextMaxLen, optionStrs[optionIdx++], gCfgInfo.cfgSections.BEHAVIOR.dictionaryFilenames.substr(0,30)));
 	menuItems.push(formatCfgMenuText(itemTextMaxLen, optionStrs[optionIdx++], gCfgInfo.cfgSections.BEHAVIOR.dictionaryFilenames));
+	menuItems.push(formatCfgMenuText(itemTextMaxLen, optionStrs[optionIdx++], gCfgInfo.cfgSections.BEHAVIOR.memeMaxTextLen));
+	menuItems.push(formatCfgMenuText(itemTextMaxLen, optionStrs[optionIdx++], gCfgInfo.cfgSections.BEHAVIOR.memeDefaultWidth));
+	menuItems.push(formatCfgMenuText(itemTextMaxLen, optionStrs[optionIdx++], gCfgInfo.cfgSections.BEHAVIOR.memeStyleRandom));
+	menuItems.push(formatCfgMenuText(itemTextMaxLen, optionStrs[optionIdx++], gCfgInfo.cfgSections.BEHAVIOR.memeDefaultBorder));
+	menuItems.push(formatCfgMenuText(itemTextMaxLen, optionStrs[optionIdx++], gCfgInfo.cfgSections.BEHAVIOR.memeDefaultColor));
+	menuItems.push(formatCfgMenuText(itemTextMaxLen, optionStrs[optionIdx++], gCfgInfo.cfgSections.BEHAVIOR.memeJustify));
 
 	// A dictionary of help text for each option, indexed by the option name from the configuration file
 	if (doBehaviorMenu.optHelp == undefined)
@@ -255,6 +274,44 @@ function doBehaviorMenu()
 				{
 					anyOptionChanged = true;
 					menuItems[optionMenuSelection] = formatCfgMenuText(itemTextMaxLen, "Enable text replacements", getTxtReplacementsVal());
+				}
+			}
+			else if (optName == "memeDefaultBorder")
+			{
+				// Default border style for memes
+				var valBackup = gCfgInfo.cfgSections.BEHAVIOR.memeDefaultBorder;
+				// Prompt the user
+				var possibleOptions = ["none", "single", "mixed1", "mixed2", "mixed3", "double", "ornate1", "ornate2", "ornate3"];
+				var ctx = uifc.list.CTX();
+				var currentSelectedOptIdx = possibleOptions.indexOf(gCfgInfo.cfgSections.BEHAVIOR.memeDefaultBorder);
+				if (currentSelectedOptIdx > -1)
+					ctx.cur = currentSelectedOptIdx;
+				var borderStyleSelection = uifc.list(winMode, optionStrs[optionMenuSelection], possibleOptions, ctx);
+				if (borderStyleSelection >= 0 && borderStyleSelection < possibleOptions.length)
+					gCfgInfo.cfgSections.BEHAVIOR.memeDefaultBorder = possibleOptions[borderStyleSelection];
+				if (gCfgInfo.cfgSections.BEHAVIOR.memeDefaultBorder != valBackup)
+				{
+					anyOptionChanged = true;
+					menuItems[optionMenuSelection] = formatCfgMenuText(itemTextMaxLen, "Border style", possibleOptions[borderStyleSelection]);
+				}
+			}
+			else if (optName == "memeJustify")
+			{
+				// Text justification for memes
+				var valBackup = gCfgInfo.cfgSections.BEHAVIOR.memeJustify;
+				// Prompt the user
+				var possibleOptions = ["left", "center", "right"];
+				var ctx = uifc.list.CTX();
+				var currentSelectedOptIdx = possibleOptions.indexOf(gCfgInfo.cfgSections.BEHAVIOR.memeJustify);
+				if (currentSelectedOptIdx > -1)
+					ctx.cur = currentSelectedOptIdx;
+				var memeTextJustifySelection = uifc.list(winMode, optionStrs[optionMenuSelection], possibleOptions, ctx);
+				if (memeTextJustifySelection >= 0 && memeTextJustifySelection < possibleOptions.length)
+					gCfgInfo.cfgSections.BEHAVIOR.memeJustify = possibleOptions[memeTextJustifySelection];
+				if (gCfgInfo.cfgSections.BEHAVIOR.memeJustify != valBackup)
+				{
+					anyOptionChanged = true;
+					menuItems[optionMenuSelection] = formatCfgMenuText(itemTextMaxLen, "Meme text justification", possibleOptions[memeTextJustifySelection]);
 				}
 			}
 			else if (itemType === "boolean")
@@ -631,6 +688,19 @@ function getOptionHelpText()
 	optionHelpText["dictionaryFilenames"] += "sbbs/mods, sbbs/ctrl, or the same directory as SlyEdit. Users can change ";
 	optionHelpText["dictionaryFilenames"] += "this for themselves too.";
 
+	optionHelpText["memeMaxTextLen"] = "Maximum meme text length: The maximum text length allowed for memes. A 'meme' for messages ";
+	optionHelpText["memeMaxTextLen"] += "is a paragraph of text in a stylized box with an optional border and background color.";
+
+	optionHelpText["memeDefaultWidth"] = "Default meme width: The default width of a meme box";
+
+	optionHelpText["memeStyleRandom"] = "Random meme style: For meme input, whether to use an initially random meme style (color & border style).";
+
+	optionHelpText["memeDefaultBorder"] = "Meme default border style: The default border style for meme input.";
+
+	optionHelpText["memeDefaultColor"] = "Meme default color number: The default color (number) for meme input.";
+
+	optionHelpText["memeJustify"] = "Meme justification: The text justification for meme input (left, center, right).";
+
 	// Word-wrap the help text items
 	for (var prop in optionHelpText)
 		optionHelpText[prop] = word_wrap(optionHelpText[prop], gHelpWrapWidth);
@@ -766,6 +836,18 @@ function readSlyEditCfgFile()
 		retObj.cfgSections.BEHAVIOR.allowSpellCheck = true;
 	if (!retObj.cfgSections.BEHAVIOR.hasOwnProperty("dictionaryFilenames"))
 		retObj.cfgSections.BEHAVIOR.dictionaryFilenames = "en,en-US-supplemental";
+	if (!retObj.cfgSections.BEHAVIOR.hasOwnProperty("memeMaxTextLen"))
+		retObj.cfgSections.BEHAVIOR.memeMaxTextLen = 500;
+	if (!retObj.cfgSections.BEHAVIOR.hasOwnProperty("memeDefaultWidth"))
+		retObj.cfgSections.BEHAVIOR.memeDefaultWidth = 39;
+	if (!retObj.cfgSections.BEHAVIOR.hasOwnProperty("memeStyleRandom"))
+		retObj.cfgSections.BEHAVIOR.memeStyleRandom = false;
+	if (!retObj.cfgSections.BEHAVIOR.hasOwnProperty("memeDefaultBorder"))
+		retObj.cfgSections.BEHAVIOR.memeDefaultBorder = "double";
+	if (!retObj.cfgSections.BEHAVIOR.hasOwnProperty("memeDefaultColor"))
+		retObj.cfgSections.BEHAVIOR.memeDefaultColor = 4;
+	if (!retObj.cfgSections.BEHAVIOR.hasOwnProperty("memeJustify"))
+		retObj.cfgSections.BEHAVIOR.memeJustify = "center";
 
 	if (!retObj.cfgSections.hasOwnProperty("STRINGS"))
 	{

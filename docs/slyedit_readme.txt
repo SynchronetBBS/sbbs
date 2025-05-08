@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.89e
-                        Release date: 2025-02-09
+                              Version 1.90
+                        Release date: 2025-05-07
 
                                   by
 
@@ -137,23 +137,23 @@ ICE parameter for IceEdit emulation:
       BBS Drop File Type: None
     After you've added SlyEdit, your Synchronet configuration window should look
     like this:
-    +[¦][?]--------------------------------------------------------------+
-    ¦                      SlyEdit (Ice style) Editor                    ¦
-    ¦--------------------------------------------------------------------¦
-    ¦ ¦Name                            SlyEdit  (Ice style)              ¦
-    ¦ ¦Internal Code                   SLYEDICE                          ¦
-    ¦ ¦Remote Command Line             ?SlyEdit.js %f ICE                ¦
-    ¦ ¦Access Requirements             ANSI                              ¦
-    ¦ ¦Intercept Standard I/O          No                                ¦
-    ¦ ¦Native (32-bit) Executable      No                                ¦
-    ¦ ¦Use Shell to Execute            No                                ¦
-    ¦ ¦Record Terminal Width           Yes                               ¦
-    ¦ ¦Word-wrap Quoted Text           Yes, for terminal width           ¦
-    ¦ ¦Automatically Quoted Text       All                               ¦
-    ¦ ¦Editor Information Files        QuickBBS MSGINF/MSGTMP            ¦
-    ¦ ¦Expand Line Feeds to CRLF       Yes                               ¦
-    ¦ ¦Strip FidoNet Kludge Lines      No                                ¦
-    ¦ ¦BBS Drop File Type              None                              ¦
+    +[ï¿½][?]--------------------------------------------------------------+
+    ï¿½                      SlyEdit (Ice style) Editor                    ï¿½
+    ï¿½--------------------------------------------------------------------ï¿½
+    ï¿½ ï¿½Name                            SlyEdit  (Ice style)              ï¿½
+    ï¿½ ï¿½Internal Code                   SLYEDICE                          ï¿½
+    ï¿½ ï¿½Remote Command Line             ?SlyEdit.js %f ICE                ï¿½
+    ï¿½ ï¿½Access Requirements             ANSI                              ï¿½
+    ï¿½ ï¿½Intercept Standard I/O          No                                ï¿½
+    ï¿½ ï¿½Native (32-bit) Executable      No                                ï¿½
+    ï¿½ ï¿½Use Shell to Execute            No                                ï¿½
+    ï¿½ ï¿½Record Terminal Width           Yes                               ï¿½
+    ï¿½ ï¿½Word-wrap Quoted Text           Yes, for terminal width           ï¿½
+    ï¿½ ï¿½Automatically Quoted Text       All                               ï¿½
+    ï¿½ ï¿½Editor Information Files        QuickBBS MSGINF/MSGTMP            ï¿½
+    ï¿½ ï¿½Expand Line Feeds to CRLF       Yes                               ï¿½
+    ï¿½ ï¿½Strip FidoNet Kludge Lines      No                                ï¿½
+    ï¿½ ï¿½BBS Drop File Type              None                              ï¿½
     +--------------------------------------------------------------------+
 
     For DCT Edit mode, use DCT in place of ICE on the command line.  For
@@ -218,24 +218,27 @@ BBS machine):
 
 Help keys                                     Slash commands (on blank line)
 ---------                                     ------------------------------
-Ctrl-G       : Input graphic character      ¦ /A      : Abort
-Ctrl-L       : Command key list (this list) ¦ /S      : Save
-                                            ¦ /Q      : Quote message
-Ctrl-T       : List text replacements       ¦ /T      : List text replacements
-                                            ¦ /U      : Your user settings
-                                            ¦ /C      : Cross-post selection
-                                            ¦ /UPLOAD : Upload a message
+Ctrl-G       : Input graphic character      ï¿½ /A      : Abort
+Ctrl-L       : Command key list (this list) ï¿½ /S      : Save
+Ctrl-T       : List text replacements       ï¿½ /T      : List text replacements
+                                            ï¿½ /Q      : Quote message
+                                            ï¿½ /M      : Add a meme
+                                            ï¿½ /U      : Your user settings
+                                            ï¿½ /C      : Cross-post selection
+                                            ï¿½ /UPLOAD : Upload a message
 
 Command/edit keys
 -----------------
-Ctrl-A       : Abort message                ¦ PageUp  : Page up
-Ctrl-Z       : Save message                 ¦ PageDown: Page down
-Ctrl-Q       : Quote message                ¦ Ctrl-W  : Word/text search
-Insert/Ctrl-I: Toggle insert/overwrite mode ¦ Ctrl-D  : Delete line
-Ctrl-S       : Change subject               ¦ ESC     : Command menu
-Ctrl-U       : Your user settings           ¦ Ctrl-C  : Cross-post selection
-Ctrl-K       : Change text color            ¦ Ctrl-R  : Spell checker
-Ctrl-O       : Import a file                ¦ Ctrl-X  : Export to file
+Ctrl-A       : Abort message                ï¿½ PageUp  : Page up
+Ctrl-Z       : Save message                 ï¿½ PageDown: Page down
+Ctrl-Q       : Quote message                ï¿½ Ctrl-W  : Word/text search
+Insert/Ctrl-I: Toggle insert/overwrite mode ï¿½ Ctrl-D  : Delete line
+Ctrl-S       : Change subject               ï¿½ ESC     : Command menu
+Ctrl-U       : Your user settings           ï¿½ Ctrl-C  : Cross-post selection
+Ctrl-K       : Change text color            ï¿½ Ctrl-R  : Spell checker
+Ctrl-O       : Import a file                ï¿½ Ctrl-X  : Export to file
+
+
 
 
 5. Configuration file
@@ -392,6 +395,52 @@ dictionaryFilenames               Dictionary filenames (used for spell check).
                                   exist on the system.  The dictionary files
                                   are located in either sbbs/mods, sbbs/ctrl,
                                   or the same directory as SlyEdit.
+
+memeMaxTextLen                    For appending a 'meme' to a message, this
+                                  specifies the maximum text length for a meme.
+
+memeDefaultWidth                  The default width for memes
+
+memeStyleRandom                   For appending a meme to a message, whether or
+                                  not to choose a random style (border style &
+                                  color) for the meme. The user will still be
+                                  able to change it. Valid values are true and
+                                  false. If this is true, the border & color
+                                  settings will be ignored.
+								  
+memeDefaultBorder                 Default border for posting a meme. This can be
+                                  one of the following:
+                                  none
+                                  single
+                                  mixed1
+                                  mixed2
+                                  mixed3
+                                  double
+                                  ornate1
+                                  ornate2
+                                  ornate3
+								  This can also be a number between 1 and the
+                                  maximum number of meme border styles. You can
+                                  refer to sbbs/exec/load/meme_lib.js - Near the
+                                  top, there are definitions such as
+                                  BORDER_NONE, BORDER_SINGLE, etc., up to
+                                  BORDER_COUNT (which is the number of border
+                                  styles supported).
+
+memeDefaultColor                  For appending a meme to a message, this is a
+                                  number that specifies the coloring for the
+                                  meme. This can be between 1 and the maximum
+                                  number of coloring options supported by
+                                  sbbs/exec/load/meme_chooser.js. You can refer
+                                  to sbbs/exec/load/meme_chooser.js. At the time
+                                  of this writing, under "function main" in that
+                                  file, there is an array of attribute codes,
+                                  declared via "var attr", and there are are 7
+                                  of them as of now.
+
+memeJustify                       For appending a meme to a message, this
+                                  specifies the text justification. Valid
+                                  values are center, left, and right.
 
 String settings
 -----------------
@@ -949,6 +998,37 @@ message to lower-case and comparing them with the words in the dictionary.
 ===================
 Version  Date         Description
 -------  ----         -----------
+1.90     2025-05-07   Better behavior when editing a general file rather than a
+                      message (i.e., if the user is editing an SSH key): Not
+                      adding a space after each (wrapped) line, etc.. Lines will
+                      still be wrapped in the user's terminal during editing but
+                      should be saved properly.
+
+                      Color/attribute codes are no longer removed from quote
+                      lines. Although quote lines still appear in SlyEdit with
+                      one (configurable) color, the quoted text will retain
+                      color/attribute codes when the message is posted.
+
+                      New feature: A 'meme' can be added to the message by
+                      typing /m on an empty line by itself and pressing enter.
+
+                      Bug fix: When closing the User Settings dialog, quote
+                      lines are refreshed with the configured quote line color
+                      (instead of with any color codes included in those lines)
+ 
+                      Bug fix: When closing the User Settings dialog, existing
+                      message lines are refreshed better; sometimes, there were
+                      small parts of the beginnings of some lines that were
+                      blanked out.
+ 
+                      Bug fix (sort of): DCT mode File menu wasn't drawing when
+                      the user presses the ESC key to bring up the menu. I don't
+                      know why that's happening. I found a kludge that seems to
+                      fix it.
+ 
+                      On startup, SlyEdit now sets the 'normal' attribute on the
+                      console to clear away any background color or other
+                      attribute(s) that may have been set.
 1.89e    2025-02-09   User inactivity timeout: Display a warning message
                       (without messing with the screen). New [STRINGS]
                       configuration section with stringsFilename to specify the
