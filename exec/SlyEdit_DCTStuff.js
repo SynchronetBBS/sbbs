@@ -847,7 +847,7 @@ function doDCTESCMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
 		doDCTESCMenu.allMenus[editMenuNum].addItem("&Graphic char   Ctrl-G", DCTMENU_GRAPHIC_CHAR);
 		doDCTESCMenu.allMenus[editMenuNum].addItem("&Find Text      Ctrl-N", DCTMENU_EDIT_FIND_TEXT);
 		doDCTESCMenu.allMenus[editMenuNum].addItem("Spe&ll Checker  Ctrl-W", DCTMENU_EDIT_SPELL_CHECKER);
-		doDCTESCMenu.allMenus[editMenuNum].addItem("Insert &Meme          ", DCTMENU_EDIT_INSERT_MEME);
+		doDCTESCMenu.allMenus[editMenuNum].addItem("Insert &Meme", DCTMENU_EDIT_INSERT_MEME);
 		doDCTESCMenu.allMenus[editMenuNum].addItem("Setti&ngs       Ctrl-U", DCTMENU_EDIT_SETTINGS);
 		doDCTESCMenu.allMenus[editMenuNum].addExitLoopKey(CTRL_I, DCTMENU_EDIT_INSERT_TOGGLE);
 		doDCTESCMenu.allMenus[editMenuNum].addExitLoopKey(CTRL_N, DCTMENU_EDIT_FIND_TEXT);
@@ -863,7 +863,7 @@ function doDCTESCMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
 		// Help menu
 		doDCTESCMenu.allMenus[helpMenuNum] = new DCTMenu(doDCTESCMenu.mainMenuItemPositions.helpX, doDCTESCMenu.mainMenuItemPositions.mainMenuY+1);
 		doDCTESCMenu.allMenus[helpMenuNum].addItem("C&ommand List   Ctrl-L", DCTMENU_HELP_COMMAND_LIST);
-		doDCTESCMenu.allMenus[helpMenuNum].addItem("&Program Info   Ctrl-R", DCTMENU_HELP_PROGRAM_INFO);
+		doDCTESCMenu.allMenus[helpMenuNum].addItem("&Program Info", DCTMENU_HELP_PROGRAM_INFO);
 		if (gConfigSettings.enableTextReplacements)
 		{
 			doDCTESCMenu.allMenus[helpMenuNum].addItem("&Text replcmts  Ctrl-T", DCTMENU_LIST_TXT_REPLACEMENTS);
