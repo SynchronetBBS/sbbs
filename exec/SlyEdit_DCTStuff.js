@@ -845,8 +845,8 @@ function doDCTESCMenu(pEditLeft, pEditRight, pEditTop, pDisplayMessageRectangle,
 		doDCTESCMenu.allMenus[editMenuNum] = new DCTMenu(doDCTESCMenu.mainMenuItemPositions.editX, doDCTESCMenu.mainMenuItemPositions.mainMenuY+1);
 		doDCTESCMenu.allMenus[editMenuNum].addItem("&Insert Mode    Ctrl-I", DCTMENU_EDIT_INSERT_TOGGLE);
 		doDCTESCMenu.allMenus[editMenuNum].addItem("&Graphic char   Ctrl-G", DCTMENU_GRAPHIC_CHAR);
-		doDCTESCMenu.allMenus[editMenuNum].addItem("&Find Text      Ctrl-N", DCTMENU_EDIT_FIND_TEXT);
-		doDCTESCMenu.allMenus[editMenuNum].addItem("Spe&ll Checker  Ctrl-W", DCTMENU_EDIT_SPELL_CHECKER);
+		doDCTESCMenu.allMenus[editMenuNum].addItem("&Word/txt find  Ctrl-W", DCTMENU_EDIT_FIND_TEXT);
+		doDCTESCMenu.allMenus[editMenuNum].addItem("Spe&ll Checker  Ctrl-R", DCTMENU_EDIT_SPELL_CHECKER);
 		doDCTESCMenu.allMenus[editMenuNum].addItem("Insert &Meme", DCTMENU_EDIT_INSERT_MEME);
 		doDCTESCMenu.allMenus[editMenuNum].addItem("Setti&ngs       Ctrl-U", DCTMENU_EDIT_SETTINGS);
 		doDCTESCMenu.allMenus[editMenuNum].addExitLoopKey(CTRL_I, DCTMENU_EDIT_INSERT_TOGGLE);
