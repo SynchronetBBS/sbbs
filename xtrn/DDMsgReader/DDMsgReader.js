@@ -252,6 +252,10 @@
  * 2025-04-20 Eric Oulashin     Version 1.96q
  *                              If DDMsgReader.cfg doesn't exist, read DDMsgReader.example.cfg
  *                              (in the same directory as DDMsgreader.js) if it exists
+ * 2025-05-10 Eric Oulashin     Version 1.96r
+ *                              When getting a message body, return a print mode of P_UTF8
+ *                              or P_AUTO_UTF8 to ensure messages with UTF-8 are printed
+ *                              correctly
  */
 
 "use strict";
@@ -359,8 +363,8 @@ var hexdump = load('hexdump_lib.js');
 
 
 // Reader version information
-var READER_VERSION = "1.96q";
-var READER_DATE = "2025-04-20";
+var READER_VERSION = "1.96r";
+var READER_DATE = "2025-05-10";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -4716,8 +4720,7 @@ function DigDistMsgReader_CreateLightbarMsgListMenu()
 			menuItemObj.retval = msgHdr.number;
 			var msgIsToUser = userHandleAliasNameMatch(msgHdr.to);
 			var msgIsFromUser = userHandleAliasNameMatch(msgHdr.from);
-			var readingPersonalEmail = (this.msgReader.subBoardCode == "mail");
-			if (!readingPersonalEmail)
+			if (!this.readingPersonalEmail)
 				menuItemObj.useAltColors = msgIsToUser;
 			// For any indicator character next to the message, prioritize deleted, then selected,
 			// then unread, then attachments.
@@ -4730,7 +4733,7 @@ function DigDistMsgReader_CreateLightbarMsgListMenu()
 				menuItemObj.itemColor = [];
 				var colorSet = this.colors.itemColor;
 				var selectedColorSet = this.colors.selectedItemColor;
-				if (!readingPersonalEmail)
+				if (!this.readingPersonalEmail)
 				{
 					if (msgIsToUser)
 					{
@@ -5838,7 +5841,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 			numSolidScrollBlocks: 0
 		};
 		scrollbarInfoObj.solidBlockLastStartRow = solidBlockLastStartRow;
-		scrollbarInfoObj.numSolidScrollBlocks = numSolidScrollBlocks;
+		scrollbarInfoObj.numSolidScrollBlocks = numSolidScrollBlocks
 		var scrollRetObj = scrollTextLines(msgInfo.messageLines, topMsgLineIdx,
 									   this.colors.msgBodyColor, writeMessage,
 									   this.msgAreaLeft, this.msgAreaTop, msgAreaWidth,
@@ -11962,6 +11965,7 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 	{
 		// Most likely replying to a local user
 		replyMode |= WM_EMAIL;
+		//replymode |= WM_EXPANDLF; // Insure CRLF-terminated lines
 		// Look up the user number of the "from" user name in the message header
 		var userNumber = findUserNumWithName(pMsgHdr.from); // Used to use system.matchuser(pMsgHdr.from)
 		if (userNumber != 0)
@@ -19330,14 +19334,46 @@ function DigDistMsgReader_GetMsgBody(pMsgHdr)
 		// If the message is UTF8 and the terminal is not UTF8-capable, then convert
 		// the text to cp437.
 		retObj.msgBody = msgbase.get_msg_body(false, pMsgHdr.number, false, false, true, true);
+		// Add P_UTF8 or P_AUTO_UTF8 to pmode so that UTF-8 characters can be
+		// printed correctly with Synchronet's print functions
 		if (pMsgHdr.hasOwnProperty("is_utf8") && pMsgHdr.is_utf8)
 		{
+			/*
 			var userConsoleSupportsUTF8 = false;
 			if (typeof(USER_UTF8) != "undefined")
 				userConsoleSupportsUTF8 = console.term_supports(USER_UTF8);
 			if (!userConsoleSupportsUTF8)
 				retObj.msgBody = utf8_cp437(retObj.msgBody);
+			*/
+			//retObj.pmode |= P_UTF8;
 		}
+		else
+			retObj.pmode |= P_AUTO_UTF8;
+
+		/*
+		// TODO
+		// New: Sixel support (note: \x1b is the ESC code)
+		// Sixel images seem to start with "\x1bP0;0;0q"1;1;" and have their
+		// width & height afterward, such as:
+		//\x1bP0;0;0q"1;1;640;300#
+		// And sixels seem to end with ESC\
+		//var KEY_ESC = ascii(27);
+		//var startIdx = retObj.msgBody.indexOf(KEY_ESC + "P0;0;0q\"1;1;");
+		//if (user.is_sysop) console.print(retObj.msgBody + "\r\n\x01p"); // Temporary
+		// TODO: It seems ESC codes are being stripped
+		var startIdx = retObj.msgBody.indexOf("\x1bP0;0;0q\"1;1;");
+		if (user.is_sysop) console.print("\x01n\r\nstartIdx: " + startIdx + "\r\n\x01p"); // Tempoary
+		if (startIdx > -1)
+		{
+			var endIdx = retObj.msgBody.indexOf(KEY_ESC + "\\", startIdx+1);
+			if (endIdx > startIdx)
+			{
+				if (user.is_sysop) printf("\x01nSixel found from %d to %d\r\n\x01p", startIdx, endIdx);
+			}
+		}
+		// End new (sixel support)
+		*/
+
 		// Remove any initial coloring from the message body, which can color the whole message
 		retObj.msgBody = removeInitialColorFromMsgBody(retObj.msgBody);
 		// For HTML-formatted messages, convert HTML entities
@@ -20903,6 +20939,10 @@ function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEma
 				{
 					// We're reading mail to the user
 					matchFn = function(pSearchStr, pMsgHdr, pMsgBase, pSubBoardCode) {
+						// If the message is marked for deletion & the user isn't allowed to view it, then skip it
+						//if (Boolean(pMsgHdr.attr & MSG_DELETE) && !canViewDeletedMsgs())
+						//	return false;
+
 						var msgText = strip_ctrl(pMsgBase.get_msg_body(false, pMsgHdr.number, false, false, true, true));
 						if (typeof(msgText) !== "string")
 							msgText = "";
@@ -20919,6 +20959,10 @@ function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEma
 		case SEARCH_KEYWORD:
 			getAllMsgHdrs = true;
 			matchFn = function(pSearchStr, pMsgHdr, pMsgBase, pSubBoardCode) {
+				// If the message is marked for deletion & the user isn't allowed to view it, then skip it
+				if (Boolean(pMsgHdr.attr & MSG_DELETE) && !canViewDeletedMsgs())
+					return false;
+
 				var msgText = strip_ctrl(pMsgBase.get_msg_body(false, pMsgHdr.number, false, false, true, true));
 				if (typeof(msgText) !== "string")
 					msgText = "";
@@ -20932,6 +20976,10 @@ function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEma
 		case SEARCH_FROM_NAME:
 			getAllMsgHdrs = true;
 			matchFn = function(pSearchStr, pMsgHdr, pMsgBase, pSubBoardCode) {
+				// If the message is marked for deletion & the user isn't allowed to view it, then skip it
+				if (Boolean(pMsgHdr.attr & MSG_DELETE) && !canViewDeletedMsgs())
+					return false;
+
 				var fromNameFound = (pMsgHdr.from.toUpperCase() == pSearchStr.toUpperCase());
 				if (pSubBoardCode == "mail")
 					return fromNameFound && (gAllPersonalEmailOptSpecified || msgIsToUserByNum(pMsgHdr));
@@ -20942,6 +20990,9 @@ function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEma
 		case SEARCH_TO_NAME_CUR_MSG_AREA:
 			getAllMsgHdrs = true;
 			matchFn = function(pSearchStr, pMsgHdr, pMsgBase, pSubBoardCode) {
+				// If the message is marked for deletion & the user isn't allowed to view it, then skip it
+				if (Boolean(pMsgHdr.attr & MSG_DELETE) && !canViewDeletedMsgs())
+					return false;
 				return (pMsgHdr.to.toUpperCase() == pSearchStr);
 			}
 			break;
@@ -20949,6 +21000,10 @@ function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEma
 			getAllMsgHdrs = true;
 		case SEARCH_ALL_TO_USER_SCAN:
 			matchFn = function(pSearchStr, pMsgHdr, pMsgBase, pSubBoardCode) {
+				// If the message is marked for deletion & the user isn't allowed to view it, then skip it
+				if (Boolean(pMsgHdr.attr & MSG_DELETE) && !canViewDeletedMsgs())
+					return false;
+
 				// See if the message is not marked as deleted and the 'To' name
 				// matches the user's handle, alias, and/or username.
 				return ((((pMsgHdr.attr & MSG_DELETE) == 0) || canViewDeletedMsgs()) && userHandleAliasNameMatch(pMsgHdr.to));
@@ -21010,6 +21065,10 @@ function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEma
 					endMsgIndex = msgbase.total_msgs;
 			}
 			matchFn = function(pSearchStr, pMsgHdr, pMsgBase, pSubBoardCode) {
+				// If the message is marked for deletion & the user isn't allowed to view it, then skip it
+				if (Boolean(pMsgHdr.attr & MSG_DELETE) && !canViewDeletedMsgs())
+					return false;
+
 				// Note: This assumes pSubBoardCode is not "mail" (personal mail).
 				// See if the message 'To' name matches the user's handle, alias,
 				// and/or username and is not marked as deleted and is unread.
@@ -21043,6 +21102,10 @@ function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEma
 			endMsgIndex = absMsgNumToIdxWithMsgbaseObj(msgbase, msgbase.last_msg) + 1;
 			// TODO: Is this matchFn really needed?
 			matchFn = function(pSearchStr, pMsgHdr, pMsgBase, pSubBoardCode) {
+				// If the message is marked for deletion & the user isn't allowed to view it, then skip it
+				if (Boolean(pMsgHdr.attr & MSG_DELETE) && !canViewDeletedMsgs())
+					return false;
+
 				// Note: This assumes pSubBoardCode is not "mail" (personal mail).
 				// Get the offset of the last read message and compare it with the
 				// offset of the given message header
@@ -23989,9 +24052,9 @@ function charStr(pChar, pNumTimes)
 // Returns whether the logged-in user can view deleted messages.
 function canViewDeletedMsgs()
 {
-	var usersVDM = ((system.settings & SYS_USRVDELM) == SYS_USRVDELM);
-	var sysopVDM = ((system.settings & SYS_SYSVDELM) == SYS_SYSVDELM);
-	return (usersVDM || (user.is_sysop && sysopVDM));
+	// Logic from msglist.js:
+	return ((system.settings&SYS_SYSVDELM) && (user.is_sysop || (system.settings&SYS_USRVDELM)));
+	//return (Boolean(system.settings & SYS_USRVDELM) || (user.is_sysop && Boolean(system.settings & SYS_SYSVDELM)));
 }
 
 // Returns whether or not a message header is a vote header
