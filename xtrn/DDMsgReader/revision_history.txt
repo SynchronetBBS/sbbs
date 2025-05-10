@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.96r    2025-05-10   Another UTF-8 update to ensure messages with UTF-8 are
+                      printed correctly
 1.96q    2025-04-20   If DDMsgReader.cfg doesn't exist, DDMsgReader will read
                       DDMsgReader.example.cfg (in the same directory as
                       DDMsgreader.js) if it exists. To make your own
