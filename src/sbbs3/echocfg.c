@@ -967,8 +967,8 @@ USAGE:
 			"general to the operation of the tosser (SBBSecho) and mailer (BinkIT).\n"
 			"\n"
 			"The `Linked Nodes` sub-menu is where you configure your FidoNet-style\n"
-			"links: other FidoNet-style nodes/systems you regularly connect with\n"
-			"to exchange mail/files.\n"
+			"links: other FidoNet-style node or point systems you regularly connect\n"
+			"wth to exchange mail/files.\n"
 			"\n"
 			"The `Archive Types` sub-menu is where you configure your archive\n"
 			"programs (a.k.a. \"packers\") used for the packing and unpacking of\n"
@@ -1021,15 +1021,15 @@ USAGE:
 					uifc.helpbuf =
 						"~ Linked Nodes ~\n\n"
 						"From this menu you can configure the settings for your linked\n"
-						"FidoNet-style nodes (uplinks and downlinks).\n"
+						"FidoNet-style points and nodes (uplinks and downlinks).\n"
 						"\n"
-						"A single node configuration can represent one node or a collection\n"
-						"of nodes, by using the `ALL` wildcard word.\n"
+						"A single linked node configuration can represent a single linked node\n"
+						"/point or a collection of of links, by using the `ALL` wildcard word.\n"
 						"\n"
 						"The hexadecimal numbers in parentheses are provided as an aide when\n"
 						"correlating FidoNet files and BSO directories with node numbers.\n"
 						"\n"
-						"An exclamation mark denotes passive (inactive) nodes.\n";
+						"An exclamation mark denotes passive (inactive) links.\n";
 					;
 
 					for (u = 0; u < cfg.nodecfgs; u++) {
