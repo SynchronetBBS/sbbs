@@ -115,7 +115,7 @@ __attribute__ ((format (printf, 2, 3)));
 ;
 int mv(const char *insrc, const char *indest, bool copy);
 time_t fmsgtime(const char *str);
-ulong export_echomail(const char *sub_code, const nodecfg_t*, bool rescan);
+ulong export_echomail(const char *sub_code, const nodecfg_t*, uint32_t rescan);
 const char* area_desc(const char* areatag);
 
 /* FTN-compliant "Program Identifier"/PID (also used as a "Tosser Identifier"/TID) */
@@ -1597,7 +1597,7 @@ void add_areas_from_echolists(FILE* afileout, FILE* nmfile
 void alter_areas_ini(FILE* afilein, FILE* afileout, FILE* nmfile
                      , bool add_all, str_list_t add_area, size_t* added
                      , bool del_all, str_list_t del_area, size_t* deleted
-                     , nodecfg_t* nodecfg, const char* to, bool rescan)
+                     , nodecfg_t* nodecfg, const char* to, uint32_t rescan)
 {
 	faddr_t     addr = nodecfg->addr;
 	const char* addr_str = smb_faddrtoa(&addr, NULL);
@@ -1668,8 +1668,8 @@ void alter_areas_ini(FILE* afilein, FILE* afileout, FILE* nmfile
 				fprintf(nmfile, "%s added.\r\n", echotag);
 				(*added)++;
 			}
-			if (rescan && area_is_linked(areanum, &addr) && subnum_is_valid(&scfg, cfg.area[areanum].sub)) {
-				ulong exported = export_echomail(scfg.sub[cfg.area[areanum].sub]->code, nodecfg, true);
+			if (rescan > 0 && area_is_linked(areanum, &addr) && subnum_is_valid(&scfg, cfg.area[areanum].sub)) {
+				ulong exported = export_echomail(scfg.sub[cfg.area[areanum].sub]->code, nodecfg, rescan);
 				fprintf(nmfile, "%s rescanned and %lu messages exported.\r\n", echotag, exported);
 			}
 			continue;
@@ -1683,7 +1683,7 @@ void alter_areas_ini(FILE* afilein, FILE* afileout, FILE* nmfile
 void alter_areas_bbs(FILE* afilein, FILE* afileout, FILE* nmfile
                      , bool add_all, str_list_t add_area, size_t* added
                      , bool del_all, str_list_t del_area, size_t* deleted
-                     , nodecfg_t* nodecfg, const char* to, bool rescan)
+                     , nodecfg_t* nodecfg, const char* to, uint32_t rescan)
 {
 	char     fields[1024], code[LEN_EXTCODE + 1], echotag[FIDO_AREATAG_LEN + 1], comment[256]
 	, *p, *tp;
@@ -1792,8 +1792,8 @@ void alter_areas_bbs(FILE* afilein, FILE* afileout, FILE* nmfile
 					fprintf(nmfile, "%s added.\r\n", echotag);
 					(*added)++;
 				}
-				if (rescan && area_is_linked(areanum, &addr) && subnum_is_valid(&scfg, cfg.area[areanum].sub)) {
-					ulong exported = export_echomail(scfg.sub[cfg.area[areanum].sub]->code, nodecfg, true);
+				if (rescan > 0 && area_is_linked(areanum, &addr) && subnum_is_valid(&scfg, cfg.area[areanum].sub)) {
+					ulong exported = export_echomail(scfg.sub[cfg.area[areanum].sub]->code, nodecfg, rescan);
 					fprintf(nmfile, "%s rescanned and %lu messages exported.\r\n", echotag, exported);
 				}
 			}
@@ -1904,7 +1904,7 @@ void add_areas_from_echolists(FILE* afileout, FILE* nmfile
 /******************************************************************************
  Used by Area Manager to add/remove/change areas in the areas file
 ******************************************************************************/
-void alter_areas(str_list_t add_area, str_list_t del_area, nodecfg_t* nodecfg, const char* to, bool rescan)
+void alter_areas(str_list_t add_area, str_list_t del_area, nodecfg_t* nodecfg, const char* to, uint32_t rescan)
 {
 	FILE *      nmfile, *afilein, *afileout;
 	char        outpath[MAX_PATH + 1];
@@ -2067,7 +2067,7 @@ bool alter_config(nodecfg_t* nodecfg, const char* key, const char* value)
 /******************************************************************************
  Used by Area Manager to process any '%' commands that come in via netmail
 ******************************************************************************/
-bool areamgr_command(char* instr, nodecfg_t* nodecfg, const char* to, bool rescan)
+bool areamgr_command(char* instr, nodecfg_t* nodecfg, const char* to, uint32_t rescan)
 {
 	FILE *   stream, *tmpf;
 	char     str[MAX_PATH + 1];
@@ -2247,25 +2247,39 @@ bool areamgr_command(char* instr, nodecfg_t* nodecfg, const char* to, bool resca
 		return true;
 	}
 
+	// %RESCAN [R=<count>]
+	if (strnicmp(instr, "RESCAN R=", 9) == 0 && IS_DIGIT(instr[9])) {
+		rescan = strtol(instr + 9, NULL, 10);
+		*(instr + 6) = '\0';
+	}
 	if (stricmp(instr, "RESCAN") == 0) {
 		lprintf(LOG_INFO, "AreaMgr (for %s) Rescanning all areas", faddrtoa(&addr));
-		ulong exported = export_echomail(NULL, nodecfg, true);
+		ulong exported = export_echomail(NULL, nodecfg, rescan ? rescan : ~0);
 		snprintf(str, sizeof str, "All connected areas have been rescanned and %lu messages exported.", exported);
 		create_netmail(to, /* msg: */ NULL, "Rescan Areas", str, /* dest: */ addr, /* src: */ NULL);
 		return true;
 	}
 
+	// %RESCAN <area-tag> [R=<count>]
 	if (strnicmp(instr, "RESCAN ", 7) == 0) {
-		char* p = instr;
-		FIND_WHITESPACE(p);
+		char* p = instr + 7;
 		SKIP_WHITESPACE(p);
+		char* tp = p;
+		FIND_WHITESPACE(tp);
+		if (*tp != '\0') {
+			*tp = '\0';
+			++tp;
+			SKIP_WHITESPACE(tp);
+			if (strnicmp(tp, "R=", 2) == 0 && IS_DIGIT(tp[2]))
+				rescan = strtol(tp + 2, NULL, 10);
+		}
 		int   subnum = find_linked_area(p, addr);
 		if (subnum == SUB_NOT_FOUND)
 			SAFEPRINTF(str, "Echo-tag '%s' not linked or not found.", p);
 		else if (subnum == INVALID_SUB)
 			SAFEPRINTF(str, "Connected area '%s' is pass-through: cannot be rescanned", p);
 		else {
-			ulong exported = export_echomail(scfg.sub[subnum]->code, nodecfg, true);
+			ulong exported = export_echomail(scfg.sub[subnum]->code, nodecfg, rescan ? rescan : ~0);
 			snprintf(str, sizeof str, "Connected area '%s' has been rescanned and %lu messages exported.", p, exported);
 		}
 		lprintf(LOG_INFO, "AreaMgr (for %s) %s", faddrtoa(&addr), str);
@@ -2351,7 +2365,7 @@ char* process_areamgr(fidoaddr_t addr, char* inbuf, const char* subj, const char
 	char *      p, *tp, action, cmds = 0;
 	ulong       l, m;
 	str_list_t  add_area, del_area;
-	bool        rescan = false;
+	uint32_t    rescan = 0;
 	bool        list = false;
 	bool        query = false;
 
@@ -2369,12 +2383,14 @@ char* process_areamgr(fidoaddr_t addr, char* inbuf, const char* subj, const char
 		while (*p != '\0') {
 			SKIP_WHITESPACE(p);
 			if (stricmp(p, "-R") == 0 || strnicmp(p, "-R ", 3) == 0)
-				rescan = true;
-			if (stricmp(p, "-L") == 0 || strnicmp(p, "-L ", 3) == 0) {
+				rescan = ~0;
+			else if (strnicmp(p, "-R=", 3) == 0)
+				rescan = strtoul(p + 3, NULL, 10);
+			else if (stricmp(p, "-L") == 0 || strnicmp(p, "-L ", 3) == 0) {
 				list = true;
 				++cmds;
 			}
-			if (stricmp(p, "-Q") == 0 || strnicmp(p, "-Q ", 3) == 0) {
+			else if (stricmp(p, "-Q") == 0 || strnicmp(p, "-Q ", 3) == 0) {
 				query = true;
 				++cmds;
 			}
@@ -3014,7 +3030,7 @@ int mv(const char *insrc, const char *indest, bool copy)
 /****************************************************************************/
 /* Returns negative value on error											*/
 /****************************************************************************/
-long getlastmsg(uint subnum, uint32_t *ptr, /* unused: */ time_t *t)
+uint32_t getlastmsg(uint subnum, uint32_t *ptr, /* unused: */ time_t *t)
 {
 	int   i;
 	smb_t smbfile;
@@ -4889,7 +4905,7 @@ static void write_export_ptr(int subnum, uint32_t ptr, const char* tag)
  empty address as 'addr' designates that a rescan should be done for that
  address.
 ******************************************************************************/
-ulong export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool rescan)
+ulong export_echomail(const char* sub_code, const nodecfg_t* nodecfg, uint32_t rescan)
 {
 	char        str[256], tear, cr;
 	char*       buf = NULL;
@@ -4900,7 +4916,7 @@ ulong export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool resca
 	unsigned    area;
 	ulong       f, l, m, exp, exported = 0;
 	uint32_t    ptr, lastmsg, posts;
-	long        msgs;
+	uint32_t    msgs;
 	smbmsg_t    msg;
 	smbmsg_t    orig_msg;
 	fmsghdr_t   hdr;
@@ -4954,6 +4970,12 @@ ulong export_echomail(const char* sub_code, const nodecfg_t* nodecfg, bool resca
 			continue;
 		}
 
+		if (rescan > 0) {
+			if (msgs < rescan)
+				ptr = 0;
+			else
+				ptr = lastmsg - rescan;
+		}
 		post = NULL;
 		posts = loadmsgs(&smb, &post, ptr);
 
@@ -7048,7 +7070,7 @@ int main(int argc, char **argv)
 	}
 
 	if (opt_export_echomail && !terminated)
-		export_echomail(sub_code, nodecfg, /* rescan: */ opt_ignore_msgptrs);
+		export_echomail(sub_code, nodecfg, /* rescan: */ opt_ignore_msgptrs ? ~0 : 0);
 
 	if (opt_export_netmail && !terminated)
 		export_netmail();
