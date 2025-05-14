@@ -771,8 +771,11 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 				}
 			}
 		}
-		else
+		else {
+			if (sys_status & SS_ABORT)
+				break;
 			domsg = 1;
+		}
 		if (mode & SCAN_CONT) {
 			if (smb.curmsg < smb.msgs - 1)
 				smb.curmsg++;
