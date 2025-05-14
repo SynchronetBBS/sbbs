@@ -1642,7 +1642,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 		if (!noyes(str))
 			postmsg(subnum, 0, 0);
 	}
-	if (!(org_mode & (SCAN_CONT | SCAN_TOYOU | SCAN_FIND))
+	if (!(org_mode & (SCAN_CONT | SCAN_TOYOU | SCAN_FIND | SCAN_POLLS))
 	    && !(subscan[subnum].cfg & SUB_CFG_NSCAN) && !noyes(text[AddSubToNewScanQ]))
 		subscan[subnum].cfg |= SUB_CFG_NSCAN;
 	smb_close(&smb);
