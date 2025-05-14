@@ -28,7 +28,7 @@
 #include "ini_file.h"
 
 #define SBBSECHO_VERSION_MAJOR      3
-#define SBBSECHO_VERSION_MINOR      26
+#define SBBSECHO_VERSION_MINOR      27
 
 #define SBBSECHO_PRODUCT_CODE       0x12FF  /* from http://ftsc.org/docs/ftscprod.013 */
 
