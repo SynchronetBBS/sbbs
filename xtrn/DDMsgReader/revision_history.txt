@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.96s    2025-05-15   Fix: After replying to a netmail, pressing Q at the pause
+                      prompt would cause the email header not to be displayed
+                      when showing the message again, due to console.aborted
 1.96r    2025-05-10   Another UTF-8 update to ensure messages with UTF-8 are
                       printed correctly
 1.96q    2025-04-20   If DDMsgReader.cfg doesn't exist, DDMsgReader will read
