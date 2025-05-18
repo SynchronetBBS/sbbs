@@ -256,6 +256,11 @@
  *                              When getting a message body, return a print mode of P_UTF8
  *                              or P_AUTO_UTF8 to ensure messages with UTF-8 are printed
  *                              correctly
+ * 2025-05-15 Eric Oulashin     Version 1.96s
+ *                              Fix: After replying to a netmail, pressing Q at the
+ *                              pause prompt would cause the email header not to be
+ *                              displayed when showing the message again, due to
+ *                              console.aborted
  */
 
 "use strict";
@@ -363,8 +368,8 @@ var hexdump = load('hexdump_lib.js');
 
 
 // Reader version information
-var READER_VERSION = "1.96r";
-var READER_DATE = "2025-05-10";
+var READER_VERSION = "1.96s";
+var READER_DATE = "2025-05-15";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -6103,6 +6108,7 @@ function DigDistMsgReader_ReadMessageEnhanced_Scrollable(msgHeader, allowChgMsgA
 				}
 				// If the user quit/aborted, then quit out of reader mode now.
 				// Resetting console.aborted and line_counter to avoid pausing and screen display issues.
+				var consoleWasAborted = console.aborted;
 				console.aborted = false;
 				console.line_counter = 0;
 				if (userQuitOrAborted)
@@ -11713,6 +11719,7 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 		retObj.postSucceeded = privReplRetObj.sendSucceeded;
 		retObj.msgWasDeleted = privReplRetObj.msgWasDeleted;
 		retObj.userQuitOrAborted = privReplRetObj.userQuitOrAborted;
+		console.aborted = false; // To prevent issues displaying text
 		// If the user successfully saved the message and the message wasn't deleted,
 		// then apply the 'replied' attribute to the message Header
 		if (privReplRetObj.sendSucceeded && !privReplRetObj.msgWasDeleted)
@@ -11809,6 +11816,7 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 			retObj.postSucceeded = privReplRetObj.sendSucceeded;
 			retObj.msgWasDeleted = privReplRetObj.msgWasDeleted;
 			retObj.userQuitOrAborted = privReplRetObj.userQuitOrAborted;
+			console.aborted = false; // To prevent issues with displaying text
 		}
 		else
 		{
@@ -11818,6 +11826,7 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 			retObj.postSucceeded = bbs.post_msg(this.subBoardCode, replyMode, pMsgHdr);
 			console.pause();
 			retObj.userQuitOrAborted = console.aborted;
+			console.aborted = false; // To prevent issues with displaying text
 		}
 		// Remove the messagebase info drop file if it exists
 		if (file_exists(msgbaseInfoDropFileName))
@@ -11950,6 +11959,8 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 				replyMode |= WM_NETMAIL;
 				retObj.sendSucceeded = bbs.netmail(emailAddr, replyMode, null, pMsgHdr);
 				console.pause();
+				// TODO: Pressing Q here causes the header to not be displayed after
+				// showing the email again
 			}
 			else
 			{
@@ -11978,6 +11989,7 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 			retObj.sendSucceeded = bbs.email(userNumber, replyMode, null, null, pMsgHdr);
 			console.pause();
 			retObj.userQuitOrAborted = console.aborted;
+			console.aborted = false; // To prevent issues displaying text
 		}
 		else
 		{
@@ -12030,6 +12042,7 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 						replyMode |= WM_NETMAIL;
 						retObj.sendSucceeded = bbs.netmail(msgDest, replyMode, null, pMsgHdr);
 						retObj.userQuitOrAborted = console.aborted;
+						console.aborted = false; // To prevent issues displaying text
 						console.pause();
 					}
 					else
@@ -12037,6 +12050,7 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 						console.crlf();
 						retObj.sendSucceeded = bbs.email(userNumber, replyMode, null, null, pMsgHdr);
 						retObj.userQuitOrAborted = console.aborted;
+						console.aborted = false; // To prevent issues displaying text
 						console.pause();
 					}
 				}
@@ -12076,6 +12090,7 @@ function DigDistMsgReader_DoPrivateReply(pMsgHdr, pMsgIdx, pReplyMode)
 		if (!console.noyes(bbs.text(DeleteMailQ).replace("%s", pMsgHdr.from)))
 			retObj.msgWasDeleted = this.PromptAndDeleteOrUndeleteMessage(pMsgIdx, null, true, null, null, false);
 		retObj.userQuitOrAborted = console.aborted;
+		console.aborted = false; // To prevent issues displaying text
 	}
 
 	return retObj;
