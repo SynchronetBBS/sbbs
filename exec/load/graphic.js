@@ -1,6 +1,7 @@
 /*
  * "Graphic" object
  * Allows a graphic to be stored in memory and portions of it redrawn on command
+ * @format.tab-size 4, @format.use-tabs true
  */
 
 require("userdefs.js", "USER_ICE_COLOR");
@@ -326,8 +327,10 @@ Object.defineProperty(Graphic.prototype, "ANSI", {
 				saved={'x':x, 'y':y};
 			},
 			'u':function(params) {
-				x = saved.x;
-				y = saved.y;
+				if (saved.x !== undefined)
+					x = saved.x;
+				if (saved.y !== undefined)
+					y = saved.y;
 			}
 		};
 		std_cmds.f = std_cmds.H;
