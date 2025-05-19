@@ -53,7 +53,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 	if (remsg != NULL && title[0] == 0)
 		SAFECOPY_UTF8(title, remsg->subj);
 
-	if (useron.etoday >= cfg.level_emailperday[useron.level] && !SYSOP && !(useron.exempt & FLAG('M'))) {
+	if (useron.etoday >= cfg.level_emailperday[useron.level] && !useron_is_sysop() && !(useron.exempt & FLAG('M'))) {
 		bputs(text[TooManyEmailsToday]);
 		return false;
 	}
@@ -90,7 +90,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 	action = NODE_SMAL;
 	nodesync();
 
-	if (cfg.feedback_mod[0] && to_sysop && !SYSOP
+	if (cfg.feedback_mod[0] && to_sysop && !useron_is_sysop()
 	    && (useron.fbacks || usernumber != cfg.valuser)) {
 		main_csi.logic = LOGIC_TRUE;
 		if (exec_bin(cfg.feedback_mod, &main_csi) != 0 || main_csi.logic != LOGIC_TRUE)
@@ -118,7 +118,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 		return false;
 	}
 
-	if (mode & WM_FILE && !SYSOP && !(cfg.sys_misc & SM_FILE_EM)) {
+	if (mode & WM_FILE && !useron_is_sysop() && !(cfg.sys_misc & SM_FILE_EM)) {
 		bputs(text[EmailFilesNotAllowed]);
 		mode &= ~WM_FILE;
 	}

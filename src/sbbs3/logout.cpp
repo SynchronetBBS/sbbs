@@ -89,7 +89,7 @@ void sbbs_t::logout(bool logged_in)
 	if (sys_status & SS_USERON) {  // Insures the useron actually went through logon()/getmsgptrs() first
 		putmsgptrs();
 	}
-	if (!REALSYSOP)
+	if (!user_is_sysop(&useron))
 		logofflist();
 	useron.laston = (time32_t)now;
 

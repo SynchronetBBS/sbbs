@@ -115,7 +115,7 @@ char sbbs_t::getkey(int mode)
 			hangup();
 		}
 		if (sys_status & SS_USERON && online && (timeleft / 60) < (5 - timeleft_warn)
-		    && !SYSOP && !(sys_status & SS_LCHAT)) {
+		    && !useron_is_sysop() && !(sys_status & SS_LCHAT)) {
 			timeleft_warn = 5 - (timeleft / 60);
 			term->saveline();
 			attr(LIGHTGRAY);

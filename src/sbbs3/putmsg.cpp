@@ -480,7 +480,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 					continue;
 				}
 				if (memcmp(str + l, "@SYSONLY@", 9) == 0) {
-					if (!SYSOP)
+					if (!useron_is_sysop())
 						console ^= CON_ECHO_OFF;
 					l += 9;
 					continue;

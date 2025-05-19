@@ -238,10 +238,12 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 					result = !_not;
 				break;
 			case AR_SYSOP:
-				if (user->level < SYSOP_LEVEL && !(sys_status & SS_TMPSYSOP))
-					result = _not;
-				else
+				if (user == &useron && useron_is_sysop())
 					result = !_not;
+				else if (user != &useron && user_is_sysop(user))
+					result = !_not;
+				else
+					result = _not;
 				break;
 			case AR_GUEST:
 				if (!(user->rest & FLAG('G')))

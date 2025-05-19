@@ -81,7 +81,7 @@ bool sbbs_t::uploadfile(file_t* f)
 				              , result);
 				logline(LOG_NOTICE, "U!", str);
 				bprintf(text[FileHadErrors], f->name, cfg.ftest[i]->ext);
-				if (!SYSOP || yesno(text[DeleteFileQ]))
+				if (!useron_is_sysop() || yesno(text[DeleteFileQ]))
 					remove(path);
 				return false;
 			}

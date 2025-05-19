@@ -4357,7 +4357,7 @@ void sbbs_t::logoffstats()
 	int i;
 	stats_t stats;
 
-	if (REALSYSOP && !(cfg.sys_misc & SM_SYSSTAT))
+	if (user_is_sysop(&useron) && !(cfg.sys_misc & SM_SYSSTAT))
 		return;
 
 	if (useron.rest & FLAG('Q'))   /* Don't count QWKnet nodes */

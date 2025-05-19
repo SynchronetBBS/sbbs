@@ -87,7 +87,7 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 			lprintf(LOG_NOTICE, "!Error %d (%s) opening: %s"
 			        , errno, strerror(errno), fpath);
 			bputs(text[FileNotFound]);
-			if (SYSOP)
+			if (useron_is_sysop())
 				bputs(fpath);
 			CRLF;
 		}
@@ -212,7 +212,7 @@ bool sbbs_t::printtail(const char* fname, int lines, int mode, int org_cols, JSO
 			lprintf(LOG_NOTICE, "!Error %d (%s) opening: %s"
 			        , errno, strerror(errno), fpath);
 			bputs(text[FileNotFound]);
-			if (SYSOP)
+			if (useron_is_sysop())
 				bputs(fpath);
 			CRLF;
 		}

@@ -212,7 +212,7 @@ void sbbs_t::show_msghdr(smb_t* smb, const smbmsg_t* msg, const char* subject, c
 		}
 		if (msg->cc_list != NULL)
 			bprintf(text[MsgCarbonCopyList], msg->cc_list);
-		if (current_msg_from != NULL && (!(msg->hdr.attr & MSG_ANONYMOUS) || SYSOP)) {
+		if (current_msg_from != NULL && (!(msg->hdr.attr & MSG_ANONYMOUS) || useron_is_sysop())) {
 			bprintf(pmode, msghdr_text(msg, MsgFrom), current_msg_from);
 			if (msg->from_ext)
 				bprintf(text[MsgFromExt], msg->from_ext);
@@ -421,7 +421,7 @@ void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del, bool 
 				off_t length = flength(fpath);
 				if (length < 1)
 					bprintf(text[FileDoesNotExist], tp);
-				else if (!(useron.exempt & FLAG('T')) && cur_cps && !SYSOP
+				else if (!(useron.exempt & FLAG('T')) && cur_cps && !useron_is_sysop()
 				         && (ulong)(length / cur_cps) > timeleft)
 					bputs(text[NotEnoughTimeToDl]);
 				else {

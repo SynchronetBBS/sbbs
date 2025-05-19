@@ -168,7 +168,7 @@ void sbbs_t::multinodechat(int channel)
 			if (ch == '/') {
 				bputs(text[MultiChatCommandPrompt]);
 				strcpy(str, "ACELWQ?*");
-				if (SYSOP)
+				if (useron_is_sysop())
 					SAFECAT(str, "0");
 				i = getkeys(str, cfg.total_chans);
 				if (i & 0x80000000L) {  /* change channel */
@@ -267,7 +267,7 @@ void sbbs_t::multinodechat(int channel)
 				}
 				else switch (i) {    /* other command */
 						case '0': /* Global channel */
-							if (!SYSOP)
+							if (!useron_is_sysop())
 								break;
 							usrs = 0;
 							for (i = 1; i <= cfg.sys_nodes; i++) {
@@ -718,7 +718,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 			bprintf(text[NodeNAlreadyInPChat], n);
 			return;
 		}
-		if (SYSOP && getnodedat(n, &node, true)) {
+		if (useron_is_sysop() && getnodedat(n, &node, true)) {
 			node.misc |= NODE_FCHAT;
 			putnodedat(n, &node);
 		} else {
@@ -1181,14 +1181,14 @@ int sbbs_t::getnodetopage(int all, int telegram)
 		lastnodemsguser[0] = 0;
 	if (lastnodemsg) {
 		getnodedat(lastnodemsg, &node);
-		if (node.status != NODE_INUSE && !SYSOP)
+		if (node.status != NODE_INUSE && !useron_is_sysop())
 			lastnodemsg = 1;
 	}
 	for (j = 0, i = 1; i <= cfg.sys_nodes && i <= cfg.sys_lastnode; i++) {
 		getnodedat(i, &node);
 		if (i == cfg.node_num)
 			continue;
-		if (node.status == NODE_INUSE || (SYSOP && node.status >= NODE_LOGON && node.status <= NODE_QUIET)) {
+		if (node.status == NODE_INUSE || (useron_is_sysop() && node.status >= NODE_LOGON && node.status <= NODE_QUIET)) {
 			if (!lastnodemsg)
 				lastnodemsg = i;
 			j++;
@@ -1221,11 +1221,11 @@ int sbbs_t::getnodetopage(int all, int telegram)
 	j = atoi(str);
 	if (j && j <= cfg.sys_lastnode && j <= cfg.sys_nodes) {
 		getnodedat(j, &node);
-		if (node.useron == 0 || (node.status != NODE_INUSE && !SYSOP)) {
+		if (node.useron == 0 || (node.status != NODE_INUSE && !useron_is_sysop())) {
 			bprintf(text[NodeNIsNotInUse], j);
 			return 0;
 		}
-		if (telegram && node.misc & (NODE_POFF | NODE_ANON) && !SYSOP) {
+		if (telegram && node.misc & (NODE_POFF | NODE_ANON) && !useron_is_sysop()) {
 			bprintf(text[CantPageNode], node.misc & NODE_ANON
 			    ? text[UNKNOWN_USER] : username(&cfg, node.useron, tmp));
 			return 0;
@@ -1260,9 +1260,9 @@ int sbbs_t::getnodetopage(int all, int telegram)
 
 	for (i = 1; i <= cfg.sys_nodes && i <= cfg.sys_lastnode; i++) {
 		getnodedat(i, &node);
-		if ((node.status == NODE_INUSE || (SYSOP && node.status == NODE_QUIET))
+		if ((node.status == NODE_INUSE || (useron_is_sysop() && node.status == NODE_QUIET))
 		    && node.useron == j) {
-			if (telegram && node.misc & NODE_POFF && !SYSOP) {
+			if (telegram && node.misc & NODE_POFF && !useron_is_sysop()) {
 				bprintf(text[CantPageNode], node.misc & NODE_ANON
 				    ? text[UNKNOWN_USER] : username(&cfg, node.useron, tmp));
 				return 0;
@@ -1399,7 +1399,7 @@ void sbbs_t::nodemsg()
 				if (i != -1) {
 					getnodedat(i, &node);
 					usernumber = node.useron;
-					if (node.misc & NODE_POFF && !SYSOP)
+					if (node.misc & NODE_POFF && !useron_is_sysop())
 						bprintf(text[CantPageNode], node.misc & NODE_ANON
 						    ? text[UNKNOWN_USER] : username(&cfg, node.useron, tmp));
 					else {
@@ -1435,8 +1435,8 @@ void sbbs_t::nodemsg()
 							continue;
 						getnodedat(i, &node);
 						if ((node.status == NODE_INUSE
-						     || (SYSOP && node.status == NODE_QUIET))
-						    && (SYSOP || !(node.misc & NODE_POFF)))
+						     || (useron_is_sysop() && node.status == NODE_QUIET))
+						    && (useron_is_sysop() || !(node.misc & NODE_POFF)))
 							putnmsg(i, buf);
 					}
 					SAFECOPY(str, "sent message to all nodes");

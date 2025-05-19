@@ -1353,7 +1353,7 @@ void sbbs_t::change_user(void)
 		putnodedat(cfg.node_num, &thisnode);
 	}
 	getmsgptrs();
-	if (REALSYSOP)
+	if (user_is_sysop(&useron))
 		sys_status &= ~SS_TMPSYSOP;
 	else
 		sys_status |= SS_TMPSYSOP;

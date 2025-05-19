@@ -865,8 +865,6 @@ enum {                           // Values of mode for userlist function
 
 #define CRLF            term->newline()
 #define SYSOP_LEVEL     90
-#define SYSOP           (useron.level >= SYSOP_LEVEL || sys_status & SS_TMPSYSOP)
-#define REALSYSOP       (useron.level >= SYSOP_LEVEL)
 #define FLAG(x)         (uint)(1U << (x - 'A'))
 #define CLS             outchar(FF)
 #define WHERE           __LINE__, __FUNCTION__, getfname(__FILE__)

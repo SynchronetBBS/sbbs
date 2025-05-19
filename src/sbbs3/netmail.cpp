@@ -78,7 +78,7 @@ bool sbbs_t::netmail(const char *into, const char *title, int mode, smb_t* resmb
 	smbmsg_t    msg;
 	memset(&msg, 0, sizeof(msg));
 
-	if (useron.etoday >= cfg.level_emailperday[useron.level] && !SYSOP && !(useron.exempt & FLAG('M'))) {
+	if (useron.etoday >= cfg.level_emailperday[useron.level] && !useron_is_sysop() && !(useron.exempt & FLAG('M'))) {
 		bputs(text[TooManyEmailsToday]);
 		return false;
 	}
@@ -129,7 +129,7 @@ bool sbbs_t::netmail(const char *into, const char *title, int mode, smb_t* resmb
 			bputs(text[NoNetMailAllowed]);
 			return false;
 		}
-		if (mode & WM_FILE && !SYSOP && !(cfg.inetmail_misc & NMAIL_FILE)) {
+		if (mode & WM_FILE && !useron_is_sysop() && !(cfg.inetmail_misc & NMAIL_FILE)) {
 			bputs(text[EmailFilesNotAllowed]);
 			mode &= ~WM_FILE;
 		}
@@ -141,7 +141,7 @@ bool sbbs_t::netmail(const char *into, const char *title, int mode, smb_t* resmb
 			bprintf(text[InvalidNetMailAddr], to);
 		return false;
 	}
-	if (!cfg.total_faddrs || (!SYSOP && !(cfg.netmail_misc & NMAIL_ALLOW))) {
+	if (!cfg.total_faddrs || (!useron_is_sysop() && !(cfg.netmail_misc & NMAIL_ALLOW))) {
 		bputs(text[NoNetMailAllowed]);
 		return false;
 	}
@@ -150,7 +150,7 @@ bool sbbs_t::netmail(const char *into, const char *title, int mode, smb_t* resmb
 	SKIP_WHITESPACE(p);
 	dest_addr = atofaddr(&cfg, p);     /* Get fido address */
 
-	if ((mode & WM_FILE) && !SYSOP && !(cfg.netmail_misc & NMAIL_FILE)) {
+	if ((mode & WM_FILE) && !useron_is_sysop() && !(cfg.netmail_misc & NMAIL_FILE)) {
 		bputs(text[EmailFilesNotAllowed]);
 		mode &= ~WM_FILE;
 	}
@@ -248,28 +248,28 @@ bool sbbs_t::netmail(const char *into, const char *title, int mode, smb_t* resmb
 	msg.hdr.netattr |= NETMSG_LOCAL;
 	lprintf(LOG_DEBUG, "NetMail subject: %s", subj);
 	p = subj;
-	if ((SYSOP || useron.exempt & FLAG('F'))
+	if ((useron_is_sysop() || useron.exempt & FLAG('F'))
 	    && !strnicmp(p, "CR:", 3)) {     /* Crash over-ride by sysop */
 		p += 3;               /* skip CR: */
 		SKIP_WHITESPACE(p);
 		msg.hdr.netattr |= NETMSG_CRASH;
 	}
 
-	if ((SYSOP || useron.exempt & FLAG('F'))
+	if ((useron_is_sysop() || useron.exempt & FLAG('F'))
 	    && !strnicmp(p, "FR:", 3)) {     /* File request */
 		p += 3;               /* skip FR: */
 		SKIP_WHITESPACE(p);
 		msg.hdr.auxattr |= MSG_FILEREQUEST;
 	}
 
-	if ((SYSOP || useron.exempt & FLAG('F'))
+	if ((useron_is_sysop() || useron.exempt & FLAG('F'))
 	    && !strnicmp(p, "RR:", 3)) {     /* Return receipt request */
 		p += 3;               /* skip RR: */
 		SKIP_WHITESPACE(p);
 		msg.hdr.auxattr |= MSG_RECEIPTREQ;
 	}
 
-	if ((SYSOP || useron.exempt & FLAG('F'))
+	if ((useron_is_sysop() || useron.exempt & FLAG('F'))
 	    && !strnicmp(p, "FA:", 3)) {     /* File Attachment */
 		p += 3;               /* skip FA: */
 		SKIP_WHITESPACE(p);
@@ -470,7 +470,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 
 
 	if (!inet && !qnet &&        /* FidoNet */
-	    ((!SYSOP && !(cfg.netmail_misc & NMAIL_ALLOW)) || !cfg.total_faddrs)) {
+	    ((!useron_is_sysop() && !(cfg.netmail_misc & NMAIL_ALLOW)) || !cfg.total_faddrs)) {
 		bputs(text[NoNetMailAllowed]);
 		free(qwkbuf);
 		return;
@@ -478,7 +478,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 
 	truncsp(to);            /* Truncate off space */
 
-	if (!stricmp(to, "SBBS") && !SYSOP && qnet) {
+	if (!stricmp(to, "SBBS") && !useron_is_sysop() && qnet) {
 		free(qwkbuf);
 		return;
 	}
@@ -835,7 +835,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 	snprintf(str, sizeof str, "%.25s", block + 71);      /* Title */
 	truncsp(str);
 	p = str;
-	if ((SYSOP || useron.exempt & FLAG('F'))
+	if ((useron_is_sysop() || useron.exempt & FLAG('F'))
 	    && !strnicmp(p, "CR:", 3)) {     /* Crash over-ride by sysop */
 		p += 3;               /* skip CR: */
 		if (*p == ' ')
@@ -843,7 +843,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 		hdr.attr |= FIDO_CRASH;
 	}
 
-	if ((SYSOP || useron.exempt & FLAG('F'))
+	if ((useron_is_sysop() || useron.exempt & FLAG('F'))
 	    && !strnicmp(p, "FR:", 3)) {     /* File request */
 		p += 3;               /* skip FR: */
 		if (*p == ' ')
@@ -851,7 +851,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 		hdr.attr |= FIDO_FREQ;
 	}
 
-	if ((SYSOP || useron.exempt & FLAG('F'))
+	if ((useron_is_sysop() || useron.exempt & FLAG('F'))
 	    && !strnicmp(p, "RR:", 3)) {     /* Return receipt request */
 		p += 3;               /* skip RR: */
 		if (*p == ' ')
@@ -859,7 +859,7 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 		hdr.attr |= FIDO_RRREQ;
 	}
 
-	if ((SYSOP || useron.exempt & FLAG('F'))
+	if ((useron_is_sysop() || useron.exempt & FLAG('F'))
 	    && !strnicmp(p, "FA:", 3)) {     /* File attachment */
 		p += 3;               /* skip FA: */
 		if (*p == ' ')
@@ -957,7 +957,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, int mode, smb_t* resmb
 	FILE *      instream;
 	smbmsg_t    msg;
 
-	if ((!SYSOP && !(cfg.inetmail_misc & NMAIL_ALLOW)) || useron.rest & FLAG('M')) {
+	if ((!useron_is_sysop() && !(cfg.inetmail_misc & NMAIL_ALLOW)) || useron.rest & FLAG('M')) {
 		bputs(text[NoNetMailAllowed]);
 		return false;
 	}
@@ -986,7 +986,7 @@ bool sbbs_t::inetmail(const char *into, const char *subj, int mode, smb_t* resmb
 	strListStripStrings(rcpt_list, "<>");
 	size_t rcpt_count = strListDedupe(&rcpt_list, /* case-sensitive */ false);
 
-	if (useron.etoday + rcpt_count > cfg.level_emailperday[useron.level] && !SYSOP && !(useron.exempt & FLAG('M'))) {
+	if (useron.etoday + rcpt_count > cfg.level_emailperday[useron.level] && !useron_is_sysop() && !(useron.exempt & FLAG('M'))) {
 		strListFree(&rcpt_list);
 		bputs(text[TooManyEmailsToday]);
 		return false;
@@ -1275,7 +1275,7 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, int mode, smb_t* resmb
 	FILE *      instream;
 	smbmsg_t    msg;
 
-	if (useron.etoday >= cfg.level_emailperday[useron.level] && !SYSOP && !(useron.exempt & FLAG('M'))) {
+	if (useron.etoday >= cfg.level_emailperday[useron.level] && !useron_is_sysop() && !(useron.exempt & FLAG('M'))) {
 		bputs(text[TooManyEmailsToday]);
 		return false;
 	}
@@ -1306,7 +1306,7 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, int mode, smb_t* resmb
 	}
 
 	truncsp(to);
-	if (!stricmp(to, "SBBS") && !SYSOP) {
+	if (!stricmp(to, "SBBS") && !useron_is_sysop()) {
 		bprintf(text[InvalidNetMailAddr], to);
 		return false;
 	}

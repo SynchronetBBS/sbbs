@@ -821,7 +821,7 @@ static void send_thread(void* arg)
 					if (!(scfg.dir[f.dir]->misc & DIR_QUIET)) {
 						const char* prefix = xfer.filepos ? "partially FTP-" : "FTP-";
 						addr_len = sizeof(addr);
-						if (uploader.level >= SYSOP_LEVEL
+						if (user_is_sysop(&uploader)
 						    && getpeername(xfer.ctrl_sock, &addr.addr, &addr_len) == 0
 						    && inet_addrtop(&addr, host_ip, sizeof(host_ip)) != NULL)
 							SAFEPRINTF2(username, "%s [%s]", xfer.user->alias, host_ip);
@@ -2432,7 +2432,7 @@ static void ctrl_thread(void* arg)
 		if (!stricmp(cmd, "HELP SITE") || !stricmp(cmd, "SITE HELP")) {
 			sockprintf(sock, sess, "214-The following SITE commands are recognized (* => unimplemented):");
 			sockprintf(sock, sess, " HELP    VER     WHO     UPTIME");
-			if (user.level >= SYSOP_LEVEL)
+			if (user_is_sysop(&user))
 				sockprintf(sock, sess,
 				           " RECYCLE [ALL]");
 			if (sysop)
@@ -2613,7 +2613,7 @@ static void ctrl_thread(void* arg)
 				lprintf(LOG_INFO, "%04d <%s> identity: %s", sock, user.alias, password);
 				putuserstr(&scfg, user.number, USER_NETMAIL, password);
 			}
-			else if (user.level >= SYSOP_LEVEL && !stricmp(password, sys_pass)) {
+			else if (user_is_sysop(&user) && !stricmp(password, sys_pass)) {
 				if (scfg.sys_misc & SM_R_SYSOP) {
 					lprintf(LOG_INFO, "%04d <%s> Sysop access granted", sock, user.alias);
 					sysop = TRUE;
@@ -2816,12 +2816,12 @@ static void ctrl_thread(void* arg)
 			sockprintf(sock, sess, "211 %s (%lu served)", sectostr((uint)(time(NULL) - uptime), str), served);
 			continue;
 		}
-		if (!stricmp(cmd, "SITE RECYCLE") && user.level >= SYSOP_LEVEL) {
+		if (!stricmp(cmd, "SITE RECYCLE") && user_is_sysop(&user)) {
 			startup->recycle_now = TRUE;
 			sockprintf(sock, sess, "211 server will recycle when not in-use");
 			continue;
 		}
-		if (!stricmp(cmd, "SITE RECYCLE ALL") && user.level >= SYSOP_LEVEL) {
+		if (!stricmp(cmd, "SITE RECYCLE ALL") && user_is_sysop(&user)) {
 			refresh_cfg(&scfg);
 			sockprintf(sock, sess, "211 ALL servers/nodes will recycle when not in-use");
 			continue;

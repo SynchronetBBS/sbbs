@@ -95,7 +95,7 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 	action = act;
 
 	lm_mode &= ~(LM_NOSPAM | LM_SPAMONLY | LM_INCDEL);
-	if (cfg.sys_misc & SM_SYSVDELM && (SYSOP || cfg.sys_misc & SM_USRVDELM))
+	if (cfg.sys_misc & SM_SYSVDELM && (useron_is_sysop() || cfg.sys_misc & SM_USRVDELM))
 		lm_mode |= LM_INCDEL;
 
 	if (cfg.readmail_mod[0] && !readmail_inside) {
@@ -163,7 +163,7 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 			smb_unlockmsghdr(&smb, &msg);
 			bprintf(P_TRUNCATE | (msg.hdr.auxattr & MSG_HFIELDS_UTF8)
 			        , msghdr_text(&msg, MailWaitingLstFmt), smb.curmsg + 1
-			        , which == MAIL_SENT ? msg_to(&msg) : (msg.hdr.attr & MSG_ANONYMOUS) && !SYSOP ? text[Anonymous] : msg.from
+			        , which == MAIL_SENT ? msg_to(&msg) : (msg.hdr.attr & MSG_ANONYMOUS) && !useron_is_sysop() ? text[Anonymous] : msg.from
 			        , mail_listing_flag(&msg)
 			        , msg.subj);
 			smb_freemsgmem(&msg);
@@ -320,7 +320,7 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 		         , TERM_KEY_RIGHT
 		         , TERM_KEY_HOME
 		         , TERM_KEY_END);
-		if (SYSOP)
+		if (useron_is_sysop())
 			strcat(str, "CUSPH");
 		if (which == MAIL_YOUR)
 			strcat(str, "K");   // kill all (visible)
@@ -347,7 +347,7 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 
 				if (which == MAIL_SENT)
 					break;
-				if ((msg.hdr.attr & (MSG_NOREPLY | MSG_ANONYMOUS)) && !SYSOP) {
+				if ((msg.hdr.attr & (MSG_NOREPLY | MSG_ANONYMOUS)) && !useron_is_sysop()) {
 					bputs(text[CantReplyToMsg]);
 					break;
 				}
@@ -541,7 +541,7 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 					else
 						bprintf(P_TRUNCATE | (msg.hdr.auxattr & MSG_HFIELDS_UTF8)
 						        , msghdr_text(&msg, MailWaitingLstFmt), u + 1
-						        , which == MAIL_SENT ? msg_to(&msg) : (msg.hdr.attr & MSG_ANONYMOUS) && !SYSOP ? text[Anonymous] : msg.from
+						        , which == MAIL_SENT ? msg_to(&msg) : (msg.hdr.attr & MSG_ANONYMOUS) && !useron_is_sysop() ? text[Anonymous] : msg.from
 						        , mail_listing_flag(&msg)
 						        , msg.subj);
 					smb_freemsgmem(&msg);
@@ -758,7 +758,7 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 					else
 						bprintf(P_TRUNCATE | (msg.hdr.auxattr & MSG_HFIELDS_UTF8)
 						        , msghdr_text(&msg, MailWaitingLstFmt), u + 1
-						        , which == MAIL_SENT ? msg_to(&msg) : (msg.hdr.attr & MSG_ANONYMOUS) && !SYSOP ? text[Anonymous] : msg.from
+						        , which == MAIL_SENT ? msg_to(&msg) : (msg.hdr.attr & MSG_ANONYMOUS) && !useron_is_sysop() ? text[Anonymous] : msg.from
 						        , mail_listing_flag(&msg)
 						        , msg.subj);
 					smb_freemsgmem(&msg);
@@ -855,9 +855,9 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 				break;
 			case '?':
 				menu(menu_file);
-				if (SYSOP && which == MAIL_SENT)
+				if (useron_is_sysop() && which == MAIL_SENT)
 					menu("syssmail");
-				else if (SYSOP && which == MAIL_YOUR)
+				else if (useron_is_sysop() && which == MAIL_YOUR)
 					menu("sysmailr");   /* Sysop Mail Read */
 				domsg = 0;
 				break;
@@ -928,7 +928,7 @@ int sbbs_t::searchmail(mail_t *mail, int start, int msgs, int which, const char 
 			else
 				bprintf(P_TRUNCATE | (msg.hdr.auxattr & MSG_HFIELDS_UTF8)
 				        , msghdr_text(&msg, MailWaitingLstFmt), l + 1
-				        , which == MAIL_SENT ? msg_to(&msg) : (msg.hdr.attr & MSG_ANONYMOUS) && !SYSOP ? text[Anonymous] : msg.from
+				        , which == MAIL_SENT ? msg_to(&msg) : (msg.hdr.attr & MSG_ANONYMOUS) && !useron_is_sysop() ? text[Anonymous] : msg.from
 				        , mail_listing_flag(&msg)
 				        , msg.subj);
 			found++;

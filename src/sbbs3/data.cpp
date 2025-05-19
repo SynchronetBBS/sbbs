@@ -220,7 +220,7 @@ uint sbbs_t::gettimeleft(bool handle_out_of_time)
 	{
 		gettimeleft_inside = 1;
 
-		if (!timeleft && !SYSOP && !(sys_status & SS_LCHAT)) {
+		if (!timeleft && !useron_is_sysop() && !(sys_status & SS_LCHAT)) {
 			logline(LOG_NOTICE, nulstr, "Ran out of time");
 			term->saveline();
 			if (sys_status & SS_EVENT)

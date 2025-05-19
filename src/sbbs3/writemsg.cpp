@@ -532,7 +532,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 			return false;
 		}
 		if (!(mode & (WM_EMAIL | WM_NETMAIL)) && cfg.sub[subnum]->misc & SUB_QNET
-		    && !SYSOP
+		    && !useron_is_sysop()
 		    && (!stricmp(subj, "DROP") || !stricmp(subj, "ADD")
 		        || !strnicmp(to, "SBBS", 4))) {
 			free(buf);   /* Users can't post DROP or ADD in QWK netted subs */
@@ -1077,7 +1077,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 			}
 		}
 		if (strin[0] == '/' && strlen(strin) < 16) {
-			if (!stricmp(strin, "/DEBUG") && SYSOP) {
+			if (!stricmp(strin, "/DEBUG") && useron_is_sysop()) {
 				bprintf("\r\nline=%d lines=%d (%d), rows=%d\r\n", line, lines, (int)strListCount(str), term->rows);
 				continue;
 			}
@@ -1469,7 +1469,7 @@ bool sbbs_t::forwardmsg(smb_t* smb, smbmsg_t* orgmsg, const char* to, const char
 		return false;
 	}
 
-	if (useron.etoday >= cfg.level_emailperday[useron.level] && !SYSOP && !(useron.exempt & FLAG('M'))) {
+	if (useron.etoday >= cfg.level_emailperday[useron.level] && !useron_is_sysop() && !(useron.exempt & FLAG('M'))) {
 		bputs(text[TooManyEmailsToday]);
 		return false;
 	}

@@ -1215,7 +1215,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 						menu("sysmscan");
 					bputs(text[OperatorPrompt]);
 					strcpy(str, "?ADCEHMQTUV");
-					if (SYSOP)
+					if (useron_is_sysop())
 						strcat(str, "SP");
 					switch (getkeys(str, 0)) {
 						case '?':
@@ -1801,7 +1801,7 @@ int sbbs_t::showposts_toyou(int subnum, post_t *post, uint start, int posts, int
 			found++;
 			bprintf(P_TRUNCATE | (msg.hdr.auxattr & MSG_HFIELDS_UTF8)
 			        , msghdr_text(&msg, SubMsgLstFmt), l + 1
-			        , (msg.hdr.attr & MSG_ANONYMOUS) && !SYSOP
+			        , (msg.hdr.attr & MSG_ANONYMOUS) && !useron_is_sysop()
 			    ? text[Anonymous] : msg.from
 			        , msg.to
 			        , msg_listing_flag(subnum, &msg, &post[l])

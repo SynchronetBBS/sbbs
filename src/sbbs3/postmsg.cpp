@@ -176,7 +176,7 @@ bool sbbs_t::postmsg(int subnum, int wm_mode, smb_t* resmb, smbmsg_t* remsg)
 	if (!touser[0])
 		SAFECOPY(touser, "All");      // Default to ALL
 
-	if (!stricmp(touser, "SYSOP") && !SYSOP)  // Change SYSOP to user #1
+	if (!stricmp(touser, "SYSOP") && !useron_is_sysop())  // Change useron_is_sysop() to user #1
 		username(&cfg, 1, touser);
 
 	if (msgattr & MSG_PRIVATE && !stricmp(touser, "ALL")) {

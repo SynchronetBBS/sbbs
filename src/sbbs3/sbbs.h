@@ -563,6 +563,8 @@ public:
 #define SMB_STACK_POP	false
 	int 	smb_stack(smb_t* smb, bool push);
 
+	bool	useron_is_sysop() { return user_is_sysop(&useron) || (sys_status & SS_TMPSYSOP); }
+
 	char	rlogin_name[LEN_ALIAS+1]{};
 	char	rlogin_pass[LEN_PASS+1]{};
 	char	rlogin_term[TELNET_TERM_MAXLEN+1]{};	/* RLogin passed terminal type/speed (e.g. "xterm/57600") */

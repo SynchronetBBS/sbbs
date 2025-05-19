@@ -84,7 +84,7 @@ int sbbs_t::login(const char *username, const char *pw_prompt, const char* user_
 		return LOGIC_FALSE;
 	}
 
-	if (useron.pass[0] || REALSYSOP) {
+	if (useron.pass[0] || user_is_sysop(&useron)) {
 		if (user_pw != NULL)
 			SAFECOPY(str, user_pw);
 		else {
@@ -112,7 +112,7 @@ int sbbs_t::login(const char *username, const char *pw_prompt, const char* user_
 			useron.misc = useron_misc;
 			return LOGIC_FALSE;
 		}
-		if (REALSYSOP && (cfg.sys_misc & SM_SYSPASSLOGIN) && (cfg.sys_misc & SM_R_SYSOP) && !chksyspass(sys_pw)) {
+		if (user_is_sysop(&useron) && (cfg.sys_misc & SM_SYSPASSLOGIN) && (cfg.sys_misc & SM_R_SYSOP) && !chksyspass(sys_pw)) {
 			bputs(text[InvalidLogon]);
 			useron.number = 0;
 			useron.misc = useron_misc;

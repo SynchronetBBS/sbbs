@@ -280,7 +280,7 @@ int sbbs_t::msgtoqwk(smbmsg_t* msg, FILE *qwk_fp, int mode, smb_t* smb
 			else
 				snprintf(from, sizeof from, "%.128s@%.128s", msg->from, (char*)msg->from_net.addr);
 		}
-		if (msg->hdr.attr & MSG_ANONYMOUS && !SYSOP)
+		if (msg->hdr.attr & MSG_ANONYMOUS && !useron_is_sysop())
 			SAFECOPY(from, text[Anonymous]);
 		else if ((mode & QM_EXT) && strlen(from) > QWK_HFIELD_LEN) {
 			size += fprintf(qwk_fp, "From: %.128s%c", from, qwk_newline);

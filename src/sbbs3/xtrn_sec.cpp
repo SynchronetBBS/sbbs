@@ -245,7 +245,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		fwrite(str, strlen(str), 1, fp);           /* Total external programs */
 
 		for (i = 0; i < cfg.total_xtrns; i++) {        /* Each program's name */
-			if (SYSOP || chk_ar(cfg.xtrn[i]->ar, &useron, &client)) {
+			if (useron_is_sysop() || chk_ar(cfg.xtrn[i]->ar, &useron, &client)) {
 				SAFECOPY(str, cfg.xtrn[i]->name);
 			} else
 				str[0] = 0;                     /* Blank if no access */
@@ -324,7 +324,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		              , term->rows                    /* User screen length */
 		              , useron.level            /* User SL */
 		              , 0                       /* Cosysop? */
-		              , SYSOP                   /* Sysop? (1/0) */
+		              , useron_is_sysop()       /* Sysop? (1/0) */
 		              , term->supports(ANSI) /* ANSI ? (1/0) */
 		              , online == ON_REMOTE);   /* Remote (1/0) */
 		lfexpand(str, misc);

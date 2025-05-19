@@ -107,7 +107,7 @@ void sbbs_t::showfileinfo(file_t* f, bool show_extdesc)
 	}
 	if (f->size == -1) {
 		bprintf(text[FileIsNotOnline], f->name);
-		if (SYSOP)
+		if (useron_is_sysop())
 			bprintf("%s\r\n", path);
 	}
 	current_file = NULL;

@@ -342,7 +342,7 @@ bool sbbs_t::start_batch_download()
 	iniFreeStringList(filenames);
 	truncsp(list);
 
-	if (!(useron.exempt & FLAG('T')) && !SYSOP && totaltime > (int64_t)timeleft) {
+	if (!(useron.exempt & FLAG('T')) && !useron_is_sysop() && totaltime > (int64_t)timeleft) {
 		bputs(text[NotEnoughTimeToDl]);
 		return false;
 	}

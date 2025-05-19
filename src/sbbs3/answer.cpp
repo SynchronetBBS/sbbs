@@ -187,7 +187,7 @@ bool sbbs_t::answer(bool* login_success)
 							console &= ~(CON_R_ECHOX | CON_L_ECHOX);
 						}
 						else {
-							if (REALSYSOP && (cfg.sys_misc & SM_SYSPASSLOGIN) && (cfg.sys_misc & SM_R_SYSOP)) {
+							if (user_is_sysop(&useron) && (cfg.sys_misc & SM_SYSPASSLOGIN) && (cfg.sys_misc & SM_R_SYSOP)) {
 								rioctl(IOFI);       /* flush input buffer */
 								if (!chksyspass())
 									bputs(text[InvalidLogon]);
@@ -531,7 +531,7 @@ bool sbbs_t::answer(bool* login_success)
 		 */
 
 		if (!term_output_disabled) {
-			if (REALSYSOP && (cfg.sys_misc & SM_SYSPASSLOGIN) && (cfg.sys_misc & SM_R_SYSOP)) {
+			if (user_is_sysop(&useron) && (cfg.sys_misc & SM_SYSPASSLOGIN) && (cfg.sys_misc & SM_R_SYSOP)) {
 				rioctl(IOFI);       /* flush input buffer */
 				if (!chksyspass()) {
 					bputs(text[InvalidLogon]);

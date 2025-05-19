@@ -203,7 +203,7 @@ void sbbs_t::nodesync(bool clearline)
 	}
 
 	if (sys_status & SS_USERON && online && (timeleft / 60) < (5 - timeleft_warn)
-	    && !SYSOP) {
+	    && !useron_is_sysop()) {
 		timeleft_warn = 5 - (timeleft / 60);
 		if (!(sys_status & SS_MOFF)) {
 			attr(LIGHTGRAY);
@@ -375,7 +375,7 @@ int sbbs_t::whos_online(bool listself)
 				printnodedat(i, &node);
 			continue;
 		}
-		if (node.status == NODE_INUSE || (SYSOP && node.status == NODE_QUIET)) {
+		if (node.status == NODE_INUSE || (useron_is_sysop() && node.status == NODE_QUIET)) {
 			printnodedat(i, &node);
 			if (!lastnodemsg)
 				lastnodemsg = i;
@@ -455,7 +455,7 @@ void sbbs_t::printnodedat(uint number, node_t* node)
 			break;
 		case NODE_LOGOUT:
 			bprintf(text[NodeStatusLogout]
-			        , (node->misc & NODE_ANON) && !SYSOP ? text[UNKNOWN_USER] : username(&cfg, node->useron, tmp));
+			        , (node->misc & NODE_ANON) && !useron_is_sysop() ? text[UNKNOWN_USER] : username(&cfg, node->useron, tmp));
 			break;
 		case NODE_EVENT_WAITING:
 			bputs(text[NodeStatusEventWaiting]);
@@ -471,13 +471,13 @@ void sbbs_t::printnodedat(uint number, node_t* node)
 			bputs(node_connection_desc(this, node->connection, tmp));
 			break;
 		case NODE_QUIET:
-			if (!SYSOP) {
+			if (!useron_is_sysop()) {
 				bputs(text[NodeStatusWaitingForCall]);
 				break;
 			}
 		case NODE_INUSE:
 			attr(cfg.color[clr_nodeuser]);
-			if (node->misc & NODE_ANON && !SYSOP)
+			if (node->misc & NODE_ANON && !useron_is_sysop())
 				bputs(text[UNKNOWN_USER]);
 			else
 				bputs(username(&cfg, node->useron, tmp));
@@ -511,7 +511,7 @@ void sbbs_t::printnodedat(uint number, node_t* node)
 			break;
 	}
 	i = NODE_LOCK;
-	if (node->status == NODE_INUSE || SYSOP)
+	if (node->status == NODE_INUSE || useron_is_sysop())
 		i |= NODE_POFF | NODE_AOFF | NODE_MSGW | NODE_NMSG;
 	if (node->misc & i) {
 		bputs(" (");
@@ -527,7 +527,7 @@ void sbbs_t::printnodedat(uint number, node_t* node)
 			outchar('P');
 		outchar(')');
 	}
-	if (SYSOP && ((node->misc
+	if (useron_is_sysop() && ((node->misc
 	               & (NODE_ANON | NODE_UDAT | NODE_INTR | NODE_RRUN | NODE_EVENT | NODE_DOWN | NODE_LCHAT | NODE_FCHAT))
 	              || node->status == NODE_QUIET)) {
 		bputs(" [");
@@ -551,7 +551,7 @@ void sbbs_t::printnodedat(uint number, node_t* node)
 			outchar('Q');
 		outchar(']');
 	}
-	if (node->errors && SYSOP) {
+	if (node->errors && useron_is_sysop()) {
 		attr(cfg.color[clr_err]);
 		bprintf(" %d error%c", node->errors, node->errors > 1 ? 's' : '\0' );
 	}

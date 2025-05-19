@@ -2017,7 +2017,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	if (!strcmp(sp, "MSG_CC") && current_msg != NULL)
 		return current_msg->cc_list == NULL ? nulstr : current_msg->cc_list;
 	if (!strcmp(sp, "MSG_FROM") && current_msg != nullptr) {
-		if (current_msg->hdr.attr & MSG_ANONYMOUS && !SYSOP)
+		if (current_msg->hdr.attr & MSG_ANONYMOUS && !useron_is_sysop())
 			return text[Anonymous];
 		if (pmode != NULL)
 			*pmode |= (current_msg->hdr.auxattr & MSG_HFIELDS_UTF8);
@@ -2031,14 +2031,14 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 	if (!strcmp(sp, "MSG_FROM_NAME") && current_msg != nullptr) {
-		if (current_msg->hdr.attr & MSG_ANONYMOUS && !SYSOP)
+		if (current_msg->hdr.attr & MSG_ANONYMOUS && !useron_is_sysop())
 			return text[Anonymous];
 		if (pmode != NULL)
 			*pmode |= (current_msg->hdr.auxattr & MSG_HFIELDS_UTF8);
 		return current_msg_from == nullptr ? current_msg->from : current_msg_from;
 	}
 	if (!strcmp(sp, "MSG_FROM_FIRST") && current_msg != nullptr) {
-		if (current_msg->hdr.attr & MSG_ANONYMOUS && !SYSOP)
+		if (current_msg->hdr.attr & MSG_ANONYMOUS && !useron_is_sysop())
 			safe_snprintf(str, maxlen, "%s", text[Anonymous]);
 		else
 			safe_snprintf(str, maxlen, "%s", current_msg_from == nullptr ? current_msg->from : current_msg_from);
@@ -2047,14 +2047,14 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 	if (!strcmp(sp, "MSG_FROM_EXT") && current_msg != NULL) {
-		if (!(current_msg->hdr.attr & MSG_ANONYMOUS) || SYSOP)
+		if (!(current_msg->hdr.attr & MSG_ANONYMOUS) || useron_is_sysop())
 			if (current_msg->from_ext != NULL)
 				return current_msg->from_ext;
 		return nulstr;
 	}
 	if (!strcmp(sp, "MSG_FROM_NET") && current_msg != NULL) {
 		if (current_msg->from_net.addr != NULL
-		    && (!(current_msg->hdr.attr & MSG_ANONYMOUS) || SYSOP))
+		    && (!(current_msg->hdr.attr & MSG_ANONYMOUS) || useron_is_sysop()))
 			return smb_netaddrstr(&current_msg->from_net, str);
 		return nulstr;
 	}

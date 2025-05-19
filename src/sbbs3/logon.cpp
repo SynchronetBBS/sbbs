@@ -117,7 +117,7 @@ bool sbbs_t::logon()
 
 	if (thisnode.misc & NODE_LOCK) {
 		unlocknodedat(cfg.node_num);    /* must unlock! */
-		if (!SYSOP && !(useron.exempt & FLAG('N'))) {
+		if (!useron_is_sysop() && !(useron.exempt & FLAG('N'))) {
 			bputs(text[NodeLocked]);
 			safe_snprintf(str, sizeof(str), "(%04u)  %-25s  Locked node logon attempt"
 			              , useron.number, useron.alias);
@@ -208,7 +208,7 @@ bool sbbs_t::logon()
 	last_ns_time = ns_time = useron.ns_time;
 	// ns_time-=(useron.tlast*60); /* file newscan time == last logon time */
 
-	if (!SYSOP && online == ON_REMOTE && !(sys_status & SS_QWKLOGON)) {
+	if (!useron_is_sysop() && online == ON_REMOTE && !(sys_status & SS_QWKLOGON)) {
 		rioctl(IOCM | ABORT); /* users can't abort anything */
 		rioctl(IOCS | ABORT);
 	}
@@ -479,7 +479,7 @@ bool sbbs_t::logon()
 	if (!(sys_status & SS_QWKLOGON) && cfg.logon_mod[0])
 		exec_bin(cfg.logon_mod, &main_csi);
 
-	if (thisnode.status != NODE_QUIET && (!REALSYSOP || cfg.sys_misc & SM_SYSSTAT)) {
+	if (thisnode.status != NODE_QUIET && (!user_is_sysop(&useron) || cfg.sys_misc & SM_SYSSTAT)) {
 		int file;
 		safe_snprintf(path, sizeof(path), "%slogon.lst", cfg.data_dir);
 		if ((file = nopen(path, O_WRONLY | O_CREAT | O_APPEND)) == -1) {
@@ -544,14 +544,14 @@ bool sbbs_t::logon()
 			getnodedat(i, &node);
 			if (!(cfg.sys_misc & SM_NONODELIST)
 			    && (node.status == NODE_INUSE
-			        || ((node.status == NODE_QUIET || node.errors) && SYSOP))) {
+			        || ((node.status == NODE_QUIET || node.errors) && useron_is_sysop()))) {
 				if (!c)
 					bputs(text[NodeLstHdr]);
 				printnodedat(i, &node);
 				c = 1;
 			}
 			if (node.status == NODE_INUSE && i != cfg.node_num && node.useron == useron.number
-			    && !SYSOP && !(useron.exempt & FLAG('G'))) {
+			    && !useron_is_sysop() && !(useron.exempt & FLAG('G'))) {
 				SAFEPRINTF2(str, "(%04u)  %-25s  On more than one node at the same time"
 				            , useron.number, useron.alias);
 				logline(LOG_NOTICE, "+!", str);
@@ -579,7 +579,7 @@ bool sbbs_t::logon()
 	    && (useron.expire - now) / (1440L * 60L) <= cfg.sys_exp_warn) /* expiration */
 		bprintf(text[AccountWillExpireInNDays], (useron.expire - now) / (1440L * 60L));
 
-	if (criterrs && SYSOP)
+	if (criterrs && useron_is_sysop())
 		bprintf(text[CriticalErrors], criterrs);
 	if ((i = getuserxfers(&cfg, /* from: */ NULL, useron.number)) != 0)
 		bprintf(text[UserXferForYou], i, i > 1 ? "s" : nulstr);
@@ -692,7 +692,7 @@ uint sbbs_t::logonstats()
 	if (thisnode.status == NODE_QUIET)       /* Quiet users aren't counted */
 		return 0;
 
-	if (REALSYSOP && !(cfg.sys_misc & SM_SYSSTAT))
+	if (user_is_sysop(&useron) && !(cfg.sys_misc & SM_SYSSTAT))
 		return 0;
 
 	for (i = 0; i < 2; i++) {
