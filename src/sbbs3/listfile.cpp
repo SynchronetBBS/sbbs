@@ -189,7 +189,7 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 					if (useron.misc & BATCHFLAG)
 						bputs(text[FileListBatchCommands]);
 					else {
-						CLS;
+						cls();
 						d = strlen(cfg.lib[usrlib[i]]->lname) > strlen(cfg.dir[dirnum]->lname) ?
 						    strlen(cfg.lib[usrlib[i]]->lname) + 17
 						    : strlen(cfg.dir[dirnum]->lname) + 17;
@@ -246,11 +246,11 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 					fprintf(tofile, "\r\n%.*s\r\n", c, "----------------------------------------------------------------");
 				}
 				else {
-					CRLF;
+					term->newline();
 					attr(cfg.color[clr_filelstline]);
 					while (c--)
 						outchar('\xC4');
-					CRLF;
+					term->newline();
 				}
 			}
 		}
@@ -264,7 +264,7 @@ int sbbs_t::listfiles(const int dirnum, const char *filespec, FILE* tofile, cons
 				found = -1;
 				break;
 			}
-			CRLF;
+			term->newline();
 		}
 		else if (tofile)
 			listfiletofile(f, tofile);
@@ -446,7 +446,7 @@ bool sbbs_t::listfile(file_t* f, const int dirnum, const char *search, const cha
 		else {
 			bputs(P_TRUNCATE, fdesc);
 		}
-		CRLF;
+		term->newline();
 	} else {
 		truncsp(ext);
 		while (strncmp(ext, "\r\n", 2) == 0
@@ -535,7 +535,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 				addtobatdl(bf[0]);
 				if (ch == 'D')
 					start_batch_download();
-				CRLF;
+				term->newline();
 				return 2;
 			}
 			d = mouse_list(this, row, total, str);
@@ -544,7 +544,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 				return -1;
 			if (d > 0) {     /* d is string length */
 				strupr(str);
-				CRLF;
+				term->newline();
 				term->lncntr = 0;
 				for (c = 0; c < d; c++) {
 					if (batdn_total() >= cfg.max_batdn) {
@@ -576,7 +576,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 				}
 				if (ch == 'D')
 					start_batch_download();
-				CRLF;
+				term->newline();
 				return 2;
 			}
 			term->clearline();
@@ -595,7 +595,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 				return -1;
 			if (d > 0) {     /* d is string length */
 				strupr(str);
-				CRLF;
+				term->newline();
 				term->lncntr = 0;
 				for (c = 0; c < d; c++) {
 					if (str[c] == '*' || strchr(str + c, '.')) {     /* filename or spec given */
@@ -654,7 +654,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 					}
 				}
 				else if (ch == 'M') {
-					CRLF;
+					term->newline();
 					for (i = 0; i < usrlibs; i++)
 						bprintf(text[MoveToLibLstFmt], i + 1, cfg.lib[usrlib[i]]->lname);
 					sync();
@@ -665,7 +665,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 						ml = cfg.dir[smb->dirnum]->lib;
 					else
 						ml--;
-					CRLF;
+					term->newline();
 					for (j = 0; j < usrdirs[ml]; j++)
 						bprintf(text[MoveToDirLstFmt]
 						        , j + 1, cfg.dir[usrdir[ml][j]]->lname);
@@ -677,7 +677,7 @@ int sbbs_t::batchflagprompt(smb_t* smb, file_t** bf, uint* row, const int total
 						md = usrdirs[ml] - 1;
 					else
 						md--;
-					CRLF;
+					term->newline();
 				}
 				term->lncntr = 0;
 				for (c = 0; c < d; c++) {
@@ -839,7 +839,7 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 		if (mode == FI_REMOVE || mode == FI_OLD || mode == FI_OLDUL
 		    || mode == FI_OFFLINE) {
 			sync();
-//			CRLF;
+//			term->newline();
 			SAFEPRINTF(str, "VDERN\r%c", quit_key());
 			if (m > 1)
 				SAFECAT(str, "P-\b");
@@ -862,7 +862,7 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 			switch (key) {
 				case 'V':
 					viewfilecontents(f);
-					CRLF;
+					term->newline();
 					sync();
 					pause();
 					m--;
@@ -930,7 +930,7 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 					removefcdt(f);
 					break;
 				case 'M':   /* move the file to another dir */
-					CRLF;
+					term->newline();
 					for (i = 0; i < usrlibs; i++)
 						bprintf(text[MoveToLibLstFmt], i + 1, cfg.lib[usrlib[i]]->lname);
 					sync();
@@ -941,7 +941,7 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 						i = cfg.dir[dirnum]->lib;
 					else
 						i--;
-					CRLF;
+					term->newline();
 					for (j = 0; j < usrdirs[i]; j++)
 						bprintf(text[MoveToDirLstFmt]
 						        , j + 1, cfg.dir[usrdir[i][j]]->lname);
@@ -953,7 +953,7 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 						j = usrdirs[i] - 1;
 					else
 						j--;
-					CRLF;
+					term->newline();
 					movefile(&smb, f, usrdir[i][j]);
 					break;
 				case 'P':   /* previous */
@@ -1062,7 +1062,7 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 							thisnode.aux = 0xf0;
 							putnodedat(cfg.node_num, &thisnode);
 						}
-						CRLF;
+						term->newline();
 					}
 					for (j = 0; j < cfg.total_dlevents; j++) {
 						if (file_type_match(f->name, cfg.dlevent[j]->ext)

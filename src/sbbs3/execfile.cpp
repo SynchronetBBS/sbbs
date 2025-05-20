@@ -68,7 +68,7 @@ int sbbs_t::exec_file(csi_t *csi)
 				}
 				snprintf(str, sizeof str, "dirs%u", usrlib[j] + 1);
 				if (!menu(str, P_NOERROR)) {
-					CLS;
+					cls();
 					bprintf(text[DirLstHdr], cfg.lib[usrlib[j]]->lname);
 					for (i = 0; i < usrdirs[j] && !msgabort(); i++) {
 						if (i == curdir[j])
@@ -223,7 +223,7 @@ int sbbs_t::exec_file(csi_t *csi)
 			if (menu(str, P_NOERROR)) {
 				return 0;
 			}
-			CRLF;
+			term->newline();
 			bprintf(text[DirLstHdr], cfg.lib[usrlib[curlib]]->lname);
 			for (i = 0; i < usrdirs[curlib] && !msgabort(); i++) {
 				if (i == curdir[curlib])

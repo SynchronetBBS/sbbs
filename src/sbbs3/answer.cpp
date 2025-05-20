@@ -586,7 +586,7 @@ bool sbbs_t::answer(bool* login_success)
 		}
 		if (autoterm & PETSCII) {
 			SAFECOPY(terminal, "PETSCII");
-			outchar(FF);
+			cls();
 			term->center(str);
 			term_out("\r\n");
 		} else {    /* ANSI+ terminal detection */

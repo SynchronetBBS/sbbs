@@ -366,7 +366,7 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, str_list_t
 				if (*buf == CTRL_CLOSE_BRACKET) {
 					save_console = console;
 					console &= ~CON_RAW_IN;   // Allow Ctrl-U/Ctrl-P
-					CRLF;
+					term->newline();
 					while (online) {
 						sync();
 						mnemonics(text[TelnetGatewayPrompt]);

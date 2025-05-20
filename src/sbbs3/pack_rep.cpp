@@ -260,7 +260,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 		fclose(voting);
 	}
 	fclose(rep);            /* close HUB_ID.MSG */
-	CRLF;
+	term->newline();
 	/* Look for extra files to send out */
 	SAFEPRINTF2(str, "%sqnet/%s.out", cfg.data_dir, hubid_lower);
 	dir = opendir(str);
@@ -276,7 +276,7 @@ bool sbbs_t::pack_rep(uint hubnum)
 	if (dir != NULL)
 		closedir(dir);
 	if (netfiles)
-		CRLF;
+		term->newline();
 
 	if (!msgcnt && !netfiles && !packedmail && !voting_data) {
 		lprintf(LOG_INFO, "%s", remove_ctrl_a(text[QWKNoNewMessages], tmp));

@@ -294,7 +294,7 @@ int sbbs_t::exec_function(csi_t *csi)
 			snprintf(str, sizeof str, "%sguru.log", cfg.logs_dir);
 			if (fexist(str)) {
 				printfile(str, 0);
-				CRLF;
+				term->newline();
 				if (text[DeleteGuruLogQ][0] && !noyes(text[DeleteGuruLogQ]))
 					remove(str);
 			}

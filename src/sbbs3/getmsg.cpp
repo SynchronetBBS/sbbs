@@ -192,9 +192,9 @@ void sbbs_t::show_msghdr(smb_t* smb, const smbmsg_t* msg, const char* subject, c
 	attr(LIGHTGRAY);
 	if (term->row != 0) {
 		if (useron.misc & CLRSCRN)
-			outchar(FF);
+			cls();
 		else
-			CRLF;
+			term->newline();
 	}
 	msghdr_tos = (term->row == 0);
 	if (!menu("msghdr", P_NOERROR)) {
@@ -267,7 +267,7 @@ bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, int p_mode, post_t* post)
 			comments++;
 		}
 	if (comments)
-		CRLF;
+		term->newline();
 
 	if (msg->hdr.type == SMB_MSG_TYPE_POLL && post != NULL && is_sub) {
 		char*    answer;
@@ -314,7 +314,7 @@ bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, int p_mode, post_t* post)
 				attr(cfg.color[clr_votes_empty]);
 				bputs(answer);
 			}
-			CRLF;
+			term->newline();
 			answers++;
 		}
 		if (!msg->user_voted && !(useron.misc & EXPERT) && !(msg->hdr.auxattr & POLL_CLOSED) && !(useron.rest & FLAG('V')))
@@ -353,7 +353,7 @@ bool sbbs_t::show_msg(smb_t* smb, smbmsg_t* msg, int p_mode, post_t* post)
 	putmsg(p, p_mode, msg->columns);
 	smb_freemsgtxt(txt);
 	if (term->column)
-		CRLF;
+		term->newline();
 	if ((txt = smb_getmsgtxt(smb, msg, GETMSGTXT_TAIL_ONLY)) == NULL)
 		return false;
 

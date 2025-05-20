@@ -1184,7 +1184,7 @@ js_clear(JSContext *cx, uintN argc, jsval *arglist)
 	}
 	rc = JS_SUSPENDREQUEST(cx);
 	if (autopause)
-		sbbs->CLS;
+		sbbs->cls();
 	else
 		sbbs->term->clearscreen();
 	JS_RESUMEREQUEST(cx, rc);

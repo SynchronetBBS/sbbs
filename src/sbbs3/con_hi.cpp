@@ -158,7 +158,7 @@ bool sbbs_t::chksyspass(const char* sys_pw)
 	else {
 		bputs(text[SystemPassword]);
 		getstr(str, sizeof(cfg.sys_pass) - 1, K_UPPER | K_NOECHO);
-		CRLF;
+		term->newline();
 		term->lncntr = 0;
 	}
 	if (stricmp(cfg.sys_pass, str)) {

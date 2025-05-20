@@ -55,8 +55,8 @@ void sbbs_t::batchmenu()
 			clearabort();
 			if (term->lncntr) {
 				sync();
-				CRLF;
-				if (term->lncntr)          /* CRLF or SYNC can cause pause */
+				term->newline();
+				if (term->lncntr)          /* term->newline() or SYNC can cause pause */
 					pause();
 			}
 			menu("batchxfr");
@@ -701,7 +701,7 @@ void sbbs_t::batch_add_list(char *list)
 		}
 		fclose(stream);
 		remove(list);
-		CRLF;
+		term->newline();
 	}
 }
 

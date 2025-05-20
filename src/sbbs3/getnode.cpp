@@ -366,7 +366,7 @@ int sbbs_t::whos_online(bool listself)
 		return exec_bin(cfg.whosonline_mod, &main_csi);
 	}
 
-	CRLF;
+	term->newline();
 	bputs(text[NodeLstHdr]);
 	for (j = 0, i = 1; i <= cfg.sys_nodes && i <= cfg.sys_lastnode; i++) {
 		getnodedat(i, &node);
@@ -396,7 +396,7 @@ void sbbs_t::nodelist(void)
 		return;
 	}
 
-	CRLF;
+	term->newline();
 	bputs(text[NodeLstHdr]);
 	for (int i = 1; i <= cfg.sys_nodes && i <= cfg.sys_lastnode; i++) {
 		getnodedat(i, &node);
@@ -556,7 +556,7 @@ void sbbs_t::printnodedat(uint number, node_t* node)
 		bprintf(" %d error%c", node->errors, node->errors > 1 ? 's' : '\0' );
 	}
 	attr(LIGHTGRAY);
-	CRLF;
+	term->newline();
 }
 
 uint sbbs_t::count_nodes(bool self)

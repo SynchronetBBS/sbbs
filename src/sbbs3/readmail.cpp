@@ -795,7 +795,7 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 				bprintf("%s: %s"
 				        , text[DisplayUnreadMessagesOnlyQ]
 				        , (lm_mode & LM_UNREAD) ? text[On] : text[Off]);
-				CRLF;
+				term->newline();
 				break;
 			}
 #endif
@@ -826,7 +826,7 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode)
 						bputs(text[On]);
 						break;
 				}
-				CRLF;
+				term->newline();
 				break;
 			}
 			case 'P':   /* Purge author and all mail to/from */

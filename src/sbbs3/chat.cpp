@@ -295,7 +295,7 @@ void sbbs_t::multinodechat(int channel)
 							putuserchat(useron.number, useron.chat);
 							break;
 						case 'C': /* List of action commands */
-							CRLF;
+							term->newline();
 							for (i = 0; channel && i < cfg.total_chatacts; i++) {
 								if (cfg.chatact[i]->actset
 								    != cfg.chan[channel - 1]->actset)
@@ -303,12 +303,12 @@ void sbbs_t::multinodechat(int channel)
 								bprintf("%-*.*s", LEN_CHATACTCMD
 								        , LEN_CHATACTCMD, cfg.chatact[i]->cmd);
 								if (!((i + 1) % 8)) {
-									CRLF;
+									term->newline();
 								}
 								else
 									bputs(" ");
 							}
-							CRLF;
+							term->newline();
 							break;
 						case 'E': /* Toggle echo */
 							useron.chat ^= CHAT_ECHO;
@@ -318,12 +318,12 @@ void sbbs_t::multinodechat(int channel)
 							putuserchat(useron.number, useron.chat);
 							break;
 						case 'L': /* list nodes */
-							CRLF;
+							term->newline();
 							for (i = 1; i <= cfg.sys_nodes && i <= cfg.sys_lastnode; i++) {
 								getnodedat(i, &node);
 								printnodedat(i, &node);
 							}
-							CRLF;
+							term->newline();
 							break;
 						case 'W': /* page node(s) */
 							j = getnodetopage(0, 0);
@@ -362,13 +362,13 @@ void sbbs_t::multinodechat(int channel)
 									bputs("     ");
 									bputs(text[ChatChanLstTitles]);
 								}
-								CRLF;
+								term->newline();
 								bputs(text[ChatChanLstUnderline]);
 								if (cfg.total_chans >= 10) {
 									bputs("     ");
 									bputs(text[ChatChanLstUnderline]);
 								}
-								CRLF;
+								term->newline();
 								if (cfg.total_chans >= 10)
 									j = (cfg.total_chans / 2) + (cfg.total_chans & 1);
 								else
@@ -388,9 +388,9 @@ void sbbs_t::multinodechat(int channel)
 											        , cfg.chan[k]->cost);
 										}
 									}
-									CRLF;
+									term->newline();
 								}
-								CRLF;
+								term->newline();
 							}
 							break;
 						case '?': /* menu */
@@ -470,7 +470,7 @@ void sbbs_t::multinodechat(int channel)
 							        , thisnode.misc & NODE_ANON
 							    ? text[UNKNOWN_USER] : useron.alias
 							        , str);
-							CRLF;
+							term->newline();
 
 							if (usrs && j < usrs) {
 								/* Display to dest user */
@@ -639,7 +639,7 @@ bool sbbs_t::sysop_page(void)
 				mswait(200);
 				outchar('.');
 			}
-			CRLF;
+			term->newline();
 		}
 		else {
 			sys_status ^= SS_SYSPAGE;
@@ -868,7 +868,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 
 	if (sys_status & SS_SPLITP) {
 		term->lncntr = 0;
-		CLS;
+		cls();
 		term->save_cursor_pos();
 		term->gotoxy(1, 13);
 		remote_y = 1;
@@ -912,7 +912,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 			}
 			else if (ch == CTRL_R) {
 				if (sys_status & SS_SPLITP) {
-					CLS;
+					cls();
 					attr(cfg.color[clr_chatremote]);
 					remotebuf[remoteline][remotechar] = 0;
 					for (unsigned u = 0; u <= remoteline; u++) {
@@ -976,7 +976,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 						else
 							localline++;
 						if (echo) {
-							CRLF;
+							term->newline();
 							local_y++;
 							if (sys_status & SS_SPLITP)
 								term->cleartoeol();
@@ -1070,7 +1070,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 						remotechar = 0;
 
 						if (sys_status & SS_SPLITP && remote_y == 12) {
-							CRLF;
+							term->newline();
 							bprintf(forced ? local_sep : sep
 							        , thisnode.misc & NODE_MSGW ? 'T':' '
 							        , sectostr(timeleft, tmp)
@@ -1092,7 +1092,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 							else
 								remoteline++;
 							if (echo) {
-								CRLF;
+								term->newline();
 								remote_y++;
 								if (sys_status & SS_SPLITP)
 									term->cleartoeol();
@@ -1162,7 +1162,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 		}
 	}
 	if (sys_status & SS_SPLITP)
-		CLS;
+		cls();
 	clearabort();
 	sys_status &= ~(SS_SPLITP);
 	close(in);
@@ -1321,12 +1321,12 @@ void sbbs_t::nodemsg()
 				if (thisnode.misc & (NODE_MSGW | NODE_NMSG)) {
 					term->lncntr = 0;   /* prevent pause prompt */
 					term->saveline();
-					CRLF;
+					term->newline();
 					if (thisnode.misc & NODE_NMSG)
 						getnmsg();
 					if (thisnode.misc & NODE_MSGW)
 						getsmsg(useron.number);
-					CRLF;
+					term->newline();
 					term->restoreline();
 				}
 				else
@@ -1337,7 +1337,7 @@ void sbbs_t::nodemsg()
 
 		if (!online || sys_status & SS_ABORT) {
 			clearabort();
-			CRLF;
+			term->newline();
 			break;
 		}
 
@@ -1380,7 +1380,7 @@ void sbbs_t::nodemsg()
 				if (!i)
 					break;
 				if (sys_status & SS_ABORT) {
-					CRLF;
+					term->newline();
 					break;
 				}
 				putsmsg(usernumber, buf);
@@ -1751,7 +1751,7 @@ void sbbs_t::guruchat(char* line, char* gurubuf, int gurunum, char* last_answer)
 				bprintf(text[ChatLineFmt], cfg.guru[gurunum]->name
 				        , cfg.sys_nodes + 1, ':', theanswer);
 			}
-			CRLF;
+			term->newline();
 			snprintf(str, sizeof str, "%sguru.log", cfg.logs_dir);
 			if ((fp = fopenlog(&cfg, str, /* shareable: */true)) == NULL)
 				errormsg(WHERE, ERR_OPEN, str, O_WRONLY | O_CREAT | O_APPEND);

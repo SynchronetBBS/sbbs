@@ -72,7 +72,7 @@ void sbbs_t::scansubs(int mode)
 				SAFEPRINTF2(tmp, "searched %u sub-boards for '%s'", subs_scanned, str);
 				logline(nulstr, tmp);
 				if (!found)
-					CRLF;
+					term->newline();
 				return;
 			}
 		}
@@ -85,7 +85,7 @@ void sbbs_t::scansubs(int mode)
 						found = listsub(usrsub[curgrp][i], mode, 0, NULL);
 				}
 			if (!found)
-				CRLF;
+				term->newline();
 			return;
 		}
 	}
@@ -179,7 +179,7 @@ void sbbs_t::scanallsubs(int mode)
 						break;
 				}
 				if (!found)
-					CRLF;
+					term->newline();
 				snprintf(tmp, sizeof tmp, "searched %u sub-boards for '%s'"
 				         , subs_scanned, str);
 				logline(nulstr, tmp);
@@ -196,7 +196,7 @@ void sbbs_t::scanallsubs(int mode)
 					break;
 			}
 			if (!found)
-				CRLF;
+				term->newline();
 			return;
 		}
 	}

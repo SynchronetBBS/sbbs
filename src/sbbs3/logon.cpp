@@ -224,7 +224,7 @@ bool sbbs_t::logon()
 		if (text[HappyBirthday][0]) {
 			bputs(text[HappyBirthday]);
 			pause();
-			CLS;
+			cls();
 		}
 		user_event(EVENT_BIRTHDAY);
 	}
@@ -298,12 +298,12 @@ bool sbbs_t::logon()
 					truncsp(str);
 					if (chkpass(str, &useron, /* unique: */ true))
 						break;
-					CRLF;
+					term->newline();
 				}
 
 			while (online) {
 				if (cfg.sys_misc & SM_PWEDIT) {
-					CRLF;
+					term->newline();
 					bputs(text[VerifyPassword]);
 				}
 				else {

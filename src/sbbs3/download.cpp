@@ -184,7 +184,7 @@ int sbbs_t::protocol(prot_t* prot, enum XFER_TYPE type
 		fclose(stream);
 	}
 
-	CRLF;
+	term->newline();
 	if (autohang)
 		sys_status |= SS_PAUSEOFF;           /* Pause off after download */
 	if (elapsed != nullptr) {
@@ -241,7 +241,7 @@ void sbbs_t::autohangup()
 		hangup();
 	}
 	else
-		CRLF;
+		term->newline();
 }
 
 bool sbbs_t::checkdszlog(const char* fpath)

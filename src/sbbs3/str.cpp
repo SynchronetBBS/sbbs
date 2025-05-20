@@ -194,7 +194,7 @@ void sbbs_t::userlist(int mode)
 		bputs(text[CheckingSlots]);
 	}
 	else {
-		CRLF;
+		term->newline();
 	}
 	j = 0;
 	k = lastuser(&cfg);
@@ -261,7 +261,7 @@ void sbbs_t::userlist(int mode)
 		return;
 	}
 	if (!sort) {
-		CRLF;
+		term->newline();
 	}
 	bprintf(text[NTotalUsers], users);
 	if (mode == UL_SUB)
@@ -270,7 +270,7 @@ void sbbs_t::userlist(int mode)
 		bprintf(text[NUsersOnCurDir], j);
 	if (!sort)
 		return;
-	CRLF;
+	term->newline();
 	qsort((void *)line, j, sizeof(line[0])
 	      , (int (*)(const void*, const void*)) pstrcmp);
 	for (i = 0; i < j && !msgabort(); i++)
@@ -356,7 +356,7 @@ void sbbs_t::sif(char *fname, char *answers, int len)
 				bputs(" \b");
 				m++;
 			}
-			if ((buf[m + 1] & 0xdf) == 'R') {      /* Add CRLF */
+			if ((buf[m + 1] & 0xdf) == 'R') {      /* Add term->newline() */
 				cr = 1;
 				m++;
 			}
@@ -373,7 +373,7 @@ void sbbs_t::sif(char *fname, char *answers, int len)
 				answers[a] = getkey(mode);
 				outchar(answers[a++]);
 				attr(LIGHTGRAY);
-				CRLF;
+				term->newline();
 			}
 			if (cr) {
 				answers[a++] = CR;
@@ -397,7 +397,7 @@ void sbbs_t::sif(char *fname, char *answers, int len)
 				mode |= K_LINE;
 				m++;
 			}
-			if ((buf[m + 1] & 0xdf) == 'R') {      /* Add CRLF */
+			if ((buf[m + 1] & 0xdf) == 'R') {      /* Add term->newline() */
 				cr = 1;
 				m++;
 			}
@@ -524,13 +524,13 @@ void sbbs_t::sof(char *fname, char *answers, int len)
 				bputs(" \b");
 				m++;
 			}
-			if ((buf[m + 1] & 0xdf) == 'R') {      /* Add CRLF */
+			if ((buf[m + 1] & 0xdf) == 'R') {      /* Add term->newline() */
 				cr = 1;
 				m++;
 			}
 			outchar(answers[a++]);
 			attr(LIGHTGRAY);
-			CRLF;
+			term->newline();
 			if (cr)
 				a += 2;
 		}
@@ -574,7 +574,7 @@ void sbbs_t::sof(char *fname, char *answers, int len)
 			getrec(answers, a, max, str);
 			bputs(str);
 			attr(LIGHTGRAY);
-			CRLF;
+			term->newline();
 			if (!cr)
 				a += max;
 			else
@@ -710,7 +710,7 @@ size_t sbbs_t::gettmplt(char *strout, const char *templt, int mode)
 	}
 	str[c] = 0;
 	attr(LIGHTGRAY);
-	CRLF;
+	term->newline();
 	if (!(sys_status & SS_ABORT))
 		strcpy(strout, str); // Not SAFECOPY()able
 	return c;
@@ -739,7 +739,7 @@ bool sbbs_t::inputnstime(time_t *dt)
 
 	bputs(text[NScanDate]);
 	bputs(timestr(*dt));
-	CRLF;
+	term->newline();
 	if (localtime_r(dt, &tm) == NULL) {
 		errormsg(WHERE, ERR_CHK, "time ptr", 0);
 		return FALSE;
@@ -748,12 +748,12 @@ bool sbbs_t::inputnstime(time_t *dt)
 	bputs(text[NScanYear]);
 	ultoa(tm.tm_year + 1900, str, 10);
 	if (!getstr(str, 4, K_EDIT | K_AUTODEL | K_NUMBER | K_NOCRLF) || sys_status & SS_ABORT) {
-		CRLF;
+		term->newline();
 		return false;
 	}
 	tm.tm_year = atoi(str);
 	if (tm.tm_year < 1970) {       /* unix time is seconds since 1/1/1970 */
-		CRLF;
+		term->newline();
 		return false;
 	}
 	tm.tm_year -= 1900;   /* tm_year is years since 1900 */
@@ -761,12 +761,12 @@ bool sbbs_t::inputnstime(time_t *dt)
 	bputs(text[NScanMonth]);
 	ultoa(tm.tm_mon + 1, str, 10);
 	if (!getstr(str, 2, K_EDIT | K_AUTODEL | K_NUMBER | K_NOCRLF) || sys_status & SS_ABORT) {
-		CRLF;
+		term->newline();
 		return false;
 	}
 	tm.tm_mon = atoi(str);
 	if (tm.tm_mon < 1 || tm.tm_mon > 12) {
-		CRLF;
+		term->newline();
 		return false;
 	}
 	tm.tm_mon--;        /* tm_mon is zero-based */
@@ -774,12 +774,12 @@ bool sbbs_t::inputnstime(time_t *dt)
 	bputs(text[NScanDay]);
 	ultoa(tm.tm_mday, str, 10);
 	if (!getstr(str, 2, K_EDIT | K_AUTODEL | K_NUMBER | K_NOCRLF) || sys_status & SS_ABORT) {
-		CRLF;
+		term->newline();
 		return false;
 	}
 	tm.tm_mday = atoi(str);
 	if (tm.tm_mday < 1 || tm.tm_mday > 31) {
-		CRLF;
+		term->newline();
 		return false;
 	}
 	bputs(text[NScanHour]);
@@ -801,25 +801,25 @@ bool sbbs_t::inputnstime(time_t *dt)
 	}
 	ultoa(hour, str, 10);
 	if (!getstr(str, 2, K_EDIT | K_AUTODEL | K_NUMBER | K_NOCRLF) || sys_status & SS_ABORT) {
-		CRLF;
+		term->newline();
 		return false;
 	}
 	tm.tm_hour = atoi(str);
 	if (tm.tm_hour > 24) {
-		CRLF;
+		term->newline();
 		return false;
 	}
 
 	bputs(text[NScanMinute]);
 	ultoa(tm.tm_min, str, 10);
 	if (!getstr(str, 2, K_EDIT | K_AUTODEL | K_NUMBER | K_NOCRLF) || sys_status & SS_ABORT) {
-		CRLF;
+		term->newline();
 		return false;
 	}
 
 	tm.tm_min = atoi(str);
 	if (tm.tm_min > 59) {
-		CRLF;
+		term->newline();
 		return false;
 	}
 	tm.tm_sec = 0;
@@ -836,7 +836,7 @@ bool sbbs_t::inputnstime(time_t *dt)
 			tm.tm_hour = 0;
 	}
 	else {
-		CRLF;
+		term->newline();
 	}
 	tm.tm_isdst = -1; /* Do not adjust for DST */
 	*dt = mktime(&tm);
@@ -973,12 +973,12 @@ void sbbs_t::sys_info()
 	ver();
 	const char* fname = "../system";
 	if (menu_exists(fname) && text[ViewSysInfoFileQ][0] && yesno(text[ViewSysInfoFileQ])) {
-		CLS;
+		cls();
 		menu(fname);
 	}
 	fname = "logon";
 	if (menu_exists(fname) && text[ViewLogonMsgQ][0] && yesno(text[ViewLogonMsgQ])) {
-		CLS;
+		cls();
 		menu(fname);
 	}
 }
@@ -1018,7 +1018,7 @@ void sbbs_t::user_info()
 	bprintf(text[UserEmails]
 	        , useron.emails, useron.fbacks
 	        , getmail(&cfg, useron.number, /* Sent: */ FALSE, /* SPAM: */ FALSE), useron.etoday);
-	CRLF;
+	term->newline();
 	bprintf(text[UserUploads]
 	        , byte_estimate_to_str(useron.ulb, tmp, sizeof(tmp), 1, 1), useron.uls);
 	bprintf(text[UserDownloads]
@@ -1076,7 +1076,7 @@ char* sbbs_t::xfer_prot_menu(enum XFER_TYPE type, user_t* user, char* keys, size
 		if (menu_used)
 			continue;
 		if (printed && (term->cols < 80 || (printed % 2) == 0))
-			CRLF;
+			term->newline();
 		bprintf(text[TransferProtLstFmt], cfg.prot[i]->mnemonic, cfg.prot[i]->name);
 		printed++;
 	}
@@ -1149,7 +1149,7 @@ void sbbs_t::logonlist(const char* args)
 	} else {
 		bputs(text[CallersToday]);
 		printfile(str, P_NOATCODES | P_OPENCLOSE | P_TRUNCATE);
-		CRLF;
+		term->newline();
 	}
 }
 

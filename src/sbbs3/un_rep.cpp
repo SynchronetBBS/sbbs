@@ -628,7 +628,7 @@ bool sbbs_t::unpack_rep(char* repfile)
 
 	if (online == ON_REMOTE) {
 		bputs(text[QWKUnpacked]);
-		CRLF;
+		term->newline();
 		/**********************************************/
 		/* Hang-up now if that's what the user wanted */
 		/**********************************************/

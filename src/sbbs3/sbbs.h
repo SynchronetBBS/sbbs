@@ -902,6 +902,7 @@ public:
 #endif
 	;
 	int		outchar(char ch);				/* Output a char - check echo and emu.  */
+	int		cls() { return outchar(FF); }	// Clear the screen
 	bool	check_pause();			/* Check lncntr to and pause() if appropriate */
 	int		outcp(enum unicode_codepoint, char cp437_fallback);
 	int		outcp(enum unicode_codepoint, const char* cp437_fallback = NULL);

@@ -317,7 +317,7 @@ bool sbbs_t::upload(int dirnum, const char* fname)
 	if (j && i >= j) {
 		bputs(text[TheseFileExtsOnly]);
 		bputs(cfg.dir[dirnum]->exts);
-		CRLF;
+		term->newline();
 		if (!dir_op(dirnum))
 			return false;
 	}
@@ -353,7 +353,7 @@ bool sbbs_t::upload(int dirnum, const char* fname)
 		ch = getkey(K_ALPHA);
 		if (!IS_ALPHA(ch) || sys_status & SS_ABORT)
 			return false;
-		CRLF;
+		term->newline();
 		SAFEPRINTF(descbeg, text[Rated], toupper(ch));
 	}
 	if (cfg.dir[dirnum]->misc & DIR_ULDATE) {
@@ -410,7 +410,7 @@ bool sbbs_t::upload(int dirnum, const char* fname)
 				}
 			}
 			else {
-				CRLF;
+				term->newline();
 			}
 		}
 		if (strListCount(dest_user_list) < 1)

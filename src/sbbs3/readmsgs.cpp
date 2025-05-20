@@ -684,7 +684,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 				bprintf(text[ZScanPostHdr], ugrp, usub, smb.curmsg + 1, smb.msgs);
 
 			if (!reads && mode)
-				CRLF;
+				term->newline();
 
 			msg.upvotes = post[smb.curmsg].upvotes;
 			msg.downvotes = post[smb.curmsg].downvotes;

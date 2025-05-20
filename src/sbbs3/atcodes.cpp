@@ -936,7 +936,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return lastuseron;
 
 	if (!strcmp(sp, "CLS") || !strcmp(sp, "CLEAR")) {
-		CLS;
+		cls();
 		return nulstr;
 	}
 

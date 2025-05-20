@@ -1814,10 +1814,10 @@ int sbbs_t::exec(csi_t *csi)
 					return 0;
 			}
 		case CS_CRLF:
-			CRLF;
+			term->newline();
 			return 0;
 		case CS_CLS:
-			CLS;
+			cls();
 			return 0;
 		case CS_PAUSE:
 			pause();

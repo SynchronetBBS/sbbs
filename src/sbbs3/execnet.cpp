@@ -720,7 +720,7 @@ bool sbbs_t::ftp_get(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest, bool d
 	}
 
 	if (!dir && csi->ftp_mode & CS_FTP_HASH) {
-		CRLF;
+		term->newline();
 	}
 
 	if (fp != NULL)
@@ -837,7 +837,7 @@ bool sbbs_t::ftp_put(csi_t* csi, SOCKET ctrl_sock, char* src, char* dest)
 	}
 
 	if (csi->ftp_mode & CS_FTP_HASH) {
-		CRLF;
+		term->newline();
 	}
 
 	fclose(fp);

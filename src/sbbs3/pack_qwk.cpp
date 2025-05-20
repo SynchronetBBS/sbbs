@@ -623,7 +623,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 		if (!flength(str))
 			remove(str);
 	}
-	CRLF;
+	term->newline();
 
 	if (!prepack && online != ON_LOCAL && ((sys_status & SS_ABORT) || !online)) {
 		bputs(text[Aborted]);
@@ -650,7 +650,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 		if (dir != NULL)
 			closedir(dir);
 		if (netfiles)
-			CRLF;
+			term->newline();
 	}
 	{
 		uint64_t   totalcdt = 0;
@@ -678,7 +678,7 @@ bool sbbs_t::pack_qwk(char *packet, uint *msgcnt, bool prepack)
 				bprintf(text[RetrievingFile], path);
 				if (mv(path, tmp, /* copy: */ TRUE) != 0) /* copy the file to temp dir */
 					batch_file_remove(&cfg, useron.number, XFER_BATCH_DOWNLOAD, filename);
-				CRLF;
+				term->newline();
 			}
 		}
 		iniFreeStringList(ini);

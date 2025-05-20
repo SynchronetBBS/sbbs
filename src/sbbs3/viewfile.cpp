@@ -56,7 +56,7 @@ int sbbs_t::viewfile(file_t* f, bool ext)
 		switch (ch) {
 			case 'B':
 				addtobatdl(f);
-				CRLF;
+				term->newline();
 				return -1;
 			case 'D':
 				editfiledesc(f);

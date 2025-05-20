@@ -863,10 +863,8 @@ enum {                           // Values of mode for userlist function
 /* Macros */
 /**********/
 
-#define CRLF            term->newline()
 #define SYSOP_LEVEL     90
 #define FLAG(x)         (uint)(1U << (x - 'A'))
-#define CLS             outchar(FF)
 #define WHERE           __LINE__, __FUNCTION__, getfname(__FILE__)
 #define TM_MONTH(mm)    ((mm) + 1)
 #define TM_YEAR(yy)     ((yy) % 100)

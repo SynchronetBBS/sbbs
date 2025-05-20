@@ -89,7 +89,7 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 			bputs(text[FileNotFound]);
 			if (useron_is_sysop())
 				bputs(fpath);
-			CRLF;
+			term->newline();
 		}
 		return false;
 	}
@@ -214,7 +214,7 @@ bool sbbs_t::printtail(const char* fname, int lines, int mode, int org_cols, JSO
 			bputs(text[FileNotFound]);
 			if (useron_is_sysop())
 				bputs(fpath);
-			CRLF;
+			term->newline();
 		}
 		return false;
 	}

@@ -65,7 +65,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 				}
 				snprintf(str, sizeof str, "subs%u", usrgrp[j] + 1);
 				if (!menu(str, P_NOERROR)) {
-					CLS;
+					cls();
 					bprintf(text[SubLstHdr], cfg.grp[usrgrp[j]]->lname);
 					for (i = 0; i < usrsubs[j] && !msgabort(); i++) {
 						if (i == cursub[j])
@@ -231,7 +231,7 @@ int sbbs_t::exec_msg(csi_t *csi)
 			if (menu(str, P_NOERROR)) {
 				return 0;
 			}
-			CRLF;
+			term->newline();
 			bprintf(text[SubLstHdr], cfg.grp[usrgrp[curgrp]]->lname);
 			for (i = 0; i < usrsubs[curgrp] && !msgabort(); i++) {
 				if (i == cursub[curgrp])

@@ -439,7 +439,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 				if (quote[0] == list_key()) {
 					fseek(stream, l, SEEK_SET);
 					i = 1;
-					CRLF;
+					term->newline();
 					attr(LIGHTGRAY);
 					while (!feof(stream) && !ferror(stream) && !msgabort()) {
 						if (!fgets(str, sizeof(str), stream))
@@ -510,7 +510,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 		int max_title_len;
 
 		if (mode & WM_FILE) {
-			CRLF;
+			term->newline();
 			bputs(text[Filename]);
 		}
 		else {
@@ -628,7 +628,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 			}
 		}
 
-		CLS;
+		cls();
 		rioctl(IOCM | PAUSE | ABORT);
 		auto        savsubnum = smb.subnum;
 		smb.subnum = subnum;    /* Allow JS msgeditors to use bbs.smb_sub* */
@@ -994,13 +994,13 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 			else
 				outchar('+');
 		}
-		CRLF;
+		term->newline();
 	}
 	putmsg(top, pmode);
 	for (line = 0; line < lines && !msgabort(); line++) { /* display lines in buf */
 		putmsg(str[line], pmode);
 		term->cleartoeol();  /* delete to end of line */
-		CRLF;
+		term->newline();
 	}
 	sync();
 	rioctl(IOSM | ABORT);
@@ -1171,7 +1171,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 					continue;
 				}
 				bool linenums = !noyes(text[WithLineNumbersQ]);
-				CRLF;
+				term->newline();
 				attr(LIGHTGRAY);
 				putmsg(top, pmode);
 				int  digits = DEC_DIGITS(lines);
@@ -1183,7 +1183,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 					else
 						putmsg(str[j], pmode);
 					term->cleartoeol();  /* delete to end of line */
-					CRLF;
+					term->newline();
 					j++;
 				}
 				line = j;
@@ -1198,7 +1198,7 @@ uint sbbs_t::msgeditor(char *buf, const char *top, char *title, uint maxlines, u
 					bputs(text[SubjectPrompt]);
 					getstr(title, LEN_TITLE, K_LINE | K_EDIT | K_AUTODEL | K_TRIM | K_UTF8);
 					sync();
-					CRLF;
+					term->newline();
 				}
 				continue;
 			}
@@ -1332,7 +1332,7 @@ bool sbbs_t::editfile(char *fname, uint maxlines, int wmode, const char* to, con
 			if (cfg.xedit[useron_xedit - 1]->misc & WWIVCOLOR)
 				ex_mode |= EX_WWIV;
 		}
-		CLS;
+		cls();
 		rioctl(IOCM | PAUSE | ABORT);
 		if (external(cmdstr(cfg.xedit[useron_xedit - 1]->rcmd, msgtmp, nulstr, NULL, ex_mode), ex_mode, cfg.node_dir) != 0)
 			return false;
@@ -1949,7 +1949,7 @@ ushort sbbs_t::chmsgattr(const smbmsg_t* msg)
 	uint16_t attr = msg->hdr.attr;
 
 	while (online && !(sys_status & SS_ABORT)) {
-		CRLF;
+		term->newline();
 		show_msgattr(msg);
 		menu("msgattr");
 		ch = getkey(K_UPPER);

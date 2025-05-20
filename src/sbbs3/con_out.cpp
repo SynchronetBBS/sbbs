@@ -224,7 +224,7 @@ int sbbs_t::petscii_to_ansibbs(unsigned char ch)
 	switch (ch) {
 		case '\r':                  term->newline();      break;
 		case PETSCII_HOME:          term->cursor_home();  break;
-		case PETSCII_CLEAR:         return CLS;
+		case PETSCII_CLEAR:         return cls();
 		case PETSCII_DELETE:        term->backspace();    break;
 		case PETSCII_LEFT:          term->cursor_left();  break;
 		case PETSCII_RIGHT:         term->cursor_right(); break;
@@ -946,7 +946,7 @@ void sbbs_t::ctrl_a(char x)
 			term->cleartoeos();
 			break;
 		case 'L':   /* CLS (form feed) */
-			CLS;
+			cls();
 			break;
 		case '\'':  /* Home cursor */
 		case '`':   // usurped by strict hot-spot

@@ -320,7 +320,7 @@ void sbbs_t::errormsg(int line, const char* function, const char *src, const cha
 		bputs("\r\nThe sysop has been notified.\r\n");
 		pause();
 		attr(savatr);
-		CRLF;
+		term->newline();
 	}
 	if (repeat_count == 0 && cfg.node_num > 0) {
 		if (getnodedat(cfg.node_num, &thisnode, true)) {

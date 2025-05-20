@@ -269,7 +269,7 @@ bool sbbs_t::yesno(const char *str, int mode)
 			ch = getkey(K_UPPER | K_COLD);
 		if (ch == yes_key() || ch == CR) {
 			if (bputs(text[Yes], mode) && !(mode & P_NOCRLF))
-				CRLF;
+				term->newline();
 			if (!(mode & P_SAVEATR))
 				attr(LIGHTGRAY);
 			term->lncntr = 0;
@@ -277,7 +277,7 @@ bool sbbs_t::yesno(const char *str, int mode)
 		}
 		if (ch == no_key()) {
 			if (bputs(text[No], mode) && !(mode & P_NOCRLF))
-				CRLF;
+				term->newline();
 			if (!(mode & P_SAVEATR))
 				attr(LIGHTGRAY);
 			term->lncntr = 0;
@@ -307,7 +307,7 @@ bool sbbs_t::noyes(const char *str, int mode)
 			ch = getkey(K_UPPER | K_COLD);
 		if (ch == no_key() || ch == CR) {
 			if (bputs(text[No], mode) && !(mode & P_NOCRLF))
-				CRLF;
+				term->newline();
 			if (!(mode & P_SAVEATR))
 				attr(LIGHTGRAY);
 			term->lncntr = 0;
@@ -315,7 +315,7 @@ bool sbbs_t::noyes(const char *str, int mode)
 		}
 		if (ch == yes_key()) {
 			if (bputs(text[Yes], mode) && !(mode & P_NOCRLF))
-				CRLF;
+				term->newline();
 			if (!(mode & P_SAVEATR))
 				attr(LIGHTGRAY);
 			term->lncntr = 0;
@@ -348,7 +348,7 @@ int sbbs_t::getkeys(const char *keys, uint max, int mode)
 		if (sys_status & SS_ABORT) {   /* return -1 if Ctrl-C hit */
 			if (!(mode & (K_NOECHO | K_NOCRLF))) {
 				attr(LIGHTGRAY);
-				CRLF;
+				term->newline();
 			}
 			term->lncntr = 0;
 			return -1;
@@ -365,7 +365,7 @@ int sbbs_t::getkeys(const char *keys, uint max, int mode)
 					}
 					if (sys_status & SS_ABORT) {
 						if (!(mode & (K_NOECHO | K_NOCRLF))) {
-							CRLF;
+							term->newline();
 						}
 						return -1;
 					}
@@ -377,7 +377,7 @@ int sbbs_t::getkeys(const char *keys, uint max, int mode)
 				}
 				if (!(mode & (K_NOECHO | K_NOCRLF))) {
 					attr(LIGHTGRAY);
-					CRLF;
+					term->newline();
 				}
 				term->lncntr = 0;
 			}
@@ -386,7 +386,7 @@ int sbbs_t::getkeys(const char *keys, uint max, int mode)
 		if (ch == CR && max) {             /* return 0 if no number */
 			if (!(mode & (K_NOECHO | K_NOCRLF))) {
 				attr(LIGHTGRAY);
-				CRLF;
+				term->newline();
 			}
 			term->lncntr = 0;
 			if (n)
@@ -408,7 +408,7 @@ int sbbs_t::getkeys(const char *keys, uint max, int mode)
 			if (i * 10 > max && !(useron.misc & COLDKEYS) && keybuf_level() < 1) {
 				if (!(mode & (K_NOECHO | K_NOCRLF))) {
 					attr(LIGHTGRAY);
-					CRLF;
+					term->newline();
 				}
 				term->lncntr = 0;
 				return i | 0x80000000L;

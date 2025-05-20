@@ -179,15 +179,14 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			bputs("\b ");
 		term->saveline();
 		attr(LIGHTGRAY);
-		CRLF;
+		term->newline();
 		bputs(text[RawMsgInputModeIsNow]);
 		if (console & CON_RAW_IN)
 			bputs(text[Off]);
 		else
 			bputs(text[On]);
 		console ^= CON_RAW_IN;
-		CRLF;
-		CRLF;
+		term->newline(2);
 		term->restoreline();
 		term->lncntr = 0;
 		hotkey_inside &= ~(1 << ch);
@@ -213,7 +212,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			if (!(sys_status & SS_SPLITP)) {
 				term->saveline();
 				attr(LIGHTGRAY);
-				CRLF;
+				term->newline();
 			}
 			if (cfg.hotkey[i]->cmd[0] == '?') {
 				if (js_hotkey_cx == NULL) {
@@ -224,7 +223,7 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			} else
 				external(cmdstr(cfg.hotkey[i]->cmd, nulstr, nulstr, tmp), 0);
 			if (!(sys_status & SS_SPLITP)) {
-				CRLF;
+				term->newline();
 				term->restoreline();
 			}
 			term->lncntr = 0;
@@ -251,13 +250,13 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			if (!(sys_status & SS_SPLITP)) {
 				term->saveline();
 				attr(LIGHTGRAY);
-				CRLF;
+				term->newline();
 			}
 			nodesync();     /* read any waiting messages */
 			nodemsg();      /* send a message */
 			sync();
 			if (!(sys_status & SS_SPLITP)) {
-				CRLF;
+				term->newline();
 				term->restoreline();
 			}
 			term->lncntr = 0;
@@ -275,12 +274,12 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 			if (!(sys_status & SS_SPLITP)) {
 				term->saveline();
 				attr(LIGHTGRAY);
-				CRLF;
+				term->newline();
 			}
 			whos_online(true);  /* list users */
 			sync();
 			if (!(sys_status & SS_SPLITP)) {
-				CRLF;
+				term->newline();
 				term->restoreline();
 			}
 			term->lncntr = 0;

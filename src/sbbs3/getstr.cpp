@@ -342,7 +342,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 						attr(LIGHTGRAY);
 				}
 				if (!(mode & K_NOCRLF))
-					CRLF;
+					term->newline();
 				return l;
 
 			case CTRL_N:    /* Ctrl-N Next word */
@@ -533,7 +533,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 						if (strip_invalid_attr(strout) && !(mode & K_NOECHO))
 							redrwstr(strout, i, l, K_MSG);
 						if (!(mode & (K_NOECHO | K_NOCRLF)))
-							CRLF;
+							term->newline();
 						return i;
 					}
 					x = i - 1;
@@ -547,7 +547,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 						if (strip_invalid_attr(strout) && !(mode & K_NOECHO))
 							redrwstr(strout, i, l, K_MSG);
 						if (!(mode & (K_NOECHO | K_NOCRLF)))
-							CRLF;
+							term->newline();
 						return i;
 					}
 					wordwrap[z] = 0;
@@ -562,7 +562,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 					if (strip_invalid_attr(strout) && !(mode & K_NOECHO))
 						redrwstr(strout, i, x, mode);
 					if (!(mode & (K_NOECHO | K_NOCRLF)))
-						CRLF;
+						term->newline();
 					return x;
 				}
 				if (i < maxlen && ch >= ' ') {
@@ -628,7 +628,7 @@ size_t sbbs_t::getstr(char *strout, size_t maxlen, int mode, const str_list_t hi
 		attr(LIGHTGRAY);
 	if (!(mode & (K_NOCRLF | K_NOECHO))) {
 		if (!(mode & K_MSG && sys_status & SS_ABORT)) {
-			CRLF;
+			term->newline();
 		} else
 			term->carriage_return();
 		term->lncntr = 0;
@@ -658,17 +658,17 @@ int sbbs_t::getnum(uint max, uint dflt)
 				term->backspace();
 				continue;
 			}
-			CRLF;
+			term->newline();
 			term->lncntr = 0;
 			return -1;
 		}
 		else if (sys_status & SS_ABORT) {
-			CRLF;
+			term->newline();
 			term->lncntr = 0;
 			return -1;
 		}
 		else if (ch == CR) {
-			CRLF;
+			term->newline();
 			term->lncntr = 0;
 			if (!n)
 				return dflt;
@@ -685,7 +685,7 @@ int sbbs_t::getnum(uint max, uint dflt)
 			i += ch & 0xf;
 			outchar(ch);
 			if (i * 10UL > max && !(useron.misc & COLDKEYS) && keybuf_level() < 1) {
-				CRLF;
+				term->newline();
 				term->lncntr = 0;
 				return i;
 			}

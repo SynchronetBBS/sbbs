@@ -155,11 +155,11 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 				} else if (mode & P_WRAP) {
 					if (org_cols) {
 						if (term->column > (org_cols - 1)) {
-							CRLF;
+							term->newline();
 						}
 					} else {
 						if (term->column >= (term->cols - 1)) {
-							CRLF;
+							term->newline();
 						}
 					}
 				}
@@ -458,7 +458,7 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 				if (memcmp(str + l, "@EOF@", 5) == 0)
 					break;
 				if (memcmp(str + l, "@CLEAR@", 7) == 0) {
-					CLS;
+					cls();
 					clearabort();
 					l += 7;
 					while (str[l] != 0 && (str[l] == '\r' || str[l] == '\n'))

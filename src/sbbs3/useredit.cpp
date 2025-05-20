@@ -57,7 +57,7 @@ void sbbs_t::useredit(int usernumber)
 		user.number = useron.number;
 	action = NODE_SYSP;
 	while (online) {
-		CLS;
+		cls();
 		attr(LIGHTGRAY);
 		getuserdat(&cfg, &user);
 		if (!user.number) {
@@ -105,7 +105,7 @@ void sbbs_t::useredit(int usernumber)
 			bprintf(text[UeditCommentLine], i ? '+' : ' '
 			        , user.comment);
 		else
-			CRLF;
+			term->newline();
 		if (localtime32(&user.laston, &tm) == NULL)
 			return;
 		bprintf(text[UserDates]
@@ -153,7 +153,7 @@ void sbbs_t::useredit(int usernumber)
 		else if (user.misc & INACTIVE)
 			term->center(text[InactiveUser]);
 		else
-			CRLF;
+			term->newline();
 		l = lastuser(&cfg);
 		sync();
 		bprintf(text[UeditPrompt], user.number, l);
@@ -424,7 +424,7 @@ void sbbs_t::useredit(int usernumber)
 				break;
 			case 'Q':
 				term->lncntr = 0;
-				CLS;
+				cls();
 				free(ar);   /* assertion here */
 				return;
 			case 'R':
@@ -473,7 +473,7 @@ void sbbs_t::useredit(int usernumber)
 					putuserstr(user.number, USER_DLS, str);
 				break;
 			case 'V':
-				CLS;
+				cls();
 				attr(LIGHTGRAY);
 				for (i = 0; i < 10; i++) {
 					bprintf(text[QuickValidateFmt]
@@ -549,7 +549,7 @@ void sbbs_t::useredit(int usernumber)
 				}
 				break;
 			case '?':
-				CLS;
+				cls();
 				menu("uedit");  /* Sysop Uedit Edit Menu */
 				pause();
 				break;
@@ -744,7 +744,7 @@ void sbbs_t::user_config(user_t* user)
 		return;
 	}
 	while (online) {
-		CLS;
+		cls();
 		getuserdat(&cfg, user);
 		bprintf(text[UserDefaultsHdr], user->alias, user->number);
 		if (user == &useron) {
@@ -1111,7 +1111,7 @@ void sbbs_t::user_config(user_t* user)
 						break;
 					truncsp(str);
 					if (!chkpass(str, user)) {
-						CRLF;
+						term->newline();
 						pause();
 						break;
 					}

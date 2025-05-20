@@ -80,13 +80,13 @@ void sbbs_t::ver()
 	char tmp[128];
 #endif
 
-	CRLF;
+	term->newline();
 	strcpy(str, VERSION_NOTICE);
 #if defined(_DEBUG)
 	strcat(str, "  Debug");
 #endif
 	term->center(str);
-	CRLF;
+	term->newline();
 
 	DESCRIBE_COMPILER(compiler);
 
@@ -98,19 +98,19 @@ void sbbs_t::ver()
 	         , smb_lib_ver(), compiler);
 
 	term->center(str);
-	CRLF;
+	term->newline();
 
 	term->center("https://gitlab.synchro.net - " GIT_BRANCH "/" GIT_HASH);
-	CRLF;
+	term->newline();
 
 	snprintf(str, sizeof str, "%s - http://synchro.net", COPYRIGHT_NOTICE);
 	term->center(str);
-	CRLF;
+	term->newline();
 
 #ifdef JAVASCRIPT
 	if (!(startup->options & BBS_OPT_NO_JAVASCRIPT)) {
 		term->center((char *)JS_GetImplementationVersion());
-		CRLF;
+		term->newline();
 	}
 #endif
 
@@ -124,20 +124,20 @@ void sbbs_t::ver()
 		(void)result;
 		safe_snprintf(str, sizeof(str), "cryptlib %u.%u.%u (%u)", cl_major, cl_minor, cl_step, CRYPTLIB_VERSION);
 		term->center(str);
-		CRLF;
+		term->newline();
 	}
 #endif
 
 	safe_snprintf(str, sizeof str, "%s (%u)", archive_version_string(), ARCHIVE_VERSION_NUMBER);
 	term->center(str);
-	CRLF;
+	term->newline();
 
 #ifdef USE_MOSQUITTO
 	SAFECOPY(str, mqtt_libver(tmp, sizeof tmp));
 	safe_snprintf(tmp, sizeof tmp, " (%u)", LIBMOSQUITTO_VERSION_NUMBER);
 	SAFECAT(str, tmp);
 	term->center(str);
-	CRLF;
+	term->newline();
 #endif
 
 	safe_snprintf(str, sizeof(str), "%s %s", os_version(os, sizeof(os)), os_cpuarch(cpu, sizeof(cpu)));

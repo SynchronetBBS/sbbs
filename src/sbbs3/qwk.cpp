@@ -434,7 +434,7 @@ void sbbs_t::qwk_sec()
 		}
 		if (ch == 'C') {
 			while (online) {
-				CLS;
+				cls();
 				bprintf(text[QWKSettingsHdr], useron.alias, useron.number);
 				term->add_hotspot('A');
 				bprintf(text[QWKSettingsCtrlA]
@@ -605,7 +605,7 @@ void sbbs_t::qwk_sec()
 			else
 				i = 0;
 			bprintf(text[FiTransferTime], sectostr(i, tmp));
-			CRLF;
+			term->newline();
 			if (!(useron.exempt & FLAG('T')) && (uint)i > timeleft) {
 				bputs(text[NotEnoughTimeToDl]);
 				break;

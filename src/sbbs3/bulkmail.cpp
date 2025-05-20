@@ -69,7 +69,7 @@ bool sbbs_t::bulkmail(uchar *ar)
 	}
 
 	bputs(text[WritingIndx]);
-	CRLF;
+	term->newline();
 
 	if ((msgbuf = (char*)malloc(length + 1)) == NULL) {
 		fclose(fp);
