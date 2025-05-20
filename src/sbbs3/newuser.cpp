@@ -159,6 +159,8 @@ bool sbbs_t::newuser()
 			else
 				useron.misc &= ~NO_EXASCII;
 		}
+		sys_status |= SS_NEWUSER;
+		update_nodeterm();
 
 		if (rlogin_name[0])
 			SAFECOPY(useron.alias, rlogin_name);
@@ -453,7 +455,6 @@ bool sbbs_t::newuser()
 		SAFEPRINTF2(str, "%suser/%4.4u.dat", cfg.data_dir, useron.number);
 		create_sif_dat(cfg.new_sif, str);
 	}
-	sys_status |= SS_NEWUSER;
 
 	if (!(cfg.uq & UQ_NODEF))
 		user_config(&useron);
