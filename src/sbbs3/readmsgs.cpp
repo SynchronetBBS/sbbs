@@ -1632,6 +1632,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 				domsg = 0;
 				break;
 		}
+		clearabort();
 	}
 	if (msg.total_hfields)
 		smb_freemsgmem(&msg);
