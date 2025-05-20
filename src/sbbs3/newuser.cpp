@@ -153,7 +153,7 @@ bool sbbs_t::newuser()
 			autoterm |= PETSCII;
 			term_out(PETSCII_UPPERLOWER);
 			bputs(text[PetTerminalDetected]);
-		} else {
+		} else if (!(useron.misc & UTF8)) {
 			if (!yesno(text[ExAsciiTerminalQ]))
 				useron.misc |= NO_EXASCII;
 			else
