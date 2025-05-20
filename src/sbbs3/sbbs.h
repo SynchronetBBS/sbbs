@@ -808,7 +808,7 @@ public:
 	void	dirinfo(int dirnum);
 	bool	trashcan(const char *insearch, const char *name, struct trash* trash = NULL);
 	void	time_bank(void);
-	void	change_user(void);
+	bool	change_user(const char* username = nullptr);
 
 	/* putmsg.cpp */
 	char	putmsg(const char *str, int mode, int org_cols = 0, JSObject* obj = NULL);

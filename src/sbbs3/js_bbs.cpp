@@ -2735,16 +2735,26 @@ js_useredit(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_change_user(JSContext *cx, uintN argc, jsval *arglist)
 {
+	jsval*     argv = JS_ARGV(cx, arglist);
 	sbbs_t*    sbbs;
 	jsrefcount rc;
+	char* username{nullptr};
 
 	if ((sbbs = js_GetPrivate(cx, JS_THIS_OBJECT(cx, arglist))) == NULL)
 		return JS_FALSE;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_VOID);
 
+	if (argc > 0 && !JSVAL_NULL_OR_VOID(argv[0])) {
+		JSString* str = JS_ValueToString(cx, argv[0]);
+		if (str == nullptr)
+			return JS_FALSE;
+		JSSTRING_TO_MSTRING(cx, str, username, NULL);
+	}
+
 	rc = JS_SUSPENDREQUEST(cx);
-	sbbs->change_user();
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(sbbs->change_user(username)));
+	free(username);
 	JS_RESUMEREQUEST(cx, rc);
 
 	return JS_TRUE;
@@ -4818,8 +4828,9 @@ static jsSyncMethodSpec js_bbs_functions[] = {
 	 , JSDOCSTR("Enter the user editor.")
 	 , 310
 	},
-	{"change_user",     js_change_user,     0,  JSTYPE_VOID,    JSDOCSTR("")
-	 , JSDOCSTR("Change to a different user.")
+	{"change_user",     js_change_user,     0,  JSTYPE_BOOLEAN, JSDOCSTR("[username or number]")
+	 , JSDOCSTR("Change to a different user.<br>"
+		"Will prompt for user name or number when none is passed.")
 	 , 310
 	},
 	{"list_logons",     js_logonlist,       0,  JSTYPE_VOID,    JSDOCSTR("[arguments]")

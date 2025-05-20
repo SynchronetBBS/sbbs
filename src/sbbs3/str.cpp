@@ -1318,27 +1318,30 @@ void sbbs_t::time_bank(void)
 	}
 }
 
-void sbbs_t::change_user(void)
+bool sbbs_t::change_user(const char* username)
 {
 	uint i;
 	char str[256];
-	char tmp[128];
+	char passwd[LEN_PASS + 1];
 
 	if (!chksyspass())
-		return;
-	bputs(text[ChUserPrompt]);
-	if (!getstr(str, LEN_ALIAS, K_UPPER))
-		return;
-	if ((i = finduser(str)) == 0)
-		return;
-	if (getuserstr(&cfg, i, USER_LEVEL, str, sizeof(str)) != NULL && atoi(str) > logon_ml) {
-		if (getuserstr(&cfg, i, USER_PASS, tmp, sizeof(tmp)) != NULL) {
+		return false;
+	if (username == nullptr || *username == '\0') {
+		bputs(text[ChUserPrompt]);
+		if (!getstr(str, LEN_ALIAS, K_UPPER))
+			return false;
+		username = str;
+	}
+	if ((i = finduser(username)) == 0)
+		return false;
+	if (getuserdec32(&cfg, i, USER_LEVEL) > logon_ml) {
+		if (getuserstr(&cfg, i, USER_PASS, passwd, sizeof passwd) != NULL) {
 			bputs(text[ChUserPwPrompt]);
 			console |= CON_R_ECHOX;
-			getstr(str, 8, K_UPPER);
-			console &= ~(CON_R_ECHOX | CON_L_ECHOX);
-			if (strcmp(str, tmp))
-				return;
+			getstr(str, sizeof str - 1, K_UPPER);
+			console &= ~CON_R_ECHOX;
+			if (strcmp(str, passwd) != 0)
+				return false;
 		}
 	}
 	putmsgptrs();
@@ -1359,6 +1362,7 @@ void sbbs_t::change_user(void)
 		sys_status |= SS_TMPSYSOP;
 	snprintf(str, sizeof str, "Changed into %s #%u", useron.alias, useron.number);
 	logline("S+", str);
+	return true;
 }
 
 /* 't' value must be adjusted for timezone offset */

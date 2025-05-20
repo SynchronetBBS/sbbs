@@ -108,10 +108,10 @@ function str_cmds(str)
 			}
 		}
 
-		help["CHUSER"] = "Become a different user";
-		if(str=="CHUSER") {
+		help["CHUSER [Name or Number]"] = "Become a different user";
+		if(word=="CHUSER") {
 			// Prompts for syspass
-			bbs.change_user();
+			bbs.change_user(str.substr(6));
 			return;
 		}
 
@@ -327,7 +327,7 @@ function str_cmds(str)
 			return;
 		}
 
-		help["UEDIT [Number or Name]"] = "Edits specified user or starts at user #1";
+		help["UEDIT [Name or Number]"] = "Edits specified user or starts at user #1";
 		if(word=="UEDIT") {
 			// Prompts for syspass
 			str=str.substr(5).trim();
@@ -785,6 +785,14 @@ function str_cmds(str)
 			print_help(i, help[i]);
 	} else if(word == "HELP") {
 		var cmd = str.substr(4).trim().toUpperCase();
+		if(!help[cmd]) {
+			for(var i in help) {
+				if(i.substr(0, cmd.length) == cmd) {
+					cmd = i;
+					break;
+				}
+			}
+		}
 		if(!help[cmd])
 			alert("Unrecognized command: " + cmd);
 		else
@@ -811,7 +819,10 @@ function get_arg(str, parm, history)
 		parm = "Parameter(s)";
 	str=str.replace(/^\s+/,"");
 	if(str=="") {
-		write(format("%s: ", parm));
+		if(parm.indexOf(':') >= 0)
+			write(parm);
+		else
+			write(format("%s: ", parm));
 		str=console.getstr(200, K_MSG | K_TRIM | K_LINEWRAP, history);
 	}
 	if(str) {
