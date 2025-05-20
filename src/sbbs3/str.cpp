@@ -1349,8 +1349,12 @@ bool sbbs_t::change_user(const char* username)
 	           , cfg.sub[usrsub[curgrp][cursub[curgrp]]]->code);
 	putuserstr(useron.number, USER_CURDIR
 	           , cfg.dir[usrdir[curlib][curdir[curlib]]]->code);
+	user_t org_user = useron;
 	useron.number = i;
-	getuserdat(&cfg, &useron);
+	if (getuserdat(&cfg, &useron) != USER_SUCCESS) {
+		useron = org_user;
+		return false;
+	}
 	if (getnodedat(cfg.node_num, &thisnode, true)) {
 		thisnode.useron = useron.number;
 		putnodedat(cfg.node_num, &thisnode);
