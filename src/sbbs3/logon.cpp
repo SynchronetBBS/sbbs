@@ -184,7 +184,7 @@ bool sbbs_t::logon()
 	if ((useron.misc & AUTOTERM)
 	    // User manually-enabled PETSCII, but they're logging in with an ANSI (auto-detected) terminal
 	    || ((useron.misc & PETSCII) && (autoterm & ANSI))) {
-		useron.misc &= ~(ANSI | RIP | CHARSET_FLAGS);
+		useron.misc &= ~(ANSI | RIP | PETSCII | UTF8); // Note: don't turn off NO_EXASCII flag (issue #923)
 		useron.misc |= (AUTOTERM | autoterm);
 	}
 
