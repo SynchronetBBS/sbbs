@@ -116,6 +116,9 @@
  *                              that may have been set.
  * 2025-05-07 Eric Oulashin     Version 1.90
  *                              Releasing this version
+ * 2025-05-20 Eric Oulashin     Version 1.91
+ *                              Bug fix: Message text is now properly re-written when the Program
+ *                              Info box (available from DCT mode) is erased
  */
 
 "use strict";
@@ -206,8 +209,8 @@ if (console.screen_columns < 80)
 }
 
 // Version information
-var EDITOR_VERSION = "1.90";
-var EDITOR_VER_DATE = "2025-05-07";
+var EDITOR_VERSION = "1.91";
+var EDITOR_VER_DATE = "2025-05-20";
 
 
 // Program variables
@@ -4073,7 +4076,7 @@ function doESCMenu(pCurpos, pCurrentWordLength)
 			}
 			break;
 		case ESC_MENU_HELP_PROGRAM_INFO:
-			displayProgramInfoBox();
+			displayProgramInfoBox(pCurpos);
 			break;
 		case ESC_MENU_CROSS_POST_MESSAGE:
 			if (gCanCrossPost)
@@ -4125,7 +4128,10 @@ function doESCMenu(pCurpos, pCurrentWordLength)
 
 // Displays SlyEdit program information in a box in the edit area.  Waits for
 // a keypress, and then erases the box.
-function displayProgramInfoBox()
+//
+// Parameters:
+//  pCurpos: The current cursor position (with x and y properties)
+function displayProgramInfoBox(pCurpos)
 {
 	var boxWidth = 47;
 	var boxHeight = 12;
@@ -4184,9 +4190,8 @@ function displayProgramInfoBox()
 	// Wait for a keypress
 	console.getkey(K_NOCRLF|K_NOSPIN);
 	// Erase the info box
-	var editLineIndexAtSelBoxTopRow = gEditLinesIndex-(boxTopLeftY-gEditTop);
-	if (editLineIndexAtSelBoxTopRow < 0)
-		editLineIndexAtSelBoxTopRow = 0;
+	//var topEditIndex = gEditLinesIndex-(curpos.y-gEditTop);
+	var editLineIndexAtSelBoxTopRow = gEditLinesIndex - (pCurpos.y-boxTopLeftY);
 	displayMessageRectangle(boxTopLeftX, boxTopLeftY, boxWidth, boxHeight, editLineIndexAtSelBoxTopRow, true);
 }
 

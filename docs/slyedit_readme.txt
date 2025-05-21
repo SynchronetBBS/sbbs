@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.90
-                        Release date: 2025-05-07
+                              Version 1.91
+                        Release date: 2025-05-20
 
                                   by
 
@@ -998,6 +998,8 @@ message to lower-case and comparing them with the words in the dictionary.
 ===================
 Version  Date         Description
 -------  ----         -----------
+1.91     2025-05-20   Bug fix: Message text is now properly re-written when the
+                      Program Info box (available from DCT mode) is erased
 1.90     2025-05-07   Better behavior when editing a general file rather than a
                       message (i.e., if the user is editing an SSH key): Not
                       adding a space after each (wrapped) line, etc.. Lines will
