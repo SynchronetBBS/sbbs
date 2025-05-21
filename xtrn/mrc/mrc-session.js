@@ -4,7 +4,7 @@
 // See mrc-client.js for a bad example.
 function MRC_Session(host, port, user, pass, alias) {
     
-    const MRC_VER = "Multi Relay Chat JS v1.3.3 2025-04-11 [cf]";
+    const MRC_VER = "Multi Relay Chat JS v1.3.4 2025-05-20 [cf]";
     const CTCP_ROOM = "ctcp_echo_channel";
     
     const handle = new Socket();
