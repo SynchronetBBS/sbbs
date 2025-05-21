@@ -84,8 +84,9 @@ mrc-client.ini:
                 to separate multiple commands.
       splash:   Whether the "Multi Relay Chat for Synchronet" splash is shown
                 on startup.
-  - The [aliases], [theme], [msg_color], [show_nicks], and [twit_list] sections
-    are for user settings which get added or updated any time a user uses them.
+  - The [aliases], [theme], [msg_color], [show_nicks], [twit_list], and 
+    [chat_sounds] sections are for user settings which get added or updated any
+    time a user uses them.
 
 
 4) MRC Stats
@@ -151,7 +152,7 @@ file. Or just disable it by setting splash = false in mrc-client.ini
   indicate the start of a sysop command. In the case of the MRC client, such
   text is simply ignored and does not get sent over.
   
-  As a workround, you may simply insert a space in front of the message you 
+  As a workaround, you may simply insert a space in front of the message you 
   want to send that starts with a semicolon.
 
 

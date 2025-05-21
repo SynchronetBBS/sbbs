@@ -11,6 +11,7 @@
 WH/CmotdN‰HK:N Display the Message of the Day
 WH/Cscroll Kor CPGUPK:N Scroll the chat window
 WH/Cmentions Kor CUPK:N Reset mention counter and review mentions
+WH/Csound         K:N Toggle chat sounds (mentions & system msgs)
 WH/CthemeNˆHK:N Select a theme HK..........N seeHK:N H/ChelpN Htheme
 WH/CtwitN‰HK:N Twit List management HK....N seeHK:N H/ChelpN Htwit
 WH/CctcpN‰HK:N Send a CTCP command HK.....N seeHK:N H/ChelpN Hctcp

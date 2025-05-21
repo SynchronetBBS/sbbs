@@ -50,6 +50,7 @@ js.time_limit=0;
 var input_state = 'chat';
 var paused_msg_buffer = []; 
 var show_nicks = false;
+var chat_sounds = false;
 var stat_mode = 0; // 0 = Local Session stats (Chatters, Latency, & Mentions); 1 = Global MRC Stats
 
 var mentions = [];
@@ -66,8 +67,8 @@ var theme_mrc_title = "\x01w\x01hMRC";
 
 var f = new File(js.startup_dir + 'mrc-client.ini');
 if (!f.open('r')) {
-	alert("Error " + f.error + " (" + strerror(f.error) + ") opening " + f.name);
-	exit(1);
+    alert("Error " + f.error + " (" + strerror(f.error) + ") opening " + f.name);
+    exit(1);
 }
 
 const settings = {
@@ -78,7 +79,8 @@ const settings = {
     show_nicks: f.iniGetObject('show_nicks') || {},
     theme: f.iniGetObject('theme') || {},
     msg_color: f.iniGetObject('msg_color') || {},
-    twit_list: f.iniGetObject('twit_list') || {}
+    twit_list: f.iniGetObject('twit_list') || {},
+    chat_sounds: f.iniGetObject('chat_sounds') || {}
 };
 
 f.close();
@@ -344,7 +346,9 @@ function display_system_messages(frames) { // display local system messages (e.g
             }
             display_server_message(frames, "\x01k\x01h*.:\x01k\x01h__\x01n\x01w");
         }
-        console.beep();
+        if (chat_sounds) {
+            console.beep();
+        }
         file_removecase(NOTIF_FILE);
     }
 }
@@ -400,6 +404,9 @@ function main() {
     if (settings.twit_list[user.alias]) {
         session.twit_list = settings.twit_list[user.alias].split(ascii(126));
     }
+    if (settings.chat_sounds[user.alias]) {
+        session.chat_sounds = settings.chat_sounds[user.alias];
+    }
 
     const frames = init_display(session.msg_color);
     const inputline = new InputLine(frames.input);
@@ -435,7 +442,9 @@ function main() {
             if (session.twit_list.indexOf(msg.from_user.toLowerCase()) < 0) {
                 var mention = false;
                 if (msg.body.toUpperCase().indexOf(user.alias.toUpperCase()) >= 0 && msg.from_user !== user.alias) {
-                    console.beep();
+                    if (chat_sounds) {
+                        console.beep();
+                    }
                     mention = true;
                     session.mention_count = session.mention_count + 1;
                     refresh_stats(frames, session);
@@ -607,6 +616,11 @@ function main() {
                             stat_mode = stat_mode === 0 ? 1 : 0;
                             refresh_stats(frames, session);
                             break;
+                        case "sound":
+                            chat_sounds = !chat_sounds;
+                            display_server_message(frames, "\x01n\x01c\x01hChat sounds \x01w\x01h" + ( chat_sounds ? "ON" : "OFF" ) + "\x01c\x01h.\x01n\x01w");
+                            save_setting(user.alias, "chat_sounds", chat_sounds);
+                            break;                            
                         case "theme":
                             if (cmd.length == 2) {
                                 set_theme( cmd[1] );
