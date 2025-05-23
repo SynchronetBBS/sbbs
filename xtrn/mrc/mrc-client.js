@@ -405,7 +405,7 @@ function main() {
         session.twit_list = settings.twit_list[user.alias].split(ascii(126));
     }
     if (settings.chat_sounds[user.alias]) {
-        session.chat_sounds = settings.chat_sounds[user.alias];
+        chat_sounds = settings.chat_sounds[user.alias];
     }
 
     const frames = init_display(session.msg_color);
