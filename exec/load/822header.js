@@ -10,8 +10,17 @@ MsgBase.HeaderPrototype.get_rfc822_header=function(force_update, unfold, default
 		delete this.rfc822;
 
 	if(this.rfc822==undefined) {
-		this.rfc822='';
-		this.rfc822 += "To: "+ (this.to_list || this.to || this.forward_path) +"\r\n";
+		this.rfc822 = "To: "+ (this.to_list || this.to || this.forward_path);
+		if(this.to_net_addr) {
+			if(this.to_net_addr.indexOf('@') != -1)
+				this.rfc822 += " <" + this.to_net_addr + ">";
+			else
+				this.rfc822 += " (" + this.to_net_addr + ")";
+		}
+		if(this.to_ext)
+			this.rfc822 += " (#" + this.to_ext + ")";
+		this.rfc822	+= "\r\n";
+
 		if(this.cc_list)
 			this.rfc822 += "Cc: " + this.cc_list + "\r\n";
 		this.rfc822 += "Subject: "+this.subject+"\r\n";
@@ -19,15 +28,19 @@ MsgBase.HeaderPrototype.get_rfc822_header=function(force_update, unfold, default
 			this.rfc822 += "Message-ID: "+this.id+"\r\n";
 		this.rfc822 += "Date: "+this.date+"\r\n";
 
+		this.rfc822 += "From: ";
 		var quoted_from = '"' + this.from + '"';
 		if(!this.from_net_type || this.from_net_addr.length==0)    /* local message */
-			this.rfc822 += "From: " + quoted_from + " <" + this.from.replace(/ /g,".").toLowerCase() + "@" + system.inetaddr + ">\r\n";
+			this.rfc822 += quoted_from + " <" + this.from.replace(/ /g,".").toLowerCase() + "@" + system.inetaddr + ">";
 		else if(!this.from_net_addr.length)
-			this.rfc822 += "From: " + quoted_from + "\r\n";
+			this.rfc822 += quoted_from;
 		else if(this.from_net_addr.indexOf('@')!=-1)
-			this.rfc822 += "From: " + quoted_from +" <"+this.from_net_addr+">\r\n";
-		else
-			this.rfc822 += "From: " + quoted_from +" <"+this.from.replace(/ /g,".").toLowerCase()+"@"+this.from_net_addr+">\r\n";
+			this.rfc822 += quoted_from +" <"+this.from_net_addr+">";
+		else // FTN or QWKnet sender address
+			this.rfc822 += this.from +" (" + this.from_net_addr + ")";
+		if(this.from_ext)
+			this.rfc822 += " (#" + this.from_ext + ")";
+		this.rfc822	+= "\r\n";
 
 //		this.rfc822 += "X-Comment-To: "+this.to+"\r\n";
 		if(this.path != undefined)
@@ -61,7 +74,7 @@ MsgBase.HeaderPrototype.get_rfc822_header=function(force_update, unfold, default
 		
 		// "Received" headers
 		if(this.field_list!=undefined) {
-			for(i in this.field_list) 
+			for(i in this.field_list)
 				if(this.field_list[i].type == SMTPRECEIVED)
 					this.rfc822 += "Received: " + this.field_list[i].data + "\r\n";
 		}
@@ -84,13 +97,18 @@ MsgBase.HeaderPrototype.get_rfc822_header=function(force_update, unfold, default
 			this.rfc822 += "X-FTN-REPLY: "+this.ftn_reply+"\r\n";
 		if(this.ftn_charset != undefined)
 			this.rfc822 += "X-FTN-CHRS: "+this.ftn_charset+"\r\n";
+		if(this.ftn_bbsid != undefined)
+			this.rfc822 += "X-FTN-BBSID: "+this.ftn_bbsid+"\r\n";
 		
-		// Other RFC822 headers
+		// Other Fidonet headers
 		if(this.field_list!=undefined) {
-			for(i in this.field_list) 
+			for(i in this.field_list)
+				if(this.field_list[i].type==FIDOCTRL)
+					this.rfc822 += "X-FTN-Kludge: " + this.field_list[i].data + "\r\n";
+			for(i in this.field_list)
 				if(this.field_list[i].type==FIDOSEENBY)
 					this.rfc822 += "X-FTN-SEEN-BY: " + this.field_list[i].data + "\r\n";
-			for(i in this.field_list) 
+			for(i in this.field_list)
 				if(this.field_list[i].type==FIDOPATH)
 					this.rfc822 += "X-FTN-PATH: " + this.field_list[i].data + "\r\n";
 		}
