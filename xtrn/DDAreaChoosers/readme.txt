@@ -1,6 +1,6 @@
                      Digital Distortion Area Choosers
-                              Version 1.42c
-                        Release date: 2025-04-21
+                              Version 1.42e
+                        Release date: 2025-05-27
 
                                   by
 
