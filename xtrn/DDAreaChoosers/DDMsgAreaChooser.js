@@ -89,6 +89,8 @@
  * 2025-04-21 Eric Oulashin   Version 1.42c
  *                            F & L keys working again on the light bar menu (first & last page).
  *                            Fix for "this.DisplayMenuHdrWithNumItems is not a function".
+ * 2025-05-27 Eric Oulashin   Version 1.42e
+ *                            Fix: Name collapsing for group names w/ more than 1 instance
  */
 
 /* Command-line arguments:
@@ -126,8 +128,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.42c";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2025-04-21";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.42e";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2025-05-27";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -3129,7 +3131,7 @@ function getMsgSubHeirarchy(pCollapsing, pCollapsingSeparator)
 				// only appears once, then use the whole group name as one name
 				var sepCountInGrpDesc = countSubstrInStr(grpDesc, pCollapsingSeparator);
 				var startIdx = 0;
-				if (sepCountInGrpDesc > 0 && grpsBeforeSeparator.hasOwnProperty(nameArray[0]) == 1)
+				if (sepCountInGrpDesc > 0 && grpsBeforeSeparator.hasOwnProperty(nameArray[0]) && grpsBeforeSeparator[nameArray[0]] == 1)
 					startIdx += sepCountInGrpDesc;
 				for (var i = startIdx; i < nameArray.length; ++i)
 				{

@@ -83,6 +83,8 @@
  *                            showing help.
  * 2025-05-03 Eric Oulashin   Version 1.42d
  *                            Fix: Displays the configured area change header again
+ * 2025-05-27 Eric Oulashin   Version 1.42e
+ *                            Fix: Name collapsing for group names w/ more than 1 instance
  */
 
 // TODO: Failing silently when 1st argument is true
@@ -123,8 +125,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_FILE_AREA_CHOOSER_VERSION = "1.42d";
-var DD_FILE_AREA_CHOOSER_VER_DATE = "2025-05-03";
+var DD_FILE_AREA_CHOOSER_VERSION = "1.42e";
+var DD_FILE_AREA_CHOOSER_VER_DATE = "2025-05-27";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -2056,6 +2058,16 @@ function getFileDirHeirarchy(pCollapsing, pCollapsingSeparator)
 				else
 					libsBeforeSeparator[libDescBeforeSep] = 1;
 			}
+			/*
+			// Temproary
+			if (user.is_sysop)
+			{
+				if (libDesc.indexOf("Mirrors") == 0)
+				{
+				}
+			}
+			// End Temporary
+			*/
 		}
 
 		// Build the heirarchy
@@ -2083,7 +2095,7 @@ function getFileDirHeirarchy(pCollapsing, pCollapsingSeparator)
 				// only appears once, then use the whole library name as one name
 				var sepCountInLibDesc = countSubstrInStr(libDesc, pCollapsingSeparator);
 				var startIdx = 0;
-				if (sepCountInLibDesc > 0 && libsBeforeSeparator.hasOwnProperty(nameArray[0]) == 1)
+				if (sepCountInLibDesc > 0 && libsBeforeSeparator.hasOwnProperty(nameArray[0]) && libsBeforeSeparator[nameArray[0]] == 1)
 					startIdx += sepCountInLibDesc;
 				for (var i = startIdx; i < nameArray.length; ++i)
 				{

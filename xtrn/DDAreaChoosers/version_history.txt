@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.42e    2025-05-27   Fix: Name collapsing for group names w/ more than 1
+                      instance
 1.42d    2025-05-03   File area chooser only - Fix: Displays the configured
                       area change header again
 1.42c    2025-04-21   F & L keys working again on the light bar menu (first &
