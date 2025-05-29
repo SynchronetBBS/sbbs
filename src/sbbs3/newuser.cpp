@@ -312,7 +312,7 @@ bool sbbs_t::newuser()
 				break;
 		}
 		useron.misc &= ~NETMAIL;
-		if ((cfg.sys_misc & SM_FWDTONET) && is_supported_netmail_addr(&cfg, useron.netmail) && yesno(text[ForwardMailQ]))
+		if ((cfg.sys_misc & SM_FWDTONET) && is_supported_netmail_addr(&cfg, useron.netmail) && text[ForwardMailQ][0] && yesno(text[ForwardMailQ]))
 			useron.misc |= NETMAIL;
 
 		if (text[UserInfoCorrectQ][0] == 0 || yesno(text[UserInfoCorrectQ]))
