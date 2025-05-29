@@ -1,6 +1,6 @@
                      Digital Distortion Area Choosers
-                              Version 1.42e
-                        Release date: 2025-05-27
+                              Version 1.42f
+                        Release date: 2025-05-28
 
                                   by
 
@@ -412,7 +412,7 @@ names, the 'collapsing' feature will split the menus up into multiple tiers of
 options. For instance, if you have a file library called "Mirror:Simtelnet" and
 directories in there such as "C-Net:Mac:Business" and "C-Net:Mac:Games:action",
 the menu heirarchy will be arranged as follows:
-Mirror
+Mirrors
   Simetlnet
     C-Net
       Mac
@@ -456,6 +456,14 @@ the useDirCollapsing and dirCollapseSeparator options in DDFileAreaChooser.cfg.
 If all of the sub-boards in a message group or all directories in a file library
 have the same separator, then those will not be collapsed, since that would
 result in only a single 2nd-tier selection, which would not be useful.
+
+If you want to use the separator character but don't want the item to be
+collapsed, you can put the separator in the name twice in a row. Also, for those
+instances, the separator character will be displayed just once instead of twice.
+For example, if you wanted a file library literally displayed as "Linux: Games",
+and you have : configured as the separator character, you could name the library
+"Linux:: Games".  This only applies when name collapsing is enabled; if
+disabled, the name will be displayed as-is with the double character.
 
 
 6. DDMsgAreaChooser class: Properties & methods

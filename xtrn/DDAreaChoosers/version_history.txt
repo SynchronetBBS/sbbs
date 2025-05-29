@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.42f    2025-05-28   Name collapsing now works at the top level. Also, support
+                      for a double separator to not collapse (and display just
+                      one of those characters).
 1.42e    2025-05-27   Fix: Name collapsing for group names w/ more than 1
                       instance
 1.42d    2025-05-03   File area chooser only - Fix: Displays the configured

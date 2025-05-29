@@ -85,6 +85,10 @@
  *                            Fix: Displays the configured area change header again
  * 2025-05-27 Eric Oulashin   Version 1.42e
  *                            Fix: Name collapsing for group names w/ more than 1 instance
+ * 2025-05-28 Eric Oulashin   Version 1.42f
+ *                            Name collapsing now works at the top level. Also,
+ *                            support for a double separator to not collapse (and
+ *                            display just one of those characters).
  */
 
 // TODO: Failing silently when 1st argument is true
@@ -102,11 +106,13 @@ if (typeof(require) === "function")
 {
 	require("sbbsdefs.js", "K_NOCRLF");
 	require("dd_lightbar_menu.js", "DDLightbarMenu");
+	require("DDAreaChooserCommon.js", "splitStringOnSingleCharByItself");
 }
 else
 {
 	load("sbbsdefs.js");
 	load("dd_lightbar_menu.js");
+	load("DDAreaChooserCommon.js");
 }
 
 // This script requires Synchronet version 3.14 or higher.
@@ -125,8 +131,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_FILE_AREA_CHOOSER_VERSION = "1.42e";
-var DD_FILE_AREA_CHOOSER_VER_DATE = "2025-05-27";
+var DD_FILE_AREA_CHOOSER_VERSION = "1.42f";
+var DD_FILE_AREA_CHOOSER_VER_DATE = "2025-05-28";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -925,13 +931,6 @@ function DDFileAreaChooser_CreateLightbarMenu(pDirHeirarchyObj, pHeirarchyLevel,
 		else
 			retObj.itemNumWidth = pDirHeirarchyObj.length.toString().length;
 		retObj.descWidth = console.screen_columns - retObj.itemNumWidth - retObj.numItemsWidth - 1;
-		// Temporary
-		if (user.is_sysop)
-		{
-			//printf("\x01npNumItemsWidth: %d, itemNumWidth: %d, # items width: %d, descWidth: %d\r\n", pNumItemsWidth, retObj.itemNumWidth, retObj.numItemsWidth, retObj.descWidth);
-			//printf("\x01nLongest # items in heirarchy: %d\r\n", maxNumItemsWidthInHeirarchy(pDirHeirarchyObj));
-		}
-		// End Temporary
 	}
 	// If not using the lightbar interface (and ANSI behavior is not to be allowed), fileDirMenu.numberedMode
 	// will be set to true by default.  Also, in that situation, set the menu's item number color
@@ -2058,17 +2057,11 @@ function getFileDirHeirarchy(pCollapsing, pCollapsingSeparator)
 				else
 					libsBeforeSeparator[libDescBeforeSep] = 1;
 			}
-			/*
-			// Temproary
-			if (user.is_sysop)
-			{
-				if (libDesc.indexOf("Mirrors") == 0)
-				{
-				}
-			}
-			// End Temporary
-			*/
 		}
+
+		// A regular expression intended to be used for replacing all double instances
+		// of the separator character with a single instance
+		var doubleSepCharGlobalRegex = new RegExp(pCollapsingSeparator + pCollapsingSeparator, "g"); // "gi" for global case insensitive
 
 		// Build the heirarchy
 		// For each library, go through each directory
@@ -2088,8 +2081,8 @@ function getFileDirHeirarchy(pCollapsing, pCollapsingSeparator)
 				*/
 				var libDesc = skipsp(truncsp(file_area.lib_list[libIdx].description));
 				var dirDesc = skipsp(truncsp(file_area.lib_list[libIdx].dir_list[dirIdx].description));
-				var libAndDirName = libDesc + ":" + dirDesc;
-				var nameArray = removeEmptyStrsFromArray(libAndDirName.split(pCollapsingSeparator));
+				var libAndDirName = libDesc + pCollapsingSeparator + dirDesc;
+				var nameArray = removeEmptyStrsFromArray(splitStringOnSingleCharByItself(libAndDirName, pCollapsingSeparator));
 				var arrayToSearch = fileDirHeirarchy;
 				// If the library description has the separator character and the first element
 				// only appears once, then use the whole library name as one name
@@ -2105,6 +2098,9 @@ function getFileDirHeirarchy(pCollapsing, pCollapsingSeparator)
 						name = libDesc;
 					else
 						name = skipsp(truncsp(nameArray[i]));
+					// Replace any double instances of the separator character with
+					// a single instance
+					name = name.replace(doubleSepCharGlobalRegex, pCollapsingSeparator);
 					// Look for this one in the heirarchy; if not found, add it.
 					// Look for an entry in the array that matches the name and has its own "items" array
 					var heirarchyIdx = -1;

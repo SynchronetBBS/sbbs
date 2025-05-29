@@ -91,6 +91,10 @@
  *                            Fix for "this.DisplayMenuHdrWithNumItems is not a function".
  * 2025-05-27 Eric Oulashin   Version 1.42e
  *                            Fix: Name collapsing for group names w/ more than 1 instance
+ * 2025-05-28 Eric Oulashin   Version 1.42f
+ *                            Name collapsing now works at the top level. Also,
+ *                            support for a double separator to not collapse (and
+ *                            display just one of those characters).
  */
 
 /* Command-line arguments:
@@ -105,11 +109,13 @@ if (typeof(require) === "function")
 {
 	require("sbbsdefs.js", "K_NOCRLF");
 	require("dd_lightbar_menu.js", "DDLightbarMenu");
+	require("DDAreaChooserCommon.js", "splitStringOnSingleCharByItself");
 }
 else
 {
 	load("sbbsdefs.js");
 	load("dd_lightbar_menu.js");
+	load("DDAreaChooserCommon.js");
 }
 
 // This script requires Synchronet version 3.14 or higher.
@@ -128,8 +134,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.42e";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2025-05-27";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.42f";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2025-05-28";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -3107,6 +3113,11 @@ function getMsgSubHeirarchy(pCollapsing, pCollapsingSeparator)
 			}
 		}
 
+		// A regular expression intended to be used for replacing all double instances
+		// of the separator character with a single instance
+		var doubleSepCharGlobalRegex = new RegExp(pCollapsingSeparator + pCollapsingSeparator, "g"); // "gi" for global case insensitive
+
+		// Build the heirarchy
 		// For each message group, go through each sub-board
 		for (var grpIdx = 0; grpIdx < msg_area.grp_list.length; ++grpIdx)
 		{
@@ -3125,7 +3136,8 @@ function getMsgSubHeirarchy(pCollapsing, pCollapsingSeparator)
 				var grpDesc = skipsp(truncsp(msg_area.grp_list[grpIdx].description));
 				var subDesc = skipsp(truncsp(msg_area.grp_list[grpIdx].sub_list[subIdx].description));
 				var grpAndSubname = grpDesc + pCollapsingSeparator + subDesc;
-				var nameArray = removeEmptyStrsFromArray(grpAndSubname.split(pCollapsingSeparator));
+				//var nameArray = removeEmptyStrsFromArray(grpAndSubname.split(pCollapsingSeparator));
+				var nameArray = removeEmptyStrsFromArray(splitStringOnSingleCharByItself(grpAndSubname, pCollapsingSeparator));
 				var arrayToSearch = msgSubHeirarchy;
 				// If the group description has the separator character and the first element
 				// only appears once, then use the whole group name as one name
@@ -3141,6 +3153,9 @@ function getMsgSubHeirarchy(pCollapsing, pCollapsingSeparator)
 						name = grpDesc;
 					else
 						name = skipsp(truncsp(nameArray[i]));
+					// Replace any double instances of the separator character with
+					// a single instance
+					name = name.replace(doubleSepCharGlobalRegex, pCollapsingSeparator);
 					// Look for this one in the heirarchy; if not found, add it.
 					// Look for an entry in the array that matches the name and has its own "items" array
 					var heirarchyIdx = -1;
