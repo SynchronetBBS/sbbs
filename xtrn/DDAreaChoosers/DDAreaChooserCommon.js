@@ -21,7 +21,7 @@ function splitStringOnSingleCharByItself(pStr, pSeparatorChar)
 	var strArray = [];
 	var startIdx = 0;
 	var colonIdx = indexOfOneCharByItself(pStr, pSeparatorChar, startIdx);
-	while (colonIdx > -1)
+	while (colonIdx > -1 && startIdx < pStr.length)
 	{
 		strArray.push(pStr.substr(startIdx, colonIdx-startIdx));
 		startIdx = colonIdx + 1;
@@ -48,6 +48,7 @@ function indexOfOneCharByItself(pStr, pChar, pStartIdx)
 		startIdx = pStartIdx;
 	var foundIdx = -1;
 	var lastStrIdx = pStr.length - 1;
+
 	for (var i = startIdx; i < pStr.length && foundIdx == -1; ++i)
 	{
 		if (pStr[i] == pChar)
