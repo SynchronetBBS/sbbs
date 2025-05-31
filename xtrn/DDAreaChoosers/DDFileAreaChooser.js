@@ -573,6 +573,9 @@ function DDFileAreaChooser_SelectFileArea(pChooseLib)
 					menuContinueOn = false;
 					selectionLoopContinueOn = false;
 				}
+
+				// The key help line will need to be written again
+				writeKeyHelpLine = true;
 			}
 			else if ((lastUserInputUpper == "/") || (lastUserInputUpper == CTRL_F)) // Start of find
 			{
@@ -803,6 +806,9 @@ function DDFileAreaChooser_SelectFileArea(pChooseLib)
 					else
 						chosenLibOrSubdirName = previousChosenLibOrSubdirNames.pop();
 				}
+
+				// The key help line will need to be written again
+				writeKeyHelpLine = true;
 			}
 		}
 	}
