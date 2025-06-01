@@ -42,8 +42,8 @@ for(var c=0; c < options.login_prompts; c++) {
 	bbs.nodesync();
 
 	// Display login prompt
-	const legacy_login_prompt = "NN: \x01[";
-	const legacy_password_prompt = "PW: \x01[";
+	const legacy_login_prompt = options.legacy_prompts ? "NN: \x01[" : "";
+	const legacy_password_prompt = options.legacy_prompts ? "PW: \x01[" : "";
 	var str = "\x01n\x01h\x01cEnter \x01wUser Name";
 	if(system.login_settings & LOGIN_USERNUM)
 		str += "\x01c or \x01wNumber";
@@ -97,7 +97,8 @@ for(var c=0; c < options.login_prompts; c++) {
 		if(options && options.email_passwords) {
 			var u = new User(usernum);
 			if(!(u.settings&(USER_DELETED|USER_INACTIVE))
-				&& u.security.level < 90
+				&& !u.is_sysop
+				&& u.security.password
 				&& netaddr_type(u.netmail) == NET_INTERNET
 				&& !console.noyes("Email your password to you")) {
 				var email_addr = u.netmail;
