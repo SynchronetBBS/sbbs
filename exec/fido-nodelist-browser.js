@@ -6938,7 +6938,7 @@ js.on_exit('console.write("[?25h");');
                 case "":
                 case "":
                 case "":
-                case "":
+                case "\x1A":
                 case "\x1B":
                 case "":
                 case "":
