@@ -80,13 +80,13 @@ function getAreaHeirarchy(pWhichAreas, pCollapsing, pCollapsingSeparator)
 				// areas where there are no spaces before or after the :, but that
 				// isn't how I did it before..
 				/*
-				var topArrayAndSubItenMane = topLevelArray[topLevelIdx].description + ":" + topLevelArray[topLevelIdx][subArrayName][subArrayIdx].description;
-				var nameArray = splitStrNoSpacesBeforeSeparator(topArrayAndSubItenMane, pCollapsingSeparator);
+				var topArrayAndSubItemName = topLevelArray[topLevelIdx].description + ":" + topLevelArray[topLevelIdx][subArrayName][subArrayIdx].description;
+				var nameArray = splitStrNoSpacesBeforeSeparator(topArrayAndSubItemName, pCollapsingSeparator);
 				*/
 				var topArrayItemDesc = skipsp(truncsp(topLevelArray[topLevelIdx].description));
 				var subArrayItemDesc = skipsp(truncsp(topLevelArray[topLevelIdx][subArrayName][subArrayIdx].description));
-				var topArrayAndSubItenMane = topArrayItemDesc + pCollapsingSeparator + subArrayItemDesc;
-				var nameArray = removeEmptyStrsFromArray(splitStringOnSingleCharByItself(topArrayAndSubItenMane, pCollapsingSeparator));
+				var topArrayAndSubItemName = topArrayItemDesc + pCollapsingSeparator + subArrayItemDesc;
+				var nameArray = removeEmptyStrsFromArray(splitStringOnSingleCharByItself(topArrayAndSubItemName, pCollapsingSeparator));
 				var arrayToSearch = areaHeirarchy;
 				// If the library description has the separator character and the first element
 				// only appears once, then use the whole library name as one name
