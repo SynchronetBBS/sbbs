@@ -1,0 +1,46 @@
+--- js-1.8.5/js/src/configure.orig	2025-06-04 19:09:11.360947000 -0400
++++ js-1.8.5/js/src/configure	2025-06-04 19:09:32.047905000 -0400
+@@ -6469,7 +6469,7 @@
+ *-darwin*)
+     HOST_CFLAGS="$HOST_CFLAGS -DXP_UNIX -DXP_MACOSX -DNO_X11"
+     HOST_NSPR_MDCPUCFG='\"md/_darwin.cfg\"'
+-    HOST_OPTIMIZE_FLAGS="${HOST_OPTIMIZE_FLAGS=-O3}"
++    HOST_OPTIMIZE_FLAGS="${HOST_OPTIMIZE_FLAGS=-O2}"
+     ;;
+ 
+ *-linux*|*-kfreebsd*-gnu|*-gnu*)
+@@ -6744,9 +6744,9 @@
+     MKCSHLIB='$(CC) $(CFLAGS) $(DSO_PIC_CFLAGS) $(DSO_LDOPTS) -o $@'
+     # If we're building with --enable-profiling, we need a frame pointer.
+     if test -z "$MOZ_PROFILING"; then
+-        MOZ_OPTIMIZE_FLAGS="-O3 -fomit-frame-pointer"
++        MOZ_OPTIMIZE_FLAGS="-O2 -fomit-frame-pointer"
+     else
+-        MOZ_OPTIMIZE_FLAGS="-O3 -fno-omit-frame-pointer"
++        MOZ_OPTIMIZE_FLAGS="-O2 -fno-omit-frame-pointer"
+     fi
+     _PEDANTIC=
+     CFLAGS="$CFLAGS -fpascal-strings -fno-common"
+--- js-1.8.5/js/src/configure.in.orig	2025-06-04 19:09:15.580258000 -0400
++++ js-1.8.5/js/src/configure.in	2025-06-04 19:09:41.242457000 -0400
+@@ -1887,7 +1887,7 @@
+ *-darwin*)
+     HOST_CFLAGS="$HOST_CFLAGS -DXP_UNIX -DXP_MACOSX -DNO_X11"
+     HOST_NSPR_MDCPUCFG='\"md/_darwin.cfg\"'
+-    HOST_OPTIMIZE_FLAGS="${HOST_OPTIMIZE_FLAGS=-O3}"
++    HOST_OPTIMIZE_FLAGS="${HOST_OPTIMIZE_FLAGS=-O2}"
+     ;;
+ 
+ *-linux*|*-kfreebsd*-gnu|*-gnu*)
+@@ -2032,9 +2032,9 @@
+     MKCSHLIB='$(CC) $(CFLAGS) $(DSO_PIC_CFLAGS) $(DSO_LDOPTS) -o $@'
+     # If we're building with --enable-profiling, we need a frame pointer.
+     if test -z "$MOZ_PROFILING"; then
+-        MOZ_OPTIMIZE_FLAGS="-O3 -fomit-frame-pointer"
++        MOZ_OPTIMIZE_FLAGS="-O2 -fomit-frame-pointer"
+     else
+-        MOZ_OPTIMIZE_FLAGS="-O3 -fno-omit-frame-pointer"
++        MOZ_OPTIMIZE_FLAGS="-O2 -fno-omit-frame-pointer"
+     fi
+     _PEDANTIC=
+     CFLAGS="$CFLAGS -fpascal-strings -fno-common"
