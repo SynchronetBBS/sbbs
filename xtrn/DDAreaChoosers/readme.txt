@@ -1,6 +1,6 @@
                      Digital Distortion Area Choosers
-                              Version 1.42f
-                        Release date: 2025-05-28
+                              Version 1.43
+                        Release date: 2025-06-01
 
                                   by
 
@@ -190,8 +190,16 @@ exec_xtrn MSGARCHO
 4. Configuration files
 ======================
 If you want to change the default beavior and colors for one of these scripts,
-you can edit its configuration file, which is a plain text file.  The
-configuration files have two sections: A behavior section (denoted by
+you can edit its configuration files, which are plain text files.
+
+DDFileAreaChooser.example.cfg and DDMsgAreaChooser.example.cfg are example
+configuration files for the file area chooser and message area chooser,
+respectively. If you want to customize your configuration, copy
+DDFileAreaChooser.example.cfg to DDFileAreaChooser.cfg and
+DDMsgAreaChooser.example.cfg to DDMsgAreaChooser.cfg (they can be in the same
+directory, xtrn/DDAreaChoosers, or in sbbs/mods) and make your customizations.
+
+The configuration files have two sections: A behavior section (denoted by
 [BEHAVIOR]) and a colors section (denoted by [COLORS]).  For each setting or
 color, the syntax is as folows:
 
