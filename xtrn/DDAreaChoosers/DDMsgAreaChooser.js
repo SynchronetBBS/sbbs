@@ -95,6 +95,11 @@
  *                            Name collapsing now works at the top level. Also,
  *                            support for a double separator to not collapse (and
  *                            display just one of those characters).
+ * 2025-06-01 Eric Oulashin   Version 1.43
+ *                            If DDMsgAreaChooser.cfg doesn't exist, read DDMsgAreaChooser.example.cfg
+ *                            (in the same directory as DDMsgAreaChooser.js) if it exists.
+ *                            Also did an internal refactor, moving some common functionality
+ *                            out into DDAreaChooserCommon.js to make development a bit simpler.
  */
 
 /* Command-line arguments:
@@ -109,7 +114,7 @@ if (typeof(require) === "function")
 {
 	require("sbbsdefs.js", "K_NOCRLF");
 	require("dd_lightbar_menu.js", "DDLightbarMenu");
-	require("DDAreaChooserCommon.js", "splitStringOnSingleCharByItself");
+	require("DDAreaChooserCommon.js", "getAreaHeirarchy");
 }
 else
 {
@@ -134,8 +139,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.42f";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2025-05-28";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.43";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2025-06-01";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -316,7 +321,7 @@ function DDMsgAreaChooser()
 
 	// Populate msgArea_list (should be done after reading the configuration file
 	// so that useSubCollapsing and subCollapseSeparator are set according to settings
-	this.msgArea_list = getMsgSubHeirarchy(this.useSubCollapsing, this.subCollapseSeparator);
+	this.msgArea_list = getAreaHeirarchy(DDAC_MSG_AREAS, this.useSubCollapsing, this.subCollapseSeparator);
 	
 	// These variables store default lengths of the various columns displayed in
 	// the message group/sub-board lists.
@@ -476,7 +481,7 @@ function DDMsgAreaChooser_WriteGrpListHdrLine(pNumPages, pPageNum)
 //  pMsgAreaHeirarchyObj: An object from this.msgArea_list, which is
 //                        set up with a 'name' property and either
 //                        an 'items' property if it has sub-items
-//                        or a 'subObj' property if it's a sub-board
+//                        or a 'subItemObj' property if it's a sub-board
 //  pGrpIndex: The index of the message group (assumed to be valid)
 //  pSubIndex: Optional - The index of a sub-board within the message group (if using sub-board
 //             collapsing, we might want to append the sub-board name to the description)
@@ -709,7 +714,7 @@ function DDMsgAreaChooser_SelectMsgArea(pChooseGroup, pGrpIdx)
 			{
 				// The user chose a valid item (the return value is the menu item index)
 				// The objects in this.msgArea_list have a 'name' property and either
-                // an 'items' property if it has sub-items or a 'subObj' property
+                // an 'items' property if it has sub-items or a 'subItemObj' property
 				// if it's a file directory
 				selectedItemIdx = null;
 				selectedGrpIdx = selectedMenuIdx;
@@ -734,10 +739,10 @@ function DDMsgAreaChooser_SelectMsgArea(pChooseGroup, pGrpIdx)
 					msgAreaStructure = msgAreaStructure[selectedMenuIdx].items;
 					menuContinueOn = false;
 				}
-				else if (msgAreaStructure[selectedMenuIdx].hasOwnProperty("subObj"))
+				else if (msgAreaStructure[selectedMenuIdx].hasOwnProperty("subItemObj"))
 				{
 					// The user has selected a file directory
-					bbs.cursub_code = msgAreaStructure[selectedMenuIdx].subObj.code;
+					bbs.cursub_code = msgAreaStructure[selectedMenuIdx].subItemObj.code;
 					menuContinueOn = false;
 					selectionLoopContinueOn = false;
 				}
@@ -1006,7 +1011,7 @@ function DDMsgAreaChooser_SelectMsgArea(pChooseGroup, pGrpIdx)
 //  pMsgAreaHeirarchyObj: An object from this.msgArea_list, which is
 //                        set up with a 'name' property and either
 //                        an 'items' property if it has sub-items
-//                        or a 'subObj' property if it's a sub-board
+//                        or a 'subItemObj' property if it's a sub-board
 //  pGrpIndex: The index of the message group (assumed to be valid)
 //  pGrpIdx: The index of the message group being used
 //  pNumPages: Optional - The number of pages of items
@@ -1020,16 +1025,16 @@ function DDMsgAreaChooser_DisplayListHdrLines(pScreenRow, pChooseGroup, pMsgArea
 		this.WriteGrpListHdrLine(pNumPages, pPageNum);
 	else
 	{
-		// See if the items in the directory heirarchy only contain a "subObj" or an "items"
+		// See if the items in the directory heirarchy only contain a "subItemObj" or an "items"
 		var allItemsAreSubBoards = true;
 		var allItemsContainOnlyOtherItems = true;
 		if (typeof(pMsgAreaHeirarchyObj[pGrpIdx]) === "object" && !Array.isArray(pMsgAreaHeirarchyObj[pGrpIdx]) && pMsgAreaHeirarchyObj[pGrpIdx].hasOwnProperty("items"))
 		{
 			for (var i = 0; i < pMsgAreaHeirarchyObj[pGrpIdx].items.length; ++i)
 			{
-				if (!pMsgAreaHeirarchyObj[pGrpIdx].items[i].hasOwnProperty("subObj") || pMsgAreaHeirarchyObj[pGrpIdx].items[i].hasOwnProperty("items"))
+				if (!pMsgAreaHeirarchyObj[pGrpIdx].items[i].hasOwnProperty("subItemObj") || pMsgAreaHeirarchyObj[pGrpIdx].items[i].hasOwnProperty("items"))
 					allItemsAreSubBoards = false;
-				if (pMsgAreaHeirarchyObj[pGrpIdx].items[i].hasOwnProperty("subObj") || !pMsgAreaHeirarchyObj[pGrpIdx].items[i].hasOwnProperty("items"))
+				if (pMsgAreaHeirarchyObj[pGrpIdx].items[i].hasOwnProperty("subItemObj") || !pMsgAreaHeirarchyObj[pGrpIdx].items[i].hasOwnProperty("items"))
 					allItemsContainOnlyOtherItems = false;
 			}
 		}
@@ -1063,7 +1068,7 @@ function DDMsgAreaChooser_DisplayListHdrLines(pScreenRow, pChooseGroup, pMsgArea
 //  pMsgAreaHeirarchyObj: An object from this.msgArea_list, which is
 //                        set up with a 'name' property and either
 //                        an 'items' property if it has sub-items
-//                        or a 'subObj' property if it's a sub-board
+//                        or a 'subItemObj' property if it's a sub-board
 //  pHeirarchyLevel: The level we're at in the heirarchy (1-based)
 //  pMenuTopRow: The screen row to use for the menu's top row
 //  pSelectedItemIdx: The index to use for the selected item. If not
@@ -1150,8 +1155,8 @@ function DDMsgAreaChooser_CreateLightbarMenu(pMsgAreaHeirarchyObj, pHeirarchyLev
 		//msgAreaMenu.idxWithUserSelectedSubBoard = -1;
 		for (var i = 0; i < pMsgAreaHeirarchyObj.length; ++i)
 		{
-			// Each object will have either an "items" or a "subObj"
-			if (!pMsgAreaHeirarchyObj[i].hasOwnProperty("subObj"))
+			// Each object will have either an "items" or a "subItemObj"
+			if (!pMsgAreaHeirarchyObj[i].hasOwnProperty("subItemObj"))
 				retObj.allSubs = false;
 			// See if this one has the user's selected file directory
 			if (msgAreaStructureHasCurrentUserSubBoard(pMsgAreaHeirarchyObj[i]))
@@ -1179,8 +1184,8 @@ function DDMsgAreaChooser_CreateLightbarMenu(pMsgAreaHeirarchyObj, pHeirarchyLev
 		msgAreaMenu.idxWithUserSelectedSubBoard = -1;
 		for (var i = 0; i < pMsgAreaHeirarchyObj.length; ++i)
 		{
-			// Each object will have either an "items" or a "subObj"
-			if (!pMsgAreaHeirarchyObj[i].hasOwnProperty("subObj"))
+			// Each object will have either an "items" or a "subItemObj"
+			if (!pMsgAreaHeirarchyObj[i].hasOwnProperty("subItemObj"))
 			{
 				retObj.allSubs = false;
 				msgAreaMenu.allSubs = false;
@@ -1240,14 +1245,14 @@ function DDMsgAreaChooser_CreateLightbarMenu(pMsgAreaHeirarchyObj, pHeirarchyLev
 					menuItemObj.text = strip_ctrl(menuItemObj.text);
 				}
 			}
-			else if (this.msgAreaHeirarchyObj[pItemIdx].hasOwnProperty("subObj"))
+			else if (this.msgAreaHeirarchyObj[pItemIdx].hasOwnProperty("subItemObj"))
 			{
-				if (this.msgAreaHeirarchyObj[pItemIdx].subObj.hasOwnProperty("posts"))
-					numItems = this.msgAreaHeirarchyObj[pItemIdx].subObj.posts; // Added in Synchronet 3.18c
+				if (this.msgAreaHeirarchyObj[pItemIdx].subItemObj.hasOwnProperty("posts"))
+					numItems = this.msgAreaHeirarchyObj[pItemIdx].subItemObj.posts; // Added in Synchronet 3.18c
 				else
 				{
 					// Get information from the messagebase
-					var msgBase = new MsgBase(this.msgAreaHeirarchyObj[pItemIdx].subObj.code);
+					var msgBase = new MsgBase(this.msgAreaHeirarchyObj[pItemIdx].subItemObj.code);
 					if (msgBase.open())
 					{
 						numItems = msgBase.total_msgs;
@@ -1266,7 +1271,7 @@ function DDMsgAreaChooser_CreateLightbarMenu(pMsgAreaHeirarchyObj, pHeirarchyLev
 				}
 				*/
 
-				var grpIdx = this.msgAreaHeirarchyObj[pItemIdx].subObj.grp_index;
+				var grpIdx = this.msgAreaHeirarchyObj[pItemIdx].subItemObj.grp_index;
 				// Ensure the subBoardListPrintfInfo object is built for the given group
 				this.areaChooser.BuildSubBoardPrintfInfoForGrp(grpIdx);
 				// Menu item text
@@ -1294,7 +1299,7 @@ function DDMsgAreaChooser_CreateLightbarMenu(pMsgAreaHeirarchyObj, pHeirarchyLev
 					// Get the timestamp of the last message, if configured to do so
 					if (this.areaChooser.showDatesInSubBoardList)
 					{
-						var lastMsgPostTimestamp = getLatestMsgTime(this.msgAreaHeirarchyObj[pItemIdx].subObj.code);
+						var lastMsgPostTimestamp = getLatestMsgTime(this.msgAreaHeirarchyObj[pItemIdx].subItemObj.code);
 						menuItemObj.text += format(this.areaChooser.subBoardListPrintfInfo[grpIdx].printfStr, pItemIdx+1,
 												   this.msgAreaHeirarchyObj[pItemIdx].name.substr(0, this.areaChooser.subBoardNameLen),
 												   numItems,
@@ -1354,7 +1359,7 @@ function DDMsgAreaChooser_CreateLightbarMenu(pMsgAreaHeirarchyObj, pHeirarchyLev
 					// Generate the item text
 					if (this.areaChooser.showDatesInSubBoardList)
 					{
-						var lastMsgPostTimestamp = getLatestMsgTime(this.msgAreaHeirarchyObj[pItemIdx].subObj.code);
+						var lastMsgPostTimestamp = getLatestMsgTime(this.msgAreaHeirarchyObj[pItemIdx].subItemObj.code);
 						menuItemObj.text += format(this.areaChooser.subBoardListPrintfInfo[grpIdx].printfStrWithoutAreaNum,
 												  this.msgAreaHeirarchyObj[pItemIdx].name.substr(0, this.areaChooser.subBoardNameLen), numItems,
 						                          strftime("%Y-%m-%d", lastMsgPostTimestamp),
@@ -1397,7 +1402,7 @@ function DDMsgAreaChooser_CreateLightbarMenu(pMsgAreaHeirarchyObj, pHeirarchyLev
 //  pMsgAreaHeirarchyObj: An object from this.msgArea_list, which is
 //                        set up with a 'name' property and either
 //                        an 'items' property if it has sub-items
-//                        or a 'subObj' property if it's a sub-board
+//                        or a 'subItemObj' property if it's a sub-board
 //  pAreaNumWidthOverride: Optional - An override for the width of the area # column. Mainly for the traditional (non-lightbar) UI
 //                         If this is not specified/null, then this.areaNumLen will be used.
 //  pColorIdxOffset: Optional - An offset to adjust the color indexes by in the color arrays.
@@ -1423,18 +1428,18 @@ function DDMsgAreaChooser_GetColorIndexInfoForLightbarMenu(pMsgAreaHeirarchyObj,
 	var highestNumMsgs = 0;
 	for (var i = 0; i < pMsgAreaHeirarchyObj.length; ++i)
 	{
-		if (pMsgAreaHeirarchyObj[i].hasOwnProperty("subObj"))
+		if (pMsgAreaHeirarchyObj[i].hasOwnProperty("subItemObj"))
 		{
 			// The 'posts' property was added in Synchronet 3.18c
-			if (msg_area.sub[pMsgAreaHeirarchyObj[i].subObj.code].hasOwnProperty("posts"))
+			if (msg_area.sub[pMsgAreaHeirarchyObj[i].subItemObj.code].hasOwnProperty("posts"))
 			{
-				if (msg_area.sub[pMsgAreaHeirarchyObj[i].subObj.code].posts > highestNumMsgs)
-					highestNumMsgs = msg_area.sub[pMsgAreaHeirarchyObj[i].subObj.code].posts;
+				if (msg_area.sub[pMsgAreaHeirarchyObj[i].subItemObj.code].posts > highestNumMsgs)
+					highestNumMsgs = msg_area.sub[pMsgAreaHeirarchyObj[i].subItemObj.code].posts;
 			}
 			else
 			{
 				// Get the total number of messages in the sub-board.  It isn't accurate, but it's fast.
-				var msgBase = new MsgBase(pMsgAreaHeirarchyObj[i].subObj.code);
+				var msgBase = new MsgBase(pMsgAreaHeirarchyObj[i].subItemObj.code);
 				if (msgBase.open())
 				{
 					if (msgBase.total_msgs > highestNumMsgs)
@@ -1743,8 +1748,23 @@ function AdjustMenuAttrArrayIndexes(pMenuAttrIdxArray, pAttrIdxOffset)
 // For the DDMsgAreaChooser class: Reads the configuration file.
 function DDMsgAreaChooser_ReadConfigFile()
 {
-	// Open the configuration file
-	var cfgFile = new File(js.exec_dir + "DDMsgAreaChooser.cfg");
+	// Use "DDMsgAreaChooser.cfg" if that exists; otherwise, use
+	// "DDMsgAreaChooser.example.cfg" (the stock config file)
+	var cfgFilenameBase = "DDMsgAreaChooser.cfg";
+	var cfgFilename = file_cfgname(system.mods_dir, cfgFilenameBase);
+	if (!file_exists(cfgFilename))
+		cfgFilename = file_cfgname(system.ctrl_dir, cfgFilenameBase);
+	if (!file_exists(cfgFilename))
+		cfgFilename = file_cfgname(js.exec_dir, cfgFilenameBase);
+	// If the configuration file hasn't been found, look to see if there's a DDMsgAreaChooser.example.cfg file
+	// available in the same directory 
+	if (!file_exists(cfgFilename))
+	{
+		var exampleFileName = file_cfgname(js.exec_dir, "DDMsgAreaChooser.example.cfg");
+		if (file_exists(exampleFileName))
+			cfgFilename = exampleFileName;
+	}
+	var cfgFile = new File(cfgFilename);
 	if (cfgFile.open("r"))
 	{
 		var behaviorSettings = cfgFile.iniGetObject("BEHAVIOR");
@@ -2177,13 +2197,13 @@ function defaultSubBoardObj()
 }
 function subBoardObjFromOfficialSubBoard(pGrpIdx, pSubIdx)
 {
-	var subObj = defaultSubBoardObj();
-	for (var prop in subObj)
+	var subItemObj = defaultSubBoardObj();
+	for (var prop in subItemObj)
 	{
 		if (prop != "sub_subboard_list" && msg_area.grp_list[pGrpIdx].sub_list[pSubIdx].hasOwnProperty(prop)) // Doesn't exist in the official dir objects
-			subObj[prop] = msg_area.grp_list[pGrpIdx].sub_list[pSubIdx][prop];
+			subItemObj[prop] = msg_area.grp_list[pGrpIdx].sub_list[pSubIdx][prop];
 	}
-	return subObj;
+	return subItemObj;
 }
 
 // Removes multiple, leading, and/or trailing spaces.
@@ -3083,240 +3103,6 @@ function findNextGrpIdxWithSubBoards(pGrpIdx)
 	return nextGrpIdx;
 }
 
-// Creates and returns an array which is a sort of recursive array structure
-// of objects. Each entry in the array will be an object with a 'name' property
-// and either an 'items' property if it has sub-items or a 'subObj' property
-// if it's a Synchronet message sub-board. The last item in the array chain
-// will have the 'subObj' property.
-//
-// Parameters:
-//  pCollapsing: Boolean - Whether or not to use sub-board collapsing
-//  pCollapsingSeparator: The separator used to split file lib/dir names when using collapsing
-function getMsgSubHeirarchy(pCollapsing, pCollapsingSeparator)
-{
-	var msgSubHeirarchy = [];
-	if (pCollapsing)
-	{
-		// First, check the group descriptions for strings before the separator character
-		var grpsBeforeSeparator = {}; // Will be an object indexed by description with a count as the value
-		for (var grpIdx = 0; grpIdx < msg_area.grp_list.length; ++grpIdx)
-		{
-			var grpDesc = skipsp(truncsp(msg_area.grp_list[grpIdx].description));
-			var sepIdx = msg_area.grp_list[grpIdx].description.indexOf(pCollapsingSeparator);
-			if (sepIdx > -1)
-			{
-				var grpDescBeforeSep = msg_area.grp_list[grpIdx].description.substr(0, sepIdx);
-				if (grpsBeforeSeparator.hasOwnProperty(grpDescBeforeSep))
-					grpsBeforeSeparator[grpDescBeforeSep] += 1;
-				else
-					grpsBeforeSeparator[grpDescBeforeSep] = 1;
-			}
-		}
-
-		// A regular expression intended to be used for replacing all double instances
-		// of the separator character with a single instance
-		var doubleSepCharGlobalRegex = new RegExp(pCollapsingSeparator + pCollapsingSeparator, "g"); // "gi" for global case insensitive
-
-		// Build the heirarchy
-		// For each message group, go through each sub-board
-		for (var grpIdx = 0; grpIdx < msg_area.grp_list.length; ++grpIdx)
-		{
-			for (var subIdx = 0; subIdx < msg_area.grp_list[grpIdx].sub_list.length; ++subIdx)
-			{
-				// 1. Join the message group name & sub-board name separated by a colon
-				// 2. Split on colons into an array (of names)
-				// 3. Go through the array of names and build the appropriate structure in msgSubHeirarchy.
-				// TODO: Initially, I thought of having collapsing restricted to
-				// areas where there are no spaces before or after the :, but that
-				// isn't how I did it before..
-				/*
-				var grpAndSubname = msg_area.grp_list[grpIdx].description + ":" + msg_area.grp_list[grpIdx].sub_list[subIdx].description;
-				var nameArray = splitStrNoSpacesBeforeSeparator(grpAndSubname, pCollapsingSeparator);
-				*/
-				var grpDesc = skipsp(truncsp(msg_area.grp_list[grpIdx].description));
-				var subDesc = skipsp(truncsp(msg_area.grp_list[grpIdx].sub_list[subIdx].description));
-				var grpAndSubname = grpDesc + pCollapsingSeparator + subDesc;
-				//var nameArray = removeEmptyStrsFromArray(grpAndSubname.split(pCollapsingSeparator));
-				var nameArray = removeEmptyStrsFromArray(splitStringOnSingleCharByItself(grpAndSubname, pCollapsingSeparator));
-				var arrayToSearch = msgSubHeirarchy;
-				// If the group description has the separator character and the first element
-				// only appears once, then use the whole group name as one name
-				var sepCountInGrpDesc = countSubstrInStr(grpDesc, pCollapsingSeparator);
-				var startIdx = 0;
-				if (sepCountInGrpDesc > 0 && grpsBeforeSeparator.hasOwnProperty(nameArray[0]) && grpsBeforeSeparator[nameArray[0]] == 1)
-					startIdx += sepCountInGrpDesc;
-				for (var i = startIdx; i < nameArray.length; ++i)
-				{
-					//var name = skipsp(truncsp(nameArray[i]));
-					var name = "";
-					if (startIdx > 0 && i == startIdx)
-						name = grpDesc;
-					else
-						name = skipsp(truncsp(nameArray[i]));
-					// Replace any double instances of the separator character with
-					// a single instance
-					name = name.replace(doubleSepCharGlobalRegex, pCollapsingSeparator);
-					// Look for this one in the heirarchy; if not found, add it.
-					// Look for an entry in the array that matches the name and has its own "items" array
-					var heirarchyIdx = -1;
-					for (var j = 0; j < arrayToSearch.length; ++j)
-					{
-						if (arrayToSearch[j].name == name && arrayToSearch[j].hasOwnProperty("items"))
-						{
-							heirarchyIdx = j;
-							break;
-						}
-					}
-					if (heirarchyIdx > -1)
-						arrayToSearch = arrayToSearch[heirarchyIdx].items;
-					else
-					{
-						// If we're at the last name, add a subObj item; otherwise, add
-						// an items array.
-						if (i == nameArray.length - 1)
-						{
-							arrayToSearch.push(
-							{
-								name: name,
-								altName: msg_area.grp_list[grpIdx].sub_list[subIdx].name,
-								grpIdx: grpIdx,
-								subObj: msg_area.grp_list[grpIdx].sub_list[subIdx]
-							});
-						}
-						else
-						{
-							arrayToSearch.push(
-							{
-								name: name,
-								altName: name,
-								grpIdx: grpIdx,
-								items: []
-							});
-							arrayToSearch = arrayToSearch[arrayToSearch.length-1].items;
-						}
-					}
-				}
-			}
-		}
-	}
-	else
-	{
-		// No collapsing. Have msgSubHeirarchy match the group/sub structure
-		// configured on the BBS.
-		for (var grpIdx = 0; grpIdx < msg_area.grp_list.length; ++grpIdx)
-		{
-			msgSubHeirarchy.push(
-			{
-				name: msg_area.grp_list[grpIdx].description,
-				altName: msg_area.grp_list[grpIdx].name,
-				grpIdx: grpIdx,
-				items: []
-			});
-			var libIdxInHeirarchy = msgSubHeirarchy.length - 1;
-			for (var subIdx = 0; subIdx < msg_area.grp_list[grpIdx].sub_list.length; ++subIdx)
-			{
-				msgSubHeirarchy[libIdxInHeirarchy].items.push(
-				{
-					name: msg_area.grp_list[grpIdx].sub_list[subIdx].description,
-					altName: msg_area.grp_list[grpIdx].sub_list[subIdx].name,
-					grpIdx: grpIdx,
-					subObj: msg_area.grp_list[grpIdx].sub_list[subIdx]
-				});
-			}
-		}
-	}
-
-	// Add 'allSubs' and 'allItems' properties to the items in the heirarchy
-	//addAllSubsAndAllItemsBooleansToMsgHeirarchy(msgSubHeirarchy);
-
-	return msgSubHeirarchy;
-}
-// Hepler for getMsgSubHeirarchy()
-function addAllSubsAndAllItemsBooleansToMsgHeirarchy(pMsgSubHeirarchyObj, pParentObj)
-{
-	var retObj = {
-		allItems: false,
-		allSubs: false
-	};
-
-	if (pMsgSubHeirarchyObj.hasOwnProperty("items"))
-	{
-		var sawItems = false;
-		var sawSubs = true;
-		for (var i = 0; i < pMsgSubHeirarchyObj.items.length; ++i)
-		{
-			pMsgSubHeirarchyObj.items[i].parent = pMsgSubHeirarchyObj;
-			sawItems = pMsgSubHeirarchyObj.items[i].hasOwnProperty("items");
-			sawSubs = pMsgSubHeirarchyObj.items[i].hasOwnProperty("subObj");
-			if (sawSubObj && sawItems)
-			{
-				pMsgSubHeirarchyObj.allSubs = false;
-				pMsgSubHeirarchyObj.allItems = false;
-			}
-			else if (sawSubObj)
-			{
-				pMsgSubHeirarchyObj.allSubs = true;
-				pMsgSubHeirarchyObj.allItems = false;
-			}
-			else if (sawItems)
-			{
-				pMsgSubHeirarchyObj.allSubs = false;
-				pMsgSubHeirarchyObj.allItems = true;
-			}
-
-			addAllSubsAndAllItemsBooleansToMsgHeirarchy(pMsgSubHeirarchyObj.items[i]);
-		}
-	}
-	else
-	{
-		if (pParentObj != null)
-			pMsgSubHeirarchyObj.parent = pParentObj;
-		pMsgSubHeirarchyObj.allSubs = true;
-	}
-
-	return retObj;
-}
-
-// Splits a string on a separator, except when there's a space after a
-// separator; if there's a space after a the separator, both parts of the
-// string before & after the separator are included as one item in the
-// resulting array. For instance, "Magic: The Gathering:Information"
-// would be split up such that "Magic: The Gathering" would be one string
-// and "Information" would be another, whereas "Mirror:Simtel:DOS:Games"
-// would all be split up into 4 strings
-function splitStrNoSpacesBeforeSeparator(pStr, pSep)
-{
-	var strArray = [];
-	var splitArray = pStr.split(pSep);
-	for (var i = 0; i < splitArray.length; ++i)
-	{
-		if (i < splitArray.length-1 && splitArray[i+1].indexOf(" ") == 0)
-			strArray.push(splitArray[i] + ":" + splitArray[++i]);
-		else
-			strArray.push(splitArray[i]);
-	}
-	return strArray;
-}
-
-// Returns the number of times a substring apears in a string
-//
-// Parameters:
-//  pStr: The string to search
-//  pSubstr: The substring inside the string to count
-//
-// Return: The number of times the substring appears in the string
-function countSubstrInStr(pStr, pSubstr)
-{
-	var substrCount = 0;
-	var substrIdx = pStr.indexOf(pSubstr);
-	while (substrIdx > -1)
-	{
-		++substrCount;
-		substrIdx = pStr.indexOf(pSubstr, substrIdx+1);
-	}
-	return substrCount;
-}
-
 // Given a message group/sub-board heirarchy object built by this module, this
 // function returns whether it contains the user's currently selected message
 // sub-board.
@@ -3325,7 +3111,7 @@ function countSubstrInStr(pStr, pSubstr)
 //  pMsgSubHeirarchyObj: An object from this.msgArea_list, which is
 //                       set up with a 'name' property and either
 //                       an 'items' property if it has sub-items
-//                       or a 'subObj' property if it's a message
+//                       or a 'subItemObj' property if it's a message
 //                       sub-board
 //
 // Return value: Whether or not the given structure has the user's currently selected message sub-board
@@ -3342,15 +3128,16 @@ function msgAreaStructureHasCurrentUserSubBoard(pMsgSubHeirarchyObj)
 	}
 	else
 	{
-		// This is one of the objects with 'name' and an 'items' or 'subObj'
-		if (pMsgSubHeirarchyObj.hasOwnProperty("subObj"))
-			currentUserSubBoardFound = (bbs.cursub_code == pMsgSubHeirarchyObj.subObj.code);
+		// This is one of the objects with 'name' and an 'items' or 'subItemObj'
+		if (pMsgSubHeirarchyObj.hasOwnProperty("subItemObj"))
+			currentUserSubBoardFound = (bbs.cursub_code == pMsgSubHeirarchyObj.subItemObj.code);
 		else if (pMsgSubHeirarchyObj.hasOwnProperty("items"))
 			currentUserSubBoardFound = msgAreaStructureHasCurrentUserSubBoard(pMsgSubHeirarchyObj.items);
 	}
 	return currentUserSubBoardFound;
 }
 
+/*
 // Removes empty strings from an array - Given an array,
 // makes a new array with only the non-empty strings and returns it.
 function removeEmptyStrsFromArray(pArray)
@@ -3363,3 +3150,4 @@ function removeEmptyStrsFromArray(pArray)
 	}
 	return newArray;
 }
+*/

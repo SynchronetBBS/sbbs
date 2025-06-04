@@ -89,6 +89,11 @@
  *                            Name collapsing now works at the top level. Also,
  *                            support for a double separator to not collapse (and
  *                            display just one of those characters).
+ * 2025-06-01 Eric Oulashin   Version 1.43
+ *                            If DDFileAreaChooser.cfg doesn't exist, read DDFileAreaChooser.example.cfg
+ *                            (in the same directory as DDFileAreaChooser.js) if it exists.
+ *                            Also did an internal refactor, moving some common functionality
+ *                            out into DDAreaChooserCommon.js to make development a bit simpler.
  */
 
 // TODO: Failing silently when 1st argument is true
@@ -106,7 +111,7 @@ if (typeof(require) === "function")
 {
 	require("sbbsdefs.js", "K_NOCRLF");
 	require("dd_lightbar_menu.js", "DDLightbarMenu");
-	require("DDAreaChooserCommon.js", "splitStringOnSingleCharByItself");
+	require("DDAreaChooserCommon.js", "getAreaHeirarchy");
 }
 else
 {
@@ -131,8 +136,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_FILE_AREA_CHOOSER_VERSION = "1.42f";
-var DD_FILE_AREA_CHOOSER_VER_DATE = "2025-05-28";
+var DD_FILE_AREA_CHOOSER_VERSION = "1.43";
+var DD_FILE_AREA_CHOOSER_VER_DATE = "2025-06-01";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -269,7 +274,7 @@ function DDFileAreaChooser()
     // the chooser to use to let the user choose a file lib & directory. It
     // will be set up with the same basic format regardless of whether
     // directory collapsing is to be used or not.
-	this.lib_list = getFileDirHeirarchy(this.useDirCollapsing, this.dirCollapseSeparator);
+	this.lib_list = getAreaHeirarchy(DDAC_FILE_AREAS, this.useDirCollapsing, this.dirCollapseSeparator);
 
 	// printf strings used for outputting the file libraries
 	this.fileLibPrintfStr = " " + this.colors.areaNum + "%" + this.areaNumLen + "d "
@@ -543,7 +548,7 @@ function DDFileAreaChooser_SelectFileArea(pChooseLib)
 			{
 				// The user chose a valid item (the return value is the menu item index)
 				// The objects in this.lib_list have a 'name' property and either
-                // an 'items' property if it has sub-items or a 'dirObj' property
+                // an 'items' property if it has sub-items or a 'subItemObj' property
 				// if it's a file directory
 				selectedItemIndexes.push(selectedMenuIdx);
 				previousChosenLibOrSubdirNames.push(chosenLibOrSubdirName);
@@ -566,10 +571,10 @@ function DDFileAreaChooser_SelectFileArea(pChooseLib)
 					fileLibStructure = fileLibStructure[selectedMenuIdx].items;
 					menuContinueOn = false;
 				}
-				else if (fileLibStructure[selectedMenuIdx].hasOwnProperty("dirObj"))
+				else if (fileLibStructure[selectedMenuIdx].hasOwnProperty("subItemObj"))
 				{
 					// The user has selected a file directory
-					bbs.curdir_code = fileLibStructure[selectedMenuIdx].dirObj.code;
+					bbs.curdir_code = fileLibStructure[selectedMenuIdx].subItemObj.code;
 					menuContinueOn = false;
 					selectionLoopContinueOn = false;
 				}
@@ -876,7 +881,7 @@ function DDFileAreaChooser_WriteDirListHdr1Line(pLibIdx, pDirIdx, pNumPages, pPa
 //  pDirHeirarchyObj: An object from this.lib_list, which is
 //                    set up with a 'name' property and either
 //                    an 'items' property if it has sub-items
-//                    or a 'dirObj' property if it's a file
+//                    or a 'subItemObj' property if it's a file
 //                    directory
 //  pHeirarchyLevel: The level we're at in the heirarchy (1-based)
 //  pMenuTopRow: The screen row to use for the menu's top row
@@ -969,8 +974,8 @@ function DDFileAreaChooser_CreateLightbarMenu(pDirHeirarchyObj, pHeirarchyLevel,
 		fileDirMenu.idxWithUserSelectedDir = -1;
 		for (var i = 0; i < pDirHeirarchyObj.length; ++i)
 		{
-			// Each object will have either an "items" or a "dirObj"
-			if (!pDirHeirarchyObj[i].hasOwnProperty("dirObj"))
+			// Each object will have either an "items" or a "subItemObj"
+			if (!pDirHeirarchyObj[i].hasOwnProperty("subItemObj"))
 			{
 				retObj.allDirs = false;
 				fileDirMenu.allDirs = false;
@@ -1009,14 +1014,14 @@ function DDFileAreaChooser_CreateLightbarMenu(pDirHeirarchyObj, pHeirarchyLevel,
 					//adjustDescLen = true;
 				}
 			}
-			else if (this.dirHeirarchyObj[pItemIdx].hasOwnProperty("dirObj"))
+			else if (this.dirHeirarchyObj[pItemIdx].hasOwnProperty("subItemObj"))
 			{
-				if (numItems = this.dirHeirarchyObj[pItemIdx].dirObj.hasOwnProperty("files"))
-					numItems = this.dirHeirarchyObj[pItemIdx].dirObj.files; // Added in Synchronet 3.18c
+				if (numItems = this.dirHeirarchyObj[pItemIdx].subItemObj.hasOwnProperty("files"))
+					numItems = this.dirHeirarchyObj[pItemIdx].subItemObj.files; // Added in Synchronet 3.18c
 				else
 				{
-					var dirIdx = this.dirHeirarchyObj[pItemIdx].dirObj.index;
-					numItems = this.areaChooser.fileDirListPrintfInfo[this.dirHeirarchyObj[pItemIdx].libIdx].fileCounts[dirIdx];
+					var dirIdx = this.dirHeirarchyObj[pItemIdx].subItemObj.index;
+					numItems = this.areaChooser.fileDirListPrintfInfo[this.dirHeirarchyObj[pItemIdx].topLevelIdx].fileCounts[dirIdx];
 				}
 			}
 
@@ -1024,7 +1029,7 @@ function DDFileAreaChooser_CreateLightbarMenu(pDirHeirarchyObj, pHeirarchyLevel,
 			menuItemObj.text = (showDirMark ? "*" : " ");
 			if (this.allowANSI)
 			{
-				menuItemObj.text += format(this.areaChooser.fileDirListPrintfInfo[this.dirHeirarchyObj[pItemIdx].libIdx].printfStr, pItemIdx+1,
+				menuItemObj.text += format(this.areaChooser.fileDirListPrintfInfo[this.dirHeirarchyObj[pItemIdx].topLevelIdx].printfStr, pItemIdx+1,
 										   areaDesc.substr(0, this.areaChooser.descFieldLen), numItems);
 			}
 			else
@@ -1082,7 +1087,7 @@ function DDFileAreaChooser_CreateLightbarMenu(pDirHeirarchyObj, pHeirarchyLevel,
 // Parameters:
 //  pDirHeirarchyObj: An object from this.lib_list, which is set up with a
 //                    'name' property and either an 'items' property if it
-//                    has sub-items or a 'dirObj' property if it's a file
+//                    has sub-items or a 'subItemObj' property if it's a file
 //                    directory
 //  pNumItemsWidthOverride: Optional - An override for the width of the # items column. Mainly for the traditional (non-lightbar) UI
 //                          If this is not specified/null, then this.areaNumLen will be used.
@@ -1168,8 +1173,23 @@ function DDFileAreaChooser_writeKeyHelpLine()
 // For the DDFileAreaChooser class: Reads the configuration file.
 function DDFileAreaChooser_ReadConfigFile()
 {
-	// Open the configuration file
-	var cfgFile = new File(js.exec_dir + "DDFileAreaChooser.cfg");
+	// Use "DDFileAreaChooser.cfg" if that exists; otherwise, use
+	// "DDFileAreaChooser.example.cfg" (the stock config file)
+	var cfgFilenameBase = "DDFileAreaChooser.cfg";
+	var cfgFilename = file_cfgname(system.mods_dir, cfgFilenameBase);
+	if (!file_exists(cfgFilename))
+		cfgFilename = file_cfgname(system.ctrl_dir, cfgFilenameBase);
+	if (!file_exists(cfgFilename))
+		cfgFilename = file_cfgname(js.exec_dir, cfgFilenameBase);
+	// If the configuration file hasn't been found, look to see if there's a DDFileAreaChooser.example.cfg file
+	// available in the same directory 
+	if (!file_exists(cfgFilename))
+	{
+		var exampleFileName = file_cfgname(js.exec_dir, "DDFileAreaChooser.example.cfg");
+		if (file_exists(exampleFileName))
+			cfgFilename = exampleFileName;
+	}
+	var cfgFile = new File(cfgFilename);
 	if (cfgFile.open("r"))
 	{
 		var behaviorSettings = cfgFile.iniGetObject("BEHAVIOR");
@@ -2035,190 +2055,6 @@ function findNextLibIdxWithDirs(pLibIdx)
 	return nextLibIdx;
 }
 
-// Creates and returns an array which is a sort of recursive array structure
-// of objects. Each entry in the array will be an object with a 'name' property
-// and either an 'items' property if it has sub-items or a 'dirObj' property
-// if it's a Synchronet file directory. The last item in the array chain
-// will have the 'dirObj' property.
-//
-// Parameters:
-//  pCollapsing: Boolean - Whether or not to use directory collapsing
-//  pCollapsingSeparator: The separator used to split file lib/dir names when using collapsing
-function getFileDirHeirarchy(pCollapsing, pCollapsingSeparator)
-{
-	var fileDirHeirarchy = [];
-	if (pCollapsing)
-	{
-		// First, check the library descriptions for strings before the separator character
-		var libsBeforeSeparator = {}; // Will be an object indexed by description with a count as the value
-		for (var libIdx = 0; libIdx < file_area.lib_list.length; ++libIdx)
-		{
-			var libDesc = skipsp(truncsp(file_area.lib_list[libIdx].description));
-			var sepIdx = file_area.lib_list[libIdx].description.indexOf(pCollapsingSeparator);
-			if (sepIdx > -1)
-			{
-				var libDescBeforeSep = file_area.lib_list[libIdx].description.substr(0, sepIdx);
-				if (libsBeforeSeparator.hasOwnProperty(libDescBeforeSep))
-					libsBeforeSeparator[libDescBeforeSep] += 1;
-				else
-					libsBeforeSeparator[libDescBeforeSep] = 1;
-			}
-		}
-
-		// A regular expression intended to be used for replacing all double instances
-		// of the separator character with a single instance
-		var doubleSepCharGlobalRegex = new RegExp(pCollapsingSeparator + pCollapsingSeparator, "g"); // "gi" for global case insensitive
-
-		// Build the heirarchy
-		// For each library, go through each directory
-		for (var libIdx = 0; libIdx < file_area.lib_list.length; ++libIdx)
-		{
-			for (var dirIdx = 0; dirIdx < file_area.lib_list[libIdx].dir_list.length; ++dirIdx)
-			{
-				// 1. Join the library name & directory name separated by a colon
-				// 2. Split on colons into an array (of names)
-				// 3. Go through the array of names and build the appropriate structure in fileDirHeirarchy.
-				// TODO: Initially, I thought of having collapsing restricted to
-				// areas where there are no spaces before or after the :, but that
-				// isn't how I did it before..
-				/*
-				var libAndDirName = file_area.lib_list[libIdx].description + ":" + file_area.lib_list[libIdx].dir_list[dirIdx].description;
-				var nameArray = splitStrNoSpacesBeforeSeparator(libAndDirName, pCollapsingSeparator);
-				*/
-				var libDesc = skipsp(truncsp(file_area.lib_list[libIdx].description));
-				var dirDesc = skipsp(truncsp(file_area.lib_list[libIdx].dir_list[dirIdx].description));
-				var libAndDirName = libDesc + pCollapsingSeparator + dirDesc;
-				var nameArray = removeEmptyStrsFromArray(splitStringOnSingleCharByItself(libAndDirName, pCollapsingSeparator));
-				var arrayToSearch = fileDirHeirarchy;
-				// If the library description has the separator character and the first element
-				// only appears once, then use the whole library name as one name
-				var sepCountInLibDesc = countSubstrInStr(libDesc, pCollapsingSeparator);
-				var startIdx = 0;
-				if (sepCountInLibDesc > 0 && libsBeforeSeparator.hasOwnProperty(nameArray[0]) && libsBeforeSeparator[nameArray[0]] == 1)
-					startIdx += sepCountInLibDesc;
-				for (var i = startIdx; i < nameArray.length; ++i)
-				{
-					//var name = skipsp(truncsp(nameArray[i]));
-					var name = "";
-					if (startIdx > 0 && i == startIdx)
-						name = libDesc;
-					else
-						name = skipsp(truncsp(nameArray[i]));
-					// Replace any double instances of the separator character with
-					// a single instance
-					name = name.replace(doubleSepCharGlobalRegex, pCollapsingSeparator);
-					// Look for this one in the heirarchy; if not found, add it.
-					// Look for an entry in the array that matches the name and has its own "items" array
-					var heirarchyIdx = -1;
-					for (var j = 0; j < arrayToSearch.length; ++j)
-					{
-						if (arrayToSearch[j].name == name && arrayToSearch[j].hasOwnProperty("items"))
-						{
-								heirarchyIdx = j;
-								break;
-						}
-					}
-					if (heirarchyIdx > -1)
-						arrayToSearch = arrayToSearch[heirarchyIdx].items;
-					else
-					{
-						// If we're at the last name, add a dirObj item; otherwise, add
-						// an items array.
-						if (i == nameArray.length - 1)
-						{
-							arrayToSearch.push(
-							{
-								name: name,
-								altName: file_area.lib_list[libIdx].dir_list[dirIdx].name,
-								libIdx: libIdx,
-								dirObj: file_area.lib_list[libIdx].dir_list[dirIdx]
-							});
-						}
-						else
-						{
-							arrayToSearch.push(
-							{
-								name: name,
-								altName: name,
-								libIdx: libIdx,
-								items: []
-							});
-							arrayToSearch = arrayToSearch[arrayToSearch.length-1].items;
-						}
-					}
-				}
-			}
-		}
-	}
-	else
-	{
-		// No collapsing. Have fileDirHeirarchy match the lib/dir structure
-		// configured on the BBS.
-		for (var libIdx = 0; libIdx < file_area.lib_list.length; ++libIdx)
-		{
-			fileDirHeirarchy.push(
-			{
-					name: file_area.lib_list[libIdx].description,
-					altName: file_area.lib_list[libIdx].name,
-					libIdx: libIdx,
-					items: []
-			});
-			var libIdxInHeirarchy = fileDirHeirarchy.length - 1;
-			for (var dirIdx = 0; dirIdx < file_area.lib_list[libIdx].dir_list.length; ++dirIdx)
-			{
-				fileDirHeirarchy[libIdxInHeirarchy].items.push(
-				{
-					name: file_area.lib_list[libIdx].dir_list[dirIdx].description,
-					altName: file_area.lib_list[libIdx].dir_list[dirIdx].name,
-					libIdx: libIdx,
-					dirObj: file_area.lib_list[libIdx].dir_list[dirIdx]
-				});
-			}
-		}
-	}
-	return fileDirHeirarchy;
-}
-
-// Splits a string on a separator, except when there's a space after a
-// separator; if there's a space after a the separator, both parts of the
-// string before & after the separator are included as one item in the
-// resulting array. For instance, "Magic: The Gathering:Information"
-// would be split up such that "Magic: The Gathering" would be one string
-// and "Information" would be another, whereas "Mirror:Simtel:DOS:Games"
-// would all be split up into 4 strings
-function splitStrNoSpacesBeforeSeparator(pStr, pSep)
-{
-	var strArray = [];
-	var splitArray = pStr.split(pSep);
-	for (var i = 0; i < splitArray.length; ++i)
-	{
-		if (i < splitArray.length-1 && splitArray[i+1].indexOf(" ") == 0)
-			strArray.push(splitArray[i] + ":" + splitArray[++i]);
-		else
-			strArray.push(splitArray[i]);
-	}
-	return strArray;
-}
-
-// Returns the number of times a substring apears in a string
-//
-// Parameters:
-//  pStr: The string to search
-//  pSubstr: The substring inside the string to count
-//
-// Return: The number of times the substring appears in the string
-function countSubstrInStr(pStr, pSubstr)
-{
-	var substrCount = 0;
-	var substrIdx = pStr.indexOf(pSubstr);
-	while (substrIdx > -1)
-	{
-		++substrCount;
-		substrIdx = pStr.indexOf(pSubstr, substrIdx+1);
-	}
-	return substrCount;
-}
-
 // Given a file lib/directory heirarchy object built by this module, this
 // function returns whether it contains the user's currently selected file
 // directory.
@@ -2227,7 +2063,7 @@ function countSubstrInStr(pStr, pSubstr)
 //  pDirHeirarchyObj: An object from this.lib_list, which is
 //                    set up with a 'name' property and either
 //                    an 'items' property if it has sub-items
-//                    or a 'dirObj' property if it's a file
+//                    or a 'subItemObj' property if it's a file
 //                    directory
 //
 // Return value: Whether or not the given structure has the user's currently selected file directory
@@ -2244,9 +2080,9 @@ function fileDirStructureHasCurrentUserFileDir(pDirHeirarchyObj)
 	}
 	else
 	{
-		// This is one of the objects with 'name' and an 'items' or 'dirObj'
-		if (pDirHeirarchyObj.hasOwnProperty("dirObj"))
-			currentUserFileDirFound = (bbs.curdir_code == pDirHeirarchyObj.dirObj.code);
+		// This is one of the objects with 'name' and an 'items' or 'subItemObj'
+		if (pDirHeirarchyObj.hasOwnProperty("subItemObj"))
+			currentUserFileDirFound = (bbs.curdir_code == pDirHeirarchyObj.subItemObj.code);
 		else if (pDirHeirarchyObj.hasOwnProperty("items"))
 			currentUserFileDirFound = fileDirStructureHasCurrentUserFileDir(pDirHeirarchyObj.items);
 	}
@@ -2261,7 +2097,7 @@ function fileDirStructureHasCurrentUserFileDir(pDirHeirarchyObj)
 //  pDirHeirarchyObj: An object from this.lib_list, which is
 //                    set up with a 'name' property and either
 //                    an 'items' property if it has sub-items
-//                    or a 'dirObj' property if it's a file
+//                    or a 'subItemObj' property if it's a file
 //                    directory
 //
 // Return value: The length of the longest number of items in the heirarchy
@@ -2280,6 +2116,7 @@ function maxNumItemsWidthInHeirarchy(pDirHeirarchyObj)
 	return maxNumItemsWidth;
 }
 
+/*
 // Removes empty strings from an array - Given an array,
 // makes a new array with only the non-empty strings and returns it.
 function removeEmptyStrsFromArray(pArray)
@@ -2292,3 +2129,4 @@ function removeEmptyStrsFromArray(pArray)
 	}
 	return newArray;
 }
+*/
