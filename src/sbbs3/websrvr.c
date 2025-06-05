@@ -7545,6 +7545,9 @@ void web_server(void* arg)
 			if (client_socket == INVALID_SOCKET)
 				continue;
 
+			if (acc_type != NULL && !strcmp(acc_type, "TLS"))
+				session->is_tls = true;
+
 			if (startup->socket_open != NULL)
 				startup->socket_open(startup->cbdata, true);
 
@@ -7561,8 +7564,8 @@ void web_server(void* arg)
 				        , client_socket, host_ip, startup->max_clients);
 				if (!len_503)
 					len_503 = strlen(error_503);
-				if (sendsocket(client_socket, error_503, len_503) != len_503)
-					errprintf(LOG_ERR, WHERE, "%04d FAILED sending error 503", client_socket);
+				if (session->is_tls == false && sendsocket(client_socket, error_503, len_503) != len_503)
+					errprintf(LOG_WARNING, WHERE, "%04d FAILED sending error 503", client_socket);
 				close_socket(&client_socket);
 				continue;
 			}
@@ -7581,8 +7584,6 @@ void web_server(void* arg)
 
 			host_port = inet_addrport(&client_addr);
 
-			if (acc_type != NULL && !strcmp(acc_type, "TLS"))
-				session->is_tls = true;
 			lprintf(LOG_INFO, "%04d %s [%s] Connection accepted on %s port %u from port %u"
 			        , client_socket
 			        , session->is_tls ? "HTTPS":"HTTP"
