@@ -107,6 +107,7 @@ const char *ANSI_Terminal::attrstr(unsigned atr)
 	return "-Invalid use of ansi()-";
 }
 
+#if 0 // Used by disabled telemate/qmodem code below
 static uint32_t
 popcnt(const uint32_t val)
 {
@@ -119,6 +120,7 @@ popcnt(const uint32_t val)
 	i *= 0x01010101;
 	return  i >> 24;
 }
+#endif
 
 // Was ansi() and ansi_attr()
 char* ANSI_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t strsz)
@@ -165,8 +167,10 @@ char* ANSI_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t st
 	}
 
 	lastret = strlcpy(str, "\033[", strsz);
+
+// Not supported by Telemate or Qmodem, which we do support
+#if 0
 	uint32_t changed_mask = (curatr ^ atr) & (HIGH | BLINK | REVERSED | UNDERLINE | CONCEALED);
-	// TODO: CSI 0 m does *NOT* set 
 	if (changed_mask) {
 		uint32_t set = popcnt(changed_mask & atr);
 		uint32_t clear = popcnt(changed_mask & ~atr);
@@ -187,10 +191,24 @@ char* ANSI_Terminal::attrstr(unsigned atr, unsigned curatr, char* str, size_t st
 
 		if (set_only_weight < set_clear_weight) {
 			lastret = strlcat(str, "0;", strsz);
-			curatr &= ~0x77;
+			curatr &= ~(0x77 | HIGH | BLINK | REVERSED | UNDERLINE | CONCEALED);
 			curatr |= ANSI_NORMAL;
 		}
 	}
+#else
+	// TODO: Detect or configure this.
+	// If turning off any of the special bits, reset
+	// to normal rather than use the turn off code.
+	if (((!(atr & HIGH)) && (curatr & HIGH)) ||
+	    ((!(atr & BLINK)) && (curatr & BLINK)) ||
+	    ((!(atr & REVERSED)) && (curatr & REVERSED)) ||
+	    ((!(atr & UNDERLINE)) && (curatr & UNDERLINE)) ||
+	    ((!(atr & CONCEALED)) && (curatr & CONCEALED))) {
+		lastret = strlcat(str, "0;", strsz);
+		curatr &= ~(0x77 | HIGH | BLINK | REVERSED | UNDERLINE | CONCEALED);
+		curatr |= ANSI_NORMAL;
+	}
+#endif
 	if (atr & HIGH) {                     /* special attributes */
 		if (!(curatr & HIGH))
 			lastret = strlcat(str, "1;", strsz);
