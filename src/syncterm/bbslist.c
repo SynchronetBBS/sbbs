@@ -1182,7 +1182,7 @@ enum {
 	BBSLIST_FIELD_DATA_BITS,
 	BBSLIST_FIELD_PARITY,
 	BBSLIST_FIELD_TELNET_NO_BINARY,
-	BBSLIST_FIELD_TELNET_DEFERED_NEGOTIATION,
+	BBSLIST_FIELD_TELNET_DEFERRED_NEGOTIATION,
 };
 
 void
@@ -1277,8 +1277,8 @@ build_edit_list(struct bbslist *item, char opt[][69], int *optmap, char **opts, 
 		sprintf(opt[i++], "Binmode Broken    %s", item->telnet_no_binary ? "Yes" : "No");
 	}
 	if (item->conn_type == CONN_TYPE_TELNET || item->conn_type == CONN_TYPE_TELNETS) {
-		optmap[i] = BBSLIST_FIELD_TELNET_DEFERED_NEGOTIATION;
-		sprintf(opt[i++], "Defered Negotiate %s", item->defer_telnet_negotiation ? "Yes" : "No");
+		optmap[i] = BBSLIST_FIELD_TELNET_DEFERRED_NEGOTIATION;
+		sprintf(opt[i++], "Defer Negotiate   %s", item->defer_telnet_negotiation ? "Yes" : "No");
 	}
 	optmap[i] = BBSLIST_FIELD_SCREEN_MODE;
 	sprintf(opt[i++], "Screen Mode       %s", screen_modes[item->screen_mode]);
