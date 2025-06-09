@@ -4368,6 +4368,7 @@ function ReadUserSettingsFile(pSlyEdCfgObj)
 {
 	// Initialize the settings object with the default settings
 	var userSettingsObj = {
+		wrapQuoteLines: pSlyEdCfgObj.reWrapQuoteLines,
 		enableTaglines: pSlyEdCfgObj.enableTaglines,
 		promptSpellCheckOnSave: false,
 		useQuoteLineInitials: pSlyEdCfgObj.useQuoteLineInitials,
@@ -4437,7 +4438,9 @@ function ReadUserSettingsFile(pSlyEdCfgObj)
 
 				if (settingsMode == "behavior")
 				{
-					if (settingUpper == "ENABLETAGLINES")
+					if (settingUpper == "WRAPQUOTELINES")
+						userSettingsObj.wrapQuoteLines = (valueUpper == "TRUE");
+					else if (settingUpper == "ENABLETAGLINES")
 						userSettingsObj.enableTaglines = (valueUpper == "TRUE");
 					else if (settingUpper == "PROMPTSPELLCHECKONSAVE")
 						userSettingsObj.promptSpellCheckOnSave = (valueUpper == "TRUE");
@@ -4485,7 +4488,8 @@ function WriteUserSettingsFile(pUserSettingsObj)
 	var userSettingsFile = new File(gUserSettingsFilename);
 	if (userSettingsFile.open("w"))
 	{
-		const behaviorBoolSettingNames = ["enableTaglines",
+		const behaviorBoolSettingNames = ["wrapQuoteLines",
+		                                  "enableTaglines",
 		                                  "promptSpellCheckOnSave",
 		                                  "useQuoteLineInitials",
 		                                  "indentQuoteLinesWithInitials",
