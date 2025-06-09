@@ -2004,7 +2004,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 				changed = 1;
 				iniSetBool(&inifile, itemname, "TelnetBrokenTextmode", item->telnet_no_binary, &ini_style);
 				break;
-			case BBSLIST_FIELD_TELNET_DEFERED_NEGOTIATION:
+			case BBSLIST_FIELD_TELNET_DEFERRED_NEGOTIATION:
 				item->defer_telnet_negotiation = !item->defer_telnet_negotiation;
 				changed = 1;
 				iniSetBool(&inifile, itemname, "TelnetDeferNegotiate", item->defer_telnet_negotiation, &ini_style);
