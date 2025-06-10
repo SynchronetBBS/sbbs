@@ -1,6 +1,6 @@
                          SlyEdit message editor
                               Version 1.92
-                        Release date: 2025-06-09
+                        Release date: 2025-06-10
 
                                   by
 
@@ -1001,9 +1001,11 @@ message to lower-case and comparing them with the words in the dictionary.
 ===================
 Version  Date         Description
 -------  ----         -----------
-1.92     2025-06-09   Added a new user setting to toggle whether to wrap quote
+1.92     2025-06-10   Added a new user setting to toggle whether to wrap quote
                       lines to the terminal width. Turning this off can help
-                      preserve message formatting when quoting.
+                      preserve message formatting when quoting. Also, added
+                      a user toggle option for whether to join wrapped quote
+                      lines.
                       Also, the included configuration file is now
                       SlyEdit.example.cfg. You can copy it to SlyEdit.cfg to
                       make your own customizations. slyedcfg.js will copy it

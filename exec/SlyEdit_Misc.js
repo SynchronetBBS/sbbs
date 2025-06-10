@@ -3024,14 +3024,17 @@ function toggleAttr(pAttrType, pAttrs, pNewAttr)
 //  pTrimSpacesFromQuoteLines: Whether or not to trim spaces from quote lines (for when people
 //                             indent the first line of their reply, etc.).  Defaults to true.
 //  pMaxWidth: The maximum width of the lines
+//  pJoinWrappedLineWithNextLine: Optional boolean - Whether or not to join the next line to wrapped lines.
+//                                This defaults to true (this is the default behavior).
 //
 // Return value: The wrapped text lines, as an array of strings
-function wrapTextLinesForQuoting(pTextLines, pQuotePrefix, pIndentQuoteLines, pTrimSpacesFromQuoteLines, pMaxWidth)
+function wrapTextLinesForQuoting(pTextLines, pQuotePrefix, pIndentQuoteLines, pTrimSpacesFromQuoteLines, pMaxWidth, pJoinWrappedLineWithNextLine)
 {
 	var quotePrefix = typeof(pQuotePrefix) === "string" ? pQuotePrefix : " > ";
 	var maxLineWidth = typeof(pMaxWidth) === "number" && pMaxWidth > 0 ? pMaxWidth : console.screen_columns - 1;
 	var indentQuoteLines = typeof(pIndentQuoteLines) === "boolean" ? pIndentQuoteLines : true;
 	var trimSpacesFromQuoteLines = typeof(pTrimSpacesFromQuoteLines) === "boolean" ? pTrimSpacesFromQuoteLines : true;
+	var joinWrappedLineWithNextLine = typeof(pJoinWrappedLineWithNextLine) === "boolean" ? pJoinWrappedLineWithNextLine : true;
 
 	// Get information about the various 'sections'/paragraphs of the message
 	var msgSections = getMsgSections(pTextLines);
@@ -3086,94 +3089,132 @@ function wrapTextLinesForQuoting(pTextLines, pQuotePrefix, pIndentQuoteLines, pT
 				thisSectionPrefix = thisSectionPrefix.replace(/^\s+/, ""); // Remove any leading whitespace
 		}
 
-		// Build a long string containing the current section's text
-		var arbitaryLongLineLen = 120; // An arbitrary line length (for determining when to add a CRLF)
-		var mostOfConsoleWidth = Math.floor(console.screen_columns * 0.85); // For checking when to add a CRLF
-		var halfConsoleWidth = Math.floor(console.screen_columns * 0.5); // For checking when to add a CRLF
-		var sectionText = "";
-		for (var textLineIdx = msgSections[i].begLineIdx; textLineIdx <= msgSections[i].endLineIdx; ++textLineIdx)
+		// See if any of the text has UTF-8 characters
+		var textIsUTF8 = false;
+		if (pTextLines.length > 0)
 		{
-			// If the line is a blank line, then count how many blank lines there are in a row
-			// and append that many CRLF strings to the section text
-			if (stringIsEmptyOrOnlyWhitespace(pTextLines[textLineIdx]))
-				sectionText += "\r\n";
-			else
+			for (var textLineIdx = msgSections[i].begLineIdx; textLineIdx <= msgSections[i].endLineIdx; ++textLineIdx)
+				textIsUTF8 = str_is_utf8(pTextLines[textLineIdx]);
+		}
+
+		// Wrapping will be different if we want to join wrapped lines together or not
+		if (joinWrappedLineWithNextLine)
+		{
+			// Build a long string containing the current section's text
+			var arbitraryLongLineLen = 120; // An arbitrary line length (for determining when to add a CRLF)
+			var mostOfConsoleWidth = Math.floor(console.screen_columns * 0.85); // For checking when to add a CRLF
+			var halfConsoleWidth = Math.floor(console.screen_columns * 0.5); // For checking when to add a CRLF
+			var sectionText = "";
+			for (var textLineIdx = msgSections[i].begLineIdx; textLineIdx <= msgSections[i].endLineIdx; ++textLineIdx)
 			{
-				var thisLineTrimmed = pTextLines[textLineIdx].trim();
-				if ((nextSectionPrefix != "" && thisLineTrimmed == nextSectionPrefix.trim()) || (previousSectionPrefix != "" && thisLineTrimmed == previousSectionPrefix.trim()))
+				// If the line is a blank line, then count how many blank lines there are in a row
+				// and append that many CRLF strings to the section text
+				if (stringIsEmptyOrOnlyWhitespace(pTextLines[textLineIdx]))
 					sectionText += "\r\n";
 				else
 				{
-					// Trim leading & trailing whitespace from the text & append it to the section text
-					//sectionText += pTextLines[textLineIdx].substr(originalPrefix.length).trim() + " ";
-					// substrWithAttrCodes() is defined in dd_lightbar_menu.js
-					var len = pTextLines[textLineIdx].length - originalPrefix.length;
-					//sectionText += substrWithAttrCodes(pTextLines[textLineIdx], originalPrefix.length, len).trim() + " ";
-					var currentLineText = substrWithAttrCodes(pTextLines[textLineIdx], originalPrefix.length, len);
-					if (trimSpacesFromQuoteLines)
-						currentLineText = currentLineText.trim();
-					//sectionText += currentLineText + " ";
-					sectionText += currentLineText;
-					// If the next line isn't blank and the current line is less than half of the
-					// terminal width, append a \r\n to the end (the line may be this short on purpose)
-					var numLinesInSection = msgSections[i].endLineIdx - msgSections[i].begLineIdx + 1;
-					// See if the next line is blank or is a tear/origin line (starting with "--- " or "Origin").
-					// In these situations, we want (or may want) to add a hard newline (CRLF: \r\n) at the end.
-					var nextLineIsBlank = false;
-					var nextLineIsOriginOrTearLine = false;
-					if (textLineIdx < msgSections[i].endLineIdx)
-					{
-						var nextLineTrimmed = pTextLines[textLineIdx+1].trim();
-						nextLineIsBlank = (console.strlen(nextLineTrimmed) == 0);
-						if (!nextLineIsBlank)
-							nextLineIsOriginOrTearLine = msgLineIsTearLineOrOriginLine(nextLineTrimmed);
-					}
-					// Get the length of the current line (if it needs wrapping, then wrap it & get the
-					// length of the last line after wrapping), so that if that length is short, we might
-					// put a CRLF at the end to signify the end of the paragraph/section
-					var lineLastLength = 0;
-					var currentLineScreenLen = console.strlen(pTextLines[textLineIdx]);
-					if (currentLineScreenLen < console.screen_columns - 1)
-						lineLastLength = currentLineScreenLen;
+					var thisLineTrimmed = pTextLines[textLineIdx].trim();
+					if ((nextSectionPrefix != "" && thisLineTrimmed == nextSectionPrefix.trim()) || (previousSectionPrefix != "" && thisLineTrimmed == previousSectionPrefix.trim()))
+						sectionText += "\r\n";
 					else
 					{
-						var currentLine = pTextLines[textLineIdx];
+						// Trim leading & trailing whitespace from the text & append it to the section text
+						//sectionText += pTextLines[textLineIdx].substr(originalPrefix.length).trim() + " ";
+						// substrWithAttrCodes() is defined in dd_lightbar_menu.js
+						var len = pTextLines[textLineIdx].length - originalPrefix.length;
+						//sectionText += substrWithAttrCodes(pTextLines[textLineIdx], originalPrefix.length, len).trim() + " ";
+						var currentLineText = substrWithAttrCodes(pTextLines[textLineIdx], originalPrefix.length, len);
 						if (trimSpacesFromQuoteLines)
-							currentLine = currentLine.trim();
-						var paragraphLines = lfexpand(word_wrap(currentLine, console.screen_columns-1, null, true)).split("\r\n");
-						paragraphLines.pop(); // There will be an extra empty line at the end; remove it
-						if (paragraphLines.length > 0)
-							lineLastLength = console.strlen(paragraphLines[paragraphLines.length-1]);
+							currentLineText = currentLineText.trim();
+						//sectionText += currentLineText + " ";
+						sectionText += currentLineText;
+						// If the next line isn't blank and the current line is less than half of the
+						// terminal width, append a \r\n to the end (the line may be this short on purpose)
+						var numLinesInSection = msgSections[i].endLineIdx - msgSections[i].begLineIdx + 1;
+						// See if the next line is blank or is a tear/origin line (starting with "--- " or "Origin").
+						// In these situations, we want (or may want) to add a hard newline (CRLF: \r\n) at the end.
+						var nextLineIsBlank = false;
+						var nextLineIsOriginOrTearLine = false;
+						if (textLineIdx < msgSections[i].endLineIdx)
+						{
+							var nextLineTrimmed = pTextLines[textLineIdx+1].trim();
+							nextLineIsBlank = (console.strlen(nextLineTrimmed) == 0);
+							if (!nextLineIsBlank)
+								nextLineIsOriginOrTearLine = msgLineIsTearLineOrOriginLine(nextLineTrimmed);
+						}
+						// Get the length of the current line (if it needs wrapping, then wrap it & get the
+						// length of the last line after wrapping), so that if that length is short, we might
+						// put a CRLF at the end to signify the end of the paragraph/section
+						var lineLastLength = 0;
+						var currentLineScreenLen = console.strlen(pTextLines[textLineIdx]);
+						if (currentLineScreenLen < console.screen_columns - 1)
+							lineLastLength = currentLineScreenLen;
+						else
+						{
+							var currentLine = pTextLines[textLineIdx];
+							if (trimSpacesFromQuoteLines)
+								currentLine = currentLine.trim();
+							var paragraphLines = lfexpand(word_wrap(currentLine, console.screen_columns-1, null, true, textIsUTF8)).split("\r\n");
+							paragraphLines.pop(); // There will be an extra empty line at the end; remove it
+							if (paragraphLines.length > 0)
+								lineLastLength = console.strlen(paragraphLines[paragraphLines.length-1]);
+						}
+						// Put a CRLF at the end in certain conditions
+						var lineScreenLen = console.strlen(pTextLines[textLineIdx]);
+						if (nextLineIsOriginOrTearLine || nextLineIsBlank)
+							sectionText += "\r\n";
+						// Append a CRLF if the line isn't blank and its length is less than 85% of the user's terminal width
+						// ..and if the text line length is originally longer than an arbitrary length (bit arbitrary, but if a line is that long, then
+						// it's probably its own paragraph
+						else if (lineScreenLen > arbitraryLongLineLen && numLinesInSection > 1 && !nextLineIsBlank && lineLastLength <= mostOfConsoleWidth)
+							sectionText += "\r\n";
+						else if (lineScreenLen <= halfConsoleWidth && !nextLineIsBlank)
+							sectionText += "\r\n";					
+						else
+							sectionText += " ";
 					}
-					// Put a CRLF at the end in certain conditions
-					var lineScreenLen = console.strlen(pTextLines[textLineIdx]);
-					if (nextLineIsOriginOrTearLine || nextLineIsBlank)
-						sectionText += "\r\n";
-					// Append a CRLF if the line isn't blank and its length is less than 85% of the user's terminal width
-					// ..and if the text line length is originally longer than an arbitrary length (bit arbitrary, but if a line is that long, then
-					// it's probably its own paragraph
-					else if (lineScreenLen > arbitaryLongLineLen && numLinesInSection > 1 && !nextLineIsBlank && lineLastLength <= mostOfConsoleWidth)
-						sectionText += "\r\n";
-					else if (lineScreenLen <= halfConsoleWidth && !nextLineIsBlank)
-						sectionText += "\r\n";
-					else
-						sectionText += " ";
 				}
 			}
+			// Remove the trailing space from the end, and wrap the section's text according to the length
+			// with the current prefix, then append the re-wrapped text lines to wrappedTextLines
+			sectionText = sectionText.replace(/ $/, "");
+			var textWrapLen = maxLineWidth - thisSectionPrefix.length;
+			var msgSectionLines = lfexpand(word_wrap(sectionText, textWrapLen, null, true, textIsUTF8)).split("\r\n");
+			msgSectionLines.pop(); // There will be an extra empty line at the end; remove it
+			for (var wrappedSectionIdx = 0; wrappedSectionIdx < msgSectionLines.length; ++wrappedSectionIdx)
+			{
+				// Prepend the text line with the section prefix only if the line isn't blank
+				if (console.strlen(msgSectionLines[wrappedSectionIdx]) > 0)
+					wrappedTextLines.push(thisSectionPrefix + msgSectionLines[wrappedSectionIdx]);
+				else
+					wrappedTextLines.push(msgSectionLines[wrappedSectionIdx]);
+			}
 		}
-		// Remove the trailing space from the end, and wrap the section's text according to the length
-		// with the current prefix, then append the re-wrapped text lines to wrappedTextLines
-		sectionText = sectionText.replace(/ $/, "");
-		var textWrapLen = maxLineWidth - thisSectionPrefix.length;
-		var msgSectionLines = lfexpand(word_wrap(sectionText, textWrapLen, null, true)).split("\r\n");
-		msgSectionLines.pop(); // There will be an extra empty line at the end; remove it
-		for (var wrappedSectionIdx = 0; wrappedSectionIdx < msgSectionLines.length; ++wrappedSectionIdx)
+		else
 		{
-			// Prepend the text line with the section prefix only if the line isn't blank
-			if (console.strlen(msgSectionLines[wrappedSectionIdx]) > 0)
-				wrappedTextLines.push(thisSectionPrefix + msgSectionLines[wrappedSectionIdx]);
-			else
-				wrappedTextLines.push(msgSectionLines[wrappedSectionIdx]);
+			// joinWrappedLineWithNextLine is false - Wrap lines but don't join them with the next line
+			for (var textLineIdx = msgSections[i].begLineIdx; textLineIdx <= msgSections[i].endLineIdx; ++textLineIdx)
+			{
+				var textLine = pTextLines[textLineIdx].replace(/ $/, "");
+				var textWrapLen = console.strlen(textLine) - thisSectionPrefix.length;
+				if (textWrapLen < 0)
+					textWrapLen = 0;
+				var lines = lfexpand(word_wrap(textLine, textWrapLen, null, true, textIsUTF8)).split("\r\n");
+				lines.pop(); // There will be an extra empty line at the end; remove it
+				for (var linesIdx = 0; linesIdx < lines.length; ++linesIdx)
+				{
+					// Prepend the text line with the section prefix only if the line isn't blank
+					if (console.strlen(lines[linesIdx]) > 0)
+						wrappedTextLines.push(thisSectionPrefix + lines[linesIdx]);
+					else
+						wrappedTextLines.push(lines[linesIdx]);
+				}
+
+				// If the line is a blank line, then count how many blank lines there are in a row
+				// and append that many CRLF strings to the section text
+				//if (stringIsEmptyOrOnlyWhitespace(pTextLines[textLineIdx]))
+				//	sectionText += "\r\n";
+			}
 		}
 	}
 	return wrappedTextLines;
@@ -4370,9 +4411,10 @@ function ReadUserSettingsFile(pSlyEdCfgObj)
 {
 	// Initialize the settings object with the default settings
 	var userSettingsObj = {
-		wrapQuoteLines: pSlyEdCfgObj.reWrapQuoteLines,
 		enableTaglines: pSlyEdCfgObj.enableTaglines,
 		promptSpellCheckOnSave: false,
+		wrapQuoteLines: pSlyEdCfgObj.reWrapQuoteLines,
+		joinQuoteLinesWhenWrapping: true,
 		useQuoteLineInitials: pSlyEdCfgObj.useQuoteLineInitials,
 		// The next setting specifies whether or not quote lines should be
 		// prefixed with a space when using author initials.
@@ -4440,12 +4482,14 @@ function ReadUserSettingsFile(pSlyEdCfgObj)
 
 				if (settingsMode == "behavior")
 				{
-					if (settingUpper == "WRAPQUOTELINES")
-						userSettingsObj.wrapQuoteLines = (valueUpper == "TRUE");
-					else if (settingUpper == "ENABLETAGLINES")
+					if (settingUpper == "ENABLETAGLINES")
 						userSettingsObj.enableTaglines = (valueUpper == "TRUE");
 					else if (settingUpper == "PROMPTSPELLCHECKONSAVE")
 						userSettingsObj.promptSpellCheckOnSave = (valueUpper == "TRUE");
+					else if (settingUpper == "WRAPQUOTELINES")
+						userSettingsObj.wrapQuoteLines = (valueUpper == "TRUE");
+					else if (settingUpper == "JOINQUOTELINESWHENWRAPPING")
+						userSettingsObj.joinQuoteLinesWhenWrapping = (valueUpper == "TRUE");
 					else if (settingUpper == "USEQUOTELINEINITIALS")
 						userSettingsObj.useQuoteLineInitials = (valueUpper == "TRUE");
 					else if (settingUpper == "INDENTQUOTELINESWITHINITIALS")
@@ -4490,9 +4534,10 @@ function WriteUserSettingsFile(pUserSettingsObj)
 	var userSettingsFile = new File(gUserSettingsFilename);
 	if (userSettingsFile.open("w"))
 	{
-		const behaviorBoolSettingNames = ["wrapQuoteLines",
-		                                  "enableTaglines",
+		const behaviorBoolSettingNames = ["enableTaglines",
 		                                  "promptSpellCheckOnSave",
+		                                  "wrapQuoteLines",
+		                                  "joinQuoteLinesWhenWrapping",
 		                                  "useQuoteLineInitials",
 		                                  "indentQuoteLinesWithInitials",
 		                                  "trimSpacesFromQuoteLines",

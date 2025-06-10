@@ -121,7 +121,8 @@
  *                              Info box (available from DCT mode) is erased
  * 2025-06-09 Eric Oulashin     Version 1.92
  *                              Added a user-togglable setting in the user settings for whether
- *                              to (re-)wrap quote lines to terminal width
+ *                              to (re-)wrap quote lines to terminal width. Also, a user toggle
+ *                              for whether to join wrapped quote lines.
  */
 
 "use strict";
@@ -213,7 +214,7 @@ if (console.screen_columns < 80)
 
 // Version information
 var EDITOR_VERSION = "1.92";
-var EDITOR_VER_DATE = "2025-06-09";
+var EDITOR_VER_DATE = "2025-06-10";
 
 
 // Program variables
@@ -3348,6 +3349,8 @@ function doQuoteSelection(pCurpos, pCurrentWordLength)
 		doQuoteSelection.trimSpacesFromQuoteLines = gUserSettings.trimSpacesFromQuoteLines;
 	if (typeof(doQuoteSelection.wrapQuoteLines) == "undefined")
 		doQuoteSelection.wrapQuoteLines = gUserSettings.wrapQuoteLines;
+	if (typeof(doQuoteSelection.joinQuoteLinesWhenWrapping) == "undefined")
+		doQuoteSelection.joinQuoteLinesWhenWrapping = gUserSettings.joinQuoteLinesWhenWrapping;
 	
 	// If the setting to re-wrap quote lines is enabled, then do it.
 	// We're re-wrapping the quote lines here in case the user changes their
@@ -3375,7 +3378,9 @@ function doQuoteSelection(pCurpos, pCurrentWordLength)
 		var indentQuoteLinesWithInitialsSettingChanged = (doQuoteSelection.indentQuoteLinesWithInitials != gUserSettings.indentQuoteLinesWithInitials);
 		var trimSpacesFromQuoteLinesSettingChanged = (doQuoteSelection.trimSpacesFromQuoteLines != gUserSettings.trimSpacesFromQuoteLines);
 		var wrapQuoteLinesChanged = (doQuoteSelection.wrapQuoteLines != gUserSettings.wrapQuoteLines);
-		if (!gUserHasOpenedQuoteWindow || quoteLineInitialsSettingChanged || indentQuoteLinesWithInitialsSettingChanged || trimSpacesFromQuoteLinesSettingChanged || wrapQuoteLinesChanged)
+		var joinWrappedQuoteLinesChanged = (doQuoteSelection.joinQuoteLinesWhenWrapping != gUserSettings.joinQuoteLinesWhenWrapping);
+		if (!gUserHasOpenedQuoteWindow || quoteLineInitialsSettingChanged || indentQuoteLinesWithInitialsSettingChanged ||
+		    trimSpacesFromQuoteLinesSettingChanged || wrapQuoteLinesChanged || joinWrappedQuoteLinesChanged)
 		{
 			doQuoteSelection.useQuoteLineInitials = gUserSettings.useQuoteLineInitials;
 			doQuoteSelection.indentQuoteLinesWithInitials = gUserSettings.indentQuoteLinesWithInitials;
@@ -3423,7 +3428,7 @@ function doQuoteSelection(pCurpos, pCurrentWordLength)
 				var quoteWrapCfg = getEditorQuoteWrapCfgFromSCFG();
 				if (quoteWrapCfg.quoteWrapEnabled && quoteWrapCfg.quoteWrapCols > 0)
 					maxQuoteLineLength = quoteWrapCfg.quoteWrapCols;
-				gQuoteLines = wrapTextLinesForQuoting(gQuoteLines, gQuotePrefix, gUserSettings.indentQuoteLinesWithInitials, gUserSettings.trimSpacesFromQuoteLines, maxQuoteLineLength);
+				gQuoteLines = wrapTextLinesForQuoting(gQuoteLines, gQuotePrefix, gUserSettings.indentQuoteLinesWithInitials, gUserSettings.trimSpacesFromQuoteLines, maxQuoteLineLength, gUserSettings.joinQuoteLinesWhenWrapping);
 			}
 			else if (gUserSettings.useQuoteLineInitials)
 			{
@@ -6238,7 +6243,7 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 	// Create the user settings box
 	var optBoxTitle = "Setting                                      Enabled";
 	var optBoxWidth = ChoiceScrollbox_MinWidth();
-	var optBoxHeight = (dictionaryFilenames.length > 1 ? 12 : 11);
+	var optBoxHeight = (dictionaryFilenames.length > 1 ? 13 : 12);
 	var optBoxStartX = gEditLeft + Math.floor((gEditWidth/2) - (optBoxWidth/2));
 	if (optBoxStartX < gEditLeft)
 		optBoxStartX = gEditLeft;
@@ -6257,23 +6262,27 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 	optionBox.setBottomBorderText(bottomBorderText, true, false);
 
 	// Add the options to the option box
+	const optFormatStr = "%-46s [ ]";
 	const checkIdx = 48;
-	const TAGLINE_OPT_INDEX = optionBox.addTextItem("Taglines                                       [ ]");
+	const TAGLINE_OPT_INDEX = optionBox.addTextItem(format(optFormatStr, "Taglines"));
 	var SPELLCHECK_ON_SAVE_OPT_INDEX = -1;
 	if (gConfigSettings.allowSpellCheck)
-		SPELLCHECK_ON_SAVE_OPT_INDEX = optionBox.addTextItem("Prompt for spell checker on save               [ ]");
-	const QUOTE_WRAP_OPT_INDEX = optionBox.addTextItem("Wrap quote lines to terminal width             [ ]");
-	const QUOTE_INITIALS_OPT_INDEX = optionBox.addTextItem("Quote with author's initials                   [ ]");
-	const QUOTE_INITIALS_INDENT_OPT_INDEX = optionBox.addTextItem("Indent quote lines containing initials         [ ]");
-	const TRIM_QUOTE_SPACES_OPT_INDEX = optionBox.addTextItem("Trim spaces from quote lines                   [ ]");
-	const AUTO_SIGN_OPT_INDEX = optionBox.addTextItem("Auto-sign messages                             [ ]");
-	const SIGN_REAL_ONLY_FIRST_NAME_OPT_INDEX = optionBox.addTextItem("  When using real name, use only first name    [ ]");
-	const SIGN_EMAILS_REAL_NAME_OPT_INDEX = optionBox.addTextItem("  Sign emails with real name                   [ ]");
+		SPELLCHECK_ON_SAVE_OPT_INDEX = optionBox.addTextItem(format(optFormatStr, "Prompt for spell checker on save"));
+	const QUOTE_WRAP_OPT_INDEX = optionBox.addTextItem(format(optFormatStr, "Wrap quote lines to terminal width"));
+	const JOIN_WRAPPED_QUOTE_LINES_OPT_INDEX = optionBox.addTextItem(format(optFormatStr, "Join quote lines when wrapping"));
+	const QUOTE_INITIALS_OPT_INDEX = optionBox.addTextItem(format(optFormatStr, "Quote with author's initials"));
+	const QUOTE_INITIALS_INDENT_OPT_INDEX = optionBox.addTextItem(format(optFormatStr, "Indent quote lines containing initials"));
+	const TRIM_QUOTE_SPACES_OPT_INDEX = optionBox.addTextItem(format(optFormatStr, "Trim spaces from quote lines"));
+	const AUTO_SIGN_OPT_INDEX = optionBox.addTextItem(format(optFormatStr, "Auto-sign messages"));
+	const SIGN_REAL_ONLY_FIRST_NAME_OPT_INDEX = optionBox.addTextItem(format(optFormatStr, "  When using real name, use only first name"));
+	const SIGN_EMAILS_REAL_NAME_OPT_INDEX = optionBox.addTextItem(format(optFormatStr, "  Sign emails with real name"));
 	var DICTIONARY_OPT_INDEX = -1;
 	if (dictionaryFilenames.length > 1)
 		DICTIONARY_OPT_INDEX = optionBox.addTextItem("Spell-check dictionary/dictionaries");
 	if (gUserSettings.wrapQuoteLines)
 		optionBox.chgCharInTextItem(QUOTE_WRAP_OPT_INDEX, checkIdx, CHECK_CHAR);
+	if (gUserSettings.joinQuoteLinesWhenWrapping)
+		optionBox.chgCharInTextItem(JOIN_WRAPPED_QUOTE_LINES_OPT_INDEX, checkIdx, CHECK_CHAR);
 	if (gUserSettings.enableTaglines)
 		optionBox.chgCharInTextItem(TAGLINE_OPT_INDEX, checkIdx, CHECK_CHAR);
 	if (gConfigSettings.allowSpellCheck && gUserSettings.promptSpellCheckOnSave)
@@ -6294,6 +6303,7 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 	// Create an object containing toggle values (true/false) for each option index
 	var optionToggles = {};
 	optionToggles[QUOTE_WRAP_OPT_INDEX] = gUserSettings.wrapQuoteLines;
+	optionToggles[JOIN_WRAPPED_QUOTE_LINES_OPT_INDEX] = gUserSettings.joinQuoteLinesWhenWrapping;
 	optionToggles[TAGLINE_OPT_INDEX] = gUserSettings.enableTaglines;
 	if (gConfigSettings.allowSpellCheck)
 		optionToggles[SPELLCHECK_ON_SAVE_OPT_INDEX] = gUserSettings.promptSpellCheckOnSave;
@@ -6326,6 +6336,9 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 				{
 					case QUOTE_WRAP_OPT_INDEX:
 						gUserSettings.wrapQuoteLines = !gUserSettings.wrapQuoteLines;
+						break;
+					case JOIN_WRAPPED_QUOTE_LINES_OPT_INDEX:
+						gUserSettings.joinQuoteLinesWhenWrapping = !gUserSettings.joinQuoteLinesWhenWrapping;
 						break;
 					case TAGLINE_OPT_INDEX:
 						gUserSettings.enableTaglines = !gUserSettings.enableTaglines;
