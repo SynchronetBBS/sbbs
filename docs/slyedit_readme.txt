@@ -243,9 +243,13 @@ Ctrl-O       : Import a file                � Ctrl-X  : Export to file
 
 5. Configuration file
 =====================
-The configuration file, SlyEdit.cfg, is split up into 3 sections -
-Behavior, Ice colors, and DCT colors.  These sections are designated
-by [BEHAVIOR], [ICE_COLORS], and [DCT_COLORS], respectively.
+The configuration file included in the Synchronet repository is
+SlyEdit.example.cfg in sbbs/ctrl.  You can copy it to SlyEdit.cfg to make your
+own customizations.
+
+The configuration file is split up into 3 sections - Behavior, Ice colors, and
+DCT colors.  These sections are designated by [BEHAVIOR], [ICE_COLORS], and
+[DCT_COLORS], respectively.
 
 To help with configuration, there is a menu-driven configuration script in
 sbbs/exec called slyedcfg.js. To run it, open a command prompt in the sbbs/exec
@@ -255,10 +259,9 @@ jsexec slyedcfg
 Alternately, you can specify the .js filename extension if you want to:
 jsexec slyedcfg.js
 
-The configuration script will copy your SlyEdit configuration file to your
-sbbs/mods directory to help prevent it from being accidentally overridden when
-doing an update from the Synchronet source repository. SlyEdit will pick up its
-configuration from sbbs/mods if the configuration file is there.
+The configuration script will copy your SlyEdit configuration file to
+SlyEdit.cfg in your sbbs/mods directory. SlyEdit will pick up its configuration
+from sbbs/mods if the configuration file is there.
 
 The configuration settings are described below:
 
@@ -1001,6 +1004,10 @@ Version  Date         Description
 1.92     2025-06-09   Added a new user setting to toggle whether to wrap quote
                       lines to the terminal width. Turning this off can help
                       preserve message formatting when quoting.
+                      Also, the included configuration file is now
+                      SlyEdit.example.cfg. You can copy it to SlyEdit.cfg to
+                      make your own customizations. slyedcfg.js will copy it
+                      to sbbs/mods/SlyEdit.cfg.
 1.91     2025-05-20   Bug fix: Message text is now properly re-written when the
                       Program Info box (available from DCT mode) is erased
 1.90     2025-05-07   Better behavior when editing a general file rather than a
