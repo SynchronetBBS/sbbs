@@ -788,6 +788,9 @@ function readSlyEditCfgFile()
 		cfgSections: {}
 	};
 
+	if (!file_exists(retObj.cfgFilename) && file_exists(system.ctrl_dir + "SlyEdit.example.cfg"))
+		retObj.cfgFilename = system.ctrl_dir + "SlyEdit.example.cfg";
+
 	var cfgFile = new File(retObj.cfgFilename);
 	if (cfgFile.open("r"))
 	{
@@ -795,6 +798,10 @@ function readSlyEditCfgFile()
 		for (var i = 0; i < iniSectionNames.length; ++i)
 			retObj.cfgSections[iniSectionNames[i]] = cfgFile.iniGetObject(iniSectionNames[i]);
 		cfgFile.close();
+
+		print("");
+		print("- Loaded config file: " + retObj.cfgFilename);
+		print("")
 	}
 	// In case some settings weren't loaded, add defaults
 	if (!retObj.cfgSections.hasOwnProperty("BEHAVIOR"))

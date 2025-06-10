@@ -2303,6 +2303,8 @@ function ReadSlyEditConfigFile()
 
 	// Open the SlyEdit configuration file
 	var slyEdCfgFileName = genFullPathCfgFilename("SlyEdit.cfg", js.exec_dir);
+	if (!file_exists(slyEdCfgFileName))
+		slyEdCfgFileName = genFullPathCfgFilename("SlyEdit.example.cfg", js.exec_dir);
 	var cfgFile = new File(slyEdCfgFileName);
 	if (cfgFile.open("r"))
 	{
