@@ -706,22 +706,22 @@ static int sess_sendbuf(http_session_t *session, const char *buf, size_t len, vo
 				result = sendsocket(session->socket, buf + sent, len - sent);
 				if (result == SOCKET_ERROR) {
 					if (SOCKET_ERRNO == ECONNRESET)
-						lprintf(LOG_NOTICE, "%04d Connection reset by peer on send", session->socket);
+						lprintf(LOG_NOTICE, "%04d %s [%s] Connection reset by peer on send", session->socket, session->client.protocol, session->host_ip);
 					else if (SOCKET_ERRNO == ECONNABORTED)
-						lprintf(LOG_NOTICE, "%04d Connection aborted by peer on send", session->socket);
+						lprintf(LOG_NOTICE, "%04d %s [%s] Connection aborted by peer on send", session->socket, session->client.protocol, session->host_ip);
 #ifdef EPIPE
 					else if (SOCKET_ERRNO == EPIPE)
-						lprintf(LOG_NOTICE, "%04d Unable to send to peer", session->socket);
+						lprintf(LOG_NOTICE, "%04d %s [%s] Unable to send to peer", session->socket, session->client.protocol, session->host_ip);
 #endif
 					else if (session->socket != INVALID_SOCKET)
-						lprintf(LOG_WARNING, "%04d !ERROR %d sending on socket", session->socket, SOCKET_ERRNO);
+						lprintf(LOG_WARNING, "%04d %s [%s] !ERROR %d sending on socket", session->socket, session->client.protocol, session->host_ip, SOCKET_ERRNO);
 					*failed = true;
 					return sent;
 				}
 			}
 		}
 		else {
-			lprintf(LOG_WARNING, "%04d Timeout waiting for socket to become writable", session->socket);
+			lprintf(LOG_WARNING, "%04d %s [%s] Timeout waiting for socket to become writable", session->socket, session->client.protocol, session->host_ip);
 			*failed = true;
 			return sent;
 		}
@@ -1541,8 +1541,10 @@ static off_t sock_sendfile(http_session_t *session, char *path, off_t start, off
 			remain = -1L;
 		}
 		while ((i = read(file, buf, (size_t)(remain > sizeof(buf)?sizeof(buf):remain))) > 0) {
-			if (writebuf(session, buf, i) != i) {
-				lprintf(LOG_WARNING, "%04d !ERROR sending %s", session->socket, path);
+			int wr = writebuf(session, buf, i);
+			if (wr != i) {
+				lprintf(LOG_WARNING, "%04d %s [%s] !ERROR sending %s (sent %d instead of %d bytes)"
+					,session->socket, session->client.protocol, session->host_ip, path, wr, (int)i);
 				close(file);
 				return 0;
 			}
@@ -2242,7 +2244,8 @@ static int sockreadline(http_session_t * session, char *buf, size_t length)
 			}
 			else {
 				/* Timeout */
-				lprintf(LOG_NOTICE, "%04d Session timeout due to inactivity (%d seconds)", session->socket, startup->max_inactivity);
+				lprintf(LOG_NOTICE, "%04d %s [%s] Session timeout due to inactivity (%d seconds)"
+					, session->socket, session->client.protocol, session->host_ip, startup->max_inactivity);
 				return -1;
 			}
 		}
@@ -2252,7 +2255,8 @@ static int sockreadline(http_session_t * session, char *buf, size_t length)
 				if (session->is_tls || SOCKET_ERRNO != EAGAIN) {
 					if (!session->is_tls) {
 						if (startup->options & WEB_OPT_DEBUG_RX)
-							lprintf(LOG_DEBUG, "%04d !ERROR %d receiving on socket", session->socket, SOCKET_ERRNO);
+							lprintf(LOG_DEBUG, "%04d %s [%s] !ERROR %d receiving on socket"
+								, session->socket, session->client.protocol, session->host_ip, SOCKET_ERRNO);
 					}
 					close_session_socket(session);
 					return -1;
@@ -2283,9 +2287,9 @@ static int sockreadline(http_session_t * session, char *buf, size_t length)
 	buf[i] = 0;
 
 	if (startup->options & WEB_OPT_DEBUG_RX) {
-		lprintf(LOG_DEBUG, "%04d RX: %s", session->socket, buf);
+		lprintf(LOG_DEBUG, "%04d %s [%s] RX: %s", session->socket, session->client.protocol, session->host_ip, buf);
 		if (chucked)
-			lprintf(LOG_DEBUG, "%04d Long header, chucked %d bytes", session->socket, chucked);
+			lprintf(LOG_DEBUG, "%04d %s [%s] Long header, chucked %d bytes", session->socket, session->client.protocol, session->host_ip, chucked);
 	}
 	return i;
 }
@@ -4876,7 +4880,7 @@ static bool exec_fastcgi(http_session_t *session)
 		.arg = &cd
 	};
 
-	lprintf(LOG_INFO, "%04d %s [%s] Executing FastCGI: %s", session->socket, session->client.protocol, session->host_ip, session->req.physical_path);
+	lprintf(LOG_DEBUG, "%04d %s [%s] Executing FastCGI: %s", session->socket, session->client.protocol, session->host_ip, session->req.physical_path);
 	if (session->req.fastcgi_socket == NULL) {
 		errprintf(LOG_ERR, WHERE, "%04d No FastCGI socket configured!", session->socket);
 		return false;
