@@ -65,7 +65,8 @@ function getAreaHeirarchy(pWhichAreas, pCollapsing, pCollapsingSeparator)
 
 		// A regular expression intended to be used for replacing all double instances
 		// of the separator character with a single instance
-		var doubleSepCharGlobalRegex = new RegExp(pCollapsingSeparator + pCollapsingSeparator, "g"); // "gi" for global case insensitive
+		// Modifiers can be "gi" for global case insensitive
+		var doubleSepCharGlobalRegex = new RegExp(quoteLiteralCharsForRegEx(pCollapsingSeparator + pCollapsingSeparator), "g");
 
 		// Build the heirarchy
 		// For each library, go through each directory
@@ -295,4 +296,28 @@ function splitStrNoSpacesBeforeSeparator(pStr, pSep)
 			strArray.push(splitArray[i]);
 	}
 	return strArray;
+}
+
+// Adds backslash characters to a string to quote characters as needed
+// to match the literal character in a regular expression
+//
+// Parameters:
+//  pStr: The string to search
+//
+// Return value: The string with special regex characters back-quoted
+function quoteLiteralCharsForRegEx(pStr)
+{
+	if (typeof(pStr) !== "string")
+		return "";
+
+	const specialChars = "^$.*+?()[]{}|\\";
+
+	var newStr = "";
+	for (var i = 0; i < pStr.length; ++i)
+	{
+		if (specialChars.indexOf(pStr[i]) > -1)
+			newStr += "\\";
+		newStr += pStr[i];
+	}
+	return newStr;
 }

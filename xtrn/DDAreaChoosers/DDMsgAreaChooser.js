@@ -100,6 +100,8 @@
  *                            (in the same directory as DDMsgAreaChooser.js) if it exists.
  *                            Also did an internal refactor, moving some common functionality
  *                            out into DDAreaChooserCommon.js to make development a bit simpler.
+ * 2025-06-04 Eric Oulashin   Version 1.44
+ *                            Fix: Item colors for sub-boards properly aligned again
  */
 
 /* Command-line arguments:
@@ -139,8 +141,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.43";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2025-06-01";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.44";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2025-06-04";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -252,7 +254,7 @@ function DDMsgAreaChooser()
 		timeHighlight: "\x01w\x01h",
 		numItemsHighlight: "\x01w\x01h",
 		// Lightbar help line colors
-		lightbarHelpLineBkg: "\x01" + "7",
+		lightbarHelpLineBkg: "\x017",
 		lightbarHelpLineGeneral: "\x01b",
 		lightbarHelpLineHotkey: "\x01r",
 		lightbarHelpLineParen: "\x01m"
@@ -302,7 +304,7 @@ function DDMsgAreaChooser()
 	this.SelectMsgArea = DDMsgAreaChooser_SelectMsgArea;
 	this.CreateLightbarMenu = DDMsgAreaChooser_CreateLightbarMenu;
 	this.GetColorIndexInfoForLightbarMenu = DDMsgAreaChooser_GetColorIndexInfoForLightbarMenu;
-	this.GetSubBoardColorIndexInfoForLightbarMenu = DDMsgAreaChooser_GetSubBoardColorIndexInfoForLightbarMenu;
+	this.GetSubBoardColorIndexInfoAndFormatStrForMenuItem = DDMsgAreaChooser_GetSubBoardColorIndexInfoAndFormatStrForMenuItem;
 	// TODO: Anything we can remove?
 	// Help screen
 	this.ShowHelpScreen = DDMsgAreaChooser_showHelpScreen;
@@ -1247,6 +1249,8 @@ function DDMsgAreaChooser_CreateLightbarMenu(pMsgAreaHeirarchyObj, pHeirarchyLev
 			}
 			else if (this.msgAreaHeirarchyObj[pItemIdx].hasOwnProperty("subItemObj"))
 			{
+				var numPostsLabelWidth = 7; // Width of the "# Posts" label
+
 				if (this.msgAreaHeirarchyObj[pItemIdx].subItemObj.hasOwnProperty("posts"))
 					numItems = this.msgAreaHeirarchyObj[pItemIdx].subItemObj.posts; // Added in Synchronet 3.18c
 				else
@@ -1278,29 +1282,19 @@ function DDMsgAreaChooser_CreateLightbarMenu(pMsgAreaHeirarchyObj, pHeirarchyLev
 				menuItemObj.text = (showDirMark ? "*" : " ");
 				if (this.allowANSI)
 				{
-					// Menu item color arrays
-					// Not entirely sure why the heirarchy level matters
-					if (pHeirarchyLevel > 2)
-					{
-						
-						// Weird hacky stuff to get the color alignments right for this situation
-						var itemColorIdxInfo = this.areaChooser.GetSubBoardColorIndexInfoForLightbarMenu(pItemNumWidth, this.msgAreaHeirarchyObj.length.toString().length);
-						menuItemObj.itemColor = itemColorIdxInfo.itemColorForSubBoard;
-						menuItemObj.itemSelectedColor = itemColorIdxInfo.selectedItemColorForSubBoard;
-					}
-					else
-					{
-						menuItemObj.itemColor = this.itemColorForSubBoard;
-						menuItemObj.itemSelectedColor = this.selectedItemColorForSubBoard;
-					}
-
+					// Menu item color arrays for the item
+					var itemColorIdxInfo = this.areaChooser.GetSubBoardColorIndexInfoAndFormatStrForMenuItem(pItemNumWidth, numPostsLabelWidth);
+					menuItemObj.itemColor = itemColorIdxInfo.itemColorInfo;
+					menuItemObj.itemSelectedColor = itemColorIdxInfo.selectedItemColorInfo;
+					var formatStr = itemColorIdxInfo.formatStr;
 					// Note: this.areaChooser.subBoardNameLen and this.areaChooser.subBoardListPrintfInfo[grpIdx].nameLen
 					// are probably the same.
 					// Get the timestamp of the last message, if configured to do so
 					if (this.areaChooser.showDatesInSubBoardList)
 					{
 						var lastMsgPostTimestamp = getLatestMsgTime(this.msgAreaHeirarchyObj[pItemIdx].subItemObj.code);
-						menuItemObj.text += format(this.areaChooser.subBoardListPrintfInfo[grpIdx].printfStr, pItemIdx+1,
+						//this.areaChooser.subBoardListPrintfInfo[grpIdx].printfStr
+						menuItemObj.text += format(formatStr, pItemIdx+1,
 												   this.msgAreaHeirarchyObj[pItemIdx].name.substr(0, this.areaChooser.subBoardNameLen),
 												   numItems,
 						                           strftime("%Y-%m-%d", lastMsgPostTimestamp),
@@ -1308,7 +1302,8 @@ function DDMsgAreaChooser_CreateLightbarMenu(pMsgAreaHeirarchyObj, pHeirarchyLev
 					}
 					else
 					{
-						menuItemObj.text += format(this.areaChooser.subBoardListPrintfInfo[grpIdx].printfStr, pItemIdx+1,
+						//this.areaChooser.subBoardListPrintfInfo[grpIdx].printfStr
+						menuItemObj.text += format(formatStr, pItemIdx+1,
 												   this.msgAreaHeirarchyObj[pItemIdx].name.substr(0, this.areaChooser.subBoardNameLen), numItems);
 					}
 				}
@@ -1321,55 +1316,25 @@ function DDMsgAreaChooser_CreateLightbarMenu(pMsgAreaHeirarchyObj, pHeirarchyLev
 					if (numSpaces > 0)
 						menuItemObj.text += format("%*s", numSpaces, " ");
 
-					// If this menu only has sub-boards, then use the original attribute arrays
-					// that were set up for the menu
-					if (this.allSubs)
-					{
-						// Not entirely sure why the heirarchy level matters
-						if (pHeirarchyLevel > 2)
-						{
-							var itemColorIdxInfo = this.areaChooser.GetColorIndexInfoForLightbarMenu(this.msgAreaHeirarchyObj, pItemNumWidth+1);
-							menuItemObj.itemColor = itemColorIdxInfo.itemColorForSubBoard;
-							menuItemObj.itemSelectedColor = itemColorIdxInfo.selectedItemColorForSubBoard;
-						}
-						else
-						{
-							menuItemObj.itemColor = msgAreaMenu.itemColorForSubBoard;
-							menuItemObj.itemSelectedColor = msgAreaMenu.selectedItemColorForSubBoard;
-						}
-					}
-					else
-					{
-						// This menu has a mix of sub-boards and other groups of items
-						// Menu item color arrays
-						//var itemColorIdxInfo = this.areaChooser.GetColorIndexInfoForLightbarMenu(this.msgAreaHeirarchyObj[pItemIdx]);
-						var itemColorIdxInfo = this.areaChooser.GetColorIndexInfoForLightbarMenu(this.msgAreaHeirarchyObj);
-						if (numSpaces > 0)
-						{
-							menuItemObj.itemColor = AdjustMenuAttrArrayIndexes(itemColorIdxInfo.itemColorForSubBoard, numSpaces-1);
-							menuItemObj.itemSelectedColor = AdjustMenuAttrArrayIndexes(itemColorIdxInfo.selectedItemColorForSubBoard, numSpaces-1);
-						}
-						else
-						{
-							menuItemObj.itemColor = itemColorIdxInfo.itemColorForSubBoard;
-							menuItemObj.itemSelectedColor = itemColorIdxInfo.selectedItemColorForSubBoard;
-						}
-					}
-
+					// Menu item coloring & format string
+					var itemColorIdxInfo = this.areaChooser.GetSubBoardColorIndexInfoAndFormatStrForMenuItem(pItemNumWidth, numPostsLabelWidth, numSpaces);
+					menuItemObj.itemColor = itemColorIdxInfo.itemColorInfo;
+					menuItemObj.itemSelectedColor = itemColorIdxInfo.selectedItemColorInfo;
+					var formatStr = itemColorIdxInfo.formatStr;
 					// Generate the item text
 					if (this.areaChooser.showDatesInSubBoardList)
 					{
 						var lastMsgPostTimestamp = getLatestMsgTime(this.msgAreaHeirarchyObj[pItemIdx].subItemObj.code);
-						menuItemObj.text += format(this.areaChooser.subBoardListPrintfInfo[grpIdx].printfStrWithoutAreaNum,
+						//this.areaChooser.subBoardListPrintfInfo[grpIdx].printfStrWithoutAreaNum
+						menuItemObj.text += format(formatStr,
 												  this.msgAreaHeirarchyObj[pItemIdx].name.substr(0, this.areaChooser.subBoardNameLen), numItems,
 						                          strftime("%Y-%m-%d", lastMsgPostTimestamp),
 						                          strftime("%H:%M:%S", lastMsgPostTimestamp));
-						//var itemColorIdxInfo = this.areaChooser.GetColorIndexInfoForLightbarMenu(this.msgAreaHeirarchyObj[pItemIdx]);
-						//var itemColorIdxInfo = this.areaChooser.GetColorIndexInfoForLightbarMenu(this.msgAreaHeirarchyObj);
 					}
 					else
 					{
-						menuItemObj.text += format(this.areaChooser.subBoardListPrintfInfo[grpIdx].printfStrWithoutAreaNum,
+						//this.areaChooser.subBoardListPrintfInfo[grpIdx].printfStrWithoutAreaNum
+						menuItemObj.text += format(formatStr,
 						                          this.msgAreaHeirarchyObj[pItemIdx].name.substr(0, this.areaChooser.subBoardNameLen), numItems);
 					}
 				}
@@ -1605,104 +1570,153 @@ function DDMsgAreaChooser_GetColorIndexInfoForLightbarMenu(pMsgAreaHeirarchyObj,
 	return retObj;
 }
 
-// pItemNumHdrWidth: The width of the item # column header (including the mark character)
-// pNumItemsWidth: The width of the # items (not column header)
-function DDMsgAreaChooser_GetSubBoardColorIndexInfoForLightbarMenu(pItemNumHdrWidth, pNumItemsWidth)
+// Bulids and returns arrays of coloring information and a printf format string for
+// a sub-board for the lightbar menu
+//
+// Parameters:
+//  pItemNumHdrWidth: The width being used for the "Item #" column header
+//  pNumItemsHdrWidth: The width being used for the "# Items" column header
+//  pDescriptionPaddingLen: Optional - An amount of padding used in front of the description for
+//                          the traditional interface, which will be used between the mark character
+//                          and the description text. This won't be added to the format string but
+//                          will be used for the color/attribute indexes if provided.
+//
+// Return value: An object with the following parameters:
+//  itemColorInfo: An array of objects with 'start', 'end', and 'attrs' properties with colors for the menu item
+//  selectedItemColorInfo: An array of objects with 'start', 'end', and 'attrs' properties with selected item
+//                         colors for the menu item
+//  formatStr: A printf format string for the menu item
+function DDMsgAreaChooser_GetSubBoardColorIndexInfoAndFormatStrForMenuItem(pItemNumHdrWidth, pNumItemsHdrWidth, pDescriptionPaddingLen)
 {
 	var retObj = {
-		itemColorForSubBoard: {},
-		selectedItemColorForSubBoard: {}
+		itemColorInfo: [],
+		selectedItemColorInfo: [],
+		formatStr: ""
 	};
+
+	var itemNumHdrWidth = pItemNumHdrWidth - 1; // Leave room for the selected mark character
 
 	var usingLightbarInterface = this.useLightbarInterface && console.term_supports(USER_ANSI);
 	if (usingLightbarInterface)
 	{
-		// Colors for items that are sub-boards
+		var markStart = 0;
+		var markEnd = 1;
 		if (this.showDatesInSubBoardList)
 		{
-			var itemNumWidth = pItemNumHdrWidth - 1;
-			// Sub # Name                                         # Posts Latest date & time
-			var markStart = 0;
-			var markEnd = 1;
+			var dateWidth = 10;
+			var timeWidth = 8;
+			var dateAndTimeWidth = dateWidth + timeWidth + 1;
+			var descWidth = console.screen_columns - itemNumHdrWidth - pNumItemsHdrWidth - dateWidth - timeWidth - 6;
+			//if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow())
+			retObj.formatStr = "%" + itemNumHdrWidth + "d %-" + descWidth + "s %" + pNumItemsHdrWidth + "d %-" + dateWidth + "s %-" + timeWidth + "s";
+
 			var itemNumStart = markEnd;
-			var itemNumEnd = itemNumStart + itemNumWidth;
-			// "Latest date & time": 18
-			// # spaces: 3
-			// Total: 21
-			var descWidth = console.screen_columns - pItemNumHdrWidth - pNumItemsWidth - 22;
+			var itemNumEnd = itemNumStart + itemNumHdrWidth + 1;
 			var descStart = itemNumEnd;
-			var descEnd = descStart + descWidth;
+			var descEnd = descStart + descWidth + 1;
 			var numItemsStart = descEnd;
-			var numItemsEnd = numItemsStart + pNumItemsWidth + 1;
+			var numItemsEnd = numItemsStart + pNumItemsHdrWidth + 1;
 			var dateStart = numItemsEnd;
-			// 2025-01-01 
-			var dateEnd = dateStart + 11;
+			var dateEnd = dateStart + dateWidth;
 			var timeStart = dateEnd;
 			var timeEnd = -1;
-			retObj.itemColorForSubBoard = [{start: markStart, end: markEnd, attrs: this.colors.areaMark},
-			                               {start: itemNumStart, end: itemNumEnd, attrs: this.colors.areaNum},
-			                               {start: descStart, end: descEnd, attrs: this.colors.desc},
-			                               {start: numItemsStart, end: numItemsEnd, attrs: this.colors.numItems},
-			                               {start: dateStart, end: dateEnd, attrs: this.colors.latestDate},
-			                               {start: timeStart, end: timeEnd, attrs: this.colors.latestTime}];
-			retObj.selectedItemColorForSubBoard = [{start: markStart, end: markEnd, attrs: this.colors.areaMark + this.colors.bkgHighlight},
-			                                       {start: itemNumStart, end: itemNumEnd, attrs: this.colors.areaNumHighlight + this.colors.bkgHighlight},
-			                                       {start: descStart, end: descEnd, attrs: this.colors.descHighlight + this.colors.bkgHighlight},
-			                                       {start: numItemsStart, end: numItemsEnd, attrs: this.colors.numItemsHighlight + this.colors.bkgHighlight},
-			                                       {start: dateStart, end: dateEnd, attrs: this.colors.dateHighlight + this.colors.bkgHighlight},
-			                                       {start: timeStart, end: timeEnd, attrs: this.colors.timeHighlight + this.colors.bkgHighlight}];
+			retObj.itemColorInfo = [{start: markStart, end: markEnd, attrs: this.colors.areaMark},
+			                        {start: itemNumStart, end: itemNumEnd, attrs: this.colors.areaNum},
+			                        {start: descStart, end: descEnd, attrs: this.colors.desc},
+			                        {start: numItemsStart, end: numItemsEnd, attrs: this.colors.numItems},
+			                        {start: dateStart, end: dateEnd, attrs: this.colors.latestDate},
+			                        {start: timeStart, end: timeEnd, attrs: this.colors.latestTime}];
+			retObj.selectedItemColorInfo = [{start: markStart, end: markEnd, attrs: this.colors.areaMark + this.colors.bkgHighlight},
+			                                {start: itemNumStart, end: itemNumEnd, attrs: this.colors.areaNumHighlight + this.colors.bkgHighlight},
+			                                {start: descStart, end: descEnd, attrs: this.colors.descHighlight + this.colors.bkgHighlight},
+			                                {start: numItemsStart, end: numItemsEnd, attrs: this.colors.numItemsHighlight + this.colors.bkgHighlight},
+			                                {start: dateStart, end: dateEnd, attrs: this.colors.dateHighlight + this.colors.bkgHighlight},
+			                                {start: timeStart, end: timeEnd, attrs: this.colors.timeHighlight + this.colors.bkgHighlight}];
 		}
 		else
 		{
-			var itemNumWidth = pItemNumHdrWidth - 1;
-			// Sub # Name                                         # Posts Latest date & time
-			var markStart = 0;
-			var markEnd = 1;
+			// No dates in the sub-board list
 			var itemNumStart = markEnd;
-			var itemNumEnd = itemNumStart + itemNumWidth;
-			var descWidth = console.screen_columns - pItemNumHdrWidth - pNumItemsWidth - 3;
+			var itemNumEnd = itemNumStart + itemNumHdrWidth + 1;
 			var descStart = itemNumEnd;
-			var descEnd = descStart + descWidth;
+			var descWidth = console.screen_columns - itemNumHdrWidth - pNumItemsHdrWidth - 4;
+			var descEnd = descStart + descWidth + 1;
 			var numItemsStart = descEnd;
 			var numItemsEnd = -1;
-			retObj.itemColorForSubBoard = [{start: markStart, end: markEnd, attrs: this.colors.areaMark},
-			                               {start: itemNumStart, end: itemNumEnd, attrs: this.colors.areaNum},
-			                               {start: descStart, end: descEnd, attrs: this.colors.desc},
-			                               {start: numItemsStart, end: numItemsEnd, attrs: this.colors.numItems}];
-			retObj.selectedItemColorForSubBoard = [{start: markStart, end: markEnd, attrs: this.colors.areaMark + this.colors.bkgHighlight},
-			                                       {start: itemNumStart, end: itemNumEnd, attrs: this.colors.areaNumHighlight + this.colors.bkgHighlight},
-			                                       {start: descStart, end: descEnd, attrs: this.colors.descHighlight + this.colors.bkgHighlight},
-			                                       {start: numItemsStart, end: numItemsEnd, attrs: this.colors.numItemsHighlight + this.colors.bkgHighlight}];
+			//if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow())
+			retObj.formatStr = "%" + itemNumHdrWidth + "d %-" + descWidth + "s %" + pNumItemsHdrWidth + "d";
+			retObj.itemColorInfo = [{start: markStart, end: markEnd, attrs: this.colors.areaMark},
+			                        {start: itemNumStart, end: itemNumEnd, attrs: this.colors.areaNum},
+			                        {start: descStart, end: descEnd, attrs: this.colors.desc},
+			                        {start: numItemsStart, end: numItemsEnd, attrs: this.colors.numItems}];
+			retObj.selectedItemColorInfo = [{start: markStart, end: markEnd, attrs: this.colors.areaMark + this.colors.bkgHighlight},
+			                                {start: itemNumStart, end: itemNumEnd, attrs: this.colors.areaNumHighlight + this.colors.bkgHighlight},
+			                                {start: descStart, end: descEnd, attrs: this.colors.descHighlight + this.colors.bkgHighlight},
+			                                {start: numItemsStart, end: numItemsEnd, attrs: this.colors.numItemsHighlight + this.colors.bkgHighlight}];
 		}
 	}
 	else
 	{
-		// TODO: Non-lightbar
-		/*
-		// Colors for items that are sub-boards
+		// TODO
+		// Using the traditional/non-lightbar interface
+		var markStart = 0;
+		var markEnd = 1;
 		if (this.showDatesInSubBoardList)
 		{
-			retObj.itemColorForSubBoard = [{start: retObj.subBoardListIdxes.markCharStart, end: retObj.subBoardListIdxes.markCharEnd, attrs: this.colors.areaMark},
-			                               {start: retObj.subBoardListIdxes.descStart, end: retObj.subBoardListIdxes.descEnd, attrs: this.colors.desc},
-			                               {start: retObj.subBoardListIdxes.numItemsStart, end: retObj.subBoardListIdxes.numItemsEnd, attrs: this.colors.numItems},
-			                               {start: retObj.subBoardListIdxes.dateStart, end: retObj.subBoardListIdxes.dateEnd, attrs: this.colors.latestDate},
-			                               {start: retObj.subBoardListIdxes.timeStart, end: retObj.subBoardListIdxes.timeEnd, attrs: this.colors.latestTime}];
-			retObj.selectedItemColorForSubBoard = [{start: retObj.subBoardListIdxes.markCharStart, end: retObj.subBoardListIdxes.markCharEnd, attrs: this.colors.areaMark + this.colors.bkgHighlight},
-			                                       {start: retObj.subBoardListIdxes.descStart, end: retObj.subBoardListIdxes.descEnd, attrs: this.colors.descHighlight + this.colors.bkgHighlight},
-			                                       {start: retObj.subBoardListIdxes.numItemsStart, end: retObj.subBoardListIdxes.numItemsEnd, attrs: this.colors.numItemsHighlight + this.colors.bkgHighlight},
-			                                       {start: retObj.subBoardListIdxes.dateStart, end: retObj.subBoardListIdxes.dateEnd, attrs: this.colors.dateHighlight + this.colors.bkgHighlight},
-			                                       {start: retObj.subBoardListIdxes.timeStart, end: retObj.subBoardListIdxes.timeEnd, attrs: this.colors.timeHighlight + this.colors.bkgHighlight}];
+			var dateWidth = 10;
+			var timeWidth = 8;
+			var descWidth = console.screen_columns - itemNumHdrWidth - pNumItemsHdrWidth - dateWidth - timeWidth - 6;
+			//if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow())
+			retObj.formatStr = "%-" + descWidth + "s %" + pNumItemsHdrWidth + "d %-" + dateWidth + "s %-" + timeWidth + "s";
+
+			var descStart = markEnd;
+			if (typeof(pDescriptionPaddingLen) === "number" && pDescriptionPaddingLen > 0)
+			{
+				descStart += pDescriptionPaddingLen;
+				// It seems descWidth doesn't need to be adjusted here
+			}
+			var descEnd = descStart + descWidth + 1;
+			var numItemsStart = descEnd;
+			var numItemsEnd = numItemsStart + pNumItemsHdrWidth + 1;
+			var dateStart = numItemsEnd;
+			var dateEnd = dateStart + dateWidth;
+			var timeStart = dateEnd;
+			var timeEnd = -1;
+			retObj.itemColorInfo = [{start: markStart, end: markEnd, attrs: this.colors.areaMark},
+			                        {start: descStart, end: descEnd, attrs: this.colors.desc},
+			                        {start: numItemsStart, end: numItemsEnd, attrs: this.colors.numItems},
+			                        {start: dateStart, end: dateEnd, attrs: this.colors.latestDate},
+			                        {start: timeStart, end: timeEnd, attrs: this.colors.latestTime}];
+			retObj.selectedItemColorInfo = [{start: markStart, end: markEnd, attrs: this.colors.areaMark + this.colors.bkgHighlight},
+			                                {start: descStart, end: descEnd, attrs: this.colors.descHighlight + this.colors.bkgHighlight},
+			                                {start: numItemsStart, end: numItemsEnd, attrs: this.colors.numItemsHighlight + this.colors.bkgHighlight},
+			                                {start: dateStart, end: dateEnd, attrs: this.colors.dateHighlight + this.colors.bkgHighlight},
+			                                {start: timeStart, end: timeEnd, attrs: this.colors.timeHighlight + this.colors.bkgHighlight}];
 		}
 		else
 		{
-			retObj.itemColorForSubBoard = [{start: retObj.subBoardListIdxes.markCharStart, end: retObj.subBoardListIdxes.markCharEnd, attrs: this.colors.areaMark},
-			                               {start: retObj.subBoardListIdxes.descStart, end: retObj.subBoardListIdxes.descEnd, attrs: this.colors.desc},
-			                               {start: retObj.subBoardListIdxes.numItemsStart, end: retObj.subBoardListIdxes.numItemsEnd, attrs: this.colors.numItems}];
-			retObj.selectedItemColorForSubBoard = [{start: retObj.subBoardListIdxes.markCharStart, end: retObj.subBoardListIdxes.markCharEnd, attrs: this.colors.areaMark + this.colors.bkgHighlight},
-			                                       {start: retObj.subBoardListIdxes.descStart, end: retObj.subBoardListIdxes.descEnd, attrs: this.colors.descHighlight + this.colors.bkgHighlight},
-			                                       {start: retObj.subBoardListIdxes.numItemsStart, end: retObj.subBoardListIdxes.numItemsEnd, attrs: this.colors.numItemsHighlight + this.colors.bkgHighlight}];
+			// No dates in the sub-board list
+			var descStart = markEnd;
+			var descWidth = console.screen_columns - itemNumHdrWidth - pNumItemsHdrWidth - 4;
+			var descEnd = descStart + descWidth + 1;
+			var numItemsStart = descEnd;
+			var numItemsEnd = -1;
+			//if (this.scrollbarEnabled && !this.CanShowAllItemsInWindow())
+			//retObj.formatStr = "%" + itemNumHdrWidth + "d %-" + descWidth + "s %" + pNumItemsHdrWidth + "d";
+			retObj.formatStr = "%-" + descWidth + "s %" + pNumItemsHdrWidth + "d";
+			// Generate the color info arrays
+			if (typeof(pDescriptionPaddingLen) === "number" && pDescriptionPaddingLen > 0)
+			{
+				descStart += pDescriptionPaddingLen;
+				// It seems descWidth doesn't need to be adjusted here
+			}
+			retObj.itemColorInfo = [{start: markStart, end: markEnd, attrs: this.colors.areaMark},
+			                        {start: descStart, end: descEnd, attrs: this.colors.desc},
+			                        {start: numItemsStart, end: numItemsEnd, attrs: this.colors.numItems}];
+			retObj.selectedItemColorInfo = [{start: markStart, end: markEnd, attrs: this.colors.areaMark + this.colors.bkgHighlight},
+			                                {start: descStart, end: descEnd, attrs: this.colors.descHighlight + this.colors.bkgHighlight},
+			                                {start: numItemsStart, end: numItemsEnd, attrs: this.colors.numItemsHighlight + this.colors.bkgHighlight}];
 		}
-		*/
 	}
 
 	return retObj;
