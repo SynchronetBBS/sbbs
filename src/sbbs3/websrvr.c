@@ -1543,7 +1543,7 @@ static off_t sock_sendfile(http_session_t *session, char *path, off_t start, off
 		while ((i = read(file, buf, (size_t)(remain > sizeof(buf)?sizeof(buf):remain))) > 0) {
 			int wr = writebuf(session, buf, i);
 			if (wr != i) {
-				lprintf(LOG_WARNING, "%04d %s [%s] !ERROR sending %s (sent %d instead of %d bytes)"
+				lprintf(LOG_WARNING, "%04d %s [%s] !ERROR sending %s (sent %d of %d bytes)"
 					,session->socket, session->client.protocol, session->host_ip, path, wr, (int)i);
 				close(file);
 				return 0;
@@ -7557,6 +7557,23 @@ void web_server(void* arg)
 				startup->socket_open(startup->cbdata, true);
 
 			inet_addrtop(&client_addr, host_ip, sizeof(host_ip));
+
+			if (session->is_tls == false && startup->max_concurrent_connections > 0) {
+				int ip_len = strlen(host_ip) + 1;
+				uint connections = listCountMatches(&current_connections, host_ip, ip_len);
+				if(connections >= startup->max_concurrent_connections
+					&& !is_host_exempt(&scfg, host_ip, /* host_name */NULL)) {
+					lprintf(LOG_NOTICE, "%04d HTTP [%s] !Maximum concurrent connections (%u) exceeded"
+						,client_socket, host_ip, startup->max_concurrent_connections);
+					static int len_429;
+					if(len_429 < 1)
+						len_429 = strlen(error_429);
+					if(sendsocket(client_socket, error_429, len_429) != len_429)
+						lprintf(LOG_ERR, "%04d HTTP [%s] FAILED sending error 429", client_socket, host_ip);
+					close_socket(&client_socket);
+					continue;
+				}
+			}
 
 			if (trashcan(&scfg, host_ip, "ip-silent")) {
 				close_socket(&client_socket);
