@@ -76,7 +76,7 @@ var UPPER_LEFT_DOUBLE = "\xC9"; //ASCII 201
 var HORIZONTAL_DOUBLE = "\xCD"; //ASCII 205
 var UPPER_RIGHT_DOUBLE = "\xBB"; //ASCII 187
 var VERTICAL_DOUBLE = "\xBA"; //ASCII 186
-var LOWER_LEFT_DOUBLE = "\xCB"; //ASCII 200
+var LOWER_LEFT_DOUBLE = ascii(200); // "\xCB" is the hex value but wasn't making the correct character
 var LOWER_RIGHT_DOUBLE = "\xBC"; //ASCII 188
 var T_DOUBLE = "\xCB"; //ASCII 203
 var LEFT_T_DOUBLE = "\xCC"; //ASCII 204
@@ -1065,7 +1065,8 @@ function ChoiceScrollbox(pLeftX, pTopY, pWidth, pHeight, pTopBorderText, pSlyEdC
 	               + UPPER_RIGHT_SINGLE;
 
 	// Bottom border string
-	this.btmBorderNavText = "\x01n\x01h\x01c" + UP_ARROW + "\x01b, \x01c" + DOWN_ARROW + "\x01b, \x01cN\x01y)\x01bext, \x01cP\x01y)\x01brev, "
+	//this.btmBorderNavText = "\x01n\x01h\x01c" + UP_ARROW + "\x01b, \x01c" + DOWN_ARROW + "\x01b, \x01cN\x01y)\x01bext, \x01cP\x01y)\x01brev, "
+	this.btmBorderNavText = "\x01n\x01h\x01cUp\x01b, \x01cDn\x01b, \x01cN\x01y)\x01bext, \x01cP\x01y)\x01brev, "
 	                      + "\x01cF\x01y)\x01birst, \x01cL\x01y)\x01bast, \x01cHOME\x01b, \x01cEND\x01b, \x01cEnter\x01y=\x01bSelect, "
 	                      + "\x01cESC\x01n\x01c/\x01h\x01cQ\x01y=\x01bEnd";
 	this.bottomBorder = "\x01n" + pSlyEdCfgObj.genColors.listBoxBorder + LOWER_LEFT_SINGLE
@@ -1410,7 +1411,8 @@ function ChoiceScrollbox_DoInputLoop(pDrawBorder)
 		itemWasSelected: false,
 		selectedIndex: -1,
 		selectedItem: "",
-		lastKeypress: ""
+		lastKeypress: "",
+		userQuit: false
 	};
 
 	// Don't do anything if the item list doesn't contain any items
@@ -1648,6 +1650,7 @@ function ChoiceScrollbox_DoInputLoop(pDrawBorder)
 				this.chosenTextItemIndex = retObj.selectedIndex = -1;
 				refreshList = false;
 				continueOn = false;
+				retObj.userQuit = true;
 				break;
 			default:
 				// If the keypress is an additional key to exit the input loop, then
@@ -1657,6 +1660,7 @@ function ChoiceScrollbox_DoInputLoop(pDrawBorder)
 					this.chosenTextItemIndex = retObj.selectedIndex = -1;
 					refreshList = false;
 					continueOn = false;
+					retObj.userQuit = true;
 				}
 				else
 				{
@@ -5987,4 +5991,26 @@ function displayDebugText(pDebugX, pDebugY, pText, pOriginalPos, pClearDebugLine
 		mswait(pPauseAfter);
 	if ((typeof(pOriginalPos) != "undefined") && (pOriginalPos != null))
 		console.gotoxy(pOriginalPos);
+}
+
+// Counts the number of occurrences of a substring within a string
+//
+// Parameters:
+//  pStr: The string to count occurences in
+//  pSubstr: The string to look for within pStr
+//
+// Return value: The number of occurrences of pSubstr found in pStr
+function countOccurrencesInStr(pStr, pSubstr)
+{
+	if (typeof(pStr) !== "string" || typeof(pSubstr) !== "string") return 0;
+	if (pStr.length == 0 || pSubstr.length == 0) return 0;
+
+	var count = 0;
+	var strIdx = pStr.indexOf(pSubstr);
+	while (strIdx > -1 && strIdx < pStr.length)
+	{
+		++count;
+		strIdx = pStr.indexOf(pSubstr, strIdx+1);
+	}
+	return count;
 }

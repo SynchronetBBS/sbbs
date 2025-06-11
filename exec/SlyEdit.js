@@ -158,6 +158,8 @@ if (requireFnExists)
 	require("sbbsdefs.js", "K_NOCRLF");
 	require("attr_conv.js", "syncAttrCodesToANSI");
 	require("text.js", "AreYouThere");
+	require("frame.js", "Frame");
+	require("scrollbar.js", "ScrollBar");
 	require(js.exec_dir + "SlyEdit_Misc.js", "gUserSettingsFilename");
 }
 else
@@ -165,6 +167,8 @@ else
 	load("sbbsdefs.js");
 	load("attr_conv.js");
 	load("text.js");
+	load("frame.js");
+	load("scrollbar.js");
 	load(js.exec_dir + "SlyEdit_Misc.js");
 }
 
@@ -214,7 +218,7 @@ if (console.screen_columns < 80)
 
 // Version information
 var EDITOR_VERSION = "1.92";
-var EDITOR_VER_DATE = "2025-06-10";
+var EDITOR_VER_DATE = "2025-06-11";
 
 
 // Program variables
@@ -6250,9 +6254,15 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 	var optionBox = new ChoiceScrollbox(optBoxStartX, gEditTop+1, optBoxWidth, optBoxHeight, optBoxTitle,
 	                                    gConfigSettings, false, true);
 	optionBox.addInputLoopExitKey(CTRL_U);
+	optionBox.addInputLoopExitKey("?");
 	// Update the bottom help text to be more specific to the user settings box
+	/*
 	var bottomBorderText = "\x01n\x01h\x01c"+ UP_ARROW + "\x01b, \x01c"+ DOWN_ARROW + "\x01b, \x01cEnter\x01y=\x01bSelect\x01n\x01c/\x01h\x01btoggle, "
 	                      + "\x01cESC\x01n\x01c/\x01hQ\x01n\x01c/\x01hCtrl-U\x01y=\x01bClose";
+	*/
+	var bottomBorderText = "\x01n\x01h\x01cUp\x01b, \x01cDn\x01b, \x01cEnter\x01y=\x01bSelect\x01n\x01c/\x01h\x01btoggle, "
+	                     + "\x01c?\x01y=\x01bHelp, "
+	                     + "\x01cESC\x01n\x01c/\x01hQ\x01n\x01c/\x01hCtrl-U\x01y=\x01bClose";
 	// This one contains the page navigation keys..  Don't really need to show those,
 	// since the settings box only has one page right now:
 	/*var bottomBorderText = "\x01n\x01h\x01c"+ UP_ARROW + "\x01b, \x01c"+ DOWN_ARROW + "\x01b, \x01cN\x01y)\x01bext, \x01cP\x01y)\x01brev, "
@@ -6395,7 +6405,18 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 	}); // Option box enter key override function
 
 	// Display the option box and have it do its input loop
-	var boxRetObj = optionBox.doInputLoop(true);
+	var continueOn = true;
+	while (continueOn)
+	{
+		var boxRetObj = optionBox.doInputLoop(true);
+		if (boxRetObj.lastKeypress == "?")
+		{
+			displayUserSettingsHelp(optionBox.dimensions.topLeftX+1, optionBox.dimensions.topLeftY+1, optionBox.dimensions.width-2,
+			                        optionBox.dimensions.height-2);
+		}
+		else if (boxRetObj.userQuit)
+			continueOn = false;
+	}
 
 	// If the user changed any of their settings, then save the user settings.
 	// If the save fails, then output an error message.
@@ -6484,6 +6505,81 @@ function doUserDictionaryLanguageSelection(pBoxTopLeftX, pBoxTopLeftY, pBoxWidth
 			gUserSettings.pDictionaryFilenames.push(userChoice[i]);
 		}
 	}
+}
+
+// Helper for doUserSettings(): Displays help for user settings in a scrollable box
+function displayUserSettingsHelp(pTopLeftX, pTopLeftY, pWidth, pHeight)
+{
+	// Draw a border around the frame object
+	console.gotoxy(pTopLeftX-1, pTopLeftY-1);
+	console.attributes = "HB";
+	console.print(UPPER_LEFT_DOUBLE);
+	for (var i = 0; i < pWidth; ++i)
+		console.print(HORIZONTAL_DOUBLE);
+	console.print(UPPER_RIGHT_DOUBLE);
+	for (var lineIdx = 0; lineIdx < pHeight; ++lineIdx)
+	{
+		console.gotoxy(pTopLeftX-1, pTopLeftY+lineIdx);
+		console.print(VERTICAL_DOUBLE);
+		console.gotoxy(pTopLeftX+pWidth, pTopLeftY+lineIdx);
+		console.print(VERTICAL_DOUBLE);
+	}
+	console.gotoxy(pTopLeftX-1, pTopLeftY+pHeight);
+	console.print(LOWER_LEFT_DOUBLE);
+	for (var i = 0; i < pWidth; ++i)
+		console.print(HORIZONTAL_DOUBLE);
+	console.print(LOWER_RIGHT_DOUBLE);
+
+	// Create the frame object
+	var frameObj = new Frame(pTopLeftX, pTopLeftY, pWidth, pHeight, BG_BLACK);
+	frameObj.attr &=~ HIGH;
+	frameObj.v_scroll = true;
+	frameObj.h_scroll = false;
+	frameObj.scrollbars = true;
+	var scrollbarObj = new ScrollBar(frameObj, {bg: BG_BLACK, fg: LIGHTGRAY, orientation: "vertical", autohide: false});
+	// Add the help text, then start the user input loop for the frame
+	var helpText = getUserSettingsHelpText(pWidth);
+	frameObj.putmsg(helpText, "\x01n");
+	var additionalQuitKeys = "";
+	var lastUserInput = doFrameInputLoop(frameObj, scrollbarObj, helpText, additionalQuitKeys);
+}
+
+// Returns text for the user settings help
+function getUserSettingsHelpText(pMaxTextWidth)
+{
+	var helpHeaderText = "SlyEdit User Settings Help";
+	var numSpaces = Math.floor(pMaxTextWidth/2) - Math.floor(helpHeaderText.length/2);
+	var helpText = "\x01n\x01c\x01h" + format("%*s", numSpaces, "") + helpHeaderText + "\x01n\r\n\r\n";
+	helpText += "\x01cPress any key to exit this help.\x01n\r\n\r\n";
+	helpText += getHelpTextWithLabel("Taglines", "Toggles whether you want to be prompted to add a tag line when you save a message", pMaxTextWidth);
+	helpText += "\r\n";
+	helpText += getHelpTextWithLabel("Prompt for spell checker on save", "Whether to use the spell checker when saving a message/file", pMaxTextWidth);
+	helpText += "\r\n";
+	helpText += getHelpTextWithLabel("Wrap quote lines to terminal width", "Whether or not to wrap quoted lines to your terminal width, to preserve all of their text. If not, quote lines will be truncated due to the quote prefix.", pMaxTextWidth);
+	helpText += "\r\n";
+	helpText += getHelpTextWithLabel("Join quote lines when wrapping", "Whether or not quoted lines should be joined together after wrapping. If not, quote lines will always start on their own line, even when wrapping is enabled. Turning this off can help preserve some of the formatting of the quoted lines.", pMaxTextWidth);
+	helpText += "\r\n";
+	helpText += getHelpTextWithLabel("Quote with author's initials", "Whether or not to include the author's initials in the quote prefix when quoting the message you're replying to", pMaxTextWidth);
+	helpText += "\r\n";
+	helpText += getHelpTextWithLabel("Indent quote lines containing initials", "When quoting with author's initials, whether or not to indent quote lines with a space", pMaxTextWidth);
+	helpText += "\r\n";
+	helpText += getHelpTextWithLabel("Trim spaces from quote lines", "Whether or not to remove leading and trailing spaces from quote lines. If you want to preserve formatting, you should turn this off before quoting the message.", pMaxTextWidth);
+	helpText += "\r\n";
+	helpText += getHelpTextWithLabel("Auto-sign messages", "Whether or not to automatically sign your name at the end of a message. Your handle will be used in sub-boards where handles are allowed; otherwise, your real name will be used.", pMaxTextWidth);
+	helpText += "\r\n";
+	helpText += getHelpTextWithLabel("  When using real name, use only first name", "When auto-signing with your real name, whether to use only your first name", pMaxTextWidth);
+	helpText += "\r\n";
+	helpText += getHelpTextWithLabel("  Sign emails with real name", "When auto-signing messages, whether or not to always sign emails with your real name", pMaxTextWidth);
+	helpText += "\r\n";
+	helpText += getHelpTextWithLabel("Spell-check dictionary/dictionaries", "Here, you can specify which spell-check dictionaries are used", pMaxTextWidth);
+	helpText += "\x01n";
+	return helpText;
+}
+// Helper for getUserSettingsHelpText()
+function getHelpTextWithLabel(pLabel, pHelpText, pMaxWidth)
+{
+	var helpText = format("\x01n\x01c\x01h%s\x01g: \x01n\x01c%s", pLabel, pHelpText);
+	return lfexpand(word_wrap(helpText, pMaxWidth, null, false));
 }
 
 // Allows the user to select a tagline.  Returns an object with the following
@@ -7118,4 +7214,75 @@ function doMemeInput()
 	}
 
 	return retObj;
+}
+
+// Displays a Frame object and handles the input loop for navigation until
+// the user presses Q, Enter, or ESC To quit the input loop
+//
+// Parameters:
+//  pFrame: The Frame object
+//  pScrollbar: The Scrollbar object for the Frame
+//  pFrameContentStr: The string content that was added to the Frame
+//  pAdditionalQuitKeys: Optional - A string containing additional keys to quit the
+//                       input loop.  This is case-sensitive.
+//
+// Return value: The last keypress/input from the user
+function doFrameInputLoop(pFrame, pScrollbar, pFrameContentStr, pAdditionalQuitKeys)
+{
+	var checkAdditionalQuitKeys = (typeof(pAdditionalQuitKeys) === "string" && pAdditionalQuitKeys.length > 0);
+
+	// Input loop for the frame to let the user scroll it
+	var frameContentTopYOffset = 0;
+	//var maxFrameYOffset = pFrameContentStr.split("\r\n").length - pFrame.height;
+	var maxFrameYOffset = countOccurrencesInStr(pFrameContentStr, "\r\n") - pFrame.height;
+	if (maxFrameYOffset < 0) maxFrameYOffset = 0;
+	var userInput = "";
+	var continueOn = true;
+	do
+	{
+		pFrame.scrollTo(0, frameContentTopYOffset);
+		pFrame.invalidate();
+		pScrollbar.cycle();
+		pFrame.cycle();
+		pFrame.draw();
+		// Note: getKeyWithESCChars() is defined in dd_lightbar_menu.js.
+		userInput = getKeyWithESCChars(K_NOECHO|K_NOSPIN|K_NOCRLF, 30000).toUpperCase();
+		if (userInput == KEY_UP)
+		{
+			if (frameContentTopYOffset > 0)
+				--frameContentTopYOffset;
+		}
+		else if (userInput == KEY_DOWN)
+		{
+			if (frameContentTopYOffset < maxFrameYOffset)
+				++frameContentTopYOffset;
+		}
+		else if (userInput == KEY_PAGEUP)
+		{
+			frameContentTopYOffset -= pFrame.height;
+			if (frameContentTopYOffset < 0)
+				frameContentTopYOffset = 0;
+		}
+		else if (userInput == KEY_PAGEDN)
+		{
+			frameContentTopYOffset += pFrame.height;
+			if (frameContentTopYOffset > maxFrameYOffset)
+				frameContentTopYOffset = maxFrameYOffset;
+		}
+		else if (userInput == KEY_HOME)
+			frameContentTopYOffset = 0;
+		else if (userInput == KEY_END)
+			frameContentTopYOffset = maxFrameYOffset;
+
+		// Check for whether to continue the input loop
+		continueOn = (userInput != "Q" && userInput != KEY_ENTER && userInput != KEY_ESC);
+		// If the additional quit keys does not contain the user's keypress, then continue
+		// the input loop.
+		// In other words, if the additional quit keys includes the user's keypress, then
+		// don't continue.
+		if (continueOn && checkAdditionalQuitKeys)
+			continueOn = (pAdditionalQuitKeys.indexOf(userInput) < 0);
+	} while (continueOn);
+
+	return userInput;
 }
