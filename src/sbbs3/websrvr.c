@@ -6913,6 +6913,7 @@ void http_session_thread(void* arg)
 			lprintf(LOG_NOTICE, "%04d %s [%s] !Maximum concurrent connections (%u) exceeded"
 			        , socket, session.client.protocol, session.host_ip, startup->max_concurrent_connections);
 			send_error(&session, __LINE__, error_429);
+			session.finished = true;
 		}
 	}
 
