@@ -224,6 +224,7 @@ typedef struct  {
 	bool write_chunked;
 	off_t range_start;
 	off_t range_end;
+	bool got_range;
 	bool accept_ranges;
 	time_t if_range;
 	bool path_info_index;
@@ -1349,6 +1350,7 @@ static bool send_headers(http_session_t *session, const char *status, int chunke
 			status_line = "200 OK";
 			session->req.range_start = 0;
 			session->req.range_end = 0;
+			session->req.got_range = false;
 		}
 		if (session->req.send_location) {
 			ret = -1;
@@ -1455,7 +1457,7 @@ static bool send_headers(http_session_t *session, const char *status, int chunke
 					safecat(headers, header, MAX_HEADERS_SIZE);
 				}
 				else  {
-					if ((session->req.range_start || session->req.range_end) && stat_code == 206) {
+					if ((session->req.got_range) && stat_code == 206) {
 						safe_snprintf(header, sizeof(header), "%s: %" PRIdOFF, get_header(HEAD_LENGTH), session->req.range_end - session->req.range_start + 1);
 						safecat(headers, header, MAX_HEADERS_SIZE);
 					}
@@ -1477,7 +1479,7 @@ static bool send_headers(http_session_t *session, const char *status, int chunke
 				safecat(headers, header, MAX_HEADERS_SIZE);
 			}
 
-			if (session->req.range_start || session->req.range_end) {
+			if (session->req.got_range) {
 				switch (stat_code) {
 					case 206:   /* Partial reply */
 						safe_snprintf(header, sizeof(header), "%s: bytes %" PRIdOFF "-%" PRIdOFF "/%" PRIdOFF, get_header(HEAD_CONTENT_RANGE), session->req.range_start, session->req.range_end, stats.st_size);
@@ -2864,7 +2866,7 @@ static bool parse_headers(http_session_t * session)
 						send_error(session, __LINE__, "501 Not Implemented");
 					break;
 				case HEAD_RANGE:
-					if (!stricmp(value, "bytes=")) {
+					if (strnicmp(value, "bytes=", 6)) {
 						send_error(session, __LINE__, error_416);
 						break;
 					}
@@ -2873,23 +2875,55 @@ static bool parse_headers(http_session_t * session)
 						send_error(session, __LINE__, error_416);
 						break;
 					}
-					/* Check for offset from end. */
 					if (*value == '-') {
-						session->req.range_start = strtol(value, NULL, 10);
+						if (!isdigit(*(value + 1))) {     // Presumably Win32 will assert if it's negative
+							send_error(session, __LINE__, error_416);
+							break;
+						}
+						errno = 0;
+						session->req.range_start = strtoll(value, &value, 10);
+						if (errno || session->req.range_start >= 0) {
+							send_error(session, __LINE__, error_416);
+							break;
+						}
 						session->req.range_end = -1;
-						break;
-					}
-					if ((p = strtok_r(value, "-", &last)) != NULL) {
-						session->req.range_start = strtol(p, NULL, 10);
-						if ((p = strtok_r(NULL, "-", &last)) != NULL)
-							session->req.range_end = strtol(p, NULL, 10);
-						else
-							session->req.range_end = -1;
 					}
 					else {
+						if (!isdigit(*value)) {     // Presumably Win32 will assert if it's negative
+							send_error(session, __LINE__, error_416);
+							break;
+						}
+						errno = 0;
+						session->req.range_start = strtoll(value, &value, 10);
+						if (errno) {
+							send_error(session, __LINE__, error_416);
+							break;
+						}
+						if (*value != '-') {
+							send_error(session, __LINE__, error_416);
+							break;
+						}
+						value++;
+						if (*value == 0) {
+							session->req.range_end = -1;
+						}
+						else {
+							if (!isdigit(*value)) {     // Presumably Win32 will assert if it's negative
+								send_error(session, __LINE__, error_416);
+								break;
+							}
+							session->req.range_end = strtoll(value, &value, 10);
+							if (errno) {
+								send_error(session, __LINE__, error_416);
+								break;
+							}
+						}
+					}
+					if (*value) {
 						send_error(session, __LINE__, error_416);
 						break;
 					}
+					session->req.got_range = true;
 					break;
 				case HEAD_IFRANGE:
 					session->req.if_range = decode_date(value);
@@ -3989,11 +4023,11 @@ static bool check_request(http_session_t * session)
 			return false;
 		}
 	}
-	if (session->req.range_start || session->req.range_end) {
+	if (session->req.got_range) {
 		if (session->req.range_start < 0)
-			session->req.range_start = sb.st_size - session->req.range_start;
+			session->req.range_start = sb.st_size + session->req.range_start;
 		if (session->req.range_end < 0)
-			session->req.range_end = sb.st_size - session->req.range_end;
+			session->req.range_end = sb.st_size + session->req.range_end;
 		if (session->req.range_end >= sb.st_size)
 			session->req.range_end = sb.st_size - 1;
 		if (session->req.range_end < session->req.range_start || session->req.dynamic) {
@@ -6342,7 +6376,7 @@ static void respond(http_session_t * session)
 	if (session->req.send_content && content_length > 0)  {
 		off_t  snt = 0;
 		time_t start = time(NULL);
-		if (session->req.range_start != 0 || (session->req.range_end && session->req.range_end != (content_length - 1)))
+		if (session->req.range_start != 0 || (session->req.got_range && session->req.range_end != (content_length - 1)))
 			lprintf(LOG_INFO, "%04d %s [%s] Sending file: %s (range %" PRIdOFF "-%" PRIdOFF " of %" PRIdOFF " bytes)"
 			        , session->socket, session->client.protocol, session->client.addr, session->req.physical_path
 			        , session->req.range_start, session->req.range_end, content_length);
