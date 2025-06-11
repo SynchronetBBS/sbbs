@@ -9,7 +9,7 @@ require("sbbsdefs.js", "P_NONE");
 require("uifcdefs.js", "UIFC_INMSG");
 
 
-if (!uifc.init("SlyEdit 1.91 Configurator"))
+if (!uifc.init("SlyEdit 1.92 Configurator"))
 {
 	print("Failed to initialize uifc");
 	exit(1);
@@ -644,7 +644,7 @@ function getOptionHelpText()
 
 	optionHelpText["reWrapQuoteLines"] = "Re-wrap quote lines: If true, quote lines will be re-wrapped so that they are complete ";
 	optionHelpText["reWrapQuoteLines"] += "but still look good when quoted.  If this option is disabled, then quote lines will ";
-	optionHelpText["reWrapQuoteLines"] += "simply be trimmed to fit into the message.";
+	optionHelpText["reWrapQuoteLines"] += "simply be trimmed to fit into the message. Users can change this for themselves too.";
 
 	optionHelpText["useQuoteLineInitials"] = "Use author initials in quoted lines: Whether or not to prefix the quote ";
 	optionHelpText["useQuoteLineInitials"] += "lines with the last author's initials. Users can change this for themselves too.";
@@ -788,6 +788,9 @@ function readSlyEditCfgFile()
 		cfgSections: {}
 	};
 
+	if (!file_exists(retObj.cfgFilename) && file_exists(system.ctrl_dir + "SlyEdit.example.cfg"))
+		retObj.cfgFilename = system.ctrl_dir + "SlyEdit.example.cfg";
+
 	var cfgFile = new File(retObj.cfgFilename);
 	if (cfgFile.open("r"))
 	{
@@ -795,6 +798,10 @@ function readSlyEditCfgFile()
 		for (var i = 0; i < iniSectionNames.length; ++i)
 			retObj.cfgSections[iniSectionNames[i]] = cfgFile.iniGetObject(iniSectionNames[i]);
 		cfgFile.close();
+
+		print("");
+		print("- Loaded config file: " + retObj.cfgFilename);
+		print("")
 	}
 	// In case some settings weren't loaded, add defaults
 	if (!retObj.cfgSections.hasOwnProperty("BEHAVIOR"))
