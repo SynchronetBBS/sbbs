@@ -73,6 +73,7 @@ void sbbs_t::useredit(int usernumber)
 		unixtodstr(user.laston, tmp);
 		if (strcmp(str, tmp) && user.ltoday) {
 			user.ltoday = user.ttoday = user.ptoday = user.etoday = user.dtoday = user.textra = 0;
+			user.btoday = 0;
 			user.freecdt = cfg.level_freecdtperday[user.level];
 			putuserdat(&user);  /* Leave alone */
 		}

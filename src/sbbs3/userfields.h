@@ -104,7 +104,8 @@ enum user_field {
 	USER_MAIL,
 	USER_LANG,
 	USER_DELDATE,
-	USER_DTODAY,   // Downloads today
+	USER_DTODAY,   // Downloads today (files)
+	USER_BTODAY,   // Downloads today (bytes)
 
 	// Last:
 	USER_FIELD_COUNT

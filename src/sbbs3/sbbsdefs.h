@@ -941,7 +941,8 @@ typedef struct {                        // Users information
 	       ltoday,                      // Logons today
 	       xedit,                       // External editor (1 based)
 	       shell;                       // Command shell
-	uint32_t dtoday;                    // Downloads today
+	uint32_t dtoday;                    // Downloads today (files)
+	uint64_t btoday;					// Downloads today (bytes)
 
 	char alias[LEN_ALIAS + 1],          // Alias
 	     name[LEN_NAME + 1],            // Name - Real

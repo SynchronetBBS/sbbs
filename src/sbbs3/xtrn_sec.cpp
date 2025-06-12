@@ -431,8 +431,8 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 
 		t = getnextevent(&cfg, NULL);
 		localtime_r(&t, &tm);
-		safe_snprintf(str, sizeof(str), "%u\n%" PRIu64 "\n"
-		              , 0                       /* 30: Kbytes downloaded today */
+		safe_snprintf(str, sizeof(str), "%" PRIu64 "\n%" PRIu64 "\n"
+		              , useron.btoday / 1024                     /* 30: Kbytes downloaded today */
 		              , user_available_credits(&useron) / 1024UL /* 31: Max Kbytes to download today */
 		              );
 		lfexpand(str, misc);
@@ -668,11 +668,11 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		fwrite(str, strlen(str), 1, fp);
 
 		localtime32(&useron.laston, &tm);
-		safe_snprintf(str, sizeof(str), "%u\n%u\n%u\n%u\n%s\n%02u/%02u/%02u %02u:%02u\n"
+		safe_snprintf(str, sizeof(str), "%u\n%u\n%" PRIu64 "\n%" PRIu64 "\n%s\n%02u/%02u/%02u %02u:%02u\n"
 		              , useron.dtoday           /* Daily download total */
 		              , max_files               /* Max download files */
-		              , 0                       /* Daily download k total */
-		              , 0                       /* Max download k total */
+		              , useron.btoday / 1024    /* Daily download k total */
+		              , user_available_credits(&useron) / 1024 /* Max download k total */
 		              , useron.phone            /* User phone number */
 		              , TM_MONTH(tm.tm_mon)     /* Last on date and time ("MM/DD/YY  HH:MM") */
 		              , tm.tm_mday, TM_YEAR(tm.tm_year)
@@ -850,7 +850,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 			l = (((tm.tm_hour * 60) + tm.tm_min) * 60) + tm.tm_sec;
 
 		safe_snprintf(str, sizeof(str), "%s\n%s\n%u\n%u\n%u\n%u\n%" PRId32 "\n%" PRIu64 "\n%s\n"
-		              "%s\n%s\n%u\n%s\n%u\n%u\n%u\n%u\n%u\n%lu\n%u\n"
+		              "%s\n%s\n%u\n%s\n%u\n%u\n%u\n%u\n%u\n%" PRIu64 "\n%" PRIu64 "\n"
 		              "%" PRIu64 "\n%" PRIu64 "\n%s\n%s\n"
 		              , dropdir
 		              , term->supports(ANSI) ? "TRUE":"FALSE" /* ANSI ? True or False */
@@ -870,8 +870,8 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		              , cfg.node_num            /* Node number */
 		              , max_files               /* Downloads allowed per day */
 		              , useron.dtoday           /* Downloads already this day */
-		              , 100000L                 /* Download bytes allowed/day */
-		              , 0                       /* Downloaded bytes already today */
+		              , user_available_credits(&useron) /* Download bytes allowed/day */
+		              , useron.btoday           /* Downloaded bytes already today */
 		              , useron.ulb / 1024L      /* Kbytes uploaded */
 		              , useron.dlb / 1024L      /* Kbytes downloaded */
 		              , useron.phone            /* Phone Number */

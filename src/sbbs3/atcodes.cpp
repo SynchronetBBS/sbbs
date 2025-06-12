@@ -1330,6 +1330,16 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 
+	if (strcmp(sp, "BTODAY") == 0) {
+		safe_snprintf(str, maxlen, "%" PRIu64, useron.btoday);
+		return str;
+	}
+
+	if (strcmp(sp, "KTODAY") == 0) {
+		safe_snprintf(str, maxlen, "%" PRIu64, useron.btoday / 1024);
+		return str;
+	}
+
 	if (strcmp(sp, "LTODAY") == 0) {
 		safe_snprintf(str, maxlen, "%u", useron.ltoday);
 		return str;

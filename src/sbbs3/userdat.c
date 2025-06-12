@@ -498,7 +498,8 @@ int parseuserdat(scfg_t* cfg, char *userdat, user_t *user, char* field[])
 	user->fbacks = (ushort)strtoul(field[USER_FBACKS], NULL, 0);
 	user->etoday = (ushort)strtoul(field[USER_ETODAY], NULL, 0);
 	user->ptoday = (ushort)strtoul(field[USER_PTODAY], NULL, 0);
-	user->dtoday = (ushort)strtoul(field[USER_DTODAY], NULL, 0);
+	user->dtoday = strtoul(field[USER_DTODAY], NULL, 0);
+	user->btoday = strtoull(field[USER_BTODAY], NULL, 0);
 
 	user->ulb = strtoull(field[USER_ULB], NULL, 0);
 	user->uls = (ushort)strtoul(field[USER_ULS], NULL, 0);
@@ -523,7 +524,7 @@ int parseuserdat(scfg_t* cfg, char *userdat, user_t *user, char* field[])
 	user->expire = parse_usertime(field[USER_EXPIRE]);
 
 	/* Reset daily stats if not already logged on today */
-	if (user->ltoday || user->etoday || user->ptoday || user->ttoday || user->dtoday) {
+	if (user->ltoday || user->etoday || user->ptoday || user->ttoday || user->dtoday || user->btoday) {
 		time_t    now;
 		struct tm now_tm;
 		struct tm logon_tm;
@@ -740,6 +741,7 @@ bool format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 	                   "%s\t" // USER_LANG
 	                   "%s\t" // USER_DELDATE
 	                   "%" PRIu32 "\t" // USER_DTODAY
+	                   "%" PRIu64 "\t" // USER_BTODAY
 	                   , user->number
 	                   , user->alias
 	                   , user->name
@@ -805,7 +807,8 @@ bool format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 	                   , user->mail
 	                   , user->lang
 	                   , deldate
-	                   , user->dtoday					
+	                   , user->dtoday
+	                   , user->btoday
 	                   );
 	if (len > USER_RECORD_LEN || len < 0) // truncated?
 		return false;
@@ -3021,6 +3024,7 @@ bool user_downloaded(scfg_t* cfg, user_t* user, int files, off_t bytes)
 	user->dls = (ushort)adjustuserval(cfg, user->number, USER_DLS, files);
 	user->dlb = adjustuserval(cfg, user->number, USER_DLB, bytes);
 	user->dtoday = (uint32_t)adjustuserval(cfg, user->number, USER_DTODAY, files);
+	user->btoday = adjustuserval(cfg, user->number, USER_BTODAY, bytes);
 
 	return true;
 }
@@ -3222,9 +3226,14 @@ void resetdailyuserdat(scfg_t* cfg, user_t* user, bool write)
 	user->freecdt = cfg->level_freecdtperday[user->level];
 	if (write)
 		putuserdec64(cfg, user->number, USER_FREECDT, user->freecdt);
+	/* downloads today (files) */
 	user->dtoday = 0;
 	if (write)
 		putuserstr(cfg, user->number, USER_DTODAY, "0");
+	/* downloads today (bytes) */
+	user->btoday = 0;
+	if (write)
+		putuserstr(cfg, user->number, USER_BTODAY, "0");
 	/* time used today */
 	user->ttoday = 0;
 	if (write)
@@ -3577,6 +3586,7 @@ size_t user_field_len(enum user_field fnum)
 		case USER_ETODAY:       return sizeof(user.etoday);
 		case USER_PTODAY:       return sizeof(user.ptoday);
 		case USER_DTODAY:       return sizeof(user.dtoday);
+		case USER_BTODAY:       return sizeof(user.btoday);
 
 		// File xfer stats:
 		case USER_ULB:          return sizeof(user.ulb);

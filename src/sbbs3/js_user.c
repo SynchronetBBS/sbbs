@@ -82,6 +82,7 @@ enum {
 	, USER_PROP_UNREAD_WAITING
 	, USER_PROP_SPAM_WAITING
 	, USER_PROP_MAIL_PENDING
+	, USER_PROP_BTODAY
 	, USER_PROP_DTODAY
 	, USER_PROP_ULB
 	, USER_PROP_ULS
@@ -300,6 +301,9 @@ static JSBool js_user_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case USER_PROP_DLCPS:
 			val = p->user->dlcps;
+			break;
+		case USER_PROP_BTODAY:
+			val = p->user->btoday;
 			break;
 		case USER_PROP_DTODAY:
 			val = p->user->dtoday;
@@ -997,7 +1001,7 @@ static jsSyncPropertySpec js_user_limits_properties[] = {
 	{   "email_per_day", USER_PROP_EMAILPERDAY, USER_PROP_FLAGS,   311 },
 	{   "posts_per_day", USER_PROP_POSTSPERDAY, USER_PROP_FLAGS,   311 },
 	{   "free_credits_per_day", USER_PROP_FREECDTPERDAY, USER_PROP_FLAGS,   311 },
-	{   "downloads_per_day", USER_PROP_DOWNLOADSPERDAY, USER_PROP_FLAGS,   321 },
+	{   "file_downloads_per_day", USER_PROP_DOWNLOADSPERDAY, USER_PROP_FLAGS,   321 },
 	{0}
 };
 
@@ -1037,7 +1041,8 @@ static jsSyncPropertySpec js_user_stats_properties[] = {
 	{   "total_feedbacks", USER_PROP_FBACKS, USER_PROP_FLAGS,       310 },
 	{   "email_today", USER_PROP_ETODAY, USER_PROP_FLAGS,       310 },
 	{   "posts_today", USER_PROP_PTODAY, USER_PROP_FLAGS,       310 },
-	{   "downloads_today", USER_PROP_DTODAY, USER_PROP_FLAGS,	321 },
+	{   "bytes_downloaded_today", USER_PROP_BTODAY, USER_PROP_FLAGS,	321 },
+	{   "files_downloaded_today", USER_PROP_DTODAY, USER_PROP_FLAGS,	321 },
 	{   "bytes_uploaded", USER_PROP_ULB, USER_PROP_FLAGS,       310 },
 	{   "files_uploaded", USER_PROP_ULS, USER_PROP_FLAGS,       310 },
 	{   "bytes_downloaded", USER_PROP_DLB, USER_PROP_FLAGS,       310 },
@@ -1067,6 +1072,7 @@ static const char* user_stats_prop_desc[] = {
 	, "Total feedback messages sent"
 	, "E-mail sent today"
 	, "Messages posted today"
+	, "Bytes downloaded today"
 	, "Files downloaded today"
 	, "Total bytes uploaded"
 	, "Total files uploaded"
