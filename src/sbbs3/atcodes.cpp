@@ -1330,7 +1330,8 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 
-	if (strcmp(sp, "BTODAY") == 0) {
+	// Note: @DAYBYTES@ = "Daily download K" in Wildcat 4 Sysop Guide, but "Number of bytes downloaded today" in PCBoard v15.2 Sysop Manual
+	if (strcmp(sp, "BTODAY") == 0 || strcmp(sp, "DAYBYTES") == 0) {
 		safe_snprintf(str, maxlen, "%" PRIu64, useron.btoday);
 		return str;
 	}
@@ -1505,7 +1506,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 
-	if (!strcmp(sp, "DAYBYTES")) {    /* amt of free cdts used today */
+	if (!strcmp(sp, "USEDCDT")) {    /* amt of free cdts used today */
 		safe_snprintf(str, maxlen, "%" PRIu64, cfg.level_freecdtperday[useron.level] - useron.freecdt);
 		return str;
 	}
