@@ -7600,10 +7600,9 @@ void web_server(void* arg)
 					lprintf(LOG_NOTICE, "%04d HTTP [%s] !Maximum concurrent connections (%u) exceeded"
 						,client_socket, host_ip, startup->max_concurrent_connections);
 					static int len_429;
-					if(len_429 < 1)
+					if (len_429 < 1)
 						len_429 = strlen(error_429);
-					if(sendsocket(client_socket, error_429, len_429) != len_429)
-						lprintf(LOG_ERR, "%04d HTTP [%s] FAILED sending error 429", client_socket, host_ip);
+					sendsocket(client_socket, error_429, len_429);
 					close_socket(&client_socket);
 					continue;
 				}
