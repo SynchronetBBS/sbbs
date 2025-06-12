@@ -990,9 +990,10 @@ int sbbs_t::listfileinfo(const int dirnum, const char *filespec, const int mode)
 				}
 				continue;
 			}
-			if (!user_can_download(&cfg, f->dir, &useron, &client, /* reason: */ NULL)) {
+			uint reason;
+			if (!user_can_download(&cfg, f->dir, &useron, &client, &reason)) {
 				sync();
-				bputs(text[CantDownloadFromDir]);
+				bputs(text[reason]);
 				mnemonics(text[QuitOrNext]);
 				if (getkeys(keys, 0) == quit_key()) {
 					found = -1;
