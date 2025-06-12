@@ -166,6 +166,7 @@ DLLEXPORT bool  user_can_send_mail(scfg_t*, enum smb_net_type, uint usernumber, 
 DLLEXPORT bool  user_is_sysop(user_t*);
 DLLEXPORT bool  user_is_subop(scfg_t*, int subnum, user_t*, client_t* client);
 DLLEXPORT bool  user_is_dirop(scfg_t*, int dirnum, user_t*, client_t* client);
+DLLEXPORT uint  user_downloads_per_day(scfg_t*, user_t*);
 DLLEXPORT bool  download_is_free(scfg_t*, int dirnum, user_t*, client_t* client);
 
 enum parsed_vpath {

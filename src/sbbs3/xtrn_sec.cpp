@@ -142,6 +142,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 	struct tm tm;
 	struct tm tl;
 	stats_t   stats;
+	uint max_files = user_downloads_per_day(&cfg, &useron);
 
 	char      node_dir[MAX_PATH + 1];
 	char      ctrl_dir[MAX_PATH + 1];
@@ -472,8 +473,8 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 			              , tm.tm_min
 			              , tl.tm_hour              /* 45: Time of last call */
 			              , tl.tm_min
-			              , 999                     /* 46: Max daily files available */
-			              , 0                       /* 47: Files downloaded so far today */
+			              , MIN(max_files, INT16_MAX) /* 46: Max daily files available */
+			              , useron.ptoday           /* 47: Files downloaded so far today */
 			              , useron.ulb / 1024UL     /* 48: Total Kbytes uploaded */
 			              , useron.dlb / 1024UL     /* 49: Total Kbytes downloaded */
 			              , useron.comment          /* 50: User comment */
@@ -668,8 +669,8 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 
 		localtime32(&useron.laston, &tm);
 		safe_snprintf(str, sizeof(str), "%u\n%u\n%u\n%u\n%s\n%02u/%02u/%02u %02u:%02u\n"
-		              , 0                       /* Daily download total */
-		              , 0                       /* Max download files */
+		              , useron.dtoday           /* Daily download total */
+		              , max_files               /* Max download files */
 		              , 0                       /* Daily download k total */
 		              , 0                       /* Max download k total */
 		              , useron.phone            /* User phone number */
@@ -867,8 +868,8 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		              , 0                       /* Current conference */
 		              , 0                       /* Current file dir */
 		              , cfg.node_num            /* Node number */
-		              , 15                      /* Downloads allowed per day */
-		              , 0                       /* Downloads already this day */
+		              , max_files               /* Downloads allowed per day */
+		              , useron.dtoday           /* Downloads already this day */
 		              , 100000L                 /* Download bytes allowed/day */
 		              , 0                       /* Downloaded bytes already today */
 		              , useron.ulb / 1024L      /* Kbytes uploaded */

@@ -1482,7 +1482,13 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	if (!strcmp(sp, "NEWFILETIME"))
 		return timestr(ns_time);
 
-	/* MAXDL */
+	if (strcmp(sp, "MAXDL") == 0) {
+		uint max_files = user_downloads_per_day(&cfg, &useron);
+		if (max_files == UINT_MAX)
+			return text[Unlimited];
+		safe_snprintf(str, maxlen, "%u", max_files);
+		return str;
+	}
 
 	if (!strcmp(sp, "MAXDK") || !strcmp(sp, "DLKLIMIT") || !strcmp(sp, "KBLIMIT")) {
 		safe_snprintf(str, maxlen, "%" PRIu64, cfg.level_freecdtperday[useron.level] / 1024L);

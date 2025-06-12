@@ -3804,6 +3804,16 @@ bool user_can_download(scfg_t* cfg, int dirnum, user_t* user, client_t* client, 
 }
 
 /****************************************************************************/
+/* Return the max number of files that user is allowed to download per day	*/
+/****************************************************************************/
+uint user_downloads_per_day(scfg_t* cfg, user_t* user)
+{
+	if (cfg->level_downloadsperday[user->level] && !(user->exempt & FLAG('D')))
+		return cfg->level_downloadsperday[user->level];
+	return UINT_MAX;
+}
+
+/****************************************************************************/
 /* Determine if the specified user can or cannot send email					*/
 /* 'reason' is an (optional) pointer to a text.dat item number				*/
 /* usernumber==0 for netmail												*/
