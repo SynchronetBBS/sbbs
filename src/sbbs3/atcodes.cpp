@@ -1331,8 +1331,13 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 
 	// Note: @DAYBYTES@ = "Daily download K" in Wildcat 4 Sysop Guide, but "Number of bytes downloaded today" in PCBoard v15.2 Sysop Manual
-	if (strcmp(sp, "BTODAY") == 0 || strcmp(sp, "DAYBYTES") == 0) {
+	if (strcmp(sp, "DAYBYTES") == 0) {
 		safe_snprintf(str, maxlen, "%" PRIu64, useron.btoday);
+		return str;
+	}
+
+	if (strcmp(sp, "BTODAY") == 0) {
+		byte_estimate_to_str(useron.btoday, str, maxlen, /* unit: */ 1, /* precision: */ 1);
 		return str;
 	}
 
@@ -1423,6 +1428,11 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 
+	if (strcmp(sp, "UPB") == 0) {
+		byte_estimate_to_str(useron.ulb, str, maxlen, /* unit: */ 1, /* precision: */ 1);
+		return str;
+	}
+
 	if (!strcmp(sp, "UPBYTES")) {
 		safe_snprintf(str, maxlen, "%" PRIu64, useron.ulb);
 		return str;
@@ -1435,6 +1445,11 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 
 	if (!strcmp(sp, "UPS") || !strcmp(sp, "UPFILES")) {
 		safe_snprintf(str, maxlen, "%u", useron.uls);
+		return str;
+	}
+
+	if (strcmp(sp, "DLB") == 0) {
+		byte_estimate_to_str(useron.dlb, str, maxlen, /* unit: */ 1, /* precision: */ 1);
 		return str;
 	}
 
