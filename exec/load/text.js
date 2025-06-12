@@ -944,7 +944,8 @@ var QWKEndOfMessage=934;
 var QWKTagLineFmt=935;
 var QWKControlCommand=936;
 var QWKBadControlCommand=937;
+var NoMoreDownloads=938;
 
-var TOTAL_TEXT=937;
+var TOTAL_TEXT=938;
 
 this;

@@ -938,4 +938,5 @@ const char* const text_id[]={
 	,"QWKTagLineFmt"
 	,"QWKControlCommand"
 	,"QWKBadControlCommand"
+	,"NoMoreDownloads"
 };

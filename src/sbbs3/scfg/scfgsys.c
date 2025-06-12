@@ -935,12 +935,17 @@ void security_cfg(void)
 				k = 0;
 				while (1) {
 					for (i = 0; i < 100; i++) {
+						if (cfg.level_downloadsperday[i] < 1)
+							SAFECOPY(str, "*");
+						else
+							snprintf(str, sizeof str, "%u", cfg.level_downloadsperday[i]);
 						byte_count_to_str(cfg.level_freecdtperday[i], tmp, sizeof(tmp));
 						snprintf(opt[i], MAX_OPLN, "%-2d    %5d %5d "
-						         "%5d %5d %5d %5d %6s %7s %2u", i
+						         "%5d %5d %5d %5d %5s %6s %7s %2u", i
 						         , cfg.level_timeperday[i], cfg.level_timepercall[i]
 						         , cfg.level_callsperday[i], cfg.level_emailperday[i]
 						         , cfg.level_postsperday[i], cfg.level_linespermsg[i]
+						         , str
 						         , tmp
 						         , cfg.level_misc[i] & LEVEL_EXPTOVAL ? "Val Set" : "Level"
 						         , cfg.level_misc[i] & (LEVEL_EXPTOVAL | LEVEL_EXPTOLVL) ?
@@ -960,11 +965,12 @@ void security_cfg(void)
 						"    Email Per Day          Maximum number of email sent per day\n"
 						"    Posts Per Day          Maximum number of posted messages per day\n"
 						"    Lines Per Message      Maximum number of lines per message\n"
+						"    Downloads Per Day      Maximum nubmer of files downloaded per day\n"
 						"    Free Credits Per Day   Number of free credits awarded per day\n"
 						"    Expire To              Level or validation set to Expire to\n"
 					;
 					i = uifc.list(WIN_RHT | WIN_ACT | WIN_SAV, 0, 3, 0, &seclevel_dflt, &seclevel_bar
-					              , "Level   T/D   T/C   C/D   E/D   P/D   L/M   F/D   "
+					              , "Level   T/D   T/C   C/D   E/D   P/D   L/M   D/D    F/D  "
 					              "Expire To", opt);
 					if (i == -1)
 						break;
@@ -983,6 +989,11 @@ void security_cfg(void)
 						         , cfg.level_postsperday[i]);
 						snprintf(opt[j++], MAX_OPLN, "%-22.22s%-5u", "Lines Per Message"
 						         , cfg.level_linespermsg[i]);
+						if (cfg.level_downloadsperday[i] < 1)
+							SAFECOPY(tmp, "Unlimited");
+						else
+							snprintf(tmp, sizeof tmp, "%u", cfg.level_downloadsperday[i]);
+						snprintf(opt[j++], MAX_OPLN, "%-22.22s%s", "Downloads Per Day", tmp);
 						byte_count_to_str(cfg.level_freecdtperday[i], tmp, sizeof(tmp));
 						snprintf(opt[j++], MAX_OPLN, "%-22.22s%-6s", "Free Credits Per Day"
 						         , tmp);
@@ -1057,6 +1068,13 @@ void security_cfg(void)
 								cfg.level_linespermsg[i] = atoi(tmp);
 								break;
 							case 6:
+								uifc.input(WIN_MID | WIN_SAV, 0, 0
+								           , "Downloaded Files Allowed Per Day (0=Unlimited)"
+								           , ultoa(cfg.level_downloadsperday[i], tmp, 10), 5
+								           , K_NUMBER | K_EDIT);
+								cfg.level_downloadsperday[i] = strtoul(tmp, NULL, 10);
+								break;
+							case 7:
 								byte_count_to_str(cfg.level_freecdtperday[i], tmp, sizeof(tmp));
 								if (uifc.input(WIN_MID | WIN_SAV, 0, 0
 								               , "Free Credits Awarded Per Day"
@@ -1064,7 +1082,7 @@ void security_cfg(void)
 								               , K_EDIT | K_UPPER) > 0)
 									cfg.level_freecdtperday[i] = parse_byte_count(tmp, 1);
 								break;
-							case 7:
+							case 8:
 								j = 0;
 								snprintf(opt[j++], MAX_OPLN, "Default Expired Level "
 								         "(Currently %u)", cfg.expired_level);

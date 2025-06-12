@@ -549,6 +549,13 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 					result = !_not;
 				(*ptrptr)++;
 				break;
+			case AR_DLT:
+				if ((equal && user->dtoday != i) || (!equal && user->dtoday < i))
+					result = _not;
+				else
+					result = !_not;
+				(*ptrptr)++;
+				break;
 			case AR_DLK:
 				if ((equal && user->dlb / 1024 != i) || (!equal && user->dlb / 1024 < i))
 					result = _not;

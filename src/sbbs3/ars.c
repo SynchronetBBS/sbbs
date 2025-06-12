@@ -261,6 +261,10 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf)
 				artype = AR_DLS;
 				i += 2;
 			}
+			else if (!strnicmp(str + i, "DLT", 3)) {
+				artype = AR_DLT;
+				i += 2;
+			}
 			else if (!strnicmp(str + i, "DLK", 3)) {
 				artype = AR_DLK;
 				i += 2;
@@ -583,6 +587,7 @@ uchar* arstr(ushort* count, const char* str, scfg_t* cfg, uchar* ar_buf)
 				case AR_ULK:
 				case AR_ULM:
 				case AR_DLS:
+				case AR_DLT:
 				case AR_DLK:
 				case AR_DLM:
 					ar[j++] = n & 0xff;

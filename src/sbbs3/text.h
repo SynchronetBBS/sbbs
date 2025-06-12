@@ -954,6 +954,7 @@ enum text {
 	,QWKTagLineFmt
 	,QWKControlCommand
 	,QWKBadControlCommand
+	,NoMoreDownloads
 
 	,TOTAL_TEXT
 };

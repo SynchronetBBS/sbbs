@@ -319,6 +319,7 @@ bool read_main_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 		cfg->level_misc[i] = iniGetUInteger(section, NULL, "settings", 0);
 		cfg->level_expireto[i] = iniGetClampedInt(section, NULL, "expireto", 0, 0, 99);
 		cfg->level_freecdtperday[i] = iniGetBytes(section, NULL, "freecdtperday", 1, 0);
+		cfg->level_downloadsperday[i] = iniGetUInt32(section, NULL, "downloadsperday", 0);
 	}
 
 	str_list_t shell_list = iniGetParsedSectionList(sections, "shell:");

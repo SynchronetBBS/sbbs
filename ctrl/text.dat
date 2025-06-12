@@ -1124,3 +1124,4 @@
 " %c \1g%.10s\1n %c %.127s%c"							   935 QWKTagLineFmt
 "\1n\r\n\1b\1hQWK Control [\1c%s\1b]: \1g%s\r\n"		   936 QWKControlCommand
 "Unrecognized Control Command!\1n\r\n"					   937 QWKBadControlCommand
+"You are limited to @DTODAY@ file downloads per day.\r\n"  938 NoMoreDownloads

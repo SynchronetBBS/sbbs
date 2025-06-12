@@ -313,6 +313,7 @@ bool write_main_cfg(scfg_t* cfg)
 		iniSetHexInt(&section, name, "settings", cfg->level_misc[i], &ini_style);
 		iniSetUInteger(&section, name, "expireto", cfg->level_expireto[i], &ini_style);
 		iniSetBytes(&section, name, "freecdtperday", 1, cfg->level_freecdtperday[i], &ini_style);
+		iniSetUInteger(&section, name, "downloadsperday", cfg->level_downloadsperday[i], &ini_style);
 		strListMerge(&ini, section);
 		free(section);
 	}

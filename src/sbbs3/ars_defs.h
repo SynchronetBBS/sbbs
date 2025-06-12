@@ -117,6 +117,7 @@ enum {                              /* Access requirement binaries */
 	, AR_CP437
 	, AR_USERNAME
 	, AR_LANG
+	, AR_DLT    // Downloads today
 };
 
 enum ar_type {
