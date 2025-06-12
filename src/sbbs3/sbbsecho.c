@@ -6789,6 +6789,16 @@ int main(int argc, char **argv)
 		}
 	}
 
+	if (!cfg.add_from_echolists_only) {
+		for (uint u = 0; u < cfg.listcfgs; ++u) {
+			if (cfg.listcfg[u].keys[0] != NULL) {
+				lprintf(LOG_WARNING, "One or more EchoLists have been configured with a Required Key, disabling Linked Node access to Area File");
+				cfg.add_from_echolists_only = true;
+				break;
+			}
+		}
+	}
+
 	char* tmpdir = FULLPATH(NULL, cfg.temp_dir, sizeof(cfg.temp_dir) - 1);
 	if (tmpdir != NULL) {
 		SAFECOPY(cfg.temp_dir, tmpdir);
