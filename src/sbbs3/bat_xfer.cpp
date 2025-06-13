@@ -263,6 +263,11 @@ bool sbbs_t::start_batch_download()
 		iniFreeStringList(ini);
 		return false;
 	}
+	if (useron.dtoday + file_count > user_downloads_per_day(&cfg, &useron)) {
+		bputs(text[NoMoreDownloads]);
+		iniFreeStringList(ini);
+		return false;
+	}
 	str_list_t filenames = iniGetSectionList(ini, NULL);
 
 	if (file_count == 1) {   // Only one file in the queue? Perform a non-batch (e.g. XMODEM) download
@@ -737,7 +742,11 @@ bool sbbs_t::addtobatdl(file_t* f)
 
 	bool       result = false;
 	str_list_t filenames = iniGetSectionList(ini, /* prefix: */ NULL);
-	if (strListCount(filenames) >= cfg.max_batdn) {
+	size_t file_count = strListCount(filenames);
+	if (useron.dtoday + file_count > user_downloads_per_day(&cfg, &useron)) {
+		bprintf(text[CantAddToQueue], f->name);
+		bputs(text[NoMoreDownloads]);
+	} else if (file_count >= cfg.max_batdn) {
 		bprintf(text[CantAddToQueue], f->name);
 		bputs(text[BatchDlQueueIsFull]);
 	} else {
