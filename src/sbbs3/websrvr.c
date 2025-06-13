@@ -7073,8 +7073,8 @@ void http_session_thread(void* arg)
 	if (startup->index_file_name == NULL || startup->cgi_ext == NULL)
 		lprintf(LOG_DEBUG, "%04d !!! ALL YOUR BASE ARE BELONG TO US !!!", socket);
 
-	lprintf(LOG_INFO, "%04d %s [%s] Session thread terminated (%u clients, %u threads remain, %lu served)"
-	        , socket, session.client.protocol, session.host_ip, clients_remain, protected_uint32_value(thread_count), served);
+	lprintf(LOG_INFO, "%04d %s [%s] Session thread terminated (%u clients and %u threads remain, %lu served, %u concurrently)"
+	        , socket, session.client.protocol, session.host_ip, clients_remain, protected_uint32_value(thread_count), ++served, client_highwater);
 
 }
 
@@ -7656,7 +7656,6 @@ void web_server(void* arg)
 			session->js_callback.events_supported = false;
 			pthread_mutex_unlock(&session->struct_filled);
 			session = NULL;
-			served++;
 		}
 
 		set_state(terminate_server ? SERVER_STOPPING : SERVER_RELOADING);
