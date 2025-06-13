@@ -743,7 +743,7 @@ bool sbbs_t::addtobatdl(file_t* f)
 	bool       result = false;
 	str_list_t filenames = iniGetSectionList(ini, /* prefix: */ NULL);
 	size_t file_count = strListCount(filenames);
-	if (useron.dtoday + file_count > user_downloads_per_day(&cfg, &useron)) {
+	if (useron.dtoday + file_count >= user_downloads_per_day(&cfg, &useron)) {
 		bprintf(text[CantAddToQueue], f->name);
 		bputs(text[NoMoreDownloads]);
 	} else if (file_count >= cfg.max_batdn) {
