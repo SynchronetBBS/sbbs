@@ -1602,14 +1602,14 @@ static void send_error(http_session_t * session, unsigned line, const char* mess
 			SAFEPRINTF3(sbuf, "%s%s%s", error_dir, error_code, startup->ssjs_ext);
 		}
 		if (!stat(sbuf, &sb)) {
-			lprintf(LOG_INFO, "%04d Using SSJS error page", session->socket);
+			lprintf(LOG_DEBUG, "%04d %s [%s] Using SSJS error page %s", session->socket, session->client.protocol, session->host_ip, error_code);
 			session->req.dynamic = IS_SSJS;
 			if (js_setup(session)) {
 				sent_ssjs = exec_ssjs(session, sbuf);
 				if (sent_ssjs) {
 					off_t snt = 0;
 
-					lprintf(LOG_INFO, "%04d Sending generated error page", session->socket);
+					lprintf(LOG_INFO, "%04d %s [%s] Sending generated error page %s", session->socket, session->client.protocol, session->host_ip, error_code);
 					snt = sock_sendfile(session, session->req.physical_path, 0, 0);
 					if (snt < 0)
 						snt = 0;
