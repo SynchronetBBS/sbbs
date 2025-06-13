@@ -1883,6 +1883,16 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 
+	if (strcmp(sp, "UCP") == 0) {
+		safe_snprintf(str, maxlen, "%u", usrlibs ? cfg.dir[usrdir[curlib][curdir[curlib]]]->dn_pct : 0);
+		return str;
+	}
+
+	if (strcmp(sp, "DCP") == 0) {
+		safe_snprintf(str, maxlen, "%u", usrlibs ? cfg.dir[usrdir[curlib][curdir[curlib]]]->up_pct : 0);
+		return str;
+	}
+
 	if (!strcmp(sp, "NOACCESS")) {
 		if (noaccess_str == text[NoAccessTime])
 			safe_snprintf(str, maxlen, noaccess_str, noaccess_val / 60, noaccess_val % 60);
