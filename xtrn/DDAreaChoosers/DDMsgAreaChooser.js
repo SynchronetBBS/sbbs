@@ -102,6 +102,8 @@
  *                            out into DDAreaChooserCommon.js to make development a bit simpler.
  * 2025-06-04 Eric Oulashin   Version 1.44
  *                            Fix: Item colors for sub-boards properly aligned again
+ * 2025-06-14 Eric Oulashin   Version 1.45
+ *                            Support for changing sorting from DDMsgReader
  */
 
 /* Command-line arguments:
@@ -141,8 +143,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.44";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2025-06-04";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.45";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2025-06-14";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -167,34 +169,31 @@ var LOWER_CENTER_BLOCK = "\xDC";
 // Characters for display
 var HORIZONTAL_SINGLE = "\xC4";
 
+// Sub-board sort options for changing to another sub-board.
+// Note: These sort option values must match the values for how they're
+// defined in DDMsgReader.
+const SUB_BOARD_SORT_NONE = 0;
+const SUB_BOARD_SORT_ALPHABETICAL = 1;
+const SUB_BOARD_SORT_LATEST_MSG_DATE_OLDEST_FIRST = 2;
+const SUB_BOARD_SORT_LATEST_MSG_DATE_NEWEST_FIRST = 3;
+
 // Misc. defines
 var ERROR_WAIT_MS = 1500;
 var SEARCH_TIMEOUT_MS = 10000;
 
-// gIsSysop stores whether or not the user is a sysop.
-var gIsSysop = user.compare_ars("SYSOP"); // Whether or not the user is a sysop
-
+// Parse command-line arguments
 // 1st command-line argument: Whether or not to choose a message group first (if
 // false, then only choose a sub-board within the user's current group).  This
 // can be true or false.
-var gChooseMsgGrpOnStartup = true;
-if (typeof(argv[0]) == "boolean")
-	gChooseMsgGrpOnStartup = argv[0];
-else if (typeof(argv[0]) == "string")
-	gChooseMsgGrpOnStartup = (argv[0].toLowerCase() == "true");
-
 
 // 2nd command-line argument: Determine whether or not to execute the message listing
 // code (true/false)
-var executeThisScript = true;
-if (typeof(argv[1]) == "boolean")
-	executeThisScript = argv[1];
-else if (typeof(argv[1]) == "string")
-	executeThisScript = (argv[1].toLowerCase() == "true");
+var cmdLineParseRetobj = parseCmdLineArgs(argv);
+
 
 // If executeThisScript is true, then create a DDMsgAreaChooser object and use
 // it to let the user choose a message area.
-if (executeThisScript)
+if (cmdLineParseRetobj.executeThisScript)
 {
 	// Starting with the user's current messsage group, find the first message group with sub-boards.
 	// If there are none, output an error message and exit.
@@ -211,19 +210,19 @@ if (executeThisScript)
 	js.on_exit("console.ctrlkey_passthru = " + console.ctrlkey_passthru);
 	console.ctrlkey_passthru = "+ACGKLOPQRTUVWXYZ_"; // So that control key combinations only get caught by this script
 
-	var msgAreaChooser = new DDMsgAreaChooser();
+	var msgAreaChooser = new DDMsgAreaChooser(cmdLineParseRetobj.sorting);
 	// If we are to let the user choose a sub-board within
 	// their current group (and not choose a message group
 	// first), then we need to capture the chosen sub-board
 	// here just in case, and change the user's message area
 	// here.  Otherwise, if choosing the message group first,
 	// SelectMsgArea() will change the user's sub-board.
-	//var msgGroupIdx = (gChooseMsgGrpOnStartup ? firstGrpIdxWithSubBoards/*null*/ : +bbs.curgrp);
+	//var msgGroupIdx = (cmdLineParseRetobj.chooseMsgGrpOnStartup ? firstGrpIdxWithSubBoards/*null*/ : +bbs.curgrp);
 	var msgGroupIdx = +bbs.curgrp; // Default to the user's current message group
-	if (!gChooseMsgGrpOnStartup)
+	if (!cmdLineParseRetobj.chooseMsgGrpOnStartup)
 		msgAreaChooser.BuildSubBoardPrintfInfoForGrp(msgGroupIdx);
-	var chosenIdx = msgAreaChooser.SelectMsgArea(gChooseMsgGrpOnStartup, msgGroupIdx);
-	if (!gChooseMsgGrpOnStartup && (typeof(chosenIdx) === "number"))
+	var chosenIdx = msgAreaChooser.SelectMsgArea(cmdLineParseRetobj.chooseMsgGrpOnStartup, msgGroupIdx);
+	if (!cmdLineParseRetobj.chooseMsgGrpOnStartup && (typeof(chosenIdx) === "number"))
 		bbs.cursub_code = msg_area.grp_list[bbs.curgrp].sub_list[chosenIdx].code;
 }
 
@@ -232,8 +231,11 @@ if (executeThisScript)
 ///////////////////////////////////////////////////////////////////////////////////
 // DDMsgAreaChooser class stuff
 
-function DDMsgAreaChooser()
+function DDMsgAreaChooser(pSortOption)
 {
+	// Sorting (defaults to none)
+	this.sortOption = SUB_BOARD_SORT_NONE;
+
 	// this.colors will be an associative array of colors (indexed by their
 	// usage) used for the message group/sub-board lists.
 	// Colors for the file & message area lists
@@ -320,10 +322,31 @@ function DDMsgAreaChooser()
 
 	// Read the settings from the config file.
 	this.ReadConfigFile();
+	// this.sortOption is set in ReadConfigFile() based on the user's DDMsgReader setting.
+	// However, if the parameter pSortOption is valid, then use it to override the current
+	// sorting option.
+	if (typeof(pSortOption) === "number" && pSortOption > -1)
+		this.sortOption = pSortOption;
 
 	// Populate msgArea_list (should be done after reading the configuration file
 	// so that useSubCollapsing and subCollapseSeparator are set according to settings
 	this.msgArea_list = getAreaHeirarchy(DDAC_MSG_AREAS, this.useSubCollapsing, this.subCollapseSeparator);
+	// Sort according to the configured sort option.
+	// Only the alphabetical sort option applies to the top level, since it's only
+	// message group names; there are no message dates there
+	if (this.sortOption == SUB_BOARD_SORT_ALPHABETICAL)
+	{
+		this.msgArea_list.sort(function(pA, pB)
+		{
+			if (pA.name < pB.name)
+				return -1;
+			else if (pA.name == pB.name)
+				return 0;
+			else if (pA.name > pB.name)
+				return 1;
+		});
+	}
+	this.msgArea_list.sorted = true;
 	
 	// These variables store default lengths of the various columns displayed in
 	// the message group/sub-board lists.
@@ -738,6 +761,63 @@ function DDMsgAreaChooser_SelectMsgArea(pChooseGroup, pGrpIdx)
 					}
 					else
 						chosenGroupOrSubBoardName = msgAreaStructure[selectedMenuIdx].name;
+					// Sort the current area structure, if applicable
+					if (!msgAreaStructure[selectedMenuIdx].hasOwnProperty("sorted") || !msgAreaStructure[selectedMenuIdx].sorted)
+					{
+						switch (this.sortOption)
+						{
+							case SUB_BOARD_SORT_NONE:
+								break;
+							case SUB_BOARD_SORT_ALPHABETICAL:
+								msgAreaStructure[selectedMenuIdx].items.sort(function(pA, pB)
+								{
+									if (pA.name < pB.name)
+										return -1;
+									else if (pA.name == pB.name)
+										return 0;
+									else if (pA.name > pB.name)
+										return 1;
+								});
+								break;
+							case SUB_BOARD_SORT_LATEST_MSG_DATE_OLDEST_FIRST:
+								msgAreaStructure[selectedMenuIdx].items.sort(function(pA, pB)
+								{
+									var sortVal = 0;
+									if (pA.hasOwnProperty("subItemObj") && pB.hasOwnProperty("subItemObj"))
+									{
+										var latestMsgTimeA = getLatestMsgTime(pA.subItemObj.code);
+										var latestMsgTimeB = getLatestMsgTime(pB.subItemObj.code);
+										if (latestMsgTimeA < latestMsgTimeB)
+											sortVal = -1;
+										else if (latestMsgTimeA == latestMsgTimeB)
+											sortVal = 0;
+										else if (latestMsgTimeA > latestMsgTimeB)
+											sortVal = 1;
+									}
+									return sortVal;
+								});
+								break;
+							case SUB_BOARD_SORT_LATEST_MSG_DATE_NEWEST_FIRST:
+								msgAreaStructure[selectedMenuIdx].items.sort(function(pA, pB)
+								{
+									var sortVal = 0;
+									if (pA.hasOwnProperty("subItemObj") && pB.hasOwnProperty("subItemObj"))
+									{
+										var latestMsgTimeA = getLatestMsgTime(pA.subItemObj.code);
+										var latestMsgTimeB = getLatestMsgTime(pB.subItemObj.code);
+										if (latestMsgTimeA < latestMsgTimeB)
+											sortVal = 1;
+										else if (latestMsgTimeA == latestMsgTimeB)
+											sortVal = 0;
+										else if (latestMsgTimeA > latestMsgTimeB)
+											sortVal = -1;
+									}
+									return sortVal;
+								});
+								break;
+						}
+						msgAreaStructure[selectedMenuIdx].sorted = true;
+					}
 					msgAreaStructure = msgAreaStructure[selectedMenuIdx].items;
 					menuContinueOn = false;
 				}
@@ -1817,6 +1897,20 @@ function DDMsgAreaChooser_ReadConfigFile()
 			}
 		}
 	}
+
+	// DDMsgReader has a user configuration option to specify a sort option for the area
+	// chooser, so try to read that setting if possible.
+	var DDMsgReaderUserSettingsFilename = system.data_dir + "user/" + format("%04d", user.number) + ".DDMsgReader_Settings";
+	var DDMsgReaderUserSettingsFile = new File(DDMsgReaderUserSettingsFilename);
+	if (DDMsgReaderUserSettingsFile.open("r"))
+	{
+		var behaviorSettings = DDMsgReaderUserSettingsFile.iniGetObject("BEHAVIOR");
+		DDMsgReaderUserSettingsFile.close();
+		// Note: The subBoardChangeSorting setting is numeric. The sort option values
+		// in this script must match how they're defined in DDMsgReader.
+		if (behaviorSettings.hasOwnProperty("subBoardChangeSorting") && typeof(behaviorSettings.subBoardChangeSorting) === "number")
+			this.sortOption = behaviorSettings.subBoardChangeSorting;
+	}
 }
 
 // For the DDMsgAreaChooser class: Shows the help screen
@@ -1840,12 +1934,18 @@ function DDMsgAreaChooser_showHelpScreen(pLightbar, pClearScreen)
 	console.center("\x01n\x01cVersion \x01g" + DD_MSG_AREA_CHOOSER_VERSION +
 	               " \x01w\x01h(\x01b" + DD_MSG_AREA_CHOOSER_VER_DATE + "\x01w)");
 	console.crlf();
-	console.print("\x01n\x01cFirst, a listing of message groups is displayed.  One can be chosen by typing");
-	console.crlf();
-	console.print("its number.  Then, a listing of sub-boards within that message group will be");
-	console.crlf();
-	console.print("shown, and one can be chosen by typing its number.");
-	console.crlf();
+	var helpText = "First, a listing of message groups is displayed.  One can be chosen by typing ";
+	helpText += "its number.  Then, a listing of sub-boards within that message group will be ";
+	helpText += "shown, and one can be chosen by typing its number.";
+	printf("\x01n\x01c%s", lfexpand(word_wrap(helpText, console.screen_columns-1, null, false)));
+	if (this.sortOption != SUB_BOARD_SORT_NONE)
+	{
+		helpText = "The current sorting is " + subBoardSortOptionToDescriptiveStr(this.sortOption) + ".";
+		helpText += " The sorting can be changed in Digital Distortion Message Reader on this system ";
+		helpText += "by pressing Ctrl-U to open the user settings, selecting \"Sorting for sub-board ";
+		helpText += "change\", and then choosing a sorting option.";
+		printf("\r\n%s", lfexpand(word_wrap(helpText, console.screen_columns-1, null, false)));
+	}
 
 	if (pLightbar)
 	{
@@ -3149,6 +3249,86 @@ function msgAreaStructureHasCurrentUserSubBoard(pMsgSubHeirarchyObj)
 			currentUserSubBoardFound = msgAreaStructureHasCurrentUserSubBoard(pMsgSubHeirarchyObj.items);
 	}
 	return currentUserSubBoardFound;
+}
+
+// Parses command-line arguments
+function parseCmdLineArgs(argv)
+{
+	var retObj = {
+		chooseMsgGrpOnStartup: true,
+		executeThisScript: true,
+		sorting: -1 // Invalid unless specified on the command line
+	};
+
+	// 1st command-line argument: Whether or not to choose a message group first (if
+	// false, then only choose a sub-board within the user's current group).  This
+	// can be true or false.
+	if (typeof(argv[0]) == "boolean")
+		retObj.chooseMsgGrpOnStartup = argv[0];
+	else if (typeof(argv[0]) == "string" && argv[0].length > 0 && argv[0][0] != "-")
+		retObj.chooseMsgGrpOnStartup = (argv[0].toLowerCase() == "true");
+
+	// 2nd command-line argument: Determine whether or not to execute the message listing
+	// code (true/false)
+	if (typeof(argv[1]) == "boolean")
+		retObj.executeThisScript = argv[1];
+	else if (typeof(argv[1]) == "string" && argv[1].length > 0 && argv[1][0] != "-")
+		retObj.executeThisScript = (argv[1].toLowerCase() == "true");
+
+	// Go through the arguments looking for ones starting with a - to set
+	// various options (in option=value format)
+	for (var i = 0; i < argv.length; ++i)
+	{
+		if (argv[i].length == 0) continue;
+		if (argv[i][0] != "-") continue;
+		var equalsIdx = argv[i].indexOf("=");
+		if (equalsIdx == -1) continue;
+		var optName = argv[i].substring(1, equalsIdx);
+		var optValue = argv[i].substring(equalsIdx+1);
+		var optNameLower = optName.toLowerCase();
+		if (optNameLower == "sort")
+			retObj.sorting = sortOptToValue(optValue);
+	}
+
+	return retObj;
+}
+
+// Converts a short sort option string to its numeric sort option value
+function sortOptToValue(pSortOptStr)
+{
+	var sortOptVal = SUB_BOARD_SORT_NONE;
+	const optValStr = pSortOptStr.toLowerCase();
+	if (optValStr == "none")
+		sortOptVal = SUB_BOARD_SORT_NONE;
+	else if (optValStr == "alphabetical")
+		sortOptVal = SUB_BOARD_SORT_ALPHABETICAL;
+	else if (optValStr == "msg_date_oldest_first")
+		sortOptVal = SUB_BOARD_SORT_LATEST_MSG_DATE_OLDEST_FIRST;
+	else if (optValStr == "msg_date_newest_first")
+		sortOptVal = SUB_BOARD_SORT_LATEST_MSG_DATE_NEWEST_FIRST;
+	return sortOptVal;
+}
+
+// Converts one of the sub-board sort options to a descriptive string
+function subBoardSortOptionToDescriptiveStr(pSortOption)
+{
+	var optionStr = "None (as configured in the system)";
+	switch (pSortOption)
+	{
+		case SUB_BOARD_SORT_NONE:
+			optionStr = "None (as configured in the system)";
+			break;
+		case SUB_BOARD_SORT_ALPHABETICAL:
+			optionStr = "Alphabetical";
+			break;
+		case SUB_BOARD_SORT_LATEST_MSG_DATE_OLDEST_FIRST:
+			optionStr = "Latest message date (oldest first)";
+			break;
+		case SUB_BOARD_SORT_LATEST_MSG_DATE_NEWEST_FIRST:
+			optionStr = "Latest message date (newest first)";
+			break;
+	}
+	return optionStr;
 }
 
 /*

@@ -94,6 +94,10 @@
  *                            (in the same directory as DDFileAreaChooser.js) if it exists.
  *                            Also did an internal refactor, moving some common functionality
  *                            out into DDAreaChooserCommon.js to make development a bit simpler.
+ * 2025-06-05 Eric Oulashin   Version 1.44
+ *                            Version update to match the message area chooser (no functional update here)
+ * 2025-06-14 Eric Oulashin   Version 1.45
+ *                            Version update to match the message area chooser (no functional update here)
  */
 
 // TODO: Failing silently when 1st argument is true
@@ -136,8 +140,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_FILE_AREA_CHOOSER_VERSION = "1.43";
-var DD_FILE_AREA_CHOOSER_VER_DATE = "2025-06-01";
+var DD_FILE_AREA_CHOOSER_VERSION = "1.45";
+var DD_FILE_AREA_CHOOSER_VER_DATE = "2025-06-14";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -438,7 +442,6 @@ function DDFileAreaChooser_SelectFileArea(pChooseLib)
 			console.crlf();
 		}
 		var createMenuRet = this.CreateLightbarMenu(fileLibStructure, previousFileLibStructures.length+1, menuTopRow, selectedItemIdx, numItemsWidth);
-		//if (user.is_sysop) printf("\x01n# items: %d\r\n\x01p", createMenuRet.menuObj.NumItems()); // Temporary
 		if (this.useLightbarInterface && console.term_supports(USER_ANSI))
 			numItemsWidth = createMenuRet.itemNumWidth;
 		var menu = createMenuRet.menuObj;

@@ -1,6 +1,6 @@
                       Digital Distortion Message Reader
-                                 Version 1.96s
-                           Release date: 2025-05-15
+                                 Version 1.97
+                           Release date: 2025-06-14
 
                                      by
 
@@ -53,14 +53,30 @@ in the message area (AKA sub-board) using the left & right arrow keys, replying
 to messages, and other common messagebase functionality.  The Digital
 Distortion Message Reader can also list messages in the message area and allows
 forward & reverse navigation through the message list using a lightbar or
-traditional user interface.  An integrated message area chooser feature is also
-included, allowing the user to change to a different message area to read/list
-messages.  Message newscan and various types of message searching are also
-available.  This script requires Synchronet version 3.15 or newer.
+traditional user interface.
 
-When using Synchronet 3.17, the message voting features added in Synchronet
-3.17 are supported.  For regular messages, users can vote a message up or down,
-and users can also vote in poll messages.
+This script requires Synchronet version 3.18 or newer.
+
+Digital Distortion Message reader also allows the user to change to a different
+message area while in the reader. The reader uses Digital Distortion Message
+Area Chooser (DDMsgAreaChooser.js) to do that. In a stock Synchronet setup,
+DDMsgAreaChooser.js is included in sbbs/xtrn/DDAreaChoosers. The reader will
+look for it there by default. If you want to run DDMsgAreaChooser.js from a
+different directory for any reason, you can change the DDMsgAreaChoose setting
+in DDMsgReader.cfg to be the full path & filename of DDMsgAreaChooser.js. That
+setting can also have a relative path (relative to sbbs/exec). For instance:
+
+DDMsgAreaChooser=../xtrn/SomeOtherPath/DDMsgAreaChooser.js
+
+If DDMsgAreaChooser.js is unavailable for any reason (i.e.,
+sbbs/xtrn/DDAreaChoosers is missing for some reason and DDMsgAreaChooser is not
+configured), area chooser functionality will not be functional.
+
+Message newscan and various types of message searching are also available.
+
+Message voting features added in Synchronet 3.17. Message voting is supported
+by this reader.  For regular messages, users can vote a message up or down,
+and users can also vote in polls.
 
 If the user's terminal does not support ANSI, the reader will fall back to a
 traditional user interface (which does not support scrolling).  The user
@@ -101,8 +117,7 @@ The following is a list of features:
   If there is no custom header file, a default header style will be used.  For
   There can also be different custom header files for various terminal widths.
 - Allows changing to a different message area from within the reader or message
-  list.  The area chooser will use a lightbar interface for ANSI users or a
-  traditional interface for users whose terminal doesn't support ANSI.
+  list, using the DDMsgAreaChooser.js mod.
 - Allows the user to delete and edit existing messages that they've written, if the
   sub-board supports those operations.
 - Allows the user to download file attachments, whether uploaded to their
@@ -731,23 +746,6 @@ readingPostOnSubBoardInsteadOfGoToNext  For reading messages (not for a newscan,
                                       Synchronet behavior. Valid values are true
                                       and false.  This defaults to false.
 
-areaChooserHdrFilenameBase            The filename to use (without the
-                                      extension) for a header to display above
-                                      the message area chooser list.  For
-                                      example, if areaChgHeader is specified,
-                                      then the reader will look for
-                                      areaChgHeader.ans if it exists, and if
-                                      not, the reader will look for
-                                      areaChgHeader.asc.  Additionally, you
-                                      can have multiple header files for
-                                      different terminal widths; fpr example,
-                                      areaChgHeader-80.ans for an 80-column
-                                      terminal, areaChgHeader-140.ans for a
-                                      140-column terminal, etc.
-
-areaChooserHdrMaxLines                The maximum number of lines to use from
-                                      the message area chooser header file.
-
 displayAvatars                        Whether or not to display user avatars in
                                       message headers.  Valid values are true
                                       and false.
@@ -864,6 +862,15 @@ showUserResponsesInTallyInfo          For poll messages or messages with upvotes
                                       show each users' responses. If false, it
                                       will just show the names of who voted on
                                       the message (and when).
+
+DDMsgAreaChooser                      The full path & filename of
+                                      DDMsgAreaChooser.js, if it's not in
+                                      sbbs/xtrn/DDAreaChoosers. If
+                                      DDMsgAreaChooser.js is in
+                                      sbbs/xtrn/DDAreaChoosers, this setting can
+                                      be left empty. DDAreaChooser.js is used
+                                      for allowing the user to change to a
+                                      different message sub-board.
 
 themeFilename                         The name of the configuration file to
                                       use for colors & string settings
