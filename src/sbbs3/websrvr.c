@@ -816,11 +816,12 @@ static void thread_up(bool setuid)
 		startup->thread_up(startup->cbdata, true, setuid);
 }
 
-static void thread_down(void)
+static uint32_t thread_down(void)
 {
-	(void)protected_uint32_adjust(&thread_count, -1);
+	uint32_t count = protected_uint32_adjust(&thread_count, -1);
 	if (startup != NULL && startup->thread_up != NULL)
 		startup->thread_up(startup->cbdata, false, false);
+	return count;
 }
 
 /*********************************************************************/
@@ -7077,13 +7078,13 @@ void http_session_thread(void* arg)
 	update_clients();
 	client_off(socket);
 
-	thread_down();
+	uint32_t threads_remain = thread_down();
 
 	if (startup->index_file_name == NULL || startup->cgi_ext == NULL)
 		lprintf(LOG_DEBUG, "%04d !!! ALL YOUR BASE ARE BELONG TO US !!!", socket);
 
 	lprintf(LOG_INFO, "%04d %s [%s] Session thread terminated (%u clients and %u threads remain, %lu served, %u concurrently)"
-	        , socket, session.client.protocol, session.host_ip, clients_remain, protected_uint32_value(thread_count), ++served, client_highwater);
+	        , socket, session.client.protocol, session.host_ip, clients_remain, threads_remain, ++served, client_highwater);
 
 }
 
