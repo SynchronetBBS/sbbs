@@ -2856,6 +2856,7 @@ static bool parse_headers(http_session_t * session)
 					}
 					break;
 				case HEAD_AGENT:
+					lprintf(LOG_INFO, "%04d %s [%s] User-Agent: %s", session->socket, session->client.protocol, session->host_ip, value);
 					if (session->req.ld != NULL) {
 						FREE_AND_NULL(session->req.ld->agent);
 						/* FREE()d in http_logging_thread() */
