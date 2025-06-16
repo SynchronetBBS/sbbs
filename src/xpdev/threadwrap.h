@@ -152,6 +152,9 @@ DLLEXPORT int pthread_once(pthread_once_t *oc, void (*init)(void));
 /* atomic_add_int on FreeBSD) but they have the advantage of always		*/
 /* working and being thread-safe on all platforms that support pthread	*/
 /* mutexes.																*/
+/*                                                                      */
+/* Note: protected_int*_adjust() return the *old* integer value, while  */
+/*       protected_int*_adjust_fetch() return the *new* integer value.  */
 /************************************************************************/
 #if !__STDC_NO_ATOMICS__
 #ifdef __cplusplus
@@ -251,11 +254,6 @@ typedef struct {
 #define protected_uint32_value(i)		protected_uint32_adjust(&(i),0)
 #define protected_int64_value(i)		protected_int64_adjust(&(i),0)
 #define protected_uint64_value(i)		protected_uint64_adjust(&(i),0)
-
-#define protected_int32_adjust_fetch(a, b)	protected_int32_adjust(a, b)
-#define protected_uint32_adjust_fetch(a, b)	protected_uint32_adjust(a, b)
-#define protected_int64_adjust_fetch(a, b)	protected_int64_adjust(a, b)
-#define protected_uint64_adjust_fetch(a, b)	protected_uint64_adjust(a, b)
 
 /* Return 0 on success, non-zero on failure (see pthread_mutex_init): */
 DLLEXPORT void protected_int32_init(protected_int32_t*,	int32_t value);
