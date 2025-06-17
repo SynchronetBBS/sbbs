@@ -818,7 +818,7 @@ static void thread_up(bool setuid)
 
 static uint32_t thread_down(void)
 {
-	uint32_t count = protected_uint32_adjust(&thread_count, -1);
+	uint32_t count = protected_uint32_adjust_fetch(&thread_count, -1);
 	if (startup != NULL && startup->thread_up != NULL)
 		startup->thread_up(startup->cbdata, false, false);
 	return count;
@@ -6906,7 +6906,7 @@ void http_session_thread(void* arg)
 		return;
 	}
 
-	client_count = protected_uint32_adjust(&active_clients, 1);
+	client_count = protected_uint32_adjust_fetch(&active_clients, 1);
 	if (client_count > client_highwater) {
 		client_highwater = client_count;
 		if (client_highwater > 1)

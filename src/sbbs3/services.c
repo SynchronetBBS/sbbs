@@ -1301,7 +1301,7 @@ static void js_service_thread(void* arg)
 	}
 	FREE_AND_NULL(service_client.subscan);
 
-	ulong remain = protected_uint32_adjust(&service->clients, -1);
+	ulong remain = protected_uint32_adjust_fetch(&service->clients, -1);
 	update_clients();
 
 #ifdef _WIN32
@@ -1633,7 +1633,7 @@ static void native_service_thread(void* arg)
 		errprintf(LOG_ERR, WHERE, "%04d %s '%s' returned %d"
 		          , socket, service->protocol, fullcmd, result);
 
-	ulong remain = protected_uint32_adjust(&service->clients, -1);
+	ulong remain = protected_uint32_adjust_fetch(&service->clients, -1);
 	update_clients();
 
 #ifdef _WIN32

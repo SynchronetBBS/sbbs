@@ -1822,7 +1822,7 @@ static void pop3_thread(void* arg)
 
 	free(arg);
 
-	uint32_t client_count = protected_uint32_adjust(&active_clients, 1);
+	uint32_t client_count = protected_uint32_adjust_fetch(&active_clients, 1);
 	if (client_count > client_highwater) {
 		client_highwater = client_count;
 		if (client_highwater > 1)
@@ -5108,7 +5108,7 @@ static void smtp_thread(void* arg)
 
 	free(arg);
 
-	uint32_t client_count = protected_uint32_adjust(&active_clients, 1);
+	uint32_t client_count = protected_uint32_adjust_fetch(&active_clients, 1);
 	if (client_count > client_highwater) {
 		client_highwater = client_count;
 		if (client_highwater > 1)
