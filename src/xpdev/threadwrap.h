@@ -260,14 +260,20 @@ DLLEXPORT void protected_int32_init(protected_int32_t*,	int32_t value);
 DLLEXPORT void protected_int64_init(protected_int64_t*,	int64_t value);
 
 /* Return new value: */
-DLLEXPORT int32_t protected_int32_adjust(protected_int32_t*, int32_t adjustment);
+DLLEXPORT int32_t protected_int32_adjust_fetch(protected_int32_t*, int32_t adjustment);
 DLLEXPORT int32_t protected_int32_set(protected_int32_t*, int32_t val);
-DLLEXPORT uint32_t protected_uint32_adjust(protected_uint32_t*, int32_t adjustment);
+DLLEXPORT uint32_t protected_uint32_adjust_fetch(protected_uint32_t*, int32_t adjustment);
 DLLEXPORT uint32_t protected_uint32_set(protected_uint32_t*, uint32_t val);
-DLLEXPORT int64_t protected_int64_adjust(protected_int64_t*, int64_t adjustment);
+DLLEXPORT int64_t protected_int64_adjust_fetch(protected_int64_t*, int64_t adjustment);
 DLLEXPORT int64_t protected_int64_set(protected_int64_t*, int64_t val);
-DLLEXPORT uint64_t protected_uint64_adjust(protected_uint64_t*, int64_t adjustment);
+DLLEXPORT uint64_t protected_uint64_adjust_fetch(protected_uint64_t*, int64_t adjustment);
 DLLEXPORT uint64_t protected_uint64_set(protected_uint64_t*, uint64_t adjustment);
+
+/* Return old value: */
+DLLEXPORT int32_t protected_int32_adjust(protected_int32_t*, int32_t adjustment);
+DLLEXPORT uint32_t protected_uint32_adjust(protected_uint32_t*, int32_t adjustment);
+DLLEXPORT int64_t protected_int64_adjust(protected_int64_t*, int64_t adjustment);
+DLLEXPORT uint64_t protected_uint64_adjust(protected_uint64_t*, int64_t adjustment);
 
 #endif
 

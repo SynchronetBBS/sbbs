@@ -282,7 +282,7 @@ uint64_t protected_uint64_adjust(protected_uint64_t* i, int64_t adjustment)
 	oldval = i->value;
 	i->value += adjustment;
 	pthread_mutex_unlock(&i->mutex);
-	return newval;
+	return oldval;
 }
 
 // protected_int*_adjust_fetch() return the *new* (adjusted) integer value
@@ -295,7 +295,7 @@ int32_t protected_int32_adjust_fetch(protected_int32_t* i, int32_t adjustment)
 	return newval;
 }
 
-uint32_t protected_uint32_adjust(protected_uint32_t* i, int32_t adjustment)
+uint32_t protected_uint32_adjust_fetch(protected_uint32_t* i, int32_t adjustment)
 {
 	uint32_t newval;
 	pthread_mutex_lock(&i->mutex);
@@ -304,7 +304,7 @@ uint32_t protected_uint32_adjust(protected_uint32_t* i, int32_t adjustment)
 	return newval;
 }
 
-int64_t protected_int64_adjust(protected_int64_t* i, int64_t adjustment)
+int64_t protected_int64_adjust_fetch(protected_int64_t* i, int64_t adjustment)
 {
 	int64_t newval;
 	pthread_mutex_lock(&i->mutex);
@@ -313,7 +313,7 @@ int64_t protected_int64_adjust(protected_int64_t* i, int64_t adjustment)
 	return newval;
 }
 
-uint64_t protected_uint64_adjust(protected_uint64_t* i, int64_t adjustment)
+uint64_t protected_uint64_adjust_fetch(protected_uint64_t* i, int64_t adjustment)
 {
 	uint64_t newval;
 	pthread_mutex_lock(&i->mutex);
