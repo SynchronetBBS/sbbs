@@ -261,13 +261,15 @@
  *                              pause prompt would cause the email header not to be
  *                              displayed when showing the message again, due to
  *                              console.aborted
- * 2025-06-14 Eric Oulashin     Version 1.97
+ * 2025-06-14 Eric Oulashin     Version 1.97 Beta
  *                              Now uses DDMsgAreaChooser for changing to another
  *                              sub-board. Built-in functionality (duplicated code)
  *                              has been removed.
  *                              New config option: DDMsgAreaChooser
  *                              Config options removed: areaChooserHdrFilenameBase,
  *                              areaChooserHdrMaxLines
+ * 2025-06-18 Eric Oulashin     Version 1.97
+ *                              Releasing this version.
  */
 
 "use strict";
@@ -376,7 +378,7 @@ var hexdump = load('hexdump_lib.js');
 
 // Reader version information
 var READER_VERSION = "1.97";
-var READER_DATE = "2025-06-14";
+var READER_DATE = "2025-06-18";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -578,6 +580,7 @@ if (file_exists(system.exec_dir + "load/avatar_lib.js"))
 // User twitlist filename (and settings filename)
 var gUserTwitListFilename = system.data_dir + "user/" + format("%04d", user.number) + ".DDMsgReader_twitlist";
 var gUserSettingsFilename = system.data_dir + "user/" + format("%04d", user.number) + ".DDMsgReader_Settings";
+var gDDMsgAreaChooserUserSettingsFilename = system.data_dir + "user/" + format("%04d", user.number) + ".DDMsgAreaChooser_Settings";
 
 /////////////////////////////////////////////
 // Script execution code
@@ -776,105 +779,102 @@ if (gDoDDMR)
 		// If the option to choose a message area first was enabled on the command-line
 		// (and neither the -subBoard nor the -personalEmail options were specified),
 		// then let the user choose a sub-board now.
-		if (msgReader.DDMsgAreaChooserFilename.length > 0)
+		if (gCmdLineArgVals.hasOwnProperty("chooseareafirst") && gCmdLineArgVals["chooseareafirst"] && !gCmdLineArgVals.hasOwnProperty("subboard") && !gListPersonalEmailCmdLineOpt)
+			msgReader.SelectMsgArea();
+		// Back up the user's current sub-board so that we can change back
+		// to it after searching is done, if a search is done.
+		var originalMsgGrpIdx = bbs.curgrp;
+		var originalSubBoardIdx = bbs.cursub;
+		var restoreOriginalSubCode = true;
+		// Based on the reader's start mode/search type, do the appropriate thing.
+		switch (msgReader.searchType)
 		{
-			if (gCmdLineArgVals.hasOwnProperty("chooseareafirst") && gCmdLineArgVals["chooseareafirst"] && !gCmdLineArgVals.hasOwnProperty("subboard") && !gListPersonalEmailCmdLineOpt)
-				msgReader.SelectMsgArea();
-			// Back up the user's current sub-board so that we can change back
-			// to it after searching is done, if a search is done.
-			var originalMsgGrpIdx = bbs.curgrp;
-			var originalSubBoardIdx = bbs.cursub;
-			var restoreOriginalSubCode = true;
-			// Based on the reader's start mode/search type, do the appropriate thing.
-			switch (msgReader.searchType)
-			{
-				case SEARCH_NONE:
-					restoreOriginalSubCode = false;
-					if (msgReader.subBoardCode != "mail")
-					{
-						console.attributes = "N";
-						console.crlf();
-						console.print("Loading " + subBoardGrpAndName(msgReader.subBoardCode) + "....");
-						console.line_counter = 0; // To prevent a pause before the message list comes up
-					}
-					msgReader.ReadOrListSubBoard();
-					break;
-				case SEARCH_KEYWORD:
-					var txtToSearch = (gCmdLineArgVals.hasOwnProperty("searchtext") ? gCmdLineArgVals.searchtext : null);
-					var subBoardCode = (gCmdLineArgVals.hasOwnProperty("subboard") ? gCmdLineArgVals.subboard : null);
-					msgReader.SearchMsgScan("keyword_search", txtToSearch, subBoardCode);
-					break;
-				case SEARCH_FROM_NAME:
-					msgReader.SearchMessages("from_name_search");
-					break;
-				case SEARCH_TO_NAME_CUR_MSG_AREA:
-					msgReader.SearchMessages("to_name_search");
-					break;
-				case SEARCH_TO_USER_CUR_MSG_AREA:
-					msgReader.SearchMessages("to_user_search");
-					break;
-				case SEARCH_MSG_NEWSCAN:
-					var scopeChar = null;
-					if (typeof(gCmdLineArgVals.indexmodescope) === "string")
-					{
-						var argScopeLower = gCmdLineArgVals.indexmodescope.toLowerCase();
-						if (argScopeLower == "sub" || argScopeLower == "subboard"|| argScopeLower == "sub-board")
-							scopeChar = "S";
-						else if (argScopeLower == "group" || argScopeLower == "grp")
-							scopeChar = "G";
-						else if (argScopeLower == "all")
-							scopeChar = "A";
-					}
-					if (scopeChar == null && !gCmdLineArgVals.suppresssearchtypetext)
-					{
-						console.crlf();
-						console.putmsg(msgReader.text.newMsgScanText);
-					}
-					msgReader.MessageAreaScan(SCAN_CFG_NEW, SCAN_NEW, scopeChar);
-					break;
-				case SEARCH_MSG_NEWSCAN_CUR_SUB:
-					msgReader.MessageAreaScan(SCAN_CFG_NEW, SCAN_NEW, "S");
-					break;
-				case SEARCH_MSG_NEWSCAN_CUR_GRP:
-					msgReader.MessageAreaScan(SCAN_CFG_NEW, SCAN_NEW, "G");
-					break;
-				case SEARCH_MSG_NEWSCAN_ALL:
-					msgReader.MessageAreaScan(SCAN_CFG_NEW, SCAN_NEW, "A");
-					break;
-				case SEARCH_TO_USER_NEW_SCAN:
-					if (!gCmdLineArgVals.suppresssearchtypetext)
-					{
-						console.crlf();
-						console.putmsg(msgReader.text.newToYouMsgScanText);
-					}
-					msgReader.MessageAreaScan(SCAN_CFG_TOYOU/*SCAN_CFG_YONLY*/, SCAN_UNREAD);
-					break;
-				case SEARCH_TO_USER_NEW_SCAN_CUR_SUB:
-					msgReader.MessageAreaScan(SCAN_CFG_TOYOU/*SCAN_CFG_YONLY*/, SCAN_UNREAD, "S");
-					break;
-				case SEARCH_TO_USER_NEW_SCAN_CUR_GRP:
-					msgReader.MessageAreaScan(SCAN_CFG_TOYOU/*SCAN_CFG_YONLY*/, SCAN_UNREAD, "G");
-					break;
-				case SEARCH_TO_USER_NEW_SCAN_ALL:
-					msgReader.MessageAreaScan(SCAN_CFG_TOYOU/*SCAN_CFG_YONLY*/, SCAN_UNREAD, "A");
-					break;
-				case SEARCH_ALL_TO_USER_SCAN:
-					if (!gCmdLineArgVals.suppresssearchtypetext)
-					{
-						console.crlf();
-						console.putmsg(msgReader.text.allToYouMsgScanText);
-					}
-					msgReader.MessageAreaScan(SCAN_CFG_TOYOU, SCAN_TOYOU);
-					break;
-			}
+			case SEARCH_NONE:
+				restoreOriginalSubCode = false;
+				if (msgReader.subBoardCode != "mail")
+				{
+					console.attributes = "N";
+					console.crlf();
+					console.print("Loading " + subBoardGrpAndName(msgReader.subBoardCode) + "....");
+					console.line_counter = 0; // To prevent a pause before the message list comes up
+				}
+				msgReader.ReadOrListSubBoard();
+				break;
+			case SEARCH_KEYWORD:
+				var txtToSearch = (gCmdLineArgVals.hasOwnProperty("searchtext") ? gCmdLineArgVals.searchtext : null);
+				var subBoardCode = (gCmdLineArgVals.hasOwnProperty("subboard") ? gCmdLineArgVals.subboard : null);
+				msgReader.SearchMsgScan("keyword_search", txtToSearch, subBoardCode);
+				break;
+			case SEARCH_FROM_NAME:
+				msgReader.SearchMessages("from_name_search");
+				break;
+			case SEARCH_TO_NAME_CUR_MSG_AREA:
+				msgReader.SearchMessages("to_name_search");
+				break;
+			case SEARCH_TO_USER_CUR_MSG_AREA:
+				msgReader.SearchMessages("to_user_search");
+				break;
+			case SEARCH_MSG_NEWSCAN:
+				var scopeChar = null;
+				if (typeof(gCmdLineArgVals.indexmodescope) === "string")
+				{
+					var argScopeLower = gCmdLineArgVals.indexmodescope.toLowerCase();
+					if (argScopeLower == "sub" || argScopeLower == "subboard"|| argScopeLower == "sub-board")
+					scopeChar = "S";
+					else if (argScopeLower == "group" || argScopeLower == "grp")
+						scopeChar = "G";
+					else if (argScopeLower == "all")
+						scopeChar = "A";
+				}
+				if (scopeChar == null && !gCmdLineArgVals.suppresssearchtypetext)
+				{
+					console.crlf();
+					console.putmsg(msgReader.text.newMsgScanText);
+				}
+				msgReader.MessageAreaScan(SCAN_CFG_NEW, SCAN_NEW, scopeChar);
+				break;
+			case SEARCH_MSG_NEWSCAN_CUR_SUB:
+				msgReader.MessageAreaScan(SCAN_CFG_NEW, SCAN_NEW, "S");
+				break;
+			case SEARCH_MSG_NEWSCAN_CUR_GRP:
+				msgReader.MessageAreaScan(SCAN_CFG_NEW, SCAN_NEW, "G");
+				break;
+			case SEARCH_MSG_NEWSCAN_ALL:
+				msgReader.MessageAreaScan(SCAN_CFG_NEW, SCAN_NEW, "A");
+				break;
+			case SEARCH_TO_USER_NEW_SCAN:
+				if (!gCmdLineArgVals.suppresssearchtypetext)
+				{
+					console.crlf();
+					console.putmsg(msgReader.text.newToYouMsgScanText);
+				}
+				msgReader.MessageAreaScan(SCAN_CFG_TOYOU/*SCAN_CFG_YONLY*/, SCAN_UNREAD);
+				break;
+			case SEARCH_TO_USER_NEW_SCAN_CUR_SUB:
+				msgReader.MessageAreaScan(SCAN_CFG_TOYOU/*SCAN_CFG_YONLY*/, SCAN_UNREAD, "S");
+				break;
+			case SEARCH_TO_USER_NEW_SCAN_CUR_GRP:
+				msgReader.MessageAreaScan(SCAN_CFG_TOYOU/*SCAN_CFG_YONLY*/, SCAN_UNREAD, "G");
+				break;
+			case SEARCH_TO_USER_NEW_SCAN_ALL:
+				msgReader.MessageAreaScan(SCAN_CFG_TOYOU/*SCAN_CFG_YONLY*/, SCAN_UNREAD, "A");
+				break;
+			case SEARCH_ALL_TO_USER_SCAN:
+				if (!gCmdLineArgVals.suppresssearchtypetext)
+				{
+					console.crlf();
+					console.putmsg(msgReader.text.allToYouMsgScanText);
+				}
+				msgReader.MessageAreaScan(SCAN_CFG_TOYOU, SCAN_TOYOU);
+				break;
+		}
 
-			// If we should restore the user's original message area, then do so.
-			if (restoreOriginalSubCode)
-			{
-				bbs.cursub = 0;
-				bbs.curgrp = originalMsgGrpIdx;
-				bbs.cursub = originalSubBoardIdx;
-			}
+		// If we should restore the user's original message area, then do so.
+		if (restoreOriginalSubCode)
+		{
+			bbs.cursub = 0;
+			bbs.curgrp = originalMsgGrpIdx;
+			bbs.cursub = originalSubBoardIdx;
 		}
 	}
 
@@ -1392,16 +1392,24 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 		promptDelPersonalEmailAfterReply: false,
 		// Whether or not to display the 'replied' status character (for personal email)
 		displayMsgRepliedChar: true,
-		// Sub-board sorting for changing to another sub-board: None, Alphabetical, or LatestMsgDate
-		subBoardChangeSorting: SUB_BOARD_SORT_NONE,
 		// For the message list, whether to automatically move to the next message after selecting one
 		selectInMsgListMovesToNext: false
 	};
 	// Full path & filename of Digital Distortion Message Area Chooser (if configured)
 	this.DDMsgAreaChooserFilename = "";
+	// shellLib will be lazy-loaded on first use if DDMsgAreaChooser is unavailable
+	this.shellLib = null;
 	// Read the settings from the config file (some settings could set user settings)
 	this.cfgFileSuccessfullyRead = false;
 	this.ReadConfigFile();
+	// If this.DDMsgAreaChooserFilename is still blank, then see if
+	// DDMsgAreaChooser.js is in the stock location
+	if (this.DDMsgAreaChooserFilename.length == 0)
+	{
+		var msgAreaChooserFullPath = fullpath("../xtrn/DDAreaChoosers/DDMsgAreaChooser.js");
+		if (file_exists(msgAreaChooserFullPath))
+			this.DDMsgAreaChooserFilename = msgAreaChooserFullPath;
+	}
 	this.ReadUserSettingsFile(false);
 	// Set any other values specified by the command-line parameters
 	// Reader start mode - Read or list mode
@@ -1461,10 +1469,6 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 				this.text[prop] = "\x01n" + this.text[prop];
 		}
 	}
-
-	// Message sub-board sort option for changing to a different sub-board, to
-	// persist while the reader is running but not to save to user settings
-	this.subBoardSortOptionWhileRunning = this.userSettings.subBoardChangeSorting;
 
 	// this.tabReplacementText will be the text that tabs will be replaced
 	// with in enhanced reader mode
@@ -2224,7 +2228,7 @@ function DigDistMsgReader_SearchMessages(pSearchModeStr, pSubBoardCode, pScanSco
 					mswait(10);
 
 					subCode = subBoardsToScan[subCodeIdx];
-					if (skipSubBoardScanCfgCheck || (msg_area.sub[subCode].can_read && ((msg_area.sub[subCode].scan_cfg & SCAN_CFG_NEW) == SCAN_CFG_NEW)))
+					if (skipSubBoardScanCfgCheck || (userCanAccessSub(subCode, "read") && Boolean(msg_area.sub[subCode].scan_cfg & SCAN_CFG_NEW)))
 					{
 						// Force garbage collection to ensure enough memory is available to continue
 						js.gc(true);
@@ -2394,7 +2398,7 @@ function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
 	// don't allow the user to read it.
 	if (this.subBoardCode != "mail")
 	{
-		if (!msg_area.sub[this.subBoardCode].can_read)
+		if (!userCanAccessSub(this.subBoardCode, "read"))
 		{
 			var errorMsg = format(bbs.text(CantReadSub), msg_area.sub[this.subBoardCode].grp_name, msg_area.sub[this.subBoardCode].name);
 			console.print("\x01n" + errorMsg);
@@ -2803,7 +2807,7 @@ function DigDistMsgReader_MessageAreaScan(pScanCfgOpt, pScanMode, pScanScopeChar
 		//user.compare_ars(msg_area.grp_list[grpIndex].sub_list[subIndex].ars)
 		// Now using the can_read property.
 		this.setSubBoardCode(subBoardsToScan[subCodeIdx]); // Needs to be set before getting the last read/scan pointer index
-		if (msg_area.sub[this.subBoardCode].can_read && ((msg_area.sub[this.subBoardCode].scan_cfg & pScanCfgOpt) == pScanCfgOpt))
+		if (userCanAccessSub(this.subBoardCode, "read") && Boolean(msg_area.sub[this.subBoardCode].scan_cfg & pScanCfgOpt))
 		{
 			// If we are to output status messages, then do so and 
 			if (outputMessages)
@@ -3156,7 +3160,7 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 	// don't allow the user to read it.
 	if (this.subBoardCode != "mail")
 	{
-		if (!msg_area.sub[this.subBoardCode].can_read)
+		if (!userCanAccessSub(this.subBoardCode, "read"))
 		{
 			var errorMsg = format(bbs.text(CantReadSub), msg_area.sub[this.subBoardCode].grp_name, msg_area.sub[this.subBoardCode].name);
 			console.print("\x01n" + errorMsg);
@@ -3400,7 +3404,7 @@ function DigDistMsgReader_ReadMessages(pSubBoardCode, pStartingMsgOffset, pRetur
 		}
 		else if (readMsgRetObj.nextAction == ACTION_CHG_MSG_AREA) // Change message area, if allowed
 		{
-			if (allowChgMsgArea && this.DDMsgAreaChooserFilename.length > 0)
+			if (allowChgMsgArea)
 			{
 				// Change message sub-board.  If a different sub-board was
 				// chosen, then change some variables to use the new
@@ -3584,7 +3588,7 @@ function DigDistMsgReader_ListMessages(pSubBoardCode, pAllowChgSubBoard)
 	// don't allow the user to read it.
 	if (this.subBoardCode != "mail")
 	{
-		if (!msg_area.sub[this.subBoardCode].can_read)
+		if (!userCanAccessSub(this.subBoardCode, "read"))
 		{
 			var errorMsg = format(bbs.text(CantReadSub), msg_area.sub[this.subBoardCode].grp_name, msg_area.sub[this.subBoardCode].name);
 			console.print("\x01n" + errorMsg);
@@ -3641,7 +3645,7 @@ function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 	// don't allow the user to read it.
 	if (this.subBoardCode != "mail")
 	{
-		if (!msg_area.sub[this.subBoardCode].can_read)
+		if (!userCanAccessSub(this.subBoardCode, "read"))
 		{
 			var errorMsg = format(bbs.text(CantReadSub), msg_area.sub[this.subBoardCode].grp_name, msg_area.sub[this.subBoardCode].name);
 			console.print("\x01n" + errorMsg);
@@ -3861,7 +3865,7 @@ function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 			// C: Change to another message area (sub-board)
 			else if (retvalObj.userInput == this.msgListKeys.chgMsgArea) // "C"
 			{
-				if (allowChgSubBoard && this.DDMsgAreaChooserFilename.length > 0 && this.subBoardCode != "mail")
+				if (allowChgSubBoard && this.subBoardCode != "mail")
 				{
 					// Store the current sub-board code so we can see if it changed
 					var oldSubCode = bbs.cursub_code;
@@ -4053,7 +4057,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 	// don't allow the user to read it.
 	if (this.subBoardCode != "mail")
 	{
-		if (!msg_area.sub[this.subBoardCode].can_read)
+		if (!userCanAccessSub(this.subBoardCode, "read"))
 		{
 			var errorMsg = format(bbs.text(CantReadSub), msg_area.sub[this.subBoardCode].grp_name, msg_area.sub[this.subBoardCode].name);
 			console.print("\x01n" + errorMsg);
@@ -4384,7 +4388,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 		// C: Change to another message area (sub-board)
 		else if (lastUserInputUpper == this.msgListKeys.chgMsgArea)
 		{
-			if (allowChgSubBoard && this.DDMsgAreaChooserFilename.length > 0 && this.subBoardCode != "mail")
+			if (allowChgSubBoard && this.subBoardCode != "mail")
 			{
 				// Store the current sub-board code so we can see if it changed
 				var oldSubCode = bbs.cursub_code;
@@ -9747,20 +9751,6 @@ function DigDistMsgReader_ReadConfigFile()
 			this.userSettings.promptDelPersonalEmailAfterReply = settingsObj.promptDelPersonalEmailAfterReply;
 		if (typeof(settingsObj.displayIndexedModeMenuIfNoNewMessages) === "boolean")
 			this.userSettings.displayIndexedModeMenuIfNoNewMessages = settingsObj.displayIndexedModeMenuIfNoNewMessages;
-		if (typeof(settingsObj.subBoardChangeSorting) === "string")
-		{
-			var valUpper = settingsObj.subBoardChangeSorting.toUpperCase();
-			if (valUpper == "NONE")
-				this.userSettings.subBoardChangeSorting = SUB_BOARD_SORT_NONE;
-			else if (valUpper == "ALPHABETICAL")
-				this.userSettings.subBoardChangeSorting = SUB_BOARD_SORT_ALPHABETICAL;
-			else if (valUpper == "LATESTMSGDATEOLDESTFIRST" || valUpper == "LATEST_MSG_DATE_OLDEST_FIRST")
-				this.userSettings.subBoardChangeSorting = SUB_BOARD_SORT_LATEST_MSG_DATE_OLDEST_FIRST;
-			else if (valUpper == "LATESTMSGDATENEWESTFIRST" || valUpper == "LATEST_MSG_DATE_NEWEST_FIRST")
-				this.userSettings.subBoardChangeSorting = SUB_BOARD_SORT_LATEST_MSG_DATE_NEWEST_FIRST;
-			else
-				this.userSettings.subBoardChangeSorting = SUB_BOARD_SORT_NONE;
-		}
 		if (typeof(settingsObj.indexedModeNewscanOnlyShowSubsWithNewMsgs) === "boolean")
 			this.userSettings.indexedModeNewscanOnlyShowSubsWithNewMsgs = settingsObj.indexedModeNewscanOnlyShowSubsWithNewMsgs;
 		if (typeof(settingsObj.DDMsgAreaChooser) === "string")
@@ -11366,7 +11356,7 @@ function DigDistMsgReader_ReplyToMsg(pMsgHdr, pMsgText, pPrivate, pMsgIdx)
 	var replyPrivately = (typeof(pPrivate) == "boolean" ? pPrivate : false);
 	var canPost = true;
 	if (!replyPrivately && (this.subBoardCode != "mail"))
-		canPost = msg_area.sub[this.subBoardCode].can_post;
+		canPost = userCanAccessSub(this.subBoardCode, "post");
 	if (!canPost)
 	{
 		console.crlf();
@@ -12920,8 +12910,14 @@ function DigDistMsgReader_SelectMsgArea()
 	if (this.DDMsgAreaChooserFilename.length > 0)
 	{
 		this.currentAction = ACTION_CHOOSING_SUB_BOARD;
-		var cmdLine = format("?%s -sort=%s", this.DDMsgAreaChooserFilename, subBoardSortOptionToStrForCommandLine(this.subBoardSortOptionWhileRunning));
-		bbs.exec(cmdLine);
+		bbs.exec("?" + this.DDMsgAreaChooserFilename);
+	}
+	else
+	{
+		console.clear("\x01n");
+		if (this.shellLib == null)
+			this.shellLib = load({}, "shell_lib.js");
+		this.shellLib.select_msg_area();
 	}
 	this.currentAction = ACTION_NONE;
 }
@@ -13952,15 +13948,6 @@ function DigDistMsgReader_GetScanPtrMsgIdx()
 	if (msg_area.sub[this.subBoardCode].posts == 0)
 		return -1;
 
-	/*
-	// Temporary (debugging newscan for new user)
-	var grpIdx = msg_area.sub[this.subBoardCode].grp_index;
-	var subDesc = msg_area.grp_list[grpIdx].name + " - " + msg_area.sub[this.subBoardCode].name;
-	// End Temporary
-	*/
-	
-	//printf("%s - Scan tr is last msg special value: %s\r\n", subDesc, subBoardScanPtrIsLatestMsgSpecialVal(this.subBoardCode) ? "true" : "false"); // Temporary
-
 	// If the user's scan pointer is the special value that their scan pointer should be
 	// on the last message, then set it that way (the user might be a new user).
 	// Otherwise, get the user's scan pointer message index.
@@ -13977,7 +13964,6 @@ function DigDistMsgReader_GetScanPtrMsgIdx()
 			{
 				//msg_area.sub[this.subBoardCode].scan_ptr = lasgReadableMsgHdr.number;
 				//msg_area.sub[this.subBoardCode].last_read = lasgReadableMsgHdr.number;
-				//printf("- %s Here 1; scan_ptr: %d; msgIdx: %d\r\n\x01p", subDesc, msg_area.sub[this.subBoardCode].scan_ptr, msgIdx); // Temporary (debugging newscan for new user)
 			}
 			//else
 			//	 return -1;
@@ -13989,7 +13975,6 @@ function DigDistMsgReader_GetScanPtrMsgIdx()
 	else
 	{
 		msgIdx = this.GetMsgIdx(msg_area.sub[this.subBoardCode].scan_ptr);
-		//printf("- %s Here 2; scan_ptr: %d; msgIdx: %d\r\n\x01p", subDesc, msg_area.sub[this.subBoardCode].scan_ptr, msgIdx); // Temporary (debugging newscan for new user)
 	}
 	// Sanity checking for msgIdx
 	var msgbase = new MsgBase(this.subBoardCode);
@@ -14005,23 +13990,13 @@ function DigDistMsgReader_GetScanPtrMsgIdx()
 			if (readableMsgIdx > -1)
 			{
 				var newLastRead = this.IdxToAbsMsgNum(readableMsgIdx);
-				//console.print("- " + subDesc + " Here 3. newLastRead: " + newLastRead + "\r\n\x01p"); // Temporary (debugging newscan for new user)
 				if (newLastRead > -1)
-				{
-					//console.print("- " + subDesc + " Here 4\r\n\x01p"); // Temporary (debugging newscan for new user)
 					msg_area.sub[this.subBoardCode].scan_ptr = newLastRead;
-				}
 				else
-				{
-					//console.print("- " + subDesc + " Here 5\r\n\x01p"); // Temporary (debugging newscan for new user)
 					msg_area.sub[this.subBoardCode].scan_ptr = 0;
-				}
 			}
 			else
-			{
-				//console.print("- " + subDesc + " Here 6\r\n\x01p"); // Temporary (debugging newscan for new user)
 				msg_area.sub[this.subBoardCode].scan_ptr = 0;
-			}
 		}
 		msgbase.close();
 	}
@@ -14738,6 +14713,10 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn, pTopR
 			originalSettings[prop] = this.userSettings[prop];
 	}
 
+	// DDMsgAreaChooser sort option
+	var readRetObj = readUserDDMsgAreaChooserSortingSetting();
+	var chgSubBoardSortOpt = readRetObj.sortOption;
+	var chgSubBoardSortOptChanged = false;
 
 	// Create the user settings box
 	var optBoxTitle = "Setting                                      Enabled";
@@ -14867,7 +14846,9 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn, pTopR
 
 	// Other actions
 	var USER_TWITLIST_OPT_INDEX = optionBox.addTextItem("Personal twit list");
-	var SUB_BOARD_CHANGE_SORTING_OPT_INDEX = optionBox.addTextItem("Sorting for sub-board change");
+	var SUB_BOARD_CHANGE_SORTING_OPT_INDEX = -1;
+	if (this.DDMsgAreaChooserFilename.length > 0)
+		SUB_BOARD_CHANGE_SORTING_OPT_INDEX = optionBox.addTextItem("Sorting for sub-board change");
 
 	// Set up the enter key in the box to toggle the selected item.
 	optionBox.readerObj = this;
@@ -14952,11 +14933,14 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn, pTopR
 						retObj.needWholeScreenRefresh = true;
 						break;
 					case SUB_BOARD_CHANGE_SORTING_OPT_INDEX:
-						var sortOptMenu = CreateSubBoardChangeSortOptMenu(optBoxStartX, optBoxTopRow, optBoxWidth, optBoxHeight, this.readerObj.userSettings.subBoardChangeSorting);
+						var sortOptMenu = CreateSubBoardChangeSortOptMenu(optBoxStartX, optBoxTopRow, optBoxWidth, optBoxHeight, chgSubBoardSortOpt);
 						var chosenSortOpt = sortOptMenu.GetVal();
 						console.attributes = "N";
 						if (typeof(chosenSortOpt) === "number")
-							this.readerObj.userSettings.subBoardChangeSorting = chosenSortOpt;
+						{
+							chgSubBoardSortOpt = chosenSortOpt;
+							chgSubBoardSortOptChanged = true;
+						}
 						retObj.needWholeScreenRefresh = false;
 						this.drawBorder();
 						this.drawInnerMenu(SUB_BOARD_CHANGE_SORTING_OPT_INDEX);
@@ -14992,8 +14976,13 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn, pTopR
 			pDrawBottomhelpLineFn(this);
 		}
 	}
-
-	optionBox.addInputLoopExitKey(CTRL_U);
+	// If the sort option for changing sub-board changed, save it to the user's
+	// DDMsgAreaChooser settings file, if applicable
+	if (this.DDMsgAreaChooserFilename.length > 0 && chgSubBoardSortOptChanged)
+	{
+		if (!writeUserDDMsgAreaChooserSortingSetting(chgSubBoardSortOpt))
+			log(LOG_ERROR, format("Updating user's DDFileAreaChooser settings (%s) failed!", this.DDMsgAreaChooserFilename));
+	}
 
 	// Prepare return object values and return
 	retObj.optionBoxTopLeftX = optionBox.dimensions.topLeftX;
@@ -15081,7 +15070,9 @@ function DigDistMsgReader_DoUserSettings_Traditional()
 	var PROPMT_DEL_PERSONAL_MSG_AFTER_REPLY_OPT_NUM = optNum++;
 	var USER_TWITLIST_OPT_NUM = optNum++;
 	// Sub-board sorting for changing to another sub-board
-	var SUB_BOARD_CHANGE_SORTING_OPT_NUM = optNum++;
+	var SUB_BOARD_CHANGE_SORTING_OPT_NUM = -1;
+	if (this.DDMsgAreaChooserFilename.length > 0)
+		SUB_BOARD_CHANGE_SORTING_OPT_NUM = optNum++;
 	var HIGHEST_CHOICE_NUM = SUB_BOARD_CHANGE_SORTING_OPT_NUM; // Highest choice number
 	// Specific to personal email
 	var DISPLAY_PERSONAL_MAIL_REPLIED_INDICATOR_CHAR_OPT_NUM = -1;
@@ -15110,7 +15101,8 @@ function DigDistMsgReader_DoUserSettings_Traditional()
 	printTradUserSettingOption(READER_QUIT_TO_MSG_LIST_OPT_NUM, "Quitting From reader goes to message list", wordFirstCharAttrs, wordRemainingAttrs);
 	printTradUserSettingOption(PROPMT_DEL_PERSONAL_MSG_AFTER_REPLY_OPT_NUM, "Prompt to delete personal message after replying", wordFirstCharAttrs, wordRemainingAttrs);
 	printTradUserSettingOption(USER_TWITLIST_OPT_NUM, "Personal twit list", wordFirstCharAttrs, wordRemainingAttrs);
-	printTradUserSettingOption(SUB_BOARD_CHANGE_SORTING_OPT_NUM, "Sorting for sub-board change", wordFirstCharAttrs, wordRemainingAttrs);
+	if (this.DDMsgAreaChooserFilename.length > 0)
+		printTradUserSettingOption(SUB_BOARD_CHANGE_SORTING_OPT_NUM, "Sorting for sub-board change", wordFirstCharAttrs, wordRemainingAttrs);
 	// Specific to personal email
 	if (this.readingPersonalEmail)
 		printTradUserSettingOption(DISPLAY_PERSONAL_MAIL_REPLIED_INDICATOR_CHAR_OPT_NUM, "Display email replied indicator", wordFirstCharAttrs, wordRemainingAttrs);
@@ -15126,6 +15118,9 @@ function DigDistMsgReader_DoUserSettings_Traditional()
 		return retObj;
 
 	var userSettingsChanged = false;
+	var readRetObj = readUserDDMsgAreaChooserSortingSetting();
+	var chgSubBoardSortOpt = readRetObj.sortOption;
+	var chgSubBoardSortOptChanged = false;
 	switch (userChoiceNum)
 	{
 		case LIST_MESSAGES_IN_REVERSE_OPT_NUM:
@@ -15187,13 +15182,14 @@ function DigDistMsgReader_DoUserSettings_Traditional()
 			console.crlf();
 			console.print("\x01cChoose a sorting option for sub-board change (\x01hQ\x01n\x01c to quit)");
 			console.crlf();
-			var sortOptMenu = CreateSubBoardChangeSortOptMenu(1, 1, console.screen_columns, console.screen_rows, this.userSettings.subBoardChangeSorting);
+			var sortOptMenu = CreateSubBoardChangeSortOptMenu(1, 1, console.screen_columns, console.screen_rows, chgSubBoardSortOpt);
 			sortOptMenu.numberedMode = true;
 			sortOptMenu.allowANSI = false;
 			var chosenSortOpt = sortOptMenu.GetVal();
 			if (typeof(chosenSortOpt) === "number")
 			{
-				this.userSettings.subBoardChangeSorting = chosenSortOpt;
+				chgSubBoardSortOpt = chosenSortOpt;
+				chgSubBoardSortOptChanged = true;
 				console.print("\x01n\x01cYou chose\x01g\x01h: \x01c");
 				switch (chosenSortOpt)
 				{
@@ -15231,6 +15227,13 @@ function DigDistMsgReader_DoUserSettings_Traditional()
 			console.pause();
 		}
 	}
+	// If the sort option for changing sub-board changed, save it to the user's
+	// DDMsgAreaChooser settings file, if applicable
+	if (this.DDMsgAreaChooserFilename.length > 0 && chgSubBoardSortOptChanged)
+	{
+		if (!writeUserDDMsgAreaChooserSortingSetting(chgSubBoardSortOpt))
+			log(LOG_ERROR, format("Updating user's DDFileAreaChooser settings (%s) failed!", this.DDMsgAreaChooserFilename));
+	}
 
 	return retObj;
 }
@@ -15259,6 +15262,43 @@ function colorFirstCharAndRemainingCharsInWords(pStr, pWordFirstCharAttrs, pWord
 function printTradUserSettingOption(pOptNum, pStr, pWordFirstCharAttrs, pWordRemainderAttrs)
 {
 	printf("\x01c\x01h%d\x01g: %s\r\n", pOptNum, colorFirstCharAndRemainingCharsInWords(pStr, pWordFirstCharAttrs, pWordRemainderAttrs));
+}
+
+// Reads the user's sorting setting for DDMsgAreaChooser, if it exists
+function readUserDDMsgAreaChooserSortingSetting()
+{
+	var retObj = {
+		succeeded: false,
+		sortOption: SUB_BOARD_SORT_NONE
+	};
+
+	if (file_exists(gDDMsgAreaChooserUserSettingsFilename))
+	{
+		var userSettingsFile = new File(gDDMsgAreaChooserUserSettingsFilename);
+		if (userSettingsFile.open("r"))
+		{
+			retObj.sortOption = userSettingsFile.iniGetValue("BEHAVIOR", "areaChangeSorting", SUB_BOARD_SORT_NONE);
+			userSettingsFile.close();
+			retObj.succeeded = true;
+		}
+	}
+
+	return retObj;
+}
+
+// Writes the user's sorting setting for DDMsgAreaChooser, if it exists
+function writeUserDDMsgAreaChooserSortingSetting(pSortOption)
+{
+	var writeSucceeded = false;
+	// Open the user settings file, if it exists
+	var userSettingsFile = new File(gDDMsgAreaChooserUserSettingsFilename);
+	if (userSettingsFile.open(userSettingsFile.exists ? "r+" : "w+"))
+	{
+		userSettingsFile.iniSetValue("BEHAVIOR", "areaChangeSorting", pSortOption);
+		userSettingsFile.close();
+		writeSucceeded = true;
+	}
+	return writeSucceeded;
 }
 
 ///////////////////////////////////////////////////////////////
@@ -15578,9 +15618,9 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 			for (var subIdx = 0; subIdx < msg_area.grp_list[grpIdx].sub_list.length; ++subIdx)
 			{
 				// Skip sub-boards that the user can't read or doesn't have configured for newscans
-				if (!msg_area.grp_list[grpIdx].sub_list[subIdx].can_read)
+				if (!userCanAccessSub(msg_area.grp_list[grpIdx].sub_list[subIdx].code, "read"))
 					continue;
-				if ((msg_area.grp_list[grpIdx].sub_list[subIdx].scan_cfg & SCAN_CFG_NEW) == 0)
+				if (!Boolean(msg_area.grp_list[grpIdx].sub_list[subIdx].scan_cfg & SCAN_CFG_NEW))
 					continue;
 				// If scanning the user's current sub-board and this is the wrong sub-board, then
 				// skip this sub-board (the other groups should have been skipped in the outer loop).
@@ -15665,7 +15705,7 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 		for (var subIdx = 0; subIdx < msg_area.grp_list[grpIdx].sub_list.length; ++subIdx)
 		{
 			// Skip sub-boards that the user can't read or doesn't have configured for newscans
-			if (!msg_area.grp_list[grpIdx].sub_list[subIdx].can_read)
+			if (!userCanAccessSub(msg_area.grp_list[grpIdx].sub_list[subIdx].code, "read"))
 				continue;
 			if (newScanOnly && !Boolean(msg_area.grp_list[grpIdx].sub_list[subIdx].scan_cfg & SCAN_CFG_NEW))
 				continue;
@@ -16240,7 +16280,7 @@ function findWidestNumMsgsAndNumNewMsgs(pScanScope, pForNewscanOnly, pDisplaySta
 
 		for (var subIdx = 0; subIdx < msg_area.grp_list[grpIdx].sub_list.length; ++subIdx)
 		{
-			if (!msg_area.grp_list[grpIdx].sub_list[subIdx].can_read)
+			if (!userCanAccessSub(msg_area.grp_list[grpIdx].sub_list[subIdx].code, "read"))
 				continue;
 			if (onlyNewscanCfg && !Boolean(msg_area.grp_list[grpIdx].sub_list[subIdx].scan_cfg & SCAN_CFG_NEW))
 				continue;
@@ -22784,7 +22824,7 @@ function ChoiceScrollbox(pLeftX, pTopY, pWidth, pHeight, pTopBorderText, pCfgObj
 	// Calculate the maximum top border text length to account for the left/right
 	// T chars and "Page #### of ####" text
 	var maxTopBorderTextLen = innerBorderWidth - (pAddTCharsAroundTopText ? 21 : 19);
-	if (strip_ctrl(pTopBorderText).length > maxTopBorderTextLen)
+	if (console.strlen(pTopBorderText) > maxTopBorderTextLen)
 		pTopBorderText = pTopBorderText.substr(0, maxTopBorderTextLen);
 	this.topBorder = "\x01n" + pCfgObj.colors.listBoxBorder + UPPER_LEFT_SINGLE;
 	if (addTopTCharsAroundText)
@@ -22793,7 +22833,7 @@ function ChoiceScrollbox(pLeftX, pTopY, pWidth, pHeight, pTopBorderText, pCfgObj
 	               + pTopBorderText + "\x01n" + pCfgObj.colors.listBoxBorder;
 	if (addTopTCharsAroundText)
 		this.topBorder += LEFT_T_SINGLE;
-	const topBorderTextLen = strip_ctrl(pTopBorderText).length;
+	const topBorderTextLen = console.strlen(pTopBorderText);
 	var numHorizBorderChars = innerBorderWidth - topBorderTextLen - 20;
 	if (addTopTCharsAroundText)
 		numHorizBorderChars -= 2;
@@ -22810,7 +22850,7 @@ function ChoiceScrollbox(pLeftX, pTopY, pWidth, pHeight, pTopBorderText, pCfgObj
 	this.bottomBorder = "\x01n" + pCfgObj.colors.listBoxBorder + LOWER_LEFT_SINGLE
 	                  + RIGHT_T_SINGLE + this.btmBorderNavText + "\x01n" + pCfgObj.colors.listBoxBorder
 	                  + LEFT_T_SINGLE;
-	var numCharsRemaining = this.dimensions.width - strip_ctrl(this.btmBorderNavText).length - 6;
+	var numCharsRemaining = this.dimensions.width - console.strlen(this.btmBorderNavText) - 6;
 	for (var i = 0; i < numCharsRemaining; ++i)
 		this.bottomBorder += HORIZONTAL_SINGLE;
 	this.bottomBorder += LOWER_RIGHT_SINGLE;
@@ -23042,7 +23082,7 @@ function ChoiceScrollbox_SetBottomBorderText(pText, pAddTChars, pAutoStripIfTooL
 
 	if (pAutoStripIfTooLong)
 	{
-		if (strip_ctrl(pText).length > innerWidth)
+		if (console.strlen(pText) > innerWidth)
 			pText = pText.substr(0, innerWidth);
 	}
 
@@ -23055,7 +23095,7 @@ function ChoiceScrollbox_SetBottomBorderText(pText, pAddTChars, pAutoStripIfTooL
 	this.bottomBorder += pText + "\x01n" + this.programCfgObj.colors.listBoxBorder;
 	if (pAddTChars)
 		this.bottomBorder += LEFT_T_SINGLE;
-	var numCharsRemaining = this.dimensions.width - strip_ctrl(this.bottomBorder).length - 3;
+	var numCharsRemaining = this.dimensions.width - console.strlen(this.bottomBorder) - 3;
 	for (var i = 0; i < numCharsRemaining; ++i)
 		this.bottomBorder += HORIZONTAL_SINGLE;
 	this.bottomBorder += LOWER_RIGHT_SINGLE;
@@ -24466,29 +24506,6 @@ function genPathedFilename(pDefaultDir, pFilename)
 	return outFilename;
 }
 
-// Converts the value of this.subBoardSortOptionWhileRunning to a short string
-// for a command line
-function subBoardSortOptionToStrForCommandLine(pSortOption)
-{
-	var sortOptStr = "none";
-	switch (pSortOption)
-	{
-		case SUB_BOARD_SORT_NONE:
-		default:
-			sortOptStr = "none";
-			break;
-		case SUB_BOARD_SORT_ALPHABETICAL:
-			sortOptStr = "alphabetical";
-			break;
-		case SUB_BOARD_SORT_LATEST_MSG_DATE_OLDEST_FIRST:
-			sortOptStr = "msg_date_oldest_first";
-			break;
-		case SUB_BOARD_SORT_LATEST_MSG_DATE_NEWEST_FIRST:
-			sortOptStr = "msg_date_newest_first";
-			break;
-	}
-	return sortOptStr;
-}
 
 
 // Constructs & displays a frame with a border around it, and performs a user input loop
@@ -24706,7 +24723,7 @@ function drawBorder(pX, pY, pWidth, pHeight, pColor, pLineStyle, pTitle, pTitleC
 	// Include the bottom border text in the top border, if there is any specified
 	if (typeof(pBottomBorderText) === "string" && pBottomBorderText.length > 0)
 	{
-		var textLen = strip_ctrl(pBottomBorderText).length;
+		var textLen = console.strlen(pBottomBorderText);
 		if (textLen > pWidth - 4)
 			textLen = pWidth - 4;
 		innerWidth -= textLen;
@@ -24742,6 +24759,55 @@ function countOccurrencesInStr(pStr, pSubstr)
 		strIdx = pStr.indexOf(pSubstr, strIdx+1);
 	}
 	return count;
+}
+
+// Returns whether the logged-on user has a certain access to a sub-board.
+//
+// Parameters:
+//  pSubCode: The internal code of a sub-board
+//  pAccessMode: Access mode string to check with: 'read', 'post', or 'operator'
+//
+// Return value: Boolean - Whether or not the current logged-in user has the specified access to the specified sub-board
+function userCanAccessSub(pSubCode, pAccessMode)
+{
+	// 2026-06-17:
+	/*
+	<git_rswindell> From: Rob Swindell (on Windows 11)
+	<git_rswindell> https://gitlab.synchro.net/main/sbbs/-/commit/24226f351c85dabf3bc71713
+	<git_rswindell>     Modified src/sbbs3/js_user.c
+	<git_rswindell> New User class methods: can_access_sub() and can_access_dir()
+	<git_rswindell> Much easier and more accurate way to determine (via JS) if a specific user
+	<git_rswindell> has a particular kind of access to a message sub-board or a file directory.
+	<git_rswindell> This is accurate because it uses the 'userdat' functions under the hood, which
+	<git_rswindell> check much more than just a single access requirement string against the user.
+	<git_rswindell> Usage:
+	<git_rswindell> bool can_access_sub(string sub_code or number sub_num
+	<git_rswindell>  [,'read', 'post', or 'operator'])
+	<git_rswindell> bool can_access_dir(string dir_code or number dir_num
+	<git_rswindell>  [,'download', 'upload', or 'operator'])
+	<git_rswindell> If no access string (second argument) is specified, then just generic "access"
+	<git_rswindell> (e.g. for listing areas) is checked.
+	<git_rswindell> The existing msg_area.sub[].can_access, can_read, can_post (and similar for
+	<git_rswindell> file_area.dir[]) are still useful, but only for the current 'user'. If you
+	<git_rswindell> want to check a different user's access to a sub-board or file directory, you
+	<git_rswindell> really need to use these new User class methods.
+	<git_rswindell> GitLab pipeline from Rob Swindell
+	<git_rswindell> Pipeline for master branch BROKEN by Rob Swindell (on Windows 11)
+	<git_rswindell> New User class methods: can_access_sub() and can_access_dir()
+	*/
+	var userCanAccess = false;
+	if (typeof(user.can_access_sub) === "function")
+		userCanAccess = user.can_access_sub(pSubCode, pAccessMode);
+	else
+	{
+		if (pAccessMode == "read")
+			userCanAccess = msg_area.sub[pSubCode].can_read;
+		else if (pAccessMode == "post")
+			userCanAccess = msg_area.sub[pSubCode].can_post;
+		else if (pAccessMode == "operator")
+			userCanAccess = msg_area.sub[pSubCode].is_operator;
+	}
+	return userCanAccess;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////

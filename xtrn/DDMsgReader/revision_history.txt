@@ -5,10 +5,10 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
-1.97     2025-06-14   Now uses DDMsgAreaChooser for changing to another message
+1.97     2025-06-18   Now uses DDMsgAreaChooser for changing to another message
                       sub-board. Built-in functionality for that has been
                       removed.
-                      New configuration option: DDMsgAreaChooser (specifies the
+                      New configuration option: DDMsgAreaChooser - Specifies the
                       full path & filename of DDMsgAreaChooser.js; this can be
                       blank if it's in the stock location at
                       sbbs/xtrn/DDAreaChoosers.
