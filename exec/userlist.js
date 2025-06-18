@@ -55,15 +55,14 @@ for(var i = 1; i <= lastuser; i++) {
 				continue;
 			break;
 	}
-	if(sort)
-		list.push( { number: u.number
-			, alias: u.alias
-			, location: u.location
-			, note: u.note
-			, connection: u.connection
-			, stats: { laston_date: u.stats.laston_date }
-			});
-	else
+	list.push( { number: u.number
+		, alias: u.alias
+		, location: u.location
+		, note: u.note
+		, connection: u.connection
+		, stats: { laston_date: u.stats.laston_date }
+		});
+	if(!sort)
 		print_user(u);
 }
 
