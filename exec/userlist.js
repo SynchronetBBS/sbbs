@@ -47,17 +47,11 @@ for(var i = 1; i <= lastuser; i++) {
 	++users;
 	switch(mode) {
 		case UL_SUB:
-			var sub = msg_area.sub[bbs.cursub_code];
-			if(!u.compare_ars(msg_area.grp[sub.grp_name].ars))
-				continue;
-			if(!u.compare_ars(sub.ars))
+			if(!u.can_access_sub(bbs.cursub_code))
 				continue;
 			break;
 		case UL_DIR:
-			var dir = file_area.dir[bbs.curdir_code];
-			if(!u.compare_ars(file_area.lib[dir.lib_name].ars))
-				continue;
-			if(!u.compare_ars(dir.ars))
+			if(!u.can_access_dir(bbs.curdir_code))
 				continue;
 			break;
 	}
