@@ -1103,6 +1103,41 @@ static void js_user_finalize(JSContext *cx, JSObject *obj)
 	JS_SetPrivate(cx, obj, NULL);
 }
 
+/* Utility functions */
+static int get_subnum(JSContext* cx, scfg_t* cfg, jsval *argv, int argc)
+{
+	int subnum = INVALID_SUB;
+
+	if (argc > 0 && JSVAL_IS_STRING(argv[0])) {
+		char * p;
+		JSSTRING_TO_ASTRING(cx, JSVAL_TO_STRING(argv[0]), p, LEN_EXTCODE + 2, NULL);
+		subnum = getsubnum(cfg, p);
+	} else if (argc > 0 && JSVAL_IS_NUMBER(argv[0])) {
+		uint32 i;
+		if (!JS_ValueToECMAUint32(cx, argv[0], &i))
+			return JS_FALSE;
+		subnum = i;
+	}
+	return subnum;
+}
+
+static int get_dirnum(JSContext* cx, scfg_t* cfg, jsval *argv, int argc)
+{
+	int dirnum = INVALID_DIR;
+
+	if (argc > 0 && JSVAL_IS_STRING(argv[0])) {
+		char *p;
+		JSSTRING_TO_ASTRING(cx, JSVAL_TO_STRING(argv[0]), p, LEN_EXTCODE + 2, NULL);
+		dirnum = getdirnum(cfg, p);
+	} else if (argc > 0 && JSVAL_IS_NUMBER(argv[0])) {
+		uint32 i;
+		if (!JS_ValueToECMAUint32(cx, argv[0], &i))
+			return JS_FALSE;
+		dirnum = i;
+	}
+	return dirnum;
+}
+
 extern JSClass js_user_class;
 
 static JSBool
@@ -1408,6 +1443,91 @@ js_get_time_left(JSContext *cx, uintN argc, jsval *arglist)
 }
 
 static JSBool
+js_can_access_sub(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
+	jsval *    argv = JS_ARGV(cx, arglist);
+	private_t* p;
+	jsrefcount rc;
+	char* access = NULL;
+	scfg_t*    scfg;
+
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
+
+	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+
+	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == NULL)
+		return JS_FALSE;
+
+	if (argc > 1 && JSVAL_IS_STRING(argv[1])) {
+		JSSTRING_TO_ASTRING(cx, JSVAL_TO_STRING(argv[1]), access, 32, NULL);
+	}
+
+	rc = JS_SUSPENDREQUEST(cx);
+	js_getuserdat(scfg, p);
+	int subnum = get_subnum(cx, scfg, argv, argc);
+	bool result = false;
+	if (access == NULL)
+		result = user_can_access_sub(scfg, subnum, p->user, NULL);
+	else if (stricmp(access, "READ") == 0)
+		result = user_can_read_sub(scfg, subnum, p->user, NULL);
+	else if (stricmp(access, "POST") == 0)
+		result = user_can_post(scfg, subnum, p->user, NULL, NULL);
+	else if (stricmp(access, "OPERATOR") == 0)
+		result = user_is_subop(scfg, subnum, p->user, NULL);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
+	JS_RESUMEREQUEST(cx, rc);
+
+	return JS_TRUE;
+}
+
+static JSBool
+js_can_access_dir(JSContext *cx, uintN argc, jsval *arglist)
+{
+	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
+	jsval *    argv = JS_ARGV(cx, arglist);
+	private_t* p;
+	jsrefcount rc;
+	char* access = NULL;
+	scfg_t*    scfg;
+
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
+
+	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
+
+	if ((p = (private_t*)js_GetClassPrivate(cx, obj, &js_user_class)) == NULL)
+		return JS_FALSE;
+
+	if (argc > 1 && JSVAL_IS_STRING(argv[1])) {
+		JSSTRING_TO_ASTRING(cx, JSVAL_TO_STRING(argv[1]), access, 32, NULL);
+	}
+
+	rc = JS_SUSPENDREQUEST(cx);
+	js_getuserdat(scfg, p);
+	int dirnum = get_dirnum(cx, scfg, argv, argc);
+	bool result = false;
+	if (access == NULL)
+		result = user_can_access_dir(scfg, dirnum, p->user, NULL);
+	else if (stricmp(access, "DOWNLOAD") == 0)
+		result = user_can_download(scfg, dirnum, p->user, NULL, NULL);
+	else if (stricmp(access, "UPLOAD") == 0)
+		result = user_can_upload(scfg, dirnum, p->user, NULL, NULL);
+	else if (stricmp(access, "OPERATOR") == 0)
+		result = user_is_dirop(scfg, dirnum, p->user, NULL);
+	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(result));
+	JS_RESUMEREQUEST(cx, rc);
+
+	return JS_TRUE;
+}
+
+
+static JSBool
 js_user_close(JSContext *cx, uintN argc, jsval *arglist)
 {
 	JSObject * obj = JS_THIS_OBJECT(cx, arglist);
@@ -1459,6 +1579,12 @@ static jsSyncMethodSpec js_user_functions[] = {
 		        "Note: this method does not account for pending forced timed events.<br>"
 		        "Note: for the pre-defined user object on the BBS, you almost certainly want bbs.get_time_left() instead.")
 	 , 31401},
+	{"can_access_sub",  js_can_access_sub,  1,  JSTYPE_BOOLEAN,  JSDOCSTR("<i>string</i> sub_code or <i>number</i> sub_num, ['read', 'post', or 'operator']")
+	 , JSDOCSTR("Return <tt>true</tt> if the user has the specified access to the specified message sub-board. If no access string (second argument) is specified, <i>any access</i> is checked.")
+	 , 321},
+	{"can_access_dir",  js_can_access_dir,  1,  JSTYPE_BOOLEAN,  JSDOCSTR("<i>string</i> dir_code or <i>number</i> dir_num, ['download', 'upload', or 'operator']")
+	 , JSDOCSTR("Return <tt>true</tt> if the user has the specified access to the specified file directory. If no access string (second argument) is specified, <i>any access</i> is checked.")
+	 , 321},
 	{"close",           js_user_close,      0,  JSTYPE_VOID,    JSDOCSTR("")
 	 , JSDOCSTR("Close the <tt>user.tab</tt> file, if open. The file will be automatically reopened if necessary.")
 	 , 31902},
