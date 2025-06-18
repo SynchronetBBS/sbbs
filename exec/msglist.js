@@ -63,6 +63,7 @@ if(argv.indexOf('-?') >= 0 || argv.indexOf('-help') >= 0)
 	exit(0);
 }
 require('sbbsdefs.js', 'LEN_ALIAS');
+require('nodedefs.js', 'NODE_RMSG');
 require("utf8_cp437.js", 'utf8_cp437');
 require("file_size.js", 'file_size_str');
 require("html2asc.js", 'html2asc');
@@ -71,6 +72,8 @@ var ansiterm = require("ansiterm_lib.js", 'expand_ctrl_a');
 load('822header.js');
 var hexdump = load('hexdump_lib.js');
 var mimehdr = load('mimehdr.js');
+
+var node_action = NODE_RMSG;
 
 const age = load('age.js');
 
@@ -474,6 +477,8 @@ function view_msg(msgbase, msg, lines, total_msgs, grp_name, sub_name, is_operat
 			if(!update_msg_attr(msgbase, msg, msg.attr |= MSG_READ))
 				alert("failed to add read attribute");
 		}
+		bbs.node_action = node_action;
+		bbs.nodesync(/* clearline: */false);
 		// Only message text nav keys are handled here
 		var key = console.getkeys(total_msgs, K_UPPER|K_NOCRLF);
 		switch(key) {
@@ -1015,6 +1020,7 @@ function list_msgs(msgbase, list, current, preview, grp_name, sub_name)
 		}
 		console.mnemonics(cmds.join(", ") + format(fmt, list_formats.length-1));
 		console.cleartoeol();
+		bbs.node_action = node_action;
 		bbs.nodesync(/* clearline: */false);
 //		console.mouse_mode = 1<<1;
 		var key = console.getkey();
@@ -1870,15 +1876,19 @@ if(msgbase.cfg) {
 	switch(which) {
 		case MAIL_YOUR:
 			sub_name = "Inbox";
+			node_action = NODE_RMAL;
 			break;
 		case MAIL_SENT:
 			sub_name = "Sent";
+			node_action = NODE_RSML;
 			break;
 		case MAIL_ALL:
 			sub_name = "All";
+			node_action = NODE_SYSP;
 			break;
 		case MAIL_ANY:
 			sub_name = "Any";
+			node_action = NODE_RMAL;
 			break;
 		default:
 			sub_name = String(which);

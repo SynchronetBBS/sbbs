@@ -5987,7 +5987,7 @@ NO_PASSTHRU:
 				pthread_mutex_unlock(&sbbs->ssh_mutex);
 			}
 
-			uint32_t client_count = protected_uint32_adjust(&node_threads_running, 1);
+			uint32_t client_count = protected_uint32_adjust_fetch(&node_threads_running, 1);
 			new_node->input_thread_running = true;
 			new_node->autoterm = sbbs->autoterm;
 			update_terminal(new_node, sbbs->term);

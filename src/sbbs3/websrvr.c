@@ -606,8 +606,10 @@ static int writebuf(http_session_t  *session, const char *buf, size_t len)
 	size_t sent = 0;
 	size_t avail;
 
-	if (session->req.sent_headers && session->req.send_content == false)
+	if (session->req.sent_headers && session->req.send_content == false) {
+		lprintf(LOG_INFO, "%04d %s [%s] Not sending data because session->req.send_content == false", session->socket, session->client.protocol, session->host_ip);
 		return 0;
+	}
 	while (sent < len) {
 		ResetEvent(session->outbuf.empty_event);
 		avail = RingBufFree(&session->outbuf);
@@ -814,11 +816,12 @@ static void thread_up(bool setuid)
 		startup->thread_up(startup->cbdata, true, setuid);
 }
 
-static void thread_down(void)
+static uint32_t thread_down(void)
 {
-	(void)protected_uint32_adjust(&thread_count, -1);
+	uint32_t count = protected_uint32_adjust_fetch(&thread_count, -1);
 	if (startup != NULL && startup->thread_up != NULL)
 		startup->thread_up(startup->cbdata, false, false);
+	return count;
 }
 
 /*********************************************************************/
@@ -1632,28 +1635,29 @@ static void send_error(http_session_t * session, unsigned line, const char* mess
 		else
 			SAFEPRINTF2(session->req.physical_path, "%s%s.html", error_dir, error_code);
 		session->req.mime_type = get_mime_type(strrchr(session->req.physical_path, '.'));
-		send_headers(session, message, false);
-		if (!stat(session->req.physical_path, &sb)) {
-			off_t snt = 0;
-			snt = sock_sendfile(session, session->req.physical_path, 0, 0);
-			if (snt < 0)
-				snt = 0;
-			if (session->req.ld != NULL)
-				session->req.ld->size = snt;
-		}
-		else {
-			lprintf(LOG_NOTICE, "%04d Error message file %s doesn't exist"
-			        , session->socket, session->req.physical_path);
-			safe_snprintf(sbuf, sizeof(sbuf)
-			              , "<HTML><HEAD><TITLE>%s Error</TITLE></HEAD>"
-			              "<BODY><H1>%s Error</H1><BR><H3>In addition, "
-			              "I can't seem to find the %s error file</H3><br>"
-			              "please notify <a href=\"mailto:sysop@%s\">"
-			              "%s</a></BODY></HTML>"
-			              , error_code, error_code, error_code, scfg.sys_inetaddr, scfg.sys_op);
-			bufprint(session, sbuf);
-			if (session->req.ld != NULL)
-				session->req.ld->size = strlen(sbuf);
+		if (send_headers(session, message, false) && session->req.send_content) {
+			if (!stat(session->req.physical_path, &sb)) {
+				off_t snt = 0;
+				snt = sock_sendfile(session, session->req.physical_path, 0, 0);
+				if (snt < 0)
+					snt = 0;
+				if (session->req.ld != NULL)
+					session->req.ld->size = snt;
+			}
+			else {
+				lprintf(LOG_NOTICE, "%04d Error message file %s doesn't exist"
+				        , session->socket, session->req.physical_path);
+				safe_snprintf(sbuf, sizeof(sbuf)
+				              , "<HTML><HEAD><TITLE>%s Error</TITLE></HEAD>"
+				              "<BODY><H1>%s Error</H1><BR><H3>In addition, "
+				              "I can't seem to find the %s error file</H3><br>"
+				              "please notify <a href=\"mailto:sysop@%s\">"
+				              "%s</a></BODY></HTML>"
+				              , error_code, error_code, error_code, scfg.sys_inetaddr, scfg.sys_op);
+				bufprint(session, sbuf);
+				if (session->req.ld != NULL)
+					session->req.ld->size = strlen(sbuf);
+			}
 		}
 	}
 	drain_outbuf(session);
@@ -2853,6 +2857,7 @@ static bool parse_headers(http_session_t * session)
 					}
 					break;
 				case HEAD_AGENT:
+					lprintf(LOG_INFO, "%04d %s [%s] User-Agent: %s", session->socket, session->client.protocol, session->host_ip, value);
 					if (session->req.ld != NULL) {
 						FREE_AND_NULL(session->req.ld->agent);
 						/* FREE()d in http_logging_thread() */
@@ -6901,7 +6906,7 @@ void http_session_thread(void* arg)
 		return;
 	}
 
-	client_count = protected_uint32_adjust(&active_clients, 1);
+	client_count = protected_uint32_adjust_fetch(&active_clients, 1);
 	if (client_count > client_highwater) {
 		client_highwater = client_count;
 		if (client_highwater > 1)
@@ -6941,6 +6946,11 @@ void http_session_thread(void* arg)
 			lprintf(LOG_NOTICE, "%04d %s [%s] New concurrent connections per client highwater mark: %u"
 			        , socket, session.client.protocol, session.host_ip, con_conn_highwater);
 	}
+	/*
+	 * If we don't parse a request method, assume GET / HTTP/1.0
+	 */
+	session.req.method = HTTP_GET;
+	session.http_ver = HTTP_1_0;
 	if (startup->max_concurrent_connections > 0) {
 		if (connections > startup->max_concurrent_connections
 		    && !is_host_exempt(&scfg, session.host_ip, /* host_name */ NULL)) {
@@ -7068,13 +7078,13 @@ void http_session_thread(void* arg)
 	update_clients();
 	client_off(socket);
 
-	thread_down();
+	uint32_t threads_remain = thread_down();
 
 	if (startup->index_file_name == NULL || startup->cgi_ext == NULL)
 		lprintf(LOG_DEBUG, "%04d !!! ALL YOUR BASE ARE BELONG TO US !!!", socket);
 
 	lprintf(LOG_INFO, "%04d %s [%s] Session thread terminated (%u clients and %u threads remain, %lu served, %u concurrently)"
-	        , socket, session.client.protocol, session.host_ip, clients_remain, protected_uint32_value(thread_count), ++served, client_highwater);
+	        , socket, session.client.protocol, session.host_ip, clients_remain, threads_remain, ++served, client_highwater);
 
 }
 
