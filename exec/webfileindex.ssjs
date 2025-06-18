@@ -291,6 +291,8 @@ function nav_links(nav)
 
 function view_file(filename)
 {
+	if(filename[0] == '"')
+		filename = filename.substring(1, filename.length - 1);
 	header(" - " + filename);
 	dir = file_area.dir[http_request.dir];
 	writeln("[" + root_link() + "] / ");
