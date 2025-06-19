@@ -6946,7 +6946,8 @@ void http_session_thread(void* arg)
 		session.finished = true;
 	} else {
 		uint connections = listCountMatches(&current_connections, session.host_ip, strlen(session.host_ip) + 1);
-		if (startup->max_concurrent_connections > 0 && connections > startup->max_concurrent_connections) {
+		if (startup->max_concurrent_connections > 0 && connections > startup->max_concurrent_connections
+		    && !is_host_exempt(&scfg, session.host_ip, /* host_name */ NULL)) {
 			lprintf(LOG_NOTICE, "%04d %s [%s] !Maximum concurrent connections (%u) exceeded"
 			        , socket, session.client.protocol, session.host_ip, startup->max_concurrent_connections);
 			send_error(&session, __LINE__, error_429);
@@ -7611,7 +7612,8 @@ void web_server(void* arg)
 			if (session->is_tls == false && startup->max_concurrent_connections > 0) {
 				int ip_len = strlen(host_ip) + 1;
 				uint connections = listCountMatches(&current_connections, host_ip, ip_len);
-				if(connections >= startup->max_concurrent_connections) {
+				if(connections >= startup->max_concurrent_connections
+					&& !is_host_exempt(&scfg, host_ip, /* host_name */NULL)) {
 					lprintf(LOG_NOTICE, "%04d HTTP [%s] !Maximum concurrent connections (%u) exceeded"
 						,client_socket, host_ip, startup->max_concurrent_connections);
 					static int len_429;
