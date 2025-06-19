@@ -1576,11 +1576,11 @@ static void send_error(http_session_t * session, unsigned line, const char* mess
 	if (session->socket == INVALID_SOCKET)
 		return;
 	session->req.if_modified_since = 0;
+	strlcpy(error_code, message, sizeof error_code);
 	lprintf(LOG_INFO, "%04d %s [%s] !ERROR: %s (line %u) request: %s"
-	        , session->socket, session->client.protocol, session->host_ip, message, line, session->req.request_line);
+	        , session->socket, session->client.protocol, session->host_ip, str_has_ctrl(message) ? error_code: message, line, session->req.request_line);
 	session->req.keep_alive = false;
 	session->req.send_location = NO_LOCATION;
-	strlcpy(error_code, message, sizeof error_code);
 	SAFECOPY(session->req.status, message);
 	if (atoi(error_code) < 500) {
 		/*
@@ -6907,13 +6907,6 @@ void http_session_thread(void* arg)
 	}
 
 	client_count = protected_uint32_adjust_fetch(&active_clients, 1);
-	if (client_count > client_highwater) {
-		client_highwater = client_count;
-		if (client_highwater > 1)
-			lprintf(LOG_NOTICE, "%04d New active client highwater mark: %u"
-			        , session.socket, client_highwater);
-		mqtt_pub_uintval(&mqtt, TOPIC_SERVER, "highwater", mqtt.highwater = client_highwater);
-	}
 	update_clients();
 	SAFECOPY(session.username, unknown);
 
@@ -6939,25 +6932,38 @@ void http_session_thread(void* arg)
 
 	session.subscan = (subscan_t*)calloc(scfg.total_subs, sizeof(subscan_t));
 
-	uint connections = listCountMatches(&current_connections, session.host_ip, strlen(session.host_ip) + 1);
-	if (connections > con_conn_highwater) {
-		con_conn_highwater = connections;
-		if (con_conn_highwater > 1)
-			lprintf(LOG_NOTICE, "%04d %s [%s] New concurrent connections per client highwater mark: %u"
-			        , socket, session.client.protocol, session.host_ip, con_conn_highwater);
-	}
 	/*
 	 * If we don't parse a request method, assume GET / HTTP/1.0
 	 */
 	session.req.method = HTTP_GET;
 	session.http_ver = HTTP_1_0;
-	if (startup->max_concurrent_connections > 0) {
-		if (connections > startup->max_concurrent_connections
+	if (startup->max_clients && client_count > startup->max_clients) {
+		lprintf(LOG_WARNING, "%04d %s [%s] !MAXIMUM CLIENTS (%u) exceeded by %u, access denied"
+		        , socket, session.client.protocol, session.host_ip, startup->max_clients, client_count - startup->max_clients);
+		send_error(&session, __LINE__, error_503);
+		session.finished = true;
+	} else {
+		uint connections = listCountMatches(&current_connections, session.host_ip, strlen(session.host_ip) + 1);
+		if (startup->max_concurrent_connections > 0 && connections > startup->max_concurrent_connections
 		    && !is_host_exempt(&scfg, session.host_ip, /* host_name */ NULL)) {
 			lprintf(LOG_NOTICE, "%04d %s [%s] !Maximum concurrent connections (%u) exceeded"
 			        , socket, session.client.protocol, session.host_ip, startup->max_concurrent_connections);
 			send_error(&session, __LINE__, error_429);
 			session.finished = true;
+		} else {
+			if (connections > con_conn_highwater) {
+				con_conn_highwater = connections;
+				if (con_conn_highwater > 1)
+					lprintf(LOG_NOTICE, "%04d %s [%s] New concurrent connections per client highwater mark: %u"
+					        , socket, session.client.protocol, session.host_ip, con_conn_highwater);
+			}
+			if (client_count > client_highwater) {
+				client_highwater = client_count;
+				if (client_highwater > 1)
+					lprintf(LOG_NOTICE, "%04d New active client highwater mark: %u"
+					        , session.socket, client_highwater);
+				mqtt_pub_uintval(&mqtt, TOPIC_SERVER, "highwater", mqtt.highwater = client_highwater);
+			}
 		}
 	}
 
@@ -7299,7 +7305,6 @@ void web_server(void* arg)
 	http_session_t *  session = NULL;
 	void *            acc_type;
 	int               i;
-	ulong             count;
 
 	startup = (web_startup_t*)arg;
 
@@ -7623,14 +7628,17 @@ void web_server(void* arg)
 				continue;
 			}
 
-			count = protected_uint32_value(active_clients);
-			if (startup->max_clients && count >= startup->max_clients) {
-				lprintf(LOG_WARNING, "%04d [%s] !MAXIMUM CLIENTS (%d) reached, access denied"
-				        , client_socket, host_ip, startup->max_clients);
+			uint32_t client_count = protected_uint32_value(active_clients);
+			uint32_t threshold = startup->max_clients;
+			if (session->is_tls) // Successfully sending a 503 error over TLS requires a session_thread
+				threshold += 10; // so allow some extra clients/threads in that case
+			if (startup->max_clients && client_count >= threshold) {
+				lprintf(LOG_WARNING, "%04d [%s] !MAXIMUM CLIENTS (%u) %s (%u), access denied"
+				        , client_socket, host_ip, startup->max_clients, client_count > startup->max_clients ? "exceeded" : "reached", client_count);
 				if (!len_503)
 					len_503 = strlen(error_503);
 				if (session->is_tls == false && sendsocket(client_socket, error_503, len_503) != len_503)
-					errprintf(LOG_WARNING, WHERE, "%04d FAILED sending error 503", client_socket);
+					lprintf(LOG_WARNING, "%04d FAILED sending error 503", client_socket);
 				close_socket(&client_socket);
 				continue;
 			}
