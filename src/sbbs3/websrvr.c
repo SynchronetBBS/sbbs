@@ -2164,7 +2164,7 @@ static bool check_ars(http_session_t * session)
 
 	/* Should go to the hack log? */
 	lprintf(LOG_WARNING, "%04d %s [%s] <%s> !AUTHORIZATION FAILURE (reason: %u), ARS: %s"
-	        , session->socket, session->client.protocol, session->host_ip, session->req.auth.username, reason, session->req.ars);
+	        , session->socket, session->client.protocol, session->host_ip, session->req.auth.username, reason + 1, session->req.ars);
 
 #ifdef _WIN32
 	if (startup->sound.hack[0] && !sound_muted(&scfg))
