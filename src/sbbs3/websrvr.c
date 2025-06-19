@@ -257,6 +257,7 @@ typedef struct  {
 	union xp_sockaddr addr;
 	socklen_t addr_len;
 	http_request_t req;
+	uint requests;
 	char host_ip[INET6_ADDRSTRLEN];
 	char host_name[128];            /* Resolved remote host */
 	int http_ver;                   /* Request HTTP version.  0 = HTTP/0.9, 1=HTTP/1.0, 2=HTTP/1.1 */
@@ -3473,7 +3474,7 @@ static bool get_req(http_session_t * session, char *request_line)
 		if (len < 0)
 			return false;
 		if (req_line[0])
-			lprintf(LOG_INFO, "%04d %s [%s] Request: %s", session->socket, session->client.protocol, session->host_ip, req_line);
+			lprintf(LOG_INFO, "%04d %s [%s] Request %u: %s", session->socket, session->client.protocol, session->host_ip, ++session->requests, req_line);
 		if (session->req.ld != NULL && session->req.ld->request == NULL)
 			/* FREE()d in http_logging_thread() */
 			session->req.ld->request = strdup(req_line);
@@ -6959,8 +6960,8 @@ void http_session_thread(void* arg)
 			if (client_count > client_highwater) {
 				client_highwater = client_count;
 				if (client_highwater > 1)
-					lprintf(LOG_NOTICE, "%04d New active client highwater mark: %u"
-					        , session.socket, client_highwater);
+					lprintf(LOG_NOTICE, "%04d %s [%s] New active client highwater mark: %u"
+					        , socket, session.client.protocol, session.host_ip, client_highwater);
 				mqtt_pub_uintval(&mqtt, TOPIC_SERVER, "highwater", mqtt.highwater = client_highwater);
 			}
 		}
@@ -7088,8 +7089,8 @@ void http_session_thread(void* arg)
 	if (startup->index_file_name == NULL || startup->cgi_ext == NULL)
 		lprintf(LOG_DEBUG, "%04d !!! ALL YOUR BASE ARE BELONG TO US !!!", socket);
 
-	lprintf(LOG_INFO, "%04d %s [%s] Session thread terminated (%u clients and %u threads remain, %lu served, %u concurrently)"
-	        , socket, session.client.protocol, session.host_ip, clients_remain, threads_remain, ++served, client_highwater);
+	lprintf(LOG_INFO, "%04d %s [%s] Session thread terminated after %u requests (%u clients and %u threads remain, %lu served, %u concurrently)"
+	        , socket, session.client.protocol, session.host_ip, session.requests, clients_remain, threads_remain, ++served, client_highwater);
 
 }
 
