@@ -1476,7 +1476,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 		return str;
 	}
 
-	if (strcmp(sp, "UDR") == 0) {
+	if (strcmp(sp, "UDR") == 0 || strcmp(sp, "BYTERATIO") == 0) {
 		float f = 0;
 		if (useron.ulb)
 			f = (float)useron.dlb / useron.ulb;
