@@ -599,84 +599,12 @@ function DDMsgAreaChooser_SelectMsgArea(pChooseGroup, pGrpIdx)
 	var subBoardsLabelLen = 14; // The length of the "Sub-boards of " label
 	var nameSep = " - ";          // A string to use to separate group/sub-board names for the top header line
 	var numItemsWidth = 0;        // Width of the header column for # of items (not including the space), for creating the menu
+	var sortingChanged = false;   // Will be set true when the user changes sorting so that we can update appropriately
 	// Main loop
 	var selectionLoopContinueOn = true;
 	while (selectionLoopContinueOn)
 	{
 		console.clear("\x01n");
-		// TODO: No longer needed?
-		/*
-		// Sort the current area structure, if applicable
-		if (msgAreaStructure != null && (!msgAreaStructure.hasOwnProperty("sorted") || !msgAreaStructure.sorted))
-		{
-			var structureToSort = (Array.isArray(msgAreaStructure) ? msgAreaStructure : msgAreaStructure.items);
-			switch (this.userSettings.areaChangeSorting)
-			{
-				case SUB_BOARD_SORT_NONE:
-					// Sort by the uniqueNumber property that was added when creating the
-					// structure initially
-					structureToSort.sort(function(pA, pB)
-					{
-						if (pA.uniqueNumber < pB.uniqueNumber)
-							return -1;
-						else if (pA.uniqueNumber == pB.uniqueNumber)
-							return 0;
-						else if (pA.uniqueNumber > pB.uniqueNumber)
-							return 1;
-					});
-					break;
-				case SUB_BOARD_SORT_ALPHABETICAL:
-					structureToSort.sort(function(pA, pB)
-					{
-						if (pA.name < pB.name)
-							return -1;
-						else if (pA.name == pB.name)
-							return 0;
-						else if (pA.name > pB.name)
-							return 1;
-					});
-					break;
-				case SUB_BOARD_SORT_LATEST_MSG_DATE_OLDEST_FIRST:
-					structureToSort.sort(function(pA, pB)
-					{
-						var sortVal = 0;
-						if (pA.hasOwnProperty("subItemObj") && pB.hasOwnProperty("subItemObj"))
-						{
-							var latestMsgTimeA = getLatestMsgTime(pA.subItemObj.code);
-							var latestMsgTimeB = getLatestMsgTime(pB.subItemObj.code);
-							if (latestMsgTimeA < latestMsgTimeB)
-								sortVal = -1;
-							else if (latestMsgTimeA == latestMsgTimeB)
-								sortVal = 0;
-							else if (latestMsgTimeA > latestMsgTimeB)
-								sortVal = 1;
-						}
-						return sortVal;
-					});
-					break;
-				case SUB_BOARD_SORT_LATEST_MSG_DATE_NEWEST_FIRST:
-					//if (user.is_sysop) console.print("Sorting: Msg date newest first  \x01p"); // Temporary
-					structureToSort.sort(function(pA, pB)
-					{
-						var sortVal = 0;
-						if (pA.hasOwnProperty("subItemObj") && pB.hasOwnProperty("subItemObj"))
-						{
-							var latestMsgTimeA = getLatestMsgTime(pA.subItemObj.code);
-							var latestMsgTimeB = getLatestMsgTime(pB.subItemObj.code);
-							if (latestMsgTimeA < latestMsgTimeB)
-								sortVal = 1;
-							else if (latestMsgTimeA == latestMsgTimeB)
-								sortVal = 0;
-							else if (latestMsgTimeA > latestMsgTimeB)
-								sortVal = -1;
-						}
-						return sortVal;
-					});
-					break;
-			}
-			msgAreaStructure.sorted = true;
-		}
-		*/
 
 		// If we're displaying the file libraries (top level), then we'll output 1
 		// header line; otherwise, we'll output 2 header line; adjut the top line
@@ -705,6 +633,15 @@ function DDMsgAreaChooser_SelectMsgArea(pChooseGroup, pGrpIdx)
 		else if (previousMsgAreaStructures.length > 0)
 			previousMsgAreaStructure = previousMsgAreaStructures[previousMsgAreaStructures.length-1];
 		var createMenuRet = this.CreateLightbarMenu(msgAreaStructure, previousMsgAreaStructures.length+1, menuTopRow, selectedItemIdx, numItemsWidth);
+		// If sorting has changed, ensure the menu's selected item is the user's
+		// current sub-board
+		if (sortingChanged)
+		{
+			setMenuIdxWithSelectedSubBoard(createMenuRet.menuObj, msgAreaStructure);
+			// If we're back at the root, set sortingChanged back to false
+			if (msgAreaStructure == this.msgArea_list)
+				sortingChanged = false;
+		}
 		// createMenuRet.allSubs
 		// createMenuRet.allOnlyOtherItems
 		var menu = createMenuRet.menuObj;
@@ -1082,6 +1019,7 @@ function DDMsgAreaChooser_SelectMsgArea(pChooseGroup, pGrpIdx)
 				if (this.userSettings.areaChangeSorting != previousSortSetting)
 				{
 					menuContinueOn = false;
+					sortingChanged = true;
 					sortHeirarchyRecursive(this.msgArea_list, this.userSettings.areaChangeSorting);
 				}
 				else
@@ -1323,24 +1261,9 @@ function DDMsgAreaChooser_CreateLightbarMenu(pMsgAreaHeirarchyObj, pHeirarchyLev
 		// Also, see which one has the user's current chosen directory so we can set the
 		// current menu item index - And save that index in the menu object for its
 		// reference later.
-		msgAreaMenu.idxWithUserSelectedSubBoard = -1;
-		for (var i = 0; i < pMsgAreaHeirarchyObj.length; ++i)
-		{
-			// Each object will have either an "items" or a "subItemObj"
-			if (!pMsgAreaHeirarchyObj[i].hasOwnProperty("subItemObj"))
-			{
-				retObj.allSubs = false;
-				msgAreaMenu.allSubs = false;
-			}
-			if (!pMsgAreaHeirarchyObj[i].hasOwnProperty("items"))
-				retObj.allOnlyOtherItems = false
-			// See if this one has the user's selected file directory
-			if (msgAreaStructureHasCurrentUserSubBoard(pMsgAreaHeirarchyObj[i]))
-				msgAreaMenu.idxWithUserSelectedSubBoard = i;
-			// If we've found all we need, then stop going through the array
-			if (!retObj.allSubs && msgAreaMenu.idxWithUserSelectedSubBoard > -1)
-				break;
-		}
+		var tmpRetObj = setMenuIdxWithSelectedSubBoard(msgAreaMenu, pMsgAreaHeirarchyObj);
+		retObj.allSubs = tmpRetObj.allSubs;
+		retObj.allOnlyOtherItems = tmpRetObj.allOnlyOtherItems;
 
 		// Replace the menu's NumItems() function to return the correct number of items
 		msgAreaMenu.NumItems = function() {
@@ -3716,6 +3639,46 @@ function sortHeirarchyRecursive(pHeirarchyArray, pSortOption)
 			sortHeirarchyRecursive(pHeirarchyArray[i].items, pSortOption);
 		pHeirarchyArray[i].sorted = true;
 	}
+}
+
+// With a DDLightbarMenu object for message areas, checks to see if any of the items in
+// the array aren't sub-boards.
+// Also, see which one has the user's current chosen sub-board so we can set the
+// current menu item index - And save that index in the menu object for its
+// reference later.
+function setMenuIdxWithSelectedSubBoard(pMenuObj, pMsgAreaHeirarchyObj)
+{
+	var retObj = {
+		allSubs: true,
+		allOnlyOtherItems: true,
+	};
+
+	pMenuObj.idxWithUserSelectedSubBoard = -1;
+	for (var i = 0; i < pMsgAreaHeirarchyObj.length; ++i)
+	{
+		// Each object will have either an "items" or a "subItemObj"
+		if (!pMsgAreaHeirarchyObj[i].hasOwnProperty("subItemObj"))
+		{
+			retObj.allSubs = false;
+			pMenuObj.allSubs = false;
+		}
+		if (!pMsgAreaHeirarchyObj[i].hasOwnProperty("items"))
+			retObj.allOnlyOtherItems = false
+		// See if this one has the user's selected message sub-board
+		if (msgAreaStructureHasCurrentUserSubBoard(pMsgAreaHeirarchyObj[i]))
+			pMenuObj.idxWithUserSelectedSubBoard = i;
+		// If we've found all we need, then stop going through the array
+		if (!retObj.allSubs && pMenuObj.idxWithUserSelectedSubBoard > -1)
+			break;
+	}
+	if (pMenuObj.idxWithUserSelectedSubBoard >= 0 && pMenuObj.idxWithUserSelectedSubBoard < pMenuObj.NumItems())
+	{
+		pMenuObj.selectedItemIdx = pMenuObj.idxWithUserSelectedSubBoard;
+		if (pMenuObj.selectedItemIdx >= pMenuObj.topItemIdx+pMenuObj.GetNumItemsPerPage())
+			pMenuObj.topItemIdx = pMenuObj.selectedItemIdx - pMenuObj.GetNumItemsPerPage() + 1;
+	}
+
+	return retObj;
 }
 
 /*
