@@ -17,7 +17,7 @@ require("sbbsdefs.js", "P_NONE");
 require("uifcdefs.js", "UIFC_INMSG");
 
 
-if (!uifc.init("DigDist. Message Reader 1.96s Configurator"))
+if (!uifc.init("DigDist. Message Reader 1.97 Configurator"))
 {
 	print("Failed to initialize uifc");
 	exit(1);
@@ -101,8 +101,6 @@ function doMainMenu()
 		"tabSpaces", // Number
 		"pauseAfterNewMsgScan", // Boolean
 		"readingPostOnSubBoardInsteadOfGoToNext", // Boolean
-		"areaChooserHdrFilenameBase", // String
-		"areaChooserHdrMaxLines", // Number
 		"displayAvatars", // Boolean
 		"rightJustifyAvatars", // Boolean
 		"msgListSort", // String (Written/Received)
@@ -121,6 +119,7 @@ function doMainMenu()
 		"subBoardChangeSorting", // String: None, Alphabetical, LatestMsgDateOldestFirst, or LatestMsgDateNewestFirst
 		"indexedModeNewscanOnlyShowSubsWithNewMsgs", // Boolean
 		"showUserResponsesInTallyInfo", // Boolean
+		"DDMsgAreaChooser", // String
 		"themeFilename" // String
 	];
 	// Strings for the options to display on the menu
@@ -138,8 +137,6 @@ function doMainMenu()
 		"Number of Spaces for Tabs",
 		"Pause After New Message Scan",
 		"Reading Post On Sub-Board Instead Of Go To Next",
-		"Area Chooser Header Filename Base",
-		"Area Chooser Header Max # of Lines",
 		"Display Avatars",
 		"Right-Justify Avatars",
 		"Message List Sort",
@@ -158,6 +155,7 @@ function doMainMenu()
 		"Sorting for sub-board change",
 		"Index newscan: Only show subs w/ new msgs",
 		"Include user responses in tally info",
+		"DDMsgAreaChooser full path & filename",
 		"Theme Filename"
 	];
 	// Build an array of formatted string to be displayed on the menu
@@ -232,12 +230,11 @@ function doMainMenu()
 			}
 			else
 			{
-				if (optName == "areaChooserHdrFilenameBase")
+				if (optName == "DDMsgAreaChooser")
 				{
-					// Area chooser header filename base
-					var promptStr = optionStrs[optionMenuSelection];
-					var userInput = uifc.input(WIN_MID, promptStr, gCfgInfo.cfgOptions[optName], 60, K_EDIT);
-					if (typeof(userInput) === "string" && userInput.length > 0)
+					// DDMsgAreaChooser full path & filename
+					var userInput = uifc.input(WIN_MID, "DDMsgReader full path & filename", gCfgInfo.cfgOptions[optName], 255, K_EDIT);
+					if (typeof(userInput) === "string" && userInput != gCfgInfo.cfgOptions[optName])
 					{
 						gCfgInfo.cfgOptions[optName] = userInput;
 						anyOptionChanged = true;
@@ -562,12 +559,6 @@ function getOptionHelpText()
 	optionHelpText["readingPostOnSubBoardInsteadOfGoToNext"] += "Whether or not to ask the user whether to post on the sub-board in reader mode after reading the last ";
 	optionHelpText["readingPostOnSubBoardInsteadOfGoToNext"] += "message instead of prompting to go to the next sub-board.  This is  like the stock Synchronet behavior.";
 
-	optionHelpText["areaChooserHdrFilenameBase"] = "Area Chooser Header Filename Base: If you'd like to have an ANSI displayed above the lists of the area ";
-	optionHelpText["areaChooserHdrFilenameBase"] += "chooser, you can specify the 'base' of the filename (without the .ans/.asc) here. The file must be in the ";
-	optionHelpText["areaChooserHdrFilenameBase"] += "same directory as DDMsgReader.js.";
-
-	optionHelpText["areaChooserHdrMaxLines"] = "Area Chooser Header Max # of Lines: The maximum number of lines to use from the area chooser header file";
-
 	optionHelpText["displayAvatars"] = "Display Avatars: Whether or not to display user avatars (the small user-specified ANSIs) when reading messages";
 
 	optionHelpText["rightJustifyAvatars"] = "Right-Justify Avatars: Whether or not to display user avatars on the right. If false, they will be displayed ";
@@ -643,6 +634,10 @@ function getOptionHelpText()
 	optionHelpText["showUserResponsesInTallyInfo"] += "to show each users' responses. If false, it will just show the names of who voted on ";
 	optionHelpText["showUserResponsesInTallyInfo"] += "the message (and when).";
 
+	optionHelpText["DDMsgAreaChooser"] = "DDMsgAreaChooser full path & filename: The full path & filename of DDMsgAreaChooser.js, ";
+	optionHelpText["DDMsgAreaChooser"] += "if it's not in sbbs/xtrn/DDAreaChoosers. If DDMsgAreaChooser.js is in ";
+	optionHelpText["DDMsgAreaChooser"] += "sbbs/xtrn/DDAreaChoosers, this setting can be left empty. DDAreaChooser.js is used for ";
+	optionHelpText["DDMsgAreaChooser"] += "allowing the user to change to a different message sub-board.";
 
 	optionHelpText["themeFilename"] = "Theme filename: The name of a file for a color theme to use";
 
@@ -817,10 +812,6 @@ function readDDMsgReaderCfgFile()
 		retObj.cfgOptions.pauseAfterNewMsgScan = true;
 	if (!retObj.cfgOptions.hasOwnProperty("readingPostOnSubBoardInsteadOfGoToNext"))
 		retObj.cfgOptions.readingPostOnSubBoardInsteadOfGoToNext = false;
-	if (!retObj.cfgOptions.hasOwnProperty("areaChooserHdrFilenameBase"))
-		retObj.cfgOptions.areaChooserHdrFilenameBase = "";
-	if (!retObj.cfgOptions.hasOwnProperty("areaChooserHdrMaxLines"))
-		retObj.cfgOptions.areaChooserHdrMaxLines = 12;
 	if (!retObj.cfgOptions.hasOwnProperty("displayAvatars"))
 		retObj.cfgOptions.displayAvatars = true;
 	if (!retObj.cfgOptions.hasOwnProperty("rightJustifyAvatars"))
@@ -859,6 +850,8 @@ function readDDMsgReaderCfgFile()
 		retObj.cfgOptions.indexedModeNewscanOnlyShowSubsWithNewMsgs = false;
 	if (!retObj.cfgOptions.hasOwnProperty("showUserResponsesInTallyInfo"))
 		retObj.cfgOptions.showUserResponsesInTallyInfo = false;
+	if (!retObj.cfgOptions.hasOwnProperty("DDMsgAreaChooser"))
+		retObj.cfgOptions.DDMsgAreaChooser = "";
 	if (!retObj.cfgOptions.hasOwnProperty("themeFilename"))
 		retObj.cfgOptions.themeFilename = "DefaultTheme.cfg";
 

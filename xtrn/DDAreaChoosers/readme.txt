@@ -1,6 +1,6 @@
                      Digital Distortion Area Choosers
-                              Version 1.44
-                        Release date: 2025-06-05
+                              Version 1.45
+                        Release date: 2025-06-18
 
                                   by
 
@@ -20,8 +20,6 @@ Contents
 3. Installation & Setup
 4. Configuration files
 5. Sub-board & directory name collapsing
-6. DDMsgAreaChooser class: Properties & methods
-7. DDFileAreaChooser class: Properties & methods
 
 
 1. Disclaimer
@@ -49,6 +47,10 @@ library, if desired.    Additionally, the message area
 chooser will show the date & time of the latest post for each of the
 sub-boards.
 
+The user is able to change the sorting when displaying the items: The user can
+press Ctrl-U to open a user settings dialog, which has an option to let them
+change the sorting option.
+
 The file & message area chooser scripts can be run in several ways:
 - Executed from a JavaScript/Baja script
 - Loaded in a JavaScript script, then use the DDMsgAreaChooser or
@@ -64,6 +66,7 @@ Step 1: Copy the following files to a directory of your choice (i.e., sbbs/exec
 or sbbs/mods):
 DDFileAreaChooser.js
 DDMsgAreaChooser.js
+DDAreaChooserCommon.js
 DDMsgAreaChooser.cfg
 DDFileAreaChooser.cfg
 
@@ -125,36 +128,6 @@ bbs.exec("?DDFileAreaChooser.js false");
 For Baja:
 exec "?DDMsgAreaChooser.js false"
 exec "?DDFileAreaChooser.js false"
-
-The second command-line parameter specifies whether or not to execute the
-script - This is for use when loading the script with the load() function
-instead of bbs.exec() in JavaScript.  See the next section for more details.
-
-
-Advanced installation notes (optional)
---------------------------------------
-The area chooser functionality is encapsulated into JavaScript objects so
-that you can customize the settings & colors within your script if you like.
-To do this, follow these steps:
- 1. Include the following line in your JavaScript script (preferably near the
-    top):
- load("DDMsgAreaChooser.js", true, false);
- 2. Where you want to have area choosing functionality, instantiate the object
-    and call its SelectMsgArea() function (for the message area chooser) or its
-    SelectFileArea() function (for the file area chooser).  An example:
-    var msgAreaChooser = new DDMsgAreaChooser();
-	 msgAreaChooser.SelectMsgArea();
-You can also list message groups (using the same colors as the chooser) as
-follows:
-  msgAreaChooser.ListMsgGrps();
-You can also use the message lister object to list the sub-boards in the
-current message group (using the same colors as the chooser) as follows:
-  msgAreaChooser.ListSubBoardsInMsgGroup();
-For listing file libraries and file directories inside of a library, you can
-do the following:
-  var fileAreaChooser = new DDFileAreaChooser();
-  fileAreaChooser.ListFileLibs(); // List file libraries
-  fileAreaChooser.ListDirsInFileLib(); // List directories inside the current library
 
 
 If you would like to set up these scripts as doors, the following is an example
@@ -474,85 +447,3 @@ and you have : configured as the separator character, you could name the library
 disabled, the name will be displayed as-is with the double character.
 
 
-6. DDMsgAreaChooser class: Properties & methods
-===============================================
-The following are the properties and methods of the DDMsgAreaChooser class, which
-is the class used for letting the user choose a message area:
-Property name                         Description
--------------                         -----------
-showImportDates                       Boolean: Whether or not to show the
-                                      import dates (rather than message dates)
-                                      in the latest date & time column in the
-                                      sub-board lists.
-
-useLightbarInterface                  Boolean: Whether or not to use a
-                                      lightbar user interface.
-
-Methods
--------
-Method name                           Description
------------                           -----------
-DDMsgAreaChooser()                    Constructor
-
-SelectMsgArea()                       Lets the user choose a message sub-board.
-                                      If the useLightbarInterface property is
-                                      true and the user's terminal supports
-                                      ANSI, it will use the lightbar interface;
-                                      otherwise, it will use traditional
-                                      interface.
-
-SelectMsgArea_Lightbar()              Lets the user choose a message sub-board,
-                                      with a lightbar user interface.
-
-SelectMsgArea_Traditional()           Lets the user choose a message sub-board,
-                                      with a traditional user interface.
-
-ListMsgGrps()                         Lists the message groups
-
-ListSubBoardsInMsgGroup(pGrpIndex,    Lists the sub-boards in the user's
-                        pMarkIndex,   currently-selected message group.
-                        pSortType)    The parameters are all optional.  They
-                                      specify the index of the message group,
-                                      the index of the sub-board to mark with
-                                      the "chosen" character, and a sort type,
-                                      which can be "none" (default sorting),
-                                      "dateAsc" for date ascending,
-                                      "dateDesc" for date descending, or
-                                      "description" for description.
-
-7. DDFileAreaChooser class: Properties & methods
-===============================================
-The following are the properties and methods of the DDMsgAreaChooser class, which
-is the class used for letting the user choose a message area:
-Property name                         Description
--------------                         -----------
-useLightbarInterface                  Boolean: Whether or not to use a
-                                      lightbar user interface.
-
-Methods
--------
-Method name                           Description
------------                           -----------
-DDFileAreaChooser()                   Constructor
-
-SelectFileArea()                      Lets the user choose a file directory.
-                                      If the useLightbarInterface property is
-                                      true and the user's terminal supports
-                                      ANSI, it will use the lightbar interface;
-                                      otherwise, it will use traditional
-                                      interface.
-
-SelectFileArea_Lightbar()             Lets the user choose a file directory,
-                                      with a lightbar user interface.
-
-SelectFileArea_Traditional()          Lets the user choose a file directory,
-                                      with a traditional user interface.
-
-ListFileLibs()                        Lists the file libraries
-
-ListDirsInFileLib(pLibIndex,          Lists the directories in the user's
-                  pMarkIndex)         currently-selected file library.
-                                      The parameters are optional.  They
-                                      specify the index of the file library
-                                      and the index of the directory to mark
-                                      with the "chosen" character.

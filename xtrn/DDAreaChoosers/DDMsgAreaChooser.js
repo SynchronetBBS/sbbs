@@ -102,6 +102,8 @@
  *                            out into DDAreaChooserCommon.js to make development a bit simpler.
  * 2025-06-04 Eric Oulashin   Version 1.44
  *                            Fix: Item colors for sub-boards properly aligned again
+ * 2025-06-18 Eric Oulashin   Version 1.45
+ *                            Added sorting with a user config option
  */
 
 /* Command-line arguments:
@@ -141,8 +143,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.44";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2025-06-04";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.45";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2025-06-18";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -167,34 +169,35 @@ var LOWER_CENTER_BLOCK = "\xDC";
 // Characters for display
 var HORIZONTAL_SINGLE = "\xC4";
 
+// Sub-board sort options for changing to another sub-board.
+// Note: These sort option values must match the values for how they're
+// defined in DDMsgReader.
+const SUB_BOARD_SORT_NONE = 0;
+const SUB_BOARD_SORT_ALPHABETICAL = 1;
+const SUB_BOARD_SORT_LATEST_MSG_DATE_OLDEST_FIRST = 2;
+const SUB_BOARD_SORT_LATEST_MSG_DATE_NEWEST_FIRST = 3;
+
 // Misc. defines
 var ERROR_WAIT_MS = 1500;
 var SEARCH_TIMEOUT_MS = 10000;
 
-// gIsSysop stores whether or not the user is a sysop.
-var gIsSysop = user.compare_ars("SYSOP"); // Whether or not the user is a sysop
 
+// User settings file name
+var gUserSettingsFilename = system.data_dir + "user/" + format("%04d", user.number) + ".DDMsgAreaChooser_Settings";
+
+// Parse command-line arguments
 // 1st command-line argument: Whether or not to choose a message group first (if
 // false, then only choose a sub-board within the user's current group).  This
 // can be true or false.
-var gChooseMsgGrpOnStartup = true;
-if (typeof(argv[0]) == "boolean")
-	gChooseMsgGrpOnStartup = argv[0];
-else if (typeof(argv[0]) == "string")
-	gChooseMsgGrpOnStartup = (argv[0].toLowerCase() == "true");
-
 
 // 2nd command-line argument: Determine whether or not to execute the message listing
 // code (true/false)
-var executeThisScript = true;
-if (typeof(argv[1]) == "boolean")
-	executeThisScript = argv[1];
-else if (typeof(argv[1]) == "string")
-	executeThisScript = (argv[1].toLowerCase() == "true");
+var cmdLineParseRetobj = parseCmdLineArgs(argv);
+
 
 // If executeThisScript is true, then create a DDMsgAreaChooser object and use
 // it to let the user choose a message area.
-if (executeThisScript)
+if (cmdLineParseRetobj.executeThisScript)
 {
 	// Starting with the user's current messsage group, find the first message group with sub-boards.
 	// If there are none, output an error message and exit.
@@ -218,12 +221,12 @@ if (executeThisScript)
 	// here just in case, and change the user's message area
 	// here.  Otherwise, if choosing the message group first,
 	// SelectMsgArea() will change the user's sub-board.
-	//var msgGroupIdx = (gChooseMsgGrpOnStartup ? firstGrpIdxWithSubBoards/*null*/ : +bbs.curgrp);
+	//var msgGroupIdx = (cmdLineParseRetobj.chooseMsgGrpOnStartup ? firstGrpIdxWithSubBoards/*null*/ : +bbs.curgrp);
 	var msgGroupIdx = +bbs.curgrp; // Default to the user's current message group
-	if (!gChooseMsgGrpOnStartup)
+	if (!cmdLineParseRetobj.chooseMsgGrpOnStartup)
 		msgAreaChooser.BuildSubBoardPrintfInfoForGrp(msgGroupIdx);
-	var chosenIdx = msgAreaChooser.SelectMsgArea(gChooseMsgGrpOnStartup, msgGroupIdx);
-	if (!gChooseMsgGrpOnStartup && (typeof(chosenIdx) === "number"))
+	var chosenIdx = msgAreaChooser.SelectMsgArea(cmdLineParseRetobj.chooseMsgGrpOnStartup, msgGroupIdx);
+	if (!cmdLineParseRetobj.chooseMsgGrpOnStartup && (typeof(chosenIdx) === "number"))
 		bbs.cursub_code = msg_area.grp_list[bbs.curgrp].sub_list[chosenIdx].code;
 }
 
@@ -296,8 +299,15 @@ function DDMsgAreaChooser()
 	// separator.
 	//this.msgArea_list = [];
 
+	this.userSettings = {
+		// Area change sorting for changing to another sub-board: None, Alphabetical, or LatestMsgDate
+		areaChangeSorting: SUB_BOARD_SORT_NONE
+	};
+
 	// Set the function pointers for the object
 	this.ReadConfigFile = DDMsgAreaChooser_ReadConfigFile;
+	this.ReadUserSettingsFile = DDMsgAreaChooser_ReadUserSettingsFile;
+	this.WriteUserSettingsFile = DDMsgAreaChooser_WriteUserSettingsFile;
 	this.WriteKeyHelpLine = DDMsgAreaChooser_writeKeyHelpLine;
 	this.WriteGrpListHdrLine = DDMsgAreaChooser_WriteGrpListHdrLine;
 	this.WriteSubBrdListHdr1Line = DMsgAreaChooser_WriteSubBrdListHdr1Line;
@@ -317,13 +327,19 @@ function DDMsgAreaChooser()
 	this.SetUpGrpListWithCollapsedSubBoards = DDMsgAreaChooser_SetUpGrpListWithCollapsedSubBoards;
 	this.FindMsgAreaIdxFromText = DDMsgAreaChooser_FindMsgAreaIdxFromText;
 	this.GetSubNameLenAndNumMsgsLen = DDMsgAreaChooser_GetSubNameLenAndNumMsgsLen;
+	this.DoUserSettings_Scrollable = DDMsgAreaChooser_DoUserSettings_Scrollable;
+	this.DoUserSettings_Traditional = DDMsgAreaChooser_DoUserSettings_Traditional;
 
 	// Read the settings from the config file.
 	this.ReadConfigFile();
+	// Read the user settings
+	this.ReadUserSettingsFile();
 
 	// Populate msgArea_list (should be done after reading the configuration file
 	// so that useSubCollapsing and subCollapseSeparator are set according to settings
 	this.msgArea_list = getAreaHeirarchy(DDAC_MSG_AREAS, this.useSubCollapsing, this.subCollapseSeparator);
+	// Sort according to the user's configured sort option.
+	sortHeirarchyRecursive(this.msgArea_list, this.userSettings.areaChangeSorting);
 	
 	// These variables store default lengths of the various columns displayed in
 	// the message group/sub-board lists.
@@ -538,6 +554,7 @@ function DDMsgAreaChooser_SelectMsgArea(pChooseGroup, pGrpIdx)
 
 	// Start with this.lib_list, which is the topmost file lib/dir structure
 	var msgAreaStructure = this.msgArea_list;
+	var msgAreaStructureWithItems = this.msgArea_list;
 	var selectedGrpIdx = null;
 	var previousMsgAreaStructure = null;
 	if (!chooseGrp)
@@ -549,6 +566,7 @@ function DDMsgAreaChooser_SelectMsgArea(pChooseGroup, pGrpIdx)
 				if (this.msgArea_list[pGrpIdx].hasOwnProperty("items"))
 				{
 					msgAreaStructure = this.msgArea_list[pGrpIdx].items;
+					msgAreaStructureWithItems = this.msgArea_list[pGrpIdx];
 					selectedGrpIdx = pGrpIdx;
 					previousMsgAreaStructure = this.msgArea_list;
 				}
@@ -563,6 +581,7 @@ function DDMsgAreaChooser_SelectMsgArea(pChooseGroup, pGrpIdx)
 					if (this.msgArea_list[i].hasOwnProperty("items"))
 					{
 						msgAreaStructure = this.msgArea_list[i].items;
+						msgAreaStructureWithItems = this.msgArea_list[i];
 						selectedGrpIdx = i;
 						previousMsgAreaStructure = this.msgArea_list;
 					}
@@ -575,6 +594,7 @@ function DDMsgAreaChooser_SelectMsgArea(pChooseGroup, pGrpIdx)
 	var selectedItemIdx = null;
 	var chosenGroupOrSubBoardName = ""; // Will have the name of the user's chosen library/subdir
 	var previousMsgAreaStructures = []; // Will be used like a stack
+	var previousMsgAreaStructuresWithItems = [];
 	var previousChosenLibOrSubdirNames = []; // Will be used like a stack
 	var subBoardsLabelLen = 14; // The length of the "Sub-boards of " label
 	var nameSep = " - ";          // A string to use to separate group/sub-board names for the top header line
@@ -584,6 +604,79 @@ function DDMsgAreaChooser_SelectMsgArea(pChooseGroup, pGrpIdx)
 	while (selectionLoopContinueOn)
 	{
 		console.clear("\x01n");
+		// TODO: No longer needed?
+		/*
+		// Sort the current area structure, if applicable
+		if (msgAreaStructure != null && (!msgAreaStructure.hasOwnProperty("sorted") || !msgAreaStructure.sorted))
+		{
+			var structureToSort = (Array.isArray(msgAreaStructure) ? msgAreaStructure : msgAreaStructure.items);
+			switch (this.userSettings.areaChangeSorting)
+			{
+				case SUB_BOARD_SORT_NONE:
+					// Sort by the uniqueNumber property that was added when creating the
+					// structure initially
+					structureToSort.sort(function(pA, pB)
+					{
+						if (pA.uniqueNumber < pB.uniqueNumber)
+							return -1;
+						else if (pA.uniqueNumber == pB.uniqueNumber)
+							return 0;
+						else if (pA.uniqueNumber > pB.uniqueNumber)
+							return 1;
+					});
+					break;
+				case SUB_BOARD_SORT_ALPHABETICAL:
+					structureToSort.sort(function(pA, pB)
+					{
+						if (pA.name < pB.name)
+							return -1;
+						else if (pA.name == pB.name)
+							return 0;
+						else if (pA.name > pB.name)
+							return 1;
+					});
+					break;
+				case SUB_BOARD_SORT_LATEST_MSG_DATE_OLDEST_FIRST:
+					structureToSort.sort(function(pA, pB)
+					{
+						var sortVal = 0;
+						if (pA.hasOwnProperty("subItemObj") && pB.hasOwnProperty("subItemObj"))
+						{
+							var latestMsgTimeA = getLatestMsgTime(pA.subItemObj.code);
+							var latestMsgTimeB = getLatestMsgTime(pB.subItemObj.code);
+							if (latestMsgTimeA < latestMsgTimeB)
+								sortVal = -1;
+							else if (latestMsgTimeA == latestMsgTimeB)
+								sortVal = 0;
+							else if (latestMsgTimeA > latestMsgTimeB)
+								sortVal = 1;
+						}
+						return sortVal;
+					});
+					break;
+				case SUB_BOARD_SORT_LATEST_MSG_DATE_NEWEST_FIRST:
+					//if (user.is_sysop) console.print("Sorting: Msg date newest first  \x01p"); // Temporary
+					structureToSort.sort(function(pA, pB)
+					{
+						var sortVal = 0;
+						if (pA.hasOwnProperty("subItemObj") && pB.hasOwnProperty("subItemObj"))
+						{
+							var latestMsgTimeA = getLatestMsgTime(pA.subItemObj.code);
+							var latestMsgTimeB = getLatestMsgTime(pB.subItemObj.code);
+							if (latestMsgTimeA < latestMsgTimeB)
+								sortVal = 1;
+							else if (latestMsgTimeA == latestMsgTimeB)
+								sortVal = 0;
+							else if (latestMsgTimeA > latestMsgTimeB)
+								sortVal = -1;
+						}
+						return sortVal;
+					});
+					break;
+			}
+			msgAreaStructure.sorted = true;
+		}
+		*/
 
 		// If we're displaying the file libraries (top level), then we'll output 1
 		// header line; otherwise, we'll output 2 header line; adjut the top line
@@ -725,6 +818,7 @@ function DDMsgAreaChooser_SelectMsgArea(pChooseGroup, pGrpIdx)
 				if (msgAreaStructure[selectedMenuIdx].hasOwnProperty("items"))
 				{
 					previousMsgAreaStructures.push(msgAreaStructure);
+					previousMsgAreaStructuresWithItems.push(msgAreaStructureWithItems);
 					if (previousChosenLibOrSubdirNames.length > 1)
 					{
 						chosenGroupOrSubBoardName = previousChosenLibOrSubdirNames[previousChosenLibOrSubdirNames.length-1] + nameSep + msgAreaStructure[selectedMenuIdx].name;
@@ -739,6 +833,7 @@ function DDMsgAreaChooser_SelectMsgArea(pChooseGroup, pGrpIdx)
 					else
 						chosenGroupOrSubBoardName = msgAreaStructure[selectedMenuIdx].name;
 					msgAreaStructure = msgAreaStructure[selectedMenuIdx].items;
+					msgAreaStructureWithItems = msgAreaStructure[selectedMenuIdx];
 					menuContinueOn = false;
 				}
 				else if (msgAreaStructure[selectedMenuIdx].hasOwnProperty("subItemObj"))
@@ -865,6 +960,7 @@ function DDMsgAreaChooser_SelectMsgArea(pChooseGroup, pGrpIdx)
 						{
 							selectedItemIdx = selectedItemIndexes.push(selectedItemIdx);
 							msgAreaStructure = previousMsgAreaStructures.push(msgAreaStructure);
+							msgAreaStructureWithItems = previousMsgAreaStructuresWithItems.push(msgAreaStructureWithItems);
 							previousChosenLibOrSubdirNames.push("");
 							msgAreaStructure = newMsgAreaStructure;
 							createMenuRet = this.CreateLightbarMenu(newMsgAreaStructure, previousMsgAreaStructures.length+1, menuTopRow, 0, numItemsWidth);
@@ -970,6 +1066,49 @@ function DDMsgAreaChooser_SelectMsgArea(pChooseGroup, pGrpIdx)
 					writeKeyHelpLine = false;
 				}
 			}
+			else if (lastUserInputUpper == CTRL_U)
+			{
+				var usingANSI = this.useLightbarInterface && console.term_supports(USER_ANSI);
+				// Make a backup of the user's sort setting so we can compare it later
+				var previousSortSetting = this.userSettings.areaChangeSorting;
+				var userSettingsRetObj;
+				if (usingANSI)
+					userSettingsRetObj = this.DoUserSettings_Scrollable();
+				else
+					this.DoUserSettings_Traditional();
+
+				// If the user's sort setting changed, set menuContinueOn to false.
+				// That will re-create the menu and sort it accordingly and re-draw.
+				if (this.userSettings.areaChangeSorting != previousSortSetting)
+				{
+					menuContinueOn = false;
+					sortHeirarchyRecursive(this.msgArea_list, this.userSettings.areaChangeSorting);
+				}
+				else
+				{
+					// If using the ANSI/scrolling interface, refresh the screen
+					if (usingANSI)
+					{
+						if (userSettingsRetObj.needWholeScreenRefresh)
+						{
+							writeHdrLines = true;
+							drawMenu = true;
+							writeKeyHelpLine = true;
+						}
+						else
+						{
+							//var menu = createMenuRet.menuObj;
+							menu.DrawPartialAbs(userSettingsRetObj.optionBoxTopLeftX,
+												userSettingsRetObj.optionBoxTopLeftY,
+												userSettingsRetObj.optionBoxWidth,
+												userSettingsRetObj.optionBoxHeight);
+							writeHdrLines = false;
+							drawMenu = false;
+							writeKeyHelpLine = false;
+						}
+					}
+				}
+			}
 			// Quit - Note: This check should be last
 			else if (lastUserInputUpper == "Q" || lastUserInputUpper == KEY_ESC || selectedMenuIdx == null)
 			{
@@ -991,6 +1130,7 @@ function DDMsgAreaChooser_SelectMsgArea(pChooseGroup, pGrpIdx)
 				else // Go to the previous file lib/dir structure
 				{
 					msgAreaStructure = previousMsgAreaStructures.pop();
+					msgAreaStructureWithItems = previousMsgAreaStructuresWithItems.pop();
 					if (msgAreaStructure == this.msgArea_list)
 					{
 						chosenGroupOrSubBoardName = "";
@@ -1118,7 +1258,7 @@ function DDMsgAreaChooser_CreateLightbarMenu(pMsgAreaHeirarchyObj, pHeirarchyLev
 	var msgAreaMenu = new DDLightbarMenu(1, pMenuTopRow, console.screen_columns, fileDirMenuHeight);
 	// Add additional keypresses for quitting the menu's input loop so we can
 	// respond to these keys
-	msgAreaMenu.AddAdditionalQuitKeys("qQ?/" + CTRL_F);
+	msgAreaMenu.AddAdditionalQuitKeys("qQ?/" + CTRL_F + CTRL_U);
 	msgAreaMenu.AddAdditionalFirstPageKeys("fF");
 	msgAreaMenu.AddAdditionalLastPageKeys("lL");
 	if (this.useLightbarInterface && console.term_supports(USER_ANSI))
@@ -1819,6 +1959,43 @@ function DDMsgAreaChooser_ReadConfigFile()
 	}
 }
 
+// For the DDMsgAreaChooser class: Reads the user settings file
+function DDMsgAreaChooser_ReadUserSettingsFile()
+{
+	// Open and read the user settings file, if it exists
+	var userSettingsFile = new File(gUserSettingsFilename);
+	if (userSettingsFile.open("r"))
+	{
+		for (var settingName in this.userSettings)
+		{
+			this.userSettings[settingName] = userSettingsFile.iniGetValue("BEHAVIOR", settingName, this.userSettings[settingName]);
+		}
+
+		userSettingsFile.close();
+	}
+}
+
+// For the DDMsgAreaChooser class: Writes the user settings file
+function DDMsgAreaChooser_WriteUserSettingsFile()
+{
+	var writeSucceeded = false;
+	// Open the user settings file, if it exists
+	var userSettingsFile = new File(gUserSettingsFilename);
+	if (userSettingsFile.open(userSettingsFile.exists ? "r+" : "w+"))
+	{
+		// Variables in this.userSettings are initialized in the DDMsgAreaChooser constructor. For each
+		// user setting (except for twitlist), save the setting in the user's settings file. The user's
+		// twit list is an array that is saved to a separate file.
+		for (var settingName in this.userSettings)
+		{
+			userSettingsFile.iniSetValue("BEHAVIOR", settingName, this.userSettings[settingName]);
+		}
+		userSettingsFile.close();
+		writeSucceeded = true;
+	}
+	return writeSucceeded;
+}
+
 // For the DDMsgAreaChooser class: Shows the help screen
 //
 // Parameters:
@@ -1840,12 +2017,10 @@ function DDMsgAreaChooser_showHelpScreen(pLightbar, pClearScreen)
 	console.center("\x01n\x01cVersion \x01g" + DD_MSG_AREA_CHOOSER_VERSION +
 	               " \x01w\x01h(\x01b" + DD_MSG_AREA_CHOOSER_VER_DATE + "\x01w)");
 	console.crlf();
-	console.print("\x01n\x01cFirst, a listing of message groups is displayed.  One can be chosen by typing");
-	console.crlf();
-	console.print("its number.  Then, a listing of sub-boards within that message group will be");
-	console.crlf();
-	console.print("shown, and one can be chosen by typing its number.");
-	console.crlf();
+	var helpText = "First, a listing of message groups is displayed.  One can be chosen by typing ";
+	helpText += "its number.  Then, a listing of sub-boards within that message group will be ";
+	helpText += "shown, and one can be chosen by typing its number.";
+	printf("\x01n\x01c%s", lfexpand(word_wrap(helpText, console.screen_columns-1, null, false)));
 
 	if (pLightbar)
 	{
@@ -1873,6 +2048,8 @@ function DDMsgAreaChooser_showHelpScreen(pLightbar, pClearScreen)
 		console.print("\x01h/\x01n\x01c or \x01hCtrl-F\x01n\x01c: Find by name/description");
 		console.crlf();
 		console.print("\x01hN\x01n\x01c: Next search result (after a find)");
+		console.crlf();
+		console.print("\x01hCTRL-U\x01n\x01c: User settings (i.e., sorting)");
 		console.crlf();
 	}
 
@@ -2176,6 +2353,250 @@ function DDMsgAreaChooser_SetUpGrpListWithCollapsedSubBoards()
 		}
 	}
 }
+
+// For the DDMsgAreaChooser class:  Lets the user manage their preferences/settings (scrollable/ANSI user interface).
+//
+// Return value: An object containing the following properties:
+//               needWholeScreenRefresh: Boolean - Whether or not the whole screen needs to be
+//                                       refreshed (i.e., when the user has edited their twitlist)
+//               optionBoxTopLeftX: The top-left screen column of the option box
+//               optionBoxTopLeftY: The top-left screen row of the option box
+//               optionBoxWidth: The width of the option box
+//               optionBoxHeight: The height of the option box
+function DDMsgAreaChooser_DoUserSettings_Scrollable()
+{
+	var retObj = {
+		needWholeScreenRefresh: false,
+		optionBoxTopLeftX: 1,
+		optionBoxTopLeftY: 1,
+		optionBoxWidth: 0,
+		optionBoxHeight: 0
+	};
+
+	if (!this.useLightbarInterface || !console.term_supports(USER_ANSI))
+	{
+		this.DoUserSettings_Traditional();
+		return retObj;
+	}
+
+	// Save the user's current settings so that we can check them later to see if any
+	// of them changed, in order to determine whether to save the user's settings file.
+	var originalSettings = {};
+	for (var prop in this.userSettings)
+	{
+		if (this.userSettings.hasOwnProperty(prop))
+			originalSettings[prop] = this.userSettings[prop];
+	}
+
+
+	// Create the user settings box
+	var optBoxTitle = "Setting                                      Enabled";
+	var optBoxWidth = ChoiceScrollbox_MinWidth();
+	var optBoxHeight = 6;
+	var optBoxTopRow = 3;
+	var optBoxStartX = Math.floor((console.screen_columns/2) - (optBoxWidth/2));
+	++optBoxStartX; // Looks better
+	var optionBox = new ChoiceScrollbox(optBoxStartX, optBoxTopRow, optBoxWidth, optBoxHeight, optBoxTitle,
+										null/*gConfigSettings*/, false, true);
+	optionBox.addInputLoopExitKey(CTRL_U);
+	// Update the bottom help text to be more specific to the user settings box
+	var bottomBorderText = "\x01n\x01h\x01cUp\x01b, \x01cDn\x01b, \x01cEnter\x01y=\x01bSelect\x01n\x01c/\x01h\x01btoggle, "
+	                     + "\x01cESC\x01n\x01c/\x01hQ\x01n\x01c/\x01hCtrl-U\x01y=\x01bClose";
+	// This one contains the page navigation keys..  Don't really need to show those,
+	// since the settings box only has one page right now:
+	/*var bottomBorderText = "\x01n\x01h\x01cUp\x01b, \x01cDn\x01b, \x01cN\x01y)\x01bext, \x01cP\x01y)\x01brev, "
+						   + "\x01cF\x01y)\x01birst, \x01cL\x01y)\x01bast, \x01cEnter\x01y=\x01bSelect, "
+						   + "\x01cESC\x01n\x01c/\x01hQ\x01n\x01c/\x01hCtrl-U\x01y=\x01bClose";*/
+
+	optionBox.setBottomBorderText(bottomBorderText, true, false);
+
+	// Sorting option
+	var SUB_BOARD_CHANGE_SORTING_OPT_INDEX = optionBox.addTextItem("Sorting");
+
+	// Set up the enter key in the box to toggle the selected item.
+	optionBox.areaChooserObj = this;
+	optionBox.setEnterKeyOverrideFn(function(pBox) {
+		var itemIndex = pBox.getChosenTextItemIndex();
+		if (itemIndex > -1)
+		{
+			switch (itemIndex)
+			{
+				case SUB_BOARD_CHANGE_SORTING_OPT_INDEX:
+					var sortOptMenu = CreateSubBoardChangeSortOptMenu(optBoxStartX, optBoxTopRow, optBoxWidth, optBoxHeight, this.areaChooserObj.userSettings.areaChangeSorting);
+					var chosenSortOpt = sortOptMenu.GetVal();
+					console.attributes = "N";
+					if (typeof(chosenSortOpt) === "number")
+						this.areaChooserObj.userSettings.areaChangeSorting = chosenSortOpt;
+					retObj.needWholeScreenRefresh = false;
+					this.drawBorder();
+					this.drawInnerMenu(SUB_BOARD_CHANGE_SORTING_OPT_INDEX);
+					break;
+				default:
+					break;
+			}
+		}
+	}); // Option box enter key override function
+
+	// Display the option box and have it do its input loop
+	var boxRetObj = optionBox.doInputLoop(true);
+
+	// If the user changed any of their settings, then save the user settings.
+	// If the save fails, then output an error message.
+	var settingsChanged = false;
+	for (var prop in this.userSettings)
+	{
+		if (this.userSettings.hasOwnProperty(prop))
+		{
+			settingsChanged = settingsChanged || (originalSettings[prop] != this.userSettings[prop]);
+			if (settingsChanged)
+				break;
+		}
+	}
+	if (settingsChanged)
+	{
+		if (!this.WriteUserSettingsFile())
+		{
+			writeWithPause(1, console.screen_rows, "\x01n\x01y\x01hFailed to save settings!\x01n", ERROR_PAUSE_WAIT_MS, "\x01n", true);
+			// Refresh the bottom row help line
+			this.WriteKeyHelpLine();
+		}
+	}
+
+	optionBox.addInputLoopExitKey(CTRL_U);
+
+	// Prepare return object values and return
+	retObj.optionBoxTopLeftX = optionBox.dimensions.topLeftX;
+	retObj.optionBoxTopLeftY = optionBox.dimensions.topLeftY;
+	retObj.optionBoxWidth = optionBox.dimensions.width;
+	retObj.optionBoxHeight = optionBox.dimensions.height;
+	return retObj;
+}
+
+// For the DDMsgAreaChooser class: Lets the user change their settings (traditional user interface)
+function DDMsgAreaChooser_DoUserSettings_Traditional()
+{
+	var optNum = 1;
+	var SUB_BOARD_CHANGE_SORTING_OPT_NUM = optNum++;
+	var HIGHEST_CHOICE_NUM = SUB_BOARD_CHANGE_SORTING_OPT_NUM; // Highest choice number
+
+	console.crlf();
+	var wordFirstCharAttrs = "\x01c\x01h";
+	var wordRemainingAttrs = "\x01c";
+	console.print(colorFirstCharAndRemainingCharsInWords("User Settings", wordFirstCharAttrs, wordRemainingAttrs) + "\r\n");
+	printTradUserSettingOption(SUB_BOARD_CHANGE_SORTING_OPT_NUM, "Sorting", wordFirstCharAttrs, wordRemainingAttrs);
+	console.crlf();
+	console.print("\x01cYour choice (\x01hQ\x01n\x01c: Quit)\x01h: \x01g");
+	var userChoiceNum = console.getnum(HIGHEST_CHOICE_NUM);
+	console.attributes = "N";
+	var userChoiceStr = userChoiceNum.toString().toUpperCase();
+	if (userChoiceStr.length == 0 || userChoiceStr == "Q")
+		return retObj;
+
+	var userSettingsChanged = false;
+	switch (userChoiceNum)
+	{
+		case SUB_BOARD_CHANGE_SORTING_OPT_NUM:
+			console.attributes = "N";
+			console.crlf();
+			console.print("\x01cChoose a sorting option (\x01hQ\x01n\x01c to quit)");
+			console.crlf();
+			var sortOptMenu = CreateSubBoardChangeSortOptMenu(1, 1, console.screen_columns, console.screen_rows, this.userSettings.areaChangeSorting);
+			sortOptMenu.numberedMode = true;
+			sortOptMenu.allowANSI = false;
+			var chosenSortOpt = sortOptMenu.GetVal();
+			if (typeof(chosenSortOpt) === "number")
+			{
+				this.userSettings.areaChangeSorting = chosenSortOpt;
+				userSettingsChanged = true;
+				console.print("\x01n\x01cYou chose\x01g\x01h: \x01c");
+				switch (chosenSortOpt)
+				{
+					case SUB_BOARD_SORT_NONE:
+						console.print("None");
+						break;
+					case SUB_BOARD_SORT_ALPHABETICAL:
+						console.print("Alphabetical");
+						break;
+					case SUB_BOARD_SORT_LATEST_MSG_DATE_OLDEST_FIRST:
+						console.print("Message date (oldest first)");
+						break;
+					case SUB_BOARD_SORT_LATEST_MSG_DATE_NEWEST_FIRST:
+						console.print("Message date (newest first)");
+						break;
+				}
+				console.crlf();
+			}
+			else
+			{
+				console.putmsg(bbs.text(Aborted), P_SAVEATR);
+				console.pause();
+			}
+			console.attributes = "N";
+			break;
+	}
+
+	// If any user settings changed, then write them to the user settings file
+	if (userSettingsChanged)
+	{
+		if (!this.WriteUserSettingsFile())
+		{
+			console.print("\x01n\r\n\x01y\x01hFailed to save settings!\x01n");
+			console.crlf();
+			console.pause();
+		}
+	}
+}
+
+// Helper function for user settings: Creates the menu object to let the user choose
+// a sub-board change sorting option, and returns the object
+function CreateSubBoardChangeSortOptMenu(pX, pY, pWidth, pHeight, pCurrentSortSetting)
+{
+	var sortOptMenu = new DDLightbarMenu(pX, pY, pWidth, pHeight);
+	sortOptMenu.AddAdditionalQuitKeys("qQ");
+	sortOptMenu.borderEnabled = true;
+	sortOptMenu.colors.borderColor = "\x01n\x01b";
+	sortOptMenu.borderChars = {
+		upperLeft: UPPER_LEFT_DOUBLE,
+		upperRight: UPPER_RIGHT_DOUBLE,
+		lowerLeft: LOWER_LEFT_DOUBLE,
+		lowerRight: LOWER_RIGHT_DOUBLE,
+		top: HORIZONTAL_DOUBLE,
+		bottom: HORIZONTAL_DOUBLE,
+		left: VERTICAL_DOUBLE,
+		right: VERTICAL_DOUBLE
+	};
+	sortOptMenu.topBorderText = "Sub-board change sorting";
+	sortOptMenu.Add("None", SUB_BOARD_SORT_NONE);
+	sortOptMenu.Add("Alphabetical", SUB_BOARD_SORT_ALPHABETICAL);
+	sortOptMenu.Add("Msg date: Oldest first", SUB_BOARD_SORT_LATEST_MSG_DATE_OLDEST_FIRST);
+	sortOptMenu.Add("Msg date: Newest first", SUB_BOARD_SORT_LATEST_MSG_DATE_NEWEST_FIRST);
+	switch (pCurrentSortSetting)
+	{
+		case SUB_BOARD_SORT_NONE:
+			sortOptMenu.selectedItemIdx = 0;
+			break;
+		case SUB_BOARD_SORT_ALPHABETICAL:
+			sortOptMenu.selectedItemIdx = 1;
+			break;
+		case SUB_BOARD_SORT_LATEST_MSG_DATE_OLDEST_FIRST:
+			sortOptMenu.selectedItemIdx = 2;
+			break;
+		case SUB_BOARD_SORT_LATEST_MSG_DATE_NEWEST_FIRST:
+			sortOptMenu.selectedItemIdx = 3;
+			break;
+	}
+
+	sortOptMenu.colors.itemColor = "\x01n\x01c\x01h";
+
+	// For use in numbered mode for the traditional UI:
+	sortOptMenu.colors.itemNumColor = "\x01n\x01c";
+	sortOptMenu.colors.highlightedItemNumColor = "\x01n\x01g\x01h";
+
+	return sortOptMenu;
+}
+
+/////////////////////////////
+// Misc. functions
 
 // Returns a default object for a message group
 function defaultMsgGrpObj()
@@ -3149,6 +3570,152 @@ function msgAreaStructureHasCurrentUserSubBoard(pMsgSubHeirarchyObj)
 			currentUserSubBoardFound = msgAreaStructureHasCurrentUserSubBoard(pMsgSubHeirarchyObj.items);
 	}
 	return currentUserSubBoardFound;
+}
+
+// Parses command-line arguments
+function parseCmdLineArgs(argv)
+{
+	var retObj = {
+		chooseMsgGrpOnStartup: true,
+		executeThisScript: true
+	};
+
+	// 1st command-line argument: Whether or not to choose a message group first (if
+	// false, then only choose a sub-board within the user's current group).  This
+	// can be true or false.
+	if (typeof(argv[0]) == "boolean")
+		retObj.chooseMsgGrpOnStartup = argv[0];
+	else if (typeof(argv[0]) == "string" && argv[0].length > 0 && argv[0][0] != "-")
+		retObj.chooseMsgGrpOnStartup = (argv[0].toLowerCase() == "true");
+
+	// 2nd command-line argument: Determine whether or not to execute the message listing
+	// code (true/false)
+	if (typeof(argv[1]) == "boolean")
+		retObj.executeThisScript = argv[1];
+	else if (typeof(argv[1]) == "string" && argv[1].length > 0 && argv[1][0] != "-")
+		retObj.executeThisScript = (argv[1].toLowerCase() == "true");
+
+	return retObj;
+}
+
+// Converts a short sort option string to its numeric sort option value
+function sortOptToValue(pSortOptStr)
+{
+	var sortOptVal = SUB_BOARD_SORT_NONE;
+	const optValStr = pSortOptStr.toLowerCase();
+	if (optValStr == "none")
+		sortOptVal = SUB_BOARD_SORT_NONE;
+	else if (optValStr == "alphabetical")
+		sortOptVal = SUB_BOARD_SORT_ALPHABETICAL;
+	else if (optValStr == "msg_date_oldest_first")
+		sortOptVal = SUB_BOARD_SORT_LATEST_MSG_DATE_OLDEST_FIRST;
+	else if (optValStr == "msg_date_newest_first")
+		sortOptVal = SUB_BOARD_SORT_LATEST_MSG_DATE_NEWEST_FIRST;
+	return sortOptVal;
+}
+
+// Converts one of the sub-board sort options to a descriptive string
+function subBoardSortOptionToDescriptiveStr(pSortOption)
+{
+	var optionStr = "None (as configured in the system)";
+	switch (pSortOption)
+	{
+		case SUB_BOARD_SORT_NONE:
+			optionStr = "None (as configured in the system)";
+			break;
+		case SUB_BOARD_SORT_ALPHABETICAL:
+			optionStr = "Alphabetical";
+			break;
+		case SUB_BOARD_SORT_LATEST_MSG_DATE_OLDEST_FIRST:
+			optionStr = "Latest message date (oldest first)";
+			break;
+		case SUB_BOARD_SORT_LATEST_MSG_DATE_NEWEST_FIRST:
+			optionStr = "Latest message date (newest first)";
+			break;
+	}
+	return optionStr;
+}
+
+// Sorts the heirarchy recursively, including None, Alphabetical,
+// latest message date oldest first, and latest message date
+// newest first.
+//
+// Parameters:
+//  pHeirarchyArray: One of the arrays of items from the heirarchy
+//  pSortOption: The option specifying which way to sort
+function sortHeirarchyRecursive(pHeirarchyArray, pSortOption)
+{
+	switch (pSortOption)
+	{
+		case SUB_BOARD_SORT_NONE:
+			// Sort by the uniqueNumber property that was added when creating the
+			// structure initially
+			pHeirarchyArray.sort(function(pA, pB)
+			{
+				if (pA.uniqueNumber < pB.uniqueNumber)
+					return -1;
+				else if (pA.uniqueNumber == pB.uniqueNumber)
+					return 0;
+				else if (pA.uniqueNumber > pB.uniqueNumber)
+					return 1;
+			});
+			break;
+		case SUB_BOARD_SORT_ALPHABETICAL:
+			pHeirarchyArray.sort(function(pA, pB)
+			{
+				if (pA.name < pB.name)
+					return -1;
+				else if (pA.name == pB.name)
+					return 0;
+				else if (pA.name > pB.name)
+					return 1;
+			});
+			break;
+		case SUB_BOARD_SORT_LATEST_MSG_DATE_OLDEST_FIRST:
+			pHeirarchyArray.sort(function(pA, pB)
+			{
+				var sortVal = 0;
+				if (pA.hasOwnProperty("subItemObj") && pB.hasOwnProperty("subItemObj"))
+				{
+					var latestMsgTimeA = getLatestMsgTime(pA.subItemObj.code);
+					var latestMsgTimeB = getLatestMsgTime(pB.subItemObj.code);
+					if (latestMsgTimeA < latestMsgTimeB)
+						sortVal = -1;
+					else if (latestMsgTimeA == latestMsgTimeB)
+						sortVal = 0;
+					else if (latestMsgTimeA > latestMsgTimeB)
+						sortVal = 1;
+				}
+				return sortVal;
+			});
+			break;
+		case SUB_BOARD_SORT_LATEST_MSG_DATE_NEWEST_FIRST:
+			pHeirarchyArray.sort(function(pA, pB)
+			{
+				var sortVal = 0;
+				if (pA.hasOwnProperty("subItemObj") && pB.hasOwnProperty("subItemObj"))
+				{
+					var latestMsgTimeA = getLatestMsgTime(pA.subItemObj.code);
+					var latestMsgTimeB = getLatestMsgTime(pB.subItemObj.code);
+					if (latestMsgTimeA < latestMsgTimeB)
+						sortVal = 1;
+					else if (latestMsgTimeA == latestMsgTimeB)
+						sortVal = 0;
+					else if (latestMsgTimeA > latestMsgTimeB)
+						sortVal = -1;
+				}
+				return sortVal;
+			});
+			break;
+	}
+	pHeirarchyArray.sorted = true;
+	// Sort recursively
+	for (var i = 0; i < pHeirarchyArray.length; ++i)
+	{
+		if (pHeirarchyArray[i].hasOwnProperty("items"))
+			sortHeirarchyRecursive(pHeirarchyArray[i].items, pSortOption);
+		pHeirarchyArray[i].sorted = true;
+	}
 }
 
 /*
