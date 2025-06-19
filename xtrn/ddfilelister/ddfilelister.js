@@ -177,6 +177,10 @@
  * 2025-03-06 Eric Oulashin     Version 2.29
  *                              Bug fix for editing ext'd description when a file has no ext'd
  *                              description initially
+ * 2025-06-18 Eric Oulashin     Version 2.30
+ *                              Input timeout fix (only applicable when using a scrollable box,
+ *                              such as when viwing file info). Also, improvement in showing the
+ *                              time to download a file.
  */
 
 "use strict";
@@ -218,8 +222,8 @@ var gAvatar = load({}, "avatar_lib.js");
 
 
 // Version information
-var LISTER_VERSION = "2.29";
-var LISTER_DATE = "2025-03-06";
+var LISTER_VERSION = "2.30";
+var LISTER_DATE = "2025-06-18";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -3180,8 +3184,7 @@ function doFrameInputLoop(pFrame, pScrollbar, pFrameContentStr, pAdditionalQuitK
 		pScrollbar.cycle();
 		pFrame.cycle();
 		pFrame.draw();
-		// Note: getKeyWithESCChars() is defined in dd_lightbar_menu.js.
-		userInput = getKeyWithESCChars(K_NOECHO|K_NOSPIN|K_NOCRLF, 30000).toUpperCase();
+		userInput = console.getkey(K_NOECHO|K_NOSPIN|K_NOCRLF).toUpperCase();
 		if (userInput == KEY_UP)
 		{
 			if (frameContentTopYOffset > 0)
@@ -6092,7 +6095,18 @@ function calcDownloadTimeInSeconds(pNumBytes)
 	// It mentions both bbs.download_cps and user.stats.download_cps
 	// added in Synchronet 3.20, but bbs.download_cps seems to be
 	// unavailable at this time of writing
-	return pNumBytes / user.stats.download_cps;
+	// TODO: According to DigitalMan:
+
+	// Sanity checking
+
+	// Synchronet normally does this with the user's download speed:
+	// if (rate_cps < 1)
+	//	rate_cps = 100000;
+	var rate_cps = user.stats.download_cps;
+	if (rate_cps < 1)
+		rate_cps = 100000;
+	var numBytes = (typeof(pNumBytes) === "number" ? pNumBytes : 0);
+	return numBytes / rate_cps;
 }
 
 // Converts a number of seconds to a string representing HH:MM:SS

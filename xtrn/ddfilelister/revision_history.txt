@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.30     2025-06-18   Input timeout fix (only applicable when using a
+                      scrollable box, such as when viwing file info). Also,
+                      improvement in showing the time to download a file.
 2.29     2025-03-06   Bug fix for editing an extended description when a file
                       doesn't have an extended description initially
 2.28b    2025-02-27   Formatting improvement for the traditional (non-lightbar)
