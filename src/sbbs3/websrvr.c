@@ -2127,17 +2127,17 @@ static bool check_ars(http_session_t * session)
 		session->req.ld->user = strdup(session->req.auth.username);
 	}
 
+	uint reason = CantDownloadFromDir;
 	if (session->parsed_vpath == PARSED_VPATH_FULL) {
 		if (download_is_free(&scfg, session->file.dir, &session->user, &session->client)
 		    || session->user.cdt >= session->file.cost)
-			authorized = user_can_download(&scfg, session->file.dir, &session->user, &session->client, NULL);
+			authorized = user_can_download(&scfg, session->file.dir, &session->user, &session->client, &reason);
 		else
 			authorized = false;
 	} else {
 		ar = arstr(NULL, session->req.ars, &scfg, NULL);
 		authorized = chk_ar(&scfg, ar, &session->user, &session->client);
-		if (ar != NULL)
-			FREE_AND_NULL(ar);
+		free(ar);
 	}
 	if (authorized)  {
 		switch (session->req.auth.type) {
@@ -2163,8 +2163,8 @@ static bool check_ars(http_session_t * session)
 	}
 
 	/* Should go to the hack log? */
-	lprintf(LOG_WARNING, "%04d %s [%s] !AUTHORIZATION FAILURE for user %s, ARS: %s"
-	        , session->socket, session->client.protocol, session->host_ip, session->req.auth.username, session->req.ars);
+	lprintf(LOG_WARNING, "%04d %s [%s] <%s> !AUTHORIZATION FAILURE (reason: %u), ARS: %s"
+	        , session->socket, session->client.protocol, session->host_ip, session->req.auth.username, reason, session->req.ars);
 
 #ifdef _WIN32
 	if (startup->sound.hack[0] && !sound_muted(&scfg))
