@@ -5,6 +5,8 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.45     2025-06-18   Added support for sorting, with a user configuration
+                      option.  User settings can be opened via Ctrl-U.
 1.44     2025-06-05   Fix (message area chooser only): Sub-board item colors
                       are properly aligned again
 1.43     2025-06-01   *.example.cfg files provided in the Synchronet repo: If
