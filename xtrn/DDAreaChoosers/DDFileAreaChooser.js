@@ -428,6 +428,7 @@ function DDFileAreaChooser_SelectFileArea(pChooseLib)
 	var directoriesLabelLen = 15; // The length of the "Directories of " label
 	var nameSep = " - ";          // A string to use to separate lib/subdirectory names for the top header line
 	var numItemsWidth = 0;        // Width of the header column for # of items (not including the space), for creating the menu
+	var sortingChanged = false;   // Will be set true when the user changes sorting so that we can update appropriately
 	if (!this.useLightbarInterface || !console.term_supports(USER_ANSI))
 		numItemsWidth = 5;
 	// Main loop
@@ -461,6 +462,19 @@ function DDFileAreaChooser_SelectFileArea(pChooseLib)
 		var createMenuRet = this.CreateLightbarMenu(fileLibStructure, previousFileLibStructures.length+1, menuTopRow, selectedItemIdx, numItemsWidth);
 		if (this.useLightbarInterface && console.term_supports(USER_ANSI))
 			numItemsWidth = createMenuRet.itemNumWidth;
+		// If sorting has changed, ensure the menu's selected item is the user's
+		// current sub-board
+		if (sortingChanged)
+		{
+			//var screenPosBackup = console.getxy();
+			setMenuIdxWithSelectedFileDir(createMenuRet.menuObj, fileLibStructure);
+			// TODO: It seems the key help line at the bottom  could disappear in
+			// this situation, so make sure it's still showing
+			writeKeyHelpLine = true;
+			// If we're back at the root, set sortingChanged back to false
+			if (fileLibStructure == this.lib_list)
+				sortingChanged = false;
+		}
 		var menu = createMenuRet.menuObj;
 		// Write the header lines, & write the key help line at the bottom of the screen
 		var numItemsColLabel = createMenuRet.allDirs ? "Files" : "Items";
@@ -812,6 +826,7 @@ function DDFileAreaChooser_SelectFileArea(pChooseLib)
 				if (this.userSettings.areaChangeSorting != previousSortSetting)
 				{
 					menuContinueOn = false;
+					sortingChanged = true;
 					sortHeirarchyRecursive(this.lib_list, this.userSettings.areaChangeSorting);
 				}
 				else
@@ -1034,22 +1049,8 @@ function DDFileAreaChooser_CreateLightbarMenu(pDirHeirarchyObj, pHeirarchyLevel,
 		// Also, see which one has the user's current chosen directory so we can set the
 		// current menu item index - And save that index in the menu object for its
 		// reference later.
-		fileDirMenu.idxWithUserSelectedDir = -1;
-		for (var i = 0; i < pDirHeirarchyObj.length; ++i)
-		{
-			// Each object will have either an "items" or a "subItemObj"
-			if (!pDirHeirarchyObj[i].hasOwnProperty("subItemObj"))
-			{
-				retObj.allDirs = false;
-				fileDirMenu.allDirs = false;
-			}
-			// See if this one has the user's selected file directory
-			if (fileDirStructureHasCurrentUserFileDir(pDirHeirarchyObj[i]))
-				fileDirMenu.idxWithUserSelectedDir = i;
-			// If we've found all we need, then stop going through the array
-			if (!retObj.allDirs && fileDirMenu.idxWithUserSelectedDir > -1)
-				break;
-		}
+		var tmpRetObj = setMenuIdxWithSelectedFileDir(fileDirMenu, pDirHeirarchyObj);
+		retObj.allDirs = tmpRetObj.allDirs;
 
 		// Replace the menu's NumItems() function to return the correct number of items
 		fileDirMenu.NumItems = function() {
@@ -2492,6 +2493,43 @@ function sortHeirarchyRecursive(pHeirarchyArray, pSortOption)
 			sortHeirarchyRecursive(pHeirarchyArray[i].items, pSortOption);
 		pHeirarchyArray[i].sorted = true;
 	}
+}
+
+// With a DDLightbarMenu object for file areas, checks to see if any of the items in
+// the array aren't directories.
+// Also, see which one has the user's current chosen directory so we can set the
+// current menu item index - And save that index in the menu object for its
+// reference later.
+function setMenuIdxWithSelectedFileDir(pMenuObj, pDirHeirarchyObj)
+{
+	var retObj = {
+		allDirs: true
+	};
+
+	pMenuObj.idxWithUserSelectedDir = -1;
+	for (var i = 0; i < pDirHeirarchyObj.length; ++i)
+	{
+		// Each object will have either an "items" or a "subItemObj"
+		if (!pDirHeirarchyObj[i].hasOwnProperty("subItemObj"))
+		{
+			retObj.allDirs = false;
+			pMenuObj.allDirs = false;
+		}
+		// See if this one has the user's selected file directory
+		if (fileDirStructureHasCurrentUserFileDir(pDirHeirarchyObj[i]))
+			pMenuObj.idxWithUserSelectedDir = i;
+		// If we've found all we need, then stop going through the array
+		if (!retObj.allDirs && pMenuObj.idxWithUserSelectedDir > -1)
+			break;
+	}
+	if (pMenuObj.idxWithUserSelectedDir >= 0 && pMenuObj.idxWithUserSelectedDir < pMenuObj.NumItems())
+	{
+		pMenuObj.selectedItemIdx = pMenuObj.idxWithUserSelectedDir;
+		if (pMenuObj.selectedItemIdx >= pMenuObj.topItemIdx+pMenuObj.GetNumItemsPerPage())
+			pMenuObj.topItemIdx = pMenuObj.selectedItemIdx - pMenuObj.GetNumItemsPerPage() + 1;
+	}
+
+	return retObj;
 }
 
 /*
