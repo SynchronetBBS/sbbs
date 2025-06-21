@@ -270,6 +270,10 @@
  *                              areaChooserHdrMaxLines
  * 2025-06-18 Eric Oulashin     Version 1.97
  *                              Releasing this version.
+ * 2025-06-20 Eric Oulashin     Version 1.97a
+ *                              After displaying the indexed mode menu, don't display
+ *                              the "Loading.." status again, which happened after
+ *                              closing the user settings dialog
  */
 
 "use strict";
@@ -377,8 +381,8 @@ var hexdump = load('hexdump_lib.js');
 
 
 // Reader version information
-var READER_VERSION = "1.97";
-var READER_DATE = "2025-06-18";
+var READER_VERSION = "1.97a";
+var READER_DATE = "2025-06-20";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -15069,11 +15073,14 @@ function DigDistMsgReader_DoUserSettings_Traditional()
 	var READER_QUIT_TO_MSG_LIST_OPT_NUM = optNum++;
 	var PROPMT_DEL_PERSONAL_MSG_AFTER_REPLY_OPT_NUM = optNum++;
 	var USER_TWITLIST_OPT_NUM = optNum++;
+	var HIGHEST_CHOICE_NUM = USER_TWITLIST_OPT_NUM; // Highest choice number
 	// Sub-board sorting for changing to another sub-board
 	var SUB_BOARD_CHANGE_SORTING_OPT_NUM = -1;
 	if (this.DDMsgAreaChooserFilename.length > 0)
+	{
 		SUB_BOARD_CHANGE_SORTING_OPT_NUM = optNum++;
-	var HIGHEST_CHOICE_NUM = SUB_BOARD_CHANGE_SORTING_OPT_NUM; // Highest choice number
+		HIGHEST_CHOICE_NUM = SUB_BOARD_CHANGE_SORTING_OPT_NUM;
+	}
 	// Specific to personal email
 	var DISPLAY_PERSONAL_MAIL_REPLIED_INDICATOR_CHAR_OPT_NUM = -1;
 	if (this.readingPersonalEmail)
@@ -15332,6 +15339,7 @@ function DigDistMsgReader_DoIndexedMode(pScanScope, pNewscanOnly)
 
 	var clearScreenForMenu = true;
 	var drawMenu = true;
+	var writeLoadingStatus = true;
 	var writeBottomHelpLine = true;
 	var continueOn = true;
 	while (continueOn)
@@ -15340,7 +15348,10 @@ function DigDistMsgReader_DoIndexedMode(pScanScope, pNewscanOnly)
 		var origNumNewMessages = 0;
 		// Let the user choose a sub-board, and if their choice is valid,
 		// let them read the sub-board.
-		var indexRetObj = this.IndexedModeChooseSubBoard(clearScreenForMenu, drawMenu, writeBottomHelpLine, pScanScope, pNewscanOnly);
+		//console.crlf();
+		//console.clear("\x01n");
+		var indexRetObj = this.IndexedModeChooseSubBoard(clearScreenForMenu, drawMenu, writeLoadingStatus, writeBottomHelpLine, pScanScope, pNewscanOnly);
+		writeLoadingStatus = false;
 		if (typeof(indexRetObj.numNewMsgs) === "number")
 			origNumNewMessages = indexRetObj.numNewMsgs;
 		var userChoseAValidSubBoard = (typeof(indexRetObj.chosenSubCode) === "string" && msg_area.sub.hasOwnProperty(indexRetObj.chosenSubCode));
@@ -15566,6 +15577,7 @@ function DigDistMsgReader_DoIndexedMode(pScanScope, pNewscanOnly)
 // Parameters:
 //  pClearScreen: Whether or not to clear the screen. Defaults to true.
 //  pDrawMenu: Whether or not to draw the menu. Defaults to true.
+//  pWriteStatusText: Whether or not to write the "Loading" text and status dots. Defaults to true.
 //  pDisplayHelpLine: Whether or not to draw the help line at the bottom of the screen. Defaults to true.
 //  pScanScope: Numeric - Whether to scan the current sub-board, group, or all.
 //              This would be SCAN_SCOPE_SUB_BOARD, SCAN_SCOPE_GROUP, or SCAN_SCOPE_ALL.
@@ -15577,7 +15589,7 @@ function DigDistMsgReader_DoIndexedMode(pScanScope, pNewscanOnly)
 //               numNewMsgs: The number of new messages in the chosen sub-board
 //               viewMsgList: Whether or not to view the message list instead of going to reader mode
 //               lastUserInput: The last keypress entered by the user
-function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDisplayHelpLine, pScanScope, pNewscanOnly)
+function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pWriteStatusText, pDisplayHelpLine, pScanScope, pNewscanOnly)
 {
 	var retObj = {
 		chosenSubCode: null,
@@ -15595,8 +15607,12 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 	// Display an initial loading text, since the following may take some time
 	// for BBSes with many sub-boards
 	console.attributes = "N";
-	console.crlf();
-	console.print("Loading...");
+	var writeStatusText = (typeof(pWriteStatusText) === "boolean" ? pWriteStatusText : true);
+	if (writeStatusText)
+	{
+		console.crlf();
+		console.print("Loading...");
+	}
 
 	// Note: DDlightbarMenu supports non-ANSI terminals with a more traditional UI
 	// of listing the items and letting the user choose one by typing its number.
@@ -15649,7 +15665,7 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 	}
 
 	// Set text widths for the menu items
-	var newMsgWidthObj = findWidestNumMsgsAndNumNewMsgs(scanScope, newScanOnly, true);
+	var newMsgWidthObj = findWidestNumMsgsAndNumNewMsgs(scanScope, newScanOnly, writeStatusText);
 	var numMsgsWidth = newMsgWidthObj.widestNumMsgs;
 	var numNewMsgsWidth = newMsgWidthObj.widestNumNewMsgs;
 	// Ensure the column widths for the last few columns (after description) are wide enough
@@ -15716,10 +15732,13 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 
 			++numSubBoards;
 
-			// Calculate & display progress percentage (every other sub-board)
-			var progressPercentage = numSubBoards / newMsgWidthObj.numSubBoards * 100.0;
-			if (numSubBoards % 2 == 0)
-				printf("\rLoading: %0.2f%%  ", progressPercentage);
+			if (writeStatusText)
+			{
+				// Calculate & display progress percentage (every other sub-board)
+				var progressPercentage = numSubBoards / newMsgWidthObj.numSubBoards * 100.0;
+				if (numSubBoards % 2 == 0)
+					printf("\rLoading: %0.2f%%  ", progressPercentage);
+			}
 
 			var itemInfo = this.GetIndexedModeSubBoardMenuItemTextAndInfo(msg_area.grp_list[grpIdx].sub_list[subIdx].code);
 			// If configured to only show sub-boards with new messages and this sub-board
@@ -15758,7 +15777,8 @@ function DigDistMsgReader_IndexedModeChooseSubBoard(pClearScreen, pDrawMenu, pDi
 		}
 	}
 	// For end of progress reporting
-	console.print("\rLoading: 100.00%  \r\n");
+	if (writeStatusText)
+		console.print("\rLoading: 100.00%  \r\n");
 	if (totalNewMsgs > 0)
 		console.line_counter = 0; // To prevent a pause before the index mode sub-board menu comes up
 	// If there are no items on the menu, then show a message and return
@@ -16245,16 +16265,17 @@ function DigDistMsgReader_ScrollableModeAreYouThereWarning()
 	console.gotoxy(originalCurPos);
 }
 
-// Returns an object with the widest text length of the number of new messsages and
-// number of new-to-you messages in all readable sub-boards in the user's newscan configuration
+// Helper for IndexedModeChooseSubBoard(): Returns an object with the widest text length of the
+// number of new messsages and number of new-to-you messages in all readable sub-boards in the
+// user's newscan configuration
 //
 // Parameters:
 //  pScanScope: Numeric - Whether to scan the current sub-board, group, or all.
 //              This would be SCAN_SCOPE_SUB_BOARD, SCAN_SCOPE_GROUP, or SCAN_SCOPE_ALL.
 //  pForNewscanOnly: Boolean: Whether or not to only check sub-boards in the user's newscan configuration.
 //                   Defaults to false.
-// pDisplayStatusDots: Optional boolean - Whether or not to display status dots while this is running.
-//                     Defaults to false.
+//  pDisplayStatusDots: Optional boolean - Whether or not to display status dots while this is running.
+//                      Defaults to false.
 //
 // Return value: An object with the following properties:
 //               widestNumMsgs: The biggest length of the number of messages in the sub-boards
