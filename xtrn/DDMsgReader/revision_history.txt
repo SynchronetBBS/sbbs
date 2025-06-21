@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.97a    2025-06-20   Fix: After displaying the indexed mode menu, don't display
+                      the "Loading.." status again, which happened after closing
+                      the user settings dialog
 1.97     2025-06-18   Now uses DDMsgAreaChooser for changing to another message
                       sub-board. Built-in functionality for that has been
                       removed.
