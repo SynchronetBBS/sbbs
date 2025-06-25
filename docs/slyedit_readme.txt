@@ -1001,6 +1001,11 @@ message to lower-case and comparing them with the words in the dictionary.
 ===================
 Version  Date         Description
 -------  ----         -----------
+1.92a    2025-06-24   Bug fix: For cross-posting, when selecting a sub-board,
+                      the additional menu quit keys were set as item-select keys
+                      instead; now they are quit keys as they should be, so that
+                      quitting/exiting out of the cross-post sub-board selection
+                      menu does not select the sub-board.
 1.92     2025-06-10   Added a new user setting to toggle whether to wrap quote
                       lines to the terminal width. Turning this off can help
                       preserve message formatting when quoting. Also, added
