@@ -123,6 +123,11 @@
  *                              Added a user-togglable setting in the user settings for whether
  *                              to (re-)wrap quote lines to terminal width. Also, a user toggle
  *                              for whether to join wrapped quote lines.
+ * 2025-06-24 Eric Oulashin     Version 1.92a
+ *                              Bug fix: For cross-posting, when selecting a sub-board,
+ *                              the additional menu quit keys were set as item-select keys
+ *                              instead..  Switched the function call so it sets them as
+ *                              additional quit keys.
  */
 
 "use strict";
@@ -217,8 +222,8 @@ if (console.screen_columns < 80)
 }
 
 // Version information
-var EDITOR_VERSION = "1.92";
-var EDITOR_VER_DATE = "2025-06-11";
+var EDITOR_VERSION = "1.92a";
+var EDITOR_VER_DATE = "2025-06-24";
 
 
 // Program variables
@@ -5629,12 +5634,12 @@ function promptUserForCrossPostSubBoardCodes(pSelBoxUpperLeft, pSelBoxLowerRight
 			// Get an object of selected sub-board indexes that we can pass to
 			// the sub-board menu.
 			var selectedItemIndexes = {};
-			for (var subIdxStr in msg_area.grp_list[grpIdx].sub_list)
+			for (var subIdx = 0; subIdx < msg_area.grp_list[grpIdx].sub_list.length; ++subIdx)
 			{
-				var subIdx = +subIdxStr;
 				if (gCrossPostMsgSubs.subCodeExists(msg_area.grp_list[grpIdx].sub_list[subIdx].code))
 					selectedItemIndexes[subIdx] = true;
 			}
+			
 
 			// Create the sub-board menu and let the user make a selection.
 			var subBoardMenu = createCrossPostSubBoardMenu(grpIdx, listStartCol, listStartRow, selBoxInnerWidth, selBoxInnerHeight, menuListColors);
@@ -5805,7 +5810,7 @@ function createCrossPostSubBoardMenu(pGrpIdx, pListStartCol, pListStartRow, pLis
 	// ? = Help
 	subBoardMenu.AddAdditionalQuitKeys("?");
 	// Add q, Q, and Ctrl-C as keys to quit out and select the sub-board(s) (instead of quit & abort)
-	subBoardMenu.AddAdditionalSelectItemKeys("qQ" + CTRL_C);
+	subBoardMenu.AddAdditionalQuitKeys("qQ" + CTRL_C);
 
 	// Description length (for the color indexes & printf string)
 	var descLen = pListWidth - numSubsLength - 2; // -2 for the possible * and the space
