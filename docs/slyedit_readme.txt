@@ -1001,6 +1001,11 @@ message to lower-case and comparing them with the words in the dictionary.
 ===================
 Version  Date         Description
 -------  ----         -----------
+1.92a    2025-06-24   Bug fix: For cross-posting, when selecting a sub-board,
+                      the additional menu quit keys were set as item-select keys
+                      instead; now they are quit keys as they should be, so that
+                      quitting/exiting out of the cross-post sub-board selection
+                      menu does not select the sub-board.
 1.92     2025-06-10   Added a new user setting to toggle whether to wrap quote
                       lines to the terminal width. Turning this off can help
                       preserve message formatting when quoting. Also, added
@@ -1098,12 +1103,12 @@ Version  Date         Description
                       useful for posting ANSI files unmodified.
 1.83     2022-12-13   Quote lines that are wider than the user's terminal width
                       are now wrapped to the user's terminal width to ensure
-					  all the quote lines are entirely available to be quoted.
+                      all the quote lines are entirely available to be quoted.
 1.82     2022-12-01   Bug fix: Added some safety checks when reading the
                       configuration file
 1.81     2022-11-26   Refactored the way the configuration file is read. Also,
                       the color configuration files now can just specify
-					  attribute characters, without the control character.
+                      attribute characters, without the control character.
 1.80     2022-07-04   Added the ability to change/set the text color (using the
                       CTRL-K hotkey).  If desired, changing the text color can
                       be disabled if, and the colors can be saved as ANSI
@@ -1116,25 +1121,25 @@ Version  Date         Description
 1.79     2022-06-21   JS strict mode enabled. Small JS issues fixed.
 1.78     2022-06-09   Removed high-ascii characters from the SlyEdit JS files;
                       used ascii() with their numeric ASCII values instead. This
-					  should avoid issues with text editors converting
-					  characters incorrectly.
+                      should avoid issues with text editors converting
+                      characters incorrectly.
 1.77     2022-05-27   Fixed a few instances where SlyEdit was trying to access
                       sub-board information with an empty sub-board code (in the
-					  rare case when no sub-boards are configured).
+                      rare case when no sub-boards are configured).
 1.76     2022-03-05   When selecting quote lines in a reply message, SlyEdit now
                       remembers the position in the quote selection menu so that
-					  the quote menu isn't always at the top whenever it's
-					  opened again.  This issue may have been introduced when
-					  SlyEdit was refactored to use DDLightbarMenu for its
-					  lightbar stuff.
+                      the quote menu isn't always at the top whenever it's
+                      opened again.  This issue may have been introduced when
+                      SlyEdit was refactored to use DDLightbarMenu for its
+                      lightbar stuff.
 1.75     2021-12-11   Refactored the cross-post menu and quote selection window
                       to use DDLightbarMenu instead of SlyEdit's own lightbar
-					  code.
+                      code.
 1.74     2021-01-23   Making use of the new K_NUL and checking user input
                       against null, SlyEdit no longer thinks a 0x0 (sent with
-					  CTRL-Space on a Mac) is a timeout.  K_NUL was added on
-					  Jan. 21, 2021 by Rob Swindell. (This update was from Deon
-					  George)
+                      CTRL-Space on a Mac) is a timeout.  K_NUL was added on
+                      Jan. 21, 2021 by Rob Swindell. (This update was from Deon
+                      George)
 1.73     2020-03-31   Now uses DDLightbarMenu instead of SlyEdit's own internal
                       choice menu.
 1.72     2020-03-04   For cross-posting, to make sure the user can post in a
@@ -1143,60 +1148,60 @@ Version  Date         Description
 					  property covers more cases.
 1.71     2020-03-03   Added a new configuration option, allowSpellCheck, which
                       the sysop can use to configure whether or not spell check
-					  is allowed.  You might want to disable spell check if the
-					  spell check feature causes SlyEdit to abort with an error
-					  saying it's out of memory.
+                      is allowed.  You might want to disable spell check if the
+                      spell check feature causes SlyEdit to abort with an error
+                      saying it's out of memory.
 1.70     2019-08-15   Fix for a bug introduced in the flowing-line update in
                       1.68 where some quote blocks were sometimes not being
-					  included when saving a message.  Also, quote lines are now
-					  wrapped to the user's terminal width rather than 80
-					  columns.
+                      included when saving a message.  Also, quote lines are now
+                      rapped to the user's terminal width rather than 80
+                      olumns.
 1.69     2019-08-14   Updated to only use console.inkey() for user input and not
                       use console.getkey() anymore. The change was made in the
-					  getUserKey() function in SlyEdit_Misc.js. Also, SlyEdit
-					  will now write the editor style (ICE or DCT) to result.ed
-					  at the end when a message is saved.  Also, when editing a
-					  message, if the cursor is at the end of the last line and
-					  the user presses the DEL key, then treat it as a
-					  backspace. Some terminals send a delete for backspace,
-					  particularly with keyboards that have a delete key but no
-					  backspace key.
+                      getUserKey() function in SlyEdit_Misc.js. Also, SlyEdit
+                      will now write the editor style (ICE or DCT) to result.ed
+                      at the end when a message is saved.  Also, when editing a
+                      message, if the cursor is at the end of the last line and
+                      the user presses the DEL key, then treat it as a
+                      backspace. Some terminals send a delete for backspace,
+                      particularly with keyboards that have a delete key but no
+                      backspace key.
 1.68     2019-08-09   Updated to honor the SUB_ANON and SUB_AONLY flags for the
                       sub-boards when cross-posting so that the "from" name is
-					  "Anonymous" if either of those flags enabled.
+                      "Anonymous" if either of those flags enabled.
                       Updated to allow message uploading. Started working on
-					  updates to save new text lines as one long line, to help
-					  with word wrapping in offline readers etc.
+                      updates to save new text lines as one long line, to help
+                      with word wrapping in offline readers etc.
 1.67     2019-07-21   Now supports the RESULT.ED drop file, with the ability to
                       change the subject. Synchronet 3.17c development builds
-					  from July 21, 2019 onward support result.ed even for
-					  editors configured for QuickBBS MSGINF/MSGTMP.
+                      from July 21, 2019 onward support result.ed even for
+                      editors configured for QuickBBS MSGINF/MSGTMP.
 1.66     2019-05-29   Added more parsing for dictionary filenames for 'general'
                       dictionaries and 'supplimental' ones
 1.65     2019-05-24   Added support for parsing many standard language tags for
                       the dictionary filenames
 1.64     2019-05-24   Started working on adding a spell check feature. Also,
                       updated to use require() instead of load() for .js
-					  scripts when possible.
+                      scripts when possible.
 1.63     2019-04-18   Started working on supporting word-wrapping for the entire
                       width of any terminal size, beyond 79.
 1.62     2018-11-11   Updated to save the message if the user disconnects, to
                       support Synchronet's message draft feature that was added
-					  recently.
+                      recently.
 1.61     2018-08-03   Updated to delete instances of User objects that are
                       created, due to an optimization in Synchronet 3.17 that
-					  leaves user.dat open
+                      leaves user.dat open
 1.54     2017-12-26   Improved quoting with author initials when a > character
                       exists in the quote lines: Not mistaking the preceding
-					  text as a quote prefix if it has 3 or more non-space
-					  characters before the >.  Also fixed an issue where
-					  wrapped quote lines were sometimes missing the quote line
-					  prefix.
+                      text as a quote prefix if it has 3 or more non-space
+                      characters before the >.  Also fixed an issue where
+                      wrapped quote lines were sometimes missing the quote line
+                      prefix.
 1.53     2017-12-19   Updated the PageUp and PageDown keys to ensure they match
                       what's in sbbsdefs.js, since Synchronet added key codes
-					  for those keys on December 17, 2018.  SlyEdit should still
-					  work with older and newer builds of Synchronet, with or
-					  without the updated sbbsdefs.js.
+                      for those keys on December 17, 2018.  SlyEdit should still
+                      work with older and newer builds of Synchronet, with or
+                      without the updated sbbsdefs.js.
 1.52     2017-12-17   Added the ability for the sysop to toggle whether or not
                       to allow users to edit quote lines, using the
 					  configuration option allowEditQuoteLines.
