@@ -2133,8 +2133,8 @@ void input_thread(void *arg)
 	BYTE          inbuf[4000];
 	BYTE          telbuf[sizeof(inbuf)];
 	BYTE *        wrbuf;
-	int           i, rd, wr, avail;
-	uint          total_recv = 0;
+	int           i, wr, avail;
+	uint64_t      total_recv = 0;
 	uint          total_pkts = 0;
 	sbbs_t*       sbbs = (sbbs_t*) arg;
 	SOCKET        sock;
@@ -2221,7 +2221,7 @@ void input_thread(void *arg)
 		else if (uspy_socket[sbbs->cfg.node_num - 1] != INVALID_SOCKET && fds[1].revents & POLLIN) {
 			if (socket_recvdone(uspy_socket[sbbs->cfg.node_num - 1], 0)) {
 				close_socket(uspy_socket[sbbs->cfg.node_num - 1]);
-				lprintf(LOG_NOTICE, "Closing local spy socket: %d", uspy_socket[sbbs->cfg.node_num - 1]);
+				lprintf(LOG_NOTICE, "Node %d Closing local spy socket: %d", sbbs->cfg.node_num, uspy_socket[sbbs->cfg.node_num - 1]);
 				uspy_socket[sbbs->cfg.node_num - 1] = INVALID_SOCKET;
 				continue;
 			}
@@ -2234,25 +2234,26 @@ void input_thread(void *arg)
 #error Spy sockets without poll() was removed in commit 3971ef4dcc3db19f400a648b6110718e56a64cf3
 #endif
 #endif
-		rd = RingBufFree(&sbbs->inbuf);
+		avail = RingBufFree(&sbbs->inbuf);
 
-		if (rd == 0) { // input buffer full
-			lprintf(LOG_WARNING, "Node %d !WARNING input buffer full", sbbs->cfg.node_num);
+		if (avail < 1) { // input buffer full
+			lprintf(LOG_WARNING, "Node %d !WARNING input buffer full after receiving %" PRIu64 " bytes ", sbbs->cfg.node_num, total_recv);
 			// wait up to 5 seconds to empty (1 byte min)
 			time_t start = time(NULL);
-			while ((rd = RingBufFree(&sbbs->inbuf)) == 0 && time(NULL) - start < 5) {
+			while ((avail = RingBufFree(&sbbs->inbuf)) < 1 && time(NULL) - start < 5) {
 				YIELD();
 			}
-			if (rd == 0)   /* input buffer still full */
+			if (avail < 1)   /* input buffer still full */
 				continue;
 		}
 
-		if (rd > (int)sizeof(inbuf))
-			rd = sizeof(inbuf);
+		if (avail > (int)sizeof inbuf)
+			avail = sizeof inbuf;
 
 		if (pthread_mutex_lock(&sbbs->input_thread_mutex) != 0)
 			sbbs->errormsg(WHERE, ERR_LOCK, "input_thread_mutex", 0);
 
+		int rd; // number of bytes read
 #ifdef USE_CRYPTLIB
 		if (sbbs->ssh_mode && sock == sbbs->client_socket) {
 			int err;
@@ -2261,21 +2262,25 @@ void input_thread(void *arg)
 				continue;
 			}
 			pthread_mutex_lock(&sbbs->ssh_mutex);
-			if (cryptStatusError((err = crypt_pop_channel_data(sbbs, (char*)inbuf, rd, &i)))) {
+			if (cryptStatusError((err = crypt_pop_channel_data(sbbs, (char*)inbuf, avail, &i)))) {
 				pthread_mutex_unlock(&sbbs->ssh_mutex);
 				if (pthread_mutex_unlock(&sbbs->input_thread_mutex) != 0)
 					sbbs->errormsg(WHERE, ERR_UNLOCK, "input_thread_mutex", 0);
-				if (err == CRYPT_ERROR_COMPLETE)
+				if (err == CRYPT_ERROR_COMPLETE) {
+					lprintf(LOG_WARNING, "Node %d SSH Operation complete", sbbs->cfg.node_num);
 					break;
-				if (err == CRYPT_ERROR_TIMEOUT)
+				}
+				if (err == CRYPT_ERROR_TIMEOUT) {
+					lprintf(LOG_NOTICE, "Node %d SSH Timeout", sbbs->cfg.node_num);
 					continue;
+				}
 				/* Handle the SSH error here... */
 				GCES(err, sbbs->cfg.node_num, sbbs->ssh_session, "popping data");
 				break;
 			}
 			else {
 				pthread_mutex_unlock(&sbbs->ssh_mutex);
-				if (!i) {
+				if (i < 1) {
 					if (pthread_mutex_unlock(&sbbs->input_thread_mutex) != 0)
 						sbbs->errormsg(WHERE, ERR_UNLOCK, "input_thread_mutex", 0);
 					continue;
@@ -2285,7 +2290,7 @@ void input_thread(void *arg)
 		}
 		else
 #endif
-		rd = recv(sock, (char*)inbuf, rd, 0);
+			rd = recv(sock, (char*)inbuf, avail, 0);
 
 		if (pthread_mutex_unlock(&sbbs->input_thread_mutex) != 0)
 			sbbs->errormsg(WHERE, ERR_UNLOCK, "input_thread_mutex", 0);
@@ -2348,7 +2353,7 @@ void input_thread(void *arg)
 		else
 			wrbuf = telnet_interpret(sbbs, inbuf, rd, telbuf, wr);
 		if (wr > (int)sizeof(telbuf)) {
-			errprintf(LOG_ERR, WHERE, "!TELBUF OVERFLOW (%d>%d)", wr, (int)sizeof(telbuf));
+			errprintf(LOG_ERR, WHERE, "Node %d !TELBUF OVERFLOW (%d>%d)", sbbs->cfg.node_num, wr, (int)sizeof(telbuf));
 			wr = sizeof(telbuf);
 		}
 
@@ -2390,7 +2395,7 @@ void input_thread(void *arg)
 		avail = RingBufFree(&sbbs->inbuf);
 
 		if (avail < wr)
-			errprintf(LOG_ERR, WHERE, "!INPUT BUFFER FULL (%d free)", avail);
+			errprintf(LOG_ERR, WHERE, "Node %d !INPUT BUFFER FULL (%d free, %d bytes discarded)", sbbs->cfg.node_num, avail, wr);
 		else
 			RingBufWrite(&sbbs->inbuf, wrbuf, wr);
 //		if(wr>100)
@@ -2407,7 +2412,7 @@ void input_thread(void *arg)
 		sbbs->terminated = true;    // Signal JS to stop execution
 
 	thread_down();
-	lprintf(LOG_DEBUG, "Node %d input thread terminated (received %u bytes in %u blocks)"
+	lprintf(LOG_DEBUG, "Node %d input thread terminated (received %" PRIu64 " bytes in %u blocks)"
 	        , sbbs->cfg.node_num, total_recv, total_pkts);
 }
 
