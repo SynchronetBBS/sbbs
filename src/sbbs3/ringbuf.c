@@ -98,7 +98,7 @@ void RingBufDispose( RingBuf* rb)
 	/*
 	 * TODO: CloseEvent() will fail if there's any waiters...
 	 *       and the old semaphore posted an extra time
-	 *       "just incase"
+	 *       "just in case"
 	 */
 	if (rb->empty_event != NULL)
 		CloseEvent(rb->empty_event);
@@ -203,7 +203,7 @@ DWORD RingBufWrite( RingBuf* rb, const BYTE* src,  DWORD cnt )
 	return cnt;
 }
 
-/* Pass NULL dst to just foward pointer (after Peek) */
+/* Pass NULL dst to just forward pointer (after Peek) */
 DWORD RingBufRead( RingBuf* rb, BYTE* dst,  DWORD cnt )
 {
 	DWORD max, first, remain, len;
