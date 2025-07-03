@@ -65,17 +65,16 @@ bool trash_parse_details(const char* p, struct trash* trash, char* item, size_t 
 			*item = '\0';
 		else
 			strlcpy(item, list[0], size);
+		strListFastDelete(list, /* index: */ 0, /* count: */ 1);
 	}
-	if (strListFastDelete(list, /* index: */ 0, /* count: */ 1)) {
-		trash->added = iniGetDateTime(list, ROOT_SECTION, "t", 0);
-		trash->expires = iniGetDateTime(list, ROOT_SECTION, "e", 0);
-		if ((p = iniGetValue(list, ROOT_SECTION, "p", NULL, NULL)) != NULL)
-			SAFECOPY(trash->prot, p);
-		if ((p = iniGetValue(list, ROOT_SECTION, "u", NULL, NULL)) != NULL)
-			SAFECOPY(trash->user, p);
-		if ((p = iniGetValue(list, ROOT_SECTION, "r", NULL, NULL)) != NULL)
-			SAFECOPY(trash->reason, p);
-	}
+	trash->added = iniGetDateTime(list, ROOT_SECTION, "t", 0);
+	trash->expires = iniGetDateTime(list, ROOT_SECTION, "e", 0);
+	if ((p = iniGetValue(list, ROOT_SECTION, "p", NULL, NULL)) != NULL)
+		SAFECOPY(trash->prot, p);
+	if ((p = iniGetValue(list, ROOT_SECTION, "u", NULL, NULL)) != NULL)
+		SAFECOPY(trash->user, p);
+	if ((p = iniGetValue(list, ROOT_SECTION, "r", NULL, NULL)) != NULL)
+		SAFECOPY(trash->reason, p);
 	strListFree(&list);
 	return true;
 }
