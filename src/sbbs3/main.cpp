@@ -5616,8 +5616,10 @@ NO_SSH:
 			// TODO: Plain text output in SSH socket
 			struct trash trash;
 			if (sbbs->trashcan(host_ip, "ip", &trash)) {
-				char details[128];
-				lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in ip.can %s", client_socket, client.protocol, host_ip, trash_details(&trash, details, sizeof details));
+				if (!trash.quiet) {
+					char details[128];
+					lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in ip.can %s", client_socket, client.protocol, host_ip, trash_details(&trash, details, sizeof details));
+				}
 				close_socket(client_socket);
 				continue;
 			}
@@ -5697,9 +5699,11 @@ NO_SSH:
 			}
 
 			if (sbbs->trashcan(host_name, "host", &trash)) {
-				char details[128];
-				lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in host.can: %s %s"
-				        , client_socket, client.protocol, host_ip, host_name, trash_details(&trash, details, sizeof details));
+				if (!trash.quiet) {
+					char details[128];
+					lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in host.can: %s %s"
+							, client_socket, client.protocol, host_ip, host_name, trash_details(&trash, details, sizeof details));
+				}
 				SSH_END(client_socket);
 				close_socket(client_socket);
 				continue;

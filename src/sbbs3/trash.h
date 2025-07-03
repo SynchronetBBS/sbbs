@@ -30,6 +30,7 @@
 #define STR_FAILED_LOGIN_ATTEMPTS "FAILED LOGIN ATTEMPTS"
 
 struct trash {
+	bool quiet; // silently-filter/block
 	time_t added;
 	time_t expires;
 	char prot[32];

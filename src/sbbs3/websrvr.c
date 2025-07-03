@@ -6451,7 +6451,8 @@ FILE *open_post_file(http_session_t *session)
 	// Create temporary file for post data.
 	SAFEPRINTF3(path, "%sSBBS_POST.%u.%u.data", scfg.temp_dir, getpid(), session->socket);
 	if ((fp = fopen(path, "wb")) == NULL) {
-		errprintf(LOG_ERR, WHERE, "%04d !ERROR %d (%s) opening/creating %s", session->socket, errno, strerror(errno), path);
+		errprintf(LOG_ERR, WHERE, "%04d %-5s [%s] !ERROR %d (%s) opening/creating %s"
+			, session->socket, session->client.protocol, session->host_ip, errno, strerror(errno), path);
 		return fp;
 	}
 	if (session->req.cleanup_file[CLEANUP_POST_DATA]) {
@@ -6462,7 +6463,8 @@ FILE *open_post_file(http_session_t *session)
 	session->req.cleanup_file[CLEANUP_POST_DATA] = strdup(path);
 	if (session->req.post_data != NULL) {
 		if (fwrite(session->req.post_data, session->req.post_len, 1, fp) != 1) {
-			errprintf(LOG_ERR, WHERE, "%04d !ERROR %d (%s) writing to %s", session->socket, errno, strerror(errno), path);
+			errprintf(LOG_ERR, WHERE, "%04d %-5s [%s] !ERROR %d (%s) writing to %s"
+				, session->socket, session->client.protocol, session->host_ip, errno, strerror(errno), path);
 			fclose(fp);
 			return NULL;
 		}
@@ -6520,7 +6522,8 @@ int read_post_data(http_session_t * session)
 					/* FREE()d in close_request */
 					p = realloc(session->req.post_data, s);
 					if (p == NULL) {
-						errprintf(LOG_CRIT, WHERE, "%04d !ERROR Allocating %lu bytes of memory", session->socket, (ulong)session->req.post_len);
+						errprintf(LOG_CRIT, WHERE, "%04d %-5s [%s] !ERROR Allocating %lu bytes of memory"
+							, session->socket, session->client.protocol, session->host_ip, (ulong)session->req.post_len);
 						send_error(session, __LINE__, "413 Request entity too large");
 						FCLOSE_OPEN_FILE(fp);
 						return false;
@@ -6578,14 +6581,16 @@ int read_post_data(http_session_t * session)
 				if (s < (MAX_POST_LEN + 1) && (session->req.post_data = malloc((size_t)(s + 1))) != NULL)
 					session->req.post_len = recvbufsocket(session, session->req.post_data, s);
 				else  {
-					errprintf(LOG_CRIT, WHERE, "%04d !ERROR Allocating %lu bytes of memory", session->socket, (ulong)s);
+					errprintf(LOG_CRIT, WHERE, "%04d %-5s [%s] !ERROR Allocating %lu bytes of memory"
+						, session->socket, session->client.protocol, session->host_ip, (ulong)s);
 					send_error(session, __LINE__, "413 Request entity too large");
 					return false;
 				}
 			}
 		}
 		if (session->req.post_len != s)
-			lprintf(LOG_DEBUG, "%04d !ERROR Browser said they sent %lu bytes, but I got %lu", session->socket, (ulong)s, (ulong)session->req.post_len);
+			lprintf(LOG_DEBUG, "%04d %-5s [%s] !ERROR Browser said they sent %lu bytes, but I got %lu"
+				, session->socket, session->client.protocol, session->host_ip, (ulong)s, (ulong)session->req.post_len);
 		if (session->req.post_len > s)
 			session->req.post_len = s;
 		if (session->req.post_data != NULL)
@@ -6613,7 +6618,7 @@ void http_output_thread(void *arg)
 	obuf = &(session->outbuf);
 	/* Destroyed at end of function */
 	if ((i = pthread_mutex_init(&session->outbuf_write, NULL)) != 0) {
-		lprintf(LOG_DEBUG, "Error %d initializing outbuf mutex", i);
+		lprintf(LOG_DEBUG, "%04d %-5s [%s] Error %d initializing outbuf mutex", session->socket, session->client.protocol, session->host_ip, i);
 		close_session_socket(session);
 		thread_down();
 		return;
@@ -6651,13 +6656,13 @@ void http_output_thread(void *arg)
 #endif
 #endif
 			obuf->highwater_mark = i;
-			lprintf(LOG_DEBUG, "%04d Autotuning outbuf highwater mark to %d based on MSS"
-			        , session->socket, i);
+			lprintf(LOG_DEBUG, "%04d %-5s [%s] Autotuning outbuf highwater mark to %d based on MSS"
+			        , session->socket, session->client.protocol, session->host_ip, i);
 			mss = obuf->highwater_mark;
 			if (mss > OUTBUF_LEN) {
 				mss = OUTBUF_LEN;
-				lprintf(LOG_DEBUG, "%04d MSS (%d) is higher than OUTBUF_LEN (%d)"
-				        , session->socket, i, OUTBUF_LEN);
+				lprintf(LOG_DEBUG, "%04d %-5s [%s] MSS (%d) is higher than OUTBUF_LEN (%d)"
+				        , session->socket, session->client.protocol, session->host_ip, i, OUTBUF_LEN);
 			}
 		}
 	}
@@ -6866,9 +6871,11 @@ void http_session_thread(void* arg)
 			lprintf(LOG_INFO, "%04d HostAlias: %s", session.socket, host->h_aliases[i]);
 #endif
 		if (host_name[0] && trashcan2(&scfg, host_name, NULL, "host", &trash)) {
-			char details[128];
-			lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in host.can: %s %s"
-			        , session.socket, session.client.protocol, session.host_ip, host_name, trash_details(&trash, details, sizeof details));
+			if (!trash.quiet) {
+				char details[128];
+				lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in host.can: %s %s"
+						, session.socket, session.client.protocol, session.host_ip, host_name, trash_details(&trash, details, sizeof details));
+			}
 			close_session_socket(&session);
 			sem_wait(&session.output_thread_terminated);
 			sem_destroy(&session.output_thread_terminated);
@@ -6895,7 +6902,7 @@ void http_session_thread(void* arg)
 			        , session.socket, session.client.protocol
 			        , session.host_ip, attempted.count - attempted.dupes, attempted.user
 			        , duration_estimate_to_vstr(banned, ban_duration, sizeof ban_duration, 1, 1));
-		} else {
+		} else if (!trash.quiet) {
 			char details[128];
 			lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in ip.can %s"
 			        , session.socket, session.client.protocol, session.host_ip, trash_details(&trash, details, sizeof details));

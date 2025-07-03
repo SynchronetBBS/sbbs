@@ -1191,15 +1191,19 @@ static bool pop3_client_thread(pop3_t* pop3)
 	}
 	struct trash trash;
 	if (trashcan2(&scfg, host_ip, NULL, "ip", &trash)) {
-		char details[128];
-		lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in ip.can %s", socket, client.protocol, host_ip, trash_details(&trash, details, sizeof details));
+		if (!trash.quiet) {
+			char details[128];
+			lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in ip.can %s", socket, client.protocol, host_ip, trash_details(&trash, details, sizeof details));
+		}
 		sockprintf(socket, client.protocol, session, "-ERR Access denied.");
 		return false;
 	}
 	if (trashcan2(&scfg, host_name, NULL, "host", &trash)) {
-		char details[128];
-		lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in host.can: %s %s"
-		        , socket, client.protocol, host_ip, host_name, trash_details(&trash, details, sizeof details));
+		if (!trash.quiet) {
+			char details[128];
+			lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in host.can: %s %s"
+					, socket, client.protocol, host_ip, host_name, trash_details(&trash, details, sizeof details));
+		}
 		sockprintf(socket, client.protocol, session, "-ERR Access denied.");
 		return false;
 	}
@@ -2022,11 +2026,13 @@ static BOOL chk_email_addr(SOCKET socket, const char* prot, char* p, char* host_
 	struct trash trash;
 	if (!trashcan2(&scfg, name, addr, "email", &trash))
 		return TRUE;
-	char         details[128];
-	lprintf(LOG_NOTICE, "%04d %s [%s] !BLOCKED %s e-mail address: %s %s"
-	        , socket, prot, host_ip, source, p, trash_details(&trash, details, sizeof details));
-	SAFEPRINTF2(tmp, "Blocked %s e-mail address: %s", source, p);
-	spamlog(&scfg, &mqtt, (char*)prot, "REFUSED", tmp, host_name, host_ip, to, from);
+	if (!trash.quiet) {
+		char         details[128];
+		lprintf(LOG_NOTICE, "%04d %s [%s] !BLOCKED %s e-mail address: %s %s"
+				, socket, prot, host_ip, source, p, trash_details(&trash, details, sizeof details));
+		SAFEPRINTF2(tmp, "Blocked %s e-mail address: %s", source, p);
+		spamlog(&scfg, &mqtt, (char*)prot, "REFUSED", tmp, host_name, host_ip, to, from);
+	}
 	return FALSE;
 }
 
@@ -3102,16 +3108,22 @@ static bool smtp_client_thread(smtp_t* smtp)
 		}
 		struct trash trash;
 		if (trashcan2(&scfg, host_ip, NULL, "ip", &trash)) {
-			char details[128];
-			lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in ip.can %s (%lu total)"
-			        , socket, client.protocol, host_ip, trash_details(&trash, details, sizeof details), ++stats.sessions_refused);
+			++stats.sessions_refused;
+			if (!trash.quiet) {
+				char details[128];
+				lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in ip.can %s (%lu total)"
+						, socket, client.protocol, host_ip, trash_details(&trash, details, sizeof details), stats.sessions_refused);
+			}
 			sockprintf(socket, client.protocol, session, "550 CLIENT IP ADDRESS BLOCKED: %s", host_ip);
 			return false;
 		}
 		if (trashcan2(&scfg, host_name, NULL, "host", &trash)) {
-			char details[128];
-			lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in host.can: %s %s (%lu total)"
-			        , socket, client.protocol, host_ip, host_name, trash_details(&trash, details, sizeof details), ++stats.sessions_refused);
+			++stats.sessions_refused;
+			if (!trash.quiet) {
+				char details[128];
+				lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in host.can: %s %s (%lu total)"
+						, socket, client.protocol, host_ip, host_name, trash_details(&trash, details, sizeof details), stats.sessions_refused);
+			}
 			sockprintf(socket, client.protocol, session, "550 CLIENT HOSTNAME BLOCKED: %s", host_name);
 			return false;
 		}

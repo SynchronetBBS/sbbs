@@ -67,6 +67,7 @@ bool trash_parse_details(const char* p, struct trash* trash, char* item, size_t 
 			strlcpy(item, list[0], size);
 		strListFastDelete(list, /* index: */ 0, /* count: */ 1);
 	}
+	trash->quiet = iniGetBool(list, ROOT_SECTION, "q", false);
 	trash->added = iniGetDateTime(list, ROOT_SECTION, "t", 0);
 	trash->expires = iniGetDateTime(list, ROOT_SECTION, "e", 0);
 	if ((p = iniGetValue(list, ROOT_SECTION, "p", NULL, NULL)) != NULL)

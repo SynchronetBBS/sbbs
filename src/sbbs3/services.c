@@ -1134,7 +1134,7 @@ static void js_service_thread(void* arg)
 
 	struct trash trash;
 	if (trashcan2(&scfg, host_name, NULL, "host", &trash)) {
-		if (service->log_level >= LOG_NOTICE) {
+		if (!trash.quiet && service->log_level >= LOG_NOTICE) {
 			char details[128];
 			lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in host.can: %s %s"
 			        , socket, service->protocol, client.addr, host_name, trash_details(&trash, details, sizeof details));
@@ -1551,9 +1551,11 @@ static void native_service_thread(void* arg)
 
 	struct trash trash;
 	if (trashcan2(&scfg, host_name, NULL, "host", &trash)) {
-		char details[128];
-		lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in host.can: %s %s"
-		        , socket, service->protocol, client.addr, host_name, trash_details(&trash, details, sizeof details));
+		if (!trash.quiet) {
+			char details[128];
+			lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in host.can: %s %s"
+					, socket, service->protocol, client.addr, host_name, trash_details(&trash, details, sizeof details));
+		}
 		close_socket(socket);
 		protected_uint32_adjust(&service->clients, -1);
 		thread_down();
@@ -2423,9 +2425,11 @@ void services_thread(void* arg)
 					}
 					struct trash trash;
 					if (trashcan2(&scfg, host_ip, NULL, "ip", &trash)) {
-						char details[128];
-						lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in ip.can %s"
-						        , client_socket, service[i].protocol, host_ip, trash_details(&trash, details, sizeof details));
+						if (!trash.quiet) {
+							char details[128];
+							lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in ip.can %s"
+									, client_socket, service[i].protocol, host_ip, trash_details(&trash, details, sizeof details));
+						}
 						FREE_AND_NULL(udp_buf);
 						close_socket(client_socket);
 						continue;

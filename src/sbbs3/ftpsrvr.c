@@ -2321,16 +2321,20 @@ static void ctrl_thread(void* arg)
 
 	struct trash trash;
 	if (trashcan2(&scfg, host_ip, NULL, "ip", &trash)) {
-		char details[128];
-		lprintf(LOG_NOTICE, "%04d [%s] !CLIENT BLOCKED in ip.can %s", sock, host_ip, trash_details(&trash, details, sizeof details));
+		if (!trash.quiet) {
+			char details[128];
+			lprintf(LOG_NOTICE, "%04d [%s] !CLIENT BLOCKED in ip.can %s", sock, host_ip, trash_details(&trash, details, sizeof details));
+		}
 		sockprintf(sock, sess, "550 Access denied.");
 		ftp_close_socket(&sock, &sess, __LINE__);
 		thread_down();
 		return;
 	}
 	if (trashcan2(&scfg, host_name, NULL, "host", &trash)) {
-		char details[128];
-		lprintf(LOG_NOTICE, "%04d [%s] !CLIENT BLOCKED in host.can: %s %s", sock, host_ip, host_name, trash_details(&trash, details, sizeof details));
+		if (!trash.quiet) {
+			char details[128];
+			lprintf(LOG_NOTICE, "%04d [%s] !CLIENT BLOCKED in host.can: %s %s", sock, host_ip, host_name, trash_details(&trash, details, sizeof details));
+		}
 		sockprintf(sock, sess, "550 Access denied.");
 		ftp_close_socket(&sock, &sess, __LINE__);
 		thread_down();
