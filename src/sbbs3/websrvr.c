@@ -91,8 +91,7 @@ static int          len_503 = 0;
 
 #define TIMEOUT_THREAD_WAIT     60      /* Seconds */
 #define MAX_REQUEST_LINE        1024    /* NOT including terminator */
-#define MAX_HEADERS_SIZE        16384   /* Maximum total size of all headers
-	                                       (Including terminator )*/
+#define MAX_HEADERS_SIZE        16384   /* Maximum total size of all headers (Including terminator) */
 #define MAX_REDIR_LOOPS         20      /* Max. times to follow internal redirects for a single request */
 #define MAX_POST_LEN            (4 * 1048576) /* Max size of body for POSTS */
 #define OUTBUF_LEN              (256 * 1024)  /* Size of output thread ring buffer */
@@ -1735,13 +1734,15 @@ bool http_checkuser(http_session_t * session)
 	if (session->req.dynamic == IS_SSJS) {
 		if (session->last_js_user_num == session->user.number)
 			return true;
-		lprintf(LOG_DEBUG, "%04d JavaScript: Initializing User Objects", session->socket);
+		lprintf(LOG_DEBUG, "%04d %-5s [%s] JavaScript: Initializing User Objects"
+			, session->socket, session->client.protocol, session->host_ip);
 		JS_BEGINREQUEST(session->js_cx);
 		if (session->user.number > 0) {
 			if (!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, &session->user, &session->client
 			                          , startup->file_vpath_prefix, session->subscan /* subscan */, &mqtt)) {
 				JS_ENDREQUEST(session->js_cx);
-				errprintf(LOG_ERR, WHERE, "%04d !JavaScript ERROR creating user objects", session->socket);
+				errprintf(LOG_ERR, WHERE, "%04d %-5s [%s] !JavaScript ERROR creating user objects"
+					, session->socket, session->client.protocol, session->host_ip);
 				send_error(session, __LINE__, "500 Error initializing JavaScript User Objects");
 				return false;
 			}
@@ -1750,7 +1751,8 @@ bool http_checkuser(http_session_t * session)
 			if (!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, /* user: */ NULL, &session->client
 			                          , startup->file_vpath_prefix, session->subscan /* subscan */, &mqtt)) {
 				JS_ENDREQUEST(session->js_cx);
-				errprintf(LOG_ERR, WHERE, "%04d !ERROR initializing JavaScript User Objects", session->socket);
+				errprintf(LOG_ERR, WHERE, "%04d %-5s [%s] !ERROR initializing JavaScript User Objects"
+					, session->socket, session->client.protocol, session->host_ip);
 				send_error(session, __LINE__, "500 Error initializing JavaScript User Objects");
 				return false;
 			}
@@ -3097,7 +3099,7 @@ static int is_dynamic_req(http_session_t* session)
 	else if (get_xjs_handler(ext, session))
 		i = IS_SSJS;
 	if (!(startup->options & BBS_OPT_NO_JAVASCRIPT) && i)  {
-		lprintf(LOG_DEBUG, "%04d Setting up JavaScript support", session->socket);
+		lprintf(LOG_DEBUG, "%04d %-5s [%s] Setting up JavaScript support", session->socket, session->client.protocol, session->host_ip);
 		if (!js_setup(session)) {
 			send_error(session, __LINE__, error_500);
 			return IS_STATIC;
@@ -3657,7 +3659,7 @@ static bool exec_js_webctrl(http_session_t* session, char *name, char* script, c
 	char      redir_req[MAX_REQUEST_LINE + 1];
 
 	if (!js_setup_cx(session)) {
-		errprintf(LOG_ERR, WHERE, "%04d !ERROR setting up JavaScript context for %s", session->socket, name);
+		errprintf(LOG_ERR, WHERE, "%04d %-5s [%s] !ERROR setting up JavaScript context for %s", session->socket, session->client.protocol, session->host_ip, name);
 		return false;
 	}
 
@@ -3704,8 +3706,8 @@ static bool exec_js_webctrl(http_session_t* session, char *name, char* script, c
 
 		lprintf(LOG_DEBUG, "%04d %-5s [%s] JavaScript: Compiling %s", session->socket, session->client.protocol, session->host_ip, name);
 		if (!JS_EvaluateScript(session->js_cx, session->js_glob, script, strlen(script), name, 1, &rval)) {
-			lprintf(LOG_WARNING, "%04d !JavaScript FAILED to compile rewrite %s:%s"
-			        , session->socket, name, script);
+			lprintf(LOG_WARNING, "%04d %-5s [%s] !JavaScript FAILED to compile rewrite %s:%s"
+			        , session->socket, session->client.protocol, session->host_ip, name, script);
 			JS_ReportPendingException(session->js_cx);
 			JS_RemoveObjectRoot(session->js_cx, &session->js_glob);
 			JS_ENDREQUEST(session->js_cx);
@@ -5479,7 +5481,7 @@ js_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
 		return;
 
 	if (report == NULL) {
-		lprintf(LOG_ERR, "%04d !JavaScript: %s", session->socket, message);
+		lprintf(LOG_ERR, "%04d %-5s [%s] !JavaScript: %s", session->socket, session->client.protocol, session->host_ip, message);
 		if (content_file_open(session))
 			fprintf(session->req.fp, "!JavaScript: %s", message);
 		return;
@@ -5813,7 +5815,8 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 	/* user-specific objects */
 	if (!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, &session->user, &session->client
 	                          , startup->file_vpath_prefix, session->subscan /* subscan */, &mqtt)) {
-		errprintf(LOG_ERR, WHERE, "%04d !JavaScript ERROR creating user objects", session->socket);
+		errprintf(LOG_ERR, WHERE, "%04d %-5s [%s] !JavaScript ERROR creating user objects"
+			, session->socket, session->client.protocol, session->host_ip);
 		send_error(session, __LINE__, "500 Error initializing JavaScript User Objects");
 		return false;
 	}
@@ -6061,20 +6064,22 @@ js_initcx(http_session_t *session)
 	JSContext* js_cx;
 
 	if ((js_cx = JS_NewContext(session->js_runtime, JAVASCRIPT_CONTEXT_STACK)) == NULL) {
-		errprintf(LOG_CRIT, WHERE, "%04d JavaScript: Failed to create new context", session->socket);
+		errprintf(LOG_CRIT, WHERE, "%04d %-5s [%s] JavaScript: Failed to create new context"
+			, session->socket, session->client.protocol, session->host_ip);
 		return NULL;
 	}
 	JS_SetOptions(js_cx, startup->js.options);
 	JS_BEGINREQUEST(js_cx);
 
-	lprintf(LOG_DEBUG, "%04d JavaScript: Context created with options: %lx"
-	        , session->socket, (long)startup->js.options);
+	lprintf(LOG_DEBUG, "%04d %-5s [%s] JavaScript: Context created with options: %lx"
+	        , session->socket, session->client.protocol, session->host_ip, (long)startup->js.options);
 
 	JS_SetErrorReporter(js_cx, js_ErrorReporter);
 
 	JS_SetOperationCallback(js_cx, js_OperationCallback);
 
-	lprintf(LOG_DEBUG, "%04d JavaScript: Creating Global Objects and Classes", session->socket);
+	lprintf(LOG_DEBUG, "%04d %-5s [%s] JavaScript: Creating Global Objects and Classes"
+		, session->socket, session->client.protocol, session->host_ip);
 	if (!js_CreateCommonObjects(js_cx, &scfg, NULL
 	                            , NULL                          /* global */
 	                            , uptime                        /* system */
@@ -6090,7 +6095,8 @@ js_initcx(http_session_t *session)
 	                            , &mqtt
 	                            )
 	    || !JS_DefineFunctions(js_cx, session->js_glob, js_global_functions)) {
-		errprintf(LOG_CRIT, WHERE, "%04d JavaScript: Failed to create global objects and classes", session->socket);
+		errprintf(LOG_CRIT, WHERE, "%04d %-5s [%s] JavaScript: Failed to create global objects and classes"
+			, session->socket, session->client.protocol, session->host_ip);
 		JS_RemoveObjectRoot(js_cx, &session->js_glob);
 		JS_ENDREQUEST(js_cx);
 		JS_DestroyContext(js_cx);
@@ -6106,11 +6112,12 @@ static bool js_setup_cx(http_session_t* session)
 	JSString* js_str;
 
 	if (session->js_runtime == NULL) {
-		lprintf(LOG_DEBUG, "%04d JavaScript: Creating runtime: %u bytes"
-		        , session->socket, startup->js.max_bytes);
+		lprintf(LOG_DEBUG, "%04d %-5s [%s] JavaScript: Creating runtime: %u bytes"
+		        , session->socket, session->client.protocol, session->host_ip, startup->js.max_bytes);
 
 		if ((session->js_runtime = jsrt_GetNew(startup->js.max_bytes, 5000, __FILE__, __LINE__)) == NULL) {
-			errprintf(LOG_ERR, WHERE, "%04d !ERROR creating JavaScript runtime", session->socket);
+			errprintf(LOG_ERR, WHERE, "%04d %-5s [%s] !ERROR creating JavaScript runtime"
+				, session->socket, session->client.protocol, session->host_ip);
 			return false;
 		}
 	}
@@ -6118,7 +6125,8 @@ static bool js_setup_cx(http_session_t* session)
 	if (session->js_cx == NULL) {  /* Context not yet created, create it now */
 		/* js_initcx() begins a context */
 		if (((session->js_cx = js_initcx(session)) == NULL)) {
-			lprintf(LOG_WARNING, "%04d !ERROR initializing JavaScript context", session->socket);
+			lprintf(LOG_WARNING, "%04d %-5s [%s] !ERROR initializing JavaScript context"
+				, session->socket, session->client.protocol, session->host_ip);
 			return false;
 		}
 		argv = JS_NewArrayObject(session->js_cx, 0, NULL);
@@ -6143,9 +6151,11 @@ static bool js_setup_cx(http_session_t* session)
 		JS_MaybeGC(session->js_cx);
 	}
 
-	lprintf(LOG_DEBUG, "%04d JavaScript: Initializing HttpRequest object", session->socket);
+	lprintf(LOG_DEBUG, "%04d %-5s [%s] JavaScript: Initializing HttpRequest object"
+		, session->socket, session->client.protocol, session->host_ip);
 	if (js_CreateHttpRequestObject(session->js_cx, session->js_glob, session) == NULL) {
-		errprintf(LOG_ERR, WHERE, "%04d !ERROR initializing JavaScript HttpRequest object", session->socket);
+		errprintf(LOG_ERR, WHERE, "%04d %-5s [%s] !ERROR initializing JavaScript HttpRequest object"
+			, session->socket, session->client.protocol, session->host_ip);
 		JS_ENDREQUEST(session->js_cx);
 		return false;
 	}
@@ -6160,9 +6170,9 @@ static bool js_setup(http_session_t* session)
 	if (!js_setup_cx(session))
 		return false;
 
-	lprintf(LOG_DEBUG, "%04d JavaScript: Initializing HttpReply object", session->socket);
+	lprintf(LOG_DEBUG, "%04d %-5s [%s] JavaScript: Initializing HttpReply object", session->socket, session->client.protocol, session->host_ip);
 	if (js_CreateHttpReplyObject(session->js_cx, session->js_glob, session) == NULL) {
-		errprintf(LOG_ERR, WHERE, "%04d !ERROR initializing JavaScript HttpReply object", session->socket);
+		errprintf(LOG_ERR, WHERE, "%04d %-5s [%s] !ERROR initializing JavaScript HttpReply object", session->socket, session->client.protocol, session->host_ip);
 		JS_ENDREQUEST(session->js_cx);
 		return false;
 	}
@@ -6308,24 +6318,26 @@ static bool exec_ssjs(http_session_t* session, char* script)  {
 
 		session->js_callback.counter = 0;
 
-		lprintf(LOG_DEBUG, "%04d JavaScript: Compiling script: %s", session->socket, script);
+		lprintf(LOG_DEBUG, "%04d %-5s [%s] JavaScript: Compiling script: %s"
+			, session->socket, session->client.protocol, session->host_ip, script);
 		if ((js_script = JS_CompileFile(session->js_cx, session->js_glob
 		                                , script)) == NULL) {
-			errprintf(LOG_ERR, WHERE, "%04d !JavaScript FAILED to compile script (%s)"
-			          , session->socket, script);
+			errprintf(LOG_ERR, WHERE, "%04d %-5s [%s] !JavaScript FAILED to compile script (%s)"
+			          , session->socket, session->client.protocol, session->host_ip, script);
 			JS_RemoveObjectRoot(session->js_cx, &session->js_glob);
 			JS_ENDREQUEST(session->js_cx);
 			return false;
 		}
 
-		lprintf(LOG_DEBUG, "%04d JavaScript: Executing script: %s", session->socket, script);
+		lprintf(LOG_DEBUG, "%04d %-5s [%s] JavaScript: Executing script: %s"
+			, session->socket, session->client.protocol, session->host_ip, script);
 		start = xp_timer();
 		js_PrepareToExecute(session->js_cx, session->js_glob, script, /* startup_dir */ NULL, session->js_glob);
 		JS_ExecuteScript(session->js_cx, session->js_glob, js_script, &rval);
 		js_EvalOnExit(session->js_cx, session->js_glob, &session->js_callback);
 		JS_RemoveObjectRoot(session->js_cx, &session->js_glob);
-		lprintf(LOG_DEBUG, "%04d JavaScript: Done executing script: %s (%.2Lf seconds)"
-		        , session->socket, script, xp_timer() - start);
+		lprintf(LOG_DEBUG, "%04d %-5s [%s] JavaScript: Done executing script: %s (%.2Lf seconds)"
+		        , session->socket, session->client.protocol, session->host_ip, script, xp_timer() - start);
 	} while (0);
 
 	SAFECOPY(session->req.physical_path, path);
@@ -7064,7 +7076,7 @@ void http_session_thread(void* arg)
 	http_logoff(&session, socket, __LINE__);
 
 	if (session.js_cx != NULL) {
-		lprintf(LOG_DEBUG, "%04d JavaScript: Destroying context", socket);
+		lprintf(LOG_DEBUG, "%04d %-5s [%s] JavaScript: Destroying context", socket, session.client.protocol, session.host_ip);
 		JS_BEGINREQUEST(session.js_cx);
 		JS_RemoveObjectRoot(session.js_cx, &session.js_glob);
 		JS_ENDREQUEST(session.js_cx);
@@ -7073,7 +7085,7 @@ void http_session_thread(void* arg)
 	}
 
 	if (session.js_runtime != NULL) {
-		lprintf(LOG_DEBUG, "%04d JavaScript: Destroying runtime", socket);
+		lprintf(LOG_DEBUG, "%04d %-5s [%s] JavaScript: Destroying runtime", socket, session.client.protocol, session.host_ip);
 		jsrt_Release(session.js_runtime);
 		session.js_runtime = NULL;
 	}
