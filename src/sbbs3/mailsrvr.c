@@ -171,7 +171,7 @@ typedef struct {
 				GCES_level = startup->tls_error_level;                                      \
 				if (GCES_level > LOG_INFO)                                                      \
 				GCES_level = LOG_INFO;                                                      \
-				lprintf(GCES_level, "%04d %s [%s] %s", sock, server, host, GCES_estr);         \
+				lprintf(GCES_level, "%04d %-5s [%s] %s", sock, server, host, GCES_estr);         \
 				free_crypt_attrstr(GCES_estr);                                                  \
 			}                                                                                    \
 } while (0)
@@ -182,7 +182,7 @@ typedef struct {
 			get_crypt_error_string(status, sess, &GCES_estr, action, &GCES_level);                      \
 			if (GCES_estr) {                                                                            \
 				lprintf((log_level < startup->tls_error_level) ? startup->tls_error_level : log_level   \
-						, "%04d %s [%s] %s", sock, server, host, GCES_estr);                                \
+						, "%04d %-5s [%s] %s", sock, server, host, GCES_estr);                                \
 				free_crypt_attrstr(GCES_estr);                                                          \
 			}                                                                                           \
 } while (0)
@@ -1058,7 +1058,7 @@ static void badlogin(SOCKET sock, CRYPT_SESSION sess, const char* resp
 		SAFEPRINTF(reason, "%s LOGIN", client->protocol);
 		count = loginFailure(startup->login_attempt_list, addr, client->protocol, user, passwd, &attempt);
 		if (count > 1)
-			lprintf(LOG_NOTICE, "%04d %s [%s] !%lu " STR_FAILED_LOGIN_ATTEMPTS " in %s"
+			lprintf(LOG_NOTICE, "%04d %-5s [%s] !%lu " STR_FAILED_LOGIN_ATTEMPTS " in %s"
 			        , sock, client->protocol, client->addr, count
 			        , duration_estimate_to_vstr(attempt.time - attempt.first, tmp, sizeof tmp, 1, 1));
 		mqtt_user_login_fail(&mqtt, client, user);
@@ -1137,14 +1137,14 @@ static bool pop3_client_thread(pop3_t* pop3)
 	inet_addrtop(&server_addr, server_ip, sizeof(server_ip));
 
 	if (startup->options & MAIL_OPT_DEBUG_POP3)
-		lprintf(LOG_INFO, "%04d %s [%s] Connection accepted on %s port %u from port %u"
+		lprintf(LOG_INFO, "%04d %-5s [%s] Connection accepted on %s port %u from port %u"
 		        , socket, client.protocol, host_ip, server_ip, inet_addrport(&server_addr), inet_addrport(&pop3->client_addr));
 
 	SAFECOPY(host_name, STR_NO_HOSTNAME);
 	if (!(startup->options & MAIL_OPT_NO_HOST_LOOKUP)) {
 		getnameinfo(&pop3->client_addr.addr, pop3->client_addr_len, host_name, sizeof(host_name), NULL, 0, NI_NAMEREQD);
 		if (startup->options & MAIL_OPT_DEBUG_POP3)
-			lprintf(LOG_INFO, "%04d %s [%s] Hostname: %s", socket, client.protocol, host_ip, host_name);
+			lprintf(LOG_INFO, "%04d %-5s [%s] Hostname: %s", socket, client.protocol, host_ip, host_name);
 	}
 	if (pop3->tls_port) {
 		if (!do_cryptInit(lprintf)) {
@@ -1183,7 +1183,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 	ulong banned = loginBanned(&scfg, startup->login_attempt_list, socket, host_name, startup->login_attempt, &attempted);
 	if (banned) {
 		char ban_duration[128];
-		lprintf(LOG_NOTICE, "%04d %s [%s] !TEMPORARY BAN (%lu login attempts, last: %s) - remaining: %s"
+		lprintf(LOG_NOTICE, "%04d %-5s [%s] !TEMPORARY BAN (%lu login attempts, last: %s) - remaining: %s"
 		        , socket, client.protocol, host_ip, attempted.count - attempted.dupes, attempted.user
 		        , duration_estimate_to_vstr(banned, ban_duration, sizeof ban_duration, 1, 1));
 		sockprintf(socket, client.protocol, session, "-ERR Access denied.");
@@ -1193,7 +1193,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 	if (trashcan2(&scfg, host_ip, NULL, "ip", &trash)) {
 		if (!trash.quiet) {
 			char details[128];
-			lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in ip.can %s", socket, client.protocol, host_ip, trash_details(&trash, details, sizeof details));
+			lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in ip.can %s", socket, client.protocol, host_ip, trash_details(&trash, details, sizeof details));
 		}
 		sockprintf(socket, client.protocol, session, "-ERR Access denied.");
 		return false;
@@ -1201,7 +1201,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 	if (trashcan2(&scfg, host_name, NULL, "host", &trash)) {
 		if (!trash.quiet) {
 			char details[128];
-			lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in host.can: %s %s"
+			lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in host.can: %s %s"
 					, socket, client.protocol, host_ip, host_name, trash_details(&trash, details, sizeof details));
 		}
 		sockprintf(socket, client.protocol, session, "-ERR Access denied.");
@@ -1220,7 +1220,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 
 	if (startup->login_attempt.throttle
 	    && (login_attempts = loginAttempts(startup->login_attempt_list, &pop3->client_addr)) > 1) {
-		lprintf(LOG_DEBUG, "%04d %s [%s] Throttling suspicious connection (%lu login attempts)"
+		lprintf(LOG_DEBUG, "%04d %-5s [%s] Throttling suspicious connection (%lu login attempts)"
 		        , socket, client.protocol, host_ip, login_attempts);
 		mswait(login_attempts * startup->login_attempt.throttle);
 	}
@@ -1332,21 +1332,21 @@ static bool pop3_client_thread(pop3_t* pop3)
 		user.number = find_login_id(&scfg, username);
 		if (!user.number) {
 			if (scfg.sys_misc & SM_ECHO_PW)
-				lprintf(LOG_NOTICE, "%04d %s [%s] !UNKNOWN USER: '%s' (password: %s)"
+				lprintf(LOG_NOTICE, "%04d %-5s [%s] !UNKNOWN USER: '%s' (password: %s)"
 				        , socket, client.protocol, host_ip, username, password);
 			else
-				lprintf(LOG_NOTICE, "%04d %s [%s] !UNKNOWN USER: '%s'"
+				lprintf(LOG_NOTICE, "%04d %-5s [%s] !UNKNOWN USER: '%s'"
 				        , socket, client.protocol, host_ip, username);
 			badlogin(socket, session, pop_auth_error, username, password, &client, &pop3->client_addr);
 			break;
 		}
 		if ((i = getuserdat(&scfg, &user)) != 0) {
-			errprintf(LOG_ERR, WHERE, "%04d %s [%s] !ERROR %d getting data on user (%s)"
+			errprintf(LOG_ERR, WHERE, "%04d %-5s [%s] !ERROR %d getting data on user (%s)"
 			          , socket, client.protocol, host_ip, i, username);
 			break;
 		}
 		if (user.misc & (DELETED | INACTIVE)) {
-			lprintf(LOG_NOTICE, "%04d %s [%s] !DELETED or INACTIVE user #%u (%s)"
+			lprintf(LOG_NOTICE, "%04d %-5s [%s] !DELETED or INACTIVE user #%u (%s)"
 			        , socket, client.protocol, host_ip, user.number, username);
 			badlogin(socket, session, pop_auth_error, username, password, &client, NULL);
 			break;
@@ -1357,7 +1357,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 			MD5_calc(digest, challenge, strlen(challenge));
 			MD5_hex(str, digest);
 			if (strcmp(str, response)) {
-				lprintf(LOG_NOTICE, "%04d %s [%s] !FAILED APOP authentication: %s"
+				lprintf(LOG_NOTICE, "%04d %-5s [%s] !FAILED APOP authentication: %s"
 				        , socket, client.protocol, host_ip, username);
 #if 0
 				lprintf(LOG_DEBUG, "%04d !POP3 digest data: %s", socket, challenge);
@@ -1369,16 +1369,16 @@ static bool pop3_client_thread(pop3_t* pop3)
 			}
 		} else if (stricmp(password, user.pass)) {
 			if (scfg.sys_misc & SM_ECHO_PW)
-				lprintf(LOG_NOTICE, "%04d %s [%s] <%s> !FAILED Password attempt: '%s' expected '%s'"
+				lprintf(LOG_NOTICE, "%04d %-5s [%s] <%s> !FAILED Password attempt: '%s' expected '%s'"
 				        , socket, client.protocol, host_ip, username, password, user.pass);
 			else
-				lprintf(LOG_NOTICE, "%04d %s [%s] <%s> !FAILED Password attempt"
+				lprintf(LOG_NOTICE, "%04d %-5s [%s] <%s> !FAILED Password attempt"
 				        , socket, client.protocol, host_ip, username);
 			badlogin(socket, session, pop_auth_error, username, password, &client, &pop3->client_addr);
 			break;
 		}
 		if (!chk_ars(&scfg, startup->login_ars, &user, &client)) {
-			lprintf(LOG_NOTICE, "%04d %s [%s] <%s> !Insufficient server access: %s"
+			lprintf(LOG_NOTICE, "%04d %-5s [%s] <%s> !Insufficient server access: %s"
 			        , socket, client.protocol, host_ip, username, startup->login_ars);
 			badlogin(socket, session, pop_auth_error, username, NULL, &client, &pop3->client_addr);
 			break;
@@ -1399,7 +1399,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 		activity = FALSE;
 
 		if (startup->options & MAIL_OPT_DEBUG_POP3)
-			lprintf(LOG_INFO, "%04d %s [%s] <%s> logged-in %s", socket, client.protocol, host_ip, user.alias, apop ? "via APOP":"");
+			lprintf(LOG_INFO, "%04d %-5s [%s] <%s> logged-in %s", socket, client.protocol, host_ip, user.alias, apop ? "via APOP":"");
 #ifdef _WIN32
 		if (startup->sound.login[0] && !sound_muted(&scfg))
 			PlaySound(startup->sound.login, NULL, SND_ASYNC | SND_FILENAME);
@@ -1408,14 +1408,14 @@ static bool pop3_client_thread(pop3_t* pop3)
 
 		SAFEPRINTF(smb.file, "%smail", scfg.data_dir);
 		if (smb_islocked(&smb)) {
-			lprintf(LOG_WARNING, "%04d %s [%s] <%s> !MAIL BASE LOCKED: %s", socket, client.protocol, host_ip, user.alias, smb.last_error);
+			lprintf(LOG_WARNING, "%04d %-5s [%s] <%s> !MAIL BASE LOCKED: %s", socket, client.protocol, host_ip, user.alias, smb.last_error);
 			sockprintf(socket, client.protocol, session, "-ERR database locked, try again later");
 			break;
 		}
 		smb.retry_time = scfg.smb_retry_time;
 		smb.subnum = INVALID_SUB;
 		if ((i = smb_open(&smb)) != SMB_SUCCESS) {
-			errprintf(LOG_ERR, WHERE, "%04d %s [%s] <%s> !ERROR %d (%s) opening %s", socket, client.protocol, host_ip, user.alias, i, smb.last_error, smb.file);
+			errprintf(LOG_ERR, WHERE, "%04d %-5s [%s] <%s> !ERROR %d (%s) opening %s", socket, client.protocol, host_ip, user.alias, i, smb.last_error, smb.file);
 			sockprintf(socket, client.protocol, session, "-ERR %d opening %s", i, smb.file);
 			break;
 		}
@@ -1792,7 +1792,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 			lprintf(LOG_INFO, "%04d %s <%s> logged-out from port %u on %s [%s]"
 			        , socket, client.protocol, user.alias, inet_addrport(&pop3->client_addr), host_name, host_ip);
 		else
-			lprintf(LOG_INFO, "%04d %s [%s] client disconnected from port %u on %s"
+			lprintf(LOG_INFO, "%04d %-5s [%s] client disconnected from port %u on %s"
 			        , socket, client.protocol, host_ip, inet_addrport(&pop3->client_addr), host_name);
 	}
 
@@ -1810,7 +1810,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 	{
 		int32_t remain = thread_down();
 		if (startup->options & MAIL_OPT_DEBUG_POP3)
-			lprintf(LOG_DEBUG, "%04d %s [%s] Session thread terminated (%u threads remain, %lu clients served)"
+			lprintf(LOG_DEBUG, "%04d %-5s [%s] Session thread terminated (%u threads remain, %lu clients served)"
 			        , socket, client.protocol, host_ip, remain, ++stats.pop3_served);
 	}
 	return true;
@@ -2028,7 +2028,7 @@ static BOOL chk_email_addr(SOCKET socket, const char* prot, char* p, char* host_
 		return TRUE;
 	if (!trash.quiet) {
 		char         details[128];
-		lprintf(LOG_NOTICE, "%04d %s [%s] !BLOCKED %s e-mail address: %s %s"
+		lprintf(LOG_NOTICE, "%04d %-5s [%s] !BLOCKED %s e-mail address: %s %s"
 				, socket, prot, host_ip, source, p, trash_details(&trash, details, sizeof details));
 		SAFEPRINTF2(tmp, "Blocked %s e-mail address: %s", source, p);
 		spamlog(&scfg, &mqtt, (char*)prot, "REFUSED", tmp, host_name, host_ip, to, from);
@@ -2807,7 +2807,7 @@ static int chk_received_hdr(SOCKET socket, const char* prot, const char *buf, IN
 		}
 
 		if ((dnsbl_result->s_addr = dns_blacklisted(socket, prot, &addr, host_name, dnsbl, dnsbl_ip)) != 0)
-			lprintf(LOG_NOTICE, "%04d %s [%s] BLACKLISTED SERVER on %s: %s = %s"
+			lprintf(LOG_NOTICE, "%04d %-5s [%s] BLACKLISTED SERVER on %s: %s = %s"
 			        , socket, prot, ip, dnsbl, host_name, inet_ntop(AF_INET, dnsbl_result, tmp, sizeof tmp));
 	} while (0);
 	free(fromstr);
@@ -3030,7 +3030,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 	inet_addrtop(&smtp->client_addr, host_ip, sizeof(host_ip));
 	inet_addrtop(&server_addr, server_ip, sizeof(server_ip));
 
-	lprintf(LOG_INFO, "%04d %s [%s] Connection accepted on %s port %u from port %u"
+	lprintf(LOG_INFO, "%04d %-5s [%s] Connection accepted on %s port %u from port %u"
 	        , socket, client.protocol, host_ip, server_ip, inet_addrport(&server_addr), inet_addrport(&smtp->client_addr));
 	SAFEPRINTF(client_id, "[%s]", host_ip);
 
@@ -3093,7 +3093,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 		ulong banned = loginBanned(&scfg, startup->login_attempt_list, socket, host_name, startup->login_attempt, &attempted);
 		if (banned) {
 			char ban_duration[128];
-			lprintf(LOG_NOTICE, "%04d %s [%s] !TEMPORARY BAN (%lu login attempts, last: %s) - remaining: %s"
+			lprintf(LOG_NOTICE, "%04d %-5s [%s] !TEMPORARY BAN (%lu login attempts, last: %s) - remaining: %s"
 			        , socket, client.protocol, host_ip, attempted.count - attempted.dupes, attempted.user
 			        , duration_estimate_to_vstr(banned, ban_duration, sizeof ban_duration, 1, 1));
 			return false;
@@ -3101,7 +3101,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 
 		spam_block_exempt = find2strs(host_ip, host_name, spam_block_exemptions, NULL);
 		if (!spam_block_exempt && findstr(host_ip, spam_block)) {
-			lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in %s (%lu total)"
+			lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in %s (%lu total)"
 			        , socket, client.protocol, host_ip, spam_block, ++stats.sessions_refused);
 			sockprintf(socket, client.protocol, session, "550 CLIENT IP ADDRESS BLOCKED: %s", host_ip);
 			return false;
@@ -3111,7 +3111,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 			++stats.sessions_refused;
 			if (!trash.quiet) {
 				char details[128];
-				lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in ip.can %s (%lu total)"
+				lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in ip.can %s (%lu total)"
 						, socket, client.protocol, host_ip, trash_details(&trash, details, sizeof details), stats.sessions_refused);
 			}
 			sockprintf(socket, client.protocol, session, "550 CLIENT IP ADDRESS BLOCKED: %s", host_ip);
@@ -3121,7 +3121,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 			++stats.sessions_refused;
 			if (!trash.quiet) {
 				char details[128];
-				lprintf(LOG_NOTICE, "%04d %s [%s] !CLIENT BLOCKED in host.can: %s %s (%lu total)"
+				lprintf(LOG_NOTICE, "%04d %-5s [%s] !CLIENT BLOCKED in host.can: %s %s (%lu total)"
 						, socket, client.protocol, host_ip, host_name, trash_details(&trash, details, sizeof details), stats.sessions_refused);
 			}
 			sockprintf(socket, client.protocol, session, "550 CLIENT HOSTNAME BLOCKED: %s", host_name);
@@ -3131,7 +3131,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 		/*  SPAM Filters (mail-abuse.org) */
 		dnsbl_result.s_addr = dns_blacklisted(socket, client.protocol, &smtp->client_addr, host_name, dnsbl, dnsbl_ip);
 		if (dnsbl_result.s_addr) {
-			lprintf(LOG_NOTICE, "%04d %s [%s] BLACKLISTED SERVER on %s: %s = %s"
+			lprintf(LOG_NOTICE, "%04d %-5s [%s] BLACKLISTED SERVER on %s: %s = %s"
 			        , socket, client.protocol, dnsbl_ip, dnsbl, host_name, inet_ntop(AF_INET, &dnsbl_result, tmp, sizeof tmp));
 			if (startup->options & MAIL_OPT_DNSBL_REFUSE) {
 				SAFEPRINTF2(str, "Listed on %s as %s", dnsbl, inet_ntop(AF_INET, &dnsbl_result, tmp, sizeof tmp));
@@ -3148,7 +3148,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 
 	SAFEPRINTF(smb.file, "%smail", scfg.data_dir);
 	if (smb_islocked(&smb)) {
-		lprintf(LOG_WARNING, "%04d %s [%s] !MAIL BASE LOCKED: %s"
+		lprintf(LOG_WARNING, "%04d %-5s [%s] !MAIL BASE LOCKED: %s"
 		        , socket, client.protocol, host_ip, smb.last_error);
 		sockprintf(socket, client.protocol, session, smtp_error, "mail base locked");
 		return false;
@@ -3160,14 +3160,14 @@ static bool smtp_client_thread(smtp_t* smtp)
 	srand((unsigned int)(time(NULL) ^ (time_t)GetCurrentThreadId()));   /* seed random number generator */
 	(void)rand(); /* throw-away first result */
 	SAFEPRINTF4(session_id, "%x%x%x%lx", getpid(), socket, rand(), (long)clock());
-	lprintf(LOG_DEBUG, "%04d %s [%s] Session ID=%s", socket, client.protocol, host_ip, session_id);
+	lprintf(LOG_DEBUG, "%04d %-5s [%s] Session ID=%s", socket, client.protocol, host_ip, session_id);
 	SAFEPRINTF3(msgtxt_fname, "%sSBBS_%s.%s.msg", scfg.temp_dir, client.protocol, session_id);
 	SAFEPRINTF3(newtxt_fname, "%sSBBS_%s.%s.new", scfg.temp_dir, client.protocol, session_id);
 	SAFEPRINTF3(logtxt_fname, "%sSBBS_%s.%s.log", scfg.temp_dir, client.protocol, session_id);
 	SAFEPRINTF3(rcptlst_fname, "%sSBBS_%s.%s.lst", scfg.temp_dir, client.protocol, session_id);
 	rcptlst = fopen(rcptlst_fname, "w+");
 	if (rcptlst == NULL) {
-		errprintf(LOG_CRIT, WHERE, "%04d %s [%s] !ERROR %d creating recipient list: %s"
+		errprintf(LOG_CRIT, WHERE, "%04d %-5s [%s] !ERROR %d creating recipient list: %s"
 		          , socket, client.protocol, host_ip, errno, rcptlst_fname);
 		sockprintf(socket, client.protocol, session, smtp_error, "fopen error");
 		return false;
@@ -4272,7 +4272,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 				break;
 			}
 			if (!chk_ars(&scfg, startup->login_ars, &relay_user, &client)) {
-				lprintf(LOG_NOTICE, "%04d %s [%s] <%s> !Insufficient server access: %s"
+				lprintf(LOG_NOTICE, "%04d %-5s [%s] <%s> !Insufficient server access: %s"
 				        , socket, client.protocol, client_id, user_name, startup->login_ars);
 				badlogin(socket, session, badauth_rsp, user_name, NULL, &client, &smtp->client_addr);
 				break;
@@ -4365,8 +4365,8 @@ static bool smtp_client_thread(smtp_t* smtp)
 			MD5_calc(digest, md5_data, sizeof(secret) + sizeof(digest));
 			MD5_hex(str, digest);
 			if (strcmp(p, str)) {
-				lprintf(LOG_NOTICE, "%04d SMTP %s <%s> !FAILED CRAM-MD5 authentication"
-				        , socket, client_id, relay_user.alias);
+				lprintf(LOG_NOTICE, "%04d %-5s %s <%s> !FAILED CRAM-MD5 authentication"
+				        , socket, client.protocol, client_id, relay_user.alias);
 #if 0
 				lprintf(LOG_DEBUG, "%04d !SMTP calc digest: %s"
 				        , socket, str);
@@ -4377,7 +4377,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 				break;
 			}
 			if (!chk_ars(&scfg, startup->login_ars, &relay_user, &client)) {
-				lprintf(LOG_NOTICE, "%04d %s [%s] <%s> !Insufficient server access: %s"
+				lprintf(LOG_NOTICE, "%04d %-5s [%s] <%s> !Insufficient server access: %s"
 				        , socket, client.protocol, client_id, user_name, startup->login_ars);
 				badlogin(socket, session, badauth_rsp, user_name, NULL, &client, &smtp->client_addr);
 				break;
@@ -6413,7 +6413,7 @@ void mail_server(void* arg)
 
 					if (connections - logins >= (int)startup->max_concurrent_connections
 					    && !is_host_exempt(&scfg, host_ip, /* host_name */ NULL)) {
-						lprintf(LOG_NOTICE, "%04d %s [%s] !Maximum concurrent connections without login (%u) exceeded (%lu total)"
+						lprintf(LOG_NOTICE, "%04d %-5s [%s] !Maximum concurrent connections without login (%u) exceeded (%lu total)"
 						        , client_socket, servprot, host_ip, startup->max_concurrent_connections, ++stats.connections_exceeded);
 						sockprintf(client_socket, servprot, session, is_smtp ? smtp_error : pop_error, "Maximum connections exceeded");
 						mail_close_socket(&client_socket, &session);
@@ -6428,7 +6428,7 @@ void mail_server(void* arg)
 				}
 
 				if (protected_uint32_value(active_clients) >= startup->max_clients) {
-					lprintf(LOG_WARNING, "%04d %s [%s] !MAXIMUM CLIENTS (%u) reached, access denied (%lu total)"
+					lprintf(LOG_WARNING, "%04d %-5s [%s] !MAXIMUM CLIENTS (%u) reached, access denied (%lu total)"
 					        , client_socket, servprot, host_ip, startup->max_clients, ++stats.connections_refused);
 					sockprintf(client_socket, servprot, session, is_smtp ? smtp_error : pop_error, "Maximum active clients reached");
 					mail_close_socket(&client_socket, &session);
@@ -6438,8 +6438,8 @@ void mail_server(void* arg)
 				l = 1;
 
 				if ((i = ioctlsocket(client_socket, FIONBIO, &l)) != 0) {
-					errprintf(LOG_CRIT, WHERE, "%04d %s !ERROR %d (%d) disabling blocking on socket"
-					          , client_socket, servprot, i, SOCKET_ERRNO);
+					errprintf(LOG_CRIT, WHERE, "%04d %-5s [%s] !ERROR %d (%d) disabling blocking on socket"
+					          , client_socket, servprot, host_ip, i, SOCKET_ERRNO);
 					sockprintf(client_socket, servprot, session, is_smtp ? smtp_error : pop_error, "ioctlsocket error");
 					mswait(3000);
 					mail_close_socket(&client_socket, &session);
@@ -6448,8 +6448,8 @@ void mail_server(void* arg)
 
 				if (is_smtp) {
 					if ((smtp = malloc(sizeof(smtp_t))) == NULL) {
-						errprintf(LOG_CRIT, WHERE, "%04d SMTP !ERROR allocating %lu bytes of memory for smtp_t"
-						          , client_socket, (ulong)sizeof(smtp_t));
+						errprintf(LOG_CRIT, WHERE, "%04d %-5s !ERROR allocating %lu bytes of memory for smtp_t"
+						          , client_socket, servprot, (ulong)sizeof(smtp_t));
 						sockprintf(client_socket, servprot, session, smtp_error, "malloc failure");
 						mail_close_socket(&client_socket, &session);
 						continue;
@@ -6466,8 +6466,8 @@ void mail_server(void* arg)
 				}
 				else {
 					if ((pop3 = malloc(sizeof(pop3_t))) == NULL) {
-						errprintf(LOG_CRIT, WHERE, "%04d POP3 !ERROR allocating %lu bytes of memory for pop3_t"
-						          , client_socket, (ulong)sizeof(pop3_t));
+						errprintf(LOG_CRIT, WHERE, "%04d %-5s !ERROR allocating %lu bytes of memory for pop3_t"
+						          , client_socket, servprot, (ulong)sizeof(pop3_t));
 						sockprintf(client_socket, "POP3", session, "-ERR System error, please try again later.");
 						mswait(3000);
 						mail_close_socket(&client_socket, &session);
