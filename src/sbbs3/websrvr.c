@@ -3845,7 +3845,7 @@ static bool check_request(http_session_t * session)
 			*last_slash = 0;
 			SAFECAT(path, startup->index_file_name[i]);
 			if (startup->options & WEB_OPT_DEBUG_TX)
-				lprintf(LOG_DEBUG, "%04d Checking for %s", session->socket, path);
+				lprintf(LOG_DEBUG, "%04d %-5s [%s] Checking for %s", session->socket, session->client.protocol, session->host_ip, path);
 			if (!stat(path, &sb))
 				break;
 			SAFECOPY(path, session->req.physical_path);
@@ -4025,7 +4025,7 @@ static bool check_request(http_session_t * session)
 		/* OPTIONS requests never return 404 errors (ala Apache) */
 		if (session->req.method != HTTP_OPTIONS) {
 			if (startup->options & WEB_OPT_DEBUG_TX)
-				lprintf(LOG_DEBUG, "%04d 404 - %s does not exist", session->socket, path);
+				lprintf(LOG_DEBUG, "%04d %-5s [%s] 404 - %s does not exist", session->socket, session->client.protocol, session->host_ip, path);
 			SAFECAT(session->req.physical_path, session->req.extra_path_info);
 			SAFECAT(session->req.virtual_path, session->req.extra_path_info);
 			send_error(session, __LINE__, error_404);
@@ -4830,7 +4830,8 @@ static int do_cgi_stuff(http_session_t *session, struct cgi_api *cgi, bool orig_
 							char content_type[MAX_REQUEST_LINE + 1];
 							int  snt;
 
-							lprintf(LOG_DEBUG, "%04d Recieved invalid CGI headers, sending result as plain-text", session->socket);
+							lprintf(LOG_DEBUG, "%04d %-5s [%s] Received invalid CGI headers, sending result as plain-text"
+								, session->socket, session->client.protocol, session->host_ip);
 
 							/* free() the non-headers so they don't get sent, then recreate the list */
 							strListFreeStrings(session->req.dynamic_heads);
@@ -4875,8 +4876,8 @@ static int do_cgi_stuff(http_session_t *session, struct cgi_api *cgi, bool orig_
 			if (ready & CGI_INPUT_READY) {
 				/* Send received POST Data to stdin of CGI process */
 				if ((i = sess_recv(session, buf, sizeof(buf), 0)) > 0)  {
-					lprintf(LOG_DEBUG, "%04d CGI Received %d bytes of POST data"
-					        , session->socket, i);
+					lprintf(LOG_DEBUG, "%04d %-5s [%s] CGI Received %d bytes of POST data"
+					        , session->socket, session->client.protocol, session->host_ip, i);
 					cgi->write_in(cgi->arg, buf, i);
 				}
 			}
@@ -4974,7 +4975,8 @@ static bool exec_fastcgi(http_session_t *session)
 	if (sendsocket(sock, (void *)msg, sizeof(struct fastcgi_header)) != sizeof(struct fastcgi_header)) {
 		free(msg);
 		closesocket(sock);
-		lprintf(LOG_WARNING, "%04d Failure to send stdin to FastCGI socket!", session->socket);
+		lprintf(LOG_WARNING, "%04d %-s [%s] Failure to send stdin to FastCGI socket!"
+			, session->socket, session->client.protocol, session->host_ip);
 		return false;
 	}
 	free(msg);
@@ -5066,7 +5068,8 @@ static bool exec_cgi(http_session_t *session)
 
 	handler = get_cgi_handler(cmdline);
 	if (handler)
-		lprintf(LOG_INFO, "%04d Using handler %s to execute %s", session->socket, handler, cmdline);
+		lprintf(LOG_INFO, "%04d %-5s [%s] Using handler %s to execute %s"
+			, session->socket, session->client.protocol, session->host_ip, handler, cmdline);
 
 	if ((child = fork()) == 0)  {
 		str_list_t env_list;
@@ -5095,8 +5098,8 @@ static bool exec_cgi(http_session_t *session)
 		{
 			*p = 0;
 			if (chdir(cgipath) != 0)
-				lprintf(LOG_ERR, "%04d !ERROR %d changing directory to %s"
-				        , session->socket, errno, cgipath);
+				lprintf(LOG_ERR, "%04d %-5s [%s] !ERROR %d changing directory to %s"
+				        , session->socket, session->client.protocol, session->host_ip, errno, cgipath);
 		}
 
 		/* Execute command */
@@ -5144,7 +5147,8 @@ static bool exec_cgi(http_session_t *session)
 				if (i > 0)
 					sent += i;
 				else {
-					lprintf(LOG_INFO, "%04d FAILED writing CGI POST data", session->socket);
+					lprintf(LOG_INFO, "%04d %-5s [%s] FAILED writing CGI POST data"
+						, session->socket, session->client.protocol, session->host_ip);
 					close(in_pipe[1]);
 					close(out_pipe[0]);
 					close(err_pipe[0]);
@@ -5152,7 +5156,8 @@ static bool exec_cgi(http_session_t *session)
 				}
 			}
 			else {
-				lprintf(LOG_INFO, "%04d FAILED polling CGI stding for write", session->socket);
+				lprintf(LOG_INFO, "%04d %-5s [%s] FAILED polling CGI stding for write"
+					, session->socket, session->client.protocol, session->host_ip);
 				close(in_pipe[1]);
 				close(out_pipe[0]);
 				close(err_pipe[0]);
@@ -5271,14 +5276,16 @@ static bool exec_cgi(http_session_t *session)
 	else
 		SAFECOPY(startup_dir, session->req.cgi_dir?session->req.cgi_dir:cgi_dir);
 
-	lprintf(LOG_DEBUG, "%04d CGI startup dir: %s", session->socket, startup_dir);
+	lprintf(LOG_DEBUG, "%04d %-5s [%s] CGI startup dir: %s"
+		, session->socket, session->client.protocol, session->host_ip, startup_dir);
 
 	if ((p = get_cgi_handler(session->req.physical_path)) != NULL)
 		SAFEPRINTF2(cmdline, "%s %s", p, session->req.physical_path);
 	else
 		SAFECOPY(cmdline, session->req.physical_path);
 
-	lprintf(LOG_INFO, "%04d Executing CGI: %s", session->socket, cmdline);
+	lprintf(LOG_INFO, "%04d %-5s [%s] Executing CGI: %s"
+		, session->socket, session->client.protocol, session->host_ip, cmdline);
 
 	orig_keep = session->req.keep_alive;
 	session->req.keep_alive = false;
@@ -5349,12 +5356,12 @@ static bool exec_cgi(http_session_t *session)
 		got_valid_headers = true;
 
 	if (GetExitCodeProcess(process_info.hProcess, &retval) == false)
-		errprintf(LOG_ERR, WHERE, "%04d !ERROR GetExitCodeProcess(%s) returned %d"
-		          , session->socket, getfname(cmdline), GetLastError());
+		errprintf(LOG_ERR, WHERE, "%04d %-5s [%s] !ERROR GetExitCodeProcess(%s) returned %d"
+		          , session->socket, session->client.protocol, session->host_ip, getfname(cmdline), GetLastError());
 
 	if (retval == STILL_ACTIVE) {
-		lprintf(LOG_WARNING, "%04d Terminating CGI process: %s"
-		        , session->socket, getfname(cmdline));
+		lprintf(LOG_WARNING, "%04d %-5s [%s] Terminating CGI process: %s"
+		        , session->socket, session->client.protocol, session->host_ip, getfname(cmdline));
 		TerminateProcess(process_info.hProcess, GetLastError());
 	}
 
@@ -5365,12 +5372,12 @@ static bool exec_cgi(http_session_t *session)
 	CloseHandle(process_info.hProcess);
 
 	if (!got_valid_headers)
-		lprintf(LOG_WARNING, "%04d !CGI Process %s did not generate valid headers"
-		        , session->socket, getfname(cmdline));
+		lprintf(LOG_WARNING, "%04d %-5s [%s] !CGI Process %s did not generate valid headers"
+		        , session->socket, session->client.protocol, session->host_ip, getfname(cmdline));
 
 	if (!done_parsing_headers)
-		lprintf(LOG_WARNING, "%04d !CGI Process %s did not send data header termination"
-		        , session->socket, getfname(cmdline));
+		lprintf(LOG_WARNING, "%04d %-5s [%s] !CGI Process %s did not send data header termination"
+		        , session->socket, session->client.protocol, session->host_ip, getfname(cmdline));
 
 	return true;
 #endif
@@ -5757,15 +5764,15 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 	user.number = find_login_id(&scfg, username);
 
 	if (getuserdat(&scfg, &user) != 0) {
-		lprintf(LOG_NOTICE, "%04d !USER NOT FOUND: '%s'"
-		        , session->socket, username);
+		lprintf(LOG_NOTICE, "%04d %-5s [%s] !USER NOT FOUND: '%s'"
+		        , session->socket, session->client.protocol, session->host_ip, username);
 		JS_RESUMEREQUEST(cx, rc);
 		return JS_TRUE;
 	}
 
 	if (user.misc & (DELETED | INACTIVE)) {
-		lprintf(LOG_WARNING, "%04d !DELETED OR INACTIVE USER #%d: %s"
-		        , session->socket, user.number, username);
+		lprintf(LOG_WARNING, "%04d %-5s [%s] !DELETED OR INACTIVE USER #%d: %s"
+		        , session->socket, session->client.protocol, session->host_ip, user.number, username);
 		JS_RESUMEREQUEST(cx, rc);
 		return JS_TRUE;
 	}
@@ -5780,11 +5787,11 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 		if (stricmp(user.pass, password)) { /* Wrong password */
 			rc = JS_SUSPENDREQUEST(cx);
 			if (scfg.sys_misc & SM_ECHO_PW)
-				lprintf(LOG_NOTICE, "%04d <%s> !FAILED Password attempt: '%s' expected '%s'"
-				        , session->socket, user.alias, password, user.pass);
+				lprintf(LOG_NOTICE, "%04d %-5s [%s] <%s> !FAILED Password attempt: '%s' expected '%s'"
+				        , session->socket, session->client.protocol, session->host_ip, user.alias, password, user.pass);
 			else
-				lprintf(LOG_NOTICE, "%04d <%s> !FAILED Password attempt"
-				        , session->socket, user.alias);
+				lprintf(LOG_NOTICE, "%04d %-5s [%s] <%s> !FAILED Password attempt"
+				        , session->socket, session->client.protocol, session->host_ip, user.alias);
 			badlogin(session->socket, username, password, &session->client, &session->addr);
 			JS_RESUMEREQUEST(cx, rc);
 			return JS_TRUE;
@@ -5792,8 +5799,8 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	if (!chk_ars(&scfg, startup->login_ars, &user, &session->client)) {
-		lprintf(LOG_NOTICE, "%04d <%s> !Insufficient server access: %s"
-		        , session->socket, user.alias, startup->login_ars);
+		lprintf(LOG_NOTICE, "%04d %-5s [%s] <%s> !Insufficient server access: %s"
+		        , session->socket, session->client.protocol, session->host_ip, user.alias, startup->login_ars);
 		badlogin(session->socket, username, NULL, &session->client, &session->addr);
 		return JS_TRUE;
 	}
