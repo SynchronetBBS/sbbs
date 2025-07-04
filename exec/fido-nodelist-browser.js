@@ -8310,7 +8310,7 @@ js.on_exit('console.write("[?25h");');
             case "":
             case "":
             case "":
-            case "":
+            case "\x1A":
             case "":
             case "":
             case keydefs2.KEY_UP:
