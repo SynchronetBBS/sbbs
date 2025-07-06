@@ -1777,19 +1777,24 @@ js_notify(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	if (argc > 3 && !JSVAL_NULL_OR_VOID(argv[3])) {
-		if ((js_str = JS_ValueToString(cx, argv[3])) == NULL)
+		if ((js_str = JS_ValueToString(cx, argv[3])) == NULL) {
+			free(msg);
 			return JS_FALSE;
+		}
 
 		JSSTRING_TO_MSTRING(cx, js_str, replyto, NULL);
 		HANDLE_PENDING(cx, replyto);
-		if (replyto == NULL)
+		if (replyto == NULL) {
+			free(msg);
 			return JS_TRUE;
+		}
 	}
 
 	JSSTRING_TO_MSTRING(cx, js_subj, subj, NULL);
 	HANDLE_PENDING(cx, subj);
 	if (subj == NULL) {
 		free(msg);
+		free(replyto);
 		return JS_TRUE;
 	}
 
