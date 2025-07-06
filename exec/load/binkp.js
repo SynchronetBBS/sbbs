@@ -1185,7 +1185,7 @@ BinkP.prototype.recvFrame = function(timeout)
 				this.reset_eob(false);
 			switch(ret.command) {
 				case this.command.M_ERR:
-					log(LOG_ERROR, "BinkP got fatal error '"+ret.data+"' from remote: " + this.remote_addrs);
+					log(LOG_WARNING, "BinkP got fatal error '"+ret.data+"' from remote: " + this.remote_addrs);
 					this.sock.close();
 					this.socket = undefined;
 					return undefined;
