@@ -117,7 +117,8 @@ var newuser_details = format("%s <%s> %u %s from %s using %ux%u %s/%s via %s"
 if(options.notify_sysop)
 	system.notify(options.notify_sysop
 		,format("New user created: \x01c%s #%u", user.alias, user.number)
-		,newuser_details);
+		,newuser_details
+		,user.netmail);
 
 bbs.log_str(newuser_details);
 
