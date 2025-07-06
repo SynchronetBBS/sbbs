@@ -107,7 +107,7 @@ for(var i in dir_list) {
 				var path;
 				try {
 					path = base.get_path(file.name);
-				} catch(e) {
+				} catch (e) {
 					alert(e);
 					continue;
 				}
@@ -123,7 +123,7 @@ for(var i in dir_list) {
 			}
 		}
 		if(removed)
-			log(LOG_NOTICE, ": Removed " + removed + " of " + list.length + " files due to age greater than " + max_age + " days");
+			log(LOG_NOTICE, dir_code + ": Removed " + removed + " of " + list.length + " files due to age greater than " + max_age + " days");
 	}
 	var max_files = base.max_files || dir.max_files;
 	var tfiles = file_area.dir[dir_code].files;
@@ -147,7 +147,7 @@ for(var i in dir_list) {
 			}
 		}
 		if(removed)
-			log(LOG_NOTICE, ": Removed " + removed + " of " + list.length + " files due to max file limit of " + max_files);
+			log(LOG_NOTICE, dir_code + ": Removed " + removed + " of " + list.length + " files due to max file limit of " + max_files);
 	}
 
 	base.close();
