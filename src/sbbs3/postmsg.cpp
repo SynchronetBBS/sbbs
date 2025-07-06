@@ -672,7 +672,7 @@ extern "C" int postpoll(scfg_t* cfg, smb_t* smb, smbmsg_t* msg)
 }
 
 // Send an email and a short-message to a local user about something important (e.g. a system error)
-extern "C" int notify(scfg_t* cfg, uint usernumber, const char* subject, const char* text)
+extern "C" int notify(scfg_t* cfg, uint usernumber, const char* subject, const char* text, const char* replyto)
 {
 	int      i;
 	smb_t    smb = {};
@@ -705,6 +705,9 @@ extern "C" int notify(scfg_t* cfg, uint usernumber, const char* subject, const c
 	char* msgsubj = strip_ctrl(subject, NULL);
 	smb_hfield_str(&msg, SUBJECT, msgsubj);
 	free(msgsubj);
+	if (replyto != nullptr) {
+		smb_hfield_add_netaddr(&msg, REPLYTONETADDR, replyto, /* net_type */NULL, /* insert */false);
+	}
 	if (msgbase_open(cfg, &smb, INVALID_SUB, &storage, &dupechk_hashes, &xlat) == SMB_SUCCESS) {
 		add_msg_ids(cfg, &smb, &msg, /* remsg: */ NULL);
 		smb_addmsg(&smb, &msg, storage, dupechk_hashes, xlat, (uchar*)text, /* tail: */ NULL);
@@ -725,9 +728,9 @@ extern "C" int notify(scfg_t* cfg, uint usernumber, const char* subject, const c
 	return putsmsg(cfg, usernumber, smsg);
 }
 
-bool sbbs_t::notify(const char* subject, const char* text)
+bool sbbs_t::notify(const char* subject, const char* text, const char* replyto)
 {
 	char buf[128];
 
-	return ::notify(&cfg, /* usernumber: */ 1, expand_atcodes(subject, buf, sizeof buf), text) == 0;
+	return ::notify(&cfg, /* usernumber: */ 1, expand_atcodes(subject, buf, sizeof buf), text, replyto) == 0;
 }

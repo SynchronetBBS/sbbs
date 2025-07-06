@@ -1743,9 +1743,10 @@ js_notify(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *              argv = JS_ARGV(cx, arglist);
 	int32                usernumber = 1;
 	JSString*            js_subj;
-	JSString*            js_msg;
+	JSString*            js_str;
 	char*                subj;
 	char*                msg = NULL;
+	char*                replyto = NULL;
 	jsrefcount           rc;
 	BOOL                 ret;
 
@@ -1765,13 +1766,23 @@ js_notify(JSContext *cx, uintN argc, jsval *arglist)
 	if ((js_subj = JS_ValueToString(cx, argv[1])) == NULL)
 		return JS_FALSE;
 
-	if (argc > 2) {
-		if ((js_msg = JS_ValueToString(cx, argv[2])) == NULL)
+	if (argc > 2 && !JSVAL_NULL_OR_VOID(argv[2])) {
+		if ((js_str = JS_ValueToString(cx, argv[2])) == NULL)
 			return JS_FALSE;
 
-		JSSTRING_TO_MSTRING(cx, js_msg, msg, NULL);
+		JSSTRING_TO_MSTRING(cx, js_str, msg, NULL);
 		HANDLE_PENDING(cx, msg);
 		if (msg == NULL)
+			return JS_TRUE;
+	}
+
+	if (argc > 3 && !JSVAL_NULL_OR_VOID(argv[3])) {
+		if ((js_str = JS_ValueToString(cx, argv[3])) == NULL)
+			return JS_FALSE;
+
+		JSSTRING_TO_MSTRING(cx, js_str, replyto, NULL);
+		HANDLE_PENDING(cx, replyto);
+		if (replyto == NULL)
 			return JS_TRUE;
 	}
 
@@ -1783,9 +1794,10 @@ js_notify(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
-	ret = notify(sys->cfg, usernumber, subj, msg) == 0;
+	ret = notify(sys->cfg, usernumber, subj, msg, replyto) == 0;
 	free(subj);
 	free(msg);
+	free(replyto);
 	JS_RESUMEREQUEST(cx, rc);
 	JS_SET_RVAL(cx, arglist, BOOLEAN_TO_JSVAL(ret));
 
@@ -2367,7 +2379,7 @@ static jsSyncMethodSpec js_system_functions[] = {
 	{"put_telegram",    js_put_telegram,    2,  JSTYPE_BOOLEAN, JSDOCSTR("user_number, message_text")
 	 , JSDOCSTR("Send a user a short text message, delivered immediately or during next logon")
 	 , 310},
-	{"notify",          js_notify,          2,  JSTYPE_BOOLEAN, JSDOCSTR("user_number, subject [,message_text]")
+	{"notify",          js_notify,          2,  JSTYPE_BOOLEAN, JSDOCSTR("user_number, subject [,message_text] [,reply_to_address]")
 	 , JSDOCSTR("Notify a user or operator via both email and a short text message about an important event")
 	 , 31801},
 	{"newuser",         js_new_user,        1,  JSTYPE_ALIAS },

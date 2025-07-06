@@ -845,7 +845,7 @@ public:
 
 	/* postmsg.cpp */
 	bool	postmsg(int subnum, int wm_mode = WM_NONE, smb_t* resmb = NULL, smbmsg_t* remsg = NULL);
-	bool	notify(const char* subject, const char* text = NULL);
+	bool	notify(const char* subject, const char* text = NULL, const char* replyto = NULL);
 
 	/* mail.cpp */
 	int		delmail(uint usernumber,int which);
@@ -1317,7 +1317,7 @@ extern "C" {
 	DLLEXPORT int		closepoll(scfg_t*, smb_t*, uint32_t msgnum, const char* username);
 	DLLEXPORT void		signal_sub_sem(scfg_t*, int subnum);
 	DLLEXPORT int		msg_client_hfields(smbmsg_t*, client_t*);
-	DLLEXPORT int		notify(scfg_t*, uint usernumber, const char* subject, const char* msg);
+	DLLEXPORT int		notify(scfg_t*, uint usernumber, const char* subject, const char* msg, const char* replyto);
 	DLLEXPORT void		normalize_msg_hfield_encoding(const char* charset, char* str, size_t size);
 
 	/* data.cpp */

@@ -155,7 +155,7 @@ extern "C" int errorlog(scfg_t* cfg, struct mqtt* mqtt, int level, const char* h
 	if (cfg->erruser && level <= cfg->errlevel) {
 		char subject[128];
 		SAFEPRINTF2(subject, "%s %sERROR occurred", host, level <= LOG_CRIT ? "CRITICAL " : "");
-		notify(cfg, cfg->erruser, subject, text);
+		notify(cfg, cfg->erruser, subject, text, /* replyto */NULL);
 	}
 	mqtt_errormsg(mqtt, level, text);
 
