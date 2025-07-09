@@ -1536,7 +1536,7 @@ static off_t sock_sendfile(http_session_t *session, char *path, off_t start, off
 	else {
 		if (start || end) {
 			if (lseek(file, start, SEEK_SET) == -1) {
-				lprintf(LOG_WARNING, "%04d !ERROR %d seeking to position %" PRIdOFF " in %s", session->socket, SOCKET_ERRNO, start, path);
+				lprintf(LOG_WARNING, "%04d !ERROR %d seeking to position %" PRIdOFF " in %s", session->socket, errno, start, path);
 				close(file);
 				return 0;
 			}
