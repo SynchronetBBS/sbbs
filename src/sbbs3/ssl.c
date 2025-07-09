@@ -417,6 +417,10 @@ bool ssl_sync(scfg_t *scfg, int (*lprintf)(int level, const char* fmt, ...))
 		return false;
 	if (!cert_path[0])
 		SAFEPRINTF2(cert_path, "%s%s", scfg->ctrl_dir, "ssl.cert");
+	if (!fexist(cert_path)) {
+		lprintf(LOG_ERR, "%s: Certificate file does not exist: %s", __FUNCTION__, cert_path);
+		return false;
+	}
 	time_t fd = fdate(cert_path);
 	if (!rwlock_rdlock(&tls_cert_file_date_lock)) {
 		lprintf(LOG_ERR, "Unable to lock tls_cert_file_date_lock for read at %d", __LINE__);
@@ -521,7 +525,8 @@ static struct cert_list * get_ssl_cert(scfg_t *cfg, int (*lprintf)(int level, co
 
 	if (!do_cryptInit(lprintf))
 		return NULL;
-	ssl_sync(cfg, lprintf);
+	if (!ssl_sync(cfg, lprintf))
+		return NULL;
 	cert_entry = malloc(sizeof(*cert_entry));
 	if (cert_entry == NULL) {
 		lprintf(LOG_CRIT, "%s line %d: FAILED TO ALLOCATE %u bytes of memory", __FUNCTION__, __LINE__, sizeof *cert_entry);
@@ -541,7 +546,7 @@ static struct cert_list * get_ssl_cert(scfg_t *cfg, int (*lprintf)(int level, co
 			cryptKeysetClose(ssl_keyset);
 		}
 		if (cert_entry->cert == -1) {
-			lprintf(LOG_WARNING, "Failed to open/read TLS certificate: %s", cert_path);
+			lprintf(LOG_WARNING, "%s: Failed to open/read TLS certificate: %s", __FUNCTION__, cert_path);
 			if (cfg->create_self_signed_cert) {
 				// Only try to create cert first time through the loop.
 				if (loops == 0) {
