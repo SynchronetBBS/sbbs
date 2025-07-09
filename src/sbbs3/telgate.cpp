@@ -268,7 +268,7 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, str_list_t
 	}
 
 	if ((remote_socket = open_socket(PF_INET, SOCK_STREAM, client.protocol)) == INVALID_SOCKET) {
-		errormsg(WHERE, ERR_OPEN, "socket", 0);
+		errormsg(WHERE, ERR_OPEN, "socket", SOCKET_ERRNO, socket_strerror(SOCKET_ERRNO));
 		return false;
 	}
 
@@ -277,8 +277,10 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, str_list_t
 	addr.sin_family = AF_INET;
 
 	if ((i = bind(remote_socket, (struct sockaddr *) &addr, sizeof (addr))) != 0) {
-		lprintf(LOG_NOTICE, "!TELGATE ERROR %d (%d) binding to socket %d", i, SOCKET_ERRNO, remote_socket);
-		bprintf("!ERROR %d (%d) binding to socket\r\n", i, SOCKET_ERRNO);
+		lprintf(LOG_NOTICE, "!TELGATE ERROR %d (%d: %s) binding to socket %d"
+			, i, SOCKET_ERRNO, socket_strerror(SOCKET_ERRNO), remote_socket);
+		bprintf("!ERROR %d (%d: %s) binding to socket\r\n"
+			, i, SOCKET_ERRNO, socket_strerror(SOCKET_ERRNO));
 		close_socket(remote_socket);
 		return false;
 	}
@@ -290,8 +292,8 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, str_list_t
 
 	l = 1;
 	if ((i = ioctlsocket(remote_socket, FIONBIO, &l)) != 0) {
-		lprintf(LOG_NOTICE, "!TELGATE ERROR %d (%d) disabling socket blocking"
-		        , i, SOCKET_ERRNO);
+		lprintf(LOG_NOTICE, "!TELGATE ERROR %d (%d: %s) disabling socket blocking"
+		        , i, SOCKET_ERRNO, socket_strerror(SOCKET_ERRNO));
 		close_socket(remote_socket);
 		return false;
 	}
@@ -302,10 +304,10 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, str_list_t
 	        , destaddr, port, remote_socket);
 
 	if ((i = nonblocking_connect(remote_socket, (struct sockaddr *)&addr, sizeof(addr), timeout)) != 0) {
-		lprintf(LOG_NOTICE, "!TELGATE ERROR %d (%d) connecting to server: %s"
-		        , i, SOCKET_ERRNO, destaddr);
-		bprintf("!ERROR %d (%d) connecting to server: %s\r\n"
-		        , i, SOCKET_ERRNO, destaddr);
+		lprintf(LOG_NOTICE, "!TELGATE ERROR %d (%d: %s) connecting to server: %s"
+		        , i, SOCKET_ERRNO, socket_strerror(SOCKET_ERRNO), destaddr);
+		bprintf("!ERROR %d (%d: %s) connecting to server: %s\r\n"
+		        , i, SOCKET_ERRNO, socket_strerror(SOCKET_ERRNO), destaddr);
 		close_socket(remote_socket);
 		return false;
 	}
@@ -331,7 +333,8 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, str_list_t
 		p++;    // Add NULL
 		l = p - (char*)buf;
 		if (sendsocket(remote_socket, (char*)buf, l) != (ssize_t)l)
-			lprintf(LOG_WARNING, "Error %d sending %lu bytes to server: %s", SOCKET_ERRNO, l, destaddr);
+			lprintf(LOG_WARNING, "Error %d (%s) sending %lu bytes to server: %s"
+				, SOCKET_ERRNO, socket_strerror(SOCKET_ERRNO), l, destaddr);
 		mode |= TG_NOLF;  /* Send LF (to remote host) when Telnet client sends CRLF (when not in binary mode) */
 	} else if (!(mode & TG_RAW)) {
 		proxy = new TelnetProxy(remote_socket, this);
@@ -353,7 +356,8 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, str_list_t
 		for (i = 0; send_strings[i] != NULL; ++i) {
 			ssize_t len = strlen(send_strings[i]);
 			if (sendsocket(remote_socket, send_strings[i], len) != len)
-				lprintf(LOG_WARNING, "Error %d sending %d character to server: %s", SOCKET_ERRNO, (int)len, destaddr);
+				lprintf(LOG_WARNING, "Error %d (%s) sending %d character to server: %s"
+					, SOCKET_ERRNO, socket_strerror(SOCKET_ERRNO), (int)len, destaddr);
 		}
 	}
 
@@ -426,7 +430,8 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, str_list_t
 					mswait(500);
 				}
 				if (i < 0) {
-					lprintf(LOG_NOTICE, "!TELGATE ERROR %d sending on socket %d", SOCKET_ERRNO, remote_socket);
+					lprintf(LOG_NOTICE, "!TELGATE ERROR %d (%s) sending on socket %d"
+						, SOCKET_ERRNO, socket_strerror(SOCKET_ERRNO), remote_socket);
 					break;
 				}
 			}
@@ -445,7 +450,8 @@ bool sbbs_t::telnet_gate(char* destaddr, uint mode, unsigned timeout, str_list_t
 				YIELD();
 				continue;
 			}
-			lprintf(LOG_NOTICE, "!TELGATE ERROR %d receiving on socket %d", SOCKET_ERRNO, remote_socket);
+			lprintf(LOG_NOTICE, "!TELGATE ERROR %d (%s) receiving on socket %d"
+				, SOCKET_ERRNO, socket_strerror(SOCKET_ERRNO), remote_socket);
 			break;
 		}
 		if (!rd) {
