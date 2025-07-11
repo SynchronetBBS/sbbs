@@ -901,7 +901,7 @@ void security_cfg(void)
 				uifc.helpbuf =
 					"`User Expires When Out-of-time:`\n"
 					"\n"
-					"If you want users to be set to `Expired User Values` if they run out of\n"
+					"If you want users to be set to `Expired Account Values` if they run out of\n"
 					"time online, then set this option to `Yes`.\n"
 				;
 				i = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, 0
@@ -965,7 +965,7 @@ void security_cfg(void)
 						"    Email Per Day          Maximum number of email sent per day\n"
 						"    Posts Per Day          Maximum number of posted messages per day\n"
 						"    Lines Per Message      Maximum number of lines per message\n"
-						"    Downloads Per Day      Maximum nubmer of files downloaded per day\n"
+						"    Downloads Per Day      Maximum number of files downloaded per day\n"
 						"    Free Credits Per Day   Number of free credits awarded per day\n"
 						"    Expire To              Level or validation set to Expire to\n"
 					;
