@@ -280,7 +280,7 @@ function enter_file_section()
 		return;
 	if(user.new_file_time == 0)
 		return;
-	console.newline(2);
+	console.cond_blankline();
 	if(console.yesno("Search all libraries for new files"))
 		bbs.scan_dirs(FL_ULTIME, /* all */true);
 }
