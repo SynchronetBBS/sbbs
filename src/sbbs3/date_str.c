@@ -30,9 +30,16 @@ const char *mon[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun"
 
 /****************************************************************************/
 /****************************************************************************/
-char* date_format(scfg_t* cfg, char* buf, size_t size)
+char* date_format(scfg_t* cfg, char* buf, size_t size, bool verbal)
 {
-	switch (cfg->sys_date_fmt) {
+	if (verbal) {
+		switch (cfg->sys_date_fmt) {
+			case MMDDYY: snprintf(buf, size, "MonDD%cYY", cfg->sys_date_sep); return buf;
+			case DDMMYY: snprintf(buf, size, "DD%cMonYY", cfg->sys_date_sep); return buf;
+			case YYMMDD: snprintf(buf, size, "YY%cMonDD", cfg->sys_date_sep); return buf;
+		}
+	}
+	else switch (cfg->sys_date_fmt) {
 		case DDMMYY: snprintf(buf, size, "DD%cMM%cYY", cfg->sys_date_sep, cfg->sys_date_sep); return buf;
 		case MMDDYY: snprintf(buf, size, "MM%cDD%cYY", cfg->sys_date_sep, cfg->sys_date_sep); return buf;
 		case YYMMDD: snprintf(buf, size, "YY%cMM%cDD", cfg->sys_date_sep, cfg->sys_date_sep); return buf;

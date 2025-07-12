@@ -806,7 +806,7 @@ const char* sbbs_t::atcode(const char* sp, char* str, size_t maxlen, int* pmode,
 	}
 
 	if (strcmp(sp, "DATEFMT") == 0) {
-		return date_format(&cfg, str, maxlen);
+		return date_format(&cfg, str, maxlen, /* verbal */false);
 	}
 
 	if (strcmp(sp, "BDATEFMT") == 0 || strcmp(sp, "BIRTHFMT") == 0) {

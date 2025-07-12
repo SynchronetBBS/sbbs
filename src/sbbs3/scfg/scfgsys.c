@@ -1796,7 +1796,7 @@ void sys_cfg(void)
 		         , smb_zonestr(sys_timezone(&cfg), NULL)
 		         , SMB_TZ_HAS_DST(cfg.sys_timezone) && cfg.sys_misc & SM_AUTO_DST ? "(Auto-DST)" : "");
 		snprintf(opt[i++], MAX_OPLN, "%-20s%s (e.g. %s)", "Short Date Format"
-		         , date_format(&cfg, str, sizeof str)
+		         , date_format(&cfg, str, sizeof str, cfg.sys_date_verbal)
 		         , datestr(&cfg, time(NULL), dstr));
 		snprintf(opt[i++], MAX_OPLN, "%-20s%s", "Operator", cfg.sys_op);
 
