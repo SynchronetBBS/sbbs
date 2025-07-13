@@ -120,13 +120,13 @@ void xfer_opts()
 		snprintf(opt[i++], MAX_OPLN, "Transfer Protocols...");
 		opt[i][0] = 0;
 		uifc.helpbuf =
-			"`File Transfer Configuration:`\n"
+			"`File Options:`\n"
 			"\n"
 			"This menu has options and sub-menus that pertain specifically to the\n"
 			"file transfer section of the BBS.\n"
 		;
 		switch (uifc.list(WIN_ORG | WIN_ACT | WIN_CHE, 0, 0, 72, &xfr_dflt, 0
-		                  , "File Transfer Configuration", opt)) {
+		                  , "File Options", opt)) {
 			case -1:
 				i = save_changes(WIN_MID);
 				if (i == -1)
@@ -187,8 +187,8 @@ void xfer_opts()
 				uifc.helpbuf =
 					"`Default Percentage of Credits to Credit Uploader on Upload:`\n"
 					"\n"
-					"This is the default setting that will be used when new file\n"
-					"directories are created.\n"
+					"This is the default value that will be used for this setting (under\n"
+					"`Directory Defaults...`) when new File Libraries are created.\n"
 				;
 				uifc.input(WIN_MID, 0, 0
 				           , "Default Percentage of Credits to Credit Uploader on Upload"
@@ -199,8 +199,8 @@ void xfer_opts()
 				uifc.helpbuf =
 					"`Default Percentage of Credits to Credit Uploader on Download:`\n"
 					"\n"
-					"This is the default setting that will be used when new file\n"
-					"directories are created.\n"
+					"This is the default value that will be used for this setting (under\n"
+					"`Directory Defaults...`) when new File Libraries are created.\n"
 				;
 				uifc.input(WIN_MID, 0, 0
 				           , "Default Percentage of Credits to Credit Uploader on Download"

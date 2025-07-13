@@ -575,7 +575,7 @@ static void termsrvr_cfg(void)
 		opt[i][0] = '\0';
 
 		uifc.helpbuf =
-			"`Terminal Server Configuration:`\n"
+			"`Terminal Server Settings:`\n"
 			"\n"
 			"The initialization settings of the Synchronet server that provides the\n"
 			"traditional BBS experience over `Telnet`, `SSH`, `RLogin`, or `Raw TCP`\n"
@@ -584,7 +584,7 @@ static void termsrvr_cfg(void)
 			"For full documentation, see `http://wiki.synchro.net/server:terminal`\n"
 		;
 		switch (uifc.list(WIN_ACT | WIN_ESC | WIN_RHT | WIN_SAV, 0, 0, 0, &cur, &bar
-		                  , "Terminal Server", opt)) {
+		                  , "Terminal Server Settings", opt)) {
 			case 0:
 				enabled = !enabled;
 				uifc.changes = true;
@@ -990,7 +990,7 @@ static void websrvr_cfg(void)
 		opt[i][0] = '\0';
 
 		uifc.helpbuf =
-			"`Web Server Configuration:`\n"
+			"`Web Server Settings:`\n"
 			"\n"
 			"The initialization settings of the Synchronet Web Server that provides\n"
 			"support for web browser access to the BBS over `HTTP` and `HTTPS` (TLS)\n"
@@ -1006,7 +1006,7 @@ static void websrvr_cfg(void)
 			"For full documentation, see `http://wiki.synchro.net/server:web`\n"
 		;
 		switch (uifc.list(WIN_ACT | WIN_ESC | WIN_RHT | WIN_SAV, 0, 0, 0, &cur, &bar
-		                  , "Web Server", opt)) {
+		                  , "Web Server Settings", opt)) {
 			case 0:
 				enabled = !enabled;
 				uifc.changes = true;
@@ -1195,7 +1195,7 @@ static void ftpsrvr_cfg(void)
 		opt[i][0] = '\0';
 
 		uifc.helpbuf =
-			"`FTP Server Configuration:`\n"
+			"`FTP Server Settings:`\n"
 			"\n"
 			"These settings define the initialization parameters of the Synchronet\n"
 			"FTP Server.  FTP and FTPS (TLS) protocols are supported for downloads\n"
@@ -1208,7 +1208,7 @@ static void ftpsrvr_cfg(void)
 			"For full documentation, see `http://wiki.synchro.net/server:ftp`\n"
 		;
 		switch (uifc.list(WIN_ACT | WIN_ESC | WIN_RHT | WIN_SAV, 0, 0, 0, &cur, &bar
-		                  , "FTP Server", opt)) {
+		                  , "FTP Server Settings", opt)) {
 			case 0:
 				enabled = !enabled;
 				uifc.changes = true;
@@ -1680,7 +1680,7 @@ static void mailsrvr_cfg(void)
 		opt[i][0] = '\0';
 
 		uifc.helpbuf =
-			"`Mail Server Configuration:`\n"
+			"`Mail Server Settings:`\n"
 			"\n"
 			"Set the initial parameters of the Synchronet Mail Server here.  This\n"
 			"server supports receiving mail over [E]SMTP and [E]SMTPS protocols as\n"
@@ -1691,7 +1691,7 @@ static void mailsrvr_cfg(void)
 			"For full documentation, see `http://wiki.synchro.net/server:mail`\n"
 		;
 		switch (uifc.list(WIN_ACT | WIN_ESC | WIN_RHT | WIN_SAV, 0, 0, 0, &cur, &bar
-		                  , "Mail Server", opt)) {
+		                  , "Mail Server Settings", opt)) {
 			case 0:
 				enabled = !enabled;
 				uifc.changes = true;
@@ -1941,13 +1941,13 @@ static void services_cfg(void)
 		opt[i][0] = '\0';
 
 		uifc.helpbuf =
-			"`Services Server Configuration:`\n"
+			"`Services Server Settings:`\n"
 			"\n"
 			"For full documentation, see `http://wiki.synchro.net/server:services`\n"
 
 		;
 		switch (uifc.list(WIN_ACT | WIN_ESC | WIN_RHT | WIN_SAV, 0, 0, 0, &cur, &bar
-		                  , "Services Server", opt)) {
+		                  , "Services Server Settings", opt)) {
 			case 0:
 				enabled = !enabled;
 				uifc.changes = true;

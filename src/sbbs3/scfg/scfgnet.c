@@ -399,12 +399,11 @@ void net_cfg()
 		strcpy(opt[i++], "MQTT");
 		opt[i][0] = 0;
 		uifc.helpbuf =
-			"`Configure Networks:`\n"
+			"`Network Configuration:`\n"
 			"\n"
-			"This is the network configuration menu. Select the type of network\n"
-			"technology that you want to configure.\n"
+			"Select the type of network technology that you want to configure.\n"
 		;
-		i = uifc.list(WIN_ORG | WIN_ACT | WIN_CHE, 0, 0, 0, &net_dflt, 0, "Networks", opt);
+		i = uifc.list(WIN_ORG | WIN_ACT | WIN_CHE, 0, 0, 0, &net_dflt, 0, "Network Configuration", opt);
 		if (i < 0) // ESC
 			break;
 		uifc.changes = 0;
