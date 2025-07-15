@@ -391,7 +391,7 @@ function main()
 
 	while(cmd >= 0) {
 		var menu = ["Global Options","Per Area Options"];
-		cmd = uifc.list(WIN_ORG|WIN_ACT|WIN_MID|WIN_ESC, "TickIT Options", menu, ctx);
+		cmd = uifc.list(WIN_ORG|WIN_ACT|WIN_MID|WIN_ESC, "Configure TickIT", menu, ctx);
 		switch(cmd) {
 			case 0:
 				edit_globals(tickit.gcfg);
