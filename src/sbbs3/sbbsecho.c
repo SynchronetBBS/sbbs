@@ -3422,7 +3422,7 @@ enum {
 /* Returns 0 on success, 1 dupe, 2 filtered, 3 empty, 4 too-old				*/
 /* or other SMB error														*/
 /****************************************************************************/
-int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint usernumber, uint subnum)
+int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint usernumber, uint subnum, bool* forwarded)
 {
 	uchar      ch, stail[MAX_TAILLEN + 1], *sbody;
 	char       msg_id[256], str[128], *p;
@@ -3500,6 +3500,8 @@ int fmsgtosmsg(char* fbuf, fmsghdr_t* hdr, uint usernumber, uint subnum)
 			lprintf(LOG_INFO, "Forwarding message from %s to %s", hdr->from, user.netmail);
 			smb_hfield_netaddr(&msg, RECIPIENTNETADDR, user.netmail, &nettype);
 			smb_hfield_bin(&msg, RECIPIENTNETTYPE, nettype);
+			if (forwarded != NULL)
+				*forwarded = true;
 		} else {
 			snprintf(str, sizeof str, "%u", usernumber);
 			smb_hfield_str(&msg, RECIPIENTEXT, str);
@@ -4754,11 +4756,19 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 							SAFECOPY(hdr.from, "SBBSecho");
 							hdr.origzone = hdr.orignet = hdr.orignode = hdr.origpoint = 0;
 							hdr.time[0] = 0;    /* Generate a new timestamp */
-							if (fmsgtosmsg(p, &hdr, notify, INVALID_SUB) == IMPORT_SUCCESS) {
+							bool forwarded = false;
+							if (fmsgtosmsg(p, &hdr, notify, INVALID_SUB, &forwarded) == IMPORT_SUCCESS) {
 								SAFECOPY(str, "\7\1n\1hSBBSecho \1n\1msent you mail\r\n");
 								int result = putsmsg(&scfg, notify, str);
 								if (result != USER_SUCCESS)
 									lprintf(LOG_ERR, "ERROR %d notifying area manager (user #%u)", result, notify);
+								else if (forwarded) {
+									user_t user = { .number = usernumber };
+									if (getuserdat(&scfg, &user) == USER_SUCCESS) {
+										snprintf(str, sizeof str, text[InternetMailForwarded], user.netmail);
+										putsmsg(&scfg, usernumber, str);
+									}
+								}
 							}
 						} else
 							lprintf(LOG_ERR, "Configured Area Manager, user not found: %s", cfg.areamgr);
@@ -4793,7 +4803,8 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 
 	fmsgbuf = getfmsg(fp, &length);
 
-	switch (i = fmsgtosmsg(fmsgbuf, &hdr, usernumber, INVALID_SUB)) {
+	bool forwarded = false;
+	switch (i = fmsgtosmsg(fmsgbuf, &hdr, usernumber, INVALID_SUB, &forwarded)) {
 		case IMPORT_SUCCESS:            /* success */
 			break;
 		case IMPORT_FILTERED_DUPE:      /* filtered */
@@ -4830,6 +4841,13 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE* fp, const cha
 		int result = putsmsg(&scfg, usernumber, str);
 		if (result != USER_SUCCESS)
 			lprintf(LOG_ERR, "ERROR %d notifying recipient (user #%u)", result, usernumber);
+		else if (forwarded) {
+			user_t user = { .number = usernumber };
+			if (getuserdat(&scfg, &user) == USER_SUCCESS) {
+				snprintf(str, sizeof str, text[InternetMailForwarded], user.netmail);
+				putsmsg(&scfg, usernumber, str);
+			}
+		}
 	}
 	if (hdr.attr & FIDO_FILE) {    /* File attachment */
 		char  filelist[FIDO_SUBJ_LEN];
@@ -6328,7 +6346,7 @@ void import_packets(const char* inbound, nodecfg_t* inbox, bool secure)
 			/**********************/
 			/* Importing EchoMail */
 			/**********************/
-			result = fmsgtosmsg(fmsgbuf, &hdr, 0, cfg.area[i].sub);
+			result = fmsgtosmsg(fmsgbuf, &hdr, 0, cfg.area[i].sub, NULL);
 
 			if (result == IMPORT_FILTERED_DUPE) {
 				lprintf(LOG_NOTICE, "%s Duplicate message from %s (%s) to %s, subject: %s"
