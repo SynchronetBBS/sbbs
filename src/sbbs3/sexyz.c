@@ -73,6 +73,7 @@
 #include "ringbuf.h"
 #include "telnet.h"
 #include "nopen.h"
+#include "date_str.h"
 #include "git_branch.h"
 #include "git_hash.h"
 
@@ -211,6 +212,9 @@ static int lputs(void* unused, int level, const char* str)
 	return ret;
 }
 
+#if defined(__GNUC__)   // Catch printf-format errors with lprintf
+static int lprintf(int level, const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
+#endif
 static int lprintf(int level, const char *fmt, ...)
 {
 	char    sbuf[1024];
@@ -788,6 +792,8 @@ void dump_block(long block_size)
 
 void xmodem_progress(void* unused, unsigned block_num, int64_t offset, int64_t fsize, time_t start)
 {
+	char          tmp1[64];
+	char          tmp2[64];
 	unsigned      cps;
 	uint64_t      total_blocks;
 	long          l;
@@ -809,42 +815,37 @@ void xmodem_progress(void* unused, unsigned block_num, int64_t offset, int64_t f
 		if (mode & SEND) {
 			total_blocks = num_blocks(block_num, offset, fsize, xm.block_size);
 			fprintf(statfp, "\rBlock (%lu%s): %u/%" PRId64 "  Byte: %" PRId64 "  "
-			        "Time: %lu:%02lu/%lu:%02lu  %u cps  %lu%% "
+			        "Time: %s/%s  %u cps  %lu%% "
 			        , xm.block_size % 1024L ? xm.block_size: xm.block_size / 1024L
 			        , xm.block_size % 1024L ? "" : "K"
 			        , block_num
 			        , total_blocks
 			        , offset
-			        , t / 60L
-			        , t % 60L
-			        , l / 60L
-			        , l % 60L
+			        , seconds_to_str(t, tmp1)
+			        , seconds_to_str(l, tmp2)
 			        , cps
 			        , fsize?(long)(((float)offset / (float)fsize) * 100.0):100
 			        );
 		} else if (mode & YMODEM) {
 			fprintf(statfp, "\rBlock (%lu%s): %u  Byte: %" PRId64 "  "
-			        "Time: %lu:%02lu/%lu:%02lu  %u cps  %lu%% "
+			        "Time: %s/%s  %u cps  %lu%% "
 			        , xm.block_size % 1024L ? xm.block_size: xm.block_size / 1024L
 			        , xm.block_size % 1024L ? "" : "K"
 			        , block_num
 			        , offset
-			        , t / 60L
-			        , t % 60L
-			        , l / 60L
-			        , l % 60L
+			        , seconds_to_str(t, tmp1)
+			        , seconds_to_str(l, tmp2)
 			        , cps
 			        , fsize?(long)(((float)offset / (float)fsize) * 100.0):100
 			        );
 		} else { /* XModem receive */
 			fprintf(statfp, "\rBlock (%lu%s): %u  Byte: %" PRId64 "  "
-			        "Time: %lu:%02lu  %u cps "
+			        "Time: %s  %u cps "
 			        , xm.block_size % 1024L ? xm.block_size: xm.block_size / 1024L
 			        , xm.block_size % 1024L ? "" : "K"
 			        , block_num
 			        , offset
-			        , t / 60L
-			        , t % 60L
+			        , seconds_to_str(t, tmp1)
 			        , cps
 			        );
 		}
@@ -859,6 +860,8 @@ void xmodem_progress(void* unused, unsigned block_num, int64_t offset, int64_t f
  */
 void zmodem_progress(void* cbdata, int64_t current_pos)
 {
+	char          tmp1[64];
+	char          tmp2[64];
 	unsigned      cps;
 	long          l;
 	long          t;
@@ -879,16 +882,14 @@ void zmodem_progress(void* cbdata, int64_t current_pos)
 		if (l < 0)
 			l = 0;
 		fprintf(statfp, "\rKByte: %" PRId64 "/%" PRId64 "  %u/CRC-%u  "
-		        "Time: %lu:%02lu/%lu:%02lu  %u cps  %lu%% "
+		        "Time: %s/%s  %u cps  %lu%% "
 		        , current_pos / 1024
 		        , zm.current_file_size / 1024
 		        , zm.block_size
 		        , mode & RECV ? (zm.receive_32bit_data ? 32:16) :
 		        (zm.can_fcs_32 && !zm.want_fcs_16) ? 32:16
-		        , t / 60L
-		        , t % 60L
-		        , l / 60L
-		        , l % 60L
+		        , seconds_to_str(t, tmp1)
+		        , seconds_to_str(l, tmp2)
 		        , cps
 		        , zm.current_file_size?(long)(((float)current_pos / (float)zm.current_file_size) * 100.0):100
 		        );
@@ -899,6 +900,7 @@ void zmodem_progress(void* cbdata, int64_t current_pos)
 
 static int send_files(char** fname, uint fnames)
 {
+	char     tmp[64];
 	char     path[MAX_PATH + 1];
 	int      i;
 	uint     fnum;
@@ -988,13 +990,13 @@ static int send_files(char** fname, uint fnames)
 				if (zm.file_skipped)
 					lprintf(LOG_WARNING, "File Skipped");
 				else
-					lprintf(LOG_INFO, "Successful - Time: %lu:%02lu  CPS: %u"
-					        , t / 60, t % 60, cps);
+					lprintf(LOG_INFO, "Successful - Time: %s  CPS: %u"
+					        , seconds_to_str((uint)t, tmp)
+						    , cps);
 
 				if (xm.total_files - xm.sent_files)
-					lprintf(LOG_INFO, "Remaining - Time: %lu:%02lu  Files: %lu  KBytes: %" PRId64
-					        , ((xm.total_bytes - xm.sent_bytes) / cps) / 60
-					        , ((xm.total_bytes - xm.sent_bytes) / cps) % 60
+					lprintf(LOG_INFO, "Remaining - Time: %s  Files: %lu  KBytes: %" PRId64
+					        , seconds_to_str((uint)((xm.total_bytes - xm.sent_bytes) / cps), tmp)
 					        , xm.total_files - xm.sent_files
 					        , (xm.total_bytes - xm.sent_bytes) / 1024
 					        );
@@ -1063,14 +1065,16 @@ static int send_files(char** fname, uint fnames)
 		t = time(NULL) - startall;
 		if (!t)
 			t = 1;
-		lprintf(LOG_INFO, "Overall - Time %02lu:%02lu  KBytes: %" PRId64 "  CPS: %lu"
-		        , t / 60, t % 60, total_bytes / 1024, total_bytes / t);
+		lprintf(LOG_INFO, "Overall - Time %s  KBytes: %" PRId64 "  CPS: %lu"
+		        , seconds_to_str((uint)t, tmp)
+			    , total_bytes / 1024, total_bytes / t);
 	}
 	return 0;  /* success */
 }
 
 static int receive_files(char** fname_list, int fnames)
 {
+	char      tmp[64];
 	char      str[MAX_PATH + 1];
 	char      fname[MAX_PATH + 1];
 	int       i;
@@ -1348,8 +1352,8 @@ static int receive_files(char** fname_list, int fnames)
 		if (zm.file_skipped)
 			lprintf(LOG_WARNING, "File Skipped");
 		else if (success)
-			lprintf(LOG_INFO, "Successful - Time: %lu:%02lu  CPS: %lu"
-			        , t / 60, t % 60, (ulong)(file_bytes / t));
+			lprintf(LOG_INFO, "Successful - Time: %s  CPS: %lu"
+			        , seconds_to_str((uint)t, tmp), (ulong)(file_bytes / t));
 		else
 			lprintf(LOG_ERR, "File Transfer %s"
 			        , zm.local_abort ? "Aborted": zm.cancelled ? "Cancelled":"Failure");
@@ -1389,9 +1393,8 @@ static int receive_files(char** fname_list, int fnames)
 		total_files--;
 		total_bytes -= file_bytes;
 		if (total_files > 1 && total_bytes)
-			lprintf(LOG_INFO, "Remaining - Time: %lu:%02lu  Files: %u  KBytes: %" PRIu64
-			        , (total_bytes / cps) / 60
-			        , (total_bytes / cps) % 60
+			lprintf(LOG_INFO, "Remaining - Time: %s  Files: %u  KBytes: %" PRIu64
+			        , seconds_to_str((uint)(total_bytes / cps), tmp)
 			        , total_files
 			        , total_bytes / 1024
 			        );

@@ -233,6 +233,7 @@ SEXYZ_OBJS = \
 			$(MTOBJODIR)/zmodem$(OFILE) \
 			$(MTOBJODIR)/ringbuf$(OFILE) \
 			$(MTOBJODIR)/nopen$(OFILE) \
+			$(MTOBJODIR)/date_str$(OFILE) \
 			$(MTOBJODIR)/telnet$(OFILE)
 
 QWKNODES_OBJS = 	$(LOAD_CFG_OBJS) \

@@ -149,6 +149,7 @@
   <ItemGroup>
     <ClCompile Include="..\hash\crc16.c" />
     <ClCompile Include="..\hash\crc32.c" />
+    <ClCompile Include="date_str.c" />
     <ClCompile Include="nopen.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
