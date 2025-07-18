@@ -100,7 +100,10 @@ function find_name(objs, name)
 function import_netuser_list(hdr, list)
 {
 	var objs = [];
-	var file = new File(lib.netuser_fname(hdr.from_net_addr));
+	var fname = lib.netuser_fname(hdr.from_net_addr);
+	if(!fname)
+		return false;
+	var file = new File(fname);
 	if(file.open("r")) {
 		objs = file.iniGetAllObjects();
 		file.close();
