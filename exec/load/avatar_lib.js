@@ -5,7 +5,7 @@ const defs = {
 	height: 6,
 };
 
-const QWK_ID_PATTERN = /^[A-Za-z]\w{1,7}$/;
+const QWK_ID_PATTERN = /^[A-Z][\w|-]{1,7}$/;
 const FTN_3D_PATTERN = /^(\d+):(\d+)\/(\d+)$/;
 const FTN_4D_PATTERN = /^(\d+):(\d+)\/(\d+)\.(\d+)$/;
 
