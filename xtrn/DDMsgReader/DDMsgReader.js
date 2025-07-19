@@ -274,6 +274,12 @@
  *                              After displaying the indexed mode menu, don't display
  *                              the "Loading.." status again, which happened after
  *                              closing the user settings dialog
+ * 2025-07-19 Eric Oulashin     Version 1.97b
+ *                              Bug fix: When listing messages, get the correct message
+ *                              to read (both when listing in reverse and normal order).
+ *                              Bug when listing in reverse reported by m1ndsurf3r in
+ *                              the #synchronet IRC channel.
+ *                              
  */
 
 "use strict";
@@ -381,8 +387,8 @@ var hexdump = load('hexdump_lib.js');
 
 
 // Reader version information
-var READER_VERSION = "1.97a";
-var READER_DATE = "2025-06-20";
+var READER_VERSION = "1.97b";
+var READER_DATE = "2025-07-19";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -4157,7 +4163,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 		{
 			// The user choice a message to read
 			this.lightbarListSelectedMsgIdx = msgListMenu.selectedItemIdx;
-			msgHeader = this.GetMsgHdrByIdx(this.lightbarListSelectedMsgIdx, this.showScoresInMsgList);
+			msgHeader = this.GetMsgHdrByMsgNum(userChoice, this.showScoresInMsgList);
 			// TODO: Is this commented-out code necessary?  In indexed newscan mode, when reading a
 			// message, then switching to the list, then selecting a message to read, this is re-printing
 			// the message info line from the message list and it's appearing over the help line at the
@@ -10483,27 +10489,25 @@ function DigDistMsgReader_GetMsgHdrByIdx(pMsgIdx, pExpandFields, pMsgbase)
 function DigDistMsgReader_GetMsgHdrByMsgNum(pMsgNum, pExpandFields)
 {
 	var msgHdr = null;
+	// Try a few different things to get the message header
 	if (this.msgSearchHdrs.hasOwnProperty(this.subBoardCode) &&
-			(this.msgSearchHdrs[this.subBoardCode].indexed.length > 0))
+	    this.msgSearchHdrs[this.subBoardCode].indexed.length > 0)
 	{
 		if ((pMsgNum > 0) && (pMsgNum <= this.msgSearchHdrs[this.subBoardCode].indexed.length))
 			msgHdr = this.msgSearchHdrs[this.subBoardCode].indexed[pMsgNum-1];
 	}
-	else if (this.hdrsForCurrentSubBoard.length > 0)
+	if (msgHdr == null && this.hdrsForCurrentSubBoard.length > 0)
 	{
 		if ((pMsgNum > 0) && (pMsgNum <= this.hdrsForCurrentSubBoard.length))
 			msgHdr = this.hdrsForCurrentSubBoard.length[pMsgNum-1];
 	}
-	else
+	if (msgHdr == null)
 	{
 		var msgbase = new MsgBase(this.subBoardCode);
 		if (msgbase.open())
 		{
-			if ((pMsgNum > 0) && (pMsgNum <= msgbase.total_msgs))
-			{
-				var expandFields = (typeof(pExpandFields) == "boolean" ? pExpandFields : false);
-				msgHdr = msgbase.get_msg_header(true, pMsgNum-1, expandFields);
-			}
+			var expandFields = (typeof(pExpandFields) == "boolean" ? pExpandFields : false);
+			msgHdr = msgbase.get_msg_header(false, pMsgNum, expandFields);
 			msgbase.close();
 		}
 	}
@@ -17044,7 +17048,35 @@ function DigDistMsgReader_ForwardMessage(pMsgHdr, pMsgBody)
 			// the message.  The destination ("to" informatoin) will be filled in
 			// according to the destination type.
 			var destMsgHdr = { to_net_type: NET_NONE, from: user.name,
+			                   from_ext: user.number,
 							   replyto: user.name, subject: msgSubject }; // pMsgHdr.subject
+			// TODO: Decide whether to use user.netmail or user.email as the reply-to network
+			// address
+			/*
+			<nelgin> Forwarded messages are sent from a different address then the original.
+			<nelgin> Original: Jun 26 13:43:59 bbs synchronet: mail 0020 SEND/TLS Successfully sent message #24859 (4010 bytes, 41 lines) from 'nelgin' #1 to 'ray.lopez' ray.lopez@utsa.edu
+			<nelgin> Jun 26 13:43:59 bbs synchronet: mail 0000 SEND Auto-exempting: <ray.lopez@utsa.edu>
+			<nelgin> Forward: Jun 26 13:45:48 bbs synchronet: mail 0020 SEND/TLS Successfully sent message #24860 (4323 bytes, 48 lines) from 'Nigel Reed' <Nigel.Reed@endofthelinebbs.com> to 'rl@well.com' rl@well.com
+			*/
+			/*
+			var currentUserSentTheMsg = false;
+			if (pMsgHdr.hasOwnProperty("from_ext") && pMsgHdr.from_ext == user.number)
+				currentUserSentTheMsg = true;
+			else
+			{
+				var foundUsernum = system.matchuser(pMsgHdr.from);
+				if (foundUsernum == 0)
+				{
+					if (userHandleAliasNameMatch(pMsgHdr.from))
+						foundUsernum = user.number;
+				}
+				currentUserSentTheMsg = (foundUsernum == user.number);
+			}
+			if (currentUserSentTheMsg && pMsgHdr.from.toLowerCase() == user.alias.toLowerCase())
+				destMsgHdr.replyto_net_addr = user.email; // Should be alias@bbsDomain
+			else
+				destMsgHdr.replyto_net_addr = user.netmail;
+			*/
 			if (user.netmail.length > 0)
 			{
 				destMsgHdr.replyto_net_addr = user.netmail;
