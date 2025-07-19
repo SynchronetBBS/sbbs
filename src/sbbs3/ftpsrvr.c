@@ -126,11 +126,6 @@ BOOL direxist(char *dir)
 		return FALSE;
 }
 
-BOOL dir_op(scfg_t* cfg, user_t* user, client_t* client, uint dirnum)
-{
-	return user_is_dirop(cfg, dirnum, user, client);
-}
-
 static int lputs(int level, const char* str)
 {
 	mqtt_lputs(&mqtt, TOPIC_SERVER, level, str);
@@ -1998,7 +1993,7 @@ static BOOL can_upload(lib_t *lib, dir_t *dir, user_t *user, client_t *client)
 		return FALSE;
 	if (user->rest & FLAG('U'))
 		return FALSE;
-	if (dir_op(&scfg, user, client, dir->dirnum))
+	if (user_is_dirop(&scfg, dir->dirnum, user, client))
 		return TRUE;
 	// The rest can only upload if there's room
 	if (dir->maxfiles && getfiles(&scfg, dir->dirnum) >= dir->maxfiles)
@@ -2024,7 +2019,7 @@ static BOOL can_delete_files(lib_t *lib, dir_t *dir, user_t *user, client_t *cli
 		return FALSE;
 	if (!chk_ar(&scfg, dir->ar, user, client))
 		return FALSE;
-	if (dir_op(&scfg, user, client, dir->dirnum))
+	if (user_is_dirop(&scfg, dir->dirnum, user, client))
 		return TRUE;
 	if (user->exempt & FLAG('R'))
 		return TRUE;
@@ -2060,7 +2055,7 @@ static BOOL can_append(lib_t *lib, dir_t *dir, user_t *user, client_t *client, f
 		return FALSE;
 	if (dir->dirnum != scfg.sysop_dir && dir->dirnum != scfg.upload_dir && !chk_ar(&scfg, dir->ar, user, client))
 		return FALSE;
-	if (!dir_op(&scfg, user, client, dir->dirnum) && !(user->exempt & FLAG('U'))) {
+	if (!user_is_dirop(&scfg, dir->dirnum, user, client) && !(user->exempt & FLAG('U'))) {
 		if (!chk_ar(&scfg, dir->ul_ar, user, client) || !chk_ar(&scfg, lib->ul_ar, user, client))
 			return FALSE;
 	}
@@ -2077,7 +2072,7 @@ static BOOL can_delete(lib_t *lib, dir_t *dir, user_t *user, client_t *client, f
 		return FALSE;
 	if (!chk_ar(&scfg, dir->ar, user, client))
 		return FALSE;
-	if (!dir_op(&scfg, user, client, dir->dirnum))
+	if (!user_is_dirop(&scfg, dir->dirnum, user, client))
 		return FALSE;
 	if (!(user->exempt & FLAG('R')))
 		return FALSE;
@@ -4543,10 +4538,11 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 
-				if (delecmd && !dir_op(&scfg, &user, &client, dir) && !(user.exempt & FLAG('R'))) {
-					lprintf(LOG_WARNING, "%04d <%s> has insufficient access to delete files in /%s/%s"
+				if (delecmd && !user_is_dirop(&scfg, dir, &user, &client) && !(user.exempt & FLAG('R'))) {
+					lprintf(LOG_WARNING, "%04d <%s> has insufficient access to delete file (%p) in /%s/%s"
 					        , sock, user.alias
 					        , scfg.lib[scfg.dir[dir]->lib]->vdir
+						    , p
 					        , scfg.dir[dir]->vdir);
 					sockprintf(sock, sess, "550 Insufficient access.");
 					filepos = 0;
@@ -4739,7 +4735,7 @@ static void ctrl_thread(void* arg)
 
 				append = (strnicmp(cmd, "APPE", 4) == 0);
 
-				if (!dir_op(&scfg, &user, &client, dir) && !(user.exempt & FLAG('U'))) {
+				if (!user_is_dirop(&scfg, dir, &user, &client) && !(user.exempt & FLAG('U'))) {
 					if (!chk_ar(&scfg, scfg.dir[dir]->ul_ar, &user, &client)
 					    || !chk_ar(&scfg, scfg.lib[scfg.dir[dir]->lib]->ul_ar, &user, &client)) {
 						lprintf(LOG_WARNING, "%04d <%s> cannot upload to /%s/%s (insufficient access)"
