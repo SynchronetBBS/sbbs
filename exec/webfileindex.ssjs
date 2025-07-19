@@ -133,6 +133,7 @@ function dir_index(dir)
 	writeln("</tr>");
 	writeln("</thead>");
 	writeln("<tbody>");
+	var listed = 0;
 	for(var l in list) {
 		var f = list[l];
 		if(f.size <= 0)
@@ -153,11 +154,12 @@ function dir_index(dir)
 		}
 		write('</td>');
 		writeln("</tr>");
+		++listed;
 	}
 	writeln("</tbody>");
 	writeln("</table>");
 	writeln("</div>");
-	writeln("<p>" + list.length + " files listed");
+	writeln("<p>" + listed + " files listed");
 	writeln("<br />");
 }
 
