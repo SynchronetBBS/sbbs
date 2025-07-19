@@ -4538,17 +4538,6 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 
-				if (delecmd && !user_is_dirop(&scfg, dir, &user, &client) && !(user.exempt & FLAG('R'))) {
-					lprintf(LOG_WARNING, "%04d <%s> has insufficient access to delete file (%p) in /%s/%s"
-					        , sock, user.alias
-					        , scfg.lib[scfg.dir[dir]->lib]->vdir
-						    , p
-					        , scfg.dir[dir]->vdir);
-					sockprintf(sock, sess, "550 Insufficient access.");
-					filepos = 0;
-					continue;
-				}
-				SAFEPRINTF2(fname, "%s%s", scfg.dir[dir]->path, p);
 				filedat = findfile(&scfg, dir, p, NULL);
 				if (!filedat) {
 					sockprintf(sock, sess, "550 File not found: %s", p);
@@ -4557,6 +4546,25 @@ static void ctrl_thread(void* arg)
 					filepos = 0;
 					continue;
 				}
+				if (delecmd && !user_is_dirop(&scfg, dir, &user, &client) && !(user.exempt & FLAG('R'))) {
+					file_t f = {0};
+					if (filedat)
+						loadfile(&scfg, dir, p, &f, file_detail_normal, NULL);
+					if (stricmp(f.from, user.alias)) {
+						lprintf(LOG_WARNING, "%04d <%s> has insufficient access to delete file (%s) uploaded by %s in /%s/%s"
+								, sock, user.alias
+								, p
+								, f.from[0] == 0 ? STR_UNKNOWN_USER : f.from
+								, scfg.lib[scfg.dir[dir]->lib]->vdir
+								, scfg.dir[dir]->vdir);
+						sockprintf(sock, sess, "550 Insufficient access.");
+						filepos = 0;
+						smb_freefilemem(&f);
+						continue;
+					}
+					smb_freefilemem(&f);
+				}
+				SAFEPRINTF2(fname, "%s%s", scfg.dir[dir]->path, p);
 
 				/* Verify credits */
 				if (!getsize && !getdate && !delecmd
