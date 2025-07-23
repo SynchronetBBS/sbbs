@@ -48,7 +48,7 @@ function exec_xtrn_pre(prog)
 			if (!console.yesno(options.prompt_on_info_fmt)) {
 				exit(1);
 			}
-		} else {
+		} else if (options.pause_after_info !== false) {
 			console.pause();
 		}
 		console.line_counter=0;
