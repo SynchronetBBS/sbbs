@@ -279,7 +279,9 @@
  *                              to read (both when listing in reverse and normal order).
  *                              Bug when listing in reverse reported by m1ndsurf3r in
  *                              the #synchronet IRC channel.
- *                              
+ * 2025-07-23 Eric Oulashin     Version 1.97c
+ *                              Bug fix: Get the correct message when choosing a personal
+ *                              email when listing in reverse
  */
 
 "use strict";
@@ -387,8 +389,8 @@ var hexdump = load('hexdump_lib.js');
 
 
 // Reader version information
-var READER_VERSION = "1.97b";
-var READER_DATE = "2025-07-19";
+var READER_VERSION = "1.97c";
+var READER_DATE = "2025-07-23";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -2487,7 +2489,7 @@ function DigDistMsgReader_ReadOrListSubBoard(pSubBoardCode, pStartingMsgOffset,
 		switch (readerMode)
 		{
 			case READER_MODE_READ:
-				// Call the ReadMessages method - DOn't change the sub-board,
+				// Call the ReadMessages method - Don't change the sub-board,
 				// and pass the selected index of the message to read.  If that
 				// index is -1, the ReadMessages method will use the user's
 				// last-read message index.
@@ -4162,8 +4164,9 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 		if (typeof(userChoice) == "number")
 		{
 			// The user choice a message to read
-			this.lightbarListSelectedMsgIdx = msgListMenu.selectedItemIdx;
+			//this.lightbarListSelectedMsgIdx = msgListMenu.selectedItemIdx;
 			msgHeader = this.GetMsgHdrByMsgNum(userChoice, this.showScoresInMsgList);
+			//msgHeader = this.GetMsgHdrByIdx(msgListMenu.selectedItemIdx, this.showScoresInMsgList);
 			// TODO: Is this commented-out code necessary?  In indexed newscan mode, when reading a
 			// message, then switching to the list, then selecting a message to read, this is re-printing
 			// the message info line from the message list and it's appearing over the help line at the
@@ -4191,6 +4194,12 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 				}
 				if (readMsg)
 				{
+					//retObj.selectedMsgOffset = msgHeader.offset;
+					retObj.selectedMsgOffset = this.GetMsgIdx(msgHeader.number);
+					if (retObj.selectedMsgOffset < 0)
+						retObj.selectedMsgOffset = 0;
+					// Used to do this:
+					/*
 					// If there is a search specified and the search result objects are
 					// set up for the current sub-board, then the selected message offset
 					// should be the search result array index.  Otherwise (if not
@@ -4205,6 +4214,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 						if (retObj.selectedMsgOffset < 0)
 							retObj.selectedMsgOffset = 0;
 					}
+					*/
 					// Return from here so that the calling function can switch into
 					// reader mode.
 					continueOn = false;
@@ -5374,7 +5384,21 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 
 	// Update the message list index variables so that the message list is in
 	// the right spot for the message currently being read
-	this.CalcMsgListScreenIdxVarsFromMsgNum(pOffset+1);
+	var msgOffset = 0;
+	if (this.userSettings.listMessagesInReverse)
+	{
+		msgOffset = this.NumMessages() - pOffset;
+		if (msgOffset < 0)
+			msgOffset = 0;
+	}
+	else
+		msgOffset = pOffset + 1;
+	this.CalcMsgListScreenIdxVarsFromMsgNum(msgOffset);
+	/*
+	retObj.selectedMsgOffset = this.GetMsgIdx(msgHeader.number);
+	if (retObj.selectedMsgOffset < 0)
+		retObj.selectedMsgOffset = 0;
+	*/
 
 	// Check the pAllowChgArea parameter.  If it's a boolean, then use it.  If
 	// not, then check to see if we're reading personal mail - If not, then allow
@@ -10493,13 +10517,30 @@ function DigDistMsgReader_GetMsgHdrByMsgNum(pMsgNum, pExpandFields)
 	if (this.msgSearchHdrs.hasOwnProperty(this.subBoardCode) &&
 	    this.msgSearchHdrs[this.subBoardCode].indexed.length > 0)
 	{
-		if ((pMsgNum > 0) && (pMsgNum <= this.msgSearchHdrs[this.subBoardCode].indexed.length))
-			msgHdr = this.msgSearchHdrs[this.subBoardCode].indexed[pMsgNum-1];
+		if (this.msgNumToIdxMap.hasOwnProperty(pMsgNum))
+		{
+			var msgIdx = this.msgNumToIdxMap[pMsgNum];
+			if (this.hdrsForCurrentSubBoard.length.length > 0 && msgIdx >= 0 && msgIdx < this.hdrsForCurrentSubBoard.length)
+				msgHdr = this.hdrsForCurrentSubBoard[msgIdx];
+			else if (this.msgSearchHdrs.length > 0 && msgIdx >= 0 && msgIdx < msgSearchHdrs.length)
+				msgHdr = this.msgSearchHdrs[msgIdx];
+		}
+		else
+		{
+			for (var i = 0; i < this.msgSearchHdrs[this.subBoardCode].indexed.length && msgHdr == null; ++i)
+			{
+				if (this.msgSearchHdrs[this.subBoardCode].indexed[i].number == pMsgNum)
+					msgHdr = this.msgSearchHdrs[this.subBoardCode].indexed[i];
+			}
+		}
 	}
 	if (msgHdr == null && this.hdrsForCurrentSubBoard.length > 0)
 	{
-		if ((pMsgNum > 0) && (pMsgNum <= this.hdrsForCurrentSubBoard.length))
-			msgHdr = this.hdrsForCurrentSubBoard.length[pMsgNum-1];
+		for (var i = 0; i < this.hdrsForCurrentSubBoard.length.length && msgHdr == null; ++i)
+		{
+			if (this.hdrsForCurrentSubBoard[i].number == pMsgNum)
+				msgHdr = this.hdrsForCurrentSubBoard[i];
+		}
 	}
 	if (msgHdr == null)
 	{
@@ -14518,7 +14559,7 @@ function DigDistMsgReader_CalcLightbarMsgListTopIdx(pPageNum)
 // correct place for the message being read.
 //
 // Parameters:
-//  pMsgNum: The message number (1-based)
+//  pMsgNum: The message number/index (1-based)
 function DigDistMsgReader_CalcMsgListScreenIdxVarsFromMsgNum(pMsgNum)
 {
 	// Calculate the message list variables
@@ -18006,7 +18047,7 @@ function DigDistMsgReader_GetMsgBody(pMsgHdr)
 		//if (user.is_sysop) console.print(retObj.msgBody + "\r\n\x01p"); // Temporary
 		// TODO: It seems ESC codes are being stripped
 		var startIdx = retObj.msgBody.indexOf("\x1bP0;0;0q\"1;1;");
-		if (user.is_sysop) console.print("\x01n\r\nstartIdx: " + startIdx + "\r\n\x01p"); // Tempoary
+		if (user.is_sysop) console.print("\x01n\r\nstartIdx: " + startIdx + "\r\n\x01p"); // Temporary
 		if (startIdx > -1)
 		{
 			var endIdx = retObj.msgBody.indexOf(KEY_ESC + "\\", startIdx+1);
