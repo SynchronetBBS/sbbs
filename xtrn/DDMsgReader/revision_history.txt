@@ -5,7 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
-1.97b:   2027-07-19   Fix: When listing messages in reverse, get the correct
+1.97c    2027-07-23   Fix: When listing personal email in reverse, get the
+                      correct message to read.
+1.97b    2027-07-19   Fix: When listing messages in reverse, get the correct
                       message to read.
 1.97a    2025-06-20   Fix: After displaying the indexed mode menu, don't display
                       the "Loading.." status again, which happened after closing
