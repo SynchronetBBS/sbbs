@@ -754,6 +754,10 @@ void msgs_cfg()
 						uifc.msg(strDuplicateCodePrefix);
 					else if (code_prefix[0] == 0 || code_ok(code_prefix)) {
 						SAFECOPY(cfg.grp[grpnum]->code_prefix, code_prefix);
+						for (j = 0; j < cfg.total_subs; j++) {
+							if (cfg.sub[j]->grp == grpnum)
+								cfg.sub[j]->cfg_modified = true;
+						}
 					} else {
 						uifc.helpbuf = invalid_code;
 						uifc.msg(strInvalidCodePrefix);

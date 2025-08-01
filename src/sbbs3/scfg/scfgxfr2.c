@@ -598,6 +598,10 @@ void xfer_cfg()
 						uifc.msg(strDuplicateCodePrefix);
 					else if (code_prefix[0] == 0 || code_ok(code_prefix)) {
 						SAFECOPY(cfg.lib[libnum]->code_prefix, code_prefix);
+						for (j = 0; j < cfg.total_dirs; j++) {
+							if (cfg.dir[j]->lib == libnum)
+								cfg.dir[j]->cfg_modified = true;
+						}
 					} else {
 						uifc.helpbuf = invalid_code;
 						uifc.msg(strInvalidCodePrefix);
@@ -2075,8 +2079,10 @@ void dir_cfg(int libnum)
 					SAFEPRINTF2(tmp, "%s%s", cfg.lib[cfg.dir[i]->lib]->code_prefix, str);
 					if (getdirnum(&cfg, tmp) >= 0)
 						uifc.msg(strDuplicateCode);
-					else if (code_ok(str))
+					else if (code_ok(str)) {
 						SAFECOPY(cfg.dir[i]->code_suffix, str);
+						cfg.dir[i]->cfg_modified = true;
+					}
 					else {
 						uifc.helpbuf = invalid_code;
 						uifc.msg(strInvalidCode);

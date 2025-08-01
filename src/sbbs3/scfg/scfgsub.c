@@ -462,8 +462,10 @@ void sub_cfg(int grpnum)
 					SAFEPRINTF2(tmp, "%s%s", cfg.grp[cfg.sub[i]->grp]->code_prefix, str);
 					if (getsubnum(&cfg, tmp) >= 0)
 						uifc.msg(strDuplicateCode);
-					else if (code_ok(str))
+					else if (code_ok(str)) {
 						SAFECOPY(cfg.sub[i]->code_suffix, str);
+						cfg.sub[i]->cfg_modified = true;
+					}
 					else {
 						uifc.helpbuf = invalid_code;
 						uifc.msg(strInvalidCode);
