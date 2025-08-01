@@ -187,7 +187,7 @@ $(OBJDIR)%$(OBJFILE) : %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 ${LIBDIR}libODoors${SHLIB} : ${OBJECTS}
-	$(LD) $(LDFLAGS) -o ${LIBDIR}libODoors${SHLIB}.6.2 ${OBJECTS}
+	$(CC) -shared -Wl,-Bsymbolic -o ${LIBDIR}libODoors${SHLIB}.6.2 ${OBJECTS} -lc
 	ln -fs libODoors${SHLIB}.6.2 ${LIBDIR}libODoors${SHLIB}
 
 ${LIBDIR}libODoors${STATICLIB} : ${OBJECTS}
