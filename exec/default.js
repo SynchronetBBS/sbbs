@@ -245,9 +245,7 @@ while(bbs.online && !js.terminated) {
 		console.newline();
 		continue;
 	}
-	if(!bbs.compare_ars(menu_cmd.ars))
-		console.print(menu_cmd.err);
-	else {
+	if(bbs.compare_ars(menu_cmd.ars)) {
 		if(menu_cmd.msg)
 			console.print(menu_cmd.msg);
 		if(menu_cmd.eval)
@@ -262,4 +260,6 @@ while(bbs.online && !js.terminated) {
 				js.exec(script, {});
 		}
 	}
+	else if(menu_cmd.err)
+		console.print(menu_cmd.err);
 }
