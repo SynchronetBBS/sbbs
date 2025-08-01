@@ -197,7 +197,10 @@ bool sbbs_t::uploadfile(file_t* f)
 	}
 	mqtt_file_upload(mqtt, &useron, f->dir, f->name, length, &client);
 	user_event(EVENT_UPLOAD);
-
+	if (f->dir == cfg.sysop_dir) {
+		snprintf(str, sizeof str, text[UserSentYouFile], useron.alias);
+		notify(str, f->name);
+	}
 	return true;
 }
 
@@ -485,6 +488,11 @@ bool sbbs_t::upload(int dirnum, const char* fname)
 				autohangup();
 			}
 		}
+	}
+	if (result == true && dirnum == cfg.user_dir) {
+		snprintf(str, sizeof str, text[UserSentYouFile], useron.alias);
+		for (i = 0; dest_user_list != NULL && dest_user_list[i] != NULL; ++i)
+			putsmsg(matchuser(&cfg, dest_user_list[i], /* sysop_alias: */false), str);
 	}
 	smb_freefilemem(&f);
 	strListFree(&dest_user_list);
