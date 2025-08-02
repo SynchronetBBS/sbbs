@@ -144,6 +144,22 @@ Example, with a limit:
 lbMenu.multiSelect = true;
 lbMenu.maxNumSelections = 5;
 
+By default, if multi-select is enabled and GetVal() is called, the 'enter' key
+(or other selection keys) will exit the menu selection without adding the
+current highlighted item to the multi-select items. The user can still select
+items (i.e., using the spacebar) and the enter key will basically confirm their
+selection.  However, when using multi-select, if you want the enter key to select
+the current highlighted item before exiting GetVal(), you can set
+enterAndSelectKeysAddsMultiSelectItem to true:
+lbMenu.enterAndSelectKeysAddsMultiSelectItem = true;
+When you set that to true, then when the user presses Enter (or another configured
+select-item key), the current highlighted menu item will be toggled on before exiting
+the menu input loop (i.e., GetVal()).
+The reason it's called enterAndSelectKeysAddsMultiSelectItem is because Enter normally
+returns from choosing an item, and there can be additional select-item keys if you call
+AddAdditionalSelectItemKeys().
+
+
 Example usage:
 require("dd_lightbar_menu.js", "DDLightbarMenu");
 // Create a menu at position 1, 3 with width 45 and height of 10
@@ -505,6 +521,7 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	this.multiSelect = false;
 	this.maxNumSelections = -1; // -1 or 0 means no limit on the number of selections
 	this.multiSelectItemChar = CHECK_CHAR; // The character to display for a selected item in multi-select mode
+	this.enterAndSelectKeysAddsMultiSelectItem = false; // Whether or not enter/select key adds the current item to multi-select
 	this.numberedMode = false;
 	this.itemNumLen = 0; // For the length of the item numbers in numbered mode
 	this.additionalQuitKeys = ""; // A string of additional keys besides ESC to quit out of the menu
@@ -2104,13 +2121,17 @@ function DDLightbarMenu_GetVal(pDraw, pSelectedItemIndexes)
 					allowSelectItem = this.ValidateSelectItem(this.GetItem(this.selectedItemIdx).retval);
 				if (allowSelectItem)
 				{
-					// If multi-select is enabled and if the user hasn't made any choices,
+					// If multi-select is enabled and the enter/select key should add the
+					// current item to multi-select, and if the user hasn't made any choices,
 					// then add the current item to the user choices.  Otherwise, choose
 					// the current item.  Then exit.
 					if (this.multiSelect)
 					{
-						if (Object.keys(selectedItemIndexes).length == 0)
-							selectedItemIndexes[+(this.selectedItemIdx)] = true;
+						if (this.enterAndSelectKeysAddsMultiSelectItem)
+						{
+							if (Object.keys(selectedItemIndexes).length == 0)
+								selectedItemIndexes[+(this.selectedItemIdx)] = true;
+						}
 					}
 					else
 						retVal = this.GetItem(this.selectedItemIdx).retval;
