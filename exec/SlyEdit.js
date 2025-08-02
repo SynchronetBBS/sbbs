@@ -128,6 +128,11 @@
  *                              the additional menu quit keys were set as item-select keys
  *                              instead..  Switched the function call so it sets them as
  *                              additional quit keys.
+ * 2025-08-02 Eric Oulashin     Version 1.92b
+ *                              Cross-post selection fix to not select when just enter
+ *                              is pressed (just confirm). Also, updated cross-post help
+ *                              text and bottom border help text for othe cross-post menu
+ *                              to explain that better.
  */
 
 "use strict";
@@ -222,8 +227,8 @@ if (console.screen_columns < 80)
 }
 
 // Version information
-var EDITOR_VERSION = "1.92a";
-var EDITOR_VER_DATE = "2025-06-24";
+var EDITOR_VERSION = "1.92b";
+var EDITOR_VER_DATE = "2025-08-02";
 
 
 // Program variables
@@ -5345,15 +5350,25 @@ function drawInitialCrossPostSelBoxTopBorder(pTopLeft, pWidth, pBorderColor, pTe
 //            (for message groups), this will output "Select" for the Enter action.
 function drawInitialCrossPostSelBoxBottomBorder(pBottomLeft, pWidth, pBorderColor, pMsgSubs)
 {
+	const maxWidth = pWidth - 2; // - 2 for the corner characters
 	console.gotoxy(pBottomLeft);
-	console.print(pBorderColor + LOWER_LEFT_SINGLE + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + HORIZONTAL_SINGLE + RIGHT_T_SINGLE +
-	              "\x01n\x01h\x01c"+ UP_ARROW + "\x01b, \x01c"+ DOWN_ARROW + "\x01b, \x01cPgUp\x01b, \x01cPgDn\x01b, \x01cHome\x01b, \x01cEnd\x01b, "
-				  + (pMsgSubs ? "\x01cSpace\x01y=\x01bToggle" : "\x01cEnter\x01y=\x01bSelect") + ", \x01cCtrl-C\x01n\x01c/\x01hQ\x01y=\x01bEnd, \x01c?\x01y=\x01bHelp\x01n"
-	              + pBorderColor + LEFT_T_SINGLE);
-	var len = pWidth - 71;
-	for (var i = 0; i < len; ++i)
-		console.print(HORIZONTAL_SINGLE);
-	console.print(LOWER_RIGHT_SINGLE);
+	var border = RIGHT_T_SINGLE + "\x01n\x01h\x01cUp\x01b/\x01cDn\x01b/\x01cPgUp\x01b/\x01cPgDn\x01b/\x01cHome\x01b/\x01cEnd \x01c";
+	if (pMsgSubs)
+		border += "Space\x01y=\x01bToggle \x01cEnter\x01y=\x01bConfirm";
+	else
+		border += "Enter\x01y=\x01bSelect";
+	border += " \x01cCtrl-C\x01n\x01c/\x01hQ\x01y=\x01bAbort \x01c?";
+	if (!pMsgSubs)
+		border += "\x01y=\x01bHelp";
+	border += "\x01n" + pBorderColor + LEFT_T_SINGLE;
+	var numCharsToAdd = Math.floor(maxWidth / 2) - Math.floor(console.strlen(border)/2);
+	for (var i = 0; i < numCharsToAdd; ++i)
+		border = HORIZONTAL_SINGLE + border;
+	numCharsToAdd = maxWidth - console.strlen(border);
+	for (var i = 0; i < numCharsToAdd; ++i)
+		border += HORIZONTAL_SINGLE;
+	border = pBorderColor + LOWER_LEFT_SINGLE + border + LOWER_RIGHT_SINGLE;
+	console.print(border);
 }
 // Displays help text for cross-posting, for use in cross-post selection mode.
 //
@@ -5382,7 +5397,8 @@ function displayCrossPostHelp(selBoxUpperLeft, selBoxLowerRight)
       displayCrossPostHelp.helpLines.push("marked with an asterisk (" + gConfigSettings.genColors.crossPostMsgGrpMark + "*\x01n\x01c).");
       displayCrossPostHelp.helpLines.push("To navigate the list, you may use the up & down arrow keys, PageUp and");
       displayCrossPostHelp.helpLines.push("PageDown to go to the previous & next page, Home to go to the first");
-      displayCrossPostHelp.helpLines.push("page, and End to go to the last page. To end: Ctrl-C, Q, or ESC.");
+      displayCrossPostHelp.helpLines.push("page, and End to go to the last page. To confirm sub-board selection,");
+	  displayCrossPostHelp.helpLines.push("press Enter. To abort: Ctrl-C, Q, or ESC.");
    }
 
    // Display the help text
@@ -5803,14 +5819,14 @@ function createCrossPostSubBoardMenu(pGrpIdx, pListStartCol, pListStartRow, pLis
 	subBoardMenu.scrollbarEnabled = true;
 	subBoardMenu.borderEnabled = false;
 	subBoardMenu.multiSelect = true;
+	subBoardMenu.enterAndSelectKeysAddsMultiSelectItem = false; // Ensure Enter doesn't add to multi-select items
 	subBoardMenu.ampersandHotkeysInItems = false;
 	subBoardMenu.wrapNavigation = false;
 	// Add additional keypresses for quitting the menu's input loop so we can
 	// respond to these keys
 	// ? = Help
-	subBoardMenu.AddAdditionalQuitKeys("?");
-	// Add q, Q, and Ctrl-C as keys to quit out and select the sub-board(s) (instead of quit & abort)
-	subBoardMenu.AddAdditionalQuitKeys("qQ" + CTRL_C);
+	// Q and Ctrl-C: Quit
+	subBoardMenu.AddAdditionalQuitKeys("?qQ" + CTRL_C);
 
 	// Description length (for the color indexes & printf string)
 	var descLen = pListWidth - numSubsLength - 2; // -2 for the possible * and the space
@@ -6274,7 +6290,7 @@ function doUserSettings(pCurpos, pReturnCursorToOriginalPos)
 	                       + "\x01cF\x01y)\x01birst, \x01cL\x01y)\x01bast, \x01cEnter\x01y=\x01bSelect, "
 	                       + "\x01cESC\x01n\x01c/\x01hQ\x01n\x01c/\x01hCtrl-U\x01y=\x01bClose";*/
 
-	optionBox.setBottomBorderText(bottomBorderText, true, false);
+	optionBox.setBottomBorderText(bottomBorderText, true, false, true);
 
 	// Add the options to the option box
 	const optFormatStr = "%-46s [ ]";

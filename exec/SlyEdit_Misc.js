@@ -1292,7 +1292,7 @@ function ChoiceScrollbox_AddInputLoopExitKey(pKeypress)
 {
    this.inputLoopExitKeys[pKeypress] = true;
 }
-function ChoiceScrollbox_SetBottomBorderText(pText, pAddTChars, pAutoStripIfTooLong)
+function ChoiceScrollbox_SetBottomBorderText(pText, pAddTChars, pAutoStripIfTooLong, pCenter)
 {
 	if (typeof(pText) != "string")
 		return;
@@ -1306,7 +1306,19 @@ function ChoiceScrollbox_SetBottomBorderText(pText, pAddTChars, pAutoStripIfTooL
 	}
 
 	// Re-build the bottom border string based on the new text
+	var maxWidth = this.dimensions.width - 2; // -2 for the corner characters
+	if (pAddTChars)
+		maxWidth -= 2; // -2 for the T characters
 	this.bottomBorder = "\x01n" + this.SlyEdCfgObj.genColors.listBoxBorder + LOWER_LEFT_SINGLE;
+	if (pCenter)
+	{
+		var numCharsToAdd = Math.floor(maxWidth / 2) - Math.floor(console.strlen(pText)/2);
+		if (numCharsToAdd > 0)
+		{
+			for (var i = 0; i < numCharsToAdd; ++i)
+				this.bottomBorder += HORIZONTAL_SINGLE;
+		}
+	}
 	if (pAddTChars)
 		this.bottomBorder += RIGHT_T_SINGLE;
 	if (pText.indexOf("\x01n") != 0)
