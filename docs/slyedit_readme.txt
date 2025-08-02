@@ -1,6 +1,6 @@
                          SlyEdit message editor
-                              Version 1.92a
-                        Release date: 2025-06-24
+                              Version 1.92b
+                        Release date: 2025-08-02
 
                                   by
 
@@ -1001,6 +1001,11 @@ message to lower-case and comparing them with the words in the dictionary.
 ===================
 Version  Date         Description
 -------  ----         -----------
+1.92b    2025-08-02   Cross-post selection fix to not select when just enter is
+                      pressed (just confirm; this change was mainly in
+                      dd_lightbar_menu.js). Also, updated cross-post help text
+                      and bottom border help text for othe cross-post menu to
+                      explain that better.
 1.92a    2025-06-24   Bug fix: For cross-posting, when selecting a sub-board,
                       the additional menu quit keys were set as item-select keys
                       instead; now they are quit keys as they should be, so that
