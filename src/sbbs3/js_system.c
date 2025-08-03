@@ -1799,7 +1799,7 @@ js_notify(JSContext *cx, uintN argc, jsval *arglist)
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
-	ret = notify(sys->cfg, usernumber, subj, msg, replyto) == 0;
+	ret = notify(sys->cfg, usernumber, subj, /* strip_ctrl: */false, msg, replyto) == 0;
 	free(subj);
 	free(msg);
 	free(replyto);
