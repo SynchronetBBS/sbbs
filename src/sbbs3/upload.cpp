@@ -198,8 +198,8 @@ bool sbbs_t::uploadfile(file_t* f)
 	mqtt_file_upload(mqtt, &useron, f->dir, f->name, length, &client);
 	user_event(EVENT_UPLOAD);
 	if (f->dir == cfg.sysop_dir) {
-		snprintf(str, sizeof str, text[UserSentYouFile], useron.alias);
-		notify(str, f->name);
+		snprintf(str, sizeof str, text[UserSentYouFile], useron.alias, f->name);
+		notify(str);
 	}
 	return true;
 }
@@ -490,7 +490,7 @@ bool sbbs_t::upload(int dirnum, const char* fname)
 		}
 	}
 	if (result == true && dirnum == cfg.user_dir) {
-		snprintf(str, sizeof str, text[UserSentYouFile], useron.alias);
+		snprintf(str, sizeof str, text[UserSentYouFile], useron.alias, fname);
 		for (i = 0; dest_user_list != NULL && dest_user_list[i] != NULL; ++i)
 			putsmsg(matchuser(&cfg, dest_user_list[i], /* sysop_alias: */false), str);
 	}

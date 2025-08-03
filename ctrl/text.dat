@@ -798,7 +798,7 @@
 "\r\nDownload files in batch queue now"                 646 DownloadBatchQ
 "\1_\1r\1h\r\nWaiting for Slow Media Device #%u..."        647 WaitingForDeviceN
 "\1n\1y\1h%s\1n\1c sent you E-mail.\r\n"                   648 UserSentYouMail
-"\1n\1y\1h%s\1n\1c sent you a file.\r\n"                   649 UserSentYouFile
+"\1n\1y\1h%s\1n\1c sent you a file: \1h%s\r\n"             649 UserSentYouFile
 "\1n\1y\1h%s\1n\1c read your E-mail on %s.\r\n"              650 UserReadYourMail
 "\1_\1w\1hNode %2d: \1g%s\1n\1g read your E-mail.\r\n"       651 UserReadYourMailNodeMsg
 "\r\n@Which@, ~@Quit@, or [%u]: "                           652 JoinWhichGrp
