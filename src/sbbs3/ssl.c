@@ -417,7 +417,7 @@ bool ssl_sync(scfg_t *scfg, int (*lprintf)(int level, const char* fmt, ...))
 		return false;
 	if (!cert_path[0])
 		SAFEPRINTF2(cert_path, "%s%s", scfg->ctrl_dir, "ssl.cert");
-	if (!fexist(cert_path)) {
+	if (!scfg->create_self_signed_cert && !fexist(cert_path)) {
 		lprintf(LOG_ERR, "%s: Certificate file does not exist: %s", __FUNCTION__, cert_path);
 		return false;
 	}
