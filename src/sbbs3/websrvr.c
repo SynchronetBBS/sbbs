@@ -804,7 +804,6 @@ static void client_on(SOCKET sock, client_t* client, bool update)
 
 static void client_off(SOCKET sock)
 {
-	listRemoveTaggedNode(&current_connections, sock, /* free_data */ true);
 	if (startup != NULL && startup->client_on != NULL)
 		startup->client_on(startup->cbdata, false, sock, NULL, false);
 	mqtt_client_on(&mqtt, false, sock, NULL, false);
@@ -7079,6 +7078,7 @@ void http_session_thread(void* arg)
 		}
 		close_request(&session);
 	}
+	listRemoveTaggedNode(&current_connections, socket, /* free_data */ true);
 
 	http_logoff(&session, socket, __LINE__);
 
