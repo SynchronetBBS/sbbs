@@ -15,6 +15,12 @@ require("sbbsdefs.js", "K_LINEWRAP");
 var options = load({}, "modopts.js", "postmeme");
 if (!options) options = {};
 
+
+if(!msg_area.sub[bbs.cursub_code].can_post) {
+	alert("Sorry, you can't post on sub-board: " + msg_area.sub[bbs.cursub_code].name);
+	exit(0);
+}
+
 console.print("\x01N\x01Y\x01HWhat do you want to say?\x01N\r\n");
 var text = console.getstr(options.max_length || 500, K_LINEWRAP);
 if (!text)
