@@ -782,7 +782,7 @@ static void http_srvr_cfg(web_startup_t* startup)
 					uifc.changes = true;
 				}
 				break;
-			case 3:
+			case 2:
 				if (startup->options & WEB_OPT_NO_HTTP)
 					break;
 				SAFEPRINTF(str, "%u", startup->port);
