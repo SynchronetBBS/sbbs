@@ -550,7 +550,6 @@ static struct cert_list * get_ssl_cert(scfg_t *cfg, int (*lprintf)(int level, co
 			if (cfg->create_self_signed_cert) {
 				// Only try to create cert first time through the loop.
 				if (loops == 0) {
-					lprintf(LOG_NOTICE, "Creating self-signed TLS certificate");
 					if (create_self_signed_cert(cfg, lprintf)) {
 						loops++;
 						assert_pthread_mutex_unlock(&get_ssl_cert_mutex);
