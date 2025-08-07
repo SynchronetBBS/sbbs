@@ -1130,6 +1130,9 @@ char* getbirthyymmdd(scfg_t* cfg, char sep, const char* birth, char* buf, size_t
 	return buf;
 }
 
+/****************************************************************************/
+/* Returns birthdate string with 2 digit year, unlike format_birthdate()	*/
+/****************************************************************************/
 char* getbirthdstr(scfg_t* cfg, const char* birth, char* buf, size_t max)
 {
 	if (cfg->sys_date_fmt == YYMMDD)
@@ -1185,6 +1188,7 @@ char* parse_birthdate(scfg_t* cfg, const char* birthdate, char* out, size_t maxl
 
 /****************************************************************************/
 /* Converts from user birth date to MM/DD/YYYY, DD/MM/YYYY, or YYYY/MM/DD	*/
+/* Note: Returns 4 digit year, unlike getbirthdstr()						*/
 /****************************************************************************/
 char* format_birthdate(scfg_t* cfg, const char* birthdate, char* out, size_t maxlen)
 {
