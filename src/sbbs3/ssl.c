@@ -417,10 +417,6 @@ bool ssl_sync(scfg_t *scfg, int (*lprintf)(int level, const char* fmt, ...))
 		return false;
 	if (!cert_path[0])
 		SAFEPRINTF2(cert_path, "%s%s", scfg->ctrl_dir, "ssl.cert");
-	if (!scfg->create_self_signed_cert && !fexist(cert_path)) {
-		lprintf(LOG_ERR, "%s: Certificate file does not exist: %s", __FUNCTION__, cert_path);
-		return false;
-	}
 	time_t fd = fdate(cert_path);
 	if (!rwlock_rdlock(&tls_cert_file_date_lock)) {
 		lprintf(LOG_ERR, "Unable to lock tls_cert_file_date_lock for read at %d", __LINE__);
