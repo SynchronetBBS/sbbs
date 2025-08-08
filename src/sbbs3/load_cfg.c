@@ -266,7 +266,7 @@ void prep_cfg(scfg_t* cfg)
 			for (j = 0; j < cfg->total_dirs; j++) {
 				if (cfg->dir[j]->lib != i)
 					continue;
-				if (strcmp(cfg->dir[j]->path, p) == 0 || strcmp(cfg->dir[j]->path, dirname) == 0)
+				if (strcmp(cfg->dir[j]->path, p) == 0 || strcmp(cfg->dir[j]->path, dirname) == 0 || stricmp(cfg->dir[j]->code_suffix, dirname) == 0)
 					break;
 			}
 			if (j < cfg->total_dirs) // duplicate
