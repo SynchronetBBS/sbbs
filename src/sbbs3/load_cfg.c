@@ -254,38 +254,32 @@ void prep_cfg(scfg_t* cfg)
 		glob_t g;
 		if (glob(path, GLOB_MARK, NULL, &g))
 			continue;
+		dir_t dir = cfg->lib[i]->dir_defaults;
+		dir.lib = i;
 		for (uint gi = 0; gi < g.gl_pathc; gi++) {
 			char* p = g.gl_pathv[gi];
 			char* tp = lastchar(p);
 			if (*tp != '/')
 				continue;
 			*tp = 0; // Remove trailing slash
-			char* dirname = getfname(p);
-			*tp = PATH_DELIM;
+			SAFECOPY(dir.path, p);
+			char* dirname = getfname(dir.path);
+			SAFECOPY(dir.lname, dirname);
+			SAFECOPY(dir.sname, dirname);
+			char code_suffix[LEN_EXTCODE + 1];
+			SAFECOPY(code_suffix, dirname);
+			prep_code(code_suffix, cfg->lib[i]->code_prefix);
+			SAFECOPY(dir.code_suffix, code_suffix);
+			init_vdir(cfg, &dir);
 			int   j;
 			for (j = 0; j < cfg->total_dirs; j++) {
 				if (cfg->dir[j]->lib != i)
 					continue;
-				if (strcmp(cfg->dir[j]->path, p) == 0 || strcmp(cfg->dir[j]->path, dirname) == 0 || stricmp(cfg->dir[j]->code_suffix, dirname) == 0)
+				if (strcmp(cfg->dir[j]->path, dir.path) == 0 || strcmp(cfg->dir[j]->path, dirname) == 0 || stricmp(cfg->dir[j]->code_suffix, dir.code_suffix) == 0)
 					break;
 			}
 			if (j < cfg->total_dirs) // duplicate
 				continue;
-			dir_t dir = cfg->lib[i]->dir_defaults;
-			dir.lib = i;
-			SAFECOPY(dir.path, p);
-			*tp = 0; // Remove trailing slash
-			SAFECOPY(dir.lname, dirname);
-			SAFECOPY(dir.sname, dir.lname);
-			char code_suffix[LEN_EXTCODE + 1];
-			SAFECOPY(code_suffix, dir.lname);
-			prep_code(code_suffix, cfg->lib[i]->code_prefix);
-			SAFECOPY(dir.code_suffix, code_suffix);
-			SAFEPRINTF2(dir.code, "%s%s"
-			            , cfg->lib[i]->code_prefix
-			            , dir.code_suffix);
-			init_vdir(cfg, &dir);
-
 			dir_t** new_dirs;
 			if ((new_dirs = (dir_t **)realloc(cfg->dir, sizeof(dir_t *) * (cfg->total_dirs + 2))) == NULL)
 				continue;
