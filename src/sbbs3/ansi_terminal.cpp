@@ -1107,16 +1107,21 @@ bool ANSI_Terminal::parse_input_sequence(char& ch, int mode) {
 				if (++timeouts >= 30)
 					break;
 			}
-			switch(ansi.parse(rc)) {
-				case ansiState_final:
-					done = 1;
-					break;
-				case ansiState_broken:
-					sbbs->lprintf(LOG_DEBUG, "Invalid ANSI sequence: '\\e%s'", &(ansi.ansi_sequence.c_str()[1]));
-					done = 1;
-					break;
-				default:
-					break;
+			else if (rc & (~0xff)) {
+				sbbs->lprintf(LOG_DEBUG, "Unhandled kbincom return %04x'", rc);
+			}
+			else {
+				switch(ansi.parse(rc)) {
+					case ansiState_final:
+						done = 1;
+						break;
+					case ansiState_broken:
+						sbbs->lprintf(LOG_DEBUG, "Invalid ANSI sequence: '\\e%s'", &(ansi.ansi_sequence.c_str()[1]));
+						done = 1;
+						break;
+					default:
+						break;
+				}
 			}
 		}
 		switch (ansi.current_state()) {
