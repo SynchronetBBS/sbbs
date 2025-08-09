@@ -23,6 +23,8 @@
 
 const char* strReadingIniFile = "Reading sbbs.ini ...";
 const char* strDisabled = "<disabled>";
+const char* strDefault = "<default>";
+const char* strInfinite = "Infinite";
 
 static const char* threshold(uint val)
 {
@@ -33,17 +35,17 @@ static const char* threshold(uint val)
 	return str;
 }
 
-static const char* duration(uint val, bool verbose)
+static const char* duration(uint val, bool verbose, const char* zero)
 {
 	static char str[128];
-	if (val == 0)
-		return strDisabled;
+	if (val == 0 && zero != NULL)
+		return zero;
 	return verbose ? duration_to_vstr(val, str, sizeof(str)) : duration_to_str(val, str, sizeof(str));;
 }
 
-static const char* vduration(uint val)
+static const char* vduration(uint val, const char* zero)
 {
-	return duration(val, true);
+	return duration(val, true, zero);
 }
 
 static const char* maximum(uint val)
@@ -68,10 +70,10 @@ static void login_attempt_cfg(struct login_attempt_settings* login_attempt)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Hack Log Threshold", threshold(login_attempt->hack_threshold));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Temporary Ban Threshold", threshold(login_attempt->tempban_threshold));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Temporary Ban Duration"
-		         , duration_to_vstr(login_attempt->tempban_duration, tmp, sizeof(tmp)));
+		         , vduration(login_attempt->tempban_duration, NULL));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Automatic Filter Threshold", threshold(login_attempt->filter_threshold));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Automatic Filter Duration"
-		         , login_attempt->filter_duration == 0 ? "Infinite" : duration_to_vstr(login_attempt->filter_duration, tmp, sizeof(tmp)));
+		         , vduration(login_attempt->filter_duration, strInfinite));
 		opt[i][0] = '\0';
 
 		uifc.helpbuf =
@@ -109,7 +111,7 @@ static void login_attempt_cfg(struct login_attempt_settings* login_attempt)
 					login_attempt->tempban_threshold = atoi(str);
 				break;
 			case 4:
-				SAFECOPY(str, duration(login_attempt->tempban_duration, false));
+				SAFECOPY(str, duration(login_attempt->tempban_duration, false, false));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Lifetime of Temporary-Ban of IP", str, 10, K_EDIT) > 0)
 					login_attempt->tempban_duration = (uint)parse_duration(str);
 				break;
@@ -119,10 +121,7 @@ static void login_attempt_cfg(struct login_attempt_settings* login_attempt)
 					login_attempt->filter_threshold = atoi(str);
 				break;
 			case 6:
-				if (login_attempt->filter_duration == 0)
-					SAFECOPY(str, "Infinite");
-				else
-					SAFECOPY(str, duration(login_attempt->filter_duration, false));
+				SAFECOPY(str, duration(login_attempt->filter_duration, false, strInfinite));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Lifetime of Auto-Filter of IPs", str, 8, K_EDIT) > 0)
 					login_attempt->filter_duration = (uint)parse_duration(str);
 				break;
@@ -224,8 +223,8 @@ static void global_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Network Interfaces (IPv4/6)", strListCombine(startup.interfaces, tmp, sizeof(tmp), ", "));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Outbound Interface (IPv4)", IPv4AddressToStr(startup.outgoing4.s_addr, tmp, sizeof(tmp)));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Bind Retry Count", threshold(startup.bind_retry_count));
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Bind Retry Delay", vduration(startup.bind_retry_delay));
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Sem File Check Interval", vduration(startup.sem_chk_freq));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Bind Retry Delay", vduration(startup.bind_retry_delay, strDisabled));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Sem File Check Interval", vduration(startup.sem_chk_freq, strDefault));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Login Requirements", startup.login_ars);
 		strcpy(opt[i++], "JavaScript Settings...");
 		strcpy(opt[i++], "Failed Login Attempts...");
@@ -267,12 +266,12 @@ static void global_cfg(void)
 					startup.bind_retry_count = atoi(str);
 				break;
 			case 5:
-				SAFECOPY(str, duration(startup.bind_retry_delay, false));
+				SAFECOPY(str, duration(startup.bind_retry_delay, false, strDisabled));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Port Bind Retry Delay", str, 6, K_EDIT) > 0)
 					startup.bind_retry_delay = (uint)parse_duration(str);
 				break;
 			case 6:
-				SAFECOPY(str, duration(startup.sem_chk_freq, false));
+				SAFECOPY(str, duration(startup.sem_chk_freq, false, strDefault));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Semaphore File Check Interval", str, 6, K_EDIT) > 0)
 					startup.sem_chk_freq = (uint16_t)parse_duration(str);
 				break;
@@ -396,7 +395,7 @@ static void ssh_srvr_cfg(bbs_startup_t* startup)
 		         , startup->options & BBS_OPT_ALLOW_SSH ? strListCombine(startup->ssh_interfaces, tmp, sizeof(tmp), ", ") : "N/A");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "Port", startup->ssh_port);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Connect Timeout"
-		         , startup->options & BBS_OPT_ALLOW_SSH ? vduration(startup->ssh_connect_timeout) : "N/A");
+		         , startup->options & BBS_OPT_ALLOW_SSH ? vduration(startup->ssh_connect_timeout, NULL) : "N/A");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Error Level"
 		         , startup->options & BBS_OPT_ALLOW_SSH ? iniLogLevelStringList()[startup->ssh_error_level] : "N/A");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "User Authentication Type"
@@ -404,7 +403,7 @@ static void ssh_srvr_cfg(bbs_startup_t* startup)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "File Transfer (SFTP) Support"
 		         , startup->options & BBS_OPT_ALLOW_SSH ? (startup->options & BBS_OPT_ALLOW_SFTP ? "Yes" : "No") : "N/A");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max SFTP Inactivity"
-		         , (startup->options & BBS_OPT_ALLOW_SSH) && (startup->options & BBS_OPT_ALLOW_SFTP) ? vduration(startup->max_sftp_inactivity) : "N/A");
+		         , (startup->options & BBS_OPT_ALLOW_SSH) && (startup->options & BBS_OPT_ALLOW_SFTP) ? vduration(startup->max_sftp_inactivity, NULL) : "N/A");
 
 		opt[i][0] = '\0';
 
@@ -433,7 +432,7 @@ static void ssh_srvr_cfg(bbs_startup_t* startup)
 			case 3:
 				if (!(startup->options & BBS_OPT_ALLOW_SSH))
 					break;
-				SAFECOPY(str, duration(startup->ssh_connect_timeout, false));
+				SAFECOPY(str, duration(startup->ssh_connect_timeout, false, NULL));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "SSH Connect Timeout", str, 6, K_EDIT) > 0)
 					startup->ssh_connect_timeout = (uint16_t)parse_duration(str);
 				break;
@@ -457,7 +456,7 @@ static void ssh_srvr_cfg(bbs_startup_t* startup)
 					break;
 				if (!(startup->options & BBS_OPT_ALLOW_SFTP))
 					break;
-				SAFECOPY(str, duration(startup->max_sftp_inactivity, false));
+				SAFECOPY(str, duration(startup->max_sftp_inactivity, false, NULL));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Socket Inactivity during SFTP Session", str, 10, K_EDIT) > 0)
 					startup->max_sftp_inactivity = (uint16_t)parse_duration(str);
 				break;
@@ -559,9 +558,9 @@ static void termsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "80 Column PETSCII Support", startup.pet80_port  ? str : strDisabled);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "DOS Program Support", startup.options & BBS_OPT_NO_DOS ? "No" : "Yes");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Concurrent Connections", maximum(startup.max_concurrent_connections));
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Login Inactivity", vduration(startup.max_login_inactivity));
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max New User Inactivity", vduration(startup.max_newuser_inactivity));
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max User Inactivity", vduration(startup.max_session_inactivity));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Login Inactivity", vduration(startup.max_login_inactivity, strDisabled));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max New User Inactivity", vduration(startup.max_newuser_inactivity, strDisabled));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max User Inactivity", vduration(startup.max_session_inactivity, strDisabled));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%u ms", "Output Buffer Drain Timeout", startup.outbuf_drain_timeout);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Execute Timed Events", startup.options & BBS_OPT_NO_EVENTS ? "No" : "Yes");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Execute QWK-related Events"
@@ -647,7 +646,7 @@ static void termsrvr_cfg(void)
 					"feature.  Default is `10 minutes`.\n"
 					SOCKET_INACTIVITY_HELP
 				;
-				SAFECOPY(str, duration(startup.max_login_inactivity, false));
+				SAFECOPY(str, duration(startup.max_login_inactivity, false, strDisabled));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Socket Inactivity at Login", str, 10, K_EDIT) > 0)
 					startup.max_login_inactivity = (uint16_t)parse_duration(str);
 				break;
@@ -661,7 +660,7 @@ static void termsrvr_cfg(void)
 					"detection feature.  Default is `60 minutes`.\n"
 					SOCKET_INACTIVITY_HELP
 				;
-				SAFECOPY(str, duration(startup.max_newuser_inactivity, false));
+				SAFECOPY(str, duration(startup.max_newuser_inactivity, false, strDisabled));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Socket Inactivity at New User Registration", str, 10, K_EDIT) > 0)
 					startup.max_newuser_inactivity = (uint16_t)parse_duration(str);
 				break;
@@ -677,7 +676,7 @@ static void termsrvr_cfg(void)
 					"\n"
 					"`H`-exempt users will not be disconnected due to socket inactivity."
 				;
-				SAFECOPY(str, duration(startup.max_session_inactivity, false));
+				SAFECOPY(str, duration(startup.max_session_inactivity, false, strDisabled));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Socket Inactivity during User Session", str, 10, K_EDIT) > 0)
 					startup.max_session_inactivity = (uint16_t)parse_duration(str);
 				break;
@@ -856,7 +855,7 @@ static void websrvr_cgi_cfg(web_startup_t* startup)
 		snprintf(opt[i++], MAX_OPLN, "%-25s%s", "Directory", startup->cgi_dir);
 		snprintf(opt[i++], MAX_OPLN, "%-25s%s", "File Extensions", strListCombine(startup->cgi_ext, tmp, sizeof(tmp), ", "));
 		snprintf(opt[i++], MAX_OPLN, "%-25s%s", "Default Content-Type", startup->default_cgi_content);
-		snprintf(opt[i++], MAX_OPLN, "%-25s%s", "Max Inactivity", vduration(startup->max_cgi_inactivity));
+		snprintf(opt[i++], MAX_OPLN, "%-25s%s", "Max Inactivity", vduration(startup->max_cgi_inactivity, strDefault));
 		opt[i][0] = '\0';
 
 		switch (uifc.list(WIN_ACT | WIN_ESC | WIN_MID | WIN_SAV, 0, 0, 0, &cur, &bar
@@ -881,7 +880,7 @@ static void websrvr_cgi_cfg(web_startup_t* startup)
 				           , startup->default_cgi_content, sizeof(startup->default_cgi_content) - 1, K_EDIT);
 				break;
 			case 4:
-				duration_to_str(startup->max_cgi_inactivity, str, sizeof(str));
+				SAFECOPY(str, duration(startup->max_cgi_inactivity, false, strDefault));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum CGI Inactivity", str, 10, K_EDIT) > 0)
 					startup->max_cgi_inactivity = (uint16_t)parse_duration(str);
 				break;
@@ -977,7 +976,7 @@ static void websrvr_cfg(void)
 			SAFEPRINTF(str, "[%slogs/http-*]", cfg.logs_dir);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Access Logging", startup.options & WEB_OPT_HTTP_LOGGING ? str : strDisabled);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Clients", maximum(startup.max_clients));
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Inactivity", vduration(startup.max_inactivity));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Inactivity", vduration(startup.max_inactivity, strDefault));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Concurrent Connections", maximum(startup.max_concurrent_connections));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Authentication Methods", startup.default_auth_list);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%u ms", "Output Buffer Drain Timeout", startup.outbuf_drain_timeout);
@@ -1059,7 +1058,7 @@ static void websrvr_cfg(void)
 					startup.max_clients = atoi(str);
 				break;
 			case 11:
-				SAFECOPY(str, duration(startup.max_inactivity, false));
+				SAFECOPY(str, duration(startup.max_inactivity, false, strDefault));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Client Inactivity", str, 10, K_EDIT) > 0)
 					startup.max_inactivity = (uint16_t)parse_duration(str);
 				break;
@@ -1182,9 +1181,9 @@ static void ftpsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%u - %u", "Passive Port Range", startup.pasv_port_low, startup.pasv_port_high);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Auto-generate Index File", startup.options & FTP_OPT_INDEX_FILE ? startup.index_file_name : strDisabled);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "QWK Message Packet Transfers", startup.options & FTP_OPT_ALLOW_QWK ? "Yes" : "No");
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "QWK Message Packet Timeout", startup.options & FTP_OPT_ALLOW_QWK ? vduration(startup.qwk_timeout) : "N/A");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "QWK Message Packet Timeout", startup.options & FTP_OPT_ALLOW_QWK ? vduration(startup.qwk_timeout, strDefault) : "N/A");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Clients", maximum(startup.max_clients));
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Inactivity", vduration(startup.max_inactivity));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Inactivity", vduration(startup.max_inactivity, strDefault));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Concurrent Connections", maximum(startup.max_concurrent_connections));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Sysop File System Access", startup.options & FTP_OPT_NO_LOCAL_FSYS ? "No" : "Yes");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Allow Bounce Transfers", startup.options & FTP_OPT_ALLOW_BOUNCE ? "Yes" : "No");
@@ -1265,7 +1264,7 @@ static void ftpsrvr_cfg(void)
 				startup.options ^= FTP_OPT_ALLOW_QWK;
 				break;
 			case 8:
-				SAFECOPY(str, duration(startup.qwk_timeout, false));
+				SAFECOPY(str, duration(startup.qwk_timeout, false, strDefault));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "QWK Message Packet Creation Timeout", str, 10, K_EDIT) > 0)
 					startup.qwk_timeout = (uint16_t)parse_duration(str);
 				break;
@@ -1275,7 +1274,7 @@ static void ftpsrvr_cfg(void)
 					startup.max_clients = atoi(str);
 				break;
 			case 10:
-				SAFECOPY(str, duration(startup.max_inactivity, false));
+				SAFECOPY(str, duration(startup.max_inactivity, false, strDefault));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Client Inactivity", str, 10, K_EDIT) > 0)
 					startup.max_inactivity = (uint16_t)parse_duration(str);
 				break;
@@ -1351,9 +1350,9 @@ static void sendmail_cfg(mail_startup_t* startup)
 		int i = 0;
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Enabled", startup->options & MAIL_OPT_NO_SENDMAIL ? "No" : "Yes");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Rescan Interval"
-		         , startup->options & MAIL_OPT_NO_SENDMAIL ? "N/A" : vduration(startup->rescan_frequency));
+		         , startup->options & MAIL_OPT_NO_SENDMAIL ? "N/A" : vduration(startup->rescan_frequency, strDefault));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Connect Timeout"
-		         , startup->options & MAIL_OPT_NO_SENDMAIL ? "N/A" : vduration(startup->connect_timeout));
+		         , startup->options & MAIL_OPT_NO_SENDMAIL ? "N/A" : vduration(startup->connect_timeout, strDisabled));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Auto-exempt Recipients"
 		         , startup->options & MAIL_OPT_NO_SENDMAIL ? "N/A" : startup->options & MAIL_OPT_NO_AUTO_EXEMPT ? "No" : "Yes");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%u", "Max Delivery Attempts", startup->max_delivery_attempts);
@@ -1395,14 +1394,14 @@ static void sendmail_cfg(mail_startup_t* startup)
 			case 1:
 				if (startup->options & MAIL_OPT_NO_SENDMAIL)
 					break;
-				SAFECOPY(str, duration(startup->rescan_frequency, false));
+				SAFECOPY(str, duration(startup->rescan_frequency, false, strDefault));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "MailBase Rescan Interval", str, 5, K_EDIT) > 0)
 					startup->rescan_frequency = (uint16_t)parse_duration(str);
 				break;
 			case 2:
 				if (startup->options & MAIL_OPT_NO_SENDMAIL)
 					break;
-				SAFECOPY(str, duration(startup->connect_timeout, false));
+				SAFECOPY(str, duration(startup->connect_timeout, false, strDisabled));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "SendMail Connect Timeout", str, 5, K_EDIT) > 0)
 					startup->connect_timeout = (uint32_t)parse_duration(str);
 				break;
@@ -1643,7 +1642,7 @@ static void mailsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "POP3/TLS Support", startup.options & MAIL_OPT_TLS_POP3 ? str : strDisabled);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Mark Retrieved Mail as Read", startup.options & MAIL_OPT_NO_READ_POP3 ? "No" : "Yes");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Clients", maximum(startup.max_clients));
-		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Inactivity", vduration(startup.max_inactivity));
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Inactivity", vduration(startup.max_inactivity, strDefault));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Concurrent Connections", maximum(startup.max_concurrent_connections));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Recipients Per Message", maximum(startup.max_recipients));
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Max Messages Waiting", maximum(startup.max_msgs_waiting));
@@ -1668,7 +1667,7 @@ static void mailsrvr_cfg(void)
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Hash DNS-Blacklisted Msgs", startup.options & MAIL_OPT_DNSBL_SPAMHASH ? "Yes" : "No");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Kill SPAM When Read", startup.options & MAIL_OPT_KILL_READ_SPAM ? "Yes": "No");
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Spammer IP-Filter Duration"
-		         , startup.spam_block_duration == 0 ? "Infinite" : duration_to_vstr(startup.spam_block_duration, tmp, sizeof(tmp)));
+		         , vduration(startup.spam_block_duration, strInfinite));
 		if (startup.options & MAIL_OPT_RELAY_TX)
 			p = "Relay";
 		else
@@ -1741,7 +1740,7 @@ static void mailsrvr_cfg(void)
 					startup.max_clients = atoi(str);
 				break;
 			case 11:
-				SAFECOPY(str, duration(startup.max_inactivity, false));
+				SAFECOPY(str, duration(startup.max_inactivity, false, strDisabled));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Maximum Client Inactivity", str, 10, K_EDIT) > 0)
 					startup.max_inactivity = (uint16_t)parse_duration(str);
 				break;
@@ -1834,10 +1833,7 @@ static void mailsrvr_cfg(void)
 				startup.options ^= MAIL_OPT_KILL_READ_SPAM;
 				break;
 			case 27:
-				if (startup.spam_block_duration == 0)
-					SAFECOPY(str, "Infinite");
-				else
-					SAFECOPY(str, duration(startup.spam_block_duration, false));
+				SAFECOPY(str, duration(startup.spam_block_duration, false, strInfinite));
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Lifetime of ban of SPAM-bait taker IP", str, 8, K_EDIT) > 0)
 					startup.spam_block_duration = (uint)parse_duration(str);
 				break;
