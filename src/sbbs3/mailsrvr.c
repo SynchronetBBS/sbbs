@@ -5094,12 +5094,15 @@ static bool smtp_client_thread(smtp_t* smtp)
 	listRemoveTaggedNode(&current_logins, socket, /* free_data */ TRUE);
 	client_off(socket);
 
-#ifdef _WIN32
 	if (relay_user.number) {
+#ifdef _WIN32
 		if (startup->sound.logout[0] && !sound_muted(&scfg))
 			PlaySound(startup->sound.logout, NULL, SND_ASYNC | SND_FILENAME);
-	}
 #endif
+		if (!logoutuserdat(&scfg, &relay_user, time(NULL), client.time))
+			errprintf(LOG_ERR, WHERE, "%04d %-5s <%s> !ERROR in logoutuserdat", socket, client.protocol, relay_user.alias);
+		mqtt_user_logout(&mqtt, &client, client.time);
+	}
 	/* Must be last */
 	{
 		int32_t remain = thread_down();
