@@ -2633,10 +2633,7 @@ void sys_cfg(void)
 						SAFECOPY(str, "Unlimited");
 					}
 					snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Maximum Log File Size", str);
-					if (cfg.max_getkey_inactivity)
-						duration_to_vstr(cfg.max_getkey_inactivity, str, sizeof(str));
-					else
-						SAFECOPY(str, "Unlimited");
+					duration_to_vstr(cfg.max_getkey_inactivity, str, sizeof(str));
 					snprintf(opt[i++], MAX_OPLN, "%-27.27s%s", "Maximum User Inactivity", str);
 					if (cfg.inactivity_warn)
 						SAFEPRINTF(str, "%u percent", cfg.inactivity_warn);
@@ -2945,17 +2942,13 @@ void sys_cfg(void)
 							}
 							break;
 						case 18:
-							if (cfg.max_getkey_inactivity < 1)
-								SAFECOPY(str, "Unlimited");
-							else
-								duration_to_str(cfg.max_getkey_inactivity, str, sizeof(str));
+							duration_to_str(cfg.max_getkey_inactivity, str, sizeof(str));
 							uifc.helpbuf =
 								"`Duration Before Inactive-User Disconnection:`\n"
 								"\n"
 								"This is the duration of time the user must be inactive while the BBS\n"
 								"is waiting for keyboard input (via `getkey()`) before the user will be\n"
-								"automatically disconnected.  A setting of `0` will disable this user\n"
-								"inactivity detection feature.  Default is `5 minutes`.\n"
+								"automatically disconnected.  Default is `5 minutes`.\n"
 								"\n"
 								"For lower-level inactive socket detection/disconnection, see the\n"
 								"`Max*Inactivity` settings in `Servers->Terminal Server`. \n"
