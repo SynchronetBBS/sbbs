@@ -4165,6 +4165,10 @@ static bool smtp_client_thread(smtp_t* smtp)
 			subnum = INVALID_SUB;
 			continue;
 		}
+		if (relay_user.number != 0 && strnicmp(buf, "AUTH", 4) == 0) {
+			sockprintf(socket, client.protocol, session, badseq_rsp);
+			continue;
+		}
 		if ((auth_login = (stricmp(buf, "AUTH LOGIN") == 0)) == TRUE
 		    || strnicmp(buf, "AUTH PLAIN ", 11) == 0
 		    || stricmp(buf, "AUTH PLAIN") == 0) {
