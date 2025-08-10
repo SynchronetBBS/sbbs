@@ -3168,7 +3168,7 @@ int loginuserdat(scfg_t* cfg, user_t* user, const char* protocol, const char* ho
 		SAFECOPY(user->comp, hostname);
 	if (ipaddr != NULL)
 		SAFECOPY(user->ipaddr, ipaddr);
-	user->logontime = logontime;
+	user->logontime = (time32_t)logontime;
 
 	return putuserdat(cfg, user);
 }
