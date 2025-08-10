@@ -1,0 +1,38 @@
+--- misc/analyse.h.orig	2025-08-10 17:05:51.681624000 -0400
++++ misc/analyse.h	2025-08-10 17:11:38.066091000 -0400
+@@ -939,21 +939,22 @@
+ 			__attribute__(( format( printf, formatIndex, argIndex ) ))
+ #define STDC_PURE			__attribute__(( pure ))
+ 
+-#if ( defined( __clang__ ) && ( __clang_major__ >= 15 ) || \
+-	  defined( __GNUC__ ) && ( __GNUC__ >= 15 ) )
+-  /* Flex-arrays, used with DECLARE_VARSTRUCT_VARS.  We need to indicate 
+-	 support for this with HAS_STDC_FLEXARRAY when it's used later to deal 
+-	 with C99 wanting to see '[]' while other compilers want to see '[ 1 ]' 
+-	 for the array size */
+-  #if __has_attribute( counted_by )
+-	#define STDC_FLEXARRAY( count )	__attribute__(( counted_by( count ) ))
+-	#define HAS_STDC_FLEXARRAY
+-  #else
++// Fails self-test on GCC with this... appears to be incorrect alignment assumptions
++//#if ( defined( __clang__ ) && ( __clang_major__ >= 15 ) || \
++//	  defined( __GNUC__ ) && ( __GNUC__ >= 15 ) )
++//  /* Flex-arrays, used with DECLARE_VARSTRUCT_VARS.  We need to indicate 
++//	 support for this with HAS_STDC_FLEXARRAY when it's used later to deal 
++//	 with C99 wanting to see '[]' while other compilers want to see '[ 1 ]' 
++//	 for the array size */
++//  #if __has_attribute( counted_by )
++//	#define STDC_FLEXARRAY( count )	__attribute__(( counted_by( count ) ))
++//	#define HAS_STDC_FLEXARRAY
++//  #else
+ 	#define STDC_FLEXARRAY( count )
+-  #endif /* LLVM attributes */
+-#else
++//  #endif /* LLVM attributes */
++//#else
+   #define STDC_FLEXARRAY( count )
+-#endif /* Compiler-specific flex-array support */
++//#endif /* Compiler-specific flex-array support */
+ 
+ #if defined( __clang__ ) && ( __clang_major__ >= 5 ) && \
+ 	( !defined( __apple_build_version__ ) || \
