@@ -1681,12 +1681,7 @@ void http_logon(http_session_t * session, user_t *usr)
 		SAFECOPY(session->username, unknown);
 	else {
 		SAFECOPY(session->username, session->user.alias);
-		/* Adjust Connect and host */
-		SAFECOPY(session->user.connection, session->client.protocol);
-		SAFECOPY(session->user.comp, session->host_name);
-		SAFECOPY(session->user.ipaddr, session->host_ip);
-		session->user.logontime = (time32_t)session->logon_time;
-		int result = putuserdat(&scfg, &session->user);
+		int result = loginuserdat(&scfg, &session->user, session->client.protocol, session->host_name, session->host_ip, session->logon_time);
 		if (result != 0)
 			errprintf(LOG_ERR, WHERE, "%04d %-5s [%s] <%s> !Error %d writing user data for user #%d"
 			          , session->socket, session->client.protocol, session->host_ip

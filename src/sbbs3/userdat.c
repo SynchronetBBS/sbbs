@@ -3164,6 +3164,21 @@ bool user_adjust_minutes(scfg_t* cfg, user_t* user, long amount)
 
 /****************************************************************************/
 /****************************************************************************/
+int loginuserdat(scfg_t* cfg, user_t* user, const char* protocol, const char* hostname, const char* ipaddr, time_t logontime)
+{
+	if (protocol != NULL)
+		SAFECOPY(user->connection, protocol);
+	if (hostname != NULL)
+		SAFECOPY(user->comp, hostname);
+	if (ipaddr != NULL)
+		SAFECOPY(user->ipaddr, ipaddr);
+	user->logontime = logontime;
+
+	return putuserdat(cfg, user);
+}
+
+/****************************************************************************/
+/****************************************************************************/
 bool logoutuserdat(scfg_t* cfg, user_t* user, time_t now, time_t logontime)
 {
 	char      str[128];

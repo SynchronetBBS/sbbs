@@ -204,7 +204,6 @@ bool sbbs_t::logon()
 	logon_ml = useron.level;
 	logontime = time(NULL);
 	starttime = logontime;
-	useron.logontime = (time32_t)logontime;
 	last_ns_time = ns_time = useron.ns_time;
 	// ns_time-=(useron.tlast*60); /* file newscan time == last logon time */
 
@@ -449,11 +448,10 @@ bool sbbs_t::logon()
 		logline(LOG_NOTICE, "+!", str);
 		return false;
 	}
-	SAFECOPY(useron.connection, connection);
-	SAFECOPY(useron.ipaddr, client_ipaddr);
-	SAFECOPY(useron.comp, client_name);
 	useron.logons++;
-	putuserdat(&useron);
+	i = loginuserdat(&cfg, &useron, connection, client_name, client_ipaddr, logontime);
+	if (i != USER_SUCCESS)
+		lprintf(LOG_ERR, "%s !Error %d writing user data for user #%d", __FUNCTION__, i, useron.number);
 	getmsgptrs();
 	sys_status |= SS_USERON;          /* moved from further down */
 	// Needs to be called after SS_USERON is set
