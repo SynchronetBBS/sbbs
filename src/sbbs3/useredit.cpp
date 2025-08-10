@@ -69,13 +69,8 @@ void sbbs_t::useredit(int usernumber)
 				return;
 			}
 		}
-		unixtodstr(time(NULL), str);
-		unixtodstr(user.laston, tmp);
-		if (strcmp(str, tmp) && user.ltoday) {
-			user.ltoday = user.ttoday = user.ptoday = user.etoday = user.dtoday = user.textra = 0;
-			user.btoday = 0;
-			user.freecdt = cfg.level_freecdtperday[user.level];
-			putuserdat(&user);  /* Leave alone */
+		if (!days_are_same(time(NULL), user.laston) && user.ltoday) {
+			resetdailyuserdat(&cfg, &user, /* write: */true);
 		}
 		char   user_pass[LEN_PASS + 1];
 		SAFECOPY(user_pass, user.pass);

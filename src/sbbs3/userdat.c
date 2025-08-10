@@ -525,17 +525,8 @@ int parseuserdat(scfg_t* cfg, char *userdat, user_t *user, char* field[])
 
 	/* Reset daily stats if not already logged on today */
 	if (user->ltoday || user->etoday || user->ptoday || user->ttoday || user->dtoday || user->btoday) {
-		time_t    now;
-		struct tm now_tm;
-		struct tm logon_tm;
-
-		now = time(NULL);
-		if (localtime_r(&now, &now_tm) != NULL
-		    && localtime32(&user->laston, &logon_tm) != NULL) {
-			if (now_tm.tm_year != logon_tm.tm_year
-			    || now_tm.tm_mon != logon_tm.tm_mon
-			    || now_tm.tm_mday != logon_tm.tm_mday)
-				resetdailyuserdat(cfg, user, /* write: */ false);
+		if (!days_are_same(time(NULL), user->laston)) {
+			resetdailyuserdat(cfg, user, /* write: */ false);
 		}
 	}
 	return USER_SUCCESS;
@@ -3177,7 +3168,6 @@ bool logoutuserdat(scfg_t* cfg, user_t* user, time_t now, time_t logontime)
 {
 	char      str[128];
 	time_t    tused;
-	struct tm tm, tm_now;
 
 	if (user == NULL)
 		return false;
@@ -3193,15 +3183,8 @@ bool logoutuserdat(scfg_t* cfg, user_t* user, time_t now, time_t logontime)
 	adjustuserval(cfg, user->number, USER_TIMEON, user->tlast);
 	adjustuserval(cfg, user->number, USER_TTODAY, user->tlast);
 
-	/* Convert time_t to struct tm */
-	if (localtime_r(&now, &tm_now) == NULL)
-		return false;
-
-	if (localtime_r(&logontime, &tm) == NULL)
-		return false;
-
 	/* Reset daily stats if new day */
-	if (tm.tm_mday != tm_now.tm_mday)
+	if (!days_are_same(now, logontime))
 		resetdailyuserdat(cfg, user, /* write: */ true);
 
 	return true;

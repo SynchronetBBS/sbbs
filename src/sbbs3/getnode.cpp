@@ -113,7 +113,6 @@ static int getpagingnode(scfg_t* cfg)
 /****************************************************************************/
 void sbbs_t::nodesync(bool clearline)
 {
-	char str[256], today[32];
 	int  atr = curatr;
 
 	if (nodesync_inside || !online)
@@ -141,10 +140,7 @@ void sbbs_t::nodesync(bool clearline)
 		}
 
 		if (!(sys_status & SS_DATE_CHANGED)) {
-			now = time(NULL);
-			unixtodstr(logontime, str);
-			unixtodstr(now, today);
-			if (strcmp(str, today)) { /* New day, clear "today" user vars */
+			if (!days_are_same(time(NULL), logontime)) { /* New day, clear "today" user vars */
 				sys_status |= SS_DATE_CHANGED;  // So we don't keep doing this over&over
 				resetdailyuserdat(&cfg, &useron, /* write: */ true);
 			}
