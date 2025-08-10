@@ -525,15 +525,15 @@
 "\1n\1cComment %c : \1h%s\r\n"                             427 UeditCommentLine
 "\1n\1cFirst on  : \1h%-8.8s  \1n\1cExpire    : \1h%-8.8s  "\ 428 UserDates
 	"\1n\1cLast on   : \1h%-8.8s  %02u:%02u\r\n"
-"\1n\1cTime on   : \1h%-5u     \1n\1cToday     : "\          429 UserTimes
-	"\1h%-5u%-5u\1n\1cLast call : "\
-	"\1h%-5u%-5u\1n\1cExtra : \1h%u\r\n"
-"\1n\1cLogons    : \1h%-5u     \1n\1cToday     : "\          430 UserLogons
-	"\1h%-5u%-5u\1n\1cPosts     : "\
-	"\1h%-5u%-5u\1n\1cToday : \1h%u\r\n"
-"\1n\1cE-mails   : \1h%-5u     \1n\1cTo sysop  : "\          431 UserEmails
-	"\1h%-5u     \1n\1cWaiting   : "\
-	"\1h%-5u     \1n\1cToday : \1h%u\r\n"
+"\1n\1cTime on   : \1h%-10u\1n\1cToday     : "\          429 UserTimes
+	"\1h%-5u%4u \1n\1cLast call : "\
+	"\1h%-5u%4u \1n\1cExtra : \1h%u\r\n"
+"\1n\1cLogons    : \1h%-10u\1n\1cToday     : "\          430 UserLogons
+	"\1h%-5u%4u \1n\1cPosts     : "\
+	"\1h%-5u%4u \1n\1cToday : \1h%u\r\n"
+"\1n\1cE-mails   : \1h%-10u\1n\1cTo sysop  : "\          431 UserEmails
+	"\1h%-10u\1n\1cWaiting   : "\
+	"\1h%-10u\1n\1cToday : \1h%u\r\n"
 "\1n\1cNetMail   : \1h%s\r\n"                               432 UserNetMail
 "\1n\1cUploads   : \1h%9.9s \1n\1cbytes in "\               433 UserUploads
 	"\1h%u \1n\1cfiles\r\n"
