@@ -37,10 +37,6 @@
 #include "xpdatetime.h"
 #include "dat_rec.h"
 
-#ifndef USHRT_MAX
-	#define USHRT_MAX ((unsigned short)~0)
-#endif
-
 #define VALID_CFG(cfg)  (cfg != NULL && cfg->size == sizeof(scfg_t))
 #define VALID_USER_NUMBER(n) ((n) >= 1)
 #define VALID_USER_FIELD(n) ((n) >= 0 && (n) < USER_FIELD_COUNT)
@@ -3191,7 +3187,7 @@ bool logoutuserdat(scfg_t* cfg, user_t* user, time_t now, time_t logontime)
 		now = time(NULL);
 
 	tused = (now - logontime) / 60;
-	user->tlast = (tused > USHRT_MAX ? USHRT_MAX : tused);
+	user->tlast = tused;
 
 	putuserdatetime(cfg, user->number, USER_LASTON, (time32_t)now);
 	putuserstr(cfg, user->number, USER_TLAST, ultoa(user->tlast, str, 10));
