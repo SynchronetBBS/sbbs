@@ -15681,7 +15681,7 @@ handle_rip_line(BYTE *buf, unsigned *blen, unsigned *pos, size_t *rip_start, uns
 		if (rip.version && (cio_api.options & CONIO_OPT_SET_PIXEL))
 			rip.enabled = true;
 	}
-	else if ((pending[0] == '\x1b') && (pending[1] == '[')) {
+	else if ((pending[0] == '\x1b') && (pending[1] == '[') && pending[2]) {
 		do_skypix(pending, pending_len);
 	}
 	else {
