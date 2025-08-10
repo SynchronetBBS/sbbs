@@ -531,7 +531,7 @@ int parseuserdat(scfg_t* cfg, char *userdat, user_t *user, char* field[])
 
 		now = time(NULL);
 		if (localtime_r(&now, &now_tm) != NULL
-		    && localtime32(&user->logontime, &logon_tm) != NULL) {
+		    && localtime32(&user->laston, &logon_tm) != NULL) {
 			if (now_tm.tm_year != logon_tm.tm_year
 			    || now_tm.tm_mon != logon_tm.tm_mon
 			    || now_tm.tm_mday != logon_tm.tm_mday)
