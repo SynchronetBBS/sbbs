@@ -40,7 +40,7 @@ time_t checktime(void)
 	return (time_t)difftime(mktime(&tm), mktime(tmp));
 }
 
-bool days_are_same(time_t t1, time_t t2)
+bool dates_are_same(time_t t1, time_t t2)
 {
 	struct tm tm1, tm2;
 

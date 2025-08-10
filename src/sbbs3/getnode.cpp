@@ -140,7 +140,7 @@ void sbbs_t::nodesync(bool clearline)
 		}
 
 		if (!(sys_status & SS_DATE_CHANGED)) {
-			if (!days_are_same(time(NULL), logontime)) { /* New day, clear "today" user vars */
+			if (!dates_are_same(time(NULL), logontime)) { /* New day, clear "today" user vars */
 				sys_status |= SS_DATE_CHANGED;  // So we don't keep doing this over&over
 				resetdailyuserdat(&cfg, &useron, /* write: */ true);
 			}

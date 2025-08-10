@@ -69,7 +69,7 @@ void sbbs_t::useredit(int usernumber)
 				return;
 			}
 		}
-		if (!days_are_same(time(NULL), user.laston) && user.ltoday) {
+		if (!dates_are_same(time(NULL), user.laston) && user.ltoday) {
 			resetdailyuserdat(&cfg, &user, /* write: */true);
 		}
 		char   user_pass[LEN_PASS + 1];

@@ -525,7 +525,7 @@ int parseuserdat(scfg_t* cfg, char *userdat, user_t *user, char* field[])
 
 	/* Reset daily stats if not already logged on today */
 	if (user->ltoday || user->etoday || user->ptoday || user->ttoday || user->dtoday || user->btoday) {
-		if (!days_are_same(time(NULL), user->laston)) {
+		if (!dates_are_same(time(NULL), user->laston)) {
 			resetdailyuserdat(cfg, user, /* write: */ false);
 		}
 	}
@@ -3184,7 +3184,7 @@ bool logoutuserdat(scfg_t* cfg, user_t* user, time_t now, time_t logontime)
 	adjustuserval(cfg, user->number, USER_TTODAY, user->tlast);
 
 	/* Reset daily stats if new day */
-	if (!days_are_same(now, logontime))
+	if (!dates_are_same(now, logontime))
 		resetdailyuserdat(cfg, user, /* write: */ true);
 
 	return true;
