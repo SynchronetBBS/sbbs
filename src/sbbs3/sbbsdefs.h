@@ -925,8 +925,8 @@ enum COLORS {
 /********************/
 
 typedef struct {                        // Users information
-	ushort number,                      // Number
-	       uls,                         // Number of uploads
+	ushort number;                      // Number
+	uint   uls,                         // Number of uploads
 	       dls,                         // Number of downloads
 	       posts,                       // Number of posts
 	       emails,                      // Number of emails
@@ -938,8 +938,8 @@ typedef struct {                        // Users information
 	       logons,                      // Total logons
 	       ttoday,                      // Time on today
 	       tlast,                       // Time on last call
-	       ltoday,                      // Logons today
-	       xedit,                       // External editor (1 based)
+	       ltoday;                      // Logons today
+	int    xedit,                       // External editor (1 based)
 	       shell;                       // Command shell
 	uint32_t dtoday;                    // Downloads today (files)
 	uint64_t btoday;					// Downloads today (bytes)

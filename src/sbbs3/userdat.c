@@ -488,23 +488,23 @@ int parseuserdat(scfg_t* cfg, char *userdat, user_t *user, char* field[])
 	user->firston = parse_usertime(field[USER_FIRSTON]);
 	user->deldate = parse_usertime(field[USER_DELDATE]);
 
-	user->logons = (ushort)strtoul(field[USER_LOGONS], NULL, 0);
-	user->ltoday = (ushort)strtoul(field[USER_LTODAY], NULL, 0);
-	user->timeon = (ushort)strtoul(field[USER_TIMEON], NULL, 0);
-	user->ttoday = (ushort)strtoul(field[USER_TTODAY], NULL, 0);
-	user->tlast = (ushort)strtoul(field[USER_TLAST], NULL, 0);
-	user->posts = (ushort)strtoul(field[USER_POSTS], NULL, 0);
-	user->emails = (ushort)strtoul(field[USER_EMAILS], NULL, 0);
-	user->fbacks = (ushort)strtoul(field[USER_FBACKS], NULL, 0);
-	user->etoday = (ushort)strtoul(field[USER_ETODAY], NULL, 0);
-	user->ptoday = (ushort)strtoul(field[USER_PTODAY], NULL, 0);
+	user->logons = strtoul(field[USER_LOGONS], NULL, 0);
+	user->ltoday = strtoul(field[USER_LTODAY], NULL, 0);
+	user->timeon = strtoul(field[USER_TIMEON], NULL, 0);
+	user->ttoday = strtoul(field[USER_TTODAY], NULL, 0);
+	user->tlast = strtoul(field[USER_TLAST], NULL, 0);
+	user->posts = strtoul(field[USER_POSTS], NULL, 0);
+	user->emails = strtoul(field[USER_EMAILS], NULL, 0);
+	user->fbacks = strtoul(field[USER_FBACKS], NULL, 0);
+	user->etoday = strtoul(field[USER_ETODAY], NULL, 0);
+	user->ptoday = strtoul(field[USER_PTODAY], NULL, 0);
 	user->dtoday = strtoul(field[USER_DTODAY], NULL, 0);
 	user->btoday = strtoull(field[USER_BTODAY], NULL, 0);
 
 	user->ulb = strtoull(field[USER_ULB], NULL, 0);
-	user->uls = (ushort)strtoul(field[USER_ULS], NULL, 0);
+	user->uls = strtoul(field[USER_ULS], NULL, 0);
 	user->dlb = strtoull(field[USER_DLB], NULL, 0);
-	user->dls = (ushort)strtoul(field[USER_DLS], NULL, 0);
+	user->dls = strtoul(field[USER_DLS], NULL, 0);
 	user->dlcps = (uint32_t)strtoul(field[USER_DLCPS], NULL, 0);
 	user->leech = (uchar)strtoul(field[USER_LEECH], NULL, 0);
 
@@ -520,7 +520,7 @@ int parseuserdat(scfg_t* cfg, char *userdat, user_t *user, char* field[])
 	user->cdt = strtoull(field[USER_CDT], NULL, 0);
 	user->freecdt = strtoull(field[USER_FREECDT], NULL, 0);
 	user->min = strtoul(field[USER_MIN], NULL, 0);
-	user->textra = (ushort)strtoul(field[USER_TEXTRA], NULL, 0);
+	user->textra = strtoul(field[USER_TEXTRA], NULL, 0);
 	user->expire = parse_usertime(field[USER_EXPIRE]);
 
 	/* Reset daily stats if not already logged on today */
@@ -2988,8 +2988,8 @@ bool user_posted_msg(scfg_t* cfg, user_t* user, int count)
 	if (user == NULL)
 		return false;
 
-	user->posts = (ushort)adjustuserval(cfg, user->number, USER_POSTS, count);
-	user->ptoday = (ushort)adjustuserval(cfg, user->number, USER_PTODAY, count);
+	user->posts = adjustuserval(cfg, user->number, USER_POSTS, count);
+	user->ptoday = adjustuserval(cfg, user->number, USER_PTODAY, count);
 
 	if (user->rest & FLAG('Q'))
 		return true;
@@ -3003,10 +3003,10 @@ bool user_sent_email(scfg_t* cfg, user_t* user, int count, bool feedback)
 		return false;
 
 	if (feedback)
-		user->fbacks = (ushort)adjustuserval(cfg, user->number, USER_FBACKS, count);
+		user->fbacks = adjustuserval(cfg, user->number, USER_FBACKS, count);
 	else
-		user->emails = (ushort)adjustuserval(cfg, user->number, USER_EMAILS, count);
-	user->etoday = (ushort)adjustuserval(cfg, user->number, USER_ETODAY, count);
+		user->emails = adjustuserval(cfg, user->number, USER_EMAILS, count);
+	user->etoday = adjustuserval(cfg, user->number, USER_ETODAY, count);
 
 	return inc_email_stats(cfg, count, feedback);
 }
@@ -3016,7 +3016,7 @@ bool user_downloaded(scfg_t* cfg, user_t* user, int files, off_t bytes)
 	if (user == NULL)
 		return false;
 
-	user->dls = (ushort)adjustuserval(cfg, user->number, USER_DLS, files);
+	user->dls = adjustuserval(cfg, user->number, USER_DLS, files);
 	user->dlb = adjustuserval(cfg, user->number, USER_DLB, bytes);
 	user->dtoday = (uint32_t)adjustuserval(cfg, user->number, USER_DTODAY, files);
 	user->btoday = adjustuserval(cfg, user->number, USER_BTODAY, bytes);
@@ -3133,7 +3133,7 @@ bool user_uploaded(scfg_t* cfg, user_t* user, int files, off_t bytes)
 	if (user == NULL)
 		return false;
 
-	user->uls = (ushort)adjustuserval(cfg, user->number, USER_ULS, files);
+	user->uls = adjustuserval(cfg, user->number, USER_ULS, files);
 	user->ulb = adjustuserval(cfg, user->number, USER_ULB, bytes);
 
 	return true;
@@ -3191,7 +3191,7 @@ bool logoutuserdat(scfg_t* cfg, user_t* user, time_t now, time_t logontime)
 		now = time(NULL);
 
 	tused = (now - logontime) / 60;
-	user->tlast = (ushort)(tused > USHRT_MAX ? USHRT_MAX : tused);
+	user->tlast = (tused > USHRT_MAX ? USHRT_MAX : tused);
 
 	putuserdatetime(cfg, user->number, USER_LASTON, (time32_t)now);
 	putuserstr(cfg, user->number, USER_TLAST, ultoa(user->tlast, str, 10));
