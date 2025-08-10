@@ -13,6 +13,7 @@ Fix binary mode tracking, which could cause issues after transfers
 Fix SDL and GDI issue with textmode() when font is changed
 Fix manual upload screen when not in cp437+ANSI mode
 Fix loss of character when performing LCF wrap
+Fix crash at startup when built with gcc15 and -fhardened
 
 Version 1.6
 ------------
