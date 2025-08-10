@@ -4340,14 +4340,14 @@ static bool smtp_client_thread(smtp_t* smtp)
 				break;
 			}
 			if ((i = getuserdat(&scfg, &relay_user)) != 0) {
-				errprintf(LOG_ERR, WHERE, "%04d %-5s %s !ERROR %d getting data on user (%s)"
-				          , socket, client.protocol, client_id, i, user_name);
+				errprintf(LOG_ERR, WHERE, "%04d %-5s %s <%s> !ERROR %d getting user data"
+				          , socket, client.protocol, client_id, user_name, i);
 				badlogin(socket, session, badauth_rsp, NULL, NULL, &client, NULL);
 				break;
 			}
 			if (relay_user.misc & (DELETED | INACTIVE)) {
-				lprintf(LOG_NOTICE, "%04d %-5s %s !DELETED or INACTIVE user #%u (%s)"
-				        , socket, client.protocol, client_id, relay_user.number, user_name);
+				lprintf(LOG_NOTICE, "%04d %-5s %s <%s> !DELETED or INACTIVE user #%u"
+				        , socket, client.protocol, client_id, user_name, relay_user.number);
 				badlogin(socket, session, badauth_rsp, NULL, NULL, &client, NULL);
 				break;
 			}
