@@ -40,6 +40,18 @@ time_t checktime(void)
 	return (time_t)difftime(mktime(&tm), mktime(tmp));
 }
 
+bool days_are_same(time_t t1, time_t t2)
+{
+	struct tm tm1, tm2;
+
+	if (localtime_r(&t1, &tm1) == NULL)
+		return false;
+	if (localtime_r(&t2, &tm2) == NULL)
+		return false;
+
+	return (tm1.tm_year == tm2.tm_year) && (tm1.tm_yday == tm2.tm_yday);
+}
+
 /* Compensates for struct tm "weirdness" */
 time_t sane_mktime(struct tm* tm)
 {

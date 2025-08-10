@@ -31,6 +31,9 @@ extern "C" {
 /* Return difference (in seconds) in time() result from standard (0 on success) */
 DLLEXPORT time_t		checktime(void);
 
+/* Determine if the time's represent the same calendar day */
+DLLEXPORT bool			days_are_same(time_t, time_t);
+
 /* Implementation of mktime()/timegm() that handles common tm element conversions for you */
 DLLEXPORT time_t		sane_mktime(struct tm*);
 DLLEXPORT time_t		sane_timegm(struct tm*);
