@@ -4288,8 +4288,9 @@ static bool smtp_client_thread(smtp_t* smtp)
 			client.usernum = relay_user.number;
 			client_on(socket, &client, TRUE /* update */);
 
-			lprintf(LOG_INFO, "%04d %-5s %s <%s> logged-in using %s authentication"
-			        , socket, client.protocol, client_id, relay_user.alias, auth_login ? "LOGIN" : "PLAIN");
+			lprintf(LOG_INFO, "%04d %-5s %s <%s> logged-in using %s authentication (%u emails sent today)"
+			        , socket, client.protocol, client_id, relay_user.alias, auth_login ? "LOGIN" : "PLAIN"
+					, relay_user.etoday);
 			SAFEPRINTF(client_id, "<%s>", relay_user.alias);
 			sockprintf(socket, client.protocol, session, auth_ok);
 #ifdef _WIN32
@@ -4393,8 +4394,8 @@ static bool smtp_client_thread(smtp_t* smtp)
 			client.usernum = relay_user.number;
 			client_on(socket, &client, TRUE /* update */);
 
-			lprintf(LOG_INFO, "%04d %-5s %s <%s> logged-in using CRAM-MD5 authentication"
-			        , socket, client.protocol, client_id, relay_user.alias);
+			lprintf(LOG_INFO, "%04d %-5s %s <%s> logged-in using CRAM-MD5 authentication (%u emails sent today)"
+			        , socket, client.protocol, client_id, relay_user.alias, relay_user.etoday);
 			SAFEPRINTF(client_id, "<%s>", relay_user.alias);
 			sockprintf(socket, client.protocol, session, auth_ok);
 #ifdef _WIN32
