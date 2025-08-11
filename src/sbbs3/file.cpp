@@ -171,6 +171,8 @@ bool sbbs_t::removefcdt(file_t* f)
 		bprintf(text[UnknownUploader], f->from, f->name);
 		return false;
 	}
+	if (getuserdat(&cfg, &user) != USER_SUCCESS)
+		return false;
 	cdt = 0L;
 	if (cfg.dir[f->dir]->misc & DIR_CDTMIN && cur_cps) {
 		if (cfg.dir[f->dir]->misc & DIR_CDTUL)
