@@ -8022,8 +8022,9 @@ rv_save(const char * const var, const void * const data)
 		rip.stw.ey = cterm->bottom_margin - 1;
 		rip.stw.wrap = (cterm->extattr & CTERM_EXTATTR_AUTOWRAP) ? 1 : 0;
 		assert_rwlock_rdlock(&vstatlock);
-		rip.stw.size = vstat.charwidth;
+		const int charwidth = vstat.charwidth;
 		assert_rwlock_unlock(&vstatlock);
+		rip.stw.size = charwidth;
 		rip.stw.curstype = rip.curstype;
 		rip.stw.attr = cterm->attr;
 		return NULL;
