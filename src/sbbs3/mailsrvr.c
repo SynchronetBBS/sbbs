@@ -4592,7 +4592,8 @@ static bool smtp_client_thread(smtp_t* smtp)
 				}
 			}
 
-			if (relay_user.number && (relay_user.etoday + rcpt_count) >= scfg.level_emailperday[relay_user.level]
+			if (relay_user.number && getuserdat(&scfg, &relay_user) == USER_SUCCESS
+				&& (relay_user.etoday + rcpt_count) >= scfg.level_emailperday[relay_user.level]
 			    && !(relay_user.exempt & FLAG('M'))) {
 				lprintf(LOG_NOTICE, "%04d %-5s %s !EMAILS PER DAY LIMIT (%u) REACHED FOR USER #%u (%s)"
 				        , socket, client.protocol, client_id, scfg.level_emailperday[relay_user.level], relay_user.number, relay_user.alias);
