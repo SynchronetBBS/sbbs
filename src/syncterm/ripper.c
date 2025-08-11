@@ -15736,6 +15736,13 @@ handle_rip_line(BYTE *buf, unsigned *blen, unsigned *pos, size_t *rip_start, uns
 	else {
 		if ((*blen > 0) && (rip.state == RIP_STATE_CR) && (buf[0] == '\n'))
 			remove = 1;
+		else if ((*blen > 0) && (rip.state == RIP_STATE_CSI) && (buf[0] == '!'))
+			remove = 1;
+		else if ((*blen > 0) && (rip.state == RIP_STATE_CSI) && (buf[0] >= '0' && buf[0] <= '2')) {
+			remove = 1;
+			if ((*blen > 1) && (buf[1] == '1'))
+				remove++;
+		}
 		else
 			remove = 0;
 		remainder = *blen;
