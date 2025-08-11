@@ -106,6 +106,7 @@ enum user_field {
 	USER_DELDATE,
 	USER_DTODAY,   // Downloads today (files)
 	USER_BTODAY,   // Downloads today (bytes)
+	USER_RESET,    // Date/time of last daily reset
 
 	// Last:
 	USER_FIELD_COUNT

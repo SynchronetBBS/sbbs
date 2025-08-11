@@ -139,11 +139,10 @@ void sbbs_t::nodesync(bool clearline)
 			}
 		}
 
-		if (!(sys_status & SS_DATE_CHANGED)) {
-			if (!dates_are_same(time(NULL), logontime)) { /* New day, clear "today" user vars */
-				sys_status |= SS_DATE_CHANGED;  // So we don't keep doing this over&over
-				resetdailyuserdat(&cfg, &useron, /* write: */ true);
-			}
+		if (!dates_are_same(time(NULL), useron.reset)) { /* New day, clear "today" user vars */
+			sys_status |= SS_DATE_CHANGED; // Note: this could happen multiple times in a single (very long) user session
+			lprintf(LOG_DEBUG, "New day detected");
+			resetdailyuserdat(&cfg, &useron, /* write: */ true);
 		}
 		if (thisnode.misc & NODE_UDAT && !(useron.rest & FLAG('G'))) {   /* not guest */
 			if (getuseron(WHERE) && getnodedat(cfg.node_num, &thisnode, true)) {

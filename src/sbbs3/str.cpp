@@ -1279,8 +1279,8 @@ void sbbs_t::time_bank(void)
 		s = getnum(s);
 		if (s > 0) {
 			logline("  ", "Minute Bank Deposit");
-			useron.min = (uint32_t)adjustuserval(&cfg, useron.number, USER_MIN, s);
-			useron.ttoday = (ushort)adjustuserval(&cfg, useron.number, USER_TTODAY, s);
+			useron.min = (uint32_t)adjustuserval(&cfg, &useron, USER_MIN, s);
+			useron.ttoday = adjustuserval(&cfg, &useron, USER_TTODAY, s);
 			snprintf(str, sizeof str, "Minute Adjustment: %u", s * cfg.cdt_min_value);
 			logline("*+", str);
 		}
@@ -1308,8 +1308,8 @@ void sbbs_t::time_bank(void)
 		s = getnum(s);
 		if (s > 0) {
 			logline("  ", "Credit to Minute Conversion");
-			useron.cdt = adjustuserval(&cfg, useron.number, USER_CDT, -(s * 102400L));
-			useron.min = (uint32_t)adjustuserval(&cfg, useron.number, USER_MIN, s * (int)cfg.cdt_min_value);
+			useron.cdt = adjustuserval(&cfg, &useron, USER_CDT, -(s * 102400L));
+			useron.min = (uint32_t)adjustuserval(&cfg, &useron, USER_MIN, s * (int)cfg.cdt_min_value);
 			snprintf(str, sizeof str, "Credit Adjustment: %ld", -(s * 102400L));
 			logline("$-", str);
 			snprintf(str, sizeof str, "Minute Adjustment: %u", s * cfg.cdt_min_value);

@@ -231,8 +231,8 @@ uint sbbs_t::gettimeleft(bool handle_out_of_time)
 				SAFEPRINTF(tmp, text[Convert100ktoNminQ], cfg.cdt_min_value);
 				if (yesno(tmp)) {
 					logline("  ", "Credit to Minute Conversion");
-					useron.min = (uint32_t)adjustuserval(&cfg, useron.number, USER_MIN, cfg.cdt_min_value);
-					useron.cdt = adjustuserval(&cfg, useron.number, USER_CDT, -(102400LL));
+					useron.min = (uint32_t)adjustuserval(&cfg, &useron, USER_MIN, cfg.cdt_min_value);
+					useron.cdt = adjustuserval(&cfg, &useron, USER_CDT, -(102400LL));
 					SAFEPRINTF(str, "Credit Adjustment: %ld", -(102400L));
 					logline("$-", str);
 					SAFEPRINTF(str, "Minute Adjustment: %u", cfg.cdt_min_value);

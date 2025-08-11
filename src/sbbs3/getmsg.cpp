@@ -444,9 +444,9 @@ void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del, bool 
 										(void)remove(fpath);
 									logon_dlb += length;  /* Update stats */
 									logon_dls++;
-									useron.dls = (ushort)adjustuserval(&cfg, useron.number
+									useron.dls = adjustuserval(&cfg, &useron
 									                                   , USER_DLS, 1);
-									useron.dlb = adjustuserval(&cfg, useron.number
+									useron.dlb = adjustuserval(&cfg, &useron
 									                           , USER_DLB, length);
 									downloadedbytes(length, elapsed);
 									bprintf(text[FileNBytesSent]

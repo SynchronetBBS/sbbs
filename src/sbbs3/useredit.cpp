@@ -561,7 +561,7 @@ void sbbs_t::useredit(int usernumber)
 						adj = strtoll(str, NULL, 10) * cfg.cdt_per_dollar;
 					else
 						adj = parse_byte_count(str, 1);
-					adjustuserval(&cfg, user.number, USER_CDT, adj);
+					adjustuserval(&cfg, &user, USER_CDT, adj);
 				}
 				break;
 			case '*':

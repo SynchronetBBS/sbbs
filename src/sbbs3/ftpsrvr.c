@@ -806,11 +806,11 @@ static void send_thread(void* arg)
 						l = 0;
 					if (scfg.dir[f.dir]->misc & DIR_CDTMIN && cps) { /* Give min instead of cdt */
 						mod = ((ulong)(l * (scfg.dir[f.dir]->dn_pct / 100.0)) / cps) / 60;
-						adjustuserval(&scfg, uploader.number, USER_MIN, mod);
+						adjustuserval(&scfg, &uploader, USER_MIN, mod);
 						sprintf(tmp, "%lu minute", mod);
 					} else {
 						mod = (ulong)(l * (scfg.dir[f.dir]->dn_pct / 100.0));
-						adjustuserval(&scfg, uploader.number, USER_CDT, mod);
+						adjustuserval(&scfg, &uploader, USER_CDT, mod);
 						u32toac(mod, tmp, ',');
 					}
 					if (!(scfg.dir[f.dir]->misc & DIR_QUIET)) {
@@ -1130,10 +1130,10 @@ static void receive_thread(void* arg)
 			user_uploaded(&scfg, xfer.user, (!xfer.append && xfer.filepos == 0) ? 1:0, total);
 			if (scfg.dir[f.dir]->up_pct && scfg.dir[f.dir]->misc & DIR_CDTUL) { /* credit for upload */
 				if (scfg.dir[f.dir]->misc & DIR_CDTMIN && cps)    /* Give min instead of cdt */
-					xfer.user->min = (uint32_t)adjustuserval(&scfg, xfer.user->number, USER_MIN
+					xfer.user->min = (uint32_t)adjustuserval(&scfg, xfer.user, USER_MIN
 					                                         , ((ulong)(total * (scfg.dir[f.dir]->up_pct / 100.0)) / cps) / 60);
 				else
-					xfer.user->cdt = adjustuserval(&scfg, xfer.user->number, USER_CDT
+					xfer.user->cdt = adjustuserval(&scfg, xfer.user, USER_CDT
 					                               , cdt * (uint64_t)(scfg.dir[f.dir]->up_pct / 100.0));
 			}
 			if (!(scfg.dir[f.dir]->misc & DIR_NOSTAT))

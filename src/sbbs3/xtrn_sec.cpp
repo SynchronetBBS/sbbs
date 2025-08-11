@@ -1074,7 +1074,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 				truncsp(str);
 				mod = atol(str) * 1024L;
 				if (mod) {
-					useron.dlb = adjustuserval(&cfg, useron.number, USER_DLB, mod);
+					useron.dlb = adjustuserval(&cfg, &useron, USER_DLB, mod);
 					subtract_cdt(&cfg, &useron, mod);
 				}
 			}
@@ -1144,7 +1144,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 			}
 			logline(tmp, str);
 			if (mod > 0L)          /* always add to real cdt */
-				useron.cdt = adjustuserval(&cfg, useron.number, USER_CDT, mod);
+				useron.cdt = adjustuserval(&cfg, &useron, USER_CDT, mod);
 			else
 				subtract_cdt(&cfg, &useron, -mod); /* subtract from free cdt first */
 		}
@@ -1196,7 +1196,7 @@ void sbbs_t::moduserdat(uint xtrnnum)
 			if (mod) {
 				SAFEPRINTF(str, "Minute Adjustment: %s", ultoac(mod, tmp));
 				logline("*+", str);
-				useron.min = (uint32_t)adjustuserval(&cfg, useron.number, USER_MIN, mod);
+				useron.min = (uint32_t)adjustuserval(&cfg, &useron, USER_MIN, mod);
 			}
 		}
 		if (fgets(str, 81, stream)) {      /* flags #3 */

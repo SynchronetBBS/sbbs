@@ -995,7 +995,8 @@ typedef struct {                        // Users information
 	         pwmod,                     // Password last modified
 	         ns_time,                   // Date/Time of last new file scan
 	         logontime,                 // Time of current logon
-	         deldate;                   // Date/TIme account deleted
+	         deldate,                   // Date/Time account deleted
+	         reset;                     // Date/Time of last daily (e.g. stats) reset
 } user_t;
 
 typedef struct {

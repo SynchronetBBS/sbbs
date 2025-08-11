@@ -164,10 +164,10 @@ bool sbbs_t::removefcdt(file_t* f)
 {
 	char str[128];
 	char tmp[512];
-	int  u;
 	long cdt;
+	user_t user;
 
-	if ((u = matchuser(&cfg, f->from, TRUE /*sysop_alias*/)) == 0) {
+	if ((user.number = matchuser(&cfg, f->from, TRUE /*sysop_alias*/)) == 0) {
 		bprintf(text[UnknownUploader], f->from, f->name);
 		return false;
 	}
@@ -179,11 +179,11 @@ bool sbbs_t::removefcdt(file_t* f)
 		    && f->hdr.times_downloaded)  /* all downloads */
 			cdt += ((ulong)((long)f->hdr.times_downloaded
 			                * f->cost * (cfg.dir[f->dir]->dn_pct / 100.0)) / cur_cps) / 60;
-		adjustuserval(&cfg, u, USER_MIN, -cdt);
+		adjustuserval(&cfg, &user, USER_MIN, -cdt);
 		snprintf(str, sizeof str, "%lu minute", cdt);
 		snprintf(tmp, sizeof tmp, text[FileRemovedUserMsg]
 		         , f->name, cdt ? str : text[No]);
-		putsmsg(u, tmp);
+		putsmsg(user.number, tmp);
 	}
 	else {
 		if (cfg.dir[f->dir]->misc & DIR_CDTUL)
@@ -200,14 +200,14 @@ bool sbbs_t::removefcdt(file_t* f)
 				return false;
 			cdt = atol(str);
 		}
-		adjustuserval(&cfg, u, USER_CDT, -cdt);
+		adjustuserval(&cfg, &user, USER_CDT, -cdt);
 		snprintf(tmp, sizeof tmp, text[FileRemovedUserMsg]
 		         , f->name, cdt > 0 ? ultoac(cdt, str) : text[No]);
-		putsmsg(u, tmp);
+		putsmsg(user.number, tmp);
 	}
 
-	adjustuserval(&cfg, u, USER_ULB, -f->size);
-	adjustuserval(&cfg, u, USER_ULS, -1);
+	adjustuserval(&cfg, &user, USER_ULB, -f->size);
+	adjustuserval(&cfg, &user, USER_ULS, -1);
 	return true;
 }
 

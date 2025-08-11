@@ -518,10 +518,11 @@ int parseuserdat(scfg_t* cfg, char *userdat, user_t *user, char* field[])
 	user->min = strtoul(field[USER_MIN], NULL, 0);
 	user->textra = strtoul(field[USER_TEXTRA], NULL, 0);
 	user->expire = parse_usertime(field[USER_EXPIRE]);
+	user->reset = parse_usertime(field[USER_RESET]);
 
 	/* Reset daily stats if not already logged on today */
 	if (user->ltoday || user->etoday || user->ptoday || user->ttoday || user->dtoday || user->btoday) {
-		if (!dates_are_same(time(NULL), user->laston)) {
+		if (!dates_are_same(time(NULL), user->reset)) {
 			resetdailyuserdat(cfg, user, /* write: */ false);
 		}
 	}
@@ -646,6 +647,7 @@ bool format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 	char pwmod[64];
 	char expire[64];
 	char deldate[64];
+	char reset[64];
 	u32toaf(user->flags1, flags1);
 	u32toaf(user->flags2, flags2);
 	u32toaf(user->flags3, flags3);
@@ -659,6 +661,7 @@ bool format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 	format_datetime(user->pwmod, pwmod, sizeof(pwmod));
 	format_datetime(user->expire, expire, sizeof(expire));
 	format_datetime(user->deldate, deldate, sizeof(deldate));
+	format_datetime(user->reset, reset, sizeof(reset));
 
 	// NOTE: order must match enum user_field definition (in userfields.h)
 	int len = snprintf(userdat, USER_RECORD_LEN,
@@ -729,6 +732,7 @@ bool format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 	                   "%s\t" // USER_DELDATE
 	                   "%" PRIu32 "\t" // USER_DTODAY
 	                   "%" PRIu64 "\t" // USER_BTODAY
+	                   "%s\t" // USER_RESET
 	                   , user->number
 	                   , user->alias
 	                   , user->name
@@ -796,6 +800,7 @@ bool format_userdat(scfg_t* cfg, user_t* user, char userdat[])
 	                   , deldate
 	                   , user->dtoday
 	                   , user->btoday
+	                   , reset
 	                   );
 	if (len > USER_RECORD_LEN || len < 0) // truncated?
 		return false;
@@ -2739,6 +2744,16 @@ uint64_t getuserdec64(scfg_t* cfg, int usernumber, enum user_field fnum)
 	return strtoull(str, NULL, 10);
 }
 
+time32_t getuserdatetime(scfg_t* cfg , int usernumber, enum user_field fnum)
+{
+	char str[32];
+
+	if (getuserstr(cfg, usernumber, fnum, str, sizeof(str)) == NULL)
+		return 0;
+
+	return parse_usertime(str);
+}
+
 uint32_t getusermisc(scfg_t* cfg, int usernumber)
 {
 	return getuserhex32(cfg, usernumber, USER_MISC);
@@ -2861,11 +2876,28 @@ int putuserqwk(scfg_t* cfg, int usernumber, uint32_t value)
 	return putuserhex32(cfg, usernumber, USER_QWK, value);
 }
 
+static bool is_daily_user_field(enum user_field fnum)
+{
+	switch(fnum) {
+		case USER_LTODAY:
+		case USER_TTODAY:
+		case USER_ETODAY:
+		case USER_PTODAY:
+		case USER_FREECDT:
+		case USER_TEXTRA:
+		case USER_DTODAY:
+		case USER_BTODAY:
+			return true;
+		default:
+			return false;
+	}
+}
+
 /****************************************************************************/
 /* Updates user 'usernumber's numeric field value by adding 'adj' to it		*/
 /* returns the new value.													*/
 /****************************************************************************/
-uint64_t adjustuserval(scfg_t* cfg, int usernumber, enum user_field fnum, int64_t adj)
+uint64_t adjustuserval(scfg_t* cfg, user_t* user, enum user_field fnum, int64_t adj)
 {
 	char     value[256];
 	char     userdat[USER_RECORD_LEN + 1];
@@ -2873,13 +2905,22 @@ uint64_t adjustuserval(scfg_t* cfg, int usernumber, enum user_field fnum, int64_
 	bool     valid = true;
 	uint64_t val = 0;
 
-	if (!VALID_CFG(cfg) || !VALID_USER_NUMBER(usernumber) || !VALID_USER_FIELD(fnum))
+	if (user == NULL)
 		return 0;
+
+	if (!VALID_CFG(cfg) || !VALID_USER_NUMBER(user->number) || !VALID_USER_FIELD(fnum))
+		return 0;
+
+	if (is_daily_user_field(fnum)) {
+		user->reset = getuserdatetime(cfg, user->number, USER_RESET);
+		if (!dates_are_same(time(NULL), user->reset))
+			resetdailyuserdat(cfg, user, /* write; */true);
+	}
 
 	if ((file = openuserdat(cfg, /* for_modify: */ true)) < 0)
 		return 0;
 
-	if (readuserdat(cfg, usernumber, userdat, sizeof(userdat), file, /* leave_locked: */ true) == 0) {
+	if (readuserdat(cfg, user->number, userdat, sizeof(userdat), file, /* leave_locked: */ true) == 0) {
 		char* field[USER_FIELD_COUNT];
 		split_userdat(userdat, field);
 		val = strtoull(field[fnum], NULL, 10);
@@ -2926,13 +2967,13 @@ uint64_t adjustuserval(scfg_t* cfg, int usernumber, enum user_field fnum, int64_
 		}
 		if (valid) {
 			field[fnum] = value;
-			if (seekuserdat(file, usernumber))
+			if (seekuserdat(file, user->number))
 				writeuserfields(cfg, field, file);
 		}
 	}
-	unlockuserdat(file, usernumber);
+	unlockuserdat(file, user->number);
 	close(file);
-	dirtyuserdat(cfg, usernumber);
+	dirtyuserdat(cfg, user->number);
 	return val;
 }
 
@@ -2966,7 +3007,7 @@ void subtract_cdt(scfg_t* cfg, user_t* user, uint64_t amt)
 			mod = amt - user->freecdt;   /* free credits */
 			putuserstr(cfg, user->number, USER_FREECDT, "0");
 			user->freecdt = 0;
-			user->cdt = adjustuserval(cfg, user->number, USER_FREECDT, -mod);
+			user->cdt = adjustuserval(cfg, user, USER_FREECDT, -mod);
 		} else {                          /* subtract just free credits */
 			user->freecdt -= amt;
 			putuserstr(cfg, user->number, USER_FREECDT, _ui64toa(user->freecdt, tmp, 10));
@@ -2975,7 +3016,7 @@ void subtract_cdt(scfg_t* cfg, user_t* user, uint64_t amt)
 	else {  /* no free credits */
 		if (amt > INT64_MAX)
 			amt = INT64_MAX;
-		user->cdt = adjustuserval(cfg, user->number, USER_CDT, -(int64_t)amt);
+		user->cdt = adjustuserval(cfg, user, USER_CDT, -(int64_t)amt);
 	}
 }
 
@@ -2984,8 +3025,8 @@ bool user_posted_msg(scfg_t* cfg, user_t* user, int count)
 	if (user == NULL)
 		return false;
 
-	user->posts = adjustuserval(cfg, user->number, USER_POSTS, count);
-	user->ptoday = adjustuserval(cfg, user->number, USER_PTODAY, count);
+	user->posts = adjustuserval(cfg, user, USER_POSTS, count);
+	user->ptoday = adjustuserval(cfg, user, USER_PTODAY, count);
 
 	if (user->rest & FLAG('Q'))
 		return true;
@@ -2999,10 +3040,10 @@ bool user_sent_email(scfg_t* cfg, user_t* user, int count, bool feedback)
 		return false;
 
 	if (feedback)
-		user->fbacks = adjustuserval(cfg, user->number, USER_FBACKS, count);
+		user->fbacks = adjustuserval(cfg, user, USER_FBACKS, count);
 	else
-		user->emails = adjustuserval(cfg, user->number, USER_EMAILS, count);
-	user->etoday = adjustuserval(cfg, user->number, USER_ETODAY, count);
+		user->emails = adjustuserval(cfg, user, USER_EMAILS, count);
+	user->etoday = adjustuserval(cfg, user, USER_ETODAY, count);
 
 	return inc_email_stats(cfg, count, feedback);
 }
@@ -3012,10 +3053,10 @@ bool user_downloaded(scfg_t* cfg, user_t* user, int files, off_t bytes)
 	if (user == NULL)
 		return false;
 
-	user->dls = adjustuserval(cfg, user->number, USER_DLS, files);
-	user->dlb = adjustuserval(cfg, user->number, USER_DLB, bytes);
-	user->dtoday = (uint32_t)adjustuserval(cfg, user->number, USER_DTODAY, files);
-	user->btoday = adjustuserval(cfg, user->number, USER_BTODAY, bytes);
+	user->dls = adjustuserval(cfg, user, USER_DLS, files);
+	user->dlb = adjustuserval(cfg, user, USER_DLB, bytes);
+	user->dtoday = (uint32_t)adjustuserval(cfg, user, USER_DTODAY, files);
+	user->btoday = adjustuserval(cfg, user, USER_BTODAY, bytes);
 
 	return true;
 }
@@ -3073,7 +3114,7 @@ bool user_downloaded_file(scfg_t* cfg, user_t* user, client_t* client,
 		if (!(cfg->dir[dirnum]->misc & DIR_CDTDL)) /* Don't give credits on d/l */
 			l = 0;
 		uint64_t mod = (uint64_t)(l * (cfg->dir[dirnum]->dn_pct / 100.0));
-		adjustuserval(cfg, uploader.number, USER_CDT, mod);
+		adjustuserval(cfg, &uploader, USER_CDT, mod);
 		if (cfg->text != NULL && !(cfg->dir[dirnum]->misc & DIR_QUIET)) {
 			char        str[256];
 			char        tmp[128];
@@ -3129,8 +3170,8 @@ bool user_uploaded(scfg_t* cfg, user_t* user, int files, off_t bytes)
 	if (user == NULL)
 		return false;
 
-	user->uls = adjustuserval(cfg, user->number, USER_ULS, files);
-	user->ulb = adjustuserval(cfg, user->number, USER_ULB, bytes);
+	user->uls = adjustuserval(cfg, user, USER_ULS, files);
+	user->ulb = adjustuserval(cfg, user, USER_ULB, bytes);
 
 	return true;
 }
@@ -3143,7 +3184,7 @@ bool user_adjust_credits(scfg_t* cfg, user_t* user, int64_t amount)
 	if (amount < 0)    /* subtract */
 		subtract_cdt(cfg, user, -amount);
 	else            /* add */
-		user->cdt = adjustuserval(cfg, user->number, USER_CDT, amount);
+		user->cdt = adjustuserval(cfg, user, USER_CDT, amount);
 
 	return true;
 }
@@ -3153,7 +3194,7 @@ bool user_adjust_minutes(scfg_t* cfg, user_t* user, long amount)
 	if (user == NULL)
 		return false;
 
-	user->min = (uint32_t)adjustuserval(cfg, user->number, USER_MIN, amount);
+	user->min = (uint32_t)adjustuserval(cfg, user, USER_MIN, amount);
 
 	return true;
 }
@@ -3191,12 +3232,8 @@ bool logoutuserdat(scfg_t* cfg, user_t* user, time_t now, time_t logontime)
 
 	putuserdatetime(cfg, user->number, USER_LASTON, (time32_t)now);
 	putuserstr(cfg, user->number, USER_TLAST, ultoa(user->tlast, str, 10));
-	adjustuserval(cfg, user->number, USER_TIMEON, user->tlast);
-	adjustuserval(cfg, user->number, USER_TTODAY, user->tlast);
-
-	/* Reset daily stats if new day */
-	if (!dates_are_same(now, logontime))
-		resetdailyuserdat(cfg, user, /* write: */ true);
+	adjustuserval(cfg, user, USER_TIMEON, user->tlast);
+	adjustuserval(cfg, user, USER_TTODAY, user->tlast);
 
 	return true;
 }
@@ -3240,6 +3277,10 @@ void resetdailyuserdat(scfg_t* cfg, user_t* user, bool write)
 	user->textra = 0;
 	if (write)
 		putuserstr(cfg, user->number, USER_TEXTRA, "0");
+	/* reset timestmap */
+	user->reset = time32(NULL);
+	if (write)
+		putuserdatetime(cfg, user->number, USER_RESET, user->reset);
 }
 
 /****************************************************************************/
@@ -3571,6 +3612,7 @@ size_t user_field_len(enum user_field fnum)
 		case USER_LASTON:       return sizeof(user.laston);
 		case USER_FIRSTON:      return sizeof(user.firston);
 		case USER_DELDATE:      return sizeof(user.deldate);
+		case USER_RESET:        return sizeof(user.reset);
 
 		// Counting stats:
 		case USER_LOGONS:       return sizeof(user.logons);
