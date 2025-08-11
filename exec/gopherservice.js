@@ -163,7 +163,9 @@ switch(request) {
 				u.number=system.node_list[n].useron;
 				//write(format("%s (%u %s) ", u.alias, u.age, u.gender));
 				write(u.alias + " (" + u.age + " " + u.gender +") ");
-				if(system.node_list[n].action==NODE_XTRN && system.node_list[n].aux)
+				if(system.node_list[n].activity)
+					write(system.node_list[n].activity);
+				else if(system.node_list[n].action==NODE_XTRN && system.node_list[n].aux)
 					write("running %s" + u.curxtrn);
 				else
 					write(format(NodeAction[system.node_list[n].action],system.node_list[n].aux));
