@@ -3025,8 +3025,8 @@ bool user_posted_msg(scfg_t* cfg, user_t* user, int count)
 	if (user == NULL)
 		return false;
 
-	user->posts = adjustuserval(cfg, user, USER_POSTS, count);
-	user->ptoday = adjustuserval(cfg, user, USER_PTODAY, count);
+	user->posts = (uint)adjustuserval(cfg, user, USER_POSTS, count);
+	user->ptoday = (uint)adjustuserval(cfg, user, USER_PTODAY, count);
 
 	if (user->rest & FLAG('Q'))
 		return true;
@@ -3040,10 +3040,10 @@ bool user_sent_email(scfg_t* cfg, user_t* user, int count, bool feedback)
 		return false;
 
 	if (feedback)
-		user->fbacks = adjustuserval(cfg, user, USER_FBACKS, count);
+		user->fbacks = (uint)adjustuserval(cfg, user, USER_FBACKS, count);
 	else
-		user->emails = adjustuserval(cfg, user, USER_EMAILS, count);
-	user->etoday = adjustuserval(cfg, user, USER_ETODAY, count);
+		user->emails = (uint)adjustuserval(cfg, user, USER_EMAILS, count);
+	user->etoday = (uint)adjustuserval(cfg, user, USER_ETODAY, count);
 
 	return inc_email_stats(cfg, count, feedback);
 }
@@ -3053,7 +3053,7 @@ bool user_downloaded(scfg_t* cfg, user_t* user, int files, off_t bytes)
 	if (user == NULL)
 		return false;
 
-	user->dls = adjustuserval(cfg, user, USER_DLS, files);
+	user->dls = (uint)adjustuserval(cfg, user, USER_DLS, files);
 	user->dlb = adjustuserval(cfg, user, USER_DLB, bytes);
 	user->dtoday = (uint32_t)adjustuserval(cfg, user, USER_DTODAY, files);
 	user->btoday = adjustuserval(cfg, user, USER_BTODAY, bytes);
@@ -3170,7 +3170,7 @@ bool user_uploaded(scfg_t* cfg, user_t* user, int files, off_t bytes)
 	if (user == NULL)
 		return false;
 
-	user->uls = adjustuserval(cfg, user, USER_ULS, files);
+	user->uls = (uint)adjustuserval(cfg, user, USER_ULS, files);
 	user->ulb = adjustuserval(cfg, user, USER_ULB, bytes);
 
 	return true;
@@ -3228,7 +3228,7 @@ bool logoutuserdat(scfg_t* cfg, user_t* user, time_t now, time_t logontime)
 		now = time(NULL);
 
 	tused = (now - logontime) / 60;
-	user->tlast = tused;
+	user->tlast = (uint)tused;
 
 	putuserdatetime(cfg, user->number, USER_LASTON, (time32_t)now);
 	putuserstr(cfg, user->number, USER_TLAST, ultoa(user->tlast, str, 10));

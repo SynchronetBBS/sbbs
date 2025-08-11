@@ -444,7 +444,7 @@ void sbbs_t::download_msg_attachments(smb_t* smb, smbmsg_t* msg, bool del, bool 
 										(void)remove(fpath);
 									logon_dlb += length;  /* Update stats */
 									logon_dls++;
-									useron.dls = adjustuserval(&cfg, &useron
+									useron.dls = (uint)adjustuserval(&cfg, &useron
 									                                   , USER_DLS, 1);
 									useron.dlb = adjustuserval(&cfg, &useron
 									                           , USER_DLB, length);

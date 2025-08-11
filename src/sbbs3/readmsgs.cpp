@@ -930,7 +930,7 @@ int sbbs_t::scanposts(int subnum, int mode, const char *find)
 							term->center(text[Deleted]);
 							if (!stricmp(cfg.sub[subnum]->misc & SUB_NAME
 							    ? useron.name : useron.alias, msg.from))
-								useron.posts = adjustuserval(&cfg, &useron, USER_POSTS, -1);
+								useron.posts = (uint)adjustuserval(&cfg, &useron, USER_POSTS, -1);
 						}
 					}
 					smb_unlocksmbhdr(&smb);

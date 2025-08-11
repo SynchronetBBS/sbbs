@@ -1646,14 +1646,14 @@ bool sbbs_t::forwardmsg(smb_t* smb, smbmsg_t* orgmsg, const char* to, const char
 	logline("E+", str);
 
 	if (usernumber == 1) {
-		useron.fbacks = adjustuserval(&cfg, &useron, USER_FBACKS, 1);
+		useron.fbacks = (uint)adjustuserval(&cfg, &useron, USER_FBACKS, 1);
 		logon_fbacks++;
 	}
 	else {
-		useron.emails = adjustuserval(&cfg, &useron, USER_EMAILS, 1);
+		useron.emails = (uint)adjustuserval(&cfg, &useron, USER_EMAILS, 1);
 		logon_emails++;
 	}
-	useron.etoday = adjustuserval(&cfg, &useron, USER_ETODAY, 1);
+	useron.etoday = (uint)adjustuserval(&cfg, &useron, USER_ETODAY, 1);
 
 	if (usernumber > 0) {
 		int i;

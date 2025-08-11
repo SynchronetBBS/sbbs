@@ -334,9 +334,9 @@ bool sbbs_t::netmail(const char *into, const char *title, int mode, smb_t* resmb
 		return false;
 	}
 
-	useron.emails = adjustuserval(&cfg, &useron, USER_EMAILS, 1);
+	useron.emails = (uint)adjustuserval(&cfg, &useron, USER_EMAILS, 1);
 	logon_emails++;
-	useron.etoday = adjustuserval(&cfg, &useron, USER_ETODAY, 1);
+	useron.etoday = (uint)adjustuserval(&cfg, &useron, USER_ETODAY, 1);
 	if (!(useron.exempt & FLAG('S')))
 		subtract_cdt(&cfg, &useron, cfg.netmail_cost);
 
@@ -733,9 +733,9 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 					subtract_cdt(&cfg, &useron, cfg.inetmail_cost);
 			}
 
-			useron.emails = adjustuserval(&cfg, &useron, USER_EMAILS, 1);
+			useron.emails = (uint)adjustuserval(&cfg, &useron, USER_EMAILS, 1);
 			logon_emails++;
-			useron.etoday = adjustuserval(&cfg, &useron, USER_ETODAY, 1);
+			useron.etoday = (uint)adjustuserval(&cfg, &useron, USER_ETODAY, 1);
 
 			if (qnet)
 				bprintf(text[QWKNetMailSent], name, fulladdr);
@@ -928,9 +928,9 @@ void sbbs_t::qwktonetmail(FILE *rep, char *block, char *into, uchar fromhub)
 	if (!(useron.exempt & FLAG('S')))
 		subtract_cdt(&cfg, &useron, cfg.netmail_cost);
 
-	useron.emails = adjustuserval(&cfg, &useron, USER_EMAILS, 1);
+	useron.emails = (uint)adjustuserval(&cfg, &useron, USER_EMAILS, 1);
 	logon_emails++;
-	useron.etoday = adjustuserval(&cfg, &useron, USER_ETODAY, 1);
+	useron.etoday = (uint)adjustuserval(&cfg, &useron, USER_ETODAY, 1);
 
 	bprintf(text[FidoNetMailSent], hdr.to, smb_faddrtoa(&fidoaddr, tmp));
 	snprintf(str, sizeof str, "%s sent NetMail to %s @%s via QWK"
@@ -1250,9 +1250,9 @@ bool sbbs_t::inetmail(const char *into, const char *subj, int mode, smb_t* resmb
 	if (!(useron.exempt & FLAG('S')))
 		subtract_cdt(&cfg, &useron, cfg.inetmail_cost * rcpt_count);
 
-	useron.emails = adjustuserval(&cfg, &useron, USER_EMAILS, rcpt_count);
+	useron.emails = (uint)adjustuserval(&cfg, &useron, USER_EMAILS, rcpt_count);
 	logon_emails += rcpt_count;
-	useron.etoday = adjustuserval(&cfg, &useron, USER_ETODAY, rcpt_count);
+	useron.etoday = (uint)adjustuserval(&cfg, &useron, USER_ETODAY, rcpt_count);
 
 	bprintf(text[InternetMailSent], to_list);
 	SAFEPRINTF(str, "sent Internet Mail to %s", to_list);
@@ -1465,9 +1465,9 @@ bool sbbs_t::qnetmail(const char *into, const char *subj, int mode, smb_t* resmb
 		return false;
 	}
 
-	useron.emails = adjustuserval(&cfg, &useron, USER_EMAILS, 1);
+	useron.emails = (uint)adjustuserval(&cfg, &useron, USER_EMAILS, 1);
 	logon_emails++;
-	useron.etoday = adjustuserval(&cfg, &useron, USER_ETODAY, 1);
+	useron.etoday = (uint)adjustuserval(&cfg, &useron, USER_ETODAY, 1);
 
 	bprintf(text[QWKNetMailSent], to, fulladdr);
 	SAFEPRINTF2(str, "sent QWK NetMail to %s (%s)"

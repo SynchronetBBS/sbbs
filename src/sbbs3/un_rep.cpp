@@ -330,14 +330,14 @@ bool sbbs_t::unpack_rep(char* repfile)
 			if (qwk_import_msg(rep, block, blocks
 			                   , /* fromhub: */ 0, &smb, /* touser: */ usernum, &msg, &dupe)) {
 				if (usernum == 1) {
-					useron.fbacks = adjustuserval(&cfg, &useron, USER_FBACKS, 1);
+					useron.fbacks = (uint)adjustuserval(&cfg, &useron, USER_FBACKS, 1);
 					logon_fbacks++;
 				}
 				else {
-					useron.emails = adjustuserval(&cfg, &useron, USER_EMAILS, 1);
+					useron.emails = (uint)adjustuserval(&cfg, &useron, USER_EMAILS, 1);
 					logon_emails++;
 				}
-				useron.etoday = adjustuserval(&cfg, &useron, USER_ETODAY, 1);
+				useron.etoday = (uint)adjustuserval(&cfg, &useron, USER_ETODAY, 1);
 				bprintf(P_REMOTE, text[Emailed], username(&cfg, usernum, tmp), usernum);
 				SAFEPRINTF2(str, "sent QWK e-mail to %s #%d"
 				            , username(&cfg, usernum, tmp), usernum);

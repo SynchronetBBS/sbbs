@@ -427,7 +427,7 @@ bool sbbs_t::sendfile(char* fname, char prot, const char* desc, bool autohang)
 		off_t length = flength(fname);
 		logon_dlb += length;    /* Update stats */
 		logon_dls++;
-		useron.dls = adjustuserval(&cfg, &useron, USER_DLS, 1);
+		useron.dls = (uint)adjustuserval(&cfg, &useron, USER_DLS, 1);
 		useron.dlb = (uint32_t)adjustuserval(&cfg, &useron, USER_DLB, length);
 		downloadedbytes(length, elapsed);
 		char bytes[32];
