@@ -15969,18 +15969,6 @@ explode(struct rip_button_style *but)
 {
 	long double last, now;
 	const int expms = 50;
-	const bool old_xor = rip.xor;
-	const uint16_t old_line_pattern = rip.line_pattern;
-	const int old_sx = rip.viewport.sx;
-	const int old_sy = rip.viewport.sy;
-	const int old_ex = rip.viewport.ex;
-	const int old_ey = rip.viewport.ey;
-	struct ciolib_pixels *pix = getpixels(0, 0, vstat.scrnwidth - 1, vstat.scrnheight - 1, true);
-	if (!pix)
-		return;
-
-	rip.xor = false;
-	rip.line_pattern = 0x3333;
 
 	int lx1 = but->box.x1;
 	int ly1 = but->box.y1;
@@ -16015,13 +16003,6 @@ explode(struct rip_button_style *but)
 
 	// Erase new box
 	explode_box(lx1, ly1, lx2, ly2);
-
-	rip.xor = old_xor;
-	rip.line_pattern = old_line_pattern;
-	rip.viewport.sx = old_sx;
-	rip.viewport.sy = old_sy;
-	rip.viewport.ex = old_ex;
-	rip.viewport.ey = old_ey;
 }
 
 static void
