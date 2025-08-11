@@ -268,11 +268,14 @@ It is recommended that you do the same thing with your logout script.
 
 5. Main configuration file
 ==========================
-The file ddup.cfg contains general settings for the upload processor.  This
-file can be edited with a text editor.  The syntax for each setting is as
-folows:
-setting=value
+ddup.example.cfg is an example configuration file for the upload processor.
+This file can be edited with a text editor. In order to to customize your
+configuration, copy ddup.example.cfg to ddup.cfg and edit ddup.cfg. ddup.cfg
+can be in the same directory, xtrn/dd_upload_processor, in sbbs/mods, or in
+sbbs/ctrl.
 
+The syntax for each setting is as follows:
+setting=value
 where "setting" is the setting name, "value" is the corresponding value for
 the setting.
 Also, comments are allowed in the configuration file.  Comments begin with a
@@ -298,14 +301,21 @@ skipScanIfSysop                       Specifies whether or not to skip scanning
 
 6. Archive file type configuration file
 =======================================
-The configuration file ddup_file_types.cfg defines options for various file
-types, including the extract command (for archive files) and whether or not
-you want the upload processor to scan it.  File types are specified by their
-filename extension in square brackets.  Extractable files must have an
-EXTRACT option, which specifies the command line for extracting the file.
+The configuration file ddup_file_types.example.cfg is an example configuration
+file that defines options for various file types, including the extract command
+(for archive files) and whether or not you want the upload processor to scan it.
+File types are specified by their filename extension in square brackets.
+Extractable files must have an EXTRACT option, which specifies the command line
+for extracting the file.
+
 Another option that can be specified in this file is scanOption, which
 specifies whether or not you want the upload processor to scan the file
 (or files in the archive) with the virus scanner.
+
+Similarly to ddup.example.cfg, in order to customize settings in this file,
+copy it to ddup_file_types.cfg (in the same directory, xtrn/dd_upload_processor,
+in sbbs/mods, or in sbbs/ctrl) and edit ddup_file_types.cfg with a text editor.
+
 The general format for each file type is as follows:
 
 [EXTENSION]

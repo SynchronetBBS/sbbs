@@ -29,6 +29,9 @@
  * 2023-08-08 Eric Oulashin     Version 1.06
  *                              When a virus scan fails, the scan output is written to the system
  *                              log (as a warning) rather than to the user's console session.
+ * 2025-08-11 Eric Oulashin     Version 1.07
+ *                              Supports .example.cfg configuration filenames. Also allows
+ *                              reading the configuration file from sbbs/mods or sbbs/ctrl.
  */
 
 /* Command-line arguments:
@@ -44,20 +47,12 @@ if (system.version_num < 31400)
 	exit(1);
 }
 
-// Determine the script's execution directory.
-// This code is a trick that was created by Deuce, suggested by Rob
-// Swindell as a way to detect which directory the script was executed
-// in.  I've shortened the code a little.
-// Note: gStartupPath will include the trailing slash.
-var gStartupPath = '.';
-try { throw dig.dist(dist); } catch(e) { gStartupPath = e.fileName; }
-gStartupPath = backslash(gStartupPath.replace(/[\/\\][^\/\\]*$/,''));
 
-load(gStartupPath + "ddup_cleanup.js");
+load(js.exec_dir + "ddup_cleanup.js");
 
 // Version information
-var gDDUPVersion = "1.06";
-var gDDUPVerDate = "2023-08-08";
+var gDDUPVersion = "1.07";
+var gDDUPVerDate = "2025-08-11";
 
 // Store whether or not this is running in Windows
 var gRunningInWindows = /^WIN/.test(system.platform.toUpperCase());
@@ -125,7 +120,7 @@ var gGenCfg = {
 var gFileTypeCfg = {};
 
 // Read the configuration files to populate the global configuration object.
-var configFileRead = ReadConfigFile(gStartupPath);
+var configFileRead = ReadConfigFile();
 // If the configuration files weren't read, then output an error and exit.
 if (!configFileRead)
 {
@@ -142,7 +137,7 @@ if (gGenCfg.scanCmd.length == 0)
 
 // Global variables
 // Strings for the OK and failure symbols
-var gOKStr = "\1n\1k\1h[\1n\1gû\1k\1h]\1n";
+var gOKStr = "\1n\1k\1h[\1n\1gï¿½\1k\1h]\1n";
 var gOKStrWithNewline = gOKStr + "\r\n";
 var gFailStr = "\1n\1k\1h[\1rX\1k]\1n";
 var gFailStrWithNewline = gFailStr + "\r\n";
@@ -489,76 +484,117 @@ function scanFilesInDir(pDir)
 // Reads the configuration file and returns an object containing the
 // configuration settings.
 //
-// Parameters:
-//  pCfgFilePath: The path from which to load the configuration file.
-//
 // Return value: Boolean - Whether or not the configuration was read.
-function ReadConfigFile(pCfgFilePath)
+function ReadConfigFile()
 {
 	// Read the file type settings.
 	var fileTypeSettingsRead = false;
-	var fileTypeCfgFile = new File(pCfgFilePath + "ddup_file_types.cfg");
-	if (fileTypeCfgFile.open("r"))
+	var cfgFilename = GetFullyPathedCfgFilename("ddup_file_types.cfg");
+	if (cfgFilename.length > 0)
 	{
-		if (fileTypeCfgFile.length > 0)
+		var fileTypeCfgFile = new File(cfgFilename);
+		if (fileTypeCfgFile.open("r"))
 		{
-			var allFileTypeCfg = fileTypeCfgFile.iniGetAllObjects();
-			fileTypeSettingsRead = true;
-			for (var i = 0; i < allFileTypeCfg.length; ++i)
+			if (fileTypeCfgFile.length > 0)
 			{
-				var filenameExt = allFileTypeCfg[i].name; // Filename extension
-				var scannableFile = new ScannableFile(filenameExt, "", "scan");
-				for (var prop in allFileTypeCfg[i])
+				var allFileTypeCfg = fileTypeCfgFile.iniGetAllObjects();
+				fileTypeSettingsRead = true;
+				for (var i = 0; i < allFileTypeCfg.length; ++i)
 				{
-					var propUpper = prop.toUpperCase();
-					if (propUpper === "EXTRACT")
-						scannableFile.extractCmd = allFileTypeCfg[i][prop];
-					else if (propUpper === "SCANOPTION")
-						scannableFile.scanOption = allFileTypeCfg[i][prop];
+					var filenameExt = allFileTypeCfg[i].name; // Filename extension
+					var scannableFile = new ScannableFile(filenameExt, "", "scan");
+					for (var prop in allFileTypeCfg[i])
+					{
+						var propUpper = prop.toUpperCase();
+						if (propUpper === "EXTRACT")
+							scannableFile.extractCmd = allFileTypeCfg[i][prop];
+						else if (propUpper === "SCANOPTION")
+							scannableFile.scanOption = allFileTypeCfg[i][prop];
+					}
+					gFileTypeCfg[filenameExt] = scannableFile;
 				}
-				gFileTypeCfg[filenameExt] = scannableFile;
 			}
+			fileTypeCfgFile.close();
 		}
-		fileTypeCfgFile.close();
 	}
 
 	// Read the general configuration
 	var genSettingsRead = false;
-	var genCfgFile = new File(pCfgFilePath + "ddup.cfg");
-	if (genCfgFile.open("r"))
+	cfgFilename = GetFullyPathedCfgFilename("ddup.cfg");
+	if (cfgFilename.length > 0)
 	{
-		if (genCfgFile.length > 0)
+		var genCfgFile = new File(cfgFilename);
+		if (genCfgFile.open("r"))
 		{
-			var settingsObj = genCfgFile.iniGetObject();
-			genSettingsRead = true;
-			for (var prop in settingsObj)
+			if (genCfgFile.length > 0)
 			{
-				// Set the appropriate value in the settings object.
-				var settingUpper = prop.toUpperCase();
-				if (settingUpper == "SCANCMD")
-					gGenCfg.scanCmd = settingsObj[prop];
-				else if (settingUpper == "SKIPSCANIFSYSOP")
+				var settingsObj = genCfgFile.iniGetObject();
+				genSettingsRead = true;
+				for (var prop in settingsObj)
 				{
-					if (typeof(settingsObj[prop]) === "string")
-						gGenCfg.skipScanIfSysop = (settingsObj[prop].toUpperCase() == "YES");
-					else if (typeof(settingsObj[prop]) === "boolean")
-						gGenCfg.skipScanIfSysop = settingsObj[prop];
-				}
-				else if (settingUpper == "PAUSEATEND")
-				{
-					if (typeof(settingsObj[prop]) === "string")
+					// Set the appropriate value in the settings object.
+					var settingUpper = prop.toUpperCase();
+					if (settingUpper == "SCANCMD")
+						gGenCfg.scanCmd = settingsObj[prop];
+					else if (settingUpper == "SKIPSCANIFSYSOP")
 					{
-						var valueUpper = settingsObj[prop].toUpperCase();
-						gGenCfg.pauseAtEnd = (valueUpper == "YES" || valueUpper == "TRUE");
+						if (typeof(settingsObj[prop]) === "string")
+							gGenCfg.skipScanIfSysop = (settingsObj[prop].toUpperCase() == "YES");
+						else if (typeof(settingsObj[prop]) === "boolean")
+							gGenCfg.skipScanIfSysop = settingsObj[prop];
 					}
-					else if (typeof(settingsObj[prop]) === "boolean")
-						gGenCfg.pauseAtEnd = settingsObj[prop];
+					else if (settingUpper == "PAUSEATEND")
+					{
+						if (typeof(settingsObj[prop]) === "string")
+						{
+							var valueUpper = settingsObj[prop].toUpperCase();
+							gGenCfg.pauseAtEnd = (valueUpper == "YES" || valueUpper == "TRUE");
+						}
+						else if (typeof(settingsObj[prop]) === "boolean")
+							gGenCfg.pauseAtEnd = settingsObj[prop];
+					}
 				}
 			}
 		}
 	}
 
 	return (fileTypeSettingsRead && genSettingsRead);
+}
+
+// Given a filename (without full path), this returns a fully-pathed configuration filename.
+// This checks the mods directory, then the ctrl directory, then the same directory as the
+// script. If not found, then this will look for an .example.cfg in the same directory as
+// the script.  If none found, this will return an empty string.
+//
+// Parameters:
+//  pFilenameWithoutFullPath: A filename (not fully-pathed)
+//
+// Return value: A fully-pathed filename containing the directory it's found in. If not found,
+//               the return value will be an empty string.
+function GetFullyPathedCfgFilename(pFilenameWithoutFullPath)
+{
+	var cfgFilename = file_cfgname(system.mods_dir, pFilenameWithoutFullPath);
+	if (!file_exists(cfgFilename))
+		cfgFilename = file_cfgname(system.ctrl_dir, pFilenameWithoutFullPath);
+	if (!file_exists(cfgFilename))
+		cfgFilename = file_cfgname(js.exec_dir, pFilenameWithoutFullPath);
+	// If the configuration file hasn't been found, look to see if there's a .example.cfg file
+	// available in the same directory as the script
+	if (!file_exists(cfgFilename))
+	{
+		var exampleFileName = "";
+		var dotIdx = pFilenameWithoutFullPath.lastIndexOf(".");
+		if (dotIdx > -1)
+			exampleFileName = pFilenameWithoutFullPath.substring(0, dotIdx) + ".example" + pFilenameWithoutFullPath.substring(dotIdx);
+		else
+			exampleFileName = pFilenameWithoutFullPath + ".example";
+		exampleFileName = file_cfgname(js.exec_dir, exampleFileName);
+		if (file_exists(exampleFileName))
+			cfgFilename = exampleFileName;
+		else
+			cfgFilename = "";
+	}
+	return cfgFilename;
 }
 
 // Removes multiple, leading, and/or trailing spaces
