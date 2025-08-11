@@ -1793,6 +1793,39 @@ CIOLIBEXPORT struct ciolib_pixels * ciolib_getpixels(uint32_t sx, uint32_t sy, u
 	return NULL;
 }
 
+/* Returns NULL on failure */
+CIOLIBEXPORT struct ciolib_pixels * ciolib_duppixels(struct ciolib_pixels *in)
+{
+	CIOLIB_INIT();
+
+	if (in == NULL)
+		return in;
+	struct ciolib_pixels *ret = malloc(sizeof(struct ciolib_pixels));
+	if (ret == NULL)
+		return ret;
+	memcpy(ret, in, sizeof(*ret));
+	if (ret->pixels) {
+		size_t sz = ret->height * ret->width * sizeof(ret->pixels[0]);
+		ret->pixels = malloc(sz);
+		if (ret->pixels == NULL) {
+			free(ret);
+			return NULL;
+		}
+		memcpy(ret->pixels, in->pixels, sz);
+	}
+	if (ret->pixelsb) {
+		size_t sz = ret->height * ret->width * sizeof(ret->pixelsb[0]);
+		ret->pixelsb = malloc(sz);
+		if (ret->pixelsb == NULL) {
+			free(ret->pixels);
+			free(ret);
+			return NULL;
+		}
+		memcpy(ret->pixelsb, in->pixelsb, sz);
+	}
+	return ret;
+}
+
 /* Returns non-zero on success */
 CIOLIBEXPORT int ciolib_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_t x_off, uint32_t y_off, uint32_t mx_off, uint32_t my_off, struct ciolib_pixels *pixels, struct ciolib_mask *mask)
 {

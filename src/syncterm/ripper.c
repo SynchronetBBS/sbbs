@@ -265,6 +265,25 @@ struct popup_option {
 	char  hk;
 };
 
+struct saved_text_window {
+	int x;
+	int y;
+	int sx;
+	int sy;
+	int ex;
+	int ey;
+	int wrap;
+	int size;
+	uint8_t attr;
+	int curstype;
+};
+
+struct saved_clipboard {
+	int x;
+	int y;
+	struct ciolib_pixels *pix;
+};
+
 static struct {
 	enum rip_state          state;
 	enum rip_state          newstate;
@@ -324,6 +343,8 @@ static struct {
 	void *default_font;
 	int   default_font_width;
 	int   default_font_height;
+	struct saved_text_window stw;
+	struct saved_clipboard scb;
 } rip = {
 	RIP_STATE_BOL,
 	RIP_STATE_FLUSHING,
@@ -363,6 +384,8 @@ static struct {
 	NULL,
 	8,
 	8,
+	{0, 0, 0, 0, 79, 43, 1, 1, 7, _NORMALCURSOR},
+	{0, 0, NULL},
 };
 
 static const uint16_t      rip_line_patterns[4] = {
@@ -7540,6 +7563,79 @@ get_text_variable(const char * const var)
 	return vardef->func(var, vardef->data);
 }
 
+static void
+rip_text_window(int x1, int y1, int x2, int y2, int arg1, int arg2)
+{
+	int arg3;
+	struct text_info ti;
+	gettextinfo(&ti);
+	if (arg1)
+		cterm->extattr |= CTERM_EXTATTR_AUTOWRAP;
+	else
+		cterm->extattr &= ~CTERM_EXTATTR_AUTOWRAP;
+	assert_rwlock_rdlock(&vstatlock);
+	if ((x1 == cterm->left_margin - 1)
+	    && (x2 == cterm->right_margin - 1)
+	    && (y1 == cterm->top_margin - 1)
+	    && (y2 == cterm->bottom_margin - 1)
+	    && (arg2 == vstat.charwidth)) {
+		assert_rwlock_unlock(&vstatlock);
+		return;
+	}
+	assert_rwlock_unlock(&vstatlock);
+	switch (arg2) {
+		case 0:
+			reinit_screen(
+				(uint8_t *)conio_fontdata[0].eight_by_eight,
+				8,
+				8);
+			break;
+		case 1:
+			reinit_screen(ripfnt7x8, 7, 8);
+			break;
+		case 2:
+			reinit_screen(
+				(uint8_t *)conio_fontdata[0].eight_by_fourteen,
+				8,
+				14);
+			break;
+		case 3:
+			reinit_screen(ripfnt7x14, 7, 14);
+			break;
+		case 4:
+			reinit_screen(ripfnt16x14, 16, 14);
+			break;
+	}
+	arg3 = 0;
+	if (x1 >= cterm->width)
+		x1 = cterm->width - 1;
+	if (x2 >= cterm->width)
+		x2 = cterm->width - 1;
+	if (y1 >= cterm->height)
+		y1 = cterm->height - 1;
+	if (y2 >= cterm->height)
+		y2 = cterm->height - 1;
+
+	if ((x1 != cterm->left_margin - 1)
+	    || (y1 != cterm->top_margin - 1)
+	    || (x2 != cterm->right_margin - 1)
+	    || (y2 != cterm->bottom_margin - 1))
+		arg3 = 1;
+	cterm->left_margin = x1 + 1;
+	cterm->top_margin = y1 + 1;
+	cterm->right_margin = x2 + 1;
+	cterm->bottom_margin = y2 + 1;
+
+	cterm->extattr |= CTERM_EXTATTR_ORIGINMODE;
+	if (arg3) {
+		setwindow(cterm);
+		arg3 = hold_update;
+		hold_update = 0;
+		gotoxy(1, 1);
+		hold_update = arg3;
+	}
+}
+
 static char *
 rv_version(const char * const var, const void * const data)
 {
@@ -7829,6 +7925,7 @@ static uint32_t
 map_rip_color(int color)
 {
 	uint32_t col = 0;
+	color &= 0x80FFFFFF;
 
 	if (color < 16) {
 		col = ega_colours[color];
@@ -7916,6 +8013,28 @@ rv_save(const char * const var, const void * const data)
 		copy_mouse_fields(rip.mfields, &rip.saved_mfields);
 		return NULL;
 	}
+	if (strcmp(var, "STW") == 0) {
+		rip.stw.x = rip.x;
+		rip.stw.y = rip.y;
+		rip.stw.sx = cterm->left_margin - 1;
+		rip.stw.sy = cterm->top_margin - 1;
+		rip.stw.ex = cterm->right_margin - 1;
+		rip.stw.ey = cterm->bottom_margin - 1;
+		rip.stw.wrap = (cterm->extattr & CTERM_EXTATTR_AUTOWRAP) ? 1 : 0;
+		assert_rwlock_rdlock(&vstatlock);
+		rip.stw.size = vstat.charwidth;
+		assert_rwlock_unlock(&vstatlock);
+		rip.stw.curstype = rip.curstype;
+		rip.stw.attr = cterm->attr;
+		return NULL;
+	}
+	if (strcmp(var, "SCB") == 0) {
+		rip.scb.x = rip.clipx;
+		rip.scb.y = rip.clipy;
+		freepixels(rip.scb.pix);
+		rip.scb.pix = duppixels(rip.clipboard);
+		return NULL;
+	}
 	printf("TODO: Save RIP Variables (%s)\n", var);
 	return NULL;
 }
@@ -7927,6 +8046,29 @@ rv_restore(const char * const var, const void * const data)
                 // Restore mouse fields...
 		kill_mouse_fields();
 		copy_mouse_fields(rip.saved_mfields, &rip.mfields);
+		return NULL;
+	}
+	if (strcmp(var, "RTW") == 0) {
+		if (rip.stw.sx == 0 && rip.stw.sy == 0 && rip.stw.ex == 0 && rip.stw.ey == 0) {
+			rip.text_disabled = true;
+		}
+		else {
+			rip.text_disabled = false;
+		}
+		rip_text_window(rip.stw.sx, rip.stw.sy, rip.stw.ex, rip.stw.ey, rip.stw.wrap, rip.stw.size);
+		rip.x = rip.stw.x;
+		rip.y = rip.stw.y;
+		rip.curstype = rip.stw.curstype;
+		_setcursortype(rip.curstype);
+		cterm->attr = rip.stw.attr;
+		attr2palette(cterm->attr, &cterm->fg_color, &cterm->bg_color);
+		return NULL;
+	}
+	if (strcmp(var, "RCB") == 0) {
+		rip.clipx = rip.scb.x;
+		rip.clipy = rip.scb.y;
+		freepixels(rip.clipboard);
+		rip.clipboard = duppixels(rip.scb.pix);
 		return NULL;
 	}
 	printf("TODO: Restore RIP Variables (%s)\n", var);
@@ -8389,6 +8531,7 @@ static uint32_t
 pixel2color(uint32_t pix)
 {
 	int i;
+	pix &= 0x80FFFFFF;
 
 	for (i = 0; i < 16; i++) {
 		if (ega_colours[i] == pix)
@@ -12373,73 +12516,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							arg2 = parse_mega(&args[9], 1);
 							if (arg2 == -1)
 								break;
-							struct text_info ti;
-							gettextinfo(&ti);
-							if (arg1)
-								cterm->extattr |= CTERM_EXTATTR_AUTOWRAP;
-							else
-								cterm->extattr &= ~CTERM_EXTATTR_AUTOWRAP;
-							assert_rwlock_rdlock(&vstatlock);
-							if ((x1 == cterm->left_margin - 1)
-							    && (x2 == cterm->right_margin - 1)
-							    && (y1 == cterm->top_margin - 1)
-							    && (y2 == cterm->bottom_margin - 1)
-							    && (arg2 == vstat.charwidth)) {
-								assert_rwlock_unlock(&vstatlock);
-								break;
-							}
-							assert_rwlock_unlock(&vstatlock);
-							switch (arg2) {
-								case 0:
-									reinit_screen(
-										(uint8_t *)conio_fontdata[0].eight_by_eight,
-										8,
-										8);
-									break;
-								case 1:
-									reinit_screen(ripfnt7x8, 7, 8);
-									break;
-								case 2:
-									reinit_screen(
-										(uint8_t *)conio_fontdata[0].eight_by_fourteen,
-										8,
-										14);
-									break;
-								case 3:
-									reinit_screen(ripfnt7x14, 7, 14);
-									break;
-								case 4:
-									reinit_screen(ripfnt16x14, 16, 14);
-									break;
-							}
-							arg3 = 0;
-							if (x1 >= cterm->width)
-								x1 = cterm->width - 1;
-							if (x2 >= cterm->width)
-								x2 = cterm->width - 1;
-							if (y1 >= cterm->height)
-								y1 = cterm->height - 1;
-							if (y2 >= cterm->height)
-								y2 = cterm->height - 1;
-
-							if ((x1 != cterm->left_margin - 1)
-							    || (y1 != cterm->top_margin - 1)
-							    || (x2 != cterm->right_margin - 1)
-							    || (y2 != cterm->bottom_margin - 1))
-								arg3 = 1;
-							cterm->left_margin = x1 + 1;
-							cterm->top_margin = y1 + 1;
-							cterm->right_margin = x2 + 1;
-							cterm->bottom_margin = y2 + 1;
-
-							cterm->extattr |= CTERM_EXTATTR_ORIGINMODE;
-							if (arg3) {
-								setwindow(cterm);
-								arg3 = hold_update;
-								hold_update = 0;
-								gotoxy(1, 1);
-								hold_update = arg3;
-							}
+							rip_text_window(x1, y1, x2, y2, arg1, arg2);
 							break;
 						case 'x': // RIP_FILLED_POLY_BEZIER (v2.A2)
 							handled = true;

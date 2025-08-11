@@ -409,6 +409,7 @@ typedef struct {
 	int		(*attr2palette)	(uint8_t attr, uint32_t *fg, uint32_t *bg);
 	int		(*setpixel)	(uint32_t x, uint32_t y, uint32_t colour);
 	struct ciolib_pixels *(*getpixels)(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, int force);
+	struct ciolib_pixels *(*duppixels)(struct ciolib_pixels pix);
 	int		(*setpixels)(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_t x_off, uint32_t y_off, uint32_t mx_off, uint32_t my_off, struct ciolib_pixels *pixels, struct ciolib_mask *mask);
 	int 	(*get_modepalette)(uint32_t[16]);
 	int	(*set_modepalette)(uint32_t[16]);
@@ -507,6 +508,7 @@ CIOLIBEXPORT int ciolib_setpalette(uint32_t entry, uint16_t r, uint16_t g, uint1
 CIOLIBEXPORT int ciolib_attr2palette(uint8_t attr, uint32_t *fg, uint32_t *bg);
 CIOLIBEXPORT int ciolib_setpixel(uint32_t x, uint32_t y, uint32_t colour);
 CIOLIBEXPORT struct ciolib_pixels * ciolib_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, int force);
+CIOLIBEXPORT struct ciolib_pixels * ciolib_duppixels(struct ciolib_pixels *pix);
 CIOLIBEXPORT int ciolib_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_t x_off, uint32_t y_off, uint32_t mx_off, uint32_t my_off, struct ciolib_pixels *pixels, struct ciolib_mask *mask);
 CIOLIBEXPORT void ciolib_freepixels(struct ciolib_pixels *pixels);
 CIOLIBEXPORT void ciolib_freemask(struct ciolib_mask *mask);
@@ -596,6 +598,7 @@ CIOLIBEXPORT void ansi_ciolib_setdoorway(int enable);
 	#define attr2palette(a,b,c)		ciolib_attr2palette(a,b,c)
 	#define setpixel(a,b,c)			ciolib_setpixel(a,b,c)
 	#define getpixels(a,b,c,d, e)		ciolib_getpixels(a,b,c,d, e)
+	#define duppixels(a)			ciolib_duppixels(a)
 	#define setpixels(a,b,c,d,e,f,g,h,i,j)	ciolib_setpixels(a,b,c,d,e,f,g,h,i,j)
 	#define freepixels(a)			ciolib_freepixels(a)
 	#define freemask(a)			ciolib_freemask(a)
