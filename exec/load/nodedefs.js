@@ -110,6 +110,7 @@ var NodeAction		=[			/* Node.action value descriptions			*/
 	,"in private chat with node %u"
 	,"paging node %u for private chat"
 	,"retrieving from device #%d"
+	,"performing custom action"
 	];
 
 								/********************************************/
