@@ -90,6 +90,7 @@ Hides various popups during a connect.
 Specifies the default scheme for \fIURL\fP to be rlogin://
 .IP \fB\-s\fP
 Run in "safe mode" which disables the modification of local files such as the
+dialing directory and startup config.
 .IP \fB\-t\fP
 Specifies the default scheme for \fIURL\fP to be telnet://
 .IP \fB\-T\fP
