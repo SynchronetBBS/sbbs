@@ -879,6 +879,10 @@ static void play_music(struct cterminal *cterm)
 				if(np!=NULL) {
 					np->notenum=notenum;
 					np->notelen=notelen;
+					if(np->notelen<1)
+						np->notelen=1;
+					if(np->notelen>64)
+						np->notelen=64;
 					np->dotted=dotted;
 					np->tempo=cterm->tempo;
 					np->noteshape=cterm->noteshape;

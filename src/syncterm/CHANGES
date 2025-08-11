@@ -17,6 +17,7 @@ Fix crash at startup when built with gcc15 and -fhardened
 Fix RIP handling when ESC[! sequences are split between packets
 Improve RIP sounds
 Implement RIP STW/RTW and SCB/RCP commands
+Fix divide by zero when playing invalid ANSI music
 
 Version 1.6
 ------------
