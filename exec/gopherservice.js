@@ -158,19 +158,20 @@ switch(request) {
 	case "nodelist":
 		var u = new User(1);
 		for(n=0;n<system.node_list.length;n++) {
+			var node = system.node_list[n];
 			write(format("Node %2d ",n+1));
-			if(system.node_list[n].status==NODE_INUSE) {
-				u.number=system.node_list[n].useron;
+			if(node.status==NODE_INUSE) {
+				u.number=node.useron;
 				//write(format("%s (%u %s) ", u.alias, u.age, u.gender));
 				write(u.alias + " (" + u.age + " " + u.gender +") ");
-				if(system.node_list[n].activity)
-					write(system.node_list[n].activity);
-				else if(system.node_list[n].action==NODE_XTRN && system.node_list[n].aux)
+				if(node.activity)
+					write(strip_ctrl(node.activity));
+				else if(node.action==NODE_XTRN && node.aux)
 					write("running %s" + u.curxtrn);
 				else
-					write(format(NodeAction[system.node_list[n].action],system.node_list[n].aux));
+					write(format(NodeAction[node.action],node.aux));
 			} else
-				write(format(NodeStatus[system.node_list[n].status],system.node_list[n].aux));
+				write(strip_ctrl(node.vstatus || format(NodeStatus[node.status],node.aux)));
 
 			write("\r\n");
 		}			
