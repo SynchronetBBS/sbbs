@@ -30,6 +30,9 @@ enum WAVE_SHAPE {
 	,WAVE_SHAPE_SINE_SAW_HARM
 };
 
+#define WAVE_SHAPE_MASK     0x7FFFFFFFU
+#define WAVE_SHAPE_NO_CLEAN 0x80000000U
+
 #define XPBEEP_DEVICE_WIN32      (1U<<0)
 #define XPBEEP_DEVICE_ALSA       (1U<<1)
 #define XPBEEP_DEVICE_OSS        (1U<<2)
@@ -42,13 +45,13 @@ extern uint32_t xpbeep_sound_devices_enabled;
 #ifdef __cplusplus
 extern "C" {
 #endif
-DLLEXPORT void xptone_makewave(double freq, unsigned char *wave, int samples, enum WAVE_SHAPE shape);
+DLLEXPORT void xptone_makewave(double freq, unsigned char *wave, int samples, DWORD shape);
 DLLEXPORT bool xptone_open(void);
 DLLEXPORT bool xptone_close(void);
 DLLEXPORT void xpbeep(double freq, DWORD duration);
 DLLEXPORT bool xp_play_sample(unsigned char *sample, size_t sample_size, bool background);
 DLLEXPORT void xptone_complete(void);
-DLLEXPORT bool xptone(double freq, DWORD duration, enum WAVE_SHAPE);
+DLLEXPORT bool xptone(double freq, DWORD duration, DWORD shape);
 #ifdef __unix__
 DLLEXPORT void unix_beep(int freq, int dur);
 #endif

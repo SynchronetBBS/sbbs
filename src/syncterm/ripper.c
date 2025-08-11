@@ -7678,10 +7678,40 @@ rv_time(const char * const var, const void * const data)
 	return NULL;
 }
 
+// Generates a smooth sweep tone from start to end frequence in samples
+// samples at rate samples per second.
+static double
+sweep(double phase, unsigned start, unsigned end, size_t samples, unsigned rate, uint8_t *buf)
+{
+	if (samples == 0)
+		return phase;
+	const bool add = (start < end);
+	const unsigned lower = add ? start : end;
+	const unsigned upper = add ? end : start;
+	const int64_t delta = upper - lower;
+	for (size_t i = 0; i < samples; i++) {
+		// Calculate frequency at this sample
+		double f;
+		if (add)
+			f = ((double)i / samples * delta) - lower;
+		else
+			f = upper - ((double)i / samples * delta);
+		// Calculate phase change per sample for this frequency
+		double pc = 2 * M_PI * (f / rate);
+		phase += pc;
+		buf[i] = 32 * sin(phase) + 128;
+		if (phase > M_PI * 2)
+			phase -= (M_PI * 2);
+	}
+	return phase;
+}
+
 static char *
 rv_sound(const char * const var, const void * const data)
 {
 	int i;
+	uint8_t wave[8196];
+	double phase = 0.0;
 
 	switch (var[0]) {
 		case 'A':
@@ -7698,31 +7728,27 @@ rv_sound(const char * const var, const void * const data)
 					SLEEP(75); // Literally in the spec.
 					return NULL;
 				case 'L':
-					xptone(50, 25, WAVE_SHAPE_SINE);
+					xptone(50, 25, WAVE_SHAPE_SINE | WAVE_SHAPE_NO_CLEAN);
 					SLEEP(10); // Literally in the spec.
 					return NULL;
 			}
 			break;
 		case 'M':
+			// 7938 samples
 			for (i = 0; i < 4; i += 1) {
-				xptone(1300, 10, WAVE_SHAPE_SINE);
-				xptone(1200, 10, WAVE_SHAPE_SINE);
-				xptone(1100, 10, WAVE_SHAPE_SINE);
-				xptone(1000, 10, WAVE_SHAPE_SINE);
-				xptone(900, 10, WAVE_SHAPE_SINE);
-				xptone(800, 10, WAVE_SHAPE_SINE);
-				xptone(700, 10, WAVE_SHAPE_SINE);
-				xptone(850, 10, WAVE_SHAPE_SINE);
-				xptone(950, 10, WAVE_SHAPE_SINE);
+				phase = sweep(phase, 1300, 700, 1543, 22050, &wave[i * 1984 + 0]);
+				phase = sweep(phase, 700, 850, 221, 22050, &wave[i * 1984 + 1543]);
+				phase = sweep(phase, 850, 1300, 220, 22050, &wave[i * 1984 + 1764]);
 			}
+			xp_play_sample(wave, 7938, false);
 			return NULL;
 		case 'P':
-			for (i = 2500; i >= 50; i -= 20)
-				xptone(i, 2, WAVE_SHAPE_SINE);
+			sweep(phase, 2500, 50, 5380, 22050, wave);
+			xp_play_sample(wave, 5380, false);
 			return NULL;
 		case 'R':
-			for (i = 50; i <= 2500; i += 20)
-				xptone(i, 2, WAVE_SHAPE_SINE);
+			sweep(phase, 50, 2500, 5380, 22050, wave);
+			xp_play_sample(wave, 5380, false);
 			return NULL;
 	}
 	printf("TODO: RIP Variables (%s)\n", var);

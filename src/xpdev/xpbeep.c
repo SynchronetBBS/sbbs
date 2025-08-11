@@ -227,7 +227,7 @@ static bool xp_play_sample_locked(unsigned char *sample, size_t size, bool backg
 /********************************************************************************/
 /* Calculate and generate a sound wave pattern (thanks to Deuce!)				*/
 /********************************************************************************/
-void xptone_makewave(double freq, unsigned char *wave, int samples, enum WAVE_SHAPE shape)
+void xptone_makewave(double freq, unsigned char *wave, int samples, DWORD shape)
 {
 	int    i;
 	int    midpoint;
@@ -248,7 +248,7 @@ void xptone_makewave(double freq, unsigned char *wave, int samples, enum WAVE_SH
 		for (i = 0; i < samples; i++) {
 			pos = (inc * (double)i);
 			pos -= (int)(pos / WAVE_TPI) * WAVE_TPI;
-			switch (shape) {
+			switch (shape & WAVE_SHAPE_MASK) {
 				case WAVE_SHAPE_SINE:
 					wave[i] = (sin (pos)) * 127 + 128;
 					break;
@@ -285,47 +285,49 @@ void xptone_makewave(double freq, unsigned char *wave, int samples, enum WAVE_SH
 			wave[i] = ((((double)wave[i]) - 128) * 0.251) + 128;
 		}
 
-		/* Now we have a "perfect" wave...
-		 * we must clean it up now to avoid click/pop
-		 */
-		if (wave[samples - 1] > 128)
-			endhigh = true;
-		else
-			endhigh = false;
-		/* Completely remove the last wave fragment */
-		i = samples - 1;
-		if (wave[i] != 128) {
-			for (; i > midpoint; i--) {
-				if (endhigh && wave[i] < 128)
-					break;
-				if (!endhigh && wave[i] > 128)
-					break;
-				wave[i] = 128;
+		if ((shape & WAVE_SHAPE_NO_CLEAN) == 0) {
+			/* Now we have a "perfect" wave...
+			 * we must clean it up now to avoid click/pop
+			 */
+			if (wave[samples - 1] > 128)
+				endhigh = true;
+			else
+				endhigh = false;
+			/* Completely remove the last wave fragment */
+			i = samples - 1;
+			if (wave[i] != 128) {
+				for (; i > midpoint; i--) {
+					if (endhigh && wave[i] < 128)
+						break;
+					if (!endhigh && wave[i] > 128)
+						break;
+					wave[i] = 128;
+				}
 			}
-		}
 
-		/* Number of crossings should be on the order of 5ms worth... according to the ARRL */
-		/* We're ASSuming that a full wave crosses twice */
-		numcross = freq / 100;
-		if (numcross) {
-			/* Ramp up and down by one third for three corssings of 128 */
-			crossings = 0;
-			for (i = 0; i < (samples - 1); i++) {
-				if (((wave[i] < 128 && wave[i + 1] >= 128) || (wave[i] > 128 && wave[i + 1] <= 128)) && i > 2) {
-					crossings++;
-					if (crossings >= numcross)
-						break;
+			/* Number of crossings should be on the order of 5ms worth... according to the ARRL */
+			/* We're ASSuming that a full wave crosses twice */
+			numcross = freq / 100;
+			if (numcross) {
+				/* Ramp up and down by one third for three corssings of 128 */
+				crossings = 0;
+				for (i = 0; i < (samples - 1); i++) {
+					if (((wave[i] < 128 && wave[i + 1] >= 128) || (wave[i] > 128 && wave[i + 1] <= 128)) && i > 2) {
+						crossings++;
+						if (crossings >= numcross)
+							break;
+					}
+					wave[i] = 128 + ((wave[i] - 128) / ((numcross - crossings) * (numcross - crossings)));
 				}
-				wave[i] = 128 + ((wave[i] - 128) / ((numcross - crossings) * (numcross - crossings)));
-			}
-			crossings = 0;
-			for (i = samples - 1; i > 0; i--) {
-				if (((wave[i] < 128 && wave[i - 1] >= 128) || (wave[i] > 128 && wave[i - 1] <= 128)) && i > 2) {
-					crossings++;
-					if (crossings >= numcross)
-						break;
+				crossings = 0;
+				for (i = samples - 1; i > 0; i--) {
+					if (((wave[i] < 128 && wave[i - 1] >= 128) || (wave[i] > 128 && wave[i - 1] <= 128)) && i > 2) {
+						crossings++;
+						if (crossings >= numcross)
+							break;
+					}
+					wave[i] = 128 + ((wave[i] - 128) / ((numcross - crossings) * (numcross - crossings)));
 				}
-				wave[i] = 128 + ((wave[i] - 128) / ((numcross - crossings) * (numcross - crossings)));
 			}
 		}
 	}
@@ -1175,7 +1177,7 @@ bool xp_play_sample(unsigned char *sample, size_t sample_size, bool background)
 /* Play a tone through the wave/DSP output device (sound card) - Deuce			*/
 /********************************************************************************/
 
-bool xptone(double freq, DWORD duration, enum WAVE_SHAPE shape)
+bool xptone(double freq, DWORD duration, DWORD shape)
 {
 	unsigned char *wave;
 	int            samples;
@@ -1187,9 +1189,11 @@ bool xptone(double freq, DWORD duration, enum WAVE_SHAPE shape)
 	if (freq < 17 && freq != 0)
 		freq = 17;
 	samples = S_RATE * duration / 1000;
-	if (freq) {
-		if (samples <= S_RATE / freq * 2)
-			samples = S_RATE / freq * 2;
+	if ((shape & WAVE_SHAPE_NO_CLEAN) == 0) {
+		if (freq) {
+			if (samples <= S_RATE / freq * 2)
+				samples = S_RATE / freq * 2;
+		}
 	}
 	if (freq == 0 || samples > S_RATE / freq * 2) {
 		int sample_len;
