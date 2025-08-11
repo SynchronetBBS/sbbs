@@ -18,6 +18,7 @@ Fix RIP handling when ESC[! sequences are split between packets
 Improve RIP sounds
 Implement RIP STW/RTW and SCB/RCP commands
 Fix divide by zero when playing invalid ANSI music
+Implement RIP exploding button flag
 
 Version 1.6
 ------------
