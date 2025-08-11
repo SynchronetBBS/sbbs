@@ -8565,6 +8565,7 @@ draw_pixel(int x, int y)
 			return;
 		if (pix->pixels[0] & 0x40000000) {
 			return;
+			freepixels(pix);
 		}
 		rip_setpixel(rip.viewport.sx + x, rip.viewport.sy + y, pixel2color(pix->pixels[0]) ^ rip.color);
 		freepixels(pix);
@@ -8574,9 +8575,6 @@ draw_pixel(int x, int y)
 			setpixels(rip.viewport.sx + x, rip.viewport.sy + y, rip.viewport.sx + x, rip.viewport.sy + y, 0, 0, 0, 0, pix, NULL);
 			freepixels(pix);
 		}
-
-		pix = getpixels(rip.viewport.sx + x, rip.viewport.sy + y, rip.viewport.sx + x, rip.viewport.sy + y, 0);
-		freepixels(pix);
 	}
 	else {
 		rip_setpixel(rip.viewport.sx + x, rip.viewport.sy + y, rip.color);
@@ -9227,7 +9225,7 @@ invert_rect(int x1, int y1, int x2, int y2)
 	pixel = 0;
 	for (y = 0; y < pix->height; y++) {
 		for (x = 0; x < pix->width; x++) {
-			col = pix->pixels[pixel];
+			col = pix->pixels[pixel] & 0x80FFFFFF;
 			for (i = 0; i < 16; i++) {
 				if (col == palette[i])
 					break;
@@ -9237,7 +9235,7 @@ invert_rect(int x1, int y1, int x2, int y2)
 				pix->pixels[pixel] = palette[i];
 			}
 
-			col = pix->pixelsb[pixel];
+			col = pix->pixelsb[pixel] & 0x80FFFFFF;
 			for (i = 0; i < 16; i++) {
 				if (col == palette[i])
 					break;
@@ -15942,6 +15940,91 @@ ansi_only(BYTE *buf, unsigned count)
 }
 
 static void
+hline(int x1, int y1, int x2)
+{
+	invert_rect(x1, y1, x2, y1);
+}
+
+static void
+vline(int x1, int y1, int y2)
+{
+	invert_rect(x1, y1, x1, y2);
+}
+
+static void
+explode_box(int x1, int y1, int x2, int y2)
+{
+	hline(x1, y1, x2);
+	if (y1 != y2) {
+		hline(x1, y2, x2);
+		if (((y2 - y1) > 1) || ((y1 - y2) > 1)) {
+			vline(x1, y1 + 1, y2 - 1);
+			vline(x2, y1 + 1, y2 - 1);
+		}
+	}
+}
+
+static void
+explode(struct rip_button_style *but)
+{
+	long double last, now;
+	const int expms = 50;
+	const bool old_xor = rip.xor;
+	const uint16_t old_line_pattern = rip.line_pattern;
+	const int old_sx = rip.viewport.sx;
+	const int old_sy = rip.viewport.sy;
+	const int old_ex = rip.viewport.ex;
+	const int old_ey = rip.viewport.ey;
+	struct ciolib_pixels *pix = getpixels(0, 0, vstat.scrnwidth - 1, vstat.scrnheight - 1, true);
+	if (!pix)
+		return;
+
+	rip.xor = false;
+	rip.line_pattern = 0x3333;
+
+	int lx1 = but->box.x1;
+	int ly1 = but->box.y1;
+	int lx2 = but->box.x2;
+	int ly2 = but->box.y2;
+
+	const int dx1 = but->box.x1;
+	const int dy1 = but->box.y1;
+	const int dx2 = rip.x_dim - but->box.x2 - 1;
+	const int dy2 = rip.y_dim - but->box.y2 - 1;
+
+	// Draw new box
+	explode_box(lx1, ly1, lx2, ly2);
+	last = xp_timer();
+
+	// Take expms 1ms steps to "explode" as per the doc
+	for (int step = 0; step < expms; step++) {
+		// Erase old box
+		explode_box(lx1, ly1, lx2, ly2);
+		// Calculate new box position
+		lx1 = but->box.x1 - (dx1 * step / expms);
+		ly1 = but->box.y1 - (dy1 * step / expms);
+		lx2 = but->box.x2 + (dx2 * step / expms);
+		ly2 = but->box.y2 + (dy2 * step / expms);
+		// Draw new box
+		explode_box(lx1, ly1, lx2, ly2);
+		now = xp_timer();
+		if (now - last < 0.001)
+			SLEEP(1);
+		last = now;
+	}
+
+	// Erase new box
+	explode_box(lx1, ly1, lx2, ly2);
+
+	rip.xor = old_xor;
+	rip.line_pattern = old_line_pattern;
+	rip.viewport.sx = old_sx;
+	rip.viewport.sy = old_sy;
+	rip.viewport.ex = old_ex;
+	rip.viewport.ey = old_ey;
+}
+
+static void
 handle_mouse_button(struct rip_button_style *but)
 {
 	if (but->flags.radiogroup)
@@ -15949,7 +16032,7 @@ handle_mouse_button(struct rip_button_style *but)
 	if (but->flags.cbgroup)
 		puts("TODO: Handle checkbox group");
 	if (but->flags.explode)
-		puts("TODO: Handle explode flag");
+		explode(but);
 	handle_command_str(but->command);
 
         /*
