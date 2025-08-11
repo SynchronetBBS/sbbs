@@ -520,8 +520,8 @@ int parseuserdat(scfg_t* cfg, char *userdat, user_t *user, char* field[])
 	user->expire = parse_usertime(field[USER_EXPIRE]);
 	user->reset = parse_usertime(field[USER_RESET]);
 
-	/* Reset daily stats if not already logged on today */
-	if (user->ltoday || user->etoday || user->ptoday || user->ttoday || user->dtoday || user->btoday) {
+	/* Reset (zero) daily stats and free credits if not already reset today */
+	if (user->ltoday || user->etoday || user->ptoday || user->ttoday || user->textra || user->freecdt || user->dtoday || user->btoday) {
 		if (!dates_are_same(time(NULL), user->reset)) {
 			resetdailyuserdat(cfg, user, /* write: */ false);
 		}
