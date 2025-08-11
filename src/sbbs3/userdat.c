@@ -3258,7 +3258,8 @@ void resetdailyuserdat(scfg_t* cfg, user_t* user, bool write)
 	if (write)
 		putuserstr(cfg, user->number, USER_PTODAY, "0");
 	/* free credits per day */
-	user->freecdt = cfg->level_freecdtperday[user->level];
+	if (user->level < 100)
+		user->freecdt = cfg->level_freecdtperday[user->level];
 	if (write)
 		putuserdec64(cfg, user->number, USER_FREECDT, user->freecdt);
 	/* downloads today (files) */
