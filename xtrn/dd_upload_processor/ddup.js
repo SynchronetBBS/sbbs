@@ -38,12 +38,14 @@
  1 (argv[0]): The name of the file to scan
 */
 
+"use strict";
+
 load("sbbsdefs.js");
 
 // Require version 3.14 or newer of Synchronet (for file_chmod())
 if (system.version_num < 31400)
 {
-	console.print("\1nDigital Distortion Upload Processor requires Synchronet 3.14 or newer.\r\n");
+	console.print("\x01nDigital Distortion Upload Processor requires Synchronet 3.14 or newer.\r\n");
 	exit(1);
 }
 
@@ -73,13 +75,13 @@ if (argv.length > 0)
 			gFileToScan = fixedArgs[0];
 		else
 		{
-			console.print("\1n\1y\1hError: \1n\1cBlank filename argument given.\r\n\1p");
+			console.print("\x01n\x01y\x01hError: \x01n\x01cBlank filename argument given.\r\n\x01p");
 			exit(-2);
 		}
 	}
 	else
 	{
-		console.print("\1n\1y\1hError: \1n\1cUnknown command-line argument specified.\r\n\1p");
+		console.print("\x01n\x01y\x01hError: \x01n\x01cUnknown command-line argument specified.\r\n\x01p");
 		exit(-1);
 	}
 }
@@ -107,7 +109,7 @@ if (gFileToScan.length > 0)
 // if not.
 if (gFileToScan.length == 0)
 {
-	console.print("\1n\1y\1hError: \1n\1cNo filename specified to process.\r\n\1p");
+	console.print("\x01n\x01y\x01hError: \x01n\x01cNo filename specified to process.\r\n\x01p");
 	exit(1);
 }
 
@@ -124,26 +126,26 @@ var configFileRead = ReadConfigFile();
 // If the configuration files weren't read, then output an error and exit.
 if (!configFileRead)
 {
-	console.print("\1n\1y\1hError: \1n\1cUpload processor is unable to read its\r\n");
-	console.print("configuration files.\r\n\1p");
+	console.print("\x01n\x01y\x01hError: \x01n\x01cUpload processor is unable to read its\r\n");
+	console.print("configuration files.\r\n\x01p");
 	exit(2);
 }
 // Exit if there is no scan command.
 if (gGenCfg.scanCmd.length == 0)
 {
-	console.print("\1n\1y\1hWarning: \1n\1cNo scan command configured for the upload processor.\r\n");
+	console.print("\x01n\x01y\x01hWarning: \x01n\x01cNo scan command configured for the upload processor.\r\n");
 	exit(0);
 }
 
 // Global variables
 // Strings for the OK and failure symbols
-var gOKStr = "\1n\1k\1h[\1n\1g�\1k\1h]\1n";
+var gOKStr = "\x01n\x01k\x01h[\x01n\x01g\xFB\x01k\x01h]\x01n";
 var gOKStrWithNewline = gOKStr + "\r\n";
-var gFailStr = "\1n\1k\1h[\1rX\1k]\1n";
+var gFailStr = "\x01n\x01k\x01h[\x01rX\x01k]\x01n";
 var gFailStrWithNewline = gFailStr + "\r\n";
 // Stuff for the printf formatting string for the status messages
 var gStatusTextLen = 79 - console.strlen(gOKStr); // gOKStr and gFailStr should have the same length
-var gStatusPrintfStr = "\1n%s%-" + gStatusTextLen + "s\1n"; // For a color and the status text
+var gStatusPrintfStr = "\x01n%s%-" + gStatusTextLen + "s\x01n"; // For a color and the status text
 
 // Now, scan the file and return the appropriate return code.
 exit(main());
@@ -157,11 +159,11 @@ exit(main());
 function main()
 {
 	// Output the program name & version information
-	console.print("\1n\r\n\1c\1hD\1n\1cigital \1hD\1n\1cistortion \1hU\1n\1cpload \1hP\1n\1crocessor \1w\1hv\1n\1g" +
+	console.print("\x01n\r\n\x01c\x01hD\x01n\x01cigital \x01hD\x01n\x01cistortion \x01hU\x01n\x01cpload \x01hP\x01n\x01crocessor \x01w\x01hv\x01n\x01g" +
 	              gDDUPVersion);
 	// Originally I had this script output the version date, but now I'm not sure
 	// if I want to do that..
-	//console.print(" \1w\1h(\1b" + gDDUPVerDate + "\1w)");
+	//console.print(" \x01w\x01h(\x01b" + gDDUPVerDate + "\x01w)");
 	console.attributes = "N";
 	console.crlf();
 
@@ -170,15 +172,15 @@ function main()
 	// Depending on the exit code, display a success or failure message.
 	console.crlf();
 	if (exitCode == 0)
-		console.print(gOKStr + " \1n\1b\1hScan successful - The file passed.\r\n");
+		console.print(gOKStr + " \x01n\x01b\x01hScan successful - The file passed.\r\n");
 	else
-		console.print(gFailStr + " \1n\1y\1hScan failed!\r\n");
+		console.print(gFailStr + " \x01n\x01y\x01hScan failed!\r\n");
 
 	// If the option to pause at the end is enabled, then prompt the user for
 	// a keypress.
 	if (gGenCfg.pauseAtEnd)
 	{
-		console.print("\1n\1w\1hPress any key to continue:\1n");
+		console.print("\x01n\x01w\x01hPress any key to continue:\x01n");
 		console.getkey(K_NOECHO);
 	}
 
@@ -248,14 +250,14 @@ function processFile(pFilename)
 	// Display the program header stuff - The name of the file being scanned
 	// and the status header line
 	var justFilename = getFilenameFromPath(pFilename);
-	console.print("\1n\1w\1hScanning \1b" + justFilename);
-	console.print("\1n\r\n\1b\1" + "7                             File Scan Status                                  \1n\r\n");
+	console.print("\x01n\x01w\x01hScanning \x01b" + justFilename);
+	console.print("\x01n\r\n\x01b\x01" + "7                             File Scan Status                                  \x01n\r\n");
 
 	// If the skipScanIfSysop option is enabled and the user is a sysop,
 	// then assume the file is good.
 	if (gGenCfg.skipScanIfSysop && user.compare_ars("SYSOP"))
 	{
-		printf(gStatusPrintfStr, "\1g\1h", "Auto-approving the file (you're a sysop)");
+		printf(gStatusPrintfStr, "\x01g\x01h", "Auto-approving the file (you're a sysop)");
 		console.print(gOKStrWithNewline);
 		return 0;
 	}
@@ -289,7 +291,7 @@ function processFile(pFilename)
 				deltree(baseWorkDir + "/");
 				if (!mkdir(baseWorkDir))
 				{
-					console.print("\1n\1y\1hWarning: \1n\1w\1h Unable to create the work dir.\1n\r\n");
+					console.print("\x01n\x01y\x01hWarning: \x01n\x01w\x01h Unable to create the work dir.\x01n\r\n");
 					retval = -1;
 				}
 				
@@ -300,7 +302,7 @@ function processFile(pFilename)
 					deltree(workDir + "/");
 					if (!mkdir(workDir))
 					{
-						console.print("\1n\1y\1hWarning: \1n\1w\1h Unable to create a dir in the temporary work dir.\1n\r\n");
+						console.print("\x01n\x01y\x01hWarning: \x01n\x01w\x01h Unable to create a dir in the temporary work dir.\x01n\r\n");
 						retval = -1;
 					}
 				}
@@ -309,13 +311,13 @@ function processFile(pFilename)
 				if (retval == 0)
 				{
 					// Extract the file to the work directory
-					printf(gStatusPrintfStr, "\1m\1h", "Extracting the file...");
+					printf(gStatusPrintfStr, "\x01m\x01h", "Extracting the file...");
 					console.crlf();
 					var errorStr = extractFileToDir(pFilename, workDir);
 					if (errorStr.length == 0)
 					{
 						// Scan the files in the work directory.
-						printf(gStatusPrintfStr, "\1r", "Scanning files inside the archive for viruses...");
+						printf(gStatusPrintfStr, "\x01r", "Scanning files inside the archive for viruses...");
 						var retObj = scanFilesInDir(workDir);
 						retval = retObj.returnCode;
 						if (retObj.returnCode == 0)
@@ -323,7 +325,7 @@ function processFile(pFilename)
 						else
 						{
 							console.print(gFailStrWithNewline);
-							console.print("\1n\1y\1hVirus scan failed.\1n\r\n");
+							console.print("\x01n\x01y\x01hVirus scan failed.\x01n\r\n");
 							log(LOG_WARNING, format("File (%s) uploaded by %s failed virus scan:", pFilename, user.alias));
 							for (var index = 0; index < retObj.cmdOutput.length; ++index)
 								log(LOG_WARNING, retObj.cmdOutput[index]);
@@ -333,7 +335,7 @@ function processFile(pFilename)
 					{
 						console.print(gFailStrWithNewline);
 						// Scan the files in the work directory.
-						console.print("\1n\1y\1hWarning: \1n\1w\1h Unable to extract to work dir.\1n\r\n");
+						console.print("\x01n\x01y\x01hWarning: \x01n\x01w\x01h Unable to extract to work dir.\x01n\r\n");
 						retval = -2;
 					}
 				}
@@ -343,7 +345,7 @@ function processFile(pFilename)
 			else
 			{
 				// The file has no extract command, so just scan it.
-				printf(gStatusPrintfStr, "\1b\1h", "Scanning...");
+				printf(gStatusPrintfStr, "\x01b\x01h", "Scanning...");
 				var scanCmd = gGenCfg.scanCmd.replace("%FILESPEC%", "\"" + fixPathSlashes(pFilename) + "\"");
 				// Run the scan command and capture its output, in case the scan fails.
 				var retObj = runExternalCmdWithOutput(scanCmd);
@@ -353,7 +355,7 @@ function processFile(pFilename)
 				else
 				{
 					console.print(gFailStrWithNewline);
-					console.print("\1n\1y\1hVirus scan failed.\1n\r\n");
+					console.print("\x01n\x01y\x01hVirus scan failed.\x01n\r\n");
 					log(LOG_WARNING, format("File (%s) uploaded by %s failed virus scan:", pFilename, user.alias));
 					for (var index = 0; index < retObj.cmdOutput.length; ++index)
 						log(LOG_WARNING, retObj.cmdOutput[index]);
@@ -366,7 +368,7 @@ function processFile(pFilename)
 	else
 	{
 		// There's nothing configured for the file's extension, so just scan it.
-		printf(gStatusPrintfStr, "\1r", "Scanning...");
+		printf(gStatusPrintfStr, "\x01r", "Scanning...");
 		var scanCmd = gGenCfg.scanCmd.replace("%FILESPEC%", "\"" + fixPathSlashes(pFilename) + "\"");
 		var retObj = runExternalCmdWithOutput(scanCmd);
 		retval = retObj.returnCode;
@@ -375,7 +377,7 @@ function processFile(pFilename)
 		else
 		{
 			console.print(gFailStrWithNewline);
-			console.print("\1n\1y\1hVirus scan failed.\1n\r\n");
+			console.print("\x01n\x01y\x01hVirus scan failed.\x01n\r\n");
 			log(LOG_WARNING, format("File (%s) uploaded by %s failed virus scan:", pFilename, user.alias));
 			for (var index = 0; index < retObj.cmdOutput.length; ++index)
 				log(LOG_WARNING, retObj.cmdOutput[index]);
@@ -948,7 +950,7 @@ function runExternalCmdWithOutput(pCommand)
 	{
 		// Write a Windows batch file to run the command
 		scriptFilename = fixPathSlashes(system.node_dir + "DDUP_ScanCmd.bat");
-		//console.print(":" + scriptFilename + ":\r\n\1p"); // Temporary (for debugging)
+		//console.print(":" + scriptFilename + ":\r\n\x01p"); // Temporary (for debugging)
 		var scriptFile = new File(scriptFilename);
 		if (scriptFile.open("w"))
 		{
