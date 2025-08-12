@@ -1,13 +1,17 @@
 Version 1.7b
 ------------
-Fix APB and APU from top in BBC Micro Mode 7
-Fix blast-through in Mode 7 high ASCII mosaics
+Add custom palette support to list file
+Add support for DECSC/DECRC control codes
+Pass control key combinations in BBC Micro mode
+Implement RIP STW/RTW and SCB/RCP commands
+Implement RIP exploding button flag
+Improve RIP sounds
 Update Prestel/Mode 7 keybindings
 Don't disable status line for Atari ST modes
+Fix divide by zero when playing invalid ANSI music
+Fix APB and APU from top in BBC Micro Mode 7
+Fix blast-through in Mode 7 high ASCII mosaics
 Fix broken vertical (U+00A6) vs. vertical line (U+007C)
-Add custom palette support to list file
-Pass control key combinations in BBC Micro mode
-Add support for DECSC/DECRC control codes
 Fix crash when first ANSI music note played is in background
 Fix binary mode tracking, which could cause issues after transfers
 Fix SDL and GDI issue with textmode() when font is changed
@@ -15,10 +19,6 @@ Fix manual upload screen when not in cp437+ANSI mode
 Fix loss of character when performing LCF wrap
 Fix crash at startup when built with gcc15 and -fhardened
 Fix RIP handling when ESC[! sequences are split between packets
-Improve RIP sounds
-Implement RIP STW/RTW and SCB/RCP commands
-Fix divide by zero when playing invalid ANSI music
-Implement RIP exploding button flag
 
 Version 1.6
 ------------
