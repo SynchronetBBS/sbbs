@@ -15740,7 +15740,7 @@ handle_rip_line(BYTE *buf, unsigned *blen, unsigned *pos, size_t *rip_start, uns
 			remove = 1;
 		else if ((*blen > 0) && (rip.state == RIP_STATE_CSI) && (buf[0] >= '0' && buf[0] <= '2')) {
 			remove = 1;
-			if ((*blen > 1) && (buf[1] == '1'))
+			if ((*blen > 1) && (buf[1] == '!'))
 				remove++;
 		}
 		else
@@ -15764,6 +15764,7 @@ handle_rip_line(BYTE *buf, unsigned *blen, unsigned *pos, size_t *rip_start, uns
 		memmove(&buf[*rip_start], &buf[(*pos) + 1], remainder);
 
                 // Adjust the buffer...
+                // coverity[overflow_const:
 		*blen -= remove;
 		*pos -= remove;
 	}
