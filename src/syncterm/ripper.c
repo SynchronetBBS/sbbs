@@ -15764,7 +15764,7 @@ handle_rip_line(BYTE *buf, unsigned *blen, unsigned *pos, size_t *rip_start, uns
 		memmove(&buf[*rip_start], &buf[(*pos) + 1], remainder);
 
                 // Adjust the buffer...
-                // coverity[overflow_const:
+                // coverity[overflow_const:SUPPRESS]:
 		*blen -= remove;
 		*pos -= remove;
 	}
