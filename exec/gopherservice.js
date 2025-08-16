@@ -39,15 +39,19 @@ function writeln(str)
 }
 
 // Send the contents of a text file to the client socket
-function send_file(fname)
+function send_file(fname, prefix, suffix)
 {
+	if (!prefix)
+		prefix = "";
+	if (!suffix)
+		suffix = "";
 	f = new File(fname);
 	if(!f.open("r")) 
 		return;
 	txt = f.readAll();
 	f.close();
 	for(l in txt)
-		writeln(strip_ctrl(txt[l]));
+		writeln(prefix + strip_ctrl(txt[l]) + suffix);
 }
 
 function getQwkBulletins() {
@@ -90,6 +94,10 @@ if(request[0] == '/')
 	request = request.slice(1);
 
 if(request=="") { /* "root" */
+	var files = directory(system.text_dir + "gopher_welcome*.msg");
+	for (var i in files) {
+		send_file(files[i], prefix + 'i', '\t\tfake\t1');
+	}
 	if (msg_area.grp_list.length) {
 		writeln(prefix + 'iMessage Groups\t\tfake\t1');
 		for(g in msg_area.grp_list) {
