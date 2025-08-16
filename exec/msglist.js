@@ -57,9 +57,14 @@ if(argv.indexOf('-?') >= 0 || argv.indexOf('-help') >= 0)
 	writeln("  -p=<list>       specify comma-separated list of property names to print");
 	writeln("  -fmt=<fmt>      specify format string");
 	writeln("  -hdr            include list header");
+	writeln("  -sent           list sent mail messages");
+	writeln("  -all            list all mail messages");
+	writeln("  -unread         list only unread messages");
 	writeln("  -count          show count of messages only");
 	writeln("  -all_subs       action for all sub areas")
-	writeln("  -hide_zero      do not show a line if zero messages are returned")
+	writeln("  -hide_zero      do not print anything if no messages are loaded")
+	writeln("  -nospam         do not load SPAM-tagged messages");
+	writeln("  -spam           only load SPAM-tagged messages");
 	exit(0);
 }
 require('sbbsdefs.js', 'LEN_ALIAS');
