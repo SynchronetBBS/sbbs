@@ -1,6 +1,6 @@
                     Digital Distortion Archive Viewer
-                              Version 1.05
-                        Release date: 2023-08-08
+                              Version 1.06
+                        Release date: 2025-08-17
 
                                   by
 
@@ -298,10 +298,6 @@ interfaceStyle                        String: The user interface to use.  Valid 
                                       with user prompted for input at the end of each
                                       screenful) and "Lightbar" (use the lightbar user
                                       interface).
-
-inputTimeoutMS                        The user input timeout, in milliseconds.
-                                      In the default configuration file, this is set at
-                                      300000 (5 minutes).
 
 maxArcFileSize                        Maximum archive file size.  By default, this value
                                       is in bytes; however, kilobytes, megabytes, or
