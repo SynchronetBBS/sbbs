@@ -619,7 +619,6 @@ uint sbbs_t::logonstats()
 	uint      i;
 	stats_t   stats;
 	node_t    node;
-	struct tm tm, update_tm;
 
 	sys_status &= ~SS_DAILY;
 	if (!getstats(&cfg, 0, &stats)) {
@@ -629,13 +628,20 @@ uint sbbs_t::logonstats()
 
 	now = time(NULL);
 	if (stats.date > now + (24L * 60L * 60L)) /* More than a day in the future? */
-		errormsg(WHERE, ERR_CHK, "Daily stats date/time stamp", (ulong)stats.date);
-	if (localtime_r(&stats.date, &update_tm) == NULL)
-		return 0;
-	if (localtime_r(&now, &tm) == NULL)
-		return 0;
-	if ((tm.tm_mday > update_tm.tm_mday && tm.tm_mon == update_tm.tm_mon)
-	    || tm.tm_mon > update_tm.tm_mon || tm.tm_year > update_tm.tm_year) {
+		errormsg(WHERE, ERR_CHK, "Daily stats date/time stamp", (int)stats.date);
+
+	if (!dates_are_same(now, stats.date)) {
+
+		struct tm tm{};
+		struct tm update_tm{};
+		if (localtime_r(&stats.date, &update_tm) == NULL) {
+			errormsg(WHERE, ERR_CHK, "Daily stats date/time break down", (int)stats.date);
+			return 0;
+		}
+		if (localtime_r(&now, &tm) == NULL) {
+			errormsg(WHERE, ERR_CHK, "Current date/time break down", (int)stats.date);
+			return 0;
+		}
 
 		sys_status |= SS_NEW_DAY;
 		if (tm.tm_mon != update_tm.tm_mon)
@@ -651,7 +657,7 @@ uint sbbs_t::logonstats()
 		int file;
 		if ((file = nopen(path, O_TRUNC | O_CREAT | O_WRONLY)) == -1) {
 			errormsg(WHERE, ERR_OPEN, path, O_TRUNC | O_CREAT | O_WRONLY);
-			return 0L;
+			return 0;
 		}
 		close(file);
 		for (i = 0; i <= cfg.sys_nodes; i++) {
@@ -697,7 +703,7 @@ uint sbbs_t::logonstats()
 		FILE* fp = fopen_dstats(&cfg, i ? 0 : cfg.node_num, /* for_write: */ TRUE);
 		if (fp == NULL) {
 			errormsg(WHERE, ERR_OPEN, "dsts.ini", i);
-			return 0L;
+			return 0;
 		}
 		if (!fread_dstats(fp, &stats)) {
 			errormsg(WHERE, ERR_READ, "dsts.ini", i);
