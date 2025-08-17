@@ -2,7 +2,7 @@
 
 // Client for Synchronet dynamic DNS service (yourbbs.synchro.net)
 
-// usage: ?dyndns <password> [ip_address] [-mx address]
+// usage: ?dyndns [password] [ip_address] [[-option] | [-option value] [...]]
 
 const REVISION = "2.0";
 const rx_log_level = LOG_INFO;
@@ -29,9 +29,9 @@ var mx_record = options.mx;
 var ip_address = options.ip;
 var ip6_address = options.ip6;
 var host_name = system.qwk_id;
-var password = options.password || argv[0];
+var password = options.password;
 
-for(i=1;i<argc;i++) {
+for(i=0;i<argc;i++) {
 	switch (argv[i].toLowerCase()) {
 		case "-q":
 			quiet = true;
@@ -47,7 +47,11 @@ for(i=1;i<argc;i++) {
 			ip6_address = argv[++i];
 			break;
 		default:
-			ip_address = argv[i];
+			if (password)
+				ip_address = argv[i];
+			else
+				password = argv[i];
+			break;
 	}
 }
 
