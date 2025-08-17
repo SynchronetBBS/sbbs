@@ -2,6 +2,11 @@ Revision History for Digital Distortion Archive Viewer
 ======================================================
 Version  Date         Description
 -------  ----         -----------
+1.06     2025-08-17   Now supports .example.cfg configuration filenames. Also
+                      allows reading the configuration file from sbbs/mods or
+                      sbbs/ctrl.
+                      Internal refactor: Now uses dd_lightbar_menu.js for the
+                      file list menu.
 1.05     2023-08-08   Internal refactor of how the configuration files are
                       loaded. Colors in dd_arc_viewer.cfg no longer need the
                       control character.

@@ -6,86 +6,6 @@
  * BBS: Digital Distortion
  * BBS address: digdist.bbsindex.com
  *
- * Date       User              Description
- * 2009-08-29 Eric Oulashin     Started
- * 2009-08-31 Eric Oulashin     Re-did the configuration file.
- *                              Started re-arranging the code with a
- *                              plan to extract archives, rather than
- *                              using their view command in order to
- *                              view inside of archives.  Started
- *                              working on some functions to do this
- *                              so that it can be done recursively
- *                              (to handle subdirectories).
- * 2009-09-01 Eric Oulashin     Worked on the lightbar interface, and
- *                              on the script in general.
- * 2009-09-02 Eric Oulashin     Worked on file downloading, subdirectory
- *                              viewing, and other enhancements.  Started
- *                              working more on the traditional interface:
- *                              added writeCmdPrompt_Traditional(), etc.
- * 2009-09-03 Eric Oulashin     Updated the file size width to be 6 instead
- *                              of 10.
- *                              Made the file # show up in both the lightbar
- *                              and traditional interface (for consistency).
- *                              Added file # entry to the lightbar interface.
- * 2009-09-04 Eric Oulashin     Worked on functionality enhancements and
- *                              bug fixes.
- * 2009-09-05 Eric Oulashin     Worked on optimizing when file path slashes
- *                              are fixed.  Increased the size column from 7
- *                              to 8 chars.
- * 2009-09-07 Eric Oulashin     Fixed a bug in viewing text files - Now it
- *                              always pauses after the last screenful.
- *                              Also added a maxFileSize option to specify
- *                              the maximum size of a file that can be read.
- * 2009-09-08 Eric Oulashin     Updated the configuration file to include
- *                              maxArcFileSize and maxTextFileSize, to
- *                              specify the maximum archive file size and
- *                              maximum text file size.  Added sizeStrToBytes()
- *                              to help convert the number values read from
- *                              the config file to bytes.
- * 2009-09-10 Eric Oulashin     Version 1.00
- *                              First general public release
- * 2009-12-15 Eric Oulashin     Version 1.01
- *                              Updated the getFilenameExtension() function to
- *                              not use file_getext().  Added some unit test
- *                              functions.
- * 2009-12-15 Eric Oulashin     Version Pre1.02
- *                              Updated to store the name of the file to view
- *                              in a variable called gFileToView.  Also added
- *                              some code to read the name of the file to view
- *                              from DDArcViewerFilename.txt in the node
- *                              directory if the filename is not specified on
- *                              the command line.
- *                              This method enables this script to view files
- *                              files with spaces in its path/filename, avoiding
- *                              the issue that strings with spaces are always
- *                              split up into separate command-line arguments.
- * 2009-12-18 Eric Oulashin     Version 1.02
- *                              Decided to release this version.
- * 2009-12-20 Eric Oulashin     Version 1.03
- *                              Made use of Tracker1's fixArgs() function to
- *                              combine command-line arguments that were
- *                              originally split due to spaces in the arguments.
- *                              This relies on the arguments being passed with
- *                              double-quotes around them, as in other
- *                              programming languages.
- * 2009-12-25 Eric Oulashin     Verison 1.04 Beta
- *                              Removed the extra declaration for fileToView from
- *                              the else case (the script should use the global one).
- *                              Renamed fileToView to gFileToView.
- * 2022-04-12 Eric Oulashin     Started updating to use the new Archive class in
- *                              Synchronet 3.19.
- * 2022-05-14 Eric Oulashin     Version 1.04
- *                              Made a couple fixes and improvements.
- *                              Updated to read the file viewable and extractable
- *                              commands from the Synchronet configuration and use
- *                              any of those that aren't in dd_arc_viewer_file_types.cfg.
- *                              dd_arc_viewer_file_types.cfg takes precedence.
- * 2022-05-17 Eric Oulashin     When extracting an archive with Synchronet's
- *                              internal archiver, extracts with path information
- *                              to trust that filename characters are safe.
- * 2023-08-08 Eric Oulashin     Version 1.05
- *                              Refactored how the configuration files are loaded.
- *                              Colors in dd_arc_viewer.cfg no longer need the control character.
  */
 
 "use strict";
@@ -95,31 +15,24 @@
 */
 
 if (typeof(require) === "function")
+{
 	require("sbbsdefs.js", "K_UPPER");
+	require("dd_lightbar_menu.js", "DDLightbarMenu");
+}
 else
+{
 	load("sbbsdefs.js");
-
-
-// Determine the script's execution directory.
-// This code is a trick that was created by Deuce, suggested by Rob
-// Swindell as a way to detect which directory the script was executed
-// in.  I've shortened the code a little.
-// Note: gStartupPath will include the trailing slash.
-var gStartupPath = '.';
-var gThisScriptFilename = "";
-try { throw dig.dist(dist); } catch(e) {
-	gStartupPath = backslash(e.fileName.replace(/[\/\\][^\/\\]*$/,''));
-	gThisScriptFilename = file_getname(e.fileName);
+	load("dd_lightbar_menu.js");
 }
 
 // We need the deltree() and withoutTrailingSlash() functions
 // from the cleanup script.
-load(gStartupPath + "dd_arc_viewer_cleanup.js");
+load(js.exec_dir + "dd_arc_viewer_cleanup.js");
 
 
 // Version information
-var gDDArcViewerVersion = "1.05";
-var gDDArcViewerVerDate = "2023-08-08";
+var gDDArcViewerVersion = "1.06";
+var gDDArcViewerVerDate = "2025-08-17";
 var gDDArcViewerProgName = "Digital Distortion Archive Viewer";
 
 
@@ -129,8 +42,6 @@ var KEY_ENTER = CTRL_M;
 var ESC_KEY = "\x1b";
 
 // Characters for display
-var UP_ARROW_DISPLAY = ascii(24);
-var DOWN_ARROW_DISPLAY = ascii(25);
 var UPPER_LEFT_SINGLE = "\xDA";
 var HORIZONTAL_SINGLE = "\xC4";
 var UPPER_RIGHT_SINGLE = "\xBF";
@@ -142,6 +53,8 @@ var LOWER_RIGHT_SINGLE = "\xD9";
 // Determine which slash character to use for paths, depending
 // on the OS.
 var gPathSlash = (/^WIN/.test(system.platform.toUpperCase())) ? "\\" : "/";
+
+var gArchiveClassIsAvailable = (typeof(Archive) === "function");
 
 
 // gViewableFileTypes will contain ViewableFile objects representing files
@@ -156,7 +69,6 @@ var gViewableFileTypes = {
 // General configuration
 var gGenConfig = {
 	interfaceStyle: "Lightbar",
-	inputTimeoutMS: 300000,
 	maxArcFileSize: 1073741824, // 1.0GB
 	maxTextFileSize: 5242880,   // 5.0MB
 	colors: {
@@ -225,7 +137,7 @@ if (gFileToView.length == 0)
 }
 
 // Read the configuration files.
-var configFileRead = ReadConfig(gStartupPath);
+var configFileRead = ReadConfig();
 // If the configuration file wasn't read, then output an error and exit.
 if (!configFileRead)
 {
@@ -259,8 +171,7 @@ var useLightbar = (gANSISupported && (gGenConfig.interfaceStyle == "Lightbar"));
 var gTopLevelFilename = fixPathSlashes(gFileToView);
 bbs.log_str(user.alias + " is viewing a file: " + gTopLevelFilename);
 // View the file
-var gListFilesFunction = useLightbar ? listFiles_Lightbar : listFiles_Traditional;
-var retObj = viewFile(gTopLevelFilename, gRootWorkDir, gListFilesFunction);
+var retObj = viewFile(gTopLevelFilename, gRootWorkDir);
 
 // Clean up (remove the root work directory, etc.)
 console.print("\x01n\x01cViewer cleanup\x01i...\x01n\r\n");
@@ -317,48 +228,51 @@ function ViewableFile(pExtension, pViewCmd, pExtractCmd)
 // settings were read.  Also populates gGenConfig with the general
 // configuration options.
 //
-// Parameters:
-//  pCfgFilePath: The path from which to load the configuration file.
-//
 // Return value: Boolean - Whether or not configuration settings were read.
-function ReadConfig(pCfgFilePath)
+function ReadConfig()
 {
+	//js.exec_dir
+	//GetFullyPathedCfgFilename(pFilenameWithoutFullPath)
 	// Read the file type settings
 	var fileTypeSettingsRead = false;
-	var fileTypeCfgFile = new File(pCfgFilePath + "dd_arc_viewer_file_types.cfg");
-	if (fileTypeCfgFile.open("r"))
+	var cfgFilename = GetFullyPathedCfgFilename("dd_arc_viewer_file_types.cfg");
+	if (cfgFilename.length > 0)
 	{
-		if (fileTypeCfgFile.length > 0)
+		var fileTypeCfgFile = new File(cfgFilename);
+		if (fileTypeCfgFile.open("r"))
 		{
-			var allFileTypeCfg = fileTypeCfgFile.iniGetAllObjects();
-			fileTypeSettingsRead = true;
-			for (var i = 0; i < allFileTypeCfg.length; ++i)
+			if (fileTypeCfgFile.length > 0)
 			{
-				var filenameExt = allFileTypeCfg[i].name; // Filename extension
-				var viewableFile = new ViewableFile();
-				viewableFile.extension = filenameExt;
-				for (var prop in allFileTypeCfg[i])
+				var allFileTypeCfg = fileTypeCfgFile.iniGetAllObjects();
+				fileTypeSettingsRead = true;
+				for (var i = 0; i < allFileTypeCfg.length; ++i)
 				{
-					var propUpper = prop.toUpperCase();
-					if (propUpper == "VIEW")
-						viewableFile.viewCmd = allFileTypeCfg[i][prop];
-					else if (propUpper == "EXTRACT")
-						viewableFile.extractCmd = allFileTypeCfg[i][prop];
-					else if (propUpper == "ISTEXT")
+					var filenameExt = allFileTypeCfg[i].name; // Filename extension
+					var viewableFile = new ViewableFile();
+					viewableFile.extension = filenameExt;
+					for (var prop in allFileTypeCfg[i])
 					{
-						if (typeof(allFileTypeCfg[i][prop]) === "string")
+						var propUpper = prop.toUpperCase();
+						if (propUpper == "VIEW")
+							viewableFile.viewCmd = allFileTypeCfg[i][prop];
+						else if (propUpper == "EXTRACT")
+							viewableFile.extractCmd = allFileTypeCfg[i][prop];
+						else if (propUpper == "ISTEXT")
 						{
-							var valueUpper = allFileTypeCfg[i][prop].toUpperCase();
-							viewableFile.isText = (valueUpper == "YES" || valueUpper == "TRUE");
+							if (typeof(allFileTypeCfg[i][prop]) === "string")
+							{
+								var valueUpper = allFileTypeCfg[i][prop].toUpperCase();
+								viewableFile.isText = (valueUpper == "YES" || valueUpper == "TRUE");
+							}
+							else if (typeof(allFileTypeCfg[i][prop]) === "boolean")
+								viewableFile.isText = allFileTypeCfg[i][prop];
 						}
-						else if (typeof(allFileTypeCfg[i][prop]) === "boolean")
-							viewableFile.isText = allFileTypeCfg[i][prop];
 					}
+					gViewableFileTypes[filenameExt] = viewableFile;
 				}
-				gViewableFileTypes[filenameExt] = viewableFile;
 			}
+			fileTypeCfgFile.close();
 		}
-		fileTypeCfgFile.close();
 	}
 
 	// Read the extractable and viewable file configuration from the Synchronet
@@ -385,60 +299,58 @@ function ReadConfig(pCfgFilePath)
 
 	// Read the general program configuration
 	var genSettingsRead = false;
-	var genCfgFile = new File(pCfgFilePath + "dd_arc_viewer.cfg");
-	if (genCfgFile.open("r"))
+	cfgFilename = GetFullyPathedCfgFilename("dd_arc_viewer.cfg");
+	if (cfgFilename.length > 0)
 	{
-		if (genCfgFile.length > 0)
+		var genCfgFile = new File(cfgFilename);
+		if (genCfgFile.open("r"))
 		{
-			var behaviorSettings = genCfgFile.iniGetObject("BEHAVIOR");
-			var colorSettings = genCfgFile.iniGetObject("COLORS");
-			genSettingsRead = true;
-
-			// General/behavior settings
-			for (var prop in behaviorSettings)
+			if (genCfgFile.length > 0)
 			{
-				var propUpper = prop.toUpperCase();
-				if (propUpper == "INTERFACESTYLE")
+				var behaviorSettings = genCfgFile.iniGetObject("BEHAVIOR");
+				var colorSettings = genCfgFile.iniGetObject("COLORS");
+				genSettingsRead = true;
+
+				// General/behavior settings
+				for (var prop in behaviorSettings)
 				{
-					var valueUpper = behaviorSettings[prop].toUpperCase();
-					// Ensure that the first character is uppercase and the
-					// rest is lower-case.
-					if ((valueUpper == "LIGHTBAR") || (valueUpper == "TRADITIONAL"))
+					var propUpper = prop.toUpperCase();
+					if (propUpper == "INTERFACESTYLE")
 					{
-						gGenConfig.interfaceStyle = behaviorSettings[prop].substr(0, 1).toUpperCase()
-						                          + behaviorSettings[prop].substr(1).toLowerCase();
+						var valueUpper = behaviorSettings[prop].toUpperCase();
+						// Ensure that the first character is uppercase and the
+						// rest is lower-case.
+						if ((valueUpper == "LIGHTBAR") || (valueUpper == "TRADITIONAL"))
+						{
+							gGenConfig.interfaceStyle = behaviorSettings[prop].substr(0, 1).toUpperCase()
+							                          + behaviorSettings[prop].substr(1).toLowerCase();
+						}
+					}
+					else if (propUpper == "MAXARCFILESIZE")
+						gGenConfig.maxArcFileSize = sizeStrToBytes(behaviorSettings[prop]);
+					else if (propUpper == "MAXTEXTFILESIZE")
+						gGenConfig.maxTextFileSize = sizeStrToBytes(behaviorSettings[prop]);
+				}
+
+				// Color settings
+				var onlySyncAttrsRegexWholeWord = new RegExp("^[\x01krgybmcw01234567hinq,;\.dtlasz]+$", 'i');
+				for (var prop in gGenConfig.colors)
+				{
+					if (colorSettings.hasOwnProperty(prop))
+					{
+						// Make sure the value is a string (for attrCodeStr() etc; in some cases, such as a background attribute of 4, it will be a number)
+						var value = colorSettings[prop].toString();
+						// If the value doesn't have any control characters, then add the control character
+						// before attribute characters
+						if (!/\x01/.test(value))
+							value = attrCodeStr(value);
+						if (onlySyncAttrsRegexWholeWord.test(value))
+							gGenConfig.colors[prop] = value;
 					}
 				}
-				else if (propUpper == "INPUTTIMEOUTMS")
-				{
-					var timeoutMSInt = parseInt(behaviorSettings[prop]);
-					if (!isNaN(timeoutMSInt) && timeoutMSInt > 0)
-						gGenConfig.inputTimeoutMS = timeoutMSInt;
-				}
-				else if (propUpper == "MAXARCFILESIZE")
-					gGenConfig.maxArcFileSize = sizeStrToBytes(behaviorSettings[prop]);
-				else if (propUpper == "MAXTEXTFILESIZE")
-					gGenConfig.maxTextFileSize = sizeStrToBytes(behaviorSettings[prop]);
 			}
-
-			// Color settings
-			var onlySyncAttrsRegexWholeWord = new RegExp("^[\x01krgybmcw01234567hinq,;\.dtlasz]+$", 'i');
-			for (var prop in gGenConfig.colors)
-			{
-				if (colorSettings.hasOwnProperty(prop))
-				{
-					// Make sure the value is a string (for attrCodeStr() etc; in some cases, such as a background attribute of 4, it will be a number)
-					var value = colorSettings[prop].toString();
-					// If the value doesn't have any control characters, then add the control character
-					// before attribute characters
-					if (!/\x01/.test(value))
-						value = attrCodeStr(value);
-					if (onlySyncAttrsRegexWholeWord.test(value))
-						gGenConfig.colors[prop] = value;
-				}
-			}
+			genCfgFile.close();
 		}
-		genCfgFile.close();
 	}
 
 	return (fileTypeSettingsRead && genSettingsRead);
@@ -519,11 +431,48 @@ function getFileExtractAndViewCmdsFromSCFG()
 	return fileCmds;
 }
 
+// Given a filename (without full path), this returns a fully-pathed configuration filename.
+// This checks the mods directory, then the ctrl directory, then the same directory as the
+// script. If not found, then this will look for an .example.cfg in the same directory as
+// the script.  If none found, this will return an empty string.
+//
+// Parameters:
+//  pFilenameWithoutFullPath: A filename (not fully-pathed)
+//
+// Return value: A fully-pathed filename containing the directory it's found in. If not found,
+//               the return value will be an empty string.
+function GetFullyPathedCfgFilename(pFilenameWithoutFullPath)
+{
+	var cfgFilename = file_cfgname(system.mods_dir, pFilenameWithoutFullPath);
+	if (!file_exists(cfgFilename))
+		cfgFilename = file_cfgname(system.ctrl_dir, pFilenameWithoutFullPath);
+	if (!file_exists(cfgFilename))
+		cfgFilename = file_cfgname(js.exec_dir, pFilenameWithoutFullPath);
+	// If the configuration file hasn't been found, look to see if there's a .example.cfg file
+	// available in the same directory as the script
+	if (!file_exists(cfgFilename))
+	{
+		var exampleFileName = "";
+		var dotIdx = pFilenameWithoutFullPath.lastIndexOf(".");
+		if (dotIdx > -1)
+			exampleFileName = pFilenameWithoutFullPath.substring(0, dotIdx) + ".example" + pFilenameWithoutFullPath.substring(dotIdx);
+		else
+			exampleFileName = pFilenameWithoutFullPath + ".example";
+		exampleFileName = file_cfgname(js.exec_dir, exampleFileName);
+		if (file_exists(exampleFileName))
+			cfgFilename = exampleFileName;
+		else
+			cfgFilename = "";
+	}
+	return cfgFilename;
+}
+
 
 // Extracts an archive to a directory.
 //
 // Parameters:
 //  pArchiveFilename: The name of the archive file to extract
+//  pFilespec: To specify files to extract from the archive
 //  pDestDir: The directory to which to extract the file
 //
 // Return value: An object containing the following properties:
@@ -534,7 +483,7 @@ function getFileExtractAndViewCmdsFromSCFG()
 //               output: An array containing the output of the extraction command, if
 //                       an external extract command was run.  If the Archive class
 //                       is available, this will likely be empty.
-function extractArchive(pArchiveFilename, pDestDir)
+function extractArchive(pArchiveFilename, pFilespec, pDestDir)
 {
 	var retObj = {
 		success: false,
@@ -551,7 +500,7 @@ function extractArchive(pArchiveFilename, pDestDir)
 	// If the Archive class is available (added in Synchronet 3.19), then
 	// use it to extract the archive.  Otherwise, use the configured external
 	// archiver command to extract it.
-	if (typeof(Archive) === "function")
+	if (gArchiveClassIsAvailable)
 	{
 		retObj.usedArchiveClass = true;
 		var arcFile = new Archive(arcFilename);
@@ -561,26 +510,34 @@ function extractArchive(pArchiveFilename, pDestDir)
 			// filename characters are okay).  If we don't extract with
 			// path information, then Synchronet may reject some filenames
 			// due to certain characters in the filename.
-			if (arcFile.extract(destDir, true) > 0)
+			var numFilesExtracted = 0;
+			if (typeof(pFilespec) === "string" && pFilespec.length > 0)
+				numFilesExtracted = arcFile.extract(destDir, true, true, 0, pFilespec);
+			else
+				numFilesExtracted = arcFile.extract(destDir, true);
+			if (numFilesExtracted > 0)
 				retObj.success = true;
 			else
 				retObj.error = "No files extracted";
 		}
 		catch (e)
 		{
-			// Synchronet's internal archiver was unable to extract it.  Try
-			// with an external archiver, if a command is configured.
-			log(LOG_ERR, "DDArcViewer: Synchronet internal archiver failed to extract " + arcFilename + ": " + e);
-			var externRet = extractArchiveWithExernalArc(pArchiveFilename, pDestDir);
-			retObj.output = externRet.output;
-			retObj.success = externRet.success;
+			// Synchronet's internal archiver was unable to extract it.
+			var errorMsg = format("DDArcViewer: Synchronet internal archiver failed to extract %s: " + e, arcFilename);
+			log(LOG_ERR, errorMsg);
 		}
 	}
-	else
+	// If we tried the archive class but it failed, then try with the configured
+	// external extract command, if possible
+	if (retObj.usedArchiveClass && !retObj.success)
 	{
-		var externRet = extractArchiveWithExernalArc(pArchiveFilename, pDestDir);
+		retObj.error = "";
+		var externRet = extractArchiveWithExernalArc(pArchiveFilename, pFilespec, pDestDir);
 		retObj.output = externRet.output;
 		retObj.success = externRet.success;
+		retObj.usedArchiveClass = false;
+		if (!externRet.success)
+			retObj.error = "Failed";
 	}
 	return retObj;
 }
@@ -588,6 +545,7 @@ function extractArchive(pArchiveFilename, pDestDir)
 //
 // Parameters:
 //  pArchiveFilename: The name of the archive file to extract
+//  pFilespec: To specify files to extract from the archive
 //  pDestDir: The directory to which to extract the file
 //
 // Return value: An object containing the following properties:
@@ -595,7 +553,7 @@ function extractArchive(pArchiveFilename, pDestDir)
 //               output: An array containing the output of the extraction command, if
 //                       an external extract command was run.  If the Archive class
 //                       is available, this will likely be empty.
-function extractArchiveWithExernalArc(pArchiveFilename, pDestDir)
+function extractArchiveWithExernalArc(pArchiveFilename, pFilespec, pDestDir)
 {
 	var retObj = {
 		success: false,
@@ -626,11 +584,16 @@ function extractArchiveWithExernalArc(pArchiveFilename, pDestDir)
 	// to deal with spaces.
 	var extractCmd = gViewableFileTypes[filenameExt].extractCmd;
 	var command = extractCmd.replace("%FILENAME%", "\"" + arcFilename + "\"");
-	// I was originally going to replace %FILESPEC% with * (to extract all files), but
-	// that doesn't work on *nix because * expands to all files in the current dir.
-	// And if the filespec isn't specified, it extracts all files anyway.
-	//command = command.replace("%FILESPEC%", "*"); // Extract all files
-	command = command.replace("%FILESPEC%", ""); // Extract all files
+	if (typeof(pFilespec) === "string" && pFilespec.length > 0)
+		command = command.replace("%FILESPEC%", "\"" + pFilespec + "\"");
+	else
+	{
+		// I was originally going to replace %FILESPEC% with * (to extract all files), but
+		// that doesn't work on *nix because * expands to all files in the current dir.
+		// And if the filespec isn't specified, it extracts all files anyway.
+		//command = command.replace("%FILESPEC%", "*"); // Extract all files
+		command = command.replace("%FILESPEC%", ""); // Extract all files
+	}
 	command = command.replace("%TO_DIR%", "\"" + withoutTrailingSlash(destDir) + "\"");
 	retObj.output = execCmdWithOutput(command);
 	retObj.success = true;
@@ -643,13 +606,10 @@ function extractArchiveWithExernalArc(pArchiveFilename, pDestDir)
 // Parameters:
 //  pFilename: The name of the file to view
 //  pWorkDir: The directory in which to place extracted files
-//  pListFilesFunction: A pointer to the file listing function.  This
-//                      would point to either listFiles_Lightbar() or
-//                      listFiles_Traditional().
 //
 // Return value: An object containing the following properties:
-//   errorCode: An code representing an error.  0 = no error.
-function viewFile(pFilename, pWorkDir, pListFilesFunction)
+//               errorCode: An code representing an error.  0 = no error.
+function viewFile(pFilename, pWorkDir)
 {
 	var retObj = {
 		errorCode: 0
@@ -663,8 +623,23 @@ function viewFile(pFilename, pWorkDir, pListFilesFunction)
 		retObj.errorCode = 3;
 		return(retObj);
 	}
+
+	var libarchiveRecognizesFile = false;
+	var fileList = [];
+	if (gArchiveClassIsAvailable)
+	{
+		try
+		{
+			var archive = new Archive(pFilename);
+			fileList = archive.list();
+			libarchiveRecognizesFile = true;
+		}
+		catch(e)
+		{
+		}
+	}
 	// If the filename extension is unknown, then output an error and exit.
-	if ((gViewableFileTypes[filenameExt] == undefined) || (gViewableFileTypes[filenameExt] == null))
+	if (!libarchiveRecognizesFile && !(gViewableFileTypes.hasOwnProperty(filenameExt) && typeof(gViewableFileTypes[filenameExt]) === "object"))
 	{
 		console.print("\x01n\x01c\x01hError: \x01n\x01cThe filename extension (" + filenameExt + ") is unknown.\r\n\x01p");
 		retObj.errorCode = 4;
@@ -672,11 +647,11 @@ function viewFile(pFilename, pWorkDir, pListFilesFunction)
 	}
 
 	// Get the filename without the full path in front.
-	var justFilename = getFilenameFromPath(pFilename);
+	var justFilename = file_getname(pFilename);
 
 	// If the file is a text file, then view it using the VIEW command.
 	// Otherwise, treat it as an archive: Extract it and list the files.
-	if (gViewableFileTypes[filenameExt].isText)
+	if (!libarchiveRecognizesFile && gViewableFileTypes[filenameExt].isText)
 	{
 		// If file size limit is in effect and the file is too big, then refuse
 		// to view it.
@@ -703,7 +678,7 @@ function viewFile(pFilename, pWorkDir, pListFilesFunction)
 		// If the Archive class isn't available (added in Synchronet 3.19) and there
 		// is no extract command specified for the archive type, then output an error
 		// and exit.
-		if (typeof(Archive) !== "function" && (!gViewableFileTypes.hasOwnProperty(filenameExt) || gViewableFileTypes[filenameExt].extractCmd.length == 0))
+		if (!gArchiveClassIsAvailable && (!gViewableFileTypes.hasOwnProperty(filenameExt) || gViewableFileTypes[filenameExt].extractCmd.length == 0))
 		{
 			console.print("\x01n\x01c\x01hError: \x01n\x01cNo extract command is defined for " +
 			              filenameExt + " files.\r\n\x01p");
@@ -712,54 +687,440 @@ function viewFile(pFilename, pWorkDir, pListFilesFunction)
 		}
 
 		// Create a subdirectory within pWorkDir where the file will be extracted.
-		var workDir = pWorkDir + justFilename + "_Temp/";
-		deltree(workDir);
-		var workDirExists = mkdir(workDir);
-		// If the work directory was created, then extract the archive and list
-		// its files.  Otherwise, fall back to the view command to view it.
-		if (workDirExists)
+		// TODO: Uncomment the following line and build fileList if necessary.
+		// List the itmes in fileList.
+		var mainArchiveWorkDir = "";
+		if (fileList.length == 0 && !libarchiveRecognizesFile)
 		{
-			// Extract the archive into the work directory.
-			console.print("\x01n\x01cExtracting " + justFilename + "\x01i...\x01n\r\n");
-			console.line_counter = 0; // To prevent pausing
-			var extractRet = extractArchive(pFilename, workDir);
-			if (extractRet.success)
+			mainArchiveWorkDir = pWorkDir + justFilename + "_Temp/";
+			deltree(workDir);
+			var workDirExists = mkdir(workDir);
+			// If the work directory was created, then extract the archive and list
+			// its files.  Otherwise, fall back to the view command to view it.
+			if (workDirExists)
 			{
-				// List the files.
-				var screenRow = pListFilesFunction(workDir, justFilename);
-
-				// Remove the work directory and all of its contents (and tell
-				// the user what we're doing).
-				console.attributes = "N";
-				console.gotoxy(1, screenRow);
-				console.print("\x01y\x01hPerforming cleanup for " + justFilename + "\x01i...\x01n\r\n");
+				// Extract the archive into the work directory.
+				console.print("\x01n\x01cExtracting " + justFilename + "\x01i...\x01n\r\n");
 				console.line_counter = 0; // To prevent pausing
+				var extractRet = extractArchive(pFilename, null, workDir);
+				if (extractRet.success)
+				{
+					var filesInDir = directory(workDir + "*");
+					for (var i = 0; i < filesInDir.length; ++i)
+					{
+						fileList.push({
+							name: file_getname(filesInDir[i]),
+							size: file_size(filesInDir[i]),
+							time: file_date(filesInDir[i])
+						});
+					}
+
+					// TODO: Do we still need this?
+					/*
+					// Remove the work directory and all of its contents (and tell
+					// the user what we're doing).
+					console.attributes = "N";
+					console.gotoxy(1, screenRow);
+					console.print("\x01y\x01hPerforming cleanup for " + justFilename + "\x01i...\x01n\r\n");
+					console.line_counter = 0; // To prevent pausing
+					*/
+				}
+				else
+				{
+					console.crlf();
+					console.print("\x01n\x01h\x01y");
+					if (extractRet.error != "")
+						console.print(extractRet.error);
+					else
+						console.print("Failed to extract the archive (to get list of files)");
+					console.attributes = "N";
+					console.crlf();
+					console.pause();
+				}
+				deltree(workDir);
 			}
 			else
 			{
-				console.crlf();
-				console.print("\x01n\x01h\x01y");
-				if (extractRet.error != "")
-					console.print(extractRet.error);
-				else
-					console.print("Failed to extract the archive");
-				console.attributes = "N";
-				console.crlf();
-				console.pause();
+				console.clear("\x01n");
+				console.print("\x01n\x01c\x01hNote: \x01n\x01cCould not create the temporary work directory for\r\n" +
+							justFilename + ", so only a basic view is provided.\r\n\x01p");
+				viewUsingVIEWCmd(pFilename, filenameExt);
+				retObj.errorCode = 7;
 			}
-			deltree(workDir);
 		}
-		else
+
+		// If we were able to get a list of files, create the file list menu and display it
+		if (fileList.length > 0)
 		{
-			console.clear("\x01n");
-			console.print("\x01n\x01c\x01hNote: \x01n\x01cCould not create the temporary work directory for\r\n" +
-			              justFilename + ", so only a basic view is provided.\r\n\x01p");
-			viewUsingVIEWCmd(pFilename, filenameExt);
-			retObj.errorCode = 7;
+			var menuStartRow = 4;
+			var menuHeight = console.screen_rows - menuStartRow;
+			var fileListMenu = createFileListMenu(1, menuStartRow, console.screen_columns, menuHeight, fileList, gGenConfig.colors, useLightbar);
+			var continueOn = true;
+			while (continueOn)
+			{
+				console.line_counter = 0; // To prevent pausing
+				console.clear("\x01n");
+				var viewedArchiveFilenameWithoutPath = file_getname(pFilename);
+				writeFileListHeader(viewedArchiveFilenameWithoutPath, fileList.length.toString().length);
+				if (useLightbar)
+					displayBottomHelpLine_Lightbar()
+				var chosenItem = fileListMenu.GetVal();
+				var lastUserInputUpper = fileListMenu.lastUserInput.toUpperCase();
+				var chosenFilename = ""; // Filename for chosen action, if we can determine it
+				//if (chosenItem == null)
+				if (lastUserInputUpper == "Q" || fileListMenu.lastUserInput == KEY_ESC)
+					continueOn = false;
+				// Numeric digit: The start of a file number
+				else if (chosenItem == null && fileListMenu.lastUserInput.match(/[0-9]/))
+				{
+					// Put the user's input back in the input buffer to
+					// be used for getting the rest of the message number.
+					console.ungetstr(fileListMenu.lastUserInput);
+					console.gotoxy(1, console.screen_rows);
+					console.clearline("\x01n");
+					console.print("\x01cFile #: \x01h");
+					var userInputNum = console.getnum(fileList.length);
+					console.attributes = "N";
+					lastUserInputUpper = doFileActionInput(fileList[userInputNum-1].name, false, useLightbar);
+					if (lastUserInputUpper == "C") // Cancel
+						continue;
+					else
+						chosenFilename = fileList[userInputNum-1].name;
+				}
+				else if (typeof(chosenItem) === "number")
+				{
+					// TODO: Finish this, and also do this in a way that
+					// minimizes code duplication. Maybe functionalize the
+					// operations of viewing & downloading a file? Viewing
+					// could be recursive too..
+					lastUserInputUpper = doFileActionInput(fileList[chosenItem].name, true, useLightbar);
+					if (lastUserInputUpper == "C") // Cancel
+						continue;
+					else
+						chosenFilename = fileList[chosenItem].name;
+				}
+				// Before this point, if the user made a selection from the menu
+				// and pressed C to cancel the action input, the loop would have
+				// continued to the next iteration alrady.
+
+				// ?: Display help
+				if (lastUserInputUpper == "?")
+				{
+					showHelpScreen(true);
+				}
+				// D: Download the selected file
+				else if (lastUserInputUpper == "D")
+				{
+					// Prompt the user for the filename if not known already and create
+					// a temporary work directory if necessary
+					var tempLogicRetObj = promptForFilenameAndCreateTempWorkDirIfNecessary(pWorkDir,
+					                                 mainArchiveWorkDir, fileList, fileListMenu, chosenFilename,
+					                                 "DLTemp_", 8);
+					// If a filename has been chosen, then let the user download it
+					if (tempLogicRetObj.chosenFilename.length > 0)
+					{
+						if (tempLogicRetObj.workDirExists)
+						{
+							// Confirm with the user whether to download the file
+							var confirmText = "\x01n\x01cDownload \x01h"
+											+ tempLogicRetObj.chosenFilename.substr(0, console.screen_columns - 12) + "\x01n";
+							if (console.yesno(confirmText))
+							{
+								var fullyPathedChosenFilename = "";
+								if (tempLogicRetObj.mustExtractFileFromArchive)
+								{
+									var extractRetObj = extractArchive(pFilename, tempLogicRetObj.chosenFilename, tempLogicRetObj.workDir);
+									if (extractRetObj.success)
+										fullyPathedChosenFilename = tempLogicRetObj.workDir + tempLogicRetObj.chosenFilename;
+									else
+										printf("\x01n\x01y\x01h* \x01wExtraction failed: %s\x01n\r\n\x01p", extractRetObj.error.length > 0 ? extractRetObj.error : extractRetObj.output);
+								}
+								else
+									fullyPathedChosenFilename = pWorkDir + tempLogicRetObj.chosenFilename;
+								// If we successfully extracted the file, then send it to the user
+								if (fullyPathedChosenFilename.length > 0)
+								{
+									// If the entry is a directory, then output an error.
+									// Otherwise, let the user download the file.
+									if (file_isdir(fullyPathedChosenFilename))
+									{
+										console.print("\x01n\x01w\x01hCan't download an entire directory.");
+										mswait(1500);
+									}
+									else
+									{
+										var logMsg = format("%s ($%d) is downloading file %s from archive %s", user.alias, user.number, tempLogicRetObj.chosenFilename, pFilename);
+										bbs.log_str(logMsg);
+										log(LOG_INFO, logMsg);
+										bbs.send_file(fullyPathedChosenFilename);
+									}
+								}
+							}
+						}
+					}
+					// If we extracted the file here, then remove the temporary work directory
+					if (tempLogicRetObj.mustExtractFileFromArchive && file_isdir(tempLogicRetObj.workDir))
+						deltree(tempLogicRetObj.workDir);
+
+					// Refresh the screen by outputting the file list headers.
+					if (gANSISupported)
+					{
+						console.clear("\x01n");
+						console.gotoxy(1, 1);
+						writeFileListHeader(viewedArchiveFilenameWithoutPath);
+					}
+				}
+				// V: View the selected file
+				else if (lastUserInputUpper == "V")
+				{
+					// Prompt the user for the filename if not known already and create
+					// a temporary work directory if necessary
+					var tempLogicRetObj = promptForFilenameAndCreateTempWorkDirIfNecessary(pWorkDir,
+					                                 mainArchiveWorkDir, fileList, fileListMenu, chosenFilename,
+					                                 "ViewTemp_", 8);
+					// If a filename has been chosen, then let the user view it
+					if (tempLogicRetObj.chosenFilename.length > 0)
+					{
+						if (tempLogicRetObj.workDirExists)
+						{
+							// Confirm with the user whether to view the file
+							var confirmText = "\x01n\x01cView \x01h"
+											+ tempLogicRetObj.chosenFilename.substr(0, console.screen_columns - 12) + "\x01n";
+							if (console.yesno(confirmText))
+							{
+								var fullyPathedChosenFilename = "";
+								if (tempLogicRetObj.mustExtractFileFromArchive)
+								{
+									var extractRetObj = extractArchive(pFilename, tempLogicRetObj.chosenFilename, tempLogicRetObj.workDir);
+									if (extractRetObj.success)
+										fullyPathedChosenFilename = tempLogicRetObj.workDir + tempLogicRetObj.chosenFilename;
+									else
+										printf("\x01n\x01y\x01h* \x01wExtraction failed: %s\x01n\r\n\x01p", extractRetObj.error.length > 0 ? extractRetObj.error : extractRetObj.output);
+								}
+								else
+									fullyPathedChosenFilename = pWorkDir + tempLogicRetObj.chosenFilename;
+								// If we successfully extracted the file, then send it to the user
+								if (fullyPathedChosenFilename.length > 0)
+								{
+									// If the entry is a directory, then output an error.
+									// Otherwise, let the user view the file.
+									if (file_isdir(fullyPathedChosenFilename))
+									{
+										console.print("\x01n\x01w\x01hCan't view an entire directory.");
+										mswait(1500);
+									}
+									else
+									{
+										var logMsg = format("%s ($%d) is viewing file %s from archive %s", user.alias, user.number, tempLogicRetObj.chosenFilename, pFilename);
+										bbs.log_str(logMsg);
+										log(LOG_INFO, logMsg);
+										viewFile(fullyPathedChosenFilename, pWorkDir);
+									}
+								}
+							}
+						}
+					}
+					// If we extracted the file here, then remove the temporary work directory
+					if (tempLogicRetObj.mustExtractFileFromArchive && file_isdir(tempLogicRetObj.workDir))
+						deltree(tempLogicRetObj.workDir);
+
+					// Refresh the screen by outputting the file list headers.
+					if (gANSISupported)
+					{
+						console.clear("\x01n");
+						console.gotoxy(1, 1);
+						writeFileListHeader(viewedArchiveFilenameWithoutPath);
+					}
+				}
+				// Note: I was hoping to let users add files to their batch download
+				// queue, but it looks like files have to be in Synchronet's file
+				// database in order for that to work.  :(  So I've commented out
+				// the code I wrote for adding to the batch download queue.
+				/*
+				// B: Add the selected file to the user's batch download queue
+				else if (userInput == "B")
+				{
+					// If this file hasn't had its slashes fixed, then fix them.
+					if (!fileSlashesFixed[selectedIndex])
+					{
+						files[selectedIndex] = fixPathSlashes(files[selectedIndex]);
+						fileSlashesFixed[selectedIndex] = true;
+					}
+					// Go to the last line on the screen (for prompting/messages)
+					console.gotoxy(1, console.screen_rows);
+					console.clearline("\x01n");
+					// If the entry is a directory, then report an error.  Otherwise,
+					// go to the bottom and confirm with the user if they really
+					// want to download the file.
+					if (file_isdir(files[selectedIndex]))
+					{
+						console.print("\x01n\x01w\x01hCan't download an entire directory.");
+						mswait(1500);
+						// Re-draw the bottom help line
+						console.gotoxy(1, console.screen_rows);
+						displayBottomHelpLine_Lightbar();
+					}
+					else
+					{
+						var justFilename = file_getname(files[selectedIndex]);
+						var filenameWidth = console.screen_columns - 23;
+						if (console.yesno("\x01n\x01cAdd \x01h" + justFilename.substr(0, filenameWidth) + "\x01n\x01c to batch DL queue"))
+						{
+							// Create the temporary batch download directory and copy
+							// the selected file to it.  If that succeeded, then add
+							// the file to the user's download queue.
+							mkdir(gBatchDLDir);
+							var DLFilename = gBatchDLDir + justFilename;
+							if (file_copy(files[selectedIndex], DLFilename))
+							{
+								// Add the file to the DL queue.  If failed, show an error.
+								console.gotoxy(1, console.screen_rows);
+								console.clearline("\x01n");
+								if (addFileToBatchQueue(DLFilename))
+								console.print("\x01n\x01cFile added to batch DL queue.");
+								else
+								{
+									console.print("\x01n\x01y\x01hUnable to add to batch DL queue!");
+									file_remove(DLFilename);
+								}
+								mswait(1500);
+							}
+							else
+							{
+								// Couldn't copy the file to the temporary DL queue directory.
+								console.gotoxy(1, console.screen_rows);
+								console.clearline("\x01n");
+								console.print("\x01n\x01y\x01hUnable to copy to queue directory!");
+								mswait(1500);
+							}
+						}
+					}
+
+					// Re-draw the screen so that everything looks correct.
+					drawTopAndBottom_Lightbar(pArchiveFilename);
+					listFiles_ShowScreenful(files, topFileIndex, listTopRow, listBottomRow,
+					selectedIndex, true, true);
+				}
+				*/
+			}
 		}
 	}
 
 	return(retObj);
+}
+// Helper for viewFile(): Prompts the user for a filename if necessary and
+// creates a temporary work directory if necessary.
+//
+// Parameters:
+//  pArcViewerWorkDir: The archive viewer work directory
+//  pMainArchiveWorkDir: The work directory for the archive being viewed (could be empty if it hasn't been extracted yet)
+//  pFileList: The array of filenames in the archive
+//  pFileListMenu: The DDLightbarMenu object for displaying the file list to the user
+//  pChosenFilename: The chosen filename, if known; this can be an empty string if not known yet
+//  pTempWorkDirPrefix: A prefix to use for creating a temporary work directory
+//  pTempDirRandomComponentLength: Length to use for creating the random component of the work directory. Optional; defaults to 8
+//
+// Return value: An object containing the following properties:
+//               chosenFilename: The user's chosen filename (the user may need to be prompted for it)
+//               mustExtractFileFromArchive: Boolean - Whether or not the file needs to be extracted from
+//                                           the archive (if the archive hasn't been extracted already). If
+//                                           this is true, that also means the new temporary work directory
+//                                           was created and should be removed when done.
+//               workDir: The temporary work directory
+//               workDirExists: Boolean - Whether or not the work directory was successfully created (or exists already)
+function promptForFilenameAndCreateTempWorkDirIfNecessary(pArcViewerWorkDir, pMainArchiveWorkDir, pFileList, pFileListMenu, pChosenFilename, pTempWorkDirPrefix, pTempDirRandomComponentLength)
+{
+	var retObj = {
+		chosenFilename: pChosenFilename,
+		mustExtractFileFromArchive: false,
+		workDir: "",
+		workDirExists: false
+	};
+	
+	// Place the cursor where it should be
+	console.attributes = "N";
+	if (gANSISupported)
+	{
+		console.gotoxy(1, console.screen_rows);
+		console.crlf();
+	}
+	else
+		console.crlf();
+	// If a chosen filename isn't known yet (i.e., using the
+	// traditional interface), prompt for a file
+	if (retObj.chosenFilename.length == 0)
+	{
+		var fileIndex = -1;
+		if (gANSISupported)
+			fileIndex = pFileListMenu.selectedItemIdx;
+		else
+		{
+			// Prompt the user for a file number.
+			console.print("\x01n\x01cFile #: \x01h");
+			var userInput = console.getnum(pFileList.length);
+			if (typeof(userInput) === "number" && userInput > 0)
+				fileIndex = userInput - 1;
+			console.attributes = "N";
+		}
+		if (fileIndex >= 0 && fileIndex < pFileList.length)
+			retObj.chosenFilename = pFileList[fileIndex].name;
+	}
+	// If a filename has been chosen, figure out what the work directory should be
+	// and if it exists or it needs to be created (and the archive needs to be extracted
+	// to it)
+	if (retObj.chosenFilename.length > 0)
+	{
+		// Figure out a temporary work directory. If the main archive has
+		// already been extracted, then use that; otherwise, make a
+		// temporary work dir and extract the file there.
+		if (pMainArchiveWorkDir.length > 0 && file_isdir(pMainArchiveWorkDir))
+		{
+			retObj.workDir = pMainArchiveWorkDir;
+			retObj.workDirExists = true;
+		}
+		else
+		{
+			var randomComponentLength = 8;
+			if (typeof(pTempDirRandomComponentLength) === "number" && pTempDirRandomComponentLength > 0)
+				randomComponentLength = pTempDirRandomComponentLength;
+			retObj.workDir = backslash(pArcViewerWorkDir + pTempWorkDirPrefix + randomStr(randomComponentLength));
+			retObj.mustExtractFileFromArchive = true;
+			retObj.workDirExists = mkdir(retObj.workDir);
+		}
+	}
+
+	return retObj;
+}
+
+// Prompts the user for a keypress to do an action for a file
+// (View, Download, Cancel)
+//
+// Parameters:
+//  pJustFilename: The filename (without full path)
+//  pPrepareLine: Boolean - Whether or not to either clear the last line on the screen first
+//                (if using lightbar) or output a CRLF (if not using lithtbar)
+//  pUsingLightbar: Boolean - Whether or not we're using the lightbar interface
+//
+// Return value: The user's keypress
+function doFileActionInput(pJustFilename, pPrepareLine, pUsingLightbar)
+{
+	console.attributes = "N";
+	if (pPrepareLine)
+	{
+		if (pUsingLightbar)
+		{
+			console.gotoxy(1, console.screen_rows);
+			console.clearline("\x01n");
+		}
+		else
+			console.crlf();
+	}
+	console.print("\x01c\x01h" + pJustFilename.substr(0, console.screen_columns-1));
+	console.crlf();
+	console.print("\x01y(\x01cV\x01y)\x01n\x01ciew\x01b\x01h, " +
+				  "\x01y(\x01cD\x01y)\x01n\x01cownload\x01b\x01h, or " +
+				  "\x01y(\x01cC\x01y)\x01n\x01cancel: \x01h");
+	return console.getkeys("VDC").toString();
 }
 
 // Views a text file using its VIEW command.
@@ -818,312 +1179,26 @@ function viewUsingVIEWCmd(pFilename, pFilenameExt)
 		console.print("\x01n\x01cThe file is empty.\x01n");
 }
 
-// Shows the user the list of files in a given directory (traditional
-// interface).
-//
-// Parameters:
-//  pDir: The directory to list
-//  pArchiveFilename: The name of the archive that contained the files, without the full path
-//
-// Return value: The screen row that's one past the last file listed.
-function listFiles_Traditional(pDir, pArchiveFilename)
-{
-	// This function goes to the next page.  Returns whether or not
-	// to redraw (i.e., we won't want to redraw if there is no next
-	// page).
-	function goToNextPage()
-	{
-		var redraw = false;
-		var nextPageTopIndex = topFileIndex + numPageLines;
-		if (nextPageTopIndex < files.length)
-		{
-			topFileIndex = nextPageTopIndex;
-			selectedIndex = topFileIndex;
-			redraw = true;
-		}
-		return redraw;
-	}
-	// This function goes to the previous page.  Returns whether or
-	// not to redraw (i.e., we won't want to redraw if there is no
-	// next page).
-	function goToPrevPage()
-	{
-		var redraw = false;
-		var prevPageTopIndex = topFileIndex - numPageLines;
-		if (prevPageTopIndex >= 0)
-		{
-			topFileIndex = prevPageTopIndex;
-			selectedIndex = topFileIndex;
-			redraw = true;
-		}
-		return redraw;
-	}
-	// This function calculates lastPageRow based on topFileIndex.
-	function calcLastPageRow()
-	{
-		lastPageRow = listBottomRow;
-		if (files.length - topFileIndex < numPageLines)
-			lastPageRow = listTopRow + (files.length - topFileIndex) - 1;
-		onePastLastFileRow = lastPageRow + 1;
-	}
-
-	var onePastLastFileRow = console.screen_rows;
-
-	// Get a list of files in the directory
-	var files = directory(pDir + "*");
-	if (files.length > 0)
-	{
-		// This object will keep track of which filenames have had their
-		// slashes fixed.
-		var fileSlashesFixed = {};
-
-		// Screen display and array index variables
-		const listTopRow = 4;
-		const listBottomRow = console.screen_rows - 1;
-		const numPageLines = listBottomRow - listTopRow + 1; // # of lines in a page
-		var topFileIndex = 0; // The index of the array entry at the top of the screen
-		// Calculate the index of the filename that appears at the top of the
-		// last page.
-		var lastPageTopIndex = numPageLines;
-		while (lastPageTopIndex < files.length)
-			lastPageTopIndex += numPageLines;
-		lastPageTopIndex -= numPageLines;
-		// lastPageRow will store the row number of the last file displayed on the screen.
-		var lastPageRow = listBottomRow;
-
-		// Start listing the file information.
-
-		// Output the file list headers.
-		console.clear("\x01n");
-		console.gotoxy(1, 1);
-		writeFileListHeader(pArchiveFilename);
-
-		// Input loop
-		var userInput = "";
-		var redrawFileInfo = true; // Whether or not to update the file info on the screen
-		var continueOn = true;
-		while (continueOn)
-		{
-			// List the screenful of files if redrawFileInfo is true.
-			if (redrawFileInfo)
-				listFiles_ShowScreenful(files, topFileIndex, listTopRow, listBottomRow, -1, true, false);
-			redrawFileInfo = true;
-			// Calculate the screen row number of the last file displayed on the screen, and
-			// place the cursor one line below it.
-			calcLastPageRow();
-			if (gANSISupported)
-				console.gotoxy(1, lastPageRow + 1);
-			writeCmdPrompt_Traditional();
-			// Get a keypress from the user, with a timeout.
-			userInput = console.inkey(K_UPPER | K_NOCRLF | K_NOSPIN, gGenConfig.inputTimeoutMS);
-			// If the user's terminal doesn't support ANSI, and if the user didn't
-			// enter a number, then output a newline so that the text looks okay.
-			if (!gANSISupported && userInput.match(/[^0-9]/))
-				console.crlf();
-			// If userInput is blank, that means the timeout was reached.
-			if (userInput.length == 0)
-			{
-				// Display a message and exit.
-				console.print("\x01n\r\n\x01y\x01hInput timeout reached.\x01n");
-				mswait(2500);
-				continueOn = false;
-			}
-			// Numeric digit: The start of a file number
-			else if (userInput.match(/[0-9]/))
-			{
-				// Put the user's input back in the input buffer to
-				// be used for getting the rest of the message number.
-				console.ungetstr(userInput);
-				var retObj = doFileNumInput(files, pDir, listFiles_Traditional);
-				// doFileNumInput() fixes file path slashes for the chosen file,
-				// so if the user chose a file, then update fileSlashesFixed
-				// for the chosen array index.
-				if (retObj.arrayIndex > -1)
-					fileSlashesFixed[retObj.arrayIndex] = true;
-				// Refresh the headers on the screen.
-				if (gANSISupported) {
-					console.clear("\x01n");
-					console.gotoxy(1, 1);
-					writeFileListHeader(pArchiveFilename);
-				}
-			}
-			// N: Next page
-			else if ((userInput == "N") || (userInput == KEY_ENTER))
-			{
-				redrawFileInfo = (goToNextPage() || !gANSISupported);
-				calcLastPageRow();
-				// If there is less than a pageful of file entries on this
-				// new page, then we need to erase the bottom row of the
-				// screen where the input prompt line was.
-				if (gANSISupported && (lastPageRow < listBottomRow)) {
-					console.gotoxy(1, console.screen_rows);
-					console.clearline("\x01n");
-				} else
-					console.crlf();
-			}
-			// P: Previous page
-			else if (userInput == "P")
-				redrawFileInfo = goToPrevPage();
-			// F: first page
-			else if (userInput == "F")
-			{
-				// Set topFileIndex to 0 only if it's > 0.  Otherwise,
-				// we don't want to redraw the screen.
-				if (topFileIndex > 0)
-					topFileIndex = 0;
-				else
-				{
-					if (gANSISupported)
-						redrawFileInfo = false;
-				}
-			}
-			// L: Last page
-			else if (userInput == "L")
-			{
-				// Set topFileIndex for the last page only if we're not
-				// already there.  Otherwise, we don't want to redraw
-				// the screen.
-				if (topFileIndex < lastPageTopIndex)
-				{
-					topFileIndex = lastPageTopIndex;
-					calcLastPageRow();
-					// If there is less than a pageful of file entries on this
-					// new page, then we need to erase the bottom row of the
-					// screen where the input prompt line was.
-					if (gANSISupported && (lastPageRow < listBottomRow))
-					{
-						console.gotoxy(1, console.screen_rows);
-						console.clearline("\x01n");
-					}
-				}
-				else
-					redrawFileInfo = false;
-			}
-			// D: Download a file
-			else if (userInput == "D")
-			{
-				if (gANSISupported)
-					console.crlf();
-				// Prompt the user for a file number.
-				console.print("\x01n\x01cFile #: \x01h");
-				userInput = console.getnum(files.length);
-				if (userInput > 0)
-				{
-					var index = userInput - 1;
-					// If the entry is a directory, then output an error.
-					// Otherwise, let the user download the file.
-					if (file_isdir(files[index]))
-					{
-						console.print("\x01n\x01w\x01hCan't download an entire directory.");
-						mswait(1500);
-					}
-					else
-					{
-						// Confirm with the user whether to download the file
-						var filename = getFilenameFromPath(files[index]);
-						var confirmText = "\x01n\x01cDownload \x01h"
-							 + filename.substr(0, console.screen_columns - 12) + "\x01n";
-						if (console.yesno(confirmText))
-						{
-							bbs.log_str(user.alias + " is downloading a file from an archive: " + files[index]);
-							bbs.send_file(files[index]);
-						}
-					}
-				}
-
-				// Refresh the screen by outputting the file list headers.
-				if (gANSISupported)
-				{
-					console.clear("\x01n");
-					console.gotoxy(1, 1);
-					writeFileListHeader(pArchiveFilename);
-				}
-			}
-			// V: View a file
-			else if (userInput == "V")
-			{
-				if (gANSISupported)
-					console.crlf();
-				// Prompt the user for a file number.
-				console.print("\x01n\x01cFile #: \x01h");
-				userInput = console.getnum(files.length);
-				if (userInput > 0)
-				{
-					// If this file hasn't had its slashes fixed, then fix them.
-					var index = (+userInput) - 1;
-					if (!fileSlashesFixed[index])
-					{
-						files[index] = fixPathSlashes(files[index]);
-						fileSlashesFixed[index] = true;
-					}
-
-					// Confirm with the user whether to view the file.
-					var filename = getFilenameFromPath(files[index]);
-					var confirmText = "\x01n\x01cView \x01h" + filename.substr(0, console.screen_columns - 15) + "\x01n";
-					if (console.yesno(confirmText))
-					{
-						// If the entry is a directory, then call this function again
-						// to look in there.  Otherwise, call viewFile() to view it.
-						if (file_isdir(files[index]))
-							listFiles_Traditional(files[index], filename);
-						else
-						{
-							bbs.log_str(user.alias + " is viewing a file inside an archive: " + files[index]);
-							viewFile(files[index], pDir, listFiles_Traditional);
-						}
-					}
-				}
-
-				// Refresh the screen by outputting the file list headers.
-				if (gANSISupported)
-				{
-					console.clear("\x01n");
-					console.gotoxy(1, 1);
-					writeFileListHeader(pArchiveFilename);
-				}
-			}
-			// Q or ESC key: Quit
-			else if ((userInput == "Q") || (userInput == ESC_KEY))
-			{
-				continueOn = false;
-				break;
-			}
-			// ?: Display help
-			else if (userInput == "?")
-			{
-				showHelpScreen(false);
-				// Refresh the screen by outputting the file list headers.
-				if (gANSISupported)
-				{
-					console.clear("\x01n");
-					console.gotoxy(1, 1);
-					writeFileListHeader(pArchiveFilename);
-				}
-			}
-		}
-	}
-	else
-		console.print("\x01n\x01cCould not extract/view the file, or it is empty.\r\n\x01p");
-
-	return onePastLastFileRow;
-}
-
 // Writes the header lines for the file list.
 //
 // Parameters:
 //  pFilename: The name of the file/dir being displayed.
-function writeFileListHeader(pFilename)
+function writeFileListHeader(pFilename, pNumFilesLen)
 {
+	var numFilesLen = (typeof(pNumFilesLen) === "number" ? pNumFilesLen : 4);
 	// Construct the header text variables only once (for speed).
 	if (writeFileListHeader.topHelp2 == undefined)
 	{
-		writeFileListHeader.topHelp2 = gGenConfig.colors.headerLine
-		                             + "   #     Size    Date    Time  Filename\r\n";
+		//writeFileListHeader.topHelp2 = gGenConfig.colors.headerLine
+		//                             + "   #     Size    Date    Time  Filename\r\n";
+		writeFileListHeader.topHelp2 = gGenConfig.colors.headerLine;
+		writeFileListHeader.topHelp2 += format("%" + numFilesLen + "s", "#");
+		writeFileListHeader.topHelp2 += "     Size    Date    Time  Filename\r\n";
 	}
 	if (writeFileListHeader.topHelp3 == undefined)
 	{
 		writeFileListHeader.topHelp3 = gGenConfig.colors.headerSeparatorLine
-		                             + charStr(HORIZONTAL_SINGLE, 4) + " " + charStr(HORIZONTAL_SINGLE, 8) + " "
+		                             + charStr(HORIZONTAL_SINGLE, numFilesLen) + " " + charStr(HORIZONTAL_SINGLE, 8) + " "
 		                             + charStr(HORIZONTAL_SINGLE, 10) + " " + charStr(HORIZONTAL_SINGLE, 5) + " "
 		                             + charStr(HORIZONTAL_SINGLE, console.screen_columns - 32);
 		// Add line characters to the end of the screen.
@@ -1138,104 +1213,6 @@ function writeFileListHeader(pFilename)
 	       pFilename.substr(0, console.screen_columns-9));
 	console.print(writeFileListHeader.topHelp2);
 	console.print(writeFileListHeader.topHelp3);
-}
-
-// Performs file number input and viewing/sending a file to the user based
-// on the file number (1-based).
-//
-// Parameters:
-//  pFileArray: The array of filenames
-//  pDir: The directory where the files are
-//  pListFilesFunction: A pointer to the file listing function.  This
-//                      would point to either listFiles_Lightbar() or
-//                      listFiles_Traditional().
-//  pFileNum: Optional - A file number (1-based).  If this is specified,
-//            the user won't be prompted for the file number.
-//
-// Return value: An object containing the following properties:
-//               fileNum: The user's selected file number (1-based)
-//               arrayIndex: The file array index (0-based)
-function doFileNumInput(pFileArray, pDir, pListFilesFunction, pFileNum)
-{
-   // Create the return object
-   var retObj = {
-	   fileNum: (pFileNum == undefined ? -1 : pFileNum),
-	   arrayIndex: (pFileNum == undefined ? -1 : pFileNum-1)
-   };
-
-   // Create a persistent object to keep track of the indexes of the files
-   // in the array that have had their slashes fixed.
-   if (doFileNumInput.fileSlashesFixed == undefined)
-      doFileNumInput.fileSlashesFixed = {};
-
-   var userInput = 0;
-   // If pFileNum wasn't passed in, then prompt the user for the file
-   // number.  Otherwise, use pFileNum.
-   if ((pFileNum == null) || (pFileNum == undefined))
-      userInput = console.getnum(pFileArray.length);
-   else
-      userInput = pFileNum;
-   if (userInput > 0)
-   {
-      retObj.fileNum = userInput;
-      retObj.arrayIndex = userInput - 1;
-
-      // If this file hasn't had its slashes fixed, then fix them.
-      if (!doFileNumInput.fileSlashesFixed[retObj.arrayIndex])
-      {
-         pFileArray[retObj.arrayIndex] = fixPathSlashes(pFileArray[retObj.arrayIndex]);
-         doFileNumInput.fileSlashesFixed[retObj.arrayIndex] = true;
-      }
-
-      var justFilename = getFilenameFromPath(pFileArray[retObj.arrayIndex]);
-      // If the file is a directory, don't prompt the user; just view it.
-      // Otherwise, prompt the user to view, download, or cancel.
-      if (file_isdir(pFileArray[retObj.arrayIndex]))
-         userInput = "V";
-      else
-      {
-         console.print("\x01n\x01c\x01h" +
-                       justFilename.substr(0, console.screen_columns-1));
-         console.crlf();
-         console.print("\x01y(\x01cV\x01y)\x01n\x01ciew\x01b\x01h, " +
-                       "\x01y(\x01cD\x01y)\x01n\x01cownload\x01b\x01h, or " +
-                       "\x01y(\x01cC\x01y)\x01n\x01cancel: \x01h");
-         userInput = console.getkeys("VDC").toString();
-      }
-      if (userInput == "V")
-      {
-         // View the file
-         // If the entry is a directory, then call this function again
-         // to look in there.  Otherwise, call viewFile() to view it.
-         if (file_isdir(pFileArray[retObj.arrayIndex]))
-            pListFilesFunction(pFileArray[retObj.arrayIndex], justFilename);
-         else
-         {
-            bbs.log_str(user.alias + " is viewing a file inside an archive: " +
-                        pFileArray[retObj.arrayIndex]);
-            viewFile(pFileArray[retObj.arrayIndex], pDir, pListFilesFunction);
-         }
-      }
-      else if (userInput == "D")
-      {
-         // Download the file
-         // If the entry is a directory, then output an error.
-         // Otherwise, let the user download the file.
-         if (file_isdir(pFileArray[retObj.arrayIndex]))
-         {
-            console.print("\x01n\x01w\x01hCan't download an entire directory.\x01n");
-            mswait(1500);
-         }
-         else
-         {
-            bbs.log_str(user.alias + " is downloading a file from an archive: " +
-                        pFileArray[retObj.arrayIndex]);
-            bbs.send_file(pFileArray[retObj.arrayIndex]);
-         }
-      }
-   }
-
-   return retObj;
 }
 
 // Displays the command prompt for the traditional interface.
@@ -1253,479 +1230,169 @@ function writeCmdPrompt_Traditional()
    console.print(writeCmdPrompt_Traditional.text);
 }
 
-// Shows the user the list of files in a given directory (lightbar
-// interface).
-//
-// Parameters:
-//  pDir: The directory to list
-//  pArchiveFilename: The name of the archive that contained the files, without the full path
-//
-// Return value: The screen row that's one past the last file listed.
-function listFiles_Lightbar(pDir, pArchiveFilename)
+function createFileListMenu(pListStartCol, pListStartRow, pListWidth, pListHeight, pFileArray, pColorObj, pUseANSI)
 {
-	// This function goes to the next page.  Returns whether or not
-	// to redraw (i.e., we won't want to redraw if there is no next
-	// page).
-	function goToNextPage()
+	var fileListMenu = new DDLightbarMenu(pListStartCol, pListStartRow, pListWidth, pListHeight);
+	fileListMenu.scrollbarEnabled = true;
+	fileListMenu.borderEnabled = false;
+	fileListMenu.multiSelect = false;
+	fileListMenu.ampersandHotkeysInItems = false;
+	fileListMenu.wrapNavigation = true;
+	fileListMenu.allowANSI = pUseANSI;
+	// Add additional keypresses for quitting the menu's input loop so we can
+	// respond to these keys
+	// D: Download a file
+	// V: View a file
+	// ? = Help
+	// Q: Exit
+	// Ctrl-C: Exit
+	fileListMenu.AddAdditionalQuitKeys("?QqDdVv?" + CTRL_C);
+	if (pUseANSI)
 	{
-		var redraw = false;
-		var nextPageTopIndex = topFileIndex + numPageLines;
-		if (nextPageTopIndex < files.length)
-		{
-			topFileIndex = nextPageTopIndex;
-			selectedIndex = topFileIndex;
-			curpos.y = listTopRow;
-			onePastLastFileRow = listTopRow + (files.length - topFileIndex) + 1;
-			redraw = true;
-		}
-		return redraw;
+		// Additional quit keys: Numbers - For manual numeric input
+		fileListMenu.AddAdditionalQuitKeys("0123456789");
 	}
-	// This function goes to the previous page.  Returns whether or
-	// not to redraw (i.e., we won't want to redraw if there is no
-	// next page).
-	function goToPrevPage()
+	// Additional previous/next page keys
+	fileListMenu.AddAdditionalPageUpKeys("Pp");
+	fileListMenu.AddAdditionalPageDownKeys("Nn");
+
+	// Set the color indexes in the menu
+	fileListMenu.itemFormatStr = "";
+	if (typeof(pColorObj) === "object")
 	{
-		var redraw = false;
-		var prevPageTopIndex = topFileIndex - numPageLines;
-		if (prevPageTopIndex >= 0)
+		var fileNumLen = pFileArray.length.toString().length;
+		var fileSizeLen = 8;
+		var fileDateLen = 10;
+		var fileTimeLen = 5;
+		var filenameLen = pListWidth - fileNumLen - fileSizeLen - fileDateLen - fileTimeLen - 4; // 4 spaces
+		if (pUseANSI)
 		{
-			topFileIndex = prevPageTopIndex;
-			selectedIndex = topFileIndex;
-			curpos.y = listTopRow;
-			redraw = true;
+			// ANSI/lightbar mode
+			fileListMenu.itemFormatStr = "%" + fileNumLen + "d %" + fileSizeLen + "s %" + fileDateLen + "s %"
+			                           + fileTimeLen + "s %-" + filenameLen + "s";
+
+			// Start & end indexes for the various items
+			var numStart = 0;
+			var numEnd = fileNumLen + 1;
+			var sizeStart = numEnd;
+			var sizeEnd = sizeStart + fileSizeLen + 1;
+			var dateStart = sizeEnd;
+			var dateEnd = dateStart + fileDateLen + 1;
+			var timeStart = dateEnd;
+			var timeEnd = timeStart + fileTimeLen + 1;
+			var filenameStart = timeEnd;
+			var filenameEnd = -1;
+
+			fileListMenu.SetColors({
+				itemColor: [{start: numStart, end: numEnd, attrs: pColorObj.fileNums},
+				            {start: sizeStart, end: sizeEnd, attrs: pColorObj.fileSize},
+				            {start: dateStart, end: dateEnd, attrs: pColorObj.fileDate},
+				            {start: timeStart, end: timeEnd, attrs: pColorObj.fileTime},
+				            {start: filenameStart, end: filenameEnd, attrs: pColorObj.filename}],
+				selectedItemColor: [{start: numStart, end: numEnd, attrs: pColorObj.highlightedFile},
+				                    {start: sizeStart, end: sizeEnd, attrs: pColorObj.highlightedFile},
+				                    {start: dateStart, end: dateEnd, attrs: pColorObj.highlightedFile},
+				                    {start: timeStart, end: timeEnd, attrs: pColorObj.highlightedFile},
+				                    {start: filenameStart, end: filenameEnd, attrs: pColorObj.highlightedFile}]
+			});
 		}
-		return redraw;
-	}
-
-	var onePastLastFileRow = console.screen_rows;
-
-	// Get a list of files in the directory
-	var files = directory(pDir + "*");
-	if (files.length > 0)
-	{
-		// This object will keep track of which filenames have had their
-		// slashes fixed.
-		var fileSlashesFixed = {};
-
-		// Screen row and array index variables
-		const listTopRow = 4;
-		const listBottomRow = console.screen_rows - 1;
-		const numPageLines = listBottomRow - listTopRow + 1; // # of lines in a page
-		var topFileIndex = 0; // Index of the file appearing at the top of the screen
-		var selectedIndex = 0; // The index of the currently selected file
-		onePastLastFileRow = listTopRow + (files.length - topFileIndex);
-
-		// Set up a cursor position object, which will start at the top row.
-		var curpos = {
-			x: 1,
-			y: listTopRow
-		};
-
-		// Calculate the index of the filename that appears at the top of the
-		// last page.
-		var lastPageTopIndex = numPageLines;
-		while (lastPageTopIndex < files.length)
-			lastPageTopIndex += numPageLines;
-		lastPageTopIndex -= numPageLines;
-
-		// Draw the header lines and the help line at the bottom
-		drawTopAndBottom_Lightbar(pArchiveFilename);
-
-		// Now, output the first page of information, move the cursor up to the top,
-		// and start the input loop.
-		listFiles_ShowScreenful(files, topFileIndex, listTopRow, listBottomRow, topFileIndex, false, true);
-		var userInput = "";
-		var continueOn = true;
-		while (continueOn)
+		else
 		{
-			console.gotoxy(curpos); // Make sure the cursor is still in the right place
-			// Get a key from the user, with a timeout.
-			userInput = console.inkey(K_UPPER | K_NOCRLF | K_NOSPIN, gGenConfig.inputTimeoutMS);
-			// If userInput is blank, that means the timeout was reached.
-			if (userInput.length == 0)
-			{
-				// Display a message and exit.
-				console.gotoxy(1, console.screen_rows);
-				console.clearline("\x01n");
-				console.print("\x01n\x01y\x01hInput timeout reached.");
-				mswait(2500);
-				continueOn = false;
-			}
-			// Up arrow: Move up one file
-			else if (userInput == KEY_UP)
-			{
-				// Go to the previous file, if possible.
-				if (selectedIndex > 0)
-				{
-					if (curpos.y > listTopRow)
-					{
-						// Draw the current file information in normal colors.
-						console.gotoxy(1, curpos.y);
-						writeFileInfo(files[selectedIndex], false, selectedIndex + 1);
-						// Go to the next file, position the cursor where it should be,
-						// and write the file information in the highlight color.
-						--selectedIndex;
-						--curpos.y;
-						console.gotoxy(1, curpos.y);
-						writeFileInfo(files[selectedIndex], true, selectedIndex + 1);
-					}
-					else
-					{
-						// Go to the previous page, if possible.
-						// Note: curpos is updated by goToPrevPage(), so we don't have to
-						// update it here.
-						if (goToPrevPage())
-						{
-							// Move the selection to the bottom of the list, then refresh the screen.
-							selectedIndex = topFileIndex + numPageLines - 1;
-							curpos.y = listBottomRow;
-							listFiles_ShowScreenful(files, topFileIndex, listTopRow, listBottomRow, selectedIndex, true, true);
-						}
-					}
-				}
-			}
-			// Down arrow: Move down one file
-			else if (userInput == KEY_DOWN)
-			{
-				// Go to the next file, if possible.
-				if (selectedIndex < files.length - 1)
-				{
-					if (curpos.y < listBottomRow)
-					{
-						// Draw the current file information in normal colors.
-						console.gotoxy(1, curpos.y);
-						writeFileInfo(files[selectedIndex], false, selectedIndex + 1);
-						// Go to the next file, position the cursor where it should be,
-						// and write the file information in the highlight color.
-						++selectedIndex;
-						++curpos.y;
-						console.gotoxy(1, curpos.y);
-						writeFileInfo(files[selectedIndex], true, selectedIndex + 1);
-					}
-					else
-					{
-						// Go to the next page, if possible.
-						// Note: curpos is updated by goToNextPage(), so we don't have to
-						// update it here.
-						if (goToNextPage())
-							listFiles_ShowScreenful(files, topFileIndex, listTopRow, listBottomRow, selectedIndex, true, true);
-					}
-				}
-			}
-			// Home key: Go to the first file shown on the screen
-			else if (userInput == KEY_HOME)
-			{
-				if ((selectedIndex > topFileIndex) && (curpos.y > listTopRow))
-				{
-					// Draw the current file information in normal colors.
-					console.gotoxy(1, curpos.y);
-					writeFileInfo(files[selectedIndex], false, selectedIndex + 1);
-					// Go to the top index on the screen, and draw that file's
-					// information in the highlight color.
-					selectedIndex = topFileIndex;
-					curpos.y = listTopRow;
-					console.gotoxy(1, curpos.y);
-					writeFileInfo(files[selectedIndex], true, selectedIndex + 1);
-				}
-			}
-			// End key: Go to the last file shown on the screen
-			else if (userInput == KEY_END)
-			{
-				// Calculate the bottom file index and bottom screen row so that
-				// we don't go out of the array bounds.
-				var bottomFileIndex = topFileIndex + (numPageLines - 1);
-				var bottomScreenRow = listBottomRow;
-				if (bottomFileIndex >= files.length)
-				{
-					bottomFileIndex = files.length - 1;
-					bottomScreenRow = listTopRow + (bottomFileIndex - topFileIndex);
-				}
-				if ((selectedIndex < bottomFileIndex) && (curpos.y < listBottomRow))
-				{
-					// Draw the current file information in normal colors.
-					console.gotoxy(1, curpos.y);
-					writeFileInfo(files[selectedIndex], false, selectedIndex + 1);
-					// Go to the top index on the screen, and draw that file's
-					// information in the highlight color.
-					selectedIndex = bottomFileIndex;
-					curpos.y = bottomScreenRow;
-					console.gotoxy(1, curpos.y);
-					writeFileInfo(files[selectedIndex], true, selectedIndex + 1);
-				}
-			}
-			// Enter: Allow the user to view/download the highlighted file
-			else if (userInput == KEY_ENTER)
-			{
-				// Place the cursor at the desired location and do file # input.
-				console.gotoxy(1, console.screen_rows);
-				console.clearline("\x01n");
-				var retObj = doFileNumInput(files, pDir, listFiles_Lightbar, selectedIndex + 1);
-				// doFileNumInput() fixes file path slashes for the chosen file,
-				// so if the user chose a file, then update fileSlashesFixed
-				// for the chosen array index.
-				if (retObj.arrayIndex > -1)
-					fileSlashesFixed[retObj.arrayIndex] = true;
-				// Re-draw the screen so that everything looks correct.
-				drawTopAndBottom_Lightbar(pArchiveFilename);
-				listFiles_ShowScreenful(files, topFileIndex, listTopRow, listBottomRow,
-					selectedIndex, true, true);
-			}
-			// Note: I was hoping to let users add files to their batch download
-			// queue, but it looks like files have to be in Synchronet's file
-			// database in order for that to work.  :(  So I've commented out
-			// the code I wrote for adding to the batch download queue.
-			/*
-			// B: Add the selected file to the user's batch download queue
-			else if (userInput == "B")
-			{
-				// If this file hasn't had its slashes fixed, then fix them.
-				if (!fileSlashesFixed[selectedIndex])
-				{
-					files[selectedIndex] = fixPathSlashes(files[selectedIndex]);
-					fileSlashesFixed[selectedIndex] = true;
-					}
-					// Go to the last line on the screen (for prompting/messages)
-					console.gotoxy(1, console.screen_rows);
-					console.clearline("\x01n");
-					// If the entry is a directory, then report an error.  Otherwise,
-					// go to the bottom and confirm with the user if they really
-					// want to download the file.
-					if (file_isdir(files[selectedIndex]))
-				{
-					console.print("\x01n\x01w\x01hCan't download an entire directory.");
-					mswait(1500);
-					// Re-draw the bottom help line
-					console.gotoxy(1, console.screen_rows);
-					displayBottomHelpLine_Lightbar();
-					}
-					else
-				{
-					var justFilename = getFilenameFromPath(files[selectedIndex]);
-					var filenameWidth = console.screen_columns - 23;
-					if (console.yesno("\x01n\x01cAdd \x01h" +
-					justFilename.substr(0, filenameWidth) +
-					"\x01n\x01c to batch DL queue"))
-				{
-					// Create the temporary batch download directory and copy
-					// the selected file to it.  If that succeeded, then add
-					// the file to the user's download queue.
-					mkdir(gBatchDLDir);
-					var DLFilename = gBatchDLDir + justFilename;
-					if (file_copy(files[selectedIndex], DLFilename))
-				{
-					// Add the file to the DL queue.  If failed, show an error.
-					console.gotoxy(1, console.screen_rows);
-					console.clearline("\x01n");
-					if (addFileToBatchQueue(DLFilename))
-					console.print("\x01n\x01cFile added to batch DL queue.");
-					else
-				{
-					console.print("\x01n\x01y\x01hUnable to add to batch DL queue!");
-					file_remove(DLFilename);
-					}
-					mswait(1500);
-					}
-					else
-					{
-						// Couldn't copy the file to the temporary DL queue directory.
-						console.gotoxy(1, console.screen_rows);
-						console.clearline("\x01n");
-						console.print("\x01n\x01y\x01hUnable to copy to queue directory!");
-						mswait(1500);
-						}
-					}
+			// Not ANSI/lightbar mode - Will used numbered mode automatically
+			fileListMenu.colors.itemNumColor = pColorObj.fileNums;
+			fileListMenu.colors.highlightedItemNumColor = pColorObj.highlightedFile;
 
-				// Re-draw the screen so that everything looks correct.
-				drawTopAndBottom_Lightbar(pArchiveFilename);
-				listFiles_ShowScreenful(files, topFileIndex, listTopRow, listBottomRow,
-				selectedIndex, true, true);
-			}
-			}
-			 */
-			// D: Download the selected file
-			else if (userInput == "D") {
-				// Go to the last line on the screen (for prompting/messages)
-				console.gotoxy(1, console.screen_rows);
-				console.clearline("\x01n");
-				// If the entry is a directory, then report an error.  Otherwise,
-				// go to the bottom and confirm with the user if they really
-				// want to download the file.
-				if (file_isdir(files[selectedIndex]))
-				{
-					console.print("\x01n\x01w\x01hCan't download an entire directory.");
-					mswait(1500);
-					// Re-draw the bottom help line
-					console.gotoxy(1, console.screen_rows);
-					displayBottomHelpLine_Lightbar();
-				}
-				else
-				{
-					var filenameWidth = console.screen_columns - 24;
-					if (console.yesno("\x01n\x01cDownload \x01h" +
-							getFilenameFromPath(files[selectedIndex]).substr(0, filenameWidth) +
-							"\x01n\x01c: Are you sure")) {
-						bbs.log_str(user.alias + " is downloading a file from an archive: " +
-							files[selectedIndex]);
-						bbs.send_file(files[selectedIndex]);
-					}
+			fileListMenu.itemFormatStr = "%" + fileSizeLen + "s %" + fileDateLen + "s %"
+			                           + fileTimeLen + "s %-" + filenameLen + "s";
 
-					// Re-draw the screen so that everything looks correct.
-					drawTopAndBottom_Lightbar(pArchiveFilename);
-					listFiles_ShowScreenful(files, topFileIndex, listTopRow, listBottomRow,
-						selectedIndex, true, true);
-				}
-			}
-			// Q or ESC key: Quit
-			else if ((userInput == "Q") || (userInput == ESC_KEY)) {
-				continueOn = false;
-				break;
-			}
-			// ?: Display help
-			else if (userInput == "?")
-			{
-				showHelpScreen(true);
-				// Re-draw the screen so that everything looks correct.
-				drawTopAndBottom_Lightbar(pArchiveFilename);
-				listFiles_ShowScreenful(files, topFileIndex, listTopRow, listBottomRow,
-					selectedIndex, true, true);
-			}
-			// V: View the current file
-			else if (userInput == "V")
-			{
-				// If this file hasn't had its slashes fixed, then fix them.
-				if (!fileSlashesFixed[selectedIndex])
-				{
-					files[selectedIndex] = fixPathSlashes(files[selectedIndex]);
-					fileSlashesFixed[selectedIndex] = true;
-				}
+			// Start & end indexes for the various items
+			var sizeStart = 0;
+			var sizeEnd = fileSizeLen + 1;
+			var dateStart = sizeEnd;
+			var dateEnd = dateStart + fileDateLen + 1;
+			var timeStart = dateEnd;
+			var timeEnd = timeStart + fileTimeLen + 1;
+			var filenameStart = timeEnd;
+			var filenameEnd = -1;
 
-				var filename = getFilenameFromPath(files[selectedIndex]);
-				// If the file is a directory, then just view it.  Otherwise,
-				// go to the bottom and confirm with the user if they really
-				// want to view the file.
-				var viewIt = false;
-				if (file_isdir(files[selectedIndex]))
-					viewIt = true;
-				else
-				{
-					console.gotoxy(1, console.screen_rows);
-					console.clearline("\x01n");
-					var confirmText = "\x01n\x01cView \x01h"
-						 + filename.substr(0, console.screen_columns - 15) + "\x01n"
-						viewIt = console.yesno(confirmText);
-				}
-				if (viewIt)
-				{
-					// If the entry is a directory, then call this function again
-					// to look in there.  Otherwise, call viewFile() to view it.
-					if (file_isdir(files[selectedIndex]))
-						listFiles_Lightbar(files[selectedIndex], filename);
-					else
-					{
-						bbs.log_str(user.alias + " is viewing a file inside an archive: " +
-							files[selectedIndex]);
-						viewFile(files[selectedIndex], pDir, listFiles_Lightbar);
-					}
-				}
-
-				// Re-draw the screen so that everything looks correct.
-				drawTopAndBottom_Lightbar(pArchiveFilename);
-				listFiles_ShowScreenful(files, topFileIndex, listTopRow, listBottomRow,
-					selectedIndex, true, true);
-			}
-			// N: Next page
-			else if (userInput == "N")
-			{
-				// Note: curpos is updated by goToNextPage(), so we don't have to
-				// update it here.
-				if (goToNextPage())
-				{
-					listFiles_ShowScreenful(files, topFileIndex, listTopRow, listBottomRow,
-						selectedIndex, true, true);
-				}
-			}
-			// P: Previous page
-			else if (userInput == "P")
-			{
-				// Note: curpos is updated by goToNextPage(), so we don't have to
-				// update it here.
-				if (goToPrevPage())
-				{
-					listFiles_ShowScreenful(files, topFileIndex, listTopRow, listBottomRow,
-						selectedIndex, true, true);
-				}
-			}
-			// F: First page
-			else if (userInput == "F")
-			{
-				// If we're not already on the first page, then go there.
-				if (topFileIndex > 0)
-				{
-					topFileIndex = 0;
-					selectedIndex = 0;
-					console.y = listTopRow;
-					listFiles_ShowScreenful(files, topFileIndex, listTopRow, listBottomRow,
-						selectedIndex, true, true);
-				}
-			}
-			// L: Last page
-			else if (userInput == "L")
-			{
-				// If we're not already on the last page, then go there.
-				if (topFileIndex < lastPageTopIndex)
-				{
-					topFileIndex = lastPageTopIndex;
-					selectedIndex = lastPageTopIndex;
-					console.y = listTopRow;
-					listFiles_ShowScreenful(files, topFileIndex, listTopRow, listBottomRow,
-						selectedIndex, true, true);
-				}
-			}
-			// Numeric digit: The start of a file number
-			else if (userInput.match(/[0-9]/))
-			{
-				// Put the user's input back in the input buffer to
-				// be used for getting the rest of the message number.
-				console.ungetstr(userInput);
-				console.gotoxy(1, console.screen_rows);
-				console.clearline("\x01n");
-				console.print("\x01cFile #: \x01h");
-				var retObj = doFileNumInput(files, pDir, listFiles_Lightbar);
-				// doFileNumInput() fixes file path slashes for the chosen file,
-				// so if the user chose a file, then update fileSlashesFixed
-				// for the chosen array index.
-				if (retObj.arrayIndex > -1)
-					fileSlashesFixed[retObj.arrayIndex] = true;
-				// Refresh the screen.
-				drawTopAndBottom_Lightbar(pArchiveFilename);
-				listFiles_ShowScreenful(files, topFileIndex, listTopRow, listBottomRow,
-					selectedIndex, true, true);
-			}
+			fileListMenu.SetColors({
+				itemColor: [{start: sizeStart, end: sizeEnd, attrs: pColorObj.fileSize},
+				            {start: dateStart, end: dateEnd, attrs: pColorObj.fileDate},
+				            {start: timeStart, end: timeEnd, attrs: pColorObj.fileTime},
+				            {start: filenameStart, end: filenameEnd, attrs: pColorObj.filename}],
+				selectedItemColor: [{start: sizeStart, end: sizeEnd, attrs: pColorObj.highlightedFile},
+				                    {start: dateStart, end: dateEnd, attrs: pColorObj.highlightedFile},
+				                    {start: timeStart, end: timeEnd, attrs: pColorObj.highlightedFile},
+				                    {start: filenameStart, end: filenameEnd, attrs: pColorObj.highlightedFile}]
+			});
 		}
 	}
-	else
-		console.print("\x01n\x01cCould not extract/view the file, or it is empty.\r\n\x01p");
 
-	return onePastLastFileRow;
+	// Change the menu's NumItems() and GetItem() function to reference
+	// the file information rather than add the menu items to the menu
+	fileListMenu.fileArray = pFileArray;
+	fileListMenu.NumItems = function() {
+		return this.fileArray.length;
+	};
+	fileListMenu.GetItem = function(pIdx) {
+		var menuItemObj = this.MakeItemWithRetval(-1);
+		if (pIdx >= 0 && pIdx < this.fileArray.length)
+		{
+			menuItemObj.retval = pIdx;
+			var fileSizeStr = getFileSizeStr(this.fileArray[pIdx].size);
+			var fileDateStr = strftime("%Y-%m-%d", this.fileArray[pIdx].time);
+			var fileTimeStr = strftime("%H:%M", this.fileArray[pIdx].time);
+			if (this.allowANSI)
+			{
+				menuItemObj.text = format(fileListMenu.itemFormatStr, pIdx+1, fileSizeStr, fileDateStr, fileTimeStr,
+				                          this.fileArray[pIdx].name);
+			}
+			else
+			{
+				menuItemObj.text = format(fileListMenu.itemFormatStr, fileSizeStr, fileDateStr, fileTimeStr,
+				                          this.fileArray[pIdx].name);
+			}
+		}
+		return menuItemObj;
+	};
+
+	// Add the file information items to the menu
+	/*
+	fileList.push({
+		name: file_getname(filesInDir[i]),
+		size: file_size(filesInDir[i]),
+		time: file_date(filesInDir[i])
+	});
+	*/
+	/*
+	for (var i = 0; i < pFileArray; ++i)
+	{
+		//fileList[i]
+	}
+	*/
+
+	//fileListMenu.SetSelectedItemIdx(0);
+
+	return fileListMenu;
 }
 
 // Displays the help line at the bottom of the screen (for lightbar mode).
 function displayBottomHelpLine_Lightbar()
 {
-   // Construct the help text variable only once (for speed).
-   if (displayBottomHelpLine_Lightbar.bottomHelp == undefined)
-   {
-      displayBottomHelpLine_Lightbar.bottomHelp = "\x01n\x01" + "7\x01r"
-            + UP_ARROW_DISPLAY + "\x01b, \x01r" + DOWN_ARROW_DISPLAY
-            + "\x01b, \x01rHOME\x01b, \x01rEND\x01b, \x01rENTER\x01b, \x01rN\x01m)\x01bext, "
-            + "\x01rP\x01m)\x01brev, \x01rF\x01m)\x01birst, \x01rL\x01m)\x01bast, "
-            + "\x01rV\x01m)\x01biew, \x01rD\x01m)\x01bL, \x01rQ\x01m)\x01buit, "
-            + "\x01r#\x01b, \x01r?   ";
-   }
+	// Construct the help text variable only once (for speed).
+	if (displayBottomHelpLine_Lightbar.bottomHelp == undefined)
+	{
+		displayBottomHelpLine_Lightbar.bottomHelp = "\x01n\x01" + "7\x01rUp\x01b, \x01rDn"
+		                      + "\x01b, \x01rHOME\x01b, \x01rEND\x01b, \x01rENTER\x01b, \x01rN\x01m)\x01bext, "
+		                      + "\x01rP\x01m)\x01brev, \x01rF\x01m)\x01birst, \x01rL\x01m)\x01bast, "
+		                      + "\x01rV\x01m)\x01biew, \x01rD\x01m)\x01bL, \x01rQ\x01m)\x01buit, "
+		                      + "\x01r#\x01b, \x01r? ";
+		
+	}
 
-   // Go to the last row on the screen and display the help line
-   console.gotoxy(1, console.screen_rows);
-   console.print(displayBottomHelpLine_Lightbar.bottomHelp);
+	// Go to the last row on the screen and display the help line
+	console.gotoxy(1, console.screen_rows);
+	console.print(displayBottomHelpLine_Lightbar.bottomHelp);
 }
 
 // Writes the top and bottom lines for the file list in lightbar mode.
@@ -1822,70 +1489,80 @@ function listFiles_ShowScreenful(pArray, pStartIndex, pStartLine, pEndLine, pHig
 //  pFileNum: The file number (1-based)
 function writeFileInfo(pFilename, pHighlight, pFileNum)
 {
-   // Create the format strings (but only once, for speed)
-   // Format widths
-   var sizeWidth = 8;
-   var dateWidth = 10;
-   var timeWidth = 5;
-   // Filename width
-   if (writeFileInfo.filenameWidth == undefined)
-   {
-      writeFileInfo.filenameWidth = console.screen_columns - sizeWidth - dateWidth
-                                  - timeWidth - 9;
-   }
-   if (writeFileInfo.formatStr == undefined)
-   {
-      writeFileInfo.formatStr = "\x01n" + gGenConfig.colors.fileNums + "%4d "
-                  + gGenConfig.colors.fileSize + "%" + sizeWidth + "s "
-                  + gGenConfig.colors.fileDate + "%-" + dateWidth + "s "
-                  + gGenConfig.colors.fileTime + "%-" + timeWidth
-                  + "s " + gGenConfig.colors.filename + "%-" + writeFileInfo.filenameWidth
-                  + "s";
-   }
-   if (writeFileInfo.hiFormatStr == undefined)
-   {
-      writeFileInfo.hiFormatStr = "\x01n" + gGenConfig.colors.highlightedFile + "%4d %"
-                  + sizeWidth + "s %-" + dateWidth + "s %-" + timeWidth + "s %-"
-                  + writeFileInfo.filenameWidth + "s";
-   }
+	// Create the format strings (but only once, for speed)
+	// Format widths
+	var sizeWidth = 8;
+	var dateWidth = 10;
+	var timeWidth = 5;
+	// Filename width
+	if (writeFileInfo.filenameWidth == undefined)
+	{
+		writeFileInfo.filenameWidth = console.screen_columns - sizeWidth - dateWidth
+		                            - timeWidth - 9;
+	}
+	if (writeFileInfo.formatStr == undefined)
+	{
+		writeFileInfo.formatStr = "\x01n" + gGenConfig.colors.fileNums + "%4d "
+		          + gGenConfig.colors.fileSize + "%" + sizeWidth + "s "
+		          + gGenConfig.colors.fileDate + "%-" + dateWidth + "s "
+		          + gGenConfig.colors.fileTime + "%-" + timeWidth
+		          + "s " + gGenConfig.colors.filename + "%-" + writeFileInfo.filenameWidth
+		          + "s";
+	}
+	if (writeFileInfo.hiFormatStr == undefined)
+	{
+		writeFileInfo.hiFormatStr = "\x01n" + gGenConfig.colors.highlightedFile + "%4d %"
+		          + sizeWidth + "s %-" + dateWidth + "s %-" + timeWidth + "s %-"
+		          + writeFileInfo.filenameWidth + "s";
+	}
 
-   // Get just the filename from the end of pFilename.
-   var filename = getFilenameFromPath(pFilename);
-   // If the entry is a directory, then display it as such.
-   // Otherwise, output the file information.
-   if (file_isdir(pFilename))
-   {
-      printf(pHighlight ? writeFileInfo.hiFormatStr : writeFileInfo.formatStr,
-             pFileNum,                            // File number column
-             "<DIR>",                             // File size column
-             "",                                  // File date column
-             "",                                  // File time column
-             filename.substr(0, writeFileInfo.filenameWidth)); // Directory name
-   }
-   else
-   {
-      var fileDate = file_date(pFilename);
-      var fileSizeBytes = file_size(pFilename);
-      // Display the file size in gigabytes, megabytes, or kilobytes, if
-      // it's large enough.
-      var fileSizeStr = "";
-      if (fileSizeBytes >= 1073741824)   // Gigabyte size
-         fileSizeStr = format("%6.2fG", (fileSizeBytes / 1073741824));
-      else if (fileSizeBytes >= 1048576) // Megabyte size
-         fileSizeStr = format("%6.2fM", (fileSizeBytes / 1048576));
-      else if (fileSizeBytes >= 1024)    // Kilobyte size
-         fileSizeStr = format("%6.2fK", (fileSizeBytes / 1024));
-      else // Use the byte size
-         fileSizeStr = format("%d", fileSizeBytes).substr(0, 10);
+	// Get just the filename from the end of pFilename.
+	var filename = file_getname(pFilename);
+	// If the entry is a directory, then display it as such.
+	// Otherwise, output the file information.
+	if (file_isdir(pFilename))
+	{
+		printf(pHighlight ? writeFileInfo.hiFormatStr : writeFileInfo.formatStr,
+		     pFileNum,                            // File number column
+		     "<DIR>",                             // File size column
+		     "",                                  // File date column
+		     "",                                  // File time column
+		     filename.substr(0, writeFileInfo.filenameWidth)); // Directory name
+	}
+	else
+	{
+		var fileDate = file_date(pFilename);
+		var fileSizeBytes = file_size(pFilename);
+		// Display the file information.
+		printf(pHighlight ? writeFileInfo.hiFormatStr : writeFileInfo.formatStr,
+		     pFileNum,                            // File number
+		     getFileSizeStr(fileSizeBytes),       // File size
+		     strftime("%Y-%m-%d", fileDate),      // File date
+		     strftime("%H:%M", fileDate),         // File time
+		     filename.substr(0, writeFileInfo.filenameWidth)); // Filename
+	}
+}
 
-      // Display the file information.
-      printf(pHighlight ? writeFileInfo.hiFormatStr : writeFileInfo.formatStr,
-             pFileNum,                            // File number
-             fileSizeStr,                         // File size
-             strftime("%Y-%m-%d", fileDate),      // File date
-             strftime("%H:%M", fileDate),         // File time
-             filename.substr(0, writeFileInfo.filenameWidth)); // Filename
-   }
+// Returns a file size string for use in the file list
+//
+// Parameters:
+//  pFileSizeBytes: The file size in bytes
+//
+// Return value: A string containing the file size, possibly with a suffix
+function getFileSizeStr(pFileSizeBytes)
+{
+	// Display the file size in gigabytes, megabytes, or kilobytes, if
+	// it's large enough.
+	var fileSizeStr = "";
+	if (pFileSizeBytes >= 1073741824)   // Gigabyte size
+		fileSizeStr = format("%6.2fG", (pFileSizeBytes / 1073741824));
+	else if (pFileSizeBytes >= 1048576) // Megabyte size
+		fileSizeStr = format("%6.2fM", (pFileSizeBytes / 1048576));
+	else if (pFileSizeBytes >= 1024)    // Kilobyte size
+		fileSizeStr = format("%6.2fK", (pFileSizeBytes / 1024));
+	else // Use the byte size
+		fileSizeStr = format("%d", pFileSizeBytes).substr(0, 10);
+	return fileSizeStr;
 }
 
 // This function executes an OS command and returns its output as an
@@ -1998,27 +1675,6 @@ function getFilenameExtension(pFilename)
 	return filenameExt;
 }
 
-// This function returns just the filename from the end of a full path, regardless
-// of whether it has a trailing slash.
-//
-// Parameters:
-//  pFilename: The full path & filename
-//
-// Return value: Just the filename from the end of the path
-function getFilenameFromPath(pFilename)
-{
-   var filename = pFilename;
-   if (filename.length > 0)
-   {
-      // If the filename has a trailing slash, remove it.  Then,
-      // use file_getname() to get the filename from the end.
-      if ((/\/$/.test(filename)) || (/\\$/.test(filename)))
-         filename = filename.substr(0, filename.length-1);
-      filename = file_getname(filename);
-   }
-   return filename;
-}
-
 // Given a full path & filename, this function returns just the path portion,
 // with a trailing slash.
 //
@@ -2028,44 +1684,40 @@ function getFilenameFromPath(pFilename)
 // Return value: Just the path portion of the filename.
 function getPathFromFilename(pFilename)
 {
-   // Make sure pFilename is valid
-   if ((pFilename == null) || (pFilename == undefined))
-      return "";
-   if (typeof(pFilename) != "string")
-      return "";
-   if (pFilename.length == 0)
-      return "";
+	// Make sure pFilename is valid
+	if (typeof(pFilename) !== "string" || pFilename.length == 0)
+		return "";
 
-   // Make sure the filename has the correct slashes for
-   // the platform.
-   var filename = fixPathSlashes(pFilename);
+	// Make sure the filename has the correct slashes for
+	// the platform.
+	var filename = fixPathSlashes(pFilename);
 
-   // If pFilename is actually a directory, then just return it.
-   if (file_isdir(filename))
-   {
-      // Make sure it has a trailing slash that's appropriate
-      // for the OS.
-      var lastChar = filename.charAt(filename.length-1);
-      if (lastChar != gPathSlash)
-         filename += gPathSlash;
-      return filename;
-   }
+	// If pFilename is actually a directory, then just return it.
+	if (file_isdir(filename))
+	{
+		// Make sure it has a trailing slash that's appropriate
+		// for the OS.
+		var lastChar = filename.charAt(filename.length-1);
+		if (lastChar != gPathSlash)
+			filename += gPathSlash;
+		return filename;
+	}
 
-   // Find the index of the last slash and use that to extract the path.
-   var path = "";
-   var lastSlashIndex = filename.lastIndexOf(gPathSlash);
-   if (lastSlashIndex > 0)
-      path = filename.substr(0, lastSlashIndex);
+	// Find the index of the last slash and use that to extract the path.
+	var path = "";
+	var lastSlashIndex = filename.lastIndexOf(gPathSlash);
+	if (lastSlashIndex > 0)
+		path = filename.substr(0, lastSlashIndex);
 
-   // If we extracted the path, make sure it ends with a slash.
-   if (path.length > 0)
-   {
-      var lastChar = path.charAt(path.length-1);
-      if (lastChar != gPathSlash)
-         path += gPathSlash;
-   }
+	// If we extracted the path, make sure it ends with a slash.
+	if (path.length > 0)
+	{
+		var lastChar = path.charAt(path.length-1);
+		if (lastChar != gPathSlash)
+			path += gPathSlash;
+	}
 
-   return path;
+	return path;
 }
 
 // Fixes all slashes in a given path to be the appropriate slash
@@ -2077,33 +1729,29 @@ function getPathFromFilename(pFilename)
 // Return value: The fixed version of pPath
 function fixPathSlashes(pPath)
 {
-   // Make sure pPath is valid.
-   if ((pPath == null) || (pPath == undefined))
-      return "";
-   if (typeof(pPath) != "string")
-      return "";
-   if (pPath.length == 0)
-      return "";
+	// Make sure pPath is valid.
+	if (typeof(pPath) !== "string" || pPath.length == 0)
+		return "";
 
-   // Create a variable to store whether or not we're in Windows,
-   // but only once (for speed).
-   if (fixPathSlashes.inWin == undefined)
-      fixPathSlashes.inWin = /^WIN/.test(system.platform.toUpperCase());
+	// Create a variable to store whether or not we're in Windows,
+	// but only once (for speed).
+	if (fixPathSlashes.inWin == undefined)
+		fixPathSlashes.inWin = /^WIN/.test(system.platform.toUpperCase());
 
-   // Fix the slashes and return the fixed version.
-   //return(fixPathSlashes.inWin ? pPath.replace("/", "\\") : pPath.replace("\\", "/"));
-   var path = pPath;
-   if (fixPathSlashes.inWin) // Windows
-   {
-      while (path.indexOf("/") > -1)
-         path = path.replace("/", "\\");
-   }
-   else // *nix
-   {
-      while (path.indexOf("\\") > -1)
-         path = path.replace("\\", "/");
-   }
-   return path;
+	// Fix the slashes and return the fixed version.
+	//return(fixPathSlashes.inWin ? pPath.replace("/", "\\") : pPath.replace("\\", "/"));
+	var path = pPath;
+	if (fixPathSlashes.inWin) // Windows
+	{
+		while (path.indexOf("/") > -1)
+			path = path.replace("/", "\\");
+	}
+	else // *nix
+	{
+		while (path.indexOf("\\") > -1)
+			path = path.replace("\\", "/");
+	}
+	return path;
 }
 
 // Adds a file to the user's batch download queue.  Returns true on
@@ -2118,25 +1766,25 @@ function fixPathSlashes(pPath)
 // Return value: true on success, or false on failure
 function addFileToBatchQueue(pFilename)
 {
-   var retval = false;
-   // Create the batch list file
-   var listFilename = system.node_dir + "DDArcViewer_DLList.txt";
-   var listFile = new File(listFilename);
-   if (listFile.open("w"))
-   {
-      // Write to the list file and close it.
-      retval = listFile.write(pFilename);
-      listFile.close();
+	var retval = false;
+	// Create the batch list file
+	var listFilename = system.node_dir + "DDArcViewer_DLList.txt";
+	var listFile = new File(listFilename);
+	if (listFile.open("w"))
+	{
+		// Write to the list file and close it.
+		retval = listFile.write(pFilename);
+		listFile.close();
 
-      // If we were able to write the filename to the list file, then
-      // add the list to the user's download queue.
-      if (retval)
-         retval = bbs.batch_add_list(listFilename);
+		// If we were able to write the filename to the list file, then
+		// add the list to the user's download queue.
+		if (retval)
+			retval = bbs.batch_add_list(listFilename);
 
-      // Delete the list file
-      file_remove(listFilename);
-   }
-   return retval;
+		// Delete the list file
+		file_remove(listFilename);
+	}
+	return retval;
 }
 
 // Shows the help screen.
@@ -2145,78 +1793,78 @@ function addFileToBatchQueue(pFilename)
 //  pLightbarMode: Whether or not the script is using the lightbar interface
 function showHelpScreen(pLightbarMode)
 {
-   // Construct the program name header text lines
-   if (showHelpScreen.progInfoHeader == undefined)
-   {
-      var width = gDDArcViewerProgName.length + 2;
-      showHelpScreen.progInfoHeader = new Array();
-      // Upper & lower border lines
-      showHelpScreen.progInfoHeader[0] = "\x01c\x01h" + UPPER_LEFT_SINGLE;
-      showHelpScreen.progInfoHeader[2] = LOWER_LEFT_SINGLE;
-      for (var i = 0; i < width; ++i)
-      {
-         showHelpScreen.progInfoHeader[0] += HORIZONTAL_SINGLE;
-         showHelpScreen.progInfoHeader[2] += HORIZONTAL_SINGLE;
-      }
-      showHelpScreen.progInfoHeader[0] += UPPER_RIGHT_SINGLE;
-      showHelpScreen.progInfoHeader[2] += LOWER_RIGHT_SINGLE;
-      // Middle section with the program name
-      showHelpScreen.progInfoHeader[1] = VERTICAL_SINGLE + "\x01" + "4\x01y\x01h "
-                                       + gDDArcViewerProgName + " \x01n\x01c\x01h" + VERTICAL_SINGLE;
-      // Version & author information
-      showHelpScreen.progInfoHeader[3] = "\x01n\x01cVersion \x01g" + gDDArcViewerVersion
-                                       + " \x01w\x01h(\x01b" + gDDArcViewerVerDate + "\x01w)";
-      showHelpScreen.progInfoHeader[4] = "\x01n\x01cby Eric Oulashin \x01h(\x01n\x01csysop of Digital Distortion BBS\x01h)";
-   }
+	// Construct the program name header text lines
+	if (showHelpScreen.progInfoHeader == undefined)
+	{
+		var width = gDDArcViewerProgName.length + 2;
+		showHelpScreen.progInfoHeader = new Array();
+		// Upper & lower border lines
+		showHelpScreen.progInfoHeader[0] = "\x01c\x01h" + UPPER_LEFT_SINGLE;
+		showHelpScreen.progInfoHeader[2] = LOWER_LEFT_SINGLE;
+		for (var i = 0; i < width; ++i)
+		{
+			showHelpScreen.progInfoHeader[0] += HORIZONTAL_SINGLE;
+			showHelpScreen.progInfoHeader[2] += HORIZONTAL_SINGLE;
+		}
+		showHelpScreen.progInfoHeader[0] += UPPER_RIGHT_SINGLE;
+		showHelpScreen.progInfoHeader[2] += LOWER_RIGHT_SINGLE;
+		// Middle section with the program name
+		showHelpScreen.progInfoHeader[1] = VERTICAL_SINGLE + "\x01" + "4\x01y\x01h "
+		                                 + gDDArcViewerProgName + " \x01n\x01c\x01h" + VERTICAL_SINGLE;
+		// Version & author information
+		showHelpScreen.progInfoHeader[3] = "\x01n\x01cVersion \x01g" + gDDArcViewerVersion
+		                                 + " \x01w\x01h(\x01b" + gDDArcViewerVerDate + "\x01w)";
+		showHelpScreen.progInfoHeader[4] = "\x01n\x01cby Eric Oulashin \x01h(\x01n\x01csysop of Digital Distortion BBS\x01h)";
+	}
 
-   // Display the header lines
-   console.clear("\x01n");
-   for (var i = 0; i < showHelpScreen.progInfoHeader.length; ++i)
-      console.center(showHelpScreen.progInfoHeader[i]);
+	// Display the header lines
+	console.clear("\x01n");
+	for (var i = 0; i < showHelpScreen.progInfoHeader.length; ++i)
+		console.center(showHelpScreen.progInfoHeader[i]);
 
-   // Display the program help
-   console.crlf();
-   console.print("\x01n\x01c" + gDDArcViewerProgName + " lets you list the files inside an archive.\r\n");
-   console.print("You can also view or download the files from the archive.");
-   console.crlf();
-   console.crlf();
-   console.print("The following is a list of the command keys:\r\n");
-   console.print("\x01k\x01h" + charStr(HORIZONTAL_SINGLE, 44));
-   console.crlf();
-   var formatStr = "\x01n\x01c\x01h%5s\x01g: \x01n\x01c%s\r\n";
-   if (pLightbarMode)
-   {
-      printf(formatStr, "HOME", "Go to the first file on the page");
-      printf(formatStr, "END", "Go to the last file on the page");
-      printf(formatStr, UP_ARROW_DISPLAY, "Move up one file");
-      printf(formatStr, DOWN_ARROW_DISPLAY, "Move down one file");
-   }
-   printf(formatStr, "N", "Next page");
-   printf(formatStr, "P", "Previous page");
-   printf(formatStr, "F", "First page");
-   printf(formatStr, "L", "Last page");
-   if (pLightbarMode)
-   {
-      printf(formatStr, "Enter", "Select the currently highlighted file to view/download");
-      printf(formatStr, "V", "View the currently highlighted file");
-      printf(formatStr, "D", "Download the currently highlighted file");
-   }
-   else
-   {
-      printf(formatStr, "V", "View a file (you will be prompted for the file number)");
-      printf(formatStr, "D", "Download a file (you will be prompted for the file number)");
-   }
-   printf(formatStr, "Q/ESC", "Quit");
-   console.crlf();
-   console.print("\x01n\x01cYou can also choose a file to view/download by typing its number.");
-   console.crlf();
-   if (!gANSISupported)
-      console.crlf();
+	// Display the program help
+	console.crlf();
+	console.print("\x01n\x01c" + gDDArcViewerProgName + " lets you list the files inside an archive.\r\n");
+	console.print("You can also view or download the files from the archive.");
+	console.crlf();
+	console.crlf();
+	console.print("The following is a list of the command keys:\r\n");
+	console.print("\x01k\x01h" + charStr(HORIZONTAL_SINGLE, 44));
+	console.crlf();
+	var formatStr = "\x01n\x01c\x01h%5s\x01g: \x01n\x01c%s\r\n";
+	if (pLightbarMode)
+	{
+		printf(formatStr, "HOME", "Go to the first file on the page");
+		printf(formatStr, "END", "Go to the last file on the page");
+		printf(formatStr, "Up", "Move up one file");
+		printf(formatStr, "Down", "Move down one file");
+	}
+	printf(formatStr, "N", "Next page");
+	printf(formatStr, "P", "Previous page");
+	printf(formatStr, "F", "First page");
+	printf(formatStr, "L", "Last page");
+	if (pLightbarMode)
+	{
+		printf(formatStr, "Enter", "Select the currently highlighted file to view/download");
+		printf(formatStr, "V", "View the currently highlighted file");
+		printf(formatStr, "D", "Download the currently highlighted file");
+	}
+	else
+	{
+		printf(formatStr, "V", "View a file (you will be prompted for the file number)");
+		printf(formatStr, "D", "Download a file (you will be prompted for the file number)");
+	}
+	printf(formatStr, "Q/ESC", "Quit");
+	console.crlf();
+	console.print("\x01n\x01cYou can also choose a file to view/download by typing its number.");
+	console.crlf();
+	if (!gANSISupported)
+		console.crlf();
 
-   // If the user doesn't have their screen pause setting turned on, then
-   // pause now.
-   if ((user.settings & USER_PAUSE) == 0)
-      console.pause();
+	// If the user doesn't have their screen pause setting turned on, then
+	// pause now.
+	if (!Boolean(user.settings & USER_PAUSE))
+		console.pause();
 }
 
 // This function fixes an array of command-line arguments so that
@@ -2277,4 +1925,18 @@ function attrCodeStr(pAttrCodeCharStr)
 			str += "\x01" + currentChar;
 	}
 	return str;
+}
+
+// Returns a random string of a specified length. The string will not
+// use any special characters, in order to be a valid directory name.
+function randomStr(pStrLen)
+{
+	if (typeof(pStrLen) !== "number" || pStrLen <= 0)
+		return "";
+
+	const strChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789";
+	var randomStr = "";
+	for (var i = 0; i < pStrLen; ++i)
+		randomStr += strChars[random(strChars.length)];
+	return randomStr;
 }
