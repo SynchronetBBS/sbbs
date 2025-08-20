@@ -51,6 +51,7 @@ if(argv.indexOf('-?') >= 0 || argv.indexOf('-help') >= 0)
 {
 	writeln("usage: [-options] [sub-code]");
 	writeln("options:");
+	writeln("  -preview        enable the message preview pane by default");
 	writeln("  -sort=prop      sort message list by property");
 	writeln("  -reverse        reverse the sort order");
 	writeln("  -new=<days>     include new messages added in past <days>");
@@ -61,8 +62,8 @@ if(argv.indexOf('-?') >= 0 || argv.indexOf('-help') >= 0)
 	writeln("  -all            list all mail messages");
 	writeln("  -unread         list only unread messages");
 	writeln("  -count          show count of messages only");
-	writeln("  -all_subs       action for all sub areas")
-	writeln("  -hide_zero      do not print anything if no messages are loaded")
+	writeln("   -hide_zero     do not print message count of 0 when no messages are listed")
+	writeln("  -all_subs       list all sub-boards")
 	writeln("  -nospam         do not load SPAM-tagged messages");
 	writeln("  -spam           only load SPAM-tagged messages");
 	exit(0);
