@@ -48,7 +48,7 @@ for(var i in data_dir) {
 }
 
 for(var i in system.node_list) {
-	file_list.push( { dir: system.node_list[i].dir, file: "node.cnf", desc: "Node configuration settings (migrated to node.ini" } );
+	file_list.push( { dir: system.node_list[i].dir, file: "node*.cnf", desc: "Node configuration settings (migrated to node.ini" } );
 	file_list.push( { dir: system.node_list[i].dir, file: "dsts.dab", desc: "Daily system statistics (migrated to dsts.ini)" } );
 	file_list.push( { dir: system.node_list[i].dir, file: "csts.dab", desc: "Cumulative system statistics (migrated to csts.tab)" } );
 }
