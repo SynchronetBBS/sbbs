@@ -98,6 +98,9 @@
  *                            Version update to match the message area chooser (no functional update here)
  * 2025-06-18 Eric Oulashin   Version 1.45
  *                            Added sorting with a user config option
+ * 2025-08-26 Eric Oulashin   Version 1.46
+ *                            Replaced arrow keys in the key help line since some terminals
+ *                            can't display them.
  */
 
 // TODO: Failing silently when 1st argument is true
@@ -140,8 +143,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_FILE_AREA_CHOOSER_VERSION = "1.45";
-var DD_FILE_AREA_CHOOSER_VER_DATE = "2025-06-18";
+var DD_FILE_AREA_CHOOSER_VERSION = "1.46";
+var DD_FILE_AREA_CHOOSER_VER_DATE = "2025-08-26";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -311,11 +314,11 @@ function DDFileAreaChooser()
 	                         + +(this.descFieldLen-3) + "s %-7s";
 	// Lightbar mode key help line
 	this.lightbarKeyHelpText = "\x01n" + this.colors.lightbarHelpLineHotkey
-	              + this.colors.lightbarHelpLineBkg + UP_ARROW
+	              + this.colors.lightbarHelpLineBkg + "Up"
 	              + "\x01n" + this.colors.lightbarHelpLineGeneral
 	              + this.colors.lightbarHelpLineBkg + ", "
 	              + "\x01n" + this.colors.lightbarHelpLineHotkey
-	              + this.colors.lightbarHelpLineBkg + DOWN_ARROW
+	              + this.colors.lightbarHelpLineBkg + "Dn"
 	              + "\x01n" + this.colors.lightbarHelpLineGeneral
 	              + this.colors.lightbarHelpLineBkg + ", "
 	              + "\x01n" + this.colors.lightbarHelpLineHotkey
