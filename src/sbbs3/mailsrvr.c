@@ -3335,8 +3335,8 @@ static bool smtp_client_thread(smtp_t* smtp)
 					continue;
 				}
 
-				fclose(msgtxt), msgtxt = NULL;
-				fclose(rcptlst), rcptlst = NULL;
+				FCLOSE_OPEN_FILE(msgtxt);
+				FCLOSE_OPEN_FILE(rcptlst);
 
 				/* External Mail Processing here */
 				mailproc = NULL;
@@ -5000,9 +5000,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 				sockprintf(socket, client.protocol, session, badseq_rsp);
 				continue;
 			}
-			if (msgtxt != NULL) {
-				fclose(msgtxt), msgtxt = NULL;
-			}
+			FCLOSE_OPEN_FILE(msgtxt);
 			remove(msgtxt_fname);
 			if ((msgtxt = fopen(msgtxt_fname, "w+b")) == NULL) {
 				errprintf(LOG_ERR, WHERE, "%04d %-5s %s !ERROR %d opening %s"
@@ -5089,15 +5087,12 @@ static bool smtp_client_thread(smtp_t* smtp)
 	/* Free up resources here */
 	smb_freemsgmem(&msg);
 
-	if (msgtxt != NULL)
-		fclose(msgtxt);
+	FCLOSE_OPEN_FILE(msgtxt);
 	if (!(startup->options & MAIL_OPT_DEBUG_RX_BODY))
 		remove(msgtxt_fname);
-	if (rcptlst != NULL)
-		fclose(rcptlst);
+	FCLOSE_OPEN_FILE(rcptlst);
 	remove(rcptlst_fname);
-	if (spy != NULL)
-		fclose(spy);
+	FCLOSE_OPEN_FILE(spy);
 	js_cleanup(js_runtime, js_cx, &js_glob);
 
 	listRemoveTaggedNode(&current_logins, socket, /* free_data */ TRUE);
