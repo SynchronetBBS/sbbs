@@ -4059,7 +4059,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 							putsmsg(&scfg, usernum, str);
 						}
 					}
-					if (startup->archive_ars[0] != 0 && usernum != 0 && relay_user.number != usernum) {
+					if (!(msg.hdr.attr & MSG_SPAM) && startup->archive_ars[0] != 0 && usernum != 0 && relay_user.number != usernum) {
 						user_t user = { .number = usernum };
 						if (getuserdat(&scfg, &user) == USER_SUCCESS) {
 							if (chk_ars(&scfg, startup->archive_ars, &user, &client))
