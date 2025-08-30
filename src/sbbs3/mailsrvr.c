@@ -2867,6 +2867,21 @@ end:
 	return usernum;
 }
 
+// Save a verbatim-copy of the SMTP-received mail message to a file in .eml format
+bool archive_mail(const char* fname, int usernumber, const char* subdir, const char* session_id)
+{
+	char tmp[128];
+	char path[MAX_PATH + 1];
+
+	snprintf(path, sizeof path, "%suser/%04u/%s/", scfg.data_dir, usernumber, subdir);
+	mkpath(path);
+	SAFECAT(path, gmtime_to_isoDateTimeStr(time(NULL), tmp, sizeof tmp));
+	SAFECAT(path, "-");
+	SAFECAT(path, session_id);
+	SAFECAT(path, ".eml");
+	return CopyFile(fname, path, /* fail-if-exists: */true);
+}
+
 #define WITH_ESMTP  (1 << 0)
 #define WITH_AUTH   (1 << 1)
 #define WITH_TLS    (1 << 2)
@@ -4044,6 +4059,13 @@ static bool smtp_client_thread(smtp_t* smtp)
 							putsmsg(&scfg, usernum, str);
 						}
 					}
+					if (startup->archive_ars[0] != 0 && usernum != 0 && relay_user.number != usernum) {
+						user_t user = { .number = usernum };
+						if (getuserdat(&scfg, &user) == USER_SUCCESS) {
+							if (chk_ars(&scfg, startup->archive_ars, &user, &client))
+								archive_mail(msgtxt_fname, usernum, "smtp_in", session_id);
+						}
+					}
 				}
 				iniFreeStringList(sec_list);
 				if (rcpt_count < 1) {
@@ -4060,6 +4082,9 @@ static bool smtp_client_thread(smtp_t* smtp)
 				smb_close_da(&smb);
 #endif
 				smb_close(&smb);
+				if (startup->archive_ars[0] != 0 && relay_user.number != 0
+					&& chk_ars(&scfg, startup->archive_ars, &relay_user, &client))
+					archive_mail(msgtxt_fname, relay_user.number, "smtp_relay", session_id);
 				pthread_mutex_unlock(&savemsg_mutex);
 				continue;
 			}

@@ -1674,6 +1674,7 @@ static void mailsrvr_cfg(void)
 			p = "Direct";
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "SendMail Support...", startup.options & MAIL_OPT_NO_SENDMAIL ? strDisabled : p);
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Login Requirements", startup.login_ars);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Archive Requirements", startup.archive_ars);
 		strcpy(opt[i++], "JavaScript Settings...");
 		strcpy(opt[i++], "Failed Login Attempts...");
 		opt[i][0] = '\0';
@@ -1844,9 +1845,12 @@ static void mailsrvr_cfg(void)
 				getar("Mail Server Login", startup.login_ars);
 				break;
 			case 30:
-				js_startup_cfg(&startup.js);
+				getar("Mail Archive", startup.archive_ars);
 				break;
 			case 31:
+				js_startup_cfg(&startup.js);
+				break;
+			case 32:
 				login_attempt_cfg(&startup.login_attempt);
 				break;
 			default:

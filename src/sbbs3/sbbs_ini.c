@@ -64,6 +64,7 @@ static const char* strLoginAttemptTempBanDuration = "LoginAttemptTempBanDuration
 static const char* strLoginAttemptFilterThreshold = "LoginAttemptFilterThreshold";
 static const char* strLoginAttemptFilterDuration = "LoginAttemptFilterDuration";
 static const char* strLoginRequirements = "LoginRequirements";
+static const char* strArchiveRequirements = "ArchiveRequirements";
 static const char* strJavaScriptMaxBytes       = "JavaScriptMaxBytes";
 static const char* strJavaScriptTimeLimit      = "JavaScriptTimeLimit";
 static const char* strJavaScriptGcInterval     = "JavaScriptGcInterval";
@@ -658,6 +659,8 @@ void sbbs_read_ini(
 
 		SAFECOPY(mail->login_ars
 		         , iniGetString(list, section, strLoginRequirements, global->login_ars, value));
+		SAFECOPY(mail->archive_ars
+		         , iniGetString(list, section, strArchiveRequirements, nulstr, value));
 
 		SAFECOPY(mail->relay_server
 		         , iniGetString(list, section, "RelayServer", nulstr, value));
@@ -1209,6 +1212,8 @@ bool sbbs_write_ini(
 			if (stricmp(mail->login_ars, global->login_ars) == 0)
 				iniRemoveKey(lp, section, strLoginRequirements);
 			else if (!iniSetString(lp, section, strLoginRequirements, mail->login_ars, &style))
+				break;
+			if (!iniSetString(lp, section, strArchiveRequirements, mail->archive_ars, &style))
 				break;
 
 			if (!iniSetString(lp, section, "RelayServer", mail->relay_server, &style))

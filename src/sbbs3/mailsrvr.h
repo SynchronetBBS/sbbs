@@ -70,6 +70,7 @@ typedef struct {
 	/* Misc */
 	int tls_error_level;            /* Cap the severity of TLS error log messages */
 	bool notify_offline_users;
+	char archive_ars[INI_MAX_VALUE_LEN];
 
 	/* Relay Server */
 	char relay_server[128];
