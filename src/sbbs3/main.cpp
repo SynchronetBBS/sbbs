@@ -2865,6 +2865,9 @@ void event_thread(void* arg)
 	sbbs_t*     sbbs = (sbbs_t*) arg;
 	char event_code[LEN_CODE + 1];
 
+	if (terminate_server)
+		return;
+
 	sbbs->lprintf(LOG_INFO, "BBS Events thread started");
 
 	sbbs_srand();   /* Seed random number generator */
