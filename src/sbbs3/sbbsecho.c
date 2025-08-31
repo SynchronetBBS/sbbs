@@ -110,7 +110,7 @@ str_list_t     locked_bso_nodes;
 
 int lprintf(int level, char *fmt, ...)
 #if defined(__GNUC__)   // Catch printf-format errors
-__attribute__ ((format (printf, 2, 3)));
+__attribute__ ((format (printf, 2, 3)))
 #endif
 ;
 int mv(const char *insrc, const char *indest, bool copy);

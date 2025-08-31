@@ -883,22 +883,22 @@ public:
 	int		rputs(int mode, const char* str) { return rputs(str, mode); }
 	int		bprintf(const char *fmt, ...)			/* BBS printf function */
 #if defined(__GNUC__)   // Catch printf-format errors
-    __attribute__ ((format (printf, 2, 3)));		// 1 is 'this'
+    __attribute__ ((format (printf, 2, 3)))			// 1 is 'this'
 #endif
 	;
 	int		bprintf(int mode, const char *fmt, ...)
 #if defined(__GNUC__)   // Catch printf-format errors
-    __attribute__ ((format (printf, 3, 4)));		// 1 is 'this', 2 is 'mode'
+    __attribute__ ((format (printf, 3, 4)))			// 1 is 'this', 2 is 'mode'
 #endif
 	;
 	int		rprintf(const char *fmt, ...)			/* BBS raw printf function */
 #if defined(__GNUC__)   // Catch printf-format errors
-    __attribute__ ((format (printf, 2, 3)));		// 1 is 'this'
+    __attribute__ ((format (printf, 2, 3)))			// 1 is 'this'
 #endif
 	;
 	int		term_printf(const char *fmt, ...)			/* BBS direct-comm printf function */
 #if defined(__GNUC__)   // Catch printf-format errors
-    __attribute__ ((format (printf, 2, 3)));		// 1 is 'this'
+    __attribute__ ((format (printf, 2, 3)))			// 1 is 'this'
 #endif
 	;
 	int		outchar(char ch);				/* Output a char - check echo and emu.  */
@@ -1065,12 +1065,12 @@ public:
 	int		lputs(int level, const char* str);
 	int		lprintf(int level, const char *fmt, ...)
 #if defined(__GNUC__)   // Catch printf-format errors
-    __attribute__ ((format (printf, 3, 4)));		// 1 is 'this'
+    __attribute__ ((format (printf, 3, 4)))			// 1 is 'this'
 #endif
 	;
 	int		errprintf(int level, int line, const char* function, const char* file, const char *fmt, ...)
 #if defined(__GNUC__)   // Catch printf-format errors
-    __attribute__ ((format (printf, 6, 7)));		// 1 is 'this'
+    __attribute__ ((format (printf, 6, 7)))			// 1 is 'this'
 #endif
 	;
 	void	printstatslog(uint node);
@@ -1569,7 +1569,7 @@ extern "C" {
 	int 	lputs(int level, const char *);			/* log output */
 	int 	lprintf(int level, const char *fmt, ...)	/* log output */
 #if defined(__GNUC__)   // Catch printf-format errors
-    __attribute__ ((format (printf, 2, 3)));
+    __attribute__ ((format (printf, 2, 3)))
 #endif
 	;
 	void	call_socket_open_callback(bool open);

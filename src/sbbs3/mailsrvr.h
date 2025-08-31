@@ -222,7 +222,7 @@ int mail_close_socket(SOCKET *sock, int *sess);
 
 int sockprintf(SOCKET sock, const char* prot, int sess, char *fmt, ...)
 #if defined(__GNUC__)   // Catch printf-format errors
-__attribute__ ((format (printf, 4, 5)));
+__attribute__ ((format (printf, 4, 5)))
 #endif
 ;
 
