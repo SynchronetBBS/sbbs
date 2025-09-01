@@ -2874,7 +2874,8 @@ bool archive_mail(const char* fname, int usernumber, const char* subdir, const c
 	char path[MAX_PATH + 1];
 
 	snprintf(path, sizeof path, "%suser/%04u/%s/", scfg.data_dir, usernumber, subdir);
-	mkpath(path);
+	if (!mkpath(path))
+		return false;
 	SAFECAT(path, gmtime_to_isoDateTimeStr(time(NULL), tmp, sizeof tmp));
 	SAFECAT(path, "-");
 	SAFECAT(path, session_id);
