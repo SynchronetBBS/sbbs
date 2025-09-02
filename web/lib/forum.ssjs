@@ -104,6 +104,10 @@ var printBoards = function() {
 }
 
 var printThreads = function(sub) {
+	if(sub != 'mail' && msg_area.sub[sub] == undefined) {
+		print("Invalid message base code.");
+		return false;
+	}
 	try {
 		msgBase = new MsgBase(sub);
 		msgBase.open();
@@ -285,6 +289,10 @@ var formatBody = function(body, ANSI_formatted, hide_quotes)
 }
 
 var printThread = function(sub, t) {
+	if(sub != 'mail' && msg_area.sub[sub] == undefined) {
+		print("Invalid message base code.");
+		return false;
+	}
 	try {
 		var msgBase = new MsgBase(sub);
 		msgBase.open();
@@ -365,6 +373,10 @@ var printThread = function(sub, t) {
 }
 
 var printMessage = function(sub, number) {
+	if(sub != 'mail' && msg_area.sub[sub] == undefined) {
+		print("Invalid message base code.");
+		return false;
+	}
 	try {
 		var msgBase = new MsgBase(sub);
 		msgBase.open();
@@ -392,6 +404,10 @@ var printMessage = function(sub, number) {
 }
 
 var postMessage = function(sub, irt, to, from, subject, body) {
+	if(sub != 'mail' && msg_area.sub[sub] == undefined) {
+		print("Invalid message base code.");
+		return false;
+	}
 	for(var a = 0; a < arguments.length; a++) {
 		if(a == "irt")
 			continue;
@@ -433,6 +449,10 @@ var postMessage = function(sub, irt, to, from, subject, body) {
 }
 
 var deleteMessage = function(sub, message) {
+	if(sub != 'mail' && msg_area.sub[sub] == undefined) {
+		print("Invalid message base code.");
+		return false;
+	}
 	try {
 		var msgBase = new MsgBase(sub);
 		msgBase.open();

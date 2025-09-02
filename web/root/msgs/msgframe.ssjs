@@ -14,7 +14,7 @@ if(path==undefined) {
 var sub=path[1];
 var id=parseInt(path[2]);
 
-if(sub==undefined) {
+if(sub==undefined || (sub != 'mail' && msg_area.sub[sub] == undefined)) {
     error("Invalid path: " + http_request.path_info);
 }
 
