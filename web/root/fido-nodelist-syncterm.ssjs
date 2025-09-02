@@ -1,3 +1,5 @@
+if(!http_request.post_data)
+	exit(0);
 var nodelist = new File(system.temp_dir + "nodelist.txt");
 if(!nodelist.open("w")) {
 	write("Error " + nodelist.error + " opening " + nodelist.name);
