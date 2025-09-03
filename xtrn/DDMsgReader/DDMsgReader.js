@@ -10470,57 +10470,39 @@ function DigDistMsgReader_GetMsgHdrByMsgNum(pMsgNum, pExpandFields)
 	if (this.msgSearchHdrs.hasOwnProperty(this.subBoardCode) &&
 	    this.msgSearchHdrs[this.subBoardCode].indexed.length > 0)
 	{
-		if (user.is_sysop) console.print("\x01nHere 1\r\n"); // Temporary
 		if (this.msgNumToIdxMap.hasOwnProperty(pMsgNum))
 		{
-			if (user.is_sysop) console.print("\x01nHere 2\r\n"); // Temporary
 			var msgIdx = this.msgNumToIdxMap[pMsgNum];
 			if (this.hdrsForCurrentSubBoard.length.length > 0 && msgIdx >= 0 && msgIdx < this.hdrsForCurrentSubBoard.length)
-			{
 				msgHdr = this.hdrsForCurrentSubBoard[msgIdx];
-				if (user.is_sysop) console.print("\x01nHere 3\r\n"); // Temporary
-			}
 			else if (this.msgSearchHdrs.length > 0 && msgIdx >= 0 && msgIdx < msgSearchHdrs.length)
-			{
 				msgHdr = this.msgSearchHdrs[msgIdx];
-				if (user.is_sysop) console.print("\x01nHere 4\r\n"); // Temporary
-			}
 		}
 		else
 		{
-			if (user.is_sysop) console.print("\x01nHere 5\r\n"); // Temporary
 			for (var i = 0; i < this.msgSearchHdrs[this.subBoardCode].indexed.length && msgHdr == null; ++i)
 			{
 				if (this.msgSearchHdrs[this.subBoardCode].indexed[i].number == pMsgNum)
-				{
 					msgHdr = this.msgSearchHdrs[this.subBoardCode].indexed[i];
-					if (user.is_sysop) console.print("\x01nHere 6\r\n"); // Temporary
-				}
 			}
 		}
 	}
 	if (msgHdr == null && this.hdrsForCurrentSubBoard.length > 0)
 	{
-		if (user.is_sysop) console.print("\x01nHere 7\r\n"); // Temporary
 		for (var i = 0; i < this.hdrsForCurrentSubBoard.length.length && msgHdr == null; ++i)
 		{
 			if (this.hdrsForCurrentSubBoard[i].number == pMsgNum)
-			{
 				msgHdr = this.hdrsForCurrentSubBoard[i];
-				if (user.is_sysop) console.print("\x01nHere 8\r\n"); // Temporary
-			}
 		}
 	}
 	if (msgHdr == null)
 	{
-		if (user.is_sysop) printf("\x01nHere 9: %s\r\n", this.subBoardCode); // Temporary
 		var msgbase = new MsgBase(this.subBoardCode);
 		if (msgbase.open())
 		{
 			var expandFields = (typeof(pExpandFields) == "boolean" ? pExpandFields : false);
 			msgHdr = msgbase.get_msg_header(false, pMsgNum, expandFields);
 			msgbase.close();
-			if (user.is_sysop) console.print("\x01nHere 10: " + msgHdr + "\r\n"); // Temporary
 		}
 	}
 	return msgHdr;
