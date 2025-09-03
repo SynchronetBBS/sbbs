@@ -1,13 +1,13 @@
                       Digital Distortion Message Reader
-                                 Version 1.97c
-                           Release date: 2025-07-23
+                                 Version 1.97d
+                           Release date: 2025-09-02
 
                                      by
 
                                 Eric Oulashin
                           Sysop of Digital Distortion
                   BBS internet address: digitaldistortionbbs.com
-                     Alternate address: digdist.bbsindex.com
+                     Alternate address: digdist.synchro.net
                         Email: eric.oulashin@gmail.com
 
 
