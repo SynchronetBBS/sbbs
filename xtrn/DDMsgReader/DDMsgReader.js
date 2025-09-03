@@ -282,6 +282,12 @@
  * 2025-07-23 Eric Oulashin     Version 1.97c
  *                              Bug fix: Get the correct message when choosing a personal
  *                              email when listing in reverse
+ * 2025-08-27 Eric Oulashin     Version 1.97d Beta
+ *                              Replaced arrow keys in the key help lines since
+ *                              some terminals can't display them.
+ * 2025-09-02 Eric Oulashin     Version 1.97d
+ *                              Fix for "go to message" in lightbar mode (correctly
+ *                              finding the message)
  */
 
 "use strict";
@@ -389,8 +395,8 @@ var hexdump = load('hexdump_lib.js');
 
 
 // Reader version information
-var READER_VERSION = "1.97c";
-var READER_DATE = "2025-07-23";
+var READER_VERSION = "1.97d";
+var READER_DATE = "2025-09-02";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -1694,51 +1700,6 @@ function DigDistMsgReader(pSubBoardCode, pScriptArgs)
 	// Sub-board information header (printf string)
 	this.subBoardListHdrPrintfStr = this.colors.areaChooserMsgAreaHeaderColor + " %5s %-"
 	                              + +(this.subBoardNameLen-3) + "s %-7s %-19s";
-	// Lightbar area chooser help line text
-	// For PageUp, normally I'd think KEY_PAGEUP should work, but that triggers sending a telegram instead.  \x1b[V seems to work though.
-	this.lightbarAreaChooserHelpLine = "\x01n"
-	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "@CLEAR_HOT@@`" + UP_ARROW + "`" + KEY_UP + "@"
-	                          + this.colors.lightbarAreaChooserHelpLineGeneralColor + ", "
-	                          //+ this.colors.lightbarAreaChooserHelpLineHotkeyColor + "@`" + DOWN_ARROW + "`" + KEY_DOWN + "@"
-							  + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "@`" + DOWN_ARROW + "`\\n@"
-	                          + this.colors.lightbarAreaChooserHelpLineGeneralColor + ", "
-	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "@`HOME`" + KEY_HOME + "@"
-	                          + this.colors.lightbarAreaChooserHelpLineGeneralColor + ", "
-	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "@`END`" + KEY_END + "@"
-	                          + this.colors.lightbarAreaChooserHelpLineGeneralColor + ", "
-	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "#"
-	                          + this.colors.lightbarAreaChooserHelpLineGeneralColor + ", "
-	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "@`PgUp`" + "\x1b[V" + "@"
-	                          + this.colors.lightbarAreaChooserHelpLineGeneralColor + "/"
-	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "@`Dn`" + KEY_PAGEDN + "@"
-	                          + this.colors.lightbarAreaChooserHelpLineGeneralColor + ", "
-	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "@`F`F@"
-	                          + this.colors.lightbarAreaChooserHelpLineParenColor + ")"
-	                          + this.colors.lightbarAreaChooserHelpLineGeneralColor + "irst pg, "
-	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "@`L`L@"
-	                          + this.colors.lightbarAreaChooserHelpLineParenColor + ")"
-	                          + this.colors.lightbarAreaChooserHelpLineGeneralColor + "ast pg, "
-	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "@`CTRL-F`" + CTRL_F + "@"
-	                          + this.colors.lightbarAreaChooserHelpLineGeneralColor + ", "
-	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "@`/`/@"
-	                          + this.colors.lightbarAreaChooserHelpLineGeneralColor + ", "
-	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "@`N`N@"
-	                          + this.colors.lightbarAreaChooserHelpLineGeneralColor + ", "
-	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "@`Q`Q@"
-	                          + this.colors.lightbarAreaChooserHelpLineParenColor + ")"
-	                          + this.colors.lightbarAreaChooserHelpLineGeneralColor + "uit, "
-	                          + this.colors.lightbarAreaChooserHelpLineHotkeyColor + "@`?`?@";
-	var lbAreaChooserHelpLineLen = 72;
-	// Pad the lightbar key help text on either side to center it on the screen
-	// (but leave off the last character to avoid screen drawing issues)
-	var padLen = console.screen_columns - lbAreaChooserHelpLineLen - 1;
-	var leftPadLen = Math.floor(padLen/2);
-	var rightPadLen = padLen - leftPadLen;
-	this.lightbarAreaChooserHelpLine = this.colors.lightbarAreaChooserHelpLineGeneralColor
-	                                 + format("%*s", leftPadLen, "")
-	                                 + this.lightbarAreaChooserHelpLine
-	                                 + this.colors.lightbarAreaChooserHelpLineGeneralColor
-	                                 + format("%" + rightPadLen + "s", "") + "\x01n";
 
 	// this.subBoardListPrintfInfo will be an array of printf strings
 	// for the sub-boards in the message groups.  The index is the
@@ -4371,7 +4332,7 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 				// Make sure the message number is for a valid message (i.e., it
 				// could be an invalid message number if there is a search, where
 				// not all message numbers are consecutive).
-				if (this.GetMsgHdrByMsgNum(userMsgNum) != null)
+				if (this.GetMsgHdrByIdx(userMsgNum) != null)
 				{
 					// If the message is on the current page, then just go to and
 					// highlight it.  Otherwise, set the user's selected message on the
@@ -8984,14 +8945,12 @@ function DigDistMsgReader_WriteMsgListScreenTopHeader()
 		}
 
 		// Display the message group name
-		console.print(this.colors["msgListHeaderMsgGroupTextColor"] + "Msg group: " +
-		this.colors["msgListHeaderMsgGroupNameColor"] + msgGroupName);
+		console.print(this.colors["msgListHeaderMsgGroupTextColor"] + "Msg group: " + this.colors["msgListHeaderMsgGroupNameColor"] + msgGroupName);
 		console.cleartoeol(); // Fill to the end of the line with the current colors
 		// Display the sub-board name on the next line
 		++curpos.y;
 		console.gotoxy(curpos);
-		console.print(this.colors.msgListHeaderSubBoardTextColor + "Sub-board: " +
-		this.colors["msgListHeaderMsgSubBoardName"] + subBoardName);
+		console.print(this.colors.msgListHeaderSubBoardTextColor + "Sub-board: " + this.colors["msgListHeaderMsgSubBoardName"] + subBoardName);
 		console.cleartoeol(); // Fill to the end of the line with the current colors
 		++curpos.y;
 		console.gotoxy(curpos);
@@ -9451,11 +9410,10 @@ function DigDistMsgReader_SetMsgListPauseTextAndLightbarHelpLine()
 
 	// Set the lightbar help text for message listing.  The @-codes are for mouse click tracking.
 	// For PageUp, normally I'd think KEY_PAGEUP should work, but that triggers sending a telegram instead.  \x1b[V seems to work though.
-	this.msgListLightbarModeHelpLine = this.colors.lightbarMsgListHelpLineHotkeyColor + "@CLEAR_HOT@@`" + UP_ARROW + "`" + KEY_UP + "@"
-	                           + this.colors.lightbarMsgListHelpLineGeneralColor + ", "
-							   //+ this.colors.lightbarMsgListHelpLineHotkeyColor + "@`" + DOWN_ARROW + "`" + KEY_DOWN + "@"
-							   + this.colors.lightbarMsgListHelpLineHotkeyColor + "@`" + DOWN_ARROW + "`\\n@"
-	                           + this.colors.lightbarMsgListHelpLineGeneralColor + ", "
+	this.msgListLightbarModeHelpLine = this.colors.lightbarMsgListHelpLineHotkeyColor + "@CLEAR_HOT@@`Up`" + KEY_UP + "@"
+	                           + this.colors.lightbarMsgListHelpLineGeneralColor + "/"
+							   + this.colors.lightbarMsgListHelpLineHotkeyColor + "@`Dn`\\n@"
+	                           + this.colors.lightbarMsgListHelpLineGeneralColor + "/"
 							   + this.colors.lightbarMsgListHelpLineHotkeyColor + "@`PgUp`" + "\x1b[V" + "@"
 	                           + this.colors.lightbarMsgListHelpLineGeneralColor + "/"
 							   + this.colors.lightbarMsgListHelpLineHotkeyColor + "@`Dn`" + KEY_PAGEDN + "@"
@@ -9528,28 +9486,34 @@ function DigDistMsgReader_SetMsgListPauseTextAndLightbarHelpLine()
 function DigDistMsgReader_SetEnhancedReaderHelpLine()
 {
 	// For PageUp, normally I'd think KEY_PAGEUP should work, but that triggers sending a telegram instead.  \x1b[V seems to work though.
-	this.enhReadHelpLine = this.colors.enhReaderHelpLineHotkeyColor + "@CLEAR_HOT@@`" + UP_ARROW + "`" + KEY_UP + "@"
-						 + this.colors.enhReaderHelpLineGeneralColor + ", "
-						 //+ this.colors.enhReaderHelpLineHotkeyColor + "@`" + DOWN_ARROW + "`" + KEY_DOWN + "@"
-						 + this.colors.enhReaderHelpLineHotkeyColor + "@`" + DOWN_ARROW + "`\\n@"
-						 + this.colors.enhReaderHelpLineGeneralColor + ", "
-						 + this.colors.enhReaderHelpLineHotkeyColor + "@`" + LEFT_ARROW + "`" + KEY_LEFT + "@"
-						 + this.colors.enhReaderHelpLineGeneralColor +", "
-						 + this.colors.enhReaderHelpLineHotkeyColor + "@`" + RIGHT_ARROW + "`" + KEY_RIGHT + "@"
-						 + this.colors.enhReaderHelpLineGeneralColor + ", "
+	this.enhReadHelpLine = this.colors.enhReaderHelpLineHotkeyColor + "@CLEAR_HOT@@`Up`" + KEY_UP + "@"
+						 + this.colors.enhReaderHelpLineGeneralColor + "/"
+						 + this.colors.enhReaderHelpLineHotkeyColor + "@`Dn`\\n@"
+						 + this.colors.enhReaderHelpLineGeneralColor + "/"
+						 + this.colors.enhReaderHelpLineHotkeyColor + "@`<-`" + KEY_LEFT + "@"
+						 + this.colors.enhReaderHelpLineGeneralColor +"/"
+						 + this.colors.enhReaderHelpLineHotkeyColor + "@`->`" + KEY_RIGHT + "@"
+						 + this.colors.enhReaderHelpLineGeneralColor + "/"
 						 + this.colors.enhReaderHelpLineHotkeyColor + "@`PgUp`" + "\x1b[V" + "@"
 						 + this.colors.enhReaderHelpLineGeneralColor + "/"
 						 + this.colors.enhReaderHelpLineHotkeyColor + "@`Dn`" + KEY_PAGEDN + "@"
-						 + this.colors.enhReaderHelpLineGeneralColor + ", "
+						 + this.colors.enhReaderHelpLineGeneralColor + "/"
 						 + this.colors.enhReaderHelpLineHotkeyColor + "@`HOME`" + KEY_HOME + "@"
 						 + this.colors.enhReaderHelpLineGeneralColor + ", "
 						 + this.colors.enhReaderHelpLineHotkeyColor + "@`END`" + KEY_END + "@"
-						 + this.colors.enhReaderHelpLineGeneralColor + ", "
+						 + this.colors.enhReaderHelpLineGeneralColor + "/"
 						 + this.colors.enhReaderHelpLineHotkeyColor;
+	var screenTextLen = 30;
 	if (this.CanDelete() || this.CanDeleteLastMsg())
+	{
 		this.enhReadHelpLine += "@`DEL`" + KEY_DEL + "@" + this.colors.enhReaderHelpLineGeneralColor + ", " + this.colors.enhReaderHelpLineHotkeyColor;
+		screenTextLen += 5;
+	}
 	if (this.CanEdit() && (console.screen_columns > 87))
+	{
 		this.enhReadHelpLine += "@`E`E@" + this.colors.enhReaderHelpLineParenColor + ")" + this.colors.enhReaderHelpLineGeneralColor + "dit, " + this.colors.enhReaderHelpLineHotkeyColor;
+		screenTextLen += 7;
+	}
 	this.enhReadHelpLine += "@`F`F@" + this.colors.enhReaderHelpLineParenColor + ")"
 						 + this.colors.enhReaderHelpLineGeneralColor + "irst, "
 						 + this.colors.enhReaderHelpLineHotkeyColor + "@`L`L@" 
@@ -9565,55 +9529,54 @@ function DigDistMsgReader_SetEnhancedReaderHelpLine()
 						 + this.colors.enhReaderHelpLineParenColor + ")"
 						 + this.colors.enhReaderHelpLineGeneralColor + "uit, "
 						 + this.colors.enhReaderHelpLineHotkeyColor + "@`?`?@";
+	screenTextLen += 42;
 	// Center the help text based on the console width
-	//var numHotkeyChars = 92;
-	var numHotkeyChars = 89;
-	//var numCharsRemaining = console.screen_columns - (console.strlen(this.enhReadHelpLine) - numHotkeyChars) - 1;
-	var helpLineScreenLen = (console.strlen(this.enhReadHelpLine) - numHotkeyChars);
-	var numCharsRemaining = console.screen_columns - helpLineScreenLen - 1;
-	var frontPaddingLen = Math.floor(numCharsRemaining/2);
-	var padding = format("%*s", frontPaddingLen, "");
-	this.enhReadHelpLine = padding + this.enhReadHelpLine;
-	this.enhReadHelpLine = "\x01n" + this.colors.enhReaderHelpLineBkgColor + this.enhReadHelpLine;
-	if (console.screen_columns > 80)
+	var numCharsRemaining = console.screen_columns - screenTextLen - 1;
+	if (numCharsRemaining > 0)
 	{
-		//helpLineScreenLen += frontPaddingLen;
-		//numCharsRemaining = console.screen_columns - helpLineScreenLen - 1;
-		helpLineScreenLen = (console.strlen(this.enhReadHelpLine) - numHotkeyChars);
-		//numCharsRemaining = console.screen_columns - helpLineScreenLen - 2;
-		// Adding 3 as a correction factor for wide terminals (this is a kludge)
-		numCharsRemaining = console.screen_columns - helpLineScreenLen + 3;
-		if (numCharsRemaining > 0)
+		var frontPaddingLen = Math.floor(numCharsRemaining/2);
+		var padding = format("%*s", frontPaddingLen, "");
+		this.enhReadHelpLine = padding + this.enhReadHelpLine;
+		var remainingPadding = numCharsRemaining - frontPaddingLen;
+		if (remainingPadding > 0)
 		{
-			//this.enhReadHelpLine += format("%" + numCharsRemaining + "s", "");
-			this.enhReadHelpLine += format("%*s", numCharsRemaining, "");
+			padding = format("%*s", remainingPadding, "")
+			this.enhReadHelpLine += padding;
 		}
 	}
+	this.enhReadHelpLine = "\x01n" + this.colors.enhReaderHelpLineBkgColor + this.enhReadHelpLine;
 
 	// Create a version without the change area option
 	// For PageUp, normally I'd think KEY_PAGEUP should work, but that triggers sending a telegram instead.  \x1b[V seems to work though.
-	this.enhReadHelpLineWithoutChgArea = this.colors.enhReaderHelpLineHotkeyColor + "@CLEAR_HOT@  @`" + UP_ARROW + "`" + KEY_UP + "@"
-									   + this.colors.enhReaderHelpLineGeneralColor + ", "
+	this.enhReadHelpLineWithoutChgArea = this.colors.enhReaderHelpLineHotkeyColor + "@CLEAR_HOT@@`Up`" + KEY_UP + "@"
+									   + this.colors.enhReaderHelpLineGeneralColor + "/"
 									   //+ this.colors.enhReaderHelpLineHotkeyColor + "@`" + DOWN_ARROW + "`" + KEY_DOWN + "@"
-									   + this.colors.enhReaderHelpLineHotkeyColor + "@`" + DOWN_ARROW + "`\\n@"
-									   + this.colors.enhReaderHelpLineGeneralColor + ", "
-									   + this.colors.enhReaderHelpLineHotkeyColor + "@`" + LEFT_ARROW + "`" + KEY_LEFT + "@"
-									   + this.colors.enhReaderHelpLineGeneralColor + ", "
-									   + this.colors.enhReaderHelpLineHotkeyColor + "@`" + RIGHT_ARROW + "`" + KEY_RIGHT + "@"
-									   + this.colors.enhReaderHelpLineGeneralColor + ", "
+									   + this.colors.enhReaderHelpLineHotkeyColor + "@`Dn`\\n@"
+									   + this.colors.enhReaderHelpLineGeneralColor + "/"
+									   + this.colors.enhReaderHelpLineHotkeyColor + "@`<-`" + KEY_LEFT + "@"
+									   + this.colors.enhReaderHelpLineGeneralColor + "/"
+									   + this.colors.enhReaderHelpLineHotkeyColor + "@`->`" + KEY_RIGHT + "@"
+									   + this.colors.enhReaderHelpLineGeneralColor + "/"
 									   + this.colors.enhReaderHelpLineHotkeyColor + "@`PgUp`" + "\x1b[V" + "@"
 									   + this.colors.enhReaderHelpLineGeneralColor + "/"
 									   + this.colors.enhReaderHelpLineHotkeyColor + "@`Dn`" + KEY_PAGEDN + "@"
-									   + this.colors.enhReaderHelpLineGeneralColor + ", "
+									   + this.colors.enhReaderHelpLineGeneralColor + "/"
 									   + this.colors.enhReaderHelpLineHotkeyColor + "@`HOME`" + KEY_HOME + "@"
-									   + this.colors.enhReaderHelpLineGeneralColor + ", "
+									   + this.colors.enhReaderHelpLineGeneralColor + "/"
 									   + this.colors.enhReaderHelpLineHotkeyColor + "@`END`" + KEY_END + "@"
 									   + this.colors.enhReaderHelpLineGeneralColor + ", "
 									   + this.colors.enhReaderHelpLineHotkeyColor;
+	screenTextLen = 30;
 	if (this.CanDelete() || this.CanDeleteLastMsg())
+	{
 		this.enhReadHelpLineWithoutChgArea += "@`DEL`" + KEY_DEL + "@" + this.colors.enhReaderHelpLineGeneralColor + ", " + this.colors.enhReaderHelpLineHotkeyColor;
+		screenTextLen += 5;
+	}
 	if (this.CanEdit())
+	{
 		this.enhReadHelpLineWithoutChgArea += "@`E`E@" + this.colors.enhReaderHelpLineParenColor + ")" + this.colors.enhReaderHelpLineGeneralColor + "dit, " + this.colors.enhReaderHelpLineHotkeyColor;
+		screenTextLen += 7;
+	}
 	this.enhReadHelpLineWithoutChgArea += "@`F`F@" + this.colors.enhReaderHelpLineParenColor + ")"
 									   + this.colors.enhReaderHelpLineGeneralColor + "irst, "
 									   + this.colors.enhReaderHelpLineHotkeyColor + "@`L`L@"
@@ -9625,32 +9588,22 @@ function DigDistMsgReader_SetEnhancedReaderHelpLine()
 									   + this.colors.enhReaderHelpLineHotkeyColor + "@`Q`Q@"
 									   + this.colors.enhReaderHelpLineParenColor + ")"
 									   + this.colors.enhReaderHelpLineGeneralColor + "uit, "
-									   + this.colors.enhReaderHelpLineHotkeyColor + "@`?`?@  ";
-
-	// Center the help text based on the console width
-	numHotkeyChars = 84;
-	//var numCharsRemaining = console.screen_columns - (console.strlen(this.enhReadHelpLineWithoutChgArea) - numHotkeyChars) - 1;
-	helpLineScreenLen = (console.strlen(this.enhReadHelpLineWithoutChgArea) - numHotkeyChars);
-	numCharsRemaining = console.screen_columns - helpLineScreenLen - 1;
+									   + this.colors.enhReaderHelpLineHotkeyColor + "@`?`?@";
+	screenTextLen += 31;
+	numCharsRemaining = console.screen_columns - screenTextLen - 1;
 	if (numCharsRemaining > 0)
 	{
 		frontPaddingLen = Math.floor(numCharsRemaining/2);
-		//padding = format("%" + frontPaddingLen + "s", "");
 		padding = format("%*s", frontPaddingLen, "");
 		this.enhReadHelpLineWithoutChgArea = padding + this.enhReadHelpLineWithoutChgArea;
-	}
-	this.enhReadHelpLineWithoutChgArea = "\x01n" + this.colors.enhReaderHelpLineBkgColor + this.enhReadHelpLineWithoutChgArea;
-	if (console.screen_columns > 80)
-	{
-		helpLineScreenLen = (console.strlen(this.enhReadHelpLineWithoutChgArea) - numHotkeyChars);
-		// Adding 3 as a correction factor for wide terminals (this is a kludge)
-		numCharsRemaining = console.screen_columns - helpLineScreenLen + 3;
-		if (numCharsRemaining > 0)
+		var remainingPadding = numCharsRemaining - frontPaddingLen;
+		if (remainingPadding > 0)
 		{
-			//this.enhReadHelpLineWithoutChgArea += format("%" + numCharsRemaining + "s", "");
-			this.enhReadHelpLineWithoutChgArea += format("%*s", numCharsRemaining, "");
+			padding = format("%*s", remainingPadding, "")
+			this.enhReadHelpLineWithoutChgArea += padding;
 		}
 	}
+	this.enhReadHelpLineWithoutChgArea = "\x01n" + this.colors.enhReaderHelpLineBkgColor + this.enhReadHelpLineWithoutChgArea;
 }
 function stripCtrlFromEnhReadHelpLine_ReplaceArrowChars(pHelpLine)
 {
@@ -10517,39 +10470,57 @@ function DigDistMsgReader_GetMsgHdrByMsgNum(pMsgNum, pExpandFields)
 	if (this.msgSearchHdrs.hasOwnProperty(this.subBoardCode) &&
 	    this.msgSearchHdrs[this.subBoardCode].indexed.length > 0)
 	{
+		if (user.is_sysop) console.print("\x01nHere 1\r\n"); // Temporary
 		if (this.msgNumToIdxMap.hasOwnProperty(pMsgNum))
 		{
+			if (user.is_sysop) console.print("\x01nHere 2\r\n"); // Temporary
 			var msgIdx = this.msgNumToIdxMap[pMsgNum];
 			if (this.hdrsForCurrentSubBoard.length.length > 0 && msgIdx >= 0 && msgIdx < this.hdrsForCurrentSubBoard.length)
+			{
 				msgHdr = this.hdrsForCurrentSubBoard[msgIdx];
+				if (user.is_sysop) console.print("\x01nHere 3\r\n"); // Temporary
+			}
 			else if (this.msgSearchHdrs.length > 0 && msgIdx >= 0 && msgIdx < msgSearchHdrs.length)
+			{
 				msgHdr = this.msgSearchHdrs[msgIdx];
+				if (user.is_sysop) console.print("\x01nHere 4\r\n"); // Temporary
+			}
 		}
 		else
 		{
+			if (user.is_sysop) console.print("\x01nHere 5\r\n"); // Temporary
 			for (var i = 0; i < this.msgSearchHdrs[this.subBoardCode].indexed.length && msgHdr == null; ++i)
 			{
 				if (this.msgSearchHdrs[this.subBoardCode].indexed[i].number == pMsgNum)
+				{
 					msgHdr = this.msgSearchHdrs[this.subBoardCode].indexed[i];
+					if (user.is_sysop) console.print("\x01nHere 6\r\n"); // Temporary
+				}
 			}
 		}
 	}
 	if (msgHdr == null && this.hdrsForCurrentSubBoard.length > 0)
 	{
+		if (user.is_sysop) console.print("\x01nHere 7\r\n"); // Temporary
 		for (var i = 0; i < this.hdrsForCurrentSubBoard.length.length && msgHdr == null; ++i)
 		{
 			if (this.hdrsForCurrentSubBoard[i].number == pMsgNum)
+			{
 				msgHdr = this.hdrsForCurrentSubBoard[i];
+				if (user.is_sysop) console.print("\x01nHere 8\r\n"); // Temporary
+			}
 		}
 	}
 	if (msgHdr == null)
 	{
+		if (user.is_sysop) printf("\x01nHere 9: %s\r\n", this.subBoardCode); // Temporary
 		var msgbase = new MsgBase(this.subBoardCode);
 		if (msgbase.open())
 		{
 			var expandFields = (typeof(pExpandFields) == "boolean" ? pExpandFields : false);
 			msgHdr = msgbase.get_msg_header(false, pMsgNum, expandFields);
 			msgbase.close();
+			if (user.is_sysop) console.print("\x01nHere 10: " + msgHdr + "\r\n"); // Temporary
 		}
 	}
 	return msgHdr;
@@ -14794,11 +14765,11 @@ function DigDistMsgReader_DoUserSettings_Scrollable(pDrawBottomhelpLineFn, pTopR
 										null/*gConfigSettings*/, false, true);
 	optionBox.addInputLoopExitKey(CTRL_U);
 	// Update the bottom help text to be more specific to the user settings box
-	var bottomBorderText = "\x01n\x01h\x01c" + UP_ARROW + "\x01b, \x01c" + DOWN_ARROW + "\x01b, \x01cEnter\x01y=\x01bSelect\x01n\x01c/\x01h\x01btoggle, "
+	var bottomBorderText = "\x01n\x01h\x01cUp\x01b, \x01cDn\x01b, \x01cEnter\x01y=\x01bSelect\x01n\x01c/\x01h\x01btoggle, "
 	                     + "\x01cESC\x01n\x01c/\x01hQ\x01n\x01c/\x01hCtrl-U\x01y=\x01bClose";
 	// This one contains the page navigation keys..  Don't really need to show those,
 	// since the settings box only has one page right now:
-	/*var bottomBorderText = "\x01n\x01h\x01c"+ UP_ARROW + "\x01b, \x01c"+ DOWN_ARROW + "\x01b, \x01cN\x01y)\x01bext, \x01cP\x01y)\x01brev, "
+	/*var bottomBorderText = "\x01n\x01h\x01cUp\x01b, \x01cDn\x01b, \x01cN\x01y)\x01bext, \x01cP\x01y)\x01brev, "
 						   + "\x01cF\x01y)\x01birst, \x01cL\x01y)\x01bast, \x01cEnter\x01y=\x01bSelect, "
 						   + "\x01cESC\x01n\x01c/\x01hQ\x01n\x01c/\x01hCtrl-U\x01y=\x01bClose";*/
 
@@ -16186,15 +16157,14 @@ function DigDistMsgReader_MakeIndexedModeHelpLine()
 	if (typeof(this.indexedModeHelpLine) === "string")
 		return;
 
-	this.indexedModeHelpLine = this.colors.lightbarIndexedModeHelpLineHotkeyColor + "@CLEAR_HOT@@`" + UP_ARROW + "`" + KEY_UP + "@"
-	                         + this.colors.lightbarIndexedModeHelpLineGeneralColor + ", "
-	                         //+ this.colors.lightbarIndexedModeHelpLineHotkeyColor + "@`" + DOWN_ARROW + "`" + KEY_DOWN + "@"
-							 + this.colors.lightbarIndexedModeHelpLineHotkeyColor + "@`" + DOWN_ARROW + "`\\n@"
-	                         + this.colors.lightbarIndexedModeHelpLineGeneralColor + ", "
+	this.indexedModeHelpLine = this.colors.lightbarIndexedModeHelpLineHotkeyColor + "@CLEAR_HOT@@`Up`" + KEY_UP + "@"
+	                         + this.colors.lightbarIndexedModeHelpLineGeneralColor + "/"
+							 + this.colors.lightbarIndexedModeHelpLineHotkeyColor + "@`Dn`\\n@"
+	                         + this.colors.lightbarIndexedModeHelpLineGeneralColor + "/"
 	                         + this.colors.lightbarIndexedModeHelpLineHotkeyColor + "@`PgUp`" + "\x1b[V" + "@"
 	                         + this.colors.lightbarIndexedModeHelpLineGeneralColor + "/"
 	                         + this.colors.lightbarIndexedModeHelpLineHotkeyColor + "@`P`" + "\x1b[V" + "@"
-	                         + this.colors.lightbarIndexedModeHelpLineGeneralColor + ", "
+	                         + this.colors.lightbarIndexedModeHelpLineGeneralColor + "/"
 	                         + this.colors.lightbarIndexedModeHelpLineHotkeyColor + "@`PgDn`" + KEY_PAGEDN + "@"
 	                         + this.colors.lightbarIndexedModeHelpLineGeneralColor + "/"
 	                         + this.colors.lightbarIndexedModeHelpLineHotkeyColor + "@`N`" + "\x1b[V" + "@"
@@ -16217,7 +16187,8 @@ function DigDistMsgReader_MakeIndexedModeHelpLine()
 	                         + this.colors.lightbarIndexedModeHelpLineGeneralColor + "uit, "
 	                         + this.colors.lightbarIndexedModeHelpLineHotkeyColor + "@`?`?@";
 	// Add spaces so that the text is centered on the screen
-	var helpLineLen = 60;
+	//var helpLineLen = 60;
+	var helpLineLen = 59;
 	var leftSideNumChars = Math.floor(console.screen_columns / 2) - Math.floor(helpLineLen / 2);
 	var rightSideNumChars = leftSideNumChars;
 	var totalNumChars = leftSideNumChars + rightSideNumChars + helpLineLen;
@@ -22938,13 +22909,13 @@ function ChoiceScrollbox(pLeftX, pTopY, pWidth, pHeight, pTopBorderText, pCfgObj
 	               + UPPER_RIGHT_SINGLE;
 
 	// Bottom border string
-	this.btmBorderNavText = "\x01n\x01h\x01c" + UP_ARROW + "\x01b, \x01c" + DOWN_ARROW + "\x01b, \x01cN\x01y)\x01bext, \x01cP\x01y)\x01brev, "
+	this.btmBorderNavText = "\x01n\x01h\x01cUp\x01b, \x01cDn\x01b, \x01cN\x01y)\x01bext, \x01cP\x01y)\x01brev, "
 	                      + "\x01cF\x01y)\x01birst, \x01cL\x01y)\x01bast, \x01cHOME\x01b, \x01cEND\x01b, \x01cEnter\x01y=\x01bSelect, "
 	                      + "\x01cESC\x01n\x01c/\x01h\x01cQ\x01y=\x01bEnd";
 	this.bottomBorder = "\x01n" + pCfgObj.colors.listBoxBorder + LOWER_LEFT_SINGLE
 	                  + RIGHT_T_SINGLE + this.btmBorderNavText + "\x01n" + pCfgObj.colors.listBoxBorder
 	                  + LEFT_T_SINGLE;
-	var numCharsRemaining = this.dimensions.width - console.strlen(this.btmBorderNavText) - 6;
+	var numCharsRemaining = this.dimensions.width - console.strlen(this.btmBorderNavText) - 4;
 	for (var i = 0; i < numCharsRemaining; ++i)
 		this.bottomBorder += HORIZONTAL_SINGLE;
 	this.bottomBorder += LOWER_RIGHT_SINGLE;
@@ -23189,7 +23160,7 @@ function ChoiceScrollbox_SetBottomBorderText(pText, pAddTChars, pAutoStripIfTooL
 	this.bottomBorder += pText + "\x01n" + this.programCfgObj.colors.listBoxBorder;
 	if (pAddTChars)
 		this.bottomBorder += LEFT_T_SINGLE;
-	var numCharsRemaining = this.dimensions.width - console.strlen(this.bottomBorder) - 3;
+	var numCharsRemaining = this.dimensions.width - console.strlen(this.bottomBorder) - 1; // - 3
 	for (var i = 0; i < numCharsRemaining; ++i)
 		this.bottomBorder += HORIZONTAL_SINGLE;
 	this.bottomBorder += LOWER_RIGHT_SINGLE;

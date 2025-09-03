@@ -5,9 +5,13 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
-1.97c    2027-07-23   Fix: When listing personal email in reverse, get the
+1.97d    2025-09-02   Replaced arrow keys in the key help lines since some
+                      terminals can't display them.
+                      Fix for "go to message" in lightbar mode (correctly
+                      finding the message)
+1.97c    2025-07-23   Fix: When listing personal email in reverse, get the
                       correct message to read.
-1.97b    2027-07-19   Fix: When listing messages in reverse, get the correct
+1.97b    2025-07-19   Fix: When listing messages in reverse, get the correct
                       message to read.
 1.97a    2025-06-20   Fix: After displaying the indexed mode menu, don't display
                       the "Loading.." status again, which happened after closing
