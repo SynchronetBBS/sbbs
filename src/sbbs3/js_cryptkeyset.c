@@ -494,7 +494,7 @@ js_cryptkeyset_constructor(JSContext *cx, uintN argc, jsval *arglist)
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx, obj, "Class used for storing CryptContext keys", 31601);
 	js_DescribeSyncConstructor(cx, obj, "To create a new CryptKeyset object: "
-	                           "<tt>var c = new CryptKeyset('<i>filename</i>' [ <i>opts = CryptKeyset.KEYOPT.NONE</i> ])</tt><br> "
+	                           "<tt>var c = new CryptKeyset(<i>filename</i> [ <i>opts = CryptKeyset.KEYOPT.NONE</i> ])</tt><br> "
 	                           "where <i>filename</i> is the name of the file to create, and <i>opts</i> "
 	                           "is a value from CryptKeyset.KEYOPT"
 	                           );

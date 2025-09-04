@@ -3128,7 +3128,7 @@ js_cryptcert_constructor(JSContext *cx, uintN argc, jsval *arglist)
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx, obj, "Class used for Certificates", 31601);
 	js_DescribeSyncConstructor(cx, obj, "To create a new CryptCert object: "
-	                           "var c = new CryptCert('<i>type</i> | <i>cert</i>')</tt><br> "
+	                           "var c = new CryptCert(<i>type</i> | <i>cert</i>)</tt><br> "
 	                           "where <i>type</i> "
 	                           "is a value from CryptCert.TYPE and <i>cert</i> is a DER encoded certificate string"
 	                           );

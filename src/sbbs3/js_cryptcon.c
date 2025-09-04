@@ -996,7 +996,7 @@ js_cryptcon_constructor(JSContext *cx, uintN argc, jsval *arglist)
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx, obj, "Class used for encryption/decryption", 31601);
 	js_DescribeSyncConstructor(cx, obj, "To create a new CryptContext object: "
-	                           "<tt>var c = new CryptContext('<i>algorithm</i>')</tt><br>"
+	                           "<tt>var c = new CryptContext(<i>algorithm</i>)</tt><br>"
 	                           "where <i>algorithm</i> is a property of CryptContext.ALGO"
 	                           );
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", cryptcon_prop_desc, JSPROP_READONLY);

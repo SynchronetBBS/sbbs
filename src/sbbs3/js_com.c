@@ -808,7 +808,7 @@ js_com_constructor(JSContext *cx, uintN argc, jsval *arglist)
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx, obj, "Class used for serial port communications", 31501);
 	js_DescribeSyncConstructor(cx, obj, "To create a new COM object: "
-	                           "<tt>var c = new COM('<i>device</i>')</tt><br>"
+	                           "<tt>var c = new COM(<i>device</i>)</tt><br>"
 	                           "where <i>device</i> = <tt>COMx</tt> (e.g. COM1) for Win32 or <tt>/dev/ttyXY</tt> for *nix (e.g. /dev/ttyu0)"
 	                           );
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", com_prop_desc, JSPROP_READONLY);
