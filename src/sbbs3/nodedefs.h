@@ -30,7 +30,7 @@
 #include "limits.h"
 
 enum node_status {                  /* Node Status */
-	NODE_WFC                        /* Waiting for Call */
+	  NODE_WFC                       /* Waiting for Call */
 	, NODE_LOGON                     /* at logon prompt */
 	, NODE_NEWUSER                   /* New user applying */
 	, NODE_INUSE                     /* In Use */
