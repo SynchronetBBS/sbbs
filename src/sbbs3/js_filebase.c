@@ -72,15 +72,20 @@ js_open(JSContext *cx, uintN argc, jsval *arglist)
 
 	JS_SET_RVAL(cx, arglist, JSVAL_FALSE);
 
-	if (p->smb.dirnum == INVALID_DIR
-	    && strchr(p->smb.file, '/') == NULL
-	    && strchr(p->smb.file, '\\') == NULL) {
-		JS_ReportError(cx, "Unrecognized filebase code: %s", p->smb.file);
-		return JS_FALSE;
+	if (!dirnum_is_valid(scfg, p->smb.dirnum)) {
+		const char* fname = getfname(p->smb.file);
+		if (fname == p->smb.file || illegal_filename(fname)) {
+			JS_ReportError(cx, "Invalid filebase path: '%s'", p->smb.file);
+			return JS_FALSE;
+		}
 	}
 
 	rc = JS_SUSPENDREQUEST(cx);
-	if ((p->smb_result = smb_open_dir(scfg, &(p->smb), p->smb.dirnum)) != SMB_SUCCESS) {
+	if (!dirnum_is_valid(scfg, p->smb.dirnum))
+		p->smb_result = smb_open(&(p->smb));
+	else
+		p->smb_result = smb_open_dir(scfg, &(p->smb), p->smb.dirnum);
+	if (p->smb_result != SMB_SUCCESS) {
 		JS_RESUMEREQUEST(cx, rc);
 		return JS_TRUE;
 	}
@@ -807,7 +812,7 @@ js_get_file_list(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
-	if (p->smb.dirnum != INVALID_DIR)
+	if (dirnum_is_valid(scfg, p->smb.dirnum))
 		sort = scfg->dir[p->smb.dirnum]->sort;
 
 	uintN argn = 0;
@@ -892,7 +897,7 @@ js_get_file_names(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
-	if (p->smb.dirnum != INVALID_DIR)
+	if (dirnum_is_valid(scfg, p->smb.dirnum))
 		sort = scfg->dir[p->smb.dirnum]->sort;
 
 	uintN argn = 0;
@@ -1806,6 +1811,7 @@ js_filebase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	JSObject * obj;
 	jsval *    argv = JS_ARGV(cx, arglist);
 	char       base[MAX_PATH + 1] = "";
+	bool       is_path = false;
 	private_t* p;
 	scfg_t*    scfg;
 
@@ -1821,13 +1827,18 @@ js_filebase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	memset(p, 0, sizeof(private_t));
 	p->smb.retry_time = scfg->smb_retry_time;
 
-	JSVALUE_TO_STRBUF(cx, argv[0], base, sizeof base, NULL);
+	int argn = 0;
+	if (JSVAL_IS_BOOLEAN(argv[argn])) {
+		is_path = JSVAL_TO_BOOLEAN(argv[argn]);
+		++argn;
+	}
+	JSVALUE_TO_STRBUF(cx, argv[argn], base, sizeof base, NULL);
 	if (JS_IsExceptionPending(cx)) {
 		free(p);
 		return JS_FALSE;
 	}
 	if (*base == '\0') {
-		JS_ReportError(cx, "Invalid 'code' parameter");
+		JS_ReportError(cx, "Invalid 'path_or_code' parameter");
 		free(p);
 		return JS_FALSE;
 	}
@@ -1841,18 +1852,21 @@ js_filebase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx, obj, "Class used for accessing file databases", 31900);
 	js_DescribeSyncConstructor(cx, obj, "To create a new FileBase object: "
-	                           "<tt>var filebase = new FileBase('<i>code</i>')</tt><br>"
-	                           "where <i>code</i> is a directory internal code."
+	                           "<tt>var filebase = new FileBase([<i>bool</i> is_path=false,] <i>string</i> path_or_code)</tt><br>"
+	                           "where <i>path_or_code</i> is a directory internal code, or ...<br>"
+	                           "when <i>is_path</i> is <tt>true</tt>, the string parameter specifies the path to a file base (not an internal code) - new behavior in v3.21."
 	                           );
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", filebase_prop_desc, JSPROP_READONLY);
 #endif
 
-	p->smb.dirnum = getdirnum(scfg, base);
-	if (dirnum_is_valid(scfg, p->smb.dirnum)) {
+	if (is_path) {
+		p->smb.dirnum = INVALID_DIR;
+		SAFECOPY(p->smb.file, base);
+	} else if (dirnum_is_valid(scfg, p->smb.dirnum = getdirnum(scfg, base))) {
 		safe_snprintf(p->smb.file, sizeof(p->smb.file), "%s%s"
 		              , scfg->dir[p->smb.dirnum]->data_dir, scfg->dir[p->smb.dirnum]->code);
 	} else { /* unknown code */
-		SAFECOPY(p->smb.file, base);
+		JS_ReportError(cx, "Unrecognized file area (directory) internal code: '%s'", base);
 	}
 
 	return JS_TRUE;
