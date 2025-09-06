@@ -565,6 +565,9 @@ function DDLightbarMenu(pX, pY, pWidth, pHeight)
 	// Whether or not to allow ANSI behavior. Mainly for testing (this should be true).
 	this.allowANSI = true;
 
+	// Whether or not the user's console supports UTF-8
+	this.userConsoleSupportsUTF8 = (typeof(USER_UTF8) === "number" ? console.term_supports(USER_UTF8) : false);
+
 	// Text to use for the user input prompt for the non-ANSI interface
 	this.nonANSIPromptText = "\x01n\x01c\x01hY\x01n\x01cour \x01hC\x01n\x01choice\x01h\x01g: \x01c";
 
@@ -1247,7 +1250,6 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected, pScreen
 	}
 	else
 	{
-		// var userConsoleSupportsUTF8 = (typeof(USER_UTF8) != "undefined" ? console.term_supports(USER_UTF8) : false);
 		// If the item has (multi-byte) UTF-8 text, then one problem is that printing the whole string
 		// could result in the printed string length being shorter than expected (due to multi-byte
 		// characters), which can result in the inner text width not being completely filled.  If there
@@ -1312,7 +1314,7 @@ function DDLightbarMenu_WriteItem(pIdx, pItemLen, pHighlight, pSelected, pScreen
 					textToPrint = substrWithAttrCodes(itemText, itemStartIdx, itemLen);
 					if (this.ANSISupported())
 						console.gotoxy(itemStartX + itemColor[i].start, itemY);
-					console.print(textToPrint, P_AUTO_UTF8); // printModeBits
+					console.print(textToPrint, this.userConsoleSupportsUTF8 ? P_AUTO_UTF8 : P_NONE); // printModeBits
 					itemStartIdx += itemLen;
 
 					// If the printed length of the string is shorter than needed, and we're not
