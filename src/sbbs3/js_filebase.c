@@ -1815,6 +1815,9 @@ js_filebase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	private_t* p;
 	scfg_t*    scfg;
 
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+
 	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
 	obj = JS_NewObject(cx, &js_filebase_class, NULL, NULL);
@@ -1828,11 +1831,8 @@ js_filebase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	p->smb.retry_time = scfg->smb_retry_time;
 
 	int argn = 0;
-	if (JSVAL_IS_BOOLEAN(argv[argn])) {
-		is_path = JSVAL_TO_BOOLEAN(argv[argn]);
-		++argn;
-	}
 	JSVALUE_TO_STRBUF(cx, argv[argn], base, sizeof base, NULL);
+	++argn;
 	if (JS_IsExceptionPending(cx)) {
 		free(p);
 		return JS_FALSE;
@@ -1841,6 +1841,10 @@ js_filebase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ReportError(cx, "Invalid 'path_or_code' parameter");
 		free(p);
 		return JS_FALSE;
+	}
+	if (argn < argc && JSVAL_IS_BOOLEAN(argv[argn])) {
+		is_path = JSVAL_TO_BOOLEAN(argv[argn]);
+		++argn;
 	}
 
 	if (!JS_SetPrivate(cx, obj, p)) {
@@ -1852,8 +1856,8 @@ js_filebase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx, obj, "Class used for accessing file databases", 31900);
 	js_DescribeSyncConstructor(cx, obj, "To create a new FileBase object: "
-	                           "<tt>var filebase = new FileBase([<i>bool</i> is_path=false,] <i>string</i> path_or_code)</tt><br>"
-	                           "where <i>path_or_code</i> is a directory internal code, or ...<br>"
+	                           "<tt>var filebase = new FileBase(<i>string</i> code_or_path, [<i>bool</i> is_path=false])</tt><br>"
+	                           "where <i>code_or_path</i> is a file directory internal code, or ...<br>"
 	                           "when <i>is_path</i> is <tt>true</tt>, the string parameter specifies the path to a file base (not an internal code) - new behavior in v3.21."
 	                           );
 	js_CreateArrayOfStrings(cx, obj, "_property_desc_list", filebase_prop_desc, JSPROP_READONLY);

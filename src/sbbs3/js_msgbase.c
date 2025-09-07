@@ -3350,6 +3350,9 @@ js_msgbase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	private_t* p;
 	scfg_t*    scfg;
 
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+
 	scfg = JS_GetRuntimePrivate(JS_GetRuntime(cx));
 
 	obj = JS_NewObject(cx, &js_msgbase_class, NULL, NULL);
@@ -3363,11 +3366,8 @@ js_msgbase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 	p->smb.retry_time = scfg->smb_retry_time;
 
 	int argn = 0;
-	if (JSVAL_IS_BOOLEAN(argv[argn])) {
-		is_path = JSVAL_TO_BOOLEAN(argv[argn]);
-		++argn;
-	}
 	JSVALUE_TO_STRBUF(cx, argv[argn], base, sizeof base, NULL);
+	++argn;
 	if (JS_IsExceptionPending(cx)) {
 		free(p);
 		return JS_FALSE;
@@ -3378,6 +3378,10 @@ js_msgbase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 		return JS_FALSE;
 	}
 
+	if (argn < argc && JSVAL_IS_BOOLEAN(argv[argn])) {
+		is_path = JSVAL_TO_BOOLEAN(argv[argn]);
+		++argn;
+	}
 	p->debug = JS_FALSE;
 
 	if (!JS_SetPrivate(cx, obj, p)) {
@@ -3389,8 +3393,8 @@ js_msgbase_constructor(JSContext *cx, uintN argc, jsval *arglist)
 #ifdef BUILD_JSDOCS
 	js_DescribeSyncObject(cx, obj, "Class used for accessing message bases", 310);
 	js_DescribeSyncConstructor(cx, obj, "To create a new MsgBase object: "
-	                           "<tt>var msgbase = new MsgBase([<i>bool</i> is_path=false,] <i>string</i> path_or_code)</tt><br>"
-	                           "where <i>code</i> is a sub-board internal code, or <tt>'mail'</tt> for the e-mail message base.<br>"
+	                           "<tt>var msgbase = new MsgBase(<i>string</i> code_or_path, [<i>bool</i> is_path=false])</tt><br>"
+	                           "where <i>code_or_path</i> is a sub-board internal code, or <tt>'mail'</tt> for the e-mail message base.<br>"
 	                           "When <i>is_path</i> is <tt>true</tt>, the string parameter specifies the path to a message base (not an internal code) - new behavior in v3.21."
 	                           "<p>"
 	                           "The MsgBase retrieval methods that accept a <tt>by_offset</tt> argument as their optional first boolean argument "
