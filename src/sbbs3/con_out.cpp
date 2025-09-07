@@ -318,12 +318,14 @@ size_t sbbs_t::print_utf8_as_cp437(const char* str, size_t len)
 	char ch = unicode_to_cp437(codepoint);
 	if (ch)
 		outchar(ch);
-	else if (unicode_width(codepoint, unicode_zerowidth) > 0) {
-		outchar(CP437_INVERTED_QUESTION_MARK);
+	else {
+		size_t width = unicode_width(codepoint, unicode_zerowidth);
+		for (size_t i = 0; i < width; ++i)
+			outchar(CP437_INVERTED_QUESTION_MARK);
 		char seq[32] = "";
 		for (size_t i = 0; i < len; i++)
 			snprintf(seq + strlen(seq), 4, "%02X ", (uchar) * (str + i));
-		lprintf(LOG_DEBUG, "Unsupported UTF-8 sequence: %s (U+%X)", seq, codepoint);
+		lprintf(LOG_DEBUG, "Unsupported UTF-8 sequence: %s (U+%X) width=%u", seq, codepoint, (uint)width);
 	}
 	return len;
 }
