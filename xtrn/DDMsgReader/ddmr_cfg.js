@@ -17,7 +17,7 @@ require("sbbsdefs.js", "P_NONE");
 require("uifcdefs.js", "UIFC_INMSG");
 
 
-if (!uifc.init("DigDist. Message Reader 1.97d Configurator"))
+if (!uifc.init("DigDist. Message Reader 1.97e Configurator"))
 {
 	print("Failed to initialize uifc");
 	exit(1);
