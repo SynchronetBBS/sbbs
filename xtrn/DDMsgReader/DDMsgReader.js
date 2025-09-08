@@ -16371,10 +16371,6 @@ function getLatestPostTimestampAndNumNewMsgs(pSubCode, pMsgbase)
 		msgBaseOpenedHere = true;
 	}
 
-	// Temporary
-	var subCodeLower = pSubCode.toLowerCase();
-	// End Tempoary
-
 	//var msgbase = new MsgBase(pSubCode);
 	//if (msgbase.open())
 	if (msgbaseIsOpen)
@@ -16422,15 +16418,6 @@ function getLatestPostTimestampAndNumNewMsgs(pSubCode, pMsgbase)
 							// number of new messages).  Another way might be to start from scan_ptr
 							// scan_ptr and count the number of readable messages.
 							//retObj.numNewMsgs = numReadableMsgsFromAbsMsgNumWithMsgbase(msgbase, pSubCode, msg_area.sub[pSubCode].scan_ptr);
-							// Temproary
-							if (user.is_sysop)
-							{
-								if (subCodeLower == "dove_dove-nix" || subCodeLower == "dove_dove-int")
-								{
-									printf("\x01n2 - %s - last readable #: %d, scan ptr: %d, # new msgs: %d\r\n\x01p", pSubCode, lastReadableMsgHdr.number, msg_area.sub[pSubCode].scan_ptr, retObj.numNewMsgs);
-								}
-							}
-							// End Temporary
 						}
 					}
 				}
