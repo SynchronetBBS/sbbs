@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.97e    2025-09-07   Fix: When listing messages in lightbar mode in reverse
+                      order, deleting (with DEL) and toggling messages (with
+                      the spacebar) now work on the correct message.
 1.97d    2025-09-02   Replaced arrow keys in the key help lines since some
                       terminals can't display them.
                       Fix for "go to message" in lightbar mode (correctly

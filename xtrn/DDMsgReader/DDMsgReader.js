@@ -288,6 +288,10 @@
  * 2025-09-02 Eric Oulashin     Version 1.97d
  *                              Fix for "go to message" in lightbar mode (correctly
  *                              finding the message)
+ * 2025-09-02 Eric Oulashin     Version 1.97e
+ *                              Fix: When listing messages in lightbar mode in reverse
+ *                              order, deleting (with DEL) and toggling messages (with
+ *                              the spacebar) now work on the correct message.
  */
 
 "use strict";
@@ -395,8 +399,8 @@ var hexdump = load('hexdump_lib.js');
 
 
 // Reader version information
-var READER_VERSION = "1.97d";
-var READER_DATE = "2025-09-02";
+var READER_VERSION = "1.97e";
+var READER_DATE = "2025-09-07";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -3764,7 +3768,7 @@ function DigDistMsgReader_ListMessages_Traditional(pAllowChgSubBoard)
 						this.tradListTopMsgIdx = totalNumMessages - this.tradMsgListNumLines;
 				}
 			}
-			// D: Delete a message
+			// D or DEL: Delete a message
 			else if (retvalObj.userInput == "D" || retvalObj.userInput == this.msgListKeys.deleteMessage || retvalObj.userInput == '\x7f' || retvalObj.userInput == '\x08')
 			{
 				if (retvalObj.userInput == '\x08')
@@ -4277,19 +4281,25 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 
 				// The PromptAndDeleteOrUndeleteMessage() method will prompt the user for confirmation
 				// to delete the message and then delete it if confirmed.
-				this.PromptAndDeleteOrUndeleteMessage(this.lightbarListSelectedMsgIdx, { x: 1, y: console.screen_rows}, true);
-
-				// In case all messages were deleted, if the user can't view deleted messages,
-				// show an appropriate message and don't continue listing messages.
-				//if (this.NumMessages() == 0)
-				if (!this.NonDeletedMessagesExist() && !canViewDeletedMsgs())
-					continueOn = false;
-				else
+				var msgIdx = this.lightbarListSelectedMsgIdx;
+				if (this.userSettings.listMessagesInReverse)
+					msgIdx = this.NumMessages() - this.lightbarListSelectedMsgIdx - 1;
+				if (msgIdx >= 0)
 				{
-					// There are still some messages to show, so refresh the screen.
-					// Refresh the header & help line.
-					this.WriteMsgListScreenTopHeader();
-					this.DisplayKeyHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
+					this.PromptAndDeleteOrUndeleteMessage(msgIdx, { x: 1, y: console.screen_rows}, true);
+
+					// In case all messages were deleted, if the user can't view deleted messages,
+					// show an appropriate message and don't continue listing messages.
+					//if (this.NumMessages() == 0)
+					if (!this.NonDeletedMessagesExist() && !canViewDeletedMsgs())
+						continueOn = false;
+					else
+					{
+						// There are still some messages to show, so refresh the screen.
+						// Refresh the header & help line.
+						this.WriteMsgListScreenTopHeader();
+						this.DisplayKeyHelpLine(this.msgListLightbarModeHelpLine, this.msgListLightbarModeHelpLineLen);
+					}
 				}
 			}
 		}
@@ -4418,7 +4428,10 @@ function DigDistMsgReader_ListMessages_Lightbar(pAllowChgSubBoard)
 		// delete, etc.)
 		else if (lastUserInputUpper == " ")
 		{
-			this.ToggleSelectedMessage(this.subBoardCode, this.lightbarListSelectedMsgIdx);
+			var msgIdx = this.lightbarListSelectedMsgIdx;
+			if (this.userSettings.listMessagesInReverse)
+				msgIdx = this.NumMessages() - this.lightbarListSelectedMsgIdx - 1;
+			this.ToggleSelectedMessage(this.subBoardCode, msgIdx);
 			var topItemIdxBackup = msgListMenu.topItemIdx;
 			if (this.userSettings.selectInMsgListMovesToNext && msgListMenu.selectedItemIdx < msgListMenu.NumItems())
 			{
