@@ -29,7 +29,7 @@
 /* BBS Object Properites */
 /*****************************/
 enum {
-	BBS_PROP_SYS_STATUS
+	  BBS_PROP_SYS_STATUS
 	, BBS_PROP_STARTUP_OPT
 	, BBS_PROP_ANSWER_TIME
 	, BBS_PROP_LOGON_TIME
@@ -2517,7 +2517,7 @@ js_user_config(JSContext *cx, uintN argc, jsval *arglist)
 
 	rc = JS_SUSPENDREQUEST(cx);
 	sbbs->user_config(&sbbs->useron);
-	if (!(sbbs->useron.rest & FLAG('G')))    /* not guest */
+	if (!sbbs->useron_is_guest())
 		sbbs->getuseron(WHERE);
 	JS_RESUMEREQUEST(cx, rc);
 

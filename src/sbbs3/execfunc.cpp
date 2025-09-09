@@ -53,7 +53,7 @@ int sbbs_t::exec_function(csi_t *csi)
 			return 0;
 		case CS_USER_DEFAULTS:
 			user_config(&useron);
-			if (!(useron.rest & FLAG('G')))    /* not guest */
+			if (!useron_is_guest())
 				getuseron(WHERE);
 			return 0;
 		case CS_TEXT_FILE_SECTION:

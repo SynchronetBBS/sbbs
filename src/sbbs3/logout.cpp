@@ -52,7 +52,7 @@ void sbbs_t::logout(bool logged_in)
 		putnodedat(cfg.node_num, &node);
 	}
 
-	if (useron.rest & FLAG('G')) {
+	if (useron_is_guest()) {
 		putuserstr(useron.number, USER_NAME, nulstr);
 		clearbatdl();
 	}

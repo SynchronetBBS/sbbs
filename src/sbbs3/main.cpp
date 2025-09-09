@@ -4439,7 +4439,7 @@ void node_thread(void* arg)
 			while (sbbs->online) {
 				SLEEP(1000);
 				sbbs->getnodedat(sbbs->cfg.node_num, &sbbs->thisnode, /* lock: */ false);
-				if (sbbs->thisnode.misc & NODE_UDAT && !(sbbs->useron.rest & FLAG('G'))) {   /* not guest */
+				if ((sbbs->thisnode.misc & NODE_UDAT) && !sbbs->useron_is_guest()) {
 					if (sbbs->getuseron(WHERE) && sbbs->getnodedat(sbbs->cfg.node_num, &sbbs->thisnode, /* lock: */ true)) {
 						sbbs->thisnode.misc &= ~NODE_UDAT;
 						sbbs->putnodedat(sbbs->cfg.node_num, &sbbs->thisnode);

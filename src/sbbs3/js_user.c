@@ -835,7 +835,7 @@ static JSBool js_user_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, 
 
 	}
 	free(str);
-	if (!(p->user->rest & FLAG('G')))
+	if (!user_is_guest(p->user))
 		p->cached = FALSE;
 
 	JS_RESUMEREQUEST(cx, rc);

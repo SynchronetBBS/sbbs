@@ -62,7 +62,7 @@ bool sbbs_t::logon()
 	if (useron.rest & FLAG('Q'))
 		sys_status ^= SS_QWKLOGON;
 
-	if (useron.rest & FLAG('G')) {     /* Guest account */
+	if (useron_is_guest()) {
 		useron.misc = (cfg.new_misc & (~ASK_NSCAN));
 		useron.rows = TERM_ROWS_AUTO;
 		useron.cols = TERM_COLS_AUTO;
@@ -157,7 +157,7 @@ bool sbbs_t::logon()
 	getusrsubs();
 	getusrdirs();
 
-	if (useron.misc & CURSUB && !(useron.rest & FLAG('G'))) {
+	if ((useron.misc & CURSUB) && !useron_is_guest()) {
 		for (i = 0; i < usrgrps; i++) {
 			for (j = 0; j < usrsubs[i]; j++) {
 				if (!strcmp(cfg.sub[usrsub[i][j]]->code, useron.cursub))
@@ -346,7 +346,7 @@ bool sbbs_t::logon()
 		if (!(cfg.uq & UQ_NOUPRLWR))
 			kmode |= K_UPRLWR;
 
-		if (!(useron.rest & FLAG('G'))) {
+		if (!useron_is_guest()) {
 			if (!useron.name[0] && ((cfg.uq & UQ_ALIASES && cfg.uq & UQ_REALNAME)
 			                        || cfg.uq & UQ_COMPANY))
 				while (online) {
@@ -549,7 +549,7 @@ bool sbbs_t::logon()
 				c = 1;
 			}
 			if (node.status == NODE_INUSE && i != cfg.node_num && node.useron == useron.number
-			    && !useron_is_sysop() && !(useron.exempt & FLAG('G'))) {
+			    && !useron_is_sysop() && !useron_is_guest()) {
 				SAFEPRINTF2(str, "(%04u)  %-25s  On more than one node at the same time"
 				            , useron.number, useron.alias);
 				logline(LOG_NOTICE, "+!", str);

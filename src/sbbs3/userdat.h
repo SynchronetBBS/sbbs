@@ -165,6 +165,8 @@ DLLEXPORT bool  user_can_post(scfg_t*, int subnum, user_t*, client_t* client, ui
 DLLEXPORT bool  user_can_upload(scfg_t*, int dirnum, user_t*, client_t* client, uint* reason);
 DLLEXPORT bool  user_can_download(scfg_t*, int dirnum, user_t*, client_t* client, uint* reason);
 DLLEXPORT bool  user_can_send_mail(scfg_t*, enum smb_net_type, uint usernumber, user_t*, uint* reason);
+DLLEXPORT bool  user_is_nobody(user_t*);
+DLLEXPORT bool  user_is_guest(user_t*);
 DLLEXPORT bool  user_is_sysop(user_t*);
 DLLEXPORT bool  user_is_subop(scfg_t*, int subnum, user_t*, client_t* client);
 DLLEXPORT bool  user_is_dirop(scfg_t*, int dirnum, user_t*, client_t* client);

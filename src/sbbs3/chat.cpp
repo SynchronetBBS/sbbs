@@ -1122,7 +1122,7 @@ void sbbs_t::privchat(bool forced, int node_num)
 					getnodedat(cfg.node_num, &thisnode);
 					if (thisnode.misc & NODE_INTR)
 						break;
-					if (thisnode.misc & NODE_UDAT && !(useron.rest & FLAG('G'))) {
+					if (thisnode.misc & NODE_UDAT && !useron_is_guest()) {
 						if (getuseron(WHERE) && getnodedat(cfg.node_num, &thisnode, true)) {
 							thisnode.misc &= ~NODE_UDAT;
 							putnodedat(cfg.node_num, &thisnode);

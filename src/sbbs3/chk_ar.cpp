@@ -246,7 +246,7 @@ bool sbbs_t::ar_exp(const uchar **ptrptr, user_t* user, client_t* client)
 					result = _not;
 				break;
 			case AR_GUEST:
-				if (!(user->rest & FLAG('G')))
+				if (!user_is_guest(user))
 					result = _not;
 				else
 					result = !_not;

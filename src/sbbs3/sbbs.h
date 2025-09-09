@@ -563,6 +563,7 @@ public:
 #define SMB_STACK_POP	false
 	int 	smb_stack(smb_t* smb, bool push);
 
+	bool	useron_is_guest() { return user_is_guest(&useron); }
 	bool	useron_is_sysop() { return user_is_sysop(&useron) || (sys_status & SS_TMPSYSOP); }
 
 	char	rlogin_name[LEN_ALIAS+1]{};

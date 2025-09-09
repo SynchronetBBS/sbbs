@@ -272,7 +272,7 @@ bool sbbs_t::email(int usernumber, const char *top, const char *subj, int mode, 
 	smb_hfield_str(&msg, SENDEREXT, str);
 
 	if (useron.misc & NETMAIL) {
-		if (useron.rest & FLAG('G'))
+		if (useron_is_guest())
 			smb_hfield_str(&msg, REPLYTO, useron.name);
 		smb_hfield_netaddr(&msg, REPLYTONETADDR, useron.netmail, NULL);
 	}

@@ -2762,7 +2762,7 @@ static void ctrl_thread(void* arg)
 			continue;
 		}
 
-		if (!(user.rest & FLAG('G')))
+		if (!user_is_guest(&user))
 			getuserdat(&scfg, &user);   /* get current user data */
 
 		if ((timeleft = (long)gettimeleft(&scfg, &user, logintime)) < 1L) {
@@ -2994,7 +2994,7 @@ static void ctrl_thread(void* arg)
 			}
 
 			inet_addrtop(&data_addr, data_ip, sizeof(data_ip));
-			bool bounce_allowed = (startup->options & FTP_OPT_ALLOW_BOUNCE) && !(user.rest & FLAG('G'));
+			bool bounce_allowed = (startup->options & FTP_OPT_ALLOW_BOUNCE) && !user_is_guest(&user);
 			if (data_port < IPPORT_RESERVED
 			    || (strcmp(data_ip, host_ip) != 0 && !bounce_allowed)) {
 				lprintf(LOG_WARNING, "%04d <%s> !SUSPECTED BOUNCE ATTACK ATTEMPT to %s port %u"

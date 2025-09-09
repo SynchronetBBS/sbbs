@@ -43,7 +43,7 @@ void sbbs_t::getmsgptrs()
 
 void sbbs_t::putmsgptrs()
 {
-	if (useron.number == 0 || useron.rest & FLAG('G'))
+	if (user_is_nobody(&useron) || user_is_guest(&useron))
 		return;
 	char       path[MAX_PATH + 1];
 	msgptrs_filename(&cfg, useron.number, path, sizeof path);

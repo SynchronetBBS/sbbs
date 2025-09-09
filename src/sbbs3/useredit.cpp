@@ -860,7 +860,7 @@ void sbbs_t::user_config(user_t* user)
 			bprintf(text[UserDefaultsProtocol], protname(user->prot, XFER_DOWNLOAD)
 			        , user->misc & AUTOHANG ? "(Auto-Hangup)" : nulstr);
 		}
-		if (*text[UserDefaultsPassword] && (cfg.sys_misc & SM_PWEDIT) && !(user->rest & FLAG('G'))) {
+		if (*text[UserDefaultsPassword] && (cfg.sys_misc & SM_PWEDIT) && !user_is_guest(user)) {
 			term->add_hotspot('W');
 			SAFECAT(keys, "W");
 			bputs(text[UserDefaultsPassword]);

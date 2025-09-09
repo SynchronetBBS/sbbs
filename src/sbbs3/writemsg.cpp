@@ -639,7 +639,7 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 		rioctl(IOSM | PAUSE | ABORT);
 
 		checkline();
-		if (!online && (flength(msgtmp) > 0) && (useron.number > 0) && !(useron.rest & FLAG('G'))) { // save draft message due to disconnection
+		if (!online && (flength(msgtmp) > 0) && (useron.number > 0) && !useron_is_guest()) { // save draft message due to disconnection
 			if (mv(msgtmp, draft, /* copy: */ true) == 0) {
 				user_set_property(&cfg, useron.number, draft_desc, "subject", subj);
 				user_set_time_property(&cfg, useron.number, draft_desc, "created", time(NULL));

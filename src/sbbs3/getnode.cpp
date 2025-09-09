@@ -144,7 +144,7 @@ void sbbs_t::nodesync(bool clearline)
 			lprintf(LOG_DEBUG, "New day detected");
 			resetdailyuserdat(&cfg, &useron, /* write: */ true);
 		}
-		if (thisnode.misc & NODE_UDAT && !(useron.rest & FLAG('G'))) {   /* not guest */
+		if ((thisnode.misc & NODE_UDAT) && !useron_is_guest()) {
 			if (getuseron(WHERE) && getnodedat(cfg.node_num, &thisnode, true)) {
 				thisnode.misc &= ~NODE_UDAT;
 				putnodedat(cfg.node_num, &thisnode);

@@ -597,6 +597,7 @@ static void dirtyuserdat(scfg_t* cfg, uint usernumber)
 }
 
 /****************************************************************************/
+/* Returns first node number user is using or 0 if none						*/
 /****************************************************************************/
 int user_is_online(scfg_t* cfg, uint usernumber)
 {
@@ -2272,7 +2273,7 @@ static bool ar_exp(scfg_t* cfg, uchar **ptrptr, user_t* user, client_t* client)
 					result = !not;
 				break;
 			case AR_GUEST:
-				if (user == NULL || !(user->rest & FLAG('G')))
+				if (user_is_guest(user))
 					result = not;
 				else
 					result = !not;
@@ -3897,6 +3898,27 @@ bool user_can_send_mail(scfg_t* cfg, enum smb_net_type net_type, uint usernumber
 	return true;
 }
 
+
+/****************************************************************************/
+/* Determine if the specified user is not a valid user account (nobody)		*/
+/****************************************************************************/
+bool user_is_nobody(user_t* user)
+{
+	if (user == NULL)
+		return true;
+	return user->number == 0;
+}
+
+/****************************************************************************/
+/* Determine if the specified user is a guest account						*/
+/****************************************************************************/
+bool user_is_guest(user_t* user)
+{
+	if (user == NULL)
+		return false;
+	return user->rest & FLAG('G');
+}
+
 /****************************************************************************/
 /* Determine if the specified user is a system operator						*/
 /****************************************************************************/
@@ -4361,7 +4383,7 @@ bool getmsgptrs(scfg_t* cfg, user_t* user, subscan_t* subscan, void (*progress)(
 	if (user->number == 0)
 		return 0;
 
-	if (user->rest & FLAG('G'))
+	if (user_is_guest(user))
 		return initmsgptrs(cfg, subscan, cfg->guest_msgscan_init, progress, cbdata);
 
 	/* New way: */
@@ -4430,7 +4452,7 @@ bool putmsgptrs(scfg_t* cfg, user_t* user, subscan_t* subscan)
 {
 	char path[MAX_PATH + 1];
 
-	if (user->number == 0 || (user->rest & FLAG('G')))  /* Guest */
+	if (user_is_nobody(user) || user_is_guest(user))
 		return true;
 
 	msgptrs_filename(cfg, user->number, path, sizeof path);
@@ -4452,7 +4474,7 @@ bool putmsgptrs_fp(scfg_t* cfg, user_t* user, subscan_t* subscan, FILE* fp)
 	time_t now = time(NULL);
 	bool   result = true;
 
-	if (user->number == 0 || (user->rest & FLAG('G')))   /* Guest */
+	if (user_is_nobody(user) || user_is_guest(user))
 		return true;
 
 	fixmsgptrs(cfg, subscan);
