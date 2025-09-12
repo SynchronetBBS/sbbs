@@ -75,8 +75,10 @@ int sbbs_t::translate_input(int ch)
 		bool lwe = last_inkey_was_esc;
 		if (ch == ESC)
 			last_inkey_was_esc = true;
-		if (lwe && ch == '[')
-			autoterm |= ANSI;	// A CSI means ANSI.
+		if (lwe && ch == '[') {
+			autoterm |= ANSI;	// Receiving any CSI means the terminal is ANSI
+			update_terminal(this);
+		}
 		if (term->supports(SWAP_DELETE)) {
 			switch (ch) {
 				case TERM_KEY_DELETE:

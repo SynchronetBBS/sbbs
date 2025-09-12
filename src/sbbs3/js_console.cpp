@@ -321,6 +321,7 @@ static JSBool js_console_set(JSContext *cx, JSObject *obj, jsid id, JSBool stric
 			break;
 		case CON_PROP_AUTOTERM:
 			sbbs->autoterm = val;
+			update_terminal(sbbs);
 			break;
 		case CON_PROP_UNICODE_ZEROWIDTH:
 			sbbs->unicode_zerowidth = val;
