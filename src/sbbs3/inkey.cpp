@@ -77,7 +77,7 @@ int sbbs_t::translate_input(int ch)
 			last_inkey_was_esc = true;
 		if (lwe && ch == '[') {
 			autoterm |= ANSI;	// Receiving any CSI means the terminal is ANSI
-			update_terminal(this);
+			// update_terminal(this); causes later crash
 		}
 		if (term->supports(SWAP_DELETE)) {
 			switch (ch) {
