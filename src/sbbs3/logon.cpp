@@ -449,7 +449,7 @@ bool sbbs_t::logon()
 		return false;
 	}
 	useron.logons++;
-	i = loginuserdat(&cfg, &useron, connection, client_name, client_ipaddr, logontime);
+	i = loginuserdat(&cfg, &useron, &client, /* use_prot: */true, /* save_ars: */NULL);
 	if (i != USER_SUCCESS)
 		lprintf(LOG_ERR, "%s !Error %d writing user data for user #%d", __FUNCTION__, i, useron.number);
 	getmsgptrs();

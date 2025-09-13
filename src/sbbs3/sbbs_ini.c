@@ -63,6 +63,7 @@ static const char* strLoginAttemptTempBanThreshold = "LoginAttemptTempBanThresho
 static const char* strLoginAttemptTempBanDuration = "LoginAttemptTempBanDuration";
 static const char* strLoginAttemptFilterThreshold = "LoginAttemptFilterThreshold";
 static const char* strLoginAttemptFilterDuration = "LoginAttemptFilterDuration";
+static const char* strLoginInfoSave = "LoginInfoSave";
 static const char* strLoginRequirements = "LoginRequirements";
 static const char* strArchiveRequirements = "ArchiveRequirements";
 static const char* strJavaScriptMaxBytes       = "JavaScriptMaxBytes";
@@ -589,6 +590,8 @@ void sbbs_read_ini(
 
 		SAFECOPY(ftp->login_ars
 		         , iniGetString(list, section, strLoginRequirements, global->login_ars, value));
+		SAFECOPY(ftp->login_info_save
+				 , iniGetString(list, section, strLoginInfoSave, "", value));
 
 		ftp->log_level
 		    = iniGetLogLevel(list, section, strLogLevel, global->log_level);
@@ -738,6 +741,8 @@ void sbbs_read_ini(
 
 		SAFECOPY(services->login_ars
 		         , iniGetString(list, section, strLoginRequirements, global->login_ars, value));
+		SAFECOPY(services->login_info_save
+		         , iniGetString(list, section, strLoginInfoSave, "", value));
 
 		SAFECOPY(services->services_ini
 		         , iniGetString(list, section, strIniFileName, "services.ini", value));
@@ -789,6 +794,8 @@ void sbbs_read_ini(
 
 		SAFECOPY(web->login_ars
 		         , iniGetString(list, section, strLoginRequirements, global->login_ars, value));
+		SAFECOPY(web->login_info_save
+		         , iniGetString(list, section, strLoginInfoSave, "", value));
 
 		SAFECOPY(web->root_dir
 		         , iniGetString(list, section, "RootDirectory", WEB_DEFAULT_ROOT_DIR, value));
@@ -1109,6 +1116,8 @@ bool sbbs_write_ini(
 				iniRemoveKey(lp, section, strLoginRequirements);
 			else if (!iniSetString(lp, section, strLoginRequirements, ftp->login_ars, &style))
 				break;
+			if (!iniSetString(lp, section, strLoginInfoSave, ftp->login_info_save, &style))
+				break;
 
 			if (!iniSetString(lp, section, "IndexFileName", ftp->index_file_name, &style))
 				break;
@@ -1317,6 +1326,8 @@ bool sbbs_write_ini(
 				iniRemoveKey(lp, section, strLoginRequirements);
 			else if (!iniSetString(lp, section, strLoginRequirements, services->login_ars, &style))
 				break;
+			if (!iniSetString(lp, section, strLoginInfoSave, services->login_info_save, &style))
+				break;
 
 			if (!sbbs_set_sound_settings(lp, section, &services->sound, &global->sound, &style))
 				break;
@@ -1397,6 +1408,8 @@ bool sbbs_write_ini(
 			if (stricmp(web->login_ars, global->login_ars) == 0)
 				iniRemoveKey(lp, section, strLoginRequirements);
 			else if (!iniSetString(lp, section, strLoginRequirements, web->login_ars, &style))
+				break;
+			if (!iniSetString(lp, section, strLoginInfoSave, web->login_info_save, &style))
 				break;
 
 			if (!iniSetString(lp, section, "RootDirectory", web->root_dir, &style))

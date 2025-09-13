@@ -1389,7 +1389,7 @@ static bool pop3_client_thread(pop3_t* pop3)
 			listAddNodeData(&current_logins, client.addr, strlen(client.addr) + 1, socket, LAST_NODE);
 		}
 
-		loginuserdat(&scfg, &user, /* protocol: */NULL, host_name, host_ip, time(NULL));
+		loginuserdat(&scfg, &user, &client, /* use_prot: */false, /* save_ars: */NULL);
 
 		/* Update client display */
 		SAFECOPY(client.user, user.alias);
@@ -4317,7 +4317,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 			client.usernum = relay_user.number;
 			client_on(socket, &client, TRUE /* update */);
 
-			loginuserdat(&scfg, &relay_user, client.protocol, host_name, host_ip, time(NULL));
+			loginuserdat(&scfg, &relay_user, &client, /* use_prot: */true, /* save_ars: */NULL);
 
 			lprintf(LOG_INFO, "%04d %-5s %s <%s> logged-in using %s authentication (%u emails sent today)"
 			        , socket, client.protocol, client_id, relay_user.alias, auth_login ? "LOGIN" : "PLAIN"
@@ -4425,7 +4425,7 @@ static bool smtp_client_thread(smtp_t* smtp)
 			client.usernum = relay_user.number;
 			client_on(socket, &client, TRUE /* update */);
 
-			loginuserdat(&scfg, &relay_user, client.protocol, host_name, host_ip, time(NULL));
+			loginuserdat(&scfg, &relay_user, &client, /* use_prot: */true, /* save_ars: */NULL);
 
 			lprintf(LOG_INFO, "%04d %-5s %s <%s> logged-in using CRAM-MD5 authentication (%u emails sent today)"
 			        , socket, client.protocol, client_id, relay_user.alias, relay_user.etoday);

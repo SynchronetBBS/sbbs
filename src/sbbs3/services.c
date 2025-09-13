@@ -483,19 +483,15 @@ js_login(JSContext *cx, uintN argc, jsval *arglist)
 		JS_ValueToBoolean(cx, argv[2], &inc_logons);
 
 	rc = JS_SUSPENDREQUEST(cx);
-	if (client->client != NULL) {
-		SAFECOPY(client->user.ipaddr, client->client->addr);
-		SAFECOPY(client->user.comp, client->client->host);
-		if (!(client->service->options & SERVICE_OPT_NO_USER_PROT))
-			SAFECOPY(client->user.connection, client->service->protocol);
-	}
 
 	if (inc_logons) {
 		client->user.logons++;
 		client->user.ltoday++;
 	}
 
-	int result = putuserdat(&scfg, &client->user);
+	int result = loginuserdat(&scfg, &client->user, client->client
+	                          , !(client->service->options & SERVICE_OPT_NO_USER_PROT)
+	                          , startup->login_info_save);
 	if (result != 0) {
 		errprintf(LOG_ERR, WHERE, "%04d %s !Error %d writing user data for user #%d"
 		          , client->socket, client->service->protocol

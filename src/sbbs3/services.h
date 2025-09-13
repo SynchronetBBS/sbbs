@@ -29,6 +29,7 @@ typedef struct {
 	struct in6_addr outgoing6;
 	str_list_t interfaces;
 	char services_ini[128];     // services.ini filename
+	char login_info_save[INI_MAX_VALUE_LEN];
 
 	/* JavaScript operating parameters */
 	js_startup_t js;

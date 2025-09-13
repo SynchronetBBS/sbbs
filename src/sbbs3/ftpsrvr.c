@@ -2672,7 +2672,7 @@ static void ctrl_thread(void* arg)
 			/* Adjust User Total Logons/Logons Today */
 			user.logons++;
 			user.ltoday++;
-			if ((result = loginuserdat(&scfg, &user, "FTP", host_name, host_ip, logintime)) != 0)
+			if ((result = loginuserdat(&scfg, &user, &client, /* use_protocol: */true, startup->login_info_save)) != 0)
 				lprintf(LOG_ERR, "%04d [%s] <%s> !Error %d (errno %d %s) writing user data for user #%d"
 				        , sock, host_ip, user.alias, result, errno, safe_strerror(errno, error, sizeof error), user.number);
 			mqtt_user_login(&mqtt, &client);

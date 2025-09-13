@@ -148,7 +148,7 @@ DLLEXPORT int   putusermail(scfg_t*, int usernumber, uint32_t value);
 DLLEXPORT int   putuserqwk(scfg_t*, int usernumber, uint32_t value);
 DLLEXPORT uint64_t adjustuserval(scfg_t*, user_t*, enum user_field, int64_t value);
 DLLEXPORT bool  writeuserfields(scfg_t*, char* field[], int file);
-DLLEXPORT int   loginuserdat(scfg_t*, user_t*, const char* protocol, const char* hostname, const char* ipaddr, time_t logontime);
+DLLEXPORT int   loginuserdat(scfg_t*, user_t*, client_t* client, bool use_prot, char* save_ars);
 DLLEXPORT bool  logoutuserdat(scfg_t*, user_t*, time_t now, time_t logontime);
 DLLEXPORT void  resetdailyuserdat(scfg_t*, user_t*, bool write);
 DLLEXPORT void  subtract_cdt(scfg_t*, user_t*, uint64_t amt);

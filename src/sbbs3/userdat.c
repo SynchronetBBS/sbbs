@@ -3201,17 +3201,24 @@ bool user_adjust_minutes(scfg_t* cfg, user_t* user, long amount)
 }
 
 /****************************************************************************/
+/* 'cfg' and 'user' arguments may not NOT be NULL							*/
+/* 'client' and 'save_ars' arguments may be NULL							*/
+/* 'use_prot' indicates whether to copy the client->protocol value to user	*/
+/* When save_ars is not NULL, specifies users to not save login values for	*/
+/* Returns 0 (USER_SUCCESS) on success										*/
 /****************************************************************************/
-int loginuserdat(scfg_t* cfg, user_t* user, const char* protocol, const char* hostname, const char* ipaddr, time_t logontime)
+int loginuserdat(scfg_t* cfg, user_t* user, client_t* client, bool use_prot, char* save_ars)
 {
-	if (protocol != NULL)
-		SAFECOPY(user->connection, protocol);
-	if (hostname != NULL)
-		SAFECOPY(user->comp, hostname);
-	if (ipaddr != NULL)
-		SAFECOPY(user->ipaddr, ipaddr);
-	user->logontime = (time32_t)logontime;
+	if (client != NULL) {
+		if (use_prot)
+			SAFECOPY(user->connection, client->protocol);
+		SAFECOPY(user->comp, client->host);
+		SAFECOPY(user->ipaddr, client->addr);
+	}
+	user->logontime = time32(NULL);
 
+	if (save_ars != NULL && !chk_ars(cfg, save_ars, user, client))
+		return USER_SUCCESS;
 	return putuserdat(cfg, user);
 }
 

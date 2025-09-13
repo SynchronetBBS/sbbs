@@ -59,6 +59,7 @@ typedef struct {
 	char default_cgi_content[128];
 	char default_auth_list[128];
 	uint outbuf_drain_timeout;
+	char login_info_save[INI_MAX_VALUE_LEN];
 
 	/* JavaScript operating parameters */
 	js_startup_t js;

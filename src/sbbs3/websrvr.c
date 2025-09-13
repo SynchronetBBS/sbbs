@@ -1681,7 +1681,7 @@ void http_logon(http_session_t * session, user_t *usr)
 		SAFECOPY(session->username, unknown);
 	else {
 		SAFECOPY(session->username, session->user.alias);
-		int result = loginuserdat(&scfg, &session->user, session->client.protocol, session->host_name, session->host_ip, session->logon_time);
+		int result = loginuserdat(&scfg, &session->user, &session->client, /* use_prot: */true, startup->login_info_save);
 		if (result != 0)
 			errprintf(LOG_ERR, WHERE, "%04d %-5s [%s] <%s> !Error %d writing user data for user #%d"
 			          , session->socket, session->client.protocol, session->host_ip

@@ -45,6 +45,7 @@ typedef struct {
 	int64_t max_fsize;          /* Maximum file size accepted for upload (0=unlimited) */
 	uint max_concurrent_connections;
 	char index_file_name[64];
+	char login_info_save[INI_MAX_VALUE_LEN];
 
 } ftp_startup_t;
 
