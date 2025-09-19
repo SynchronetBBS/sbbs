@@ -1130,11 +1130,11 @@ cet_telesoftware_try_get_block(struct bbslist *bbs)
 	uint8_t checkxor = 0;
 	bool got_start = false;
 	bool got_escape = false;
-	bool got_end = false;
+	bool got_block_end = false;
 	bool need_term = false;
 	int16_t shift = 0;
 
-	while ((ret->length < max_len) && (!got_end)) {
+	while ((ret->length < max_len) && (!got_block_end)) {
 		bool xor = got_start;
 		int b = recv_byte(NULL, CET_TS_TIMEOUT);
 		if (b < 0 || b > 255) {
@@ -1192,14 +1192,13 @@ cet_telesoftware_try_get_block(struct bbslist *bbs)
 						ret->data[ret->length++] = '|';
 						break;
 					case 'F':
-						if (got_end) {
+						if (ret->ends_file) {
 							free(ret);
 							lputs(NULL, LOG_ERR, "Multiple |F in file");
 							return NULL;
 						}
 						ret->ends_file = true;
 						allowed_after_end = true;
-						got_end = true;
 						break;
 					case 'G':
 						if (ret->frame != 'A') {
@@ -1274,7 +1273,7 @@ cet_telesoftware_try_get_block(struct bbslist *bbs)
 							lprintf(LOG_ERR, "Incorrect checkxor. Calculated 0x%02, Remote indicated 0x%02", checkxor, checked);
 							return NULL;
 						}
-						got_end = true;
+						got_block_end = true;
 						break;
 					case '}': // ie: ¾
 						ret->data[ret->length++] = '}';
@@ -1282,6 +1281,7 @@ cet_telesoftware_try_get_block(struct bbslist *bbs)
 					// We don't really handle these for now...
 					default:
 						allowed_after_end = true;
+						// Fallthrough
 					case 'D':
 					case 'T':
 						lprintf(LOG_WARNING, "Unhandled escape |%c", b);
@@ -1289,7 +1289,7 @@ cet_telesoftware_try_get_block(struct bbslist *bbs)
 						break;
 				}
 			}
-			if (got_end && !allowed_after_end) {
+			if (ret->ends_file && !allowed_after_end) {
 				free(ret);
 				lprintf(LOG_ERR, "Received |%c after |F", b);
 				return NULL;
@@ -1312,6 +1312,7 @@ cet_telesoftware_try_get_block(struct bbslist *bbs)
 					if (shift && b < 64) {
 						free(ret);
 						lprintf(LOG_ERR, "Illegal encoding, shift of %d with byte of %d", shift, b);
+						return NULL;
 					}
 					if (b == '}')
 						ret->data[ret->length++] = ' ';
@@ -1496,9 +1497,9 @@ cet_telesoftware_download(struct bbslist *bbs)
 		}
 	}
 
+	free(header);
 	FILE *fp = fopen(str, "wb");
 	if (fp == NULL) {
-		free(header);
 		lprintf(LOG_ERR, "Error %d creating %s", errno, str);
 		transfer_complete(false, was_binary);
 		return;
@@ -1508,7 +1509,6 @@ cet_telesoftware_download(struct bbslist *bbs)
 		if (next_frame == 'z' + 1) {
 			next_frame = 'a';
 			if (!cet_send_string("0")) {
-				free(header);
 				fclose(fp);
 				lputs(NULL, LOG_ERR, "Error requesting next frame");
 				transfer_complete(false, was_binary);
@@ -1517,7 +1517,6 @@ cet_telesoftware_download(struct bbslist *bbs)
 		}
 		else {
 			if (!cet_send_string("_")) {
-				free(header);
 				fclose(fp);
 				lputs(NULL, LOG_ERR, "Error requesting next page");
 				transfer_complete(false, was_binary);
@@ -1526,11 +1525,12 @@ cet_telesoftware_download(struct bbslist *bbs)
 		}
 		struct cet_ts_block *blk = cet_telesoftware_get_block(bbs);
 		if (blk == NULL) {
-			free(header);
 			fclose(fp);
 			transfer_complete(false, was_binary);
 			return;
 		}
+		if (frames_remaining != 999)
+			frames_remaining--;
 		bytes_received += blk->length;
 		if (blk->frame == 'A') {
 			if (next_frame == 'A') {
@@ -1541,7 +1541,6 @@ cet_telesoftware_download(struct bbslist *bbs)
 			if (next_frame == 'A')
 				next_frame = blk->frame;
 			if (blk->frame != next_frame) {
-				free(header);
 				fclose(fp);
 				lprintf(LOG_ERR, "Out of order frame... got %c, expcted %c", blk->frame, next_frame);
 				free(blk);
@@ -1549,7 +1548,6 @@ cet_telesoftware_download(struct bbslist *bbs)
 				return;
 			}
 			if (blk->block_num != next_block) {
-				free(header);
 				fclose(fp);
 				lprintf(LOG_ERR, "Out of order block in frame %c... got %u, expcted %u", blk->frame, blk->block_num, next_block);
 				free(blk);
@@ -1563,7 +1561,6 @@ cet_telesoftware_download(struct bbslist *bbs)
 			next_block++;
 		size_t written = fwrite(blk->data, 1, blk->length, fp);
 		if (written != blk->length) {
-			free(header);
 			fclose(fp);
 			lprintf(LOG_ERR, "Bad write, wrote %zu, tried %zu", written, blk->length);
 			free(blk);
@@ -1572,7 +1569,13 @@ cet_telesoftware_download(struct bbslist *bbs)
 		}
 		if (blk->ends_file) {
 			free(blk);
+			if (frames_remaining) {
+				lprintf(LOG_ERR, "End of file detected with %u frames remaining.", frames_remaining);
+			}
 			break;
+		}
+		if (!frames_remaining) {
+			lprintf(LOG_ERR, "End of file detected with %u frames remaining.", frames_remaining);
 		}
 		free(blk);
 	}
