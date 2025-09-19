@@ -1106,6 +1106,13 @@ cet_send_string(const char *str)
 	return true;
 }
 
+static void
+cet_telesoftware_end_of_frame(void)
+{
+	// Original spec says to wait until two seconds have passed without a character.
+	while (recv_byte(NULL, 2) != -1);
+}
+
 static struct cet_ts_block *
 cet_telesoftware_try_get_block(struct bbslist *bbs)
 {
@@ -1337,6 +1344,7 @@ cet_telesoftware_get_block(struct bbslist *bbs)
 	struct cet_ts_block *ret = NULL;
 	while (ret == NULL) {
 		ret = cet_telesoftware_try_get_block(bbs);
+		cet_telesoftware_end_of_frame();
 		if (ret)
 			return ret;
 		if (retries == 0)
@@ -1553,11 +1561,11 @@ cet_telesoftware_download(struct bbslist *bbs)
 			next_frame++;
 		else
 			next_block++;
-		if (fwrite(blk->data, 1, blk->length, fp) != blk->length) {
+		size_t written = fwrite(blk->data, 1, blk->length, fp);
+		if (written != blk->length) {
 			free(header);
-			free(blk);
 			fclose(fp);
-			lprintf(LOG_ERR, "Out of order block in frame %c... got %u, expcted %u", blk->frame, blk->block_num, next_block);
+			lprintf(LOG_ERR, "Bad write, wrote %zu, tried %zu", written, blk->length);
 			free(blk);
 			transfer_complete(false, was_binary);
 			return;
@@ -1571,6 +1579,7 @@ cet_telesoftware_download(struct bbslist *bbs)
 	fclose(fp);
 
 	transfer_complete(true, was_binary);
+	cet_send_string("*00");
 	cet_send_string("_");
 }
 
