@@ -822,8 +822,8 @@ draw_transfer_window(char *title)
 		twh = trans_ti.screenheight;
 	if (twh > tww)
 		twh = tww;
-	char outline[tww * 2];
-	char shadow[tww * 2]; /* Assumes that width*2 > height * 2 */
+	char outline[TRANSFER_WIN_WIDTH * 2];
+	char shadow[TRANSFER_WIN_HEIGHT * 2]; /* Assumes that width*2 > height * 2 */
 	int  i, top, left, old_hold;
 
 	old_hold = hold_update;
