@@ -837,12 +837,12 @@ draw_transfer_window(char *title)
 	window(1, 1, trans_ti.screenwidth, trans_ti.screenheight);
 
 	vmem_gettext(transw_ti.winleft, transw_ti.wintop, transw_ti.winright, transw_ti.winbottom, winbuf);
-	memset(outline, YELLOW | (BLUE << 4), sizeof(outline));
-	for (i = 2; i < sizeof(outline) - 2; i += 2) {
+	memset(outline, YELLOW | (BLUE << 4), tww * 2);
+	for (i = 2; i < (tww - 1) * 2; i += 2) {
 		outline[i] = (char)0xcd; /* Double horizontal line */
 	}
 	outline[0] = (char)0xc9;
-	outline[sizeof(outline) - 2] = (char)0xbb;
+	outline[(tww - 1) * 2] = (char)0xbb;
 	puttext(left, top, left + tww - 1, top, outline);
 
         /* Title */
@@ -853,32 +853,32 @@ draw_transfer_window(char *title)
 	textattr(WHITE | (BLUE << 4));
 	cprintf("%s", title);
 
-	for (i = 2; i < sizeof(outline) - 2; i += 2) {
+	for (i = 2; i < (tww - 1) * 2; i += 2) {
 		outline[i] = (char)0xc4;           /* Single horizontal line */
 	}
 	outline[0] = (char)0xc7;                   /* 0xcc */
-	outline[sizeof(outline) - 2] = (char)0xb6; /* 0xb6 */
+	outline[(tww - 1) * 2] = (char)0xb6; /* 0xb6 */
 	puttext(left, top + 6, left + tww - 1, top + 6, outline);
 
-	for (i = 2; i < sizeof(outline) - 2; i += 2) {
+	for (i = 2; i < (tww - 1) * 2; i += 2) {
 		outline[i] = (char)0xcd; /* Double horizontal line */
 	}
 	outline[0] = (char)0xc8;
-	outline[sizeof(outline) - 2] = (char)0xbc;
+	outline[(tww - 1) * 2] = (char)0xbc;
 	puttext(left,
 	    top + twh - 1,
 	    left + tww - 1,
 	    top + twh - 1,
 	    outline);
 	outline[0] = (char)0xba;
-	outline[sizeof(outline) - 2] = (char)0xba;
-	for (i = 2; i < sizeof(outline) - 2; i += 2)
+	outline[(tww - 1) * 2] = (char)0xba;
+	for (i = 2; i < (tww - 1) * 2; i += 2)
 		outline[i] = ' ';
 	for (i = 1; i < 6; i++)
 		puttext(left, top + i, left + tww - 1, top + i, outline);
 
 /*
- *      for(i=3;i < sizeof(outline) - 2; i+=2) {
+ *      for(i=3;i < (tww - 1) * 2; i+=2) {
  *              outline[i] = LIGHTGRAY | (BLACK << 8);
  *      }
  */
@@ -900,7 +900,7 @@ draw_transfer_window(char *title)
 		    left + tww + 1,
 		    top + (twh - 1),
 		    shadow);
-		for (i = 1; i < sizeof(shadow); i += 2)
+		for (i = 1; i < tww * 2; i += 2)
 			shadow[i] = DARKGRAY;
 		puttext(left + tww,
 		    top + 1,
@@ -912,7 +912,7 @@ draw_transfer_window(char *title)
 		    left + tww + 1,
 		    top + twh,
 		    shadow);
-		for (i = 1; i < sizeof(shadow); i += 2)
+		for (i = 1; i < tww * 2; i += 2)
 			shadow[i] = DARKGRAY;
 		puttext(left + 2,
 		    top + twh,
