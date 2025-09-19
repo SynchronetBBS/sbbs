@@ -831,9 +831,7 @@ draw_transfer_window(char *title)
 	top = (trans_ti.screenheight - twh) / 2 + 1;
 	left = (trans_ti.screenwidth - tww) / 2 + 1;
 	window(left, top, left + tww - 1, top + twh - 1);
-fprintf(stderr, "Set: %d, %d, %d, %d\n", left, top, left + tww + 1, top + twh);
 	gettextinfo(&transw_ti);
-fprintf(stderr, "Got: %d, %d, %d, %d\n", transw_ti.winleft, transw_ti.wintop, transw_ti.winright, transw_ti.winbottom);
 	window(transw_ti.winleft + 2, transw_ti.wintop + 1, transw_ti.winright - 2, transw_ti.wintop + 5);
 	gettextinfo(&progress_ti);
 	window(1, 1, trans_ti.screenwidth, trans_ti.screenheight);
