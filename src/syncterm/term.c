@@ -1036,17 +1036,556 @@ begin_upload(struct bbslist *bbs, bool autozm, int lastch)
 	gotoxy(txtinfo.curx, txtinfo.cury);
 }
 
+static int
+ask_overwrite(int *dflt)
+{
+	char                 *opts[4] = {
+		"Overwrite",
+		"Choose New Name",
+		"Cancel Download",
+		NULL
+	};
+	uifc.helpbuf = "Duplicate file... choose action\n";
+	return uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, dflt, NULL, "Duplicate File Name", opts);
+}
+
+static void
+transfer_complete(bool success, bool was_binary)
+{
+	int timeout = success ? settings.xfer_success_keypress_timeout : settings.xfer_failure_keypress_timeout;
+
+	if (!was_binary)
+		conn_binary_mode_off();
+	if (log_fp != NULL)
+		fflush(log_fp);
+
+        /* TODO: Make this pretty (countdown timer) and don't delay a second between keyboard polls */
+	lprintf(LOG_NOTICE, "Hit any key or wait %u seconds to continue...", timeout);
+	while (timeout > 0) {
+		if (kbhit()) {
+			/* coverity[cond_const:SUPPRESS] */
+			if (getch() == (CIO_KEY_QUIT & 0xff)) {
+				if ((getch() << 8) == (CIO_KEY_QUIT & 0xff00))
+					check_exit(false);
+			}
+			break;
+		}
+		timeout--;
+		SLEEP(1000);
+	}
+
+	erase_transfer_window();
+}
+
+struct cet_ts_state {
+	int16_t total_frames;
+	uint8_t frame_blocks;
+};
+
+struct cet_ts_block {
+	size_t  sz;
+	size_t  length;
+	uint8_t frame;
+	uint8_t block_num;
+	uint8_t block_cnt;
+	uint8_t ends_file;
+	char    data[];
+};
+
+#define CET_TS_TIMEOUT 5
+#define CET_TS_RETRIES 3
+
+static bool
+cet_send_string(const char *str)
+{
+	for (;*str;str++) {
+		if (send_byte(NULL, *str, CET_TS_TIMEOUT))
+			return false;
+	}
+	flush_send(NULL);
+	return true;
+}
+
+static struct cet_ts_block *
+cet_telesoftware_try_get_block(struct bbslist *bbs)
+{
+	struct text_info ti;
+	gettextinfo(&ti);
+	size_t max_len = ti.screenwidth * ti.screenheight;
+	size_t sz = offsetof(struct cet_ts_block, data) + max_len;
+	struct cet_ts_block *ret = malloc(sz);
+	ret->sz = sz;
+	ret->length = 0;
+	ret->frame = 'A';
+	ret->block_num = 0;
+	ret->block_cnt = 0;
+	ret->ends_file = false;
+	uint8_t checkxor = 0;
+	bool got_start = false;
+	bool got_escape = false;
+	bool got_end = false;
+	bool need_term = false;
+	int16_t shift = 0;
+
+	while ((ret->length < max_len) && (!got_end)) {
+		bool xor = got_start;
+		int b = recv_byte(NULL, CET_TS_TIMEOUT);
+		if (b < 0 || b > 255) {
+			free(ret);
+			lprintf(LOG_ERR, "Failed to receive byte (timeout %d)", b);
+			return NULL;
+		}
+		if (got_start && (b > 127 || b < 32)) {
+			free(ret);
+			lprintf(LOG_ERR, "Received illegal byte 0x%02x (high bit set)", b);
+			return NULL;
+		}
+		if (got_escape) {
+			if (!got_start && b != 'A') {
+				continue;
+			}
+			bool allowed_after_end = false;
+			got_escape = false;
+			if (need_term) {
+				if (b == 'I') {
+					allowed_after_end = true;
+					need_term = false;
+				}
+			}
+			else {
+				int b1, b2, b3;
+				switch (b) {
+					case '0':
+						shift = 0;
+						break;
+					case '1':
+						shift = -64;
+						break;
+					case '2':
+						shift = 64;
+						break;
+					case '3':
+						shift = 96;
+						break;
+					case '4':
+						shift = 128;
+						break;
+					case '5':
+						shift = 160;
+						break;
+					case 'A':
+						if (got_start) {
+							free(ret);
+							lputs(NULL, LOG_ERR, "|A Inside block");
+							return NULL;
+						}
+						got_start = true;
+						break;
+					case 'E':
+						ret->data[ret->length++] = '|';
+						break;
+					case 'F':
+						if (got_end) {
+							free(ret);
+							lputs(NULL, LOG_ERR, "Multiple |F in file");
+							return NULL;
+						}
+						ret->ends_file = true;
+						allowed_after_end = true;
+						got_end = true;
+						break;
+					case 'G':
+						if (ret->frame != 'A') {
+							free(ret);
+							lputs(NULL, LOG_ERR, "Multiple |G in block");
+							return NULL;
+						}
+						// Read extra bytes up to | or four, then set got_escape
+						need_term = true;
+						b1 = recv_byte(NULL, CET_TS_TIMEOUT);
+						if (b1 < 'a' || b1 > 'z') {
+							free(ret);
+							lprintf(LOG_ERR, "Invalid |G frame byte 0x%02%s", b1, b1 == -1 ? " (timeout)" : "");
+							return NULL;
+						}
+						checkxor ^= b1;
+						ret->frame = b1;
+						b1 = recv_byte(NULL, CET_TS_TIMEOUT);
+						if (((b1 < '0') || (b1 > '9')) && (b1 != '|')) {
+							free(ret);
+							lprintf(LOG_ERR, "Invalid |G block id byte 0x%02%s", b1, b1 == -1 ? " (timeout)" : "");
+							return NULL;
+						}
+						if (b1 == '|') {
+							got_escape = true;
+						}
+						else {
+							checkxor ^= b1;
+							ret->block_num = b1 - '0';
+							b1 = recv_byte(NULL, CET_TS_TIMEOUT);
+							if ((b1 < '0') || (b1 > '9')) {
+								free(ret);
+								lprintf(LOG_ERR, "Invalid |G block id byte 0x%02%s", b1, b1 == -1 ? " (timeout)" : "");
+								return NULL;
+							}
+							ret->block_cnt = b1 - '0';
+						}
+						break;
+					case 'I':
+						free(ret);
+						lputs(NULL, LOG_ERR, "Got unneeded |I");
+						return NULL;
+					case 'L':
+#ifdef _WIN32
+						ret->data[ret->length++] = '\r';
+#endif
+						ret->data[ret->length++] = '\n';
+						break;
+					case 'Z':
+						allowed_after_end = true;
+						b1 = recv_byte(NULL, CET_TS_TIMEOUT);
+						if (b1 < '0' || b1 > '9') {
+							free(ret);
+							lprintf(LOG_ERR, "Invalid checkxor byte 0x%02%s", b1, b1 == -1 ? " (timeout)" : "");
+							return NULL;
+						}
+						b2 = recv_byte(NULL, CET_TS_TIMEOUT);
+						if (b2 < '0' || b2 > '9') {
+							free(ret);
+							lprintf(LOG_ERR, "Invalid checkxor byte 0x%02%s", b2, b2 == -1 ? " (timeout)" : "");
+							return NULL;
+						}
+						b3 = recv_byte(NULL, CET_TS_TIMEOUT);
+						if (b3 < '0' || b3 > '9') {
+							free(ret);
+							lprintf(LOG_ERR, "Invalid checkxor byte 0x%02%s", b3, b3 == -1 ? " (timeout)" : "");
+							return NULL;
+						}
+						uint8_t checked = (b1 - '0') * 100 + (b2 - '0') * 10 + (b3 - '0');
+						if (checked != checkxor) {
+							free(ret);
+							lprintf(LOG_ERR, "Incorrect checkxor. Calculated 0x%02, Remote indicated 0x%02", checkxor, checked);
+							return NULL;
+						}
+						got_end = true;
+						break;
+					case '}': // ie: ¾
+						ret->data[ret->length++] = '}';
+						break;
+					// We don't really handle these for now...
+					default:
+						allowed_after_end = true;
+					case 'D':
+					case 'T':
+						lprintf(LOG_WARNING, "Unhandled escape |%c", b);
+						need_term = true;
+						break;
+				}
+			}
+			if (got_end && !allowed_after_end) {
+				free(ret);
+				lprintf(LOG_ERR, "Received |%c after |F", b);
+				return NULL;
+			}
+			if (xor) {
+				checkxor ^= '|';
+				checkxor ^= (b & 0x7F);
+			}
+		}
+		else {
+			if (!got_start && b != '|') {
+				continue;
+			}
+			switch (b) {
+				case '|':
+					got_escape = true;
+					break;
+				default: {
+					uint8_t nb = b + shift;
+					if (shift && b < 64) {
+						free(ret);
+						lprintf(LOG_ERR, "Illegal encoding, shift of %d with byte of %d", shift, b);
+					}
+					if (b == '}')
+						ret->data[ret->length++] = ' ';
+					else
+						ret->data[ret->length++] = nb;
+					if (xor) {
+						checkxor ^= (b & 0x7F);
+					}
+				}
+			}
+		}
+	}
+	if (need_term) {
+		free(ret);
+		lputs(NULL, LOG_ERR, "No terminating |I found");
+		return NULL;
+	}
+	if (ret->length == max_len) {
+		free(ret);
+		lputs(NULL, LOG_ERR, "No terminating |Z found");
+		return NULL;
+	}
+	return ret;
+}
+
+static struct cet_ts_block *
+cet_telesoftware_get_block(struct bbslist *bbs)
+{
+	int retries = CET_TS_RETRIES;
+	struct cet_ts_block *ret = NULL;
+	while (ret == NULL) {
+		ret = cet_telesoftware_try_get_block(bbs);
+		if (ret)
+			return ret;
+		if (retries == 0)
+			break;
+		retries--;
+		cet_send_string("*00");
+	}
+	lputs(NULL, LOG_ERR, "Too many retries, aborting");
+	return NULL;
+}
+
+bool
+cet_telesoftware_duplicate(struct bbslist *bbs, char *path, size_t pathsize, char *fname)
+{
+	struct  text_info     txtinfo;
+	struct ciolib_screen *savscrn;
+	bool                  ret = false;
+	int                   i;
+	char                  newfname[MAX_PATH + 1];
+	bool                  loop = true;
+	int                   old_hold = hold_update;
+
+	gettextinfo(&txtinfo);
+	savscrn = cp437_savescrn();
+	window(1, 1, txtinfo.screenwidth, txtinfo.screenheight);
+
+	init_uifc(false, false);
+
+	hold_update = false;
+	while (loop) {
+		loop = false;
+		i = 0;
+		uifc.helpbuf = "Duplicate file... choose action\n";
+		switch (ask_overwrite(&i)) {
+			case -1:
+				if (check_exit(false)) {
+					ret = false;
+					break;
+				}
+				loop = true;
+				break;
+			case 0: /* Overwrite */
+				unlink(path);
+				ret = true;
+				break;
+			case 1: /* Choose new name */
+				uifc.changes = 0;
+				uifc.helpbuf = "Duplicate Filename... enter new name";
+				SAFECOPY(newfname, getfname(fname));
+				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "New Filename: ", newfname,
+				    sizeof(newfname) - 1, K_EDIT) == -1) {
+					loop = true;
+				}
+				else {
+					if (uifc.changes) {
+						sprintf(path, "%s/%s", bbs->dldir, newfname);
+						ret = true;
+					}
+					else {
+						loop = true;
+					}
+				}
+				break;
+		}
+	}
+
+	uifcbail();
+	restorescreen(savscrn);
+	freescreen(savscrn);
+	hold_update = old_hold;
+	return ret;
+}
+
+static void
+cet_telesoftware_download(struct bbslist *bbs)
+{
+	uint64_t bytes_received = 0;
+	bool     was_binary = conn_api.binary_mode;
+	uint8_t  next_frame = 'A';
+	uint8_t  next_block = 0;
+	uint16_t frames_remaining;
+	char     str[MAX_PATH * 2 + 2];
+
+	if (safe_mode)
+		return;
+	draw_transfer_window("CET Telesoftware Download");
+
+	if (!was_binary)
+		conn_binary_mode_on();
+
+	// Send *00 to resend current page. (not strictly required, we *could* get this from the screen buffer)
+	if (!cet_send_string("*00")) {
+		lputs(NULL, LOG_ERR, "Failed to request header block ('*00')");
+		transfer_complete(false, was_binary);
+		return;
+	}
+
+	struct cet_ts_block *header = cet_telesoftware_get_block(bbs);
+	if (header == NULL) {
+		lputs(NULL, LOG_ERR, "Failed to get header block");
+		transfer_complete(false, was_binary);
+		return;
+	}
+	const char *fname = header->data;
+	char *p = strchr(header->data, '\n');
+	if (p == NULL) {
+		free(header);
+		lputs(NULL, LOG_ERR, "Invalid header block (missing |L)");
+		transfer_complete(false, was_binary);
+		return;
+	}
+	*p = 0;
+	if (p == fname) {
+		free(header);
+		lputs(NULL, LOG_ERR, "Invalid header block (zero-length file name)");
+		transfer_complete(false, was_binary);
+		return;
+	}
+#ifdef _WIN32
+	if (*(p - 1) != '\r') {
+		free(header);
+		lputs(NULL, LOG_ERR, "Invalid header block (missing |L)");
+		transfer_complete(false, was_binary);
+		return;
+	}
+	*(p - 1) = 0;
+#endif
+	p++;
+	long lng = strtol(p, NULL, 10);
+	if (lng < 1 || lng > 999) {
+		free(header);
+		lprintf(LOG_ERR, "Invalid header block size (%s)", p);
+		transfer_complete(false, was_binary);
+		return;
+	}
+	frames_remaining = lng;
+
+	lprintf(LOG_DEBUG, "Incoming filename: %.64s ", getfname(fname));
+	SAFEPRINTF2(str, "%s/%s", bbs->dldir, getfname(fname));
+	lprintf(LOG_INFO, "File size: %" PRId16 " frames", frames_remaining);
+	lprintf(LOG_DEBUG, "Receiving: %.64s ", str);
+
+	while (fexistcase(str)) {
+		lprintf(LOG_WARNING, "%s already exists", str);
+		if (!cet_telesoftware_duplicate(bbs, str, sizeof(str), getfname(fname))) {
+			free(header);
+			transfer_complete(false, was_binary);
+			return;
+		}
+	}
+
+	FILE *fp = fopen(str, "wb");
+	if (fp == NULL) {
+		free(header);
+		lprintf(LOG_ERR, "Error %d creating %s", errno, str);
+		transfer_complete(false, was_binary);
+		return;
+	}
+
+	for (;;) {
+		if (next_frame == 'z' + 1) {
+			next_frame = 'a';
+			if (!cet_send_string("0")) {
+				free(header);
+				fclose(fp);
+				lputs(NULL, LOG_ERR, "Error requesting next frame");
+				transfer_complete(false, was_binary);
+				return;
+			}
+		}
+		else {
+			if (!cet_send_string("_")) {
+				free(header);
+				fclose(fp);
+				lputs(NULL, LOG_ERR, "Error requesting next page");
+				transfer_complete(false, was_binary);
+				return;
+			}
+		}
+		struct cet_ts_block *blk = cet_telesoftware_get_block(bbs);
+		if (blk == NULL) {
+			free(header);
+			fclose(fp);
+			transfer_complete(false, was_binary);
+			return;
+		}
+		bytes_received += blk->length;
+		if (blk->frame == 'A') {
+			if (next_frame == 'A') {
+				next_frame = 'a';
+			}
+		}
+		else {
+			if (next_frame == 'A')
+				next_frame = blk->frame;
+			if (blk->frame != next_frame) {
+				free(header);
+				fclose(fp);
+				lprintf(LOG_ERR, "Out of order frame... got %c, expcted %c", blk->frame, next_frame);
+				free(blk);
+				transfer_complete(false, was_binary);
+				return;
+			}
+			if (blk->block_num != next_block) {
+				free(header);
+				fclose(fp);
+				lprintf(LOG_ERR, "Out of order block in frame %c... got %u, expcted %u", blk->frame, blk->block_num, next_block);
+				free(blk);
+				transfer_complete(false, was_binary);
+				return;
+			}
+		}
+		if (blk->block_cnt == blk->block_num)
+			next_frame++;
+		else
+			next_block++;
+		if (fwrite(blk->data, 1, blk->length, fp) != blk->length) {
+			free(header);
+			free(blk);
+			fclose(fp);
+			lprintf(LOG_ERR, "Out of order block in frame %c... got %u, expcted %u", blk->frame, blk->block_num, next_block);
+			free(blk);
+			transfer_complete(false, was_binary);
+			return;
+		}
+		if (blk->ends_file) {
+			free(blk);
+			break;
+		}
+		free(blk);
+	}
+	fclose(fp);
+
+	transfer_complete(true, was_binary);
+	cet_send_string("_");
+}
+
 void
 begin_download(struct bbslist *bbs)
 {
 	char                  path[MAX_PATH + 1];
 	int                   i;
-	char                 *opts[6] = {
+	char                 *opts[7] = {
 		"ZMODEM",
 		"YMODEM-g",
 		"YMODEM",
 		"XMODEM-CRC",
 		"XMODEM-CHKSUM",
+		"CET Telesoftware",
 		""
 	};
 	struct  text_info     txtinfo;
@@ -1062,6 +1601,8 @@ begin_download(struct bbslist *bbs)
 	init_uifc(false, false);
 
 	i = 0;
+	if (cterm->emulation != CTERM_EMULATION_PRESTEL)
+		opts[5] = "";
 	uifc.helpbuf = "Select Protocol";
 	hold_update = false;
 	suspend_rip(true);
@@ -1085,6 +1626,9 @@ begin_download(struct bbslist *bbs)
 		case 4:
 			if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Filename", path, sizeof(path), 0) != -1)
 				xmodem_download(bbs, XMODEM | RECV, path);
+			break;
+		case 5:
+			cet_telesoftware_download(bbs);
 			break;
 	}
 	suspend_rip(false);
@@ -1172,34 +1716,6 @@ ascii_upload(FILE *fp)
 	}
 }
 
-static void
-transfer_complete(bool success, bool was_binary)
-{
-	int timeout = success ? settings.xfer_success_keypress_timeout : settings.xfer_failure_keypress_timeout;
-
-	if (!was_binary)
-		conn_binary_mode_off();
-	if (log_fp != NULL)
-		fflush(log_fp);
-
-        /* TODO: Make this pretty (countdown timer) and don't delay a second between keyboard polls */
-	lprintf(LOG_NOTICE, "Hit any key or wait %u seconds to continue...", timeout);
-	while (timeout > 0) {
-		if (kbhit()) {
-			/* coverity[cond_const:SUPPRESS] */
-			if (getch() == (CIO_KEY_QUIT & 0xff)) {
-				if ((getch() << 8) == (CIO_KEY_QUIT & 0xff00))
-					check_exit(false);
-			}
-			break;
-		}
-		timeout--;
-		SLEEP(1000);
-	}
-
-	erase_transfer_window();
-}
-
 void
 zmodem_upload(struct bbslist *bbs, FILE *fp, char *path)
 {
@@ -1251,12 +1767,6 @@ zmodem_duplicate_callback(void *cbdata, void *zm_void)
 	struct ciolib_screen *savscrn;
 	bool                  ret = false;
 	int                   i;
-	char                 *opts[4] = {
-		"Overwrite",
-		"Choose New Name",
-		"Cancel Download",
-		NULL
-	};
 	struct zmodem_cbdata *cb = (struct zmodem_cbdata *)cbdata;
 	zmodem_t             *zm = (zmodem_t *)zm_void;
 	char                  fpath[MAX_PATH * 2 + 2];
@@ -1273,7 +1783,7 @@ zmodem_duplicate_callback(void *cbdata, void *zm_void)
 		loop = false;
 		i = 0;
 		uifc.helpbuf = "Duplicate file... choose action\n";
-		switch (uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, NULL, "Duplicate File Name", opts)) {
+		switch (ask_overwrite(&i)) {
 			case -1:
 				if (check_exit(false)) {
 					ret = false;
@@ -1660,12 +2170,6 @@ xmodem_duplicate(xmodem_t *xm, struct bbslist *bbs, char *path, size_t pathsize,
 	struct ciolib_screen *savscrn;
 	bool                  ret = false;
 	int                   i;
-	char                 *opts[4] = {
-		"Overwrite",
-		"Choose New Name",
-		"Cancel Download",
-		NULL
-	};
 	char                  newfname[MAX_PATH + 1];
 	bool                  loop = true;
 	int                   old_hold = hold_update;
@@ -1681,7 +2185,7 @@ xmodem_duplicate(xmodem_t *xm, struct bbslist *bbs, char *path, size_t pathsize,
 		loop = false;
 		i = 0;
 		uifc.helpbuf = "Duplicate file... choose action\n";
-		switch (uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, NULL, "Duplicate File Name", opts)) {
+		switch (ask_overwrite(&i)) {
 			case -1:
 				if (check_exit(false)) {
 					ret = false;
