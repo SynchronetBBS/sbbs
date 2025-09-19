@@ -64,8 +64,10 @@ struct cterminal *cterm;
 #define TRANSFER_WIN_HEIGHT 18
 static struct vmem_cell winbuf[(TRANSFER_WIN_WIDTH + 2) * (TRANSFER_WIN_HEIGHT + 1) * 2]; /* Save buffer for transfer
                                                                                            * window */
-static struct text_info trans_ti;
-static struct text_info log_ti;
+static struct text_info trans_ti;    // Holds the screen and window size from before transfer
+static struct text_info transw_ti;   // Holds the screen and transfer window
+static struct text_info progress_ti; // Holds the screen and progress window
+static struct text_info log_ti;      // Holds the screen and log info
 
 static struct ciolib_pixels *pixmap_buffer[2];
 static struct ciolib_mask *mask_buffer;
@@ -639,6 +641,7 @@ zmodem_progress(void *cbdata, int64_t current_pos)
 	struct zmodem_cbdata *zcb = (struct zmodem_cbdata *)cbdata;
 	zmodem_t             *zm = zcb->zm;
 	bool                  growing = false;
+	int                   tww = transw_ti.winright - transw_ti.winleft + 1;
 
 	now = time(NULL);
 	if (current_pos > zm->current_file_size)
@@ -646,10 +649,7 @@ zmodem_progress(void *cbdata, int64_t current_pos)
 	if ((now != last_progress) || ((current_pos >= zm->current_file_size) && (growing == false))) {
 		zmodem_check_abort(cbdata);
 		hold_update = true;
-		window(((trans_ti.screenwidth - TRANSFER_WIN_WIDTH) / 2) + 2,
-		    ((trans_ti.screenheight - TRANSFER_WIN_HEIGHT) / 2) + 1,
-		    ((trans_ti.screenwidth - TRANSFER_WIN_WIDTH) / 2) + TRANSFER_WIN_WIDTH - 2,
-		    ((trans_ti.screenheight - TRANSFER_WIN_HEIGHT) / 2) + 5);
+		window(progress_ti.winleft, progress_ti.wintop, progress_ti.winright, progress_ti.winbottom);
 		gotoxy(1, 1);
 		textattr(LIGHTCYAN | (BLUE << 4));
 		t = now - zm->transfer_start_time;
@@ -663,7 +663,7 @@ zmodem_progress(void *cbdata, int64_t current_pos)
 		if (l < 0)
 			l = 0;
 		cprintf("File (%u of %u): %-.*s",
-		    zm->current_file_num, zm->total_files, TRANSFER_WIN_WIDTH - 20, zm->current_file_name);
+		    zm->current_file_num, zm->total_files, tww - 20, zm->current_file_name);
 		clreol();
 		cputs("\r\n");
 		if (zm->transfer_start_pos)
@@ -693,11 +693,11 @@ zmodem_progress(void *cbdata, int64_t current_pos)
 		clreol();
 		cputs("\r\n");
 		if (zm->current_file_size == 0) {
-			cprintf("%*s%3d%%\r\n", TRANSFER_WIN_WIDTH / 2 - 5, "", 100);
+			cprintf("%*s%3d%%\r\n", tww / 2 - 5, "", 100);
 			l = 60;
 		}
 		else {
-			cprintf("%*s%3d%%\r\n", TRANSFER_WIN_WIDTH / 2 - 5, "",
+			cprintf("%*s%3d%%\r\n", tww / 2 - 5, "",
 			    (long)(((float)current_pos / (float)zm->current_file_size) * 100.0));
 			l = (long)(60 * ((float)current_pos / (float)zm->current_file_size));
 		}
@@ -812,25 +812,40 @@ count_data_waiting(void)
 void
 draw_transfer_window(char *title)
 {
-	char outline[TRANSFER_WIN_WIDTH * 2];
-	char shadow[TRANSFER_WIN_WIDTH * 2]; /* Assumes that width*2 > height * 2 */
+	int  tww = TRANSFER_WIN_WIDTH;
+	int  twh = TRANSFER_WIN_HEIGHT;
+	gettextinfo(&trans_ti);
+
+	if (tww > trans_ti.screenwidth)
+		tww = trans_ti.screenwidth;
+	if (twh > trans_ti.screenheight)
+		twh = trans_ti.screenheight;
+	if (twh > tww)
+		twh = tww;
+	char outline[tww * 2];
+	char shadow[tww * 2]; /* Assumes that width*2 > height * 2 */
 	int  i, top, left, old_hold;
 
 	old_hold = hold_update;
 	hold_update = true;
-	gettextinfo(&trans_ti);
-	top = (trans_ti.screenheight - TRANSFER_WIN_HEIGHT) / 2;
-	left = (trans_ti.screenwidth - TRANSFER_WIN_WIDTH) / 2;
+	top = (trans_ti.screenheight - twh) / 2 + 1;
+	left = (trans_ti.screenwidth - tww) / 2 + 1;
+	window(left, top, left + tww - 1, top + twh - 1);
+fprintf(stderr, "Set: %d, %d, %d, %d\n", left, top, left + tww + 1, top + twh);
+	gettextinfo(&transw_ti);
+fprintf(stderr, "Got: %d, %d, %d, %d\n", transw_ti.winleft, transw_ti.wintop, transw_ti.winright, transw_ti.winbottom);
+	window(transw_ti.winleft + 2, transw_ti.wintop + 1, transw_ti.winright - 2, transw_ti.wintop + 5);
+	gettextinfo(&progress_ti);
 	window(1, 1, trans_ti.screenwidth, trans_ti.screenheight);
 
-	vmem_gettext(left, top, left + TRANSFER_WIN_WIDTH + 1, top + TRANSFER_WIN_HEIGHT, winbuf);
+	vmem_gettext(transw_ti.winleft, transw_ti.wintop, transw_ti.winright, transw_ti.winbottom, winbuf);
 	memset(outline, YELLOW | (BLUE << 4), sizeof(outline));
 	for (i = 2; i < sizeof(outline) - 2; i += 2) {
 		outline[i] = (char)0xcd; /* Double horizontal line */
 	}
 	outline[0] = (char)0xc9;
 	outline[sizeof(outline) - 2] = (char)0xbb;
-	puttext(left, top, left + TRANSFER_WIN_WIDTH - 1, top, outline);
+	puttext(left, top, left + tww - 1, top, outline);
 
         /* Title */
 	gotoxy(left + 4, top);
@@ -845,7 +860,7 @@ draw_transfer_window(char *title)
 	}
 	outline[0] = (char)0xc7;                   /* 0xcc */
 	outline[sizeof(outline) - 2] = (char)0xb6; /* 0xb6 */
-	puttext(left, top + 6, left + TRANSFER_WIN_WIDTH - 1, top + 6, outline);
+	puttext(left, top + 6, left + tww - 1, top + 6, outline);
 
 	for (i = 2; i < sizeof(outline) - 2; i += 2) {
 		outline[i] = (char)0xcd; /* Double horizontal line */
@@ -853,62 +868,62 @@ draw_transfer_window(char *title)
 	outline[0] = (char)0xc8;
 	outline[sizeof(outline) - 2] = (char)0xbc;
 	puttext(left,
-	    top + TRANSFER_WIN_HEIGHT - 1,
-	    left + TRANSFER_WIN_WIDTH - 1,
-	    top + TRANSFER_WIN_HEIGHT - 1,
+	    top + twh - 1,
+	    left + tww - 1,
+	    top + twh - 1,
 	    outline);
 	outline[0] = (char)0xba;
 	outline[sizeof(outline) - 2] = (char)0xba;
 	for (i = 2; i < sizeof(outline) - 2; i += 2)
 		outline[i] = ' ';
 	for (i = 1; i < 6; i++)
-		puttext(left, top + i, left + TRANSFER_WIN_WIDTH - 1, top + i, outline);
+		puttext(left, top + i, left + tww - 1, top + i, outline);
 
 /*
  *      for(i=3;i < sizeof(outline) - 2; i+=2) {
  *              outline[i] = LIGHTGRAY | (BLACK << 8);
  *      }
  */
-	for (i = 7; i < TRANSFER_WIN_HEIGHT - 1; i++)
-		puttext(left, top + i, left + TRANSFER_WIN_WIDTH - 1, top + i, outline);
+	for (i = 7; i < twh - 1; i++)
+		puttext(left, top + i, left + tww - 1, top + i, outline);
 
         /* Title */
-	gotoxy(left + TRANSFER_WIN_WIDTH - 20, top + i);
+	gotoxy(left + tww - 20, top + i);
 	textattr(YELLOW | (BLUE << 4));
 	cprintf("\xb5              \xc6");
 	textattr(WHITE | (BLUE << 4));
-	gotoxy(left + TRANSFER_WIN_WIDTH - 18, top + i);
+	gotoxy(left + tww - 18, top + i);
 	cprintf("ESC to Abort");
 
         /* Shadow */
 	if (uifc.bclr == BLUE) {
-		gettext(left + TRANSFER_WIN_WIDTH,
+		gettext(left + tww,
 		    top + 1,
-		    left + TRANSFER_WIN_WIDTH + 1,
-		    top + (TRANSFER_WIN_HEIGHT - 1),
+		    left + tww + 1,
+		    top + (twh - 1),
 		    shadow);
 		for (i = 1; i < sizeof(shadow); i += 2)
 			shadow[i] = DARKGRAY;
-		puttext(left + TRANSFER_WIN_WIDTH,
+		puttext(left + tww,
 		    top + 1,
-		    left + TRANSFER_WIN_WIDTH + 1,
-		    top + (TRANSFER_WIN_HEIGHT - 1),
+		    left + tww + 1,
+		    top + (twh - 1),
 		    shadow);
 		gettext(left + 2,
-		    top + TRANSFER_WIN_HEIGHT,
-		    left + TRANSFER_WIN_WIDTH + 1,
-		    top + TRANSFER_WIN_HEIGHT,
+		    top + twh,
+		    left + tww + 1,
+		    top + twh,
 		    shadow);
 		for (i = 1; i < sizeof(shadow); i += 2)
 			shadow[i] = DARKGRAY;
 		puttext(left + 2,
-		    top + TRANSFER_WIN_HEIGHT,
-		    left + TRANSFER_WIN_WIDTH + 1,
-		    top + TRANSFER_WIN_HEIGHT,
+		    top + twh,
+		    left + tww + 1,
+		    top + twh,
 		    shadow);
 	}
 
-	window(left + 2, top + 7, left + TRANSFER_WIN_WIDTH - 3, top + TRANSFER_WIN_HEIGHT - 2);
+	window(left + 2, top + 7, left + tww - 3, top + twh - 2);
 	hold_update = false;
 	gotoxy(1, 1);
 	hold_update = old_hold;
@@ -919,11 +934,7 @@ draw_transfer_window(char *title)
 void
 erase_transfer_window(void)
 {
-	vmem_puttext(((trans_ti.screenwidth - TRANSFER_WIN_WIDTH) / 2),
-	    ((trans_ti.screenheight - TRANSFER_WIN_HEIGHT) / 2),
-	    ((trans_ti.screenwidth - TRANSFER_WIN_WIDTH) / 2) + TRANSFER_WIN_WIDTH + 1,
-	    ((trans_ti.screenheight - TRANSFER_WIN_HEIGHT) / 2) + TRANSFER_WIN_HEIGHT,
-	    winbuf);
+	vmem_puttext(transw_ti.winleft, transw_ti.wintop, transw_ti.winright, transw_ti.winbottom, winbuf);
 	window(trans_ti.winleft, trans_ti.wintop, trans_ti.winright, trans_ti.winbottom);
 	gotoxy(trans_ti.curx, trans_ti.cury);
 	textattr(trans_ti.attribute);
@@ -1097,7 +1108,7 @@ struct cet_ts_block {
 #define CET_TS_RETRIES 3
 
 static void
-cet_telesoftware_progress(unsigned frame_num, long frame_count, size_t bytes_received, time_t start)
+cet_telesoftware_progress(unsigned frame_num, long frame_count, size_t bytes_received, time_t start, const char *fpath)
 {
 	static int16_t last_frame;
 	int            old_hold = hold_update;
@@ -1108,10 +1119,7 @@ cet_telesoftware_progress(unsigned frame_num, long frame_count, size_t bytes_rec
 	}
 	if (frame_num != last_frame) {
 		hold_update = true;
-		window(((trans_ti.screenwidth - TRANSFER_WIN_WIDTH) / 2) + 2,
-		    ((trans_ti.screenheight - TRANSFER_WIN_HEIGHT) / 2) + 1,
-		    ((trans_ti.screenwidth - TRANSFER_WIN_WIDTH) / 2) + TRANSFER_WIN_WIDTH - 2,
-		    ((trans_ti.screenheight - TRANSFER_WIN_HEIGHT) / 2) + 5);
+		window(progress_ti.winleft, progress_ti.wintop, progress_ti.winright, progress_ti.winbottom);
 		gotoxy(1, 1);
 		textattr(LIGHTCYAN | (BLUE << 4));
 		time_t t = now - start;
@@ -1129,12 +1137,14 @@ cet_telesoftware_progress(unsigned frame_num, long frame_count, size_t bytes_rec
 		else
 			l -= t;                    /* now, it's est time left */
 		if (frame_count != 999) {
-			cprintf("Frame: %u of %u  Byte: %" PRId64,
+			cprintf("File: %-.*s\r\nFrame: %u of %u  Byte: %" PRId64,
+			    progress_ti.winright - progress_ti.winleft + 1 - 7, getfname(fpath),
 			    frame_num, frame_count,
 			    bytes_received);
 		}
 		else {
-			cprintf("Frame: %u  Byte: %" PRId64,
+			cprintf("File: %-.*s\r\nFrame: %u  Byte: %" PRId64,
+			    progress_ti.winright - progress_ti.winleft + 1 - 7, getfname(fpath),
 			    frame_num,
 			    bytes_received);
 		}
@@ -1511,7 +1521,7 @@ cet_telesoftware_download(struct bbslist *bbs)
 	uint8_t  next_block = 0;
 	uint16_t frames_remaining;
 	uint16_t frame_number = 0;
-	char     str[MAX_PATH * 2 + 2];
+	char     fpath[MAX_PATH * 2 + 2] = {0};
 	bool     aborted = false;
 
 	if (safe_mode)
@@ -1522,7 +1532,7 @@ cet_telesoftware_download(struct bbslist *bbs)
 		conn_binary_mode_on();
 
 	time_t start = time(NULL);
-	cet_telesoftware_progress(frame_number, 999, bytes_received, start);
+	cet_telesoftware_progress(frame_number, 999, bytes_received, start, fpath);
 
 	// Send *00 to resend current page. (not strictly required, we *could* get this from the screen buffer)
 	if (!cet_send_string("*00")) {
@@ -1572,24 +1582,24 @@ cet_telesoftware_download(struct bbslist *bbs)
 	frames_remaining = total_frames;
 
 	lprintf(LOG_DEBUG, "Incoming filename: %.64s ", getfname(fname));
-	SAFEPRINTF2(str, "%s/%s", bbs->dldir, getfname(fname));
+	SAFEPRINTF2(fpath, "%s/%s", bbs->dldir, getfname(fname));
 	lprintf(LOG_INFO, "File size: %" PRId16 " frames", frames_remaining);
-	lprintf(LOG_DEBUG, "Receiving: %.64s ", str);
+	lprintf(LOG_DEBUG, "Receiving: %.64s ", fpath);
 
-	while (fexistcase(str)) {
-		lprintf(LOG_WARNING, "%s already exists", str);
-		if (!cet_telesoftware_duplicate(bbs, str, sizeof(str), getfname(fname))) {
+	while (fexistcase(fpath)) {
+		lprintf(LOG_WARNING, "%s already exists", fpath);
+		if (!cet_telesoftware_duplicate(bbs, fpath, sizeof(fpath), getfname(fname))) {
 			free(header);
 			transfer_complete(false, was_binary);
 			return;
 		}
 	}
 
-	cet_telesoftware_progress(frame_number, total_frames, bytes_received, start);
+	cet_telesoftware_progress(frame_number, total_frames, bytes_received, start, fpath);
 	free(header);
-	FILE *fp = fopen(str, "wb");
+	FILE *fp = fopen(fpath, "wb");
 	if (fp == NULL) {
-		lprintf(LOG_ERR, "Error %d creating %s", errno, str);
+		lprintf(LOG_ERR, "Error %d creating %s", errno, fpath);
 		transfer_complete(false, was_binary);
 		return;
 	}
@@ -1622,7 +1632,7 @@ cet_telesoftware_download(struct bbslist *bbs)
 			frames_remaining--;
 		bytes_received += blk->length;
 		frame_number++;
-		cet_telesoftware_progress(frame_number, total_frames, bytes_received, start);
+		cet_telesoftware_progress(frame_number, total_frames, bytes_received, start, fpath);
 		if (blk->frame == 'A') {
 			if (next_frame == 'A') {
 				next_frame = 'a';
@@ -2046,16 +2056,14 @@ xmodem_progress(void *cbdata, unsigned block_num, int64_t offset, int64_t fsize,
 	static time_t last_progress;
 	int           old_hold = hold_update;
 	xmodem_t     *xm = (xmodem_t *)cbdata;
+	int           tww = transw_ti.winright - transw_ti.winleft + 1;
 
 	now = time(NULL);
 	if ((now - last_progress > 0) || (offset >= fsize)) {
 		xmodem_check_abort(cbdata);
 
 		hold_update = true;
-		window(((trans_ti.screenwidth - TRANSFER_WIN_WIDTH) / 2) + 2,
-		    ((trans_ti.screenheight - TRANSFER_WIN_HEIGHT) / 2) + 1,
-		    ((trans_ti.screenwidth - TRANSFER_WIN_WIDTH) / 2) + TRANSFER_WIN_WIDTH - 2,
-		    ((trans_ti.screenheight - TRANSFER_WIN_HEIGHT) / 2) + 5);
+		window(progress_ti.winleft, progress_ti.wintop, progress_ti.winright, progress_ti.winbottom);
 		gotoxy(1, 1);
 		textattr(LIGHTCYAN | (BLUE << 4));
 		t = now - start;
@@ -2086,7 +2094,7 @@ xmodem_progress(void *cbdata, unsigned block_num, int64_t offset, int64_t fsize,
 			    cps);
 			clreol();
 			cputs("\r\n");
-			cprintf("%*s%3d%%\r\n", TRANSFER_WIN_WIDTH / 2 - 5, "",
+			cprintf("%*s%3d%%\r\n", tww / 2 - 5, "",
 			    fsize ? (long)(((float)offset / (float)fsize) * 100.0) : 100);
 			i = fsize ? (((float)offset / (float)fsize) * 60.0) : 60;
 			if (i < 0)
@@ -2118,7 +2126,7 @@ xmodem_progress(void *cbdata, unsigned block_num, int64_t offset, int64_t fsize,
 			    cps);
 			clreol();
 			cputs("\r\n");
-			cprintf("%*s%3d%%\r\n", TRANSFER_WIN_WIDTH / 2 - 5, "",
+			cprintf("%*s%3d%%\r\n", tww / 2 - 5, "",
 			    fsize ? (long)(((float)offset / (float)fsize) * 100.0) : 100);
 			i = fsize ? (long)(((float)offset / (float)fsize) * 60.0) : 60;
 			if (i < 0)
