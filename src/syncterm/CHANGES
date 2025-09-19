@@ -7,6 +7,7 @@ Implement RIP STW/RTW and SCB/RCP commands
 Implement RIP exploding button flag
 Improve RIP sounds
 Update Prestel/Mode 7 keybindings
+Support downloading in Prestel mode via CET Telesoftware protocol
 Don't disable status line for Atari ST modes
 Fix divide by zero when playing invalid ANSI music
 Fix APB and APU from top in BBC Micro Mode 7
