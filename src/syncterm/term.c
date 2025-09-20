@@ -68,6 +68,8 @@ static struct text_info trans_ti;    // Holds the screen and window size from be
 static struct text_info transw_ti;   // Holds the screen and transfer window
 static struct text_info progress_ti; // Holds the screen and progress window
 static struct text_info log_ti;      // Holds the screen and log info
+static bool is_telstar;              // If Telstar is detected (first string is date as follows: \x0c\x1e\x1e\x1e20250920T0706Z\x0c\x1e\x1e)
+                                     // We will delay 200ms between frames when downloading
 
 static struct ciolib_pixels *pixmap_buffer[2];
 static struct ciolib_mask *mask_buffer;
@@ -1153,7 +1155,7 @@ cet_frame_recv_byte(void *ptr, unsigned timeout)
  * (Amateur Packet Radio Systems), so we basically need at least a 100ms
  * delay or transfers won't work reliably.
  */
-#define CET_TS_FRAME_TIMEOUT_MS 200
+#define CET_TS_FRAME_TIMEOUT_MS (is_telstar ? 200 : 1)
 #define CET_TS_RETRIES 3
 
 static void
@@ -4773,6 +4775,64 @@ finish_scrollback(void)
 	}
 }
 
+/*
+ * Telstar sends the current data as metadata at the start of a connection.
+ * This allows systems without an RTC so set their clock. This *also* allows
+ * is to detect Telstar-2 and slow down Tele4software downloads.
+ */
+static bool
+check_if_telstar(const char buf[22], size_t sz)
+{
+	if (sz != 22)
+		return false;
+	if (buf[0] != '\x0c')
+		return false;
+	if (buf[1] != '\x1e')
+		return false;
+	if (buf[2] != '\x1e')
+		return false;
+	if (buf[3] != '\x1e')
+		return false;
+	// Will only work until 29:69 on the 39th day of the 19th month of 9999
+	if (buf[4] < '2' || buf[4] > '9')
+		return false;
+	if (buf[5] < '0' || buf[5] > '9')
+		return false;
+	if (buf[6] < '0' || buf[6] > '9')
+		return false;
+	if (buf[7] < '0' || buf[7] > '9')
+		return false;
+	if (buf[8] < '0' || buf[8] > '1')
+		return false;
+	if (buf[9] < '0' || buf[9] > '9')
+		return false;
+	if (buf[10] < '0' || buf[10] > '3')
+		return false;
+	if (buf[11] < '0' || buf[11] > '9')
+		return false;
+	if (buf[12] != 'T')
+		return false;
+	if (buf[13] < '0' || buf[13] > '2')
+		return false;
+	if (buf[14] < '0' || buf[14] > '9')
+		return false;
+	if (buf[15] < '0' || buf[15] > '6')
+		return false;
+	if (buf[16] < '0' || buf[16] > '9')
+		return false;
+	if (buf[17] != 'Z')
+		return false;
+	if (buf[18] != '\x0c')
+		return false;
+	if (buf[19] != '\x1e')
+		return false;
+	if (buf[20] != '\x1e')
+		return false;
+	if (buf[21] != '\x1e')
+		return false;
+	return true;
+}
+
 bool
 doterm(struct bbslist *bbs)
 {
@@ -4825,6 +4885,9 @@ doterm(struct bbslist *bbs)
 	struct mouse_state ms = {0};
 	int                speedwatch = 0;
 	bool atascii_inverse = false;
+	is_telstar = false;
+	char telstar_buffer[22];
+	size_t telstar_buffer_offset = 0;
 
 	normalize_entry(bbs);
 	freepixels(pixmap_buffer[0]);
@@ -5026,6 +5089,13 @@ doterm(struct bbslist *bbs)
 									remain = 1;
 								speedwatch = 0;
 								break;
+						}
+						if (telstar_buffer_offset < sizeof(telstar_buffer)) {
+							telstar_buffer[telstar_buffer_offset++] = inch;
+							if (telstar_buffer_offset == sizeof(telstar_buffer)) {
+								is_telstar = check_if_telstar(telstar_buffer, telstar_buffer_offset);
+fprintf(stderr, "Is Telstar? %s\n", is_telstar ? "Yes" : "No");
+							}
 						}
 						if ((inch == zrqinit[zrqlen]) || (inch == zrinit[zrqlen])) {
 							zrqbuf[zrqlen] = inch;
