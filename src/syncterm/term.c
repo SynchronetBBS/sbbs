@@ -1149,11 +1149,11 @@ cet_frame_recv_byte(void *ptr, unsigned timeout)
  * slow down transfers, and isn't actually necessary.
  * 
  * However, Telstar 2.0 has a requirement that received characters be
- * at least 100ms apart ro work around an issue with TNCs
+ * at least 200ms apart ro work around an issue with TNCs
  * (Amateur Packet Radio Systems), so we basically need at least a 100ms
  * delay or transfers won't work reliably.
  */
-#define CET_TS_FRAME_TIMEOUT_MS 100
+#define CET_TS_FRAME_TIMEOUT_MS 200
 #define CET_TS_RETRIES 3
 
 static void
