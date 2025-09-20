@@ -11,6 +11,7 @@ else
  JS_CONFIGURE_ARGS += --enable-optimize=-O3
 endif
 CXXFLAGS = -std=gnu++98
+JS_CFLAGS = -std=gnu17
 JS_CONFIGURE_ENV += 'MAKE=$(MAKE)'
 ifeq ($(shell perl -e 'print "$(machine)"=~/\.arm/?"YES":"NO"'),YES)
  ifeq ($(shell perl -e 'print "$(machine)"=~/\.armv[1-6]/?"YES":"NO"'),YES)
@@ -18,16 +19,17 @@ ifeq ($(shell perl -e 'print "$(machine)"=~/\.arm/?"YES":"NO"'),YES)
  endif
  ifeq ($(shell perl -e 'print `gcc -v 2>&1`=~/--with-fpu=vfp/?"YES":"NO"'),YES)
   ifeq ($(shell perl -e 'print `gcc -v 2>&1`=~/--with-float=hard/?"YES":"NO"'),YES)
-   JS_CONFIGURE_ENV += 'CFLAGS=-mfpu=vfp -mfloat-abi=hard'
+   JS_CFLAGS += -mfpu=vfp -mfloat-abi=hard
    CXXFLAGS += -mfpu=vfp -mfloat-abi=hard
    JS_CONFIGURE_ENV += 'ASFLAGS=-mfpu=vfp -mfloat-abi=hard'
   else
-   JS_CONFIGURE_ENV += 'CFLAGS=-msoft-float'
+   JS_CFLAGS += -msoft-float
    CXXFLAGS += -msoft-float
    JS_CONFIGURE_ENV += 'ASFLAGS=-msoft-float'
   endif
  endif
 endif
+JS_CONFIGURE_ENV += "CFLAGS=$(JS_CFLAGS)"
 # OS/2 and "GNU" (HURD?) also need this, but we never plan to support them.
 ifneq ($(os),linux)
  ifneq ($(os),sunos)
