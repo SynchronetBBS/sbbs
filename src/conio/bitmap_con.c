@@ -711,6 +711,9 @@ calc_charstate(struct blockstate *bs, struct vmem_cell *vc, struct charstate *cs
 			}
 			cs->top_half = false;
 			lattr = pvc->legacy_attr;
+			// Handle blink
+			if (vc->bg & CIOLIB_BG_PRESTEL_TERMINAL)
+				draw_fg = ((!(lattr & 0x80)) || vstat.no_blink);
 		}
 		// If not a bottom (either a top or no doubles)
 		else {
