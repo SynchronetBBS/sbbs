@@ -11,7 +11,7 @@ else
  JS_CONFIGURE_ARGS += --enable-optimize=-O3
 endif
 CXXFLAGS = -std=gnu++98
-JS_CFLAGS = -std=gnu17
+JS_CFLAGS = -std=gnu11
 JS_CONFIGURE_ENV += 'MAKE=$(MAKE)'
 ifeq ($(shell perl -e 'print "$(machine)"=~/\.arm/?"YES":"NO"'),YES)
  ifeq ($(shell perl -e 'print "$(machine)"=~/\.armv[1-6]/?"YES":"NO"'),YES)
