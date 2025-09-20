@@ -1207,10 +1207,12 @@ cet_telesoftware_progress(struct cet_ts_state *sp)
 		    cps);
 		cputs("\r\n");
 		clreol();
-		cprintf("Remain: %lu:%02lu",
-		    (ulong)(l / 60L),
-		    (ulong)(l % 60L));
-		clreol();
+		if (sp->frame_count != 999) {
+			cprintf("Remain: %lu:%02lu",
+			    (ulong)(l / 60L),
+			    (ulong)(l % 60L));
+			clreol();
+		}
 		last_frame = sp->frame_num;
 		hold_update = false;
 		gotoxy(wherex(), wherey());
@@ -1748,7 +1750,7 @@ cet_telesoftware_download(struct bbslist *bbs)
 		}
 		if (blk->ends_file) {
 			free(blk);
-			if (frames_remaining) {
+			if (frames_remaining && frames_remaining != 999) {
 				lprintf(LOG_ERR, "End of file detected with %u frames remaining.", frames_remaining);
 			}
 			break;
