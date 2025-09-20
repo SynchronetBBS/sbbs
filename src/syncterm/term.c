@@ -785,6 +785,23 @@ recv_byte(void *unused, unsigned timeout /* seconds */)
 	return -1;
 }
 
+static int
+recv_byte_ms(void *unused, unsigned timeout /* milliseconds */)
+{
+	BYTE ch;
+
+	recv_bytes(timeout);
+
+	if (recv_byte_buffer_len > 0) {
+		ch = recv_byte_buffer[recv_byte_buffer_pos++];
+		if (recv_byte_buffer_pos == recv_byte_buffer_len)
+			recv_byte_buffer_len = recv_byte_buffer_pos = 0;
+		return ch;
+	}
+
+	return -1;
+}
+
 #if defined(__BORLANDC__)
  #pragma argsused
 #endif
@@ -1116,7 +1133,7 @@ cet_frame_recv_byte(void *ptr, unsigned timeout)
 	if (sp->orig_screen_pos >= sp->orig_screen_sz) {
 		free(sp->orig_screen);
 		sp->orig_screen = NULL;
-		sp->recv_byte = recv_byte;
+		sp->recv_byte = recv_byte_ms;
 		return -1;
 	}
 	uint8_t ret = sp->orig_screen[sp->orig_screen_pos];
@@ -1124,8 +1141,19 @@ cet_frame_recv_byte(void *ptr, unsigned timeout)
 	return ret;
 }
 
-#define CET_TS_TIMEOUT 5
-#define CET_TS_FRAME_TIMEOUT 2
+#define CET_TS_TIMEOUT_SEC 5
+#define CET_TS_TIMEOUT_MS (CET_TS_TIMEOUT_SEC * 1000)
+/*
+ * The original Telesoftware spec required waiting for 2 seconds after
+ * the last byte is received to detect an end of frame, which would really
+ * slow down transfers, and isn't actually necessary.
+ * 
+ * However, Telstar 2.0 has a requirement that received characters be
+ * at least 100ms apart ro work around an issue with TNCs
+ * (Amateur Packet Radio Systems), so we basically need at least a 100ms
+ * delay or transfers won't work reliably.
+ */
+#define CET_TS_FRAME_TIMEOUT_MS 100
 #define CET_TS_RETRIES 3
 
 static void
@@ -1151,7 +1179,7 @@ cet_telesoftware_progress(struct cet_ts_state *sp)
 			cps = 1;           /* cps so far */
 		double fps = ((double)sp->frame_num) / t;
 		if (fps <= 0.0)
-			fps = (1.0 / CET_TS_FRAME_TIMEOUT);           /* fps so far (default to the fastest we can go) */
+			fps = 0.001 / CET_TS_FRAME_TIMEOUT_MS;           /* fps so far (default to the fastest we can go) */
 		time_t l = (time_t)(sp->frame_count / fps); /* total transfer est time */
 		if (t >= l)
 			l = 0;
@@ -1192,7 +1220,7 @@ static bool
 cet_send_string(const char *str)
 {
 	for (;*str;str++) {
-		if (send_byte(NULL, *str, CET_TS_TIMEOUT))
+		if (send_byte(NULL, *str, CET_TS_TIMEOUT_SEC))
 			return false;
 	}
 	flush_send(NULL);
@@ -1203,7 +1231,7 @@ static void
 cet_telesoftware_end_of_frame(struct cet_ts_state *sp)
 {
 	// Original spec says to wait until two seconds have passed without a character.
-	while (sp->recv_byte(sp, CET_TS_FRAME_TIMEOUT) != -1);
+	while (sp->recv_byte(sp, CET_TS_FRAME_TIMEOUT_MS) != -1);
 }
 
 static struct cet_ts_block *
@@ -1254,7 +1282,7 @@ cet_telesoftware_try_get_block(struct cet_ts_state *sp)
 			lputs(NULL, LOG_INFO, "Aborted by user");
 			return NULL;
 		}
-		int b = sp->recv_byte(sp, CET_TS_TIMEOUT);
+		int b = sp->recv_byte(sp, CET_TS_TIMEOUT_MS);
 		if (b < 0 || b > 255) {
 			free(ret);
 			lprintf(LOG_ERR, "Failed to receive byte (timeout %d)", b);
@@ -1326,7 +1354,7 @@ cet_telesoftware_try_get_block(struct cet_ts_state *sp)
 						}
 						// Read extra bytes up to | or four, then set got_escape
 						need_term = true;
-						b1 = sp->recv_byte(sp, CET_TS_TIMEOUT);
+						b1 = sp->recv_byte(sp, CET_TS_TIMEOUT_MS);
 						if (b1 < 'a' || b1 > 'z') {
 							free(ret);
 							lprintf(LOG_ERR, "Invalid |G frame byte 0x%02%s", b1, b1 == -1 ? " (timeout)" : "");
@@ -1334,7 +1362,7 @@ cet_telesoftware_try_get_block(struct cet_ts_state *sp)
 						}
 						checkxor ^= b1;
 						ret->frame = b1;
-						b1 = sp->recv_byte(sp, CET_TS_TIMEOUT);
+						b1 = sp->recv_byte(sp, CET_TS_TIMEOUT_MS);
 						if (((b1 < '0') || (b1 > '9')) && (b1 != '|')) {
 							free(ret);
 							lprintf(LOG_ERR, "Invalid |G block id byte 0x%02%s", b1, b1 == -1 ? " (timeout)" : "");
@@ -1346,7 +1374,7 @@ cet_telesoftware_try_get_block(struct cet_ts_state *sp)
 						else {
 							checkxor ^= b1;
 							ret->block_num = b1 - '0';
-							b1 = sp->recv_byte(sp, CET_TS_TIMEOUT);
+							b1 = sp->recv_byte(sp, CET_TS_TIMEOUT_MS);
 							if ((b1 < '0') || (b1 > '9')) {
 								free(ret);
 								lprintf(LOG_ERR, "Invalid |G block id byte 0x%02%s", b1, b1 == -1 ? " (timeout)" : "");
@@ -1367,19 +1395,19 @@ cet_telesoftware_try_get_block(struct cet_ts_state *sp)
 						break;
 					case 'Z':
 						allowed_after_end = true;
-						b1 = sp->recv_byte(sp, CET_TS_TIMEOUT);
+						b1 = sp->recv_byte(sp, CET_TS_TIMEOUT_MS);
 						if (b1 < '0' || b1 > '9') {
 							free(ret);
 							lprintf(LOG_ERR, "Invalid checkxor byte 0x%02%s", b1, b1 == -1 ? " (timeout)" : "");
 							return NULL;
 						}
-						b2 = sp->recv_byte(sp, CET_TS_TIMEOUT);
+						b2 = sp->recv_byte(sp, CET_TS_TIMEOUT_MS);
 						if (b2 < '0' || b2 > '9') {
 							free(ret);
 							lprintf(LOG_ERR, "Invalid checkxor byte 0x%02%s", b2, b2 == -1 ? " (timeout)" : "");
 							return NULL;
 						}
-						b3 = sp->recv_byte(sp, CET_TS_TIMEOUT);
+						b3 = sp->recv_byte(sp, CET_TS_TIMEOUT_MS);
 						if (b3 < '0' || b3 > '9') {
 							free(ret);
 							lprintf(LOG_ERR, "Invalid checkxor byte 0x%02%s", b3, b3 == -1 ? " (timeout)" : "");
