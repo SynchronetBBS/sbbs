@@ -1147,13 +1147,13 @@ cet_frame_recv_byte(void *ptr, unsigned timeout)
 #define CET_TS_TIMEOUT_MS (CET_TS_TIMEOUT_SEC * 1000)
 /*
  * The original Telesoftware spec required waiting for 2 seconds after
- * the last byte is received to detect an end of frame, which would really
- * slow down transfers, and isn't actually necessary.
+ * the last byte is received to detect an end of frame, which would
+ * really slow down transfers, and isn't actually necessary.
  * 
- * However, Telstar 2.0 has a requirement that received characters be
- * at least 200ms apart ro work around an issue with TNCs
- * (Amateur Packet Radio Systems), so we basically need at least a 100ms
- * delay or transfers won't work reliably.
+ * However, Telstar 2.0 has a requirement that received # characters be
+ * at least 200ms after the previous received character to work around
+ * an issue with TNCs (Amateur Packet Radio Systems), so we basically
+ * need at least a 200ms delay or transfers won't work reliably.
  */
 #define CET_TS_FRAME_TIMEOUT_MS (is_telstar ? 200 : 1)
 #define CET_TS_RETRIES 3
@@ -1261,6 +1261,7 @@ cet_telesoftware_try_get_block(struct cet_ts_state *sp)
 
 	while ((!sp->aborted) && (ret->length < max_len) && (!got_block_end)) {
 		bool xor = got_start;
+		// Check for user abort...
 		while (kbhit()) {
 			int key = getch();
 			switch (key) {
@@ -5096,7 +5097,6 @@ doterm(struct bbslist *bbs)
 							telstar_buffer[telstar_buffer_offset++] = inch;
 							if (telstar_buffer_offset == sizeof(telstar_buffer)) {
 								is_telstar = check_if_telstar(telstar_buffer, telstar_buffer_offset);
-fprintf(stderr, "Is Telstar? %s\n", is_telstar ? "Yes" : "No");
 							}
 						}
 						if ((inch == zrqinit[zrqlen]) || (inch == zrinit[zrqlen])) {
