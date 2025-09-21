@@ -1688,6 +1688,8 @@ cet_telesoftware_download(struct bbslist *bbs)
 				fclose(fp);
 				lputs(NULL, LOG_ERR, "Error requesting next frame");
 				transfer_complete(false, was_binary);
+				// Resend last frame
+				cet_send_string("*00");
 				return;
 			}
 		}
@@ -1697,6 +1699,8 @@ cet_telesoftware_download(struct bbslist *bbs)
 				fclose(fp);
 				lputs(NULL, LOG_ERR, "Error requesting next page");
 				transfer_complete(false, was_binary);
+				// Resend last frame
+				cet_send_string("*00");
 				return;
 			}
 		}
@@ -1705,6 +1709,8 @@ cet_telesoftware_download(struct bbslist *bbs)
 			free(st.orig_screen);
 			fclose(fp);
 			transfer_complete(false, was_binary);
+			// Resend last frame
+			cet_send_string("*00");
 			return;
 		}
 		if (frames_remaining != 999)
@@ -1725,6 +1731,8 @@ cet_telesoftware_download(struct bbslist *bbs)
 					free(blk);
 					lprintf(LOG_ERR, "Too many retries for frame %c, aborting", next_frame);
 					transfer_complete(false, was_binary);
+					// Resend last frame
+					cet_send_string("*00");
 					return;
 				}
 				free(st.orig_screen);
@@ -1747,6 +1755,8 @@ cet_telesoftware_download(struct bbslist *bbs)
 					free(blk);
 					lprintf(LOG_ERR, "Out of order frame... got %c, expcted %c", blk->frame, next_frame);
 					transfer_complete(false, was_binary);
+					// Resend last frame
+					cet_send_string("*00");
 					return;
 				}
 			}
@@ -1756,6 +1766,8 @@ cet_telesoftware_download(struct bbslist *bbs)
 				lprintf(LOG_ERR, "Out of order block in frame %c... got %u, expcted %u", blk->frame, blk->block_num, next_block);
 				free(blk);
 				transfer_complete(false, was_binary);
+				// Resend last frame
+				cet_send_string("*00");
 				return;
 			}
 		}
@@ -1771,6 +1783,8 @@ cet_telesoftware_download(struct bbslist *bbs)
 			lprintf(LOG_ERR, "Bad write, wrote %zu, tried %zu", written, blk->length);
 			free(blk);
 			transfer_complete(false, was_binary);
+			// Resend last frame
+			cet_send_string("*00");
 			return;
 		}
 		if (blk->ends_file) {
@@ -1790,12 +1804,16 @@ cet_telesoftware_download(struct bbslist *bbs)
 
 	transfer_complete(st.aborted, was_binary);
 	// Resend last frame
-	//cet_send_string("*00");
+	/* <nelgin> The word is "The TSW downloader would just leave the final frame displayed and allow the user to control what to do next."
+	 * <nelgin> "You can add text on the frame after the end of the telesoftware data."
+	 * <nelgin> That's from the guy who wrote some of the original Prestel code.
+	 */
+	cet_send_string("*00");
 	// Move to next frame on page (or next page if at end)
-	if (next_frame == 'z' + 1)
-		cet_send_string("0");
-	else
-		cet_send_string("_");
+	//if (next_frame == 'z' + 1)
+	//	cet_send_string("0");
+	//else
+	//	cet_send_string("_");
 	// Always use zero route
 	//cet_send_string("0");
 }
