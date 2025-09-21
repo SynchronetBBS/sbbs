@@ -1679,6 +1679,7 @@ cet_telesoftware_download(struct bbslist *bbs)
 		return;
 	}
 
+	unsigned retries = 0;
 	while (!st.aborted) {
 		if (next_frame == 'z' + 1) {
 			next_frame = 'a';
@@ -1720,12 +1721,34 @@ cet_telesoftware_download(struct bbslist *bbs)
 			if (next_frame == 'A')
 				next_frame = blk->frame;
 			if (blk->frame != next_frame) {
+				if (retries >= 3) {
+					free(blk);
+					lprintf(LOG_ERR, "Too many retries for frame %c, aborting", next_frame);
+					transfer_complete(false, was_binary);
+					return;
+				}
 				free(st.orig_screen);
 				fclose(fp);
-				lprintf(LOG_ERR, "Out of order frame... got %c, expcted %c", blk->frame, next_frame);
-				free(blk);
-				transfer_complete(false, was_binary);
-				return;
+				if (blk->frame < next_frame) {
+					free(blk);
+					lprintf(LOG_ERR, "Old frame retransmitted... got %c, expcted %c", blk->frame, next_frame);
+					cet_send_string("_");
+					retries++;
+					continue;
+				}
+				else if (next_frame == 'a') {
+					free(blk);
+					lprintf(LOG_ERR, "New page not started... got %c, expcted %c", blk->frame, next_frame);
+					cet_send_string("0");
+					retries++;
+					continue;
+				}
+				else {
+					free(blk);
+					lprintf(LOG_ERR, "Out of order frame... got %c, expcted %c", blk->frame, next_frame);
+					transfer_complete(false, was_binary);
+					return;
+				}
 			}
 			if (blk->block_num != next_block) {
 				free(st.orig_screen);
@@ -1736,6 +1759,7 @@ cet_telesoftware_download(struct bbslist *bbs)
 				return;
 			}
 		}
+		retries = 0;
 		if (blk->block_cnt == blk->block_num)
 			next_frame++;
 		else
