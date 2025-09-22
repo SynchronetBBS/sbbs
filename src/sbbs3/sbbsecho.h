@@ -37,7 +37,7 @@
 #define DEFAULT_INBOUND             "../fido/nonsecure"
 #define DEFAULT_SECURE_INBOUND      "../fido/inbound"
 #define DEFAULT_OUTBOUND            "../fido/outbound"
-#define DEFAULT_AREA_FILE           "../data/areas.bbs"
+#define DEFAULT_AREA_FILE           ""
 #define DEFAULT_BAD_AREA_FILE       "../data/badareas.lst"
 #define DEFAULT_ECHOSTATS_FILE      "../data/echostats.ini"
 #define DEFAULT_LOG_FILE            "../data/sbbsecho.log"

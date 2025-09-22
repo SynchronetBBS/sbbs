@@ -1586,7 +1586,7 @@ USAGE:
 					snprintf(opt[i++], MAX_OPLN - 1, "%-30.30s %s", "Outbound Directory"
 					         , cfg.outbound[0] ? cfg.outbound : DEFAULT_OUTBOUND);
 					snprintf(opt[i++], MAX_OPLN - 1, "%-30.30s %s", "Area File"
-					         , cfg.areafile[0] ? cfg.areafile : DEFAULT_AREA_FILE);
+					         , cfg.areafile[0] ? cfg.areafile : "<none>");
 					snprintf(opt[i++], MAX_OPLN - 1, "%-30.30s %s", "Bad Area File"
 					         , cfg.badareafile[0] ? cfg.badareafile : DEFAULT_BAD_AREA_FILE);
 					snprintf(opt[i++], MAX_OPLN - 1, "%-30.30s %s", "Log File"
@@ -1721,7 +1721,7 @@ USAGE:
 								" `*` This file may be import/exported to/from your `Message Areas` in `SCFG`\n"
 								" `*` This file may be remotely modified by authorized nodes using `AreaMgr`\n"
 								"\n"
-								"Default value is: `" DEFAULT_AREA_FILE "`"
+								"Recommended value is: `../data/areas.bbs`"
 							;
 							uifc.input(WIN_L2R | WIN_SAV, 0, 0, "Area File"
 							           , cfg.areafile, sizeof(cfg.areafile) - 1
