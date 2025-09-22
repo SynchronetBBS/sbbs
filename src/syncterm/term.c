@@ -1738,22 +1738,22 @@ cet_telesoftware_download(struct bbslist *bbs)
 				free(st.orig_screen);
 				fclose(fp);
 				if (blk->frame < next_frame) {
-					free(blk);
 					lprintf(LOG_ERR, "Old frame retransmitted... got %c, expcted %c", blk->frame, next_frame);
+					free(blk);
 					cet_send_string("_");
 					retries++;
 					continue;
 				}
 				else if (next_frame == 'a') {
-					free(blk);
 					lprintf(LOG_ERR, "New page not started... got %c, expcted %c", blk->frame, next_frame);
+					free(blk);
 					cet_send_string("0");
 					retries++;
 					continue;
 				}
 				else {
-					free(blk);
 					lprintf(LOG_ERR, "Out of order frame... got %c, expcted %c", blk->frame, next_frame);
+					free(blk);
 					transfer_complete(false, was_binary);
 					// Resend last frame
 					cet_send_string("*00");
