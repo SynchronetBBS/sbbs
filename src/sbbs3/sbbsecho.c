@@ -6898,21 +6898,23 @@ int main(int argc, char **argv)
 	cfg.areas = 0;        /* Total number of areas in AREAS.BBS */
 	cfg.area = NULL;
 
-	(void)fexistcase(cfg.areafile);
-	char *ext = getfext(cfg.areafile);
-	areafile_is_ini = (ext != NULL && stricmp(ext, ".ini") == 0);
+	if (*cfg.areafile) {
+		(void)fexistcase(cfg.areafile);
+		char *ext = getfext(cfg.areafile);
+		areafile_is_ini = (ext != NULL && stricmp(ext, ".ini") == 0);
 
-	if ((stream = fopen(cfg.areafile, "r")) == NULL) {
-		lprintf(LOG_NOTICE, "Could not open Area File (%s): %s", cfg.areafile, strerror(errno));
-	} else {
-		printf("Reading %s", cfg.areafile);
-		if (areafile_is_ini)
-			read_areafile_ini(stream);
-		else
-			read_areafile_bbs(stream);
-		fclose(stream);
-		printf("\n");
-		lprintf(LOG_DEBUG, "Read %u areas from %s", cfg.areas, cfg.areafile);
+		if ((stream = fopen(cfg.areafile, "r")) == NULL) {
+			lprintf(LOG_NOTICE, "Could not open Area File (%s): %s", cfg.areafile, strerror(errno));
+		} else {
+			printf("Reading %s", cfg.areafile);
+			if (areafile_is_ini)
+				read_areafile_ini(stream);
+			else
+				read_areafile_bbs(stream);
+			fclose(stream);
+			printf("\n");
+			lprintf(LOG_DEBUG, "Read %u areas from %s", cfg.areas, cfg.areafile);
+		}
 	}
 
 	if (cfg.badecho >= 0)
