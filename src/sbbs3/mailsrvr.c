@@ -2020,7 +2020,7 @@ static BOOL chk_email_addr(SOCKET socket, const char* prot, char* p, char* host_
 	char         addr[128];
 	char         tmp[128];
 
-	parse_mail_address(p, name, sizeof name, addr, sizeof addr);
+	parse_mail_address(p, name, sizeof name - 1, addr, sizeof addr - 1);
 
 	struct trash trash;
 	if (!trashcan2(&scfg, name, addr, "email", &trash))
