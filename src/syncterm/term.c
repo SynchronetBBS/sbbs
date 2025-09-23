@@ -1108,8 +1108,11 @@ transfer_complete(bool success, bool was_binary)
 struct cet_ts_state {
 	int (*recv_byte)(void *, unsigned);
 	uint8_t *orig_screen;
+	uint8_t *frame_buffer;
 	size_t orig_screen_pos;
 	size_t orig_screen_sz;
+	size_t fb_pos;
+	size_t fb_sz;
 	size_t bytes_received;
 	time_t start;
 	long frame_count;
@@ -1231,11 +1234,31 @@ cet_send_string(const char *str)
 	return true;
 }
 
+static inline void
+cet_append_fb(struct cet_ts_state *sp, int byte)
+{
+	if (byte == 12) {	// Clear screen
+		sp->fb_pos = 0;
+	}
+	if (sp->fb_pos == sp->fb_sz) {
+		size_t newsz = sp->fb_sz ? sp->fb_sz * 2 : 1000;
+		void *ra = realloc(sp->frame_buffer, newsz);
+		if (!ra)
+			return;
+		sp->frame_buffer = ra;
+		sp->fb_sz = newsz;
+	}
+	sp->frame_buffer[sp->fb_pos++] = byte;
+}
+
 static void
 cet_telesoftware_end_of_frame(struct cet_ts_state *sp)
 {
 	// Original spec says to wait until two seconds have passed without a character.
-	while (sp->recv_byte(sp, CET_TS_FRAME_TIMEOUT_MS) != -1);
+	int byte;
+	while ((byte = sp->recv_byte(sp, CET_TS_FRAME_TIMEOUT_MS)) != -1) {
+		cet_append_fb(sp, byte);
+	}
 }
 
 static struct cet_ts_block *
@@ -1293,6 +1316,7 @@ cet_telesoftware_try_get_block(struct cet_ts_state *sp)
 			lprintf(LOG_ERR, "Failed to receive byte (timeout %d)", b);
 			return NULL;
 		}
+		cet_append_fb(sp, b);
 		if (got_start && (b > 127 || b < 32)) {
 			free(ret);
 			lprintf(LOG_ERR, "Received illegal byte 0x%02x (high bit set)", b);
@@ -1360,6 +1384,7 @@ cet_telesoftware_try_get_block(struct cet_ts_state *sp)
 						// Read extra bytes up to | or four, then set got_escape
 						need_term = true;
 						b1 = sp->recv_byte(sp, CET_TS_TIMEOUT_MS);
+						cet_append_fb(sp, b1);
 						if (b1 < 'a' || b1 > 'z') {
 							free(ret);
 							lprintf(LOG_ERR, "Invalid |G frame byte 0x%02%s", b1, b1 == -1 ? " (timeout)" : "");
@@ -1368,6 +1393,7 @@ cet_telesoftware_try_get_block(struct cet_ts_state *sp)
 						checkxor ^= b1;
 						ret->frame = b1;
 						b1 = sp->recv_byte(sp, CET_TS_TIMEOUT_MS);
+						cet_append_fb(sp, b1);
 						if (((b1 < '0') || (b1 > '9')) && (b1 != '|')) {
 							free(ret);
 							lprintf(LOG_ERR, "Invalid |G block id byte 0x%02%s", b1, b1 == -1 ? " (timeout)" : "");
@@ -1380,6 +1406,7 @@ cet_telesoftware_try_get_block(struct cet_ts_state *sp)
 							checkxor ^= b1;
 							ret->block_num = b1 - '0';
 							b1 = sp->recv_byte(sp, CET_TS_TIMEOUT_MS);
+							cet_append_fb(sp, b1);
 							if ((b1 < '0') || (b1 > '9')) {
 								free(ret);
 								lprintf(LOG_ERR, "Invalid |G block id byte 0x%02%s", b1, b1 == -1 ? " (timeout)" : "");
@@ -1401,18 +1428,21 @@ cet_telesoftware_try_get_block(struct cet_ts_state *sp)
 					case 'Z':
 						allowed_after_end = true;
 						b1 = sp->recv_byte(sp, CET_TS_TIMEOUT_MS);
+						cet_append_fb(sp, b1);
 						if (b1 < '0' || b1 > '9') {
 							free(ret);
 							lprintf(LOG_ERR, "Invalid checkxor byte 0x%02%s", b1, b1 == -1 ? " (timeout)" : "");
 							return NULL;
 						}
 						b2 = sp->recv_byte(sp, CET_TS_TIMEOUT_MS);
+						cet_append_fb(sp, b2);
 						if (b2 < '0' || b2 > '9') {
 							free(ret);
 							lprintf(LOG_ERR, "Invalid checkxor byte 0x%02%s", b2, b2 == -1 ? " (timeout)" : "");
 							return NULL;
 						}
 						b3 = sp->recv_byte(sp, CET_TS_TIMEOUT_MS);
+						cet_append_fb(sp, b3);
 						if (b3 < '0' || b3 > '9') {
 							free(ret);
 							lprintf(LOG_ERR, "Invalid checkxor byte 0x%02%s", b3, b3 == -1 ? " (timeout)" : "");
@@ -1575,11 +1605,14 @@ cet_telesoftware_duplicate(struct bbslist *bbs, char *path, size_t pathsize, cha
 }
 
 static void
-cet_telesoftware_download(struct bbslist *bbs)
+cet_telesoftware_download(struct bbslist *bbs, void **frame_buffer, size_t *buflen)
 {
+	*frame_buffer = NULL;
+	*buflen = 0;
 	if (safe_mode)
 		return;
 	bool     was_binary = conn_api.binary_mode;
+	bool     success = false;
 	uint8_t  next_frame = 'A';
 	uint8_t  next_block = 0;
 	uint16_t frames_remaining;
@@ -1593,14 +1626,16 @@ cet_telesoftware_download(struct bbslist *bbs)
 		.aborted = false,
 		.start = time(NULL),
 	};
+	FILE *fp = NULL;
+	struct cet_ts_block *header = NULL;
+	struct cet_ts_block *blk = NULL;
 
 	if (st.orig_screen)
 		gettext(ti.winleft, ti.wintop, ti.winright, ti.winbottom, st.orig_screen);
 	draw_transfer_window("CET Telesoftware Download");
 	if (st.orig_screen == NULL) {
 		lputs(NULL, LOG_ERR, "malloc() failures");
-		transfer_complete(false, was_binary);
-		return;
+		goto failure;
 	}
 
 	if (!was_binary)
@@ -1608,37 +1643,26 @@ cet_telesoftware_download(struct bbslist *bbs)
 
 	cet_telesoftware_progress(&st);
 
-	struct cet_ts_block *header = cet_telesoftware_get_block(&st);
+	header = cet_telesoftware_get_block(&st);
 	if (header == NULL) {
-		free(st.orig_screen);
 		lputs(NULL, LOG_ERR, "Failed to get header block");
-		transfer_complete(false, was_binary);
-		return;
+		goto failure;
 	}
 	const char *fname = header->data;
 	char *p = strchr(header->data, '\n');
 	if (p == NULL) {
-		free(st.orig_screen);
-		free(header);
 		lputs(NULL, LOG_ERR, "Invalid header block (missing |L)");
-		transfer_complete(false, was_binary);
-		return;
+		goto failure;
 	}
 	*p = 0;
 	if (p == fname) {
-		free(st.orig_screen);
-		free(header);
 		lputs(NULL, LOG_ERR, "Invalid header block (zero-length file name)");
-		transfer_complete(false, was_binary);
-		return;
+		goto failure;
 	}
 #ifdef _WIN32
 	if (*(p - 1) != '\r') {
-		free(st.orig_screen);
-		free(header);
 		lputs(NULL, LOG_ERR, "Invalid header block (missing |L)");
-		transfer_complete(false, was_binary);
-		return;
+		goto failure;
 	}
 	*(p - 1) = 0;
 #endif
@@ -1646,11 +1670,8 @@ cet_telesoftware_download(struct bbslist *bbs)
 	header->data[header->length] = 0;
 	st.frame_count = strtol(p, NULL, 10);
 	if (st.frame_count < 1 || st.frame_count > 999) {
-		free(st.orig_screen);
-		free(header);
 		lprintf(LOG_ERR, "Invalid header block size (%s)", p);
-		transfer_complete(false, was_binary);
-		return;
+		goto failure;
 	}
 	frames_remaining = st.frame_count;
 
@@ -1662,21 +1683,16 @@ cet_telesoftware_download(struct bbslist *bbs)
 	while (fexistcase(st.fpath)) {
 		lprintf(LOG_WARNING, "%s already exists", st.fpath);
 		if (!cet_telesoftware_duplicate(bbs, st.fpath, sizeof(st.fpath), getfname(fname))) {
-			free(st.orig_screen);
-			free(header);
-			transfer_complete(false, was_binary);
-			return;
+			goto failure;
 		}
 	}
 
 	cet_telesoftware_progress(&st);
 	free(header);
-	FILE *fp = fopen(st.fpath, "wb");
+	fp = fopen(st.fpath, "wb");
 	if (fp == NULL) {
-		free(st.orig_screen);
 		lprintf(LOG_ERR, "Error %d creating %s", errno, st.fpath);
-		transfer_complete(false, was_binary);
-		return;
+		goto failure;
 	}
 
 	unsigned retries = 0;
@@ -1684,34 +1700,19 @@ cet_telesoftware_download(struct bbslist *bbs)
 		if (next_frame == 'z' + 1) {
 			next_frame = 'a';
 			if (!cet_send_string("0")) {
-				free(st.orig_screen);
-				fclose(fp);
 				lputs(NULL, LOG_ERR, "Error requesting next frame");
-				transfer_complete(false, was_binary);
-				// Resend last frame
-				cet_send_string("*00");
-				return;
+				goto failure;
 			}
 		}
 		else {
 			if (!cet_send_string("_")) {
-				free(st.orig_screen);
-				fclose(fp);
 				lputs(NULL, LOG_ERR, "Error requesting next page");
-				transfer_complete(false, was_binary);
-				// Resend last frame
-				cet_send_string("*00");
-				return;
+				goto failure;
 			}
 		}
-		struct cet_ts_block *blk = cet_telesoftware_get_block(&st);
+		blk = cet_telesoftware_get_block(&st);
 		if (blk == NULL) {
-			free(st.orig_screen);
-			fclose(fp);
-			transfer_complete(false, was_binary);
-			// Resend last frame
-			cet_send_string("*00");
-			return;
+			goto failure;
 		}
 		if (frames_remaining != 999)
 			frames_remaining--;
@@ -1728,18 +1729,15 @@ cet_telesoftware_download(struct bbslist *bbs)
 				next_frame = blk->frame;
 			if (blk->frame != next_frame) {
 				if (retries >= 3) {
-					free(blk);
 					lprintf(LOG_ERR, "Too many retries for frame %c, aborting", next_frame);
-					transfer_complete(false, was_binary);
-					// Resend last frame
-					cet_send_string("*00");
-					return;
+					goto failure;
 				}
 				free(st.orig_screen);
 				fclose(fp);
 				if (blk->frame < next_frame) {
 					lprintf(LOG_ERR, "Old frame retransmitted... got %c, expcted %c", blk->frame, next_frame);
 					free(blk);
+					blk = NULL;
 					cet_send_string("_");
 					retries++;
 					continue;
@@ -1747,28 +1745,19 @@ cet_telesoftware_download(struct bbslist *bbs)
 				else if (next_frame == 'a') {
 					lprintf(LOG_ERR, "New page not started... got %c, expcted %c", blk->frame, next_frame);
 					free(blk);
+					blk = NULL;
 					cet_send_string("0");
 					retries++;
 					continue;
 				}
 				else {
 					lprintf(LOG_ERR, "Out of order frame... got %c, expcted %c", blk->frame, next_frame);
-					free(blk);
-					transfer_complete(false, was_binary);
-					// Resend last frame
-					cet_send_string("*00");
-					return;
+					goto failure;
 				}
 			}
 			if (blk->block_num != next_block) {
-				free(st.orig_screen);
-				fclose(fp);
 				lprintf(LOG_ERR, "Out of order block in frame %c... got %u, expcted %u", blk->frame, blk->block_num, next_block);
-				free(blk);
-				transfer_complete(false, was_binary);
-				// Resend last frame
-				cet_send_string("*00");
-				return;
+				goto failure;
 			}
 		}
 		retries = 0;
@@ -1778,17 +1767,10 @@ cet_telesoftware_download(struct bbslist *bbs)
 			next_block++;
 		size_t written = fwrite(blk->data, 1, blk->length, fp);
 		if (written != blk->length) {
-			free(st.orig_screen);
-			fclose(fp);
 			lprintf(LOG_ERR, "Bad write, wrote %zu, tried %zu", written, blk->length);
-			free(blk);
-			transfer_complete(false, was_binary);
-			// Resend last frame
-			cet_send_string("*00");
-			return;
+			goto failure;
 		}
 		if (blk->ends_file) {
-			free(blk);
 			if (frames_remaining && frames_remaining != 999) {
 				lprintf(LOG_ERR, "End of file detected with %u frames remaining.", frames_remaining);
 			}
@@ -1798,24 +1780,20 @@ cet_telesoftware_download(struct bbslist *bbs)
 			lprintf(LOG_ERR, "End of file detected with %u frames remaining.", frames_remaining);
 		}
 		free(blk);
+		blk = NULL;
 	}
-	free(st.orig_screen);
-	fclose(fp);
+	success = st.aborted;
 
-	transfer_complete(st.aborted, was_binary);
-	// Resend last frame
-	/* <nelgin> The word is "The TSW downloader would just leave the final frame displayed and allow the user to control what to do next."
-	 * <nelgin> "You can add text on the frame after the end of the telesoftware data."
-	 * <nelgin> That's from the guy who wrote some of the original Prestel code.
-	 */
-	cet_send_string("*00");
-	// Move to next frame on page (or next page if at end)
-	//if (next_frame == 'z' + 1)
-	//	cet_send_string("0");
-	//else
-	//	cet_send_string("_");
-	// Always use zero route
-	//cet_send_string("0");
+failure:
+	free(blk);
+	free(header);
+	free(st.orig_screen);
+	if (fp)
+		fclose(fp);
+	transfer_complete(success, was_binary);
+	// Display cached last frame
+	*frame_buffer = st.frame_buffer;
+	*buflen = st.fb_pos;
 }
 
 void
@@ -1835,6 +1813,8 @@ begin_download(struct bbslist *bbs)
 	struct  text_info     txtinfo;
 	int                   old_hold = hold_update;
 	struct ciolib_screen *savscrn;
+	void *buf = NULL;
+	size_t buflen = 0;
 
 	if (safe_mode)
 		return;
@@ -1872,7 +1852,7 @@ begin_download(struct bbslist *bbs)
 				xmodem_download(bbs, XMODEM | RECV, path);
 			break;
 		case 5:
-			cet_telesoftware_download(bbs);
+			cet_telesoftware_download(bbs, &buf, &buflen);
 			break;
 	}
 	suspend_rip(false);
@@ -1881,6 +1861,10 @@ begin_download(struct bbslist *bbs)
 	restorescreen(savscrn);
 	freescreen(savscrn);
 	gotoxy(txtinfo.curx, txtinfo.cury);
+	if (buf) {
+		cterm_write(cterm, buf, buflen, NULL, 0, NULL);
+		free(buf);
+	}
 }
 
 #if defined(__BORLANDC__)
