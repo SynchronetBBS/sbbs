@@ -155,7 +155,7 @@ var tests = [
 	}},
 	{'name':"HT", 'func':function() {
 		console.gotoxy(1,1);
-		console.write("\t");
+		console.putbyte(9);
 		if (check_xy(1, 1))
 			return false;
 		return true;
@@ -179,7 +179,7 @@ var tests = [
 		console.gotoxy(3,1);
 		console.write("\x1bH");
 		console.gotoxy(1,1);
-		console.write("\t");
+		console.putbyte(9);
 		return check_xy(3,1);
 	}},
 	{'name':"RI", 'func':function() {
@@ -411,9 +411,9 @@ var tests = [
 	}},
 	{'name':'CHT', 'func':function() {
 		console.gotoxy(1,1);
-		console.write("\t");
+		console.putbyte(9);
 		var pos1 = fast_getxy();
-		console.write("\t");
+		console.putbyte(9);
 		var pos2 = fast_getxy();
 		console.gotoxy(1, 1);
 		console.write("\x1b[I");
@@ -635,9 +635,9 @@ var tests = [
 	}},
 	{'name':'CVT', 'func':function() {
 		console.gotoxy(1,1);
-		console.write("\t");
+		console.putbyte(9);
 		var pos1 = fast_getxy();
-		console.write("\t");
+		console.putbyte(9);
 		var pos2 = fast_getxy();
 		console.gotoxy(1,1);
 		console.write("\x1b[Y");
@@ -655,11 +655,11 @@ var tests = [
 	}},
 	{'name':'CBT', 'func':function() {
 		console.gotoxy(1,1);
-		console.write("\t");
+		console.putbyte(9);
 		var pos1 = fast_getxy();
-		console.write("\t");
+		console.putbyte(9);
 		var pos2 = fast_getxy();
-		console.write("\t");
+		console.putbyte(9);
 		var pos3 = fast_getxy();
 		console.gotoxy(pos3.x,pos3.y);
 		console.write("\x1b[Z");
@@ -744,11 +744,11 @@ var tests = [
 	}},
 	{'name':'TSR', 'func':function() {
 		console.gotoxy(1, 1);
-		console.write("\t");
+		console.putbyte(9);
 		var pos = fast_getxy();
 		console.write("\x1b["+pos.x+" d");
 		console.gotoxy(1, 1);
-		console.write("\t");
+		console.putbyte(9);
 		if (check_xy(pos.x, pos.y))
 			return false;
 		return true;
@@ -795,11 +795,11 @@ var tests = [
 	}},
 	{'name':'TBC', 'func':function() {
 		console.gotoxy(1, 1);
-		console.write("\t");
+		console.putbyte(9);
 		var pos = fast_getxy();
 		console.write("\x1b[0g");
 		console.gotoxy(1, 1);
-		console.write("\t");
+		console.putbyte(9);
 		if (check_xy(pos.x, pos.y))
 			return false;
 		console.write("\x1bc");
@@ -807,7 +807,7 @@ var tests = [
 		console.gotoxy(console.screen_columns, 1);
 		console.write("\x1bH");
 		console.gotoxy(1,1);
-		console.write("\t");
+		console.putbyte(9);
 		if (!check_xy(console.screen_columns,1)) {
 			console.write("\x1bc");
 			return false;
