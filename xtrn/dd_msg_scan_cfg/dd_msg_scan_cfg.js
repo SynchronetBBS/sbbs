@@ -277,7 +277,7 @@ function letUserChooseMsgGrp(pConfig, msgGrpListStartCol, msgGrpListStartRow, ms
 					if (useLightbarInterface(pConfig))
 					{
 						console.gotoxy(1, console.screen_rows);
-						console.cleartoeol("\x01n");
+						console.cleartoeol("N");
 						console.gotoxy(1, console.screen_rows);
 					}
 					else
@@ -616,7 +616,7 @@ function letUserDoSubBoardConfigForMsgGrp(pConfig, pGrpIdx, pStartCol, pStartRow
 					if (useLightbarInterface(pConfig))
 					{
 						console.gotoxy(1, console.screen_rows);
-						console.cleartoeol("\x01n");
+						console.cleartoeol("N");
 						console.gotoxy(1, console.screen_rows);
 					}
 					else
@@ -1704,7 +1704,7 @@ function displayScanConfigHelp(pMsgGrpName)
 function displayErrorMsgAtBottomScreenRow(pConfig, pErrorMsg, pClearRowAfterward)
 {
 	console.gotoxy(1, console.screen_rows);
-	console.cleartoeol("\x01n");
+	console.cleartoeol("N");
 	console.gotoxy(1, console.screen_rows);
 	console.print(pConfig.colors.errorMsg);
 	console.print(pErrorMsg);
@@ -1713,7 +1713,7 @@ function displayErrorMsgAtBottomScreenRow(pConfig, pErrorMsg, pClearRowAfterward
 	if (clearRowAfterward)
 	{
 		console.gotoxy(1, console.screen_rows);
-		console.cleartoeol("\x01n");
+		console.cleartoeol("N");
 		console.gotoxy(1, console.screen_rows);
 	}
 	else
