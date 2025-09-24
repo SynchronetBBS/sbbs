@@ -1688,7 +1688,6 @@ cet_telesoftware_download(struct bbslist *bbs, void **frame_buffer, size_t *bufl
 	}
 
 	cet_telesoftware_progress(&st);
-	free(header);
 	fp = fopen(st.fpath, "wb");
 	if (fp == NULL) {
 		lprintf(LOG_ERR, "Error %d creating %s", errno, st.fpath);
@@ -1732,8 +1731,6 @@ cet_telesoftware_download(struct bbslist *bbs, void **frame_buffer, size_t *bufl
 					lprintf(LOG_ERR, "Too many retries for frame %c, aborting", next_frame);
 					goto failure;
 				}
-				free(st.orig_screen);
-				fclose(fp);
 				if (blk->frame < next_frame) {
 					lprintf(LOG_ERR, "Old frame retransmitted... got %c, expcted %c", blk->frame, next_frame);
 					free(blk);
