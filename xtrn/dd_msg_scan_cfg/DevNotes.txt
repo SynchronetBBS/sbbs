@@ -1,0 +1,6 @@
+2025-04-21
+----------
+From Nelgin: Add a sort option (sort by long name, etc.)
+
+this.selectedItemIdx
+

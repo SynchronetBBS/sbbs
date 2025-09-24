@@ -1,0 +1,8 @@
+This file lists all of the changes made for each release of Digital
+Distortion Message Scan Config.
+
+Revision History (change log)
+=============================
+Version  Date         Description
+-------  ----         -----------
+1.00     2025-09-23   Initial release
