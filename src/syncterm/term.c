@@ -417,6 +417,8 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 			if (term.width >= 80)
 				avail = 29;
 	}
+	if (term.width == 40)
+		avail = 29;
 
 	if (speed)
 		snprintf(sbuf, sizeof(sbuf), " (%d)", speed);
@@ -453,7 +455,7 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 	if (ms->mode == 0) {
 		status_bar[30].ch = ' ';
 	}
-	for (i = 1; fullbuf[i]; i++) {
+	for (i = 1; fullbuf[i] && i < term.width; i++) {
 		status_bar[i].ch = fullbuf[i];
 	}
 	if (ms->mode != 0) {
@@ -1688,7 +1690,6 @@ cet_telesoftware_download(struct bbslist *bbs, void **frame_buffer, size_t *bufl
 	}
 
 	cet_telesoftware_progress(&st);
-	free(header);
 	fp = fopen(st.fpath, "wb");
 	if (fp == NULL) {
 		lprintf(LOG_ERR, "Error %d creating %s", errno, st.fpath);
@@ -1714,8 +1715,6 @@ cet_telesoftware_download(struct bbslist *bbs, void **frame_buffer, size_t *bufl
 		if (blk == NULL) {
 			goto failure;
 		}
-		if (frames_remaining != 999)
-			frames_remaining--;
 		st.bytes_received += blk->length;
 		st.frame_num++;
 		cet_telesoftware_progress(&st);
@@ -1732,8 +1731,6 @@ cet_telesoftware_download(struct bbslist *bbs, void **frame_buffer, size_t *bufl
 					lprintf(LOG_ERR, "Too many retries for frame %c, aborting", next_frame);
 					goto failure;
 				}
-				free(st.orig_screen);
-				fclose(fp);
 				if (blk->frame < next_frame) {
 					lprintf(LOG_ERR, "Old frame retransmitted... got %c, expcted %c", blk->frame, next_frame);
 					free(blk);
@@ -1765,6 +1762,8 @@ cet_telesoftware_download(struct bbslist *bbs, void **frame_buffer, size_t *bufl
 			next_frame++;
 		else
 			next_block++;
+		if (frames_remaining != 999)
+			frames_remaining--;
 		size_t written = fwrite(blk->data, 1, blk->length, fp);
 		if (written != blk->length) {
 			lprintf(LOG_ERR, "Bad write, wrote %zu, tried %zu", written, blk->length);
