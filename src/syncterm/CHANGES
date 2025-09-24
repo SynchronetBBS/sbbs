@@ -21,6 +21,8 @@ Fix loss of character when performing LCF wrap
 Fix crash at startup when built with gcc15 and -fhardened
 Fix RIP handling when ESC[! sequences are split between packets
 Fix double-height blinking in Prestel mode
+Fix potential hang
+Fix broken Scroll Up (CSI S)
 
 Version 1.6
 ------------
