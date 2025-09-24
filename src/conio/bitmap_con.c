@@ -1384,12 +1384,11 @@ bitmap_vmem_puttext(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 	return ret;
 }
 
-int bitmap_vmem_gettext(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
+static bool
+bitmap_vmem_gettext_invalid(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 {
-	int x,y;
-
 	if(!bitmap_initialized)
-		return(0);
+		return true;
 
 	if(		   sx < 1
 			|| sy < 1
@@ -1400,10 +1399,16 @@ int bitmap_vmem_gettext(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 			|| ex > cio_textinfo.screenwidth
 			|| ey > cio_textinfo.screenheight
 			|| fill==NULL) {
-		return(0);
+		return true;
 	}
+	return false;
+}
 
-	assert_rwlock_rdlock(&vstatlock);
+static int
+bitmap_vmem_gettext_locked_inner(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
+{
+	int x,y;
+
 	for(y=sy-1;y<ey;y++) {
 		struct vmem_cell *vc = vmem_cell_ptr(vstat.vmem, sx - 1, y);
 		for(x=sx-1;x<ex;x++) {
@@ -1411,8 +1416,27 @@ int bitmap_vmem_gettext(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 			vc = vmem_next_ptr(vstat.vmem, vc);
 		}
 	}
-	assert_rwlock_unlock(&vstatlock);
 	return(1);
+}
+
+static int
+bitmap_vmem_gettext_locked(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
+{
+	if (bitmap_vmem_gettext_invalid(sx, sy, ex, ey, fill))
+		return 0;
+
+	return bitmap_vmem_gettext_locked_inner(sx, sy, ex, ey, fill);
+}
+
+int bitmap_vmem_gettext(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
+{
+	if (bitmap_vmem_gettext_invalid(sx, sy, ex, ey, fill))
+		return 0;
+
+	assert_rwlock_rdlock(&vstatlock);
+	int ret = bitmap_vmem_gettext_locked_inner(sx, sy, ex, ey, fill);
+	assert_rwlock_unlock(&vstatlock);
+	return(ret);
 }
 
 void bitmap_gotoxy(int x, int y)
@@ -1544,9 +1568,10 @@ int bitmap_setfont(int font, int force, int font_num)
 
 		old=malloc(ow*oh*sizeof(*old));
 		if(old) {
-			bitmap_vmem_gettext(1,1,ow,oh,old);
-			/* coverity[sleep:SUPPRESS] */
+			bitmap_vmem_gettext_locked(1,1,ow,oh,old);
+			assert_rwlock_unlock(&vstatlock);
 			textmode(newmode);
+			assert_rwlock_wrlock(&vstatlock);
 			new=malloc(ti.screenwidth*ti.screenheight*sizeof(*new));
 			if(!new) {
 				free(old);
@@ -1755,9 +1780,9 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 
 		// Set up the move back down...
 		scrolldown = !scrolldown;
-		height = vstat.rows - height;
+		height = vstat.rows - height - 1;
 		toy = vstat.rows - (height - 1);
-		y = toy - height + 1;
+		y = vstat.rows - height;
 	}
 	if (scrolldown) {
 		soff = vmem_cell_offset(vstat.vmem, x - 1, y + height - 2);
