@@ -149,7 +149,7 @@ while (continueOn)
 // Return value: The chosen index of the message group (0-based), or null if none is chosen
 function letUserChooseMsgGrp(pConfig, msgGrpListStartCol, msgGrpListStartRow, msgGrpMenuWidth, msgGrpMenuHeight)
 {
-	console.clear("\x01n");
+	console.clear("N");
 	if (letUserChooseMsgGrp.menuInfo === undefined)
 	{
 		// Create the message group menu
@@ -277,7 +277,7 @@ function letUserChooseMsgGrp(pConfig, msgGrpListStartCol, msgGrpListStartRow, ms
 					if (useLightbarInterface(pConfig))
 					{
 						console.gotoxy(1, console.screen_rows);
-						console.cleartoeol("\x01n");
+						console.cleartoeol("N");
 						console.gotoxy(1, console.screen_rows);
 					}
 					else
@@ -329,9 +329,9 @@ function letUserChooseMsgGrp(pConfig, msgGrpListStartCol, msgGrpListStartRow, ms
 			else if (msgGrpMenu.lastUserInput == "?")
 			{
 				// Show help for choosing a message group
-				console.clear("\x01n");
+				console.clear("N");
 				displayChooseMsgGroupHelp();
-				console.clear("\x01n");
+				console.clear("N");
 				showHeaderLines = true;
 				redrawMenu = true;
 				writeKeyHelpLine = true;
@@ -420,14 +420,14 @@ function letUserDoSubBoardConfigForMsgGrp(pConfig, pGrpIdx, pStartCol, pStartRow
 {
 	if (msg_area.grp_list[pGrpIdx].sub_list.length == 0)
 	{
-		console.clear("\x01n");
+		console.clear("N");
 		console.center(gConfig.colors.msgGrpHdr + "There are no sub-boards for this group\x01n");
 		console.crlf();
 		console.pause();
 		return;
 	}
 
-	console.clear("\x01n");
+	console.clear("N");
 
 	// For toggle-all unread and to-you options
 	var unreadAllToggle = true;
@@ -616,7 +616,7 @@ function letUserDoSubBoardConfigForMsgGrp(pConfig, pGrpIdx, pStartCol, pStartRow
 					if (useLightbarInterface(pConfig))
 					{
 						console.gotoxy(1, console.screen_rows);
-						console.cleartoeol("\x01n");
+						console.cleartoeol("N");
 						console.gotoxy(1, console.screen_rows);
 					}
 					else
@@ -675,9 +675,9 @@ function letUserDoSubBoardConfigForMsgGrp(pConfig, pGrpIdx, pStartCol, pStartRow
 			else if (currentToggleMenu.lastUserInput == "?")
 			{
 				// Show help for message scan configuration
-				console.clear("\x01n");
+				console.clear("N");
 				displayScanConfigHelp(msg_area.grp_list[pGrpIdx].description);
-				console.clear("\x01n");
+				console.clear("N");
 				showHeaderLines = true;
 				showMenus = true;
 				writeKeyHelpLine = true;
@@ -769,9 +769,9 @@ function letUserDoSubBoardConfigForMsgGrp(pConfig, pGrpIdx, pStartCol, pStartRow
 			else if (userInputStr == "?")
 			{
 				// Show help for message scan configuration
-				console.clear("\x01n");
+				console.clear("N");
 				displayScanConfigHelp(msg_area.grp_list[pGrpIdx].description);
-				console.clear("\x01n");
+				console.clear("N");
 			}
 			else
 			{
@@ -1704,7 +1704,7 @@ function displayScanConfigHelp(pMsgGrpName)
 function displayErrorMsgAtBottomScreenRow(pConfig, pErrorMsg, pClearRowAfterward)
 {
 	console.gotoxy(1, console.screen_rows);
-	console.cleartoeol("\x01n");
+	console.cleartoeol("N");
 	console.gotoxy(1, console.screen_rows);
 	console.print(pConfig.colors.errorMsg);
 	console.print(pErrorMsg);
@@ -1713,7 +1713,7 @@ function displayErrorMsgAtBottomScreenRow(pConfig, pErrorMsg, pClearRowAfterward
 	if (clearRowAfterward)
 	{
 		console.gotoxy(1, console.screen_rows);
-		console.cleartoeol("\x01n");
+		console.cleartoeol("N");
 		console.gotoxy(1, console.screen_rows);
 	}
 	else
