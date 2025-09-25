@@ -1,0 +1,7 @@
+his file lists all of the changes made for each release of Groupie news reader
+
+Revision History (change log)
+=============================
+Version  Date         Description
+-------  ----         -----------
+1.00     2025-09-24   Initial version & release
