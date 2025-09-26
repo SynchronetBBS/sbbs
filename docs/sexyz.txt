@@ -1,17 +1,15 @@
 Synchronet External X/Y/ZMODEM (SEXYZ) File Transfer Protocol Driver
 --------------------------------------------------------------------
 
-$Id: sexyz.txt,v 1.28 2014/12/11 10:27:34 rswindell Exp $
-
 The live version of this document is online at:
 http://wiki.synchro.net/util:sexyz
 
 Overview
 --------
-SEXYZ was developed as a native (32-bit) TCP/socket-based replacement for the
-16-bit DOS file transfer drivers (e.g. FDSZ, CE-XYZ, etc.) that we've been
-stuck with on 32-bit BBSes for FAR too long. While SEXYZ was designed with
-Synchronet BBSes in mind, it should also work with other 32-bit BBS packages
+SEXYZ was developed as a native TCP/socket-based replacement for the 16-bit
+DOS file transfer drivers (e.g. FDSZ, CE-XYZ, etc.) that we'd been
+stuck with on modern BBSes for FAR too long.  While SEXYZ was designed with
+Synchronet BBSes in mind, it should also work with other modern BBS packages
 that have the ability to pass socket descriptors to external file transfer
 protocol drivers.
 
@@ -31,7 +29,7 @@ SEXYZ has several advantages over legacy drivers like FDSZ and CE-XYZ:
     o Handles Telnet IAC escaping and option negotiations (optionally)
     o Transfers files over fast connections (e.g. 100KB/sec) without issue
     o Actively developed and supported
-    o Open source (at cvs.synchro.net)!
+    o Open source!
 
 
 Distribution
@@ -41,16 +39,13 @@ http://www.fsf.org/licensing/licenses/gpl.txt
 with portions licensed under the GNU Lesser General Public License (LGPL)
 http://www.fsf.org/licensing/licenses/lgpl.txt.
 
-You can find the current source code (in C) in the CVS repository at
-cvs.synchro.net.
+You can find the current source code (in C) at gitlab.synchro.net
 
 The latest and greatest build will be included in Synchronet-Win32 releases.
 You should be able to find/download the latest general release of SEXYZ-Win32
 (sexyzNNN.zip) at one or all of the following locations:
 
-http://www.synchro.net
-ftp://ftp.synchro.net
-ftp://vert.synchro.net
+https://web.synchro.net/Synchronet/
 telnet://vert.synchro.net
 
 SEXYZ can also be built from the C source code for use (natively) on Linux
@@ -58,7 +53,7 @@ and other Unix variants (e.g. FreeBSD).
 
 For a client implementation of SEXYZ, use the SyncTerm Telnet/RLogin/SSH
 terminal program (http://syncterm.net/), available for many platforms,
-including Win32, *nix, and Mac OS-X.
+including Win32, *nix, and macOS.
 
 
 Command-line Syntax
@@ -71,17 +66,20 @@ usage: sexyz <socket> [-opts] <cmd> [file | path | @list]
 socket = TCP socket descriptor (or leave blank for "stdio" mode on Unix)
 
 opts   = -y  allow overwriting of existing files when receiving
-         -o  disable ZMODEM CRC-32 mode (force CRC-16 mode instead)
-         -s  disable ZMODEM streaming (Slow ZMODEM)
          -k  enable X/YMODEM-1K send mode
          -c  enable XMODEM-CRC receive mode
          -g  enable X/YMODEM-G receive mode (no error recovery)
+         -o  disable ZMODEM CRC-32 mode (use CRC-16)
+         -s  use segmented ZMODEM (disable streaming)
          -2  set maximum ZMODEM block size to 2K
          -4  set maximum ZMODEM block size to 4K
          -8  set maximum ZMODEM block size to 8K (ZedZap)
+         -w# set maximum ZMODEM transmit window size (default=0, unlimited)
+         -m# set maximum receive file size to # bytes (default=0, unlimited)
+         -l  lowercase received filenames
          -!  to pause after abnormal exit (error)
          -telnet to enable Telnet mode (the default)
-         -rlogin to enable RLogin (pass-through) mode
+         -rlogin or -ssh or -raw to disable Telnet mode
 
 cmd    = v  to display detailed version information
          sx to send XMODEM     rx to receive XMODEM
@@ -281,6 +279,7 @@ Example .ini file (with default values given):
     OutbufHighwaterMark=1100    ; bytes before auto-flush
     OutbufDrainTimeout=10       ; milliseconds before auto-flush
     ProgressInterval=1          ; interval (in seconds) of progress display
+    MaxFileSize=0               ; maximum receive file size in bytes (0=unlimited)
 
     [XMODEM]
     SendTimeout=10      ; seconds
@@ -311,12 +310,15 @@ Example .ini file (with default values given):
     EscapeTelnetIAC=TRUE    ; send ZDLE/ZRUB1 instead of 0xff with -telnet
     Escape8thBit=FALSE      ; ZDLE-escape all bytes with bit-7 set
     EscapeCtrlChars=FALSE   ; ZDLE-escape all control characters (< 20h)
+    MaxWindowSize=0     ; Non-zero number of bytes for window management
+    TargetWindowSize=0  ; Duration (secs) to enable auto-adjusting window size
 
     [DSZLOG]
     Path=true           ; include full path to filename in log
     Short=false         ; use Micros~1 short path/filename in log (Windows)
     Quotes=false        ; enclose filename in "quotes" (for EleBBS)
 
+    [SOCKOPTS]          ; See https://wiki.synchro.net/config:sockopts.ini
 
 Compatibility
 -------------
@@ -352,9 +354,9 @@ CRC-16 error detection.
 
 As of this writing, the current version of SEXYZ and the X/ZMODEM modules are:
 
-    sexyz.c  1.81
-    xmodem.c 1.36   <-- Includes YMODEM
-    zmodem.c 1.77
+    sexyz.c  3.1
+    xmodem.c 2.0   <-- Includes YMODEM
+    zmodem.c 2.1
 
 SEXYZ for Win32 has been tested successfully with the following Telnet clients
 /terminal programs:
@@ -406,11 +408,20 @@ RZ-rx-frames: ZFILE, ZDATA, ZCRCG, ZCRCW, ZCRCE, ZEOF, ZFIN
 RZ-tx-frames: ZRINIT, ZRPOS, ZACK, ZFIN
 Failed: none
 
+[Tera Term]
+By: Tera Term development team
+OS: Win32
+Version: 5.5.0
+URL: https://github.com/TeraTermProject/teraterm
+Tested: XMODEM, YMODEM, ZMODEM uploads and downloads
+ZMODEM: CRC-32
+Failed: None
+
 
 Support
 -------
 For technical support (including bug reports), see 
-http://www.synchro.net/docs/support.html for details.
+https://wiki.synchro.net/howto:support for details.
 
 When submitting problem/bug reports, please include the version output from
 the "sexyz v" command. We're also very interested in reports of compatibility
@@ -451,5 +462,5 @@ SEXYZ includes portions of the Synchronet XPDEV and SMBLIB libraries which
 are licensed under the GNU Lesser General Public License (LGPL).
 http://www.fsf.org/licensing/licenses/lgpl.txt
 
-Synchronet BBS software is written by and copyright 2014 Rob Swindell.
+Synchronet BBS software is written by and copyright Rob Swindell.
 http://www.synchro.net/docs/copyright.html
