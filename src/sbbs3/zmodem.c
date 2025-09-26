@@ -64,6 +64,7 @@
 
 #define HDRLEN     5    /* size of a zmodem header */
 
+#define SET_PARITY(c)	((c) | 0x80)
 #define STRIPPED_PARITY(c)  ((c) & 0x7f)
 
 static int lprintf(zmodem_t* zm, int level, const char *fmt, ...)
@@ -1167,13 +1168,13 @@ BOOL zmodem_recv_hex_header(zmodem_t* zm)
 	 * drop the end of line sequence after a hex header
 	 */
 	c = zmodem_rx(zm);
-	if (c == '\r') {
+	if (c == '\r' || c == SET_PARITY('\r')) { // CR with Odd Parity (Tera Term's ZMODEM sends this)
 		/*
 		 * both are expected with CR
 		 */
 		c = zmodem_rx(zm);  /* drop LF */
 	}
-	if (c != '\n' && c != 0x8A) {
+	if (c != '\n' && c != SET_PARITY('\n')) { // LF with Even Parity
 		lprintf(zm, LOG_ERR, "%s HEX header not terminated with LF: %s"
 		        , __FUNCTION__, chr(c));
 		return FALSE;
@@ -2397,7 +2398,7 @@ const char* zmodem_source(void)
 
 char* zmodem_ver(char *buf)
 {
-	return strcpy(buf, "2.0");
+	return strcpy(buf, "2.1");
 }
 
 void zmodem_init(zmodem_t* zm, void* cbdata
