@@ -6,7 +6,7 @@
 #include <ciolib.h>
 #include <cterm.h>
 #include <genwrap.h>
-#include <limits.h>
+#include <float.h>
 #include <math.h>
 #include <stdbool.h>
 #include <string.h>
