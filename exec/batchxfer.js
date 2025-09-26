@@ -84,7 +84,7 @@ function batchmenu()
 			case 'L':
 				var list = batch_list_read(user.batch_upload_list);
 				if(list && list.length) {
-					if(sort === undefined)
+					if(sort === undefined && list.length > 1)
 						sort = console.yesno(bbs.text(bbs.text.SortAlphaQ));
 					if(sort)
 						bbs.batch_sort(/* upload */true);
@@ -105,7 +105,7 @@ function batchmenu()
 				var totalcdt = 0;
 				list = batch_list_read(user.batch_download_list);
 				if(list && list.length) {
-					if(sort === undefined)
+					if(sort === undefined && list.length > 1)
 						sort = console.yesno(bbs.text(bbs.text.SortAlphaQ));
 					if(sort)
 						bbs.batch_sort(/* upload */false);
@@ -124,7 +124,7 @@ function batchmenu()
 						if(console.aborted)
 							break;
 					}
-					if(!console.aborted)
+					if(list.length > 1 && !console.aborted)
 						console.print(format(bbs.text(bbs.text.DownloadQueueTotals)
 							,file_size_float(totalcdt, 1, 1)
 							,file_size_float(totalsize, 1, 1)
