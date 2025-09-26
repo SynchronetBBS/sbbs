@@ -185,21 +185,42 @@ while (continueConnectLoop)
 	nntpClient = new NNTPClient(gUserSettings.NNTPSettings, 0, gSettings.recvBufSizeBytes, gSettings.recvTimeoutSeconds);
 	nntpClient.lowercaseHeaderFieldNames = true;
 	nntpClient.addHeaderToIfMissing = true;
-	var retObj = nntpClient.Connect();
-	if (!retObj.connected)
+	var connectRetObj = null;
+	var connectContinueOn = true;
+	while (connectContinueOn)
 	{
-		nntpClient.Disconnect();
-		printf("!Error %d connecting to %s port %d\r\n", nntpClient.GetLastError(), nntpClient.connectOptions.hostname, nntpClient.connectOptions.port);
-		//exit(1);
-		// Let the user change their server configuration
-		if (console.yesno("Change configuration settings"))
+		connectRetObj = nntpClient.Connect();
+		if (connectRetObj.connected)
 		{
-			LetUserUpdateSettings(gUserSettingsFilename);
+			//console.print(connectRetObj.connectStr + "\r\n");
+			console.print("Connected to the server.\r\n");
+			connectContinueOn = false;
+			break;
+		}
+		else
+		{
+			nntpClient.Disconnect();
+			printf("!Error %d connecting to %s port %d\r\n", nntpClient.GetLastError(), nntpClient.connectOptions.hostname, nntpClient.connectOptions.port);
+			//exit(1);
+			// Let the user change their server configuration
+			if (console.yesno("Change configuration settings"))
+				LetUserUpdateSettings(gUserSettingsFilename);
+			else
+			{
+				connectContinueOn = false;
+				break;
+			}
 		}
 	}
+	if (typeof(connectRetObj) !== "object" || !connectRetObj.connected)
+	{
+		console.print("\x01n\x01w\x01hFailed to connect.\x01n\r\n");
+		console.crlf();
+		exit(1);
+	}
 
-	//console.print(retObj.connectStr + "\r\n");
-	console.print("Connected to the server.\r\n");
+
+	
 
 	if (nntpClient.Authenticate())
 	{

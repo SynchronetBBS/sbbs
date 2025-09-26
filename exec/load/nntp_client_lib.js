@@ -74,7 +74,7 @@ NNTPClient.prototype.Connect = function()
 	};
 
 	this.socket = new Socket();
-	this.socket.debug = true; // TODO
+	this.socket.debug = false;
 	this.socket.bind(0, this.interfaceIP);
 	retObj.connected = this.socket.connect(this.connectOptions.hostname, this.connectOptions.port);
 	if (retObj.connected)
@@ -93,7 +93,10 @@ NNTPClient.prototype.Connect = function()
 // Returns the last error from the socket
 NNTPClient.prototype.GetLastError = function()
 {
-	return this.socket.last_error;
+	if (this.socket != null)
+		return this.socket.last_error;
+	else
+		return -1;
 }
 
 // Disconnects from the server and destroyes the socket
