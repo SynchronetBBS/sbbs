@@ -153,9 +153,12 @@ opportunity to change their server settings upon failure to connect.
 
 In the configurator, the first menu item is "User account configuration" - You
 can select that option to add/edit server configuration & credentials for your
-users. It will show a list of your users, and when you select a user, it will
-show a dialog with server configuration information for them that you can
-configure.
+users. You can edit credentials for users individually, or do a bulk edit of the
+server hostname, port, and password for any existing saved user credential
+files.
+When editing individual user credentials, it will show a list of your users, and
+when you select a user, it will show a dialog with server configuration
+information for them that you can configure.
 
 In groupie_cfg, the 2nd menu option lets you choose the sorting optoin for the
 user list for when you want to edit users' server configuration.

@@ -360,48 +360,102 @@ function promptYesNo(pQuestion, pInitialVal, pWinMode)
 // Performs the user account configuration for the NNTP server
 function doUserAccountConfig()
 {
-	// Build an array of the account names and dictionary of user names
+	var menuOptStrs = [
+		"Invididual user accounts",
+		"Bulk change settings for existing NNTP accounts"
+	];
+
+	// Create a CTX to specify the current selected item index
+	if (doUserAccountConfig.ctx == undefined)
+		doUserAccountConfig.ctx = uifc.list.CTX();
+	// Selection
+	var winMode = WIN_ORG|WIN_MID|WIN_ACT|WIN_ESC;
+	var menuTitle = "NNTP Server Account Management";
+	var anyOptionChanged = false;
+	var continueOn = true;
+	while (continueOn && !js.terminated)
+	{
+		//uifc.help_text = doUserAccountConfig.mainScreenHelp;
+		var optionMenuSelection = uifc.list(winMode, menuTitle, menuOptStrs, doUserAccountConfig.ctx);
+		doUserAccountConfig.ctx.cur = optionMenuSelection; // Remember the current selected item
+		switch (optionMenuSelection)
+		{
+			case -1: // ESC
+				continueOn = false;
+				break;
+			case 0: // Individual NNTP user accounts
+				editIndividualNNTPUserAccounts();
+				break;
+			case 1: // Bulk change settings for existing NNTP accounts
+				bulkEditExistingNNTPAccountInformation();
+				break;
+		}
+	}
+}
+
+// Performs editing of individual NNTP server user accounts
+function editIndividualNNTPUserAccounts()
+{
+	// Get an array of the account names and dictionary of user names
 	// to numbers
-	var userAccountNames = [];
-	var userAccountNumsByUsername = {};
+	var userInfo = getUserAcctNamesAndNumbers();
+
+	// Create a CTX to specify the current selected item index
+	if (editIndividualNNTPUserAccounts.ctx == undefined)
+		editIndividualNNTPUserAccounts.ctx = uifc.list.CTX();
+	// Selection
+	var winMode = WIN_ORG|WIN_MID|WIN_ACT|WIN_ESC;
+	var menuTitle = "Users";
+	var anyOptionChanged = false;
+	var continueOn = true;
+	while (continueOn && !js.terminated)
+	{
+		//uifc.help_text = editIndividualNNTPUserAccounts.mainScreenHelp;
+		var optionMenuSelection = uifc.list(winMode, menuTitle, userInfo.userAccountNames, editIndividualNNTPUserAccounts.ctx);
+		editIndividualNNTPUserAccounts.ctx.cur = optionMenuSelection; // Remember the current selected item
+		if (optionMenuSelection == -1) // ESC
+			continueOn = false;
+		else
+		{
+			var username = userInfo.userAccountNames[optionMenuSelection];
+			editNNTPServerAcctInfoForUser(username, userInfo.userAccountNumsByUsername[username]);
+		}
+	}
+}
+// Helper for editIndividualNNTPUserAccounts(): Gets an array of
+// user account names (possibly sorted) and an object mapping those
+// names to account numbers
+function getUserAcctNamesAndNumbers()
+{
+	var retObj = {
+		userAccountNames: [],
+		userAccountNumsByUsername: {}
+	};
+
+	// Build the array of the account names and dictionary of user names
+	// to numbers
 	for (var userNum = 1; userNum <= system.lastuser; ++userNum)
 	{
 		// Load the user record
-		var theUser = new User(userNum);
-
-		// If this user account is deleted, inactive, or the guest or a QWK account, then skip it
-		if (Boolean(theUser.settings & USER_DELETED) || Boolean(theUser.settings & USER_INACTIVE) ||
-		    Boolean(theUser.security.restrictions & UFLAG_G) || theUser.compare_ars("REST Q"))
+		try
 		{
-			continue;
-		}
+			var theUser = new User(userNum);
 
-		// Depending on the sort option (which will be used right after this loop),
-		// use either the user's real name first or the user's alias first
-		var username = "";
-		if (theUser.alias.length > 0 && theUser.name.length > 0)
-		{
-			if (gCfgInfo.cfgOptions.groupie_cfg_user_sorting == USER_SORT_REAL_NAME)
+			// If this user account is deleted, inactive, or the guest or a QWK account, then skip it
+			if (Boolean(theUser.settings & USER_DELETED) || Boolean(theUser.settings & USER_INACTIVE) ||
+				Boolean(theUser.security.restrictions & UFLAG_G) || theUser.compare_ars("REST Q"))
 			{
-				if (theUser.name.toUpperCase() != theUser.alias.toUpperCase())
-					username = theUser.name + " (" + theUser.alias + ")";
-				else
-					username = theUser.alias;
+				continue;
 			}
-			else
-			{
-				if (theUser.name.toUpperCase() != theUser.alias.toUpperCase())
-					username = theUser.alias + " (" + theUser.name + ")";
-				else
-					username = theUser.alias;
-			}
+
+			var username = getUserName(theUser);
+			retObj.userAccountNames.push(username);
+			retObj.userAccountNumsByUsername[username] = theUser.number;
 		}
-		else if (theUser.alias.length > 0)
-			username = theUser.alias;
-		else if (theUser.name.length > 0)
-			username = theUser.name;
-		userAccountNames.push(username);
-		userAccountNumsByUsername[username] = theUser.number;
+		catch (error)
+		{
+			log(LOG_ERR, format("Groupie config - Error loading user number %d: %s", userNum, error));
+		}
 	}
 	// Sort the user list as configured, if applicable.
 	// The names will be added as either the user's real name followed by
@@ -410,7 +464,7 @@ function doUserAccountConfig()
 	// just need to sort them.
 	if (gCfgInfo.cfgOptions.groupie_cfg_user_sorting != USER_SORT_USER_NUMBER)
 	{
-		userAccountNames.sort(function(pA, pB) {
+		retObj.userAccountNames.sort(function(pA, pB) {
 			var usernameAUpper = pA.toUpperCase();
 			var usernameBUpper = pB.toUpperCase();
 			if (usernameAUpper < usernameBUpper)
@@ -422,27 +476,39 @@ function doUserAccountConfig()
 		});
 	}
 
-	// Create a CTX to specify the current selected item index
-	if (doUserAccountConfig.ctx == undefined)
-		doUserAccountConfig.ctx = uifc.list.CTX();
-	// Selection
-	var winMode = WIN_ORG|WIN_MID|WIN_ACT|WIN_ESC;
-	var menuTitle = "Users";
-	var anyOptionChanged = false;
-	var continueOn = true;
-	while (continueOn && !js.terminated)
+	return retObj;
+}
+// Builds a string containing a user's alias & name, with either their
+// alias first or name first, depending on the configured sort order in
+// the ettings
+function getUserName(pUserAcct)
+{
+	// Depending on the sort option (which will be used right after this loop),
+	// use either the user's real name first or the user's alias first
+	var username = "";
+	if (pUserAcct.alias.length > 0 && pUserAcct.name.length > 0)
 	{
-		//uifc.help_text = doUserAccountConfig.mainScreenHelp;
-		var optionMenuSelection = uifc.list(winMode, menuTitle, userAccountNames, doUserAccountConfig.ctx);
-		doUserAccountConfig.ctx.cur = optionMenuSelection; // Remember the current selected item
-		if (optionMenuSelection == -1) // ESC
-			continueOn = false;
+		if (gCfgInfo.cfgOptions.groupie_cfg_user_sorting == USER_SORT_REAL_NAME)
+		{
+			if (pUserAcct.name.toUpperCase() != pUserAcct.alias.toUpperCase())
+				username = pUserAcct.name + " (" + pUserAcct.alias + ")";
+			else
+				username = pUserAcct.alias;
+		}
 		else
 		{
-			var username = userAccountNames[optionMenuSelection];
-			editNNTPServerAcctInfoForUser(username, userAccountNumsByUsername[username]);
+			if (pUserAcct.name.toUpperCase() != pUserAcct.alias.toUpperCase())
+				username = pUserAcct.alias + " (" + pUserAcct.name + ")";
+			else
+				username = pUserAcct.alias;
 		}
 	}
+	else if (pUserAcct.alias.length > 0)
+		username = pUserAcct.alias;
+	else if (pUserAcct.name.length > 0)
+		username = pUserAcct.name;
+
+	return username;
 }
 
 // Allows configuring NNTP server settings for a user account
@@ -464,9 +530,17 @@ function editNNTPServerAcctInfoForUser(pUsername, pUserNum)
 		// Set default values for the user's server settings
 		userSettings.NNTPSettings.hostname = gCfgInfo.cfgOptions.hostname;
 		userSettings.NNTPSettings.port = gCfgInfo.cfgOptions.host_port;
-		var theUser = new User(pUserNum);
-		userSettings.NNTPSettings.username = theUser.alias;
-		userSettings.NNTPSettings.password = gCfgInfo.cfgOptions.default_server_password;
+		try
+		{
+			var theUser = new User(pUserNum);
+			userSettings.NNTPSettings.username = theUser.alias;
+			userSettings.NNTPSettings.password = gCfgInfo.cfgOptions.default_server_password;
+		}
+		catch (error)
+		{
+			uifc.msg(format("* Failed to load user number %d: %s", pUserNum, error));
+			return;
+		}
 	}
 	if (userSettings.NNTPSettings.password.length == 0)
 		userSettings.NNTPSettings.password = gCfgInfo.cfgOptions.default_server_password;
@@ -538,6 +612,170 @@ function editNNTPServerAcctInfoForUser(pUsername, pUserNum)
 			uifc.msg("* Failed to save settings for " + pUsername + "!");
 	}
 }
+
+// Allows changing NNTP server settings for existing NNTP accounts
+function bulkEditExistingNNTPAccountInformation()
+{
+	// Get an array of <user#>.groupie.ini files from the sbbs/data/user directory,
+	// as well as username & user #s for the users for those filenames
+	var userInfo = getServerSettingFilenamesAndUserInfo();
+
+	var cfgOptProps = [
+		"hostname",                // String
+		"host_port"                // Numeric
+		//"default_server_password"  // String
+	];
+	var optionStrs = [
+		"NNTP server hostname/IP",
+		"NNTP server port"
+		//"Default server password for users"
+	];
+	// For menu item text formatting
+	var itemTextMaxLen = 40;
+	// Build an array of formatted string to be displayed on the menu
+	// (the value formatting will depend on the variable type)
+	var menuItems = [];
+	for (var i = 0; i < cfgOptProps.length; ++i)
+	{
+		var propName = cfgOptProps[i];
+		menuItems.push(formatCfgMenuText(itemTextMaxLen, cfgOptProps[i], optionStrs[i], gCfgInfo.cfgOptions[propName]));
+	}
+
+	// Create a CTX to specify the current selected item index
+	if (bulkEditExistingNNTPAccountInformation.ctx == undefined)
+		bulkEditExistingNNTPAccountInformation.ctx = uifc.list.CTX();
+	// Selection
+	var winMode = WIN_ORG|WIN_MID|WIN_ACT|WIN_ESC;
+	var menuTitle = format("Bulk account edit (%d files)", userInfo.serverSettingFilenames.length);
+	var chosenHostname = gCfgInfo.cfgOptions.hostname;
+	var chosenPort = gCfgInfo.cfgOptions.host_port;
+	//var chosenPassword = gCfgInfo.cfgOptions.default_server_password;
+	var continueOn = true;
+	while (continueOn && !js.terminated)
+	{
+		//uifc.help_text = bulkEditExistingNNTPAccountInformation.mainScreenHelp;
+		var optionMenuSelection = uifc.list(winMode, menuTitle, menuItems, bulkEditExistingNNTPAccountInformation.ctx);
+		bulkEditExistingNNTPAccountInformation.ctx.cur = optionMenuSelection; // Remember the current selected item
+		switch (optionMenuSelection)
+		{
+			case -1: // ESC
+				continueOn = false;
+				break;
+			case 0: // Hostname
+				var propName = cfgOptProps[optionMenuSelection];
+				chosenHostname = uifc.input(WIN_MID, optionStrs[optionMenuSelection], gCfgInfo.cfgOptions[propName], 0, K_EDIT);
+				menuItems[optionMenuSelection] = formatCfgMenuText(itemTextMaxLen, cfgOptProps[optionMenuSelection], optionStrs[optionMenuSelection], chosenHostname);
+				break;
+			case 1: // Port
+				var propName = cfgOptProps[optionMenuSelection];
+				var valStr = uifc.input(WIN_MID, optionStrs[optionMenuSelection], gCfgInfo.cfgOptions[propName].toString(), 0, K_NUMBER|K_EDIT);
+				var valNum = parseInt(valStr);
+				if (!isNaN(valNum))
+				{
+					chosenPort = valNum;
+					menuItems[optionMenuSelection] = formatCfgMenuText(itemTextMaxLen, cfgOptProps[optionMenuSelection], optionStrs[optionMenuSelection], chosenPort.toString());
+				}
+				break;
+			/*
+			case 2: // Password
+				var propName = cfgOptProps[optionMenuSelection];
+				chosenPassword = uifc.input(WIN_MID, optionStrs[optionMenuSelection], gCfgInfo.cfgOptions[propName], 0, K_EDIT);
+				menuItems[optionMenuSelection] = formatCfgMenuText(itemTextMaxLen, cfgOptProps[optionMenuSelection], optionStrs[optionMenuSelection], chosenPassword);
+				break;
+			*/
+		}
+	}
+
+	// Prompt the user whether to apply/save settings, and if so, do it
+	if (promptYesNo("Save configurations?", false, WIN_ORG|WIN_MID|WIN_ACT|WIN_ESC))
+	{
+		var usernamesForFailedSave = [];
+		for (var i = 0; i < userInfo.serverSettingFilenames.length; ++i)
+		{
+			var userSettings = ReadUserSettings(userInfo.serverSettingFilenames[i], {});
+			if (userSettings.successfullyRead)
+			{
+				userSettings.NNTPSettings.hostname = chosenHostname;
+				userSettings.NNTPSettings.port = chosenPort;
+				//userSettings.NNTPSettings.password = chosenPassword;
+				//userSettings.NNTPSettings.username
+				if (!SaveUserSettings(userInfo.serverSettingFilenames[i], userSettings.NNTPSettings))
+					usernamesForFailedSave.push(userInfo.userAccountNames[i]);
+			}
+			else
+				usernamesForFailedSave.push(userInfo.userAccountNames[i]);
+		}
+
+		// Show a success/fail message
+		if (usernamesForFailedSave.length > 0)
+		{
+			winMode = WIN_ORG|WIN_MID|WIN_ACT|WIN_ESC;
+			uifc.list(winMode, "Save failed for these users", usernamesForFailedSave);
+		}
+		else
+			uifc.msg("All succeeded");
+	}
+}
+// Helper for bulkEditExistingNNTPAccountInformation(): Gets an array of existing
+// server setting filenames for users, and theur usernames & user numbers,
+// possibly sorting the user names.
+function getServerSettingFilenamesAndUserInfo()
+{
+	var retObj = {
+		userAccountNames: [],
+		serverSettingFilenames: [], // Same number and order as userAccountNames
+		userAccountNumsByUsername: {},
+		failedUserNums: []
+	};
+
+	var serverSettingFilenames = directory(system.data_dir + "user/*.groupie.ini");
+	for (var i = 0; i < serverSettingFilenames.length; ++i)
+	{
+		var justFilename = file_getname(serverSettingFilenames[i]);
+		var dotIdx = justFilename.indexOf(".");
+		if (dotIdx == -1)
+			continue;
+		var userNum = parseInt(justFilename.substring(0, dotIdx));
+		if (isNaN(userNum))
+			continue;
+
+		try
+		{
+			var theUser = new User(userNum);
+			var username = getUserName(theUser);
+			retObj.userAccountNames.push(username);
+			retObj.serverSettingFilenames.push(serverSettingFilenames[i]);
+			retObj.userAccountNumsByUsername[username] = userNum;
+		}
+		catch (error)
+		{
+			retObj.failedUserNums.push(userNum);
+			log(LOG_ERR, format("Groupie config - Error loading user number %d: %s", userNum, error));
+		}
+	}
+
+	// Sort the user list as configured, if applicable.
+	// The names will be added as either the user's real name followed by
+	// alias or alias followed by real name, depending on the sort option.
+	// So if the sort option isn't user number (no specific sorting), we
+	// just need to sort them.
+	if (gCfgInfo.cfgOptions.groupie_cfg_user_sorting != USER_SORT_USER_NUMBER)
+	{
+		retObj.userAccountNames.sort(function(pA, pB) {
+			var usernameAUpper = pA.toUpperCase();
+			var usernameBUpper = pB.toUpperCase();
+			if (usernameAUpper < usernameBUpper)
+				return -1;
+			else if (usernameAUpper == usernameBUpper)
+				return 0;
+			else if (usernameAUpper > usernameBUpper)
+				return 1;
+		});
+	}
+
+	return retObj;
+}
+
 
 // Lets the user (sysop) configure the username sorting for groupie_cfg
 function chooseGroupieCfgUsernameSortOpt(pCurrentValNum)
