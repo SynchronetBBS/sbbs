@@ -1011,6 +1011,17 @@ Same as kbd:[Alt+E]
 The following sections delve deeper into technical details, and should
 not be required for normal use.
 
+=== Per-entry Palette
+
+SyncTERM currently has the beginnings of support for a custom colour
+palette on a per-connection basis.  For now, this needs to be manually
+added to the dialing directory though.
+
+First, figure out the RGB colours you want for each of up to 16
+attributes and convert them to 32-bit base-10 integers.  Then, open the
+SyncTERM dialing directory in a text editor.  Find the entry you wish to
+modify, and Add a Palette=###,###,###... line to that entry.
+
 === Persistant State
 
 SyncTERM will preserve a very small amount of state when exited normally
