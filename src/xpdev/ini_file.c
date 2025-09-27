@@ -435,9 +435,15 @@ bool iniRemoveSection(str_list_t* list, const char* section)
 {
 	size_t i;
 
-	i = find_section_index(*list, section);
-	if ((*list)[i] == NULL)    /* not found */
-		return false;
+	if (section == ROOT_SECTION) {
+		if (list == NULL || (*list) == NULL || (*list)[0] == NULL || *(*list)[0] == INI_OPEN_SECTION_CHAR)
+			return false;
+		i = 0;
+	} else {
+		i = find_section_index(*list, section);
+		if ((*list)[i] == NULL)    /* not found */
+			return false;
+	}
 	do {
 		strListDelete(list, i);
 	} while ((*list)[i] != NULL && *(*list)[i] != INI_OPEN_SECTION_CHAR);
@@ -449,9 +455,15 @@ bool iniRemoveSectionFast(str_list_t list, const char* section)
 {
 	size_t i;
 
-	i = find_section_index(list, section);
-	if (list[i] == NULL)   /* not found */
-		return false;
+	if (section == ROOT_SECTION) {
+		if (list == NULL || list[0] == NULL || *list[0] == INI_OPEN_SECTION_CHAR)
+			return false;
+		i = 0;
+	} else {
+		i = find_section_index(list, section);
+		if (list[i] == NULL)   /* not found */
+			return false;
+	}
 	do {
 		strListFastDelete(list, i, /* count: */ 1);
 	} while (list[i] != NULL && *list[i] != INI_OPEN_SECTION_CHAR);
