@@ -341,7 +341,11 @@ int sendbuf(SOCKET s, void *buf, size_t buflen)
 {
 	size_t sent = 0;
 	int    ret;
+#ifdef PREFER_POLL
+	struct pollfd fds = {0};
+#else
 	fd_set socket_set;
+#endif
 
 #ifdef __unix__
 	if (stdio)
@@ -361,6 +365,13 @@ int sendbuf(SOCKET s, void *buf, size_t buflen)
 #if (EAGAIN != EWOULDBLOCK)
 				case EWOULDBLOCK:
 #endif
+#ifdef PREFER_POLL
+					fds.fd = s;
+					fds.events = POLLOUT;
+					if ((ret = poll(&fds, 1, /* timeout (infinite): */-1)) < 1)
+						goto disconnect;
+					break;
+#else
 					/* Block until we can send */
 					FD_ZERO(&socket_set);
 					FD_SET(s, &socket_set);
@@ -371,6 +382,7 @@ int sendbuf(SOCKET s, void *buf, size_t buflen)
 							goto disconnect;
 						}
 					}
+#endif
 					break;
 				default:
 					goto disconnect;
@@ -416,8 +428,12 @@ void send_telnet_cmd(SOCKET sock, uchar cmd, uchar opt)
 static int recv_buffer(int timeout /* seconds */)
 {
 	int            i;
+#ifdef PREFER_POLL
+	struct pollfd fds = {0};
+#else
 	fd_set         socket_set;
 	struct timeval tv;
+#endif
 	int            magic_errno;
 
 	for (;;) {
@@ -451,8 +467,23 @@ static int recv_buffer(int timeout /* seconds */)
 #if (EAGAIN != EWOULDBLOCK)
 				case EWOULDBLOCK:
 #endif
-					// Call select()
 					if (timeout) {
+#ifdef PREFER_POLL
+						if (stdio)
+							fds.fd = STDIN_FILENO;
+						else
+							fds.fd = sock;
+						fds.events = POLLIN;
+						if ((i = poll(&fds, 1, timeout * 1000)) < 1) {
+							if (fds.revents & POLLHUP)
+								connected = FALSE;
+							if (i == 0)
+								lprintf(LOG_WARNING, "Receive timeout (%u seconds)", timeout);
+							else
+								lprintf(LOG_ERR, "Receive ERROR %d", magic_errno);
+						}
+#else
+						// Call select()
 						FD_ZERO(&socket_set);
 #ifdef __unix__
 						if (stdio)
@@ -464,7 +495,7 @@ static int recv_buffer(int timeout /* seconds */)
 						tv.tv_usec = 0;
 						if ((i = select(sock + 1, &socket_set, NULL, NULL, &tv)) < 1) {
 							if (i == SOCKET_ERROR) {
-								lprintf(LOG_ERR, "ERROR %d selecting socket", magic_errno);
+								lprintf(LOG_ERR, "Receive ERROR %d", magic_errno);
 								connected = FALSE;
 							}
 							else
@@ -474,6 +505,7 @@ static int recv_buffer(int timeout /* seconds */)
 							timeout = 0;
 							continue;
 						}
+#endif
 					}
 					return 0;
 				default:
