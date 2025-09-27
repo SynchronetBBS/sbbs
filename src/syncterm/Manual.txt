@@ -1022,6 +1022,10 @@ attributes and convert them to 32-bit base-10 integers.  Then, open the
 SyncTERM dialing directory in a text editor.  Find the entry you wish to
 modify, and Add a Palette=###,###,###... line to that entry.
 
+If there are fewer than sixteen entries in the list, the list will be
+repeated to fill all 16 palette slots. This allows for example, the use
+16 colour Amiga VT-52 mode.
+
 === Persistant State
 
 SyncTERM will preserve a very small amount of state when exited normally
