@@ -3039,7 +3039,13 @@ edit_web_lists(void)
 		    "Add and remove dialing directories available on the web (ie: via HTTP\n"
 		    "or HTTPS).  Each entry must have a unique name (which is used as a\n"
 		    "filename in the cache) and a URI that indicates where to download the\n"
-		    "directory list from.";
+		    "directory list from.\n"
+		    "\n"
+		    "The SyncTERM author hosts two BBS lists, the Synchronet BBS list at:\n"
+		    "http://syncterm.bbsdev.net/syncterm.lst\n"
+		    "and the Telnet BBS Guide BBS list at:\n"
+		    "http://syncterm.bbsdev.net/telnetbbsguide.lst\n"
+		    "for easy use and configuration.";
 		int i = uifc.list(WIN_SAV | WIN_INS | WIN_INSACT | WIN_DEL | WIN_XTR | WIN_ACT,
 		        0, 0, 0, &cur, &bar, "Web Lists", list);
 		if (i == -1) {
