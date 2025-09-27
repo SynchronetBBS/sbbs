@@ -343,10 +343,14 @@ int sendbuf(SOCKET s, void *buf, size_t buflen)
 	int    ret;
 	fd_set socket_set;
 
+#ifdef __unix__
+	if (stdio)
+		s = STDOUT_FILENO;
+#endif
 	for (;;) {
 #ifdef __unix__
 		if (stdio)
-			ret = write(STDOUT_FILENO, (char *)buf + sent, buflen - sent);
+			ret = write(s, (char *)buf + sent, buflen - sent);
 		else
 #endif
 		ret = sendsocket(s, (char *)buf + sent, buflen - sent);
@@ -359,14 +363,9 @@ int sendbuf(SOCKET s, void *buf, size_t buflen)
 #endif
 					/* Block until we can send */
 					FD_ZERO(&socket_set);
-#ifdef __unix__
-					if (stdio)
-						FD_SET(STDIN_FILENO, &socket_set);
-					else
-#endif
-					FD_SET(sock, &socket_set);
+					FD_SET(s, &socket_set);
 
-					if ((ret = select(sock + 1, NULL, &socket_set, NULL, NULL)) < 1) {
+					if ((ret = select(s + 1, NULL, &socket_set, NULL, NULL)) < 1) {
 						if (ret == SOCKET_ERROR && SOCKET_ERRNO != EINTR) {
 							lprintf(LOG_ERR, "ERROR %d selecting socket", SOCKET_ERRNO);
 							goto disconnect;
