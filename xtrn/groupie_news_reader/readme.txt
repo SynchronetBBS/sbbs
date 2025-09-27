@@ -1,6 +1,6 @@
                           Groupie (newsgroup reader)
-                                Version 1.00
-                           Release date: 2025-09-25
+                                Version 1.01
+                           Release date: 2025-09-27
 
                             Initially developed by:
                                 Eric Oulashin
@@ -17,7 +17,7 @@ Contents
 1. Disclaimer
 2. Introduction
 3. Files included
-4. Configuration file
+4. Configuration & setting user credentials
 5. Installation
    - Loadable Modules setup
    - Command shell setup
@@ -51,10 +51,29 @@ If you provide news server access for your users, it will be up to you to
 create accounts for your users and provide them with the server information
 (hostname and port, as well as their username and password).
 
-This reader stores users' settings (such as their username & password) in their
-own configuration file, which will be stored in the sbbs/data/user directory
-with the filename <user#>.DDNewsReader.ini (<user#> will be the user number
-padded to 4 digits with leading 0s).
+The first time a user runs Groupie, they will be prompted for the news server,
+their username, and password for the news server. The server hostname/IP addres,
+port, and username will be filled in, but the user can change those, in addition
+to providing their password. For instance:
+
+Settings file does not exist.  Configuration settings are needed.
+Server hostname: 127.0.0.1
+Server port (default=119): 119
+Username: Nightfox
+Password: 
+
+Once the user has provided that information, Groupie will save their settings
+in sbbs/data/user/<user#>.groupie.ini (where <user#> is a 0-padded user number
+up to 4 digits). As of this writing, if a user needs their settings changed,
+you can delete their .groupie.ini file and the user will be prompted for that
+information the next time they run Groupie.
+
+If Groupie is unable to connect to the server when the user runs Groupie (and
+it may take some time before the timeout occurs), the user will be given the
+chance to change their server settings. If the user does so, it will try to
+connect again. If the server doesn't change their server settings at that point,
+Groupie will exit.
+
 When a user first runs this reader, if they don't have a settings file yet, the
 reader will prompt the user for their server settings.  The hostname, port, and
 username will be populated, but the user can change those; the user will also
@@ -96,6 +115,9 @@ refresh the newsgroup list cache by deleting this file.
 =================
 These are the files included:
 - groupie.js: The main news reader script. This is the script to run.
+- groupie_cfg.js: This is a configurator for Groupe, which looks similar to
+  SCFG and lets you change the settings, as well as edit users' NNTP server
+  settings.
 - nntp_client_lib.js: A NNTP client library, which provides functions for
   interacting with a NNTP server, such as connecting, logging in, getting lists
   of newsgroups & articles, etc.
@@ -106,8 +128,38 @@ These are the files included:
   Of course, you can always make your own to use with the reader.
 
 
-4. Configuration file
-=====================
+4. Configuration & setting user credentials
+===========================================
+You may wish to configure news server credentials for your users. To do so, you
+can use the configurator, groupie_cfg.js. You can run that on your BBS machine
+at a command prompt using jsexec. For example:
+
+jsexec groupie_cfg.js
+
+You could also leave off the .js extension:
+
+jsexec groupie_cfg
+
+One thing you can configure to make things easier is the "Default server
+password for users" setting in the configurator (or directly edit the
+default_server_password option in the .ini file with a text editor) - That is
+the default password to use for users on the news server. When a user first
+runs Groupie, they won't have any server settings, so it will try to connect
+with the default server settings. It's possible that it will fail to connect. By
+default, users can't change their server settings, and Groupie will tell them to
+ask the sysop to edit their news server settings. There is an option to allow
+users to change their server settings - If that's enabled, a user will have the
+opportunity to change their server settings upon failure to connect.
+
+In the configurator, the first menu item is "User account configuration" - You
+can select that option to add/edit server configuration & credentials for your
+users. It will show a list of your users, and when you select a user, it will
+show a dialog with server configuration information for them that you can
+configure.
+
+In groupie_cfg, the 2nd menu option lets you choose the sorting optoin for the
+user list for when you want to edit users' server configuration.
+
 This reader includes a default configuration file, groupie.example.ini.
 Copy that to groupie.ini and then edit groupie.ini with any text
 editor. The settings are in the format setting=value, where "setting" is the
@@ -145,6 +197,9 @@ use_lightbar_interface                Whether or not to use a lightbar interface
                                       the reader will revert back to a non-
                                       lightbar interface.
 
+users_can_change_their_nttp_settings  Whether or not users are allowed to change
+                                      their NNTP settings
+
 receive_bufer_size_bytes              The default receive buffer size for the
                                       NNTP client, in bytes
 
@@ -158,6 +213,8 @@ hostname                              The default hostname/IP address & port of
 host_port                             The default server port. Users can specify
                                       a different port in their configuration if
                                       they need to.
+
+default_server_password               The default news server password for users
 
 prepend_foward_msg_subject            When forwarding messages, whether or not
                                       to prepend the subject with "Fwd: ".
