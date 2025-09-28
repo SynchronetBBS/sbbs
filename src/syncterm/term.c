@@ -451,13 +451,13 @@ update_status(struct bbslist *bbs, int speed, int ooii_mode, bool ata_inv)
 		snprintf(fullbuf, sizeof(fullbuf), " %-*.*s %c %-6.6s ", avail, avail, nbuf, 0xb3
 		    , conn_types[bbs->conn_type]);
 	}
-	if (ms->mode == 0) {
+	if (ms->mode == MM_OFF) {
 		status_bar[30].ch = ' ';
 	}
 	for (i = 1; fullbuf[i] && i < term.width; i++) {
 		status_bar[i].ch = fullbuf[i];
 	}
-	if (ms->mode != 0) {
+	if (ms->mode != MM_OFF) {
 		// TODO: Clear before M?
 		//status_bar[29].ch = ' ';
 		status_bar[30].ch = 'M';
@@ -5195,7 +5195,7 @@ doterm(struct bbslist *bbs)
 							break;
 						case CIOLIB_BUTTON_4_PRESS:
 						case CIOLIB_BUTTON_5_PRESS:
-							if ((ms.mode != 9) && (ms.mode != 0)) {
+							if ((ms.mode != MM_X10) && (ms.mode != MM_OFF) && (ms.mode != MM_RIP)) {
 								conn_send(mouse_buf,
 								    fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent,
 								    &ms), 0);
@@ -5209,7 +5209,7 @@ doterm(struct bbslist *bbs)
 							break;
 						case CIOLIB_BUTTON_2_CLICK:
 						case CIOLIB_BUTTON_3_CLICK:
-							if (ms.mode == 9) {
+							if (ms.mode == MM_X10) {
 								conn_send(mouse_buf,
 								    fill_mevent(mouse_buf, sizeof(mouse_buf), &mevent,
 								    &ms), 0);
