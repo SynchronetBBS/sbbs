@@ -52,6 +52,8 @@ bool sbbs_t::logon()
 	client.usernum = useron.number;
 	client_on(client_socket, &client, TRUE /* update */);
 
+	register_login();
+
 #ifdef JAVASCRIPT
 	js_create_user_objects(js_cx, js_glob);
 #endif
@@ -601,6 +603,9 @@ bool sbbs_t::logon()
 		scanallsubs(SCAN_NEW);
 	if (usrgrps && useron.misc & ASK_SSCAN && text[SScanAllGrpsQ][0] && yesno(text[SScanAllGrpsQ]))
 		scanallsubs(SCAN_TOYOU | SCAN_UNREAD);
+
+	user_login_state = user_logged_on; // notify other nodes upon (later) logoff
+
 	return true;
 }
 

@@ -25,7 +25,7 @@
 /****************************************************************************/
 /* Function that is called after a user hangs up or logs off				*/
 /****************************************************************************/
-void sbbs_t::logout(bool logged_in)
+void sbbs_t::logout()
 {
 	char   path[MAX_PATH + 1];
 	char   str[256];
@@ -57,7 +57,7 @@ void sbbs_t::logout(bool logged_in)
 		clearbatdl();
 	}
 
-	if (sys_status & SS_USERON && thisnode.status != NODE_QUIET && !(useron.rest & FLAG('Q')) && logged_in)
+	if (sys_status & SS_USERON && thisnode.status != NODE_QUIET && !(useron.rest & FLAG('Q')) && user_login_state == user_logged_on)
 		for (i = 1; i <= cfg.sys_nodes; i++)
 			if (i != cfg.node_num) {
 				getnodedat(i, &node);

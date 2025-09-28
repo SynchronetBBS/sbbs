@@ -95,7 +95,7 @@ check_pubkey(scfg_t *cfg, ushort unum, char *pkey, size_t pksz)
 	return false;
 }
 
-bool sbbs_t::answer(bool* login_success)
+bool sbbs_t::answer()
 {
 	char      str[MAX_PATH + 1], str2[MAX_PATH + 1], c;
 	char      tmp[MAX_PATH];
@@ -795,7 +795,7 @@ bool sbbs_t::answer(bool* login_success)
 			newuser();
 		}
 
-		if (!useron.number) {    /* manual/regular logon */
+		if (!useron.number) {    /* manual/regular login */
 
 			/* Display ANSWER screen */
 			rioctl(IOSM | PAUSE);
@@ -803,17 +803,12 @@ bool sbbs_t::answer(bool* login_success)
 			menu("../answer");  // Should use P_NOABORT ?
 			sys_status &= ~SS_PAUSEON;
 			exec_bin(cfg.login_mod, &main_csi);
-		} else  /* auto logon here */
+		} else  /* auto login here */
 			logon();
 	}
 
 	if (!useron.number)
 		hangup();
-	else {
-		if (useron.pass[0])
-			loginSuccess(startup->login_attempt_list, &client_addr);
-		*login_success = true;
-	}
 
 	if (!online)
 		return false;
