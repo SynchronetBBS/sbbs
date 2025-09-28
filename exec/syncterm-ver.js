@@ -58,8 +58,13 @@ function readVersionAPC()
 	return ver.slice(13);
 }
 
+/*
+ * Good for cterm versions up to 1322 only
+ */
 function ctermToSyncTERMVer(ver)
 {
+	if (ver >= 1322)
+		throw new Error("Version out of range (>1322)");
 	if (console.cterm_version === undefined || console.cterm_version < 1125)
 		return 'Unknown (Guessed)';
 	if (console.cterm_version === 1125)
