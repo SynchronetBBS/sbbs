@@ -4503,18 +4503,26 @@ apc_handler(char *strbuf, size_t slen, char *retbuf, size_t retsize, void *apcd)
 				switch(Jxl.status) {
 					case JXL_STATUS_OK:
 					case JXL_STATUS_NOTHREADS:
-						memcpy(&retbuf[rlen], "\x1b[=1;1-n", 8);
+						memcpy(&retbuf[rlen], "\x1b[=1;1-n", 9);
 						break;
 					default:
-						memcpy(&retbuf[rlen], "\x1b[=1;0-n", 8);
+						memcpy(&retbuf[rlen], "\x1b[=1;0-n", 9);
 						break;
 				}
 			}
 			else
-				memcpy(&retbuf[rlen], "\x1b[=1;0-n", 8);
+				memcpy(&retbuf[rlen], "\x1b[=1;0-n", 9);
 #else
-			memcpy(&retbuf[rlen], "\x1b[=1;0-n", 8);
+			memcpy(&retbuf[rlen], "\x1b[=1;0-n", 9);
 #endif
+		}
+	}
+	else if(strcmp(strbuf, "SyncTERM:VER") == 0) {
+		size_t rlen = strlen(retbuf);
+		size_t addon = 2 + 13 + strlen(syncterm_version) + 2 + 1;
+
+		if (rlen + addon + 1< retsize) {
+			sprintf(&retbuf[rlen], "\x1b_SyncTERM:VER;%s\x1b\\", syncterm_version);
 		}
 	}
 
