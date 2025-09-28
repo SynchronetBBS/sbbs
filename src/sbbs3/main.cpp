@@ -1086,7 +1086,7 @@ js_write_raw(JSContext *cx, uintN argc, jsval *arglist)
 		if (len < 1)
 			continue;
 		rc = JS_SUSPENDREQUEST(cx);
-		sbbs->term_out(str, len);
+		sbbs->putcom(str, len);
 		JS_RESUMEREQUEST(cx, rc);
 	}
 	if (str != NULL)
