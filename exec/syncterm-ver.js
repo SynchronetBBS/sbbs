@@ -28,18 +28,34 @@ function readAPC()
 			}
 			continue;
 		}
+		if (lastch == '\x1b' && ch == '\\')
+			break;
 		if ((ch >= '\x08' && ch <= '\x0d') || (ch >= '\x20' && ch <= '\x7e')) {
 			response += ch;
 			if (response.slice(-2) === '\x1b\\')
 				break;
 		}
-		else
-			log(LOG_DEBUG, "SyncTERM Discarding Invalid APC character: " + format("'%c' (%02X)", ch, ascii(ch)));
+		else {
+			if (ch == '\x1b' && ((lastch >= '\x08' && lastch <= '\x0d') || (lastch >= '\x20' && lastch <= '\x7e')))
+				/* Nothing */;
+			else {
+				if (lastch == '\x1b')
+					log(LOG_DEBUG, "SyncTERM Discarding Invalid APC character: " + format("'%c' (%02X)", lastch, ascii(lastch)));
+				log(LOG_DEBUG, "SyncTERM Discarding Invalid APC character: " + format("'%c' (%02X)", ch, ascii(ch)));
+			}
+		}
+		lastch = ch;
 	}
 	console.ctrlkey_passthru = oldctrl;
-	var printable = response.slice(2, -2);
+	var printable = response.slice(2);
 	log(LOG_DEBUG, "SyncTERM query response: "+printable);
 	return printable;
+}
+
+function readVersionAPC()
+{
+	var ver = readAPC();
+	return ver.slice(13);
 }
 
 function ctermToSyncTERMVer(ver)
@@ -83,7 +99,7 @@ function getSyncTERMVerStr()
 	if (console.cterm_version === undefined || console.cterm_version < 1323)
 		return ctermToSyncTERMVer(console.cterm_version);
 	console.write("\x1b_SyncTERM:VER\x1b\\");
-	return readAPC();
+	return readVersionAPC();
 }
 
 function getLatestVerStr()
