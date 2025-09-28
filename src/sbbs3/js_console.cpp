@@ -460,7 +460,6 @@ static const char*        con_prop_desc[] = {
 	, "Current 0-based row position, set to move cursor"
 	, "Current 0-based column position, set to move cursor"
 	, "Column the cursor was on when last CR was sent to terminal or the line wrapped"
-	, "Obsolete alias for last_cr_column"
 	, "Duration of delay (in milliseconds) before each line-feed character is sent to the terminal"
 	, "Current display attributes (set with number or string value)"
 	, "<tt>true</tt> if the terminal cursor is already at the top of the screen - <small>READ ONLY</small>"

@@ -757,7 +757,7 @@ free_list(struct bbslist **list, int listcount)
 }
 
 void
-read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id, int type)
+read_item(named_str_list_t** listfile, struct bbslist *entry, char *bbsname, int id, int type)
 {
 	char home[MAX_PATH + 1];
 	str_list_t section;
@@ -766,7 +766,7 @@ read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id, int
 	get_syncterm_filename(home, sizeof(home), SYNCTERM_DEFAULT_TRANSFER_PATH, false);
 	if (bbsname != NULL)
 		SAFECOPY(entry->name, bbsname);
-	section = iniGetSection(listfile, bbsname);
+	section = iniGetParsedSection(listfile, bbsname, true);
 	iniGetSString(section, NULL, "Address", "", entry->addr, sizeof(entry->addr));
 	entry->conn_type = iniGetEnum(section, NULL, "ConnectionType", conn_types_enum, CONN_TYPE_SSH);
 	entry->flow_control = fc_from_enum(iniGetEnum(section, NULL, "FlowControl", fc_enum, 0));
@@ -840,8 +840,6 @@ read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id, int
 	iniGetSString(section, NULL, "Comment", "", entry->comment, sizeof(entry->comment));
 	entry->type = type;
 	entry->id = id;
-
-	strListFree(&section);
 }
 
 bool
@@ -899,25 +897,28 @@ read_list(char *listpath, struct bbslist **list, struct bbslist *defaults, int *
 	char *bbsname;
 	str_list_t bbses;
 	str_list_t inilines;
+	named_str_list_t** nlines;
 
 	if ((listfile = fopen(listpath, "r")) != NULL) {
 		inilines = iniReadFile(listfile);
 		fclose(listfile);
+		nlines = iniParseSections(inilines);
 		if ((defaults != NULL) && (type == USER_BBSLIST))
-			read_item(inilines, defaults, NULL, -1, type);
-		bbses = iniGetSectionList(inilines, NULL);
+			read_item(nlines, defaults, NULL, -1, type);
+		bbses = iniGetParsedSectionList(nlines, NULL);
 		while ((bbsname = strListRemove(&bbses, 0)) != NULL) {
 			if ((!list_name_check(list, bbsname, NULL, false)) && (!is_reserved_bbs_name(bbsname))) {
 				if ((list[*i] = (struct bbslist *)malloc(sizeof(struct bbslist))) == NULL) {
 					free(bbsname);
 					break;
 				}
-				read_item(inilines, list[*i], bbsname, *i, type);
+				read_item(nlines, list[*i], bbsname, *i, type);
 				(*i)++;
 			}
 			free(bbsname);
 		}
 		strListFree(&bbses);
+		iniFreeParsedSections(nlines);
 		strListFree(&inilines);
 	}
 	else {

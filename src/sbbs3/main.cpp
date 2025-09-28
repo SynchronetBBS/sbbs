@@ -1086,7 +1086,7 @@ js_write_raw(JSContext *cx, uintN argc, jsval *arglist)
 		if (len < 1)
 			continue;
 		rc = JS_SUSPENDREQUEST(cx);
-		sbbs->term_out(str, len);
+		sbbs->putcom(str, len);
 		JS_RESUMEREQUEST(cx, rc);
 	}
 	if (str != NULL)
@@ -4397,6 +4397,22 @@ void sbbs_t::logoffstats()
 	}
 }
 
+
+void sbbs_t::register_login()
+{
+	if (user_login_state >= user_logged_in)
+		return;
+	if (useron.pass[0]) {
+		loginSuccess(startup->login_attempt_list, &client_addr);
+		listAddNodeData(&current_logins, client.addr, strlen(client.addr) + 1, cfg.node_num, LAST_NODE);
+	}
+#ifdef _WIN32
+	if (startup->sound.login[0] && !sound_muted(&cfg))
+		PlaySound(startup->sound.login, NULL, SND_ASYNC | SND_FILENAME);
+#endif
+	user_login_state = user_logged_in;
+}
+
 void node_thread(void* arg)
 {
 	char str[MAX_PATH + 1];
@@ -4430,11 +4446,10 @@ void node_thread(void* arg)
 		mswait(login_attempts * startup->login_attempt.throttle);
 	}
 
-	bool login_success = false;
-	if (sbbs->answer(&login_success)) {
+	if (sbbs->answer()) {
 
-		if (sbbs->useron.pass[0])
-			listAddNodeData(&current_logins, sbbs->client.addr, strlen(sbbs->client.addr) + 1, sbbs->cfg.node_num, LAST_NODE);
+		sbbs->register_login();
+
 		if (sbbs->term_output_disabled) { // e.g. SFTP
 			while (sbbs->online) {
 				SLEEP(1000);
@@ -4538,7 +4553,7 @@ void node_thread(void* arg)
 
 	sbbs->hangup(); /* closes sockets, calls client_off, and shuts down the output_thread */
 
-	sbbs->logout(login_success);
+	sbbs->logout();
 
 	time_t now = time(NULL);
 	SAFEPRINTF(str, "%sclient.ini", sbbs->cfg.node_dir);
@@ -4600,7 +4615,7 @@ void node_thread(void* arg)
 		}
 	}
 
-	if (login_success)
+	if (sbbs->user_login_state >= sbbs->user_logged_in)
 		sbbs->catsyslog(/* Crash: */ false);
 	else {
 		rewind(sbbs->logfile_fp);

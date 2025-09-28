@@ -38,6 +38,9 @@ const char* sbbs_t::parse_login(const char* str)
 	return str;
 }
 
+// -----------------------------------------------------------
+// Interactive user login, called from Baja or JS login module
+// -----------------------------------------------------------
 int sbbs_t::login(const char *username, const char *pw_prompt, const char* user_pw, const char* sys_pw)
 {
 	char str[128];
@@ -59,14 +62,15 @@ int sbbs_t::login(const char *username, const char *pw_prompt, const char* user_
 			bputs(pw_prompt);
 			console |= CON_R_ECHOX;
 			getstr(str, LEN_PASS * 2, K_UPPER | K_LOWPRIO | K_TAB);
+			// We don't care about the password in this case, we already know it's a bad user-ID
 			console &= ~(CON_R_ECHOX | CON_L_ECHOX);
 			badlogin(useron.alias, str);
-			bputs(text[InvalidLogon]);  /* why does this always fail? */
+			bputs(text[InvalidLogon]);
 			if (cfg.sys_misc & SM_ECHO_PW)
-				snprintf(tmp, sizeof tmp, "(%04u)  %-25s  FAILED Password attempt: '%s'"
+				snprintf(tmp, sizeof tmp, "(%04u)  %-25s  FAILED Login-ID attempt, Password: '%s'"
 				         , 0, useron.alias, str);
 			else
-				snprintf(tmp, sizeof tmp, "(%04u)  %-25s  FAILED Password attempt"
+				snprintf(tmp, sizeof tmp, "(%04u)  %-25s  FAILED Login-ID attempt"
 				         , 0, useron.alias);
 			logline(LOG_NOTICE, "+!", tmp);
 		} else {
@@ -120,10 +124,7 @@ int sbbs_t::login(const char *username, const char *pw_prompt, const char* user_
 		}
 	}
 
-#ifdef _WIN32
-	if (startup->sound.login[0] && !sound_muted(&cfg))
-		PlaySound(startup->sound.login, NULL, SND_ASYNC | SND_FILENAME);
-#endif
+	register_login();
 
 	return LOGIC_TRUE;
 }

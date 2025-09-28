@@ -563,6 +563,7 @@ public:
 #define SMB_STACK_POP	false
 	int 	smb_stack(smb_t* smb, bool push);
 
+	enum { user_not_logged_in, user_logged_in, user_logged_on } user_login_state;
 	bool	useron_is_guest() { return user_is_guest(&useron); }
 	bool	useron_is_sysop() { return user_is_sysop(&useron) || (sys_status & SS_TMPSYSOP); }
 
@@ -1016,13 +1017,13 @@ public:
 
 	/* answer.cpp */
 	bool    set_authresponse(bool activate_ssh);
-	bool	answer(bool* login_success);
+	bool	answer();
 
 	/* logon.ccp */
 	bool	logon(void);
 
 	/* logout.cpp */
-	void	logout(bool logged_in = true);
+	void	logout();
 
 	/* newuser.cpp */
 	bool	newuser(void);					/* Get new user							*/
@@ -1077,6 +1078,7 @@ public:
 	void	printstatslog(uint node);
 	uint	logonstats(void);
 	void	logoffstats(void);
+	void    register_login(void);
 	int		nopen(char *str, int access);
 	int		mv(const char *src, const char *dest, bool copy); /* fast file move/copy function */
 	bool	chksyspass(const char* sys_pw = NULL);

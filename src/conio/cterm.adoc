@@ -1989,6 +1989,12 @@ SOURCE: <<XTerm>>
 An Operating System Command Begins with an `APC` and ends with a `ST`
 SyncTERM implements the following APC commands:
 
+=== `APC SyncTERM:VER ST` Get SyncTERM Version (`CTSV`)
+SyncTERM responds with
+an `APC` string with the full version string of SyncTERM, either
+`SyncTERM 1.7rc1` for release builds or `SyncTERM 1.7b Debug (Sep 27 2025)`
+for debug builds
+
 === `APC SyncTERM:C;S Ps1 Ps2 ST` Store file (`CTSFI`)
 Where `Ps1` is a filename and `Ps2` is the base64 encoded
 contents of the file.  The named file is stored in the

@@ -178,7 +178,7 @@ extern int         rates[];
 extern int         sortorder[];
 extern ini_style_t ini_style;
 extern char       *screen_modes_enum[];
-void read_item(str_list_t listfile, struct bbslist *entry, char *bbsname, int id, int type);
+void read_item(named_str_list_t** listfile, struct bbslist *entry, char *bbsname, int id, int type);
 void read_list(char *listpath, struct bbslist **list, struct bbslist *defaults, int *i, int type);
 void free_list(struct bbslist **list, int listcount);
 void add_bbs(char *listpath, struct bbslist *bbs, bool isnew);

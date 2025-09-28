@@ -1,3 +1,9 @@
+Version 1.7rc1
+--------------
+Add CTSV APC command
+Optimize dialing directory parsing
+Fix scroll wheel in RIP mode
+
 Version 1.7b
 ------------
 Add custom palette support to list file
