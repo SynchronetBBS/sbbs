@@ -123,7 +123,6 @@ function mouse_enable(enable)
 {
 	if (graph) {
 		ansiterm.send('mouse', enable ? 'set' : 'clear', ['any_events', 'extended_coord']);
-		return;
 	}
 	const mouse_passthru = (CON_MOUSE_CLK_PASSTHRU | CON_MOUSE_REL_PASSTHRU);
 	if(enable)
