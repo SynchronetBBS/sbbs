@@ -1,4 +1,5 @@
 Extract release archives and ensure the correct version is in all of them
+Update source tarball to have corretly name subdirectory
 Upload files to SourceForge
 Set default OS versions on SourceForge
 Add new version to Found in Version file on SourceForge in bug and support trackers
