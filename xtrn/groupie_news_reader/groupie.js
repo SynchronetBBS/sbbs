@@ -10,6 +10,11 @@
  *                              Progress made
  * 2025-09-25 Eric Oulashin     Version 1.00
  *                              Releasing this version
+ * 2025-09-27 Eric Oulashin     Version 1.01
+ *                              New configuration option for toggling whether
+ *                              users can change their NNTP settings.
+ *                              New configurator that can be run with jsexec
+ *                              which can also edit users' NNTP settings.
  */
 
 "use strict";
@@ -45,8 +50,8 @@ var hexdump = load('hexdump_lib.js');
 
 // Program and version information
 var PROGRAM_NAME = "Groupie";
-var PROGRAM_VERSION = "1.00";
-var PROGRAM_DATE = "2025-09-25";
+var PROGRAM_VERSION = "1.01";
+var PROGRAM_DATE = "2025-09-27";
 
 
 ///////////////////////////////////
@@ -165,14 +170,34 @@ var gArticleListHdrLines = loadAnsOrAscFileIntoArray(articleListHdrFilename, gSe
 // Read the user's settings.  If the user settings file didn't exist, then prompt the user for settings.
 var gUserSettingsFilename = system.data_dir + "user/" + gPaddedUserNum + ".groupie.ini";
 var gUserSettings = ReadUserSettings(gUserSettingsFilename, gSettings.server);
-// If successfully read, copy the NNTP server settings to gSettings, since those
-// credential settings will be used to log in
+// If the user's settings couldn't be successfully read, then save the user's
+// default server settings and try to read them again.
 if (!gUserSettings.successfullyRead)
 {
-	console.print("Settings file does not exist.  Configuration settings are needed.\r\n");
-	LetUserUpdateSettings(gUserSettingsFilename);
-	console.crlf();
+	if (SaveUserSettings(gUserSettingsFilename))
+		gUserSettings = ReadUserSettings(gUserSettingsFilename, gSettings.server);
 }
+/*
+// If not successfully read, then if we can let the user configure their server settings,
+// do so.
+if (!gUserSettings.successfullyRead)
+{
+	if (gSettings.usersCanChangeTheirNNTPSettings)
+	{
+		console.print("Settings file does not exist.  Configuration settings are needed.\r\n");
+		LetUserUpdateSettings(gUserSettingsFilename);
+		console.crlf();
+	}
+	else
+	{
+		var errorMsg = "You don't have any server settings. Please ask your sysop to configure that for you.";
+		console.print(lfexpand(word_wrap(errorMsg, console.screen_columns-1, false)));
+		console.crlf();
+		console.pause();
+		exit(0);
+	}
+}
+*/
 
 // Create the news reader client object and connect.
 // This is in a loop in case connection/authentication fails and the user has
@@ -202,11 +227,12 @@ while (continueConnectLoop)
 			nntpClient.Disconnect();
 			printf("!Error %d connecting to %s port %d\r\n", nntpClient.GetLastError(), nntpClient.connectOptions.hostname, nntpClient.connectOptions.port);
 			//exit(1);
-			// Let the user change their server configuration
-			if (console.yesno("Change configuration settings"))
+			// Let the user change their server configuration, if configured to do so
+			if (gSettings.usersCanChangeTheirNNTPSettings && console.yesno("Change configuration settings"))
 				LetUserUpdateSettings(gUserSettingsFilename);
 			else
 			{
+				console.print("Please ask the sysop to change your server settings.\r\n\x01p");
 				connectContinueOn = false;
 				break;
 			}
@@ -215,6 +241,8 @@ while (continueConnectLoop)
 	if (typeof(connectRetObj) !== "object" || !connectRetObj.connected)
 	{
 		console.print("\x01n\x01w\x01hFailed to connect.\x01n\r\n");
+		if (!gSettings.usersCanChangeTheirNNTPSettings)
+			console.print("Please ask the sysop to change your server settings.\r\n");
 		console.crlf();
 		exit(1);
 	}
@@ -232,13 +260,15 @@ while (continueConnectLoop)
 		nntpClient.Disconnect();
 		console.print("Authentication failed!\r\n");
 		// Let the user change their server configuration
-		if (console.yesno("Change configuration settings"))
+		if (gSettings.usersCanChangeTheirNNTPSettings && console.yesno("Change configuration settings"))
 		{
 			LetUserUpdateSettings(gUserSettingsFilename);
 			console.crlf();
 		}
 		else
 		{
+			if (!gSettings.usersCanChangeTheirNNTPSettings)
+				console.print("Please ask the sysop to change your server settings.\r\n");
 			nntpClient.Disconnect();
 			continueConnectLoop = false;
 			exit(2);
@@ -347,6 +377,7 @@ function ReadSettings(pDefaultCfgFilename)
 	var settings = {
 		server: new NNTPConnectOptions(),
 		serverPort: 119, // Default server port
+		defaultPasswordForUsers: "",
 		recvBufSizeBytes: 1024, // Default receive size
 		recvTimeoutSeconds: 30, // Default receive timeout
 		usersHaveSeparateAccount: false,
@@ -354,6 +385,7 @@ function ReadSettings(pDefaultCfgFilename)
 		defaultMaxNumMsgsFromNewsgroup: 500,
 		msgSaveDir: "",
 		useLightbarInterface: true,
+		usersCanChangeTheirNNTPSettings: false,
 		newsgroupListHdrFilenameBase: "",
 		newsgroupListHdrMaxNumLines: 8,
 		articleListHdrFilenameBase: "",
@@ -411,7 +443,7 @@ function ReadSettings(pDefaultCfgFilename)
 	settings.server.hostname = "127.0.0.1";
 	settings.server.port = 119;
 	settings.server.username = user.alias;
-	settings.server.password = user.security.password;
+	//settings.server.password = user.security.password; // Don't use this; use the configured default server password
 
 	// Figure out where the configuration file is
 	var cfgFilename = file_cfgname(system.mods_dir, pDefaultCfgFilename);
@@ -451,6 +483,11 @@ function ReadSettings(pDefaultCfgFilename)
 			settings.serverPort = settingsObj.host_port;
 			settings.server.port = settingsObj.host_port;
 		}
+		if (typeof(settingsObj.default_server_password) === "string")
+		{
+			settings.defaultPasswordForUsers = settingsObj.default_server_password;
+			settings.server.password = settingsObj.default_server_password;
+		}
 		if (typeof(settingsObj.receive_bufer_size_bytes) === "number" && settingsObj.receive_bufer_size_bytes > 0)
 		{
 			settings.recvBufSizeBytes = settingsObj.receive_bufer_size_bytes;
@@ -470,6 +507,8 @@ function ReadSettings(pDefaultCfgFilename)
 			settings.msgSaveDir = settingsObj.msg_save_dir;
 		if (typeof(settingsObj.use_lightbar_interface) === "boolean")
 			settings.useLightbarInterface = settingsObj.use_lightbar_interface;
+		if (typeof(settingsObj.users_can_change_their_nttp_settings) === "boolean")
+			settings.usersCanChangeTheirNNTPSettings = settingsObj.users_can_change_their_nttp_settings;
 		if (typeof(settingsObj.newsgroup_list_hdr_filename_base) === "string" && settingsObj.newsgroup_list_hdr_filename_base.length > 0)
 			settings.newsgroupListHdrFilenameBase = settingsObj.newsgroup_list_hdr_filename_base;
 		if (typeof(settingsObj.newsgroup_list_hdr_max_num_lines) === "number")
