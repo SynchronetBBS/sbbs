@@ -1729,15 +1729,17 @@ str_list_t iniGetParsedSection(named_str_list_t** list, const char* name, bool c
 		section = list[i];
 		if (section->name == NULL)
 			continue;
-		const bool isRootSection = (section->name == &iniParsedRootValue);
-		const bool isRootMatch = (name == NULL) && isRootSection;
-		if (isRootMatch || ((!isRootSection) && (stricmp(section->name, name) == 0))) {
-			if (cut) {
-				if (!isRootSection)
-					free(section->name);
-				section->name = NULL;
+		{ // Braces for Microsoft...
+			const bool isRootSection = (section->name == &iniParsedRootValue);
+			const bool isRootMatch = (name == NULL) && isRootSection;
+			if (isRootMatch || ((!isRootSection) && (stricmp(section->name, name) == 0))) {
+				if (cut) {
+					if (!isRootSection)
+						free(section->name);
+					section->name = NULL;
+				}
+				return section->list;
 			}
-			return section->list;
 		}
 	}
 	return NULL;
