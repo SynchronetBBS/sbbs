@@ -45,6 +45,13 @@ typedef struct {
 	char*	literal_separator;
 } ini_style_t;
 
+typedef struct {
+	const char *str;
+	size_t len;
+} ini_lv_string_t;
+
+typedef struct fp_list_s ini_fp_list_t;
+
 #if defined(__cplusplus)
 extern "C" {
 #endif
@@ -316,6 +323,14 @@ DLLEXPORT named_str_list_t** iniParseSections(const str_list_t);
 DLLEXPORT str_list_t	iniGetParsedSection(named_str_list_t**, const char* section, bool cut);
 DLLEXPORT str_list_t 	iniGetParsedSectionList(named_str_list_t**, const char* prefix);
 DLLEXPORT void*			iniFreeParsedSections(named_str_list_t** list);
+
+/* Fast functions */
+DLLEXPORT ini_fp_list_t * iniFastParseSections(const str_list_t list);
+ini_lv_string_t **iniGetFastParsedSectionList(ini_fp_list_t *fp, const char* prefix, size_t *sz);
+str_list_t iniGetFastParsedSection(ini_fp_list_t *fp, const char* name, bool cut);
+str_list_t iniGetFastParsedSectionLV(ini_fp_list_t *fp, ini_lv_string_t* name, bool cut);
+void iniFastParsedSectionListFree(ini_lv_string_t **list);
+void iniFreeFastParse(ini_fp_list_t *s);
 
 /*
  * Too handy to leave internal

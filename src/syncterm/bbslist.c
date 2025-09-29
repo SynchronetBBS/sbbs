@@ -757,16 +757,21 @@ free_list(struct bbslist **list, int listcount)
 }
 
 void
-read_item(named_str_list_t** listfile, struct bbslist *entry, char *bbsname, int id, int type)
+read_item(ini_fp_list_t *listfile, struct bbslist *entry, ini_lv_string_t *bbsname, int id, int type)
 {
 	char home[MAX_PATH + 1];
 	str_list_t section;
 	bool sys = (type == SYSTEM_BBSLIST);
 
 	get_syncterm_filename(home, sizeof(home), SYNCTERM_DEFAULT_TRANSFER_PATH, false);
-	if (bbsname != NULL)
-		SAFECOPY(entry->name, bbsname);
-	section = iniGetParsedSection(listfile, bbsname, true);
+	if (bbsname != NULL) {
+		size_t cpylen = bbsname->len;
+		if (cpylen > LIST_NAME_MAX)
+			cpylen = LIST_NAME_MAX;
+		memcpy(entry->name, bbsname->str, cpylen);
+		entry->name[cpylen] = 0;
+	}
+	section = iniGetFastParsedSectionLV(listfile, bbsname, true);
 	iniGetSString(section, NULL, "Address", "", entry->addr, sizeof(entry->addr));
 	entry->conn_type = iniGetEnum(section, NULL, "ConnectionType", conn_types_enum, CONN_TYPE_SSH);
 	entry->flow_control = fc_from_enum(iniGetEnum(section, NULL, "FlowControl", fc_enum, 0));
@@ -894,15 +899,19 @@ static int
 fip_bsearch_cmp(const void *key_ptr, const void *elem_ptr)
 {
 	const struct bbslist **elem = (const struct bbslist**)elem_ptr;
-	const char *key = key_ptr;
+	const ini_lv_string_t *key = key_ptr;
 
 	fip_last_visited = elem;
-	fip_last_ret = stricmp(key, elem[0]->name);
+	fip_last_ret = strnicmp(key->str, elem[0]->name, key->len);
+	if (fip_last_ret == 0) {
+		if (elem[0]->name[key->len])
+			fip_last_ret = 1;
+	}
 	return fip_last_ret;
 }
 
 static size_t
-find_insert_point(struct bbslist **list, char *bbsname, int sz)
+find_insert_point(struct bbslist **list, ini_lv_string_t *bbsname, int sz)
 {
 	fip_last_visited = NULL;
 	fip_last_ret = 0;
@@ -930,39 +939,39 @@ void
 read_list(char *listpath, struct bbslist **list, struct bbslist *defaults, int *i, int type)
 {
 	FILE *listfile;
-	char *bbsname;
-	str_list_t bbses;
+	ini_lv_string_t **bbses;
+	size_t bbs_cnt;
+	size_t j;
 	str_list_t inilines;
-	named_str_list_t** nlines;
+	ini_fp_list_t *nlines;
 
 	if ((listfile = fopen(listpath, "r")) != NULL) {
 		inilines = iniReadFile(listfile);
 		fclose(listfile);
-		nlines = iniParseSections(inilines);
+		nlines = iniFastParseSections(inilines);
 		if ((defaults != NULL) && (type == USER_BBSLIST))
 			read_item(nlines, defaults, NULL, -1, type);
-		bbses = iniGetParsedSectionList(nlines, NULL);
-		while ((bbsname = strListRemove(&bbses, 0)) != NULL) {
-			size_t ip = find_insert_point(list, bbsname, *i);
+		bbses = iniGetFastParsedSectionList(nlines, NULL, &bbs_cnt);
+		for (j = 0; j < bbs_cnt; j++) {
+			size_t ip = find_insert_point(list, bbses[j], *i);
 			if (ip < SIZE_MAX) {
 				if (ip < *i) {
 					memmove(&list[ip + 1], &list[ip], (*i - ip) * sizeof(*list));
 				}
 				if ((list[ip] = (struct bbslist *)malloc(sizeof(struct bbslist))) == NULL) {
-					free(bbsname);
+					fputs("Out of memory at in read_list()\r\n", stderr);
 					break;
 				}
-				read_item(nlines, list[ip], bbsname, *i, type);
+				read_item(nlines, list[ip], bbses[j], *i, type);
 				(*i)++;
 			}
-			free(bbsname);
 			if (*i == MAX_OPTS - 1) {
 				fprintf(stderr, "Reading too many entries (more than %d)!\r\n", MAX_OPTS);
 				break;
 			}
 		}
-		strListFree(&bbses);
-		iniFreeParsedSections(nlines);
+		iniFastParsedSectionListFree(bbses);
+		iniFreeFastParse(nlines);
 		strListFree(&inilines);
 	}
 	else {
