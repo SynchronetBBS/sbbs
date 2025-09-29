@@ -1627,6 +1627,20 @@ addParsedLine(named_str_list_t** lp, size_t sections, char *data, size_t *keys)
 	return true;
 }
 
+static int
+sectionCmp(const void *s1, const void *s2)
+{
+	const named_str_list_t** sec1 = (const named_str_list_t**)s1;
+	const named_str_list_t** sec2 = (const named_str_list_t**)s2;
+
+	// Parse root first always
+	if (sec1[0]->name == &iniParsedRootValue)
+		return -1;
+	if (sec2[0]->name == &iniParsedRootValue)
+		return 1;
+	return stricmp(sec1[0]->name, sec2[0]->name);
+}
+
 // the 'list' must remain allocated/valid through-out the life of the returned named_str_list
 // as this function does not copy the key=value lines in the original list, it just references them
 named_str_list_t** iniParseSections(const str_list_t list)
@@ -1688,6 +1702,7 @@ named_str_list_t** iniParseSections(const str_list_t list)
 		goto error_return;
 
 	lp[sections] = NULL;    /* terminate list */
+	qsort(lp, sections, sizeof(*lp), sectionCmp);
 
 	return lp;
 
@@ -1697,20 +1712,133 @@ error_return:
 	return NULL;
 }
 
+typedef struct {
+	const named_str_list_t** base;
+	size_t prefixLen;
+	const char *prefix;
+} find_first_key_t;
+
+static int
+findFirstPrefixCmp(const void *keyPtr, const void *entryPtr)
+{
+	const find_first_key_t *key = keyPtr;
+	const named_str_list_t** ent = (const named_str_list_t**)entryPtr;
+
+	// First, check for root node
+	if (key->prefix == NULL) {
+		if (ent[0]->name == &iniParsedRootValue)
+			return 0;
+		return -1;
+	}
+	if (ent[0]->name == &iniParsedRootValue) {
+		return 1;
+	}
+	// Next, check if the prefix matches...
+	int cmp = strnicmp(key->prefix, ent[0]->name, key->prefixLen);
+	if (cmp)
+		return cmp;
+	// See if this is first in list
+	if (ent == key->base)
+		return 0;
+	// Now check if the previous entry has the same prefix
+	ent--;
+	cmp = strnicmp(key->prefix, ent[0]->name, key->prefixLen);
+	if (cmp == 0)
+		return -1;
+	return 0;
+}
+
+static size_t
+findFirstPrefix(named_str_list_t** list, const char *prefix, size_t prefixLen)
+{
+	find_first_key_t key = {
+		.base = (const named_str_list_t**)list,
+		.prefix = prefix,
+		.prefixLen = prefixLen,
+	};
+	// We still need to loop through to count. :(
+	size_t len = 0;
+	for (; list[len]; len++)
+		;
+
+	named_str_list_t** ret = bsearch(&key, list, len, sizeof(*list), findFirstPrefixCmp);
+	if (ret == NULL)
+		return SIZE_MAX;
+	return ret - list;
+}
+
+static int
+findFirstMatchCmp(const void *keyPtr, const void *entryPtr)
+{
+	const find_first_key_t *key = keyPtr;
+	const named_str_list_t** ent = (const named_str_list_t**)entryPtr;
+
+	// First, check for root node
+	if (key->prefix == NULL) {
+		if (ent[0]->name == &iniParsedRootValue)
+			return 0;
+		return -1;
+	}
+	if (ent[0]->name == &iniParsedRootValue) {
+		return 1;
+	}
+	// Next, check for a match...
+	int cmp = stricmp(key->prefix, ent[0]->name);
+	if (cmp)
+		return cmp;
+	// See if this is first in list
+	if (ent == key->base)
+		return 0;
+	// Now check if the previous entry is identical
+	ent--;
+	cmp = stricmp(key->prefix, ent[0]->name);
+	if (cmp == 0)
+		return -1;
+	return 0;
+}
+
+static size_t
+findFirstMatch(named_str_list_t** list, const char *name)
+{
+	find_first_key_t key = {
+		.base = (const named_str_list_t**)list,
+		.prefix = name,
+	};
+	// We still need to loop through to count. :(
+	size_t len = 0;
+	for (; list[len]; len++)
+		;
+
+	named_str_list_t** ret = bsearch(&key, list, len, sizeof(*list), findFirstMatchCmp);
+	if (ret == NULL)
+		return SIZE_MAX;
+	return ret - list;
+}
+
 str_list_t iniGetParsedSectionList(named_str_list_t** list, const char* prefix)
 {
-	size_t            i;
+	size_t            i = 0;
 	size_t            count = 0;
+	size_t            prefixLen = 0;
 	str_list_t        result = strListInit();
 	named_str_list_t* section;
 
-	for (i = 0; list != NULL && list[i] != NULL; ++i) {
+	if (prefix)
+		prefixLen = strlen(prefix);
+
+	if (prefixLen) {
+		i = findFirstPrefix(list, prefix, prefixLen);
+		if (i == SIZE_MAX)
+			return result;
+	}
+
+	for (; list != NULL && list[i] != NULL; ++i) {
 		section = list[i];
 		if (section->name == NULL || section->name == &iniParsedRootValue)
 			continue;
 		if (prefix != NULL) {
-			if (strnicmp(section->name, prefix, strlen(prefix)) != 0)
-				continue;
+			if (strnicmp(section->name, prefix, prefixLen) != 0)
+				break;
 		}
 		strListAppend(&result, section->name, count++);
 	}
@@ -1725,7 +1853,11 @@ str_list_t iniGetParsedSection(named_str_list_t** list, const char* name, bool c
 	if (list == NULL)
 		return NULL;
 
-	for (i = 0; list[i] != NULL; ++i) {
+	i = findFirstMatch(list, name);
+	if (i == SIZE_MAX)
+		return NULL;
+
+	for (; list[i] != NULL; ++i) {
 		/*
 		 * We can't declare these below, so can't make them const
 		 * until MSVC supports C99. Just adding braces around the
@@ -1749,6 +1881,8 @@ str_list_t iniGetParsedSection(named_str_list_t** list, const char* name, bool c
 			}
 			return section->list;
 		}
+		else
+			break;
 	}
 	return NULL;
 }
