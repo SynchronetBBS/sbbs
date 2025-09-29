@@ -874,6 +874,7 @@ list_name_check(struct bbslist **list, char *bbsname, int *pos, int useronly)
 		}
 		return 0;
 	}
+
 	for (i = 0; list[i] != NULL; i++) {
 		if (useronly && (list[i]->type != USER_BBSLIST))
 			continue;
@@ -884,6 +885,41 @@ list_name_check(struct bbslist **list, char *bbsname, int *pos, int useronly)
 		}
 	}
 	return 0;
+}
+
+static const struct bbslist **fip_last_visited;
+static int fip_last_ret;
+
+static int
+fip_bsearch_cmp(const void *key_ptr, const void *elem_ptr)
+{
+	const struct bbslist **elem = (const struct bbslist**)elem_ptr;
+	const char *key = key_ptr;
+
+	fip_last_visited = elem;
+	fip_last_ret = stricmp(key, elem[0]->name);
+	return fip_last_ret;
+}
+
+static size_t
+find_insert_point(struct bbslist **list, char *bbsname, int sz)
+{
+	fip_last_visited = NULL;
+	fip_last_ret = 0;
+	const struct bbslist **clist = (const struct bbslist**)list;
+
+	void *item = bsearch(bbsname, list, sz, sizeof(*list), fip_bsearch_cmp);
+	size_t ret = 0;
+	if (item == NULL) {
+		if (fip_last_visited) {
+			ret = fip_last_visited - clist;
+			if (fip_last_ret > 0)
+				ret++;
+		}
+	}
+	else
+		ret = SIZE_MAX;
+	return ret;
 }
 
 /*
@@ -907,15 +943,23 @@ read_list(char *listpath, struct bbslist **list, struct bbslist *defaults, int *
 			read_item(nlines, defaults, NULL, -1, type);
 		bbses = iniGetParsedSectionList(nlines, NULL);
 		while ((bbsname = strListRemove(&bbses, 0)) != NULL) {
-			if ((!list_name_check(list, bbsname, NULL, false)) && (!is_reserved_bbs_name(bbsname))) {
-				if ((list[*i] = (struct bbslist *)malloc(sizeof(struct bbslist))) == NULL) {
+			size_t ip = find_insert_point(list, bbsname, *i);
+			if (ip < SIZE_MAX) {
+				if (ip < *i) {
+					memmove(&list[ip + 1], &list[ip], (*i - ip) * sizeof(*list));
+				}
+				if ((list[ip] = (struct bbslist *)malloc(sizeof(struct bbslist))) == NULL) {
 					free(bbsname);
 					break;
 				}
-				read_item(nlines, list[*i], bbsname, *i, type);
+				read_item(nlines, list[ip], bbsname, *i, type);
 				(*i)++;
 			}
 			free(bbsname);
+			if (*i == MAX_OPTS - 1) {
+				fprintf(stderr, "Reading too many entries (more than %d)!\r\n", MAX_OPTS);
+				break;
+			}
 		}
 		strListFree(&bbses);
 		iniFreeParsedSections(nlines);
