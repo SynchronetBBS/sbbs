@@ -1732,7 +1732,7 @@ str_list_t iniGetParsedSection(named_str_list_t** list, const char* name, bool c
 		{ // Braces for Microsoft...
 			const bool isRootSection = (section->name == &iniParsedRootValue);
 			const bool isRootMatch = (name == NULL) && isRootSection;
-			if (isRootMatch || ((!isRootSection) && (stricmp(section->name, name) == 0))) {
+			if (isRootMatch || (name && (!isRootSection) && (stricmp(section->name, name) == 0))) {
 				if (cut) {
 					if (!isRootSection)
 						free(section->name);
