@@ -15,6 +15,11 @@
  *                              users can change their NNTP settings.
  *                              New configurator that can be run with jsexec
  *                              which can also edit users' NNTP settings.
+ * 2025-09-29 Eric Oulashin     Version 1.02
+ *                              New configuration option, append_bbs_domain_to_usernames,
+ *                              which specifies whether to append the BBS's domain
+ *                              (as @domain) to usernames when authenticating with
+ *                              the news server
  */
 
 "use strict";
@@ -50,8 +55,8 @@ var hexdump = load('hexdump_lib.js');
 
 // Program and version information
 var PROGRAM_NAME = "Groupie";
-var PROGRAM_VERSION = "1.01";
-var PROGRAM_DATE = "2025-09-27";
+var PROGRAM_VERSION = "1.02";
+var PROGRAM_DATE = "2025-09-29";
 
 
 ///////////////////////////////////
@@ -170,6 +175,10 @@ var gArticleListHdrLines = loadAnsOrAscFileIntoArray(articleListHdrFilename, gSe
 // Read the user's settings.  If the user settings file didn't exist, then prompt the user for settings.
 var gUserSettingsFilename = system.data_dir + "user/" + gPaddedUserNum + ".groupie.ini";
 var gUserSettings = ReadUserSettings(gUserSettingsFilename, gSettings.server);
+// If configured to append the BBS's domain to the user's username,
+// then append it as @domain
+if (gSettings.appendBBSDomainToUsernames)
+	gUserSettings.NNTPSettings.username = gUserSettings.NNTPSettings.username + "@" + system.inet_addr;
 // If the user's settings couldn't be successfully read, then save the user's
 // default server settings and try to read them again.
 if (!gUserSettings.successfullyRead)
@@ -376,6 +385,7 @@ function ReadSettings(pDefaultCfgFilename)
 {
 	var settings = {
 		server: new NNTPConnectOptions(),
+		appendBBSDomainToUsernames: false,
 		serverPort: 119, // Default server port
 		defaultPasswordForUsers: "",
 		recvBufSizeBytes: 1024, // Default receive size
@@ -498,6 +508,8 @@ function ReadSettings(pDefaultCfgFilename)
 			settings.recvTimeoutSeconds = settingsObj.receive_timeout_seconds;
 			settings.server.recvTimeoutSeconds = settingsObj.receive_timeout_seconds;
 		}
+		if (typeof(settingsObj.append_bbs_domain_to_usernames) === "boolean")
+			settings.appendBBSDomainToUsernames = settingsObj.append_bbs_domain_to_usernames;
 		// Other settings
 		if (typeof(settingsObj.prepend_foward_msg_subject) === "boolean")
 			settings.prependFowardMsgSubject = settingsObj.prepend_foward_msg_subject;

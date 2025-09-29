@@ -1,6 +1,6 @@
                           Groupie (newsgroup reader)
-                                Version 1.01
-                           Release date: 2025-09-27
+                                Version 1.02
+                           Release date: 2025-09-29
 
                             Initially developed by:
                                 Eric Oulashin
@@ -190,18 +190,20 @@ then the one in xtrn/groupie will be used.
 
 The configuration settings are described in the sections below:
 
-Main configuration file (groupie.example.ini)
-----------------------------------------------------
+Main configuration file (groupie.example.ini or groupie.ini)
+------------------------------------------------------------
 Setting                               Description
 -------                               -----------
 use_lightbar_interface                Whether or not to use a lightbar interface.
                                       Valid values are true and false. If the
                                       user's terminal is not ANSI-capable, then
                                       the reader will revert back to a non-
-                                      lightbar interface.
+                                      lightbar interface.  Valid values are
+                                      true and false.
 
 users_can_change_their_nttp_settings  Whether or not users are allowed to change
-                                      their NNTP settings
+                                      their NNTP settings.  Valid values are
+                                      true and false.
 
 receive_bufer_size_bytes              The default receive buffer size for the
                                       NNTP client, in bytes
@@ -218,6 +220,14 @@ host_port                             The default server port. Users can specify
                                       they need to.
 
 default_server_password               The default news server password for users
+
+
+append_bbs_domain_to_usernames        Whether or not to append the BBS's domain
+                                      (as @domain) to the user's username for
+                                      the NNTP server. Your BBS domain is
+                                      configured in SCFG > Networks > Ineternet
+                                      E-Mail > System Address. Valid values are
+                                      true and false.
 
 prepend_foward_msg_subject            When forwarding messages, whether or not
                                       to prepend the subject with "Fwd: ".
