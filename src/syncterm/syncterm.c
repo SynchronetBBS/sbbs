@@ -2159,9 +2159,9 @@ main(int argc, char **argv)
 			str_list_t inilines;
 			inilines = iniReadFile(listfile);
 			fclose(listfile);
-			named_str_list_t** nlines = iniParseSections(inilines);
+			ini_fp_list_t *nlines = iniFastParseSections(inilines);
 			read_item(nlines, bbs, NULL, 0, USER_BBSLIST);
-			iniFreeParsedSections(nlines);
+			iniFreeFastParse(nlines);
 			strListFree(&inilines);
 			if (override_conn) {
 				if (conn_type != bbs->conn_type)

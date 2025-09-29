@@ -3030,6 +3030,373 @@ bool iniWriteFile(FILE* fp, const str_list_t list)
 	return count == strListCount(list);
 }
 
+// Fast parsed INI interface
+struct fp_section {
+	ini_lv_string_t name;	// Unterminated name (borrowed)
+	str_list_t list;	// Allocated at most once (allocated)
+	size_t listLen;		// Number of lines in list
+	size_t originalOrder;	// Original section number
+	bool cut;		// Has been removed (does not free list)
+};
+
+struct fp_list_s {
+	size_t firstUncut;	// Where to start/end searching for a section
+	size_t lastUncut;	// Where to start/end searching for a section
+	size_t totalSections;	// The number of sections initially allocated, includes cut sections
+	struct fp_section sections[];
+};
+
+void
+iniFreeFastParse(ini_fp_list_t *s)
+{
+	size_t i;
+
+	if (s == NULL)
+		return;
+	for (i = 0; i < s->totalSections; i++) {
+		// This abuses strListFreeBlock() and assumes it's just a free() wrapper
+		strListFreeBlock((char *)s->sections[i].list);
+	}
+	free(s);
+}
+
+static inline size_t
+getArraySize(size_t allocSz)
+{
+	return (allocSz - sizeof(ini_fp_list_t)) / sizeof(struct fp_section);
+}
+
+static int
+iniFastParseCmp(const void *a, const void *b)
+{
+	const struct fp_section *seca = a;
+	const struct fp_section *secb = b;
+	size_t cmpLen;
+	int cmp;
+	bool aLonger = false;
+	bool abSame;
+
+	if (a == NULL) {
+		if (b == NULL)
+			return seca->originalOrder - secb->originalOrder;
+		return -1;
+	}
+	if (b == NULL)
+		return 1;
+	abSame = (seca->name.len == secb->name.len);
+	if (!abSame) {
+		if (seca->name.len > secb->name.len)
+			aLonger = true;
+	}
+	cmpLen = aLonger ? secb->name.len : seca->name.len;
+	cmp = strnicmp(seca->name.str, secb->name.str, cmpLen);
+	if (cmp)
+		return cmp;
+	if (abSame)
+		return seca->originalOrder - secb->originalOrder;
+	if (aLonger)
+		return 1;
+	return -1;
+}
+
+/*
+ * References the original list with whitespace removed, but also has
+ * additional allocation. Allocates 4k (one page) to start, then doubles
+ * on overflow.
+ * 
+ * Returns NULL on error only, allocates 4k even for an empty list.
+ * It is an error to pass a NULL list.
+ */
+ini_fp_list_t *
+iniFastParseSections(const str_list_t list)
+{
+	size_t allocSz = 4096;
+	ini_fp_list_t *ret = malloc(allocSz);
+	size_t arraySz = getArraySize(allocSz);
+	size_t i;
+
+	if (!ret)
+		return NULL;
+
+	if (!list) {
+		free(ret);
+		return NULL;
+	}
+
+	ret->firstUncut = 0;
+	ret->totalSections = 0;
+
+	// Root section
+	memset(&ret->sections[0], 0, sizeof(ret->sections[0]));
+	ret->sections[0].list = strListInit();
+
+	if (ret->sections[0].list == NULL)
+		goto error_return;
+
+	for (i = 0; list[i] != NULL; i++) {
+		char *str = list[i];
+		SKIP_WHITESPACE(str);
+		if (*str == INI_OPEN_SECTION_CHAR) {
+			str++;
+			size_t slen = strlen(str);
+			while (slen && (IS_WHITESPACE(str[slen - 1])))
+				slen--;
+			if (str[slen - 1] == INI_CLOSE_SECTION_CHAR)
+				slen--;
+			else // Discard line
+				continue;
+			struct fp_section *sect;
+			ret->totalSections++;
+			if ((ret->totalSections) >= arraySz) {
+				allocSz *= 2;
+				ini_fp_list_t *np = realloc(ret, allocSz);
+				if (np == NULL)
+					goto error_return;
+				ret = np;
+				arraySz = getArraySize(allocSz);
+			}
+			sect = &ret->sections[ret->totalSections];
+			sect->list = strListInit();
+			if (sect->list == NULL)
+				goto error_return;
+			sect->listLen = 0;
+			sect->name.str = str;
+			sect->originalOrder = ret->totalSections;
+			sect->cut = false;
+			sect->name.len = slen;
+		}
+		else {
+			if (*str != '\0' && *str != INI_COMMENT_CHAR) {
+				if (!strListAnnex(&ret->sections[ret->totalSections].list, str, ret->sections[ret->totalSections].listLen))
+					goto error_return;
+				ret->sections[ret->totalSections].listLen++;
+			}
+		}
+	}
+
+	// Sort
+	qsort(ret->sections, ret->totalSections, sizeof(ret->sections[0]), iniFastParseCmp);
+	// Remove duplicates (ugh)
+	for (i = 1; i < ret->totalSections; i++) {
+		int cmp;
+		struct fp_section *seca = &ret->sections[i - 1];
+		struct fp_section *secb = &ret->sections[i];
+		if (seca->name.len != secb->name.len)
+			continue;
+		cmp = strnicmp(seca->name.str, secb->name.str, seca->name.len);
+		if (cmp)
+			continue;
+		if (secb->originalOrder > seca->originalOrder) {
+			ret->totalSections--;
+			if (i < ret->totalSections) {
+				struct fp_section *secc = &ret->sections[i + 1];
+				memmove(secb, secc, sizeof(*secb) * (ret->totalSections - i));
+			}
+		}
+		else {
+			memmove(seca, secb, sizeof(*seca) * (ret->totalSections - i));
+			ret->totalSections--;
+		}
+	}
+	ret->lastUncut = ret->totalSections;
+	if (ret->lastUncut)
+		ret->lastUncut--;
+	return ret;
+
+error_return:
+	free(ret->sections[ret->totalSections].list);
+	iniFreeFastParse(ret);
+	return NULL;
+}
+
+struct iniGetFastPrefixStartCmpKey {
+	ini_lv_string_t prefix;
+	struct fp_section *base;
+};
+
+static int
+iniGetFastPrefixStartCmp(const void *keyPtr, const void *entryPtr)
+{
+	const struct iniGetFastPrefixStartCmpKey *key = keyPtr;
+	const struct fp_section *fp = entryPtr;
+	bool fpIsShorter = fp->name.len < key->prefix.len;
+	size_t cmpLen = fpIsShorter ? fp->name.len : key->prefix.len;
+	int cmp = strnicmp(key->prefix.str, fp->name.str, cmpLen);
+
+	if (cmp)
+		return cmp;
+	if (fpIsShorter)
+		return 1;
+	/*
+	 * We now know the prefix is present... now we need to check if
+	 * the previous entry also has the prefix...
+	 */
+	if (fp == key->base) {
+		// First entry, this is where we start...
+		return 0;
+	}
+	// Move to the previous entry
+	fp--;
+
+	// If the previous entry is shorter, we have the start
+	if (fp->name.len < key->prefix.len)
+		return 0;
+	// Doesn't start with prefix, we're good
+	if (strnicmp(fp->name.str, key->prefix.str, key->prefix.len))
+		return 0;
+	// Does start with prefix, previous is a better start
+	return 1;
+}
+
+static void
+adjustUncuts(ini_fp_list_t *fp)
+{
+	while (fp->sections[fp->firstUncut].cut && fp->firstUncut <= fp->lastUncut)
+		fp->firstUncut++;
+	if (fp->firstUncut > fp->lastUncut)
+		return;
+	while (fp->lastUncut > fp->firstUncut && fp->sections[fp->lastUncut].cut)
+		fp->lastUncut--;
+}
+
+static size_t
+iniGetFastPrefixStart(ini_fp_list_t *fp, const char *prefix)
+{
+	struct iniGetFastPrefixStartCmpKey key = {};
+	adjustUncuts(fp);
+	if (fp->firstUncut >= fp->totalSections)
+		return SIZE_MAX;
+	if (prefix == NULL || *prefix == 0)
+		return fp->firstUncut;
+	key.prefix.str = prefix;
+	key.prefix.len = strlen(prefix);
+	key.base = &fp->sections[fp->firstUncut];
+
+	struct fp_section *found = bsearch(&key, key.base, fp->lastUncut - fp->firstUncut + 1, sizeof(fp->sections[0]), iniGetFastPrefixStartCmp);
+	if (found == NULL)
+		return SIZE_MAX;
+	return found - fp->sections;
+}
+
+ini_lv_string_t **
+iniGetFastParsedSectionList(ini_fp_list_t *fp, const char* prefix, size_t *sz)
+{
+	size_t i;
+	size_t cnt = 0;
+	size_t prefixLen = 0;
+	if (fp == NULL) {
+		if (sz)
+			*sz = 0;
+		return NULL;
+	}
+	ini_lv_string_t **ret = malloc(sizeof(ini_lv_string_t *) * (fp->lastUncut - fp->firstUncut + 1));
+	if (ret == NULL) {
+		if (sz)
+			*sz = 0;
+		return ret;
+	}
+	if (prefix)
+		prefixLen = strlen(prefix);
+	for (i = iniGetFastPrefixStart(fp, prefix); i <= fp->lastUncut; i++) {
+		if (fp->sections[i].name.str == NULL)
+			continue;
+		if (fp->sections[i].cut)
+			continue;
+		if (fp->sections[i].name.len < prefixLen)
+			break;
+		if (prefixLen) {
+			if (strnicmp(fp->sections[i].name.str, prefix, prefixLen))
+				break;
+		}
+		ret[cnt] = &(fp->sections[i].name);
+		cnt++;
+	}
+	if (sz)
+		*sz = cnt;
+	return ret;
+}
+
+static int
+iniGetFastParsedSectionCmp(const void *keyPtr, const void *entPtr)
+{
+	const struct fp_section *fp = entPtr;
+	const ini_lv_string_t *name = keyPtr;
+	size_t cmplen;
+	bool entShorter;
+
+	if (fp->name.str == NULL) {
+		if (name == NULL || name->str == NULL)
+			return 0;
+	}
+	if (name == NULL || name->str == NULL)
+		return -1;
+	entShorter = fp->name.len < name->len;
+	cmplen = entShorter ? fp->name.len : name->len;
+	int cmp = strnicmp(name->str, fp->name.str, cmplen);
+	if (cmp == 0) {
+		if (fp->name.len == name->len)
+			return 0;
+		if (entShorter)
+			return 1;
+		return -1;
+	}
+	return cmp;
+}
+
+str_list_t
+iniGetFastParsedSection(ini_fp_list_t *fp, const char* name, bool cut)
+{
+	ini_lv_string_t nameLV = {
+		.str = name,
+		.len = name ? strlen(name) : 0,
+	};
+	if (fp == NULL)
+		return NULL;
+	adjustUncuts(fp);
+	if (fp->firstUncut > fp->lastUncut)
+		return NULL;
+
+	struct fp_section *found = bsearch(&nameLV, &fp->sections[fp->firstUncut], fp->lastUncut - fp->firstUncut + 1, sizeof(fp->sections[0]), iniGetFastParsedSectionCmp);
+	if (found == NULL)
+		return NULL;
+	if (cut) {
+		found->cut = true;
+		if (found == &fp->sections[fp->firstUncut])
+			fp->firstUncut++;
+		if (found == &fp->sections[fp->lastUncut] && fp->lastUncut)
+			fp->lastUncut--;
+	}
+	return found->list;
+}
+
+str_list_t
+iniGetFastParsedSectionLV(ini_fp_list_t *fp, ini_lv_string_t* name, bool cut)
+{
+	if (fp == NULL)
+		return NULL;
+	adjustUncuts(fp);
+	if (fp->firstUncut > fp->lastUncut)
+		return NULL;
+
+	struct fp_section *found = bsearch(name, &fp->sections[fp->firstUncut], fp->lastUncut - fp->firstUncut + 1, sizeof(fp->sections[0]), iniGetFastParsedSectionCmp);
+	if (found == NULL)
+		return NULL;
+	if (cut) {
+		found->cut = true;
+		if (found == &fp->sections[fp->firstUncut])
+			fp->firstUncut++;
+		if (found == &fp->sections[fp->lastUncut] && fp->lastUncut)
+			fp->lastUncut--;
+	}
+	return found->list;
+}
+
+void
+iniFastParsedSectionListFree(ini_lv_string_t **list)
+{
+	free(list);
+}
+
 #ifdef INI_FILE_TEST
 void main(int argc, char** argv)
 {
