@@ -9,6 +9,9 @@
 // List of NNTP commands:
 // http://www.tcpipguide.com/free/t_NNTPCommands-2.htm
 //
+// NNTP specification:
+// https://datatracker.ietf.org/doc/html/rfc3977
+//
 // Response codes:
 // http://www.tcpipguide.com/free/t_NNTPStatusResponsesandResponseCodes-3.htm
 
@@ -150,6 +153,80 @@ NNTPClient.prototype.GetNewsgroups = function(pTimeoutOverride)
 	var LINE_FEED = "\x0a";
 	//var numBytesSent = this.socket.send("LIST" + LINE_FEED);
 	var sendSucceeded = this.socket.sendline("LIST NEWSGROUPS");
+	//var numBytesSent = this.socket.send("LIST NEWSGROUPS" + LINE_FEED);
+	//if (typeof(numBytesSent) === "number" && numBytesSent > 0)
+	if (sendSucceeded)
+	{
+		retObj.responseLine = this.socket.recvline(this.recvBufSizeBytes, this.recvTimeoutSeconds);
+		retObj.succeeded = (typeof(retObj.responseLine) === "string" && retObj.responseLine.indexOf("215") == 0);
+		if (retObj.succeeded)
+		{
+			var timeout = (typeof(pTimeoutOverride) === "number" ? pTimeoutOverride : this.recvTimeoutSeconds);
+			while (this.socket.is_connected)
+			{
+				var line = this.socket.recvline(this.recvBufSizeBytes, timeout);
+				if (typeof(line) === "string" && line != ".")
+				{
+					// The server may use tabs as delimiters between the newsgroup name and description
+					line = line.replace(/\t/g, " ");
+					// Split on a space - The first will be the newsgroup name, and the 2nd will be its description
+					var spaceIdx = line.indexOf(" ");
+					if (spaceIdx > -1)
+					{
+						retObj.newsgroupArray.push({
+							name: line.substr(0, spaceIdx),
+							desc: truncsp(skipsp(line.substr(spaceIdx+1)))
+						});
+					}
+					else
+					{
+						retObj.newsgroupArray.push({
+							name: line,
+							desc: ""
+						});
+					}
+				}
+				else
+					break;
+			}
+		}
+	}
+	return retObj;
+}
+
+// Gets an array of new newsgroups since a given date & time from the server.
+// See // https://datatracker.ietf.org/doc/html/rfc3977#page-63 for more details.
+//
+// Parameters:
+//  pDate: A date string in the format yymmdd or yyyymmdd
+//  pTime: A time string in the format hhmmss
+//  pIsGMT: Boolean - Whether or not the date & time are GMT. Defaults to false.
+//  pTimeoutOverride: Optional - An override for the time out (in seconds)
+//
+// Return value: An object containing the following properties:
+//               succeeded: Boolean - Whether or not the operation succeeded
+//               responseLine: The response line from the server
+//               newsgroupArray: An array of objects containing the following properties:
+//                               name: The name of the newsgroup
+//                               desc: The newsgroup description
+NNTPClient.prototype.GetNewNewsgroups = function(pDate, pTime, pIsGMT, pTimeoutOverride)
+{
+	var retObj = {
+		succeeded: false,
+		responseLine: "",
+		newsgroupArray: []
+	}
+
+	const isGMT = (typeof(pIsGMT) === "boolean" ? pIsGMT : false);
+
+	var LINE_FEED = "\x0a";
+	//var numBytesSent = this.socket.send("LIST" + LINE_FEED);
+	// Information on the NEWSGROUPS command:
+	// https://datatracker.ietf.org/doc/html/rfc3977#page-63
+	var command = format("NEWSGROUPS %s %s", pDate, pTime);
+	if (isGMT)
+		command += " GMT";
+	var sendSucceeded = this.socket.sendline(command);
 	//var numBytesSent = this.socket.send("LIST NEWSGROUPS" + LINE_FEED);
 	//if (typeof(numBytesSent) === "number" && numBytesSent > 0)
 	if (sendSucceeded)
@@ -608,6 +685,53 @@ NNTPClient.prototype.Last = function()
 		}
 	}
 
+	return retObj;
+}
+
+// Gets help from the news server
+//
+// Parameters:
+//  pTimeoutOverride: Optional - An override for the time out (in seconds)
+//
+// Return value: An object containing the following properties:
+//               succeeded: Boolean - Whether or not the operation succeeded
+//               responseLine: The response line from the server
+//               helpLines: An array of text lines containing the returned help text from the server
+NNTPClient.prototype.Help = function(pTimeoutOverride)
+{
+	var retObj = {
+		succeeded: false,
+		responseLine: "",
+		helpLines: []
+	}
+
+	var LINE_FEED = "\x0a";
+	//var numBytesSent = this.socket.send("LIST" + LINE_FEED);
+	// https://datatracker.ietf.org/doc/html/rfc3977#page-63
+	var sendSucceeded = this.socket.sendline("HELP");
+	//var numBytesSent = this.socket.send("LIST NEWSGROUPS" + LINE_FEED);
+	//if (typeof(numBytesSent) === "number" && numBytesSent > 0)
+	if (sendSucceeded)
+	{
+		retObj.responseLine = this.socket.recvline(this.recvBufSizeBytes, this.recvTimeoutSeconds);
+		retObj.succeeded = (typeof(retObj.responseLine) === "string" && retObj.responseLine.indexOf("215") == 0);
+		if (retObj.succeeded)
+		{
+			var timeout = (typeof(pTimeoutOverride) === "number" ? pTimeoutOverride : this.recvTimeoutSeconds);
+			while (this.socket.is_connected)
+			{
+				var line = this.socket.recvline(this.recvBufSizeBytes, timeout);
+				if (typeof(line) === "string" && line != ".")
+				{
+					// The server may use tabs as delimiters between the newsgroup name and description
+					line = line.replace(/\t/g, " ");
+					retObj.helpLines.push(line);
+				}
+				else
+					break;
+			}
+		}
+	}
 	return retObj;
 }
 
