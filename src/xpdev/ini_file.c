@@ -41,6 +41,9 @@
 #define INI_INCLUDE_DIRECTIVE   "!include "
 #define INI_INCLUDE_MAX         10000
 
+// Can be exported if needed by someone who wants to poke under the hood.
+static char iniParsedRootValue = 0;
+
 static ini_style_t default_style;
 
 void iniSetDefaultStyle(ini_style_t style)
@@ -1589,6 +1592,41 @@ iniGetNamedStringList(str_list_t list, const char* section)
 	return lp;
 }
 
+static bool
+addParsedSection(named_str_list_t*** lp, size_t *sections, char *name)
+{
+	named_str_list_t** np = (named_str_list_t**)realloc(*lp, sizeof(named_str_list_t*) * (*sections + 2));
+	if (np == NULL)
+		return false;
+	*lp = np;
+	if (((*lp)[*sections] = (named_str_list_t*)malloc(sizeof(named_str_list_t))) == NULL)
+		return false;
+	if (name == &iniParsedRootValue) {
+		(*lp)[*sections]->name = name;
+	}
+	else {
+		if (((*lp)[*sections]->name = strdup(name)) == NULL)
+			return false;
+	}
+	if (((*lp)[*sections]->list = strListInit()) == NULL)
+		return false;
+	*sections += 1;
+	return true;
+}
+
+static bool
+addParsedLine(named_str_list_t** lp, size_t sections, char *data, size_t *keys)
+{
+	if (is_eof(data))
+		return false;
+	if (sections > 0) {
+		SKIP_WHITESPACE(data);
+		if (*data != '\0' && *data != INI_COMMENT_CHAR)
+			strListAnnex(&lp[sections - 1]->list, data, (*keys)++);
+	}
+	return true;
+}
+
 // the 'list' must remain allocated/valid through-out the life of the returned named_str_list
 // as this function does not copy the key=value lines in the original list, it just references them
 named_str_list_t** iniParseSections(const str_list_t list)
@@ -1599,55 +1637,64 @@ named_str_list_t** iniParseSections(const str_list_t list)
 	size_t             sections = 0;
 	size_t             keys = 0;
 	named_str_list_t** lp;
-	named_str_list_t** np;
 
-	if (list == NULL)
-		return NULL;
-
-	// Find first section
-	for (i = 0; list[i] != NULL; ++i) {
-		p = list[i];
-		SKIP_WHITESPACE(p);
-		if (*p == INI_OPEN_SECTION_CHAR)
-			break;
-	}
-	if (list[i] == NULL)
+	if (list == NULL || list[0] == NULL)
 		return NULL;
 
 	if ((lp = (named_str_list_t**)malloc(sizeof(named_str_list_t*))) == NULL)
 		return NULL;
 
-	for (; list[i] != NULL; ++i) {
-		SAFECOPY(str, list[i]);
-		p = section_name(str);
-		if (p != NULL) {
-			if ((np = (named_str_list_t**)realloc(lp, sizeof(named_str_list_t*) * (sections + 2))) == NULL)
-				break;
-			lp = np;
-			if ((lp[sections] = (named_str_list_t*)malloc(sizeof(named_str_list_t))) == NULL)
-				break;
-			if ((lp[sections]->name = strdup(p)) == NULL)
-				break;
-			if ((lp[sections]->list = strListInit()) == NULL)
-				break;
-			++sections;
+	// Find root section if present
+	for (i = 0; list[i] != NULL; ++i) {
+		p = list[i];
+		SKIP_WHITESPACE(p);
+		if (*p)
+			break;
+	}
+
+	if (list[i] != NULL) {
+		// TODO: A comment will create a zero-length root section, which kinda sucks...
+		if (*p != INI_OPEN_SECTION_CHAR) {
+			if (!addParsedSection(&lp, &sections, &iniParsedRootValue))
+				goto error_return;
 			keys = 0;
-		} else {
-			p = list[i];
-			if (is_eof(p))
-				break;
-			if (sections > 0) {
+			for (; list[i] != NULL; ++i) {
+				p = list[i];
 				SKIP_WHITESPACE(p);
-				if (*p == '\0' || *p == INI_COMMENT_CHAR)
-					continue;
-				strListAnnex(&lp[sections - 1]->list, p, keys++);
+				if (*p == INI_OPEN_SECTION_CHAR)
+					break;
+				// False return here just means it was a comment or blank line
+				if (!addParsedLine(lp, sections, list[i], &keys))
+					break;
 			}
 		}
 	}
 
+	for (; list[i] != NULL; ++i) {
+		SAFECOPY(str, list[i]);
+		p = section_name(str);
+		if (p != NULL) {
+			if (!addParsedSection(&lp, &sections, p))
+				goto error_return;
+			keys = 0;
+		} else {
+			// False return here just means it was a comment or blank line
+			if (!addParsedLine(lp, sections, list[i], &keys))
+				break;
+		}
+	}
+
+	if (sections == 0)
+		goto error_return;
+
 	lp[sections] = NULL;    /* terminate list */
 
 	return lp;
+
+error_return:
+	lp[sections] = NULL;    /* terminate list */
+	iniFreeParsedSections(lp);
+	return NULL;
 }
 
 str_list_t iniGetParsedSectionList(named_str_list_t** list, const char* prefix)
@@ -1659,7 +1706,7 @@ str_list_t iniGetParsedSectionList(named_str_list_t** list, const char* prefix)
 
 	for (i = 0; list != NULL && list[i] != NULL; ++i) {
 		section = list[i];
-		if (section->name == NULL)
+		if (section->name == NULL || section->name == &iniParsedRootValue)
 			continue;
 		if (prefix != NULL) {
 			if (strnicmp(section->name, prefix, strlen(prefix)) != 0)
@@ -1675,9 +1722,6 @@ str_list_t iniGetParsedSection(named_str_list_t** list, const char* name, bool c
 	size_t            i;
 	named_str_list_t* section;
 
-	if (name == NULL) // Root section not supported
-		return NULL;
-
 	if (list == NULL)
 		return NULL;
 
@@ -1685,9 +1729,12 @@ str_list_t iniGetParsedSection(named_str_list_t** list, const char* name, bool c
 		section = list[i];
 		if (section->name == NULL)
 			continue;
-		if (stricmp(section->name, name) == 0) {
+		const bool isRootSection = (section->name == &iniParsedRootValue);
+		const bool isRootMatch = (name == NULL) && isRootSection;
+		if (isRootMatch || ((!isRootSection) && (stricmp(section->name, name) == 0))) {
 			if (cut) {
-				free(section->name);
+				if (!isRootSection)
+					free(section->name);
 				section->name = NULL;
 			}
 			return section->list;
@@ -1704,7 +1751,8 @@ void* iniFreeParsedSections(named_str_list_t** list)
 		return NULL;
 
 	for (i = 0; list[i] != NULL; ++i) {
-		free(list[i]->name);
+		if (list[i]->name != &iniParsedRootValue)
+			free(list[i]->name);
 		free(list[i]->list);
 		free(list[i]);
 	}
