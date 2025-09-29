@@ -1302,6 +1302,7 @@ static str_list_t ini_read_section_list(FILE* fp, const char* prefix, bool inclu
 	char       str[INI_MAX_LINE_LEN];
 	ulong      items = 0;
 	str_list_t lp;
+	size_t     prefixLen = 0;
 
 	if ((lp = strListInit()) == NULL)
 		return NULL;
@@ -1311,6 +1312,9 @@ static str_list_t ini_read_section_list(FILE* fp, const char* prefix, bool inclu
 
 	rewind(fp);
 
+	if (prefix != NULL)
+		prefixLen = strlen(prefix);
+
 	while (!feof(fp)) {
 		if (fgets(str, sizeof(str), fp) == NULL)
 			break;
@@ -1318,9 +1322,10 @@ static str_list_t ini_read_section_list(FILE* fp, const char* prefix, bool inclu
 			break;
 		if ((p = section_name(str)) == NULL)
 			continue;
-		if (prefix != NULL)
-			if (strnicmp(p, prefix, strlen(prefix)) != 0)
+		if (prefixLen != 0) {
+			if (strnicmp(p, prefix, prefixLen) != 0)
 				continue;
+		}
 		if (!include_dupes && strListFind(lp, p, /* case_sensitive */ false) >= 0)
 			continue;
 		if (strListAppend(&lp, p, items++) == NULL)
@@ -1346,6 +1351,7 @@ static str_list_t ini_get_section_list(str_list_t list, const char* prefix, bool
 	char       str[INI_MAX_LINE_LEN];
 	ulong      i, items = 0;
 	str_list_t lp;
+	size_t     prefixLen = 0;
 
 	if ((lp = strListInit()) == NULL)
 		return NULL;
@@ -1353,15 +1359,19 @@ static str_list_t ini_get_section_list(str_list_t list, const char* prefix, bool
 	if (list == NULL)
 		return lp;
 
+	if (prefix != NULL)
+		prefixLen = strlen(prefix);
+
 	for (i = 0; list[i] != NULL; i++) {
 		SAFECOPY(str, list[i]);
 		if (is_eof(str))
 			break;
 		if ((p = section_name(str)) == NULL)
 			continue;
-		if (prefix != NULL)
-			if (strnicmp(p, prefix, strlen(prefix)) != 0)
+		if (prefixLen != 0) {
+			if (strnicmp(p, prefix, prefixLen) != 0)
 				continue;
+		}
 		if (include_dupes && strListFind(lp, p, /* case_sensitive */ false) >= 0)
 			continue;
 		if (strListAppend(&lp, p, items++) == NULL)
@@ -1386,9 +1396,13 @@ size_t iniGetSectionCount(str_list_t list, const char* prefix)
 	char*  p;
 	char   str[INI_MAX_LINE_LEN];
 	size_t i, items = 0;
+	size_t prefixLen = 0;
 
 	if (list == NULL)
 		return 0;
+
+	if (prefix != NULL)
+		prefixLen = strlen(prefix);
 
 	for (i = 0; list[i] != NULL; i++) {
 		SAFECOPY(str, list[i]);
@@ -1396,9 +1410,10 @@ size_t iniGetSectionCount(str_list_t list, const char* prefix)
 			break;
 		if ((p = section_name(str)) == NULL)
 			continue;
-		if (prefix != NULL)
-			if (strnicmp(p, prefix, strlen(prefix)) != 0)
+		if (prefixLen != 0) {
+			if (strnicmp(p, prefix, prefixLen) != 0)
 				continue;
+		}
 		items++;
 	}
 
@@ -1410,11 +1425,15 @@ size_t iniReadSectionCount(FILE* fp, const char* prefix)
 	char* p;
 	char  str[INI_MAX_LINE_LEN];
 	ulong items = 0;
+	size_t prefixLen = 0;
 
 	if (fp == NULL)
 		return 0;
 
 	rewind(fp);
+
+	if (prefix != NULL)
+		prefixLen = strlen(prefix);
 
 	while (!feof(fp)) {
 		if (fgets(str, sizeof(str), fp) == NULL)
@@ -1423,9 +1442,10 @@ size_t iniReadSectionCount(FILE* fp, const char* prefix)
 			break;
 		if ((p = section_name(str)) == NULL)
 			continue;
-		if (prefix != NULL)
-			if (strnicmp(p, prefix, strlen(prefix)) != 0)
+		if (prefixLen != 0) {
+			if (strnicmp(p, prefix, prefixLen) != 0)
 				continue;
+		}
 		items++;
 	}
 
@@ -1703,13 +1723,17 @@ str_list_t iniGetParsedSectionList(named_str_list_t** list, const char* prefix)
 	size_t            count = 0;
 	str_list_t        result = strListInit();
 	named_str_list_t* section;
+	size_t            prefixLen = 0;
+
+	if (prefix != NULL)
+		prefixLen = strlen(prefix);
 
 	for (i = 0; list != NULL && list[i] != NULL; ++i) {
 		section = list[i];
 		if (section->name == NULL || section->name == &iniParsedRootValue)
 			continue;
-		if (prefix != NULL) {
-			if (strnicmp(section->name, prefix, strlen(prefix)) != 0)
+		if (prefixLen != 0) {
+			if (strnicmp(section->name, prefix, prefixLen) != 0)
 				continue;
 		}
 		strListAppend(&result, section->name, count++);
