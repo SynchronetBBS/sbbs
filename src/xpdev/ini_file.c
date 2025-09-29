@@ -1726,12 +1726,24 @@ str_list_t iniGetParsedSection(named_str_list_t** list, const char* name, bool c
 		return NULL;
 
 	for (i = 0; list[i] != NULL; ++i) {
+		/*
+		 * We can't declare these below, so can't make them const
+		 * until MSVC supports C99. Just adding braces around the
+		 * const declarations seems to make MSVC crash in random
+		 * places.
+		 * 
+		 * https://gitlab.synchro.net/main/sbbs/-/pipelines/9324
+		 */
+		bool isRootSection;
+		bool isRootMatch;
 		section = list[i];
 		if (section->name == NULL)
 			continue;
-		if (((name == NULL) && (section->name == &iniParsedRootValue)) || ((!(section->name == &iniParsedRootValue)) && (stricmp(section->name, name) == 0))) {
+		isRootSection = (section->name == &iniParsedRootValue);
+		isRootMatch = isRootSection && (name == NULL);
+		if (isRootMatch || ((!isRootSection) && (stricmp(section->name, name) == 0))) {
 			if (cut) {
-				if (!(section->name == &iniParsedRootValue))
+				if (!isRootSection)
 					free(section->name);
 				section->name = NULL;
 			}
