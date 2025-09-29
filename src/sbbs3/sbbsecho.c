@@ -5600,6 +5600,7 @@ int export_netmail(void)
 			continue;
 		}
 
+		remove_ctrl_a(txt, txt);
 		create_netmail(msg.to, &msg, msg_subj, txt, /* dest: */ *(fidoaddr_t*)msg.to_net.addr, /* src: */ NULL);
 		FREE_AND_NULL(txt);
 
