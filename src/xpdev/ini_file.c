@@ -1726,20 +1726,19 @@ str_list_t iniGetParsedSection(named_str_list_t** list, const char* name, bool c
 		return NULL;
 
 	for (i = 0; list[i] != NULL; ++i) {
+		// These need to be up here or MSVC crashes. :(
+		const bool isRootSection = (section->name == &iniParsedRootValue);
+		const bool isRootMatch = (name == NULL) && isRootSection;
 		section = list[i];
 		if (section->name == NULL)
 			continue;
-		{ // Braces for Microsoft...
-			const bool isRootSection = (section->name == &iniParsedRootValue);
-			const bool isRootMatch = (name == NULL) && isRootSection;
-			if (isRootMatch || ((!isRootSection) && (stricmp(section->name, name) == 0))) {
-				if (cut) {
-					if (!isRootSection)
-						free(section->name);
-					section->name = NULL;
-				}
-				return section->list;
+		if (isRootMatch || ((!isRootSection) && (stricmp(section->name, name) == 0))) {
+			if (cut) {
+				if (!isRootSection)
+					free(section->name);
+				section->name = NULL;
 			}
+			return section->list;
 		}
 	}
 	return NULL;
