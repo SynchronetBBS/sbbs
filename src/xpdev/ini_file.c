@@ -1741,7 +1741,7 @@ str_list_t iniGetParsedSection(named_str_list_t** list, const char* name, bool c
 			continue;
 		isRootSection = (section->name == &iniParsedRootValue);
 		isRootMatch = isRootSection && (name == NULL);
-		if (isRootMatch || ((!isRootSection) && (stricmp(section->name, name) == 0))) {
+		if (isRootMatch || ((name != NULL) && (!isRootSection) && (stricmp(section->name, name) == 0))) {
 			if (cut) {
 				if (!isRootSection)
 					free(section->name);
