@@ -195,7 +195,7 @@ NNTPClient.prototype.GetNewsgroups = function(pTimeoutOverride)
 }
 
 // Gets an array of new newsgroups since a given date & time from the server.
-// See // https://datatracker.ietf.org/doc/html/rfc3977#page-63 for more details.
+// See https://datatracker.ietf.org/doc/html/rfc3977#page-63 for more details.
 //
 // Parameters:
 //  pDate: A date string in the format yymmdd or yyyymmdd
@@ -207,8 +207,13 @@ NNTPClient.prototype.GetNewsgroups = function(pTimeoutOverride)
 //               succeeded: Boolean - Whether or not the operation succeeded
 //               responseLine: The response line from the server
 //               newsgroupArray: An array of objects containing the following properties:
-//                               name: The name of the newsgroup
-//                               desc: The newsgroup description
+//                               name: The name of the newsgroup (string)
+//                               highWatermark: The reported high water mark for the group (number)
+//                               lowWatermark: The reported low water mark for the group (number)
+//                               groupStatus: The current status of the group on this server (string):
+//                                            "y": Posting is permitted
+//                                            "n": Posting is not permitted
+//                                            "m": Postings will be forwarded to the newsgroup moderator
 NNTPClient.prototype.GetNewNewsgroups = function(pDate, pTime, pIsGMT, pTimeoutOverride)
 {
 	var retObj = {
@@ -221,18 +226,16 @@ NNTPClient.prototype.GetNewNewsgroups = function(pDate, pTime, pIsGMT, pTimeoutO
 
 	var LINE_FEED = "\x0a";
 	//var numBytesSent = this.socket.send("LIST" + LINE_FEED);
-	// Information on the NEWSGROUPS command:
+	// Information on the NEWGROUPS command:
 	// https://datatracker.ietf.org/doc/html/rfc3977#page-63
-	var command = format("NEWSGROUPS %s %s", pDate, pTime);
+	var command = format("NEWGROUPS %s %s", pDate, pTime);
 	if (isGMT)
 		command += " GMT";
 	var sendSucceeded = this.socket.sendline(command);
-	//var numBytesSent = this.socket.send("LIST NEWSGROUPS" + LINE_FEED);
-	//if (typeof(numBytesSent) === "number" && numBytesSent > 0)
 	if (sendSucceeded)
 	{
 		retObj.responseLine = this.socket.recvline(this.recvBufSizeBytes, this.recvTimeoutSeconds);
-		retObj.succeeded = (typeof(retObj.responseLine) === "string" && retObj.responseLine.indexOf("215") == 0);
+		retObj.succeeded = (typeof(retObj.responseLine) === "string" && retObj.responseLine.indexOf("231") == 0);
 		if (retObj.succeeded)
 		{
 			var timeout = (typeof(pTimeoutOverride) === "number" ? pTimeoutOverride : this.recvTimeoutSeconds);
@@ -243,20 +246,46 @@ NNTPClient.prototype.GetNewNewsgroups = function(pDate, pTime, pIsGMT, pTimeoutO
 				{
 					// The server may use tabs as delimiters between the newsgroup name and description
 					line = line.replace(/\t/g, " ");
-					// Split on a space - The first will be the newsgroup name, and the 2nd will be its description
-					var spaceIdx = line.indexOf(" ");
-					if (spaceIdx > -1)
+					// Split on a space - The components are as follows:
+					// Newsgroup name (no spaces)
+					// The reported high water mark for the group
+					// The reported low water mark for the group
+					// The current status of the group on this server:
+					//  "y": Posting is permitted
+					//  "n": Posting is not permitted
+					//  "m": Postings will be forwarded to the newsgroup moderator
+					var lineComponents = line.split(" ");
+					if (lineComponents.length == 0)
+						continue;
+					var grpName = "";
+					var grpHighWatermark = 0;
+					var grpLowWatermark = 0;
+					var grpStatus = "y";
+					var lineComponents = line.split(" ");
+					if (lineComponents.length >= 1)
+						grpName = lineComponents[0];
+					if (lineComponents.length >= 2)
 					{
-						retObj.newsgroupArray.push({
-							name: line.substr(0, spaceIdx),
-							desc: truncsp(skipsp(line.substr(spaceIdx+1)))
-						});
+						var numVal = parseInt(lineComponents[1]);
+						if (!isNaN(numVal))
+							grpHighWatermark = numVal;
 					}
-					else
+					if (lineComponents.length >= 3)
+					{
+						var numVal = parseInt(lineComponents[2]);
+						if (!isNaN(numVal))
+							grpLowWatermark = numVal;
+					}
+					if (lineComponents.length >= 4)
+						grpStatus = lineComponents[3].toLowerCase();
+
+					if (grpName.length > 0)
 					{
 						retObj.newsgroupArray.push({
-							name: line,
-							desc: ""
+							name: grpName,
+							highWatermark: grpHighWatermark,
+							lowWatermark: grpLowWatermark,
+							groupStatus: grpStatus
 						});
 					}
 				}
