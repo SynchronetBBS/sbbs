@@ -9,7 +9,7 @@ require("uifcdefs.js", "UIFC_INMSG");
 require("nntp_client_lib.js", "NNTPConnectOptions");
 
 
-if (!uifc.init("Groupie News Server Account Configurator"))
+if (!uifc.init("Groupie News Reader Configurator"))
 {
 	print("Failed to initialize uifc");
 	exit(1);
@@ -80,13 +80,14 @@ function doMainMenu()
 	// cfgOptProps must correspond exactly with optionStrs & menuItems
 	var cfgOptProps = [
 		"groupie_cfg_user_sorting",             // Username sorting for groupie_cfg
+		"append_bbs_domain_to_usernames",       // Boolean
 		"default_server_password",              // String
+		"hostname",                             // String
+		"host_port",                            // Numeric
 		"use_lightbar_interface",               // Boolean
 		"users_can_change_their_nttp_settings", // Boolean
 		"receive_bufer_size_bytes",             // Numeric
 		"receive_timeout_seconds",              // Numeric
-		"hostname",                             // String
-		"host_port",                            // Numeric
 		//"prepend_foward_msg_subject",          // Boolean
 		"default_max_num_msgs_from_newsgroup",  // Numeric
 		"msg_save_dir",                         // String
@@ -99,13 +100,14 @@ function doMainMenu()
 	// Strings for the options to display on the menu
 	var optionStrs = [
 		"Username sorting for groupie_cfg",
+		"Append @BBS_domain to usernames",
 		"Default server password for users",
+		"NNTP server hostname/IP",
+		"NNTP server port",
 		"Use Lightbar/Scrolling Interface",
 		"Users can change their NNTP settings",
 		"Receive buffer size (bytes)",
 		"Receive timeout (in seconds)",
-		"NNTP server hostname/IP",
-		"NNTP server port",
 		//"Prepend forwarded msgs w/ 'fwd'",
 		"Default max # articles from newsgroup",
 		"Message/article save dir (server PC)",
@@ -872,6 +874,11 @@ function getOptionHelpText()
 
 	optionHelpText["host_port"] = "NNTP server port: The (default) port to use for the NNTP server";
 
+	optionHelpText["append_bbs_domain_to_usernames"] = "Append @BBS_domain to usernames: Whether or not to append the ";
+	optionHelpText["append_bbs_domain_to_usernames"] += "BBS's domain (as @domain) to the user's username for the NNTP ";
+	optionHelpText["append_bbs_domain_to_usernames"] += "server. Your BBS domain is configured in SCFG > Networks > ";
+	optionHelpText["append_bbs_domain_to_usernames"] += "Ineternet E-Mail > System Address";
+
 	optionHelpText["default_server_password"] = "Default server password for users: The default server password ";
 	optionHelpText["default_server_password"] += "to use for users' credentials";
 
@@ -994,6 +1001,8 @@ function readGroupieCfgFile(pCfgFileName)
 		retObj.cfgOptions.hostname = "127.0.0.1";
 	if (typeof(retObj.cfgOptions.host_port) !== "number")
 		retObj.cfgOptions.host_port = 119;
+	if (typeof(retObj.cfgOptions.ppend_bbs_domain_to_usernames) !== "boolean")
+		retObj.cfgOptions.ppend_bbs_domain_to_usernames = false;
 	if (typeof(retObj.cfgOptions.default_server_password) !== "string")
 		retObj.cfgOptions.default_server_password = "";
 	if (typeof(retObj.cfgOptions.prepend_foward_msg_subject) !== "boolean")

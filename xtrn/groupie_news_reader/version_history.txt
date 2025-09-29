@@ -4,8 +4,13 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.02     2025-09-29   New configuration option, append_bbs_domain_to_usernames,
+                      which specifies whether to append the BBS's domain (as
+                      @domain) to usernames when authenticating with the news
+                      server
 1.01     2025-09-27   New configuration option for toggling whether users can
-                      change their NNTP settings.
+                      change their NNTP settings:
+                      users_can_change_their_nttp_settings
                       New configurator that can be run with jsexec which can
                       also edit users' NNTP settings.
 1.00     2025-09-25   Initial version & release
