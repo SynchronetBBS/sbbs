@@ -1663,7 +1663,7 @@ named_str_list_t** iniParseSections(const str_list_t list)
 				SKIP_WHITESPACE(p);
 				if (*p == INI_OPEN_SECTION_CHAR)
 					break;
-				// False return here just means it was a comment or blank line
+				// False return here means it was EOF
 				if (!addParsedLine(lp, sections, list[i], &keys))
 					break;
 			}
@@ -1678,7 +1678,7 @@ named_str_list_t** iniParseSections(const str_list_t list)
 				goto error_return;
 			keys = 0;
 		} else {
-			// False return here just means it was a comment or blank line
+			// False return here means it was EOF
 			if (!addParsedLine(lp, sections, list[i], &keys))
 				break;
 		}
