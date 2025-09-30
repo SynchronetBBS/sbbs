@@ -3351,8 +3351,11 @@ iniGetFastParsedSectionCmp(const void *keyPtr, const void *entPtr)
 str_list_t
 iniGetFastParsedSection(ini_fp_list_t *fp, const char* name, bool cut)
 {
-	ini_lv_string_t nameLV = {name, name ? strlen(name) : 0};
+	ini_lv_string_t nameLV;
 	struct fp_section *found;
+
+	nameLV.str = name;
+	nameLV.len = name ? strlen(name) : 0;
 	if (fp == NULL)
 		return NULL;
 	adjustUncuts(fp);
