@@ -3368,9 +3368,12 @@ iniGetFastParsedSectionCmp(const void *keyPtr, const void *entPtr)
 		return -1;
 	entShorter = fp->name.len < name->len;
 	cmplen = entShorter ? fp->name.len : name->len;
-	cmp = strnicmp(name->str, fp->name.str, cmplen);
+	if (cmplen)
+		cmp = strnicmp(name->str, fp->name.str, cmplen);
+	else
+		cmp = 0;
 	if (cmp == 0) {
-		if (fp->name && (fp->name.len == name->len))
+		if (fp->name.len == name->len)
 			return 0;
 		if (entShorter)
 			return 1;
