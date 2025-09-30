@@ -5,6 +5,14 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+2.31     2025-09-30   When doing a file search, don't display "There are no
+                      files in.." when no files are found. Also, output a CRLF
+                      just before exiting in case of file searching so that the
+                      "Searcing..." text will appear on its own line.
+                      Also, the default configuration file has been renamed to
+                      ddfilelister.example.ini; sysops can copy it to
+                      ddfilelister.ini to avoid having it overridden due to an
+                      update from the repository.
 2.30     2025-06-18   Input timeout fix (only applicable when using a
                       scrollable box, such as when viwing file info). Also,
                       improvement in showing the time to download a file.

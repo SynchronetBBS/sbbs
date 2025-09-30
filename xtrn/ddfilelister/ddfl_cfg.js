@@ -1,23 +1,17 @@
-// This is a menu-driven configurator for Digital Distortion File Lister.  If you're running
-// DDFileLister xtrn/ddfilelister (the standard location), then any changes are saved to
-// ddfilelister.cfg in sbbs/mods, so that custom changes don't get overridden due to an update.
-// If you have ddfilelister in a directory other than xtrn/ddfilelister, then the changes to
-// ddfilelister.cfg will be saved in that directory (assuming you're running ddmr_cfg.js from
-// that same directory).
-// Currently for ddfilelister 2.29.
+// This is a menu-driven configurator for Digital Distortion File Lister.
 //
-// If you're running ddfilelister from xtrn/ddfilelister (the standard location) and you want
-// to save the configuration file there (rather than sbbs/mods), you can use one of the
-// following command-line options: noMods, -noMods, no_mods, or -no_mods
+// On the initial run, ddfilelister.example.ini is copied to ddfilelister.ini in the
+// same directory, and changes are made to ddfilelister.ini. This also supports
+// ddfilelister.ini (or ddfilelister.cfg) being in sbbs/mods.
+
 
 "use strict";
-
 
 require("sbbsdefs.js", "P_NONE");
 require("uifcdefs.js", "UIFC_INMSG");
 
 
-if (!uifc.init("DigDist. File Lister 2.29 Configurator"))
+if (!uifc.init("DigDist. File Lister 2.31 Configurator"))
 {
 	print("Failed to initialize uifc");
 	exit(1);
@@ -25,7 +19,6 @@ if (!uifc.init("DigDist. File Lister 2.29 Configurator"))
 js.on_exit("uifc.bail()");
 
 // DDFileLister base configuration filename, and help text wrap width
-var gCfgFileName = "ddfilelister.cfg";
 var gHelpWrapWidth = uifc.screen_width - 10;
 
 // When saving the configuration file, always save it in the same directory
@@ -37,6 +30,13 @@ parseCmdLineArgs();
 
 // Read the DDFileLister configuration file
 var gCfgInfo = readDDFileListerCfgFile();
+if (gCfgInfo.errorMsg.length > 0)
+{
+	uifc.msg(gCfgInfo.errorMsg);
+	exit(2);
+}
+var gCfgFileName = gCfgInfo.cfgFilename;
+
 
 // Show the main menu and go from there.
 // This is in a loop so that if the user aborts from confirming to save
@@ -61,8 +61,11 @@ while (continueOn)
 					uifc.msg("Failed to save settings!");
 				else
 				{
+					uifc.msg("Changes were saved to " + gCfgFileName);
+					/*
 					if (saveRetObj.savedToModsDir)
 						uifc.msg("Changes were successfully saved (to the mods dir)");
+					*/
 				}
 			}
 			continueOn = false;
@@ -503,6 +506,7 @@ function parseCmdLineArgs()
 function readDDFileListerCfgFile()
 {
 	var retObj = {
+		errorMsg: "",
 		cfgFilename: "",
 		cfgOptions: {}
 	};
@@ -510,12 +514,42 @@ function readDDFileListerCfgFile()
 	// Determine the location of the configuration file.  First look for it
 	// in the sbbs/mods directory, then sbbs/ctrl, then in the same directory
 	// as this script.
-	var cfgFilename = file_cfgname(system.mods_dir, gCfgFileName);
-	if (!file_exists(cfgFilename))
-		cfgFilename = file_cfgname(system.ctrl_dir, gCfgFileName);
-	if (!file_exists(cfgFilename))
-		cfgFilename = file_cfgname(js.exec_dir, gCfgFileName);
-	retObj.cfgFilename = cfgFilename;
+	var cfgFilename = "ddfilelister.ini";
+	var cfgFilenameFullPath = file_cfgname(system.mods_dir, cfgFilename);
+	if (!file_exists(cfgFilenameFullPath))
+		cfgFilenameFullPath = file_cfgname(system.ctrl_dir, cfgFilename);
+	if (!file_exists(cfgFilenameFullPath))
+		cfgFilenameFullPath = file_cfgname(js.exec_dir, cfgFilename);
+	// If the .ini doesn't exist, see if the .cfg exists
+	if (!file_exists(cfgFilenameFullPath))
+	{
+		cfgFilename = "ddfilelister.cfg";
+		var cfgFilenameFullPath = file_cfgname(system.mods_dir, cfgFilename);
+		if (!file_exists(cfgFilenameFullPath))
+			cfgFilenameFullPath = file_cfgname(system.ctrl_dir, cfgFilename);
+		if (!file_exists(cfgFilenameFullPath))
+			cfgFilenameFullPath = file_cfgname(js.exec_dir, cfgFilename);
+	}
+	// If the configuration file hasn't been found, look to see if there's a .example.ini file
+	// available in the same directory. If so, then copy ddfilelister.example.ini to
+	// ddfilelister.ini and use ddfilelister.ini.
+	if (!file_exists(cfgFilenameFullPath))
+	{
+		var exampleFileName = file_cfgname(js.exec_dir, "ddfilelister.example.ini");
+		if (file_exists(exampleFileName))
+		{
+			//cfgFilenameFullPath = exampleFileName;
+			var copiedIniFilename = file_cfgname(js.exec_dir, "ddfilelister.ini");
+			if (file_copy(exampleFileName, copiedIniFilename))
+				cfgFilenameFullPath = copiedIniFilename;
+			else
+			{
+				retObj.errorMsg = "Failed to copy ddfilelister.example.ini to ddfilelister.ini";
+				return retObj;
+			}
+		}
+	}
+	retObj.cfgFilename = cfgFilenameFullPath;
 
 	// Open and read the configuration file
 	var cfgFile = new File(retObj.cfgFilename);
@@ -523,6 +557,11 @@ function readDDFileListerCfgFile()
 	{
 		retObj.cfgOptions = cfgFile.iniGetObject();
 		cfgFile.close();
+	}
+	else
+	{
+		retObj.errorMsg = "Failed to open " + retObj.cfgFilename;
+		return retObj;
 	}
 
 	// In case some settings weren't loaded, add defaults
