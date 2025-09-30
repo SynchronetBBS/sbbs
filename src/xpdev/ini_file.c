@@ -29,6 +29,12 @@
 #include "filewrap.h"   /* chsize */
 #include "netwrap.h"
 
+#if defined(_WIN32)
+        #define QSORT_CALLBACK_TYPE __cdecl
+#else
+        #define QSORT_CALLBACK_TYPE
+#endif
+
 /* Maximum length of entire line, includes '\0' */
 #define INI_MAX_LINE_LEN        (INI_MAX_VALUE_LEN * 2)
 #define INI_COMMENT_CHAR        ';'
