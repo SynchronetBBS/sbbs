@@ -2159,7 +2159,7 @@ main(int argc, char **argv)
 			str_list_t inilines;
 			inilines = iniReadFile(listfile);
 			fclose(listfile);
-			ini_fp_list_t *nlines = iniFastParseSections(inilines);
+			ini_fp_list_t *nlines = iniFastParseSections(inilines, false);
 			read_item(nlines, bbs, NULL, 0, USER_BBSLIST);
 			iniFreeFastParse(nlines);
 			strListFree(&inilines);

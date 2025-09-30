@@ -325,12 +325,13 @@ DLLEXPORT str_list_t 	iniGetParsedSectionList(named_str_list_t**, const char* pr
 DLLEXPORT void*			iniFreeParsedSections(named_str_list_t** list);
 
 /* Fast functions */
-DLLEXPORT ini_fp_list_t * iniFastParseSections(const str_list_t list);
-ini_lv_string_t **iniGetFastParsedSectionList(ini_fp_list_t *fp, const char* prefix, size_t *sz);
-str_list_t iniGetFastParsedSection(ini_fp_list_t *fp, const char* name, bool cut);
-str_list_t iniGetFastParsedSectionLV(ini_fp_list_t *fp, ini_lv_string_t* name, bool cut);
-void iniFastParsedSectionListFree(ini_lv_string_t **list);
-void iniFreeFastParse(ini_fp_list_t *s);
+DLLEXPORT ini_fp_list_t * iniFastParseSections(const str_list_t list, bool orderedList);
+DLLEXPORT ini_lv_string_t **iniGetFastParsedSectionList(ini_fp_list_t *fp, const char* prefix, size_t *sz);
+DLLEXPORT str_list_t iniGetFastParsedSection(ini_fp_list_t *fp, const char* name, bool cut);
+DLLEXPORT str_list_t iniGetFastParsedSectionLV(ini_fp_list_t *fp, ini_lv_string_t* name, bool cut);
+DLLEXPORT void iniFastParsedSectionListFree(ini_lv_string_t **list);
+DLLEXPORT void iniFreeFastParse(ini_fp_list_t *s);
+DLLEXPORT ini_lv_string_t *iniGetFastParsedSectionOrderedList(ini_fp_list_t *fp);
 
 /*
  * Too handy to leave internal
