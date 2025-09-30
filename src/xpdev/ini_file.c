@@ -3060,7 +3060,7 @@ iniFreeFastParse(ini_fp_list_t *s)
 	free(s);
 }
 
-static inline size_t
+static size_t
 getArraySize(size_t allocSz)
 {
 	return (allocSz - sizeof(ini_fp_list_t)) / sizeof(struct fp_section);
