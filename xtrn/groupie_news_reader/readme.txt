@@ -1,6 +1,6 @@
                           Groupie (newsgroup reader)
-                                Version 1.02
-                           Release date: 2025-09-29
+                                Version 1.03
+                           Release date: 2025-09-30
 
                             Initially developed by:
                                 Eric Oulashin

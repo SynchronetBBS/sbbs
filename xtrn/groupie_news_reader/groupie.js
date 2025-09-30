@@ -20,6 +20,11 @@
  *                              which specifies whether to append the BBS's domain
  *                              (as @domain) to usernames when authenticating with
  *                              the news server
+ * 2025-09-30 Eric Oulashin     Version 1.03
+ *                              When getting the list of newsgroups, if using the
+ *                              newsgroup cache file for a server, then also request
+ *                              a list of new newsgroups since the cached file's
+ *                              timestamp
  */
 
 "use strict";
@@ -55,8 +60,8 @@ var hexdump = load('hexdump_lib.js');
 
 // Program and version information
 var PROGRAM_NAME = "Groupie";
-var PROGRAM_VERSION = "1.02";
-var PROGRAM_DATE = "2025-09-29";
+var PROGRAM_VERSION = "1.03";
+var PROGRAM_DATE = "2025-09-30";
 
 
 ///////////////////////////////////
@@ -284,7 +289,6 @@ while (continueConnectLoop)
 		}
 	}
 }
-
 
 // Get the list of newsgroups & create the newsgroup menu
 // Filename for the newsgroup list cache for the server
@@ -826,10 +830,11 @@ function CreateNewsgroupMenu(pNNTPClient)
 		numNewsgroups: 0
 	};
 
+	var timeoutOverride = 15;
 	var getNewsgrpsRetObj = null;
 	if (!file_exists(gNewsgroupListFilename))
 	{
-		getNewsgrpsRetObj = pNNTPClient.GetNewsgroups(15);
+		getNewsgrpsRetObj = pNNTPClient.GetNewsgroups(timeoutOverride);
 		if (getNewsgrpsRetObj.succeeded)
 		{
 			retObj.numNewsgroups = getNewsgrpsRetObj.newsgroupArray.length;
@@ -872,6 +877,7 @@ function CreateNewsgroupMenu(pNNTPClient)
 		var count = 1; // 1: Newsgroup name; 2: Newsgroup description
 		var newsgrpName = "";
 		var inFile = new File(gNewsgroupListFilename);
+		var grpCacheFileTimestamp = inFile.date;
 		if (inFile.open("r"))
 		{
 			while (!inFile.eof)
@@ -905,6 +911,45 @@ function CreateNewsgroupMenu(pNNTPClient)
 				}
 			}
 			inFile.close();
+
+			// Also, get any new newsgroups since the cache file was written
+			var ngRet = pNNTPClient.GetNewNewsgroupsSinceLocalTimestamp(grpCacheFileTimestamp, timeoutOverride);
+			if (ngRet.succeeded)
+			{
+				if (ngRet.newsgroupArray.length > 0)
+				{
+					for (var i = 0; i < ngRet.newsgroupArray.length; ++i)
+					{
+						getNewsgrpsRetObj.newsgroupArray.push({
+							name: ngRet.newsgroupArray[i].name,
+							desc: ngRet.newsgroupArray[i].name
+						});
+					}
+
+					// Add the new newsgroups to the newsgroup cache file
+					var outFile = new File(gNewsgroupListFilename);
+					if (outFile.open("a"))
+					{
+						for (var i = 0; i < ngRet.newsgroupArray.length; ++i)
+						{
+							outFile.writeln(ngRet.newsgroupArray[i].name);
+							outFile.writeln(ngRet.newsgroupArray[i].name);
+							outFile.writeln("");
+						}
+						outFile.close();
+					}
+				}
+			}
+			else
+			{
+				var fileTimestampStr = strftime("%Y-%m-%d %H:%M:%S", grpCacheFileTimestamp);
+				if (ngRet.responseLine.length > 0)
+					retObj.errorMsg = format("Failed to retrieve new newsgroups since %s: %s", fileTimestampStr, ngRet.responseLine);
+				else
+					retObj.errorMsg = format("Failed to retrieve new newsgroups since %s", fileTimestampStr);
+				return retObj;
+			}
+
 			retObj.numNewsgroups = getNewsgrpsRetObj.newsgroupArray.length;
 		}
 	}
@@ -919,6 +964,17 @@ function CreateNewsgroupMenu(pNNTPClient)
 		retObj.hdrFormatStr = "%" + itemNumLen + "s %-" + newsgroupNameWidth + "s %-" + newsgroupDescWidth + "s";
 	}
 
+	// Sort the newsgroups array
+	getNewsgrpsRetObj.newsgroupArray.sort(function(pA, pB) {
+		var nameA = pA.name.toUpperCase();
+		var nameB = pB.name.toUpperCase();
+		if (nameA < nameB)
+			return -1;
+		else if (nameA == nameB)
+			return 0;
+		else
+			return 1;
+	});
 
 	var nameWidth = Math.floor(console.screen_columns / 2) - 1;
 	var descWidth = console.screen_columns - nameWidth - 1;

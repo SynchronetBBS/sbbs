@@ -297,6 +297,32 @@ NNTPClient.prototype.GetNewNewsgroups = function(pDate, pTime, pIsGMT, pTimeoutO
 	return retObj;
 }
 
+// Gets an array of new newsgroups from the server since a local timestamp.
+// See https://datatracker.ietf.org/doc/html/rfc3977#page-63 for more details.
+//
+// Parameters:
+//  pTimestamp: A timestamp local to the BBS machine, in time_t format
+//  pTimeoutOverride: Optional - An override for the time out (in seconds)
+//
+// Return value: An object containing the following properties:
+//               succeeded: Boolean - Whether or not the operation succeeded
+//               responseLine: The response line from the server
+//               newsgroupArray: An array of objects containing the following properties:
+//                               name: The name of the newsgroup (string)
+//                               highWatermark: The reported high water mark for the group (number)
+//                               lowWatermark: The reported low water mark for the group (number)
+//                               groupStatus: The current status of the group on this server (string):
+//                                            "y": Posting is permitted
+//                                            "n": Posting is not permitted
+//                                            "m": Postings will be forwarded to the newsgroup moderator
+NNTPClient.prototype.GetNewNewsgroupsSinceLocalTimestamp = function(pTimestamp, pTimeoutOverride)
+{
+	var GMTTimestamp = localTimeTToGMT(pTimestamp);
+	var dateStr = strftime("%Y%m%d", GMTTimestamp);
+	var timeStr = strftime("%H%M%S", GMTTimestamp);
+	return this.GetNewNewsgroups(dateStr, timeStr, true, pTimeoutOverride);
+}
+
 // Selects a newsgroup on the server
 //
 // Parameters:
@@ -1358,6 +1384,23 @@ function stringIsEmptyOrOnlyWhitespace(pString)
 	if (typeof(pString) !== "string")
 		return false;
 	return (pString.length == 0 || /^\s+$/.test(pString));
+}
+
+// Converts a local timestamp (in time_t format) to GMT (UTC) time
+//
+// Parameters:
+//  pTime: A local timestamp (in time_t format)
+//
+// Return value: The time_t value converted to GMT (UTC)
+function localTimeTToGMT(pTime)
+{
+	// system.tz_offset is the BBS's local timezone offset (in minutes) from UTC.
+	// Negative values represent zones west of UTC; positive values represent
+	// zones east of UTC.
+	// Multiplying the resulting value by -1 in order to get GMT time by
+	// adding the offset to pTime
+	var localOffsetInSeconds = -(system.tz_offset * 60); // 60 seconds per minute
+	return pTime + localOffsetInSeconds;
 }
 
 ////////////////////////////////////////////////////////////////
