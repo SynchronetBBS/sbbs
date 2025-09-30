@@ -48,7 +48,7 @@
 #define INI_INCLUDE_MAX         10000
 
 // Can be exported if needed by someone who wants to poke under the hood.
-static char iniParsedRootValue = 0;
+static char iniParsedRootValue[1] = {0};
 
 static ini_style_t default_style;
 
@@ -1628,7 +1628,7 @@ addParsedSection(named_str_list_t*** lp, size_t *sections, char *name)
 	*lp = np;
 	if (((*lp)[*sections] = (named_str_list_t*)malloc(sizeof(named_str_list_t))) == NULL)
 		return false;
-	if (name == &iniParsedRootValue) {
+	if (name == iniParsedRootValue) {
 		(*lp)[*sections]->name = name;
 	}
 	else {
@@ -1682,7 +1682,7 @@ named_str_list_t** iniParseSections(const str_list_t list)
 	if (list[i] != NULL) {
 		// TODO: A comment will create a zero-length root section, which kinda sucks...
 		if (*p != INI_OPEN_SECTION_CHAR) {
-			if (!addParsedSection(&lp, &sections, &iniParsedRootValue))
+			if (!addParsedSection(&lp, &sections, iniParsedRootValue))
 				goto error_return;
 			keys = 0;
 			for (; list[i] != NULL; ++i) {
@@ -1737,7 +1737,7 @@ str_list_t iniGetParsedSectionList(named_str_list_t** list, const char* prefix)
 
 	for (i = 0; list != NULL && list[i] != NULL; ++i) {
 		section = list[i];
-		if (section->name == NULL || section->name == &iniParsedRootValue)
+		if (section->name == NULL || section->name == iniParsedRootValue)
 			continue;
 		if (prefixLen != 0) {
 			if (strnicmp(section->name, prefix, prefixLen) != 0)
@@ -1770,7 +1770,7 @@ str_list_t iniGetParsedSection(named_str_list_t** list, const char* name, bool c
 		section = list[i];
 		if (section->name == NULL)
 			continue;
-		isRootSection = (section->name == &iniParsedRootValue);
+		isRootSection = (section->name == iniParsedRootValue);
 		isRootMatch = isRootSection && (name == NULL);
 		if (isRootMatch || ((name != NULL) && (!isRootSection) && (stricmp(section->name, name) == 0))) {
 			if (cut) {
@@ -1792,7 +1792,7 @@ void* iniFreeParsedSections(named_str_list_t** list)
 		return NULL;
 
 	for (i = 0; list[i] != NULL; ++i) {
-		if (list[i]->name != &iniParsedRootValue)
+		if (list[i]->name != iniParsedRootValue)
 			free(list[i]->name);
 		free(list[i]->list);
 		free(list[i]);
