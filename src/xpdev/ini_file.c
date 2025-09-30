@@ -3157,7 +3157,7 @@ iniFastParseSections(const str_list_t list, bool orderedList)
 			slen = strlen(str);
 			while (slen && (IS_WHITESPACE(str[slen - 1])))
 				slen--;
-			if (str[slen - 1] == INI_CLOSE_SECTION_CHAR)
+			if (slen && str[slen - 1] == INI_CLOSE_SECTION_CHAR)
 				slen--;
 			else // Discard line
 				continue;
@@ -3329,19 +3329,22 @@ iniGetFastParsedSectionList(ini_fp_list_t *fp, const char* prefix, size_t *sz)
 	}
 	if (prefix)
 		prefixLen = strlen(prefix);
-	for (i = iniGetFastPrefixStart(fp, prefix); i <= fp->lastUncut; i++) {
-		if (fp->sections[i].name.str == NULL)
-			continue;
-		if (fp->sections[i].cut)
-			continue;
-		if (fp->sections[i].name.len < prefixLen)
-			break;
-		if (prefixLen) {
-			if (strnicmp(fp->sections[i].name.str, prefix, prefixLen))
+	i = iniGetFastPrefixStart(fp, prefix);
+	if (i != SIZE_MAX) {
+		for (i = iniGetFastPrefixStart(fp, prefix); i <= fp->lastUncut; i++) {
+			if (fp->sections[i].name.str == NULL)
+				continue;
+			if (fp->sections[i].cut)
+				continue;
+			if (fp->sections[i].name.len < prefixLen)
 				break;
+			if (prefixLen) {
+				if (strnicmp(fp->sections[i].name.str, prefix, prefixLen))
+					break;
+			}
+			ret[cnt] = &(fp->sections[i].name);
+			cnt++;
 		}
-		ret[cnt] = &(fp->sections[i].name);
-		cnt++;
 	}
 	if (sz)
 		*sz = cnt;
@@ -3367,7 +3370,7 @@ iniGetFastParsedSectionCmp(const void *keyPtr, const void *entPtr)
 	cmplen = entShorter ? fp->name.len : name->len;
 	cmp = strnicmp(name->str, fp->name.str, cmplen);
 	if (cmp == 0) {
-		if (fp->name.len == name->len)
+		if (fp->name && (fp->name.len == name->len))
 			return 0;
 		if (entShorter)
 			return 1;
