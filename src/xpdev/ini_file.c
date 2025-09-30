@@ -3066,7 +3066,7 @@ getArraySize(size_t allocSz)
 	return (allocSz - sizeof(ini_fp_list_t)) / sizeof(struct fp_section);
 }
 
-static int
+static int QSORT_CALLBACK_TYPE
 iniFastParseCmp(const void *a, const void *b)
 {
 	const struct fp_section *seca = a;
@@ -3216,7 +3216,7 @@ struct iniGetFastPrefixStartCmpKey {
 	struct fp_section *base;
 };
 
-static int
+static int QSORT_CALLBACK_TYPE
 iniGetFastPrefixStartCmp(const void *keyPtr, const void *entryPtr)
 {
 	const struct iniGetFastPrefixStartCmpKey *key = keyPtr;
@@ -3320,7 +3320,7 @@ iniGetFastParsedSectionList(ini_fp_list_t *fp, const char* prefix, size_t *sz)
 	return ret;
 }
 
-static int
+static int QSORT_CALLBACK_TYPE
 iniGetFastParsedSectionCmp(const void *keyPtr, const void *entPtr)
 {
 	const struct fp_section *fp = entPtr;
