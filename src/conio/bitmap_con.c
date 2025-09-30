@@ -1568,16 +1568,24 @@ int bitmap_setfont(int font, int force, int font_num)
 
 		old=malloc(ow*oh*sizeof(*old));
 		if(old) {
+			/*
+			 * Passing old to bitmap_vmem_gettext_locked()
+			 * gets Coverity worked up about old being accessed
+			 * after an unlock/lock, so we have the suppressions
+			 * below.
+			 */
 			bitmap_vmem_gettext_locked(1,1,ow,oh,old);
 			assert_rwlock_unlock(&vstatlock);
 			textmode(newmode);
 			assert_rwlock_wrlock(&vstatlock);
 			new=malloc(ti.screenwidth*ti.screenheight*sizeof(*new));
 			if(!new) {
+				// coverity[atomicity:SUPPRESS]
 				free(old);
 				assert_rwlock_unlock(&vstatlock);
 				return 0;
 			}
+			// coverity[atomicity:SUPPRESS]
 			pold=old;
 			pnew=new;
 			for(row=0; row<ti.screenheight; row++) {
