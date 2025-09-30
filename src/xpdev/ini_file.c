@@ -3138,8 +3138,9 @@ iniFastParseSections(const str_list_t list)
 		SKIP_WHITESPACE(str);
 		if (*str == INI_OPEN_SECTION_CHAR) {
 			struct fp_section *sect;
+			size_t slen;
 			str++;
-			size_t slen = strlen(str);
+			slen = strlen(str);
 			while (slen && (IS_WHITESPACE(str[slen - 1])))
 				slen--;
 			if (str[slen - 1] == INI_CLOSE_SECTION_CHAR)
