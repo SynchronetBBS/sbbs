@@ -298,7 +298,7 @@ static char* read_value(FILE* fp, const char* section, const char* key, char* va
 		if (vp == NULL)
 			break;
 		/* key found */
-		sprintf(value, "%.*s", INI_MAX_VALUE_LEN - 1, vp);
+		strlcpy(value, vp, INI_MAX_VALUE_LEN);
 		return clean_value(value);
 	}
 
@@ -330,7 +330,7 @@ static size_t get_value(str_list_t list, const char* section, const char* key, c
 		if (stricmp(p, key) != 0)
 			continue;
 		if (value != NULL) {
-			sprintf(value, "%.*s", INI_MAX_VALUE_LEN - 1, vp);
+			strlcpy(value, vp, INI_MAX_VALUE_LEN);
 			clean_value(value);
 		}
 		if (vpp != NULL)
@@ -1037,8 +1037,9 @@ char* iniSetIntList(str_list_t* list, const char* section, const char* key
 
 static char* default_value(const char* deflt, char* value)
 {
-	if (deflt != NULL && deflt != value && value != NULL)
-		sprintf(value, "%.*s", INI_MAX_VALUE_LEN - 1, deflt);
+	if (deflt != NULL && deflt != value && value != NULL) {
+		strlcpy(value, deflt, INI_MAX_VALUE_LEN);
+	}
 
 	return (char*)deflt;
 }

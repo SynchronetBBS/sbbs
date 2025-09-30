@@ -640,7 +640,7 @@ static bool getfilecase(char *path, bool dir)
 	}
 #if 0
 	if (strcspn(path, "?*") != strlen(path))  {
-		sprintf(path, "%.*s", MAX_PATH, globme);
+		strlcpy(path, globme, MAX_PATH + 1);
 		return fexist(path);
 	}
 #endif
@@ -657,7 +657,7 @@ static bool getfilecase(char *path, bool dir)
 				break;
 		}
 		if (i < glb.gl_pathc)  {
-			sprintf(path, "%.*s", MAX_PATH, glb.gl_pathv[i]);
+			strlcpy(path, glb.gl_pathv[i], MAX_PATH + 1);
 			globfree(&glb);
 			return true;
 		}

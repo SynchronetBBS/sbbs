@@ -1439,11 +1439,11 @@ char *
 get_syncterm_filename(char *fn, int fnlen, int type, bool shared)
 {
 	if ((config_override != NULL) && (type == SYNCTERM_PATH_INI) && !shared) {
-		sprintf(fn, "%.*s", fnlen - 1, config_override);
+		strlcpy(fn, config_override, fnlen);
 		return fn;
 	}
 	if ((list_override != NULL) && (type == SYNCTERM_PATH_LIST) && !shared) {
-		sprintf(fn, "%.*s", fnlen - 1, list_override);
+		strlcpy(fn, list_override, fnlen);
 		return fn;
 	}
 
