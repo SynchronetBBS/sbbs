@@ -3046,6 +3046,7 @@ struct fp_section {
 };
 
 struct fp_list_s {
+	ini_lv_string_t *sectionList;	// Allocated at most once (allocated)
 	size_t firstUncut;	// Where to start/end searching for a section
 	size_t lastUncut;	// Where to start/end searching for a section
 	size_t totalSections;	// The number of sections initially allocated, includes cut sections
@@ -3059,6 +3060,7 @@ iniFreeFastParse(ini_fp_list_t *s)
 
 	if (s == NULL)
 		return;
+	free(s->sectionList);
 	for (i = 0; i < s->totalSections; i++) {
 		// This abuses strListFreeBlock() and assumes it's just a free() wrapper
 		strListFreeBlock((char *)s->sections[i].list);
@@ -3112,9 +3114,13 @@ iniFastParseCmp(const void *a, const void *b)
  * 
  * Returns NULL on error only, allocates 4k even for an empty list.
  * It is an error to pass a NULL list.
+ * 
+ * If orderedList is true, will create a list of section names in file
+ * order which can be retreived using iniGetFastParsedSectionOrderedList()
+ * That list is not deduped or modified by cut operations.
  */
 ini_fp_list_t *
-iniFastParseSections(const str_list_t list)
+iniFastParseSections(const str_list_t list, bool orderedList)
 {
 	size_t allocSz = 4096;
 	ini_fp_list_t *ret = malloc(allocSz);
@@ -3131,6 +3137,7 @@ iniFastParseSections(const str_list_t list)
 
 	ret->firstUncut = 0;
 	ret->totalSections = 0;
+	ret->sectionList = NULL;
 
 	// Root section
 	memset(&ret->sections[0], 0, sizeof(ret->sections[0]));
@@ -3181,7 +3188,16 @@ iniFastParseSections(const str_list_t list)
 			}
 		}
 	}
+	ret->totalSections++;
 
+	if (orderedList) {
+		ret->sectionList = malloc(ret->totalSections * sizeof(*ret->sectionList));
+		if (ret->sectionList == NULL)
+			goto error_return;
+		for (i = 0; i < ret->totalSections; i++) {
+			ret->sectionList[i] = ret->sections[i].name;
+		}
+	}
 	// Sort
 	qsort(ret->sections, ret->totalSections, sizeof(ret->sections[0]), iniFastParseCmp);
 	// Remove duplicates (ugh)
@@ -3198,10 +3214,14 @@ iniFastParseSections(const str_list_t list)
 			ret->totalSections--;
 			if (i < ret->totalSections) {
 				struct fp_section *secc = &ret->sections[i + 1];
+				// This abuses strListFreeBlock() and assumes it's just a free() wrapper
+				strListFreeBlock((char *)secb->list);
 				memmove(secb, secc, sizeof(*secb) * (ret->totalSections - i));
 			}
 		}
 		else {
+			// This abuses strListFreeBlock() and assumes it's just a free() wrapper
+			strListFreeBlock((char *)seca->list);
 			memmove(seca, secb, sizeof(*seca) * (ret->totalSections - i));
 			ret->totalSections--;
 		}
@@ -3213,6 +3233,7 @@ iniFastParseSections(const str_list_t list)
 
 error_return:
 	free(ret->sections[ret->totalSections].list);
+	ret->sections[ret->totalSections].list = NULL;
 	iniFreeFastParse(ret);
 	return NULL;
 }
@@ -3354,6 +3375,23 @@ iniGetFastParsedSectionCmp(const void *keyPtr, const void *entPtr)
 	return cmp;
 }
 
+static str_list_t
+iniHandleFoundSection(struct fp_section *found, ini_fp_list_t *fp, bool cut)
+{
+	if (found == NULL)
+		return NULL;
+	if (found->cut)
+		return NULL;
+	if (cut) {
+		found->cut = true;
+		if (found == &fp->sections[fp->firstUncut])
+			fp->firstUncut++;
+		if (found == &fp->sections[fp->lastUncut] && fp->lastUncut)
+			fp->lastUncut--;
+	}
+	return found->list;
+}
+
 str_list_t
 iniGetFastParsedSection(ini_fp_list_t *fp, const char* name, bool cut)
 {
@@ -3369,16 +3407,7 @@ iniGetFastParsedSection(ini_fp_list_t *fp, const char* name, bool cut)
 		return NULL;
 
 	found = bsearch(&nameLV, &fp->sections[fp->firstUncut], fp->lastUncut - fp->firstUncut + 1, sizeof(fp->sections[0]), iniGetFastParsedSectionCmp);
-	if (found == NULL)
-		return NULL;
-	if (cut) {
-		found->cut = true;
-		if (found == &fp->sections[fp->firstUncut])
-			fp->firstUncut++;
-		if (found == &fp->sections[fp->lastUncut] && fp->lastUncut)
-			fp->lastUncut--;
-	}
-	return found->list;
+	return iniHandleFoundSection(found, fp, cut);
 }
 
 str_list_t
@@ -3392,16 +3421,13 @@ iniGetFastParsedSectionLV(ini_fp_list_t *fp, ini_lv_string_t* name, bool cut)
 		return NULL;
 
 	found = bsearch(name, &fp->sections[fp->firstUncut], fp->lastUncut - fp->firstUncut + 1, sizeof(fp->sections[0]), iniGetFastParsedSectionCmp);
-	if (found == NULL)
-		return NULL;
-	if (cut) {
-		found->cut = true;
-		if (found == &fp->sections[fp->firstUncut])
-			fp->firstUncut++;
-		if (found == &fp->sections[fp->lastUncut] && fp->lastUncut)
-			fp->lastUncut--;
-	}
-	return found->list;
+	return iniHandleFoundSection(found, fp, cut);
+}
+
+ini_lv_string_t *
+iniGetFastParsedSectionOrderedList(ini_fp_list_t *fp)
+{
+	return fp->sectionList;
 }
 
 void

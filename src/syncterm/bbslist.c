@@ -948,7 +948,7 @@ read_list(char *listpath, struct bbslist **list, struct bbslist *defaults, int *
 	if ((listfile = fopen(listpath, "r")) != NULL) {
 		inilines = iniReadFile(listfile);
 		fclose(listfile);
-		nlines = iniFastParseSections(inilines);
+		nlines = iniFastParseSections(inilines, false);
 		if ((defaults != NULL) && (type == USER_BBSLIST))
 			read_item(nlines, defaults, NULL, -1, type);
 		bbses = iniGetFastParsedSectionList(nlines, NULL, &bbs_cnt);
