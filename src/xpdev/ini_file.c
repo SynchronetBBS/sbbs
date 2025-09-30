@@ -3137,6 +3137,7 @@ iniFastParseSections(const str_list_t list)
 		char *str = list[i];
 		SKIP_WHITESPACE(str);
 		if (*str == INI_OPEN_SECTION_CHAR) {
+			struct fp_section *sect;
 			str++;
 			size_t slen = strlen(str);
 			while (slen && (IS_WHITESPACE(str[slen - 1])))
@@ -3145,11 +3146,11 @@ iniFastParseSections(const str_list_t list)
 				slen--;
 			else // Discard line
 				continue;
-			struct fp_section *sect;
 			ret->totalSections++;
 			if ((ret->totalSections) >= arraySz) {
+				ini_fp_list_t *np;
 				allocSz *= 2;
-				ini_fp_list_t *np = realloc(ret, allocSz);
+				np = realloc(ret, allocSz);
 				if (np == NULL)
 					goto error_return;
 				ret = np;
@@ -3262,7 +3263,8 @@ adjustUncuts(ini_fp_list_t *fp)
 static size_t
 iniGetFastPrefixStart(ini_fp_list_t *fp, const char *prefix)
 {
-	struct iniGetFastPrefixStartCmpKey key = {};
+	struct iniGetFastPrefixStartCmpKey key = {0};
+	struct fp_section *found;
 	adjustUncuts(fp);
 	if (fp->firstUncut >= fp->totalSections)
 		return SIZE_MAX;
@@ -3272,7 +3274,7 @@ iniGetFastPrefixStart(ini_fp_list_t *fp, const char *prefix)
 	key.prefix.len = strlen(prefix);
 	key.base = &fp->sections[fp->firstUncut];
 
-	struct fp_section *found = bsearch(&key, key.base, fp->lastUncut - fp->firstUncut + 1, sizeof(fp->sections[0]), iniGetFastPrefixStartCmp);
+	found = bsearch(&key, key.base, fp->lastUncut - fp->firstUncut + 1, sizeof(fp->sections[0]), iniGetFastPrefixStartCmp);
 	if (found == NULL)
 		return SIZE_MAX;
 	return found - fp->sections;
@@ -3284,12 +3286,13 @@ iniGetFastParsedSectionList(ini_fp_list_t *fp, const char* prefix, size_t *sz)
 	size_t i;
 	size_t cnt = 0;
 	size_t prefixLen = 0;
+	ini_lv_string_t **ret;
 	if (fp == NULL) {
 		if (sz)
 			*sz = 0;
 		return NULL;
 	}
-	ini_lv_string_t **ret = malloc(sizeof(ini_lv_string_t *) * (fp->lastUncut - fp->firstUncut + 1));
+	ret = malloc(sizeof(ini_lv_string_t *) * (fp->lastUncut - fp->firstUncut + 1));
 	if (ret == NULL) {
 		if (sz)
 			*sz = 0;
@@ -3323,6 +3326,7 @@ iniGetFastParsedSectionCmp(const void *keyPtr, const void *entPtr)
 	const ini_lv_string_t *name = keyPtr;
 	size_t cmplen;
 	bool entShorter;
+	int cmp;
 
 	if (fp->name.str == NULL) {
 		if (name == NULL || name->str == NULL)
@@ -3332,7 +3336,7 @@ iniGetFastParsedSectionCmp(const void *keyPtr, const void *entPtr)
 		return -1;
 	entShorter = fp->name.len < name->len;
 	cmplen = entShorter ? fp->name.len : name->len;
-	int cmp = strnicmp(name->str, fp->name.str, cmplen);
+	cmp = strnicmp(name->str, fp->name.str, cmplen);
 	if (cmp == 0) {
 		if (fp->name.len == name->len)
 			return 0;
@@ -3346,17 +3350,15 @@ iniGetFastParsedSectionCmp(const void *keyPtr, const void *entPtr)
 str_list_t
 iniGetFastParsedSection(ini_fp_list_t *fp, const char* name, bool cut)
 {
-	ini_lv_string_t nameLV = {
-		.str = name,
-		.len = name ? strlen(name) : 0,
-	};
+	ini_lv_string_t nameLV = {name, name ? strlen(name) : 0};
+	struct fp_section *found;
 	if (fp == NULL)
 		return NULL;
 	adjustUncuts(fp);
 	if (fp->firstUncut > fp->lastUncut)
 		return NULL;
 
-	struct fp_section *found = bsearch(&nameLV, &fp->sections[fp->firstUncut], fp->lastUncut - fp->firstUncut + 1, sizeof(fp->sections[0]), iniGetFastParsedSectionCmp);
+	found = bsearch(&nameLV, &fp->sections[fp->firstUncut], fp->lastUncut - fp->firstUncut + 1, sizeof(fp->sections[0]), iniGetFastParsedSectionCmp);
 	if (found == NULL)
 		return NULL;
 	if (cut) {
@@ -3372,13 +3374,14 @@ iniGetFastParsedSection(ini_fp_list_t *fp, const char* name, bool cut)
 str_list_t
 iniGetFastParsedSectionLV(ini_fp_list_t *fp, ini_lv_string_t* name, bool cut)
 {
+	struct fp_section *found;
 	if (fp == NULL)
 		return NULL;
 	adjustUncuts(fp);
 	if (fp->firstUncut > fp->lastUncut)
 		return NULL;
 
-	struct fp_section *found = bsearch(name, &fp->sections[fp->firstUncut], fp->lastUncut - fp->firstUncut + 1, sizeof(fp->sections[0]), iniGetFastParsedSectionCmp);
+	found = bsearch(name, &fp->sections[fp->firstUncut], fp->lastUncut - fp->firstUncut + 1, sizeof(fp->sections[0]), iniGetFastParsedSectionCmp);
 	if (found == NULL)
 		return NULL;
 	if (cut) {
