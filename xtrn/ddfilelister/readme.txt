@@ -1,6 +1,6 @@
                         Digital Distortion File Lister
-                                 Version 2.30
-                           Release date: 2025-06-18
+                                 Version 2.31
+                           Release date: 2025-09-30
 
                                      by
 
@@ -104,19 +104,23 @@ lists files in the user's current directory, which is the default.
 Aside from readme.txt revision_history.txt, Digital Distortion File Lister is
 comprised of the following files:
 
-1. ddfilelister.js        The Digital Distortion File Lister script
+- ddfilelister.js            The Digital Distortion File Lister script
 
-2. ddfilelister.cfg       The file lister configuration file
+- ddfilelister.example.ini   The configuration file. To make changes to your
+                             configuration, you can copy this file to
+                             ddfilelister.ini and edit that file. You can also
+                             use ddfl_cfg.js to configure options; ddfl_cfg will
+                             save to ddfilelister.ini.
 
-3. defaultTheme.cfg       The default theme file containing colors used in the
-                          file lister
+- defaultTheme.cfg           The default theme file containing colors used in the
+                             file lister
 
-4. ddfl_cfg.js            A menu-driven configurator for Digital Distortion File
-                          lister - This can be run at the command prompt using
-                          jsexec. For example:
-                          jsexec ddfl_cfg.js
-                          The .js can also be omitted from the filename when
-                          running it this way.
+- ddfl_cfg.js                A menu-driven configurator for Digital Distortion
+                             File lister - This can be run at the command prompt
+                             using jsexec. For example:
+                             jsexec ddfl_cfg.js
+                             The .js can also be omitted from the filename when
+                             running it this way.
 						  
 
 The configuration files are plain text files, so they can be edited using any

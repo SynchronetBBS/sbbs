@@ -181,6 +181,15 @@
  *                              Input timeout fix (only applicable when using a scrollable box,
  *                              such as when viwing file info). Also, improvement in showing the
  *                              time to download a file.
+ * 2025-09-30 Eric Oulashin     Version 2.31
+ *                              When doing a file search, don't display "There are no files in.."
+ *                              when no files are found. Also, output a CRLF just before exiting
+ *                              in case of file searching so that the "Searcing..." text will
+ *                              appear on its own line.
+ *                              Also, the default configuration file has been renamed to
+ *                              ddfilelister.example.ini; sysops can copy it to ddfilelister.ini
+ *                              to avoid having it overridden due to an update from the
+ *                              repository.
  */
 
 "use strict";
@@ -222,8 +231,8 @@ var gAvatar = load({}, "avatar_lib.js");
 
 
 // Version information
-var LISTER_VERSION = "2.30";
-var LISTER_DATE = "2025-06-18";
+var LISTER_VERSION = "2.31";
+var LISTER_DATE = "2025-09-30";
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -856,6 +865,11 @@ else
 		}
 	}
 }
+
+// Output a CRLF - In case a file search is happening, a
+// CRLF will allow the "Scanning.." text to appear on its
+// own line
+console.print("\x01n\r\n");
 
 // The exit code needs to be the number of files listed (this is important if this
 // script is used as a loadable module).
@@ -4240,12 +4254,33 @@ function readConfigFile()
 
 	// Open the main configuration file.  First look for it in the sbbs/mods
 	// directory, then sbbs/ctrl, then in the same directory as this script.
-	var cfgFilename = "ddfilelister.cfg";
+	// First look for ddfilelister.ini, then ddfilelister.cfg (the .cfg was the
+	// old filename)
+	var cfgFilename = "ddfilelister.ini";
 	var cfgFilenameFullPath = file_cfgname(system.mods_dir, cfgFilename);
 	if (!file_exists(cfgFilenameFullPath))
 		cfgFilenameFullPath = file_cfgname(system.ctrl_dir, cfgFilename);
 	if (!file_exists(cfgFilenameFullPath))
 		cfgFilenameFullPath = file_cfgname(js.exec_dir, cfgFilename);
+	// If the .ini doesn't exist, see if the .cfg exists
+	if (!file_exists(cfgFilenameFullPath))
+	{
+		cfgFilename = "ddfilelister.cfg";
+		var cfgFilenameFullPath = file_cfgname(system.mods_dir, cfgFilename);
+		if (!file_exists(cfgFilenameFullPath))
+			cfgFilenameFullPath = file_cfgname(system.ctrl_dir, cfgFilename);
+		if (!file_exists(cfgFilenameFullPath))
+			cfgFilenameFullPath = file_cfgname(js.exec_dir, cfgFilename);
+	}
+	// If the configuration file hasn't been found, look to see if there's a .example.ini file
+	// available in the same directory 
+	if (!file_exists(cfgFilenameFullPath))
+	{
+		var exampleFileName = file_cfgname(js.exec_dir, "ddfilelister.example.ini");
+		if (file_exists(exampleFileName))
+			cfgFilenameFullPath = exampleFileName;
+	}
+
 	var cfgFile = new File(cfgFilenameFullPath);
 	if (cfgFile.open("r"))
 	{
@@ -4725,15 +4760,10 @@ function populateFileList(pSearchMode)
 		var filebase = new FileBase(gDirCode);
 		if (filebase.open())
 		{
-			// If there are no files in the filebase, then say so and exit now.
+			// If there are no files in the filebase, then exit now.
 			if (filebase.files == 0)
 			{
 				filebase.close();
-				var libIdx = file_area.dir[gDirCode].lib_index;
-				console.crlf();
-				console.print("\x01n\x01cThere are no files in \x01h" + file_area.lib_list[libIdx].description + "\x01n\x01c - \x01h" +
-							  file_area.dir[gDirCode].description + "\x01n");
-				console.crlf();
 				retObj.exitNow = true;
 				retObj.exitCode = 0;
 				return retObj;
