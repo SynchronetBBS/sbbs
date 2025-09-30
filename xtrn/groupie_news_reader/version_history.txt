@@ -4,6 +4,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.03     2025-09-30   When getting the list of newsgroups, if using the
+                      newsgroup cache file for a server, then also request a
+                      list of new newsgroups since the cached file's timestamp
 1.02     2025-09-29   New configuration option, append_bbs_domain_to_usernames,
                       which specifies whether to append the BBS's domain (as
                       @domain) to usernames when authenticating with the news
