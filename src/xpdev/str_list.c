@@ -639,7 +639,7 @@ void strListFree(str_list_t* list)
 // Read from the current file position (in stream 'fp') to the end of file
 // adding each read line (up to max_line_len chars) to the specified string
 // list (or allocating a new one, when 'lp' is NULL).
-// Returns NULL of error (i.e. memory allocation or file read failure).
+// Returns NULL on error (i.e. memory allocation or file read failure).
 // Upon error, the allocated list will be freed, but only if 'lp' was NULL.
 str_list_t strListReadFile(FILE* fp, str_list_t* lp, size_t max_line_len)
 {
