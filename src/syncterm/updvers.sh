@@ -69,6 +69,7 @@ perl -pi -e "s/(CPACK_PACKAGE_VERSION_MAJOR )[0-9]+/\$1.'${MAJOR}'/ge" CMakeList
 perl -pi -e "s/(CPACK_PACKAGE_VERSION_MINOR )[0-9]+/\$1.'${MINOR}'/ge" CMakeLists.txt
 perl -pi -e "s/(CPACK_PACKAGE_VERSION_PATCH )[^)]+/\$1.'${PATCHSTR}'/ge" CMakeLists.txt
 perl -pi -e "s/(CPACK_PACKAGE_VERSION )[^)]+/\$1.'${VERSTR}'/ge" CMakeLists.txt
+perl -pi -e "s/(CPACK_DEBIAN_PACKAGE_VERSION )[^)]+/\$1.'${VERSTR}'/ge" CMakeLists.txt
 
 # Info.plist
 echo Updating Info.plist
