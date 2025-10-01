@@ -136,6 +136,8 @@ struct cterminal {
 	unsigned char		attr;			// Current attribute
 	uint32_t			fg_color;
 	uint32_t			bg_color;
+	uint32_t			default_fg_palette;
+	uint32_t			default_bg_palette;
 	unsigned int		extattr;		// Extended attributes
 #define CTERM_EXTATTR_AUTOWRAP		0x0001
 #define CTERM_EXTATTR_ORIGINMODE	0x0002

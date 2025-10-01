@@ -3,6 +3,7 @@ Version 1.7rc1
 Add CTSV APC command
 Optimize dialing directory parsing
 Fix scroll wheel in RIP mode
+Support OSC 10 ; ? ST and OSC 11 ; ? ST
 
 Version 1.7b
 ------------
