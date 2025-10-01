@@ -1237,6 +1237,7 @@ enum {
 	BBSLIST_FIELD_PARITY,
 	BBSLIST_FIELD_TELNET_NO_BINARY,
 	BBSLIST_FIELD_TELNET_DEFERRED_NEGOTIATION,
+	BBSLIST_FIELD_PALETTE,
 };
 
 void
@@ -1372,6 +1373,8 @@ build_edit_list(struct bbslist *item, char opt[][69], int *optmap, char **opts, 
 	}
 	optmap[i] = BBSLIST_FIELD_HIDEPOPUPS;
 	sprintf(opt[i++], "Hide Popups       %s", item->hidepopups ? "Yes" : "No");
+	optmap[i] = BBSLIST_FIELD_PALETTE;
+	strcpy(opt[i++], "Edit Palette");
 	opt[i][0] = 0;
 }
 
@@ -1512,14 +1515,276 @@ build_edit_help(struct bbslist *item, int isdefault, char *helpbuf, size_t hbsz)
 		hblen += strlcat(helpbuf + hblen, "~ Fake Comm Rate ~\n"
 		                                  "        Display speed\n\n", hbsz - hblen);
 	}
+	hblen += strlcat(helpbuf + hblen, "~ Palette ~\n"
+	                                  "        Edit colour palette for this entry\n\n", hbsz - hblen);
+}
+
+static uint32_t
+get_palette_value(int palette, size_t entry)
+{
+	uint32_t pe = palettes[palette][entry];
+	return (uint32_t)dac_default[pe].red << 16 | (uint32_t)dac_default[pe].green << 8 | (uint32_t)dac_default[pe].blue;
+}
+
+static void
+kbwait(void)
+{
+	for (int tc = 0; tc < 50; tc++) {
+		if (kbhit())
+			break;
+		SLEEP(1);
+	}
+}
+
+static void
+update_colourbox(uint32_t colour, uint32_t fg_dac, struct vmem_cell *new, size_t width, size_t height)
+{
+	char nattr = uifc.hclr | (uifc.bclr << 4);
+	char iattr = uifc.lclr | (uifc.cclr << 4);
+	char str[width];
+	struct vmem_cell *ptr = new;
+	size_t i;
+
+	uint8_t attr = RED | GREEN << 4;
+	if (cio_api.options & CONIO_OPT_PALETTE_SETTING) {
+		setpalette(1, dac_default[fg_dac].red << 8 | dac_default[fg_dac].red
+		    , dac_default[fg_dac].green << 8 | dac_default[fg_dac].green
+		    , dac_default[fg_dac].blue << 8 | dac_default[fg_dac].blue);
+		setpalette(2, (colour >> 16 & 0xff) | (colour >> 8 & 0xff00)
+		    , (colour >> 8 & 0xff) | (colour & 0xff00)
+		    , (colour & 0xff) | (colour << 8 & 0xff00));
+		strlcpy(str, "   Color   ", sizeof(str));
+	}
+	else {
+		attr = nattr;
+		snprintf(str, sizeof(str), "  #%06" PRIx32 "   ", colour);
+	}
+	const char *p;
+	for (p = str, ptr = &new[width + 1]; *p; p++, ptr++)
+		set_vmem(ptr, *p, attr, 0);
+
+	snprintf(str, sizeof(str), "%3d %3d %3d", colour >> 16 & 0xff, colour >> 8 & 0xff, colour & 0xff);
+	for (i = 0, ptr = &new[width * 2 + 1]; str[i]; i++, ptr++)
+		set_vmem(ptr, str[i], i % 4 == 3 ? nattr : iattr, 0);
+
+	const char *bline = "Red Grn Blu";
+	for (p = bline, ptr = &new[width * (height - 2) + 1]; *p; p++, ptr++)
+		ptr->ch = *p;
+}
+
+static uint32_t
+edit_colour(uint32_t colour)
+{
+	const size_t width = 13;
+	const size_t height = 5;
+	struct vmem_cell old[width * height];
+	struct vmem_cell new[width * height];
+	int left, top;
+	int x, y;
+	struct text_info ti;
+	char nattr = uifc.hclr | (uifc.bclr << 4);
+	uint32_t fg_dac = 2;
+	int field = 0;
+
+	gettextinfo(&ti);
+	left = (ti.screenwidth - width) / 2;
+	top = (ti.screenheight - height) / 2;
+	vmem_gettext(left, top, left + width - 1, top + height - 1, old);
+
+	for (y = 0; y < height; y++) {
+		for (x = 0; x < width; x++) {
+			set_vmem(&new[y * width + x], 0, nattr, 0);
+		}
+	}
+
+	struct vmem_cell *tptr = new;
+	struct vmem_cell *bptr = &new[(height - 1) * width];
+	(tptr++)->ch = uifc.chars->input_top_left;
+	(bptr++)->ch = uifc.chars->input_bottom_left;
+	for (size_t i = 0; i < width - 2; i++) {
+		(tptr++)->ch = uifc.chars->input_top;
+		(bptr++)->ch = uifc.chars->input_bottom;
+	}
+	tptr->ch = uifc.chars->input_top_right;
+	bptr->ch = uifc.chars->input_bottom_right;
+	for (size_t i = 1; i < (height - 1); i++) {
+		new[width * i].ch = uifc.chars->input_left;
+		new[width * (i + 1) - 1].ch = uifc.chars->input_right;
+	}
+
+	uifc.helpbuf = "`Edit Palette Entry`\n\n"
+		       "~TAB/Backtab~ switches between Red, Green, and Blue.\n"
+		       "~CR~          saves the current colour component.\n"
+		       "~UP/DOWN~     changes the example foreground colour\n";
+	for (;;) {
+		char nstr[4];
+		int last;
+		uint8_t cval;
+		update_colourbox(colour, fg_dac, new, width, height);
+		vmem_puttext(left, top, left + width - 1, top + height - 1, new);
+		switch (field) {
+			case 0:
+				cval = colour >> 16 & 0xff;
+				break;
+			case 1:
+				cval = colour >> 8 & 0xff;
+				break;
+			case 2:
+				cval = colour & 0xff;
+				break;
+		}
+		snprintf(nstr, sizeof(nstr), "%d", cval);
+		uifc.getstrxy(left + 1 + field * 4, top + 2, 3, nstr, 3, K_NUMBER | K_EDIT | K_NOCRLF | K_DEUCEEXIT | K_TABEXIT, &last);
+		switch (last) {
+			uint32_t nval;
+			case ESC:
+				goto done;
+			case CIO_KEY_UP:
+				if (fg_dac)
+					fg_dac--;
+				else
+					fg_dac = 15;
+				break;
+			case CIO_KEY_DOWN:
+				if (fg_dac == 15)
+					fg_dac = 0;
+				else
+					fg_dac++;
+				break;
+			case '\r':
+				nval = strtoul(nstr, NULL, 10);
+				switch (field) {
+					case 0:
+						colour &= 0xffff;
+						colour |= nval << 16;
+						break;
+					case 1:
+						colour &= 0xff00ff;
+						colour |= nval << 8;
+						break;
+					case 2:
+						colour &= 0xffff00;
+						colour |= nval;
+						break;
+				}
+				// Fallthrough
+			case '\t':
+				field++;
+				if (field == 3)
+					field = 0;
+				break;
+			case 3840: // Backtab
+				if (field)
+					field--;
+				else
+					field = 2;
+				break;
+		}
+
+		if (last == ESC)
+			break;
+	}
+
+done:
+	vmem_puttext(left, top, left + width - 1, top + height - 1, old);
+	return colour;
+}
+
+static bool
+edit_palette(struct bbslist *item)
+{
+	char opt[17][69];
+	char *opts[(sizeof(opt) / sizeof(opt[0])) + 1];
+	int dflt = 0;
+	int bar = 0;
+	int vmode;
+	int tmode;
+	int palette;
+	uint32_t oldp[16];
+	unsigned old_size = item->palette_size;
+	unsigned min_palette_sz = 16;
+
+	memcpy(oldp, item->palette, sizeof(oldp));
+	tmode = screen_to_ciolib(item->screen_mode);
+	vmode = find_vmode(tmode);
+	if (vmode == -1) {
+		char errstr[128];
+		snprintf(errstr, sizeof(errstr), "Failed to map text mode %d to video mode", tmode);
+		uifcmsg(errstr, NULL);
+		return false;
+	}
+	palette = vparams[vmode].palette;
+
+	for (size_t i = 0; i < sizeof(opt) / sizeof(opt[0]); i++)
+		opts[i] = opt[i];
+	if (item->palette_size == 0) {
+		switch(palette) {
+			case PRESTEL_PALETTE:
+				min_palette_sz = 8;
+				break;
+			case ATARI_PALETTE_4:
+				min_palette_sz = 4;
+				break;
+			case ATARI_PALETTE_2:
+				min_palette_sz = 2;
+				break;
+			default:
+				min_palette_sz = 16;
+				break;
+		}
+	}
+	for (;item->palette_size < min_palette_sz; item->palette_size++) {
+		item->palette[item->palette_size] = get_palette_value(palette, item->palette_size);
+	}
+	for (;;) {
+		opts[0] = 0;
+		for (size_t i = 0; i < item->palette_size; i++) {
+			snprintf(opt[i], sizeof(opt[i]), "Colour %2zd (#%06x)", i, item->palette[i]);
+			opts[i] = opt[i];
+			opts[i + 1] = 0;
+		}
+		uifc_winmode_t mode = WIN_SAV | WIN_ACT | WIN_INSACT| WIN_DELACT | WIN_EDIT;
+		if (item->palette_size > min_palette_sz)
+			mode |= WIN_DEL;
+		if (item->palette_size < 16)
+			mode |= WIN_INS | WIN_XTR;
+		uifc.helpbuf = "`Edit Palette`\n\n"
+		               "If there are fewer than sixteen entries in the palette, they will be\n"
+		               "repeated to fill when whole palette.";
+		int status = uifc.list(mode, 0, 0, 0, &dflt, &bar, "Edit Palette Entries", opts);
+		if (status == -1)
+			break;
+		if (status & MSK_INS) {
+			item->palette[item->palette_size] = get_palette_value(palette, item->palette_size);
+			item->palette_size++;
+		}
+		else if (status & MSK_DEL) {
+			item->palette_size--;
+		}
+		else if (status == (status & MSK_OFF)) {
+			item->palette[status] = edit_colour(item->palette[status]);
+		}
+	}
+	if (item->palette_size == min_palette_sz) {
+		unsigned i;
+		for (i = 0; i < min_palette_sz; i++) {
+			if (item->palette[i] != get_palette_value(palette, i))
+				break;
+		}
+		if (i == min_palette_sz)
+			item->palette_size = 0;
+	}
+	if (item->palette_size != old_size || memcmp(oldp, item->palette, sizeof(oldp)))
+		return true;
+	return false;
 }
 
 int
 edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdefault)
 {
-	char opt[26][69]; /* 21=Holds number of menu items, 80=Number of columns */
+	char opt[27][69]; /* 21=Holds number of menu items, 80=Number of columns */
 	char optname[69];
-	int optmap[26];
+	int optmap[27];
 	char *opts[(sizeof(opt) / sizeof(opt[0])) + 1];
 	int changed = 0;
 	int copt = 0, i, j;
@@ -2062,6 +2327,15 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 				item->defer_telnet_negotiation = !item->defer_telnet_negotiation;
 				changed = 1;
 				iniSetBool(&inifile, itemname, "TelnetDeferNegotiate", item->defer_telnet_negotiation, &ini_style);
+				break;
+			case BBSLIST_FIELD_PALETTE:
+				if (edit_palette(item)) {
+					if (item->palette_size == 0)
+						iniRemoveKey(&inifile, itemname, "Palette");
+					else
+						iniSetIntList(&inifile, itemname, "Palette", ",", (int*)item->palette, item->palette_size, &ini_style);
+					changed = 1;
+				}
 				break;
 		}
 		if (uifc.changes)
@@ -3017,16 +3291,6 @@ done:
 	}
 	draw_comment(list);
 	return ret;
-}
-
-static void
-kbwait(void)
-{
-	for (int tc = 0; tc < 50; tc++) {
-		if (kbhit())
-			break;
-		SLEEP(1);
-	}
 }
 
 static void
