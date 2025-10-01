@@ -1577,8 +1577,8 @@ edit_colour(uint32_t colour)
 {
 	const size_t width = 13;
 	const size_t height = 5;
-	struct vmem_cell old[width * height];
-	struct vmem_cell new[width * height];
+	struct vmem_cell old[13 * 5]; // MSVC doesn't allow VLAs
+	struct vmem_cell new[13 * 5]; // MSVC doesn't allow VLAs
 	int left, top;
 	int x, y;
 	struct text_info ti;
