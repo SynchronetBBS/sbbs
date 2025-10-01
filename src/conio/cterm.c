@@ -1527,6 +1527,17 @@ fail:
 	return NULL;
 }
 
+static int
+cterm_setpalette(struct cterminal *cterm, uint32_t entry, uint16_t r, uint16_t g, uint16_t b)
+{
+	const uint32_t palette_offset = cio_api.options & CONIO_OPT_EXTENDED_PALETTE ? 16 : 0;
+	if (entry == 7 + palette_offset)
+		cterm->default_fg_palette = (uint32_t)r >> 8 << 16 | (uint32_t)g >> 8 << 8 | (uint32_t)b >> 8;
+	else if (entry == palette_offset)
+		cterm->default_bg_palette = (uint32_t)r >> 8 << 16 | (uint32_t)g >> 8 << 8 | (uint32_t)b >> 8;
+	return setpalette(entry, r, g, b);
+}
+
 static void parse_sixel_string(struct cterminal *cterm, bool finish)
 {
 	char *p = cterm->strbuf;
@@ -1710,7 +1721,7 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 							b = strtoul(p, &p, 10);
 						}
 						if (t == 2)	// Only support RGB
-							setpalette(cterm->sx_fg, UINT16_MAX*r/100, UINT16_MAX*g/100, UINT16_MAX*b/100);
+							cterm_setpalette(cterm, cterm->sx_fg, UINT16_MAX * r / 100, UINT16_MAX * g / 100, UINT16_MAX * b / 100);
 					}
 					break;
 				case '$':	// Graphics Carriage Return
@@ -4547,7 +4558,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 											ccount++;
 										}
 										if (ccount == 3 && !broken)
-											setpalette(index + palette_offset, rgb[0], rgb[1], rgb[2]);
+											cterm_setpalette(cterm, index + palette_offset, rgb[0], rgb[1], rgb[2]);
 										index = ULONG_MAX;
 									}
 								}
@@ -4556,7 +4567,7 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 								if (strlen(cterm->strbuf) == 3) {
 									// Reset all colours
 									for (i=0; i < sizeof(dac_default)/sizeof(struct dac_colors); i++)
-										setpalette(i + palette_offset, dac_default[i].red << 8 | dac_default[i].red, dac_default[i].green << 8 | dac_default[i].green, dac_default[i].blue << 8 | dac_default[i].blue);
+										cterm_setpalette(cterm, i + palette_offset, dac_default[i].red << 8 | dac_default[i].red, dac_default[i].green << 8 | dac_default[i].green, dac_default[i].blue << 8 | dac_default[i].blue);
 								}
 								else if(cterm->strbuf[3] == ';') {
 									char *seqlast;
@@ -4567,8 +4578,21 @@ static void do_ansi(struct cterminal *cterm, char *retbuf, size_t retsize, int *
 										p2=NULL;
 										pi = strtoull(p, NULL, 10);
 										if (pi < sizeof(dac_default)/sizeof(struct dac_colors))
-											setpalette(pi + palette_offset, dac_default[pi].red << 8 | dac_default[pi].red, dac_default[pi].green << 8 | dac_default[pi].green, dac_default[pi].blue << 8 | dac_default[pi].blue);
+											cterm_setpalette(cterm, pi + palette_offset, dac_default[pi].red << 8 | dac_default[pi].red, dac_default[pi].green << 8 | dac_default[pi].green, dac_default[pi].blue << 8 | dac_default[pi].blue);
 									}
+								}
+							}
+							else if (cterm->strbuf[0] == '1'
+							    && (cterm->strbuf[1] == '0' || cterm->strbuf[1] == '1')
+							    && cterm->strbuf[2] == ';'
+							    && cterm->strbuf[3] == '?'
+							    && cterm->strbuf[4] == 0) {
+								if (retbuf != NULL) {
+									uint32_t colour = cterm->strbuf[1] == '0' ? cterm->default_fg_palette : cterm->default_bg_palette;
+
+									snprintf(tmp, sizeof(tmp), "\x1b]1%c;rgb:%02x/%02x/%02x\x1b\\", cterm->strbuf[1], colour >> 16 & 0xff, colour >> 8 & 0xff, colour & 0xff);
+									if (strlen(retbuf) + strlen(tmp) < retsize)
+										strcat(retbuf, tmp);
 								}
 							}
 							break;
@@ -4723,7 +4747,7 @@ cterm_reset(struct cterminal *cterm)
 	/* Set up a shadow palette */
 	if (cio_api.options & CONIO_OPT_EXTENDED_PALETTE) {
 		for (i=0; i < sizeof(dac_default)/sizeof(struct dac_colors); i++)
-			setpalette(i + 16, dac_default[i].red << 8 | dac_default[i].red, dac_default[i].green << 8 | dac_default[i].green, dac_default[i].blue << 8 | dac_default[i].blue);
+			cterm_setpalette(cterm, i + 16, dac_default[i].red << 8 | dac_default[i].red, dac_default[i].green << 8 | dac_default[i].green, dac_default[i].blue << 8 | dac_default[i].blue);
 	}
 
 	/* Reset mouse state */
