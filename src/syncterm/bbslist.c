@@ -1541,7 +1541,7 @@ update_colourbox(uint32_t colour, uint32_t fg_dac, struct vmem_cell *new, size_t
 {
 	char nattr = uifc.hclr | (uifc.bclr << 4);
 	char iattr = uifc.lclr | (uifc.cclr << 4);
-	char str[width];
+	char str[128];
 	struct vmem_cell *ptr = new;
 	size_t i;
 
