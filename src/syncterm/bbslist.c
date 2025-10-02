@@ -1750,21 +1750,19 @@ edit_palette(struct bbslist *item)
 
 	for (size_t i = 0; i < sizeof(opt) / sizeof(opt[0]); i++)
 		opts[i] = opt[i];
-	if (item->palette_size == 0) {
-		switch(palette) {
-			case PRESTEL_PALETTE:
-				min_palette_sz = 8;
-				break;
-			case ATARI_PALETTE_4:
-				min_palette_sz = 4;
-				break;
-			case ATARI_PALETTE_2:
-				min_palette_sz = 2;
-				break;
-			default:
-				min_palette_sz = 16;
-				break;
-		}
+	switch(palette) {
+		case PRESTEL_PALETTE:
+			min_palette_sz = 8;
+			break;
+		case ATARI_PALETTE_4:
+			min_palette_sz = 4;
+			break;
+		case ATARI_PALETTE_2:
+			min_palette_sz = 2;
+			break;
+		default:
+			min_palette_sz = 16;
+			break;
 	}
 	for (;item->palette_size < min_palette_sz; item->palette_size++) {
 		item->palette[item->palette_size] = get_palette_value(palette, item->palette_size);
