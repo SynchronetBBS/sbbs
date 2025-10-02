@@ -1520,7 +1520,7 @@ build_edit_help(struct bbslist *item, int isdefault, char *helpbuf, size_t hbsz)
 }
 
 static uint32_t
-get_palette_value(int palette, size_t entry)
+get_default_palette_value(int palette, size_t entry)
 {
 	uint32_t pe = palettes[palette][entry];
 	return (uint32_t)dac_default[pe].red << 16 | (uint32_t)dac_default[pe].green << 8 | (uint32_t)dac_default[pe].blue;
@@ -1539,7 +1539,7 @@ kbwait(void)
 #define COLORBOX_WIDTH  15
 #define COLORBOX_HEIGHT  5
 static void
-update_colourbox(uint32_t colour, uint32_t fg_dac, struct vmem_cell *new)
+update_colourbox(uint32_t colour, uint32_t fg_colour, struct vmem_cell *new)
 {
 	char nattr = uifc.hclr | (uifc.bclr << 4);
 	char iattr = uifc.lclr | (uifc.cclr << 4);
@@ -1549,9 +1549,9 @@ update_colourbox(uint32_t colour, uint32_t fg_dac, struct vmem_cell *new)
 
 	uint8_t attr = RED | GREEN << 4;
 	if (cio_api.options & CONIO_OPT_PALETTE_SETTING) {
-		setpalette(1, dac_default[fg_dac].red << 8 | dac_default[fg_dac].red
-		    , dac_default[fg_dac].green << 8 | dac_default[fg_dac].green
-		    , dac_default[fg_dac].blue << 8 | dac_default[fg_dac].blue);
+		setpalette(1, (fg_colour >> 16 & 0xff) | (fg_colour >> 8 & 0xff00)
+		    , (fg_colour >> 8 & 0xff) | (fg_colour & 0xff00)
+		    , (fg_colour & 0xff) | (fg_colour << 8 & 0xff00));
 		setpalette(2, (colour >> 16 & 0xff) | (colour >> 8 & 0xff00)
 		    , (colour >> 8 & 0xff) | (colour & 0xff00)
 		    , (colour & 0xff) | (colour << 8 & 0xff00));
@@ -1575,7 +1575,7 @@ update_colourbox(uint32_t colour, uint32_t fg_dac, struct vmem_cell *new)
 }
 
 static uint32_t
-edit_colour(uint32_t colour, uint32_t reset_value)
+edit_colour(uint32_t colour, uint32_t reset_value, uint32_t palette[16])
 {
 	struct vmem_cell old[COLORBOX_WIDTH * COLORBOX_HEIGHT]; // MSVC doesn't allow VLAs
 	struct vmem_cell new[COLORBOX_WIDTH * COLORBOX_HEIGHT]; // MSVC doesn't allow VLAs
@@ -1583,7 +1583,7 @@ edit_colour(uint32_t colour, uint32_t reset_value)
 	int x, y;
 	struct text_info ti;
 	char nattr = uifc.hclr | (uifc.bclr << 4);
-	uint32_t fg_dac = 2;
+	uint32_t fg_attr = 7;
 	int field = 0;
 
 	gettextinfo(&ti);
@@ -1650,7 +1650,7 @@ edit_colour(uint32_t colour, uint32_t reset_value)
 		char nstr[4];
 		int last;
 		uint8_t cval;
-		update_colourbox(colour, fg_dac, new);
+		update_colourbox(colour, palette[fg_attr], new);
 		vmem_puttext(left, top, left + COLORBOX_WIDTH - 1, top + COLORBOX_HEIGHT - 1, new);
 		if (field < 0 || field > 2)
 			field = 0;
@@ -1677,16 +1677,16 @@ edit_colour(uint32_t colour, uint32_t reset_value)
 			case ESC:
 				goto done;
 			case CIO_KEY_UP:
-				if (fg_dac)
-					fg_dac--;
+				if (fg_attr)
+					fg_attr--;
 				else
-					fg_dac = 15;
+					fg_attr = 15;
 				break;
 			case CIO_KEY_DOWN:
-				if (fg_dac == 15)
-					fg_dac = 0;
+				if (fg_attr == 15)
+					fg_attr = 0;
 				else
-					fg_dac++;
+					fg_attr++;
 				break;
 			case '%':
 				if ((reset_value & 0xFF000000) == 0)
@@ -1784,7 +1784,7 @@ edit_palette(struct bbslist *item)
 			break;
 	}
 	for (;item->palette_size < min_palette_sz; item->palette_size++) {
-		item->palette[item->palette_size] = get_palette_value(palette, item->palette_size);
+		item->palette[item->palette_size] = get_default_palette_value(palette, item->palette_size);
 	}
 	for (;;) {
 		opts[0] = 0;
@@ -1807,20 +1807,20 @@ edit_palette(struct bbslist *item)
 		if ((status & MSK_ON) == MSK_EDIT)
 			status &= MSK_OFF;
 		if ((status & MSK_ON) == MSK_INS && item->palette_size < 16) {
-			item->palette[item->palette_size] = get_palette_value(palette, item->palette_size);
+			item->palette[item->palette_size] = get_default_palette_value(palette, item->palette_size);
 			item->palette_size++;
 		}
 		else if ((status & MSK_ON) == MSK_DEL && item->palette_size > 1) {
 			item->palette_size--;
 		}
 		else if (status == (status & MSK_OFF)) {
-			item->palette[status] = edit_colour(item->palette[status], get_palette_value(palette, status));
+			item->palette[status] = edit_colour(item->palette[status], get_default_palette_value(palette, status), item->palette);
 		}
 	}
 	if (item->palette_size == min_palette_sz) {
 		unsigned i;
 		for (i = 0; i < min_palette_sz; i++) {
-			if (item->palette[i] != get_palette_value(palette, i))
+			if (item->palette[i] != get_default_palette_value(palette, i))
 				break;
 		}
 		if (i == min_palette_sz)
