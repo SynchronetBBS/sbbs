@@ -1575,7 +1575,7 @@ update_colourbox(uint32_t colour, uint32_t fg_dac, struct vmem_cell *new)
 }
 
 static uint32_t
-edit_colour(uint32_t colour, int palette, size_t entry)
+edit_colour(uint32_t colour, uint32_t reset_value)
 {
 	struct vmem_cell old[COLORBOX_WIDTH * COLORBOX_HEIGHT]; // MSVC doesn't allow VLAs
 	struct vmem_cell new[COLORBOX_WIDTH * COLORBOX_HEIGHT]; // MSVC doesn't allow VLAs
@@ -1689,7 +1689,8 @@ edit_colour(uint32_t colour, int palette, size_t entry)
 					fg_dac++;
 				break;
 			case '%':
-				colour = get_palette_value(palette, entry);
+				if ((reset_value & 0xFF000000) == 0)
+					colour = reset_value;
 				break;
 			case '\r':
 				nval = strtoul(nstr, NULL, 10);
@@ -1813,7 +1814,7 @@ edit_palette(struct bbslist *item)
 			item->palette_size--;
 		}
 		else if (status == (status & MSK_OFF)) {
-			item->palette[status] = edit_colour(item->palette[status], palette, status);
+			item->palette[status] = edit_colour(item->palette[status], get_palette_value(palette, status));
 		}
 	}
 	if (item->palette_size == min_palette_sz) {
