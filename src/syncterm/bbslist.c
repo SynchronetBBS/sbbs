@@ -1563,7 +1563,7 @@ update_colourbox(uint32_t colour, uint32_t fg_dac, struct vmem_cell *new, size_t
 	for (p = str, ptr = &new[width + 1]; *p; p++, ptr++)
 		set_vmem(ptr, *p, attr, 0);
 
-	snprintf(str, sizeof(str), "%3d %3d %3d", colour >> 16 & 0xff, colour >> 8 & 0xff, colour & 0xff);
+	snprintf(str, sizeof(str), "%-3d %-3d %-3d", colour >> 16 & 0xff, colour >> 8 & 0xff, colour & 0xff);
 	for (i = 0, ptr = &new[width * 2 + 1]; str[i]; i++, ptr++)
 		set_vmem(ptr, str[i], i % 4 == 3 ? nattr : iattr, 0);
 
