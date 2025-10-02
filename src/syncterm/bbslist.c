@@ -1575,7 +1575,7 @@ update_colourbox(uint32_t colour, uint32_t fg_dac, struct vmem_cell *new)
 }
 
 static uint32_t
-edit_colour(uint32_t colour)
+edit_colour(uint32_t colour, int palette, size_t entry)
 {
 	struct vmem_cell old[COLORBOX_WIDTH * COLORBOX_HEIGHT]; // MSVC doesn't allow VLAs
 	struct vmem_cell new[COLORBOX_WIDTH * COLORBOX_HEIGHT]; // MSVC doesn't allow VLAs
@@ -1641,7 +1641,8 @@ edit_colour(uint32_t colour)
 	uifc.helpbuf = "`Edit Palette Entry`\n\n"
 		       "~TAB/Backtab~ switches between Red, Green, and Blue.\n"
 		       "~CR~          saves the current colour component.\n"
-		       "~UP/DOWN~     changes the example foreground colour\n\n"
+		       "~UP/DOWN~     changes the example foreground colour\n"
+		       "~%~           resets to default value\n"
 		       "Each value should be a number between 0 and 255, indicating the\n"
 		       "relative brightness of the named colour channel\n"
 		       "(Red, Green, and Blue).";
@@ -1670,7 +1671,7 @@ edit_colour(uint32_t colour)
 		uifc.helpstart = left + 4;
 		uifc.helpend = left + 6;
 		uifc.buttony = top;
-		uifc.getstrxy(left + 2 + field * 4, top + 2, 3, nstr, 3, K_NUMBER | K_EDIT | K_NOCRLF | K_DEUCEEXIT | K_TABEXIT, &last);
+		uifc.getstrxy(left + 2 + field * 4, top + 2, 3, nstr, 3, K_SCANNING | K_NUMBER | K_EDIT | K_NOCRLF | K_DEUCEEXIT | K_TABEXIT, &last);
 		switch (last) {
 			uint32_t nval;
 			case ESC:
@@ -1686,6 +1687,9 @@ edit_colour(uint32_t colour)
 					fg_dac = 0;
 				else
 					fg_dac++;
+				break;
+			case '%':
+				colour = get_palette_value(palette, entry);
 				break;
 			case '\r':
 				nval = strtoul(nstr, NULL, 10);
@@ -1809,7 +1813,7 @@ edit_palette(struct bbslist *item)
 			item->palette_size--;
 		}
 		else if (status == (status & MSK_OFF)) {
-			item->palette[status] = edit_colour(item->palette[status]);
+			item->palette[status] = edit_colour(item->palette[status], palette, status);
 		}
 	}
 	if (item->palette_size == min_palette_sz) {
