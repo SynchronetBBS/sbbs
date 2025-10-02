@@ -3331,7 +3331,7 @@ iniGetFastParsedSectionList(ini_fp_list_t *fp, const char* prefix, size_t *sz)
 		prefixLen = strlen(prefix);
 	i = iniGetFastPrefixStart(fp, prefix);
 	if (i != SIZE_MAX) {
-		for (i = iniGetFastPrefixStart(fp, prefix); i <= fp->lastUncut; i++) {
+		for (i = i; i <= fp->lastUncut; i++) {
 			if (fp->sections[i].name.str == NULL)
 				continue;
 			if (fp->sections[i].cut)
@@ -3368,8 +3368,11 @@ iniGetFastParsedSectionCmp(const void *keyPtr, const void *entPtr)
 		return -1;
 	entShorter = fp->name.len < name->len;
 	cmplen = entShorter ? fp->name.len : name->len;
-	if (cmplen)
+	if (cmplen) {
+		// The assumption here is that if fp->name.str == NULL, cmplen will be zero
+		// coverity[FORWARD_NULL:SUPPRESS]
 		cmp = strnicmp(name->str, fp->name.str, cmplen);
+	}
 	else
 		cmp = 0;
 	if (cmp == 0) {
