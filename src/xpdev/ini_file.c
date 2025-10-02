@@ -3331,7 +3331,7 @@ iniGetFastParsedSectionList(ini_fp_list_t *fp, const char* prefix, size_t *sz)
 		prefixLen = strlen(prefix);
 	i = iniGetFastPrefixStart(fp, prefix);
 	if (i != SIZE_MAX) {
-		for (i = i; i <= fp->lastUncut; i++) {
+		for (; i <= fp->lastUncut; i++) {
 			if (fp->sections[i].name.str == NULL)
 				continue;
 			if (fp->sections[i].cut)
