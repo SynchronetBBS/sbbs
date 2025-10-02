@@ -253,8 +253,8 @@ ifdef win
  NTDDI ?= 0x06010000
 else
  CFLAGS +=	-DPREFER_POLL
- machine_uname	:=	$(shell if uname -m | egrep -v "(i[3456789]*|x)86" > /dev/null; then uname -m | tr "[A-Z]" "[a-z]" | tr " " "_" ; fi)
- machine_uname	:=	$(shell if uname -m | egrep "64" > /dev/null; then uname -m | tr "[A-Z]" "[a-z]" | tr " " "_" ; else echo $(machine_uname) ; fi)
+ machine_uname	:=	$(shell if uname -m | grep -Ev "(i[3456789]*|x)86" > /dev/null; then uname -m | tr "[A-Z]" "[a-z]" | tr " " "_" ; fi)
+ machine_uname	:=	$(shell if uname -m | grep "64" > /dev/null; then uname -m | tr "[A-Z]" "[a-z]" | tr " " "_" ; else echo $(machine_uname) ; fi)
 endif
 
 ifeq ($(os),darwin)
