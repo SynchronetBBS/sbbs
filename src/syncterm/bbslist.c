@@ -1651,6 +1651,8 @@ edit_colour(uint32_t colour)
 		uint8_t cval;
 		update_colourbox(colour, fg_dac, new);
 		vmem_puttext(left, top, left + COLORBOX_WIDTH - 1, top + COLORBOX_HEIGHT - 1, new);
+		if (field < 0 || field > 2)
+			field = 0;
 		switch (field) {
 			case 0:
 				cval = colour >> 16 & 0xff;
