@@ -1731,9 +1731,9 @@ edit_colour(uint32_t colour, uint32_t reset_value, uint32_t palette[16])
 
 done:
 	setpalette(1,
-		   dac_default[1].red << 8 | dac_default[1].red,
-		   dac_default[1].green << 8 | dac_default[1].green,
-		   dac_default[1].blue << 8 | dac_default[1].blue);
+		   dac_default[4].red << 8 | dac_default[1].red,
+		   dac_default[4].green << 8 | dac_default[1].green,
+		   dac_default[4].blue << 8 | dac_default[1].blue);
 	setpalette(2,
 		   dac_default[2].red << 8 | dac_default[2].red,
 		   dac_default[2].green << 8 | dac_default[2].green,
