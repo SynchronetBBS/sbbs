@@ -306,7 +306,7 @@ endif
 ifeq ($(shell if [ -f /usr/include/inttypes.h ] ; then echo YES ; fi),YES)
  CFLAGS	+=	-DHAS_INTTYPES_H
 else
- ifeq ($(shell if [ -f /boot/develop/headers/posix/inttypes.h ] ; then echo YES ; fi),YES)
+ ifeq ($(shell if [ -f /boot/system/develop/headers/posix/inttypes.h ] ; then echo YES ; fi),YES)
   CFLAGS	+=	-DHAS_INTTYPES_H
  else
   ifeq ($(os),darwin)	# Don't go digging for stuff on Mac, nobody knows what's up.
