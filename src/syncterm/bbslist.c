@@ -1602,29 +1602,33 @@ edit_colour(uint32_t colour)
 	(tptr++)->ch = uifc.chars->input_top_left;
 	(bptr++)->ch = uifc.chars->input_bottom_left;
 	for (size_t i = 0; i < COLORBOX_WIDTH - 2; i++) {
-		switch (i) {
-			case 0:
-				(tptr++)->ch = uifc.chars->button_left;
-				break;
-			case 1:
-				set_vmem(tptr++, uifc.chars->close_char, uifc.lclr | (uifc.bclr << 4), 0);
-				break;
-			case 2:
-				(tptr++)->ch = uifc.chars->button_right;
-				break;
-			case 3:
-				(tptr++)->ch = uifc.chars->button_left;
-				break;
-			case 4:
-				set_vmem(tptr++, uifc.chars->help_char, uifc.lclr | (uifc.bclr << 4), 0);
-				break;
-			case 5:
-				(tptr++)->ch = uifc.chars->button_right;
-				break;
-			default:
-				(tptr++)->ch = uifc.chars->input_top;
-				break;
+		if (uifc.mode & UIFC_MOUSE) {
+			switch (i) {
+				case 0:
+					(tptr++)->ch = uifc.chars->button_left;
+					break;
+				case 1:
+					set_vmem(tptr++, uifc.chars->close_char, uifc.lclr | (uifc.bclr << 4), 0);
+					break;
+				case 2:
+					(tptr++)->ch = uifc.chars->button_right;
+					break;
+				case 3:
+					(tptr++)->ch = uifc.chars->button_left;
+					break;
+				case 4:
+					set_vmem(tptr++, uifc.chars->help_char, uifc.lclr | (uifc.bclr << 4), 0);
+					break;
+				case 5:
+					(tptr++)->ch = uifc.chars->button_right;
+					break;
+				default:
+					(tptr++)->ch = uifc.chars->input_top;
+					break;
+			}
 		}
+		else
+			(tptr++)->ch = uifc.chars->input_top;
 		(bptr++)->ch = uifc.chars->input_bottom;
 	}
 	tptr->ch = uifc.chars->input_top_right;
