@@ -1580,12 +1580,10 @@ int bitmap_setfont(int font, int force, int font_num)
 			assert_rwlock_wrlock(&vstatlock);
 			new=malloc(ti.screenwidth*ti.screenheight*sizeof(*new));
 			if(!new) {
-				// coverity[atomicity:SUPPRESS]
 				free(old);
 				assert_rwlock_unlock(&vstatlock);
 				return 0;
 			}
-			// coverity[atomicity:SUPPRESS]
 			pold=old;
 			pnew=new;
 			for(row=0; row<ti.screenheight; row++) {
