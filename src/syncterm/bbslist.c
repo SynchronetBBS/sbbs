@@ -1536,12 +1536,14 @@ kbwait(void)
 	}
 }
 
+#define COLORBOX_WIDTH  15
+#define COLORBOX_HEIGHT  5
 static void
-update_colourbox(uint32_t colour, uint32_t fg_dac, struct vmem_cell *new, size_t width, size_t height)
+update_colourbox(uint32_t colour, uint32_t fg_dac, struct vmem_cell *new)
 {
 	char nattr = uifc.hclr | (uifc.bclr << 4);
 	char iattr = uifc.lclr | (uifc.cclr << 4);
-	char str[128];
+	char str[COLORBOX_WIDTH + 1];
 	struct vmem_cell *ptr = new;
 	size_t i;
 
@@ -1560,25 +1562,23 @@ update_colourbox(uint32_t colour, uint32_t fg_dac, struct vmem_cell *new, size_t
 		snprintf(str, sizeof(str), "  #%06" PRIx32 "   ", colour);
 	}
 	const char *p;
-	for (p = str, ptr = &new[width + 1]; *p; p++, ptr++)
+	for (p = str, ptr = &new[COLORBOX_WIDTH * 1 + 2]; *p; p++, ptr++)
 		set_vmem(ptr, *p, attr, 0);
 
 	snprintf(str, sizeof(str), "%-3d %-3d %-3d", colour >> 16 & 0xff, colour >> 8 & 0xff, colour & 0xff);
-	for (i = 0, ptr = &new[width * 2 + 1]; str[i]; i++, ptr++)
+	for (i = 0, ptr = &new[COLORBOX_WIDTH * 2 + 2]; str[i]; i++, ptr++)
 		set_vmem(ptr, str[i], i % 4 == 3 ? nattr : iattr, 0);
 
 	const char *bline = "Red Grn Blu";
-	for (p = bline, ptr = &new[width * (height - 2) + 1]; *p; p++, ptr++)
+	for (p = bline, ptr = &new[COLORBOX_WIDTH * (COLORBOX_HEIGHT - 2) + 2]; *p; p++, ptr++)
 		ptr->ch = *p;
 }
 
 static uint32_t
 edit_colour(uint32_t colour)
 {
-	const size_t width = 13;
-	const size_t height = 5;
-	struct vmem_cell old[13 * 5]; // MSVC doesn't allow VLAs
-	struct vmem_cell new[13 * 5]; // MSVC doesn't allow VLAs
+	struct vmem_cell old[COLORBOX_WIDTH * COLORBOX_HEIGHT]; // MSVC doesn't allow VLAs
+	struct vmem_cell new[COLORBOX_WIDTH * COLORBOX_HEIGHT]; // MSVC doesn't allow VLAs
 	int left, top;
 	int x, y;
 	struct text_info ti;
@@ -1587,29 +1587,51 @@ edit_colour(uint32_t colour)
 	int field = 0;
 
 	gettextinfo(&ti);
-	left = (ti.screenwidth - width) / 2;
-	top = (ti.screenheight - height) / 2;
-	vmem_gettext(left, top, left + width - 1, top + height - 1, old);
+	left = (ti.screenwidth - COLORBOX_WIDTH) / 2;
+	top = (ti.screenheight - COLORBOX_HEIGHT) / 2;
+	vmem_gettext(left, top, left + COLORBOX_WIDTH - 1, top + COLORBOX_HEIGHT - 1, old);
 
-	for (y = 0; y < height; y++) {
-		for (x = 0; x < width; x++) {
-			set_vmem(&new[y * width + x], 0, nattr, 0);
+	for (y = 0; y < COLORBOX_HEIGHT; y++) {
+		for (x = 0; x < COLORBOX_WIDTH; x++) {
+			set_vmem(&new[y * COLORBOX_WIDTH + x], 0, nattr, 0);
 		}
 	}
 
 	struct vmem_cell *tptr = new;
-	struct vmem_cell *bptr = &new[(height - 1) * width];
+	struct vmem_cell *bptr = &new[(COLORBOX_HEIGHT - 1) * COLORBOX_WIDTH];
 	(tptr++)->ch = uifc.chars->input_top_left;
 	(bptr++)->ch = uifc.chars->input_bottom_left;
-	for (size_t i = 0; i < width - 2; i++) {
-		(tptr++)->ch = uifc.chars->input_top;
+	for (size_t i = 0; i < COLORBOX_WIDTH - 2; i++) {
+		switch (i) {
+			case 0:
+				(tptr++)->ch = uifc.chars->button_left;
+				break;
+			case 1:
+				set_vmem(tptr++, uifc.chars->close_char, uifc.lclr | (uifc.bclr << 4), 0);
+				break;
+			case 2:
+				(tptr++)->ch = uifc.chars->button_right;
+				break;
+			case 3:
+				(tptr++)->ch = uifc.chars->button_left;
+				break;
+			case 4:
+				set_vmem(tptr++, uifc.chars->help_char, uifc.lclr | (uifc.bclr << 4), 0);
+				break;
+			case 5:
+				(tptr++)->ch = uifc.chars->button_right;
+				break;
+			default:
+				(tptr++)->ch = uifc.chars->input_top;
+				break;
+		}
 		(bptr++)->ch = uifc.chars->input_bottom;
 	}
 	tptr->ch = uifc.chars->input_top_right;
 	bptr->ch = uifc.chars->input_bottom_right;
-	for (size_t i = 1; i < (height - 1); i++) {
-		new[width * i].ch = uifc.chars->input_left;
-		new[width * (i + 1) - 1].ch = uifc.chars->input_right;
+	for (size_t i = 1; i < (COLORBOX_HEIGHT - 1); i++) {
+		new[COLORBOX_WIDTH * i].ch = uifc.chars->input_left;
+		new[COLORBOX_WIDTH * (i + 1) - 1].ch = uifc.chars->input_right;
 	}
 
 	uifc.helpbuf = "`Edit Palette Entry`\n\n"
@@ -1620,8 +1642,8 @@ edit_colour(uint32_t colour)
 		char nstr[4];
 		int last;
 		uint8_t cval;
-		update_colourbox(colour, fg_dac, new, width, height);
-		vmem_puttext(left, top, left + width - 1, top + height - 1, new);
+		update_colourbox(colour, fg_dac, new);
+		vmem_puttext(left, top, left + COLORBOX_WIDTH - 1, top + COLORBOX_HEIGHT - 1, new);
 		switch (field) {
 			case 0:
 				cval = colour >> 16 & 0xff;
@@ -1634,7 +1656,12 @@ edit_colour(uint32_t colour)
 				break;
 		}
 		snprintf(nstr, sizeof(nstr), "%d", cval);
-		uifc.getstrxy(left + 1 + field * 4, top + 2, 3, nstr, 3, K_NUMBER | K_EDIT | K_NOCRLF | K_DEUCEEXIT | K_TABEXIT, &last);
+		uifc.exitstart = left + 1;
+		uifc.exitend = left + 3;
+		uifc.helpstart = left + 4;
+		uifc.helpend = left + 6;
+		uifc.buttony = top;
+		uifc.getstrxy(left + 2 + field * 4, top + 2, 3, nstr, 3, K_NUMBER | K_EDIT | K_NOCRLF | K_DEUCEEXIT | K_TABEXIT, &last);
 		switch (last) {
 			uint32_t nval;
 			case ESC:
@@ -1679,6 +1706,9 @@ edit_colour(uint32_t colour)
 				else
 					field = 2;
 				break;
+			default:
+				fprintf(stderr, "Char: %d\n", last);
+				break;
 		}
 
 		if (last == ESC)
@@ -1686,7 +1716,7 @@ edit_colour(uint32_t colour)
 	}
 
 done:
-	vmem_puttext(left, top, left + width - 1, top + height - 1, old);
+	vmem_puttext(left, top, left + COLORBOX_WIDTH - 1, top + COLORBOX_HEIGHT - 1, old);
 	return colour;
 }
 
