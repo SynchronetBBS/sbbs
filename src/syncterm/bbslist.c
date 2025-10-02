@@ -1797,11 +1797,11 @@ edit_palette(struct bbslist *item)
 		int status = uifc.list(mode, 0, 0, 0, &dflt, &bar, "Edit Palette Entries", opts);
 		if (status == -1)
 			break;
-		if (status & MSK_INS) {
+		if (status & MSK_INS && item->palette_size < 16) {
 			item->palette[item->palette_size] = get_palette_value(palette, item->palette_size);
 			item->palette_size++;
 		}
-		else if (status & MSK_DEL) {
+		else if (status & MSK_DEL && item->palette_size > 1) {
 			item->palette_size--;
 		}
 		else if (status == (status & MSK_OFF)) {
