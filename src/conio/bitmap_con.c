@@ -1566,6 +1566,8 @@ int bitmap_setfont(int font, int force, int font_num)
 		ow=ti.screenwidth;
 		oh=ti.screenheight;
 
+		// Tell coverity this assignment is not protected by the lock
+		// coverity[def:SUPPRESS]
 		old=malloc(ow*oh*sizeof(*old));
 		if(old) {
 			/*
