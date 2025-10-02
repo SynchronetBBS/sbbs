@@ -1723,6 +1723,14 @@ edit_colour(uint32_t colour)
 	}
 
 done:
+	setpalette(1,
+		   dac_default[1].red << 8 | dac_default[1].red,
+		   dac_default[1].green << 8 | dac_default[1].green,
+		   dac_default[1].blue << 8 | dac_default[1].blue);
+	setpalette(2,
+		   dac_default[2].red << 8 | dac_default[2].red,
+		   dac_default[2].green << 8 | dac_default[2].green,
+		   dac_default[2].blue << 8 | dac_default[2].blue);
 	vmem_puttext(left, top, left + COLORBOX_WIDTH - 1, top + COLORBOX_HEIGHT - 1, old);
 	return colour;
 }
