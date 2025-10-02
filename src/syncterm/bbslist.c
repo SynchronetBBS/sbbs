@@ -1637,7 +1637,9 @@ edit_colour(uint32_t colour)
 	uifc.helpbuf = "`Edit Palette Entry`\n\n"
 		       "~TAB/Backtab~ switches between Red, Green, and Blue.\n"
 		       "~CR~          saves the current colour component.\n"
-		       "~UP/DOWN~     changes the example foreground colour\n";
+		       "~UP/DOWN~     changes the example foreground colour\n\b"
+		       "Each value should be a number between 0 and 255, indicating the relative\n"
+		       "brightness of the named colour channel (Red, Green, and Blue).";
 	for (;;) {
 		char nstr[4];
 		int last;
