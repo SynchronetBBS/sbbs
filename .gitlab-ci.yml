@@ -111,7 +111,9 @@ include:
   stage: test
   extends: .rules
   script:
-    - make -f install/install-sbbs.mk NOCAP=1
+    - mkdir sbbs
+    - cd sbbs
+    - make -f ../install/install-sbbs.mk NOCAP=1 REPODIR=..
   needs: []
 
 "windows-x86 [sbbs]":
