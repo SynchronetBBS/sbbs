@@ -5,6 +5,10 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.47     2025-10-03   Mouse click hotspots in the key help lines. Some of the
+                      click hotspots have an issue that causes the chooser to
+                      exit out though - the full sequence for the key for those
+                      clicks (ESC + ...) might not be captured.
 1.46     2025-08-26   Replaced arrow keys in the key help line since some
                       terminals can't display them.
 1.45     2025-06-18   Added support for sorting, with a user configuration

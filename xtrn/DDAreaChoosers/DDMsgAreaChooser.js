@@ -107,6 +107,11 @@
  * 2025-08-26 Eric Oulashin   Version 1.46
  *                            Replaced arrow keys in the key help line since some terminals
  *                            can't display them.
+ * 2025-10-03 Eric Oulashin   Version 1.47
+ *                            Mouse click hotspots in the key help lines. Some of the
+ *                            click hotspots have an issue that causes the chooser to
+ *                            exit out though - the full sequence for the key for those
+ *                            clicks (ESC + ...) might not be captured.
  */
 
 /* Command-line arguments:
@@ -146,8 +151,8 @@ if (system.version_num < 31400)
 }
 
 // Version & date variables
-var DD_MSG_AREA_CHOOSER_VERSION = "1.46";
-var DD_MSG_AREA_CHOOSER_VER_DATE = "2025-08-26";
+var DD_MSG_AREA_CHOOSER_VERSION = "1.47";
+var DD_MSG_AREA_CHOOSER_VER_DATE = "2025-10-03";
 
 // Keyboard input key codes
 var CTRL_H = "\x08";
@@ -385,68 +390,69 @@ function DDMsgAreaChooser()
 		this.subBoardListHdrPrintfStr += " %-19s";
 	// Lightbar mode key help line
 	this.lightbarKeyHelpText = "\x01n" + this.colors.lightbarHelpLineHotkey
-	              + this.colors.lightbarHelpLineBkg + "Up"
+	              + this.colors.lightbarHelpLineBkg + "@CLEAR_HOT@@`Up`" + KEY_UP + "@"
 	              + "\x01n" + this.colors.lightbarHelpLineGeneral
 	              + this.colors.lightbarHelpLineBkg + ", "
 	              + "\x01n" + this.colors.lightbarHelpLineHotkey
-	              + this.colors.lightbarHelpLineBkg + "Dn"
+	              + this.colors.lightbarHelpLineBkg + "@`Dn`\\n@"
 	              + "\x01n" + this.colors.lightbarHelpLineGeneral
 	              + this.colors.lightbarHelpLineBkg + ", "
 	              + "\x01n" + this.colors.lightbarHelpLineHotkey
-	              + this.colors.lightbarHelpLineBkg + "PgUp"
+	              + this.colors.lightbarHelpLineBkg + "@`PgUp`" + "\x1b[V" + "@"
 	              + "\x01n" + this.colors.lightbarHelpLineGeneral
 	              + this.colors.lightbarHelpLineBkg + "/"
 	              + "\x01n" + this.colors.lightbarHelpLineHotkey
-	              + this.colors.lightbarHelpLineBkg + "Dn"
+	              + this.colors.lightbarHelpLineBkg + "@`Dn`" + KEY_PAGEDN + "@"
 	              + "\x01n" + this.colors.lightbarHelpLineGeneral
 	              + this.colors.lightbarHelpLineBkg + ", "
 	              + "\x01n" + this.colors.lightbarHelpLineHotkey
-	              + this.colors.lightbarHelpLineBkg + "HOME"
+	              + this.colors.lightbarHelpLineBkg + "@`HOME`" + KEY_HOME + "@"
 	              + "\x01n" + this.colors.lightbarHelpLineGeneral
 	              + this.colors.lightbarHelpLineBkg + ", "
 	              + "\x01n" + this.colors.lightbarHelpLineHotkey
-	              + this.colors.lightbarHelpLineBkg + "END"
+	              + this.colors.lightbarHelpLineBkg + "@`END`" + KEY_END + "@"
 	              + "\x01n" + this.colors.lightbarHelpLineGeneral
 	              + this.colors.lightbarHelpLineBkg + ", "
 	              + "\x01n" + this.colors.lightbarHelpLineHotkey
-	              + this.colors.lightbarHelpLineBkg + "F"
+	              + this.colors.lightbarHelpLineBkg + "@`F`F@"
 	              + "\x01n" + this.colors.lightbarHelpLineParen
 	              + this.colors.lightbarHelpLineBkg + ")"
 	              + "\x01n" + this.colors.lightbarHelpLineGeneral
 	              + this.colors.lightbarHelpLineBkg + "irst pg, "
 	              + "\x01n" + this.colors.lightbarHelpLineHotkey
-	              + this.colors.lightbarHelpLineBkg + "L"
+	              + this.colors.lightbarHelpLineBkg + "@`L`L@"
 	              + "\x01n" + this.colors.lightbarHelpLineParen
 	              + this.colors.lightbarHelpLineBkg + ")"
 	              + "\x01n" + this.colors.lightbarHelpLineGeneral
 	              + this.colors.lightbarHelpLineBkg + "ast pg, "
 	              + "\x01n" + this.colors.lightbarHelpLineHotkey
-	              + this.colors.lightbarHelpLineBkg + "#"
+	              + this.colors.lightbarHelpLineBkg + "@`#`#@"
 	              + "\x01n" + this.colors.lightbarHelpLineGeneral
 	              + this.colors.lightbarHelpLineBkg + ", "
 	              + "\x01n" + this.colors.lightbarHelpLineHotkey
-	              + this.colors.lightbarHelpLineBkg + "CTRL-F"
+	              + this.colors.lightbarHelpLineBkg + "@`CTRL-F`" + CTRL_F + "@"
 	              + "\x01n" + this.colors.lightbarHelpLineGeneral
 	              + this.colors.lightbarHelpLineBkg + ", "
 	              + "\x01n" + this.colors.lightbarHelpLineHotkey
-	              + this.colors.lightbarHelpLineBkg + "/"
+	              + this.colors.lightbarHelpLineBkg + "@`/`/@"
 	              + "\x01n" + this.colors.lightbarHelpLineGeneral
 	              + this.colors.lightbarHelpLineBkg + ", "
 	              + "\x01n" + this.colors.lightbarHelpLineHotkey
-	              + this.colors.lightbarHelpLineBkg + "N"
+	              + this.colors.lightbarHelpLineBkg + "@`N`N@"
 	              + "\x01n" + this.colors.lightbarHelpLineGeneral
 	              + this.colors.lightbarHelpLineBkg + ", "
 	              + "\x01n" + this.colors.lightbarHelpLineHotkey
-				  + this.colors.lightbarHelpLineBkg + "Q"
+				  + this.colors.lightbarHelpLineBkg + "@`Q`Q@"
 				  + "\x01n" + this.colors.lightbarHelpLineParen
 				  + this.colors.lightbarHelpLineBkg + ")"
 				  + "\x01n" + this.colors.lightbarHelpLineGeneral
 				  + this.colors.lightbarHelpLineBkg + "uit, "
 				  + "\x01n" + this.colors.lightbarHelpLineHotkey
-				  + this.colors.lightbarHelpLineBkg + "?";
+				  + this.colors.lightbarHelpLineBkg + "@`?`?@";
 	// Pad the lightbar key help text on either side to center it on the screen
 	// (but leave off the last character to avoid screen drawing issues)
-	var helpTextLen = console.strlen(this.lightbarKeyHelpText);
+	//var helpTextLen = console.strlen(this.lightbarKeyHelpText);
+	var helpTextLen = 74;
 	var helpTextStartCol = (console.screen_columns/2) - (helpTextLen/2);
 	this.lightbarKeyHelpText = "\x01n" + this.colors.lightbarHelpLineBkg
 	                         + format("%" + +(helpTextStartCol) + "s", "")
@@ -471,7 +477,8 @@ function DDMsgAreaChooser()
 function DDMsgAreaChooser_writeKeyHelpLine()
 {
 	console.gotoxy(1, console.screen_rows);
-	console.print(this.lightbarKeyHelpText);
+	//console.print(this.lightbarKeyHelpText);
+	console.putmsg(this.lightbarKeyHelpText);
 }
 
 // For the DDMsgAreaChooser class: Outputs the header line to appear above
@@ -1197,6 +1204,10 @@ function DDMsgAreaChooser_CreateLightbarMenu(pMsgAreaHeirarchyObj, pHeirarchyLev
 	// Create the menu object
 	var fileDirMenuHeight = console.screen_rows - pMenuTopRow;
 	var msgAreaMenu = new DDLightbarMenu(1, pMenuTopRow, console.screen_columns, fileDirMenuHeight);
+	/*
+	if (typeof(console.mouse_mode) === "number")
+		msgAreaMenu.mouseEnabled = !Boolean(console.mouse_mode & MOUSE_MODE_OFF);
+	*/
 	// Add additional keypresses for quitting the menu's input loop so we can
 	// respond to these keys
 	msgAreaMenu.AddAdditionalQuitKeys("qQ?/" + CTRL_F + CTRL_U);
