@@ -13,7 +13,7 @@ endif
 vpath %.c ../comio ../sbbs3
 
 
-$(SEXPOTS): git_branch.h git_hash.h $(OBJS)
+$(SEXPOTS): $(XPDEV_DEPS) git_branch.h git_hash.h $(OBJS)
 	@echo Linking $@
 	${QUIET}$(CC) $(LDFLAGS) $(MT_LDFLAGS) -o $@ $(OBJS) $(XPDEV-MT_LIBS)
 
