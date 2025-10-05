@@ -3446,10 +3446,9 @@ iniFastParsedSectionListFree(ini_lv_string_t **list)
 	free(list);
 }
 
-#ifdef WITH_CRYPTLIB
-#ifndef WITHOUT_CRYPTLIB
 const char *encryptedHeaderPrefix = "; Encrypted INI File, Algorithm: ";
 
+#if (defined(WITH_CRYPTLIB) && !defined(WITHOUT_CRYPTLIB))
 const char *
 iniCryptGetAlgoName(enum iniCryptAlgo a)
 {
@@ -3838,8 +3837,47 @@ done:
 	free(buffer);
 	return line == strListCount(list);
 }
-#endif // WITHOUT_CRYPTLIB
-#endif // WITH_CRYPTLIB
+#else // WITH_CRYPTLIB && !WITHOUT_CRYPTLIB
+const char *
+iniCryptGetAlgoName(enum iniCryptAlgo a)
+{
+	switch(a) {
+		case INI_CRYPT_ALGO_NONE:
+			return "NONE";
+	}
+	return NULL;
+}
+
+enum iniCryptAlgo
+iniCryptGetAlgoFromName(const char *n)
+{
+	return INI_CRYPT_ALGO_NONE;
+}
+
+str_list_t
+iniReadEncryptedFile(FILE* fp, bool(*get_key)(void *cb_data, char *keybuf, size_t *sz), enum iniCryptAlgo *algoPtr, int *ks, char *saltBuf, size_t *saltsz, void *cbdata)
+{
+	char str[INI_MAX_LINE_LEN + 1];
+
+	if (fp == NULL)
+		return NULL;
+
+	rewind(fp);
+
+	if (fgets(str, sizeof(str), fp) == NULL)
+		return NULL;
+
+	if (strncmp(str, encryptedHeaderPrefix, sizeof(encryptedHeaderPrefix) - 1)) {
+		return iniReadFile(fp);
+	}
+	return NULL;
+}
+
+bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo algo, int keySize, const char *key, char *salt)
+{
+	return iniWriteFile(fp, list);
+}
+#endif // WITH_CRYPTLIB && !WITHOUT_CRYPTLIB
 
 #ifdef INI_FILE_TEST
 void main(int argc, char** argv)

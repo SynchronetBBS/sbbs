@@ -3515,6 +3515,7 @@ edit_web_lists(void)
 	return changed;
 }
 
+#ifndef WITHOUT_CRYPTLIB
 static void
 changeAlgo(const char *listpath, enum iniCryptAlgo algo, int keySize)
 {
@@ -3590,6 +3591,7 @@ encryption_menu(const char *listpath)
 			break;
 	}
 }
+#endif
 
 /*
  * Displays the BBS list and allows edits to user BBS list
@@ -3619,7 +3621,9 @@ show_bbslist(char *current, int connected)
 		"Program Settings",
 		"File Locations",
 		"Build Options",
+#ifndef WITHOUT_CRYPTLIB
 		"List Encryption",
+#endif
 		NULL
 	};
 	char *connected_settings_menu[] = {
@@ -4550,9 +4554,11 @@ show_bbslist(char *current, int connected)
 						             NULL,
 						             NULL);
 						break;
+#ifndef WITHOUT_CRYPTLIB
 					case 7:	// Encryption!
 						encryption_menu(settings.list_path);
 						break;
+#endif
 				}
 			}
 		}
