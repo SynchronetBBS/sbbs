@@ -519,18 +519,6 @@ get_rate_num(int rate)
 }
 
 static int
-get_next_rate(int curr_rate)
-{
-	int i;
-
-	if (curr_rate == 0)
-		i = 0;
-	else
-		i = get_rate_num(curr_rate) + 1;
-	return rates[i];
-}
-
-static int
 is_sorting(int chk)
 {
 	int i;
