@@ -3783,7 +3783,7 @@ bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo al
 		status = cryptGetAttribute(ctx, CRYPT_CTXINFO_KEYSIZE, &i);
 		if (cryptStatusError(status))
 			return false;
-		keySize = i;
+		keySize = i * 8;
 	}
 	status = cryptSetAttributeString(ctx, CRYPT_CTXINFO_KEYING_SALT, salt, strlen(salt));
 	if (cryptStatusError(status))

@@ -871,8 +871,9 @@ prompt_password(void *cb_data, char *keybuf, size_t *sz)
 static str_list_t
 iniReadBBSList(FILE *fp)
 {
-	str_list_t inifile = iniReadEncryptedFile(fp, prompt_password, NULL, NULL, NULL, NULL, NULL);
-	if (inifile == NULL || (list_algo != INI_CRYPT_ALGO_NONE && !iniGetBool(inifile, NULL, "DecryptionCheck", false))) {
+	enum iniCryptAlgo algo = INI_CRYPT_ALGO_NONE;
+	str_list_t inifile = iniReadEncryptedFile(fp, prompt_password, &algo, NULL, NULL, NULL, NULL);
+	if (inifile == NULL || (algo != INI_CRYPT_ALGO_NONE && !iniGetBool(inifile, NULL, "DecryptionCheck", false))) {
 		uifc.msg("Failed to decrypt BBS list, exiting");
 		exit(EXIT_FAILURE);
 	}
@@ -3521,13 +3522,13 @@ edit_web_lists(void)
 
 #if (defined(WITH_CRYPTLIB) && !defined(WITHOUT_CRYPTLIB))
 static void
-changeAlgo(const char *listpath, enum iniCryptAlgo algo, int keySize)
+changeAlgo(const char *listpath, enum iniCryptAlgo algo, int keySize, const char *newpass)
 {
 	FILE *listfile;
 
 	if (safe_mode)
 		return;
-	if (!list_password[0]) {
+	if (newpass == NULL && !list_password[0]) {
 		if (!prompt_password(NULL, NULL, NULL))
 			return;
 	}
@@ -3537,7 +3538,11 @@ changeAlgo(const char *listpath, enum iniCryptAlgo algo, int keySize)
 			iniRemoveKey(&inifile, NULL, "DecryptionCheck");
 		else
 			iniSetBool(&inifile, NULL, "DecryptionCheck", true, &ini_style);
+		if (newpass)
+			strlcpy(list_password, newpass, sizeof(list_password));
 		iniWriteEncryptedFile(listfile, inifile, algo, keySize, list_password, NULL);
+		list_algo = algo;
+		list_keysize = keySize;
 		fclose(listfile);
 		iniFreeStringList(inifile);
 	}
@@ -3570,28 +3575,29 @@ encryption_menu(const char *listpath)
 	int val = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &dflt, &bar, title, encryption);
 	switch(val) {
 		case 0:
-			if (uifc.input(WIN_SAV | WIN_MID, 0, 0, "New Password", newpass, sizeof(newpass), K_PASSWORD) > 0) {
-				strcpy(list_password, newpass);
-				changeAlgo(listpath, list_algo, list_keysize);
-			}
+			if (uifc.input(WIN_SAV | WIN_MID, 0, 0, "New Password", newpass, sizeof(newpass), K_PASSWORD) > 0)
+				changeAlgo(listpath, list_algo, list_keysize, newpass);
 			break;
 		case 1:
-			changeAlgo(listpath, INI_CRYPT_ALGO_AES, 128);
+			changeAlgo(listpath, INI_CRYPT_ALGO_AES, 128, NULL);
 			break;
 		case 2:
-			changeAlgo(listpath, INI_CRYPT_ALGO_AES, 256);
+			changeAlgo(listpath, INI_CRYPT_ALGO_AES, 256, NULL);
 			break;
 		case 3:
-			changeAlgo(listpath, INI_CRYPT_ALGO_CHACHA20, 0);
+			changeAlgo(listpath, INI_CRYPT_ALGO_CHACHA20, 0, NULL);
 			break;
 		case 4:
-			changeAlgo(listpath, INI_CRYPT_ALGO_CAST, 128);
+			changeAlgo(listpath, INI_CRYPT_ALGO_CAST, 128, NULL);
 			break;
 		case 5:
-			changeAlgo(listpath, INI_CRYPT_ALGO_CAST, 256);
+			changeAlgo(listpath, INI_CRYPT_ALGO_CAST, 256, NULL);
 			break;
 		case 6:
-			changeAlgo(listpath, INI_CRYPT_ALGO_IDEA, 0);
+			changeAlgo(listpath, INI_CRYPT_ALGO_IDEA, 0, NULL);
+			break;
+		case 7:
+			changeAlgo(listpath, INI_CRYPT_ALGO_NONE, 0, NULL);
 			break;
 	}
 }
