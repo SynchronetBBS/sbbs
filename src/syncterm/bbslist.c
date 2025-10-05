@@ -362,7 +362,7 @@ fc_from_enum(int fc_enum)
 	}
 }
 
-void
+static void
 viewofflinescroll(void)
 {
 	int top;
@@ -518,7 +518,7 @@ get_rate_num(int rate)
 	return i;
 }
 
-int
+static int
 get_next_rate(int curr_rate)
 {
 	int i;
@@ -530,7 +530,7 @@ get_next_rate(int curr_rate)
 	return rates[i];
 }
 
-int
+static int
 is_sorting(int chk)
 {
 	int i;
@@ -543,7 +543,7 @@ is_sorting(int chk)
 	return 0;
 }
 
-int
+static int
 intbufcmp(const void *a, const void *b, size_t size)
 {
 #ifdef __BIG_ENDIAN__
@@ -561,7 +561,7 @@ intbufcmp(const void *a, const void *b, size_t size)
 #endif
 }
 
-int
+static int
 listcmp(const void *aptr, const void *bptr)
 {
 	const char *a = *(void **)(aptr);
@@ -595,7 +595,7 @@ listcmp(const void *aptr, const void *bptr)
 	return 0;
 }
 
-void
+static void
 sort_list(struct bbslist **list, int *listcount, int *cur, int *bar, char *current)
 {
 	int i;
@@ -613,7 +613,7 @@ sort_list(struct bbslist **list, int *listcount, int *cur, int *bar, char *curre
 	}
 }
 
-void
+static void
 write_sortorder(void)
 {
 	char inipath[MAX_PATH + 1];
@@ -646,7 +646,7 @@ write_sortorder(void)
 	strListFree(&inicontents);
 }
 
-void
+static void
 edit_sorting(struct bbslist **list, int *listcount, int *ocur, int *obar, char *current)
 {
 	char opt[sizeof(sort_order) / sizeof(struct sort_order_info)][80];
@@ -847,7 +847,7 @@ read_item(ini_fp_list_t *listfile, struct bbslist *entry, ini_lv_string_t *bbsna
 	entry->id = id;
 }
 
-bool
+static bool
 is_reserved_bbs_name(const char *name)
 {
 	if (stricmp(name, "syncterm-system-cache") == 0)
@@ -861,7 +861,7 @@ is_reserved_bbs_name(const char *name)
  * optionally only if the entry is a user list
  * entry
  */
-int
+static int
 list_name_check(struct bbslist **list, char *bbsname, int *pos, int useronly)
 {
 	int i;
@@ -997,7 +997,7 @@ fc_str(char *str, int fc)
  * Terminates a path with "..." if it's too long.
  * Format must contain only a single '%s'.
  */
-void
+static void
 printf_trunc(char *dst, size_t dstsz, char *fmt, char *path)
 {
 	char *mangled;
@@ -1022,7 +1022,7 @@ printf_trunc(char *dst, size_t dstsz, char *fmt, char *path)
 		sprintf(dst, fmt, path);
 }
 
-void
+static void
 configure_log(struct bbslist *item, const char *itemname, str_list_t inifile, int *changed)
 {
 	char opt[4][69];
@@ -1240,7 +1240,7 @@ enum {
 	BBSLIST_FIELD_PALETTE,
 };
 
-void
+static void
 build_edit_list(struct bbslist *item, char opt[][69], int *optmap, char **opts, int isdefault, char *itemname)
 {
 	int i = 0;
@@ -1378,7 +1378,7 @@ build_edit_list(struct bbslist *item, char opt[][69], int *optmap, char **opts, 
 	opt[i][0] = 0;
 }
 
-void
+static void
 build_edit_help(struct bbslist *item, int isdefault, char *helpbuf, size_t hbsz)
 {
 	size_t hblen = 0;
@@ -2471,7 +2471,7 @@ add_bbs(char *listpath, struct bbslist *bbs, bool new_entry)
 	strListFree(&inifile);
 }
 
-void
+static void
 del_bbs(char *listpath, struct bbslist *bbs)
 {
 	FILE *listfile;
@@ -2625,7 +2625,7 @@ edit_audio_mode(str_list_t *inicontents)
 	}
 }
 
-void
+static void
 change_settings(int connected)
 {
 	char inipath[MAX_PATH + 1];
@@ -3183,7 +3183,7 @@ write_ini:
 	strListFree(&inicontents);
 }
 
-void
+static void
 load_bbslist(struct bbslist **list,
              size_t listsize,
              struct bbslist *defaults,

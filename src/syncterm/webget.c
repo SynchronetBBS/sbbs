@@ -404,7 +404,7 @@ special_return:
 	return NULL;
 }
 
-const char *
+static const char *
 skipws(const char *val)
 {
 	while (*val == ' ' || *val == '\t')
@@ -1151,7 +1151,8 @@ ret_return:
 	return ret;
 }
 
-double dmax(double d1, double d2)
+static double
+dmax(double d1, double d2)
 {
 	if (d1 > d2)
 		return d1;
