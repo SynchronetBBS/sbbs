@@ -27,8 +27,10 @@
 #endif
 #include "genwrap.h"
 #include "str_list.h"	/* strList_t */
+#ifdef WITH_CRYPTLIB
 #ifndef WITHOUT_CRYPTLIB
 	#include "cryptlib.h"
+#endif
 #endif
 
 #define INI_MAX_VALUE_LEN	1024		/* Maximum value length, includes '\0' */
@@ -59,6 +61,7 @@ typedef struct fp_list_s ini_fp_list_t;
 extern "C" {
 #endif
 
+#ifdef WITH_CRYPTLIB
 #ifndef WITHOUT_CRYPTLIB
 enum iniCryptAlgo {
 	INI_CRYPT_ALGO_NONE = CRYPT_ALGO_NONE,
@@ -72,8 +75,8 @@ enum iniCryptAlgo {
 	INI_CRYPT_ALGO_CHACHA20 = CRYPT_ALGO_CHACHA20,
 	INI_CRYPT_ALGO_LAST = CRYPT_ALGO_CHACHA20
 };
-
 #endif // WITHOUT_CRYPTLIB
+#endif // WITH_CRYPTLIB
 
 /* Read all section names and return as an allocated string list */
 /* Optionally (if prefix!=NULL), returns a subset of section names */
@@ -353,11 +356,13 @@ DLLEXPORT void iniFreeFastParse(ini_fp_list_t *s);
 DLLEXPORT ini_lv_string_t *iniGetFastParsedSectionOrderedList(ini_fp_list_t *fp);
 
 /* Encryption Functions (can't do includes yet) */
+#ifdef WITH_CRYPTLIB
 #ifndef WITHOUT_CRYPTLIB
 DLLEXPORT str_list_t iniReadEncryptedFile(FILE* fp, bool(*get_key)(void *cb_data, char *keybuf, size_t *sz), enum iniCryptAlgo *algoPtr, int *ks, char *saltBuf, size_t *saltsz, void *cbdata);
 DLLEXPORT bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo algo, int keySize, const char *key, char *salt);
 DLLEXPORT const char *iniCryptGetAlgoName(enum iniCryptAlgo a);
 DLLEXPORT enum iniCryptAlgo iniCryptGetAlgoFromName(const char *n);
+#endif
 #endif
 
 /*

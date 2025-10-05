@@ -3446,6 +3446,7 @@ iniFastParsedSectionListFree(ini_lv_string_t **list)
 	free(list);
 }
 
+#ifdef WITH_CRYPTLIB
 #ifndef WITHOUT_CRYPTLIB
 const char *encryptedHeaderPrefix = "; Encrypted INI File, Algorithm: ";
 
@@ -3838,6 +3839,7 @@ done:
 	return line == strListCount(list);
 }
 #endif // WITHOUT_CRYPTLIB
+#endif // WITH_CRYPTLIB
 
 #ifdef INI_FILE_TEST
 void main(int argc, char** argv)

@@ -2,7 +2,7 @@ SRC_ROOT	?=	..
 include $(SRC_ROOT)/build/Common.gmake
 
 ifdef XP_SEM
-	MTOBJS	+=	$(MTOBJODIR)$(DIRSEP)xpsem$(OFILE)
+ MTOBJS	+=	$(MTOBJODIR)$(DIRSEP)xpsem$(OFILE)
 endif
 ifndef win
  MTOBJS	+=	$(MTOBJODIR)$(DIRSEP)xpevent$(OFILE)
