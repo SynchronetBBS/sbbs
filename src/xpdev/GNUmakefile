@@ -16,6 +16,12 @@ ifdef WITH_SDL_AUDIO
  OBJS	+=	$(OBJODIR)$(DIRSEP)sdlfuncs$(OFILE)
 endif
 
+ifdef WITHOUT_CRYPTLIB
+ CFLAGS += -DWITHOUT_CRYPTLIB
+else
+ DEPS += $(CRYPT_LIB)
+endif
+
 # Executable Build Rule
 $(WRAPTEST): $(MTOBJODIR)/wraptest.o $(DEPS) | $(EXEODIR)
 	@echo Linking $@
