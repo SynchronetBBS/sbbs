@@ -81,6 +81,7 @@ struct syncterm_settings {
 	int                   extern_scale;
 	uint                  audio_output_modes;
 	bool                  invert_wheel;
+	bool                  webgetUserList;
 };
 
 extern ini_bitdesc_t audio_output_bits[];

@@ -1446,6 +1446,16 @@ get_syncterm_filename(char *fn, int fnlen, int type, bool shared)
 		strlcpy(fn, list_override, fnlen);
 		return fn;
 	}
+	if (settings.webgetUserList && type == SYNCTERM_PATH_LIST && !shared) {
+		if (!get_syncterm_filename(fn, fnlen, SYNCTERM_PATH_CACHE, false))
+			return NULL;
+		backslash(fn);
+		strlcat(fn, "syncterm-system-cache", fnlen);
+		if (mkpath(fn) != 0)
+			return NULL;
+		strlcat(fn, "System List.lst", fnlen);
+		return fn;
+	}
 
 	// Get recursive for the system cache...
 	if (type == SYNCTERM_PATH_SYSTEM_CACHE) {
@@ -1541,7 +1551,27 @@ load_settings(struct syncterm_settings *set)
 		SAFECOPY(set->list_path, list_override);
 	}
 	else {
-		SAFECOPY(set->list_path, set->stored_list_path);
+		if (strnicmp(set->stored_list_path, "http://", 7) == 0)
+			set->webgetUserList = true;
+		else if (strnicmp(set->stored_list_path, "https://", 8) == 0)
+			set->webgetUserList = true;
+		if (set->webgetUserList) {
+			if (!get_syncterm_filename(settings.list_path, sizeof(settings.list_path), SYNCTERM_PATH_CACHE, false))
+				SAFECOPY(set->list_path, set->stored_list_path);
+			else {
+				backslash(set->list_path);
+				strlcat(set->list_path, "syncterm-system-cache", sizeof(set->list_path));
+				if (mkpath(set->list_path) != 0)
+					SAFECOPY(set->list_path, set->stored_list_path);
+				else {
+					backslash(set->list_path);
+					strlcat(set->list_path, "System List.lst", sizeof(set->list_path));
+				}
+			}
+		}
+		else {
+			SAFECOPY(set->list_path, set->stored_list_path);
+		}
 	}
 	set->scaling_factor = iniReadFloat(inifile, "SyncTERM", "ScalingFactor", 0);
 	set->blocky = iniReadBool(inifile, "SyncTERM", "BlockyScaling", true);
@@ -2144,6 +2174,56 @@ main(int argc, char **argv)
  #endif /* ifdef ALPHA */
 #endif /* if 0 */
 
+	if (!winsock_startup())
+		return 1;
+
+	if ((settings.webgetUserList || settings.webgets) && !quitting) {
+		// Update the web list caches...
+
+		init_uifc(true, true);
+		char cache_path[MAX_PATH + 1];
+		if (get_syncterm_filename(cache_path, sizeof(cache_path), SYNCTERM_PATH_SYSTEM_CACHE, false)) {
+			size_t items;
+			size_t started = 0;
+			if (settings.webgets) {
+				COUNT_LIST_ITEMS(settings.webgets, items);
+			}
+			else
+				items = 0;
+			struct webget_request *reqs = calloc(items + settings.webgetUserList, sizeof(struct webget_request));
+			sem_init(&download_complete_sem, 0, 0);
+			if (settings.webgetUserList) {
+				if (init_webget_req(&reqs[0], cache_path, "System List", settings.list_path)) {
+					reqs[0].cb_data = 0;
+					_beginthread(download_thread, 0, &reqs[0]);
+					started++;
+				}
+				else {
+					reqs[0].cb_data = UINT64_C(0x8000000000000000);
+				}
+			}
+			for (size_t i = settings.webgetUserList; i < items + settings.webgetUserList; i++) {
+				if (init_webget_req(&reqs[i], cache_path, settings.webgets[i - settings.webgetUserList]->name, settings.webgets[i - settings.webgetUserList]->value)) {
+					reqs[i].cb_data = i;
+					_beginthread(download_thread, 0, &reqs[i]);
+					started++;
+				}
+				else {
+					reqs[i].cb_data = UINT64_C(0x8000000000000000) | i;
+				}
+			}
+			while (started > 0) {
+				if (sem_trywait_block(&download_complete_sem, 200) == 0) {
+					started--;
+				}
+				update_webget_progress(reqs, items, false);
+			}
+			sem_destroy(&download_complete_sem);
+			update_webget_progress(reqs, items, true);
+		}
+		uifcbail();
+	}
+
         /* Auto-connect URL */
 	if (url[0]) {
 		if ((bbs = (struct bbslist *)malloc(sizeof(struct bbslist))) == NULL) {
@@ -2177,41 +2257,6 @@ main(int argc, char **argv)
 			goto USAGE;
 	}
 
-	if (!winsock_startup())
-		return 1;
-
-	if (settings.webgets && !quitting) {
-		// Update the web list caches...
-
-		init_uifc(true, true);
-		char cache_path[MAX_PATH + 1];
-		if (get_syncterm_filename(cache_path, sizeof(cache_path), SYNCTERM_PATH_SYSTEM_CACHE, false)) {
-			size_t items;
-			size_t started = 0;
-			COUNT_LIST_ITEMS(settings.webgets, items);
-			struct webget_request *reqs = calloc(items, sizeof(struct webget_request));
-			sem_init(&download_complete_sem, 0, 0);
-			for (size_t i = 0; i < items; i++) {
-				if (init_webget_req(&reqs[i], cache_path, settings.webgets[i]->name, settings.webgets[i]->value)) {
-					reqs[i].cb_data = i;
-					_beginthread(download_thread, 0, &reqs[i]);
-					started++;
-				}
-				else {
-					reqs[i].cb_data = UINT64_C(0x8000000000000000) | i;
-				}
-			}
-			while (started > 0) {
-				if (sem_trywait_block(&download_complete_sem, 200) == 0) {
-					started--;
-				}
-				update_webget_progress(reqs, items, false);
-			}
-			sem_destroy(&download_complete_sem);
-			update_webget_progress(reqs, items, true);
-		}
-		uifcbail();
-	}
 	load_font_files();
 	while ((!quitting) && (bbs != NULL || (bbs = show_bbslist(last_bbs, false)) != NULL)) {
 		if (default_hidepopups >= 0)

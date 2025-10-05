@@ -3460,6 +3460,10 @@ edit_web_lists(void)
 				tmpn[0] = 0;
 			while (uifc.input(WIN_SAV | WIN_MID, 0, 0, "Web List Name", tmpn, sizeof(tmpn) - 1, K_EDIT) != -1
 			    && tmpn[0]) {
+				if (stricmp(tmpn, "System List") == 0) {
+					uifc.msg("Invalid Name");
+					continue;
+				}
 				if (settings.webgets != NULL && namedStrListFindName(settings.webgets, tmpn)) {
 					uifc.msg("Duplicate Name");
 					continue;
