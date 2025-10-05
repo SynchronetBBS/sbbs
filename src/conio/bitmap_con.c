@@ -2485,6 +2485,122 @@ bitmap_snap(bool grow, int maxwidth, int maxheight)
 	} while ((vstat.winwidth > maxwidth || vstat.winheight > maxheight) && mult > 1);
 }
 
+static void
+integer_scale(int maxwidth, int maxheight, int64_t os)
+{
+	int64_t bs;
+	int64_t ls;
+	int64_t ns;
+	int w, h;
+
+	int mult = 1;
+	bitmap_get_scaled_win_size(mult, &w, &h, maxwidth, maxheight);
+	bs = ((int64_t)w * w) + ((int64_t)h * h);
+	ls = bs;
+	ns = bs;
+	while (ns < os) {
+		mult++;
+		bitmap_get_scaled_win_size(mult, &w, &h, 0, 0);
+		if ((maxwidth > 0) && (w > maxwidth)) {
+			mult--;
+			ns = ls;
+			break;
+		}
+		if (w == maxwidth)
+			break;
+		if ((maxheight > 0) && (h > maxheight)) {
+			mult--;
+			ns = ls;
+			break;
+		}
+		if (h == maxheight)
+			break;
+		bs = ((int64_t)w * w) + ((int64_t)h * h);
+		ls = ns;
+		ns = bs;
+	}
+	if ((os - ls) <= (ns - os)) {
+		if (mult > 1)
+			mult--;
+	}
+	bitmap_get_scaled_win_size(mult, &w, &h, maxwidth, maxheight);
+	vstat.winwidth = w;
+	vstat.winheight = h;
+	vstat.scaling = mult;
+}
+
+const double precision = 0.00005;
+_Static_assert(precision > 0.0, "Precision is too low!");
+
+static void
+double_scale(int maxwidth, int maxheight, int64_t os)
+{
+	int64_t bs;
+	int64_t ls;
+	int64_t ns;
+	int w, h;
+
+	double mult = 1.0;
+	double step = 1.0;
+	bitmap_get_scaled_win_size(mult, &w, &h, maxwidth, maxheight);
+	bs = ((int64_t)w * w) + ((int64_t)h * h);
+	ls = bs;
+	ns = bs;
+	while (ns < os) {
+		mult += step;
+		bitmap_get_scaled_win_size(mult, &w, &h, 0, 0);
+		if ((maxwidth > 0) && (w > maxwidth)) {
+			mult -= step;
+			if (step <= precision) {
+				ns = ls;
+				break;
+			}
+			step /= 2;
+			continue;
+		}
+		if (w == maxwidth)
+			break;
+		if ((maxheight > 0) && (h > maxheight)) {
+			mult -= step;
+			if (step <= precision) {
+				ns = ls;
+				break;
+			}
+			step /= 2;
+			continue;
+		}
+		if (h == maxheight)
+			break;
+		bs = ((int64_t)w * w) + ((int64_t)h * h);
+		if (bs >= os && step > precision) {
+			mult -= step;
+			step /= 2;
+			continue;
+		}
+		ls = ns;
+		ns = bs;
+	}
+	long long lastDelta = llabs(os - ls);
+	long long currDelta = llabs(ns - os);
+	if (lastDelta <= currDelta) {
+		if (mult > 1) {
+			mult -= step;
+			currDelta = lastDelta;
+		}
+	}
+	bitmap_get_scaled_win_size(mult, &w, &h, maxwidth, maxheight);
+	vstat.winwidth = w;
+	vstat.winheight = h;
+	vstat.scaling = mult;
+}
+
+static double oldMult = 0.0;
+static double newMult = 0.0;
+static int oldWWidth = 0;
+static int oldWHeight = 0;
+static int oldSWidth = 0;
+static int oldSHeight = 0;
+
 /*
  * This function is intended to be called from the driver.
  * as a result, it cannot block waiting for driver status
@@ -2501,14 +2617,12 @@ int bitmap_drv_init_mode(int mode, int *width, int *height, int maxwidth, int ma
 {
 	int i;
 	int64_t os;
-	int64_t ls;
-	int64_t ns;
-	int64_t bs;
-	int w, h;
-	int mult;
 
 	if(!bitmap_initialized)
 		return(-1);
+
+	int prevSWidth = vstat.scrnwidth;
+	int prevSHeight = vstat.scrnheight;
 
 	if (mode == _ORIGMODE)
 		mode = C80;
@@ -2561,41 +2675,32 @@ int bitmap_drv_init_mode(int mode, int *width, int *height, int maxwidth, int ma
 	cio_textinfo.winright=cio_textinfo.screenwidth;
 	cio_textinfo.winbottom=cio_textinfo.screenheight;
 
-	// Now calculate the closest diagonal new size that's smaller than max...
-	mult = 1;
-	bitmap_get_scaled_win_size(mult, &w, &h, maxwidth, maxheight);
-	bs = ((int64_t)w * w) + ((int64_t)h * h);
-	ls = bs;
-	ns = bs;
-	while (ns < os) {
-		mult++;
-		bitmap_get_scaled_win_size(mult, &w, &h, 0, 0);
-		if ((maxwidth > 0) && (w > maxwidth)) {
-			mult--;
-			ns = ls;
-			break;
-		}
-		if (w == maxwidth)
-			break;
-		if ((maxheight > 0) && (h > maxheight)) {
-			mult--;
-			ns = ls;
-			break;
-		}
-		if (h == maxheight)
-			break;
-		bs = ((int64_t)w * w) + ((int64_t)h * h);
-		ls = ns;
-		ns = bs;
+	// If we're going back to the old scaling, and we haven't scaled, just restore the damn thing.
+	if (oldSWidth == vstat.scrnwidth && oldSHeight == vstat.scrnheight && vstat.scaling == newMult) {
+		vstat.winwidth = oldWWidth;
+		vstat.winheight = oldWHeight;
+		vstat.scaling = oldMult;
 	}
-	if ((os - ls) <= (ns - os)) {
-		if (mult > 1)
-			mult--;
+	else {
+		int w, h;
+		// Tuck this away...
+		oldSWidth = prevSWidth;
+		oldSHeight = prevSHeight;
+		oldWWidth = vstat.winwidth;
+		oldWHeight = vstat.winheight;
+		oldMult = vstat.scaling;
+		// Now calculate the closest diagonal new size that's smaller than max...
+		double delta = fabs(vstat.scaling - round(vstat.scaling));
+		if (delta < precision)
+			integer_scale(maxwidth, maxheight, os);
+		else
+			double_scale(maxwidth, maxheight, os);
+
+		// Round-trip the scaling so it doesn't change randomly later...
+		bitmap_get_scaled_win_size(vstat.scaling, &w, &h, 0, 0);
+		vstat.scaling = bitmap_double_mult_inside(w, h);
+		newMult = vstat.scaling;
 	}
-	bitmap_get_scaled_win_size(mult, &w, &h, maxwidth, maxheight);
-	vstat.winwidth = w;
-	vstat.winheight = h;
-	vstat.scaling = mult;
 
 	return(0);
 }
