@@ -855,6 +855,8 @@ prompt_password(void *cb_data, char *keybuf, size_t *sz)
 	if (sz && *sz < newSz)
 		newSz = *sz;
 	if (list_password[0] == 0) {
+		uifc.helpbuf = "`Encrypted List`\n\n"
+		            "The BBS list is encrypted. Enter the password it was encrypted with.";
 		int olen = uifc.input(WIN_SAV | WIN_MID, 0, 0, "Password", list_password, sizeof(list_password) - 1, K_PASSWORD);
 		if (olen < 1)
 			return false;
