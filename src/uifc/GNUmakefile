@@ -20,7 +20,7 @@ include $(SRC_ROOT)/build/Common.gmake	# defines clean and output directory rule
 CFLAGS += -I$(XPDEV_SRC) $(CIOLIB-MT_CFLAGS) $(XPDEV-MT_CFLAGS)
 
 # MT-UIFC Library Link Rule
-$(UIFCLIB-MT_BUILD): $(MT_OBJS) | $(MTOBJODIR) $(LIBODIR)
+$(UIFCLIB-MT_BUILD): $(XPDEV_DEPS) $(MT_OBJS) | $(MTOBJODIR) $(LIBODIR)
 	@echo Creating $@ ...
 ifdef FAT
 	$(QUIET)$(DELETE) $@
