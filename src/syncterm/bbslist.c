@@ -3528,7 +3528,7 @@ changeAlgo(const char *listpath, enum iniCryptAlgo algo, int keySize, const char
 
 	if (safe_mode)
 		return;
-	if (newpass == NULL && !list_password[0]) {
+	if (newpass == NULL && algo != INI_CRYPT_ALGO_NONE && !list_password[0]) {
 		if (!prompt_password(NULL, NULL, NULL))
 			return;
 	}
@@ -3576,6 +3576,8 @@ encryption_menu(const char *listpath)
 			snprintf(title, sizeof(title), "Currently %s", iniCryptGetAlgoName(list_algo));
 	}
 
+	uifc.helpbuf = "`Encryption`\n\n"
+	               "Choose the encryption type you would like to convert the list to.";
 	int val = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &dflt, &bar, title, encryption);
 	switch(val) {
 		case 0:

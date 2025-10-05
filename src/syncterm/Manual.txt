@@ -778,6 +778,9 @@ that SyncTERM will access.
 Build Options::
 Shows which optional components SyncTERM was built to support.
 
+List Encryption::
+Allows you to encrypt or decrypt the BBS list. Choose the encryption type
+you want or change the password, etc.
 
 ==== Current Screen Mode
 
