@@ -1,10 +1,10 @@
 Version 1.7rc1
 --------------
+Add menu for editing an entries palette
 Add CTSV APC command
+Add support for OSC 10 ; ? ST and OSC 11 ; ? ST
 Optimize dialing directory parsing
 Fix scroll wheel in RIP mode
-Support OSC 10 ; ? ST and OSC 11 ; ? ST
-Add menu for editing an entries palette
 
 Version 1.7b
 ------------
