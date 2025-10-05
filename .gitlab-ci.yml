@@ -189,17 +189,17 @@ include:
     paths:
       - "src/vdmodem/Release/*.exe"
 
-#"windows-x86 [syncterm-msvc]":
-#  tags: [Windows]
-#  stage: build
-#  extends: .rules
-#  script:
-#    - cd src/syncterm
-#    - .\release.bat
-#  artifacts:
-#    name: syncterm-msvc
-#    paths:
-#      - "src/syncterm/Release/*.exe"
+"windows-x86 [syncterm-msvc]":
+  tags: [Windows]
+  stage: build
+  extends: .rules
+  script:
+    - cd src/syncterm
+    - .\release.bat
+  artifacts:
+    name: syncterm-msvc
+    paths:
+      - "src/syncterm/Release/*.exe"
 
 "freebsd-amd64 [sbbs-noskeeters]":
   extends:
