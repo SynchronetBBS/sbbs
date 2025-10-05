@@ -3569,8 +3569,12 @@ encryption_menu(const char *listpath)
 
 	if (list_algo == INI_CRYPT_ALGO_NONE)
 		strlcpy(title, "Not Encrypted", sizeof(title));
-	else
-		snprintf(title, sizeof(title), "Currently %s (%d)", iniCryptGetAlgoName(list_algo), list_keysize);
+	else {
+		if (list_keysize)
+			snprintf(title, sizeof(title), "Currently %s (%d)", iniCryptGetAlgoName(list_algo), list_keysize);
+		else
+			snprintf(title, sizeof(title), "Currently %s", iniCryptGetAlgoName(list_algo));
+	}
 
 	int val = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &dflt, &bar, title, encryption);
 	switch(val) {
