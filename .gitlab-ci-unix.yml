@@ -291,6 +291,7 @@ spec:
   rules:
     - if: '"$[[ inputs.no_encrypted_ini ]]" == "yes"'
       when: never
+    - !reference [.rules, rules]
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [utils]":
   extends:
@@ -333,6 +334,7 @@ spec:
   rules:
     - if: '"$[[ inputs.no_encrypted_ini ]]" == "yes"'
       when: never
+    - !reference [.rules, rules]
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs-build]":
   extends:
@@ -603,6 +605,7 @@ spec:
   rules:
     - if: '"$[[ inputs.no_encrypted_ini ]]" == "yes"'
       when: never
+    - !reference [.rules, rules]
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [gtkchat]":
   extends:
