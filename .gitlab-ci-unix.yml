@@ -13,6 +13,8 @@ spec:
       default: 'RELEASE=1'
     no_javascript:
       default: 'no'
+    no_encrypted_ini:
+      default: 'no'
     has_curses:
       default: 'yes'
     has_gtk:
@@ -286,6 +288,9 @@ spec:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [uifc]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
+  rules:
+    - if: '"$[[ inputs.no_encrypted_ini ]]" == "yes"'
+      when: never
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [utils]":
   extends:
@@ -325,6 +330,9 @@ spec:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [uifc]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
+  rules:
+    - if: '"$[[ inputs.no_encrypted_ini ]]" == "yes"'
+      when: never
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs-build]":
   extends:
@@ -592,6 +600,9 @@ spec:
       - "src/sexpots/*.exe.release/*"
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
+  rules:
+    - if: '"$[[ inputs.no_encrypted_ini ]]" == "yes"'
+      when: never
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [gtkchat]":
   extends:
