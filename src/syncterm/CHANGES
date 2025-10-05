@@ -1,3 +1,7 @@
+Version 1.7rc2
+--------------
+Fix screen initialization to not snap to next smaller integer scaling
+
 Version 1.7rc1
 --------------
 Add menu for editing an entries palette
