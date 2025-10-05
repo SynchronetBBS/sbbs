@@ -5,6 +5,9 @@
 #ifndef _CONN_H_
 #define _CONN_H_
 
+#ifdef _MSC_VER
+#undef __STDC_NO_ATOMICS__
+#endif
 #include <stdatomic.h>
 #include <stdbool.h>
 
