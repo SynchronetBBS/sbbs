@@ -156,7 +156,9 @@ recv_nbytes(struct http_session *sess, uint8_t *buf, const size_t chunk_size, bo
 	while (received < chunk_size) {
 		ssize_t rc;
 		if (sess->is_tls) {
-#ifndef WITHOUT_CRYPTLIB
+#ifdef WITHOUT_CRYPTLIB
+			goto error_return;
+#else
 			int copied = 0;
 			int status = cryptPopData(sess->tls, &buf[received], chunk_size - received, &copied);
 			if (status == CRYPT_ERROR_COMPLETE) {
@@ -292,7 +294,9 @@ send_request(struct http_session *sess)
 	sess->cache.request_time = time(NULL);
 	ssize_t sent;
 	if (sess->is_tls) {
-#ifndef WITHOUT_CRYPTLIB
+#ifdef WITHOUT_CRYPTLIB
+		return false;
+#else
 		int copied;
 		int ret = cryptPushData(sess->tls, reqstr, len, &copied);
 		if (cryptStatusError(ret)) {
