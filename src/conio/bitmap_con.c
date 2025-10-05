@@ -2530,7 +2530,6 @@ integer_scale(int maxwidth, int maxheight, int64_t os)
 }
 
 const double precision = 0.00005;
-_Static_assert(precision > 0.0, "Precision is too low!");
 
 static void
 double_scale(int maxwidth, int maxheight, int64_t os)
