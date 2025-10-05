@@ -27,6 +27,9 @@
 #endif
 #include "genwrap.h"
 #include "str_list.h"	/* strList_t */
+#ifndef WITHOUT_CRYPTLIB
+	#include "cryptlib.h"
+#endif
 
 #define INI_MAX_VALUE_LEN	1024		/* Maximum value length, includes '\0' */
 #define ROOT_SECTION		NULL
@@ -55,6 +58,22 @@ typedef struct fp_list_s ini_fp_list_t;
 #if defined(__cplusplus)
 extern "C" {
 #endif
+
+#ifndef WITHOUT_CRYPTLIB
+enum iniCryptAlgo {
+	INI_CRYPT_ALGO_NONE = CRYPT_ALGO_NONE,
+	INI_CRYPT_ALGO_DES = CRYPT_ALGO_DES,
+	INI_CRYPT_ALGO_3DES = CRYPT_ALGO_3DES,
+	INI_CRYPT_ALGO_IDEA = CRYPT_ALGO_IDEA,
+	INI_CRYPT_ALGO_CAST = CRYPT_ALGO_CAST,
+	INI_CRYPT_ALGO_RC2 = CRYPT_ALGO_RC2,
+	INI_CRYPT_ALGO_RC4 = CRYPT_ALGO_RC4,
+	INI_CRYPT_ALGO_AES = CRYPT_ALGO_AES,
+	INI_CRYPT_ALGO_CHACHA20 = CRYPT_ALGO_CHACHA20,
+	INI_CRYPT_ALGO_LAST = CRYPT_ALGO_CHACHA20
+};
+
+#endif // WITHOUT_CRYPTLIB
 
 /* Read all section names and return as an allocated string list */
 /* Optionally (if prefix!=NULL), returns a subset of section names */
@@ -332,6 +351,14 @@ DLLEXPORT str_list_t iniGetFastParsedSectionLV(ini_fp_list_t *fp, ini_lv_string_
 DLLEXPORT void iniFastParsedSectionListFree(ini_lv_string_t **list);
 DLLEXPORT void iniFreeFastParse(ini_fp_list_t *s);
 DLLEXPORT ini_lv_string_t *iniGetFastParsedSectionOrderedList(ini_fp_list_t *fp);
+
+/* Encryption Functions (can't do includes yet) */
+#ifndef WITHOUT_CRYPTLIB
+DLLEXPORT str_list_t iniReadEncryptedFile(FILE* fp, bool(*get_key)(void *cb_data, char *keybuf, size_t *sz), enum iniCryptAlgo *algoPtr, int *ks, char *saltBuf, size_t *saltsz, void *cbdata);
+DLLEXPORT bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo algo, int keySize, const char *key, char *salt);
+DLLEXPORT const char *iniCryptGetAlgoName(enum iniCryptAlgo a);
+DLLEXPORT enum iniCryptAlgo iniCryptGetAlgoFromName(const char *n);
+#endif
 
 /*
  * Too handy to leave internal

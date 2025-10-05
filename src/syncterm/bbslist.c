@@ -332,6 +332,10 @@ ini_style_t ini_style = {
 	/* bit_separator */ NULL
 };
 
+static char list_password[1024] = "";
+static enum iniCryptAlgo list_algo = INI_CRYPT_ALGO_NONE;
+static int list_keysize = 0;
+
 static int
 fc_to_enum(int fc)
 {
@@ -843,6 +847,39 @@ is_reserved_bbs_name(const char *name)
 	return false;
 }
 
+static bool
+prompt_password(void *cb_data, char *keybuf, size_t *sz)
+{
+	size_t newSz = sizeof(list_password);
+
+	if (sz && *sz < newSz)
+		newSz = *sz;
+	if (list_password[0] == 0) {
+		int olen = uifc.input(WIN_SAV | WIN_MID, 0, 0, "Password", list_password, sizeof(list_password) - 1, K_PASSWORD);
+		if (olen < 1)
+			return false;
+	}
+	if (list_password[0]) {
+		if (keybuf && sz) {
+			*sz = strlcpy(keybuf, list_password, *sz);
+		}
+		return true;
+	}
+	return false;
+}
+
+static str_list_t
+iniReadBBSList(FILE *fp)
+{
+	str_list_t inifile = iniReadEncryptedFile(fp, prompt_password, NULL, NULL, NULL, NULL, NULL);
+	if (inifile == NULL || (list_algo != INI_CRYPT_ALGO_NONE && !iniGetBool(inifile, NULL, "DecryptionCheck", false))) {
+		uifc.msg("Failed to decrypt BBS list, exiting");
+		exit(EXIT_FAILURE);
+	}
+
+	return inifile;
+}
+
 /*
  * Checks if bbsname already is listed in list
  * setting *pos to the position if not NULL.
@@ -859,7 +896,7 @@ list_name_check(struct bbslist **list, char *bbsname, int *pos, int useronly)
 		str_list_t inifile;
 
 		if ((listfile = fopen(settings.list_path, "r")) != NULL) {
-			inifile = iniReadFile(listfile);
+			inifile = iniReadBBSList(listfile);
 			i = iniSectionExists(inifile, bbsname);
 			strListFree(&inifile);
 			fclose(listfile);
@@ -934,7 +971,7 @@ read_list(char *listpath, struct bbslist **list, struct bbslist *defaults, int *
 	ini_fp_list_t *nlines;
 
 	if ((listfile = fopen(listpath, "r")) != NULL) {
-		inilines = iniReadFile(listfile);
+		inilines = iniReadBBSList(listfile);
 		fclose(listfile);
 		nlines = iniFastParseSections(inilines, false);
 		if ((defaults != NULL) && (type == USER_BBSLIST))
@@ -1851,7 +1888,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 		add_bbs(listpath, item, true);
 	}
 	if ((listfile = fopen(listpath, "r")) != NULL) {
-		inifile = iniReadFile(listfile);
+		inifile = iniReadBBSList(listfile);
 		fclose(listfile);
 	}
 	else
@@ -1910,7 +1947,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 				}
 				if (!safe_mode) {
 					if ((listfile = fopen(listpath, "w")) != NULL) {
-						iniWriteFile(listfile, inifile);
+						iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, list_password, NULL);
 						fclose(listfile);
 					}
 				}
@@ -2394,7 +2431,7 @@ add_bbs(char *listpath, struct bbslist *bbs, bool new_entry)
 	if (safe_mode)
 		return;
 	if ((listfile = fopen(listpath, "r")) != NULL) {
-		inifile = iniReadFile(listfile);
+		inifile = iniReadBBSList(listfile);
 		fclose(listfile);
 	}
 	else
@@ -2453,7 +2490,7 @@ add_bbs(char *listpath, struct bbslist *bbs, bool new_entry)
 	if (bbs->palette_size > 0)
 		iniSetIntList(&inifile, bbs->name, "Palette", ",", (int*)bbs->palette, bbs->palette_size, &ini_style);
 	if ((listfile = fopen(listpath, "w")) != NULL) {
-		iniWriteFile(listfile, inifile);
+		iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, list_password, NULL);
 		fclose(listfile);
 	}
 	strListFree(&inifile);
@@ -2468,11 +2505,11 @@ del_bbs(char *listpath, struct bbslist *bbs)
 	if (safe_mode)
 		return;
 	if ((listfile = fopen(listpath, "r")) != NULL) {
-		inifile = iniReadFile(listfile);
+		inifile = iniReadBBSList(listfile);
 		fclose(listfile);
 		iniRemoveSection(&inifile, bbs->name);
 		if ((listfile = fopen(listpath, "w")) != NULL) {
-			iniWriteFile(listfile, inifile);
+			iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, list_password, NULL);
 			fclose(listfile);
 		}
 		strListFree(&inifile);
@@ -3274,7 +3311,7 @@ edit_comment(struct bbslist *list, char *listpath)
 
 	// Open with write permissions so it fails if you can't edit.
 	if ((listfile = fopen(listpath, "r+")) != NULL) {
-		inifile = iniReadFile(listfile);
+		inifile = iniReadBBSList(listfile);
 		fclose(listfile);
 	}
 	else
@@ -3324,7 +3361,7 @@ done:
 	free(old);
 	if (inifile != NULL) {
 		if ((listfile = fopen(listpath, "w")) != NULL) {
-			iniWriteFile(listfile, inifile);
+			iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, list_password, NULL);
 			fclose(listfile);
 		}
 		strListFree(&inifile);
@@ -3478,6 +3515,82 @@ edit_web_lists(void)
 	return changed;
 }
 
+static void
+changeAlgo(const char *listpath, enum iniCryptAlgo algo, int keySize)
+{
+	FILE *listfile;
+
+	if (safe_mode)
+		return;
+	if (!list_password[0]) {
+		if (!prompt_password(NULL, NULL, NULL))
+			return;
+	}
+	if ((listfile = fopen(listpath, "r+")) != NULL) {
+		str_list_t inifile = iniReadBBSList(listfile);
+		if (algo == INI_CRYPT_ALGO_NONE)
+			iniRemoveKey(&inifile, NULL, "DecryptionCheck");
+		else
+			iniSetBool(&inifile, NULL, "DecryptionCheck", true, &ini_style);
+		iniWriteEncryptedFile(listfile, inifile, algo, keySize, list_password, NULL);
+		fclose(listfile);
+		iniFreeStringList(inifile);
+	}
+}
+
+static void
+encryption_menu(const char *listpath)
+{
+	char *encryption[] = {
+		"Change Password",
+		"Encrypt Using AES-128",
+		"Encrypt Using AES-256",
+		"Encrypt Using ChaCha20",
+		"Encrypt Using CAST-128",
+		"Encrypt Using CAST-256",
+		"Encrypt Using IDEA",
+		"Decrypt",
+		NULL
+	};
+	int dflt = 0;
+	int bar = 0;
+	char title[80];
+	char newpass[sizeof(list_password)];
+
+	if (list_algo == INI_CRYPT_ALGO_NONE)
+		strlcpy(title, "Not Encrypted", sizeof(title));
+	else
+		snprintf(title, sizeof(title), "Currently %s (%d)", iniCryptGetAlgoName(list_algo), list_keysize);
+
+	int val = uifc.list(WIN_SAV | WIN_MID, 0, 0, 0, &dflt, &bar, title, encryption);
+	switch(val) {
+		case 0:
+			if (uifc.input(WIN_SAV | WIN_MID, 0, 0, "New Password", newpass, sizeof(newpass), K_PASSWORD) > 0) {
+				strcpy(list_password, newpass);
+				changeAlgo(listpath, list_algo, list_keysize);
+			}
+			break;
+		case 1:
+			changeAlgo(listpath, INI_CRYPT_ALGO_AES, 128);
+			break;
+		case 2:
+			changeAlgo(listpath, INI_CRYPT_ALGO_AES, 256);
+			break;
+		case 3:
+			changeAlgo(listpath, INI_CRYPT_ALGO_CHACHA20, 0);
+			break;
+		case 4:
+			changeAlgo(listpath, INI_CRYPT_ALGO_CAST, 128);
+			break;
+		case 5:
+			changeAlgo(listpath, INI_CRYPT_ALGO_CAST, 256);
+			break;
+		case 6:
+			changeAlgo(listpath, INI_CRYPT_ALGO_IDEA, 0);
+			break;
+	}
+}
+
 /*
  * Displays the BBS list and allows edits to user BBS list
  * Mode is one of BBSLIST_SELECT or BBSLIST_EDIT
@@ -3506,6 +3619,7 @@ show_bbslist(char *current, int connected)
 		"Program Settings",
 		"File Locations",
 		"Build Options",
+		"List Encryption",
 		NULL
 	};
 	char *connected_settings_menu[] = {
@@ -4435,6 +4549,9 @@ show_bbslist(char *current, int connected)
 						             p,
 						             NULL,
 						             NULL);
+						break;
+					case 7:	// Encryption!
+						encryption_menu(settings.list_path);
 						break;
 				}
 			}

@@ -239,3 +239,10 @@ ifndef NO_PULSEAUDIO
   endif
  endif
 endif
+
+ifdef WITHOUT_CRYPTLIB
+ CFLAGS += -DWITHOUT_CRYPTLIB
+else
+ CFLAGS	+= $(CRYPT_CFLAGS)
+ XPDEV_LIBS += $(CRYPT_LIBS)
+endif
