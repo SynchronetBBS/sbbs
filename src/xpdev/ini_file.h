@@ -62,9 +62,9 @@ extern "C" {
 #endif
 
 enum iniCryptAlgo {
-	INI_CRYPT_ALGO_NONE = CRYPT_ALGO_NONE,
-#ifdef WITH_CRYPTLIB
-#ifndef WITHOUT_CRYPTLIB
+#if (defined(WITHOUT_CRYPTLIB) || !defined(WITH_CRYPTLIB))
+	INI_CRYPT_ALGO_NONE,
+#else	
 	INI_CRYPT_ALGO_DES = CRYPT_ALGO_DES,
 	INI_CRYPT_ALGO_3DES = CRYPT_ALGO_3DES,
 	INI_CRYPT_ALGO_IDEA = CRYPT_ALGO_IDEA,
@@ -73,8 +73,7 @@ enum iniCryptAlgo {
 	INI_CRYPT_ALGO_RC4 = CRYPT_ALGO_RC4,
 	INI_CRYPT_ALGO_AES = CRYPT_ALGO_AES,
 	INI_CRYPT_ALGO_CHACHA20 = CRYPT_ALGO_CHACHA20,
-#endif // WITHOUT_CRYPTLIB
-#endif // WITH_CRYPTLIB
+#endif
 };
 
 /* Read all section names and return as an allocated string list */
