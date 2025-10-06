@@ -2530,6 +2530,7 @@ integer_scale(int maxwidth, int maxheight, int64_t os)
 }
 
 const double precision = 0.00005;
+const double tolerance = 0.0125;
 
 static void
 double_scale(int maxwidth, int maxheight, int64_t os)
@@ -2674,30 +2675,30 @@ int bitmap_drv_init_mode(int mode, int *width, int *height, int maxwidth, int ma
 	cio_textinfo.winright=cio_textinfo.screenwidth;
 	cio_textinfo.winbottom=cio_textinfo.screenheight;
 
-	// If we're going back to the old scaling, and we haven't scaled, just restore the damn thing.
-	if (oldSWidth == vstat.scrnwidth && oldSHeight == vstat.scrnheight && vstat.scaling == newMult) {
-		vstat.winwidth = oldWWidth;
-		vstat.winheight = oldWHeight;
-		vstat.scaling = oldMult;
-	}
+	// Now calculate the closest diagonal new size that's smaller than max...
+	double delta = fabs(vstat.scaling - round(vstat.scaling));
+	if (delta < tolerance)
+		integer_scale(maxwidth, maxheight, os);
 	else {
-		int w, h;
-		// Tuck this away...
-		oldSWidth = prevSWidth;
-		oldSHeight = prevSHeight;
-		oldWWidth = vstat.winwidth;
-		oldWHeight = vstat.winheight;
-		oldMult = vstat.scaling;
-		// Now calculate the closest diagonal new size that's smaller than max...
-		double delta = fabs(vstat.scaling - round(vstat.scaling));
-		if (delta < precision)
-			integer_scale(maxwidth, maxheight, os);
-		else
+		// If we're going back to the old scaling, and we haven't scaled, just restore the damn thing.
+		if (oldSWidth == vstat.scrnwidth && oldSHeight == vstat.scrnheight && vstat.scaling == newMult) {
+			vstat.winwidth = oldWWidth;
+			vstat.winheight = oldWHeight;
+			vstat.scaling = oldMult;
+		}
+		else {
+			int w, h;
+			// Tuck this away...
+			oldSWidth = prevSWidth;
+			oldSHeight = prevSHeight;
+			oldWWidth = vstat.winwidth;
+			oldWHeight = vstat.winheight;
+			oldMult = vstat.scaling;
 			double_scale(maxwidth, maxheight, os);
-
-		// Round-trip the scaling so it doesn't change randomly later...
-		bitmap_get_scaled_win_size(vstat.scaling, &w, &h, 0, 0);
-		vstat.scaling = bitmap_double_mult_inside(w, h);
+			// Round-trip the scaling so it doesn't change randomly later...
+			bitmap_get_scaled_win_size(vstat.scaling, &w, &h, 0, 0);
+			vstat.scaling = bitmap_double_mult_inside(w, h);
+		}
 		newMult = vstat.scaling;
 	}
 
