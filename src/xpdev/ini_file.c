@@ -3603,18 +3603,28 @@ iniReadEncryptedFile(FILE* fp, bool(*get_key)(void *cb_data, char *keybuf, size_
 	if (cryptStatusError(status))
 		return false;
 	status = cryptGetAttribute(ctx, CRYPT_CTXINFO_BLOCKSIZE, &i);
-	if (status == CRYPT_ERROR_NOTAVAIL || i == 0) {
+	if (status == CRYPT_ERROR_NOTAVAIL) {
 		bufferSize = INI_MAX_LINE_LEN - 1;
 		streamCipher = true;
 	}
 	else {
-		if (cryptStatusError(status))
-			goto done;
-		bufferSize = i;
+		if (i == 0 || i == 1) {
+			bufferSize = INI_MAX_LINE_LEN - 1;
+			streamCipher = true;
+		}
+		else {
+			if (cryptStatusError(status))
+				goto done;
+			bufferSize = i;
+		}
 	}
 	status = cryptGetAttribute(ctx, CRYPT_CTXINFO_IVSIZE, &i);
 	if (!cryptStatusError(status)) {
 		char iv[CRYPT_MAX_IVSIZE];
+		uint16_t ivs;
+		if (fread(&ivs, 1, sizeof(ivs), fp) != sizeof(ivs))
+			goto done;
+		i = ntohs(ivs);
 		if (fread(iv, 1, i, fp) != i)
 			goto done;
 		status = cryptSetAttributeString(ctx, CRYPT_CTXINFO_IV, iv, i);
@@ -3714,6 +3724,9 @@ addEncrpytedChar(CRYPT_CONTEXT ctx, bool *gotIV, const char ch, char *buffer, si
 		if (!(*gotIV)) {
 			int status = cryptGetAttributeString(ctx, CRYPT_CTXINFO_IV, iv, &ivSize);
 			if (cryptStatusOK(status)) {
+				uint16_t ivs = htons(ivSize);
+				if (fwrite(&ivs, 1, sizeof(ivs), fp) != sizeof(ivs))
+					return false;
 				if (fwrite(iv, 1, ivSize, fp) != ivSize)
 					return false;
 			}
@@ -3799,7 +3812,13 @@ bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo al
 	else {
 		if (cryptStatusError(status))
 			goto done;
-		bufferSize = i;
+		if (i == 1 || i == 0) {
+			bufferSize = INI_MAX_LINE_LEN - 1;
+			streamCipher = true;
+		}
+		else {
+			bufferSize = i;
+		}
 	}
 	buffer = malloc(bufferSize);
 	if (buffer == NULL)
