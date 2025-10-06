@@ -82,6 +82,7 @@ set(PATCHES
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-size-doesnt-mean-copied.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-add-psk-flag.patch
 	${CMAKE_CURRENT_SOURCE_DIR}/cl-winapi-needed.patch
+	${CMAKE_CURRENT_SOURCE_DIR}/cl-enable-chacha20.patch
 )
 
 FetchContent_Declare(CryptLib
