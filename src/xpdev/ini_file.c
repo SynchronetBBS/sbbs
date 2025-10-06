@@ -3721,6 +3721,8 @@ addEncrpytedChar(CRYPT_CONTEXT ctx, bool *gotIV, const char ch, char *buffer, si
 	buffer[(*bufferPos)++] = ch;
 	if (*bufferPos == blockSize) {
 		int status = cryptEncrypt(ctx, buffer, blockSize);
+		if (cryptStatusError(status))
+			return false;
 		if (!(*gotIV)) {
 			int status = cryptGetAttributeString(ctx, CRYPT_CTXINFO_IV, iv, &ivSize);
 			if (cryptStatusOK(status)) {
@@ -3734,8 +3736,6 @@ addEncrpytedChar(CRYPT_CONTEXT ctx, bool *gotIV, const char ch, char *buffer, si
 				return false;
 			*gotIV = true;
 		}
-		if (cryptStatusError(status))
-			return false;
 		if (fwrite(buffer, 1, blockSize, fp) != blockSize)
 			return false;
 		*bufferPos = 0;
