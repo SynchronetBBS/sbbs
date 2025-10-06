@@ -878,13 +878,18 @@ prompt_password(void *cb_data, char *keybuf, size_t *sz)
 }
 
 static str_list_t
-iniReadBBSList(FILE *fp)
+iniReadBBSList(FILE *fp, bool userList)
 {
 	enum iniCryptAlgo algo = INI_CRYPT_ALGO_NONE;
-	str_list_t inifile = iniReadEncryptedFile(fp, prompt_password, &algo, NULL, NULL, NULL, NULL);
+	int ks;
+	str_list_t inifile = iniReadEncryptedFile(fp, prompt_password, &algo, &ks, NULL, NULL, NULL);
 	if (inifile == NULL || (algo != INI_CRYPT_ALGO_NONE && !iniGetBool(inifile, NULL, "DecryptionCheck", false))) {
 		uifc.msg("Failed to decrypt BBS list, exiting");
 		exit(EXIT_FAILURE);
+	}
+	if (userList) {
+		list_algo = algo;
+		list_keysize = ks;
 	}
 
 	return inifile;
@@ -906,7 +911,7 @@ list_name_check(struct bbslist **list, char *bbsname, int *pos, int useronly)
 		str_list_t inifile;
 
 		if ((listfile = fopen(settings.list_path, "r")) != NULL) {
-			inifile = iniReadBBSList(listfile);
+			inifile = iniReadBBSList(listfile, true);
 			i = iniSectionExists(inifile, bbsname);
 			strListFree(&inifile);
 			fclose(listfile);
@@ -981,7 +986,7 @@ read_list(char *listpath, struct bbslist **list, struct bbslist *defaults, int *
 	ini_fp_list_t *nlines;
 
 	if ((listfile = fopen(listpath, "r")) != NULL) {
-		inilines = iniReadBBSList(listfile);
+		inilines = iniReadBBSList(listfile, type == USER_BBSLIST);
 		fclose(listfile);
 		nlines = iniFastParseSections(inilines, false);
 		if ((defaults != NULL) && (type == USER_BBSLIST))
@@ -1916,7 +1921,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 		add_bbs(listpath, item, true);
 	}
 	if ((listfile = fopen(listpath, "r")) != NULL) {
-		inifile = iniReadBBSList(listfile);
+		inifile = iniReadBBSList(listfile, isdefault);
 		fclose(listfile);
 	}
 	else
@@ -2474,7 +2479,7 @@ add_bbs(char *listpath, struct bbslist *bbs, bool new_entry)
 	if (safe_mode)
 		return;
 	if ((listfile = fopen(listpath, "r")) != NULL) {
-		inifile = iniReadBBSList(listfile);
+		inifile = iniReadBBSList(listfile, true);
 		fclose(listfile);
 	}
 	else
@@ -2551,7 +2556,7 @@ del_bbs(char *listpath, struct bbslist *bbs)
 	if (safe_mode)
 		return;
 	if ((listfile = fopen(listpath, "r")) != NULL) {
-		inifile = iniReadBBSList(listfile);
+		inifile = iniReadBBSList(listfile, bbs->type == USER_BBSLIST);
 		fclose(listfile);
 		iniRemoveSection(&inifile, bbs->name);
 		if ((listfile = fopen(listpath, "w")) != NULL) {
@@ -3357,7 +3362,7 @@ edit_comment(struct bbslist *list, char *listpath)
 
 	// Open with write permissions so it fails if you can't edit.
 	if ((listfile = fopen(listpath, "r+")) != NULL) {
-		inifile = iniReadBBSList(listfile);
+		inifile = iniReadBBSList(listfile, true);
 		fclose(listfile);
 	}
 	else
@@ -3578,7 +3583,7 @@ changeAlgo(const char *listpath, enum iniCryptAlgo algo, int keySize, const char
 			return;
 	}
 	if ((listfile = fopen(listpath, "r+")) != NULL) {
-		str_list_t inifile = iniReadBBSList(listfile);
+		str_list_t inifile = iniReadBBSList(listfile, true);
 		if (algo == INI_CRYPT_ALGO_NONE)
 			iniRemoveKey(&inifile, NULL, "DecryptionCheck");
 		else
@@ -3598,12 +3603,14 @@ encryption_menu(const char *listpath)
 {
 	char *encryption[] = {
 		"Change Password",
-		"Encrypt Using AES-128",
-		"Encrypt Using AES-256",
-		"Encrypt Using ChaCha20",
-		"Encrypt Using CAST-128",
-		"Encrypt Using CAST-256",
-		"Encrypt Using IDEA",
+		"Encrypt Using ChaCha20",              // 2008
+		"Encrypt Using AES-128",               // 1998
+		"Encrypt Using AES-256",               // 1998
+		"Encrypt Using CAST-128",              // 1996
+		"Encrypt Using IDEA",                  // 1991
+		"Encrypt Using RC2",                   // 1987
+		"Encrypt Using RC4 (Insecure)",        // 1987
+		"Encrypt Using 3DES (Insecure)",       // 1981
 		"Decrypt",
 		NULL
 	};
@@ -3630,24 +3637,30 @@ encryption_menu(const char *listpath)
 				changeAlgo(listpath, list_algo, list_keysize, newpass);
 			break;
 		case 1:
-			changeAlgo(listpath, INI_CRYPT_ALGO_AES, 128, NULL);
+			changeAlgo(listpath, INI_CRYPT_ALGO_CHACHA20, 0, NULL);
 			break;
 		case 2:
-			changeAlgo(listpath, INI_CRYPT_ALGO_AES, 256, NULL);
+			changeAlgo(listpath, INI_CRYPT_ALGO_AES, 128, NULL);
 			break;
 		case 3:
-			changeAlgo(listpath, INI_CRYPT_ALGO_CHACHA20, 0, NULL);
+			changeAlgo(listpath, INI_CRYPT_ALGO_AES, 256, NULL);
 			break;
 		case 4:
 			changeAlgo(listpath, INI_CRYPT_ALGO_CAST, 128, NULL);
 			break;
 		case 5:
-			changeAlgo(listpath, INI_CRYPT_ALGO_CAST, 256, NULL);
-			break;
-		case 6:
 			changeAlgo(listpath, INI_CRYPT_ALGO_IDEA, 0, NULL);
 			break;
+		case 6:
+			changeAlgo(listpath, INI_CRYPT_ALGO_RC2, 0, NULL);
+			break;
 		case 7:
+			changeAlgo(listpath, INI_CRYPT_ALGO_RC4, 0, NULL);
+			break;
+		case 8:
+			changeAlgo(listpath, INI_CRYPT_ALGO_3DES, 0, NULL);
+			break;
+		case 9:
 			changeAlgo(listpath, INI_CRYPT_ALGO_NONE, 0, NULL);
 			break;
 	}
@@ -4020,7 +4033,7 @@ show_bbslist(char *current, int connected)
 							}
 							if (!uifc.changes)
 								break;
-							if (list_name_check(list, tmp, NULL, false)) {
+							if (list_name_check(list, tmp, NULL, true)) {
 								uifc.helpbuf = "`Entry Name Already Exists`\n\n"
 								               "An entry with that name already exists in the directory.\n"
 								               "Please choose a unique name.\n";

@@ -3461,8 +3461,6 @@ iniCryptGetAlgoName(enum iniCryptAlgo a)
 			return "CAST";
 		case INI_CRYPT_ALGO_CHACHA20:
 			return "ChaCha20";
-		case INI_CRYPT_ALGO_DES:
-			return "DES";
 		case INI_CRYPT_ALGO_IDEA:
 			return "IDEA";
 		case INI_CRYPT_ALGO_NONE:
@@ -3486,8 +3484,6 @@ iniCryptGetAlgoFromName(const char *n)
 		return INI_CRYPT_ALGO_CAST;
 	if (!strcmp(n, "ChaCha20"))
 		return INI_CRYPT_ALGO_CHACHA20;
-	if (!strcmp(n, "DES"))
-		return INI_CRYPT_ALGO_DES;
 	if (!strcmp(n, "IDEA"))
 		return INI_CRYPT_ALGO_IDEA;
 	if (!strcmp(n, "RC2"))
