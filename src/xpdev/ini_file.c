@@ -3589,6 +3589,12 @@ iniReadEncryptedFile(FILE* fp, bool(*get_key)(void *cb_data, char *keybuf, size_
 	status = cryptSetAttribute(ctx, CRYPT_CTXINFO_KEYSIZE, keySize / 8);
 	if (cryptStatusError(status))
 		goto done;
+	status = cryptSetAttribute(ctx, CRYPT_CTXINFO_KEYING_ALGO, CRYPT_ALGO_HMAC_SHA2);
+	if (cryptStatusError(status))
+		goto done;
+	status = cryptSetAttribute(ctx, CRYPT_CTXINFO_KEYING_ITERATIONS, 50000);
+	if (cryptStatusError(status))
+		goto done;
 	status = cryptSetAttributeString(ctx, CRYPT_CTXINFO_KEYING_SALT, salt, saltLength);
 	if (cryptStatusError(status))
 		return false;
@@ -3794,6 +3800,12 @@ bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo al
 			return false;
 		keySize = i * 8;
 	}
+	status = cryptSetAttribute(ctx, CRYPT_CTXINFO_KEYING_ALGO, CRYPT_ALGO_HMAC_SHA2);
+	if (cryptStatusError(status))
+		goto done;
+	status = cryptSetAttribute(ctx, CRYPT_CTXINFO_KEYING_ITERATIONS, 50000);
+	if (cryptStatusError(status))
+		goto done;
 	status = cryptSetAttributeString(ctx, CRYPT_CTXINFO_KEYING_SALT, salt, strlen(salt));
 	if (cryptStatusError(status))
 		return false;
