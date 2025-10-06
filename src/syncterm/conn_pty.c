@@ -501,7 +501,7 @@ pty_connect(struct bbslist *bbs)
 		case -1:
 			return -1;
 		case 0: /* Child */
-			setenv("TERM", settings.TERM, 1);
+			setenv("TERM", bbs->term_name[0] ? bbs->term_name : settings.TERM, 1);
 			termcap = xp_asprintf("syncterm|SyncTERM"
 			        ":co#%d:li#%d"
 			        ":ND:am:da:ut:it#8"

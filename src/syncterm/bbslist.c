@@ -224,6 +224,12 @@ static struct sort_order_info sort_order[] = {
 		sizeof(((struct bbslist *)NULL)->yellow_is_yellow)
 	},
 	{
+		"Terminal Type",
+		0,
+		offsetof(struct bbslist, term_name),
+		sizeof(((struct bbslist *)NULL)->term_name)
+	},
+	{
 		NULL,
 		0,
 		0,
@@ -782,6 +788,7 @@ read_item(ini_fp_list_t *listfile, struct bbslist *entry, ini_lv_string_t *bbsna
 	entry->rip = iniGetEnum(section, NULL, "RIP", rip_versions, RIP_VERSION_NONE);
 	entry->force_lcf = iniGetBool(section, NULL, "ForceLCF", false);
 	entry->yellow_is_yellow = iniGetBool(section, NULL, "YellowIsYellow", false);
+	iniGetSString(section, NULL, "TerminalType", "", entry->term_name, sizeof(entry->term_name));
 	if (iniKeyExists(section, NULL, "SSHFingerprint")) {
 		char fp[41];
 		int i;
@@ -1266,6 +1273,7 @@ enum {
 	BBSLIST_FIELD_TELNET_NO_BINARY,
 	BBSLIST_FIELD_TELNET_DEFERRED_NEGOTIATION,
 	BBSLIST_FIELD_PALETTE,
+	BBSLIST_FIELD_TERMINAL_TYPE,
 };
 
 static void
@@ -1365,6 +1373,13 @@ build_edit_list(struct bbslist *item, char opt[][69], int *optmap, char **opts, 
 	}
 	optmap[i] = BBSLIST_FIELD_SCREEN_MODE;
 	sprintf(opt[i++], "Screen Mode       %s", screen_modes[item->screen_mode]);
+	if (item->conn_type == CONN_TYPE_SSH || item->conn_type == CONN_TYPE_SSHNA
+	    || item->conn_type == CONN_TYPE_TELNET || item->conn_type == CONN_TYPE_TELNETS
+	    || item->conn_type == CONN_TYPE_RLOGIN || item->conn_type == CONN_TYPE_RLOGIN_REVERSED
+	    || item->conn_type == CONN_TYPE_SHELL) {
+		optmap[i] = BBSLIST_FIELD_TERMINAL_TYPE;
+		sprintf(opt[i++], "Terminal Type     %s", item->term_name[0] ? item->term_name : "<Automatic>");
+	}
 	optmap[i] = BBSLIST_FIELD_FONT;
 	sprintf(opt[i++], "Font              %s", item->font);
 	if (get_emulation(item) != CTERM_EMULATION_ANSI_BBS)
@@ -1515,6 +1530,14 @@ build_edit_help(struct bbslist *item, int isdefault, char *helpbuf, size_t hbsz)
 	}
 	hblen += strlcat(helpbuf + hblen, "~ Screen Mode ~\n"
 	                                  "        Display mode to use\n\n", hbsz - hblen);
+	if (item->conn_type == CONN_TYPE_SSH || item->conn_type == CONN_TYPE_SSHNA
+	    || item->conn_type == CONN_TYPE_TELNET || item->conn_type == CONN_TYPE_TELNETS
+	    || item->conn_type == CONN_TYPE_RLOGIN || item->conn_type == CONN_TYPE_RLOGIN_REVERSED
+	    || item->conn_type == CONN_TYPE_SHELL) {
+		hblen += strlcat(helpbuf + hblen, "~Terminal Type~\n"
+		                                 "        Type of terminal to advertise to remote\n\n", hbsz - hblen);
+	}
+
 	hblen += strlcat(helpbuf + hblen, "~ Font ~\n"
 	                                  "        Select font to use for the entry\n\n"
 	                                  "~ Hide Popups ~\n"
@@ -1862,9 +1885,11 @@ edit_palette(struct bbslist *item)
 int
 edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdefault)
 {
-	char opt[27][69]; /* 21=Holds number of menu items, 80=Number of columns */
+#define EDIT_LIST_MAX 41
+	char opt[EDIT_LIST_MAX + 1][69]; /* EDIT_LIST_MAX=Holds number of menu items, 69=Number of columns */
 	char optname[69];
-	int optmap[27];
+	int optmap[EDIT_LIST_MAX + 1];
+#undef EDIT_LIST_MAX
 	char *opts[(sizeof(opt) / sizeof(opt[0])) + 1];
 	int changed = 0;
 	int copt = 0, i, j;
@@ -2417,6 +2442,21 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 					changed = 1;
 				}
 				break;
+			case BBSLIST_FIELD_TERMINAL_TYPE:
+				uifc.helpbuf = "`Terminal Type`\n\n"
+					       "Sent to the remote to allow them to know what type of emulation is\n"
+					       "supported.\n\n"
+					       "Leave blank to use the correct value based on the screen mode.";
+				uifc.input(WIN_MID | WIN_SAV,
+				           0,
+				           0,
+				           optname,
+				           item->term_name,
+				           sizeof(item->term_name) - 1,
+				           K_EDIT);
+				check_exit(false);
+				iniSetString(&inifile, itemname, "TerminalType", item->term_name, &ini_style);
+				break;
 		}
 		if (uifc.changes)
 			changed = 1;
@@ -2475,6 +2515,9 @@ add_bbs(char *listpath, struct bbslist *bbs, bool new_entry)
 	iniSetString(&inifile, bbs->name, "Comment", bbs->comment, &ini_style);
 	iniSetBool(&inifile, bbs->name, "ForceLCF", bbs->force_lcf, &ini_style);
 	iniSetBool(&inifile, bbs->name, "YellowIsYellow", bbs->yellow_is_yellow, &ini_style);
+	if (bbs->term_name[0]) {
+		iniSetString(&inifile, bbs->name, "TerminalType", bbs->term_name, &ini_style);
+	}
 	iniSetBool(&inifile, bbs->name, "TelnetBrokenTextmode", bbs->telnet_no_binary, &ini_style);
 	iniSetBool(&inifile, bbs->name, "TelnetDeferNegotiate", bbs->defer_telnet_negotiation, &ini_style);
 	if (bbs->has_fingerprint) {
@@ -4611,9 +4654,12 @@ get_emulation(struct bbslist *bbs)
 }
 
 const char *
-get_emulation_str(cterm_emulation_t emu)
+get_emulation_str(struct bbslist *bbs)
 {
-	switch (emu) {
+	if (bbs->term_name[0])
+		return bbs->term_name;
+	
+	switch (get_emulation(bbs)) {
 		case CTERM_EMULATION_ANSI_BBS:
 			return "syncterm";
 		case CTERM_EMULATION_PETASCII:

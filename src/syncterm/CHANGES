@@ -2,6 +2,7 @@ Version 1.8b
 ------------
 Support encrypted dialing directories
 Support web-based main dialing directory
+Allow specifying terminal type for each entry
 
 Version 1.7rc2
 --------------

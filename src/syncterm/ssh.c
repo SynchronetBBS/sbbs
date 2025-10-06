@@ -892,7 +892,7 @@ ssh_connect(struct bbslist *bbs)
 		uifc.pop(NULL);
 		uifc.pop("Setting Terminal Type");
 	}
-	term = get_emulation_str(get_emulation(bbs));
+	term = get_emulation_str(bbs);
 	status = cryptSetAttributeString(ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_TERMINAL, term, strlen(term));
 
 	get_term_win_size(&cols, &rows, NULL, NULL, &bbs->nostatus);

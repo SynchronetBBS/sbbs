@@ -19,6 +19,7 @@
 extern int telnet_log_level;
 bool telnet_deferred = false;
 bool telnet_no_binary = false;
+char term_name[sizeof(((struct bbslist *)NULL)->term_name)];
 
 /*****************************************************************************/
 
@@ -172,6 +173,7 @@ telnet_connect(struct bbslist *bbs)
 
 	telnet_deferred =  bbs->defer_telnet_negotiation;
 	telnet_no_binary =  bbs->telnet_no_binary;
+	strlcpy(term_name, get_emulation_str(bbs), sizeof(term_name));
 	_beginthread(rlogin_output_thread, 0, NULL);
 	_beginthread(rlogin_input_thread, 0, bbs);
 

@@ -3,11 +3,13 @@
 #ifndef _TELNET_H_
 #define _TELNET_H_
 
+#include "bbslist.h"
 #include "sockwrap.h"
 
 extern SOCKET telnet_sock;
 extern bool telnet_deferred;
 extern bool telnet_no_binary;
+extern char term_name[sizeof(((struct bbslist *)NULL)->term_name)];
 
 void telnet_binary_mode_on(void);
 void telnet_binary_mode_off(void);

@@ -138,16 +138,16 @@ rlogin_connect(struct bbslist *bbs)
 		conn_send(passwd, strlen(passwd) + 1, 1000);
 		conn_send(ruser, strlen(ruser) + 1, 1000);
 		if (bbs->bpsrate) {
-			char sbuf[30];
+			char sbuf[64];
 
-			sprintf(sbuf, "%s/%d", get_emulation_str(get_emulation(bbs)), bbs->bpsrate);
+			sprintf(sbuf, "%s/%d", get_emulation_str(bbs), bbs->bpsrate);
 
 			conn_send(sbuf, strlen(sbuf) + 1, 1000);
 		}
 		else {
-			char sbuf[30];
+			char sbuf[64];
 
-			sprintf(sbuf, "%s/115200", get_emulation_str(get_emulation(bbs)));
+			sprintf(sbuf, "%s/115200", get_emulation_str(bbs));
 
 			conn_send(sbuf, strlen(sbuf) + 1, 1000);
 		}
