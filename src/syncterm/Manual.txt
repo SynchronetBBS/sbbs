@@ -700,6 +700,17 @@ at least OpenSSH and new versions of Synchronet.  This option
 requires SFTP support from the remote side, and may cause connection
 stability issues if SFTP is not available or does not work correctly.
 
+Edit Palette::
+This opens a menu allowing you to cusomize the palette for the entry. If
+the default palette has fewer than 16 colours, you can add additional
+palette entries. When you select a colour, you can enter the red, green,
+and blue values separately, and the resulting colour is shown when
+possible.
+
+If there are fewer than sixteen entries in the list, the list will be
+repeated to fill all 16 palette slots. This allows for example, the use
+16 colour Amiga VT-52 mode.
+
 
 ==== Modifying the Sort Order
 
@@ -1021,20 +1032,6 @@ Same as kbd:[Alt+E]
 The following sections delve deeper into technical details, and should
 not be required for normal use.
 
-=== Per-entry Palette
-
-SyncTERM currently has the beginnings of support for a custom colour
-palette on a per-connection basis.  For now, this needs to be manually
-added to the dialing directory though.
-
-First, figure out the RGB colours you want for each of up to 16
-attributes and convert them to 32-bit base-10 integers.  Then, open the
-SyncTERM dialing directory in a text editor.  Find the entry you wish to
-modify, and Add a Palette=###,###,###... line to that entry.
-
-If there are fewer than sixteen entries in the list, the list will be
-repeated to fill all 16 palette slots. This allows for example, the use
-16 colour Amiga VT-52 mode.
 
 === Persistant State
 
