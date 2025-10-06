@@ -766,7 +766,7 @@ spec:
     - cd ci-test
     - tar -xvkzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build${EXTRA_FILENAME}.tgz"
     - tar -xvkzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ctrl_exec${EXTRA_FILENAME}.tgz"
-    - "SBBSCTRL=./ctrl valgrind --leak-check=full --error-exitcode=1 --num-callers=20 --track-origins=yes --read-var-info=yes --read-inline-info=yes --suppressions=src/sbbs3/suppressions.vg src/sbbs3/*.exe.release/jsexec -S -f exec/tests/test.js"
+    - "SBBSCTRL=./ctrl valgrind --leak-check=full --error-exitcode=1 --num-callers=20 --track-origins=yes --read-var-info=yes --read-inline-info=yes --suppressions=../src/sbbs3/suppressions.vg src/sbbs3/*.exe.release/jsexec -S -f exec/tests/test.js"
     - cd ..
     - rm -rf ci-test
   variables:
