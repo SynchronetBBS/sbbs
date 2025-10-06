@@ -593,6 +593,13 @@ These modes use the Atari ST VT52 emulation and do not support ANSI-BBS.
 See <<_current_screen_mode,Current Screen Mode>> and
 <<custom_screen_mode,Custom Screen Mode>> for additional information.
 
+Terminal Type::
+Sets the value send by protocols that support sending this as a string.
+Currently, Telnet, RLogin, SSH, and Shell.
+When this value is empty (displays as "<Automatic>"), it is chosen based
+on the screen mode as one of `syncterm`, `PETSCII`, `ATASCII`, `Prestel`,
+`Beeb7`, or `AtariST+VT52`.
+
 Hide Status Line::
 Indicates that the "status line" at the bottom of
 the window when connected should not be displayed.  This allows
