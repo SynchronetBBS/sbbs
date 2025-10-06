@@ -1,8 +1,8 @@
-Version 1.7rc2
+Version 1.7rc3
 --------------
 Fix screen initialization to not snap to next smaller integer scaling
 
-Version 1.7rc1
+Version 1.7rc2
 --------------
 Add menu for editing an entries palette
 Add CTSV APC command
@@ -10,8 +10,8 @@ Add support for OSC 10 ; ? ST and OSC 11 ; ? ST
 Optimize dialing directory parsing
 Fix scroll wheel in RIP mode
 
-Version 1.7b
-------------
+Version 1.7rc1
+-------------------
 Add custom palette support to list file
 Add support for DECSC/DECRC control codes
 Pass control key combinations in BBC Micro mode
