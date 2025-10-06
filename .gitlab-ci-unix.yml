@@ -51,7 +51,7 @@ spec:
     - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS libmozjs
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
     - cd ../..
-    - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/spidermonkey.tgz" 3rdp/*.release/mozjs
+    - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/spidermonkey.tgz" 3rdp/*.*.*.release/mozjs
   variables:
     GIT_STRATEGY: fetch
   rules:
