@@ -3646,7 +3646,7 @@ encryption_menu(const char *listpath)
 			changeAlgo(listpath, INI_CRYPT_ALGO_AES, 256, NULL);
 			break;
 		case 4:
-			changeAlgo(listpath, INI_CRYPT_ALGO_CAST, 128, NULL);
+			changeAlgo(listpath, INI_CRYPT_ALGO_CAST, 0, NULL);
 			break;
 		case 5:
 			changeAlgo(listpath, INI_CRYPT_ALGO_IDEA, 0, NULL);
