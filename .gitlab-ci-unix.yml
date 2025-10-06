@@ -478,7 +478,6 @@ spec:
     - .$[[ inputs.os ]]-build
   script:
     - tar -xvkzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/sbbs-build${EXTRA_FILENAME}.tgz"
-    - tar -xvkzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/utils.tgz"
   variables:
     GIT_STRATEGY: fetch
   artifacts:
@@ -489,10 +488,6 @@ spec:
       - "src/sbbs3/*/*.exe.release/*"
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs-build]"
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [scfg]"
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [uedit]"
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [umonitor]"
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [utils]"
   rules:
     - if: '"$[[ inputs.no_javascript ]]" == "yes"'
       when: never
