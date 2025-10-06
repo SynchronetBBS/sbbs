@@ -36,7 +36,7 @@
 #endif
 
 /* Maximum length of entire line, includes '\0' */
-#define INI_MAX_LINE_LEN        ((INI_MAX_VALUE_LEN * 2) + 1)
+#define INI_MAX_LINE_LEN        (INI_MAX_VALUE_LEN * 2)
 #define INI_COMMENT_CHAR        ';'
 #define INI_OPEN_SECTION_CHAR   '['
 #define INI_CLOSE_SECTION_CHAR  ']'
@@ -2959,7 +2959,7 @@ str_list_t iniReadFile(FILE* fp)
 	if (fp != NULL)
 		rewind(fp);
 
-	list = strListReadFile(fp, NULL, INI_MAX_LINE_LEN - 1);
+	list = strListReadFile(fp, NULL, INI_MAX_LINE_LEN);
 	if (list == NULL)
 		return NULL;
 
