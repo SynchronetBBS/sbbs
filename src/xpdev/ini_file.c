@@ -3507,7 +3507,7 @@ iniCryptGetAlgoFromName(const char *n)
  * material.
  */
 str_list_t
-iniReadEncryptedFile(FILE* fp, bool(*get_key)(void *cb_data, char *keybuf, size_t *sz), enum iniCryptAlgo *algoPtr, int *ks, char *saltBuf, size_t *saltsz, void *cbdata)
+iniReadEncryptedFile(FILE* fp, bool(*get_key)(void *cb_data, char *keybuf, size_t *sz), int KDFiterations, enum iniCryptAlgo *algoPtr, int *ks, char *saltBuf, size_t *saltsz, void *cbdata)
 {
 	char keyData[1024];
 	size_t keyDataSize;
@@ -3592,7 +3592,9 @@ iniReadEncryptedFile(FILE* fp, bool(*get_key)(void *cb_data, char *keybuf, size_
 	status = cryptSetAttribute(ctx, CRYPT_CTXINFO_KEYING_ALGO, CRYPT_ALGO_HMAC_SHA2);
 	if (cryptStatusError(status))
 		goto done;
-	status = cryptSetAttribute(ctx, CRYPT_CTXINFO_KEYING_ITERATIONS, 50000);
+	if (KDFiterations < 1)
+		KDFiterations = 50000;
+	status = cryptSetAttribute(ctx, CRYPT_CTXINFO_KEYING_ITERATIONS, KDFiterations);
 	if (cryptStatusError(status))
 		goto done;
 	status = cryptSetAttributeString(ctx, CRYPT_CTXINFO_KEYING_SALT, salt, saltLength);
@@ -3749,12 +3751,14 @@ addEncrpytedChar(CRYPT_CONTEXT ctx, bool *gotIV, const char ch, char *buffer, si
  * Writes the INI file in list to fp encrypted with key.
  * 
  * If salt is specified, it must be between 8 and 64 NUL-terminated
- * non-whitespace characters that can  * appear in a single line of a
+ * non-whitespace characters that can appear in a single line of a
  * text file. (note 0xff is considered whitespace).
  * 
  * If salt is not specified (preferred), a random salt is generated.
+ * 
+ * If KDFiterations is less than 1, it is set to the default (50,000)
  */
-bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo algo, int keySize, const char *key, char *salt)
+bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo algo, int keySize, int KDFiterations, const char *key, char *salt)
 {
 	char randomSalt[CRYPT_MAX_HASHSIZE + 1];
 	int status;
@@ -3767,6 +3771,8 @@ bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo al
 	int i;
 	bool gotIV = false;
 
+	if (KDFiterations < 1)
+		KDFiterations = 50000;
 	if (fp == NULL)
 		return false;
 	if (algo == INI_CRYPT_ALGO_NONE)
@@ -3803,7 +3809,7 @@ bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo al
 	status = cryptSetAttribute(ctx, CRYPT_CTXINFO_KEYING_ALGO, CRYPT_ALGO_HMAC_SHA2);
 	if (cryptStatusError(status))
 		goto done;
-	status = cryptSetAttribute(ctx, CRYPT_CTXINFO_KEYING_ITERATIONS, 50000);
+	status = cryptSetAttribute(ctx, CRYPT_CTXINFO_KEYING_ITERATIONS, KDFiterations);
 	if (cryptStatusError(status))
 		goto done;
 	status = cryptSetAttributeString(ctx, CRYPT_CTXINFO_KEYING_SALT, salt, strlen(salt));

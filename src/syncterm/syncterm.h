@@ -82,6 +82,7 @@ struct syncterm_settings {
 	uint                  audio_output_modes;
 	bool                  invert_wheel;
 	bool                  webgetUserList;
+	int                   keyDerivationIterations;
 };
 
 extern ini_bitdesc_t audio_output_bits[];

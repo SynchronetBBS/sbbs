@@ -1604,6 +1604,9 @@ load_settings(struct syncterm_settings *set)
 		set->webgets = iniReadNamedStringList(inifile, "WebLists");
 	}
 
+	/* KDF Parameters */
+	set->keyDerivationIterations = iniReadInteger(inifile, "SyncTERM", "KeyDerivationIterations", 50000);
+
 	if (inifile)
 		fclose(inifile);
 }

@@ -354,8 +354,8 @@ DLLEXPORT void iniFreeFastParse(ini_fp_list_t *s);
 DLLEXPORT ini_lv_string_t *iniGetFastParsedSectionOrderedList(ini_fp_list_t *fp);
 
 /* Encryption Functions (can't do includes yet) */
-DLLEXPORT str_list_t iniReadEncryptedFile(FILE* fp, bool(*get_key)(void *cb_data, char *keybuf, size_t *sz), enum iniCryptAlgo *algoPtr, int *ks, char *saltBuf, size_t *saltsz, void *cbdata);
-DLLEXPORT bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo algo, int keySize, const char *key, char *salt);
+DLLEXPORT str_list_t iniReadEncryptedFile(FILE* fp, bool(*get_key)(void *cb_data, char *keybuf, size_t *sz), int KDFiterations, enum iniCryptAlgo *algoPtr, int *ks, char *saltBuf, size_t *saltsz, void *cbdata);
+DLLEXPORT bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo algo, int keySize, int KDFiterations, const char *key, char *salt);
 DLLEXPORT const char *iniCryptGetAlgoName(enum iniCryptAlgo a);
 DLLEXPORT enum iniCryptAlgo iniCryptGetAlgoFromName(const char *n);
 

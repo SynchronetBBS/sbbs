@@ -882,7 +882,7 @@ iniReadBBSList(FILE *fp, bool userList)
 {
 	enum iniCryptAlgo algo = INI_CRYPT_ALGO_NONE;
 	int ks;
-	str_list_t inifile = iniReadEncryptedFile(fp, prompt_password, &algo, &ks, NULL, NULL, NULL);
+	str_list_t inifile = iniReadEncryptedFile(fp, prompt_password, settings.keyDerivationIterations, &algo, &ks, NULL, NULL, NULL);
 	if (inifile == NULL || (algo != INI_CRYPT_ALGO_NONE && !iniGetBool(inifile, NULL, "DecryptionCheck", false))) {
 		uifc.msg("Failed to decrypt BBS list, exiting");
 		exit(EXIT_FAILURE);
@@ -1980,7 +1980,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 				}
 				if (!safe_mode) {
 					if ((listfile = fopen(listpath, "w")) != NULL) {
-						iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, list_password, NULL);
+						iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password, NULL);
 						fclose(listfile);
 					}
 				}
@@ -2541,7 +2541,7 @@ add_bbs(char *listpath, struct bbslist *bbs, bool new_entry)
 	if (bbs->palette_size > 0)
 		iniSetIntList(&inifile, bbs->name, "Palette", ",", (int*)bbs->palette, bbs->palette_size, &ini_style);
 	if ((listfile = fopen(listpath, "w")) != NULL) {
-		iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, list_password, NULL);
+		iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password, NULL);
 		fclose(listfile);
 	}
 	strListFree(&inifile);
@@ -2560,7 +2560,7 @@ del_bbs(char *listpath, struct bbslist *bbs)
 		fclose(listfile);
 		iniRemoveSection(&inifile, bbs->name);
 		if ((listfile = fopen(listpath, "w")) != NULL) {
-			iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, list_password, NULL);
+			iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password, NULL);
 			fclose(listfile);
 		}
 		strListFree(&inifile);
@@ -2707,8 +2707,8 @@ change_settings(int connected)
 	char inipath[MAX_PATH + 1];
 	FILE *inifile;
 	str_list_t inicontents;
-	char opts[15][1049];
-	char *opt[16];
+	char opts[16][1049];
+	char *opt[17];
 	char *subopts[10];
 	char audio_opts[1024];
 	int i, j, k, l;
@@ -2723,7 +2723,7 @@ change_settings(int connected)
 	else
 		inicontents = strListInit();
 
-	for (i = 0; i < 15; i++)
+	for (i = 0; i < 16; i++)
 		opt[i] = opts[i];
 	opt[i] = NULL;
 
@@ -2756,7 +2756,9 @@ change_settings(int connected)
 		               "~ Scaling ~\n"
 		               "        Cycle scaling type.\n\n"
 		               "~ Custom Screen Mode ~\n"
-		               "        Configure the Custom screen mode.\n\n";
+		               "        Configure the Custom screen mode.\n\n"
+		               "~ Key Derivation Iterations ~\n"
+		               "        Change the number of iterations in the Key Derivation Function.\n\n";
 		SAFEPRINTF(opts[0], "Confirm Program Exit    %s", settings.confirm_close ? "Yes" : "No");
 		SAFEPRINTF(opts[1], "Prompt to Save          %s", settings.prompt_save ? "Yes" : "No");
 		SAFEPRINTF(opts[2], "Startup Screen Mode     %s", screen_modes[settings.startup_mode]);
@@ -2785,10 +2787,11 @@ change_settings(int connected)
 		SAFEPRINTF(opts[11], "TERM For Shell          %s", settings.TERM);
 		sprintf(opts[12], "Scaling                 %s", scaling_names[settings_to_scale()]);
 		sprintf(opts[13], "Invert Mouse Wheel      %s", settings.invert_wheel ? "Yes" : "No");
+		sprintf(opts[14], "Key Derivation Iters.   %d", settings.keyDerivationIterations);
 		if (connected)
-			opt[14] = NULL;
+			opt[15] = NULL;
 		else
-			sprintf(opts[14], "Custom Screen Mode");
+			sprintf(opts[15], "Custom Screen Mode");
 		switch (uifc.list(WIN_MID | WIN_SAV | WIN_ACT, 0, 0, 0, &cur, NULL, "Program Settings", opt)) {
 			case -1:
 				check_exit(false);
@@ -3073,6 +3076,49 @@ change_settings(int connected)
 				iniSetBool(&inicontents, "SyncTERM", "InvertMouseWheel", settings.invert_wheel, &ini_style);
 				break;
 			case 14:
+				{
+					uifc.helpbuf = "`Key Derivation Function Iterations`\n\n"
+						       "Number of iterations to run the Key Derivation Function when creating an\n"
+						       "encryption key from a password. Using more iterations makes offline\n"
+						       "attacks harder by making dictionary attacks more difficult, ideally\n"
+						       "making it more difficult than simple random key brute forcing.\n\n"
+						       "The default value is 50,000 which takes about 0.15 seconds on my current\n"
+						       "computer. This means that a normal read/modify/write of an entry ends up\n"
+						       "taking 0.3 seconds longer due to KDF. Lowering this value makes offline\n"
+						       "attacks easier, but can noticably speed up encrypted file access.\n\n"
+						       "Minimum value is 1, maximum value is 2147483647. You should choose the\n"
+						       "highest value you can put up with. NIST reccomends a minimum of 10,000.\n";
+					char value[11];
+					snprintf(value, sizeof(value), "%d", settings.keyDerivationIterations);
+					if (uifc.input(WIN_SAV | WIN_MID, 0, 0, "Iterations", value, sizeof(value) - 1, K_NUMBER | K_EDIT) > 0) {
+						long nval = strtol(value, NULL, 10);
+						if (nval > 0) {
+							FILE *listfile;
+
+							if ((listfile = fopen(settings.list_path, "r+")) != NULL) {
+								str_list_t inifile = iniReadBBSList(listfile, true);
+								if (list_algo != INI_CRYPT_ALGO_NONE) {
+									settings.keyDerivationIterations = nval;
+									iniSetInteger(&inicontents, "SyncTERM", "KeyDerivationIterations", settings.keyDerivationIterations, &ini_style);
+									iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password, NULL);
+									fclose(listfile);
+									iniFreeStringList(inifile);
+								}
+								else {
+									settings.keyDerivationIterations = nval;
+									iniSetInteger(&inicontents, "SyncTERM", "KeyDerivationIterations", settings.keyDerivationIterations, &ini_style);
+								}
+							}
+							else {
+								uifc.msg("Failed to open list file");
+								settings.keyDerivationIterations = nval;
+								iniSetInteger(&inicontents, "SyncTERM", "KeyDerivationIterations", settings.keyDerivationIterations, &ini_style);
+							}
+						}
+					}
+				}
+				break;
+			case 15:
 				uifc.helpbuf = "`Custom Screen Mode`\n\n"
 				               "~ Rows ~\n"
 				               "        Sets the number of rows in the custom screen mode\n"
@@ -3412,7 +3458,7 @@ done:
 	free(old);
 	if (inifile != NULL) {
 		if ((listfile = fopen(listpath, "w")) != NULL) {
-			iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, list_password, NULL);
+			iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password, NULL);
 			fclose(listfile);
 		}
 		strListFree(&inifile);
@@ -3590,7 +3636,7 @@ changeAlgo(const char *listpath, enum iniCryptAlgo algo, int keySize, const char
 			iniSetBool(&inifile, NULL, "DecryptionCheck", true, &ini_style);
 		if (newpass)
 			strlcpy(list_password, newpass, sizeof(list_password));
-		iniWriteEncryptedFile(listfile, inifile, algo, keySize, list_password, NULL);
+		iniWriteEncryptedFile(listfile, inifile, algo, keySize, settings.keyDerivationIterations, list_password, NULL);
 		list_algo = algo;
 		list_keysize = keySize;
 		fclose(listfile);
