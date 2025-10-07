@@ -123,12 +123,28 @@ int main(int argc, char **argv)
 	int		mode = C80;
 	int		emulation = CTERM_EMULATION_ANSI_BBS;
 	char		font_name[64] = "Codepage 437 English";
+	double          scaling = 1.0;
 
 	/* Parse command line */
 	for(i=1; i<argc; i++) {
 		if(argv[i][0]=='-') {
 			if(argv[i][1]=='l' && argv[i][2]==0)
 				expand=1;
+			else if(argv[i][1]=='s') {
+				char *p = &argv[i][2];
+				if (!*p) {
+					i++;
+					if (i >= argc)
+						break;
+					p = argv[i];
+				}
+				double mult = strtof(p, NULL);
+				if (mult < 1 || mult > 1000) {
+					fputs("Can't parse scaling value\n\n", stdout);
+					goto usage;
+				}
+				scaling *= mult;
+			}
 			else if(argv[i][1]=='a' && argv[i][2]==0) {
 				mode = C80;
 				emulation = CTERM_EMULATION_ANSI_BBS;
@@ -139,6 +155,7 @@ int main(int argc, char **argv)
 				mode = ATARIST_40X25;
 				ansi=0;
 				strlcpy(font_name, "Atari", sizeof(font_name));
+				scaling *= 2;
 			}
 			else if(argv[i][1]=='B' && argv[i][2]==0) {
 				emulation = CTERM_EMULATION_BEEB;
@@ -151,6 +168,7 @@ int main(int argc, char **argv)
 				mode = C64_40X25;
 				ansi=0;
 				strlcpy(font_name, "Commodore 64 (UPPER)", sizeof(font_name));
+				scaling *= 2;
 			}
 			else if(argv[i][1]=='P' && argv[i][2]==0) {
 				emulation = CTERM_EMULATION_PRESTEL;
@@ -175,6 +193,7 @@ int main(int argc, char **argv)
 		}
 	}
 
+	ciolib_initial_scaling = scaling;
 	if(ansi) {
 		initciolib(CIOLIB_MODE_ANSI);
 		puts("START OF ANSI...");
@@ -233,9 +252,10 @@ int main(int argc, char **argv)
 	return(0);
 
 usage:
-	cprintf("Usage: %s [-l] [-a | -A | -B | -C | -P | -V] [filename]\r\n\r\n"
+	cprintf("Usage: %s [-s <scaling>] [-l] [-a | -A | -B | -C | -P | -V] [filename]\r\n\r\n"
 			"Displays the ANSI file filename expanding \\n to \\r\\n if -l is specified.\r\n"
 			"If no filename is specified, reads input from stdin\r\n"
+			"Will be scaled by <scaling> (can be fractional)\r\n"
 			"If -a is specified, outputs ANSI to stdout\r\n"
 			"If -A is specified, outputs in Atari mode\r\n"
 			"If -B is specified, outputs in BBC Micro mode\r\n"
