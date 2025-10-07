@@ -973,7 +973,10 @@ CIOLIBEXPORT void ciolib_gotoxy(int x, int y)
 /* **MUST** be implemented */
 CIOLIBEXPORT void ciolib_textmode(int mode)
 {
-	CIOLIB_INIT();
+	if (initialized != 1) {
+		ciolib_initial_mode = mode;
+		initciolib(CIOLIB_MODE_AUTO);
+	}
 
 	if(mode==LASTMODE) {
 		cio_api.textmode(lastmode);
