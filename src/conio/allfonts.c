@@ -47,8 +47,8 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 	{NULL, NULL, NULL, NULL, "Topaz Plus (Amiga)", CIOLIB_ISO_8859_1, false},
 	{NULL, NULL, NULL, NULL, "MicroKnight (Amiga)", CIOLIB_ISO_8859_1, false},
 	{NULL, NULL, NULL, NULL, "Topaz (Amiga)", CIOLIB_ISO_8859_1, false},
-	{NULL, NULL, NULL, NULL, "Prestel (8x16)", CIOLIB_PRESTEL, false},
-	{NULL, NULL, NULL, NULL, "Atari ST (System)", CIOLIB_ATARIST, false},
+	{NULL, NULL, NULL, NULL, "Prestel", CIOLIB_PRESTEL, false},
+	{NULL, NULL, NULL, NULL, "Atari ST", CIOLIB_ATARIST, false},
 };
 #else
 CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
