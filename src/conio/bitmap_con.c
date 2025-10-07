@@ -203,6 +203,12 @@ static int bitmap_loadfont_locked(const char *filename)
 						else
 							memcpy(font[i], conio_fontdata[current_font[i]].eight_by_sixteen, fontsize);
 						break;
+					default:
+						goto error_return;
+				}
+				break;
+			case 12:
+				switch (vstat.charheight) {
 					case 20:
 						if(conio_fontdata[current_font[i]].twelve_by_twenty==NULL) {
 							if (i==0)
