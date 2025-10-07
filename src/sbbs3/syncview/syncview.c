@@ -92,6 +92,21 @@ void lfexpand(char *buf, int *len)
 	return;
 }
 
+void setFontByName(const char *fname)
+{
+	int f = 0;
+	for (int i = 0; conio_fontdata[i].desc; i++) {
+		if (strcmp(fname, conio_fontdata[i].desc) == 0) {
+			f = i;
+			break;
+		}
+	}
+	setfont(f, false, 1);
+	setfont(f, false, 2);
+	setfont(f, false, 3);
+	setfont(f, false, 4);
+}
+
 int main(int argc, char **argv)
 {
 	struct text_info	ti;
@@ -105,14 +120,50 @@ int main(int argc, char **argv)
 	int		expand=0;
 	int		ansi=0;
 	int		i;
+	int		mode = C80;
+	int		emulation = CTERM_EMULATION_ANSI_BBS;
+	char		font_name[64] = "Codepage 437 English";
 
 	/* Parse command line */
 	for(i=1; i<argc; i++) {
 		if(argv[i][0]=='-') {
 			if(argv[i][1]=='l' && argv[i][2]==0)
 				expand=1;
-			else if(argv[i][1]=='a' && argv[i][2]==0)
+			else if(argv[i][1]=='a' && argv[i][2]==0) {
+				mode = C80;
+				emulation = CTERM_EMULATION_ANSI_BBS;
 				ansi=1;
+			}
+			else if(argv[i][1]=='A' && argv[i][2]==0) {
+				emulation = CTERM_EMULATION_ATASCII;
+				mode = ATARIST_40X25;
+				ansi=0;
+				strlcpy(font_name, "Atari", sizeof(font_name));
+			}
+			else if(argv[i][1]=='B' && argv[i][2]==0) {
+				emulation = CTERM_EMULATION_BEEB;
+				mode = PRESTEL_40X25;
+				ansi=0;
+				strlcpy(font_name, "Prestel", sizeof(font_name));
+			}
+			else if(argv[i][1]=='C' && argv[i][2]==0) {
+				emulation = CTERM_EMULATION_PETASCII;
+				mode = C64_40X25;
+				ansi=0;
+				strlcpy(font_name, "Commodore 64 (UPPER)", sizeof(font_name));
+			}
+			else if(argv[i][1]=='P' && argv[i][2]==0) {
+				emulation = CTERM_EMULATION_PRESTEL;
+				mode = PRESTEL_40X25;
+				ansi=0;
+				strlcpy(font_name, "Prestel", sizeof(font_name));
+			}
+			else if(argv[i][1]=='S' && argv[i][2]==0) {
+				emulation = CTERM_EMULATION_ATARIST_VT52;
+				mode = ATARIST_80X25;
+				ansi=0;
+				strlcpy(font_name, "Atari ST", sizeof(font_name));
+			}
 			else
 				goto usage;
 		}
@@ -129,7 +180,8 @@ int main(int argc, char **argv)
 		puts("START OF ANSI...");
 	}
 
-	textmode(C80);
+	textmode(mode);
+	setFontByName(font_name);
 	gettextinfo(&ti);
 	if((scrollbuf=malloc(SCROLL_LINES*ti.screenwidth*sizeof(*scrollbuf)))==NULL) {
 		cprintf("Cannot allocate memory\n\n\rPress any key to exit.");
@@ -137,7 +189,7 @@ int main(int argc, char **argv)
 		return(-1);
 	}
 
-	cterm=cterm_init(ti.screenheight, ti.screenwidth, 1, 1, SCROLL_LINES, ti.screenwidth, scrollbuf, CTERM_EMULATION_ANSI_BBS);
+	cterm=cterm_init(ti.screenheight, ti.screenwidth, 1, 1, SCROLL_LINES, ti.screenwidth, scrollbuf, emulation);
 	if(!cterm) {
 		fputs("ERROR Initializing CTerm!\n", stderr);
 		return 1;
@@ -181,12 +233,16 @@ int main(int argc, char **argv)
 	return(0);
 
 usage:
-	cprintf("Usage: %s [-l] [-a] [filename]\r\n\r\n"
+	cprintf("Usage: %s [-l] [-a | -A | -B | -C | -P | -V] [filename]\r\n\r\n"
 			"Displays the ANSI file filename expanding \\n to \\r\\n if -l is specified.\r\n"
 			"If no filename is specified, reads input from stdin\r\n"
 			"If -a is specified, outputs ANSI to stdout\r\n"
+			"If -A is specified, outputs in Atari mode\r\n"
+			"If -B is specified, outputs in BBC Micro mode\r\n"
+			"If -C is specified, outputs in C64 mode\r\n"
+			"If -S is specified, outputs in AtariST VT-52 mode\r\n"
 			"\r\n"
-			"Press any key to exit.");
+			"Press any key to exit.", argv[0]);
 	getch();
 	return(-1);
 }
