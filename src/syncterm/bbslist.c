@@ -1921,7 +1921,7 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 		add_bbs(listpath, item, true);
 	}
 	if ((listfile = fopen(listpath, "r")) != NULL) {
-		inifile = iniReadBBSList(listfile, isdefault);
+		inifile = iniReadBBSList(listfile, true);
 		fclose(listfile);
 	}
 	else
@@ -3097,17 +3097,13 @@ change_settings(int connected)
 
 							if ((listfile = fopen(settings.list_path, "r+")) != NULL) {
 								str_list_t inifile = iniReadBBSList(listfile, true);
+								settings.keyDerivationIterations = nval;
+								iniSetInteger(&inicontents, "SyncTERM", "KeyDerivationIterations", settings.keyDerivationIterations, &ini_style);
 								if (list_algo != INI_CRYPT_ALGO_NONE) {
-									settings.keyDerivationIterations = nval;
-									iniSetInteger(&inicontents, "SyncTERM", "KeyDerivationIterations", settings.keyDerivationIterations, &ini_style);
 									iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password, NULL);
 									fclose(listfile);
-									iniFreeStringList(inifile);
 								}
-								else {
-									settings.keyDerivationIterations = nval;
-									iniSetInteger(&inicontents, "SyncTERM", "KeyDerivationIterations", settings.keyDerivationIterations, &ini_style);
-								}
+								iniFreeStringList(inifile);
 							}
 							else {
 								uifc.msg("Failed to open list file");
