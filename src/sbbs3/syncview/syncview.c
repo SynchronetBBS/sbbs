@@ -2,14 +2,64 @@
 #include <string.h>
 
 #include "dirwrap.h"
+#include "genwrap.h"
 
 #include "ciolib.h"
 #include "cterm.h"
+#include "sauce.h"
+#include "vidmodes.h"
 
 #define SCROLL_LINES	100000
 #define BUF_SIZE		1024
 
 struct cterminal *cterm;
+
+char *fnames[] = {
+	"IBM VGA",
+	"IBM VGA50",
+	"IBM VGA25G",
+	"IBM EGA",
+	"IBM EGA43",
+	"IBM VGA ",
+	"IBM VGA50 ",
+	"IBM VGA25G ",
+	"IBM EGA ",
+	"IBM EGA43 ",
+	"Amiga Topaz 1",
+	"Amiga Topaz 1+"
+	"Amiga Topaz 2",
+	"Amiga Topaz 2+"
+	"Amiga P0T-NOoDLE",
+	"Amiga MicroKnight"
+	"Amiga MicroKnight+"
+	"Amigal mOsOul",
+	"C64 PETSCII unshifted",
+	"C64 PETSCII shifted",
+	"Atari ATASCII",
+};
+
+int fonts[] = {
+	0,
+	0,
+	0,
+	0,
+	0,
+	-1,
+	-1,
+	-1,
+	-1,
+	-1,
+	42,
+	40,
+	42,
+	40,
+	37,
+	41,
+	39,
+	32,
+	33,
+	36,
+};
 
 void viewscroll(void)
 {
@@ -124,6 +174,13 @@ int main(int argc, char **argv)
 	int		emulation = CTERM_EMULATION_ANSI_BBS;
 	char		font_name[64] = "Codepage 437 English";
 	double          scaling = 1.0;
+	sauce_record_t  sauce = {0};
+	int             setflags = 0;
+	int             flags;
+	char            stitle[SAUCE_LEN_TITLE + 1] = "";
+	bool            saucy = false;
+	off_t           stop;
+	size_t          pos = 0;
 
 	/* Parse command line */
 	for(i=1; i<argc; i++) {
@@ -193,13 +250,130 @@ int main(int argc, char **argv)
 		}
 	}
 
+	if(infile) {
+		if((f=fopen(infile,"rb"))==NULL) {
+			printf("Cannot read %s\n",infile);
+			return(-1);
+		}
+		if (sauce_fread_record(f, &sauce)) {
+			int cols = 80;
+			int rows = 25;
+			int cvmode = find_vmode(CIOLIB_MODE_CUSTOM);
+			saucy = true;
+			stop = flength(infile) - 128 - 1;
+			if (sauce.comments)
+				stop -= (sauce.comments * 64 + 5);
+
+			memcpy(stitle, sauce.title, sizeof(sauce.title));
+			stitle[sizeof(stitle) - 1] = 0;
+			truncsp(stitle);
+			uint16_t type = (((uint16_t)sauce.datatype) << 8) | sauce.filetype;
+			switch (type) {
+				case 0x0100:	// ASCII
+				case 0x0101:	// ANSi
+				case 0x0102:	// ANSiMation
+					// These types have a font name...
+					if (sauce.tinfos[0]) {
+						for (size_t f = 0; f < sizeof(fnames) / sizeof(fnames[0]); f++) {
+							size_t nlen = strlen(fnames[f]);
+							if (fonts[f] >= 0)
+								nlen++;
+							if (strncmp(sauce.tinfos, fnames[f], nlen) == 0) {
+								if (fonts[f] == -1) {
+									char *p = &sauce.tinfos[nlen];
+									if (strcmp(p, "437"))
+										strcpy(font_name, conio_fontdata[0].desc);
+									else if (strcmp(p, "850"))
+										strcpy(font_name, conio_fontdata[18].desc);
+									else if (strcmp(p, "865"))
+										strcpy(font_name, conio_fontdata[28].desc);
+									else if (strcmp(p, "866"))
+										strcpy(font_name, conio_fontdata[25].desc);
+									else if (strcmp(p, "1131"))
+										strcpy(font_name, conio_fontdata[31].desc);
+									else if (strcmp(p, "1251"))
+										strcpy(font_name, conio_fontdata[20].desc);
+									else if (strcmp(p, "MIK"))
+										strcpy(font_name, conio_fontdata[20].desc);
+								}
+								else
+									strcpy(font_name, conio_fontdata[fonts[f]].desc);
+							}
+						}
+					}
+					// Fallthrough
+				case 0x0104:	// PCBoard
+				case 0x0105:	// Avatar
+				case 0x0108:	// TundraDraw
+					cols = sauce.tinfo1;
+					if (cols > 255)
+						cols = 255;
+					rows = sauce.tinfo2;
+					if (rows > 60)
+						rows = 60;
+					vparams[cvmode].cols = cols;
+					vparams[cvmode].rows = rows;
+					mode = CIOLIB_MODE_CUSTOM;
+					break;
+				case 0x0103:	// RIP
+					if (sauce.tinfo1 == 640) {
+						if (sauce.tinfo2 == 350)
+							mode = EGA80X25;
+					}
+					// TODO: RIP
+					break;
+				// TODO: 0x0500 (Binary screen image) and 0x0600 (XBin)
+			}
+			if (sauce.tflags & sauce_ansiflag_nonblink) {
+				vparams[cvmode].flags |= (CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT);
+				setflags |= (CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT);
+			}
+			switch (sauce.tflags & sauce_ansiflag_spacing_mask) {
+				case sauce_ansiflag_spacing_9pix:
+					setflags |= (CIOLIB_VIDEO_EXPAND | CIOLIB_VIDEO_LINE_GRAPHICS_EXPAND);
+					vparams[cvmode].flags |= (CIOLIB_VIDEO_EXPAND | CIOLIB_VIDEO_LINE_GRAPHICS_EXPAND);
+					vparams[cvmode].charwidth = 9;
+					break;
+				case sauce_ansiflag_spacing_legacy:
+				case sauce_ansiflag_spacing_8pix:
+				default:
+					vparams[cvmode].charwidth = 8;
+					break;
+			}
+			switch (sauce.tflags & sauce_ansiflag_ratio_mask) {
+				case sauce_ansiflag_ratio_square:
+					vparams[cvmode].aspect_width = vparams[cvmode].cols * vparams[cvmode].charwidth;
+					vparams[cvmode].aspect_height = vparams[cvmode].rows * vparams[cvmode].charheight;
+					break;
+				case sauce_ansiflag_ratio_legacy:
+				case sauce_ansiflag_ratio_rect:
+				default:
+					break;
+			}
+		}
+		if (stitle[0])
+			snprintf(title, sizeof(title), "SyncView: %s (%s)", getfname(argv[1]), stitle);
+		else
+			snprintf(title, sizeof(title), "SyncView: %s",getfname(argv[1]));
+	}
+	else {
+		f=stdin;
+		strcpy(title,"SyncView: [stdin]");
+	}
+
 	ciolib_initial_scaling = scaling;
+	ciolib_initial_program_name = "SyncView";
+	ciolib_initial_program_class = "SyncView";
+	ciolib_initial_mode = mode;
 	if(ansi) {
 		initciolib(CIOLIB_MODE_ANSI);
 		puts("START OF ANSI...");
 	}
 
 	textmode(mode);
+	flags = getvideoflags();
+	flags |= setflags;
+	setvideoflags(flags);
 	setFontByName(font_name);
 	gettextinfo(&ti);
 	if((scrollbuf=malloc(SCROLL_LINES*ti.screenwidth*sizeof(*scrollbuf)))==NULL) {
@@ -213,23 +387,17 @@ int main(int argc, char **argv)
 		fputs("ERROR Initializing CTerm!\n", stderr);
 		return 1;
 	}
-	if(infile) {
-		if((f=fopen(infile,"r"))==NULL) {
-			cprintf("Cannot read %s\n\n\rPress any key to exit.",argv[1]);
-			getch();
-			return(-1);
-		}
-		sprintf(title,"SyncView: %s",getfname(argv[1]));
-	}
-	else {
-		f=stdin;
-		strcpy(title,"SyncView: [stdin]");
-	}
 	settitle(title);
 	while((len=fread(buf, 1, BUF_SIZE, f))!=0) {
+		if (saucy && pos + len > stop) {
+			len = stop - pos;
+		}
+		pos += len;
 		if(expand)
 			lfexpand(buf, &len);
 		cterm_write(cterm, buf, len, NULL, 0, &speed);
+		if (pos >= stop)
+			break;
 	}
 	if(ansi) {
 		puts("");
