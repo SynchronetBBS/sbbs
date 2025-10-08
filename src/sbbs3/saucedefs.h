@@ -113,5 +113,6 @@ typedef struct sauce {              /* SAUCE record */
 #if !defined(__GNUC__)
 	#pragma pack(pop)       /* original packing */
 #endif
+#undef PACKED_STRUCT
 
 #endif  /* Don't add anything after this line */
