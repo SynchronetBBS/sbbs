@@ -100,7 +100,6 @@ static bool
 stbuf_realloc(stbuf *buf, size_t newsz)
 {
 	struct stbuf_raw *nbuf;
-	struct stbuf_raw **stb = (struct stbuf_raw **)buf;
 
 	assert(buf);
 	if (!buf)
@@ -159,8 +158,6 @@ stbuf_truncate(stbuf buf, size_t len)
 bool
 stbuf_atleast(stbuf *buf, size_t newsz)
 {
-	struct stbuf_raw **stb = (struct stbuf_raw **)buf;
-
 	assert(buf);
 	if (!buf)
 		return false;
@@ -185,7 +182,6 @@ stbuf_memrepl(stbuf *buf, size_t start, size_t rlen, const void *mem, size_t ile
 	size_t remain;
 	size_t olen;	// Original length
 	size_t nlen;	// New length at end
-	size_t end;	// End of inserted data
 
 	assert(buf);
 	if (!buf)
