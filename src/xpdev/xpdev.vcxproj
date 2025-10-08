@@ -313,6 +313,7 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <ClCompile Include="stbuf.c" />
     <ClCompile Include="unicode.c" />
     <ClCompile Include="xpbeep.c" />
     <ClCompile Include="xpmap.c" />
