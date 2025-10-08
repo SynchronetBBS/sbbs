@@ -338,9 +338,9 @@ ini_style_t ini_style = {
 	/* bit_separator */ NULL
 };
 
-static char list_password[1024] = "";
-static enum iniCryptAlgo list_algo = INI_CRYPT_ALGO_NONE;
-static int list_keysize = 0;
+char list_password[1024] = "";
+enum iniCryptAlgo list_algo = INI_CRYPT_ALGO_NONE;
+int list_keysize = 0;
 
 static int
 fc_to_enum(int fc)
@@ -877,7 +877,7 @@ prompt_password(void *cb_data, char *keybuf, size_t *sz)
 	return false;
 }
 
-static str_list_t
+str_list_t
 iniReadBBSList(FILE *fp, bool userList)
 {
 	enum iniCryptAlgo algo = INI_CRYPT_ALGO_NONE;

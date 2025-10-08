@@ -2297,9 +2297,8 @@ main(int argc, char **argv)
 					bbs->type = USER_BBSLIST;
 					add_bbs(settings.list_path, bbs, false);
 				}
-				if ((listfile = fopen(settings.list_path, "r")) != NULL) {
-					inifile = iniReadFile(listfile);
-					fclose(listfile);
+				if ((listfile = fopen(settings.list_path, "r+")) != NULL) {
+					inifile = iniReadBBSList(listfile, true);
 					iniSetDateTime(&inifile,
 					    bbs->name,
 					    "LastConnected",
@@ -2307,10 +2306,8 @@ main(int argc, char **argv)
 					    bbs->connected,
 					    &ini_style);
 					iniSetInteger(&inifile, bbs->name, "TotalCalls", bbs->calls, &ini_style);
-					if ((listfile = fopen(settings.list_path, "w")) != NULL) {
-						iniWriteFile(listfile, inifile);
-						fclose(listfile);
-					}
+					iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password, NULL);
+					fclose(listfile);
 					strListFree(&inifile);
 				}
 			}
