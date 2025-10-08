@@ -3578,8 +3578,10 @@ iniReadEncryptedFile(FILE* fp, bool(*get_key)(void *cb_data, char *keybuf, size_
 	start++;
 	truncsp(start);
 	saltLength = strlen(start);
-	if (saltLength > sizeof(salt))
+	if (saltLength > sizeof(salt)) {
+		saltLength = 0;
 		goto done;
+	}
 	memcpy(salt, start, saltLength);
 
 	// Create the context...
@@ -3641,8 +3643,12 @@ iniReadEncryptedFile(FILE* fp, bool(*get_key)(void *cb_data, char *keybuf, size_
 	size_t lines = 0;
 	while(!feof(fp)) {
 		size_t rret = fread(buffer, 1, bufferSize, fp);
-		if (rret < 0 || rret > INT_MAX)
+		// Getting overly paranoid here...
+		if (rret > INT_MAX) {
+			strListFree(&ret);
+			ret = NULL;
 			goto done;
+		}
 		if ((streamCipher && rret > 0) || rret == bufferSize) {
 			size_t bufpos = 0;
 			status = cryptDecrypt(ctx, buffer, rret);
@@ -3701,9 +3707,9 @@ done:
 		*algoPtr = algo;
 	if (ks)
 		*ks = keySize;
-	if (saltBuf && saltsz && *saltsz) {
+	if (saltLength && saltBuf && saltsz && *saltsz) {
 		size_t cp = *saltsz;
-		if (cp < saltLength)
+		if (cp > saltLength)
 			cp = saltLength;
 		if (cp)
 			memcpy(saltBuf, salt, cp);
