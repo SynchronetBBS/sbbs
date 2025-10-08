@@ -705,6 +705,8 @@ resize_pictures(void)
 
 		if (xrender_pm != None)
 			x11.XFreePixmap(dpy, xrender_pm);
+		// Helped debug zero-height font with syncview...
+		assert(x_cvstat.scrnheight);
 		xrender_pm = x11.XCreatePixmap(dpy, win, x_cvstat.scrnwidth, x_cvstat.scrnheight, depth);
 
 		if (xrender_src_pict != None)

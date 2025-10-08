@@ -17,6 +17,9 @@
 #define SCROLL_LINES	100000
 #define BUF_SIZE		1024
 
+extern void *hack_font1;
+extern void *hack_font2;
+
 static int cvmode;
 struct cterminal *cterm;
 
@@ -240,7 +243,7 @@ uint16_t expand_channel(uint16_t val)
 uint8_t *
 xbin_uncompress(uint8_t *data, uint16_t width, uint16_t height, size_t sz)
 {
-	uint8_t *ret = malloc((size_t)width * height);
+	uint8_t *ret = malloc((size_t)width * height * 2);
 	if (ret == NULL)
 		return ret;
 	size_t out = 0;
@@ -282,6 +285,56 @@ xbin_uncompress(uint8_t *data, uint16_t width, uint16_t height, size_t sz)
 	return ret;
 }
 
+bool
+setup_xbin(uint8_t *data, int *mode, int *setflags, int cmode, bool *xbin)
+{
+	struct xbin_header *hdr = (void *)data;
+	if (memcmp(hdr->id, "XBIN", 4) == 0) {
+		*mode = CIOLIB_MODE_CUSTOM;
+		vparams[cvmode].cols = LE_INT16(hdr->width);
+		int rows = LE_INT16(hdr->height);
+		if (rows > 60)
+			rows = 60;
+		vparams[cvmode].rows = rows;
+		vparams[cvmode].charwidth = 8;
+		if (hdr->fontsize > 0 && hdr->fontsize < 33)
+			vparams[cvmode].charheight = hdr->fontsize;
+		if (hdr->flags & (1 << 3)) {
+			*setflags |= (CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT);
+			vparams[cvmode].flags |= (CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT);
+		}
+		else {
+			*setflags &= ~(CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT);
+			vparams[cvmode].flags &= ~(CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT);
+		}
+		if (hdr->flags & (1 << 4)) {
+			*setflags |= (CIOLIB_VIDEO_NOBRIGHT | CIOLIB_VIDEO_ALTCHARS);
+			vparams[cvmode].flags |= (CIOLIB_VIDEO_NOBRIGHT | CIOLIB_VIDEO_ALTCHARS);
+		}
+		*xbin = true;
+
+		bool palette = (hdr->flags & (1 << 0));
+		bool font = (hdr->flags & (1 << 1));
+		bool twocharsets = (hdr->flags & (1 << 4));
+		size_t offset = sizeof(struct xbin_header);
+		if (palette) {
+			offset += 48;
+		}
+		if (font) {
+			vstat.forced_font = &data[offset];
+			hack_font1 = &data[offset];
+			offset += hdr->fontsize * 256;
+			if (twocharsets) {
+				vstat.forced_font2 = &data[offset];
+				hack_font2 = &data[offset];
+				offset += hdr->fontsize * 256;
+			}
+		}
+		return true;
+	}
+	return false;
+}
+
 int main(int argc, char **argv)
 {
 	struct text_info	ti;
@@ -309,6 +362,7 @@ int main(int argc, char **argv)
 	int             rip = RIP_VERSION_NONE;
 	bool            bintext = false;
 	bool            xbin = false;
+	struct xpmapping *map = NULL;
 
 	/* Parse command line */
 	for(i=1; i<argc; i++) {
@@ -527,30 +581,14 @@ int main(int argc, char **argv)
 			}
 			// We parse XBin after because it can override some stuff...
 			if (type == 0x0600) {
-				struct xbin_header hdr;
-				if (fread(&hdr, sizeof(hdr), 1, f) == 1) {
-					if (memcmp(hdr.id, "XBIN", 4) == 0) {
-						mode = CIOLIB_MODE_CUSTOM;
-						vparams[cvmode].cols = LE_INT16(hdr.width);
-						rows = LE_INT16(hdr.height);
-						if (rows > 60)
-							rows = 60;
-						vparams[cvmode].rows = rows;
-						vparams[cvmode].charwidth = 8;
-						vparams[cvmode].charheight = hdr.fontsize;
-						if (hdr.flags & (1 << 3)) {
-							setflags |= (CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT);
-							vparams[cvmode].flags |= (CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT);
-						}
-						else {
-							setflags &= ~(CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT);
-							vparams[cvmode].flags &= ~(CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT);
-						}
-						if (hdr.flags & (1 << 4)) {
-							setflags |= (CIOLIB_VIDEO_NOBRIGHT | CIOLIB_VIDEO_ALTCHARS);
-							vparams[cvmode].flags |= (CIOLIB_VIDEO_NOBRIGHT | CIOLIB_VIDEO_ALTCHARS);
-						}
+				fclose(f);
+				map = xpmap(infile, XPMAP_READ);
+				if (map) {
+					if (setup_xbin(map->addr, &mode, &setflags, cvmode, &xbin))
 						xbin = true;
+					else {
+						fprintf(stderr, "Failed to setup XBin\n");
+						xpunmap(map);
 					}
 				}
 			}
@@ -567,30 +605,15 @@ int main(int argc, char **argv)
 		}
 		else {
 			if (xbin) {
-				struct xbin_header hdr;
-				if (fread(&hdr, sizeof(hdr), 1, f) == 1) {
-					if (memcmp(hdr.id, "XBIN", 4) == 0) {
-						mode = CIOLIB_MODE_CUSTOM;
-						vparams[cvmode].cols = LE_INT16(hdr.width);
-						uint16_t rows = LE_INT16(hdr.height);
-						if (rows > 60)
-							rows = 60;
-						vparams[cvmode].rows = rows;
-						vparams[cvmode].charwidth = 8;
-						vparams[cvmode].charheight = hdr.fontsize;
-						if (hdr.flags & (1 << 3)) {
-							setflags |= (CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT);
-							vparams[cvmode].flags |= (CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT);
-						}
-						else {
-							setflags &= ~(CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT);
-							vparams[cvmode].flags &= ~(CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT);
-						}
-						if (hdr.flags & (1 << 4)) {
-							setflags |= (CIOLIB_VIDEO_NOBRIGHT | CIOLIB_VIDEO_ALTCHARS);
-							vparams[cvmode].flags |= (CIOLIB_VIDEO_NOBRIGHT | CIOLIB_VIDEO_ALTCHARS);
-						}
+				fclose(f);
+				map = xpmap(infile, XPMAP_READ);
+				if (map) {
+					if (setup_xbin(map->addr, &mode, &setflags, cvmode, &xbin))
 						xbin = true;
+					else {
+						fprintf(stderr, "Failed to setup XBin\n");
+						xpunmap(map);
+						xbin = false;
 					}
 				}
 			}
@@ -641,7 +664,7 @@ int main(int argc, char **argv)
 		size_t rows = stop / (vparams[cvmode].cols * 2);
 
 		fclose(f);
-		struct xpmapping *map = xpmap(infile, XPMAP_READ);
+		map = xpmap(infile, XPMAP_READ);
 		if (map) {
 			for (row = 0; row < rows; row += ti.screenheight) {
 				size_t sr = rows - row;
@@ -657,8 +680,6 @@ int main(int argc, char **argv)
 		}
 	}
 	else if (xbin) {
-		fclose(f);
-		struct xpmapping *map = xpmap(infile, XPMAP_READ);
 		if (map) {
 			struct xbin_header *hdr = map->addr;
 			if (memcmp(hdr->id, "XBIN", 4))
@@ -679,9 +700,11 @@ int main(int argc, char **argv)
 				}
 				if (font) {
 					vstat.forced_font = &map->addr[offset];
+					hack_font1 = &map->addr[offset];
 					offset += hdr->fontsize * 256;
 					if (twocharsets) {
 						vstat.forced_font2 = &map->addr[offset];
+						hack_font2 = &map->addr[offset];
 						offset += hdr->fontsize * 256;
 					}
 				}

@@ -311,6 +311,9 @@ struct dac_colors dac_default[TOTAL_DAC_SIZE] = {
 	{255, 255, 109}, {109, 109, 255}, {255, 109, 255}, {109, 255, 255},
 };
 
+void *hack_font1 = NULL;
+void *hack_font2 = NULL;
+
 int find_vmode(int mode)
 {
     unsigned i;
@@ -499,6 +502,7 @@ int load_vmode(struct video_stats *vs, int mode)
 		vs->aspect_width = vs->scrnwidth;
 		vs->aspect_height = vs->scrnheight;
 	}
-	vs->forced_font = NULL;
+	vs->forced_font = hack_font1;
+	vs->forced_font2 = hack_font2;
 	return(0);
 }
