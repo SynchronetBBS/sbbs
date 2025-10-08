@@ -284,8 +284,13 @@ int main(int argc, char **argv)
 							if (cpp != NULL)
 								namelen = (cpp - finfo[k].name);
 							if (strncmp(sauce.tinfos, finfo[k].name, namelen) == 0) {
-								if (finfo[k].has_8px && (sauce.tflags & sauce_ansiflag_spacing_8pix))
+								if (finfo[k].has_8px && (sauce.tflags & sauce_ansiflag_spacing_8pix)) {
 									k++;
+									if (k >= sizeof(finfo) / sizeof(finfo[0])) {
+										k--;
+										fputs("\t!Data Error: No 8px font in font table!\n", stdout);
+									}
+								}
 								if (cpp) {
 									for (l = 0; l < sizeof(cpages) / sizeof(cpages[0]); l++) {
 										if (strcmp(cpages[l].code, sauce.tinfos + (cpp - finfo[k].name)) == 0) {
@@ -294,7 +299,7 @@ int main(int argc, char **argv)
 										}
 									}
 								}
-								if (l == sizeof(cpages) / sizeof(cpages[0]))
+								if (l >= sizeof(cpages) / sizeof(cpages[0]))
 									fprintf(stdout, "\tCode Page: %.*s - Invalid/Unsupported\n", (int)strlen(cpp), sauce.tinfos + (cpp - finfo[k].name));
 								fprintf(stdout, "\tFont Size: %s\n", finfo[k].size);
 								fprintf(stdout, "\tResolution: %s\n", finfo[k].resolution);
@@ -315,17 +320,25 @@ int main(int argc, char **argv)
 				fputs("Unable to locate comment block\n", stderr);
 			}
 			else {
-				buf = malloc(sauce.comments * 64 + 5);
+				buf = malloc(sauce.comments * 64 + 5 + 1);
 				if (buf) {
 					if (fread(buf, sauce.comments * 64 + 5, 1, f) != 1) {
 						fputs("Error reading SAUCE comment block.\n", stderr);
 					}
 					else {
+						// NUL terminate for Coverity
+						buf[sauce.comments * 64 + 5] = 0;
 						if (strncmp(buf, "COMNT", 5)) {
 							fputs("Invalid comment block.\n", stderr);
 						}
 						else {
 							puts("Comments:");
+							/*
+							 * As a uint8_t, the max is 255 and we're fine with that...
+							 * Checking if it's >= 0 && <= 255 should give us other warnings
+							 * so just suppress it here.
+							 */
+							// coverity[tainted_data:SUPPRESS]
 							for (j = 0; j < sauce.comments; j++) {
 								fprintf(stdout, "\t%.64s\n", buf + 5 + (j * 64));
 							}
