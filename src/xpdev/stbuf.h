@@ -7,10 +7,10 @@
 #ifndef STBUF_H
 #define STBUF_H
 
-#include <inttypes.h>
-#include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
+
+#include "gen_defs.h"
 
 struct stbuf_raw {
 	size_t   sz;      // Size of the buffer
