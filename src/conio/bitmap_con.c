@@ -920,7 +920,8 @@ bitmap_draw_vmem_locked(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 		for (unsigned vy = 0; vy < vheight; vy++) {
 			int coff = vmem_cell_offset(vstat.vmem, sx - 1, sy - 1 + vy);
 			for (unsigned vx = 0; vx < vwidth; vx++) {
-				bitmap_drawn[coff] = fill[foff++];
+				if (bitmap_drawn)
+					bitmap_drawn[coff] = fill[foff++];
 				coff = vmem_next_offset(vstat.vmem, coff);
 			}
 		}
@@ -932,7 +933,8 @@ bitmap_draw_vmem_locked(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 			// Fill in charstate for this pass
 			int coff = vmem_cell_offset(vstat.vmem, sx - 1, sy - 1 + vy);
 			for (unsigned vx = 0; vx < vwidth; vx++) {
-				bitmap_drawn[coff] = fill[foff++];
+				if (bitmap_drawn)
+					bitmap_drawn[coff] = fill[foff++];
 				coff = vmem_next_offset(vstat.vmem, coff);
 				calc_charstate(&bs, &fill[vy * vwidth + vx], &charstate[vx], sx + vx, sy + vy);
 				if (charstate[vx].slow == false)
@@ -1308,7 +1310,7 @@ static int update_from_vmem(int force)
 	for(y=0;y<height;y++) {
 		for(x=0;x<width;x++) {
 			/* Has this char been updated? */
-			if(force || !same_cell(&bitmap_drawn[pos], &vstat.vmem->vmem[pos])
+			if(force || bitmap_drawn == NULL || !same_cell(&bitmap_drawn[pos], &vstat.vmem->vmem[pos])
 			    || ((vstat.vmem->vmem[pos].legacy_attr & 0x80)
 				&& blink_attr_changed)
 			    || ((vstat.vmem->vmem[pos].legacy_attr & 0x08) && bright_attr_changed))
@@ -1699,7 +1701,8 @@ bitmap_movetext_screen(int x, int y, int tox, int toy, int direction, int height
 		// Fill the bits with impossible data so they're redrawn
 		int bdoff = vmem_cell_offset(vstat.vmem, 0, toy - 1);
 		for (int vy = 0; vy < height; vy++) {
-			memset(&bitmap_drawn[bdoff], 0x04, sizeof(*bitmap_drawn) * vstat.cols);
+			if (bitmap_drawn)
+				memset(&bitmap_drawn[bdoff], 0x04, sizeof(*bitmap_drawn) * vstat.cols);
 			bdoff = vmem_next_row_offset(vstat.vmem, bdoff);
 		}
 		if (vstat.charheight * vstat.rows == screena.screenheight) {
@@ -1808,7 +1811,8 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 	}
 	for(cy=0; cy<height; cy++) {
 		memmove(&vstat.vmem->vmem[doff], &vstat.vmem->vmem[soff], sizeof(vstat.vmem->vmem[0])*width);
-		memmove(&bitmap_drawn[doff], &bitmap_drawn[soff], sizeof(vstat.vmem->vmem[0])*width);
+		if (bitmap_drawn)
+			memmove(&bitmap_drawn[doff], &bitmap_drawn[soff], sizeof(vstat.vmem->vmem[0])*width);
 		if (scrolldown) {
 			soff = vmem_prev_row_offset(vstat.vmem, soff);
 			doff = vmem_prev_row_offset(vstat.vmem, doff);
@@ -1820,8 +1824,10 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 	}
 
 	// Make the whole thing redraw
-	if (vstat.mode == PRESTEL_40X25)
-		memset(bitmap_drawn, 0x04, sizeof(struct vmem_cell) * vstat.cols * vstat.rows);
+	if (vstat.mode == PRESTEL_40X25) {
+		if (bitmap_drawn)
+			memset(bitmap_drawn, 0x04, sizeof(struct vmem_cell) * vstat.cols * vstat.rows);
+	}
 	else
 		bitmap_movetext_screen(x, oy, tox, otoy, oscrolldown ? -1 : 1, oheight, width);
 	assert_rwlock_unlock(&vstatlock);
@@ -1981,11 +1987,12 @@ int bitmap_setpixel(uint32_t x, uint32_t y, uint32_t colour)
 	}
 	if (xchar < vstat.cols && ychar < vstat.rows) {
 		int off = vmem_cell_offset(vstat.vmem, xchar, ychar);
-		if (!same_cell(&bitmap_drawn[off], &vstat.vmem->vmem[off])) {
+		if (bitmap_drawn == NULL || !same_cell(&bitmap_drawn[off], &vstat.vmem->vmem[off])) {
 			bitmap_draw_from_vmem(xchar + 1, ychar + 1, xchar + 1, ychar + 1, true);
 		}
 		vstat.vmem->vmem[off].bg |= CIOLIB_BG_PIXEL_GRAPHICS;
-		bitmap_drawn[off].bg |= CIOLIB_BG_PIXEL_GRAPHICS;
+		if (bitmap_drawn)
+			bitmap_drawn[off].bg |= CIOLIB_BG_PIXEL_GRAPHICS;
 	}
 	if (x < screena.screenwidth && y < screena.screenheight) {
 		if (screena.rect->data[pixel_offset(&screena, x, y)] != colour) {
@@ -2069,7 +2076,7 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 				if (in_text_area) {
 					if (!yupdated) {
 						if (!xupdated) {
-							if (!same_cell(&bitmap_drawn[off], &vstat.vmem->vmem[off])) {
+							if (bitmap_drawn == NULL || !same_cell(&bitmap_drawn[off], &vstat.vmem->vmem[off])) {
 								bitmap_draw_from_vmem(charx + 1, chary + 1, charx + 1, chary + 1, true);
 							}
 							if (vstat.vmem && vstat.vmem->vmem) {
@@ -2116,7 +2123,7 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 				if (in_text_area) {
 					if (!yupdated) {
 						if (!xupdated) {
-							if (!same_cell(&bitmap_drawn[off], &vstat.vmem->vmem[off])) {
+							if (bitmap_drawn == NULL || !same_cell(&bitmap_drawn[off], &vstat.vmem->vmem[off])) {
 								bitmap_draw_from_vmem(charx + 1, chary + 1, charx + 1, chary + 1, true);
 							}
 							if (vstat.vmem && vstat.vmem->vmem) {
