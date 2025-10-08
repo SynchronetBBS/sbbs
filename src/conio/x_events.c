@@ -3,6 +3,7 @@
  * event thread.
  */
 
+#include <assert.h>
 #include <math.h>
 #include <unistd.h>
 #include <stdbool.h>
