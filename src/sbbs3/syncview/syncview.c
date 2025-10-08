@@ -560,9 +560,6 @@ int main(int argc, char **argv)
 				cols = sauce.filetype * 2;
 				if (cols == 0)
 					cols = 80;
-				// Work around issue in ds-mim02.bin and ds-mim03.bin by dea(dsoul) from mimic
-				if (cols == 2)
-					cols = 160;
 				rows = stop / (cols * 2);
 				if (rows > 60)
 					rows = 60;
