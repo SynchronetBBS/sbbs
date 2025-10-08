@@ -18,8 +18,9 @@ include $(SRC_ROOT)/build/Common.gmake
 include $(SRC_ROOT)/sbbs3/sbbsdefs.mk
 
 vpath %.c ..
+vpath %.c ../../syncterm
 
-CFLAGS	+=	$(CIOLIB-MT_CFLAGS) $(XPDEV-MT_CFLAGS) $(SMBLIB_CFLAGS) -I..
+CFLAGS	+=	-I.. -I../../syncterm $(CIOLIB-MT_CFLAGS) $(XPDEV-MT_CFLAGS) $(SMBLIB_CFLAGS) -DSYNCVIEW
 LDFLAGS	+=	$(CIOLIB-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(MT_LDFLAGS) $(ENCODE_LDFLAGS) $(HASH_LDFLAGS)
 
 $(SYNCVIEW): $(OBJS)

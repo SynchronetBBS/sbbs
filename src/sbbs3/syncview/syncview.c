@@ -6,7 +6,9 @@
 
 #include "ciolib.h"
 #include "cterm.h"
+#include "ripper.h"
 #include "sauce.h"
+#include "term.h"
 #include "vidmodes.h"
 
 #define SCROLL_LINES	100000
@@ -61,7 +63,46 @@ int fonts[] = {
 	36,
 };
 
-void viewscroll(void)
+struct terminal term = {
+	.height = 25,
+	.width = 80,
+	.nostatus = 1,
+};
+
+void
+get_term_win_size(int *width, int *height, int *pixelw, int *pixelh, int *nostatus)
+{
+	struct  text_info txtinfo;
+	int vmode;
+
+	gettextinfo(&txtinfo);
+	vmode = find_vmode(txtinfo.currmode);
+
+	*width = txtinfo.screenwidth;
+	*height = txtinfo.screenheight;
+
+	if (vmode == -1) {
+		if (pixelw)
+			*pixelw = *width * 8;
+		if (pixelh)
+			*pixelh = *height * 16;
+	}
+	else {
+		if (pixelw)
+			*pixelw = *width * vparams[vmode].charwidth;
+		if (pixelh)
+			*pixelh = *height * vparams[vmode].charheight;
+	}
+}
+
+int rgetch(int rip)
+{
+	if (rip)
+		return rip_getch();
+	return getch();
+}
+
+void viewscroll(int rip)
 {
 	int	top;
 	int key;
@@ -81,11 +122,11 @@ void viewscroll(void)
 		if(top>cterm->backpos)
 			top=cterm->backpos;
 		vmem_puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,cterm->scrollback+(txtinfo.screenwidth*top));
-		key=getch();
+		key=rgetch(rip);
 		switch(key) {
 			case 0xe0:
 			case 0:
-				switch(key|getch()<<8) {
+				switch(key|rgetch(rip)<<8) {
 					case CIO_KEY_UP:
 						top--;
 						break;
@@ -157,6 +198,11 @@ void setFontByName(const char *fname)
 	setfont(f, false, 4);
 }
 
+int conn_send(const void *buf, size_t len, unsigned timeout)
+{
+	return len;
+}
+
 int main(int argc, char **argv)
 {
 	struct text_info	ti;
@@ -181,6 +227,7 @@ int main(int argc, char **argv)
 	bool            saucy = false;
 	off_t           stop;
 	size_t          pos = 0;
+	int             rip = RIP_VERSION_NONE;
 
 	/* Parse command line */
 	for(i=1; i<argc; i++) {
@@ -213,12 +260,14 @@ int main(int argc, char **argv)
 				ansi=0;
 				strlcpy(font_name, "Atari", sizeof(font_name));
 				scaling *= 2;
+				rip = RIP_VERSION_NONE;
 			}
 			else if(argv[i][1]=='B' && argv[i][2]==0) {
 				emulation = CTERM_EMULATION_BEEB;
 				mode = PRESTEL_40X25;
 				ansi=0;
 				strlcpy(font_name, "Prestel", sizeof(font_name));
+				rip = RIP_VERSION_NONE;
 			}
 			else if(argv[i][1]=='C' && argv[i][2]==0) {
 				emulation = CTERM_EMULATION_PETASCII;
@@ -226,18 +275,28 @@ int main(int argc, char **argv)
 				ansi=0;
 				strlcpy(font_name, "Commodore 64 (UPPER)", sizeof(font_name));
 				scaling *= 2;
+				rip = RIP_VERSION_NONE;
 			}
 			else if(argv[i][1]=='P' && argv[i][2]==0) {
 				emulation = CTERM_EMULATION_PRESTEL;
 				mode = PRESTEL_40X25;
 				ansi=0;
 				strlcpy(font_name, "Prestel", sizeof(font_name));
+				rip = RIP_VERSION_NONE;
+			}
+			else if(argv[i][1]=='R' && argv[i][2]==0) {
+				emulation = CTERM_EMULATION_ANSI_BBS;
+				mode = EGA80X25;
+				ansi=0;
+				strlcpy(font_name, conio_fontdata[0].desc, sizeof(font_name));
+				rip = RIP_VERSION_1;
 			}
 			else if(argv[i][1]=='S' && argv[i][2]==0) {
 				emulation = CTERM_EMULATION_ATARIST_VT52;
 				mode = ATARIST_80X25;
 				ansi=0;
 				strlcpy(font_name, "Atari ST", sizeof(font_name));
+				rip = RIP_VERSION_NONE;
 			}
 			else
 				goto usage;
@@ -269,9 +328,11 @@ int main(int argc, char **argv)
 			truncsp(stitle);
 			uint16_t type = (((uint16_t)sauce.datatype) << 8) | sauce.filetype;
 			switch (type) {
+				case 0x0102:	// ANSiMation
+					speed = 28800;
+					// Fallthrough
 				case 0x0100:	// ASCII
 				case 0x0101:	// ANSi
-				case 0x0102:	// ANSiMation
 					// These types have a font name...
 					if (sauce.tinfos[0]) {
 						for (size_t f = 0; f < sizeof(fnames) / sizeof(fnames[0]); f++) {
@@ -320,7 +381,7 @@ int main(int argc, char **argv)
 						if (sauce.tinfo2 == 350)
 							mode = EGA80X25;
 					}
-					// TODO: RIP
+					rip = RIP_VERSION_1;
 					break;
 				// TODO: 0x0500 (Binary screen image) and 0x0600 (XBin)
 			}
@@ -376,6 +437,8 @@ int main(int argc, char **argv)
 	setvideoflags(flags);
 	setFontByName(font_name);
 	gettextinfo(&ti);
+	term.width = ti.screenwidth;
+	term.height = ti.screenheight;
 	if((scrollbuf=malloc(SCROLL_LINES*ti.screenwidth*sizeof(*scrollbuf)))==NULL) {
 		cprintf("Cannot allocate memory\n\n\rPress any key to exit.");
 		getch();
@@ -387,6 +450,8 @@ int main(int argc, char **argv)
 		fputs("ERROR Initializing CTerm!\n", stderr);
 		return 1;
 	}
+	if (rip != RIP_VERSION_NONE)
+		init_rip_ver(rip);
 	settitle(title);
 	while((len=fread(buf, 1, BUF_SIZE, f))!=0) {
 		if (saucy && pos + len > stop) {
@@ -395,6 +460,8 @@ int main(int argc, char **argv)
 		pos += len;
 		if(expand)
 			lfexpand(buf, &len);
+		if (rip)
+			len = parse_rip((uint8_t *)buf, len, sizeof(buf));
 		cterm_write(cterm, buf, len, NULL, 0, &speed);
 		if (pos >= stop)
 			break;
@@ -416,7 +483,7 @@ int main(int argc, char **argv)
 		}
 	}
 	else
-		viewscroll();
+		viewscroll(rip);
 	return(0);
 
 usage:
@@ -428,9 +495,9 @@ usage:
 			"If -A is specified, outputs in Atari mode\r\n"
 			"If -B is specified, outputs in BBC Micro mode\r\n"
 			"If -C is specified, outputs in C64 mode\r\n"
+			"If -R is specified, outputs in RIP mode\r\n"
 			"If -S is specified, outputs in AtariST VT-52 mode\r\n"
 			"\r\n"
 			"Press any key to exit.", argv[0]);
-	getch();
 	return(-1);
 }

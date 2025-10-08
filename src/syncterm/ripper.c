@@ -10835,8 +10835,10 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 	uint32_t fg;
 	int      i, j;
 	int      x, y;
+#ifndef SYNCVIEW
 	char     cache_path[MAX_PATH + 1];
 	FILE    *icn;
+#endif
 	int      ex, ey;
 
 	args = parse_string(rawargs);
@@ -13740,6 +13742,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							arg1 = parse_mega(&args[0], 2);
 							if ((arg1 < 0) || (arg1 > 4))
 								break;
+#ifndef SYNCVIEW
 							if (strstr(&args[6], ".."))
 								break;
 							if (strchr(&args[6], '/'))
@@ -13815,6 +13818,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 									}
 									break;
 							}
+#endif
 							break;
 						case 'G': // RIP_COPY_REGION !|1G <x0> <y0> <x1> <y1> <res> <dest_line>
                                                         /* This command physically "copies" a rectangular region of the
@@ -13934,6 +13938,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
                                                          *        parameters, should be set to "10".
                                                          */
 							handled = true;
+#ifndef SYNCVIEW
 							if (!get_cache_fn_subdir(rip.bbs, cache_path,
 							    sizeof(cache_path), "RIP"))
 								break;
@@ -14048,6 +14053,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 									}
 								}
 							}
+#endif
 							break;
 						case 'K': // RIP_KILL_MOUSE_FIELDS !|1K
                                                         /*
@@ -14731,6 +14737,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 							handled = true;
 							if (rip.clipboard == NULL)
 								break;
+#ifndef SYNCVIEW
 							if (!get_cache_fn_subdir(rip.bbs, cache_path,
 							    sizeof(cache_path), "RIP"))
 								break;
@@ -14789,6 +14796,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 									free(planes);
 								}
 							}
+#endif
 							break;
 					}
 			}
@@ -14912,6 +14920,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								break;
 							if ((arg3 < 0) || (arg3 == 0) || (arg3 == 5))
 								break;
+#ifndef SYNCVIEW
 							if (!get_cache_fn_subdir(rip.bbs, cache_path,
 							    sizeof(cache_path), "RIP"))
 								break;
@@ -15053,6 +15062,7 @@ do_rip_command(int level, int sublevel, int cmd, const char *rawargs)
 								free(uldir);
 							}
 							break;
+#endif
 					}
 					break;
 			}
@@ -15373,7 +15383,9 @@ do_skypix(char *buf, size_t len)
 	int              vmode;
 	char            *sarg = NULL;
 	FILE            *font;
+#ifndef SYNCVIEW
 	char             cache_path[MAX_PATH + 1];
+#endif
 
 	if (skypix == false) {
 		skypix = true;
@@ -15647,6 +15659,7 @@ do_skypix(char *buf, size_t len)
 			setcolour(cterm->fg_color, cterm->bg_color);
 			break;
 		case 16: // XModem transfer(!)
+#ifndef SYNCVIEW
 			if ((sarg != NULL) && ((argv[1] == 20) || (argv[1] == 1))) {
 				p = strchr(sarg, ':');
 				if (p == NULL)
@@ -15668,6 +15681,7 @@ do_skypix(char *buf, size_t len)
 				strncpy(rip.bbs->dldir, dldir, sizeof(rip.bbs->dldir));
 				free(dldir);
 			}
+#endif
 			break;
 		case 17: // Set display mode...
 			printf("TODO: SkyPix Set Display Mode (%ld)\n", argv[0]);
@@ -16384,7 +16398,7 @@ suspend_rip(bool suspend)
 }
 
 void
-init_rip(struct bbslist *bbs)
+init_rip_ver(int ripver)
 {
 #ifdef HAS_VSTAT
 	if (cio_api.options & CONIO_OPT_SET_PIXEL) {
@@ -16395,8 +16409,8 @@ init_rip(struct bbslist *bbs)
 		memset(&rip, 0, sizeof(rip));
 		rip.state = RIP_STATE_BOL;
 		rip.newstate = RIP_STATE_FLUSHING;
-		rip.enabled = (bbs->rip != RIP_VERSION_NONE) && (cio_api.options & CONIO_OPT_SET_PIXEL);
-		rip.version = bbs->rip;
+		rip.enabled = (ripver != RIP_VERSION_NONE) && (cio_api.options & CONIO_OPT_SET_PIXEL);
+		rip.version = ripver;
 		rip.x = 0;
 		rip.y = 0;
 		rip.viewport.sx = 0;
@@ -16424,7 +16438,6 @@ init_rip(struct bbslist *bbs)
 		}
 		rip.viewport.ex = rip.x_dim - 1;
 		rip.viewport.ey = rip.y_dim - 1;
-		rip.bbs = bbs;
 		if (rip.version == RIP_VERSION_1) {
 			rip.default_font = conio_fontdata[0].eight_by_eight;
 			rip.default_font_width = 8;
@@ -16453,13 +16466,22 @@ init_rip(struct bbslist *bbs)
 		moredata_len = 0;
 		if (moredata)
 			moredata[0] = 0;
-		if (bbs->rip) {
+		if (ripver) {
 			shadow_palette();
 			memcpy(&curr_ega_palette, &default_ega_palette, sizeof(curr_ega_palette));
 			set_ega_palette();
 			normal_palette();
 		}
 	}
+#endif
+}
+
+void
+init_rip(struct bbslist *bbs)
+{
+#ifdef HAS_VSTAT
+	init_rip_ver(bbs->rip);
+	rip.bbs = bbs;
 #endif
 }
 
