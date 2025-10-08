@@ -299,7 +299,7 @@ int main(int argc, char **argv)
 										}
 									}
 								}
-								if (l >= sizeof(cpages) / sizeof(cpages[0]))
+								if (l >= (int)(sizeof(cpages) / sizeof(cpages[0])))
 									fprintf(stdout, "\tCode Page: %.*s - Invalid/Unsupported\n", (int)strlen(cpp), sauce.tinfos + (cpp - finfo[k].name));
 								fprintf(stdout, "\tFont Size: %s\n", finfo[k].size);
 								fprintf(stdout, "\tResolution: %s\n", finfo[k].resolution);
