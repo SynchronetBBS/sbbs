@@ -311,8 +311,8 @@ setup_xbin(uint8_t *data, int *mode, int *setflags, int cmode, bool *xbin)
 			vparams[cvmode].flags &= ~(CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT);
 		}
 		if (hdr->flags & (1 << 4)) {
-			*setflags |= (CIOLIB_VIDEO_NOBRIGHT | CIOLIB_VIDEO_ALTCHARS);
-			vparams[cvmode].flags |= (CIOLIB_VIDEO_NOBRIGHT | CIOLIB_VIDEO_ALTCHARS);
+			*setflags |= (CIOLIB_VIDEO_ALTCHARS);
+			vparams[cvmode].flags |= (CIOLIB_VIDEO_ALTCHARS);
 		}
 		*xbin = true;
 
