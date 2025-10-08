@@ -177,5 +177,6 @@ stbuf_rem(stbuf *buf, size_t start, size_t len)
 }
 
 #undef STBUF_INLINE
+#undef STBUF_RESTRICT
 
 #endif
