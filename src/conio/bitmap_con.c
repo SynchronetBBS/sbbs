@@ -603,6 +603,8 @@ calc_charstate(struct blockstate *bs, struct vmem_cell *vc, struct charstate *cs
 
 	if (vstat.forced_font) {
 		cs->font = vstat.forced_font;
+		if (vstat.forced_font2 && vc->font)
+			cs->font = vstat.forced_font2;
 	}
 	else {
 		if (current_font[0] == -1) {

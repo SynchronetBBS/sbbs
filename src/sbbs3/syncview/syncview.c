@@ -3,8 +3,10 @@
 
 #include "dirwrap.h"
 #include "genwrap.h"
+#include "xpendian.h"
 #include "xpmap.h"
 
+#include "bitmap_con.h"
 #include "ciolib.h"
 #include "cterm.h"
 #include "ripper.h"
@@ -70,6 +72,28 @@ struct terminal term = {
 	.width = 80,
 	.nostatus = 1,
 };
+
+#if defined(__GNUC__)
+        #define PACKED_STRUCT __attribute__((packed))
+#else   /* non-GCC compiler */
+        #pragma pack(push)
+        #pragma pack(1)
+        #define PACKED_STRUCT
+#endif
+
+struct xbin_header {
+	char     id[4];
+	uint8_t  eof;
+	uint16_t width;
+	uint16_t height;
+	uint8_t  fontsize;
+	uint8_t  flags;
+} PACKED_STRUCT;
+
+#if !defined(__GNUC__)
+        #pragma pack(pop)       /* original packing */
+#endif
+#undef PACKED_STRUCT
 
 void
 get_term_win_size(int *width, int *height, int *pixelw, int *pixelh, int *nostatus)
@@ -205,6 +229,59 @@ int conn_send(const void *buf, size_t len, unsigned timeout)
 	return len;
 }
 
+uint16_t expand_channel(uint16_t val)
+{
+	uint16_t ret = val << 10;
+	ret |= val << 4;
+	ret |= val >> 2;
+	return ret;
+}
+
+uint8_t *
+xbin_uncompress(uint8_t *data, uint16_t width, uint16_t height, size_t sz)
+{
+	uint8_t *ret = malloc((size_t)width * height);
+	if (ret == NULL)
+		return ret;
+	size_t out = 0;
+	for (size_t off = 0; off < sz; off++) {
+		int type = data[off] & 0xc0;
+		int counter = (data[off] & 0x3f) + 1;
+		uint8_t ch, attr;
+		switch (type) {
+			case 0:    // No compression
+				for (size_t i = 0; i < counter; i++) {
+					ret[out++] = data[++off];
+					ret[out++] = data[++off];
+				}
+				break;
+			case 0x40: // Character compression
+				ch = data[++off];
+				for (size_t i = 0; i < counter; i++) {
+					ret[out++] = ch;
+					ret[out++] = data[++off];
+				}
+				break;
+			case 0x80: // Attribute compression
+				attr = data[++off];
+				for (size_t i = 0; i < counter; i++) {
+					ret[out++] = data[++off];
+					ret[out++] = attr;
+				}
+				break;
+			default:   // Character/Attribute compression
+				ch = data[++off];
+				attr = data[++off];
+				for (size_t i = 0; i < counter; i++) {
+					ret[out++] = ch;
+					ret[out++] = attr;
+				}
+				break;
+		}
+	}
+	return ret;
+}
+
 int main(int argc, char **argv)
 {
 	struct text_info	ti;
@@ -231,6 +308,7 @@ int main(int argc, char **argv)
 	size_t          pos = 0;
 	int             rip = RIP_VERSION_NONE;
 	bool            bintext = false;
+	bool            xbin = false;
 
 	/* Parse command line */
 	for(i=1; i<argc; i++) {
@@ -257,6 +335,24 @@ int main(int argc, char **argv)
 				emulation = CTERM_EMULATION_ANSI_BBS;
 				ansi=1;
 			}
+			else if(argv[i][1]=='b' && argv[i][2]==0) {
+				emulation = CTERM_EMULATION_ANSI_BBS;
+				mode = C80;
+				ansi=0;
+				strlcpy(font_name, conio_fontdata[0].desc, sizeof(font_name));
+				rip = RIP_VERSION_NONE;
+				bintext = true;
+				xbin = false;
+			}
+			else if(argv[i][1]=='x' && argv[i][2]==0) {
+				emulation = CTERM_EMULATION_ANSI_BBS;
+				mode = C80;
+				ansi=0;
+				strlcpy(font_name, conio_fontdata[0].desc, sizeof(font_name));
+				rip = RIP_VERSION_NONE;
+				bintext = false;
+				xbin = true;
+			}
 			else if(argv[i][1]=='A' && argv[i][2]==0) {
 				emulation = CTERM_EMULATION_ATASCII;
 				mode = ATARIST_40X25;
@@ -264,6 +360,8 @@ int main(int argc, char **argv)
 				strlcpy(font_name, "Atari", sizeof(font_name));
 				scaling *= 2;
 				rip = RIP_VERSION_NONE;
+				bintext = false;
+				xbin = false;
 			}
 			else if(argv[i][1]=='B' && argv[i][2]==0) {
 				emulation = CTERM_EMULATION_BEEB;
@@ -271,6 +369,8 @@ int main(int argc, char **argv)
 				ansi=0;
 				strlcpy(font_name, "Prestel", sizeof(font_name));
 				rip = RIP_VERSION_NONE;
+				bintext = false;
+				xbin = false;
 			}
 			else if(argv[i][1]=='C' && argv[i][2]==0) {
 				emulation = CTERM_EMULATION_PETASCII;
@@ -279,6 +379,8 @@ int main(int argc, char **argv)
 				strlcpy(font_name, "Commodore 64 (UPPER)", sizeof(font_name));
 				scaling *= 2;
 				rip = RIP_VERSION_NONE;
+				bintext = false;
+				xbin = false;
 			}
 			else if(argv[i][1]=='P' && argv[i][2]==0) {
 				emulation = CTERM_EMULATION_PRESTEL;
@@ -286,6 +388,8 @@ int main(int argc, char **argv)
 				ansi=0;
 				strlcpy(font_name, "Prestel", sizeof(font_name));
 				rip = RIP_VERSION_NONE;
+				bintext = false;
+				xbin = false;
 			}
 			else if(argv[i][1]=='R' && argv[i][2]==0) {
 				emulation = CTERM_EMULATION_ANSI_BBS;
@@ -293,6 +397,8 @@ int main(int argc, char **argv)
 				ansi=0;
 				strlcpy(font_name, conio_fontdata[0].desc, sizeof(font_name));
 				rip = RIP_VERSION_1;
+				bintext = false;
+				xbin = false;
 			}
 			else if(argv[i][1]=='S' && argv[i][2]==0) {
 				emulation = CTERM_EMULATION_ATARIST_VT52;
@@ -300,6 +406,8 @@ int main(int argc, char **argv)
 				ansi=0;
 				strlcpy(font_name, "Atari ST", sizeof(font_name));
 				rip = RIP_VERSION_NONE;
+				bintext = false;
+				xbin = false;
 			}
 			else
 				goto usage;
@@ -386,7 +494,6 @@ int main(int argc, char **argv)
 					}
 					rip = RIP_VERSION_1;
 					break;
-				// TODO: 0x0500 (Binary screen image) and 0x0600 (XBin)
 			}
 			if (sauce.datatype == 0x05) {
 				// Just puttext() the whole thing...
@@ -418,6 +525,35 @@ int main(int argc, char **argv)
 					vparams[cvmode].charwidth = 8;
 					break;
 			}
+			// We parse XBin after because it can override some stuff...
+			if (type == 0x0600) {
+				struct xbin_header hdr;
+				if (fread(&hdr, sizeof(hdr), 1, f) == 1) {
+					if (memcmp(hdr.id, "XBIN", 4) == 0) {
+						mode = CIOLIB_MODE_CUSTOM;
+						vparams[cvmode].cols = LE_INT16(hdr.width);
+						rows = LE_INT16(hdr.height);
+						if (rows > 60)
+							rows = 60;
+						vparams[cvmode].rows = rows;
+						vparams[cvmode].charwidth = 8;
+						vparams[cvmode].charheight = hdr.fontsize;
+						if (hdr.flags & (1 << 3)) {
+							setflags |= (CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT);
+							vparams[cvmode].flags |= (CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT);
+						}
+						else {
+							setflags &= ~(CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT);
+							vparams[cvmode].flags &= ~(CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT);
+						}
+						if (hdr.flags & (1 << 4)) {
+							setflags |= (CIOLIB_VIDEO_NOBRIGHT | CIOLIB_VIDEO_ALTCHARS);
+							vparams[cvmode].flags |= (CIOLIB_VIDEO_NOBRIGHT | CIOLIB_VIDEO_ALTCHARS);
+						}
+						xbin = true;
+					}
+				}
+			}
 			switch (sauce.tflags & sauce_ansiflag_ratio_mask) {
 				case sauce_ansiflag_ratio_square:
 					vparams[cvmode].aspect_width = vparams[cvmode].cols * vparams[cvmode].charwidth;
@@ -427,6 +563,36 @@ int main(int argc, char **argv)
 				case sauce_ansiflag_ratio_rect:
 				default:
 					break;
+			}
+		}
+		else {
+			if (xbin) {
+				struct xbin_header hdr;
+				if (fread(&hdr, sizeof(hdr), 1, f) == 1) {
+					if (memcmp(hdr.id, "XBIN", 4) == 0) {
+						mode = CIOLIB_MODE_CUSTOM;
+						vparams[cvmode].cols = LE_INT16(hdr.width);
+						uint16_t rows = LE_INT16(hdr.height);
+						if (rows > 60)
+							rows = 60;
+						vparams[cvmode].rows = rows;
+						vparams[cvmode].charwidth = 8;
+						vparams[cvmode].charheight = hdr.fontsize;
+						if (hdr.flags & (1 << 3)) {
+							setflags |= (CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT);
+							vparams[cvmode].flags |= (CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT);
+						}
+						else {
+							setflags &= ~(CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT);
+							vparams[cvmode].flags &= ~(CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT);
+						}
+						if (hdr.flags & (1 << 4)) {
+							setflags |= (CIOLIB_VIDEO_NOBRIGHT | CIOLIB_VIDEO_ALTCHARS);
+							vparams[cvmode].flags |= (CIOLIB_VIDEO_NOBRIGHT | CIOLIB_VIDEO_ALTCHARS);
+						}
+						xbin = true;
+					}
+				}
 			}
 		}
 		if (stitle[0])
@@ -490,6 +656,60 @@ int main(int argc, char **argv)
 			xpunmap(map);
 		}
 	}
+	else if (xbin) {
+		fclose(f);
+		struct xpmapping *map = xpmap(infile, XPMAP_READ);
+		if (map) {
+			struct xbin_header *hdr = map->addr;
+			if (memcmp(hdr->id, "XBIN", 4))
+				fprintf(stderr, "Invalid XBIN header!\n");
+			else {
+				bool palette = (hdr->flags & (1 << 0));
+				bool font = (hdr->flags & (1 << 1));
+				bool compressed = (hdr->flags & (1 << 2));
+				bool twocharsets = (hdr->flags & (1 << 4));
+				size_t offset = sizeof(struct xbin_header);
+				if (palette) {
+					uint8_t *p = &map->addr[offset];
+					for (int col = 0; col < 16; col++) {
+						// Order is reversed?
+						setpalette(col, expand_channel(p[2]), expand_channel(p[1]), expand_channel(p[0]));
+						p += 3;
+					}
+					offset += 48;
+				}
+				if (font) {
+					vstat.forced_font = &map->addr[offset];
+					offset += hdr->fontsize * 256;
+					if (twocharsets) {
+						vstat.forced_font2 = &map->addr[offset];
+						offset += hdr->fontsize * 256;
+					}
+				}
+				uint8_t *imgdata = &map->addr[offset];
+				if (compressed) {
+					imgdata = xbin_uncompress(imgdata, LE_INT16(hdr->width), LE_INT16(hdr->height), stop - offset);
+					if (imgdata == NULL) {
+						fprintf(stderr, "Unable to decompress XBin data\n");
+					}
+				}
+				size_t rows = LE_INT16(hdr->height);
+				size_t row;
+				for (row = 0; row < rows; row += ti.screenheight) {
+					size_t sr = rows - row;
+					if (sr > ti.screenheight)
+						sr = ti.screenheight;
+					if (row) {
+						for (size_t i = 0; i < sr; i++)
+							cterm_scrollup(cterm);
+					}
+					puttext(1, 1 + (ti.screenheight - sr), vparams[cvmode].cols, ti.screenheight, &imgdata[row * vparams[cvmode].cols * 2]);
+				}
+			}
+			// We can't do this or we lose the fonts. :D
+			//xpunmap(map);
+		}
+	}
 	else {
 		while((len=fread(buf, 1, BUF_SIZE, f))!=0) {
 			if (saucy && pos + len > stop) {
@@ -531,6 +751,8 @@ usage:
 			"If no filename is specified, reads input from stdin\r\n"
 			"Will be scaled by <scaling> (can be fractional)\r\n"
 			"If -a is specified, outputs ANSI to stdout\r\n"
+			"If -b is specified, outputs BinaryText\r\n"
+			"If -x is specified, outputs XBin\r\n"
 			"If -A is specified, outputs in Atari mode\r\n"
 			"If -B is specified, outputs in BBC Micro mode\r\n"
 			"If -C is specified, outputs in C64 mode\r\n"
