@@ -291,6 +291,9 @@ setup_xbin(uint8_t *data, int *mode, int *setflags, int cmode, bool *xbin)
 	struct xbin_header *hdr = (void *)data;
 	if (memcmp(hdr->id, "XBIN", 4) == 0) {
 		*mode = CIOLIB_MODE_CUSTOM;
+		uint16_t cols = LE_INT16(hdr->width);
+		if (cols == 0)
+			cols = 80;
 		vparams[cvmode].cols = LE_INT16(hdr->width);
 		int rows = LE_INT16(hdr->height);
 		if (rows > 60)
@@ -534,8 +537,6 @@ int main(int argc, char **argv)
 					cols = sauce.tinfo1;
 					if (cols == 0)
 						cols = 80;
-					if (cols > 255)
-						cols = 255;
 					rows = sauce.tinfo2;
 					if (rows == 0)
 						rows = 25;
@@ -557,6 +558,8 @@ int main(int argc, char **argv)
 				// Just puttext() the whole thing...
 				bintext = true;
 				cols = sauce.filetype * 2;
+				if (cols == 0)
+					cols = 80;
 				// Work around issue in ds-mim02.bin and ds-mim03.bin by dea(dsoul) from mimic
 				if (cols == 2)
 					cols = 160;
