@@ -3,6 +3,7 @@
 
 #include "dirwrap.h"
 #include "genwrap.h"
+#include "xpmap.h"
 
 #include "ciolib.h"
 #include "cterm.h"
@@ -14,6 +15,7 @@
 #define SCROLL_LINES	100000
 #define BUF_SIZE		1024
 
+static int cvmode;
 struct cterminal *cterm;
 
 char *fnames[] = {
@@ -78,7 +80,7 @@ get_term_win_size(int *width, int *height, int *pixelw, int *pixelh, int *nostat
 	gettextinfo(&txtinfo);
 	vmode = find_vmode(txtinfo.currmode);
 
-	*width = txtinfo.screenwidth;
+	*width = vparams[cvmode].cols;
 	*height = txtinfo.screenheight;
 
 	if (vmode == -1) {
@@ -114,14 +116,14 @@ void viewscroll(int rip)
 		memmove(cterm->scrollback,cterm->scrollback+cterm->width,cterm->width*sizeof(*cterm->scrollback)*(cterm->backlines-1));
 		cterm->backpos=cterm->backlines;
 	}
-	vmem_gettext(1,1,txtinfo.screenwidth,txtinfo.screenheight,cterm->scrollback+(cterm->backpos)*cterm->width);
+	vmem_gettext(1,1,vparams[cvmode].cols,txtinfo.screenheight,cterm->scrollback+(cterm->backpos)*cterm->width);
 	top=cterm->backpos;
 	for(i=0;!i;) {
 		if(top<1)
 			top=1;
 		if(top>cterm->backpos)
 			top=cterm->backpos;
-		vmem_puttext(1,1,txtinfo.screenwidth,txtinfo.screenheight,cterm->scrollback+(txtinfo.screenwidth*top));
+		vmem_puttext(1,1,vparams[cvmode].cols,txtinfo.screenheight,cterm->scrollback+(vparams[cvmode].cols*top));
 		key=rgetch(rip);
 		switch(key) {
 			case 0xe0:
@@ -228,6 +230,7 @@ int main(int argc, char **argv)
 	off_t           stop;
 	size_t          pos = 0;
 	int             rip = RIP_VERSION_NONE;
+	bool            bintext = false;
 
 	/* Parse command line */
 	for(i=1; i<argc; i++) {
@@ -317,7 +320,7 @@ int main(int argc, char **argv)
 		if (sauce_fread_record(f, &sauce)) {
 			int cols = 80;
 			int rows = 25;
-			int cvmode = find_vmode(CIOLIB_MODE_CUSTOM);
+			cvmode = find_vmode(CIOLIB_MODE_CUSTOM);
 			saucy = true;
 			stop = flength(infile) - 128 - 1;
 			if (sauce.comments)
@@ -385,6 +388,20 @@ int main(int argc, char **argv)
 					break;
 				// TODO: 0x0500 (Binary screen image) and 0x0600 (XBin)
 			}
+			if (sauce.datatype == 0x05) {
+				// Just puttext() the whole thing...
+				bintext = true;
+				cols = sauce.filetype * 2;
+				// Work around issue in ds-mim02.bin and ds-mim03.bin by dea(dsoul) from mimic
+				if (cols == 2)
+					cols = 160;
+				rows = stop / (cols * 2);
+				if (rows > 60)
+					rows = 60;
+				vparams[cvmode].cols = cols;
+				vparams[cvmode].rows = rows;
+				mode = CIOLIB_MODE_CUSTOM;
+			}
 			if (sauce.tflags & sauce_ansiflag_nonblink) {
 				vparams[cvmode].flags |= (CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT);
 				setflags |= (CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT);
@@ -437,15 +454,15 @@ int main(int argc, char **argv)
 	setvideoflags(flags);
 	setFontByName(font_name);
 	gettextinfo(&ti);
-	term.width = ti.screenwidth;
+	term.width = vparams[cvmode].cols;
 	term.height = ti.screenheight;
-	if((scrollbuf=malloc(SCROLL_LINES*ti.screenwidth*sizeof(*scrollbuf)))==NULL) {
+	if((scrollbuf=malloc(SCROLL_LINES*vparams[cvmode].cols*sizeof(*scrollbuf)))==NULL) {
 		cprintf("Cannot allocate memory\n\n\rPress any key to exit.");
 		getch();
 		return(-1);
 	}
 
-	cterm=cterm_init(ti.screenheight, ti.screenwidth, 1, 1, SCROLL_LINES, ti.screenwidth, scrollbuf, emulation);
+	cterm=cterm_init(ti.screenheight, vparams[cvmode].cols, 1, 1, SCROLL_LINES, vparams[cvmode].cols, scrollbuf, emulation);
 	if(!cterm) {
 		fputs("ERROR Initializing CTerm!\n", stderr);
 		return 1;
@@ -453,18 +470,40 @@ int main(int argc, char **argv)
 	if (rip != RIP_VERSION_NONE)
 		init_rip_ver(rip);
 	settitle(title);
-	while((len=fread(buf, 1, BUF_SIZE, f))!=0) {
-		if (saucy && pos + len > stop) {
-			len = stop - pos;
+	if (bintext) {
+		size_t row = 0;
+		size_t rows = stop / (vparams[cvmode].cols * 2);
+
+		fclose(f);
+		struct xpmapping *map = xpmap(infile, XPMAP_READ);
+		if (map) {
+			for (row = 0; row < rows; row += ti.screenheight) {
+				size_t sr = rows - row;
+				if (sr > ti.screenheight)
+					sr = ti.screenheight;
+				if (row) {
+					for (size_t i = 0; i < sr; i++)
+						cterm_scrollup(cterm);
+				}
+				puttext(1, 1 + (ti.screenheight - sr), vparams[cvmode].cols, ti.screenheight, &map->addr[row * vparams[cvmode].cols * 2]);
+			}
+			xpunmap(map);
 		}
-		pos += len;
-		if(expand)
-			lfexpand(buf, &len);
-		if (rip)
-			len = parse_rip((uint8_t *)buf, len, sizeof(buf));
-		cterm_write(cterm, buf, len, NULL, 0, &speed);
-		if (pos >= stop)
-			break;
+	}
+	else {
+		while((len=fread(buf, 1, BUF_SIZE, f))!=0) {
+			if (saucy && pos + len > stop) {
+				len = stop - pos;
+			}
+			pos += len;
+			if(expand)
+				lfexpand(buf, &len);
+			if (rip)
+				len = parse_rip((uint8_t *)buf, len, sizeof(buf));
+			cterm_write(cterm, buf, len, NULL, 0, &speed);
+			if (pos >= stop)
+				break;
+		}
 	}
 	if(ansi) {
 		puts("");
@@ -473,13 +512,13 @@ int main(int argc, char **argv)
 			memmove(cterm->scrollback,cterm->scrollback+cterm->width,cterm->width*sizeof(*cterm->scrollback)*(cterm->backlines-1));
 			cterm->backpos=cterm->backlines;
 		}
-		vmem_gettext(1,1,ti.screenwidth,ti.screenheight,cterm->scrollback+(cterm->backpos)*cterm->width);
+		vmem_gettext(1,1,vparams[cvmode].cols,ti.screenheight,cterm->scrollback+(cterm->backpos)*cterm->width);
 		cterm->backpos += ti.screenheight;
 		puttext_can_move=1;
 		puts("START OF SCREEN DUMP...");
 		for (i = 0; i < cterm->backpos; i += ti.screenheight) {
 			clrscr();
-			vmem_puttext(1,1,ti.screenwidth,cterm->backpos - i > ti.screenheight ? ti.screenheight : cterm->backpos - i,cterm->scrollback+(ti.screenwidth*i));
+			vmem_puttext(1,1,vparams[cvmode].cols,cterm->backpos - i > ti.screenheight ? ti.screenheight : cterm->backpos - i,cterm->scrollback+(vparams[cvmode].cols*i));
 		}
 	}
 	else
