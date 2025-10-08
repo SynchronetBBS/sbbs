@@ -73,6 +73,7 @@ static int outstanding_rects;
 // win32gdi requires two rects...
 #define MAX_OUTSTANDING 2
 static protected_int32_t videoflags;
+static int real_screenwidth = 80;
 
 /* Exported globals */
 
@@ -852,7 +853,7 @@ bitmap_draw_vmem_locked(int sx, int sy, int ex, int ey, struct vmem_cell *fill)
 {
 	assert(sx <= ex);
 	assert(sy <= ey);
-	struct charstate charstate[255]; // ciolib only supports 255 columns
+	struct charstate charstate[510]; // ciolib only supports 255 columns, but syncview does to 510!
 	struct blockstate bs;
 	unsigned vwidth = ex - sx + 1;
 	unsigned vheight  = ey - sy + 1;
@@ -1365,7 +1366,7 @@ int bitmap_puttext(int sx, int sy, int ex, int ey, void *fill)
 	    || ey < 1
 	    || sx > ex
 	    || sy > ey
-	    || ex > cio_textinfo.screenwidth
+	    || ex > real_screenwidth
 	    || ey > cio_textinfo.screenheight
 	    || fill==NULL) {
 		return(0);
@@ -1404,7 +1405,7 @@ bitmap_vmem_gettext_invalid(int sx, int sy, int ex, int ey, struct vmem_cell *fi
 			|| ey < 1
 			|| sx > ex
 			|| sy > ey
-			|| ex > cio_textinfo.screenwidth
+			|| ex > real_screenwidth
 			|| ey > cio_textinfo.screenheight
 			|| fill==NULL) {
 		return true;
@@ -1766,10 +1767,10 @@ int bitmap_movetext(int x, int y, int ex, int ey, int tox, int toy)
 			|| ey<1
 			|| tox<1
 			|| toy<1
-			|| x>cio_textinfo.screenwidth
-			|| ex>cio_textinfo.screenwidth
-			|| tox>cio_textinfo.screenwidth
-			|| (tox + width - 1) > cio_textinfo.screenwidth
+			|| x>real_screenwidth
+			|| ex>real_screenwidth
+			|| tox>real_screenwidth
+			|| (tox + width - 1) > real_screenwidth
 			|| y>cio_textinfo.screenheight
 			|| ey>cio_textinfo.screenheight
 			|| toy>cio_textinfo.screenheight
@@ -2676,10 +2677,12 @@ int bitmap_drv_init_mode(int mode, int *width, int *height, int maxwidth, int ma
 	else
 		cio_textinfo.screenheight = vstat.rows;
 
-	if (vstat.cols > 0xff)
+	if (vstat.cols > 0xff) {
+		real_screenwidth = vstat.cols;
 		cio_textinfo.screenwidth = 0xff;
+	}
 	else
-		cio_textinfo.screenwidth = vstat.cols;
+		real_screenwidth = cio_textinfo.screenwidth = vstat.cols;
 
 	cio_textinfo.curx=1;
 	cio_textinfo.cury=1;
