@@ -7,6 +7,14 @@
 #ifndef STBUF_H
 #define STBUF_H
 
+#if __STDC_VERSION__ >= 199901L
+# define STBUF_INLINE inline
+# define STBUF_RESTRICT restrict
+#else
+# define STBUF_INLINE
+# define STBUF_RESTRICT
+#endif
+
 #include <stddef.h>
 #include <string.h>
 
@@ -24,7 +32,7 @@ typedef struct stbuf_s {
 	const size_t len;     // Length of the buffer contents
 	const bool   dynamic; // Can be resized via realloc()
 	const char   buf[];   // Buffer data
-} *restrict stbuf;
+} *STBUF_RESTRICT stbuf;
 
 // Offset from the start of the buffer to the data
 #define STBUF_OFFSET offsetof(struct stbuf_raw, buf)
@@ -92,80 +100,82 @@ void stbuf_free(stbuf buf);
  */
 bool stbuf_memrepl(stbuf *buf, size_t start, size_t rlen, const void *mem, size_t ilen);
 
-static inline bool
+static STBUF_INLINE bool
 stbuf_strrepl(stbuf *buf, size_t start, size_t rlen, const char *str)
 {
 	const size_t len = str ? strlen(str) : 0;
 	return stbuf_memrepl(buf, start, rlen, str, len);
 }
 
-static inline bool
+static STBUF_INLINE bool
 stbuf_repl(stbuf *buf, size_t start, size_t rlen, const stbuf stb)
 {
 	return stbuf_memrepl(buf, start, rlen, stb ? stb->buf : NULL, stb ? stb->len : 0);
 }
 
-static inline bool
+static STBUF_INLINE bool
 stbuf_strcpy(stbuf *buf, const char *str)
 {
 	return stbuf_strrepl(buf, 0, STBUF_MAX, str);
 }
 
-static inline bool
+static STBUF_INLINE bool
 stbuf_memcpy(stbuf *buf, const void *mem, size_t len)
 {
 	return stbuf_memrepl(buf, 0, STBUF_MAX, mem, len);
 }
 
-static inline bool
+static STBUF_INLINE bool
 stbuf_cpy(stbuf *buf, const stbuf src)
 {
 	return stbuf_repl(buf, 0, STBUF_MAX, src);
 }
 
-static inline bool
+static STBUF_INLINE bool
 stbuf_strcat(stbuf *buf, const char *str)
 {
 	const size_t blen = (buf && *buf) ? (*buf)->len : 0;
 	return stbuf_strrepl(buf, blen, 0, str);
 }
 
-static inline bool
+static STBUF_INLINE bool
 stbuf_memcat(stbuf *buf, const void *mem, size_t len)
 {
 	const size_t blen = (buf && *buf) ? (*buf)->len : 0;
 	return stbuf_memrepl(buf, blen, STBUF_MAX, mem, len);
 }
 
-static inline bool
+static STBUF_INLINE bool
 stbuf_cat(stbuf *buf, const stbuf sbuf)
 {
 	const size_t blen = (buf && *buf) ? (*buf)->len : 0;
 	return stbuf_repl(buf, blen, STBUF_MAX, sbuf);
 }
 
-static inline bool
+static STBUF_INLINE bool
 stbuf_memins(stbuf *buf, size_t start, const void *mem, size_t len)
 {
 	return stbuf_memrepl(buf, start, 0, mem, len);
 }
 
-static inline bool
+static STBUF_INLINE bool
 stbuf_strins(stbuf *buf, size_t start, const char *str)
 {
 	return stbuf_strrepl(buf, start, 0, str);
 }
 
-static inline bool
+static STBUF_INLINE bool
 stbuf_ins(stbuf *buf, size_t start, const stbuf sbuf)
 {
 	return stbuf_repl(buf, start, 0, sbuf);
 }
 
-static inline bool
+static STBUF_INLINE bool
 stbuf_rem(stbuf *buf, size_t start, size_t len)
 {
 	return stbuf_memrepl(buf, start, len, NULL, 0);
 }
+
+#undef STBUF_INLINE
 
 #endif
