@@ -532,9 +532,13 @@ int main(int argc, char **argv)
 				case 0x0105:	// Avatar
 				case 0x0108:	// TundraDraw
 					cols = sauce.tinfo1;
+					if (cols == 0)
+						cols = 80;
 					if (cols > 255)
 						cols = 255;
 					rows = sauce.tinfo2;
+					if (rows == 0)
+						rows = 25;
 					if (rows > 60)
 						rows = 60;
 					vparams[cvmode].cols = cols;
