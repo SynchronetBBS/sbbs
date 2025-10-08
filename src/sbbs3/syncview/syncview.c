@@ -672,8 +672,7 @@ int main(int argc, char **argv)
 				if (palette) {
 					uint8_t *p = &map->addr[offset];
 					for (int col = 0; col < 16; col++) {
-						// Order is reversed?
-						setpalette(col, expand_channel(p[2]), expand_channel(p[1]), expand_channel(p[0]));
+						setpalette(palettes[2][col], expand_channel(p[0]), expand_channel(p[1]), expand_channel(p[2]));
 						p += 3;
 					}
 					offset += 48;
