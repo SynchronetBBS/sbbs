@@ -14,7 +14,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 	{NULL, NULL, NULL, NULL, "haik8 codepage (use only with armscii8 screenmap)", CIOLIB_HAIK8, true},
 	{NULL, NULL, NULL, NULL, "ISO-8859-8 Hebrew", CIOLIB_ISO_8859_8, false},
 	{NULL, NULL, NULL, NULL, "Ukrainian font koi8-u", CIOLIB_KOI8_U, true},
-	{NULL, NULL, NULL, NULL, "ISO-8859-15 West European, (thin)", CIOLIB_ISO_8859_15, false},
+	{NULL, NULL, NULL, NULL, "ISO-8859-15 West European, (thin)", CIOLIB_ISO_8859_15, false},   // 10
 	{NULL, NULL, NULL, NULL, "ISO-8859-4 Baltic (VGA 9bit mapped)", CIOLIB_ISO_8859_4, false},
 	{NULL, NULL, NULL, NULL, "Russian koi8-r (b)", CIOLIB_KOI8_R, true},
 	{NULL, NULL, NULL, NULL, "ISO-8859-4 Baltic wide", CIOLIB_ISO_8859_4, false},
@@ -24,7 +24,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 	{NULL, NULL, NULL, NULL, "Codepage 850 Multilingual Latin I, (thin)", CIOLIB_CP850, true},
 	{NULL, NULL, NULL, NULL, "Codepage 850 Multilingual Latin I", CIOLIB_CP850, false},
 	{NULL, NULL, NULL, NULL, "Codepage 865 Norwegian, (thin)", CIOLIB_CP865, true},
-	{NULL, NULL, NULL, NULL, "Codepage 1251 Cyrillic", CIOLIB_CP1251, true},
+	{NULL, NULL, NULL, NULL, "Codepage 1251 Cyrillic", CIOLIB_CP1251, true},                   // 20
 	{NULL, NULL, NULL, NULL, "ISO-8859-7 Greek", CIOLIB_ISO_8859_7, false},
 	{NULL, NULL, NULL, NULL, "Russian koi8-r (c)", CIOLIB_KOI8_R, true},
 	{NULL, NULL, NULL, NULL, "ISO-8859-4 Baltic", CIOLIB_ISO_8859_4, false},
@@ -34,7 +34,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 	{NULL, NULL, NULL, NULL, "Codepage 866 (b) Russian", CIOLIB_CP866M2, true},
 	{NULL, NULL, NULL, NULL, "Codepage 865 Norwegian", CIOLIB_CP865, false},
 	{NULL, NULL, NULL, NULL, "Ukrainian font cp866u", CIOLIB_CP866U, true},
-	{NULL, NULL, NULL, NULL, "ISO-8859-1 West European, (thin)", CIOLIB_ISO_8859_1, false},
+	{NULL, NULL, NULL, NULL, "ISO-8859-1 West European, (thin)", CIOLIB_ISO_8859_1, false},    // 30
 	{NULL, NULL, NULL, NULL, "Codepage 1131 Belarusian, (swiss)", CIOLIB_CP1131, false},
 	{NULL, NULL, NULL, NULL, "Commodore 64 (UPPER)", CIOLIB_PETSCIIU, false},
 	{NULL, NULL, NULL, NULL, "Commodore 64 (Lower)", CIOLIB_PETSCIIL, false},
@@ -44,7 +44,7 @@ CIOLIBEXPORT struct conio_font_data_struct conio_fontdata[257] = {
 	{NULL, NULL, NULL, NULL, "P0T NOoDLE (Amiga)", CIOLIB_ISO_8859_1, false},
 	{NULL, NULL, NULL, NULL, "mO'sOul (Amiga)", CIOLIB_ISO_8859_1, false},
 	{NULL, NULL, NULL, NULL, "MicroKnight Plus (Amiga)", CIOLIB_ISO_8859_1, false},
-	{NULL, NULL, NULL, NULL, "Topaz Plus (Amiga)", CIOLIB_ISO_8859_1, false},
+	{NULL, NULL, NULL, NULL, "Topaz Plus (Amiga)", CIOLIB_ISO_8859_1, false},                  // 40
 	{NULL, NULL, NULL, NULL, "MicroKnight (Amiga)", CIOLIB_ISO_8859_1, false},
 	{NULL, NULL, NULL, NULL, "Topaz (Amiga)", CIOLIB_ISO_8859_1, false},
 	{NULL, NULL, NULL, NULL, "Prestel", CIOLIB_PRESTEL, false},
