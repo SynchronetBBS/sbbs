@@ -1705,7 +1705,11 @@ int finduser(scfg_t *cfg, user_t *user)
 		j=0;
 		for(i=1; i<=last; i++) {
 			user->number=i;
-			GETUSERDAT(cfg,user);
+			if (getuserdat(cfg, user) != 0) {
+				free_opts((char **)opt);
+				uifc.msg("Error reading user database!");
+				return -1;
+			}
 			if(strcasestr(user->alias, str)!=NULL || strcasestr(user->name, str)!=NULL || strcasestr(user->handle, str)!=NULL
 					|| user->number==un) {
 				FREE_AND_NULL(opt[j]);
@@ -1759,7 +1763,11 @@ int getuser(scfg_t *cfg, user_t *user, char* str)
 		j=0;
 		for(i=1; i<=last; i++) {
 			user->number=i;
-			GETUSERDAT(cfg,user);
+			if (getuserdat(cfg, user) != 0) {
+				free_opts((char **)opt);
+				uifc.msg("Error reading user database!");
+				return -1;
+			}
 			if(strcasestr(user->alias, str)!=NULL || strcasestr(user->name, str)!=NULL || strcasestr(user->handle, str)!=NULL) {
 				FREE_AND_NULL(opt[j]);
 				if((opt[j]=(struct user_list *)malloc(sizeof(struct user_list)))==NULL)
@@ -2139,7 +2147,11 @@ int main(int argc, char** argv)  {
 				last=lastuser(&cfg);
 				for(i=1; i<=last; i++) {
 					user.number=i;
-					GETUSERDAT(&cfg,&user);
+					if (getuserdat(&cfg, &user) != 0) {
+						free_opts(opt);
+						uifc.msg("Error reading user database!");
+						return -1;
+					}
 					sprintf(opt[i-1],"%-*s%c %-25.25s %c %-25.25s"
 						,user_status_len,user_status(&user)
 						,sepchar,user.name,sepchar,user.alias);
@@ -2164,7 +2176,11 @@ int main(int argc, char** argv)  {
 				last=lastuser(&cfg);
 				for(i=1,j=0; i<=last; i++) {
 					user.number = i;
-					GETUSERDAT(&cfg, &user);
+					if (getuserdat(&cfg, &user) != 0) {
+						free_opts(opt);
+						uifc.msg("Error reading user database!");
+						return -1;
+					}
 					if (user.misc & (DELETED | INACTIVE))
 						continue;
 					sprintf(opt[j++], "%-4u %c %-25.25s %c %-25.25s", i, sepchar, user.name, sepchar, user.alias);

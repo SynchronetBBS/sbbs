@@ -1221,9 +1221,13 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 				case JS_EVENT_SOCKET_READABLE_ONCE:
 				case JS_EVENT_SOCKET_READABLE:
 #ifdef PREFER_POLL
-					fds[cfd].fd = ev->data.sock;
-					fds[cfd].events = POLLIN;
-					cfd++;
+					if (fds && cfd < sc) {
+						fds[cfd].fd = ev->data.sock;
+						fds[cfd].events = POLLIN;
+						cfd++;
+					}
+					else
+						JS_ReportError(cx, "socket count does not match event list");
 #else
 					FD_SET(ev->data.sock, &rfds);
 					if (ev->data.sock > hsock)
@@ -1233,9 +1237,13 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 				case JS_EVENT_SOCKET_WRITABLE_ONCE:
 				case JS_EVENT_SOCKET_WRITABLE:
 #ifdef PREFER_POLL
-					fds[cfd].fd = ev->data.sock;
-					fds[cfd].events = POLLOUT;
-					cfd++;
+					if (fds && cfd < sc) {
+						fds[cfd].fd = ev->data.sock;
+						fds[cfd].events = POLLOUT;
+						cfd++;
+					}
+					else
+						JS_ReportError(cx, "socket count does not match event list");
 #else
 					FD_SET(ev->data.sock, &wfds);
 					if (ev->data.sock > hsock)
@@ -1244,9 +1252,13 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 					break;
 				case JS_EVENT_SOCKET_CONNECT:
 #ifdef PREFER_POLL
-					fds[cfd].fd = ev->data.connect.sv[0];
-					fds[cfd].events = POLLIN;
-					cfd++;
+					if (fds && cfd < sc) {
+						fds[cfd].fd = ev->data.connect.sv[0];
+						fds[cfd].events = POLLIN;
+						cfd++;
+					}
+					else
+						JS_ReportError(cx, "socket count does not match event list");
 #else
 					FD_SET(ev->data.connect.sv[0], &rfds);
 					if (ev->data.connect.sv[0] > hsock)
@@ -1293,9 +1305,13 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 					else {
 						input_locked = TRUE;
 #ifdef PREFER_POLL
-						fds[cfd].fd = ev->data.sock;
-						fds[cfd].events = POLLIN;
-						cfd++;
+						if (fds && cfd < sc) {
+							fds[cfd].fd = ev->data.sock;
+							fds[cfd].events = POLLIN;
+							cfd++;
+						}
+						else
+							JS_ReportError(cx, "socket count does not match event list");
 #else
 						FD_SET(ev->data.sock, &rfds);
 						if (ev->data.sock > hsock)
@@ -1344,7 +1360,7 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 				for (ev = *head; ev; ev = ev->next) {
 					if (ev->type == JS_EVENT_SOCKET_READABLE || ev->type == JS_EVENT_SOCKET_READABLE_ONCE) {
 #ifdef PREFER_POLL
-						if (fds[cfd].revents & ~(POLLOUT | POLLWRNORM | POLLWRBAND)) {
+						if (sc && cfd < sc && fds[cfd].revents & ~(POLLOUT | POLLWRNORM | POLLWRBAND)) {
 #else
 						if (FD_ISSET(ev->data.sock, &rfds)) {
 #endif
@@ -1356,7 +1372,7 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 					}
 					else if (ev->type == JS_EVENT_SOCKET_WRITABLE || ev->type == JS_EVENT_SOCKET_WRITABLE_ONCE) {
 #ifdef PREFER_POLL
-						if (fds[cfd].revents & ~(POLLIN | POLLRDNORM | POLLRDBAND | POLLPRI)) {
+						if (sc && cfd < sc && fds[cfd].revents & ~(POLLIN | POLLRDNORM | POLLRDBAND | POLLPRI)) {
 #else
 						if (FD_ISSET(ev->data.sock, &wfds)) {
 #endif
@@ -1368,7 +1384,7 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 					}
 					else if (ev->type == JS_EVENT_SOCKET_CONNECT) {
 #ifdef PREFER_POLL
-						if (fds[cfd].revents & ~(POLLOUT | POLLWRNORM | POLLWRBAND)) {
+						if (sc && cfd < sc && fds[cfd].revents & ~(POLLOUT | POLLWRNORM | POLLWRBAND)) {
 #else
 						if (FD_ISSET(ev->data.connect.sv[0], &rfds)) {
 #endif
@@ -1381,7 +1397,7 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 					}
 					else if (ev->type == JS_EVENT_CONSOLE_INPUT) {
 #ifdef PREFER_POLL
-						if (fds[cfd].revents & ~(POLLOUT | POLLWRNORM | POLLWRBAND)) {
+						if (sc && cfd < sc && fds[cfd].revents & ~(POLLOUT | POLLWRNORM | POLLWRBAND)) {
 #else
 						if (FD_ISSET(ev->data.sock, &rfds)) {
 #endif
@@ -1424,7 +1440,13 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 			if (ev->type == JS_EVENT_SOCKET_CONNECT) {
 				if ((jssp = (js_socket_private_t*)JS_GetPrivate(cx, ev->cx)) != NULL) {
 					slen = sizeof(jssp->remote_addr.addr);
-					getpeername(ev->data.connect.sock, &jssp->remote_addr.addr, &slen);
+					if (getpeername(ev->data.connect.sock, &jssp->remote_addr.addr, &slen) == -1) {
+						memset(&jssp->remote_addr, 0, sizeof(jssp->remote_addr));
+						// This should be zero, but be paranoid
+						jssp->remote_addr.addr.sa_family = AF_UNSPEC;
+						jssp->last_error = errno;
+						socket_strerror(jssp->last_error, jssp->last_error_str, sizeof(jssp->last_error_str));
+					}
 				}
 			}
 

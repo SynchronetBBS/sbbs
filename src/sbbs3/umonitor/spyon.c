@@ -107,6 +107,7 @@ int spyon(char *sockname, int nodenum, scfg_t* cfg)  {
 	spy_len=sizeof(struct sockaddr_un);
 #endif
 	if(connect(spy_sock,(struct sockaddr *)&spy_name,spy_len))  {
+		closesocket(spy_sock);
 		return(SPY_NOCONNECT);
 	}
 	i=1;

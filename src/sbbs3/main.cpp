@@ -2038,7 +2038,7 @@ static int crypt_pop_channel_data(sbbs_t *sbbs, char *inbuf, int want, int *got)
 						return status;
 					}
 					cname = get_crypt_attribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_TYPE);
-					if (strcmp(cname, "subsystem") == 0) {
+					if (cname && strcmp(cname, "subsystem") == 0) {
 						ssname = get_crypt_attribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL_ARG1);
 					}
 					if (((startup->options & (BBS_OPT_ALLOW_SFTP | BBS_OPT_SSH_ANYAUTH)) == BBS_OPT_ALLOW_SFTP) && ssname && cname && sbbs->sftp_channel == -1 && strcmp(ssname, "sftp") == 0) {

@@ -124,17 +124,24 @@ static struct prefix parse_prefix(const char *text)
 	}
 	if (end > text) {
 		ret.bytes = (char *)malloc((end - text) + 2);
-		memcpy(ret.bytes, text, (end - text));
-		if (ret.bytes[end - text - 1] != ' ') {
-			ret.bytes[end - text] = ' ';
-			ret.bytes[end - text + 1] = 0;
+		if (ret.bytes) {
+			memcpy(ret.bytes, text, (end - text));
+			if (ret.bytes[end - text - 1] != ' ') {
+				ret.bytes[end - text] = ' ';
+				ret.bytes[end - text + 1] = 0;
+			}
+			else
+				ret.bytes[end - text] = 0;
 		}
 		else
-			ret.bytes[end - text] = 0;
+			ret.cols = 0;
 	}
 	else {
 		ret.bytes = (char *)malloc(1);
-		ret.bytes[0] = 0;
+		if (ret.bytes)
+			ret.bytes[0] = 0;
+		else
+			ret.cols = 0;
 	}
 	return ret;
 }
@@ -357,7 +364,8 @@ static struct paragraph *word_unwrap(char *inbuf, int oldlen, bool handle_quotes
 		ret[paragraph].text[0] = 0;
 		if (handle_quotes) {
 			ret[paragraph].prefix = parse_prefix(inbuf + inpos);
-			inpos += strlen(ret[paragraph].prefix.bytes);
+			if (ret[paragraph].prefix.bytes)
+				inpos += strlen(ret[paragraph].prefix.bytes);
 			incol = ret[paragraph].prefix.cols;
 		}
 		else
@@ -389,7 +397,10 @@ static struct paragraph *word_unwrap(char *inbuf, int oldlen, bool handle_quotes
 					// Now, if the prefix changes, it's hard.
 					if (handle_quotes) {
 						new_prefix = parse_prefix(&inbuf[inpos + 1]);
-						new_prefix_len = strlen(new_prefix.bytes);
+						if (new_prefix.bytes)
+							new_prefix_len = strlen(new_prefix.bytes);
+						else
+							new_prefix_len = 0;
 					}
 					else {
 						memset(&new_prefix, 0, sizeof(new_prefix));

@@ -92,7 +92,7 @@ static void newscript_handler(JSContext  *cx,
 		bp = (struct breakpoint *)node->data;
 		if (bp->cx != cx)
 			continue;
-		if (strcmp(fname, bp->name) == 0 || strcmp(cs->fname, bp->name) == 0) {
+		if (strcmp(fname, bp->name) == 0 || (cs->fname && (strcmp(cs->fname, bp->name) == 0))) {
 			if (bp->line >= cs->firstline && bp->line <= cs->lastline) {
 				pc = JS_LineNumberToPC(cx, script, bp->line);
 				if (pc == NULL) {

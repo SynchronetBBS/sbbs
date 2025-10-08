@@ -706,15 +706,15 @@ int recycle_servers(scfg_t *cfg)
 	return(0);
 }
 
-char *geteditor(char *edit)
+char *geteditor(char *edit, size_t esz)
 {
 	if(getenv("EDITOR")==NULL && (getenv("VISUAL")==NULL || getenv("DISPLAY")==NULL))
 		strcpy(edit,"vi");
 	else {
 		if(getenv("DISPLAY")!=NULL && getenv("VISUAL")!=NULL)
-			strcpy(edit,getenv("VISUAL"));
+			strlcpy(edit,getenv("VISUAL"), esz);
 		else
-			strcpy(edit,getenv("EDITOR"));
+			strlcpy(edit,getenv("EDITOR"), esz);
 	}
 	return(edit);
 }
@@ -760,7 +760,7 @@ int edit_cfg(scfg_t *cfg)
 				return(0);
 				break;
 			default:
-				sprintf(cmd,"%s %s%s",geteditor(editcmd),cfg->ctrl_dir,opt[i]);
+				sprintf(cmd,"%s %s%s",geteditor(editcmd, sizeof(editcmd)),cfg->ctrl_dir,opt[i]);
 				do_cmd(cmd);
 				break;
 		}
@@ -803,7 +803,7 @@ int edit_can(scfg_t *cfg)
 				return(0);
 				break;
 			default:
-				sprintf(cmd,"%s %s%s",geteditor(editcmd),cfg->text_dir,opt[i]);
+				sprintf(cmd,"%s %s%s",geteditor(editcmd, sizeof(editcmd)),cfg->text_dir,opt[i]);
 				do_cmd(cmd);
 				break;
 		}

@@ -109,6 +109,8 @@ js_add_extension(JSContext *cx, uintN argc, jsval *arglist)
 	JS_RESUMEREQUEST(cx, rc);
 	if (cryptStatusError(status)) {
 		js_cryptcert_error(cx, p->cert, status);
+		FREE_AND_NULL(oid);
+		FREE_AND_NULL(extension);
 		return JS_FALSE;
 	}
 	return JS_TRUE;

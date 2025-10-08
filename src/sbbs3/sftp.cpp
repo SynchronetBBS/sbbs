@@ -1205,11 +1205,11 @@ get_attrs(sbbs_t *sbbs, const char *path)
 }
 
 static void
-copy_path(char *p, const char *fp)
+copy_path(char *p, size_t psz, const char *fp)
 {
 	char *last;
 
-	strcpy(p, fp);
+	strlcpy(p, fp, psz);
 	last = strrchr(p, '/');
 	if (last == nullptr) {
 		return;
@@ -1218,11 +1218,11 @@ copy_path(char *p, const char *fp)
 }
 
 static void
-copy_path_from_dir(char *p, const char *fp)
+copy_path_from_dir(char *p, size_t psz, const char *fp)
 {
 	char *last;
 
-	strcpy(p, fp);
+	strlcpy(p, fp, psz);
 	last = strrchr(p, '/');
 	if (last == nullptr) {
 		return;
@@ -1714,7 +1714,7 @@ sftp_readdir(sftp_dirhandle_t handle, void *cb_data)
 			if (sf == static_files_sz)
 				return sftps_send_error(sbbs->sftp_state, SSH_FX_FAILURE, "Corrupt directory handle");
 		}
-		copy_path(cwd, pm->sftp_patt);
+		copy_path(cwd, sizeof(cwd), pm->sftp_patt);
 		while (static_files[dd->info.rootdir.idx].sftp_patt != nullptr && fn.entries() < MAX_FILES_PER_READDIR) {
 			dd->info.rootdir.idx++;
 			if (static_cast<size_t>(dd->info.rootdir.idx) >= static_files_sz)
@@ -1725,7 +1725,7 @@ sftp_readdir(sftp_dirhandle_t handle, void *cb_data)
 					return fn.send();
 				return sftps_send_error(sbbs->sftp_state, SSH_FX_EOF, "No more files");
 			}
-			copy_path_from_dir(tmppath, static_files[dd->info.rootdir.idx].sftp_patt);
+			copy_path_from_dir(tmppath, sizeof(tmppath), static_files[dd->info.rootdir.idx].sftp_patt);
 			if (strcmp(cwd, tmppath))
 				continue;
 			if (static_files[dd->info.rootdir.idx].real_patt) {

@@ -859,9 +859,10 @@ static void init_enviro(http_session_t *session)  {
 	socklen_t         socklen = sizeof(sockaddr);
 
 	add_env(session, "SERVER_SOFTWARE", VERSION_NOTICE);
-	getsockname(session->socket, &sockaddr.addr, &socklen);
-	sprintf(str, "%d", inet_addrport(&sockaddr));
-	add_env(session, "SERVER_PORT", str);
+	if (getsockname(session->socket, &sockaddr.addr, &socklen) == 0) {
+		sprintf(str, "%d", inet_addrport(&sockaddr));
+		add_env(session, "SERVER_PORT", str);
+	}
 	add_env(session, "GATEWAY_INTERFACE", "CGI/1.1");
 	if (!strcmp(session->host_name, session->host_ip))
 		add_env(session, "REMOTE_HOST", session->host_name);
@@ -1046,6 +1047,7 @@ static int close_session_socket(http_session_t *session)
 {
 	char buf[1];
 	int  len;
+	int locked;
 
 	if (session == NULL || session->socket == INVALID_SOCKET)
 		return -1;
@@ -1062,14 +1064,15 @@ static int close_session_socket(http_session_t *session)
 		}
 		// Now wait for tranmission to complete
 		len = 1;
-		while (pthread_mutex_trylock(&session->outbuf_write) == EBUSY) {
+		while ((locked = pthread_mutex_trylock(&session->outbuf_write)) == EBUSY) {
 			if (len) {
 				if (cryptPopData(session->tls_sess, buf, 1, &len) != CRYPT_OK)
 					len = 0;
 			}
 			SLEEP(1);
 		}
-		pthread_mutex_unlock(&session->outbuf_write);
+		if (locked == 0)
+			pthread_mutex_unlock(&session->outbuf_write);
 		HANDLE_CRYPT_CALL(destroy_session(lprintf, session->tls_sess), session, "destroying session");
 	}
 	return close_socket(&session->socket);
@@ -3264,7 +3267,7 @@ static bool get_request_headers(http_session_t * session)
 
 	while (sockreadline(session, head_line, sizeof(head_line) - 1) > 0) {
 		/* Multi-line headers */
-		while ((i = sess_recv(session, &next_char, 1, MSG_PEEK)) > 0
+		while ((i = sess_recv(session, &next_char, 1, MSG_PEEK))
 		       && (next_char == '\t' || next_char == ' ')) {
 			if (i == -1 && (session->is_tls || SOCKET_ERRNO != EAGAIN))
 				close_session_socket(session);
@@ -4340,6 +4343,10 @@ static struct fastcgi_body * fastcgi_read_body(SOCKET sock)
 		return NULL;
 	}
 	body = (struct fastcgi_body *)malloc(offsetof(struct fastcgi_body, data) + htons(header.len));
+	if (!body) {
+		errprintf(LOG_ERR, WHERE, "Error allocating %zu bytes for FastCGI message", offsetof(struct fastcgi_body, data) + htons(header.len));
+		return NULL;
+	}
 	body->len = htons(header.len);
 	if (recv(sock, body->data, body->len, MSG_WAITALL) != body->len) {
 		free(body);
@@ -5591,12 +5598,14 @@ js_writefunc(JSContext *cx, uintN argc, jsval *arglist, bool writeln)
 		if ((str = JS_ValueToString(cx, argv[i])) == NULL)
 			continue;
 		JSSTRING_TO_RASTRING(cx, str, cstr, &cstr_sz, &len);
-		HANDLE_PENDING(cx, cstr);
-		rc = JS_SUSPENDREQUEST(cx);
-		js_writebuf(session, cstr, len);
-		if (writeln)
-			js_writebuf(session, newline, 2);
-		JS_RESUMEREQUEST(cx, rc);
+		if (cstr) {
+			HANDLE_PENDING(cx, cstr);
+			rc = JS_SUSPENDREQUEST(cx);
+			js_writebuf(session, cstr, len);
+			if (writeln)
+				js_writebuf(session, newline, 2);
+			JS_RESUMEREQUEST(cx, rc);
+		}
 	}
 
 	if (cstr)
