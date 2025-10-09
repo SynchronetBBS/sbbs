@@ -311,7 +311,17 @@ set_vmem_cell(size_t x, size_t y, uint16_t cell, uint32_t fg, uint32_t bg)
 		altfont &= ~0x01;
 	if (!vstat.blink_altcharset)
 		altfont &= ~0x02;
-	font=current_font[altfont];
+	if (vstat.forced_font) {
+		if (altfont == 1 && !vstat.forced_font2)
+			altfont = 0;
+		if (altfont == 2 && !vstat.forced_font3)
+			altfont = 0;
+		if (altfont == 3 && !vstat.forced_font4)
+			altfont = 0;
+		font = altfont;
+	}
+	else
+		font=current_font[altfont];
 	if (font == -99)
 		font = default_font;
 	if (font < 0 || font > 255)
@@ -602,9 +612,20 @@ calc_charstate(struct blockstate *bs, struct vmem_cell *vc, struct charstate *cs
 	cs->top_half = true;
 
 	if (vstat.forced_font) {
-		cs->font = vstat.forced_font;
-		if (vstat.forced_font2 && vc->font)
-			cs->font = vstat.forced_font2;
+		switch (vc->font) {
+			case 0:
+				cs->font = vstat.forced_font;
+				break;
+			case 1:
+				cs->font = vstat.forced_font2;
+				break;
+			case 2:
+				cs->font = vstat.forced_font3;
+				break;
+			case 3:
+				cs->font = vstat.forced_font4;
+				break;
+		}
 	}
 	else {
 		if (current_font[0] == -1) {
@@ -2657,7 +2678,7 @@ int bitmap_drv_init_mode(int mode, int *width, int *height, int maxwidth, int ma
 		else {
 			vstat.vmem->vmem[i].ch = 0;
 			vstat.vmem->vmem[i].legacy_attr = vstat.currattr;
-			vstat.vmem->vmem[i].font = default_font;
+			vstat.vmem->vmem[i].font = default_font == -99 ? 0 : default_font;
 			bitmap_attr2palette_locked(vstat.currattr, &vstat.vmem->vmem[i].fg, &vstat.vmem->vmem[i].bg);
 		}
 	}

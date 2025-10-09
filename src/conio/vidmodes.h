@@ -115,6 +115,8 @@ struct video_stats {
 	struct vstat_vmem *vmem;
 	uint8_t *forced_font;
 	uint8_t *forced_font2;
+	uint8_t *forced_font3;
+	uint8_t *forced_font4;
 };
 
 enum {

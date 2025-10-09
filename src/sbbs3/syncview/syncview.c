@@ -19,9 +19,12 @@
 
 extern void *hack_font1;
 extern void *hack_font2;
+extern void *hack_font3;
+extern void *hack_font4;
 
 static int cvmode;
 struct cterminal *cterm;
+static void *xbin_imgdata;
 
 char *fnames[] = {
 	"IBM VGA",
@@ -286,53 +289,121 @@ xbin_uncompress(uint8_t *data, uint16_t width, uint16_t height, size_t sz)
 }
 
 bool
-setup_xbin(uint8_t *data, int *mode, int *setflags, int cmode, bool *xbin)
+setup_xbin(uint8_t *data, int *mode, int *setflags, bool *xbin, size_t sz)
 {
 	struct xbin_header *hdr = (void *)data;
 	if (memcmp(hdr->id, "XBIN", 4) == 0) {
-		*mode = CIOLIB_MODE_CUSTOM;
-		uint16_t cols = LE_INT16(hdr->width);
+		if (mode)
+			*mode = CIOLIB_MODE_CUSTOM;
+		uint16_t width = LE_INT16(hdr->width);
+		uint16_t cols = width;
 		if (cols == 0)
 			cols = 80;
-		vparams[cvmode].cols = LE_INT16(hdr->width);
-		int rows = LE_INT16(hdr->height);
+		vparams[cvmode].cols = cols;
+		uint16_t height = LE_INT16(hdr->height);
+		int rows = height;
 		if (rows > 60)
 			rows = 60;
 		vparams[cvmode].rows = rows;
 		vparams[cvmode].charwidth = 8;
-		if (hdr->fontsize > 0 && hdr->fontsize < 33)
-			vparams[cvmode].charheight = hdr->fontsize;
-		if (hdr->flags & (1 << 3)) {
-			*setflags |= (CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT);
+		uint8_t fontsize = 16;
+		if (hdr->fontsize > 0 && hdr->fontsize < 33) {
+			fontsize = vparams[cvmode].charheight = hdr->fontsize;
+		}
+		bool palette = (hdr->flags & (1 << 0));
+		bool font = (hdr->flags & (1 << 1));
+		bool compressed = (hdr->flags & (1 << 2));
+		bool noblink = (hdr->flags & (1 << 3));
+		bool fgh_font = (hdr->flags & (1 << 4));
+		bool bgb_font = (hdr->flags & (1 << 5));
+		bool fghbgb_font = (hdr->flags & (1 << 6));
+		bool nobright = (hdr->flags & (1 << 7));
+		size_t offset = sizeof(struct xbin_header);
+
+		if (palette) {
+			uint8_t *p = &data[offset];
+			for (int col = 0; col < 16; col++) {
+				setpalette(palettes[2][col], expand_channel(p[0]), expand_channel(p[1]), expand_channel(p[2]));
+				p += 3;
+			}
+			offset += 48;
+		}
+		if (noblink) {
+			if (setflags)
+				*setflags |= (CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT);
 			vparams[cvmode].flags |= (CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT);
 		}
 		else {
-			*setflags &= ~(CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT);
+			if (setflags)
+				*setflags &= ~(CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT);
 			vparams[cvmode].flags &= ~(CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT);
 		}
-		if (hdr->flags & (1 << 4)) {
-			*setflags |= (CIOLIB_VIDEO_ALTCHARS);
-			vparams[cvmode].flags |= (CIOLIB_VIDEO_ALTCHARS);
+		/*
+		 * It's not documented, but this also appears to be expected to disable the
+		 * background being bright when it was set using non blink flag
+		 */
+		if (nobright) {
+			if (setflags) {
+				*setflags |= (CIOLIB_VIDEO_NOBRIGHT);
+				*setflags &= ~(CIOLIB_VIDEO_BGBRIGHT);
+			}
+			vparams[cvmode].flags |= CIOLIB_VIDEO_NOBRIGHT;
+			vparams[cvmode].flags &= ~CIOLIB_VIDEO_BGBRIGHT;
 		}
-		*xbin = true;
+		else {
+			if (setflags)
+				*setflags &= ~(CIOLIB_VIDEO_NOBRIGHT);
+			vparams[cvmode].flags &= ~(CIOLIB_VIDEO_NOBRIGHT);
+		}
 
-		bool palette = (hdr->flags & (1 << 0));
-		bool font = (hdr->flags & (1 << 1));
-		bool twocharsets = (hdr->flags & (1 << 4));
-		size_t offset = sizeof(struct xbin_header);
-		if (palette) {
-			offset += 48;
+		/*
+		 * Now deal with the fonts... Synchronet inserted the new fonts after the palette
+		 * but before the existing fonts.
+		 */
+		if (bgb_font) {
+			if (setflags)
+				*setflags |= (CIOLIB_VIDEO_BLINKALTCHARS);
+			vparams[cvmode].flags |= (CIOLIB_VIDEO_BLINKALTCHARS);
+			vstat.blink_altcharset = true;
+			vstat.forced_font3 = &data[offset];
+			hack_font3 = &data[offset];
+			offset += fontsize * 256;
+		}
+		if (fghbgb_font) {
+			if (setflags)
+				*setflags |= (CIOLIB_VIDEO_ALTCHARS | CIOLIB_VIDEO_BLINKALTCHARS);
+			vparams[cvmode].flags |= (CIOLIB_VIDEO_ALTCHARS | CIOLIB_VIDEO_BLINKALTCHARS);
+			vstat.bright_altcharset = true;
+			vstat.blink_altcharset = true;
+			vstat.forced_font4 = &data[offset];
+			hack_font4 = &data[offset];
+			offset += fontsize * 256;
 		}
 		if (font) {
 			vstat.forced_font = &data[offset];
 			hack_font1 = &data[offset];
-			offset += hdr->fontsize * 256;
-			if (twocharsets) {
-				vstat.forced_font2 = &data[offset];
-				hack_font2 = &data[offset];
-				offset += hdr->fontsize * 256;
-			}
+			offset += fontsize * 256;
 		}
+		/*
+		 * Synchronet also changes the previous font exists + large font bits
+		 * to be two separate font bits.
+		 */
+		if (fgh_font) {
+			if (setflags)
+				*setflags |= (CIOLIB_VIDEO_ALTCHARS);
+			vparams[cvmode].flags |= (CIOLIB_VIDEO_ALTCHARS);
+			vstat.bright_altcharset = true;
+			vstat.forced_font2 = &data[offset];
+			hack_font2 = &data[offset];
+			offset += fontsize * 256;
+		}
+
+		if (compressed)
+			xbin_imgdata = xbin_uncompress(&data[offset], width, height, sz - offset);
+		else
+			xbin_imgdata = &data[offset];
+		if (xbin)
+			*xbin = true;
 		return true;
 	}
 	return false;
@@ -588,9 +659,7 @@ int main(int argc, char **argv)
 				fclose(f);
 				map = xpmap(infile, XPMAP_READ);
 				if (map) {
-					if (setup_xbin(map->addr, &mode, &setflags, cvmode, &xbin))
-						xbin = true;
-					else {
+					if (!setup_xbin(map->addr, &mode, &setflags, &xbin, stop)) {
 						fprintf(stderr, "Failed to setup XBin\n");
 						xpunmap(map);
 					}
@@ -612,9 +681,8 @@ int main(int argc, char **argv)
 				fclose(f);
 				map = xpmap(infile, XPMAP_READ);
 				if (map) {
-					if (setup_xbin(map->addr, &mode, &setflags, cvmode, &xbin))
-						xbin = true;
-					else {
+					stop = map->size;
+					if (!setup_xbin(map->addr, &mode, &setflags, &xbin, map->size)) {
 						fprintf(stderr, "Failed to setup XBin\n");
 						xpunmap(map);
 						xbin = false;
@@ -686,54 +754,18 @@ int main(int argc, char **argv)
 	else if (xbin) {
 		if (map) {
 			struct xbin_header *hdr = map->addr;
-			if (memcmp(hdr->id, "XBIN", 4))
-				fprintf(stderr, "Invalid XBIN header!\n");
-			else {
-				bool palette = (hdr->flags & (1 << 0));
-				bool font = (hdr->flags & (1 << 1));
-				bool compressed = (hdr->flags & (1 << 2));
-				bool twocharsets = (hdr->flags & (1 << 4));
-				size_t offset = sizeof(struct xbin_header);
-				if (palette) {
-					uint8_t *p = &map->addr[offset];
-					for (int col = 0; col < 16; col++) {
-						setpalette(palettes[2][col], expand_channel(p[0]), expand_channel(p[1]), expand_channel(p[2]));
-						p += 3;
-					}
-					offset += 48;
+			size_t rows = LE_INT16(hdr->height);
+			size_t row;
+			for (row = 0; row < rows; row += ti.screenheight) {
+				size_t sr = rows - row;
+				if (sr > ti.screenheight)
+					sr = ti.screenheight;
+				if (row) {
+					for (size_t i = 0; i < sr; i++)
+						cterm_scrollup(cterm);
 				}
-				if (font) {
-					vstat.forced_font = &map->addr[offset];
-					hack_font1 = &map->addr[offset];
-					offset += hdr->fontsize * 256;
-					if (twocharsets) {
-						vstat.forced_font2 = &map->addr[offset];
-						hack_font2 = &map->addr[offset];
-						offset += hdr->fontsize * 256;
-					}
-				}
-				uint8_t *imgdata = &map->addr[offset];
-				if (compressed) {
-					imgdata = xbin_uncompress(imgdata, LE_INT16(hdr->width), LE_INT16(hdr->height), stop - offset);
-					if (imgdata == NULL) {
-						fprintf(stderr, "Unable to decompress XBin data\n");
-					}
-				}
-				size_t rows = LE_INT16(hdr->height);
-				size_t row;
-				for (row = 0; row < rows; row += ti.screenheight) {
-					size_t sr = rows - row;
-					if (sr > ti.screenheight)
-						sr = ti.screenheight;
-					if (row) {
-						for (size_t i = 0; i < sr; i++)
-							cterm_scrollup(cterm);
-					}
-					puttext(1, 1 + (ti.screenheight - sr), vparams[cvmode].cols, ti.screenheight, &imgdata[row * vparams[cvmode].cols * 2]);
-				}
+				puttext(1, 1 + (ti.screenheight - sr), vparams[cvmode].cols, ti.screenheight, &xbin_imgdata[row * vparams[cvmode].cols * 2]);
 			}
-			// We can't do this or we lose the fonts. :D
-			//xpunmap(map);
 		}
 	}
 	else {
