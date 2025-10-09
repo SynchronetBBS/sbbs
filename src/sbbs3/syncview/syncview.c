@@ -187,6 +187,8 @@ void viewscroll(int rip)
 			}
 
 			top = firstrow + 1;
+			if (top > cterm->backpos)
+				top = cterm->backpos;
 			vmem_puttext(1,1,vparams[curr_vmode].cols,txtinfo.screenheight,cterm->scrollback+(vparams[curr_vmode].cols*top));
 			// TODO: Smooth scroll this bad boy...
 			int poll_every   =  50; // ms
@@ -236,8 +238,8 @@ void viewscroll(int rip)
 	for(i=0;!i;) {
 		if (top < 1 + firstrow)
 			top = 1 + firstrow;
-		if(top>cterm->backpos)
-			top=cterm->backpos;
+		if (top > cterm->backpos)
+			top = cterm->backpos;
 		vmem_puttext(1,1,vparams[curr_vmode].cols,txtinfo.screenheight,cterm->scrollback+(vparams[curr_vmode].cols*top));
 		key=rgetch(rip);
 		switch(key) {
