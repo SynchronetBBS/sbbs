@@ -105,27 +105,27 @@ typedef struct{
 }plyrrec;
 
 
-cfgrec cfg;
-regrec reg;
-plyrrec plyr,othr;
+extern cfgrec cfg;
+extern regrec reg;
+extern plyrrec plyr,othr;
 
 
-char insurtxt[9][25];
-char diptxt[4][21];
-char cvstr3[5][25];
-char cvstr2[5][16];
-char cvstr1[5][16];
-long cvamt[5];
+extern char insurtxt[9][25];
+extern char diptxt[4][21];
+extern char cvstr3[5][25];
+extern char cvstr2[5][16];
+extern char cvstr1[5][16];
+extern long cvamt[5];
 
 
 
-char gamedir[81],
+extern char gamedir[81],
 	 workdir[81],
 	 datetxt[21],
 	 username[31],
 	 passwdtxt[9];
 
-int isnewday,
+extern int isnewday,
    alout,
    daya,
    faflag,
@@ -133,8 +133,8 @@ int isnewday,
    crpflag,
    plmflag,
    armfflag;
-int checkifdone[20];
-long xx,yy,zz,rnd_ret,xxx,yyy,lost_off,lost_def;
+extern int checkifdone[20];
+extern long xx,yy,zz,rnd_ret,xxx,yyy,lost_off,lost_def;
 
 void gamedit();
 void plyredit();

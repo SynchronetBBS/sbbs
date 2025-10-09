@@ -48,6 +48,37 @@ int flexist(char *fname);
 void engage1(long commship, long offense, long defense);
 void mainmenu();
 
+cfgrec cfg;
+regrec reg;
+plyrrec plyr,othr;
+
+
+char insurtxt[9][25];
+char diptxt[4][21];
+char cvstr3[5][25];
+char cvstr2[5][16];
+char cvstr1[5][16];
+long cvamt[5];
+
+
+
+char gamedir[81],
+	 workdir[81],
+	 datetxt[21],
+	 username[31],
+	 passwdtxt[9];
+
+int isnewday,
+   alout,
+   daya,
+   faflag,
+   fpflag,
+   crpflag,
+   plmflag,
+   armfflag;
+int checkifdone[20];
+long xx,yy,zz,rnd_ret,xxx,yyy,lost_off,lost_def;
+
 void init(int argv, char *argc[])
 {
 	strcpy(od_control.od_prog_name, "Space Dynasty Elite");
@@ -480,7 +511,7 @@ void godmenu()
 	while(!done){
 		od_clr_scr();
 		mci("   %s Sysop Menu~SM~SM",od_control.od_prog_name);
-		mci("ÄÄÄÄÄÄÍÍÍÍÍÍÍÍÍÍÍÍÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ~SM");
+		mci("\xc4\xc4\xc4\xc4\xc4\xc4\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4~SM");
 		mci("   (A) BbS Name                 : %s~SM",cfg.bbsn);
 		mci("   (B) BBS Location             : %s~SM",cfg.loc);
 		mci("   (D) Player Editor              ~SM");
@@ -546,7 +577,7 @@ void gamedit()
 	while(!done){
 		od_clr_scr();
 		center("Space Dynasty game defaults editor~SM");
-		mci("~SM~SMÄÄÄÄÄÄÍÍÍÍÍÍÍÍÍÍÍÍÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ");
+		mci("~SM~SM\xc4\xc4\xc4\xc4\xc4\xc4\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4");
 		mci("~SM(B) Number of plays per day   : %d",reg.turns);
 		mci("~SM(C) Number of credits to start: %ld",reg.credits);
 		mci("~SM(D) Number of Troops to start : %d",reg.troops);
@@ -780,7 +811,8 @@ int readplyr(int recno, plyrrec *pr)
 
 	sprintf(path,"%ssdplyr.dat",gamedir);
 	fptr=fopen(path,"rb+");
-	if(fptr==NULL);
+	if(fptr==NULL)
+		;
 	if(fseek(fptr,(long) recno * sizeof(plyrrec),SEEK_SET)==0){
 		x=fread(pr,sizeof(plyrrec),1,fptr);
 		fclose(fptr);
@@ -953,7 +985,7 @@ void makescoresfile()
 		WriteText(cfg.Sanspath,ttxt2);
 		mcistr(ttxt2,"~SM   Player                                    Planets         Score`09~SM");
 		WriteText(cfg.Sanspath,ttxt2);
-		WriteText(cfg.Sanspath,"ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ\n");
+		WriteText(cfg.Sanspath,"\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\n");
 		i=0;
 		while(readplyr(i++,&othr)){
 			if(strcmp(othr.realname,"empty")!=0){
@@ -972,7 +1004,7 @@ void makescoresfile()
 		if(!fone){
 			WriteText(cfg.Sanspath,"No players yet!\n");
 			}
-		WriteText(cfg.Sanspath,"ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ\n");
+		WriteText(cfg.Sanspath,"\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\n");
 		if(fone){
 			mcistr(ttxt2,"`0BThe Current Leader is `0F%s~SM",str);
 				WriteText(cfg.Sanspath,ttxt2);
@@ -1021,7 +1053,7 @@ void listscores()
 
 	mci("~SM`0BList of Players/Scores~SM");
 	mci("~SM   `0BPlayer                                    Planets         Score`09~SM");
-	od_repeat(196,78);nl();
+	od_repeat('\xc4',78);nl();
 	i=0;
 	while(readplyr(i++,&othr)){
 		if(strcmp(othr.realname,"empty")!=0){
@@ -1039,7 +1071,7 @@ void listscores()
 	if(!fone){
 		mci("No players yet!~SM");
 		}
-	od_repeat(196,78);nl();
+	od_repeat('\xc4',78);nl();
 	if(fone){
 		mci("`09The Current Leader is `0F%s~SM",str);
 		}
@@ -1075,7 +1107,7 @@ void status()
 	commafmt(ttxt,sizeof(ttxt),(plyr.population/.004)+1);
 	mci("`02You collect `0F%s `02credits in taxes~SM~SM",ttxt);
 	mci("`0F%s `02Status Report~SM",plyr.moniker);
-	mci("`0DÄÄÄÄÄÄÍÍÍÍÍÍÍÍÍÍÍÍÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ~SM");
+	mci("`0D\xc4\xc4\xc4\xc4\xc4\xc4\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4~SM");
 	commafmt(ttxt,sizeof(ttxt),plyr.score);
 	mci("`02Score    : `0F%s~SM",ttxt);
 	commafmt(ttxt,sizeof(ttxt),plyr.turns);
@@ -1106,7 +1138,7 @@ void status()
 	commafmt(ttxt,sizeof(ttxt),plyr.agents);
 	mci("`02Covert Agents : `0F%s~SM",ttxt);
 	mci("`02Insurgency    : `0F%s~SM",insurtxt[plyr.insurgency]);
-	mci("`0DÄÄÄÄÄÄÍÍÍÍÍÍÍÍÍÍÍÍÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ");
+	mci("`0D\xc4\xc4\xc4\xc4\xc4\xc4\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4");
 }
 
 void update()
@@ -1129,7 +1161,7 @@ void getalias()
 	while(toto && !done){
 		mci("~SC~SM`0BHello, New player.~SM");
 		mci("~SMPlease enter a name for your Dynasty.~");
-		mci("~SM        <ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ->");
+		mci("~SM        <\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4->");
 		mci("~SMDynasty: ");
 		str1[0]='\0';
 		sde_input_str(str1,30,32,127);
@@ -1177,7 +1209,7 @@ void newplyr()
 		readplyr(x,&plyr);
 		getalias();
 		saveplyr(plyr.key,&plyr);
-		mcistr(ttxt2,"~SM `0Bş `0F%s `0Bhas joined in Galactic Federation.~SM",
+		mcistr(ttxt2,"~SM `0B\xfe `0F%s `0Bhas joined in Galactic Federation.~SM",
 			plyr.moniker);
 		WriteNews(ttxt2);
 		gamelog("Initiated player account");
@@ -1454,14 +1486,14 @@ void covrtact()
 	while(plyr.agents > 0 && !done){
 		commafmt(ttxt,sizeof(ttxt),plyr.credits);
 		mci("~SM~SM`0BCovert operations");
-		mci("~SM`0CÄÄÄÄÄÄÍÍÍÍÍÍÍÍÍÍÍÍÄÄÄÄÄÄÄÄÄÄ");
+		mci("~SM`0C\xc4\xc4\xc4\xc4\xc4\xc4\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4");
 		mci("~SM`04<`0C1`04> `0BSpy Mission`03........`0B7,500");
 		mci("~SM`04<`0C2`04> `0BAssassination`03.....`0B10,000");
 		mci("~SM`04<`0C3`04> `0BSabotage`03..........`0B12,500");
 		mci("~SM`04<`0C4`04> `0BInsurgency`03.......`0B100,000");
 		mci("~SM`04<`0C5`04> `0BPlant a Bomb`03...`0B1,000,000");
 		mci("~SM`04<`0C0`04> `0BDone                    ");
-		mci("~SM`0CÄÄÄÄÄÄÍÍÍÍÍÍÍÍÍÍÍÍÄÄÄÄÄÄÄÄÄÄ");
+		mci("~SM`0C\xc4\xc4\xc4\xc4\xc4\xc4\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4");
 		mci("~SM`0CYou have `0B%d `0CAgents and `0B%s `0CCredits.~SM", plyr.agents,ttxt);
 		mci("~SM`0BCovert operation? `0C(`0B? = Menu`0C) `0F: ");
 		ch=od_get_answer("123450\n\r");
@@ -1571,7 +1603,7 @@ void results()
 		}
 
 	if(fpflag > 1 || plmflag > 1 || armfflag > 1 || faflag > 1){
-		mcistr(ttxt2,"~SM `0Cş `0BCivil War breaks out in `0E%s~SM",plyr.moniker);
+		mcistr(ttxt2,"~SM `0C\xfe `0BCivil War breaks out in `0E%s~SM",plyr.moniker);
 		WriteNews(ttxt2);
 		mci("~SM~SMCIVIL WAR breaks out in your dynasty!~SM");
 		mci("Your dynasty loses half its planets under your cruel leadership!~SM");
@@ -1634,7 +1666,7 @@ void commktmu()
 
 	mci("~SM`0BWelcome to the Common Market.~SM");
 	mci("~SM`0BItem                         Cost       Owned");
-	mci("~SM`09ÄÄÄÄÄÄÍÍÍÍÍÍÍÍÍÍÍÍÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ-");
+	mci("~SM`09\xc4\xc4\xc4\xc4\xc4\xc4\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4-");
 	mci("~SM`09<`0B1`09> `0BSoldier Troops`03..........`0B1,000`03");
 		od_repeat('.',12-strlen(stuff[0]));mci("`0B%s",stuff[0]);
 	mci("~SM`09<`0B2`09> `0BFighter`03.................`0B1,500`03");
@@ -1655,7 +1687,7 @@ void commktmu()
 	mci("~SM`09<`0B9`09> `0BHeavy Cruiser`03...........`0B4,000`03");
 		od_repeat('.',12-strlen(stuff[8]));mci("`0B%s",stuff[8]);
 	mci("~SM`09<`0B0`09> `0BDone");
-	mci("~SM`09ÄÄÄÄÄÄÍÍÍÍÍÍÍÍÍÍÍÍÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ-~SM");
+	mci("~SM`09\xc4\xc4\xc4\xc4\xc4\xc4\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4-~SM");
 }
 
 
@@ -2002,17 +2034,17 @@ void getforce()
 	while(yy < 0 || yy > fg){
 		commafmt(ttxt,sizeof(ttxt),plyr.carriers);
 		commafmt(ttxt1,sizeof(ttxt1),fg);
-	mci("~SM`0BWith %s Carriers, you can carry up to %s Fighters.",
-		ttxt,ttxt1);
-	if(plyr.fighters < 1 || plyr.carriers < 1)
-		if(plyr.fighters < 1){
-			mci("~SM`0CYou have 0 Fighters.`0B~SM");
-			yy=0;
+		mci("~SM`0BWith %s Carriers, you can carry up to %s Fighters.",
+			ttxt,ttxt1);
+		if(plyr.fighters < 1 || plyr.carriers < 1)
+			if(plyr.fighters < 1){
+				mci("~SM`0CYou have 0 Fighters.`0B~SM");
+				yy=0;
 			}
 		if(plyr.carriers < 1){
 			mci("~SM`0BYou have 0 Carriers");
 			yy=0;
-			}
+		}
 		else{
 			if(fg > plyr.fighters)
 				fg=plyr.fighters;
@@ -2027,8 +2059,8 @@ void getforce()
 			else
 				if(isdigit(stri[0]))
 					yy=atol(stri);
-			}
 		}
+	}
 
 	zz=-1;
 	while(zz < 0 || zz > hc){
@@ -2131,7 +2163,7 @@ void fight()
 	if(winplan>othr.planets)	winplan=othr.planets;
 	nl();
 	wonit=FALSE;
-	mcistr(ttxt2,"~SM `0Cş `0F%s `0Battacked `0E%s`0B",
+	mcistr(ttxt2,"~SM `0C\xfe `0F%s `0Battacked `0E%s`0B",
 		plyr.moniker,othr.moniker);
 	WriteNews(ttxt2);
 	if(winplan>0){
@@ -2264,11 +2296,7 @@ void engage(long commship, long offense, long defense)
 
 void engage2(long commship, long offense, long defense)
 {
-	long faxtor=0;
-
 	lost_off=offense-hilo(0,offense);
-	if(commship)
-		faxtor=(defense/5);
 	lost_def=defense-hilo(0,defense);
 	if(lost_off>offense)
 		lost_off=offense;
@@ -2309,7 +2337,7 @@ void engage1(long commship, long offense, long defense)
 void dipmnu()
 {
 	mci("~SM~SM`0CDaily Diplomatic Phase");
-	mci("~SM`09ÄÄÄÄÄÄÍÍÍÍÍÍÍÍÍÍÍÍÄÄÄÄÄÄÄÄÄ");
+	mci("~SM`09\xc4\xc4\xc4\xc4\xc4\xc4\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4");
 	mci("~SM`09<`0F1`09> `0BPropose Alliance");
 	mci("~SM`09<`0F2`09> `0BBreak Treaty");
 	mci("~SM`09<`0F3`09> `0BView Relations");
@@ -2318,7 +2346,7 @@ void dipmnu()
 	mci("~SM`09<`0F6`09> `0BGalactic News");
 	mci("~SM`09<`0F7`09> `0BEmbassy Contacts");
 	mci("~SM`09<`0F0`09> `0BDone");
-	mci("~SM`09ÄÄÄÄÄÄÍÍÍÍÍÍÍÍÍÍÍÍÄÄÄÄÄÄÄÄÄ~SM");
+	mci("~SM`09\xc4\xc4\xc4\xc4\xc4\xc4\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4~SM");
 }
 
 
@@ -2423,27 +2451,27 @@ void embsycon()
 	int i=0;
 
 	mci("~SM`0ELast Known Embassy Contact~SM");
-	mci("~SM`09ÄÄÄÄÄÄÍÍÍÍÍÍÍÍÍÍÍÍÄÄÄÄÄÄÄÄ~SM");
+	mci("~SM`09\xc4\xc4\xc4\xc4\xc4\xc4\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4~SM");
 	mci("~SM`0BName                          Date");
-	mci("~SM`09ÄÄÄÄÄÄÍÍÍÍÍÍÍÍÍÍÍÍÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ");
+	mci("~SM`09\xc4\xc4\xc4\xc4\xc4\xc4\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4");
 	while(readplyr(i++,&othr)){
 		if(strcmp(othr.realname,"empty")!=0){
 			mci("~SM`0F%c `0E%-27s `0D%s",
 				othr.key+'A',othr.moniker,othr.laston);
 			}
 		}
-	mci("~SM`09ÄÄÄÄÄÄÍÍÍÍÍÍÍÍÍÍÍÍÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ~SM");
+	mci("~SM`09\xc4\xc4\xc4\xc4\xc4\xc4\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4~SM");
 }
 
 void pamnu1()
 {
 	mci("~SM`0BPropose Alliance");
-	mci("~SM`09ÄÄÄÄÄÄÍÍÍÍÍÍÍÍÍÍÍÍÄÄÄÄÄÄÄÄÄ");
+	mci("~SM`09\xc4\xc4\xc4\xc4\xc4\xc4\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4");
 	mci("~SM`09<`0F1`09> `0BNeutrality/Peace Treaty");
 	mci("~SM`09<`0F2`09> `0BMinor Alliance Pact");
 	mci("~SM`09<`0F3`09> `0BMajor Alliance Pact");
 	mci("~SM`09<`0F0`09> `0BDone");
-	mci("~SM`09ÄÄÄÄÄÄÍÍÍÍÍÍÍÍÍÍÍÍÄÄÄÄÄÄÄÄÄ");
+	mci("~SM`09\xc4\xc4\xc4\xc4\xc4\xc4\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4");
 }
 
 
@@ -2483,9 +2511,9 @@ void viewrltn()
 	int i=0,aint;
 
 	mci("~SMDiplomatic Relations~SM");
-	mci("~SMÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ~SM");
+	mci("~SM\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4~SM");
 	mci("~SMName                                  Planets          Score         Relation");
-	mci("~SMÄÄÄÄÄÄÍÍÍÍÍÍÍÍÍÍÍÍÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ");
+	mci("~SM\xc4\xc4\xc4\xc4\xc4\xc4\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4");
 	while(readplyr(i++,&othr)){
 		if(strcmp(othr.realname,"empty")!=0){
 			if(othr.key!=plyr.key){
@@ -2496,7 +2524,7 @@ void viewrltn()
 				}
 			}
 		}
-	mci("~SMÄÄÄÄÄÄÍÍÍÍÍÍÍÍÍÍÍÍÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ~SM");
+	mci("~SM\xc4\xc4\xc4\xc4\xc4\xc4\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4~SM");
 }
 
 
@@ -2595,17 +2623,17 @@ void initnews()
 	WriteNews("[2J[1;33m%s [37m%s [36mNews file for [33m%s\n\n",
 		od_control.od_prog_name,od_control.od_prog_version,datetxt);
 	WriteNews("                        [1;36m-[37m=[33mThe Galactice Tribune[37m=[36m-\n");
-	WriteNews("  [1;34mÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ[36m\n");
+	WriteNews("  [1;34m\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4[36m\n");
 
 	scr=0L;
 	for(i=0;i<24;i++){
 		readplyr(i,&othr);
 		if(othr.score>scr){
-			sprintf(path1,othr.moniker);
+			strcpy(path1,othr.moniker);
 			scr=othr.score;
 			}
 		}
-	WriteNews("  [1;34mş [33m%s [36mhas risen to the ranks of Top Dynasty\n",path1);
+	WriteNews("  [1;34m\xfe [33m%s [36mhas risen to the ranks of Top Dynasty\n",path1);
 }
 
 void maint()
@@ -2668,16 +2696,16 @@ void chckali()
 		}
 	if(ct1>=0){
 		mci("~SM`0BAlliance Proposals");
-		mci("~SM`09ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ~SM");
+		mci("~SM`09\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4~SM");
 		mci("~SM`0BName                           Planets         Score         Relation");
-		mci("~SM`09ÄÄÄÄÄÄÍÍÍÍÍÍÍÍÍÍÍÍÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ");
+		mci("~SM`09\xc4\xc4\xc4\xc4\xc4\xc4\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4");
 		ct2=0;
 		while(ct2<=ct1){
 			mci("~SM`0B%c   %-21s %12ld %13ld %20s",
 				key1[ct2]+'A',who1[ct2],pl1[ct2],sk1[ct2],diptxt[rl1[ct2]-4]);
 			ct2++;
 			}
-		mci("~SM`09ÄÄÄÄÄÄÍÍÍÍÍÍÍÍÍÍÍÍÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ~SM");
+		mci("~SM`09\xc4\xc4\xc4\xc4\xc4\xc4\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xcd\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4~SM");
 		ct2=0;
 		while(ct2<=ct1){
 			mci("~SM`0B%s offers you a %s pact.",
@@ -2746,7 +2774,7 @@ void bombloc(int ww)
 				xxx=hilo(0,xxx);
 				othr.food-=xxx;
 				commafmt(ttxt,sizeof(ttxt),xxx);
-	mcistr(ttxt2,"~SM `09ş `0BA superfreighter containing `0E%s `0Bmegatons~SM of `0F%s's `0Bfood is destroyed.~SM",ttxt,othr.moniker);
+	mcistr(ttxt2,"~SM `09\xfe `0BA superfreighter containing `0E%s `0Bmegatons~SM of `0F%s's `0Bfood is destroyed.~SM",ttxt,othr.moniker);
 				WriteNews(ttxt2);
 				mci(ttxt2);
 				break;
@@ -2756,7 +2784,7 @@ void bombloc(int ww)
 				xxx=hilo(0,xxx);
 				othr.generals-=xxx;
 				commafmt(ttxt,sizeof(ttxt),xxx);
-				mcistr(ttxt2,"~SM `09ş `0E%s `0Bof `0E%s's `0BGenerals are killed.~SM",
+				mcistr(ttxt2,"~SM `09\xfe `0E%s `0Bof `0E%s's `0BGenerals are killed.~SM",
 					ttxt,othr.moniker);
 				WriteNews(ttxt2);
 				mci(ttxt2);
@@ -2767,7 +2795,7 @@ void bombloc(int ww)
 				xxx=hilo(0,xxx);
 				othr.carriers-=xxx;
 				commafmt(ttxt,sizeof(ttxt),xxx);
-				mcistr(ttxt2,"~SM `09ş `0E%s `0Bof `0E%s's `0BCarriers are destroyed.~SM",
+				mcistr(ttxt2,"~SM `09\xfe `0E%s `0Bof `0E%s's `0BCarriers are destroyed.~SM",
 					ttxt,othr.moniker);
 				WriteNews(ttxt2);
 				mci(ttxt2);

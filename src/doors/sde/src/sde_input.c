@@ -22,31 +22,24 @@
 
 void sde_input_str(char *sStr, int iMaxlen, unsigned char hichar, unsigned char lochar)
 {
-	int i,ok;
-	char ch=0,prevchar,dispch;
+	int i;
+	char ch=0;
 
 	od_printf("%-*s",iMaxlen,sStr);
 	for(i=iMaxlen;i>strlen(sStr);i--)
 		od_printf("\b");
 	i=strlen(sStr);
 	do{
-		ok=FALSE;
-		prevchar=ch;
 		ch=od_get_key(TRUE);
-		dispch=ch;
 
 		if(ch=='\b' || ch==127){
 			if(i>0){
 				od_disp_str("\b \b");
 				i--;
-				prevchar=*sStr;
-				dispch='\0';
 				}
-			ok=FALSE;
 			}
 		else{
 			if(ch>=hichar && ch<=lochar){
-				prevchar=sStr[i];
 				if(ch!='\n' && ch!='\r' && ch!='\x1b' && ch!='\b' && ch!=127)
 					sStr[i]=ch;
 				else{
