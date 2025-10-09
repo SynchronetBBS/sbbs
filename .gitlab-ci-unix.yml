@@ -13,8 +13,6 @@ spec:
       default: 'RELEASE=1'
     has_javascript:
       default: 'yes'
-    has_encrypted_ini:
-      default: 'yes'
     has_curses:
       default: 'yes'
     has_gtk:
@@ -407,10 +405,6 @@ spec:
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
-  rules:
-    - if: '"$[[ inputs.has_encrypted_ini ]]" == "no"'
-      when: never
-    - !reference [.rules, rules]
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [syncdraw]":
   extends:
@@ -610,10 +604,6 @@ spec:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [uifc]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
-  rules:
-    - if: '"$[[ inputs.has_encrypted_ini ]]" == "no"'
-      when: never
-    - !reference [.rules, rules]
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [utils]":
   extends:
@@ -653,10 +643,6 @@ spec:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [uifc]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
-  rules:
-    - if: '"$[[ inputs.has_encrypted_ini ]]" == "no"'
-      when: never
-    - !reference [.rules, rules]
 
 #############
 # Libraries #

@@ -22,6 +22,7 @@
 /* Platform-specific headers */
 #ifdef _WIN32
 	#include <io.h>         /* open/close */
+	#define WIN32_LEAN_AND_MEAN
 	#include <windows.h>
 #endif
 

@@ -70,7 +70,6 @@ include:
       build_flags: 'AR=/home/admin/mingw-w32/bin/i686-w64-mingw32-ar AS=/home/admin/mingw-w32/bin/i686-w64-mingw32-as CC="ccache /home/admin/mingw-w32/bin/i686-w64-mingw32-gcc" CXX="ccache /home/admin/mingw-w32/bin/i686-w64-mingw32-g++" RANLIB=/home/admin/mingw-w32/bin/i686-w64-mingw32-ranlib WINDRES=/home/admin/mingw-w32/bin/i686-w64-mingw32-windres RELEASE=1'
       has_javascript: 'no'
       has_curses: 'no'
-      has_encrypted_ini: 'no'
   - local: '.gitlab-ci-unix.yml'
     inputs:
       os: 'mingw-w64'
@@ -80,7 +79,6 @@ include:
       build_flags: 'AR=/home/admin/mingw-w64/bin/x86_64-w64-mingw32-ar AS=/home/admin/mingw-w64/bin/x86_64-w64-mingw32-as CC="ccache /home/admin/mingw-w64/bin/x86_64-w64-mingw32-gcc" CXX="ccache /home/admin/mingw-w64/bin/x86_64-w64-mingw32-g++" RANLIB=/home/admin/mingw-w64/bin/x86_64-w64-mingw32-ranlib WINDRES=/home/admin/mingw-w64/bin/x86_64-w64-mingw32-windres RELEASE=1'
       has_javascript: 'no'
       has_curses: 'no'
-      has_encrypted_ini: 'no'
   - local: '.gitlab-ci-unix.yml'
     inputs:
       os: 'darwin-aarch64'

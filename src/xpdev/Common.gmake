@@ -28,6 +28,13 @@ endif
 ifeq ($(os),linux)	# Linux
  XPDEV-MT_LIBS	+=	-lpthread
 endif
+ifdef WITHOUT_CRYPTLIB
+ CFLAGS += -DWITHOUT_CRYPTLIB
+else
+ XPDEV-MT_CFLAGS += $(CRYPT_CFLAGS) -DWITH_CRYPTLIB
+ XPDEV-MT_LIBS += $(CRYPT_LIBS)
+ XPDEV_DEPS += $(CRYPT_LIB)
+endif
 ifdef win		# MinGW32
  XPDEV_LIBS	+=	-lws2_32 -lwinmm -lnetapi32 -liphlpapi
  XPDEV-MT_LIBS	+=	-lws2_32 -lwinmm -lnetapi32 -liphlpapi
@@ -238,12 +245,4 @@ ifndef NO_PULSEAUDIO
    endif
   endif
  endif
-endif
-
-ifdef WITHOUT_CRYPTLIB
- CFLAGS += -DWITHOUT_CRYPTLIB
-else
- XPDEV-MT_CFLAGS += $(CRYPT_CFLAGS) -DWITH_CRYPTLIB
- XPDEV-MT_LIBS += $(CRYPT_LIBS)
- XPDEV_DEPS += $(CRYPT_LIB)
 endif
