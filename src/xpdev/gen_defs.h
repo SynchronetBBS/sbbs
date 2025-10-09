@@ -22,6 +22,19 @@
 #ifndef _GEN_DEFS_H
 #define _GEN_DEFS_H
 
+#if (__STDC_VERSION__ >= 199901L) || (__cplusplus >= 201703L)
+# ifndef HAS_INTTYPES_H
+#  define HAS_INTTYPES_H
+# endif
+# ifndef HAS_STDINT_H
+#  define HAS_STDINT_H
+# endif
+#elif __cplusplus >= 201103
+# ifndef HAS_STDINT_H
+#  define HAS_STDINT_H
+# endif
+#endif
+
 #include "cp437defs.h"
 #ifdef _DEBUG
 #include <assert.h>
