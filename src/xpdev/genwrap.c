@@ -779,6 +779,7 @@ char* _ui64toa(uint64_t val, char* str, int radix)
 #endif
 #endif
 
+#ifndef NO_OS_VERSION
 /****************************************************************************/
 /* Write the version details of the current operating system into str		*/
 /****************************************************************************/
@@ -869,6 +870,7 @@ char* os_version(char *str, size_t size)
 
 	return str;
 }
+#endif
 
 /****************************************************************************/
 /* Write the CPU architecture according to the Operating System into str	*/
