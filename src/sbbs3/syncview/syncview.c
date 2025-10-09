@@ -823,6 +823,7 @@ int main(int argc, char **argv)
 	}
 
 	textmode(mode);
+	_setcursortype(_NOCURSOR);
 	flags = getvideoflags();
 	flags |= setflags;
 	setvideoflags(flags);
