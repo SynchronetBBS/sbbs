@@ -104,7 +104,7 @@ checkday(void)
 	    playerlist[i]->battles = BATTLES_PER_DAY;
 	    playerlist[i]->fights = FIGHTS_PER_DAY;
 	    playerlist[i]->flights = FLIGHTS_PER_DAY;
-	    playerlist[i]->status &= ~DEAD;
+	    playerlist[i]->status &= ~(DEAD);
 	    playerlist[i]->damage = 0;
 	    playerlist[i]->vary = supplant();
 	}
@@ -400,7 +400,7 @@ credits(void)
 }
 
 void
-docs()
+docs(void)
 {
     od_clr_scr();
     od_send_file("text/docs");
@@ -864,13 +864,11 @@ int
 main(int argc, char **argv)
 {
     DWORD           i;
-    BOOL            found;
     FILE           *infile;
     od_init();
     checkday();
     atexit(leave);
 
-    found = FALSE;
     nl();
     nl();
     credits();

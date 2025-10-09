@@ -77,7 +77,7 @@ endofline(FILE * infile)
 {
     int             rd;
     while ((rd = fgetc(infile)) != EOF) {
-	if (rd == '\n');
-	break;
+	if (rd == '\n')
+		break;
     }
 }

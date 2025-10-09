@@ -10,8 +10,8 @@
 #define BATTLES_PER_DAY	3
 #define FLIGHTS_PER_DAY	3
 
-#define DEAD	1<<0
-#define ONLINE	1<<1
+#define DEAD	(1<<0)
+#define ONLINE	(1<<1)
 
 /* Status for opponent */
 enum {
@@ -93,7 +93,7 @@ extern QWORD           required[29];	       /* Experience required for each leve
 extern struct weapon   weapon[26];
 extern struct armour   armour[26];
 extern const char	dots[];
-FILE           *infile;		       /* Current input file */
+extern FILE           *infile;		       /* Current input file */
 
 /* Utility macros */
 #define nl()	od_disp_str("\r\n");
