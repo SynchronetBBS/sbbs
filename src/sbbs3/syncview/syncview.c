@@ -172,10 +172,12 @@ void viewscroll(int rip)
 			bool abort = false;
 			struct vmem_cell *c = cterm->scrollback;
 			while (!abort) {
+				struct vmem_cell *f = c;
 				for (int y = 0; !abort && y < txtinfo.screenheight; y++) {
 					for (int x = 0; !abort && x < vparams[curr_vmode].cols; x++) {
-						if (c->bg != 0 || c->fg != 7 || (c->ch != 0 && c->ch != ' '))
+						if (c->bg != f->bg || c->fg != f->fg || (c->ch != 0 && c->ch != ' ')) {
 							abort = true;
+						}
 						c++;
 					}
 				}
