@@ -78,17 +78,19 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
-    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
+    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/encode.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/hash.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz"
+    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
     - cd src/sbbs3/gtkchat
+    - touch cl
     - touch depend
-    - touch xpdev
-    - touch xpdev-mt
     - touch encode
     - touch hash
     - touch smblib
+    - touch xpdev
+    - touch xpdev-mt
     - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
   variables:
     GIT_STRATEGY: fetch
@@ -97,10 +99,11 @@ spec:
     paths:
       - "src/sbbs3/gtkchat/*.exe.release/*"
   needs:
-    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [encode]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [hash]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
   rules:
     - if: '"$[[ inputs.has_gtk ]]" == "no"'
       when: never
@@ -385,8 +388,10 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
     - cd src/sexpots
+    - touch cl
     - touch depend
     - touch xpdev
     - touch xpdev-mt
@@ -398,6 +403,7 @@ spec:
     paths:
       - "src/sexpots/*.exe.release/*"
   needs:
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
   rules:
     - if: '"$[[ inputs.no_encrypted_ini ]]" == "yes"'
@@ -409,8 +415,10 @@ spec:
     - .$[[ inputs.os ]]-build
   script:
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
+    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
     - cd src/syncdraw
+    - touch cl
     - touch depend
     - touch xpdev
     - touch xpdev-mt
@@ -424,6 +432,7 @@ spec:
       - "src/syncdraw/*.exe.release/*"
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [syncterm]":
@@ -521,6 +530,7 @@ spec:
     - .$[[ inputs.os ]]-build
   script:
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
+    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/encode.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/hash.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz"
@@ -528,6 +538,7 @@ spec:
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/gitinfo.tgz"
     - cd src/sbbs3/uedit
+    - touch cl
     - touch depend
     - touch xpdev
     - touch xpdev-mt
@@ -545,6 +556,7 @@ spec:
     GIT_STRATEGY: fetch
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [encode]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [hash]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]"
@@ -561,12 +573,14 @@ spec:
     - .$[[ inputs.os ]]-build
   script:
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
+    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/encode.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/hash.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/smblib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/uifc.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
     - cd src/sbbs3/umonitor
+    - touch cl
     - touch depend
     - touch xpdev
     - touch xpdev-mt
@@ -584,6 +598,7 @@ spec:
     GIT_STRATEGY: fetch
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [encode]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [hash]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [smblib]"
@@ -754,7 +769,9 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
     - cd src/uifc
+    - touch cl
     - touch depend
     - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
@@ -762,6 +779,8 @@ spec:
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/uifc.tgz" src/uifc/*.lib.release* src/uifc/*.obj.release*/*.o*
   variables:
     GIT_STRATEGY: fetch
+  needs:
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]":
   extends:
