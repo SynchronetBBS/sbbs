@@ -136,7 +136,7 @@ int rgetch(int rip)
 
 void viewscroll(int rip)
 {
-	int	top;
+	int	top = 1;
 	int key;
 	int i;
 	struct	text_info txtinfo;
@@ -147,7 +147,6 @@ void viewscroll(int rip)
 		cterm->backpos=cterm->backlines;
 	}
 	vmem_gettext(1,1,vparams[cvmode].cols,txtinfo.screenheight,cterm->scrollback+(cterm->backpos)*cterm->width);
-	top=cterm->backpos;
 	for(i=0;!i;) {
 		if(top<1)
 			top=1;
@@ -170,6 +169,12 @@ void viewscroll(int rip)
 						break;
 					case CIO_KEY_NPAGE:
 						top+=txtinfo.screenheight;
+						break;
+					case CIO_KEY_HOME:
+						top = 1;
+						break;
+					case CIO_KEY_END:
+						top = cterm->backpos;
 						break;
 				}
 				break;
