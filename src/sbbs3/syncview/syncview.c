@@ -878,7 +878,7 @@ int main(int argc, char **argv)
 					for (size_t i = 0; i < sr; i++)
 						cterm_scrollup(cterm);
 				}
-				puttext(1, 1 + (ti.screenheight - sr), vparams[curr_vmode].cols, ti.screenheight, &xbin_imgdata[row * vparams[curr_vmode].cols * 2]);
+				puttext(1, 1 + (ti.screenheight - sr), vparams[curr_vmode].cols, ti.screenheight, &((uint8_t*)xbin_imgdata)[row * vparams[curr_vmode].cols * 2]);
 			}
 		}
 	}
