@@ -296,13 +296,13 @@ INT16 PlayWaHoo( void )
 			else
 				moved = TRUE;
 
-				for (i=0;i<MAX_PIECES;i++)
+			for (i=0;i<MAX_PIECES;i++)
+			{
+				if (player.locations[curColor][i] != EMPTY)
 				{
-					if (player.locations[curColor][i] != EMPTY)
-					{
-						moved = FALSE;
-					}
+					moved = FALSE;
 				}
+			}
 
 
 				// if they did not pull one out of start, let them move one (if

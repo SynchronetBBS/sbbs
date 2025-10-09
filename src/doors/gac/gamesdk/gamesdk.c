@@ -6,6 +6,8 @@
    // need to use command line parameters...
 */
 
+void player_write(struct player *pl, FILE *f);
+void player_read(struct player *pl, FILE *f);
 
 /* The main() or WinMain() function: program execution begins here. */
 #ifdef ODPLAT_WIN32
@@ -1054,11 +1056,13 @@ INT16 g_rand( INT16 max )
 void InitGame( INT16 pause)
 {
 
+#ifdef KEEP_REG
 		INT16 i;
-	char regstring[100];
 	time_t now;
 	long int diff;
 	INT16 extra_delay;
+#endif
+	char regstring[100];
 
 	// Set the linked lists to null
 	list = NULL;
@@ -2211,14 +2215,14 @@ void MakeBulletins( INT16 last )
 	if (last == TRUE)
 	{
 // 4/97                fputs(szPlylstANS, playerAns);
-                fputs(szPlycurANS, playerAns);
+                fputs((char *)szPlycurANS, playerAns);
                 fprintf(playerAns, "\r\n     *** Top 15 Players of the Last %s Game ***\r\n\r\n", od_control.od_prog_name);
                 fprintf(playerAsc, "\r\n\r\n     *** Top 15 Players of the Last %s Game ***\r\n\r\n", od_control.od_prog_name);
                 fprintf(playerAsc, "\r\n\r\n     *** Top 15 Players of the Last %s Game ***\r\n\r\n", od_control.od_prog_name);
 	}
 	else
 	{
-		fputs(szPlycurANS, playerAns);
+		fputs((char *)szPlycurANS, playerAns);
                 fprintf(playerAns, "\r\n     *** Top 15 Players of the Current %s Game ***\r\n\r\n", od_control.od_prog_name);
                 fprintf(playerAsc, "\r\n\r\n     *** Top 15 Players of the Current %s Game ***\r\n\r\n", od_control.od_prog_name);
 	}
@@ -2248,9 +2252,9 @@ void MakeBulletins( INT16 last )
 		GetPlayerInfo(&listplayer, current->account, TRUE);
 
 		// 12/96 removed investment
-		fprintf(playerAns, "  \x1B[0;1;37m%3d   \x1B[0;36m%-20s \x1B[0;1;34m$\x1B[0;36m%10lu   \x1B[0;34m%-35.35s\r\n", i+1,  listplayer.names,
+		fprintf(playerAns, "  \x1B[0;1;37m%3d   \x1B[0;36m%-20s \x1B[0;1;34m$\x1B[0;36m%10" PRIu32 "   \x1B[0;34m%-35.35s\r\n", i+1,  listplayer.names,
 					(listplayer.money), getbbsname(listplayer.bbs));
-		fprintf(playerAsc, "  %3d   %-20s $%10lu   %-35.35s\r\n", i+1,  listplayer.names,
+		fprintf(playerAsc, "  %3d   %-20s $%10" PRIu32 "   %-35.35s\r\n", i+1,  listplayer.names,
 					(listplayer.money), getbbsname(listplayer.bbs));
 		// Increment line number
 		i++;
@@ -2286,13 +2290,13 @@ void MakeBulletins( INT16 last )
 	if (last == TRUE)
 	{
 // 4/97                fputs(szBbslstANS, bbsAns);
-                fputs(szBbscurANS, bbsAns);
+                fputs((char *)szBbscurANS, bbsAns);
                 fprintf(bbsAns, "\r\n     *** Top 15 BBSs of the Last %s Game ***\r\n\r\n", od_control.od_prog_name);
                 fprintf(bbsAsc, "\r\n\r\n     *** Top 15 BBSs of the Last %s Game ***\r\n\r\n", od_control.od_prog_name);
 	}
 	else
 	{
-		fputs(szBbscurANS, bbsAns);
+		fputs((char *)szBbscurANS, bbsAns);
                 fprintf(bbsAns, "\r\n     *** Top 15 BBSs of the Current %s Game ***\r\n\r\n", od_control.od_prog_name);
                 fprintf(bbsAsc, "\r\n\r\n     *** Top 15 BBSs of the Current %s Game ***\r\n\r\n", od_control.od_prog_name);
 	}
@@ -2579,7 +2583,7 @@ void g_clr_scr(void)
 {
 	od_clr_scr();
 	// force screen clearing even if it is turned off for the user
-	if (!od_control.user_attribute & 0x02) od_disp_emu("\xc", TRUE);
+	if (!(od_control.user_attribute & 0x02)) od_disp_emu("\xc", TRUE);
 	// send an extra line for RIP users to avoid losing the top line
 	if (od_control.user_rip)
 	{
@@ -3068,6 +3072,7 @@ char EditorHelp( void )
 		//od_window_remove(input_window);
 //      od_restore_screen( screen);
 	}
+	else choice = '\0';
 /*
 	else
 	{

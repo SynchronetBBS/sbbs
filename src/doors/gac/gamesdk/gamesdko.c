@@ -451,7 +451,7 @@ void SendIBBSData(char inbound, INT16 frombbs)
 		// create a new filename for this system
 		gettime(&t);
 		// 12/96 Modified to have to BBS in filename and use ibbsid
-		sprintf(sendname, "%sOUTBOUND%c%2.2s%02d%02d%02d.%s", doorpath, PATH_DELIM, ibbsid, InterBBSInfo.paOtherSystem[system].szNumber, t.ti_sec, t.ti_hund, league);
+		sprintf(sendname, "%sOUTBOUND%c%2.2s%02d%02d%02d.%s", doorpath, PATH_DELIM, ibbsid, InterBBSInfo.paOtherSystem[0].szNumber, t.ti_sec, t.ti_hund, league);
 	  #ifdef ODPLAT_DOS
 		delay(100); // slow the system down a bit
 	  #endif
@@ -466,7 +466,7 @@ void SendIBBSData(char inbound, INT16 frombbs)
 		}
 */
 		// 12/96 Modified to have to BBS in filename and use ibbs id
-		if (binkley == TRUE) sprintf(sendname, "^%sOUTBOUND%c%2.2s%02d%02d%02d.%s", doorpath, PATH_DELIM, ibbsid, InterBBSInfo.paOtherSystem[system].szNumber, t.ti_sec, t.ti_hund, league);
+		if (binkley == TRUE) sprintf(sendname, "^%sOUTBOUND%c%2.2s%02d%02d%02d.%s", doorpath, PATH_DELIM, ibbsid, InterBBSInfo.paOtherSystem[0].szNumber, t.ti_sec, t.ti_hund, league);
 
 		// set the subject to this file...delete on send, and toggel file mode
 		strcpy(InterBBSInfo.szSubject,sendname);

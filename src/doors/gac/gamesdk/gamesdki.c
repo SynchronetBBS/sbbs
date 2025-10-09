@@ -499,13 +499,12 @@ void FAR16 Inbound( INT16 night )
 	static tIBResult returned;
 	#endif
 	FILE *config, *fromfile;
-   int file;
 //  unsigned attrib;
 	char zipfile[15];
 	INT16 i,j;
 	INT16 value1, value2, value3;
 
-	INT16 done=-1;
+//	INT16 done=-1;
 
 	char filename[256];
 
@@ -553,7 +552,7 @@ void FAR16 Inbound( INT16 night )
 //    {
 	 od_printf("`bright cyan`     - Finding First Inbound File\n\r");
 	 sprintf(filename, "%s%2.2s*.%.3s", inbounddir, ibbsid, league);
-	 done = glob(filename, 0, NULL, &ffblk);
+	 /*done = */glob(filename, 0, NULL, &ffblk);
 //    }
 
 	// new PKUNZIP routines
@@ -596,7 +595,7 @@ void FAR16 Inbound( INT16 night )
 		sprintf(filename, "%sfrombbs.dat", doorpath);
 		fromfile = fopen(filename, "rb");
 
-		if (file == -1 )
+		if (fromfile == NULL )
 		{
 			od_printf("`BRIGHT RED`ERROR OPENING %s\n\r", filename);
 			sprintf(prompt, "ERROR Opening: frombbs.dat file");
@@ -789,7 +788,7 @@ void FAR16 Inbound( INT16 night )
 		// if (night == CLEANUP)
 
 	}
-	done = TRUE;
+//	done = TRUE;
 
 	// check for a reset file
 	sprintf(filename, "%sIN%c%s_n.dat", doorpath, PATH_DELIM, ibbsgametitle);

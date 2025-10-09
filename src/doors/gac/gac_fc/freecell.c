@@ -94,7 +94,7 @@ fclose(gac_debug);
 	if (gameOver == SAVED)
 	{
 		player.savedGame = TRUE;
-		sprintf(prompt, "You currently have a `bright cyan`%2d%%`cyan` Win Ratio and `bright cyan`$%lu`cyan`", ratio, player.money);
+		sprintf(prompt, "You currently have a `bright cyan`%2d%%`cyan` Win Ratio and `bright cyan`$%" PRIu32 "`cyan`", ratio, player.money);
 		PromptBox("Come back when you want to continue.", prompt, "ANY", FALSE);
 		response = 'N';
 	}
@@ -381,7 +381,7 @@ void CheckHomeCells( void )
 // the appropriate graphics
 void MoveFreeCard( char location1, char location2, char topCard, char bottomCard)
 {
-	char i;
+	//char i;
 
 	// must delete the old card, redraw the top cards of the columns
 	// if it was a column,
@@ -467,7 +467,7 @@ void MoveFreeCard( char location1, char location2, char topCard, char bottomCard
 			player.freeCell[location2-'A'] = topCard;
 			// display the card in teh new location
 			// 12/96 redisplay all the free cells if needed
-			for (location2 = location2; location2 <= 'D'; location2++)
+			for (; location2 <= 'D'; location2++)
 			{
 				if (player.freeCell[location2-'A'] != EMPTY)
 					DisplaySmallCard( FREE_X, (location2-'A')*FREE_OFFSET + FREE_Y,
@@ -483,7 +483,7 @@ void MoveFreeCard( char location1, char location2, char topCard, char bottomCard
 			player.homeCell[location2-'M'] = topCard;
 			// display the card in teh new location
 			// 12/96 Draw all four cards again (if needed)
-			for (location2 = location2; location2 <= 'P'; location2++)
+			for (; location2 <= 'P'; location2++)
 			{
 				if (player.homeCell[location2-'M'] != EMPTY)
 					DisplaySmallCard( HOME_X, (location2-'M')*FREE_OFFSET + HOME_Y,
@@ -956,7 +956,7 @@ void DisplaySmallCard( INT16 left, INT16 top, INT16 card)
 	// storage for the current border types
 	// char box_chars[8];
 	// loop
-	INT16 i;
+	//INT16 i;
 	
 	// 12/96    
 	/*

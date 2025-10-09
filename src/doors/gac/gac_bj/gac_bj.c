@@ -88,7 +88,6 @@ void play()
 		,*TwentyOne="`bright blue` Twenty-one``\n\r";
 	INT16 h,i,j;
 	//,file;
-	long val;
 	time_t start,now;
 
 	// 12/96 For full sized cards
@@ -466,8 +465,8 @@ UpdateCursor(); // 12/96
 			// 12/96 display so blind people can still play
 			//else
 			//{
-				od_printf(str);
-				UpdateCursor(); // 12/96
+			od_printf(str);
+			UpdateCursor(); // 12/96
 			//}
 
 			strcpy(str,"\r\n`Bright cyan`H`cyan`it");
@@ -802,7 +801,6 @@ UpdateCursor(); // 12/96
 			sprintf(tmp,"`Bright Magenta` Won! `bright yellow`$`Bright white`%u",j);
 			strcat(str,tmp);
 			player.money+=j;
-			val-=j;
 			//moduserdat();
 			 }
 		else if(h<22 && h==dh)
@@ -811,7 +809,6 @@ UpdateCursor(); // 12/96
 		{
 			strcat(str," `bright red`Lost");
 			player.money-=bet[i];
-			val+=bet[i];
 		}
 		strcat(str,"\r\n");
 		sprintf(str2,YourHand,h,str);

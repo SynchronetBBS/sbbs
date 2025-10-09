@@ -183,7 +183,7 @@ void Config( void )
 
 		fscanf( config, "%*[^ ] %[^\n]\n", temp); // skip eraseonrec
 
-		fscanf( config, "%*[^ ] %*[^\n]\n", temp); // skip zonepoint
+		fscanf( config, "%*[^ ] %*[^\n]\n"); // skip zonepoint
 
 		fscanf( config, "%*[^ ] %[^\n]\n", inbound);
 		fclose(config);
@@ -510,10 +510,10 @@ void Config( void )
 			fprintf(config, "EraseOnSend Yes\n");
 
 		// if (EraseOnReceive == 'N')
-			fprintf(config, "NOTUSED NOTUSED\n");
+		fprintf(config, "NOTUSED NOTUSED\n");
 
 		// if (IgnoreZonePoint == 'N')
-			fprintf(config, "NOTUSED NOTUSED\n");
+		fprintf(config, "NOTUSED NOTUSED\n");
 
 		fprintf(config, "InboundDir %s\n", inbound);
 				fclose(config);

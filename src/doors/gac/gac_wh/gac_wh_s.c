@@ -673,9 +673,6 @@ tIBResult PrivateReadConfig(tIBInfo *pInfo, char *pszConfigFile)
 
 void ProcessPrivateConfigLine(INT16 nKeyword, char *pszParameter, void *pCallbackData)
    {
-   tIBInfo *pInfo = (tIBInfo *)pCallbackData;
-   tOtherNode *paNewNodeArray;
-
    switch(nKeyword)
 	  {
 	//   This programs specific config options, these will override the .CFG
