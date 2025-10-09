@@ -74,6 +74,9 @@
 #ifndef _INC_OPENDOOR
 #define _INC_OPENDOOR
 
+#if __STDC_VERSION__ >= 199901L
+#include <inttypes.h>
+#endif
 
 /* ========================================================================= */
 /* Version and platform definitions.                                         */
@@ -178,6 +181,11 @@
 
 /* Portable types that are the same size across all platforms */
 #ifndef ODPLAT_WIN32
+#if __STDC_VERSION__ >= 199901L
+typedef uint8_t            BYTE;                        /* Unsigned, 8 bits. */
+typedef uint16_t           WORD;                       /* Unsigned, 16 bits. */
+typedef uint32_t           DWORD;                      /* Unsigned, 32 bits. */
+#else
 #ifndef BYTE
 typedef unsigned char      BYTE;                        /* Unsigned, 8 bits. */
 #endif
@@ -190,14 +198,23 @@ typedef unsigned long      DWORD;                      /* Unsigned, 32 bits. */
 #ifndef CHAR
 typedef char               CHAR;         /* Native character representation. */
 #endif
+#endif
 #define DWORD_DEFINED
 #define WORD_DEFINED
 #endif /* !ODPLAT_WIN32 */
 
+#if __STDC_VERSION__ >= 199901L
+typedef int8_t             INT8;                          /* Signed, 8 bits. */
+typedef int16_t            INT16;                        /* Signed, 16 bits. */
+#ifndef ODPLAT_WIN32	/* avoid type redefinition from basetsd.h */
+typedef int32_t            INT32;                        /* Signed, 32 bits. */
+#endif
+#else
 typedef signed char        INT8;                          /* Signed, 8 bits. */
 typedef signed short int   INT16;                        /* Signed, 16 bits. */
 #ifndef ODPLAT_WIN32	/* avoid type redefinition from basetsd.h */
 typedef signed long int    INT32;                        /* Signed, 32 bits. */
+#endif
 #endif
 
 
