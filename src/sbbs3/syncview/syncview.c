@@ -25,6 +25,7 @@ extern void *hack_font4;
 static int cvmode;
 struct cterminal *cterm;
 static void *xbin_imgdata;
+static int speed;
 
 char *fnames[] = {
 	"IBM VGA",
@@ -134,22 +135,84 @@ int rgetch(int rip)
 	return getch();
 }
 
+int rkbhit(int rip)
+{
+	if (rip)
+		return rip_kbhit();
+	return kbhit();
+}
+
 void viewscroll(int rip)
 {
 	int	top = 1;
+	int     firstrow = 0;
 	int key;
 	int i;
 	struct	text_info txtinfo;
 
+	while (rkbhit(rip))
+		rgetch(rip);
 	gettextinfo(&txtinfo);
 	if(cterm->backpos>cterm->backlines) {
 		memmove(cterm->scrollback,cterm->scrollback+cterm->width,cterm->width*sizeof(*cterm->scrollback)*(cterm->backlines-1));
 		cterm->backpos=cterm->backlines;
 	}
 	vmem_gettext(1,1,vparams[cvmode].cols,txtinfo.screenheight,cterm->scrollback+(cterm->backpos)*cterm->width);
+	if (speed)
+		top = cterm->backpos;
+	/*
+	 * Now, strip off initial screen clears...
+	 */
+	bool abort = false;
+	struct vmem_cell *c = cterm->scrollback;
+	while (!abort) {
+		for (int y = 0; !abort && y < txtinfo.screenheight; y++) {
+			for (int x = 0; !abort && x < vparams[cvmode].cols; x++) {
+				if (c->bg != 0 || c->fg != 7 || (c->ch != 0 && c->ch != ' '))
+					abort = true;
+				c++;
+			}
+		}
+		if (!abort) {
+			firstrow += txtinfo.screenheight;
+		}
+	}
+
+	top = firstrow + 1;
+	vmem_puttext(1,1,vparams[cvmode].cols,txtinfo.screenheight,cterm->scrollback+(vparams[cvmode].cols*top));
+	if (!speed) {
+		// TODO: Smooth scroll this bad boy...
+		const int poll_every   =  50; // ms
+		const int scroll_every = 250; // ms
+		const int end_pause =   1500;
+		abort = false;
+		int direction = 1;
+
+		while (!abort) {
+			for (int slept = 0; !abort && slept < end_pause - scroll_every; slept += poll_every) {
+				if (rkbhit(rip))
+					abort = true;
+				SLEEP(poll_every);
+			}
+
+			while (!abort && top + direction <= cterm->backpos && top + direction >= firstrow) {
+				for (int slept = 0; !abort && slept < scroll_every; slept += poll_every) {
+					if (rkbhit(rip))
+						abort = true;
+					SLEEP(poll_every);
+				}
+				if (!abort)
+					top += direction;
+				vmem_puttext(1,1,vparams[cvmode].cols,txtinfo.screenheight,cterm->scrollback+(vparams[cvmode].cols*top));
+			}
+
+			direction = direction == 1 ? -1 : 1;
+		}
+	}
+
 	for(i=0;!i;) {
-		if(top<1)
-			top=1;
+		if (top < 1 + firstrow)
+			top = 1 + firstrow;
 		if(top>cterm->backpos)
 			top=cterm->backpos;
 		vmem_puttext(1,1,vparams[cvmode].cols,txtinfo.screenheight,cterm->scrollback+(vparams[cvmode].cols*top));
@@ -420,7 +483,6 @@ int main(int argc, char **argv)
 	FILE	*f;
 	char	buf[BUF_SIZE*2];	/* Room for lfexpand */
 	int		len;
-	int		speed=0;
 	struct vmem_cell	*scrollbuf;
 	char	*infile=NULL;
 	char	title[MAX_PATH+1];
