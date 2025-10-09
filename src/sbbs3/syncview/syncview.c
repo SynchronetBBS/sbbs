@@ -158,55 +158,75 @@ void viewscroll(int rip)
 		cterm->backpos=cterm->backlines;
 	}
 	vmem_gettext(1,1,vparams[cvmode].cols,txtinfo.screenheight,cterm->scrollback+(cterm->backpos)*cterm->width);
-	if (speed)
+	if (rip) {
 		top = cterm->backpos;
-	/*
-	 * Now, strip off initial screen clears...
-	 */
-	bool abort = false;
-	struct vmem_cell *c = cterm->scrollback;
-	while (!abort) {
-		for (int y = 0; !abort && y < txtinfo.screenheight; y++) {
-			for (int x = 0; !abort && x < vparams[cvmode].cols; x++) {
-				if (c->bg != 0 || c->fg != 7 || (c->ch != 0 && c->ch != ' '))
-					abort = true;
-				c++;
-			}
-		}
-		if (!abort) {
-			firstrow += txtinfo.screenheight;
-		}
 	}
-
-	top = firstrow + 1;
-	vmem_puttext(1,1,vparams[cvmode].cols,txtinfo.screenheight,cterm->scrollback+(vparams[cvmode].cols*top));
-	if (!speed) {
-		// TODO: Smooth scroll this bad boy...
-		const int poll_every   =  50; // ms
-		const int scroll_every = 250; // ms
-		const int end_pause =   1500;
-		abort = false;
-		int direction = 1;
-
-		while (!abort) {
-			for (int slept = 0; !abort && slept < end_pause - scroll_every; slept += poll_every) {
-				if (rkbhit(rip))
-					abort = true;
-				SLEEP(poll_every);
+	else {
+		if (speed)
+			top = cterm->backpos;
+		else {
+			/*
+			 * Now, strip off initial screen clears...
+			 */
+			bool abort = false;
+			struct vmem_cell *c = cterm->scrollback;
+			while (!abort) {
+				for (int y = 0; !abort && y < txtinfo.screenheight; y++) {
+					for (int x = 0; !abort && x < vparams[cvmode].cols; x++) {
+						if (c->bg != 0 || c->fg != 7 || (c->ch != 0 && c->ch != ' '))
+							abort = true;
+						c++;
+					}
+				}
+				if (!abort) {
+					firstrow += txtinfo.screenheight;
+				}
 			}
 
-			while (!abort && top + direction <= cterm->backpos && top + direction >= firstrow) {
-				for (int slept = 0; !abort && slept < scroll_every; slept += poll_every) {
+			top = firstrow + 1;
+			vmem_puttext(1,1,vparams[cvmode].cols,txtinfo.screenheight,cterm->scrollback+(vparams[cvmode].cols*top));
+			// TODO: Smooth scroll this bad boy...
+			int poll_every   =  50; // ms
+			const int scroll_every = 250; // ms
+			const int end_pause =   1500;
+			abort = false;
+			int direction = 1;
+
+			poll_every = scroll_every / vparams[cvmode].charheight;
+
+			while (!abort) {
+				for (int slept = 0; !abort && slept < end_pause - scroll_every; slept += poll_every) {
 					if (rkbhit(rip))
 						abort = true;
 					SLEEP(poll_every);
 				}
-				if (!abort)
-					top += direction;
-				vmem_puttext(1,1,vparams[cvmode].cols,txtinfo.screenheight,cterm->scrollback+(vparams[cvmode].cols*top));
-			}
 
-			direction = direction == 1 ? -1 : 1;
+				const uint32_t gsx = 0;
+				const uint32_t gsy = direction == 1 ? 1 : 0;
+				const uint32_t gex = vparams[cvmode].charwidth * vparams[cvmode].cols - 1;
+				const uint32_t gey = vparams[cvmode].charheight * vparams[cvmode].rows - 1 + (direction == 1 ? 0 : -1);
+
+				const uint32_t ssx = 0;
+				const uint32_t ssy = direction == 1 ? 0 : 1;
+				const uint32_t sex = vparams[cvmode].charwidth * vparams[cvmode].cols - 1;
+				const uint32_t sey = vparams[cvmode].charheight * vparams[cvmode].rows - 1 + (direction == 1 ? -1 : 0);
+
+				while (!abort && top + direction <= cterm->backpos && top + direction >= firstrow) {
+					for (int slept = 0; !abort && slept < scroll_every; slept += poll_every) {
+						if (rkbhit(rip))
+							abort = true;
+						SLEEP(poll_every);
+						struct ciolib_pixels *pix = getpixels(gsx, gsy, gex, gey, false);
+						setpixels(ssx, ssy, sex, sey, 0, 0, 0, 0, pix, NULL);
+						freepixels(pix);
+					}
+					if (!abort)
+						top += direction;
+					vmem_puttext(1,1,vparams[cvmode].cols,txtinfo.screenheight,cterm->scrollback+(vparams[cvmode].cols*top));
+				}
+
+				direction = direction == 1 ? -1 : 1;
+			}
 		}
 	}
 
