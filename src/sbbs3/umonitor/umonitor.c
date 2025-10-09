@@ -193,6 +193,10 @@ int dospy(scfg_t *cfg, int nodenum, bbs_startup_t *bbs_startup)  {
 			uifc.msg("STDIN has gone away... you probably can't close this window.  :-)");
 			return(-1);
 
+		case SPY_NOCTERM:
+			uifc.msg("CTerm has failed to initialize.");
+			return(-1);
+
 		case SPY_CLOSED:
 			break;
 

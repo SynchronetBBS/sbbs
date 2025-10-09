@@ -28,6 +28,7 @@ enum {
 	,SPY_SOCKETLOST
 	,SPY_STDINLOST
 	,SPY_CLOSED
+	,SPY_NOCTERM
 	};
 
 int spyon(char *sockname, int nodenum, scfg_t*);

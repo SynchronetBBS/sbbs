@@ -122,6 +122,10 @@ int spyon(char *sockname, int nodenum, scfg_t* cfg)  {
 	cprintf("Spying on node %d ... press CTRL-C to return to monitor", nodenum);
 	clreol();
 	cterm = cterm_init(ti.screenheight - 1, ti.screenwidth, 1, 1, 0, 0, NULL, cterm_emu);
+	if (cterm == NULL) {
+		closesocket(spy_sock);
+		return(SPY_NOCTERM);
+	}
 	while(spy_sock!=INVALID_SOCKET && cterm != NULL)  {
 		struct timeval tv;
 		tv.tv_sec=0;
@@ -187,6 +191,8 @@ int spyon(char *sockname, int nodenum, scfg_t* cfg)  {
 			}
 		}
 	}
+	if (spy_sock != INVALID_SOCKET)
+		close(spy_sock);
 	cterm_end(cterm, 1);
 	puttext(1,1,ti.screenwidth,ti.screenheight,scrn);
 	window(ti.winleft,ti.wintop,ti.winright,ti.winbottom);
