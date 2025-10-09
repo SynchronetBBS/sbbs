@@ -3,10 +3,10 @@
     Specifically, the player structure, player and opponent def's and size.
 */
 
-#include "gamesdk.h"	/* Needs PACK stuff */
-
 #ifndef _GAMESTRU_H
 #define _GAMESTRU_H
+
+#include "gamesdk.h"	/* Needs PACK stuff */
 
 #ifdef  EXTDRIVER
 #define     EXT /* */

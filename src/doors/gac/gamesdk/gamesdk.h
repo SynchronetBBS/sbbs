@@ -30,12 +30,12 @@
 #include "OpenDoor.h"          // Include the OpenDoors Library!
 #include "xpendian.h"
 
+#include "netmail.h"  //The Inter-BBS Kit (defines _PACK)
 #include "gamestru.h"   // found in the game's own directory
 #ifdef KEEP_REG
 #include "regkey.h"          // Include the RegKey Library!
 #endif
 #include "display.h"                 // To display internally imbedded ANS,AVT,RIP,ASC files
-#include "netmail.h"  //The Inter-BBS Kit
 #include "gregedit.h"  // needed for editor
 
 
@@ -61,6 +61,9 @@ EXT tMessageHeader MessageHeader;
 //#include "art/plylst.h"
 
 #include "gen_defs.h"
+#ifndef FAR16
+#define FAR16
+#endif
 #include "genwrap.h"
 #include "dirwrap.h"
 #include "filewrap.h"
