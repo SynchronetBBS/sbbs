@@ -767,7 +767,9 @@ spec:
   extends:
     - .$[[ inputs.os ]]-build
   script:
+    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
     - cd src/xpdev
+    - touch cl
     - touch depend
     - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
     - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
@@ -775,6 +777,8 @@ spec:
     - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz" src/xpdev/*.lib.release* src/xpdev/*.obj.release*/*.o*
   variables:
     GIT_STRATEGY: fetch
+  needs:
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
 
 #########
 # Tests #
