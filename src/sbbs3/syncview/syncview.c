@@ -23,6 +23,7 @@ extern void *hack_font3;
 extern void *hack_font4;
 
 static int cvmode;
+static int curr_vmode;
 struct cterminal *cterm;
 static void *xbin_imgdata;
 static int speed;
@@ -111,7 +112,7 @@ get_term_win_size(int *width, int *height, int *pixelw, int *pixelh, int *nostat
 	gettextinfo(&txtinfo);
 	vmode = find_vmode(txtinfo.currmode);
 
-	*width = vparams[cvmode].cols;
+	*width = vparams[curr_vmode].cols;
 	*height = txtinfo.screenheight;
 
 	if (vmode == -1) {
@@ -157,7 +158,7 @@ void viewscroll(int rip)
 		memmove(cterm->scrollback,cterm->scrollback+cterm->width,cterm->width*sizeof(*cterm->scrollback)*(cterm->backlines-1));
 		cterm->backpos=cterm->backlines;
 	}
-	vmem_gettext(1,1,vparams[cvmode].cols,txtinfo.screenheight,cterm->scrollback+(cterm->backpos)*cterm->width);
+	vmem_gettext(1,1,vparams[curr_vmode].cols,txtinfo.screenheight,cterm->scrollback+(cterm->backpos)*cterm->width);
 	if (rip) {
 		top = cterm->backpos;
 	}
@@ -172,7 +173,7 @@ void viewscroll(int rip)
 			struct vmem_cell *c = cterm->scrollback;
 			while (!abort) {
 				for (int y = 0; !abort && y < txtinfo.screenheight; y++) {
-					for (int x = 0; !abort && x < vparams[cvmode].cols; x++) {
+					for (int x = 0; !abort && x < vparams[curr_vmode].cols; x++) {
 						if (c->bg != 0 || c->fg != 7 || (c->ch != 0 && c->ch != ' '))
 							abort = true;
 						c++;
@@ -184,7 +185,7 @@ void viewscroll(int rip)
 			}
 
 			top = firstrow + 1;
-			vmem_puttext(1,1,vparams[cvmode].cols,txtinfo.screenheight,cterm->scrollback+(vparams[cvmode].cols*top));
+			vmem_puttext(1,1,vparams[curr_vmode].cols,txtinfo.screenheight,cterm->scrollback+(vparams[curr_vmode].cols*top));
 			// TODO: Smooth scroll this bad boy...
 			int poll_every   =  50; // ms
 			const int scroll_every = 250; // ms
@@ -192,7 +193,7 @@ void viewscroll(int rip)
 			abort = false;
 			int direction = 1;
 
-			poll_every = scroll_every / vparams[cvmode].charheight;
+			poll_every = scroll_every / vparams[curr_vmode].charheight;
 
 			while (!abort) {
 				for (int slept = 0; !abort && slept < end_pause - scroll_every; slept += poll_every) {
@@ -203,13 +204,13 @@ void viewscroll(int rip)
 
 				const uint32_t gsx = 0;
 				const uint32_t gsy = direction == 1 ? 1 : 0;
-				const uint32_t gex = vparams[cvmode].charwidth * vparams[cvmode].cols - 1;
-				const uint32_t gey = vparams[cvmode].charheight * vparams[cvmode].rows - 1 + (direction == 1 ? 0 : -1);
+				const uint32_t gex = vparams[curr_vmode].charwidth * vparams[curr_vmode].cols - 1;
+				const uint32_t gey = vparams[curr_vmode].charheight * vparams[curr_vmode].rows - 1 + (direction == 1 ? 0 : -1);
 
 				const uint32_t ssx = 0;
 				const uint32_t ssy = direction == 1 ? 0 : 1;
-				const uint32_t sex = vparams[cvmode].charwidth * vparams[cvmode].cols - 1;
-				const uint32_t sey = vparams[cvmode].charheight * vparams[cvmode].rows - 1 + (direction == 1 ? -1 : 0);
+				const uint32_t sex = vparams[curr_vmode].charwidth * vparams[curr_vmode].cols - 1;
+				const uint32_t sey = vparams[curr_vmode].charheight * vparams[curr_vmode].rows - 1 + (direction == 1 ? -1 : 0);
 
 				while (!abort && top + direction <= cterm->backpos && top + direction >= firstrow) {
 					for (int slept = 0; !abort && slept < scroll_every; slept += poll_every) {
@@ -222,7 +223,7 @@ void viewscroll(int rip)
 					}
 					if (!abort)
 						top += direction;
-					vmem_puttext(1,1,vparams[cvmode].cols,txtinfo.screenheight,cterm->scrollback+(vparams[cvmode].cols*top));
+					vmem_puttext(1,1,vparams[curr_vmode].cols,txtinfo.screenheight,cterm->scrollback+(vparams[curr_vmode].cols*top));
 				}
 
 				direction = direction == 1 ? -1 : 1;
@@ -235,7 +236,7 @@ void viewscroll(int rip)
 			top = 1 + firstrow;
 		if(top>cterm->backpos)
 			top=cterm->backpos;
-		vmem_puttext(1,1,vparams[cvmode].cols,txtinfo.screenheight,cterm->scrollback+(vparams[cvmode].cols*top));
+		vmem_puttext(1,1,vparams[curr_vmode].cols,txtinfo.screenheight,cterm->scrollback+(vparams[curr_vmode].cols*top));
 		key=rgetch(rip);
 		switch(key) {
 			case 0xe0:
@@ -525,6 +526,13 @@ int main(int argc, char **argv)
 	bool            xbin = false;
 	struct xpmapping *map = NULL;
 
+	cvmode = find_vmode(CIOLIB_MODE_CUSTOM);
+	curr_vmode = find_vmode(mode);
+	mode = CIOLIB_MODE_CUSTOM;
+	curr_vmode = cvmode;
+	memcpy(&vparams[cvmode], &vparams[curr_vmode], sizeof(vparams[cvmode]));
+	vparams[cvmode].mode = CIOLIB_MODE_CUSTOM;
+
 	/* Parse command line */
 	for(i=1; i<argc; i++) {
 		if(argv[i][0]=='-') {
@@ -547,12 +555,14 @@ int main(int argc, char **argv)
 			}
 			else if(argv[i][1]=='a' && argv[i][2]==0) {
 				mode = C80;
+				curr_vmode = find_vmode(mode);
 				emulation = CTERM_EMULATION_ANSI_BBS;
 				ansi=1;
 			}
 			else if(argv[i][1]=='b' && argv[i][2]==0) {
 				emulation = CTERM_EMULATION_ANSI_BBS;
-				mode = C80;
+				mode = CIOLIB_MODE_CUSTOM;
+				curr_vmode = find_vmode(mode);
 				ansi=0;
 				strlcpy(font_name, conio_fontdata[0].desc, sizeof(font_name));
 				rip = RIP_VERSION_NONE;
@@ -561,7 +571,8 @@ int main(int argc, char **argv)
 			}
 			else if(argv[i][1]=='x' && argv[i][2]==0) {
 				emulation = CTERM_EMULATION_ANSI_BBS;
-				mode = C80;
+				mode = CIOLIB_MODE_CUSTOM;
+				curr_vmode = find_vmode(mode);
 				ansi=0;
 				strlcpy(font_name, conio_fontdata[0].desc, sizeof(font_name));
 				rip = RIP_VERSION_NONE;
@@ -571,6 +582,7 @@ int main(int argc, char **argv)
 			else if(argv[i][1]=='A' && argv[i][2]==0) {
 				emulation = CTERM_EMULATION_ATASCII;
 				mode = ATARIST_40X25;
+				curr_vmode = find_vmode(mode);
 				ansi=0;
 				strlcpy(font_name, "Atari", sizeof(font_name));
 				scaling *= 2;
@@ -581,6 +593,7 @@ int main(int argc, char **argv)
 			else if(argv[i][1]=='B' && argv[i][2]==0) {
 				emulation = CTERM_EMULATION_BEEB;
 				mode = PRESTEL_40X25;
+				curr_vmode = find_vmode(mode);
 				ansi=0;
 				strlcpy(font_name, "Prestel", sizeof(font_name));
 				rip = RIP_VERSION_NONE;
@@ -590,6 +603,7 @@ int main(int argc, char **argv)
 			else if(argv[i][1]=='C' && argv[i][2]==0) {
 				emulation = CTERM_EMULATION_PETASCII;
 				mode = C64_40X25;
+				curr_vmode = find_vmode(mode);
 				ansi=0;
 				strlcpy(font_name, "Commodore 64 (UPPER)", sizeof(font_name));
 				scaling *= 2;
@@ -600,6 +614,7 @@ int main(int argc, char **argv)
 			else if(argv[i][1]=='P' && argv[i][2]==0) {
 				emulation = CTERM_EMULATION_PRESTEL;
 				mode = PRESTEL_40X25;
+				curr_vmode = find_vmode(mode);
 				ansi=0;
 				strlcpy(font_name, "Prestel", sizeof(font_name));
 				rip = RIP_VERSION_NONE;
@@ -608,7 +623,11 @@ int main(int argc, char **argv)
 			}
 			else if(argv[i][1]=='R' && argv[i][2]==0) {
 				emulation = CTERM_EMULATION_ANSI_BBS;
-				mode = EGA80X25;
+				mode = CIOLIB_MODE_CUSTOM;
+				curr_vmode = find_vmode(mode);
+				curr_vmode = find_vmode(EGA80X25);
+				memcpy(&vparams[cvmode], &vparams[curr_vmode], sizeof(vparams[cvmode]));
+				vparams[cvmode].mode = CIOLIB_MODE_CUSTOM;
 				ansi=0;
 				strlcpy(font_name, conio_fontdata[0].desc, sizeof(font_name));
 				rip = RIP_VERSION_1;
@@ -618,6 +637,7 @@ int main(int argc, char **argv)
 			else if(argv[i][1]=='S' && argv[i][2]==0) {
 				emulation = CTERM_EMULATION_ATARIST_VT52;
 				mode = ATARIST_80X25;
+				curr_vmode = find_vmode(mode);
 				ansi=0;
 				strlcpy(font_name, "Atari ST", sizeof(font_name));
 				rip = RIP_VERSION_NONE;
@@ -643,12 +663,13 @@ int main(int argc, char **argv)
 		if (sauce_fread_record(f, &sauce)) {
 			int cols = 80;
 			int rows = 25;
-			cvmode = find_vmode(CIOLIB_MODE_CUSTOM);
 			saucy = true;
 			stop = flength(infile) - 128 - 1;
 			if (sauce.comments)
 				stop -= (sauce.comments * 64 + 5);
 
+			mode = CIOLIB_MODE_CUSTOM;
+			curr_vmode = find_vmode(mode);
 			memcpy(stitle, sauce.title, sizeof(sauce.title));
 			stitle[sizeof(stitle) - 1] = 0;
 			truncsp(stitle);
@@ -702,12 +723,14 @@ int main(int argc, char **argv)
 						rows = 60;
 					vparams[cvmode].cols = cols;
 					vparams[cvmode].rows = rows;
-					mode = CIOLIB_MODE_CUSTOM;
 					break;
 				case 0x0103:	// RIP
 					if (sauce.tinfo1 == 640) {
-						if (sauce.tinfo2 == 350)
-							mode = EGA80X25;
+						if (sauce.tinfo2 == 350) {
+							curr_vmode = find_vmode(EGA80X25);
+							memcpy(&vparams[cvmode], &vparams[curr_vmode], sizeof(vparams[cvmode]));
+							vparams[cvmode].mode = CIOLIB_MODE_CUSTOM;
+						}
 					}
 					rip = RIP_VERSION_1;
 					break;
@@ -723,7 +746,6 @@ int main(int argc, char **argv)
 					rows = 60;
 				vparams[cvmode].cols = cols;
 				vparams[cvmode].rows = rows;
-				mode = CIOLIB_MODE_CUSTOM;
 			}
 			if (sauce.tflags & sauce_ansiflag_nonblink) {
 				vparams[cvmode].flags |= (CIOLIB_VIDEO_NOBLINK | CIOLIB_VIDEO_BGBRIGHT);
@@ -778,9 +800,9 @@ int main(int argc, char **argv)
 			}
 		}
 		if (stitle[0])
-			snprintf(title, sizeof(title), "SyncView: %s (%s)", getfname(argv[1]), stitle);
+			snprintf(title, sizeof(title), "SyncView: %s (%s)", getfname(infile), stitle);
 		else
-			snprintf(title, sizeof(title), "SyncView: %s",getfname(argv[1]));
+			snprintf(title, sizeof(title), "SyncView: %s",getfname(infile));
 	}
 	else {
 		f=stdin;
@@ -802,15 +824,15 @@ int main(int argc, char **argv)
 	setvideoflags(flags);
 	setFontByName(font_name);
 	gettextinfo(&ti);
-	term.width = vparams[cvmode].cols;
+	term.width = vparams[curr_vmode].cols;
 	term.height = ti.screenheight;
-	if((scrollbuf=malloc(SCROLL_LINES*vparams[cvmode].cols*sizeof(*scrollbuf)))==NULL) {
+	if((scrollbuf=malloc(SCROLL_LINES*vparams[curr_vmode].cols*sizeof(*scrollbuf)))==NULL) {
 		cprintf("Cannot allocate memory\n\n\rPress any key to exit.");
 		getch();
 		return(-1);
 	}
 
-	cterm=cterm_init(ti.screenheight, vparams[cvmode].cols, 1, 1, SCROLL_LINES, vparams[cvmode].cols, scrollbuf, emulation);
+	cterm=cterm_init(ti.screenheight, vparams[curr_vmode].cols, 1, 1, SCROLL_LINES, vparams[curr_vmode].cols, scrollbuf, emulation);
 	if(!cterm) {
 		fputs("ERROR Initializing CTerm!\n", stderr);
 		return 1;
@@ -820,7 +842,7 @@ int main(int argc, char **argv)
 	settitle(title);
 	if (bintext) {
 		size_t row = 0;
-		size_t rows = stop / (vparams[cvmode].cols * 2);
+		size_t rows = stop / (vparams[curr_vmode].cols * 2);
 
 		fclose(f);
 		map = xpmap(infile, XPMAP_READ);
@@ -833,7 +855,7 @@ int main(int argc, char **argv)
 					for (size_t i = 0; i < sr; i++)
 						cterm_scrollup(cterm);
 				}
-				puttext(1, 1 + (ti.screenheight - sr), vparams[cvmode].cols, ti.screenheight, &map->addr[row * vparams[cvmode].cols * 2]);
+				puttext(1, 1 + (ti.screenheight - sr), vparams[curr_vmode].cols, ti.screenheight, &map->addr[row * vparams[curr_vmode].cols * 2]);
 			}
 			xpunmap(map);
 		}
@@ -851,7 +873,7 @@ int main(int argc, char **argv)
 					for (size_t i = 0; i < sr; i++)
 						cterm_scrollup(cterm);
 				}
-				puttext(1, 1 + (ti.screenheight - sr), vparams[cvmode].cols, ti.screenheight, &xbin_imgdata[row * vparams[cvmode].cols * 2]);
+				puttext(1, 1 + (ti.screenheight - sr), vparams[curr_vmode].cols, ti.screenheight, &xbin_imgdata[row * vparams[curr_vmode].cols * 2]);
 			}
 		}
 	}
@@ -877,13 +899,13 @@ int main(int argc, char **argv)
 			memmove(cterm->scrollback,cterm->scrollback+cterm->width,cterm->width*sizeof(*cterm->scrollback)*(cterm->backlines-1));
 			cterm->backpos=cterm->backlines;
 		}
-		vmem_gettext(1,1,vparams[cvmode].cols,ti.screenheight,cterm->scrollback+(cterm->backpos)*cterm->width);
+		vmem_gettext(1,1,vparams[curr_vmode].cols,ti.screenheight,cterm->scrollback+(cterm->backpos)*cterm->width);
 		cterm->backpos += ti.screenheight;
 		puttext_can_move=1;
 		puts("START OF SCREEN DUMP...");
 		for (i = 0; i < cterm->backpos; i += ti.screenheight) {
 			clrscr();
-			vmem_puttext(1,1,vparams[cvmode].cols,cterm->backpos - i > ti.screenheight ? ti.screenheight : cterm->backpos - i,cterm->scrollback+(vparams[cvmode].cols*i));
+			vmem_puttext(1,1,vparams[curr_vmode].cols,cterm->backpos - i > ti.screenheight ? ti.screenheight : cterm->backpos - i,cterm->scrollback+(vparams[curr_vmode].cols*i));
 		}
 	}
 	else
