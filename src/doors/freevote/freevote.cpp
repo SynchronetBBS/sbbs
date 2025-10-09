@@ -243,7 +243,7 @@ freadQuestionRecord(tQuestionRecord *q, FILE *f)
 				return(0);
 			break;
 		default:
-			fprintf(stderr, "Unhandled time_t size (%d)\n", sizeof(time_t));
+			fprintf(stderr, "Unhandled time_t size (%lu)\n", sizeof(time_t));
 			exit(1);
 	}
 	return(1);
@@ -292,7 +292,7 @@ fwriteQuestionRecord(tQuestionRecord *q, FILE *f)
 				return(0);
 			break;
 		default:
-			fprintf(stderr, "Unhandled time_t size (%d)\n", sizeof(time_t));
+			fprintf(stderr, "Unhandled time_t size (%lu)\n", sizeof(time_t));
 			exit(1);
 	}
 	return(1);
@@ -418,6 +418,7 @@ NoDropFile(void)
 
 
 /* main() function - Program execution begins here. */
+int
 main(int argc, char *argv[])
 {
    /* Variable to store user's choice from the menu */
@@ -556,7 +557,7 @@ main(int argc, char *argv[])
 	strzcpy(od_control.info_path,argv[cnt],2,59);
       } else if (strnicmp(argv[cnt],"-N",2)==0) {
 	strzcpy(numstr,argv[cnt],2,59);
-	sscanf(numstr,"%d",&od_control.od_node);
+	sscanf(numstr,"%hd",&od_control.od_node);
       } else if (strnicmp(argv[cnt],"-S",2)==0) {
 	strzcpy(numstr,argv[cnt],2,59);
 	sscanf(numstr,"%d",&user_security);
@@ -866,13 +867,13 @@ main(int argc, char *argv[])
       if(od_send_file(menufile)!=TRUE && od_send_file("MMENU")!=TRUE) {
 	if(od_control.user_ansi || od_control.user_avatar) {
 	  if(colorsch==COLOR_DEF) {
-	    od_printf("`bright`                        ßßß     ßßß ÜÜÜ     ßßß  Ü  ßßß   `bright green`v3.2\n\r");
-	    od_printf("`bright red`ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`bright blue`Ûß`bright red`ÄÄ`bright blue`ÛßÜ`bright red`Ä`bright blue`Ûß`bright red`ÄÄ`bright blue`ß`bright red`Ä`bright blue`ß`bright red`Ä`bright blue`Û`bright red`Ä`bright blue`Û`bright red`Ä`bright blue`Û`bright red`Ä`bright blue`Û`bright red`Ä`bright blue`ßßß`bright red`Ä`bright blue`Ûß`bright red`ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ\n\r");
-	    od_printf("`blue`                        ß   ß   ßßß ßßß  ß  ßßß  ßß ßßß   `green`by `bright green`Franz\n\r");
+	    od_printf("`bright`                        \xdf\xdf\xdf     \xdf\xdf\xdf \xdc\xdc\xdc     \xdf\xdf\xdf  \xdc  \xdf\xdf\xdf   `bright green`v3.2\n\r");
+	    od_printf("`bright red`\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4`bright blue`\xdb\xdf`bright red`\xc4\xc4`bright blue`\xdb\xdf\xdc`bright red`\xc4`bright blue`\xdb\xdf`bright red`\xc4\xc4`bright blue`\xdf`bright red`\xc4`bright blue`\xdf`bright red`\xc4`bright blue`\xdb`bright red`\xc4`bright blue`\xdb`bright red`\xc4`bright blue`\xdb`bright red`\xc4`bright blue`\xdb`bright red`\xc4`bright blue`\xdf\xdf\xdf`bright red`\xc4`bright blue`\xdb\xdf`bright red`\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\n\r");
+	    od_printf("`blue`                        \xdf   \xdf   \xdf\xdf\xdf \xdf\xdf\xdf  \xdf  \xdf\xdf\xdf  \xdf\xdf \xdf\xdf\xdf   `green`by `bright green`Franz\n\r");
 	  } else {
-	    od_printf("`bright`                        ßßß     ßßß ÜÜÜ     ßßß  Ü  ßßß   `white`v`bright`3`white`.`bright`2\n\r");
-	    od_printf("`bright black`ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`bright blue`Ûß`bright black`ÄÄ`bright blue`ÛßÜ`bright black`Ä`bright blue`Ûß`bright black`ÄÄ`bright blue`ß`bright black`Ä`bright blue`ß`bright black`Ä`bright blue`Û`bright black`Ä`bright blue`Û`bright black`Ä`bright blue`Û`bright black`Ä`bright blue`Û`bright black`Ä`bright blue`ßßß`bright black`Ä`bright blue`Ûß`bright black`ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ\n\r");
-	    od_printf("`blue`                        ß   ß   ßßß ßßß  ß  ßßß  ßß ßßß   `bright black`by `white`Franz\n\r");
+	    od_printf("`bright`                        \xdf\xdf\xdf     \xdf\xdf\xdf \xdc\xdc\xdc     \xdf\xdf\xdf  \xdc  \xdf\xdf\xdf   `white`v`bright`3`white`.`bright`2\n\r");
+	    od_printf("`bright black`\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4`bright blue`\xdb\xdf`bright black`\xc4\xc4`bright blue`\xdb\xdf\xdc`bright black`\xc4`bright blue`\xdb\xdf`bright black`\xc4\xc4`bright blue`\xdf`bright black`\xc4`bright blue`\xdf`bright black`\xc4`bright blue`\xdb`bright black`\xc4`bright blue`\xdb`bright black`\xc4`bright blue`\xdb`bright black`\xc4`bright blue`\xdb`bright black`\xc4`bright blue`\xdf\xdf\xdf`bright black`\xc4`bright blue`\xdb\xdf`bright black`\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\n\r");
+	    od_printf("`blue`                        \xdf   \xdf   \xdf\xdf\xdf \xdf\xdf\xdf  \xdf  \xdf\xdf\xdf  \xdf\xdf \xdf\xdf\xdf   `bright black`by `white`Franz\n\r");
 	  }
 	} else {
 	  od_printf("------------------------< FREEVOTE v3.2 >---< by Franz >---------------------\n\r");
@@ -898,7 +899,7 @@ main(int argc, char *argv[])
 	     od_printf("`bright red`");
 	   else
 	     od_printf("`bright black`");
-	   od_printf("                      ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ\n\r");
+	   od_printf("                      \xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\n\r");
 	   if(colorsch==COLOR_DEF)
 	     od_printf("`red`");
 	   else
@@ -969,7 +970,7 @@ main(int argc, char *argv[])
 	 if(od_control.user_ansi || od_control.user_avatar) {
 	   if(colorsch==COLOR_DEF)
 	     od_printf("`bright red`");
-	   od_printf("                      ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ\n\r");
+	   od_printf("                      \xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\n\r");
 	 } else {
 	   od_printf("                      -------------------------------------\n\r");
 	 }
@@ -981,7 +982,7 @@ main(int argc, char *argv[])
 	 if(od_control.user_ansi || od_control.user_avatar) {
 	   if(colorsch==COLOR_DEF)
 	     od_printf("`bright red`");
-	   od_printf("                      ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ\n\r");
+	   od_printf("                      \xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\n\r");
 	 } else {
 	   od_printf("                      -------------------------------------\n\r");
 	 }
@@ -2487,12 +2488,13 @@ void ChangeQuestion(void)
 	    if(QuestionRecord.bitflags & BF_15_BY_1_MODE) {
 	      cnt++;
 	    } else {
-	      if(strlen(QuestionRecord.aszAnswer[cnt+1])>0)
+	      if(strlen(QuestionRecord.aszAnswer[cnt+1])>0) {
 		if(colorsch==COLOR_DEF)
 		  od_printf("`green`");
 		else
 		  od_printf("`bright black`");
-		od_printf("    %s\n\r",QuestionRecord.aszAnswer[cnt+1]);
+	        od_printf("    %s\n\r",QuestionRecord.aszAnswer[cnt+1]);
+	      }
 	      cnt+=2;
 	    }
 	 }
