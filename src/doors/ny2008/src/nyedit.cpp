@@ -43,10 +43,8 @@ NoDropFile(void) {
 extern "C" int main (int argc,char *argv[]) {
 	FILE *justfile;
 	char key,s_key;
-	WORD uintval;
 	DWORD points;
 	char numstr[41];
-	scr_rec srec;
 	INT16 cnt;
 	INT16 cntv,intval;
 	//  user_rec cur_user;
@@ -168,7 +166,7 @@ extern "C" int main (int argc,char *argv[]) {
 				od_control.od_disable &=~ DIS_BPS_SETTING;
 			} else if (strnicmp(argv[cnt],"-N",2)==0) {
 				strzcpy(numstr,argv[cnt],2,59);
-				sscanf(numstr,"%d",&intval);
+				sscanf(numstr,"%" SCNd16,&intval);
 				od_control.od_node=intval;
 				/*      } else if (strnicmp(argv[cnt],"-DV",3)==0) {
 					directvideo=1; */
@@ -314,7 +312,7 @@ extern "C" int main (int argc,char *argv[]) {
 				od_printf("\n\r`bright`Enter amount of points, ENTER to abort:");
 				od_input_str(numstr,25,'0','9');
 				if (numstr[0]!=0) {
-					sscanf(numstr,"%lu",&points);
+					sscanf(numstr,"%" SCNu32,&points);
 					if(points>cur_user.points) {
 						set_points(points);
 						WriteCurrentUser(user_num);
@@ -332,7 +330,9 @@ extern "C" int main (int argc,char *argv[]) {
 				od_printf("\n\r\n\r`bright`Enter amount of money at hand, ENTER to abort:");
 				od_input_str(numstr,25,'0','9');
 				if (numstr[0]!=0) {
-					sscanf(numstr,"%lu",&cur_user.money);
+					uint32_t n;
+					sscanf(numstr,"%" SCNu32,&n);
+					cur_user.money = n;
 					WriteCurrentUser(user_num);
 				}
 				break;
@@ -341,7 +341,9 @@ extern "C" int main (int argc,char *argv[]) {
 				od_printf("\n\r\n\r`bright`Enter amount of money in bank, ENTER to abort:");
 				od_input_str(numstr,25,'0','9');
 				if (numstr[0]!=0) {
-					sscanf(numstr,"%lu",&cur_user.bank);
+					uint32_t n;
+					sscanf(numstr,"%" SCNu32,&n);
+					cur_user.bank = n;
 					WriteCurrentUser(user_num);
 				}
 				break;
@@ -382,7 +384,7 @@ extern "C" int main (int argc,char *argv[]) {
 				//      od_control.od_ker_exec=ny_kernel;
 				od_input_str(numstr,25,'0','9');
 				if (numstr[0]!=0) {
-					sscanf(numstr,"%d",&cur_user.turns);
+					sscanf(numstr,"%hhd",&cur_user.turns);
 					WriteCurrentUser(user_num);
 				}
 				break;
@@ -391,13 +393,17 @@ extern "C" int main (int argc,char *argv[]) {
 				od_printf("\n\r\n\r`bright`Enter hitpoints, ENTER to abort:");
 				od_input_str(numstr,25,'0','9');
 				if (numstr[0]!=0) {
-					sscanf(numstr,"%ld",&cur_user.hitpoints);
+					int32_t n;
+					sscanf(numstr,"%" SCNd32,&n);
+					cur_user.hitpoints = n;
 
 				}
 				od_printf("\n\r\n\r`bright`Enter maximum hitpoints, ENTER to abort:");
 				od_input_str(numstr,25,'0','9');
 				if (numstr[0]!=0) {
-					sscanf(numstr,"%ld",&cur_user.maxhitpoints);
+					int32_t n;
+					sscanf(numstr,"%" SCNd32,&n);
+					cur_user.maxhitpoints = n;
 				}
 				if(cur_user.maxhitpoints<1)
 					cur_user.maxhitpoints=1;
@@ -413,7 +419,7 @@ extern "C" int main (int argc,char *argv[]) {
 				od_printf("\n\r\n\r`bright`Enter the drug high, ENTER to abort:");
 				od_input_str(numstr,25,'0','9');
 				if (numstr[0]!=0) {
-					sscanf(numstr,"%d",&intval);
+					sscanf(numstr,"%" SCNd16,&intval);
 					if(intval>100)
 						intval=100;
 					if(intval<0)
@@ -427,7 +433,7 @@ extern "C" int main (int argc,char *argv[]) {
 				od_printf("\n\r\n\r`bright`Enter hunger, ENTER to abort:");
 				od_input_str(numstr,25,'0','9');
 				if (numstr[0]!=0) {
-					sscanf(numstr,"%d",&intval);
+					sscanf(numstr,"%" SCNd16,&intval);
 					if(intval>100)
 						intval=100;
 					if(intval<0)
@@ -442,7 +448,7 @@ extern "C" int main (int argc,char *argv[]) {
 					od_printf("\n\r\n\r`bright`Enter the infection, ENTER to abort:");
 					od_input_str(numstr,25,'0','9');
 					if (numstr[0]!=0) {
-						sscanf(numstr,"%d",&intval);
+						sscanf(numstr,"%" SCNd16,&intval);
 						if(intval>100)
 							intval=100;
 						if(intval<0)
@@ -548,7 +554,7 @@ extern "C" int main (int argc,char *argv[]) {
 					od_printf("\n\r\n\r`bright`Enter the drug addiction, ENTER to abort:");
 					od_input_str(numstr,25,'0','9');
 					if (numstr[0]!=0) {
-						sscanf(numstr,"%d",&intval);
+						sscanf(numstr,"%" SCNd16,&intval);
 						if(intval>100)
 							intval=100;
 						if(intval<0)
@@ -567,7 +573,7 @@ extern "C" int main (int argc,char *argv[]) {
 					od_printf("\n\r\n\r`bright`Enter the days since last hit, ENTER to abort:");
 					od_input_str(numstr,25,'0','9');
 					if (numstr[0]!=0) {
-						sscanf(numstr,"%d",&intval);
+						sscanf(numstr,"%" SCNd16,&intval);
 						if(intval<0)
 							intval=0;
 						cur_user.drug_days_since=intval;
@@ -584,7 +590,9 @@ extern "C" int main (int argc,char *argv[]) {
 				od_printf("\n\r\n\r`bright`Enter days since laid, ENTER to abort:");
 				od_input_str(numstr,25,'0','9');
 				if (numstr[0]!=0) {
-					sscanf(numstr,"%d",&cur_user.since_got_laid);
+					int16_t n;
+					sscanf(numstr,"%" SCNd16,&n);
+					cur_user.since_got_laid = n;
 					if(cur_user.since_got_laid<0)
 						cur_user.since_got_laid=0;
 					WriteCurrentUser(user_num);
@@ -595,7 +603,7 @@ extern "C" int main (int argc,char *argv[]) {
 				od_printf("\n\r\n\r`bright`Enter sex turns left, ENTER to abort:");
 				od_input_str(numstr,25,'0','9');
 				if (numstr[0]!=0) {
-					sscanf(numstr,"%d",&intval);
+					sscanf(numstr,"%" SCNd16,&intval);
 					if(intval>255)
 						intval=255;
 					if(intval<0)
@@ -609,7 +617,9 @@ extern "C" int main (int argc,char *argv[]) {
 				od_printf("\n\r\n\r`bright`Enter # of condoms, ENTER to abort:");
 				od_input_str(numstr,25,'0','9');
 				if (numstr[0]!=0) {
-					sscanf(numstr,"%d",&cur_user.condoms);
+					int16_t n;
+					sscanf(numstr,"%" SCNu16,&n);
+					cur_user.condoms = n;
 					if(cur_user.condoms<0)
 						cur_user.condoms=0;
 					WriteCurrentUser(user_num);
@@ -620,7 +630,7 @@ extern "C" int main (int argc,char *argv[]) {
 				od_printf("\n\r\n\r`bright`Enter # of rocks, ENTER to abort:");
 				od_input_str(numstr,25,'0','9');
 				if (numstr[0]!=0) {
-					sscanf(numstr,"%d",&cur_user.rocks);
+					sscanf(numstr,"%hhd",&cur_user.rocks);
 					//        if(cur_user.rocks<0) cur_user.rocks=0;
 					WriteCurrentUser(user_num);
 				}
@@ -630,7 +640,7 @@ extern "C" int main (int argc,char *argv[]) {
 				od_printf("\n\r\n\r`bright`Enter the Throwing Ability (0-100), ENTER to abort:");
 				od_input_str(numstr,25,'0','9');
 				if (numstr[0]!=0) {
-					sscanf(numstr,"%d",&intval);
+					sscanf(numstr,"%" SCNd16,&intval);
 					cur_user.throwing_ability=intval;
 					//        if(cur_user.throwing_ability<0) cur_user.throwing_ability=0;
 					if(cur_user.throwing_ability>100)
@@ -640,7 +650,7 @@ extern "C" int main (int argc,char *argv[]) {
 				od_printf("\n\r\n\r`bright`Enter the Kicking Ability (0-100), ENTER to abort:");
 				od_input_str(numstr,25,'0','9');
 				if (numstr[0]!=0) {
-					sscanf(numstr,"%d",&intval);
+					sscanf(numstr,"%" SCNd16,&intval);
 					cur_user.kick_ability=intval;
 					//        if(cur_user.kick_ability<0) cur_user.kick_ability=0;
 					if(cur_user.kick_ability>100)
@@ -650,7 +660,7 @@ extern "C" int main (int argc,char *argv[]) {
 				od_printf("\n\r\n\r`bright`Enter the Punching Ability (0-100), ENTER to abort:");
 				od_input_str(numstr,25,'0','9');
 				if (numstr[0]!=0) {
-					sscanf(numstr,"%d",&intval);
+					sscanf(numstr,"%" SCNd16,&intval);
 					cur_user.punch_ability=intval;
 					//        if(cur_user.punch_ability<0) cur_user.punch_ability=0;
 					if(cur_user.punch_ability>100)
@@ -666,7 +676,9 @@ extern "C" int main (int argc,char *argv[]) {
 				od_printf("\n\r\n\r`bright`Enter # of drug hits, ENTER to abort:");
 				od_input_str(numstr,25,'0','9');
 				if (numstr[0]!=0) {
-					sscanf(numstr,"%d",&cur_user.drug_hits);
+					uint16_t n;
+					sscanf(numstr,"%" SCNd16,&n);
+					cur_user.drug_hits = n;
 					if(cur_user.drug_hits<0)
 						cur_user.drug_hits=0;
 					WriteCurrentUser(user_num);
@@ -810,7 +822,7 @@ extern "C" int main (int argc,char *argv[]) {
 					od_printf("\n\r\n\r`bright`How long is it paid for, ENTER to abort:");
 					od_input_str(numstr,25,'0','9');
 					if (numstr[0]!=0) {
-						sscanf(numstr,"%d",&intval);
+						sscanf(numstr,"%" SCNd16,&intval);
 						if(intval>255)
 							intval=255;
 						if(intval<0)
@@ -976,7 +988,7 @@ char *D_Num(DWORD num) {
 	char temp[14];
 	INT16 cnt,cnt2,len;
 
-	sprintf(temp,"%lu",num);
+	sprintf(temp,"%" PRIu32,num);
 
 	len=strlen(temp);
 
@@ -1250,7 +1262,6 @@ set_points(DWORD raise) {       // when is time for next level      0   1    2  
 void
 SortScrFile(INT16 usr) // pebble sorting of scorefile
 {
-	FILE *justfile;
 	FILE *scr_file;
 	FILE *fpUserFile;
 	FILE *njustfile;
@@ -1360,7 +1371,6 @@ SortScrFile(INT16 usr) // pebble sorting of scorefile
 void
 SortScrFileB(INT16 usr) // pebble sorting of scorefile
 {
-	FILE *justfile;
 	FILE *scr_file;
 	FILE *fpUserFile;
 	FILE *njustfile;
@@ -1630,7 +1640,7 @@ void CustomConfigFunction(char *pszKeyword, char *pszOptions) {
 		strzcpy(flagdir,pszOptions,2,MAX_PATH);
 	} else if(stricmp(pszKeyword, "PollingValue") == 0) {
 		if(time_slice_value!=0)
-			sscanf(pszOptions,"%d",&time_slice_value);
+			sscanf(pszOptions,"%" SCNd16,&time_slice_value);
 	} else if(stricmp(pszKeyword, "NoMultitasker") == 0) {
 		time_slice_value=0;
 	}
@@ -1787,7 +1797,7 @@ ny_fwrite(const void *ptr, size_t size, size_t n, FILE *stream) {
 size_t
 ny_fread(void *ptr, size_t size, size_t n, FILE *stream) {
 	size_t status;
-	INT32 offset;
+	INT32 offset=ftell(stream);
 
 	if(single_node==FALSE && filelength(fileno(stream))>=offset+(size*n)) {
 		offset=ftell(stream);
