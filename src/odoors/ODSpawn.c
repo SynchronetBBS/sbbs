@@ -1064,7 +1064,6 @@ int _spawnvpe(int nModeFlag, char *pszPath, char *papszArgs[],
 {
    pid_t	child;
    int		status;
-   pid_t	wret;
    struct sigaction act;
 
 
@@ -1091,7 +1090,7 @@ int _spawnvpe(int nModeFlag, char *pszPath, char *papszArgs[],
 	  exit(-1); /* this should never happen! */
    }
    if(nModeFlag == P_WAIT)  {
-      wret=waitpid(child,&status,0);
+      waitpid(child,&status,0);
 	  if(WIFEXITED(status))  {
 	     return(WEXITSTATUS(status));
 	  }

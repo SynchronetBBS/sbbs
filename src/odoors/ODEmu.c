@@ -77,7 +77,7 @@
 
 
 /* Local helper function prototypes. */
-static void ODEmulateFromBuffer(char *pszBuffer, BOOL bRemoteEcho);
+static void ODEmulateFromBuffer(const char *pszBuffer, BOOL bRemoteEcho);
 static FILE *ODEmulateFindCompatFile(const char *pszBaseName, INT *pnLevel);
 static void ODEmulateFillArea(BYTE btLeft, BYTE btTop, BYTE btRight,
    BYTE btBottom, char chToFillWith);
@@ -1085,7 +1085,7 @@ ODAPIDEF void ODCALL od_emulate(char chToEmulate)
  *
  *     Return: void
  */
-static void ODEmulateFromBuffer(char *pszBuffer, BOOL bRemoteEcho)
+static void ODEmulateFromBuffer(const char *pszBuffer, BOOL bRemoteEcho)
 {
    char chCurrent;
    static tODScrnTextInfo TextInfo;

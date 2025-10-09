@@ -841,7 +841,7 @@ static WORD ODCfgGetWordHex(char *pszConfigText)
       ++pszConfigText;
    }
 
-   sscanf(pszConfigText, "%x", &wToReturn);
+   sscanf(pszConfigText, "%hx", &wToReturn);
 
    return(wToReturn);
 }

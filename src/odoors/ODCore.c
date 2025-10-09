@@ -650,7 +650,7 @@ ODAPIDEF void ODCALL od_page(void)
    /* Use extended ASCII characters if operating in ANSI or AVATAR mode. */
    if(od_control.user_ansi || od_control.user_avatar)
    {
-      od_repeat('Ä',77);
+      od_repeat('\xc4',77);
    }
    else
    {

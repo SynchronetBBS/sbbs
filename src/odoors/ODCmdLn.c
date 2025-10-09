@@ -293,7 +293,7 @@ ODAPIDEF void ODCALL od_parse_cmd_line(INT nArgCount, char *papszArguments[])
             printf("AVALIABLE COMMAND LINE OPTIONS ");
             if(od_control.od_cmd_line_help != NULL)
             {
-               printf(od_control.od_cmd_line_help);
+               fputs(od_control.od_cmd_line_help, stdout);
             }
             else
             {
@@ -426,6 +426,10 @@ ODAPIDEF void ODCALL od_parse_cmd_line(INT nArgCount, char *papszArguments[])
                (*od_control.od_cmd_line_handler)(pszCurrentArg,
                   szCustomOptions);
             }
+            break;
+         case kParamPersonality:
+         case kParamOption:
+            // Ignore by OpenDoors
             break;
       }
    }

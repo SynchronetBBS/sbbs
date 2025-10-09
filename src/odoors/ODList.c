@@ -466,7 +466,7 @@ static INT ODListFilenameSplit(const char *pszEntirePath, char *pszDrive,
 
    if((pchCurrentPos = strrchr(pchStart, '.')) == NULL)
    {
-      if(pchStart =='\0')
+      if(pchStart[0] =='\0')
       {
          pszExtension[0] = '\0';
          pszName[0] = '\0';

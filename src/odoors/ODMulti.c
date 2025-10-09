@@ -95,7 +95,7 @@ static INT nCurrentPersonality = 255;
  */
 ODAPIDEF void ODCALL ODMPSEnable(void)
 {
-   pfSetPersonality = od_set_personality;
+   pfSetPersonality = &od_set_personality;
 }
 
 
@@ -108,7 +108,7 @@ ODAPIDEF void ODCALL ODMPSEnable(void)
  *
  *     Return: TRUE on success, or FALSE on failure.
  */
-ODAPIDEF BOOL ODCALL od_set_personality(const char *pszName)
+ODAPIDEF BOOL ODCALL od_set_personality(char *pszName)
 {
 #ifdef OD_TEXTMODE
    BYTE btNewPersonality;

@@ -1077,9 +1077,9 @@ tODResult ODDirRead(tODDirHandle hDir, tODDirEntry *pDirEntry)
 	  pDirEntry->wAttributes=DIR_ATTRIB_NORMAL;
 	  if(st.st_mode & S_IFDIR)
 	  	 pDirEntry->wAttributes |= DIR_ATTRIB_DIREC;
-	  if(!st.st_mode & S_IWUSR)
+	  if(!(st.st_mode & S_IWUSR))
 	  	 pDirEntry->wAttributes |= DIR_ATTRIB_RDONLY;
-	  if(!st.st_mode & S_IRUSR)
+	  if(!(st.st_mode & S_IRUSR))
 	  	 pDirEntry->wAttributes |= DIR_ATTRIB_SYSTEM;
 	  pDirEntry->LastWriteTime=st.st_mtime;
 	  pDirEntry->dwFileSize=st.st_size;

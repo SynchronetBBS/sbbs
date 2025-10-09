@@ -68,12 +68,12 @@ endif
 #
 CFLAGS	+=	-fPIC
 LDFLAGS	+=	-fPIC
-CFLAGS	+=	-O2 -L${LIBDIR} -I../xpdev -shared
+CFLAGS	+=	-O2 -I../xpdev
 ifeq ($(OS),Darwin)
  CFLAGS		+=	-D__unix__
- LDFLAGS	:=	$(CFLAGS) -dynamiclib -single_module
+ LDFLAGS	:=	$(CFLAGS) -L$(LIBDIR) -dynamiclib -single_module
 else
- LDFLAGS	:=	$(CFLAGS) -shared
+ LDFLAGS	:=	-L$(LIBDIR) -shared
 endif
 CFLAGS	+=	-Wall
 ifeq ($(shell if [ -f /usr/include/inttypes.h ] ; then echo YES ; fi),YES)
@@ -86,7 +86,9 @@ endif
 #
 # Link flags.
 #
-LDFLAGS	+=	-L../xpdev/$(LD).$(os).x64.lib.$(BUILDTYPE)
+ifdef XPDEV_LIB
+LDFLAGS	+=	-L$(XPDEV_LIB)
+endif
 #
 #------------------------------------------------------------------------------
 #
@@ -114,7 +116,11 @@ endif
 #
 all: ${OBJDIR} ${LIBDIR} $(EXEDIR) ${LIBDIR}libODoors${SHLIB} \
     ${LIBDIR}libODoors${STATICLIB} $(EXEDIR)ex_chat $(EXEDIR)ex_diag \
-    $(EXEDIR)ex_hello $(EXEDIR)ex_music $(EXEDIR)ex_ski $(EXEDIR)ex_vote
+    $(EXEDIR)ex_hello $(EXEDIR)ex_music $(EXEDIR)ex_vote
+
+ifdef XPDEV_LIB
+all: $(EXEDIR)ex_ski
+endif
 #
 #------------------------------------------------------------------------------
 #
@@ -195,22 +201,22 @@ ${LIBDIR}libODoors${STATICLIB} : ${OBJECTS}
 	ranlib ${LIBDIR}libODoors${STATICLIB}
 	
 ${EXEDIR}ex_chat: ex_chat.c ${LIBDIR}libODoors${SHLIB}
-	$(CC) $(CFLAGS) ex_chat.c -o $@ -lODoors
+	$(CC) $(LDFLAGS) $(CFLAGS) ex_chat.c -o $@ -lODoors
 
 ${EXEDIR}ex_diag: ex_diag.c ${LIBDIR}libODoors${SHLIB}
-	$(CC) $(CFLAGS) ex_diag.c -o $@ -lODoors
+	$(CC) $(LDFLAGS) $(CFLAGS) ex_diag.c -o $@ -lODoors
 
 ${EXEDIR}ex_hello: ex_hello.c ${LIBDIR}libODoors${SHLIB}
-	$(CC) $(CFLAGS) ex_hello.c -o $@ -lODoors
+	$(CC) $(LDFLAGS) $(CFLAGS) ex_hello.c -o $@ -lODoors
 
 ${EXEDIR}ex_music: ex_music.c ${LIBDIR}libODoors${SHLIB}
-	$(CC) $(CFLAGS) ex_music.c -o $@ -lODoors
+	$(CC) $(LDFLAGS) $(CFLAGS) ex_music.c -o $@ -lODoors
 
 ${EXEDIR}ex_ski: ex_ski.c ${LIBDIR}libODoors${SHLIB}
-	$(CC) $(CFLAGS) $(LDFLAGS) ex_ski.c -o $@ -lODoors -lxpdev
+	$(CC) $(LDFLAGS) $(CFLAGS) $(LDFLAGS) ex_ski.c -o $@ -lODoors -lxpdev
 
 ${EXEDIR}ex_vote: ex_vote.c ${LIBDIR}libODoors${SHLIB}
-	$(CC) $(CFLAGS) ex_vote.c ../xpdev/filewrap.c -o $@ -lODoors -DMULTINODE_AWARE
+	$(CC) $(LDFLAGS) $(CFLAGS) ex_vote.c ../xpdev/filewrap.c -o $@ -lODoors -DMULTINODE_AWARE
 
 #
 #------------------------------------------------------------------------------

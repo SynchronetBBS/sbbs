@@ -106,11 +106,11 @@ int main(int argc, char *argv[])
       od_clr_scr();
 
       /* Display program title */
-      od_printf("`bright white`                Ûßß ÛßÜ ÛßÛ ÛÜ Û ÛßÜ   Ûßß Û   ÛßÛ Û   ÛßÛ ÛßÛßÛ\n\r");
-      od_printf("`bright red`ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ`bright white`ÛßÛ`bright red`Ä`bright white`ÛßÜ`bright red`Ä`bright white`ÛßÛ`bright red`Ä`bright white`Û`bright red`Ä`bright white`ßÛ`bright red`Ä`bright white`Û");
-      od_printf("`bright red`Ä`bright white`Û`bright red`ÄÄÄ`bright white`ßßÛ`bright red`Ä`bright white`Û`bright red`ÄÄÄ`bright white`ÛßÛ`bright red`Ä`bright white`Û`bright red`ÄÄÄ`bright white`Û");
-      od_printf("`bright red`Ä`bright white`Û`bright red`Ä`bright white`Û`bright red`Ä`bright white`Û`bright red`Ä`bright white`Û`bright red`ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ\n\r");
-      od_printf("`bright white`                ßßß ß ß ß ß ß  ß ßß    ßßß ßßß ß ß ßßß ßßß ß ß ß\n\r\n\r");
+      od_printf("`bright white`                \xdb\xdf\xdf \xdb\xdf\xdc \xdb\xdf\xdc \xdb\xdc \xdb \xdb\xdf\xdc   \xdb\xdf\xdf \xdb   \xdb\xdf\xdb \xdb   \xdb\xdf\xdb \xdb\xdf\xdb\xdf\xdb\n\r");
+      od_printf("`bright red`\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4`bright white`\xdb\xdf\xdb`bright red`\xc4`bright white`\xdb\xdf\xdc`bright red`\xc4`bright white`\xdb\xdf\xdb`bright red`\xc4`bright white`\xdb`bright red`\xc4`bright white`\xdf\xdb`bright red`\xc4`bright white`\xdb");
+      od_printf("`bright red`\xc4`bright white`\xdb`bright red`\xc4\xc4\xc4`bright white`\xdf\xdf\xdb`bright red`\xc4`bright white`\xdb`bright red`\xc4\xc4\xc4`bright white`\xdb\xdf\xdb`bright red`\xc4`bright white`\xdb`bright red`\xc4\xc4\xc4`bright white`\xdb");
+      od_printf("`bright red`\xc4`bright white`\xdb`bright red`\xc4`bright white`\xdb`bright red`\xc4`bright white`\xdb`bright red`\xc4`bright white`\xdb`bright red`\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\n\r");
+      od_printf("`bright white`                \xdf\xdf\xdf \xdf \xdf \xdf \xdf \xdf  \xdf \xdf\xdf    \xdf\xdf\xdf \xdf\xdf\xdf \xdf \xdf \xdf\xdf\xdf \xdf\xdf\xdf \xdf \xdf \xdf\n\r\n\r");
 
       /* Display instructions */
       od_printf("`dark green`Prepare yourself for the challenge of Grand Slalom downhill skiing!\n\r\n\r");
@@ -303,7 +303,7 @@ void ShowHighScores(void)
       /* Display header line */
       od_printf("`bright green`Player                            Score     "
                 "Record Date`dark green`\n\r");
-      od_printf("ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ\n\r");
+      od_printf("\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\n\r");
 
       /* Display high scores */
       for(iHighScore = 0; iHighScore < HIGH_SCORES; ++iHighScore)
@@ -325,7 +325,7 @@ void ShowHighScores(void)
    }
 
    /* Display footer line */
-   od_printf("ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ\n\r\n\r");
+   od_printf("\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\n\r\n\r");
 
    /* Wait for user to press a key */
    od_printf("`bright white`Press [ENTER]/[RETURN] to continue: ");
