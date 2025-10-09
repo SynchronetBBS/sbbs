@@ -28,8 +28,8 @@ void command_line(void)
 // ***THE MAIN EXECUTABLE FOR THE LORD IGM
 int main(int argc, char *argv[])
 {
-    char inFile[13], outFile[13], line[261], test[261];
-    char *p, *curp;
+    char inFile[13], outFile[13], line[261];
+    char *p;
     //, keyword[15];
     FILE *in, *out;
 
