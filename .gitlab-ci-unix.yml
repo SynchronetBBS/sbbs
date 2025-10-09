@@ -11,10 +11,10 @@ spec:
       default: 'no'
     build_flags:
       default: 'RELEASE=1'
-    no_javascript:
-      default: 'no'
-    no_encrypted_ini:
-      default: 'no'
+    has_javascript:
+      default: 'yes'
+    has_encrypted_ini:
+      default: 'yes'
     has_curses:
       default: 'yes'
     has_gtk:
@@ -23,6 +23,8 @@ spec:
       default: 'gmake'
     has_valgrind:
       default: 'no'
+    has_graphics:
+      default: 'yes'
 ---
 
 ".$[[ inputs.os ]]":
@@ -63,7 +65,7 @@ spec:
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [sbbs-build]"
   rules:
-    - if: '"$[[ inputs.no_javascript ]]" == "yes"'
+    - if: '"$[[ inputs.has_javascript ]]" == "no"'
       when: never
     - if: '"$[[ inputs.cross_platform ]]" == "yes"'
       when: never
@@ -272,7 +274,7 @@ spec:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [uifc]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [gitinfo]"
   rules:
-    - if: '"$[[ inputs.no_javascript ]]" == "yes"'
+    - if: '"$[[ inputs.has_javascript ]]" == "no"'
       when: never
     - if: '"$[[ inputs.cross_platform ]]" == "yes"'
       when: never
@@ -339,7 +341,7 @@ spec:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [uifc]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [gitinfo]"
   rules:
-    - if: '"$[[ inputs.no_javascript ]]" == "yes"'
+    - if: '"$[[ inputs.has_javascript ]]" == "no"'
       when: never
     - if: '"$[[ inputs.cross_platform ]]" == "yes"'
       when: never
@@ -406,7 +408,7 @@ spec:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
   rules:
-    - if: '"$[[ inputs.no_encrypted_ini ]]" == "yes"'
+    - if: '"$[[ inputs.has_encrypted_ini ]]" == "no"'
       when: never
     - !reference [.rules, rules]
 
@@ -524,6 +526,10 @@ spec:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [encode]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [hash]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
+  rules:
+    - if: '"$[[ inputs.has_graphics ]]" == "no"'
+      when: never
+    - !reference [.rules, rules]
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [uedit]":
   extends:
@@ -605,7 +611,7 @@ spec:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [uifc]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
   rules:
-    - if: '"$[[ inputs.no_encrypted_ini ]]" == "yes"'
+    - if: '"$[[ inputs.has_encrypted_ini ]]" == "no"'
       when: never
     - !reference [.rules, rules]
 
@@ -648,7 +654,7 @@ spec:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [uifc]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
   rules:
-    - if: '"$[[ inputs.no_encrypted_ini ]]" == "yes"'
+    - if: '"$[[ inputs.has_encrypted_ini ]]" == "no"'
       when: never
     - !reference [.rules, rules]
 
@@ -761,7 +767,7 @@ spec:
   variables:
     GIT_STRATEGY: fetch
   rules:
-    - if: '"$[[ inputs.no_javascript ]]" == "yes"'
+    - if: '"$[[ inputs.has_javascript ]]" == "no"'
       when: never
     - !reference [.rules, rules]
 
@@ -823,7 +829,7 @@ spec:
   rules:
     - if: '"$[[ inputs.cross_platform ]]" == "yes"'
       when: never
-    - if: '"$[[ inputs.no_javascript ]]" == "yes"'
+    - if: '"$[[ inputs.has_javascript ]]" == "no"'
       when: never
     - !reference [.rules, rules]
 
@@ -847,7 +853,7 @@ spec:
   rules:
     - if: '"$[[ inputs.cross_platform ]]" == "yes"'
       when: never
-    - if: '"$[[ inputs.no_javascript ]]" == "yes"'
+    - if: '"$[[ inputs.has_javascript ]]" == "no"'
       when: never
     - if: '"$[[ inputs.has_valgrind ]]" == "no"'
       when: never
@@ -874,7 +880,7 @@ spec:
   rules:
     - if: '"$[[ inputs.cross_platform ]]" == "yes"'
       when: never
-    - if: '"$[[ inputs.no_javascript ]]" == "yes"'
+    - if: '"$[[ inputs.has_javascript ]]" == "no"'
       when: never
     - !reference [.rules, rules]
 

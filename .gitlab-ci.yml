@@ -25,12 +25,14 @@ include:
       platform: 'amd64'
       tagname: 'OpenBSD'
       build_flags: 'CC="ccache cc" CXX="ccache c++" RELEASE=1 NO_ABSOLUTE_RPATH=1'
+      has_graphics: 'no'
   - local: '.gitlab-ci-unix.yml'
     inputs:
       os: 'netbsd'
       platform: 'amd64'
       tagname: 'NetBSD'
       build_flags: 'CC="ccache cc" CXX="ccache c++" RELEASE=1 USE_SYSTEM_CURSES=1 NO_ABSOLUTE_RPATH=1'
+      has_graphics: 'no'
   - local: '.gitlab-ci-unix.yml'
     inputs:
       os: 'freebsd'
@@ -58,7 +60,7 @@ include:
       platform: "x64"
       tagname: "alpine-linux"
       build_flags: 'CC="ccache cc" CXX="ccache c++" RELEASE=1 NO_ABSOLUTE_RPATH=1'
-      no_javascript: 'yes'
+      has_javascript: 'no'
   - local: '.gitlab-ci-unix.yml'
     inputs:
       os: 'mingw-w64'
@@ -66,9 +68,9 @@ include:
       tagname: 'FreeBSD'
       cross_platform: 'yes'
       build_flags: 'AR=/home/admin/mingw-w32/bin/i686-w64-mingw32-ar AS=/home/admin/mingw-w32/bin/i686-w64-mingw32-as CC="ccache /home/admin/mingw-w32/bin/i686-w64-mingw32-gcc" CXX="ccache /home/admin/mingw-w32/bin/i686-w64-mingw32-g++" RANLIB=/home/admin/mingw-w32/bin/i686-w64-mingw32-ranlib WINDRES=/home/admin/mingw-w32/bin/i686-w64-mingw32-windres RELEASE=1'
-      no_javascript: 'yes'
+      has_javascript: 'no'
       has_curses: 'no'
-      no_encrypted_ini: 'yes'
+      has_encrypted_ini: 'no'
   - local: '.gitlab-ci-unix.yml'
     inputs:
       os: 'mingw-w64'
@@ -76,9 +78,9 @@ include:
       tagname: 'FreeBSD'
       cross_platform: 'yes'
       build_flags: 'AR=/home/admin/mingw-w64/bin/x86_64-w64-mingw32-ar AS=/home/admin/mingw-w64/bin/x86_64-w64-mingw32-as CC="ccache /home/admin/mingw-w64/bin/x86_64-w64-mingw32-gcc" CXX="ccache /home/admin/mingw-w64/bin/x86_64-w64-mingw32-g++" RANLIB=/home/admin/mingw-w64/bin/x86_64-w64-mingw32-ranlib WINDRES=/home/admin/mingw-w64/bin/x86_64-w64-mingw32-windres RELEASE=1'
-      no_javascript: 'yes'
+      has_javascript: 'no'
       has_curses: 'no'
-      no_encrypted_ini: 'yes'
+      has_encrypted_ini: 'no'
   - local: '.gitlab-ci-unix.yml'
     inputs:
       os: 'darwin-aarch64'
