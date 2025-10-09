@@ -491,13 +491,17 @@ spec:
   script:
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/cryptlib.tgz"
+    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/encode.tgz"
+    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/hash.tgz"
     - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
     - cd src/sbbs3/syncview
-    - touch depend
-    - touch xpdev
-    - touch xpdev-mt
     - touch ciolib-mt
     - touch cl
+    - touch depend
+    - touch encode
+    - touch hash
+    - touch xpdev
+    - touch xpdev-mt
     - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
   variables:
     GIT_STRATEGY: fetch
@@ -508,6 +512,8 @@ spec:
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [encode]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [hash]"
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [uedit]":
