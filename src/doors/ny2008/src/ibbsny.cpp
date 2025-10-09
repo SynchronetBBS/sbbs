@@ -30,7 +30,7 @@ char            bbs_namei[37];
 char            aszShortMonthName[12][4] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
         "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 
-
+#if 0
 /*
    tBool DirExists(const char *pszDirName) { char szDirFileName[PATH_CHARS +
    1]; struct ffblk DirEntry; //   if(pszDirName==NULL) return(FALSE); //
@@ -42,6 +42,7 @@ char            aszShortMonthName[12][4] = {"Jan", "Feb", "Mar", "Apr", "May", "
    rFileName, &DirEntry, FA_ARCH|FA_DIREC) == 0 && (DirEntry.ff_attrib &
    FA_DIREC)); }
 */
+#endif
 
 void            MakeFilename(const char *pszPath, const char *pszFilename, char *pszOut) {
 	/* Validate parameters in debug mode */
@@ -207,14 +208,14 @@ tIBResult       IBSend(tIBInfo * pInfo, char *pszDestNode, char *pBuffer,
 	}
 	/* Create MSGID kludge line, including point if non-zero */
 	if (OrigNode.wPoint != 0) {
-		sprintf(szMSGID, "\1MSGID: %u:%u/%u.%u %lx\r",
+		sprintf(szMSGID, "\1MSGID: %u:%u/%u.%u %" PRIx32 "\r",
 		        OrigNode.wZone,
 		        OrigNode.wNet,
 		        OrigNode.wNode,
 		        OrigNode.wPoint,
 		        GetNextMSGID());
 	} else {
-		sprintf(szMSGID, "\1MSGID: %u:%u/%u %lx\r",
+		sprintf(szMSGID, "\1MSGID: %u:%u/%u %" PRIx32 "\r",
 		        OrigNode.wZone,
 		        OrigNode.wNet,
 		        OrigNode.wNode,
@@ -284,8 +285,6 @@ tIBResult       IBSendMail(tIBInfo * pInfo, ibbs_mail_type * ibmail) {
 	tFidoNode       DestNode;
 	tFidoNode       OrigNode;
 
-	if (ibmail->node_r == NULL)
-		return (eBadParameter);
 	if (ibmail == NULL)
 		return (eBadParameter);
 
@@ -376,14 +375,14 @@ tIBResult       IBSendMail(tIBInfo * pInfo, ibbs_mail_type * ibmail) {
 	}
 	/* Create MSGID kludge line, including point if non-zero */
 	if (OrigNode.wPoint != 0) {
-		sprintf(szMSGID, "\1MSGID: %u:%u/%u.%u %lx\r",
+		sprintf(szMSGID, "\1MSGID: %u:%u/%u.%u %" PRIx32 "\r",
 		        OrigNode.wZone,
 		        OrigNode.wNet,
 		        OrigNode.wNode,
 		        OrigNode.wPoint,
 		        GetNextMSGID());
 	} else {
-		sprintf(szMSGID, "\1MSGID: %u:%u/%u %lx\r",
+		sprintf(szMSGID, "\1MSGID: %u:%u/%u %" PRIx32 "\r",
 		        OrigNode.wZone,
 		        OrigNode.wNet,
 		        OrigNode.wNode,
@@ -481,8 +480,6 @@ void            EncodeMail(char *pszDest, ibbs_mail_type * ibmail) {
 	char           *pcDest = pszDest;
 
 	INT16             x, l, ln;
-
-	char            temp[25];
 
 	l = strlen(ibmail->sender);
 	for (x = 0; x < l; x++) {
@@ -625,6 +622,7 @@ void            EncodeMail(char *pszDest, ibbs_mail_type * ibmail) {
 	*pcDest = '\0';
 }
 
+#if 0
 /*
    void DecodeBuffer(const char *pszSource, void *pDestBuffer, int
    nBufferSize) { const char *pcSource = pszSource; char *pcDest = (char
@@ -643,6 +641,8 @@ void            EncodeMail(char *pszDest, ibbs_mail_type * ibmail) {
    bFirstOfByte = TRUE; } } /* Increment source byte pointer -/ ++pcSource; }
    }
 */
+#endif
+
 void            DecodeMail(const char *pszSource, ibbs_mail_type * ibmail) {
 	const char     *pcSource = pszSource;
 
@@ -676,7 +676,7 @@ void            DecodeMail(const char *pszSource, ibbs_mail_type * ibmail) {
 		tmp[0] = *pcSource;
 		tmp[1] = *(pcSource + 1);
 		tmp[2] = 0;
-		sscanf(tmp, "%X", &t);
+		sscanf(tmp, "%" SCNx16, &t);
 		ibmail->sender[x] = t;
 		pcSource += 2;
 		x++;
@@ -694,7 +694,7 @@ void            DecodeMail(const char *pszSource, ibbs_mail_type * ibmail) {
 		tmp[0] = *pcSource;
 		tmp[1] = *(pcSource + 1);
 		tmp[2] = 0;
-		sscanf(tmp, "%X", &t);
+		sscanf(tmp, "%" SCNx16, &t);
 		ibmail->senderI[x] = t;
 		pcSource += 2;
 		x++;
@@ -706,9 +706,9 @@ void            DecodeMail(const char *pszSource, ibbs_mail_type * ibmail) {
 	while (*pcSource <= ' ')
 		pcSource++;
 
-	sscanf(pcSource, "%s", &tmp);
+	sscanf(pcSource, "%79s", tmp);
 	pcSource += strlen(tmp);
-	sscanf(tmp, "%X", &t);
+	sscanf(tmp, "%" SCNx16, &t);
 	ibmail->sender_sex = (sex_type) t;
 
 	while (*pcSource <= ' ')
@@ -719,7 +719,7 @@ void            DecodeMail(const char *pszSource, ibbs_mail_type * ibmail) {
 	while (*pcSource > ' ') {
 		tmp[0] = *pcSource;
 		tmp[1] = *(pcSource + 1);
-		sscanf(tmp, "%X", &t);
+		sscanf(tmp, "%" SCNx16, &t);
 		ibmail->node_s[x] = t;
 		pcSource += 2;
 		x++;
@@ -738,7 +738,7 @@ void            DecodeMail(const char *pszSource, ibbs_mail_type * ibmail) {
 	while (*pcSource > ' ') {
 		tmp[0] = *pcSource;
 		tmp[1] = *(pcSource + 1);
-		sscanf(tmp, "%X", &t);
+		sscanf(tmp, "%" SCNx16, &t);
 		ibmail->node_r[x] = t;
 		pcSource += 2;
 		x++;
@@ -754,7 +754,7 @@ void            DecodeMail(const char *pszSource, ibbs_mail_type * ibmail) {
 	while (*pcSource > ' ') {
 		tmp[0] = *pcSource;
 		tmp[1] = *(pcSource + 1);
-		sscanf(tmp, "%X", &t);
+		sscanf(tmp, "%" SCNx16, &t);
 		ibmail->recver[x] = t;
 		pcSource += 2;
 		x++;
@@ -768,7 +768,7 @@ void            DecodeMail(const char *pszSource, ibbs_mail_type * ibmail) {
 	while (*pcSource > ' ') {
 		tmp[0] = *pcSource;
 		tmp[1] = *(pcSource + 1);
-		sscanf(tmp, "%X", &t);
+		sscanf(tmp, "%" SCNx16, &t);
 		ibmail->recverI[x] = t;
 		pcSource += 2;
 		x++;
@@ -777,45 +777,45 @@ void            DecodeMail(const char *pszSource, ibbs_mail_type * ibmail) {
 	while (*pcSource <= ' ')
 		pcSource++;
 
-	sscanf(pcSource, "%s", &tmp);
+	sscanf(pcSource, "%79s", tmp);
 	pcSource += strlen(tmp);
-	sscanf(tmp, "%X", &t);
+	sscanf(tmp, "%" SCNx16, &t);
 	ibmail->quote_length = t;
 	//printf("[QL%d]", (INT16)ibmail->quote_length);
 	//debug
 	while (*pcSource <= ' ')
 		pcSource++;
 
-	sscanf(pcSource, "%s", &tmp);
+	sscanf(pcSource, "%79s", tmp);
 	pcSource += strlen(tmp);
-	sscanf(tmp, "%X", &t);
+	sscanf(tmp, "%" SCNx16, &t);
 	ibmail->length = t;
 	//printf("[L%d]", (INT16)ibmail->length);
 	//debug
 	while (*pcSource <= ' ')
 		pcSource++;
 
-	sscanf(pcSource, "%s", &tmp);
+	sscanf(pcSource, "%79s", tmp);
 	pcSource += strlen(tmp);
-	sscanf(tmp, "%X", &t);
+	sscanf(tmp, "%" SCNx16, &t);
 	ibmail->flirt = t;
 	//printf("[F%d][%s]", (INT16)ibmail->flirt, tmp);
 	//debug
 	while (*pcSource <= ' ')
 		pcSource++;
 
-	sscanf(pcSource, "%s", &tmp);
+	sscanf(pcSource, "%79s", tmp);
 	pcSource += strlen(tmp);
-	sscanf(tmp, "%X", &t);
+	sscanf(tmp, "%" SCNx16, &t);
 	ibmail->ill = (desease) t;
 	//printf("[D%d]", (INT16)ibmail->ill);
 	//debug
 	while (*pcSource <= ' ')
 		pcSource++;
 
-	sscanf(pcSource, "%s", &tmp);
+	sscanf(pcSource, "%79s", tmp);
 	pcSource += strlen(tmp);
-	sscanf(tmp, "%X", &t);
+	sscanf(tmp, "%" SCNx16, &t);
 	ibmail->inf = t;
 	//printf("[INF%d]\n", (INT16)ibmail->inf);
 	//debug
@@ -831,7 +831,7 @@ void            DecodeMail(const char *pszSource, ibbs_mail_type * ibmail) {
 		while (*pcSource > ' ') {
 			tmp[0] = *pcSource;
 			tmp[1] = *(pcSource + 1);
-			sscanf(tmp, "%X", &t);
+			sscanf(tmp, "%" SCNx16, &t);
 			(ibmail->lines)[ln][x] = t;
 			pcSource += 2;
 			x++;
@@ -844,7 +844,7 @@ void            DecodeMail(const char *pszSource, ibbs_mail_type * ibmail) {
 		while (*pcSource > ' ') {
 			tmp[0] = *pcSource;
 			tmp[1] = *(pcSource + 1);
-			sscanf(tmp, "%X", &t);
+			sscanf(tmp, "%" SCNx16, &t);
 			(ibmail->lines)[ln][x] = t;
 			pcSource += 2;
 			x++;
@@ -857,7 +857,7 @@ void            DecodeMail(const char *pszSource, ibbs_mail_type * ibmail) {
 		while (*pcSource > ' ') {
 			tmp[0] = *pcSource;
 			tmp[1] = *(pcSource + 1);
-			sscanf(tmp, "%X", &t);
+			sscanf(tmp, "%" SCNx16, &t);
 			(ibmail->lines)[ln][x] = t;
 			pcSource += 2;
 			x++;
@@ -870,7 +870,7 @@ void            DecodeMail(const char *pszSource, ibbs_mail_type * ibmail) {
 		while (*pcSource > ' ') {
 			tmp[0] = *pcSource;
 			tmp[1] = *(pcSource + 1);
-			sscanf(tmp, "%X", &t);
+			sscanf(tmp, "%" SCNx16, &t);
 			(ibmail->lines)[ln][x] = t;
 			pcSource += 2;
 			x++;
@@ -886,7 +886,7 @@ void            DecodeMail(const char *pszSource, ibbs_mail_type * ibmail) {
 	//return;
 }
 
-
+#if 0
 /*
    INT16 DecodeBufferR(const char *pszSource, void *pDestBuffer) { const char
    pcSource = pszSource; char *pcDest = (char *)pDestBuffer; char size[2];
@@ -908,6 +908,7 @@ void            DecodeMail(const char *pszSource, ibbs_mail_type * ibmail) {
    BufferSize=*(INT16 *)size; pDestBuffer=malloc(nBufferSize); } } /* Increment
    source byte pointer -/ ++pcSource; } return(nBufferSize); }
 */
+#endif
 
 DWORD           GetNextMSGID(void) {
 	/* MSGID should be unique for every message, for as long as possible.   */
@@ -934,7 +935,7 @@ void            GetMessageFilename(char *pszMessageDir, DWORD lwMessageNum,
                                    char *pszOut) {
 	char            szFileName[FILENAME_CHARS + 1];
 
-	sprintf(szFileName, "%ld.msg", lwMessageNum);
+	sprintf(szFileName, "%" PRId32 ".msg", lwMessageNum);
 	MakeFilename(pszMessageDir, szFileName, pszOut);
 }
 
@@ -1070,7 +1071,7 @@ tIBResult       ValidateInfoStruct(tIBInfo * pInfo) {
 	return (eSuccess);
 }
 
-
+#if 0
 /*
    tIBResult IBGet(tIBInfo *pInfo, void *pBuffer, INT16 nMaxBufferSize) { esult
    ToReturn; struct ffblk DirEntry; DWORD lwCurrentMsgNum; ader
@@ -1117,6 +1118,8 @@ tIBResult       ValidateInfoStruct(tIBInfo * pInfo) {
    while(findnext(&DirEntry) == 0); } /* If no new messages were found -/
    return(eNoMoreMessages); }
 */
+#endif
+
 tIBResult       IBGetMail(tIBInfo * pInfo, ibbs_mail_type * ibmail) {
 	tIBResult       ToReturn;
 	glob_t          DirEntry;
@@ -1218,7 +1221,7 @@ tIBResult       IBGetMail(tIBInfo * pInfo, ibbs_mail_type * ibmail) {
 
 }
 
-
+#if 0
 /*
    tIBResult IBGetR(tIBInfo *pInfo, void *pBuffer, INT16 *nBufferLen) { ult
    ToReturn; struct ffblk DirEntry; DWORD lwCurrentMsgNum; er MessageHeader;
@@ -1253,6 +1256,7 @@ tIBResult       IBGetMail(tIBInfo * pInfo, ibbs_mail_type * ibmail) {
    while(findnext(&DirEntry) == 0); } /* If no new messages were found -/
    return(eNoMoreMessages); }
 */
+#endif
 
 void            ConvertAddressToString(char *pszDest, const tFidoNode * pNode) {
 	if (pNode->wZone == 0) {
@@ -1276,9 +1280,18 @@ void            ConvertStringToAddress(tFidoNode * pNode, const char *pszSource)
 	pNode->wNode = 0;
 	pNode->wPoint = 0;
 	if (strchr(pszSource, ':') == NULL) {
-		sscanf(pszSource, "%u/%u.%u", &(pNode->wNet), &(pNode->wNode), &(pNode->wPoint));
+		uint16_t n1, n2, n3;
+		sscanf(pszSource, "%" SCNu16 "/%" SCNu16 ".%" SCNu16, &n1, &n2, &n3);
+		pNode->wNet = n1;
+		pNode->wNode = n2;
+		pNode->wPoint = n3;
 	} else {
-		sscanf(pszSource, "%u:%u/%u.%u", &(pNode->wZone), &(pNode->wNet), &(pNode->wNode), &(pNode->wPoint));
+		uint16_t n1, n2, n3, n4;
+		sscanf(pszSource, "%" SCNu16 ":%" SCNu16 "/%" SCNu16" .%" SCNu16, &n1, &n2, &n3, &n4);
+		pNode->wZone = n1;
+		pNode->wNet = n2;
+		pNode->wNode = n3;
+		pNode->wPoint = n4;
 	}
 }
 
@@ -1342,7 +1355,7 @@ void            ProcessConfigLine(INT16 nKeyword, char *pszParameter, void *pCal
 			break;
 
 		case KEYWORD_IBBS_GN:
-			sscanf(pszParameter, "%d", &ibbsi_game_num);
+			sscanf(pszParameter, "%" SCNd16, &ibbsi_game_num);
 			break;
 
 		case KEYWORD_BBS_NAME:

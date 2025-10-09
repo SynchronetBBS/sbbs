@@ -169,7 +169,7 @@ INT16
 copyfile(const char *file1,const char *file2) {
 	FILE *f1,*f2;
 	char *buffer;
-	INT32 len1,where,x,y;
+	INT32 len1,x,y;
 
 
 	f1=ShareFileOpen(file1,"rb");
@@ -283,12 +283,10 @@ loadbadwords(void) {
 
 extern "C" int
 main(int argc,char *argv[]) {
-	FILE *justfile,*njustfile;
+	FILE *justfile;
 	char key;
-	WORD uintval;
 	char numstr[26];
-	scr_rec srec;
-	INT16 cnt,intval,x;
+	INT16 cnt,intval;
 	scr_rec rec;
 	date today;
 	date lastday;
@@ -507,7 +505,7 @@ main(int argc,char *argv[]) {
 				od_exit(10,FALSE);
 			} else if (strnicmp(argv[cnt],"-N",2)==0) {
 				strzcpy(numstr,argv[cnt],2,59);
-				sscanf(numstr,"%d",&intval);
+				sscanf(numstr,"%" SCNd16,&intval);
 				od_control.od_node=intval;
 			} else if (strnicmp(argv[cnt],"-C",2)==0) {
 				od_control.od_config_filename=argv[cnt]+2;
@@ -563,8 +561,6 @@ main(int argc,char *argv[]) {
 		od_control.user_screen_length=35;
 	}
 
-	char *InComing;
-	char *OutGoing;
 	ibbs_mail_type ibmail;
 
 	registered=TRUE;
@@ -579,7 +575,6 @@ main(int argc,char *argv[]) {
 
 	if(ibbs==TRUE) {
 		ch_game_d();
-		INT16 xx;
 		strcpy(IBBSInfo.szThisNodeAddress, "0:000/000");
 		sprintf(IBBSInfo.szProgName, "#@NYG#%05d IBBS",ibbs_game_num);
 		strcpy(IBBSInfo.szNetmailDir, "C:/FD/NETMAIL");
@@ -594,7 +589,7 @@ main(int argc,char *argv[]) {
 
 		char szDirFileName[PATH_CHARS + 1];
 
-		if(IBBSInfo.szNetmailDir==NULL || strlen(IBBSInfo.szNetmailDir)>PATH_CHARS) {
+		if(strlen(IBBSInfo.szNetmailDir)>PATH_CHARS) {
 			od_printf("\n\r\nNETMAIL DIR NOT FOUND\n\r\n");
 			od_exit(10,FALSE);
 		}
@@ -1616,7 +1611,6 @@ ny_kernel(void) {
 		FILE *justfile;
 		static char numstr[35],numstr2[14];
 		INT16 intval,
-		INT16used,
 		battled_user = -1;
 
 		//if(0) {
@@ -1666,49 +1660,48 @@ ny_kernel(void) {
 			if(justfile != NULL) {
 				ny_fread(&intval,2,1,justfile);
 				fclose(justfile);
-			}
-			sprintf(numstr,"u%07d.fgg",nCurrentUserNumber);
-			if (fexist(numstr)) {
+				sprintf(numstr,"u%07d.fgg",nCurrentUserNumber);
+				if (fexist(numstr)) {
 
-				sprintf(numstr,"u%07d.fgg",intval);
-				justfile = ShareFileOpen(numstr,"wb");
+					sprintf(numstr,"u%07d.fgg",intval);
+					justfile = ShareFileOpen(numstr,"wb");
+					if(justfile != NULL)
+						fclose(justfile);
+					sprintf(numstr,"u%07d.atk",nCurrentUserNumber);
+					sprintf(numstr2,"u%07d.atk",intval);
+					rename(numstr,numstr2);
+				}
+
+				sprintf(numstr,"u%07d.chl",nCurrentUserNumber);
+				sprintf(numstr2,"u%07d.chl",intval);
+				rename(numstr,numstr2);
+
+				/*clean up*/
+				sprintf(numstr,"u%07d.*",nCurrentUserNumber);
+				ny_remove(numstr);
+
+				sprintf(numstr,"u%07d.fgc",nCurrentUserNumber);
+				justfile = ShareFileOpen(numstr, "wb");
+				if(justfile != NULL) {
+					ny_fwrite(&intval,2,1,justfile);
+					fclose(justfile);
+				}
+
+				nCurrentUserNumber=intval;
+
+				/* tady se musi zmenit vsechnt flagy......*/
+				sprintf(numstr,"u%07d.sts",nCurrentUserNumber);
+				justfile = ShareFileOpen(numstr, "wb");
+				if(justfile != NULL) {
+					ny_fwrite(&cur_user,sizeof(user_rec),1,justfile);
+					fclose(justfile);
+				}
+
+				sprintf(numstr,"u%07d.on",nCurrentUserNumber);
+				justfile = ShareFileOpen(numstr, "a+b");
 				if(justfile != NULL)
 					fclose(justfile);
-				sprintf(numstr,"u%07d.atk",nCurrentUserNumber);
-				sprintf(numstr2,"u%07d.atk",intval);
-				rename(numstr,numstr2);
 			}
-
-			sprintf(numstr,"u%07d.chl",nCurrentUserNumber);
-			sprintf(numstr2,"u%07d.chl",intval);
-			rename(numstr,numstr2);
-
-			/*clean up*/
-			sprintf(numstr,"u%07d.*",nCurrentUserNumber);
-			ny_remove(numstr);
-
-			sprintf(numstr,"u%07d.fgc",nCurrentUserNumber);
-			justfile = ShareFileOpen(numstr, "wb");
-			if(justfile != NULL) {
-				ny_fwrite(&intval,2,1,justfile);
-				fclose(justfile);
-			}
-
-			nCurrentUserNumber=intval;
-
-			/* tady se musi zmenit vsechnt flagy......*/
-			sprintf(numstr,"u%07d.sts",nCurrentUserNumber);
-			justfile = ShareFileOpen(numstr, "wb");
-			if(justfile != NULL) {
-				ny_fwrite(&cur_user,sizeof(user_rec),1,justfile);
-				fclose(justfile);
-			}
-
-			sprintf(numstr,"u%07d.on",nCurrentUserNumber);
-			justfile = ShareFileOpen(numstr, "a+b");
-			if(justfile != NULL)
-				fclose(justfile);
-
 		}
 		if(battled_user>=0) {
 			sprintf(numstr,"u%07d.bfa",battled_user);
@@ -1956,10 +1949,10 @@ wrt_sts(void) {
 			if(justfile != NULL) {
 				ny_fread(&cur_user.rank,2,1,justfile);
 				fclose(justfile);
+				ny_remove(numstr);
+				//      sprintf(numstr,"del u%07d.rnk",nCurrentUserNumber);
+				//      system(numstr);
 			}
-			ny_remove(numstr);
-			//      sprintf(numstr,"del u%07d.rnk",nCurrentUserNumber);
-			//      system(numstr);
 		}
 		sprintf(numstr,"u%07d.sts",nCurrentUserNumber);
 		justfile = ShareFileOpen(numstr, "w+b");
@@ -1986,7 +1979,7 @@ wrt_sts(void) {
 
 	ch_game_d();
 	scr_file=ShareFileOpen(SCR_FILENAME,"r+b");
-	if(justfile != NULL) {
+	if(scr_file != NULL) {
 		fseek(scr_file, (INT32)cur_user.rank * sizeof(scr_rec), SEEK_SET);
 		ny_fwrite(&rec, sizeof(scr_rec), 1, scr_file);
 		fclose(scr_file);
@@ -2054,9 +2047,9 @@ exit_ops(void) {
 		if(justfile != NULL) {
 			ny_fread(&intval,2,1,justfile);
 			fclose(justfile);
+			sprintf(numstr,"u%07d.bfa",intval);
+			ny_remove(numstr);
 		}
-		sprintf(numstr,"u%07d.bfa",intval);
-		ny_remove(numstr);
 	}
 
 	sprintf(numstr,"u%07d.swp",nCurrentUserNumber);
@@ -2137,7 +2130,6 @@ Maintanance(void) {
 	FILE *scr_file;
 	FILE *justfile;
 	FILE *njustfile;
-	FILE *delfile;
 	char numstr[45],numstr2[14];
 	scr_rec scr_user;
 	user_rec urec;
@@ -2173,7 +2165,7 @@ Maintanance(void) {
 			ch_game_d();
 			if (fexist(LASTMAINT_FILENAME)) {
 				fpUserFile = ShareFileOpen(LASTMAINT_FILENAME, "r+b");
-				if(justfile != NULL) {
+				if(fpUserFile != NULL) {
 					ny_fread(&lastday, sizeof(date), 1, fpUserFile);
 					if (lastday.da_year==today.da_year && lastday.da_mon==today.da_mon && lastday.da_day==today.da_day) {
 						fclose(fpUserFile);
@@ -2596,7 +2588,7 @@ ChangeOnlineRanks(void) {
 			strcpy(numstr,*fname);
 			numstr[0]='0';
 			numstr[8]=0;
-			sscanf(numstr,"%d",&intval);
+			sscanf(numstr,"%" SCNd16,&intval);
 			ch_game_d();
 			justfile=ShareFileOpen(USER_FILENAME,"rb");
 			if(justfile != NULL) {
@@ -2630,7 +2622,6 @@ CrashRecovery(void) {
 	char numstr[36];
 	scr_rec scr_user;
 	user_rec urec;
-	INT16 intval;
 	INT16 user_num=0;
 	//  struct ffblk ffblk;
 
@@ -2730,7 +2721,6 @@ CrashRecovery(void) {
 void
 SortScrFile(INT16 usr,INT16 max) // pebble sorting of scorefile
 {
-	FILE *justfile;
 	FILE *scr_file;
 	FILE *fpUserFile;
 	FILE *njustfile;
@@ -2911,7 +2901,6 @@ SortScrFile(INT16 usr,INT16 max) // pebble sorting of scorefile
 void
 SortScrFileB(INT16 usr) // pebble sorting of scorefile
 {
-	FILE *justfile;
 	FILE *scr_file;
 	FILE *fpUserFile;
 	FILE *njustfile;
@@ -3108,7 +3097,6 @@ char entry_menu(void) {
 	FILE *justfile;
 	INT16 intval;
 	static int unreg_sign=TRUE;
-	char numstr[100];
 
 
 	key=0;
@@ -3175,12 +3163,12 @@ char entry_menu(void) {
 		if(justfile != NULL) {
 			ny_fread(&intval,2,1,justfile);
 			fclose(justfile);
+			ny_line(34,0,0);
+			//   ny_disp_emu("`$T`6his game has been running for `0");
+			od_printf("%d",intval);
+			ny_line(35,0,1);
+			//   ny_disp_emu("`6 days!\n\r");
 		}
-		ny_line(34,0,0);
-		//   ny_disp_emu("`$T`6his game has been running for `0");
-		od_printf("%d",intval);
-		ny_line(35,0,1);
-		//   ny_disp_emu("`6 days!\n\r");
 
 		key=ny_send_menu(ENTRY_2,allowed);
 	}
@@ -3602,7 +3590,6 @@ MakeFiles(void) {
 	FILE *ascii_file;
 	FILE *ansi_file;
 	scr_rec user_scr;
-	INT32 filepos;
 	INT16 cnt;
 
 	//od_printf("\n\r\n\r");
@@ -3775,7 +3762,7 @@ ListPlayersS(sex_type psex) {
 	FILE *scr_file;
 	scr_rec user_scr;
 	INT32 filepos;
-	INT16 cnt,rnk;
+	INT16 cnt;
 	INT16 nonstop=FALSE;
 	char key;
 
@@ -3793,7 +3780,6 @@ ListPlayersS(sex_type psex) {
 	ch_game_d();
 	if ((scr_file=ShareFileOpen(SCR_FILENAME,"rb"))!=NULL) {
 		cnt=5;
-		rnk=1;
 
 		while (scr_file != NULL && ny_fread(&user_scr, sizeof(scr_rec), 1, scr_file) == 1) {
 			if (user_scr.sex==psex) {
@@ -3824,7 +3810,6 @@ ListPlayersS(sex_type psex) {
 						fseek(scr_file,filepos,SEEK_SET);
 				}
 			}
-			rnk++;
 		}
 		if(scr_file != NULL)
 			fclose(scr_file);
@@ -3844,7 +3829,7 @@ ListPlayersA() {
 	FILE *scr_file;
 	scr_rec user_scr;
 	INT32 filepos;
-	INT16 cnt,rnk;
+	INT16 cnt;
 	INT16 nonstop=FALSE;
 	char key;
 
@@ -3862,7 +3847,6 @@ ListPlayersA() {
 	ch_game_d();
 	if ((scr_file=ShareFileOpen(SCR_FILENAME,"rb"))!=NULL) {
 		cnt=5;
-		rnk=1;
 		while (scr_file != NULL && ny_fread(&user_scr, sizeof(scr_rec), 1, scr_file) == 1) {
 			if (user_scr.alive==ALIVE) {
 
@@ -3893,7 +3877,6 @@ ListPlayersA() {
 						fseek(scr_file,filepos,SEEK_SET);
 				}
 			}
-			rnk++;
 		}
 		if(scr_file != NULL)
 			fclose(scr_file);
@@ -3914,7 +3897,7 @@ WhosOnline(void) {
 	FILE *scr_file;
 	scr_rec user_scr;
 	INT32 filepos;
-	INT16 cnt,rnk;
+	INT16 cnt;
 	INT16 nonstop=FALSE;
 	char key;
 
@@ -3939,7 +3922,6 @@ WhosOnline(void) {
 	ch_game_d();
 	if ((scr_file=ShareFileOpen(SCR_FILENAME,"rb"))!=NULL) {
 		cnt=5;
-		rnk=1;
 		while (scr_file != NULL && ny_fread(&user_scr, sizeof(scr_rec), 1, scr_file) == 1) {
 			if (user_scr.online==TRUE) {
 				PlInfo(&user_scr,cnt);
@@ -3968,7 +3950,6 @@ WhosOnline(void) {
 						fseek(scr_file,filepos,SEEK_SET);
 				}
 			}
-			rnk++;
 		}
 		if(scr_file != NULL)
 			fclose(scr_file);
@@ -4361,7 +4342,7 @@ char *D_Num(INT32 num) {
 		str[0]='-';
 	}
 
-	sprintf(temp,"%ld",num);
+	sprintf(temp,"%" PRId32,num);
 
 	len=strlen(temp);
 
@@ -4389,7 +4370,7 @@ char *D_Num(DWORD num) {
 	char temp[14];
 	INT16 cnt,cnt2,len;
 
-	sprintf(temp,"%lu",num);
+	sprintf(temp,"%" PRIu32,num);
 
 	len=strlen(temp);
 
@@ -4995,7 +4976,6 @@ DisplayBestIB(void) {
 	//  ffblk ffblk;
 	ibbs_best_rec_type best_rec;
 	FILE *justfile;
-	INT16 cnt;
 
 	ch_game_d();
 	if (fexist(IBBS_BESTTEN_FILENAME)) {
@@ -5008,7 +4988,6 @@ DisplayBestIB(void) {
 			if(rip)
 				od_send_file("frame1.rip");
 			ny_send_menu(TEN_BEST_IBBS,"");
-			cnt=1;
 			/*    od_printf("\n\r`bright red`T`red`en `bright red`B`red`est ... `bright red`W`red`inners\n\r\n\r");
 		    	od_printf("`bright blue`-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n\r");
 		    	od_printf("`cyan`Rank:    Name:                     Points:");*/
@@ -5021,7 +5000,6 @@ DisplayBestIB(void) {
 				od_set_attrib(0x02);
 				ny_disp_emu(LocationOf(best_rec.location));
 				od_disp_str("\n\r");
-				cnt++;
 			}
 			//    od_printf("\n\r");
 			ny_line(399,0,1);

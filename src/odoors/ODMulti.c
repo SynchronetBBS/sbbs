@@ -108,7 +108,7 @@ ODAPIDEF void ODCALL ODMPSEnable(void)
  *
  *     Return: TRUE on success, or FALSE on failure.
  */
-ODAPIDEF BOOL ODCALL od_set_personality(char *pszName)
+ODAPIDEF BOOL ODCALL od_set_personality(const char *pszName)
 {
 #ifdef OD_TEXTMODE
    BYTE btNewPersonality;

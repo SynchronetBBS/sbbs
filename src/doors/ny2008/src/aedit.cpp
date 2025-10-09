@@ -1,3 +1,4 @@
+#include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -20,7 +21,6 @@ main(void) {
 	INT16 num=0;
 	INT16 lvl=0;
 	INT16 cnt;
-	char nnm[36];
 	system("mv " ENEMY_FILENAME " nyenmb.dat");
 	system("mv " ENEMY_INDEX " nyenmb.idx");
 	system("rm " ENEMY_FILENAME);
@@ -33,6 +33,7 @@ main(void) {
 		dump();
 
 		if (key=='A' || key=='a') {
+			int32_t n;
 			printf("Name of the sucker:");
 			cnt=0;
 			do {
@@ -45,24 +46,27 @@ main(void) {
 				dump();
 
 			printf("Hitpoints:");
-			scanf("%ld",&erec.hitpoints);
+			scanf("%" SCNd32,&n);
+			erec.hitpoints = n;
 			dump();
 
 			printf("Strength:");
-			scanf("%ld",&erec.strength);
+			scanf("%" SCNd32,&n);
+			erec.strength = n;
 			dump();
 
 			printf("Defense:");
-			scanf("%ld",&erec.defense);
+			scanf("%" SCNd32,&n);
+			erec.defense = n;
 			dump();
 
 			printf("Arm:");
-			scanf("%d",&erec.arm);
+			scanf("%hhd",&erec.arm);
 
 			dump();
 
 			justfile=fopen(ENEMY_FILENAME,"a+b");
-			printf("Atpos: %d\n\n",ftell(justfile)/sizeof(enemy));
+			printf("Atpos: %lu\n\n",ftell(justfile)/sizeof(enemy));
 			fwrite(&erec,sizeof(enemy),1,justfile);
 			fclose(justfile);
 

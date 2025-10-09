@@ -74,8 +74,8 @@
 #ifndef _INC_OPENDOOR
 #define _INC_OPENDOOR
 
-#if __STDC_VERSION__ >= 199901L
-#include <inttypes.h>
+#if (__STDC_VERSION__ >= 199901L) || (__cplusplus >= 201103L)
+#include <stdint.h>
 #endif
 
 /* ========================================================================= */
@@ -181,7 +181,7 @@
 
 /* Portable types that are the same size across all platforms */
 #ifndef ODPLAT_WIN32
-#if __STDC_VERSION__ >= 199901L
+#if (__STDC_VERSION__ >= 199901L) || (__cplusplus >= 201103L)
 typedef uint8_t            BYTE;                        /* Unsigned, 8 bits. */
 typedef uint16_t           WORD;                       /* Unsigned, 16 bits. */
 typedef uint32_t           DWORD;                      /* Unsigned, 32 bits. */
@@ -203,7 +203,7 @@ typedef char               CHAR;         /* Native character representation. */
 #define WORD_DEFINED
 #endif /* !ODPLAT_WIN32 */
 
-#if __STDC_VERSION__ >= 199901L
+#if (__STDC_VERSION__ >= 199901L) || (__cplusplus >= 201103L)
 typedef int8_t             INT8;                          /* Signed, 8 bits. */
 typedef int16_t            INT16;                        /* Signed, 16 bits. */
 #ifndef ODPLAT_WIN32	/* avoid type redefinition from basetsd.h */
@@ -1028,7 +1028,7 @@ ODAPIDEF void ODCALL   od_set_attrib(INT nColour);
 ODAPIDEF void ODCALL   od_set_color(INT nForeground, INT nBackground);
 ODAPIDEF void ODCALL   od_set_cursor(INT nRow, INT nColumn);
 ODAPIDEF void ODCALL   od_set_dtr(BOOL bHigh);
-ODAPIDEF BOOL ODCALL   od_set_personality(char *pszName);
+ODAPIDEF BOOL ODCALL   od_set_personality(const char *pszName);
 ODAPIDEF void ODCALL   od_set_statusline(INT nSetting);
 ODAPIDEF void ODCALL   od_sleep(tODMilliSec Milliseconds);
 ODAPIDEF BOOL ODCALL   od_spawn(const char *pszCommandLine);

@@ -5,7 +5,7 @@
 #include <dirwrap.h>
 #include <genwrap.h>
 #ifdef ODPLAT_NIX
-#include <ciowrap.h>
+#include <ciolib.h>
 #else
 #include <conio.h>
 #endif

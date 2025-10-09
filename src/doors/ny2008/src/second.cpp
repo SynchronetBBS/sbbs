@@ -85,7 +85,6 @@ void
 get_line(char beg[],char line[], char ovr[],INT16 wrap) {
 	char key;
 	INT16 cnt,cnt2;
-	INT16 intval;
 
 	cnt=0;
 	cnt2=0;
@@ -396,7 +395,6 @@ void
 guns_ops(void) {
 	char key,
 	s_key;
-	DWORD max;
 	weapon choice;
 
 	do {
@@ -683,8 +681,7 @@ void
 healing_ops(void) {
 	char key,
 	s_key;
-	INT16  hit_diff,
-	howmuch;
+	INT16  howmuch;
 	INT32 intval;
 
 	/*drug rehab prices for different levels*/
@@ -915,7 +912,7 @@ void
 food_ops(void) {
 	char key,
 	s_key;
-	INT32 longval,intval;
+	INT32 intval;
 	INT16 chance;
 
 	do {
@@ -1231,7 +1228,7 @@ get_laid_ops(void) {
 					//		      od_printf("`bright red`T`red`he sex turns went down anyway...\n\r");
 
 					cur_user.sex_today--;
-					wrt_sts;
+					wrt_sts();
 					if(!rip)
 						WaitForEnter();
 					else
@@ -1557,7 +1554,6 @@ disp_fig_stats(void) {
 void
 illness(void)  // std's and stuff
 {
-	INT16 intval;
 	desease ill;
 
 	ill = (desease)(xp_random(AIDS-cur_user.std+2)+cur_user.std-1);
@@ -1667,7 +1663,6 @@ money_ops(void) {
 	char hand[25];
 	char omg[51];
 	char numstr[26];
-	char line[80];
 	FILE *justfile;
 	FILE *msg_file;
 	scr_rec urec;
@@ -1923,8 +1918,7 @@ void
 drug_ops(void) {
 	char s_key,
 	t_key,
-	f_key,
-	inputs[25];
+	f_key;
 	INT32  max,
 	quant;
 
@@ -2142,7 +2136,7 @@ money_plus(DWORD howmuch) {
 
 	med=ULONG_MAX-howmuch;
 	if (med<=cur_user.money)
-		cur_user.money=ULONG_MAX;
+		cur_user.money=UINT32_MAX;
 	else
 		cur_user.money+=howmuch;
 	od_control.od_update_status_now=TRUE;
@@ -2462,7 +2456,7 @@ uplneZnova:
 			return max;
 		} else if (input_s[cnt]=='\n' || input_s[cnt]=='\r') {
 			input_s[cnt]=' ';
-			sscanf(input_s,"%lu",&intval);
+			sscanf(input_s,"%" PRIu32,&intval);
 			if (intval>max) {
 				do {
 					od_printf("\b \b");
@@ -2497,8 +2491,7 @@ uplneZnova:
 INT16
 CheckForHandle(char handle[25]) {
 	FILE *fpUserFile;
-	INT16	user_num,
-	ret_val;
+	INT16	ret_val;
 	char numstr[25],numstr2[25];
 	user_rec urec;
 	scr_rec srec;
@@ -2517,8 +2510,6 @@ CheckForHandle(char handle[25]) {
 			//
 			od_exit(12,FALSE);
 		}
-		/* Begin with the current user record number set to 0. */
-		user_num = 0;
 		/* Loop for each record in the file */
 		while(ny_fread(&urec, sizeof(user_rec), 1, fpUserFile) == 1) {
 			/* If name in record matches the current user name ... */
@@ -2534,15 +2525,11 @@ CheckForHandle(char handle[25]) {
 				/* and exit the loop. */
 				break;
 			}
-			/* Move user record number to next user record. */
-			user_num++;
 			//      time_slice();
 		}
 		fclose(fpUserFile);
 		return ret_val;
 	} else {
-		/* Begin with the current user record number set to 0. */
-		user_num = 0;
 		/* Loop for each record in the file */
 		while(ny_fread(&srec, sizeof(scr_rec), 1, fpUserFile) == 1) {
 			/* If name in record matches the current user name ... */
@@ -2558,8 +2545,6 @@ CheckForHandle(char handle[25]) {
 				/* and exit the loop. */
 				break;
 			}
-			/* Move user record number to next user record. */
-			user_num++;
 		}
 		fclose(fpUserFile);
 		return ret_val;
@@ -2944,7 +2929,7 @@ ny_fwrite(const void *ptr, size_t size, size_t n, FILE *stream) {
 size_t
 ny_fread(void *ptr, size_t size, size_t n, FILE *stream) {
 	size_t status;
-	INT32 offset;
+	INT32 offset=ftell(stream);
 
 	if(single_node==FALSE && filelength(fileno(stream))>=offset+(size*n)) {
 		offset=ftell(stream);
@@ -3113,115 +3098,115 @@ WaitForEnter(void) {
 /* configuration file keywords that                                */
 void CustomConfigFunction(char *pszKeyword, char *pszOptions) {
 	if(stricmp(pszKeyword, "BustedChanceBank") == 0) {
-		sscanf(pszOptions,"%d",&busted_ch_bank);
+		sscanf(pszOptions,"%" SCNd16,&busted_ch_bank);
 		if (busted_ch_bank<1)
 			busted_ch_bank=1;
 		if (busted_ch_bank>90)
 			busted_ch_bank=90;
 	} else if(stricmp(pszKeyword, "BustedChanceFood") == 0) {
-		sscanf(pszOptions,"%d",&busted_ch_food);
+		sscanf(pszOptions,"%" SCNd16,&busted_ch_food);
 		if (busted_ch_food<1)
 			busted_ch_food=1;
 		if (busted_ch_food>90)
 			busted_ch_food=90;
 	} else if(stricmp(pszKeyword, "BustedChanceRape") == 0) {
-		sscanf(pszOptions,"%d",&busted_ch_rape);
+		sscanf(pszOptions,"%" SCNd16,&busted_ch_rape);
 		if (busted_ch_rape<1)
 			busted_ch_rape=1;
 		if (busted_ch_rape>90)
 			busted_ch_rape=90;
 	} else if(stricmp(pszKeyword, "BustedChanceBeggar") == 0) {
-		sscanf(pszOptions,"%d",&busted_ch_beggar);
+		sscanf(pszOptions,"%" SCNd16,&busted_ch_beggar);
 		if (busted_ch_beggar<1)
 			busted_ch_beggar=1;
 		if (busted_ch_beggar>90)
 			busted_ch_beggar=90;
 	} else if(stricmp(pszKeyword, "BustedChanceCar") == 0) {
-		sscanf(pszOptions,"%d",&busted_ch_car);
+		sscanf(pszOptions,"%" SCNd16,&busted_ch_car);
 		if (busted_ch_car<1)
 			busted_ch_car=1;
 		if (busted_ch_car>90)
 			busted_ch_car=90;
 	} else if(stricmp(pszKeyword, "BustedChanceSchool") == 0) {
-		sscanf(pszOptions,"%d",&busted_ch_school);
+		sscanf(pszOptions,"%" SCNd16,&busted_ch_school);
 		if (busted_ch_school<1)
 			busted_ch_school=1;
 		if (busted_ch_school>90)
 			busted_ch_school=90;
 	} else if(stricmp(pszKeyword, "BustedChanceWindow") == 0) {
-		sscanf(pszOptions,"%d",&busted_ch_window);
+		sscanf(pszOptions,"%" SCNd16,&busted_ch_window);
 		if (busted_ch_window<1)
 			busted_ch_window=1;
 		if (busted_ch_window>90)
 			busted_ch_window=90;
 	} else if(stricmp(pszKeyword, "BustedChancePoison") == 0) {
-		sscanf(pszOptions,"%d",&busted_ch_poison);
+		sscanf(pszOptions,"%" SCNd16,&busted_ch_poison);
 		if (busted_ch_poison<1)
 			busted_ch_poison=1;
 		if (busted_ch_poison>90)
 			busted_ch_poison=90;
 	} else if(stricmp(pszKeyword, "BustedChanceBomb") == 0) {
-		sscanf(pszOptions,"%d",&busted_ch_bomb);
+		sscanf(pszOptions,"%" SCNd16,&busted_ch_bomb);
 		if (busted_ch_bomb<1)
 			busted_ch_bomb=1;
 		if (busted_ch_bomb>90)
 			busted_ch_bomb=90;
 	} else if(stricmp(pszKeyword, "SuccessChanceBank") == 0) {
-		sscanf(pszOptions,"%d",&success_ch_bank);
+		sscanf(pszOptions,"%" SCNd16,&success_ch_bank);
 		if (success_ch_bank<1)
 			success_ch_bank=1;
 		if (success_ch_bank>100)
 			success_ch_bank=100;
 	} else if(stricmp(pszKeyword, "SuccessChanceFood") == 0) {
-		sscanf(pszOptions,"%d",&success_ch_food);
+		sscanf(pszOptions,"%" SCNd16,&success_ch_food);
 		if (success_ch_food<1)
 			success_ch_food=1;
 		if (success_ch_food>100)
 			success_ch_food=100;
 	} else if(stricmp(pszKeyword, "SuccessChanceRape") == 0) {
-		sscanf(pszOptions,"%d",&success_ch_rape);
+		sscanf(pszOptions,"%" SCNd16,&success_ch_rape);
 		if (success_ch_rape<1)
 			success_ch_rape=1;
 		if (success_ch_rape>100)
 			success_ch_rape=100;
 	} else if(stricmp(pszKeyword, "SuccessChanceBeggar") == 0) {
-		sscanf(pszOptions,"%d",&success_ch_beggar);
+		sscanf(pszOptions,"%" SCNd16,&success_ch_beggar);
 		if (success_ch_beggar<1)
 			success_ch_beggar=1;
 		if (success_ch_beggar>100)
 			success_ch_beggar=100;
 	} else if(stricmp(pszKeyword, "SuccessChanceCar") == 0) {
-		sscanf(pszOptions,"%d",&success_ch_car);
+		sscanf(pszOptions,"%" SCNd16,&success_ch_car);
 		if (success_ch_car<1)
 			success_ch_car=1;
 		if (success_ch_car>100)
 			success_ch_car=100;
 	} else if(stricmp(pszKeyword, "SuccessChanceSchool") == 0) {
-		sscanf(pszOptions,"%d",&success_ch_school);
+		sscanf(pszOptions,"%" SCNd16,&success_ch_school);
 		if (success_ch_school<1)
 			success_ch_school=1;
 		if (success_ch_school>100)
 			success_ch_school=100;
 	} else if(stricmp(pszKeyword, "SuccessChanceWindow") == 0) {
-		sscanf(pszOptions,"%d",&success_ch_window);
+		sscanf(pszOptions,"%" SCNd16,&success_ch_window);
 		if (success_ch_window<1)
 			success_ch_window=1;
 		if (success_ch_window>100)
 			success_ch_window=100;
 	} else if(stricmp(pszKeyword, "SuccessChancePoison") == 0) {
-		sscanf(pszOptions,"%d",&success_ch_poison);
+		sscanf(pszOptions,"%" SCNd16,&success_ch_poison);
 		if (success_ch_poison<1)
 			success_ch_poison=1;
 		if (success_ch_poison>100)
 			success_ch_poison=100;
 	} else if(stricmp(pszKeyword, "SuccessChanceBomb") == 0) {
-		sscanf(pszOptions,"%d",&success_ch_bomb);
+		sscanf(pszOptions,"%" SCNd16,&success_ch_bomb);
 		if (success_ch_bomb<1)
 			success_ch_bomb=1;
 		if (success_ch_bomb>100)
 			success_ch_bomb=100;
 	} else if(stricmp(pszKeyword, "FightsPerDay") == 0) {
-		sscanf(pszOptions,"%d",&max_fights);
+		sscanf(pszOptions,"%" SCNd16,&max_fights);
 		if (max_fights<0)
 			max_fights=0;
 		if (max_fights>800)
@@ -3235,25 +3220,25 @@ void CustomConfigFunction(char *pszKeyword, char *pszOptions) {
 	} else if(stricmp(pszKeyword, "NoMultitasker") == 0) {
 		no_slices=TRUE;
 	} else if(stricmp(pszKeyword, "DeleteAfter") == 0) {
-		sscanf(pszOptions,"%d",&delete_after);
+		sscanf(pszOptions,"%" SCNd16,&delete_after);
 		if (delete_after<5)
 			delete_after=5;
 		if (delete_after>800)
 			delete_after=800;
 	} else if(stricmp(pszKeyword, "PollingValue") == 0) {
-		sscanf(pszOptions,"%d",&time_slice_value);
+		sscanf(pszOptions,"%" SCNd16,&time_slice_value);
 		if (time_slice_value<0)
 			time_slice_value=0;
 		if (time_slice_value>2000)
 			time_slice_value=2000;
 	} else if(stricmp(pszKeyword, "CheckFlagsEvery") == 0) {
-		sscanf(pszOptions,"%d",&check_o_nodes);
+		sscanf(pszOptions,"%" SCNd16,&check_o_nodes);
 		if (check_o_nodes<1)
 			check_o_nodes=1;
 		if (check_o_nodes>60)
 			check_o_nodes=60;
 	} else if(stricmp(pszKeyword, "BankInterest") == 0) {
-		sscanf(pszOptions,"%d",&bank_interest);
+		sscanf(pszOptions,"%" SCNd16,&bank_interest);
 		if (bank_interest<0)
 			bank_interest=0;
 		if (bank_interest>100)
@@ -3275,7 +3260,7 @@ void CustomConfigFunction(char *pszKeyword, char *pszOptions) {
 	} else if(stricmp(pszKeyword, "InterBBSOperator") == 0) {
 		ibbs_operator=TRUE;
 	} else if(stricmp(pszKeyword, "InterBBSGameNumber") == 0) {
-		sscanf(pszOptions,"%d",&ibbs_game_num);
+		sscanf(pszOptions,"%" SCNd16,&ibbs_game_num);
 	}
 
 }
@@ -3639,12 +3624,12 @@ ny_disp_emu_file(FILE *ans_phile,FILE *asc_phile,char line[],INT16 min) {
 				fprintf(asc_phile,"`");
 				fprintf(ans_phile,"`");
 			} else if(line[cnt]=='v') {
-				fprintf(asc_phile,ver);
-				fprintf(ans_phile,ver);
+				fputs(ver, asc_phile);
+				fputs(ver, ans_phile);
 				len+=(strlen(ver) - 1);
 			} else if(line[cnt]=='w') {
-				fprintf(asc_phile,verinfo);
-				fprintf(ans_phile,verinfo);
+				fputs(verinfo, asc_phile);
+				fputs(verinfo, ans_phile);
 				len+=(strlen(verinfo) - 1);
 			} else if(line[cnt]=='0')
 				fprintf(ans_phile,"[1;32m");
@@ -3828,7 +3813,7 @@ ibbs_bbs_list(void) {
 		od_input_str(numstr,3,'0','9');
 		if(numstr[0]==0)
 			return -1;
-		sscanf(numstr,"%d",&cnt);
+		sscanf(numstr,"%" SCNd16,&cnt);
 		od_disp_str("\n\r");
 	} while(cnt>=IBBSInfo.nTotalSystems || cnt==mine);
 
@@ -4050,7 +4035,7 @@ ibbs_bbs_name(INT16 bbs,INT16 sex,INT16 nochoice,char nameI[],INT16 *dbn,INT16 *
 			od_input_str(numstr,3,'0','9');
 			if(numstr[0]==0)
 				return;
-			sscanf(numstr,"%d",&cnt);
+			sscanf(numstr,"%" SCNd16,&cnt);
 			od_disp_str("\n\r");
 			if(sex>0 && cnt<bbs_spy_rec.players) {
 				justfile=ShareFileOpen(numstr,"rb");
@@ -4091,18 +4076,13 @@ void
 ibbs_ops(void) {
 	char key;
 	char hand[36];
-	char omg[51];
 	char numstr[26];
 	//	char node_r[NODE_ADDRESS_CHARS + 1];
 	char line[80],ovr[80];
 	FILE *justfile;
-	FILE *msg_file;
-	scr_rec urec;
-	user_rec u2rec;
-	INT16 unum,ret,cnt;
+	INT16 cnt;
 	ibbs_mail_type ibmail;
 	ibbs_scr_rec ibscr_rec;
-	INT32 fillen;
 	INT16 dbn,pn,intval;
 	ibbs_act_rec act_rec;
 	DWORD money;

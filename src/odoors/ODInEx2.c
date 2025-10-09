@@ -65,6 +65,7 @@
 
 #define BUILDING_OPENDOORS
 
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -379,7 +380,7 @@ ODAPIDEF void ODCALL od_exit(INT nErrorLevel, BOOL bTermCall)
          switch(btDoorSYSLock)
          {
             case 0:
-               fprintf(pfDropFile,"%lu\n",od_control.baud);
+               fprintf(pfDropFile,"%" PRIu32 "\n",od_control.baud);
                break;
             case 1:
                fprintf(pfDropFile,"N\n");
@@ -398,7 +399,7 @@ ODAPIDEF void ODCALL od_exit(INT nErrorLevel, BOOL bTermCall)
          fprintf(pfDropFile,"%s\n",od_control.user_dataphone);
          fprintf(pfDropFile,"%s\n",od_control.user_password);
          fprintf(pfDropFile,"%u\n",od_control.user_security);
-         fprintf(pfDropFile,"%lu\n",od_control.user_numcalls);
+         fprintf(pfDropFile,"%" PRIu32 "\n",od_control.user_numcalls);
          fprintf(pfDropFile,"%s\n",od_control.user_lastdate);
          fprintf(pfDropFile,"%u\n",(signed int)od_control.user_timelimit*60);
          fprintf(pfDropFile,"%d\n",od_control.user_timelimit);
@@ -421,9 +422,9 @@ ODAPIDEF void ODCALL od_exit(INT nErrorLevel, BOOL bTermCall)
          fprintf(pfDropFile,"%s\n",od_control.user_subdate);
          fprintf(pfDropFile,"%u\n",od_control.user_num);
          fprintf(pfDropFile,"%s",apszDropFileInfo[6]);
-         fprintf(pfDropFile,"%lu\n",od_control.user_uploads);
-         fprintf(pfDropFile,"%lu\n",od_control.user_downloads);
-         fprintf(pfDropFile,"%lu\n",od_control.user_todayk);
+         fprintf(pfDropFile,"%" PRIu32 "\n",od_control.user_uploads);
+         fprintf(pfDropFile,"%" PRIu32 "\n",od_control.user_downloads);
+         fprintf(pfDropFile,"%" PRIu32 "\n",od_control.user_todayk);
          fprintf(pfDropFile,"%s",apszDropFileInfo[21]);
 
 
@@ -449,8 +450,8 @@ ODAPIDEF void ODCALL od_exit(INT nErrorLevel, BOOL bTermCall)
             fprintf(pfDropFile,"%s\n",od_control.user_lasttime);
             fprintf(pfDropFile,"%s",apszDropFileInfo[18]);
             fprintf(pfDropFile,"%s",apszDropFileInfo[19]);
-            fprintf(pfDropFile,"%lu\n",od_control.user_upk);
-            fprintf(pfDropFile,"%lu\n",od_control.user_downk);
+            fprintf(pfDropFile,"%" PRIu32 "\n",od_control.user_upk);
+            fprintf(pfDropFile,"%" PRIu32 "\n",od_control.user_downk);
             fprintf(pfDropFile,"%s\n",od_control.user_comment);
             fprintf(pfDropFile,"%s",apszDropFileInfo[20]);
             fprintf(pfDropFile,"%u\n",od_control.user_messages);
@@ -473,7 +474,7 @@ ODAPIDEF void ODCALL od_exit(INT nErrorLevel, BOOL bTermCall)
             fprintf(pfDropFile,"%d\n",od_control.port+1);
          }
 
-         fprintf(pfDropFile,"%lu\n",od_control.baud);
+         fprintf(pfDropFile,"%" PRIu32 "\n",od_control.baud);
 
          fprintf(pfDropFile,"%d\n",od_control.user_timelimit);
 
@@ -497,7 +498,7 @@ ODAPIDEF void ODCALL od_exit(INT nErrorLevel, BOOL bTermCall)
          fprintf(pfDropFile,"%s\n",od_control.user_name);
          fprintf(pfDropFile,"%s\n",od_control.user_password);
          fprintf(pfDropFile,"%s",apszDropFileInfo[0]);
-         fprintf(pfDropFile,"%lu\n",od_control.baud);
+         fprintf(pfDropFile,"%" PRIu32 "\n",od_control.baud);
          fprintf(pfDropFile,"%d\n",od_control.port+1);
          fprintf(pfDropFile,"%d\n",od_control.user_timelimit);
          fprintf(pfDropFile,"%s",apszDropFileInfo[13]);
@@ -511,8 +512,8 @@ ODAPIDEF void ODCALL od_exit(INT nErrorLevel, BOOL bTermCall)
             fprintf(pfDropFile,"FALSE\n");
          }
          fprintf(pfDropFile,"%u\n",od_control.user_security);
-         fprintf(pfDropFile,"%lu\n",od_control.user_uploads);
-         fprintf(pfDropFile,"%lu\n",od_control.user_downloads);
+         fprintf(pfDropFile,"%" PRIu32 "\n",od_control.user_uploads);
+         fprintf(pfDropFile,"%" PRIu32 "\n",od_control.user_downloads);
          fprintf(pfDropFile,"%s",apszDropFileInfo[1]);
          fprintf(pfDropFile,"%s",apszDropFileInfo[2]);
          fprintf(pfDropFile,"%s",apszDropFileInfo[3]);
@@ -543,9 +544,9 @@ ODAPIDEF void ODCALL od_exit(INT nErrorLevel, BOOL bTermCall)
          fprintf(pfDropFile,"%s",apszDropFileInfo[10]);
          fprintf(pfDropFile,"%s",apszDropFileInfo[11]);
          fprintf(pfDropFile,"%s",apszDropFileInfo[12]);
-         fprintf(pfDropFile,"%lu\n",od_control.user_todayk);
-         fprintf(pfDropFile,"%lu\n",od_control.user_upk);
-         fprintf(pfDropFile,"%lu\n",od_control.user_downk);
+         fprintf(pfDropFile,"%" PRIu32 "\n",od_control.user_todayk);
+         fprintf(pfDropFile,"%" PRIu32 "\n",od_control.user_upk);
+         fprintf(pfDropFile,"%" PRIu32 "\n",od_control.user_downk);
          fprintf(pfDropFile,"%s\n",od_control.user_homephone);
          fprintf(pfDropFile,"%s\n",od_control.user_location);
          if(apszDropFileInfo[15][0]!='\0')
@@ -597,7 +598,7 @@ ODAPIDEF void ODCALL od_exit(INT nErrorLevel, BOOL bTermCall)
            }
            else
            {
-              fprintf(pfDropFile,"%lu\n",od_control.baud);
+              fprintf(pfDropFile,"%" PRIu32 "\n",od_control.baud);
            }
            fprintf(pfDropFile,"%d\n",od_control.port+1);
            fprintf(pfDropFile,"%s",apszDropFileInfo[6]);
@@ -627,8 +628,8 @@ ODAPIDEF void ODCALL od_exit(INT nErrorLevel, BOOL bTermCall)
            fprintf(pfDropFile, "%s\n", od_control.user_birthday);
            fprintf(pfDropFile, "%d\n", od_control.od_node);
            fprintf(pfDropFile, "%d\n", od_control.port + 1);
-           fprintf(pfDropFile, "%lu\n", od_control.od_connect_speed);
-           fprintf(pfDropFile, "%lu\n", od_control.baud);
+           fprintf(pfDropFile, "%" PRIu32 "\n", od_control.od_connect_speed);
+           fprintf(pfDropFile, "%" PRIu32 "\n", od_control.baud);
            fprintf(pfDropFile, "%c\n", (od_control.od_com_flow_control
               == COM_RTSCTS_FLOW) ? 'Y' : 'N');
            fprintf(pfDropFile, "%c\n", od_control.user_error_free ? 'Y' : 'N');

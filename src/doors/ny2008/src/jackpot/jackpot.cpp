@@ -88,8 +88,10 @@ int main(int argc,char *argv[]) {
 			// directvideo=1;
 
 			//use a different .CFG file
+#if 0
 		} else if (strnicmp(argv[x],"-C",2)==0) {
 			strzcpy(od_control.od_config_filename,argv[x],2,59);
+#endif
 		}
 
 		//loop for all arguments
@@ -371,7 +373,7 @@ main_menu:
 			/**/                                                   /**/
 			/**/    med=ULONG_MAX-jackpot;                         /**/
 			/**/    if (med<=urec.money)                           /**/
-			/**/      urec.money=ULONG_MAX;                        /**/
+			/**/      urec.money=UINT32_MAX;                       /**/
 			/**/    else                                           /**/
 			/**/      urec.money+=jackpot;                         /**/
 			/*********************************************************/

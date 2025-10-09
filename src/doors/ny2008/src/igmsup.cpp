@@ -129,7 +129,7 @@ read_IGMs(void) {
                                                         od_kernel();
                                                 }
                                                 *(key+x2-x3-1)=0;
-                                                sscanf(numstr,"%d",&intval);
+                                                sscanf(numstr,"%" SCNd16,&intval);
                                                 if(od_control.user_security<intval)
                                                         ok=3;
                                         }
@@ -221,7 +221,7 @@ read_fight_IGMs(void) {
                                                         od_kernel();
                                                 }
                                                 *(key+x2-x3-1)=0;
-                                                sscanf(numstr,"%d",&intval);
+                                                sscanf(numstr,"%" SCNd16,&intval);
                                                 if(od_control.user_security<intval)
                                                         ok=3;
                                         }
@@ -416,7 +416,7 @@ list_igm:
                 goto all_over_igm;
         }
 
-        sscanf(numstr,"%ld",&intval);
+        sscanf(numstr,"%" SCNd32,&intval);
 
         if (intval==0 || intval>maxnum) {
                 goto all_over_igm;
@@ -525,7 +525,7 @@ CreateDropFile(INT16 all) {
         fprintf(justfile,"%s\n",od_control.info_path);
         fprintf(justfile,"%d\n",od_control.caller_timelimit);
         fprintf(justfile,"%d\n",od_control.port);
-        fprintf(justfile,"%lu\n",od_control.baud);
+        fprintf(justfile,"%" PRIu32 "\n",od_control.baud);
         if(od_control.user_avatar!=FALSE) {
                 fprintf(justfile,"AVATAR");
         } else if(od_control.user_ansi!=FALSE || rip==TRUE) {
@@ -574,11 +574,11 @@ CreateDropFile(INT16 all) {
                         fprintf(justfile,"%d\n",cur_user.drug_hits);       //the hist that the user has
                         fprintf(justfile,"%d\n",cur_user.drug_days_since); //if addicted how long the user
                         //has not used the drug
-                        fprintf(justfile,"%ld\n",cur_user.hitpoints);       //users hitpoints
-                        fprintf(justfile,"%ld\n",cur_user.maxhitpoints);    //maximum of the users hitpoints
-                        fprintf(justfile,"%lu\n",cur_user.points);          //users points
-                        fprintf(justfile,"%lu\n",cur_user.money);           //money in hand
-                        fprintf(justfile,"%lu\n",cur_user.bank);            //money in bank
+                        fprintf(justfile,"%" PRId32 "\n",cur_user.hitpoints);       //users hitpoints
+                        fprintf(justfile,"%" PRId32 "\n",cur_user.maxhitpoints);    //maximum of the users hitpoints
+                        fprintf(justfile,"%" PRIu32 "\n",cur_user.points);          //users points
+                        fprintf(justfile,"%" PRIu32 "\n",cur_user.money);           //money in hand
+                        fprintf(justfile,"%" PRIu32 "\n",cur_user.bank);            //money in bank
                         fprintf(justfile,"%d\n",(INT16)cur_user.level);           //user level
                         fprintf(justfile,"%d\n",(INT16)cur_user.turns);           //fight the user has left today
                         fprintf(justfile,"%d\n",(INT16)cur_user.hunger);          // % of hunger
@@ -671,12 +671,14 @@ call_IGM(char exenam[]) {
         FILE *justfile;
         DWORD p_before;
         DWORD p_diff;
-        INT16 x,x2;
+        INT16 x;
         char *key;
         //  ffblk ffblk;
         INT16 intval;
         INT16 rankt,inact;
-
+        uint32_t u32;
+        int32_t d32;
+        int16_t d16;
 
 
         ny_line(180,2,1);
@@ -780,55 +782,66 @@ call_IGM(char exenam[]) {
                                 fgets(numstr,30,justfile);
                                 //sscanf(numstr,"%d",&cur_user.days_not_on);     //days the user has been inactive
                                 fgets(numstr,30,justfile);
-                                sscanf(numstr,"%d",&cur_user.strength);        //attacking strenght of the user
+                                sscanf(numstr,"%" SCNd16,&d16);
+                                cur_user.strength = d16;        //attacking strenght of the user
                                 fgets(numstr,30,justfile);
-                                sscanf(numstr,"%d",&cur_user.defense);         //defensive strenght
+                                sscanf(numstr,"%" SCNd16,&d16);
+                                cur_user.defense = d16;         //defensive strenght
                                 fgets(numstr,30,justfile);
-                                sscanf(numstr,"%d",&cur_user.condoms);         //condoms user has
+                                sscanf(numstr,"%" SCNd16,&d16);
+                                cur_user.condoms = d16;         //condoms user has
                                 fgets(numstr,30,justfile);
-                                sscanf(numstr,"%d",&cur_user.since_got_laid);  //days since the user last got laid
+                                sscanf(numstr,"%" SCNd16,&d16);
+                                cur_user.since_got_laid = d16;  //days since the user last got laid
                                 fgets(numstr,30,justfile);
-                                sscanf(numstr,"%d",&cur_user.drug_hits);       //the hist that the user has
+                                sscanf(numstr,"%" SCNd16,&d16);
+                                cur_user.drug_hits = d16;       //the hist that the user has
                                 fgets(numstr,30,justfile);
-                                sscanf(numstr,"%d",&cur_user.drug_days_since); //if addicted how long the user
+                                sscanf(numstr,"%" SCNd16,&d16);
+                                cur_user.drug_days_since = d16; //if addicted how long the user
                                 //has not used the drug
                                 fgets(numstr,30,justfile);
-                                sscanf(numstr,"%ld",&cur_user.hitpoints);       //users hitpoints
+                                sscanf(numstr,"%" SCNd32,&d32);
+                                cur_user.hitpoints = d32;       //users hitpoints
                                 fgets(numstr,30,justfile);
-                                sscanf(numstr,"%ld",&cur_user.maxhitpoints);    //maximum of the users hitpoints
+                                sscanf(numstr,"%" SCNd32,&d32);
+                                cur_user.maxhitpoints = d32;    //maximum of the users hitpoints
                                 fgets(numstr,30,justfile);
-                                sscanf(numstr,"%lu",&cur_user.points);          //users points
+                                sscanf(numstr,"%" SCNu32,&u32);
+                                cur_user.points = u32;          //users points
                                 fgets(numstr,30,justfile);
-                                sscanf(numstr,"%lu",&cur_user.money);           //money in hand
+                                sscanf(numstr,"%" SCNu32,&u32);
+                                cur_user.money = u32;           //money in hand
                                 fgets(numstr,30,justfile);
-                                sscanf(numstr,"%lu",&cur_user.bank);            //money in bank
+                                sscanf(numstr,"%" SCNu32,&u32);
+                                cur_user.bank = u32;            //money in bank
                                 fgets(numstr,30,justfile);
-                                sscanf(numstr,"%d",&intval);
+                                sscanf(numstr,"%" SCNd16,&intval);
                                 cur_user.level=intval;           //user level
                                 fgets(numstr,30,justfile);
-                                sscanf(numstr,"%d",&intval);
+                                sscanf(numstr,"%" SCNd16,&intval);
                                 cur_user.turns=intval;           //fight the user has left today
                                 fgets(numstr,30,justfile);
-                                sscanf(numstr,"%d",&intval);
+                                sscanf(numstr,"%" SCNd16,&intval);
                                 cur_user.hunger=intval;          // % of hunger
                                 fgets(numstr,30,justfile);
-                                sscanf(numstr,"%d",&intval);
+                                sscanf(numstr,"%" SCNd16,&intval);
                                 cur_user.sex_today=intval;       //sex turns left today
                                 fgets(numstr,30,justfile);
-                                sscanf(numstr,"%d",&intval);
+                                sscanf(numstr,"%" SCNd16,&intval);
                                 cur_user.std_percent=intval;     // % of current std
                                 fgets(numstr,30,justfile);
-                                sscanf(numstr,"%d",&intval);
+                                sscanf(numstr,"%" SCNd16,&intval);
                                 cur_user.drug_addiction=intval;  // % of drug addiction
                                 fgets(numstr,30,justfile);
-                                sscanf(numstr,"%d",&intval);
+                                sscanf(numstr,"%" SCNd16,&intval);
                                 cur_user.drug_high=intval;       // % of how "high" the player is
                                 fgets(numstr,30,justfile);
-                                sscanf(numstr,"%d",&intval);
+                                sscanf(numstr,"%" SCNd16,&intval);
                                 cur_user.hotel_paid_fer=intval;  //for how many more days the hotel
                                 //is paid for
                                 fgets(numstr,30,justfile);
-                                sscanf(numstr,"%d",&intval);
+                                sscanf(numstr,"%" SCNd16,&intval);
                                 cur_user.days_in_hospital=intval;//how many days has the use been
                                 //in hospital
 
@@ -861,7 +874,7 @@ call_IGM(char exenam[]) {
                                         cur_user.nation=HIPPIE;
 
                                 fgets(numstr,30,justfile);
-                                sscanf(numstr,"%d",&intval);
+                                sscanf(numstr,"%" SCNd16,&intval);
                                 cur_user.arm=(weapon)intval;
 
 
@@ -905,30 +918,30 @@ call_IGM(char exenam[]) {
                                         cur_user.rest_where=NOWHERE;
 
                                 fgets(numstr,30,justfile);
-                                sscanf(numstr,"%d",&intval);
+                                sscanf(numstr,"%" SCNd16,&intval);
                                 cur_user.unhq=intval;
                                 fgets(numstr,30,justfile);
-                                sscanf(numstr,"%d",&intval);
+                                sscanf(numstr,"%" SCNd16,&intval);
                                 cur_user.poison=intval;
 
                                 fgets(numstr,30,justfile);
-                                sscanf(numstr,"%d",&intval);
+                                sscanf(numstr,"%" SCNd16,&intval);
                                 cur_user.rocks=intval;
 
                                 fgets(numstr,30,justfile);
-                                sscanf(numstr,"%d",&intval);
+                                sscanf(numstr,"%" SCNd16,&intval);
                                 cur_user.throwing_ability=intval;
 
                                 fgets(numstr,30,justfile);
-                                sscanf(numstr,"%d",&intval);
+                                sscanf(numstr,"%" SCNd16,&intval);
                                 cur_user.punch_ability=intval;
 
                                 fgets(numstr,30,justfile);
-                                sscanf(numstr,"%d",&intval);
+                                sscanf(numstr,"%" SCNd16,&intval);
                                 cur_user.kick_ability=intval;
 
                                 fgets(numstr,30,justfile);
-                                sscanf(numstr,"%d",&intval);
+                                sscanf(numstr,"%" SCNd16,&intval);
                                 cur_user.InterBBSMoves=intval;
 
                                 fclose(justfile);

@@ -960,7 +960,7 @@ char *D_Num(INT32 num) {
 		str[0]='-';
 	}
 
-	sprintf(temp,"%ld",num);
+	sprintf(temp,"%" PRId32,num);
 
 	len=strlen(temp);
 

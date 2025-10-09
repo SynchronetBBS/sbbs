@@ -1,3 +1,4 @@
+#include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -14,7 +15,7 @@ main(void) {
 	enemy_idx eidx;
 	char key;
 	INT16 num,cnt;
-	char nnm[36];
+	int32_t d32;
 
 	do {
 		printf("\n\nA-Add V-View E-Edit Q-Quit >");
@@ -22,6 +23,7 @@ main(void) {
 		dump();
 
 		if (key=='A' || key=='a') {
+			int32_t n;
 			printf("Name of the sucker:");
 			cnt=0;
 			do {
@@ -36,29 +38,32 @@ main(void) {
 				dump();
 
 			printf("Hitpoints:");
-			scanf("%d",&erec.hitpoints);
+			scanf("%" SCNd32,&n);
+			erec.hitpoints = n;
 			dump();
 
 			printf("Strength:");
-			scanf("%d",&erec.strength);
+			scanf("%" SCNd32,&n);
+			erec.strength = n;
 			dump();
 
 			printf("Defense:");
-			scanf("%d",&erec.defense);
+			scanf("%" SCNd32,&n);
+			erec.defense = n;
 			dump();
 
 			printf("Arm:");
-			scanf("%d",&erec.arm);
+			scanf("%hhd",&erec.arm);
 
 			dump();
 
 			justfile=fopen(ENEMY_FILENAME,"a+b");
-			printf("Atpos: %d\n\n",ftell(justfile)/sizeof(enemy));
+			printf("Atpos: %lu\n\n",ftell(justfile)/sizeof(enemy));
 			fwrite(&erec,sizeof(enemy),1,justfile);
 			fclose(justfile);
 		} else if (key=='V' || key=='v') {
 			printf("\nView which record:");
-			scanf("%d",&num);
+			scanf("%" SCNd16,&num);
 			dump();
 
 			justfile=fopen(ENEMY_FILENAME,"rb");
@@ -67,15 +72,15 @@ main(void) {
 			fclose(justfile);
 
 			printf("Name of the sucker: %s\n",erec.name);
-			printf("Hitpoints: %d\n",erec.hitpoints);
-			printf("Strength: %d\n",erec.strength);
-			printf("Defense: %d\n",erec.defense);
+			printf("Hitpoints: %" PRId32 "\n",erec.hitpoints);
+			printf("Strength: %" PRId32 "\n",erec.strength);
+			printf("Defense: %" PRId32 "\n",erec.defense);
 			printf("Arm: %d\n",erec.arm);
 
 		} else if (key=='E' || key=='e') {
 
 			printf("\nEdit which record:");
-			scanf("%d",&num);
+			scanf("%" SCNd16,&num);
 
 			dump();
 
@@ -85,9 +90,9 @@ main(void) {
 			fclose(justfile);
 
 			printf("Name of the sucker: %s\n",erec.name);
-			printf("Hitpoints: %d\n",erec.hitpoints);
-			printf("Strength: %d\n",erec.strength);
-			printf("Defense: %d\n",erec.defense);
+			printf("Hitpoints: %" PRId32 "\n",erec.hitpoints);
+			printf("Strength: %" PRId32 "\n",erec.strength);
+			printf("Defense: %" PRId32 "\n",erec.defense);
 			printf("Arm: %d\n",erec.arm);
 
 			printf("\nName of the sucker:");
@@ -103,19 +108,22 @@ main(void) {
 				dump();
 
 			printf("Hitpoints:");
-			scanf("%d",&erec.hitpoints);
+			scanf("%" SCNd32,&d32);
+			erec.hitpoints = d32;
 			dump();
 
 			printf("Strength:");
-			scanf("%d",&erec.strength);
+			scanf("%" SCNd32,&d32);
+			erec.strength = d32;
 			dump();
 
 			printf("Defense:");
-			scanf("%d",&erec.defense);
+			scanf("%" SCNd32,&d32);
+			erec.defense = d32;
 			dump();
 
 			printf("Arm:");
-			scanf("%d",&erec.arm);
+			scanf("%hhd",&erec.arm);
 
 			dump();
 
@@ -137,9 +145,9 @@ main(void) {
 		fclose(justfile);
 		for (num=0;num<=20;num++) {
 			printf("input first enemy for level %d, was %d :",num,eidx.first_enemy[num]);
-			scanf("%d",&eidx.first_enemy[num]);
+			scanf("%" SCNd16,&eidx.first_enemy[num]);
 			printf("input last enemy for level %d, was %d :",num,eidx.last_enemy[num]);
-			scanf("%d",&eidx.last_enemy[num]);
+			scanf("%" SCNd16,&eidx.last_enemy[num]);
 			dump();
 		}
 		justfile=fopen(ENEMY_INDEX,"wb");

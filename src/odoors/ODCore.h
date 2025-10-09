@@ -78,7 +78,7 @@ extern char *pchColorEndPos;
 extern BYTE btCurrentStatusLine;
 extern OD_PERSONALITY_CALLBACK *pfCurrentPersonality;
 extern char szDesiredPersonality[33];
-typedef BOOL ODCALL SET_PERSONALITY_FUNC(char *pszName);
+typedef BOOL ODCALL SET_PERSONALITY_FUNC(const char *pszName);
 extern SET_PERSONALITY_FUNC *pfSetPersonality;
 
 /* Commonly used character sequences. */
