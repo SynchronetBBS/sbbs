@@ -1118,6 +1118,10 @@ ODAPIDEF BOOL ODCALL   od_window_remove(void *pWinInfo);
                                   od_control.config_function=function;\
                                   od_init()
 ODAPIDEF BOOL ODCALL                   od_log_open(void);
+#if __cplusplus < 201103L
 ODAPIDEF void ODCALL                   od_emulate(register char in_char);
+#else
+ODAPIDEF void ODCALL                   od_emulate(char in_char);
+#endif
 
 #endif /* _INC_OPENDOOR */
