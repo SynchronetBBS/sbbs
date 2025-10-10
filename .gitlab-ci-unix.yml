@@ -23,6 +23,8 @@ spec:
       default: 'no'
     has_graphics:
       default: 'yes'
+    build_doors:
+      default: 'no'
 ---
 
 ".$[[ inputs.os ]]":
@@ -714,6 +716,21 @@ spec:
   variables:
     GIT_STRATEGY: fetch
 
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [odoors]":
+  extends:
+    - .$[[ inputs.os ]]-build
+  script:
+    - cd src/odoors
+    - touch depend
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
+    - mkdir -p "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}"
+    - cd ../..
+    - tar -czf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/odoors.tgz" src/odoors/libs-* src/odoors/*.h src/odoors/FILE_ID.DIZ src/odoors/*.TXT src/odoors/*.txt
+  variables:
+    GIT_STRATEGY: fetch
+  needs:
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
+
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [sftp]":
   extends:
     - .$[[ inputs.os ]]-build
@@ -790,6 +807,10 @@ spec:
     GIT_STRATEGY: fetch
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [cryptlib]"
+
+#########
+# Doors #
+#########
 
 #########
 # Tests #
