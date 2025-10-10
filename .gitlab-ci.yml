@@ -55,6 +55,7 @@ include:
       has_gtk: "yes"
       build_flags: 'CC="ccache cc" CXX="ccache c++" RELEASE=1 NO_ABSOLUTE_RPATH=1'
       has_valgrind: "yes"
+      build_doors: "yes"
   - local: '.gitlab-ci-unix.yml'
     inputs:
       os: "alpine-linux"
@@ -90,6 +91,7 @@ include:
       gnu_make: 'make'
       has_gtk: "yes"
       build_flags: 'RELEASE=1'
+      build_doors: "yes"
   - local: '.gitlab-ci-unix.yml'
     inputs:
       os: 'darwin-x86'
