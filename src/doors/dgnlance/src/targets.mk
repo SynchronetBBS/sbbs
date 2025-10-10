@@ -1,7 +1,7 @@
 DGNLNCE	=	$(EXEODIR)$(DIRSEP)dgnlnce$(EXEFILE)
 DGNLNCE_DST=	..$(DIRSEP)dgnlnce.$(machine)$(EXEFILE)
 DST_LIBDIR=	..$(DIRSEP)lib.$(machine)
-ODOORS_LIB=	$(SRC_ROOT)$(DIRSEP)odoors$(DIRSEP)libs-${shell uname}$(DIRSEP)$(LIBPREFIX)ODoors$(SOFILE)
+ODOORS_LIB=	$(SRC_ROOT)$(DIRSEP)odoors$(DIRSEP)libs-${OS}$(DIRSEP)$(LIBPREFIX)ODoors$(SOFILE)
 DST_LIBDIR=	..$(DIRSEP)lib.$(machine)
 ODOORS_DST=	$(DST_LIBDIR)$(DIRSEP)$(LIBPREFIX)ODoors$(SOFILE)
 
