@@ -8,6 +8,11 @@
 #include "ini_file.h"
 #include "os_info.h"
 
+#if defined(_WIN32)
+	#include <windows.h>
+	#include <winternl.h>
+#endif
+
 /****************************************************************************/
 /* Write the version details of the current operating system into str		*/
 /****************************************************************************/
