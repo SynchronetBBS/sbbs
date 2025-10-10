@@ -59,14 +59,15 @@
 
 /* xpdev */
 #include "conwrap.h"
-#include "genwrap.h"
-#include "semwrap.h"
 #include "dirwrap.h"
+#include "eventwrap.h"
 #include "filewrap.h"
+#include "genwrap.h"
+#include "ini_file.h"
+#include "os_info.h"
+#include "semwrap.h"
 #include "sockwrap.h"
 #include "str_list.h"
-#include "ini_file.h"
-#include "eventwrap.h"
 #include "threadwrap.h"
 
 /* sbbs */

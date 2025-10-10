@@ -27,6 +27,7 @@
 #include "filedat.h"
 #include "js_rtpool.h"
 #include "js_request.h"
+#include "os_info.h"
 #include "ssl.h"
 #include "ver.h"
 #include "eventwrap.h"

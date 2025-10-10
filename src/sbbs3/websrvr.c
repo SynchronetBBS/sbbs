@@ -48,27 +48,28 @@
 #endif
 
 #undef SBBS /* this shouldn't be defined unless building sbbs.dll/libsbbs.so */
-#include "sbbs.h"
-#include "sbbsdefs.h"
-#include "filedat.h"
-#include "sockwrap.h"       /* sendfilesocket() */
-#include "multisock.h"
-#include "threadwrap.h"
-#include "semwrap.h"
-#include "xpendian.h"
-#include "websrvr.h"
 #include "base64.h"
-#include "md5.h"
-#include "hex.h"
-#include "js_rtpool.h"
-#include "js_request.h"
-#include "js_socket.h"
-#include "xpmap.h"
-#include "xpprintf.h"
-#include "ssl.h"
 #include "fastcgi.h"
+#include "filedat.h"
 #include "git_branch.h"
 #include "git_hash.h"
+#include "hex.h"
+#include "js_request.h"
+#include "js_rtpool.h"
+#include "js_socket.h"
+#include "md5.h"
+#include "multisock.h"
+#include "os_info.h"
+#include "sbbs.h"
+#include "sbbsdefs.h"
+#include "semwrap.h"
+#include "sockwrap.h"       /* sendfilesocket() */
+#include "ssl.h"
+#include "threadwrap.h"
+#include "websrvr.h"
+#include "xpendian.h"
+#include "xpmap.h"
+#include "xpprintf.h"
 
 static const char*  server_name = "Synchronet Web Server";
 static const char*  server_abbrev = "web";

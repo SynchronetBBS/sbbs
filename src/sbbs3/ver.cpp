@@ -25,6 +25,7 @@
 #endif
 #include "git_hash.h"
 #include "git_branch.h"
+#include "os_info.h"
 #include "ver.h"
 #include <archive.h>
 

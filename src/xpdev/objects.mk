@@ -18,6 +18,7 @@ OBJS	= \
 	$(OBJODIR)$(DIRSEP)multisock$(OFILE) \
 	$(OBJODIR)$(DIRSEP)named_str_list$(OFILE) \
 	$(OBJODIR)$(DIRSEP)netwrap$(OFILE) \
+	$(OBJODIR)$(DIRSEP)os_info$(OFILE) \
 	$(OBJODIR)$(DIRSEP)sockwrap$(OFILE) \
 	$(OBJODIR)$(DIRSEP)semfile$(OFILE) \
 	$(OBJODIR)$(DIRSEP)str_list$(OFILE) \
@@ -43,6 +44,7 @@ MTOBJS	= \
 	$(MTOBJODIR)$(DIRSEP)msg_queue$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)multisock$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)named_str_list$(OFILE) \
+	$(MTOBJODIR)$(DIRSEP)os_info$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)rwlockwrap$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)semwrap$(OFILE) \
 	$(MTOBJODIR)$(DIRSEP)netwrap$(OFILE) \

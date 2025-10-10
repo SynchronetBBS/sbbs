@@ -5,7 +5,6 @@ XPDEV	?=	../../xpdev
 OS	:=	$(shell uname)
 OS	:=	$(shell echo $(OS) | tr "[ A-Z]" "[\-a-z]")
 OS	:=	$(shell echo $(OS) | tr -d "/")
-CFLAGS += -DNO_OS_VERSION
 CXXFLAGS += -g -O2 -I../../odoors -I$(XPDEV)
 LDFLAGS += -L../../odoors/libs-`uname`
 

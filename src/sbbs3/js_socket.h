@@ -3,6 +3,7 @@
 
 #include <cryptlib.h>
 #include "gen_defs.h"
+#include "sbbs.h"
 #include "sockwrap.h"
 #include "multisock.h"
 

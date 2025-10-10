@@ -6,7 +6,6 @@ ODOOR_SRC	=	../../../../odoors
 CIOLIB_SRC	=	../../../../conio
 CFLAGS += -O2
 CFLAGS += -g
-CFLAGS += -DNO_OS_VERSION
 CFLAGS += -I${ODOOR_SRC} -I${XPDEV_SRC} -I${UIFC_SRC} -I${CIOLIB_SRC}
 CFLAGS += -DHAS_RANDOM_FUNC
 # Needed for struct alignment!

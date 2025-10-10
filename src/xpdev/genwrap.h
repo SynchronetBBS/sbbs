@@ -366,13 +366,6 @@ DLLEXPORT int get_errno(void);
 
 #endif
 
-/* Command processor/shell environment variable name */
-#ifdef __unix__
-	#define OS_CMD_SHELL_ENV_VAR	"SHELL"
-#else	/* DOS/Windows/OS2 */
-	#define OS_CMD_SHELL_ENV_VAR	"COMSPEC"
-#endif
-
 /* Win32 implementations of recursive (thread-safe) std C time functions on Unix */
 #if !defined(__unix__)
 
@@ -386,9 +379,6 @@ DLLEXPORT long		xp_random(int);
 DLLEXPORT long double xp_timer(void);
 DLLEXPORT uint64_t xp_timer64(void);
 DLLEXPORT int64_t xp_fast_timer64(void);
-DLLEXPORT char*		os_version(char *str, size_t);
-DLLEXPORT char*		os_cpuarch(char *str, size_t);
-DLLEXPORT char*		os_cmdshell(void);
 DLLEXPORT char*		lastchar(const char* str);
 DLLEXPORT int		safe_snprintf(char *dst, size_t size, const char *fmt, ...)
 #if defined(__GNUC__)   // Catch printf-format errors

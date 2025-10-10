@@ -19,10 +19,11 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#include "filedat.h"
 #include "sbbs.h"
 #include "js_request.h"
+#include "os_info.h"
 #include "ver.h"
-#include "filedat.h"
 
 #ifdef JAVASCRIPT
 

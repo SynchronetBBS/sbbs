@@ -19,6 +19,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#include <stdio.h>
 #include "gen_defs.h"
 #include "dirwrap.h"
 #include "sockwrap.h"
