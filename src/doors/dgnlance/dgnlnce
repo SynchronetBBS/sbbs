@@ -31,7 +31,10 @@ then
 else
 	platform="${os}.${machine}"
 fi
-exec "${name}.${platform}" "$@"
+if [ -x "${dir}/${name}.${platform}" ]
+then
+	exec "${dir}/${name}.${platform}" "$@"
+fi
 
 echo "Unable to find binary for ${platform}" >&2
 exit 1
