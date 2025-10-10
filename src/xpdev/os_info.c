@@ -13,6 +13,7 @@
 
 #if defined(__unix__)
         #include <sys/ioctl.h>      /* ioctl() */
+	#include <sys/utsname.h>
         #include <signal.h>
 #elif defined(_WIN32)
         #include <windows.h>
