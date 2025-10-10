@@ -95,7 +95,13 @@ endif
 # Output directories. customize for your own preferences. Note that trailing
 # backslash (\} characters are required.
 #
-SHLIB		:=	.so
+SHFLAGS		+=	-shared
+ifeq ($(os),darwin)
+ SHLIB		?=	.dylib
+else
+ SHLIB		?=	.so
+ SHFLAGS	+=	-Wl,-Bsymbolic
+endif
 STATICLIB	:=	.a
 OBJFILE 	:=	.o
 ifdef PROFILE
@@ -193,7 +199,7 @@ $(OBJDIR)%$(OBJFILE) : %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 ${LIBDIR}libODoors${SHLIB} : ${OBJECTS}
-	$(CC) -shared -Wl,-Bsymbolic -o ${LIBDIR}libODoors${SHLIB}.6.2 ${OBJECTS} -lc
+	$(CC) $(SHFLAGS) -o ${LIBDIR}libODoors${SHLIB}.6.2 ${OBJECTS} -lc
 	ln -fs libODoors${SHLIB}.6.2 ${LIBDIR}libODoors${SHLIB}
 
 ${LIBDIR}libODoors${STATICLIB} : ${OBJECTS}
