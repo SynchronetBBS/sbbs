@@ -10,7 +10,7 @@
 
 #if defined(_WIN32)
 	#include <windows.h>
-	#include <ntdef.h>
+	#include <ntddk.h>
 #endif
 
 /****************************************************************************/
