@@ -300,7 +300,7 @@ char *KbIn (char *dest, long Lmax)
 			break;
 	}
 
-	Oprint("Þ\b"); // '³=179
+	Oprint("\xde\b"); // '³=179
 
 	timeout.tv_sec=1;
 	timeout.tv_usec=0;
@@ -323,7 +323,7 @@ char *KbIn (char *dest, long Lmax)
 				v = strlen(dest);
 				if(v>0)
 				{
-					Oprint(" \b\b \bÞ\b");
+					Oprint(" \b\b \b\xde\b");
 					dest[v-1]=0;
 				}
 			}
@@ -336,7 +336,7 @@ char *KbIn (char *dest, long Lmax)
 			{
 				write(0,inch, 1);
 				strcat(dest,inch);
-				Oprint("Þ\b");
+				Oprint("\xde\b");
 			}
 			if(strlen(dest)>=Lmax)
 			{

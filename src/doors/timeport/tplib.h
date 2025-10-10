@@ -71,7 +71,7 @@ extern char ch17[256];
 extern char Ch18[256];
 // DIM SHARED RecLen AS INTEGER, DatPath$, BarBar$, PlayerNum AS INTEGER
 extern short int RecLen;
-extern char DatPath[MAXPATHLEN];
+extern char DatPath[MAXPATHLEN - 13];
 extern char *BarBar;
 extern short int PlayerNum;
 // DIM SHARED Today$, Yesterday$, Regis AS INTEGER, FirstAvail AS INTEGER
@@ -108,7 +108,7 @@ extern char Prompt[128];
 // Stuff common to all (May as well be in here eh?)
 extern short Hit;
 extern short Level;
-extern char Bad[256];
+extern char Bad[512];
 extern char NotAgain[256];
 extern char Weapon;
 extern long Money;

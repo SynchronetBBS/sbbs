@@ -1,5 +1,5 @@
 VER	:=	1.2
-CFLAGS	+=	-Wall
+CFLAGS	+=	-Wall -fPIC
 STRIP	:=
 
 ifdef DEBUG
@@ -42,37 +42,37 @@ endif
 all: ${BINARIES} ${STRIP}
 
 install$(BINSUFFIX): install.c
-	gcc ${CFLAGS} -o install$(BINSUFFIX) install.c $(CURSLIB)
+	${CC} ${CFLAGS} -o install$(BINSUFFIX) install.c $(CURSLIB)
 
 twenties$(BINSUFFIX): ${REQLIBS} twenties.c
-	gcc ${CFLAGS} ${LFLAGS} $(LIBS) -o twenties$(BINSUFFIX) twenties.c
+	${CC} ${CFLAGS} ${LFLAGS} $(LIBS) -o twenties$(BINSUFFIX) twenties.c
 
 makemod$(BINSUFFIX): ${REQLIBS} makemod.c
-	gcc ${CFLAGS} ${LFLAGS} $(LIBS) -o makemod$(BINSUFFIX) makemod.c
+	${CC} ${CFLAGS} ${LFLAGS} $(LIBS) -o makemod$(BINSUFFIX) makemod.c
 
 stoneage$(BINSUFFIX): ${REQLIBS} stoneage.c
-	gcc ${CFLAGS} ${LFLAGS} $(LIBS) -o stoneage$(BINSUFFIX) stoneage.c
+	${CC} ${CFLAGS} ${LFLAGS} $(LIBS) -o stoneage$(BINSUFFIX) stoneage.c
 
 timeport$(BINSUFFIX): ${REQLIBS} timeport.c timeport.h
-	gcc ${CFLAGS} ${LFLAGS} $(LIBS) -o timeport$(BINSUFFIX) timeport.c
+	${CC} ${CFLAGS} ${LFLAGS} $(LIBS) -o timeport$(BINSUFFIX) timeport.c
 
 tp-event$(BINSUFFIX): ${REQLIBS} tp-event.c
-	gcc ${CFLAGS} ${LFLAGS} $(LIBS) -o tp-event$(BINSUFFIX) tp-event.c
+	${CC} ${CFLAGS} ${LFLAGS} $(LIBS) -o tp-event$(BINSUFFIX) tp-event.c
 
 outside$(BINSUFFIX): ${REQLIBS} outside.c
-	gcc ${CFLAGS} ${LFLAGS} $(LIBS) -o outside$(BINSUFFIX) outside.c
+	${CC} ${CFLAGS} ${LFLAGS} $(LIBS) -o outside$(BINSUFFIX) outside.c
 
 badtimes$(BINSUFFIX): ${REQLIBS} badtimes.c
-	gcc ${CFLAGS} ${LFLAGS} $(LIBS) -o badtimes$(BINSUFFIX) badtimes.c
+	${CC} ${CFLAGS} ${LFLAGS} $(LIBS) -o badtimes$(BINSUFFIX) badtimes.c
 
 $(LIBPREFIX)tplib.o: tplib.c tplib.h doors.h $(LIBPREFIX)
-	gcc -c ${CFLAGS} -o $(LIBPREFIX)tplib.o tplib.c
+	${CC} -c ${CFLAGS} -o $(LIBPREFIX)tplib.o tplib.c
 
 $(LIBPREFIX)doors.o: doors.c doors.h tplib.h $(LIBPREFIX)
-	gcc ${CFLAGS} -o $(LIBPREFIX)doors.o -c doors.c
+	${CC} ${CFLAGS} -o $(LIBPREFIX)doors.o -c doors.c
 
 $(LIBPREFIX)libtp.so: $(LIBPREFIX)tplib.o $(LIBPREFIX)doors.o $(LIBPREFIX)
-	gcc $(CFLAGS) -shared -o $(LIBPREFIX)libtp.so.$(VER) $(LIBPREFIX)tplib.o $(LIBPREFIX)doors.o
+	${CC} $(CFLAGS) -shared -o $(LIBPREFIX)libtp.so.$(VER) $(LIBPREFIX)tplib.o $(LIBPREFIX)doors.o
 	@cd $(LIBPREFIX) && ln -fs libtp.so.$(VER) libtp.so
 
 $(LIBPREFIX):

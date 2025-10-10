@@ -78,7 +78,7 @@ void UCase(char *str)
 	}
 }
 
-void COLOR(fg, bg)
+void COLOR(int fg, int bg)
 {
 	int pair;
 
@@ -98,7 +98,7 @@ void COLOR(fg, bg)
 	color_set(pair,NULL);
 }
 
-void LOCATE(xpos, ypos)
+void LOCATE(int xpos, int ypos)
 {
 	xpos--;
 	ypos--;
@@ -620,7 +620,7 @@ char *GetWord(char *dest, char *Pro,char *Def)
 	PRINT(" [");
 	COLOR(11,0);
 	PRINT(Def);
-	COLOR(3);
+	COLOR(3,0);
 	PRINT("]: ");
 	strcpy(dest,Def);
 	/* This should be better! */

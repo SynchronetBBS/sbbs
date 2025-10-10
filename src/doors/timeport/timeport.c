@@ -77,8 +77,6 @@ int main(int argc, char **argv)
 	char DATE[9];
 	short A;
 	short t;
-	short DidList;
-	short DidView;
 	short DidNews;
 
 	ParseCmdLine(argc,argv);	
@@ -212,8 +210,6 @@ int main(int argc, char **argv)
 */
 
 //   'insert "shuttle log-on here"
-    DidList = 0;
-	DidView = 0;
 	DidNews = 0;
 
 	
@@ -252,7 +248,6 @@ int main(int argc, char **argv)
 				break;
 			case 'L':
 				ListPlayers();
-				DidList = 1;
 				quick=0;
 				break;
 			case 'V':
@@ -1081,7 +1076,7 @@ void ReadMail(short t)
 								{
                     	        	AddToMail(v, "`3Retro-quoter engaged: In response to `!your `3comments below:");
                         		}
-								sprintf(str,"`3=ð> `2%1.75s",Quote[x]);
+								sprintf(str,"`3=\xf0> `2%1.75s",Quote[x]);
                         		AddToMail(v, str);
 	                    	}
     	            	}

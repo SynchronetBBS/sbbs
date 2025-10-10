@@ -31,7 +31,7 @@ char ch17[256];
 char Ch18[256];
 // DIM SHARED RecLen AS INTEGER, DatPath$, BarBar$, PlayerNum AS INTEGER
 short int RecLen=240;
-char DatPath[MAXPATHLEN];
+char DatPath[MAXPATHLEN - 13];
 char *BarBar="`4-`5=`4-`5=`4----`5=`4---------`5=`4---------------------------------------`5=`4---------`5=`4----`5=`4-`5=`4-\r\n";
 short int PlayerNum;
 // DIM SHARED Today$, Yesterday$, Regis AS INTEGER, FirstAvail AS INTEGER
@@ -68,7 +68,7 @@ char Prompt[128];
 // Stuff common to all (May as well be in here eh?)
 short Hit;
 short Level;
-char Bad[256];
+char Bad[512];
 char NotAgain[256];
 char Weapon;
 long Money;
@@ -176,7 +176,6 @@ void AddToMail(short x, char *e)
 
 void DelOldFromNameList(void)
 {
-	short c=0;
 	char NameListFN[MAXPATHLEN];
 	char NewListFN[MAXPATHLEN];
 	FILE *NameList;
@@ -202,7 +201,6 @@ void DelOldFromNameList(void)
 	{
 		readline(b, sizeof(b), NameList);
 		strcpy(str,b);
-	    c++;
 	    user = strtok(str, "~");
 		if(user!=NULL)
 		{
@@ -256,7 +254,7 @@ char *FixTheString(char *dest, char *a, char *b, char *c)
 
 char *GetCommand(char *dest)
 {
-	char pr[256];
+	char pr[1024];
 
 	if(strlen(Prompt))
 	{
@@ -547,7 +545,7 @@ void ListPlayers(void)
 	char AliasName[1000][256];
 	long Exper[1000];
 	short GoMax;
-	char str[256];
+	char str[MAXPATHLEN];
 	FILE *file;
 	char *p;
 	short MadeChange;
@@ -612,11 +610,11 @@ void ListPlayers(void)
 	Pax = 16;
 	Pottr = 1;
 	Oprint("\r\n");
-	Oprint("`2컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴\r\n");
+	Oprint("`2\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\r\n");
 	Oprint("`!                        Time Port: `#List of Recruits\r\n");
-	Oprint("`2컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴\r\n");
+	Oprint("`2\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\r\n");
 	Oprint(" Sex  Name            Level   Experience    Alive  Kills  Codes   Wins\r\n");
-	Oprint("`2컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴\r\n");
+	Oprint("`2\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\r\n");
 
 	for(xix = 1; xix<GoMax; xix++)
 	{
@@ -627,7 +625,7 @@ void ListPlayers(void)
 			{
         	    Ocls();
 				Oprint(" Sex  Name            Level   Experience    Alive  Kills  Codes   Wins\r\n");
-				Oprint("`2컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴\r\n");
+				Oprint("`2\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\r\n");
 	        }
     	    // 'show the listing
         	Oprint("`$   ");
@@ -806,7 +804,7 @@ void OpenInventory(void)
 		buf[0]='-';
 		fread(buf, 80, 1, file);
 		buf[80]=0;
-		strncpy(Invent[x],buf,20);
+		strncpy(Invent[x],buf,sizeof(Invent[0]));
 		RTrim(Invent[x]);
 		inv[x][1]=atoi(Mid(midbuf,buf,20,8));
 		inv[x][2]=atoi(Mid(midbuf,buf,28,3));
@@ -1053,7 +1051,7 @@ void ReadItem(int n, int o)
 	fread(buf, 80, 1, file);
 	buf[80]=0;
 	fclose(file);
-	strncpy(ItemName[o],buf,20);
+	strncpy(ItemName[o],buf,sizeof(ItemName[0]));
 	ItemName[o][20]=0;
 	into[o][1]=atoi(Mid(midbuf,buf,20,8));
 	into[o][2]=atoi(Mid(midbuf,buf,28,3));
@@ -1132,10 +1130,9 @@ void SaveStats(char *a0, char *a1, int b1, int c1, char *d1, char *E1, char *f1,
 				char *i1, char *j1, char *k1, char *l1, char *m1, char *n1, char *o1, char *p1, char *q1, char *Thr) */
 {
 	short Found=0;
-	short c=0;
 	char path[MAXPATHLEN];
 	FILE *file;
-	char buf[241];
+	char buf[244];
 	char outbuf[241];
 	int	Record=0;
 
@@ -1144,7 +1141,6 @@ void SaveStats(char *a0, char *a1, int b1, int c1, char *d1, char *E1, char *f1,
     while(!feof(file) && !Found)
 	{
 		Record++;
-	    c++;
 		buf[0]=0;
 		fread(buf, RecLen, 1, file);
     	if(buf[0] < ' ' && buf[0] > -128)
@@ -1208,7 +1204,6 @@ void SaveStrStats(char *a0, char *a1, char *b1, char *c1, char *d1, char *E1, ch
 				char *i1, char *j1, char *k1, char *l1, char *m1, char *n1, char *o1, char *p1, char *q1, char *Thr) */
 {
 	short Found=0;
-	short c=0;
 	char path[MAXPATHLEN];
 	FILE *file;
 	char buf[241];
@@ -1220,7 +1215,6 @@ void SaveStrStats(char *a0, char *a1, char *b1, char *c1, char *d1, char *E1, ch
     while(!feof(file) && !Found)
 	{
 		Record++;
-	    c++;
 		buf[0]=0;
 		fread(buf, RecLen, 1, file);
     	if(buf[0] < ' ' && buf[0] > -128)
@@ -1248,14 +1242,14 @@ void SaveStrStats(char *a0, char *a1, char *b1, char *c1, char *d1, char *E1, ch
 
 void ViewStats(void)
 {
-	char str[256];
+	char str[512];
 	short d;
 
 	Ocls();
 	Oprint("\r\n");
-	Oprint("`3컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴\r\n");
+	Oprint("`3\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\r\n");
 	Oprint(" `!                       Your Statistics and Settings\r\n");
-	Oprint("`3컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴컴\r\n\r\n");
+	Oprint("`3\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\r\n\r\n");
 	sprintf(str,"                `3            Your Name: `@%s\r\n",Alias);
 	Oprint(str);
 	sprintf(str,"                `3             Your Sex: `@%s\r\n",sex[0]=='M'?"Male":"Female");
@@ -1305,7 +1299,7 @@ void WriteNews(char *e, short x)
 	if(strlen(e) > 0)
 		fprintf(file,"%s\r\n",e);
 	if(x > 0)
-		fprintf(file,"                         `4컴컴컴�`@컴컴컴�`4컴컴컴�\r\n");
+		fprintf(file,"                         `4\xc4\xc4\xc4\xc4\xc4\xc4\xc4`@\xc4\xc4\xc4\xc4\xc4\xc4\xc4`4\xc4\xc4\xc4\xc4\xc4\xc4\xc4\r\n");
 	fclose(file);
 }
 
@@ -1328,7 +1322,6 @@ void readline(char *dest, size_t size, FILE *file)
 
 char *IsHeNew(char *dest)
 {
-	char kr[256];
 	char a[256];
 	int Found=0;
 	char path[MAXPATHLEN];
@@ -1338,7 +1331,6 @@ char *IsHeNew(char *dest)
 	
 	// '**** REMOVE THIS routine for STUB operation! ****
 	// CLOSE #1  /* Why would this be open? */
-	kr[0]=0;
 
 	Found = 0;
 
@@ -1378,7 +1370,7 @@ char *FindName(char *dest, char *Rr)
 	char Te[256];
 	char *i;
 	char te[256];
-	char str[256];
+	char str[512];
 
 	sprintf(path,"%snamelist.dat",DatPath);
 	file=SharedOpen(path, "r", LOCK_SH);
@@ -1515,7 +1507,7 @@ short GetHitLev(long lx, long ly, float l1, float L2)
 		return(0);
 	Tv2 = Tv1 * l1;
 	Tv3 = Tv1 * L2;
-	Tv4 = abs(Tv3 - Tv2);
+	Tv4 = labs(Tv3 - Tv2);
 	Tv5 = random()%Tv4 + Tv2;
 	return(Tv5);
 }
@@ -1526,7 +1518,7 @@ short GetMonHp(short l, float l1, float L2)
 	Tv1 = MonMinHp[l];
 	Tv2 = Tv1 * l1;
 	Tv3 = Tv1 * L2;
-	Tv4 = abs(Tv3 - Tv2);
+	Tv4 = labs(Tv3 - Tv2);
 	Tv5 = random()%Tv4 + Tv2;
 	return(Tv5);
 }
@@ -1538,7 +1530,7 @@ long GetValue(long Tv1, float l1, float L2)
 
 	Tv2 = Tv1 * l1;
 	Tv3 = Tv1 * L2;
-	Tv4 = abs(Tv3 - Tv2);
+	Tv4 = labs(Tv3 - Tv2);
 	Tv5 = random()%Tv4+Tv2;
 	return(Tv5);
 }
@@ -1547,7 +1539,7 @@ long GetValue(long Tv1, float l1, float L2)
 short TalkToPress(void)
 {
 	char a[49];
-	char str[256];
+	char str[512];
 	Oprint("\r\n`2 Do you wish to make a comment in the daily news? (`0Y`2/`0n`2): ");
 	GetYesNo(a);
 	Oprint("\r\n");
