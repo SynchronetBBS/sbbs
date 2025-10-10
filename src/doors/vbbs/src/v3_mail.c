@@ -97,7 +97,7 @@ void sendmail()
 		}
 		else
 		{
-			sprintf(ttxt1,"%04d `09³ `07%-74s`09³~SM\n", mail.letternum, ttxt);
+			sprintf(ttxt1,"%04d `09\xb3 `07%-74s`09\xb3~SM\n", mail.letternum, ttxt);
 			mcimacros(ttxt1);
 			writemail(tpath,ttxt1);
 			lcnt++;

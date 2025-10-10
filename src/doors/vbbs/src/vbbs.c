@@ -86,9 +86,9 @@ tUserRecord plyr, othr, tmpplyr;
 tUserIdx	UsersIdx[MAX_USERS];
 hackrec 	hacker;
 
-hdtype  	harddrive[MAX_HD];
-cputype 	computer[MAX_CPU];
-modemtype  	mtype[MAX_MODEM];
+hdtype  	harddrive[MAX_HD + 1];
+cputype 	computer[MAX_CPU + 1];
+modemtype  	mtype[MAX_MODEM + 1];
 bbstype 	bbssw[20];
 char		skill_txt[10][30];
 
@@ -1458,9 +1458,9 @@ int rankplyr(int plyrno)
 	int i;
 
 	sort_users();
-    for(i=0;i<MAX_USERS && i<plyrcnt;i++)
-    	if(UsersIdx[i].recno==plyrno)
-        	return(i);
+	for(i=0;i<MAX_USERS && i<plyrcnt;i++)
+		if(UsersIdx[i].recno==plyrno)
+			return(i);
 	return(-1);
 }
 
@@ -1498,7 +1498,7 @@ int rand_num(int num)
 	float max = (float)num;
 	int rnum;
 
-	rnum = (int)(max*rand()/(RAND_MAX+1.0f));
+	rnum = (int)(max*rand()/((double)RAND_MAX+1.0f));
 
 	return rnum;
 }

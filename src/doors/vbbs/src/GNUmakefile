@@ -8,12 +8,12 @@ O	     = ./obj
 VPATH	 = .:linux
 
 # define tools
-CC = gcc
-LD = gcc
-RC = rc
-RM = rm -f
-MV = mv -f
-CP = cp
+CC ?= gcc
+LD ?= gcc
+RC ?= rc
+RM ?= rm -f
+MV ?= mv -f
+CP ?= cp
 
 BUILD ?= release
 
@@ -50,7 +50,7 @@ obj:
 
 ${TARGET}: bin obj ${OBJS}
 	@echo linking $@
-	${QUIET}${LD} ${LDFLAGS} ${OBJS} ${LIBS} -o ${TARGET}
+	${QUIET}${CC} ${LDFLAGS} ${OBJS} ${LIBS} -o ${TARGET}
 	${QUIET}${CP} ${TARGET} ../build
 
 clean:

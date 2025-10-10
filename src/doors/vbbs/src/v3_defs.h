@@ -28,9 +28,9 @@ extern tUserRecord plyr, othr, tmpplyr;
 extern tUserIdx	UsersIdx[MAX_USERS];
 extern hackrec 	hacker;
 
-extern hdtype  	harddrive[MAX_HD];
-extern cputype 	computer[MAX_CPU];
-extern modemtype  	mtype[MAX_MODEM];
+extern hdtype  	harddrive[MAX_HD + 1];
+extern cputype 	computer[MAX_CPU + 1];
+extern modemtype  	mtype[MAX_MODEM + 1];
 extern bbstype 	bbssw[20];
 extern char		skill_txt[10][30];
 

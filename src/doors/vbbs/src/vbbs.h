@@ -34,7 +34,7 @@
 #define VBBS_VERSION "v3.2 [0009]"
 
 /* setup cross platform types */
-typedef CHAR	s8;
+typedef signed char	s8;
 typedef BYTE	u8;
 typedef	INT16	s16;
 typedef	WORD	u16;

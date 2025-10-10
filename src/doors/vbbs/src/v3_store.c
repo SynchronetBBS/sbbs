@@ -396,7 +396,6 @@ void buy_bbs_sw()
     unsigned int i;
 	int		num1,cnt=1;
     char    ch1,kys[12]="Q";
-	s32 TLong = 0L;
 
     text("0730");
     for(i=0;i<MAX_SW;i++) {
@@ -409,7 +408,6 @@ void buy_bbs_sw()
         else
             LG=' ';
         sprintf(TS,"%-30s",bbssw[i].bbsname);
-        TLong=bbssw[i].cost;
 		char_2A(1,LG);
 		str_2A(2,bbssw[i].bbsname);
 		s32_2C(3,bbssw[i].cost);

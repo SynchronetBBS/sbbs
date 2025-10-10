@@ -176,7 +176,6 @@ void takeclass(int classnum)
 	int		istrs[2],ii;
 	float   olded,edu;
 	float TFloat = 0.0f;
-	s32 TLong = 0L;
 
 	nl();
 	nl();
@@ -192,15 +191,14 @@ void takeclass(int classnum)
 	s16_2A(1,inum);
 	s16_2A(2,inum);
 	text("0472");
-	TLong=classes[classnum].cost;
 	inum=classes[classnum].apch;
 	s16_2A(1,inum);
 	text("0473");
 	*ttxt='\0';
 	od_input_str(ttxt, 2, '0', '9');
 	istrs[0]=atoi(ttxt);
-    if(istrs[0]<1)
-    	return;
+	if(istrs[0]<1)
+		return;
 	if(istrs[0]>inum)
 		istrs[0]=inum;
 	inum=classes[classnum].average_hours*classes[classnum].apch;
