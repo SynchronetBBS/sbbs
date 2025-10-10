@@ -147,8 +147,8 @@ static VECTOR vectab1[]=
 static VECTOR vectab2[(sizeof vectab1)/(sizeof vectab1[0])];
 
 /* Location function prototypes. */
-int _spawnvpe(int nModeFlag, char *pszPath, char *papszArgs[],
-   char *papszEnviron[]);
+int _spawnvpe(int nModeFlag, char *pszPath, const char *const papszArgs[],
+   const char *const papszEnviron[]);
 int _spawnve(int nModeFlag, char *pszPath, char *papszArgs[],
    char * papszEnviron[]);
 static void savevect(void);
@@ -158,8 +158,8 @@ static void savevect(void);
 
 #ifdef ODPLAT_NIX
 /* Location function prototypes. */
-int _spawnvpe(int nModeFlag, char *pszPath, char *papszArgs[],
-   char *papszEnviron[]);
+int _spawnvpe(int nModeFlag, char *pszPath, const char *const papszArgs[],
+   const char *const papszEnviron[]);
 #endif /* ODPLAT_NIX */
 
 /* ----------------------------------------------------------------------------
@@ -459,8 +459,8 @@ ODAPIDEF INT16 ODCALL od_spawnvpe(INT16 nModeFlag, char *pszPath,
  *     Return: -1 on failure or the spawned-to program's return value on
  *             success.
  */
-int _spawnvpe(int nModeFlag, char *pszPath, char *papszArgs[],
-   char *papszEnviron[])
+int _spawnvpe(int nModeFlag, char *pszPath, const char *const papszArgs[],
+   const char *const papszEnviron[])
 {
    char *e;
    char *p;
@@ -1059,8 +1059,8 @@ int _spawnve(int nModeFlag, char *pszPath, char *papszArgs[],
  *     Return: -1 on failure or the spawned-to program's return value on
  *             success.
  */
-int _spawnvpe(int nModeFlag, char *pszPath, char *papszArgs[],
-   char *papszEnviron[])
+int _spawnvpe(int nModeFlag, char *pszPath, const char *const papszArgs[],
+   const char *const papszEnviron[])
 {
    pid_t	child;
    int		status;
