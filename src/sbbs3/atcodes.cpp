@@ -19,12 +19,13 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#include "sbbs.h"
+
 #include "cmdshell.h"
 #include "cp437defs.h"
 #include "filedat.h"
 #include "os_info.h"
 #include "petdefs.h"
-#include "sbbs.h"
 #include "unicode.h"
 #include "utf8.h"
 #include "ver.h"

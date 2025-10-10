@@ -48,6 +48,8 @@
 #endif
 
 #undef SBBS /* this shouldn't be defined unless building sbbs.dll/libsbbs.so */
+#include "sbbs.h"
+
 #include "base64.h"
 #include "fastcgi.h"
 #include "filedat.h"
@@ -60,7 +62,6 @@
 #include "md5.h"
 #include "multisock.h"
 #include "os_info.h"
-#include "sbbs.h"
 #include "sbbsdefs.h"
 #include "semwrap.h"
 #include "sockwrap.h"       /* sendfilesocket() */
