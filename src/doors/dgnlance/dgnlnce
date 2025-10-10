@@ -1,0 +1,37 @@
+#!/bin/sh
+
+name=`basename $0`
+dir=`dirname $0`
+os=$(uname | tr '[A-Z ]' '[a-z_]')
+machine=$(uname -m | tr '[A-Z ]' '[a-z_]')
+if [ -z "${machine}" ]
+then
+	if [ "${os}" = "darwin" ]
+	then
+		if [ "$(sysctl hw.optional.x86_64)" = "x86_64" ]
+		then
+			machine="x86_64"
+		fi
+	fi
+fi
+if [ "${machine}" = "x86_64" ]
+then
+	machine=x64
+fi
+if (echo "${machine}" | grep -E '(i[3456789]*|x)86' > /dev/null 2>&1)
+then
+	# Matching platforms don't get the machine type in the filename
+	# unless they also have "64" in the name
+	if (echo "${machine}" | grep -E '64' > /dev/null 2>&1)
+	then
+		platform="${os}.${machine}"
+	else
+		platform="${os}"
+	fi
+else
+	platform="${os}.${machine}"
+fi
+exec "${name}.${platform}" "$@"
+
+echo "Unable to find binary for ${platform}" >&2
+exit 1
