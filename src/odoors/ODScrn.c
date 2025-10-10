@@ -328,7 +328,7 @@ LRESULT CALLBACK ODScrnWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
 
    ASSERT(hwnd != NULL);
 
-   hInstance = (HINSTANCE)GetWindowLong(hwnd, GWL_USERDATA);
+   hInstance = (HINSTANCE)GetWindowLongPtr(hwnd, GWLP_USERDATA);
 
    switch(uMsg)
    {
@@ -353,7 +353,7 @@ LRESULT CALLBACK ODScrnWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
       {
          CREATESTRUCT *pCreateStruct = (CREATESTRUCT *)lParam;
          hInstance = (HINSTANCE)pCreateStruct->lpCreateParams;
-         SetWindowLong(hwnd, GWL_USERDATA, (LONG)hInstance);
+         SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)hInstance);
          break;
       }
 

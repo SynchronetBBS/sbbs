@@ -90,54 +90,55 @@
 
 /* OpenDoors target platform. */
 #if defined(WIN32) || defined(__WIN32__) || defined(_WIN32)
-#define ODPLAT_WIN32
-#undef ODPLAT_DOS
-#ifdef OD_WIN32_STATIC
-#pragma message("Compiling for Win32 static version of OpenDoors")
-#else /* !OD_WIN32_STATIC */
-#pragma message("Compiling for Win32 DLL version of OpenDoors")
-#define OD_DLL
-#endif /* !OD_WIN32_STATIC */
+# define ODPLAT_WIN32
+# undef ODPLAT_DOS
+# ifdef OD_WIN32_STATIC
+#  pragma message("Compiling for Win32 static version of OpenDoors")
+# else /* !OD_WIN32_STATIC */
+#  pragma message("Compiling for Win32 DLL version of OpenDoors")
+#  define OD_DLL
+# endif /* !OD_WIN32_STATIC */
 #else /* !WIN32 */
-#if defined(__unix__) || defined(__NetBSD__) || defined(__APPLE__)
-#define ODPLAT_NIX
-#undef ODPLAT_DOS
-#undef DIRSEP
-#define DIRSEP '/'
-#undef DIRSEP_STR
-#define DIRSEP_STR "/"
-#else
-#define ODPLAT_DOS
-#undef ODPLAT_WIN32
-#pragma message("Compiling for DOS version of OpenDoors")
-#endif /* !NIX */
+# if defined(__unix__) || defined(__NetBSD__) || defined(__APPLE__)
+#  define ODPLAT_NIX
+#  undef ODPLAT_DOS
+#  undef DIRSEP
+#  define DIRSEP '/'
+#  undef DIRSEP_STR
+#  define DIRSEP_STR "/"
+# else
+#  define ODPLAT_DOS
+#  undef ODPLAT_WIN32
+#  pragma message("Compiling for DOS version of OpenDoors")
+# endif /* !NIX */
 #endif /* !WIN32 */
 
 
 /* Include any other headers required by OpenDoor.h. */
 #ifdef ODPLAT_WIN32 
+#include "ws2tcpip.h"
 #include "windows.h"
 #endif /* ODPLAT_WIN32 */
 
 /* For DLL versions, definitions of function or data that is exported from */
 /* a module or imported into a module.                                     */
 #ifdef OD_DLL
-#if defined(_MSC_VER) || defined(__BORLANDC__)
-#define OD_EXPORT __declspec(dllexport)
-#else /* !_MSC_VER || __BORLANDC__ */
-#define OD_EXPORT _export
-#endif /* !_MSC_VER */
-#define OD_IMPORT DECLSPEC_IMPORT
+# if defined(_MSC_VER) || defined(__BORLANDC__) || defined(__MINGW32__)
+#  define OD_EXPORT __declspec(dllexport)
+# else /* !_MSC_VER || __BORLANDC__ */
+#  define OD_EXPORT _export
+# endif /* !_MSC_VER */
+# define OD_IMPORT DECLSPEC_IMPORT
 #else /* !OD_DLL */
-#define OD_EXPORT
-#define OD_IMPORT
+# define OD_EXPORT
+# define OD_IMPORT
 #endif /* !OD_DLL */
 
 /* Definition of function naming convention used by OpenDoors. */
 #ifdef __cplusplus
-#define OD_NAMING_CONVENTION extern "C"
+# define OD_NAMING_CONVENTION extern "C"
 #else /* !__cplusplus */
-#define OD_NAMING_CONVENTION
+# define OD_NAMING_CONVENTION
 #endif /* !__cplusplus */
 
 /* Definition of function calling convention used by OpenDoors. */
@@ -153,9 +154,9 @@
 
 /* OpenDoors API function declaration type. */
 #ifdef BUILDING_OPENDOORS
-#define ODAPIDEF OD_NAMING_CONVENTION OD_EXPORT
+# define ODAPIDEF OD_NAMING_CONVENTION OD_EXPORT
 #else /* !BUILDING_OPENDOORS */
-#define ODAPIDEF OD_NAMING_CONVENTION OD_IMPORT
+# define ODAPIDEF OD_NAMING_CONVENTION OD_IMPORT
 #endif /* !BUILDING_OPENDOORS */
 
 /* OpenDoors API global variable definition and declaration types. */
@@ -1033,7 +1034,7 @@ ODAPIDEF void ODCALL   od_set_statusline(INT nSetting);
 ODAPIDEF void ODCALL   od_sleep(tODMilliSec Milliseconds);
 ODAPIDEF BOOL ODCALL   od_spawn(const char *pszCommandLine);
 ODAPIDEF INT16 ODCALL  od_spawnvpe(INT16 nModeFlag, char *pszPath,
-                          char *papszArg[], char *papszEnv[]);
+                          const char *const papszArg[], const char *const papszEnv[]);
 ODAPIDEF void * ODCALL od_window_create(INT nLeft, INT nTop, INT nRight,
                           INT nBottom, char *pszTitle, BYTE btBorderCol,
                           BYTE btTitleCol, BYTE btInsideCol, INT nReserved);

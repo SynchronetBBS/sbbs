@@ -47,8 +47,34 @@ CC	?=	gcc
 #                 link - For Microsoft compilers
 #
 # Get OS name
-OS      :=      $(shell uname)
-os	:=	$(shell echo $(OS) | tr '[A-Z]' '[a-z]' | tr ' ' '_')
+gcc_machine := $(findstring mingw32,$(shell ${CC} -dumpmachine))
+gcc_w64     := $(findstring w64,$(shell ${CC} -dumpmachine))
+gcc_x86_64  := $(findstring x86_64,$(shell ${CC} -dumpmachine))
+ifeq ($(gcc_machine),mingw32)
+ CFLAGS +=      -DMSVCRT_VERSION=0x0800
+ ifeq ($(gcc_x86_64),x86_64)
+  OS            := Win64
+  os            := Win64
+  win           := 64
+  CFLAGS        += -m64
+  LDFLAGS       += -m64
+  machine_uname := x64
+ else
+  OS            := Win32
+  os            := Win32
+  win           := 32
+  CFLAGS        += -m32
+  LDFLAGS       += -m32
+  WINDRESFLAGS  += -Fpe-i386
+  machine_uname := x86
+ endif
+ ifeq ($(gcc_w64),w64)
+  CFLAGS += -DDISABLE_MKSTEMP_DEFINE
+ endif
+else
+ OS      :=      $(shell uname)
+ os	:=	$(shell echo $(OS) | tr '[A-Z]' '[a-z]' | tr ' ' '_')
+endif
 OBJDIR	:=	objs-$(OS)/
 LIBDIR	:=	libs-$(OS)/
 EXEDIR	:=	exe-$(OS)/
@@ -96,11 +122,21 @@ endif
 # backslash (\} characters are required.
 #
 SHFLAGS		+=	-shared
+LIB_PREFIX	:=	lib
+LIB_SUFFIX	:=	.6.2
+EXTRA_LIBS	:=
 ifeq ($(os),darwin)
  SHLIB		?=	.dylib
 else
- SHLIB		?=	.so
- SHFLAGS	+=	-Wl,-Bsymbolic
+ ifdef win
+  SHLIB		?=	.dll
+  EXTRA_LIBS += -lwsock32 -lgdi32 -lcomctl32 -Wl,--subsystem,windows
+  LIB_PREFIX	:=
+  LIB_SUFFIX	:=
+ else
+  SHLIB		?=	.so
+  SHFLAGS	+=	-Wl,-Bsymbolic
+ endif
 endif
 STATICLIB	:=	.a
 OBJFILE 	:=	.o
@@ -120,8 +156,8 @@ endif
 #
 # Define primary target.
 #
-all: ${OBJDIR} ${LIBDIR} $(EXEDIR) ${LIBDIR}libODoors${SHLIB} \
-    ${LIBDIR}libODoors${STATICLIB} $(EXEDIR)ex_chat $(EXEDIR)ex_diag \
+all: ${OBJDIR} ${LIBDIR} $(EXEDIR) ${LIBDIR}${LIB_PREFIX}ODoors${SHLIB} \
+    ${LIBDIR}${LIB_PREFIX}ODoors${STATICLIB} $(EXEDIR)ex_chat $(EXEDIR)ex_diag \
     $(EXEDIR)ex_hello $(EXEDIR)ex_music $(EXEDIR)ex_vote
 
 ifdef XPDEV_LIB
@@ -186,6 +222,10 @@ OBJECTS := ${OBJDIR}ODAuto${OBJFILE}\
 #         ${OBJDIR}ODoor.res
 #         ${OBJDIR}odsys${OBJFILE}\	this file is missing
 
+ifdef win
+	OBJECTS += ${OBJDIR}ODFrame${OBJFILE}
+endif
+
 ${OBJDIR}:
 	mkdir ${OBJDIR}
 
@@ -198,30 +238,32 @@ ${EXEDIR}:
 $(OBJDIR)%$(OBJFILE) : %.c
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-${LIBDIR}libODoors${SHLIB} : ${OBJECTS}
-	$(CC) $(SHFLAGS) -o ${LIBDIR}libODoors${SHLIB}.6.2 ${OBJECTS} -lc
-	ln -fs libODoors${SHLIB}.6.2 ${LIBDIR}libODoors${SHLIB}
+${LIBDIR}${LIB_PREFIX}ODoors${SHLIB} : ${OBJECTS}
+	$(CC) $(SHFLAGS) -o ${LIBDIR}${LIB_PREFIX}ODoors${SHLIB}${LIB_SUFFIX} ${OBJECTS} ${EXTRA_LIBS}
+ifndef win
+	ln -fs ${LIB_PREFIX}ODoors${SHLIB}${LIB_SUFFIX} ${LIBDIR}${LIB_PREFIX}ODoors${SHLIB}
+endif
 
-${LIBDIR}libODoors${STATICLIB} : ${OBJECTS}
-	ar -r ${LIBDIR}libODoors${STATICLIB} ${OBJECTS}
-	ranlib ${LIBDIR}libODoors${STATICLIB}
+${LIBDIR}${LIB_PREFIX}ODoors${STATICLIB} : ${OBJECTS}
+	ar -r ${LIBDIR}${LIB_PREFIX}ODoors${STATICLIB} ${OBJECTS}
+	ranlib ${LIBDIR}${LIB_PREFIX}ODoors${STATICLIB}
 	
-${EXEDIR}ex_chat: ex_chat.c ${LIBDIR}libODoors${SHLIB}
+${EXEDIR}ex_chat: ex_chat.c ${LIBDIR}${LIB_PREFIX}ODoors${SHLIB}
 	$(CC) $(LDFLAGS) $(CFLAGS) ex_chat.c -o $@ -lODoors
 
-${EXEDIR}ex_diag: ex_diag.c ${LIBDIR}libODoors${SHLIB}
+${EXEDIR}ex_diag: ex_diag.c ${LIBDIR}${LIB_PREFIX}ODoors${SHLIB}
 	$(CC) $(LDFLAGS) $(CFLAGS) ex_diag.c -o $@ -lODoors
 
-${EXEDIR}ex_hello: ex_hello.c ${LIBDIR}libODoors${SHLIB}
+${EXEDIR}ex_hello: ex_hello.c ${LIBDIR}${LIB_PREFIX}ODoors${SHLIB}
 	$(CC) $(LDFLAGS) $(CFLAGS) ex_hello.c -o $@ -lODoors
 
-${EXEDIR}ex_music: ex_music.c ${LIBDIR}libODoors${SHLIB}
+${EXEDIR}ex_music: ex_music.c ${LIBDIR}${LIB_PREFIX}ODoors${SHLIB}
 	$(CC) $(LDFLAGS) $(CFLAGS) ex_music.c -o $@ -lODoors
 
-${EXEDIR}ex_ski: ex_ski.c ${LIBDIR}libODoors${SHLIB}
+${EXEDIR}ex_ski: ex_ski.c ${LIBDIR}${LIB_PREFIX}ODoors${SHLIB}
 	$(CC) $(LDFLAGS) $(CFLAGS) $(LDFLAGS) ex_ski.c -o $@ -lODoors -lxpdev
 
-${EXEDIR}ex_vote: ex_vote.c ${LIBDIR}libODoors${SHLIB}
+${EXEDIR}ex_vote: ex_vote.c ${LIBDIR}${LIB_PREFIX}ODoors${SHLIB}
 	$(CC) $(LDFLAGS) $(CFLAGS) ex_vote.c ../xpdev/filewrap.c -o $@ -lODoors -DMULTINODE_AWARE
 
 #

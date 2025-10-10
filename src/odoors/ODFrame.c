@@ -46,6 +46,7 @@
 
 #include <stdio.h>
 
+#include "ws2tcpip.h"
 #include "windows.h"
 #include "commctrl.h"
 
@@ -137,13 +138,13 @@ LRESULT CALLBACK ODFrameToolbarProc(HWND hwnd, UINT uMsg, WPARAM wParam,
 static void ODFrameUpdateTimeLeft(tODFrameWindowInfo *pWindowInfo);
 LRESULT CALLBACK ODFrameTimeEditProc(HWND hwnd, UINT uMsg, WPARAM wParam,
    LPARAM lParam);
-BOOL CALLBACK ODFrameAboutDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
+INT_PTR CALLBACK ODFrameAboutDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
    LPARAM lParam);
 static HWND ODFrameCreateWindow(HANDLE hInstance);
 static void ODFrameDestroyWindow(HWND hwndFrame);
 static void ODFrameMessageLoop(HANDLE hInstance, HWND hwndFrame);
 DWORD OD_THREAD_FUNC ODFrameThreadProc(void *pParam);
-BOOL CALLBACK ODFrameMessageDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
+INT_PTR CALLBACK ODFrameMessageDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
    LPARAM lParam);
 
 
@@ -316,8 +317,8 @@ static HWND ODFrameCreateToolbar(HWND hwndParent, HANDLE hInstance,
 
    /* Change the window proc for the toolbar window to our own, keeping a */
    /* pointer to the original window proc.                                */
-   pfnDefToolbarProc = (WNDPROC)GetWindowLong(hwndToolbar, GWL_WNDPROC);
-   SetWindowLong(hwndToolbar, GWL_WNDPROC, (LONG)ODFrameToolbarProc);
+   pfnDefToolbarProc = (WNDPROC)GetWindowLongPtr(hwndToolbar, GWLP_WNDPROC);
+   SetWindowLongPtr(hwndToolbar, GWLP_WNDPROC, (LONG_PTR)ODFrameToolbarProc);
 
    /* Next, create an edit control on the toolbar, to allow the user's */
    /* time remaining online to be adjusted.                            */
@@ -341,8 +342,8 @@ static HWND ODFrameCreateToolbar(HWND hwndParent, HANDLE hInstance,
 
    /* Change the window proc for the edit window to our own, keeping a */
    /* pointer to the original window proc. */
-   pfnDefEditProc = (WNDPROC)GetWindowLong(hwndTimeEdit, GWL_WNDPROC);
-   SetWindowLong(hwndTimeEdit, GWL_WNDPROC, (LONG)ODFrameTimeEditProc);
+   pfnDefEditProc = (WNDPROC)GetWindowLongPtr(hwndTimeEdit, GWLP_WNDPROC);
+   SetWindowLongPtr(hwndTimeEdit, GWLP_WNDPROC, (LONG_PTR)ODFrameTimeEditProc);
 
    /* Add the time edit control to the tooltip control. */
 
@@ -596,7 +597,7 @@ INT ODFrameGetUsedClientAtTop(HWND hwndFrame)
    tODFrameWindowInfo *pWindowInfo;
    RECT rcWindow;
 
-   pWindowInfo = (tODFrameWindowInfo *)GetWindowLong(hwndFrame, GWL_USERDATA);
+   pWindowInfo = (tODFrameWindowInfo *)GetWindowLongPtr(hwndFrame, GWLP_USERDATA);
 
    if(!pWindowInfo->bToolbarOn) return(0);
 
@@ -621,7 +622,7 @@ INT ODFrameGetUsedClientAtBottom(HWND hwndFrame)
    tODFrameWindowInfo *pWindowInfo;
    RECT rcWindow;
 
-   pWindowInfo = (tODFrameWindowInfo *)GetWindowLong(hwndFrame, GWL_USERDATA);
+   pWindowInfo = (tODFrameWindowInfo *)GetWindowLongPtr(hwndFrame, GWLP_USERDATA);
 
    if(!pWindowInfo->bStatusBarOn) return(0);
 
@@ -656,7 +657,7 @@ LRESULT CALLBACK ODFrameWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
 {
    tODFrameWindowInfo *pWindowInfo;
 
-   pWindowInfo = (tODFrameWindowInfo *)GetWindowLong(hwnd, GWL_USERDATA);
+   pWindowInfo = (tODFrameWindowInfo *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
 
    switch(uMsg)
    {
@@ -666,7 +667,7 @@ LRESULT CALLBACK ODFrameWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
          /* information structure in window's user data.           */
          CREATESTRUCT *pCreateStruct = (CREATESTRUCT *)lParam;
          pWindowInfo = (tODFrameWindowInfo *)pCreateStruct->lpCreateParams;
-         SetWindowLong(hwnd, GWL_USERDATA, (LONG)pWindowInfo);
+         SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)pWindowInfo);
 
          /* Update the enabled and checked states of frame window commands. */
          ODFrameUpdateCmdUI();
@@ -719,7 +720,7 @@ LRESULT CALLBACK ODFrameWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam,
          /* When the frame window is destroyed, it is the window proc's   */
          /* responsiblity to deallocate the window information structure. */
          free(pWindowInfo);
-         SetWindowLong(hwnd, GWL_USERDATA, (LONG)NULL);
+         SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)NULL);
 
          /* Reset current frame window handle. */
          hwndCurrentFrame = NULL;
@@ -1177,7 +1178,7 @@ void ODFrameUpdateCmdUI(void)
    if(hwndFrame == NULL) return;
 
    /* Obtain window information structure. */
-   pWindowInfo = (tODFrameWindowInfo *)GetWindowLong(hwndFrame, GWL_USERDATA);
+   pWindowInfo = (tODFrameWindowInfo *)GetWindowLongPtr(hwndFrame, GWLP_USERDATA);
    if(pWindowInfo == NULL) return;
 
    /* Check or uncheck the toolbar and status bar menu items. */
@@ -1229,8 +1230,8 @@ void ODFrameUpdateTimeDisplay(void)
    /* anything.                                                      */
    if(hwndCurrentFrame == NULL) return;
 
-   pWindowInfo = (tODFrameWindowInfo *)GetWindowLong(hwndCurrentFrame,
-      GWL_USERDATA);
+   pWindowInfo = (tODFrameWindowInfo *)GetWindowLongPtr(hwndCurrentFrame,
+      GWLP_USERDATA);
    ASSERT(pWindowInfo != NULL);
 
    ODFrameUpdateTimeLeft(pWindowInfo);
@@ -1254,8 +1255,8 @@ void ODFrameUpdateWantChat(void)
    /* anything.                                                      */
    if(hwndCurrentFrame == NULL) return;
 
-   pWindowInfo = (tODFrameWindowInfo *)GetWindowLong(hwndCurrentFrame,
-      GWL_USERDATA);
+   pWindowInfo = (tODFrameWindowInfo *)GetWindowLongPtr(hwndCurrentFrame,
+      GWLP_USERDATA);
    ASSERT(pWindowInfo != NULL);
 
    /* If the status bar is on, then update the text displayed in the */
@@ -1315,7 +1316,7 @@ static void ODFrameDestroyWindow(HWND hwndFrame)
    ASSERT(hwndFrame != NULL);
 
    /* Obtain a pointer to the frame window information structure. */
-   pWindowInfo = (tODFrameWindowInfo *)GetWindowLong(hwndFrame, GWL_USERDATA);
+   pWindowInfo = (tODFrameWindowInfo *)GetWindowLongPtr(hwndFrame, GWLP_USERDATA);
 
    /* At this point, deallocate the accelerator table. */
    if(pWindowInfo->hacclFrameCommands != NULL)
@@ -1476,7 +1477,7 @@ LRESULT CALLBACK ODFrameTimeEditProc(HWND hwnd, UINT uMsg, WPARAM wParam,
  *
  *     Return: TRUE if message is processed, FALSE otherwise.
  */
-BOOL CALLBACK ODFrameAboutDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
+INT_PTR CALLBACK ODFrameAboutDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
    LPARAM lParam)
 {
    switch(uMsg)
@@ -1628,7 +1629,7 @@ BOOL ODFrameTranslateAccelerator(HWND hwndFrame, LPMSG pMsg)
    ASSERT(pMsg != NULL);
 
    /* Obtain a pointer to the frame window information structure. */
-   pWindowInfo = (tODFrameWindowInfo *)GetWindowLong(hwndFrame, GWL_USERDATA);
+   pWindowInfo = (tODFrameWindowInfo *)GetWindowLongPtr(hwndFrame, GWLP_USERDATA);
    ASSERT(pWindowInfo != NULL);
 
    /* Perform accelerator translation, based on the frame window's */
@@ -1708,7 +1709,7 @@ tODResult ODFrameStart(HANDLE hInstance, tODThreadHandle *phFrameThread)
  *
  *     Return: TRUE if message is processed, FALSE otherwise.
  */
-BOOL CALLBACK ODFrameMessageDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
+INT_PTR CALLBACK ODFrameMessageDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
    LPARAM lParam)
 {
    switch(uMsg)

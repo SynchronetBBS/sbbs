@@ -203,7 +203,7 @@ ODAPIDEF BOOL ODCALL od_spawn(const char *pszCommandLine)
 
 #ifdef ODPLAT_WIN32
    char *pch;
-   char *apszArgs[3];
+   const char *apszArgs[3];
    char szProgName[80];
 
    /* Build command and arguments list. */
@@ -274,7 +274,7 @@ ODAPIDEF BOOL ODCALL od_spawn(const char *pszCommandLine)
  *             success.
  */
 ODAPIDEF INT16 ODCALL od_spawnvpe(INT16 nModeFlag, char *pszPath,
-   char *papszArg[], char *papszEnv[])
+   const char *const papszArg[], const char *const papszEnv[])
 {
    INT16 nToReturn;
    time_t nStartUnixTime;

@@ -1839,9 +1839,9 @@ tODResult ODComOpenFromExistingHandle(tPortHandle hPort,
 
 		pPortInfo->socket = dwExistingHandle;
 
-		getsockopt(pPortInfo->socket, IPPROTO_TCP, TCP_NODELAY, &(pPortInfo->old_delay), &delay);
+		getsockopt(pPortInfo->socket, IPPROTO_TCP, TCP_NODELAY, (void*)&(pPortInfo->old_delay), &delay);
 		delay=FALSE;
-		setsockopt(pPortInfo->socket, IPPROTO_TCP, TCP_NODELAY, &delay, sizeof(delay));
+		setsockopt(pPortInfo->socket, IPPROTO_TCP, TCP_NODELAY, (void*)&delay, sizeof(delay));
 
         pPortInfo->bIsOpen = TRUE;
 
@@ -1977,7 +1977,7 @@ tODResult ODComClose(tPortHandle hPort)
 
 #ifdef INCLUDE_SOCKET_COM
       case kComMethodSocket:
-		 setsockopt(pPortInfo->socket, IPPROTO_TCP, TCP_NODELAY, &(pPortInfo->old_delay), sizeof(pPortInfo->old_delay));
+		 setsockopt(pPortInfo->socket, IPPROTO_TCP, TCP_NODELAY, (void*)&(pPortInfo->old_delay), sizeof(pPortInfo->old_delay));
          closesocket(pPortInfo->socket);
          break;
 #endif /* INCLUDE_SOCKET_COM */
@@ -2587,8 +2587,16 @@ tODResult ODComInbound(tPortHandle hPort, int *pnInboundWaiting)
 
 #ifdef INCLUDE_SOCKET_COM
       case kComMethodSocket:
+#ifdef ODPLAT_WIN32
+			u_long piw = *pnInboundWaiting;
+			if(ioctlsocket(pPortInfo->socket,FIONREAD,&piw) != 0)
+				*pnInboundWaiting = 0;
+			else
+				*pnInboundWaiting = piw;
+#else
 			if(ioctlsocket(pPortInfo->socket,FIONREAD,pnInboundWaiting) != 0)
 				*pnInboundWaiting = 0;
+#endif
 			break;
 #endif /* INCLUDE_SOCKET_COM */
 

@@ -2465,7 +2465,7 @@ void ODInitError(char *pszErrorText)
  *     Return: TRUE if message is processed, FALSE otherwise.
  */
 #ifdef ODPLAT_WIN32
-BOOL CALLBACK ODInitLoginDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
+INT_PTR CALLBACK ODInitLoginDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
    LPARAM lParam)
 {
    switch(uMsg)

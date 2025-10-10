@@ -397,7 +397,7 @@ INT ODSearchForDropFile(char **papszFileNames, INT nNumFileNames,
    char *pszFound, char *pszDirectory);
 void ODInitError(char *pszErrorText);
 #ifdef ODPLAT_WIN32
-BOOL CALLBACK ODInitLoginDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
+INT_PTR CALLBACK ODInitLoginDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam,
    LPARAM lParam);
 void ODInExDisableDTR(void);
 #endif /* ODPLAT_WIN32 */
