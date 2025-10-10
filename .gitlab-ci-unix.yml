@@ -730,6 +730,10 @@ spec:
     GIT_STRATEGY: fetch
   needs:
     - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
+  rules:
+    - if: '"$[[ inputs.build_doors ]]" == "no"'
+      when: never
+    - !reference [.rules, rules]
 
 "$[[ inputs.os ]]-$[[ inputs.platform ]] [sftp]":
   extends:
