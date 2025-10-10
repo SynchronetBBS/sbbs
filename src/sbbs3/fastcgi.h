@@ -1,6 +1,8 @@
 #ifndef _FASTCGI_H_
 #define _FASTCGI_H_
 
+#include "gen_defs.h"
+
 #if defined(_WIN32) || defined(__BORLANDC__)
 	#define PRAGMA_PACK
 #endif
